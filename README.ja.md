@@ -1,16 +1,15 @@
 
 # Vuls: VULnerability Scanner
 
+[![Slack](https://img.shields.io/badge/slack-join-blue.svg)](http://goo.gl/forms/xm5KFo35tu)
+
 Vulnerability scanner for Linux, agentless, written in golang.
 
-Slackチームは[こちらから](http://goo.gl/forms/xm5KFo35tu)参加できます。(日本語でオッケーです)
+[README in English](https://github.com/future-architect/vuls/blob/master/README.md)
 
 [![asciicast](https://asciinema.org/a/bazozlxrw1wtxfu9yojyihick.png)](https://asciinema.org/a/bazozlxrw1wtxfu9yojyihick)
 
 ![Vuls-slack](img/vuls-slack-ja.png)
-
-
-[README in English](https://github.com/future-architect/vuls/blob/master/README.md)
 
 
 ----
