@@ -436,7 +436,7 @@ prepare:
         prepare [-config=/path/to/config.toml] [-debug]
 
   -config string
-        /path/to/toml (default "/home/ec2-user/config.toml")
+        /path/to/toml (default "$PWD/config.toml")
   -debug
         debug mode
   -use-unattended-upgrades
@@ -462,13 +462,13 @@ scan:
                 [-debug]
                 [-debug-sql]
   -config string
-        /path/to/toml (default "$HOME/config.toml")
+        /path/to/toml (default "$PWD/config.toml")
   -cve-dictionary-url string
-        http://CVE.Dictionary (default: %s) (default "http://127.0.0.1:1323")
+        http://CVE.Dictionary (default "http://127.0.0.1:1323")
   -cvss-over float
         -cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))
   -dbpath string
-        /path/to/sqlite3 (default "$HOME/vuls.sqlite3")
+        /path/to/sqlite3 (default "$PWD/vuls.sqlite3")
   -debug
         debug mode
   -debug-sql
@@ -549,7 +549,7 @@ fetchnvd:
                 [-debug-sql]
 
   -dbpath string
-        /path/to/sqlite3 (default "/home/ec2-user/cve.sqlite3")
+        /path/to/sqlite3 (default "$PWD/cve.sqlite3")
   -debug
         debug mode
   -debug-sql
