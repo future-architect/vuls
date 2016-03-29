@@ -636,3 +636,7 @@ Please see [CHANGELOG](https://github.com/future-architect/vuls/blob/master/CHAN
 # Licence
 
 Please see [LICENSE](https://github.com/future-architect/vuls/blob/master/LICENSE).
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/future-architect/vuls/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
