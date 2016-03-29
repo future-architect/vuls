@@ -17,19 +17,19 @@ Vulnerability scanner for Linux, agentless, written in golang.
 
 # Abstract
 
-毎日のように発見される脆弱性の調査やソフトウェアアップデート作業は、システム管理者にとって負荷の高いタスクである。
-プロダクション環境ではサービス停止リスクを避けるために、パッケージマネージャの自動更新機能を使わずに手動更新で運用するケースも多い。
-だが、手動更新での運用には以下の問題がある。
-- システム管理者がNVDなどで新着の脆弱性をウォッチし続けなければならない
-- サーバにインストールされているソフトウェアは膨大であり、システム管理者が全てを把握するのは困難
-- 新着の脆弱性がどのサーバに該当するのかといった調査コストが大きく、漏れる可能性がある
+For a system administrator, having to perform security vulnerability analysis and software update on a daily basis can be a burden.
+To avoid downtime in production environment, it is common for system administrator to choose not to use the automatic update option provided by package manager and to perform update manually.
+This leads to the following problems.
+- System administrator will have to constantly watch out for any new vulnerabilities in NVD(National Vulnerability Database) and etc.
+- It might be impossible for the system administrator to monitor all the software if there are a large number of software installed in server.
+- It is expensive to perform anaylsis to determine the servers affected by new vulnerabilities. The possibility of overlooking a server or two during analysis is there.
 
 
-Vulsは上に挙げた手動運用での課題を解決するツールであり、以下の特徴がある。
-- システムに関係ある脆弱性のみ教えてくれる
-- その脆弱性に該当するサーバを教えてくれる
-- 自動スキャンのため脆弱性検知の漏れを防ぐことができる
-- CRONなどで定期実行、レポートすることで脆弱性の放置を防ぐことできる
+Vuls is a tool created to solve the problems listed above. It has the following characteristics.
+- Informs users of the vulnerabilities that are related to the system.
+- Informs users of the servers that are affected.
+- Vulnerability detection is done automatically to prevent any oversight.
+- Report is generated on regular basis using CRON etc. to manage vulnerability.
 
 ![Vuls-Motivation](img/vuls-motivation.png)
 
@@ -37,24 +37,24 @@ Vulsは上に挙げた手動運用での課題を解決するツールであり�
 
 # Main Features
 
-- Linuxサーバに存在する脆弱性をスキャン
-    - Ubuntu, Debian, CentOS, Amazon Linux, RHELに対応
-    - クラウド、オンプレミス、Docker
-- OSパッケージ管理対象外のミドルウェアをスキャン
-    - プログラミング言語のライブラリやフレームワーク、ミドルウェアの脆弱性スキャン
-    - CPEに登録されているソフトウェアが対象
-- エージェントレスアーキテクチャ
-    - スキャン対象サーバにSSH接続可能なマシン1台にセットアップするだけで動作
-- 設定ファイルのテンプレート自動生成
-    - CIDRを指定してサーバを自動検出、設定ファイルのテンプレートを生成
-- EmailやSlackで通知可能（日本語でのレポートも可能）
-- 付属のTUIビューアを用いてターミナル上でスキャン結果を参照可能
+- Scan for any vulnerabilities in Linux Server
+    - Supports Ubuntu, Debian, CentOS, Amazon Linux, RHEL
+    - Cloud, on-premise, Docker
+- Scan middleware that are not included in OS package management
+    - Scan middleware, programming language libraries and framework for vulnerability
+    - Support software registered in CPE
+- Agentless architecture
+    - User is required to only setup one machine that is connected to other target servers via SSH
+- Auto generation of configuration file template
+    - Auto detection of servers set using CIDR, generate configuration file template
+- Email and Slack notification is possible (supports Japanese language) 
+- Scan result is viewable on accessory software, TUI Viewer terminal.
 
 ----
 
-# What Vuls Does'nt Do
+# What Vuls Doesn't Do
 
-- Vuls does'nt update the vulneable packages.
+- Vuls doesn't update the vulnerable packages.
 
 ----
 
