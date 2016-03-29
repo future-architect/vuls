@@ -1,9 +1,9 @@
 
 # Vuls: VULnerability Scanner
 
-Vulnerability scanner for Linux, agentless, written in golang.
+[![Slack](https://img.shields.io/badge/slack-join-blue.svg)](http://goo.gl/forms/xm5KFo35tu)
 
-We have a slack team. [Join slack team](http://goo.gl/forms/xm5KFo35tu)
+Vulnerability scanner for Linux, agentless, written in golang.
 
 [![asciicast](https://asciinema.org/a/3y9zrf950agiko7klg8abvyck.png)](https://asciinema.org/a/3y9zrf950agiko7klg8abvyck)
 
@@ -335,62 +335,83 @@ You can customize your configuration using this template.
 # Configuration
 
 - Slack section
+    ```
+    [slack]
+    hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
+    channel      = "#channel-name"
+    #channel      = "#{servername}"
+    iconEmoji    = ":ghost:"
+    authUser     = "username"
+    notifyUsers  = ["@username"]
+    ```
 
-```
-[slack]
-hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
-channel      = "#channel-name"
-#channel      = "#{servername}"
-iconEmoji    = ":ghost:"
-authUser     = "username"
-notifyUsers  = ["@username"]
-```
+    - hookURL : Incomming webhook's URL  
+    - channel : channel name.  
+    If you set #{servername} to channel, the report will be sent to #servername channel.  
+    In the following example, the report will be sent to #server1 and #server2.  
+    Be sure to create these channels before scanning.
+      ```
+      [slack]
+      channel      = "#{servername}"
+      ...snip...
 
-- hookURL : Incomming webhook's URL  
-- channel : channel name.  
+      [servers]
+
+      [servers.server1]
+      host         = "172.31.4.82"
+      ...snip...
+
+      [servers.server2]
+      host         = "172.31.4.83"
+      ...snip...
+      ```
+
+    - iconEmoji: emoji
+    - authUser: username of the slack team
+    - notifyUsers: a list of Slack usernames to send Slack notification.
+      If you set ["@foo", "@bar"] to notifyUsers, @foo @bar will be included in text.  
+      So @foo, @bar can receive mobile push notifications on their smartphone.  
 
 - Mail section
-
-
-```
-[mail]
-smtpAddr      = "smtp.gmail.com"
-smtpPort      = 465
-user          = "username"
-password      = "password"
-from          = "from@address.com"
-to            = ["to@address.com"]
-cc            = ["cc@address.com"]
-subjectPrefix = "[vuls]"
-```
+    ```
+    [mail]
+    smtpAddr      = "smtp.gmail.com"
+    smtpPort      = 465
+    user          = "username"
+    password      = "password"
+    from          = "from@address.com"
+    to            = ["to@address.com"]
+    cc            = ["cc@address.com"]
+    subjectPrefix = "[vuls]"
+    ```
 
 - Defualt section
-
-```
-[default]
-#port        = "22"
-#user        = "username"
-#password    = "password"
-#keyPath     = "/home/username/.ssh/id_rsa"
-#keyPassword = "password"
-```
+    ```
+    [default]
+    #port        = "22"
+    #user        = "username"
+    #password    = "password"
+    #keyPath     = "/home/username/.ssh/id_rsa"
+    #keyPassword = "password"
+    ```
+    Items that are not specified in the server section will be set those items of the defualt section.
 
 - servers section
+    ```
+    [servers]
 
-```
-[servers]
-
-[servers.172-31-4-82]
-host         = "172.31.4.82"
-#port        = "22"
-#user        = "root"
-#password    = "password"
-#keyPath     = "/home/username/.ssh/id_rsa"
-#keyPassword = "password"
-#cpeNames = [
-#  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
-#]
-```
+    [servers.172-31-4-82]
+    host         = "172.31.4.82"
+    #port        = "22"
+    #user        = "root"
+    #password    = "password"
+    #keyPath     = "/home/username/.ssh/id_rsa"
+    #keyPassword = "password"
+    #cpeNames = [
+    #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
+    #]
+    ```
+    You can overwrite the default value that specified in default section.
 
 ----
 
@@ -562,10 +583,10 @@ Use Systemd, Upstart or supervisord, daemontools...
 Use job scheduler like Cron (with -last2y option).
 
 - How to cross compile
-```bash
-$ cd /path/to/your/local-git-reporsitory/vuls
-$ GOOS=linux GOARCH=amd64 go build -o vuls.amd64
-```
+    ```bash
+    $ cd /path/to/your/local-git-reporsitory/vuls
+    $ GOOS=linux GOARCH=amd64 go build -o vuls.amd64
+    ```
 
 - Logging  
 Log wrote to under /var/log/vuls/
@@ -573,7 +594,7 @@ Log wrote to under /var/log/vuls/
 - Debug  
 Run with --debug, --sql-debug option.
 
-- Windows
+- Windows  
 Use Microsoft Baseline Secuirty Analyzer. [MBSA](https://technet.microsoft.com/en-us/security/cc184924.aspx)
 
 ----
