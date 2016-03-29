@@ -54,7 +54,7 @@ Vulsは上に挙げた手動運用での課題を解決するツールであり�
 
 # What Vuls Does'nt Do
 
-- Update the vulneable packages actually
+- Vuls does'nt update the vulneable packages.
 
 ----
 
