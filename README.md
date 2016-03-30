@@ -82,10 +82,10 @@ Procedure is as follows.
 - Add the following to the cloud-init, to prevent from automatically update at the first launch.
 
     - [Q: How do I disable the automatic installation of critical and important security updates on initial launch?](https://aws.amazon.com/amazon-linux-ami/faqs/?nc1=h_ls)
-```
-#cloud-config
-repo_upgrade: none
-```
+    ```
+    #cloud-config
+    repo_upgrade: none
+    ```
 
 ## 2. Enable to ssh from localhost
 
