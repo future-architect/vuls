@@ -74,7 +74,7 @@ This can be done in the following steps.
 1. Scan
 1. TUI(Terminal-Based User Interface)
 
-## Step1. Launch Amazon Linux
+## 1. Launch Amazon Linux
 
 - We are using the old AMI (amzn-ami-hvm-2015.09.1.x86_64-gp2 - ami-383c1956) for this example
 - Instance size: t2.medium
@@ -88,7 +88,7 @@ This can be done in the following steps.
     repo_upgrade: none
     ```
 
-## Step2. Generate a ssh-key on local machine
+## 2. Generate a ssh-key on local machine
 
 Create a keypair then append public key to authorized_keys
 ```bash
@@ -96,7 +96,7 @@ $ ssh-keygen -t rsa
 $ cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
 ```
 
-## Step3. Install requirements
+## 3. Install requirements
 
 Vuls requires the following packages.
 
@@ -126,7 +126,7 @@ Set the OS environment variable to current shell
 $ source /etc/profile.d/goenv.sh
 ```
 
-## Step4. Deploy go-cve-dictionary
+## 4. Deploy go-cve-dictionary
 
 go get
 
@@ -157,7 +157,7 @@ $ go-cve-dictionary server
 [Mar 24 15:21:56]  INFO Listening on 127.0.0.1:1323
 ```
 
-## Step5. Deploy vuls
+## 5. Deploy vuls
 
 Launch a new terminal, SSH to the ec2 instance.
 
@@ -166,7 +166,7 @@ go get
 $ go get github.com/future-architect/vuls
 ```
 
-## Step6. Config
+## 6. Config
 
 Create a config file(TOML format).
 
@@ -181,13 +181,13 @@ user        = "ec2-user"
 keyPath     = "/home/ec2-user/.ssh/id_rsa"
 ```
 
-## Step7. Initializing Vuls 
+## 7. Initializing Vuls 
 
 ```
 $ vuls prepare
 ```
 
-## Step8. Start Scanning
+## 8. Start Scanning
 
 ```
 $ vuls scan
@@ -220,7 +220,7 @@ Package/CPE     java-1.7.0-openjdk-1.7.0.91-2.6.2.2.63.amzn1 -> java-1.7.0-openj
 
 ```
 
-## Step9. TUI
+## 9. TUI
 
 Vuls has Terminal-Based User Interface to display the scan result.
 
