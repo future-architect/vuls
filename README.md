@@ -95,7 +95,7 @@ This is required to ssh to itself.
 Create a keypair then append public key to authorized_keys
 ```bash
 $ ssh-keygen -t rsa
-$ cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
+$ cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
 ```
 
 ## Step3. Install requirements
