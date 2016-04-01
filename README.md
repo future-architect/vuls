@@ -88,7 +88,9 @@ This can be done in the following steps.
     repo_upgrade: none
     ```
 
-## Step2. Generate a ssh-key on local machine
+## Step2. SSH setting
+
+This is required to ssh to itself.
 
 Create a keypair then append public key to authorized_keys
 ```bash
@@ -181,7 +183,7 @@ user        = "ec2-user"
 keyPath     = "/home/ec2-user/.ssh/id_rsa"
 ```
 
-## Step7. Initializing Vuls 
+## Step7. Setting up target servers for vuls  
 
 ```
 $ vuls prepare
@@ -241,14 +243,14 @@ $ vuls tui
 - Fetch vulnerbility information from NVD, JVN(Japanese), then insert into SQLite.
 
 ## Vuls
-- Scan vulnerabilities of the servers and generate a list of the CVE ID
-- In order to get more information of the detected CVE, send HTTP request to go-cve-dictinary
+- Scan vulnerabilities on the servers and create a list of the CVE ID
+- For more detailed information of the detected CVE, send HTTP request to go-cve-dictinary
 - Send a report by Slack, Email
 - System operator can view the latest report by terminal
 
 ----
 
-# Use cases
+# Use Cases
 
 ## Scan all servers
 
@@ -507,7 +509,7 @@ $ vuls scan --report-slack --report-mail --cvss-over=7
 With this sample command, it will ..
 - Scan all servers defined in config file
 - Send scan results to slack and email
-- Only Reporting CVEs that CVSS score is over 7
+- Only Report CVEs that CVSS score is over 7
 - Print scan result to terminal
 
 ### Scan specific servers
@@ -522,14 +524,14 @@ With this sample command, it will ..
 
 # Usage: Scan vulnerability of non-OS package
 
-It is possible to detect vulnerabilities something you compiled by yourself or the language libraries and the frameworks that have been registered in the [CPE](https://nvd.nist.gov/cpe.cfm).
+It is possible to detect vulnerabilities something you compiled by yourself, the language libraries and the frameworks that have been registered in the [CPE](https://nvd.nist.gov/cpe.cfm).
 
 -  How to search CPE name by software name
     - [NVD: Search Common Platform Enumerations (CPE)](https://web.nvd.nist.gov/view/cpe/search)  
     **Check CPE Naming Format: 2.2**
 
 - Configuration  
-If you want to detect the vulnerbility of Ruby on Rails v4.2.1, here is an example.
+To detect the vulnerbility of Ruby on Rails v4.2.1, cpeNames needs to be set in the servers section.
     ```
     [servers]
 
@@ -569,7 +571,7 @@ fetchnvd:
 $ go-cve-dictionary fetchnvd -entire
 ```
 
-- Fetch data of the last 2 years
+- Fetch data in the last 2 years
 
 ```
 $ go-cve-dictionary fetchnvd -last2y
