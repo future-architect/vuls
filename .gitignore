@@ -1,0 +1,9 @@
+.vscode
+coverage.out
+issues/
+*.txt
+vendor/
+log/
+.gitmodules
+vuls
+*.sqlite3
