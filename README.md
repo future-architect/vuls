@@ -5,7 +5,7 @@
 
 Vulnerability scanner for Linux, agentless, written in golang.
 
-[README in Japanese](https://github.com/future-architect/vuls/blob/master/README.ja.md)  
+[README in Japanese](https://github.com/future-architect/vuls/blob/master/README.ja.md)
 We have a slack team. [Join slack team](http://goo.gl/forms/xm5KFo35tu)
 
 [![asciicast](https://asciinema.org/a/3y9zrf950agiko7klg8abvyck.png)](https://asciinema.org/a/3y9zrf950agiko7klg8abvyck)
@@ -59,10 +59,10 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 
 ----
 
-# Hello Vuls
+# Hello Vuls 
 
-Describe how to scan the vulnerabilites that is included on the localhost.
-Procedure is as follows.
+This tutorial will let you scan the vulnerabilities on the localhost with vuls.   
+This can be done in the following steps.  
 
 1. Launch Amazon Linux
 1. Enable to ssh from localhost
@@ -74,13 +74,13 @@ Procedure is as follows.
 1. Scan
 1. TUI(Terminal-Based User Interface)
 
-## 1. Launch Amazon Linux
+## Step1. Launch Amazon Linux
 
-- For the purpose of explanation, using the old AMI (amzn-ami-hvm-2015.09.1.x86_64-gp2 - ami-383c1956)
+- We are using the old AMI (amzn-ami-hvm-2015.09.1.x86_64-gp2 - ami-383c1956) for this example
 - Instance size: t2.medium
-    - Unable to work on t2.small, micro, nano, Because 2.3GB memory is needed during data fetch from NVD for the first time.
-    - After the initial data fetch has been completed, It is able to run on t2.nano
-- Add the following to the cloud-init, to prevent from automatically update at the first launch.
+    - For the first time, t2.medium and above is required for the data fetch from NVD
+    - You can switch to t2.nano after the initial data fetch.
+- Add the following to the cloud-init, to avoid auto-update at the first launch.
 
     - [Q: How do I disable the automatic installation of critical and important security updates on initial launch?](https://aws.amazon.com/amazon-linux-ami/faqs/?nc1=h_ls)
     ```
@@ -88,7 +88,9 @@ Procedure is as follows.
     repo_upgrade: none
     ```
 
-## 2. Enable to ssh from localhost
+## Step2. SSH setting
+
+This is required to ssh to itself.
 
 Create a keypair then append public key to authorized_keys
 ```bash
@@ -96,7 +98,7 @@ $ ssh-keygen -t rsa
 $ cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
 ```
 
-## 3. Install requirements
+## Step3. Install requirements
 
 Vuls requires the following packages.
 
@@ -113,7 +115,7 @@ $ wget https://storage.googleapis.com/golang/go1.6.linux-amd64.tar.gz
 $ sudo tar -C /usr/local -xzf go1.6.linux-amd64.tar.gz
 $ mkdir $HOME/go
 ```
-Put these lines into /etc/profile.d/goenv.sh
+Add these lines into /etc/profile.d/goenv.sh
 
 ```bash
 export GOROOT=/usr/local/go
@@ -126,7 +128,7 @@ Set the OS environment variable to current shell
 $ source /etc/profile.d/goenv.sh
 ```
 
-## 4. Deploy go-cve-dictionary
+## Step4. Deploy go-cve-dictionary
 
 go get
 
@@ -148,7 +150,7 @@ $ ls -alh cve.sqlite3
 -rw-r--r-- 1 ec2-user ec2-user 7.0M Mar 24 13:20 cve.sqlite3
 ```
 
-Now we has vulnerbility data, So start as server mode again.
+Now we successfully collected vulnerbility data, then start as server mode again.
 ```bash
 $ go-cve-dictionary server
 [Mar 24 15:21:55]  INFO Opening DB. datafile: /home/ec2-user/cve.sqlite3
@@ -157,16 +159,16 @@ $ go-cve-dictionary server
 [Mar 24 15:21:56]  INFO Listening on 127.0.0.1:1323
 ```
 
-## 5. Deploy vuls
+## Step5. Deploy vuls
 
-Launch a new terminal, SSH to the ec2.
+Launch a new terminal, SSH to the ec2 instance.
 
 go get
 ```
 $ go get github.com/future-architect/vuls
 ```
 
-## 6. Config
+## Step6. Config
 
 Create a config file(TOML format).
 
@@ -181,14 +183,13 @@ user        = "ec2-user"
 keyPath     = "/home/ec2-user/.ssh/id_rsa"
 ```
 
-## 7. Prepare
-
+## Step7. Setting up target servers for vuls  
 
 ```
 $ vuls prepare
 ```
 
-## 8. Scan
+## Step8. Start Scanning
 
 ```
 $ vuls scan
@@ -221,9 +222,9 @@ Package/CPE     java-1.7.0-openjdk-1.7.0.91-2.6.2.2.63.amzn1 -> java-1.7.0-openj
 
 ```
 
-## 9. TUI
+## Step9. TUI
 
-Vuls has Terminal-Based User Interface to see the latest scan.
+Vuls has Terminal-Based User Interface to display the scan result.
 
 ```
 $ vuls tui
@@ -242,14 +243,14 @@ $ vuls tui
 - Fetch vulnerbility information from NVD, JVN(Japanese), then insert into SQLite.
 
 ## Vuls
-- Scan vulnerabilities that exist on servers, to get a list of the CVE ID
-- In order to get more information of the detected CVE, send HTTP request to go-cve-dictinary
-- Send the report by Slack, Email
-- System operator can see the latest report by terminal
+- Scan vulnerabilities on the servers and create a list of the CVE ID
+- For more detailed information of the detected CVE, send HTTP request to go-cve-dictinary
+- Send a report by Slack, Email
+- System operator can view the latest report by terminal
 
 ----
 
-# Usecase
+# Use Cases
 
 ## Scan all servers
 
@@ -278,7 +279,7 @@ web/app server in the same configuration under the load balancer
 
 # Usage: Automatic Server Discovery
 
-Discovery subcommand discovers active servers which specifed in CIDR range, then print the template of config file(TOML format) to terminal.
+Discovery subcommand discovers active servers specifed in CIDR range, then print the template of config file(TOML format) to terminal.
 
 ```
 $ vuls discover -help
@@ -351,7 +352,7 @@ You can customize your configuration using this template.
     - hookURL : Incomming webhook's URL  
     - channel : channel name.  
     If you set #{servername} to channel, the report will be sent to #servername channel.  
-    In the following example, the report will be sent to #server1 and #server2.  
+    In the following example, the report will be sent to the #server1 and #server2.  
     Be sure to create these channels before scanning.
       ```
       [slack]
@@ -371,7 +372,7 @@ You can customize your configuration using this template.
 
     - iconEmoji: emoji
     - authUser: username of the slack team
-    - notifyUsers: a list of Slack usernames to send Slack notification.
+    - notifyUsers: a list of Slack usernames to send Slack notifications.
       If you set ["@foo", "@bar"] to notifyUsers, @foo @bar will be included in text.  
       So @foo, @bar can receive mobile push notifications on their smartphone.  
 
@@ -397,7 +398,7 @@ You can customize your configuration using this template.
     #keyPath     = "/home/username/.ssh/id_rsa"
     #keyPassword = "password"
     ```
-    Items that are not specified in the server section will be set those items of the defualt section.
+    Items of the defualt section will be used if not specified.
 
 - servers section
     ```
@@ -414,8 +415,8 @@ You can customize your configuration using this template.
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
     ```
-    You can overwrite the default value that specified in default section.  
-    Vuls supports multiple SSH authentication method.  
+    You can overwrite the default value specified in default section.  
+    Vuls supports multiple SSH authentication methods.  
     - SSH agent
     - SSH public key authentication (with password, empty password)
     - Password authentication
@@ -496,7 +497,7 @@ scan:
 
 ## example
 
-Run go-cve-dictionary as server mdoe before scanning.
+Run go-cve-dictionary as server mode before scanning.
 ```
 $ go-cve-dictionary server
 ```
@@ -505,17 +506,17 @@ $ go-cve-dictionary server
 ```
 $ vuls scan --report-slack --report-mail --cvss-over=7
 ```
-Examples of the above are the following meanings...
+With this sample command, it will ..
 - Scan all servers defined in config file
-- Send scan resulsts to slack, email
-- Only Reporting CVEs that CVSS score over 7
+- Send scan results to slack and email
+- Only Report CVEs that CVSS score is over 7
 - Print scan result to terminal
 
-### Scan specified servers
+### Scan specific servers
 ```
 $ vuls scan server1 server2
 ```
-Examples of the above are the following meanings...
+With this sample command, it will ..
 - Scan only 2 servers. (server1, server2)
 - Print scan result to terminal
 
@@ -523,14 +524,14 @@ Examples of the above are the following meanings...
 
 # Usage: Scan vulnerability of non-OS package
 
-Vuls is possible to detect vulnerabilities something you compiled by yourself or library of language, framework that has been registered in the [CPE](https://nvd.nist.gov/cpe.cfm).
+It is possible to detect vulnerabilities something you compiled by yourself, the language libraries and the frameworks that have been registered in the [CPE](https://nvd.nist.gov/cpe.cfm).
 
 -  How to search CPE name by software name
     - [NVD: Search Common Platform Enumerations (CPE)](https://web.nvd.nist.gov/view/cpe/search)  
     **Check CPE Naming Format: 2.2**
 
 - Configuration  
-If you want to detect the vulnerbility of Ruby on Rails v4.2.1, define as below.
+To detect the vulnerbility of Ruby on Rails v4.2.1, cpeNames needs to be set in the servers section.
     ```
     [servers]
 
@@ -570,7 +571,7 @@ fetchnvd:
 $ go-cve-dictionary fetchnvd -entire
 ```
 
-- Fetch data last 2 years
+- Fetch data in the last 2 years
 
 ```
 $ go-cve-dictionary fetchnvd -last2y
