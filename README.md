@@ -5,8 +5,9 @@
 
 Vulnerability scanner for Linux, agentless, written in golang.
 
-[README in Japanese](https://github.com/future-architect/vuls/blob/master/README.ja.md)
-We have a slack team. [Join slack team](http://goo.gl/forms/xm5KFo35tu)
+We have a slack team. [Join slack team](http://goo.gl/forms/xm5KFo35tu)  
+
+[README in Japanese](https://github.com/future-architect/vuls/blob/master/README.ja.md)  
 
 [![asciicast](https://asciinema.org/a/3y9zrf950agiko7klg8abvyck.png)](https://asciinema.org/a/3y9zrf950agiko7klg8abvyck)
 
