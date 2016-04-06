@@ -603,6 +603,9 @@ Log wrote to under /var/log/vuls/
 - Debug  
 Run with --debug, --sql-debug option.
 
+- Ajusting Open File Limit
+[Riak docs](http://docs.basho.com/riak/latest/ops/tuning/open-files-limit/) is awesome.
+
 - Windows  
 Use Microsoft Baseline Secuirty Analyzer. [MBSA](https://technet.microsoft.com/en-us/security/cc184924.aspx)
 
