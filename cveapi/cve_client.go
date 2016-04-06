@@ -127,19 +127,18 @@ func (api cvedictClient) FetchCveDetails(cveIDs []string) (cveDetails cve.CveDet
 }
 
 func (api cvedictClient) httpGet(key, url string, resChan chan<- response, errChan chan<- error) {
-
 	var body string
 	var errs []error
 	var resp *http.Response
 	f := func() (err error) {
 		resp, body, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
 		if len(errs) > 0 || resp.StatusCode != 200 {
-			errChan <- fmt.Errorf("HTTP error. errs: %v, url: %s", errs, url)
+			return fmt.Errorf("HTTP GET error: %v, code: %d, url: %s", errs, resp.StatusCode, url)
 		}
 		return nil
 	}
 	notify := func(err error, t time.Duration) {
-		log.Warnf("Failed to get. retrying in %s seconds. err: %s", t, err)
+		log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %s", t, err)
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {
@@ -219,12 +218,12 @@ func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]c
 		}
 		resp, body, errs = req.End()
 		if len(errs) > 0 || resp.StatusCode != 200 {
-			return fmt.Errorf("HTTP error. errs: %v, url: %s", errs, url)
+			return fmt.Errorf("HTTP POST errors: %v, code: %d, url: %s", errs, resp.StatusCode, url)
 		}
 		return nil
 	}
 	notify := func(err error, t time.Duration) {
-		log.Warnf("Failed to get. retrying in %s seconds. err: %s", t, err)
+		log.Warnf("Failed to HTTP POST. retrying in %s seconds. err: %s", t, err)
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {
