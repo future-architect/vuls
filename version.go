@@ -17,8 +17,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 package main
 
-// Name.
+// Name is Vuls
 const Name string = "vuls"
 
-// Version.
-const Version string = "0.1.0"
+// Version of Vuls
+const Version string = "0.1.1"
