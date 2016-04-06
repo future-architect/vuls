@@ -390,7 +390,7 @@ You can customize your configuration using this template.
     subjectPrefix = "[vuls]"
     ```
 
-- Defualt section
+- Default section
     ```
     [default]
     #port        = "22"
@@ -399,7 +399,7 @@ You can customize your configuration using this template.
     #keyPath     = "/home/username/.ssh/id_rsa"
     #keyPassword = "password"
     ```
-    Items of the defualt section will be used if not specified.
+    Items of the default section will be used if not specified.
 
 - servers section
     ```
