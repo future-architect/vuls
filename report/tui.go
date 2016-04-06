@@ -602,7 +602,6 @@ func summaryLines(data models.ScanResult) string {
 		}
 		stable.AddRow(icols...)
 	}
-	// ignore UnknownCves
 	return fmt.Sprintf("%s", stable)
 }
 
@@ -625,7 +624,6 @@ func setDetailLayout(g *gocui.Gui) error {
 		//      currentScanResult.KnownCves[currentCveInfo],
 		//      currentScanResult.Family)
 
-		//TODO error handling
 		text, err := detailLines()
 		if err != nil {
 			return err
@@ -654,6 +652,10 @@ type dataForTmpl struct {
 }
 
 func detailLines() (string, error) {
+	if len(currentScanResult.KnownCves) == 0 {
+		return "No vulnerable packages", nil
+	}
+
 	cveInfo := currentScanResult.KnownCves[currentCveInfo]
 	cveID := cveInfo.CveDetail.CveID
 
