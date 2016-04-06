@@ -288,7 +288,7 @@ discover:
         discover 192.168.0.0/24
 ```
 
-## Exapmle
+## Example
 
 ```
 $ vuls discover 172.31.4.0/24
