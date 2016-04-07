@@ -130,7 +130,7 @@ func detectServersOS() (osi []osTypeInterface, err error) {
 		case res := <-osTypeChan:
 			osi = append(osi, res)
 		case <-timeout:
-			Log.Error("Timeout Occured while detecting OS.")
+			Log.Error("Timeout occured while detecting OS.")
 			err = fmt.Errorf("Timeout!")
 			return
 		}
@@ -151,21 +151,21 @@ func Prepare() []error {
 // Scan scan
 func Scan() []error {
 	if len(servers) == 0 {
-		return []error{fmt.Errorf("Not initialize yet.")}
+		return []error{fmt.Errorf("Not initialized yet.")}
 	}
 
 	Log.Info("Check required packages for scanning...")
 	if errs := checkRequiredPackagesInstalled(); errs != nil {
-		Log.Error("Please execute with [prepare] subcommand to install required packages before scanning")
+		Log.Error("Please execute with [prepare] subcommand to install required packages before scanning.")
 		return errs
 	}
 
-	Log.Info("Scanning vuluneable OS packages...")
+	Log.Info("Scanning vulnerable OS packages...")
 	if errs := scanPackages(); errs != nil {
 		return errs
 	}
 
-	Log.Info("Scanning vulnerable software specified in CPE...")
+	Log.Info("Scanning vulnerable software specified in the CPE...")
 	if errs := scanVulnByCpeName(); errs != nil {
 		return errs
 	}
