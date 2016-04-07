@@ -86,7 +86,7 @@ func (c TOMLLoader) Load(pathToToml string) (err error) {
 			s.CpeNames = d.CpeNames
 		}
 
-		s.LogMsgAnsiColor = Colors[i%len(conf.Servers)]
+		s.LogMsgAnsiColor = Colors[i%len(Colors)]
 		i++
 
 		servers[name] = s
