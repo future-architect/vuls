@@ -129,7 +129,7 @@ Set the OS environment variable to current shell
 $ source /etc/profile.d/goenv.sh
 ```
 
-## Step4. Deploy go-cve-dictionary
+## Step4. Deploy [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
 
 go get
 
