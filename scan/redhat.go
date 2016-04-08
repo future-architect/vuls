@@ -228,7 +228,7 @@ func (o *redhat) scanPackages() error {
 
 	var unsecurePacks []CvePacksInfo
 	if unsecurePacks, err = o.scanUnsecurePackages(); err != nil {
-		o.log.Errorf("Failed to scan valnerable packages")
+		o.log.Errorf("Failed to scan vulnerable packages")
 		return err
 	}
 	o.setUnsecurePackages(unsecurePacks)
