@@ -156,7 +156,7 @@ func Scan() []error {
 
 	Log.Info("Check required packages for scanning...")
 	if errs := checkRequiredPackagesInstalled(); errs != nil {
-		Log.Error("Please execute with [prepare] subcommand to install required packages before scanning.")
+		Log.Error("Please execute with [prepare] subcommand to install required packages before scanning")
 		return errs
 	}
 
