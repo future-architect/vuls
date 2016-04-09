@@ -130,7 +130,7 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 // Execute execute
 func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
-	logrus.Infof("Begin scannig (config: %s)", p.configPath)
+	logrus.Infof("Begin scanning (config: %s)", p.configPath)
 	err := c.Load(p.configPath)
 	if err != nil {
 		logrus.Errorf("Error loading %s, %s", p.configPath, err)
