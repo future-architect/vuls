@@ -5,7 +5,7 @@
 
 **Merged pull requests:**
 
-- Typo in Exapmle [\#6](https://github.com/future-architect/vuls/pull/6) ([toli](https://github.com/toli))
+- Typo in Example [\#6](https://github.com/future-architect/vuls/pull/6) ([toli](https://github.com/toli))
 
 ## [v0.1.0](https://github.com/future-architect/vuls/tree/v0.1.0) (2016-04-04)
 **Merged pull requests:**
