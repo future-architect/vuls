@@ -79,7 +79,7 @@ This can be done in the following steps.
 
 - We are using the old AMI (amzn-ami-hvm-2015.09.1.x86_64-gp2 - ami-383c1956) for this example
 - Instance size: t2.medium
-    - For the first time, t2.medium and above is required for the data fetch from NVD
+    - For the first time, t2.medium and above is required for the data fetch from NVD(about 2.3GB of memory needed)
     - You can switch to t2.nano after the initial data fetch.
 - Add the following to the cloud-init, to avoid auto-update at the first launch.
 
