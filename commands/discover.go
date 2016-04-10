@@ -39,7 +39,7 @@ type DiscoverCmd struct {
 func (*DiscoverCmd) Name() string { return "discover" }
 
 // Synopsis return synopsis
-func (*DiscoverCmd) Synopsis() string { return "Host discovery in the CIDR." }
+func (*DiscoverCmd) Synopsis() string { return "Host discovery in the CIDR" }
 
 // Usage return usage
 func (*DiscoverCmd) Usage() string {
@@ -77,7 +77,7 @@ func (p *DiscoverCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface
 		}
 
 		if len(hosts) < 1 {
-			logrus.Errorf("Active hosts not found in %s.", cidr)
+			logrus.Errorf("Active hosts not found in %s", cidr)
 			return subcommands.ExitSuccess
 		} else if err := printConfigToml(hosts); err != nil {
 			logrus.Errorf("Failed to parse template. err: %s", err)

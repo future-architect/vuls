@@ -130,7 +130,7 @@ func detectServersOS() (osi []osTypeInterface, err error) {
 		case res := <-osTypeChan:
 			osi = append(osi, res)
 		case <-timeout:
-			Log.Error("Timeout occured while detecting OS.")
+			Log.Error("Timeout occured while detecting OS")
 			err = fmt.Errorf("Timeout!")
 			return
 		}
@@ -151,7 +151,7 @@ func Prepare() []error {
 // Scan scan
 func Scan() []error {
 	if len(servers) == 0 {
-		return []error{fmt.Errorf("Not initialized yet.")}
+		return []error{fmt.Errorf("Not initialized yet")}
 	}
 
 	Log.Info("Check required packages for scanning...")
@@ -201,7 +201,7 @@ func GetScanResults() (results models.ScanResults, err error) {
 	for _, s := range servers {
 		r, err := s.convertToModel()
 		if err != nil {
-			return results, fmt.Errorf("Failed converting to model: %s.", err)
+			return results, fmt.Errorf("Failed converting to model: %s", err)
 		}
 		results = append(results, r)
 	}

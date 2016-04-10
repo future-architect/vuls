@@ -57,7 +57,7 @@ type ScanCmd struct {
 func (*ScanCmd) Name() string { return "scan" }
 
 // Synopsis return synopsis
-func (*ScanCmd) Synopsis() string { return "Scan vulnerabilities." }
+func (*ScanCmd) Synopsis() string { return "Scan vulnerabilities" }
 
 // Usage return usage
 func (*ScanCmd) Usage() string {
@@ -202,7 +202,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	Log.Info("Scanning vulnerabilities... ")
 	if errs := scan.Scan(); 0 < len(errs) {
 		for _, e := range errs {
-			Log.Errorf("Failed to scan. err: %s.", e)
+			Log.Errorf("Failed to scan. err: %s", e)
 		}
 		return subcommands.ExitFailure
 	}

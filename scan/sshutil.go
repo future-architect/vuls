@@ -94,11 +94,11 @@ func parallelSSHExec(fn func(osTypeInterface) error, timeoutSec ...int) (errs []
 			if err != nil {
 				errs = append(errs, err)
 			} else {
-				logrus.Debug("Parallel SSH Success.")
+				logrus.Debug("Parallel SSH Success")
 			}
 		case <-time.After(time.Duration(timeout) * time.Second):
-			logrus.Errorf("Parallel SSH Timeout.")
-			errs = append(errs, fmt.Errorf("Timed out!"))
+			logrus.Errorf("Parallel SSH Timeout")
+			errs = append(errs, fmt.Errorf("Timed out"))
 		}
 	}
 	return

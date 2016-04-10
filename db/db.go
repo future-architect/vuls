@@ -226,7 +226,7 @@ func SelectLatestScanHistory() (m.ScanHistory, error) {
 	db.Order("scanned_at desc").First(&scanHistory)
 
 	if scanHistory.ID == 0 {
-		return m.ScanHistory{}, fmt.Errorf("No scanHistory records.")
+		return m.ScanHistory{}, fmt.Errorf("No scanHistory records")
 	}
 
 	results := []m.ScanResult{}

@@ -34,7 +34,7 @@ type TOMLLoader struct {
 func (c TOMLLoader) Load(pathToToml string) (err error) {
 	var conf Config
 	if _, err := toml.DecodeFile(pathToToml, &conf); err != nil {
-		log.Error("Load config failed.", err)
+		log.Error("Load config failed", err)
 		return err
 	}
 
@@ -91,7 +91,7 @@ func (c TOMLLoader) Load(pathToToml string) (err error) {
 
 		servers[name] = s
 	}
-	log.Debug("Config loaded.")
+	log.Debug("Config loaded")
 	log.Debugf("%s", pp.Sprintf("%v", servers))
 	Conf.Servers = servers
 	return
