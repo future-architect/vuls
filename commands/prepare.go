@@ -121,7 +121,7 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 	logger.Info("Installing...")
 	if errs := scan.Prepare(); 0 < len(errs) {
 		for _, e := range errs {
-			logger.Errorf("Failed: %s.", e)
+			logger.Errorf("Failed: %s", e)
 		}
 		return subcommands.ExitFailure
 	}

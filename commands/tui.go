@@ -39,7 +39,7 @@ type TuiCmd struct {
 func (*TuiCmd) Name() string { return "tui" }
 
 // Synopsis return synopsis
-func (*TuiCmd) Synopsis() string { return "Run Tui view to anayze vulnerabilites." }
+func (*TuiCmd) Synopsis() string { return "Run Tui view to anayze vulnerabilites" }
 
 // Usage return usage
 func (*TuiCmd) Usage() string {

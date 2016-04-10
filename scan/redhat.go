@@ -160,7 +160,7 @@ func (o *redhat) installYumChangelog() error {
 
 		cmd := "rpm -q " + packName
 		if r := o.ssh(cmd, noSudo); r.isSuccess() {
-			o.log.Infof("Ignored: %s already installed.", packName)
+			o.log.Infof("Ignored: %s already installed", packName)
 			return nil
 		}
 
@@ -170,7 +170,7 @@ func (o *redhat) installYumChangelog() error {
 				"Failed to install %s. status: %d, stdout: %s, stderr: %s",
 				packName, r.ExitStatus, r.Stdout, r.Stderr)
 		}
-		o.log.Infof("Installed: %s.", packName)
+		o.log.Infof("Installed: %s", packName)
 	}
 	return nil
 }
