@@ -516,7 +516,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse %s. err: %s", cmd, err)
 	}
-	o.log.Debugf("%s", pp.Sprintf("%s", vulnerablePackInfoList))
+	o.log.Debugf("%s", pp.Sprintf("%v", vulnerablePackInfoList))
 	for i, packInfo := range vulnerablePackInfoList {
 		installedPack, found := o.Packages.FindByName(packInfo.Name)
 		if !found {
@@ -544,7 +544,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 
 	// get advisoryID(RHSA, ALAS) - CVE IDs
 	cmd = "yum updateinfo --security update"
-	r = o.ssh(util.PrependProxyEnv(cmd), noSudo)
+	r = o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
 		return nil, fmt.Errorf(
 			"Failed to %s. status: %d, stdout: %s, stderr: %s",
