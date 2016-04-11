@@ -21,6 +21,7 @@ type osTypeInterface interface {
 	setServerInfo(config.ServerInfo)
 	getServerInfo() config.ServerInfo
 	setDistributionInfo(string, string)
+	getDistributionInfo() string
 	checkRequiredPackagesInstalled() error
 	scanPackages() error
 	scanVulnByCpeName() error
@@ -108,7 +109,7 @@ func detectOs(c config.ServerInfo) (osType osTypeInterface) {
 func InitServers(localLogger *logrus.Entry) (err error) {
 	Log = localLogger
 	if servers, err = detectServersOS(); err != nil {
-		err = fmt.Errorf("Failed to detect OS")
+		err = fmt.Errorf("Failed to detect the type of OS. err: %s", err)
 	} else {
 		Log.Debugf("%s", pp.Sprintf("%s", servers))
 	}
@@ -128,10 +129,26 @@ func detectServersOS() (osi []osTypeInterface, err error) {
 	for i := 0; i < len(config.Conf.Servers); i++ {
 		select {
 		case res := <-osTypeChan:
+			Log.Infof("(%d/%d) Successfully detected. %s: %s",
+				i+1, len(config.Conf.Servers),
+				res.getServerInfo().ServerName,
+				res.getDistributionInfo())
 			osi = append(osi, res)
 		case <-timeout:
-			Log.Error("Timeout occured while detecting OS")
-			err = fmt.Errorf("Timeout!")
+			Log.Error("Timeout occured while detecting")
+			err = fmt.Errorf("Timeout")
+			for servername := range config.Conf.Servers {
+				found := false
+				for _, o := range osi {
+					if servername == o.getServerInfo().ServerName {
+						found = true
+						break
+					}
+				}
+				if !found {
+					Log.Errorf("Failed to detect. servername: %s", servername)
+				}
+			}
 			return
 		}
 	}
@@ -151,7 +168,7 @@ func Prepare() []error {
 // Scan scan
 func Scan() []error {
 	if len(servers) == 0 {
-		return []error{fmt.Errorf("Not initialized yet")}
+		return []error{fmt.Errorf("No server defined. Check the configuration")}
 	}
 
 	Log.Info("Check required packages for scanning...")

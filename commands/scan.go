@@ -130,7 +130,7 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 // Execute execute
 func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
-	logrus.Infof("Begin scanning (config: %s)", p.configPath)
+	logrus.Infof("Start scanning (config: %s)", p.configPath)
 	err := c.Load(p.configPath)
 	if err != nil {
 		logrus.Errorf("Error loading %s, %s", p.configPath, err)
@@ -192,10 +192,10 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitFailure
 	}
 
-	Log.Info("Detecting OS... ")
+	Log.Info("Detecting the type of OS... ")
 	err = scan.InitServers(Log)
 	if err != nil {
-		Log.Errorf("Failed to init servers. err: %s", err)
+		Log.Errorf("Failed to init servers. Check the configuration. err: %s", err)
 		return subcommands.ExitFailure
 	}
 
