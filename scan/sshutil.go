@@ -225,7 +225,7 @@ func sshConnect(c conf.ServerInfo) (client *ssh.Client, err error) {
 
 	var auths = []ssh.AuthMethod{}
 	if auths, err = addKeyAuth(auths, c.KeyPath, c.KeyPassword); err != nil {
-		logrus.Fatalf("Faild to add keyAuth. err: %s", err)
+		logrus.Fatalf("Failed to add keyAuth. err: %s", err)
 	}
 
 	if c.Password != "" {
@@ -240,7 +240,7 @@ func sshConnect(c conf.ServerInfo) (client *ssh.Client, err error) {
 	//  log.Debugf("config: %s", pp.Sprintf("%v", config))
 
 	notifyFunc := func(e error, t time.Duration) {
-		logrus.Warnf("Faild to ssh %s@%s:%s. err: %s, Retrying in %s...",
+		logrus.Warnf("Failed to ssh %s@%s:%s. err: %s, Retrying in %s...",
 			c.User, c.Host, c.Port, e, t)
 		logrus.Debugf("sshConInfo: %s", pp.Sprintf("%v", c))
 	}
