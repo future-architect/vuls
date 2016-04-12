@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package scan
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/Sirupsen/logrus"
@@ -50,6 +51,10 @@ func (l *linux) getServerInfo() config.ServerInfo {
 func (l *linux) setDistributionInfo(fam, rel string) {
 	l.Family = fam
 	l.Release = rel
+}
+
+func (l *linux) getDistributionInfo() string {
+	return fmt.Sprintf("%s %s", l.Family, l.Release)
 }
 
 func (l *linux) convertToModel() (models.ScanResult, error) {

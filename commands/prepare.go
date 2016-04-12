@@ -78,7 +78,7 @@ func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	logrus.Infof("Begin Preparing (config: %s)", p.configPath)
+	logrus.Infof("Start Preparing (config: %s)", p.configPath)
 
 	err := c.Load(p.configPath)
 	if err != nil {
