@@ -1,11 +1,28 @@
 # Change Log
 
+## [v0.1.2](https://github.com/future-architect/vuls/tree/v0.1.2) (2016-04-12)
+[Full Changelog](https://github.com/future-architect/vuls/compare/v0.1.1...v0.1.2)
+
+**Fixed bugs:**
+
+- Maximum 6 nodes available to scan [\#12](https://github.com/future-architect/vuls/issues/12)
+- panic: runtime error: index out of range [\#5](https://github.com/future-architect/vuls/issues/5)
+- Fix sudo option on RedHat like Linux and change some messages. [\#20](https://github.com/future-architect/vuls/pull/20) ([kotakanbe](https://github.com/kotakanbe))
+- Typo fix and updated readme [\#19](https://github.com/future-architect/vuls/pull/19) ([Euan-Kerr](https://github.com/Euan-Kerr))
+- remove a period at the end of error messages. [\#18](https://github.com/future-architect/vuls/pull/18) ([kotakanbe](https://github.com/kotakanbe))
+- fix error while yum updateinfo --security update on rhel@aws [\#17](https://github.com/future-architect/vuls/pull/17) ([kotakanbe](https://github.com/kotakanbe))
+- Fixed typos [\#15](https://github.com/future-architect/vuls/pull/15) ([radarhere](https://github.com/radarhere))
+- Typo fix in error messages [\#14](https://github.com/future-architect/vuls/pull/14) ([Bregor](https://github.com/Bregor))
+- Fix index out of range error when the number of servers is over 6. \#12 [\#13](https://github.com/future-architect/vuls/pull/13) ([kotakanbe](https://github.com/kotakanbe))
+- Revise small grammar mistakes in serverapi.go [\#9](https://github.com/future-architect/vuls/pull/9) ([cpobrien](https://github.com/cpobrien))
+- Fix error handling in HTTP backoff function [\#7](https://github.com/future-architect/vuls/pull/7) ([kotakanbe](https://github.com/kotakanbe))
+
 ## [v0.1.1](https://github.com/future-architect/vuls/tree/v0.1.1) (2016-04-06)
 [Full Changelog](https://github.com/future-architect/vuls/compare/v0.1.0...v0.1.1)
 
-**Merged pull requests:**
+**Fixed bugs:**
 
-- Typo in Example [\#6](https://github.com/future-architect/vuls/pull/6) ([toli](https://github.com/toli))
+- Typo in Exapmle [\#6](https://github.com/future-architect/vuls/pull/6) ([toli](https://github.com/toli))
 
 ## [v0.1.0](https://github.com/future-architect/vuls/tree/v0.1.0) (2016-04-04)
 **Merged pull requests:**
