@@ -26,7 +26,7 @@ Ce qui implique les problèmes suivants :
 - Il pourrait être impossible pour un administrateur système de surveiller tous les logiciels installés sur un serveur.
 - Il est coûteux d'effectuer une analyse pour déterminer quels sont les serveurs affectés par de nouvelles vulnérabilités. La possibilité de négliger un serveur ou deux est bien présente.
 
-Vuls est un outil crée pour palier aux problèmes listés ci-dessus. Voici ces caractéristiques.
+Vuls est un outil crée pour palier aux problèmes listés ci-dessus. Voici ses caractéristiques.
 - Informer les utilisateurs des vulnérabilités système.
 - Informer les utilisateurs des systèmes concernés. 
 - La détection de vulnérabilités est effectuée automatiquement pour éviter toute négligence.
