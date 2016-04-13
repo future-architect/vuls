@@ -43,7 +43,7 @@ Vuls est un outil crée pour palier aux problèmes listés ci-dessus. Voici ces 
     - Cloud, auto-hébergement, Docker
 - Scan d'intergiciels non inclus dans le gestionnaire de paquets de l'OS
     - Scan d'intergiciels, de libraries de language de programmation et framework pour des vulnérabilités
-    - Supporte les logiciels inscrits sur CPE
+    - Supporte les logiciels inscrits au CPE
 - Architecture sans agent
     - L'utilisateur doit seulement mettre en place VULS sur une seule machine qui se connectera aux autres via SSH
 - Génération automatique des fichiers de configuration
@@ -523,16 +523,16 @@ Via cette simple commande Vuls va : ..
 
 ----
 
-# Usage: Scan vulnerability of non-OS package
+# Usage: Recherche de vulnérabilités sur des paquets non compris dans l'OS
 
-It is possible to detect vulnerabilities something you compiled by yourself, the language libraries and the frameworks that have been registered in the [CPE](https://nvd.nist.gov/cpe.cfm).
+Il est possible de détecter des vulnérabilités sur des programmes que vous avez compilés, des lors que les libraries et frameworks ont été enregistré dans [CPE](https://nvd.nist.gov/cpe.cfm).
 
--  How to search CPE name by software name
+-  Comment rechercher dans CPE via le nom du programme
     - [NVD: Search Common Platform Enumerations (CPE)](https://web.nvd.nist.gov/view/cpe/search)  
     **Check CPE Naming Format: 2.2**
 
 - Configuration  
-To detect the vulnerbility of Ruby on Rails v4.2.1, cpeNames needs to be set in the servers section.
+Pour détecter des vulnérabilités sur Ruby on Rails v4.2.1, cpeNames doit etre déclaré dans la section servers.
     ```
     [servers]
 
@@ -545,7 +545,7 @@ To detect the vulnerbility of Ruby on Rails v4.2.1, cpeNames needs to be set in 
     ]
     ```
 
-# Usage: Update NVD Data.
+# Usage: Mise à jour des données NVD.
 
 ```
 $ go-cve-dictionary fetchnvd -h
@@ -566,13 +566,13 @@ fetchnvd:
         Refresh NVD data in the last two years.
 ```
 
-- Fetch data of the entire period
+- Récupérer toutes les données jusqu'à aujourd'hui
 
 ```
 $ go-cve-dictionary fetchnvd -entire
 ```
 
-- Fetch data in the last 2 years
+- Reçupérer les données des 2 denières années
 
 ```
 $ go-cve-dictionary fetchnvd -last2y
