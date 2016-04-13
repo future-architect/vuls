@@ -241,12 +241,12 @@ $ vuls tui
 ![Vuls-Architecture](img/vuls-architecture.png)
 
 ## go-cve-dictinary  
-- Collecte les données de vulnérabilités depuis NVD, JVN(Japonais), et les envoient dans SQLite.
+- Collecte les informations de vulnérabilités depuis NVD, JVN(Japonais), et les envoie dans SQLite.
 
 ## Vuls
 - Scan de vulnérabilités sur serveurs et création d'une liste contenant les CVE ID
 - Pour des informations plus détaillés sur une CVE, envoie une requete HTTP à go-cve-dictinary 
-- Rapport via Slack, Email
+- Rapport à Slack et par Email
 - L'administrateur système peut voir les résultats du dernier rapport dans le terminal
 
 ----
