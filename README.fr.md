@@ -496,7 +496,7 @@ scan:
 
 ```
 
-## example
+## exemple
 
 Lancez go-cve-dictionary en mode serveur avant de lancer un scan
 ```
@@ -523,7 +523,7 @@ Via cette simple commande Vuls va : ..
 
 ----
 
-# Usage: Recherche de vulnérabilités sur des paquets non compris dans l'OS
+# Utilisation: Recherche de vulnérabilités sur des paquets non compris dans l'OS
 
 Il est possible de détecter des vulnérabilités sur des programmes que vous avez compilés, des lors que les libraries et frameworks ont été enregistré dans [CPE](https://nvd.nist.gov/cpe.cfm).
 
@@ -545,7 +545,7 @@ Pour détecter des vulnérabilités sur Ruby on Rails v4.2.1, cpeNames doit etre
     ]
     ```
 
-# Usage: Mise à jour des données NVD.
+# Utilisation: Mise à jour des données NVD.
 
 ```
 $ go-cve-dictionary fetchnvd -h
