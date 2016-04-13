@@ -232,3 +232,421 @@ $ vuls tui
 ```
 
 ![Vuls-TUI](img/hello-vuls-tui.png)
+
+
+----
+
+# Architecture
+
+![Vuls-Architecture](img/vuls-architecture.png)
+
+## go-cve-dictinary  
+- Collecte les données de vulnérabilités depuis NVD, JVN(Japonais), et les envoient dans SQLite.
+
+## Vuls
+- Scan de vulnérabilités sur serveurs et création d'une liste contenant les CVE ID
+- Pour des informations plus détaillés sur une CVE, envoie une requete HTTP à go-cve-dictinary 
+- Rapport via Slack, Email
+- L'administrateur système peut voir les résultats du dernier rapport dans le terminal
+
+----
+
+# Exemples d'utilisation
+
+## Scan de tous les serverus
+
+![Vuls-Usecase1](img/vuls-usecase-elb-rails-rds-all.png)
+
+## Scan d'un seul serveur
+
+web/app server in the same configuration under the load balancer
+
+![Vuls-Usecase2](img/vuls-usecase-elb-rails-rds-single.png)
+
+----
+
+# OS supportés 
+
+| Distribution|            Release |
+|:------------|-------------------:|
+| Ubuntu      |          12, 14, 16|
+| Debian      |                7, 8|
+| RHEL        |          4, 5, 6, 7|
+| CentOS      |             5, 6, 7|
+| Amazon Linux|                All |
+
+----
+
+
+# Usage: Détection Automatique de Serveurs 
+
+La sous-commande Discovery permet de détecter les serveurs actifs dans un range d'IP CIDR, les résultas sont directement affichés dans le terminal en respectant le format du fichier de configuration (TOML format).
+
+```
+$ vuls discover -help
+discover:
+        discover 192.168.0.0/24
+```
+
+## Exemple
+
+```
+$ vuls discover 172.31.4.0/24
+# Create config.toml using below and then ./vuls --config=/path/to/config.toml
+
+[slack]
+hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
+channel      = "#channel-name"
+#channel      = "#{servername}"
+iconEmoji    = ":ghost:"
+authUser     = "username"
+notifyUsers  = ["@username"]
+
+[mail]
+smtpAddr      = "smtp.gmail.com"
+smtpPort      = 465
+user          = "username"
+password      = "password"
+from          = "from@address.com"
+to            = ["to@address.com"]
+cc            = ["cc@address.com"]
+subjectPrefix = "[vuls]"
+
+[default]
+#port        = "22"
+#user        = "username"
+#password    = "password"
+#keyPath     = "/home/username/.ssh/id_rsa"
+#keyPassword = "password"
+
+[servers]
+
+[servers.172-31-4-82]
+host         = "172.31.4.82"
+#port        = "22"
+#user        = "root"
+#password    = "password"
+#keyPath     = "/home/username/.ssh/id_rsa"
+#keyPassword = "password"
+#cpeNames = [
+#  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
+#]
+```
+
+Vous pouvez customiser votre configuration en utilisant ce modèle.
+
+----
+
+# Configuration
+
+- Slack section
+    ```
+    [slack]
+    hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
+    channel      = "#channel-name"
+    #channel      = "#{servername}"
+    iconEmoji    = ":ghost:"
+    authUser     = "username"
+    notifyUsers  = ["@username"]
+    ```
+
+    - hookURL : Incomming webhook's URL  
+    - channel : channel name.  
+    If you set #{servername} to channel, the report will be sent to #servername channel.  
+    In the following example, the report will be sent to the #server1 and #server2.  
+    Be sure to create these channels before scanning.
+      ```
+      [slack]
+      channel      = "#{servername}"
+      ...snip...
+
+      [servers]
+
+      [servers.server1]
+      host         = "172.31.4.82"
+      ...snip...
+
+      [servers.server2]
+      host         = "172.31.4.83"
+      ...snip...
+      ```
+
+    - iconEmoji: emoji
+    - authUser: username of the slack team
+    - notifyUsers: a list of Slack usernames to send Slack notifications.
+      If you set ["@foo", "@bar"] to notifyUsers, @foo @bar will be included in text.  
+      So @foo, @bar can receive mobile push notifications on their smartphone.  
+
+- Mail section
+    ```
+    [mail]
+    smtpAddr      = "smtp.gmail.com"
+    smtpPort      = 465
+    user          = "username"
+    password      = "password"
+    from          = "from@address.com"
+    to            = ["to@address.com"]
+    cc            = ["cc@address.com"]
+    subjectPrefix = "[vuls]"
+    ```
+
+- Default section
+    ```
+    [default]
+    #port        = "22"
+    #user        = "username"
+    #password    = "password"
+    #keyPath     = "/home/username/.ssh/id_rsa"
+    #keyPassword = "password"
+    ```
+    Items of the default section will be used if not specified.
+
+- servers section
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+    host         = "172.31.4.82"
+    #port        = "22"
+    #user        = "root"
+    #password    = "password"
+    #keyPath     = "/home/username/.ssh/id_rsa"
+    #keyPassword = "password"
+    #cpeNames = [
+    #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
+    #]
+    ```
+    Vous pouvez remplacer les valeurs par défaut indiquées en modifiant la section default
+    Vuls supporte plusieurs méthodes d'authentification SSH :
+    - SSH agent
+    - SSH authentication par clés (avec mot de passe ou sans mot de passe)
+    - Authentification par mot de passe
+
+----
+
+# Usage : Prepare
+
+La sous-commande prepare installe tous les paquets nécessaires sur chaque serveur.
+
+| Distribution|            Release | Requirements |
+|:------------|-------------------:|:-------------|
+| Ubuntu      |          12, 14, 16| -            |
+| Debian      |                7, 8| apptitude    |
+| CentOS      |                   5| yum-plugin-security, yum-changelog |
+| CentOS      |                6, 7| yum-plugin-security, yum-plugin-changelog |
+| Amazon      |                All | -            |
+| RHEL        |         4, 5, 6, 7 | -            |
+
+
+```
+$ vuls prepare -help
+prepare:
+        prepare [-config=/path/to/config.toml] [-debug]
+
+  -config string
+        /path/to/toml (default "$PWD/config.toml")
+  -debug
+        debug mode
+  -use-unattended-upgrades
+        [Deprecated] For Ubuntu, install unattended-upgrades
+```
+
+----
+
+# Usage: Scan
+
+```
+$ vuls scan -help
+scan:
+        scan
+                [-lang=en|ja]
+                [-config=/path/to/config.toml]
+                [-dbpath=/path/to/vuls.sqlite3]
+                [-cve-dictionary-url=http://127.0.0.1:1323]
+                [-cvss-over=7]
+                [-report-slack]
+                [-report-mail]
+                [-http-proxy=http://192.168.0.1:8080]
+                [-debug]
+                [-debug-sql]
+  -config string
+        /path/to/toml (default "$PWD/config.toml")
+  -cve-dictionary-url string
+        http://CVE.Dictionary (default "http://127.0.0.1:1323")
+  -cvss-over float
+        -cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))
+  -dbpath string
+        /path/to/sqlite3 (default "$PWD/vuls.sqlite3")
+  -debug
+        debug mode
+  -debug-sql
+        SQL debug mode
+  -http-proxy string
+        http://proxy-url:port (default: empty)
+  -lang string
+        [en|ja] (default "en")
+  -report-mail
+        Email report
+  -report-slack
+        Slack report
+  -use-unattended-upgrades
+        [Deprecated] For Ubuntu. Scan by unattended-upgrades or not (use apt-get upgrade --dry-run by default)
+  -use-yum-plugin-security
+        [Deprecated] For CentOS 5. Scan by yum-plugin-security or not (use yum check-update by default)
+
+```
+
+## example
+
+Lancez go-cve-dictionary en mode serveur avant de lancer un scan
+```
+$ go-cve-dictionary server
+```
+
+### Scan tous les serveurs identifiés dans le fichier de configuration
+```
+$ vuls scan --report-slack --report-mail --cvss-over=7
+```
+Via cette simple commande Vuls va : ..
+- Scanner tous les serveurs identifiés dans le fichier de configuration
+- Envoyer les résultas du scan à slack et par email
+- Ne rapporter que les CVE dont la note CVSS est au dessus de 7
+- Afficher les résultats du scan dans le terminal
+
+### Scan de serveurs spécifiques
+```
+$ vuls scan server1 server2
+```
+Via cette simple commande Vuls va : ..
+- Scanner seulement 2 serveurs. (server1, server2)
+- Afficher les résultats du scan dans le terminal
+
+----
+
+# Usage: Scan vulnerability of non-OS package
+
+It is possible to detect vulnerabilities something you compiled by yourself, the language libraries and the frameworks that have been registered in the [CPE](https://nvd.nist.gov/cpe.cfm).
+
+-  How to search CPE name by software name
+    - [NVD: Search Common Platform Enumerations (CPE)](https://web.nvd.nist.gov/view/cpe/search)  
+    **Check CPE Naming Format: 2.2**
+
+- Configuration  
+To detect the vulnerbility of Ruby on Rails v4.2.1, cpeNames needs to be set in the servers section.
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+    host         = "172.31.4.82"
+    user        = "ec2-user"
+    keyPath     = "/home/username/.ssh/id_rsa"
+    cpeNames = [
+      "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
+    ]
+    ```
+
+# Usage: Update NVD Data.
+
+```
+$ go-cve-dictionary fetchnvd -h
+fetchnvd:
+        fetchnvd
+                [-last2y]
+                [-dbpath=/path/to/cve.sqlite3]
+                [-debug]
+                [-debug-sql]
+
+  -dbpath string
+        /path/to/sqlite3 (default "$PWD/cve.sqlite3")
+  -debug
+        debug mode
+  -debug-sql
+        SQL debug mode
+  -last2y
+        Refresh NVD data in the last two years.
+```
+
+- Fetch data of the entire period
+
+```
+$ go-cve-dictionary fetchnvd -entire
+```
+
+- Fetch data in the last 2 years
+
+```
+$ go-cve-dictionary fetchnvd -last2y
+```
+
+----
+
+# Misc
+
+- HTTP Proxy Support  
+If your system is behind HTTP proxy, you have to specify --http-proxy option.
+
+- How to Daemonize go-cve-dictionary  
+Use Systemd, Upstart or supervisord, daemontools...
+
+- How to Enable Automatic-Update of Vunerability Data.  
+Use job scheduler like Cron (with -last2y option).
+
+- How to cross compile
+    ```bash
+    $ cd /path/to/your/local-git-reporsitory/vuls
+    $ GOOS=linux GOARCH=amd64 go build -o vuls.amd64
+    ```
+
+- Logging  
+Log wrote to under /var/log/vuls/
+
+- Debug  
+Run with --debug, --sql-debug option.
+
+- Ajusting Open File Limit  
+[Riak docs](http://docs.basho.com/riak/latest/ops/tuning/open-files-limit/) is awesome.
+
+- Does Vuls accept ssh connections with fish-shell or old zsh as the login shell?  
+No, Vuls needs a user on the server for bash login. see also [#8](/../../issues/8)
+
+- Windows  
+Use Microsoft Baseline Security Analyzer. [MBSA](https://technet.microsoft.com/en-us/security/cc184924.aspx)
+
+----
+
+# Data Source
+
+- [NVD](https://nvd.nist.gov/)
+- [JVN(Japanese)](http://jvndb.jvn.jp/apis/myjvn/)
+
+
+# Authors
+
+kotakanbe ([@kotakanbe](https://twitter.com/kotakanbe)) created vuls and [these fine people](https://github.com/future-architect/vuls/graphs/contributors) have contributed.
+
+----
+
+# Contribute
+
+1. Fork it
+2. Create your feature branch (`git checkout -b my-new-feature`)
+3. Commit your changes (`git commit -am 'Add some feature'`)
+4. Push to the branch (`git push origin my-new-feature`)
+5. Create new Pull Request
+
+----
+
+# Change Log
+
+Please see [CHANGELOG](https://github.com/future-architect/vuls/blob/master/CHANGELOG.md).
+
+----
+
+# Licence
+
+Please see [LICENSE](https://github.com/future-architect/vuls/blob/master/LICENSE).
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/future-architect/vuls/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
+
