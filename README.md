@@ -589,7 +589,7 @@ If your system is behind HTTP proxy, you have to specify --http-proxy option.
 - How to Daemonize go-cve-dictionary  
 Use Systemd, Upstart or supervisord, daemontools...
 
-- How to update vulnerability data automatically.
+- How to update vulnerability data automatically.  
 Use job scheduler like Cron (with -last2y option).
 
 - How to cross compile
@@ -606,6 +606,9 @@ Run with --debug, --sql-debug option.
 
 - Ajusting Open File Limit  
 [Riak docs](http://docs.basho.com/riak/latest/ops/tuning/open-files-limit/) is awesome.
+
+- Can I use a ssh remote user who configured fish-shell or old zsh as login shell?  
+No. Create a user with bash login shell on target servers. see also [#8](/../../issues/8)
 
 - Windows  
 Use Microsoft Baseline Security Analyzer. [MBSA](https://technet.microsoft.com/en-us/security/cc184924.aspx)
