@@ -556,7 +556,11 @@ Loading mirror speeds from cached hostfile
 
 audit-libs.x86_64              2.3.7-5.el6                   base
 bash.x86_64                    4.1.2-33.el6_7.1              updates
-	`
+Obsoleting Packages
+python-libs.i686    2.6.6-64.el6   rhui-REGION-rhel-server-releases
+    python-ordereddict.noarch     1.1-3.el6ev    installed
+`
+
 	r.Packages = []models.PackageInfo{
 		{
 			Name:    "audit-libs",
@@ -567,6 +571,16 @@ bash.x86_64                    4.1.2-33.el6_7.1              updates
 			Name:    "bash",
 			Version: "4.1.1",
 			Release: "33",
+		},
+		{
+			Name:    "python-libs",
+			Version: "2.6.0",
+			Release: "1.1-0",
+		},
+		{
+			Name:    "python-ordereddict",
+			Version: "1.0",
+			Release: "1",
 		},
 	}
 	var tests = []struct {
@@ -589,6 +603,20 @@ bash.x86_64                    4.1.2-33.el6_7.1              updates
 					Release:    "33",
 					NewVersion: "4.1.2",
 					NewRelease: "33.el6_7.1",
+				},
+				{
+					Name:       "python-libs",
+					Version:    "2.6.0",
+					Release:    "1.1-0",
+					NewVersion: "2.6.6",
+					NewRelease: "64.el6",
+				},
+				{
+					Name:       "python-ordereddict",
+					Version:    "1.0",
+					Release:    "1",
+					NewVersion: "1.1",
+					NewRelease: "3.el6ev",
 				},
 			},
 		},
