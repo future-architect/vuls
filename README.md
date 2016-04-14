@@ -79,17 +79,15 @@ This can be done in the following steps.
 ## Step1. Launch Amazon Linux
 
 - We are using the old AMI (amzn-ami-hvm-2015.09.1.x86_64-gp2 - ami-383c1956) for this example
-- Instance size: t2.medium
-    - For the first time, t2.medium and above is required for the data fetch from NVD(about 2.3GB of memory needed)
-    - You can switch to t2.nano after the initial data fetch.
 - Add the following to the cloud-init, to avoid auto-update at the first launch.
 
-    - [Q: How do I disable the automatic installation of critical and important security updates on initial launch?](https://aws.amazon.com/amazon-linux-ami/faqs/?nc1=h_ls)
     ```
     #cloud-config
     repo_upgrade: none
     ```
 
+    - [Q: How do I disable the automatic installation of critical and important security updates on initial launch?](https://aws.amazon.com/amazon-linux-ami/faqs/?nc1=h_ls)
+    
 ## Step2. SSH setting
 
 This is required to ssh to itself.
@@ -142,18 +140,17 @@ $ sudo chmod 700 /var/log/vuls
 $ go get github.com/kotakanbe/go-cve-dictionary
 ```
 
-Start go-cve-dictionary as server mode.  
-For the first time, go-cve-dictionary fetches vulnerability data from NVD.  
+Fetch vulnerability data from NVD.  
 It takes about 10 minutes (on AWS).  
 
 ```bash
-$ go-cve-dictionary server
-... Fetching ...
+$ for i in {2002..2016}; do ./go-cve-dictionary fetchnvd -years $i; done
+... snip ...
 $ ls -alh cve.sqlite3
 -rw-r--r-- 1 ec2-user ec2-user 7.0M Mar 24 13:20 cve.sqlite3
 ```
 
-Now we successfully collected vulnerbility data, then start as server mode again.
+Now we successfully collected vulnerbility data, then start as server.  
 ```bash
 $ go-cve-dictionary server
 [Mar 24 15:21:55]  INFO Opening DB. datafile: /home/ec2-user/cve.sqlite3
