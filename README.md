@@ -430,7 +430,7 @@ Prepare subcommand installs required packages on each server.
 | Distribution|            Release | Requirements |
 |:------------|-------------------:|:-------------|
 | Ubuntu      |          12, 14, 16| -            |
-| Debian      |                7, 8| apptitude    |
+| Debian      |                7, 8| aptitude     |
 | CentOS      |                   5| yum-plugin-security, yum-changelog |
 | CentOS      |                6, 7| yum-plugin-security, yum-plugin-changelog |
 | Amazon      |                All | -            |
