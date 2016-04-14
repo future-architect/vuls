@@ -300,7 +300,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (CvePacksList, error)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse %s. err: %s", cmd, err)
 	}
-	o.log.Debugf("%s", pp.Sprintf("%s", packInfoList))
+	o.log.Debugf("%s", pp.Sprintf("%v", packInfoList))
 
 	// Collect CVE-IDs in changelog
 	type PackInfoCveIDs struct {
@@ -409,9 +409,12 @@ func (o *redhat) parseYumCheckUpdateLines(stdout string) (results models.Package
 			continue
 		}
 		if needToParse {
+			if strings.HasPrefix(line, "Obsoleting") {
+				continue
+			}
 			candidate, err := o.parseYumCheckUpdateLine(line)
 			if err != nil {
-				return models.PackageInfoList{}, err
+				return results, err
 			}
 
 			installed, found := o.Packages.FindByName(candidate.Name)
