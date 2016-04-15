@@ -20,6 +20,8 @@ package util
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/rifflock/lfshook"
@@ -40,6 +42,9 @@ func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
 
 	// File output
 	logDir := "/var/log/vuls"
+	if runtime.GOOS == "windows" {
+		logDir = filepath.Join(os.Getenv("APPDATA"), "vuls")
+	}
 	if _, err := os.Stat(logDir); os.IsNotExist(err) {
 		if err := os.Mkdir(logDir, 0666); err != nil {
 			logrus.Errorf("Failed to create log directory: %s", err)

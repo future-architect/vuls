@@ -21,6 +21,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/report"
@@ -54,7 +55,9 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	//  f.StringVar(&p.lang, "lang", "en", "[en|ja]")
 	f.BoolVar(&p.debugSQL, "debug-sql", false, "debug SQL")
 
-	defaultDBPath := os.Getenv("PWD") + "/vuls.sqlite3"
+	wd, _ := os.Getwd()
+
+	defaultDBPath := filepath.Join(wd, "vuls.sqlite3")
 	f.StringVar(&p.dbpath, "dbpath", defaultDBPath,
 		fmt.Sprintf("/path/to/sqlite3 (default: %s)", defaultDBPath))
 }
