@@ -239,7 +239,7 @@ $ vuls tui
 
 ![Vuls-Architecture](img/vuls-architecture.png)
 
-## go-cve-dictinary  
+## [go-cve-dictinary](https://github.com/kotakanbe/go-cve-dictionary)  
 - Fetch vulnerability information from NVD, JVN(Japanese), then insert into SQLite.
 
 ## Vuls
@@ -529,6 +529,9 @@ It is possible to detect vulnerabilities something you compiled by yourself, the
 -  How to search CPE name by software name
     - [NVD: Search Common Platform Enumerations (CPE)](https://web.nvd.nist.gov/view/cpe/search)  
     **Check CPE Naming Format: 2.2**
+
+    - [go-cpe-dictionary](https://github.com/kotakanbe/go-cpe-dictionary) is a good choice for geeks.   
+    You can search a CPE name by the application name incremenally.
 
 - Configuration  
 To detect the vulnerbility of Ruby on Rails v4.2.1, cpeNames needs to be set in the servers section.
