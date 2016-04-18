@@ -458,7 +458,7 @@ func (o *redhat) parseYumCheckUpdateLine(line string) (models.PackageInfo, error
 }
 
 func (o *redhat) getChangelog(packageNames string) (stdout string, err error) {
-	command := "echo N | "
+	command := ""
 	if 0 < len(config.Conf.HTTPProxy) {
 		command += util.ProxyEnv()
 	}

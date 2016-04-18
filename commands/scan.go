@@ -45,12 +45,15 @@ type ScanCmd struct {
 	cvssScoreOver    float64
 	httpProxy        string
 
-	useYumPluginSecurity  bool
-	useUnattendedUpgrades bool
-
 	// reporting
 	reportSlack bool
 	reportMail  bool
+
+	askSudoPassword bool
+	askKeyPassword  bool
+
+	useYumPluginSecurity  bool
+	useUnattendedUpgrades bool
 }
 
 // Name return subcommand name
@@ -71,6 +74,8 @@ func (*ScanCmd) Usage() string {
 		[-report-slack]
 		[-report-mail]
 		[-http-proxy=http://192.168.0.1:8080]
+		[-ask-sudo-password]
+		[-ask-key-password]
 		[-debug]
 		[-debug-sql]
 `
@@ -112,6 +117,20 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.reportMail, "report-mail", false, "Email report")
 
 	f.BoolVar(
+		&p.askSudoPassword,
+		"ask-sudo-password",
+		false,
+		"Ask sudo password of target servers before scanning",
+	)
+
+	f.BoolVar(
+		&p.askKeyPassword,
+		"ask-key-password",
+		false,
+		"Ask ssh privatekey password of target servers before scanning",
+	)
+
+	f.BoolVar(
 		&p.useYumPluginSecurity,
 		"use-yum-plugin-security",
 		false,
@@ -129,14 +148,30 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	var keyPass, sudoPass string
+	var err error
+	if p.askKeyPassword {
+		prompt := "SSH key password: "
+		if keyPass, err = getPasswd(prompt); err != nil {
+			logrus.Error(err)
+			return subcommands.ExitFailure
+		}
+	}
+	if p.askSudoPassword {
+		prompt := "sudo password: "
+		if sudoPass, err = getPasswd(prompt); err != nil {
+			logrus.Error(err)
+			return subcommands.ExitFailure
+		}
+	}
 
-	logrus.Infof("Start scanning (config: %s)", p.configPath)
-	err := c.Load(p.configPath)
+	err = c.Load(p.configPath, keyPass, sudoPass)
 	if err != nil {
 		logrus.Errorf("Error loading %s, %s", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
 
+	logrus.Infof("Start scanning (config: %s)", p.configPath)
 	target := make(map[string]c.ServerInfo)
 	for _, arg := range f.Args() {
 		found := false

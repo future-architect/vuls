@@ -137,7 +137,8 @@ func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (re
 	// set pipefail option.
 	// http://unix.stackexchange.com/questions/14270/get-exit-status-of-process-thats-piped-to-another
 	cmd = fmt.Sprintf("set -o pipefail; %s", cmd)
-	logger.Debugf("Command: %s", strings.Replace(cmd, "\n", "", -1))
+	logger.Debugf("Command: %s",
+		strings.Replace(maskPassword(cmd, c.Password), "\n", "", -1))
 
 	var client *ssh.Client
 	client, err = sshConnect(c)
@@ -189,7 +190,7 @@ func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (re
 
 	logger.Debugf(
 		"SSH executed. cmd: %s, status: %#v\nstdout: \n%s\nstderr: \n%s",
-		cmd, err, result.Stdout, result.Stderr)
+		maskPassword(cmd, c.Password), err, result.Stdout, result.Stderr)
 
 	return
 }
@@ -240,7 +241,7 @@ func sshConnect(c conf.ServerInfo) (client *ssh.Client, err error) {
 	//  log.Debugf("config: %s", pp.Sprintf("%v", config))
 
 	notifyFunc := func(e error, t time.Duration) {
-		logrus.Warnf("Failed to ssh %s@%s:%s. err: %s, Retrying in %s...",
+		logrus.Warnf("Failed to ssh %s@%s:%s err: %s, Retrying in %s...",
 			c.User, c.Host, c.Port, e, t)
 		logrus.Debugf("sshConInfo: %s", pp.Sprintf("%v", c))
 	}
@@ -308,4 +309,9 @@ func parsePemBlock(block *pem.Block) (interface{}, error) {
 	default:
 		return nil, fmt.Errorf("rtop: unsupported key type %q", block.Type)
 	}
+}
+
+// ref golang.org/x/crypto/ssh/keys.go#ParseRawPrivateKey.
+func maskPassword(cmd, sudoPass string) string {
+	return strings.Replace(cmd, fmt.Sprintf("echo %s", sudoPass), "echo *****", -1)
 }

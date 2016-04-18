@@ -31,7 +31,7 @@ type TOMLLoader struct {
 }
 
 // Load load the configuraiton TOML file specified by path arg.
-func (c TOMLLoader) Load(pathToToml string) (err error) {
+func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
 	var conf Config
 	if _, err := toml.DecodeFile(pathToToml, &conf); err != nil {
 		log.Error("Load config failed", err)
@@ -53,10 +53,7 @@ func (c TOMLLoader) Load(pathToToml string) (err error) {
 			s.User = d.User
 		}
 
-		s.Password = v.Password
-		if s.Password == "" {
-			s.Password = d.Password
-		}
+		s.Password = sudoPass
 
 		s.Host = v.Host
 
@@ -76,10 +73,7 @@ func (c TOMLLoader) Load(pathToToml string) (err error) {
 			}
 		}
 
-		s.KeyPassword = v.KeyPassword
-		if s.KeyPassword == "" {
-			s.KeyPassword = d.KeyPassword
-		}
+		s.KeyPassword = keyPass
 
 		s.CpeNames = v.CpeNames
 		if len(s.CpeNames) == 0 {
