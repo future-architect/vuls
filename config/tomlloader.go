@@ -45,15 +45,32 @@ func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
 	Conf.Default = d
 	servers := make(map[string]ServerInfo)
 
+	if keyPass != "" {
+		d.KeyPassword = keyPass
+	}
+
+	if sudoPass != "" {
+		d.Password = sudoPass
+	}
+
 	i := 0
 	for name, v := range conf.Servers {
+
+		if 0 < len(v.KeyPassword) || 0 < len(v.Password) {
+			log.Warn("[Depricated] password and keypassword in config file are unsecure. Remove them immediately for a security reason. They will be removed in a future release.")
+		}
+
 		s := ServerInfo{ServerName: name}
 		s.User = v.User
 		if s.User == "" {
 			s.User = d.User
 		}
 
-		s.Password = sudoPass
+		//  s.Password = sudoPass
+		s.Password = v.Password
+		if s.Password == "" {
+			s.Password = d.Password
+		}
 
 		s.Host = v.Host
 
@@ -73,7 +90,11 @@ func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
 			}
 		}
 
-		s.KeyPassword = keyPass
+		//  s.KeyPassword = keyPass
+		s.KeyPassword = v.KeyPassword
+		if s.KeyPassword == "" {
+			s.KeyPassword = d.KeyPassword
+		}
 
 		s.CpeNames = v.CpeNames
 		if len(s.CpeNames) == 0 {

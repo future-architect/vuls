@@ -117,17 +117,17 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.reportMail, "report-mail", false, "Email report")
 
 	f.BoolVar(
+		&p.askKeyPassword,
+		"ask-key-password",
+		false,
+		"Ask ssh privatekey password before scanning",
+	)
+
+	f.BoolVar(
 		&p.askSudoPassword,
 		"ask-sudo-password",
 		false,
 		"Ask sudo password of target servers before scanning",
-	)
-
-	f.BoolVar(
-		&p.askKeyPassword,
-		"ask-key-password",
-		false,
-		"Ask ssh privatekey password of target servers before scanning",
 	)
 
 	f.BoolVar(

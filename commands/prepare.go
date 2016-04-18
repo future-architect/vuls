@@ -59,9 +59,10 @@ func (*PrepareCmd) Synopsis() string {
 func (*PrepareCmd) Usage() string {
 	return `prepare:
 	prepare
-			[-config=/path/to/config.toml] [-debug]
+			[-config=/path/to/config.toml]
 			[-ask-sudo-password]
 			[-ask-key-password]
+			[-debug]
 
 `
 }
@@ -78,7 +79,7 @@ func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
 		&p.askKeyPassword,
 		"ask-key-password",
 		false,
-		"Ask ssh privatekey password of target servers before scanning",
+		"Ask ssh privatekey password before scanning",
 	)
 
 	f.BoolVar(

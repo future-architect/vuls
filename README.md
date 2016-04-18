@@ -239,7 +239,7 @@ $ vuls tui
 
 ![Vuls-Architecture](img/vuls-architecture.png)
 
-## go-cve-dictinary  
+## [go-cve-dictinary](https://github.com/kotakanbe/go-cve-dictionary)  
 - Fetch vulnerability information from NVD, JVN(Japanese), then insert into SQLite.
 
 ## Vuls
@@ -314,9 +314,7 @@ subjectPrefix = "[vuls]"
 [default]
 #port        = "22"
 #user        = "username"
-#password    = "password"
 #keyPath     = "/home/username/.ssh/id_rsa"
-#keyPassword = "password"
 
 [servers]
 
@@ -324,9 +322,7 @@ subjectPrefix = "[vuls]"
 host         = "172.31.4.82"
 #port        = "22"
 #user        = "root"
-#password    = "password"
 #keyPath     = "/home/username/.ssh/id_rsa"
-#keyPassword = "password"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
@@ -394,9 +390,7 @@ You can customize your configuration using this template.
     [default]
     #port        = "22"
     #user        = "username"
-    #password    = "password"
     #keyPath     = "/home/username/.ssh/id_rsa"
-    #keyPassword = "password"
     ```
     Items of the default section will be used if not specified.
 
@@ -408,9 +402,7 @@ You can customize your configuration using this template.
     host         = "172.31.4.82"
     #port        = "22"
     #user        = "root"
-    #password    = "password"
     #keyPath     = "/home/username/.ssh/id_rsa"
-    #keyPassword = "password"
     #cpeNames = [
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
@@ -439,9 +431,15 @@ Prepare subcommand installs required packages on each server.
 
 ```
 $ vuls prepare -help
-prepare:
-        prepare [-config=/path/to/config.toml] [-debug]
+prepare
+                        [-config=/path/to/config.toml] [-debug]
+                        [-ask-sudo-password]
+                        [-ask-key-password]
 
+  -ask-key-password
+        Ask ssh privatekey password before scanning
+  -ask-sudo-password
+        Ask sudo password of target servers before scanning
   -config string
         /path/to/toml (default "$PWD/config.toml")
   -debug
@@ -455,6 +453,7 @@ prepare:
 # Usage: Scan
 
 ```
+
 $ vuls scan -help
 scan:
         scan
@@ -466,8 +465,14 @@ scan:
                 [-report-slack]
                 [-report-mail]
                 [-http-proxy=http://192.168.0.1:8080]
+                [-ask-sudo-password]
+                [-ask-key-password]
                 [-debug]
                 [-debug-sql]
+  -ask-key-password
+        Ask ssh privatekey password before scanning
+  -ask-sudo-password
+        Ask sudo password of target servers before scanning
   -config string
         /path/to/toml (default "$PWD/config.toml")
   -cve-dictionary-url string
@@ -495,6 +500,21 @@ scan:
 
 ```
 
+## ask-key-password option 
+
+| SSH key password |  -ask-key-password ||
+|:-----------------|:-------------------||
+| empty password   |                 -  ||
+| with password    |           required | or use ssh-agent |
+
+## ask-sudo-password option
+
+| sudo password on target servers | -ask-sudo-password ||
+|:-----------------|:-------------------||
+| NOPASSWORD       |                 -  | defined as NOPASSWORD in /etc/sudoers on target servers |
+| with password    |           required ||
+
+
 ## example
 
 Run go-cve-dictionary as server mode before scanning.
@@ -504,9 +524,10 @@ $ go-cve-dictionary server
 
 ### Scan all servers defined in config file
 ```
-$ vuls scan --report-slack --report-mail --cvss-over=7
+$ vuls scan --report-slack --report-mail --cvss-over=7 -ask-sudo-password -ask-key-password
 ```
 With this sample command, it will ..
+- Ask sudo password and ssh key passsword before scanning
 - Scan all servers defined in config file
 - Send scan results to slack and email
 - Only Report CVEs that CVSS score is over 7
@@ -517,7 +538,9 @@ With this sample command, it will ..
 $ vuls scan server1 server2
 ```
 With this sample command, it will ..
-- Scan only 2 servers. (server1, server2)
+- Use SSH Key-Based authentication with empty password (without -ask-key-password option)
+- Sudo with no password (without -ask-sudo-password option)
+- Scan only 2 servers (server1, server2)
 - Print scan result to terminal
 
 ----
@@ -529,6 +552,9 @@ It is possible to detect vulnerabilities something you compiled by yourself, the
 -  How to search CPE name by software name
     - [NVD: Search Common Platform Enumerations (CPE)](https://web.nvd.nist.gov/view/cpe/search)  
     **Check CPE Naming Format: 2.2**
+
+    - [go-cpe-dictionary](https://github.com/kotakanbe/go-cpe-dictionary) is a good choice for geeks.   
+    You can search a CPE name by the application name incremenally.
 
 - Configuration  
 To detect the vulnerbility of Ruby on Rails v4.2.1, cpeNames needs to be set in the servers section.
@@ -589,6 +615,11 @@ Use Systemd, Upstart or supervisord, daemontools...
 
 - How to Enable Automatic-Update of Vunerability Data.  
 Use job scheduler like Cron (with -last2y option).
+
+- How to Enable Automatic-Scan.  
+Use job scheduler like Cron.  
+Set NOPASSWORD option in /etc/sudoers on target servers.  
+Use SSH Key-Based Authentication with empty password or ssh-agent.
 
 - How to cross compile
     ```bash
