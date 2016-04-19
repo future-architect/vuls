@@ -503,17 +503,17 @@ scan:
 
 ## ask-key-password option 
 
-| SSH key password |  -ask-key-password ||
-|:-----------------|:-------------------||
-| empty password   |                 -  ||
+| SSH key password |  -ask-key-password | |
+|:-----------------|:-------------------|:----|
+| empty password   |                 -  | |
 | with password    |           required | or use ssh-agent |
 
 ## ask-sudo-password option
 
-| sudo password on target servers | -ask-sudo-password ||
-|:-----------------|:-------------------||
-| NOPASSWORD       |                 -  | defined as NOPASSWORD in /etc/sudoers on target servers |
-| with password    |           required ||
+| sudo password on target servers | -ask-sudo-password | |
+|:-----------------|:-------|:------|
+| NOPASSWORD       | - | defined as NOPASSWORD in /etc/sudoers on target servers |
+| with password    | required | . |
 
 
 ## example
