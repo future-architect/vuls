@@ -103,7 +103,7 @@ $ chmod 600 ~/.ssh/authorized_keys
 
 Vuls requires the following packages.
 
-- sqlite
+- SQLite3
 - git
 - gcc
 - go v1.6
@@ -188,6 +188,7 @@ keyPath     = "/home/ec2-user/.ssh/id_rsa"
 ```
 $ vuls prepare
 ```
+see [Usage: Prepare](https://github.com/future-architect/vuls#usage-prepare)
 
 ## Step8. Start Scanning
 
@@ -240,7 +241,7 @@ $ vuls tui
 ![Vuls-Architecture](img/vuls-architecture.png)
 
 ## [go-cve-dictinary](https://github.com/kotakanbe/go-cve-dictionary)  
-- Fetch vulnerability information from NVD, JVN(Japanese), then insert into SQLite.
+- Fetch vulnerability information from NVD, JVN(Japanese), then insert into SQLite3.
 
 ## Vuls
 - Scan vulnerabilities on the servers and create a list of the CVE ID
