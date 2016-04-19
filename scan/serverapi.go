@@ -7,7 +7,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
-	"github.com/k0kubun/pp"
 	cve "github.com/kotakanbe/go-cve-dictionary/models"
 )
 
@@ -110,8 +109,6 @@ func InitServers(localLogger *logrus.Entry) (err error) {
 	Log = localLogger
 	if servers, err = detectServersOS(); err != nil {
 		err = fmt.Errorf("Failed to detect the type of OS. err: %s", err)
-	} else {
-		Log.Debugf("%s", pp.Sprintf("%s", servers))
 	}
 	return
 }

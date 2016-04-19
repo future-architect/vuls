@@ -111,9 +111,7 @@ subjectPrefix = "[vuls]"
 [default]
 #port        = "22"
 #user        = "username"
-#password    = "password"
 #keyPath     = "/home/username/.ssh/id_rsa"
-#keyPassword = "password"
 
 [servers]
 {{- $names:=  .Names}}
@@ -122,9 +120,7 @@ subjectPrefix = "[vuls]"
 host         = "{{$ip}}"
 #port        = "22"
 #user        = "root"
-#password    = "password"
 #keyPath     = "/home/username/.ssh/id_rsa"
-#keyPassword = "password"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]

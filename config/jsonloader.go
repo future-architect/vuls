@@ -24,6 +24,6 @@ type JSONLoader struct {
 }
 
 // Load load the configuraiton JSON file specified by path arg.
-func (c JSONLoader) Load(path string) (err error) {
+func (c JSONLoader) Load(path, sudoPass, keyPass string) (err error) {
 	return fmt.Errorf("Not implement yet")
 }

@@ -129,6 +129,7 @@ func (o *redhat) installYumPluginSecurity() error {
 		return nil
 	}
 
+	o.log.Info("Installing yum-plugin-security...")
 	cmd := util.PrependProxyEnv("yum install -y yum-plugin-security")
 	if r := o.ssh(cmd, sudo); !r.isSuccess() {
 		return fmt.Errorf(
@@ -139,7 +140,6 @@ func (o *redhat) installYumPluginSecurity() error {
 }
 
 func (o *redhat) installYumChangelog() error {
-	o.log.Info("Installing yum-plugin-security...")
 
 	if o.Family == "centos" {
 		var majorVersion int
@@ -164,6 +164,7 @@ func (o *redhat) installYumChangelog() error {
 			return nil
 		}
 
+		o.log.Infof("Installing %s...", packName)
 		cmd = util.PrependProxyEnv("yum install -y " + packName)
 		if r := o.ssh(cmd, sudo); !r.isSuccess() {
 			return fmt.Errorf(
@@ -458,7 +459,10 @@ func (o *redhat) parseYumCheckUpdateLine(line string) (models.PackageInfo, error
 }
 
 func (o *redhat) getChangelog(packageNames string) (stdout string, err error) {
-	command := "echo N | "
+	command := ""
+	if o.ServerInfo.User == "root" {
+		command = "yes no | "
+	}
 	if 0 < len(config.Conf.HTTPProxy) {
 		command += util.ProxyEnv()
 	}

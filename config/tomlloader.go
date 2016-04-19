@@ -31,7 +31,7 @@ type TOMLLoader struct {
 }
 
 // Load load the configuraiton TOML file specified by path arg.
-func (c TOMLLoader) Load(pathToToml string) (err error) {
+func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
 	var conf Config
 	if _, err := toml.DecodeFile(pathToToml, &conf); err != nil {
 		log.Error("Load config failed", err)
@@ -45,14 +45,28 @@ func (c TOMLLoader) Load(pathToToml string) (err error) {
 	Conf.Default = d
 	servers := make(map[string]ServerInfo)
 
+	if keyPass != "" {
+		d.KeyPassword = keyPass
+	}
+
+	if sudoPass != "" {
+		d.Password = sudoPass
+	}
+
 	i := 0
 	for name, v := range conf.Servers {
+
+		if 0 < len(v.KeyPassword) || 0 < len(v.Password) {
+			log.Warn("[Depricated] password and keypassword in config file are unsecure. Remove them immediately for a security reason. They will be removed in a future release.")
+		}
+
 		s := ServerInfo{ServerName: name}
 		s.User = v.User
 		if s.User == "" {
 			s.User = d.User
 		}
 
+		//  s.Password = sudoPass
 		s.Password = v.Password
 		if s.Password == "" {
 			s.Password = d.Password
@@ -76,6 +90,7 @@ func (c TOMLLoader) Load(pathToToml string) (err error) {
 			}
 		}
 
+		//  s.KeyPassword = keyPass
 		s.KeyPassword = v.KeyPassword
 		if s.KeyPassword == "" {
 			s.KeyPassword = d.KeyPassword

@@ -34,6 +34,9 @@ type PrepareCmd struct {
 	debug      bool
 	configPath string
 
+	askSudoPassword bool
+	askKeyPassword  bool
+
 	useUnattendedUpgrades bool
 }
 
@@ -55,7 +58,11 @@ func (*PrepareCmd) Synopsis() string {
 // Usage return usage
 func (*PrepareCmd) Usage() string {
 	return `prepare:
-	prepare [-config=/path/to/config.toml] [-debug]
+	prepare
+			[-config=/path/to/config.toml]
+			[-ask-sudo-password]
+			[-ask-key-password]
+			[-debug]
 
 `
 }
@@ -69,6 +76,20 @@ func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
 	f.BoolVar(
+		&p.askKeyPassword,
+		"ask-key-password",
+		false,
+		"Ask ssh privatekey password before scanning",
+	)
+
+	f.BoolVar(
+		&p.askSudoPassword,
+		"ask-sudo-password",
+		false,
+		"Ask sudo password of target servers before scanning",
+	)
+
+	f.BoolVar(
 		&p.useUnattendedUpgrades,
 		"use-unattended-upgrades",
 		false,
@@ -78,14 +99,30 @@ func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	logrus.Infof("Start Preparing (config: %s)", p.configPath)
+	var keyPass, sudoPass string
+	var err error
+	if p.askKeyPassword {
+		prompt := "SSH key password: "
+		if keyPass, err = getPasswd(prompt); err != nil {
+			logrus.Error(err)
+			return subcommands.ExitFailure
+		}
+	}
+	if p.askSudoPassword {
+		prompt := "sudo password: "
+		if sudoPass, err = getPasswd(prompt); err != nil {
+			logrus.Error(err)
+			return subcommands.ExitFailure
+		}
+	}
 
-	err := c.Load(p.configPath)
+	err = c.Load(p.configPath, keyPass, sudoPass)
 	if err != nil {
 		logrus.Errorf("Error loading %s, %s", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
 
+	logrus.Infof("Start Preparing (config: %s)", p.configPath)
 	target := make(map[string]c.ServerInfo)
 	for _, arg := range f.Args() {
 		found := false
