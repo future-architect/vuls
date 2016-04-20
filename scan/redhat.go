@@ -246,7 +246,7 @@ func (o *redhat) scanInstalledPackages() (installedPackages models.PackageInfoLi
 		for _, line := range lines {
 			if trimed := strings.TrimSpace(line); len(trimed) != 0 {
 				var packinfo models.PackageInfo
-				if packinfo, err = o.parseScanedPackagesLine(line); err != nil {
+				if packinfo, err = o.parseScannedPackagesLine(line); err != nil {
 					return
 				}
 				installedPackages = append(installedPackages, packinfo)
@@ -260,17 +260,17 @@ func (o *redhat) scanInstalledPackages() (installedPackages models.PackageInfoLi
 		r.ExitStatus, r.Stdout, r.Stderr)
 }
 
-func (o *redhat) parseScanedPackagesLine(line string) (pack models.PackageInfo, err error) {
-	re, _ := regexp.Compile(`^([^\t']+)\t([^\t]+)\t(.+)$`)
-	result := re.FindStringSubmatch(line)
-	if len(result) == 4 {
-		pack.Name = result[1]
-		pack.Version = result[2]
-		pack.Release = strings.TrimSpace(result[3])
-	} else {
-		err = fmt.Errorf("redhat: Failed to parse package line: %s", line)
+func (o *redhat) parseScannedPackagesLine(line string) (models.PackageInfo, error) {
+	fields := strings.Fields(line)
+	if len(fields) != 3 {
+		return models.PackageInfo{},
+			fmt.Errorf("Failed to parse package line: %s", line)
 	}
-	return
+	return models.PackageInfo{
+		Name:    fields[0],
+		Version: fields[1],
+		Release: fields[2],
+	}, nil
 }
 
 func (o *redhat) scanUnsecurePackages() ([]CvePacksInfo, error) {
@@ -312,7 +312,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (CvePacksList, error)
 	for i, packInfo := range packInfoList {
 		changelog, err := o.getChangelog(packInfo.Name)
 		if err != nil {
-			o.log.Errorf("Failed to collect CVE. err: %s", err)
+			o.log.Errorf("Failed to collect CVE IDs. err: %s", err)
 			return nil, err
 		}
 
@@ -420,9 +420,12 @@ func (o *redhat) parseYumCheckUpdateLines(stdout string) (results models.Package
 
 			installed, found := o.Packages.FindByName(candidate.Name)
 			if !found {
-				return models.PackageInfoList{}, fmt.Errorf(
-					"Failed to parse yum check update line: %s-%s-%s",
+				o.log.Warnf("Not found the package in rpm -qa. candidate: %s-%s-%s",
 					candidate.Name, candidate.Version, candidate.Release)
+				o.log.Debugf("rpm -qa:")
+				o.log.Debugf(pp.Sprintf("%v", o.Packages))
+				results = append(results, candidate)
+				continue
 			}
 			installed.NewVersion = candidate.NewVersion
 			installed.NewRelease = candidate.NewRelease
@@ -524,15 +527,6 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 		return nil, fmt.Errorf("Failed to parse %s. err: %s", cmd, err)
 	}
 	o.log.Debugf("%s", pp.Sprintf("%v", vulnerablePackInfoList))
-	for i, packInfo := range vulnerablePackInfoList {
-		installedPack, found := o.Packages.FindByName(packInfo.Name)
-		if !found {
-			return nil, fmt.Errorf(
-				"Parsed package not found. packInfo: %#v", packInfo)
-		}
-		vulnerablePackInfoList[i].Version = installedPack.Version
-		vulnerablePackInfoList[i].Release = installedPack.Release
-	}
 
 	dict := map[string][]models.PackageInfo{}
 	for _, advIDPackNames := range advIDPackNamesList {
