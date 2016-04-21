@@ -287,7 +287,7 @@ func (o *redhat) scanUnsecurePackages() ([]CvePacksInfo, error) {
 //TODO return whether already expired.
 func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (CvePacksList, error) {
 
-	cmd := "yum check-update"
+	cmd := "yum --color=never check-update"
 	r := o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess(0, 100) {
 		//returns an exit code of 100 if there are available updates.
@@ -467,6 +467,8 @@ func (o *redhat) getChangelog(packageNames string) (stdout string, err error) {
 	if 0 < len(config.Conf.HTTPProxy) {
 		command += util.ProxyEnv()
 	}
+
+	// yum update --changelog doesn't have --color option.
 	command += fmt.Sprintf(" yum update --changelog %s | grep CVE", packageNames)
 
 	r := o.ssh(command, sudo)
@@ -493,7 +495,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 			"yum updateinfo is not suppported on CentOS")
 	}
 
-	cmd := "yum repolist"
+	cmd := "yum --color=never repolist"
 	r := o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
 		return nil, fmt.Errorf(
@@ -502,7 +504,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 	}
 
 	// get advisoryID(RHSA, ALAS) - package name,version
-	cmd = "yum updateinfo list available --security"
+	cmd = "yum --color=never updateinfo list available --security"
 	r = o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
 		return nil, fmt.Errorf(
@@ -513,7 +515,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 
 	// get package name, version, rel to be upgrade.
 	//  cmd = "yum check-update --security"
-	cmd = "yum check-update"
+	cmd = "yum --color=never check-update"
 	r = o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess(0, 100) {
 		//returns an exit code of 100 if there are available updates.
@@ -543,7 +545,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 	}
 
 	// get advisoryID(RHSA, ALAS) - CVE IDs
-	cmd = "yum updateinfo --security update"
+	cmd = "yum --color=never updateinfo --security update"
 	r = o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
 		return nil, fmt.Errorf(
