@@ -1,5 +1,32 @@
 # Change Log
 
+## [v0.1.3](https://github.com/future-architect/vuls/tree/v0.1.3) (2016-04-21)
+[Full Changelog](https://github.com/future-architect/vuls/compare/v0.1.2...v0.1.3)
+
+**Implemented enhancements:**
+
+- Add sudo support for prepare [\#11](https://github.com/future-architect/vuls/issues/11)
+- Dockerfile? [\#10](https://github.com/future-architect/vuls/issues/10)
+- Update README [\#41](https://github.com/future-architect/vuls/pull/41) ([theonlydoo](https://github.com/theonlydoo))
+- Sparse dockerization [\#38](https://github.com/future-architect/vuls/pull/38) ([theonlydoo](https://github.com/theonlydoo))
+- No password in config [\#35](https://github.com/future-architect/vuls/pull/35) ([kotakanbe](https://github.com/kotakanbe))
+- Fr readme translation [\#23](https://github.com/future-architect/vuls/pull/23) ([novakin](https://github.com/novakin))
+
+**Fixed bugs:**
+
+- Issues updating CVE database behind https proxy [\#39](https://github.com/future-architect/vuls/issues/39)
+- Vuls failed to parse yum check-update [\#24](https://github.com/future-architect/vuls/issues/24)
+- Fix yum to yum --color=never \#36 [\#42](https://github.com/future-architect/vuls/pull/42) ([kotakanbe](https://github.com/kotakanbe))
+- Fix parse yum check update [\#40](https://github.com/future-architect/vuls/pull/40) ([kotakanbe](https://github.com/kotakanbe))
+- fix typo [\#31](https://github.com/future-architect/vuls/pull/31) ([blue119](https://github.com/blue119))
+- Fix error while parsing yum check-update \#24 [\#30](https://github.com/future-architect/vuls/pull/30) ([kotakanbe](https://github.com/kotakanbe))
+
+**Closed issues:**
+
+- Unable to scan on ubuntu because changelog.ubuntu.com is down... [\#21](https://github.com/future-architect/vuls/issues/21)
+- err: Not initialize\(d\) yet.. [\#16](https://github.com/future-architect/vuls/issues/16)
+- Errors when using fish shell [\#8](https://github.com/future-architect/vuls/issues/8)
+
 ## [v0.1.2](https://github.com/future-architect/vuls/tree/v0.1.2) (2016-04-12)
 [Full Changelog](https://github.com/future-architect/vuls/compare/v0.1.1...v0.1.2)
 
