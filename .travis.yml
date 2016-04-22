@@ -3,8 +3,6 @@ go:
   - 1.6
   - tip
 sudo: true
-script: go test -race ./go/...
-install: GO15VENDOREXPERIMENT=1 go get -t -v ./go/...
 env:
   - GO15VENDOREXPERIMENT=1
 
