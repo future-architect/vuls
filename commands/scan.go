@@ -20,6 +20,7 @@ package commands
 import (
 	"flag"
 	"os"
+	"path/filepath"
 
 	"github.com/Sirupsen/logrus"
 	c "github.com/future-architect/vuls/config"
@@ -87,10 +88,12 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.debug, "debug", false, "debug mode")
 	f.BoolVar(&p.debugSQL, "debug-sql", false, "SQL debug mode")
 
-	defaultConfPath := os.Getenv("PWD") + "/config.toml"
+	wd, _ := os.Getwd()
+
+	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
-	defaultDBPath := os.Getenv("PWD") + "/vuls.sqlite3"
+	defaultDBPath := filepath.Join(wd, "vuls.sqlite3")
 	f.StringVar(&p.dbpath, "dbpath", defaultDBPath, "/path/to/sqlite3")
 
 	defaultURL := "http://127.0.0.1:1323"
