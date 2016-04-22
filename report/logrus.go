@@ -19,6 +19,8 @@ package report
 
 import (
 	"os"
+	"path/filepath"
+	"runtime"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/future-architect/vuls/models"
@@ -31,6 +33,9 @@ type LogrusWriter struct {
 
 func (w LogrusWriter) Write(scanResults []models.ScanResult) error {
 	path := "/var/log/vuls/report.log"
+	if runtime.GOOS == "windows" {
+		path = filepath.Join(os.Getenv("APPDATA"), "vuls", "report.log")
+	}
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return err

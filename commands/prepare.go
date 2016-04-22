@@ -20,6 +20,7 @@ package commands
 import (
 	"flag"
 	"os"
+	"path/filepath"
 
 	"github.com/Sirupsen/logrus"
 	c "github.com/future-architect/vuls/config"
@@ -72,7 +73,9 @@ func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
 
 	f.BoolVar(&p.debug, "debug", false, "debug mode")
 
-	defaultConfPath := os.Getenv("PWD") + "/config.toml"
+	wd, _ := os.Getwd()
+
+	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
 	f.BoolVar(

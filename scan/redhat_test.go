@@ -48,10 +48,18 @@ func TestParseScanedPackagesLineRedhat(t *testing.T) {
 				Release: "30.el6.11",
 			},
 		},
+		{
+			"Percona-Server-shared-56 5.6.19 rel67.0.el6",
+			models.PackageInfo{
+				Name:    "Percona-Server-shared-56",
+				Version: "5.6.19",
+				Release: "rel67.0.el6",
+			},
+		},
 	}
 
 	for _, tt := range packagetests {
-		p, _ := r.parseScanedPackagesLine(tt.in)
+		p, _ := r.parseScannedPackagesLine(tt.in)
 		if p.Name != tt.pack.Name {
 			t.Errorf("name: expected %s, actual %s", tt.pack.Name, p.Name)
 		}
@@ -800,39 +808,6 @@ updateinfo list done`
 			}
 		}
 	}
-}
-
-func TestParseYumUpdateinfoToGetUpdateID(t *testing.T) {
-
-	r := newRedhat(config.ServerInfo{})
-
-	var packagetests = []struct {
-		in   string
-		pack models.PackageInfo
-	}{
-		{
-			"openssl	1.0.1e	30.el6.11",
-			models.PackageInfo{
-				Name:    "openssl",
-				Version: "1.0.1e",
-				Release: "30.el6.11",
-			},
-		},
-	}
-
-	for _, tt := range packagetests {
-		p, _ := r.parseScanedPackagesLine(tt.in)
-		if p.Name != tt.pack.Name {
-			t.Errorf("name: expected %s, actual %s", tt.pack.Name, p.Name)
-		}
-		if p.Version != tt.pack.Version {
-			t.Errorf("version: expected %s, actual %s", tt.pack.Version, p.Version)
-		}
-		if p.Release != tt.pack.Release {
-			t.Errorf("release: expected %s, actual %s", tt.pack.Release, p.Release)
-		}
-	}
-
 }
 
 func TestExtractPackNameVerRel(t *testing.T) {

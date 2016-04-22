@@ -122,7 +122,7 @@ func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (re
 	} else {
 		logger = log[0]
 	}
-
+	c.SudoOpt.ExecBySudo = true
 	var err error
 	if sudo && c.User != "root" {
 		switch {

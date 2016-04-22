@@ -246,7 +246,7 @@ func (o *redhat) scanInstalledPackages() (installedPackages models.PackageInfoLi
 		for _, line := range lines {
 			if trimed := strings.TrimSpace(line); len(trimed) != 0 {
 				var packinfo models.PackageInfo
-				if packinfo, err = o.parseScanedPackagesLine(line); err != nil {
+				if packinfo, err = o.parseScannedPackagesLine(line); err != nil {
 					return
 				}
 				installedPackages = append(installedPackages, packinfo)
@@ -260,17 +260,17 @@ func (o *redhat) scanInstalledPackages() (installedPackages models.PackageInfoLi
 		r.ExitStatus, r.Stdout, r.Stderr)
 }
 
-func (o *redhat) parseScanedPackagesLine(line string) (pack models.PackageInfo, err error) {
-	re, _ := regexp.Compile(`^([^\t']+)\t([^\t]+)\t(.+)$`)
-	result := re.FindStringSubmatch(line)
-	if len(result) == 4 {
-		pack.Name = result[1]
-		pack.Version = result[2]
-		pack.Release = strings.TrimSpace(result[3])
-	} else {
-		err = fmt.Errorf("redhat: Failed to parse package line: %s", line)
+func (o *redhat) parseScannedPackagesLine(line string) (models.PackageInfo, error) {
+	fields := strings.Fields(line)
+	if len(fields) != 3 {
+		return models.PackageInfo{},
+			fmt.Errorf("Failed to parse package line: %s", line)
 	}
-	return
+	return models.PackageInfo{
+		Name:    fields[0],
+		Version: fields[1],
+		Release: fields[2],
+	}, nil
 }
 
 func (o *redhat) scanUnsecurePackages() ([]CvePacksInfo, error) {
@@ -287,7 +287,7 @@ func (o *redhat) scanUnsecurePackages() ([]CvePacksInfo, error) {
 //TODO return whether already expired.
 func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (CvePacksList, error) {
 
-	cmd := "yum check-update"
+	cmd := "yum --color=never check-update"
 	r := o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess(0, 100) {
 		//returns an exit code of 100 if there are available updates.
@@ -312,7 +312,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (CvePacksList, error)
 	for i, packInfo := range packInfoList {
 		changelog, err := o.getChangelog(packInfo.Name)
 		if err != nil {
-			o.log.Errorf("Failed to collect CVE. err: %s", err)
+			o.log.Errorf("Failed to collect CVE IDs. err: %s", err)
 			return nil, err
 		}
 
@@ -420,9 +420,10 @@ func (o *redhat) parseYumCheckUpdateLines(stdout string) (results models.Package
 
 			installed, found := o.Packages.FindByName(candidate.Name)
 			if !found {
-				return models.PackageInfoList{}, fmt.Errorf(
-					"Failed to parse yum check update line: %s-%s-%s",
+				o.log.Warnf("Not found the package in rpm -qa. candidate: %s-%s-%s",
 					candidate.Name, candidate.Version, candidate.Release)
+				results = append(results, candidate)
+				continue
 			}
 			installed.NewVersion = candidate.NewVersion
 			installed.NewRelease = candidate.NewRelease
@@ -466,6 +467,8 @@ func (o *redhat) getChangelog(packageNames string) (stdout string, err error) {
 	if 0 < len(config.Conf.HTTPProxy) {
 		command += util.ProxyEnv()
 	}
+
+	// yum update --changelog doesn't have --color option.
 	command += fmt.Sprintf(" yum update --changelog %s | grep CVE", packageNames)
 
 	r := o.ssh(command, sudo)
@@ -492,7 +495,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 			"yum updateinfo is not suppported on CentOS")
 	}
 
-	cmd := "yum repolist"
+	cmd := "yum --color=never repolist"
 	r := o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
 		return nil, fmt.Errorf(
@@ -501,7 +504,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 	}
 
 	// get advisoryID(RHSA, ALAS) - package name,version
-	cmd = "yum updateinfo list available --security"
+	cmd = "yum --color=never updateinfo list available --security"
 	r = o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
 		return nil, fmt.Errorf(
@@ -511,7 +514,8 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 	advIDPackNamesList, err := o.parseYumUpdateinfoListAvailable(r.Stdout)
 
 	// get package name, version, rel to be upgrade.
-	cmd = "yum check-update --security"
+	//  cmd = "yum check-update --security"
+	cmd = "yum --color=never check-update"
 	r = o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess(0, 100) {
 		//returns an exit code of 100 if there are available updates.
@@ -519,26 +523,17 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 			"Failed to %s. status: %d, stdout: %s, stderr: %s",
 			cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
-	vulnerablePackInfoList, err := o.parseYumCheckUpdateLines(r.Stdout)
+	updatable, err := o.parseYumCheckUpdateLines(r.Stdout)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse %s. err: %s", cmd, err)
 	}
-	o.log.Debugf("%s", pp.Sprintf("%v", vulnerablePackInfoList))
-	for i, packInfo := range vulnerablePackInfoList {
-		installedPack, found := o.Packages.FindByName(packInfo.Name)
-		if !found {
-			return nil, fmt.Errorf(
-				"Parsed package not found. packInfo: %#v", packInfo)
-		}
-		vulnerablePackInfoList[i].Version = installedPack.Version
-		vulnerablePackInfoList[i].Release = installedPack.Release
-	}
+	o.log.Debugf("%s", pp.Sprintf("%v", updatable))
 
 	dict := map[string][]models.PackageInfo{}
 	for _, advIDPackNames := range advIDPackNamesList {
 		packInfoList := models.PackageInfoList{}
 		for _, packName := range advIDPackNames.PackNames {
-			packInfo, found := vulnerablePackInfoList.FindByName(packName)
+			packInfo, found := updatable.FindByName(packName)
 			if !found {
 				return nil, fmt.Errorf(
 					"PackInfo not found. packInfo: %#v", packName)
@@ -550,7 +545,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 	}
 
 	// get advisoryID(RHSA, ALAS) - CVE IDs
-	cmd = "yum updateinfo --security update"
+	cmd = "yum --color=never updateinfo --security update"
 	r = o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
 		return nil, fmt.Errorf(
