@@ -93,7 +93,7 @@ func printConfigToml(ips []string) (err error) {
 [slack]
 hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
 channel      = "#channel-name"
-#channel      = "#{servername}"
+#channel      = "${servername}"
 iconEmoji    = ":ghost:"
 authUser     = "username"
 notifyUsers  = ["@username"]
