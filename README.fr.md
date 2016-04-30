@@ -297,7 +297,7 @@ $ vuls discover 172.31.4.0/24
 [slack]
 hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
 channel      = "#channel-name"
-#channel      = "#{servername}"
+#channel      = "${servername}"
 iconEmoji    = ":ghost:"
 authUser     = "username"
 notifyUsers  = ["@username"]
@@ -344,7 +344,7 @@ Vous pouvez customiser votre configuration en utilisant ce modèle.
     [slack]
     hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
     channel      = "#channel-name"
-    #channel      = "#{servername}"
+    #channel      = "${servername}"
     iconEmoji    = ":ghost:"
     authUser     = "username"
     notifyUsers  = ["@username"]
@@ -352,12 +352,12 @@ Vous pouvez customiser votre configuration en utilisant ce modèle.
 
     - hookURL : Incomming webhook's URL  
     - channel : channel name.  
-    If you set #{servername} to channel, the report will be sent to #servername channel.  
+    If you set ${servername} to channel, the report will be sent to each channel.  
     In the following example, the report will be sent to the #server1 and #server2.  
     Be sure to create these channels before scanning.
       ```
       [slack]
-      channel      = "#{servername}"
+      channel      = "${servername}"
       ...snip...
 
       [servers]
