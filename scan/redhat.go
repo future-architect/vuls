@@ -861,3 +861,7 @@ func (o *redhat) parseYumUpdateinfoListAvailable(stdout string) (advisoryIDPacks
 	}
 	return result, nil
 }
+
+func (o *redhat) clone() osTypeInterface {
+	return o
+}

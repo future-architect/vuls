@@ -231,7 +231,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitFailure
 	}
 
-	Log.Info("Detecting the type of OS... ")
+	Log.Info("Detecting Server OS... ")
 	err = scan.InitServers(Log)
 	if err != nil {
 		Log.Errorf("Failed to init servers. Check the configuration. err: %s", err)

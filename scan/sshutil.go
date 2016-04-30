@@ -124,7 +124,7 @@ func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (re
 	}
 	c.SudoOpt.ExecBySudo = true
 	var err error
-	if sudo && c.User != "root" {
+	if sudo && c.User != "root" && !c.IsContainer() {
 		switch {
 		case c.SudoOpt.ExecBySudo:
 			cmd = fmt.Sprintf("echo %s | sudo -S %s", c.Password, cmd)
@@ -139,6 +139,13 @@ func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (re
 	cmd = fmt.Sprintf("set -o pipefail; %s", cmd)
 	logger.Debugf("Command: %s",
 		strings.Replace(maskPassword(cmd, c.Password), "\n", "", -1))
+
+	if c.IsContainer() {
+		switch c.Container.Type {
+		case "", "docker":
+			cmd = fmt.Sprintf(`docker exec %s /bin/bash -c "%s"`, c.Container.ContainerID, cmd)
+		}
+	}
 
 	var client *ssh.Client
 	client, err = sshConnect(c)

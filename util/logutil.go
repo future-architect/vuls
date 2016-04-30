@@ -53,11 +53,16 @@ func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
 
 	whereami := "localhost"
 	if 0 < len(c.ServerName) {
-		whereami = fmt.Sprintf("%s:%s", c.ServerName, c.Port)
-
+		if 0 < len(c.Container.ContainerID) {
+			whereami = fmt.Sprintf(
+				"%s_%s", c.ServerName, c.Container.Name)
+		} else {
+			whereami = fmt.Sprintf("%s", c.ServerName)
+		}
 	}
+
 	if _, err := os.Stat(logDir); err == nil {
-		path := fmt.Sprintf("%s/%s.log", logDir, whereami)
+		path := filepath.Join(logDir, whereami)
 		log.Hooks.Add(lfshook.NewHook(lfshook.PathMap{
 			logrus.DebugLevel: path,
 			logrus.InfoLevel:  path,
