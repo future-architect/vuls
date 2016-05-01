@@ -30,8 +30,13 @@ import (
 type TOMLLoader struct {
 }
 
+type AskFunc struct {
+	KeyPass  func() (string, error)
+	SudoPass func(string) (string, error)
+}
+
 // Load load the configuraiton TOML file specified by path arg.
-func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
+func (c TOMLLoader) Load(pathToToml string, ask AskFunc) (err error) {
 	var conf Config
 	if _, err := toml.DecodeFile(pathToToml, &conf); err != nil {
 		log.Error("Load config failed", err)
@@ -45,12 +50,45 @@ func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
 	Conf.Default = d
 	servers := make(map[string]ServerInfo)
 
+	var keyPass string
+	if ask.KeyPass != nil {
+		if keyPass, err = ask.KeyPass(); err != nil {
+			return err
+		}
+	}
 	if keyPass != "" {
 		d.KeyPassword = keyPass
 	}
 
-	if sudoPass != "" {
-		d.Password = sudoPass
+	var defaultSudoPass, suPass, sudoPass string
+	if ask.SudoPass != nil {
+		if d.SudoMethod != "" {
+			if defaultSudoPass, err = ask.SudoPass(d.SudoMethod); err != nil {
+				return err
+			}
+		}
+		if defaultSudoPass == "" {
+			for _, v := range conf.Servers {
+				switch v.SudoMethod {
+				case "su":
+					if suPass == "" {
+						if suPass, err = ask.SudoPass(v.SudoMethod); err != nil {
+							return err
+						}
+					}
+				case "sudo", "":
+					if sudoPass == "" {
+						if sudoPass, err = ask.SudoPass(v.SudoMethod); err != nil {
+							return err
+						}
+					}
+				default:
+					return fmt.Errorf("SudoMethod: unsupported method %s", v.SudoMethod)
+				}
+			}
+		} else {
+			d.Password = defaultSudoPass
+		}
 	}
 
 	i := 0
@@ -70,6 +108,14 @@ func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
 		s.Password = v.Password
 		if s.Password == "" {
 			s.Password = d.Password
+			if s.Password == "" {
+				switch v.SudoMethod {
+				case "su":
+					s.Password = suPass
+				case "sudo", "":
+					s.Password = sudoPass
+				}
+			}
 		}
 
 		s.Host = v.Host

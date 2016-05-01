@@ -51,7 +51,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 	red = newRedhat(c)
 
 	// set sudo option flag
-	c.SudoOpt = config.SudoOption{ExecBySudo: true}
+	//c.SudoOpt = config.SudoOption{ExecBySudo: true}
 	red.setServerInfo(c)
 
 	if r := sshExec(c, "ls /etc/fedora-release", noSudo); r.isSuccess() {

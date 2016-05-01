@@ -18,14 +18,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package config
 
 // Load loads configuration
-func Load(path, keyPass, sudoPass string) error {
+func Load(path string, ask AskFunc) error {
 	var loader Loader
 	loader = TOMLLoader{}
 
-	return loader.Load(path, keyPass, sudoPass)
+	return loader.Load(path, ask)
 }
 
 // Loader is interface of concrete loader
 type Loader interface {
-	Load(string, string, string) error
+	Load(string, AskFunc) error
 }

@@ -202,6 +202,7 @@ type ServerInfo struct {
 	Port        string
 	KeyPath     string
 	KeyPassword string
+	SudoMethod  string
 	SudoOpt     SudoOption
 
 	CpeNames []string
