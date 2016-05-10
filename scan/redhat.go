@@ -462,7 +462,7 @@ func (o *redhat) parseYumCheckUpdateLine(line string) (models.PackageInfo, error
 func (o *redhat) getChangelog(packageNames string) (stdout string, err error) {
 	command := ""
 	if o.ServerInfo.User == "root" {
-		command = "echo N | "
+		command = "yes N | "
 	}
 	if 0 < len(config.Conf.HTTPProxy) {
 		command += util.ProxyEnv()
