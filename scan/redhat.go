@@ -287,7 +287,7 @@ func (o *redhat) scanUnsecurePackages() ([]CvePacksInfo, error) {
 //TODO return whether already expired.
 func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (CvePacksList, error) {
 
-	cmd := "yum --color=never check-update"
+	cmd := "LANG=EN yum --color=never check-update"
 	r := o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess(0, 100) {
 		//returns an exit code of 100 if there are available updates.
@@ -515,7 +515,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 
 	// get package name, version, rel to be upgrade.
 	//  cmd = "yum check-update --security"
-	cmd = "yum --color=never check-update"
+	cmd = "LANG=EN yum --color=never check-update"
 	r = o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess(0, 100) {
 		//returns an exit code of 100 if there are available updates.
