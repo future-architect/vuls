@@ -96,7 +96,7 @@ func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
 		&p.useUnattendedUpgrades,
 		"use-unattended-upgrades",
 		false,
-		"[Depricated] For Ubuntu, install unattended-upgrades",
+		"[Deprecated] For Ubuntu, install unattended-upgrades",
 	)
 }
 

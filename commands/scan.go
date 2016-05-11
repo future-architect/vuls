@@ -137,14 +137,14 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		&p.useYumPluginSecurity,
 		"use-yum-plugin-security",
 		false,
-		"[Depricated] For CentOS 5. Scan by yum-plugin-security or not (use yum check-update by default)",
+		"[Deprecated] For CentOS 5. Scan by yum-plugin-security or not (use yum check-update by default)",
 	)
 
 	f.BoolVar(
 		&p.useUnattendedUpgrades,
 		"use-unattended-upgrades",
 		false,
-		"[Depricated] For Ubuntu. Scan by unattended-upgrades or not (use apt-get upgrade --dry-run by default)",
+		"[Deprecated] For Ubuntu. Scan by unattended-upgrades or not (use apt-get upgrade --dry-run by default)",
 	)
 
 }

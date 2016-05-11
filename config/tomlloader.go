@@ -57,7 +57,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
 	for name, v := range conf.Servers {
 
 		if 0 < len(v.KeyPassword) || 0 < len(v.Password) {
-			log.Warn("[Depricated] password and keypassword in config file are unsecure. Remove them immediately for a security reason. They will be removed in a future release.")
+			log.Warn("[Deprecated] password and keypassword in config file are unsecure. Remove them immediately for a security reason. They will be removed in a future release.")
 		}
 
 		s := ServerInfo{ServerName: name}
