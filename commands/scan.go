@@ -215,6 +215,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	c.Conf.DBPath = p.dbpath
 	c.Conf.CveDictionaryURL = p.cveDictionaryURL
+	c.Conf.CvssScoreOver = p.cvssScoreOver
 	c.Conf.HTTPProxy = p.httpProxy
 	c.Conf.UseYumPluginSecurity = p.useYumPluginSecurity
 	c.Conf.UseUnattendedUpgrades = p.useUnattendedUpgrades
