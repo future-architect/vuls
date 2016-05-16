@@ -133,8 +133,8 @@ func (api cvedictClient) httpGet(key, url string, resChan chan<- response, errCh
 	f := func() (err error) {
 		//  resp, body, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
 		resp, body, errs = gorequest.New().Get(url).End()
-		if len(errs) > 0 || resp.StatusCode != 200 {
-			return fmt.Errorf("HTTP GET error: %v, code: %d, url: %s", errs, resp.StatusCode, url)
+		if len(errs) > 0 {
+			return fmt.Errorf("HTTP GET error: %v, url: %s, resp: %v", errs, url, resp)
 		}
 		return nil
 	}
