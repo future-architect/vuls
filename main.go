@@ -19,6 +19,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
 	"golang.org/x/net/context"
@@ -38,7 +39,15 @@ func main() {
 	subcommands.Register(&commands.ScanCmd{}, "scan")
 	subcommands.Register(&commands.PrepareCmd{}, "prepare")
 
+	var version = flag.Bool("v", false, "Show version")
+
 	flag.Parse()
+
+	if *version {
+		fmt.Printf("%s %s\n", Name, Version)
+		os.Exit(int(subcommands.ExitSuccess))
+	}
+
 	ctx := context.Background()
 	os.Exit(int(subcommands.Execute(ctx)))
 }
