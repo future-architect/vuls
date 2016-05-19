@@ -226,7 +226,7 @@ func (o *debian) parseScanedPackagesLine(line string) (name, version string, err
 func (o *debian) checkRequiredPackagesInstalled() error {
 
 	if o.Family == "debian" {
-		if r := o.ssh("test -f /usr/bin/aptitude", sudo); !r.isSuccess() {
+		if r := o.ssh("test -f /usr/bin/aptitude", noSudo); !r.isSuccess() {
 			msg := "aptitude is not installed"
 			o.log.Errorf(msg)
 			return fmt.Errorf(msg)
