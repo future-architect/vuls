@@ -19,6 +19,7 @@ package commands
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -35,8 +36,8 @@ type PrepareCmd struct {
 	debug      bool
 	configPath string
 
-	askSudoPassword bool
-	askKeyPassword  bool
+	askPassword    bool
+	askKeyPassword bool
 
 	useUnattendedUpgrades bool
 }
@@ -61,7 +62,7 @@ func (*PrepareCmd) Usage() string {
 	return `prepare:
 	prepare
 			[-config=/path/to/config.toml]
-			[-ask-sudo-password]
+			[-ask-password]
 			[-ask-key-password]
 			[-debug]
 
@@ -86,10 +87,10 @@ func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
 	)
 
 	f.BoolVar(
-		&p.askSudoPassword,
-		"ask-sudo-password",
+		&p.askPassword,
+		"ask-password",
 		false,
-		"Ask sudo password of target servers before scanning",
+		"Ask su or sudo password of target servers before scanning",
 	)
 
 	f.BoolVar(
@@ -102,24 +103,40 @@ func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	var keyPass, sudoPass string
+	var askFunc c.AskFunc
 	var err error
+
 	if p.askKeyPassword {
-		prompt := "SSH key password: "
-		if keyPass, err = getPasswd(prompt); err != nil {
-			logrus.Error(err)
-			return subcommands.ExitFailure
-		}
-	}
-	if p.askSudoPassword {
-		prompt := "sudo password: "
-		if sudoPass, err = getPasswd(prompt); err != nil {
-			logrus.Error(err)
-			return subcommands.ExitFailure
+		askFunc.KeyPass = func() (keyPass string, err error) {
+			prompt := "SSH key password: "
+			if keyPass, err = getPasswd(prompt); err != nil {
+				logrus.Error(err)
+				return "", err
+			}
+			return keyPass, nil
 		}
 	}
 
-	err = c.Load(p.configPath, keyPass, sudoPass)
+	if p.askPassword {
+		askFunc.SudoPass = func(sudoMethod string) (sudoPass string, err error) {
+			var prompt string
+			switch sudoMethod {
+			case "su":
+				prompt = "su password: "
+			case "sudo", "":
+				prompt = "sudo password: "
+			default:
+				return "", fmt.Errorf("SudoMethod: unsupported method %s", sudoMethod)
+			}
+			if sudoPass, err = getPasswd(prompt); err != nil {
+				logrus.Error(err)
+				return "", err
+			}
+			return sudoPass, nil
+		}
+	}
+
+	err = c.Load(p.configPath, askFunc)
 	if err != nil {
 		logrus.Errorf("Error loading %s, %s", p.configPath, err)
 		return subcommands.ExitUsageError

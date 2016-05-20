@@ -122,16 +122,16 @@ func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (re
 	} else {
 		logger = log[0]
 	}
-	c.SudoOpt.ExecBySudo = true
+	//c.SudoOpt.ExecBySudo = true
 	var err error
 	if sudo && c.User != "root" {
-		switch {
-		case c.SudoOpt.ExecBySudo:
+		switch c.SudoMethod {
+		case "su":
+			cmd = fmt.Sprintf("echo %s | su root -c %s", c.Password, cmd)
+		case "sudo", "":
 			cmd = fmt.Sprintf("echo %s | sudo -S %s", c.Password, cmd)
-		case c.SudoOpt.ExecBySudoSh:
-			cmd = fmt.Sprintf("echo %s | sudo sh -c '%s'", c.Password, cmd)
 		default:
-			logger.Panicf("sudoOpt is invalid. SudoOpt: %v", c.SudoOpt)
+			logger.Panicf("SudoMethod: unsupported method %s", c.SudoMethod)
 		}
 	}
 	// set pipefail option.

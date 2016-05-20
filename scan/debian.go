@@ -50,7 +50,7 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface) {
 	deb = newDebian(c)
 
 	// set sudo option flag
-	c.SudoOpt = config.SudoOption{ExecBySudo: true}
+	//c.SudoOpt = config.SudoOption{ExecBySudo: true}
 	deb.setServerInfo(c)
 
 	if r := sshExec(c, "ls /etc/debian_version", noSudo); !r.isSuccess() {
