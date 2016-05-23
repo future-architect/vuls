@@ -188,8 +188,6 @@ func (c *SlackConf) Validate() (errs []error) {
 		errs = append(errs, err)
 	}
 
-	// TODO check if slack configration is valid
-
 	return
 }
 
@@ -202,12 +200,33 @@ type ServerInfo struct {
 	Port        string
 	KeyPath     string
 	KeyPassword string
-	SudoOpt     SudoOption
 
 	CpeNames []string
 
-	// DebugLog Color
-	LogMsgAnsiColor string
+	// Container Names or IDs
+	Containers []string
+
+	// userd internal
+	LogMsgAnsiColor string // DebugLog Color
+	SudoOpt         SudoOption
+	Container       Container
+}
+
+// IsContainer returns whether this ServerInfo is about container
+func (s ServerInfo) IsContainer() bool {
+	return 0 < len(s.Container.ContainerID)
+}
+
+// SetContainer set container
+func (s *ServerInfo) SetContainer(d Container) {
+	s.Container = d
+}
+
+// Container has Container information.
+type Container struct {
+	ContainerID string
+	Name        string
+	Type        string
 }
 
 // SudoOption is flag of sudo option.

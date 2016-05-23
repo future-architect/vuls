@@ -28,18 +28,13 @@ import (
 )
 
 func toPlainText(scanResult models.ScanResult) (string, error) {
-	hostinfo := fmt.Sprintf(
-		"%s (%s %s)",
-		scanResult.ServerName,
-		scanResult.Family,
-		scanResult.Release,
-	)
+	serverInfo := scanResult.ServerInfo()
 
 	var buffer bytes.Buffer
-	for i := 0; i < len(hostinfo); i++ {
+	for i := 0; i < len(serverInfo); i++ {
 		buffer.WriteString("=")
 	}
-	header := fmt.Sprintf("%s\n%s", hostinfo, buffer.String())
+	header := fmt.Sprintf("%s\n%s", serverInfo, buffer.String())
 
 	if len(scanResult.KnownCves) == 0 && len(scanResult.UnknownCves) == 0 {
 		return fmt.Sprintf(`

@@ -101,6 +101,11 @@ func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
 			s.CpeNames = d.CpeNames
 		}
 
+		s.Containers = v.Containers
+		if len(s.Containers) == 0 {
+			s.Containers = d.Containers
+		}
+
 		s.LogMsgAnsiColor = Colors[i%len(Colors)]
 		i++
 

@@ -49,6 +49,7 @@ func MigrateDB() error {
 		&m.ScanHistory{},
 		&m.ScanResult{},
 		//  &m.NWLink{},
+		&m.Container{},
 		&m.CveInfo{},
 		&m.CpeName{},
 		&m.PackageInfo{},
@@ -67,6 +68,10 @@ func MigrateDB() error {
 	//      AddIndex("idx_n_w_links_scan_result_id", "scan_result_id").Error; err != nil {
 	//      return fmt.Errorf(errMsg, err)
 	//  }
+	if err := db.Model(&m.Container{}).
+		AddIndex("idx_containers_scan_result_id", "scan_result_id").Error; err != nil {
+		return fmt.Errorf(errMsg, err)
+	}
 	if err := db.Model(&m.CveInfo{}).
 		AddIndex("idx_cve_infos_scan_result_id", "scan_result_id").Error; err != nil {
 		return fmt.Errorf(errMsg, err)
@@ -85,11 +90,11 @@ func MigrateDB() error {
 		return fmt.Errorf(errMsg, err)
 	}
 	if err := db.Model(&cve.CveDetail{}).
-		AddIndex("idx_cve_detail_cve_info_id", "cve_info_id").Error; err != nil {
+		AddIndex("idx_cve_details_cve_info_id", "cve_info_id").Error; err != nil {
 		return fmt.Errorf(errMsg, err)
 	}
 	if err := db.Model(&cve.CveDetail{}).
-		AddIndex("idx_cve_detail_cveid", "cve_id").Error; err != nil {
+		AddIndex("idx_cve_details_cveid", "cve_id").Error; err != nil {
 		return fmt.Errorf(errMsg, err)
 	}
 	if err := db.Model(&cve.Nvd{}).
@@ -139,6 +144,10 @@ func Insert(results []m.ScanResult) error {
 	for _, scanResult := range history.ScanResults {
 		scanResult.ScanHistoryID = history.ID
 		if err := db.Create(&scanResult).Error; err != nil {
+			return err
+		}
+		scanResult.Container.ScanResultID = scanResult.ID
+		if err := db.Create(&scanResult.Container).Error; err != nil {
 			return err
 		}
 		if err := insertCveInfos(scanResult.ID, scanResult.KnownCves); err != nil {
@@ -229,7 +238,8 @@ func SelectLatestScanHistory() (m.ScanHistory, error) {
 		return m.ScanHistory{}, fmt.Errorf("No scanHistory records")
 	}
 
-	results := []m.ScanResult{}
+	//  results := []m.ScanResult{}
+	results := m.ScanResults{}
 	db.Model(&scanHistory).Related(&results, "ScanResults")
 	scanHistory.ScanResults = results
 
@@ -238,10 +248,16 @@ func SelectLatestScanHistory() (m.ScanHistory, error) {
 		//  db.Model(&r).Related(&nw, "NWLinks")
 		//  scanHistory.ScanResults[i].NWLinks = nw
 
+		di := m.Container{}
+		db.Model(&r).Related(&di, "Container")
+		scanHistory.ScanResults[i].Container = di
+
 		knownCves := selectCveInfos(&r, "KnownCves")
 		sort.Sort(m.CveInfos(knownCves))
 		scanHistory.ScanResults[i].KnownCves = knownCves
 	}
+
+	sort.Sort(scanHistory.ScanResults)
 	return scanHistory, nil
 }
 

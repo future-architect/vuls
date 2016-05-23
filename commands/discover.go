@@ -112,6 +112,10 @@ subjectPrefix = "[vuls]"
 #port        = "22"
 #user        = "username"
 #keyPath     = "/home/username/.ssh/id_rsa"
+#cpeNames = [
+#  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
+#]
+#containers = ["${running}"]
 
 [servers]
 {{- $names:=  .Names}}
@@ -124,6 +128,7 @@ host         = "{{$ip}}"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
+#containers = ["${running}"]
 {{end}}
 
 `

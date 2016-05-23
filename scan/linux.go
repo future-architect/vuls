@@ -20,6 +20,7 @@ package scan
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/future-architect/vuls/config"
@@ -34,6 +35,8 @@ type linux struct {
 	Release string
 	osPackages
 	log *logrus.Entry
+
+	errs []error
 }
 
 func (l *linux) ssh(cmd string, sudo bool) sshResult {
@@ -44,7 +47,7 @@ func (l *linux) setServerInfo(c config.ServerInfo) {
 	l.ServerInfo = c
 }
 
-func (l *linux) getServerInfo() config.ServerInfo {
+func (l linux) getServerInfo() config.ServerInfo {
 	return l.ServerInfo
 }
 
@@ -55,6 +58,77 @@ func (l *linux) setDistributionInfo(fam, rel string) {
 
 func (l *linux) getDistributionInfo() string {
 	return fmt.Sprintf("%s %s", l.Family, l.Release)
+}
+
+func (l linux) allContainers() (containers []config.Container, err error) {
+	switch l.ServerInfo.Container.Type {
+	case "", "docker":
+		stdout, err := l.dockerPs("-a --format '{{.ID}} {{.Names}}'")
+		if err != nil {
+			return containers, err
+		}
+		return l.parseDockerPs(stdout)
+	default:
+		return containers, fmt.Errorf(
+			"Not supported yet: %s", l.ServerInfo.Container.Type)
+	}
+}
+
+func (l *linux) runningContainers() (containers []config.Container, err error) {
+	switch l.ServerInfo.Container.Type {
+	case "", "docker":
+		stdout, err := l.dockerPs("--format '{{.ID}} {{.Names}}'")
+		if err != nil {
+			return containers, err
+		}
+		return l.parseDockerPs(stdout)
+	default:
+		return containers, fmt.Errorf(
+			"Not supported yet: %s", l.ServerInfo.Container.Type)
+	}
+}
+
+func (l *linux) exitedContainers() (containers []config.Container, err error) {
+	switch l.ServerInfo.Container.Type {
+	case "", "docker":
+		stdout, err := l.dockerPs("--filter 'status=exited' --format '{{.ID}} {{.Names}}'")
+		if err != nil {
+			return containers, err
+		}
+		return l.parseDockerPs(stdout)
+	default:
+		return containers, fmt.Errorf(
+			"Not supported yet: %s", l.ServerInfo.Container.Type)
+	}
+}
+
+func (l *linux) dockerPs(option string) (string, error) {
+	cmd := fmt.Sprintf("docker ps %s", option)
+	r := l.ssh(cmd, noSudo)
+	if !r.isSuccess() {
+		return "", fmt.Errorf(
+			"Failed to %s. status: %d, stdout: %s, stderr: %s",
+			cmd, r.ExitStatus, r.Stdout, r.Stderr)
+	}
+	return r.Stdout, nil
+}
+
+func (l *linux) parseDockerPs(stdout string) (containers []config.Container, err error) {
+	lines := strings.Split(stdout, "\n")
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			break
+		}
+		if len(fields) != 2 {
+			return containers, fmt.Errorf("Unknown format: %s", line)
+		}
+		containers = append(containers, config.Container{
+			ContainerID: fields[0],
+			Name:        fields[1],
+		})
+	}
+	return
 }
 
 func (l *linux) convertToModel() (models.ScanResult, error) {
@@ -84,10 +158,16 @@ func (l *linux) convertToModel() (models.ScanResult, error) {
 		cves = append(cves, cve)
 	}
 
+	container := models.Container{
+		ContainerID: l.ServerInfo.Container.ContainerID,
+		Name:        l.ServerInfo.Container.Name,
+	}
+
 	return models.ScanResult{
 		ServerName:  l.ServerInfo.ServerName,
 		Family:      l.Family,
 		Release:     l.Release,
+		Container:   container,
 		KnownCves:   cves,
 		UnknownCves: unknownScoreCves,
 	}, nil
@@ -131,4 +211,12 @@ func (l *linux) scanVulnByCpeName() error {
 	sort.Sort(CvePacksList(unsecurePacks))
 	l.setUnsecurePackages(unsecurePacks)
 	return nil
+}
+
+func (l *linux) setErrs(errs []error) {
+	l.errs = errs
+}
+
+func (l linux) getErrs() []error {
+	return l.errs
 }

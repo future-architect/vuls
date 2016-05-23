@@ -30,16 +30,34 @@ import (
 // ScanHistory is the history of Scanning.
 type ScanHistory struct {
 	gorm.Model
-	ScanResults []ScanResult
+	ScanResults ScanResults
 	ScannedAt   time.Time
 }
 
 // ScanResults is slice of ScanResult.
 type ScanResults []ScanResult
 
+// Len implement Sort Interface
+func (s ScanResults) Len() int {
+	return len(s)
+}
+
+// Swap implement Sort Interface
+func (s ScanResults) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+// Less implement Sort Interface
+func (s ScanResults) Less(i, j int) bool {
+	if s[i].ServerName == s[j].ServerName {
+		return s[i].Container.ContainerID < s[i].Container.ContainerID
+	}
+	return s[i].ServerName < s[j].ServerName
+}
+
 // FilterByCvssOver is filter function.
-func (results ScanResults) FilterByCvssOver() (filtered ScanResults) {
-	for _, result := range results {
+func (s ScanResults) FilterByCvssOver() (filtered ScanResults) {
+	for _, result := range s {
 		cveInfos := []CveInfo{}
 		for _, cveInfo := range result.KnownCves {
 			if config.Conf.CvssScoreOver < cveInfo.CveDetail.CvssScore(config.Conf.Lang) {
@@ -61,10 +79,58 @@ type ScanResult struct {
 	//  Hostname    string
 	Family  string
 	Release string
+
+	Container Container
+
 	//  Fqdn        string
 	//  NWLinks     []NWLink
 	KnownCves   []CveInfo
 	UnknownCves []CveInfo
+}
+
+// ServerInfo returns server name one line
+func (r ScanResult) ServerInfo() string {
+	hostinfo := ""
+	if r.Container.ContainerID == "" {
+		hostinfo = fmt.Sprintf(
+			"%s (%s%s)",
+			r.ServerName,
+			r.Family,
+			r.Release,
+		)
+	} else {
+		hostinfo = fmt.Sprintf(
+			"%s / %s (%s%s) on %s",
+			r.Container.Name,
+			r.Container.ContainerID,
+			r.Family,
+			r.Release,
+			r.ServerName,
+		)
+	}
+	return hostinfo
+}
+
+// ServerInfoTui returns server infromation for TUI sidebar
+func (r ScanResult) ServerInfoTui() string {
+	hostinfo := ""
+	if r.Container.ContainerID == "" {
+		hostinfo = fmt.Sprintf(
+			"%s (%s%s)",
+			r.ServerName,
+			r.Family,
+			r.Release,
+		)
+	} else {
+		hostinfo = fmt.Sprintf(
+			"|-- %s (%s%s)",
+			r.Container.Name,
+			r.Family,
+			r.Release,
+			//  r.Container.ContainerID,
+		)
+	}
+	return hostinfo
 }
 
 // CveSummary summarize the number of CVEs group by CVSSv2 Severity
@@ -232,7 +298,6 @@ func (p PackageInfo) ToStringNewVersion() string {
 }
 
 // DistroAdvisory has Amazon Linux AMI Security Advisory information.
-//TODO Rename to DistroAdvisory
 type DistroAdvisory struct {
 	gorm.Model
 	CveInfoID uint
@@ -241,4 +306,13 @@ type DistroAdvisory struct {
 	Severity   string
 	Issued     time.Time
 	Updated    time.Time
+}
+
+// Container has Container information
+type Container struct {
+	gorm.Model
+	ScanResultID uint
+
+	ContainerID string
+	Name        string
 }

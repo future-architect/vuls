@@ -253,7 +253,9 @@ see https://github.com/future-architect/vuls/tree/master/docker
 
 ## Vuls
 - Scan vulnerabilities on the servers and create a list of the CVE ID
-- For more detailed information of the detected CVE, send HTTP request to go-cve-dictinary
+  - To scan Docker containers, Vuls connect via ssh to the Docker host and then `docker exec` to the containers. So, no need to run sshd daemon on the containers.
+- Fetch more detailed information of the detected CVE from go-cve-dictionary
+- Insert scan result into SQLite3
 - Send a report by Slack, Email
 - System operator can view the latest report by terminal
 
@@ -335,6 +337,7 @@ host         = "172.31.4.82"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
+#containers = ["${running}"]
 ```
 
 You can customize your configuration using this template.
@@ -400,6 +403,10 @@ You can customize your configuration using this template.
     #port        = "22"
     #user        = "username"
     #keyPath     = "/home/username/.ssh/id_rsa"
+    #cpeNames = [
+    #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
+    #]
+    #containers = ["${running}"]
     ```
     Items of the default section will be used if not specified.
 
@@ -415,6 +422,7 @@ You can customize your configuration using this template.
     #cpeNames = [
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
+    #containers = ["${running}"]
     ```
     You can overwrite the default value specified in default section.  
     Vuls supports multiple SSH authentication methods.  
@@ -578,6 +586,43 @@ To detect the vulnerbility of Ruby on Rails v4.2.1, cpeNames needs to be set in 
       "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     ]
     ```
+    
+# Usage: Scan Docker containers
+
+It is common that keep Docker containers runnning without SSHd daemon.  
+see [Docker Blog:Why you don't need to run SSHd in your Docker containers](https://blog.docker.com/2014/06/why-you-dont-need-to-run-sshd-in-docker/)
+
+Vuls scans Docker containers via `docker exec` instead of SSH.  
+For more details, see [Architecture section](https://github.com/future-architect/vuls#architecture)
+
+- To scan all of running containers  
+  "${running}" needs to be set in the containers item.
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+    host         = "172.31.4.82"
+    user        = "ec2-user"
+    keyPath     = "/home/username/.ssh/id_rsa"
+    containers = ["${running}"]
+    ```
+
+- To scan specific containers  
+  The container ID or container name needs to be set in the containers item.  
+  In the following example, only "container_name_a" and "4aa37a8b63b9" will be scanned.  
+  Be sure to check these containers are running state before scanning.  
+  If specified containers are exited, vuls gives up scanning with printing error message.
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+    host         = "172.31.4.82"
+    user        = "ec2-user"
+    keyPath     = "/home/username/.ssh/id_rsa"
+    containers = ["container_name_a", "4aa37a8b63b9"]
+    ```
+
+
 
 # Usage: Update NVD Data.
 
@@ -616,6 +661,10 @@ $ go-cve-dictionary fetchnvd -last2y
 
 # Misc
 
+- Unable to go get vuls  
+Update git to the latest version. Old version of git can't get some repositories.  
+see https://groups.google.com/forum/#!topic/mgo-users/rO1-gUDFo_g
+
 - HTTP Proxy Support  
 If your system is behind HTTP proxy, you have to specify --http-proxy option.
 
@@ -650,6 +699,13 @@ No, Vuls needs a user on the server for bash login. see also [#8](/../../issues/
 
 - Windows  
 Use Microsoft Baseline Security Analyzer. [MBSA](https://technet.microsoft.com/en-us/security/cc184924.aspx)
+
+----
+
+# Related Projects 
+
+- [k1LoW/ssh_config_to_vuls_config](https://github.com/k1LoW/ssh_config_to_vuls_config)   
+ssh_config to vuls config TOML format
 
 ----
 

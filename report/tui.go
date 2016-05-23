@@ -410,7 +410,7 @@ func changeHost(g *gocui.Gui, v *gocui.View) error {
 	serverName := strings.TrimSpace(l)
 
 	for _, r := range scanHistory.ScanResults {
-		if serverName == r.ServerName {
+		if serverName == strings.TrimSpace(r.ServerInfoTui()) {
 			currentScanResult = r
 			break
 		}
@@ -509,14 +509,14 @@ func layout(g *gocui.Gui) error {
 
 func setSideLayout(g *gocui.Gui) error {
 	_, maxY := g.Size()
-	if v, err := g.SetView("side", -1, -1, 30, maxY); err != nil {
+	if v, err := g.SetView("side", -1, -1, 40, maxY); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
 		v.Highlight = true
 
 		for _, result := range scanHistory.ScanResults {
-			fmt.Fprintln(v, result.ServerName)
+			fmt.Fprintln(v, result.ServerInfoTui())
 		}
 		currentScanResult = scanHistory.ScanResults[0]
 		if err := g.SetCurrentView("side"); err != nil {
@@ -528,7 +528,7 @@ func setSideLayout(g *gocui.Gui) error {
 
 func setSummaryLayout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
-	if v, err := g.SetView("summary", 30, -1, maxX, int(float64(maxY)*0.2)); err != nil {
+	if v, err := g.SetView("summary", 40, -1, maxX, int(float64(maxY)*0.2)); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -616,7 +616,7 @@ func setDetailLayout(g *gocui.Gui) error {
 	_, oy := summaryView.Origin()
 	currentCveInfo = cy + oy
 
-	if v, err := g.SetView("detail", 30, int(float64(maxY)*0.2), maxX, maxY); err != nil {
+	if v, err := g.SetView("detail", 40, int(float64(maxY)*0.2), maxX, maxY); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}

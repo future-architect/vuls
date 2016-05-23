@@ -40,7 +40,7 @@ func (w MailWriter) Write(scanResults []models.ScanResult) (err error) {
 
 		subject := fmt.Sprintf("%s%s %s",
 			conf.Mail.SubjectPrefix,
-			s.ServerName,
+			s.ServerInfo(),
 			s.CveSummary(),
 		)
 		m.SetHeader("Subject", subject)
