@@ -48,7 +48,12 @@ No unsecure packages.
 	scoredReport, unscoredReport = toPlainTextDetails(scanResult, scanResult.Family)
 
 	scored := strings.Join(scoredReport, "\n\n")
-	unscored := strings.Join(unscoredReport, "\n\n")
+
+	unscored := ""
+	if !config.Conf.IgnoreUnscoredCves {
+		unscored = strings.Join(unscoredReport, "\n\n")
+	}
+
 	detail := fmt.Sprintf(`
 %s
 
@@ -67,7 +72,12 @@ func ToPlainTextSummary(r models.ScanResult) string {
 	stable := uitable.New()
 	stable.MaxColWidth = 84
 	stable.Wrap = true
-	cves := append(r.KnownCves, r.UnknownCves...)
+
+	cves := r.KnownCves
+	if !config.Conf.IgnoreUnscoredCves {
+		cves = append(cves, r.UnknownCves...)
+	}
+
 	for _, d := range cves {
 		var scols []string
 

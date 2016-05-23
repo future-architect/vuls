@@ -479,6 +479,7 @@ scan:
                 [-dbpath=/path/to/vuls.sqlite3]
                 [-cve-dictionary-url=http://127.0.0.1:1323]
                 [-cvss-over=7]
+                [-ignore-unscored-cves]
                 [-report-slack]
                 [-report-mail]
                 [-http-proxy=http://192.168.0.1:8080]
@@ -504,6 +505,8 @@ scan:
         SQL debug mode
   -http-proxy string
         http://proxy-url:port (default: empty)
+  -ignore-unscored-cves
+        Don't report the unscored CVEs
   -lang string
         [en|ja] (default "en")
   -report-mail

@@ -150,10 +150,13 @@ func (r ScanResult) CveSummary() string {
 			unknown++
 		}
 	}
+
+	if config.Conf.IgnoreUnscoredCves {
+		return fmt.Sprintf("Total: %d (High:%d Middle:%d Low:%d)",
+			high+middle+low, high, middle, low)
+	}
 	return fmt.Sprintf("Total: %d (High:%d Middle:%d Low:%d ?:%d)",
-		high+middle+low+unknown,
-		high, middle, low, unknown,
-	)
+		high+middle+low+unknown, high, middle, low, unknown)
 }
 
 // NWLink has network link information.
