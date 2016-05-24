@@ -1,5 +1,39 @@
 # Change Log
 
+## [v0.1.4](https://github.com/future-architect/vuls/tree/v0.1.4) (2016-05-24)
+[Full Changelog](https://github.com/future-architect/vuls/compare/v0.1.3...v0.1.4)
+
+**Implemented enhancements:**
+
+- Initial fetch from NVD is too heavy \(2.3 GB of memory consumed\) [\#27](https://github.com/future-architect/vuls/issues/27)
+- Enable to show previous scan result [\#69](https://github.com/future-architect/vuls/pull/69) ([kotakanbe](https://github.com/kotakanbe))
+- Add ignore-unscored-cves option [\#68](https://github.com/future-architect/vuls/pull/68) ([kotakanbe](https://github.com/kotakanbe))
+- Support dynamic scanning docker container [\#67](https://github.com/future-architect/vuls/pull/67) ([kotakanbe](https://github.com/kotakanbe))
+- Add version flag [\#65](https://github.com/future-architect/vuls/pull/65) ([kotakanbe](https://github.com/kotakanbe))
+- Update Dockerfile [\#57](https://github.com/future-architect/vuls/pull/57) ([theonlydoo](https://github.com/theonlydoo))
+- Update run.sh [\#56](https://github.com/future-architect/vuls/pull/56) ([theonlydoo](https://github.com/theonlydoo))
+- Support Windows [\#33](https://github.com/future-architect/vuls/pull/33) ([mattn](https://github.com/mattn))
+
+**Fixed bugs:**
+
+- vuls scan -cvss-over does not work. [\#59](https://github.com/future-architect/vuls/issues/59)
+- `panic: runtime error: invalid memory address or nil pointer dereference` when scan CentOS5.5 [\#58](https://github.com/future-architect/vuls/issues/58)
+-  It rans out of memory. [\#47](https://github.com/future-architect/vuls/issues/47)
+- BUG: vuls scan on CentOS with Japanese environment. [\#43](https://github.com/future-architect/vuls/issues/43)
+- yum --color=never [\#36](https://github.com/future-architect/vuls/issues/36)
+- Failed to parse yum check-update [\#32](https://github.com/future-architect/vuls/issues/32)
+- Pointless sudo [\#29](https://github.com/future-architect/vuls/issues/29)
+- Can't init database in a path having blanks [\#26](https://github.com/future-architect/vuls/issues/26)
+- Fix pointless sudo in debian.go \#29 [\#66](https://github.com/future-architect/vuls/pull/66) ([kotakanbe](https://github.com/kotakanbe))
+- Fix error handling of httpGet in cve-client \#58 [\#64](https://github.com/future-architect/vuls/pull/64) ([kotakanbe](https://github.com/kotakanbe))
+- Fix nil pointer at error handling of cve\_client \#58 [\#63](https://github.com/future-architect/vuls/pull/63) ([kotakanbe](https://github.com/kotakanbe))
+- Set language en\_US. [\#61](https://github.com/future-architect/vuls/pull/61) ([pabroff](https://github.com/pabroff))
+- Fix -cvss-over flag \#59 [\#60](https://github.com/future-architect/vuls/pull/60) ([kotakanbe](https://github.com/kotakanbe))
+- Fix scan on Japanese environment. [\#55](https://github.com/future-architect/vuls/pull/55) ([pabroff](https://github.com/pabroff))
+- Fix a typo: replace Depricated by Deprecated. [\#54](https://github.com/future-architect/vuls/pull/54) ([jody-frankowski](https://github.com/jody-frankowski))
+- Fix yes no infinite loop while doing yum update --changelog on root@CentOS \#47 [\#50](https://github.com/future-architect/vuls/pull/50) ([pabroff](https://github.com/pabroff))
+- Fix $servername in output of discover command [\#45](https://github.com/future-architect/vuls/pull/45) ([kotakanbe](https://github.com/kotakanbe))
+
 ## [v0.1.3](https://github.com/future-architect/vuls/tree/v0.1.3) (2016-04-21)
 [Full Changelog](https://github.com/future-architect/vuls/compare/v0.1.2...v0.1.3)
 
