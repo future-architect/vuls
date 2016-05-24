@@ -40,9 +40,9 @@ var currentCveInfo int
 var currentDetailLimitY int
 
 // RunTui execute main logic
-func RunTui() subcommands.ExitStatus {
+func RunTui(historyID string) subcommands.ExitStatus {
 	var err error
-	scanHistory, err = latestScanHistory()
+	scanHistory, err = selectScanHistory(historyID)
 	if err != nil {
 		log.Fatal(err)
 		return subcommands.ExitFailure
@@ -70,12 +70,12 @@ func RunTui() subcommands.ExitStatus {
 	return subcommands.ExitSuccess
 }
 
-func latestScanHistory() (latest models.ScanHistory, err error) {
+func selectScanHistory(historyID string) (latest models.ScanHistory, err error) {
 	if err := db.OpenDB(); err != nil {
 		return latest, fmt.Errorf(
 			"Failed to open DB. datafile: %s, err: %s", config.Conf.DBPath, err)
 	}
-	latest, err = db.SelectLatestScanHistory()
+	latest, err = db.SelectScanHistory(historyID)
 	return
 }
 

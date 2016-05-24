@@ -20,6 +20,7 @@ package db
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/future-architect/vuls/config"
@@ -229,10 +230,22 @@ func resetGormIDs(infos []m.CveInfo) []m.CveInfo {
 	return infos
 }
 
-// SelectLatestScanHistory select latest scan history from DB
-func SelectLatestScanHistory() (m.ScanHistory, error) {
+// SelectScanHistory select scan history from DB
+func SelectScanHistory(historyID string) (m.ScanHistory, error) {
+	var err error
+
 	scanHistory := m.ScanHistory{}
-	db.Order("scanned_at desc").First(&scanHistory)
+	if historyID == "" {
+		// select latest
+		db.Order("scanned_at desc").First(&scanHistory)
+	} else {
+		var id int
+		if id, err = strconv.Atoi(historyID); err != nil {
+			return m.ScanHistory{},
+				fmt.Errorf("historyID have to be numeric number: %s", err)
+		}
+		db.First(&scanHistory, id)
+	}
 
 	if scanHistory.ID == 0 {
 		return m.ScanHistory{}, fmt.Errorf("No scanHistory records")
@@ -285,4 +298,27 @@ func selectCveInfos(result *m.ScanResult, fieldName string) []m.CveInfo {
 		cveInfos[i].CpeNames = names
 	}
 	return cveInfos
+}
+
+// SelectScanHistories select latest scan history from DB
+func SelectScanHistories() ([]m.ScanHistory, error) {
+	scanHistories := []m.ScanHistory{}
+	db.Order("scanned_at desc").Find(&scanHistories)
+
+	if len(scanHistories) == 0 {
+		return []m.ScanHistory{}, fmt.Errorf("No scanHistory records")
+	}
+
+	for i, history := range scanHistories {
+		results := m.ScanResults{}
+		db.Model(&history).Related(&results, "ScanResults")
+		scanHistories[i].ScanResults = results
+
+		for j, r := range results {
+			di := m.Container{}
+			db.Model(&r).Related(&di, "Container")
+			scanHistories[i].ScanResults[j].Container = di
+		}
+	}
+	return scanHistories, nil
 }

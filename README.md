@@ -625,6 +625,59 @@ For more details, see [Architecture section](https://github.com/future-architect
     containers = ["container_name_a", "4aa37a8b63b9"]
     ```
 
+# Usage: TUI
+
+## Display the latest scan results
+
+```
+$ vuls tui -h
+tui:
+	tui [-dbpath=/path/to/vuls.sqlite3]
+
+  -dbpath string
+        /path/to/sqlite3 (default "$PWD/vuls.sqlite3")
+  -debug-sql
+    	debug SQL
+
+```
+
+Key binding is bellow.
+
+| key | |
+|:-----------------|:-------|:------|
+| TAB | move cursor among the panes |
+| Arrow up/down | move cursor to up/down |
+| Ctrl+j, Ctrl+k | move cursor to up/donw |
+| Ctrl+u, Ctrl+d | page up/donw |
+
+For details, see https://github.com/future-architect/vuls/blob/master/report/tui.go
+
+## Display the previous scan results
+
+- Display the list of scan results.
+```
+$ ./vuls history
+2   2016-05-24 19:49 scanned 1 servers: amazon2
+1   2016-05-24 19:48 scanned 2 servers: amazon1, romantic_goldberg
+```
+
+- Display the result of scanID 1
+```
+$ ./vuls tui 1
+```
+
+- Display the result of scanID 2
+```
+$ ./vuls tui 2
+```
+
+# Display the previous scan results using peco
+
+```
+$ ./vuls history | peco | vuls tui
+```
+
+[![asciicast](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8.png)](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8)
 
 
 # Usage: Update NVD Data.
