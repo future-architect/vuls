@@ -43,8 +43,11 @@ type ScanCmd struct {
 
 	dbpath           string
 	cveDictionaryURL string
-	cvssScoreOver    float64
-	httpProxy        string
+
+	cvssScoreOver      float64
+	ignoreUnscoredCves bool
+
+	httpProxy string
 
 	// reporting
 	reportSlack bool
@@ -72,6 +75,7 @@ func (*ScanCmd) Usage() string {
 		[-dbpath=/path/to/vuls.sqlite3]
 		[-cve-dictionary-url=http://127.0.0.1:1323]
 		[-cvss-over=7]
+		[-ignore-unscored-cves]
 		[-report-slack]
 		[-report-mail]
 		[-http-proxy=http://192.168.0.1:8080]
@@ -108,6 +112,12 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		"cvss-over",
 		0,
 		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
+
+	f.BoolVar(
+		&p.ignoreUnscoredCves,
+		"ignore-unscored-cves",
+		false,
+		"Don't report the unscored CVEs")
 
 	f.StringVar(
 		&p.httpProxy,
@@ -216,6 +226,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	c.Conf.DBPath = p.dbpath
 	c.Conf.CveDictionaryURL = p.cveDictionaryURL
 	c.Conf.CvssScoreOver = p.cvssScoreOver
+	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
 	c.Conf.HTTPProxy = p.httpProxy
 	c.Conf.UseYumPluginSecurity = p.useYumPluginSecurity
 	c.Conf.UseUnattendedUpgrades = p.useUnattendedUpgrades

@@ -41,9 +41,11 @@ type Config struct {
 
 	CveDictionaryURL string `valid:"url"`
 
-	CvssScoreOver float64
-	HTTPProxy     string `valid:"url"`
-	DBPath        string
+	CvssScoreOver      float64
+	IgnoreUnscoredCves bool
+
+	HTTPProxy string `valid:"url"`
+	DBPath    string
 	//  CpeNames      []string
 	//  SummaryMode          bool
 	UseYumPluginSecurity  bool

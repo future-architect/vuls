@@ -109,7 +109,12 @@ func msgText(r models.ScanResult) string {
 
 func toSlackAttachments(scanResult models.ScanResult) (attaches []*attachment) {
 
-	scanResult.KnownCves = append(scanResult.KnownCves, scanResult.UnknownCves...)
+	cves := scanResult.KnownCves
+	if !config.Conf.IgnoreUnscoredCves {
+		cves = append(cves, scanResult.UnknownCves...)
+	}
+	scanResult.KnownCves = cves
+
 	for _, cveInfo := range scanResult.KnownCves {
 		cveID := cveInfo.CveDetail.CveID
 
