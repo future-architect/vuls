@@ -20,12 +20,16 @@ package commands
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/report"
 	"github.com/google/subcommands"
+	"github.com/labstack/gommon/log"
 	"golang.org/x/net/context"
 )
 
@@ -67,5 +71,24 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	c.Conf.Lang = "en"
 	c.Conf.DebugSQL = p.debugSQL
 	c.Conf.DBPath = p.dbpath
-	return report.RunTui()
+
+	historyID := ""
+	if 0 < len(f.Args()) {
+		if _, err := strconv.Atoi(f.Args()[0]); err != nil {
+			log.Errorf("First Argument have to be scan_histores record ID: %s", err)
+			return subcommands.ExitFailure
+		}
+		historyID = f.Args()[0]
+	} else {
+		bytes, err := ioutil.ReadAll(os.Stdin)
+		if err != nil {
+			log.Errorf("Failed to read stdin: %s", err)
+			return subcommands.ExitFailure
+		}
+		fields := strings.Fields(string(bytes))
+		if 0 < len(fields) {
+			historyID = fields[0]
+		}
+	}
+	return report.RunTui(historyID)
 }

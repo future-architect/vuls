@@ -38,6 +38,7 @@ func main() {
 	subcommands.Register(&commands.TuiCmd{}, "tui")
 	subcommands.Register(&commands.ScanCmd{}, "scan")
 	subcommands.Register(&commands.PrepareCmd{}, "prepare")
+	subcommands.Register(&commands.HistoryCmd{}, "history")
 
 	var version = flag.Bool("v", false, "Show version")
 
