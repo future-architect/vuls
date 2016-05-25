@@ -25,6 +25,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/future-architect/vuls/commands"
+	"github.com/future-architect/vuls/version"
 	"github.com/google/subcommands"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -40,12 +41,12 @@ func main() {
 	subcommands.Register(&commands.PrepareCmd{}, "prepare")
 	subcommands.Register(&commands.HistoryCmd{}, "history")
 
-	var version = flag.Bool("v", false, "Show version")
+	var v = flag.Bool("v", false, "Show version")
 
 	flag.Parse()
 
-	if *version {
-		fmt.Printf("%s %s\n", Name, Version)
+	if *v {
+		fmt.Printf("%s %s\n", version.Name, version.Version)
 		os.Exit(int(subcommands.ExitSuccess))
 	}
 
