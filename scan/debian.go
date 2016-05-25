@@ -472,13 +472,13 @@ func (o *debian) scanPackageCveInfos(unsecurePacks []models.PackageInfo) (cvePac
 			select {
 			case pack := <-reqChan:
 				func(p models.PackageInfo) {
-					if cveIds, err := o.scanPackageCveIds(p); err != nil {
+					if cveIDs, err := o.scanPackageCveIDs(p); err != nil {
 						errChan <- err
 					} else {
 						resChan <- struct {
 							models.PackageInfo
 							strarray
-						}{p, cveIds}
+						}{p, cveIDs}
 					}
 				}(pack)
 			}
@@ -489,30 +489,30 @@ func (o *debian) scanPackageCveInfos(unsecurePacks []models.PackageInfo) (cvePac
 		select {
 		case pair := <-resChan:
 			pack := pair.PackageInfo
-			cveIds := pair.strarray
-			for _, cveID := range cveIds {
+			cveIDs := pair.strarray
+			for _, cveID := range cveIDs {
 				cvePackages[cveID] = appendPackIfMissing(cvePackages[cveID], pack)
 			}
 			o.log.Infof("(%d/%d) Scanned %s-%s : %s",
-				i+1, len(unsecurePacks), pair.Name, pair.PackageInfo.Version, cveIds)
+				i+1, len(unsecurePacks), pair.Name, pair.PackageInfo.Version, cveIDs)
 		case err := <-errChan:
 			if err != nil {
 				return nil, err
 			}
 		case <-timeout:
-			return nil, fmt.Errorf("Timeout scanPackageCveIds")
+			return nil, fmt.Errorf("Timeout scanPackageCveIDs")
 		}
 	}
 
-	var cveIds []string
+	var cveIDs []string
 	for k := range cvePackages {
-		cveIds = append(cveIds, k)
+		cveIDs = append(cveIDs, k)
 	}
 
-	o.log.Debugf("%d Cves are found. cves: %v", len(cveIds), cveIds)
+	o.log.Debugf("%d Cves are found. cves: %v", len(cveIDs), cveIDs)
 
 	o.log.Info("Fetching CVE details...")
-	cveDetails, err := cveapi.CveClient.FetchCveDetails(cveIds)
+	cveDetails, err := cveapi.CveClient.FetchCveDetails(cveIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -530,7 +530,7 @@ func (o *debian) scanPackageCveInfos(unsecurePacks []models.PackageInfo) (cvePac
 	return
 }
 
-func (o *debian) scanPackageCveIds(pack models.PackageInfo) (cveIds []string, err error) {
+func (o *debian) scanPackageCveIDs(pack models.PackageInfo) ([]string, error) {
 	cmd := ""
 	switch o.Family {
 	case "ubuntu":
@@ -549,12 +549,7 @@ func (o *debian) scanPackageCveIds(pack models.PackageInfo) (cveIds []string, er
 		return nil, nil
 
 	}
-	cveIds, err = o.getCveIDParsingChangelog(r.Stdout, pack.Name, pack.Version)
-	if err != nil {
-		trimUbuntu := strings.Split(pack.Version, "ubuntu")[0]
-		return o.getCveIDParsingChangelog(r.Stdout, pack.Name, trimUbuntu)
-	}
-	return
+	return o.getCveIDParsingChangelog(r.Stdout, pack.Name, pack.Version)
 }
 
 func (o *debian) getCveIDParsingChangelog(changelog string,
@@ -581,7 +576,7 @@ func (o *debian) getCveIDParsingChangelog(changelog string,
 	}
 
 	//TODO report as unable to parse changelog.
-	o.log.Warn(err)
+	o.log.Error(err)
 	return []string{}, nil
 }
 
