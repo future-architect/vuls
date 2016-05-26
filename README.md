@@ -25,7 +25,7 @@ We have a slack team. [Join slack team](http://goo.gl/forms/xm5KFo35tu)
 For a system administrator, having to perform security vulnerability analysis and software update on a daily basis can be a burden.
 To avoid downtime in production environment, it is common for system administrator to choose not to use the automatic update option provided by package manager and to perform update manually.
 This leads to the following problems.
-- System administrator will have to constantly watch out for any new vulnerabilities in NVD(National Vulnerability Database) and etc.
+- System administrator will have to constantly watch out for any new vulnerabilities in NVD(National Vulnerability Database) or similar databases.
 - It might be impossible for the system administrator to monitor all the software if there are a large number of software installed in server.
 - It is expensive to perform analysis to determine the servers affected by new vulnerabilities. The possibility of overlooking a server or two during analysis is there.
 
@@ -34,7 +34,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 - Informs users of the vulnerabilities that are related to the system.
 - Informs users of the servers that are affected.
 - Vulnerability detection is done automatically to prevent any oversight.
-- Report is generated on regular basis using CRON etc. to manage vulnerability.
+- Report is generated on regular basis using CRON or other methods. to manage vulnerability.
 
 ![Vuls-Motivation](img/vuls-motivation.png)
 
@@ -65,7 +65,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 
 # Hello Vuls 
 
-This tutorial will let you scan the vulnerabilities on the localhost with vuls.   
+This tutorial will let you scan the vulnerabilities on the localhost with Vuls.   
 This can be done in the following steps.  
 
 1. Launch Amazon Linux
@@ -161,9 +161,9 @@ $ go-cve-dictionary server
 [Mar 24 15:21:56]  INFO Listening on 127.0.0.1:1323
 ```
 
-## Step5. Deploy vuls
+## Step5. Deploy Vuls
 
-Launch a new terminal, SSH to the ec2 instance.
+Launch a new terminal and SSH to the ec2 instance.
 
 go get
 ```
@@ -185,7 +185,7 @@ user        = "ec2-user"
 keyPath     = "/home/ec2-user/.ssh/id_rsa"
 ```
 
-## Step7. Setting up target servers for vuls  
+## Step7. Setting up target servers for Vuls  
 
 ```
 $ vuls prepare
@@ -249,15 +249,15 @@ see https://github.com/future-architect/vuls/tree/master/docker
 ![Vuls-Architecture](img/vuls-architecture.png)
 
 ## [go-cve-dictinary](https://github.com/kotakanbe/go-cve-dictionary)  
-- Fetch vulnerability information from NVD, JVN(Japanese), then insert into SQLite3.
+- Fetch vulnerability information from NVD and JVN(Japanese), then insert into SQLite3.
 
 ## Vuls
 - Scan vulnerabilities on the servers and create a list of the CVE ID
   - To scan Docker containers, Vuls connect via ssh to the Docker host and then `docker exec` to the containers. So, no need to run sshd daemon on the containers.
 - Fetch more detailed information of the detected CVE from go-cve-dictionary
 - Insert scan result into SQLite3
-- Send a report by Slack, Email
-- System operator can view the latest report by terminal
+- Send a report by Slack and Email
+- Show the latest report on your terminal
 
 ----
 
@@ -290,7 +290,7 @@ web/app server in the same configuration under the load balancer
 
 # Usage: Automatic Server Discovery
 
-Discovery subcommand discovers active servers specified in CIDR range, then print the template of config file(TOML format) to terminal.
+Discovery subcommand discovers active servers specified in CIDR range, then display the template of config file(TOML format) to terminal.
 
 ```
 $ vuls discover -help
@@ -567,7 +567,7 @@ With this sample command, it will ..
 
 # Usage: Scan vulnerability of non-OS package
 
-It is possible to detect vulnerabilities something you compiled by yourself, the language libraries and the frameworks that have been registered in the [CPE](https://nvd.nist.gov/cpe.cfm).
+It is possible to detect vulnerabilities in non-OS packages, such as something you compiled by yourself, language libraries and frameworks, that have been registered in the [CPE](https://nvd.nist.gov/cpe.cfm).
 
 -  How to search CPE name by software name
     - [NVD: Search Common Platform Enumerations (CPE)](https://web.nvd.nist.gov/view/cpe/search)  
@@ -614,7 +614,7 @@ For more details, see [Architecture section](https://github.com/future-architect
   The container ID or container name needs to be set in the containers item.  
   In the following example, only "container_name_a" and "4aa37a8b63b9" will be scanned.  
   Be sure to check these containers are running state before scanning.  
-  If specified containers are exited, vuls gives up scanning with printing error message.
+  If specified containers are not running, Vuls gives up scanning with printing error message.
     ```
     [servers]
 
@@ -680,7 +680,7 @@ $ ./vuls history | peco | ./vuls tui
 [![asciicast](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8.png)](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8)
 
 
-# Usage: Update NVD Data.
+# Usage: Update NVD Data
 
 ```
 $ go-cve-dictionary fetchnvd -h
@@ -733,7 +733,7 @@ Use job scheduler like Cron (with -last2y option).
 - How to Enable Automatic-Scan.  
 Use job scheduler like Cron.  
 Set NOPASSWORD option in /etc/sudoers on target servers.  
-Use SSH Key-Based Authentication with empty password or ssh-agent.
+Use SSH Key-Based Authentication with no passphrase or ssh-agent.
 
 - How to cross compile
     ```bash
@@ -742,12 +742,12 @@ Use SSH Key-Based Authentication with empty password or ssh-agent.
     ```
 
 - Logging  
-Log wrote to under /var/log/vuls/
+Log is under /var/log/vuls/
 
 - Debug  
 Run with --debug, --sql-debug option.
 
-- Ajusting Open File Limit  
+- Adjusting Open File Limit  
 [Riak docs](http://docs.basho.com/riak/latest/ops/tuning/open-files-limit/) is awesome.
 
 - Does Vuls accept ssh connections with fish-shell or old zsh as the login shell?  
