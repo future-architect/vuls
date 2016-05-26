@@ -80,14 +80,17 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		}
 		historyID = f.Args()[0]
 	} else {
-		bytes, err := ioutil.ReadAll(os.Stdin)
-		if err != nil {
-			log.Errorf("Failed to read stdin: %s", err)
-			return subcommands.ExitFailure
-		}
-		fields := strings.Fields(string(bytes))
-		if 0 < len(fields) {
-			historyID = fields[0]
+		stat, _ := os.Stdin.Stat()
+		if (stat.Mode() & os.ModeCharDevice) == 0 {
+			bytes, err := ioutil.ReadAll(os.Stdin)
+			if err != nil {
+				log.Errorf("Failed to read stdin: %s", err)
+				return subcommands.ExitFailure
+			}
+			fields := strings.Fields(string(bytes))
+			if 0 < len(fields) {
+				historyID = fields[0]
+			}
 		}
 	}
 	return report.RunTui(historyID)
