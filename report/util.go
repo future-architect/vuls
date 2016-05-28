@@ -20,12 +20,43 @@ package report
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/gosuri/uitable"
 )
+
+func ensureResultDir() (path string, err error) {
+	if resultDirPath != "" {
+		return resultDirPath, nil
+	}
+
+	const timeLayout = "20060102_1504"
+	timedir := time.Now().Format(timeLayout)
+	wd, _ := os.Getwd()
+	dir := filepath.Join(wd, "results", timedir)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", fmt.Errorf("Failed to create dir: %s", err)
+	}
+
+	symlinkPath := filepath.Join(wd, "results", "current")
+	if _, err := os.Stat(symlinkPath); err == nil {
+		if err := os.Remove(symlinkPath); err != nil {
+			return "", fmt.Errorf(
+				"Failed to remove symlink. path: %s, err: %s", symlinkPath, err)
+		}
+	}
+
+	if err := os.Symlink(dir, symlinkPath); err != nil {
+		return "", fmt.Errorf(
+			"Failed to create symlink: path: %s, err: %s", symlinkPath, err)
+	}
+	return dir, nil
+}
 
 func toPlainText(scanResult models.ScanResult) (string, error) {
 	serverInfo := scanResult.ServerInfo()
@@ -83,8 +114,7 @@ func ToPlainTextSummary(r models.ScanResult) string {
 
 		switch {
 		case config.Conf.Lang == "ja" &&
-			d.CveDetail.Jvn.ID != 0 &&
-			0 < d.CveDetail.CvssScore("ja"):
+			0 < d.CveDetail.Jvn.CvssScore():
 
 			summary := d.CveDetail.Jvn.Title
 			scols = []string{
@@ -121,12 +151,11 @@ func ToPlainTextSummary(r models.ScanResult) string {
 	return fmt.Sprintf("%s", stable)
 }
 
-//TODO Distro Advisory
 func toPlainTextDetails(data models.ScanResult, osFamily string) (scoredReport, unscoredReport []string) {
 	for _, cve := range data.KnownCves {
 		switch config.Conf.Lang {
 		case "en":
-			if cve.CveDetail.Nvd.ID != 0 {
+			if 0 < cve.CveDetail.Nvd.CvssScore() {
 				scoredReport = append(
 					scoredReport, toPlainTextDetailsLangEn(cve, osFamily))
 			} else {
@@ -134,10 +163,10 @@ func toPlainTextDetails(data models.ScanResult, osFamily string) (scoredReport, 
 					scoredReport, toPlainTextUnknownCve(cve, osFamily))
 			}
 		case "ja":
-			if cve.CveDetail.Jvn.ID != 0 {
+			if 0 < cve.CveDetail.Jvn.CvssScore() {
 				scoredReport = append(
 					scoredReport, toPlainTextDetailsLangJa(cve, osFamily))
-			} else if cve.CveDetail.Nvd.ID != 0 {
+			} else if 0 < cve.CveDetail.Nvd.CvssScore() {
 				scoredReport = append(
 					scoredReport, toPlainTextDetailsLangEn(cve, osFamily))
 			} else {

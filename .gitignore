@@ -2,6 +2,7 @@
 coverage.out
 issues/
 *.txt
+*.json
 vendor/
 log/
 .gitmodules

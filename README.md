@@ -480,8 +480,9 @@ scan:
                 [-cve-dictionary-url=http://127.0.0.1:1323]
                 [-cvss-over=7]
                 [-ignore-unscored-cves]
-                [-report-slack]
+                [-report-json]
                 [-report-mail]
+                [-report-slack]
                 [-http-proxy=http://192.168.0.1:8080]
                 [-ask-sudo-password]
                 [-ask-key-password]
@@ -509,10 +510,12 @@ scan:
         Don't report the unscored CVEs
   -lang string
         [en|ja] (default "en")
+  -report-json
+        Write report to JSON files ($PWD/results/current)
   -report-mail
-        Email report
+        Send report via Email
   -report-slack
-        Slack report
+        Send report via Slack
   -use-unattended-upgrades
         [Deprecated] For Ubuntu. Scan by unattended-upgrades or not (use apt-get upgrade --dry-run by default)
   -use-yum-plugin-security
@@ -520,20 +523,24 @@ scan:
 
 ```
 
-## ask-key-password option 
+## -ask-key-password option 
 
 | SSH key password |  -ask-key-password | |
 |:-----------------|:-------------------|:----|
 | empty password   |                 -  | |
 | with password    |           required | or use ssh-agent |
 
-## ask-sudo-password option
+## -ask-sudo-password option
 
 | sudo password on target servers | -ask-sudo-password | |
 |:-----------------|:-------|:------|
 | NOPASSWORD       | - | defined as NOPASSWORD in /etc/sudoers on target servers |
 | with password    | required | . |
 
+## -report-json option
+
+At the end of the scan, scan results will be available in JSON format in the $PWD/result/current/ directory.  
+all.json includes the scan results of all servres and servername.json includes the scan result of the server.
 
 ## example
 
@@ -562,6 +569,8 @@ With this sample command, it will ..
 - Sudo with no password (without -ask-sudo-password option)
 - Scan only 2 servers (server1, server2)
 - Print scan result to terminal
+
+
 
 ----
 
