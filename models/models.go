@@ -72,8 +72,8 @@ func (s ScanResults) FilterByCvssOver() (filtered ScanResults) {
 
 // ScanResult has the result of scanned CVE information.
 type ScanResult struct {
-	gorm.Model
-	ScanHistoryID uint
+	gorm.Model    `json:"-"`
+	ScanHistoryID uint `json:"-"`
 
 	ServerName string // TOML Section key
 	//  Hostname    string
@@ -161,8 +161,8 @@ func (r ScanResult) CveSummary() string {
 
 // NWLink has network link information.
 type NWLink struct {
-	gorm.Model
-	ScanResultID uint
+	gorm.Model   `json:"-"`
+	ScanResultID uint `json:"-"`
 
 	IPAddress string
 	Netmask   string
@@ -183,13 +183,16 @@ func (c CveInfos) Swap(i, j int) {
 
 func (c CveInfos) Less(i, j int) bool {
 	lang := config.Conf.Lang
+	if c[i].CveDetail.CvssScore(lang) == c[j].CveDetail.CvssScore(lang) {
+		return c[i].CveDetail.CveID < c[j].CveDetail.CveID
+	}
 	return c[i].CveDetail.CvssScore(lang) > c[j].CveDetail.CvssScore(lang)
 }
 
 // CveInfo has Cve Information.
 type CveInfo struct {
-	gorm.Model
-	ScanResultID uint
+	gorm.Model   `json:"-"`
+	ScanResultID uint `json:"-"`
 
 	CveDetail        cve.CveDetail
 	Packages         []PackageInfo
@@ -199,8 +202,8 @@ type CveInfo struct {
 
 // CpeName has CPE name
 type CpeName struct {
-	gorm.Model
-	CveInfoID uint
+	gorm.Model `json:"-"`
+	CveInfoID  uint `json:"-"`
 
 	Name string
 }
@@ -265,8 +268,8 @@ func (ps PackageInfoList) FindByName(name string) (result PackageInfo, found boo
 
 // PackageInfo has installed packages.
 type PackageInfo struct {
-	gorm.Model
-	CveInfoID uint
+	gorm.Model `json:"-"`
+	CveInfoID  uint `json:"-"`
 
 	Name    string
 	Version string
@@ -302,8 +305,8 @@ func (p PackageInfo) ToStringNewVersion() string {
 
 // DistroAdvisory has Amazon Linux AMI Security Advisory information.
 type DistroAdvisory struct {
-	gorm.Model
-	CveInfoID uint
+	gorm.Model `json:"-"`
+	CveInfoID  uint `json:"-"`
 
 	AdvisoryID string
 	Severity   string
@@ -313,8 +316,8 @@ type DistroAdvisory struct {
 
 // Container has Container information
 type Container struct {
-	gorm.Model
-	ScanResultID uint
+	gorm.Model   `json:"-"`
+	ScanResultID uint `json:"-"`
 
 	ContainerID string
 	Name        string

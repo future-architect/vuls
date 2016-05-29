@@ -132,10 +132,10 @@ func (l *linux) parseDockerPs(stdout string) (containers []config.Container, err
 }
 
 func (l *linux) convertToModel() (models.ScanResult, error) {
-	var cves, unknownScoreCves []models.CveInfo
+	var scoredCves, unscoredCves models.CveInfos
 	for _, p := range l.UnsecurePackages {
-		if p.CveDetail.CvssScore(config.Conf.Lang) < 0 {
-			unknownScoreCves = append(unknownScoreCves, models.CveInfo{
+		if p.CveDetail.CvssScore(config.Conf.Lang) <= 0 {
+			unscoredCves = append(unscoredCves, models.CveInfo{
 				CveDetail:        p.CveDetail,
 				Packages:         p.Packs,
 				DistroAdvisories: p.DistroAdvisories, // only Amazon Linux
@@ -155,7 +155,7 @@ func (l *linux) convertToModel() (models.ScanResult, error) {
 			DistroAdvisories: p.DistroAdvisories, // only Amazon Linux
 			CpeNames:         cpenames,
 		}
-		cves = append(cves, cve)
+		scoredCves = append(scoredCves, cve)
 	}
 
 	container := models.Container{
@@ -163,13 +163,16 @@ func (l *linux) convertToModel() (models.ScanResult, error) {
 		Name:        l.ServerInfo.Container.Name,
 	}
 
+	sort.Sort(scoredCves)
+	sort.Sort(unscoredCves)
+
 	return models.ScanResult{
 		ServerName:  l.ServerInfo.ServerName,
 		Family:      l.Family,
 		Release:     l.Release,
 		Container:   container,
-		KnownCves:   cves,
-		UnknownCves: unknownScoreCves,
+		KnownCves:   scoredCves,
+		UnknownCves: unscoredCves,
 	}, nil
 }
 
@@ -208,7 +211,6 @@ func (l *linux) scanVulnByCpeName() error {
 		unsecurePacks = append(unsecurePacks, set[key])
 	}
 	unsecurePacks = append(unsecurePacks, l.UnsecurePackages...)
-	sort.Sort(CvePacksList(unsecurePacks))
 	l.setUnsecurePackages(unsecurePacks)
 	return nil
 }

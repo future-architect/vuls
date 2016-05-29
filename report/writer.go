@@ -37,3 +37,5 @@ const (
 type ResultWriter interface {
 	Write([]models.ScanResult) error
 }
+
+var resultDirPath string

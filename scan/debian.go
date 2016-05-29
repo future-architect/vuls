@@ -20,7 +20,6 @@ package scan
 import (
 	"fmt"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -526,7 +525,6 @@ func (o *debian) scanPackageCveInfos(unsecurePacks []models.PackageInfo) (cvePac
 			//  CvssScore: cinfo.CvssScore(conf.Lang),
 		})
 	}
-	sort.Sort(CvePacksList(cvePacksList))
 	return
 }
 
