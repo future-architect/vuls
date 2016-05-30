@@ -1,10 +1,11 @@
+vuls
 .vscode
-coverage.out
-issues/
 *.txt
 *.json
+*.sqlite3
+.gitmodules
+coverage.out
+issues/
 vendor/
 log/
-.gitmodules
-vuls
-*.sqlite3
+results/

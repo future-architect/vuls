@@ -54,6 +54,7 @@ type ScanCmd struct {
 	reportSlack bool
 	reportMail  bool
 	reportJSON  bool
+	reportText  bool
 
 	askSudoPassword bool
 	askKeyPassword  bool
@@ -81,6 +82,7 @@ func (*ScanCmd) Usage() string {
 		[-report-json]
 		[-report-mail]
 		[-report-slack]
+		[-report-text]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-ask-sudo-password]
 		[-ask-key-password]
@@ -135,6 +137,11 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		"report-json",
 		false,
 		fmt.Sprintf("Write report to JSON files (%s/results/current)", wd),
+	)
+	f.BoolVar(&p.reportText,
+		"report-text",
+		false,
+		fmt.Sprintf("Write report to text files (%s/results/current)", wd),
 	)
 
 	f.BoolVar(
@@ -221,7 +228,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	// report
 	reports := []report.ResultWriter{
-		report.TextWriter{},
+		report.StdoutWriter{},
 		report.LogrusWriter{},
 	}
 	if p.reportSlack {
@@ -232,6 +239,9 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 	if p.reportJSON {
 		reports = append(reports, report.JSONWriter{})
+	}
+	if p.reportText {
+		reports = append(reports, report.TextFileWriter{})
 	}
 
 	c.Conf.DBPath = p.dbpath
