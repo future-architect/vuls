@@ -564,19 +564,19 @@ func summaryLines(data models.ScanResult) string {
 		//      packs = append(packs, pack.Name)
 		//  }
 		if config.Conf.Lang == "ja" && 0 < d.CveDetail.Jvn.CvssScore() {
-			summary := d.CveDetail.Jvn.Title
+			summary := d.CveDetail.Jvn.CveTitle()
 			cols = []string{
 				fmt.Sprintf(indexFormat, i+1),
 				d.CveDetail.CveID,
 				fmt.Sprintf("|  %-4.1f(%s)",
 					d.CveDetail.CvssScore(config.Conf.Lang),
-					d.CveDetail.Jvn.Severity,
+					d.CveDetail.Jvn.CvssSeverity(),
 				),
 				//  strings.Join(packs, ","),
 				summary,
 			}
 		} else {
-			summary := d.CveDetail.Nvd.Summary
+			summary := d.CveDetail.Nvd.CveSummary()
 
 			var cvssScore string
 			if d.CveDetail.CvssScore("en") <= 0 {
@@ -584,7 +584,7 @@ func summaryLines(data models.ScanResult) string {
 			} else {
 				cvssScore = fmt.Sprintf("| %-4.1f(%s)",
 					d.CveDetail.CvssScore(config.Conf.Lang),
-					d.CveDetail.Nvd.Severity(),
+					d.CveDetail.Nvd.CvssSeverity(),
 				)
 			}
 
@@ -670,16 +670,16 @@ func detailLines() (string, error) {
 	case config.Conf.Lang == "ja" &&
 		0 < cveInfo.CveDetail.Jvn.CvssScore():
 		jvn := cveInfo.CveDetail.Jvn
-		cvssSeverity = jvn.Severity
-		cvssVector = jvn.Vector
-		summary = fmt.Sprintf("%s\n%s", jvn.Title, jvn.Summary)
-		refs = jvn.References
+		cvssSeverity = jvn.CvssSeverity()
+		cvssVector = jvn.CvssVector()
+		summary = fmt.Sprintf("%s\n%s", jvn.CveTitle(), jvn.CveSummary())
+		refs = jvn.VulnSiteReferences()
 	default:
 		nvd := cveInfo.CveDetail.Nvd
-		cvssSeverity = nvd.Severity()
+		cvssSeverity = nvd.CvssSeverity()
 		cvssVector = nvd.CvssVector()
-		summary = nvd.Summary
-		refs = nvd.References
+		summary = nvd.CveSummary()
+		refs = nvd.VulnSiteReferences()
 	}
 
 	links := []string{

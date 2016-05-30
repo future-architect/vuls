@@ -116,21 +116,22 @@ func ToPlainTextSummary(r models.ScanResult) string {
 		case config.Conf.Lang == "ja" &&
 			0 < d.CveDetail.Jvn.CvssScore():
 
-			summary := d.CveDetail.Jvn.Title
+			summary := d.CveDetail.Jvn.CveTitle()
 			scols = []string{
 				d.CveDetail.CveID,
 				fmt.Sprintf("%-4.1f (%s)",
 					d.CveDetail.CvssScore(config.Conf.Lang),
-					d.CveDetail.Jvn.Severity,
+					d.CveDetail.Jvn.CvssSeverity(),
 				),
 				summary,
 			}
 		case 0 < d.CveDetail.CvssScore("en"):
-			summary := d.CveDetail.Nvd.Summary
+			summary := d.CveDetail.Nvd.CveSummary()
 			scols = []string{
 				d.CveDetail.CveID,
-				fmt.Sprintf("%-4.1f",
+				fmt.Sprintf("%-4.1f (%s)",
 					d.CveDetail.CvssScore(config.Conf.Lang),
+					d.CveDetail.Nvd.CvssSeverity(),
 				),
 				summary,
 			}
@@ -138,7 +139,7 @@ func ToPlainTextSummary(r models.ScanResult) string {
 			scols = []string{
 				d.CveDetail.CveID,
 				"?",
-				d.CveDetail.Nvd.Summary,
+				d.CveDetail.Nvd.CveSummary(),
 			}
 		}
 
@@ -219,14 +220,14 @@ func toPlainTextDetailsLangJa(cveInfo models.CveInfo, osFamily string) string {
 		dtable.AddRow("Score",
 			fmt.Sprintf("%4.1f (%s)",
 				cveDetail.Jvn.CvssScore(),
-				jvn.Severity,
+				jvn.CvssSeverity(),
 			))
 	} else {
 		dtable.AddRow("Score", "?")
 	}
-	dtable.AddRow("Vector", jvn.Vector)
-	dtable.AddRow("Title", jvn.Title)
-	dtable.AddRow("Description", jvn.Summary)
+	dtable.AddRow("Vector", jvn.CvssVector())
+	dtable.AddRow("Title", jvn.CveTitle())
+	dtable.AddRow("Description", jvn.CveSummary())
 
 	dtable.AddRow("JVN", jvn.Link())
 	dtable.AddRow("NVD", fmt.Sprintf("%s?vulnId=%s", nvdBaseURL, cveID))
@@ -261,14 +262,14 @@ func toPlainTextDetailsLangEn(d models.CveInfo, osFamily string) string {
 		dtable.AddRow("Score",
 			fmt.Sprintf("%4.1f (%s)",
 				cveDetail.Nvd.CvssScore(),
-				nvd.Severity(),
+				nvd.CvssSeverity(),
 			))
 	} else {
 		dtable.AddRow("Score", "?")
 	}
 
 	dtable.AddRow("Vector", nvd.CvssVector())
-	dtable.AddRow("Summary", nvd.Summary)
+	dtable.AddRow("Summary", nvd.CveSummary())
 	dtable.AddRow("NVD", fmt.Sprintf("%s?vulnId=%s", nvdBaseURL, cveID))
 	dtable.AddRow("MITRE", fmt.Sprintf("%s%s", mitreBaseURL, cveID))
 	dtable.AddRow("CVE Details", fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID))

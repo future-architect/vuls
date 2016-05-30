@@ -180,10 +180,10 @@ func attachmentText(cveInfo models.CveInfo, osFamily string) string {
 		jvn := cveInfo.CveDetail.Jvn
 		return fmt.Sprintf("*%4.1f (%s)* <%s|%s>\n%s\n%s",
 			cveInfo.CveDetail.CvssScore(config.Conf.Lang),
-			jvn.Severity,
-			fmt.Sprintf(cvssV2CalcURLTemplate, cveInfo.CveDetail.CveID, jvn.Vector),
-			jvn.Vector,
-			jvn.Title,
+			jvn.CvssSeverity(),
+			fmt.Sprintf(cvssV2CalcURLTemplate, cveInfo.CveDetail.CveID, jvn.CvssVector()),
+			jvn.CvssVector(),
+			jvn.CveTitle(),
 			linkText,
 		)
 
@@ -191,15 +191,15 @@ func attachmentText(cveInfo models.CveInfo, osFamily string) string {
 		nvd := cveInfo.CveDetail.Nvd
 		return fmt.Sprintf("*%4.1f (%s)* <%s|%s>\n%s\n%s",
 			cveInfo.CveDetail.CvssScore(config.Conf.Lang),
-			nvd.Severity(),
+			nvd.CvssSeverity(),
 			fmt.Sprintf(cvssV2CalcURLTemplate, cveInfo.CveDetail.CveID, nvd.CvssVector()),
 			nvd.CvssVector(),
-			nvd.Summary,
+			nvd.CveSummary(),
 			linkText,
 		)
 	default:
 		nvd := cveInfo.CveDetail.Nvd
-		return fmt.Sprintf("?\n%s\n%s", nvd.Summary, linkText)
+		return fmt.Sprintf("?\n%s\n%s", nvd.CveSummary(), linkText)
 	}
 }
 

@@ -483,6 +483,7 @@ scan:
                 [-report-json]
                 [-report-mail]
                 [-report-slack]
+                [-report-text]
                 [-http-proxy=http://192.168.0.1:8080]
                 [-ask-sudo-password]
                 [-ask-key-password]
@@ -516,6 +517,8 @@ scan:
         Send report via Email
   -report-slack
         Send report via Slack
+  -report-text
+        Write report to text files ($PWD/results/current)
   -use-unattended-upgrades
         [Deprecated] For Ubuntu. Scan by unattended-upgrades or not (use apt-get upgrade --dry-run by default)
   -use-yum-plugin-security
@@ -541,6 +544,11 @@ scan:
 
 At the end of the scan, scan results will be available in JSON format in the $PWD/result/current/ directory.  
 all.json includes the scan results of all servres and servername.json includes the scan result of the server.
+
+## -report-text option
+
+At the end of the scan, scan results will be available in TEXT format in the $PWD/result/current/ directory.  
+all.txt includes the scan results of all servres and servername.txt includes the scan result of the server.
 
 ## example
 

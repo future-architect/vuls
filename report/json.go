@@ -49,13 +49,13 @@ func (w JSONWriter) Write(scanResults []models.ScanResult) (err error) {
 		} else {
 			jsonPath = filepath.Join(path,
 				fmt.Sprintf("%s_%s.json", r.ServerName, r.Container.Name))
-
 		}
+
 		if jsonBytes, err = json.MarshalIndent(r, "", "  "); err != nil {
 			return fmt.Errorf("Failed to Marshal to JSON: %s", err)
 		}
 		if err := ioutil.WriteFile(jsonPath, jsonBytes, 0644); err != nil {
-			return fmt.Errorf("Failed to write JSON. path: %s, err: %s", all, err)
+			return fmt.Errorf("Failed to write JSON. path: %s, err: %s", jsonPath, err)
 		}
 	}
 	return nil
