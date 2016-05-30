@@ -46,6 +46,7 @@ type Config struct {
 
 	HTTPProxy string `valid:"url"`
 	DBPath    string
+	CveDBPath string
 	//  CpeNames      []string
 	//  SummaryMode          bool
 	UseYumPluginSecurity  bool
@@ -60,6 +61,13 @@ func (c Config) Validate() bool {
 		if ok, _ := valid.IsFilePath(c.DBPath); !ok {
 			errs = append(errs, fmt.Errorf(
 				"SQLite3 DB path must be a *Absolute* file path. dbpath: %s", c.DBPath))
+		}
+	}
+
+	if len(c.CveDBPath) != 0 {
+		if ok, _ := valid.IsFilePath(c.CveDBPath); !ok {
+			errs = append(errs, fmt.Errorf(
+				"SQLite3 DB(Cve Doctionary) path must be a *Absolute* file path. dbpath: %s", c.CveDBPath))
 		}
 	}
 

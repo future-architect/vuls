@@ -30,6 +30,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/util"
+	cveconfig "github.com/kotakanbe/go-cve-dictionary/config"
+	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
 	cve "github.com/kotakanbe/go-cve-dictionary/models"
 )
 
@@ -46,6 +48,11 @@ func (api *cvedictClient) initialize() {
 }
 
 func (api cvedictClient) CheckHealth() (ok bool, err error) {
+	if config.Conf.CveDBPath != "" {
+		log.Debugf("get cve-dictionary from sqlite3")
+		return true, nil
+	}
+
 	api.initialize()
 	url := fmt.Sprintf("%s/health", api.baseURL)
 	var errs []error
@@ -67,6 +74,10 @@ type response struct {
 }
 
 func (api cvedictClient) FetchCveDetails(cveIDs []string) (cveDetails cve.CveDetails, err error) {
+	if config.Conf.CveDBPath != "" {
+		return api.FetchCveDetailsFromCveDB(cveIDs)
+	}
+
 	api.baseURL = config.Conf.CveDictionaryURL
 	reqChan := make(chan string, len(cveIDs))
 	resChan := make(chan response, len(cveIDs))
@@ -124,6 +135,32 @@ func (api cvedictClient) FetchCveDetails(cveIDs []string) (cveDetails cve.CveDet
 	// order by CVE ID desc
 	sort.Sort(cveDetails)
 	return
+}
+
+func (api cvedictClient) FetchCveDetailsFromCveDB(cveIDs []string) (cveDetails cve.CveDetails, err error) {
+
+	cveconfig.Conf.DBPath = config.Conf.CveDBPath
+
+	log.Debugf("open cve-dictionary db")
+	if err := cvedb.OpenDB(); err != nil {
+		return []cve.CveDetail{},
+			fmt.Errorf("go-cve-dictionary:OpenDB Error: %v", err)
+	}
+	for _, cveID := range cveIDs {
+		cveDetail := cvedb.Get(cveID)
+		if len(cveDetail.CveID) == 0 {
+			cveDetails = append(cveDetails, cve.CveDetail{
+				CveID: cveID,
+			})
+		} else {
+			cveDetails = append(cveDetails, cveDetail)
+		}
+	}
+
+	// order by CVE ID desc
+	sort.Sort(cveDetails)
+	return
+
 }
 
 func (api cvedictClient) httpGet(key, url string, resChan chan<- response, errChan chan<- error) {
