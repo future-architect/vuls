@@ -26,10 +26,10 @@ import (
 	"strconv"
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/report"
 	"github.com/google/subcommands"
-	"github.com/labstack/gommon/log"
 	"golang.org/x/net/context"
 )
 
