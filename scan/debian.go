@@ -488,6 +488,7 @@ func (o *debian) scanPackageCveInfos(unsecurePacks []models.PackageInfo) (cvePac
 		}
 	}
 
+	errs := []error{}
 	for i := 0; i < len(unsecurePacks); i++ {
 		select {
 		case pair := <-resChan:
@@ -499,12 +500,14 @@ func (o *debian) scanPackageCveInfos(unsecurePacks []models.PackageInfo) (cvePac
 			o.log.Infof("(%d/%d) Scanned %s-%s : %s",
 				i+1, len(unsecurePacks), pair.Name, pair.PackageInfo.Version, cveIDs)
 		case err := <-errChan:
-			if err != nil {
-				return nil, err
-			}
+			errs = append(errs, err)
 		case <-timeout:
 			return nil, fmt.Errorf("Timeout scanPackageCveIDs")
 		}
+	}
+
+	if 0 < len(errs) {
+		return nil, fmt.Errorf("%v", errs)
 	}
 
 	var cveIDs []string
