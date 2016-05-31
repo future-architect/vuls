@@ -43,6 +43,7 @@ type ScanCmd struct {
 	configPath string
 
 	dbpath           string
+	cvedbpath        string
 	cveDictionaryURL string
 
 	cvssScoreOver      float64
@@ -76,6 +77,7 @@ func (*ScanCmd) Usage() string {
 		[-lang=en|ja]
 		[-config=/path/to/config.toml]
 		[-dbpath=/path/to/vuls.sqlite3]
+		[-cvedbpath=/path/to/cve.sqlite3]
 		[-cve-dictionary-url=http://127.0.0.1:1323]
 		[-cvss-over=7]
 		[-ignore-unscored-cves]
@@ -104,6 +106,8 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 	defaultDBPath := filepath.Join(wd, "vuls.sqlite3")
 	f.StringVar(&p.dbpath, "dbpath", defaultDBPath, "/path/to/sqlite3")
+
+	f.StringVar(&p.cvedbpath, "cvedbpath", "", "/path/to/sqlite3 (For get cve detail from cve.sqlite3)")
 
 	defaultURL := "http://127.0.0.1:1323"
 	f.StringVar(
@@ -245,6 +249,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	c.Conf.DBPath = p.dbpath
+	c.Conf.CveDBPath = p.cvedbpath
 	c.Conf.CveDictionaryURL = p.cveDictionaryURL
 	c.Conf.CvssScoreOver = p.cvssScoreOver
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
