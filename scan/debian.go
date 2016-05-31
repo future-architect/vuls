@@ -282,7 +282,7 @@ func (o *debian) scanUnsecurePackages(packs []models.PackageInfo) ([]CvePacksInf
 
 	unsecurePacks, err = o.fillCandidateVersion(unsecurePacks)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to fill candidate versions. err: %s", err)
 	}
 
 	// Collect CVE information of upgradable packages
@@ -335,6 +335,7 @@ func (o *debian) fillCandidateVersion(packs []models.PackageInfo) ([]models.Pack
 		}
 	}
 
+	errs := []error{}
 	result := []models.PackageInfo{}
 	for i := 0; i < len(packs); i++ {
 		select {
@@ -343,10 +344,13 @@ func (o *debian) fillCandidateVersion(packs []models.PackageInfo) ([]models.Pack
 			o.log.Infof("(%d/%d) Upgradable: %s-%s -> %s",
 				i+1, len(packs), pack.Name, pack.Version, pack.NewVersion)
 		case err := <-errChan:
-			return nil, err
+			errs = append(errs, err)
 		case <-timeout:
 			return nil, fmt.Errorf("Timeout fillCandidateVersion")
 		}
+	}
+	if 0 < len(errs) {
+		return nil, fmt.Errorf("%v", errs)
 	}
 	return result, nil
 }
