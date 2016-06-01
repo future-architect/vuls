@@ -67,7 +67,7 @@ func (c Config) Validate() bool {
 	if len(c.CveDBPath) != 0 {
 		if ok, _ := valid.IsFilePath(c.CveDBPath); !ok {
 			errs = append(errs, fmt.Errorf(
-				"SQLite3 DB(Cve Doctionary) path must be a *Absolute* file path. dbpath: %s", c.CveDBPath))
+				"SQLite3 DB(Cve Dictionary) path must be a *Absolute* file path. dbpath: %s", c.CveDBPath))
 		}
 	}
 

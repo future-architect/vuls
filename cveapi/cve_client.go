@@ -144,7 +144,7 @@ func (api cvedictClient) FetchCveDetailsFromCveDB(cveIDs []string) (cveDetails c
 	log.Debugf("open cve-dictionary db")
 	if err := cvedb.OpenDB(); err != nil {
 		return []cve.CveDetail{},
-			fmt.Errorf("go-cve-dictionary:OpenDB Error: %v", err)
+			fmt.Errorf("Failed to open DB. err: %s", err)
 	}
 	for _, cveID := range cveIDs {
 		cveDetail := cvedb.Get(cveID)

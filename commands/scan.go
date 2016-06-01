@@ -77,7 +77,7 @@ func (*ScanCmd) Usage() string {
 		[-lang=en|ja]
 		[-config=/path/to/config.toml]
 		[-dbpath=/path/to/vuls.sqlite3]
-		[-cvedbpath=/path/to/cve.sqlite3]
+		[-cve-dictionary-dbpath=/path/to/cve.sqlite3]
 		[-cve-dictionary-url=http://127.0.0.1:1323]
 		[-cvss-over=7]
 		[-ignore-unscored-cves]
@@ -107,7 +107,11 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	defaultDBPath := filepath.Join(wd, "vuls.sqlite3")
 	f.StringVar(&p.dbpath, "dbpath", defaultDBPath, "/path/to/sqlite3")
 
-	f.StringVar(&p.cvedbpath, "cvedbpath", "", "/path/to/sqlite3 (For get cve detail from cve.sqlite3)")
+	f.StringVar(
+		&p.cvedbpath,
+		"cve-dictionary-dbpath",
+		"",
+		"/path/to/sqlite3 (For get cve detail from cve.sqlite3)")
 
 	defaultURL := "http://127.0.0.1:1323"
 	f.StringVar(
@@ -203,7 +207,13 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitUsageError
 	}
 
-	logrus.Infof("Start scanning (config: %s)", p.configPath)
+	logrus.Info("Start scanning")
+	logrus.Infof("config: %s", p.configPath)
+	if p.cvedbpath != "" {
+		logrus.Infof("cve-dictionary: %s", p.cvedbpath)
+	} else {
+		logrus.Infof("cve-dictionary: %s", p.cveDictionaryURL)
+	}
 	target := make(map[string]c.ServerInfo)
 	for _, arg := range f.Args() {
 		found := false

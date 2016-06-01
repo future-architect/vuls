@@ -152,15 +152,6 @@ $ ls -alh cve.sqlite3
 -rw-r--r-- 1 ec2-user ec2-user 7.0M Mar 24 13:20 cve.sqlite3
 ```
 
-Now we successfully collected vulnerbility data, then start as server.  
-```bash
-$ go-cve-dictionary server
-[Mar 24 15:21:55]  INFO Opening DB. datafile: /home/ec2-user/cve.sqlite3
-[Mar 24 15:21:55]  INFO Migrating DB
-[Mar 24 15:21:56]  INFO Starting HTTP Sever...
-[Mar 24 15:21:56]  INFO Listening on 127.0.0.1:1323
-```
-
 ## Step5. Deploy Vuls
 
 Launch a new terminal and SSH to the ec2 instance.
@@ -195,8 +186,12 @@ see [Usage: Prepare](https://github.com/future-architect/vuls#usage-prepare)
 ## Step8. Start Scanning
 
 ```
-$ vuls scan
-INFO[0000] Begin scanning (config: /home/ec2-user/config.toml)
+$ vuls scan -cve-dictionary-dbpath=$PWD/cve.sqlite3
+INFO[0000] Start scanning (config: /home/ec2-user/config.toml)
+INFO[0000] Start scanning
+INFO[0000] config: /home/ec2-user/config.toml
+INFO[0000] cve-dictionary: /home/ec2-user/cve.sqlite3
+
 
 ... snip ...
 
@@ -477,6 +472,7 @@ scan:
                 [-lang=en|ja]
                 [-config=/path/to/config.toml]
                 [-dbpath=/path/to/vuls.sqlite3]
+                [--cve-dictionary-dbpath=/path/to/cve.sqlite3]
                 [-cve-dictionary-url=http://127.0.0.1:1323]
                 [-cvss-over=7]
                 [-ignore-unscored-cves]
@@ -495,6 +491,8 @@ scan:
         Ask sudo password of target servers before scanning
   -config string
         /path/to/toml (default "$PWD/config.toml")
+  --cve-dictionary-dbpath string
+        /path/to/sqlite3 (For get cve detail from cve.sqlite3)        
   -cve-dictionary-url string
         http://CVE.Dictionary (default "http://127.0.0.1:1323")
   -cvss-over float
@@ -552,14 +550,9 @@ all.txt includes the scan results of all servres and servername.txt includes the
 
 ## example
 
-Run go-cve-dictionary as server mode before scanning.
-```
-$ go-cve-dictionary server
-```
-
 ### Scan all servers defined in config file
 ```
-$ vuls scan --report-slack --report-mail --cvss-over=7 -ask-sudo-password -ask-key-password
+$ vuls scan --report-slack --report-mail --cvss-over=7 -ask-sudo-password -ask-key-password -cve-dictionary-dbpath=$PWD/cve.sqlite3
 ```
 With this sample command, it will ..
 - Ask sudo password and ssh key passsword before scanning
@@ -570,7 +563,7 @@ With this sample command, it will ..
 
 ### Scan specific servers
 ```
-$ vuls scan server1 server2
+$ vuls scan -cve-dictionary-dbpath=$PWD/cve.sqlite3 server1 server2
 ```
 With this sample command, it will ..
 - Use SSH Key-Based authentication with empty password (without -ask-key-password option)
@@ -696,6 +689,18 @@ $ ./vuls history | peco | ./vuls tui
 
 [![asciicast](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8.png)](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8)
 
+# Usage: go-cve-dictonary on different server 
+
+Run go-cve-dictionary as server mode before scanning on 192.168.10.1
+```
+$ go-cve-dictionary server -bind=192.168.10.1 -port=1323
+```
+
+Run Vuls with -cve-dictionary-url option.
+
+```
+$ vuls scan -cve-dictionary-url=http://192.168.0.1:1323
+```
 
 # Usage: Update NVD Data
 
