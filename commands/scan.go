@@ -273,8 +273,8 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	if ok, err := cveapi.CveClient.CheckHealth(); !ok {
-		Log.Errorf("CVE HTTP server is not running. %#v", cveapi.CveClient)
-		Log.Fatal(err)
+		Log.Errorf("CVE HTTP server is not running. err: %s", err)
+		Log.Errorf("Run go-cve-dictionary as server mode or specify -cve-dictionary-dbpath option")
 		return subcommands.ExitFailure
 	}
 
