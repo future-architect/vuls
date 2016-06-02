@@ -801,11 +801,14 @@ kotakanbe ([@kotakanbe](https://twitter.com/kotakanbe)) created vuls and [these 
 
 # Contribute
 
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
+1. fork a repository: github.com/future-architect/vuls to github.com/you/repo
+2. get original code: go get github.com/future-architect/vuls
+3. work on original code
+4. add remote to your repo: git remote add myfork https://github.com/you/repo.git
+5. push your changes: git push myfork
+6. create a new Pull Request
+
+- see [GitHub and Go: forking, pull requests, and go-getting](http://blog.campoy.cat/2014/03/github-and-go-forking-pull-requests-and.html)
 
 ----
 
