@@ -58,8 +58,8 @@ type ScanCmd struct {
 	reportText  bool
 	reportS3    bool
 
-	askSudoPassword bool
-	askKeyPassword  bool
+	askBecomePassword bool
+	askKeyPassword    bool
 
 	useYumPluginSecurity  bool
 	useUnattendedUpgrades bool
@@ -92,7 +92,7 @@ func (*ScanCmd) Usage() string {
 		[-report-slack]
 		[-report-text]
 		[-http-proxy=http://192.168.0.1:8080]
-		[-ask-sudo-password]
+		[-ask-become-password]
 		[-ask-key-password]
 		[-debug]
 		[-debug-sql]
@@ -178,8 +178,8 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	)
 
 	f.BoolVar(
-		&p.askSudoPassword,
-		"ask-sudo-password",
+		&p.askBecomePassword,
+		"ask-become-password",
 		false,
 		"Ask sudo password of target servers before scanning",
 	)
@@ -202,24 +202,16 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	var keyPass, sudoPass string
+	var askFunc c.AskFunc
 	var err error
 	if p.askKeyPassword {
-		prompt := "SSH key password: "
-		if keyPass, err = getPasswd(prompt); err != nil {
-			logrus.Error(err)
-			return subcommands.ExitFailure
-		}
+		askFunc.KeyPassword = askKeyPassword
 	}
-	if p.askSudoPassword {
-		prompt := "sudo password: "
-		if sudoPass, err = getPasswd(prompt); err != nil {
-			logrus.Error(err)
-			return subcommands.ExitFailure
-		}
+	if p.askBecomePassword {
+		askFunc.BecomePassword = askBecomePassword
 	}
 
-	err = c.Load(p.configPath, keyPass, sudoPass)
+	err = c.Load(p.configPath, askFunc)
 	if err != nil {
 		logrus.Errorf("Error loading %s, %s", p.configPath, err)
 		return subcommands.ExitUsageError

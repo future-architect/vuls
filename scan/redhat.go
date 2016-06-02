@@ -50,8 +50,6 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 
 	red = newRedhat(c)
 
-	// set sudo option flag
-	c.SudoOpt = config.SudoOption{ExecBySudo: true}
 	red.setServerInfo(c)
 
 	if r := sshExec(c, "ls /etc/fedora-release", noSudo); r.isSuccess() {
@@ -460,7 +458,7 @@ func (o *redhat) parseYumCheckUpdateLine(line string) (models.PackageInfo, error
 
 func (o *redhat) getChangelog(packageNames string) (stdout string, err error) {
 	command := ""
-	if o.ServerInfo.User == "root" {
+	if o.ServerInfo.User == "root" || o.ServerInfo.BecomeMethod == "su" {
 		command = "echo N | "
 	}
 	if 0 < len(config.Conf.HTTPProxy) {

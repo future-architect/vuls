@@ -27,8 +27,6 @@ func newBsd(c config.ServerInfo) *bsd {
 //https://github.com/mizzy/specinfra/blob/master/lib/specinfra/helper/detect_os/freebsd.rb
 func detectFreebsd(c config.ServerInfo) (itsMe bool, bsd osTypeInterface) {
 	bsd = newBsd(c)
-	//set sudo option flag
-	c.SudoOpt = config.SudoOption{ExecBySudo: true}
 	bsd.setServerInfo(c)
 
 	if r := sshExec(c, "uname", noSudo); r.isSuccess() {
