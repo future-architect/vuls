@@ -112,6 +112,10 @@ func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 	if itsMe {
 		return
 	}
+	itsMe, osType = detectFreebsd(c)
+	if itsMe {
+		return
+	}
 
 	osType.setErrs([]error{fmt.Errorf("Unknown OS Type")})
 	return
@@ -126,7 +130,6 @@ func InitServers(localLogger *logrus.Entry) error {
 		return fmt.Errorf("Failed to detect server OSes. err: %s", err)
 	}
 	servers = hosts
-
 	Log.Info("Detecting Container OS...")
 	containers, err := detectContainerOSes()
 	if err != nil {
