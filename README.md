@@ -142,6 +142,10 @@ $ sudo chmod 700 /var/log/vuls
 $ go get github.com/kotakanbe/go-cve-dictionary
 ```
 
+If an error occurred while go get, check the following points.
+- Update Git
+- try [deploying with glide](https://github.com/future-architect/vuls/blob/master/README.md#deploy-with-glide).
+
 Fetch vulnerability data from NVD.  
 It takes about 10 minutes (on AWS).  
 
@@ -160,6 +164,10 @@ go get
 ```
 $ go get github.com/future-architect/vuls
 ```
+
+If an error occurred while go get, check the following points.
+- Update Git
+- try [deploying with glide](https://github.com/future-architect/vuls/blob/master/README.md#deploy-with-glide).
 
 ## Step6. Config
 
