@@ -737,6 +737,28 @@ $ go-cve-dictionary fetchnvd -last2y
 
 ----
 
+# Deploy With Glide
+
+If an error occurred while go get, try deploying with glide.  
+- Install [Glide](https://github.com/bumptech/glide)
+- Deploy go-cve-dictionary
+```
+$ go get -d github.com/kotakanbe/go-cve-dictionary
+$ cd $GOPARH/src/github.com/kotakanbe/go-cve-dictinary
+$ glide install
+$ go install
+```
+- Deploy vuls
+```
+$ go get -d github.com/future-architect/vuls
+$ cd $GOPARH/src/github.com/future-architect/vuls
+$ glide install
+$ go install
+```
+- The binaries are created under $GOPARH/bin
+
+---
+
 # Misc
 
 - Unable to go get vuls  
