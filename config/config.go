@@ -47,6 +47,11 @@ type Config struct {
 	HTTPProxy string `valid:"url"`
 	DBPath    string
 	CveDBPath string
+
+	AwsProfile string
+	AwsRegion  string
+	S3Bucket   string
+
 	//  CpeNames      []string
 	//  SummaryMode          bool
 	UseYumPluginSecurity  bool
