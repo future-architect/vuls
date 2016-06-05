@@ -167,7 +167,7 @@ func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (re
 		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
 		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
 	}
-	if err = session.RequestPty("xterm", 400, 120, modes); err != nil {
+	if err = session.RequestPty("xterm", 400, 256, modes); err != nil {
 		logger.Errorf("Failed to request for pseudo terminal. err: %s, c: %s",
 			err,
 			pp.Sprintf("%v", c))
