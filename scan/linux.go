@@ -31,11 +31,12 @@ import (
 type linux struct {
 	ServerInfo config.ServerInfo
 
-	Family  string
-	Release string
+	Family   string
+	Release  string
+	Platform models.Platform
 	osPackages
-	log *logrus.Entry
 
+	log  *logrus.Entry
 	errs []error
 }
 
@@ -56,8 +57,16 @@ func (l *linux) setDistributionInfo(fam, rel string) {
 	l.Release = rel
 }
 
-func (l *linux) getDistributionInfo() string {
+func (l linux) getDistributionInfo() string {
 	return fmt.Sprintf("%s %s", l.Family, l.Release)
+}
+
+func (l *linux) setPlatform(p models.Platform) {
+	l.Platform = p
+}
+
+func (l linux) getPlatform() models.Platform {
+	return l.Platform
 }
 
 func (l linux) allContainers() (containers []config.Container, err error) {
@@ -131,6 +140,56 @@ func (l *linux) parseDockerPs(stdout string) (containers []config.Container, err
 	return
 }
 
+func (l *linux) detectPlatform() error {
+	ok, instanceID, err := l.detectRunningOnAws()
+	if err != nil {
+		return err
+	}
+	if ok {
+		l.setPlatform(models.Platform{
+			Name:       "aws",
+			InstanceID: instanceID,
+		})
+		return nil
+	}
+
+	//TODO Azure, GCP...
+	l.setPlatform(models.Platform{
+		Name: "other",
+	})
+	return nil
+}
+
+func (l linux) detectRunningOnAws() (ok bool, instanceID string, err error) {
+	if r := l.ssh("type curl", noSudo); r.isSuccess() {
+		cmd := "curl --max-time 1 --retry 3 --noproxy 169.254.169.254 http://169.254.169.254/latest/meta-data/instance-id"
+		if r := l.ssh(cmd, noSudo); r.isSuccess() {
+			id := strings.TrimSpace(r.Stdout)
+			return true, id, nil
+		} else if r.ExitStatus == 28 || r.ExitStatus == 7 {
+			// Not running on AWS
+			//  7   Failed to connect to host.
+			// 28  operation timeout.
+			return false, "", nil
+		}
+	}
+
+	if r := l.ssh("type wget", noSudo); r.isSuccess() {
+		cmd := "wget --tries=3 --timeout=1 --no-proxy -q -O - http://169.254.169.254/latest/meta-data/instance-id"
+		if r := l.ssh(cmd, noSudo); r.isSuccess() {
+			id := strings.TrimSpace(r.Stdout)
+			return true, id, nil
+		} else if r.ExitStatus == 4 {
+			// Not running on AWS
+			// 4   Network failure
+			return false, "", nil
+		}
+	}
+	return false, "", fmt.Errorf(
+		"Failed to curl or wget to AWS instance metadata on %s. container: %s",
+		l.ServerInfo.ServerName, l.ServerInfo.Container.Name)
+}
+
 func (l *linux) convertToModel() (models.ScanResult, error) {
 	var scoredCves, unscoredCves models.CveInfos
 	for _, p := range l.UnsecurePackages {
@@ -171,6 +230,7 @@ func (l *linux) convertToModel() (models.ScanResult, error) {
 		Family:      l.Family,
 		Release:     l.Release,
 		Container:   container,
+		Platform:    l.Platform,
 		KnownCves:   scoredCves,
 		UnknownCves: unscoredCves,
 	}, nil

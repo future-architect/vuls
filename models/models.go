@@ -82,6 +82,8 @@ type ScanResult struct {
 
 	Container Container
 
+	Platform Platform
+
 	//  Fqdn        string
 	//  NWLinks     []NWLink
 	KnownCves   []CveInfo
@@ -321,4 +323,13 @@ type Container struct {
 
 	ContainerID string
 	Name        string
+}
+
+// Platform has platform information
+type Platform struct {
+	gorm.Model   `json:"-"`
+	ScanResultID uint `json:"-"`
+
+	Name       string // aws or azure or gcp or other...
+	InstanceID string
 }
