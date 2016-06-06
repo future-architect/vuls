@@ -56,12 +56,17 @@ type ScanCmd struct {
 	reportMail  bool
 	reportJSON  bool
 	reportText  bool
+	reportS3    bool
 
 	askSudoPassword bool
 	askKeyPassword  bool
 
 	useYumPluginSecurity  bool
 	useUnattendedUpgrades bool
+
+	awsProfile  string
+	awsS3Bucket string
+	awsRegion   string
 }
 
 // Name return subcommand name
@@ -83,6 +88,7 @@ func (*ScanCmd) Usage() string {
 		[-ignore-unscored-cves]
 		[-report-json]
 		[-report-mail]
+		[-report-s3]
 		[-report-slack]
 		[-report-text]
 		[-http-proxy=http://192.168.0.1:8080]
@@ -90,6 +96,9 @@ func (*ScanCmd) Usage() string {
 		[-ask-key-password]
 		[-debug]
 		[-debug-sql]
+		[-aws-profile=default]
+		[-aws-region=us-west-2]
+		[-aws-s3-bucket=bucket_name]
 `
 }
 
@@ -151,6 +160,15 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		fmt.Sprintf("Write report to text files (%s/results/current)", wd),
 	)
+
+	f.BoolVar(&p.reportS3,
+		"report-s3",
+		false,
+		"Write report to S3 (bucket/yyyyMMdd_HHmm)",
+	)
+	f.StringVar(&p.awsProfile, "aws-profile", "default", "AWS Profile to use")
+	f.StringVar(&p.awsRegion, "aws-region", "us-east-1", "AWS Region to use")
+	f.StringVar(&p.awsS3Bucket, "aws-s3-bucket", "", "S3 bucket name")
 
 	f.BoolVar(
 		&p.askKeyPassword,
@@ -256,6 +274,17 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 	if p.reportText {
 		reports = append(reports, report.TextFileWriter{})
+	}
+	if p.reportS3 {
+		c.Conf.AwsRegion = p.awsRegion
+		c.Conf.AwsProfile = p.awsProfile
+		c.Conf.S3Bucket = p.awsS3Bucket
+		if err := report.CheckIfBucketExists(); err != nil {
+			Log.Errorf("Failed to access to the S3 bucket. err: %s", err)
+			Log.Error("Ensure the bucket or check AWS config before scanning")
+			return subcommands.ExitUsageError
+		}
+		reports = append(reports, report.S3Writer{})
 	}
 
 	c.Conf.DBPath = p.dbpath

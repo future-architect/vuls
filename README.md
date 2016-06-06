@@ -486,6 +486,7 @@ scan:
                 [-ignore-unscored-cves]
                 [-report-json]
                 [-report-mail]
+                [-report-s3]
                 [-report-slack]
                 [-report-text]
                 [-http-proxy=http://192.168.0.1:8080]
@@ -493,10 +494,20 @@ scan:
                 [-ask-key-password]
                 [-debug]
                 [-debug-sql]
+                [-aws-profile=default]
+                [-aws-region=us-west-2]
+                [-aws-s3-bucket=bucket_name]
+
   -ask-key-password
         Ask ssh privatekey password before scanning
   -ask-sudo-password
         Ask sudo password of target servers before scanning
+  -aws-profile string
+        AWS Profile to use (default "default")
+  -aws-region string
+        AWS Region to use (default "us-east-1")
+  -aws-s3-bucket string
+        S3 bucket name
   -config string
         /path/to/toml (default "$PWD/config.toml")
   --cve-dictionary-dbpath string
@@ -521,6 +532,8 @@ scan:
         Write report to JSON files ($PWD/results/current)
   -report-mail
         Send report via Email
+  -report-s3
+        Write report to S3 (bucket/yyyyMMdd_HHmm)
   -report-slack
         Send report via Slack
   -report-text
@@ -546,15 +559,10 @@ scan:
 | NOPASSWORD       | - | defined as NOPASSWORD in /etc/sudoers on target servers |
 | with password    | required | . |
 
-## -report-json option
+## -report-json , -report-text option
 
-At the end of the scan, scan results will be available in JSON format in the $PWD/result/current/ directory.  
-all.json includes the scan results of all servres and servername.json includes the scan result of the server.
-
-## -report-text option
-
-At the end of the scan, scan results will be available in TEXT format in the $PWD/result/current/ directory.  
-all.txt includes the scan results of all servres and servername.txt includes the scan result of the server.
+At the end of the scan, scan results will be available in the $PWD/result/current/ directory.  
+all.(json|txt) includes the scan results of all servres and servername.(json|txt) includes the scan result of the server.
 
 ## example
 
@@ -579,6 +587,20 @@ With this sample command, it will ..
 - Scan only 2 servers (server1, server2)
 - Print scan result to terminal
 
+### Put results in S3 bucket
+To put results in S3 bucket, configure following settings in AWS before scanning.
+- Create S3 bucket. see [Creating a Bucket](http://docs.aws.amazon.com/AmazonS3/latest/UG/CreatingaBucket.html)  
+- Create access key. The access key must have read and write access to the AWS S3 bucket. see [Managing Access Keys for IAM Users](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html)
+- Configure the security credentials. see [Configuring the AWS Command Line Interface](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html)
+
+```
+$ vuls scan -cve-dictionary-dbpath=$PWD/cve.sqlite3 -aws-region=ap-northeast-1 -aws-s3-bucket=vuls -aws-profile=default
+```
+With this sample command, it will ..
+- Use SSH Key-Based authentication with empty password (without -ask-key-password option)
+- Sudo with no password (without -ask-sudo-password option)
+- Scan all servers defined in config file
+- Put scan result(JSON) in S3 bucket. The bucket name is "vuls" in ap-northeast-1 and profile is "default"
 
 
 ----
