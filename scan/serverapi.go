@@ -15,12 +15,17 @@ var Log *logrus.Entry
 
 var servers []osTypeInterface
 
-// Base Interface of redhat, debian
+// Base Interface of redhat, debian, freebsd
 type osTypeInterface interface {
 	setServerInfo(config.ServerInfo)
 	getServerInfo() config.ServerInfo
+
 	setDistributionInfo(string, string)
 	getDistributionInfo() string
+
+	detectPlatform() error
+	getPlatform() models.Platform
+
 	checkRequiredPackagesInstalled() error
 	scanPackages() error
 	scanVulnByCpeName() error
@@ -136,6 +141,30 @@ func InitServers(localLogger *logrus.Entry) error {
 		return fmt.Errorf("Failed to detect Container OSes. err: %s", err)
 	}
 	servers = append(servers, containers...)
+
+	Log.Info("Detecting Platforms...")
+	errs := detectPlatforms()
+	if 0 < len(errs) {
+		// Only logging
+		Log.Errorf("Failed to detect platforms. err: %v", errs)
+	}
+	for i, s := range servers {
+		if s.getServerInfo().IsContainer() {
+			Log.Infof("(%d/%d) %s on %s is running on %s",
+				i+1, len(servers),
+				s.getServerInfo().Container.Name,
+				s.getServerInfo().ServerName,
+				s.getPlatform().Name,
+			)
+
+		} else {
+			Log.Infof("(%d/%d) %s is running on %s",
+				i+1, len(servers),
+				s.getServerInfo().ServerName,
+				s.getPlatform().Name,
+			)
+		}
+	}
 	return nil
 }
 
@@ -326,6 +355,13 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 		return append(oses, containerHost)
 	}
 	return oses
+}
+
+func detectPlatforms() []error {
+	timeoutSec := 1 * 60
+	return parallelSSHExec(func(o osTypeInterface) error {
+		return o.detectPlatform()
+	}, timeoutSec)
 }
 
 // Prepare installs requred packages to scan vulnerabilities.
