@@ -208,13 +208,14 @@ func (c *SlackConf) Validate() (errs []error) {
 
 // ServerInfo has SSH Info, additional CPE packages to scan.
 type ServerInfo struct {
-	ServerName  string
-	User        string
-	Password    string
-	Host        string
-	Port        string
-	KeyPath     string
-	KeyPassword string
+	ServerName   string
+	User         string
+	Password     string
+	Host         string
+	Port         string
+	KeyPath      string
+	KeyPassword  string
+	BecomeMethod string
 
 	CpeNames []string
 
@@ -223,7 +224,6 @@ type ServerInfo struct {
 
 	// userd internal
 	LogMsgAnsiColor string // DebugLog Color
-	SudoOpt         SudoOption
 	Container       Container
 }
 
@@ -242,14 +242,4 @@ type Container struct {
 	ContainerID string
 	Name        string
 	Type        string
-}
-
-// SudoOption is flag of sudo option.
-type SudoOption struct {
-
-	// echo pass | sudo -S ls
-	ExecBySudo bool
-
-	// echo pass | sudo sh -C 'ls'
-	ExecBySudoSh bool
 }

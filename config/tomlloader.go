@@ -30,8 +30,13 @@ import (
 type TOMLLoader struct {
 }
 
+type AskFunc struct {
+	KeyPassword    func() (string, error)
+	BecomePassword func(string) (string, error)
+}
+
 // Load load the configuraiton TOML file specified by path arg.
-func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
+func (c TOMLLoader) Load(pathToToml string, ask AskFunc) (err error) {
 	var conf Config
 	if _, err := toml.DecodeFile(pathToToml, &conf); err != nil {
 		log.Error("Load config failed", err)
@@ -45,12 +50,42 @@ func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
 	Conf.Default = d
 	servers := make(map[string]ServerInfo)
 
-	if keyPass != "" {
-		d.KeyPassword = keyPass
+	var keyPassword string
+	if ask.KeyPassword != nil {
+		if keyPassword, err = ask.KeyPassword(); err != nil {
+			return err
+		}
 	}
 
-	if sudoPass != "" {
-		d.Password = sudoPass
+	if keyPassword != "" {
+		d.KeyPassword = keyPassword
+	}
+
+	var suPassword, sudoPassword string
+	if ask.BecomePassword != nil {
+		for _, v := range conf.Servers {
+			becomeMethod := v.BecomeMethod
+			if becomeMethod == "" {
+				becomeMethod = d.BecomeMethod
+			}
+
+			switch becomeMethod {
+			case "su":
+				if suPassword == "" {
+					if suPassword, err = ask.BecomePassword(becomeMethod); err != nil {
+						return err
+					}
+				}
+			case "sudo", "":
+				if sudoPassword == "" {
+					if sudoPassword, err = ask.BecomePassword(becomeMethod); err != nil {
+						return err
+					}
+				}
+			default:
+				return fmt.Errorf("BecomeMethod: unsupported method %s", becomeMethod)
+			}
+		}
 	}
 
 	i := 0
@@ -68,8 +103,17 @@ func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
 
 		//  s.Password = sudoPass
 		s.Password = v.Password
+		s.BecomeMethod = v.BecomeMethod
+		if s.BecomeMethod == "" {
+			s.BecomeMethod = d.BecomeMethod
+		}
 		if s.Password == "" {
-			s.Password = d.Password
+			switch s.BecomeMethod {
+			case "su":
+				s.Password = suPassword
+			case "sudo", "":
+				s.Password = sudoPassword
+			}
 		}
 
 		s.Host = v.Host

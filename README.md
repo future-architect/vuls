@@ -453,12 +453,12 @@ Prepare subcommand installs required packages on each server.
 $ vuls prepare -help
 prepare
                         [-config=/path/to/config.toml] [-debug]
-                        [-ask-sudo-password]
+                        [-ask-become-password]
                         [-ask-key-password]
 
   -ask-key-password
         Ask ssh privatekey password before scanning
-  -ask-sudo-password
+  -ask-become-password
         Ask sudo password of target servers before scanning
   -config string
         /path/to/toml (default "$PWD/config.toml")
@@ -490,7 +490,7 @@ scan:
                 [-report-slack]
                 [-report-text]
                 [-http-proxy=http://192.168.0.1:8080]
-                [-ask-sudo-password]
+                [-ask-become-password]
                 [-ask-key-password]
                 [-debug]
                 [-debug-sql]
@@ -500,7 +500,7 @@ scan:
 
   -ask-key-password
         Ask ssh privatekey password before scanning
-  -ask-sudo-password
+  -ask-become-password
         Ask sudo password of target servers before scanning
   -aws-profile string
         AWS Profile to use (default "default")
@@ -552,9 +552,9 @@ scan:
 | empty password   |                 -  | |
 | with password    |           required | or use ssh-agent |
 
-## -ask-sudo-password option
+## -ask-become-password option
 
-| sudo password on target servers | -ask-sudo-password | |
+| sudo password on target servers | -ask-become-password | |
 |:-----------------|:-------|:------|
 | NOPASSWORD       | - | defined as NOPASSWORD in /etc/sudoers on target servers |
 | with password    | required | . |
@@ -568,7 +568,7 @@ all.(json|txt) includes the scan results of all servres and servername.(json|txt
 
 ### Scan all servers defined in config file
 ```
-$ vuls scan --report-slack --report-mail --cvss-over=7 -ask-sudo-password -ask-key-password -cve-dictionary-dbpath=$PWD/cve.sqlite3
+$ vuls scan --report-slack --report-mail --cvss-over=7 -ask-become-password -ask-key-password -cve-dictionary-dbpath=$PWD/cve.sqlite3
 ```
 With this sample command, it will ..
 - Ask sudo password and ssh key passsword before scanning
@@ -583,7 +583,7 @@ $ vuls scan -cve-dictionary-dbpath=$PWD/cve.sqlite3 server1 server2
 ```
 With this sample command, it will ..
 - Use SSH Key-Based authentication with empty password (without -ask-key-password option)
-- Sudo with no password (without -ask-sudo-password option)
+- Sudo with no password (without -ask-become-password option)
 - Scan only 2 servers (server1, server2)
 - Print scan result to terminal
 

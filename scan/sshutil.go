@@ -122,16 +122,19 @@ func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (re
 	} else {
 		logger = log[0]
 	}
-	c.SudoOpt.ExecBySudo = true
 	var err error
 	if sudo && c.User != "root" && !c.IsContainer() {
-		switch {
-		case c.SudoOpt.ExecBySudo:
+		switch c.BecomeMethod {
+		case "su":
+			// TODO pass su password to remote servers throuth ssh
+			logger.Debug("su is executed without password")
+			logger.Debugf("If %s can not exececute su without password, ssh will hang. Please stop process by Ctrl-C", c.User)
+			cmd = fmt.Sprintf("su root -c '%s'", cmd)
+			// TODO raise error when ssh process hanging.
+		case "sudo", "":
 			cmd = fmt.Sprintf("echo %s | sudo -S %s", c.Password, cmd)
-		case c.SudoOpt.ExecBySudoSh:
-			cmd = fmt.Sprintf("echo %s | sudo sh -c '%s'", c.Password, cmd)
 		default:
-			logger.Panicf("sudoOpt is invalid. SudoOpt: %v", c.SudoOpt)
+			logger.Panicf("BecomeMethod: unsupported method %s", c.BecomeMethod)
 		}
 	}
 	// set pipefail option.
@@ -319,5 +322,8 @@ func parsePemBlock(block *pem.Block) (interface{}, error) {
 
 // ref golang.org/x/crypto/ssh/keys.go#ParseRawPrivateKey.
 func maskPassword(cmd, sudoPass string) string {
+	if sudoPass == "" {
+		return cmd
+	}
 	return strings.Replace(cmd, fmt.Sprintf("echo %s", sudoPass), "echo *****", -1)
 }
