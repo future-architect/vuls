@@ -9,3 +9,4 @@ issues/
 vendor/
 log/
 results/
+*config.toml

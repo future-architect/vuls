@@ -648,7 +648,7 @@ python-libs.i686    2.6.6-64.el6   rhui-REGION-rhel-server-releases
 
 func TestParseYumCheckUpdateLinesAmazon(t *testing.T) {
 	r := newRedhat(config.ServerInfo{})
-	r.Family = "amzon"
+	r.Family = "amazon"
 	stdout := `Loaded plugins: priorities, update-motd, upgrade-helper
 34 package(s) needed for security, out of 71 available
 
