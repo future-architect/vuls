@@ -341,6 +341,15 @@ func distroLinks(cveInfo models.CveInfo, osFamily string) []distroLink {
 			},
 			//  TODO Debian dsa
 		}
+	case "FreeBSD":
+		links := []distroLink{}
+		for _, advisory := range cveInfo.DistroAdvisories {
+			links = append(links, distroLink{
+				"FreeBSD-VuXML",
+				fmt.Sprintf(freeBSDVuXMLBaseURL, advisory.AdvisoryID),
+			})
+		}
+		return links
 	default:
 		return []distroLink{}
 	}

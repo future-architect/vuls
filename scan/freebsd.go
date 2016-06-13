@@ -2,9 +2,7 @@ package scan
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
-	"time"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/cveapi"
@@ -27,33 +25,24 @@ func newBsd(c config.ServerInfo) *bsd {
 //https://github.com/mizzy/specinfra/blob/master/lib/specinfra/helper/detect_os/freebsd.rb
 func detectFreebsd(c config.ServerInfo) (itsMe bool, bsd osTypeInterface) {
 	bsd = newBsd(c)
-	//set sudo option flag
-	c.SudoOpt = config.SudoOption{ExecBySudo: true}
-	bsd.setServerInfo(c)
-
+	c.Family = "FreeBSD"
 	if r := sshExec(c, "uname", noSudo); r.isSuccess() {
 		if strings.Contains(r.Stdout, "FreeBSD") == true {
 			if b := sshExec(c, "uname -r", noSudo); b.isSuccess() {
-				bsd.setDistributionInfo("FreeBSD", b.Stdout)
-			} else {
-				return false, bsd
+				bsd.setDistributionInfo("FreeBSD", strings.TrimSpace(b.Stdout))
+				bsd.setServerInfo(c)
+				return true, bsd
 			}
-			return true, bsd
-		} else {
-			return false, bsd
 		}
 	}
-	return
+	return false, bsd
 }
+
 func (o *bsd) install() error {
-	//pkg upgrade
-	cmd := "pkg upgrade"
-	if r := o.ssh(cmd, sudo); !r.isSuccess() {
-		msg := fmt.Sprintf("Failed to %s. status: %d, stdout: %s, stderr: %s",
-			cmd, r.ExitStatus, r.Stdout, r.Stderr)
-		o.log.Errorf(msg)
-		return fmt.Errorf(msg)
-	}
+	return nil
+}
+
+func (o *bsd) checkRequiredPackagesInstalled() error {
 	return nil
 }
 
@@ -65,8 +54,9 @@ func (o *bsd) scanPackages() error {
 		return err
 	}
 	o.setPackages(packs)
+
 	var unsecurePacks []CvePacksInfo
-	if unsecurePacks, err = o.scanUnsecurePackages(packs); err != nil {
+	if unsecurePacks, err = o.scanUnsecurePackages(); err != nil {
 		o.log.Errorf("Failed to scan vulnerable packages")
 		return err
 	}
@@ -74,181 +64,163 @@ func (o *bsd) scanPackages() error {
 	return nil
 }
 
-func (o *bsd) scanInstalledPackages() (packs []models.PackageInfo, err error) {
-	//pkg query is a FreeBSD to provide info on a certain package : %n=name %v=version: formatting for string split later
-	r := o.ssh("pkg query '%n*%v'", noSudo)
-	if !r.isSuccess() {
-		return packs, fmt.Errorf(
-			"Failed to scan packages. status: %d, stdout:%s, Stderr: %s",
-			r.ExitStatus, r.Stdout, r.Stderr)
-	}
-	//same format as debain.go
-	lines := strings.Split(r.Stdout, "\n")
-	for _, line := range lines {
-		//for every \n
-		if trimmed := strings.TrimSpace(line); len(trimmed) != 0 {
-			name, version, err := o.parseScanedPackagesLine(trimmed)
-			if err != nil {
-				return nil, fmt.Errorf("FreeBSD: Failed to parse package")
-			}
-			packs = append(packs, models.PackageInfo{
-				Name:    name,
-				Version: version,
-			})
-		}
-	}
-	return
-}
-
-func (o *bsd) parseScanedPackagesLine(line string) (name, version string, err error) {
-	name = strings.Split(line, "*")[0]
-	if len(strings.Split(line, "*")) == 2 {
-
-		version = strings.Split(line, "*")[1]
-	}
-	return name, version, nil
-}
-
-func (o *bsd) checkRequiredPackagesInstalled() error {
-	return nil
-}
-
-func (o *bsd) scanUnsecurePackages(packs []models.PackageInfo) ([]CvePacksInfo, error) {
-	cmd := util.PrependProxyEnv("pkg version -l '>'")
+func (o *bsd) scanInstalledPackages() ([]models.PackageInfo, error) {
+	cmd := util.PrependProxyEnv("pkg version -v")
 	r := o.ssh(cmd, noSudo)
 	if !r.isSuccess() {
-		return nil, nil
+		return nil, fmt.Errorf("Failed to %s. status: %d, stdout:%s, Stderr: %s",
+			cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
-	match := regexp.MustCompile("(.)+[^[-](\\d)]")
-	upgradablePackNames := match.FindAllString(r.Stdout, -1)
-
-	// Convert package name to PackageInfo struct
-	var unsecurePacks []models.PackageInfo
-	var err error
-	for _, name := range upgradablePackNames {
-		for _, pack := range packs {
-			if pack.Name == name {
-				unsecurePacks = append(unsecurePacks, pack)
-				break
-			}
-		}
-	}
-	/* unsecurePacks, err = o.fillCanidateVersion(unsecurePacks)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to fill canidate versions. err: %s", err)
-	}
-	*/
-
-	// Collect CVE information of upgradable packages
-	cvePacksInfos, err := o.scanPackageCveInfos(unsecurePacks)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to scan unsecure packages. err: %s", err)
-	}
-
-	return cvePacksInfos, nil
+	return o.parsePkgVersion(r.Stdout), nil
 }
 
-func (o *bsd) scanPackageCveInfos(unsecurePacks []models.PackageInfo) (cvePacksList CvePacksList, err error) {
+func (o *bsd) scanUnsecurePackages() (cvePacksList []CvePacksInfo, err error) {
+	cmd := util.PrependProxyEnv("pkg audit -F -f /tmp/vuln.db -r")
+	r := o.ssh(cmd, noSudo)
+	if !r.isSuccess(0, 1) {
+		return nil, fmt.Errorf("Failed to %s. status: %d, stdout:%s, Stderr: %s",
+			cmd, r.ExitStatus, r.Stdout, r.Stderr)
+	}
+	if r.ExitStatus == 0 {
+		// no vulnerabilities
+		return []CvePacksInfo{}, nil
+	}
 
-	// { CVE ID: [packageInfo] }
-	cvePackages := make(map[string][]models.PackageInfo)
-
-	type strarray []string
-	resChan := make(chan struct {
-		models.PackageInfo
-		strarray
-	}, len(unsecurePacks))
-	errChan := make(chan error, len(unsecurePacks))
-	reqChan := make(chan models.PackageInfo, len(unsecurePacks))
-	defer close(resChan)
-	defer close(errChan)
-	defer close(reqChan)
-
-	go func() {
-		for _, pack := range unsecurePacks {
-			reqChan <- pack
+	var packAdtRslt []pkgAuditResult
+	blocks := o.splitIntoBlocks(r.Stdout)
+	for _, b := range blocks {
+		name, cveIDs, vulnID := o.parseBlock(b)
+		if len(cveIDs) == 0 {
+			continue
 		}
-	}()
+		pack, found := o.Packages.FindByName(name)
+		if !found {
+			return nil, fmt.Errorf("Vulnerable package: %s is not found", name)
+		}
+		packAdtRslt = append(packAdtRslt, pkgAuditResult{
+			pack: pack,
+			vulnIDCveIDs: vulnIDCveIDs{
+				vulnID: vulnID,
+				cveIDs: cveIDs,
+			},
+		})
+	}
 
-	timeout := time.After(30 * 60 * time.Second)
-
-	concurrency := 10
-	tasks := util.GenWorkers(concurrency)
-	for range unsecurePacks {
-		tasks <- func() {
-			select {
-			case pack := <-reqChan:
-				func(p models.PackageInfo) {
-					if cveIDs, err := o.scanPackageCveIDs(p); err != nil {
-						errChan <- err
-					} else {
-						resChan <- struct {
-							models.PackageInfo
-							strarray
-						}{p, cveIDs}
-					}
-				}(pack)
-			}
+	// { CVE ID: []pkgAuditResult }
+	cveIDAdtMap := make(map[string][]pkgAuditResult)
+	for _, p := range packAdtRslt {
+		for _, cid := range p.vulnIDCveIDs.cveIDs {
+			cveIDAdtMap[cid] = append(cveIDAdtMap[cid], p)
 		}
 	}
 
-	errs := []error{}
-	for i := 0; i < len(unsecurePacks); i++ {
-		o.log.Info(unsecurePacks[i])
-		select {
-		case pair := <-resChan:
-			pack := pair.PackageInfo
-			cveIDs := pair.strarray
-			for _, cveID := range cveIDs {
-				cvePackages[cveID] = appendPackIfMissing(cvePackages[cveID], pack)
-			}
-			o.log.Infof("(%d/%d) Scanned %s-%s : %s",
-				i+1, len(unsecurePacks), pair.Name, pair.PackageInfo.Version, cveIDs)
-		case err := <-errChan:
-			errs = append(errs, err)
-		case <-timeout:
-			return nil, fmt.Errorf("Timeout scanPackageCveIDs")
-		}
-	}
-
-	if 0 < len(errs) {
-		return nil, fmt.Errorf("%v", errs)
-	}
-
-	var cveIDs []string
-	for k := range cvePackages {
+	cveIDs := []string{}
+	for k := range cveIDAdtMap {
 		cveIDs = append(cveIDs, k)
 	}
 
-	o.log.Debugf("%d Cves are found. cves: %v", len(cveIDs), cveIDs)
-
-	o.log.Info("Fetching CVE details...")
 	cveDetails, err := cveapi.CveClient.FetchCveDetails(cveIDs)
 	if err != nil {
 		return nil, err
 	}
 	o.log.Info("Done")
 
-	for _, detail := range cveDetails {
+	for _, d := range cveDetails {
+		packs := []models.PackageInfo{}
+		for _, r := range cveIDAdtMap[d.CveID] {
+			packs = append(packs, r.pack)
+		}
+
+		disAdvs := []models.DistroAdvisory{}
+		for _, r := range cveIDAdtMap[d.CveID] {
+			disAdvs = append(disAdvs, models.DistroAdvisory{
+				AdvisoryID: r.vulnIDCveIDs.vulnID,
+			})
+		}
+
 		cvePacksList = append(cvePacksList, CvePacksInfo{
-			CveID:     detail.CveID,
-			CveDetail: detail,
-			Packs:     cvePackages[detail.CveID],
-			//  CvssScore: cinfo.CvssScore(conf.Lang),
+			CveID:            d.CveID,
+			CveDetail:        d,
+			Packs:            packs,
+			DistroAdvisories: disAdvs,
 		})
 	}
 	return
 }
 
-func (o *bsd) scanPackageCveIDs(pack models.PackageInfo) ([]string, error) {
-	cmd := fmt.Sprintf("pkg audit -F %s | grep CVE-\\w", pack.Name)
-	cmd = util.PrependProxyEnv(cmd)
+func (o *bsd) parsePkgVersion(stdout string) (packs []models.PackageInfo) {
+	lines := strings.Split(stdout, "\n")
+	for _, l := range lines {
+		fields := strings.Fields(l)
+		if len(fields) < 2 {
+			continue
+		}
 
-	r := o.ssh(cmd, noSudo)
-	if !r.isSuccess() {
-		o.log.Warnf("Failed to %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
-		return nil, nil
+		packVer := fields[0]
+		splitted := strings.Split(packVer, "-")
+		ver := splitted[len(splitted)-1]
+		name := strings.Join(splitted[:len(splitted)-1], "-")
+
+		switch fields[1] {
+		case "?", "=":
+			packs = append(packs, models.PackageInfo{
+				Name:    name,
+				Version: ver,
+			})
+		case "<":
+			candidate := strings.TrimSuffix(fields[6], ")")
+			packs = append(packs, models.PackageInfo{
+				Name:       name,
+				Version:    ver,
+				NewVersion: candidate,
+			})
+		}
 	}
-	match := regexp.MustCompile("(CVE-\\d{4}-\\d{4})")
-	return match.FindAllString(r.Stdout, -1), nil
+	return
+}
+
+type vulnIDCveIDs struct {
+	vulnID string
+	cveIDs []string
+}
+
+type pkgAuditResult struct {
+	pack         models.PackageInfo
+	vulnIDCveIDs vulnIDCveIDs
+}
+
+func (o *bsd) splitIntoBlocks(stdout string) (blocks []string) {
+	lines := strings.Split(stdout, "\n")
+	block := []string{}
+	for _, l := range lines {
+		if len(strings.TrimSpace(l)) == 0 {
+			if 0 < len(block) {
+				blocks = append(blocks, strings.Join(block, "\n"))
+				block = []string{}
+			}
+			continue
+		}
+		block = append(block, strings.TrimSpace(l))
+	}
+	if 0 < len(block) {
+		blocks = append(blocks, strings.Join(block, "\n"))
+	}
+	return
+}
+
+func (o *bsd) parseBlock(block string) (packName string, cveIDs []string, vulnID string) {
+	lines := strings.Split(block, "\n")
+	for _, l := range lines {
+		if strings.HasSuffix(l, " is vulnerable:") {
+			packVer := strings.Fields(l)[0]
+			splitted := strings.Split(packVer, "-")
+			packName = strings.Join(splitted[:len(splitted)-1], "-")
+		} else if strings.HasPrefix(l, "CVE:") {
+			cveIDs = append(cveIDs, strings.Fields(l)[1])
+		} else if strings.HasPrefix(l, "WWW:") {
+			splitted := strings.Split(l, "/")
+			vulnID = strings.TrimSuffix(splitted[len(splitted)-1], ".html")
+		}
+	}
+	return
 }

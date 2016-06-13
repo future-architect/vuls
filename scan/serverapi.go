@@ -64,10 +64,9 @@ type CvePacksList []CvePacksInfo
 type CvePacksInfo struct {
 	CveID            string
 	CveDetail        cve.CveDetail
-	Packs            []models.PackageInfo
-	DistroAdvisories []models.DistroAdvisory // for Aamazon, RHEL
+	Packs            models.PackageInfoList
+	DistroAdvisories []models.DistroAdvisory // for Aamazon, RHEL, FreeBSD
 	CpeNames         []string
-	//  CvssScore float64
 }
 
 // FindByCveID find by CVEID

@@ -134,11 +134,12 @@ func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (re
 			logger.Panicf("sudoOpt is invalid. SudoOpt: %v", c.SudoOpt)
 		}
 	}
-	// set pipefail option.
-	// http://unix.stackexchange.com/questions/14270/get-exit-status-of-process-thats-piped-to-another
-	cmd = fmt.Sprintf("set -o pipefail; %s", cmd)
-	logger.Debugf("Command: %s",
-		strings.Replace(maskPassword(cmd, c.Password), "\n", "", -1))
+
+	if c.Family != "FreeBSD" {
+		// set pipefail option. Bash only
+		// http://unix.stackexchange.com/questions/14270/get-exit-status-of-process-thats-piped-to-another
+		cmd = fmt.Sprintf("set -o pipefail; %s", cmd)
+	}
 
 	if c.IsContainer() {
 		switch c.Container.Type {
@@ -146,6 +147,9 @@ func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (re
 			cmd = fmt.Sprintf(`docker exec %s /bin/bash -c "%s"`, c.Container.ContainerID, cmd)
 		}
 	}
+
+	logger.Debugf("Command: %s",
+		strings.Replace(maskPassword(cmd, c.Password), "\n", "", -1))
 
 	var client *ssh.Client
 	client, err = sshConnect(c)

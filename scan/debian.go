@@ -194,7 +194,7 @@ func (o *debian) scanInstalledPackages() (packs []models.PackageInfo, err error)
 	lines := strings.Split(r.Stdout, "\n")
 	for _, line := range lines {
 		if trimmed := strings.TrimSpace(line); len(trimmed) != 0 {
-			name, version, err := o.parseScanedPackagesLine(trimmed)
+			name, version, err := o.parseScannedPackagesLine(trimmed)
 			if err != nil {
 				return nil, fmt.Errorf(
 					"Debian: Failed to parse package line: %s", line)
@@ -208,7 +208,7 @@ func (o *debian) scanInstalledPackages() (packs []models.PackageInfo, err error)
 	return
 }
 
-func (o *debian) parseScanedPackagesLine(line string) (name, version string, err error) {
+func (o *debian) parseScannedPackagesLine(line string) (name, version string, err error) {
 	re, _ := regexp.Compile(`^([^\t']+)\t(.+)$`)
 	result := re.FindStringSubmatch(line)
 	if len(result) == 3 {
