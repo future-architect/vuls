@@ -31,6 +31,8 @@ const (
 
 	ubuntuSecurityBaseURL = "http://people.ubuntu.com/~ubuntu-security/cve"
 	debianTrackerBaseURL  = "https://security-tracker.debian.org/tracker"
+
+	freeBSDVuXMLBaseURL = "https://vuxml.freebsd.org/freebsd/%s.html"
 )
 
 // ResultWriter Interface

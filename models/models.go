@@ -305,7 +305,7 @@ func (p PackageInfo) ToStringNewVersion() string {
 	return str
 }
 
-// DistroAdvisory has Amazon Linux AMI Security Advisory information.
+// DistroAdvisory has Amazon Linux, RHEL, FreeBSD Security Advisory information.
 type DistroAdvisory struct {
 	gorm.Model `json:"-"`
 	CveInfoID  uint `json:"-"`

@@ -25,7 +25,7 @@ import (
 	"github.com/k0kubun/pp"
 )
 
-func TestParseScanedPackagesLineDebian(t *testing.T) {
+func TestParseScannedPackagesLineDebian(t *testing.T) {
 
 	var packagetests = []struct {
 		in      string
@@ -43,7 +43,7 @@ func TestParseScanedPackagesLineDebian(t *testing.T) {
 
 	d := newDebian(config.ServerInfo{})
 	for _, tt := range packagetests {
-		n, v, _ := d.parseScanedPackagesLine(tt.in)
+		n, v, _ := d.parseScannedPackagesLine(tt.in)
 		if n != tt.name {
 			t.Errorf("name: expected %s, actual %s", tt.name, n)
 		}

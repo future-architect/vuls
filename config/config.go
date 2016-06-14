@@ -221,10 +221,11 @@ type ServerInfo struct {
 	// Container Names or IDs
 	Containers []string
 
-	// userd internal
+	// used internal
 	LogMsgAnsiColor string // DebugLog Color
 	SudoOpt         SudoOption
 	Container       Container
+	Family          string
 }
 
 // IsContainer returns whether this ServerInfo is about container
