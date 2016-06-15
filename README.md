@@ -774,14 +774,14 @@ If an error occurred while go get, try deploying with glide.
 - Deploy go-cve-dictionary
 ```
 $ go get -d github.com/kotakanbe/go-cve-dictionary
-$ cd $GOPARH/src/github.com/kotakanbe/go-cve-dictinary
+$ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
 $ glide install
 $ go install
 ```
 - Deploy vuls
 ```
 $ go get -d github.com/future-architect/vuls
-$ cd $GOPARH/src/github.com/future-architect/vuls
+$ cd $GOPATH/src/github.com/future-architect/vuls
 $ glide install
 $ go install
 ```
