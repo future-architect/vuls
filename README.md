@@ -787,6 +787,28 @@ $ go install
 ```
 - The binaries are created under $GOPARH/bin
 
+----
+
+# Update Vuls With Glide
+
+- Update go-cve-dictionary
+```
+$ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
+$ git pull
+$ glide install
+$ go install
+```
+
+- Update vuls
+```
+$ cd $GOPATH/src/github.com/future-architect/vuls
+$ git pull
+$ glide install
+$ go install
+```
+- The binaries are created under $GOPARH/bin
+- If the DB schema was changed, please specify new SQLite3 DB file.
+
 ---
 
 # Misc
