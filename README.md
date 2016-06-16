@@ -427,11 +427,17 @@ You can customize your configuration using this template.
     #]
     #containers = ["${running}"]
     ```
+
     You can overwrite the default value specified in default section.  
-    Vuls supports multiple SSH authentication methods.  
+
+    Vuls supports two types of SSH. One is native go implementation. The other is external SSH command. For details, see [-ssh-external option](https://github.com/future-architect/vuls#-ssh-external-option)
+    
+    Multiple SSH authentication methods are supported.  
     - SSH agent
     - SSH public key authentication (with password, empty password)
     - Password authentication
+
+
 
 ----
 
@@ -484,6 +490,7 @@ scan:
                 [-cve-dictionary-url=http://127.0.0.1:1323]
                 [-cvss-over=7]
                 [-ignore-unscored-cves]
+                [-ssh-external]
                 [-report-json]
                 [-report-mail]
                 [-report-s3]
@@ -538,12 +545,24 @@ scan:
         Send report via Slack
   -report-text
         Write report to text files ($PWD/results/current)
+  -ssh-external
+        Use external ssh command. Default: Use the Go native implementation
   -use-unattended-upgrades
         [Deprecated] For Ubuntu. Scan by unattended-upgrades or not (use apt-get upgrade --dry-run by default)
   -use-yum-plugin-security
         [Deprecated] For CentOS 5. Scan by yum-plugin-security or not (use yum check-update by default)
 
 ```
+
+## -ssh-external option
+
+Vuls supports different types of SSH.  
+
+By Defaut, using a native Go implementation from crypto/ssh.   
+This is useful in situations where you may not have access to traditional UNIX tools.
+
+To use external ssh command, specify this option.   
+This is useful If you want to use ProxyCommand or chiper algorithm of SSH that is not supported by native go implementation.  
 
 ## -ask-key-password option 
 
@@ -558,6 +577,7 @@ scan:
 |:-----------------|:-------|:------|
 | NOPASSWORD       | - | defined as NOPASSWORD in /etc/sudoers on target servers |
 | with password    | required | . |
+
 
 ## -report-json , -report-text option
 

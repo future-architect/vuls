@@ -44,6 +44,8 @@ type Config struct {
 	CvssScoreOver      float64
 	IgnoreUnscoredCves bool
 
+	SSHExternal bool
+
 	HTTPProxy string `valid:"url"`
 	DBPath    string
 	CveDBPath string

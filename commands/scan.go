@@ -67,6 +67,8 @@ type ScanCmd struct {
 	awsProfile  string
 	awsS3Bucket string
 	awsRegion   string
+
+	sshExternal bool
 }
 
 // Name return subcommand name
@@ -86,6 +88,7 @@ func (*ScanCmd) Usage() string {
 		[-cve-dictionary-url=http://127.0.0.1:1323]
 		[-cvss-over=7]
 		[-ignore-unscored-cves]
+		[-ssh-external]
 		[-report-json]
 		[-report-mail]
 		[-report-s3]
@@ -140,6 +143,12 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		"ignore-unscored-cves",
 		false,
 		"Don't report the unscored CVEs")
+
+	f.BoolVar(
+		&p.sshExternal,
+		"ssh-external",
+		false,
+		"Use external ssh command. Default: Use the Go native implementation")
 
 	f.StringVar(
 		&p.httpProxy,
@@ -292,6 +301,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	c.Conf.CveDictionaryURL = p.cveDictionaryURL
 	c.Conf.CvssScoreOver = p.cvssScoreOver
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
+	c.Conf.SSHExternal = p.sshExternal
 	c.Conf.HTTPProxy = p.httpProxy
 	c.Conf.UseYumPluginSecurity = p.useYumPluginSecurity
 	c.Conf.UseUnattendedUpgrades = p.useUnattendedUpgrades
