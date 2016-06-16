@@ -35,7 +35,7 @@ import (
 
 // inherit OsTypeInterface
 type redhat struct {
-	linux
+	base
 }
 
 // NewRedhat is constructor

@@ -32,7 +32,7 @@ import (
 
 // inherit OsTypeInterface
 type debian struct {
-	linux
+	base
 }
 
 // NewDebian is constructor
