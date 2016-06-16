@@ -12,7 +12,7 @@ import (
 
 // inherit OsTypeInterface
 type bsd struct {
-	linux
+	base
 }
 
 // NewBSD constructor

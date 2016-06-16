@@ -1,10 +1,10 @@
 hash: f6451157cbeaa3590d2b62fb9902221f73c81b5aeda722cf61929f88ce1cfc64
-updated: 2016-06-06T09:28:24.182725693+09:00
+updated: 2016-06-16T00:45:19.481421096+09:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: df81827fdd59d8b4fb93d8910b286ab7a3919520
 - name: github.com/aws/aws-sdk-go
-  version: 1608a1f6ffe7f327007d2aca50ebf1d26c285ef2
+  version: d3b6d25135b4e09ecd39ea3c2a5cad35279b0515
   subpackages:
   - aws
   - aws/credentials

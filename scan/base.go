@@ -28,7 +28,7 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
-type linux struct {
+type base struct {
 	ServerInfo config.ServerInfo
 
 	Family   string
@@ -40,36 +40,36 @@ type linux struct {
 	errs []error
 }
 
-func (l *linux) ssh(cmd string, sudo bool) sshResult {
+func (l *base) ssh(cmd string, sudo bool) sshResult {
 	return sshExec(l.ServerInfo, cmd, sudo, l.log)
 }
 
-func (l *linux) setServerInfo(c config.ServerInfo) {
+func (l *base) setServerInfo(c config.ServerInfo) {
 	l.ServerInfo = c
 }
 
-func (l linux) getServerInfo() config.ServerInfo {
+func (l base) getServerInfo() config.ServerInfo {
 	return l.ServerInfo
 }
 
-func (l *linux) setDistributionInfo(fam, rel string) {
+func (l *base) setDistributionInfo(fam, rel string) {
 	l.Family = fam
 	l.Release = rel
 }
 
-func (l linux) getDistributionInfo() string {
+func (l base) getDistributionInfo() string {
 	return fmt.Sprintf("%s %s", l.Family, l.Release)
 }
 
-func (l *linux) setPlatform(p models.Platform) {
+func (l *base) setPlatform(p models.Platform) {
 	l.Platform = p
 }
 
-func (l linux) getPlatform() models.Platform {
+func (l base) getPlatform() models.Platform {
 	return l.Platform
 }
 
-func (l linux) allContainers() (containers []config.Container, err error) {
+func (l base) allContainers() (containers []config.Container, err error) {
 	switch l.ServerInfo.Container.Type {
 	case "", "docker":
 		stdout, err := l.dockerPs("-a --format '{{.ID}} {{.Names}}'")
@@ -83,7 +83,7 @@ func (l linux) allContainers() (containers []config.Container, err error) {
 	}
 }
 
-func (l *linux) runningContainers() (containers []config.Container, err error) {
+func (l *base) runningContainers() (containers []config.Container, err error) {
 	switch l.ServerInfo.Container.Type {
 	case "", "docker":
 		stdout, err := l.dockerPs("--format '{{.ID}} {{.Names}}'")
@@ -97,7 +97,7 @@ func (l *linux) runningContainers() (containers []config.Container, err error) {
 	}
 }
 
-func (l *linux) exitedContainers() (containers []config.Container, err error) {
+func (l *base) exitedContainers() (containers []config.Container, err error) {
 	switch l.ServerInfo.Container.Type {
 	case "", "docker":
 		stdout, err := l.dockerPs("--filter 'status=exited' --format '{{.ID}} {{.Names}}'")
@@ -111,7 +111,7 @@ func (l *linux) exitedContainers() (containers []config.Container, err error) {
 	}
 }
 
-func (l *linux) dockerPs(option string) (string, error) {
+func (l *base) dockerPs(option string) (string, error) {
 	cmd := fmt.Sprintf("docker ps %s", option)
 	r := l.ssh(cmd, noSudo)
 	if !r.isSuccess() {
@@ -122,7 +122,7 @@ func (l *linux) dockerPs(option string) (string, error) {
 	return r.Stdout, nil
 }
 
-func (l *linux) parseDockerPs(stdout string) (containers []config.Container, err error) {
+func (l *base) parseDockerPs(stdout string) (containers []config.Container, err error) {
 	lines := strings.Split(stdout, "\n")
 	for _, line := range lines {
 		fields := strings.Fields(line)
@@ -140,7 +140,7 @@ func (l *linux) parseDockerPs(stdout string) (containers []config.Container, err
 	return
 }
 
-func (l *linux) detectPlatform() error {
+func (l *base) detectPlatform() error {
 	ok, instanceID, err := l.detectRunningOnAws()
 	if err != nil {
 		return err
@@ -160,7 +160,7 @@ func (l *linux) detectPlatform() error {
 	return nil
 }
 
-func (l linux) detectRunningOnAws() (ok bool, instanceID string, err error) {
+func (l base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 	if r := l.ssh("type curl", noSudo); r.isSuccess() {
 		cmd := "curl --max-time 1 --retry 3 --noproxy 169.254.169.254 http://169.254.169.254/latest/meta-data/instance-id"
 		if r := l.ssh(cmd, noSudo); r.isSuccess() {
@@ -190,7 +190,7 @@ func (l linux) detectRunningOnAws() (ok bool, instanceID string, err error) {
 		l.ServerInfo.ServerName, l.ServerInfo.Container.Name)
 }
 
-func (l *linux) convertToModel() (models.ScanResult, error) {
+func (l *base) convertToModel() (models.ScanResult, error) {
 	var scoredCves, unscoredCves models.CveInfos
 	for _, p := range l.UnsecurePackages {
 		if p.CveDetail.CvssScore(config.Conf.Lang) <= 0 {
@@ -237,7 +237,7 @@ func (l *linux) convertToModel() (models.ScanResult, error) {
 }
 
 // scanVulnByCpeName search vulnerabilities that specified in config file.
-func (l *linux) scanVulnByCpeName() error {
+func (l *base) scanVulnByCpeName() error {
 	unsecurePacks := CvePacksList{}
 
 	serverInfo := l.getServerInfo()
@@ -275,10 +275,10 @@ func (l *linux) scanVulnByCpeName() error {
 	return nil
 }
 
-func (l *linux) setErrs(errs []error) {
+func (l *base) setErrs(errs []error) {
 	l.errs = errs
 }
 
-func (l linux) getErrs() []error {
+func (l base) getErrs() []error {
 	return l.errs
 }
