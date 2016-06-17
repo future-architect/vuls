@@ -860,7 +860,8 @@ Use Microsoft Baseline Security Analyzer. [MBSA](https://technet.microsoft.com/e
 ssh_config to vuls config TOML format
 
 - [usiusi360/vulsrepo](https://github.com/usiusi360/vulsrepo)  
-VulsRepo is visualized based on the json report output in vuls.
+VulsRepo is visualized based on the json report output in vuls.  
+Youtube  
 [![vulsrepo](http://img.youtube.com/vi/DIBPoik4owc/0.jpg)](https://www.youtube.com/watch?v=DIBPoik4owc)
 
 
@@ -901,6 +902,4 @@ Please see [CHANGELOG](https://github.com/future-architect/vuls/blob/master/CHAN
 
 Please see [LICENSE](https://github.com/future-architect/vuls/blob/master/LICENSE).
 
-
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/future-architect/vuls/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 
