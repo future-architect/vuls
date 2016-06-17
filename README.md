@@ -859,6 +859,11 @@ Use Microsoft Baseline Security Analyzer. [MBSA](https://technet.microsoft.com/e
 - [k1LoW/ssh_config_to_vuls_config](https://github.com/k1LoW/ssh_config_to_vuls_config)   
 ssh_config to vuls config TOML format
 
+- [usiusi360/vulsrepo](https://github.com/usiusi360/vulsrepo)  
+VulsRepo is visualized based on the json report output in vuls.
+[![vulsrepo](http://img.youtube.com/vi/DIBPoik4owc/0.jpg)](https://www.youtube.com/watch?v=DIBPoik4owc)
+
+
 ----
 
 # Data Source
