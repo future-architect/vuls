@@ -25,6 +25,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	ex "os/exec"
 	"strings"
 	"time"
 
@@ -104,8 +105,11 @@ func parallelSSHExec(fn func(osTypeInterface) error, timeoutSec ...int) (errs []
 	return
 }
 
-func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (result sshResult) {
-	// Setup Logger
+// Instead of just doing SSHExec everything, just do an exec
+// if the ServerInfo says that this is a localhost//127.0.0.1 AND
+// there is no port//the port is "local", then dont go over SSH
+func exec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (result sshResult) {
+		// Setup Logger
 	var logger *logrus.Entry
 	if len(log) == 0 {
 		level := logrus.InfoLevel
@@ -123,7 +127,6 @@ func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (re
 		logger = log[0]
 	}
 	c.SudoOpt.ExecBySudo = true
-	var err error
 	if sudo && c.User != "root" && !c.IsContainer() {
 		switch {
 		case c.SudoOpt.ExecBySudo:
@@ -150,6 +153,42 @@ func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (re
 
 	logger.Debugf("Command: %s",
 		strings.Replace(maskPassword(cmd, c.Password), "\n", "", -1))
+
+	if (c.Port == "" || c.Port == "local") && 
+	   (c.Host == "127.0.0.1" || c.Host == "localhost") {
+	   	return localExec(c, cmd, sudo, logger)
+	} else {
+		return sshExec(c, cmd, sudo, logger)
+	}
+}
+
+func localExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (result sshResult) {
+	var err error
+	// Setup Logger
+	var logger *logrus.Entry = log[0]
+	toExec := ex.Command(cmd)
+	var stdoutBuf, stderrBuf bytes.Buffer
+	toExec.Stdout = &stdoutBuf
+	toExec.Stderr = &stderrBuf
+
+	if err := toExec.Run(); err != nil {
+		result.ExitStatus = 999
+	} else {
+		result.ExitStatus = 0
+	}
+	result.Stdout = stdoutBuf.String()
+	result.Stderr = stderrBuf.String()
+	logger.Debugf(
+		"Shell executed. cmd: %s, status: %#v\nstdout: \n%s\nstderr: \n%s",
+		maskPassword(cmd, c.Password), err, result.Stdout, result.Stderr)
+
+	return
+}
+
+// SSHExec should never be called directly
+func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (result sshResult) {
+	var err error
+	var logger *logrus.Entry = log[0]
 
 	var client *ssh.Client
 	client, err = sshConnect(c)

@@ -104,6 +104,9 @@ func (*ScanCmd) Usage() string {
 
 // SetFlags set flag
 func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
+
+	// Using the golang 'flag' pkg, set up all the variables in the 'ScanCmd' struct
+
 	f.StringVar(&p.lang, "lang", "en", "[en|ja]")
 	f.BoolVar(&p.debug, "debug", false, "debug mode")
 	f.BoolVar(&p.debugSQL, "debug-sql", false, "SQL debug mode")
@@ -202,6 +205,7 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	// This is where main enters the "scan" subcommand
 	var keyPass, sudoPass string
 	var err error
 	if p.askKeyPassword {
@@ -218,6 +222,8 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 			return subcommands.ExitFailure
 		}
 	}
+
+	// Load up the config file here
 
 	err = c.Load(p.configPath, keyPass, sudoPass)
 	if err != nil {
@@ -308,6 +314,8 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	Log.Info("Detecting Server OS... ")
+	
+	// Remote ping out to all the servers to detect OS's
 	err = scan.InitServers(Log)
 	if err != nil {
 		Log.Errorf("Failed to init servers. Check the configuration. err: %s", err)
@@ -315,6 +323,8 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	Log.Info("Scanning vulnerabilities... ")
+	
+	// Actually do the scan
 	if errs := scan.Scan(); 0 < len(errs) {
 		for _, e := range errs {
 			Log.Errorf("Failed to scan. err: %s", e)
@@ -322,6 +332,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitFailure
 	}
 
+	// Get results to parse and put places
 	scanResults, err := scan.GetScanResults()
 	if err != nil {
 		Log.Fatal(err)

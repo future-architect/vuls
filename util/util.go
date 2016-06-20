@@ -27,15 +27,21 @@ import (
 
 // GenWorkers generates goroutine
 // http://qiita.com/na-o-ys/items/65373132b1c5bc973cca
+
+// Take a # of workers you want to have
 func GenWorkers(num int) chan<- func() {
+	// Make a channel to push functions you want the workers to work on
 	tasks := make(chan func())
+	// Loop over # of workers
 	for i := 0; i < num; i++ {
+		// Start goroutine to exec the functions that get pushed onto the func chan
 		go func() {
 			for f := range tasks {
 				f()
 			}
 		}()
 	}
+	// Return the chan to push funcsto
 	return tasks
 }
 
