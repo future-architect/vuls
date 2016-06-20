@@ -75,10 +75,8 @@ func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
 		s.Host = v.Host
 
 		s.Port = v.Port
-		log.Info("port is: ", s.Port)
 		if s.Port == "" {
 			s.Port = d.Port
-			log.Info("now port is: ", s.Port)
 		}
 
 		s.KeyPath = v.KeyPath
