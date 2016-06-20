@@ -70,28 +70,28 @@ func (l base) getPlatform() models.Platform {
 }
 
 func (l base) allContainers() (containers []config.Container, err error) {
-	switch l.ServerInfo.Container.Type {
-	case "docker":
+	switch strings.Split(l.getDistributionInfo(), " ")[0] {
+	case "FreeBSD":
+		stdout, err := l.jailPs("")
+		//Insert call to bsd jail handler functions TODO
+		if err != nil {
+			return containers, err
+		}
+		return l.parseJailPs(stdout)
+	case "-1":
+		return containers, fmt.Errorf(
+			"Not supported yet: %s", l.ServerInfo.Container.Type)
+	default:
 		stdout, err := l.dockerPs("-a --format '{{.ID}} {{.Names}}'")
 		if err != nil {
 			return containers, err
 		}
 		return l.parseDockerPs(stdout)
-	case "":
-		stdout, err := l.jailPs("")
-		if err != nil {
-			return containers, err
-		}
-		return l.parseJailPs(stdout)
-	default:
-		return containers, fmt.Errorf(
-			"Not supported yet: %s", l.ServerInfo.Container.Type)
 	}
 }
 
 func (l *base) runningContainers() (containers []config.Container, err error) {
 	switch strings.Split(l.getDistributionInfo(), " ")[0] {
-
 	case "FreeBSD":
 		stdout, err := l.jailPs("")
 		//Insert call to bsd jail handler functions TODO
@@ -112,22 +112,23 @@ func (l *base) runningContainers() (containers []config.Container, err error) {
 }
 
 func (l *base) exitedContainers() (containers []config.Container, err error) {
-	switch l.ServerInfo.Container.Type {
-	case "docker":
+	switch strings.Split(l.getDistributionInfo(), " ")[0] {
+	case "FreeBSD":
+		stdout, err := l.jailPs("")
+		//Insert call to bsd jail handler functions TODO
+		if err != nil {
+			return containers, err
+		}
+		return l.parseJailPs(stdout)
+	case "-1":
+		return containers, fmt.Errorf(
+			"Not supported yet: %s", l.ServerInfo.Container.Type)
+	default:
 		stdout, err := l.dockerPs("--filter 'status=exited' --format '{{.ID}} {{.Names}}'")
 		if err != nil {
 			return containers, err
 		}
 		return l.parseDockerPs(stdout)
-	case "FreeBSD":
-		stdout, err := l.jailPs("") //todo: add stdout := FreeBSDps("options to get exited containers")
-		if err != nil {
-			return containers, err
-		}
-		return l.parseJailPs(stdout)
-	default:
-		return containers, fmt.Errorf(
-			"Not supported yet: %s", l.ServerInfo.Container.Type)
 	}
 }
 
