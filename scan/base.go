@@ -40,9 +40,16 @@ type base struct {
 	errs []error
 }
 
+func (l *base) exec(cmd string, sudo bool) sshResult {
+	return exec(l.ServerInfo, cmd, sudo, l.log)
+}
+
+// This shouldn't be used anymore -- use exec which will figure out
+// if it needs to ssh or w/e
 func (l *base) ssh(cmd string, sudo bool) sshResult {
 	return sshExec(l.ServerInfo, cmd, sudo, l.log)
 }
+// DEPRECATED --------------------
 
 func (l *base) setServerInfo(c config.ServerInfo) {
 	l.ServerInfo = c

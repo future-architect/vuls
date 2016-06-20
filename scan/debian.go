@@ -52,12 +52,13 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface) {
 	c.SudoOpt = config.SudoOption{ExecBySudo: true}
 	deb.setServerInfo(c)
 
-	if r := sshExec(c, "ls /etc/debian_version", noSudo); !r.isSuccess() {
+	if r := exec(c, "ls /etc/debian_version", noSudo); !r.isSuccess() {
 		Log.Debugf("Not Debian like Linux. Host: %s:%s", c.Host, c.Port)
 		return false, deb
 	}
 
-	if r := sshExec(c, "lsb_release -ir", noSudo); r.isSuccess() {
+
+	if r := exec(c, "lsb_release -ir", noSudo); r.isSuccess() {
 		//  e.g.
 		//  root@fa3ec524be43:/# lsb_release -ir
 		//  Distributor ID:	Ubuntu
@@ -78,7 +79,7 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface) {
 		return true, deb
 	}
 
-	if r := sshExec(c, "cat /etc/lsb-release", noSudo); r.isSuccess() {
+	if r := exec(c, "cat /etc/lsb-release", noSudo); r.isSuccess() {
 		//  e.g.
 		//  DISTRIB_ID=Ubuntu
 		//  DISTRIB_RELEASE=14.04
@@ -101,7 +102,7 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface) {
 
 	// Debian
 	cmd := "cat /etc/debian_version"
-	if r := sshExec(c, cmd, noSudo); r.isSuccess() {
+	if r := exec(c, cmd, noSudo); r.isSuccess() {
 		deb.setDistributionInfo("debian", trim(r.Stdout))
 		return true, deb
 	}
@@ -119,7 +120,7 @@ func (o *debian) install() error {
 	// apt-get update
 	o.log.Infof("apt-get update...")
 	cmd := util.PrependProxyEnv("apt-get update")
-	if r := o.ssh(cmd, sudo); !r.isSuccess() {
+	if r := o.exec(cmd, sudo); !r.isSuccess() {
 		msg := fmt.Sprintf("Failed to %s. status: %d, stdout: %s, stderr: %s",
 			cmd, r.ExitStatus, r.Stdout, r.Stderr)
 		o.log.Errorf(msg)
@@ -129,7 +130,7 @@ func (o *debian) install() error {
 	if o.Family == "debian" {
 		// install aptitude
 		cmd = util.PrependProxyEnv("apt-get install --force-yes -y aptitude")
-		if r := o.ssh(cmd, sudo); !r.isSuccess() {
+		if r := o.exec(cmd, sudo); !r.isSuccess() {
 			msg := fmt.Sprintf("Failed to %s. status: %d, stdout: %s, stderr: %s",
 				cmd, r.ExitStatus, r.Stdout, r.Stderr)
 			o.log.Errorf(msg)
@@ -143,7 +144,7 @@ func (o *debian) install() error {
 		return nil
 	}
 
-	if r := o.ssh("type unattended-upgrade", noSudo); r.isSuccess() {
+	if r := o.exec("type unattended-upgrade", noSudo); r.isSuccess() {
 		o.log.Infof(
 			"Ignored: unattended-upgrade already installed")
 		return nil
@@ -151,7 +152,7 @@ func (o *debian) install() error {
 
 	cmd = util.PrependProxyEnv(
 		"apt-get install --force-yes -y unattended-upgrades")
-	if r := o.ssh(cmd, sudo); !r.isSuccess() {
+	if r := o.exec(cmd, sudo); !r.isSuccess() {
 		msg := fmt.Sprintf("Failed to %s. status: %d, stdout: %s, stderr: %s",
 			cmd, r.ExitStatus, r.Stdout, r.Stderr)
 		o.log.Errorf(msg)
@@ -181,7 +182,7 @@ func (o *debian) scanPackages() error {
 }
 
 func (o *debian) scanInstalledPackages() (packs []models.PackageInfo, err error) {
-	r := o.ssh("dpkg-query -W", noSudo)
+	r := o.exec("dpkg-query -W", noSudo)
 	if !r.isSuccess() {
 		return packs, fmt.Errorf(
 			"Failed to scan packages. status: %d, stdout:%s, stderr: %s",
@@ -225,7 +226,7 @@ func (o *debian) parseScannedPackagesLine(line string) (name, version string, er
 func (o *debian) checkRequiredPackagesInstalled() error {
 
 	if o.Family == "debian" {
-		if r := o.ssh("test -f /usr/bin/aptitude", noSudo); !r.isSuccess() {
+		if r := o.exec("test -f /usr/bin/aptitude", noSudo); !r.isSuccess() {
 			msg := "aptitude is not installed"
 			o.log.Errorf(msg)
 			return fmt.Errorf(msg)
@@ -236,7 +237,7 @@ func (o *debian) checkRequiredPackagesInstalled() error {
 		return nil
 	}
 
-	if r := o.ssh("type unattended-upgrade", noSudo); !r.isSuccess() {
+	if r := o.exec("type unattended-upgrade", noSudo); !r.isSuccess() {
 		msg := "unattended-upgrade is not installed"
 		o.log.Errorf(msg)
 		return fmt.Errorf(msg)
@@ -248,7 +249,7 @@ func (o *debian) checkRequiredPackagesInstalled() error {
 func (o *debian) scanUnsecurePackages(packs []models.PackageInfo) ([]CvePacksInfo, error) {
 	//  cmd := prependProxyEnv(conf.HTTPProxy, "apt-get update | cat; echo 1")
 	cmd := util.PrependProxyEnv("apt-get update")
-	if r := o.ssh(cmd, sudo); !r.isSuccess() {
+	if r := o.exec(cmd, sudo); !r.isSuccess() {
 		return nil, fmt.Errorf(
 			"Failed to %s. status: %d, stdout: %s, stderr: %s",
 			cmd, r.ExitStatus, r.Stdout, r.Stderr,
@@ -317,7 +318,7 @@ func (o *debian) fillCandidateVersion(packs []models.PackageInfo) ([]models.Pack
 			case pack := <-reqChan:
 				func(p models.PackageInfo) {
 					cmd := fmt.Sprintf("apt-cache policy %s", p.Name)
-					r := o.ssh(cmd, sudo)
+					r := o.exec(cmd, sudo)
 					if !r.isSuccess() {
 						errChan <- fmt.Errorf(
 							"Failed to %s. status: %d, stdout: %s, stderr: %s",
@@ -380,7 +381,7 @@ func (o *debian) GetUnsecurePackNamesUsingUnattendedUpgrades() (packNames []stri
 			"Not supported yet. %s, %s", o.Family, o.Release)
 	}
 
-	r := o.ssh(cmd, sudo)
+	r := o.exec(cmd, sudo)
 	if r.isSuccess(0, 1) {
 		packNames = strings.Split(strings.TrimSpace(r.Stdout), " ")
 		return packNames, nil
@@ -393,7 +394,7 @@ func (o *debian) GetUnsecurePackNamesUsingUnattendedUpgrades() (packNames []stri
 
 func (o *debian) GetUpgradablePackNames() (packNames []string, err error) {
 	cmd := util.PrependProxyEnv("apt-get upgrade --dry-run")
-	r := o.ssh(cmd, sudo)
+	r := o.exec(cmd, sudo)
 	if r.isSuccess(0, 1) {
 		return o.parseAptGetUpgrade(r.Stdout)
 	}
@@ -470,6 +471,9 @@ func (o *debian) scanPackageCveInfos(unsecurePacks []models.PackageInfo) (cvePac
 
 	concurrency := 10
 	tasks := util.GenWorkers(concurrency)
+	// Tasks is a channel that accepts functions.  Tasks has
+	// <concurrency> goroutines executing functions that are pushed
+	// onto the task channel
 	for range unsecurePacks {
 		tasks <- func() {
 			select {
@@ -545,7 +549,7 @@ func (o *debian) scanPackageCveIDs(pack models.PackageInfo) ([]string, error) {
 	}
 	cmd = util.PrependProxyEnv(cmd)
 
-	r := o.ssh(cmd, noSudo)
+	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
 		o.log.Warnf(
 			"Failed to %s. status: %d, stdout: %s, stderr: %s",
