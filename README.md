@@ -106,7 +106,7 @@ $ chmod 600 ~/.ssh/authorized_keys
 Vuls requires the following packages.
 
 - SQLite3
-- git
+- git v2
 - gcc
 - go v1.6
     - https://golang.org/doc/install
