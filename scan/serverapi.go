@@ -108,19 +108,19 @@ func (s CvePacksList) Less(i, j int) bool {
 
 func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 	var itsMe bool
-	itsMe, osType = detectDebian(c)
-	if itsMe {
+	if itsMe, osType = detectDebian(c); itsMe {
+		Log.Debugf("Debian like Linux. Host: %s:%s", c.Host, c.Port)
 		return
 	}
-	itsMe, osType = detectRedhat(c)
-	if itsMe {
+	if itsMe, osType = detectRedhat(c); itsMe {
+		Log.Debugf("Redhat like Linux. Host: %s:%s", c.Host, c.Port)
 		return
 	}
-	itsMe, osType = detectFreebsd(c)
-	if itsMe {
+	if itsMe, osType = detectFreebsd(c); itsMe {
+		Log.Debugf("FreeBSD. Host: %s:%s", c.Host, c.Port)
 		return
 	}
-
+	osType.setServerInfo(c)
 	osType.setErrs([]error{fmt.Errorf("Unknown OS Type")})
 	return
 }
@@ -177,18 +177,21 @@ func detectServerOSes() (oses []osTypeInterface, err error) {
 		}(s)
 	}
 
-	timeout := time.After(300 * time.Second)
+	timeout := time.After(60 * time.Second)
 	for i := 0; i < len(config.Conf.Servers); i++ {
 		select {
 		case res := <-osTypeChan:
-			if 0 < len(res.getErrs()) {
-				continue
-			}
-			Log.Infof("(%d/%d) Detected %s: %s",
-				i+1, len(config.Conf.Servers),
-				res.getServerInfo().ServerName,
-				res.getDistributionInfo())
 			oses = append(oses, res)
+			if 0 < len(res.getErrs()) {
+				Log.Infof("(%d/%d) Failed %s",
+					i+1, len(config.Conf.Servers),
+					res.getServerInfo().ServerName)
+			} else {
+				Log.Infof("(%d/%d) Detected %s: %s",
+					i+1, len(config.Conf.Servers),
+					res.getServerInfo().ServerName,
+					res.getDistributionInfo())
+			}
 		case <-timeout:
 			msg := "Timeout occurred while detecting"
 			Log.Error(msg)
@@ -208,19 +211,16 @@ func detectServerOSes() (oses []osTypeInterface, err error) {
 		}
 	}
 
-	errorOccurred := false
+	errs := []error{}
 	for _, osi := range oses {
-		if errs := osi.getErrs(); 0 < len(errs) {
-			errorOccurred = true
-			Log.Errorf("Some errors occurred on %s",
-				osi.getServerInfo().ServerName)
-			for _, err := range errs {
-				Log.Error(err)
-			}
+		if 0 < len(osi.getErrs()) {
+			errs = append(errs, fmt.Errorf(
+				"Error occurred on %s. errs: %s",
+				osi.getServerInfo().ServerName, osi.getErrs()))
 		}
 	}
-	if errorOccurred {
-		return oses, fmt.Errorf("Some errors occurred")
+	if 0 < len(errs) {
+		return oses, fmt.Errorf("%s", errs)
 	}
 	return
 }
@@ -234,10 +234,11 @@ func detectContainerOSes() (oses []osTypeInterface, err error) {
 		}(s)
 	}
 
-	timeout := time.After(300 * time.Second)
+	timeout := time.After(60 * time.Second)
 	for i := 0; i < len(config.Conf.Servers); i++ {
 		select {
 		case res := <-osTypesChan:
+			oses = append(oses, res...)
 			for _, osi := range res {
 				if 0 < len(osi.getErrs()) {
 					continue
@@ -247,7 +248,6 @@ func detectContainerOSes() (oses []osTypeInterface, err error) {
 					sinfo.Container.ContainerID, sinfo.Container.Name,
 					sinfo.ServerName, osi.getDistributionInfo())
 			}
-			oses = append(oses, res...)
 		case <-timeout:
 			msg := "Timeout occurred while detecting"
 			Log.Error(msg)
@@ -267,19 +267,16 @@ func detectContainerOSes() (oses []osTypeInterface, err error) {
 		}
 	}
 
-	errorOccurred := false
+	errs := []error{}
 	for _, osi := range oses {
-		if errs := osi.getErrs(); 0 < len(errs) {
-			errorOccurred = true
-			Log.Errorf("Some errors occurred on %s",
-				osi.getServerInfo().ServerName)
-			for _, err := range errs {
-				Log.Error(err)
-			}
+		if 0 < len(osi.getErrs()) {
+			errs = append(errs, fmt.Errorf(
+				"Error occurred on %s. errs: %s",
+				osi.getServerInfo().ServerName, osi.getErrs()))
 		}
 	}
-	if errorOccurred {
-		return oses, fmt.Errorf("Some errors occurred")
+	if 0 < len(errs) {
+		return oses, fmt.Errorf("%s", errs)
 	}
 	return
 }

@@ -25,7 +25,10 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"os/exec"
+	"runtime"
 	"strings"
+	"syscall"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -105,53 +108,21 @@ func parallelSSHExec(fn func(osTypeInterface) error, timeoutSec ...int) (errs []
 }
 
 func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (result sshResult) {
-	// Setup Logger
-	var logger *logrus.Entry
-	if len(log) == 0 {
-		level := logrus.InfoLevel
-		if conf.Conf.Debug == true {
-			level = logrus.DebugLevel
-		}
-		l := &logrus.Logger{
-			Out:       os.Stderr,
-			Formatter: new(logrus.TextFormatter),
-			Hooks:     make(logrus.LevelHooks),
-			Level:     level,
-		}
-		logger = logrus.NewEntry(l)
-	} else {
-		logger = log[0]
+	if runtime.GOOS == "windows" || !conf.Conf.SSHExternal {
+		return sshExecNative(c, cmd, sudo, log...)
 	}
-	c.SudoOpt.ExecBySudo = true
-	var err error
-	if sudo && c.User != "root" && !c.IsContainer() {
-		switch {
-		case c.SudoOpt.ExecBySudo:
-			cmd = fmt.Sprintf("echo %s | sudo -S %s", c.Password, cmd)
-		case c.SudoOpt.ExecBySudoSh:
-			cmd = fmt.Sprintf("echo %s | sudo sh -c '%s'", c.Password, cmd)
-		default:
-			logger.Panicf("sudoOpt is invalid. SudoOpt: %v", c.SudoOpt)
-		}
-	}
+	return sshExecExternal(c, cmd, sudo, log...)
+}
 
-	if c.Family != "FreeBSD" {
-		// set pipefail option. Bash only
-		// http://unix.stackexchange.com/questions/14270/get-exit-status-of-process-thats-piped-to-another
-		cmd = fmt.Sprintf("set -o pipefail; %s", cmd)
-	}
+func sshExecNative(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (result sshResult) {
+	logger := getSSHLogger(log...)
 
-	if c.IsContainer() {
-		switch c.Container.Type {
-		case "", "docker":
-			cmd = fmt.Sprintf(`docker exec %s /bin/bash -c "%s"`, c.Container.ContainerID, cmd)
-		}
-	}
-
+	cmd = decolateCmd(c, cmd, sudo)
 	logger.Debugf("Command: %s",
 		strings.Replace(maskPassword(cmd, c.Password), "\n", "", -1))
 
 	var client *ssh.Client
+	var err error
 	client, err = sshConnect(c)
 	defer client.Close()
 
@@ -200,10 +171,123 @@ func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (re
 	result.Port = c.Port
 
 	logger.Debugf(
-		"SSH executed. cmd: %s, status: %#v\nstdout: \n%s\nstderr: \n%s",
-		maskPassword(cmd, c.Password), err, result.Stdout, result.Stderr)
+		"SSH executed. cmd: %s, err: %#v, status: %d\nstdout: \n%s\nstderr: \n%s",
+		maskPassword(cmd, c.Password), err, result.ExitStatus, result.Stdout, result.Stderr)
 
 	return
+}
+
+func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (result sshResult) {
+	logger := getSSHLogger(log...)
+
+	sshBinaryPath, err := exec.LookPath("ssh")
+	if err != nil {
+		logger.Debug("Failed to find SSH binary, using native Go implementation")
+		return sshExecNative(c, cmd, sudo, log...)
+	}
+
+	defaultSSHArgs := []string{
+		"-o", "StrictHostKeyChecking=no",
+		"-o", "UserKnownHostsFile=/dev/null",
+		"-o", "LogLevel=quiet",
+		"-o", "ConnectionAttempts=3",
+		"-o", "ConnectTimeout=10",
+		"-o", "ControlMaster=no",
+		"-o", "ControlPath=none",
+
+		// TODO ssh session multiplexing
+		//  "-o", "ControlMaster=auto",
+		//  "-o", `ControlPath=~/.ssh/controlmaster-%r-%h.%p`,
+		//  "-o", "Controlpersist=30m",
+	}
+	args := append(defaultSSHArgs, fmt.Sprintf("%s@%s", c.User, c.Host))
+	args = append(args, "-p", c.Port)
+
+	//  if conf.Conf.Debug {
+	//      args = append(args, "-v")
+	//  }
+
+	if 0 < len(c.KeyPath) {
+		args = append(args, "-i", c.KeyPath)
+		args = append(args, "-o", "PasswordAuthentication=no")
+	}
+
+	cmd = decolateCmd(c, cmd, sudo)
+	args = append(args, cmd)
+	execCmd := exec.Command(sshBinaryPath, args...)
+
+	var stdoutBuf, stderrBuf bytes.Buffer
+	execCmd.Stdout = &stdoutBuf
+	execCmd.Stderr = &stderrBuf
+	if err := execCmd.Run(); err != nil {
+		if e, ok := err.(*exec.ExitError); ok {
+			if s, ok := e.Sys().(syscall.WaitStatus); ok {
+				result.ExitStatus = s.ExitStatus()
+			} else {
+				result.ExitStatus = 998
+			}
+		} else {
+			result.ExitStatus = 999
+		}
+	} else {
+		result.ExitStatus = 0
+	}
+
+	result.Stdout = stdoutBuf.String()
+	result.Stderr = stderrBuf.String()
+	result.Host = c.Host
+	result.Port = c.Port
+
+	logger.Debugf(
+		"SSH executed. cmd: %s %s, err: %#v, status: %d\nstdout: \n%s\nstderr: \n%s",
+		sshBinaryPath,
+		maskPassword(strings.Join(args, " "), c.Password),
+		err, result.ExitStatus, result.Stdout, result.Stderr)
+
+	return
+}
+
+func getSSHLogger(log ...*logrus.Entry) *logrus.Entry {
+	if len(log) == 0 {
+		level := logrus.InfoLevel
+		if conf.Conf.Debug == true {
+			level = logrus.DebugLevel
+		}
+		l := &logrus.Logger{
+			Out:       os.Stderr,
+			Formatter: new(logrus.TextFormatter),
+			Hooks:     make(logrus.LevelHooks),
+			Level:     level,
+		}
+		return logrus.NewEntry(l)
+	}
+	return log[0]
+}
+
+func decolateCmd(c conf.ServerInfo, cmd string, sudo bool) string {
+	c.SudoOpt.ExecBySudo = true
+	if sudo && c.User != "root" && !c.IsContainer() {
+		switch {
+		case c.SudoOpt.ExecBySudo:
+			cmd = fmt.Sprintf("echo %s | sudo -S %s", c.Password, cmd)
+		case c.SudoOpt.ExecBySudoSh:
+			cmd = fmt.Sprintf("echo %s | sudo sh -c '%s'", c.Password, cmd)
+		}
+	}
+
+	if c.Family != "FreeBSD" {
+		// set pipefail option. Bash only
+		// http://unix.stackexchange.com/questions/14270/get-exit-status-of-process-thats-piped-to-another
+		cmd = fmt.Sprintf("set -o pipefail; %s", cmd)
+	}
+
+	if c.IsContainer() {
+		switch c.Container.Type {
+		case "", "docker":
+			cmd = fmt.Sprintf(`docker exec %s /bin/bash -c "%s"`, c.Container.ContainerID, cmd)
+		}
+	}
+	return cmd
 }
 
 func getAgentAuth() (auth ssh.AuthMethod, ok bool) {
@@ -317,7 +401,7 @@ func parsePemBlock(block *pem.Block) (interface{}, error) {
 	case "DSA PRIVATE KEY":
 		return ssh.ParseDSAPrivateKey(block.Bytes)
 	default:
-		return nil, fmt.Errorf("rtop: unsupported key type %q", block.Type)
+		return nil, fmt.Errorf("Unsupported key type %q", block.Type)
 	}
 }
 
