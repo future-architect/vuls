@@ -108,10 +108,18 @@ func (s CvePacksList) Less(i, j int) bool {
 
 func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 	var itsMe bool
-	if itsMe, osType = detectDebian(c); itsMe {
+	var fatalErr error
+	itsMe, osType, fatalErr = detectDebian(c)
+
+	if fatalErr != nil {
+		osType.setServerInfo(c)
+		osType.setErrs([]error{fatalErr})
+		return
+	} else if itsMe {
 		Log.Debugf("Debian like Linux. Host: %s:%s", c.Host, c.Port)
 		return
 	}
+
 	if itsMe, osType = detectRedhat(c); itsMe {
 		Log.Debugf("Redhat like Linux. Host: %s:%s", c.Host, c.Port)
 		return

@@ -44,7 +44,7 @@ func newDebian(c config.ServerInfo) *debian {
 
 // Ubuntu, Debian
 // https://github.com/serverspec/specinfra/blob/master/lib/specinfra/helper/detect_os/debian.rb
-func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface) {
+func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err error) {
 
 	deb = newDebian(c)
 
@@ -53,8 +53,14 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface) {
 	deb.setServerInfo(c)
 
 	if r := sshExec(c, "ls /etc/debian_version", noSudo); !r.isSuccess() {
+		if r.ExitStatus == 255 {
+			return false, deb, fmt.Errorf(
+				"Unable to connect via SSH. Check SSH settings. servername: %s, %s@%s:%s, status: %d, stdout: %s, stderr: %s",
+				c.ServerName, c.User, c.Host, c.Port, r.ExitStatus, r.Stdout, r.Stderr,
+			)
+		}
 		Log.Debugf("Not Debian like Linux. Host: %s:%s", c.Host, c.Port)
-		return false, deb
+		return false, deb, nil
 	}
 
 	if r := sshExec(c, "lsb_release -ir", noSudo); r.isSuccess() {
@@ -75,7 +81,7 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface) {
 			distro := strings.ToLower(trim(result[1]))
 			deb.setDistributionInfo(distro, trim(result[2]))
 		}
-		return true, deb
+		return true, deb, nil
 	}
 
 	if r := sshExec(c, "cat /etc/lsb-release", noSudo); r.isSuccess() {
@@ -96,18 +102,18 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface) {
 			distro := strings.ToLower(trim(result[1]))
 			deb.setDistributionInfo(distro, trim(result[2]))
 		}
-		return true, deb
+		return true, deb, nil
 	}
 
 	// Debian
 	cmd := "cat /etc/debian_version"
 	if r := sshExec(c, cmd, noSudo); r.isSuccess() {
 		deb.setDistributionInfo("debian", trim(r.Stdout))
-		return true, deb
+		return true, deb, nil
 	}
 
 	Log.Debugf("Not Debian like Linux. Host: %s:%s", c.Host, c.Port)
-	return false, deb
+	return false, deb, nil
 }
 
 func trim(str string) string {
