@@ -70,45 +70,99 @@ func (l base) getPlatform() models.Platform {
 }
 
 func (l base) allContainers() (containers []config.Container, err error) {
-	switch l.ServerInfo.Container.Type {
-	case "", "docker":
+	switch strings.Split(l.getDistributionInfo(), " ")[0] {
+	case "FreeBSD":
+		stdout, err := l.jailPs("")
+		//Insert call to bsd jail handler functions TODO
+		if err != nil {
+			return containers, err
+		}
+		return l.parseJailPs(stdout)
+	case "-1":
+		return containers, fmt.Errorf(
+			"Not supported yet: %s", l.ServerInfo.Container.Type)
+	default:
 		stdout, err := l.dockerPs("-a --format '{{.ID}} {{.Names}}'")
 		if err != nil {
 			return containers, err
 		}
 		return l.parseDockerPs(stdout)
-	default:
-		return containers, fmt.Errorf(
-			"Not supported yet: %s", l.ServerInfo.Container.Type)
 	}
 }
 
 func (l *base) runningContainers() (containers []config.Container, err error) {
-	switch l.ServerInfo.Container.Type {
-	case "", "docker":
+	switch strings.Split(l.getDistributionInfo(), " ")[0] {
+	case "FreeBSD":
+		stdout, err := l.jailPs("")
+		//Insert call to bsd jail handler functions TODO
+		if err != nil {
+			return containers, err
+		}
+		return l.parseJailPs(stdout)
+	case "-1":
+		return containers, fmt.Errorf(
+			"Not supported yet: %s", l.ServerInfo.Container.Type)
+	default:
 		stdout, err := l.dockerPs("--format '{{.ID}} {{.Names}}'")
 		if err != nil {
 			return containers, err
 		}
 		return l.parseDockerPs(stdout)
-	default:
-		return containers, fmt.Errorf(
-			"Not supported yet: %s", l.ServerInfo.Container.Type)
 	}
 }
 
 func (l *base) exitedContainers() (containers []config.Container, err error) {
-	switch l.ServerInfo.Container.Type {
-	case "", "docker":
+	switch strings.Split(l.getDistributionInfo(), " ")[0] {
+	case "FreeBSD":
+		stdout, err := l.jailPs("")
+		//Insert call to bsd jail handler functions TODO
+		if err != nil {
+			return containers, err
+		}
+		return l.parseJailPs(stdout)
+	case "-1":
+		return containers, fmt.Errorf(
+			"Not supported yet: %s", l.ServerInfo.Container.Type)
+	default:
 		stdout, err := l.dockerPs("--filter 'status=exited' --format '{{.ID}} {{.Names}}'")
 		if err != nil {
 			return containers, err
 		}
 		return l.parseDockerPs(stdout)
-	default:
-		return containers, fmt.Errorf(
-			"Not supported yet: %s", l.ServerInfo.Container.Type)
 	}
+}
+
+func (l *base) jailPs(option string) (string, error) {
+	cmd := fmt.Sprintf("jls %s", option)
+	r := l.ssh(cmd, noSudo)
+	if !r.isSuccess() {
+		return "", fmt.Errorf(
+			"Failed to %s. status: %d, stdout: %s, stderr: %s",
+			cmd, r.ExitStatus, r.Stdout, r.Stderr)
+	}
+	return r.Stdout, nil
+}
+
+func (l *base) parseJailPs(stdout string) (containers []config.Container, err error) {
+	lines := strings.Split(stdout, "\n")
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			break
+		}
+		if len(fields) != 5 {
+			return containers, fmt.Errorf("Unkown format: %s", line)
+		}
+		if fields[0] == "JID" {
+			break
+		} else {
+			containers = append(containers, config.Container{
+				ContainerID: fields[0],
+				Name:        fields[2],
+			})
+		}
+	}
+	return
 }
 
 func (l *base) dockerPs(option string) (string, error) {
@@ -123,9 +177,9 @@ func (l *base) dockerPs(option string) (string, error) {
 }
 
 func (l *base) parseDockerPs(stdout string) (containers []config.Container, err error) {
-	lines := strings.Split(stdout, "\n")
+	lines := strings.Split(stdout, "\n") //splits by line so each line is new containers
 	for _, line := range lines {
-		fields := strings.Fields(line)
+		fields := strings.Fields(line) //splits the name and container ID into two sections for append
 		if len(fields) == 0 {
 			break
 		}
