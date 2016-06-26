@@ -76,8 +76,16 @@ func (o *bsd) scanInstalledPackages() ([]models.PackageInfo, error) {
 }
 
 func (o *bsd) scanUnsecurePackages() (cvePacksList []CvePacksInfo, err error) {
-	cmd := util.PrependProxyEnv("pkg audit -F -f /tmp/vuln.db -r")
+	const vulndbPath = "/tmp/vuln.db"
+	cmd := "rm -f " + vulndbPath
 	r := o.ssh(cmd, noSudo)
+	if !r.isSuccess(0) {
+		return nil, fmt.Errorf("Failed to %s. status: %d, stdout:%s, Stderr: %s",
+			cmd, r.ExitStatus, r.Stdout, r.Stderr)
+	}
+
+	cmd = util.PrependProxyEnv("pkg audit -F -r -f " + vulndbPath)
+	r = o.ssh(cmd, noSudo)
 	if !r.isSuccess(0, 1) {
 		return nil, fmt.Errorf("Failed to %s. status: %d, stdout:%s, Stderr: %s",
 			cmd, r.ExitStatus, r.Stdout, r.Stderr)
