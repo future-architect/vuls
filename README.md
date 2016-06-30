@@ -251,8 +251,6 @@ see https://github.com/future-architect/vuls/tree/master/docker
 
 ![Vuls-Architecture](img/vuls-architecture.png)
 
-![Vuls-Scan-Flow](img/vuls-scan-flow.png)
-
 ## [go-cve-dictinary](https://github.com/kotakanbe/go-cve-dictionary)  
 - Fetch vulnerability information from NVD and JVN(Japanese), then insert into SQLite3.
 
@@ -263,6 +261,8 @@ see https://github.com/future-architect/vuls/tree/master/docker
 - Insert scan result into SQLite3
 - Send a report by Slack and Email
 - Show the latest report on your terminal
+
+![Vuls-Scan-Flow](img/vuls-scan-flow.png)
 
 ----
 
