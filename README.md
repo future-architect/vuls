@@ -351,6 +351,13 @@ subjectPrefix = "[vuls]"
 #port        = "22"
 #user        = "username"
 #keyPath     = "/home/username/.ssh/id_rsa"
+#cpeNames = [
+#  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
+#]
+#containers = ["${running}"]
+#optional = [
+#    ["key", "value"],
+#]
 
 [servers]
 
@@ -363,6 +370,9 @@ host         = "172.31.4.82"
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
 #containers = ["${running}"]
+#optional = [
+#    ["key", "value"],
+#]
 ```
 
 You can customize your configuration using this template.
@@ -432,6 +442,9 @@ You can customize your configuration using this template.
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
     #containers = ["${running}"]
+    #optional = [
+    #    ["key", "value"],
+    #]
     ```
     Items of the default section will be used if not specified.
 
@@ -448,9 +461,20 @@ You can customize your configuration using this template.
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
     #containers = ["${running}"]
+    #optional = [
+    #    ["key", "value"],
+    #]
     ```
 
     You can overwrite the default value specified in default section.  
+
+    - host: IP address or hostname of target server
+    - port: SSH Port number
+    - user: SSH username
+    - keyPath: SSH private key path
+    - cpeNames: see [Usage: Scan vulnerability of non-OS package](https://github.com/future-architect/vuls#usage-scan-vulnerability-of-non-os-package)
+    - containers: see [Usage: Scan Docker containers](https://github.com/future-architect/vuls#usage-scan-docker-containers)
+    - optional: Add additional information to JSON report.
 
     Vuls supports two types of SSH. One is native go implementation. The other is external SSH command. For details, see [-ssh-external option](https://github.com/future-architect/vuls#-ssh-external-option)
     
@@ -458,6 +482,8 @@ You can customize your configuration using this template.
     - SSH agent
     - SSH public key authentication (with password, empty password)
     - Password authentication
+
+    
 
 
 
@@ -551,7 +577,7 @@ scan:
         Azure storage container name
   -azure-key string
         Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified
-   -config string
+  -config string
         /path/to/toml (default "$PWD/config.toml")
   -cve-dictionary-dbpath string
         /path/to/sqlite3 (For get cve detail from cve.sqlite3)        
@@ -698,6 +724,45 @@ $ vuls scan \
       -azure-container=vuls
 ```
 
+## Example: Add optional key-value pairs to JSON
+
+Optional key-value can be outputted to JSON.  
+The key-value in the default section will be overwritten by servers section's key-value.  
+For instance, you can use this field for Azure ResourceGroup name, Azure VM Name and so on.
+
+- config.toml
+```toml
+[default]
+optional = [
+	["key1", "default_value"],
+	["key3", "val3"],
+]
+
+[servers.bsd]
+host     = "192.168.11.11"
+user     = "kanbe"
+optional = [
+	["key1", "val1"],
+	["key2", "val2"],
+]
+```
+
+- bsd.json
+```json
+[
+  {
+    "ServerName": "bsd",
+    "Family": "FreeBSD",
+    "Release": "10.3-RELEASE",
+    .... snip ...
+    "Optional": [
+      [  "key1", "val1" ],
+      [  "key2", "val2" ],
+      [  "key3", "val3" ]
+    ]
+  }
+]
+```
 
 ----
 

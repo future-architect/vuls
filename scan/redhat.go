@@ -180,8 +180,8 @@ func (o *redhat) checkRequiredPackagesInstalled() error {
 	if config.Conf.UseYumPluginSecurity {
 		// check if yum-plugin-security is installed.
 		// Amazon Linux, REHL can execute 'yum updateinfo --security updates' without yum-plugin-security
-		cmd := "rpm -q yum-plugin-security"
 		if o.Family == "centos" {
+			cmd := "rpm -q yum-plugin-security"
 			if r := o.ssh(cmd, noSudo); !r.isSuccess() {
 				msg := "yum-plugin-security is not installed"
 				o.log.Errorf(msg)
