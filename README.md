@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/github/license/future-architect/vuls.svg?style=flat-square)](https://github.com/future-architect/vuls/blob/master/LICENSE.txt)
 
 
-Vulnerability scanner for Linux, agentless, written in golang.
+Vulnerability scanner for Linux/FreeBSD, agentless, written in golang.
 
 We have a slack team. [Join slack team](http://goo.gl/forms/xm5KFo35tu)  
 
@@ -42,8 +42,8 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 
 # Main Features
 
-- Scan for any vulnerabilities in Linux Server
-    - Supports Ubuntu, Debian, CentOS, Amazon Linux, RHEL
+- Scan for any vulnerabilities in Linux/FreeBSD Server
+    - Supports Ubuntu, Debian, CentOS, Amazon Linux, RHEL, FreeBSD
     - Cloud, on-premise, Docker
 - Scan middleware that are not included in OS package management
     - Scan middleware, programming language libraries and framework for vulnerability
@@ -241,7 +241,7 @@ $ vuls tui
 
 ----
 
-# Hello Vuls in a docker container
+# Setup Vuls in a Docker Container
 
 see https://github.com/future-architect/vuls/tree/master/setup/docker
 
@@ -255,7 +255,7 @@ see https://github.com/future-architect/vuls/tree/master/setup/docker
 - Fetch vulnerability information from NVD and JVN(Japanese), then insert into SQLite3.
 
 ## Vuls
-- Scan vulnerabilities on the servers and create a list of the CVE ID
+- Scan vulnerabilities on the servers via SSH and create a list of the CVE ID
   - To scan Docker containers, Vuls connect via ssh to the Docker host and then `docker exec` to the containers. So, no need to run sshd daemon on the containers.
 - Fetch more detailed information of the detected CVE from go-cve-dictionary
 - Insert scan result into SQLite3
@@ -288,7 +288,8 @@ web/app server in the same configuration under the load balancer
 | Debian      |                7, 8|
 | RHEL        |          4, 5, 6, 7|
 | CentOS      |             5, 6, 7|
-| Amazon Linux|                All |
+| Amazon Linux|                 All|
+| FreeBSD     |                  10|
 
 ----
 
@@ -364,8 +365,8 @@ You can customize your configuration using this template.
 
     - hookURL : Incomming webhook's URL  
     - channel : channel name.  
-    If you set ${servername} to channel, the report will be sent to each channel.  
-    In the following example, the report will be sent to the #server1 and #server2.  
+    If you set `${servername}` to channel, the report will be sent to each channel.  
+    In the following example, the report will be sent to the `#server1` and `#server2`.  
     Be sure to create these channels before scanning.
       ```
       [slack]
@@ -386,7 +387,7 @@ You can customize your configuration using this template.
     - iconEmoji: emoji
     - authUser: username of the slack team
     - notifyUsers: a list of Slack usernames to send Slack notifications.
-      If you set ["@foo", "@bar"] to notifyUsers, @foo @bar will be included in text.  
+      If you set `["@foo", "@bar"]` to notifyUsers, @foo @bar will be included in text.  
       So @foo, @bar can receive mobile push notifications on their smartphone.  
 
 - Mail section
@@ -455,6 +456,7 @@ Prepare subcommand installs required packages on each server.
 | CentOS      |                6, 7| yum-plugin-security, yum-plugin-changelog |
 | Amazon      |                All | -            |
 | RHEL        |         4, 5, 6, 7 | -            |
+| FreeBSD     |                 10 | -            |
 
 
 ```
@@ -578,13 +580,13 @@ This is useful If you want to use ProxyCommand or chiper algorithm of SSH that i
 | sudo password on target servers | -ask-sudo-password | |
 |:-----------------|:-------|:------|
 | NOPASSWORD       | - | defined as NOPASSWORD in /etc/sudoers on target servers |
-| with password    | required | . |
+| with password    | required |  |
 
 
 ## -report-json , -report-text option
 
-At the end of the scan, scan results will be available in the $PWD/result/current/ directory.  
-all.(json|txt) includes the scan results of all servres and servername.(json|txt) includes the scan result of the server.
+At the end of the scan, scan results will be available in the `$PWD/result/current/` directory.  
+`all.(json|txt)` includes the scan results of all servres and `servername.(json|txt)` includes the scan result of the server.
 
 ## example
 
@@ -661,7 +663,7 @@ Vuls scans Docker containers via `docker exec` instead of SSH.
 For more details, see [Architecture section](https://github.com/future-architect/vuls#architecture)
 
 - To scan all of running containers  
-  "${running}" needs to be set in the containers item.
+  `"${running}"` needs to be set in the containers item.
     ```
     [servers]
 
@@ -674,7 +676,7 @@ For more details, see [Architecture section](https://github.com/future-architect
 
 - To scan specific containers  
   The container ID or container name needs to be set in the containers item.  
-  In the following example, only "container_name_a" and "4aa37a8b63b9" will be scanned.  
+  In the following example, only `container_name_a` and `4aa37a8b63b9` will be scanned.  
   Be sure to check these containers are running state before scanning.  
   If specified containers are not running, Vuls gives up scanning with printing error message.
     ```
