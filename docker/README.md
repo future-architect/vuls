@@ -2,16 +2,16 @@
 
 ## Table of Contens
 
-- What's Vuls-On-Docker?
-- Server Setup
+- [What's Vuls-On-Docker?](#whats-vuls-on-docker)
+- [Server Setup](#setting-up-your-machine)
 	- Install Docker
 	- Instal Docker Compose
-- Vuls Setup
+- [Vuls Setup](#setting-up-vuls)
 	- Locate a appropriate ssh-key
-	- Edit toml 
-- Start Vuls Container
-- Scan servers with Vuls-On-Docker
-- See the results in a browser
+	- Edit toml
+- [Start A Vuls Container](#start-a-vuls-container)
+- [Scan servers with Vuls-On-Docker](#scan-servers-with-vuls-on-docker)
+- [See the results in a browser](#see-the-results-in-a-browser)
 
 ## What's Vuls-On-Docker
 
@@ -42,7 +42,7 @@ cd vuls/docker
 1. Locate a ssh-key in (vuls/docker/conf/id_rsa)
 2. Ajust config.toml to your environment
 
-## Start Vuls Container
+## Start A Vuls Container
 
 - Execute the following command to build and run a Vuls Container
 ``
