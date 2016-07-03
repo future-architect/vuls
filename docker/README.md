@@ -43,7 +43,7 @@
 ## Setting up Vuls
 
 1. Locate a ssh-key in (vuls/docker/conf/id_rsa)
-2. Ajust config.toml(vuls/docker/conf/config.toml) to your environment
+2. Create and ajust config.toml(vuls/docker/conf/config.toml) to your environment
 	
 	```
 	[servers]
@@ -65,7 +65,7 @@
 
 ## Scan servers with Vuls-On-Docker
 
-- Use the embedded script to scan server for vulsrepo(or run whatever with docker exec)
+- Use the embedded script to scan servers for vulsrepo(or run whatever with docker exec)
 
 	```
 	docker exec -t vuls vuls prepare -config=conf/config.toml
