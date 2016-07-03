@@ -1,77 +1,64 @@
 # Vuls on Docker
 
-## Index
+## Table of Contens
 
-- テスト環境
-- サーバーセットアップ
-    - Dockerのインストール
-    - Docker Composeのインストール
-- vulsセットアップ
-    - sshキーの配置
-    - tomlの編集
-- Vuls 起動
-- Vuls scan実行
-- ブラウザから動作確認
+- What's Vuls-On-Docker?
+- Server Setup
+	- Install Docker
+	- Instal Docker Compose
+- Vuls Setup
+	- Locate a appropriate ssh-key
+	- Edit toml 
+- Start Vuls Container
+- Scan servers with Vuls-On-Docker
+- See the results in a browser
 
+## What's Vuls-On-Docker
 
-##テスト環境
+- This is a dockernized-Vuls with DockerRepo UI in it.
+- It's designed to reduce the cost of installation and the dependencies that vuls requires.
+- You can run install and run Vuls on your machine with only a few commands.
+- The result can be viewed with a browser
 
-- Server OS: ubuntu 14.04
-
-## サーバーセットアップ
-
-1. Dockerのインストール
-2. Docker Composeのインストール
-
-### 作業ディレクトリの作成
-
+## Setting up your machine
+	
+1. [Install Docker](https://docs.docker.com/engine/installation/)
+2. [Install Docker-Compose](https://docs.docker.com/compose/install/)
+3. Make sure that you can run the following commands before you move on.
+```
+$ docker version
+$ docker-compose version
+```
+4. Create a working directory for Vuls
 ```
 mkdir work
 cd work
-git clone https://github.com/hikachan/vuls
-cd vuls
+git clone https://github.com/hikachan/vuls.git
+cd vuls/docker
 ```
 
-## Vuls セットアップ
+## Setting up Vuls
 
-### sshキーの配置(vuls/docker/conf/id_rsa)
+1. Locate a ssh-key in (vuls/docker/conf/id_rsa)
+2. Ajust config.toml to your environment
 
-### tomlの編集(vuls/docker/conf/config.toml)
+## Start Vuls Container
 
-```
-[servers]
-
-#This is a sample
-[servers.172.17.0.1]
-host         = "172.17.0.1"
-port        = "22"
-user        = "ubuntu"
-keyPath     = "/root/.ssh/id_rsa"
-#containers = ["target_container"]
-```
-
-## Vuls 起動
-
-```
+- Execute the following command to build and run a Vuls Container
+``
 docker-compose up -d
-```
+`` 
 
-## Update cve
+## Scan servers with Vuls-On-Docker
 
-```
-docker exec -t vuls scripts/update_cve.sh
-```
-
-## Vuls Scan 実行
-
+- Use the embedded script to scan server for vulsrepo(or run whatever with docker exec)
 ```
 docker exec -t vuls vuls prepare -config=conf/config.toml
 docker exec -t vuls scripts/scan_for_vulsrepo.sh
 ```
 
-### Vuls Repo 接続確認
+## See the results in a browser 
 
 ```
 http://${Vuls_Host}/vulsrepo/
 ```
-
