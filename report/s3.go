@@ -71,7 +71,7 @@ func CheckIfBucketExists() error {
 func (w S3Writer) Write(scanResults []models.ScanResult) (err error) {
 
 	var jsonBytes []byte
-	if jsonBytes, err = json.MarshalIndent(scanResults, "", "  "); err != nil {
+	if jsonBytes, err = json.Marshal(scanResults); err != nil {
 		return fmt.Errorf("Failed to Marshal to JSON: %s", err)
 	}
 
@@ -96,7 +96,7 @@ func (w S3Writer) Write(scanResults []models.ScanResult) (err error) {
 			key = fmt.Sprintf("%s/%s_%s.json", timestr, r.ServerName, r.Container.Name)
 		}
 
-		if jsonBytes, err = json.MarshalIndent(r, "", "  "); err != nil {
+		if jsonBytes, err = json.Marshal(r); err != nil {
 			return fmt.Errorf("Failed to Marshal to JSON: %s", err)
 		}
 		_, err = svc.PutObject(&s3.PutObjectInput{
