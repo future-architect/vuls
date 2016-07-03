@@ -1,10 +1,10 @@
 hash: f6451157cbeaa3590d2b62fb9902221f73c81b5aeda722cf61929f88ce1cfc64
-updated: 2016-06-16T00:45:19.481421096+09:00
+updated: 2016-07-03T16:13:02.040590043+09:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: df81827fdd59d8b4fb93d8910b286ab7a3919520
 - name: github.com/aws/aws-sdk-go
-  version: d3b6d25135b4e09ecd39ea3c2a5cad35279b0515
+  version: caee6e866bf437a6bef0777a3bf141cdd3aa022d
   subpackages:
   - aws
   - aws/credentials
@@ -18,24 +18,24 @@ imports:
   - private/endpoints
   - aws/awsutil
   - aws/client/metadata
+  - aws/signer/v4
   - private/protocol
   - private/protocol/restxml
-  - private/signer/v4
   - private/waiter
   - aws/credentials/ec2rolecreds
   - aws/ec2metadata
-  - private/protocol/query
   - private/protocol/rest
+  - private/protocol/query
   - private/protocol/xml/xmlutil
   - private/protocol/query/queryutil
 - name: github.com/BurntSushi/toml
   version: f0aeabca5a127c4078abb8c8d64298b147264b55
 - name: github.com/cenkalti/backoff
-  version: a6030178a585d5972d4d33ce61f4a1fa40eaaed0
+  version: cdf48bbc1eb78d1349cbda326a4a037f7ba565c6
 - name: github.com/cheggaaa/pb
   version: c1f48d5ce4f292dfb775ef52aaedd15be323510d
 - name: github.com/go-ini/ini
-  version: 72ba3e6b9e6b87e0c74c9a7a4dc86e8dd8ba4355
+  version: 927d8d7ced542ab92df77ac1637b6e56336ee0dd
 - name: github.com/google/subcommands
   version: 1c7173745a6001f67d8d96ab4e178284c77f7759
 - name: github.com/gosuri/uitable
@@ -46,17 +46,17 @@ imports:
 - name: github.com/howeyc/gopass
   version: 66487b23f2880ba32e185121d2cd51a338ea069a
 - name: github.com/jinzhu/gorm
-  version: bf0e23607840019d62e32e87e9af48e881d74b1e
+  version: c1c4f9f86e732a042aac9f37e025893d6d6cabec
 - name: github.com/jinzhu/inflection
-  version: 3272df6c21d04180007eb3349844c89a3856bc25
+  version: 8f4d3a0d04ce0b7c0cf3126fb98524246d00d102
 - name: github.com/jmespath/go-jmespath
   version: 0b12d6b521d83fc7f755e7cfc1b1fbdd35a01a74
 - name: github.com/jroimartin/gocui
   version: 2dcda558bf18ec07c7065bf1eaf071b5305f7c0c
 - name: github.com/k0kubun/pp
-  version: 36d5366f4ec038f9a76dd85c7b29074089bb9b9e
+  version: f5dce6ed0ccf6c350f1679964ff6b61f3d6d2033
 - name: github.com/kotakanbe/go-cve-dictionary
-  version: e2d9573a7fe56c769bcd40d048376e99c24c03b3
+  version: 1a336b8ac785badfe89a175ee926d39574901232
   subpackages:
   - config
   - db
@@ -69,7 +69,7 @@ imports:
 - name: github.com/kotakanbe/logrus-prefixed-formatter
   version: f4f7d41649cf1e75e736884da8d05324aa76ea25
 - name: github.com/mattn/go-colorable
-  version: 6cea104aa68c848b93be9d9c4be622350c132d61
+  version: 9056b7a9f2d1f2d96498d6d146acd1f9d5ed3d59
 - name: github.com/mattn/go-isatty
   version: 56b76bdf51f7708750eac80fa38b952bb9f32639
 - name: github.com/mattn/go-runewidth
@@ -81,15 +81,15 @@ imports:
 - name: github.com/moul/http2curl
   version: b1479103caacaa39319f75e7f57fc545287fca0d
 - name: github.com/nsf/termbox-go
-  version: 8930de04764634cd4ac7b3bd33480681b194fe0c
+  version: c45773466a30b680355d6494cc8826113c93cd0f
 - name: github.com/parnurzeal/gorequest
-  version: f17fef20c518e688f4edb3eb2af148462ecab3ef
+  version: 6e8ad4ebdee4bec2934ed5afaaa1c7b877832a17
 - name: github.com/rifflock/lfshook
   version: 05a24e24fa8d3a2eca8c2baf23aa2d5a2c51490c
 - name: github.com/Sirupsen/logrus
   version: f3cfb454f4c209e6668c95216c4744b8fddb2356
 - name: golang.org/x/crypto
-  version: 5bcd134fee4dd1475da17714aac19c0aa0142e2f
+  version: 811831de4c4dd03a0b8737233af3b36852386373
   subpackages:
   - ssh
   - ssh/agent
@@ -98,12 +98,12 @@ imports:
   - ed25519
   - ed25519/internal/edwards25519
 - name: golang.org/x/net
-  version: c4c3ea71919de159c9e246d7be66deb7f0a39a58
+  version: b400c2eff1badec7022a8c8f5bea058b6315eed7
   subpackages:
   - context
   - publicsuffix
 - name: golang.org/x/sys
-  version: 076b546753157f758b316e59bcb51e6807c04057
+  version: 62bee037599929a6e9146f29d10dd5208c43507d
   subpackages:
   - unix
 - name: gopkg.in/alexcesaro/quotedprintable.v3

@@ -165,8 +165,16 @@ func (l base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 		cmd := "curl --max-time 1 --retry 3 --noproxy 169.254.169.254 http://169.254.169.254/latest/meta-data/instance-id"
 		if r := l.ssh(cmd, noSudo); r.isSuccess() {
 			id := strings.TrimSpace(r.Stdout)
+
+			if id == "not found" {
+				// status: 0, stdout: "not found" on degitalocean or Azure
+				return false, "", nil
+			}
 			return true, id, nil
-		} else if r.ExitStatus == 28 || r.ExitStatus == 7 {
+		}
+
+		switch r.ExitStatus {
+		case 28, 7:
 			// Not running on AWS
 			//  7   Failed to connect to host.
 			// 28  operation timeout.
@@ -179,9 +187,13 @@ func (l base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 		if r := l.ssh(cmd, noSudo); r.isSuccess() {
 			id := strings.TrimSpace(r.Stdout)
 			return true, id, nil
-		} else if r.ExitStatus == 4 {
+		}
+
+		switch r.ExitStatus {
+		case 4, 8:
 			// Not running on AWS
 			// 4   Network failure
+			// 8   Server issued an error response.
 			return false, "", nil
 		}
 	}
