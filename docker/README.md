@@ -44,7 +44,17 @@
 
 1. Locate a ssh-key in (vuls/docker/conf/id_rsa)
 2. Ajust config.toml(vuls/docker/conf/config.toml) to your environment
+	
+	```
+	[servers]
 
+  	[servers.172-31-4-82]
+  	host        = "172.31.4.82"
+  	user        = "ec2-user"
+  	keyPath     = "/opt/vuls/conf/id_rsa"
+  	containers = ["container_name_a", "4aa37a8b63b9"]
+	```
+	
 ## Start A Vuls Container
 
 - Execute the following command to build and run a Vuls Container
