@@ -25,17 +25,20 @@
 1. [Install Docker](https://docs.docker.com/engine/installation/)
 2. [Install Docker-Compose](https://docs.docker.com/compose/install/)
 3. Make sure that you can run the following commands before you move on.
-```
-$ docker version
-$ docker-compose version
-```
+
+	```
+	$ docker version
+	$ docker-compose version
+	```
+
 4. Create a working directory for Vuls
-```
-mkdir work
-cd work
-git clone https://github.com/hikachan/vuls.git
-cd vuls/docker
-```
+
+	```
+	mkdir work
+	cd work
+	git clone https://github.com/hikachan/vuls.git
+	cd vuls/docker
+	```
 
 ## Setting up Vuls
 
@@ -45,17 +48,19 @@ cd vuls/docker
 ## Start A Vuls Container
 
 - Execute the following command to build and run a Vuls Container
-``
-docker-compose up -d
-`` 
+
+	``
+	docker-compose up -d
+	`` 
 
 ## Scan servers with Vuls-On-Docker
 
 - Use the embedded script to scan server for vulsrepo(or run whatever with docker exec)
-```
-docker exec -t vuls vuls prepare -config=conf/config.toml
-docker exec -t vuls scripts/scan_for_vulsrepo.sh
-```
+
+	```
+	docker exec -t vuls vuls prepare -config=conf/config.toml
+	docker exec -t vuls scripts/scan_for_vulsrepo.sh
+	```
 
 ## See the results in a browser 
 
