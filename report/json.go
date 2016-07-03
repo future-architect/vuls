@@ -34,7 +34,7 @@ func (w JSONWriter) Write(scanResults []models.ScanResult) (err error) {
 	path, err := ensureResultDir()
 
 	var jsonBytes []byte
-	if jsonBytes, err = json.MarshalIndent(scanResults, "", "  "); err != nil {
+	if jsonBytes, err = json.Marshal(scanResults); err != nil {
 		return fmt.Errorf("Failed to Marshal to JSON: %s", err)
 	}
 	all := filepath.Join(path, "all.json")
@@ -51,7 +51,7 @@ func (w JSONWriter) Write(scanResults []models.ScanResult) (err error) {
 				fmt.Sprintf("%s_%s.json", r.ServerName, r.Container.Name))
 		}
 
-		if jsonBytes, err = json.MarshalIndent(r, "", "  "); err != nil {
+		if jsonBytes, err = json.Marshal(r); err != nil {
 			return fmt.Errorf("Failed to Marshal to JSON: %s", err)
 		}
 		if err := ioutil.WriteFile(jsonPath, jsonBytes, 0644); err != nil {
