@@ -43,7 +43,7 @@
 ## Setting up Vuls
 
 1. Locate a ssh-key in (vuls/docker/conf/id_rsa)
-2. Ajust config.toml to your environment
+2. Ajust config.toml(vuls/docker/conf/config.toml) to your environment
 
 ## Start A Vuls Container
 
