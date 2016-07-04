@@ -743,7 +743,7 @@ $ ./vuls history | peco | ./vuls tui
 
 [![asciicast](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8.png)](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8)
 
-# Usage: go-cve-dictonary on different server 
+# Usage: go-cve-dictionary on different server 
 
 Run go-cve-dictionary as server mode before scanning on 192.168.10.1
 ```
