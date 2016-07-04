@@ -81,6 +81,7 @@ func (*ScanCmd) Synopsis() string { return "Scan vulnerabilities" }
 func (*ScanCmd) Usage() string {
 	return `scan:
 	scan
+		[SERVER]...
 		[-lang=en|ja]
 		[-config=/path/to/config.toml]
 		[-dbpath=/path/to/vuls.sqlite3]
