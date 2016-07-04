@@ -1,0 +1,11 @@
+version: '2'
+services:
+  vuls:
+    container_name: vuls
+    build: ./dockerfile
+    image: vuls-docker:0.1
+    volumes:
+    - ./conf:/opt/vuls/conf
+    ports:
+      - "80:80"
+
