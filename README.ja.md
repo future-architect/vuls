@@ -246,7 +246,7 @@ see https://github.com/future-architect/vuls/tree/master/setup/docker
 
 ![Vuls-Architecture](img/vuls-architecture.png)
 
-## [go-cve-dictinary](https://github.com/kotakanbe/go-cve-dictionary)  
+## [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)  
 - NVDとJVN(日本語)から脆弱性データベースを取得し、SQLite3に格納する。
 
 ## Vuls
