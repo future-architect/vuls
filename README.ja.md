@@ -586,7 +586,13 @@ SSH Configが使えるので、ProxyCommandを使った多段SSHなどが可能�
 
 ### Scan all servers defined in config file
 ```
-$ vuls scan --report-slack --report-mail --cvss-over=7 -ask-sudo-password -ask-key-password -cve-dictionary-dbpath=$PWD/cve.sqlite3
+$ vuls scan \
+      --report-slack \ 
+      --report-mail \
+      --cvss-over=7 \
+      -ask-sudo-password \ 
+      -ask-key-password \
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3
 ```
 この例では、
 - スキャン対象サーバのsudoパスワードを指定
@@ -598,7 +604,9 @@ $ vuls scan --report-slack --report-mail --cvss-over=7 -ask-sudo-password -ask-k
 
 ### Scan specific servers
 ```
-$ vuls scan -cve-dictionary-dbpath=$PWD/cve.sqlite3 server1 server2
+$ vuls scan \
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      server1 server2
 ```
 この例では、
 - SSH公開鍵認証（秘密鍵パスフレーズなし）
@@ -614,7 +622,11 @@ $ vuls scan -cve-dictionary-dbpath=$PWD/cve.sqlite3 server1 server2
 - security credentialsを設定 [Configuring the AWS Command Line Interface](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html)
 
 ```
-$ vuls scan -cve-dictionary-dbpath=$PWD/cve.sqlite3 -aws-region=ap-northeast-1 -aws-s3-bucket=vuls -aws-profile=default
+$ vuls scan \
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -aws-region=ap-northeast-1 \
+      -aws-s3-bucket=vuls \
+      -aws-profile=default 
 ```
 この例では、
 - SSH公開鍵認証（秘密鍵パスフレーズなし）

@@ -23,6 +23,15 @@ ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 
 RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH"
 
+# glide install
+ENV GLIDE_VERSION 0.10.2
+ENV GLIDE_DOWNLOAD_URL https://github.com/Masterminds/glide/releases/download/$GLIDE_VERSION/glide-$GLIDE_VERSION-linux-amd64.tar.gz
+RUN curl -fsSL "$GLIDE_DOWNLOAD_URL" -o glide.tar.gz \
+    && mkdir /usr/local/glide \
+    && tar -C /usr/local/glide -xzf glide.tar.gz \
+    && ln -s /usr/local/glide/linux-amd64/glide /usr/local/bin/ \
+    && rm glide.tar.gz
+
 # nginx Install
 RUN apt-key adv --keyserver hkp://pgp.mit.edu:80 --recv-keys 573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62 \
     && echo "deb http://nginx.org/packages/mainline/debian/ jessie nginx" >> /etc/apt/sources.list \
@@ -49,11 +58,23 @@ COPY nginx.conf /etc/nginx/nginx.conf
 ENV VULS_ROOT /opt/vuls
 RUN mkdir -p /var/log/vuls ${VULS_ROOT}/conf /root/.ssh/
 RUN chmod 700 -R /var/log/vuls $VULS_ROOT
-RUN go get github.com/kotakanbe/go-cve-dictionary
-RUN go get github.com/future-architect/vuls
+#  RUN go get github.com/kotakanbe/go-cve-dictionary
+#  RUN go get github.com/future-architect/vuls
+
+RUN go get -v -d github.com/kotakanbe/go-cve-dictionary \
+    && cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary \
+    && glide install \
+    && go install
+
+RUN go get -v -d github.com/future-architect/vuls \
+    && cd $GOPATH/src/github.com/future-architect/vuls \
+    && glide install \
+    && go install
 
 # Copy custom Scripts
 COPY ./scripts/ ${VULS_ROOT}/scripts
+RUN chmod 755 ${VULS_ROOT}/scripts/*
+
 
 #Vulrepo Install
 RUN git clone https://github.com/usiusi360/vulsrepo /tmp/vulsrepo
