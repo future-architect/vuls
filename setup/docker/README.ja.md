@@ -1,77 +1,102 @@
 # Vuls on Docker
 
-## Index
+## What's Vuls-On-Docker
 
-- テスト環境
-- サーバーセットアップ
-    - Dockerのインストール
-    - Docker Composeのインストール
-- vulsセットアップ
-    - sshキーの配置
-    - tomlの編集
-- Vuls 起動
-- Vuls scan実行
-- ブラウザから動作確認
+- 数個のコマンドを実行するだけでVulsとvulsrepoのセットアップが出来るスクリプト
+- Dockerコンテナ上にVulsと[vulsrepo](https://github.com/usiusi360/vulsrepo)をセットアップ可能
+- スキャン結果をvulsrepoでブラウザで分析可能
+- 脆弱性データベースの更新が可能
+- モジュールのアップデートが可能
 
+## Setting up your machine
+	
+1. [Install Docker](https://docs.docker.com/engine/installation/)
+2. [Install Docker-Compose](https://docs.docker.com/compose/install/)
+3. 実行前に以下のコマンドが実行可能なことを確認する
 
-##テスト環境
+	```
+	$ docker version
+	$ docker-compose version
+	```
 
-- Server OS: ubuntu 14.04
+4. Vulsをgit clone
+	```
+	mkdir work
+	cd work
+	git clone https://github.com/future-architect/vuls.git
+	cd vuls/setup/docker
+	```
 
-## サーバーセットアップ
+## Start A Vuls Container
 
-1. Dockerのインストール
-2. Docker Composeのインストール
+- 以下のコマンドを実行してコンテナをビルドする
 
-### 作業ディレクトリの作成
+	```
+	$ cd $GOPATH/src/github.com/future-architect/vuls/setup/docker
+	$ docker-compose up -d
+	```
 
-```
-mkdir work
-cd work
-git clone https://github.com/hikachan/vuls
-cd vuls
-```
+## Setting up Vuls
 
-## Vuls セットアップ
+1. スキャン対象サーバのSSH秘密鍵を保存(vuls/setup/docker/conf/)する
+2. config.toml(vuls/docker/conf/config.toml) を環境に合わせて作成する
+	
+	```
+	[servers]
 
-### sshキーの配置(vuls/docker/conf/id_rsa)
+  	[servers.172-31-4-82]
+  	host        = "172.31.4.82"
+  	user        = "ec2-user"
+  	keyPath     = "conf/id_rsa"
+	```
 
-### tomlの編集(vuls/docker/conf/config.toml)
+## Fetch Vulnerability database
 
-```
-[servers]
+- NVDから脆弱性データベースを取得する
+	```
+	$ docker exec -t vuls scripts/fetch_nvd_all.sh
+	```
 
-#This is a sample
-[servers.172.17.0.1]
-host         = "172.17.0.1"
-port        = "22"
-user        = "ubuntu"
-keyPath     = "/root/.ssh/id_rsa"
-#containers = ["target_container"]
-```
+- レポートを日本語化する場合は、JVNから脆弱性データを取得する
+	```
+	$ docker exec -t vuls scripts/fetch_jvn_all.sh
+	```
 
-## Vuls 起動
+## Scan servers with Vuls-On-Docker
 
-```
-docker-compose up -d
-```
+- スキャンを実行する
 
-## Update cve
+	```
+	$ docker exec -t vuls vuls prepare -config=conf/config.toml
+	$ docker exec -t vuls scripts/scan_for_vulsrepo.sh
+	```
 
-```
-docker exec -t vuls scripts/update_cve.sh
-```
-
-## Vuls Scan 実行
-
-```
-docker exec -t vuls vuls prepare -config=conf/config.toml
-docker exec -t vuls scripts/scan_for_vulsrepo.sh
-```
-
-### Vuls Repo 接続確認
+## See the results in a browser 
 
 ```
 http://${Vuls_Host}/vulsrepo/
 ```
 
+# Update modules
+
+- vuls, go-cve-dictionary, vulsrepoのモジュールをアップデートする
+	```
+	$ docker exec -t vuls scripts/update_modules.sh
+	```
+
+# Update Vulnerability database
+
+- NVDの過去２年分の脆弱性データベースを更新する
+	```
+	$ docker exec -t vuls scripts/fetch_nvd_last2y.sh
+	```
+
+- JVNの過去１ヶ月分の脆弱性データベースを更新する
+	```
+	$ docker exec -t vuls scripts/fetch_jvn_month.sh
+	```
+
+- JVNの過去1週間分の脆弱性データベースを更新する
+	```
+	$ docker exec -t vuls scripts/fetch_jvn_week.sh
+	```
