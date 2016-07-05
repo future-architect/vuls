@@ -1,0 +1,3 @@
+[submodule "vuls-cookbook"]
+	path = vuls-cookbook
+	url = https://github.com/sadayuki-matsuno/vuls-cookbook.git
