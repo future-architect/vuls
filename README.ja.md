@@ -59,6 +59,20 @@ Vulsは上に挙げた手動運用での課題を解決するツールであり�
 
 ----
 
+# Setup Vuls
+
+Vulsのセットアップは以下の３パターンがある
+
+-  Dockerコンテナ上にセットアップ  
+Docker Composeを用いて少ないコマンドでセットアップ可能  
+see https://github.com/future-architect/vuls/tree/master/setup/docker
+- Chefでセットアップ  
+see https://github.com/sadayuki-matsuno/vuls-cookbook
+- 手動でセットアップ  
+Hello Vulsチュートリアルでは手動でのセットアップ方法で説明する
+
+----
+
 # Hello Vuls 
 
 本チュートリアルでは、Amazon EC2にVulsをセットアップし、自分に存在する脆弱性をスキャンする方法を説明する。
@@ -233,14 +247,6 @@ $ vuls tui
 ```
 
 ![Vuls-TUI](img/hello-vuls-tui.png)
-
-
-----
-
-# Setup Vuls in a Docker Container
-
-VulsをDockerコンテナ上に作成する方法  
-see https://github.com/future-architect/vuls/tree/master/setup/docker
 
 ----
 
