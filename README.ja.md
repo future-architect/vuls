@@ -3,6 +3,8 @@
 
 [![Slack](https://img.shields.io/badge/slack-join-blue.svg)](http://goo.gl/forms/xm5KFo35tu)
 
+![Vuls-logo](img/vuls_logo.png)  
+
 Vulnerability scanner for Linux/FreeBSD, agentless, written in golang.
 
 [README in English](https://github.com/future-architect/vuls/blob/master/README.md)  
@@ -990,5 +992,4 @@ Please see [CHANGELOG](https://github.com/future-architect/vuls/blob/master/CHAN
 # Licence
 
 Please see [LICENSE](https://github.com/future-architect/vuls/blob/master/LICENSE).
-
 
