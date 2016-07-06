@@ -5,6 +5,7 @@
 [![License](https://img.shields.io/github/license/future-architect/vuls.svg?style=flat-square)](https://github.com/future-architect/vuls/blob/master/LICENSE.txt)
 
 
+![Vuls-logo](img/vuls_logo.png)
 Vulnerability scanner for Linux/FreeBSD, agentless, written in golang.
 
 We have a slack team. [Join slack team](http://goo.gl/forms/xm5KFo35tu)  
@@ -937,5 +938,4 @@ Please see [CHANGELOG](https://github.com/future-architect/vuls/blob/master/CHAN
 # Licence
 
 Please see [LICENSE](https://github.com/future-architect/vuls/blob/master/LICENSE).
-
 
