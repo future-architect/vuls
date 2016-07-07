@@ -808,7 +808,7 @@ $ go-cve-dictionary fetchnvd -last2y
 # Deploy With Glide
 
 If an error occurred while go get, try deploying with glide.  
-- Install [Glide](https://github.com/bumptech/glide)
+- Install [Glide](https://github.com/Masterminds/glide)
 - Deploy go-cve-dictionary
 ```
 $ go get -d github.com/kotakanbe/go-cve-dictionary
