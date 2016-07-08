@@ -67,7 +67,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 
 # Setup Vuls
 
-Therea are 3 ways to setup Vuls.
+There are 3 ways to setup Vuls.
 
 - Docker container  
 Dockernized-Vuls with vulsrepo UI in it.  
