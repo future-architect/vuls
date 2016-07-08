@@ -65,7 +65,24 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 
 ----
 
-# Hello Vuls 
+# Setup Vuls
+
+Therea are 3 ways to setup Vuls.
+
+- Docker container  
+Dockernized-Vuls with vulsrepo UI in it.  
+You can run install and run Vuls on your machine with only a few commands.  
+see https://github.com/future-architect/vuls/tree/master/setup/docker
+
+- Chef  
+see https://github.com/sadayuki-matsuno/vuls-cookbook
+
+- Manually  
+Hello Vuls Tutorial shows how to setup vuls manually.
+
+----
+
+# Tutorial: Hello Vuls
 
 This tutorial will let you scan the vulnerabilities on the localhost with Vuls.   
 This can be done in the following steps.  
