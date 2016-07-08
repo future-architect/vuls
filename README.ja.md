@@ -65,7 +65,8 @@ Vulsのセットアップは以下の３パターンがある
 
 -  Dockerコンテナ上にセットアップ  
 Docker Composeを用いて少ないコマンドでセットアップ可能  
-see https://github.com/future-architect/vuls/tree/master/setup/docker
+see https://github.com/future-architect/vuls/tree/master/setup/docker  
+[日本語README](https://github.com/future-architect/vuls/blob/master/setup/docker/README.ja.md)  
 - Chefでセットアップ  
 see https://github.com/sadayuki-matsuno/vuls-cookbook
 - 手動でセットアップ  
