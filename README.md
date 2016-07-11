@@ -484,6 +484,7 @@ prepare
                         [-config=/path/to/config.toml] [-debug]
                         [-ask-sudo-password]
                         [-ask-key-password]
+                        [SERVER]...
 
   -ask-key-password
         Ask ssh privatekey password before scanning
@@ -514,6 +515,7 @@ scan:
                 [-cvss-over=7]
                 [-ignore-unscored-cves]
                 [-ssh-external]
+                [-report-azure-blob]
                 [-report-json]
                 [-report-mail]
                 [-report-s3]
@@ -527,6 +529,11 @@ scan:
                 [-aws-profile=default]
                 [-aws-region=us-west-2]
                 [-aws-s3-bucket=bucket_name]
+                [-azure-account=accout]
+                [-azure-key=key]
+                [-azure-container=container]
+                [SERVER]...
+
 
   -ask-key-password
         Ask ssh privatekey password before scanning
@@ -538,9 +545,15 @@ scan:
         AWS Region to use (default "us-east-1")
   -aws-s3-bucket string
         S3 bucket name
-  -config string
+  -azure-account string
+        Azure account name to use. AZURE_STORAGE_ACCOUNT environment variable is used if not specified
+  -azure-container string
+        Azure storage container name
+  -azure-key string
+        Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified
+   -config string
         /path/to/toml (default "$PWD/config.toml")
-  --cve-dictionary-dbpath string
+  -cve-dictionary-dbpath string
         /path/to/sqlite3 (For get cve detail from cve.sqlite3)        
   -cve-dictionary-url string
         http://CVE.Dictionary (default "http://127.0.0.1:1323")
@@ -607,9 +620,7 @@ This is useful If you want to use ProxyCommand or chiper algorithm of SSH that i
 At the end of the scan, scan results will be available in the `$PWD/result/current/` directory.  
 `all.(json|txt)` includes the scan results of all servres and `servername.(json|txt)` includes the scan result of the server.
 
-## example
-
-### Scan all servers defined in config file
+## Example: Scan all servers defined in config file
 ```
 $ vuls scan \
       --report-slack \ 
@@ -626,7 +637,7 @@ With this sample command, it will ..
 - Only Report CVEs that CVSS score is over 7
 - Print scan result to terminal
 
-### Scan specific servers
+## Example: Scan specific servers
 ```
 $ vuls scan \
       -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
@@ -638,7 +649,7 @@ With this sample command, it will ..
 - Scan only 2 servers (server1, server2)
 - Print scan result to terminal
 
-### Put results in S3 bucket
+## Example: Put results in S3 bucket
 To put results in S3 bucket, configure following settings in AWS before scanning.
 - Create S3 bucket. see [Creating a Bucket](http://docs.aws.amazon.com/AmazonS3/latest/UG/CreatingaBucket.html)  
 - Create access key. The access key must have read and write access to the AWS S3 bucket. see [Managing Access Keys for IAM Users](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html)
@@ -647,6 +658,7 @@ To put results in S3 bucket, configure following settings in AWS before scanning
 ```
 $ vuls scan \
       -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -report-s3 \
       -aws-region=ap-northeast-1 \
       -aws-s3-bucket=vuls \
       -aws-profile=default 
@@ -656,6 +668,35 @@ With this sample command, it will ..
 - Sudo with no password (without -ask-sudo-password option)
 - Scan all servers defined in config file
 - Put scan result(JSON) in S3 bucket. The bucket name is "vuls" in ap-northeast-1 and profile is "default"
+
+## Example: Put results in Azure Blob storage
+
+To put results in Azure Blob Storage, configure following settings in Azure before scanning.
+- Create a container
+
+```
+$ vuls scan \
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -report-azure-blob \
+      -azure-container=vuls \
+      -azure-account=test \
+      -azure-key=access-key-string 
+```
+With this sample command, it will ..
+- Use SSH Key-Based authentication with empty password (without -ask-key-password option)
+- Sudo with no password (without -ask-sudo-password option)
+- Scan all servers defined in config file
+- Put scan result(JSON) in Azure Blob Storage. The container name is "vuls", storage account is "test" and accesskey is "access-key-string"
+
+account and access key can be defined in environment variables.
+```
+$ export AZURE_STORAGE_ACCOUNT=test
+$ export AZURE_STORAGE_ACCESS_KEY=access-key-string
+$ vuls scan \
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -report-azure-blob \
+      -azure-container=vuls
+```
 
 
 ----

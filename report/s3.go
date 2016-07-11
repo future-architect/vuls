@@ -32,16 +32,6 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
-// S3Writer writes results to S3
-type S3Writer struct{}
-
-func getS3() *s3.S3 {
-	return s3.New(session.New(&aws.Config{
-		Region:      aws.String(c.Conf.AwsRegion),
-		Credentials: credentials.NewSharedCredentials("", c.Conf.AwsProfile),
-	}))
-}
-
 // CheckIfBucketExists check the existence of S3 bucket
 func CheckIfBucketExists() error {
 	svc := getS3()
@@ -67,7 +57,17 @@ func CheckIfBucketExists() error {
 	return nil
 }
 
-// Write put results in S3
+// S3Writer writes results to S3
+type S3Writer struct{}
+
+func getS3() *s3.S3 {
+	return s3.New(session.New(&aws.Config{
+		Region:      aws.String(c.Conf.AwsRegion),
+		Credentials: credentials.NewSharedCredentials("", c.Conf.AwsProfile),
+	}))
+}
+
+// Write results to S3
 func (w S3Writer) Write(scanResults []models.ScanResult) (err error) {
 
 	var jsonBytes []byte

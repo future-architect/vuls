@@ -1,10 +1,10 @@
-hash: f6451157cbeaa3590d2b62fb9902221f73c81b5aeda722cf61929f88ce1cfc64
-updated: 2016-07-03T16:13:02.040590043+09:00
+hash: 9683c87b3cf998e7fac1b12c4a94bf2bd18cb5422e9108539811546e703a439a
+updated: 2016-07-12T16:20:45.462913061+09:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: df81827fdd59d8b4fb93d8910b286ab7a3919520
 - name: github.com/aws/aws-sdk-go
-  version: caee6e866bf437a6bef0777a3bf141cdd3aa022d
+  version: 90dec2183a5f5458ee79cbaf4b8e9ab910bc81a6
   subpackages:
   - aws
   - aws/credentials
@@ -28,14 +28,18 @@ imports:
   - private/protocol/query
   - private/protocol/xml/xmlutil
   - private/protocol/query/queryutil
+- name: github.com/Azure/azure-sdk-for-go
+  version: 58a13e378daf3b06e65925397185684b16321111
+  subpackages:
+  - storage
 - name: github.com/BurntSushi/toml
-  version: f0aeabca5a127c4078abb8c8d64298b147264b55
+  version: ffaa107fbd880f6d18cd6fec9b511668dcad8639
 - name: github.com/cenkalti/backoff
   version: cdf48bbc1eb78d1349cbda326a4a037f7ba565c6
 - name: github.com/cheggaaa/pb
-  version: c1f48d5ce4f292dfb775ef52aaedd15be323510d
+  version: 04b234c80d661c663dbcebd52fc7218fdacc6d0c
 - name: github.com/go-ini/ini
-  version: 927d8d7ced542ab92df77ac1637b6e56336ee0dd
+  version: cf53f9204df4fbdd7ec4164b57fa6184ba168292
 - name: github.com/google/subcommands
   version: 1c7173745a6001f67d8d96ab4e178284c77f7759
 - name: github.com/gosuri/uitable
@@ -46,7 +50,7 @@ imports:
 - name: github.com/howeyc/gopass
   version: 66487b23f2880ba32e185121d2cd51a338ea069a
 - name: github.com/jinzhu/gorm
-  version: c1c4f9f86e732a042aac9f37e025893d6d6cabec
+  version: 613c0655691abb7691b70c5fda80a716d9e20b1b
 - name: github.com/jinzhu/inflection
   version: 8f4d3a0d04ce0b7c0cf3126fb98524246d00d102
 - name: github.com/jmespath/go-jmespath
@@ -89,7 +93,7 @@ imports:
 - name: github.com/Sirupsen/logrus
   version: f3cfb454f4c209e6668c95216c4744b8fddb2356
 - name: golang.org/x/crypto
-  version: 811831de4c4dd03a0b8737233af3b36852386373
+  version: c2f4947f41766b144bb09066e919466da5eddeae
   subpackages:
   - ssh
   - ssh/agent
@@ -98,12 +102,12 @@ imports:
   - ed25519
   - ed25519/internal/edwards25519
 - name: golang.org/x/net
-  version: b400c2eff1badec7022a8c8f5bea058b6315eed7
+  version: f841c39de738b1d0df95b5a7187744f0e03d8112
   subpackages:
   - context
   - publicsuffix
 - name: golang.org/x/sys
-  version: 62bee037599929a6e9146f29d10dd5208c43507d
+  version: a408501be4d17ee978c04a618e7a1b22af058c0e
   subpackages:
   - unix
 - name: gopkg.in/alexcesaro/quotedprintable.v3

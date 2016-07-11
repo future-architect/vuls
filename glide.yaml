@@ -1,8 +1,17 @@
 package: github.com/future-architect/vuls
 import:
+- package: github.com/Azure/azure-sdk-for-go
+  subpackages:
+  - storage
 - package: github.com/BurntSushi/toml
 - package: github.com/Sirupsen/logrus
 - package: github.com/asaskevich/govalidator
+- package: github.com/aws/aws-sdk-go
+  subpackages:
+  - aws
+  - aws/credentials
+  - aws/session
+  - service/s3
 - package: github.com/cenkalti/backoff
 - package: github.com/google/subcommands
 - package: github.com/gosuri/uitable
