@@ -54,6 +54,10 @@ type Config struct {
 	AwsRegion  string
 	S3Bucket   string
 
+	AzureAccount   string
+	AzureKey       string
+	AzureContainer string
+
 	//  CpeNames      []string
 	//  SummaryMode          bool
 	UseYumPluginSecurity  bool

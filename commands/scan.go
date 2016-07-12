@@ -49,24 +49,28 @@ type ScanCmd struct {
 	cvssScoreOver      float64
 	ignoreUnscoredCves bool
 
-	httpProxy string
-
-	// reporting
-	reportSlack bool
-	reportMail  bool
-	reportJSON  bool
-	reportText  bool
-	reportS3    bool
-
+	httpProxy       string
 	askSudoPassword bool
 	askKeyPassword  bool
 
-	useYumPluginSecurity  bool
-	useUnattendedUpgrades bool
+	// reporting
+	reportSlack     bool
+	reportMail      bool
+	reportJSON      bool
+	reportText      bool
+	reportS3        bool
+	reportAzureBlob bool
 
 	awsProfile  string
 	awsS3Bucket string
 	awsRegion   string
+
+	azureAccount   string
+	azureKey       string
+	azureContainer string
+
+	useYumPluginSecurity  bool
+	useUnattendedUpgrades bool
 
 	sshExternal bool
 }
@@ -81,7 +85,6 @@ func (*ScanCmd) Synopsis() string { return "Scan vulnerabilities" }
 func (*ScanCmd) Usage() string {
 	return `scan:
 	scan
-		[SERVER]...
 		[-lang=en|ja]
 		[-config=/path/to/config.toml]
 		[-dbpath=/path/to/vuls.sqlite3]
@@ -90,6 +93,7 @@ func (*ScanCmd) Usage() string {
 		[-cvss-over=7]
 		[-ignore-unscored-cves]
 		[-ssh-external]
+		[-report-azure-blob]
 		[-report-json]
 		[-report-mail]
 		[-report-s3]
@@ -103,6 +107,13 @@ func (*ScanCmd) Usage() string {
 		[-aws-profile=default]
 		[-aws-region=us-west-2]
 		[-aws-s3-bucket=bucket_name]
+		[-azure-profile=default]
+		[-aws-region=us-west-2]
+		[-azure-account=accout]
+		[-azure-key=key]
+		[-azure-container=container]
+
+		[SERVER]...
 `
 }
 
@@ -174,11 +185,20 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.reportS3,
 		"report-s3",
 		false,
-		"Write report to S3 (bucket/yyyyMMdd_HHmm)",
+		"Write report to S3 (bucket/yyyyMMdd_HHmm/servername.json)",
 	)
-	f.StringVar(&p.awsProfile, "aws-profile", "default", "AWS Profile to use")
-	f.StringVar(&p.awsRegion, "aws-region", "us-east-1", "AWS Region to use")
+	f.StringVar(&p.awsProfile, "aws-profile", "default", "AWS profile to use")
+	f.StringVar(&p.awsRegion, "aws-region", "us-east-1", "AWS region to use")
 	f.StringVar(&p.awsS3Bucket, "aws-s3-bucket", "", "S3 bucket name")
+
+	f.BoolVar(&p.reportAzureBlob,
+		"report-azure-blob",
+		false,
+		"Write report to S3 (container/yyyyMMdd_HHmm/servername.json)",
+	)
+	f.StringVar(&p.azureAccount, "azure-account", "", "Azure account name to use. AZURE_STORAGE_ACCOUNT environment variable is used if not specified")
+	f.StringVar(&p.azureKey, "azure-key", "", "Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified")
+	f.StringVar(&p.azureContainer, "azure-container", "", "Azure storage container name")
 
 	f.BoolVar(
 		&p.askKeyPassword,
@@ -295,6 +315,29 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 			return subcommands.ExitUsageError
 		}
 		reports = append(reports, report.S3Writer{})
+	}
+	if p.reportAzureBlob {
+		c.Conf.AzureAccount = p.azureAccount
+		if c.Conf.AzureAccount == "" {
+			c.Conf.AzureAccount = os.Getenv("AZURE_STORAGE_ACCOUNT")
+		}
+
+		c.Conf.AzureKey = p.azureKey
+		if c.Conf.AzureKey == "" {
+			c.Conf.AzureKey = os.Getenv("AZURE_STORAGE_ACCESS_KEY")
+		}
+
+		c.Conf.AzureContainer = p.azureContainer
+		if c.Conf.AzureContainer == "" {
+			Log.Error("Azure storage container name is requied with --azure-container option")
+			return subcommands.ExitUsageError
+		}
+		if err := report.CheckIfAzureContainerExists(); err != nil {
+			Log.Errorf("Failed to access to the Azure Blob container. err: %s", err)
+			Log.Error("Ensure the container or check Azure config before scanning")
+			return subcommands.ExitUsageError
+		}
+		reports = append(reports, report.AzureBlobWriter{})
 	}
 
 	c.Conf.DBPath = p.dbpath

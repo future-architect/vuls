@@ -467,6 +467,7 @@ prepare
                         [-config=/path/to/config.toml] [-debug]
                         [-ask-sudo-password]
                         [-ask-key-password]
+                        [SERVER]...
 
   -ask-key-password
         Ask ssh privatekey password before scanning
@@ -497,6 +498,7 @@ scan:
                 [-cvss-over=7]
                 [-ignore-unscored-cves]
                 [-ssh-external]
+                [-report-azure-blob]
                 [-report-json]
                 [-report-mail]
                 [-report-s3]
@@ -510,6 +512,12 @@ scan:
                 [-aws-profile=default]
                 [-aws-region=us-west-2]
                 [-aws-s3-bucket=bucket_name]
+                [-azure-account=accout]
+                [-azure-key=key]
+                [-azure-container=container]
+                [SERVER]...
+
+
 
   -ask-key-password
         Ask ssh privatekey password before scanning
@@ -521,9 +529,15 @@ scan:
         AWS Region to use (default "us-east-1")
   -aws-s3-bucket string
         S3 bucket name
+  -azure-account string
+        Azure account name to use. AZURE_STORAGE_ACCOUNT environment variable is used if not specified
+  -azure-container string
+        Azure storage container name
+  -azure-key string
+        Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified
   -config string
         /path/to/toml (default "$PWD/config.toml")
-  --cve-dictionary-dbpath string
+  -cve-dictionary-dbpath string
         /path/to/sqlite3 (For get cve detail from cve.sqlite3)        
   -cve-dictionary-url string
         http://CVE.Dictionary (default "http://127.0.0.1:1323")
@@ -591,14 +605,12 @@ SSH Configが使えるので、ProxyCommandを使った多段SSHなどが可能�
 `all.(json|txt)`には、全サーバのスキャン結果が出力される。  
 `servername.(json|txt)`には、サーバごとのスキャン結果が出力される。
 
-## example
-
-### Scan all servers defined in config file
+## Example: Scan all servers defined in config file
 ```
 $ vuls scan \
-      --report-slack \ 
-      --report-mail \
-      --cvss-over=7 \
+      -report-slack \ 
+      -report-mail \
+      -cvss-over=7 \
       -ask-sudo-password \ 
       -ask-key-password \
       -cve-dictionary-dbpath=$PWD/cve.sqlite3
@@ -611,7 +623,7 @@ $ vuls scan \
 - CVSSスコアが 7.0 以上の脆弱性のみレポート
 - go-cve-dictionaryにはHTTPではなくDBに直接アクセス（go-cve-dictionaryをサーバモードで起動しない）
 
-### Scan specific servers
+## Example: Scan specific servers
 ```
 $ vuls scan \
       -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
@@ -622,8 +634,7 @@ $ vuls scan \
 - ノーパスワードでsudoが実行可能
 - configで定義されているサーバの中の、server1, server2のみスキャン
 
-### Put results in S3 bucket
-レポートをS3バケットに格納する方法
+## Example: Put results in S3 bucket
 
 事前にAWS関連の設定を行う
 - S3バケットを作成 [Creating a Bucket](http://docs.aws.amazon.com/AmazonS3/latest/UG/CreatingaBucket.html)
@@ -633,6 +644,7 @@ $ vuls scan \
 ```
 $ vuls scan \
       -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -report-s3
       -aws-region=ap-northeast-1 \
       -aws-s3-bucket=vuls \
       -aws-profile=default 
@@ -645,6 +657,38 @@ $ vuls scan \
   - バケット名 ... vuls
   - リージョン ... ap-northeast-1
   - 利用するProfile ... default
+
+## Example: Put results in Azure Blob storage
+
+事前にAzure Blob関連の設定を行う
+- Containerを作成
+
+```
+$ vuls scan \
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -report-azure-blob \
+      -azure-container=vuls \
+      -azure-account=test \
+      -azure-key=access-key-string 
+```
+この例では、
+- SSH公開鍵認証（秘密鍵パスフレーズなし）
+- ノーパスワードでsudoが実行可能
+- configに定義された全サーバをスキャン
+- 結果をJSON形式でAzure Blobに格納する。
+  - コンテナ名 ... vuls
+  - ストレージアカウント名 ... test
+  - アクセスキー ... access-key-string
+
+また、アカウント名とアクセスキーは環境変数でも定義が可能
+```
+$ export AZURE_STORAGE_ACCOUNT=test
+$ export AZURE_STORAGE_ACCESS_KEY=access-key-string
+$ vuls scan \
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -report-azure-blob \
+      -azure-container=vuls
+```
 
 ----
 

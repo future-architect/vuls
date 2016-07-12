@@ -508,6 +508,7 @@ func (o *debian) scanPackageCveInfos(unsecurePacks []models.PackageInfo) (cvePac
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
+			//TODO append to errs
 			return nil, fmt.Errorf("Timeout scanPackageCveIDs")
 		}
 	}

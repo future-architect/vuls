@@ -65,6 +65,7 @@ func (*PrepareCmd) Usage() string {
 			[-ask-key-password]
 			[-debug]
 
+		    [SERVER]...
 `
 }
 
