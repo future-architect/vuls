@@ -107,8 +107,6 @@ func (*ScanCmd) Usage() string {
 		[-aws-profile=default]
 		[-aws-region=us-west-2]
 		[-aws-s3-bucket=bucket_name]
-		[-azure-profile=default]
-		[-aws-region=us-west-2]
 		[-azure-account=accout]
 		[-azure-key=key]
 		[-azure-container=container]
