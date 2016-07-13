@@ -227,6 +227,9 @@ type ServerInfo struct {
 	// Container Names or IDs
 	Containers []string
 
+	// Optional key-value set that will be outputted to JSON
+	Optional [][]interface{}
+
 	// used internal
 	LogMsgAnsiColor string // DebugLog Color
 	SudoOpt         SudoOption

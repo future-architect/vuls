@@ -118,6 +118,20 @@ func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
 			s.Containers = d.Containers
 		}
 
+		s.Optional = v.Optional
+		for _, dkv := range d.Optional {
+			found := false
+			for _, kv := range s.Optional {
+				if dkv[0] == kv[0] {
+					found = true
+					break
+				}
+			}
+			if !found {
+				s.Optional = append(s.Optional, dkv)
+			}
+		}
+
 		s.LogMsgAnsiColor = Colors[i%len(Colors)]
 		i++
 

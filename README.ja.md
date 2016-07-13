@@ -336,6 +336,13 @@ subjectPrefix = "[vuls]"
 #port        = "22"
 #user        = "username"
 #keyPath     = "/home/username/.ssh/id_rsa"
+#cpeNames = [
+#  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
+#]
+#containers = ["${running}"]
+#optional = [
+#    ["key", "value"],
+#]
 
 [servers]
 
@@ -348,6 +355,9 @@ host         = "172.31.4.82"
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
 #containers = ["${running}"]
+#optional = [
+#    ["key", "value"],
+#]
 ```
 
 このテンプレート使ってVulsの設定フィアルを作ってもよい。
@@ -414,6 +424,9 @@ host         = "172.31.4.82"
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
     #containers = ["${running}"]
+    #optional = [
+    #    ["key", "value"],
+    #]
     ```
     下記serversセクションで値が指定されなかった場合のデフォルト値
 
@@ -430,13 +443,25 @@ host         = "172.31.4.82"
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
     #containers = ["${running}"]
+    #optional = [
+    #    ["key", "value"],
+    #]
     ```
 
     serversセクションの値は、defaultセクションの値よりも優先される。
     defaultセクションの値を使いたい場合は `#` でコメントアウトする。
 
+    - host: IP address or hostname of target server
+    - port: SSH Port number
+    - user: SSH username
+    - keyPath: SSH private key path
+    - cpeNames: see [Usage: Scan vulnerability of non-OS package](https://github.com/future-architect/vuls/blob/master/README.ja.md#usage-scan-vulnerability-of-non-os-package)
+    - containers: see [Usage: Scan Docker containers](https://github.com/future-architect/vuls/blob/master/README.ja.md#usage-scan-docker-containers)
+    - optional: JSONレポートに含めたい追加情報
+
+
     Vulsは各サーバにSSHで接続するが、Goのネイティブ実装と、OSコマンドの２種類のSSH接続方法をサポートしている。
-    詳細は [-ssh-external option](https://github.com/future-architect/vuls#-ssh-external-option) を参照。
+    詳細は [-ssh-external option](https://github.com/future-architect/vuls/blob/master/README.ja.md#-ssh-external-option) を参照。
     
     また、以下のSSH認証をサポートしている。
     - SSH agent
@@ -688,6 +713,46 @@ $ vuls scan \
       -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
       -report-azure-blob \
       -azure-container=vuls
+```
+
+## Example: Add optional key-value pairs to JSON
+
+追加情報をJSONに含めることができる。  
+デフォルトセクションのkey-valueはserversセクションのもので上書きされる。  
+使い方の例として、AzureリソースグループやVM名を指定しておくことで、結果のJSONをスクリプトでパースしてAzure VMの操作をする、などが可能。
+
+- config.toml
+```toml
+[default]
+optional = [
+	["key1", "default_value"],
+	["key3", "val3"],
+]
+
+[servers.bsd]
+host     = "192.168.11.11"
+user     = "kanbe"
+optional = [
+	["key1", "val1"],
+	["key2", "val2"],
+]
+```
+
+- bsd.json
+```json
+[
+  {
+    "ServerName": "bsd",
+    "Family": "FreeBSD",
+    "Release": "10.3-RELEASE",
+    .... snip ...
+    "Optional": [
+      [  "key1", "val1" ],
+      [  "key2", "val2" ],
+      [  "key3", "val3" ]
+    ]
+  }
+]
 ```
 
 ----

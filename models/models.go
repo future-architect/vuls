@@ -88,6 +88,8 @@ type ScanResult struct {
 	//  NWLinks     []NWLink
 	KnownCves   []CveInfo
 	UnknownCves []CveInfo
+
+	Optional [][]interface{} `gorm:"-"`
 }
 
 // ServerInfo returns server name one line

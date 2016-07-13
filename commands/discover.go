@@ -116,6 +116,9 @@ subjectPrefix = "[vuls]"
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
 #containers = ["${running}"]
+#optional = [
+#    ["key", "value"],
+#]
 
 [servers]
 {{- $names:=  .Names}}
@@ -129,6 +132,9 @@ host         = "{{$ip}}"
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
 #containers = ["${running}"]
+#optional = [
+#    ["key", "value"],
+#]
 {{end}}
 
 `
