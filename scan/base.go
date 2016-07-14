@@ -115,9 +115,7 @@ func (l *base) dockerPs(option string) (string, error) {
 	cmd := fmt.Sprintf("docker ps %s", option)
 	r := l.ssh(cmd, noSudo)
 	if !r.isSuccess() {
-		return "", fmt.Errorf(
-			"Failed to %s. status: %d, stdout: %s, stderr: %s",
-			cmd, r.ExitStatus, r.Stdout, r.Stderr)
+		return "", fmt.Errorf("Failed to SSH: %s", r)
 	}
 	return r.Stdout, nil
 }

@@ -109,8 +109,8 @@ func (s CvePacksList) Less(i, j int) bool {
 func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 	var itsMe bool
 	var fatalErr error
-	itsMe, osType, fatalErr = detectDebian(c)
 
+	itsMe, osType, fatalErr = detectDebian(c)
 	if fatalErr != nil {
 		osType.setServerInfo(c)
 		osType.setErrs([]error{fatalErr})
@@ -134,74 +134,61 @@ func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 }
 
 // InitServers detect the kind of OS distribution of target servers
-func InitServers(localLogger *logrus.Entry) error {
+func InitServers(localLogger *logrus.Entry) {
 	Log = localLogger
+	servers = detectServerOSes()
 
-	hosts, err := detectServerOSes()
-	if err != nil {
-		return fmt.Errorf("Failed to detect server OSes. err: %s", err)
-	}
-	servers = hosts
-	Log.Info("Detecting Container OS...")
-	containers, err := detectContainerOSes()
-	if err != nil {
-		return fmt.Errorf("Failed to detect Container OSes. err: %s", err)
-	}
+	containers := detectContainerOSes()
 	servers = append(servers, containers...)
 
-	Log.Info("Detecting Platforms...")
-	errs := detectPlatforms()
-	if 0 < len(errs) {
-		// Only logging
-		Log.Errorf("Failed to detect platforms. err: %v", errs)
-	}
-	for i, s := range servers {
+	Log.Info("SSH-able servers are below...")
+	for _, s := range servers {
 		if s.getServerInfo().IsContainer() {
-			Log.Infof("(%d/%d) %s on %s is running on %s",
-				i+1, len(servers),
+			fmt.Printf("%s@%s ",
 				s.getServerInfo().Container.Name,
 				s.getServerInfo().ServerName,
-				s.getPlatform().Name,
 			)
-
 		} else {
-			Log.Infof("(%d/%d) %s is running on %s",
-				i+1, len(servers),
-				s.getServerInfo().ServerName,
-				s.getPlatform().Name,
-			)
+			fmt.Printf("%s ", s.getServerInfo().ServerName)
 		}
 	}
-	return nil
+	fmt.Printf("\n")
 }
 
-func detectServerOSes() (oses []osTypeInterface, err error) {
+func detectServerOSes() (sshAbleOses []osTypeInterface) {
+	Log.Info("Detecting OS of servers... ")
 	osTypeChan := make(chan osTypeInterface, len(config.Conf.Servers))
 	defer close(osTypeChan)
 	for _, s := range config.Conf.Servers {
 		go func(s config.ServerInfo) {
-			//TODO handling Unknown OS
+			defer func() {
+				if p := recover(); p != nil {
+					Log.Debugf("Panic: %s on %s", p, s.ServerName)
+				}
+			}()
 			osTypeChan <- detectOS(s)
 		}(s)
 	}
 
-	timeout := time.After(60 * time.Second)
+	var oses []osTypeInterface
+	timeout := time.After(30 * time.Second)
 	for i := 0; i < len(config.Conf.Servers); i++ {
 		select {
 		case res := <-osTypeChan:
 			oses = append(oses, res)
 			if 0 < len(res.getErrs()) {
-				Log.Infof("(%d/%d) Failed %s",
+				Log.Errorf("(%d/%d) Failed: %s, err: %s",
 					i+1, len(config.Conf.Servers),
-					res.getServerInfo().ServerName)
+					res.getServerInfo().ServerName,
+					res.getErrs())
 			} else {
-				Log.Infof("(%d/%d) Detected %s: %s",
+				Log.Infof("(%d/%d) Detected: %s: %s",
 					i+1, len(config.Conf.Servers),
 					res.getServerInfo().ServerName,
 					res.getDistributionInfo())
 			}
 		case <-timeout:
-			msg := "Timeout occurred while detecting"
+			msg := "Timed out while detecting servers"
 			Log.Error(msg)
 			for servername := range config.Conf.Servers {
 				found := false
@@ -212,52 +199,56 @@ func detectServerOSes() (oses []osTypeInterface, err error) {
 					}
 				}
 				if !found {
-					Log.Errorf("Failed to detect. servername: %s", servername)
+					Log.Errorf("(%d/%d) Timed out: %s",
+						i+1, len(config.Conf.Servers),
+						servername)
+					i++
 				}
 			}
-			return oses, fmt.Errorf(msg)
 		}
 	}
 
-	errs := []error{}
-	for _, osi := range oses {
-		if 0 < len(osi.getErrs()) {
-			errs = append(errs, fmt.Errorf(
-				"Error occurred on %s. errs: %s",
-				osi.getServerInfo().ServerName, osi.getErrs()))
+	for _, o := range oses {
+		if len(o.getErrs()) == 0 {
+			sshAbleOses = append(sshAbleOses, o)
 		}
-	}
-	if 0 < len(errs) {
-		return oses, fmt.Errorf("%s", errs)
 	}
 	return
 }
 
-func detectContainerOSes() (oses []osTypeInterface, err error) {
+func detectContainerOSes() (actives []osTypeInterface) {
+	Log.Info("Detecting OS of containers... ")
 	osTypesChan := make(chan []osTypeInterface, len(servers))
 	defer close(osTypesChan)
 	for _, s := range servers {
 		go func(s osTypeInterface) {
+			defer func() {
+				if p := recover(); p != nil {
+					Log.Debugf("Panic: %s on %s",
+						p, s.getServerInfo().ServerName)
+				}
+			}()
 			osTypesChan <- detectContainerOSesOnServer(s)
 		}(s)
 	}
 
-	timeout := time.After(60 * time.Second)
-	for i := 0; i < len(config.Conf.Servers); i++ {
+	var oses []osTypeInterface
+	timeout := time.After(30 * time.Second)
+	for i := 0; i < len(servers); i++ {
 		select {
 		case res := <-osTypesChan:
-			oses = append(oses, res...)
 			for _, osi := range res {
+				sinfo := osi.getServerInfo()
 				if 0 < len(osi.getErrs()) {
+					Log.Errorf("Failed: %s err: %s", sinfo.ServerName, osi.getErrs())
 					continue
 				}
-				sinfo := osi.getServerInfo()
-				Log.Infof("Detected %s/%s on %s: %s",
-					sinfo.Container.ContainerID, sinfo.Container.Name,
-					sinfo.ServerName, osi.getDistributionInfo())
+				oses = append(oses, res...)
+				Log.Infof("Detected: %s@%s: %s",
+					sinfo.Container.Name, sinfo.ServerName, osi.getDistributionInfo())
 			}
 		case <-timeout:
-			msg := "Timeout occurred while detecting"
+			msg := "Timed out while detecting containers"
 			Log.Error(msg)
 			for servername := range config.Conf.Servers {
 				found := false
@@ -268,23 +259,16 @@ func detectContainerOSes() (oses []osTypeInterface, err error) {
 					}
 				}
 				if !found {
-					Log.Errorf("Failed to detect. servername: %s", servername)
+					Log.Errorf("Timed out: %s", servername)
+
 				}
 			}
-			return oses, fmt.Errorf(msg)
 		}
 	}
-
-	errs := []error{}
-	for _, osi := range oses {
-		if 0 < len(osi.getErrs()) {
-			errs = append(errs, fmt.Errorf(
-				"Error occurred on %s. errs: %s",
-				osi.getServerInfo().ServerName, osi.getErrs()))
+	for _, o := range oses {
+		if len(o.getErrs()) == 0 {
+			actives = append(actives, o)
 		}
-	}
-	if 0 < len(errs) {
-		return oses, fmt.Errorf("%s", errs)
 	}
 	return
 }
@@ -361,6 +345,33 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 	return oses
 }
 
+// DetectPlatforms detects the platform of each servers.
+func DetectPlatforms(localLogger *logrus.Entry) {
+	errs := detectPlatforms()
+	if 0 < len(errs) {
+		// Only logging
+		Log.Warnf("Failed to detect platforms. err: %v", errs)
+	}
+	for i, s := range servers {
+		if s.getServerInfo().IsContainer() {
+			Log.Infof("(%d/%d) %s on %s is running on %s",
+				i+1, len(servers),
+				s.getServerInfo().Container.Name,
+				s.getServerInfo().ServerName,
+				s.getPlatform().Name,
+			)
+
+		} else {
+			Log.Infof("(%d/%d) %s is running on %s",
+				i+1, len(servers),
+				s.getServerInfo().ServerName,
+				s.getPlatform().Name,
+			)
+		}
+	}
+	return
+}
+
 func detectPlatforms() []error {
 	timeoutSec := 1 * 60
 	return parallelSSHExec(func(o osTypeInterface) error {
@@ -410,7 +421,7 @@ func checkRequiredPackagesInstalled() []error {
 }
 
 func scanPackages() []error {
-	timeoutSec := 30 * 60
+	timeoutSec := 120 * 60
 	return parallelSSHExec(func(o osTypeInterface) error {
 		return o.scanPackages()
 	}, timeoutSec)

@@ -56,7 +56,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 
 	if r := sshExec(c, "ls /etc/fedora-release", noSudo); r.isSuccess() {
 		red.setDistributionInfo("fedora", "unknown")
-		Log.Warn("Fedora not tested yet. Host: %s:%s", c.Host, c.Port)
+		Log.Warn("Fedora not tested yet: %s", r)
 		return true, red
 	}
 
@@ -69,9 +69,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 			re, _ := regexp.Compile(`(.*) release (\d[\d.]*)`)
 			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
-				Log.Warn(
-					"Failed to parse RedHat/CentOS version. stdout: %s, Host: %s:%s",
-					r.Stdout, c.Host, c.Port)
+				Log.Warn("Failed to parse RedHat/CentOS version: %s", r)
 				return true, red
 			}
 
@@ -100,7 +98,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 		return true, red
 	}
 
-	Log.Debugf("Not RedHat like Linux. Host: %s:%s", c.Host, c.Port)
+	Log.Debugf("Not RedHat like Linux. servername: %s", c.ServerName)
 	return false, red
 }
 
@@ -132,9 +130,7 @@ func (o *redhat) installYumPluginSecurity() error {
 	o.log.Info("Installing yum-plugin-security...")
 	cmd := util.PrependProxyEnv("yum install -y yum-plugin-security")
 	if r := o.ssh(cmd, sudo); !r.isSuccess() {
-		return fmt.Errorf(
-			"Failed to %s. status: %d, stdout: %s, stderr: %s",
-			cmd, r.ExitStatus, r.Stdout, r.Stderr)
+		return fmt.Errorf("Failed to SSH: %s", r)
 	}
 	return nil
 }
@@ -167,9 +163,7 @@ func (o *redhat) installYumChangelog() error {
 		o.log.Infof("Installing %s...", packName)
 		cmd = util.PrependProxyEnv("yum install -y " + packName)
 		if r := o.ssh(cmd, sudo); !r.isSuccess() {
-			return fmt.Errorf(
-				"Failed to install %s. status: %d, stdout: %s, stderr: %s",
-				packName, r.ExitStatus, r.Stdout, r.Stderr)
+			return fmt.Errorf("Failed to SSH: %s", r)
 		}
 		o.log.Infof("Installed: %s", packName)
 	}
@@ -291,9 +285,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (CvePacksList, error)
 	r := o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess(0, 100) {
 		//returns an exit code of 100 if there are available updates.
-		return nil, fmt.Errorf(
-			"Failed to %s. status: %d, stdout: %s, stderr: %s",
-			cmd, r.ExitStatus, r.Stdout, r.Stderr)
+		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 
 	// get Updateble package name, installed, candidate version.
@@ -472,9 +464,7 @@ func (o *redhat) getChangelog(packageNames string) (stdout string, err error) {
 
 	r := o.ssh(command, sudo)
 	if !r.isSuccess(0, 1) {
-		return "", fmt.Errorf(
-			"Failed to get changelog. status: %d, stdout: %s, stderr: %s",
-			r.ExitStatus, r.Stdout, r.Stderr)
+		return "", fmt.Errorf("Failed to SSH: %s", r)
 	}
 	return r.Stdout, nil
 }
@@ -497,18 +487,14 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 	cmd := "yum --color=never repolist"
 	r := o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
-		return nil, fmt.Errorf(
-			"Failed to %s. status: %d, stdout: %s, stderr: %s",
-			cmd, r.ExitStatus, r.Stdout, r.Stderr)
+		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 
 	// get advisoryID(RHSA, ALAS) - package name,version
 	cmd = "yum --color=never updateinfo list available --security"
 	r = o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
-		return nil, fmt.Errorf(
-			"Failed to %s. status: %d, stdout: %s, stderr: %s",
-			cmd, r.ExitStatus, r.Stdout, r.Stderr)
+		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 	advIDPackNamesList, err := o.parseYumUpdateinfoListAvailable(r.Stdout)
 
@@ -518,9 +504,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 	r = o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess(0, 100) {
 		//returns an exit code of 100 if there are available updates.
-		return nil, fmt.Errorf(
-			"Failed to %s. status: %d, stdout: %s, stderr: %s",
-			cmd, r.ExitStatus, r.Stdout, r.Stderr)
+		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 	updatable, err := o.parseYumCheckUpdateLines(r.Stdout)
 	if err != nil {
@@ -547,9 +531,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 	cmd = "yum --color=never updateinfo --security update"
 	r = o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
-		return nil, fmt.Errorf(
-			"Failed to %s. status: %d, stdout: %s, stderr: %s",
-			cmd, r.ExitStatus, r.Stdout, r.Stderr)
+		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 	advisoryCveIDsList, err := o.parseYumUpdateinfo(r.Stdout)
 	if err != nil {

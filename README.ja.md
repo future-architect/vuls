@@ -198,7 +198,8 @@ go getでエラーが発生した場合は、以下の点を確認する。
 
 ## Step6. Config
 
-Vulの設定ファイルを作成する（TOMLフォーマット）
+Vulの設定ファイルを作成する（TOMLフォーマット）  
+設定ファイルのチェックを行う
 
 ```
 $ cat config.toml
@@ -209,6 +210,8 @@ host         = "172.31.4.82"
 port        = "22"
 user        = "ec2-user"
 keyPath     = "/home/ec2-user/.ssh/id_rsa"
+
+$ vuls configtest
 ```
 
 ## Step7. Setting up target servers for Vuls  
@@ -484,6 +487,31 @@ host         = "172.31.4.82"
     - SSH public key authentication (with password, empty password)
     - Password authentication
 
+----
+
+# Usage: Configtest 
+
+configtestサブコマンドは、config.tomlで定義されたサーバ/コンテナに対してSSH可能かどうかをチェックする。
+
+```
+$ vuls configtest --help
+configtest:
+        configtest
+                        [-config=/path/to/config.toml]
+                        [-ask-key-password]
+                        [-ssh-external]
+                        [-debug]
+
+                        [SERVER]...
+  -ask-key-password
+        Ask ssh privatekey password before scanning
+  -config string
+        /path/to/toml (default "/Users/kotakanbe/go/src/github.com/future-architect/vuls/config.toml")
+  -debug
+        debug mode
+  -ssh-external
+        Use external ssh command. Default: Use the Go native implementation
+```
 
 ----
 
