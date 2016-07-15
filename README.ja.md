@@ -153,6 +153,14 @@ $ sudo chmod 700 /var/log/vuls
 $ go get github.com/kotakanbe/go-cve-dictionary
 ```
 
+go-cve-dictionaryを既にインストール済みでupdateしたい場合は
+
+```bash
+$ go get -u github.com/kotakanbe/go-cve-dictionary
+```
+
+で可能である。
+
 go getでエラーが発生した場合は、以下の点を確認する。
 - Gitのバージョンがv2以降か？
 - Go依存パッケージの問題でgo getに失敗する場合は [deploying with glide](https://github.com/future-architect/vuls/blob/master/README.md#deploy-with-glide) を試す。
@@ -175,6 +183,14 @@ go get
 ```
 $ go get github.com/future-architect/vuls
 ```
+
+vulsを既にインストール済みでupdateしたい場合は
+
+```bash
+$ go get -u github.com/future-architect/vuls
+```
+
+で可能である。
 
 go getでエラーが発生した場合は、以下の点を確認する。
 - Gitのバージョンがv2以降か？
@@ -360,7 +376,7 @@ host         = "172.31.4.82"
 #]
 ```
 
-このテンプレート使ってVulsの設定フィアルを作ってもよい。
+このテンプレート使ってVulsの設定ファイルを作ってもよい。
 
 ----
 
@@ -963,6 +979,26 @@ $ go-cve-dictionary fetchnvd -last2y
 Cronなどのジョブスケジューラを用いて実現可能。  
 -week オプションを指定して夜間の日次実行を推奨。
 
+- 注意
+NVDとJVNの両方の情報を取得する場合、NVDからの情報を取得した後でJVNの情報を取得することを勧める
+2016年7月現在で、
+
+    ```
+    $ go-cve-dictionary fetchnvd -years 2002 2003 2004 2005 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 
+
+    $ go-cve-dictionary fetchjvn -entire 
+    ```
+
+の順でやった場合、最初のコマンドが15分程度、二つ目のコマンドが70分程度で、トータルでも1時間半程度で終わる(環境依存)が、
+
+    ```
+    $ go-cve-dictionary fetchjvn -entire 
+
+    $ nohup go-cve-dictionary fetchnvd -years 2002 2003 2004 2005 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 &
+    ```
+
+の順で行うと、最初のコマンドは1時間くらいで終わるが二つ目のコマンドが21時間かかることもある(環境依存)。
+時間がかかりそうな時は上記のようにnohupして進捗を確認するようにした方が精神衛生的にも良い。
 
 ## スキャン実行
 
@@ -1037,6 +1073,7 @@ CRONなどを使えば可能
 CRONなどを使い、自動化のためにsudoと、秘密鍵のパスワードなしでも実行可能なようにする
   - スキャン対象サーバの /etc/sudoers に NOPASSWORD を設定する  
   - 秘密鍵パスフレーズなしの公開鍵認証か、ssh-agentを使う  
+  - vulsのスキャン結果が溜まりすぎると実行時間が長くなるため、適宜scan結果である vuls.sqlite3 ファイル(default)をリネームして保持するなりすると良い
 
 - クロスコンパイル
     ```bash
