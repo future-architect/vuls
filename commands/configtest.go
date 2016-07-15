@@ -23,61 +23,49 @@ import (
 	"path/filepath"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/google/subcommands"
+	"golang.org/x/net/context"
+
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/scan"
 	"github.com/future-architect/vuls/util"
-	"github.com/google/subcommands"
-	"golang.org/x/net/context"
 )
 
-// PrepareCmd is Subcommand of host discovery mode
-type PrepareCmd struct {
-	debug      bool
-	configPath string
-
+// ConfigtestCmd is Subcommand
+type ConfigtestCmd struct {
+	configPath      string
 	askSudoPassword bool
 	askKeyPassword  bool
+	sshExternal     bool
 
-	useUnattendedUpgrades bool
+	debug bool
 }
 
 // Name return subcommand name
-func (*PrepareCmd) Name() string { return "prepare" }
+func (*ConfigtestCmd) Name() string { return "configtest" }
 
 // Synopsis return synopsis
-func (*PrepareCmd) Synopsis() string {
-	//  return "Install packages Ubuntu: unattended-upgrade, CentOS: yum-plugin-security)"
-	return `Install required packages to scan.
-				CentOS: yum-plugin-security, yum-plugin-changelog
-				Amazon: None
-				RHEL:   TODO
-				Ubuntu: None
-
-	`
-}
+func (*ConfigtestCmd) Synopsis() string { return "Test configuration" }
 
 // Usage return usage
-func (*PrepareCmd) Usage() string {
-	return `prepare:
-	prepare
-			[-config=/path/to/config.toml]
-			[-ask-sudo-password]
-			[-ask-key-password]
-			[-debug]
-
-		    [SERVER]...
+func (*ConfigtestCmd) Usage() string {
+	return `configtest:
+	configtest
+		        [-config=/path/to/config.toml]
+	        	[-ask-sudo-password]
+	        	[-ask-key-password]
+	        	[-ssh-external]
+		        [-debug]
 `
 }
 
 // SetFlags set flag
-func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
-
-	f.BoolVar(&p.debug, "debug", false, "debug mode")
-
+func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 	wd, _ := os.Getwd()
-
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
+
+	f.BoolVar(&p.debug, "debug", false, "debug mode")
 
 	f.BoolVar(
 		&p.askKeyPassword,
@@ -94,15 +82,15 @@ func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
 	)
 
 	f.BoolVar(
-		&p.useUnattendedUpgrades,
-		"use-unattended-upgrades",
+		&p.sshExternal,
+		"ssh-external",
 		false,
-		"[Deprecated] For Ubuntu, install unattended-upgrades",
-	)
+		"Use external ssh command. Default: Use the Go native implementation")
 }
 
 // Execute execute
-func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+
 	var keyPass, sudoPass string
 	var err error
 	if p.askKeyPassword {
@@ -120,49 +108,24 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 		}
 	}
 
+	c.Conf.Debug = p.debug
+
 	err = c.Load(p.configPath, keyPass, sudoPass)
 	if err != nil {
 		logrus.Errorf("Error loading %s, %s", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
 
-	logrus.Infof("Start Preparing (config: %s)", p.configPath)
-	target := make(map[string]c.ServerInfo)
-	for _, arg := range f.Args() {
-		found := false
-		for servername, info := range c.Conf.Servers {
-			if servername == arg {
-				target[servername] = info
-				found = true
-				break
-			}
-		}
-		if !found {
-			logrus.Errorf("%s is not in config", arg)
-			return subcommands.ExitUsageError
-		}
-	}
-	if 0 < len(f.Args()) {
-		c.Conf.Servers = target
+	// logger
+	Log := util.NewCustomLogger(c.ServerInfo{})
+
+	Log.Info("Validating Config...")
+	if !c.Conf.Validate() {
+		return subcommands.ExitUsageError
 	}
 
-	c.Conf.Debug = p.debug
-	c.Conf.UseUnattendedUpgrades = p.useUnattendedUpgrades
+	Log.Info("Detecting Server OS... ")
+	scan.InitServers(Log)
 
-	// Set up custom logger
-	logger := util.NewCustomLogger(c.ServerInfo{})
-
-	logger.Info("Detecting OS... ")
-	scan.InitServers(logger)
-
-	logger.Info("Installing...")
-	if errs := scan.Prepare(); 0 < len(errs) {
-		for _, e := range errs {
-			logger.Errorf("Failed: %s", e)
-		}
-		return subcommands.ExitFailure
-	}
-
-	logger.Info("Success")
 	return subcommands.ExitSuccess
 }

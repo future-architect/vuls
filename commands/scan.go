@@ -20,8 +20,10 @@ package commands
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Sirupsen/logrus"
 	c "github.com/future-architect/vuls/config"
@@ -31,6 +33,7 @@ import (
 	"github.com/future-architect/vuls/scan"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
+	"github.com/labstack/gommon/log"
 	"golang.org/x/net/context"
 )
 
@@ -260,8 +263,27 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	} else {
 		logrus.Infof("cve-dictionary: %s", p.cveDictionaryURL)
 	}
+
+	var servernames []string
+	if 0 < len(f.Args()) {
+		servernames = f.Args()
+	} else {
+		stat, _ := os.Stdin.Stat()
+		if (stat.Mode() & os.ModeCharDevice) == 0 {
+			bytes, err := ioutil.ReadAll(os.Stdin)
+			if err != nil {
+				log.Errorf("Failed to read stdin: %s", err)
+				return subcommands.ExitFailure
+			}
+			fields := strings.Fields(string(bytes))
+			if 0 < len(fields) {
+				servernames = fields
+			}
+		}
+	}
+
 	target := make(map[string]c.ServerInfo)
-	for _, arg := range f.Args() {
+	for _, arg := range servernames {
 		found := false
 		for servername, info := range c.Conf.Servers {
 			if servername == arg {
@@ -275,7 +297,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 			return subcommands.ExitUsageError
 		}
 	}
-	if 0 < len(f.Args()) {
+	if 0 < len(servernames) {
 		c.Conf.Servers = target
 	}
 
@@ -359,12 +381,11 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitFailure
 	}
 
-	Log.Info("Detecting Server OS... ")
-	err = scan.InitServers(Log)
-	if err != nil {
-		Log.Errorf("Failed to init servers. Check the configuration. err: %s", err)
-		return subcommands.ExitFailure
-	}
+	Log.Info("Detecting Server/Contianer OS... ")
+	scan.InitServers(Log)
+
+	Log.Info("Detecting Platforms... ")
+	scan.DetectPlatforms(Log)
 
 	Log.Info("Scanning vulnerabilities... ")
 	if errs := scan.Scan(); 0 < len(errs) {
