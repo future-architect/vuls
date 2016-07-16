@@ -163,7 +163,8 @@ func (l *base) detectPlatform() error {
 func (l base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 	if r := l.ssh("type curl", noSudo); r.isSuccess() {
 		cmd := "curl --max-time 1 --retry 3 --noproxy 169.254.169.254 http://169.254.169.254/latest/meta-data/instance-id"
-		if r := l.ssh(cmd, noSudo); r.isSuccess() {
+		r := l.ssh(cmd, noSudo)
+		if r.isSuccess() {
 			id := strings.TrimSpace(r.Stdout)
 
 			if id == "not found" {
@@ -184,7 +185,8 @@ func (l base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 
 	if r := l.ssh("type wget", noSudo); r.isSuccess() {
 		cmd := "wget --tries=3 --timeout=1 --no-proxy -q -O - http://169.254.169.254/latest/meta-data/instance-id"
-		if r := l.ssh(cmd, noSudo); r.isSuccess() {
+		r := l.ssh(cmd, noSudo)
+		if r.isSuccess() {
 			id := strings.TrimSpace(r.Stdout)
 			return true, id, nil
 		}
