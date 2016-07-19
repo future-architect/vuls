@@ -19,65 +19,56 @@ package commands
 
 import (
 	"flag"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/google/subcommands"
+	"github.com/labstack/gommon/log"
+	"golang.org/x/net/context"
+
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/scan"
 	"github.com/future-architect/vuls/util"
-	"github.com/google/subcommands"
-	"golang.org/x/net/context"
 )
 
-// PrepareCmd is Subcommand of host discovery mode
-type PrepareCmd struct {
-	debug      bool
-	configPath string
+// ConfigtestCmd is Subcommand
+type ConfigtestCmd struct {
+	configPath     string
+	askKeyPassword bool
+	sshExternal    bool
 
-	askSudoPassword bool
-	askKeyPassword  bool
-
-	useUnattendedUpgrades bool
+	debug bool
 }
 
 // Name return subcommand name
-func (*PrepareCmd) Name() string { return "prepare" }
+func (*ConfigtestCmd) Name() string { return "configtest" }
 
 // Synopsis return synopsis
-func (*PrepareCmd) Synopsis() string {
-	//  return "Install packages Ubuntu: unattended-upgrade, CentOS: yum-plugin-security)"
-	return `Install required packages to scan.
-				CentOS: yum-plugin-security, yum-plugin-changelog
-				Amazon: None
-				RHEL:   TODO
-				Ubuntu: None
-
-	`
-}
+func (*ConfigtestCmd) Synopsis() string { return "Test configuration" }
 
 // Usage return usage
-func (*PrepareCmd) Usage() string {
-	return `prepare:
-	prepare
-			[-config=/path/to/config.toml]
-			[-ask-sudo-password]
-			[-ask-key-password]
-			[-debug]
+func (*ConfigtestCmd) Usage() string {
+	return `configtest:
+	configtest
+		        [-config=/path/to/config.toml]
+	        	[-ask-key-password]
+	        	[-ssh-external]
+		        [-debug]
 
-		    [SERVER]...
+		        [SERVER]...
 `
 }
 
 // SetFlags set flag
-func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
-
-	f.BoolVar(&p.debug, "debug", false, "debug mode")
-
+func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 	wd, _ := os.Getwd()
-
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
+
+	f.BoolVar(&p.debug, "debug", false, "debug mode")
 
 	f.BoolVar(
 		&p.askKeyPassword,
@@ -87,23 +78,16 @@ func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
 	)
 
 	f.BoolVar(
-		&p.askSudoPassword,
-		"ask-sudo-password",
+		&p.sshExternal,
+		"ssh-external",
 		false,
-		"Ask sudo password of target servers before scanning",
-	)
-
-	f.BoolVar(
-		&p.useUnattendedUpgrades,
-		"use-unattended-upgrades",
-		false,
-		"[Deprecated] For Ubuntu, install unattended-upgrades",
-	)
+		"Use external ssh command. Default: Use the Go native implementation")
 }
 
 // Execute execute
-func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	var keyPass, sudoPass string
+func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+
+	var keyPass string
 	var err error
 	if p.askKeyPassword {
 		prompt := "SSH key password: "
@@ -112,23 +96,35 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 			return subcommands.ExitFailure
 		}
 	}
-	if p.askSudoPassword {
-		prompt := "sudo password: "
-		if sudoPass, err = getPasswd(prompt); err != nil {
-			logrus.Error(err)
-			return subcommands.ExitFailure
-		}
-	}
 
-	err = c.Load(p.configPath, keyPass, sudoPass)
+	c.Conf.Debug = p.debug
+
+	err = c.Load(p.configPath, keyPass, "")
 	if err != nil {
 		logrus.Errorf("Error loading %s, %s", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
 
-	logrus.Infof("Start Preparing (config: %s)", p.configPath)
+	var servernames []string
+	if 0 < len(f.Args()) {
+		servernames = f.Args()
+	} else {
+		stat, _ := os.Stdin.Stat()
+		if (stat.Mode() & os.ModeCharDevice) == 0 {
+			bytes, err := ioutil.ReadAll(os.Stdin)
+			if err != nil {
+				log.Errorf("Failed to read stdin: %s", err)
+				return subcommands.ExitFailure
+			}
+			fields := strings.Fields(string(bytes))
+			if 0 < len(fields) {
+				servernames = fields
+			}
+		}
+	}
+
 	target := make(map[string]c.ServerInfo)
-	for _, arg := range f.Args() {
+	for _, arg := range servernames {
 		found := false
 		for servername, info := range c.Conf.Servers {
 			if servername == arg {
@@ -142,27 +138,20 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 			return subcommands.ExitUsageError
 		}
 	}
-	if 0 < len(f.Args()) {
+	if 0 < len(servernames) {
 		c.Conf.Servers = target
 	}
 
-	c.Conf.Debug = p.debug
-	c.Conf.UseUnattendedUpgrades = p.useUnattendedUpgrades
+	// logger
+	Log := util.NewCustomLogger(c.ServerInfo{})
 
-	// Set up custom logger
-	logger := util.NewCustomLogger(c.ServerInfo{})
-
-	logger.Info("Detecting OS... ")
-	scan.InitServers(logger)
-
-	logger.Info("Installing...")
-	if errs := scan.Prepare(); 0 < len(errs) {
-		for _, e := range errs {
-			logger.Errorf("Failed: %s", e)
-		}
-		return subcommands.ExitFailure
+	Log.Info("Validating Config...")
+	if !c.Conf.Validate() {
+		return subcommands.ExitUsageError
 	}
 
-	logger.Info("Success")
+	Log.Info("Detecting Server/Contianer OS... ")
+	scan.InitServers(Log)
+
 	return subcommands.ExitSuccess
 }

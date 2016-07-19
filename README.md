@@ -190,7 +190,8 @@ If an error occurred while go get, check the following points.
 
 ## Step6. Config
 
-Create a config file(TOML format).
+Create a config file(TOML format).  
+Then check the config.
 
 ```
 $ cat config.toml
@@ -201,6 +202,8 @@ host         = "172.31.4.82"
 port        = "22"
 user        = "ec2-user"
 keyPath     = "/home/ec2-user/.ssh/id_rsa"
+
+$ vuls configtest
 ```
 
 ## Step7. Setting up target servers for Vuls  
@@ -483,8 +486,31 @@ You can customize your configuration using this template.
     - SSH public key authentication (with password, empty password)
     - Password authentication
 
-    
+----
 
+# Usage: Configtest 
+
+Configtest subcommand check if vuls is able to connect via ssh to servers/containers defined in the config.toml.  
+
+```
+$ vuls configtest --help
+configtest:
+        configtest
+                        [-config=/path/to/config.toml]
+                        [-ask-key-password]
+                        [-ssh-external]
+                        [-debug]
+
+                        [SERVER]...
+  -ask-key-password
+        Ask ssh privatekey password before scanning
+  -config string
+        /path/to/toml (default "/Users/kotakanbe/go/src/github.com/future-architect/vuls/config.toml")
+  -debug
+        debug mode
+  -ssh-external
+        Use external ssh command. Default: Use the Go native implementation
+```
 
 
 ----
