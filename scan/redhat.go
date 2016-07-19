@@ -300,12 +300,31 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (CvePacksList, error)
 		PackInfo models.PackageInfo
 		CveIDs   []string
 	}
+
+	var rpm2changelog map[string]*string
+	if !config.Conf.SSHExternal {
+		allChangelog, err := o.getAllChangelog(packInfoList)
+		if err != nil {
+			o.log.Errorf("Failed to getAllchangelog. err: %s", err)
+			return nil, err
+		}
+		rpm2changelog, err = o.parseAllChangelog(allChangelog)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to parseAllChangelog. err: %s", err)
+		}
+	}
+
 	var results []PackInfoCveIDs
 	for i, packInfo := range packInfoList {
-		changelog, err := o.getChangelog(packInfo.Name)
-		if err != nil {
-			o.log.Errorf("Failed to collect CVE IDs. err: %s", err)
-			return nil, err
+		changelog := ""
+		if !config.Conf.SSHExternal {
+			changelog = o.getChangelogCVELines(rpm2changelog, packInfo)
+		} else {
+			changelog, err = o.getChangelog(packInfo.Name)
+			if err != nil {
+				o.log.Errorf("Failed to collect CVE IDs. err: %s", err)
+				return nil, err
+			}
 		}
 
 		// Collect unique set of CVE-ID in each changelog
@@ -465,6 +484,129 @@ func (o *redhat) getChangelog(packageNames string) (stdout string, err error) {
 	r := o.ssh(command, sudo)
 	if !r.isSuccess(0, 1) {
 		return "", fmt.Errorf("Failed to SSH: %s", r)
+	}
+	return r.Stdout, nil
+}
+
+func (o *redhat) mkPstring() *string {
+	str := ""
+	return &str
+}
+
+func (o *redhat) regexpReplace(src string, pat string, rep string) string {
+	r := regexp.MustCompile(pat)
+	return r.ReplaceAllString(src, rep)
+}
+
+func (o *redhat) getChangelogCVELines(rpm2changelog map[string]*string, packInfo models.PackageInfo) string {
+	rpm := fmt.Sprintf("%s-%s-%s", packInfo.Name, o.regexpReplace(packInfo.NewVersion, `^[0-9]+:`, ""), packInfo.NewRelease)
+	retLine := ""
+	if rpm2changelog[rpm] != nil {
+		lines := strings.Split(*rpm2changelog[rpm], "\n")
+		for _, line := range lines {
+			match, _ := regexp.MatchString("CVE-[0-9]+-[0-9]+", line)
+			if match {
+				retLine += fmt.Sprintf("%s\n", line)
+			}
+		}
+	}
+	return retLine
+}
+
+func (o *redhat) parseAllChangelog(allChangelog string) (map[string]*string, error) {
+	var majorVersion int
+	if 0 < len(o.Release) && o.Family == "centos" {
+		majorVersion, _ = strconv.Atoi(strings.Split(o.Release, ".")[0])
+	} else {
+		return nil, fmt.Errorf(
+			"Not implemented yet. family: %s, release: %s",
+			o.Family, o.Release)
+	}
+
+	orglines := strings.Split(allChangelog, "\n")
+	tmpline := ""
+	var lines []string
+	var prev, now bool
+	for i, _ := range orglines {
+		if majorVersion == 5 {
+			/* for CentOS5 (yum-util < 1.1.20) */
+			prev = false
+			now = false
+			if i > 0 {
+				prev, _ = o.isRpmPackageNameLine(orglines[i-1])
+			}
+			now, _ = o.isRpmPackageNameLine(orglines[i])
+			if prev && now {
+				tmpline = fmt.Sprintf("%s, %s", tmpline, orglines[i])
+				continue
+			}
+			if !prev && now {
+				tmpline = fmt.Sprintf("%s%s", tmpline, orglines[i])
+				continue
+			}
+			if tmpline != "" {
+				lines = append(lines, fmt.Sprintf("%s", tmpline))
+				tmpline = ""
+			}
+			lines = append(lines, fmt.Sprintf("%s", orglines[i]))
+		} else {
+			/* for CentOS6,7 (yum-util >= 1.1.20) */
+			line := orglines[i]
+			line = o.regexpReplace(line, `^ChangeLog for: `, "")
+			line = o.regexpReplace(line, `^\*\*\sNo\sChangeLog\sfor:.*`, "")
+			lines = append(lines, line)
+		}
+	}
+
+	rpm2changelog := make(map[string]*string)
+	writePointer := o.mkPstring()
+	for _, line := range lines {
+		match, _ := o.isRpmPackageNameLine(line)
+		if match {
+			rpms := strings.Split(line, ",")
+			pNewString := o.mkPstring()
+			writePointer = pNewString
+			for _, rpm := range rpms {
+				rpm = strings.TrimSpace(rpm)
+				rpm = o.regexpReplace(rpm, `^[0-9]+:`, "")
+				rpm = o.regexpReplace(rpm, `\.centos([.0-9]+)?\.(i386|i486|i586|i686|k6|athlon|x86_64|noarch|ppc|alpha|sparc)$`, "")
+				rpm = o.regexpReplace(rpm, `\.(i386|i486|i586|i686|k6|athlon|x86_64|noarch|ppc|alpha|sparc)$`, "")
+				rpm2changelog[rpm] = pNewString
+			}
+		} else {
+			stop, _ := regexp.MatchString("^Dependencies Resolved", line)
+			if stop {
+				return rpm2changelog, nil
+			} else {
+				*writePointer += fmt.Sprintf("%s\n", line)
+			}
+		}
+	}
+	return rpm2changelog, nil
+}
+
+func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList) (stdout string, err error) {
+	packageNames := ""
+	for _, packInfo := range packInfoList {
+		packageNames += fmt.Sprintf("%s ", packInfo.Name)
+	}
+
+	command := ""
+	if o.ServerInfo.User == "root" {
+		command = "echo N | "
+	}
+	if 0 < len(config.Conf.HTTPProxy) {
+		command += util.ProxyEnv()
+	}
+
+	// yum update --changelog doesn't have --color option.
+	command += fmt.Sprintf(" yum update --changelog %s", packageNames)
+
+	r := o.ssh(command, sudo)
+	if !r.isSuccess(0, 1) {
+		return "", fmt.Errorf(
+			"Failed to get changelog. status: %d, stdout: %s, stderr: %s",
+			r.ExitStatus, r.Stdout, r.Stderr)
 	}
 	return r.Stdout, nil
 }
@@ -692,6 +834,10 @@ func (o *redhat) changeSectionState(state int) (newState int) {
 
 func (o *redhat) isHorizontalRule(line string) (bool, error) {
 	return regexp.MatchString("^=+$", line)
+}
+
+func (o *redhat) isRpmPackageNameLine(line string) (bool, error) {
+	return regexp.MatchString("^[^ ]+(i386|i486|i586|i686|k6|athlon|x86_64|noarch|ppc|alpha|sparc)", line)
 }
 
 // see test case
