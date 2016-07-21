@@ -33,7 +33,6 @@
 - Execute the following command to build and run a Vuls Container
 
 	```
-	$ cd $GOPATH/src/github.com/future-architect/vuls/docker
 	$ docker-compose up -d
 	```
 
