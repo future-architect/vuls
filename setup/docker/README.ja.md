@@ -32,7 +32,6 @@
 - 以下のコマンドを実行してコンテナをビルドする
 
 	```
-	$ cd $GOPATH/src/github.com/future-architect/vuls/setup/docker
 	$ docker-compose up -d
 	```
 
