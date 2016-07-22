@@ -33,7 +33,6 @@ import (
 	"github.com/future-architect/vuls/scan"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
-	"github.com/labstack/gommon/log"
 	"golang.org/x/net/context"
 )
 
@@ -272,7 +271,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		if (stat.Mode() & os.ModeCharDevice) == 0 {
 			bytes, err := ioutil.ReadAll(os.Stdin)
 			if err != nil {
-				log.Errorf("Failed to read stdin: %s", err)
+				logrus.Errorf("Failed to read stdin: %s", err)
 				return subcommands.ExitFailure
 			}
 			fields := strings.Fields(string(bytes))

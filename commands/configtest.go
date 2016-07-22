@@ -26,7 +26,6 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/google/subcommands"
-	"github.com/labstack/gommon/log"
 	"golang.org/x/net/context"
 
 	c "github.com/future-architect/vuls/config"
@@ -113,7 +112,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		if (stat.Mode() & os.ModeCharDevice) == 0 {
 			bytes, err := ioutil.ReadAll(os.Stdin)
 			if err != nil {
-				log.Errorf("Failed to read stdin: %s", err)
+				logrus.Errorf("Failed to read stdin: %s", err)
 				return subcommands.ExitFailure
 			}
 			fields := strings.Fields(string(bytes))
