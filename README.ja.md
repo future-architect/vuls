@@ -288,6 +288,24 @@ $ vuls tui
 ![Vuls-Scan-Flow](img/vuls-scan-flow.png)
 
 ----
+# Performance Considerations
+
+- Ubuntu, Debian and CentOS  
+アップデート対象のパッケージが沢山ある場合は、Changelogをパースするので遅いし、スキャン対象サーバのリソースを消費する。
+
+- Amazon, RHEL and FreeBSD  
+高速にスキャンし、スキャン対象サーバのリソース消費量は小さい。
+
+| Distribution|         Scan Speed | Resource Usage On Target Server |
+|:------------|:-------------------|:-------------|
+| Amazon      |               Fast | Light            |
+| RHEL        |               Fast | Light            |
+| FreeBSD     |               Fast | Light            |
+| Ubuntu      |               Slow | Heavy            |
+| Debian      |               Slow | Heavy            |
+| CentOS      |               Slow | Heavy            |
+
+----
 
 # Use Cases
 
