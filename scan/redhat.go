@@ -527,7 +527,7 @@ func (o *redhat) parseAllChangelog(allChangelog string) (map[string]*string, err
 	tmpline := ""
 	var lines []string
 	var prev, now bool
-	for i, _ := range orglines {
+	for i := range orglines {
 		if majorVersion == 5 {
 			/* for CentOS5 (yum-util < 1.1.20) */
 			prev = false
@@ -577,9 +577,8 @@ func (o *redhat) parseAllChangelog(allChangelog string) (map[string]*string, err
 			stop, _ := regexp.MatchString("^Dependencies Resolved", line)
 			if stop {
 				return rpm2changelog, nil
-			} else {
-				*writePointer += fmt.Sprintf("%s\n", line)
 			}
+			*writePointer += fmt.Sprintf("%s\n", line)
 		}
 	}
 	return rpm2changelog, nil
