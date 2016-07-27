@@ -302,6 +302,54 @@ func TestIsDescriptionLine(t *testing.T) {
 	}
 }
 
+func TestIsRpmPackageNameLine(t *testing.T) {
+	r := newRedhat(config.ServerInfo{})
+	var tests = []struct {
+		in    string
+		found bool
+	}{
+		{
+			"stunnel-4.15-2.el5.2.i386",
+			true,
+		},
+		{
+			"iproute-2.6.18-15.el5.i386",
+			true,
+		},
+		{
+			"1:yum-updatesd-0.9-6.el5_10.noarch",
+			true,
+		},
+		{
+			"glibc-2.12-1.192.el6.x86_64",
+			true,
+		},
+		{
+			" glibc-2.12-1.192.el6.x86_64",
+			false,
+		},
+		{
+			"glibc-2.12-1.192.el6.x86_64, iproute-2.6.18-15.el5.i386",
+			true,
+		},
+		{
+			"k6 hoge.i386",
+			false,
+		},
+		{
+			"triathlon",
+			false,
+		},
+	}
+
+	for i, tt := range tests {
+		found, err := r.isRpmPackageNameLine(tt.in)
+		if tt.found != found {
+			t.Errorf("[%d] line: %s, expected %t, actual %t, err %v", i, tt.in, tt.found, found, err)
+		}
+	}
+}
+
 func TestParseYumUpdateinfoToGetSeverity(t *testing.T) {
 	r := newRedhat(config.ServerInfo{})
 	var tests = []struct {
@@ -567,6 +615,7 @@ bash.x86_64                    4.1.2-33.el6_7.1              updates
 Obsoleting Packages
 python-libs.i686    2.6.6-64.el6   rhui-REGION-rhel-server-releases
     python-ordereddict.noarch     1.1-3.el6ev    installed
+bind-utils.x86_64                       30:9.3.6-25.P1.el5_11.8          updates
 `
 
 	r.Packages = []models.PackageInfo{
@@ -587,6 +636,11 @@ python-libs.i686    2.6.6-64.el6   rhui-REGION-rhel-server-releases
 		},
 		{
 			Name:    "python-ordereddict",
+			Version: "1.0",
+			Release: "1",
+		},
+		{
+			Name:    "bind-utils",
 			Version: "1.0",
 			Release: "1",
 		},
@@ -626,6 +680,13 @@ python-libs.i686    2.6.6-64.el6   rhui-REGION-rhel-server-releases
 					NewVersion: "1.1",
 					NewRelease: "3.el6ev",
 				},
+				{
+					Name:       "bind-utils",
+					Version:    "1.0",
+					Release:    "1",
+					NewVersion: "9.3.6",
+					NewRelease: "25.P1.el5_11.8",
+				},
 			},
 		},
 	}
@@ -653,18 +714,18 @@ func TestParseYumCheckUpdateLinesAmazon(t *testing.T) {
 34 package(s) needed for security, out of 71 available
 
 bind-libs.x86_64           32:9.8.2-0.37.rc1.45.amzn1      amzn-main
-java-1.7.0-openjdk.x86_64  1:1.7.0.95-2.6.4.0.65.amzn1     amzn-main
+java-1.7.0-openjdk.x86_64  1.7.0.95-2.6.4.0.65.amzn1     amzn-main
 if-not-architecture        100-200                         amzn-main
 `
 	r.Packages = []models.PackageInfo{
 		{
 			Name:    "bind-libs",
-			Version: "32:9.8.0",
+			Version: "9.8.0",
 			Release: "0.33.rc1.45.amzn1",
 		},
 		{
 			Name:    "java-1.7.0-openjdk",
-			Version: "1:1.7.0.0",
+			Version: "1.7.0.0",
 			Release: "2.6.4.0.0.amzn1",
 		},
 		{
@@ -682,16 +743,16 @@ if-not-architecture        100-200                         amzn-main
 			models.PackageInfoList{
 				{
 					Name:       "bind-libs",
-					Version:    "32:9.8.0",
+					Version:    "9.8.0",
 					Release:    "0.33.rc1.45.amzn1",
-					NewVersion: "32:9.8.2",
+					NewVersion: "9.8.2",
 					NewRelease: "0.37.rc1.45.amzn1",
 				},
 				{
 					Name:       "java-1.7.0-openjdk",
-					Version:    "1:1.7.0.0",
+					Version:    "1.7.0.0",
 					Release:    "2.6.4.0.0.amzn1",
-					NewVersion: "1:1.7.0.95",
+					NewVersion: "1.7.0.95",
 					NewRelease: "2.6.4.0.65.amzn1",
 				},
 				{
@@ -843,4 +904,305 @@ func TestExtractPackNameVerRel(t *testing.T) {
 		}
 	}
 
+}
+
+const (
+	/* for CentOS6,7 (yum-util >= 1.1.20) */
+	stdoutCentos6 = `---> Package libaio.x86_64 0:0.3.107-10.el6 will be installed
+--> Finished Dependency Resolution
+
+Changes in packages about to be updated:
+
+ChangeLog for: binutils-2.20.51.0.2-5.44.el6.x86_64
+* Mon Dec  7 21:00:00 2015 Nick Clifton <nickc@redhat.com> - 2.20.51.0.2-5.44
+- Backport upstream RELRO fixes. (#1227839)
+
+** No ChangeLog for: chkconfig-1.3.49.5-1.el6.x86_64
+
+ChangeLog for: coreutils-8.4-43.el6.x86_64, coreutils-libs-8.4-43.el6.x86_64
+* Wed Feb 10 21:00:00 2016 Ondrej Vasik <ovasik@redhat.com> - 8.4-43
+- sed should actually be /bin/sed (related #1222140)
+
+* Wed Jan  6 21:00:00 2016 Ondrej Vasik <ovasik@redhat.com> - 8.4-41
+- colorls.sh,colorls.csh - call utilities with complete path (#1222140)
+- mkdir, mkfifo, mknod - respect default umask/acls when
+  COREUTILS_CHILD_DEFAULT_ACLS envvar is set (to match rhel 7 behaviour,
+
+ChangeLog for: centos-release-6-8.el6.centos.12.3.x86_64
+* Wed May 18 21:00:00 2016 Johnny Hughes <johnny@centos.org> 6-8.el6.centos.12.3
+- CentOS-6.8 Released
+- TESTSTRING CVE-0000-0000
+
+ChangeLog for: 12:dhclient-4.1.1-51.P1.el6.centos.x86_64, 12:dhcp-common-4.1.1-51.P1.el6.centos.x86_64
+* Tue May 10 21:00:00 2016 Johnny Hughes <johnny@centos.org> - 12:4.1.1-51.P1
+- created patch 1000 for CentOS Branding
+- replaced vvendor variable with CentOS in the SPEC file
+- TESTSTRING CVE-1111-1111
+
+* Mon Jan 11 21:00:00 2016 Jiri Popelka <jpopelka@redhat.com> - 12:4.1.1-51.P1
+- send unicast request/release via correct interface (#1297445)
+
+* Thu Dec  3 21:00:00 2015 Jiri Popelka <jpopelka@redhat.com> - 12:4.1.1-50.P1
+- Lease table overflow crash. (#1133917)
+- Add ignore-client-uids option. (#1196768)
+- dhclient-script: it's OK if the arping reply comes from our system. (#1204095)
+- VLAN ID is only bottom 12-bits of TCI. (#1259552)
+- dhclient: Make sure link-local address is ready in stateless mode. (#1263466)
+- dhclient-script: make_resolv_conf(): Keep old nameservers
+  if server sends domain-name/search, but no nameservers. (#1269595)
+
+ChangeLog for: file-5.04-30.el6.x86_64, file-libs-5.04-30.el6.x86_64
+* Tue Feb 16 21:00:00 2016 Jan Kaluza <jkaluza@redhat.com> 5.04-30
+- fix CVE-2014-3538 (unrestricted regular expression matching)
+
+* Tue Jan  5 21:00:00 2016 Jan Kaluza <jkaluza@redhat.com> 5.04-29
+- fix #1284826 - try to read ELF header to detect corrupted one
+
+* Wed Dec 16 21:00:00 2015 Jan Kaluza <jkaluza@redhat.com> 5.04-28
+- fix #1263987 - fix bugs found by coverity in the patch
+
+* Thu Nov 26 21:00:00 2015 Jan Kaluza <jkaluza@redhat.com> 5.04-27
+- fix CVE-2014-3587 (incomplete fix for CVE-2012-1571)
+- fix CVE-2014-3710 (out-of-bounds read in elf note headers)
+- fix CVE-2014-8116 (multiple DoS issues (resource consumption))
+- fix CVE-2014-8117 (denial of service issue (resource consumption))
+- fix CVE-2014-9620 (limit the number of ELF notes processed)
+- fix CVE-2014-9653 (malformed elf file causes access to uninitialized memory)
+
+
+Dependencies Resolved
+
+`
+	/* for CentOS5 (yum-util < 1.1.20) */
+	stdoutCentos5 = `---> Package portmap.i386 0:4.0-65.2.2.1 set to be updated
+--> Finished Dependency Resolution
+
+Changes in packages about to be updated:
+
+libuser-0.54.7-3.el5.i386
+nss_db-2.2-38.el5_11.i386
+* Thu Nov 20 23:00:00 2014 Nalin Dahyabhai <nalin@redhat.com> - 2.2-38
+- build without strict aliasing (internal build tooling)
+
+* Sat Nov 15 23:00:00 2014 Nalin Dahyabhai <nalin@redhat.com> - 2.2-37
+- pull in fix for a memory leak in nss_db (#1163493)
+
+acpid-1.0.4-12.el5.i386
+* Thu Oct  6 00:00:00 2011 Jiri Skala <jskala@redhat.com> - 1.0.4-12
+- Resolves: #729769 - acpid dumping useless info to log
+
+nash-5.1.19.6-82.el5.i386, mkinitrd-5.1.19.6-82.el5.i386
+* Tue Apr 15 00:00:00 2014 Brian C. Lane <bcl@redhat.com> 5.1.19.6-82
+- Use ! instead of / when searching sysfs for ccis device
+  Resolves: rhbz#988020
+- Always include ahci module (except on s390) (bcl)
+  Resolves: rhbz#978245
+- Prompt to recreate default initrd (karsten)
+  Resolves: rhbz#472764
+
+util-linux-2.13-0.59.el5_8.i386
+* Wed Oct 17 00:00:00 2012 Karel Zak <kzak@redhat.com> 2.13-0.59.el5_8
+- fix #865791 - fdisk fails to partition disk not in use
+
+* Wed Dec 21 23:00:00 2011 Karel Zak <kzak@redhat.com> 2.13-0.59
+- fix #768382 - CVE-2011-1675 CVE-2011-1677 util-linux various flaws
+
+* Wed Oct 26 00:00:00 2011 Karel Zak <kzak@redhat.com> 2.13-0.58
+- fix #677452 - util-linux fails to build with gettext-0.17
+
+30:bind-utils-9.3.6-25.P1.el5_11.8.i386, 30:bind-libs-9.3.6-25.P1.el5_11.8.i386
+* Mon Mar 14 23:00:00 2016 Tomas Hozza <thozza@redhat.com> - 30:9.3.6-25.P1.8
+- Fix issue with patch for CVE-2016-1285 and CVE-2016-1286 found by test suite
+
+* Wed Mar  9 23:00:00 2016 Tomas Hozza <thozza@redhat.com> - 30:9.3.6-25.P1.7
+- Fix CVE-2016-1285 and CVE-2016-1286
+
+* Mon Jan 18 23:00:00 2016 Tomas Hozza <thozza@redhat.com> - 30:9.3.6-25.P1.6
+- Fix CVE-2015-8704
+
+* Thu Sep  3 00:00:00 2015 Tomas Hozza <thozza@redhat.com> - 30:9.3.6-25.P1.5
+- Fix CVE-2015-8000
+
+
+Dependencies Resolved
+
+`
+)
+
+func TestGetChangelogCVELines(t *testing.T) {
+	var testsCentos6 = []struct {
+		in  models.PackageInfo
+		out string
+	}{
+		{
+			models.PackageInfo{
+				Name:       "binutils",
+				NewVersion: "2.20.51.0.2",
+				NewRelease: "5.44.el6",
+			},
+			"",
+		},
+		{
+			models.PackageInfo{
+				Name:       "centos-release",
+				NewVersion: "6",
+				NewRelease: "8.el6.centos.12.3",
+			},
+			`- TESTSTRING CVE-0000-0000
+`,
+		},
+		{
+			models.PackageInfo{
+				Name:       "dhclient",
+				NewVersion: "4.1.1",
+				NewRelease: "51.P1.el6.centos",
+			},
+			`- TESTSTRING CVE-1111-1111
+`,
+		},
+		{
+			models.PackageInfo{
+				Name:       "dhcp-common",
+				NewVersion: "4.1.1",
+				NewRelease: "51.P1.el6.centos",
+			},
+			`- TESTSTRING CVE-1111-1111
+`,
+		},
+		{
+			models.PackageInfo{
+				Name:       "coreutils-libs",
+				NewVersion: "8.4",
+				NewRelease: "43.el6",
+			},
+			"",
+		},
+		{
+			models.PackageInfo{
+				Name:       "file",
+				NewVersion: "5.04",
+				NewRelease: "30.el6",
+			},
+			`- fix CVE-2014-3538 (unrestricted regular expression matching)
+- fix CVE-2014-3587 (incomplete fix for CVE-2012-1571)
+- fix CVE-2014-3710 (out-of-bounds read in elf note headers)
+- fix CVE-2014-8116 (multiple DoS issues (resource consumption))
+- fix CVE-2014-8117 (denial of service issue (resource consumption))
+- fix CVE-2014-9620 (limit the number of ELF notes processed)
+- fix CVE-2014-9653 (malformed elf file causes access to uninitialized memory)
+`,
+		},
+		{
+			models.PackageInfo{
+				Name:       "file-libs",
+				NewVersion: "5.04",
+				NewRelease: "30.el6",
+			},
+			`- fix CVE-2014-3538 (unrestricted regular expression matching)
+- fix CVE-2014-3587 (incomplete fix for CVE-2012-1571)
+- fix CVE-2014-3710 (out-of-bounds read in elf note headers)
+- fix CVE-2014-8116 (multiple DoS issues (resource consumption))
+- fix CVE-2014-8117 (denial of service issue (resource consumption))
+- fix CVE-2014-9620 (limit the number of ELF notes processed)
+- fix CVE-2014-9653 (malformed elf file causes access to uninitialized memory)
+`,
+		},
+	}
+
+	r := newRedhat(config.ServerInfo{})
+	r.Family = "centos"
+	r.Release = "6.7"
+	for _, tt := range testsCentos6 {
+		rpm2changelog, err := r.parseAllChangelog(stdoutCentos6)
+		if err != nil {
+			t.Errorf("err: %s", err)
+		}
+		changelog := r.getChangelogCVELines(rpm2changelog, tt.in)
+		if tt.out != changelog {
+			t.Errorf("line: expected %s, actual %s, tt: %#v", tt.out, changelog, tt)
+		}
+	}
+
+	var testsCentos5 = []struct {
+		in  models.PackageInfo
+		out string
+	}{
+		{
+			models.PackageInfo{
+				Name:       "libuser",
+				NewVersion: "0.54.7",
+				NewRelease: "3.el5",
+			},
+			"",
+		},
+		{
+			models.PackageInfo{
+				Name:       "nss_db",
+				NewVersion: "2.2",
+				NewRelease: "38.el5_11",
+			},
+			"",
+		},
+		{
+			models.PackageInfo{
+				Name:       "acpid",
+				NewVersion: "1.0.4",
+				NewRelease: "82.el5",
+			},
+			"",
+		},
+		{
+			models.PackageInfo{
+				Name:       "mkinitrd",
+				NewVersion: "5.1.19.6",
+				NewRelease: "82.el5",
+			},
+			"",
+		},
+		{
+			models.PackageInfo{
+				Name:       "util-linux",
+				NewVersion: "2.13",
+				NewRelease: "0.59.el5_8",
+			},
+			`- fix #768382 - CVE-2011-1675 CVE-2011-1677 util-linux various flaws
+`,
+		},
+		{
+			models.PackageInfo{
+				Name:       "bind-libs",
+				NewVersion: "9.3.6",
+				NewRelease: "25.P1.el5_11.8",
+			},
+			`- Fix issue with patch for CVE-2016-1285 and CVE-2016-1286 found by test suite
+- Fix CVE-2016-1285 and CVE-2016-1286
+- Fix CVE-2015-8704
+- Fix CVE-2015-8000
+`,
+		},
+		{
+			models.PackageInfo{
+				Name:       "bind-utils",
+				NewVersion: "9.3.6",
+				NewRelease: "25.P1.el5_11.8",
+			},
+			`- Fix issue with patch for CVE-2016-1285 and CVE-2016-1286 found by test suite
+- Fix CVE-2016-1285 and CVE-2016-1286
+- Fix CVE-2015-8704
+- Fix CVE-2015-8000
+`,
+		},
+	}
+
+	r.Release = "5.6"
+	for _, tt := range testsCentos5 {
+		rpm2changelog, err := r.parseAllChangelog(stdoutCentos5)
+		if err != nil {
+			t.Errorf("err: %s", err)
+		}
+		changelog := r.getChangelogCVELines(rpm2changelog, tt.in)
+		if tt.out != changelog {
+			t.Errorf("line: expected %s, actual %s, tt: %#v", tt.out, changelog, tt)
+		}
+	}
 }
