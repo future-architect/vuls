@@ -1046,7 +1046,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 			models.PackageInfo{
 				Name:       "centos-release",
 				NewVersion: "6",
-				NewRelease: "8.el6",
+				NewRelease: "8.el6.centos.12.3",
 			},
 			`- TESTSTRING CVE-0000-0000
 `,
@@ -1055,7 +1055,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 			models.PackageInfo{
 				Name:       "dhclient",
 				NewVersion: "4.1.1",
-				NewRelease: "51.P1.el6",
+				NewRelease: "51.P1.el6.centos",
 			},
 			`- TESTSTRING CVE-1111-1111
 `,
@@ -1064,7 +1064,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 			models.PackageInfo{
 				Name:       "dhcp-common",
 				NewVersion: "4.1.1",
-				NewRelease: "51.P1.el6",
+				NewRelease: "51.P1.el6.centos",
 			},
 			`- TESTSTRING CVE-1111-1111
 `,

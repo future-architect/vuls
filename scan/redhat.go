@@ -580,7 +580,6 @@ func (o *redhat) parseAllChangelog(allChangelog string) (map[string]*string, err
 			for _, rpm := range rpms {
 				rpm = strings.TrimSpace(rpm)
 				rpm = o.regexpReplace(rpm, `^[0-9]+:`, "")
-				rpm = o.regexpReplace(rpm, `\.centos([.0-9]+)?\.(i386|i486|i586|i686|k6|athlon|x86_64|noarch|ppc|alpha|sparc)$`, "")
 				rpm = o.regexpReplace(rpm, `\.(i386|i486|i586|i686|k6|athlon|x86_64|noarch|ppc|alpha|sparc)$`, "")
 				rpm2changelog[rpm] = pNewString
 			}
