@@ -328,6 +328,18 @@ func TestIsRpmPackageNameLine(t *testing.T) {
 			" glibc-2.12-1.192.el6.x86_64",
 			false,
 		},
+		{
+			"glibc-2.12-1.192.el6.x86_64, iproute-2.6.18-15.el5.i386",
+			true,
+		},
+		{
+			"k6 hoge.i386",
+			false,
+		},
+		{
+			"triathlon",
+			false,
+		},
 	}
 
 	for i, tt := range tests {
@@ -603,6 +615,7 @@ bash.x86_64                    4.1.2-33.el6_7.1              updates
 Obsoleting Packages
 python-libs.i686    2.6.6-64.el6   rhui-REGION-rhel-server-releases
     python-ordereddict.noarch     1.1-3.el6ev    installed
+bind-utils.x86_64                       30:9.3.6-25.P1.el5_11.8          updates
 `
 
 	r.Packages = []models.PackageInfo{
@@ -623,6 +636,11 @@ python-libs.i686    2.6.6-64.el6   rhui-REGION-rhel-server-releases
 		},
 		{
 			Name:    "python-ordereddict",
+			Version: "1.0",
+			Release: "1",
+		},
+		{
+			Name:    "bind-utils",
 			Version: "1.0",
 			Release: "1",
 		},
@@ -662,6 +680,13 @@ python-libs.i686    2.6.6-64.el6   rhui-REGION-rhel-server-releases
 					NewVersion: "1.1",
 					NewRelease: "3.el6ev",
 				},
+				{
+					Name:       "bind-utils",
+					Version:    "1.0",
+					Release:    "1",
+					NewVersion: "9.3.6",
+					NewRelease: "25.P1.el5_11.8",
+				},
 			},
 		},
 	}
@@ -689,18 +714,18 @@ func TestParseYumCheckUpdateLinesAmazon(t *testing.T) {
 34 package(s) needed for security, out of 71 available
 
 bind-libs.x86_64           32:9.8.2-0.37.rc1.45.amzn1      amzn-main
-java-1.7.0-openjdk.x86_64  1:1.7.0.95-2.6.4.0.65.amzn1     amzn-main
+java-1.7.0-openjdk.x86_64  1.7.0.95-2.6.4.0.65.amzn1     amzn-main
 if-not-architecture        100-200                         amzn-main
 `
 	r.Packages = []models.PackageInfo{
 		{
 			Name:    "bind-libs",
-			Version: "32:9.8.0",
+			Version: "9.8.0",
 			Release: "0.33.rc1.45.amzn1",
 		},
 		{
 			Name:    "java-1.7.0-openjdk",
-			Version: "1:1.7.0.0",
+			Version: "1.7.0.0",
 			Release: "2.6.4.0.0.amzn1",
 		},
 		{
@@ -718,16 +743,16 @@ if-not-architecture        100-200                         amzn-main
 			models.PackageInfoList{
 				{
 					Name:       "bind-libs",
-					Version:    "32:9.8.0",
+					Version:    "9.8.0",
 					Release:    "0.33.rc1.45.amzn1",
-					NewVersion: "32:9.8.2",
+					NewVersion: "9.8.2",
 					NewRelease: "0.37.rc1.45.amzn1",
 				},
 				{
 					Name:       "java-1.7.0-openjdk",
-					Version:    "1:1.7.0.0",
+					Version:    "1.7.0.0",
 					Release:    "2.6.4.0.0.amzn1",
-					NewVersion: "1:1.7.0.95",
+					NewVersion: "1.7.0.95",
 					NewRelease: "2.6.4.0.65.amzn1",
 				},
 				{
@@ -1029,7 +1054,16 @@ func TestGetChangelogCVELines(t *testing.T) {
 		{
 			models.PackageInfo{
 				Name:       "dhclient",
-				NewVersion: "12:4.1.1",
+				NewVersion: "4.1.1",
+				NewRelease: "51.P1.el6",
+			},
+			`- TESTSTRING CVE-1111-1111
+`,
+		},
+		{
+			models.PackageInfo{
+				Name:       "dhcp-common",
+				NewVersion: "4.1.1",
 				NewRelease: "51.P1.el6",
 			},
 			`- TESTSTRING CVE-1111-1111
@@ -1085,7 +1119,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 		}
 		changelog := r.getChangelogCVELines(rpm2changelog, tt.in)
 		if tt.out != changelog {
-			t.Errorf("line: expected %s, actual %s", tt.out, changelog)
+			t.Errorf("line: expected %s, actual %s, tt: %#v", tt.out, changelog, tt)
 		}
 	}
 
@@ -1137,7 +1171,19 @@ func TestGetChangelogCVELines(t *testing.T) {
 		{
 			models.PackageInfo{
 				Name:       "bind-libs",
-				NewVersion: "30:9.3.6",
+				NewVersion: "9.3.6",
+				NewRelease: "25.P1.el5_11.8",
+			},
+			`- Fix issue with patch for CVE-2016-1285 and CVE-2016-1286 found by test suite
+- Fix CVE-2016-1285 and CVE-2016-1286
+- Fix CVE-2015-8704
+- Fix CVE-2015-8000
+`,
+		},
+		{
+			models.PackageInfo{
+				Name:       "bind-utils",
+				NewVersion: "9.3.6",
 				NewRelease: "25.P1.el5_11.8",
 			},
 			`- Fix issue with patch for CVE-2016-1285 and CVE-2016-1286 found by test suite
@@ -1156,7 +1202,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 		}
 		changelog := r.getChangelogCVELines(rpm2changelog, tt.in)
 		if tt.out != changelog {
-			t.Errorf("line: expected %s, actual %s", tt.out, changelog)
+			t.Errorf("line: expected %s, actual %s, tt: %#v", tt.out, changelog, tt)
 		}
 	}
 }

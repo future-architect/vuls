@@ -301,6 +301,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (CvePacksList, error)
 		CveIDs   []string
 	}
 
+	// { packageName: changelog-lines }
 	var rpm2changelog map[string]*string
 	if !config.Conf.SSHExternal {
 		allChangelog, err := o.getAllChangelog(packInfoList)
@@ -460,7 +461,7 @@ func (o *redhat) parseYumCheckUpdateLine(line string) (models.PackageInfo, error
 	if len(fields) != 2 {
 		return models.PackageInfo{}, fmt.Errorf("Unknown format: %s", line)
 	}
-	version := fields[0]
+	version := o.regexpReplace(fields[0], `^[0-9]+:`, "")
 	release := fields[1]
 	return models.PackageInfo{
 		Name:       packName,
@@ -499,7 +500,7 @@ func (o *redhat) regexpReplace(src string, pat string, rep string) string {
 }
 
 func (o *redhat) getChangelogCVELines(rpm2changelog map[string]*string, packInfo models.PackageInfo) string {
-	rpm := fmt.Sprintf("%s-%s-%s", packInfo.Name, o.regexpReplace(packInfo.NewVersion, `^[0-9]+:`, ""), packInfo.NewRelease)
+	rpm := fmt.Sprintf("%s-%s-%s", packInfo.Name, packInfo.NewVersion, packInfo.NewRelease)
 	retLine := ""
 	if rpm2changelog[rpm] != nil {
 		lines := strings.Split(*rpm2changelog[rpm], "\n")
@@ -527,15 +528,19 @@ func (o *redhat) parseAllChangelog(allChangelog string) (map[string]*string, err
 	tmpline := ""
 	var lines []string
 	var prev, now bool
+	var err error
 	for i := range orglines {
 		if majorVersion == 5 {
 			/* for CentOS5 (yum-util < 1.1.20) */
 			prev = false
 			now = false
 			if i > 0 {
-				prev, _ = o.isRpmPackageNameLine(orglines[i-1])
+				prev, err = o.isRpmPackageNameLine(orglines[i-1])
+				if err != nil {
+					return nil, err
+				}
 			}
-			now, _ = o.isRpmPackageNameLine(orglines[i])
+			now, err = o.isRpmPackageNameLine(orglines[i])
 			if prev && now {
 				tmpline = fmt.Sprintf("%s, %s", tmpline, orglines[i])
 				continue
@@ -561,7 +566,10 @@ func (o *redhat) parseAllChangelog(allChangelog string) (map[string]*string, err
 	rpm2changelog := make(map[string]*string)
 	writePointer := o.mkPstring()
 	for _, line := range lines {
-		match, _ := o.isRpmPackageNameLine(line)
+		match, err := o.isRpmPackageNameLine(line)
+		if err != nil {
+			return nil, err
+		}
 		if match {
 			rpms := strings.Split(line, ",")
 			pNewString := o.mkPstring()
@@ -836,7 +844,20 @@ func (o *redhat) isHorizontalRule(line string) (bool, error) {
 }
 
 func (o *redhat) isRpmPackageNameLine(line string) (bool, error) {
-	return regexp.MatchString("^[^ ]+(i386|i486|i586|i686|k6|athlon|x86_64|noarch|ppc|alpha|sparc)", line)
+	s := strings.TrimPrefix(line, "ChangeLog for: ")
+	ss := strings.Split(s, ", ")
+	if len(ss) == 0 {
+		return false, nil
+	}
+	for _, s := range ss {
+		s = strings.TrimRight(s, " \r\n")
+		ok, err := regexp.MatchString(
+			`^[^ ]+\.(i386|i486|i586|i686|k6|athlon|x86_64|noarch|ppc|alpha|sparc)$`, s)
+		if !ok {
+			return false, err
+		}
+	}
+	return true, nil
 }
 
 // see test case
