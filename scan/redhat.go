@@ -541,6 +541,9 @@ func (o *redhat) parseAllChangelog(allChangelog string) (map[string]*string, err
 				}
 			}
 			now, err = o.isRpmPackageNameLine(orglines[i])
+			if err != nil {
+				return nil, err
+			}
 			if prev && now {
 				tmpline = fmt.Sprintf("%s, %s", tmpline, orglines[i])
 				continue
