@@ -669,7 +669,11 @@ Vulsは２種類のSSH接続方法をサポートしている。
 これは、SSHコマンドがインストールされていない環境でも動作する（Windowsなど）  
 
 外部SSHコマンドを使ってスキャンするためには、`-ssh-external`を指定する。
-SSH Configが使えるので、ProxyCommandを使った多段SSHなどが可能。
+SSH Configが使えるので、ProxyCommandを使った多段SSHなどが可能。  
+CentOSでは、スキャン対象サーバの/etc/sudoersに以下を追加する必要がある(user: vuls)
+```
+Defaults:vuls !requiretty
+```
 
 ## -ask-key-password option 
 

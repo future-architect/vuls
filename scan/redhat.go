@@ -303,30 +303,19 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (CvePacksList, error)
 
 	// { packageName: changelog-lines }
 	var rpm2changelog map[string]*string
-	if !config.Conf.SSHExternal {
-		allChangelog, err := o.getAllChangelog(packInfoList)
-		if err != nil {
-			o.log.Errorf("Failed to getAllchangelog. err: %s", err)
-			return nil, err
-		}
-		rpm2changelog, err = o.parseAllChangelog(allChangelog)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to parseAllChangelog. err: %s", err)
-		}
+	allChangelog, err := o.getAllChangelog(packInfoList)
+	if err != nil {
+		o.log.Errorf("Failed to getAllchangelog. err: %s", err)
+		return nil, err
+	}
+	rpm2changelog, err = o.parseAllChangelog(allChangelog)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parseAllChangelog. err: %s", err)
 	}
 
 	var results []PackInfoCveIDs
 	for i, packInfo := range packInfoList {
-		changelog := ""
-		if !config.Conf.SSHExternal {
-			changelog = o.getChangelogCVELines(rpm2changelog, packInfo)
-		} else {
-			changelog, err = o.getChangelog(packInfo.Name)
-			if err != nil {
-				o.log.Errorf("Failed to collect CVE IDs. err: %s", err)
-				return nil, err
-			}
-		}
+		changelog := o.getChangelogCVELines(rpm2changelog, packInfo)
 
 		// Collect unique set of CVE-ID in each changelog
 		uniqueCveIDMap := make(map[string]bool)
@@ -470,25 +459,6 @@ func (o *redhat) parseYumCheckUpdateLine(line string) (models.PackageInfo, error
 	}, nil
 }
 
-func (o *redhat) getChangelog(packageNames string) (stdout string, err error) {
-	command := ""
-	if o.ServerInfo.User == "root" {
-		command = "echo N | "
-	}
-	if 0 < len(config.Conf.HTTPProxy) {
-		command += util.ProxyEnv()
-	}
-
-	// yum update --changelog doesn't have --color option.
-	command += fmt.Sprintf(" yum update --changelog %s | grep CVE", packageNames)
-
-	r := o.ssh(command, sudo)
-	if !r.isSuccess(0, 1) {
-		return "", fmt.Errorf("Failed to SSH: %s", r)
-	}
-	return r.Stdout, nil
-}
-
 func (o *redhat) mkPstring() *string {
 	str := ""
 	return &str
@@ -609,7 +579,7 @@ func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList) (stdout st
 	}
 
 	// yum update --changelog doesn't have --color option.
-	command += fmt.Sprintf(" yum update --changelog %s", packageNames)
+	command += fmt.Sprintf(" LANG=en_US.UTF-8 yum update --changelog %s", packageNames)
 
 	r := o.ssh(command, sudo)
 	if !r.isSuccess(0, 1) {
