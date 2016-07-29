@@ -669,6 +669,11 @@ This is useful in situations where you may not have access to traditional UNIX t
 
 To use external ssh command, specify this option.   
 This is useful If you want to use ProxyCommand or chiper algorithm of SSH that is not supported by native go implementation.  
+Don't forget to add below line to /etc/sudoers on the target servers. (username: vuls)
+```
+Defaults:vuls !requiretty
+```
+
 
 ## -ask-key-password option 
 

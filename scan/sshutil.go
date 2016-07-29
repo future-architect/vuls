@@ -126,7 +126,7 @@ func parallelSSHExec(fn func(osTypeInterface) error, timeoutSec ...int) (errs []
 }
 
 func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (result sshResult) {
-	if runtime.GOOS == "windows" || !conf.Conf.SSHExternal {
+	if isSSHExecNative() {
 		result = sshExecNative(c, cmd, sudo)
 	} else {
 		result = sshExecExternal(c, cmd, sudo)
@@ -135,6 +135,10 @@ func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (re
 	logger := getSSHLogger(log...)
 	logger.Debug(result)
 	return
+}
+
+func isSSHExecNative() bool {
+	return runtime.GOOS == "windows" || !conf.Conf.SSHExternal
 }
 
 func sshExecNative(c conf.ServerInfo, cmd string, sudo bool) (result sshResult) {
@@ -203,6 +207,7 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result sshResult
 	}
 
 	defaultSSHArgs := []string{
+		"-t",
 		"-o", "StrictHostKeyChecking=no",
 		"-o", "UserKnownHostsFile=/dev/null",
 		"-o", "LogLevel=quiet",
@@ -289,6 +294,7 @@ func decolateCmd(c conf.ServerInfo, cmd string, sudo bool) string {
 			cmd = fmt.Sprintf(`docker exec %s /bin/bash -c "%s"`, c.Container.ContainerID, cmd)
 		}
 	}
+	//  cmd = fmt.Sprintf("set -x; %s", cmd)
 	return cmd
 }
 
