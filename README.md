@@ -289,20 +289,25 @@ see https://github.com/future-architect/vuls/tree/master/setup/docker
 ----
 # Performance Considerations
 
-- on Ubuntu, Debian and CentOS  
-Vuls parses a changelog of upgradable packages. The scan speed is slow and resource usage is heavy when there are many updatable packages on target server.  
+- on Ubuntu and Debian  
+Vuls issues `apt-get changelog` for each upgradable packages and parse the changelog.  
+`apt-get changelog` is slow and resource usage is heavy when there are many updatable packages on target server.  
+
+- on CentOS  
+Vuls issues `yum update --changelog` to get changelogs of upgradable packages at once and parse the changelog.  
+Scan speed is fast and resource usage is light.  
 
 - On Amazon, RHEL and FreeBSD  
 High speed scan and resource usage is light because Vuls can get CVE IDs by using package manager(no need to parse a changelog).
 
 | Distribution|         Scan Speed | Resource Usage On Target Server |
 |:------------|:-------------------|:-------------|
+| Ubuntu      |               Slow | Heavy            |
+| Debian      |               Slow | Heavy            |
+| CentOS      |               Fast | Light            |
 | Amazon      |               Fast | Light            |
 | RHEL        |               Fast | Light            |
 | FreeBSD     |               Fast | Light            |
-| Ubuntu      |               Slow | Heavy            |
-| Debian      |               Slow | Heavy            |
-| CentOS      |               Slow | Heavy            |
 
 ----
 
