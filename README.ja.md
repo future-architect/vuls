@@ -290,20 +290,23 @@ $ vuls tui
 ----
 # Performance Considerations
 
-- Ubuntu, Debian and CentOS  
-アップデート対象のパッケージが沢山ある場合は、Changelogをパースするので遅いし、スキャン対象サーバのリソースを消費する。
+- Ubuntu, Debian  
+アップデート対象のパッケージが沢山ある場合は、毎回apt-get changelogするので遅いし、スキャン対象サーバのリソースを消費する。
+
+- CentOS  
+アップデート対象すべてのchangelogを一度で取得しパースする。スキャンスピードは高速、サーバリソース消費量は小さい。
 
 - Amazon, RHEL and FreeBSD  
 高速にスキャンし、スキャン対象サーバのリソース消費量は小さい。
 
 | Distribution|         Scan Speed | Resource Usage On Target Server |
 |:------------|:-------------------|:-------------|
+| Ubuntu      |               Slow | Heavy            |
+| Debian      |               Slow | Heavy            |
+| CentOS      |               Fast | Light            |
 | Amazon      |               Fast | Light            |
 | RHEL        |               Fast | Light            |
 | FreeBSD     |               Fast | Light            |
-| Ubuntu      |               Slow | Heavy            |
-| Debian      |               Slow | Heavy            |
-| CentOS      |               Slow | Heavy            |
 
 ----
 
