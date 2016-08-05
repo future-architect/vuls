@@ -374,7 +374,7 @@ notifyUsers  = ["@username"]
 
 [mail]
 smtpAddr      = "smtp.gmail.com"
-smtpPort      = "465"
+smtpPort      = "587"
 user          = "username"
 password      = "password"
 from          = "from@address.com"
@@ -455,7 +455,7 @@ host         = "172.31.4.82"
     ```
     [mail]
     smtpAddr      = "smtp.gmail.com"
-    smtpPort      = "465"
+    smtpPort      = "587"
     user          = "username"
     password      = "password"
     from          = "from@address.com"
