@@ -252,6 +252,9 @@ type ServerInfo struct {
 	// Optional key-value set that will be outputted to JSON
 	Optional [][]interface{}
 
+	// For CentOS, RHEL, Amazon
+	Enablerepo string
+
 	// used internal
 	LogMsgAnsiColor string // DebugLog Color
 	Container       Container

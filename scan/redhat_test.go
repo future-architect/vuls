@@ -664,6 +664,7 @@ pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 					Release:    "4.el6",
 					NewVersion: "2.3.7",
 					NewRelease: "5.el6",
+					Repository: "base",
 				},
 				{
 					Name:       "bash",
@@ -671,6 +672,7 @@ pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 					Release:    "33",
 					NewVersion: "4.1.2",
 					NewRelease: "33.el6_7.1",
+					Repository: "updates",
 				},
 				{
 					Name:       "python-libs",
@@ -678,6 +680,7 @@ pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 					Release:    "1.1-0",
 					NewVersion: "2.6.6",
 					NewRelease: "64.el6",
+					Repository: "rhui-REGION-rhel-server-releases",
 				},
 				{
 					Name:       "python-ordereddict",
@@ -685,6 +688,7 @@ pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 					Release:    "1",
 					NewVersion: "1.1",
 					NewRelease: "3.el6ev",
+					Repository: "installed",
 				},
 				{
 					Name:       "bind-utils",
@@ -692,6 +696,7 @@ pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 					Release:    "1",
 					NewVersion: "9.3.6",
 					NewRelease: "25.P1.el5_11.8",
+					Repository: "updates",
 				},
 				{
 					Name:       "pytalloc",
@@ -699,6 +704,7 @@ pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 					Release:    "0",
 					NewVersion: "2.0.7",
 					NewRelease: "2.el6",
+					Repository: "@CentOS 6.5/6.5",
 				},
 			},
 		},
@@ -760,6 +766,7 @@ if-not-architecture        100-200                         amzn-main
 					Release:    "0.33.rc1.45.amzn1",
 					NewVersion: "9.8.2",
 					NewRelease: "0.37.rc1.45.amzn1",
+					Repository: "amzn-main",
 				},
 				{
 					Name:       "java-1.7.0-openjdk",
@@ -767,6 +774,7 @@ if-not-architecture        100-200                         amzn-main
 					Release:    "2.6.4.0.0.amzn1",
 					NewVersion: "1.7.0.95",
 					NewRelease: "2.6.4.0.65.amzn1",
+					Repository: "amzn-main",
 				},
 				{
 					Name:       "if-not-architecture",
@@ -774,6 +782,7 @@ if-not-architecture        100-200                         amzn-main
 					Release:    "20",
 					NewVersion: "100",
 					NewRelease: "200",
+					Repository: "amzn-main",
 				},
 			},
 		},

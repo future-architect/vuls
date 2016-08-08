@@ -20,6 +20,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	log "github.com/Sirupsen/logrus"
@@ -153,6 +154,23 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			}
 			if !found {
 				s.Optional = append(s.Optional, dkv)
+			}
+		}
+
+		s.Enablerepo = v.Enablerepo
+		if len(s.Enablerepo) == 0 {
+			s.Enablerepo = d.Enablerepo
+		}
+		if len(s.Enablerepo) != 0 {
+			for _, repo := range strings.Split(s.Enablerepo, ",") {
+				switch repo {
+				case "base", "updates":
+					// nop
+				default:
+					return fmt.Errorf(
+						"For now, enablerepo have to be base or updates: %s, servername: %s",
+						s.Enablerepo, name)
+				}
 			}
 		}
 
