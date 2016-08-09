@@ -79,8 +79,11 @@ const sudo = true
 const noSudo = false
 
 func parallelSSHExec(fn func(osTypeInterface) error, timeoutSec ...int) (errs []error) {
+	resChan := make(chan string, len(servers))
 	errChan := make(chan error, len(servers))
 	defer close(errChan)
+	defer close(resChan)
+
 	for _, s := range servers {
 		go func(s osTypeInterface) {
 			defer func() {
@@ -97,7 +100,7 @@ func parallelSSHExec(fn func(osTypeInterface) error, timeoutSec ...int) (errs []
 					err,
 				)
 			} else {
-				errChan <- nil
+				resChan <- s.getServerInfo().ServerName
 			}
 		}(s)
 	}
@@ -109,18 +112,39 @@ func parallelSSHExec(fn func(osTypeInterface) error, timeoutSec ...int) (errs []
 		timeout = timeoutSec[0]
 	}
 
+	var snames []string
+	isTimedout := false
 	for i := 0; i < len(servers); i++ {
 		select {
+		case s := <-resChan:
+			snames = append(snames, s)
 		case err := <-errChan:
-			if err != nil {
-				errs = append(errs, err)
-			} else {
-				logrus.Debug("Parallel SSH Success")
-			}
+			errs = append(errs, err)
 		case <-time.After(time.Duration(timeout) * time.Second):
-			logrus.Errorf("Parallel SSH Timeout")
-			errs = append(errs, fmt.Errorf("Timed out"))
+			isTimedout = true
 		}
+	}
+
+	// collect timed out servernames
+	var timedoutSnames []string
+	if isTimedout {
+		for _, s := range servers {
+			name := s.getServerInfo().ServerName
+			found := false
+			for _, t := range snames {
+				if name == t {
+					found = true
+					break
+				}
+			}
+			if !found {
+				timedoutSnames = append(timedoutSnames, name)
+			}
+		}
+	}
+	if isTimedout {
+		errs = append(errs, fmt.Errorf(
+			"Timed out: %s", timedoutSnames))
 	}
 	return
 }
@@ -196,7 +220,7 @@ func sshExecNative(c conf.ServerInfo, cmd string, sudo bool) (result sshResult) 
 
 	result.Stdout = stdoutBuf.String()
 	result.Stderr = stderrBuf.String()
-	result.Cmd = strings.Replace(maskPassword(cmd, c.Password), "\n", "", -1)
+	result.Cmd = strings.Replace(cmd, "\n", "", -1)
 	return
 }
 
@@ -234,6 +258,8 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result sshResult
 	}
 
 	cmd = decolateCmd(c, cmd, sudo)
+	//  cmd = fmt.Sprintf("stty cols 256; set -o pipefail; %s", cmd)
+
 	args = append(args, cmd)
 	execCmd := exec.Command(sshBinaryPath, args...)
 
@@ -259,8 +285,7 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result sshResult
 	result.Servername = c.ServerName
 	result.Host = c.Host
 	result.Port = c.Port
-	result.Cmd = fmt.Sprintf("%s %s",
-		sshBinaryPath, maskPassword(strings.Join(args, " "), c.Password))
+	result.Cmd = fmt.Sprintf("%s %s", sshBinaryPath, strings.Join(args, " "))
 	return
 }
 
@@ -272,14 +297,8 @@ func getSSHLogger(log ...*logrus.Entry) *logrus.Entry {
 }
 
 func decolateCmd(c conf.ServerInfo, cmd string, sudo bool) string {
-	c.SudoOpt.ExecBySudo = true
 	if sudo && c.User != "root" && !c.IsContainer() {
-		switch {
-		case c.SudoOpt.ExecBySudo:
-			cmd = fmt.Sprintf("echo %s | sudo -S %s", c.Password, cmd)
-		case c.SudoOpt.ExecBySudoSh:
-			cmd = fmt.Sprintf("echo %s | sudo sh -c '%s'", c.Password, cmd)
-		}
+		cmd = fmt.Sprintf("sudo -S %s", cmd)
 	}
 
 	if c.Family != "FreeBSD" {
@@ -329,10 +348,6 @@ func sshConnect(c conf.ServerInfo) (client *ssh.Client, err error) {
 	var auths = []ssh.AuthMethod{}
 	if auths, err = addKeyAuth(auths, c.KeyPath, c.KeyPassword); err != nil {
 		return nil, err
-	}
-
-	if c.Password != "" {
-		auths = append(auths, ssh.Password(c.Password))
 	}
 
 	// http://blog.ralch.com/tutorial/golang-ssh-connection/
@@ -410,9 +425,4 @@ func parsePemBlock(block *pem.Block) (interface{}, error) {
 	default:
 		return nil, fmt.Errorf("Unsupported key type %q", block.Type)
 	}
-}
-
-// ref golang.org/x/crypto/ssh/keys.go#ParseRawPrivateKey.
-func maskPassword(cmd, sudoPass string) string {
-	return strings.Replace(cmd, fmt.Sprintf("echo %s", sudoPass), "echo *****", -1)
 }

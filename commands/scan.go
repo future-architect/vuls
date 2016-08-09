@@ -102,7 +102,6 @@ func (*ScanCmd) Usage() string {
 		[-report-slack]
 		[-report-text]
 		[-http-proxy=http://192.168.0.1:8080]
-		[-ask-sudo-password]
 		[-ask-key-password]
 		[-debug]
 		[-debug-sql]
@@ -211,7 +210,7 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		&p.askSudoPassword,
 		"ask-sudo-password",
 		false,
-		"Ask sudo password of target servers before scanning",
+		"[Deprecated] THIS OPTION WAS REMOVED FOR SECURITY REASONS. Define NOPASSWD in /etc/sudoers on tareget servers and use SSH key-based authentication",
 	)
 
 	f.BoolVar(
@@ -232,7 +231,7 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	var keyPass, sudoPass string
+	var keyPass string
 	var err error
 	if p.askKeyPassword {
 		prompt := "SSH key password: "
@@ -242,14 +241,11 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		}
 	}
 	if p.askSudoPassword {
-		prompt := "sudo password: "
-		if sudoPass, err = getPasswd(prompt); err != nil {
-			logrus.Error(err)
-			return subcommands.ExitFailure
-		}
+		logrus.Errorf("[Deprecated] -ask-sudo-password WAS REMOVED FOR SECURITY REASONS. Define NOPASSWD in /etc/sudoers on tareget servers and use SSH key-based authentication")
+		return subcommands.ExitFailure
 	}
 
-	err = c.Load(p.configPath, keyPass, sudoPass)
+	err = c.Load(p.configPath, keyPass)
 	if err != nil {
 		logrus.Errorf("Error loading %s, %s", p.configPath, err)
 		return subcommands.ExitUsageError
@@ -382,6 +378,12 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	Log.Info("Detecting Server/Contianer OS... ")
 	scan.InitServers(Log)
+
+	Log.Info("Checking sudo configuration... ")
+	if err := scan.CheckIfSudoNoPasswd(Log); err != nil {
+		Log.Errorf("Failed to sudo with nopassword via SSH. Define NOPASSWD in /etc/sudoers on target servers")
+		return subcommands.ExitFailure
+	}
 
 	Log.Info("Detecting Platforms... ")
 	scan.DetectPlatforms(Log)

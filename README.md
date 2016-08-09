@@ -120,6 +120,9 @@ $ cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
 $ chmod 600 ~/.ssh/authorized_keys
 ```
 
+Vuls doesn't support SSH password authentication. So you have to use SSH key-based authentication.  
+And also, SUDO with password is not supported for security reasons. So you have to define NOPASSWORD in /etc/sudoers on target servers.  
+
 ## Step3. Install requirements
 
 Vuls requires the following packages.
@@ -506,15 +509,14 @@ You can customize your configuration using this template.
     
     Multiple SSH authentication methods are supported.  
     - SSH agent
-    - SSH public key authentication (with password, empty password)
-    - Password authentication
+    - SSH public key authentication (with password and empty password)
+    Password authentication is not supported.
 
 ----
 
 # Usage: Configtest 
 
 Configtest subcommand check if vuls is able to connect via ssh to servers/containers defined in the config.toml.  
-
 ```
 $ vuls configtest --help
 configtest:
@@ -535,6 +537,16 @@ configtest:
         Use external ssh command. Default: Use the Go native implementation
 ```
 
+And also, configtest subcommand checks sudo settings on target servers whether Vuls is able to SUDO with nopassword via SSH.  
+Example of /etc/sudoers on target servers
+- CentOS, Amazon Linux, RedHat Enterprise Linux
+```
+vuls ALL=(root) NOPASSWD: /usr/bin/yum
+```
+- Ubuntu, Debian
+```
+vuls ALL=(root) NOPASSWD: /usr/bin/apt-get, /usr/bin/apt-cache
+```
 
 ----
 
@@ -557,14 +569,11 @@ Prepare subcommand installs required packages on each server.
 $ vuls prepare -help
 prepare
                         [-config=/path/to/config.toml] [-debug]
-                        [-ask-sudo-password]
                         [-ask-key-password]
                         [SERVER]...
 
   -ask-key-password
         Ask ssh privatekey password before scanning
-  -ask-sudo-password
-        Ask sudo password of target servers before scanning
   -config string
         /path/to/toml (default "$PWD/config.toml")
   -debug
@@ -597,7 +606,6 @@ scan:
                 [-report-slack]
                 [-report-text]
                 [-http-proxy=http://192.168.0.1:8080]
-                [-ask-sudo-password]
                 [-ask-key-password]
                 [-debug]
                 [-debug-sql]
@@ -612,8 +620,6 @@ scan:
 
   -ask-key-password
         Ask ssh privatekey password before scanning
-  -ask-sudo-password
-        Ask sudo password of target servers before scanning
   -aws-profile string
         AWS Profile to use (default "default")
   -aws-region string
@@ -687,14 +693,6 @@ Defaults:vuls !requiretty
 | empty password   |                 -  | |
 | with password    |           required | or use ssh-agent |
 
-## -ask-sudo-password option
-
-| sudo password on target servers | -ask-sudo-password | |
-|:-----------------|:-------|:------|
-| NOPASSWORD       | - | defined as NOPASSWORD in /etc/sudoers on target servers |
-| with password    | required |  |
-
-
 ## -report-json , -report-text option
 
 At the end of the scan, scan results will be available in the `$PWD/result/current/` directory.  
@@ -706,12 +704,11 @@ $ vuls scan \
       --report-slack \ 
       --report-mail \
       --cvss-over=7 \
-      -ask-sudo-password \ 
       -ask-key-password \
       -cve-dictionary-dbpath=$PWD/cve.sqlite3
 ```
 With this sample command, it will ..
-- Ask sudo password and ssh key passsword before scanning
+- Ask SSH key passsword before scanning
 - Scan all servers defined in config file
 - Send scan results to slack and email
 - Only Report CVEs that CVSS score is over 7
@@ -725,7 +722,6 @@ $ vuls scan \
 ```
 With this sample command, it will ..
 - Use SSH Key-Based authentication with empty password (without -ask-key-password option)
-- Sudo with no password (without -ask-sudo-password option)
 - Scan only 2 servers (server1, server2)
 - Print scan result to terminal
 
@@ -745,7 +741,6 @@ $ vuls scan \
 ```
 With this sample command, it will ..
 - Use SSH Key-Based authentication with empty password (without -ask-key-password option)
-- Sudo with no password (without -ask-sudo-password option)
 - Scan all servers defined in config file
 - Put scan result(JSON) in S3 bucket. The bucket name is "vuls" in ap-northeast-1 and profile is "default"
 
@@ -764,7 +759,6 @@ $ vuls scan \
 ```
 With this sample command, it will ..
 - Use SSH Key-Based authentication with empty password (without -ask-key-password option)
-- Sudo with no password (without -ask-sudo-password option)
 - Scan all servers defined in config file
 - Put scan result(JSON) in Azure Blob Storage. The container name is "vuls", storage account is "test" and accesskey is "access-key-string"
 

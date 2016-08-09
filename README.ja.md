@@ -112,6 +112,9 @@ $ cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
 $ chmod 600 ~/.ssh/authorized_keys
 ```
 
+VulsはSSHパスワード認証をサポートしていない。SSH公開鍵鍵認証を使う必要がある。
+また、パスワードありのSUDOもセキュリティ上の理由によりサポートしていないため、スキャン対象サーバに/etc/sudoersにNOPASSWDを設定して、パスワードなしでSUDO可能にする必要がある。
+
 ## Step3. Install requirements
 
 Vulsセットアップに必要な以下のソフトウェアをインストールする。
@@ -506,13 +509,13 @@ host         = "172.31.4.82"
     また、以下のSSH認証をサポートしている。
     - SSH agent
     - SSH public key authentication (with password, empty password)
-    - Password authentication
+    SSH Password認証はサポートしていない
 
 ----
 
 # Usage: Configtest 
 
-configtestサブコマンドは、config.tomlで定義されたサーバ/コンテナに対してSSH可能かどうかをチェックする。
+configtestサブコマンドは、config.tomlで定義されたサーバ/コンテナに対してSSH可能かどうかをチェックする。  
 
 ```
 $ vuls configtest --help
@@ -533,6 +536,18 @@ configtest:
   -ssh-external
         Use external ssh command. Default: Use the Go native implementation
 ```
+
+また、スキャン対象サーバに対してパスワードなしでSUDO可能な状態かもチェックする。  
+スキャン対象サーバ上の`/etc/sudoers`のサンプル
+- CentOS, Amazon Linux, RedHat Enterprise Linux
+```
+vuls ALL=(root) NOPASSWD: /usr/bin/yum
+```
+- Ubuntu, Debian
+```
+vuls ALL=(root) NOPASSWD: /usr/bin/apt-get, /usr/bin/apt-cache
+```
+
 
 ----
 
@@ -555,14 +570,11 @@ Prepareサブコマンドは、Vuls内部で利用する以下のパッケージ
 $ vuls prepare -help
 prepare
                         [-config=/path/to/config.toml] [-debug]
-                        [-ask-sudo-password]
                         [-ask-key-password]
                         [SERVER]...
 
   -ask-key-password
         Ask ssh privatekey password before scanning
-  -ask-sudo-password
-        Ask sudo password of target servers before scanning
   -config string
         /path/to/toml (default "$PWD/config.toml")
   -debug
@@ -595,7 +607,6 @@ scan:
                 [-report-slack]
                 [-report-text]
                 [-http-proxy=http://192.168.0.1:8080]
-                [-ask-sudo-password]
                 [-ask-key-password]
                 [-debug]
                 [-debug-sql]
@@ -611,8 +622,6 @@ scan:
 
   -ask-key-password
         Ask ssh privatekey password before scanning
-  -ask-sudo-password
-        Ask sudo password of target servers before scanning
   -aws-profile string
         AWS Profile to use (default "default")
   -aws-region string
@@ -685,14 +694,6 @@ Defaults:vuls !requiretty
 | empty password   |                 -  | |
 | with password    |           required | or use ssh-agent |
 
-## -ask-sudo-password option
-
-| sudo password on target servers | -ask-sudo-password | |
-|:-----------------|:-------|:------|
-| NOPASSWORD       | - | defined as NOPASSWORD in /etc/sudoers on target servers |
-| with password    | required |  |
-
-
 ## -report-json , -report-text option
 
 結果をファイルに出力したい場合に指定する。出力先は、`$PWD/result/current/`    
@@ -705,12 +706,10 @@ $ vuls scan \
       -report-slack \ 
       -report-mail \
       -cvss-over=7 \
-      -ask-sudo-password \ 
       -ask-key-password \
       -cve-dictionary-dbpath=$PWD/cve.sqlite3
 ```
 この例では、
-- スキャン対象サーバのsudoパスワードを指定
 - SSH公開鍵認証（秘密鍵パスフレーズ）を指定
 - configに定義された全サーバをスキャン
 - レポートをslack, emailに送信
@@ -745,7 +744,6 @@ $ vuls scan \
 ```
 この例では、
 - SSH公開鍵認証（秘密鍵パスフレーズなし）
-- ノーパスワードでsudoが実行可能
 - configに定義された全サーバをスキャン
 - 結果をJSON形式でS3に格納する。
   - バケット名 ... vuls
@@ -767,7 +765,6 @@ $ vuls scan \
 ```
 この例では、
 - SSH公開鍵認証（秘密鍵パスフレーズなし）
-- ノーパスワードでsudoが実行可能
 - configに定義された全サーバをスキャン
 - 結果をJSON形式でAzure Blobに格納する。
   - コンテナ名 ... vuls
