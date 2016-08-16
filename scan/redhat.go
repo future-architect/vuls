@@ -47,11 +47,7 @@ func newRedhat(c config.ServerInfo) *redhat {
 
 // https://github.com/serverspec/specinfra/blob/master/lib/specinfra/helper/detect_os/redhat.rb
 func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
-
 	red = newRedhat(c)
-
-	// set sudo option flag
-	c.SudoOpt = config.SudoOption{ExecBySudo: true}
 	red.setServerInfo(c)
 
 	if r := sshExec(c, "ls /etc/fedora-release", noSudo); r.isSuccess() {
@@ -100,6 +96,16 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 
 	Log.Debugf("Not RedHat like Linux. servername: %s", c.ServerName)
 	return false, red
+}
+
+func (o *redhat) checkIfSudoNoPasswd() error {
+	r := o.ssh("yum --version", sudo)
+	if !r.isSuccess() {
+		o.log.Errorf("sudo error on %s", r)
+		return fmt.Errorf("Failed to sudo: %s", r)
+	}
+	o.log.Infof("sudo ... OK")
+	return nil
 }
 
 // CentOS 5 ... yum-plugin-security, yum-changelog

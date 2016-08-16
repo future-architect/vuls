@@ -39,6 +39,12 @@ func detectFreebsd(c config.ServerInfo) (itsMe bool, bsd osTypeInterface) {
 	return false, bsd
 }
 
+func (o *bsd) checkIfSudoNoPasswd() error {
+	// FreeBSD doesn't need root privilege
+	o.log.Infof("sudo ... OK")
+	return nil
+}
+
 func (o *bsd) install() error {
 	return nil
 }

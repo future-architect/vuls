@@ -31,7 +31,7 @@ type TOMLLoader struct {
 }
 
 // Load load the configuraiton TOML file specified by path arg.
-func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
+func (c TOMLLoader) Load(pathToToml, keyPass string) (err error) {
 	var conf Config
 	if _, err := toml.DecodeFile(pathToToml, &conf); err != nil {
 		log.Error("Load config failed", err)
@@ -49,15 +49,11 @@ func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
 		d.KeyPassword = keyPass
 	}
 
-	if sudoPass != "" {
-		d.Password = sudoPass
-	}
-
 	i := 0
 	for name, v := range conf.Servers {
 
-		if 0 < len(v.KeyPassword) || 0 < len(v.Password) {
-			log.Warn("[Deprecated] password and keypassword in config file are unsecure. Remove them immediately for a security reason. They will be removed in a future release.")
+		if 0 < len(v.KeyPassword) {
+			log.Warn("[Deprecated] KEYPASSWORD IN CONFIG FILE ARE UNSECURE. REMOVE THEM IMMEDIATELY FOR A SECURITY REASONS. THEY WILL BE REMOVED IN A FUTURE RELEASE.")
 		}
 
 		s := ServerInfo{ServerName: name}
@@ -69,12 +65,6 @@ func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
 			s.User = d.User
 		default:
 			return fmt.Errorf("%s is invalid. User is empty", name)
-		}
-
-		//  s.Password = sudoPass
-		s.Password = v.Password
-		if s.Password == "" {
-			s.Password = d.Password
 		}
 
 		s.Host = v.Host
