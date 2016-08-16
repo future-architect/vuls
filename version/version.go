@@ -21,4 +21,4 @@ package version
 const Name string = "vuls"
 
 // Version of Vuls
-const Version string = "0.1.4"
+const Version string = "0.1.5"
