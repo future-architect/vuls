@@ -299,6 +299,7 @@ func getSSHLogger(log ...*logrus.Entry) *logrus.Entry {
 func decolateCmd(c conf.ServerInfo, cmd string, sudo bool) string {
 	if sudo && c.User != "root" && !c.IsContainer() {
 		cmd = fmt.Sprintf("sudo -S %s", cmd)
+		cmd = strings.Replace(cmd, "|", "| sudo ", -1)
 	}
 
 	if c.Family != "FreeBSD" {
