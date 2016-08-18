@@ -90,7 +90,7 @@ func (w S3Writer) Write(scanResults []models.ScanResult) (err error) {
 
 	for _, r := range scanResults {
 		key := ""
-		if r.Container.ContainerID == "" {
+		if len(r.Container.ContainerID) == 0 {
 			key = fmt.Sprintf("%s/%s.json", timestr, r.ServerName)
 		} else {
 			key = fmt.Sprintf("%s/%s_%s.json", timestr, r.ServerName, r.Container.Name)

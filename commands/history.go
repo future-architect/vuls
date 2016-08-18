@@ -20,25 +20,22 @@ package commands
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"golang.org/x/net/context"
-
-	"github.com/Sirupsen/logrus"
 	c "github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/db"
-	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/report"
 	"github.com/google/subcommands"
+	"golang.org/x/net/context"
 )
 
 // HistoryCmd is Subcommand of list scanned results
 type HistoryCmd struct {
-	debug    bool
-	debugSQL bool
-
-	dbpath string
+	debug       bool
+	debugSQL    bool
+	jsonBaseDir string
 }
 
 // Name return subcommand name
@@ -53,7 +50,7 @@ func (*HistoryCmd) Synopsis() string {
 func (*HistoryCmd) Usage() string {
 	return `history:
 	history
-		[-dbpath=/path/to/vuls.sqlite3]
+		[-results-dir=/path/to/results]
 	`
 }
 
@@ -62,47 +59,45 @@ func (p *HistoryCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.debugSQL, "debug-sql", false, "SQL debug mode")
 
 	wd, _ := os.Getwd()
-	defaultDBPath := filepath.Join(wd, "vuls.sqlite3")
-	f.StringVar(&p.dbpath, "dbpath", defaultDBPath, "/path/to/sqlite3")
+	defaultJSONBaseDir := filepath.Join(wd, "results")
+	f.StringVar(&p.jsonBaseDir, "results-dir", defaultJSONBaseDir, "/path/to/results")
 }
 
 // Execute execute
 func (p *HistoryCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
 	c.Conf.DebugSQL = p.debugSQL
-	c.Conf.DBPath = p.dbpath
+	c.Conf.JSONBaseDir = p.jsonBaseDir
 
-	//  _, err := scanHistories()
-	histories, err := scanHistories()
-	if err != nil {
-		logrus.Error("Failed to select scan histories: ", err)
+	var err error
+	var jsonDirs report.JSONDirs
+	if jsonDirs, err = report.GetValidJSONDirs(); err != nil {
 		return subcommands.ExitFailure
 	}
-	const timeLayout = "2006-01-02 15:04"
-	for _, history := range histories {
-		names := []string{}
-		for _, result := range history.ScanResults {
-			if 0 < len(result.Container.ContainerID) {
-				names = append(names, result.Container.Name)
-			} else {
-				names = append(names, result.ServerName)
-			}
+	for _, d := range jsonDirs {
+		var files []os.FileInfo
+		if files, err = ioutil.ReadDir(d); err != nil {
+			return subcommands.ExitFailure
 		}
-		fmt.Printf("%-3d %s scanned %d servers: %s\n",
-			history.ID,
-			history.ScannedAt.Format(timeLayout),
-			len(history.ScanResults),
-			strings.Join(names, ", "),
+		var hosts []string
+		for _, f := range files {
+			// TODO this "if block" will be deleted in a future release
+			if f.Name() == "all.json" {
+				continue
+			}
+			if filepath.Ext(f.Name()) != ".json" {
+				continue
+			}
+			fileBase := strings.TrimSuffix(f.Name(), filepath.Ext(f.Name()))
+			hosts = append(hosts, fileBase)
+		}
+		splitPath := strings.Split(d, string(os.PathSeparator))
+		timeStr := splitPath[len(splitPath)-1]
+		fmt.Printf("%s scanned %d servers: %s\n",
+			timeStr,
+			len(hosts),
+			strings.Join(hosts, ", "),
 		)
 	}
 	return subcommands.ExitSuccess
-}
-
-func scanHistories() (histories []models.ScanHistory, err error) {
-	if err := db.OpenDB(); err != nil {
-		return histories, fmt.Errorf(
-			"Failed to open DB. datafile: %s, err: %s", c.Conf.DBPath, err)
-	}
-	histories, err = db.SelectScanHistories()
-	return
 }

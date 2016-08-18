@@ -20,13 +20,13 @@ package report
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/db"
 	"github.com/future-architect/vuls/models"
 	"github.com/google/subcommands"
 	"github.com/gosuri/uitable"
@@ -40,9 +40,9 @@ var currentCveInfo int
 var currentDetailLimitY int
 
 // RunTui execute main logic
-func RunTui(historyID string) subcommands.ExitStatus {
+func RunTui(jsonDirName string) subcommands.ExitStatus {
 	var err error
-	scanHistory, err = selectScanHistory(historyID)
+	scanHistory, err = selectScanHistory(jsonDirName)
 	if err != nil {
 		log.Fatal(err)
 		return subcommands.ExitFailure
@@ -70,12 +70,20 @@ func RunTui(historyID string) subcommands.ExitStatus {
 	return subcommands.ExitSuccess
 }
 
-func selectScanHistory(historyID string) (latest models.ScanHistory, err error) {
-	if err := db.OpenDB(); err != nil {
-		return latest, fmt.Errorf(
-			"Failed to open DB. datafile: %s, err: %s", config.Conf.DBPath, err)
+func selectScanHistory(jsonDirName string) (latest models.ScanHistory, err error) {
+	var jsonDir string
+	if 0 < len(jsonDirName) {
+		jsonDir = filepath.Join(config.Conf.JSONBaseDir, jsonDirName)
+	} else {
+		var jsonDirs JSONDirs
+		if jsonDirs, err = GetValidJSONDirs(); err != nil {
+			return
+		}
+		jsonDir = jsonDirs[0]
 	}
-	latest, err = db.SelectScanHistory(historyID)
+	if latest, err = LoadOneScanHistory(jsonDir); err != nil {
+		return
+	}
 	return
 }
 
@@ -332,7 +340,7 @@ func cursorUp(g *gocui.Gui, v *gocui.View) error {
 	if v != nil {
 		ox, oy := v.Origin()
 		cx, cy := v.Cursor()
-		if err := v.SetCursor(cx, cy-1); err != nil && oy > 0 {
+		if err := v.SetCursor(cx, cy-1); err != nil && 0 < oy {
 			if err := v.SetOrigin(ox, oy-1); err != nil {
 				return err
 			}

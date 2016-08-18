@@ -30,13 +30,13 @@ import (
 	"github.com/gosuri/uitable"
 )
 
-func ensureResultDir() (path string, err error) {
+func ensureResultDir(scannedAt time.Time) (path string, err error) {
 	if resultDirPath != "" {
 		return resultDirPath, nil
 	}
 
 	const timeLayout = "20060102_1504"
-	timedir := time.Now().Format(timeLayout)
+	timedir := scannedAt.Format(timeLayout)
 	wd, _ := os.Getwd()
 	dir := filepath.Join(wd, "results", timedir)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -44,7 +44,7 @@ func ensureResultDir() (path string, err error) {
 	}
 
 	symlinkPath := filepath.Join(wd, "results", "current")
-	if _, err := os.Stat(symlinkPath); err == nil {
+	if _, err := os.Lstat(symlinkPath); err == nil {
 		if err := os.Remove(symlinkPath); err != nil {
 			return "", fmt.Errorf(
 				"Failed to remove symlink. path: %s, err: %s", symlinkPath, err)

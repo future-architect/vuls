@@ -599,7 +599,7 @@ func (o *debian) parseChangelog(changelog string,
 			o.log.Debugf("Found the stop line. line: %s", line)
 			stopLineFound = true
 			break
-		} else if matches := cveRe.FindAllString(line, -1); len(matches) > 0 {
+		} else if matches := cveRe.FindAllString(line, -1); 0 < len(matches) {
 			for _, m := range matches {
 				cveIDs = util.AppendIfMissing(cveIDs, m)
 			}

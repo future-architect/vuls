@@ -59,7 +59,7 @@ func (api cvedictClient) CheckHealth() (ok bool, err error) {
 	var resp *http.Response
 	resp, _, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
 	//  resp, _, errs = gorequest.New().Proxy(api.httpProxy).Get(url).End()
-	if len(errs) > 0 || resp == nil || resp.StatusCode != 200 {
+	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 		return false, fmt.Errorf("Failed to request to CVE server. url: %s, errs: %v", url, errs)
 	}
 	return true, nil
@@ -198,7 +198,7 @@ func (api cvedictClient) httpGet(key, url string, resChan chan<- response, errCh
 //          }
 //          pp.Println(req)
 //          resp, body, errs = req.End()
-//          if len(errs) > 0 || resp.StatusCode != 200 {
+//          if 0 < len(errs) || resp.StatusCode != 200 {
 //              errChan <- fmt.Errorf("HTTP error. errs: %v, url: %s", errs, url)
 //          }
 //          return nil
@@ -252,7 +252,7 @@ func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]c
 			req = req.Send(fmt.Sprintf("%s=%s", key, query[key])).Type("json")
 		}
 		resp, body, errs = req.End()
-		if len(errs) > 0 || resp == nil || resp.StatusCode != 200 {
+		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			return fmt.Errorf("HTTP POST error: %v, url: %s, resp: %v", errs, url, resp)
 		}
 		return nil

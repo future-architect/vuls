@@ -11,7 +11,7 @@
 	clean
 
 SRCS = $(shell git ls-files '*.go')
-PKGS = ./. ./db ./config ./models ./report ./cveapi ./scan ./util ./commands
+PKGS = ./. ./config ./models ./report ./cveapi ./scan ./util ./commands
 
 all: test
 

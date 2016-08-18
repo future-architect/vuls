@@ -510,7 +510,7 @@ func (o *redhat) parseAllChangelog(allChangelog string) (map[string]*string, err
 			/* for CentOS5 (yum-util < 1.1.20) */
 			prev = false
 			now = false
-			if i > 0 {
+			if 0 < i {
 				prev, err = o.isRpmPackageNameLine(orglines[i-1])
 				if err != nil {
 					return nil, err
