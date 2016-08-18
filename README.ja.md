@@ -538,11 +538,19 @@ configtest:
 ```
 
 また、スキャン対象サーバに対してパスワードなしでSUDO可能な状態かもチェックする。  
+
 スキャン対象サーバ上の`/etc/sudoers`のサンプル
-- CentOS, Amazon Linux, RedHat Enterprise Linux
+
+- CentOS, RHEL 5, 6, Amazon Linux
 ```
-vuls ALL=(root) NOPASSWD: /usr/bin/yum
+vuls ALL=(root) NOPASSWD: /usr/bin/yum, /bin/echo
 ```
+
+- CentOS, RHEL 7以降
+```
+vuls ALL=(root) NOPASSWD: /usr/bin/yum, /usr/bin/echo
+```
+
 - Ubuntu, Debian
 ```
 vuls ALL=(root) NOPASSWD: /usr/bin/apt-get, /usr/bin/apt-cache
