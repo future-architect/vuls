@@ -576,10 +576,7 @@ func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList) (stdout st
 		packageNames += fmt.Sprintf("%s ", packInfo.Name)
 	}
 
-	command := ""
-	if o.ServerInfo.User == "root" {
-		command = "echo N | "
-	}
+	command := "echo N | "
 	if 0 < len(config.Conf.HTTPProxy) {
 		command += util.ProxyEnv()
 	}
