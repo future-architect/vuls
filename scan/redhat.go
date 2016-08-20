@@ -867,7 +867,7 @@ func (o *redhat) parseYumUpdateinfoHeaderAmazon(line string) (a models.DistroAdv
 }
 
 func (o *redhat) parseYumUpdateinfoLineToGetCveIDs(line string) []string {
-	re, _ := regexp.Compile(`(CVE-\d{4}-\d{4})`)
+	re, _ := regexp.Compile(`(CVE-\d{4}-\d{4,})`)
 	return re.FindAllString(line, -1)
 }
 
