@@ -589,7 +589,7 @@ func (o *debian) getCveIDParsingChangelog(changelog string,
 func (o *debian) parseChangelog(changelog string,
 	packName string, versionOrLater string) (cveIDs []string, err error) {
 
-	cveRe, _ := regexp.Compile(`(CVE-\d{4}-\d{4})`)
+	cveRe, _ := regexp.Compile(`(CVE-\d{4}-\d{4,})`)
 	stopRe, _ := regexp.Compile(fmt.Sprintf(`\(%s\)`, regexp.QuoteMeta(versionOrLater)))
 	stopLineFound := false
 	lines := strings.Split(changelog, "\n")
