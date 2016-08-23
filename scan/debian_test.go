@@ -54,7 +54,7 @@ func TestParseScannedPackagesLineDebian(t *testing.T) {
 
 }
 
-func TestgetCveIDParsingChangelog(t *testing.T) {
+func TestGetCveIDParsingChangelog(t *testing.T) {
 
 	var tests = []struct {
 		in       []string
@@ -86,12 +86,11 @@ systemd (227-1) unstable; urgency=medium`,
 				"CVE-2015-3210",
 			},
 		},
-
 		{
 			// ver
 			[]string{
 				"libpcre3",
-				"2:8.38-1ubuntu1",
+				"2:8.35-7.1ubuntu1",
 				`pcre3 (2:8.38-2) unstable; urgency=low
 pcre3 (2:8.38-1) unstable; urgency=low
 pcre3 (2:8.35-8) unstable; urgency=low
@@ -110,7 +109,6 @@ pcre3 (2:8.35-7) unstable; urgency=medium`,
 				"CVE-2015-3210",
 			},
 		},
-
 		{
 			// ver-ubuntu3
 			[]string{
@@ -151,7 +149,7 @@ sysvinit (2.88dsf-57) unstable; urgency=low`,
 util-linux (2.27.1-3) unstable; urgency=medium
 CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
 CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
-CVE-2015-3210: heap buffer overflow in pcre_compile2() /
+CVE-2015-3210: CVE-2016-1000000heap buffer overflow in pcre_compile2() /
 util-linux (2.27.1-2) unstable; urgency=medium
 util-linux (2.27.1-1ubuntu4) xenial; urgency=medium
 util-linux (2.27.1-1ubuntu3) xenial; urgency=medium
@@ -178,6 +176,7 @@ util-linux (2.26.2-6) unstable; urgency=medium`,
 				"CVE-2015-2325",
 				"CVE-2015-2326",
 				"CVE-2015-3210",
+				"CVE-2016-1000000",
 			},
 		},
 	}
@@ -187,6 +186,7 @@ util-linux (2.26.2-6) unstable; urgency=medium`,
 		actual, _ := d.getCveIDParsingChangelog(tt.in[2], tt.in[0], tt.in[1])
 		if len(actual) != len(tt.expected) {
 			t.Errorf("Len of return array are'nt same. expected %#v, actual %#v", tt.expected, actual)
+			t.Errorf(pp.Sprintf("%s", tt.in))
 			continue
 		}
 		for i := range tt.expected {
