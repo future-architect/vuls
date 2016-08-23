@@ -553,6 +553,7 @@ func (o *debian) scanPackageCveIDs(pack models.PackageInfo) ([]string, error) {
 		return nil, nil
 
 	}
+	// No error will be returned. Only logging.
 	return o.getCveIDParsingChangelog(r.Stdout, pack.Name, pack.Version)
 }
 
@@ -579,7 +580,7 @@ func (o *debian) getCveIDParsingChangelog(changelog string,
 		return
 	}
 
-	//TODO report as unable to parse changelog.
+	// Only logging the error.
 	o.log.Error(err)
 	return []string{}, nil
 }

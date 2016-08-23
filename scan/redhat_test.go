@@ -143,11 +143,11 @@ func TestParseYumUpdateinfoLineToGetCveIDs(t *testing.T) {
 			[]string{"CVE-2015-0278"},
 		},
 		{
-			": 1195457 - nodejs-0.10.35 causes undefined symbolsCVE-2015-0278, CVE-2015-0278, CVE-2015-0277",
+			": 1195457 - nodejs-0.10.35 causes undefined symbolsCVE-2015-0278, CVE-2015-0278, CVE-2015-02770000000 ",
 			[]string{
 				"CVE-2015-0278",
 				"CVE-2015-0278",
-				"CVE-2015-0277",
+				"CVE-2015-02770000000",
 			},
 		},
 	}
