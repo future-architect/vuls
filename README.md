@@ -55,7 +55,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 - Auto generation of configuration file template
     - Auto detection of servers set using CIDR, generate configuration file template
 - Email and Slack notification is possible (supports Japanese language) 
-- Scan result is viewable on accessory software, TUI Viewer terminal.
+- Scan result is viewable on accessory software, TUI Viewer terminal or Web UI ([VulsRepo](https://github.com/usiusi360/vulsrepo)).
 
 ----
 
@@ -96,6 +96,7 @@ This can be done in the following steps.
 1. Prepare
 1. Scan
 1. TUI(Terminal-Based User Interface)
+1. Web UI ([VulsRepo](https://github.com/usiusi360/vulsrepo))
 
 ## Step1. Launch Amazon Linux
 
@@ -263,6 +264,10 @@ $ vuls tui
 
 ![Vuls-TUI](img/hello-vuls-tui.png)
 
+## Step10. Web UI
+
+[VulsRepo](https://github.com/usiusi360/vulsrepo) is a awesome Web UI for Vuls.  
+Check it out the [Online Demo](http://usiusi360.github.io/vulsrepo/).
 
 ----
 
