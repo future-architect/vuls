@@ -65,8 +65,7 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err err
 		//  root@fa3ec524be43:/# lsb_release -ir
 		//  Distributor ID:	Ubuntu
 		//  Release:	14.04
-		re, _ := regexp.Compile(
-			`(?s)^Distributor ID:\s*(.+?)\n*Release:\s*(.+?)$`)
+		re := regexp.MustCompile(`(?s)^Distributor ID:\s*(.+?)\n*Release:\s*(.+?)$`)
 		result := re.FindStringSubmatch(trim(r.Stdout))
 
 		if len(result) == 0 {
@@ -86,8 +85,7 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err err
 		//  DISTRIB_RELEASE=14.04
 		//  DISTRIB_CODENAME=trusty
 		//  DISTRIB_DESCRIPTION="Ubuntu 14.04.2 LTS"
-		re, _ := regexp.Compile(
-			`(?s)^DISTRIB_ID=(.+?)\n*DISTRIB_RELEASE=(.+?)\n.*$`)
+		re := regexp.MustCompile(`(?s)^DISTRIB_ID=(.+?)\n*DISTRIB_RELEASE=(.+?)\n.*$`)
 		result := re.FindStringSubmatch(trim(r.Stdout))
 		if len(result) == 0 {
 			Log.Warnf(
@@ -214,12 +212,16 @@ func (o *debian) scanInstalledPackages() (packs []models.PackageInfo, err error)
 	return
 }
 
+var packageLinePattern = regexp.MustCompile(`^([^\t']+)\t(.+)$`)
+
 func (o *debian) parseScannedPackagesLine(line string) (name, version string, err error) {
-	re, _ := regexp.Compile(`^([^\t']+)\t(.+)$`)
-	result := re.FindStringSubmatch(line)
+	result := packageLinePattern.FindStringSubmatch(line)
 	if len(result) == 3 {
 		// remove :amd64, i386...
-		name = regexp.MustCompile(":.+").ReplaceAllString(result[1], "")
+		name = result[1]
+		if i := strings.IndexRune(name, ':'); i >= 0 {
+			name = name[:i]
+		}
 		version = result[2]
 		return
 	}
@@ -404,8 +406,8 @@ func (o *debian) GetUpgradablePackNames() (packNames []string, err error) {
 }
 
 func (o *debian) parseAptGetUpgrade(stdout string) (upgradableNames []string, err error) {
-	startRe, _ := regexp.Compile(`The following packages will be upgraded:`)
-	stopRe, _ := regexp.Compile(`^(\d+) upgraded.*`)
+	startRe := regexp.MustCompile(`The following packages will be upgraded:`)
+	stopRe := regexp.MustCompile(`^(\d+) upgraded.*`)
 	startLineFound, stopLineFound := false, false
 
 	lines := strings.Split(stdout, "\n")
@@ -590,8 +592,8 @@ func (o *debian) getCveIDParsingChangelog(changelog string,
 func (o *debian) parseChangelog(changelog string,
 	packName string, versionOrLater string) (cveIDs []string, err error) {
 
-	cveRe, _ := regexp.Compile(`(CVE-\d{4}-\d{4,})`)
-	stopRe, _ := regexp.Compile(fmt.Sprintf(`\(%s\)`, regexp.QuoteMeta(versionOrLater)))
+	cveRe := regexp.MustCompile(`(CVE-\d{4}-\d{4,})`)
+	stopRe := regexp.MustCompile(fmt.Sprintf(`\(%s\)`, regexp.QuoteMeta(versionOrLater)))
 	stopLineFound := false
 	lines := strings.Split(changelog, "\n")
 	for _, line := range lines {
