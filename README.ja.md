@@ -50,6 +50,7 @@ Vulsは上に挙げた手動運用での課題を解決するツールであり�
     - CIDRを指定してサーバを自動検出、設定ファイルのテンプレートを生成
 - EmailやSlackで通知可能（日本語でのレポートも可能）
 - 付属するTerminal-Based User Interfaceビューアでは、Vim風キーバインドでスキャン結果を参照可能
+- Web UI([VulsRepo](https://github.com/usiusi360/vulsrepo))を使えばピボットテーブルのように分析可能
 
 ----
 
@@ -88,6 +89,7 @@ Hello Vulsチュートリアルでは手動でのセットアップ方法で説�
 1. Prepare
 1. Scan
 1. TUI(Terminal-Based User Interface)で結果を参照する
+1. Web UI([VulsRepo](https://github.com/usiusi360/vulsrepo))で結果を参照する
 
 ## Step1. Launch Amazon Linux
 
@@ -270,6 +272,11 @@ $ vuls tui
 ```
 
 ![Vuls-TUI](img/hello-vuls-tui.png)
+
+## Step10. Web UI
+
+[VulsRepo](https://github.com/usiusi360/vulsrepo)はスキャン結果をビボットテーブルのように分析可能にするWeb UIである。  
+[Online Demo](http://usiusi360.github.io/vulsrepo/)があるので試してみて。
 
 ----
 
