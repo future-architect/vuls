@@ -79,7 +79,7 @@ RUN chmod 755 ${VULS_ROOT}/scripts/*
 #Vulrepo Install
 RUN git clone https://github.com/usiusi360/vulsrepo /tmp/vulsrepo
 RUN mkdir /usr/share/nginx/html/vulsrepo/
-RUN cp -rp /tmp/vulsrepo/src/* /usr/share/nginx/html/vulsrepo
+RUN cp -rp /tmp/vulsrepo/dist/* /usr/share/nginx/html/vulsrepo
 RUN rm -rf /tmp/vulsrepo
 
 #Home
