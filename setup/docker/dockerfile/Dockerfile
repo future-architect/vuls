@@ -32,28 +32,6 @@ RUN curl -fsSL "$GLIDE_DOWNLOAD_URL" -o glide.tar.gz \
     && ln -s /usr/local/glide/linux-amd64/glide /usr/local/bin/ \
     && rm glide.tar.gz
 
-# nginx Install
-RUN apt-key adv --keyserver hkp://pgp.mit.edu:80 --recv-keys 573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62 \
-    && echo "deb http://nginx.org/packages/mainline/debian/ jessie nginx" >> /etc/apt/sources.list \
-    && apt-get update \
-    && apt-get install --no-install-recommends --no-install-suggests -y \
-                        ca-certificates \
-                        nginx \
-                        nginx-module-xslt \
-                        nginx-module-geoip \
-                        nginx-module-image-filter \
-                        nginx-module-perl \
-                        nginx-module-njs \
-                        gettext-base \
-                        wget \
-                        unzip \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN ln -sf /dev/stdout /var/log/nginx/access.log \
-        && ln -sf /dev/stderr /var/log/nginx/error.log
-
-COPY nginx.conf /etc/nginx/nginx.conf
-
 #Vuls Install
 ENV VULS_ROOT /opt/vuls
 RUN mkdir -p /var/log/vuls ${VULS_ROOT}/conf /root/.ssh/
@@ -77,13 +55,19 @@ RUN chmod 755 ${VULS_ROOT}/scripts/*
 
 
 #Vulrepo Install
-RUN git clone https://github.com/usiusi360/vulsrepo /tmp/vulsrepo
-RUN mkdir /usr/share/nginx/html/vulsrepo/
-RUN cp -rp /tmp/vulsrepo/dist/* /usr/share/nginx/html/vulsrepo
-RUN rm -rf /tmp/vulsrepo
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+                 apache2 \
+                 libcgi-pm-perl \
+                 libjson-perl \
+  && rm -rf /var/lib/apt/lists/* \
+  && cd /var/www/html/ \
+  && git clone https://github.com/usiusi360/vulsrepo \
+  && cp /var/www/html/vulsrepo/dist/cgi/vulsrepo.conf.sample /etc/apache2/conf-enabled/vulsrepo.conf \
+  && a2enmod cgid
 
 #Home
-WORKDIR /opt/vuls
 EXPOSE 80 443
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT service apache2 start && tail -f /dev/null
+
 
