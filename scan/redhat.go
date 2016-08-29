@@ -62,7 +62,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 		// $ cat /etc/redhat-release
 		// CentOS release 6.5 (Final)
 		if r := sshExec(c, "cat /etc/redhat-release", noSudo); r.isSuccess() {
-			re, _ := regexp.Compile(`(.*) release (\d[\d.]*)`)
+			re := regexp.MustCompile(`(.*) release (\d[\d.]*)`)
 			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
 				Log.Warn("Failed to parse RedHat/CentOS version: %s", r)
@@ -471,9 +471,11 @@ func (o *redhat) mkPstring() *string {
 }
 
 func (o *redhat) regexpReplace(src string, pat string, rep string) string {
-	r := regexp.MustCompile(pat)
-	return r.ReplaceAllString(src, rep)
+	re := regexp.MustCompile(pat)
+	return re.ReplaceAllString(src, rep)
 }
+
+var changeLogCVEPattern = regexp.MustCompile(`CVE-[0-9]+-[0-9]+`)
 
 func (o *redhat) getChangelogCVELines(rpm2changelog map[string]*string, packInfo models.PackageInfo) string {
 	rpm := fmt.Sprintf("%s-%s-%s", packInfo.Name, packInfo.NewVersion, packInfo.NewRelease)
@@ -481,8 +483,7 @@ func (o *redhat) getChangelogCVELines(rpm2changelog map[string]*string, packInfo
 	if rpm2changelog[rpm] != nil {
 		lines := strings.Split(*rpm2changelog[rpm], "\n")
 		for _, line := range lines {
-			match, _ := regexp.MatchString("CVE-[0-9]+-[0-9]+", line)
-			if match {
+			if changeLogCVEPattern.MatchString(line) {
 				retLine += fmt.Sprintf("%s\n", line)
 			}
 		}
@@ -560,8 +561,7 @@ func (o *redhat) parseAllChangelog(allChangelog string) (map[string]*string, err
 				rpm2changelog[rpm] = pNewString
 			}
 		} else {
-			stop, _ := regexp.MatchString("^Dependencies Resolved", line)
-			if stop {
+			if strings.HasPrefix(line, "Dependencies Resolved") {
 				return rpm2changelog, nil
 			}
 			*writePointer += fmt.Sprintf("%s\n", line)
@@ -703,6 +703,8 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 	return result, nil
 }
 
+var horizontalRulePattern = regexp.MustCompile(`^=+$`)
+
 func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveIDs, err error) {
 	sectionState := Outside
 	lines := strings.Split(stdout, "\n")
@@ -720,7 +722,7 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 		line = strings.TrimSpace(line)
 
 		// find the new section pattern
-		if match, _ := o.isHorizontalRule(line); match {
+		if horizontalRulePattern.MatchString(line) {
 
 			// set previous section's result to return-variable
 			if sectionState == Content {
@@ -814,9 +816,8 @@ func (o *redhat) changeSectionState(state int) (newState int) {
 	return newState
 }
 
-func (o *redhat) isHorizontalRule(line string) (bool, error) {
-	return regexp.MatchString("^=+$", line)
-}
+var rpmPackageArchPattern = regexp.MustCompile(
+	`^[^ ]+\.(i386|i486|i586|i686|k6|athlon|x86_64|noarch|ppc|alpha|sparc)$`)
 
 func (o *redhat) isRpmPackageNameLine(line string) (bool, error) {
 	s := strings.TrimPrefix(line, "ChangeLog for: ")
@@ -826,10 +827,8 @@ func (o *redhat) isRpmPackageNameLine(line string) (bool, error) {
 	}
 	for _, s := range ss {
 		s = strings.TrimRight(s, " \r\n")
-		ok, err := regexp.MatchString(
-			`^[^ ]+\.(i386|i486|i586|i686|k6|athlon|x86_64|noarch|ppc|alpha|sparc)$`, s)
-		if !ok {
-			return false, err
+		if !rpmPackageArchPattern.MatchString(s) {
+			return false, nil
 		}
 	}
 	return true, nil
@@ -852,9 +851,10 @@ func (o *redhat) parseYumUpdateinfoHeaderCentOS(line string) (packs []models.Pac
 	return
 }
 
+var yumHeaderPattern = regexp.MustCompile(`(ALAS-.+): (.+) priority package update for (.+)$`)
+
 func (o *redhat) parseYumUpdateinfoHeaderAmazon(line string) (a models.DistroAdvisory, names []string, err error) {
-	re, _ := regexp.Compile(`(ALAS-.+): (.+) priority package update for (.+)$`)
-	result := re.FindStringSubmatch(line)
+	result := yumHeaderPattern.FindStringSubmatch(line)
 	if len(result) == 4 {
 		a.AdvisoryID = result[1]
 		a.Severity = result[2]
@@ -866,31 +866,36 @@ func (o *redhat) parseYumUpdateinfoHeaderAmazon(line string) (a models.DistroAdv
 	return
 }
 
+var yumCveIDPattern = regexp.MustCompile(`(CVE-\d{4}-\d{4,})`)
+
 func (o *redhat) parseYumUpdateinfoLineToGetCveIDs(line string) []string {
-	re, _ := regexp.Compile(`(CVE-\d{4}-\d{4,})`)
-	return re.FindAllString(line, -1)
+	return yumCveIDPattern.FindAllString(line, -1)
 }
 
+var yumAdvisoryIDPattern = regexp.MustCompile(`^ *Update ID : (.*)$`)
+
 func (o *redhat) parseYumUpdateinfoToGetAdvisoryID(line string) (advisoryID string, found bool) {
-	re, _ := regexp.Compile(`^ *Update ID : (.*)$`)
-	result := re.FindStringSubmatch(line)
+	result := yumAdvisoryIDPattern.FindStringSubmatch(line)
 	if len(result) != 2 {
 		return "", false
 	}
 	return strings.TrimSpace(result[1]), true
 }
 
+var yumIssuedPattern = regexp.MustCompile(`^\s*Issued : (\d{4}-\d{2}-\d{2})`)
+
 func (o *redhat) parseYumUpdateinfoLineToGetIssued(line string) (date time.Time, found bool) {
-	return o.parseYumUpdateinfoLineToGetDate(line, `^\s*Issued : (\d{4}-\d{2}-\d{2})`)
+	return o.parseYumUpdateinfoLineToGetDate(line, yumIssuedPattern)
 }
+
+var yumUpdatedPattern = regexp.MustCompile(`^\s*Updated : (\d{4}-\d{2}-\d{2})`)
 
 func (o *redhat) parseYumUpdateinfoLineToGetUpdated(line string) (date time.Time, found bool) {
-	return o.parseYumUpdateinfoLineToGetDate(line, `^\s*Updated : (\d{4}-\d{2}-\d{2})`)
+	return o.parseYumUpdateinfoLineToGetDate(line, yumUpdatedPattern)
 }
 
-func (o *redhat) parseYumUpdateinfoLineToGetDate(line, regexpFormat string) (date time.Time, found bool) {
-	re, _ := regexp.Compile(regexpFormat)
-	result := re.FindStringSubmatch(line)
+func (o *redhat) parseYumUpdateinfoLineToGetDate(line string, regexpPattern *regexp.Regexp) (date time.Time, found bool) {
+	result := regexpPattern.FindStringSubmatch(line)
 	if len(result) != 2 {
 		return date, false
 	}
@@ -901,14 +906,16 @@ func (o *redhat) parseYumUpdateinfoLineToGetDate(line, regexpFormat string) (dat
 	return t, true
 }
 
+var yumDescriptionPattern = regexp.MustCompile(`^\s*Description : `)
+
 func (o *redhat) isDescriptionLine(line string) bool {
-	re, _ := regexp.Compile(`^\s*Description : `)
-	return re.MatchString(line)
+	return yumDescriptionPattern.MatchString(line)
 }
 
+var yumSeverityPattern = regexp.MustCompile(`^ *Severity : (.*)$`)
+
 func (o *redhat) parseYumUpdateinfoToGetSeverity(line string) (severity string, found bool) {
-	re, _ := regexp.Compile(`^ *Severity : (.*)$`)
-	result := re.FindStringSubmatch(line)
+	result := yumSeverityPattern.FindStringSubmatch(line)
 	if len(result) != 2 {
 		return "", false
 	}
