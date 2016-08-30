@@ -63,11 +63,11 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/* \
   && cd /var/www/html/ \
   && git clone https://github.com/usiusi360/vulsrepo \
+  && mkdir /var/www/html/vulsrepo/results \
   && cp /var/www/html/vulsrepo/dist/cgi/vulsrepo.conf.sample /etc/apache2/conf-enabled/vulsrepo.conf \
   && a2enmod cgid
 
 #Home
+WORKDIR /opt/vuls
 EXPOSE 80 443
 ENTRYPOINT service apache2 start && tail -f /dev/null
-
-
