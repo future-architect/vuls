@@ -71,9 +71,6 @@ type ScanCmd struct {
 	azureKey       string
 	azureContainer string
 
-	useYumPluginSecurity  bool
-	useUnattendedUpgrades bool
-
 	sshExternal bool
 }
 
@@ -212,21 +209,6 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		"[Deprecated] THIS OPTION WAS REMOVED FOR SECURITY REASONS. Define NOPASSWD in /etc/sudoers on tareget servers and use SSH key-based authentication",
 	)
-
-	f.BoolVar(
-		&p.useYumPluginSecurity,
-		"use-yum-plugin-security",
-		false,
-		"[Deprecated] For CentOS 5. Scan by yum-plugin-security or not (use yum check-update by default)",
-	)
-
-	f.BoolVar(
-		&p.useUnattendedUpgrades,
-		"use-unattended-upgrades",
-		false,
-		"[Deprecated] For Ubuntu. Scan by unattended-upgrades or not (use apt-get upgrade --dry-run by default)",
-	)
-
 }
 
 // Execute execute
@@ -362,8 +344,6 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
 	c.Conf.SSHExternal = p.sshExternal
 	c.Conf.HTTPProxy = p.httpProxy
-	c.Conf.UseYumPluginSecurity = p.useYumPluginSecurity
-	c.Conf.UseUnattendedUpgrades = p.useUnattendedUpgrades
 
 	Log.Info("Validating Config...")
 	if !c.Conf.Validate() {

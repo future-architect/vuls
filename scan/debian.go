@@ -124,7 +124,6 @@ func (o *debian) checkIfSudoNoPasswd() error {
 }
 
 func (o *debian) install() error {
-
 	// apt-get update
 	o.log.Infof("apt-get update...")
 	cmd := util.PrependProxyEnv("apt-get update")
@@ -144,27 +143,6 @@ func (o *debian) install() error {
 		}
 		o.log.Infof("Installed: aptitude")
 	}
-
-	// install unattended-upgrades
-	if !config.Conf.UseUnattendedUpgrades {
-		return nil
-	}
-
-	if r := o.ssh("type unattended-upgrade", noSudo); r.isSuccess() {
-		o.log.Infof(
-			"Ignored: unattended-upgrade already installed")
-		return nil
-	}
-
-	cmd = util.PrependProxyEnv(
-		"apt-get install --force-yes -y unattended-upgrades")
-	if r := o.ssh(cmd, sudo); !r.isSuccess() {
-		msg := fmt.Sprintf("Failed to SSH: %s", r)
-		o.log.Errorf(msg)
-		return fmt.Errorf(msg)
-	}
-
-	o.log.Infof("Installed: unattended-upgrades")
 	return nil
 }
 
@@ -229,25 +207,13 @@ func (o *debian) parseScannedPackagesLine(line string) (name, version string, er
 	return "", "", fmt.Errorf("Unknown format: %s", line)
 }
 
-//  unattended-upgrade command need to check security upgrades).
 func (o *debian) checkRequiredPackagesInstalled() error {
-
 	if o.Family == "debian" {
 		if r := o.ssh("test -f /usr/bin/aptitude", noSudo); !r.isSuccess() {
 			msg := fmt.Sprintf("aptitude is not installed: %s", r)
 			o.log.Errorf(msg)
 			return fmt.Errorf(msg)
 		}
-	}
-
-	if !config.Conf.UseUnattendedUpgrades {
-		return nil
-	}
-
-	if r := o.ssh("type unattended-upgrade", noSudo); !r.isSuccess() {
-		msg := fmt.Sprintf("unattended-upgrade is not installed: %s", r)
-		o.log.Errorf(msg)
-		return fmt.Errorf(msg)
 	}
 	return nil
 }
@@ -260,18 +226,9 @@ func (o *debian) scanUnsecurePackages(packs []models.PackageInfo) ([]CvePacksInf
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 
-	var upgradablePackNames []string
-	var err error
-	if config.Conf.UseUnattendedUpgrades {
-		upgradablePackNames, err = o.GetUnsecurePackNamesUsingUnattendedUpgrades()
-		if err != nil {
-			return []CvePacksInfo{}, err
-		}
-	} else {
-		upgradablePackNames, err = o.GetUpgradablePackNames()
-		if err != nil {
-			return []CvePacksInfo{}, err
-		}
+	upgradablePackNames, err := o.GetUpgradablePackNames()
+	if err != nil {
+		return []CvePacksInfo{}, err
 	}
 
 	// Convert package name to PackageInfo struct
@@ -356,42 +313,6 @@ func (o *debian) fillCandidateVersion(packs []models.PackageInfo) ([]models.Pack
 		return nil, fmt.Errorf("%v", errs)
 	}
 	return result, nil
-}
-
-func (o *debian) GetUnsecurePackNamesUsingUnattendedUpgrades() (packNames []string, err error) {
-	cmd := util.PrependProxyEnv("unattended-upgrades --dry-run -d 2>&1 ")
-	release, err := strconv.ParseFloat(o.Release, 64)
-	if err != nil {
-		return packNames, fmt.Errorf(
-			"OS Release Version is invalid, %s, %s", o.Family, o.Release)
-	}
-	switch {
-	case release < 12:
-		return packNames, fmt.Errorf(
-			"Support expired. %s, %s", o.Family, o.Release)
-
-	case 12 < release && release < 14:
-		cmd += `| grep 'pkgs that look like they should be upgraded:' |
-			sed -e 's/pkgs that look like they should be upgraded://g'`
-
-	case 14 < release:
-		cmd += `| grep 'Packages that will be upgraded:' |
-			sed -e 's/Packages that will be upgraded://g'`
-
-	default:
-		return packNames, fmt.Errorf(
-			"Not supported yet. %s, %s", o.Family, o.Release)
-	}
-
-	r := o.ssh(cmd, sudo)
-	if r.isSuccess(0, 1) {
-		packNames = strings.Split(strings.TrimSpace(r.Stdout), " ")
-		return packNames, nil
-	}
-
-	return packNames, fmt.Errorf(
-		"Failed to %s. status: %d, stdout: %s, stderr: %s",
-		cmd, r.ExitStatus, r.Stdout, r.Stderr)
 }
 
 func (o *debian) GetUpgradablePackNames() (packNames []string, err error) {

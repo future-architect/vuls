@@ -60,8 +60,6 @@ type Config struct {
 
 	//  CpeNames      []string
 	//  SummaryMode          bool
-	UseYumPluginSecurity  bool
-	UseUnattendedUpgrades bool
 }
 
 // Validate configuration
