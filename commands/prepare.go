@@ -37,8 +37,6 @@ type PrepareCmd struct {
 
 	askSudoPassword bool
 	askKeyPassword  bool
-
-	useUnattendedUpgrades bool
 }
 
 // Name return subcommand name
@@ -46,7 +44,6 @@ func (*PrepareCmd) Name() string { return "prepare" }
 
 // Synopsis return synopsis
 func (*PrepareCmd) Synopsis() string {
-	//  return "Install packages Ubuntu: unattended-upgrade, CentOS: yum-plugin-security)"
 	return `Install required packages to scan.
 				CentOS: yum-plugin-security, yum-plugin-changelog
 				Amazon: None
@@ -90,13 +87,6 @@ func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
 		"ask-sudo-password",
 		false,
 		"[Deprecated] THIS OPTION WAS REMOVED FOR SECURITY REASON. Define NOPASSWD in /etc/sudoers on tareget servers and use SSH key-based authentication",
-	)
-
-	f.BoolVar(
-		&p.useUnattendedUpgrades,
-		"use-unattended-upgrades",
-		false,
-		"[Deprecated] For Ubuntu, install unattended-upgrades",
 	)
 }
 
@@ -143,7 +133,6 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 	}
 
 	c.Conf.Debug = p.debug
-	c.Conf.UseUnattendedUpgrades = p.useUnattendedUpgrades
 
 	// Set up custom logger
 	logger := util.NewCustomLogger(c.ServerInfo{})

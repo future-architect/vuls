@@ -108,41 +108,21 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 	return nil
 }
 
-// CentOS 5 ... yum-plugin-security, yum-changelog
-// CentOS 6 ... yum-plugin-security, yum-plugin-changelog
-// CentOS 7 ... yum-plugin-security, yum-plugin-changelog
+// CentOS 5 ... yum-changelog
+// CentOS 6 ... yum-plugin-changelog
+// CentOS 7 ... yum-plugin-changelog
 // RHEL, Amazon ... no additinal packages needed
 func (o *redhat) install() error {
-
 	switch o.Family {
 	case "rhel", "amazon":
 		o.log.Infof("Nothing to do")
 		return nil
 	}
-
-	if err := o.installYumPluginSecurity(); err != nil {
-		return err
-	}
+	// CentOS
 	return o.installYumChangelog()
 }
 
-func (o *redhat) installYumPluginSecurity() error {
-
-	if r := o.ssh("rpm -q yum-plugin-security", noSudo); r.isSuccess() {
-		o.log.Infof("Ignored: yum-plugin-security already installed")
-		return nil
-	}
-
-	o.log.Info("Installing yum-plugin-security...")
-	cmd := util.PrependProxyEnv("yum install -y yum-plugin-security")
-	if r := o.ssh(cmd, sudo); !r.isSuccess() {
-		return fmt.Errorf("Failed to SSH: %s", r)
-	}
-	return nil
-}
-
 func (o *redhat) installYumChangelog() error {
-
 	if o.Family == "centos" {
 		var majorVersion int
 		if 0 < len(o.Release) {
@@ -177,20 +157,6 @@ func (o *redhat) installYumChangelog() error {
 }
 
 func (o *redhat) checkRequiredPackagesInstalled() error {
-	if config.Conf.UseYumPluginSecurity {
-		// check if yum-plugin-security is installed.
-		// Amazon Linux, REHL can execute 'yum updateinfo --security updates' without yum-plugin-security
-		if o.Family == "centos" {
-			cmd := "rpm -q yum-plugin-security"
-			if r := o.ssh(cmd, noSudo); !r.isSuccess() {
-				msg := "yum-plugin-security is not installed"
-				o.log.Errorf(msg)
-				return fmt.Errorf(msg)
-			}
-		}
-		return nil
-	}
-
 	if o.Family == "centos" {
 		var majorVersion int
 		if 0 < len(o.Release) {
@@ -274,7 +240,7 @@ func (o *redhat) parseScannedPackagesLine(line string) (models.PackageInfo, erro
 }
 
 func (o *redhat) scanUnsecurePackages() ([]CvePacksInfo, error) {
-	if o.Family != "centos" || config.Conf.UseYumPluginSecurity {
+	if o.Family != "centos" {
 		// Amazon, RHEL has yum updateinfo as default
 		// yum updateinfo can collenct vendor advisory information.
 		return o.scanUnsecurePackagesUsingYumPluginSecurity()
@@ -286,7 +252,6 @@ func (o *redhat) scanUnsecurePackages() ([]CvePacksInfo, error) {
 
 //TODO return whether already expired.
 func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (CvePacksList, error) {
-
 	cmd := "LANG=en_US.UTF-8 yum --color=never check-update"
 	r := o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess(0, 100) {
