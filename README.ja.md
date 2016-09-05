@@ -976,7 +976,7 @@ fetchnvd:
 - Fetch data of the entire period
 
 ```
-$ go-cve-dictionary fetchnvd -entire
+$ for i in {2002..2016}; do go-cve-dictionary fetchnvd -years $i; done
 ```
 
 - Fetch data in the last 2 years
@@ -991,66 +991,71 @@ $ go-cve-dictionary fetchnvd -last2y
 
 - JVNから日本語の脆弱性情報を取得
     ```
-    $ go-cve-dictionary fetchjvn -help
+    $ go-cve-dictionary fetchjvn -h
     fetchjvn:
-            fetchjvn [-dump-path=$PWD/cve] [-dpath=$PWD/vuls.sqlite3] [-week] [-month] [-entire]
+            fetchjvn
+                    [-latest]
+                    [-last2y]
+                    [-years] 1998 1999 ...
+                    [-dbpath=$PWD/cve.sqlite3]
+                    [-http-proxy=http://192.168.0.1:8080]
+                    [-debug]
+                    [-debug-sql]
 
       -dbpath string
-            /path/to/sqlite3/DBfile (default "$PWD/cve.sqlite3")
+            /path/to/sqlite3 (default "$PWD/cve.sqlite3")
       -debug
             debug mode
       -debug-sql
             SQL debug mode
-      -dump-path string
-            /path/to/dump.json (default "$PWD/cve.json")
-      -entire
-            Fetch data for entire period.(This operation is time-consuming) (default: false)
-      -month
-            Fetch data in the last month (default: false)
-      -week
-            Fetch data in the last week. (default: false)
+      -http-proxy string
+            http://proxy-url:port (default: empty)
+      -last2y
+            Refresh JVN data in the last two years.
+      -latest
+            Refresh JVN data for latest.
+      -years
+            Refresh JVN data of specific years.
 
     ```
 
-- すべての期間の脆弱性情報を取得(1時間以上かかる)
+- すべての期間の脆弱性情報を取得(10分未満)
     ```
-    $ go-cve-dictionary fetchjvn -entire
-    ```
-
-- 直近1ヶ月間に更新された脆弱性情報を取得(1分未満)
-    ```
-    $ go-cve-dictionary fetchjvn -month
+    $ for i in {1998..2016}; do ./go-cve-dictionary fetchjvn -years $i; done
     ```
 
-- 直近1週間に更新された脆弱性情報を取得(1分未満)
+- 2年分の情報を取得
     ```
-    $ go-cve-dictionary fetchjvn -week
+    $ go-cve-dictionary fetchjvn -last2y
+    ```
+
+- 最新情報のみ取得
+    ```
+    $ go-cve-dictionary fetchjvn -latest
     ```
 
 - 脆弱性情報の自動アップデート  
 Cronなどのジョブスケジューラを用いて実現可能。  
--week オプションを指定して夜間の日次実行を推奨。
+-latestオプションを指定して夜間の日次実行を推奨。
 
-- 注意
-NVDとJVNの両方の情報を取得する場合、NVDからの情報を取得した後でJVNの情報を取得することを勧める
-2016年7月現在で、
+## fetchnvd, fetchjvnの実行順序の注意
 
-    ```
-    $ go-cve-dictionary fetchnvd -years 2002 2003 2004 2005 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 
+  **fetchjvn -> fetchnvdの順番だとすごく時間がかかる** (2016年9月現在)  
+  **fetchnvd -> fetchjvnの順番で実行すること**  
 
-    $ go-cve-dictionary fetchjvn -entire 
-    ```
+```
+$ for i in {2002..2016}; do go-cve-dictionary fetchnvd -years $i; done
+$ for i in {1998..2016}; do go-cve-dictionary fetchjvn -years $i; done
+```
+の順でやった場合、最初のコマンドが15分程度、二つ目のコマンドが10分程度（環境依存）
 
-の順でやった場合、最初のコマンドが15分程度、二つ目のコマンドが70分程度で、トータルでも1時間半程度で終わる(環境依存)が、
 
-    ```
-    $ go-cve-dictionary fetchjvn -entire 
-
-    $ nohup go-cve-dictionary fetchnvd -years 2002 2003 2004 2005 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 &
-    ```
-
+```
+$ for i in {1998..2016}; do go-cve-dictionary fetchjvn -years $i; done
+$ for i in {2002..2016}; do go-cve-dictionary fetchnvd -years $i; done
+```
 の順で行うと、最初のコマンドは1時間くらいで終わるが二つ目のコマンドが21時間かかることもある(環境依存)。
-時間がかかりそうな時は上記のようにnohupして進捗を確認するようにした方が精神衛生的にも良い。
+
 
 ## スキャン実行
 
