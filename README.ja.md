@@ -556,7 +556,7 @@ vuls ALL=(root) NOPASSWD: /usr/bin/yum, /bin/echo
 ```
 vuls ALL=(root) NOPASSWD: /usr/bin/apt-get, /usr/bin/apt-cache
 ```
-
+- Amazon Linux, FreeBSDはRoot権限なしでスキャン可能
 
 ----
 

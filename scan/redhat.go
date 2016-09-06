@@ -99,7 +99,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 }
 
 func (o *redhat) checkIfSudoNoPasswd() error {
-	r := o.ssh("yum --version", sudo)
+	r := o.ssh("yum --version", o.sudo())
 	if !r.isSuccess() {
 		o.log.Errorf("sudo error on %s", r)
 		return fmt.Errorf("Failed to sudo: %s", r)
@@ -250,7 +250,7 @@ func (o *redhat) scanUnsecurePackages() ([]CvePacksInfo, error) {
 	return o.scanUnsecurePackagesUsingYumCheckUpdate()
 }
 
-//TODO return whether already expired.
+// For CentOS
 func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (CvePacksList, error) {
 	cmd := "LANG=en_US.UTF-8 yum --color=never check-update"
 	r := o.ssh(util.PrependProxyEnv(cmd), sudo)
@@ -537,6 +537,7 @@ func (o *redhat) parseAllChangelog(allChangelog string) (map[string]*string, err
 	return rpm2changelog, nil
 }
 
+// CentOS
 func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList) (stdout string, err error) {
 	packageNames := ""
 	for _, packInfo := range packInfoList {
@@ -566,7 +567,7 @@ type distroAdvisoryCveIDs struct {
 }
 
 // Scaning unsecure packages using yum-plugin-security.
-//TODO return whether already expired.
+// Amazon, RHEL
 func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, error) {
 	if o.Family == "centos" {
 		// CentOS has no security channel.
@@ -576,14 +577,14 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 	}
 
 	cmd := "yum --color=never repolist"
-	r := o.ssh(util.PrependProxyEnv(cmd), sudo)
+	r := o.ssh(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 
 	// get advisoryID(RHSA, ALAS) - package name,version
 	cmd = "yum --color=never updateinfo list available --security"
-	r = o.ssh(util.PrependProxyEnv(cmd), sudo)
+	r = o.ssh(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
@@ -592,7 +593,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 	// get package name, version, rel to be upgrade.
 	//  cmd = "yum check-update --security"
 	cmd = "LANG=en_US.UTF-8 yum --color=never check-update"
-	r = o.ssh(util.PrependProxyEnv(cmd), sudo)
+	r = o.ssh(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess(0, 100) {
 		//returns an exit code of 100 if there are available updates.
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
@@ -620,7 +621,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 
 	// get advisoryID(RHSA, ALAS) - CVE IDs
 	cmd = "yum --color=never updateinfo --security update"
-	r = o.ssh(util.PrependProxyEnv(cmd), sudo)
+	r = o.ssh(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
@@ -960,4 +961,13 @@ func (o *redhat) parseYumUpdateinfoListAvailable(stdout string) (advisoryIDPacks
 
 func (o *redhat) clone() osTypeInterface {
 	return o
+}
+
+func (o *redhat) sudo() bool {
+	switch o.Family {
+	case "amazon":
+		return false
+	default:
+		return true
+	}
 }
