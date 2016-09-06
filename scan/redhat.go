@@ -381,7 +381,9 @@ func (o *redhat) parseYumCheckUpdateLines(stdout string) (results models.Package
 			continue
 		}
 		if needToParse {
-			if strings.HasPrefix(line, "Obsoleting") {
+			if strings.HasPrefix(line, "Obsoleting") ||
+				strings.HasPrefix(line, "Security:") {
+				// see https://github.com/future-architect/vuls/issues/165
 				continue
 			}
 			candidate, err := o.parseYumCheckUpdateLine(line)
