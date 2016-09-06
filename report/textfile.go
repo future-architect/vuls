@@ -22,21 +22,22 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/future-architect/vuls/models"
 )
 
 // TextFileWriter writes results to file.
-type TextFileWriter struct{}
+type TextFileWriter struct {
+	ScannedAt time.Time
+}
 
 func (w TextFileWriter) Write(scanResults []models.ScanResult) (err error) {
-
-	path, err := ensureResultDir()
-
+	path, err := ensureResultDir(w.ScannedAt)
 	all := []string{}
 	for _, r := range scanResults {
 		textFilePath := ""
-		if r.Container.ContainerID == "" {
+		if len(r.Container.ContainerID) == 0 {
 			textFilePath = filepath.Join(path, fmt.Sprintf("%s.txt", r.ServerName))
 		} else {
 			textFilePath = filepath.Join(path,

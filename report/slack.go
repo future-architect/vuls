@@ -80,7 +80,7 @@ func (w SlackWriter) Write(scanResults []models.ScanResult) error {
 				Send(string(jsonBody)).End()
 			if resp.StatusCode != 200 {
 				log.Errorf("Resonse body: %s", body)
-				if len(errs) > 0 {
+				if 0 < len(errs) {
 					return errs[0]
 				}
 			}

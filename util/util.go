@@ -111,7 +111,7 @@ func ProxyEnv() string {
 
 // PrependProxyEnv prepends proxy enviroment variable
 func PrependProxyEnv(cmd string) string {
-	if config.Conf.HTTPProxy == "" {
+	if len(config.Conf.HTTPProxy) == 0 {
 		return cmd
 	}
 	return fmt.Sprintf("%s %s", ProxyEnv(), cmd)

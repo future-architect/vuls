@@ -21,17 +21,44 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
+	"strings"
+	"time"
 
+	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 )
 
+// JSONDirs array of json files path.
+type JSONDirs []string
+
+func (d JSONDirs) Len() int {
+	return len(d)
+}
+func (d JSONDirs) Swap(i, j int) {
+	d[i], d[j] = d[j], d[i]
+}
+func (d JSONDirs) Less(i, j int) bool {
+	return d[j] < d[i]
+}
+
 // JSONWriter writes results to file.
-type JSONWriter struct{}
+type JSONWriter struct {
+	ScannedAt time.Time
+}
 
 func (w JSONWriter) Write(scanResults []models.ScanResult) (err error) {
+	var path string
+	if path, err = ensureResultDir(w.ScannedAt); err != nil {
+		return fmt.Errorf("Failed to make direcotory/symlink : %s", err)
+	}
 
-	path, err := ensureResultDir()
+	for _, scanResult := range scanResults {
+		scanResult.ScannedAt = w.ScannedAt
+	}
 
 	var jsonBytes []byte
 	if jsonBytes, err = json.Marshal(scanResults); err != nil {
@@ -44,7 +71,7 @@ func (w JSONWriter) Write(scanResults []models.ScanResult) (err error) {
 
 	for _, r := range scanResults {
 		jsonPath := ""
-		if r.Container.ContainerID == "" {
+		if len(r.Container.ContainerID) == 0 {
 			jsonPath = filepath.Join(path, fmt.Sprintf("%s.json", r.ServerName))
 		} else {
 			jsonPath = filepath.Join(path,
@@ -59,4 +86,78 @@ func (w JSONWriter) Write(scanResults []models.ScanResult) (err error) {
 		}
 	}
 	return nil
+}
+
+// JSONDirPattern is file name pattern of JSON directory
+var JSONDirPattern = regexp.MustCompile(`^\d{8}_\d{4}$`)
+
+// GetValidJSONDirs return valid json directory as array
+func GetValidJSONDirs() (jsonDirs JSONDirs, err error) {
+	var dirInfo []os.FileInfo
+	if dirInfo, err = ioutil.ReadDir(c.Conf.JSONBaseDir); err != nil {
+		err = fmt.Errorf("Failed to read %s: %s", c.Conf.JSONBaseDir, err)
+		return
+	}
+	for _, d := range dirInfo {
+		if d.IsDir() && JSONDirPattern.MatchString(d.Name()) {
+			jsonDir := filepath.Join(c.Conf.JSONBaseDir, d.Name())
+			jsonDirs = append(jsonDirs, jsonDir)
+		}
+	}
+	sort.Sort(jsonDirs)
+	return
+}
+
+// LoadOneScanHistory read JSON data
+func LoadOneScanHistory(jsonDir string) (scanHistory models.ScanHistory, err error) {
+	var scanResults []models.ScanResult
+	var files []os.FileInfo
+	if files, err = ioutil.ReadDir(jsonDir); err != nil {
+		err = fmt.Errorf("Failed to read %s: %s", jsonDir, err)
+		return
+	}
+	for _, file := range files {
+		// TODO this "if block" will be deleted in a future release
+		if file.Name() == "all.json" {
+			continue
+		}
+		if filepath.Ext(file.Name()) != ".json" {
+			continue
+		}
+		var scanResult models.ScanResult
+		var data []byte
+		jsonPath := filepath.Join(jsonDir, file.Name())
+		if data, err = ioutil.ReadFile(jsonPath); err != nil {
+			err = fmt.Errorf("Failed to read %s: %s", jsonPath, err)
+			return
+		}
+		if json.Unmarshal(data, &scanResult) != nil {
+			err = fmt.Errorf("Failed to parse %s: %s", jsonPath, err)
+			return
+		}
+		scanResults = append(scanResults, scanResult)
+	}
+	if len(scanResults) == 0 {
+		err = fmt.Errorf("There is no json file under %s", jsonDir)
+		return
+	}
+
+	var scannedAt time.Time
+	if scanResults[0].ScannedAt.IsZero() {
+		splitPath := strings.Split(jsonDir, string(os.PathSeparator))
+		timeStr := splitPath[len(splitPath)-1]
+		timeformat := "20060102_1504"
+		if scannedAt, err = time.Parse(timeformat, timeStr); err != nil {
+			err = fmt.Errorf("Failed to parse %s: %s", timeStr, err)
+			return
+		}
+	} else {
+		scannedAt = scanResults[0].ScannedAt
+	}
+
+	scanHistory = models.ScanHistory{
+		ScanResults: scanResults,
+		ScannedAt:   scannedAt,
+	}
+	return
 }

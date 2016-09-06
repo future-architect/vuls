@@ -74,6 +74,7 @@ func (s ScanResults) FilterByCvssOver() (filtered ScanResults) {
 type ScanResult struct {
 	gorm.Model    `json:"-"`
 	ScanHistoryID uint `json:"-"`
+	ScannedAt     time.Time
 
 	ServerName string // TOML Section key
 	//  Hostname    string
@@ -95,7 +96,7 @@ type ScanResult struct {
 // ServerInfo returns server name one line
 func (r ScanResult) ServerInfo() string {
 	hostinfo := ""
-	if r.Container.ContainerID == "" {
+	if len(r.Container.ContainerID) == 0 {
 		hostinfo = fmt.Sprintf(
 			"%s (%s%s)",
 			r.ServerName,
@@ -118,7 +119,7 @@ func (r ScanResult) ServerInfo() string {
 // ServerInfoTui returns server infromation for TUI sidebar
 func (r ScanResult) ServerInfoTui() string {
 	hostinfo := ""
-	if r.Container.ContainerID == "" {
+	if len(r.Container.ContainerID) == 0 {
 		hostinfo = fmt.Sprintf(
 			"%s (%s%s)",
 			r.ServerName,
@@ -190,7 +191,7 @@ func (c CveInfos) Less(i, j int) bool {
 	if c[i].CveDetail.CvssScore(lang) == c[j].CveDetail.CvssScore(lang) {
 		return c[i].CveDetail.CveID < c[j].CveDetail.CveID
 	}
-	return c[i].CveDetail.CvssScore(lang) > c[j].CveDetail.CvssScore(lang)
+	return c[j].CveDetail.CvssScore(lang) < c[i].CveDetail.CvssScore(lang)
 }
 
 // CveInfo has Cve Information.

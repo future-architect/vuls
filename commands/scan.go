@@ -24,11 +24,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/cveapi"
-	"github.com/future-architect/vuls/db"
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/scan"
 	"github.com/future-architect/vuls/util"
@@ -44,7 +44,7 @@ type ScanCmd struct {
 
 	configPath string
 
-	dbpath           string
+	jsonBaseDir      string
 	cvedbpath        string
 	cveDictionaryURL string
 
@@ -86,7 +86,7 @@ func (*ScanCmd) Usage() string {
 	scan
 		[-lang=en|ja]
 		[-config=/path/to/config.toml]
-		[-dbpath=/path/to/vuls.sqlite3]
+		[-results-dir=/path/to/results]
 		[-cve-dictionary-dbpath=/path/to/cve.sqlite3]
 		[-cve-dictionary-url=http://127.0.0.1:1323]
 		[-cvss-over=7]
@@ -124,8 +124,8 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
-	defaultDBPath := filepath.Join(wd, "vuls.sqlite3")
-	f.StringVar(&p.dbpath, "dbpath", defaultDBPath, "/path/to/sqlite3")
+	defaultJSONBaseDir := filepath.Join(wd, "results")
+	f.StringVar(&p.jsonBaseDir, "results-dir", defaultJSONBaseDir, "/path/to/results")
 
 	f.StringVar(
 		&p.cvedbpath,
@@ -284,6 +284,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	// logger
 	Log := util.NewCustomLogger(c.ServerInfo{})
+	scannedAt := time.Now()
 
 	// report
 	reports := []report.ResultWriter{
@@ -297,10 +298,10 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		reports = append(reports, report.MailWriter{})
 	}
 	if p.reportJSON {
-		reports = append(reports, report.JSONWriter{})
+		reports = append(reports, report.JSONWriter{ScannedAt: scannedAt})
 	}
 	if p.reportText {
-		reports = append(reports, report.TextFileWriter{})
+		reports = append(reports, report.TextFileWriter{ScannedAt: scannedAt})
 	}
 	if p.reportS3 {
 		c.Conf.AwsRegion = p.awsRegion
@@ -315,17 +316,17 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 	if p.reportAzureBlob {
 		c.Conf.AzureAccount = p.azureAccount
-		if c.Conf.AzureAccount == "" {
+		if len(c.Conf.AzureAccount) == 0 {
 			c.Conf.AzureAccount = os.Getenv("AZURE_STORAGE_ACCOUNT")
 		}
 
 		c.Conf.AzureKey = p.azureKey
-		if c.Conf.AzureKey == "" {
+		if len(c.Conf.AzureKey) == 0 {
 			c.Conf.AzureKey = os.Getenv("AZURE_STORAGE_ACCESS_KEY")
 		}
 
 		c.Conf.AzureContainer = p.azureContainer
-		if c.Conf.AzureContainer == "" {
+		if len(c.Conf.AzureContainer) == 0 {
 			Log.Error("Azure storage container name is requied with --azure-container option")
 			return subcommands.ExitUsageError
 		}
@@ -337,7 +338,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		reports = append(reports, report.AzureBlobWriter{})
 	}
 
-	c.Conf.DBPath = p.dbpath
+	c.Conf.JSONBaseDir = p.jsonBaseDir
 	c.Conf.CveDBPath = p.cvedbpath
 	c.Conf.CveDictionaryURL = p.cveDictionaryURL
 	c.Conf.CvssScoreOver = p.cvssScoreOver
@@ -379,21 +380,6 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	scanResults, err := scan.GetScanResults()
 	if err != nil {
 		Log.Fatal(err)
-		return subcommands.ExitFailure
-	}
-
-	Log.Info("Insert to DB...")
-	if err := db.OpenDB(); err != nil {
-		Log.Errorf("Failed to open DB. datafile: %s, err: %s", c.Conf.DBPath, err)
-		return subcommands.ExitFailure
-	}
-	if err := db.MigrateDB(); err != nil {
-		Log.Errorf("Failed to migrate. err: %s", err)
-		return subcommands.ExitFailure
-	}
-
-	if err := db.Insert(scanResults); err != nil {
-		Log.Fatalf("Failed to insert. dbpath: %s, err: %s", c.Conf.DBPath, err)
 		return subcommands.ExitFailure
 	}
 

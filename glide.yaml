@@ -22,7 +22,6 @@ import:
 - package: github.com/kotakanbe/go-cve-dictionary
   subpackages:
   - config
-  - db
   - models
 - package: github.com/kotakanbe/go-pingscanner
 - package: github.com/kotakanbe/logrus-prefixed-formatter

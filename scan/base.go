@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/future-architect/vuls/config"
@@ -239,6 +240,7 @@ func (l *base) convertToModel() (models.ScanResult, error) {
 
 	return models.ScanResult{
 		ServerName:  l.ServerInfo.ServerName,
+		ScannedAt:   time.Now(),
 		Family:      l.Family,
 		Release:     l.Release,
 		Container:   container,

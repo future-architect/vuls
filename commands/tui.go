@@ -19,11 +19,9 @@ package commands
 
 import (
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
@@ -35,9 +33,9 @@ import (
 
 // TuiCmd is Subcommand of host discovery mode
 type TuiCmd struct {
-	lang     string
-	debugSQL bool
-	dbpath   string
+	lang        string
+	debugSQL    bool
+	jsonBaseDir string
 }
 
 // Name return subcommand name
@@ -49,7 +47,7 @@ func (*TuiCmd) Synopsis() string { return "Run Tui view to anayze vulnerabilites
 // Usage return usage
 func (*TuiCmd) Usage() string {
 	return `tui:
-	tui [-dbpath=/path/to/vuls.sqlite3]
+	tui [-results-dir=/path/to/results]
 
 `
 }
@@ -61,24 +59,34 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 
 	wd, _ := os.Getwd()
 
-	defaultDBPath := filepath.Join(wd, "vuls.sqlite3")
-	f.StringVar(&p.dbpath, "dbpath", defaultDBPath,
-		fmt.Sprintf("/path/to/sqlite3 (default: %s)", defaultDBPath))
+	defaultJSONBaseDir := filepath.Join(wd, "results")
+	f.StringVar(&p.jsonBaseDir, "results-dir", defaultJSONBaseDir, "/path/to/results")
 }
 
 // Execute execute
 func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	c.Conf.Lang = "en"
 	c.Conf.DebugSQL = p.debugSQL
-	c.Conf.DBPath = p.dbpath
+	c.Conf.JSONBaseDir = p.jsonBaseDir
 
-	historyID := ""
+	var jsonDirName string
+	var err error
 	if 0 < len(f.Args()) {
-		if _, err := strconv.Atoi(f.Args()[0]); err != nil {
-			log.Errorf("First Argument have to be scan_histores record ID: %s", err)
+		var jsonDirs report.JSONDirs
+		if jsonDirs, err = report.GetValidJSONDirs(); err != nil {
 			return subcommands.ExitFailure
 		}
-		historyID = f.Args()[0]
+		for _, d := range jsonDirs {
+			splitPath := strings.Split(d, string(os.PathSeparator))
+			if splitPath[len(splitPath)-1] == f.Args()[0] {
+				jsonDirName = f.Args()[0]
+				break
+			}
+		}
+		if len(jsonDirName) == 0 {
+			log.Errorf("First Argument have to be JSON directory name : %s", err)
+			return subcommands.ExitFailure
+		}
 	} else {
 		stat, _ := os.Stdin.Stat()
 		if (stat.Mode() & os.ModeCharDevice) == 0 {
@@ -89,9 +97,9 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 			}
 			fields := strings.Fields(string(bytes))
 			if 0 < len(fields) {
-				historyID = fields[0]
+				jsonDirName = fields[0]
 			}
 		}
 	}
-	return report.RunTui(historyID)
+	return report.RunTui(jsonDirName)
 }

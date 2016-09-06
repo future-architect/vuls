@@ -63,7 +63,6 @@ imports:
   version: 1a336b8ac785badfe89a175ee926d39574901232
   subpackages:
   - config
-  - db
   - models
   - log
   - jvn

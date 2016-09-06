@@ -68,7 +68,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) (err error) {
 		}
 
 		s.Host = v.Host
-		if s.Host == "" {
+		if len(s.Host) == 0 {
 			return fmt.Errorf("%s is invalid. host is empty", name)
 		}
 
@@ -82,7 +82,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) (err error) {
 		}
 
 		s.KeyPath = v.KeyPath
-		if s.KeyPath == "" {
+		if len(s.KeyPath) == 0 {
 			s.KeyPath = d.KeyPath
 		}
 		if s.KeyPath != "" {
@@ -94,7 +94,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) (err error) {
 
 		//  s.KeyPassword = keyPass
 		s.KeyPassword = v.KeyPassword
-		if s.KeyPassword == "" {
+		if len(s.KeyPassword) == 0 {
 			s.KeyPassword = d.KeyPassword
 		}
 

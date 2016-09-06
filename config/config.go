@@ -46,9 +46,9 @@ type Config struct {
 
 	SSHExternal bool
 
-	HTTPProxy string `valid:"url"`
-	DBPath    string
-	CveDBPath string
+	HTTPProxy   string `valid:"url"`
+	JSONBaseDir string
+	CveDBPath   string
 
 	AwsProfile string
 	AwsRegion  string
@@ -66,10 +66,10 @@ type Config struct {
 func (c Config) Validate() bool {
 	errs := []error{}
 
-	if len(c.DBPath) != 0 {
-		if ok, _ := valid.IsFilePath(c.DBPath); !ok {
+	if len(c.JSONBaseDir) != 0 {
+		if ok, _ := valid.IsFilePath(c.JSONBaseDir); !ok {
 			errs = append(errs, fmt.Errorf(
-				"SQLite3 DB path must be a *Absolute* file path. dbpath: %s", c.DBPath))
+				"JSON base directory must be a *Absolute* file path. jsonBaseDir: %s", c.JSONBaseDir))
 		}
 	}
 

@@ -599,8 +599,8 @@ scan:
         scan
                 [-lang=en|ja]
                 [-config=/path/to/config.toml]
-                [-dbpath=/path/to/vuls.sqlite3]
-                [--cve-dictionary-dbpath=/path/to/cve.sqlite3]
+                [-results-dir=/path/to/results]
+                [-cve-dictionary-dbpath=/path/to/cve.sqlite3]
                 [-cve-dictionary-url=http://127.0.0.1:1323]
                 [-cvss-over=7]
                 [-ignore-unscored-cves]
@@ -646,8 +646,8 @@ scan:
         http://CVE.Dictionary (default "http://127.0.0.1:1323")
   -cvss-over float
         -cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))
-  -dbpath string
-        /path/to/sqlite3 (default "$PWD/vuls.sqlite3")
+  -results-dir string
+        /path/to/results (default "$PWD/results")
   -debug
         debug mode
   -debug-sql
@@ -882,10 +882,10 @@ For more details, see [Architecture section](https://github.com/future-architect
 ```
 $ vuls tui -h
 tui:
-	tui [-dbpath=/path/to/vuls.sqlite3]
+	tui [-results-dir=/path/to/results]
 
-  -dbpath string
-        /path/to/sqlite3 (default "$PWD/vuls.sqlite3")
+  -results-dir string
+        /path/to/results (default "$PWD/results")
   -debug-sql
     	debug SQL
 
