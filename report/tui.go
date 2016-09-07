@@ -651,6 +651,7 @@ type dataForTmpl struct {
 	CvssVector       string
 	CvssSeverity     string
 	Summary          string
+	CweURL           string
 	VulnSiteLinks    []string
 	References       []cve.Reference
 	Packages         []string
@@ -690,6 +691,8 @@ func detailLines() (string, error) {
 		refs = nvd.VulnSiteReferences()
 	}
 
+	cweURL := cweURL(cveInfo.CveDetail.CweID())
+
 	links := []string{
 		fmt.Sprintf("[NVD]( %s )", fmt.Sprintf("%s?vulnId=%s", nvdBaseURL, cveID)),
 		fmt.Sprintf("[MITRE]( %s )", fmt.Sprintf("%s%s", mitreBaseURL, cveID)),
@@ -723,6 +726,7 @@ func detailLines() (string, error) {
 		CvssSeverity:  cvssSeverity,
 		CvssVector:    cvssVector,
 		Summary:       summary,
+		CweURL:        cweURL,
 		VulnSiteLinks: links,
 		References:    refs,
 		Packages:      packages,
@@ -753,6 +757,11 @@ Summary
 --------------
 
  {{.Summary }}
+
+CWE
+--------------
+
+ {{.CweURL }}
 
 Package/CPE
 --------------

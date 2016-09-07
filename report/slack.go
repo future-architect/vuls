@@ -205,6 +205,17 @@ func attachmentText(cveInfo models.CveInfo, osFamily string) string {
 
 func links(cveInfo models.CveInfo, osFamily string) string {
 	links := []string{}
+
+	cweID := cveInfo.CveDetail.CweID()
+	if 0 < len(cweID) {
+		links = append(links, fmt.Sprintf("<%s|%s>",
+			cweURL(cweID), cweID))
+		if config.Conf.Lang == "ja" {
+			links = append(links, fmt.Sprintf("<%s|%s(JVN)>",
+				cweJvnURL(cweID), cweID))
+		}
+	}
+
 	cveID := cveInfo.CveDetail.CveID
 	if config.Conf.Lang == "ja" && 0 < len(cveInfo.CveDetail.Jvn.Link()) {
 		jvn := fmt.Sprintf("<%s|JVN>", cveInfo.CveDetail.Jvn.Link())
