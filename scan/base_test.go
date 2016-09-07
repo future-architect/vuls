@@ -56,3 +56,24 @@ f570ae647edc agitated_lovelace`,
 		}
 	}
 }
+
+func TestIsAwsInstanceID(t *testing.T) {
+	var tests = []struct {
+		in       string
+		expected bool
+	}{
+		{"i-1234567a", true},
+		{"i-1234567890abcdef0", true},
+		{"i-1234567890abcdef0000000", true},
+		{"e-1234567890abcdef0", false},
+		{"i-1234567890abcdef0 foo bar", false},
+		{"no data", false},
+	}
+
+	for _, tt := range tests {
+		actual := isAwsInstanceID(tt.in)
+		if tt.expected != actual {
+			t.Errorf("expected %t, actual %t, str: %s", tt.expected, actual, tt.in)
+		}
+	}
+}

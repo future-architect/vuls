@@ -19,6 +19,7 @@ package scan
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -165,9 +166,7 @@ func (l base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 		r := l.ssh(cmd, noSudo)
 		if r.isSuccess() {
 			id := strings.TrimSpace(r.Stdout)
-
-			if id == "not found" {
-				// status: 0, stdout: "not found" on degitalocean or Azure
+			if !l.isAwsInstanceID(id) {
 				return false, "", nil
 			}
 			return true, id, nil
@@ -187,6 +186,9 @@ func (l base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 		r := l.ssh(cmd, noSudo)
 		if r.isSuccess() {
 			id := strings.TrimSpace(r.Stdout)
+			if !l.isAwsInstanceID(id) {
+				return false, "", nil
+			}
 			return true, id, nil
 		}
 
@@ -201,6 +203,13 @@ func (l base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 	return false, "", fmt.Errorf(
 		"Failed to curl or wget to AWS instance metadata on %s. container: %s",
 		l.ServerInfo.ServerName, l.ServerInfo.Container.Name)
+}
+
+// http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/resource-ids.html
+var awsInstanceIDPattern = regexp.MustCompile(`^i-[0-9a-f]+$`)
+
+func (l base) isAwsInstanceID(str string) bool {
+	return awsInstanceIDPattern.MatchString(str)
 }
 
 func (l *base) convertToModel() (models.ScanResult, error) {
