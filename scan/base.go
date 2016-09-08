@@ -32,9 +32,8 @@ import (
 
 type base struct {
 	ServerInfo config.ServerInfo
+	Distro     config.Distro
 
-	Family   string
-	Release  string
 	Platform models.Platform
 	osPackages
 
@@ -54,13 +53,20 @@ func (l base) getServerInfo() config.ServerInfo {
 	return l.ServerInfo
 }
 
-func (l *base) setDistributionInfo(fam, rel string) {
-	l.Family = fam
-	l.Release = rel
+func (l *base) setDistro(fam, rel string) {
+	d := config.Distro{
+		Family:  fam,
+		Release: rel,
+	}
+	l.Distro = d
+
+	s := l.getServerInfo()
+	s.Distro = d
+	l.setServerInfo(s)
 }
 
-func (l base) getDistributionInfo() string {
-	return fmt.Sprintf("%s %s", l.Family, l.Release)
+func (l base) getDistro() config.Distro {
+	return l.Distro
 }
 
 func (l *base) setPlatform(p models.Platform) {
@@ -250,8 +256,8 @@ func (l *base) convertToModel() (models.ScanResult, error) {
 	return models.ScanResult{
 		ServerName:  l.ServerInfo.ServerName,
 		ScannedAt:   time.Now(),
-		Family:      l.Family,
-		Release:     l.Release,
+		Family:      l.Distro.Family,
+		Release:     l.Distro.Release,
 		Container:   container,
 		Platform:    l.Platform,
 		KnownCves:   scoredCves,

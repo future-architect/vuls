@@ -302,7 +302,7 @@ func decolateCmd(c conf.ServerInfo, cmd string, sudo bool) string {
 		cmd = strings.Replace(cmd, "|", "| sudo ", -1)
 	}
 
-	if c.Family != "FreeBSD" {
+	if c.Distro.Family != "FreeBSD" {
 		// set pipefail option. Bash only
 		// http://unix.stackexchange.com/questions/14270/get-exit-status-of-process-thats-piped-to-another
 		cmd = fmt.Sprintf("set -o pipefail; %s", cmd)

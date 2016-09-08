@@ -1,3 +1,20 @@
+/* Vuls - Vulnerability Scanner
+Copyright (C) 2016  Future Architect, Inc. Japan.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package scan
 
 import (
@@ -5,6 +22,7 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/future-architect/vuls/cache"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	cve "github.com/kotakanbe/go-cve-dictionary/models"
@@ -20,8 +38,9 @@ type osTypeInterface interface {
 	setServerInfo(config.ServerInfo)
 	getServerInfo() config.ServerInfo
 
-	setDistributionInfo(string, string)
-	getDistributionInfo() string
+	setDistro(string, string)
+	getDistro() config.Distro
+	//  getFamily() string
 
 	checkIfSudoNoPasswd() error
 	detectPlatform() error
@@ -188,7 +207,7 @@ func detectServerOSes() (sshAbleOses []osTypeInterface) {
 				Log.Infof("(%d/%d) Detected: %s: %s",
 					i+1, len(config.Conf.Servers),
 					res.getServerInfo().ServerName,
-					res.getDistributionInfo())
+					res.getDistro())
 			}
 		case <-timeout:
 			msg := "Timed out while detecting servers"
@@ -248,7 +267,7 @@ func detectContainerOSes() (actives []osTypeInterface) {
 				}
 				oses = append(oses, res...)
 				Log.Infof("Detected: %s@%s: %s",
-					sinfo.Container.Name, sinfo.ServerName, osi.getDistributionInfo())
+					sinfo.Container.Name, sinfo.ServerName, osi.getDistro())
 			}
 		case <-timeout:
 			msg := "Timed out while detecting containers"
@@ -417,6 +436,13 @@ func Scan() []error {
 		return errs
 	}
 
+	if err := setupCangelogCache(); err != nil {
+		return []error{err}
+	}
+	if cache.DB != nil {
+		defer cache.DB.Close()
+	}
+
 	Log.Info("Scanning vulnerable OS packages...")
 	if errs := scanPackages(); errs != nil {
 		return errs
@@ -425,6 +451,23 @@ func Scan() []error {
 	Log.Info("Scanning vulnerable software specified in the CPE...")
 	if errs := scanVulnByCpeName(); errs != nil {
 		return errs
+	}
+	return nil
+}
+
+func setupCangelogCache() error {
+	needToSetupCache := false
+	for _, s := range servers {
+		switch s.getDistro().Family {
+		case "ubuntu", "debian":
+			needToSetupCache = true
+			break
+		}
+	}
+	if needToSetupCache {
+		if err := cache.SetupBolt(config.Conf.CacheDBPath, Log); err != nil {
+			return err
+		}
 	}
 	return nil
 }

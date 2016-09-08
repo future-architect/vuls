@@ -49,6 +49,7 @@ type Config struct {
 	HTTPProxy   string `valid:"url"`
 	JSONBaseDir string
 	CveDBPath   string
+	CacheDBPath string
 
 	AwsProfile string
 	AwsRegion  string
@@ -69,14 +70,21 @@ func (c Config) Validate() bool {
 	if len(c.JSONBaseDir) != 0 {
 		if ok, _ := valid.IsFilePath(c.JSONBaseDir); !ok {
 			errs = append(errs, fmt.Errorf(
-				"JSON base directory must be a *Absolute* file path. jsonBaseDir: %s", c.JSONBaseDir))
+				"JSON base directory must be a *Absolute* file path. -results-dir: %s", c.JSONBaseDir))
 		}
 	}
 
 	if len(c.CveDBPath) != 0 {
 		if ok, _ := valid.IsFilePath(c.CveDBPath); !ok {
 			errs = append(errs, fmt.Errorf(
-				"SQLite3 DB(Cve Dictionary) path must be a *Absolute* file path. dbpath: %s", c.CveDBPath))
+				"SQLite3 DB(Cve Dictionary) path must be a *Absolute* file path. -cve-dictionary-dbpath: %s", c.CveDBPath))
+		}
+	}
+
+	if len(c.CacheDBPath) != 0 {
+		if ok, _ := valid.IsFilePath(c.CacheDBPath); !ok {
+			errs = append(errs, fmt.Errorf(
+				"Cache DB path must be a *Absolute* file path. -cache-dbpath: %s", c.CacheDBPath))
 		}
 	}
 
@@ -230,7 +238,17 @@ type ServerInfo struct {
 	// used internal
 	LogMsgAnsiColor string // DebugLog Color
 	Container       Container
-	Family          string
+	Distro          Distro
+}
+
+// Distro has distribution info
+type Distro struct {
+	Family  string
+	Release string
+}
+
+func (l Distro) String() string {
+	return fmt.Sprintf("%s %s", l.Family, l.Release)
 }
 
 // IsContainer returns whether this ServerInfo is about container

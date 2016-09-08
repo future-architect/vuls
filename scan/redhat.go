@@ -42,16 +42,16 @@ type redhat struct {
 func newRedhat(c config.ServerInfo) *redhat {
 	r := &redhat{}
 	r.log = util.NewCustomLogger(c)
+	r.setServerInfo(c)
 	return r
 }
 
 // https://github.com/serverspec/specinfra/blob/master/lib/specinfra/helper/detect_os/redhat.rb
 func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 	red = newRedhat(c)
-	red.setServerInfo(c)
 
 	if r := sshExec(c, "ls /etc/fedora-release", noSudo); r.isSuccess() {
-		red.setDistributionInfo("fedora", "unknown")
+		red.setDistro("fedora", "unknown")
 		Log.Warn("Fedora not tested yet: %s", r)
 		return true, red
 	}
@@ -72,9 +72,9 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 			release := result[2]
 			switch strings.ToLower(result[1]) {
 			case "centos", "centos linux":
-				red.setDistributionInfo("centos", release)
+				red.setDistro("centos", release)
 			default:
-				red.setDistributionInfo("rhel", release)
+				red.setDistro("rhel", release)
 			}
 			return true, red
 		}
@@ -90,7 +90,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 				release = fields[4]
 			}
 		}
-		red.setDistributionInfo(family, release)
+		red.setDistro(family, release)
 		return true, red
 	}
 
@@ -113,7 +113,7 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 // CentOS 7 ... yum-plugin-changelog
 // RHEL, Amazon ... no additinal packages needed
 func (o *redhat) install() error {
-	switch o.Family {
+	switch o.Distro.Family {
 	case "rhel", "amazon":
 		o.log.Infof("Nothing to do")
 		return nil
@@ -123,14 +123,13 @@ func (o *redhat) install() error {
 }
 
 func (o *redhat) installYumChangelog() error {
-	if o.Family == "centos" {
+	if o.Distro.Family == "centos" {
 		var majorVersion int
-		if 0 < len(o.Release) {
-			majorVersion, _ = strconv.Atoi(strings.Split(o.Release, ".")[0])
+		if 0 < len(o.Distro.Release) {
+			majorVersion, _ = strconv.Atoi(strings.Split(o.Distro.Release, ".")[0])
 		} else {
 			return fmt.Errorf(
-				"Not implemented yet. family: %s, release: %s",
-				o.Family, o.Release)
+				"Not implemented yet: %s", o.Distro)
 		}
 
 		var packName = ""
@@ -157,12 +156,12 @@ func (o *redhat) installYumChangelog() error {
 }
 
 func (o *redhat) checkRequiredPackagesInstalled() error {
-	if o.Family == "centos" {
+	if o.Distro.Family == "centos" {
 		var majorVersion int
-		if 0 < len(o.Release) {
-			majorVersion, _ = strconv.Atoi(strings.Split(o.Release, ".")[0])
+		if 0 < len(o.Distro.Release) {
+			majorVersion, _ = strconv.Atoi(strings.Split(o.Distro.Release, ".")[0])
 		} else {
-			msg := fmt.Sprintf("Not implemented yet. family: %s, release: %s", o.Family, o.Release)
+			msg := fmt.Sprintf("Not implemented yet: %s", o.Distro)
 			o.log.Errorf(msg)
 			return fmt.Errorf(msg)
 		}
@@ -240,7 +239,7 @@ func (o *redhat) parseScannedPackagesLine(line string) (models.PackageInfo, erro
 }
 
 func (o *redhat) scanUnsecurePackages() ([]CvePacksInfo, error) {
-	if o.Family != "centos" {
+	if o.Distro.Family != "centos" {
 		// Amazon, RHEL has yum updateinfo as default
 		// yum updateinfo can collenct vendor advisory information.
 		return o.scanUnsecurePackagesUsingYumPluginSecurity()
@@ -460,12 +459,10 @@ func (o *redhat) getChangelogCVELines(rpm2changelog map[string]*string, packInfo
 
 func (o *redhat) parseAllChangelog(allChangelog string) (map[string]*string, error) {
 	var majorVersion int
-	if 0 < len(o.Release) && o.Family == "centos" {
-		majorVersion, _ = strconv.Atoi(strings.Split(o.Release, ".")[0])
+	if 0 < len(o.Distro.Release) && o.Distro.Family == "centos" {
+		majorVersion, _ = strconv.Atoi(strings.Split(o.Distro.Release, ".")[0])
 	} else {
-		return nil, fmt.Errorf(
-			"Not implemented yet. family: %s, release: %s",
-			o.Family, o.Release)
+		return nil, fmt.Errorf("Not implemented yet: %s", o.getDistro())
 	}
 
 	orglines := strings.Split(allChangelog, "\n")
@@ -569,7 +566,7 @@ type distroAdvisoryCveIDs struct {
 // Scaning unsecure packages using yum-plugin-security.
 // Amazon, RHEL
 func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, error) {
-	if o.Family == "centos" {
+	if o.Distro.Family == "centos" {
 		// CentOS has no security channel.
 		// So use yum check-update && parse changelog
 		return CvePacksList{}, fmt.Errorf(
@@ -717,7 +714,7 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 
 		switch sectionState {
 		case Header:
-			switch o.Family {
+			switch o.Distro.Family {
 			case "centos":
 				// CentOS has no security channel.
 				// So use yum check-update && parse changelog
@@ -964,7 +961,7 @@ func (o *redhat) clone() osTypeInterface {
 }
 
 func (o *redhat) sudo() bool {
-	switch o.Family {
+	switch o.Distro.Family {
 	case "amazon":
 		return false
 	default:

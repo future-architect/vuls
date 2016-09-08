@@ -47,6 +47,7 @@ type ScanCmd struct {
 	jsonBaseDir      string
 	cvedbpath        string
 	cveDictionaryURL string
+	cacheDBPath      string
 
 	cvssScoreOver      float64
 	ignoreUnscoredCves bool
@@ -89,6 +90,7 @@ func (*ScanCmd) Usage() string {
 		[-results-dir=/path/to/results]
 		[-cve-dictionary-dbpath=/path/to/cve.sqlite3]
 		[-cve-dictionary-url=http://127.0.0.1:1323]
+		[-cache-dbpath=/path/to/cache.db]
 		[-cvss-over=7]
 		[-ignore-unscored-cves]
 		[-ssh-external]
@@ -139,6 +141,13 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		"cve-dictionary-url",
 		defaultURL,
 		"http://CVE.Dictionary")
+
+	defaultCacheDBPath := filepath.Join(wd, "cache.db")
+	f.StringVar(
+		&p.cacheDBPath,
+		"cache-dbpath",
+		defaultCacheDBPath,
+		"/path/to/cache.db (local cache of changelog for Ubuntu/Debian)")
 
 	f.Float64Var(
 		&p.cvssScoreOver,
@@ -341,6 +350,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	c.Conf.JSONBaseDir = p.jsonBaseDir
 	c.Conf.CveDBPath = p.cvedbpath
 	c.Conf.CveDictionaryURL = p.cveDictionaryURL
+	c.Conf.CacheDBPath = p.cacheDBPath
 	c.Conf.CvssScoreOver = p.cvssScoreOver
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
 	c.Conf.SSHExternal = p.sshExternal

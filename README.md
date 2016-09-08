@@ -297,25 +297,27 @@ see https://github.com/future-architect/vuls/tree/master/setup/docker
 ----
 # Performance Considerations
 
-- on Ubuntu and Debian  
+- On Ubuntu and Debian  
 Vuls issues `apt-get changelog` for each upgradable packages and parse the changelog.  
-`apt-get changelog` is slow and resource usage is heavy when there are many updatable packages on target server.  
+`apt-get changelog` is slow and resource usage is heavy when there are many updatable packages on target server.   
+Vuls stores these changelogs to KVS([boltdb](https://github.com/boltdb/bolt)).  
+From the second time on, the scan speed is fast by using the local cache.
 
-- on CentOS  
+- On CentOS  
 Vuls issues `yum update --changelog` to get changelogs of upgradable packages at once and parse the changelog.  
 Scan speed is fast and resource usage is light.  
 
 - On Amazon, RHEL and FreeBSD  
 High speed scan and resource usage is light because Vuls can get CVE IDs by using package manager(no need to parse a changelog).
 
-| Distribution|         Scan Speed | Resource Usage On Target Server |
+| Distribution|         Scan Speed | 
 |:------------|:-------------------|:-------------|
-| Ubuntu      |               Slow | Heavy            |
-| Debian      |               Slow | Heavy            |
-| CentOS      |               Fast | Light            |
-| Amazon      |               Fast | Light            |
-| RHEL        |               Fast | Light            |
-| FreeBSD     |               Fast | Light            |
+| Ubuntu      |  First time: Slow / From the second time: Fast |
+| Debian      |  First time: Slow / From the second time: Fast |
+| CentOS      |               Fast |
+| Amazon      |               Fast |
+| RHEL        |               Fast |
+| FreeBSD     |               Fast |
 
 ----
 
@@ -339,7 +341,7 @@ web/app server in the same configuration under the load balancer
 |:------------|-------------------:|
 | Ubuntu      |          12, 14, 16|
 | Debian      |                7, 8|
-| RHEL        |          4, 5, 6, 7|
+| RHEL        |                6, 7|
 | CentOS      |             5, 6, 7|
 | Amazon Linux|                 All|
 | FreeBSD     |                  10|
@@ -603,6 +605,7 @@ scan:
                 [-results-dir=/path/to/results]
                 [-cve-dictionary-dbpath=/path/to/cve.sqlite3]
                 [-cve-dictionary-url=http://127.0.0.1:1323]
+                [-cache-dbpath=/path/to/cache.db]
                 [-cvss-over=7]
                 [-ignore-unscored-cves]
                 [-ssh-external]
@@ -639,6 +642,8 @@ scan:
         Azure storage container name
   -azure-key string
         Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified
+  -cache-dbpath string
+        /path/to/cache.db (local cache of changelog for Ubuntu/Debian) (default "$PWD/cache.db")
   -config string
         /path/to/toml (default "$PWD/config.toml")
   -cve-dictionary-dbpath string
@@ -647,8 +652,6 @@ scan:
         http://CVE.Dictionary (default "http://127.0.0.1:1323")
   -cvss-over float
         -cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))
-  -results-dir string
-        /path/to/results (default "$PWD/results")
   -debug
         debug mode
   -debug-sql
@@ -669,6 +672,8 @@ scan:
         Send report via Slack
   -report-text
         Write report to text files ($PWD/results/current)
+  -results-dir string
+        /path/to/results (default "$PWD/results")
   -ssh-external
         Use external ssh command. Default: Use the Go native implementation
 ```
