@@ -1,10 +1,10 @@
-hash: 9683c87b3cf998e7fac1b12c4a94bf2bd18cb5422e9108539811546e703a439a
-updated: 2016-07-12T16:20:45.462913061+09:00
+hash: 28d14f88e90c0765c1b660ddde796e51e197239d353bb79bfc5d8f8cf9b5f9ee
+updated: 2016-09-08T19:35:45.581570944+09:00
 imports:
 - name: github.com/asaskevich/govalidator
-  version: df81827fdd59d8b4fb93d8910b286ab7a3919520
+  version: 593d64559f7600f29581a3ee42177f5dbded27a9
 - name: github.com/aws/aws-sdk-go
-  version: 90dec2183a5f5458ee79cbaf4b8e9ab910bc81a6
+  version: bc572378d109481c50d45d9dba4490d80386e98e
   subpackages:
   - aws
   - aws/credentials
@@ -13,6 +13,7 @@ imports:
   - aws/awserr
   - aws/client
   - aws/corehandlers
+  - aws/credentials/stscreds
   - aws/defaults
   - aws/request
   - private/endpoints
@@ -22,24 +23,26 @@ imports:
   - private/protocol
   - private/protocol/restxml
   - private/waiter
+  - service/sts
   - aws/credentials/ec2rolecreds
+  - aws/credentials/endpointcreds
   - aws/ec2metadata
   - private/protocol/rest
   - private/protocol/query
   - private/protocol/xml/xmlutil
   - private/protocol/query/queryutil
 - name: github.com/Azure/azure-sdk-for-go
-  version: 58a13e378daf3b06e65925397185684b16321111
+  version: 34467930a15f0d2872168deb11435b8ac3d863bb
   subpackages:
   - storage
 - name: github.com/BurntSushi/toml
-  version: ffaa107fbd880f6d18cd6fec9b511668dcad8639
+  version: 99064174e013895bbd9b025c31100bd1d9b590ca
 - name: github.com/cenkalti/backoff
-  version: cdf48bbc1eb78d1349cbda326a4a037f7ba565c6
+  version: 8edc80b07f38c27352fb186d971c628a6c32552b
 - name: github.com/cheggaaa/pb
-  version: 04b234c80d661c663dbcebd52fc7218fdacc6d0c
+  version: ad4efe000aa550bb54918c06ebbadc0ff17687b9
 - name: github.com/go-ini/ini
-  version: cf53f9204df4fbdd7ec4164b57fa6184ba168292
+  version: 6e4869b434bd001f6983749881c7ead3545887d8
 - name: github.com/google/subcommands
   version: 1c7173745a6001f67d8d96ab4e178284c77f7759
 - name: github.com/gosuri/uitable
@@ -48,51 +51,53 @@ imports:
   - util/strutil
   - util/wordwrap
 - name: github.com/howeyc/gopass
-  version: 66487b23f2880ba32e185121d2cd51a338ea069a
+  version: 3ca23474a7c7203e0a0a070fd33508f6efdb9b3d
 - name: github.com/jinzhu/gorm
-  version: 613c0655691abb7691b70c5fda80a716d9e20b1b
+  version: 02f6ae3c4ed211472b0492cee02ff3ddfdc1830d
 - name: github.com/jinzhu/inflection
-  version: 8f4d3a0d04ce0b7c0cf3126fb98524246d00d102
+  version: 74387dc39a75e970e7a3ae6a3386b5bd2e5c5cff
 - name: github.com/jmespath/go-jmespath
-  version: 0b12d6b521d83fc7f755e7cfc1b1fbdd35a01a74
+  version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
 - name: github.com/jroimartin/gocui
-  version: 2dcda558bf18ec07c7065bf1eaf071b5305f7c0c
+  version: 30f7d65597dc2c421ce452b164c36b7014ef94be
 - name: github.com/k0kubun/pp
   version: f5dce6ed0ccf6c350f1679964ff6b61f3d6d2033
 - name: github.com/kotakanbe/go-cve-dictionary
-  version: 1a336b8ac785badfe89a175ee926d39574901232
+  version: f9f68fee57dca8e60fb5d9d6b34d3215d854fc06
   subpackages:
   - config
   - models
+  - db
   - log
   - jvn
   - nvd
+  - util
 - name: github.com/kotakanbe/go-pingscanner
   version: 58e188a3e4f6ab1a6371e33421e4502e26fa1e80
 - name: github.com/kotakanbe/logrus-prefixed-formatter
   version: f4f7d41649cf1e75e736884da8d05324aa76ea25
 - name: github.com/mattn/go-colorable
-  version: 9056b7a9f2d1f2d96498d6d146acd1f9d5ed3d59
+  version: ed8eb9e318d7a84ce5915b495b7d35e0cfe7b5a8
 - name: github.com/mattn/go-isatty
-  version: 56b76bdf51f7708750eac80fa38b952bb9f32639
+  version: 66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
 - name: github.com/mattn/go-runewidth
   version: d6bea18f789704b5f83375793155289da36a3c7f
 - name: github.com/mattn/go-sqlite3
-  version: 38ee283dabf11c9cbdb968eebd79b1fa7acbabe6
+  version: 3fb7a0e792edd47bf0cf1e919dfc14e2be412e15
 - name: github.com/mgutz/ansi
   version: c286dcecd19ff979eeb73ea444e479b903f2cfcb
 - name: github.com/moul/http2curl
   version: b1479103caacaa39319f75e7f57fc545287fca0d
 - name: github.com/nsf/termbox-go
-  version: c45773466a30b680355d6494cc8826113c93cd0f
+  version: e8f6d27f72a2f2bb598eb3579afd5ea364ef67f7
 - name: github.com/parnurzeal/gorequest
-  version: 6e8ad4ebdee4bec2934ed5afaaa1c7b877832a17
+  version: 2aea80ce763523ecc6452e61c3727ae9595a5809
 - name: github.com/rifflock/lfshook
-  version: 05a24e24fa8d3a2eca8c2baf23aa2d5a2c51490c
+  version: f9d14dda07b109a7aa56f135c31b34062eb14392
 - name: github.com/Sirupsen/logrus
-  version: f3cfb454f4c209e6668c95216c4744b8fddb2356
+  version: 3ec0642a7fb6488f65b06f9040adc67e3990296a
 - name: golang.org/x/crypto
-  version: c2f4947f41766b144bb09066e919466da5eddeae
+  version: 9e590154d2353f3f5e1b24da7275686040dcf491
   subpackages:
   - ssh
   - ssh/agent
@@ -101,12 +106,12 @@ imports:
   - ed25519
   - ed25519/internal/edwards25519
 - name: golang.org/x/net
-  version: f841c39de738b1d0df95b5a7187744f0e03d8112
+  version: 9313baa13d9262e49d07b20ed57dceafcd7240cc
   subpackages:
   - context
   - publicsuffix
 - name: golang.org/x/sys
-  version: a408501be4d17ee978c04a618e7a1b22af058c0e
+  version: 30de6d19a3bd89a5f38ae4028e23aaa5582648af
   subpackages:
   - unix
 - name: gopkg.in/alexcesaro/quotedprintable.v3
