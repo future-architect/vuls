@@ -1,5 +1,44 @@
 # Change Log
 
+## [v0.1.6](https://github.com/future-architect/vuls/tree/v0.1.6) (2016-09-12)
+[Full Changelog](https://github.com/future-architect/vuls/compare/v0.1.5...v0.1.6)
+
+**Implemented enhancements:**
+
+- High speed scan on Ubuntu/Debian [\#172](https://github.com/future-architect/vuls/pull/172) ([kotakanbe](https://github.com/kotakanbe))
+- Support CWE\(Common Weakness Enumeration\) [\#169](https://github.com/future-architect/vuls/pull/169) ([kotakanbe](https://github.com/kotakanbe))
+- Enable to scan without sudo on amazon linux [\#167](https://github.com/future-architect/vuls/pull/167) ([kotakanbe](https://github.com/kotakanbe))
+- Remove deprecated options -use-unattended-upgrades,-use-yum-plugin-security [\#161](https://github.com/future-architect/vuls/pull/161) ([kotakanbe](https://github.com/kotakanbe))
+- delete sqlite3 [\#152](https://github.com/future-architect/vuls/pull/152) ([sadayuki-matsuno](https://github.com/sadayuki-matsuno))
+
+**Fixed bugs:**
+
+- Failed to setup vuls docker [\#170](https://github.com/future-architect/vuls/issues/170)
+- yum check-update error occurred when no reboot after kernel updating [\#165](https://github.com/future-architect/vuls/issues/165)
+- error thrown from 'docker build .' [\#157](https://github.com/future-architect/vuls/issues/157)
+- CVE-ID is truncated to 4 digits [\#153](https://github.com/future-architect/vuls/issues/153)
+- 'yum update --changelog' stalled in 'vuls scan'. if ssh user is not 'root'. [\#150](https://github.com/future-architect/vuls/issues/150)
+- Panic on packet scan [\#131](https://github.com/future-architect/vuls/issues/131)
+- Update glide.lock \#170 [\#171](https://github.com/future-architect/vuls/pull/171) ([kotakanbe](https://github.com/kotakanbe))
+- Fix detecting a platform on Azure [\#168](https://github.com/future-architect/vuls/pull/168) ([kotakanbe](https://github.com/kotakanbe))
+- Fix parse error for yum check-update \#165 [\#166](https://github.com/future-architect/vuls/pull/166) ([kotakanbe](https://github.com/kotakanbe))
+- Fix bug: Vuls on Docker [\#159](https://github.com/future-architect/vuls/pull/159) ([tjinjin](https://github.com/tjinjin))
+- Fix CVE-ID is truncated to 4 digits [\#155](https://github.com/future-architect/vuls/pull/155) ([usiusi360](https://github.com/usiusi360))
+- Fix yum update --changelog stalled when non-root ssh user on CentOS \#150 [\#151](https://github.com/future-architect/vuls/pull/151) ([kotakanbe](https://github.com/kotakanbe))
+
+**Closed issues:**
+
+- Support su for root privilege escalation [\#44](https://github.com/future-architect/vuls/issues/44)
+- Support FreeBSD [\#34](https://github.com/future-architect/vuls/issues/34)
+
+**Merged pull requests:**
+
+- Change scripts for data fetching from jvn [\#164](https://github.com/future-architect/vuls/pull/164) ([kotakanbe](https://github.com/kotakanbe))
+- Fix: setup vulsrepo [\#162](https://github.com/future-architect/vuls/pull/162) ([tjinjin](https://github.com/tjinjin))
+- Fix-docker-vulsrepo-install [\#160](https://github.com/future-architect/vuls/pull/160) ([usiusi360](https://github.com/usiusi360))
+- Reduce regular expression compilation [\#158](https://github.com/future-architect/vuls/pull/158) ([itchyny](https://github.com/itchyny))
+- Add testcases for \#153 [\#156](https://github.com/future-architect/vuls/pull/156) ([kotakanbe](https://github.com/kotakanbe))
+
 ## [v0.1.5](https://github.com/future-architect/vuls/tree/v0.1.5) (2016-08-16)
 [Full Changelog](https://github.com/future-architect/vuls/compare/v0.1.4...v0.1.5)
 
