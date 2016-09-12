@@ -72,7 +72,7 @@ FreeBSD: pkg<y:LabelModel>
           <y:Geometry height="56.0" width="268.0" x="10.0" y="287.8409153761062"/>
           <y:Fill color="#E8EEF7" color2="#B7C9E3" transparent="false"/>
           <y:BorderStyle color="#000000" type="line" width="1.0"/>
-          <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="32.265625" modelName="custom" textColor="#000000" visible="true" width="260.83984375" x="3.580078125" y="11.8671875">Get upgradable packages
+          <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="32.265625" modelName="custom" textColor="#000000" visible="true" width="260.83984375" x="3.580078125" y="11.8671875">Check upgradable packages
 Debian/Ubuntu: apt-get upgrade --dry-run<y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>
             </y:LabelModel>
@@ -222,7 +222,7 @@ Reporting<y:LabelModel>
           <y:Geometry height="56.0" width="268.0" x="309.6849206349206" y="287.8409153761062"/>
           <y:Fill color="#E8EEF7" color2="#B7C9E3" transparent="false"/>
           <y:BorderStyle color="#000000" type="line" width="1.0"/>
-          <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="32.265625" modelName="custom" textColor="#000000" visible="true" width="271.369140625" x="-1.6845703124999432" y="11.8671875">Get all changelogs by using package manager
+          <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="32.265625" modelName="custom" textColor="#000000" visible="true" width="293.06640625" x="-12.533203124999943" y="11.8671875">Get all changelogs of updatable packages at once
 CentOS: yum update --changelog<y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>
             </y:LabelModel>
@@ -397,7 +397,6 @@ FreeBSD<y:LabelModel>
       </data>
     </edge>
     <edge id="e12" source="n1" target="n12">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="20.0" tx="0.0" ty="-28.0"/>
@@ -416,7 +415,6 @@ FreeBSD<y:LabelModel>
       </data>
     </edge>
     <edge id="e13" source="n12" target="n13">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="28.0" tx="0.0" ty="-28.0"/>
@@ -427,7 +425,6 @@ FreeBSD<y:LabelModel>
       </data>
     </edge>
     <edge id="e14" source="n13" target="n7">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="134.00000000000006" sy="0.0" tx="0.0" ty="-28.0">

@@ -301,22 +301,24 @@ $ vuls tui
 # Performance Considerations
 
 - Ubuntu, Debian  
-アップデート対象のパッケージが沢山ある場合は、毎回apt-get changelogするので遅いし、スキャン対象サーバのリソースを消費する。
+`apt-get changelog`でアップデート対象のパッケージのチェンジログを取得し、含まれるCVE IDをパースする。
+アップデート対象のパッケージが沢山ある場合、チェンジログの取得に時間がかかるので、初回のスキャンは遅い。  
+ただ、２回目以降はキャッシュしたchangelogを使うので速くなる。  
 
 - CentOS  
-アップデート対象すべてのchangelogを一度で取得しパースする。スキャンスピードは高速、サーバリソース消費量は小さい。
+アップデート対象すべてのchangelogを一度で取得しパースする。スキャンスピードは速い、サーバリソース消費量は小さい。
 
 - Amazon, RHEL and FreeBSD  
 高速にスキャンし、スキャン対象サーバのリソース消費量は小さい。
 
-| Distribution|         Scan Speed | Resource Usage On Target Server |
-|:------------|:-------------------|:-------------|
-| Ubuntu      |               Slow | Heavy            |
-| Debian      |               Slow | Heavy            |
-| CentOS      |               Fast | Light            |
-| Amazon      |               Fast | Light            |
-| RHEL        |               Fast | Light            |
-| FreeBSD     |               Fast | Light            |
+| Distribution|         Scan Speed | 
+|:------------|:-------------------|
+| Ubuntu      | 初回は遅い / 2回目以降速い　|
+| Debian      | 初回は遅い / 2回目以降速い　|
+| CentOS      |               速い |
+| Amazon      |               速い | 
+| RHEL        |               速い | 
+| FreeBSD     |               速い |
 
 ----
 
@@ -340,7 +342,7 @@ web/app server in the same configuration under the load balancer
 |:------------|-------------------:|
 | Ubuntu      |          12, 14, 16|
 | Debian      |                7, 8|
-| RHEL        |          4, 5, 6, 7|
+| RHEL        |                6, 7|
 | CentOS      |             5, 6, 7|
 | Amazon Linux|                 All|
 | FreeBSD     |                  10|
@@ -595,7 +597,6 @@ prepare
 # Usage: Scan
 
 ```
-
 $ vuls scan -help
 scan:
         scan
@@ -604,6 +605,7 @@ scan:
                 [-results-dir=/path/to/results]
                 [-cve-dictionary-dbpath=/path/to/cve.sqlite3]
                 [-cve-dictionary-url=http://127.0.0.1:1323]
+                [-cache-dbpath=/path/to/cache.db]
                 [-cvss-over=7]
                 [-ignore-unscored-cves]
                 [-ssh-external]
@@ -626,7 +628,6 @@ scan:
                 [SERVER]...
 
 
-
   -ask-key-password
         Ask ssh privatekey password before scanning
   -aws-profile string
@@ -641,6 +642,8 @@ scan:
         Azure storage container name
   -azure-key string
         Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified
+  -cache-dbpath string
+        /path/to/cache.db (local cache of changelog for Ubuntu/Debian) (default "$PWD/cache.db")
   -config string
         /path/to/toml (default "$PWD/config.toml")
   -cve-dictionary-dbpath string
@@ -649,8 +652,6 @@ scan:
         http://CVE.Dictionary (default "http://127.0.0.1:1323")
   -cvss-over float
         -cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))
-  -results-dir string
-        /path/to/results (default "$PWD/results")
   -debug
         debug mode
   -debug-sql
@@ -671,6 +672,8 @@ scan:
         Send report via Slack
   -report-text
         Write report to text files ($PWD/results/current)
+  -results-dir string
+        /path/to/results (default "$PWD/results")
   -ssh-external
         Use external ssh command. Default: Use the Go native implementation
 ```

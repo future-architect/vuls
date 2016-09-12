@@ -3,6 +3,8 @@ vuls
 *.txt
 *.json
 *.sqlite3
+*.db
+tags
 .gitmodules
 coverage.out
 issues/

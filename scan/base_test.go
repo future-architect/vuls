@@ -70,8 +70,9 @@ func TestIsAwsInstanceID(t *testing.T) {
 		{"no data", false},
 	}
 
+	r := newRedhat(config.ServerInfo{})
 	for _, tt := range tests {
-		actual := isAwsInstanceID(tt.in)
+		actual := r.isAwsInstanceID(tt.in)
 		if tt.expected != actual {
 			t.Errorf("expected %t, actual %t, str: %s", tt.expected, actual, tt.in)
 		}

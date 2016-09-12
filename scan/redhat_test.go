@@ -451,7 +451,7 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
 	updated, _ := time.Parse("2006-01-02", "2015-09-04")
 
 	r := newRedhat(config.ServerInfo{})
-	r.Family = "redhat"
+	r.Distro = config.Distro{Family: "redhat"}
 
 	var tests = []struct {
 		in  string
@@ -511,7 +511,7 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
 func TestParseYumUpdateinfoAmazon(t *testing.T) {
 
 	r := newRedhat(config.ServerInfo{})
-	r.Family = "amazon"
+	r.Distro = config.Distro{Family: "redhat"}
 
 	issued, _ := time.Parse("2006-01-02", "2015-12-15")
 	updated, _ := time.Parse("2006-01-02", "2015-12-16")
@@ -601,7 +601,7 @@ Description : Package updates are available for Amazon Linux AMI that fix the
 
 func TestParseYumCheckUpdateLines(t *testing.T) {
 	r := newRedhat(config.ServerInfo{})
-	r.Family = "centos"
+	r.Distro = config.Distro{Family: "centos"}
 	stdout := `Loaded plugins: changelog, fastestmirror, keys, protect-packages, protectbase, security
 Loading mirror speeds from cached hostfile
  * base: mirror.fairway.ne.jp
@@ -709,7 +709,7 @@ bind-utils.x86_64                       30:9.3.6-25.P1.el5_11.8          updates
 
 func TestParseYumCheckUpdateLinesAmazon(t *testing.T) {
 	r := newRedhat(config.ServerInfo{})
-	r.Family = "amazon"
+	r.Distro = config.Distro{Family: "amazon"}
 	stdout := `Loaded plugins: priorities, update-motd, upgrade-helper
 34 package(s) needed for security, out of 71 available
 
@@ -1110,8 +1110,10 @@ func TestGetChangelogCVELines(t *testing.T) {
 	}
 
 	r := newRedhat(config.ServerInfo{})
-	r.Family = "centos"
-	r.Release = "6.7"
+	r.Distro = config.Distro{
+		Family:  "centos",
+		Release: "6.7",
+	}
 	for _, tt := range testsCentos6 {
 		rpm2changelog, err := r.parseAllChangelog(stdoutCentos6)
 		if err != nil {
@@ -1194,7 +1196,10 @@ func TestGetChangelogCVELines(t *testing.T) {
 		},
 	}
 
-	r.Release = "5.6"
+	r.Distro = config.Distro{
+		Family:  "centos",
+		Release: "5.6",
+	}
 	for _, tt := range testsCentos5 {
 		rpm2changelog, err := r.parseAllChangelog(stdoutCentos5)
 		if err != nil {

@@ -186,41 +186,6 @@ func (api cvedictClient) httpGet(key, url string, resChan chan<- response, errCh
 	}
 }
 
-//  func (api cvedictClient) httpGet(key, url string, query map[string]string, resChan chan<- response, errChan chan<- error) {
-
-//      var body string
-//      var errs []error
-//      var resp *http.Response
-//      f := func() (err error) {
-//          req := gorequest.New().SetDebug(true).Proxy(api.httpProxy).Get(url)
-//          for key := range query {
-//              req = req.Query(fmt.Sprintf("%s=%s", key, query[key])).Set("Content-Type", "application/x-www-form-urlencoded")
-//          }
-//          pp.Println(req)
-//          resp, body, errs = req.End()
-//          if 0 < len(errs) || resp.StatusCode != 200 {
-//              errChan <- fmt.Errorf("HTTP error. errs: %v, url: %s", errs, url)
-//          }
-//          return nil
-//      }
-//      notify := func(err error, t time.Duration) {
-//          log.Warnf("Failed to get. retrying in %s seconds. err: %s", t, err)
-//      }
-//      err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
-//      if err != nil {
-//          errChan <- fmt.Errorf("HTTP Error %s", err)
-//      }
-//      //  resChan <- body
-//      cveDetail := cve.CveDetail{}
-//      if err := json.Unmarshal([]byte(body), &cveDetail); err != nil {
-//          errChan <- fmt.Errorf("Failed to Unmarshall. body: %s, err: %s", body, err)
-//      }
-//      resChan <- response{
-//          key,
-//          cveDetail,
-//      }
-//  }
-
 type responseGetCveDetailByCpeName struct {
 	CpeName    string
 	CveDetails []cve.CveDetail
