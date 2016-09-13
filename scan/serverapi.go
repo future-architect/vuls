@@ -369,7 +369,7 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 
 // CheckIfSudoNoPasswd checks whether vuls can sudo with nopassword via SSH
 func CheckIfSudoNoPasswd(localLogger *logrus.Entry) error {
-	timeoutSec := 1 * 15
+	timeoutSec := 15
 	errs := parallelSSHExec(func(o osTypeInterface) error {
 		return o.checkIfSudoNoPasswd()
 	}, timeoutSec)

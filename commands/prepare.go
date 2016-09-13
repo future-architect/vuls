@@ -140,6 +140,12 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 	logger.Info("Detecting OS... ")
 	scan.InitServers(logger)
 
+	logger.Info("Checking sudo configuration... ")
+	if err := scan.CheckIfSudoNoPasswd(logger); err != nil {
+		logger.Errorf("Failed to sudo with nopassword via SSH. Define NOPASSWD in /etc/sudoers on target servers")
+		return subcommands.ExitFailure
+	}
+
 	logger.Info("Installing...")
 	if errs := scan.Prepare(); 0 < len(errs) {
 		for _, e := range errs {
