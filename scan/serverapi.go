@@ -443,9 +443,12 @@ func Scan() []error {
 	if err := setupCangelogCache(); err != nil {
 		return []error{err}
 	}
-	if cache.DB != nil {
-		defer cache.DB.Close()
-	}
+
+	defer func() {
+		if cache.DB != nil {
+			defer cache.DB.Close()
+		}
+	}()
 
 	Log.Info("Scanning vulnerable OS packages...")
 	if errs := scanPackages(); errs != nil {
