@@ -33,9 +33,9 @@ import (
 
 // HistoryCmd is Subcommand of list scanned results
 type HistoryCmd struct {
-	debug       bool
-	debugSQL    bool
-	jsonBaseDir string
+	debug      bool
+	debugSQL   bool
+	resultsDir string
 }
 
 // Name return subcommand name
@@ -59,15 +59,15 @@ func (p *HistoryCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.debugSQL, "debug-sql", false, "SQL debug mode")
 
 	wd, _ := os.Getwd()
-	defaultJSONBaseDir := filepath.Join(wd, "results")
-	f.StringVar(&p.jsonBaseDir, "results-dir", defaultJSONBaseDir, "/path/to/results")
+	defaultResultsDir := filepath.Join(wd, "results")
+	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 }
 
 // Execute execute
 func (p *HistoryCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
 	c.Conf.DebugSQL = p.debugSQL
-	c.Conf.JSONBaseDir = p.jsonBaseDir
+	c.Conf.ResultsDir = p.resultsDir
 
 	var err error
 	var jsonDirs report.JSONDirs

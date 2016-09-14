@@ -33,9 +33,9 @@ import (
 
 // TuiCmd is Subcommand of host discovery mode
 type TuiCmd struct {
-	lang        string
-	debugSQL    bool
-	jsonBaseDir string
+	lang       string
+	debugSQL   bool
+	resultsDir string
 }
 
 // Name return subcommand name
@@ -59,15 +59,15 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 
 	wd, _ := os.Getwd()
 
-	defaultJSONBaseDir := filepath.Join(wd, "results")
-	f.StringVar(&p.jsonBaseDir, "results-dir", defaultJSONBaseDir, "/path/to/results")
+	defaultResultsDir := filepath.Join(wd, "results")
+	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 }
 
 // Execute execute
 func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	c.Conf.Lang = "en"
 	c.Conf.DebugSQL = p.debugSQL
-	c.Conf.JSONBaseDir = p.jsonBaseDir
+	c.Conf.ResultsDir = p.resultsDir
 
 	var jsonDirName string
 	var err error

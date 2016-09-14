@@ -31,19 +31,21 @@ import (
 )
 
 func ensureResultDir(scannedAt time.Time) (path string, err error) {
-	if resultDirPath != "" {
-		return resultDirPath, nil
-	}
-
 	const timeLayout = "20060102_1504"
-	timedir := scannedAt.Format(timeLayout)
-	wd, _ := os.Getwd()
-	dir := filepath.Join(wd, "results", timedir)
-	if err := os.MkdirAll(dir, 0700); err != nil {
+	jsonDirName := scannedAt.Format(timeLayout)
+
+	resultsDir := config.Conf.ResultsDir
+	if len(resultsDir) == 0 {
+		wd, _ := os.Getwd()
+		resultsDir = filepath.Join(wd, "results")
+	}
+	jsonDir := filepath.Join(resultsDir, jsonDirName)
+
+	if err := os.MkdirAll(jsonDir, 0700); err != nil {
 		return "", fmt.Errorf("Failed to create dir: %s", err)
 	}
 
-	symlinkPath := filepath.Join(wd, "results", "current")
+	symlinkPath := filepath.Join(resultsDir, "current")
 	if _, err := os.Lstat(symlinkPath); err == nil {
 		if err := os.Remove(symlinkPath); err != nil {
 			return "", fmt.Errorf(
@@ -51,11 +53,11 @@ func ensureResultDir(scannedAt time.Time) (path string, err error) {
 		}
 	}
 
-	if err := os.Symlink(dir, symlinkPath); err != nil {
+	if err := os.Symlink(jsonDir, symlinkPath); err != nil {
 		return "", fmt.Errorf(
 			"Failed to create symlink: path: %s, err: %s", symlinkPath, err)
 	}
-	return dir, nil
+	return jsonDir, nil
 }
 
 func toPlainText(scanResult models.ScanResult) (string, error) {

@@ -44,7 +44,7 @@ type ScanCmd struct {
 
 	configPath string
 
-	jsonBaseDir      string
+	resultsDir       string
 	cvedbpath        string
 	cveDictionaryURL string
 	cacheDBPath      string
@@ -126,8 +126,8 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
-	defaultJSONBaseDir := filepath.Join(wd, "results")
-	f.StringVar(&p.jsonBaseDir, "results-dir", defaultJSONBaseDir, "/path/to/results")
+	defaultResultsDir := filepath.Join(wd, "results")
+	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 
 	f.StringVar(
 		&p.cvedbpath,
@@ -347,7 +347,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		reports = append(reports, report.AzureBlobWriter{})
 	}
 
-	c.Conf.JSONBaseDir = p.jsonBaseDir
+	c.Conf.ResultsDir = p.resultsDir
 	c.Conf.CveDBPath = p.cvedbpath
 	c.Conf.CveDictionaryURL = p.cveDictionaryURL
 	c.Conf.CacheDBPath = p.cacheDBPath

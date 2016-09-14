@@ -94,13 +94,13 @@ var JSONDirPattern = regexp.MustCompile(`^\d{8}_\d{4}$`)
 // GetValidJSONDirs return valid json directory as array
 func GetValidJSONDirs() (jsonDirs JSONDirs, err error) {
 	var dirInfo []os.FileInfo
-	if dirInfo, err = ioutil.ReadDir(c.Conf.JSONBaseDir); err != nil {
-		err = fmt.Errorf("Failed to read %s: %s", c.Conf.JSONBaseDir, err)
+	if dirInfo, err = ioutil.ReadDir(c.Conf.ResultsDir); err != nil {
+		err = fmt.Errorf("Failed to read %s: %s", c.Conf.ResultsDir, err)
 		return
 	}
 	for _, d := range dirInfo {
 		if d.IsDir() && JSONDirPattern.MatchString(d.Name()) {
-			jsonDir := filepath.Join(c.Conf.JSONBaseDir, d.Name())
+			jsonDir := filepath.Join(c.Conf.ResultsDir, d.Name())
 			jsonDirs = append(jsonDirs, jsonDir)
 		}
 	}
