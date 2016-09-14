@@ -170,11 +170,15 @@ func PrintSSHableServerNames() {
 }
 
 // InitServers detect the kind of OS distribution of target servers
-func InitServers(localLogger *logrus.Entry) {
+func InitServers(localLogger *logrus.Entry) error {
 	Log = localLogger
 	servers = detectServerOSes()
+	if len(servers) == 0 {
+		return fmt.Errorf("No scannable servers")
+	}
 	containers := detectContainerOSes()
 	servers = append(servers, containers...)
+	return nil
 }
 
 func detectServerOSes() (sshAbleOses []osTypeInterface) {
