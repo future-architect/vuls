@@ -138,7 +138,10 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 	logger := util.NewCustomLogger(c.ServerInfo{})
 
 	logger.Info("Detecting OS... ")
-	scan.InitServers(logger)
+	if err := scan.InitServers(logger); err != nil {
+		logger.Errorf("Failed to init servers: %s", err)
+		return subcommands.ExitFailure
+	}
 
 	logger.Info("Checking sudo configuration... ")
 	if err := scan.CheckIfSudoNoPasswd(logger); err != nil {
@@ -154,6 +157,5 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 		return subcommands.ExitFailure
 	}
 
-	logger.Info("Success")
 	return subcommands.ExitSuccess
 }

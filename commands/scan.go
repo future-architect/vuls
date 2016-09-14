@@ -368,7 +368,10 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	Log.Info("Detecting Server/Contianer OS... ")
-	scan.InitServers(Log)
+	if err := scan.InitServers(Log); err != nil {
+		Log.Errorf("Failed to init servers: %s", err)
+		return subcommands.ExitFailure
+	}
 
 	Log.Info("Checking sudo configuration... ")
 	if err := scan.CheckIfSudoNoPasswd(Log); err != nil {
