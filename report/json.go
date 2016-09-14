@@ -65,7 +65,7 @@ func (w JSONWriter) Write(scanResults []models.ScanResult) (err error) {
 		return fmt.Errorf("Failed to Marshal to JSON: %s", err)
 	}
 	all := filepath.Join(path, "all.json")
-	if err := ioutil.WriteFile(all, jsonBytes, 0644); err != nil {
+	if err := ioutil.WriteFile(all, jsonBytes, 0600); err != nil {
 		return fmt.Errorf("Failed to write JSON. path: %s, err: %s", all, err)
 	}
 
@@ -81,7 +81,7 @@ func (w JSONWriter) Write(scanResults []models.ScanResult) (err error) {
 		if jsonBytes, err = json.Marshal(r); err != nil {
 			return fmt.Errorf("Failed to Marshal to JSON: %s", err)
 		}
-		if err := ioutil.WriteFile(jsonPath, jsonBytes, 0644); err != nil {
+		if err := ioutil.WriteFile(jsonPath, jsonBytes, 0600); err != nil {
 			return fmt.Errorf("Failed to write JSON. path: %s, err: %s", jsonPath, err)
 		}
 	}

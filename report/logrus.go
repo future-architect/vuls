@@ -36,7 +36,7 @@ func (w LogrusWriter) Write(scanResults []models.ScanResult) error {
 	if runtime.GOOS == "windows" {
 		path = filepath.Join(os.Getenv("APPDATA"), "vuls", "report.log")
 	}
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return err
 	}
