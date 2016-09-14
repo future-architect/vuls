@@ -43,6 +43,10 @@ func newBsd(c config.ServerInfo) *bsd {
 //https://github.com/mizzy/specinfra/blob/master/lib/specinfra/helper/detect_os/freebsd.rb
 func detectFreebsd(c config.ServerInfo) (itsMe bool, bsd osTypeInterface) {
 	bsd = newBsd(c)
+
+	// Prevent from adding `set -o pipefail` option
+	c.Distro = config.Distro{Family: "FreeBSD"}
+
 	if r := sshExec(c, "uname", noSudo); r.isSuccess() {
 		if strings.Contains(r.Stdout, "FreeBSD") == true {
 			if b := sshExec(c, "uname -r", noSudo); b.isSuccess() {
