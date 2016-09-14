@@ -73,14 +73,14 @@ func RunTui(jsonDirName string) subcommands.ExitStatus {
 func selectScanHistory(jsonDirName string) (latest models.ScanHistory, err error) {
 	var jsonDir string
 	if 0 < len(jsonDirName) {
-		jsonDir = filepath.Join(config.Conf.JSONBaseDir, jsonDirName)
+		jsonDir = filepath.Join(config.Conf.ResultsDir, jsonDirName)
 	} else {
 		var jsonDirs JSONDirs
 		if jsonDirs, err = GetValidJSONDirs(); err != nil {
 			return
 		}
 		if len(jsonDirs) == 0 {
-			return latest, fmt.Errorf("No scan results are found in %s", config.Conf.JSONBaseDir)
+			return latest, fmt.Errorf("No scan results are found in %s", config.Conf.ResultsDir)
 		}
 		jsonDir = jsonDirs[0]
 	}

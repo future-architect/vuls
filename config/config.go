@@ -47,7 +47,7 @@ type Config struct {
 	SSHExternal bool
 
 	HTTPProxy   string `valid:"url"`
-	JSONBaseDir string
+	ResultsDir  string
 	CveDBPath   string
 	CacheDBPath string
 
@@ -67,10 +67,10 @@ type Config struct {
 func (c Config) Validate() bool {
 	errs := []error{}
 
-	if len(c.JSONBaseDir) != 0 {
-		if ok, _ := valid.IsFilePath(c.JSONBaseDir); !ok {
+	if len(c.ResultsDir) != 0 {
+		if ok, _ := valid.IsFilePath(c.ResultsDir); !ok {
 			errs = append(errs, fmt.Errorf(
-				"JSON base directory must be a *Absolute* file path. -results-dir: %s", c.JSONBaseDir))
+				"JSON base directory must be a *Absolute* file path. -results-dir: %s", c.ResultsDir))
 		}
 	}
 
