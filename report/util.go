@@ -39,7 +39,7 @@ func ensureResultDir(scannedAt time.Time) (path string, err error) {
 	timedir := scannedAt.Format(timeLayout)
 	wd, _ := os.Getwd()
 	dir := filepath.Join(wd, "results", timedir)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0700); err != nil {
 		return "", fmt.Errorf("Failed to create dir: %s", err)
 	}
 

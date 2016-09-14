@@ -49,7 +49,7 @@ func (w TextFileWriter) Write(scanResults []models.ScanResult) (err error) {
 		}
 		all = append(all, text)
 		b := []byte(text)
-		if err := ioutil.WriteFile(textFilePath, b, 0644); err != nil {
+		if err := ioutil.WriteFile(textFilePath, b, 0600); err != nil {
 			return fmt.Errorf("Failed to write text files. path: %s, err: %s", textFilePath, err)
 		}
 	}
@@ -57,7 +57,7 @@ func (w TextFileWriter) Write(scanResults []models.ScanResult) (err error) {
 	text := strings.Join(all, "\n\n")
 	b := []byte(text)
 	allPath := filepath.Join(path, "all.txt")
-	if err := ioutil.WriteFile(allPath, b, 0644); err != nil {
+	if err := ioutil.WriteFile(allPath, b, 0600); err != nil {
 		return fmt.Errorf("Failed to write text files. path: %s, err: %s", allPath, err)
 	}
 	return nil
