@@ -79,6 +79,9 @@ func selectScanHistory(jsonDirName string) (latest models.ScanHistory, err error
 		if jsonDirs, err = GetValidJSONDirs(); err != nil {
 			return
 		}
+		if len(jsonDirs) == 0 {
+			return latest, fmt.Errorf("No scan results are found in %s", config.Conf.JSONBaseDir)
+		}
 		jsonDir = jsonDirs[0]
 	}
 	if latest, err = LoadOneScanHistory(jsonDir); err != nil {
