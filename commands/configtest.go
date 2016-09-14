@@ -97,6 +97,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	}
 
 	c.Conf.Debug = p.debug
+	c.Conf.SSHExternal = p.sshExternal
 
 	err = c.Load(p.configPath, keyPass)
 	if err != nil {
