@@ -38,8 +38,8 @@
 
 ## Setting up Vuls
 
-1. Locate ssh-keys of targer servers in (vuls/docker/conf/)
-2. Create and ajust config.toml(vuls/docker/conf/config.toml) to your environment
+1. Locate ssh-keys of target servers in (vuls/setup/docker/conf/)
+2. Create and adjust config.toml(vuls/setup/docker/conf/config.toml) to your environment
 	
 	```
 	[servers]
