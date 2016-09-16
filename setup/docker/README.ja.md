@@ -38,7 +38,7 @@
 ## Setting up Vuls
 
 1. スキャン対象サーバのSSH秘密鍵を保存(vuls/setup/docker/conf/)する
-2. config.toml(vuls/docker/conf/config.toml) を環境に合わせて作成する
+2. config.toml(vuls/setup/docker/conf/config.toml) を環境に合わせて作成する
 	
 	```
 	[servers]
