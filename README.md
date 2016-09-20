@@ -607,6 +607,7 @@ scan:
                 [-cvss-over=7]
                 [-ignore-unscored-cves]
                 [-ssh-external]
+                [-containers-only]
                 [-report-azure-blob]
                 [-report-json]
                 [-report-mail]
@@ -644,6 +645,8 @@ scan:
         /path/to/cache.db (local cache of changelog for Ubuntu/Debian) (default "$PWD/cache.db")
   -config string
         /path/to/toml (default "$PWD/config.toml")
+  -containers-only
+        Scan concontainers Only. Default: Scan both of hosts and containers
   -cve-dictionary-dbpath string
         /path/to/sqlite3 (For get cve detail from cve.sqlite3)        
   -cve-dictionary-url string
@@ -878,6 +881,9 @@ For more details, see [Architecture section](https://github.com/future-architect
     keyPath     = "/home/username/.ssh/id_rsa"
     containers = ["container_name_a", "4aa37a8b63b9"]
     ```
+- To scan containers only
+  - --containers-only option is available.
+
 
 # Usage: TUI
 

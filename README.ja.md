@@ -608,6 +608,7 @@ scan:
                 [-cvss-over=7]
                 [-ignore-unscored-cves]
                 [-ssh-external]
+                [-containers-only]
                 [-report-azure-blob]
                 [-report-json]
                 [-report-mail]
@@ -645,6 +646,8 @@ scan:
         /path/to/cache.db (local cache of changelog for Ubuntu/Debian) (default "$PWD/cache.db")
   -config string
         /path/to/toml (default "$PWD/config.toml")
+  -containers-only
+        Scan concontainers Only. Default: Scan both of hosts and containers
   -cve-dictionary-dbpath string
         /path/to/sqlite3 (For get cve detail from cve.sqlite3)        
   -cve-dictionary-url string
@@ -829,7 +832,7 @@ optional = [
 
 # Usage: Scan vulnerability of non-OS package
 
-Vulsは、[CPE](https://nvd.nist.gov/cpe.cfm)に登録されているソフトウェアであれば、OSパッケージ以外のソフトウェアの脆弱性もスキャン可能。
+Vulsは、[CPE](https://nvd.nist.gov/cpe.cfm)に登録されているソフトウェアであれば、OSパッケージ以外のソフトウェアの脆弱性もスキャン可能。  
 たとえば、自分でコンパイルしたものや、言語のライブラリ、フレームワークなど。
 
 -  CPEの検索方法
@@ -858,7 +861,7 @@ Vulsは、[CPE](https://nvd.nist.gov/cpe.cfm)に登録されているソフト�
 DockerコンテナはSSHデーモンを起動しないで運用するケースが一般的。  
  [Docker Blog:Why you don't need to run SSHd in your Docker containers](https://blog.docker.com/2014/06/why-you-dont-need-to-run-sshd-in-docker/)
 
-Vulsは、DockerホストにSSHで接続し、`docker exec`でDockerコンテナにコマンドを発行して脆弱性をスキャンする。
+Vulsは、DockerホストにSSHで接続し、`docker exec`でDockerコンテナにコマンドを発行して脆弱性をスキャンする。  
 詳細は、[Architecture section](https://github.com/future-architect/vuls#architecture)を参照
 
 - 全ての起動中のDockerコンテナをスキャン  
@@ -873,10 +876,10 @@ Vulsは、DockerホストにSSHで接続し、`docker exec`でDockerコンテナ
     containers = ["${running}"]
     ```
 
-- あるコンテナのみスキャン
-  コンテナID、または、コンテナ名を、containersに指定する。
-  以下の例では、`container_name_a`と、`4aa37a8b63b9`のコンテナのみスキャンする
-  スキャン実行前に、コンテナが起動中か確認すること。もし起動してない場合はエラーメッセージを出力してスキャンを中断する。
+- あるコンテナのみスキャン  
+  コンテナID、または、コンテナ名を、containersに指定する。  
+  以下の例では、`container_name_a`と、`4aa37a8b63b9`のコンテナのみスキャンする  
+  スキャン実行前に、コンテナが起動中か確認すること。もし起動してない場合はエラーメッセージを出力してスキャンを中断する。  
     ```
     [servers]
 
@@ -886,6 +889,9 @@ Vulsは、DockerホストにSSHで接続し、`docker exec`でDockerコンテナ
     keyPath     = "/home/username/.ssh/id_rsa"
     containers = ["container_name_a", "4aa37a8b63b9"]
     ```
+- コンテナのみをスキャンする場合（ホストはスキャンしない）  
+  --containers-onlyオプションを指定する
+
 
 # Usage: TUI
 
@@ -1129,12 +1135,12 @@ Use Systemd, Upstart or supervisord, daemontools...
 CRONなどを使えば可能
 
 - 自動定期スキャン  
-CRONなどを使い、自動化のためにsudoと、秘密鍵のパスワードなしでも実行可能なようにする
+CRONなどを使い、自動化のためにsudoと、秘密鍵のパスワードなしでも実行可能なようにする  
   - スキャン対象サーバの /etc/sudoers に NOPASSWORD を設定する  
   - 秘密鍵パスフレーズなしの公開鍵認証か、ssh-agentを使う  
 
-- スキャンが重く感じる
-vulsのスキャン対象に脆弱性が溜まりすぎると実行時間が長くなります
+- スキャンが重く感じる  
+vulsのスキャン対象に脆弱性が溜まりすぎると実行時間が長くなります 
 脆弱性のある状態は溜めすぎないようにしましょう
 
 - クロスコンパイル

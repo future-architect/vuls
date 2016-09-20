@@ -44,7 +44,8 @@ type Config struct {
 	CvssScoreOver      float64
 	IgnoreUnscoredCves bool
 
-	SSHExternal bool
+	SSHExternal    bool
+	ContainersOnly bool
 
 	HTTPProxy   string `valid:"url"`
 	ResultsDir  string

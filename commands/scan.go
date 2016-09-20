@@ -56,6 +56,8 @@ type ScanCmd struct {
 	askSudoPassword bool
 	askKeyPassword  bool
 
+	containersOnly bool
+
 	// reporting
 	reportSlack     bool
 	reportMail      bool
@@ -94,6 +96,7 @@ func (*ScanCmd) Usage() string {
 		[-cvss-over=7]
 		[-ignore-unscored-cves]
 		[-ssh-external]
+		[-containers-only]
 		[-report-azure-blob]
 		[-report-json]
 		[-report-mail]
@@ -166,6 +169,12 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		"ssh-external",
 		false,
 		"Use external ssh command. Default: Use the Go native implementation")
+
+	f.BoolVar(
+		&p.containersOnly,
+		"containers-only",
+		false,
+		"Scan containers only. Default: Scan both of hosts and containers")
 
 	f.StringVar(
 		&p.httpProxy,
@@ -355,6 +364,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
 	c.Conf.SSHExternal = p.sshExternal
 	c.Conf.HTTPProxy = p.httpProxy
+	c.Conf.ContainersOnly = p.containersOnly
 
 	Log.Info("Validating Config...")
 	if !c.Conf.Validate() {

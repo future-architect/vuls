@@ -176,8 +176,13 @@ func InitServers(localLogger *logrus.Entry) error {
 	if len(servers) == 0 {
 		return fmt.Errorf("No scannable servers")
 	}
+
 	containers := detectContainerOSes()
-	servers = append(servers, containers...)
+	if config.Conf.ContainersOnly {
+		servers = containers
+	} else {
+		servers = append(servers, containers...)
+	}
 	return nil
 }
 
