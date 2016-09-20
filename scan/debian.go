@@ -247,7 +247,7 @@ func (o *debian) scanUnsecurePackages(packs []models.PackageInfo) ([]CvePacksInf
 	}
 
 	current := cache.Meta{
-		Name:   o.getServerInfo().ServerName,
+		Name:   o.getServerInfo().GetServerName(),
 		Distro: o.getServerInfo().Distro,
 		Packs:  unsecurePacks,
 	}
@@ -377,7 +377,7 @@ func (o *debian) parseAptGetUpgrade(stdout string) (upgradableNames []string, er
 
 func (o *debian) scanPackageCveInfos(unsecurePacks []models.PackageInfo) (cvePacksList CvePacksList, err error) {
 	meta := cache.Meta{
-		Name:   o.getServerInfo().ServerName,
+		Name:   o.getServerInfo().GetServerName(),
 		Distro: o.getServerInfo().Distro,
 		Packs:  unsecurePacks,
 	}
@@ -520,7 +520,7 @@ func (o *debian) scanPackageCveIDs(pack models.PackageInfo) ([]string, error) {
 		return nil, nil
 
 	}
-	err := cache.DB.PutChangelog(o.getServerInfo().ServerName, pack.Name, r.Stdout)
+	err := cache.DB.PutChangelog(o.getServerInfo().GetServerName(), pack.Name, r.Stdout)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to put changelog into cache")
 	}

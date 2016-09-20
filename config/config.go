@@ -241,6 +241,15 @@ type ServerInfo struct {
 	Distro          Distro
 }
 
+// GetServerName returns ServerName if this serverInfo is about host.
+// If this serverInfo is abount a container, returns containerID@ServerName
+func (s ServerInfo) GetServerName() string {
+	if len(s.Container.ContainerID) == 0 {
+		return s.ServerName
+	}
+	return fmt.Sprintf("%s@%s", s.Container.ContainerID, s.ServerName)
+}
+
 // Distro has distribution info
 type Distro struct {
 	Family  string

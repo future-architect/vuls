@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package util
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -53,12 +52,7 @@ func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
 
 	whereami := "localhost"
 	if 0 < len(c.ServerName) {
-		if 0 < len(c.Container.ContainerID) {
-			whereami = fmt.Sprintf(
-				"%s_%s", c.ServerName, c.Container.Name)
-		} else {
-			whereami = fmt.Sprintf("%s", c.ServerName)
-		}
+		whereami = c.GetServerName()
 	}
 
 	if _, err := os.Stat(logDir); err == nil {
