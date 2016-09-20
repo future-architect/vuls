@@ -1,5 +1,5 @@
 hash: 28d14f88e90c0765c1b660ddde796e51e197239d353bb79bfc5d8f8cf9b5f9ee
-updated: 2016-09-08T19:35:45.581570944+09:00
+updated: 2016-09-20T10:05:42.83736026+09:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 593d64559f7600f29581a3ee42177f5dbded27a9
@@ -35,6 +35,8 @@ imports:
   version: 34467930a15f0d2872168deb11435b8ac3d863bb
   subpackages:
   - storage
+- name: github.com/boltdb/bolt
+  version: fff57c100f4dea1905678da7e90d92429dff2904
 - name: github.com/BurntSushi/toml
   version: 99064174e013895bbd9b025c31100bd1d9b590ca
 - name: github.com/cenkalti/backoff
