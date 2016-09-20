@@ -284,15 +284,13 @@ see https://github.com/future-architect/vuls/tree/master/setup/docker
 ## [go-cve-dictinary](https://github.com/kotakanbe/go-cve-dictionary)  
 - Fetch vulnerability information from NVD and JVN(Japanese), then insert into SQLite3.
 
-## Vuls
+## Scanning Flow
+![Vuls-Scan-Flow](img/vuls-scan-flow.png)
 - Scan vulnerabilities on the servers via SSH and create a list of the CVE ID
   - To scan Docker containers, Vuls connect via ssh to the Docker host and then `docker exec` to the containers. So, no need to run sshd daemon on the containers.
 - Fetch more detailed information of the detected CVE from go-cve-dictionary
-- Insert scan result into SQLite3
 - Send a report by Slack and Email
-- Show the latest report on your terminal
-
-![Vuls-Scan-Flow](img/vuls-scan-flow.png)
+- Write scan results to JSON file to show the latest report on your terminal 
 
 ----
 # Performance Considerations
@@ -1007,7 +1005,8 @@ $ go install
 
 # Update Vuls With Glide
 
-- Update go-cve-dictionary
+- Update go-cve-dictionary  
+If the DB schema was changed, please specify new SQLite3 DB file.
 ```
 $ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
 $ git pull
@@ -1022,8 +1021,8 @@ $ git pull
 $ glide install
 $ go install
 ```
-- The binaries are created under $GOPARH/bin
-- If the DB schema was changed, please specify new SQLite3 DB file.
+
+Binary Files are created under $GOPARH/bin
 
 ---
 

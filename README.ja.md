@@ -288,14 +288,13 @@ $ vuls tui
 - NVDとJVN(日本語)から脆弱性データベースを取得し、SQLite3に格納する。
 
 ## Vuls
+![Vuls-Scan-Flow](img/vuls-scan-flow.png)
 - SSHでサーバに存在する脆弱性をスキャンし、CVE IDのリストを作成する
   - Dockerコンテナのスキャンする場合、VulsはまずDockerホストにSSHで接続する。その後、Dockerホスト上で `docker exec` 経由でコマンドを実効する。Dockerコンテナ内にSSHデーモンを起動する必要はない
 - 検出されたCVEの詳細情報をgo-cve-dictionaryから取得する
-- スキャン結果をSQLite3に格納する
 - スキャン結果レポートを生成し、SlackやEmailなどで送信する
-- スキャン結果の詳細情報はターミナル上で参照可能
+- スキャン結果をJSONファイルに出力すると詳細情報をターミナル上で参照可能
 
-![Vuls-Scan-Flow](img/vuls-scan-flow.png)
 
 ----
 # Performance Considerations
@@ -1094,7 +1093,8 @@ $ go install
 
 # Update Vuls With Glide
 
-- Update go-cve-dictionary
+- Update go-cve-dictionary  
+If the DB schema was changed, please specify new SQLite3 DB file.
 ```
 $ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
 $ git pull
@@ -1109,8 +1109,7 @@ $ git pull
 $ glide install
 $ go install
 ```
-- The binaries are created under $GOPARH/bin
-- If the DB schema was changed, please specify new SQLite3 DB file.
+- バイナリファイルは`$GOPARH/bin`以下に作成される
 
 ---
 
