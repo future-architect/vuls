@@ -251,7 +251,7 @@ func detectContainerOSes() (actives []osTypeInterface) {
 			defer func() {
 				if p := recover(); p != nil {
 					Log.Debugf("Panic: %s on %s",
-						p, s.getServerInfo().ServerName)
+						p, s.getServerInfo().GetServerName())
 				}
 			}()
 			osTypesChan <- detectContainerOSesOnServer(s)

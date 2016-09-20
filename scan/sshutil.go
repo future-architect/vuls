@@ -89,7 +89,7 @@ func parallelSSHExec(fn func(osTypeInterface) error, timeoutSec ...int) (errs []
 			defer func() {
 				if p := recover(); p != nil {
 					logrus.Debugf("Panic: %s on %s",
-						p, s.getServerInfo().ServerName)
+						p, s.getServerInfo().GetServerName())
 				}
 			}()
 			if err := fn(s); err != nil {
@@ -100,7 +100,7 @@ func parallelSSHExec(fn func(osTypeInterface) error, timeoutSec ...int) (errs []
 					err,
 				)
 			} else {
-				resChan <- s.getServerInfo().ServerName
+				resChan <- s.getServerInfo().GetServerName()
 			}
 		}(s)
 	}
@@ -129,7 +129,7 @@ func parallelSSHExec(fn func(osTypeInterface) error, timeoutSec ...int) (errs []
 	var timedoutSnames []string
 	if isTimedout {
 		for _, s := range servers {
-			name := s.getServerInfo().ServerName
+			name := s.getServerInfo().GetServerName()
 			found := false
 			for _, t := range snames {
 				if name == t {
