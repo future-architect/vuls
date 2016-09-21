@@ -12,3 +12,4 @@ vendor/
 log/
 results/
 *config.toml
+!setup/docker/*

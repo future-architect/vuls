@@ -1,36 +1,24 @@
-# Vuls Docker components
+# Vuls-Docker
 
 This is the Git repo of the official Docker image for vuls.
+See the [Hub page](https://hub.docker.com/r/vuls/vuls/) for the full readme on how to use the Docker image and for information regarding contributing and issues.
 
 # Supported tags and respective `Dockerfile` links
 
-- go-cve-dictionary
-  - [`latest` (*go-cve-dictionary:latest Dockerfile*)]()
-- vuls
-  - [`latest` (*vuls:latest Dockerfile*)]()
-- vulsrepo
-  - [`latest` (*vulsrepo:latest Dockerfile*)]()
+- [`latest` (*vuls:latest Dockerfile*)]()
 
 This image version is same as the github repository version.
 
+# What is Vuls?
+
+Vuls is the Vulnerability scanner for Linux/FreeBSD, agentless, written in golang.
+Please see the [Documentation](https://github.com/future-architect/vuls)
+
+![logo](https://github.com/future-architect/vuls/blob/master/img/vuls_logo.png?raw=true)
+
 # How to use this image
 
-1. fetch nvd (vuls/go-cve-dictionary)
-1. configuration (vuls/vuls)
-1. prepare (vuls/vuls)
-1. scan (vuls/vuls)
-1. vulsrepo (vuls/vulsrepo)
-
-## Step1. Fetch NVD
-
-```console
-$ for i in {2002..2016}; do \
-    docker run --rm -it \
-    -v $PWD:/vuls  vuls/go-cve-dictionary fetchnvd -years $i; \
-  done
-```
-
-## Step2. Configuration
+## configtest
 
 Create config.toml referring to [this](https://github.com/future-architect/vuls#configuration).
 
@@ -41,7 +29,7 @@ Create config.toml referring to [this](https://github.com/future-architect/vuls#
 host         = "54.249.93.16"
 port        = "22"
 user        = "vuls-user"
-keyPath     = "/root/.ssh/id_rsa" # path to ssh private key in docker
+keyPath     = "/root/.ssh/id_rsa"  # path to ssh private key in docker
 ```
 　
 
@@ -49,11 +37,11 @@ keyPath     = "/root/.ssh/id_rsa" # path to ssh private key in docker
 $ docker run --rm \
     -v ~/.ssh:/root/.ssh:ro \
     -v $PWD:/vuls \
-    vuls/vuls configtest \
-    -config=./config.toml # path to config.toml in docker
+    vuls/vuls configtest
 ```
 
-## Step3. Prepare
+
+## prepare
 
 ```console
 $ docker run --rm \
@@ -63,28 +51,30 @@ $ docker run --rm \
     -config=./config.toml # path to config.toml in docker
 ```
 
-## Step4. Scan
+## scan
 
 ```console
 $ docker run --rm -it \
     -v ~/.ssh:/root/.ssh:ro \
     -v $PWD:/vuls \
     -v /etc/localtime:/etc/localtime:ro \
-    -e "TZ=Asia/Tokyo" \
     vuls/vuls scan \
     -cve-dictionary-dbpath=/vuls/cve.sqlite3 \
     -config=./config.toml \ # path to config.toml in docker
     -report-json 
 ```
 
-## Step5. vulsrepo
+## tui
 
 ```console
-$docker run -dt \
+$ docker run --rm -it \
     -v $PWD:/vuls \
-    -p 80:80 \
-    vuls/vulsrepo
+    vuls/vuls tui 
 ```
+
+## vulsrepo
+
+Prease refer to [this](https://hub.docker.com/r/vuls/vulsrepo/).
 
 # User Feedback
 
