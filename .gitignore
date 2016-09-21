@@ -2,7 +2,7 @@ vuls
 .vscode
 *.txt
 *.json
-*.sqlite3
+*.sqlite3*
 *.db
 tags
 .gitmodules
