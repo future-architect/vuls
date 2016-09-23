@@ -44,26 +44,28 @@ func RunTui(jsonDirName string) subcommands.ExitStatus {
 	var err error
 	scanHistory, err = selectScanHistory(jsonDirName)
 	if err != nil {
-		log.Fatal(err)
+		log.Errorf("%s", err)
 		return subcommands.ExitFailure
 	}
 
 	g := gocui.NewGui()
 	if err := g.Init(); err != nil {
-		log.Panicln(err)
+		log.Errorf("%s", err)
+		return subcommands.ExitFailure
 	}
 	defer g.Close()
 
 	g.SetLayout(layout)
 	if err := keybindings(g); err != nil {
-		log.Panicln(err)
+		log.Errorf("%s", err)
+		return subcommands.ExitFailure
 	}
 	g.SelBgColor = gocui.ColorGreen
 	g.SelFgColor = gocui.ColorBlack
 	g.Cursor = true
 
 	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
-		log.Panicln(err)
+		log.Errorf("%s", err)
 		return subcommands.ExitFailure
 	}
 
