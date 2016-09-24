@@ -208,7 +208,7 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.reportAzureBlob,
 		"report-azure-blob",
 		false,
-		"Write report to S3 (container/yyyyMMdd_HHmm/servername.json)",
+		"Write report to Azure Storage blob (container/yyyyMMdd_HHmm/servername.json)",
 	)
 	f.StringVar(&p.azureAccount, "azure-account", "", "Azure account name to use. AZURE_STORAGE_ACCOUNT environment variable is used if not specified")
 	f.StringVar(&p.azureKey, "azure-key", "", "Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified")
