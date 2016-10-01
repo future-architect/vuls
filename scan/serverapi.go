@@ -451,7 +451,7 @@ func Scan() []error {
 
 	defer func() {
 		if cache.DB != nil {
-			defer cache.DB.Close()
+			cache.DB.Close()
 		}
 	}()
 
