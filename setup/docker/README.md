@@ -73,8 +73,8 @@ $ docker run --rm -it \
     -e "TZ=Asia/Tokyo" \
     vuls/vuls scan \
     -cve-dictionary-dbpath=/vuls/cve.sqlite3 \
-    -config=./config.toml \ # path to config.toml in docker
-    -report-json 
+    -report-json \
+    -config=./config.toml # path to config.toml in docker
 ```
 
 ## Step5. vulsrepo
