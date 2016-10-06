@@ -25,11 +25,16 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/future-architect/vuls/commands"
-	"github.com/future-architect/vuls/version"
 	"github.com/google/subcommands"
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+// Version of Vuls
+var version = "0.1.6"
+
+// Revision of Git
+var revision string
 
 func main() {
 	subcommands.Register(subcommands.HelpCommand(), "")
@@ -47,7 +52,7 @@ func main() {
 	flag.Parse()
 
 	if *v {
-		fmt.Printf("%s %s\n", version.Name, version.Version)
+		fmt.Printf("vuls %s %s\n", version, revision)
 		os.Exit(int(subcommands.ExitSuccess))
 	}
 

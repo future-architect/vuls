@@ -148,26 +148,19 @@ $ source /etc/profile.d/goenv.sh
 
 ## Step4. Deploy [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
 
-go get
-
 ```bash
 $ sudo mkdir /var/log/vuls
 $ sudo chown ec2-user /var/log/vuls
 $ sudo chmod 700 /var/log/vuls
-$ go get github.com/kotakanbe/go-cve-dictionary
+$
+$ mkdir -p $GOPATH/src/github.com/kotakanbe
+$ cd $GOPATH/src/github.com/kotakanbe
+$ git https://github.com/kotakanbe/go-cve-dictionary.git
+$ cd go-cve-dictionary
+$ make install
 ```
+バイナリは、`$GOPATH/bin`いかに生成される
 
-go-cve-dictionaryを既にインストール済みでupdateしたい場合は
-
-```bash
-$ go get -u github.com/kotakanbe/go-cve-dictionary
-```
-
-で可能である。
-
-go getでエラーが発生した場合は、以下の点を確認する。
-- Gitのバージョンがv2以降か？
-- Go依存パッケージの問題でgo getに失敗する場合は [deploying with glide](https://github.com/future-architect/vuls/blob/master/README.md#deploy-with-glide) を試す。
 
 NVDから脆弱性データベースを取得する。  
 環境によって異なるが、AWS上では10分程度かかる。
@@ -182,10 +175,12 @@ $ ls -alh cve.sqlite3
 ## Step5. Deploy Vuls
 
 新規にターミナルを起動し、先ほど作成したEC2にSSH接続する。
-
-go get
 ```
-$ go get github.com/future-architect/vuls
+$ mkdir -p $GOPATH/src/github.com/future-architect
+$ cd $GOPATH/src/github.com/future-architect
+$ git clone https://github.com/future-architect/vuls.git
+$ cd vuls
+$ make install
 ```
 
 vulsを既にインストール済みでupdateしたい場合は
@@ -1074,28 +1069,6 @@ slack, emailは日本語対応済み TUIは日本語表示未対応
 
 ----
 
-# Deploy With Glide
-
-If an error occurred while go get, try deploying with glide.  
-- Install [Glide](https://github.com/Masterminds/glide)
-- Deploy go-cve-dictionary
-```
-$ go get -d github.com/kotakanbe/go-cve-dictionary
-$ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
-$ glide install
-$ go install
-```
-- Deploy vuls
-```
-$ go get -d github.com/future-architect/vuls
-$ cd $GOPATH/src/github.com/future-architect/vuls
-$ glide install
-$ go install
-```
-- The binaries are created under $GOPARH/bin
-
-----
-
 # Update Vuls With Glide
 
 - Update go-cve-dictionary  
@@ -1103,16 +1076,14 @@ If the DB schema was changed, please specify new SQLite3 DB file.
 ```
 $ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
 $ git pull
-$ glide install
-$ go install
+$ make install
 ```
 
 - Update vuls
 ```
 $ cd $GOPATH/src/github.com/future-architect/vuls
 $ git pull
-$ glide install
-$ go install
+$ make install
 ```
 - バイナリファイルは`$GOPARH/bin`以下に作成される
 
