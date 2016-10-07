@@ -616,6 +616,7 @@ Obsoleting Packages
 python-libs.i686    2.6.6-64.el6   rhui-REGION-rhel-server-releases
     python-ordereddict.noarch     1.1-3.el6ev    installed
 bind-utils.x86_64                       30:9.3.6-25.P1.el5_11.8          updates
+pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 `
 
 	r.Packages = []models.PackageInfo{
@@ -643,6 +644,11 @@ bind-utils.x86_64                       30:9.3.6-25.P1.el5_11.8          updates
 			Name:    "bind-utils",
 			Version: "1.0",
 			Release: "1",
+		},
+		{
+			Name:    "pytalloc",
+			Version: "2.0.1",
+			Release: "0",
 		},
 	}
 	var tests = []struct {
@@ -686,6 +692,13 @@ bind-utils.x86_64                       30:9.3.6-25.P1.el5_11.8          updates
 					Release:    "1",
 					NewVersion: "9.3.6",
 					NewRelease: "25.P1.el5_11.8",
+				},
+				{
+					Name:       "pytalloc",
+					Version:    "2.0.1",
+					Release:    "0",
+					NewVersion: "2.0.7",
+					NewRelease: "2.el6",
 				},
 			},
 		},
