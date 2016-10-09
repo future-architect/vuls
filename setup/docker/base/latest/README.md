@@ -5,7 +5,12 @@ See the [Hub page](https://hub.docker.com/r/vuls/vuls-base/) for the full readme
 
 # Supported tags and respective `Dockerfile` links
 
-- [`0.1.0`, `latest` (*vuls-base:0.1.0 Dockerfile*)]()
+- [`latest` (*vuls-base:latest Dockerfile*)](https://github.com/future-architect/vuls/blob/master/setup/docker/base/latest/Dockerfile)
+
+# Caution
+
+This image is built per commit.
+If you want to use the latest docker image, you should remove the existing image, and pull it once again.
 
 
 # What is vuls-base?

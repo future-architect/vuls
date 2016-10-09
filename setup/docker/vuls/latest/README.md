@@ -5,9 +5,12 @@ See the [Hub page](https://hub.docker.com/r/vuls/vuls/) for the full readme on h
 
 # Supported tags and respective `Dockerfile` links
 
-- [`latest` (*vuls:latest Dockerfile*)]()
+- [`latest` (*vuls:latest Dockerfile*)](https://github.com/future-architect/vuls/blob/master/setup/docker/vuls/latest/Dockerfile)
 
-This image version is same as the github repository version.
+# Caution
+
+This image is built per commit.
+If you want to use the latest docker image, you should remove the existing image, and pull it once again.
 
 # What is Vuls?
 
