@@ -5,9 +5,12 @@ See the [Hub page](https://hub.docker.com/r/vuls/vulsrepo/) for the full readme 
 
 # Supported tags and respective `Dockerfile` links
 
-- [`latest` (*vulsrepo:latest Dockerfile*)]()
+- [`latest` (*vulsrepo:latest Dockerfile*)](https://github.com/future-architect/vuls/blob/master/setup/docker/vulsrepo/latest/Dockerfile)
 
-This image version is same as the github repository version.
+# Caution
+
+This image is built per commit.
+If you want to use the latest docker image, you should remove the existing image, and pull it once again.
 
 # What is vulsrepo?
 
