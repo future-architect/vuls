@@ -340,7 +340,6 @@ func (o *debian) parseAptGetUpgrade(stdout string) (upgradableNames []string, er
 
 	lines := strings.Split(stdout, "\n")
 	for _, line := range lines {
-		o.log.Debugf("line == %s", line)
 		if !startLineFound {
 			if matche := startRe.MatchString(line); matche {
 				startLineFound = true
