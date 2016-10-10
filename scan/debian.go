@@ -344,7 +344,6 @@ func (o *debian) parseAptGetUpgrade(stdout string) (upgradableNames []string, er
 			if matche := startRe.MatchString(line); matche {
 				startLineFound = true
 			}
-
 			continue
 		}
 		result := stopRe.FindStringSubmatch(line)
