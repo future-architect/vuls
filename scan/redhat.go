@@ -407,7 +407,7 @@ func (o *redhat) parseYumCheckUpdateLines(stdout string) (results models.Package
 
 func (o *redhat) parseYumCheckUpdateLine(line string) (models.PackageInfo, error) {
 	fields := strings.Fields(line)
-	if len(fields) != 3 {
+	if len(fields) < 3 {
 		return models.PackageInfo{}, fmt.Errorf("Unknown format: %s", line)
 	}
 	splitted := strings.Split(fields[0], ".")
