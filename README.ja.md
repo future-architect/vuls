@@ -1028,7 +1028,7 @@ $ go-cve-dictionary fetchnvd -last2y
 
 - すべての期間の脆弱性情報を取得(10分未満)
     ```
-    $ for i in {1998..2016}; do ./go-cve-dictionary fetchjvn -years $i; done
+    $ for i in {1998..2016}; do go-cve-dictionary fetchjvn -years $i; done
     ```
 
 - 2年分の情報を取得
