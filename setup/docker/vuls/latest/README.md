@@ -83,7 +83,7 @@ Prease refer to [this](https://hub.docker.com/r/vuls/vulsrepo/).
 
 ## Documentation
 
-Documentation for this image is stored in the [`docker/` directory]() of the [`future-architect/vuls` GitHub repo](https://github.com/future-architect/vuls). 
+Documentation for this image is stored in the [`docker/` directory](https://github.com/future-architect/vuls/tree/master/setup/docker) of the [`future-architect/vuls` GitHub repo](https://github.com/future-architect/vuls). 
 
 ## Issues
 
