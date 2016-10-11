@@ -38,7 +38,7 @@ func (w MailWriter) Write(scanResults []models.ScanResult) (err error) {
 		cc := strings.Join(conf.Mail.Cc[:], ", ")
 		mailAddresses := append(conf.Mail.To, conf.Mail.Cc...)
 		if _, err := mail.ParseAddressList(strings.Join(mailAddresses[:], ", ")); err != nil {
-			return fmt.Errorf("Failed to parse mail addresses: %s", err)
+			return fmt.Errorf("Failed to parse email addresses: %s", err)
 		}
 
 		subject := fmt.Sprintf("%s%s %s",
@@ -80,7 +80,7 @@ func (w MailWriter) Write(scanResults []models.ScanResult) (err error) {
 		)
 
 		if err != nil {
-			return fmt.Errorf("Failed to send mails: %s", err)
+			return fmt.Errorf("Failed to send emails: %s", err)
 		}
 	}
 	return nil

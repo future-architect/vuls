@@ -129,9 +129,9 @@ And also, SUDO with password is not supported for security reasons. So you have 
 Vuls requires the following packages.
 
 - SQLite3
-- git v2
+- git
 - gcc
-- go v1.6
+- go v1.6 or later
     - https://golang.org/doc/install
 
 ```bash

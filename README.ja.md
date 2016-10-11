@@ -121,9 +121,9 @@ VulsはSSHパスワード認証をサポートしていない。SSH公開鍵鍵�
 Vulsセットアップに必要な以下のソフトウェアをインストールする。
 
 - SQLite3
-- git v2
+- git
 - gcc
-- go v1.6
+- go v1.6 or later
     - https://golang.org/doc/install
 
 ```bash
