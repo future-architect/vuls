@@ -373,7 +373,7 @@ notifyUsers  = ["@username"]
 
 [mail]
 smtpAddr      = "smtp.gmail.com"
-smtpPort      = "465"
+smtpPort      = "587"
 user          = "username"
 password      = "password"
 from          = "from@address.com"
@@ -457,7 +457,7 @@ You can customize your configuration using this template.
     ```
     [mail]
     smtpAddr      = "smtp.gmail.com"
-    smtpPort      = "465"
+    smtpPort      = "587"
     user          = "username"
     password      = "password"
     from          = "from@address.com"

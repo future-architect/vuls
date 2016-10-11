@@ -18,13 +18,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package report
 
 import (
-	"crypto/tls"
 	"fmt"
-	"strconv"
+	"net"
+	"net/mail"
+	"net/smtp"
+	"strings"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
-	"gopkg.in/gomail.v2"
 )
 
 // MailWriter send mail
@@ -33,37 +34,53 @@ type MailWriter struct{}
 func (w MailWriter) Write(scanResults []models.ScanResult) (err error) {
 	conf := config.Conf
 	for _, s := range scanResults {
-		m := gomail.NewMessage()
-		m.SetHeader("From", conf.Mail.From)
-		m.SetHeader("To", conf.Mail.To...)
-		m.SetHeader("Cc", conf.Mail.Cc...)
+		to := strings.Join(conf.Mail.To[:], ", ")
+		cc := strings.Join(conf.Mail.Cc[:], ", ")
+		mailAddresses := append(conf.Mail.To, conf.Mail.Cc...)
+		if _, err := mail.ParseAddressList(strings.Join(mailAddresses[:], ", ")); err != nil {
+			return fmt.Errorf("Failed to parse mail addresses: %s", err)
+		}
 
 		subject := fmt.Sprintf("%s%s %s",
 			conf.Mail.SubjectPrefix,
 			s.ServerInfo(),
 			s.CveSummary(),
 		)
-		m.SetHeader("Subject", subject)
+
+		headers := make(map[string]string)
+		headers["From"] = conf.Mail.From
+		headers["To"] = to
+		headers["Cc"] = cc
+		headers["Subject"] = subject
+
+		var message string
+		for k, v := range headers {
+			message += fmt.Sprintf("%s: %s\r\n", k, v)
+		}
 
 		var body string
 		if body, err = toPlainText(s); err != nil {
 			return err
 		}
-		m.SetBody("text/plain", body)
-		port, _ := strconv.Atoi(conf.Mail.SMTPPort)
-		d := gomail.NewPlainDialer(
-			conf.Mail.SMTPAddr,
-			port,
-			conf.Mail.User,
-			conf.Mail.Password,
+		message += "\r\n" + body
+
+		smtpServer := net.JoinHostPort(conf.Mail.SMTPAddr, conf.Mail.SMTPPort)
+
+		err := smtp.SendMail(
+			smtpServer,
+			smtp.PlainAuth(
+				"",
+				conf.Mail.User,
+				conf.Mail.Password,
+				conf.Mail.SMTPAddr,
+			),
+			conf.Mail.From,
+			conf.Mail.To,
+			[]byte(message),
 		)
 
-		d.TLSConfig = &tls.Config{
-			InsecureSkipVerify: true,
-		}
-
-		if err := d.DialAndSend(m); err != nil {
-			panic(err)
+		if err != nil {
+			return fmt.Errorf("Failed to send mails: %s", err)
 		}
 	}
 	return nil
