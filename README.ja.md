@@ -562,7 +562,7 @@ vuls ALL=(root) NOPASSWD: /usr/bin/apt-get, /usr/bin/apt-cache
 
 # Usage: Prepare
 
-Prepareサブコマンドは、Vuls内部で利用する以下のパッケージをスキャン対象サーバにインストーする。
+Prepareサブコマンドは、Vuls内部で利用する以下のパッケージをスキャン対象サーバにインストールする。
 
 | Distribution|            Release | Requirements |
 |:------------|-------------------:|:-------------|
