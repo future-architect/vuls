@@ -901,14 +901,14 @@ tui:
 
 ```
 
-Key binding is bellow.
+Key binding is below.
 
 | key | |
 |:-----------------|:-------|:------|
 | TAB | move cursor among the panes |
 | Arrow up/down | move cursor to up/down |
-| Ctrl+j, Ctrl+k | move cursor to up/donw |
-| Ctrl+u, Ctrl+d | page up/donw |
+| Ctrl+j, Ctrl+k | move cursor to up/down |
+| Ctrl+u, Ctrl+d | page up/down |
 
 For details, see https://github.com/future-architect/vuls/blob/master/report/tui.go
 
@@ -1044,7 +1044,7 @@ If your system is behind HTTP proxy, you have to specify --http-proxy option.
 - How to Daemonize go-cve-dictionary  
 Use Systemd, Upstart or supervisord, daemontools...
 
-- How to Enable Automatic-Update of Vunerability Data.  
+- How to Enable Automatic-Update of Vulnerability Data.  
 Use job scheduler like Cron (with -last2y option).
 
 - How to Enable Automatic-Scan.  
@@ -1119,7 +1119,7 @@ Please see [CHANGELOG](https://github.com/future-architect/vuls/blob/master/CHAN
 
 ----
 
-# Licence
+# License
 
 Please see [LICENSE](https://github.com/future-architect/vuls/blob/master/LICENSE).
 
