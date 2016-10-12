@@ -301,7 +301,7 @@ func (o *debian) fillCandidateVersion(before models.PackageInfoList) (filled []m
 	for _, p := range before {
 		names = append(names, p.Name)
 	}
-	cmd := fmt.Sprintf("LANG=en_US.UTF-8 apt-cache policy %s", strings.Join(names, " "))
+	cmd := fmt.Sprintf("LANGUAGE=en_US.UTF-8 apt-cache policy %s", strings.Join(names, " "))
 	r := o.ssh(cmd, sudo)
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to SSH: %s.", r)
@@ -323,7 +323,7 @@ func (o *debian) fillCandidateVersion(before models.PackageInfoList) (filled []m
 }
 
 func (o *debian) GetUpgradablePackNames() (packNames []string, err error) {
-	cmd := util.PrependProxyEnv("LANG=en_US.UTF-8 apt-get upgrade --dry-run")
+	cmd := util.PrependProxyEnv("LANGUAGE=en_US.UTF-8 apt-get upgrade --dry-run")
 	r := o.ssh(cmd, sudo)
 	if r.isSuccess(0, 1) {
 		return o.parseAptGetUpgrade(r.Stdout)

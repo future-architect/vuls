@@ -251,7 +251,7 @@ func (o *redhat) scanUnsecurePackages() ([]CvePacksInfo, error) {
 
 // For CentOS
 func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (CvePacksList, error) {
-	cmd := "LANG=en_US.UTF-8 yum --color=never check-update"
+	cmd := "LANGUAGE=en_US.UTF-8 yum --color=never check-update"
 	r := o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess(0, 100) {
 		//returns an exit code of 100 if there are available updates.
@@ -547,7 +547,7 @@ func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList) (stdout st
 	}
 
 	// yum update --changelog doesn't have --color option.
-	command += fmt.Sprintf(" LANG=en_US.UTF-8 yum update --changelog %s", packageNames)
+	command += fmt.Sprintf(" LANGUAGE=en_US.UTF-8 yum update --changelog %s", packageNames)
 
 	r := o.ssh(command, sudo)
 	if !r.isSuccess(0, 1) {
@@ -589,7 +589,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (CvePacksList, err
 
 	// get package name, version, rel to be upgrade.
 	//  cmd = "yum check-update --security"
-	cmd = "LANG=en_US.UTF-8 yum --color=never check-update"
+	cmd = "LANGUAGE=en_US.UTF-8 yum --color=never check-update"
 	r = o.ssh(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess(0, 100) {
 		//returns an exit code of 100 if there are available updates.
