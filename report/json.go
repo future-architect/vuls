@@ -61,14 +61,6 @@ func (w JSONWriter) Write(scanResults []models.ScanResult) (err error) {
 	}
 
 	var jsonBytes []byte
-	if jsonBytes, err = json.Marshal(scanResults); err != nil {
-		return fmt.Errorf("Failed to Marshal to JSON: %s", err)
-	}
-	all := filepath.Join(path, "all.json")
-	if err := ioutil.WriteFile(all, jsonBytes, 0600); err != nil {
-		return fmt.Errorf("Failed to write JSON. path: %s, err: %s", all, err)
-	}
-
 	for _, r := range scanResults {
 		jsonPath := ""
 		if len(r.Container.ContainerID) == 0 {
@@ -117,10 +109,6 @@ func LoadOneScanHistory(jsonDir string) (scanHistory models.ScanHistory, err err
 		return
 	}
 	for _, file := range files {
-		// TODO this "if block" will be deleted in a future release
-		if file.Name() == "all.json" {
-			continue
-		}
 		if filepath.Ext(file.Name()) != ".json" {
 			continue
 		}

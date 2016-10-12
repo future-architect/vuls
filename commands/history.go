@@ -81,10 +81,6 @@ func (p *HistoryCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 		}
 		var hosts []string
 		for _, f := range files {
-			// TODO this "if block" will be deleted in a future release
-			if f.Name() == "all.json" {
-				continue
-			}
 			if filepath.Ext(f.Name()) != ".json" {
 				continue
 			}

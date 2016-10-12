@@ -78,16 +78,6 @@ func (w S3Writer) Write(scanResults []models.ScanResult) (err error) {
 	// http://docs.aws.amazon.com/sdk-for-go/latest/v1/developerguide/common-examples.title.html
 	svc := getS3()
 	timestr := time.Now().Format("20060102_1504")
-	key := fmt.Sprintf("%s/%s", timestr, "all.json")
-	_, err = svc.PutObject(&s3.PutObjectInput{
-		Bucket: &c.Conf.S3Bucket,
-		Key:    &key,
-		Body:   bytes.NewReader(jsonBytes),
-	})
-	if err != nil {
-		return fmt.Errorf("Failed to upload data to %s/%s, %s", c.Conf.S3Bucket, key, err)
-	}
-
 	for _, r := range scanResults {
 		key := ""
 		if len(r.Container.ContainerID) == 0 {
