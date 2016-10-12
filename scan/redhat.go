@@ -112,45 +112,46 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 // CentOS 6 ... yum-plugin-changelog
 // CentOS 7 ... yum-plugin-changelog
 // RHEL, Amazon ... no additinal packages needed
-func (o *redhat) install() error {
+func (o *redhat) checkDependencies() error {
 	switch o.Distro.Family {
 	case "rhel", "amazon":
-		o.log.Infof("Nothing to do")
+		//  o.log.Infof("Nothing to do")
 		return nil
-	}
-	// CentOS
-	return o.installYumChangelog()
-}
 
-func (o *redhat) installYumChangelog() error {
-	if o.Distro.Family == "centos" {
+	case "centos":
 		var majorVersion int
 		if 0 < len(o.Distro.Release) {
 			majorVersion, _ = strconv.Atoi(strings.Split(o.Distro.Release, ".")[0])
 		} else {
-			return fmt.Errorf(
-				"Not implemented yet: %s", o.Distro)
+			return fmt.Errorf("Not implemented yet: %s", o.Distro)
 		}
 
-		var packName = ""
+		var name = ""
 		if majorVersion < 6 {
-			packName = "yum-changelog"
+			name = "yum-changelog"
 		} else {
-			packName = "yum-plugin-changelog"
+			name = "yum-plugin-changelog"
 		}
 
-		cmd := "rpm -q " + packName
+		cmd := "rpm -q " + name
 		if r := o.ssh(cmd, noSudo); r.isSuccess() {
-			o.log.Infof("Ignored: %s already installed", packName)
 			return nil
 		}
+		o.lackDependencies = []string{name}
+		return nil
 
-		o.log.Infof("Installing %s...", packName)
-		cmd = util.PrependProxyEnv("yum install -y " + packName)
+	default:
+		return fmt.Errorf("Not implemented yet: %s", o.Distro)
+	}
+}
+
+func (o *redhat) install() error {
+	for _, name := range o.lackDependencies {
+		cmd := util.PrependProxyEnv("yum install -y " + name)
 		if r := o.ssh(cmd, sudo); !r.isSuccess() {
 			return fmt.Errorf("Failed to SSH: %s", r)
 		}
-		o.log.Infof("Installed: %s", packName)
+		o.log.Infof("Installed: %s", name)
 	}
 	return nil
 }

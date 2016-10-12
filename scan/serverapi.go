@@ -18,7 +18,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package scan
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -40,7 +43,10 @@ type osTypeInterface interface {
 
 	setDistro(string, string)
 	getDistro() config.Distro
-	//  getFamily() string
+
+	// checkDependencies checks if dependencies are installed on the target server.
+	checkDependencies() error
+	getLackDependencies() []string
 
 	checkIfSudoNoPasswd() error
 	detectPlatform() error
@@ -60,7 +66,7 @@ type osTypeInterface interface {
 	setErrs([]error)
 }
 
-// osPackages included by linux struct
+// osPackages is included by base struct
 type osPackages struct {
 	// installed packages
 	Packages models.PackageInfoList
@@ -425,12 +431,65 @@ func detectPlatforms() []error {
 
 // Prepare installs requred packages to scan vulnerabilities.
 func Prepare() []error {
-	return parallelSSHExec(func(o osTypeInterface) error {
+	errs := parallelSSHExec(func(o osTypeInterface) error {
+		if err := o.checkDependencies(); err != nil {
+			return err
+		}
+		return nil
+	})
+	if len(errs) != 0 {
+		return errs
+	}
+
+	var targets []osTypeInterface
+	for _, s := range servers {
+		deps := s.getLackDependencies()
+		if len(deps) != 0 {
+			targets = append(targets, s)
+		}
+	}
+	if len(targets) == 0 {
+		Log.Info("No need to install dependencies")
+		return nil
+	}
+
+	Log.Info("Below servers are needed to install dependencies")
+	for _, s := range targets {
+		for _, d := range s.getLackDependencies() {
+			Log.Infof("  - %s on %s", d, s.getServerInfo().GetServerName())
+		}
+	}
+	Log.Info("Is this ok to install dependencies on the servers? [y/N]")
+
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		text, err := reader.ReadString('\n')
+		if err != nil {
+			return []error{err}
+		}
+		switch strings.TrimSpace(text) {
+		case "", "N", "n":
+			return nil
+		case "y", "Y":
+			goto yes
+		default:
+			Log.Info("Please enter y or N")
+		}
+	}
+
+yes:
+	servers = targets
+	errs = parallelSSHExec(func(o osTypeInterface) error {
 		if err := o.install(); err != nil {
 			return err
 		}
 		return nil
 	})
+	if len(errs) != 0 {
+		return errs
+	}
+	Log.Info("All dependencies were installed correctly")
+	return nil
 }
 
 // Scan scan

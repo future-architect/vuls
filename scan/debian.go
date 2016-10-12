@@ -124,7 +124,31 @@ func (o *debian) checkIfSudoNoPasswd() error {
 	return nil
 }
 
+func (o *debian) checkDependencies() error {
+	switch o.Distro.Family {
+	case "ubuntu":
+		return nil
+
+	case "debian":
+		// Debian needs aptitude to get changelogs.
+		// Because unable to get changelogs via apt-get changelog on Debian.
+		name := "aptitude"
+		cmd := name + " -h"
+		if r := o.ssh(cmd, noSudo); !r.isSuccess() {
+			o.lackDependencies = []string{name}
+		}
+		return nil
+
+	default:
+		return fmt.Errorf("Not implemented yet: %s", o.Distro)
+	}
+}
+
 func (o *debian) install() error {
+	if len(o.lackDependencies) == 0 {
+		return nil
+	}
+
 	// apt-get update
 	o.log.Infof("apt-get update...")
 	cmd := util.PrependProxyEnv("apt-get update")
@@ -134,15 +158,14 @@ func (o *debian) install() error {
 		return fmt.Errorf(msg)
 	}
 
-	if o.Distro.Family == "debian" {
-		// install aptitude
-		cmd = util.PrependProxyEnv("apt-get install --force-yes -y aptitude")
+	for _, name := range o.lackDependencies {
+		cmd = util.PrependProxyEnv("apt-get install " + name)
 		if r := o.ssh(cmd, sudo); !r.isSuccess() {
 			msg := fmt.Sprintf("Failed to SSH: %s", r)
 			o.log.Errorf(msg)
 			return fmt.Errorf(msg)
 		}
-		o.log.Infof("Installed: aptitude")
+		o.log.Infof("Installed: " + name)
 	}
 	return nil
 }
