@@ -201,7 +201,7 @@ Summary         Unspecified vulnerability in the Java SE and Java SE Embedded co
 NVD             https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-0494
 MITRE           https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-0494
 CVE Details     http://www.cvedetails.com/cve/CVE-2016-0494
-CVSS Claculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-0494&vector=(AV:N/AC:L/Au:N/C:C/I:C/A:C)
+CVSS Calculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-0494&vector=(AV:N/AC:L/Au:N/C:C/I:C/A:C)
 RHEL-CVE        https://access.redhat.com/security/cve/CVE-2016-0494
 ALAS-2016-643   https://alas.aws.amazon.com/ALAS-2016-643.html
 Package/CPE     java-1.7.0-openjdk-1.7.0.91-2.6.2.2.63.amzn1 -> java-1.7.0-openjdk-1:1.7.0.95-2.6.4.0.65.amzn1
