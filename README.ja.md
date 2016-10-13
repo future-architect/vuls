@@ -250,7 +250,7 @@ Summary         Unspecified vulnerability in the Java SE and Java SE Embedded co
 NVD             https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-0494
 MITRE           https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-0494
 CVE Details     http://www.cvedetails.com/cve/CVE-2016-0494
-CVSS Claculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-0494&vector=(AV:N/AC:L/Au:N/C:C/I:C/A:C)
+CVSS Calculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-0494&vector=(AV:N/AC:L/Au:N/C:C/I:C/A:C)
 RHEL-CVE        https://access.redhat.com/security/cve/CVE-2016-0494
 ALAS-2016-643   https://alas.aws.amazon.com/ALAS-2016-643.html
 Package/CPE     java-1.7.0-openjdk-1.7.0.91-2.6.2.2.63.amzn1 -> java-1.7.0-openjdk-1:1.7.0.95-2.6.4.0.65.amzn1
@@ -422,7 +422,7 @@ host         = "172.31.4.82"
     notifyUsers  = ["@username"]
     ```
 
-    - hookURL : Incomming webhook's URL  
+    - hookURL : Incoming webhook's URL  
     - channel : channel name.  
     channelに`${servername}`を指定すると、結果レポートをサーバごとに別チャネルにすることが出来る。
     以下のサンプルでは、`#server1`チャネルと`#server2`チャネルに送信される。スキャン前にチャネルを作成する必要がある。
@@ -903,14 +903,14 @@ tui:
 
 ```
 
-Key binding is bellow.
+Key binding is below.
 
 | key | |
 |:-----------------|:-------|:------|
 | TAB | move cursor among the panes |
 | Arrow up/down | move cursor to up/down |
-| Ctrl+j, Ctrl+k | move cursor to up/donw |
-| Ctrl+u, Ctrl+d | page up/donw |
+| Ctrl+j, Ctrl+k | move cursor to up/down |
+| Ctrl+u, Ctrl+d | page up/down |
 
 For details, see https://github.com/future-architect/vuls/blob/master/report/tui.go
 
@@ -1180,7 +1180,7 @@ Please see [CHANGELOG](https://github.com/future-architect/vuls/blob/master/CHAN
 
 ----
 
-# Licence
+# License
 
 Please see [LICENSE](https://github.com/future-architect/vuls/blob/master/LICENSE).
 

@@ -139,17 +139,17 @@ WWW: https://vuxml.FreeBSD.org/freebsd/ab3e98d9-8175-11e4-907d-d050992ecde8.html
 
 	d := newBsd(config.ServerInfo{})
 	for _, tt := range tests {
-		aName, aCveIDs, aVunlnID := d.parseBlock(tt.in)
+		aName, aCveIDs, aVulnID := d.parseBlock(tt.in)
 		if tt.name != aName {
-			t.Errorf("expected vulnID: %s, actual %s", tt.vulnID, aVunlnID)
+			t.Errorf("expected vulnID: %s, actual %s", tt.vulnID, aVulnID)
 		}
 		for i := range tt.cveIDs {
 			if tt.cveIDs[i] != aCveIDs[i] {
 				t.Errorf("expected cveID: %s, actual %s", tt.cveIDs[i], aCveIDs[i])
 			}
 		}
-		if tt.vulnID != aVunlnID {
-			t.Errorf("expected vulnID: %s, actual %s", tt.vulnID, aVunlnID)
+		if tt.vulnID != aVulnID {
+			t.Errorf("expected vulnID: %s, actual %s", tt.vulnID, aVulnID)
 		}
 	}
 }

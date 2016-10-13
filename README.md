@@ -247,7 +247,7 @@ Summary         Unspecified vulnerability in the Java SE and Java SE Embedded co
 NVD             https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-0494
 MITRE           https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-0494
 CVE Details     http://www.cvedetails.com/cve/CVE-2016-0494
-CVSS Claculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-0494&vector=(AV:N/AC:L/Au:N/C:C/I:C/A:C)
+CVSS Calculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-0494&vector=(AV:N/AC:L/Au:N/C:C/I:C/A:C)
 RHEL-CVE        https://access.redhat.com/security/cve/CVE-2016-0494
 ALAS-2016-643   https://alas.aws.amazon.com/ALAS-2016-643.html
 Package/CPE     java-1.7.0-openjdk-1.7.0.91-2.6.2.2.63.amzn1 -> java-1.7.0-openjdk-1:1.7.0.95-2.6.4.0.65.amzn1
@@ -426,7 +426,7 @@ You can customize your configuration using this template.
     notifyUsers  = ["@username"]
     ```
 
-    - hookURL : Incomming webhook's URL  
+    - hookURL : Incoming webhook's URL  
     - channel : channel name.  
     If you set `${servername}` to channel, the report will be sent to each channel.  
     In the following example, the report will be sent to the `#server1` and `#server2`.  
@@ -683,11 +683,11 @@ scan:
 
 Vuls supports different types of SSH.  
 
-By Defaut, using a native Go implementation from crypto/ssh.   
+By Default, using a native Go implementation from crypto/ssh.   
 This is useful in situations where you may not have access to traditional UNIX tools.
 
 To use external ssh command, specify this option.   
-This is useful If you want to use ProxyCommand or chiper algorithm of SSH that is not supported by native go implementation.  
+This is useful If you want to use ProxyCommand or cipher algorithm of SSH that is not supported by native go implementation.  
 Don't forget to add below line to /etc/sudoers on the target servers. (username: vuls)
 ```
 Defaults:vuls !requiretty
@@ -704,7 +704,7 @@ Defaults:vuls !requiretty
 ## -report-json , -report-text option
 
 At the end of the scan, scan results will be available in the `$PWD/result/current/` directory.  
-`all.(json|txt)` includes the scan results of all servres and `servername.(json|txt)` includes the scan result of the server.
+`all.(json|txt)` includes the scan results of all servers and `servername.(json|txt)` includes the scan result of the server.
 
 ## Example: Scan all servers defined in config file
 ```
@@ -716,7 +716,7 @@ $ vuls scan \
       -cve-dictionary-dbpath=$PWD/cve.sqlite3
 ```
 With this sample command, it will ..
-- Ask SSH key passsword before scanning
+- Ask SSH key password before scanning
 - Scan all servers defined in config file
 - Send scan results to slack and email
 - Only Report CVEs that CVSS score is over 7
@@ -831,10 +831,10 @@ It is possible to detect vulnerabilities in non-OS packages, such as something y
     **Check CPE Naming Format: 2.2**
 
     - [go-cpe-dictionary](https://github.com/kotakanbe/go-cpe-dictionary) is a good choice for geeks.   
-    You can search a CPE name by the application name incremenally.
+    You can search a CPE name by the application name incrementally.
 
 - Configuration  
-To detect the vulnerbility of Ruby on Rails v4.2.1, cpeNames needs to be set in the servers section.
+To detect the vulnerability of Ruby on Rails v4.2.1, cpeNames needs to be set in the servers section.
     ```
     [servers]
 
@@ -849,7 +849,7 @@ To detect the vulnerbility of Ruby on Rails v4.2.1, cpeNames needs to be set in 
     
 # Usage: Scan Docker containers
 
-It is common that keep Docker containers runnning without SSHd daemon.  
+It is common that keep Docker containers running without SSHd daemon.  
 see [Docker Blog:Why you don't need to run SSHd in your Docker containers](https://blog.docker.com/2014/06/why-you-dont-need-to-run-sshd-in-docker/)
 
 Vuls scans Docker containers via `docker exec` instead of SSH.  
@@ -901,14 +901,14 @@ tui:
 
 ```
 
-Key binding is bellow.
+Key binding is below.
 
 | key | |
 |:-----------------|:-------|:------|
 | TAB | move cursor among the panes |
 | Arrow up/down | move cursor to up/down |
-| Ctrl+j, Ctrl+k | move cursor to up/donw |
-| Ctrl+u, Ctrl+d | page up/donw |
+| Ctrl+j, Ctrl+k | move cursor to up/down |
+| Ctrl+u, Ctrl+d | page up/down |
 
 For details, see https://github.com/future-architect/vuls/blob/master/report/tui.go
 
@@ -1019,7 +1019,7 @@ If your system is behind HTTP proxy, you have to specify --http-proxy option.
 - How to Daemonize go-cve-dictionary  
 Use Systemd, Upstart or supervisord, daemontools...
 
-- How to Enable Automatic-Update of Vunerability Data.  
+- How to Enable Automatic-Update of Vulnerability Data.  
 Use job scheduler like Cron (with -last2y option).
 
 - How to Enable Automatic-Scan.  
@@ -1094,7 +1094,7 @@ Please see [CHANGELOG](https://github.com/future-architect/vuls/blob/master/CHAN
 
 ----
 
-# Licence
+# License
 
 Please see [LICENSE](https://github.com/future-architect/vuls/blob/master/LICENSE).
 
