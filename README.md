@@ -156,18 +156,18 @@ $ source /etc/profile.d/goenv.sh
 
 ## Step4. Deploy [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
 
-go get
-
 ```bash
 $ sudo mkdir /var/log/vuls
 $ sudo chown ec2-user /var/log/vuls
 $ sudo chmod 700 /var/log/vuls
-$ go get github.com/kotakanbe/go-cve-dictionary
+$
+$ mkdir -p $GOPATH/src/github.com/kotakanbe
+$ cd $GOPATH/src/github.com/kotakanbe
+$ git clone https://github.com/kotakanbe/go-cve-dictionary.git
+$ cd go-cve-dictionary
+$ make install
 ```
-
-If an error occurred while go get, check the following points.
-- Update Git
-- try [deploying with glide](https://github.com/future-architect/vuls/blob/master/README.md#deploy-with-glide).
+The binary was built under `$GOPARH/bin`
 
 Fetch vulnerability data from NVD.  
 It takes about 10 minutes (on AWS).  
@@ -183,14 +183,14 @@ $ ls -alh cve.sqlite3
 
 Launch a new terminal and SSH to the ec2 instance.
 
-go get
 ```
-$ go get github.com/future-architect/vuls
+$ mkdir -p $GOPATH/src/github.com/future-architect
+$ cd $GOPATH/src/github.com/future-architect
+$ git clone https://github.com/future-architect/vuls.git
+$ cd vuls
+$ make install
 ```
-
-If an error occurred while go get, check the following points.
-- Update Git
-- try [deploying with glide](https://github.com/future-architect/vuls/blob/master/README.md#deploy-with-glide).
+The binary was built under `$GOPARH/bin`
 
 ## Step6. Config
 
@@ -987,28 +987,6 @@ $ go-cve-dictionary fetchnvd -last2y
 
 ----
 
-# Deploy With Glide
-
-If an error occurred while go get, try deploying with glide.  
-- Install [Glide](https://github.com/Masterminds/glide)
-- Deploy go-cve-dictionary
-```
-$ go get -d github.com/kotakanbe/go-cve-dictionary
-$ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
-$ glide install
-$ go install
-```
-- Deploy vuls
-```
-$ go get -d github.com/future-architect/vuls
-$ cd $GOPATH/src/github.com/future-architect/vuls
-$ glide install
-$ go install
-```
-- The binaries are created under $GOPARH/bin
-
-----
-
 # Update Vuls With Glide
 
 - Update go-cve-dictionary  
@@ -1016,19 +994,16 @@ If the DB schema was changed, please specify new SQLite3 DB file.
 ```
 $ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
 $ git pull
-$ glide install
-$ go install
+$ make install
 ```
 
 - Update vuls
 ```
 $ cd $GOPATH/src/github.com/future-architect/vuls
 $ git pull
-$ glide install
-$ go install
+$ make install
 ```
-
-Binary Files are created under $GOPARH/bin
+Binary file was built under $GOPARH/bin
 
 ---
 

@@ -1,4 +1,9 @@
 .PHONY: \
+	glide \
+	deps \
+	update \
+	build \
+	install \
 	all \
 	vendor \
 	lint \
@@ -12,12 +17,27 @@
 
 SRCS = $(shell git ls-files '*.go')
 PKGS = ./. ./config ./models ./report ./cveapi ./scan ./util ./commands ./cache
+VERSION := $(shell git describe --tags --abbrev=0)
+REVISION := $(shell git rev-parse --short HEAD)
+LDFLAGS := -X 'main.version=$(VERSION)' \
+	-X 'main.revision=$(REVISION)'
+
+glide:
+	go get github.com/Masterminds/glide
+
+deps: glide
+	glide install
+
+update: glide
+	glide update
+
+build: main.go deps
+	go build -ldflags "$(LDFLAGS)" -o vuls $<
+
+install: main.go deps
+	go install -ldflags "$(LDFLAGS)"
 
 all: test
-
-#  vendor:
-#          @ go get -v github.com/mjibson/party
-#          party -d external -c -u
 
 lint:
 	@ go get -v github.com/golang/lint/golint
