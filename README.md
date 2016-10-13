@@ -220,7 +220,7 @@ see [Usage: Prepare](https://github.com/future-architect/vuls#usage-prepare)
 ## Step8. Start Scanning
 
 ```
-$ vuls scan -cve-dictionary-dbpath=$PWD/cve.sqlite3
+$ vuls scan -cve-dictionary-dbpath=$PWD/cve.sqlite3 -report-json
 INFO[0000] Start scanning (config: /home/ec2-user/config.toml)
 INFO[0000] Start scanning
 INFO[0000] config: /home/ec2-user/config.toml
