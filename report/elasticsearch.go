@@ -148,7 +148,7 @@ func (w ElasticsearchWriter) Write(scanResults []models.ScanResult) error {
 	}
 
 	// TODO Use BULK api and send more than one result per call.
-	Log.Infof("Sending %d scan results to elastic search.", len(scanResults))
+	log.Infof("Sending %d scan results to elastic search.", len(scanResults))
 	for idx := range scanResults {
 		_ = writeResultToES(scanResults[idx], client, index)
 	}
