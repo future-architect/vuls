@@ -45,6 +45,7 @@ type ScanCmd struct {
 	configPath string
 
 	resultsDir       string
+	cvedbtype        string
 	cvedbpath        string
 	cveDictionaryURL string
 	cacheDBPath      string
@@ -59,12 +60,13 @@ type ScanCmd struct {
 	containersOnly bool
 
 	// reporting
-	reportSlack     bool
-	reportMail      bool
-	reportJSON      bool
-	reportText      bool
-	reportS3        bool
-	reportAzureBlob bool
+	reportSlack         bool
+	reportMail          bool
+	reportJSON          bool
+	reportText          bool
+	reportS3            bool
+	reportAzureBlob     bool
+	reportElasticsearch bool
 
 	awsProfile  string
 	awsS3Bucket string
@@ -73,6 +75,10 @@ type ScanCmd struct {
 	azureAccount   string
 	azureKey       string
 	azureContainer string
+
+	elasticsearchServers  string
+	elasticsearchPrefix   string
+	elasticsearchSniffing bool
 
 	sshExternal bool
 }
@@ -90,7 +96,8 @@ func (*ScanCmd) Usage() string {
 		[-lang=en|ja]
 		[-config=/path/to/config.toml]
 		[-results-dir=/path/to/results]
-		[-cve-dictionary-dbpath=/path/to/cve.sqlite3]
+		[-cve-dictionary-dbtype=sqlite3|mysql]
+		[-cve-dictionary-dbpath=/path/to/cve.sqlite3 or mysql connection string]
 		[-cve-dictionary-url=http://127.0.0.1:1323]
 		[-cache-dbpath=/path/to/cache.db]
 		[-cvss-over=7]
@@ -103,6 +110,7 @@ func (*ScanCmd) Usage() string {
 		[-report-s3]
 		[-report-slack]
 		[-report-text]
+		[-report-elasticsearch]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-ask-key-password]
 		[-debug]
@@ -113,6 +121,9 @@ func (*ScanCmd) Usage() string {
 		[-azure-account=accout]
 		[-azure-key=key]
 		[-azure-container=container]
+		[-elasticearch-servers=servers]
+		[-elasticearch-prefix=prefix]
+		[-elasticsearch-sniffing]
 
 		[SERVER]...
 `
@@ -131,6 +142,12 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 	defaultResultsDir := filepath.Join(wd, "results")
 	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+
+	f.StringVar(
+		&p.cvedbtype,
+		"cve-dictionary-dbtype",
+		"sqlite3",
+		"DB type for fetching CVE dictionary (sqlite3 or mysql)")
 
 	f.StringVar(
 		&p.cvedbpath,
@@ -214,6 +231,16 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.azureKey, "azure-key", "", "Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified")
 	f.StringVar(&p.azureContainer, "azure-container", "", "Azure storage container name")
 
+	f.BoolVar(&p.reportElasticsearch,
+		"report-elasticsearch",
+		false,
+		"Write report to elasticsearch",
+	)
+
+	f.StringVar(&p.elasticsearchServers, "elasticsearch-servers", "", "Comma delimited list of search servers")
+	f.StringVar(&p.elasticsearchPrefix, "elasticsearch-prefix", "vulscan", "Prefix for indexes in elasticsearch.  Default is \"vulscan\"")
+	f.BoolVar(&p.elasticsearchSniffing, "elasticsearch-sniffing", false, "True if sniffing is enabled for server discovery")
+
 	f.BoolVar(
 		&p.askKeyPassword,
 		"ask-key-password",
@@ -254,7 +281,9 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	logrus.Info("Start scanning")
 	logrus.Infof("config: %s", p.configPath)
 	if p.cvedbpath != "" {
-		logrus.Infof("cve-dictionary: %s", p.cvedbpath)
+		if p.cvedbtype == "sqlite3" {
+			logrus.Infof("cve-dictionary: %s", p.cvedbpath)
+		}
 	} else {
 		logrus.Infof("cve-dictionary: %s", p.cveDictionaryURL)
 	}
@@ -355,8 +384,16 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		}
 		reports = append(reports, report.AzureBlobWriter{})
 	}
+	if p.reportElasticsearch {
+		c.Conf.ElasticsearchServers = p.elasticsearchServers
+		c.Conf.ElasticsearchPrefix = p.elasticsearchPrefix
+		c.Conf.ElasticsearchSniffing = p.elasticsearchSniffing
+
+		reports = append(reports, report.ElasticsearchWriter{ScannedAt: scannedAt})
+	}
 
 	c.Conf.ResultsDir = p.resultsDir
+	c.Conf.CveDBType = p.cvedbtype
 	c.Conf.CveDBPath = p.cvedbpath
 	c.Conf.CveDictionaryURL = p.cveDictionaryURL
 	c.Conf.CacheDBPath = p.cacheDBPath
