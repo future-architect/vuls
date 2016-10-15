@@ -21,6 +21,12 @@ Please see the [Documentation](https://github.com/future-architect/vuls)
 
 # How to use this image
 
+## check vuls version
+
+```
+$ docker run  --rm  vuls/vuls -v
+```
+
 ## configtest
 
 Create config.toml referring to [this](https://github.com/future-architect/vuls#configuration).
@@ -40,6 +46,7 @@ keyPath     = "/root/.ssh/id_rsa"  # path to ssh private key in docker
 $ docker run --rm \
     -v ~/.ssh:/root/.ssh:ro \
     -v $PWD:/vuls \
+    -v $PWD/vuls-log:/var/log/vuls \
     vuls/vuls configtest
 ```
 
@@ -50,6 +57,7 @@ $ docker run --rm \
 $ docker run --rm \
     -v ~/.ssh:/root/.ssh:ro \
     -v $PWD:/vuls \
+    -v $PWD/vuls-log:/var/log/vuls \
     vuls/vuls prepare \
     -config=./config.toml # path to config.toml in docker
 ```
@@ -60,6 +68,7 @@ $ docker run --rm \
 $ docker run --rm -it \
     -v ~/.ssh:/root/.ssh:ro \
     -v $PWD:/vuls \
+    -v $PWD/vuls-log:/var/log/vuls \
     -v /etc/localtime:/etc/localtime:ro \
     vuls/vuls scan \
     -cve-dictionary-dbpath=/vuls/cve.sqlite3 \
@@ -72,6 +81,7 @@ $ docker run --rm -it \
 ```console
 $ docker run --rm -it \
     -v $PWD:/vuls \
+    -v $PWD/vuls-log:/var/log/vuls \
     vuls/vuls tui 
 ```
 
