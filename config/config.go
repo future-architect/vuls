@@ -36,6 +36,7 @@ type Config struct {
 
 	Mail    smtpConf
 	Slack   SlackConf
+
 	Default ServerInfo
 	Servers map[string]ServerInfo
 
@@ -60,6 +61,10 @@ type Config struct {
 	AzureAccount   string
 	AzureKey       string
 	AzureContainer string
+
+	ElasticsearchServers  string
+	ElasticsearchPrefix   string
+	ElasticsearchSniffing bool
 
 	//  CpeNames      []string
 	//  SummaryMode          bool

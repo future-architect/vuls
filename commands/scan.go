@@ -60,12 +60,13 @@ type ScanCmd struct {
 	containersOnly bool
 
 	// reporting
-	reportSlack     bool
-	reportMail      bool
-	reportJSON      bool
-	reportText      bool
-	reportS3        bool
-	reportAzureBlob bool
+	reportSlack         bool
+	reportMail          bool
+	reportJSON          bool
+	reportText          bool
+	reportS3            bool
+	reportAzureBlob     bool
+	reportElasticsearch bool
 
 	awsProfile  string
 	awsS3Bucket string
@@ -74,6 +75,10 @@ type ScanCmd struct {
 	azureAccount   string
 	azureKey       string
 	azureContainer string
+
+	elasticsearchServers  string
+	elasticsearchPrefix   string
+	elasticsearchSniffing bool
 
 	sshExternal bool
 }
@@ -105,6 +110,7 @@ func (*ScanCmd) Usage() string {
 		[-report-s3]
 		[-report-slack]
 		[-report-text]
+		[-report-elasticsearch]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-ask-key-password]
 		[-debug]
@@ -115,6 +121,9 @@ func (*ScanCmd) Usage() string {
 		[-azure-account=accout]
 		[-azure-key=key]
 		[-azure-container=container]
+		[-elasticearch-servers=servers]
+		[-elasticearch-prefix=prefix]
+		[-elasticsearch-sniffing]
 
 		[SERVER]...
 `
@@ -221,6 +230,16 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.azureAccount, "azure-account", "", "Azure account name to use. AZURE_STORAGE_ACCOUNT environment variable is used if not specified")
 	f.StringVar(&p.azureKey, "azure-key", "", "Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified")
 	f.StringVar(&p.azureContainer, "azure-container", "", "Azure storage container name")
+
+	f.BoolVar(&p.reportElasticsearch,
+		"report-elasticsearch",
+		false,
+		"Write report to elasticsearch",
+	)
+
+	f.StringVar(&p.elasticsearchServers, "elasticsearch-servers", "", "Comma delimited list of search servers")
+	f.StringVar(&p.elasticsearchPrefix, "elasticsearch-prefix", "vulscan", "Prefix for indexes in elasticsearch.  Default is \"vulscan\"")
+	f.BoolVar(&p.elasticsearchSniffing, "elasticsearch-sniffing", false, "True if sniffing is enabled for server discovery")
 
 	f.BoolVar(
 		&p.askKeyPassword,
@@ -364,6 +383,13 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 			return subcommands.ExitUsageError
 		}
 		reports = append(reports, report.AzureBlobWriter{})
+	}
+	if p.reportElasticsearch {
+		c.Conf.ElasticsearchServers = p.elasticsearchServers
+		c.Conf.ElasticsearchPrefix = p.elasticsearchPrefix
+		c.Conf.ElasticsearchSniffing = p.elasticsearchSniffing
+
+		reports = append(reports, report.ElasticsearchWriter{ScannedAt: scannedAt})
 	}
 
 	c.Conf.ResultsDir = p.resultsDir
