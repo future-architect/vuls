@@ -194,7 +194,7 @@ func writeResultToES(scanResult models.ScanResult, client *elastic.Client, index
 			ServerInfo:    scanResult.ServerInfo(),
 			Release:       scanResult.Release,
 			Family:        scanResult.Family,
-			Success:       true
+			Success:       true,
 		}
 
 		_, err := client.Index().Index(index).Type("vulscan").BodyJson(&doc).Refresh(true).Do()
