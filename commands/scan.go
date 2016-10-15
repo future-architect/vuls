@@ -45,6 +45,7 @@ type ScanCmd struct {
 	configPath string
 
 	resultsDir       string
+	cvedbtype        string
 	cvedbpath        string
 	cveDictionaryURL string
 	cacheDBPath      string
@@ -90,7 +91,8 @@ func (*ScanCmd) Usage() string {
 		[-lang=en|ja]
 		[-config=/path/to/config.toml]
 		[-results-dir=/path/to/results]
-		[-cve-dictionary-dbpath=/path/to/cve.sqlite3]
+		[-cve-dictionary-dbtype=sqlite3|mysql]
+		[-cve-dictionary-dbpath=/path/to/cve.sqlite3 or mysql connection string]
 		[-cve-dictionary-url=http://127.0.0.1:1323]
 		[-cache-dbpath=/path/to/cache.db]
 		[-cvss-over=7]
@@ -131,6 +133,12 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 	defaultResultsDir := filepath.Join(wd, "results")
 	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+
+	f.StringVar(
+		&p.cvedbtype,
+		"cve-dictionary-dbtype",
+		"sqlite3",
+		"DB type for fetching CVE dictionary (sqlite3 or mysql)")
 
 	f.StringVar(
 		&p.cvedbpath,
@@ -254,7 +262,9 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	logrus.Info("Start scanning")
 	logrus.Infof("config: %s", p.configPath)
 	if p.cvedbpath != "" {
-		logrus.Infof("cve-dictionary: %s", p.cvedbpath)
+		if p.cvedbtype == "sqlite3" {
+			logrus.Infof("cve-dictionary: %s", p.cvedbpath)
+		}
 	} else {
 		logrus.Infof("cve-dictionary: %s", p.cveDictionaryURL)
 	}
@@ -357,6 +367,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	c.Conf.ResultsDir = p.resultsDir
+	c.Conf.CveDBType = p.cvedbtype
 	c.Conf.CveDBPath = p.cvedbpath
 	c.Conf.CveDictionaryURL = p.cveDictionaryURL
 	c.Conf.CacheDBPath = p.cacheDBPath
