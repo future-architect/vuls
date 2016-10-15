@@ -49,7 +49,7 @@ func (api *cvedictClient) initialize() {
 
 func (api cvedictClient) CheckHealth() (ok bool, err error) {
 	if config.Conf.CveDBPath != "" {
-		log.Debugf("get cve-dictionary from sqlite3")
+		log.Debugf("get cve-dictionary from %s", config.Conf.CveDBType)
 		return true, nil
 	}
 
@@ -135,8 +135,10 @@ func (api cvedictClient) FetchCveDetails(cveIDs []string) (cveDetails cve.CveDet
 }
 
 func (api cvedictClient) FetchCveDetailsFromCveDB(cveIDs []string) (cveDetails cve.CveDetails, err error) {
-	log.Debugf("open cve-dictionary db")
+	log.Debugf("open cve-dictionary db (%s)", config.Conf.CveDBType)
+	cveconfig.Conf.DBType = config.Conf.CveDBType
 	cveconfig.Conf.DBPath = config.Conf.CveDBPath
+	cveconfig.Conf.DebugSQL = config.Conf.DebugSQL
 	if err := cvedb.OpenDB(); err != nil {
 		return []cve.CveDetail{},
 			fmt.Errorf("Failed to open DB. err: %s", err)
@@ -239,8 +241,11 @@ func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]c
 }
 
 func (api cvedictClient) FetchCveDetailsByCpeNameFromDB(cpeName string) ([]cve.CveDetail, error) {
-	log.Debugf("open cve-dictionary db")
+	log.Debugf("open cve-dictionary db (%s)", config.Conf.CveDBType)
+	cveconfig.Conf.DBType = config.Conf.CveDBType
 	cveconfig.Conf.DBPath = config.Conf.CveDBPath
+	cveconfig.Conf.DebugSQL = config.Conf.DebugSQL
+
 	if err := cvedb.OpenDB(); err != nil {
 		return []cve.CveDetail{},
 			fmt.Errorf("Failed to open DB. err: %s", err)
