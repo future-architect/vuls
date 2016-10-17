@@ -469,6 +469,7 @@ host         = "172.31.4.82"
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
     #containers = ["${running}"]
+    #ignoreCves = ["CVE-2016-6313"]
     #optional = [
     #    ["key", "value"],
     #]
@@ -488,6 +489,7 @@ host         = "172.31.4.82"
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
     #containers = ["${running}"]
+    #ignoreCves = ["CVE-2016-6314"]
     #optional = [
     #    ["key", "value"],
     #]
@@ -502,6 +504,7 @@ host         = "172.31.4.82"
     - keyPath: SSH private key path
     - cpeNames: see [Usage: Scan vulnerability of non-OS package](https://github.com/future-architect/vuls/blob/master/README.ja.md#usage-scan-vulnerability-of-non-os-package)
     - containers: see [Usage: Scan Docker containers](https://github.com/future-architect/vuls/blob/master/README.ja.md#usage-scan-docker-containers)
+    - ignoreCves: CVE IDs that will not be reported. But output to JSON file.
     - optional: JSONレポートに含めたい追加情報
 
 
@@ -780,6 +783,43 @@ $ vuls scan \
       -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
       -report-azure-blob \
       -azure-container=vuls
+```
+
+## Example: IgnoreCves 
+
+Slack, Mail, テキスト出力しないくないCVE IDがある場合は、設定ファイルに定義することでレポートされなくなる。
+ただ、JSONファイルには以下のように出力される。
+
+- config.toml
+```toml
+[default]
+ignoreCves = ["CVE-2016-6313"]
+
+[servers.bsd]
+host     = "192.168.11.11"
+user     = "kanbe"
+ignoreCves = ["CVE-2016-6314"]
+```
+
+- bsd.json
+```json
+[
+  {
+    "ServerName": "bsd",
+    "Family": "FreeBSD",
+    "Release": "10.3-RELEASE",
+    "IgnoredCves" : {
+      "CveDetail" : {
+        "CVE-2016-6313",
+        ...
+      },
+      "CveDetail" : {
+        "CVE-2016-6314",
+        ...
+      },
+    }
+  }
+]
 ```
 
 ## Example: Add optional key-value pairs to JSON

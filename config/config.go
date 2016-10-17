@@ -233,6 +233,8 @@ type ServerInfo struct {
 	// Container Names or IDs
 	Containers []string
 
+	IgnoreCves []string
+
 	// Optional key-value set that will be outputted to JSON
 	Optional [][]interface{}
 

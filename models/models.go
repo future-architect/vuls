@@ -89,6 +89,7 @@ type ScanResult struct {
 	//  NWLinks     []NWLink
 	KnownCves   []CveInfo
 	UnknownCves []CveInfo
+	IgnoredCves []CveInfo
 
 	Optional [][]interface{} `gorm:"-"`
 }

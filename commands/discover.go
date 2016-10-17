@@ -116,6 +116,7 @@ subjectPrefix = "[vuls]"
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
 #containers = ["${running}"]
+#ignoreCves = ["CVE-2014-6271"]
 #optional = [
 #    ["key", "value"],
 #]
@@ -132,6 +133,7 @@ host         = "{{$ip}}"
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
 #containers = ["${running}"]
+#ignoreCves = ["CVE-2014-0160"]
 #optional = [
 #    ["key", "value"],
 #]

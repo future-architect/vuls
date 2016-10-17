@@ -59,7 +59,6 @@ type SlackWriter struct{}
 func (w SlackWriter) Write(scanResults []models.ScanResult) error {
 	conf := config.Conf.Slack
 	for _, s := range scanResults {
-
 		channel := conf.Channel
 		if channel == "${servername}" {
 			channel = fmt.Sprintf("#%s", s.ServerName)
@@ -97,7 +96,6 @@ func (w SlackWriter) Write(scanResults []models.ScanResult) error {
 }
 
 func msgText(r models.ScanResult) string {
-
 	notifyUsers := ""
 	if 0 < len(r.KnownCves) || 0 < len(r.UnknownCves) {
 		notifyUsers = getNotifyUsers(config.Conf.Slack.NotifyUsers)
@@ -108,7 +106,6 @@ func msgText(r models.ScanResult) string {
 }
 
 func toSlackAttachments(scanResult models.ScanResult) (attaches []*attachment) {
-
 	cves := scanResult.KnownCves
 	if !config.Conf.IgnoreUnscoredCves {
 		cves = append(cves, scanResult.UnknownCves...)
