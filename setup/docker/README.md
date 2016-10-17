@@ -26,7 +26,9 @@ This image version is same as the github repository version.
 ```console
 $ for i in {2002..2016}; do \
     docker run --rm -it \
-    -v $PWD:/vuls  vuls/go-cve-dictionary fetchnvd -years $i; \
+    -v $PWD:/vuls \
+    -v $PWD/go-cve-dictionary-log:/var/log/vuls \
+    vuls/go-cve-dictionary fetchnvd -years $i; \
   done
 ```
 
@@ -49,6 +51,7 @@ keyPath     = "/root/.ssh/id_rsa" # path to ssh private key in docker
 $ docker run --rm \
     -v ~/.ssh:/root/.ssh:ro \
     -v $PWD:/vuls \
+    -v $PWD/vuls-log:/var/log/vuls \
     vuls/vuls configtest \
     -config=./config.toml # path to config.toml in docker
 ```
@@ -59,6 +62,7 @@ $ docker run --rm \
 $ docker run --rm \
     -v ~/.ssh:/root/.ssh:ro \
     -v $PWD:/vuls \
+    -v $PWD/vuls-log:/var/log/vuls \
     vuls/vuls prepare \
     -config=./config.toml # path to config.toml in docker
 ```
@@ -69,6 +73,7 @@ $ docker run --rm \
 $ docker run --rm -it \
     -v ~/.ssh:/root/.ssh:ro \
     -v $PWD:/vuls \
+    -v $PWD/vuls-log:/var/log/vuls \
     -v /etc/localtime:/etc/localtime:ro \
     -e "TZ=Asia/Tokyo" \
     vuls/vuls scan \
