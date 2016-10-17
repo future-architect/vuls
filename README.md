@@ -807,7 +807,7 @@ ignoreCves = ["CVE-2016-6314"]
     "ServerName": "bsd",
     "Family": "FreeBSD",
     "Release": "10.3-RELEASE",
-    "IgnoredCves" : {
+    "IgnoredCves" : [
       "CveDetail" : {
         "CVE-2016-6313",
         ...
@@ -815,8 +815,8 @@ ignoreCves = ["CVE-2016-6314"]
       "CveDetail" : {
         "CVE-2016-6314",
         ...
-      },
-    }
+      }
+    ]
   }
 ]
 ```
