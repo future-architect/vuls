@@ -39,7 +39,7 @@ type ConfigtestCmd struct {
 	askKeyPassword bool
 	sshExternal    bool
 
-	debug bool
+	loglevel       string
 }
 
 // Name return subcommand name
@@ -55,7 +55,7 @@ func (*ConfigtestCmd) Usage() string {
 		        [-config=/path/to/config.toml]
 	        	[-ask-key-password]
 	        	[-ssh-external]
-		        [-debug]
+				[-loglevel=debug|info|warning|error|fatal|panic]
 
 		        [SERVER]...
 `
@@ -67,7 +67,7 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
-	f.BoolVar(&p.debug, "debug", false, "debug mode")
+	f.StringVar(&p.loglevel, "loglevel", "info", "[debug|info|warning|error|fatal|panic]")
 
 	f.BoolVar(
 		&p.askKeyPassword,
@@ -96,7 +96,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		}
 	}
 
-	c.Conf.Debug = p.debug
+	c.Conf.LogLevel = p.loglevel
 	c.Conf.SSHExternal = p.sshExternal
 
 	err = c.Load(p.configPath, keyPass)

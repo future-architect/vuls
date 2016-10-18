@@ -30,12 +30,13 @@ var Conf Config
 
 //Config is struct of Configuration
 type Config struct {
-	Debug    bool
+	LogLevel string
 	DebugSQL bool
 	Lang     string
 
 	Mail    smtpConf
 	Slack   SlackConf
+
 	Default ServerInfo
 	Servers map[string]ServerInfo
 
@@ -69,6 +70,11 @@ type Config struct {
 func (c Config) Validate() bool {
 	errs := []error{}
 
+	_, err := log.ParseLevel(c.LogLevel)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("Invalid log level %s", c.LogLevel))
+	}
+
 	if len(c.ResultsDir) != 0 {
 		if ok, _ := valid.IsFilePath(c.ResultsDir); !ok {
 			errs = append(errs, fmt.Errorf(
@@ -97,7 +103,7 @@ func (c Config) Validate() bool {
 		}
 	}
 
-	_, err := valid.ValidateStruct(c)
+	_, err = valid.ValidateStruct(c)
 	if err != nil {
 		errs = append(errs, err)
 	}

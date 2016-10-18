@@ -34,10 +34,9 @@ func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
 	log := logrus.New()
 	log.Formatter = &formatter.TextFormatter{MsgAnsiColor: c.LogMsgAnsiColor}
 	log.Out = os.Stderr
-	log.Level = logrus.InfoLevel
-	if config.Conf.Debug {
-		log.Level = logrus.DebugLevel
-	}
+
+	level, _ := logrus.ParseLevel(config.Conf.LogLevel)
+	log.Level = level
 
 	// File output
 	logDir := "/var/log/vuls"
@@ -69,4 +68,10 @@ func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
 
 	fields := logrus.Fields{"prefix": whereami}
 	return log.WithFields(fields)
+}
+
+// IsDebugEnabled returns true if a log level of DEBUG has been set.
+func IsDebugEnabled() (bool) {
+	level, _ := logrus.ParseLevel(config.Conf.LogLevel)
+	return level == logrus.DebugLevel
 }

@@ -39,7 +39,7 @@ import (
 // ScanCmd is Subcommand of host discovery mode
 type ScanCmd struct {
 	lang     string
-	debug    bool
+	loglevel string
 	debugSQL bool
 
 	configPath string
@@ -88,6 +88,7 @@ func (*ScanCmd) Synopsis() string { return "Scan vulnerabilities" }
 func (*ScanCmd) Usage() string {
 	return `scan:
 	scan
+	    [-loglevel=debug|info|warning|error|fatal|panic]
 		[-lang=en|ja]
 		[-config=/path/to/config.toml]
 		[-results-dir=/path/to/results]
@@ -123,7 +124,7 @@ func (*ScanCmd) Usage() string {
 // SetFlags set flag
 func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.lang, "lang", "en", "[en|ja]")
-	f.BoolVar(&p.debug, "debug", false, "debug mode")
+	f.StringVar(&p.loglevel, "loglevel", "info", "[debug|info|warning|error|fatal|panic]")
 	f.BoolVar(&p.debugSQL, "debug-sql", false, "SQL debug mode")
 
 	wd, _ := os.Getwd()
@@ -307,7 +308,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	c.Conf.Lang = p.lang
-	c.Conf.Debug = p.debug
+	c.Conf.LogLevel = p.loglevel
 	c.Conf.DebugSQL = p.debugSQL
 
 	// logger

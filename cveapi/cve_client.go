@@ -57,7 +57,8 @@ func (api cvedictClient) CheckHealth() (ok bool, err error) {
 	url := fmt.Sprintf("%s/health", api.baseURL)
 	var errs []error
 	var resp *http.Response
-	resp, _, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
+
+	resp, _, errs = gorequest.New().SetDebug(util.IsDebugEnabled()).Get(url).End()
 	//  resp, _, errs = gorequest.New().Proxy(api.httpProxy).Get(url).End()
 	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 		return false, fmt.Errorf("Failed to request to CVE server. url: %s, errs: %v", url, errs)
@@ -214,7 +215,7 @@ func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]c
 	var errs []error
 	var resp *http.Response
 	f := func() (err error) {
-		req := gorequest.New().SetDebug(config.Conf.Debug).Post(url)
+		req := gorequest.New().SetDebug(util.IsDebugEnabled()).Post(url)
 		for key := range query {
 			req = req.Send(fmt.Sprintf("%s=%s", key, query[key])).Type("json")
 		}

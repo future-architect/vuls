@@ -32,7 +32,7 @@ import (
 
 // PrepareCmd is Subcommand of host discovery mode
 type PrepareCmd struct {
-	debug      bool
+	loglevel string
 	configPath string
 
 	askSudoPassword bool
@@ -59,7 +59,7 @@ func (*PrepareCmd) Usage() string {
 	prepare
 			[-config=/path/to/config.toml]
 			[-ask-key-password]
-			[-debug]
+			[-loglevel=debug|info|warning|error|fatal|panic]
 
 		    [SERVER]...
 `
@@ -68,7 +68,7 @@ func (*PrepareCmd) Usage() string {
 // SetFlags set flag
 func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
 
-	f.BoolVar(&p.debug, "debug", false, "debug mode")
+	f.StringVar(&p.loglevel, "loglevel", "info", "[debug|info|warning|error|fatal|panic]")
 
 	wd, _ := os.Getwd()
 
@@ -132,7 +132,7 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 		c.Conf.Servers = target
 	}
 
-	c.Conf.Debug = p.debug
+	c.Conf.LogLevel = p.loglevel
 
 	// Set up custom logger
 	logger := util.NewCustomLogger(c.ServerInfo{})

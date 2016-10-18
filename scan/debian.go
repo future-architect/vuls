@@ -313,7 +313,7 @@ func (o *debian) ensureChangelogCache(current cache.Meta) error {
 		}
 	}
 
-	if config.Conf.Debug {
+	if util.IsDebugEnabled() {
 		cache.DB.PrettyPrint(current)
 	}
 	return nil
