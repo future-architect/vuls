@@ -31,7 +31,7 @@ type TOMLLoader struct {
 }
 
 // Load load the configuraiton TOML file specified by path arg.
-func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
+func (c TOMLLoader) Load(pathToToml, keyPass string) (err error) {
 	var conf Config
 	if _, err := toml.DecodeFile(pathToToml, &conf); err != nil {
 		log.Error("Load config failed", err)
@@ -49,56 +49,90 @@ func (c TOMLLoader) Load(pathToToml, keyPass, sudoPass string) (err error) {
 		d.KeyPassword = keyPass
 	}
 
-	if sudoPass != "" {
-		d.Password = sudoPass
-	}
-
 	i := 0
 	for name, v := range conf.Servers {
-
-		if 0 < len(v.KeyPassword) || 0 < len(v.Password) {
-			log.Warn("[Depricated] password and keypassword in config file are unsecure. Remove them immediately for a security reason. They will be removed in a future release.")
+		if 0 < len(v.KeyPassword) {
+			log.Warn("[Deprecated] KEYPASSWORD IN CONFIG FILE ARE UNSECURE. REMOVE THEM IMMEDIATELY FOR A SECURITY REASONS. THEY WILL BE REMOVED IN A FUTURE RELEASE.")
 		}
 
 		s := ServerInfo{ServerName: name}
-		s.User = v.User
-		if s.User == "" {
-			s.User = d.User
-		}
 
-		//  s.Password = sudoPass
-		s.Password = v.Password
-		if s.Password == "" {
-			s.Password = d.Password
+		switch {
+		case v.User != "":
+			s.User = v.User
+		case d.User != "":
+			s.User = d.User
+		default:
+			return fmt.Errorf("%s is invalid. User is empty", name)
 		}
 
 		s.Host = v.Host
+		if len(s.Host) == 0 {
+			return fmt.Errorf("%s is invalid. host is empty", name)
+		}
 
-		s.Port = v.Port
-		if s.Port == "" {
+		switch {
+		case v.Port != "":
+			s.Port = v.Port
+		case d.Port != "":
 			s.Port = d.Port
+		default:
+			s.Port = "22"
 		}
 
 		s.KeyPath = v.KeyPath
-		if s.KeyPath == "" {
+		if len(s.KeyPath) == 0 {
 			s.KeyPath = d.KeyPath
 		}
 		if s.KeyPath != "" {
 			if _, err := os.Stat(s.KeyPath); err != nil {
 				return fmt.Errorf(
-					"config.toml is invalid. keypath: %s not exists", s.KeyPath)
+					"%s is invalid. keypath: %s not exists", name, s.KeyPath)
 			}
 		}
 
 		//  s.KeyPassword = keyPass
 		s.KeyPassword = v.KeyPassword
-		if s.KeyPassword == "" {
+		if len(s.KeyPassword) == 0 {
 			s.KeyPassword = d.KeyPassword
 		}
 
 		s.CpeNames = v.CpeNames
 		if len(s.CpeNames) == 0 {
 			s.CpeNames = d.CpeNames
+		}
+
+		s.Containers = v.Containers
+		if len(s.Containers) == 0 {
+			s.Containers = d.Containers
+		}
+
+		s.IgnoreCves = v.IgnoreCves
+		for _, cve := range d.IgnoreCves {
+			found := false
+			for _, c := range s.IgnoreCves {
+				if cve == c {
+					found = true
+					break
+				}
+			}
+			if !found {
+				s.IgnoreCves = append(s.IgnoreCves, cve)
+			}
+		}
+
+		s.Optional = v.Optional
+		for _, dkv := range d.Optional {
+			found := false
+			for _, kv := range s.Optional {
+				if dkv[0] == kv[0] {
+					found = true
+					break
+				}
+			}
+			if !found {
+				s.Optional = append(s.Optional, dkv)
+			}
 		}
 
 		s.LogMsgAnsiColor = Colors[i%len(Colors)]

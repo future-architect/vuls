@@ -1,0 +1,119 @@
+hash: 01cee4aa1d27c967f5f5165febfbd77fd0e89a6e7a9a89c84099c0d45dffd446
+updated: 2016-10-12T15:28:25.843936367+09:00
+imports:
+- name: github.com/asaskevich/govalidator
+  version: 7b3beb6df3c42abd3509abfc3bcacc0fbfb7c877
+- name: github.com/aws/aws-sdk-go
+  version: aad29423c2c09f0a1fa5346216bc041a4994eef4
+  subpackages:
+  - aws
+  - aws/credentials
+  - aws/session
+  - service/s3
+  - aws/awserr
+  - aws/client
+  - aws/corehandlers
+  - aws/credentials/stscreds
+  - aws/defaults
+  - aws/request
+  - private/endpoints
+  - aws/awsutil
+  - aws/client/metadata
+  - aws/signer/v4
+  - private/protocol
+  - private/protocol/restxml
+  - private/waiter
+  - service/sts
+  - aws/credentials/ec2rolecreds
+  - aws/credentials/endpointcreds
+  - aws/ec2metadata
+  - private/protocol/rest
+  - private/protocol/query
+  - private/protocol/xml/xmlutil
+  - private/protocol/query/queryutil
+- name: github.com/Azure/azure-sdk-for-go
+  version: 91f3d4a4d024e3c0d4d9412916d05cf84504a616
+  subpackages:
+  - storage
+- name: github.com/boltdb/bolt
+  version: 074dffcc83e9f421e261526d297cd93f22a34080
+- name: github.com/BurntSushi/toml
+  version: 99064174e013895bbd9b025c31100bd1d9b590ca
+- name: github.com/cenkalti/backoff
+  version: 8edc80b07f38c27352fb186d971c628a6c32552b
+- name: github.com/cheggaaa/pb
+  version: ad4efe000aa550bb54918c06ebbadc0ff17687b9
+- name: github.com/go-ini/ini
+  version: 6e4869b434bd001f6983749881c7ead3545887d8
+- name: github.com/google/subcommands
+  version: 1c7173745a6001f67d8d96ab4e178284c77f7759
+- name: github.com/gosuri/uitable
+  version: 36ee7e946282a3fb1cfecd476ddc9b35d8847e42
+  subpackages:
+  - util/strutil
+  - util/wordwrap
+- name: github.com/howeyc/gopass
+  version: f5387c492211eb133053880d23dfae62aa14123d
+- name: github.com/jinzhu/gorm
+  version: 39165d498058a823126af3cbf4d2a3b0e1acf11e
+- name: github.com/jinzhu/inflection
+  version: 74387dc39a75e970e7a3ae6a3386b5bd2e5c5cff
+- name: github.com/jmespath/go-jmespath
+  version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
+- name: github.com/jroimartin/gocui
+  version: 4e9ce9a8e26f2ef33dfe297dbdfca148733b6b9b
+- name: github.com/k0kubun/pp
+  version: f5dce6ed0ccf6c350f1679964ff6b61f3d6d2033
+- name: github.com/kotakanbe/go-cve-dictionary
+  version: f9f68fee57dca8e60fb5d9d6b34d3215d854fc06
+  subpackages:
+  - config
+  - models
+  - db
+  - log
+  - jvn
+  - nvd
+  - util
+- name: github.com/kotakanbe/go-pingscanner
+  version: 58e188a3e4f6ab1a6371e33421e4502e26fa1e80
+- name: github.com/kotakanbe/logrus-prefixed-formatter
+  version: f4f7d41649cf1e75e736884da8d05324aa76ea25
+- name: github.com/mattn/go-colorable
+  version: 6c903ff4aa50920ca86087a280590b36b3152b9c
+- name: github.com/mattn/go-isatty
+  version: 66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
+- name: github.com/mattn/go-runewidth
+  version: 737072b4e32b7a5018b4a7125da8d12de90e8045
+- name: github.com/mattn/go-sqlite3
+  version: e5a3c16c5c1d80b24f633e68aecd6b0702786d3d
+- name: github.com/mgutz/ansi
+  version: c286dcecd19ff979eeb73ea444e479b903f2cfcb
+- name: github.com/moul/http2curl
+  version: b1479103caacaa39319f75e7f57fc545287fca0d
+- name: github.com/nsf/termbox-go
+  version: b6acae516ace002cb8105a89024544a1480655a5
+- name: github.com/parnurzeal/gorequest
+  version: e37b9d1efacf7c94820b29b75dd7d0c2996b3fb1
+- name: github.com/rifflock/lfshook
+  version: 3f9d976bd7402de39b46357069fb6325a974572e
+- name: github.com/Sirupsen/logrus
+  version: 3ec0642a7fb6488f65b06f9040adc67e3990296a
+- name: golang.org/x/crypto
+  version: 4cd25d65a015cc83d41bf3454e6e8d6c116d16da
+  subpackages:
+  - ssh
+  - ssh/agent
+  - ssh/terminal
+  - curve25519
+  - ed25519
+  - ed25519/internal/edwards25519
+- name: golang.org/x/net
+  version: cf4effbb9db1f3ef07f7e1891402991b6afbb276
+  subpackages:
+  - context
+  - publicsuffix
+- name: golang.org/x/sys
+  version: 9bb9f0998d48b31547d975974935ae9b48c7a03c
+  subpackages:
+  - unix
+devImports: []

@@ -59,7 +59,6 @@ type SlackWriter struct{}
 func (w SlackWriter) Write(scanResults []models.ScanResult) error {
 	conf := config.Conf.Slack
 	for _, s := range scanResults {
-
 		channel := conf.Channel
 		if channel == "${servername}" {
 			channel = fmt.Sprintf("#%s", s.ServerName)
@@ -80,7 +79,7 @@ func (w SlackWriter) Write(scanResults []models.ScanResult) error {
 				Send(string(jsonBody)).End()
 			if resp.StatusCode != 200 {
 				log.Errorf("Resonse body: %s", body)
-				if len(errs) > 0 {
+				if 0 < len(errs) {
 					return errs[0]
 				}
 			}
@@ -97,25 +96,22 @@ func (w SlackWriter) Write(scanResults []models.ScanResult) error {
 }
 
 func msgText(r models.ScanResult) string {
-
 	notifyUsers := ""
 	if 0 < len(r.KnownCves) || 0 < len(r.UnknownCves) {
 		notifyUsers = getNotifyUsers(config.Conf.Slack.NotifyUsers)
 	}
 
-	hostinfo := fmt.Sprintf(
-		"*%s* (%s %s)",
-		r.ServerName,
-		r.Family,
-		r.Release,
-	)
-	return fmt.Sprintf("%s\n%s\n>%s", notifyUsers, hostinfo, r.CveSummary())
+	serverInfo := fmt.Sprintf("*%s*", r.ServerInfo())
+	return fmt.Sprintf("%s\n%s\n>%s", notifyUsers, serverInfo, r.CveSummary())
 }
 
 func toSlackAttachments(scanResult models.ScanResult) (attaches []*attachment) {
+	cves := scanResult.KnownCves
+	if !config.Conf.IgnoreUnscoredCves {
+		cves = append(cves, scanResult.UnknownCves...)
+	}
 
-	scanResult.KnownCves = append(scanResult.KnownCves, scanResult.UnknownCves...)
-	for _, cveInfo := range scanResult.KnownCves {
+	for _, cveInfo := range cves {
 		cveID := cveInfo.CveDetail.CveID
 
 		curentPackages := []string{}
@@ -176,16 +172,15 @@ func attachmentText(cveInfo models.CveInfo, osFamily string) string {
 
 	switch {
 	case config.Conf.Lang == "ja" &&
-		cveInfo.CveDetail.Jvn.ID != 0 &&
-		0 < cveInfo.CveDetail.CvssScore("ja"):
+		0 < cveInfo.CveDetail.Jvn.CvssScore():
 
 		jvn := cveInfo.CveDetail.Jvn
 		return fmt.Sprintf("*%4.1f (%s)* <%s|%s>\n%s\n%s",
 			cveInfo.CveDetail.CvssScore(config.Conf.Lang),
-			jvn.Severity,
-			fmt.Sprintf(cvssV2CalcURLTemplate, cveInfo.CveDetail.CveID, jvn.Vector),
-			jvn.Vector,
-			jvn.Title,
+			jvn.CvssSeverity(),
+			fmt.Sprintf(cvssV2CalcURLTemplate, cveInfo.CveDetail.CveID, jvn.CvssVector()),
+			jvn.CvssVector(),
+			jvn.CveTitle(),
 			linkText,
 		)
 
@@ -193,20 +188,31 @@ func attachmentText(cveInfo models.CveInfo, osFamily string) string {
 		nvd := cveInfo.CveDetail.Nvd
 		return fmt.Sprintf("*%4.1f (%s)* <%s|%s>\n%s\n%s",
 			cveInfo.CveDetail.CvssScore(config.Conf.Lang),
-			nvd.Severity(),
+			nvd.CvssSeverity(),
 			fmt.Sprintf(cvssV2CalcURLTemplate, cveInfo.CveDetail.CveID, nvd.CvssVector()),
 			nvd.CvssVector(),
-			nvd.Summary,
+			nvd.CveSummary(),
 			linkText,
 		)
 	default:
 		nvd := cveInfo.CveDetail.Nvd
-		return fmt.Sprintf("?\n%s\n%s", nvd.Summary, linkText)
+		return fmt.Sprintf("?\n%s\n%s", nvd.CveSummary(), linkText)
 	}
 }
 
 func links(cveInfo models.CveInfo, osFamily string) string {
 	links := []string{}
+
+	cweID := cveInfo.CveDetail.CweID()
+	if 0 < len(cweID) {
+		links = append(links, fmt.Sprintf("<%s|%s>",
+			cweURL(cweID), cweID))
+		if config.Conf.Lang == "ja" {
+			links = append(links, fmt.Sprintf("<%s|%s(JVN)>",
+				cweJvnURL(cweID), cweID))
+		}
+	}
+
 	cveID := cveInfo.CveDetail.CveID
 	if config.Conf.Lang == "ja" && 0 < len(cveInfo.CveDetail.Jvn.Link()) {
 		jvn := fmt.Sprintf("<%s|JVN>", cveInfo.CveDetail.Jvn.Link())

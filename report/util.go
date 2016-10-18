@@ -20,26 +20,54 @@ package report
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/gosuri/uitable"
 )
 
+func ensureResultDir(scannedAt time.Time) (path string, err error) {
+	const timeLayout = "20060102_1504"
+	jsonDirName := scannedAt.Format(timeLayout)
+
+	resultsDir := config.Conf.ResultsDir
+	if len(resultsDir) == 0 {
+		wd, _ := os.Getwd()
+		resultsDir = filepath.Join(wd, "results")
+	}
+	jsonDir := filepath.Join(resultsDir, jsonDirName)
+
+	if err := os.MkdirAll(jsonDir, 0700); err != nil {
+		return "", fmt.Errorf("Failed to create dir: %s", err)
+	}
+
+	symlinkPath := filepath.Join(resultsDir, "current")
+	if _, err := os.Lstat(symlinkPath); err == nil {
+		if err := os.Remove(symlinkPath); err != nil {
+			return "", fmt.Errorf(
+				"Failed to remove symlink. path: %s, err: %s", symlinkPath, err)
+		}
+	}
+
+	if err := os.Symlink(jsonDir, symlinkPath); err != nil {
+		return "", fmt.Errorf(
+			"Failed to create symlink: path: %s, err: %s", symlinkPath, err)
+	}
+	return jsonDir, nil
+}
+
 func toPlainText(scanResult models.ScanResult) (string, error) {
-	hostinfo := fmt.Sprintf(
-		"%s (%s %s)",
-		scanResult.ServerName,
-		scanResult.Family,
-		scanResult.Release,
-	)
+	serverInfo := scanResult.ServerInfo()
 
 	var buffer bytes.Buffer
-	for i := 0; i < len(hostinfo); i++ {
+	for i := 0; i < len(serverInfo); i++ {
 		buffer.WriteString("=")
 	}
-	header := fmt.Sprintf("%s\n%s", hostinfo, buffer.String())
+	header := fmt.Sprintf("%s\n%s", serverInfo, buffer.String())
 
 	if len(scanResult.KnownCves) == 0 && len(scanResult.UnknownCves) == 0 {
 		return fmt.Sprintf(`
@@ -53,7 +81,12 @@ No unsecure packages.
 	scoredReport, unscoredReport = toPlainTextDetails(scanResult, scanResult.Family)
 
 	scored := strings.Join(scoredReport, "\n\n")
-	unscored := strings.Join(unscoredReport, "\n\n")
+
+	unscored := ""
+	if !config.Conf.IgnoreUnscoredCves {
+		unscored = strings.Join(unscoredReport, "\n\n")
+	}
+
 	detail := fmt.Sprintf(`
 %s
 
@@ -72,30 +105,35 @@ func ToPlainTextSummary(r models.ScanResult) string {
 	stable := uitable.New()
 	stable.MaxColWidth = 84
 	stable.Wrap = true
-	cves := append(r.KnownCves, r.UnknownCves...)
+
+	cves := r.KnownCves
+	if !config.Conf.IgnoreUnscoredCves {
+		cves = append(cves, r.UnknownCves...)
+	}
+
 	for _, d := range cves {
 		var scols []string
 
 		switch {
 		case config.Conf.Lang == "ja" &&
-			d.CveDetail.Jvn.ID != 0 &&
-			0 < d.CveDetail.CvssScore("ja"):
+			0 < d.CveDetail.Jvn.CvssScore():
 
-			summary := d.CveDetail.Jvn.Title
+			summary := d.CveDetail.Jvn.CveTitle()
 			scols = []string{
 				d.CveDetail.CveID,
 				fmt.Sprintf("%-4.1f (%s)",
 					d.CveDetail.CvssScore(config.Conf.Lang),
-					d.CveDetail.Jvn.Severity,
+					d.CveDetail.Jvn.CvssSeverity(),
 				),
 				summary,
 			}
 		case 0 < d.CveDetail.CvssScore("en"):
-			summary := d.CveDetail.Nvd.Summary
+			summary := d.CveDetail.Nvd.CveSummary()
 			scols = []string{
 				d.CveDetail.CveID,
-				fmt.Sprintf("%-4.1f",
+				fmt.Sprintf("%-4.1f (%s)",
 					d.CveDetail.CvssScore(config.Conf.Lang),
+					d.CveDetail.Nvd.CvssSeverity(),
 				),
 				summary,
 			}
@@ -103,7 +141,7 @@ func ToPlainTextSummary(r models.ScanResult) string {
 			scols = []string{
 				d.CveDetail.CveID,
 				"?",
-				d.CveDetail.Nvd.Summary,
+				d.CveDetail.Nvd.CveSummary(),
 			}
 		}
 
@@ -116,12 +154,11 @@ func ToPlainTextSummary(r models.ScanResult) string {
 	return fmt.Sprintf("%s", stable)
 }
 
-//TODO Distro Advisory
 func toPlainTextDetails(data models.ScanResult, osFamily string) (scoredReport, unscoredReport []string) {
 	for _, cve := range data.KnownCves {
 		switch config.Conf.Lang {
 		case "en":
-			if cve.CveDetail.Nvd.ID != 0 {
+			if 0 < cve.CveDetail.Nvd.CvssScore() {
 				scoredReport = append(
 					scoredReport, toPlainTextDetailsLangEn(cve, osFamily))
 			} else {
@@ -129,10 +166,10 @@ func toPlainTextDetails(data models.ScanResult, osFamily string) (scoredReport, 
 					scoredReport, toPlainTextUnknownCve(cve, osFamily))
 			}
 		case "ja":
-			if cve.CveDetail.Jvn.ID != 0 {
+			if 0 < cve.CveDetail.Jvn.CvssScore() {
 				scoredReport = append(
 					scoredReport, toPlainTextDetailsLangJa(cve, osFamily))
-			} else if cve.CveDetail.Nvd.ID != 0 {
+			} else if 0 < cve.CveDetail.Nvd.CvssScore() {
 				scoredReport = append(
 					scoredReport, toPlainTextDetailsLangEn(cve, osFamily))
 			} else {
@@ -170,13 +207,11 @@ func toPlainTextUnknownCve(cveInfo models.CveInfo, osFamily string) string {
 }
 
 func toPlainTextDetailsLangJa(cveInfo models.CveInfo, osFamily string) string {
-
 	cveDetail := cveInfo.CveDetail
 	cveID := cveDetail.CveID
 	jvn := cveDetail.Jvn
 
 	dtable := uitable.New()
-	//TODO resize
 	dtable.MaxColWidth = 100
 	dtable.Wrap = true
 	dtable.AddRow(cveID)
@@ -185,14 +220,16 @@ func toPlainTextDetailsLangJa(cveInfo models.CveInfo, osFamily string) string {
 		dtable.AddRow("Score",
 			fmt.Sprintf("%4.1f (%s)",
 				cveDetail.Jvn.CvssScore(),
-				jvn.Severity,
+				jvn.CvssSeverity(),
 			))
 	} else {
 		dtable.AddRow("Score", "?")
 	}
-	dtable.AddRow("Vector", jvn.Vector)
-	dtable.AddRow("Title", jvn.Title)
-	dtable.AddRow("Description", jvn.Summary)
+	dtable.AddRow("Vector", jvn.CvssVector())
+	dtable.AddRow("Title", jvn.CveTitle())
+	dtable.AddRow("Description", jvn.CveSummary())
+	dtable.AddRow(cveDetail.CweID(), cweURL(cveDetail.CweID()))
+	dtable.AddRow(cveDetail.CweID()+"(JVN)", cweJvnURL(cveDetail.CweID()))
 
 	dtable.AddRow("JVN", jvn.Link())
 	dtable.AddRow("NVD", fmt.Sprintf("%s?vulnId=%s", nvdBaseURL, cveID))
@@ -217,7 +254,6 @@ func toPlainTextDetailsLangEn(d models.CveInfo, osFamily string) string {
 	nvd := cveDetail.Nvd
 
 	dtable := uitable.New()
-	//TODO resize
 	dtable.MaxColWidth = 100
 	dtable.Wrap = true
 	dtable.AddRow(cveID)
@@ -227,14 +263,16 @@ func toPlainTextDetailsLangEn(d models.CveInfo, osFamily string) string {
 		dtable.AddRow("Score",
 			fmt.Sprintf("%4.1f (%s)",
 				cveDetail.Nvd.CvssScore(),
-				nvd.Severity(),
+				nvd.CvssSeverity(),
 			))
 	} else {
 		dtable.AddRow("Score", "?")
 	}
 
 	dtable.AddRow("Vector", nvd.CvssVector())
-	dtable.AddRow("Summary", nvd.Summary)
+	dtable.AddRow("Summary", nvd.CveSummary())
+	dtable.AddRow("CWE", cweURL(cveDetail.CweID()))
+
 	dtable.AddRow("NVD", fmt.Sprintf("%s?vulnId=%s", nvdBaseURL, cveID))
 	dtable.AddRow("MITRE", fmt.Sprintf("%s%s", mitreBaseURL, cveID))
 	dtable.AddRow("CVE Details", fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID))
@@ -306,6 +344,15 @@ func distroLinks(cveInfo models.CveInfo, osFamily string) []distroLink {
 			},
 			//  TODO Debian dsa
 		}
+	case "FreeBSD":
+		links := []distroLink{}
+		for _, advisory := range cveInfo.DistroAdvisories {
+			links = append(links, distroLink{
+				"FreeBSD-VuXML",
+				fmt.Sprintf(freeBSDVuXMLBaseURL, advisory.AdvisoryID),
+			})
+		}
+		return links
 	default:
 		return []distroLink{}
 	}
@@ -331,4 +378,13 @@ func addCpeNames(table *uitable.Table, names []models.CpeName) *uitable.Table {
 		table.AddRow("CPE", fmt.Sprintf("%s", p.Name))
 	}
 	return table
+}
+
+func cweURL(cweID string) string {
+	return fmt.Sprintf("https://cwe.mitre.org/data/definitions/%s.html",
+		strings.TrimPrefix(cweID, "CWE-"))
+}
+
+func cweJvnURL(cweID string) string {
+	return fmt.Sprintf("http://jvndb.jvn.jp/ja/cwe/%s.html", cweID)
 }

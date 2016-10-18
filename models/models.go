@@ -30,16 +30,34 @@ import (
 // ScanHistory is the history of Scanning.
 type ScanHistory struct {
 	gorm.Model
-	ScanResults []ScanResult
+	ScanResults ScanResults
 	ScannedAt   time.Time
 }
 
 // ScanResults is slice of ScanResult.
 type ScanResults []ScanResult
 
+// Len implement Sort Interface
+func (s ScanResults) Len() int {
+	return len(s)
+}
+
+// Swap implement Sort Interface
+func (s ScanResults) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+// Less implement Sort Interface
+func (s ScanResults) Less(i, j int) bool {
+	if s[i].ServerName == s[j].ServerName {
+		return s[i].Container.ContainerID < s[i].Container.ContainerID
+	}
+	return s[i].ServerName < s[j].ServerName
+}
+
 // FilterByCvssOver is filter function.
-func (results ScanResults) FilterByCvssOver() (filtered ScanResults) {
-	for _, result := range results {
+func (s ScanResults) FilterByCvssOver() (filtered ScanResults) {
+	for _, result := range s {
 		cveInfos := []CveInfo{}
 		for _, cveInfo := range result.KnownCves {
 			if config.Conf.CvssScoreOver < cveInfo.CveDetail.CvssScore(config.Conf.Lang) {
@@ -54,17 +72,71 @@ func (results ScanResults) FilterByCvssOver() (filtered ScanResults) {
 
 // ScanResult has the result of scanned CVE information.
 type ScanResult struct {
-	gorm.Model
-	ScanHistoryID uint
+	gorm.Model    `json:"-"`
+	ScanHistoryID uint `json:"-"`
+	ScannedAt     time.Time
 
 	ServerName string // TOML Section key
 	//  Hostname    string
 	Family  string
 	Release string
+
+	Container Container
+
+	Platform Platform
+
 	//  Fqdn        string
 	//  NWLinks     []NWLink
 	KnownCves   []CveInfo
 	UnknownCves []CveInfo
+	IgnoredCves []CveInfo
+
+	Optional [][]interface{} `gorm:"-"`
+}
+
+// ServerInfo returns server name one line
+func (r ScanResult) ServerInfo() string {
+	hostinfo := ""
+	if len(r.Container.ContainerID) == 0 {
+		hostinfo = fmt.Sprintf(
+			"%s (%s%s)",
+			r.ServerName,
+			r.Family,
+			r.Release,
+		)
+	} else {
+		hostinfo = fmt.Sprintf(
+			"%s / %s (%s%s) on %s",
+			r.Container.Name,
+			r.Container.ContainerID,
+			r.Family,
+			r.Release,
+			r.ServerName,
+		)
+	}
+	return hostinfo
+}
+
+// ServerInfoTui returns server infromation for TUI sidebar
+func (r ScanResult) ServerInfoTui() string {
+	hostinfo := ""
+	if len(r.Container.ContainerID) == 0 {
+		hostinfo = fmt.Sprintf(
+			"%s (%s%s)",
+			r.ServerName,
+			r.Family,
+			r.Release,
+		)
+	} else {
+		hostinfo = fmt.Sprintf(
+			"|-- %s (%s%s)",
+			r.Container.Name,
+			r.Family,
+			r.Release,
+			//  r.Container.ContainerID,
+		)
+	}
+	return hostinfo
 }
 
 // CveSummary summarize the number of CVEs group by CVSSv2 Severity
@@ -84,16 +156,19 @@ func (r ScanResult) CveSummary() string {
 			unknown++
 		}
 	}
+
+	if config.Conf.IgnoreUnscoredCves {
+		return fmt.Sprintf("Total: %d (High:%d Middle:%d Low:%d)",
+			high+middle+low, high, middle, low)
+	}
 	return fmt.Sprintf("Total: %d (High:%d Middle:%d Low:%d ?:%d)",
-		high+middle+low+unknown,
-		high, middle, low, unknown,
-	)
+		high+middle+low+unknown, high, middle, low, unknown)
 }
 
 // NWLink has network link information.
 type NWLink struct {
-	gorm.Model
-	ScanResultID uint
+	gorm.Model   `json:"-"`
+	ScanResultID uint `json:"-"`
 
 	IPAddress string
 	Netmask   string
@@ -114,13 +189,16 @@ func (c CveInfos) Swap(i, j int) {
 
 func (c CveInfos) Less(i, j int) bool {
 	lang := config.Conf.Lang
-	return c[i].CveDetail.CvssScore(lang) > c[j].CveDetail.CvssScore(lang)
+	if c[i].CveDetail.CvssScore(lang) == c[j].CveDetail.CvssScore(lang) {
+		return c[i].CveDetail.CveID < c[j].CveDetail.CveID
+	}
+	return c[j].CveDetail.CvssScore(lang) < c[i].CveDetail.CvssScore(lang)
 }
 
 // CveInfo has Cve Information.
 type CveInfo struct {
-	gorm.Model
-	ScanResultID uint
+	gorm.Model   `json:"-"`
+	ScanResultID uint `json:"-"`
 
 	CveDetail        cve.CveDetail
 	Packages         []PackageInfo
@@ -130,8 +208,8 @@ type CveInfo struct {
 
 // CpeName has CPE name
 type CpeName struct {
-	gorm.Model
-	CveInfoID uint
+	gorm.Model `json:"-"`
+	CveInfoID  uint `json:"-"`
 
 	Name string
 }
@@ -196,8 +274,8 @@ func (ps PackageInfoList) FindByName(name string) (result PackageInfo, found boo
 
 // PackageInfo has installed packages.
 type PackageInfo struct {
-	gorm.Model
-	CveInfoID uint
+	gorm.Model `json:"-"`
+	CveInfoID  uint `json:"-"`
 
 	Name    string
 	Version string
@@ -231,14 +309,31 @@ func (p PackageInfo) ToStringNewVersion() string {
 	return str
 }
 
-// DistroAdvisory has Amazon Linux AMI Security Advisory information.
-//TODO Rename to DistroAdvisory
+// DistroAdvisory has Amazon Linux, RHEL, FreeBSD Security Advisory information.
 type DistroAdvisory struct {
-	gorm.Model
-	CveInfoID uint
+	gorm.Model `json:"-"`
+	CveInfoID  uint `json:"-"`
 
 	AdvisoryID string
 	Severity   string
 	Issued     time.Time
 	Updated    time.Time
+}
+
+// Container has Container information
+type Container struct {
+	gorm.Model   `json:"-"`
+	ScanResultID uint `json:"-"`
+
+	ContainerID string
+	Name        string
+}
+
+// Platform has platform information
+type Platform struct {
+	gorm.Model   `json:"-"`
+	ScanResultID uint `json:"-"`
+
+	Name       string // aws or azure or gcp or other...
+	InstanceID string
 }

@@ -37,8 +37,6 @@ type PrepareCmd struct {
 
 	askSudoPassword bool
 	askKeyPassword  bool
-
-	useUnattendedUpgrades bool
 }
 
 // Name return subcommand name
@@ -46,7 +44,6 @@ func (*PrepareCmd) Name() string { return "prepare" }
 
 // Synopsis return synopsis
 func (*PrepareCmd) Synopsis() string {
-	//  return "Install packages Ubuntu: unattended-upgrade, CentOS: yum-plugin-security)"
 	return `Install required packages to scan.
 				CentOS: yum-plugin-security, yum-plugin-changelog
 				Amazon: None
@@ -61,10 +58,10 @@ func (*PrepareCmd) Usage() string {
 	return `prepare:
 	prepare
 			[-config=/path/to/config.toml]
-			[-ask-sudo-password]
 			[-ask-key-password]
 			[-debug]
 
+		    [SERVER]...
 `
 }
 
@@ -89,20 +86,13 @@ func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
 		&p.askSudoPassword,
 		"ask-sudo-password",
 		false,
-		"Ask sudo password of target servers before scanning",
-	)
-
-	f.BoolVar(
-		&p.useUnattendedUpgrades,
-		"use-unattended-upgrades",
-		false,
-		"[Depricated] For Ubuntu, install unattended-upgrades",
+		"[Deprecated] THIS OPTION WAS REMOVED FOR SECURITY REASONS. Define NOPASSWD in /etc/sudoers on target servers and use SSH key-based authentication",
 	)
 }
 
 // Execute execute
 func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	var keyPass, sudoPass string
+	var keyPass string
 	var err error
 	if p.askKeyPassword {
 		prompt := "SSH key password: "
@@ -112,14 +102,11 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 		}
 	}
 	if p.askSudoPassword {
-		prompt := "sudo password: "
-		if sudoPass, err = getPasswd(prompt); err != nil {
-			logrus.Error(err)
-			return subcommands.ExitFailure
-		}
+		logrus.Errorf("[Deprecated] -ask-sudo-password WAS REMOVED FOR SECURITY REASONS. Define NOPASSWD in /etc/sudoers on target servers and use SSH key-based authentication")
+		return subcommands.ExitFailure
 	}
 
-	err = c.Load(p.configPath, keyPass, sudoPass)
+	err = c.Load(p.configPath, keyPass)
 	if err != nil {
 		logrus.Errorf("Error loading %s, %s", p.configPath, err)
 		return subcommands.ExitUsageError
@@ -146,26 +133,28 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 	}
 
 	c.Conf.Debug = p.debug
-	c.Conf.UseUnattendedUpgrades = p.useUnattendedUpgrades
 
 	// Set up custom logger
 	logger := util.NewCustomLogger(c.ServerInfo{})
 
 	logger.Info("Detecting OS... ")
-	err = scan.InitServers(logger)
-	if err != nil {
-		logger.Errorf("Failed to init servers. err: %s", err)
+	if err := scan.InitServers(logger); err != nil {
+		logger.Errorf("Failed to init servers: %s", err)
 		return subcommands.ExitFailure
 	}
 
-	logger.Info("Installing...")
+	logger.Info("Checking sudo configuration... ")
+	if err := scan.CheckIfSudoNoPasswd(logger); err != nil {
+		logger.Errorf("Failed to sudo with nopassword via SSH. Define NOPASSWD in /etc/sudoers on target servers")
+		return subcommands.ExitFailure
+	}
+
 	if errs := scan.Prepare(); 0 < len(errs) {
 		for _, e := range errs {
-			logger.Errorf("Failed: %s", e)
+			logger.Errorf("Failed to prepare: %s", e)
 		}
 		return subcommands.ExitFailure
 	}
 
-	logger.Info("Success")
 	return subcommands.ExitSuccess
 }

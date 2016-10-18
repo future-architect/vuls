@@ -23,10 +23,10 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
-// TextWriter write to stdout
-type TextWriter struct{}
+// StdoutWriter write to stdout
+type StdoutWriter struct{}
 
-func (w TextWriter) Write(scanResults []models.ScanResult) error {
+func (w StdoutWriter) Write(scanResults []models.ScanResult) error {
 	for _, s := range scanResults {
 		text, err := toPlainText(s)
 		if err != nil {

@@ -5,7 +5,9 @@
 [![License](https://img.shields.io/github/license/future-architect/vuls.svg?style=flat-square)](https://github.com/future-architect/vuls/blob/master/LICENSE.txt)
 
 
-Vulnerability scanner for Linux, agentless, written in golang.
+![Vuls-logo](img/vuls_logo.png)  
+
+Vulnerability scanner for Linux/FreeBSD, agentless, written in golang.
 
 We have a slack team. [Join slack team](http://goo.gl/forms/xm5KFo35tu)  
 
@@ -25,7 +27,7 @@ We have a slack team. [Join slack team](http://goo.gl/forms/xm5KFo35tu)
 For a system administrator, having to perform security vulnerability analysis and software update on a daily basis can be a burden.
 To avoid downtime in production environment, it is common for system administrator to choose not to use the automatic update option provided by package manager and to perform update manually.
 This leads to the following problems.
-- System administrator will have to constantly watch out for any new vulnerabilities in NVD(National Vulnerability Database) and etc.
+- System administrator will have to constantly watch out for any new vulnerabilities in NVD(National Vulnerability Database) or similar databases.
 - It might be impossible for the system administrator to monitor all the software if there are a large number of software installed in server.
 - It is expensive to perform analysis to determine the servers affected by new vulnerabilities. The possibility of overlooking a server or two during analysis is there.
 
@@ -34,7 +36,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 - Informs users of the vulnerabilities that are related to the system.
 - Informs users of the servers that are affected.
 - Vulnerability detection is done automatically to prevent any oversight.
-- Report is generated on regular basis using CRON etc. to manage vulnerability.
+- Report is generated on regular basis using CRON or other methods. to manage vulnerability.
 
 ![Vuls-Motivation](img/vuls-motivation.png)
 
@@ -42,8 +44,8 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 
 # Main Features
 
-- Scan for any vulnerabilities in Linux Server
-    - Supports Ubuntu, Debian, CentOS, Amazon Linux, RHEL
+- Scan for any vulnerabilities in Linux/FreeBSD Server
+    - Supports Ubuntu, Debian, CentOS, Amazon Linux, RHEL, FreeBSD
     - Cloud, on-premise, Docker
 - Scan middleware that are not included in OS package management
     - Scan middleware, programming language libraries and framework for vulnerability
@@ -53,7 +55,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 - Auto generation of configuration file template
     - Auto detection of servers set using CIDR, generate configuration file template
 - Email and Slack notification is possible (supports Japanese language) 
-- Scan result is viewable on accessory software, TUI Viewer terminal.
+- Scan result is viewable on accessory software, TUI Viewer terminal or Web UI ([VulsRepo](https://github.com/usiusi360/vulsrepo)).
 
 ----
 
@@ -63,9 +65,26 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 
 ----
 
-# Hello Vuls 
+# Setup Vuls
 
-This tutorial will let you scan the vulnerabilities on the localhost with vuls.   
+There are 3 ways to setup Vuls.
+
+- Docker container  
+Dockernized-Vuls with vulsrepo UI in it.  
+You can run install and run Vuls on your machine with only a few commands.  
+see https://github.com/future-architect/vuls/tree/master/setup/docker
+
+- Chef  
+see https://github.com/sadayuki-matsuno/vuls-cookbook
+
+- Manually  
+Hello Vuls Tutorial shows how to setup vuls manually.
+
+----
+
+# Tutorial: Hello Vuls
+
+This tutorial will let you scan the vulnerabilities on the localhost with Vuls.   
 This can be done in the following steps.  
 
 1. Launch Amazon Linux
@@ -77,6 +96,7 @@ This can be done in the following steps.
 1. Prepare
 1. Scan
 1. TUI(Terminal-Based User Interface)
+1. Web UI ([VulsRepo](https://github.com/usiusi360/vulsrepo))
 
 ## Step1. Launch Amazon Linux
 
@@ -101,6 +121,9 @@ $ cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
 $ chmod 600 ~/.ssh/authorized_keys
 ```
 
+Vuls doesn't support SSH password authentication. So you have to use SSH key-based authentication.  
+And also, SUDO with password is not supported for security reasons. So you have to define NOPASSWORD in /etc/sudoers on target servers.  
+
 ## Step3. Install requirements
 
 Vuls requires the following packages.
@@ -108,14 +131,14 @@ Vuls requires the following packages.
 - SQLite3
 - git
 - gcc
-- go v1.6
+- go v1.7.1 or later
     - https://golang.org/doc/install
 
 ```bash
 $ ssh ec2-user@52.100.100.100  -i ~/.ssh/private.pem
 $ sudo yum -y install sqlite git gcc
-$ wget https://storage.googleapis.com/golang/go1.6.linux-amd64.tar.gz
-$ sudo tar -C /usr/local -xzf go1.6.linux-amd64.tar.gz
+$ wget https://storage.googleapis.com/golang/go1.7.1.linux-amd64.tar.gz
+$ sudo tar -C /usr/local -xzf go1.7.1.linux-amd64.tar.gz
 $ mkdir $HOME/go
 ```
 Add these lines into /etc/profile.d/goenv.sh
@@ -133,14 +156,18 @@ $ source /etc/profile.d/goenv.sh
 
 ## Step4. Deploy [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
 
-go get
-
 ```bash
 $ sudo mkdir /var/log/vuls
 $ sudo chown ec2-user /var/log/vuls
 $ sudo chmod 700 /var/log/vuls
-$ go get github.com/kotakanbe/go-cve-dictionary
+$
+$ mkdir -p $GOPATH/src/github.com/kotakanbe
+$ cd $GOPATH/src/github.com/kotakanbe
+$ git clone https://github.com/kotakanbe/go-cve-dictionary.git
+$ cd go-cve-dictionary
+$ make install
 ```
+The binary was built under `$GOPARH/bin`
 
 Fetch vulnerability data from NVD.  
 It takes about 10 minutes (on AWS).  
@@ -152,27 +179,23 @@ $ ls -alh cve.sqlite3
 -rw-r--r-- 1 ec2-user ec2-user 7.0M Mar 24 13:20 cve.sqlite3
 ```
 
-Now we successfully collected vulnerbility data, then start as server.  
-```bash
-$ go-cve-dictionary server
-[Mar 24 15:21:55]  INFO Opening DB. datafile: /home/ec2-user/cve.sqlite3
-[Mar 24 15:21:55]  INFO Migrating DB
-[Mar 24 15:21:56]  INFO Starting HTTP Sever...
-[Mar 24 15:21:56]  INFO Listening on 127.0.0.1:1323
-```
+## Step5. Deploy Vuls
 
-## Step5. Deploy vuls
+Launch a new terminal and SSH to the ec2 instance.
 
-Launch a new terminal, SSH to the ec2 instance.
-
-go get
 ```
-$ go get github.com/future-architect/vuls
+$ mkdir -p $GOPATH/src/github.com/future-architect
+$ cd $GOPATH/src/github.com/future-architect
+$ git clone https://github.com/future-architect/vuls.git
+$ cd vuls
+$ make install
 ```
+The binary was built under `$GOPARH/bin`
 
 ## Step6. Config
 
-Create a config file(TOML format).
+Create a config file(TOML format).  
+Then check the config.
 
 ```
 $ cat config.toml
@@ -183,9 +206,11 @@ host         = "172.31.4.82"
 port        = "22"
 user        = "ec2-user"
 keyPath     = "/home/ec2-user/.ssh/id_rsa"
+
+$ vuls configtest
 ```
 
-## Step7. Setting up target servers for vuls  
+## Step7. Setting up target servers for Vuls  
 
 ```
 $ vuls prepare
@@ -195,8 +220,12 @@ see [Usage: Prepare](https://github.com/future-architect/vuls#usage-prepare)
 ## Step8. Start Scanning
 
 ```
-$ vuls scan
-INFO[0000] Begin scanning (config: /home/ec2-user/config.toml)
+$ vuls scan -cve-dictionary-dbpath=$PWD/cve.sqlite3 -report-json
+INFO[0000] Start scanning (config: /home/ec2-user/config.toml)
+INFO[0000] Start scanning
+INFO[0000] config: /home/ec2-user/config.toml
+INFO[0000] cve-dictionary: /home/ec2-user/cve.sqlite3
+
 
 ... snip ...
 
@@ -218,7 +247,7 @@ Summary         Unspecified vulnerability in the Java SE and Java SE Embedded co
 NVD             https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-0494
 MITRE           https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-0494
 CVE Details     http://www.cvedetails.com/cve/CVE-2016-0494
-CVSS Claculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-0494&vector=(AV:N/AC:L/Au:N/C:C/I:C/A:C)
+CVSS Calculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-0494&vector=(AV:N/AC:L/Au:N/C:C/I:C/A:C)
 RHEL-CVE        https://access.redhat.com/security/cve/CVE-2016-0494
 ALAS-2016-643   https://alas.aws.amazon.com/ALAS-2016-643.html
 Package/CPE     java-1.7.0-openjdk-1.7.0.91-2.6.2.2.63.amzn1 -> java-1.7.0-openjdk-1:1.7.0.95-2.6.4.0.65.amzn1
@@ -235,12 +264,16 @@ $ vuls tui
 
 ![Vuls-TUI](img/hello-vuls-tui.png)
 
+## Step10. Web UI
+
+[VulsRepo](https://github.com/usiusi360/vulsrepo) is a awesome Web UI for Vuls.  
+Check it out the [Online Demo](http://usiusi360.github.io/vulsrepo/).
 
 ----
 
-# Hello Vuls in a docker container
+# Setup Vuls in a Docker Container
 
-see https://github.com/future-architect/vuls/tree/master/docker
+see https://github.com/future-architect/vuls/tree/master/setup/docker
 
 ----
 
@@ -249,13 +282,40 @@ see https://github.com/future-architect/vuls/tree/master/docker
 ![Vuls-Architecture](img/vuls-architecture.png)
 
 ## [go-cve-dictinary](https://github.com/kotakanbe/go-cve-dictionary)  
-- Fetch vulnerability information from NVD, JVN(Japanese), then insert into SQLite3.
+- Fetch vulnerability information from NVD and JVN(Japanese), then insert into SQLite3.
 
-## Vuls
-- Scan vulnerabilities on the servers and create a list of the CVE ID
-- For more detailed information of the detected CVE, send HTTP request to go-cve-dictinary
-- Send a report by Slack, Email
-- System operator can view the latest report by terminal
+## Scanning Flow
+![Vuls-Scan-Flow](img/vuls-scan-flow.png)
+- Scan vulnerabilities on the servers via SSH and create a list of the CVE ID
+  - To scan Docker containers, Vuls connect via ssh to the Docker host and then `docker exec` to the containers. So, no need to run sshd daemon on the containers.
+- Fetch more detailed information of the detected CVE from go-cve-dictionary
+- Send a report by Slack and Email
+- Write scan results to JSON file to show the latest report on your terminal 
+
+----
+# Performance Considerations
+
+- On Ubuntu and Debian  
+Vuls issues `apt-get changelog` for each upgradable packages and parse the changelog.  
+`apt-get changelog` is slow and resource usage is heavy when there are many updatable packages on target server.   
+Vuls stores these changelogs to KVS([boltdb](https://github.com/boltdb/bolt)).  
+From the second time on, the scan speed is fast by using the local cache.
+
+- On CentOS  
+Vuls issues `yum update --changelog` to get changelogs of upgradable packages at once and parse the changelog.  
+Scan speed is fast and resource usage is light.  
+
+- On Amazon, RHEL and FreeBSD  
+High speed scan and resource usage is light because Vuls can get CVE IDs by using package manager(no need to parse a changelog).
+
+| Distribution|         Scan Speed | 
+|:------------|:-------------------|:-------------|
+| Ubuntu      |  First time: Slow / From the second time: Fast |
+| Debian      |  First time: Slow / From the second time: Fast |
+| CentOS      |               Fast |
+| Amazon      |               Fast |
+| RHEL        |               Fast |
+| FreeBSD     |               Fast |
 
 ----
 
@@ -279,16 +339,17 @@ web/app server in the same configuration under the load balancer
 |:------------|-------------------:|
 | Ubuntu      |          12, 14, 16|
 | Debian      |                7, 8|
-| RHEL        |          4, 5, 6, 7|
+| RHEL        |                6, 7|
 | CentOS      |             5, 6, 7|
-| Amazon Linux|                All |
+| Amazon Linux|                 All|
+| FreeBSD     |                  10|
 
 ----
 
 
 # Usage: Automatic Server Discovery
 
-Discovery subcommand discovers active servers specified in CIDR range, then print the template of config file(TOML format) to terminal.
+Discovery subcommand discovers active servers specified in CIDR range, then display the template of config file(TOML format) to terminal.
 
 ```
 $ vuls discover -help
@@ -312,7 +373,7 @@ notifyUsers  = ["@username"]
 
 [mail]
 smtpAddr      = "smtp.gmail.com"
-smtpPort      = 465
+smtpPort      = "587"
 user          = "username"
 password      = "password"
 from          = "from@address.com"
@@ -324,6 +385,14 @@ subjectPrefix = "[vuls]"
 #port        = "22"
 #user        = "username"
 #keyPath     = "/home/username/.ssh/id_rsa"
+#cpeNames = [
+#  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
+#]
+#containers = ["${running}"]
+#ignoreCves = ["CVE-2016-6313"]
+#optional = [
+#    ["key", "value"],
+#]
 
 [servers]
 
@@ -334,6 +403,11 @@ host         = "172.31.4.82"
 #keyPath     = "/home/username/.ssh/id_rsa"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
+#]
+#containers = ["${running}"]
+#ignoreCves = ["CVE-2016-6313"]
+#optional = [
+#    ["key", "value"],
 #]
 ```
 
@@ -354,10 +428,10 @@ You can customize your configuration using this template.
     notifyUsers  = ["@username"]
     ```
 
-    - hookURL : Incomming webhook's URL  
+    - hookURL : Incoming webhook's URL  
     - channel : channel name.  
-    If you set ${servername} to channel, the report will be sent to each channel.  
-    In the following example, the report will be sent to the #server1 and #server2.  
+    If you set `${servername}` to channel, the report will be sent to each channel.  
+    In the following example, the report will be sent to the `#server1` and `#server2`.  
     Be sure to create these channels before scanning.
       ```
       [slack]
@@ -378,14 +452,14 @@ You can customize your configuration using this template.
     - iconEmoji: emoji
     - authUser: username of the slack team
     - notifyUsers: a list of Slack usernames to send Slack notifications.
-      If you set ["@foo", "@bar"] to notifyUsers, @foo @bar will be included in text.  
+      If you set `["@foo", "@bar"]` to notifyUsers, @foo @bar will be included in text.  
       So @foo, @bar can receive mobile push notifications on their smartphone.  
 
 - Mail section
     ```
     [mail]
     smtpAddr      = "smtp.gmail.com"
-    smtpPort      = 465
+    smtpPort      = "587"
     user          = "username"
     password      = "password"
     from          = "from@address.com"
@@ -400,6 +474,14 @@ You can customize your configuration using this template.
     #port        = "22"
     #user        = "username"
     #keyPath     = "/home/username/.ssh/id_rsa"
+    #cpeNames = [
+    #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
+    #]
+    #containers = ["${running}"]
+    #ignoreCves = ["CVE-2016-6313"]
+    #optional = [
+    #    ["key", "value"],
+    #]
     ```
     Items of the default section will be used if not specified.
 
@@ -415,12 +497,70 @@ You can customize your configuration using this template.
     #cpeNames = [
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
+    #containers = ["${running}"]
+    #ignoreCves = ["CVE-2016-6314"]
+    #optional = [
+    #    ["key", "value"],
+    #]
     ```
+
     You can overwrite the default value specified in default section.  
-    Vuls supports multiple SSH authentication methods.  
+
+    - host: IP address or hostname of target server
+    - port: SSH Port number
+    - user: SSH username
+    - keyPath: SSH private key path
+    - cpeNames: see [Usage: Scan vulnerability of non-OS package](https://github.com/future-architect/vuls#usage-scan-vulnerability-of-non-os-package)
+    - containers: see [Usage: Scan Docker containers](https://github.com/future-architect/vuls#usage-scan-docker-containers)
+    - ignoreCves: CVE IDs that will not be reported. But output to JSON file.
+    - optional: Add additional information to JSON report.
+
+    Vuls supports two types of SSH. One is native go implementation. The other is external SSH command. For details, see [-ssh-external option](https://github.com/future-architect/vuls#-ssh-external-option)
+    
+    Multiple SSH authentication methods are supported.  
     - SSH agent
-    - SSH public key authentication (with password, empty password)
-    - Password authentication
+    - SSH public key authentication (with password and empty password)
+    Password authentication is not supported.
+
+----
+
+# Usage: Configtest 
+
+Configtest subcommand check if vuls is able to connect via ssh to servers/containers defined in the config.toml.  
+```
+$ vuls configtest --help
+configtest:
+        configtest
+                        [-config=/path/to/config.toml]
+                        [-ask-key-password]
+                        [-ssh-external]
+                        [-debug]
+
+                        [SERVER]...
+  -ask-key-password
+        Ask ssh privatekey password before scanning
+  -config string
+        /path/to/toml (default "/Users/kotakanbe/go/src/github.com/future-architect/vuls/config.toml")
+  -debug
+        debug mode
+  -ssh-external
+        Use external ssh command. Default: Use the Go native implementation
+```
+
+And also, configtest subcommand checks sudo settings on target servers whether Vuls is able to SUDO with nopassword via SSH.  
+
+Example of /etc/sudoers on target servers
+- CentOS, RHEL
+```
+vuls ALL=(root) NOPASSWD: /usr/bin/yum, /bin/echo
+```
+- Ubuntu, Debian
+```
+vuls ALL=(root) NOPASSWD: /usr/bin/apt-get, /usr/bin/apt-cache
+```
+- It is possible to scan without root privilege for Amazon Linux, FreeBSD.
+
+
 
 ----
 
@@ -432,29 +572,26 @@ Prepare subcommand installs required packages on each server.
 |:------------|-------------------:|:-------------|
 | Ubuntu      |          12, 14, 16| -            |
 | Debian      |                7, 8| aptitude     |
-| CentOS      |                   5| yum-plugin-security, yum-changelog |
-| CentOS      |                6, 7| yum-plugin-security, yum-plugin-changelog |
+| CentOS      |                   5| yum-changelog |
+| CentOS      |                6, 7| yum-plugin-changelog |
 | Amazon      |                All | -            |
 | RHEL        |         4, 5, 6, 7 | -            |
+| FreeBSD     |                 10 | -            |
 
 
 ```
 $ vuls prepare -help
 prepare
                         [-config=/path/to/config.toml] [-debug]
-                        [-ask-sudo-password]
                         [-ask-key-password]
+                        [SERVER]...
 
   -ask-key-password
         Ask ssh privatekey password before scanning
-  -ask-sudo-password
-        Ask sudo password of target servers before scanning
   -config string
         /path/to/toml (default "$PWD/config.toml")
   -debug
         debug mode
-  -use-unattended-upgrades
-        [Deprecated] For Ubuntu, install unattended-upgrades
 ```
 
 ----
@@ -468,105 +605,278 @@ scan:
         scan
                 [-lang=en|ja]
                 [-config=/path/to/config.toml]
-                [-dbpath=/path/to/vuls.sqlite3]
+                [-results-dir=/path/to/results]
+                [-cve-dictionary-dbpath=/path/to/cve.sqlite3]
                 [-cve-dictionary-url=http://127.0.0.1:1323]
+                [-cache-dbpath=/path/to/cache.db]
                 [-cvss-over=7]
-                [-report-slack]
+                [-ignore-unscored-cves]
+                [-ssh-external]
+                [-containers-only]
+                [-report-azure-blob]
+                [-report-json]
                 [-report-mail]
+                [-report-s3]
+                [-report-slack]
+                [-report-text]
                 [-http-proxy=http://192.168.0.1:8080]
-                [-ask-sudo-password]
                 [-ask-key-password]
                 [-debug]
                 [-debug-sql]
+                [-aws-profile=default]
+                [-aws-region=us-west-2]
+                [-aws-s3-bucket=bucket_name]
+                [-azure-account=accout]
+                [-azure-key=key]
+                [-azure-container=container]
+                [SERVER]...
+
+
   -ask-key-password
         Ask ssh privatekey password before scanning
-  -ask-sudo-password
-        Ask sudo password of target servers before scanning
+  -aws-profile string
+        AWS Profile to use (default "default")
+  -aws-region string
+        AWS Region to use (default "us-east-1")
+  -aws-s3-bucket string
+        S3 bucket name
+  -azure-account string
+        Azure account name to use. AZURE_STORAGE_ACCOUNT environment variable is used if not specified
+  -azure-container string
+        Azure storage container name
+  -azure-key string
+        Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified
+  -cache-dbpath string
+        /path/to/cache.db (local cache of changelog for Ubuntu/Debian) (default "$PWD/cache.db")
   -config string
         /path/to/toml (default "$PWD/config.toml")
+  -containers-only
+        Scan concontainers Only. Default: Scan both of hosts and containers
+  -cve-dictionary-dbpath string
+        /path/to/sqlite3 (For get cve detail from cve.sqlite3)        
   -cve-dictionary-url string
         http://CVE.Dictionary (default "http://127.0.0.1:1323")
   -cvss-over float
         -cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))
-  -dbpath string
-        /path/to/sqlite3 (default "$PWD/vuls.sqlite3")
   -debug
         debug mode
   -debug-sql
         SQL debug mode
   -http-proxy string
         http://proxy-url:port (default: empty)
+  -ignore-unscored-cves
+        Don't report the unscored CVEs
   -lang string
         [en|ja] (default "en")
+  -report-json
+        Write report to JSON files ($PWD/results/current)
   -report-mail
-        Email report
+        Send report via Email
+  -report-s3
+        Write report to S3 (bucket/yyyyMMdd_HHmm)
   -report-slack
-        Slack report
-  -use-unattended-upgrades
-        [Deprecated] For Ubuntu. Scan by unattended-upgrades or not (use apt-get upgrade --dry-run by default)
-  -use-yum-plugin-security
-        [Deprecated] For CentOS 5. Scan by yum-plugin-security or not (use yum check-update by default)
-
+        Send report via Slack
+  -report-text
+        Write report to text files ($PWD/results/current)
+  -results-dir string
+        /path/to/results (default "$PWD/results")
+  -ssh-external
+        Use external ssh command. Default: Use the Go native implementation
 ```
 
-## ask-key-password option 
+## -ssh-external option
+
+Vuls supports different types of SSH.  
+
+By Default, using a native Go implementation from crypto/ssh.   
+This is useful in situations where you may not have access to traditional UNIX tools.
+
+To use external ssh command, specify this option.   
+This is useful If you want to use ProxyCommand or cipher algorithm of SSH that is not supported by native go implementation.  
+Don't forget to add below line to /etc/sudoers on the target servers. (username: vuls)
+```
+Defaults:vuls !requiretty
+```
+
+
+## -ask-key-password option 
 
 | SSH key password |  -ask-key-password | |
 |:-----------------|:-------------------|:----|
 | empty password   |                 -  | |
 | with password    |           required | or use ssh-agent |
 
-## ask-sudo-password option
+## -report-json , -report-text option
 
-| sudo password on target servers | -ask-sudo-password | |
-|:-----------------|:-------|:------|
-| NOPASSWORD       | - | defined as NOPASSWORD in /etc/sudoers on target servers |
-| with password    | required | . |
+At the end of the scan, scan results will be available in the `$PWD/result/current/` directory.  
+`all.(json|txt)` includes the scan results of all servers and `servername.(json|txt)` includes the scan result of the server.
 
-
-## example
-
-Run go-cve-dictionary as server mode before scanning.
+## Example: Scan all servers defined in config file
 ```
-$ go-cve-dictionary server
-```
-
-### Scan all servers defined in config file
-```
-$ vuls scan --report-slack --report-mail --cvss-over=7 -ask-sudo-password -ask-key-password
+$ vuls scan \
+      --report-slack \ 
+      --report-mail \
+      --cvss-over=7 \
+      -ask-key-password \
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3
 ```
 With this sample command, it will ..
-- Ask sudo password and ssh key passsword before scanning
+- Ask SSH key password before scanning
 - Scan all servers defined in config file
 - Send scan results to slack and email
 - Only Report CVEs that CVSS score is over 7
 - Print scan result to terminal
 
-### Scan specific servers
+## Example: Scan specific servers
 ```
-$ vuls scan server1 server2
+$ vuls scan \
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      server1 server2
 ```
 With this sample command, it will ..
 - Use SSH Key-Based authentication with empty password (without -ask-key-password option)
-- Sudo with no password (without -ask-sudo-password option)
 - Scan only 2 servers (server1, server2)
 - Print scan result to terminal
+
+## Example: Put results in S3 bucket
+To put results in S3 bucket, configure following settings in AWS before scanning.
+- Create S3 bucket. see [Creating a Bucket](http://docs.aws.amazon.com/AmazonS3/latest/UG/CreatingaBucket.html)  
+- Create access key. The access key must have read and write access to the AWS S3 bucket. see [Managing Access Keys for IAM Users](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html)
+- Configure the security credentials. see [Configuring the AWS Command Line Interface](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html)
+
+```
+$ vuls scan \
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -report-s3 \
+      -aws-region=ap-northeast-1 \
+      -aws-s3-bucket=vuls \
+      -aws-profile=default 
+```
+With this sample command, it will ..
+- Use SSH Key-Based authentication with empty password (without -ask-key-password option)
+- Scan all servers defined in config file
+- Put scan result(JSON) in S3 bucket. The bucket name is "vuls" in ap-northeast-1 and profile is "default"
+
+## Example: Put results in Azure Blob storage
+
+To put results in Azure Blob Storage, configure following settings in Azure before scanning.
+- Create a container
+
+```
+$ vuls scan \
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -report-azure-blob \
+      -azure-container=vuls \
+      -azure-account=test \
+      -azure-key=access-key-string 
+```
+With this sample command, it will ..
+- Use SSH Key-Based authentication with empty password (without -ask-key-password option)
+- Scan all servers defined in config file
+- Put scan result(JSON) in Azure Blob Storage. The container name is "vuls", storage account is "test" and accesskey is "access-key-string"
+
+account and access key can be defined in environment variables.
+```
+$ export AZURE_STORAGE_ACCOUNT=test
+$ export AZURE_STORAGE_ACCESS_KEY=access-key-string
+$ vuls scan \
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -report-azure-blob \
+      -azure-container=vuls
+```
+
+## Example: IgnoreCves 
+
+Define ignoreCves in config if you don't want to report(slack, mail, text...) specific CVE IDs. But these ignoreCves will be output to JSON file like below.
+
+- config.toml
+```toml
+[default]
+ignoreCves = ["CVE-2016-6313"]
+
+[servers.bsd]
+host     = "192.168.11.11"
+user     = "kanbe"
+ignoreCves = ["CVE-2016-6314"]
+```
+
+- bsd.json
+```json
+[
+  {
+    "ServerName": "bsd",
+    "Family": "FreeBSD",
+    "Release": "10.3-RELEASE",
+    "IgnoredCves" : [
+      "CveDetail" : {
+        "CVE-2016-6313",
+        ...
+      },
+      "CveDetail" : {
+        "CVE-2016-6314",
+        ...
+      }
+    ]
+  }
+]
+```
+
+
+## Example: Add optional key-value pairs to JSON
+
+Optional key-value can be outputted to JSON.  
+The key-value in the default section will be overwritten by servers section's key-value.  
+For instance, you can use this field for Azure ResourceGroup name, Azure VM Name and so on.
+
+- config.toml
+```toml
+[default]
+optional = [
+	["key1", "default_value"],
+	["key3", "val3"],
+]
+
+[servers.bsd]
+host     = "192.168.11.11"
+user     = "kanbe"
+optional = [
+	["key1", "val1"],
+	["key2", "val2"],
+]
+```
+
+- bsd.json
+```json
+[
+  {
+    "ServerName": "bsd",
+    "Family": "FreeBSD",
+    "Release": "10.3-RELEASE",
+    .... snip ...
+    "Optional": [
+      [  "key1", "val1" ],
+      [  "key2", "val2" ],
+      [  "key3", "val3" ]
+    ]
+  }
+]
+```
 
 ----
 
 # Usage: Scan vulnerability of non-OS package
 
-It is possible to detect vulnerabilities something you compiled by yourself, the language libraries and the frameworks that have been registered in the [CPE](https://nvd.nist.gov/cpe.cfm).
+It is possible to detect vulnerabilities in non-OS packages, such as something you compiled by yourself, language libraries and frameworks, that have been registered in the [CPE](https://nvd.nist.gov/cpe.cfm).
 
 -  How to search CPE name by software name
     - [NVD: Search Common Platform Enumerations (CPE)](https://web.nvd.nist.gov/view/cpe/search)  
     **Check CPE Naming Format: 2.2**
 
     - [go-cpe-dictionary](https://github.com/kotakanbe/go-cpe-dictionary) is a good choice for geeks.   
-    You can search a CPE name by the application name incremenally.
+    You can search a CPE name by the application name incrementally.
 
 - Configuration  
-To detect the vulnerbility of Ruby on Rails v4.2.1, cpeNames needs to be set in the servers section.
+To detect the vulnerability of Ruby on Rails v4.2.1, cpeNames needs to be set in the servers section.
     ```
     [servers]
 
@@ -578,8 +888,113 @@ To detect the vulnerbility of Ruby on Rails v4.2.1, cpeNames needs to be set in 
       "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     ]
     ```
+    
+# Usage: Scan Docker containers
 
-# Usage: Update NVD Data.
+It is common that keep Docker containers running without SSHd daemon.  
+see [Docker Blog:Why you don't need to run SSHd in your Docker containers](https://blog.docker.com/2014/06/why-you-dont-need-to-run-sshd-in-docker/)
+
+Vuls scans Docker containers via `docker exec` instead of SSH.  
+For more details, see [Architecture section](https://github.com/future-architect/vuls#architecture)
+
+- To scan all of running containers  
+  `"${running}"` needs to be set in the containers item.
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+    host         = "172.31.4.82"
+    user        = "ec2-user"
+    keyPath     = "/home/username/.ssh/id_rsa"
+    containers = ["${running}"]
+    ```
+
+- To scan specific containers  
+  The container ID or container name needs to be set in the containers item.  
+  In the following example, only `container_name_a` and `4aa37a8b63b9` will be scanned.  
+  Be sure to check these containers are running state before scanning.  
+  If specified containers are not running, Vuls gives up scanning with printing error message.
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+    host         = "172.31.4.82"
+    user        = "ec2-user"
+    keyPath     = "/home/username/.ssh/id_rsa"
+    containers = ["container_name_a", "4aa37a8b63b9"]
+    ```
+- To scan containers only
+  - --containers-only option is available.
+
+
+# Usage: TUI
+
+## Display the latest scan results
+
+```
+$ vuls tui -h
+tui:
+	tui [-results-dir=/path/to/results]
+
+  -results-dir string
+        /path/to/results (default "$PWD/results")
+  -debug-sql
+    	debug SQL
+
+```
+
+Key binding is below.
+
+| key | |
+|:-----------------|:-------|:------|
+| TAB | move cursor among the panes |
+| Arrow up/down | move cursor to up/down |
+| Ctrl+j, Ctrl+k | move cursor to up/down |
+| Ctrl+u, Ctrl+d | page up/down |
+
+For details, see https://github.com/future-architect/vuls/blob/master/report/tui.go
+
+## Display the previous scan results
+
+- Display the list of scan results.
+```
+$ ./vuls history
+2   2016-05-24 19:49 scanned 1 servers: amazon2
+1   2016-05-24 19:48 scanned 2 servers: amazon1, romantic_goldberg
+```
+
+- Display the result of scanID 1
+```
+$ ./vuls tui 1
+```
+
+- Display the result of scanID 2
+```
+$ ./vuls tui 2
+```
+
+# Display the previous scan results using peco
+
+```
+$ ./vuls history | peco | ./vuls tui
+```
+
+[![asciicast](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8.png)](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8)
+
+# Usage: go-cve-dictionary on different server 
+
+Run go-cve-dictionary as server mode before scanning on 192.168.10.1
+```
+$ go-cve-dictionary server -bind=192.168.10.1 -port=1323
+```
+
+Run Vuls with -cve-dictionary-url option.
+
+```
+$ vuls scan -cve-dictionary-url=http://192.168.0.1:1323
+```
+
+# Usage: Update NVD Data
 
 ```
 $ go-cve-dictionary fetchnvd -h
@@ -614,7 +1029,31 @@ $ go-cve-dictionary fetchnvd -last2y
 
 ----
 
+# Update Vuls With Glide
+
+- Update go-cve-dictionary  
+If the DB schema was changed, please specify new SQLite3 DB file.
+```
+$ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
+$ git pull
+$ make install
+```
+
+- Update vuls
+```
+$ cd $GOPATH/src/github.com/future-architect/vuls
+$ git pull
+$ make install
+```
+Binary file was built under $GOPARH/bin
+
+---
+
 # Misc
+
+- Unable to go get vuls  
+Update git to the latest version. Old version of git can't get some repositories.  
+see https://groups.google.com/forum/#!topic/mgo-users/rO1-gUDFo_g
 
 - HTTP Proxy Support  
 If your system is behind HTTP proxy, you have to specify --http-proxy option.
@@ -622,13 +1061,13 @@ If your system is behind HTTP proxy, you have to specify --http-proxy option.
 - How to Daemonize go-cve-dictionary  
 Use Systemd, Upstart or supervisord, daemontools...
 
-- How to Enable Automatic-Update of Vunerability Data.  
+- How to Enable Automatic-Update of Vulnerability Data.  
 Use job scheduler like Cron (with -last2y option).
 
 - How to Enable Automatic-Scan.  
 Use job scheduler like Cron.  
 Set NOPASSWORD option in /etc/sudoers on target servers.  
-Use SSH Key-Based Authentication with empty password or ssh-agent.
+Use SSH Key-Based Authentication with no passphrase or ssh-agent.
 
 - How to cross compile
     ```bash
@@ -637,12 +1076,12 @@ Use SSH Key-Based Authentication with empty password or ssh-agent.
     ```
 
 - Logging  
-Log wrote to under /var/log/vuls/
+Log is under /var/log/vuls/
 
 - Debug  
 Run with --debug, --sql-debug option.
 
-- Ajusting Open File Limit  
+- Adjusting Open File Limit  
 [Riak docs](http://docs.basho.com/riak/latest/ops/tuning/open-files-limit/) is awesome.
 
 - Does Vuls accept ssh connections with fish-shell or old zsh as the login shell?  
@@ -650,6 +1089,19 @@ No, Vuls needs a user on the server for bash login. see also [#8](/../../issues/
 
 - Windows  
 Use Microsoft Baseline Security Analyzer. [MBSA](https://technet.microsoft.com/en-us/security/cc184924.aspx)
+
+----
+
+# Related Projects 
+
+- [k1LoW/ssh_config_to_vuls_config](https://github.com/k1LoW/ssh_config_to_vuls_config)   
+ssh_config to vuls config TOML format
+
+- [usiusi360/vulsrepo](https://github.com/usiusi360/vulsrepo)  
+VulsRepo is visualized based on the json report output in vuls.  
+Youtube  
+[![vulsrepo](http://img.youtube.com/vi/DIBPoik4owc/0.jpg)](https://www.youtube.com/watch?v=DIBPoik4owc)
+
 
 ----
 
@@ -667,11 +1119,14 @@ kotakanbe ([@kotakanbe](https://twitter.com/kotakanbe)) created vuls and [these 
 
 # Contribute
 
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
+1. fork a repository: github.com/future-architect/vuls to github.com/you/repo
+2. get original code: go get github.com/future-architect/vuls
+3. work on original code
+4. add remote to your repo: git remote add myfork https://github.com/you/repo.git
+5. push your changes: git push myfork
+6. create a new Pull Request
+
+- see [GitHub and Go: forking, pull requests, and go-getting](http://blog.campoy.cat/2014/03/github-and-go-forking-pull-requests-and.html)
 
 ----
 
@@ -681,10 +1136,6 @@ Please see [CHANGELOG](https://github.com/future-architect/vuls/blob/master/CHAN
 
 ----
 
-# Licence
+# License
 
 Please see [LICENSE](https://github.com/future-architect/vuls/blob/master/LICENSE).
-
-
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/future-architect/vuls/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
-

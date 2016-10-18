@@ -20,13 +20,13 @@ package report
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/db"
 	"github.com/future-architect/vuls/models"
 	"github.com/google/subcommands"
 	"github.com/gosuri/uitable"
@@ -40,42 +40,55 @@ var currentCveInfo int
 var currentDetailLimitY int
 
 // RunTui execute main logic
-func RunTui() subcommands.ExitStatus {
+func RunTui(jsonDirName string) subcommands.ExitStatus {
 	var err error
-	scanHistory, err = latestScanHistory()
+	scanHistory, err = selectScanHistory(jsonDirName)
 	if err != nil {
-		log.Fatal(err)
+		log.Errorf("%s", err)
 		return subcommands.ExitFailure
 	}
 
 	g := gocui.NewGui()
 	if err := g.Init(); err != nil {
-		log.Panicln(err)
+		log.Errorf("%s", err)
+		return subcommands.ExitFailure
 	}
 	defer g.Close()
 
 	g.SetLayout(layout)
 	if err := keybindings(g); err != nil {
-		log.Panicln(err)
+		log.Errorf("%s", err)
+		return subcommands.ExitFailure
 	}
 	g.SelBgColor = gocui.ColorGreen
 	g.SelFgColor = gocui.ColorBlack
 	g.Cursor = true
 
 	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
-		log.Panicln(err)
+		log.Errorf("%s", err)
 		return subcommands.ExitFailure
 	}
 
 	return subcommands.ExitSuccess
 }
 
-func latestScanHistory() (latest models.ScanHistory, err error) {
-	if err := db.OpenDB(); err != nil {
-		return latest, fmt.Errorf(
-			"Failed to open DB. datafile: %s, err: %s", config.Conf.DBPath, err)
+func selectScanHistory(jsonDirName string) (latest models.ScanHistory, err error) {
+	var jsonDir string
+	if 0 < len(jsonDirName) {
+		jsonDir = filepath.Join(config.Conf.ResultsDir, jsonDirName)
+	} else {
+		var jsonDirs JSONDirs
+		if jsonDirs, err = GetValidJSONDirs(); err != nil {
+			return
+		}
+		if len(jsonDirs) == 0 {
+			return latest, fmt.Errorf("No scan results are found in %s", config.Conf.ResultsDir)
+		}
+		jsonDir = jsonDirs[0]
 	}
-	latest, err = db.SelectLatestScanHistory()
+	if latest, err = LoadOneScanHistory(jsonDir); err != nil {
+		return
+	}
 	return
 }
 
@@ -332,7 +345,7 @@ func cursorUp(g *gocui.Gui, v *gocui.View) error {
 	if v != nil {
 		ox, oy := v.Origin()
 		cx, cy := v.Cursor()
-		if err := v.SetCursor(cx, cy-1); err != nil && oy > 0 {
+		if err := v.SetCursor(cx, cy-1); err != nil && 0 < oy {
 			if err := v.SetOrigin(ox, oy-1); err != nil {
 				return err
 			}
@@ -410,7 +423,7 @@ func changeHost(g *gocui.Gui, v *gocui.View) error {
 	serverName := strings.TrimSpace(l)
 
 	for _, r := range scanHistory.ScanResults {
-		if serverName == r.ServerName {
+		if serverName == strings.TrimSpace(r.ServerInfoTui()) {
 			currentScanResult = r
 			break
 		}
@@ -509,14 +522,14 @@ func layout(g *gocui.Gui) error {
 
 func setSideLayout(g *gocui.Gui) error {
 	_, maxY := g.Size()
-	if v, err := g.SetView("side", -1, -1, 30, maxY); err != nil {
+	if v, err := g.SetView("side", -1, -1, 40, maxY); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
 		v.Highlight = true
 
 		for _, result := range scanHistory.ScanResults {
-			fmt.Fprintln(v, result.ServerName)
+			fmt.Fprintln(v, result.ServerInfoTui())
 		}
 		currentScanResult = scanHistory.ScanResults[0]
 		if err := g.SetCurrentView("side"); err != nil {
@@ -528,7 +541,7 @@ func setSideLayout(g *gocui.Gui) error {
 
 func setSummaryLayout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
-	if v, err := g.SetView("summary", 30, -1, maxX, int(float64(maxY)*0.2)); err != nil {
+	if v, err := g.SetView("summary", 40, -1, maxX, int(float64(maxY)*0.2)); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -564,19 +577,19 @@ func summaryLines(data models.ScanResult) string {
 		//      packs = append(packs, pack.Name)
 		//  }
 		if config.Conf.Lang == "ja" && 0 < d.CveDetail.Jvn.CvssScore() {
-			summary := d.CveDetail.Jvn.Title
+			summary := d.CveDetail.Jvn.CveTitle()
 			cols = []string{
 				fmt.Sprintf(indexFormat, i+1),
 				d.CveDetail.CveID,
 				fmt.Sprintf("|  %-4.1f(%s)",
 					d.CveDetail.CvssScore(config.Conf.Lang),
-					d.CveDetail.Jvn.Severity,
+					d.CveDetail.Jvn.CvssSeverity(),
 				),
 				//  strings.Join(packs, ","),
 				summary,
 			}
 		} else {
-			summary := d.CveDetail.Nvd.Summary
+			summary := d.CveDetail.Nvd.CveSummary()
 
 			var cvssScore string
 			if d.CveDetail.CvssScore("en") <= 0 {
@@ -584,7 +597,7 @@ func summaryLines(data models.ScanResult) string {
 			} else {
 				cvssScore = fmt.Sprintf("| %-4.1f(%s)",
 					d.CveDetail.CvssScore(config.Conf.Lang),
-					d.CveDetail.Nvd.Severity(),
+					d.CveDetail.Nvd.CvssSeverity(),
 				)
 			}
 
@@ -616,7 +629,7 @@ func setDetailLayout(g *gocui.Gui) error {
 	_, oy := summaryView.Origin()
 	currentCveInfo = cy + oy
 
-	if v, err := g.SetView("detail", 30, int(float64(maxY)*0.2), maxX, maxY); err != nil {
+	if v, err := g.SetView("detail", 40, int(float64(maxY)*0.2), maxX, maxY); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -643,6 +656,7 @@ type dataForTmpl struct {
 	CvssVector       string
 	CvssSeverity     string
 	Summary          string
+	CweURL           string
 	VulnSiteLinks    []string
 	References       []cve.Reference
 	Packages         []string
@@ -670,17 +684,19 @@ func detailLines() (string, error) {
 	case config.Conf.Lang == "ja" &&
 		0 < cveInfo.CveDetail.Jvn.CvssScore():
 		jvn := cveInfo.CveDetail.Jvn
-		cvssSeverity = jvn.Severity
-		cvssVector = jvn.Vector
-		summary = fmt.Sprintf("%s\n%s", jvn.Title, jvn.Summary)
-		refs = jvn.References
+		cvssSeverity = jvn.CvssSeverity()
+		cvssVector = jvn.CvssVector()
+		summary = fmt.Sprintf("%s\n%s", jvn.CveTitle(), jvn.CveSummary())
+		refs = jvn.VulnSiteReferences()
 	default:
 		nvd := cveInfo.CveDetail.Nvd
-		cvssSeverity = nvd.Severity()
+		cvssSeverity = nvd.CvssSeverity()
 		cvssVector = nvd.CvssVector()
-		summary = nvd.Summary
-		refs = nvd.References
+		summary = nvd.CveSummary()
+		refs = nvd.VulnSiteReferences()
 	}
+
+	cweURL := cweURL(cveInfo.CveDetail.CweID())
 
 	links := []string{
 		fmt.Sprintf("[NVD]( %s )", fmt.Sprintf("%s?vulnId=%s", nvdBaseURL, cveID)),
@@ -715,6 +731,7 @@ func detailLines() (string, error) {
 		CvssSeverity:  cvssSeverity,
 		CvssVector:    cvssVector,
 		Summary:       summary,
+		CweURL:        cweURL,
 		VulnSiteLinks: links,
 		References:    refs,
 		Packages:      packages,
@@ -745,6 +762,11 @@ Summary
 --------------
 
  {{.Summary }}
+
+CWE
+--------------
+
+ {{.CweURL }}
 
 Package/CPE
 --------------

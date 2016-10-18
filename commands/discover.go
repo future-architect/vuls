@@ -100,7 +100,7 @@ notifyUsers  = ["@username"]
 
 [mail]
 smtpAddr      = "smtp.gmail.com"
-smtpPort      = 465
+smtpPort      = "587"
 user          = "username"
 password      = "password"
 from          = "from@address.com"
@@ -112,6 +112,14 @@ subjectPrefix = "[vuls]"
 #port        = "22"
 #user        = "username"
 #keyPath     = "/home/username/.ssh/id_rsa"
+#cpeNames = [
+#  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
+#]
+#containers = ["${running}"]
+#ignoreCves = ["CVE-2014-6271"]
+#optional = [
+#    ["key", "value"],
+#]
 
 [servers]
 {{- $names:=  .Names}}
@@ -123,6 +131,11 @@ host         = "{{$ip}}"
 #keyPath     = "/home/username/.ssh/id_rsa"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
+#]
+#containers = ["${running}"]
+#ignoreCves = ["CVE-2014-0160"]
+#optional = [
+#    ["key", "value"],
 #]
 {{end}}
 

@@ -18,14 +18,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package scan
 
 import (
+	"os"
 	"reflect"
 	"testing"
 
+	"github.com/Sirupsen/logrus"
+	"github.com/future-architect/vuls/cache"
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/models"
 	"github.com/k0kubun/pp"
 )
 
-func TestParseScanedPackagesLineDebian(t *testing.T) {
+func TestParseScannedPackagesLineDebian(t *testing.T) {
 
 	var packagetests = []struct {
 		in      string
@@ -43,7 +47,7 @@ func TestParseScanedPackagesLineDebian(t *testing.T) {
 
 	d := newDebian(config.ServerInfo{})
 	for _, tt := range packagetests {
-		n, v, _ := d.parseScanedPackagesLine(tt.in)
+		n, v, _ := d.parseScannedPackagesLine(tt.in)
 		if n != tt.name {
 			t.Errorf("name: expected %s, actual %s", tt.name, n)
 		}
@@ -54,7 +58,7 @@ func TestParseScanedPackagesLineDebian(t *testing.T) {
 
 }
 
-func TestgetCveIDParsingChangelog(t *testing.T) {
+func TestGetCveIDParsingChangelog(t *testing.T) {
 
 	var tests = []struct {
 		in       []string
@@ -86,12 +90,11 @@ systemd (227-1) unstable; urgency=medium`,
 				"CVE-2015-3210",
 			},
 		},
-
 		{
 			// ver
 			[]string{
 				"libpcre3",
-				"2:8.38-1ubuntu1",
+				"2:8.35-7.1ubuntu1",
 				`pcre3 (2:8.38-2) unstable; urgency=low
 pcre3 (2:8.38-1) unstable; urgency=low
 pcre3 (2:8.35-8) unstable; urgency=low
@@ -110,7 +113,6 @@ pcre3 (2:8.35-7) unstable; urgency=medium`,
 				"CVE-2015-3210",
 			},
 		},
-
 		{
 			// ver-ubuntu3
 			[]string{
@@ -151,7 +153,7 @@ sysvinit (2.88dsf-57) unstable; urgency=low`,
 util-linux (2.27.1-3) unstable; urgency=medium
 CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
 CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
-CVE-2015-3210: heap buffer overflow in pcre_compile2() /
+CVE-2015-3210: CVE-2016-1000000heap buffer overflow in pcre_compile2() /
 util-linux (2.27.1-2) unstable; urgency=medium
 util-linux (2.27.1-1ubuntu4) xenial; urgency=medium
 util-linux (2.27.1-1ubuntu3) xenial; urgency=medium
@@ -178,28 +180,23 @@ util-linux (2.26.2-6) unstable; urgency=medium`,
 				"CVE-2015-2325",
 				"CVE-2015-2326",
 				"CVE-2015-3210",
+				"CVE-2016-1000000",
 			},
 		},
 	}
 
 	d := newDebian(config.ServerInfo{})
 	for _, tt := range tests {
-		actual, _ := d.getCveIDParsingChangelog(tt.in[2], tt.in[0], tt.in[1])
+		actual := d.getCveIDFromChangelog(tt.in[2], tt.in[0], tt.in[1])
 		if len(actual) != len(tt.expected) {
 			t.Errorf("Len of return array are'nt same. expected %#v, actual %#v", tt.expected, actual)
+			t.Errorf(pp.Sprintf("%s", tt.in))
 			continue
 		}
 		for i := range tt.expected {
 			if actual[i] != tt.expected[i] {
 				t.Errorf("expected %s, actual %s", tt.expected[i], actual[i])
 			}
-		}
-	}
-
-	for _, tt := range tests {
-		_, err := d.getCveIDParsingChangelog(tt.in[2], tt.in[0], "version number do'nt match case")
-		if err != nil {
-			t.Errorf("Returning error is unexpected")
 		}
 	}
 }
@@ -516,6 +513,95 @@ Calculating upgrade... Done
 			if tt.expected[i] != actual[i] {
 				t.Errorf("[%d] expected %s, actual %s", i, tt.expected[i], actual[i])
 			}
+		}
+	}
+}
+
+func TestGetChangelogCache(t *testing.T) {
+	const servername = "server1"
+	pack := models.PackageInfo{
+		Name:       "apt",
+		Version:    "1.0.0",
+		NewVersion: "1.0.1",
+	}
+	var meta = cache.Meta{
+		Name: servername,
+		Distro: config.Distro{
+			Family:  "ubuntu",
+			Release: "16.04",
+		},
+		Packs: []models.PackageInfo{pack},
+	}
+
+	const path = "/tmp/vuls-test-cache-11111111.db"
+	log := logrus.NewEntry(&logrus.Logger{})
+	if err := cache.SetupBolt(path, log); err != nil {
+		t.Errorf("Failed to setup bolt: %s", err)
+	}
+	defer os.Remove(path)
+
+	if err := cache.DB.EnsureBuckets(meta); err != nil {
+		t.Errorf("Failed to ensure buckets: %s", err)
+	}
+
+	d := newDebian(config.ServerInfo{})
+	actual := d.getChangelogCache(meta, pack)
+	if actual != "" {
+		t.Errorf("Failed to get empty stirng from cache:")
+	}
+
+	clog := "changelog-text"
+	if err := cache.DB.PutChangelog(servername, "apt", clog); err != nil {
+		t.Errorf("Failed to put changelog: %s", err)
+	}
+
+	actual = d.getChangelogCache(meta, pack)
+	if actual != clog {
+		t.Errorf("Failed to get changelog from cache: %s", actual)
+	}
+
+	// increment a version of the pack
+	pack.NewVersion = "1.0.2"
+	actual = d.getChangelogCache(meta, pack)
+	if actual != "" {
+		t.Errorf("The changelog is not invalidated: %s", actual)
+	}
+
+	// change a name of the pack
+	pack.Name = "bash"
+	actual = d.getChangelogCache(meta, pack)
+	if actual != "" {
+		t.Errorf("The changelog is not invalidated: %s", actual)
+	}
+}
+
+func TestSplitAptCachePolicy(t *testing.T) {
+	var tests = []struct {
+		stdout   string
+		expected map[string]string
+	}{
+		// This function parse apt-cache policy by using Regexp multi-line mode.
+		// So, test data includes "\r\n"
+		{
+			"apt:\r\n  Installed: 1.2.6\r\n  Candidate: 1.2.12~ubuntu16.04.1\r\n  Version table:\r\n     1.2.12~ubuntu16.04.1 500\r\n        500 http://archive.ubuntu.com/ubuntu xenial-updates/main amd64 Packages\r\n     1.2.10ubuntu1 500\r\n        500 http://archive.ubuntu.com/ubuntu xenial/main amd64 Packages\r\n *** 1.2.6 100\r\n        100 /var/lib/dpkg/status\r\napt-utils:\r\n  Installed: 1.2.6\r\n  Candidate: 1.2.12~ubuntu16.04.1\r\n  Version table:\r\n     1.2.12~ubuntu16.04.1 500\r\n        500 http://archive.ubuntu.com/ubuntu xenial-updates/main amd64 Packages\r\n     1.2.10ubuntu1 500\r\n        500 http://archive.ubuntu.com/ubuntu xenial/main amd64 Packages\r\n *** 1.2.6 100\r\n        100 /var/lib/dpkg/status\r\nbase-files:\r\n  Installed: 9.4ubuntu3\r\n  Candidate: 9.4ubuntu4.2\r\n  Version table:\r\n     9.4ubuntu4.2 500\r\n        500 http://archive.ubuntu.com/ubuntu xenial-updates/main amd64 Packages\r\n     9.4ubuntu4 500\r\n        500 http://archive.ubuntu.com/ubuntu xenial/main amd64 Packages\r\n *** 9.4ubuntu3 100\r\n        100 /var/lib/dpkg/status\r\n",
+
+			map[string]string{
+				"apt": "apt:\r\n  Installed: 1.2.6\r\n  Candidate: 1.2.12~ubuntu16.04.1\r\n  Version table:\r\n     1.2.12~ubuntu16.04.1 500\r\n        500 http://archive.ubuntu.com/ubuntu xenial-updates/main amd64 Packages\r\n     1.2.10ubuntu1 500\r\n        500 http://archive.ubuntu.com/ubuntu xenial/main amd64 Packages\r\n *** 1.2.6 100\r\n        100 /var/lib/dpkg/status\r\n",
+
+				"apt-utils": "apt-utils:\r\n  Installed: 1.2.6\r\n  Candidate: 1.2.12~ubuntu16.04.1\r\n  Version table:\r\n     1.2.12~ubuntu16.04.1 500\r\n        500 http://archive.ubuntu.com/ubuntu xenial-updates/main amd64 Packages\r\n     1.2.10ubuntu1 500\r\n        500 http://archive.ubuntu.com/ubuntu xenial/main amd64 Packages\r\n *** 1.2.6 100\r\n        100 /var/lib/dpkg/status\r\n",
+
+				"base-files": "base-files:\r\n  Installed: 9.4ubuntu3\r\n  Candidate: 9.4ubuntu4.2\r\n  Version table:\r\n     9.4ubuntu4.2 500\r\n        500 http://archive.ubuntu.com/ubuntu xenial-updates/main amd64 Packages\r\n     9.4ubuntu4 500\r\n        500 http://archive.ubuntu.com/ubuntu xenial/main amd64 Packages\r\n *** 9.4ubuntu3 100\r\n        100 /var/lib/dpkg/status\r\n",
+			},
+		},
+	}
+
+	d := newDebian(config.ServerInfo{})
+	for _, tt := range tests {
+		actual := d.splitAptCachePolicy(tt.stdout)
+		if !reflect.DeepEqual(tt.expected, actual) {
+			e := pp.Sprintf("%v", tt.expected)
+			a := pp.Sprintf("%v", actual)
+			t.Errorf("expected %s, actual %s", e, a)
 		}
 	}
 }

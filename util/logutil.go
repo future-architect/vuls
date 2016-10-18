@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package util
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -53,11 +52,11 @@ func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
 
 	whereami := "localhost"
 	if 0 < len(c.ServerName) {
-		whereami = fmt.Sprintf("%s:%s", c.ServerName, c.Port)
-
+		whereami = c.GetServerName()
 	}
+
 	if _, err := os.Stat(logDir); err == nil {
-		path := fmt.Sprintf("%s/%s.log", logDir, whereami)
+		path := filepath.Join(logDir, whereami)
 		log.Hooks.Add(lfshook.NewHook(lfshook.PathMap{
 			logrus.DebugLevel: path,
 			logrus.InfoLevel:  path,

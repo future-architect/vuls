@@ -19,6 +19,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
 	"golang.org/x/net/context"
@@ -29,6 +30,12 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// Version of Vuls
+var version = "0.1.6"
+
+// Revision of Git
+var revision string
+
 func main() {
 	subcommands.Register(subcommands.HelpCommand(), "")
 	subcommands.Register(subcommands.FlagsCommand(), "")
@@ -37,8 +44,18 @@ func main() {
 	subcommands.Register(&commands.TuiCmd{}, "tui")
 	subcommands.Register(&commands.ScanCmd{}, "scan")
 	subcommands.Register(&commands.PrepareCmd{}, "prepare")
+	subcommands.Register(&commands.HistoryCmd{}, "history")
+	subcommands.Register(&commands.ConfigtestCmd{}, "configtest")
+
+	var v = flag.Bool("v", false, "Show version")
 
 	flag.Parse()
+
+	if *v {
+		fmt.Printf("vuls %s %s\n", version, revision)
+		os.Exit(int(subcommands.ExitSuccess))
+	}
+
 	ctx := context.Background()
 	os.Exit(int(subcommands.Execute(ctx)))
 }

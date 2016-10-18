@@ -131,3 +131,43 @@ func TestPrependHTTPProxyEnv(t *testing.T) {
 	}
 
 }
+
+func TestTruncate(t *testing.T) {
+	var tests = []struct {
+		in     string
+		length int
+		out    string
+	}{
+		{
+			in:     "abcde",
+			length: 3,
+			out:    "abc",
+		},
+		{
+			in:     "abcdefg",
+			length: 5,
+			out:    "abcde",
+		},
+		{
+			in:     "abcdefg",
+			length: 10,
+			out:    "abcdefg",
+		},
+		{
+			in:     "abcdefg",
+			length: 0,
+			out:    "",
+		},
+		{
+			in:     "abcdefg",
+			length: -1,
+			out:    "abcdefg",
+		},
+	}
+	for _, tt := range tests {
+		actual := Truncate(tt.in, tt.length)
+		if actual != tt.out {
+			t.Errorf("\nexpected: %s\n  actual: %s", tt.out, actual)
+		}
+	}
+}
