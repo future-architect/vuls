@@ -61,7 +61,7 @@ imports:
 - name: github.com/jmespath/go-jmespath
   version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
 - name: github.com/jroimartin/gocui
-  version: 4e9ce9a8e26f2ef33dfe297dbdfca148733b6b9b
+  version: 550f04e523205530542d0c4fe63c4c0ab5d046bd
 - name: github.com/k0kubun/pp
   version: f5dce6ed0ccf6c350f1679964ff6b61f3d6d2033
 - name: github.com/kotakanbe/go-cve-dictionary
