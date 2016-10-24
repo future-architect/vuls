@@ -39,12 +39,13 @@ import (
 // ScanCmd is Subcommand of host discovery mode
 type ScanCmd struct {
 	lang     string
-	debug    bool
+	loglevel string
 	debugSQL bool
 
 	configPath string
 
 	resultsDir       string
+	cvedbtype        string
 	cvedbpath        string
 	cveDictionaryURL string
 	cacheDBPath      string
@@ -87,10 +88,12 @@ func (*ScanCmd) Synopsis() string { return "Scan vulnerabilities" }
 func (*ScanCmd) Usage() string {
 	return `scan:
 	scan
+	    [-loglevel=debug|info|warning|error|fatal|panic]
 		[-lang=en|ja]
 		[-config=/path/to/config.toml]
 		[-results-dir=/path/to/results]
-		[-cve-dictionary-dbpath=/path/to/cve.sqlite3]
+		[-cve-dictionary-dbtype=sqlite3|mysql]
+		[-cve-dictionary-dbpath=/path/to/cve.sqlite3 or mysql connection string]
 		[-cve-dictionary-url=http://127.0.0.1:1323]
 		[-cache-dbpath=/path/to/cache.db]
 		[-cvss-over=7]
@@ -121,7 +124,7 @@ func (*ScanCmd) Usage() string {
 // SetFlags set flag
 func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.lang, "lang", "en", "[en|ja]")
-	f.BoolVar(&p.debug, "debug", false, "debug mode")
+	f.StringVar(&p.loglevel, "loglevel", "info", "[debug|info|warning|error|fatal|panic]")
 	f.BoolVar(&p.debugSQL, "debug-sql", false, "SQL debug mode")
 
 	wd, _ := os.Getwd()
@@ -131,6 +134,12 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 	defaultResultsDir := filepath.Join(wd, "results")
 	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+
+	f.StringVar(
+		&p.cvedbtype,
+		"cve-dictionary-dbtype",
+		"sqlite3",
+		"DB type for fetching CVE dictionary (sqlite3 or mysql)")
 
 	f.StringVar(
 		&p.cvedbpath,
@@ -254,7 +263,9 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	logrus.Info("Start scanning")
 	logrus.Infof("config: %s", p.configPath)
 	if p.cvedbpath != "" {
-		logrus.Infof("cve-dictionary: %s", p.cvedbpath)
+		if p.cvedbtype == "sqlite3" {
+			logrus.Infof("cve-dictionary: %s", p.cvedbpath)
+		}
 	} else {
 		logrus.Infof("cve-dictionary: %s", p.cveDictionaryURL)
 	}
@@ -297,7 +308,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	c.Conf.Lang = p.lang
-	c.Conf.Debug = p.debug
+	c.Conf.LogLevel = p.loglevel
 	c.Conf.DebugSQL = p.debugSQL
 
 	// logger
@@ -357,6 +368,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	c.Conf.ResultsDir = p.resultsDir
+	c.Conf.CveDBType = p.cvedbtype
 	c.Conf.CveDBPath = p.cvedbpath
 	c.Conf.CveDictionaryURL = p.cveDictionaryURL
 	c.Conf.CacheDBPath = p.cacheDBPath

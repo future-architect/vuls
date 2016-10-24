@@ -30,12 +30,13 @@ var Conf Config
 
 //Config is struct of Configuration
 type Config struct {
-	Debug    bool
+	LogLevel string
 	DebugSQL bool
 	Lang     string
 
 	Mail    smtpConf
 	Slack   SlackConf
+
 	Default ServerInfo
 	Servers map[string]ServerInfo
 
@@ -49,6 +50,7 @@ type Config struct {
 
 	HTTPProxy   string `valid:"url"`
 	ResultsDir  string
+	CveDBType   string
 	CveDBPath   string
 	CacheDBPath string
 
@@ -68,6 +70,11 @@ type Config struct {
 func (c Config) Validate() bool {
 	errs := []error{}
 
+	_, err := log.ParseLevel(c.LogLevel)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("Invalid log level %s", c.LogLevel))
+	}
+
 	if len(c.ResultsDir) != 0 {
 		if ok, _ := valid.IsFilePath(c.ResultsDir); !ok {
 			errs = append(errs, fmt.Errorf(
@@ -75,10 +82,17 @@ func (c Config) Validate() bool {
 		}
 	}
 
-	if len(c.CveDBPath) != 0 {
-		if ok, _ := valid.IsFilePath(c.CveDBPath); !ok {
-			errs = append(errs, fmt.Errorf(
-				"SQLite3 DB(Cve Dictionary) path must be a *Absolute* file path. -cve-dictionary-dbpath: %s", c.CveDBPath))
+	if c.CveDBType != "sqlite3" && c.CveDBType != "mysql" {
+		errs = append(errs, fmt.Errorf(
+			"CVE DB type must be either 'sqlite3' or 'mysql'.  -cve-dictionary-dbtype: %s", c.CveDBType))
+	}
+
+	if c.CveDBType == "sqlite3" {
+		if len(c.CveDBPath) != 0 {
+			if ok, _ := valid.IsFilePath(c.CveDBPath); !ok {
+				errs = append(errs, fmt.Errorf(
+					"SQLite3 DB(Cve Dictionary) path must be a *Absolute* file path. -cve-dictionary-dbpath: %s", c.CveDBPath))
+			}
 		}
 	}
 
@@ -89,7 +103,7 @@ func (c Config) Validate() bool {
 		}
 	}
 
-	_, err := valid.ValidateStruct(c)
+	_, err = valid.ValidateStruct(c)
 	if err != nil {
 		errs = append(errs, err)
 	}

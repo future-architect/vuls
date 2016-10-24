@@ -49,7 +49,7 @@ func (api *cvedictClient) initialize() {
 
 func (api cvedictClient) CheckHealth() (ok bool, err error) {
 	if config.Conf.CveDBPath != "" {
-		log.Debugf("get cve-dictionary from sqlite3")
+		log.Debugf("get cve-dictionary from %s", config.Conf.CveDBType)
 		return true, nil
 	}
 
@@ -57,7 +57,8 @@ func (api cvedictClient) CheckHealth() (ok bool, err error) {
 	url := fmt.Sprintf("%s/health", api.baseURL)
 	var errs []error
 	var resp *http.Response
-	resp, _, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
+
+	resp, _, errs = gorequest.New().SetDebug(util.IsDebugEnabled()).Get(url).End()
 	//  resp, _, errs = gorequest.New().Proxy(api.httpProxy).Get(url).End()
 	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 		return false, fmt.Errorf("Failed to request to CVE server. url: %s, errs: %v", url, errs)
@@ -135,8 +136,10 @@ func (api cvedictClient) FetchCveDetails(cveIDs []string) (cveDetails cve.CveDet
 }
 
 func (api cvedictClient) FetchCveDetailsFromCveDB(cveIDs []string) (cveDetails cve.CveDetails, err error) {
-	log.Debugf("open cve-dictionary db")
+	log.Debugf("open cve-dictionary db (%s)", config.Conf.CveDBType)
+	cveconfig.Conf.DBType = config.Conf.CveDBType
 	cveconfig.Conf.DBPath = config.Conf.CveDBPath
+	cveconfig.Conf.DebugSQL = config.Conf.DebugSQL
 	if err := cvedb.OpenDB(); err != nil {
 		return []cve.CveDetail{},
 			fmt.Errorf("Failed to open DB. err: %s", err)
@@ -212,7 +215,7 @@ func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]c
 	var errs []error
 	var resp *http.Response
 	f := func() (err error) {
-		req := gorequest.New().SetDebug(config.Conf.Debug).Post(url)
+		req := gorequest.New().SetDebug(util.IsDebugEnabled()).Post(url)
 		for key := range query {
 			req = req.Send(fmt.Sprintf("%s=%s", key, query[key])).Type("json")
 		}
@@ -239,8 +242,11 @@ func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]c
 }
 
 func (api cvedictClient) FetchCveDetailsByCpeNameFromDB(cpeName string) ([]cve.CveDetail, error) {
-	log.Debugf("open cve-dictionary db")
+	log.Debugf("open cve-dictionary db (%s)", config.Conf.CveDBType)
+	cveconfig.Conf.DBType = config.Conf.CveDBType
 	cveconfig.Conf.DBPath = config.Conf.CveDBPath
+	cveconfig.Conf.DebugSQL = config.Conf.DebugSQL
+
 	if err := cvedb.OpenDB(); err != nil {
 		return []cve.CveDetail{},
 			fmt.Errorf("Failed to open DB. err: %s", err)
