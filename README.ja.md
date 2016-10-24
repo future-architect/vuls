@@ -891,6 +891,31 @@ Vulsは、[CPE](https://nvd.nist.gov/cpe.cfm)に登録されているソフト�
       "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     ]
     ```
+
+
+# Usage: Integrate with OWASP Dependency Check to Automatic update when the libraries are updated (Experimental)
+[OWASP Dependency check](https://www.owasp.org/index.php/OWASP_Dependency_Check) は、プログラミング言語のライブラリを特定し（CPEを推測）、公開済みの脆弱性を検知するツール。
+
+VulsとDependency Checkを連携させる方法は以下
+- Dependency Checkを、--format=XMLをつけて実行する
+- そのXMLをconfig.toml内で以下のように定義する
+
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+    host         = "172.31.4.82"
+    user        = "ec2-user"
+    keyPath     = "/home/username/.ssh/id_rsa"
+    dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"
+    ```
+
+VulsとDependency Checkの連携すると以下の利点がある
+- ライブラリを更新した場合に、config.tomlのCPEの定義を変更しなくても良い
+- Vulsの機能でSlack, Emailで通知可能
+- 日本語のレポートが可能
+  - Dependency Checkは日本語レポートに対応していない
+
     
 # Usage: Scan Docker containers
 

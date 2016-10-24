@@ -115,6 +115,7 @@ subjectPrefix = "[vuls]"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
+#dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"
 #containers = ["${running}"]
 #ignoreCves = ["CVE-2014-6271"]
 #optional = [
@@ -132,6 +133,7 @@ host         = "{{$ip}}"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
+#dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"
 #containers = ["${running}"]
 #ignoreCves = ["CVE-2014-0160"]
 #optional = [
