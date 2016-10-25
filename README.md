@@ -52,6 +52,8 @@ Vuls is a tool created to solve the problems listed above. It has the following 
     - Support software registered in CPE
 - Agentless architecture
     - User is required to only setup one machine that is connected to other target servers via SSH
+- Nondestructive testing
+- Pre-authorization is not necessary　before scanning on AWS
 - Auto generation of configuration file template
     - Auto detection of servers set using CIDR, generate configuration file template
 - Email and Slack notification is possible (supports Japanese language) 
