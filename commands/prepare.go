@@ -37,6 +37,8 @@ type PrepareCmd struct {
 
 	askSudoPassword bool
 	askKeyPassword  bool
+
+	sshExternal bool
 }
 
 // Name return subcommand name
@@ -60,8 +62,9 @@ func (*PrepareCmd) Usage() string {
 			[-config=/path/to/config.toml]
 			[-ask-key-password]
 			[-debug]
+			[-ssh-external]
 
-		    [SERVER]...
+			[SERVER]...
 `
 }
 
@@ -88,6 +91,13 @@ func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		"[Deprecated] THIS OPTION WAS REMOVED FOR SECURITY REASONS. Define NOPASSWD in /etc/sudoers on target servers and use SSH key-based authentication",
 	)
+
+	f.BoolVar(
+		&p.sshExternal,
+		"ssh-external",
+		false,
+		"Use external ssh command. Default: Use the Go native implementation")
+
 }
 
 // Execute execute
@@ -133,6 +143,7 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 	}
 
 	c.Conf.Debug = p.debug
+	c.Conf.SSHExternal = p.sshExternal
 
 	// Set up custom logger
 	logger := util.NewCustomLogger(c.ServerInfo{})
