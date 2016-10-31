@@ -1,5 +1,5 @@
-hash: 01cee4aa1d27c967f5f5165febfbd77fd0e89a6e7a9a89c84099c0d45dffd446
-updated: 2016-10-25T19:51:49.542919471+09:00
+hash: ca64aef6e9e94c7be91f79b88edb847363c8a5bd48da4ad27784e9342c8db6e2
+updated: 2016-10-31T18:00:30.466846691+09:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7b3beb6df3c42abd3509abfc3bcacc0fbfb7c877
@@ -45,6 +45,8 @@ imports:
   version: ad4efe000aa550bb54918c06ebbadc0ff17687b9
 - name: github.com/go-ini/ini
   version: 6e4869b434bd001f6983749881c7ead3545887d8
+- name: github.com/go-sql-driver/mysql
+  version: 2a6c6079c7eff49a7e9d641e109d922f124a3e4c
 - name: github.com/google/subcommands
   version: 1c7173745a6001f67d8d96ab4e178284c77f7759
 - name: github.com/gosuri/uitable
@@ -56,6 +58,8 @@ imports:
   version: f5387c492211eb133053880d23dfae62aa14123d
 - name: github.com/jinzhu/gorm
   version: c1b9cf186e4bcd8e5d566ef43f2ae2dfe22dc34e
+  subpackages:
+  - dialects/mysql
 - name: github.com/jinzhu/inflection
   version: 74387dc39a75e970e7a3ae6a3386b5bd2e5c5cff
 - name: github.com/jmespath/go-jmespath
@@ -65,7 +69,7 @@ imports:
 - name: github.com/k0kubun/pp
   version: f5dce6ed0ccf6c350f1679964ff6b61f3d6d2033
 - name: github.com/kotakanbe/go-cve-dictionary
-  version: 8465a01aad6bf864813d61daba2e6d0a8b6a07d9
+  version: 4daeddcd31acdf75cf8454ec976718a09e9640f6
   subpackages:
   - config
   - db

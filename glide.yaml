@@ -12,6 +12,7 @@ import:
   - aws/credentials
   - aws/session
   - service/s3
+- package: github.com/boltdb/bolt
 - package: github.com/cenkalti/backoff
 - package: github.com/google/subcommands
 - package: github.com/gosuri/uitable
@@ -22,6 +23,7 @@ import:
 - package: github.com/kotakanbe/go-cve-dictionary
   subpackages:
   - config
+  - db
   - models
 - package: github.com/kotakanbe/go-pingscanner
 - package: github.com/kotakanbe/logrus-prefixed-formatter
