@@ -33,6 +33,7 @@ import (
 	"github.com/future-architect/vuls/scan"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
+	"github.com/k0kubun/pp"
 	"golang.org/x/net/context"
 )
 
@@ -245,6 +246,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitFailure
 	}
 
+	c.Conf.Debug = p.debug
 	err = c.Load(p.configPath, keyPass)
 	if err != nil {
 		logrus.Errorf("Error loading %s, %s", p.configPath, err)
@@ -295,9 +297,9 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	if 0 < len(servernames) {
 		c.Conf.Servers = target
 	}
+	logrus.Debugf("%s", pp.Sprintf("%v", target))
 
 	c.Conf.Lang = p.lang
-	c.Conf.Debug = p.debug
 	c.Conf.DebugSQL = p.debugSQL
 
 	// logger

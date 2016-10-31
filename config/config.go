@@ -188,7 +188,6 @@ type SlackConf struct {
 
 // Validate validates configuration
 func (c *SlackConf) Validate() (errs []error) {
-
 	if !c.UseThisTime {
 		return
 	}
@@ -228,7 +227,8 @@ type ServerInfo struct {
 	KeyPath     string
 	KeyPassword string
 
-	CpeNames []string
+	CpeNames               []string
+	DependencyCheckXMLPath string
 
 	// Container Names or IDs
 	Containers []string
