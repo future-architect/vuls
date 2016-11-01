@@ -12,6 +12,18 @@ See the [Hub page](https://hub.docker.com/r/vuls/vuls/) for the full readme on h
 This image is built per commit.
 If you want to use the latest docker image, you should remove the existing image, and pull it once again.
 
+- Remove old docker image
+
+```
+$ docker rmi vuls/vuls
+```
+
+- Pull new docker image
+
+```
+$ docker pull vuls/vuls
+```
+
 # What is Vuls?
 
 Vuls is the Vulnerability scanner for Linux/FreeBSD, agentless, written in golang.

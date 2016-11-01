@@ -13,6 +13,78 @@ This is the Git repo of the official Docker image for vuls.
 
 This image version is same as the github repository version.
 
+# Caution
+
+This image is built per commit.
+If you want to use the latest docker image, you should remove the existing image, and pull it once again.
+
+1. Confirm your vuls version
+
+- go-cve-dictionary
+
+```console
+$ docker run  --rm  vuls/go-cve-dictionary -v
+
+go-cve-dictionary v0.0.xxx xxxx
+```
+
+- vuls
+
+```console
+$ docker run  --rm  vuls/vuls -v
+
+vuls v0.0.xxx xxxx
+```
+
+2. Remove your old docker images
+
+- go-cve-dictionary
+
+```
+$ docker rmi vuls/go-cve-dictionary
+```
+
+```
+$ docker rmi vuls/vuls
+```
+
+- vuls
+
+```
+$ docker rmi vuls/vuls
+```
+
+3. Pull new vuls docker images
+
+- go-cve-dictionary
+
+```
+$ docker pull vuls/go-cve-dictionary
+```
+
+- vuls
+
+```
+$ docker pull vuls/vuls
+```
+
+4. Confirm your vuls version
+
+```console
+$ docker run  --rm  vuls/go-cve-dictionary -v
+
+go-cve-dictionary v0.1.xxx xxxx
+```
+
+- vuls
+
+```console
+$ docker run  --rm  vuls/vuls -v
+
+vuls v0.1.xxx xxxx
+```
+
+
 # How to use this image
 
 1. fetch nvd (vuls/go-cve-dictionary)
