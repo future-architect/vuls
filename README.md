@@ -627,6 +627,7 @@ scan:
                 [-report-s3]
                 [-report-slack]
                 [-report-text]
+                [-report-xml]
                 [-http-proxy=http://192.168.0.1:8080]
                 [-ask-key-password]
                 [-debug]
@@ -688,6 +689,8 @@ scan:
         Send report via Slack
   -report-text
         Write report to text files ($PWD/results/current)
+  -report-xml
+        Write report to XML files ($PWDresults/current)
   -results-dir string
         /path/to/results (default "$PWD/results")
   -ssh-external
@@ -716,10 +719,10 @@ Defaults:vuls !requiretty
 | empty password   |                 -  | |
 | with password    |           required | or use ssh-agent |
 
-## -report-json , -report-text option
+## -report-json , -report-text , -report-xml option
 
 At the end of the scan, scan results will be available in the `$PWD/result/current/` directory.  
-`all.(json|txt)` includes the scan results of all servers and `servername.(json|txt)` includes the scan result of the server.
+`servername.(json|txt|xml)` includes the scan result of the server.
 
 ## Example: Scan all servers defined in config file
 ```

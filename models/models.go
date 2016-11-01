@@ -72,8 +72,8 @@ func (s ScanResults) FilterByCvssOver() (filtered ScanResults) {
 
 // ScanResult has the result of scanned CVE information.
 type ScanResult struct {
-	gorm.Model    `json:"-"`
-	ScanHistoryID uint `json:"-"`
+	gorm.Model    `json:"-" xml:"-"`
+	ScanHistoryID uint `json:"-" xml:"-"`
 	ScannedAt     time.Time
 
 	ServerName string // TOML Section key
@@ -167,8 +167,8 @@ func (r ScanResult) CveSummary() string {
 
 // NWLink has network link information.
 type NWLink struct {
-	gorm.Model   `json:"-"`
-	ScanResultID uint `json:"-"`
+	gorm.Model   `json:"-" xml:"-"`
+	ScanResultID uint `json:"-" xml:"-"`
 
 	IPAddress string
 	Netmask   string
@@ -197,8 +197,8 @@ func (c CveInfos) Less(i, j int) bool {
 
 // CveInfo has Cve Information.
 type CveInfo struct {
-	gorm.Model   `json:"-"`
-	ScanResultID uint `json:"-"`
+	gorm.Model   `json:"-" xml:"-"`
+	ScanResultID uint `json:"-" xml:"-"`
 
 	CveDetail        cve.CveDetail
 	Packages         []PackageInfo
@@ -208,8 +208,8 @@ type CveInfo struct {
 
 // CpeName has CPE name
 type CpeName struct {
-	gorm.Model `json:"-"`
-	CveInfoID  uint `json:"-"`
+	gorm.Model `json:"-" xml:"-"`
+	CveInfoID  uint `json:"-" xml:"-"`
 
 	Name string
 }
@@ -274,8 +274,8 @@ func (ps PackageInfoList) FindByName(name string) (result PackageInfo, found boo
 
 // PackageInfo has installed packages.
 type PackageInfo struct {
-	gorm.Model `json:"-"`
-	CveInfoID  uint `json:"-"`
+	gorm.Model `json:"-" xml:"-"`
+	CveInfoID  uint `json:"-" xml:"-"`
 
 	Name    string
 	Version string
@@ -311,8 +311,8 @@ func (p PackageInfo) ToStringNewVersion() string {
 
 // DistroAdvisory has Amazon Linux, RHEL, FreeBSD Security Advisory information.
 type DistroAdvisory struct {
-	gorm.Model `json:"-"`
-	CveInfoID  uint `json:"-"`
+	gorm.Model `json:"-" xml:"-"`
+	CveInfoID  uint `json:"-" xml:"-"`
 
 	AdvisoryID string
 	Severity   string
@@ -322,8 +322,8 @@ type DistroAdvisory struct {
 
 // Container has Container information
 type Container struct {
-	gorm.Model   `json:"-"`
-	ScanResultID uint `json:"-"`
+	gorm.Model   `json:"-" xml:"-"`
+	ScanResultID uint `json:"-" xml:"-"`
 
 	ContainerID string
 	Name        string
@@ -331,8 +331,8 @@ type Container struct {
 
 // Platform has platform information
 type Platform struct {
-	gorm.Model   `json:"-"`
-	ScanResultID uint `json:"-"`
+	gorm.Model   `json:"-" xml:"-"`
+	ScanResultID uint `json:"-" xml:"-"`
 
 	Name       string // aws or azure or gcp or other...
 	InstanceID string

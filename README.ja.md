@@ -157,7 +157,7 @@ $ sudo chmod 700 /var/log/vuls
 $
 $ mkdir -p $GOPATH/src/github.com/kotakanbe
 $ cd $GOPATH/src/github.com/kotakanbe
-$ git https://github.com/kotakanbe/go-cve-dictionary.git
+$ git clone https://github.com/kotakanbe/go-cve-dictionary.git
 $ cd go-cve-dictionary
 $ make install
 ```
@@ -620,6 +620,7 @@ scan:
                 [-report-s3]
                 [-report-slack]
                 [-report-text]
+                [-report-xml]
                 [-http-proxy=http://192.168.0.1:8080]
                 [-ask-key-password]
                 [-debug]
@@ -681,6 +682,8 @@ scan:
         Send report via Slack
   -report-text
         Write report to text files ($PWD/results/current)
+  -report-xml
+        Write report to XML files ($PWDresults/current)
   -results-dir string
         /path/to/results (default "$PWD/results")
   -ssh-external
@@ -708,11 +711,10 @@ Defaults:vuls !requiretty
 | empty password   |                 -  | |
 | with password    |           required | or use ssh-agent |
 
-## -report-json , -report-text option
+## -report-json , -report-text , -report-xml option
 
 結果をファイルに出力したい場合に指定する。出力先は、`$PWD/result/current/`    
-`all.(json|txt)`には、全サーバのスキャン結果が出力される。  
-`servername.(json|txt)`には、サーバごとのスキャン結果が出力される。
+`servername.(json|txt|xml)`には、サーバごとのスキャン結果が出力される。
 
 ## Example: Scan all servers defined in config file
 ```
