@@ -583,17 +583,22 @@ Prepare subcommand installs required packages on each server.
 
 ```
 $ vuls prepare -help
-prepare
-                        [-config=/path/to/config.toml] [-debug]
+prepare:
+        prepare
+                        [-config=/path/to/config.toml]
                         [-ask-key-password]
-                        [SERVER]...
+                        [-debug]
+                        [-ssh-external]
 
+                        [SERVER]...
   -ask-key-password
         Ask ssh privatekey password before scanning
   -config string
         /path/to/toml (default "$PWD/config.toml")
   -debug
         debug mode
+  -ssh-external
+        Use external ssh command. Default: Use the Go native implementation
 ```
 
 ----
