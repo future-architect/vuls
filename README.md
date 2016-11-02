@@ -130,7 +130,7 @@ And also, SUDO with password is not supported for security reasons. So you have 
 
 Vuls requires the following packages.
 
-- SQLite3
+- SQLite3 or MySQL
 - git
 - gcc
 - go v1.7.1 or later
@@ -284,7 +284,7 @@ see https://github.com/future-architect/vuls/tree/master/setup/docker
 ![Vuls-Architecture](img/vuls-architecture.png)
 
 ## [go-cve-dictinary](https://github.com/kotakanbe/go-cve-dictionary)  
-- Fetch vulnerability information from NVD and JVN(Japanese), then insert into SQLite3.
+- Fetch vulnerability information from NVD and JVN(Japanese), then insert into SQLite3 or MySQL.
 
 ## Scanning Flow
 ![Vuls-Scan-Flow](img/vuls-scan-flow.png)
@@ -613,7 +613,8 @@ scan:
                 [-lang=en|ja]
                 [-config=/path/to/config.toml]
                 [-results-dir=/path/to/results]
-                [-cve-dictionary-dbpath=/path/to/cve.sqlite3]
+                [-cve-dictionary-dbtype=sqlite3|mysql]
+                [-cve-dictionary-dbpath=/path/to/cve.sqlite3 or mysql connection string]
                 [-cve-dictionary-url=http://127.0.0.1:1323]
                 [-cache-dbpath=/path/to/cache.db]
                 [-cvss-over=7]
@@ -660,7 +661,9 @@ scan:
   -containers-only
         Scan concontainers Only. Default: Scan both of hosts and containers
   -cve-dictionary-dbpath string
-        /path/to/sqlite3 (For get cve detail from cve.sqlite3)        
+        /path/to/sqlite3 (For get cve detail from cve.sqlite3)
+  -cve-dictionary-dbtype string
+        DB type for fetching CVE dictionary (sqlite3 or mysql) (default "sqlite3")
   -cve-dictionary-url string
         http://CVE.Dictionary (default "http://127.0.0.1:1323")
   -cvss-over float
@@ -869,6 +872,14 @@ optional = [
 ]
 ```
 
+## Example: Use MySQL as a DB storage back-end
+
+```
+$ vuls scan \
+      -cve-dictionary-dbtype=mysql \
+      -cve-dictionary-dbpath="user:pass@tcp(localhost:3306)/dbname?parseTime=true"
+```
+
 ----
 
 # Usage: Scan vulnerabilites of non-OS packages
@@ -1027,46 +1038,19 @@ $ vuls scan -cve-dictionary-url=http://192.168.0.1:1323
 
 # Usage: Update NVD Data
 
-```
-$ go-cve-dictionary fetchnvd -h
-fetchnvd:
-        fetchnvd
-                [-last2y]
-                [-dbpath=/path/to/cve.sqlite3]
-                [-debug]
-                [-debug-sql]
+see [go-cve-dictionary#usage-fetch-nvd-data](https://github.com/kotakanbe/go-cve-dictionary#usage-fetch-nvd-data)
 
-  -dbpath string
-        /path/to/sqlite3 (default "$PWD/cve.sqlite3")
-  -debug
-        debug mode
-  -debug-sql
-        SQL debug mode
-  -last2y
-        Refresh NVD data in the last two years.
-```
-
-- Fetch data of the entire period
-
-```
-$ go-cve-dictionary fetchnvd -entire
-```
-
-- Fetch data in the last 2 years
-
-```
-$ go-cve-dictionary fetchnvd -last2y
-```
 
 ----
 
 # Update Vuls With Glide
 
 - Update go-cve-dictionary  
-If the DB schema was changed, please specify new SQLite3 DB file.
+If the DB schema was changed, please specify new SQLite3 or MySQL DB file.
 ```
 $ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
 $ git pull
+$ mv vendor /tmp/foo
 $ make install
 ```
 
@@ -1074,6 +1058,7 @@ $ make install
 ```
 $ cd $GOPATH/src/github.com/future-architect/vuls
 $ git pull
+$ mv vendor /tmp/bar
 $ make install
 ```
 Binary file was built under $GOPARH/bin

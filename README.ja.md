@@ -122,7 +122,7 @@ VulsはSSHパスワード認証をサポートしていない。SSH公開鍵鍵�
 
 Vulsセットアップに必要な以下のソフトウェアをインストールする。
 
-- SQLite3
+- SQLite3 or MySQL
 - git
 - gcc
 - go v1.7.1 or later
@@ -606,7 +606,8 @@ scan:
                 [-lang=en|ja]
                 [-config=/path/to/config.toml]
                 [-results-dir=/path/to/results]
-                [-cve-dictionary-dbpath=/path/to/cve.sqlite3]
+                [-cve-dictionary-dbtype=sqlite3|mysql]
+                [-cve-dictionary-dbpath=/path/to/cve.sqlite3 or mysql connection string]
                 [-cve-dictionary-url=http://127.0.0.1:1323]
                 [-cache-dbpath=/path/to/cache.db]
                 [-cvss-over=7]
@@ -653,7 +654,9 @@ scan:
   -containers-only
         Scan concontainers Only. Default: Scan both of hosts and containers
   -cve-dictionary-dbpath string
-        /path/to/sqlite3 (For get cve detail from cve.sqlite3)        
+        /path/to/sqlite3 (For get cve detail from cve.sqlite3)
+  -cve-dictionary-dbtype string
+        DB type for fetching CVE dictionary (sqlite3 or mysql) (default "sqlite3")
   -cve-dictionary-url string
         http://CVE.Dictionary (default "http://127.0.0.1:1323")
   -cvss-over float
@@ -869,6 +872,14 @@ optional = [
 ]
 ```
 
+## Example: Use MySQL as a DB storage back-end
+
+```
+$ vuls scan \
+      -cve-dictionary-dbtype=mysql \
+      -cve-dictionary-dbpath="user:pass@tcp(localhost:3306)/dbname?parseTime=true"
+```
+
 ----
 
 # Usage: Scan vulnerability of non-OS package
@@ -1028,89 +1039,14 @@ $ vuls scan -cve-dictionary-url=http://192.168.0.1:1323
 
 # Usage: Update NVD Data
 
-```
-$ go-cve-dictionary fetchnvd -h
-fetchnvd:
-        fetchnvd
-                [-last2y]
-                [-dbpath=/path/to/cve.sqlite3]
-                [-debug]
-                [-debug-sql]
-
-  -dbpath string
-        /path/to/sqlite3 (default "$PWD/cve.sqlite3")
-  -debug
-        debug mode
-  -debug-sql
-        SQL debug mode
-  -last2y
-        Refresh NVD data in the last two years.
-```
-
-- Fetch data of the entire period
-
-```
-$ for i in {2002..2016}; do go-cve-dictionary fetchnvd -years $i; done
-```
-
-- Fetch data in the last 2 years
-
-```
-$ go-cve-dictionary fetchnvd -last2y
-```
+see [go-cve-dictionary#usage-fetch-nvd-data](https://github.com/kotakanbe/go-cve-dictionary#usage-fetch-nvd-data)
 
 ----
 
 # レポートの日本語化
 
-- JVNから日本語の脆弱性情報を取得
-    ```
-    $ go-cve-dictionary fetchjvn -h
-    fetchjvn:
-            fetchjvn
-                    [-latest]
-                    [-last2y]
-                    [-years] 1998 1999 ...
-                    [-dbpath=$PWD/cve.sqlite3]
-                    [-http-proxy=http://192.168.0.1:8080]
-                    [-debug]
-                    [-debug-sql]
+see [go-cve-dictionary#usage-fetch-jvn-data](https://github.com/kotakanbe/go-cve-dictionary#usage-fetch-jvn-data)
 
-      -dbpath string
-            /path/to/sqlite3 (default "$PWD/cve.sqlite3")
-      -debug
-            debug mode
-      -debug-sql
-            SQL debug mode
-      -http-proxy string
-            http://proxy-url:port (default: empty)
-      -last2y
-            Refresh JVN data in the last two years.
-      -latest
-            Refresh JVN data for latest.
-      -years
-            Refresh JVN data of specific years.
-
-    ```
-
-- すべての期間の脆弱性情報を取得(10分未満)
-    ```
-    $ for i in {1998..2016}; do go-cve-dictionary fetchjvn -years $i; done
-    ```
-
-- 2年分の情報を取得
-    ```
-    $ go-cve-dictionary fetchjvn -last2y
-    ```
-
-- 最新情報のみ取得
-    ```
-    $ go-cve-dictionary fetchjvn -latest
-    ```
-
-- 脆弱性情報の自動アップデート  
-Cronなどのジョブスケジューラを用いて実現可能。  
--latestオプションを指定して夜間の日次実行を推奨。
 
 ## fetchnvd, fetchjvnの実行順序の注意
 
@@ -1144,10 +1080,11 @@ slack, emailは日本語対応済み TUIは日本語表示未対応
 # Update Vuls With Glide
 
 - Update go-cve-dictionary  
-If the DB schema was changed, please specify new SQLite3 DB file.
+If the DB schema was changed, please specify new SQLite3 or MySQL DB file.
 ```
 $ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
 $ git pull
+$ mv vendor /tmp/foo
 $ make install
 ```
 
@@ -1155,6 +1092,7 @@ $ make install
 ```
 $ cd $GOPATH/src/github.com/future-architect/vuls
 $ git pull
+$ mv vendor /tmp/bar
 $ make install
 ```
 - バイナリファイルは`$GOPARH/bin`以下に作成される
