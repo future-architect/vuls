@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package commands
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -25,7 +26,6 @@ import (
 	"text/template"
 
 	"github.com/google/subcommands"
-	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
 	ps "github.com/kotakanbe/go-pingscanner"
