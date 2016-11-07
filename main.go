@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"os"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/future-architect/vuls/commands"
 	"github.com/google/subcommands"
