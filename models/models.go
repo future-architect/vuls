@@ -165,6 +165,11 @@ func (r ScanResult) CveSummary() string {
 		high+middle+low+unknown, high, middle, low, unknown)
 }
 
+// AllCves returns Known and Unknown CVEs
+func (r ScanResult) AllCves() []CveInfo {
+	return append(r.KnownCves, r.UnknownCves...)
+}
+
 // NWLink has network link information.
 type NWLink struct {
 	gorm.Model   `json:"-" xml:"-"`
