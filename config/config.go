@@ -46,6 +46,7 @@ type Config struct {
 
 	SSHExternal    bool
 	ContainersOnly bool
+	SkipBroken     bool
 
 	HTTPProxy   string `valid:"url"`
 	ResultsDir  string
@@ -85,7 +86,6 @@ func (c Config) Validate() bool {
 		errs = append(errs, fmt.Errorf(
 			"CVE DB type must be either 'sqlite3' or 'mysql'.  -cve-dictionary-dbtype: %s", c.CveDBType))
 	}
-
 
 	if c.CveDBType == "sqlite3" {
 		if len(c.CveDBPath) != 0 {

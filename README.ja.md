@@ -614,6 +614,7 @@ scan:
                 [-ignore-unscored-cves]
                 [-ssh-external]
                 [-containers-only]
+                [-skip-broken]
                 [-report-azure-blob]
                 [-report-json]
                 [-report-mail]
@@ -686,6 +687,8 @@ scan:
         Write report to XML files ($PWDresults/current)
   -results-dir string
         /path/to/results (default "$PWD/results")
+  -skip-broken
+        [For CentOS] yum update changelog with --skip-broken option
   -ssh-external
         Use external ssh command. Default: Use the Go native implementation
 ```

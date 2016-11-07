@@ -126,11 +126,9 @@ func (o *redhat) checkDependencies() error {
 			return fmt.Errorf("Not implemented yet: %s", o.Distro)
 		}
 
-		var name = ""
+		var name = "yum-plugin-changelog"
 		if majorVersion < 6 {
 			name = "yum-changelog"
-		} else {
-			name = "yum-plugin-changelog"
 		}
 
 		cmd := "rpm -q " + name
@@ -548,7 +546,13 @@ func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList) (stdout st
 	}
 
 	// yum update --changelog doesn't have --color option.
-	command += fmt.Sprintf(" LANGUAGE=en_US.UTF-8 yum update --changelog %s", packageNames)
+	if config.Conf.SkipBroken {
+		command += fmt.Sprintf(
+			" LANGUAGE=en_US.UTF-8 yum --skip-broken update --changelog %s", packageNames)
+	} else {
+		command += fmt.Sprintf(
+			" LANGUAGE=en_US.UTF-8 yum update --changelog %s", packageNames)
+	}
 
 	r := o.ssh(command, sudo)
 	if !r.isSuccess(0, 1) {
