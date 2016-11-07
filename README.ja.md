@@ -1003,25 +1003,25 @@ For details, see https://github.com/future-architect/vuls/blob/master/report/tui
 
 - Display the list of scan results.
 ```
-$ ./vuls history
-2   2016-05-24 19:49 scanned 1 servers: amazon2
-1   2016-05-24 19:48 scanned 2 servers: amazon1, romantic_goldberg
+$ vuls history
+20160524_1950 scanned 1 servers: amazon2
+20160524_1940 scanned 2 servers: amazon1, romantic_goldberg
 ```
 
-- Display the result of scanID 1
+- Display the result of scan 20160524_1949
 ```
-$ ./vuls tui 1
+$ vuls tui 20160524_1950
 ```
 
-- Display the result of scanID 2
+- Display the result of scan 20160524_1948
 ```
-$ ./vuls tui 2
+$ vuls tui 20160524_1940
 ```
 
 # Display the previous scan results using peco
 
 ```
-$ ./vuls history | peco | ./vuls tui
+$ vuls history | peco | vuls tui
 ```
 
 [![asciicast](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8.png)](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8)
