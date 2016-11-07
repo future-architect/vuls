@@ -59,6 +59,7 @@ type ScanCmd struct {
 	askKeyPassword  bool
 
 	containersOnly bool
+	skipBroken     bool
 
 	// reporting
 	reportSlack     bool
@@ -101,13 +102,14 @@ func (*ScanCmd) Usage() string {
 		[-ignore-unscored-cves]
 		[-ssh-external]
 		[-containers-only]
+		[-skip-broken]
 		[-report-azure-blob]
 		[-report-json]
 		[-report-mail]
 		[-report-s3]
 		[-report-slack]
 		[-report-text]
-                [-report-xml]
+		[-report-xml]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-ask-key-password]
 		[-debug]
@@ -186,6 +188,12 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		"containers-only",
 		false,
 		"Scan containers only. Default: Scan both of hosts and containers")
+
+	f.BoolVar(
+		&p.skipBroken,
+		"skip-broken",
+		false,
+		"[For CentOS] yum update changelog with --skip-broken option")
 
 	f.StringVar(
 		&p.httpProxy,
@@ -388,6 +396,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	c.Conf.SSHExternal = p.sshExternal
 	c.Conf.HTTPProxy = p.httpProxy
 	c.Conf.ContainersOnly = p.containersOnly
+	c.Conf.SkipBroken = p.skipBroken
 
 	Log.Info("Validating Config...")
 	if !c.Conf.Validate() {
