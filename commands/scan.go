@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package commands
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -34,7 +35,6 @@ import (
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
 	"github.com/k0kubun/pp"
-	"golang.org/x/net/context"
 )
 
 // ScanCmd is Subcommand of host discovery mode
@@ -67,6 +67,7 @@ type ScanCmd struct {
 	reportText      bool
 	reportS3        bool
 	reportAzureBlob bool
+	reportXML       bool
 
 	awsProfile  string
 	awsS3Bucket string
@@ -106,6 +107,7 @@ func (*ScanCmd) Usage() string {
 		[-report-s3]
 		[-report-slack]
 		[-report-text]
+                [-report-xml]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-ask-key-password]
 		[-debug]
@@ -203,6 +205,11 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		"report-text",
 		false,
 		fmt.Sprintf("Write report to text files (%s/results/current)", wd),
+	)
+	f.BoolVar(&p.reportXML,
+		"report-xml",
+		false,
+		fmt.Sprintf("Write report to XML files (%s/results/current)", wd),
 	)
 
 	f.BoolVar(&p.reportS3,
@@ -332,6 +339,9 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 	if p.reportText {
 		reports = append(reports, report.TextFileWriter{ScannedAt: scannedAt})
+	}
+	if p.reportXML {
+		reports = append(reports, report.XMLWriter{ScannedAt: scannedAt})
 	}
 	if p.reportS3 {
 		c.Conf.AwsRegion = p.awsRegion

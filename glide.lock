@@ -48,7 +48,7 @@ imports:
 - name: github.com/go-sql-driver/mysql
   version: 2a6c6079c7eff49a7e9d641e109d922f124a3e4c
 - name: github.com/google/subcommands
-  version: 1c7173745a6001f67d8d96ab4e178284c77f7759
+  version: a71b91e238406bd68766ee52db63bebedce0e9f6
 - name: github.com/gosuri/uitable
   version: 36ee7e946282a3fb1cfecd476ddc9b35d8847e42
   subpackages:
@@ -69,7 +69,7 @@ imports:
 - name: github.com/k0kubun/pp
   version: f5dce6ed0ccf6c350f1679964ff6b61f3d6d2033
 - name: github.com/kotakanbe/go-cve-dictionary
-  version: d0d8b0d3eee8022395d37edd95e88af7f5f970ad
+  version: 70989b6709c3102924ad8c8483e9bdc99bcb598b
   subpackages:
   - config
   - db

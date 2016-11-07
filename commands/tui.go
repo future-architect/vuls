@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package commands
 
 import (
+	"context"
 	"flag"
 	"io/ioutil"
 	"os"
@@ -28,7 +29,6 @@ import (
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/report"
 	"github.com/google/subcommands"
-	"golang.org/x/net/context"
 )
 
 // TuiCmd is Subcommand of host discovery mode
