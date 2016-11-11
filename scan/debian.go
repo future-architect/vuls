@@ -159,7 +159,7 @@ func (o *debian) install() error {
 	}
 
 	for _, name := range o.lackDependencies {
-		cmd = util.PrependProxyEnv("apt-get install " + name)
+		cmd = util.PrependProxyEnv("apt-get install -y " + name)
 		if r := o.ssh(cmd, sudo); !r.isSuccess() {
 			msg := fmt.Sprintf("Failed to SSH: %s", r)
 			o.log.Errorf(msg)
