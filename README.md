@@ -56,7 +56,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 - Pre-authorization is not necessary　before scanning on AWS
 - Auto generation of configuration file template
     - Auto detection of servers set using CIDR, generate configuration file template
-- Email and Slack notification is possible (supports Japanese language) 
+- Email and Slack notification is possible (supports Japanese language)
 - Scan result is viewable on accessory software, TUI Viewer terminal or Web UI ([VulsRepo](https://github.com/usiusi360/vulsrepo)).
 
 ----
@@ -111,7 +111,7 @@ This can be done in the following steps.
     ```
 
     - [Q: How do I disable the automatic installation of critical and important security updates on initial launch?](https://aws.amazon.com/amazon-linux-ami/faqs/?nc1=h_ls)
-    
+
 ## Step2. SSH setting
 
 This is required to ssh to itself.
@@ -292,7 +292,7 @@ see https://github.com/future-architect/vuls/tree/master/setup/docker
   - To scan Docker containers, Vuls connect via ssh to the Docker host and then `docker exec` to the containers. So, no need to run sshd daemon on the containers.
 - Fetch more detailed information of the detected CVE from go-cve-dictionary
 - Send a report by Slack and Email
-- Write scan results to JSON file to show the latest report on your terminal 
+- Write scan results to JSON file to show the latest report on your terminal
 
 ----
 # Performance Considerations
@@ -310,7 +310,7 @@ Scan speed is fast and resource usage is light.
 - On Amazon, RHEL and FreeBSD  
 High speed scan and resource usage is light because Vuls can get CVE IDs by using package manager(no need to parse a changelog).
 
-| Distribution|         Scan Speed | 
+| Distribution|         Scan Speed |
 |:------------|:-------------------|:-------------|
 | Ubuntu      |  First time: Slow / From the second time: Fast |
 | Debian      |  First time: Slow / From the second time: Fast |
@@ -518,7 +518,7 @@ You can customize your configuration using this template.
     - optional: Add additional information to JSON report.
 
     Vuls supports two types of SSH. One is native go implementation. The other is external SSH command. For details, see [-ssh-external option](https://github.com/future-architect/vuls#-ssh-external-option)
-    
+
     Multiple SSH authentication methods are supported.  
     - SSH agent
     - SSH public key authentication (with password and empty password)
@@ -526,7 +526,7 @@ You can customize your configuration using this template.
 
 ----
 
-# Usage: Configtest 
+# Usage: Configtest
 
 Configtest subcommand check if vuls is able to connect via ssh to servers/containers defined in the config.toml.  
 ```
@@ -584,23 +584,27 @@ Prepare subcommand installs required packages on each server.
 ```
 $ vuls prepare -help
 prepare:
-        prepare
-                        [-config=/path/to/config.toml]
-                        [-ask-key-password]
-                        [-debug]
-                        [-ssh-external]
+	prepare
+			[-config=/path/to/config.toml]
+			[-ask-key-password]
+			[-assume-yes]
+			[-debug]
+			[-ssh-external]
 
-                        [SERVER]...
+			[SERVER]...
   -ask-key-password
-        Ask ssh privatekey password before scanning
+    	Ask ssh privatekey password before scanning
+  -ask-sudo-password
+    	[Deprecated] THIS OPTION WAS REMOVED FOR SECURITY REASONS. Define NOPASSWD in /etc/sudoers on target servers and use SSH key-based authentication
+  -assume-yes
+    	Assume any dependencies should be installed
   -config string
-        /path/to/toml (default "$PWD/config.toml")
+    	/path/to/toml (default "$PWD/config.toml")
   -debug
-        debug mode
+    	debug mode
   -ssh-external
-        Use external ssh command. Default: Use the Go native implementation
+    	Use external ssh command. Default: Use the Go native implementation
 ```
-
 ----
 
 # Usage: Scan
@@ -715,7 +719,7 @@ Defaults:vuls !requiretty
 ```
 
 
-## -ask-key-password option 
+## -ask-key-password option
 
 | SSH key password |  -ask-key-password | |
 |:-----------------|:-------------------|:----|
@@ -730,7 +734,7 @@ At the end of the scan, scan results will be available in the `$PWD/result/curre
 ## Example: Scan all servers defined in config file
 ```
 $ vuls scan \
-      --report-slack \ 
+      --report-slack \
       --report-mail \
       --cvss-over=7 \
       -ask-key-password \
@@ -746,7 +750,7 @@ With this sample command, it will ..
 ## Example: Scan specific servers
 ```
 $ vuls scan \
-      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \
       server1 server2
 ```
 With this sample command, it will ..
@@ -762,11 +766,11 @@ To put results in S3 bucket, configure following settings in AWS before scanning
 
 ```
 $ vuls scan \
-      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \
       -report-s3 \
       -aws-region=ap-northeast-1 \
       -aws-s3-bucket=vuls \
-      -aws-profile=default 
+      -aws-profile=default
 ```
 With this sample command, it will ..
 - Use SSH Key-Based authentication with empty password (without -ask-key-password option)
@@ -780,11 +784,11 @@ To put results in Azure Blob Storage, configure following settings in Azure befo
 
 ```
 $ vuls scan \
-      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \
       -report-azure-blob \
       -azure-container=vuls \
       -azure-account=test \
-      -azure-key=access-key-string 
+      -azure-key=access-key-string
 ```
 With this sample command, it will ..
 - Use SSH Key-Based authentication with empty password (without -ask-key-password option)
@@ -796,12 +800,12 @@ account and access key can be defined in environment variables.
 $ export AZURE_STORAGE_ACCOUNT=test
 $ export AZURE_STORAGE_ACCESS_KEY=access-key-string
 $ vuls scan \
-      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \
       -report-azure-blob \
       -azure-container=vuls
 ```
 
-## Example: IgnoreCves 
+## Example: IgnoreCves
 
 Define ignoreCves in config if you don't want to report(slack, mail, text...) specific CVE IDs. But these ignoreCves will be output to JSON file like below.
 
@@ -936,7 +940,7 @@ How to integrate Vuls with OWASP Dependency Check
     dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"
     ```
 
-    
+
 # Usage: Scan Docker containers
 
 It is common that keep Docker containers running without SSHd daemon.  
@@ -1029,7 +1033,7 @@ $ vuls history | peco | vuls tui
 
 [![asciicast](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8.png)](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8)
 
-# Usage: go-cve-dictionary on different server 
+# Usage: go-cve-dictionary on different server
 
 Run go-cve-dictionary as server mode before scanning on 192.168.10.1
 ```
@@ -1114,7 +1118,7 @@ Use Microsoft Baseline Security Analyzer. [MBSA](https://technet.microsoft.com/e
 
 ----
 
-# Related Projects 
+# Related Projects
 
 - [k1LoW/ssh_config_to_vuls_config](https://github.com/k1LoW/ssh_config_to_vuls_config)   
 ssh_config to vuls config TOML format

@@ -39,6 +39,7 @@ type PrepareCmd struct {
 	askKeyPassword  bool
 
 	sshExternal bool
+	assumeYes   bool
 }
 
 // Name return subcommand name
@@ -61,6 +62,7 @@ func (*PrepareCmd) Usage() string {
 	prepare
 			[-config=/path/to/config.toml]
 			[-ask-key-password]
+			[-assume-yes]
 			[-debug]
 			[-ssh-external]
 
@@ -97,6 +99,12 @@ func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
 		"ssh-external",
 		false,
 		"Use external ssh command. Default: Use the Go native implementation")
+
+	f.BoolVar(
+		&p.assumeYes,
+		"assume-yes",
+		false,
+		"Assume any dependencies should be installed")
 
 }
 
@@ -144,6 +152,7 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 
 	c.Conf.Debug = p.debug
 	c.Conf.SSHExternal = p.sshExternal
+	c.Conf.AssumeYes = p.assumeYes
 
 	// Set up custom logger
 	logger := util.NewCustomLogger(c.ServerInfo{})
