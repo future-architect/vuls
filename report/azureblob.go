@@ -113,7 +113,7 @@ func (w AzureBlobWriter) upload(res models.ScanResult) (err error) {
 	if err != nil {
 		return err
 	}
-	timestr := time.Now().Format("20060102_1504")
+	timestr := time.Now().Format(time.RFC3339)
 	name := ""
 	if len(res.Container.ContainerID) == 0 {
 		name = fmt.Sprintf("%s/%s.json", timestr, res.ServerName)
