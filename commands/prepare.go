@@ -145,6 +145,10 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 	c.Conf.Debug = p.debug
 	c.Conf.SSHExternal = p.sshExternal
 
+	logrus.Info("Validating Config...")
+	if !c.Conf.Validate() {
+		return subcommands.ExitUsageError
+	}
 	// Set up custom logger
 	logger := util.NewCustomLogger(c.ServerInfo{})
 
