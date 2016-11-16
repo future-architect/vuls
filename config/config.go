@@ -44,6 +44,7 @@ type Config struct {
 	CvssScoreOver      float64
 	IgnoreUnscoredCves bool
 
+	AssumeYes      bool
 	SSHExternal    bool
 	ContainersOnly bool
 	SkipBroken     bool

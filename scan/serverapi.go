@@ -453,27 +453,30 @@ func Prepare() []error {
 		return nil
 	}
 
-	Log.Info("Below servers are needed to install dependencies")
+	Log.Info("The following servers need dependencies installed")
 	for _, s := range targets {
 		for _, d := range s.getLackDependencies() {
 			Log.Infof("  - %s on %s", d, s.getServerInfo().GetServerName())
 		}
 	}
-	Log.Info("Is this ok to install dependencies on the servers? [y/N]")
 
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		text, err := reader.ReadString('\n')
-		if err != nil {
-			return []error{err}
-		}
-		switch strings.TrimSpace(text) {
-		case "", "N", "n":
-			return nil
-		case "y", "Y":
-			goto yes
-		default:
-			Log.Info("Please enter y or N")
+	if !config.Conf.AssumeYes {
+		Log.Info("Is this ok to install dependencies on the servers? [y/N]")
+
+		reader := bufio.NewReader(os.Stdin)
+		for {
+			text, err := reader.ReadString('\n')
+			if err != nil {
+				return []error{err}
+			}
+			switch strings.TrimSpace(text) {
+			case "", "N", "n":
+				return nil
+			case "y", "Y":
+				goto yes
+			default:
+				Log.Info("Please enter y or N")
+			}
 		}
 	}
 
