@@ -19,6 +19,7 @@ package config
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
@@ -70,6 +71,10 @@ type Config struct {
 // Validate configuration
 func (c Config) Validate() bool {
 	errs := []error{}
+
+	if runtime.GOOS == "windows" && c.SSHExternal {
+		errs = append(errs, fmt.Errorf("-ssh-external cannot be used on windows"))
+	}
 
 	if len(c.ResultsDir) != 0 {
 		if ok, _ := valid.IsFilePath(c.ResultsDir); !ok {
