@@ -134,8 +134,7 @@ func LoadOneScanHistory(jsonDir string) (scanHistory models.ScanHistory, err err
 	if scanResults[0].ScannedAt.IsZero() {
 		splitPath := strings.Split(jsonDir, string(os.PathSeparator))
 		timeStr := splitPath[len(splitPath)-1]
-		timeformat := "20060102_1504"
-		if scannedAt, err = time.Parse(timeformat, timeStr); err != nil {
+		if scannedAt, err = time.Parse(time.RFC3339, timeStr); err != nil {
 			err = fmt.Errorf("Failed to parse %s: %s", timeStr, err)
 			return
 		}

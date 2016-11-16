@@ -77,7 +77,7 @@ func (w S3Writer) Write(scanResults []models.ScanResult) (err error) {
 
 	// http://docs.aws.amazon.com/sdk-for-go/latest/v1/developerguide/common-examples.title.html
 	svc := getS3()
-	timestr := time.Now().Format("20060102_1504")
+	timestr := time.Now().Format(time.RFC3339)
 	for _, r := range scanResults {
 		key := ""
 		if len(r.Container.ContainerID) == 0 {

@@ -31,8 +31,7 @@ import (
 )
 
 func ensureResultDir(scannedAt time.Time) (path string, err error) {
-	const timeLayout = "20060102_1504"
-	jsonDirName := scannedAt.Format(timeLayout)
+	jsonDirName := scannedAt.Format(time.RFC3339)
 
 	resultsDir := config.Conf.ResultsDir
 	if len(resultsDir) == 0 {
