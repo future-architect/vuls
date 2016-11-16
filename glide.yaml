@@ -15,6 +15,7 @@ import:
 - package: github.com/boltdb/bolt
 - package: github.com/cenkalti/backoff
 - package: github.com/google/subcommands
+  branch: context
 - package: github.com/gosuri/uitable
 - package: github.com/howeyc/gopass
 - package: github.com/jinzhu/gorm

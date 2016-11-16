@@ -1,10 +1,10 @@
 hash: ca64aef6e9e94c7be91f79b88edb847363c8a5bd48da4ad27784e9342c8db6e2
-updated: 2016-11-01T15:05:15.23083077+09:00
+updated: 2016-11-14T17:14:19.692072231Z
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7b3beb6df3c42abd3509abfc3bcacc0fbfb7c877
 - name: github.com/aws/aws-sdk-go
-  version: 9e5bedb97b1cd85e53fd99209f93fd1a8a9f1df7
+  version: 5b341290c488aa6bd76b335d819b4a68516ec3ab
   subpackages:
   - aws
   - aws/awserr
@@ -32,15 +32,15 @@ imports:
   - service/s3
   - service/sts
 - name: github.com/Azure/azure-sdk-for-go
-  version: 9016164015faa51e549605e7b4b117f7de2aa6f9
+  version: 27ae5c8b5bc5d90ab0540b4c5d0f2632c8db8b57
   subpackages:
   - storage
 - name: github.com/boltdb/bolt
-  version: 074dffcc83e9f421e261526d297cd93f22a34080
+  version: 315c65d4cf4f5278c73477a35fb1f9b08365d340
 - name: github.com/BurntSushi/toml
   version: 99064174e013895bbd9b025c31100bd1d9b590ca
 - name: github.com/cenkalti/backoff
-  version: b02f2bbce11d7ea6b97f282ef1771b0fe2f65ef3
+  version: 8edc80b07f38c27352fb186d971c628a6c32552b
 - name: github.com/cheggaaa/pb
   version: ad4efe000aa550bb54918c06ebbadc0ff17687b9
 - name: github.com/go-ini/ini
@@ -57,7 +57,7 @@ imports:
 - name: github.com/howeyc/gopass
   version: f5387c492211eb133053880d23dfae62aa14123d
 - name: github.com/jinzhu/gorm
-  version: c1b9cf186e4bcd8e5d566ef43f2ae2dfe22dc34e
+  version: 39165d498058a823126af3cbf4d2a3b0e1acf11e
   subpackages:
   - dialects/mysql
 - name: github.com/jinzhu/inflection
@@ -65,11 +65,11 @@ imports:
 - name: github.com/jmespath/go-jmespath
   version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
 - name: github.com/jroimartin/gocui
-  version: 357a541add9e311f7b67dfbaf92e28c71680a6b7
+  version: ba396278de0a3c63658bbaba13d2d2fa392edb11
 - name: github.com/k0kubun/pp
   version: f5dce6ed0ccf6c350f1679964ff6b61f3d6d2033
 - name: github.com/kotakanbe/go-cve-dictionary
-  version: 70989b6709c3102924ad8c8483e9bdc99bcb598b
+  version: 2dd369d26145eab2178f6d509821fcabc9391627
   subpackages:
   - config
   - db
@@ -93,7 +93,7 @@ imports:
 - name: github.com/mgutz/ansi
   version: c286dcecd19ff979eeb73ea444e479b903f2cfcb
 - name: github.com/moul/http2curl
-  version: c984a4ec331f8ef0e5cd782975a97c92bd8ab40c
+  version: b1479103caacaa39319f75e7f57fc545287fca0d
 - name: github.com/nsf/termbox-go
   version: b6acae516ace002cb8105a89024544a1480655a5
 - name: github.com/parnurzeal/gorequest
@@ -103,7 +103,7 @@ imports:
 - name: github.com/Sirupsen/logrus
   version: 3ec0642a7fb6488f65b06f9040adc67e3990296a
 - name: golang.org/x/crypto
-  version: 1150b8bd09e53aea1d415621adae9bad665061a1
+  version: 9477e0b78b9ac3d0b03822fd95422e2fe07627cd
   subpackages:
   - curve25519
   - ed25519
@@ -112,12 +112,12 @@ imports:
   - ssh/agent
   - ssh/terminal
 - name: golang.org/x/net
-  version: 65dfc08770ce66f74becfdff5f8ab01caef4e946
+  version: cf4effbb9db1f3ef07f7e1891402991b6afbb276
   subpackages:
   - context
   - publicsuffix
 - name: golang.org/x/sys
-  version: c200b10b5d5e122be351b67af224adc6128af5bf
+  version: 9bb9f0998d48b31547d975974935ae9b48c7a03c
   subpackages:
   - unix
 testImports: []

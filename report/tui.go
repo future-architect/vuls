@@ -48,7 +48,7 @@ func RunTui(jsonDirName string) subcommands.ExitStatus {
 		return subcommands.ExitFailure
 	}
 
-	g, err := gocui.NewGui()
+	g, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
 		log.Errorf("%s", err)
 		return subcommands.ExitFailure
