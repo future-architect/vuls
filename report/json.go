@@ -81,7 +81,7 @@ func (w JSONWriter) Write(scanResults []models.ScanResult) (err error) {
 }
 
 // JSONDirPattern is file name pattern of JSON directory
-var JSONDirPattern = regexp.MustCompile(`^\d{8}_\d{4}$`)
+var JSONDirPattern = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$`)
 
 // GetValidJSONDirs return valid json directory as array
 func GetValidJSONDirs() (jsonDirs JSONDirs, err error) {
