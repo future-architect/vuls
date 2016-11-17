@@ -83,9 +83,21 @@ $ docker run --rm -it \
     -v $PWD/vuls-log:/var/log/vuls \
     -v /etc/localtime:/etc/localtime:ro \
     vuls/vuls scan \
-    -cve-dictionary-dbpath=/vuls/cve.sqlite3 \
-    -config=./config.toml \ # path to config.toml in docker
-    -report-json 
+    -config=./config.toml # path to config.toml in docker
+```
+
+## Report
+
+```console
+$ docker run --rm -it \
+    -v ~/.ssh:/root/.ssh:ro \
+    -v $PWD:/vuls \
+    -v $PWD/vuls-log:/var/log/vuls \
+    -v /etc/localtime:/etc/localtime:ro \
+    vuls/vuls report \
+    -cvedb-path=/vuls/cve.sqlite3 \
+    -format-short-text \
+    -config=./config.toml # path to config.toml in docker
 ```
 
 ## tui
@@ -94,7 +106,8 @@ $ docker run --rm -it \
 $ docker run --rm -it \
     -v $PWD:/vuls \
     -v $PWD/vuls-log:/var/log/vuls \
-    vuls/vuls tui 
+    vuls/vuls tui \
+    -cvedb-path=/vuls/cve.sqlite3 
 ```
 
 ## vulsrepo

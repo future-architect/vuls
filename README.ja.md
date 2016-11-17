@@ -89,6 +89,7 @@ Hello Vulsチュートリアルでは手動でのセットアップ方法で説�
 1. 設定
 1. Prepare
 1. Scan
+1. Reporting
 1. TUI(Terminal-Based User Interface)で結果を参照する
 1. Web UI([VulsRepo](https://github.com/usiusi360/vulsrepo))で結果を参照する
 
@@ -125,7 +126,7 @@ Vulsセットアップに必要な以下のソフトウェアをインストー�
 - SQLite3 or MySQL
 - git
 - gcc
-- go v1.7.1 or later
+- go v1.7.1 or later (The latest version is recommended)
     - https://golang.org/doc/install
 
 ```bash
@@ -203,6 +204,7 @@ Vulsの設定ファイルを作成する（TOMLフォーマット）
 設定ファイルのチェックを行う
 
 ```
+$ cd $HOME
 $ cat config.toml
 [servers]
 
@@ -224,42 +226,82 @@ $ vuls prepare
 
 ## Step8. Start Scanning
 
-```
-$ vuls scan -cve-dictionary-dbpath=$PWD/cve.sqlite3 -report-json
-INFO[0000] Start scanning (config: /home/ec2-user/config.toml)
-INFO[0000] Start scanning
-INFO[0000] config: /home/ec2-user/config.toml
-INFO[0000] cve-dictionary: /home/ec2-user/cve.sqlite3
 
+```
+$ vuls scan 
+... snip ...
+
+Scan Summary
+============
+172-31-4-82       amazon 2015.09         94 CVEs      103 updatable packages
+
+```
+
+## Step9. Reporting
+
+View one-line summary
+
+```
+$ vuls report -format-one-line-text -cvedb-path=$PWD/cve.sqlite3 
+
+One Line Summary
+================
+172-31-4-82   Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
+
+```
+
+View short summary.
+
+```
+$ vuls report -format-short-text -cvedb-path=$PWD/cve.sqlite3 
+
+172-31-4-8 (amazon 2015.09)
+===========================
+Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
+
+CVE-2016-0705   10.0 (High)     Double free vulnerability in the dsa_priv_decode function in
+                                crypto/dsa/dsa_ameth.c in OpenSSL 1.0.1 before 1.0.1s and 1.0.2 before 1.0.2g
+                                allows remote attackers to cause a denial of service (memory corruption) or
+                                possibly have unspecified other impact via a malformed DSA private key.
+                                http://www.cvedetails.com/cve/CVE-2016-0705
+                                http://people.ubuntu.com/~ubuntu-security/cve/CVE-2016-0705
+                                libssl1.0.0-1.0.2f-2ubuntu1 -> libssl1.0.0-1.0.2g-1ubuntu4.5
+                                openssl-1.0.2f-2ubuntu1 -> openssl-1.0.2g-1ubuntu4.5
 
 ... snip ...
+````
+
+View full report.
+
+```
+$ vuls report -format-full-text -cvedb-path=$PWD/cve.sqlite3 
 
 172-31-4-82 (amazon 2015.09)
 ============================
-CVE-2016-0494   10.0    Unspecified vulnerability in the Java SE and Java SE Embedded components in Oracle
-                        Java SE 6u105, 7u91, and 8u66 and Java SE Embedded 8u65 allows remote attackers to
-                        affect confidentiality, integrity, and availability via unknown vectors related to
-                        2D.
-... snip ...
+Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
 
-CVE-2016-0494
+
+CVE-2016-0705
 -------------
 Score           10.0 (High)
 Vector          (AV:N/AC:L/Au:N/C:C/I:C/A:C)
-Summary         Unspecified vulnerability in the Java SE and Java SE Embedded components in Oracle Java SE 6u105,
-                7u91, and 8u66 and Java SE Embedded 8u65 allows remote attackers to affect confidentiality,
-                integrity, and availability via unknown vectors related to 2D.
-NVD             https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-0494
-MITRE           https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-0494
-CVE Details     http://www.cvedetails.com/cve/CVE-2016-0494
-CVSS Calculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-0494&vector=(AV:N/AC:L/Au:N/C:C/I:C/A:C)
-RHEL-CVE        https://access.redhat.com/security/cve/CVE-2016-0494
-ALAS-2016-643   https://alas.aws.amazon.com/ALAS-2016-643.html
-Package/CPE     java-1.7.0-openjdk-1.7.0.91-2.6.2.2.63.amzn1 -> java-1.7.0-openjdk-1:1.7.0.95-2.6.4.0.65.amzn1
+Summary         Double free vulnerability in the dsa_priv_decode function in
+                crypto/dsa/dsa_ameth.c in OpenSSL 1.0.1 before 1.0.1s and 1.0.2 before 1.0.2g
+                allows remote attackers to cause a denial of service (memory corruption) or
+                possibly have unspecified other impact via a malformed DSA private key.
+CWE             https://cwe.mitre.org/data/definitions/.html
+NVD             https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-0705
+MITRE           https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-0705
+CVE Details     http://www.cvedetails.com/cve/CVE-2016-0705
+CVSS Claculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-0705&vector=(AV:N/AC:L/...
+Ubuntu-CVE      http://people.ubuntu.com/~ubuntu-security/cve/CVE-2016-0705
+Package         libssl1.0.0-1.0.2f-2ubuntu1 -> libssl1.0.0-1.0.2g-1ubuntu4.5
+                openssl-1.0.2f-2ubuntu1 -> openssl-1.0.2g-1ubuntu4.5
 
+... snip ...
 ```
 
-## Step9. TUI
+## Step10. TUI
 
 Vulsにはスキャン結果の詳細を参照できるイカしたTUI(Terminal-Based User Interface)が付属している。
 
@@ -269,7 +311,7 @@ $ vuls tui
 
 ![Vuls-TUI](img/hello-vuls-tui.png)
 
-## Step10. Web UI
+## Step11. Web UI
 
 [VulsRepo](https://github.com/usiusi360/vulsrepo)はスキャン結果をビボットテーブルのように分析可能にするWeb UIである。  
 [Online Demo](http://usiusi360.github.io/vulsrepo/)があるので試してみて。
@@ -369,7 +411,7 @@ iconEmoji    = ":ghost:"
 authUser     = "username"
 notifyUsers  = ["@username"]
 
-[mail]
+[email]
 smtpAddr      = "smtp.gmail.com"
 smtpPort      = "587"
 user          = "username"
@@ -450,7 +492,7 @@ host         = "172.31.4.82"
 
 - Mail section
     ```
-    [mail]
+    [email]
     smtpAddr      = "smtp.gmail.com"
     smtpPort      = "587"
     user          = "username"
@@ -571,7 +613,7 @@ Prepareサブコマンドは、Vuls内部で利用する以下のパッケージ
 | CentOS      |                   5| yum-changelog |
 | CentOS      |                6, 7| yum-plugin-changelog |
 | Amazon      |                All | -            |
-| RHEL        |         4, 5, 6, 7 | -            |
+| RHEL        |               6, 7 | -            |
 | FreeBSD     |                 10 | -            |
 
 
@@ -603,90 +645,31 @@ prepare:
 $ vuls scan -help
 scan:
         scan
-                [-lang=en|ja]
                 [-config=/path/to/config.toml]
                 [-results-dir=/path/to/results]
-                [-cve-dictionary-dbtype=sqlite3|mysql]
-                [-cve-dictionary-dbpath=/path/to/cve.sqlite3 or mysql connection string]
-                [-cve-dictionary-url=http://127.0.0.1:1323]
-                [-cache-dbpath=/path/to/cache.db]
-                [-cvss-over=7]
-                [-ignore-unscored-cves]
+                [-cachedb-path=/path/to/cache.db]
                 [-ssh-external]
                 [-containers-only]
                 [-skip-broken]
-                [-report-azure-blob]
-                [-report-json]
-                [-report-mail]
-                [-report-s3]
-                [-report-slack]
-                [-report-text]
-                [-report-xml]
                 [-http-proxy=http://192.168.0.1:8080]
                 [-ask-key-password]
                 [-debug]
-                [-debug-sql]
-                [-aws-profile=default]
-                [-aws-region=us-west-2]
-                [-aws-s3-bucket=bucket_name]
-                [-azure-account=accout]
-                [-azure-key=key]
-                [-azure-container=container]
+
                 [SERVER]...
-
-
   -ask-key-password
         Ask ssh privatekey password before scanning
-  -aws-profile string
-        AWS Profile to use (default "default")
-  -aws-region string
-        AWS Region to use (default "us-east-1")
-  -aws-s3-bucket string
-        S3 bucket name
-  -azure-account string
-        Azure account name to use. AZURE_STORAGE_ACCOUNT environment variable is used if not specified
-  -azure-container string
-        Azure storage container name
-  -azure-key string
-        Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified
-  -cache-dbpath string
-        /path/to/cache.db (local cache of changelog for Ubuntu/Debian) (default "$PWD/cache.db")
+  -cachedb-path string
+        /path/to/cache.db (local cache of changelog for Ubuntu/Debian)
   -config string
-        /path/to/toml (default "$PWD/config.toml")
+        /path/to/toml 
   -containers-only
-        Scan concontainers Only. Default: Scan both of hosts and containers
-  -cve-dictionary-dbpath string
-        /path/to/sqlite3 (For get cve detail from cve.sqlite3)
-  -cve-dictionary-dbtype string
-        DB type for fetching CVE dictionary (sqlite3 or mysql) (default "sqlite3")
-  -cve-dictionary-url string
-        http://CVE.Dictionary (default "http://127.0.0.1:1323")
-  -cvss-over float
-        -cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))
+        Scan containers only. Default: Scan both of hosts and containers
   -debug
         debug mode
-  -debug-sql
-        SQL debug mode
   -http-proxy string
         http://proxy-url:port (default: empty)
-  -ignore-unscored-cves
-        Don't report the unscored CVEs
-  -lang string
-        [en|ja] (default "en")
-  -report-json
-        Write report to JSON files ($PWD/results/current)
-  -report-mail
-        Send report via Email
-  -report-s3
-        Write report to S3 (bucket/yyyyMMdd_HHmm)
-  -report-slack
-        Send report via Slack
-  -report-text
-        Write report to text files ($PWD/results/current)
-  -report-xml
-        Write report to XML files ($PWDresults/current)
   -results-dir string
-        /path/to/results (default "$PWD/results")
+        /path/to/results 
   -skip-broken
         [For CentOS] yum update changelog with --skip-broken option
   -ssh-external
@@ -714,37 +697,166 @@ Defaults:vuls !requiretty
 | empty password   |                 -  | |
 | with password    |           required | or use ssh-agent |
 
-## -report-json , -report-text , -report-xml option
-
-結果をファイルに出力したい場合に指定する。出力先は、`$PWD/result/current/`    
-`servername.(json|txt|xml)`には、サーバごとのスキャン結果が出力される。
-
 ## Example: Scan all servers defined in config file
 ```
-$ vuls scan \
-      -report-slack \ 
-      -report-mail \
-      -cvss-over=7 \
-      -ask-key-password \
-      -cve-dictionary-dbpath=$PWD/cve.sqlite3
+$ vuls scan -ask-key-password 
 ```
 この例では、
 - SSH公開鍵認証（秘密鍵パスフレーズ）を指定
 - configに定義された全サーバをスキャン
-- レポートをslack, emailに送信
-- CVSSスコアが 7.0 以上の脆弱性のみレポート
-- go-cve-dictionaryにはHTTPではなくDBに直接アクセス（go-cve-dictionaryをサーバモードで起動しない）
 
 ## Example: Scan specific servers
 ```
-$ vuls scan \
-      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
-      server1 server2
+$ vuls scan server1 server2
 ```
 この例では、
 - SSH公開鍵認証（秘密鍵パスフレーズなし）
 - ノーパスワードでsudoが実行可能
 - configで定義されているサーバの中の、server1, server2のみスキャン
+
+## Example: Scan Docker containers
+
+DockerコンテナはSSHデーモンを起動しないで運用するケースが一般的。  
+ [Docker Blog:Why you don't need to run SSHd in your Docker containers](https://blog.docker.com/2014/06/why-you-dont-need-to-run-sshd-in-docker/)
+
+Vulsは、DockerホストにSSHで接続し、`docker exec`でDockerコンテナにコマンドを発行して脆弱性をスキャンする。  
+詳細は、[Architecture section](https://github.com/future-architect/vuls#architecture)を参照
+
+- 全ての起動中のDockerコンテナをスキャン  
+  `"${running}"` をcontainersに指定する
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+    host         = "172.31.4.82"
+    user        = "ec2-user"
+    keyPath     = "/home/username/.ssh/id_rsa"
+    containers = ["${running}"]
+    ```
+
+- あるコンテナのみスキャン  
+  コンテナID、または、コンテナ名を、containersに指定する。  
+  以下の例では、`container_name_a`と、`4aa37a8b63b9`のコンテナのみスキャンする  
+  スキャン実行前に、コンテナが起動中か確認すること。もし起動してない場合はエラーメッセージを出力してスキャンを中断する。  
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+    host         = "172.31.4.82"
+    user        = "ec2-user"
+    keyPath     = "/home/username/.ssh/id_rsa"
+    containers = ["container_name_a", "4aa37a8b63b9"]
+    ```
+- コンテナのみをスキャンする場合（ホストはスキャンしない）  
+  --containers-onlyオプションを指定する
+
+
+# Usage: Report
+
+```
+report:
+        report
+                [-lang=en|ja]
+                [-config=/path/to/config.toml]
+                [-results-dir=/path/to/results]
+                [-refresh-cve]
+                [-cvedb-type=sqlite3|mysql]
+                [-cvedb-path=/path/to/cve.sqlite3]
+                [-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
+                [-cvss-over=7]
+                [-ignore-unscored-cves]
+                [-to-email]
+                [-to-slack]
+                [-to-localfile]
+                [-to-s3]
+                [-to-azure-blob]
+                [-format-json]
+                [-format-xml]
+                [-format-one-line-text]
+                [-format-short-text]
+                [-format-full-text]
+                [-gzip]
+                [-aws-profile=default]
+                [-aws-region=us-west-2]
+                [-aws-s3-bucket=bucket_name]
+                [-azure-account=accout]
+                [-azure-key=key]
+                [-azure-container=container]
+                [-http-proxy=http://192.168.0.1:8080]
+                [-debug]
+                [-debug-sql]
+
+                [SERVER]...
+  -aws-profile string
+        AWS profile to use (default "default")
+  -aws-region string
+        AWS region to use (default "us-east-1")
+  -aws-s3-bucket string
+        S3 bucket name
+  -azure-account string
+        Azure account name to use. AZURE_STORAGE_ACCOUNT environment variable is used if not specified
+  -azure-container string
+        Azure storage container name
+  -azure-key string
+        Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified
+  -config string
+        /path/to/toml 
+  -cvedb-path string
+        /path/to/sqlite3 (For get cve detail from cve.sqlite3)
+  -cvedb-type string
+        DB type for fetching CVE dictionary (sqlite3 or mysql) (default "sqlite3")
+  -cvedb-url string
+        http://cve-dictionary.com:8080 or mysql connection string
+  -cvss-over float
+        -cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))
+  -debug
+        debug mode
+  -debug-sql
+        SQL debug mode
+  -format-full-text
+        Detail report in plain text
+  -format-json
+        JSON format
+  -format-one-line-text
+        One line summary in plain text
+  -format-short-text
+        Summary in plain text
+  -format-xml
+        XML format
+  -gzip
+        gzip compression
+  -http-proxy string
+        http://proxy-url:port (default: empty)
+  -ignore-unscored-cves
+        Don't report the unscored CVEs
+  -lang string
+        [en|ja] (default "en")
+  -refresh-cve
+        Refresh CVE information in JSON file under results dir
+  -results-dir string
+        /path/to/results 
+  -to-azure-blob
+        Write report to Azure Storage blob (container/yyyyMMdd_HHmm/servername.json/xml/txt)
+  -to-email
+        Send report via Email
+  -to-localfile
+        Write report to localfile
+  -to-s3
+        Write report to S3 (bucket/yyyyMMdd_HHmm/servername.json/xml/txt)
+  -to-slack
+        Send report via Slack
+```
+
+## Example: Send scan results to Slack
+```
+$ vuls report \
+      -to-slack \
+      -cvss-over=7 \
+      -cvedb-path=$PWD/cve.sqlite3
+```
+With this sample command, it will ..
+- Slack通知
+- CVSS score が 7.0以上のもののみ通知
 
 ## Example: Put results in S3 bucket
 
@@ -755,15 +867,14 @@ $ vuls scan \
 
 ```
 $ vuls scan \
-      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
-      -report-s3
+      -cvedb-path=$PWD/cve.sqlite3 \ 
+      -to-s3 \
+      -format-json \
       -aws-region=ap-northeast-1 \
       -aws-s3-bucket=vuls \
       -aws-profile=default 
 ```
 この例では、
-- SSH公開鍵認証（秘密鍵パスフレーズなし）
-- configに定義された全サーバをスキャン
 - 結果をJSON形式でS3に格納する。
   - バケット名 ... vuls
   - リージョン ... ap-northeast-1
@@ -772,20 +883,19 @@ $ vuls scan \
 ## Example: Put results in Azure Blob storage
 
 事前にAzure Blob関連の設定を行う
-- Containerを作成
+- Azure Blob Containerを作成
 
 ```
 $ vuls scan \
-      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
-      -report-azure-blob \
+      -cvedb-path=$PWD/cve.sqlite3 \ 
+      -to-azure-blob \
+      -format-xml \
       -azure-container=vuls \
       -azure-account=test \
       -azure-key=access-key-string 
 ```
 この例では、
-- SSH公開鍵認証（秘密鍵パスフレーズなし）
-- configに定義された全サーバをスキャン
-- 結果をJSON形式でAzure Blobに格納する。
+- 結果をXML形式でBlobに格納する。
   - コンテナ名 ... vuls
   - ストレージアカウント名 ... test
   - アクセスキー ... access-key-string
@@ -802,7 +912,7 @@ $ vuls scan \
 
 ## Example: IgnoreCves 
 
-Slack, Mail, テキスト出力しないくないCVE IDがある場合は、設定ファイルに定義することでレポートされなくなる。
+Slack, EMail, テキスト出力しないくないCVE IDがある場合は、設定ファイルに定義することでレポートされなくなる。
 ただ、JSONファイルには以下のように出力される。
 
 - config.toml
@@ -938,43 +1048,6 @@ VulsとDependency Checkの連携すると以下の利点がある
   - Dependency Checkは日本語レポートに対応していない
 
     
-# Usage: Scan Docker containers
-
-DockerコンテナはSSHデーモンを起動しないで運用するケースが一般的。  
- [Docker Blog:Why you don't need to run SSHd in your Docker containers](https://blog.docker.com/2014/06/why-you-dont-need-to-run-sshd-in-docker/)
-
-Vulsは、DockerホストにSSHで接続し、`docker exec`でDockerコンテナにコマンドを発行して脆弱性をスキャンする。  
-詳細は、[Architecture section](https://github.com/future-architect/vuls#architecture)を参照
-
-- 全ての起動中のDockerコンテナをスキャン  
-  `"${running}"` をcontainersに指定する
-    ```
-    [servers]
-
-    [servers.172-31-4-82]
-    host         = "172.31.4.82"
-    user        = "ec2-user"
-    keyPath     = "/home/username/.ssh/id_rsa"
-    containers = ["${running}"]
-    ```
-
-- あるコンテナのみスキャン  
-  コンテナID、または、コンテナ名を、containersに指定する。  
-  以下の例では、`container_name_a`と、`4aa37a8b63b9`のコンテナのみスキャンする  
-  スキャン実行前に、コンテナが起動中か確認すること。もし起動してない場合はエラーメッセージを出力してスキャンを中断する。  
-    ```
-    [servers]
-
-    [servers.172-31-4-82]
-    host         = "172.31.4.82"
-    user        = "ec2-user"
-    keyPath     = "/home/username/.ssh/id_rsa"
-    containers = ["container_name_a", "4aa37a8b63b9"]
-    ```
-- コンテナのみをスキャンする場合（ホストはスキャンしない）  
-  --containers-onlyオプションを指定する
-
-
 # Usage: TUI
 
 ## Display the latest scan results
@@ -982,13 +1055,26 @@ Vulsは、DockerホストにSSHで接続し、`docker exec`でDockerコンテナ
 ```
 $ vuls tui -h
 tui:
-	tui [-results-dir=/path/to/results]
+        tui
+                [-cvedb-type=sqlite3|mysql]
+                [-cvedb-path=/path/to/cve.sqlite3]
+                [-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
+                [-results-dir=/path/to/results]
+                [-refresh-cve]
+                [-debug-sql]
 
-  -results-dir string
-        /path/to/results (default "$PWD/results")
+  -cvedb-path string
+        /path/to/sqlite3 (For get cve detail from cve.sqlite3)
+  -cvedb-type string
+        DB type for fetching CVE dictionary (sqlite3 or mysql)
+  -cvedb-url string
+        http://cve-dictionary.com:8080 or mysql connection string
   -debug-sql
-    	debug SQL
-
+        debug SQL
+  -refresh-cve
+        Refresh CVE information in JSON file under results dir
+  -results-dir string
+        /path/to/results 
 ```
 
 Key binding is below.

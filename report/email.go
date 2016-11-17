@@ -29,27 +29,27 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
-// MailWriter send mail
-type MailWriter struct{}
+// EMailWriter send mail
+type EMailWriter struct{}
 
-func (w MailWriter) Write(scanResults []models.ScanResult) (err error) {
+func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 	conf := config.Conf
-	for _, s := range scanResults {
-		to := strings.Join(conf.Mail.To[:], ", ")
-		cc := strings.Join(conf.Mail.Cc[:], ", ")
-		mailAddresses := append(conf.Mail.To, conf.Mail.Cc...)
-		if _, err := mail.ParseAddressList(strings.Join(mailAddresses[:], ", ")); err != nil {
-			return fmt.Errorf("Failed to parse email addresses: %s", err)
-		}
+	to := strings.Join(conf.EMail.To[:], ", ")
+	cc := strings.Join(conf.EMail.Cc[:], ", ")
+	mailAddresses := append(conf.EMail.To, conf.EMail.Cc...)
+	if _, err := mail.ParseAddressList(strings.Join(mailAddresses[:], ", ")); err != nil {
+		return fmt.Errorf("Failed to parse email addresses: %s", err)
+	}
 
+	for _, r := range rs {
 		subject := fmt.Sprintf("%s%s %s",
-			conf.Mail.SubjectPrefix,
-			s.ServerInfo(),
-			s.CveSummary(),
+			conf.EMail.SubjectPrefix,
+			r.ServerInfo(),
+			r.CveSummary(),
 		)
 
 		headers := make(map[string]string)
-		headers["From"] = conf.Mail.From
+		headers["From"] = conf.EMail.From
 		headers["To"] = to
 		headers["Cc"] = cc
 		headers["Subject"] = subject
@@ -60,25 +60,19 @@ func (w MailWriter) Write(scanResults []models.ScanResult) (err error) {
 		for k, v := range headers {
 			message += fmt.Sprintf("%s: %s\r\n", k, v)
 		}
+		message += "\r\n" + toFullPlainText(r)
 
-		var body string
-		if body, err = toPlainText(s); err != nil {
-			return err
-		}
-		message += "\r\n" + body
-
-		smtpServer := net.JoinHostPort(conf.Mail.SMTPAddr, conf.Mail.SMTPPort)
-
-		err := smtp.SendMail(
+		smtpServer := net.JoinHostPort(conf.EMail.SMTPAddr, conf.EMail.SMTPPort)
+		err = smtp.SendMail(
 			smtpServer,
 			smtp.PlainAuth(
 				"",
-				conf.Mail.User,
-				conf.Mail.Password,
-				conf.Mail.SMTPAddr,
+				conf.EMail.User,
+				conf.EMail.Password,
+				conf.EMail.SMTPAddr,
 			),
-			conf.Mail.From,
-			conf.Mail.To,
+			conf.EMail.From,
+			conf.EMail.To,
 			[]byte(message),
 		)
 

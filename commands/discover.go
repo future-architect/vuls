@@ -98,7 +98,7 @@ iconEmoji    = ":ghost:"
 authUser     = "username"
 notifyUsers  = ["@username"]
 
-[mail]
+[email]
 smtpAddr      = "smtp.gmail.com"
 smtpPort      = "587"
 user          = "username"

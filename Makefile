@@ -56,7 +56,7 @@ fmtcheck:
 pretest: lint vet fmtcheck
 
 test: pretest
-	$(foreach pkg,$(PKGS),go test -v $(pkg) || exit;)
+	$(foreach pkg,$(PKGS),go test -cover -v $(pkg) || exit;)
 
 unused :
 	$(foreach pkg,$(PKGS),unused $(pkg);)

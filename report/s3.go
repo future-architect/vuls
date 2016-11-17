@@ -20,6 +20,7 @@ package report
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"time"
 
@@ -31,6 +32,78 @@ import (
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 )
+
+// S3Writer writes results to S3
+type S3Writer struct{}
+
+func getS3() *s3.S3 {
+	return s3.New(session.New(&aws.Config{
+		Region:      aws.String(c.Conf.AwsRegion),
+		Credentials: credentials.NewSharedCredentials("", c.Conf.AwsProfile),
+	}))
+}
+
+// Write results to S3
+// http://docs.aws.amazon.com/sdk-for-go/latest/v1/developerguide/common-examples.title.html
+func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
+	if len(rs) == 0 {
+		return nil
+	}
+
+	svc := getS3()
+
+	if c.Conf.FormatOneLineText {
+		timestr := rs[0].ScannedAt.Format(time.RFC3339)
+		k := fmt.Sprintf(timestr + "/summary.txt")
+		text := toOneLineSummary(rs...)
+		if err := putObject(svc, k, []byte(text)); err != nil {
+			return err
+		}
+	}
+
+	for _, r := range rs {
+		key := r.ReportKeyName()
+		if c.Conf.FormatJSON {
+			k := key + ".json"
+			var b []byte
+			if b, err = json.Marshal(r); err != nil {
+				return fmt.Errorf("Failed to Marshal to JSON: %s", err)
+			}
+			if err := putObject(svc, k, b); err != nil {
+				return err
+			}
+		}
+
+		if c.Conf.FormatShortText {
+			k := key + "_short.txt"
+			text := toShortPlainText(r)
+			if err := putObject(svc, k, []byte(text)); err != nil {
+				return err
+			}
+		}
+
+		if c.Conf.FormatFullText {
+			k := key + "_full.txt"
+			text := toFullPlainText(r)
+			if err := putObject(svc, k, []byte(text)); err != nil {
+				return err
+			}
+		}
+
+		if c.Conf.FormatXML {
+			k := key + ".xml"
+			var b []byte
+			if b, err = xml.Marshal(r); err != nil {
+				return fmt.Errorf("Failed to Marshal to XML: %s", err)
+			}
+			allBytes := bytes.Join([][]byte{[]byte(xml.Header + vulsOpenTag), b, []byte(vulsCloseTag)}, []byte{})
+			if err := putObject(svc, k, allBytes); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
 
 // CheckIfBucketExists check the existence of S3 bucket
 func CheckIfBucketExists() error {
@@ -57,46 +130,22 @@ func CheckIfBucketExists() error {
 	return nil
 }
 
-// S3Writer writes results to S3
-type S3Writer struct{}
-
-func getS3() *s3.S3 {
-	return s3.New(session.New(&aws.Config{
-		Region:      aws.String(c.Conf.AwsRegion),
-		Credentials: credentials.NewSharedCredentials("", c.Conf.AwsProfile),
-	}))
-}
-
-// Write results to S3
-func (w S3Writer) Write(scanResults []models.ScanResult) (err error) {
-
-	var jsonBytes []byte
-	if jsonBytes, err = json.Marshal(scanResults); err != nil {
-		return fmt.Errorf("Failed to Marshal to JSON: %s", err)
+func putObject(svc *s3.S3, k string, b []byte) error {
+	var err error
+	if c.Conf.GZIP {
+		if b, err = gz(b); err != nil {
+			return err
+		}
+		k = k + ".gz"
 	}
 
-	// http://docs.aws.amazon.com/sdk-for-go/latest/v1/developerguide/common-examples.title.html
-	svc := getS3()
-	timestr := time.Now().Format(time.RFC3339)
-	for _, r := range scanResults {
-		key := ""
-		if len(r.Container.ContainerID) == 0 {
-			key = fmt.Sprintf("%s/%s.json", timestr, r.ServerName)
-		} else {
-			key = fmt.Sprintf("%s/%s_%s.json", timestr, r.ServerName, r.Container.Name)
-		}
-
-		if jsonBytes, err = json.Marshal(r); err != nil {
-			return fmt.Errorf("Failed to Marshal to JSON: %s", err)
-		}
-		_, err = svc.PutObject(&s3.PutObjectInput{
-			Bucket: &c.Conf.S3Bucket,
-			Key:    &key,
-			Body:   bytes.NewReader(jsonBytes),
-		})
-		if err != nil {
-			return fmt.Errorf("Failed to upload data to %s/%s, %s", c.Conf.S3Bucket, key, err)
-		}
+	if _, err := svc.PutObject(&s3.PutObjectInput{
+		Bucket: &c.Conf.S3Bucket,
+		Key:    &k,
+		Body:   bytes.NewReader(b),
+	}); err != nil {
+		return fmt.Errorf("Failed to upload data to %s/%s, %s",
+			c.Conf.S3Bucket, k, err)
 	}
 	return nil
 }

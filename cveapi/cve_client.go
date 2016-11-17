@@ -48,7 +48,7 @@ func (api *cvedictClient) initialize() {
 }
 
 func (api cvedictClient) CheckHealth() (ok bool, err error) {
-	if config.Conf.CveDBPath != "" {
+	if config.Conf.CveDictionaryURL == "" {
 		log.Debugf("get cve-dictionary from %s", config.Conf.CveDBType)
 		return true, nil
 	}
@@ -71,7 +71,7 @@ type response struct {
 }
 
 func (api cvedictClient) FetchCveDetails(cveIDs []string) (cveDetails cve.CveDetails, err error) {
-	if config.Conf.CveDBPath != "" {
+	if config.Conf.CveDictionaryURL == "" {
 		return api.FetchCveDetailsFromCveDB(cveIDs)
 	}
 
@@ -129,7 +129,6 @@ func (api cvedictClient) FetchCveDetails(cveIDs []string) (cveDetails cve.CveDet
 			fmt.Errorf("Failed to fetch CVE. err: %v", errs)
 	}
 
-	// order by CVE ID desc
 	sort.Sort(cveDetails)
 	return
 }
@@ -137,7 +136,11 @@ func (api cvedictClient) FetchCveDetails(cveIDs []string) (cveDetails cve.CveDet
 func (api cvedictClient) FetchCveDetailsFromCveDB(cveIDs []string) (cveDetails cve.CveDetails, err error) {
 	log.Debugf("open cve-dictionary db (%s)", config.Conf.CveDBType)
 	cveconfig.Conf.DBType = config.Conf.CveDBType
-	cveconfig.Conf.DBPath = config.Conf.CveDBPath
+	if config.Conf.CveDBType == "sqlite3" {
+		cveconfig.Conf.DBPath = config.Conf.CveDBPath
+	} else {
+		cveconfig.Conf.DBPath = config.Conf.CveDictionaryURL
+	}
 	cveconfig.Conf.DebugSQL = config.Conf.DebugSQL
 	if err := cvedb.OpenDB(); err != nil {
 		return []cve.CveDetail{},
@@ -194,7 +197,7 @@ type responseGetCveDetailByCpeName struct {
 }
 
 func (api cvedictClient) FetchCveDetailsByCpeName(cpeName string) ([]cve.CveDetail, error) {
-	if config.Conf.CveDBPath != "" {
+	if config.Conf.CveDictionaryURL == "" {
 		return api.FetchCveDetailsByCpeNameFromDB(cpeName)
 	}
 

@@ -149,12 +149,24 @@ $ docker run --rm -it \
     -v /etc/localtime:/etc/localtime:ro \
     -e "TZ=Asia/Tokyo" \
     vuls/vuls scan \
-    -cve-dictionary-dbpath=/vuls/cve.sqlite3 \
-    -report-json \
     -config=./config.toml # path to config.toml in docker
 ```
 
-## Step5. vulsrepo
+## Step5. Report
+
+```console
+$ docker run --rm -it \
+    -v ~/.ssh:/root/.ssh:ro \
+    -v $PWD:/vuls \
+    -v $PWD/vuls-log:/var/log/vuls \
+    -v /etc/localtime:/etc/localtime:ro \
+    vuls/vuls report \
+    -cvedb-path=/vuls/cve.sqlite3 \
+    -format-short-text \
+    -config=./config.toml # path to config.toml in docker
+```
+
+## Step6. vulsrepo
 
 ```console
 $docker run -dt \

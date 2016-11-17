@@ -21,6 +21,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -28,7 +29,7 @@ import (
 	"github.com/future-architect/vuls/cache"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
-	cve "github.com/kotakanbe/go-cve-dictionary/models"
+	"github.com/future-architect/vuls/report"
 )
 
 // Log for localhsot
@@ -54,7 +55,6 @@ type osTypeInterface interface {
 
 	checkRequiredPackagesInstalled() error
 	scanPackages() error
-	scanVulnByCpeName() error
 	install() error
 	convertToModel() (models.ScanResult, error)
 
@@ -72,64 +72,15 @@ type osPackages struct {
 	Packages models.PackageInfoList
 
 	// unsecure packages
-	UnsecurePackages CvePacksList
+	VulnInfos models.VulnInfos
 }
 
 func (p *osPackages) setPackages(pi models.PackageInfoList) {
 	p.Packages = pi
 }
 
-func (p *osPackages) setUnsecurePackages(pi []CvePacksInfo) {
-	p.UnsecurePackages = pi
-}
-
-// CvePacksList have CvePacksInfo list, getter/setter, sortable methods.
-type CvePacksList []CvePacksInfo
-
-// CvePacksInfo hold the CVE information.
-type CvePacksInfo struct {
-	CveID            string
-	CveDetail        cve.CveDetail
-	Packs            models.PackageInfoList
-	DistroAdvisories []models.DistroAdvisory // for Aamazon, RHEL, FreeBSD
-	CpeNames         []string
-}
-
-// FindByCveID find by CVEID
-func (s CvePacksList) FindByCveID(cveID string) (pi CvePacksInfo, found bool) {
-	for _, p := range s {
-		if cveID == p.CveID {
-			return p, true
-		}
-	}
-	return CvePacksInfo{CveID: cveID}, false
-}
-
-// immutable
-func (s CvePacksList) set(cveID string, cvePacksInfo CvePacksInfo) CvePacksList {
-	for i, p := range s {
-		if cveID == p.CveID {
-			s[i] = cvePacksInfo
-			return s
-		}
-	}
-	return append(s, cvePacksInfo)
-}
-
-// Len implement Sort Interface
-func (s CvePacksList) Len() int {
-	return len(s)
-}
-
-// Swap implement Sort Interface
-func (s CvePacksList) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-// Less implement Sort Interface
-func (s CvePacksList) Less(i, j int) bool {
-	return s[i].CveDetail.CvssScore(config.Conf.Lang) >
-		s[j].CveDetail.CvssScore(config.Conf.Lang)
+func (p *osPackages) setVulnInfos(vi []models.VulnInfo) {
+	p.VulnInfos = vi
 }
 
 func detectOS(c config.ServerInfo) (osType osTypeInterface) {
@@ -518,14 +469,15 @@ func Scan() []error {
 	}()
 
 	Log.Info("Scanning vulnerable OS packages...")
-	if errs := scanPackages(); errs != nil {
+	scannedAt := time.Now()
+	dir, err := ensureResultDir(scannedAt)
+	if err != nil {
+		return []error{err}
+	}
+	if errs := scanVulns(dir, scannedAt); errs != nil {
 		return errs
 	}
 
-	Log.Info("Scanning vulnerable software specified in the CPE...")
-	if errs := scanVulnByCpeName(); errs != nil {
-		return errs
-	}
 	return nil
 }
 
@@ -553,31 +505,67 @@ func checkRequiredPackagesInstalled() []error {
 	}, timeoutSec)
 }
 
-func scanPackages() []error {
+func scanVulns(jsonDir string, scannedAt time.Time) []error {
+	var results models.ScanResults
 	timeoutSec := 120 * 60
-	return parallelSSHExec(func(o osTypeInterface) error {
-		return o.scanPackages()
-	}, timeoutSec)
-
-}
-
-// scanVulnByCpeName search vulnerabilities that specified in config file.
-func scanVulnByCpeName() []error {
-	timeoutSec := 30 * 60
-	return parallelSSHExec(func(o osTypeInterface) error {
-		return o.scanVulnByCpeName()
-	}, timeoutSec)
-
-}
-
-// GetScanResults returns Scan Resutls
-func GetScanResults() (results models.ScanResults, err error) {
-	for _, s := range servers {
-		r, err := s.convertToModel()
-		if err != nil {
-			return results, fmt.Errorf("Failed converting to model: %s", err)
+	errs := parallelSSHExec(func(o osTypeInterface) error {
+		if err := o.scanPackages(); err != nil {
+			return err
 		}
+
+		r, err := o.convertToModel()
+		if err != nil {
+			return err
+		}
+		r.ScannedAt = scannedAt
 		results = append(results, r)
+
+		return nil
+	}, timeoutSec)
+
+	config.Conf.FormatJSON = true
+	ws := []report.ResultWriter{
+		report.LocalFileWriter{CurrentDir: jsonDir},
 	}
-	return
+	for _, w := range ws {
+		if err := w.Write(results...); err != nil {
+			return []error{
+				fmt.Errorf("Failed to write summary report: %s", err),
+			}
+		}
+	}
+	if errs != nil {
+		return errs
+	}
+
+	report.StdoutWriter{}.WriteScanSummary(results...)
+	return nil
+}
+
+func ensureResultDir(scannedAt time.Time) (currentDir string, err error) {
+	jsonDirName := scannedAt.Format(time.RFC3339)
+
+	resultsDir := config.Conf.ResultsDir
+	if len(resultsDir) == 0 {
+		wd, _ := os.Getwd()
+		resultsDir = filepath.Join(wd, "results")
+	}
+	jsonDir := filepath.Join(resultsDir, jsonDirName)
+	if err := os.MkdirAll(jsonDir, 0700); err != nil {
+		return "", fmt.Errorf("Failed to create dir: %s", err)
+	}
+
+	symlinkPath := filepath.Join(resultsDir, "current")
+	if _, err := os.Lstat(symlinkPath); err == nil {
+		if err := os.Remove(symlinkPath); err != nil {
+			return "", fmt.Errorf(
+				"Failed to remove symlink. path: %s, err: %s", symlinkPath, err)
+		}
+	}
+
+	if err := os.Symlink(jsonDir, symlinkPath); err != nil {
+		return "", fmt.Errorf(
+			"Failed to create symlink: path: %s, err: %s", symlinkPath, err)
+	}
+	return jsonDir, nil
 }
