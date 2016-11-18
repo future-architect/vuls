@@ -26,7 +26,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	"reflect"
 
 	"github.com/Sirupsen/logrus"
 	c "github.com/future-architect/vuls/config"
@@ -80,6 +79,8 @@ type ScanCmd struct {
 	azureContainer string
 
 	sshExternal bool
+
+	reportDiff bool
 }
 
 // Name return subcommand name
@@ -121,6 +122,7 @@ func (*ScanCmd) Usage() string {
 		[-azure-account=accout]
 		[-azure-key=key]
 		[-azure-container=container]
+		[-report-diff]
 
 		[SERVER]...
 `
@@ -252,6 +254,8 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		"[Deprecated] THIS OPTION WAS REMOVED FOR SECURITY REASONS. Define NOPASSWD in /etc/sudoers on target servers and use SSH key-based authentication",
 	)
+
+	f.BoolVar(&p.reportDiff, "report-diff", false, "report Diff Data")
 }
 
 // Execute execute
