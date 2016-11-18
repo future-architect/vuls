@@ -26,6 +26,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"reflect"
 
 	"github.com/Sirupsen/logrus"
 	c "github.com/future-architect/vuls/config"
@@ -440,12 +441,29 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	Log.Info("Reporting...")
 	filtered := scanResults.FilterByCvssOver()
-	for _, w := range reports {
+	
+	if p.reportDiff {
+		filteredDiff := scanResults.filterDiff
+		for _, w := range reports {
+			if w == report.JSONWriter{} or w == report.JSONWriter{} or w == report.XMLWriter{} {
+				if err := w.Write(filteredDiff); err != nil {
+					Log.Fatalf("Failed to report, err: %s", err)
+					return subcommands.ExitFailure
+				}
+			} else {
+				if err := w.Write(filtered); err != nil {
+					Log.Fatalf("Failed to report, err: %s", err)
+					return subcommands.ExitFailure
+				}
+			}
+		}
+	} else {
 		if err := w.Write(filtered); err != nil {
 			Log.Fatalf("Failed to report, err: %s", err)
 			return subcommands.ExitFailure
 		}
 	}
+
 
 	return subcommands.ExitSuccess
 }
