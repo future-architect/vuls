@@ -443,7 +443,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	filtered := scanResults.FilterByCvssOver()
 	
 	if p.reportDiff {
-		filteredDiff := scanResults.filterDiff
+		filteredDiff := scanResults.FilterDiff
 		for _, w := range reports {
 			if w == report.JSONWriter{} or w == report.JSONWriter{} or w == report.XMLWriter{} {
 				if err := w.Write(filteredDiff); err != nil {
