@@ -209,6 +209,7 @@ type CveInfo struct {
 	Packages         []PackageInfo
 	DistroAdvisories []DistroAdvisory
 	CpeNames         []CpeName
+	New	bool	
 }
 
 // CpeName has CPE name
