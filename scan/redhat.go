@@ -126,11 +126,9 @@ func (o *redhat) checkDependencies() error {
 			return fmt.Errorf("Not implemented yet: %s", o.Distro)
 		}
 
-		var name = ""
+		var name = "yum-plugin-changelog"
 		if majorVersion < 6 {
 			name = "yum-changelog"
-		} else {
-			name = "yum-plugin-changelog"
 		}
 
 		cmd := "rpm -q " + name
@@ -167,11 +165,9 @@ func (o *redhat) checkRequiredPackagesInstalled() error {
 			return fmt.Errorf(msg)
 		}
 
-		var packName = ""
+		var packName = "yum-plugin-changelog"
 		if majorVersion < 6 {
 			packName = "yum-changelog"
-		} else {
-			packName = "yum-plugin-changelog"
 		}
 
 		cmd := "rpm -q " + packName
@@ -252,7 +248,13 @@ func (o *redhat) scanUnsecurePackages() ([]CvePacksInfo, error) {
 
 // For CentOS
 func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (CvePacksList, error) {
-	cmd := "LANGUAGE=en_US.UTF-8 yum --color=never check-update"
+	cmd := "LANGUAGE=en_US.UTF-8 yum --color=never %s check-update"
+	if o.getServerInfo().Enablerepo != "" {
+		cmd = fmt.Sprintf(cmd, "--enablerepo="+o.getServerInfo().Enablerepo)
+	} else {
+		cmd = fmt.Sprintf(cmd, "")
+	}
+
 	r := o.ssh(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess(0, 100) {
 		//returns an exit code of 100 if there are available updates.
@@ -400,6 +402,7 @@ func (o *redhat) parseYumCheckUpdateLines(stdout string) (results models.Package
 			}
 			installed.NewVersion = candidate.NewVersion
 			installed.NewRelease = candidate.NewRelease
+			installed.Repository = candidate.Repository
 			results = append(results, installed)
 		}
 	}
@@ -419,16 +422,19 @@ func (o *redhat) parseYumCheckUpdateLine(line string) (models.PackageInfo, error
 		packName = strings.Join(strings.Split(fields[0], ".")[0:(len(splitted)-1)], ".")
 	}
 
-	fields = strings.Split(fields[1], "-")
-	if len(fields) != 2 {
+	verfields := strings.Split(fields[1], "-")
+	if len(verfields) != 2 {
 		return models.PackageInfo{}, fmt.Errorf("Unknown format: %s", line)
 	}
-	version := o.regexpReplace(fields[0], `^[0-9]+:`, "")
-	release := fields[1]
+	version := o.regexpReplace(verfields[0], `^[0-9]+:`, "")
+	release := verfields[1]
+	repos := strings.Join(fields[2:len(fields)], " ")
+
 	return models.PackageInfo{
 		Name:       packName,
 		NewVersion: version,
 		NewRelease: release,
+		Repository: repos,
 	}, nil
 }
 
@@ -547,8 +553,15 @@ func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList) (stdout st
 		command += util.ProxyEnv()
 	}
 
+	yumopts := ""
+	if o.getServerInfo().Enablerepo != "" {
+		yumopts = " --enablerepo=" + o.getServerInfo().Enablerepo
+	}
+	if config.Conf.SkipBroken {
+		yumopts += " --skip-broken"
+	}
 	// yum update --changelog doesn't have --color option.
-	command += fmt.Sprintf(" LANGUAGE=en_US.UTF-8 yum update --changelog %s", packageNames)
+	command += fmt.Sprintf(" LANGUAGE=en_US.UTF-8 yum %s --changelog update ", yumopts) + packageNames
 
 	r := o.ssh(command, sudo)
 	if !r.isSuccess(0, 1) {

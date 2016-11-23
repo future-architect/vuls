@@ -122,7 +122,7 @@ VulsはSSHパスワード認証をサポートしていない。SSH公開鍵鍵�
 
 Vulsセットアップに必要な以下のソフトウェアをインストールする。
 
-- SQLite3
+- SQLite3 or MySQL
 - git
 - gcc
 - go v1.7.1 or later
@@ -157,7 +157,7 @@ $ sudo chmod 700 /var/log/vuls
 $
 $ mkdir -p $GOPATH/src/github.com/kotakanbe
 $ cd $GOPATH/src/github.com/kotakanbe
-$ git https://github.com/kotakanbe/go-cve-dictionary.git
+$ git clone https://github.com/kotakanbe/go-cve-dictionary.git
 $ cd go-cve-dictionary
 $ make install
 ```
@@ -577,17 +577,22 @@ Prepareサブコマンドは、Vuls内部で利用する以下のパッケージ
 
 ```
 $ vuls prepare -help
-prepare
-                        [-config=/path/to/config.toml] [-debug]
+prepare:
+        prepare
+                        [-config=/path/to/config.toml]
                         [-ask-key-password]
-                        [SERVER]...
+                        [-debug]
+                        [-ssh-external]
 
+                        [SERVER]...
   -ask-key-password
         Ask ssh privatekey password before scanning
   -config string
         /path/to/toml (default "$PWD/config.toml")
   -debug
         debug mode
+  -ssh-external
+        Use external ssh command. Default: Use the Go native implementation
 ```
 
 ----
@@ -601,19 +606,22 @@ scan:
                 [-lang=en|ja]
                 [-config=/path/to/config.toml]
                 [-results-dir=/path/to/results]
-                [-cve-dictionary-dbpath=/path/to/cve.sqlite3]
+                [-cve-dictionary-dbtype=sqlite3|mysql]
+                [-cve-dictionary-dbpath=/path/to/cve.sqlite3 or mysql connection string]
                 [-cve-dictionary-url=http://127.0.0.1:1323]
                 [-cache-dbpath=/path/to/cache.db]
                 [-cvss-over=7]
                 [-ignore-unscored-cves]
                 [-ssh-external]
                 [-containers-only]
+                [-skip-broken]
                 [-report-azure-blob]
                 [-report-json]
                 [-report-mail]
                 [-report-s3]
                 [-report-slack]
                 [-report-text]
+                [-report-xml]
                 [-http-proxy=http://192.168.0.1:8080]
                 [-ask-key-password]
                 [-debug]
@@ -648,7 +656,9 @@ scan:
   -containers-only
         Scan concontainers Only. Default: Scan both of hosts and containers
   -cve-dictionary-dbpath string
-        /path/to/sqlite3 (For get cve detail from cve.sqlite3)        
+        /path/to/sqlite3 (For get cve detail from cve.sqlite3)
+  -cve-dictionary-dbtype string
+        DB type for fetching CVE dictionary (sqlite3 or mysql) (default "sqlite3")
   -cve-dictionary-url string
         http://CVE.Dictionary (default "http://127.0.0.1:1323")
   -cvss-over float
@@ -673,8 +683,12 @@ scan:
         Send report via Slack
   -report-text
         Write report to text files ($PWD/results/current)
+  -report-xml
+        Write report to XML files ($PWDresults/current)
   -results-dir string
         /path/to/results (default "$PWD/results")
+  -skip-broken
+        [For CentOS] yum update changelog with --skip-broken option
   -ssh-external
         Use external ssh command. Default: Use the Go native implementation
 ```
@@ -700,11 +714,10 @@ Defaults:vuls !requiretty
 | empty password   |                 -  | |
 | with password    |           required | or use ssh-agent |
 
-## -report-json , -report-text option
+## -report-json , -report-text , -report-xml option
 
 結果をファイルに出力したい場合に指定する。出力先は、`$PWD/result/current/`    
-`all.(json|txt)`には、全サーバのスキャン結果が出力される。  
-`servername.(json|txt)`には、サーバごとのスキャン結果が出力される。
+`servername.(json|txt|xml)`には、サーバごとのスキャン結果が出力される。
 
 ## Example: Scan all servers defined in config file
 ```
@@ -864,6 +877,14 @@ optional = [
 ]
 ```
 
+## Example: Use MySQL as a DB storage back-end
+
+```
+$ vuls scan \
+      -cve-dictionary-dbtype=mysql \
+      -cve-dictionary-dbpath="user:pass@tcp(localhost:3306)/dbname?parseTime=true"
+```
+
 ----
 
 # Usage: Scan vulnerability of non-OS package
@@ -891,6 +912,31 @@ Vulsは、[CPE](https://nvd.nist.gov/cpe.cfm)に登録されているソフト�
       "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     ]
     ```
+
+
+# Usage: Integrate with OWASP Dependency Check to Automatic update when the libraries are updated (Experimental)
+[OWASP Dependency check](https://www.owasp.org/index.php/OWASP_Dependency_Check) は、プログラミング言語のライブラリを特定し（CPEを推測）、公開済みの脆弱性を検知するツール。
+
+VulsとDependency Checkを連携させる方法は以下
+- Dependency Checkを、--format=XMLをつけて実行する
+- そのXMLをconfig.toml内で以下のように定義する
+
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+    host         = "172.31.4.82"
+    user        = "ec2-user"
+    keyPath     = "/home/username/.ssh/id_rsa"
+    dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"
+    ```
+
+VulsとDependency Checkの連携すると以下の利点がある
+- ライブラリを更新した場合に、config.tomlのCPEの定義を変更しなくても良い
+- Vulsの機能でSlack, Emailで通知可能
+- 日本語のレポートが可能
+  - Dependency Checkは日本語レポートに対応していない
+
     
 # Usage: Scan Docker containers
 
@@ -960,25 +1006,25 @@ For details, see https://github.com/future-architect/vuls/blob/master/report/tui
 
 - Display the list of scan results.
 ```
-$ ./vuls history
-2   2016-05-24 19:49 scanned 1 servers: amazon2
-1   2016-05-24 19:48 scanned 2 servers: amazon1, romantic_goldberg
+$ vuls history
+20160524_1950 scanned 1 servers: amazon2
+20160524_1940 scanned 2 servers: amazon1, romantic_goldberg
 ```
 
-- Display the result of scanID 1
+- Display the result of scan 20160524_1949
 ```
-$ ./vuls tui 1
+$ vuls tui 20160524_1950
 ```
 
-- Display the result of scanID 2
+- Display the result of scan 20160524_1948
 ```
-$ ./vuls tui 2
+$ vuls tui 20160524_1940
 ```
 
 # Display the previous scan results using peco
 
 ```
-$ ./vuls history | peco | ./vuls tui
+$ vuls history | peco | vuls tui
 ```
 
 [![asciicast](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8.png)](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8)
@@ -998,89 +1044,14 @@ $ vuls scan -cve-dictionary-url=http://192.168.0.1:1323
 
 # Usage: Update NVD Data
 
-```
-$ go-cve-dictionary fetchnvd -h
-fetchnvd:
-        fetchnvd
-                [-last2y]
-                [-dbpath=/path/to/cve.sqlite3]
-                [-debug]
-                [-debug-sql]
-
-  -dbpath string
-        /path/to/sqlite3 (default "$PWD/cve.sqlite3")
-  -debug
-        debug mode
-  -debug-sql
-        SQL debug mode
-  -last2y
-        Refresh NVD data in the last two years.
-```
-
-- Fetch data of the entire period
-
-```
-$ for i in {2002..2016}; do go-cve-dictionary fetchnvd -years $i; done
-```
-
-- Fetch data in the last 2 years
-
-```
-$ go-cve-dictionary fetchnvd -last2y
-```
+see [go-cve-dictionary#usage-fetch-nvd-data](https://github.com/kotakanbe/go-cve-dictionary#usage-fetch-nvd-data)
 
 ----
 
 # レポートの日本語化
 
-- JVNから日本語の脆弱性情報を取得
-    ```
-    $ go-cve-dictionary fetchjvn -h
-    fetchjvn:
-            fetchjvn
-                    [-latest]
-                    [-last2y]
-                    [-years] 1998 1999 ...
-                    [-dbpath=$PWD/cve.sqlite3]
-                    [-http-proxy=http://192.168.0.1:8080]
-                    [-debug]
-                    [-debug-sql]
+see [go-cve-dictionary#usage-fetch-jvn-data](https://github.com/kotakanbe/go-cve-dictionary#usage-fetch-jvn-data)
 
-      -dbpath string
-            /path/to/sqlite3 (default "$PWD/cve.sqlite3")
-      -debug
-            debug mode
-      -debug-sql
-            SQL debug mode
-      -http-proxy string
-            http://proxy-url:port (default: empty)
-      -last2y
-            Refresh JVN data in the last two years.
-      -latest
-            Refresh JVN data for latest.
-      -years
-            Refresh JVN data of specific years.
-
-    ```
-
-- すべての期間の脆弱性情報を取得(10分未満)
-    ```
-    $ for i in {1998..2016}; do go-cve-dictionary fetchjvn -years $i; done
-    ```
-
-- 2年分の情報を取得
-    ```
-    $ go-cve-dictionary fetchjvn -last2y
-    ```
-
-- 最新情報のみ取得
-    ```
-    $ go-cve-dictionary fetchjvn -latest
-    ```
-
-- 脆弱性情報の自動アップデート  
-Cronなどのジョブスケジューラを用いて実現可能。  
--latestオプションを指定して夜間の日次実行を推奨。
 
 ## fetchnvd, fetchjvnの実行順序の注意
 
@@ -1114,10 +1085,11 @@ slack, emailは日本語対応済み TUIは日本語表示未対応
 # Update Vuls With Glide
 
 - Update go-cve-dictionary  
-If the DB schema was changed, please specify new SQLite3 DB file.
+If the DB schema was changed, please specify new SQLite3 or MySQL DB file.
 ```
 $ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
 $ git pull
+$ mv vendor /tmp/foo
 $ make install
 ```
 
@@ -1125,6 +1097,7 @@ $ make install
 ```
 $ cd $GOPATH/src/github.com/future-architect/vuls
 $ git pull
+$ mv vendor /tmp/bar
 $ make install
 ```
 - バイナリファイルは`$GOPARH/bin`以下に作成される

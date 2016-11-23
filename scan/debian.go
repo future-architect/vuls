@@ -159,7 +159,7 @@ func (o *debian) install() error {
 	}
 
 	for _, name := range o.lackDependencies {
-		cmd = util.PrependProxyEnv("apt-get install " + name)
+		cmd = util.PrependProxyEnv("apt-get install -y " + name)
 		if r := o.ssh(cmd, sudo); !r.isSuccess() {
 			msg := fmt.Sprintf("Failed to SSH: %s", r)
 			o.log.Errorf(msg)
@@ -513,7 +513,7 @@ func (o *debian) getChangelogCache(meta cache.Meta, pack models.PackageInfo) str
 	}
 	changelog, err := cache.DB.GetChangelog(meta.Name, pack.Name)
 	if err != nil {
-		o.log.Warnf("Failed to get chnagelog. bucket: %s, key:%s, err: %s",
+		o.log.Warnf("Failed to get changelog. bucket: %s, key:%s, err: %s",
 			meta.Name, pack.Name, err)
 		return ""
 	}
@@ -541,11 +541,13 @@ func (o *debian) scanPackageCveIDs(pack models.PackageInfo) ([]string, error) {
 		o.log.Warnf("Failed to SSH: %s", r)
 		// Ignore this Error.
 		return nil, nil
-
 	}
-	err := cache.DB.PutChangelog(o.getServerInfo().GetServerName(), pack.Name, r.Stdout)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to put changelog into cache")
+
+	if 0 < len(strings.TrimSpace(r.Stdout)) {
+		err := cache.DB.PutChangelog(o.getServerInfo().GetServerName(), pack.Name, r.Stdout)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to put changelog into cache")
+		}
 	}
 	// No error will be returned. Only logging.
 	return o.getCveIDFromChangelog(r.Stdout, pack.Name, pack.Version), nil

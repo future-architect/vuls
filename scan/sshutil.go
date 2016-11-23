@@ -26,7 +26,6 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -150,19 +149,15 @@ func parallelSSHExec(fn func(osTypeInterface) error, timeoutSec ...int) (errs []
 }
 
 func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (result sshResult) {
-	if isSSHExecNative() {
-		result = sshExecNative(c, cmd, sudo)
-	} else {
+	if conf.Conf.SSHExternal {
 		result = sshExecExternal(c, cmd, sudo)
+	} else {
+		result = sshExecNative(c, cmd, sudo)
 	}
 
 	logger := getSSHLogger(log...)
 	logger.Debug(result)
 	return
-}
-
-func isSSHExecNative() bool {
-	return runtime.GOOS == "windows" || !conf.Conf.SSHExternal
 }
 
 func sshExecNative(c conf.ServerInfo, cmd string, sudo bool) (result sshResult) {

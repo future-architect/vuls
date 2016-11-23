@@ -1,42 +1,42 @@
-hash: 01cee4aa1d27c967f5f5165febfbd77fd0e89a6e7a9a89c84099c0d45dffd446
-updated: 2016-10-12T15:28:25.843936367+09:00
+hash: ca64aef6e9e94c7be91f79b88edb847363c8a5bd48da4ad27784e9342c8db6e2
+updated: 2016-11-14T17:14:19.692072231Z
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7b3beb6df3c42abd3509abfc3bcacc0fbfb7c877
 - name: github.com/aws/aws-sdk-go
-  version: aad29423c2c09f0a1fa5346216bc041a4994eef4
+  version: 5b341290c488aa6bd76b335d819b4a68516ec3ab
   subpackages:
   - aws
-  - aws/credentials
-  - aws/session
-  - service/s3
   - aws/awserr
-  - aws/client
-  - aws/corehandlers
-  - aws/credentials/stscreds
-  - aws/defaults
-  - aws/request
-  - private/endpoints
   - aws/awsutil
+  - aws/client
   - aws/client/metadata
-  - aws/signer/v4
-  - private/protocol
-  - private/protocol/restxml
-  - private/waiter
-  - service/sts
+  - aws/corehandlers
+  - aws/credentials
   - aws/credentials/ec2rolecreds
   - aws/credentials/endpointcreds
+  - aws/credentials/stscreds
+  - aws/defaults
   - aws/ec2metadata
-  - private/protocol/rest
+  - aws/request
+  - aws/session
+  - aws/signer/v4
+  - private/endpoints
+  - private/protocol
   - private/protocol/query
-  - private/protocol/xml/xmlutil
   - private/protocol/query/queryutil
+  - private/protocol/rest
+  - private/protocol/restxml
+  - private/protocol/xml/xmlutil
+  - private/waiter
+  - service/s3
+  - service/sts
 - name: github.com/Azure/azure-sdk-for-go
-  version: 91f3d4a4d024e3c0d4d9412916d05cf84504a616
+  version: 27ae5c8b5bc5d90ab0540b4c5d0f2632c8db8b57
   subpackages:
   - storage
 - name: github.com/boltdb/bolt
-  version: 074dffcc83e9f421e261526d297cd93f22a34080
+  version: 315c65d4cf4f5278c73477a35fb1f9b08365d340
 - name: github.com/BurntSushi/toml
   version: 99064174e013895bbd9b025c31100bd1d9b590ca
 - name: github.com/cenkalti/backoff
@@ -45,8 +45,10 @@ imports:
   version: ad4efe000aa550bb54918c06ebbadc0ff17687b9
 - name: github.com/go-ini/ini
   version: 6e4869b434bd001f6983749881c7ead3545887d8
+- name: github.com/go-sql-driver/mysql
+  version: 2a6c6079c7eff49a7e9d641e109d922f124a3e4c
 - name: github.com/google/subcommands
-  version: 1c7173745a6001f67d8d96ab4e178284c77f7759
+  version: a71b91e238406bd68766ee52db63bebedce0e9f6
 - name: github.com/gosuri/uitable
   version: 36ee7e946282a3fb1cfecd476ddc9b35d8847e42
   subpackages:
@@ -56,22 +58,24 @@ imports:
   version: f5387c492211eb133053880d23dfae62aa14123d
 - name: github.com/jinzhu/gorm
   version: 39165d498058a823126af3cbf4d2a3b0e1acf11e
+  subpackages:
+  - dialects/mysql
 - name: github.com/jinzhu/inflection
   version: 74387dc39a75e970e7a3ae6a3386b5bd2e5c5cff
 - name: github.com/jmespath/go-jmespath
   version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
 - name: github.com/jroimartin/gocui
-  version: 550f04e523205530542d0c4fe63c4c0ab5d046bd
+  version: ba396278de0a3c63658bbaba13d2d2fa392edb11
 - name: github.com/k0kubun/pp
   version: f5dce6ed0ccf6c350f1679964ff6b61f3d6d2033
 - name: github.com/kotakanbe/go-cve-dictionary
-  version: f9f68fee57dca8e60fb5d9d6b34d3215d854fc06
+  version: 2dd369d26145eab2178f6d509821fcabc9391627
   subpackages:
   - config
-  - models
   - db
-  - log
   - jvn
+  - log
+  - models
   - nvd
   - util
 - name: github.com/kotakanbe/go-pingscanner
@@ -99,14 +103,14 @@ imports:
 - name: github.com/Sirupsen/logrus
   version: 3ec0642a7fb6488f65b06f9040adc67e3990296a
 - name: golang.org/x/crypto
-  version: 4cd25d65a015cc83d41bf3454e6e8d6c116d16da
+  version: 9477e0b78b9ac3d0b03822fd95422e2fe07627cd
   subpackages:
-  - ssh
-  - ssh/agent
-  - ssh/terminal
   - curve25519
   - ed25519
   - ed25519/internal/edwards25519
+  - ssh
+  - ssh/agent
+  - ssh/terminal
 - name: golang.org/x/net
   version: cf4effbb9db1f3ef07f7e1891402991b6afbb276
   subpackages:
@@ -116,4 +120,4 @@ imports:
   version: 9bb9f0998d48b31547d975974935ae9b48c7a03c
   subpackages:
   - unix
-devImports: []
+testImports: []

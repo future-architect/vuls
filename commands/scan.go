@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package commands
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -33,7 +34,7 @@ import (
 	"github.com/future-architect/vuls/scan"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
-	"golang.org/x/net/context"
+	"github.com/k0kubun/pp"
 )
 
 // ScanCmd is Subcommand of host discovery mode
@@ -45,6 +46,7 @@ type ScanCmd struct {
 	configPath string
 
 	resultsDir       string
+	cvedbtype        string
 	cvedbpath        string
 	cveDictionaryURL string
 	cacheDBPath      string
@@ -57,6 +59,7 @@ type ScanCmd struct {
 	askKeyPassword  bool
 
 	containersOnly bool
+	skipBroken     bool
 
 	// reporting
 	reportSlack     bool
@@ -65,6 +68,7 @@ type ScanCmd struct {
 	reportText      bool
 	reportS3        bool
 	reportAzureBlob bool
+	reportXML       bool
 
 	awsProfile  string
 	awsS3Bucket string
@@ -90,19 +94,22 @@ func (*ScanCmd) Usage() string {
 		[-lang=en|ja]
 		[-config=/path/to/config.toml]
 		[-results-dir=/path/to/results]
-		[-cve-dictionary-dbpath=/path/to/cve.sqlite3]
+		[-cve-dictionary-dbtype=sqlite3|mysql]
+		[-cve-dictionary-dbpath=/path/to/cve.sqlite3 or mysql connection string]
 		[-cve-dictionary-url=http://127.0.0.1:1323]
 		[-cache-dbpath=/path/to/cache.db]
 		[-cvss-over=7]
 		[-ignore-unscored-cves]
 		[-ssh-external]
 		[-containers-only]
+		[-skip-broken]
 		[-report-azure-blob]
 		[-report-json]
 		[-report-mail]
 		[-report-s3]
 		[-report-slack]
 		[-report-text]
+		[-report-xml]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-ask-key-password]
 		[-debug]
@@ -131,6 +138,12 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 	defaultResultsDir := filepath.Join(wd, "results")
 	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+
+	f.StringVar(
+		&p.cvedbtype,
+		"cve-dictionary-dbtype",
+		"sqlite3",
+		"DB type for fetching CVE dictionary (sqlite3 or mysql)")
 
 	f.StringVar(
 		&p.cvedbpath,
@@ -176,6 +189,12 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		"Scan containers only. Default: Scan both of hosts and containers")
 
+	f.BoolVar(
+		&p.skipBroken,
+		"skip-broken",
+		false,
+		"[For CentOS] yum update changelog with --skip-broken option")
+
 	f.StringVar(
 		&p.httpProxy,
 		"http-proxy",
@@ -194,6 +213,11 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		"report-text",
 		false,
 		fmt.Sprintf("Write report to text files (%s/results/current)", wd),
+	)
+	f.BoolVar(&p.reportXML,
+		"report-xml",
+		false,
+		fmt.Sprintf("Write report to XML files (%s/results/current)", wd),
 	)
 
 	f.BoolVar(&p.reportS3,
@@ -245,6 +269,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitFailure
 	}
 
+	c.Conf.Debug = p.debug
 	err = c.Load(p.configPath, keyPass)
 	if err != nil {
 		logrus.Errorf("Error loading %s, %s", p.configPath, err)
@@ -254,7 +279,9 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	logrus.Info("Start scanning")
 	logrus.Infof("config: %s", p.configPath)
 	if p.cvedbpath != "" {
-		logrus.Infof("cve-dictionary: %s", p.cvedbpath)
+		if p.cvedbtype == "sqlite3" {
+			logrus.Infof("cve-dictionary: %s", p.cvedbpath)
+		}
 	} else {
 		logrus.Infof("cve-dictionary: %s", p.cveDictionaryURL)
 	}
@@ -295,9 +322,9 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	if 0 < len(servernames) {
 		c.Conf.Servers = target
 	}
+	logrus.Debugf("%s", pp.Sprintf("%v", target))
 
 	c.Conf.Lang = p.lang
-	c.Conf.Debug = p.debug
 	c.Conf.DebugSQL = p.debugSQL
 
 	// logger
@@ -320,6 +347,9 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 	if p.reportText {
 		reports = append(reports, report.TextFileWriter{ScannedAt: scannedAt})
+	}
+	if p.reportXML {
+		reports = append(reports, report.XMLWriter{ScannedAt: scannedAt})
 	}
 	if p.reportS3 {
 		c.Conf.AwsRegion = p.awsRegion
@@ -357,6 +387,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	c.Conf.ResultsDir = p.resultsDir
+	c.Conf.CveDBType = p.cvedbtype
 	c.Conf.CveDBPath = p.cvedbpath
 	c.Conf.CveDictionaryURL = p.cveDictionaryURL
 	c.Conf.CacheDBPath = p.cacheDBPath
@@ -365,6 +396,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	c.Conf.SSHExternal = p.sshExternal
 	c.Conf.HTTPProxy = p.httpProxy
 	c.Conf.ContainersOnly = p.containersOnly
+	c.Conf.SkipBroken = p.skipBroken
 
 	Log.Info("Validating Config...")
 	if !c.Conf.Validate() {

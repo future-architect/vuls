@@ -56,7 +56,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 - Pre-authorization is not necessary　before scanning on AWS
 - Auto generation of configuration file template
     - Auto detection of servers set using CIDR, generate configuration file template
-- Email and Slack notification is possible (supports Japanese language) 
+- Email and Slack notification is possible (supports Japanese language)
 - Scan result is viewable on accessory software, TUI Viewer terminal or Web UI ([VulsRepo](https://github.com/usiusi360/vulsrepo)).
 
 ----
@@ -111,7 +111,7 @@ This can be done in the following steps.
     ```
 
     - [Q: How do I disable the automatic installation of critical and important security updates on initial launch?](https://aws.amazon.com/amazon-linux-ami/faqs/?nc1=h_ls)
-    
+
 ## Step2. SSH setting
 
 This is required to ssh to itself.
@@ -130,7 +130,7 @@ And also, SUDO with password is not supported for security reasons. So you have 
 
 Vuls requires the following packages.
 
-- SQLite3
+- SQLite3 or MySQL
 - git
 - gcc
 - go v1.7.1 or later
@@ -284,7 +284,7 @@ see https://github.com/future-architect/vuls/tree/master/setup/docker
 ![Vuls-Architecture](img/vuls-architecture.png)
 
 ## [go-cve-dictinary](https://github.com/kotakanbe/go-cve-dictionary)  
-- Fetch vulnerability information from NVD and JVN(Japanese), then insert into SQLite3.
+- Fetch vulnerability information from NVD and JVN(Japanese), then insert into SQLite3 or MySQL.
 
 ## Scanning Flow
 ![Vuls-Scan-Flow](img/vuls-scan-flow.png)
@@ -292,7 +292,7 @@ see https://github.com/future-architect/vuls/tree/master/setup/docker
   - To scan Docker containers, Vuls connect via ssh to the Docker host and then `docker exec` to the containers. So, no need to run sshd daemon on the containers.
 - Fetch more detailed information of the detected CVE from go-cve-dictionary
 - Send a report by Slack and Email
-- Write scan results to JSON file to show the latest report on your terminal 
+- Write scan results to JSON file to show the latest report on your terminal
 
 ----
 # Performance Considerations
@@ -310,7 +310,7 @@ Scan speed is fast and resource usage is light.
 - On Amazon, RHEL and FreeBSD  
 High speed scan and resource usage is light because Vuls can get CVE IDs by using package manager(no need to parse a changelog).
 
-| Distribution|         Scan Speed | 
+| Distribution|         Scan Speed |
 |:------------|:-------------------|:-------------|
 | Ubuntu      |  First time: Slow / From the second time: Fast |
 | Debian      |  First time: Slow / From the second time: Fast |
@@ -518,7 +518,7 @@ You can customize your configuration using this template.
     - optional: Add additional information to JSON report.
 
     Vuls supports two types of SSH. One is native go implementation. The other is external SSH command. For details, see [-ssh-external option](https://github.com/future-architect/vuls#-ssh-external-option)
-    
+
     Multiple SSH authentication methods are supported.  
     - SSH agent
     - SSH public key authentication (with password and empty password)
@@ -526,7 +526,7 @@ You can customize your configuration using this template.
 
 ----
 
-# Usage: Configtest 
+# Usage: Configtest
 
 Configtest subcommand check if vuls is able to connect via ssh to servers/containers defined in the config.toml.  
 ```
@@ -583,19 +583,28 @@ Prepare subcommand installs required packages on each server.
 
 ```
 $ vuls prepare -help
-prepare
-                        [-config=/path/to/config.toml] [-debug]
-                        [-ask-key-password]
-                        [SERVER]...
+prepare:
+	prepare
+			[-config=/path/to/config.toml]
+			[-ask-key-password]
+			[-assume-yes]
+			[-debug]
+			[-ssh-external]
 
+			[SERVER]...
   -ask-key-password
-        Ask ssh privatekey password before scanning
+    	Ask ssh privatekey password before scanning
+  -ask-sudo-password
+    	[Deprecated] THIS OPTION WAS REMOVED FOR SECURITY REASONS. Define NOPASSWD in /etc/sudoers on target servers and use SSH key-based authentication
+  -assume-yes
+    	Assume any dependencies should be installed
   -config string
-        /path/to/toml (default "$PWD/config.toml")
+    	/path/to/toml (default "$PWD/config.toml")
   -debug
-        debug mode
+    	debug mode
+  -ssh-external
+    	Use external ssh command. Default: Use the Go native implementation
 ```
-
 ----
 
 # Usage: Scan
@@ -608,19 +617,22 @@ scan:
                 [-lang=en|ja]
                 [-config=/path/to/config.toml]
                 [-results-dir=/path/to/results]
-                [-cve-dictionary-dbpath=/path/to/cve.sqlite3]
+                [-cve-dictionary-dbtype=sqlite3|mysql]
+                [-cve-dictionary-dbpath=/path/to/cve.sqlite3 or mysql connection string]
                 [-cve-dictionary-url=http://127.0.0.1:1323]
                 [-cache-dbpath=/path/to/cache.db]
                 [-cvss-over=7]
                 [-ignore-unscored-cves]
                 [-ssh-external]
                 [-containers-only]
+                [-skip-broken]
                 [-report-azure-blob]
                 [-report-json]
                 [-report-mail]
                 [-report-s3]
                 [-report-slack]
                 [-report-text]
+                [-report-xml]
                 [-http-proxy=http://192.168.0.1:8080]
                 [-ask-key-password]
                 [-debug]
@@ -655,7 +667,9 @@ scan:
   -containers-only
         Scan concontainers Only. Default: Scan both of hosts and containers
   -cve-dictionary-dbpath string
-        /path/to/sqlite3 (For get cve detail from cve.sqlite3)        
+        /path/to/sqlite3 (For get cve detail from cve.sqlite3)
+  -cve-dictionary-dbtype string
+        DB type for fetching CVE dictionary (sqlite3 or mysql) (default "sqlite3")
   -cve-dictionary-url string
         http://CVE.Dictionary (default "http://127.0.0.1:1323")
   -cvss-over float
@@ -680,8 +694,12 @@ scan:
         Send report via Slack
   -report-text
         Write report to text files ($PWD/results/current)
+  -report-xml
+        Write report to XML files ($PWDresults/current)
   -results-dir string
         /path/to/results (default "$PWD/results")
+  -skip-broken
+        [For CentOS] yum update changelog with --skip-broken option
   -ssh-external
         Use external ssh command. Default: Use the Go native implementation
 ```
@@ -701,22 +719,22 @@ Defaults:vuls !requiretty
 ```
 
 
-## -ask-key-password option 
+## -ask-key-password option
 
 | SSH key password |  -ask-key-password | |
 |:-----------------|:-------------------|:----|
 | empty password   |                 -  | |
 | with password    |           required | or use ssh-agent |
 
-## -report-json , -report-text option
+## -report-json , -report-text , -report-xml option
 
 At the end of the scan, scan results will be available in the `$PWD/result/current/` directory.  
-`all.(json|txt)` includes the scan results of all servers and `servername.(json|txt)` includes the scan result of the server.
+`servername.(json|txt|xml)` includes the scan result of the server.
 
 ## Example: Scan all servers defined in config file
 ```
 $ vuls scan \
-      --report-slack \ 
+      --report-slack \
       --report-mail \
       --cvss-over=7 \
       -ask-key-password \
@@ -732,7 +750,7 @@ With this sample command, it will ..
 ## Example: Scan specific servers
 ```
 $ vuls scan \
-      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \
       server1 server2
 ```
 With this sample command, it will ..
@@ -748,11 +766,11 @@ To put results in S3 bucket, configure following settings in AWS before scanning
 
 ```
 $ vuls scan \
-      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \
       -report-s3 \
       -aws-region=ap-northeast-1 \
       -aws-s3-bucket=vuls \
-      -aws-profile=default 
+      -aws-profile=default
 ```
 With this sample command, it will ..
 - Use SSH Key-Based authentication with empty password (without -ask-key-password option)
@@ -766,11 +784,11 @@ To put results in Azure Blob Storage, configure following settings in Azure befo
 
 ```
 $ vuls scan \
-      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \
       -report-azure-blob \
       -azure-container=vuls \
       -azure-account=test \
-      -azure-key=access-key-string 
+      -azure-key=access-key-string
 ```
 With this sample command, it will ..
 - Use SSH Key-Based authentication with empty password (without -ask-key-password option)
@@ -782,12 +800,12 @@ account and access key can be defined in environment variables.
 $ export AZURE_STORAGE_ACCOUNT=test
 $ export AZURE_STORAGE_ACCESS_KEY=access-key-string
 $ vuls scan \
-      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \
       -report-azure-blob \
       -azure-container=vuls
 ```
 
-## Example: IgnoreCves 
+## Example: IgnoreCves
 
 Define ignoreCves in config if you don't want to report(slack, mail, text...) specific CVE IDs. But these ignoreCves will be output to JSON file like below.
 
@@ -864,9 +882,17 @@ optional = [
 ]
 ```
 
+## Example: Use MySQL as a DB storage back-end
+
+```
+$ vuls scan \
+      -cve-dictionary-dbtype=mysql \
+      -cve-dictionary-dbpath="user:pass@tcp(localhost:3306)/dbname?parseTime=true"
+```
+
 ----
 
-# Usage: Scan vulnerability of non-OS package
+# Usage: Scan vulnerabilites of non-OS packages
 
 It is possible to detect vulnerabilities in non-OS packages, such as something you compiled by yourself, language libraries and frameworks, that have been registered in the [CPE](https://nvd.nist.gov/cpe.cfm).
 
@@ -890,7 +916,31 @@ To detect the vulnerability of Ruby on Rails v4.2.1, cpeNames needs to be set in
       "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     ]
     ```
-    
+
+# Usage: Integrate with OWASP Dependency Check to Automatic update when the libraries are updated (Experimental)
+[OWASP Dependency check](https://www.owasp.org/index.php/OWASP_Dependency_Check) is a utility that identifies project dependencies and checks if there are any known, publicly disclosed, vulnerabilities.
+
+Benefit of integrating Vuls And OWASP Dependency Check is below.
+- Automatic Update of Vuls config when the libraries are updated.
+- Reporting by Email or Slack by using Vuls.
+- Reporting in Japanese
+  - OWASP Dependency Check supports only English
+
+How to integrate Vuls with OWASP Dependency Check
+- Execute OWASP Dependency Check with --format=XML option.
+- Define the xml file path of dependency check in config.toml.
+
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+    host         = "172.31.4.82"
+    user        = "ec2-user"
+    keyPath     = "/home/username/.ssh/id_rsa"
+    dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"
+    ```
+
+
 # Usage: Scan Docker containers
 
 It is common that keep Docker containers running without SSHd daemon.  
@@ -960,30 +1010,30 @@ For details, see https://github.com/future-architect/vuls/blob/master/report/tui
 
 - Display the list of scan results.
 ```
-$ ./vuls history
-2   2016-05-24 19:49 scanned 1 servers: amazon2
-1   2016-05-24 19:48 scanned 2 servers: amazon1, romantic_goldberg
+$ vuls history
+20160524_1950 scanned 1 servers: amazon2
+20160524_1940 scanned 2 servers: amazon1, romantic_goldberg
 ```
 
-- Display the result of scanID 1
+- Display the result of scan 20160524_1949
 ```
-$ ./vuls tui 1
+$ vuls tui 20160524_1950
 ```
 
-- Display the result of scanID 2
+- Display the result of scan 20160524_1948
 ```
-$ ./vuls tui 2
+$ vuls tui 20160524_1940
 ```
 
 # Display the previous scan results using peco
 
 ```
-$ ./vuls history | peco | ./vuls tui
+$ vuls history | peco | vuls tui
 ```
 
 [![asciicast](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8.png)](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8)
 
-# Usage: go-cve-dictionary on different server 
+# Usage: go-cve-dictionary on different server
 
 Run go-cve-dictionary as server mode before scanning on 192.168.10.1
 ```
@@ -998,46 +1048,19 @@ $ vuls scan -cve-dictionary-url=http://192.168.0.1:1323
 
 # Usage: Update NVD Data
 
-```
-$ go-cve-dictionary fetchnvd -h
-fetchnvd:
-        fetchnvd
-                [-last2y]
-                [-dbpath=/path/to/cve.sqlite3]
-                [-debug]
-                [-debug-sql]
+see [go-cve-dictionary#usage-fetch-nvd-data](https://github.com/kotakanbe/go-cve-dictionary#usage-fetch-nvd-data)
 
-  -dbpath string
-        /path/to/sqlite3 (default "$PWD/cve.sqlite3")
-  -debug
-        debug mode
-  -debug-sql
-        SQL debug mode
-  -last2y
-        Refresh NVD data in the last two years.
-```
-
-- Fetch data of the entire period
-
-```
-$ go-cve-dictionary fetchnvd -entire
-```
-
-- Fetch data in the last 2 years
-
-```
-$ go-cve-dictionary fetchnvd -last2y
-```
 
 ----
 
 # Update Vuls With Glide
 
 - Update go-cve-dictionary  
-If the DB schema was changed, please specify new SQLite3 DB file.
+If the DB schema was changed, please specify new SQLite3 or MySQL DB file.
 ```
 $ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
 $ git pull
+$ mv vendor /tmp/foo
 $ make install
 ```
 
@@ -1045,6 +1068,7 @@ $ make install
 ```
 $ cd $GOPATH/src/github.com/future-architect/vuls
 $ git pull
+$ mv vendor /tmp/bar
 $ make install
 ```
 Binary file was built under $GOPARH/bin
@@ -1094,7 +1118,7 @@ Use Microsoft Baseline Security Analyzer. [MBSA](https://technet.microsoft.com/e
 
 ----
 
-# Related Projects 
+# Related Projects
 
 - [k1LoW/ssh_config_to_vuls_config](https://github.com/k1LoW/ssh_config_to_vuls_config)   
 ssh_config to vuls config TOML format

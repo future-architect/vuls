@@ -4,8 +4,8 @@ MAINTAINER hikachan sadayuki-matsuno
 # install packages
 RUN apt-get update \
         && apt-get install -y --no-install-recommends \
-      		ca-certificates \
-		      vim \
+      	  ca-certificates \
+          vim \
           git \
           libcgi-pm-perl \
           libjson-perl \

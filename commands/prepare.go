@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package commands
 
 import (
+	"context"
 	"flag"
 	"os"
 	"path/filepath"
@@ -27,7 +28,6 @@ import (
 	"github.com/future-architect/vuls/scan"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
-	"golang.org/x/net/context"
 )
 
 // PrepareCmd is Subcommand of host discovery mode
@@ -37,6 +37,9 @@ type PrepareCmd struct {
 
 	askSudoPassword bool
 	askKeyPassword  bool
+
+	sshExternal bool
+	assumeYes   bool
 }
 
 // Name return subcommand name
@@ -59,9 +62,11 @@ func (*PrepareCmd) Usage() string {
 	prepare
 			[-config=/path/to/config.toml]
 			[-ask-key-password]
+			[-assume-yes]
 			[-debug]
+			[-ssh-external]
 
-		    [SERVER]...
+			[SERVER]...
 `
 }
 
@@ -88,6 +93,19 @@ func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		"[Deprecated] THIS OPTION WAS REMOVED FOR SECURITY REASONS. Define NOPASSWD in /etc/sudoers on target servers and use SSH key-based authentication",
 	)
+
+	f.BoolVar(
+		&p.sshExternal,
+		"ssh-external",
+		false,
+		"Use external ssh command. Default: Use the Go native implementation")
+
+	f.BoolVar(
+		&p.assumeYes,
+		"assume-yes",
+		false,
+		"Assume any dependencies should be installed")
+
 }
 
 // Execute execute
@@ -133,7 +151,13 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 	}
 
 	c.Conf.Debug = p.debug
+	c.Conf.SSHExternal = p.sshExternal
+	c.Conf.AssumeYes = p.assumeYes
 
+	logrus.Info("Validating Config...")
+	if !c.Conf.Validate() {
+		return subcommands.ExitUsageError
+	}
 	// Set up custom logger
 	logger := util.NewCustomLogger(c.ServerInfo{})
 

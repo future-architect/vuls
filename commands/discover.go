@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package commands
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -25,7 +26,6 @@ import (
 	"text/template"
 
 	"github.com/google/subcommands"
-	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
 	ps "github.com/kotakanbe/go-pingscanner"
@@ -115,6 +115,7 @@ subjectPrefix = "[vuls]"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
+#dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"
 #containers = ["${running}"]
 #ignoreCves = ["CVE-2014-6271"]
 #optional = [
@@ -132,6 +133,7 @@ host         = "{{$ip}}"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
+#dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"
 #containers = ["${running}"]
 #ignoreCves = ["CVE-2014-0160"]
 #optional = [

@@ -1,5 +1,83 @@
 # Change Log
 
+## [v0.1.7](https://github.com/future-architect/vuls/tree/v0.1.7) (2016-11-08)
+[Full Changelog](https://github.com/future-architect/vuls/compare/v0.1.6...v0.1.7)
+
+**Implemented enhancements:**
+
+- Enable to scan only docker container, without docker host [\#122](https://github.com/future-architect/vuls/issues/122)
+- Add -skip-broken option \[CentOS only\] \#245 [\#248](https://github.com/future-architect/vuls/pull/248) ([kotakanbe](https://github.com/kotakanbe))
+- Display unknown CVEs to TUI [\#244](https://github.com/future-architect/vuls/pull/244) ([kotakanbe](https://github.com/kotakanbe))
+- Add the XML output [\#240](https://github.com/future-architect/vuls/pull/240) ([gleentea](https://github.com/gleentea))
+- add '-ssh-external' option to prepare subcommand [\#234](https://github.com/future-architect/vuls/pull/234) ([mykstmhr](https://github.com/mykstmhr))
+- Integrate OWASP Dependency Check [\#232](https://github.com/future-architect/vuls/pull/232) ([kotakanbe](https://github.com/kotakanbe))
+- Add support for reading CVE data from MySQL. [\#225](https://github.com/future-architect/vuls/pull/225) ([oswell](https://github.com/oswell))
+- Remove base docker image, -v shows commit hash [\#223](https://github.com/future-architect/vuls/pull/223) ([sadayuki-matsuno](https://github.com/sadayuki-matsuno))
+- Support ignore CveIDs in config [\#222](https://github.com/future-architect/vuls/pull/222) ([kotakanbe](https://github.com/kotakanbe))
+- Confirm before installing dependencies on prepare [\#219](https://github.com/future-architect/vuls/pull/219) ([kotakanbe](https://github.com/kotakanbe))
+- Remove all.json [\#218](https://github.com/future-architect/vuls/pull/218) ([kotakanbe](https://github.com/kotakanbe))
+- Add GitHub issue template [\#217](https://github.com/future-architect/vuls/pull/217) ([kotakanbe](https://github.com/kotakanbe))
+- Improve makefile, -version shows git hash, fix README [\#216](https://github.com/future-architect/vuls/pull/216) ([kotakanbe](https://github.com/kotakanbe))
+- change e-mail package from gomail to net/smtp [\#211](https://github.com/future-architect/vuls/pull/211) ([sadayuki-matsuno](https://github.com/sadayuki-matsuno))
+- Add only-containers option to scan subcommand \#122 [\#190](https://github.com/future-architect/vuls/pull/190) ([kotakanbe](https://github.com/kotakanbe))
+- Fix -results-dir option of scan subcommand [\#185](https://github.com/future-architect/vuls/pull/185) ([kotakanbe](https://github.com/kotakanbe))
+- Show error when no scannable servers are detected. [\#177](https://github.com/future-architect/vuls/pull/177) ([kotakanbe](https://github.com/kotakanbe))
+- Add sudo check to prepare subcommand [\#176](https://github.com/future-architect/vuls/pull/176) ([kotakanbe](https://github.com/kotakanbe))
+- Supports yum --enablerepo option \(supports only base,updates for now\) [\#147](https://github.com/future-architect/vuls/pull/147) ([kotakanbe](https://github.com/kotakanbe))
+
+**Fixed bugs:**
+
+- Debian 8.6 \(jessie\) scan does not show vulnerable packages [\#235](https://github.com/future-architect/vuls/issues/235)
+- panic: runtime error: index out of range - ubuntu 16.04 + vuls history [\#180](https://github.com/future-architect/vuls/issues/180)
+- Moved golang.org/x/net/context to context [\#243](https://github.com/future-architect/vuls/pull/243) ([yoheimuta](https://github.com/yoheimuta))
+- Fix changelog cache bug on Ubuntu and Debian \#235 [\#238](https://github.com/future-architect/vuls/pull/238) ([kotakanbe](https://github.com/kotakanbe))
+- add '-ssh-external' option to prepare subcommand [\#234](https://github.com/future-architect/vuls/pull/234) ([mykstmhr](https://github.com/mykstmhr))
+- Fixed error for the latest version of gocui [\#231](https://github.com/future-architect/vuls/pull/231) ([ymd38](https://github.com/ymd38))
+- Handle the refactored gocui SetCurrentView method. [\#229](https://github.com/future-architect/vuls/pull/229) ([oswell](https://github.com/oswell))
+- Fix locale env var LANG to LANGUAGE [\#215](https://github.com/future-architect/vuls/pull/215) ([kotakanbe](https://github.com/kotakanbe))
+- Fixed bug with parsing update line on CentOS/RHEL [\#206](https://github.com/future-architect/vuls/pull/206) ([andyone](https://github.com/andyone))
+- Fix defer cache.DB.close [\#201](https://github.com/future-architect/vuls/pull/201) ([kotakanbe](https://github.com/kotakanbe))
+- Fix a help message of -report-azure-blob option [\#195](https://github.com/future-architect/vuls/pull/195) ([kotakanbe](https://github.com/kotakanbe))
+- Fix error handling in tui [\#193](https://github.com/future-architect/vuls/pull/193) ([kotakanbe](https://github.com/kotakanbe))
+- Fix not working changelog cache on Container [\#189](https://github.com/future-architect/vuls/pull/189) ([kotakanbe](https://github.com/kotakanbe))
+- Fix release version detection on FreeBSD [\#184](https://github.com/future-architect/vuls/pull/184) ([kotakanbe](https://github.com/kotakanbe))
+- Fix defer cahce.DB.close\(\) [\#183](https://github.com/future-architect/vuls/pull/183) ([kotakanbe](https://github.com/kotakanbe))
+- Fix a mode of files/dir \(report, log\) [\#182](https://github.com/future-architect/vuls/pull/182) ([kotakanbe](https://github.com/kotakanbe))
+- Fix a error when no json dirs are found under results \#180 [\#181](https://github.com/future-architect/vuls/pull/181) ([kotakanbe](https://github.com/kotakanbe))
+- ssh-external option of configtest is not working \#178 [\#179](https://github.com/future-architect/vuls/pull/179) ([kotakanbe](https://github.com/kotakanbe))
+
+**Closed issues:**
+
+- Recent changes to gobui cause build failures [\#228](https://github.com/future-architect/vuls/issues/228)
+- https://hub.docker.com/r/vuls/go-cve-dictionary/ is empty [\#208](https://github.com/future-architect/vuls/issues/208)
+- Not able to install gomail fails [\#202](https://github.com/future-architect/vuls/issues/202)
+- No results file created - vuls tui failed [\#199](https://github.com/future-architect/vuls/issues/199)
+- Wrong file permissions for results/\*.json in official Docker container [\#197](https://github.com/future-architect/vuls/issues/197)
+- Failed: Unknown OS Type [\#196](https://github.com/future-architect/vuls/issues/196)
+- Segmentation fault with configtest [\#192](https://github.com/future-architect/vuls/issues/192)
+- Failed to scan. err: No server defined. Check the configuration [\#187](https://github.com/future-architect/vuls/issues/187)
+- vuls configtest -ssh-external doesnt work [\#178](https://github.com/future-architect/vuls/issues/178)
+- apt-get update: time out [\#175](https://github.com/future-architect/vuls/issues/175)
+- scanning on Centos6, but vuls recognizes debian. [\#174](https://github.com/future-architect/vuls/issues/174)
+
+**Merged pull requests:**
+
+- Update README \#225 [\#242](https://github.com/future-architect/vuls/pull/242) ([kotakanbe](https://github.com/kotakanbe))
+- fix readme [\#241](https://github.com/future-architect/vuls/pull/241) ([sadayuki-matsuno](https://github.com/sadayuki-matsuno))
+- Fix README \#234 [\#237](https://github.com/future-architect/vuls/pull/237) ([kotakanbe](https://github.com/kotakanbe))
+- Update glide files [\#236](https://github.com/future-architect/vuls/pull/236) ([kotakanbe](https://github.com/kotakanbe))
+- fix README [\#226](https://github.com/future-architect/vuls/pull/226) ([usiusi360](https://github.com/usiusi360))
+- fix some misspelling. [\#221](https://github.com/future-architect/vuls/pull/221) ([ymomoi](https://github.com/ymomoi))
+- fix docker readme [\#214](https://github.com/future-architect/vuls/pull/214) ([sadayuki-matsuno](https://github.com/sadayuki-matsuno))
+- Fix ja document about typo [\#213](https://github.com/future-architect/vuls/pull/213) ([shokohara](https://github.com/shokohara))
+- fix readme [\#212](https://github.com/future-architect/vuls/pull/212) ([sadayuki-matsuno](https://github.com/sadayuki-matsuno))
+- fix README [\#207](https://github.com/future-architect/vuls/pull/207) ([sadayuki-matsuno](https://github.com/sadayuki-matsuno))
+- fix typo [\#204](https://github.com/future-architect/vuls/pull/204) ([usiusi360](https://github.com/usiusi360))
+- fix gitignore [\#191](https://github.com/future-architect/vuls/pull/191) ([sadayuki-matsuno](https://github.com/sadayuki-matsuno))
+- Update glide.lock [\#188](https://github.com/future-architect/vuls/pull/188) ([kotakanbe](https://github.com/kotakanbe))
+- Fix path in setup/docker/README [\#186](https://github.com/future-architect/vuls/pull/186) ([dladuke](https://github.com/dladuke))
+- Vuls and vulsrepo are now separated [\#163](https://github.com/future-architect/vuls/pull/163) ([hikachan](https://github.com/hikachan))
+
 ## [v0.1.6](https://github.com/future-architect/vuls/tree/v0.1.6) (2016-09-12)
 [Full Changelog](https://github.com/future-architect/vuls/compare/v0.1.5...v0.1.6)
 

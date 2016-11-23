@@ -48,14 +48,14 @@ func RunTui(jsonDirName string) subcommands.ExitStatus {
 		return subcommands.ExitFailure
 	}
 
-	g := gocui.NewGui()
-	if err := g.Init(); err != nil {
+	g, err := gocui.NewGui(gocui.OutputNormal)
+	if err != nil {
 		log.Errorf("%s", err)
 		return subcommands.ExitFailure
 	}
 	defer g.Close()
 
-	g.SetLayout(layout)
+	g.SetManagerFunc(layout)
 	if err := keybindings(g); err != nil {
 		log.Errorf("%s", err)
 		return subcommands.ExitFailure
@@ -222,7 +222,7 @@ func movable(v *gocui.View, nextY int) (ok bool, yLimit int) {
 		}
 		return true, yLimit
 	case "summary":
-		yLimit = len(currentScanResult.KnownCves) - 1
+		yLimit = len(currentScanResult.AllCves()) - 1
 		if yLimit < nextY {
 			return false, yLimit
 		}
@@ -552,7 +552,7 @@ func setSummaryLayout(g *gocui.Gui) error {
 			return err
 		}
 
-		lines := summaryLines(currentScanResult)
+		lines := summaryLines()
 		fmt.Fprintf(v, lines)
 
 		v.Highlight = true
@@ -562,21 +562,21 @@ func setSummaryLayout(g *gocui.Gui) error {
 	return nil
 }
 
-func summaryLines(data models.ScanResult) string {
+func summaryLines() string {
 	stable := uitable.New()
 	stable.MaxColWidth = 1000
 	stable.Wrap = false
 
 	indexFormat := ""
-	if len(data.KnownCves) < 10 {
+	if len(currentScanResult.AllCves()) < 10 {
 		indexFormat = "[%1d]"
-	} else if len(data.KnownCves) < 100 {
+	} else if len(currentScanResult.AllCves()) < 100 {
 		indexFormat = "[%2d]"
 	} else {
 		indexFormat = "[%3d]"
 	}
 
-	for i, d := range data.KnownCves {
+	for i, d := range currentScanResult.AllCves() {
 		var cols []string
 		//  packs := []string{}
 		//  for _, pack := range d.Packages {
@@ -672,11 +672,11 @@ type dataForTmpl struct {
 }
 
 func detailLines() (string, error) {
-	if len(currentScanResult.KnownCves) == 0 {
+	if len(currentScanResult.AllCves()) == 0 {
 		return "No vulnerable packages", nil
 	}
 
-	cveInfo := currentScanResult.KnownCves[currentCveInfo]
+	cveInfo := currentScanResult.AllCves()[currentCveInfo]
 	cveID := cveInfo.CveDetail.CveID
 
 	tmpl, err := template.New("detail").Parse(detailTemplate())

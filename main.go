@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"os"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/future-architect/vuls/commands"
 	"github.com/google/subcommands"
@@ -31,7 +31,7 @@ import (
 )
 
 // Version of Vuls
-var version = "0.1.6"
+var version = "0.1.7"
 
 // Revision of Git
 var revision string

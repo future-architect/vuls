@@ -81,7 +81,7 @@ func (w JSONWriter) Write(scanResults []models.ScanResult) (err error) {
 }
 
 // JSONDirPattern is file name pattern of JSON directory
-var JSONDirPattern = regexp.MustCompile(`^\d{8}_\d{4}$`)
+var JSONDirPattern = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$`)
 
 // GetValidJSONDirs return valid json directory as array
 func GetValidJSONDirs() (jsonDirs JSONDirs, err error) {
@@ -134,8 +134,7 @@ func LoadOneScanHistory(jsonDir string) (scanHistory models.ScanHistory, err err
 	if scanResults[0].ScannedAt.IsZero() {
 		splitPath := strings.Split(jsonDir, string(os.PathSeparator))
 		timeStr := splitPath[len(splitPath)-1]
-		timeformat := "20060102_1504"
-		if scannedAt, err = time.Parse(timeformat, timeStr); err != nil {
+		if scannedAt, err = time.Parse(time.RFC3339, timeStr); err != nil {
 			err = fmt.Errorf("Failed to parse %s: %s", timeStr, err)
 			return
 		}
