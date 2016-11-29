@@ -226,6 +226,8 @@ func (l base) isAwsInstanceID(str string) bool {
 func (l *base) convertToModel() (models.ScanResult, error) {
 	var scoredCves, unscoredCves, ignoredCves models.CveInfos
 	for _, p := range l.UnsecurePackages {
+		sort.Sort(models.PackageInfosByName(p.Packs))
+
 		// ignoreCves
 		found := false
 		for _, icve := range l.getServerInfo().IgnoreCves {

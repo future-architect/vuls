@@ -277,6 +277,14 @@ func (ps PackageInfoList) FindByName(name string) (result PackageInfo, found boo
 //      return PackageInfo{}, false
 //  }
 
+// PackageInfosByName implements sort.Interface for []PackageInfo based on
+// the Name field.
+type PackageInfosByName []PackageInfo
+
+func (a PackageInfosByName) Len() int           { return len(a) }
+func (a PackageInfosByName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a PackageInfosByName) Less(i, j int) bool { return a[i].Name < a[j].Name }
+
 // PackageInfo has installed packages.
 type PackageInfo struct {
 	gorm.Model `json:"-" xml:"-"`
