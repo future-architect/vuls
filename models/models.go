@@ -21,6 +21,10 @@ import (
 	"fmt"
 	"sort"
 	"time"
+	"ioutil"
+	"json"
+	"encoding/xml"
+	"bufio"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/jinzhu/gorm"
@@ -68,6 +72,84 @@ func (s ScanResults) FilterByCvssOver() (filtered ScanResults) {
 		filtered = append(filtered, result)
 	}
 	return
+}
+
+//diff previosdata and newdata
+func (s ScanResults) FilterDiff() (filteredDiff ScanResults) {
+	var filterdDiff ScanResults
+	previosData := fetchFilesystemData()
+	var previosDataCVEIDs []int{}
+
+	for _, result := range previosData {
+		cveInfos := []CveInfo{}
+		for _, cveInfo := range result.KnownCves {
+			previosDataCVEIDs = append(previosDataCVEIDs, cveInfo.CveDetail.CVEID)
+		}
+	}
+
+	for _, result := range s {
+		cveInfos := []CveInfo{}
+		for _, cveInfo := range result.KnownCves {
+			for _, precveid := range previosDataCVEIDs {
+				if precveid != cveinfo.CveDetail.CVEID {
+					cveInfos = append(cveInfos, cveInfo)
+				}
+			}
+		}
+		result.KnownCves = cveInfos
+		filtered = append(filtered, result)
+	}
+	return
+}
+
+func fetchFilesystemData() (ScanResults) {
+	//get path all.json or all.xml
+	resultsDir := config.Conf.ResultsDir
+	fis, err := ioutil.ReadDir(resultDir)
+	
+	if err != nil {
+		panic(err)
+	}
+	
+	target := fis[len(fis) - 1]	
+	targetDir := resultsDir + target.Name() 
+
+	fis, err := ioutil.ReadDir(targetDir)
+	
+	if err != nil {
+		panic(err)
+	}
+	
+	targetFilePath := fis[0]	
+
+	file, err := ioutil.ReadFile(targetFilePath)
+	if err != nil {
+		fmt.Printf("File error: %v\n", e)
+		os.Exit(1)
+    	}
+
+	//file read to prepare decision file type
+	fp := os.Open(file)
+	defer fp.Close()
+        reader := bufio.NewReaderSize(fp, 4096)
+	line, _, _ := reader.ReadLine()	
+
+	
+	//Decision file type
+	var s ScanResults
+	x := regexp.MustCompile(`^<`)	
+	j:= regexp.MustCompile(`^[`)	
+
+	if x.MutchString(line) {
+		xml.Unmarshal(file, &s)
+	}
+
+	if j.MutchString(line) {
+		json.Unmarshal(file, &s)
+	}
+
+
+	return s
 }
 
 // ScanResult has the result of scanned CVE information.
@@ -209,7 +291,6 @@ type CveInfo struct {
 	Packages         []PackageInfo
 	DistroAdvisories []DistroAdvisory
 	CpeNames         []CpeName
-	New	bool	
 }
 
 // CpeName has CPE name
