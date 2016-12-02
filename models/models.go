@@ -22,9 +22,9 @@ import (
 	"sort"
 	"time"
 	"ioutil"
-	"json"
+	"encoding/json"
 	"encoding/xml"
-	"bufio"
+	"io/bufio"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/jinzhu/gorm"
@@ -105,16 +105,8 @@ func (s ScanResults) FilterDiff() (filteredDiff ScanResults) {
 func fetchFilesystemData() (ScanResults) {
 	//get path all.json or all.xml
 	resultsDir := config.Conf.ResultsDir
-	fis, err := ioutil.ReadDir(resultDir)
-	
-	if err != nil {
-		panic(err)
-	}
-	
-	target := fis[len(fis) - 1]	
-	targetDir := resultsDir + target.Name() 
 
-	fis, err := ioutil.ReadDir(targetDir)
+	fis, err := ioutil.ReadDir(resultsDir + "/current/")
 	
 	if err != nil {
 		panic(err)
