@@ -21,10 +21,12 @@ import (
 	"fmt"
 	"sort"
 	"time"
-	"ioutil"
+	"io/ioutil"
 	"encoding/json"
 	"encoding/xml"
-	"io/bufio"
+	"bufio"
+	"os"
+	"regexp"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/jinzhu/gorm"
@@ -76,28 +78,26 @@ func (s ScanResults) FilterByCvssOver() (filtered ScanResults) {
 
 //diff previosdata and newdata
 func (s ScanResults) FilterDiff() (filteredDiff ScanResults) {
-	var filterdDiff ScanResults
 	previosData := fetchFilesystemData()
-	var previosDataCVEIDs []int{}
+	var previosDataCVEIDs []string
 
 	for _, result := range previosData {
-		cveInfos := []CveInfo{}
 		for _, cveInfo := range result.KnownCves {
-			previosDataCVEIDs = append(previosDataCVEIDs, cveInfo.CveDetail.CVEID)
+			previosDataCVEIDs = append(previosDataCVEIDs, cveInfo.CveDetail.CveID)
 		}
 	}
 
 	for _, result := range s {
-		cveInfos := []CveInfo{}
+			cveInfos := []CveInfo{}
 		for _, cveInfo := range result.KnownCves {
 			for _, precveid := range previosDataCVEIDs {
-				if precveid != cveinfo.CveDetail.CVEID {
+				if string(precveid) != cveInfo.CveDetail.CveID {
 					cveInfos = append(cveInfos, cveInfo)
 				}
 			}
 		}
 		result.KnownCves = cveInfos
-		filtered = append(filtered, result)
+		filteredDiff = append(filteredDiff, result)
 	}
 	return
 }
@@ -114,14 +114,14 @@ func fetchFilesystemData() (ScanResults) {
 	
 	targetFilePath := fis[0]	
 
-	file, err := ioutil.ReadFile(targetFilePath)
+	file, err := ioutil.ReadFile(targetFilePath.Name())
 	if err != nil {
-		fmt.Printf("File error: %v\n", e)
+		fmt.Printf("File error: %v\n", err)
 		os.Exit(1)
     	}
 
 	//file read to prepare decision file type
-	fp := os.Open(file)
+	fp, _ := os.Open(string(file))
 	defer fp.Close()
         reader := bufio.NewReaderSize(fp, 4096)
 	line, _, _ := reader.ReadLine()	
@@ -132,11 +132,11 @@ func fetchFilesystemData() (ScanResults) {
 	x := regexp.MustCompile(`^<`)	
 	j:= regexp.MustCompile(`^[`)	
 
-	if x.MutchString(line) {
+	if x.MatchString(string(line)) {
 		xml.Unmarshal(file, &s)
 	}
 
-	if j.MutchString(line) {
+	if j.MatchString(string(line)) {
 		json.Unmarshal(file, &s)
 	}
 

@@ -447,9 +447,9 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	filtered := scanResults.FilterByCvssOver()
 	
 	if p.reportDiff {
-		filteredDiff := scanResults.FilterDiff
+		filteredDiff := scanResults.FilterDiff()
 		for _, w := range reports {
-			if w == report.JSONWriter{} or w == report.JSONWriter{} or w == report.XMLWriter{} {
+			if true {
 				if err := w.Write(filteredDiff); err != nil {
 					Log.Fatalf("Failed to report, err: %s", err)
 					return subcommands.ExitFailure
@@ -462,9 +462,11 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 			}
 		}
 	} else {
-		if err := w.Write(filtered); err != nil {
-			Log.Fatalf("Failed to report, err: %s", err)
-			return subcommands.ExitFailure
+		for _, w := range reports {
+			if err := w.Write(filtered); err != nil {
+				Log.Fatalf("Failed to report, err: %s", err)
+				return subcommands.ExitFailure
+			}
 		}
 	}
 
