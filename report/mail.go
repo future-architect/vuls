@@ -52,6 +52,7 @@ func (w MailWriter) Write(scanResults []models.ScanResult) (err error) {
 		headers["To"] = to
 		headers["Cc"] = cc
 		headers["Subject"] = subject
+		headers["Content-Type"] = "text/plain; charset=utf-8"
 
 		var message string
 		for k, v := range headers {
