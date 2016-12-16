@@ -23,6 +23,7 @@ import (
 	"net/mail"
 	"net/smtp"
 	"strings"
+	"time"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -52,6 +53,7 @@ func (w MailWriter) Write(scanResults []models.ScanResult) (err error) {
 		headers["To"] = to
 		headers["Cc"] = cc
 		headers["Subject"] = subject
+		headers["Date"] = time.Now().Format(time.RFC1123Z)
 		headers["Content-Type"] = "text/plain; charset=utf-8"
 
 		var message string
