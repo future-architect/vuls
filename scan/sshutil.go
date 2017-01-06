@@ -307,6 +307,8 @@ func decolateCmd(c conf.ServerInfo, cmd string, sudo bool) string {
 		switch c.Container.Type {
 		case "", "docker":
 			cmd = fmt.Sprintf(`docker exec %s /bin/bash -c "%s"`, c.Container.ContainerID, cmd)
+		case "lxd":
+			cmd = fmt.Sprintf(`lxc exec %s -- /bin/bash -c "%s"`, c.Container.Name, cmd)
 		}
 	}
 	//  cmd = fmt.Sprintf("set -x; %s", cmd)
