@@ -280,7 +280,7 @@ func detectContainerOSes() (actives []osTypeInterface) {
 					Log.Errorf("Failed: %s err: %s", sinfo.ServerName, osi.getErrs())
 					continue
 				}
-				oses = append(oses, res...)
+				oses = append(oses, osi)
 				Log.Infof("Detected: %s@%s: %s",
 					sinfo.Container.Name, sinfo.ServerName, osi.getDistro())
 			}
