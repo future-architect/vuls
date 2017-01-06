@@ -379,7 +379,7 @@ web/app server in the same configuration under the load balancer
 |:------------|-------------------:|
 | Ubuntu      |          12, 14, 16|
 | Debian      |                7, 8|
-| RHEL        |                6, 7|
+| RHEL        |             5, 6, 7|
 | CentOS      |             5, 6, 7|
 | Amazon Linux|                 All|
 | FreeBSD     |                  10|
@@ -613,7 +613,7 @@ Prepareサブコマンドは、Vuls内部で利用する以下のパッケージ
 | CentOS      |                   5| yum-changelog |
 | CentOS      |                6, 7| yum-plugin-changelog |
 | Amazon      |                All | -            |
-| RHEL        |               6, 7 | -            |
+| RHEL        |            5, 6, 7 | -            |
 | FreeBSD     |                 10 | -            |
 
 

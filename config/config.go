@@ -20,6 +20,7 @@ package config
 import (
 	"fmt"
 	"runtime"
+	"strconv"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
@@ -367,6 +368,16 @@ type Distro struct {
 
 func (l Distro) String() string {
 	return fmt.Sprintf("%s %s", l.Family, l.Release)
+}
+
+// MajorVersion returns Major version
+func (l Distro) MajorVersion() (ver int, err error) {
+	if 0 < len(l.Release) {
+		ver, err = strconv.Atoi(strings.Split(l.Release, ".")[0])
+	} else {
+		err = fmt.Errorf("Release is empty")
+	}
+	return
 }
 
 // IsContainer returns whether this ServerInfo is about container
