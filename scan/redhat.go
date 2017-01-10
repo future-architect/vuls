@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -118,11 +117,9 @@ func (o *redhat) checkDependencies() error {
 		return nil
 
 	case "centos":
-		var majorVersion int
-		if 0 < len(o.Distro.Release) {
-			majorVersion, _ = strconv.Atoi(strings.Split(o.Distro.Release, ".")[0])
-		} else {
-			return fmt.Errorf("Not implemented yet: %s", o.Distro)
+		majorVersion, err := o.Distro.MajorVersion()
+		if err != nil {
+			return fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
 		}
 
 		var name = "yum-plugin-changelog"
@@ -155,11 +152,9 @@ func (o *redhat) install() error {
 
 func (o *redhat) checkRequiredPackagesInstalled() error {
 	if o.Distro.Family == "centos" {
-		var majorVersion int
-		if 0 < len(o.Distro.Release) {
-			majorVersion, _ = strconv.Atoi(strings.Split(o.Distro.Release, ".")[0])
-		} else {
-			msg := fmt.Sprintf("Not implemented yet: %s", o.Distro)
+		majorVersion, err := o.Distro.MajorVersion()
+		if err != nil {
+			msg := fmt.Sprintf("Not implemented yet: %s, err: %s", o.Distro, err)
 			o.log.Errorf(msg)
 			return fmt.Errorf(msg)
 		}
@@ -450,17 +445,18 @@ func (o *redhat) getChangelogCVELines(rpm2changelog map[string]*string, packInfo
 
 func (o *redhat) parseAllChangelog(allChangelog string) (map[string]*string, error) {
 	var majorVersion int
-	if 0 < len(o.Distro.Release) && o.Distro.Family == "centos" {
-		majorVersion, _ = strconv.Atoi(strings.Split(o.Distro.Release, ".")[0])
-	} else {
-		return nil, fmt.Errorf("Not implemented yet: %s", o.getDistro())
+	var err error
+	if o.Distro.Family == "centos" {
+		majorVersion, err = o.Distro.MajorVersion()
+		if err != nil {
+			return nil, fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
+		}
 	}
 
 	orglines := strings.Split(allChangelog, "\n")
 	tmpline := ""
 	var lines []string
 	var prev, now bool
-	var err error
 	for i := range orglines {
 		if majorVersion == 5 {
 			/* for CentOS5 (yum-util < 1.1.20) */
@@ -578,7 +574,21 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 	}
 
 	// get advisoryID(RHSA, ALAS) - package name,version
-	cmd = "yum --color=never updateinfo list available --security"
+	major, err := (o.Distro.MajorVersion())
+	if err != nil {
+		return nil, fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
+	}
+
+	switch major {
+	case 5:
+		{
+			cmd = "yum --color=never list-security --security"
+		}
+	case 6, 7:
+		{
+			cmd = "yum --color=never updateinfo list available --security"
+		}
+	}
 	r = o.ssh(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
@@ -618,7 +628,16 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 	}
 
 	// get advisoryID(RHSA, ALAS) - CVE IDs
-	cmd = "yum --color=never updateinfo --security update"
+	switch major {
+	case 5:
+		{
+			cmd = "yum --color=never info-sec"
+		}
+	case 6, 7:
+		{
+			cmd = "yum --color=never updateinfo --security update"
+		}
+	}
 	r = o.ssh(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
@@ -791,38 +810,6 @@ func (o *redhat) isRpmPackageNameLine(line string) (bool, error) {
 		}
 	}
 	return true, nil
-}
-
-// see test case
-func (o *redhat) parseYumUpdateinfoHeaderCentOS(line string) (packs []models.PackageInfo, err error) {
-	pkgs := strings.Split(strings.TrimSpace(line), ",")
-	for _, pkg := range pkgs {
-		packs = append(packs, models.PackageInfo{})
-		s := strings.Split(pkg, "-")
-		if len(s) == 3 {
-			packs[len(packs)-1].Name = s[0]
-			packs[len(packs)-1].Version = s[1]
-			packs[len(packs)-1].Release = s[2]
-		} else {
-			return packs, fmt.Errorf("CentOS: Unknown Header format: %s", line)
-		}
-	}
-	return
-}
-
-var yumHeaderPattern = regexp.MustCompile(`(ALAS-.+): (.+) priority package update for (.+)$`)
-
-func (o *redhat) parseYumUpdateinfoHeaderAmazon(line string) (a models.DistroAdvisory, names []string, err error) {
-	result := yumHeaderPattern.FindStringSubmatch(line)
-	if len(result) == 4 {
-		a.AdvisoryID = result[1]
-		a.Severity = result[2]
-		spaceSeparatedPacknames := result[3]
-		names = strings.Fields(spaceSeparatedPacknames)
-		return
-	}
-	err = fmt.Errorf("Amazon Linux: Unknown Header Format. %s", line)
-	return
 }
 
 var yumCveIDPattern = regexp.MustCompile(`(CVE-\d{4}-\d{4,})`)
