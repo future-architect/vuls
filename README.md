@@ -57,7 +57,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 - Auto generation of configuration file template
     - Auto detection of servers set using CIDR, generate configuration file template
 - Email and Slack notification is possible (supports Japanese language)
-- Scan result is viewable on accessory software, TUI Viewer terminal or Web UI ([VulsRepo](https://github.com/usiusi360/vulsrepo)).
+- Scan result is viewable on accessory software, TUI Viewer on terminal or Web UI ([VulsRepo](https://github.com/usiusi360/vulsrepo)).
 
 ----
 
@@ -69,15 +69,12 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 
 # Setup Vuls
 
-There are 3 ways to setup Vuls.
+There are 2 ways to setup Vuls.
 
 - Docker container  
 Dockernized-Vuls with vulsrepo UI in it.  
 You can run install and run Vuls on your machine with only a few commands.  
 see https://github.com/future-architect/vuls/tree/master/setup/docker
-
-- Chef  
-see https://github.com/sadayuki-matsuno/vuls-cookbook
 
 - Manually  
 Hello Vuls Tutorial shows how to setup vuls manually.
@@ -97,6 +94,7 @@ This can be done in the following steps.
 1. Configuration
 1. Prepare
 1. Scan
+1. Reporting
 1. TUI(Terminal-Based User Interface)
 1. Web UI ([VulsRepo](https://github.com/usiusi360/vulsrepo))
 
@@ -133,7 +131,7 @@ Vuls requires the following packages.
 - SQLite3 or MySQL
 - git
 - gcc
-- go v1.7.1 or later
+- go v1.7.1 or later (The latest version is recommended)
     - https://golang.org/doc/install
 
 ```bash
@@ -200,6 +198,7 @@ Create a config file(TOML format).
 Then check the config.
 
 ```
+$ cd $HOME
 $ cat config.toml
 [servers]
 
@@ -222,51 +221,90 @@ see [Usage: Prepare](https://github.com/future-architect/vuls#usage-prepare)
 ## Step8. Start Scanning
 
 ```
-$ vuls scan -cve-dictionary-dbpath=$PWD/cve.sqlite3 -report-json
-INFO[0000] Start scanning (config: /home/ec2-user/config.toml)
-INFO[0000] Start scanning
-INFO[0000] config: /home/ec2-user/config.toml
-INFO[0000] cve-dictionary: /home/ec2-user/cve.sqlite3
-
-
+$ vuls scan 
 ... snip ...
 
-172-31-4-82 (amazon 2015.09)
-============================
-CVE-2016-0494   10.0    Unspecified vulnerability in the Java SE and Java SE Embedded components in Oracle
-                        Java SE 6u105, 7u91, and 8u66 and Java SE Embedded 8u65 allows remote attackers to
-                        affect confidentiality, integrity, and availability via unknown vectors related to
-                        2D.
-... snip ...
-
-CVE-2016-0494
--------------
-Score           10.0 (High)
-Vector          (AV:N/AC:L/Au:N/C:C/I:C/A:C)
-Summary         Unspecified vulnerability in the Java SE and Java SE Embedded components in Oracle Java SE 6u105,
-                7u91, and 8u66 and Java SE Embedded 8u65 allows remote attackers to affect confidentiality,
-                integrity, and availability via unknown vectors related to 2D.
-NVD             https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-0494
-MITRE           https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-0494
-CVE Details     http://www.cvedetails.com/cve/CVE-2016-0494
-CVSS Calculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-0494&vector=(AV:N/AC:L/Au:N/C:C/I:C/A:C)
-RHEL-CVE        https://access.redhat.com/security/cve/CVE-2016-0494
-ALAS-2016-643   https://alas.aws.amazon.com/ALAS-2016-643.html
-Package/CPE     java-1.7.0-openjdk-1.7.0.91-2.6.2.2.63.amzn1 -> java-1.7.0-openjdk-1:1.7.0.95-2.6.4.0.65.amzn1
+Scan Summary
+============
+172-31-4-82       amazon 2015.09         94 CVEs      103 updatable packages
 
 ```
 
-## Step9. TUI
+## Step9. Reporting
+
+View one-line summary
+
+```
+$ vuls report -format-one-line-text -cvedb-path=$PWD/cve.sqlite3 
+
+One Line Summary
+================
+172-31-4-82   Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
+
+```
+
+View short summary.
+
+```
+$ vuls report -format-short-text 
+
+172-31-4-8 (amazon 2015.09)
+===========================
+Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
+
+CVE-2016-0705   10.0 (High)     Double free vulnerability in the dsa_priv_decode function in
+                                crypto/dsa/dsa_ameth.c in OpenSSL 1.0.1 before 1.0.1s and 1.0.2 before 1.0.2g
+                                allows remote attackers to cause a denial of service (memory corruption) or
+                                possibly have unspecified other impact via a malformed DSA private key.
+                                http://www.cvedetails.com/cve/CVE-2016-0705
+                                http://people.ubuntu.com/~ubuntu-security/cve/CVE-2016-0705
+                                libssl1.0.0-1.0.2f-2ubuntu1 -> libssl1.0.0-1.0.2g-1ubuntu4.5
+                                openssl-1.0.2f-2ubuntu1 -> openssl-1.0.2g-1ubuntu4.5
+
+... snip ...
+````
+
+View full report.
+
+```
+$ vuls report -format-full-text 
+
+172-31-4-82 (amazon 2015.09)
+============================
+Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
+
+
+CVE-2016-0705
+-------------
+Score           10.0 (High)
+Vector          (AV:N/AC:L/Au:N/C:C/I:C/A:C)
+Summary         Double free vulnerability in the dsa_priv_decode function in
+                crypto/dsa/dsa_ameth.c in OpenSSL 1.0.1 before 1.0.1s and 1.0.2 before 1.0.2g
+                allows remote attackers to cause a denial of service (memory corruption) or
+                possibly have unspecified other impact via a malformed DSA private key.
+CWE             https://cwe.mitre.org/data/definitions/.html
+NVD             https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-0705
+MITRE           https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-0705
+CVE Details     http://www.cvedetails.com/cve/CVE-2016-0705
+CVSS Claculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-0705&vector=(AV:N/AC:L/...
+Ubuntu-CVE      http://people.ubuntu.com/~ubuntu-security/cve/CVE-2016-0705
+Package         libssl1.0.0-1.0.2f-2ubuntu1 -> libssl1.0.0-1.0.2g-1ubuntu4.5
+                openssl-1.0.2f-2ubuntu1 -> openssl-1.0.2g-1ubuntu4.5
+
+... snip ...
+```
+
+## Step10. TUI
 
 Vuls has Terminal-Based User Interface to display the scan result.
 
 ```
-$ vuls tui
+$ vuls tui 
 ```
 
 ![Vuls-TUI](img/hello-vuls-tui.png)
 
-## Step10. Web UI
+## Step11. Web UI
 
 [VulsRepo](https://github.com/usiusi360/vulsrepo) is a awesome Web UI for Vuls.  
 Check it out the [Online Demo](http://usiusi360.github.io/vulsrepo/).
@@ -288,11 +326,8 @@ see https://github.com/future-architect/vuls/tree/master/setup/docker
 
 ## Scanning Flow
 ![Vuls-Scan-Flow](img/vuls-scan-flow.png)
-- Scan vulnerabilities on the servers via SSH and create a list of the CVE ID
+- Scan vulnerabilities on the servers via SSH and collect a list of the CVE ID
   - To scan Docker containers, Vuls connect via ssh to the Docker host and then `docker exec` to the containers. So, no need to run sshd daemon on the containers.
-- Fetch more detailed information of the detected CVE from go-cve-dictionary
-- Send a report by Slack and Email
-- Write scan results to JSON file to show the latest report on your terminal
 
 ----
 # Performance Considerations
@@ -323,15 +358,19 @@ High speed scan and resource usage is light because Vuls can get CVE IDs by usin
 
 # Use Cases
 
-## Scan all servers
+## Scan All Servers
 
 ![Vuls-Usecase1](img/vuls-usecase-elb-rails-rds-all.png)
 
-## Scan a single server
+## Scan a Single Server
 
 web/app server in the same configuration under the load balancer
 
 ![Vuls-Usecase2](img/vuls-usecase-elb-rails-rds-single.png)
+
+## Scan Staging Environment
+
+If there is a staging environment with the same configuration as the production environment, you can scan the server in staging environment
 
 ----
 
@@ -373,7 +412,7 @@ iconEmoji    = ":ghost:"
 authUser     = "username"
 notifyUsers  = ["@username"]
 
-[mail]
+[email]
 smtpAddr      = "smtp.gmail.com"
 smtpPort      = "587"
 user          = "username"
@@ -457,9 +496,9 @@ You can customize your configuration using this template.
       If you set `["@foo", "@bar"]` to notifyUsers, @foo @bar will be included in text.  
       So @foo, @bar can receive mobile push notifications on their smartphone.  
 
-- Mail section
+- EMail section
     ```
-    [mail]
+    [email]
     smtpAddr      = "smtp.gmail.com"
     smtpPort      = "587"
     user          = "username"
@@ -577,7 +616,7 @@ Prepare subcommand installs required packages on each server.
 | CentOS      |                   5| yum-changelog |
 | CentOS      |                6, 7| yum-plugin-changelog |
 | Amazon      |                All | -            |
-| RHEL        |         4, 5, 6, 7 | -            |
+| RHEL        |               6, 7 | -            |
 | FreeBSD     |                 10 | -            |
 
 
@@ -610,94 +649,34 @@ prepare:
 # Usage: Scan
 
 ```
-
 $ vuls scan -help
 scan:
         scan
-                [-lang=en|ja]
                 [-config=/path/to/config.toml]
                 [-results-dir=/path/to/results]
-                [-cve-dictionary-dbtype=sqlite3|mysql]
-                [-cve-dictionary-dbpath=/path/to/cve.sqlite3 or mysql connection string]
-                [-cve-dictionary-url=http://127.0.0.1:1323]
-                [-cache-dbpath=/path/to/cache.db]
-                [-cvss-over=7]
-                [-ignore-unscored-cves]
+                [-cachedb-path=/path/to/cache.db]
                 [-ssh-external]
                 [-containers-only]
                 [-skip-broken]
-                [-report-azure-blob]
-                [-report-json]
-                [-report-mail]
-                [-report-s3]
-                [-report-slack]
-                [-report-text]
-                [-report-xml]
                 [-http-proxy=http://192.168.0.1:8080]
                 [-ask-key-password]
                 [-debug]
-                [-debug-sql]
-                [-aws-profile=default]
-                [-aws-region=us-west-2]
-                [-aws-s3-bucket=bucket_name]
-                [-azure-account=accout]
-                [-azure-key=key]
-                [-azure-container=container]
+
                 [SERVER]...
-
-
   -ask-key-password
         Ask ssh privatekey password before scanning
-  -aws-profile string
-        AWS Profile to use (default "default")
-  -aws-region string
-        AWS Region to use (default "us-east-1")
-  -aws-s3-bucket string
-        S3 bucket name
-  -azure-account string
-        Azure account name to use. AZURE_STORAGE_ACCOUNT environment variable is used if not specified
-  -azure-container string
-        Azure storage container name
-  -azure-key string
-        Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified
-  -cache-dbpath string
-        /path/to/cache.db (local cache of changelog for Ubuntu/Debian) (default "$PWD/cache.db")
+  -cachedb-path string
+        /path/to/cache.db (local cache of changelog for Ubuntu/Debian)
   -config string
-        /path/to/toml (default "$PWD/config.toml")
+        /path/to/toml 
   -containers-only
-        Scan concontainers Only. Default: Scan both of hosts and containers
-  -cve-dictionary-dbpath string
-        /path/to/sqlite3 (For get cve detail from cve.sqlite3)
-  -cve-dictionary-dbtype string
-        DB type for fetching CVE dictionary (sqlite3 or mysql) (default "sqlite3")
-  -cve-dictionary-url string
-        http://CVE.Dictionary (default "http://127.0.0.1:1323")
-  -cvss-over float
-        -cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))
+        Scan containers only. Default: Scan both of hosts and containers
   -debug
         debug mode
-  -debug-sql
-        SQL debug mode
   -http-proxy string
         http://proxy-url:port (default: empty)
-  -ignore-unscored-cves
-        Don't report the unscored CVEs
-  -lang string
-        [en|ja] (default "en")
-  -report-json
-        Write report to JSON files ($PWD/results/current)
-  -report-mail
-        Send report via Email
-  -report-s3
-        Write report to S3 (bucket/yyyyMMdd_HHmm)
-  -report-slack
-        Send report via Slack
-  -report-text
-        Write report to text files ($PWD/results/current)
-  -report-xml
-        Write report to XML files ($PWDresults/current)
   -results-dir string
-        /path/to/results (default "$PWD/results")
+        /path/to/results 
   -skip-broken
         [For CentOS] yum update changelog with --skip-broken option
   -ssh-external
@@ -726,73 +705,200 @@ Defaults:vuls !requiretty
 | empty password   |                 -  | |
 | with password    |           required | or use ssh-agent |
 
-## -report-json , -report-text , -report-xml option
-
-At the end of the scan, scan results will be available in the `$PWD/result/current/` directory.  
-`servername.(json|txt|xml)` includes the scan result of the server.
-
 ## Example: Scan all servers defined in config file
 ```
-$ vuls scan \
-      --report-slack \
-      --report-mail \
-      --cvss-over=7 \
-      -ask-key-password \
-      -cve-dictionary-dbpath=$PWD/cve.sqlite3
+$ vuls scan -ask-key-password
 ```
 With this sample command, it will ..
 - Ask SSH key password before scanning
 - Scan all servers defined in config file
-- Send scan results to slack and email
-- Only Report CVEs that CVSS score is over 7
-- Print scan result to terminal
 
 ## Example: Scan specific servers
 ```
-$ vuls scan \
-      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \
-      server1 server2
+$ vuls scan server1 server2
 ```
 With this sample command, it will ..
 - Use SSH Key-Based authentication with empty password (without -ask-key-password option)
 - Scan only 2 servers (server1, server2)
-- Print scan result to terminal
+
+## Example: Scan Docker containers
+
+It is common that keep Docker containers running without SSHd daemon.  
+see [Docker Blog:Why you don't need to run SSHd in your Docker containers](https://blog.docker.com/2014/06/why-you-dont-need-to-run-sshd-in-docker/)
+
+Vuls scans Docker containers via `docker exec` instead of SSH.  
+For more details, see [Architecture section](https://github.com/future-architect/vuls#architecture)
+
+- To scan all of running containers  
+  `"${running}"` needs to be set in the containers item.
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+    host         = "172.31.4.82"
+    user        = "ec2-user"
+    keyPath     = "/home/username/.ssh/id_rsa"
+    containers = ["${running}"]
+    ```
+
+- To scan specific containers  
+  The container ID or container name needs to be set in the containers item.  
+  In the following example, only `container_name_a` and `4aa37a8b63b9` will be scanned.  
+  Be sure to check these containers are running state before scanning.  
+  If specified containers are not running, Vuls gives up scanning with printing error message.
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+    host         = "172.31.4.82"
+    user        = "ec2-user"
+    keyPath     = "/home/username/.ssh/id_rsa"
+    containers = ["container_name_a", "4aa37a8b63b9"]
+    ```
+- To scan containers only
+  - --containers-only option is available.
+
+----
+
+# Usage: Report
+
+```
+report:
+        report
+                [-lang=en|ja]
+                [-config=/path/to/config.toml]
+                [-results-dir=/path/to/results]
+                [-refresh-cve]
+                [-cvedb-type=sqlite3|mysql]
+                [-cvedb-path=/path/to/cve.sqlite3]
+                [-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
+                [-cvss-over=7]
+                [-ignore-unscored-cves]
+                [-to-email]
+                [-to-slack]
+                [-to-localfile]
+                [-to-s3]
+                [-to-azure-blob]
+                [-format-json]
+                [-format-xml]
+                [-format-one-line-text]
+                [-format-short-text]
+                [-format-full-text]
+                [-gzip]
+                [-aws-profile=default]
+                [-aws-region=us-west-2]
+                [-aws-s3-bucket=bucket_name]
+                [-azure-account=accout]
+                [-azure-key=key]
+                [-azure-container=container]
+                [-http-proxy=http://192.168.0.1:8080]
+                [-debug]
+                [-debug-sql]
+
+                [SERVER]...
+  -aws-profile string
+        AWS profile to use (default "default")
+  -aws-region string
+        AWS region to use (default "us-east-1")
+  -aws-s3-bucket string
+        S3 bucket name
+  -azure-account string
+        Azure account name to use. AZURE_STORAGE_ACCOUNT environment variable is used if not specified
+  -azure-container string
+        Azure storage container name
+  -azure-key string
+        Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified
+  -config string
+        /path/to/toml 
+  -cvedb-path string
+        /path/to/sqlite3 (For get cve detail from cve.sqlite3)
+  -cvedb-type string
+        DB type for fetching CVE dictionary (sqlite3 or mysql) (default "sqlite3")
+  -cvedb-url string
+        http://cve-dictionary.com:8080 or mysql connection string
+  -cvss-over float
+        -cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))
+  -debug
+        debug mode
+  -debug-sql
+        SQL debug mode
+  -format-full-text
+        Detail report in plain text
+  -format-json
+        JSON format
+  -format-one-line-text
+        One line summary in plain text
+  -format-short-text
+        Summary in plain text
+  -format-xml
+        XML format
+  -gzip
+        gzip compression
+  -http-proxy string
+        http://proxy-url:port (default: empty)
+  -ignore-unscored-cves
+        Don't report the unscored CVEs
+  -lang string
+        [en|ja] (default "en")
+  -refresh-cve
+        Refresh CVE information in JSON file under results dir
+  -results-dir string
+        /path/to/results 
+  -to-azure-blob
+        Write report to Azure Storage blob (container/yyyyMMdd_HHmm/servername.json/xml/txt)
+  -to-email
+        Send report via Email
+  -to-localfile
+        Write report to localfile
+  -to-s3
+        Write report to S3 (bucket/yyyyMMdd_HHmm/servername.json/xml/txt)
+  -to-slack
+        Send report via Slack
+```
+
+## Example: Send scan results to Slack
+```
+$ vuls report \
+      -to-slack \
+      -cvss-over=7 \
+      -cvedb-path=$PWD/cve.sqlite3
+```
+With this sample command, it will ..
+- Send scan results to slack
+- Only Report CVEs that CVSS score is over 7
 
 ## Example: Put results in S3 bucket
-To put results in S3 bucket, configure following settings in AWS before scanning.
+To put results in S3 bucket, configure following settings in AWS before reporting.
 - Create S3 bucket. see [Creating a Bucket](http://docs.aws.amazon.com/AmazonS3/latest/UG/CreatingaBucket.html)  
 - Create access key. The access key must have read and write access to the AWS S3 bucket. see [Managing Access Keys for IAM Users](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html)
 - Configure the security credentials. see [Configuring the AWS Command Line Interface](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html)
 
 ```
-$ vuls scan \
-      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \
-      -report-s3 \
+$ vuls report \
+      -cvedb-path=$PWD/cve.sqlite3 \
+      -to-s3 \
+      -format-json \
       -aws-region=ap-northeast-1 \
       -aws-s3-bucket=vuls \
       -aws-profile=default
 ```
 With this sample command, it will ..
-- Use SSH Key-Based authentication with empty password (without -ask-key-password option)
-- Scan all servers defined in config file
 - Put scan result(JSON) in S3 bucket. The bucket name is "vuls" in ap-northeast-1 and profile is "default"
 
 ## Example: Put results in Azure Blob storage
 
-To put results in Azure Blob Storage, configure following settings in Azure before scanning.
-- Create a container
+To put results in Azure Blob Storage, configure following settings in Azure before reporting.
+- Create a Azure Blob container
 
 ```
 $ vuls scan \
-      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \
+      -cvedb-path=$PWD/cve.sqlite3 \
       -report-azure-blob \
       -azure-container=vuls \
       -azure-account=test \
       -azure-key=access-key-string
 ```
 With this sample command, it will ..
-- Use SSH Key-Based authentication with empty password (without -ask-key-password option)
-- Scan all servers defined in config file
 - Put scan result(JSON) in Azure Blob Storage. The container name is "vuls", storage account is "test" and accesskey is "access-key-string"
 
 account and access key can be defined in environment variables.
@@ -800,14 +906,14 @@ account and access key can be defined in environment variables.
 $ export AZURE_STORAGE_ACCOUNT=test
 $ export AZURE_STORAGE_ACCESS_KEY=access-key-string
 $ vuls scan \
-      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \
+      -cvedb-path=$PWD/cve.sqlite3 \
       -report-azure-blob \
       -azure-container=vuls
 ```
 
 ## Example: IgnoreCves
 
-Define ignoreCves in config if you don't want to report(slack, mail, text...) specific CVE IDs. But these ignoreCves will be output to JSON file like below.
+Define ignoreCves in config if you don't want to report(Slack, EMail, Text...) specific CVE IDs. But these ignoreCves will be output to JSON file like below.
 
 - config.toml
 ```toml
@@ -886,8 +992,8 @@ optional = [
 
 ```
 $ vuls scan \
-      -cve-dictionary-dbtype=mysql \
-      -cve-dictionary-dbpath="user:pass@tcp(localhost:3306)/dbname?parseTime=true"
+      -cvedb-type=mysql \
+      -cvedb-url="user:pass@tcp(localhost:3306)/dbname?parseTime=true"
 ```
 
 ----
@@ -941,42 +1047,6 @@ How to integrate Vuls with OWASP Dependency Check
     ```
 
 
-# Usage: Scan Docker containers
-
-It is common that keep Docker containers running without SSHd daemon.  
-see [Docker Blog:Why you don't need to run SSHd in your Docker containers](https://blog.docker.com/2014/06/why-you-dont-need-to-run-sshd-in-docker/)
-
-Vuls scans Docker containers via `docker exec` instead of SSH.  
-For more details, see [Architecture section](https://github.com/future-architect/vuls#architecture)
-
-- To scan all of running containers  
-  `"${running}"` needs to be set in the containers item.
-    ```
-    [servers]
-
-    [servers.172-31-4-82]
-    host         = "172.31.4.82"
-    user        = "ec2-user"
-    keyPath     = "/home/username/.ssh/id_rsa"
-    containers = ["${running}"]
-    ```
-
-- To scan specific containers  
-  The container ID or container name needs to be set in the containers item.  
-  In the following example, only `container_name_a` and `4aa37a8b63b9` will be scanned.  
-  Be sure to check these containers are running state before scanning.  
-  If specified containers are not running, Vuls gives up scanning with printing error message.
-    ```
-    [servers]
-
-    [servers.172-31-4-82]
-    host         = "172.31.4.82"
-    user        = "ec2-user"
-    keyPath     = "/home/username/.ssh/id_rsa"
-    containers = ["container_name_a", "4aa37a8b63b9"]
-    ```
-- To scan containers only
-  - --containers-only option is available.
 
 
 # Usage: TUI
@@ -984,15 +1054,27 @@ For more details, see [Architecture section](https://github.com/future-architect
 ## Display the latest scan results
 
 ```
-$ vuls tui -h
 tui:
-	tui [-results-dir=/path/to/results]
+        tui
+                [-cvedb-type=sqlite3|mysql]
+                [-cvedb-path=/path/to/cve.sqlite3]
+                [-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
+                [-results-dir=/path/to/results]
+                [-refresh-cve]
+                [-debug-sql]
 
-  -results-dir string
-        /path/to/results (default "$PWD/results")
+  -cvedb-path string
+        /path/to/sqlite3 (For get cve detail from cve.sqlite3) (default "/Users/kotakanbe/go/src/github.com/future-architect/vuls/cve.sqlite3")
+  -cvedb-type string
+        DB type for fetching CVE dictionary (sqlite3 or mysql) (default "sqlite3")
+  -cvedb-url string
+        http://cve-dictionary.com:8080 or mysql connection string
   -debug-sql
-    	debug SQL
-
+        debug SQL
+  -refresh-cve
+        Refresh CVE information in JSON file under results dir
+  -results-dir string
+        /path/to/results (default "/Users/kotakanbe/go/src/github.com/future-architect/vuls/results")
 ```
 
 Key binding is below.
@@ -1011,18 +1093,14 @@ For details, see https://github.com/future-architect/vuls/blob/master/report/tui
 - Display the list of scan results.
 ```
 $ vuls history
-20160524_1950 scanned 1 servers: amazon2
-20160524_1940 scanned 2 servers: amazon1, romantic_goldberg
+2016-12-30T10:34:38+09:00 1 servers: u16
+2016-12-28T19:15:19+09:00 1 servers: ama
+2016-12-28T19:10:03+09:00 1 servers: cent6
 ```
 
-- Display the result of scan 20160524_1949
+- Display the result of scan 2016-12-30T10:34:38+09:00
 ```
-$ vuls tui 20160524_1950
-```
-
-- Display the result of scan 20160524_1948
-```
-$ vuls tui 20160524_1940
+$ vuls tui 2016-12-30T10:34:38+09:00
 ```
 
 # Display the previous scan results using peco
@@ -1040,10 +1118,10 @@ Run go-cve-dictionary as server mode before scanning on 192.168.10.1
 $ go-cve-dictionary server -bind=192.168.10.1 -port=1323
 ```
 
-Run Vuls with -cve-dictionary-url option.
+Run Vuls with -cvedb-url option.
 
 ```
-$ vuls scan -cve-dictionary-url=http://192.168.0.1:1323
+$ vuls scan -cvedb-url=http://192.168.0.1:1323
 ```
 
 # Usage: Update NVD Data

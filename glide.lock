@@ -1,5 +1,5 @@
-hash: ca64aef6e9e94c7be91f79b88edb847363c8a5bd48da4ad27784e9342c8db6e2
-updated: 2016-11-14T17:14:19.692072231Z
+hash: c3167d83e68562cd7ef73f138ce60cb9e60b72b50394e8615388d1f3ba9fbef2
+updated: 2017-01-02T09:37:09.437363123+09:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7b3beb6df3c42abd3509abfc3bcacc0fbfb7c877
@@ -46,7 +46,7 @@ imports:
 - name: github.com/go-ini/ini
   version: 6e4869b434bd001f6983749881c7ead3545887d8
 - name: github.com/go-sql-driver/mysql
-  version: 2a6c6079c7eff49a7e9d641e109d922f124a3e4c
+  version: d512f204a577a4ab037a1816604c48c9c13210be
 - name: github.com/google/subcommands
   version: a71b91e238406bd68766ee52db63bebedce0e9f6
 - name: github.com/gosuri/uitable
@@ -60,6 +60,7 @@ imports:
   version: 39165d498058a823126af3cbf4d2a3b0e1acf11e
   subpackages:
   - dialects/mysql
+  - dialects/sqlite
 - name: github.com/jinzhu/inflection
   version: 74387dc39a75e970e7a3ae6a3386b5bd2e5c5cff
 - name: github.com/jmespath/go-jmespath
@@ -69,7 +70,7 @@ imports:
 - name: github.com/k0kubun/pp
   version: f5dce6ed0ccf6c350f1679964ff6b61f3d6d2033
 - name: github.com/kotakanbe/go-cve-dictionary
-  version: 2dd369d26145eab2178f6d509821fcabc9391627
+  version: 7eb1f1a2e7e436177570bf234e21c2ed9489d3fb
   subpackages:
   - config
   - db
@@ -89,7 +90,7 @@ imports:
 - name: github.com/mattn/go-runewidth
   version: 737072b4e32b7a5018b4a7125da8d12de90e8045
 - name: github.com/mattn/go-sqlite3
-  version: e5a3c16c5c1d80b24f633e68aecd6b0702786d3d
+  version: 5510da399572b4962c020184bb291120c0a412e2
 - name: github.com/mgutz/ansi
   version: c286dcecd19ff979eeb73ea444e479b903f2cfcb
 - name: github.com/moul/http2curl
@@ -112,9 +113,8 @@ imports:
   - ssh/agent
   - ssh/terminal
 - name: golang.org/x/net
-  version: cf4effbb9db1f3ef07f7e1891402991b6afbb276
+  version: 1d7a0b2100da090d8b02afcfb42f97e2c77e71a4
   subpackages:
-  - context
   - publicsuffix
 - name: golang.org/x/sys
   version: 9bb9f0998d48b31547d975974935ae9b48c7a03c

@@ -15,16 +15,15 @@ import:
 - package: github.com/boltdb/bolt
 - package: github.com/cenkalti/backoff
 - package: github.com/google/subcommands
-  branch: context
 - package: github.com/gosuri/uitable
 - package: github.com/howeyc/gopass
-- package: github.com/jinzhu/gorm
 - package: github.com/jroimartin/gocui
 - package: github.com/k0kubun/pp
 - package: github.com/kotakanbe/go-cve-dictionary
   subpackages:
   - config
   - db
+  - log
   - models
 - package: github.com/kotakanbe/go-pingscanner
 - package: github.com/kotakanbe/logrus-prefixed-formatter
@@ -35,6 +34,3 @@ import:
   subpackages:
   - ssh
   - ssh/agent
-- package: golang.org/x/net
-  subpackages:
-  - context

@@ -20,13 +20,12 @@ package commands
 import (
 	"context"
 	"flag"
-	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/report"
 	"github.com/google/subcommands"
 )
@@ -36,6 +35,11 @@ type TuiCmd struct {
 	lang       string
 	debugSQL   bool
 	resultsDir string
+
+	refreshCve       bool
+	cvedbtype        string
+	cvedbpath        string
+	cveDictionaryURL string
 }
 
 // Name return subcommand name
@@ -47,7 +51,13 @@ func (*TuiCmd) Synopsis() string { return "Run Tui view to anayze vulnerabilites
 // Usage return usage
 func (*TuiCmd) Usage() string {
 	return `tui:
-	tui [-results-dir=/path/to/results]
+	tui
+		[-cvedb-type=sqlite3|mysql]
+		[-cvedb-path=/path/to/cve.sqlite3]
+		[-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
+		[-results-dir=/path/to/results]
+		[-refresh-cve]
+		[-debug-sql]
 
 `
 }
@@ -58,9 +68,33 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.debugSQL, "debug-sql", false, "debug SQL")
 
 	wd, _ := os.Getwd()
-
 	defaultResultsDir := filepath.Join(wd, "results")
 	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+
+	f.BoolVar(
+		&p.refreshCve,
+		"refresh-cve",
+		false,
+		"Refresh CVE information in JSON file under results dir")
+
+	f.StringVar(
+		&p.cvedbtype,
+		"cvedb-type",
+		"sqlite3",
+		"DB type for fetching CVE dictionary (sqlite3 or mysql)")
+
+	defaultCveDBPath := filepath.Join(wd, "cve.sqlite3")
+	f.StringVar(
+		&p.cvedbpath,
+		"cvedb-path",
+		defaultCveDBPath,
+		"/path/to/sqlite3 (For get cve detail from cve.sqlite3)")
+
+	f.StringVar(
+		&p.cveDictionaryURL,
+		"cvedb-url",
+		"",
+		"http://cve-dictionary.com:8080 or mysql connection string")
 }
 
 // Execute execute
@@ -68,38 +102,53 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	c.Conf.Lang = "en"
 	c.Conf.DebugSQL = p.debugSQL
 	c.Conf.ResultsDir = p.resultsDir
+	c.Conf.CveDBType = p.cvedbtype
+	c.Conf.CveDBPath = p.cvedbpath
+	c.Conf.CveDictionaryURL = p.cveDictionaryURL
 
-	var jsonDirName string
-	var err error
-	if 0 < len(f.Args()) {
-		var jsonDirs report.JSONDirs
-		if jsonDirs, err = report.GetValidJSONDirs(); err != nil {
-			return subcommands.ExitFailure
-		}
-		for _, d := range jsonDirs {
-			splitPath := strings.Split(d, string(os.PathSeparator))
-			if splitPath[len(splitPath)-1] == f.Args()[0] {
-				jsonDirName = f.Args()[0]
-				break
+	log.Info("Validating Config...")
+	if !c.Conf.ValidateOnTui() {
+		return subcommands.ExitUsageError
+	}
+
+	jsonDir, err := jsonDir(f.Args())
+	if err != nil {
+		log.Errorf("Failed to read json dir under results: %s", err)
+		return subcommands.ExitFailure
+	}
+
+	history, err := loadOneScanHistory(jsonDir)
+	if err != nil {
+		log.Errorf("Failed to read from JSON: %s", err)
+		return subcommands.ExitFailure
+	}
+
+	var results []models.ScanResult
+	for _, r := range history.ScanResults {
+		if p.refreshCve || needToRefreshCve(r) {
+			if c.Conf.CveDBType == "sqlite3" {
+				if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
+					log.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
+						c.Conf.CveDBPath)
+					return subcommands.ExitFailure
+				}
 			}
-		}
-		if len(jsonDirName) == 0 {
-			log.Errorf("First Argument have to be JSON directory name : %s", err)
-			return subcommands.ExitFailure
-		}
-	} else {
-		stat, _ := os.Stdin.Stat()
-		if (stat.Mode() & os.ModeCharDevice) == 0 {
-			bytes, err := ioutil.ReadAll(os.Stdin)
+
+			filled, err := fillCveInfoFromCveDB(r)
 			if err != nil {
-				log.Errorf("Failed to read stdin: %s", err)
+				log.Errorf("Failed to fill CVE information: %s", err)
 				return subcommands.ExitFailure
 			}
-			fields := strings.Fields(string(bytes))
-			if 0 < len(fields) {
-				jsonDirName = fields[0]
+
+			if err := overwriteJSONFile(jsonDir, filled); err != nil {
+				log.Errorf("Failed to write JSON: %s", err)
+				return subcommands.ExitFailure
 			}
+			results = append(results, filled)
+		} else {
+			results = append(results, r)
 		}
 	}
-	return report.RunTui(jsonDirName)
+	history.ScanResults = results
+	return report.RunTui(history)
 }

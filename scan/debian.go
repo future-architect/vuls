@@ -26,7 +26,6 @@ import (
 
 	"github.com/future-architect/vuls/cache"
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/cveapi"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 )
@@ -179,12 +178,12 @@ func (o *debian) scanPackages() error {
 	}
 	o.setPackages(packs)
 
-	var unsecurePacks []CvePacksInfo
+	var unsecurePacks []models.VulnInfo
 	if unsecurePacks, err = o.scanUnsecurePackages(packs); err != nil {
 		o.log.Errorf("Failed to scan vulnerable packages")
 		return err
 	}
-	o.setUnsecurePackages(unsecurePacks)
+	o.setVulnInfos(unsecurePacks)
 	return nil
 }
 
@@ -242,37 +241,41 @@ func (o *debian) checkRequiredPackagesInstalled() error {
 	return nil
 }
 
-func (o *debian) scanUnsecurePackages(packs []models.PackageInfo) ([]CvePacksInfo, error) {
+func (o *debian) scanUnsecurePackages(installed []models.PackageInfo) ([]models.VulnInfo, error) {
 	o.log.Infof("apt-get update...")
 	cmd := util.PrependProxyEnv("apt-get update")
 	if r := o.ssh(cmd, sudo); !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 
-	upgradablePackNames, err := o.GetUpgradablePackNames()
+	// Convert the name of upgradable packages to PackageInfo struct
+	upgradableNames, err := o.GetUpgradablePackNames()
 	if err != nil {
-		return []CvePacksInfo{}, err
+		return nil, err
 	}
-
-	// Convert package name to PackageInfo struct
-	var unsecurePacks []models.PackageInfo
-	for _, name := range upgradablePackNames {
-		for _, pack := range packs {
+	var upgradablePacks []models.PackageInfo
+	for _, name := range upgradableNames {
+		for _, pack := range installed {
 			if pack.Name == name {
-				unsecurePacks = append(unsecurePacks, pack)
+				upgradablePacks = append(upgradablePacks, pack)
 				break
 			}
 		}
 	}
-	unsecurePacks, err = o.fillCandidateVersion(unsecurePacks)
+
+	// Fill the candidate versions of upgradable packages
+	upgradablePacks, err = o.fillCandidateVersion(upgradablePacks)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to fill candidate versions. err: %s", err)
 	}
 
+	o.Packages.MergeNewVersion(upgradablePacks)
+
+	// Setup changelog cache
 	current := cache.Meta{
 		Name:   o.getServerInfo().GetServerName(),
 		Distro: o.getServerInfo().Distro,
-		Packs:  unsecurePacks,
+		Packs:  upgradablePacks,
 	}
 	o.log.Debugf("Ensure changelog cache: %s", current.Name)
 	if err := o.ensureChangelogCache(current); err != nil {
@@ -280,12 +283,12 @@ func (o *debian) scanUnsecurePackages(packs []models.PackageInfo) ([]CvePacksInf
 	}
 
 	// Collect CVE information of upgradable packages
-	cvePacksInfos, err := o.scanPackageCveInfos(unsecurePacks)
+	vulnInfos, err := o.scanVulnInfos(upgradablePacks)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to scan unsecure packages. err: %s", err)
 	}
 
-	return cvePacksInfos, nil
+	return vulnInfos, nil
 }
 
 func (o *debian) ensureChangelogCache(current cache.Meta) error {
@@ -327,7 +330,7 @@ func (o *debian) fillCandidateVersion(before models.PackageInfoList) (filled []m
 	cmd := fmt.Sprintf("LANGUAGE=en_US.UTF-8 apt-cache policy %s", strings.Join(names, " "))
 	r := o.ssh(cmd, sudo)
 	if !r.isSuccess() {
-		return nil, fmt.Errorf("Failed to SSH: %s.", r)
+		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 	packChangelog := o.splitAptCachePolicy(r.Stdout)
 	for k, v := range packChangelog {
@@ -398,26 +401,26 @@ func (o *debian) parseAptGetUpgrade(stdout string) (upgradableNames []string, er
 	return
 }
 
-func (o *debian) scanPackageCveInfos(unsecurePacks []models.PackageInfo) (cvePacksList CvePacksList, err error) {
+func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo) (models.VulnInfos, error) {
 	meta := cache.Meta{
 		Name:   o.getServerInfo().GetServerName(),
 		Distro: o.getServerInfo().Distro,
-		Packs:  unsecurePacks,
+		Packs:  upgradablePacks,
 	}
 
 	type strarray []string
 	resChan := make(chan struct {
 		models.PackageInfo
 		strarray
-	}, len(unsecurePacks))
-	errChan := make(chan error, len(unsecurePacks))
-	reqChan := make(chan models.PackageInfo, len(unsecurePacks))
+	}, len(upgradablePacks))
+	errChan := make(chan error, len(upgradablePacks))
+	reqChan := make(chan models.PackageInfo, len(upgradablePacks))
 	defer close(resChan)
 	defer close(errChan)
 	defer close(reqChan)
 
 	go func() {
-		for _, pack := range unsecurePacks {
+		for _, pack := range upgradablePacks {
 			reqChan <- pack
 		}
 	}()
@@ -425,7 +428,7 @@ func (o *debian) scanPackageCveInfos(unsecurePacks []models.PackageInfo) (cvePac
 	timeout := time.After(30 * 60 * time.Second)
 	concurrency := 10
 	tasks := util.GenWorkers(concurrency)
-	for range unsecurePacks {
+	for range upgradablePacks {
 		tasks <- func() {
 			select {
 			case pack := <-reqChan:
@@ -458,7 +461,7 @@ func (o *debian) scanPackageCveInfos(unsecurePacks []models.PackageInfo) (cvePac
 	// { CVE ID: [packageInfo] }
 	cvePackages := make(map[string][]models.PackageInfo)
 	errs := []error{}
-	for i := 0; i < len(unsecurePacks); i++ {
+	for i := 0; i < len(upgradablePacks); i++ {
 		select {
 		case pair := <-resChan:
 			pack := pair.PackageInfo
@@ -467,12 +470,11 @@ func (o *debian) scanPackageCveInfos(unsecurePacks []models.PackageInfo) (cvePac
 				cvePackages[cveID] = appendPackIfMissing(cvePackages[cveID], pack)
 			}
 			o.log.Infof("(%d/%d) Scanned %s-%s : %s",
-				i+1, len(unsecurePacks), pair.Name, pair.PackageInfo.Version, cveIDs)
+				i+1, len(upgradablePacks), pair.Name, pair.PackageInfo.Version, cveIDs)
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
-			//TODO append to errs
-			return nil, fmt.Errorf("Timeout scanPackageCveIDs")
+			errs = append(errs, fmt.Errorf("Timeout scanPackageCveIDs"))
 		}
 	}
 	if 0 < len(errs) {
@@ -484,23 +486,14 @@ func (o *debian) scanPackageCveInfos(unsecurePacks []models.PackageInfo) (cvePac
 		cveIDs = append(cveIDs, k)
 	}
 	o.log.Debugf("%d Cves are found. cves: %v", len(cveIDs), cveIDs)
-
-	o.log.Info("Fetching CVE details...")
-	cveDetails, err := cveapi.CveClient.FetchCveDetails(cveIDs)
-	if err != nil {
-		return nil, err
-	}
-	o.log.Info("Done")
-
-	for _, detail := range cveDetails {
-		cvePacksList = append(cvePacksList, CvePacksInfo{
-			CveID:     detail.CveID,
-			CveDetail: detail,
-			Packs:     cvePackages[detail.CveID],
-			//  CvssScore: cinfo.CvssScore(conf.Lang),
+	var vinfos models.VulnInfos
+	for k, v := range cvePackages {
+		vinfos = append(vinfos, models.VulnInfo{
+			CveID:    k,
+			Packages: v,
 		})
 	}
-	return
+	return vinfos, nil
 }
 
 func (o *debian) getChangelogCache(meta cache.Meta, pack models.PackageInfo) string {

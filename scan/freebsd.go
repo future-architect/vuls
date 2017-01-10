@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/cveapi"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 )
@@ -87,12 +86,12 @@ func (o *bsd) scanPackages() error {
 	}
 	o.setPackages(packs)
 
-	var unsecurePacks []CvePacksInfo
-	if unsecurePacks, err = o.scanUnsecurePackages(); err != nil {
+	var vinfos []models.VulnInfo
+	if vinfos, err = o.scanUnsecurePackages(); err != nil {
 		o.log.Errorf("Failed to scan vulnerable packages")
 		return err
 	}
-	o.setUnsecurePackages(unsecurePacks)
+	o.setVulnInfos(vinfos)
 	return nil
 }
 
@@ -105,7 +104,7 @@ func (o *bsd) scanInstalledPackages() ([]models.PackageInfo, error) {
 	return o.parsePkgVersion(r.Stdout), nil
 }
 
-func (o *bsd) scanUnsecurePackages() (cvePacksList []CvePacksInfo, err error) {
+func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
 	const vulndbPath = "/tmp/vuln.db"
 	cmd := "rm -f " + vulndbPath
 	r := o.ssh(cmd, noSudo)
@@ -120,7 +119,7 @@ func (o *bsd) scanUnsecurePackages() (cvePacksList []CvePacksInfo, err error) {
 	}
 	if r.ExitStatus == 0 {
 		// no vulnerabilities
-		return []CvePacksInfo{}, nil
+		return []models.VulnInfo{}, nil
 	}
 
 	var packAdtRslt []pkgAuditResult
@@ -151,34 +150,22 @@ func (o *bsd) scanUnsecurePackages() (cvePacksList []CvePacksInfo, err error) {
 		}
 	}
 
-	cveIDs := []string{}
 	for k := range cveIDAdtMap {
-		cveIDs = append(cveIDs, k)
-	}
-
-	cveDetails, err := cveapi.CveClient.FetchCveDetails(cveIDs)
-	if err != nil {
-		return nil, err
-	}
-	o.log.Info("Done")
-
-	for _, d := range cveDetails {
 		packs := []models.PackageInfo{}
-		for _, r := range cveIDAdtMap[d.CveID] {
+		for _, r := range cveIDAdtMap[k] {
 			packs = append(packs, r.pack)
 		}
 
 		disAdvs := []models.DistroAdvisory{}
-		for _, r := range cveIDAdtMap[d.CveID] {
+		for _, r := range cveIDAdtMap[k] {
 			disAdvs = append(disAdvs, models.DistroAdvisory{
 				AdvisoryID: r.vulnIDCveIDs.vulnID,
 			})
 		}
 
-		cvePacksList = append(cvePacksList, CvePacksInfo{
-			CveID:            d.CveID,
-			CveDetail:        d,
-			Packs:            packs,
+		vulnInfos = append(vulnInfos, models.VulnInfo{
+			CveID:            k,
+			Packages:         packs,
 			DistroAdvisories: disAdvs,
 		})
 	}

@@ -20,19 +20,40 @@ package report
 import (
 	"fmt"
 
+	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 )
 
 // StdoutWriter write to stdout
 type StdoutWriter struct{}
 
-func (w StdoutWriter) Write(scanResults []models.ScanResult) error {
-	for _, s := range scanResults {
-		text, err := toPlainText(s)
-		if err != nil {
-			return err
+// WriteScanSummary prints Scan summary at the end of scan
+func (w StdoutWriter) WriteScanSummary(rs ...models.ScanResult) {
+	fmt.Printf("\n\n")
+	fmt.Printf("Scan Summary\n")
+	fmt.Printf("============\n")
+	fmt.Printf("%s\n", toScanSummary(rs...))
+}
+
+func (w StdoutWriter) Write(rs ...models.ScanResult) error {
+	if c.Conf.FormatOneLineText {
+		fmt.Print("\n\n")
+		fmt.Println("One Line Summary")
+		fmt.Println("================")
+		fmt.Println(toOneLineSummary(rs...))
+		fmt.Print("\n")
+	}
+
+	if c.Conf.FormatShortText {
+		for _, r := range rs {
+			fmt.Println(toShortPlainText(r))
 		}
-		fmt.Println(text)
+	}
+
+	if c.Conf.FormatFullText {
+		for _, r := range rs {
+			fmt.Println(toFullPlainText(r))
+		}
 	}
 	return nil
 }

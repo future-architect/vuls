@@ -26,7 +26,6 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/cveapi"
 	"github.com/future-architect/vuls/models"
 )
 
@@ -224,61 +223,15 @@ func (l base) isAwsInstanceID(str string) bool {
 }
 
 func (l *base) convertToModel() (models.ScanResult, error) {
-	var scoredCves, unscoredCves, ignoredCves models.CveInfos
-	for _, p := range l.UnsecurePackages {
-		sort.Sort(models.PackageInfosByName(p.Packs))
-
-		// ignoreCves
-		found := false
-		for _, icve := range l.getServerInfo().IgnoreCves {
-			if icve == p.CveDetail.CveID {
-				ignoredCves = append(ignoredCves, models.CveInfo{
-					CveDetail:        p.CveDetail,
-					Packages:         p.Packs,
-					DistroAdvisories: p.DistroAdvisories,
-				})
-				found = true
-				break
-			}
-		}
-		if found {
-			continue
-		}
-
-		// unscoredCves
-		if p.CveDetail.CvssScore(config.Conf.Lang) <= 0 {
-			unscoredCves = append(unscoredCves, models.CveInfo{
-				CveDetail:        p.CveDetail,
-				Packages:         p.Packs,
-				DistroAdvisories: p.DistroAdvisories,
-			})
-			continue
-		}
-
-		cpenames := []models.CpeName{}
-		for _, cpename := range p.CpeNames {
-			cpenames = append(cpenames,
-				models.CpeName{Name: cpename})
-		}
-
-		// scoredCves
-		cve := models.CveInfo{
-			CveDetail:        p.CveDetail,
-			Packages:         p.Packs,
-			DistroAdvisories: p.DistroAdvisories,
-			CpeNames:         cpenames,
-		}
-		scoredCves = append(scoredCves, cve)
+	for _, p := range l.VulnInfos {
+		sort.Sort(models.PackageInfosByName(p.Packages))
 	}
+	sort.Sort(l.VulnInfos)
 
 	container := models.Container{
 		ContainerID: l.ServerInfo.Container.ContainerID,
 		Name:        l.ServerInfo.Container.Name,
 	}
-
-	sort.Sort(scoredCves)
-	sort.Sort(unscoredCves)
-	sort.Sort(ignoredCves)
 
 	return models.ScanResult{
 		ServerName:  l.ServerInfo.ServerName,
@@ -287,50 +240,10 @@ func (l *base) convertToModel() (models.ScanResult, error) {
 		Release:     l.Distro.Release,
 		Container:   container,
 		Platform:    l.Platform,
-		KnownCves:   scoredCves,
-		UnknownCves: unscoredCves,
-		IgnoredCves: ignoredCves,
+		ScannedCves: l.VulnInfos,
+		Packages:    l.Packages,
 		Optional:    l.ServerInfo.Optional,
 	}, nil
-}
-
-// scanVulnByCpeName search vulnerabilities that specified in config file.
-func (l *base) scanVulnByCpeName() error {
-	unsecurePacks := CvePacksList{}
-
-	serverInfo := l.getServerInfo()
-	cpeNames := serverInfo.CpeNames
-
-	// remove duplicate
-	set := map[string]CvePacksInfo{}
-
-	for _, name := range cpeNames {
-		details, err := cveapi.CveClient.FetchCveDetailsByCpeName(name)
-		if err != nil {
-			return err
-		}
-		for _, detail := range details {
-			if val, ok := set[detail.CveID]; ok {
-				names := val.CpeNames
-				names = append(names, name)
-				val.CpeNames = names
-				set[detail.CveID] = val
-			} else {
-				set[detail.CveID] = CvePacksInfo{
-					CveID:     detail.CveID,
-					CveDetail: detail,
-					CpeNames:  []string{name},
-				}
-			}
-		}
-	}
-
-	for key := range set {
-		unsecurePacks = append(unsecurePacks, set[key])
-	}
-	unsecurePacks = append(unsecurePacks, l.UnsecurePackages...)
-	l.setUnsecurePackages(unsecurePacks)
-	return nil
 }
 
 func (l *base) setErrs(errs []error) {

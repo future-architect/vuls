@@ -146,7 +146,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	Log := util.NewCustomLogger(c.ServerInfo{})
 
 	Log.Info("Validating Config...")
-	if !c.Conf.Validate() {
+	if !c.Conf.ValidateOnConfigtest() {
 		return subcommands.ExitUsageError
 	}
 

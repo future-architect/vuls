@@ -43,7 +43,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		return err
 	}
 
-	Conf.Mail = conf.Mail
+	Conf.EMail = conf.EMail
 	Conf.Slack = conf.Slack
 
 	d := conf.Default
@@ -119,7 +119,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 				return fmt.Errorf(
 					"Failed to read OWASP Dependency Check XML: %s", err)
 			}
-			log.Infof("Loaded from OWASP Dependency Check XML: %s",
+			log.Debugf("Loaded from OWASP Dependency Check XML: %s",
 				s.ServerName)
 			s.CpeNames = append(s.CpeNames, cpes...)
 		}

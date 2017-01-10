@@ -50,8 +50,9 @@ func (*PrepareCmd) Synopsis() string {
 	return `Install required packages to scan.
 				CentOS: yum-plugin-security, yum-plugin-changelog
 				Amazon: None
-				RHEL:   TODO
+				RHEL:   None
 				Ubuntu: None
+				Debian: aptitude
 
 	`
 }
@@ -155,7 +156,7 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 	c.Conf.AssumeYes = p.assumeYes
 
 	logrus.Info("Validating Config...")
-	if !c.Conf.Validate() {
+	if !c.Conf.ValidateOnPrepare() {
 		return subcommands.ExitUsageError
 	}
 	// Set up custom logger
