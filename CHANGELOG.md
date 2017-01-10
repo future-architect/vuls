@@ -1,5 +1,35 @@
 # Change Log
 
+## [v0.2.0](https://github.com/future-architect/vuls/tree/v0.2.0) (2017-01-10)
+[Full Changelog](https://github.com/future-architect/vuls/compare/v0.1.7...v0.2.0)
+
+**Fixed bugs:**
+
+- Failed to scan on RHEL5 [\#94](https://github.com/future-architect/vuls/issues/94)
+
+**Closed issues:**
+
+- vuls prepare failed to centos7 [\#275](https://github.com/future-architect/vuls/issues/275)
+- gocui.NewGui now takes a parameter [\#261](https://github.com/future-architect/vuls/issues/261)
+- Add a `--yes` flag to bypass interactive prompt for `vuls prepare` [\#260](https://github.com/future-architect/vuls/issues/260)
+- `vuls prepare` doesn't work on Debian host due to apt-get confirmation prompt [\#251](https://github.com/future-architect/vuls/issues/251)
+
+**Merged pull requests:**
+
+- Fix container os detection [\#287](https://github.com/future-architect/vuls/pull/287) ([jiazio](https://github.com/jiazio))
+- Add date header to report mail. [\#283](https://github.com/future-architect/vuls/pull/283) ([ymomoi](https://github.com/ymomoi))
+- Add Content-Type header to report/mail.go . [\#280](https://github.com/future-architect/vuls/pull/280) ([hogehogehugahuga](https://github.com/hogehogehugahuga))
+- Keep output of "vuls scan -report-\*" to be same every times [\#272](https://github.com/future-architect/vuls/pull/272) ([yoheimuta](https://github.com/yoheimuta))
+- Fix JSON-dir regex pattern \#265 [\#271](https://github.com/future-architect/vuls/pull/271) ([kotakanbe](https://github.com/kotakanbe))
+- Add report subcommand, change scan options. \#239 [\#270](https://github.com/future-architect/vuls/pull/270) ([kotakanbe](https://github.com/kotakanbe))
+- Add --assume-yes to prepare \#260 [\#266](https://github.com/future-architect/vuls/pull/266) ([Code0x58](https://github.com/Code0x58))
+- Use RFC3339 timestamps in the results [\#265](https://github.com/future-architect/vuls/pull/265) ([Code0x58](https://github.com/Code0x58))
+- Stop quietly ignoring `--ssh-external` on Windows [\#263](https://github.com/future-architect/vuls/pull/263) ([Code0x58](https://github.com/Code0x58))
+- Fix gocui.NewGui after signature change \#261 [\#262](https://github.com/future-architect/vuls/pull/262) ([Code0x58](https://github.com/Code0x58))
+- Replace inconsistent tabs with spaces [\#254](https://github.com/future-architect/vuls/pull/254) ([Code0x58](https://github.com/Code0x58))
+- Fix non-interactive `apt-get install` \#251 [\#253](https://github.com/future-architect/vuls/pull/253) ([Code0x58](https://github.com/Code0x58))
+- Fix README [\#249](https://github.com/future-architect/vuls/pull/249) ([usiusi360](https://github.com/usiusi360))
+
 ## [v0.1.7](https://github.com/future-architect/vuls/tree/v0.1.7) (2016-11-08)
 [Full Changelog](https://github.com/future-architect/vuls/compare/v0.1.6...v0.1.7)
 
@@ -48,6 +78,8 @@
 
 **Closed issues:**
 
+- --enable-repos of yum option [\#246](https://github.com/future-architect/vuls/issues/246)
+- --skip-broken at yum option [\#245](https://github.com/future-architect/vuls/issues/245)
 - Recent changes to gobui cause build failures [\#228](https://github.com/future-architect/vuls/issues/228)
 - https://hub.docker.com/r/vuls/go-cve-dictionary/ is empty [\#208](https://github.com/future-architect/vuls/issues/208)
 - Not able to install gomail fails [\#202](https://github.com/future-architect/vuls/issues/202)
@@ -59,6 +91,7 @@
 - vuls configtest -ssh-external doesnt work [\#178](https://github.com/future-architect/vuls/issues/178)
 - apt-get update: time out [\#175](https://github.com/future-architect/vuls/issues/175)
 - scanning on Centos6, but vuls recognizes debian. [\#174](https://github.com/future-architect/vuls/issues/174)
+- Fix READMEja  \#164  [\#173](https://github.com/future-architect/vuls/issues/173)
 
 **Merged pull requests:**
 
@@ -258,7 +291,7 @@
 - Maximum 6 nodes available to scan [\#12](https://github.com/future-architect/vuls/issues/12)
 - panic: runtime error: index out of range [\#5](https://github.com/future-architect/vuls/issues/5)
 - Fix sudo option on RedHat like Linux and change some messages. [\#20](https://github.com/future-architect/vuls/pull/20) ([kotakanbe](https://github.com/kotakanbe))
-- Typo fix and updated readme [\#19](https://github.com/future-architect/vuls/pull/19) ([Euan-Kerr](https://github.com/Euan-Kerr))
+- Typo fix and updated readme [\#19](https://github.com/future-architect/vuls/pull/19) ([EuanKerr](https://github.com/EuanKerr))
 - remove a period at the end of error messages. [\#18](https://github.com/future-architect/vuls/pull/18) ([kotakanbe](https://github.com/kotakanbe))
 - fix error while yum updateinfo --security update on rhel@aws [\#17](https://github.com/future-architect/vuls/pull/17) ([kotakanbe](https://github.com/kotakanbe))
 - Fixed typos [\#15](https://github.com/future-architect/vuls/pull/15) ([radarhere](https://github.com/radarhere))
