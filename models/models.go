@@ -21,6 +21,12 @@ import (
 	"fmt"
 	"sort"
 	"time"
+	"io/ioutil"
+	"encoding/json"
+	"encoding/xml"
+	"bufio"
+	"os"
+	"regexp"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/jinzhu/gorm"
@@ -68,6 +74,74 @@ func (s ScanResults) FilterByCvssOver() (filtered ScanResults) {
 		filtered = append(filtered, result)
 	}
 	return
+}
+
+//diff previosdata and newdata
+func (s ScanResults) FilterDiff() (filteredDiff ScanResults) {
+	previosData := fetchFilesystemData()
+	var previosDataCVEIDs []string
+
+	for _, result := range previosData {
+		for _, cveInfo := range result.KnownCves {
+			previosDataCVEIDs = append(previosDataCVEIDs, cveInfo.CveDetail.CveID)
+		}
+	}
+
+	for _, result := range s {
+			cveInfos := []CveInfo{}
+		for _, cveInfo := range result.KnownCves {
+			for _, precveid := range previosDataCVEIDs {
+				if string(precveid) != cveInfo.CveDetail.CveID {
+					cveInfos = append(cveInfos, cveInfo)
+				}
+			}
+		}
+		result.KnownCves = cveInfos
+		filteredDiff = append(filteredDiff, result)
+	}
+	return
+}
+
+func fetchFilesystemData() (ScanResults) {
+	//get path all.json or all.xml
+	resultsDir := config.Conf.ResultsDir
+
+	fis, err := ioutil.ReadDir(resultsDir + "/current/")
+	
+	if err != nil {
+		panic(err)
+	}
+	
+	targetFilePath := fis[0]	
+
+	file, err := ioutil.ReadFile(targetFilePath.Name())
+	if err != nil {
+		fmt.Printf("File error: %v\n", err)
+		os.Exit(1)
+    	}
+
+	//file read to prepare decision file type
+	fp, _ := os.Open(string(file))
+	defer fp.Close()
+        reader := bufio.NewReaderSize(fp, 4096)
+	line, _, _ := reader.ReadLine()	
+
+	
+	//Decision file type
+	var s ScanResults
+	x := regexp.MustCompile(`^<`)	
+	j:= regexp.MustCompile(`^[`)	
+
+	if x.MatchString(string(line)) {
+		xml.Unmarshal(file, &s)
+	}
+
+	if j.MatchString(string(line)) {
+		json.Unmarshal(file, &s)
+	}
+
+
+	return s
 }
 
 // ScanResult has the result of scanned CVE information.

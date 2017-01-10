@@ -79,6 +79,8 @@ type ScanCmd struct {
 	azureContainer string
 
 	sshExternal bool
+
+	reportDiff bool
 }
 
 // Name return subcommand name
@@ -120,6 +122,7 @@ func (*ScanCmd) Usage() string {
 		[-azure-account=accout]
 		[-azure-key=key]
 		[-azure-container=container]
+		[-report-diff]
 
 		[SERVER]...
 `
@@ -251,6 +254,8 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		"[Deprecated] THIS OPTION WAS REMOVED FOR SECURITY REASONS. Define NOPASSWD in /etc/sudoers on target servers and use SSH key-based authentication",
 	)
+
+	f.BoolVar(&p.reportDiff, "report-diff", false, "report Diff Data")
 }
 
 // Execute execute
@@ -440,12 +445,31 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	Log.Info("Reporting...")
 	filtered := scanResults.FilterByCvssOver()
-	for _, w := range reports {
-		if err := w.Write(filtered); err != nil {
-			Log.Fatalf("Failed to report, err: %s", err)
-			return subcommands.ExitFailure
+	
+	if p.reportDiff {
+		filteredDiff := scanResults.FilterDiff()
+		for _, w := range reports {
+			if true {
+				if err := w.Write(filteredDiff); err != nil {
+					Log.Fatalf("Failed to report, err: %s", err)
+					return subcommands.ExitFailure
+				}
+			} else {
+				if err := w.Write(filtered); err != nil {
+					Log.Fatalf("Failed to report, err: %s", err)
+					return subcommands.ExitFailure
+				}
+			}
+		}
+	} else {
+		for _, w := range reports {
+			if err := w.Write(filtered); err != nil {
+				Log.Fatalf("Failed to report, err: %s", err)
+				return subcommands.ExitFailure
+			}
 		}
 	}
+
 
 	return subcommands.ExitSuccess
 }
