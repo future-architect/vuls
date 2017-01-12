@@ -62,15 +62,6 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 
 		s := ServerInfo{ServerName: name}
 
-		switch {
-		case v.User != "":
-			s.User = v.User
-		case d.User != "":
-			s.User = d.User
-		default:
-			return fmt.Errorf("%s is invalid. User is empty", name)
-		}
-
 		s.Host = v.Host
 		if len(s.Host) == 0 {
 			return fmt.Errorf("%s is invalid. host is empty", name)
@@ -83,6 +74,17 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			s.Port = d.Port
 		default:
 			s.Port = "22"
+		}
+
+		switch {
+		case v.User != "":
+			s.User = v.User
+		case d.User != "":
+			s.User = d.User
+		default:
+			if s.Port != "local" {
+				return fmt.Errorf("%s is invalid. User is empty", name)
+			}
 		}
 
 		s.KeyPath = v.KeyPath

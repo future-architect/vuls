@@ -30,8 +30,8 @@ type StdoutWriter struct{}
 // WriteScanSummary prints Scan summary at the end of scan
 func (w StdoutWriter) WriteScanSummary(rs ...models.ScanResult) {
 	fmt.Printf("\n\n")
-	fmt.Printf("Scan Summary\n")
-	fmt.Printf("============\n")
+	fmt.Println("One Line Summary")
+	fmt.Println("================")
 	fmt.Printf("%s\n", toScanSummary(rs...))
 }
 

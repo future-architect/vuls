@@ -91,47 +91,6 @@ func TestChangeSectionState(t *testing.T) {
 	}
 }
 
-func TestParseYumUpdateinfoHeader(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
-	var tests = []struct {
-		in  string
-		out []models.PackageInfo
-	}{
-		{
-			"     nodejs-0.10.36-3.el6,libuv-0.10.34-1.el6,v8-3.14.5.10-17.el6    ",
-			[]models.PackageInfo{
-				{
-					Name:    "nodejs",
-					Version: "0.10.36",
-					Release: "3.el6",
-				},
-				{
-					Name:    "libuv",
-					Version: "0.10.34",
-					Release: "1.el6",
-				},
-				{
-					Name:    "v8",
-					Version: "3.14.5.10",
-					Release: "17.el6",
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		if a, err := r.parseYumUpdateinfoHeaderCentOS(tt.in); err != nil {
-			t.Errorf("err: %s", err)
-		} else {
-			if !reflect.DeepEqual(a, tt.out) {
-				e := pp.Sprintf("%#v", tt.out)
-				a := pp.Sprintf("%#v", a)
-				t.Errorf("expected %s, actual %s", e, a)
-			}
-		}
-	}
-}
-
 func TestParseYumUpdateinfoLineToGetCveIDs(t *testing.T) {
 	r := newRedhat(config.ServerInfo{})
 	var tests = []struct {
@@ -800,31 +759,6 @@ if-not-architecture        100-200                         amzn-main
 				a := pp.Sprintf("%v", packInfoList[i])
 				t.Errorf("[%d] expected %s, actual %s", i, e, a)
 			}
-		}
-	}
-}
-
-func TestParseYumUpdateinfoAmazonLinuxHeader(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
-	var tests = []struct {
-		in  string
-		out models.DistroAdvisory
-	}{
-		{
-			"Amazon Linux AMI 2014.03 - ALAS-2015-598: low priority package update for grep",
-			models.DistroAdvisory{
-				AdvisoryID: "ALAS-2015-598",
-				Severity:   "low",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		a, _, _ := r.parseYumUpdateinfoHeaderAmazon(tt.in)
-		if !reflect.DeepEqual(a, tt.out) {
-			e := pp.Sprintf("%v", tt.out)
-			a := pp.Sprintf("%v", a)
-			t.Errorf("expected %s, actual %s", e, a)
 		}
 	}
 }

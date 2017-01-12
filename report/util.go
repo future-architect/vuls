@@ -35,7 +35,7 @@ func toScanSummary(rs ...models.ScanResult) string {
 	table.Wrap = true
 	for _, r := range rs {
 		cols := []interface{}{
-			r.ServerName,
+			r.FormatServerName(),
 			fmt.Sprintf("%s%s", r.Family, r.Release),
 			fmt.Sprintf("%d CVEs", len(r.ScannedCves)),
 			r.Packages.ToUpdatablePacksSummary(),
@@ -51,7 +51,7 @@ func toOneLineSummary(rs ...models.ScanResult) string {
 	table.Wrap = true
 	for _, r := range rs {
 		cols := []interface{}{
-			r.ServerName,
+			r.FormatServerName(),
 			r.CveSummary(),
 			r.Packages.ToUpdatablePacksSummary(),
 		}
