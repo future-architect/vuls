@@ -579,15 +579,10 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 		return nil, fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
 	}
 
-	switch major {
-	case 5:
-		{
-			cmd = "yum --color=never list-security --security"
-		}
-	case 6, 7:
-		{
-			cmd = "yum --color=never updateinfo list available --security"
-		}
+	if o.Distro.Family == "centos" && major == 5 {
+		cmd = "yum --color=never list-security --security"
+	} else {
+		cmd = "yum --color=never updateinfo list available --security"
 	}
 	r = o.ssh(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess() {
@@ -628,15 +623,10 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 	}
 
 	// get advisoryID(RHSA, ALAS) - CVE IDs
-	switch major {
-	case 5:
-		{
-			cmd = "yum --color=never info-sec"
-		}
-	case 6, 7:
-		{
-			cmd = "yum --color=never updateinfo --security update"
-		}
+	if o.Distro.Family == "centos" && major == 5 {
+		cmd = "yum --color=never info-sec"
+	} else {
+		cmd = "yum --color=never updateinfo --security update"
 	}
 	r = o.ssh(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess() {
