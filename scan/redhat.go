@@ -579,7 +579,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 		return nil, fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
 	}
 
-	if o.Distro.Family == "centos" && major == 5 {
+	if o.Distro.Family == "rhel" && major == 5 {
 		cmd = "yum --color=never list-security --security"
 	} else {
 		cmd = "yum --color=never updateinfo list available --security"
@@ -623,7 +623,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 	}
 
 	// get advisoryID(RHSA, ALAS) - CVE IDs
-	if o.Distro.Family == "centos" && major == 5 {
+	if o.Distro.Family == "rhel" && major == 5 {
 		cmd = "yum --color=never info-sec"
 	} else {
 		cmd = "yum --color=never updateinfo --security update"
