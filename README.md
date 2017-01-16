@@ -173,6 +173,7 @@ Fetch vulnerability data from NVD.
 It takes about 10 minutes (on AWS).  
 
 ```bash
+$ cd $HOME
 $ for i in {2002..2016}; do go-cve-dictionary fetchnvd -years $i; done
 ... snip ...
 $ ls -alh cve.sqlite3
@@ -319,7 +320,17 @@ see https://github.com/future-architect/vuls/tree/master/setup/docker
 
 # Architecture
 
+## A. Scan via SSH Mode
+
 ![Vuls-Architecture](img/vuls-architecture.png)
+
+## B. Scan without SSH (Local Scan Mode)
+
+Deploy Vuls to the scan target server. Vuls issues a command to the local host (not via SSH). Aggregate the JSON of the scan result into another server. Since it is necessary to access the CVE database in order to refine the scan result, start go-cve-dictionary in server mode beforehand.
+On the aggregation server, you can refer to the scanning result of each scan target server using WebUI or TUI.
+
+![Vuls-Architecture Local Scan Mode](img/vuls-architecture-localscan.png)
+[Details](#example-scan-via-shell-instead-of-ssh)
 
 ## [go-cve-dictinary](https://github.com/kotakanbe/go-cve-dictionary)  
 - Fetch vulnerability information from NVD and JVN(Japanese), then insert into SQLite3 or MySQL.
@@ -445,11 +456,13 @@ host         = "172.31.4.82"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
-#containers = ["${running}"]
 #ignoreCves = ["CVE-2016-6313"]
 #optional = [
 #    ["key", "value"],
 #]
+#containers = ["${running}"]
+#[servers.172-31-4-82.container]
+#type = "lxd"
 ```
 
 You can customize your configuration using this template.
@@ -538,11 +551,13 @@ You can customize your configuration using this template.
     #cpeNames = [
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
-    #containers = ["${running}"]
     #ignoreCves = ["CVE-2016-6314"]
     #optional = [
     #    ["key", "value"],
     #]
+    #containers = ["${running}"]
+    #[servers.172-31-4-82.container]
+    #type = "lxd"
     ```
 
     You can overwrite the default value specified in default section.  
@@ -552,9 +567,9 @@ You can customize your configuration using this template.
     - user: SSH username
     - keyPath: SSH private key path
     - cpeNames: see [Usage: Scan vulnerability of non-OS package](https://github.com/future-architect/vuls#usage-scan-vulnerability-of-non-os-package)
-    - containers: see [Usage: Scan Docker containers](https://github.com/future-architect/vuls#usage-scan-docker-containers)
     - ignoreCves: CVE IDs that will not be reported. But output to JSON file.
     - optional: Add additional information to JSON report.
+    - containers: see [Example: Scan containers (Docker/LXD)(#example-scan-containers-dockerlxd)
 
     Vuls supports two types of SSH. One is native go implementation. The other is external SSH command. For details, see [-ssh-external option](https://github.com/future-architect/vuls#-ssh-external-option)
 
@@ -721,10 +736,26 @@ With this sample command, it will ..
 - Use SSH Key-Based authentication with empty password (without -ask-key-password option)
 - Scan only 2 servers (server1, server2)
 
-## Example: Scan Docker containers
+## Example: Scan via shell instead of SSH.
 
-It is common that keep Docker containers running without SSHd daemon.  
+Vuls scans localhost instead of SSH if the host address is `localhst or 127.0.0.1` and the port is `local` in config.
+For more details, see [Architecture section](https://github.com/future-architect/vuls#architecture)
+
+- config.toml
+  ```
+  [servers]
+
+  [servers.localhost]
+  host         = "localhost" # or "127.0.0.1"
+  port         = "local" 
+  ```
+
+## Example: Scan containers (Docker/LXD)
+
+It is common that keep containers running without SSHd daemon.  
 see [Docker Blog:Why you don't need to run SSHd in your Docker containers](https://blog.docker.com/2014/06/why-you-dont-need-to-run-sshd-in-docker/)
+
+### Docker
 
 Vuls scans Docker containers via `docker exec` instead of SSH.  
 For more details, see [Architecture section](https://github.com/future-architect/vuls#architecture)
@@ -757,6 +788,21 @@ For more details, see [Architecture section](https://github.com/future-architect
     ```
 - To scan containers only
   - --containers-only option is available.
+
+### LXD
+
+Vuls scans lxd via `lxc exec` instead of SSH.  
+```
+[servers]
+
+[servers.172-31-4-82]
+host         = "172.31.4.82"
+user        = "ec2-user"
+keyPath     = "/home/username/.ssh/id_rsa"
+containers = ["${running}"]
+[servers.172-31-4-82.container]
+type = "lxd"
+```
 
 ----
 

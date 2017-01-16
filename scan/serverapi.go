@@ -105,6 +105,9 @@ func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 		Log.Debugf("FreeBSD. Host: %s:%s", c.Host, c.Port)
 		return
 	}
+
+	//TODO darwin https://github.com/mizzy/specinfra/blob/master/lib/specinfra/helper/detect_os/darwin.rb
+
 	osType.setServerInfo(c)
 	osType.setErrs([]error{fmt.Errorf("Unknown OS Type")})
 	return

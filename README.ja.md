@@ -169,6 +169,7 @@ NVDから脆弱性データベースを取得する。
 環境によって異なるが、AWS上では10分程度かかる。
 
 ```bash
+$ cd $HOME
 $ for i in {2002..2016}; do go-cve-dictionary fetchnvd -years $i; done
 ... snip ...
 $ ls -alh cve.sqlite3
@@ -320,7 +321,17 @@ $ vuls tui
 
 # Architecture
 
+## A. Scan via SSH Mode
+
 ![Vuls-Architecture](img/vuls-architecture.png)
+
+## B. Scan without SSH (Local Scan Mode)
+
+Vulsをスキャン対象サーバにデプロイする。Vulsはローカルホストにコマンドを発行する(SSH経由ではない）。スキャン結果のJSONを別サーバに集約する。スキャン結果の詳細化のためにはCVEデータベースへのアクセスが必要なので、事前にgo-cve-dictionaryをserver modeで起動しておく。
+その集約サーバ上で、あなたはWebUIやTUIを用いて各スキャン対象サーバのスキャン結果を参照することが可能。
+
+![Vuls-Architecture Local Scan Mode](img/vuls-architecture-localscan.png)
+[詳細](#example-scan-via-shell-instead-of-ssh)
 
 ## [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)  
 - NVDとJVN(日本語)から脆弱性データベースを取得し、SQLite3に格納する。
@@ -532,11 +543,13 @@ host         = "172.31.4.82"
     #cpeNames = [
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
-    #containers = ["${running}"]
     #ignoreCves = ["CVE-2016-6314"]
     #optional = [
     #    ["key", "value"],
     #]
+    #containers = ["${running}"]
+    #[servers.172-31-4-82.container]
+    #type = "lxd"
     ```
 
     serversセクションの値は、defaultセクションの値よりも優先される。
@@ -547,9 +560,9 @@ host         = "172.31.4.82"
     - user: SSH username
     - keyPath: SSH private key path
     - cpeNames: see [Usage: Scan vulnerability of non-OS package](https://github.com/future-architect/vuls/blob/master/README.ja.md#usage-scan-vulnerability-of-non-os-package)
-    - containers: see [Usage: Scan Docker containers](https://github.com/future-architect/vuls/blob/master/README.ja.md#usage-scan-docker-containers)
     - ignoreCves: CVE IDs that will not be reported. But output to JSON file.
     - optional: JSONレポートに含めたい追加情報
+    - containers: see [Usage: Scan Docker containers](https://github.com/future-architect/vuls/blob/master/README.ja.md#usage-scan-docker-containers)
 
 
     Vulsは各サーバにSSHで接続するが、Goのネイティブ実装と、OSコマンドの２種類のSSH接続方法をサポートしている。
@@ -714,10 +727,28 @@ $ vuls scan server1 server2
 - ノーパスワードでsudoが実行可能
 - configで定義されているサーバの中の、server1, server2のみスキャン
 
-## Example: Scan Docker containers
+## Example: Scan via shell instead of SSH.
 
-DockerコンテナはSSHデーモンを起動しないで運用するケースが一般的。  
+ローカルホストのスキャンする場合、SSHではなく直接コマンドの発行が可能。  
+config.tomlのhostに`localhost または 127.0.0.1`かつ、portに`local`を設定する必要がある。  
+For more details, see [Architecture section](https://github.com/future-architect/vuls#architecture)
+
+- config.toml
+  ```
+  [servers]
+
+  [servers.localhost]
+  host         = "localhost" # or "127.0.0.1"
+  port         = "local" 
+  ```
+
+## Example: Scan containers (Docker/LXD)
+
+
+コンテナはSSHデーモンを起動しないで運用するケースが一般的。  
  [Docker Blog:Why you don't need to run SSHd in your Docker containers](https://blog.docker.com/2014/06/why-you-dont-need-to-run-sshd-in-docker/)
+
+### Docker
 
 Vulsは、DockerホストにSSHで接続し、`docker exec`でDockerコンテナにコマンドを発行して脆弱性をスキャンする。  
 詳細は、[Architecture section](https://github.com/future-architect/vuls#architecture)を参照
@@ -747,9 +778,24 @@ Vulsは、DockerホストにSSHで接続し、`docker exec`でDockerコンテナ
     keyPath     = "/home/username/.ssh/id_rsa"
     containers = ["container_name_a", "4aa37a8b63b9"]
     ```
+
 - コンテナのみをスキャンする場合（ホストはスキャンしない）  
   --containers-onlyオプションを指定する
 
+### LXDコンテナをスキャンする場合  
+
+Vulsは、ホストにSSHで接続し、`lxc exec`でLXDコンテナにコマンドを発行して脆弱性をスキャンする。  
+```
+[servers]
+
+[servers.172-31-4-82]
+host         = "172.31.4.82"
+user        = "ec2-user"
+keyPath     = "/home/username/.ssh/id_rsa"
+containers = ["${running}"]
+[servers.172-31-4-82.container]
+type = "lxd"
+```
 
 # Usage: Report
 

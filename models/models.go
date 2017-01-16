@@ -162,47 +162,43 @@ func (r ScanResult) ReportKeyName() (name string) {
 
 // ServerInfo returns server name one line
 func (r ScanResult) ServerInfo() string {
-	hostinfo := ""
 	if len(r.Container.ContainerID) == 0 {
-		hostinfo = fmt.Sprintf(
-			"%s (%s%s)",
-			r.ServerName,
-			r.Family,
-			r.Release,
-		)
-	} else {
-		hostinfo = fmt.Sprintf(
-			"%s / %s (%s%s) on %s",
-			r.Container.Name,
-			r.Container.ContainerID,
-			r.Family,
-			r.Release,
-			r.ServerName,
+		return fmt.Sprintf("%s (%s%s)",
+			r.ServerName, r.Family, r.Release,
 		)
 	}
-	return hostinfo
+	return fmt.Sprintf(
+		"%s / %s (%s%s) on %s",
+		r.Container.Name,
+		r.Container.ContainerID,
+		r.Family,
+		r.Release,
+		r.ServerName,
+	)
 }
 
 // ServerInfoTui returns server infromation for TUI sidebar
 func (r ScanResult) ServerInfoTui() string {
-	hostinfo := ""
 	if len(r.Container.ContainerID) == 0 {
-		hostinfo = fmt.Sprintf(
-			"%s (%s%s)",
-			r.ServerName,
-			r.Family,
-			r.Release,
-		)
-	} else {
-		hostinfo = fmt.Sprintf(
-			"|-- %s (%s%s)",
-			r.Container.Name,
-			r.Family,
-			r.Release,
-			//  r.Container.ContainerID,
-		)
+		return fmt.Sprintf("%s (%s%s)",
+			r.ServerName, r.Family, r.Release)
 	}
-	return hostinfo
+	return fmt.Sprintf(
+		"|-- %s (%s%s)",
+		r.Container.Name,
+		r.Family,
+		r.Release,
+		//  r.Container.ContainerID,
+	)
+}
+
+// FormatServerName returns server and contianer name
+func (r ScanResult) FormatServerName() string {
+	if len(r.Container.ContainerID) == 0 {
+		return r.ServerName
+	}
+	return fmt.Sprintf("%s@%s",
+		r.Container.Name, r.ServerName)
 }
 
 // CveSummary summarize the number of CVEs group by CVSSv2 Severity
