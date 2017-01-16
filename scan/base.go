@@ -89,6 +89,12 @@ func (l base) allContainers() (containers []config.Container, err error) {
 			return containers, err
 		}
 		return l.parseDockerPs(stdout)
+	case "lxd":
+		stdout, err := l.lxdPs("-c n")
+		if err != nil {
+			return containers, err
+		}
+		return l.parseLxdPs(stdout)
 	default:
 		return containers, fmt.Errorf(
 			"Not supported yet: %s", l.ServerInfo.Container.Type)
@@ -103,6 +109,12 @@ func (l *base) runningContainers() (containers []config.Container, err error) {
 			return containers, err
 		}
 		return l.parseDockerPs(stdout)
+	case "lxd":
+		stdout, err := l.lxdPs("volatile.last_state.power=RUNNING -c n")
+		if err != nil {
+			return containers, err
+		}
+		return l.parseLxdPs(stdout)
 	default:
 		return containers, fmt.Errorf(
 			"Not supported yet: %s", l.ServerInfo.Container.Type)
@@ -117,6 +129,12 @@ func (l *base) exitedContainers() (containers []config.Container, err error) {
 			return containers, err
 		}
 		return l.parseDockerPs(stdout)
+	case "lxd":
+		stdout, err := l.lxdPs("volatile.last_state.power=STOPPED -c n")
+		if err != nil {
+			return containers, err
+		}
+		return l.parseLxdPs(stdout)
 	default:
 		return containers, fmt.Errorf(
 			"Not supported yet: %s", l.ServerInfo.Container.Type)
@@ -128,6 +146,15 @@ func (l *base) dockerPs(option string) (string, error) {
 	r := l.ssh(cmd, noSudo)
 	if !r.isSuccess() {
 		return "", fmt.Errorf("Failed to SSH: %s", r)
+	}
+	return r.Stdout, nil
+}
+
+func (l *base) lxdPs(option string) (string, error) {
+	cmd := fmt.Sprintf("lxc list %s", option)
+	r := l.ssh(cmd, noSudo)
+	if !r.isSuccess() {
+		return "", fmt.Errorf("failed to SSH: %s", r)
 	}
 	return r.Stdout, nil
 }
@@ -145,6 +172,27 @@ func (l *base) parseDockerPs(stdout string) (containers []config.Container, err 
 		containers = append(containers, config.Container{
 			ContainerID: fields[0],
 			Name:        fields[1],
+		})
+	}
+	return
+}
+
+func (l *base) parseLxdPs(stdout string) (containers []config.Container, err error) {
+	lines := strings.Split(stdout, "\n")
+	for i, line := range lines[3:] {
+		if i % 2 == 1 {
+			continue
+		}
+		fields := strings.Fields(strings.Replace(line, "|", " ", -1))
+		if len(fields) == 0 {
+			break
+		}
+		if len(fields) != 1 {
+			return containers, fmt.Errorf("Unknown format: %s", line)
+		}
+		containers = append(containers, config.Container{
+			ContainerID: fields[0],
+			Name:        fields[0],
 		})
 	}
 	return
