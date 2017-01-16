@@ -169,7 +169,7 @@ NVDから脆弱性データベースを取得する。
 環境によって異なるが、AWS上では10分程度かかる。
 
 ```bash
-$ for i in {2002..2016}; do go-cve-dictionary fetchnvd -years $i; done
+$ go-cve-dictionary fetchnvd -years {2002..2016}
 ... snip ...
 $ ls -alh cve.sqlite3
 -rw-r--r-- 1 ec2-user ec2-user 7.0M Mar 24 13:20 cve.sqlite3
@@ -1145,15 +1145,15 @@ see [go-cve-dictionary#usage-fetch-jvn-data](https://github.com/kotakanbe/go-cve
   **fetchnvd -> fetchjvnの順番で実行すること**  
 
 ```
-$ for i in {2002..2016}; do go-cve-dictionary fetchnvd -years $i; done
-$ for i in {1998..2016}; do go-cve-dictionary fetchjvn -years $i; done
+$ go-cve-dictionary fetchnvd -years {2002..2016}
+$ go-cve-dictionary fetchjvn -years {1998.2016}
 ```
 の順でやった場合、最初のコマンドが15分程度、二つ目のコマンドが10分程度（環境依存）
 
 
 ```
-$ for i in {1998..2016}; do go-cve-dictionary fetchjvn -years $i; done
-$ for i in {2002..2016}; do go-cve-dictionary fetchnvd -years $i; done
+$ go-cve-dictionary fetchjvn -years {1998..2016}
+$ go-cve-dictionary fetchnvd -years {2002..2016}
 ```
 の順で行うと、最初のコマンドは1時間くらいで終わるが二つ目のコマンドが21時間かかることもある(環境依存)。
 

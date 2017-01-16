@@ -96,12 +96,10 @@ vuls v0.1.xxx xxxx
 ## Step1. Fetch NVD
 
 ```console
-$ for i in {2002..2016}; do \
-    docker run --rm -it \
+$ docker run --rm -it \
     -v $PWD:/vuls \
     -v $PWD/go-cve-dictionary-log:/var/log/vuls \
-    vuls/go-cve-dictionary fetchnvd -years $i; \
-  done
+    vuls/go-cve-dictionary fetchnvd -years {2002..2016}
 ```
 
 ## Step2. Configuration
@@ -112,7 +110,7 @@ Create config.toml referring to [this](https://github.com/future-architect/vuls#
 [servers]
 
 [servers.amazon]
-host         = "54.249.93.16"
+host        = "54.249.93.16"
 port        = "22"
 user        = "vuls-user"
 keyPath     = "/root/.ssh/id_rsa" # path to ssh private key in docker
