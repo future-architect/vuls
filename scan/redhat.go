@@ -97,7 +97,11 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 }
 
 func (o *redhat) checkIfSudoNoPasswd() error {
-	r := o.exec("yum --version", o.sudo())
+        cmd := "yum --version"
+        if o.Distro.Family == "centos" {
+                cmd = "echo N | " + cmd
+        }
+        r := o.exec(cmd, o.sudo())
 	if !r.isSuccess() {
 		o.log.Errorf("sudo error on %s", r)
 		return fmt.Errorf("Failed to sudo: %s", r)
