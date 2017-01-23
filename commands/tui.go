@@ -40,6 +40,8 @@ type TuiCmd struct {
 	cvedbtype        string
 	cvedbpath        string
 	cveDictionaryURL string
+
+	pipe bool
 }
 
 // Name return subcommand name
@@ -58,6 +60,7 @@ func (*TuiCmd) Usage() string {
 		[-results-dir=/path/to/results]
 		[-refresh-cve]
 		[-debug-sql]
+		[-pipe]
 
 `
 }
@@ -95,6 +98,12 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 		"cvedb-url",
 		"",
 		"http://cve-dictionary.com:8080 or mysql connection string")
+
+	f.BoolVar(
+		&p.pipe,
+		"pipe",
+		false,
+		"Use stdin via PIPE")
 }
 
 // Execute execute
@@ -111,6 +120,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		return subcommands.ExitUsageError
 	}
 
+	c.Conf.Pipe = p.pipe
 	jsonDir, err := jsonDir(f.Args())
 	if err != nil {
 		log.Errorf("Failed to read json dir under results: %s", err)

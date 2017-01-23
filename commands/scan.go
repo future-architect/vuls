@@ -45,6 +45,7 @@ type ScanCmd struct {
 	containersOnly bool
 	skipBroken     bool
 	sshExternal    bool
+	pipe           bool
 }
 
 // Name return subcommand name
@@ -66,6 +67,7 @@ func (*ScanCmd) Usage() string {
 		[-http-proxy=http://192.168.0.1:8080]
 		[-ask-key-password]
 		[-debug]
+		[-pipe]
 
 		[SERVER]...
 `
@@ -121,6 +123,12 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		"Ask ssh privatekey password before scanning",
 	)
+
+	f.BoolVar(
+		&p.pipe,
+		"pipe",
+		false,
+		"Use stdin via PIPE")
 }
 
 // Execute execute
@@ -145,21 +153,19 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	logrus.Info("Start scanning")
 	logrus.Infof("config: %s", p.configPath)
 
+	c.Conf.Pipe = p.pipe
 	var servernames []string
 	if 0 < len(f.Args()) {
 		servernames = f.Args()
-	} else {
-		stat, _ := os.Stdin.Stat()
-		if (stat.Mode() & os.ModeCharDevice) == 0 {
-			bytes, err := ioutil.ReadAll(os.Stdin)
-			if err != nil {
-				logrus.Errorf("Failed to read stdin: %s", err)
-				return subcommands.ExitFailure
-			}
-			fields := strings.Fields(string(bytes))
-			if 0 < len(fields) {
-				servernames = fields
-			}
+	} else if c.Conf.Pipe {
+		bytes, err := ioutil.ReadAll(os.Stdin)
+		if err != nil {
+			logrus.Errorf("Failed to read stdin: %s", err)
+			return subcommands.ExitFailure
+		}
+		fields := strings.Fields(string(bytes))
+		if 0 < len(fields) {
+			servernames = fields
 		}
 	}
 

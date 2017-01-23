@@ -74,7 +74,7 @@ func lsValidJSONDirs() (dirs jsonDirs, err error) {
 
 // jsonDir returns
 // If there is an arg, check if it is a valid format and return the corresponding path under results.
-// If passed via PIPE (such as history subcommand), return that path.
+// If arg passed via PIPE (such as history subcommand), return that path.
 // Otherwise, returns the path of the latest directory
 func jsonDir(args []string) (string, error) {
 	var err error
@@ -98,8 +98,7 @@ func jsonDir(args []string) (string, error) {
 	}
 
 	// PIPE
-	stat, _ := os.Stdin.Stat()
-	if (stat.Mode() & os.ModeCharDevice) == 0 {
+	if c.Conf.Pipe {
 		bytes, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
 			return "", fmt.Errorf("Failed to read stdin: %s", err)

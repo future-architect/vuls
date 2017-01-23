@@ -72,6 +72,8 @@ type Config struct {
 	AzureAccount   string
 	AzureKey       string
 	AzureContainer string
+
+	Pipe bool
 }
 
 // ValidateOnConfigtest validates

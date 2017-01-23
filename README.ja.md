@@ -667,6 +667,7 @@ scan:
                 [-http-proxy=http://192.168.0.1:8080]
                 [-ask-key-password]
                 [-debug]
+                [-pipe]
 
                 [SERVER]...
   -ask-key-password
@@ -681,6 +682,8 @@ scan:
         debug mode
   -http-proxy string
         http://proxy-url:port (default: empty)
+  -pipe
+        Use stdin via PIPE
   -results-dir string
         /path/to/results 
   -skip-broken
@@ -831,6 +834,7 @@ report:
                 [-http-proxy=http://192.168.0.1:8080]
                 [-debug]
                 [-debug-sql]
+                [-pipe]
 
                 [SERVER]...
   -aws-profile string
@@ -877,6 +881,8 @@ report:
         Don't report the unscored CVEs
   -lang string
         [en|ja] (default "en")
+  -pipe
+        Use stdin via PIPE
   -refresh-cve
         Refresh CVE information in JSON file under results dir
   -results-dir string
@@ -903,6 +909,7 @@ $ vuls report \
 With this sample command, it will ..
 - Slack通知
 - CVSS score が 7.0以上のもののみ通知
+
 
 ## Example: Put results in S3 bucket
 
@@ -1108,6 +1115,7 @@ tui:
                 [-results-dir=/path/to/results]
                 [-refresh-cve]
                 [-debug-sql]
+                [-pipe]
 
   -cvedb-path string
         /path/to/sqlite3 (For get cve detail from cve.sqlite3)
@@ -1117,6 +1125,8 @@ tui:
         http://cve-dictionary.com:8080 or mysql connection string
   -debug-sql
         debug SQL
+  -pipe
+        Use stdin via PIPE
   -refresh-cve
         Refresh CVE information in JSON file under results dir
   -results-dir string
@@ -1156,7 +1166,7 @@ $ vuls tui 20160524_1940
 # Display the previous scan results using peco
 
 ```
-$ vuls history | peco | vuls tui
+$ vuls history | peco | vuls tui -pipe
 ```
 
 [![asciicast](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8.png)](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8)
