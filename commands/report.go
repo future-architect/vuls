@@ -30,7 +30,6 @@ import (
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
-	"github.com/kotakanbe/go-cve-dictionary/log"
 )
 
 // ReportCmd is subcommand for reporting
@@ -71,6 +70,8 @@ type ReportCmd struct {
 	azureAccount   string
 	azureKey       string
 	azureContainer string
+
+	pipe bool
 }
 
 // Name return subcommand name
@@ -112,6 +113,7 @@ func (*ReportCmd) Usage() string {
 		[-http-proxy=http://192.168.0.1:8080]
 		[-debug]
 		[-debug-sql]
+		[-pipe]
 
 		[SERVER]...
 `
@@ -229,6 +231,12 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"",
 		"Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified")
 	f.StringVar(&p.azureContainer, "azure-container", "", "Azure storage container name")
+
+	f.BoolVar(
+		&p.pipe,
+		"pipe",
+		false,
+		"Use args passed via PIPE")
 }
 
 // Execute execute
@@ -251,9 +259,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
 	c.Conf.HTTPProxy = p.httpProxy
 
+	c.Conf.Pipe = p.pipe
 	jsonDir, err := jsonDir(f.Args())
 	if err != nil {
-		log.Errorf("Failed to read from JSON: %s", err)
+		Log.Errorf("Failed to read from JSON: %s", err)
 		return subcommands.ExitFailure
 	}
 
@@ -348,7 +357,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			Log.Debugf("need to refresh")
 			if c.Conf.CveDBType == "sqlite3" {
 				if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
-					log.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
+					Log.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
 						c.Conf.CveDBPath)
 					return subcommands.ExitFailure
 				}

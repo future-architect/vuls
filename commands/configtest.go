@@ -20,10 +20,8 @@ package commands
 import (
 	"context"
 	"flag"
-	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/google/subcommands"
@@ -108,19 +106,6 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	var servernames []string
 	if 0 < len(f.Args()) {
 		servernames = f.Args()
-	} else {
-		stat, _ := os.Stdin.Stat()
-		if (stat.Mode() & os.ModeCharDevice) == 0 {
-			bytes, err := ioutil.ReadAll(os.Stdin)
-			if err != nil {
-				logrus.Errorf("Failed to read stdin: %s", err)
-				return subcommands.ExitFailure
-			}
-			fields := strings.Fields(string(bytes))
-			if 0 < len(fields) {
-				servernames = fields
-			}
-		}
 	}
 
 	target := make(map[string]c.ServerInfo)
