@@ -66,7 +66,7 @@ $ docker run --rm \
 ## prepare
 
 ```console
-$ docker run --rm \
+$ docker run --rm -it \
     -v ~/.ssh:/root/.ssh:ro \
     -v $PWD:/vuls \
     -v $PWD/vuls-log:/var/log/vuls \
