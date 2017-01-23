@@ -44,10 +44,6 @@ vuls v0.0.xxx xxxx
 $ docker rmi vuls/go-cve-dictionary
 ```
 
-```
-$ docker rmi vuls/vuls
-```
-
 - vuls
 
 ```
