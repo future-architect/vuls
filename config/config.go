@@ -52,6 +52,7 @@ type Config struct {
 	SkipBroken     bool
 
 	HTTPProxy   string `valid:"url"`
+	LogDir      string
 	ResultsDir  string
 	CveDBType   string
 	CveDBPath   string

@@ -222,7 +222,7 @@ see [Usage: Prepare](https://github.com/future-architect/vuls#usage-prepare)
 ## Step8. Start Scanning
 
 ```
-$ vuls scan 
+$ vuls scan
 ... snip ...
 
 Scan Summary
@@ -236,7 +236,7 @@ Scan Summary
 View one-line summary
 
 ```
-$ vuls report -format-one-line-text -cvedb-path=$PWD/cve.sqlite3 
+$ vuls report -format-one-line-text -cvedb-path=$PWD/cve.sqlite3
 
 One Line Summary
 ================
@@ -247,7 +247,7 @@ One Line Summary
 View short summary.
 
 ```
-$ vuls report -format-short-text 
+$ vuls report -format-short-text
 
 172-31-4-8 (amazon 2015.09)
 ===========================
@@ -268,7 +268,7 @@ CVE-2016-0705   10.0 (High)     Double free vulnerability in the dsa_priv_decode
 View full report.
 
 ```
-$ vuls report -format-full-text 
+$ vuls report -format-full-text
 
 172-31-4-82 (amazon 2015.09)
 ============================
@@ -300,7 +300,7 @@ Package         libssl1.0.0-1.0.2f-2ubuntu1 -> libssl1.0.0-1.0.2g-1ubuntu4.5
 Vuls has Terminal-Based User Interface to display the scan result.
 
 ```
-$ vuls tui 
+$ vuls tui
 ```
 
 ![Vuls-TUI](img/hello-vuls-tui.png)
@@ -588,6 +588,7 @@ $ vuls configtest --help
 configtest:
         configtest
                         [-config=/path/to/config.toml]
+                        [-log-dir=/path/to/log]
                         [-ask-key-password]
                         [-ssh-external]
                         [-debug]
@@ -599,6 +600,8 @@ configtest:
         /path/to/toml (default "/Users/kotakanbe/go/src/github.com/future-architect/vuls/config.toml")
   -debug
         debug mode
+  -log-dir string
+        /path/to/log (default "/var/log/vuls")
   -ssh-external
         Use external ssh command. Default: Use the Go native implementation
 ```
@@ -640,6 +643,7 @@ $ vuls prepare -help
 prepare:
 	prepare
 			[-config=/path/to/config.toml]
+			[-log-dir=/path/to/log]
 			[-ask-key-password]
 			[-assume-yes]
 			[-debug]
@@ -656,6 +660,8 @@ prepare:
     	/path/to/toml (default "$PWD/config.toml")
   -debug
     	debug mode
+  -log-dir string
+      /path/to/log (default "/var/log/vuls")
   -ssh-external
     	Use external ssh command. Default: Use the Go native implementation
 ```
@@ -669,6 +675,7 @@ scan:
         scan
                 [-config=/path/to/config.toml]
                 [-results-dir=/path/to/results]
+                [-log-dir=/path/to/log]
                 [-cachedb-path=/path/to/cache.db]
                 [-ssh-external]
                 [-containers-only]
@@ -684,17 +691,19 @@ scan:
   -cachedb-path string
         /path/to/cache.db (local cache of changelog for Ubuntu/Debian)
   -config string
-        /path/to/toml 
+        /path/to/toml
   -containers-only
         Scan containers only. Default: Scan both of hosts and containers
   -debug
         debug mode
   -http-proxy string
         http://proxy-url:port (default: empty)
+  -log-dir string
+        /path/to/log (default "/var/log/vuls")
   -pipe
         Use stdin via PIPE
   -results-dir string
-        /path/to/results 
+        /path/to/results
   -skip-broken
         [For CentOS] yum update changelog with --skip-broken option
   -ssh-external
@@ -750,7 +759,7 @@ For more details, see [Architecture section](https://github.com/future-architect
 
   [servers.localhost]
   host         = "localhost" # or "127.0.0.1"
-  port         = "local" 
+  port         = "local"
   ```
 
 ## Example: Scan containers (Docker/LXD)
@@ -817,6 +826,7 @@ report:
                 [-lang=en|ja]
                 [-config=/path/to/config.toml]
                 [-results-dir=/path/to/results]
+                [-log-dir=/path/to/log]
                 [-refresh-cve]
                 [-cvedb-type=sqlite3|mysql]
                 [-cvedb-path=/path/to/cve.sqlite3]
@@ -859,7 +869,7 @@ report:
   -azure-key string
         Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified
   -config string
-        /path/to/toml 
+        /path/to/toml
   -cvedb-path string
         /path/to/sqlite3 (For get cve detail from cve.sqlite3)
   -cvedb-type string
@@ -890,12 +900,14 @@ report:
         Don't report the unscored CVEs
   -lang string
         [en|ja] (default "en")
+  -log-dir string
+        /path/to/log (default "/var/log/vuls")
   -pipe
         Use stdin via PIPE
   -refresh-cve
         Refresh CVE information in JSON file under results dir
   -results-dir string
-        /path/to/results 
+        /path/to/results
   -to-azure-blob
         Write report to Azure Storage blob (container/yyyyMMdd_HHmm/servername.json/xml/txt)
   -to-email
