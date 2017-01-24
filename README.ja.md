@@ -603,9 +603,9 @@ configtest:
 
 スキャン対象サーバ上の`/etc/sudoers`のサンプル
 
-- CentOS, RHEL, Amazon Linux
+- CentOS, RHEL, Amazon Linux (CentOS 5の場合は`/bin/echo`も必要)
 ```
-vuls ALL=(root) NOPASSWD: /usr/bin/yum, /bin/echo
+vuls ALL=(root) NOPASSWD: /usr/bin/yum (, /bin/echo)
 ```
 - Ubuntu, Debian
 ```
