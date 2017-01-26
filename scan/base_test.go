@@ -69,7 +69,7 @@ func TestParseLxdPs(t *testing.T) {
 | test1 |
 +-------+
 | test2 |
-+-------+` ,
++-------+`,
 		[]config.Container{
 			{
 				ContainerID: "test1",

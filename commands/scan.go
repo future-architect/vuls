@@ -39,6 +39,7 @@ type ScanCmd struct {
 	debug          bool
 	configPath     string
 	resultsDir     string
+	logDir         string
 	cacheDBPath    string
 	httpProxy      string
 	askKeyPassword bool
@@ -60,6 +61,7 @@ func (*ScanCmd) Usage() string {
 	scan
 		[-config=/path/to/config.toml]
 		[-results-dir=/path/to/results]
+		[-log-dir=/path/to/log]
 		[-cachedb-path=/path/to/cache.db]
 		[-ssh-external]
 		[-containers-only]
@@ -84,6 +86,9 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 	defaultResultsDir := filepath.Join(wd, "results")
 	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+
+	defaultLogDir := util.GetDefaultLogDir()
+	f.StringVar(&p.logDir, "log-dir", defaultLogDir, "/path/to/log")
 
 	defaultCacheDBPath := filepath.Join(wd, "cache.db")
 	f.StringVar(
@@ -193,6 +198,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	Log := util.NewCustomLogger(c.ServerInfo{})
 
 	c.Conf.ResultsDir = p.resultsDir
+	c.Conf.LogDir = p.logDir
 	c.Conf.CacheDBPath = p.cacheDBPath
 	c.Conf.SSHExternal = p.sshExternal
 	c.Conf.HTTPProxy = p.httpProxy

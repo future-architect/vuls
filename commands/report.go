@@ -39,6 +39,7 @@ type ReportCmd struct {
 	debugSQL   bool
 	configPath string
 	resultsDir string
+	logDir     string
 	refreshCve bool
 
 	cvssScoreOver      float64
@@ -87,6 +88,7 @@ func (*ReportCmd) Usage() string {
 		[-lang=en|ja]
 		[-config=/path/to/config.toml]
 		[-results-dir=/path/to/results]
+		[-log-dir=/path/to/log]
 		[-refresh-cve]
 		[-cvedb-type=sqlite3|mysql]
 		[-cvedb-path=/path/to/cve.sqlite3]
@@ -132,6 +134,9 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 
 	defaultResultsDir := filepath.Join(wd, "results")
 	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+
+	defaultLogDir := util.GetDefaultLogDir()
+	f.StringVar(&p.logDir, "log-dir", defaultLogDir, "/path/to/log")
 
 	f.BoolVar(
 		&p.refreshCve,
@@ -243,6 +248,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	c.Conf.Debug = p.debug
 	c.Conf.DebugSQL = p.debugSQL
+	c.Conf.LogDir = p.logDir
 	Log := util.NewCustomLogger(c.ServerInfo{})
 
 	if err := c.Load(p.configPath, ""); err != nil {

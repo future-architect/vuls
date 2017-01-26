@@ -34,6 +34,7 @@ import (
 // ConfigtestCmd is Subcommand
 type ConfigtestCmd struct {
 	configPath     string
+	logDir         string
 	askKeyPassword bool
 	sshExternal    bool
 
@@ -50,12 +51,13 @@ func (*ConfigtestCmd) Synopsis() string { return "Test configuration" }
 func (*ConfigtestCmd) Usage() string {
 	return `configtest:
 	configtest
-		        [-config=/path/to/config.toml]
-	        	[-ask-key-password]
-	        	[-ssh-external]
-		        [-debug]
+			[-config=/path/to/config.toml]
+			[-log-dir=/path/to/log]
+			[-ask-key-password]
+			[-ssh-external]
+			[-debug]
 
-		        [SERVER]...
+			[SERVER]...
 `
 }
 
@@ -64,6 +66,9 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 	wd, _ := os.Getwd()
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
+
+	defaultLogDir := util.GetDefaultLogDir()
+	f.StringVar(&p.logDir, "log-dir", defaultLogDir, "/path/to/log")
 
 	f.BoolVar(&p.debug, "debug", false, "debug mode")
 
@@ -96,6 +101,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 
 	c.Conf.Debug = p.debug
 	c.Conf.SSHExternal = p.sshExternal
+	c.Conf.LogDir = p.logDir
 
 	err = c.Load(p.configPath, keyPass)
 	if err != nil {

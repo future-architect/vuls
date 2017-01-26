@@ -76,7 +76,7 @@ Hello Vulsチュートリアルでは手動でのセットアップ方法で説�
 
 ----
 
-# Hello Vuls 
+# Hello Vuls
 
 本チュートリアルでは、Amazon EC2にVulsをセットアップし、自分に存在する脆弱性をスキャンする方法を説明する。
 手順は以下の通り
@@ -136,7 +136,7 @@ $ wget https://storage.googleapis.com/golang/go1.7.1.linux-amd64.tar.gz
 $ sudo tar -C /usr/local -xzf go1.7.1.linux-amd64.tar.gz
 $ mkdir $HOME/go
 ```
-/etc/profile.d/goenv.sh を作成し、下記を追加する。 
+/etc/profile.d/goenv.sh を作成し、下記を追加する。
 
 ```bash
 export GOROOT=/usr/local/go
@@ -229,7 +229,7 @@ $ vuls prepare
 
 
 ```
-$ vuls scan 
+$ vuls scan
 ... snip ...
 
 Scan Summary
@@ -243,7 +243,7 @@ Scan Summary
 View one-line summary
 
 ```
-$ vuls report -format-one-line-text -cvedb-path=$PWD/cve.sqlite3 
+$ vuls report -format-one-line-text -cvedb-path=$PWD/cve.sqlite3
 
 One Line Summary
 ================
@@ -254,7 +254,7 @@ One Line Summary
 View short summary.
 
 ```
-$ vuls report -format-short-text -cvedb-path=$PWD/cve.sqlite3 
+$ vuls report -format-short-text -cvedb-path=$PWD/cve.sqlite3
 
 172-31-4-8 (amazon 2015.09)
 ===========================
@@ -275,7 +275,7 @@ CVE-2016-0705   10.0 (High)     Double free vulnerability in the dsa_priv_decode
 View full report.
 
 ```
-$ vuls report -format-full-text -cvedb-path=$PWD/cve.sqlite3 
+$ vuls report -format-full-text -cvedb-path=$PWD/cve.sqlite3
 
 172-31-4-82 (amazon 2015.09)
 ============================
@@ -359,13 +359,13 @@ Vulsをスキャン対象サーバにデプロイする。Vulsはローカルホ
 - Amazon, RHEL and FreeBSD  
 高速にスキャンし、スキャン対象サーバのリソース消費量は小さい。
 
-| Distribution|         Scan Speed | 
+| Distribution|         Scan Speed |
 |:------------|:-------------------|
 | Ubuntu      | 初回は遅い / 2回目以降速い　|
 | Debian      | 初回は遅い / 2回目以降速い　|
 | CentOS      |               速い |
-| Amazon      |               速い | 
-| RHEL        |               速い | 
+| Amazon      |               速い |
+| RHEL        |               速い |
 | FreeBSD     |               速い |
 
 ----
@@ -567,7 +567,7 @@ host         = "172.31.4.82"
 
     Vulsは各サーバにSSHで接続するが、Goのネイティブ実装と、OSコマンドの２種類のSSH接続方法をサポートしている。
     詳細は [-ssh-external option](https://github.com/future-architect/vuls/blob/master/README.ja.md#-ssh-external-option) を参照。
-    
+
     また、以下のSSH認証をサポートしている。
     - SSH agent
     - SSH public key authentication (with password, empty password)
@@ -575,7 +575,7 @@ host         = "172.31.4.82"
 
 ----
 
-# Usage: Configtest 
+# Usage: Configtest
 
 configtestサブコマンドは、config.tomlで定義されたサーバ/コンテナに対してSSH可能かどうかをチェックする。  
 
@@ -584,6 +584,7 @@ $ vuls configtest --help
 configtest:
         configtest
                         [-config=/path/to/config.toml]
+                        [-log-dir=/path/to/log]
                         [-ask-key-password]
                         [-ssh-external]
                         [-debug]
@@ -595,6 +596,8 @@ configtest:
         /path/to/toml (default "/Users/kotakanbe/go/src/github.com/future-architect/vuls/config.toml")
   -debug
         debug mode
+  -log-dir string
+        /path/to/log (default "/var/log/vuls")
   -ssh-external
         Use external ssh command. Default: Use the Go native implementation
 ```
@@ -635,6 +638,7 @@ $ vuls prepare -help
 prepare:
         prepare
                         [-config=/path/to/config.toml]
+                        [-log-dir=/path/to/log]
                         [-ask-key-password]
                         [-debug]
                         [-ssh-external]
@@ -646,6 +650,8 @@ prepare:
         /path/to/toml (default "$PWD/config.toml")
   -debug
         debug mode
+  -log-dir string
+        /path/to/log (default "/var/log/vuls")
   -ssh-external
         Use external ssh command. Default: Use the Go native implementation
 ```
@@ -660,6 +666,7 @@ scan:
         scan
                 [-config=/path/to/config.toml]
                 [-results-dir=/path/to/results]
+                [-log-dir=/path/to/log]
                 [-cachedb-path=/path/to/cache.db]
                 [-ssh-external]
                 [-containers-only]
@@ -675,17 +682,19 @@ scan:
   -cachedb-path string
         /path/to/cache.db (local cache of changelog for Ubuntu/Debian)
   -config string
-        /path/to/toml 
+        /path/to/toml
   -containers-only
         Scan containers only. Default: Scan both of hosts and containers
   -debug
         debug mode
   -http-proxy string
         http://proxy-url:port (default: empty)
+  -log-dir string
+        /path/to/log (default "/var/log/vuls")
   -pipe
         Use stdin via PIPE
   -results-dir string
-        /path/to/results 
+        /path/to/results
   -skip-broken
         [For CentOS] yum update changelog with --skip-broken option
   -ssh-external
@@ -696,7 +705,7 @@ scan:
 
 Vulsは２種類のSSH接続方法をサポートしている。
 
-デフォルトでは、Goのネイティブ実装 (crypto/ssh) を使ってスキャンする。 
+デフォルトでは、Goのネイティブ実装 (crypto/ssh) を使ってスキャンする。
 これは、SSHコマンドがインストールされていない環境でも動作する（Windowsなど）  
 
 外部SSHコマンドを使ってスキャンするためには、`-ssh-external`を指定する。
@@ -706,7 +715,7 @@ CentOSでは、スキャン対象サーバの/etc/sudoersに以下を追加す�
 Defaults:vuls !requiretty
 ```
 
-## -ask-key-password option 
+## -ask-key-password option
 
 | SSH key password |  -ask-key-password | |
 |:-----------------|:-------------------|:----|
@@ -715,7 +724,7 @@ Defaults:vuls !requiretty
 
 ## Example: Scan all servers defined in config file
 ```
-$ vuls scan -ask-key-password 
+$ vuls scan -ask-key-password
 ```
 この例では、
 - SSH公開鍵認証（秘密鍵パスフレーズ）を指定
@@ -742,7 +751,7 @@ For more details, see [Architecture section](https://github.com/future-architect
 
   [servers.localhost]
   host         = "localhost" # or "127.0.0.1"
-  port         = "local" 
+  port         = "local"
   ```
 
 ## Example: Scan containers (Docker/LXD)
@@ -808,6 +817,7 @@ report:
                 [-lang=en|ja]
                 [-config=/path/to/config.toml]
                 [-results-dir=/path/to/results]
+                [-log-dir=/path/to/log]
                 [-refresh-cve]
                 [-cvedb-type=sqlite3|mysql]
                 [-cvedb-path=/path/to/cve.sqlite3]
@@ -850,7 +860,7 @@ report:
   -azure-key string
         Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified
   -config string
-        /path/to/toml 
+        /path/to/toml
   -cvedb-path string
         /path/to/sqlite3 (For get cve detail from cve.sqlite3)
   -cvedb-type string
@@ -881,12 +891,14 @@ report:
         Don't report the unscored CVEs
   -lang string
         [en|ja] (default "en")
+  -log-dir string
+        /path/to/log (default "/var/log/vuls")
   -pipe
         Use stdin via PIPE
   -refresh-cve
         Refresh CVE information in JSON file under results dir
   -results-dir string
-        /path/to/results 
+        /path/to/results
   -to-azure-blob
         Write report to Azure Storage blob (container/yyyyMMdd_HHmm/servername.json/xml/txt)
   -to-email
@@ -920,12 +932,12 @@ With this sample command, it will ..
 
 ```
 $ vuls scan \
-      -cvedb-path=$PWD/cve.sqlite3 \ 
+      -cvedb-path=$PWD/cve.sqlite3 \
       -to-s3 \
       -format-json \
       -aws-region=ap-northeast-1 \
       -aws-s3-bucket=vuls \
-      -aws-profile=default 
+      -aws-profile=default
 ```
 この例では、
 - 結果をJSON形式でS3に格納する。
@@ -940,12 +952,12 @@ $ vuls scan \
 
 ```
 $ vuls scan \
-      -cvedb-path=$PWD/cve.sqlite3 \ 
+      -cvedb-path=$PWD/cve.sqlite3 \
       -to-azure-blob \
       -format-xml \
       -azure-container=vuls \
       -azure-account=test \
-      -azure-key=access-key-string 
+      -azure-key=access-key-string
 ```
 この例では、
 - 結果をXML形式でBlobに格納する。
@@ -958,12 +970,12 @@ $ vuls scan \
 $ export AZURE_STORAGE_ACCOUNT=test
 $ export AZURE_STORAGE_ACCESS_KEY=access-key-string
 $ vuls scan \
-      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \ 
+      -cve-dictionary-dbpath=$PWD/cve.sqlite3 \
       -report-azure-blob \
       -azure-container=vuls
 ```
 
-## Example: IgnoreCves 
+## Example: IgnoreCves
 
 Slack, EMail, テキスト出力しないくないCVE IDがある場合は、設定ファイルに定義することでレポートされなくなる。
 ただ、JSONファイルには以下のように出力される。
@@ -1100,7 +1112,7 @@ VulsとDependency Checkの連携すると以下の利点がある
 - 日本語のレポートが可能
   - Dependency Checkは日本語レポートに対応していない
 
-    
+
 # Usage: TUI
 
 ## Display the latest scan results
@@ -1130,7 +1142,7 @@ tui:
   -refresh-cve
         Refresh CVE information in JSON file under results dir
   -results-dir string
-        /path/to/results 
+        /path/to/results
 ```
 
 Key binding is below.
@@ -1171,7 +1183,7 @@ $ vuls history | peco | vuls tui -pipe
 
 [![asciicast](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8.png)](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8)
 
-# Usage: go-cve-dictonary on different server 
+# Usage: go-cve-dictonary on different server
 
 Run go-cve-dictionary as server mode before scanning on 192.168.10.1
 ```
@@ -1267,7 +1279,7 @@ CRONなどを使い、自動化のためにsudoと、秘密鍵のパスワード
   - 秘密鍵パスフレーズなしの公開鍵認証か、ssh-agentを使う  
 
 - スキャンが重く感じる  
-vulsのスキャン対象に脆弱性が溜まりすぎると実行時間が長くなります 
+vulsのスキャン対象に脆弱性が溜まりすぎると実行時間が長くなります
 脆弱性のある状態は溜めすぎないようにしましょう
 
 - クロスコンパイル
@@ -1293,7 +1305,7 @@ Use Microsoft Baseline Security Analyzer. [MBSA](https://technet.microsoft.com/e
 
 ----
 
-# Related Projects 
+# Related Projects
 
 - [k1LoW/ssh_config_to_vuls_config](https://github.com/k1LoW/ssh_config_to_vuls_config)   
 ssh_config to vuls config TOML format
@@ -1340,4 +1352,3 @@ Please see [CHANGELOG](https://github.com/future-architect/vuls/blob/master/CHAN
 # License
 
 Please see [LICENSE](https://github.com/future-architect/vuls/blob/master/LICENSE).
-

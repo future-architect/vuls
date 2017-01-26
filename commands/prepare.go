@@ -34,6 +34,7 @@ import (
 type PrepareCmd struct {
 	debug      bool
 	configPath string
+	logDir     string
 
 	askSudoPassword bool
 	askKeyPassword  bool
@@ -62,6 +63,7 @@ func (*PrepareCmd) Usage() string {
 	return `prepare:
 	prepare
 			[-config=/path/to/config.toml]
+			[-log-dir=/path/to/log]
 			[-ask-key-password]
 			[-assume-yes]
 			[-debug]
@@ -80,6 +82,9 @@ func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
 
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
+
+	defaultLogDir := util.GetDefaultLogDir()
+	f.StringVar(&p.logDir, "log-dir", defaultLogDir, "/path/to/log")
 
 	f.BoolVar(
 		&p.askKeyPassword,
@@ -154,6 +159,7 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 	c.Conf.Debug = p.debug
 	c.Conf.SSHExternal = p.sshExternal
 	c.Conf.AssumeYes = p.assumeYes
+	c.Conf.LogDir = p.logDir
 
 	logrus.Info("Validating Config...")
 	if !c.Conf.ValidateOnPrepare() {
