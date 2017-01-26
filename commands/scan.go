@@ -195,10 +195,10 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	logrus.Debugf("%s", pp.Sprintf("%v", target))
 
 	// logger
+	c.Conf.LogDir = p.logDir
 	Log := util.NewCustomLogger(c.ServerInfo{})
 
 	c.Conf.ResultsDir = p.resultsDir
-	c.Conf.LogDir = p.logDir
 	c.Conf.CacheDBPath = p.cacheDBPath
 	c.Conf.SSHExternal = p.sshExternal
 	c.Conf.HTTPProxy = p.httpProxy
