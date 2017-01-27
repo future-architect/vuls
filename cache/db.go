@@ -18,6 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package cache
 
 import (
+	"time"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 )
@@ -31,6 +33,7 @@ const metabucket = "changelog-meta"
 type Cache interface {
 	Close() error
 	GetMeta(string) (Meta, bool, error)
+	RefreshMeta(Meta) error
 	EnsureBuckets(Meta) error
 	PrettyPrint(Meta) error
 	GetChangelog(string, string) (string, error)
@@ -40,9 +43,10 @@ type Cache interface {
 // Meta holds a server name, distro information of the scanned server and
 // package information that was collected at the last scan.
 type Meta struct {
-	Name   string
-	Distro config.Distro
-	Packs  []models.PackageInfo
+	Name      string
+	Distro    config.Distro
+	Packs     []models.PackageInfo
+	CreatedAt time.Time
 }
 
 // FindPack search a PackageInfo

@@ -277,13 +277,15 @@ func (o *debian) scanUnsecurePackages(installed []models.PackageInfo) ([]models.
 		Distro: o.getServerInfo().Distro,
 		Packs:  upgradablePacks,
 	}
+
 	o.log.Debugf("Ensure changelog cache: %s", current.Name)
-	if err := o.ensureChangelogCache(current); err != nil {
+	var meta *cache.Meta
+	if meta, err = o.ensureChangelogCache(current); err != nil {
 		return nil, err
 	}
 
 	// Collect CVE information of upgradable packages
-	vulnInfos, err := o.scanVulnInfos(upgradablePacks)
+	vulnInfos, err := o.scanVulnInfos(upgradablePacks, meta)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to scan unsecure packages. err: %s", err)
 	}
@@ -291,35 +293,38 @@ func (o *debian) scanUnsecurePackages(installed []models.PackageInfo) ([]models.
 	return vulnInfos, nil
 }
 
-func (o *debian) ensureChangelogCache(current cache.Meta) error {
+func (o *debian) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
 	// Search from cache
-	old, found, err := cache.DB.GetMeta(current.Name)
+	cached, found, err := cache.DB.GetMeta(current.Name)
 	if err != nil {
-		return fmt.Errorf("Failed to get meta. err: %s", err)
+		return nil, fmt.Errorf("Failed to get meta. err: %s", err)
 	}
+
 	if !found {
 		o.log.Debugf("Not found in meta: %s", current.Name)
 		err = cache.DB.EnsureBuckets(current)
 		if err != nil {
-			return fmt.Errorf("Failed to ensure buckets. err: %s", err)
+			return nil, fmt.Errorf("Failed to ensure buckets. err: %s", err)
 		}
-	} else {
-		if current.Distro.Family != old.Distro.Family ||
-			current.Distro.Release != old.Distro.Release {
-			o.log.Debugf("Need to refesh meta: %s", current.Name)
-			err = cache.DB.EnsureBuckets(current)
-			if err != nil {
-				return fmt.Errorf("Failed to ensure buckets. err: %s", err)
-			}
-		} else {
-			o.log.Debugf("Reuse meta: %s", current.Name)
-		}
+		return &current, nil
 	}
 
+	if current.Distro.Family != cached.Distro.Family ||
+		current.Distro.Release != cached.Distro.Release {
+		o.log.Debugf("Need to refesh meta: %s", current.Name)
+		err = cache.DB.EnsureBuckets(current)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to ensure buckets. err: %s", err)
+		}
+		return &current, nil
+
+	}
+
+	o.log.Debugf("Reuse meta: %s", current.Name)
 	if config.Conf.Debug {
 		cache.DB.PrettyPrint(current)
 	}
-	return nil
+	return &cached, nil
 }
 
 func (o *debian) fillCandidateVersion(before models.PackageInfoList) (filled []models.PackageInfo, err error) {
@@ -401,13 +406,7 @@ func (o *debian) parseAptGetUpgrade(stdout string) (upgradableNames []string, er
 	return
 }
 
-func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo) (models.VulnInfos, error) {
-	meta := cache.Meta{
-		Name:   o.getServerInfo().GetServerName(),
-		Distro: o.getServerInfo().Distro,
-		Packs:  upgradablePacks,
-	}
-
+func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo, meta *cache.Meta) (models.VulnInfos, error) {
 	type strarray []string
 	resChan := make(chan struct {
 		models.PackageInfo
@@ -445,6 +444,7 @@ func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo) (models.Vul
 
 					// if the changelog is not in cache or failed to get from local cache,
 					// get the changelog of the package via internet.
+					// After that, store it in the cache.
 					if cveIDs, err := o.scanPackageCveIDs(p); err != nil {
 						errChan <- err
 					} else {
@@ -493,15 +493,26 @@ func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo) (models.Vul
 			Packages: v,
 		})
 	}
+
+	// Update meta package information of changelog cache to the latest one.
+	meta.Packs = upgradablePacks
+	if err := cache.DB.RefreshMeta(*meta); err != nil {
+		return nil, err
+	}
+
 	return vinfos, nil
 }
 
-func (o *debian) getChangelogCache(meta cache.Meta, pack models.PackageInfo) string {
+func (o *debian) getChangelogCache(meta *cache.Meta, pack models.PackageInfo) string {
 	cachedPack, found := meta.FindPack(pack.Name)
 	if !found {
+		o.log.Debugf("Not found: %s", pack.Name)
 		return ""
 	}
+
 	if cachedPack.NewVersion != pack.NewVersion {
+		o.log.Debugf("Expired: %s, cache: %s, new: %s",
+			pack.Name, cachedPack.NewVersion, pack.NewVersion)
 		return ""
 	}
 	changelog, err := cache.DB.GetChangelog(meta.Name, pack.Name)
@@ -511,11 +522,12 @@ func (o *debian) getChangelogCache(meta cache.Meta, pack models.PackageInfo) str
 		return ""
 	}
 	if len(changelog) == 0 {
+		o.log.Debugf("Empty string: %s", pack.Name)
 		return ""
 	}
 
-	o.log.Debugf("Cache hit: %s, len: %d, %s...",
-		meta.Name, len(changelog), util.Truncate(changelog, 30))
+	o.log.Debugf("Hit: %s, %s, cache: %s, new: %s len: %d, %s...",
+		meta.Name, pack.Name, cachedPack.NewVersion, pack.NewVersion, len(changelog), util.Truncate(changelog, 30))
 	return changelog
 }
 
@@ -583,7 +595,7 @@ func (o *debian) parseChangelog(changelog string,
 	lines := strings.Split(changelog, "\n")
 	for _, line := range lines {
 		if matche := stopRe.MatchString(line); matche {
-			o.log.Debugf("Found the stop line. line: %s", line)
+			//  o.log.Debugf("Found the stop line: %s", line)
 			stopLineFound = true
 			break
 		} else if matches := cveRe.FindAllString(line, -1); 0 < len(matches) {

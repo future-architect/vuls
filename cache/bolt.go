@@ -20,6 +20,7 @@ package cache
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
@@ -92,6 +93,23 @@ func (b Bolt) GetMeta(serverName string) (meta Meta, found bool, err error) {
 	return
 }
 
+// RefreshMeta gets a Meta Information os the servername to boltdb.
+func (b Bolt) RefreshMeta(meta Meta) error {
+	meta.CreatedAt = time.Now()
+	jsonBytes, err := json.Marshal(meta)
+	if err != nil {
+		return fmt.Errorf("Failed to marshal to JSON: %s", err)
+	}
+	return b.db.Update(func(tx *bolt.Tx) error {
+		bkt := tx.Bucket([]byte(metabucket))
+		if err := bkt.Put([]byte(meta.Name), jsonBytes); err != nil {
+			return err
+		}
+		b.Log.Debugf("Refreshed Meta: %s", meta.Name)
+		return nil
+	})
+}
+
 // EnsureBuckets puts a Meta information and create a buket that holds changelogs.
 func (b Bolt) EnsureBuckets(meta Meta) error {
 	jsonBytes, err := json.Marshal(meta)
@@ -123,12 +141,12 @@ func (b Bolt) EnsureBuckets(meta Meta) error {
 	})
 }
 
-// PrettyPrint is for debuging
+// PrettyPrint is for debug
 func (b Bolt) PrettyPrint(meta Meta) error {
 	return b.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket([]byte(metabucket))
 		v := bkt.Get([]byte(meta.Name))
-		b.Log.Debugf("key:%s, value:%s", meta.Name, v)
+		b.Log.Debugf("Meta: key:%s, value:%s", meta.Name, v)
 
 		bkt = tx.Bucket([]byte(meta.Name))
 		c := bkt.Cursor()
