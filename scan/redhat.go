@@ -600,7 +600,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 	if o.Distro.Family == "rhel" && major == 5 {
 		cmd = "yum --color=never list-security --security"
 	} else {
-		cmd = "yum --color=never updateinfo list available --security"
+		cmd = "yum --color=never --security updateinfo list updates"
 	}
 	r = o.exec(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess() {
@@ -644,7 +644,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 	if o.Distro.Family == "rhel" && major == 5 {
 		cmd = "yum --color=never info-sec"
 	} else {
-		cmd = "yum --color=never updateinfo --security update"
+		cmd = "yum --color=never --security updateinfo updates"
 	}
 	r = o.exec(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess() {
