@@ -92,7 +92,7 @@ vuls v0.1.xxx xxxx
 ## Step1. Fetch NVD
 
 ```console
-$ for i in {2002..2016}; do \
+$ for i in `seq 2002 $(date +"%Y")`; do \
     docker run --rm -it \
     -v $PWD:/vuls \
     -v $PWD/go-cve-dictionary-log:/var/log/vuls \
