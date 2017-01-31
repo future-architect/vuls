@@ -23,7 +23,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/google/subcommands"
 
 	c "github.com/future-architect/vuls/config"
@@ -88,26 +87,27 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	// Setup Logger
+	c.Conf.Debug = p.debug
+	c.Conf.LogDir = p.logDir
+	util.Log = util.NewCustomLogger(c.ServerInfo{})
 
 	var keyPass string
 	var err error
 	if p.askKeyPassword {
 		prompt := "SSH key password: "
 		if keyPass, err = getPasswd(prompt); err != nil {
-			logrus.Error(err)
+			util.Log.Error(err)
 			return subcommands.ExitFailure
 		}
 	}
 
-	c.Conf.Debug = p.debug
-	c.Conf.SSHExternal = p.sshExternal
-	c.Conf.LogDir = p.logDir
-
 	err = c.Load(p.configPath, keyPass)
 	if err != nil {
-		logrus.Errorf("Error loading %s, %s", p.configPath, err)
+		util.Log.Errorf("Error loading %s, %s", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
+	c.Conf.SSHExternal = p.sshExternal
 
 	var servernames []string
 	if 0 < len(f.Args()) {
@@ -125,7 +125,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 			}
 		}
 		if !found {
-			logrus.Errorf("%s is not in config", arg)
+			util.Log.Errorf("%s is not in config", arg)
 			return subcommands.ExitUsageError
 		}
 	}
@@ -133,25 +133,20 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		c.Conf.Servers = target
 	}
 
-	// logger
-	Log := util.NewCustomLogger(c.ServerInfo{})
-
-	Log.Info("Validating Config...")
+	util.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnConfigtest() {
 		return subcommands.ExitUsageError
 	}
 
-	Log.Info("Detecting Server/Container OS... ")
-	if err := scan.InitServers(Log); err != nil {
-		Log.Errorf("Failed to init servers: %s", err)
+	util.Log.Info("Detecting Server/Container OS... ")
+	if err := scan.InitServers(); err != nil {
+		util.Log.Errorf("Failed to init servers: %s", err)
 		return subcommands.ExitFailure
 	}
 
-	Log.Info("Checking sudo configuration... ")
-	if err := scan.CheckIfSudoNoPasswd(Log); err != nil {
-		Log.Errorf("Failed to sudo with nopassword via SSH. Define NOPASSWD in /etc/sudoers on target servers. err: %s", err)
-		return subcommands.ExitFailure
-	}
+	util.Log.Info("Checking sudo configuration...")
+	scan.CheckIfSudoNoPasswd()
+
 	scan.PrintSSHableServerNames()
 	return subcommands.ExitSuccess
 }

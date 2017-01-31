@@ -26,7 +26,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/scan"
 	"github.com/future-architect/vuls/util"
@@ -138,25 +137,30 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+
+	// Setup Logger
+	c.Conf.Debug = p.debug
+	c.Conf.LogDir = p.logDir
+	util.Log = util.NewCustomLogger(c.ServerInfo{})
+
 	var keyPass string
 	var err error
 	if p.askKeyPassword {
 		prompt := "SSH key password: "
 		if keyPass, err = getPasswd(prompt); err != nil {
-			logrus.Error(err)
+			util.Log.Error(err)
 			return subcommands.ExitFailure
 		}
 	}
 
-	c.Conf.Debug = p.debug
 	err = c.Load(p.configPath, keyPass)
 	if err != nil {
-		logrus.Errorf("Error loading %s, %s", p.configPath, err)
+		util.Log.Errorf("Error loading %s, %s", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
 
-	logrus.Info("Start scanning")
-	logrus.Infof("config: %s", p.configPath)
+	util.Log.Info("Start scanning")
+	util.Log.Infof("config: %s", p.configPath)
 
 	c.Conf.Pipe = p.pipe
 	var servernames []string
@@ -165,7 +169,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	} else if c.Conf.Pipe {
 		bytes, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
-			logrus.Errorf("Failed to read stdin: %s", err)
+			util.Log.Errorf("Failed to read stdin: %s", err)
 			return subcommands.ExitFailure
 		}
 		fields := strings.Fields(string(bytes))
@@ -185,18 +189,14 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 			}
 		}
 		if !found {
-			logrus.Errorf("%s is not in config", arg)
+			util.Log.Errorf("%s is not in config", arg)
 			return subcommands.ExitUsageError
 		}
 	}
 	if 0 < len(servernames) {
 		c.Conf.Servers = target
 	}
-	logrus.Debugf("%s", pp.Sprintf("%v", target))
-
-	// logger
-	c.Conf.LogDir = p.logDir
-	Log := util.NewCustomLogger(c.ServerInfo{})
+	util.Log.Debugf("%s", pp.Sprintf("%v", target))
 
 	c.Conf.ResultsDir = p.resultsDir
 	c.Conf.CacheDBPath = p.cacheDBPath
@@ -205,31 +205,26 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	c.Conf.ContainersOnly = p.containersOnly
 	c.Conf.SkipBroken = p.skipBroken
 
-	Log.Info("Validating Config...")
+	util.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnScan() {
 		return subcommands.ExitUsageError
 	}
 
-	Log.Info("Detecting Server/Container OS... ")
-	if err := scan.InitServers(Log); err != nil {
-		Log.Errorf("Failed to init servers: %s", err)
+	util.Log.Info("Detecting Server/Container OS... ")
+	if err := scan.InitServers(); err != nil {
+		util.Log.Errorf("Failed to init servers: %s", err)
 		return subcommands.ExitFailure
 	}
 
-	Log.Info("Checking sudo configuration... ")
-	if err := scan.CheckIfSudoNoPasswd(Log); err != nil {
-		Log.Errorf("Failed to sudo with nopassword via SSH. Define NOPASSWD in /etc/sudoers on target servers")
-		return subcommands.ExitFailure
-	}
+	util.Log.Info("Checking sudo configuration... ")
+	scan.CheckIfSudoNoPasswd()
 
-	Log.Info("Detecting Platforms... ")
-	scan.DetectPlatforms(Log)
+	util.Log.Info("Detecting Platforms... ")
+	scan.DetectPlatforms()
 
-	Log.Info("Scanning vulnerabilities... ")
-	if errs := scan.Scan(); 0 < len(errs) {
-		for _, e := range errs {
-			Log.Errorf("Failed to scan. err: %s", e)
-		}
+	util.Log.Info("Scanning vulnerabilities... ")
+	if err := scan.Scan(); err != nil {
+		util.Log.Errorf("Failed to scan. err: %s", err)
 		return subcommands.ExitFailure
 	}
 	fmt.Printf("\n\n\n")

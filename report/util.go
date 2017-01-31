@@ -34,11 +34,21 @@ func toScanSummary(rs ...models.ScanResult) string {
 	table.MaxColWidth = maxColWidth
 	table.Wrap = true
 	for _, r := range rs {
-		cols := []interface{}{
-			r.FormatServerName(),
-			fmt.Sprintf("%s%s", r.Family, r.Release),
-			fmt.Sprintf("%d CVEs", len(r.ScannedCves)),
-			r.Packages.ToUpdatablePacksSummary(),
+		var cols []interface{}
+		if len(r.Errors) == 0 {
+			cols = []interface{}{
+				r.FormatServerName(),
+				fmt.Sprintf("%s%s", r.Family, r.Release),
+				fmt.Sprintf("%d CVEs", len(r.ScannedCves)),
+				r.Packages.ToUpdatablePacksSummary(),
+			}
+		} else {
+			cols = []interface{}{
+				r.FormatServerName(),
+				"Error",
+				"",
+				"Run with --debug to view the details",
+			}
 		}
 		table.AddRow(cols...)
 	}
@@ -50,10 +60,19 @@ func toOneLineSummary(rs ...models.ScanResult) string {
 	table.MaxColWidth = maxColWidth
 	table.Wrap = true
 	for _, r := range rs {
-		cols := []interface{}{
-			r.FormatServerName(),
-			r.CveSummary(),
-			r.Packages.ToUpdatablePacksSummary(),
+		var cols []interface{}
+		if len(r.Errors) == 0 {
+			cols = []interface{}{
+				r.FormatServerName(),
+				r.CveSummary(),
+				r.Packages.ToUpdatablePacksSummary(),
+			}
+		} else {
+			cols = []interface{}{
+				r.FormatServerName(),
+				"Error: Scan with --debug to view the details",
+				"",
+			}
 		}
 		table.AddRow(cols...)
 	}
@@ -80,6 +99,12 @@ func toShortPlainText(r models.ScanResult) string {
 		r.CveSummary(),
 		r.Packages.ToUpdatablePacksSummary(),
 	)
+
+	if len(r.Errors) != 0 {
+		return fmt.Sprintf(
+			"%s\nError: Scan with --debug to view the details\n%s\n\n",
+			header, r.Errors)
+	}
 
 	if len(cves) == 0 {
 		return fmt.Sprintf(`
@@ -167,6 +192,12 @@ func toFullPlainText(r models.ScanResult) string {
 		r.CveSummary(),
 		r.Packages.ToUpdatablePacksSummary(),
 	)
+
+	if len(r.Errors) != 0 {
+		return fmt.Sprintf(
+			"%s\nError: Scan with --debug to view the details\n%s\n\n",
+			header, r.Errors)
+	}
 
 	if len(r.KnownCves) == 0 && len(r.UnknownCves) == 0 {
 		return fmt.Sprintf(`

@@ -20,6 +20,7 @@ package report
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -59,48 +60,90 @@ type SlackWriter struct{}
 func (w SlackWriter) Write(rs ...models.ScanResult) error {
 	conf := config.Conf.Slack
 	channel := conf.Channel
-	count := 0
-	retryMax := 10
 
 	for _, r := range rs {
 		if channel == "${servername}" {
 			channel = fmt.Sprintf("#%s", r.ServerName)
 		}
 
-		msg := message{
-			Text:        msgText(r),
-			Username:    conf.AuthUser,
-			IconEmoji:   conf.IconEmoji,
-			Channel:     channel,
-			Attachments: toSlackAttachments(r),
-		}
-
-		bytes, _ := json.Marshal(msg)
-		jsonBody := string(bytes)
-
-		f := func() (err error) {
-			resp, body, errs := gorequest.New().Proxy(config.Conf.HTTPProxy).Post(conf.HookURL).Send(string(jsonBody)).End()
-			if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-				count++
-				if count == retryMax {
-					return nil
-				}
-				return fmt.Errorf(
-					"HTTP POST error: %v, url: %s, resp: %v, body: %s",
-					errs, conf.HookURL, resp, body)
+		if 0 < len(r.Errors) {
+			serverInfo := fmt.Sprintf("*%s*", r.ServerInfo())
+			notifyUsers := getNotifyUsers(config.Conf.Slack.NotifyUsers)
+			txt := fmt.Sprintf("%s\n%s\nError: %s", notifyUsers, serverInfo, r.Errors)
+			msg := message{
+				Text:      txt,
+				Username:  conf.AuthUser,
+				IconEmoji: conf.IconEmoji,
+				Channel:   channel,
 			}
-			return nil
+			if err := send(msg); err != nil {
+				return err
+			}
+			continue
 		}
-		notify := func(err error, t time.Duration) {
-			log.Warnf("Error %s", err)
-			log.Warn("Retrying in ", t)
+
+		// A maximum of 100 attachments are allowed on a message.
+		// Split into chunks with 100 elements
+		// https://api.slack.com/methods/chat.postMessage
+		maxAttachments := 100
+		m := map[int][]*attachment{}
+		for i, a := range toSlackAttachments(r) {
+			m[i/maxAttachments] = append(m[i/maxAttachments], a)
 		}
-		boff := backoff.NewExponentialBackOff()
-		if err := backoff.RetryNotify(f, boff, notify); err != nil {
-			return fmt.Errorf("HTTP error: %s", err)
+		chunkKeys := []int{}
+		for k := range m {
+			chunkKeys = append(chunkKeys, k)
+		}
+		sort.Ints(chunkKeys)
+
+		for i, k := range chunkKeys {
+			txt := ""
+			if i == 0 {
+				txt = msgText(r)
+			}
+			msg := message{
+				Text:        txt,
+				Username:    conf.AuthUser,
+				IconEmoji:   conf.IconEmoji,
+				Channel:     channel,
+				Attachments: m[k],
+			}
+			if err := send(msg); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
+}
 
+func send(msg message) error {
+	conf := config.Conf.Slack
+	count, retryMax := 0, 10
+
+	bytes, _ := json.Marshal(msg)
+	jsonBody := string(bytes)
+
+	f := func() (err error) {
+		resp, body, errs := gorequest.New().Proxy(config.Conf.HTTPProxy).Post(conf.HookURL).Send(string(jsonBody)).End()
+		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
+			count++
+			if count == retryMax {
+				return nil
+			}
+			return fmt.Errorf(
+				"HTTP POST error: %v, url: %s, resp: %v, body: %s",
+				errs, conf.HookURL, resp, body)
+		}
+		return nil
+	}
+	notify := func(err error, t time.Duration) {
+		log.Warnf("Error %s", err)
+		log.Warn("Retrying in ", t)
+	}
+	boff := backoff.NewExponentialBackOff()
+	if err := backoff.RetryNotify(f, boff, notify); err != nil {
+		return fmt.Errorf("HTTP error: %s", err)
+	}
 	if count == retryMax {
 		return fmt.Errorf("Retry count exceeded")
 	}
@@ -112,7 +155,6 @@ func msgText(r models.ScanResult) string {
 	if 0 < len(r.KnownCves) || 0 < len(r.UnknownCves) {
 		notifyUsers = getNotifyUsers(config.Conf.Slack.NotifyUsers)
 	}
-
 	serverInfo := fmt.Sprintf("*%s*", r.ServerInfo())
 	return fmt.Sprintf("%s\n%s\n>%s", notifyUsers, serverInfo, r.CveSummary())
 }

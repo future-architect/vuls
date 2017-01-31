@@ -71,35 +71,30 @@ func (s execResult) isSuccess(expectedStatusCodes ...int) bool {
 	return false
 }
 
-// Sudo is Const value for sudo mode
+// sudo is Const value for sudo mode
 const sudo = true
 
-// NoSudo is Const value for normal user mode
+// noSudo is Const value for normal user mode
 const noSudo = false
 
-func parallelSSHExec(fn func(osTypeInterface) error, timeoutSec ...int) (errs []error) {
-	resChan := make(chan string, len(servers))
-	errChan := make(chan error, len(servers))
-	defer close(errChan)
+//  Issue commands to the target servers in parallel via SSH or local execution.  If execution fails, the server will be excluded from the target server list(servers) and added to the error server list(errServers).
+func parallelExec(fn func(osTypeInterface) error, timeoutSec ...int) {
+	resChan := make(chan osTypeInterface, len(servers))
 	defer close(resChan)
 
 	for _, s := range servers {
 		go func(s osTypeInterface) {
 			defer func() {
 				if p := recover(); p != nil {
-					logrus.Debugf("Panic: %s on %s",
+					util.Log.Debugf("Panic: %s on %s",
 						p, s.getServerInfo().GetServerName())
 				}
 			}()
 			if err := fn(s); err != nil {
-				errChan <- fmt.Errorf("%s@%s:%s: %s",
-					s.getServerInfo().User,
-					s.getServerInfo().Host,
-					s.getServerInfo().Port,
-					err,
-				)
+				s.setErrs([]error{err})
+				resChan <- s
 			} else {
-				resChan <- s.getServerInfo().GetServerName()
+				resChan <- s
 			}
 		}(s)
 	}
@@ -111,40 +106,44 @@ func parallelSSHExec(fn func(osTypeInterface) error, timeoutSec ...int) (errs []
 		timeout = timeoutSec[0]
 	}
 
-	var snames []string
+	var successes []osTypeInterface
 	isTimedout := false
 	for i := 0; i < len(servers); i++ {
 		select {
 		case s := <-resChan:
-			snames = append(snames, s)
-		case err := <-errChan:
-			errs = append(errs, err)
+			if len(s.getErrs()) == 0 {
+				successes = append(successes, s)
+			} else {
+				util.Log.Errorf("Error: %s, err: %s",
+					s.getServerInfo().GetServerName(), s.getErrs())
+				errServers = append(errServers, s)
+			}
 		case <-time.After(time.Duration(timeout) * time.Second):
 			isTimedout = true
 		}
 	}
 
-	// collect timed out servernames
-	var timedoutSnames []string
 	if isTimedout {
+		// set timed out error and append to errServers
 		for _, s := range servers {
 			name := s.getServerInfo().GetServerName()
 			found := false
-			for _, t := range snames {
-				if name == t {
+			for _, ss := range successes {
+				if name == ss.getServerInfo().GetServerName() {
 					found = true
 					break
 				}
 			}
 			if !found {
-				timedoutSnames = append(timedoutSnames, name)
+				msg := fmt.Sprintf("Timed out: %s",
+					s.getServerInfo().GetServerName())
+				util.Log.Errorf(msg)
+				s.setErrs([]error{fmt.Errorf(msg)})
+				errServers = append(errServers, s)
 			}
 		}
 	}
-	if isTimedout {
-		errs = append(errs, fmt.Errorf(
-			"Timed out: %s", timedoutSnames))
-	}
+	servers = successes
 	return
 }
 

@@ -199,24 +199,23 @@ func (l *base) parseLxdPs(stdout string) (containers []config.Container, err err
 	return
 }
 
-func (l *base) detectPlatform() error {
+func (l *base) detectPlatform() {
 	ok, instanceID, err := l.detectRunningOnAws()
 	if err != nil {
-		return err
+		l.setPlatform(models.Platform{Name: "other"})
+		return
 	}
 	if ok {
 		l.setPlatform(models.Platform{
 			Name:       "aws",
 			InstanceID: instanceID,
 		})
-		return nil
+		return
 	}
 
 	//TODO Azure, GCP...
-	l.setPlatform(models.Platform{
-		Name: "other",
-	})
-	return nil
+	l.setPlatform(models.Platform{Name: "other"})
+	return
 }
 
 func (l base) detectRunningOnAws() (ok bool, instanceID string, err error) {
@@ -271,7 +270,7 @@ func (l base) isAwsInstanceID(str string) bool {
 	return awsInstanceIDPattern.MatchString(str)
 }
 
-func (l *base) convertToModel() (models.ScanResult, error) {
+func (l *base) convertToModel() models.ScanResult {
 	for _, p := range l.VulnInfos {
 		sort.Sort(models.PackageInfosByName(p.Packages))
 	}
@@ -281,6 +280,11 @@ func (l *base) convertToModel() (models.ScanResult, error) {
 		ContainerID: l.ServerInfo.Container.ContainerID,
 		Name:        l.ServerInfo.Container.Name,
 		Image:	     l.ServerInfo.Container.Image,
+	}
+
+	errs := []string{}
+	for _, e := range l.errs {
+		errs = append(errs, fmt.Sprintf("%s", e))
 	}
 
 	return models.ScanResult{
@@ -293,7 +297,8 @@ func (l *base) convertToModel() (models.ScanResult, error) {
 		ScannedCves: l.VulnInfos,
 		Packages:    l.Packages,
 		Optional:    l.ServerInfo.Optional,
-	}, nil
+		Errors:      errs,
+	}
 }
 
 func (l *base) setErrs(errs []error) {

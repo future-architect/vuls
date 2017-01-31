@@ -115,7 +115,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	c.Conf.CveDBPath = p.cvedbpath
 	c.Conf.CveDictionaryURL = p.cveDictionaryURL
 
-	log.Info("Validating Config...")
+	log.Info("Validating config...")
 	if !c.Conf.ValidateOnTui() {
 		return subcommands.ExitUsageError
 	}
