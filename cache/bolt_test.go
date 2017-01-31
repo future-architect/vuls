@@ -90,8 +90,11 @@ func TestEnsureBuckets(t *testing.T) {
 	if !found {
 		t.Errorf("Not Found in meta")
 	}
-	if !reflect.DeepEqual(meta, m) {
+	if meta.Name != m.Name || meta.Distro != m.Distro {
 		t.Errorf("expected %v, actual %v", meta, m)
+	}
+	if !reflect.DeepEqual(meta.Packs, m.Packs) {
+		t.Errorf("expected %v, actual %v", meta.Packs, m.Packs)
 	}
 	if err := DB.Close(); err != nil {
 		t.Errorf("Failed to close bolt: %s", err)

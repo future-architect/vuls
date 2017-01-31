@@ -25,7 +25,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
-	"os/exec"
+	ex "os/exec"
 	"strings"
 	"syscall"
 	"time"
@@ -39,7 +39,7 @@ import (
 	"github.com/future-architect/vuls/util"
 )
 
-type sshResult struct {
+type execResult struct {
 	Servername string
 	Host       string
 	Port       string
@@ -50,16 +50,13 @@ type sshResult struct {
 	Error      error
 }
 
-func (s sshResult) String() string {
+func (s execResult) String() string {
 	return fmt.Sprintf(
-		"SSHResult: servername: %s, cmd: %s, exitstatus: %d, stdout: %s, stderr: %s, err: %s",
+		"execResult: servername: %s\n  cmd: %s\n  exitstatus: %d\n  stdout: %s\n  stderr: %s\n  err: %s",
 		s.Servername, s.Cmd, s.ExitStatus, s.Stdout, s.Stderr, s.Error)
 }
 
-func (s sshResult) isSuccess(expectedStatusCodes ...int) bool {
-	if s.Error != nil {
-		return false
-	}
+func (s execResult) isSuccess(expectedStatusCodes ...int) bool {
 	if len(expectedStatusCodes) == 0 {
 		return s.ExitStatus == 0
 	}
@@ -67,6 +64,9 @@ func (s sshResult) isSuccess(expectedStatusCodes ...int) bool {
 		if code == s.ExitStatus {
 			return true
 		}
+	}
+	if s.Error != nil {
+		return false
 	}
 	return false
 }
@@ -148,8 +148,11 @@ func parallelSSHExec(fn func(osTypeInterface) error, timeoutSec ...int) (errs []
 	return
 }
 
-func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (result sshResult) {
-	if conf.Conf.SSHExternal {
+func exec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (result execResult) {
+	if c.Port == "local" &&
+		(c.Host == "127.0.0.1" || c.Host == "localhost") {
+		result = localExec(c, cmd, sudo)
+	} else if conf.Conf.SSHExternal {
 		result = sshExecExternal(c, cmd, sudo)
 	} else {
 		result = sshExecNative(c, cmd, sudo)
@@ -160,7 +163,37 @@ func sshExec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (re
 	return
 }
 
-func sshExecNative(c conf.ServerInfo, cmd string, sudo bool) (result sshResult) {
+func localExec(c conf.ServerInfo, cmdstr string, sudo bool) (result execResult) {
+	cmdstr = decolateCmd(c, cmdstr, sudo)
+	var cmd *ex.Cmd
+	if c.Distro.Family == "FreeBSD" {
+		cmd = ex.Command("/bin/sh", "-c", cmdstr)
+	} else {
+		cmd = ex.Command("/bin/bash", "-c", cmdstr)
+	}
+	var stdoutBuf, stderrBuf bytes.Buffer
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
+
+	if err := cmd.Run(); err != nil {
+		result.Error = err
+		if exitError, ok := err.(*ex.ExitError); ok {
+			waitStatus := exitError.Sys().(syscall.WaitStatus)
+			result.ExitStatus = waitStatus.ExitStatus()
+		} else {
+			result.ExitStatus = 999
+		}
+	} else {
+		result.ExitStatus = 0
+	}
+
+	result.Stdout = stdoutBuf.String()
+	result.Stderr = stderrBuf.String()
+	result.Cmd = strings.Replace(cmdstr, "\n", "", -1)
+	return
+}
+
+func sshExecNative(c conf.ServerInfo, cmd string, sudo bool) (result execResult) {
 	result.Servername = c.ServerName
 	result.Host = c.Host
 	result.Port = c.Port
@@ -219,8 +252,8 @@ func sshExecNative(c conf.ServerInfo, cmd string, sudo bool) (result sshResult) 
 	return
 }
 
-func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result sshResult) {
-	sshBinaryPath, err := exec.LookPath("ssh")
+func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResult) {
+	sshBinaryPath, err := ex.LookPath("ssh")
 	if err != nil {
 		return sshExecNative(c, cmd, sudo)
 	}
@@ -256,13 +289,13 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result sshResult
 	//  cmd = fmt.Sprintf("stty cols 256; set -o pipefail; %s", cmd)
 
 	args = append(args, cmd)
-	execCmd := exec.Command(sshBinaryPath, args...)
+	execCmd := ex.Command(sshBinaryPath, args...)
 
 	var stdoutBuf, stderrBuf bytes.Buffer
 	execCmd.Stdout = &stdoutBuf
 	execCmd.Stderr = &stderrBuf
 	if err := execCmd.Run(); err != nil {
-		if e, ok := err.(*exec.ExitError); ok {
+		if e, ok := err.(*ex.ExitError); ok {
 			if s, ok := e.Sys().(syscall.WaitStatus); ok {
 				result.ExitStatus = s.ExitStatus()
 			} else {
@@ -307,6 +340,8 @@ func decolateCmd(c conf.ServerInfo, cmd string, sudo bool) string {
 		switch c.Container.Type {
 		case "", "docker":
 			cmd = fmt.Sprintf(`docker exec %s /bin/bash -c "%s"`, c.Container.ContainerID, cmd)
+		case "lxd":
+			cmd = fmt.Sprintf(`lxc exec %s -- /bin/bash -c "%s"`, c.Container.Name, cmd)
 		}
 	}
 	//  cmd = fmt.Sprintf("set -x; %s", cmd)

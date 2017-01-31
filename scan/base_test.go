@@ -57,6 +57,44 @@ f570ae647edc agitated_lovelace`,
 	}
 }
 
+func TestParseLxdPs(t *testing.T) {
+
+	var test = struct {
+		in       string
+		expected []config.Container
+	}{
+		`+-------+
+| NAME  |
++-------+
+| test1 |
++-------+
+| test2 |
++-------+`,
+		[]config.Container{
+			{
+				ContainerID: "test1",
+				Name:        "test1",
+			},
+			{
+				ContainerID: "test2",
+				Name:        "test2",
+			},
+		},
+	}
+
+	r := newRedhat(config.ServerInfo{})
+	actual, err := r.parseLxdPs(test.in)
+	if err != nil {
+		t.Errorf("Error occurred. in: %s, err: %s", test.in, err)
+		return
+	}
+	for i, e := range test.expected {
+		if !reflect.DeepEqual(e, actual[i]) {
+			t.Errorf("expected %v, actual %v", e, actual[i])
+		}
+	}
+}
+
 func TestIsAwsInstanceID(t *testing.T) {
 	var tests = []struct {
 		in       string

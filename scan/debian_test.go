@@ -545,7 +545,7 @@ func TestGetChangelogCache(t *testing.T) {
 	}
 
 	d := newDebian(config.ServerInfo{})
-	actual := d.getChangelogCache(meta, pack)
+	actual := d.getChangelogCache(&meta, pack)
 	if actual != "" {
 		t.Errorf("Failed to get empty stirng from cache:")
 	}
@@ -555,21 +555,21 @@ func TestGetChangelogCache(t *testing.T) {
 		t.Errorf("Failed to put changelog: %s", err)
 	}
 
-	actual = d.getChangelogCache(meta, pack)
+	actual = d.getChangelogCache(&meta, pack)
 	if actual != clog {
 		t.Errorf("Failed to get changelog from cache: %s", actual)
 	}
 
 	// increment a version of the pack
 	pack.NewVersion = "1.0.2"
-	actual = d.getChangelogCache(meta, pack)
+	actual = d.getChangelogCache(&meta, pack)
 	if actual != "" {
 		t.Errorf("The changelog is not invalidated: %s", actual)
 	}
 
 	// change a name of the pack
 	pack.Name = "bash"
-	actual = d.getChangelogCache(meta, pack)
+	actual = d.getChangelogCache(&meta, pack)
 	if actual != "" {
 		t.Errorf("The changelog is not invalidated: %s", actual)
 	}

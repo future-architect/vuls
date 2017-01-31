@@ -26,7 +26,6 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/cveapi"
 	"github.com/future-architect/vuls/models"
 )
 
@@ -42,8 +41,8 @@ type base struct {
 	errs []error
 }
 
-func (l *base) ssh(cmd string, sudo bool) sshResult {
-	return sshExec(l.ServerInfo, cmd, sudo, l.log)
+func (l *base) exec(cmd string, sudo bool) execResult {
+	return exec(l.ServerInfo, cmd, sudo, l.log)
 }
 
 func (l *base) setServerInfo(c config.ServerInfo) {
@@ -90,6 +89,12 @@ func (l base) allContainers() (containers []config.Container, err error) {
 			return containers, err
 		}
 		return l.parseDockerPs(stdout)
+	case "lxd":
+		stdout, err := l.lxdPs("-c n")
+		if err != nil {
+			return containers, err
+		}
+		return l.parseLxdPs(stdout)
 	default:
 		return containers, fmt.Errorf(
 			"Not supported yet: %s", l.ServerInfo.Container.Type)
@@ -104,6 +109,12 @@ func (l *base) runningContainers() (containers []config.Container, err error) {
 			return containers, err
 		}
 		return l.parseDockerPs(stdout)
+	case "lxd":
+		stdout, err := l.lxdPs("volatile.last_state.power=RUNNING -c n")
+		if err != nil {
+			return containers, err
+		}
+		return l.parseLxdPs(stdout)
 	default:
 		return containers, fmt.Errorf(
 			"Not supported yet: %s", l.ServerInfo.Container.Type)
@@ -118,6 +129,12 @@ func (l *base) exitedContainers() (containers []config.Container, err error) {
 			return containers, err
 		}
 		return l.parseDockerPs(stdout)
+	case "lxd":
+		stdout, err := l.lxdPs("volatile.last_state.power=STOPPED -c n")
+		if err != nil {
+			return containers, err
+		}
+		return l.parseLxdPs(stdout)
 	default:
 		return containers, fmt.Errorf(
 			"Not supported yet: %s", l.ServerInfo.Container.Type)
@@ -126,9 +143,18 @@ func (l *base) exitedContainers() (containers []config.Container, err error) {
 
 func (l *base) dockerPs(option string) (string, error) {
 	cmd := fmt.Sprintf("docker ps %s", option)
-	r := l.ssh(cmd, noSudo)
+	r := l.exec(cmd, noSudo)
 	if !r.isSuccess() {
 		return "", fmt.Errorf("Failed to SSH: %s", r)
+	}
+	return r.Stdout, nil
+}
+
+func (l *base) lxdPs(option string) (string, error) {
+	cmd := fmt.Sprintf("lxc list %s", option)
+	r := l.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		return "", fmt.Errorf("failed to SSH: %s", r)
 	}
 	return r.Stdout, nil
 }
@@ -146,6 +172,27 @@ func (l *base) parseDockerPs(stdout string) (containers []config.Container, err 
 		containers = append(containers, config.Container{
 			ContainerID: fields[0],
 			Name:        fields[1],
+		})
+	}
+	return
+}
+
+func (l *base) parseLxdPs(stdout string) (containers []config.Container, err error) {
+	lines := strings.Split(stdout, "\n")
+	for i, line := range lines[3:] {
+		if i%2 == 1 {
+			continue
+		}
+		fields := strings.Fields(strings.Replace(line, "|", " ", -1))
+		if len(fields) == 0 {
+			break
+		}
+		if len(fields) != 1 {
+			return containers, fmt.Errorf("Unknown format: %s", line)
+		}
+		containers = append(containers, config.Container{
+			ContainerID: fields[0],
+			Name:        fields[0],
 		})
 	}
 	return
@@ -172,9 +219,9 @@ func (l *base) detectPlatform() error {
 }
 
 func (l base) detectRunningOnAws() (ok bool, instanceID string, err error) {
-	if r := l.ssh("type curl", noSudo); r.isSuccess() {
+	if r := l.exec("type curl", noSudo); r.isSuccess() {
 		cmd := "curl --max-time 1 --retry 3 --noproxy 169.254.169.254 http://169.254.169.254/latest/meta-data/instance-id"
-		r := l.ssh(cmd, noSudo)
+		r := l.exec(cmd, noSudo)
 		if r.isSuccess() {
 			id := strings.TrimSpace(r.Stdout)
 			if !l.isAwsInstanceID(id) {
@@ -192,9 +239,9 @@ func (l base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 		}
 	}
 
-	if r := l.ssh("type wget", noSudo); r.isSuccess() {
+	if r := l.exec("type wget", noSudo); r.isSuccess() {
 		cmd := "wget --tries=3 --timeout=1 --no-proxy -q -O - http://169.254.169.254/latest/meta-data/instance-id"
-		r := l.ssh(cmd, noSudo)
+		r := l.exec(cmd, noSudo)
 		if r.isSuccess() {
 			id := strings.TrimSpace(r.Stdout)
 			if !l.isAwsInstanceID(id) {
@@ -224,59 +271,15 @@ func (l base) isAwsInstanceID(str string) bool {
 }
 
 func (l *base) convertToModel() (models.ScanResult, error) {
-	var scoredCves, unscoredCves, ignoredCves models.CveInfos
-	for _, p := range l.UnsecurePackages {
-		// ignoreCves
-		found := false
-		for _, icve := range l.getServerInfo().IgnoreCves {
-			if icve == p.CveDetail.CveID {
-				ignoredCves = append(ignoredCves, models.CveInfo{
-					CveDetail:        p.CveDetail,
-					Packages:         p.Packs,
-					DistroAdvisories: p.DistroAdvisories,
-				})
-				found = true
-				break
-			}
-		}
-		if found {
-			continue
-		}
-
-		// unscoredCves
-		if p.CveDetail.CvssScore(config.Conf.Lang) <= 0 {
-			unscoredCves = append(unscoredCves, models.CveInfo{
-				CveDetail:        p.CveDetail,
-				Packages:         p.Packs,
-				DistroAdvisories: p.DistroAdvisories,
-			})
-			continue
-		}
-
-		cpenames := []models.CpeName{}
-		for _, cpename := range p.CpeNames {
-			cpenames = append(cpenames,
-				models.CpeName{Name: cpename})
-		}
-
-		// scoredCves
-		cve := models.CveInfo{
-			CveDetail:        p.CveDetail,
-			Packages:         p.Packs,
-			DistroAdvisories: p.DistroAdvisories,
-			CpeNames:         cpenames,
-		}
-		scoredCves = append(scoredCves, cve)
+	for _, p := range l.VulnInfos {
+		sort.Sort(models.PackageInfosByName(p.Packages))
 	}
+	sort.Sort(l.VulnInfos)
 
 	container := models.Container{
 		ContainerID: l.ServerInfo.Container.ContainerID,
 		Name:        l.ServerInfo.Container.Name,
 	}
-
-	sort.Sort(scoredCves)
-	sort.Sort(unscoredCves)
-	sort.Sort(ignoredCves)
 
 	return models.ScanResult{
 		ServerName:  l.ServerInfo.ServerName,
@@ -285,50 +288,10 @@ func (l *base) convertToModel() (models.ScanResult, error) {
 		Release:     l.Distro.Release,
 		Container:   container,
 		Platform:    l.Platform,
-		KnownCves:   scoredCves,
-		UnknownCves: unscoredCves,
-		IgnoredCves: ignoredCves,
+		ScannedCves: l.VulnInfos,
+		Packages:    l.Packages,
 		Optional:    l.ServerInfo.Optional,
 	}, nil
-}
-
-// scanVulnByCpeName search vulnerabilities that specified in config file.
-func (l *base) scanVulnByCpeName() error {
-	unsecurePacks := CvePacksList{}
-
-	serverInfo := l.getServerInfo()
-	cpeNames := serverInfo.CpeNames
-
-	// remove duplicate
-	set := map[string]CvePacksInfo{}
-
-	for _, name := range cpeNames {
-		details, err := cveapi.CveClient.FetchCveDetailsByCpeName(name)
-		if err != nil {
-			return err
-		}
-		for _, detail := range details {
-			if val, ok := set[detail.CveID]; ok {
-				names := val.CpeNames
-				names = append(names, name)
-				val.CpeNames = names
-				set[detail.CveID] = val
-			} else {
-				set[detail.CveID] = CvePacksInfo{
-					CveID:     detail.CveID,
-					CveDetail: detail,
-					CpeNames:  []string{name},
-				}
-			}
-		}
-	}
-
-	for key := range set {
-		unsecurePacks = append(unsecurePacks, set[key])
-	}
-	unsecurePacks = append(unsecurePacks, l.UnsecurePackages...)
-	l.setUnsecurePackages(unsecurePacks)
-	return nil
 }
 
 func (l *base) setErrs(errs []error) {

@@ -20,10 +20,8 @@ package commands
 import (
 	"context"
 	"flag"
-	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/google/subcommands"
@@ -36,6 +34,7 @@ import (
 // ConfigtestCmd is Subcommand
 type ConfigtestCmd struct {
 	configPath     string
+	logDir         string
 	askKeyPassword bool
 	sshExternal    bool
 
@@ -52,12 +51,13 @@ func (*ConfigtestCmd) Synopsis() string { return "Test configuration" }
 func (*ConfigtestCmd) Usage() string {
 	return `configtest:
 	configtest
-		        [-config=/path/to/config.toml]
-	        	[-ask-key-password]
-	        	[-ssh-external]
-		        [-debug]
+			[-config=/path/to/config.toml]
+			[-log-dir=/path/to/log]
+			[-ask-key-password]
+			[-ssh-external]
+			[-debug]
 
-		        [SERVER]...
+			[SERVER]...
 `
 }
 
@@ -66,6 +66,9 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 	wd, _ := os.Getwd()
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
+
+	defaultLogDir := util.GetDefaultLogDir()
+	f.StringVar(&p.logDir, "log-dir", defaultLogDir, "/path/to/log")
 
 	f.BoolVar(&p.debug, "debug", false, "debug mode")
 
@@ -98,6 +101,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 
 	c.Conf.Debug = p.debug
 	c.Conf.SSHExternal = p.sshExternal
+	c.Conf.LogDir = p.logDir
 
 	err = c.Load(p.configPath, keyPass)
 	if err != nil {
@@ -108,19 +112,6 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	var servernames []string
 	if 0 < len(f.Args()) {
 		servernames = f.Args()
-	} else {
-		stat, _ := os.Stdin.Stat()
-		if (stat.Mode() & os.ModeCharDevice) == 0 {
-			bytes, err := ioutil.ReadAll(os.Stdin)
-			if err != nil {
-				logrus.Errorf("Failed to read stdin: %s", err)
-				return subcommands.ExitFailure
-			}
-			fields := strings.Fields(string(bytes))
-			if 0 < len(fields) {
-				servernames = fields
-			}
-		}
 	}
 
 	target := make(map[string]c.ServerInfo)
@@ -146,7 +137,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	Log := util.NewCustomLogger(c.ServerInfo{})
 
 	Log.Info("Validating Config...")
-	if !c.Conf.Validate() {
+	if !c.Conf.ValidateOnConfigtest() {
 		return subcommands.ExitUsageError
 	}
 

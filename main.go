@@ -31,7 +31,7 @@ import (
 )
 
 // Version of Vuls
-var version = "0.1.7"
+var version = "0.2.0"
 
 // Revision of Git
 var revision string
@@ -45,6 +45,7 @@ func main() {
 	subcommands.Register(&commands.ScanCmd{}, "scan")
 	subcommands.Register(&commands.PrepareCmd{}, "prepare")
 	subcommands.Register(&commands.HistoryCmd{}, "history")
+	subcommands.Register(&commands.ReportCmd{}, "report")
 	subcommands.Register(&commands.ConfigtestCmd{}, "configtest")
 
 	var v = flag.Bool("v", false, "Show version")

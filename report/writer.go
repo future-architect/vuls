@@ -17,7 +17,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 package report
 
-import "github.com/future-architect/vuls/models"
+import (
+	"bytes"
+	"compress/gzip"
+
+	"github.com/future-architect/vuls/models"
+)
 
 const (
 	nvdBaseURL            = "https://web.nvd.nist.gov/view/vuln/detail"
@@ -33,9 +38,27 @@ const (
 	debianTrackerBaseURL  = "https://security-tracker.debian.org/tracker"
 
 	freeBSDVuXMLBaseURL = "https://vuxml.freebsd.org/freebsd/%s.html"
+
+	vulsOpenTag  = "<vulsreport>"
+	vulsCloseTag = "</vulsreport>"
 )
 
 // ResultWriter Interface
 type ResultWriter interface {
-	Write([]models.ScanResult) error
+	Write(...models.ScanResult) error
+}
+
+func gz(data []byte) ([]byte, error) {
+	var b bytes.Buffer
+	gz := gzip.NewWriter(&b)
+	if _, err := gz.Write(data); err != nil {
+		return nil, err
+	}
+	if err := gz.Flush(); err != nil {
+		return nil, err
+	}
+	if err := gz.Close(); err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
 }

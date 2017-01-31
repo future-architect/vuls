@@ -20,7 +20,7 @@ package report
 import (
 	"bytes"
 	"fmt"
-	"path/filepath"
+	"os"
 	"strings"
 	"text/template"
 	"time"
@@ -40,13 +40,8 @@ var currentCveInfo int
 var currentDetailLimitY int
 
 // RunTui execute main logic
-func RunTui(jsonDirName string) subcommands.ExitStatus {
-	var err error
-	scanHistory, err = selectScanHistory(jsonDirName)
-	if err != nil {
-		log.Errorf("%s", err)
-		return subcommands.ExitFailure
-	}
+func RunTui(history models.ScanHistory) subcommands.ExitStatus {
+	scanHistory = history
 
 	g, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
@@ -64,32 +59,12 @@ func RunTui(jsonDirName string) subcommands.ExitStatus {
 	g.SelFgColor = gocui.ColorBlack
 	g.Cursor = true
 
-	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
+	if err := g.MainLoop(); err != nil {
+		g.Close()
 		log.Errorf("%s", err)
-		return subcommands.ExitFailure
+		os.Exit(1)
 	}
-
 	return subcommands.ExitSuccess
-}
-
-func selectScanHistory(jsonDirName string) (latest models.ScanHistory, err error) {
-	var jsonDir string
-	if 0 < len(jsonDirName) {
-		jsonDir = filepath.Join(config.Conf.ResultsDir, jsonDirName)
-	} else {
-		var jsonDirs JSONDirs
-		if jsonDirs, err = GetValidJSONDirs(); err != nil {
-			return
-		}
-		if len(jsonDirs) == 0 {
-			return latest, fmt.Errorf("No scan results are found in %s", config.Conf.ResultsDir)
-		}
-		jsonDir = jsonDirs[0]
-	}
-	if latest, err = LoadOneScanHistory(jsonDir); err != nil {
-		return
-	}
-	return
 }
 
 func keybindings(g *gocui.Gui) (err error) {
@@ -537,6 +512,9 @@ func setSideLayout(g *gocui.Gui) error {
 		for _, result := range scanHistory.ScanResults {
 			fmt.Fprintln(v, result.ServerInfoTui())
 		}
+		if len(scanHistory.ScanResults) == 0 {
+			return fmt.Errorf("No scan results")
+		}
 		currentScanResult = scanHistory.ScanResults[0]
 		if _, err := g.SetCurrentView("side"); err != nil {
 			return err
@@ -666,7 +644,7 @@ type dataForTmpl struct {
 	VulnSiteLinks    []string
 	References       []cve.Reference
 	Packages         []string
-	CpeNames         []models.CpeName
+	CpeNames         []string
 	PublishedDate    time.Time
 	LastModifiedDate time.Time
 }
@@ -780,8 +758,8 @@ Package/CPE
 {{range $pack := .Packages -}}
 * {{$pack}}
 {{end -}}
-{{range .CpeNames -}}
-* {{.Name}}
+{{range $name := .CpeNames -}}
+* {{$name}}
 {{end}}
 Links
 --------------

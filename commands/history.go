@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	c "github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/report"
 	"github.com/google/subcommands"
 )
 
@@ -70,11 +69,11 @@ func (p *HistoryCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 	c.Conf.ResultsDir = p.resultsDir
 
 	var err error
-	var jsonDirs report.JSONDirs
-	if jsonDirs, err = report.GetValidJSONDirs(); err != nil {
+	var dirs jsonDirs
+	if dirs, err = lsValidJSONDirs(); err != nil {
 		return subcommands.ExitFailure
 	}
-	for _, d := range jsonDirs {
+	for _, d := range dirs {
 		var files []os.FileInfo
 		if files, err = ioutil.ReadDir(d); err != nil {
 			return subcommands.ExitFailure
@@ -89,7 +88,7 @@ func (p *HistoryCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 		}
 		splitPath := strings.Split(d, string(os.PathSeparator))
 		timeStr := splitPath[len(splitPath)-1]
-		fmt.Printf("%s scanned %d servers: %s\n",
+		fmt.Printf("%s %d servers: %s\n",
 			timeStr,
 			len(hosts),
 			strings.Join(hosts, ", "),

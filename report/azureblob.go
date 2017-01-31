@@ -20,6 +20,7 @@ package report
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"time"
 
@@ -27,11 +28,75 @@ import (
 
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/util"
 )
 
 // AzureBlobWriter writes results to AzureBlob
 type AzureBlobWriter struct{}
+
+// Write results to Azure Blob storage
+func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
+	if len(rs) == 0 {
+		return nil
+	}
+
+	cli, err := getBlobClient()
+	if err != nil {
+		return err
+	}
+
+	if c.Conf.FormatOneLineText {
+		timestr := rs[0].ScannedAt.Format(time.RFC3339)
+		k := fmt.Sprintf(timestr + "/summary.txt")
+		text := toOneLineSummary(rs...)
+		b := []byte(text)
+		if err := createBlockBlob(cli, k, b); err != nil {
+			return err
+		}
+	}
+
+	for _, r := range rs {
+		key := r.ReportKeyName()
+		if c.Conf.FormatJSON {
+			k := key + ".json"
+			var b []byte
+			if b, err = json.Marshal(r); err != nil {
+				return fmt.Errorf("Failed to Marshal to JSON: %s", err)
+			}
+			if err := createBlockBlob(cli, k, b); err != nil {
+				return err
+			}
+		}
+
+		if c.Conf.FormatShortText {
+			k := key + "_short.txt"
+			b := []byte(toShortPlainText(r))
+			if err := createBlockBlob(cli, k, b); err != nil {
+				return err
+			}
+		}
+
+		if c.Conf.FormatFullText {
+			k := key + "_full.txt"
+			b := []byte(toFullPlainText(r))
+			if err := createBlockBlob(cli, k, b); err != nil {
+				return err
+			}
+		}
+
+		if c.Conf.FormatXML {
+			k := key + ".xml"
+			var b []byte
+			if b, err = xml.Marshal(r); err != nil {
+				return fmt.Errorf("Failed to Marshal to XML: %s", err)
+			}
+			allBytes := bytes.Join([][]byte{[]byte(xml.Header + vulsOpenTag), b, []byte(vulsCloseTag)}, []byte{})
+			if err := createBlockBlob(cli, k, allBytes); err != nil {
+				return err
+			}
+		}
+	}
+	return
+}
 
 // CheckIfAzureContainerExists check the existence of Azure storage container
 func CheckIfAzureContainerExists() error {
@@ -57,84 +122,24 @@ func getBlobClient() (storage.BlobStorageClient, error) {
 	return api.GetBlobService(), nil
 }
 
-// Write results to Azure Blob storage
-func (w AzureBlobWriter) Write(scanResults []models.ScanResult) (err error) {
-	reqChan := make(chan models.ScanResult, len(scanResults))
-	resChan := make(chan bool)
-	errChan := make(chan error, len(scanResults))
-	defer close(resChan)
-	defer close(errChan)
-	defer close(reqChan)
-
-	timeout := time.After(10 * 60 * time.Second)
-	concurrency := 10
-	tasks := util.GenWorkers(concurrency)
-
-	go func() {
-		for _, r := range scanResults {
-			reqChan <- r
+func createBlockBlob(cli storage.BlobStorageClient, k string, b []byte) error {
+	var err error
+	if c.Conf.GZIP {
+		if b, err = gz(b); err != nil {
+			return err
 		}
-	}()
-
-	for range scanResults {
-		tasks <- func() {
-			select {
-			case sresult := <-reqChan:
-				func(r models.ScanResult) {
-					err := w.upload(r)
-					if err != nil {
-						errChan <- err
-					}
-					resChan <- true
-				}(sresult)
-			}
-		}
+		k = k + ".gz"
 	}
 
-	errs := []error{}
-	for i := 0; i < len(scanResults); i++ {
-		select {
-		case <-resChan:
-		case err := <-errChan:
-			errs = append(errs, err)
-		case <-timeout:
-			errs = append(errs, fmt.Errorf("Timeout while uploading to azure Blob"))
-		}
-	}
-
-	if 0 < len(errs) {
-		return fmt.Errorf("Failed to upload json to Azure Blob: %v", errs)
-	}
-	return nil
-}
-
-func (w AzureBlobWriter) upload(res models.ScanResult) (err error) {
-	cli, err := getBlobClient()
-	if err != nil {
-		return err
-	}
-	timestr := time.Now().Format(time.RFC3339)
-	name := ""
-	if len(res.Container.ContainerID) == 0 {
-		name = fmt.Sprintf("%s/%s.json", timestr, res.ServerName)
-	} else {
-		name = fmt.Sprintf("%s/%s_%s.json", timestr, res.ServerName, res.Container.Name)
-	}
-
-	jsonBytes, err := json.Marshal(res)
-	if err != nil {
-		return fmt.Errorf("Failed to Marshal to JSON: %s", err)
-	}
-
-	if err = cli.CreateBlockBlobFromReader(
+	if err := cli.CreateBlockBlobFromReader(
 		c.Conf.AzureContainer,
-		name,
-		uint64(len(jsonBytes)),
-		bytes.NewReader(jsonBytes),
+		k,
+		uint64(len(b)),
+		bytes.NewReader(b),
 		map[string]string{},
 	); err != nil {
-		return fmt.Errorf("%s/%s, %s",
-			c.Conf.AzureContainer, name, err)
+		return fmt.Errorf("Failed to upload data to %s/%s, %s",
+			c.Conf.AzureContainer, k, err)
 	}
-	return
+	return nil
 }

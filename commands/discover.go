@@ -98,7 +98,7 @@ iconEmoji    = ":ghost:"
 authUser     = "username"
 notifyUsers  = ["@username"]
 
-[mail]
+[email]
 smtpAddr      = "smtp.gmail.com"
 smtpPort      = "587"
 user          = "username"
@@ -116,11 +116,12 @@ subjectPrefix = "[vuls]"
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
 #dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"
-#containers = ["${running}"]
 #ignoreCves = ["CVE-2014-6271"]
 #optional = [
 #    ["key", "value"],
 #]
+#containers = ["${running}"]
+
 
 [servers]
 {{- $names:=  .Names}}
@@ -134,11 +135,15 @@ host         = "{{$ip}}"
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
 #dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"
-#containers = ["${running}"]
 #ignoreCves = ["CVE-2014-0160"]
 #optional = [
 #    ["key", "value"],
 #]
+#containers = ["${running}"]
+#[servers.{{index $names $i}}.container]
+#type = "docker" #or "lxd" defualt: docker
+
+
 {{end}}
 
 `
