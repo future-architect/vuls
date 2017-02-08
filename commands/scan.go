@@ -210,7 +210,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitUsageError
 	}
 
-	Log.Info("Detecting Server/Contianer OS... ")
+	Log.Info("Detecting Server/Container OS... ")
 	if err := scan.InitServers(Log); err != nil {
 		Log.Errorf("Failed to init servers: %s", err)
 		return subcommands.ExitFailure
