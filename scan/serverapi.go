@@ -433,7 +433,9 @@ func Prepare() []error {
 				Log.Info("Please enter y or N")
 			}
 		}
-	}
+	} else {
+          goto yes
+        }
 
 yes:
 	servers = targets
