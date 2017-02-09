@@ -97,13 +97,8 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 }
 
 func (o *redhat) checkIfSudoNoPasswd() error {
-	majorVersion, err := o.Distro.MajorVersion()
-	if err != nil {
-		return fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
-	}
-
 	cmd := "yum --version"
-	if o.Distro.Family == "centos" && majorVersion < 6 {
+	if o.Distro.Family == "centos" {
 		cmd = "echo N | " + cmd
 	}
 	r := o.exec(cmd, o.sudo())
@@ -537,7 +532,7 @@ func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList) (stdout st
 		packageNames += fmt.Sprintf("%s ", packInfo.Name)
 	}
 
-	command := ""
+	command := "echo N | "
 	if 0 < len(config.Conf.HTTPProxy) {
 		command += util.ProxyEnv()
 	}
@@ -548,14 +543,6 @@ func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList) (stdout st
 	}
 	if config.Conf.SkipBroken {
 		yumopts += " --skip-broken"
-	}
-
-	// CentOS 5 does not have --assumeno option.
-	majorVersion, _ := o.Distro.MajorVersion()
-	if majorVersion < 6 {
-		command = "echo N | " + command
-	} else {
-		yumopts += " --assumeno"
 	}
 
 	// yum update --changelog doesn't have --color option.
