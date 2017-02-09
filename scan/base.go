@@ -84,7 +84,7 @@ func (l base) getLackDependencies() []string {
 func (l base) allContainers() (containers []config.Container, err error) {
 	switch l.ServerInfo.Container.Type {
 	case "", "docker":
-		stdout, err := l.dockerPs("-a --format '{{.ID}} {{.Names}}'")
+		stdout, err := l.dockerPs("-a --format '{{.ID}} {{.Names}} {{.Image}}'")
 		if err != nil {
 			return containers, err
 		}
@@ -104,7 +104,7 @@ func (l base) allContainers() (containers []config.Container, err error) {
 func (l *base) runningContainers() (containers []config.Container, err error) {
 	switch l.ServerInfo.Container.Type {
 	case "", "docker":
-		stdout, err := l.dockerPs("--format '{{.ID}} {{.Names}}'")
+		stdout, err := l.dockerPs("--format '{{.ID}} {{.Names}} {{.Image}}'")
 		if err != nil {
 			return containers, err
 		}
@@ -124,7 +124,7 @@ func (l *base) runningContainers() (containers []config.Container, err error) {
 func (l *base) exitedContainers() (containers []config.Container, err error) {
 	switch l.ServerInfo.Container.Type {
 	case "", "docker":
-		stdout, err := l.dockerPs("--filter 'status=exited' --format '{{.ID}} {{.Names}}'")
+		stdout, err := l.dockerPs("--filter 'status=exited' --format '{{.ID}} {{.Names}} {{.Image}}'")
 		if err != nil {
 			return containers, err
 		}
@@ -166,12 +166,13 @@ func (l *base) parseDockerPs(stdout string) (containers []config.Container, err 
 		if len(fields) == 0 {
 			break
 		}
-		if len(fields) != 2 {
+		if len(fields) != 3 {
 			return containers, fmt.Errorf("Unknown format: %s", line)
 		}
 		containers = append(containers, config.Container{
 			ContainerID: fields[0],
 			Name:        fields[1],
+			Image:	     fields[2],
 		})
 	}
 	return
@@ -279,6 +280,7 @@ func (l *base) convertToModel() (models.ScanResult, error) {
 	container := models.Container{
 		ContainerID: l.ServerInfo.Container.ContainerID,
 		Name:        l.ServerInfo.Container.Name,
+		Image:	     l.ServerInfo.Container.Image,
 	}
 
 	return models.ScanResult{

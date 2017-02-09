@@ -398,4 +398,5 @@ type Container struct {
 	ContainerID string
 	Name        string
 	Type        string
+	Image	    string
 }

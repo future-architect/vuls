@@ -452,6 +452,7 @@ type DistroAdvisory struct {
 type Container struct {
 	ContainerID string
 	Name        string
+	Image	    string
 }
 
 // Platform has platform information
