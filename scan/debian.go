@@ -537,7 +537,7 @@ func (o *debian) scanPackageCveIDs(pack models.PackageInfo) ([]string, error) {
 	case "ubuntu":
 		cmd = fmt.Sprintf(`apt-get changelog %s | grep '\(urgency\|CVE\)'`, pack.Name)
 	case "debian":
-		cmd = fmt.Sprintf(`aptitude changelog %s | grep '\(urgency\|CVE\)'`, pack.Name)
+		cmd = fmt.Sprintf(`env PAGER=cat aptitude changelog %s | grep '\(urgency\|CVE\)'`, pack.Name)
 	}
 	cmd = util.PrependProxyEnv(cmd)
 
