@@ -361,7 +361,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	for _, r := range history.ScanResults {
 		if p.refreshCve || needToRefreshCve(r) {
 			Log.Debugf("need to refresh")
-			if c.Conf.CveDBType == "sqlite3" {
+			if c.Conf.CveDBType == "sqlite3" && c.Conf.CveDictionaryURL == "" {
 				if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
 					Log.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
 						c.Conf.CveDBPath)
