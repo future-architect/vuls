@@ -550,9 +550,9 @@ func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList) (stdout st
 		yumopts += " --skip-broken"
 	}
 
-	// CentOS 5 does not have --assumeno option.
+	// CentOS 5 and 6 does not have --assumeno option.
 	majorVersion, _ := o.Distro.MajorVersion()
-	if majorVersion < 6 {
+	if majorVersion < 7 {
 		command = "echo N | " + command
 	} else {
 		yumopts += " --assumeno"
