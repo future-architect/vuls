@@ -284,6 +284,7 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 			copied.SetContainer(config.Container{
 				ContainerID: containerInfo.ContainerID,
 				Name:        containerInfo.Name,
+				Image:	     containerInfo.Image,
 				Type:        containerHostInfo.Container.Type,
 			})
 			os := detectOS(copied)
