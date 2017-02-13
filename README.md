@@ -609,9 +609,9 @@ configtest:
 And also, configtest subcommand checks sudo settings on target servers whether Vuls is able to SUDO with nopassword via SSH.  
 
 Example of /etc/sudoers on target servers
-- CentOS, RHEL (CentOS 5 needs also `/bin/echo`)
+- CentOS, RHEL
 ```
-vuls ALL=(root) NOPASSWD: /usr/bin/yum (, /bin/echo)
+vuls ALL=(root) NOPASSWD: /usr/bin/yum
 ```
 - Ubuntu, Debian
 ```
