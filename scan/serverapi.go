@@ -86,6 +86,8 @@ func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 
 	itsMe, osType, fatalErr = detectDebian(c)
 	if fatalErr != nil {
+		osType.setErrs([]error{
+			fmt.Errorf("Failed to detect OS: %s", fatalErr)})
 		return
 	}
 
@@ -282,7 +284,7 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 			copied.SetContainer(config.Container{
 				ContainerID: containerInfo.ContainerID,
 				Name:        containerInfo.Name,
-				Image:	     containerInfo.Image,
+				Image:       containerInfo.Image,
 				Type:        containerHostInfo.Container.Type,
 			})
 			os := detectOS(copied)
