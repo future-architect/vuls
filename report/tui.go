@@ -545,6 +545,10 @@ func summaryLines() string {
 	stable.MaxColWidth = 1000
 	stable.Wrap = false
 
+	if len(currentScanResult.Errors) != 0 {
+		return "Error: Scan with --debug to view the details"
+	}
+
 	indexFormat := ""
 	if len(currentScanResult.AllCves()) < 10 {
 		indexFormat = "[%1d]"
@@ -650,6 +654,10 @@ type dataForTmpl struct {
 }
 
 func detailLines() (string, error) {
+	if len(currentScanResult.Errors) != 0 {
+		return "", nil
+	}
+
 	if len(currentScanResult.AllCves()) == 0 {
 		return "No vulnerable packages", nil
 	}
@@ -729,8 +737,6 @@ func detailLines() (string, error) {
 
 	return string(buf.Bytes()), nil
 }
-
-//  * {{.Name}}-{{.Version}}-{{.Release}}
 
 func detailTemplate() string {
 	return `

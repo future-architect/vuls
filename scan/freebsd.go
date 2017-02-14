@@ -55,13 +55,13 @@ func detectFreebsd(c config.ServerInfo) (itsMe bool, bsd osTypeInterface) {
 			}
 		}
 	}
-	Log.Debugf("Not FreeBSD. servernam: %s", c.ServerName)
+	util.Log.Debugf("Not FreeBSD. servernam: %s", c.ServerName)
 	return false, bsd
 }
 
 func (o *bsd) checkIfSudoNoPasswd() error {
 	// FreeBSD doesn't need root privilege
-	o.log.Infof("sudo ... OK")
+	o.log.Infof("sudo ... No need")
 	return nil
 }
 

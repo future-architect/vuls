@@ -23,7 +23,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Sirupsen/logrus"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/scan"
 	"github.com/future-architect/vuls/util"
@@ -116,27 +115,31 @@ func (p *PrepareCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	c.Conf.LogDir = p.logDir
+	c.Conf.Debug = p.debug
+	util.Log = util.NewCustomLogger(c.ServerInfo{})
+
 	var keyPass string
 	var err error
 	if p.askKeyPassword {
 		prompt := "SSH key password: "
 		if keyPass, err = getPasswd(prompt); err != nil {
-			logrus.Error(err)
+			util.Log.Error(err)
 			return subcommands.ExitFailure
 		}
 	}
 	if p.askSudoPassword {
-		logrus.Errorf("[Deprecated] -ask-sudo-password WAS REMOVED FOR SECURITY REASONS. Define NOPASSWD in /etc/sudoers on target servers and use SSH key-based authentication")
+		util.Log.Errorf("[Deprecated] -ask-sudo-password WAS REMOVED FOR SECURITY REASONS. Define NOPASSWD in /etc/sudoers on target servers and use SSH key-based authentication")
 		return subcommands.ExitFailure
 	}
 
 	err = c.Load(p.configPath, keyPass)
 	if err != nil {
-		logrus.Errorf("Error loading %s, %s", p.configPath, err)
+		util.Log.Errorf("Error loading %s, %s", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
 
-	logrus.Infof("Start Preparing (config: %s)", p.configPath)
+	util.Log.Infof("Start Preparing (config: %s)", p.configPath)
 	target := make(map[string]c.ServerInfo)
 	for _, arg := range f.Args() {
 		found := false
@@ -148,7 +151,7 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 			}
 		}
 		if !found {
-			logrus.Errorf("%s is not in config", arg)
+			util.Log.Errorf("%s is not in config", arg)
 			return subcommands.ExitUsageError
 		}
 	}
@@ -156,34 +159,25 @@ func (p *PrepareCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 		c.Conf.Servers = target
 	}
 
-	c.Conf.Debug = p.debug
 	c.Conf.SSHExternal = p.sshExternal
 	c.Conf.AssumeYes = p.assumeYes
-	c.Conf.LogDir = p.logDir
 
-	logrus.Info("Validating Config...")
+	util.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnPrepare() {
 		return subcommands.ExitUsageError
 	}
-	// Set up custom logger
-	logger := util.NewCustomLogger(c.ServerInfo{})
 
-	logger.Info("Detecting OS... ")
-	if err := scan.InitServers(logger); err != nil {
-		logger.Errorf("Failed to init servers: %s", err)
+	util.Log.Info("Detecting OS... ")
+	if err := scan.InitServers(); err != nil {
+		util.Log.Errorf("Failed to init servers: %s", err)
 		return subcommands.ExitFailure
 	}
 
-	logger.Info("Checking sudo configuration... ")
-	if err := scan.CheckIfSudoNoPasswd(logger); err != nil {
-		logger.Errorf("Failed to sudo with nopassword via SSH. Define NOPASSWD in /etc/sudoers on target servers")
-		return subcommands.ExitFailure
-	}
+	util.Log.Info("Checking sudo configuration... ")
+	scan.CheckIfSudoNoPasswd()
 
-	if errs := scan.Prepare(); 0 < len(errs) {
-		for _, e := range errs {
-			logger.Errorf("Failed to prepare: %s", e)
-		}
+	if err := scan.Prepare(); err != nil {
+		util.Log.Errorf("Failed to prepare: %s", err)
 		return subcommands.ExitFailure
 	}
 

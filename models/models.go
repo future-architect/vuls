@@ -73,6 +73,7 @@ type ScanResult struct {
 
 	Packages PackageInfoList
 
+	Errors   []string
 	Optional [][]interface{}
 }
 
@@ -164,8 +165,7 @@ func (r ScanResult) ReportKeyName() (name string) {
 func (r ScanResult) ServerInfo() string {
 	if len(r.Container.ContainerID) == 0 {
 		return fmt.Sprintf("%s (%s%s)",
-			r.ServerName, r.Family, r.Release,
-		)
+			r.ServerName, r.Family, r.Release)
 	}
 	return fmt.Sprintf(
 		"%s / %s (%s%s) on %s",

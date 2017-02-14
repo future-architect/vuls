@@ -42,11 +42,14 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 	}
 
 	for _, r := range rs {
-		subject := fmt.Sprintf("%s%s %s",
-			conf.EMail.SubjectPrefix,
-			r.ServerInfo(),
-			r.CveSummary(),
-		)
+		var subject string
+		if len(r.Errors) != 0 {
+			subject = fmt.Sprintf("%s%s An error occurred while scanning",
+				conf.EMail.SubjectPrefix, r.ServerInfo())
+		} else {
+			subject = fmt.Sprintf("%s%s %s",
+				conf.EMail.SubjectPrefix, r.ServerInfo(), r.CveSummary())
+		}
 
 		headers := make(map[string]string)
 		headers["From"] = conf.EMail.From

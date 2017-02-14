@@ -29,6 +29,9 @@ import (
 	formatter "github.com/kotakanbe/logrus-prefixed-formatter"
 )
 
+// Log for localhsot
+var Log *logrus.Entry
+
 // NewCustomLogger creates logrus
 func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
 	log := logrus.New()
@@ -47,7 +50,7 @@ func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
 
 	if _, err := os.Stat(logDir); os.IsNotExist(err) {
 		if err := os.Mkdir(logDir, 0700); err != nil {
-			logrus.Errorf("Failed to create log directory: %s", err)
+			log.Errorf("Failed to create log directory: %s", err)
 		}
 	}
 

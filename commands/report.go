@@ -249,10 +249,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.Debug = p.debug
 	c.Conf.DebugSQL = p.debugSQL
 	c.Conf.LogDir = p.logDir
-	Log := util.NewCustomLogger(c.ServerInfo{})
+	util.Log = util.NewCustomLogger(c.ServerInfo{})
 
 	if err := c.Load(p.configPath, ""); err != nil {
-		Log.Errorf("Error loading %s, %s", p.configPath, err)
+		util.Log.Errorf("Error loading %s, %s", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
 
@@ -268,7 +268,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.Pipe = p.pipe
 	jsonDir, err := jsonDir(f.Args())
 	if err != nil {
-		Log.Errorf("Failed to read from JSON: %s", err)
+		util.Log.Errorf("Failed to read from JSON: %s", err)
 		return subcommands.ExitFailure
 	}
 
@@ -304,7 +304,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		c.Conf.AwsProfile = p.awsProfile
 		c.Conf.S3Bucket = p.awsS3Bucket
 		if err := report.CheckIfBucketExists(); err != nil {
-			Log.Errorf("Check if there is a bucket beforehand: %s, err: %s", c.Conf.S3Bucket, err)
+			util.Log.Errorf("Check if there is a bucket beforehand: %s, err: %s", c.Conf.S3Bucket, err)
 			return subcommands.ExitUsageError
 		}
 		reports = append(reports, report.S3Writer{})
@@ -323,11 +323,11 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 		c.Conf.AzureContainer = p.azureContainer
 		if len(c.Conf.AzureContainer) == 0 {
-			Log.Error("Azure storage container name is requied with --azure-container option")
+			util.Log.Error("Azure storage container name is requied with --azure-container option")
 			return subcommands.ExitUsageError
 		}
 		if err := report.CheckIfAzureContainerExists(); err != nil {
-			Log.Errorf("Check if there is a container beforehand: %s, err: %s", c.Conf.AzureContainer, err)
+			util.Log.Errorf("Check if there is a container beforehand: %s, err: %s", c.Conf.AzureContainer, err)
 			return subcommands.ExitUsageError
 		}
 		reports = append(reports, report.AzureBlobWriter{})
@@ -338,20 +338,20 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		c.Conf.FormatShortText = true
 	}
 
-	Log.Info("Validating Config...")
+	util.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnReport() {
 		return subcommands.ExitUsageError
 	}
 	if ok, err := cveapi.CveClient.CheckHealth(); !ok {
-		Log.Errorf("CVE HTTP server is not running. err: %s", err)
-		Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with --cvedb-path option")
+		util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
+		util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with --cvedb-path option")
 		return subcommands.ExitFailure
 	}
 	if c.Conf.CveDictionaryURL != "" {
-		Log.Infof("cve-dictionary: %s", c.Conf.CveDictionaryURL)
+		util.Log.Infof("cve-dictionary: %s", c.Conf.CveDictionaryURL)
 	} else {
 		if c.Conf.CveDBType == "sqlite3" {
-			Log.Infof("cve-dictionary: %s", c.Conf.CveDBPath)
+			util.Log.Infof("cve-dictionary: %s", c.Conf.CveDBPath)
 		}
 	}
 
@@ -360,10 +360,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	var results []models.ScanResult
 	for _, r := range history.ScanResults {
 		if p.refreshCve || needToRefreshCve(r) {
-			Log.Debugf("need to refresh")
+			util.Log.Debugf("need to refresh")
 			if c.Conf.CveDBType == "sqlite3" && c.Conf.CveDictionaryURL == "" {
 				if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
-					Log.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
+					util.Log.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
 						c.Conf.CveDBPath)
 					return subcommands.ExitFailure
 				}
@@ -371,18 +371,18 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 			filled, err := fillCveInfoFromCveDB(r)
 			if err != nil {
-				Log.Errorf("Failed to fill CVE information: %s", err)
+				util.Log.Errorf("Failed to fill CVE information: %s", err)
 				return subcommands.ExitFailure
 			}
 			filled.Lang = c.Conf.Lang
 
 			if err := overwriteJSONFile(jsonDir, filled); err != nil {
-				Log.Errorf("Failed to write JSON: %s", err)
+				util.Log.Errorf("Failed to write JSON: %s", err)
 				return subcommands.ExitFailure
 			}
 			results = append(results, filled)
 		} else {
-			Log.Debugf("no need to refresh")
+			util.Log.Debugf("no need to refresh")
 			results = append(results, r)
 		}
 	}
@@ -393,7 +393,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 	for _, w := range reports {
 		if err := w.Write(res...); err != nil {
-			Log.Errorf("Failed to report: %s", err)
+			util.Log.Errorf("Failed to report: %s", err)
 			return subcommands.ExitFailure
 		}
 	}

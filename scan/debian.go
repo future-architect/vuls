@@ -56,7 +56,7 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err err
 			return false, deb, fmt.Errorf(
 				"Unable to connect via SSH. Check SSH settings. %s", r)
 		}
-		Log.Debugf("Not Debian like Linux. %s", r)
+		util.Log.Debugf("Not Debian like Linux. %s", r)
 		return false, deb, nil
 	}
 
@@ -70,7 +70,7 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err err
 
 		if len(result) == 0 {
 			deb.setDistro("debian/ubuntu", "unknown")
-			Log.Warnf(
+			util.Log.Warnf(
 				"Unknown Debian/Ubuntu version. lsb_release -ir: %s", r)
 		} else {
 			distro := strings.ToLower(trim(result[1]))
@@ -88,7 +88,7 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err err
 		re := regexp.MustCompile(`(?s)^DISTRIB_ID=(.+?)\n*DISTRIB_RELEASE=(.+?)\n.*$`)
 		result := re.FindStringSubmatch(trim(r.Stdout))
 		if len(result) == 0 {
-			Log.Warnf(
+			util.Log.Warnf(
 				"Unknown Debian/Ubuntu. cat /etc/lsb-release: %s", r)
 			deb.setDistro("debian/ubuntu", "unknown")
 		} else {
@@ -105,7 +105,7 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err err
 		return true, deb, nil
 	}
 
-	Log.Debugf("Not Debian like Linux: %s", c.ServerName)
+	util.Log.Debugf("Not Debian like Linux: %s", c.ServerName)
 	return false, deb, nil
 }
 
