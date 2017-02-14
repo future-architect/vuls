@@ -45,7 +45,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 # Main Features
 
 - Scan for any vulnerabilities in Linux/FreeBSD Server
-    - Supports Ubuntu, Debian, CentOS, Amazon Linux, RHEL, FreeBSD
+    - Supports Ubuntu, Debian, CentOS, Amazon Linux, RHEL, FreeBSD and Raspbian
     - Cloud, on-premise, Docker
 - Scan middleware that are not included in OS package management
     - Scan middleware, programming language libraries and framework for vulnerability
@@ -343,7 +343,7 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 ----
 # Performance Considerations
 
-- On Ubuntu and Debian  
+- On Ubuntu, Debian and Raspbian
 Vuls issues `apt-get changelog` for each upgradable packages and parse the changelog.  
 `apt-get changelog` is slow and resource usage is heavy when there are many updatable packages on target server.   
 Vuls stores these changelogs to KVS([boltdb](https://github.com/boltdb/bolt)).  
@@ -364,6 +364,7 @@ High speed scan and resource usage is light because Vuls can get CVE IDs by usin
 | Amazon      |               Fast |
 | RHEL        |               Fast |
 | FreeBSD     |               Fast |
+| Raspbian    |  First time: Slow / From the second time: Fast |
 
 ----
 
@@ -395,6 +396,7 @@ If there is a staging environment with the same configuration as the production 
 | CentOS      |             5, 6, 7|
 | Amazon Linux|                 All|
 | FreeBSD     |                  10|
+| Raspbian    |     Wheezy, Jessie |
 
 ----
 
@@ -609,13 +611,13 @@ configtest:
 And also, configtest subcommand checks sudo settings on target servers whether Vuls is able to SUDO with nopassword via SSH.  
 
 Example of /etc/sudoers on target servers
-- CentOS, RHEL
+- CentOS and RHEL
 ```
 vuls ALL=(root) NOPASSWD: /usr/bin/yum
 ```
-- Ubuntu, Debian
+- Ubuntu, Debian and Raspbian
 ```
-vuls ALL=(root) NOPASSWD: /usr/bin/apt-get, /usr/bin/apt-cache
+vuls ALL=(root) NOPASSWD: /usr/bin/apt-get
 ```
 - It is possible to scan without root privilege for Amazon Linux, FreeBSD.
 
@@ -636,6 +638,7 @@ Prepare subcommand installs required packages on each server.
 | Amazon      |                All | -            |
 | RHEL        |            5, 6, 7 | -            |
 | FreeBSD     |                 10 | -            |
+| Raspbian    |     Wheezy, Jessie | -            |
 
 
 ```

@@ -39,7 +39,7 @@ Vulsは上に挙げた手動運用での課題を解決するツールであり�
 # Main Features
 
 - Linuxサーバに存在する脆弱性をスキャン
-    - Ubuntu, Debian, CentOS, Amazon Linux, RHELに対応
+    - Ubuntu, Debian, CentOS, Amazon Linux, RHEL, Raspbianに対応
     - クラウド、オンプレミス、Docker
 - OSパッケージ管理対象外のミドルウェアをスキャン
     - プログラミング言語のライブラリやフレームワーク、ミドルウェアの脆弱性スキャン
@@ -348,7 +348,7 @@ Vulsをスキャン対象サーバにデプロイする。Vulsはローカルホ
 ----
 # Performance Considerations
 
-- Ubuntu, Debian  
+- Ubuntu, Debian, Raspbian
 `apt-get changelog`でアップデート対象のパッケージのチェンジログを取得し、含まれるCVE IDをパースする。
 アップデート対象のパッケージが沢山ある場合、チェンジログの取得に時間がかかるので、初回のスキャンは遅い。  
 ただ、２回目以降はキャッシュしたchangelogを使うので速くなる。  
@@ -367,6 +367,7 @@ Vulsをスキャン対象サーバにデプロイする。Vulsはローカルホ
 | Amazon      |               速い |
 | RHEL        |               速い |
 | FreeBSD     |               速い |
+| Raspbian    | 初回は遅い / 2回目以降速い　|
 
 ----
 
@@ -394,6 +395,7 @@ web/app server in the same configuration under the load balancer
 | CentOS      |             5, 6, 7|
 | Amazon Linux|                 All|
 | FreeBSD     |                  10|
+| Raspbian    |     Wheezy, Jessie |
 
 ----
 
@@ -610,9 +612,9 @@ configtest:
 ```
 vuls ALL=(root) NOPASSWD: /usr/bin/yum
 ```
-- Ubuntu, Debian
+- Ubuntu, Debian, Raspbian
 ```
-vuls ALL=(root) NOPASSWD: /usr/bin/apt-get, /usr/bin/apt-cache
+vuls ALL=(root) NOPASSWD: /usr/bin/apt-get
 ```
 - Amazon Linux, FreeBSDはRoot権限なしでスキャン可能
 
@@ -631,6 +633,7 @@ Prepareサブコマンドは、Vuls内部で利用する以下のパッケージ
 | Amazon      |                All | -            |
 | RHEL        |            5, 6, 7 | -            |
 | FreeBSD     |                 10 | -            |
+| Raspbian    |     Wheezy, Jessie | -            |
 
 
 ```
