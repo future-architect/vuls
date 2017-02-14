@@ -40,7 +40,7 @@ Vuls est un outil crée pour palier aux problèmes listés ci-dessus. Voici ses 
 # Caractéristiques principales
 
 - Recherche de vulnérabilités sur des serveurs Linux
-    - Supporte Ubuntu, Debian, CentOS, Amazon Linux, RHEL
+    - Supporte Ubuntu, Debian, CentOS, Amazon Linux, RHEL, Raspbian
     - Cloud, auto-hébergement, Docker
 - Scan d'intergiciels non inclus dans le gestionnaire de paquets de l'OS
     - Scan d'intergiciels, de libraries de language de programmation et framework pour des vulnérabilités
