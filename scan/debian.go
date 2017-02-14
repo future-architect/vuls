@@ -43,7 +43,7 @@ func newDebian(c config.ServerInfo) *debian {
 	return d
 }
 
-// Ubuntu, Debian
+// Ubuntu, Debian, Raspbian
 // https://github.com/serverspec/specinfra/blob/master/lib/specinfra/helper/detect_os/debian.rb
 func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err error) {
 	deb = newDebian(c)
@@ -58,6 +58,20 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err err
 		}
 		util.Log.Debugf("Not Debian like Linux. %s", r)
 		return false, deb, nil
+	}
+
+	// Raspbian
+	// lsb_release in Raspbian Jessie returns 'Distributor ID: Raspbian'.
+	// However, lsb_release in Raspbian Wheezy returns 'Distributor ID: Debian'.
+	if r := exec(c, "cat /etc/issue", noSudo); r.isSuccess() {
+		//  e.g.
+		//  Raspbian GNU/Linux 7 \n \l
+		result := strings.Fields(r.Stdout)
+		if len(result) > 2 && result[0] == "Raspbian" {
+			distro := strings.ToLower(trim(result[0]))
+			deb.setDistro(distro, trim(result[2]))
+			return true, deb, nil
+		}
 	}
 
 	if r := exec(c, "lsb_release -ir", noSudo); r.isSuccess() {
@@ -125,7 +139,7 @@ func (o *debian) checkIfSudoNoPasswd() error {
 
 func (o *debian) checkDependencies() error {
 	switch o.Distro.Family {
-	case "ubuntu":
+	case "ubuntu", "raspbian":
 		return nil
 
 	case "debian":
@@ -534,7 +548,7 @@ func (o *debian) getChangelogCache(meta *cache.Meta, pack models.PackageInfo) st
 func (o *debian) scanPackageCveIDs(pack models.PackageInfo) ([]string, error) {
 	cmd := ""
 	switch o.Distro.Family {
-	case "ubuntu":
+	case "ubuntu", "raspbian":
 		cmd = fmt.Sprintf(`apt-get changelog %s | grep '\(urgency\|CVE\)'`, pack.Name)
 	case "debian":
 		cmd = fmt.Sprintf(`env PAGER=cat aptitude changelog %s | grep '\(urgency\|CVE\)'`, pack.Name)
