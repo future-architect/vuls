@@ -131,12 +131,13 @@ Vuls requires the following packages.
 - SQLite3 or MySQL
 - git
 - gcc
+- GNU Make
 - go v1.7.1 or later (The latest version is recommended)
     - https://golang.org/doc/install
 
 ```bash
 $ ssh ec2-user@52.100.100.100  -i ~/.ssh/private.pem
-$ sudo yum -y install sqlite git gcc
+$ sudo yum -y install sqlite git gcc make
 $ wget https://storage.googleapis.com/golang/go1.7.1.linux-amd64.tar.gz
 $ sudo tar -C /usr/local -xzf go1.7.1.linux-amd64.tar.gz
 $ mkdir $HOME/go
