@@ -396,7 +396,7 @@ If there is a staging environment with the same configuration as the production 
 | RHEL        |             5, 6, 7|
 | CentOS      |             5, 6, 7|
 | Amazon Linux|                 All|
-| FreeBSD     |                  10|
+| FreeBSD     |              10, 11|
 | Raspbian    |     Wheezy, Jessie |
 
 ----

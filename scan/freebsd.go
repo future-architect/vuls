@@ -48,7 +48,7 @@ func detectFreebsd(c config.ServerInfo) (itsMe bool, bsd osTypeInterface) {
 
 	if r := exec(c, "uname", noSudo); r.isSuccess() {
 		if strings.Contains(r.Stdout, "FreeBSD") == true {
-			if b := exec(c, "uname -r", noSudo); b.isSuccess() {
+			if b := exec(c, "freebsd-version", noSudo); b.isSuccess() {
 				rel := strings.TrimSpace(b.Stdout)
 				bsd.setDistro("FreeBSD", rel)
 				return true, bsd
