@@ -36,7 +36,7 @@ type Config struct {
 	DebugSQL bool
 	Lang     string
 
-	EMail   smtpConf
+	EMail   SMTPConf
 	Slack   SlackConf
 	Default ServerInfo
 	Servers map[string]ServerInfo
@@ -60,6 +60,7 @@ type Config struct {
 
 	FormatXML         bool
 	FormatJSON        bool
+	FormatOneEMail    bool
 	FormatOneLineText bool
 	FormatShortText   bool
 	FormatFullText    bool
@@ -216,8 +217,8 @@ func (c Config) ValidateOnTui() bool {
 	return len(errs) == 0
 }
 
-// smtpConf is smtp config
-type smtpConf struct {
+// SMTPConf is smtp config
+type SMTPConf struct {
 	SMTPAddr string
 	SMTPPort string `valid:"port"`
 
@@ -244,7 +245,7 @@ func checkEmails(emails []string) (errs []error) {
 }
 
 // Validate SMTP configuration
-func (c *smtpConf) Validate() (errs []error) {
+func (c *SMTPConf) Validate() (errs []error) {
 
 	if !c.UseThisTime {
 		return
@@ -398,5 +399,5 @@ type Container struct {
 	ContainerID string
 	Name        string
 	Type        string
-	Image	    string
+	Image       string
 }

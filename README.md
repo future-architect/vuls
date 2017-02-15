@@ -844,6 +844,7 @@ report:
                 [-to-azure-blob]
                 [-format-json]
                 [-format-xml]
+                [-format-one-email]
                 [-format-one-line-text]
                 [-format-short-text]
                 [-format-full-text]
@@ -890,6 +891,8 @@ report:
         Detail report in plain text
   -format-json
         JSON format
+  -format-one-email
+        Send all the host report via only one EMail (Specify with -to-email)
   -format-one-line-text
         One line summary in plain text
   -format-short-text

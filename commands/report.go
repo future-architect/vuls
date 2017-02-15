@@ -58,6 +58,7 @@ type ReportCmd struct {
 
 	formatJSON        bool
 	formatXML         bool
+	formatOneEMail    bool
 	formatOneLineText bool
 	formatShortText   bool
 	formatFullText    bool
@@ -102,6 +103,7 @@ func (*ReportCmd) Usage() string {
 		[-to-azure-blob]
 		[-format-json]
 		[-format-xml]
+		[-format-one-email]
 		[-format-one-line-text]
 		[-format-short-text]
 		[-format-full-text]
@@ -191,6 +193,11 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		fmt.Sprintf("XML format"))
 
+	f.BoolVar(&p.formatOneEMail,
+		"format-one-email",
+		false,
+		"Send all the host report via only one EMail (Specify with -to-email)")
+
 	f.BoolVar(&p.formatOneLineText,
 		"format-one-line-text",
 		false,
@@ -274,6 +281,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	c.Conf.FormatXML = p.formatXML
 	c.Conf.FormatJSON = p.formatJSON
+	c.Conf.FormatOneEMail = p.formatOneEMail
 	c.Conf.FormatOneLineText = p.formatOneLineText
 	c.Conf.FormatShortText = p.formatShortText
 	c.Conf.FormatFullText = p.formatFullText
