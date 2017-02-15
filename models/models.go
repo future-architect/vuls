@@ -192,7 +192,7 @@ func (r ScanResult) ServerInfoTui() string {
 	)
 }
 
-// FormatServerName returns server and contianer name
+// FormatServerName returns server and container name
 func (r ScanResult) FormatServerName() string {
 	if len(r.Container.ContainerID) == 0 {
 		return r.ServerName

@@ -168,7 +168,7 @@ $ git clone https://github.com/kotakanbe/go-cve-dictionary.git
 $ cd go-cve-dictionary
 $ make install
 ```
-The binary was built under `$GOPARH/bin`
+The binary was built under `$GOPATH/bin`
 
 Fetch vulnerability data from NVD.  
 It takes about 10 minutes (on AWS).  
@@ -192,7 +192,7 @@ $ git clone https://github.com/future-architect/vuls.git
 $ cd vuls
 $ make install
 ```
-The binary was built under `$GOPARH/bin`
+The binary was built under `$GOPATH/bin`
 
 ## Step6. Config
 
@@ -1224,7 +1224,7 @@ $ git pull
 $ mv vendor /tmp/bar
 $ make install
 ```
-Binary file was built under $GOPARH/bin
+Binary file was built under $GOPATH/bin
 
 ---
 
