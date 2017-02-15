@@ -161,21 +161,27 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			}
 		}
 
-		s.Enablerepo = v.Enablerepo
-		if len(s.Enablerepo) == 0 {
+		//s.Enablerepo = v.Enablerepo
+		if len(v.Enablerepo) == 0 {
 			s.Enablerepo = d.Enablerepo
 		}
-		if len(s.Enablerepo) != 0 {
-			for _, repo := range strings.Split(s.Enablerepo, ",") {
+		if len(v.Enablerepo) != 0 {
+			for _, repo := range strings.Split(v.Enablerepo, ",") {
+                                repo = strings.TrimSpace(repo)
 				switch repo {
-				case "base", "updates":
-					// nop
+				case "base", "updates", "epel":
+				        s.Enablerepo = s.Enablerepo + "," + repo
 				default:
+                                        s.Enablerepo = v.Enablerepo
 					return fmt.Errorf(
-						"For now, enablerepo have to be base or updates: %s, servername: %s",
+						"For now, enablerepo have to be base ,updates or epel: %s, servername: %s",
 						s.Enablerepo, name)
 				}
 			}
+                        if strings.HasPrefix(s.Enablerepo,",") {
+                                s.Enablerepo = strings.Replace(s.Enablerepo,",","",1)
+                                s.Enablerepo = strings.TrimSpace(s.Enablerepo)
+                        }
 		}
 
 		s.LogMsgAnsiColor = Colors[i%len(Colors)]
@@ -186,3 +192,4 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	Conf.Servers = servers
 	return nil
 }
+
