@@ -171,7 +171,7 @@ NVDから脆弱性データベースを取得する。
 
 ```bash
 $ cd $HOME
-$ for i in {2002..2016}; do go-cve-dictionary fetchnvd -years $i; done
+$ for i in `seq 2002 $(date +"%Y")`; do go-cve-dictionary fetchnvd -years $i; done
 ... snip ...
 $ ls -alh cve.sqlite3
 -rw-r--r-- 1 ec2-user ec2-user 7.0M Mar 24 13:20 cve.sqlite3
