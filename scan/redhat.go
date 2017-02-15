@@ -50,7 +50,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 
 	if r := exec(c, "ls /etc/fedora-release", noSudo); r.isSuccess() {
 		red.setDistro("fedora", "unknown")
-		util.Log.Warn("Fedora not tested yet: %s", r)
+		Log.Warn("Fedora not tested yet: %s", r)
 		return true, red
 	}
 
@@ -63,7 +63,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 			re := regexp.MustCompile(`(.*) release (\d[\d.]*)`)
 			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
-				util.Log.Warn("Failed to parse RedHat/CentOS version: %s", r)
+				Log.Warn("Failed to parse RedHat/CentOS version: %s", r)
 				return true, red
 			}
 
@@ -92,7 +92,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 		return true, red
 	}
 
-	util.Log.Debugf("Not RedHat like Linux. servername: %s", c.ServerName)
+	Log.Debugf("Not RedHat like Linux. servername: %s", c.ServerName)
 	return false, red
 }
 
@@ -122,6 +122,7 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 func (o *redhat) checkDependencies() error {
 	switch o.Distro.Family {
 	case "rhel", "amazon":
+		//  o.log.Infof("Nothing to do")
 		return nil
 
 	case "centos":
@@ -268,7 +269,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse %s. err: %s", cmd, err)
 	}
-	o.log.Debugf("%s", pp.Sprintf("%v", packInfoList))
+        o.log.Debugf("%s", pp.Sprintf("%v", packInfoList))
 
 	// set candidate version info
 	o.Packages.MergeNewVersion(packInfoList)
@@ -278,7 +279,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 		PackInfo models.PackageInfo
 		CveIDs   []string
 	}
-
+        
 	allChangelog, err := o.getAllChangelog(packInfoList)
 	if err != nil {
 		o.log.Errorf("Failed to getAllchangelog. err: %s", err)
@@ -521,7 +522,8 @@ func (o *redhat) parseAllChangelog(allChangelog string) (map[string]*string, err
 			}
 		} else {
 			if strings.HasPrefix(line, "Dependencies Resolved") {
-				return rpm2changelog, nil
+// don't return	for epel			return rpm2changelog, nil
+				continue
 			}
 			*writePointer += fmt.Sprintf("%s\n", line)
 		}
@@ -536,7 +538,7 @@ func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList) (stdout st
 		packageNames += fmt.Sprintf("%s ", packInfo.Name)
 	}
 
-	command := "echo N | "
+	command := ""
 	if 0 < len(config.Conf.HTTPProxy) {
 		command += util.ProxyEnv()
 	}
@@ -550,15 +552,21 @@ func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList) (stdout st
 	}
 
 	// yum update --changelog doesn't have --color option.
-	command += fmt.Sprintf(" LANGUAGE=en_US.UTF-8 yum %s --changelog update ", yumopts) + packageNames
-
-	r := o.exec(command, sudo)
-	if !r.isSuccess(0, 1) {
-		return "", fmt.Errorf(
-			"Failed to get changelog. status: %d, stdout: %s, stderr: %s",
-			r.ExitStatus, r.Stdout, r.Stderr)
+//	command += fmt.Sprintf(" LANGUAGE=en_US.UTF-8 yum %s --changelog update ", yumopts) + packageNames
+        returnStr := ""
+        for _, packInfo := range packInfoList {// get changelog for each packages
+                command1 := ""
+		command = command1 + fmt.Sprintf(" LANGUAGE=en_US.UTF-8 yum %s --changelog update ", yumopts) + fmt.Sprintf("%s ", packInfo.Name) 
+        	r := o.exec(command, sudo)
+		if !r.isSuccess(0, 1) {
+			return "", fmt.Errorf(
+				"Failed to get changelog. status: %d, stdout: %s, stderr: %s",
+				r.ExitStatus, r.Stdout, r.Stderr)
+		}
+                returnStr = returnStr + r.Stdout
 	}
-	return r.Stdout, nil
+//	return r.Stdout, nil
+        return returnStr, nil
 }
 
 type distroAdvisoryCveIDs struct {
@@ -591,7 +599,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 	if o.Distro.Family == "rhel" && major == 5 {
 		cmd = "yum --color=never list-security --security"
 	} else {
-		cmd = "yum --color=never --security updateinfo list updates"
+		cmd = "yum --color=never updateinfo list available --security"
 	}
 	r = o.exec(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess() {
@@ -635,7 +643,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 	if o.Distro.Family == "rhel" && major == 5 {
 		cmd = "yum --color=never info-sec"
 	} else {
-		cmd = "yum --color=never --security updateinfo updates"
+		cmd = "yum --color=never updateinfo --security update"
 	}
 	r = o.exec(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess() {
