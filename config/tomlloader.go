@@ -170,7 +170,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
                                 repo = strings.TrimSpace(repo)
 				switch repo {
 				case "base", "updates", "epel":
-					s.Enablerepo = s.Enablerepo + "," + repo	
+					s.Enablerepo = s.Enablerepo + "," + repo
 				default:
 					s.Enablerepo = v.Enablerepo
 					return fmt.Errorf(
