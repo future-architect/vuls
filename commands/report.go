@@ -364,6 +364,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	history, err := loadOneScanHistory(jsonDir)
+	if err != nil {
+		util.Log.Error(err)
+		return subcommands.ExitFailure
+	}
 
 	var results []models.ScanResult
 	for _, r := range history.ScanResults {
