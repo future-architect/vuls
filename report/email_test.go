@@ -47,12 +47,13 @@ var mailTests = []mailTest{
 
 			From: "from@address.com",
 			To:   []string{"to@address.com"},
+			Cc:   []string{"cc@address.com"},
 		},
 		emailRecorder{
 			addr: "127.0.0.1:25",
 			auth: smtp.PlainAuth("", "", "", "127.0.0.1"),
 			from: "from@address.com",
-			to:   []string{"to@address.com"},
+			to:   []string{"to@address.com", "cc@address.com"},
 			body: "body",
 		},
 	},
@@ -66,6 +67,7 @@ var mailTests = []mailTest{
 
 			From: "from@address.com",
 			To:   []string{"to1@address.com", "to2@address.com"},
+			Cc:   []string{"cc1@address.com", "cc2@address.com"},
 		},
 		emailRecorder{
 			addr: "127.0.0.1:25",
@@ -76,7 +78,8 @@ var mailTests = []mailTest{
 				"127.0.0.1",
 			),
 			from: "from@address.com",
-			to:   []string{"to1@address.com", "to2@address.com"},
+			to: []string{"to1@address.com", "to2@address.com",
+				"cc1@address.com", "cc2@address.com"},
 			body: "body",
 		},
 	},

@@ -122,7 +122,7 @@ func (e *emailSender) Send(subject, body string) (err error) {
 			emailConf.SMTPAddr,
 		),
 		emailConf.From,
-		emailConf.To,
+		mailAddresses,
 		[]byte(message),
 	)
 	if err != nil {
