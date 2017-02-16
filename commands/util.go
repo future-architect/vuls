@@ -202,10 +202,12 @@ func scanVulnByCpeNames(cpeNames []string, scannedVulns []models.VulnInfo) ([]mo
 				val.CpeNames = names
 				set[detail.CveID] = val
 			} else {
-				set[detail.CveID] = models.VulnInfo{
+				v := models.VulnInfo{
 					CveID:    detail.CveID,
 					CpeNames: []string{name},
 				}
+				v.NilSliceToEmpty()
+				set[detail.CveID] = v
 			}
 		}
 	}

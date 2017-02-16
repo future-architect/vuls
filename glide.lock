@@ -70,7 +70,7 @@ imports:
 - name: github.com/k0kubun/pp
   version: f5dce6ed0ccf6c350f1679964ff6b61f3d6d2033
 - name: github.com/kotakanbe/go-cve-dictionary
-  version: c6894c632b69f1879fa49aa2f7b6a6c553061cfb
+  version: bbfdd41e7785a9b7163b5109b10ac2dea8f36d84
   subpackages:
   - config
   - db
