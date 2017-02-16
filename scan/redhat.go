@@ -272,7 +272,6 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 
 	// set candidate version info
 	o.Packages.MergeNewVersion(packInfoList)
-
 	// Collect CVE-IDs in changelog
 	type PackInfoCveIDs struct {
 		PackInfo models.PackageInfo
@@ -555,8 +554,8 @@ func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList) (stdout st
         returnStr := ""
         for _, packInfo := range packInfoList {
 		command1 := ""
-		command = command1 + fmt.Sprintf(" LANGUAGE=en_US.UTF-8 yum %s --changelog update ", yumopts) + fmt.Sprintf("%s ", packInfo.Name) 
-        	r := o.exec(command, sudo)
+		command1 = command + fmt.Sprintf(" LANGUAGE=en_US.UTF-8 yum %s --changelog update ", yumopts) + fmt.Sprintf("%s ", packInfo.Name) 
+        	r := o.exec(command1, sudo)
 		if !r.isSuccess(0, 1) {
 			return "", fmt.Errorf(
 				"Failed to get changelog. status: %d, stdout: %s, stderr: %s",
