@@ -172,7 +172,7 @@ func (l *base) parseDockerPs(stdout string) (containers []config.Container, err 
 		containers = append(containers, config.Container{
 			ContainerID: fields[0],
 			Name:        fields[1],
-			Image:	     fields[2],
+			Image:       fields[2],
 		})
 	}
 	return
@@ -279,7 +279,7 @@ func (l *base) convertToModel() models.ScanResult {
 	container := models.Container{
 		ContainerID: l.ServerInfo.Container.ContainerID,
 		Name:        l.ServerInfo.Container.Name,
-		Image:	     l.ServerInfo.Container.Image,
+		Image:       l.ServerInfo.Container.Image,
 	}
 
 	errs := []string{}
