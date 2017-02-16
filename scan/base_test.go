@@ -30,16 +30,18 @@ func TestParseDockerPs(t *testing.T) {
 		in       string
 		expected []config.Container
 	}{
-		`c7ca0992415a romantic_goldberg
-f570ae647edc agitated_lovelace`,
+		`c7ca0992415a romantic_goldberg ubuntu:14.04.5
+f570ae647edc agitated_lovelace centos:latest`,
 		[]config.Container{
 			{
 				ContainerID: "c7ca0992415a",
 				Name:        "romantic_goldberg",
+				Image:       "ubuntu:14.04.5",
 			},
 			{
 				ContainerID: "f570ae647edc",
 				Name:        "agitated_lovelace",
+				Image:       "centos:latest",
 			},
 		},
 	}
