@@ -554,7 +554,7 @@ func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList) (stdout st
 //	command += fmt.Sprintf(" LANGUAGE=en_US.UTF-8 yum %s --changelog update ", yumopts) + packageNames
         returnStr := ""
         for _, packInfo := range packInfoList {
-                command1 := ""
+		command1 := ""
 		command = command1 + fmt.Sprintf(" LANGUAGE=en_US.UTF-8 yum %s --changelog update ", yumopts) + fmt.Sprintf("%s ", packInfo.Name) 
         	r := o.exec(command, sudo)
 		if !r.isSuccess(0, 1) {
