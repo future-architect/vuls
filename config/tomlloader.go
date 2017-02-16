@@ -170,17 +170,17 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
                                 repo = strings.TrimSpace(repo)
 				switch repo {
 				case "base", "updates", "epel":
-				        s.Enablerepo = s.Enablerepo + "," + repo
+					s.Enablerepo = s.Enablerepo + "," + repo	
 				default:
-                                        s.Enablerepo = v.Enablerepo
+					s.Enablerepo = v.Enablerepo
 					return fmt.Errorf(
 						"For now, enablerepo have to be base ,updates or epel: %s, servername: %s",
 						s.Enablerepo, name)
 				}
 			}
-                        if strings.HasPrefix(s.Enablerepo,",") {
-                                s.Enablerepo = strings.Replace(s.Enablerepo,",","",1)
-                                s.Enablerepo = strings.TrimSpace(s.Enablerepo)
+			if strings.HasPrefix(s.Enablerepo,",") {
+				s.Enablerepo = strings.Replace(s.Enablerepo,",","",1)
+				s.Enablerepo = strings.TrimSpace(s.Enablerepo)
                         }
 		}
 
@@ -192,4 +192,3 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	Conf.Servers = servers
 	return nil
 }
-
