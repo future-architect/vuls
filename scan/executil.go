@@ -163,7 +163,7 @@ func exec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (resul
 }
 
 func localExec(c conf.ServerInfo, cmdstr string, sudo bool) (result execResult) {
-	cmdstr = decolateCmd(c, cmdstr, sudo)
+	cmdstr = decorateCmd(c, cmdstr, sudo)
 	var cmd *ex.Cmd
 	if c.Distro.Family == "FreeBSD" {
 		cmd = ex.Command("/bin/sh", "-c", cmdstr)
@@ -234,7 +234,7 @@ func sshExecNative(c conf.ServerInfo, cmd string, sudo bool) (result execResult)
 	session.Stdout = &stdoutBuf
 	session.Stderr = &stderrBuf
 
-	cmd = decolateCmd(c, cmd, sudo)
+	cmd = decorateCmd(c, cmd, sudo)
 	if err := session.Run(cmd); err != nil {
 		if exitErr, ok := err.(*ssh.ExitError); ok {
 			result.ExitStatus = exitErr.ExitStatus()
@@ -284,7 +284,7 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 		args = append(args, "-o", "PasswordAuthentication=no")
 	}
 
-	cmd = decolateCmd(c, cmd, sudo)
+	cmd = decorateCmd(c, cmd, sudo)
 	//  cmd = fmt.Sprintf("stty cols 256; set -o pipefail; %s", cmd)
 
 	args = append(args, cmd)
@@ -323,7 +323,7 @@ func getSSHLogger(log ...*logrus.Entry) *logrus.Entry {
 	return log[0]
 }
 
-func decolateCmd(c conf.ServerInfo, cmd string, sudo bool) string {
+func decorateCmd(c conf.ServerInfo, cmd string, sudo bool) string {
 	if sudo && c.User != "root" && !c.IsContainer() {
 		cmd = fmt.Sprintf("sudo -S %s", cmd)
 		cmd = strings.Replace(cmd, "|", "| sudo ", -1)
