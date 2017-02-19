@@ -287,6 +287,11 @@ func (l *base) convertToModel() models.ScanResult {
 		errs = append(errs, fmt.Sprintf("%s", e))
 	}
 
+	// Avoid null slice being null in JSON
+	for i := range l.VulnInfos {
+		l.VulnInfos[i].NilSliceToEmpty()
+	}
+
 	return models.ScanResult{
 		ServerName:  l.ServerInfo.ServerName,
 		ScannedAt:   time.Now(),

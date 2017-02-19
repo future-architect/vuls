@@ -92,18 +92,17 @@ func (r ScanResult) FillCveDetail() (ScanResult, error) {
 		return r, err
 	}
 
-	icves := config.Conf.Servers[r.ServerName].IgnoreCves
-
-	var known, unknown, ignored CveInfos
+	known, unknown, ignored := CveInfos{}, CveInfos{}, CveInfos{}
 	for _, d := range ds {
 		cinfo := CveInfo{
 			CveDetail: d,
 			VulnInfo:  set[d.CveID],
 		}
+		cinfo.NilSliceToEmpty()
 
 		// ignored
 		found := false
-		for _, icve := range icves {
+		for _, icve := range config.Conf.Servers[r.ServerName].IgnoreCves {
 			if icve == d.CveID {
 				ignored = append(ignored, cinfo)
 				found = true
@@ -251,6 +250,16 @@ type VulnInfo struct {
 	CpeNames         []string
 }
 
+// NilSliceToEmpty set nil slice fields to empty slice to avoid null in JSON
+func (v *VulnInfo) NilSliceToEmpty() {
+	if v.CpeNames == nil {
+		v.CpeNames = []string{}
+	}
+	if v.DistroAdvisories == nil {
+		v.DistroAdvisories = []DistroAdvisory{}
+	}
+}
+
 // FindByCveID find by CVEID
 func (s VulnInfos) FindByCveID(cveID string) (VulnInfo, bool) {
 	for _, p := range s {
@@ -310,6 +319,22 @@ func (c CveInfos) Less(i, j int) bool {
 type CveInfo struct {
 	CveDetail cve.CveDetail
 	VulnInfo
+}
+
+// NilSliceToEmpty set nil slice fields to empty slice to avoid null in JSON
+func (c *CveInfo) NilSliceToEmpty() {
+	if c.CveDetail.Nvd.Cpes == nil {
+		c.CveDetail.Nvd.Cpes = []cve.Cpe{}
+	}
+	if c.CveDetail.Jvn.Cpes == nil {
+		c.CveDetail.Jvn.Cpes = []cve.Cpe{}
+	}
+	if c.CveDetail.Nvd.References == nil {
+		c.CveDetail.Nvd.References = []cve.Reference{}
+	}
+	if c.CveDetail.Jvn.References == nil {
+		c.CveDetail.Jvn.References = []cve.Reference{}
+	}
 }
 
 // PackageInfoList is slice of PackageInfo
