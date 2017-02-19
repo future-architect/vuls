@@ -758,6 +758,13 @@ For more details, see [Architecture section](https://github.com/future-architect
   port         = "local"
   ```
 
+### cronで動かす場合
+
+RHEL/CentOSの場合、スキャン対象サーバの/etc/sudoersに以下を追加する必要がある。(user: vuls)
+```
+Defaults:vuls !requiretty
+```
+
 ## Example: Scan containers (Docker/LXD)
 
 

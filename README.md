@@ -766,6 +766,12 @@ For more details, see [Architecture section](https://github.com/future-architect
   port         = "local"
   ```
 
+### cron
+If you use local scan mode for cron jobs, don't forget to add below line to `/etc/sudoers` on RHEL/CentOS. (username: vuls)
+```
+Defaults:vuls !requiretty
+```
+
 ## Example: Scan containers (Docker/LXD)
 
 It is common that keep containers running without SSHd daemon.  
