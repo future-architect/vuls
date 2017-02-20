@@ -239,12 +239,39 @@ type NWLink struct {
 	LinkState string
 }
 
+// Confidence is a ranking how confident the CVE-ID was deteted correctly
+// Score: 0 - 100
+type Confidence struct {
+	Score           int
+	DetectionMethod string
+}
+
+func (c Confidence) String() string {
+	return fmt.Sprintf("%d / %s", c.Score, c.DetectionMethod)
+}
+
+// CpeNameMatch is a ranking how confident the CVE-ID was deteted correctly
+var CpeNameMatch = Confidence{100, "CpeNameMatch"}
+
+// YumUpdateSecurityMatch is a ranking how confident the CVE-ID was deteted correctly
+var YumUpdateSecurityMatch = Confidence{100, "YumUpdateSecurityMatch"}
+
+// PkgAuditMatch is a ranking how confident the CVE-ID was deteted correctly
+var PkgAuditMatch = Confidence{100, "PkgAuditMatch"}
+
+// ChangelogExactMatch is a ranking how confident the CVE-ID was deteted correctly
+var ChangelogExactMatch = Confidence{95, "ChangelogExactMatch"}
+
+// ChangelogLenientMatch is a ranking how confident the CVE-ID was deteted correctly
+var ChangelogLenientMatch = Confidence{50, "ChangelogLenientMatch"}
+
 // VulnInfos is VulnInfo list, getter/setter, sortable methods.
 type VulnInfos []VulnInfo
 
 // VulnInfo holds a vulnerability information and unsecure packages
 type VulnInfo struct {
 	CveID            string
+	Confidence       Confidence
 	Packages         PackageInfoList
 	DistroAdvisories []DistroAdvisory // for Aamazon, RHEL, FreeBSD
 	CpeNames         []string

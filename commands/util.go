@@ -200,11 +200,13 @@ func scanVulnByCpeNames(cpeNames []string, scannedVulns []models.VulnInfo) ([]mo
 				names := val.CpeNames
 				names = util.AppendIfMissing(names, name)
 				val.CpeNames = names
+				val.Confidence = models.CpeNameMatch
 				set[detail.CveID] = val
 			} else {
 				v := models.VulnInfo{
-					CveID:    detail.CveID,
-					CpeNames: []string{name},
+					CveID:      detail.CveID,
+					CpeNames:   []string{name},
+					Confidence: models.CpeNameMatch,
 				}
 				v.NilSliceToEmpty()
 				set[detail.CveID] = v

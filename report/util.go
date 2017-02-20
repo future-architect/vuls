@@ -128,11 +128,12 @@ No CVE-IDs are found in updatable packages.
 		switch {
 		case config.Conf.Lang == "ja" &&
 			0 < d.CveDetail.Jvn.CvssScore():
-			summary := fmt.Sprintf("%s\n%s\n%s\n%s",
+			summary := fmt.Sprintf("%s\n%s\n%s\n%sCandidate: %v",
 				d.CveDetail.Jvn.CveTitle(),
 				d.CveDetail.Jvn.Link(),
 				distroLinks(d, r.Family)[0].url,
 				packsVer,
+				d.VulnInfo.Confidence,
 			)
 			scols = []string{
 				d.CveDetail.CveID,
@@ -144,12 +145,13 @@ No CVE-IDs are found in updatable packages.
 			}
 
 		case 0 < d.CveDetail.CvssScore("en"):
-			summary := fmt.Sprintf("%s\n%s/%s\n%s\n%s",
+			summary := fmt.Sprintf("%s\n%s/%s\n%s\n%sCandidate: %v",
 				d.CveDetail.Nvd.CveSummary(),
 				cveDetailsBaseURL,
 				d.CveDetail.CveID,
 				distroLinks(d, r.Family)[0].url,
 				packsVer,
+				d.VulnInfo.Confidence,
 			)
 			scols = []string{
 				d.CveDetail.CveID,
@@ -160,8 +162,8 @@ No CVE-IDs are found in updatable packages.
 				summary,
 			}
 		default:
-			summary := fmt.Sprintf("%s\n%s",
-				distroLinks(d, r.Family)[0].url, packsVer)
+			summary := fmt.Sprintf("%s\n%sCandidate: %v",
+				distroLinks(d, r.Family)[0].url, packsVer, d.VulnInfo.Confidence)
 			scols = []string{
 				d.CveDetail.CveID,
 				"?",
@@ -277,6 +279,7 @@ func toPlainTextUnknownCve(cveInfo models.CveInfo, osFamily string) string {
 	}
 	dtable = addPackageInfos(dtable, cveInfo.Packages)
 	dtable = addCpeNames(dtable, cveInfo.CpeNames)
+	dtable.AddRow("Confidence", cveInfo.VulnInfo.Confidence)
 
 	return fmt.Sprintf("%s", dtable)
 }
@@ -319,6 +322,7 @@ func toPlainTextDetailsLangJa(cveInfo models.CveInfo, osFamily string) string {
 
 	dtable = addPackageInfos(dtable, cveInfo.Packages)
 	dtable = addCpeNames(dtable, cveInfo.CpeNames)
+	dtable.AddRow("Confidence", cveInfo.VulnInfo.Confidence)
 
 	return fmt.Sprintf("%s", dtable)
 }
@@ -359,6 +363,7 @@ func toPlainTextDetailsLangEn(d models.CveInfo, osFamily string) string {
 	}
 	dtable = addPackageInfos(dtable, d.Packages)
 	dtable = addCpeNames(dtable, d.CpeNames)
+	dtable.AddRow("Confidence", d.VulnInfo.Confidence)
 
 	return fmt.Sprintf("%s\n", dtable)
 }

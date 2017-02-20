@@ -62,7 +62,7 @@ func TestGetCveIDParsingChangelog(t *testing.T) {
 
 	var tests = []struct {
 		in       []string
-		expected []string
+		expected []DetectedCveID
 	}{
 		{
 			// verubuntu1
@@ -84,10 +84,10 @@ systemd (227-3) unstable; urgency=medium
 systemd (227-2) unstable; urgency=medium
 systemd (227-1) unstable; urgency=medium`,
 			},
-			[]string{
-				"CVE-2015-2325",
-				"CVE-2015-2326",
-				"CVE-2015-3210",
+			[]DetectedCveID{
+				{"CVE-2015-2325", models.ChangelogExactMatch},
+				{"CVE-2015-2326", models.ChangelogExactMatch},
+				{"CVE-2015-3210", models.ChangelogExactMatch},
 			},
 		},
 		{
@@ -107,10 +107,10 @@ CVE-2015-3210: heap buffer overflow in pcre_compile2() /
 pcre3 (2:8.35-7.1) unstable; urgency=medium
 pcre3 (2:8.35-7) unstable; urgency=medium`,
 			},
-			[]string{
-				"CVE-2015-2325",
-				"CVE-2015-2326",
-				"CVE-2015-3210",
+			[]DetectedCveID{
+				{"CVE-2015-2325", models.ChangelogExactMatch},
+				{"CVE-2015-2326", models.ChangelogExactMatch},
+				{"CVE-2015-3210", models.ChangelogExactMatch},
 			},
 		},
 		{
@@ -138,10 +138,10 @@ sysvinit (2.88dsf-59) unstable; urgency=medium
 sysvinit (2.88dsf-58) unstable; urgency=low
 sysvinit (2.88dsf-57) unstable; urgency=low`,
 			},
-			[]string{
-				"CVE-2015-2325",
-				"CVE-2015-2326",
-				"CVE-2015-3210",
+			[]DetectedCveID{
+				{"CVE-2015-2325", models.ChangelogExactMatch},
+				{"CVE-2015-2326", models.ChangelogExactMatch},
+				{"CVE-2015-3210", models.ChangelogExactMatch},
 			},
 		},
 		{
@@ -176,26 +176,39 @@ util-linux (2.26.2-6ubuntu2) wily; urgency=medium
 util-linux (2.26.2-6ubuntu1) wily; urgency=medium
 util-linux (2.26.2-6) unstable; urgency=medium`,
 			},
+			[]DetectedCveID{
+				{"CVE-2015-2325", models.ChangelogExactMatch},
+				{"CVE-2015-2326", models.ChangelogExactMatch},
+				{"CVE-2015-3210", models.ChangelogExactMatch},
+				{"CVE-2016-1000000", models.ChangelogExactMatch},
+			},
+		},
+		{
+			// https://github.com/future-architect/vuls/pull/350
 			[]string{
-				"CVE-2015-2325",
-				"CVE-2015-2326",
-				"CVE-2015-3210",
-				"CVE-2016-1000000",
+				"tar",
+				"1.27.1-2+b1",
+				`tar (1.27.1-2+deb8u1) jessie-security; urgency=high
+  * CVE-2016-6321: Bypassing the extract path name.
+tar (1.27.1-2) unstable; urgency=low`,
+			},
+			[]DetectedCveID{
+				{"CVE-2016-6321", models.ChangelogLenientMatch},
 			},
 		},
 	}
 
 	d := newDebian(config.ServerInfo{})
 	for _, tt := range tests {
-		actual := d.getCveIDFromChangelog(tt.in[2], tt.in[0], tt.in[1])
+		actual := d.getCveIDsFromChangelog(tt.in[2], tt.in[0], tt.in[1])
 		if len(actual) != len(tt.expected) {
 			t.Errorf("Len of return array are'nt same. expected %#v, actual %#v", tt.expected, actual)
 			t.Errorf(pp.Sprintf("%s", tt.in))
 			continue
 		}
 		for i := range tt.expected {
-			if actual[i] != tt.expected[i] {
-				t.Errorf("expected %s, actual %s", tt.expected[i], actual[i])
+			if !reflect.DeepEqual(tt.expected[i], actual[i]) {
+				t.Errorf("expected %v, actual %v", tt.expected[i], actual[i])
 			}
 		}
 	}

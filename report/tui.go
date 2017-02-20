@@ -569,11 +569,9 @@ func summaryLines() string {
 			cols = []string{
 				fmt.Sprintf(indexFormat, i+1),
 				d.CveDetail.CveID,
-				fmt.Sprintf("|  %-4.1f(%s)",
-					d.CveDetail.CvssScore(config.Conf.Lang),
-					d.CveDetail.Jvn.CvssSeverity(),
-				),
-				//  strings.Join(packs, ","),
+				fmt.Sprintf("| %4.1f",
+					d.CveDetail.CvssScore(config.Conf.Lang)),
+				fmt.Sprintf("| %3d |", d.VulnInfo.Confidence.Score),
 				summary,
 			}
 		} else {
@@ -581,18 +579,17 @@ func summaryLines() string {
 
 			var cvssScore string
 			if d.CveDetail.CvssScore("en") <= 0 {
-				cvssScore = "| ?"
+				cvssScore = "|   ?"
 			} else {
-				cvssScore = fmt.Sprintf("| %-4.1f(%s)",
-					d.CveDetail.CvssScore(config.Conf.Lang),
-					d.CveDetail.Nvd.CvssSeverity(),
-				)
+				cvssScore = fmt.Sprintf("| %4.1f",
+					d.CveDetail.CvssScore(config.Conf.Lang))
 			}
 
 			cols = []string{
 				fmt.Sprintf(indexFormat, i+1),
 				d.CveDetail.CveID,
 				cvssScore,
+				fmt.Sprintf("| %3d |", d.VulnInfo.Confidence.Score),
 				summary,
 			}
 		}
@@ -644,6 +641,7 @@ type dataForTmpl struct {
 	CvssVector       string
 	CvssSeverity     string
 	Summary          string
+	Confidence       models.Confidence
 	CweURL           string
 	VulnSiteLinks    []string
 	References       []cve.Reference
@@ -723,6 +721,7 @@ func detailLines() (string, error) {
 		CvssSeverity:  cvssSeverity,
 		CvssVector:    cvssVector,
 		Summary:       summary,
+		Confidence:    cveInfo.VulnInfo.Confidence,
 		CweURL:        cweURL,
 		VulnSiteLinks: links,
 		References:    refs,
@@ -752,6 +751,11 @@ Summary
 --------------
 
  {{.Summary }}
+
+Confidence
+--------------
+
+ {{.Confidence }}
 
 CWE
 --------------

@@ -167,6 +167,7 @@ func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
 			CveID:            k,
 			Packages:         packs,
 			DistroAdvisories: disAdvs,
+			Confidence:       models.PkgAuditMatch,
 		})
 	}
 	return

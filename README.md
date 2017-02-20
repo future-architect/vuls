@@ -254,15 +254,16 @@ $ vuls report -format-short-text
 ===========================
 Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
 
-CVE-2016-0705   10.0 (High)     Double free vulnerability in the dsa_priv_decode function in
-                                crypto/dsa/dsa_ameth.c in OpenSSL 1.0.1 before 1.0.1s and 1.0.2 before 1.0.2g
-                                allows remote attackers to cause a denial of service (memory corruption) or
-                                possibly have unspecified other impact via a malformed DSA private key.
-                                http://www.cvedetails.com/cve/CVE-2016-0705
-                                http://people.ubuntu.com/~ubuntu-security/cve/CVE-2016-0705
-                                libssl1.0.0-1.0.2f-2ubuntu1 -> libssl1.0.0-1.0.2g-1ubuntu4.5
-                                openssl-1.0.2f-2ubuntu1 -> openssl-1.0.2g-1ubuntu4.5
-
+CVE-2016-5636           10.0 (High)     Integer overflow in the get_data function in zipimport.c in CPython (aka Python)
+                                        before 2.7.12, 3.x before 3.4.5, and 3.5.x before 3.5.2 allows remote attackers
+                                        to have unspecified impact via a negative data size value, which triggers a
+                                        heap-based buffer overflow.
+                                        http://www.cvedetails.com/cve/CVE-2016-5636
+                                        https://access.redhat.com/security/cve/CVE-2016-5636
+                                        python27-2.7.10-4.119.amzn1 -> python27-2.7.12-2.120.amzn1
+                                        python27-devel-2.7.10-4.119.amzn1 -> python27-devel-2.7.12-2.120.amzn1
+                                        python27-libs-2.7.10-4.119.amzn1 -> python27-libs-2.7.12-2.120.amzn1
+                                        Candidate: 100 / YumUpdateSecurityMatch
 ... snip ...
 ````
 
@@ -275,23 +276,25 @@ $ vuls report -format-full-text
 ============================
 Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
 
-
-CVE-2016-0705
+CVE-2016-5636
 -------------
 Score           10.0 (High)
 Vector          (AV:N/AC:L/Au:N/C:C/I:C/A:C)
-Summary         Double free vulnerability in the dsa_priv_decode function in
-                crypto/dsa/dsa_ameth.c in OpenSSL 1.0.1 before 1.0.1s and 1.0.2 before 1.0.2g
-                allows remote attackers to cause a denial of service (memory corruption) or
-                possibly have unspecified other impact via a malformed DSA private key.
-CWE             https://cwe.mitre.org/data/definitions/.html
-NVD             https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-0705
-MITRE           https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-0705
-CVE Details     http://www.cvedetails.com/cve/CVE-2016-0705
-CVSS Claculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-0705&vector=(AV:N/AC:L/...
-Ubuntu-CVE      http://people.ubuntu.com/~ubuntu-security/cve/CVE-2016-0705
-Package         libssl1.0.0-1.0.2f-2ubuntu1 -> libssl1.0.0-1.0.2g-1ubuntu4.5
-                openssl-1.0.2f-2ubuntu1 -> openssl-1.0.2g-1ubuntu4.5
+Summary         Integer overflow in the get_data function in zipimport.c in CPython (aka Python)
+                before 2.7.12, 3.x before 3.4.5, and 3.5.x before 3.5.2 allows remote attackers
+                to have unspecified impact via a negative data size value, which triggers a
+                heap-based buffer overflow.
+CWE             https://cwe.mitre.org/data/definitions/190.html
+NVD             https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-5636
+MITRE           https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-5636
+CVE Details     http://www.cvedetails.com/cve/CVE-2016-5636
+CVSS Claculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-5636&vector=(AV:N/AC:L/...
+RHEL-CVE        https://access.redhat.com/security/cve/CVE-2016-5636
+ALAS-2016-724   https://alas.aws.amazon.com/ALAS-2016-724.html
+Package         python27-2.7.10-4.119.amzn1 -> python27-2.7.12-2.120.amzn1
+                python27-devel-2.7.10-4.119.amzn1 -> python27-devel-2.7.12-2.120.amzn1
+                python27-libs-2.7.10-4.119.amzn1 -> python27-libs-2.7.12-2.120.amzn1
+Confidence      100 / YumUpdateSecurityMatch
 
 ... snip ...
 ```
@@ -932,6 +935,96 @@ report:
   -to-slack
         Send report via Slack
 ```
+
+## How to read a report
+
+### Example
+
+```
+$ vuls report -format-full-text
+
+172-31-4-82 (amazon 2015.09)
+============================
+Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
+
+CVE-2016-5636
+-------------
+Score           10.0 (High)
+Vector          (AV:N/AC:L/Au:N/C:C/I:C/A:C)
+Summary         Integer overflow in the get_data function in zipimport.c in CPython (aka Python)
+                before 2.7.12, 3.x before 3.4.5, and 3.5.x before 3.5.2 allows remote attackers
+                to have unspecified impact via a negative data size value, which triggers a
+                heap-based buffer overflow.
+CWE             https://cwe.mitre.org/data/definitions/190.html
+NVD             https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-5636
+MITRE           https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-5636
+CVE Details     http://www.cvedetails.com/cve/CVE-2016-5636
+CVSS Claculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-5636&vector=(AV:N/AC:L/...
+RHEL-CVE        https://access.redhat.com/security/cve/CVE-2016-5636
+ALAS-2016-724   https://alas.aws.amazon.com/ALAS-2016-724.html
+Package         python27-2.7.10-4.119.amzn1 -> python27-2.7.12-2.120.amzn1
+                python27-devel-2.7.10-4.119.amzn1 -> python27-devel-2.7.12-2.120.amzn1
+                python27-libs-2.7.10-4.119.amzn1 -> python27-libs-2.7.12-2.120.amzn1
+Confidence      100 / YumUpdateSecurityMatch
+
+... snip ...
+```
+
+### Summary part
+
+```
+172-31-4-82 (amazon 2015.09)
+============================
+Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
+```
+
+- `172-31-4-82` means that it is a scan report of `servers.172-31-4-82` defined in cocnfig.toml.
+- `(amazon 2015.09)` means that the version of the OS is Amazon Linux 2015.09.
+- `Total: 94 (High:19 Medium:54 Low:7 ?:14)` means that a total of 94 vulnerabilities exist, and the distribution of CVSS Severity is displayed.
+- `103 updatable packages` means that there are 103 updateable packages on the target server.
+
+### Detailed Part
+
+```
+CVE-2016-5636
+-------------
+Score           10.0 (High)
+Vector          (AV:N/AC:L/Au:N/C:C/I:C/A:C)
+Summary         Integer overflow in the get_data function in zipimport.c in CPython (aka Python)
+                before 2.7.12, 3.x before 3.4.5, and 3.5.x before 3.5.2 allows remote attackers
+                to have unspecified impact via a negative data size value, which triggers a
+                heap-based buffer overflow.
+CWE             https://cwe.mitre.org/data/definitions/190.html
+NVD             https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-5636
+MITRE           https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-5636
+CVE Details     http://www.cvedetails.com/cve/CVE-2016-5636
+CVSS Claculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-5636&vector=(AV:N/AC:L/...
+RHEL-CVE        https://access.redhat.com/security/cve/CVE-2016-5636
+ALAS-2016-724   https://alas.aws.amazon.com/ALAS-2016-724.html
+Package         python27-2.7.10-4.119.amzn1 -> python27-2.7.12-2.120.amzn1
+                python27-devel-2.7.10-4.119.amzn1 -> python27-devel-2.7.12-2.120.amzn1
+                python27-libs-2.7.10-4.119.amzn1 -> python27-libs-2.7.12-2.120.amzn1
+Confidence      100 / YumUpdateSecurityMatch
+```
+
+- `Score` means CVSS Score.
+- `Vector` means [CVSS Vector](https://nvd.nist.gov/CVSS/Vector-v2.aspx)
+- `Summary` means Summary of the CVE.
+- `CWE` means [CWE - Common Weakness Enumeration](https://nvd.nist.gov/cwe.cfm) of the CVE.
+- `NVD` `MITRE` `CVE Details` `CVSS Caluculator`
+- `RHEL-CVE` means the URL of OS distributor support.
+- `Package` shows the package version information including this vulnerability.
+- `Confidence` means the reliability of detection.
+  - `100` is highly reliable
+  - `YumUpdateSecurityMatch` is the method of detecting this vulnerability.
+- Item list of `Confidence`
+  | Detection Method       | Confidence         |  OS                              |Description|
+  |:-----------------------|-------------------:|:---------------------------------|:--|
+  | YumUpdateSecurityMatch | 100                |               RHEL, Amazon Linux |Detection using yum-plugin-security|
+  | ChangelogExactMatch    | 95                 | CentOS, Ubuntu, Debian, Raspbian |Exact version match between changelog and package version|
+  | ChangelogLenientMatch  | 50                 |         Ubuntu, Debian, Raspbian |Lenient version match between changelog and package version| 
+  | PkgAuditMatch          | 100                |                          FreeBSD |Detection using pkg audit|
+  | CpeNameMatch           | 100                |                              All |Search for NVD information with CPE name specified in config.toml|
 
 ## Example: Send scan results to Slack
 ```
