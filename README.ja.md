@@ -163,7 +163,7 @@ $ git clone https://github.com/kotakanbe/go-cve-dictionary.git
 $ cd go-cve-dictionary
 $ make install
 ```
-バイナリは、`$GOPATH/bin`いかに生成される
+バイナリは、`$GOPATH/bin`以下に生成される
 
 
 NVDから脆弱性データベースを取得する。  
