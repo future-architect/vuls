@@ -142,7 +142,7 @@ func (o *redhat) checkDependencies() error {
 		}
 
 		cmd := "rpm -q " + name
-		if r := o.exec(cmd, noSudo); !r.isSuccess() {
+		if r := o.exec(cmd, noSudo); r.isSuccess() {
 			return nil
 		}
 		o.lackDependencies = []string{name}
@@ -165,7 +165,7 @@ func (o *redhat) checkPluginEnable() error {
 	} else {
 		cmd = "yum --color=never --security updateinfo list updates"
 	}
-	if err := o.exec(cmd, noSudo); err.isSuccess(){
+	if err := o.exec(cmd, noSudo); !err.isSuccess() {
 		return fmt.Errorf("%s", "Yum-plugin-security is disabled. Please enable it.")
 
 	}
@@ -606,13 +606,23 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
-	advIDPackNamesList, err := o.parseYumUpdateinfoListAvailable(r.Stdout)
 
 	// get advisoryID(RHSA, ALAS) - package name,version
 	major, err := (o.Distro.MajorVersion())
 	if err != nil {
 		return nil, fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
 	}
+
+	if o.Distro.Family == "rhel" && major == 5 {
+		cmd = "yum --color=never list-security --security"
+	} else {
+		cmd = "yum --color=never --security updateinfo list updates"
+	}
+	r = o.exec(util.PrependProxyEnv(cmd), o.sudo())
+	if !r.isSuccess() {
+		return nil, fmt.Errorf("Failed to SSH: %s", r)
+	}
+	advIDPackNamesList, err := o.parseYumUpdateinfoListAvailable(r.Stdout)
 
 	// get package name, version, rel to be upgrade.
 	//  cmd = "yum check-update --security"
