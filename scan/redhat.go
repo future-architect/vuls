@@ -155,8 +155,8 @@ func (o *redhat) checkDependencies() error {
 
 //By having this, you can detect that yum-plugin-security is entered but disable.
 //Getting ready only after becoming enable
-// https://github.com/future-architect/vuls/issues/284
 //This function corresponds to the issue of the next url.
+//https://github.com/future-architect/vuls/issues/284
 func (o *redhat) checkPluginEnable() error {
 	major, _ := (o.Distro.MajorVersion())
 	var cmd string
