@@ -1018,6 +1018,7 @@ Confidence      100 / YumUpdateSecurityMatch
   - `100` is highly reliable
   - `YumUpdateSecurityMatch` is the method of detecting this vulnerability.
 - Item list of `Confidence`
+
   | Detection Method       | Confidence         |  OS                              |Description|
   |:-----------------------|-------------------:|:---------------------------------|:--|
   | YumUpdateSecurityMatch | 100                |               RHEL, Amazon Linux |Detection using yum-plugin-security|
