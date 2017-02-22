@@ -352,8 +352,9 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 	for k, v := range cveIDPackInfoMap {
 		// Amazon, RHEL do not use this method, so VendorAdvisory do not set.
 		vinfos = append(vinfos, models.VulnInfo{
-			CveID:    k,
-			Packages: v,
+			CveID:      k,
+			Packages:   v,
+			Confidence: models.ChangelogExactMatch,
 		})
 	}
 	return vinfos, nil
@@ -670,6 +671,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 					CveID:            cveID,
 					DistroAdvisories: []models.DistroAdvisory{advIDCveIDs.DistroAdvisory},
 					Packages:         dict[advIDCveIDs.DistroAdvisory.AdvisoryID],
+					Confidence:       models.YumUpdateSecurityMatch,
 				}
 				vinfos = append(vinfos, cpinfo)
 			}

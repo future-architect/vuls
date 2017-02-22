@@ -421,10 +421,9 @@ func (o *debian) parseAptGetUpgrade(stdout string) (upgradableNames []string, er
 }
 
 func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo, meta *cache.Meta) (models.VulnInfos, error) {
-	type strarray []string
 	resChan := make(chan struct {
 		models.PackageInfo
-		strarray
+		DetectedCveIDs
 	}, len(upgradablePacks))
 	errChan := make(chan error, len(upgradablePacks))
 	reqChan := make(chan models.PackageInfo, len(upgradablePacks))
@@ -448,10 +447,10 @@ func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo, meta *cache
 				func(p models.PackageInfo) {
 					changelog := o.getChangelogCache(meta, p)
 					if 0 < len(changelog) {
-						cveIDs := o.getCveIDFromChangelog(changelog, p.Name, p.Version)
+						cveIDs := o.getCveIDsFromChangelog(changelog, p.Name, p.Version)
 						resChan <- struct {
 							models.PackageInfo
-							strarray
+							DetectedCveIDs
 						}{p, cveIDs}
 						return
 					}
@@ -464,7 +463,7 @@ func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo, meta *cache
 					} else {
 						resChan <- struct {
 							models.PackageInfo
-							strarray
+							DetectedCveIDs
 						}{p, cveIDs}
 					}
 				}(pack)
@@ -472,14 +471,14 @@ func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo, meta *cache
 		}
 	}
 
-	// { CVE ID: [packageInfo] }
-	cvePackages := make(map[string][]models.PackageInfo)
+	// { DetectedCveID{} : [packageInfo] }
+	cvePackages := make(map[DetectedCveID][]models.PackageInfo)
 	errs := []error{}
 	for i := 0; i < len(upgradablePacks); i++ {
 		select {
 		case pair := <-resChan:
 			pack := pair.PackageInfo
-			cveIDs := pair.strarray
+			cveIDs := pair.DetectedCveIDs
 			for _, cveID := range cveIDs {
 				cvePackages[cveID] = appendPackIfMissing(cvePackages[cveID], pack)
 			}
@@ -495,7 +494,7 @@ func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo, meta *cache
 		return nil, fmt.Errorf("%v", errs)
 	}
 
-	var cveIDs []string
+	var cveIDs []DetectedCveID
 	for k := range cvePackages {
 		cveIDs = append(cveIDs, k)
 	}
@@ -503,8 +502,9 @@ func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo, meta *cache
 	var vinfos models.VulnInfos
 	for k, v := range cvePackages {
 		vinfos = append(vinfos, models.VulnInfo{
-			CveID:    k,
-			Packages: v,
+			CveID:      k.CveID,
+			Confidence: k.Confidence,
+			Packages:   v,
 		})
 	}
 
@@ -545,7 +545,7 @@ func (o *debian) getChangelogCache(meta *cache.Meta, pack models.PackageInfo) st
 	return changelog
 }
 
-func (o *debian) scanPackageCveIDs(pack models.PackageInfo) ([]string, error) {
+func (o *debian) scanPackageCveIDs(pack models.PackageInfo) ([]DetectedCveID, error) {
 	cmd := ""
 	switch o.Distro.Family {
 	case "ubuntu", "raspbian":
@@ -569,11 +569,11 @@ func (o *debian) scanPackageCveIDs(pack models.PackageInfo) ([]string, error) {
 		}
 	}
 	// No error will be returned. Only logging.
-	return o.getCveIDFromChangelog(r.Stdout, pack.Name, pack.Version), nil
+	return o.getCveIDsFromChangelog(r.Stdout, pack.Name, pack.Version), nil
 }
 
-func (o *debian) getCveIDFromChangelog(changelog string,
-	packName string, versionOrLater string) []string {
+func (o *debian) getCveIDsFromChangelog(changelog string,
+	packName string, versionOrLater string) []DetectedCveID {
 
 	if cveIDs, err := o.parseChangelog(changelog, packName, versionOrLater); err == nil {
 		return cveIDs
@@ -595,31 +595,43 @@ func (o *debian) getCveIDFromChangelog(changelog string,
 
 	// Only logging the error.
 	o.log.Error(err)
-	return []string{}
+	return []DetectedCveID{}
 }
+
+// DetectedCveID has CveID, Confidence and DetectionMethod fields
+// LenientMatching will be true if this vulnerability is not detected by accurate version matching.
+// see https://github.com/future-architect/vuls/pull/328
+type DetectedCveID struct {
+	CveID      string
+	Confidence models.Confidence
+}
+
+// DetectedCveIDs is a slice of DetectedCveID
+type DetectedCveIDs []DetectedCveID
 
 // Collect CVE-IDs included in the changelog.
 // The version which specified in argument(versionOrLater) is excluded.
 func (o *debian) parseChangelog(changelog string,
-	packName string, versionOrLater string) (cveIDs []string, err error) {
+	packName string, versionOrLater string) (cves []DetectedCveID, err error) {
 
+	cveIDs := []string{}
 	cveRe := regexp.MustCompile(`(CVE-\d{4}-\d{4,})`)
 	stopRe := regexp.MustCompile(fmt.Sprintf(`\(%s\)`, regexp.QuoteMeta(versionOrLater)))
 	stopLineFound := false
-	leniantStopLineFound := false
-	versionOrLaterLeniant := versionOrLater
-	if i := strings.IndexRune(versionOrLaterLeniant, '+'); i >= 0 {
-		versionOrLaterLeniant = versionOrLaterLeniant[:i]
+	lenientStopLineFound := false
+	versionOrLaterlenient := versionOrLater
+	if i := strings.IndexRune(versionOrLaterlenient, '+'); i >= 0 {
+		versionOrLaterlenient = versionOrLaterlenient[:i]
 	}
-	leniantRe := regexp.MustCompile(fmt.Sprintf(`\(%s\)`, regexp.QuoteMeta(versionOrLaterLeniant)))
+	lenientRe := regexp.MustCompile(fmt.Sprintf(`\(%s\)`, regexp.QuoteMeta(versionOrLaterlenient)))
 	lines := strings.Split(changelog, "\n")
 	for _, line := range lines {
-		if matche := stopRe.MatchString(line); matche {
+		if match := stopRe.MatchString(line); match {
 			//  o.log.Debugf("Found the stop line: %s", line)
 			stopLineFound = true
 			break
-		} else if matchel := leniantRe.MatchString(line); matchel {
-			leniantStopLineFound = true
+		} else if matchl := lenientRe.MatchString(line); matchl {
+			lenientStopLineFound = true
 			break
 		} else if matches := cveRe.FindAllString(line, -1); 0 < len(matches) {
 			for _, m := range matches {
@@ -627,12 +639,20 @@ func (o *debian) parseChangelog(changelog string,
 			}
 		}
 	}
-	if !stopLineFound && !leniantStopLineFound {
-		return []string{}, fmt.Errorf(
+	if !stopLineFound && !lenientStopLineFound {
+		return cves, fmt.Errorf(
 			"Failed to scan CVE IDs. The version is not in changelog. name: %s, version: %s",
 			packName,
 			versionOrLater,
 		)
+	}
+
+	for _, id := range cveIDs {
+		confidence := models.ChangelogExactMatch
+		if lenientStopLineFound {
+			confidence = models.ChangelogLenientMatch
+		}
+		cves = append(cves, DetectedCveID{id, confidence})
 	}
 	return
 }
