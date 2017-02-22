@@ -167,7 +167,6 @@ func (o *redhat) checkPluginEnable() error {
 	}
 	if err := o.exec(cmd, noSudo); !err.isSuccess() {
 		return fmt.Errorf("%s", "Yum-plugin-security is disabled. Please enable it.")
-
 	}
 	return nil
 }
