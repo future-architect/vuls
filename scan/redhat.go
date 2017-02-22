@@ -120,6 +120,10 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 // CentOS 7 ... yum-plugin-changelog
 // RHEL, Amazon ... no additinal packages needed
 func (o *redhat) checkDependencies() error {
+	if err := o.checkPluginEnable(); err != nil {
+		return err
+	}
+
 	switch o.Distro.Family {
 	case "rhel", "amazon":
 		return nil
@@ -145,6 +149,25 @@ func (o *redhat) checkDependencies() error {
 	default:
 		return fmt.Errorf("Not implemented yet: %s", o.Distro)
 	}
+}
+
+//By having this, you can detect that yum-plugin-security is entered but disable.
+//Getting ready only after becoming enable
+// https://github.com/future-architect/vuls/issues/284
+//This function corresponds to the issue of the next url.
+func (o *redhat) checkPluginEnable() error {
+	major, _ := (o.Distro.MajorVersion())
+	var cmd string
+	if o.Distro.Family == "rhel" && major == 5 {
+		cmd = "yum --color=never list-security --security"
+	} else {
+		cmd = "yum --color=never --security updateinfo list updates"
+	}
+	if err := o.exec(cmd, noSudo); err.isSuccess(){
+		return fmt.Errorf("Yum-plugin-security is disabled. Please enable it. : %s", err)
+
+	}
+	return nil
 }
 
 func (o *redhat) install() error {
@@ -581,23 +604,13 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
+	advIDPackNamesList, err := o.parseYumUpdateinfoListAvailable(r.Stdout)
 
 	// get advisoryID(RHSA, ALAS) - package name,version
 	major, err := (o.Distro.MajorVersion())
 	if err != nil {
 		return nil, fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
 	}
-
-	if o.Distro.Family == "rhel" && major == 5 {
-		cmd = "yum --color=never list-security --security"
-	} else {
-		cmd = "yum --color=never --security updateinfo list updates"
-	}
-	r = o.exec(util.PrependProxyEnv(cmd), o.sudo())
-	if !r.isSuccess() {
-		return nil, fmt.Errorf("Failed to SSH: %s", r)
-	}
-	advIDPackNamesList, err := o.parseYumUpdateinfoListAvailable(r.Stdout)
 
 	// get package name, version, rel to be upgrade.
 	//  cmd = "yum check-update --security"
