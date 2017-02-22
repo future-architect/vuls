@@ -121,9 +121,10 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 // RHEL, Amazon ... no additinal packages needed
 func (o *redhat) checkDependencies() error {
 	switch o.Distro.Family {
-	case "rhel", "amazon":
+	case "amazon":
 		return nil
-
+	case "rhel":
+		return o.checkRequiredPluginsEnabled()
 	case "centos":
 		majorVersion, err := o.Distro.MajorVersion()
 		if err != nil {
@@ -137,7 +138,7 @@ func (o *redhat) checkDependencies() error {
 
 		cmd := "rpm -q " + name
 		if r := o.exec(cmd, noSudo); r.isSuccess() {
-			return nil
+			return o.checkRequiredPluginsEnabled()
 		}
 		o.lackDependencies = []string{name}
 		return nil
@@ -154,6 +155,32 @@ func (o *redhat) install() error {
 			return fmt.Errorf("Failed to SSH: %s", r)
 		}
 		o.log.Infof("Installed: %s", name)
+	}
+	return nil
+}
+
+func (o *redhat) checkRequiredPluginsEnabled() error {
+	cmd := "yum --help"
+	r := o.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		return fmt.Errorf("Failed to SSH: %s", r)
+	}
+	// Extract first line from stdout
+	// e.g. Loaded plugins: changelog, fastestmirror
+	loadedPlugins := strings.Split(r.Stdout, "\n")[0]
+
+	requiredPlugin := ""
+	switch o.Distro.Family {
+	case "rhel":
+		requiredPlugin = "security"
+	case "centos":
+		requiredPlugin = "changelog"
+	}
+
+	if !strings.Contains(loadedPlugins, requiredPlugin) {
+		msg := fmt.Sprintf("'%s' plugin is not enabled. Please check /etc/yum/pluginconf.d/", requiredPlugin)
+		o.log.Errorf(msg)
+		return fmt.Errorf(msg)
 	}
 	return nil
 }
