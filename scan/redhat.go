@@ -120,8 +120,10 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 // CentOS 7 ... yum-plugin-changelog
 // RHEL, Amazon ... no additinal packages needed
 func (o *redhat) checkDependencies() error {
-	if err := o.checkPluginEnable(); err != nil {
-		return err
+	if o.Distro.Family == "rhel" {
+		if err := o.checkPluginEnable(); err != nil {
+			return err
+		}
 	}
 
 	switch o.Distro.Family {
@@ -140,7 +142,7 @@ func (o *redhat) checkDependencies() error {
 		}
 
 		cmd := "rpm -q " + name
-		if r := o.exec(cmd, noSudo); r.isSuccess() {
+		if r := o.exec(cmd, noSudo); !r.isSuccess() {
 			return nil
 		}
 		o.lackDependencies = []string{name}
@@ -164,7 +166,7 @@ func (o *redhat) checkPluginEnable() error {
 		cmd = "yum --color=never --security updateinfo list updates"
 	}
 	if err := o.exec(cmd, noSudo); err.isSuccess(){
-		return fmt.Errorf("Yum-plugin-security is disabled. Please enable it. : %s", err)
+		return fmt.Errorf("%s", "Yum-plugin-security is disabled. Please enable it.")
 
 	}
 	return nil
