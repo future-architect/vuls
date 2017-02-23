@@ -18,16 +18,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package commands
 
 import (
+	"bytes"
 	"context"
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/report"
 	"github.com/google/subcommands"
+	"github.com/peco/peco"
 )
 
 // TuiCmd is Subcommand of host discovery mode
@@ -40,8 +45,6 @@ type TuiCmd struct {
 	cvedbtype        string
 	cvedbpath        string
 	cveDictionaryURL string
-
-	pipe bool
 }
 
 // Name return subcommand name
@@ -60,8 +63,6 @@ func (*TuiCmd) Usage() string {
 		[-results-dir=/path/to/results]
 		[-refresh-cve]
 		[-debug-sql]
-		[-pipe]
-
 `
 }
 
@@ -98,13 +99,9 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 		"cvedb-url",
 		"",
 		"http://cve-dictionary.com:8080 or mysql connection string")
-
-	f.BoolVar(
-		&p.pipe,
-		"pipe",
-		false,
-		"Use stdin via PIPE")
 }
+
+// TODO README, test, glide.lock, glide.yaml
 
 // Execute execute
 func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
@@ -120,13 +117,28 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		return subcommands.ExitUsageError
 	}
 
-	c.Conf.Pipe = p.pipe
-	jsonDir, err := jsonDir(f.Args())
+	list, err := scanList()
 	if err != nil {
-		log.Errorf("Failed to read json dir under results: %s", err)
+		log.Errorf("Failed to list scan history: %s", err)
 		return subcommands.ExitFailure
 	}
 
+	var buf bytes.Buffer
+	ctx := context.Background()
+	cli := peco.New()
+	cli.Stdin = strings.NewReader(strings.Join(list, "\n"))
+	cli.Stdout = &buf
+	cli.Argv = []string{}
+	cli.Run(ctx)
+	cli.PrintResults()
+
+	timeDir := strings.Split(buf.String(), " ")[0]
+	if timeDir == "" {
+		log.Error("Failed to filter by peco")
+		return subcommands.ExitFailure
+	}
+
+	jsonDir := filepath.Join(c.Conf.ResultsDir, timeDir)
 	history, err := loadOneScanHistory(jsonDir)
 	if err != nil {
 		log.Errorf("Failed to read from JSON: %s", err)
@@ -161,4 +173,31 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	}
 	history.ScanResults = results
 	return report.RunTui(history)
+}
+
+func scanList() (lines []string, err error) {
+	var dirs jsonDirs
+	if dirs, err = lsValidJSONDirs(); err != nil {
+		return nil, err
+	}
+
+	for _, d := range dirs {
+		var files []os.FileInfo
+		if files, err = ioutil.ReadDir(d); err != nil {
+			return nil, err
+		}
+		var hosts []string
+		for _, f := range files {
+			if filepath.Ext(f.Name()) != ".json" {
+				continue
+			}
+			fileBase := strings.TrimSuffix(f.Name(), filepath.Ext(f.Name()))
+			hosts = append(hosts, fileBase)
+		}
+		splitPath := strings.Split(d, string(os.PathSeparator))
+		timeStr := splitPath[len(splitPath)-1]
+		lines = append(lines, fmt.Sprintf("%s %d servers: %s",
+			timeStr, len(hosts), strings.Join(hosts, ", ")))
+	}
+	return
 }
