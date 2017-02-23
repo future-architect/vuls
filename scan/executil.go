@@ -332,11 +332,14 @@ func decorateCmd(c conf.ServerInfo, cmd string, sudo bool) string {
 		cmd = strings.Replace(cmd, "sudo -S echo", "echo", -1)
 	}
 
-	if c.Distro.Family != "FreeBSD" {
-		// set pipefail option. Bash only
-		// http://unix.stackexchange.com/questions/14270/get-exit-status-of-process-thats-piped-to-another
-		cmd = fmt.Sprintf("set -o pipefail; %s", cmd)
-	}
+	// If you are using pipe and you want to detect preprocessing errors, remove comment out
+	//  switch c.Distro.Family {
+	//  case "FreeBSD", "ubuntu", "debian", "raspbian":
+	//  default:
+	//      // set pipefail option. Bash only
+	//      // http://unix.stackexchange.com/questions/14270/get-exit-status-of-process-thats-piped-to-another
+	//      cmd = fmt.Sprintf("set -o pipefail; %s", cmd)
+	//  }
 
 	if c.IsContainer() {
 		switch c.Container.Type {

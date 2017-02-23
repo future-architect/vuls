@@ -47,7 +47,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 	if c.Conf.FormatOneLineText {
 		timestr := rs[0].ScannedAt.Format(time.RFC3339)
 		k := fmt.Sprintf(timestr + "/summary.txt")
-		text := toOneLineSummary(rs...)
+		text := formatOneLineSummary(rs...)
 		b := []byte(text)
 		if err := createBlockBlob(cli, k, b); err != nil {
 			return err
@@ -69,7 +69,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 
 		if c.Conf.FormatShortText {
 			k := key + "_short.txt"
-			b := []byte(toShortPlainText(r))
+			b := []byte(formatShortPlainText(r))
 			if err := createBlockBlob(cli, k, b); err != nil {
 				return err
 			}
@@ -77,7 +77,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 
 		if c.Conf.FormatFullText {
 			k := key + "_full.txt"
-			b := []byte(toFullPlainText(r))
+			b := []byte(formatFullPlainText(r))
 			if err := createBlockBlob(cli, k, b); err != nil {
 				return err
 			}

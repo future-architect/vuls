@@ -29,7 +29,7 @@ import (
 
 const maxColWidth = 80
 
-func toScanSummary(rs ...models.ScanResult) string {
+func formatScanSummary(rs ...models.ScanResult) string {
 	table := uitable.New()
 	table.MaxColWidth = maxColWidth
 	table.Wrap = true
@@ -55,7 +55,7 @@ func toScanSummary(rs ...models.ScanResult) string {
 	return fmt.Sprintf("%s\n", table)
 }
 
-func toOneLineSummary(rs ...models.ScanResult) string {
+func formatOneLineSummary(rs ...models.ScanResult) string {
 	table := uitable.New()
 	table.MaxColWidth = maxColWidth
 	table.Wrap = true
@@ -79,7 +79,7 @@ func toOneLineSummary(rs ...models.ScanResult) string {
 	return fmt.Sprintf("%s\n", table)
 }
 
-func toShortPlainText(r models.ScanResult) string {
+func formatShortPlainText(r models.ScanResult) string {
 	stable := uitable.New()
 	stable.MaxColWidth = maxColWidth
 	stable.Wrap = true
@@ -181,7 +181,7 @@ No CVE-IDs are found in updatable packages.
 	return fmt.Sprintf("%s\n%s\n", header, stable)
 }
 
-func toFullPlainText(r models.ScanResult) string {
+func formatFullPlainText(r models.ScanResult) string {
 	serverInfo := r.ServerInfo()
 
 	var buf bytes.Buffer
@@ -210,7 +210,7 @@ No CVE-IDs are found in updatable packages.
 	}
 
 	scoredReport, unscoredReport := []string{}, []string{}
-	scoredReport, unscoredReport = toPlainTextDetails(r, r.Family)
+	scoredReport, unscoredReport = formatPlainTextDetails(r, r.Family)
 
 	unscored := ""
 	if !config.Conf.IgnoreUnscoredCves {
@@ -226,41 +226,41 @@ No CVE-IDs are found in updatable packages.
 		scored,
 		unscored,
 	)
-	return fmt.Sprintf("%s\n%s\n", header, detail)
+	return fmt.Sprintf("%s\n%s\n%s", header, detail, formatChangelogs(r))
 }
 
-func toPlainTextDetails(r models.ScanResult, osFamily string) (scoredReport, unscoredReport []string) {
+func formatPlainTextDetails(r models.ScanResult, osFamily string) (scoredReport, unscoredReport []string) {
 	for _, cve := range r.KnownCves {
 		switch config.Conf.Lang {
 		case "en":
 			if 0 < cve.CveDetail.Nvd.CvssScore() {
 				scoredReport = append(
-					scoredReport, toPlainTextDetailsLangEn(cve, osFamily))
+					scoredReport, formatPlainTextDetailsLangEn(cve, osFamily))
 			} else {
 				scoredReport = append(
-					scoredReport, toPlainTextUnknownCve(cve, osFamily))
+					scoredReport, formatPlainTextUnknownCve(cve, osFamily))
 			}
 		case "ja":
 			if 0 < cve.CveDetail.Jvn.CvssScore() {
 				scoredReport = append(
-					scoredReport, toPlainTextDetailsLangJa(cve, osFamily))
+					scoredReport, formatPlainTextDetailsLangJa(cve, osFamily))
 			} else if 0 < cve.CveDetail.Nvd.CvssScore() {
 				scoredReport = append(
-					scoredReport, toPlainTextDetailsLangEn(cve, osFamily))
+					scoredReport, formatPlainTextDetailsLangEn(cve, osFamily))
 			} else {
 				scoredReport = append(
-					scoredReport, toPlainTextUnknownCve(cve, osFamily))
+					scoredReport, formatPlainTextUnknownCve(cve, osFamily))
 			}
 		}
 	}
 	for _, cve := range r.UnknownCves {
 		unscoredReport = append(
-			unscoredReport, toPlainTextUnknownCve(cve, osFamily))
+			unscoredReport, formatPlainTextUnknownCve(cve, osFamily))
 	}
 	return
 }
 
-func toPlainTextUnknownCve(cveInfo models.CveInfo, osFamily string) string {
+func formatPlainTextUnknownCve(cveInfo models.CveInfo, osFamily string) string {
 	cveID := cveInfo.CveDetail.CveID
 	dtable := uitable.New()
 	dtable.MaxColWidth = maxColWidth
@@ -284,7 +284,7 @@ func toPlainTextUnknownCve(cveInfo models.CveInfo, osFamily string) string {
 	return fmt.Sprintf("%s", dtable)
 }
 
-func toPlainTextDetailsLangJa(cveInfo models.CveInfo, osFamily string) string {
+func formatPlainTextDetailsLangJa(cveInfo models.CveInfo, osFamily string) string {
 	cveDetail := cveInfo.CveDetail
 	cveID := cveDetail.CveID
 	jvn := cveDetail.Jvn
@@ -327,7 +327,7 @@ func toPlainTextDetailsLangJa(cveInfo models.CveInfo, osFamily string) string {
 	return fmt.Sprintf("%s", dtable)
 }
 
-func toPlainTextDetailsLangEn(d models.CveInfo, osFamily string) string {
+func formatPlainTextDetailsLangEn(d models.CveInfo, osFamily string) string {
 	cveDetail := d.CveDetail
 	cveID := cveDetail.CveID
 	nvd := cveDetail.Nvd
@@ -466,4 +466,44 @@ func cweURL(cweID string) string {
 
 func cweJvnURL(cweID string) string {
 	return fmt.Sprintf("http://jvndb.jvn.jp/ja/cwe/%s.html", cweID)
+}
+
+func formatChangelogs(r models.ScanResult) string {
+	buf := []string{}
+	for _, p := range r.Packages {
+		if p.NewVersion == "" {
+			continue
+		}
+		clog := formatOneChangelog(p)
+		buf = append(buf, clog, "\n\n")
+	}
+	return strings.Join(buf, "\n")
+}
+
+func formatOneChangelog(p models.PackageInfo) string {
+	buf := []string{}
+	if p.NewVersion == "" {
+		return ""
+	}
+
+	packVer := fmt.Sprintf("%s -> %s",
+		p.ToStringCurrentVersion(), p.ToStringNewVersion())
+	var delim bytes.Buffer
+	for i := 0; i < len(packVer); i++ {
+		delim.WriteString("-")
+	}
+
+	clog := p.Changelog.Contents
+	if lines := strings.Split(clog, "\n"); len(lines) != 0 {
+		clog = strings.Join(lines[0:len(lines)-1], "\n")
+	}
+
+	switch p.Changelog.Method {
+	case models.FailedToGetChangelog:
+		clog = "No changelogs"
+	case models.FailedToFindVersionInChangelog:
+		clog = "Failed to parse changelogs. For detials, check yourself"
+	}
+	buf = append(buf, packVer, delim.String(), clog)
+	return strings.Join(buf, "\n")
 }

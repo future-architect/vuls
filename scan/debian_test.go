@@ -61,8 +61,9 @@ func TestParseScannedPackagesLineDebian(t *testing.T) {
 func TestGetCveIDParsingChangelog(t *testing.T) {
 
 	var tests = []struct {
-		in       []string
-		expected []DetectedCveID
+		in        []string
+		cveIDs    []DetectedCveID
+		changelog models.Changelog
 	}{
 		{
 			// verubuntu1
@@ -77,17 +78,24 @@ CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
 CVE-2015-3210: heap buffer overflow in pcre_compile2() /
 systemd (228-5) unstable; urgency=medium
 systemd (228-4) unstable; urgency=medium
-systemd (228-3) unstable; urgency=medium
-systemd (228-2) unstable; urgency=medium
-systemd (228-1) unstable; urgency=medium
-systemd (227-3) unstable; urgency=medium
-systemd (227-2) unstable; urgency=medium
-systemd (227-1) unstable; urgency=medium`,
+systemd (228-3) unstable; urgency=medium`,
 			},
 			[]DetectedCveID{
 				{"CVE-2015-2325", models.ChangelogExactMatch},
 				{"CVE-2015-2326", models.ChangelogExactMatch},
 				{"CVE-2015-3210", models.ChangelogExactMatch},
+			},
+			models.Changelog{
+				Contents: `systemd (229-2) unstable; urgency=medium
+systemd (229-1) unstable; urgency=medium
+systemd (228-6) unstable; urgency=medium
+CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
+CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
+CVE-2015-3210: heap buffer overflow in pcre_compile2() /
+systemd (228-5) unstable; urgency=medium
+systemd (228-4) unstable; urgency=medium`,
+				//TODO
+				Method: models.ChangelogExactMatchStr,
 			},
 		},
 		{
@@ -96,21 +104,35 @@ systemd (227-1) unstable; urgency=medium`,
 				"libpcre3",
 				"2:8.35-7.1ubuntu1",
 				`pcre3 (2:8.38-2) unstable; urgency=low
-pcre3 (2:8.38-1) unstable; urgency=low
-pcre3 (2:8.35-8) unstable; urgency=low
-pcre3 (2:8.35-7.4) unstable; urgency=medium
-pcre3 (2:8.35-7.3) unstable; urgency=medium
-pcre3 (2:8.35-7.2) unstable; urgency=low
-CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
-CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
-CVE-2015-3210: heap buffer overflow in pcre_compile2() /
-pcre3 (2:8.35-7.1) unstable; urgency=medium
-pcre3 (2:8.35-7) unstable; urgency=medium`,
+		 pcre3 (2:8.38-1) unstable; urgency=low
+		 pcre3 (2:8.35-8) unstable; urgency=low
+		 pcre3 (2:8.35-7.4) unstable; urgency=medium
+		 pcre3 (2:8.35-7.3) unstable; urgency=medium
+		 pcre3 (2:8.35-7.2) unstable; urgency=low
+		 CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
+		 CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
+		 CVE-2015-3210: heap buffer overflow in pcre_compile2() /
+		 pcre3 (2:8.35-7.1) unstable; urgency=medium
+		 pcre3 (2:8.35-7) unstable; urgency=medium`,
 			},
 			[]DetectedCveID{
 				{"CVE-2015-2325", models.ChangelogExactMatch},
 				{"CVE-2015-2326", models.ChangelogExactMatch},
 				{"CVE-2015-3210", models.ChangelogExactMatch},
+			},
+			models.Changelog{
+				Contents: `pcre3 (2:8.38-2) unstable; urgency=low
+		 pcre3 (2:8.38-1) unstable; urgency=low
+		 pcre3 (2:8.35-8) unstable; urgency=low
+		 pcre3 (2:8.35-7.4) unstable; urgency=medium
+		 pcre3 (2:8.35-7.3) unstable; urgency=medium
+		 pcre3 (2:8.35-7.2) unstable; urgency=low
+		 CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
+		 CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
+		 CVE-2015-3210: heap buffer overflow in pcre_compile2() /
+		 pcre3 (2:8.35-7.1) unstable; urgency=medium`,
+				//TODO
+				Method: models.ChangelogExactMatchStr,
 			},
 		},
 		{
@@ -119,29 +141,39 @@ pcre3 (2:8.35-7) unstable; urgency=medium`,
 				"sysvinit",
 				"2.88dsf-59.2ubuntu3",
 				`sysvinit (2.88dsf-59.3ubuntu1) xenial; urgency=low
-sysvinit (2.88dsf-59.3) unstable; urgency=medium
-CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
-CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
-CVE-2015-3210: heap buffer overflow in pcre_compile2() /
-sysvinit (2.88dsf-59.2ubuntu3) xenial; urgency=medium
-sysvinit (2.88dsf-59.2ubuntu2) wily; urgency=medium
-sysvinit (2.88dsf-59.2ubuntu1) wily; urgency=medium
-CVE-2015-2321: heap buffer overflow in pcre_compile2(). (Closes: #783285)
-sysvinit (2.88dsf-59.2) unstable; urgency=medium
-sysvinit (2.88dsf-59.1ubuntu3) wily; urgency=medium
-CVE-2015-2322: heap buffer overflow in pcre_compile2(). (Closes: #783285)
-sysvinit (2.88dsf-59.1ubuntu2) wily; urgency=medium
-sysvinit (2.88dsf-59.1ubuntu1) wily; urgency=medium
-sysvinit (2.88dsf-59.1) unstable; urgency=medium
-CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
-sysvinit (2.88dsf-59) unstable; urgency=medium
-sysvinit (2.88dsf-58) unstable; urgency=low
-sysvinit (2.88dsf-57) unstable; urgency=low`,
+		 sysvinit (2.88dsf-59.3) unstable; urgency=medium
+		 CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
+		 CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
+		 CVE-2015-3210: heap buffer overflow in pcre_compile2() /
+		 sysvinit (2.88dsf-59.2ubuntu3) xenial; urgency=medium
+		 sysvinit (2.88dsf-59.2ubuntu2) wily; urgency=medium
+		 sysvinit (2.88dsf-59.2ubuntu1) wily; urgency=medium
+		 CVE-2015-2321: heap buffer overflow in pcre_compile2(). (Closes: #783285)
+		 sysvinit (2.88dsf-59.2) unstable; urgency=medium
+		 sysvinit (2.88dsf-59.1ubuntu3) wily; urgency=medium
+		 CVE-2015-2322: heap buffer overflow in pcre_compile2(). (Closes: #783285)
+		 sysvinit (2.88dsf-59.1ubuntu2) wily; urgency=medium
+		 sysvinit (2.88dsf-59.1ubuntu1) wily; urgency=medium
+		 sysvinit (2.88dsf-59.1) unstable; urgency=medium
+		 CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
+		 sysvinit (2.88dsf-59) unstable; urgency=medium
+		 sysvinit (2.88dsf-58) unstable; urgency=low
+		 sysvinit (2.88dsf-57) unstable; urgency=low`,
 			},
 			[]DetectedCveID{
 				{"CVE-2015-2325", models.ChangelogExactMatch},
 				{"CVE-2015-2326", models.ChangelogExactMatch},
 				{"CVE-2015-3210", models.ChangelogExactMatch},
+			},
+			models.Changelog{
+				Contents: `sysvinit (2.88dsf-59.3ubuntu1) xenial; urgency=low
+		 sysvinit (2.88dsf-59.3) unstable; urgency=medium
+		 CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
+		 CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
+		 CVE-2015-3210: heap buffer overflow in pcre_compile2() /
+		 sysvinit (2.88dsf-59.2ubuntu3) xenial; urgency=medium`,
+				//TODO
+				Method: models.ChangelogExactMatchStr,
 			},
 		},
 		{
@@ -149,38 +181,77 @@ sysvinit (2.88dsf-57) unstable; urgency=low`,
 			[]string{
 				"bsdutils",
 				"1:2.27.1-1ubuntu3",
-				` util-linux (2.27.1-3ubuntu1) xenial; urgency=medium
-util-linux (2.27.1-3) unstable; urgency=medium
-CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
-CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
-CVE-2015-3210: CVE-2016-1000000heap buffer overflow in pcre_compile2() /
-util-linux (2.27.1-2) unstable; urgency=medium
-util-linux (2.27.1-1ubuntu4) xenial; urgency=medium
-util-linux (2.27.1-1ubuntu3) xenial; urgency=medium
-util-linux (2.27.1-1ubuntu2) xenial; urgency=medium
-util-linux (2.27.1-1ubuntu1) xenial; urgency=medium
-util-linux (2.27.1-1) unstable; urgency=medium
-util-linux (2.27-3ubuntu1) xenial; urgency=medium
-util-linux (2.27-3) unstable; urgency=medium
-util-linux (2.27-2) unstable; urgency=medium
-util-linux (2.27-1) unstable; urgency=medium
-util-linux (2.27~rc2-2) experimental; urgency=medium
-util-linux (2.27~rc2-1) experimental; urgency=medium
-util-linux (2.27~rc1-1) experimental; urgency=medium
-util-linux (2.26.2-9) unstable; urgency=medium
-util-linux (2.26.2-8) experimental; urgency=medium
-util-linux (2.26.2-7) experimental; urgency=medium
-util-linux (2.26.2-6ubuntu3) wily; urgency=medium
-CVE-2015-2329: heap buffer overflow in compile_branch(). (Closes: #781795)
-util-linux (2.26.2-6ubuntu2) wily; urgency=medium
-util-linux (2.26.2-6ubuntu1) wily; urgency=medium
-util-linux (2.26.2-6) unstable; urgency=medium`,
+				`util-linux (2.27.1-3ubuntu1) xenial; urgency=medium
+		 util-linux (2.27.1-3) unstable; urgency=medium
+		 CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
+		 CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
+		 CVE-2015-3210: CVE-2016-1000000heap buffer overflow in pcre_compile2() /
+		 util-linux (2.27.1-2) unstable; urgency=medium
+		 util-linux (2.27.1-1ubuntu4) xenial; urgency=medium
+		 util-linux (2.27.1-1ubuntu3) xenial; urgency=medium
+		 util-linux (2.27.1-1ubuntu2) xenial; urgency=medium
+		 util-linux (2.27.1-1ubuntu1) xenial; urgency=medium
+		 util-linux (2.27.1-1) unstable; urgency=medium
+		 util-linux (2.27-3ubuntu1) xenial; urgency=medium`,
 			},
 			[]DetectedCveID{
 				{"CVE-2015-2325", models.ChangelogExactMatch},
 				{"CVE-2015-2326", models.ChangelogExactMatch},
 				{"CVE-2015-3210", models.ChangelogExactMatch},
 				{"CVE-2016-1000000", models.ChangelogExactMatch},
+			},
+			models.Changelog{
+				Contents: `util-linux (2.27.1-3ubuntu1) xenial; urgency=medium
+		 util-linux (2.27.1-3) unstable; urgency=medium
+		 CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
+		 CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
+		 CVE-2015-3210: CVE-2016-1000000heap buffer overflow in pcre_compile2() /
+		 util-linux (2.27.1-2) unstable; urgency=medium
+		 util-linux (2.27.1-1ubuntu4) xenial; urgency=medium
+		 util-linux (2.27.1-1ubuntu3) xenial; urgency=medium`,
+				//TODO
+				Method: models.ChangelogExactMatchStr,
+			},
+		},
+		{
+			// 1:ver-ubuntu3
+			[]string{
+				"bsdutils",
+				"1:2.27-3ubuntu3",
+				`util-linux (2.27.1-3ubuntu1) xenial; urgency=medium
+		 util-linux (2.27.1-3) unstable; urgency=medium
+		 CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
+		 CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
+		 CVE-2015-3210: CVE-2016-1000000heap buffer overflow in pcre_compile2() /
+		 util-linux (2.27.1-2) unstable; urgency=medium
+		 util-linux (2.27.1-1ubuntu4) xenial; urgency=medium
+		 util-linux (2.27.1-1ubuntu3) xenial; urgency=medium
+		 util-linux (2.27.1-1ubuntu2) xenial; urgency=medium
+		 util-linux (2.27.1-1ubuntu1) xenial; urgency=medium
+		 util-linux (2.27.1-1) unstable; urgency=medium
+		 util-linux (2.27-3) xenial; urgency=medium`,
+			},
+			[]DetectedCveID{
+				{"CVE-2015-2325", models.ChangelogExactMatch},
+				{"CVE-2015-2326", models.ChangelogExactMatch},
+				{"CVE-2015-3210", models.ChangelogExactMatch},
+				{"CVE-2016-1000000", models.ChangelogExactMatch},
+			},
+			models.Changelog{
+				Contents: `util-linux (2.27.1-3ubuntu1) xenial; urgency=medium
+		 util-linux (2.27.1-3) unstable; urgency=medium
+		 CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
+		 CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
+		 CVE-2015-3210: CVE-2016-1000000heap buffer overflow in pcre_compile2() /
+		 util-linux (2.27.1-2) unstable; urgency=medium
+		 util-linux (2.27.1-1ubuntu4) xenial; urgency=medium
+		 util-linux (2.27.1-1ubuntu3) xenial; urgency=medium
+		 util-linux (2.27.1-1ubuntu2) xenial; urgency=medium
+		 util-linux (2.27.1-1ubuntu1) xenial; urgency=medium
+		 util-linux (2.27.1-1) unstable; urgency=medium
+		 util-linux (2.27-3) xenial; urgency=medium`,
+				//TODO
+				Method: models.ChangelogExactMatchStr,
 			},
 		},
 		{
@@ -189,27 +260,41 @@ util-linux (2.26.2-6) unstable; urgency=medium`,
 				"tar",
 				"1.27.1-2+b1",
 				`tar (1.27.1-2+deb8u1) jessie-security; urgency=high
-  * CVE-2016-6321: Bypassing the extract path name.
-tar (1.27.1-2) unstable; urgency=low`,
+		   * CVE-2016-6321: Bypassing the extract path name.
+		 tar (1.27.1-2) unstable; urgency=low`,
 			},
 			[]DetectedCveID{
 				{"CVE-2016-6321", models.ChangelogLenientMatch},
+			},
+			models.Changelog{
+				Contents: `tar (1.27.1-2+deb8u1) jessie-security; urgency=high
+		   * CVE-2016-6321: Bypassing the extract path name.
+		 tar (1.27.1-2) unstable; urgency=low`,
+				Method: models.ChangelogLenientMatchStr,
 			},
 		},
 	}
 
 	d := newDebian(config.ServerInfo{})
 	for _, tt := range tests {
-		actual := d.getCveIDsFromChangelog(tt.in[2], tt.in[0], tt.in[1])
-		if len(actual) != len(tt.expected) {
-			t.Errorf("Len of return array are'nt same. expected %#v, actual %#v", tt.expected, actual)
+		aCveIDs, aClog := d.getCveIDsFromChangelog(tt.in[2], tt.in[0], tt.in[1])
+		if len(aCveIDs) != len(tt.cveIDs) {
+			t.Errorf("Len of return array are'nt same. expected %#v, actual %#v", tt.cveIDs, aCveIDs)
 			t.Errorf(pp.Sprintf("%s", tt.in))
 			continue
 		}
-		for i := range tt.expected {
-			if !reflect.DeepEqual(tt.expected[i], actual[i]) {
-				t.Errorf("expected %v, actual %v", tt.expected[i], actual[i])
+		for i := range tt.cveIDs {
+			if !reflect.DeepEqual(tt.cveIDs[i], aCveIDs[i]) {
+				t.Errorf("expected %v, actual %v", tt.cveIDs[i], aCveIDs[i])
 			}
+		}
+
+		if aClog.Contents != tt.changelog.Contents {
+			t.Errorf(pp.Sprintf("expected: %s, actual: %s", tt.changelog.Contents, aClog.Contents))
+		}
+
+		if aClog.Method != tt.changelog.Method {
+			t.Errorf(pp.Sprintf("expected: %s, actual: %s", tt.changelog.Method, aClog.Method))
 		}
 	}
 }

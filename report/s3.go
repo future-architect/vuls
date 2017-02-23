@@ -55,7 +55,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 	if c.Conf.FormatOneLineText {
 		timestr := rs[0].ScannedAt.Format(time.RFC3339)
 		k := fmt.Sprintf(timestr + "/summary.txt")
-		text := toOneLineSummary(rs...)
+		text := formatOneLineSummary(rs...)
 		if err := putObject(svc, k, []byte(text)); err != nil {
 			return err
 		}
@@ -76,7 +76,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 
 		if c.Conf.FormatShortText {
 			k := key + "_short.txt"
-			text := toShortPlainText(r)
+			text := formatShortPlainText(r)
 			if err := putObject(svc, k, []byte(text)); err != nil {
 				return err
 			}
@@ -84,7 +84,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 
 		if c.Conf.FormatFullText {
 			k := key + "_full.txt"
-			text := toFullPlainText(r)
+			text := formatFullPlainText(r)
 			if err := putObject(svc, k, []byte(text)); err != nil {
 				return err
 			}

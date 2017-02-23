@@ -1022,6 +1022,27 @@ Confidence      100 / YumUpdateSecurityMatch
   | CpeNameMatch           | 100                |                              All |Search for NVD information with CPE name specified in config.toml|
 
 
+### Changelog Part
+
+The scan results of Ubuntu, Debian, Raspbian or CentOS are also output Changelog in TUI or report with -format-full-text.
+(RHEL, Amazon or FreeBSD will be available in the near future)
+
+The output change log includes only the difference between the currently installed version and candidate version.
+
+```
+tar-1.28-2.1 -> tar-1.28-2.1ubuntu0.1
+-------------------------------------
+tar (1.28-2.1ubuntu0.1) xenial-security; urgency=medium
+
+  * SECURITY UPDATE: extract pathname bypass
+    - debian/patches/CVE-2016-6321.patch: skip members whose names contain
+      ".." in src/extract.c.
+    - CVE-2016-6321
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Thu, 17 Nov 2016 11:06:07 -0500
+```
+
+
 ## Example: Send scan results to Slack
 ```
 $ vuls report \

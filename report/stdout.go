@@ -32,7 +32,7 @@ func (w StdoutWriter) WriteScanSummary(rs ...models.ScanResult) {
 	fmt.Printf("\n\n")
 	fmt.Println("One Line Summary")
 	fmt.Println("================")
-	fmt.Printf("%s\n", toScanSummary(rs...))
+	fmt.Printf("%s\n", formatScanSummary(rs...))
 }
 
 func (w StdoutWriter) Write(rs ...models.ScanResult) error {
@@ -40,19 +40,19 @@ func (w StdoutWriter) Write(rs ...models.ScanResult) error {
 		fmt.Print("\n\n")
 		fmt.Println("One Line Summary")
 		fmt.Println("================")
-		fmt.Println(toOneLineSummary(rs...))
+		fmt.Println(formatOneLineSummary(rs...))
 		fmt.Print("\n")
 	}
 
 	if c.Conf.FormatShortText {
 		for _, r := range rs {
-			fmt.Println(toShortPlainText(r))
+			fmt.Println(formatShortPlainText(r))
 		}
 	}
 
 	if c.Conf.FormatFullText {
 		for _, r := range rs {
-			fmt.Println(toFullPlainText(r))
+			fmt.Println(formatFullPlainText(r))
 		}
 	}
 	return nil

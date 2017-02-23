@@ -1071,7 +1071,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 		Release: "6.7",
 	}
 	for _, tt := range testsCentos6 {
-		rpm2changelog, err := r.parseAllChangelog(stdoutCentos6)
+		rpm2changelog, err := r.divideChangelogByPackage(stdoutCentos6)
 		if err != nil {
 			t.Errorf("err: %s", err)
 		}
@@ -1157,7 +1157,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 		Release: "5.6",
 	}
 	for _, tt := range testsCentos5 {
-		rpm2changelog, err := r.parseAllChangelog(stdoutCentos5)
+		rpm2changelog, err := r.divideChangelogByPackage(stdoutCentos5)
 		if err != nil {
 			t.Errorf("err: %s", err)
 		}
