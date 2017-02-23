@@ -267,7 +267,7 @@ CVE-2016-5636           10.0 (High)     CPython の zipimport.c の get_data 関
                                         python27-2.7.10-4.119.amzn1 -> python27-2.7.12-2.120.amzn1
                                         python27-devel-2.7.10-4.119.amzn1 -> python27-devel-2.7.12-2.120.amzn1
                                         python27-libs-2.7.10-4.119.amzn1 -> python27-libs-2.7.12-2.120.amzn1
-                                        Candidate: 100 / YumUpdateSecurityMatch
+                                        Confidence: 100 / YumUpdateSecurityMatch
 
 ... snip ...
 ````

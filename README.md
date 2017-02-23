@@ -263,7 +263,7 @@ CVE-2016-5636           10.0 (High)     Integer overflow in the get_data functio
                                         python27-2.7.10-4.119.amzn1 -> python27-2.7.12-2.120.amzn1
                                         python27-devel-2.7.10-4.119.amzn1 -> python27-devel-2.7.12-2.120.amzn1
                                         python27-libs-2.7.10-4.119.amzn1 -> python27-libs-2.7.12-2.120.amzn1
-                                        Candidate: 100 / YumUpdateSecurityMatch
+                                        Confidence: 100 / YumUpdateSecurityMatch
 ... snip ...
 ````
 
