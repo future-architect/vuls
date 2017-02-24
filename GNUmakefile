@@ -22,6 +22,8 @@ REVISION := $(shell git rev-parse --short HEAD)
 LDFLAGS := -X 'main.version=$(VERSION)' \
 	-X 'main.revision=$(REVISION)'
 
+all: glide deps build test
+
 glide:
 	go get github.com/Masterminds/glide
 
@@ -37,7 +39,6 @@ build: main.go deps
 install: main.go deps
 	go install -ldflags "$(LDFLAGS)"
 
-all: test
 
 lint:
 	@ go get -v github.com/golang/lint/golint
