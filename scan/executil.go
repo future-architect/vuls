@@ -222,7 +222,7 @@ func sshExecNative(c conf.ServerInfo, cmd string, sudo bool) (result execResult)
 		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
 		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
 	}
-	if err = session.RequestPty("xterm", 400, 256, modes); err != nil {
+	if err = session.RequestPty("xterm", 400, 1000, modes); err != nil {
 		result.Error = fmt.Errorf(
 			"Failed to request for pseudo terminal. servername: %s, err: %s",
 			c.ServerName, err)
