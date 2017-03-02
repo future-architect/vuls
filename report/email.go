@@ -40,7 +40,7 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 
 	for _, r := range rs {
 		if conf.FormatOneEMail {
-			message += toFullPlainText(r) + "\r\n\r\n"
+			message += formatFullPlainText(r) + "\r\n\r\n"
 			totalResult.KnownCves = append(totalResult.KnownCves, r.KnownCves...)
 			totalResult.UnknownCves = append(totalResult.UnknownCves, r.UnknownCves...)
 		} else {
@@ -52,7 +52,7 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 				subject = fmt.Sprintf("%s%s %s",
 					conf.EMail.SubjectPrefix, r.ServerInfo(), r.CveSummary())
 			}
-			message = toFullPlainText(r)
+			message = formatFullPlainText(r)
 			if err := sender.Send(subject, message); err != nil {
 				return err
 			}
@@ -68,7 +68,7 @@ One Line Summary
 
 
 %s`,
-			toOneLineSummary(rs...), message)
+			formatOneLineSummary(rs...), message)
 
 		subject := fmt.Sprintf("%s %s",
 			conf.EMail.SubjectPrefix,

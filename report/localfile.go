@@ -38,7 +38,7 @@ type LocalFileWriter struct {
 func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 	if c.Conf.FormatOneLineText {
 		path := filepath.Join(w.CurrentDir, "summary.txt")
-		text := toOneLineSummary(rs...)
+		text := formatOneLineSummary(rs...)
 		if err := writeFile(path, []byte(text), 0600); err != nil {
 			return fmt.Errorf(
 				"Failed to write to file. path: %s, err: %s",
@@ -63,7 +63,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		if c.Conf.FormatShortText {
 			p := path + "_short.txt"
 			if err := writeFile(
-				p, []byte(toShortPlainText(r)), 0600); err != nil {
+				p, []byte(formatShortPlainText(r)), 0600); err != nil {
 				return fmt.Errorf(
 					"Failed to write text files. path: %s, err: %s", p, err)
 			}
@@ -72,7 +72,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		if c.Conf.FormatFullText {
 			p := path + "_full.txt"
 			if err := writeFile(
-				p, []byte(toFullPlainText(r)), 0600); err != nil {
+				p, []byte(formatFullPlainText(r)), 0600); err != nil {
 				return fmt.Errorf(
 					"Failed to write text files. path: %s, err: %s", p, err)
 			}

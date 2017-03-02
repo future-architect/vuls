@@ -250,20 +250,43 @@ func (c Confidence) String() string {
 	return fmt.Sprintf("%d / %s", c.Score, c.DetectionMethod)
 }
 
+const (
+	// CpeNameMatchStr is a String representation of CpeNameMatch
+	CpeNameMatchStr = "CpeNameMatch"
+
+	// YumUpdateSecurityMatchStr is a String representation of YumUpdateSecurityMatch
+	YumUpdateSecurityMatchStr = "YumUpdateSecurityMatch"
+
+	// PkgAuditMatchStr is a String representation of PkgAuditMatch
+	PkgAuditMatchStr = "PkgAuditMatch"
+
+	// ChangelogExactMatchStr is a String representation of ChangelogExactMatch
+	ChangelogExactMatchStr = "ChangelogExactMatch"
+
+	// ChangelogLenientMatchStr is a String representation of ChangelogLenientMatch
+	ChangelogLenientMatchStr = "ChangelogLenientMatch"
+
+	// FailedToGetChangelog is a String representation of FailedToGetChangelog
+	FailedToGetChangelog = "FailedToGetChangelog"
+
+	// FailedToFindVersionInChangelog is a String representation of FailedToFindVersionInChangelog
+	FailedToFindVersionInChangelog = "FailedToFindVersionInChangelog"
+)
+
 // CpeNameMatch is a ranking how confident the CVE-ID was deteted correctly
-var CpeNameMatch = Confidence{100, "CpeNameMatch"}
+var CpeNameMatch = Confidence{100, CpeNameMatchStr}
 
 // YumUpdateSecurityMatch is a ranking how confident the CVE-ID was deteted correctly
-var YumUpdateSecurityMatch = Confidence{100, "YumUpdateSecurityMatch"}
+var YumUpdateSecurityMatch = Confidence{100, YumUpdateSecurityMatchStr}
 
 // PkgAuditMatch is a ranking how confident the CVE-ID was deteted correctly
-var PkgAuditMatch = Confidence{100, "PkgAuditMatch"}
+var PkgAuditMatch = Confidence{100, PkgAuditMatchStr}
 
 // ChangelogExactMatch is a ranking how confident the CVE-ID was deteted correctly
-var ChangelogExactMatch = Confidence{95, "ChangelogExactMatch"}
+var ChangelogExactMatch = Confidence{95, ChangelogExactMatchStr}
 
 // ChangelogLenientMatch is a ranking how confident the CVE-ID was deteted correctly
-var ChangelogLenientMatch = Confidence{50, "ChangelogLenientMatch"}
+var ChangelogLenientMatch = Confidence{50, ChangelogLenientMatchStr}
 
 // VulnInfos is VulnInfo list, getter/setter, sortable methods.
 type VulnInfos []VulnInfo
@@ -284,6 +307,9 @@ func (v *VulnInfo) NilSliceToEmpty() {
 	}
 	if v.DistroAdvisories == nil {
 		v.DistroAdvisories = []DistroAdvisory{}
+	}
+	if v.Packages == nil {
+		v.Packages = PackageInfoList{}
 	}
 }
 
@@ -466,6 +492,14 @@ type PackageInfo struct {
 	NewVersion string
 	NewRelease string
 	Repository string
+	Changelog  Changelog
+}
+
+// Changelog has contents of changelog and how to get it.
+// Method: modesl.detectionMethodStr
+type Changelog struct {
+	Contents string
+	Method   string
 }
 
 // ToStringCurrentVersion returns package name-version-release

@@ -257,7 +257,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 		cmd = fmt.Sprintf(cmd, "")
 	}
 
-	r := o.exec(util.PrependProxyEnv(cmd), sudo)
+	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess(0, 100) {
 		//returns an exit code of 100 if there are available updates.
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
@@ -287,9 +287,23 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 
 	// { packageName: changelog-lines }
 	var rpm2changelog map[string]*string
-	rpm2changelog, err = o.parseAllChangelog(allChangelog)
+	rpm2changelog, err = o.divideChangelogByPackage(allChangelog)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parseAllChangelog. err: %s", err)
+	}
+
+	for name, clog := range rpm2changelog {
+		for i, p := range o.Packages {
+			n := fmt.Sprintf("%s-%s-%s",
+				p.Name, p.NewVersion, p.NewRelease)
+			if name == n {
+				o.Packages[i].Changelog = models.Changelog{
+					Contents: *clog,
+					Method:   models.ChangelogExactMatchStr,
+				}
+				break
+			}
+		}
 	}
 
 	var results []PackInfoCveIDs
@@ -452,7 +466,7 @@ func (o *redhat) getChangelogCVELines(rpm2changelog map[string]*string, packInfo
 	return retLine
 }
 
-func (o *redhat) parseAllChangelog(allChangelog string) (map[string]*string, error) {
+func (o *redhat) divideChangelogByPackage(allChangelog string) (map[string]*string, error) {
 	var majorVersion int
 	var err error
 	if o.Distro.Family == "centos" {
@@ -559,7 +573,7 @@ func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList) (stdout st
 			"Failed to get changelog. status: %d, stdout: %s, stderr: %s",
 			r.ExitStatus, r.Stdout, r.Stderr)
 	}
-	return r.Stdout, nil
+	return strings.Replace(r.Stdout, "\r", "", -1), nil
 }
 
 type distroAdvisoryCveIDs struct {
@@ -601,9 +615,8 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 	advIDPackNamesList, err := o.parseYumUpdateinfoListAvailable(r.Stdout)
 
 	// get package name, version, rel to be upgrade.
-	//  cmd = "yum check-update --security"
 	cmd = "LANGUAGE=en_US.UTF-8 yum --color=never check-update"
-	r = o.exec(util.PrependProxyEnv(cmd), o.sudo())
+	r = o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess(0, 100) {
 		//returns an exit code of 100 if there are available updates.
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
