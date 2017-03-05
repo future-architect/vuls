@@ -26,6 +26,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 
@@ -37,10 +39,15 @@ import (
 type S3Writer struct{}
 
 func getS3() *s3.S3 {
-	return s3.New(session.New(&aws.Config{
-		Region:      aws.String(c.Conf.AwsRegion),
-		Credentials: credentials.NewSharedCredentials("", c.Conf.AwsProfile),
-	}))
+	Config := &aws.Config{
+		Region: aws.String(c.Conf.AwsRegion),
+		Credentials: credentials.NewChainCredentials([]credentials.Provider{
+			&credentials.EnvProvider{},
+			&credentials.SharedCredentialsProvider{Filename: "", Profile: c.Conf.AwsProfile},
+			&ec2rolecreds.EC2RoleProvider{Client: ec2metadata.New(session.New())},
+		}),
+	}
+	return s3.New(session.New(Config))
 }
 
 // Write results to S3
