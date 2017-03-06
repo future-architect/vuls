@@ -616,7 +616,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 
 	// get package name, version, rel to be upgrade.
 	cmd = "LANGUAGE=en_US.UTF-8 yum --color=never check-update"
-	r = o.exec(util.PrependProxyEnv(cmd), noSudo)
+	r = o.exec(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess(0, 100) {
 		//returns an exit code of 100 if there are available updates.
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
