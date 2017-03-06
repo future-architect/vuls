@@ -258,7 +258,7 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 	}
 
 	defaultSSHArgs := []string{
-		"-t",
+		"-tt",
 		"-o", "StrictHostKeyChecking=no",
 		"-o", "UserKnownHostsFile=/dev/null",
 		"-o", "LogLevel=quiet",
@@ -285,7 +285,7 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 	}
 
 	cmd = decorateCmd(c, cmd, sudo)
-	//  cmd = fmt.Sprintf("stty cols 256; set -o pipefail; %s", cmd)
+	cmd = fmt.Sprintf("stty cols 1000; %s", cmd)
 
 	args = append(args, cmd)
 	execCmd := ex.Command(sshBinaryPath, args...)
