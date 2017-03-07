@@ -120,6 +120,12 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 // CentOS 7 ... yum-plugin-changelog
 // RHEL, Amazon ... no additinal packages needed
 func (o *redhat) checkDependencies() error {
+	if o.Distro.Family == "rhel" {
+		if err := o.checkPluginEnable(); err != nil {
+			return err
+		}
+	}
+
 	switch o.Distro.Family {
 	case "rhel", "amazon":
 		return nil
@@ -145,6 +151,24 @@ func (o *redhat) checkDependencies() error {
 	default:
 		return fmt.Errorf("Not implemented yet: %s", o.Distro)
 	}
+}
+
+//By having this, you can detect that yum-plugin-security is entered but disable.
+//Getting ready only after becoming enable
+//This function corresponds to the issue of the next url.
+//https://github.com/future-architect/vuls/issues/284
+func (o *redhat) checkPluginEnable() error {
+	major, _ := (o.Distro.MajorVersion())
+	var cmd string
+	if o.Distro.Family == "rhel" && major == 5 {
+		cmd = "yum --color=never list-security --security"
+	} else {
+		cmd = "yum --color=never --security updateinfo list updates"
+	}
+	if err := o.exec(cmd, noSudo); !err.isSuccess() {
+		return fmt.Errorf("%s", "Yum-plugin-security is disabled. Please enable it.")
+	}
+	return nil
 }
 
 func (o *redhat) install() error {
