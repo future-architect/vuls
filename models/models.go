@@ -445,16 +445,18 @@ func (ps PackageInfoList) MergeNewVersion(as PackageInfoList) {
 
 func (ps PackageInfoList) countUpdatablePacks() int {
 	count := 0
+	set := make(map[string]bool)
 	for _, p := range ps {
-		if len(p.NewVersion) != 0 {
+		if len(p.NewVersion) != 0 && !set[p.Name] {
 			count++
+			set[p.Name] = true
 		}
 	}
 	return count
 }
 
-// ToUpdatablePacksSummary returns a summary of updatable packages
-func (ps PackageInfoList) ToUpdatablePacksSummary() string {
+// FormatUpdatablePacksSummary returns a summary of updatable packages
+func (ps PackageInfoList) FormatUpdatablePacksSummary() string {
 	return fmt.Sprintf("%d updatable packages",
 		ps.countUpdatablePacks())
 }
