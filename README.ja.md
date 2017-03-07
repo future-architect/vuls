@@ -1059,8 +1059,35 @@ With this sample command, it will ..
 
 事前にAWS関連の設定を行う
 - S3バケットを作成 [Creating a Bucket](http://docs.aws.amazon.com/AmazonS3/latest/UG/CreatingaBucket.html)
-- アクセスキーを作成し、S3バケットへのREAD/WRITE権限をつけておく [Managing Access Keys for IAM Users](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html)
-- security credentialsを設定 [Configuring the AWS Command Line Interface](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html)
+- いずれかの方法でS3リソースへアクセスする設定を行う
+    - 環境変数を設定 [Configuring the AWS Command Line Interface](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html)
+    - Security Credentialsを設定 [Configuring the AWS Command Line Interface](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html)
+    - サービス用のIAMロールを作成し、サービス(EC2, AWS Lambda)にアタッチ [Creating a Role to Delegate Permissions to an AWS Service](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-service.html)
+- 環境変数、Security Credentialsを設定する場合はアクセスキーを作成する [Managing Access Keys for IAM Users](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html)
+
+IAMポリシーの例:
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListAllMyBuckets"
+            ],
+            "Resource": "arn:aws:s3:::*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject"
+            ],
+            "Resource": "arn:aws:s3:::vuls/*"
+        }
+    ]
+}
+```
 
 ```
 $ vuls scan \
