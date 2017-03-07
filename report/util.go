@@ -40,7 +40,7 @@ func formatScanSummary(rs ...models.ScanResult) string {
 				r.FormatServerName(),
 				fmt.Sprintf("%s%s", r.Family, r.Release),
 				fmt.Sprintf("%d CVEs", len(r.ScannedCves)),
-				r.Packages.ToUpdatablePacksSummary(),
+				r.Packages.FormatUpdatablePacksSummary(),
 			}
 		} else {
 			cols = []interface{}{
@@ -65,7 +65,7 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 			cols = []interface{}{
 				r.FormatServerName(),
 				r.CveSummary(),
-				r.Packages.ToUpdatablePacksSummary(),
+				r.Packages.FormatUpdatablePacksSummary(),
 			}
 		} else {
 			cols = []interface{}{
@@ -97,7 +97,7 @@ func formatShortPlainText(r models.ScanResult) string {
 		r.ServerInfo(),
 		buf.String(),
 		r.CveSummary(),
-		r.Packages.ToUpdatablePacksSummary(),
+		r.Packages.FormatUpdatablePacksSummary(),
 	)
 
 	if len(r.Errors) != 0 {
@@ -111,7 +111,7 @@ func formatShortPlainText(r models.ScanResult) string {
 %s
 No CVE-IDs are found in updatable packages.
 %s
-`, header, r.Packages.ToUpdatablePacksSummary())
+`, header, r.Packages.FormatUpdatablePacksSummary())
 	}
 
 	for _, d := range cves {
@@ -192,7 +192,7 @@ func formatFullPlainText(r models.ScanResult) string {
 		r.ServerInfo(),
 		buf.String(),
 		r.CveSummary(),
-		r.Packages.ToUpdatablePacksSummary(),
+		r.Packages.FormatUpdatablePacksSummary(),
 	)
 
 	if len(r.Errors) != 0 {
@@ -206,7 +206,7 @@ func formatFullPlainText(r models.ScanResult) string {
 %s
 No CVE-IDs are found in updatable packages.
 %s
-`, header, r.Packages.ToUpdatablePacksSummary())
+`, header, r.Packages.FormatUpdatablePacksSummary())
 	}
 
 	scoredReport, unscoredReport := []string{}, []string{}
