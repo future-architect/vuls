@@ -105,14 +105,14 @@ func TestPrependHTTPProxyEnv(t *testing.T) {
 				"http://proxy.co.jp:8080",
 				"yum check-update",
 			},
-			`env http_proxy="http://proxy.co.jp:8080" https_proxy="http://proxy.co.jp:8080" HTTP_PROXY="http://proxy.co.jp:8080" HTTPS_PROXY="http://proxy.co.jp:8080" yum check-update`,
+			` http_proxy="http://proxy.co.jp:8080" https_proxy="http://proxy.co.jp:8080" HTTP_PROXY="http://proxy.co.jp:8080" HTTPS_PROXY="http://proxy.co.jp:8080" yum check-update`,
 		},
 		{
 			[]string{
 				"http://proxy.co.jp:8080",
 				"",
 			},
-			`env http_proxy="http://proxy.co.jp:8080" https_proxy="http://proxy.co.jp:8080" HTTP_PROXY="http://proxy.co.jp:8080" HTTPS_PROXY="http://proxy.co.jp:8080" `,
+			` http_proxy="http://proxy.co.jp:8080" https_proxy="http://proxy.co.jp:8080" HTTP_PROXY="http://proxy.co.jp:8080" HTTPS_PROXY="http://proxy.co.jp:8080" `,
 		},
 		{
 			[]string{

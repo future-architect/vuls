@@ -69,14 +69,6 @@ func (o *bsd) checkDependencies() error {
 	return nil
 }
 
-func (o *bsd) install() error {
-	return nil
-}
-
-func (o *bsd) checkRequiredPackagesInstalled() error {
-	return nil
-}
-
 func (o *bsd) scanPackages() error {
 	var err error
 	var packs []models.PackageInfo

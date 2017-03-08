@@ -128,12 +128,14 @@ func trim(str string) string {
 }
 
 func (o *debian) checkIfSudoNoPasswd() error {
-	r := o.exec("apt-get -v", noSudo)
+	cmd := util.PrependProxyEnv("apt-get update")
+	o.log.Infof("Checking... sudo %s", cmd)
+	r := o.exec(cmd, sudo)
 	if !r.isSuccess() {
 		o.log.Errorf("sudo error on %s", r)
 		return fmt.Errorf("Failed to sudo: %s", r)
 	}
-	o.log.Infof("sudo ... OK")
+	o.log.Infof("Sudo... Pass")
 	return nil
 }
 
@@ -145,42 +147,17 @@ func (o *debian) checkDependencies() error {
 	case "debian":
 		// Debian needs aptitude to get changelogs.
 		// Because unable to get changelogs via apt-get changelog on Debian.
-		name := "aptitude"
-		cmd := name + " -h"
-		if r := o.exec(cmd, noSudo); !r.isSuccess() {
-			o.lackDependencies = []string{name}
+		if r := o.exec("test -f /usr/bin/aptitude", noSudo); !r.isSuccess() {
+			msg := fmt.Sprintf("aptitude is not installed: %s", r)
+			o.log.Errorf(msg)
+			return fmt.Errorf(msg)
 		}
+		o.log.Infof("Dependencies... Pass")
 		return nil
 
 	default:
 		return fmt.Errorf("Not implemented yet: %s", o.Distro)
 	}
-}
-
-func (o *debian) install() error {
-	if len(o.lackDependencies) == 0 {
-		return nil
-	}
-
-	// apt-get update
-	o.log.Infof("apt-get update...")
-	cmd := util.PrependProxyEnv("apt-get update")
-	if r := o.exec(cmd, sudo); !r.isSuccess() {
-		msg := fmt.Sprintf("Failed to SSH: %s", r)
-		o.log.Errorf(msg)
-		return fmt.Errorf(msg)
-	}
-
-	for _, name := range o.lackDependencies {
-		cmd = util.PrependProxyEnv("apt-get install -y " + name)
-		if r := o.exec(cmd, sudo); !r.isSuccess() {
-			msg := fmt.Sprintf("Failed to SSH: %s", r)
-			o.log.Errorf(msg)
-			return fmt.Errorf(msg)
-		}
-		o.log.Infof("Installed: " + name)
-	}
-	return nil
 }
 
 func (o *debian) scanPackages() error {
@@ -242,17 +219,6 @@ func (o *debian) parseScannedPackagesLine(line string) (name, version string, er
 	}
 
 	return "", "", fmt.Errorf("Unknown format: %s", line)
-}
-
-func (o *debian) checkRequiredPackagesInstalled() error {
-	if o.Distro.Family == "debian" {
-		if r := o.exec("test -f /usr/bin/aptitude", noSudo); !r.isSuccess() {
-			msg := fmt.Sprintf("aptitude is not installed: %s", r)
-			o.log.Errorf(msg)
-			return fmt.Errorf(msg)
-		}
-	}
-	return nil
 }
 
 func (o *debian) scanUnsecurePackages(installed []models.PackageInfo) ([]models.VulnInfo, error) {

@@ -216,9 +216,6 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitFailure
 	}
 
-	util.Log.Info("Checking sudo configuration... ")
-	scan.CheckIfSudoNoPasswd()
-
 	util.Log.Info("Detecting Platforms... ")
 	scan.DetectPlatforms()
 

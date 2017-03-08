@@ -87,7 +87,7 @@ Hello Vulsチュートリアルでは手動でのセットアップ方法で説�
 1. go-cve-dictionaryをデプロイ
 1. Vulsをデプロイ
 1. 設定
-1. Prepare
+1. 設定ファイルと、スキャン対象サーバの設定のチェック
 1. Scan
 1. Reporting
 1. TUI(Terminal-Based User Interface)で結果を参照する
@@ -216,15 +216,14 @@ port        = "22"
 user        = "ec2-user"
 keyPath     = "/home/ec2-user/.ssh/id_rsa"
 
+```
+
+## Step7. Check config.toml and settings on the server before scanning
+
+```
 $ vuls configtest
 ```
-
-## Step7. Setting up target servers for Vuls  
-
-```
-$ vuls prepare
-```
-詳細は [Usage: Prepare](https://github.com/future-architect/vuls#usage-prepare) を参照
+詳細は [Usage: configtest](#usage-configtest) を参照
 
 ## Step8. Start Scanning
 
@@ -327,7 +326,7 @@ $ vuls tui
 
 # Architecture
 
-## A. Scan via SSH Mode
+## A. Scan via SSH Mode (Remote Scan Mode)
 
 ![Vuls-Architecture](img/vuls-architecture.png)
 
@@ -585,8 +584,6 @@ host         = "172.31.4.82"
 
 # Usage: Configtest
 
-configtestサブコマンドは、config.tomlで定義されたサーバ/コンテナに対してSSH可能かどうかをチェックする。  
-
 ```
 $ vuls configtest --help
 configtest:
@@ -595,6 +592,7 @@ configtest:
                         [-log-dir=/path/to/log]
                         [-ask-key-password]
                         [-ssh-external]
+                        [-http-proxy=http://192.168.0.1:8080]
                         [-debug]
 
                         [SERVER]...
@@ -604,66 +602,70 @@ configtest:
         /path/to/toml (default "/Users/kotakanbe/go/src/github.com/future-architect/vuls/config.toml")
   -debug
         debug mode
+  -http-proxy string
+        http://proxy-url:port (default: empty)
   -log-dir string
         /path/to/log (default "/var/log/vuls")
   -ssh-external
         Use external ssh command. Default: Use the Go native implementation
 ```
 
-また、スキャン対象サーバに対してパスワードなしでSUDO可能な状態かもチェックする。  
+configtestサブコマンドは以下をチェックする
+- config.tomlで定義されたサーバ/コンテナに対してSSH可能かどうか
+- スキャン対象のサーバ上に依存パッケーがインストールされているか
+- /etc/sudoers
 
-スキャン対象サーバ上の`/etc/sudoers`のサンプル
+## Dependencies on Target Servers
 
-- CentOS, RHEL, Amazon Linux
-```
-vuls ALL=(root) NOPASSWD: /usr/bin/yum
-```
-- Ubuntu, Debian, Raspbian
-```
-vuls ALL=(root) NOPASSWD: /usr/bin/apt-get
-```
-- Amazon Linux, FreeBSDはRoot権限なしでスキャン可能
-
-----
-
-# Usage: Prepare
-
-Prepareサブコマンドは、Vuls内部で利用する以下のパッケージをスキャン対象サーバにインストールする。
+スキャンするためには、下記のパッケージが必要なので、手動かまたはAnsibleなどのツールで事前にインストールする必要がある。
 
 | Distribution|            Release | Requirements |
 |:------------|-------------------:|:-------------|
 | Ubuntu      |          12, 14, 16| -            |
 | Debian      |                7, 8| aptitude     |
-| CentOS      |                   5| yum-changelog |
 | CentOS      |                6, 7| yum-plugin-changelog |
-| Amazon      |                All | -            |
-| RHEL        |            5, 6, 7 | -            |
+| Amazon      |                All | - |
+| RHEL        |                  5 | yum-security             |
+| RHEL        |               6, 7 | -  |
 | FreeBSD     |                 10 | -            |
 | Raspbian    |     Wheezy, Jessie | -            |
 
+## Check /etc/sudoers 
 
-```
-$ vuls prepare -help
-prepare:
-        prepare
-                        [-config=/path/to/config.toml]
-                        [-log-dir=/path/to/log]
-                        [-ask-key-password]
-                        [-debug]
-                        [-ssh-external]
+スキャン対象サーバに対してパスワードなしでSUDO可能な状態かもチェックする。  
+スキャン対象サーバ上の`/etc/sudoers`のサンプル
 
-                        [SERVER]...
-  -ask-key-password
-        Ask ssh privatekey password before scanning
-  -config string
-        /path/to/toml (default "$PWD/config.toml")
-  -debug
-        debug mode
-  -log-dir string
-        /path/to/log (default "/var/log/vuls")
-  -ssh-external
-        Use external ssh command. Default: Use the Go native implementation
+- CentOS
 ```
+vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --changelog --assumeno update *
+Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
+```
+
+- RHEL 5 
+```
+vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never list-security --security, /usr/bin/yum --color=never check-update, /usr/bin/yum --color=never info-security
+Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
+```
+
+- RHEL 6, 7
+```
+vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never --security updateinfo list updates, /usr/bin/yum --color=never check-update, /usr/bin/yum --color=never --security updateinfo updates
+Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
+```
+
+- Debian
+```
+vuls ALL=(ALL) NOPASSWD: /usr/bin/apt-get update
+Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
+```
+
+- Ubuntu/Raspbian
+```
+vuls ALL=(ALL) NOPASSWD: /usr/bin/apt-get update
+Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
+```
+
+- Amazon Linux, FreeBSDは今のところRoot権限なしでスキャン可能
 
 ----
 
