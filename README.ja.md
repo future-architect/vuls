@@ -1265,7 +1265,7 @@ VulsとDependency Checkを連携させる方法は以下
     dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"
     ```
 
-VulsとDependency Checkの連携すると以下の利点がある
+VulsとDependency Checkを連携すると以下の利点がある
 - ライブラリを更新した場合に、config.tomlのCPEの定義を変更しなくても良い
 - Vulsの機能でSlack, Emailで通知可能
 - 日本語のレポートが可能
