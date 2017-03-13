@@ -58,7 +58,7 @@ func TestParseScannedPackagesLineDebian(t *testing.T) {
 
 }
 
-func TestGetCveIDParsingChangelog(t *testing.T) {
+func TestGetCveIDsFromChangelog(t *testing.T) {
 
 	var tests = []struct {
 		in        []string
@@ -81,9 +81,9 @@ systemd (228-4) unstable; urgency=medium
 systemd (228-3) unstable; urgency=medium`,
 			},
 			[]DetectedCveID{
-				{"CVE-2015-2325", models.ChangelogExactMatch},
-				{"CVE-2015-2326", models.ChangelogExactMatch},
-				{"CVE-2015-3210", models.ChangelogExactMatch},
+				{"CVE-2015-2325", models.ChangelogLenientMatch},
+				{"CVE-2015-2326", models.ChangelogLenientMatch},
+				{"CVE-2015-3210", models.ChangelogLenientMatch},
 			},
 			models.Changelog{
 				Contents: `systemd (229-2) unstable; urgency=medium
@@ -94,8 +94,7 @@ CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
 CVE-2015-3210: heap buffer overflow in pcre_compile2() /
 systemd (228-5) unstable; urgency=medium
 systemd (228-4) unstable; urgency=medium`,
-				//TODO
-				Method: models.ChangelogExactMatchStr,
+				Method: models.ChangelogLenientMatchStr,
 			},
 		},
 		{
@@ -116,9 +115,9 @@ systemd (228-4) unstable; urgency=medium`,
 		 pcre3 (2:8.35-7) unstable; urgency=medium`,
 			},
 			[]DetectedCveID{
-				{"CVE-2015-2325", models.ChangelogExactMatch},
-				{"CVE-2015-2326", models.ChangelogExactMatch},
-				{"CVE-2015-3210", models.ChangelogExactMatch},
+				{"CVE-2015-2325", models.ChangelogLenientMatch},
+				{"CVE-2015-2326", models.ChangelogLenientMatch},
+				{"CVE-2015-3210", models.ChangelogLenientMatch},
 			},
 			models.Changelog{
 				Contents: `pcre3 (2:8.38-2) unstable; urgency=low
@@ -131,8 +130,7 @@ systemd (228-4) unstable; urgency=medium`,
 		 CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
 		 CVE-2015-3210: heap buffer overflow in pcre_compile2() /
 		 pcre3 (2:8.35-7.1) unstable; urgency=medium`,
-				//TODO
-				Method: models.ChangelogExactMatchStr,
+				Method: models.ChangelogLenientMatchStr,
 			},
 		},
 		{
@@ -172,7 +170,6 @@ systemd (228-4) unstable; urgency=medium`,
 		 CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
 		 CVE-2015-3210: heap buffer overflow in pcre_compile2() /
 		 sysvinit (2.88dsf-59.2ubuntu3) xenial; urgency=medium`,
-				//TODO
 				Method: models.ChangelogExactMatchStr,
 			},
 		},
@@ -195,10 +192,10 @@ systemd (228-4) unstable; urgency=medium`,
 		 util-linux (2.27-3ubuntu1) xenial; urgency=medium`,
 			},
 			[]DetectedCveID{
-				{"CVE-2015-2325", models.ChangelogExactMatch},
-				{"CVE-2015-2326", models.ChangelogExactMatch},
-				{"CVE-2015-3210", models.ChangelogExactMatch},
-				{"CVE-2016-1000000", models.ChangelogExactMatch},
+				{"CVE-2015-2325", models.ChangelogLenientMatch},
+				{"CVE-2015-2326", models.ChangelogLenientMatch},
+				{"CVE-2015-3210", models.ChangelogLenientMatch},
+				{"CVE-2016-1000000", models.ChangelogLenientMatch},
 			},
 			models.Changelog{
 				Contents: `util-linux (2.27.1-3ubuntu1) xenial; urgency=medium
@@ -209,8 +206,7 @@ systemd (228-4) unstable; urgency=medium`,
 		 util-linux (2.27.1-2) unstable; urgency=medium
 		 util-linux (2.27.1-1ubuntu4) xenial; urgency=medium
 		 util-linux (2.27.1-1ubuntu3) xenial; urgency=medium`,
-				//TODO
-				Method: models.ChangelogExactMatchStr,
+				Method: models.ChangelogLenientMatchStr,
 			},
 		},
 		{
@@ -232,10 +228,10 @@ systemd (228-4) unstable; urgency=medium`,
 		 util-linux (2.27-3) xenial; urgency=medium`,
 			},
 			[]DetectedCveID{
-				{"CVE-2015-2325", models.ChangelogExactMatch},
-				{"CVE-2015-2326", models.ChangelogExactMatch},
-				{"CVE-2015-3210", models.ChangelogExactMatch},
-				{"CVE-2016-1000000", models.ChangelogExactMatch},
+				{"CVE-2015-2325", models.ChangelogLenientMatch},
+				{"CVE-2015-2326", models.ChangelogLenientMatch},
+				{"CVE-2015-3210", models.ChangelogLenientMatch},
+				{"CVE-2016-1000000", models.ChangelogLenientMatch},
 			},
 			models.Changelog{
 				Contents: `util-linux (2.27.1-3ubuntu1) xenial; urgency=medium
@@ -250,8 +246,7 @@ systemd (228-4) unstable; urgency=medium`,
 		 util-linux (2.27.1-1ubuntu1) xenial; urgency=medium
 		 util-linux (2.27.1-1) unstable; urgency=medium
 		 util-linux (2.27-3) xenial; urgency=medium`,
-				//TODO
-				Method: models.ChangelogExactMatchStr,
+				Method: models.ChangelogLenientMatchStr,
 			},
 		},
 		{
@@ -276,16 +271,17 @@ systemd (228-4) unstable; urgency=medium`,
 	}
 
 	d := newDebian(config.ServerInfo{})
-	for _, tt := range tests {
+	d.Distro.Family = "ubuntu"
+	for i, tt := range tests {
 		aCveIDs, aClog := d.getCveIDsFromChangelog(tt.in[2], tt.in[0], tt.in[1])
 		if len(aCveIDs) != len(tt.cveIDs) {
-			t.Errorf("Len of return array are'nt same. expected %#v, actual %#v", tt.cveIDs, aCveIDs)
+			t.Errorf("[%d] Len of return array are'nt same. expected %#v, actual %#v", i, tt.cveIDs, aCveIDs)
 			t.Errorf(pp.Sprintf("%s", tt.in))
 			continue
 		}
-		for i := range tt.cveIDs {
-			if !reflect.DeepEqual(tt.cveIDs[i], aCveIDs[i]) {
-				t.Errorf("expected %v, actual %v", tt.cveIDs[i], aCveIDs[i])
+		for j := range tt.cveIDs {
+			if !reflect.DeepEqual(tt.cveIDs[j], aCveIDs[j]) {
+				t.Errorf("[%d] expected %v, actual %v", i, tt.cveIDs[j], aCveIDs[j])
 			}
 		}
 
