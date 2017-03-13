@@ -151,7 +151,6 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 	return nil
 }
 
-// CentOS 5 	... yum-changelog
 // CentOS 6, 7 	... yum-plugin-changelog
 // RHEL 5     	... yum-security
 // RHEL 6, 7    ... -
@@ -169,12 +168,25 @@ func (o *redhat) checkDependencies() error {
 		return fmt.Errorf(msg)
 	}
 
+	if o.Distro.Family == "centos" {
+		if majorVersion < 6 {
+			msg := fmt.Sprintf("CentOS %s is not supported", o.Distro.Release)
+			o.log.Errorf(msg)
+			return fmt.Errorf(msg)
+		}
+
+		// --assumeno option of yum is needed.
+		cmd := "yum -h | grep assumeno"
+		if r := o.exec(cmd, noSudo); !r.isSuccess() {
+			msg := fmt.Sprintf("Installed yum is old. Please update yum and then retry")
+			o.log.Errorf(msg)
+			return fmt.Errorf(msg)
+		}
+	}
+
 	switch o.Distro.Family {
 	case "centos":
 		packName = "yum-plugin-changelog"
-		if majorVersion < 6 {
-			packName = "yum-changelog"
-		}
 	case "rhel":
 		if majorVersion < 6 {
 			packName = "yum-security"

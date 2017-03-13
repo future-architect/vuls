@@ -397,7 +397,7 @@ web/app server in the same configuration under the load balancer
 | Ubuntu      |          12, 14, 16|
 | Debian      |                7, 8|
 | RHEL        |             5, 6, 7|
-| CentOS      |             5, 6, 7|
+| CentOS      |                6, 7|
 | Amazon Linux|                 All|
 | FreeBSD     |              10, 11|
 | Raspbian    |     Wheezy, Jessie |
