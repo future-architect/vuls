@@ -95,7 +95,7 @@ func URLPathParamJoin(baseURL string, paths []string, params map[string]string) 
 
 // ProxyEnv returns shell environment variables to set proxy
 func ProxyEnv() string {
-	httpProxyEnv := "env"
+	httpProxyEnv := ""
 	keys := []string{
 		"http_proxy",
 		"https_proxy",

@@ -327,9 +327,6 @@ func decorateCmd(c conf.ServerInfo, cmd string, sudo bool) string {
 	if sudo && c.User != "root" && !c.IsContainer() {
 		cmd = fmt.Sprintf("sudo -S %s", cmd)
 		cmd = strings.Replace(cmd, "|", "| sudo ", -1)
-
-		// echo command does not need sudo (for CentOS)
-		cmd = strings.Replace(cmd, "sudo -S echo", "echo", -1)
 	}
 
 	// If you are using pipe and you want to detect preprocessing errors, remove comment out

@@ -18,11 +18,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package scan
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/future-architect/vuls/cache"
@@ -38,21 +36,16 @@ var servers, errServers []osTypeInterface
 type osTypeInterface interface {
 	setServerInfo(config.ServerInfo)
 	getServerInfo() config.ServerInfo
-
 	setDistro(string, string)
 	getDistro() config.Distro
-
-	// checkDependencies checks if dependencies are installed on the target server.
-	checkDependencies() error
-	getLackDependencies() []string
-
-	checkIfSudoNoPasswd() error
 	detectPlatform()
 	getPlatform() models.Platform
 
-	checkRequiredPackagesInstalled() error
+	// checkDependencies checks if dependencies are installed on the target server.
+	checkDependencies() error
+	checkIfSudoNoPasswd() error
+
 	scanPackages() error
-	install() error
 	convertToModel() models.ScanResult
 
 	runningContainers() ([]config.Container, error)
@@ -113,7 +106,7 @@ func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 
 // PrintSSHableServerNames print SSH-able servernames
 func PrintSSHableServerNames() {
-	util.Log.Info("SSH-able servers are below...")
+	util.Log.Info("Scannable servers are below...")
 	for _, s := range servers {
 		if s.getServerInfo().IsContainer() {
 			fmt.Printf("%s@%s ",
@@ -338,9 +331,18 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 	return oses
 }
 
+// CheckDependencies checks dependencies are installed on target servers.
+func CheckDependencies() {
+	timeoutSec := 5 * 60
+	parallelExec(func(o osTypeInterface) error {
+		return o.checkDependencies()
+	}, timeoutSec)
+	return
+}
+
 // CheckIfSudoNoPasswd checks whether vuls can sudo with nopassword via SSH
 func CheckIfSudoNoPasswd() {
-	timeoutSec := 15
+	timeoutSec := 5 * 60
 	parallelExec(func(o osTypeInterface) error {
 		return o.checkIfSudoNoPasswd()
 	}, timeoutSec)
@@ -380,116 +382,11 @@ func detectPlatforms() {
 	return
 }
 
-// Prepare installs requred packages to scan vulnerabilities.
-func Prepare() error {
-	parallelExec(func(o osTypeInterface) error {
-		if err := o.checkDependencies(); err != nil {
-			return err
-		}
-		return nil
-	})
-
-	var targets, nonTargets []osTypeInterface
-	for _, s := range servers {
-		deps := s.getLackDependencies()
-		if len(deps) != 0 {
-			targets = append(targets, s)
-		} else {
-			nonTargets = append(nonTargets, s)
-		}
-	}
-	if len(targets) == 0 {
-		if 0 < len(nonTargets) {
-			util.Log.Info("The following servers were already installed dependencies")
-			for _, s := range nonTargets {
-				util.Log.Infof("  - %s", s.getServerInfo().GetServerName())
-			}
-		}
-
-		if 0 < len(errServers) {
-			util.Log.Error("Some errors occurred in the following servers")
-			for _, s := range errServers {
-				util.Log.Errorf("  - %s", s.getServerInfo().GetServerName())
-			}
-		} else {
-			util.Log.Info("Success")
-		}
-		return nil
-	}
-
-	util.Log.Info("The following servers need to install dependencies")
-	for _, s := range targets {
-		for _, d := range s.getLackDependencies() {
-			util.Log.Infof("  - %s on %s", d, s.getServerInfo().GetServerName())
-		}
-	}
-
-	if !config.Conf.AssumeYes {
-		util.Log.Info("Is this ok to install dependencies on the servers? [y/N]")
-
-		reader := bufio.NewReader(os.Stdin)
-		for {
-			text, err := reader.ReadString('\n')
-			if err != nil {
-				return err
-			}
-			switch strings.TrimSpace(text) {
-			case "", "N", "n":
-				return nil
-			case "y", "Y":
-				goto yes
-			default:
-				util.Log.Info("Please enter y or N")
-			}
-		}
-	}
-
-yes:
-	servers = targets
-	parallelExec(func(o osTypeInterface) error {
-		if err := o.install(); err != nil {
-			return err
-		}
-		return nil
-	})
-
-	if 0 < len(servers) {
-		util.Log.Info("Successfully installed in the followring servers")
-		for _, s := range servers {
-			util.Log.Infof("  - %s", s.getServerInfo().GetServerName())
-		}
-	}
-
-	if 0 < len(nonTargets) {
-		util.Log.Info("The following servers were already installed dependencies")
-		for _, s := range nonTargets {
-			util.Log.Infof("  - %s", s.getServerInfo().GetServerName())
-		}
-	}
-
-	if 0 < len(errServers) {
-		util.Log.Error("Some errors occurred in the following servers")
-		for _, s := range errServers {
-			util.Log.Errorf("  - %s", s.getServerInfo().GetServerName())
-		}
-	}
-
-	if len(errServers) == 0 {
-		util.Log.Info("Success")
-	} else {
-		util.Log.Error("Failure")
-	}
-	return nil
-}
-
 // Scan scan
 func Scan() error {
 	if len(servers) == 0 {
 		return fmt.Errorf("No server defined. Check the configuration")
 	}
-
-	util.Log.Info("Check required packages for scanning...")
-	checkRequiredPackagesInstalled()
 
 	if err := setupChangelogCache(); err != nil {
 		return err
@@ -527,14 +424,6 @@ func setupChangelogCache() error {
 			return err
 		}
 	}
-	return nil
-}
-
-func checkRequiredPackagesInstalled() []error {
-	timeoutSec := 30 * 60
-	parallelExec(func(o osTypeInterface) error {
-		return o.checkRequiredPackagesInstalled()
-	}, timeoutSec)
 	return nil
 }
 

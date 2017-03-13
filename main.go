@@ -41,7 +41,6 @@ func main() {
 	subcommands.Register(&commands.DiscoverCmd{}, "discover")
 	subcommands.Register(&commands.TuiCmd{}, "tui")
 	subcommands.Register(&commands.ScanCmd{}, "scan")
-	subcommands.Register(&commands.PrepareCmd{}, "prepare")
 	subcommands.Register(&commands.HistoryCmd{}, "history")
 	subcommands.Register(&commands.ReportCmd{}, "report")
 	subcommands.Register(&commands.ConfigtestCmd{}, "configtest")

@@ -93,7 +93,7 @@ This can be done in the following steps.
 1. Deploy go-cve-dictionary
 1. Deploy Vuls
 1. Configuration
-1. Prepare
+1. Check config.toml and settings on the server before scanning
 1. Scan
 1. Reporting
 1. TUI(Terminal-Based User Interface)
@@ -211,15 +211,15 @@ port        = "22"
 user        = "ec2-user"
 keyPath     = "/home/ec2-user/.ssh/id_rsa"
 
+```
+
+## Step7. Check config.toml and settings on the server before scanning
+
+```
 $ vuls configtest
 ```
 
-## Step7. Setting up target servers for Vuls  
-
-```
-$ vuls prepare
-```
-see [Usage: Prepare](https://github.com/future-architect/vuls#usage-prepare)
+see [Usage: configtest](#usage-configtest)
 
 ## Step8. Start Scanning
 
@@ -325,7 +325,7 @@ see https://github.com/future-architect/vuls/tree/master/setup/docker
 
 # Architecture
 
-## A. Scan via SSH Mode
+## A. Scan via SSH Mode (Remote Scan Mode)
 
 ![Vuls-Architecture](img/vuls-architecture.png)
 
@@ -589,7 +589,6 @@ You can customize your configuration using this template.
 
 # Usage: Configtest
 
-Configtest subcommand check if vuls is able to connect via ssh to servers/containers defined in the config.toml.  
 ```
 $ vuls configtest --help
 configtest:
@@ -607,72 +606,72 @@ configtest:
         /path/to/toml (default "/Users/kotakanbe/go/src/github.com/future-architect/vuls/config.toml")
   -debug
         debug mode
+  -http-proxy string
+        http://proxy-url:port (default: empty)
   -log-dir string
         /path/to/log (default "/var/log/vuls")
   -ssh-external
         Use external ssh command. Default: Use the Go native implementation
 ```
 
-And also, configtest subcommand checks sudo settings on target servers whether Vuls is able to SUDO with nopassword via SSH.  
+The configtest subcommand checks the following
+- Whether vuls is able to connect via ssh to servers/containers defined in the config.toml
+- Whether Dependent package is installed on the scan target server
+- Check /etc/sudoers
 
-Example of /etc/sudoers on target servers
-- CentOS and RHEL
-```
-vuls ALL=(root) NOPASSWD: /usr/bin/yum
-```
-- Ubuntu, Debian and Raspbian
-```
-vuls ALL=(root) NOPASSWD: /usr/bin/apt-get
-```
-- It is possible to scan without root privilege for Amazon Linux, FreeBSD.
+## Dependencies on Target Servers
 
-
-
-----
-
-# Usage: Prepare
-
-Prepare subcommand installs required packages on each server.
+In order to scan, the following dependencies are required, so you need to install them manually or with tools such as Ansible.
 
 | Distribution|            Release | Requirements |
 |:------------|-------------------:|:-------------|
 | Ubuntu      |          12, 14, 16| -            |
 | Debian      |                7, 8| aptitude     |
-| CentOS      |                   5| yum-changelog |
 | CentOS      |                6, 7| yum-plugin-changelog |
-| Amazon      |                All | -            |
-| RHEL        |            5, 6, 7 | -            |
+| Amazon      |                All | - |
+| RHEL        |                  5 | yum-security             |
+| RHEL        |               6, 7 | -  |
 | FreeBSD     |                 10 | -            |
 | Raspbian    |     Wheezy, Jessie | -            |
 
+## Check /etc/sudoers 
 
-```
-$ vuls prepare -help
-prepare:
-	prepare
-			[-config=/path/to/config.toml]
-			[-log-dir=/path/to/log]
-			[-ask-key-password]
-			[-assume-yes]
-			[-debug]
-			[-ssh-external]
+The configtest subcommand checks sudo settings on target servers whether Vuls is able to SUDO with nopassword via SSH.  
 
-			[SERVER]...
-  -ask-key-password
-    	Ask ssh privatekey password before scanning
-  -ask-sudo-password
-    	[Deprecated] THIS OPTION WAS REMOVED FOR SECURITY REASONS. Define NOPASSWD in /etc/sudoers on target servers and use SSH key-based authentication
-  -assume-yes
-    	Assume any dependencies should be installed
-  -config string
-    	/path/to/toml (default "$PWD/config.toml")
-  -debug
-    	debug mode
-  -log-dir string
-      /path/to/log (default "/var/log/vuls")
-  -ssh-external
-    	Use external ssh command. Default: Use the Go native implementation
+Example of /etc/sudoers on target servers
+
+- CentOS
 ```
+vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --changelog --assumeno update *
+Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
+```
+
+- RHEL 5 
+```
+vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never list-security --security, /usr/bin/yum --color=never check-update, /usr/bin/yum --color=never info-security
+Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
+```
+
+- RHEL 6, 7
+```
+vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never --security updateinfo list updates, /usr/bin/yum --color=never check-update, /usr/bin/yum --color=never --security updateinfo updates
+Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
+```
+
+- Debian
+```
+vuls ALL=(ALL) NOPASSWD: /usr/bin/apt-get update
+Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
+```
+
+- Ubuntu/Raspbian
+```
+vuls ALL=(ALL) NOPASSWD: /usr/bin/apt-get update
+Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
+```
+
+- On Amazon Linux, FreeBSD, it is possible to scan without root privilege for now.
+
 ----
 
 # Usage: Scan

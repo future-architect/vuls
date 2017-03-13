@@ -34,7 +34,6 @@ type base struct {
 	Distro     config.Distro
 	Platform   models.Platform
 
-	lackDependencies []string
 	osPackages
 
 	log  *logrus.Entry
@@ -75,10 +74,6 @@ func (l *base) setPlatform(p models.Platform) {
 
 func (l base) getPlatform() models.Platform {
 	return l.Platform
-}
-
-func (l base) getLackDependencies() []string {
-	return l.lackDependencies
 }
 
 func (l base) allContainers() (containers []config.Container, err error) {

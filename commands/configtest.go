@@ -36,6 +36,7 @@ type ConfigtestCmd struct {
 	logDir         string
 	askKeyPassword bool
 	sshExternal    bool
+	httpProxy      string
 
 	debug bool
 }
@@ -54,6 +55,7 @@ func (*ConfigtestCmd) Usage() string {
 			[-log-dir=/path/to/log]
 			[-ask-key-password]
 			[-ssh-external]
+			[-http-proxy=http://192.168.0.1:8080]
 			[-debug]
 
 			[SERVER]...
@@ -76,6 +78,13 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 		"ask-key-password",
 		false,
 		"Ask ssh privatekey password before scanning",
+	)
+
+	f.StringVar(
+		&p.httpProxy,
+		"http-proxy",
+		"",
+		"http://proxy-url:port (default: empty)",
 	)
 
 	f.BoolVar(
@@ -108,6 +117,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		return subcommands.ExitUsageError
 	}
 	c.Conf.SSHExternal = p.sshExternal
+	c.Conf.HTTPProxy = p.httpProxy
 
 	var servernames []string
 	if 0 < len(f.Args()) {
@@ -144,7 +154,10 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		return subcommands.ExitFailure
 	}
 
-	util.Log.Info("Checking sudo configuration...")
+	util.Log.Info("Checking dependendies...")
+	scan.CheckDependencies()
+
+	util.Log.Info("Checking sudo settings...")
 	scan.CheckIfSudoNoPasswd()
 
 	scan.PrintSSHableServerNames()

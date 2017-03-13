@@ -30,14 +30,6 @@ func (o unknown) checkDependencies() error {
 	return nil
 }
 
-func (o *unknown) install() error {
-	return nil
-}
-
-func (o *unknown) checkRequiredPackagesInstalled() error {
-	return nil
-}
-
 func (o *unknown) scanPackages() error {
 	return nil
 }
