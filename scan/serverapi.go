@@ -259,7 +259,7 @@ func detectContainerOSes() (actives, inactives []osTypeInterface) {
 
 func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeInterface) {
 	containerHostInfo := containerHost.getServerInfo()
-	if len(containerHostInfo.Containers) == 0 {
+	if len(containerHostInfo.Containers.Includes) == 0 {
 		return
 	}
 
@@ -271,14 +271,24 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 		return append(oses, containerHost)
 	}
 
-	if containerHostInfo.Containers[0] == "${running}" {
+	if containerHostInfo.Containers.Includes[0] == "${running}" {
 		for _, containerInfo := range running {
+
+			found := false
+			for _, ex := range containerHost.getServerInfo().Containers.Excludes {
+				if containerInfo.Name == ex || containerInfo.ContainerID == ex {
+					found = true
+				}
+			}
+			if found {
+				continue
+			}
+
 			copied := containerHostInfo
 			copied.SetContainer(config.Container{
 				ContainerID: containerInfo.ContainerID,
 				Name:        containerInfo.Name,
 				Image:       containerInfo.Image,
-				Type:        containerHostInfo.Container.Type,
 			})
 			os := detectOS(copied)
 			oses = append(oses, os)
@@ -295,7 +305,7 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 	}
 
 	var exited, unknown []string
-	for _, container := range containerHostInfo.Containers {
+	for _, container := range containerHostInfo.Containers.Includes {
 		found := false
 		for _, c := range running {
 			if c.ContainerID == container || c.Name == container {

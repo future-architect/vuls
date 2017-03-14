@@ -77,7 +77,7 @@ func (l base) getPlatform() models.Platform {
 }
 
 func (l base) allContainers() (containers []config.Container, err error) {
-	switch l.ServerInfo.Container.Type {
+	switch l.ServerInfo.Containers.Type {
 	case "", "docker":
 		stdout, err := l.dockerPs("-a --format '{{.ID}} {{.Names}} {{.Image}}'")
 		if err != nil {
@@ -92,12 +92,12 @@ func (l base) allContainers() (containers []config.Container, err error) {
 		return l.parseLxdPs(stdout)
 	default:
 		return containers, fmt.Errorf(
-			"Not supported yet: %s", l.ServerInfo.Container.Type)
+			"Not supported yet: %s", l.ServerInfo.Containers.Type)
 	}
 }
 
 func (l *base) runningContainers() (containers []config.Container, err error) {
-	switch l.ServerInfo.Container.Type {
+	switch l.ServerInfo.Containers.Type {
 	case "", "docker":
 		stdout, err := l.dockerPs("--format '{{.ID}} {{.Names}} {{.Image}}'")
 		if err != nil {
@@ -112,12 +112,12 @@ func (l *base) runningContainers() (containers []config.Container, err error) {
 		return l.parseLxdPs(stdout)
 	default:
 		return containers, fmt.Errorf(
-			"Not supported yet: %s", l.ServerInfo.Container.Type)
+			"Not supported yet: %s", l.ServerInfo.Containers.Type)
 	}
 }
 
 func (l *base) exitedContainers() (containers []config.Container, err error) {
-	switch l.ServerInfo.Container.Type {
+	switch l.ServerInfo.Containers.Type {
 	case "", "docker":
 		stdout, err := l.dockerPs("--filter 'status=exited' --format '{{.ID}} {{.Names}} {{.Image}}'")
 		if err != nil {
@@ -132,7 +132,7 @@ func (l *base) exitedContainers() (containers []config.Container, err error) {
 		return l.parseLxdPs(stdout)
 	default:
 		return containers, fmt.Errorf(
-			"Not supported yet: %s", l.ServerInfo.Container.Type)
+			"Not supported yet: %s", l.ServerInfo.Containers.Type)
 	}
 }
 
@@ -271,10 +271,15 @@ func (l *base) convertToModel() models.ScanResult {
 	}
 	sort.Sort(l.VulnInfos)
 
+	ctype := l.ServerInfo.Containers.Type
+	if l.ServerInfo.Container.ContainerID != "" && ctype == "" {
+		ctype = "docker"
+	}
 	container := models.Container{
 		ContainerID: l.ServerInfo.Container.ContainerID,
 		Name:        l.ServerInfo.Container.Name,
 		Image:       l.ServerInfo.Container.Image,
+		Type:        ctype,
 	}
 
 	errs := []string{}

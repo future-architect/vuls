@@ -446,7 +446,6 @@ subjectPrefix = "[vuls]"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
-#containers = ["${running}"]
 #optional = [
 #    ["key", "value"],
 #]
@@ -461,10 +460,13 @@ host         = "172.31.4.82"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
-#containers = ["${running}"]
 #optional = [
 #    ["key", "value"],
 #]
+#[servers.172-31-4-82.containers]
+#type = "lxd" # or "docker"
+#indludes = ["${running}"]
+#excludes = ["container_name", "container_id"]
 ```
 
 このテンプレート使ってVulsの設定ファイルを作ってもよい。
@@ -530,11 +532,14 @@ host         = "172.31.4.82"
     #cpeNames = [
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
-    #containers = ["${running}"]
     #ignoreCves = ["CVE-2016-6313"]
     #optional = [
     #    ["key", "value"],
     #]
+    #[servers.172-31-4-82.containers]
+    #type = "lxd" # or "docker"
+    #indludes = ["${running}"]
+    #excludes = ["container_name", "container_id"]
     ```
     下記serversセクションで値が指定されなかった場合のデフォルト値
 
@@ -555,7 +560,7 @@ host         = "172.31.4.82"
     #    ["key", "value"],
     #]
     #containers = ["${running}"]
-    #[servers.172-31-4-82.container]
+    #[servers.172-31-4-82.containers]
     #type = "lxd"
     ```
 
@@ -792,7 +797,9 @@ Vulsは、DockerホストにSSHで接続し、`docker exec`でDockerコンテナ
     host         = "172.31.4.82"
     user        = "ec2-user"
     keyPath     = "/home/username/.ssh/id_rsa"
-    containers = ["${running}"]
+
+    [servers.172-31-4-82.containers]
+    indludes = ["${running}"]
     ```
 
 - あるコンテナのみスキャン  
@@ -806,7 +813,23 @@ Vulsは、DockerホストにSSHで接続し、`docker exec`でDockerコンテナ
     host         = "172.31.4.82"
     user        = "ec2-user"
     keyPath     = "/home/username/.ssh/id_rsa"
-    containers = ["container_name_a", "4aa37a8b63b9"]
+
+    [servers.172-31-4-82.containers]
+    includes = ["container_name_a", "4aa37a8b63b9"]
+    ```
+
+- あるコンテナ以外をスキャン  
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+    host         = "172.31.4.82"
+    user        = "ec2-user"
+    keyPath     = "/home/username/.ssh/id_rsa"
+
+    [servers.172-31-4-82.containers]
+    indludes = ["${running}"]
+    excludes = ["container_name_a", "4aa37a8b63b9"]
     ```
 
 - コンテナのみをスキャンする場合（ホストはスキャンしない）  
@@ -822,9 +845,10 @@ Vulsは、ホストにSSHで接続し、`lxc exec`でLXDコンテナにコマン
 host         = "172.31.4.82"
 user        = "ec2-user"
 keyPath     = "/home/username/.ssh/id_rsa"
-containers = ["${running}"]
-[servers.172-31-4-82.container]
+
+[servers.172-31-4-82.containers]
 type = "lxd"
+includes = ["${running}"]
 ```
 
 # Usage: Report

@@ -339,7 +339,7 @@ type ServerInfo struct {
 	DependencyCheckXMLPath string
 
 	// Container Names or IDs
-	Containers []string
+	Containers Containers
 
 	IgnoreCves []string
 
@@ -394,10 +394,16 @@ func (s *ServerInfo) SetContainer(d Container) {
 	s.Container = d
 }
 
+// Containers has Containers information.
+type Containers struct {
+	Type     string
+	Includes []string
+	Excludes []string
+}
+
 // Container has Container information.
 type Container struct {
 	ContainerID string
 	Name        string
-	Type        string
 	Image       string
 }

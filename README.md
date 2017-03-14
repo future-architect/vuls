@@ -447,7 +447,6 @@ subjectPrefix = "[vuls]"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
-#containers = ["${running}"]
 #ignoreCves = ["CVE-2016-6313"]
 #optional = [
 #    ["key", "value"],
@@ -467,9 +466,10 @@ host         = "172.31.4.82"
 #optional = [
 #    ["key", "value"],
 #]
-#containers = ["${running}"]
-#[servers.172-31-4-82.container]
-#type = "lxd"
+#[servers.172-31-4-82.containers]
+#type = "lxd" # or "docker"
+#indludes = ["${running}"]
+#excludes = ["container_name", "container_id"]
 ```
 
 You can customize your configuration using this template.
@@ -538,7 +538,6 @@ You can customize your configuration using this template.
     #cpeNames = [
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
-    #containers = ["${running}"]
     #ignoreCves = ["CVE-2016-6313"]
     #optional = [
     #    ["key", "value"],
@@ -562,9 +561,10 @@ You can customize your configuration using this template.
     #optional = [
     #    ["key", "value"],
     #]
-    #containers = ["${running}"]
-    #[servers.172-31-4-82.container]
-    #type = "lxd"
+    #[servers.172-31-4-82.containers]
+    #type = "lxd" # or "docker"
+    #indludes = ["${running}"]
+    #excludes = ["container_name", "container_id"]
     ```
 
     You can overwrite the default value specified in default section.  
@@ -794,7 +794,9 @@ For more details, see [Architecture section](https://github.com/future-architect
     host         = "172.31.4.82"
     user        = "ec2-user"
     keyPath     = "/home/username/.ssh/id_rsa"
-    containers = ["${running}"]
+
+    [servers.172-31-4-82.containers]
+    indludes = ["${running}"]
     ```
 
 - To scan specific containers  
@@ -809,8 +811,25 @@ For more details, see [Architecture section](https://github.com/future-architect
     host         = "172.31.4.82"
     user        = "ec2-user"
     keyPath     = "/home/username/.ssh/id_rsa"
-    containers = ["container_name_a", "4aa37a8b63b9"]
+
+    [servers.172-31-4-82.containers]
+    includes = ["container_name_a", "4aa37a8b63b9"]
     ```
+
+- To scan except specific containers  
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+    host         = "172.31.4.82"
+    user        = "ec2-user"
+    keyPath     = "/home/username/.ssh/id_rsa"
+
+    [servers.172-31-4-82.containers]
+    indludes = ["${running}"]
+    excludes = ["container_name_a", "4aa37a8b63b9"]
+    ```
+
 - To scan containers only
   - --containers-only option is available.
 
@@ -824,9 +843,10 @@ Vuls scans lxd via `lxc exec` instead of SSH.
 host         = "172.31.4.82"
 user        = "ec2-user"
 keyPath     = "/home/username/.ssh/id_rsa"
-containers = ["${running}"]
-[servers.172-31-4-82.container]
+
+[servers.172-31-4-82.containers]
 type = "lxd"
+includes = ["${running}"]
 ```
 
 ----
