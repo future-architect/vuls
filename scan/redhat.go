@@ -305,17 +305,30 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 		CveIDs   []string
 	}
 
-	allChangelog, err := o.getAllChangelog(packInfoList)
-	if err != nil {
-		o.log.Errorf("Failed to getAllchangelog. err: %s", err)
-		return nil, err
-	}
-
-	// { packageName: changelog-lines }
 	var rpm2changelog map[string]*string
-	rpm2changelog, err = o.divideChangelogByPackage(allChangelog)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to parseAllChangelog. err: %s", err)
+	err_repos := make(map[string]bool)
+	var result_repos bool
+
+	for {
+		allChangelog, err := o.getAllChangelog(packInfoList, err_repos)
+		if err != nil {
+			o.log.Errorf("Failed to getAllchangelog. err: %s", err)
+			return nil, err
+		}
+
+		// { packageName: changelog-lines }
+		rpm2changelog, err, result_repos = o.divideChangelogByPackage(allChangelog, err_repos)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to divideChangelogByPackage. err: %s", err)
+		}
+		//if len(err_repos) == 0 {
+		if result_repos  == true {
+			o.log.Infof("All Success Repos")
+			break
+		}
+		for err_repo, _ := range err_repos {
+			o.log.Debugf("Failed to Repo: %s", err_repo)
+		}
 	}
 
 	for name, clog := range rpm2changelog {
@@ -492,13 +505,13 @@ func (o *redhat) getChangelogCVELines(rpm2changelog map[string]*string, packInfo
 	return retLine
 }
 
-func (o *redhat) divideChangelogByPackage(allChangelog string) (map[string]*string, error) {
+func (o *redhat) divideChangelogByPackage(allChangelog string, err_repos map[string]bool) (map[string]*string, error, bool) {
 	var majorVersion int
 	var err error
 	if o.Distro.Family == "centos" {
 		majorVersion, err = o.Distro.MajorVersion()
 		if err != nil {
-			return nil, fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
+			return nil, fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err), true
 		}
 	}
 
@@ -506,6 +519,23 @@ func (o *redhat) divideChangelogByPackage(allChangelog string) (map[string]*stri
 	tmpline := ""
 	var lines []string
 	var prev, now bool
+	var changelogErrorPattern = regexp.MustCompile(`^Error: Package: `)
+	var result_repos bool
+
+	result_repos = true
+	for i := range orglines {
+		if changelogErrorPattern.MatchString(orglines[i]) {
+			o.log.Debugf("ErrorLine: %s", orglines[i])
+			temp := o.regexpReplace(orglines[i], `.*\(`, "")
+			err_repos[o.regexpReplace(temp, `\).*`, "")] = true
+			result_repos = false
+		}
+	}
+	if result_repos == false {
+		o.log.Errorf("Disable Repos: %s", err_repos)
+		return nil, nil, result_repos
+	}
+
 	for i := range orglines {
 		if majorVersion == 5 {
 			/* for CentOS5 (yum-util < 1.1.20) */
@@ -514,12 +544,12 @@ func (o *redhat) divideChangelogByPackage(allChangelog string) (map[string]*stri
 			if 0 < i {
 				prev, err = o.isRpmPackageNameLine(orglines[i-1])
 				if err != nil {
-					return nil, err
+					return nil, err, true
 				}
 			}
 			now, err = o.isRpmPackageNameLine(orglines[i])
 			if err != nil {
-				return nil, err
+				return nil, err, true
 			}
 			if prev && now {
 				tmpline = fmt.Sprintf("%s, %s", tmpline, orglines[i])
@@ -548,7 +578,7 @@ func (o *redhat) divideChangelogByPackage(allChangelog string) (map[string]*stri
 	for _, line := range lines {
 		match, err := o.isRpmPackageNameLine(line)
 		if err != nil {
-			return nil, err
+			return nil, err, true
 		}
 		if match {
 			rpms := strings.Split(line, ",")
@@ -562,16 +592,16 @@ func (o *redhat) divideChangelogByPackage(allChangelog string) (map[string]*stri
 			}
 		} else {
 			if strings.HasPrefix(line, "Dependencies Resolved") {
-				return rpm2changelog, nil
+				return rpm2changelog, nil, true
 			}
 			*writePointer += fmt.Sprintf("%s\n", line)
 		}
 	}
-	return rpm2changelog, nil
+	return rpm2changelog, nil, true
 }
 
 // CentOS
-func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList) (stdout string, err error) {
+func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList, err_repos map[string]bool) (stdout string, err error) {
 	packageNames := ""
 	for _, packInfo := range packInfoList {
 		packageNames += fmt.Sprintf("%s ", packInfo.Name)
@@ -588,6 +618,13 @@ func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList) (stdout st
 	}
 	if config.Conf.SkipBroken {
 		yumopts += " --skip-broken"
+	}
+
+	if len(err_repos) != 0 {
+		yumopts += " --disablerepo="
+		for err_repo, _ := range err_repos {
+			yumopts += err_repo + ","
+		}
 	}
 
 	// yum update --changelog doesn't have --color option.
