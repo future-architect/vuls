@@ -322,7 +322,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 			return nil, fmt.Errorf("Failed to divideChangelogByPackage. err: %s", err)
 		}
 		//if len(err_repos) == 0 {
-		if result_repos  == true {
+		if result_repos == true {
 			o.log.Infof("All Success Repos")
 			break
 		}

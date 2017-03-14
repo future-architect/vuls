@@ -1070,11 +1070,16 @@ func TestGetChangelogCVELines(t *testing.T) {
 		Family:  "centos",
 		Release: "6.7",
 	}
+	err_repos := make(map[string]bool)
 	for _, tt := range testsCentos6 {
-		rpm2changelog, err := r.divideChangelogByPackage(stdoutCentos6)
+		rpm2changelog, err, result_repos := r.divideChangelogByPackage(stdoutCentos6, err_repos)
 		if err != nil {
 			t.Errorf("err: %s", err)
 		}
+		if result_repos == false {
+			t.Errorf("repo error")
+		}
+
 		changelog := r.getChangelogCVELines(rpm2changelog, tt.in)
 		if tt.out != changelog {
 			t.Errorf("line: expected %s, actual %s, tt: %#v", tt.out, changelog, tt)
@@ -1156,10 +1161,14 @@ func TestGetChangelogCVELines(t *testing.T) {
 		Family:  "centos",
 		Release: "5.6",
 	}
+	err_repos = make(map[string]bool)
 	for _, tt := range testsCentos5 {
-		rpm2changelog, err := r.divideChangelogByPackage(stdoutCentos5)
+		rpm2changelog, err, result_repos := r.divideChangelogByPackage(stdoutCentos5, err_repos)
 		if err != nil {
 			t.Errorf("err: %s", err)
+		}
+		if result_repos == false {
+			t.Errorf("repo error")
 		}
 		changelog := r.getChangelogCVELines(rpm2changelog, tt.in)
 		if tt.out != changelog {
