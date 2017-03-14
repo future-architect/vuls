@@ -337,7 +337,7 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 ![Vuls-Architecture Local Scan Mode](img/vuls-architecture-localscan.png)
 [Details](#example-scan-via-shell-instead-of-ssh)
 
-## [go-cve-dictinary](https://github.com/kotakanbe/go-cve-dictionary)  
+## [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)  
 - Fetch vulnerability information from NVD and JVN(Japanese), then insert into SQLite3 or MySQL.
 
 ## Scanning Flow
