@@ -156,6 +156,8 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	err = c.Load(p.configPath, keyPass)
 	if err != nil {
 		util.Log.Errorf("Error loading %s, %s", p.configPath, err)
+		util.Log.Errorf("If you update Vuls and get this error, there may be incompatible changes in config.toml")
+		util.Log.Errorf("Please check README: https://github.com/future-architect/vuls#configuration")
 		return subcommands.ExitUsageError
 	}
 

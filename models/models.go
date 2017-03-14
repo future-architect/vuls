@@ -541,6 +541,7 @@ type Container struct {
 	ContainerID string
 	Name        string
 	Image       string
+	Type        string
 }
 
 // Platform has platform information
