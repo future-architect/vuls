@@ -465,7 +465,7 @@ host         = "172.31.4.82"
 #]
 #[servers.172-31-4-82.containers]
 #type = "lxd" # or "docker"
-#indludes = ["${running}"]
+#includes = ["${running}"]
 #excludes = ["container_name", "container_id"]
 ```
 
@@ -538,7 +538,7 @@ host         = "172.31.4.82"
     #]
     #[servers.172-31-4-82.containers]
     #type = "lxd" # or "docker"
-    #indludes = ["${running}"]
+    #includes = ["${running}"]
     #excludes = ["container_name", "container_id"]
     ```
     下記serversセクションで値が指定されなかった場合のデフォルト値
@@ -799,7 +799,7 @@ Vulsは、DockerホストにSSHで接続し、`docker exec`でDockerコンテナ
     keyPath     = "/home/username/.ssh/id_rsa"
 
     [servers.172-31-4-82.containers]
-    indludes = ["${running}"]
+    includes = ["${running}"]
     ```
 
 - あるコンテナのみスキャン  
@@ -828,7 +828,7 @@ Vulsは、DockerホストにSSHで接続し、`docker exec`でDockerコンテナ
     keyPath     = "/home/username/.ssh/id_rsa"
 
     [servers.172-31-4-82.containers]
-    indludes = ["${running}"]
+    includes = ["${running}"]
     excludes = ["container_name_a", "4aa37a8b63b9"]
     ```
 
