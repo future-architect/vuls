@@ -122,6 +122,19 @@ func jsonDir(args []string) (string, error) {
 	return dirs[0], nil
 }
 
+// loadOneServerScanResult read JSON data of one server
+func loadOneServerScanResult(jsonFile string) (result models.ScanResult, err error) {
+	var data []byte
+	if data, err = ioutil.ReadFile(jsonFile); err != nil {
+		err = fmt.Errorf("Failed to read %s: %s", jsonFile, err)
+		return
+	}
+	if json.Unmarshal(data, &result) != nil {
+		err = fmt.Errorf("Failed to parse %s: %s", jsonFile, err)
+	}
+	return
+}
+
 // loadOneScanHistory read JSON data
 func loadOneScanHistory(jsonDir string) (scanHistory models.ScanHistory, err error) {
 	var results []models.ScanResult
@@ -136,18 +149,12 @@ func loadOneScanHistory(jsonDir string) (scanHistory models.ScanHistory, err err
 		}
 
 		var r models.ScanResult
-		var data []byte
 		path := filepath.Join(jsonDir, f.Name())
-		if data, err = ioutil.ReadFile(path); err != nil {
-			err = fmt.Errorf("Failed to read %s: %s", path, err)
+		if r, err = loadOneServerScanResult(path); err != nil {
 			return
 		}
-		if json.Unmarshal(data, &r) != nil {
-			err = fmt.Errorf("Failed to parse %s: %s", path, err)
-			return
-		}
-		results = append(results, r)
 
+		results = append(results, r)
 	}
 	if len(results) == 0 {
 		err = fmt.Errorf("There is no json file under %s", jsonDir)
@@ -173,13 +180,31 @@ func fillCveInfoFromCveDB(r models.ScanResult) (*models.ScanResult, error) {
 	return r.FillCveDetail()
 }
 
-//TODO:add func decrease
-//todo:Make it easier to read once models.ScanHistory is refactored
-//get increase cves
-//Diff vulninfos and reassign
+func loadPreviousScanHistory(current models.ScanHistory) (previous models.ScanHistory, err error) {
+	var dirs jsonDirs
+	if dirs, err = lsValidJSONDirs(); err != nil {
+		return
+	}
+
+	for _, result := range current.ScanResults {
+		for _, dir := range dirs[1:] {
+			var r models.ScanResult
+			path := filepath.Join(dir, result.ServerName+".json")
+			if r, err = loadOneServerScanResult(path); err != nil {
+				continue
+			}
+			if r.Family == result.Family && r.Release == result.Release {
+				previous.ScanResults = append(previous.ScanResults, r)
+				break
+			}
+		}
+	}
+	return previous, nil
+}
+
 func diff(currentHistory, previousHistory models.ScanHistory) (diffHistory models.ScanHistory, err error) {
 	for _, currentResult := range currentHistory.ScanResults {
-		var found bool
+		found := false
 		var previousResult models.ScanResult
 		for _, previousResult = range previousHistory.ScanResults {
 			if currentResult.ServerName == previousResult.ServerName {
@@ -188,62 +213,25 @@ func diff(currentHistory, previousHistory models.ScanHistory) (diffHistory model
 			}
 		}
 
-		var newlyDetected []models.VulnInfo
 		if found {
-			newlyDetected = getNewlyDetected(previousResult, currentResult)
-		} else {
-			newlyDetected = currentResult.ScannedCves
+			currentResult.ScannedCves = getNewCves(previousResult, currentResult)
+
+			currentResult.KnownCves = []models.CveInfo{}
+			currentResult.UnknownCves = []models.CveInfo{}
+
+			currentResult.Packages = models.PackageInfoList{}
+			for _, s := range currentResult.ScannedCves {
+				currentResult.Packages = append(currentResult.Packages, s.Packages...)
+			}
+			currentResult.Packages = currentResult.Packages.UniqByName()
 		}
 
-		currentResult.ScannedCves = newlyDetected
-		currentResult.Packages = fillPackageInfoList(newlyDetected)
 		diffHistory.ScanResults = append(diffHistory.ScanResults, currentResult)
 	}
 	return diffHistory, err
 }
 
-func fillPackageInfoList(newlyDetected []models.VulnInfo) (newlyPackages []models.PackageInfo) {
-	for _, c := range newlyDetected {
-		newlyPackages = c.Packages
-	}
-	return
-}
-
-//Fetches past json corresponding to servers of currentResuts
-//If you do not look for one in the past directory, another directory in the past
-func getPreviousResults(currentHisoty models.ScanHistory) (previous models.ScanHistory, err error) {
-	var allJSONDirs jsonDirs
-	if allJSONDirs, err = lsValidJSONDirs(); err != nil {
-		return
-	}
-
-	if len(allJSONDirs) == 1 {
-		err = fmt.Errorf("Only the current json exists")
-		return
-	}
-
-	for _, result := range currentHisoty.ScanResults {
-		for _, dirpath := range allJSONDirs[1:] {
-			var r models.ScanResult
-			var data []byte
-			path := filepath.Join(dirpath, result.ServerName+".json")
-			if data, err = ioutil.ReadFile(path); err == nil {
-				continue
-			}
-			if json.Unmarshal(data, &r) != nil {
-				err = fmt.Errorf("Failed to parse %s: %s", path, err)
-				return
-			}
-			if r.Family == result.Family {
-				previous.ScanResults = append(previous.ScanResults, r)
-				break
-			}
-		}
-	}
-	return
-}
-
-func getNewlyDetected(previousResult, currentResult models.ScanResult) (newVulninfos []models.VulnInfo) {
+func getNewCves(previousResult, currentResult models.ScanResult) (newVulninfos []models.VulnInfo) {
 	previousCveIDsSet := map[string]bool{}
 	for _, previousVulnInfo := range previousResult.ScannedCves {
 		previousCveIDsSet[previousVulnInfo.CveID] = true
@@ -263,46 +251,40 @@ func getNewlyDetected(previousResult, currentResult models.ScanResult) (newVulni
 
 func isCveInfoUpdated(currentResult, previousResult models.ScanResult, CveID string) bool {
 	type lastModified struct {
-		Jvn time.Time
 		Nvd time.Time
+		Jvn time.Time
 	}
 
-	currentModifies := lastModified{}
 	previousModifies := lastModified{}
-
-	var previousCves []models.CveInfo
-	previousCves = append(previousCves, previousResult.KnownCves...)
-	previousCves = append(previousCves, previousResult.UnknownCves...)
-	previousCves = append(previousCves, previousResult.IgnoredCves...)
-	for _, c := range previousCves {
+	for _, c := range previousResult.KnownCves {
 		if CveID == c.CveID {
 			previousModifies.Nvd = c.CveDetail.Nvd.LastModifiedDate
 			previousModifies.Jvn = c.CveDetail.Jvn.LastModifiedDate
 		}
 	}
 
-	var currentCves []models.CveInfo
-	currentCves = append(currentCves, currentResult.KnownCves...)
-	currentCves = append(currentCves, currentResult.UnknownCves...)
-	currentCves = append(currentCves, currentResult.IgnoredCves...)
-	for _, c := range currentCves {
+	currentModifies := lastModified{}
+	for _, c := range currentResult.KnownCves {
 		if CveID == c.CveDetail.CveID {
 			currentModifies.Nvd = c.CveDetail.Nvd.LastModifiedDate
 			currentModifies.Jvn = c.CveDetail.Jvn.LastModifiedDate
 		}
 	}
-
-	return currentModifies.Jvn != previousModifies.Jvn || currentModifies.Nvd != previousModifies.Nvd
+	return !currentModifies.Nvd.Equal(previousModifies.Nvd) ||
+		!currentModifies.Jvn.Equal(previousModifies.Jvn)
 }
 
 func overwriteJSONFile(dir string, r models.ScanResult) error {
 	before := c.Conf.FormatJSON
+	beforeDiff := c.Conf.Diff
 	c.Conf.FormatJSON = true
+	c.Conf.Diff = false
 	w := report.LocalFileWriter{CurrentDir: dir}
 	if err := w.Write(r); err != nil {
 		return fmt.Errorf("Failed to write summary report: %s", err)
 	}
 	c.Conf.FormatJSON = before
+	c.Conf.Diff = beforeDiff
 	return nil
 }
 
