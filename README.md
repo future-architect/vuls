@@ -468,7 +468,7 @@ host         = "172.31.4.82"
 #]
 #[servers.172-31-4-82.containers]
 #type = "lxd" # or "docker"
-#indludes = ["${running}"]
+#includes = ["${running}"]
 #excludes = ["container_name", "container_id"]
 ```
 
@@ -563,7 +563,7 @@ You can customize your configuration using this template.
     #]
     #[servers.172-31-4-82.containers]
     #type = "lxd" # or "docker"
-    #indludes = ["${running}"]
+    #includes = ["${running}"]
     #excludes = ["container_name", "container_id"]
     ```
 
@@ -796,7 +796,7 @@ For more details, see [Architecture section](https://github.com/future-architect
     keyPath     = "/home/username/.ssh/id_rsa"
 
     [servers.172-31-4-82.containers]
-    indludes = ["${running}"]
+    includes = ["${running}"]
     ```
 
 - To scan specific containers  
@@ -826,7 +826,7 @@ For more details, see [Architecture section](https://github.com/future-architect
     keyPath     = "/home/username/.ssh/id_rsa"
 
     [servers.172-31-4-82.containers]
-    indludes = ["${running}"]
+    includes = ["${running}"]
     excludes = ["container_name_a", "4aa37a8b63b9"]
     ```
 
