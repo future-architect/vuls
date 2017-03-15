@@ -1232,9 +1232,9 @@ optional = [
 ## Example: Use MySQL as a DB storage back-end
 
 ```
-$ vuls scan \
+$ vuls report \
       -cvedb-type=mysql \
-      -cvedb-url="user:pass@tcp(localhost:3306)/dbname?parseTime=true"
+      -cvedb-url="user:pass@tcp(localhost:3306)/dbname"
 ```
 
 ----

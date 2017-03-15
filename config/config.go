@@ -41,21 +41,20 @@ type Config struct {
 	Default ServerInfo
 	Servers map[string]ServerInfo
 
-	CveDictionaryURL string `valid:"url"`
-
 	CvssScoreOver      float64
 	IgnoreUnscoredCves bool
 
-	AssumeYes      bool
 	SSHExternal    bool
 	ContainersOnly bool
 	SkipBroken     bool
 
-	HTTPProxy   string `valid:"url"`
-	LogDir      string
-	ResultsDir  string
+	HTTPProxy  string `valid:"url"`
+	LogDir     string
+	ResultsDir string
+
 	CveDBType   string
 	CveDBPath   string
+	CveDBURL    string
 	CacheDBPath string
 
 	FormatXML         bool
@@ -155,16 +154,21 @@ func (c Config) ValidateOnReport() bool {
 		}
 	}
 
-	if c.CveDBType != "sqlite3" && c.CveDBType != "mysql" {
-		errs = append(errs, fmt.Errorf(
-			"CVE DB type must be either 'sqlite3' or 'mysql'.  -cve-dictionary-dbtype: %s", c.CveDBType))
-	}
-
-	if c.CveDBType == "sqlite3" {
+	switch c.CveDBType {
+	case "sqlite3":
 		if ok, _ := valid.IsFilePath(c.CveDBPath); !ok {
 			errs = append(errs, fmt.Errorf(
-				"SQLite3 DB(CVE-Dictionary) path must be a *Absolute* file path. -cve-dictionary-dbpath: %s", c.CveDBPath))
+				"SQLite3 DB(CVE-Dictionary) path must be a *Absolute* file path. -cvedb-path: %s",
+				c.CveDBPath))
 		}
+	case "mysql":
+		if c.CveDBURL == "" {
+			errs = append(errs, fmt.Errorf(
+				`MySQL connection string is needed. -cvedb-url="user:pass@tcp(localhost:3306)/dbname"`))
+		}
+	default:
+		errs = append(errs, fmt.Errorf(
+			"CVE DB type must be either 'sqlite3' or 'mysql'.  -cvedb-type: %s", c.CveDBType))
 	}
 
 	_, err := valid.ValidateStruct(c)

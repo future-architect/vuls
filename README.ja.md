@@ -1240,9 +1240,9 @@ optional = [
 ## Example: Use MySQL as a DB storage back-end
 
 ```
-$ vuls scan \
-      -cve-dictionary-dbtype=mysql \
-      -cve-dictionary-dbpath="user:pass@tcp(localhost:3306)/dbname?parseTime=true"
+$ vuls report \
+      -cvedb-type=mysql \
+      -cvedb-url="user:pass@tcp(localhost:3306)/dbname"
 ```
 
 ----
