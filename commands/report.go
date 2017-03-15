@@ -46,9 +46,9 @@ type ReportCmd struct {
 	ignoreUnscoredCves bool
 	httpProxy          string
 
-	cvedbtype        string
-	cvedbpath        string
-	cveDictionaryURL string
+	cvedbtype string
+	cvedbpath string
+	cvedbURL  string
 
 	toSlack     bool
 	toEMail     bool
@@ -160,7 +160,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"/path/to/sqlite3 (For get cve detail from cve.sqlite3)")
 
 	f.StringVar(
-		&p.cveDictionaryURL,
+		&p.cvedbURL,
 		"cvedb-url",
 		"",
 		"http://cve-dictionary.com:8080 or mysql connection string")
@@ -267,7 +267,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.ResultsDir = p.resultsDir
 	c.Conf.CveDBType = p.cvedbtype
 	c.Conf.CveDBPath = p.cvedbpath
-	c.Conf.CveDictionaryURL = p.cveDictionaryURL
+	c.Conf.CveDBURL = p.cvedbURL
 	c.Conf.CvssScoreOver = p.cvssScoreOver
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
 	c.Conf.HTTPProxy = p.httpProxy
@@ -355,8 +355,8 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with --cvedb-path option")
 		return subcommands.ExitFailure
 	}
-	if c.Conf.CveDictionaryURL != "" {
-		util.Log.Infof("cve-dictionary: %s", c.Conf.CveDictionaryURL)
+	if c.Conf.CveDBURL != "" {
+		util.Log.Infof("cve-dictionary: %s", c.Conf.CveDBURL)
 	} else {
 		if c.Conf.CveDBType == "sqlite3" {
 			util.Log.Infof("cve-dictionary: %s", c.Conf.CveDBPath)
@@ -374,7 +374,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	for _, r := range history.ScanResults {
 		if p.refreshCve || needToRefreshCve(r) {
 			util.Log.Debugf("need to refresh")
-			if c.Conf.CveDBType == "sqlite3" && c.Conf.CveDictionaryURL == "" {
+			if c.Conf.CveDBType == "sqlite3" && c.Conf.CveDBURL == "" {
 				if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
 					util.Log.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
 						c.Conf.CveDBPath)
@@ -389,11 +389,11 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			}
 			filled.Lang = c.Conf.Lang
 
-			if err := overwriteJSONFile(jsonDir, filled); err != nil {
+			if err := overwriteJSONFile(jsonDir, *filled); err != nil {
 				util.Log.Errorf("Failed to write JSON: %s", err)
 				return subcommands.ExitFailure
 			}
-			results = append(results, filled)
+			results = append(results, *filled)
 		} else {
 			util.Log.Debugf("no need to refresh")
 			results = append(results, r)

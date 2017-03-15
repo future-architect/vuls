@@ -157,18 +157,17 @@ func loadOneScanHistory(jsonDir string) (scanHistory models.ScanHistory, err err
 	return
 }
 
-func fillCveInfoFromCveDB(r models.ScanResult) (filled models.ScanResult, err error) {
+func fillCveInfoFromCveDB(r models.ScanResult) (*models.ScanResult, error) {
+	var err error
+	var vs []models.VulnInfo
+
 	sInfo := c.Conf.Servers[r.ServerName]
-	vs, err := scanVulnByCpeNames(sInfo.CpeNames, r.ScannedCves)
+	vs, err = scanVulnByCpeNames(sInfo.CpeNames, r.ScannedCves)
 	if err != nil {
-		return
+		return nil, err
 	}
 	r.ScannedCves = vs
-	filled, err = r.FillCveDetail()
-	if err != nil {
-		return
-	}
-	return
+	return r.FillCveDetail()
 }
 
 func overwriteJSONFile(dir string, r models.ScanResult) error {
@@ -182,8 +181,7 @@ func overwriteJSONFile(dir string, r models.ScanResult) error {
 	return nil
 }
 
-func scanVulnByCpeNames(cpeNames []string, scannedVulns []models.VulnInfo) ([]models.VulnInfo,
-	error) {
+func scanVulnByCpeNames(cpeNames []string, scannedVulns []models.VulnInfo) ([]models.VulnInfo, error) {
 	// To remove duplicate
 	set := map[string]models.VulnInfo{}
 	for _, v := range scannedVulns {

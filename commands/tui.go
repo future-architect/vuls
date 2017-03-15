@@ -113,7 +113,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	c.Conf.ResultsDir = p.resultsDir
 	c.Conf.CveDBType = p.cvedbtype
 	c.Conf.CveDBPath = p.cvedbpath
-	c.Conf.CveDictionaryURL = p.cveDictionaryURL
+	c.Conf.CveDBURL = p.cveDictionaryURL
 
 	log.Info("Validating config...")
 	if !c.Conf.ValidateOnTui() {
@@ -150,11 +150,11 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 				return subcommands.ExitFailure
 			}
 
-			if err := overwriteJSONFile(jsonDir, filled); err != nil {
+			if err := overwriteJSONFile(jsonDir, *filled); err != nil {
 				log.Errorf("Failed to write JSON: %s", err)
 				return subcommands.ExitFailure
 			}
-			results = append(results, filled)
+			results = append(results, *filled)
 		} else {
 			results = append(results, r)
 		}
