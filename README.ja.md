@@ -1333,7 +1333,7 @@ tui:
 Key binding is below.
 
 | key | |
-|:-----------------|:-------|:------|
+|:-----------------|:-------|
 | TAB | move cursor among the panes |
 | Arrow up/down | move cursor to up/down |
 | Ctrl+j, Ctrl+k | move cursor to up/down |

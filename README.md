@@ -362,7 +362,7 @@ Scan speed is fast and resource usage is light.
 High speed scan and resource usage is light because Vuls can get CVE IDs by using package manager(no need to parse a changelog).
 
 | Distribution|         Scan Speed |
-|:------------|:-------------------|:-------------|
+|:------------|:-------------------|
 | Ubuntu      |  First time: Slow / From the second time: Fast |
 | Debian      |  First time: Slow / From the second time: Fast |
 | CentOS      |               Fast |
@@ -1324,7 +1324,7 @@ tui:
 Key binding is below.
 
 | key | |
-|:-----------------|:-------|:------|
+|:-----------------|:-------|
 | TAB | move cursor among the panes |
 | Arrow up/down | move cursor to up/down |
 | Ctrl+j, Ctrl+k | move cursor to up/down |
