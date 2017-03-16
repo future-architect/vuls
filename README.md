@@ -46,7 +46,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 # Main Features
 
 - Scan for any vulnerabilities in Linux/FreeBSD Server
-    - Supports Ubuntu, Debian, CentOS, Amazon Linux, RHEL, FreeBSD and Raspbian
+    - Supports Ubuntu, Debian, CentOS, Amazon Linux, RHEL, Oracle Linux, FreeBSD and Raspbian
     - Cloud, on-premise, Docker
 - Scan middleware that are not included in OS package management
     - Scan middleware, programming language libraries and framework for vulnerability
@@ -361,15 +361,16 @@ Scan speed is fast and resource usage is light.
 - On Amazon, RHEL and FreeBSD  
 High speed scan and resource usage is light because Vuls can get CVE IDs by using package manager(no need to parse a changelog).
 
-| Distribution|         Scan Speed |
-|:------------|:-------------------|
-| Ubuntu      |  First time: Slow / From the second time: Fast |
-| Debian      |  First time: Slow / From the second time: Fast |
-| CentOS      |               Fast |
-| Amazon      |               Fast |
-| RHEL        |               Fast |
-| FreeBSD     |               Fast |
-| Raspbian    |  First time: Slow / From the second time: Fast |
+| Distribution |         Scan Speed |
+|:-------------|:-------------------|
+| Ubuntu       |  First time: Slow / From the second time: Fast |
+| Debian       |  First time: Slow / From the second time: Fast |
+| CentOS       |               Fast |
+| Amazon       |               Fast |
+| RHEL         |               Fast |
+| Oracle Linux |               Fast |
+| FreeBSD      |               Fast |
+| Raspbian     |  First time: Slow / From the second time: Fast |
 
 ----
 
@@ -393,15 +394,16 @@ If there is a staging environment with the same configuration as the production 
 
 # Support OS
 
-| Distribution|            Release |
-|:------------|-------------------:|
-| Ubuntu      |          12, 14, 16|
-| Debian      |                7, 8|
-| RHEL        |             5, 6, 7|
-| CentOS      |                6, 7|
-| Amazon Linux|                 All|
-| FreeBSD     |              10, 11|
-| Raspbian    |     Wheezy, Jessie |
+| Distribution |            Release |
+|:-------------|-------------------:|
+| Ubuntu       |          12, 14, 16|
+| Debian       |                7, 8|
+| RHEL         |             5, 6, 7|
+| Oracle Linux |             5, 6, 7|
+| CentOS       |                6, 7|
+| Amazon Linux |                 All|
+| FreeBSD      |              10, 11|
+| Raspbian     |     Wheezy, Jessie |
 
 ----
 
@@ -623,16 +625,18 @@ The configtest subcommand checks the following
 
 In order to scan, the following dependencies are required, so you need to install them manually or with tools such as Ansible.
 
-| Distribution|            Release | Requirements |
-|:------------|-------------------:|:-------------|
-| Ubuntu      |          12, 14, 16| -            |
-| Debian      |                7, 8| aptitude     |
-| CentOS      |                6, 7| yum-plugin-changelog |
-| Amazon      |                All | - |
-| RHEL        |                  5 | yum-security             |
-| RHEL        |               6, 7 | -  |
-| FreeBSD     |                 10 | -            |
-| Raspbian    |     Wheezy, Jessie | -            |
+| Distribution |            Release | Requirements |
+|:-------------|-------------------:|:-------------|
+| Ubuntu       |          12, 14, 16| -            |
+| Debian       |                7, 8| aptitude     |
+| CentOS       |                6, 7| yum-plugin-changelog |
+| Amazon       |                All | -            |
+| RHEL         |                  5 | yum-security |
+| RHEL         |               6, 7 | -            |
+| Oracle Linux |                  5 | yum-security |
+| Oracle Linux |               6, 7 | -            |
+| FreeBSD      |                 10 | -            |
+| Raspbian     |     Wheezy, Jessie | -            |
 
 ## Check /etc/sudoers 
 
@@ -646,13 +650,13 @@ vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --changelog --assumeno update *
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 ```
 
-- RHEL 5 
+- RHEL 5 / Oracle Linux 5
 ```
 vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never list-security --security, /usr/bin/yum --color=never check-update, /usr/bin/yum --color=never info-security
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 ```
 
-- RHEL 6, 7
+- RHEL 6, 7 / Oracle Linux 6, 7
 ```
 vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never --security updateinfo list updates, /usr/bin/yum --color=never check-update, /usr/bin/yum --color=never --security updateinfo updates
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
@@ -1033,6 +1037,7 @@ Confidence      100 / YumUpdateSecurityMatch
 - `CWE` means [CWE - Common Weakness Enumeration](https://nvd.nist.gov/cwe.cfm) of the CVE.
 - `NVD` `MITRE` `CVE Details` `CVSS Caluculator`
 - `RHEL-CVE` means the URL of OS distributor support.
+- `Oracle-CVE` means the URL of the Oracle Linux errata information.
 - `Package` shows the package version information including this vulnerability.
 - `Confidence` means the reliability of detection.
   - `100` is highly reliable
@@ -1041,7 +1046,7 @@ Confidence      100 / YumUpdateSecurityMatch
 
   | Detection Method       | Confidence         |  OS                              |Description|
   |:-----------------------|-------------------:|:---------------------------------|:--|
-  | YumUpdateSecurityMatch | 100                |               RHEL, Amazon Linux |Detection using yum-plugin-security|
+  | YumUpdateSecurityMatch | 100                | RHEL, Oracle Linux, Amazon Linux |Detection using yum-plugin-security|
   | ChangelogExactMatch    | 95                 | CentOS, Ubuntu, Debian, Raspbian |Exact version match between changelog and package version|
   | ChangelogLenientMatch  | 50                 |         Ubuntu, Debian, Raspbian |Lenient version match between changelog and package version| 
   | PkgAuditMatch          | 100                |                          FreeBSD |Detection using pkg audit|

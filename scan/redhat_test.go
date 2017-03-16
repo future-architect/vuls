@@ -409,16 +409,16 @@ Description : kernel-uek
 				{
 					DistroAdvisory: models.DistroAdvisory{
 						AdvisoryID: "ELSA-2017-0276",
-						Severity: "Moderate",
-						Issued: issued,
+						Severity:   "Moderate",
+						Issued:     issued,
 					},
 					CveIDs: []string{"CVE-2017-3135"},
 				},
 				{
 					DistroAdvisory: models.DistroAdvisory{
 						AdvisoryID: "ELSA-2017-0286",
-						Severity: "Moderate",
-						Issued: issued,
+						Severity:   "Moderate",
+						Issued:     issued,
 					},
 					CveIDs: []string{
 						"CVE-2016-8610",
@@ -428,10 +428,10 @@ Description : kernel-uek
 				{
 					DistroAdvisory: models.DistroAdvisory{
 						AdvisoryID: "ELSA-2017-3520",
-						Severity: "Important",
-						Issued: issued,
+						Severity:   "Important",
+						Issued:     issued,
 					},
-					CveIDs: []string {"CVE-2017-6074"},
+					CveIDs: []string{"CVE-2017-6074"},
 				},
 			},
 		},

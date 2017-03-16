@@ -646,7 +646,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 		return nil, fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
 	}
 
-	if (o.Distro.Family == "rhel" || o.Distro.Family == "oraclelinux")  && major == 5 {
+	if (o.Distro.Family == "rhel" || o.Distro.Family == "oraclelinux") && major == 5 {
 		cmd = "yum --color=never list-security --security"
 	} else {
 		cmd = "yum --color=never --security updateinfo list updates"
@@ -957,7 +957,7 @@ func (o *redhat) parseYumUpdateinfoListAvailable(stdout string) (advisoryIDPacks
 	for _, line := range lines {
 
 		if !(strings.HasPrefix(line, "RHSA") ||
-			strings.HasPrefix(line, "ALAS")  || 
+			strings.HasPrefix(line, "ALAS") ||
 			strings.HasPrefix(line, "ELSA")) {
 			continue
 		}
