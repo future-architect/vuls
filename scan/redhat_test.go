@@ -344,6 +344,111 @@ func TestParseYumUpdateinfoToGetSeverity(t *testing.T) {
 	}
 }
 
+func TestParseYumUpdateinfoOL(t *testing.T) {
+	stdout := `===============================================================================
+   bind security update
+===============================================================================
+  Update ID : ELSA-2017-0276
+    Release : Oracle Linux 7
+       Type : security
+     Status : final
+     Issued : 2017-02-15
+       CVEs : CVE-2017-3135
+Description : [32:9.9.4-38.2]
+            : - Fix CVE-2017-3135 (ISC change 4557)
+            : - Fix and test caching CNAME before DNAME (ISC
+            :   change 4558)
+   Severity : Moderate
+   
+===============================================================================
+   openssl security update
+===============================================================================
+  Update ID : ELSA-2017-0286
+    Release : Oracle Linux 7
+       Type : security
+     Status : final
+     Issued : 2017-02-15
+       CVEs : CVE-2016-8610
+	    : CVE-2017-3731
+Description : [1.0.1e-48.4]
+            : - fix CVE-2017-3731 - DoS via truncated packets
+            :   with RC4-MD5 cipher
+            : - fix CVE-2016-8610 - DoS of single-threaded
+            :   servers via excessive alerts
+   Severity : Moderate
+   
+===============================================================================
+   Unbreakable Enterprise kernel security update
+===============================================================================
+  Update ID : ELSA-2017-3520
+    Release : Oracle Linux 7
+       Type : security
+     Status : final
+     Issued : 2017-02-15
+       CVEs : CVE-2017-6074
+Description : kernel-uek
+            : [4.1.12-61.1.28]
+            : - dccp: fix freeing skb too early for
+            :   IPV6_RECVPKTINFO (Andrey Konovalov)  [Orabug:
+            :   25598257]  {CVE-2017-6074}
+   Severity : Important
+
+	`
+	issued, _ := time.Parse("2006-01-02", "2017-02-15")
+
+	r := newRedhat(config.ServerInfo{})
+	r.Distro = config.Distro{Family: "oraclelinux"}
+
+	var tests = []struct {
+		in  string
+		out []distroAdvisoryCveIDs
+	}{
+		{
+			stdout,
+			[]distroAdvisoryCveIDs{
+				{
+					DistroAdvisory: models.DistroAdvisory{
+						AdvisoryID: "ELSA-2017-0276",
+						Severity:   "Moderate",
+						Issued:     issued,
+					},
+					CveIDs: []string{"CVE-2017-3135"},
+				},
+				{
+					DistroAdvisory: models.DistroAdvisory{
+						AdvisoryID: "ELSA-2017-0286",
+						Severity:   "Moderate",
+						Issued:     issued,
+					},
+					CveIDs: []string{
+						"CVE-2016-8610",
+						"CVE-2017-3731",
+					},
+				},
+				{
+					DistroAdvisory: models.DistroAdvisory{
+						AdvisoryID: "ELSA-2017-3520",
+						Severity:   "Important",
+						Issued:     issued,
+					},
+					CveIDs: []string{"CVE-2017-6074"},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		actual, _ := r.parseYumUpdateinfo(tt.in)
+		for i, advisoryCveIDs := range actual {
+			if !reflect.DeepEqual(tt.out[i], advisoryCveIDs) {
+				e := pp.Sprintf("%v", tt.out[i])
+				a := pp.Sprintf("%v", advisoryCveIDs)
+				t.Errorf("[%d] Alas is not same. \nexpected: %s\nactual: %s",
+					i, e, a)
+			}
+		}
+	}
+}
+
 func TestParseYumUpdateinfoRHEL(t *testing.T) {
 
 	stdout := `===============================================================================
