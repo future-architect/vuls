@@ -33,6 +33,8 @@ const (
 	redhatSecurityBaseURL = "https://access.redhat.com/security/cve"
 	redhatRHSABaseBaseURL = "https://rhn.redhat.com/errata/%s.html"
 	amazonSecurityBaseURL = "https://alas.aws.amazon.com/%s.html"
+	oracleSecurityBaseURL = "https://linux.oracle.com/cve/%s.html"
+	oracleELSABaseBaseURL = "https://linux.oracle.com/errata/%s.html"
 
 	ubuntuSecurityBaseURL = "http://people.ubuntu.com/~ubuntu-security/cve"
 	debianTrackerBaseURL  = "https://security-tracker.debian.org/tracker"

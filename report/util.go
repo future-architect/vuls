@@ -393,6 +393,21 @@ func distroLinks(cveInfo models.CveInfo, osFamily string) []distroLink {
 			})
 		}
 		return links
+	case "oraclelinux":
+		links := []distroLink{
+			{
+				"Oracle-CVE",
+				fmt.Sprintf(oracleSecurityBaseURL, cveID),
+			},
+		}
+		for _, advisory := range cveInfo.DistroAdvisories {
+			links = append(links, distroLink{
+				// "Oracle-ELSA"
+				advisory.AdvisoryID,
+				fmt.Sprintf(oracleELSABaseBaseURL, advisory.AdvisoryID),
+			})
+		}
+		return links
 	case "amazon":
 		links := []distroLink{
 			{
