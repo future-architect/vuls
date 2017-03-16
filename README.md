@@ -78,17 +78,16 @@ You can run install and run Vuls on your machine with only a few commands.
 see https://github.com/future-architect/vuls/tree/master/setup/docker
 
 - Manually  
-Hello Vuls Tutorial shows how to setup vuls manually.
+Tutorial shows how to setup vuls manually.
 
 ----
 
-# Tutorial: Hello Vuls
+# Tutorial: Local Scan Mode
 
 This tutorial will let you scan the vulnerabilities on the localhost with Vuls.   
 This can be done in the following steps.  
 
 1. Launch Amazon Linux
-1. Enable to ssh from localhost
 1. Install requirements
 1. Deploy go-cve-dictionary
 1. Deploy Vuls
@@ -110,20 +109,6 @@ This can be done in the following steps.
     ```
 
     - [Q: How do I disable the automatic installation of critical and important security updates on initial launch?](https://aws.amazon.com/amazon-linux-ami/faqs/?nc1=h_ls)
-
-## Step2. SSH setting
-
-This is required to ssh to itself.
-
-Create a keypair then append public key to authorized_keys
-```bash
-$ ssh-keygen -t rsa
-$ cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-$ chmod 600 ~/.ssh/authorized_keys
-```
-
-Vuls doesn't support SSH password authentication. So you have to use SSH key-based authentication.  
-And also, SUDO with password is not supported for security reasons. So you have to define NOPASSWORD in /etc/sudoers on target servers.  
 
 ## Step3. Install requirements
 
@@ -198,19 +183,14 @@ The binary was built under `$GOPATH/bin`
 ## Step6. Config
 
 Create a config file(TOML format).  
-Then check the config.
-
 ```
 $ cd $HOME
 $ cat config.toml
 [servers]
 
-[servers.172-31-4-82]
-host         = "172.31.4.82"
-port        = "22"
-user        = "ec2-user"
-keyPath     = "/home/ec2-user/.ssh/id_rsa"
-
+[servers.localhost]
+host         = "localhost"
+port        = "local"
 ```
 
 ## Step7. Check config.toml and settings on the server before scanning
@@ -229,7 +209,7 @@ $ vuls scan
 
 Scan Summary
 ============
-172-31-4-82       amazon 2015.09         94 CVEs      103 updatable packages
+localhost       amazon 2015.09         94 CVEs      103 updatable packages
 
 ```
 
@@ -242,7 +222,7 @@ $ vuls report -format-one-line-text -cvedb-path=$PWD/cve.sqlite3
 
 One Line Summary
 ================
-172-31-4-82   Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
+localhost   Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
 
 ```
 
@@ -251,7 +231,7 @@ View short summary.
 ```
 $ vuls report -format-short-text
 
-172-31-4-8 (amazon 2015.09)
+localhost (amazon 2015.09)
 ===========================
 Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
 
@@ -273,7 +253,7 @@ View full report.
 ```
 $ vuls report -format-full-text
 
-172-31-4-82 (amazon 2015.09)
+localhost (amazon 2015.09)
 ============================
 Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
 
@@ -315,6 +295,97 @@ $ vuls tui
 [VulsRepo](https://github.com/usiusi360/vulsrepo) is a awesome Web UI for Vuls.  
 Check it out the [Online Demo](http://usiusi360.github.io/vulsrepo/).
 
+# Tutorial: Remote Scan Mode
+
+This tutorial will let you scan the vulnerabilities on the remote host via SSH with Vuls.   
+This can be done in the following steps.  
+
+1. Launch Another Amazon Linux
+1. Install Dependencies on the Remote Host
+1. Enable to SSH from Localhost
+1. Configuration
+1. Check config.toml and settings on the server before scanning
+1. Scan
+1. Reporting
+
+We will use the Vuls server(called localhost) created in the previous tutorial.
+
+## Step1. Launch Another Amazon Linux
+
+Same as [Tutorial: Local Scan Mode#Step1. Launch Amazon Linux](#step1-launch-amazon-linux)  
+Launch a new terminal and SSH to the Remote Server.
+
+## Step2. Install Dependencies on the Remote Server
+
+Depending on the distribution you need to install dependent modules.
+Install these dependencies manually or using Ansible etc.
+For details of dependent libraries, see [Dependencies on Target Servers](#dependencies-on-target-servers)
+
+## Step3. Enable to SSH from Localhost
+
+Vuls doesn't support SSH password authentication. So you have to use SSH key-based authentication.  
+Create a keypair on the localhost then append public key to authorized_keys on the remote host.
+
+- Localhost
+```bash
+$ ssh-keygen -t rsa
+```
+Copy ~/.ssh/id_rsa.pub to the clipboard.
+
+- Remote Host
+```
+$ mkdir ~/.ssh
+$ chmod 700 ~/.ssh
+$ touch ~/.ssh/authorized_keys
+$ chmod 600 ~/.ssh/authorized_keys
+$ vim ~/.ssh/authorized_keys
+```
+Paste from the clipboard to ~/.ssh/.authorized_keys
+
+And also, SUDO with password is not supported for security reasons. So you have to define NOPASSWORD in /etc/sudoers on target servers.  
+See [Usage: Configtest#Check /etc/sudoers](https://github.com/future-architect/vuls#check-etcsudoers)
+
+## Step4. Config
+
+- Localhost
+```
+$ cd $HOME
+$ cat config.toml
+[servers]
+
+[servers.172-31-4-82]
+host         = "172.31.4.82"
+port        = "22"
+user        = "ec2-user"
+keyPath     = "/home/ec2-user/.ssh/id_rsa"
+```
+
+## Step5. Check config.toml and settings on the server before scanning
+
+```
+$ vuls configtest
+```
+
+see [Usage: configtest](#usage-configtest)
+
+## Step6. Start Scanning
+
+```
+$ vuls scan
+... snip ...
+
+Scan Summary
+============
+172-31-4-82       amazon 2015.09         94 CVEs      103 updatable packages
+
+```
+
+## Step7. Reporting
+
+See [Tutorial: Local Scan Mode#Step9. Reporting](#step9-reporting)  
+See [Tutorial: Local Scan Mode#Step10. TUI](#step10-tui)  
+See [Tutorial: Local Scan Mode#Step11. Web UI](#step11-web-ui)
+
 ----
 
 # Setup Vuls in a Docker Container
@@ -343,7 +414,7 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 ## Scanning Flow
 ![Vuls-Scan-Flow](img/vuls-scan-flow.png)
 - Scan vulnerabilities on the servers via SSH and collect a list of the CVE ID
-  - To scan Docker containers, Vuls connect via ssh to the Docker host and then `docker exec` to the containers. So, no need to run sshd daemon on the containers.
+  - To scan Docker containers, Vuls connect via SSH to the Docker host and then `docker exec` to the containers. So, no need to run sshd daemon on the containers.
 
 ----
 # Performance Considerations
@@ -728,7 +799,7 @@ Vuls supports different types of SSH.
 By Default, using a native Go implementation from crypto/ssh.   
 This is useful in situations where you may not have access to traditional UNIX tools.
 
-To use external ssh command, specify this option.   
+To use external SSH command, specify this option.   
 This is useful If you want to use ProxyCommand or cipher algorithm of SSH that is not supported by native go implementation.  
 Don't forget to add below line to /etc/sudoers on the target servers. (username: vuls)
 ```
