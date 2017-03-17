@@ -23,19 +23,21 @@ import (
 	"os"
 	"path/filepath"
 
-	log "github.com/Sirupsen/logrus"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/report"
+	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
 )
 
 // TuiCmd is Subcommand of host discovery mode
 type TuiCmd struct {
-	lang       string
-	debugSQL   bool
-	resultsDir string
+	lang     string
+	debugSQL bool
+	debug    bool
+	logDir   string
 
+	resultsDir       string
 	refreshCve       bool
 	cvedbtype        string
 	cvedbpath        string
@@ -57,8 +59,10 @@ func (*TuiCmd) Usage() string {
 		[-cvedb-type=sqlite3|mysql]
 		[-cvedb-path=/path/to/cve.sqlite3]
 		[-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
-		[-results-dir=/path/to/results]
 		[-refresh-cve]
+		[-results-dir=/path/to/results]
+		[-log-dir=/path/to/log]
+		[-debug]
 		[-debug-sql]
 		[-pipe]
 
@@ -69,6 +73,10 @@ func (*TuiCmd) Usage() string {
 func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	//  f.StringVar(&p.lang, "lang", "en", "[en|ja]")
 	f.BoolVar(&p.debugSQL, "debug-sql", false, "debug SQL")
+	f.BoolVar(&p.debug, "debug", false, "debug mode")
+
+	defaultLogDir := util.GetDefaultLogDir()
+	f.StringVar(&p.logDir, "log-dir", defaultLogDir, "/path/to/log")
 
 	wd, _ := os.Getwd()
 	defaultResultsDir := filepath.Join(wd, "results")
@@ -109,7 +117,14 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 // Execute execute
 func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	c.Conf.Lang = "en"
+
+	// Setup Logger
+	c.Conf.Debug = p.debug
 	c.Conf.DebugSQL = p.debugSQL
+	c.Conf.LogDir = p.logDir
+	util.Log = util.NewCustomLogger(c.ServerInfo{})
+	log := util.Log
+
 	c.Conf.ResultsDir = p.resultsDir
 	c.Conf.CveDBType = p.cvedbtype
 	c.Conf.CveDBPath = p.cvedbpath
