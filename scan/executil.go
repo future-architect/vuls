@@ -341,7 +341,7 @@ func decorateCmd(c conf.ServerInfo, cmd string, sudo bool) string {
 	if c.IsContainer() {
 		switch c.Containers.Type {
 		case "", "docker":
-			cmd = fmt.Sprintf(`docker exec %s /bin/bash -c "%s"`, c.Container.ContainerID, cmd)
+			cmd = fmt.Sprintf(`docker exec --user root %s /bin/bash -c "%s"`, c.Container.ContainerID, cmd)
 		case "lxd":
 			cmd = fmt.Sprintf(`lxc exec %s -- /bin/bash -c "%s"`, c.Container.Name, cmd)
 		}
