@@ -110,7 +110,7 @@ This can be done in the following steps.
 
     - [Q: How do I disable the automatic installation of critical and important security updates on initial launch?](https://aws.amazon.com/amazon-linux-ami/faqs/?nc1=h_ls)
 
-## Step3. Install requirements
+## Step2. Install requirements
 
 Vuls requires the following packages.
 
@@ -141,7 +141,7 @@ Set the OS environment variable to current shell
 $ source /etc/profile.d/goenv.sh
 ```
 
-## Step4. Deploy [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
+## Step3. Deploy [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
 
 ```bash
 $ sudo mkdir /var/log/vuls
@@ -167,7 +167,7 @@ $ ls -alh cve.sqlite3
 -rw-r--r-- 1 ec2-user ec2-user 7.0M Mar 24 13:20 cve.sqlite3
 ```
 
-## Step5. Deploy Vuls
+## Step4. Deploy Vuls
 
 Launch a new terminal and SSH to the ec2 instance.
 
@@ -180,7 +180,7 @@ $ make install
 ```
 The binary was built under `$GOPATH/bin`
 
-## Step6. Config
+## Step5. Config
 
 Create a config file(TOML format).  
 ```
@@ -193,7 +193,11 @@ host         = "localhost"
 port        = "local"
 ```
 
-## Step7. Check config.toml and settings on the server before scanning
+Root privilege is needed on Some distributions.
+Sudo with password is not supported for security reasons. So you have to define NOPASSWORD in /etc/sudoers.
+See [Usage: Configtest#Check /etc/sudoers](#check-etcsudoers)
+
+## Step6. Check config.toml and settings on the server before scanning
 
 ```
 $ vuls configtest
@@ -201,7 +205,7 @@ $ vuls configtest
 
 see [Usage: configtest](#usage-configtest)
 
-## Step8. Start Scanning
+## Step7. Start Scanning
 
 ```
 $ vuls scan
@@ -213,7 +217,7 @@ localhost       amazon 2015.09         94 CVEs      103 updatable packages
 
 ```
 
-## Step9. Reporting
+## Step8. Reporting
 
 View one-line summary
 
@@ -280,7 +284,7 @@ Confidence      100 / YumUpdateSecurityMatch
 ... snip ...
 ```
 
-## Step10. TUI
+## Step9. TUI
 
 Vuls has Terminal-Based User Interface to display the scan result.
 
@@ -290,10 +294,12 @@ $ vuls tui
 
 ![Vuls-TUI](img/hello-vuls-tui.png)
 
-## Step11. Web UI
+## Step10. Web UI
 
 [VulsRepo](https://github.com/usiusi360/vulsrepo) is a awesome Web UI for Vuls.  
 Check it out the [Online Demo](http://usiusi360.github.io/vulsrepo/).
+
+----
 
 # Tutorial: Remote Scan Mode
 
@@ -382,9 +388,9 @@ Scan Summary
 
 ## Step7. Reporting
 
-See [Tutorial: Local Scan Mode#Step9. Reporting](#step9-reporting)  
-See [Tutorial: Local Scan Mode#Step10. TUI](#step10-tui)  
-See [Tutorial: Local Scan Mode#Step11. Web UI](#step11-web-ui)
+See [Tutorial: Local Scan Mode#Step8. Reporting](#step8-reporting)  
+See [Tutorial: Local Scan Mode#Step9. TUI](#step9-tui)  
+See [Tutorial: Local Scan Mode#Step10. Web UI](#step10-web-ui)
 
 ----
 
@@ -1310,7 +1316,7 @@ optional = [
 ```
 $ vuls report \
       -cvedb-type=mysql \
-      -cvedb-url="user:pass@tcp(localhost:3306)/dbname"
+      -cvedb-url="user:pass@tcp(localhost:3306)/dbname?parseTime=true"
 ```
 
 ----
@@ -1364,8 +1370,6 @@ How to integrate Vuls with OWASP Dependency Check
     ```
 
 
-
-
 # Usage: TUI
 
 ## Display the latest scan results
@@ -1376,25 +1380,31 @@ tui:
                 [-cvedb-type=sqlite3|mysql]
                 [-cvedb-path=/path/to/cve.sqlite3]
                 [-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
-                [-results-dir=/path/to/results]
                 [-refresh-cve]
+                [-results-dir=/path/to/results]
+                [-log-dir=/path/to/log]
+                [-debug]
                 [-debug-sql]
                 [-pipe]
 
   -cvedb-path string
-        /path/to/sqlite3 (For get cve detail from cve.sqlite3) (default "/Users/kotakanbe/go/src/github.com/future-architect/vuls/cve.sqlite3")
+        /path/to/sqlite3 (For get cve detail from cve.sqlite3) 
   -cvedb-type string
         DB type for fetching CVE dictionary (sqlite3 or mysql) (default "sqlite3")
   -cvedb-url string
         http://cve-dictionary.com:8080 or mysql connection string
+  -debug
+        debug mode
   -debug-sql
         debug SQL
+  -log-dir string
+        /path/to/log (default "/var/log/vuls")
   -pipe
         Use stdin via PIPE
   -refresh-cve
         Refresh CVE information in JSON file under results dir
   -results-dir string
-        /path/to/results (default "/Users/kotakanbe/go/src/github.com/future-architect/vuls/results")
+        /path/to/results 
 ```
 
 Key binding is below.
