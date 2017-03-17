@@ -39,7 +39,7 @@ Please see the [Documentation](https://github.com/future-architect/vuls)
 $ docker run  --rm  vuls/vuls -v
 ```
 
-## configtest
+## config
 
 Create config.toml referring to [this](https://github.com/future-architect/vuls#configuration).
 
@@ -52,25 +52,16 @@ port        = "22"
 user        = "vuls-user"
 keyPath     = "/root/.ssh/id_rsa"  # path to ssh private key in docker
 ```
-　
-
-```console
-$ docker run --rm \
-    -v ~/.ssh:/root/.ssh:ro \
-    -v $PWD:/vuls \
-    -v $PWD/vuls-log:/var/log/vuls \
-    vuls/vuls configtest
-```
 
 
-## prepare
+## configtest
 
 ```console
 $ docker run --rm -it \
     -v ~/.ssh:/root/.ssh:ro \
     -v $PWD:/vuls \
     -v $PWD/vuls-log:/var/log/vuls \
-    vuls/vuls prepare \
+    vuls/vuls configtest \
     -config=./config.toml # path to config.toml in docker
 ```
 
