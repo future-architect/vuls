@@ -308,7 +308,7 @@ This can be done in the following steps.
 1. Scan
 1. Reporting
 
-We will use the Vuls server(called localhost) created in the previous tutorial.
+We will use the Vuls server (called localhost) created in the previous tutorial.
 
 ## Step1. Launch Another Amazon Linux
 
@@ -414,7 +414,7 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 ## Scanning Flow
 ![Vuls-Scan-Flow](img/vuls-scan-flow.png)
 - Scan vulnerabilities on the servers via SSH and collect a list of the CVE ID
-  - To scan Docker containers, Vuls connect via SSH to the Docker host and then `docker exec` to the containers. So, no need to run sshd daemon on the containers.
+  - To scan Docker containers, Vuls connects via SSH to the Docker host and then `docker exec` to the containers. So, no need to run sshd daemon on the containers.
 
 ----
 # Performance Considerations
@@ -688,7 +688,7 @@ configtest:
 ```
 
 The configtest subcommand checks the following
-- Whether vuls is able to connect via ssh to servers/containers defined in the config.toml
+- Whether vuls is able to connect via SSH to servers/containers defined in the config.toml
 - Whether Dependent package is installed on the scan target server
 - Check /etc/sudoers
 
@@ -1508,7 +1508,7 @@ Run with --debug, --sql-debug option.
 - Adjusting Open File Limit  
 [Riak docs](http://docs.basho.com/riak/latest/ops/tuning/open-files-limit/) is awesome.
 
-- Does Vuls accept ssh connections with fish-shell or old zsh as the login shell?  
+- Does Vuls accept SSH connections with fish-shell or old zsh as the login shell?  
 No, Vuls needs a user on the server for bash login. see also [#8](/../../issues/8)
 
 - Windows  
