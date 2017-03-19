@@ -215,9 +215,16 @@ func diff(currentHistory, previousHistory models.ScanHistory) (diffHistory model
 
 		if found {
 			currentResult.ScannedCves = getNewCves(previousResult, currentResult)
+
+			currentResult.KnownCves = []models.CveInfo{}
+			currentResult.UnknownCves = []models.CveInfo{}
+
+			currentResult.Packages = models.PackageInfoList{}
+			for _, s := range currentResult.ScannedCves {
+				currentResult.Packages = append(currentResult.Packages, s.Packages...)
+			}
+			currentResult.Packages = currentResult.Packages.UniqByName()
 		}
-		currentResult.KnownCves = []models.CveInfo{}
-		currentResult.UnknownCves = []models.CveInfo{}
 
 		diffHistory.ScanResults = append(diffHistory.ScanResults, currentResult)
 	}
