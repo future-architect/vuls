@@ -387,32 +387,11 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 	util.Log.Infof("Loaded: %s", jsonDir)
 
-	var results []models.ScanResult
-	for _, r := range history.ScanResults {
-		if p.refreshCve || needToRefreshCve(r) {
-			util.Log.Debugf("need to refresh")
-			if c.Conf.CveDBType == "sqlite3" && c.Conf.CveDBURL == "" {
-				if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
-					util.Log.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
-						c.Conf.CveDBPath)
-					return subcommands.ExitFailure
-				}
-			}
-
-			filled, err := fillCveInfoFromCveDB(r)
-			if err != nil {
-				util.Log.Errorf("Failed to fill CVE information: %s", err)
-				return subcommands.ExitFailure
-			}
-			filled.Lang = c.Conf.Lang
-			if err := overwriteJSONFile(dir, *filled); err != nil {
-				util.Log.Errorf("Failed to write JSON: %s", err)
-				return subcommands.ExitFailure
-			}
-			results = append(results, *filled)
-		} else {
-			util.Log.Debugf("no need to refresh")
-			results = append(results, r)
+	results := refreshCve(p.refreshCve, history)
+	for _, s := range results {
+		if err := overwriteJSONFile(dir, s); err != nil {
+			util.Log.Errorf("Failed to write JSON: %s", err)
+			return subcommands.ExitFailure
 		}
 	}
 
@@ -423,30 +402,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			util.Log.Error(err)
 			return subcommands.ExitFailure
 		}
-		results = []models.ScanResult{}
-		for _, r := range history.ScanResults {
-			if p.refreshCve || needToRefreshCve(r) {
-				util.Log.Debugf("need to refresh")
-				if c.Conf.CveDBType == "sqlite3" && c.Conf.CveDBURL == "" {
-					if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
-						util.Log.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
-							c.Conf.CveDBPath)
-						return subcommands.ExitFailure
-					}
-				}
-
-				filled, err := fillCveInfoFromCveDB(r)
-				if err != nil {
-					util.Log.Errorf("Failed to fill CVE information: %s", err)
-					return subcommands.ExitFailure
-				}
-				results = append(results, *filled)
-			} else {
-				util.Log.Debugf("no need to refresh")
-				results = append(results, r)
-			}
-		}
-		previousHistory = models.ScanHistory{ScanResults: results}
+		previousHistory = models.ScanHistory{ScanResults: refreshCve(p.refreshCve, previousHistory)}
 
 		history, err = diff(currentHistory, previousHistory)
 		if err != nil {

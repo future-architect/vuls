@@ -249,6 +249,32 @@ func getNewCves(previousResult, currentResult models.ScanResult) (newVulninfos [
 	return
 }
 
+func refreshCve(p bool, history models.ScanHistory) (results models.ScanResults){
+	for _, r := range history.ScanResults {
+		if p || needToRefreshCve(r) {
+			util.Log.Debugf("need to refresh")
+			if c.Conf.CveDBType == "sqlite3" && c.Conf.CveDBURL == "" {
+				if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
+					util.Log.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
+						c.Conf.CveDBPath)
+					return
+				}
+			}
+
+			filled, err := fillCveInfoFromCveDB(r)
+			if err != nil {
+				util.Log.Errorf("Failed to fill CVE information: %s", err)
+				return
+			}
+			results = append(results, *filled)
+		} else {
+			util.Log.Debugf("no need to refresh")
+			results = append(results, r)
+		}
+	}
+	return
+}
+
 func isCveInfoUpdated(currentResult, previousResult models.ScanResult, CveID string) bool {
 	type lastModified struct {
 		Nvd time.Time
