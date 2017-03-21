@@ -262,6 +262,16 @@ func TestDiff(t *testing.T) {
 				KnownCves:   []models.CveInfo{},
 				UnknownCves: []models.CveInfo{},
 				IgnoredCves: []models.CveInfo{},
+				Packages: models.PackageInfoList{
+					{
+						Name:       "mysql-libs",
+						Version:    "5.1.73",
+						Release:    "7.el6",
+						NewVersion: "5.1.73",
+						NewRelease: "8.el6_8",
+						Repository: "",
+					},
+				},
 			},
 		},
 	}
