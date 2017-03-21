@@ -68,7 +68,6 @@ Vulsのセットアップは以下の３パターンがある
 
 -  Dockerコンテナ上にセットアップ  
 see https://github.com/future-architect/vuls/tree/master/setup/docker  
-[日本語README](https://github.com/future-architect/vuls/blob/master/setup/docker/README.ja.md)  
 - Chefでセットアップ  
 see https://github.com/sadayuki-matsuno/vuls-cookbook
 - 手動でセットアップ  
@@ -76,13 +75,12 @@ Hello Vulsチュートリアルでは手動でのセットアップ方法で説�
 
 ----
 
-# Hello Vuls
+# Tutorial: Local Scan Mode
 
 本チュートリアルでは、Amazon EC2にVulsをセットアップし、自分に存在する脆弱性をスキャンする方法を説明する。
 手順は以下の通り
 
 1. Amazon Linuxを新規作成
-1. 自分自身にSSH接続できるように設定
 1. 必要なソフトウェアをインストール
 1. go-cve-dictionaryをデプロイ
 1. Vulsをデプロイ
@@ -105,21 +103,7 @@ Hello Vulsチュートリアルでは手動でのセットアップ方法で説�
 
     - [Q: How do I disable the automatic installation of critical and important security updates on initial launch?](https://aws.amazon.com/amazon-linux-ami/faqs/?nc1=h_ls)
 
-## Step2. SSH setting
-
-ローカルホストにSSH接続できるようにする。
-
-SSHキーペアを作成し、公開鍵をauthorized_keysに追加する。
-```bash
-$ ssh-keygen -t rsa
-$ cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-$ chmod 600 ~/.ssh/authorized_keys
-```
-
-VulsはSSHパスワード認証をサポートしていない。SSH公開鍵鍵認証を使う必要がある。
-また、パスワードありのSUDOもセキュリティ上の理由によりサポートしていないため、スキャン対象サーバに/etc/sudoersにNOPASSWDを設定して、パスワードなしでSUDO可能にする必要がある。
-
-## Step3. Install requirements
+## Step2. Install requirements
 
 Vulsセットアップに必要な以下のソフトウェアをインストールする。
 
@@ -150,7 +134,7 @@ export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 $ source /etc/profile.d/goenv.sh
 ```
 
-## Step4. Deploy [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
+## Step3. Deploy [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
 
 ```bash
 $ sudo mkdir /var/log/vuls
@@ -177,7 +161,14 @@ $ ls -alh cve.sqlite3
 -rw-r--r-- 1 ec2-user ec2-user 7.0M Mar 24 13:20 cve.sqlite3
 ```
 
-## Step5. Deploy Vuls
+日本語化したい場合は、JVNから脆弱性データベースを取得する。  
+
+```bash
+$ cd $HOME
+$ for i in `seq 1998 $(date +"%Y")`; do go-cve-dictionary fetchjvn -years $i; done
+```
+
+## Step4. Deploy Vuls
 
 新規にターミナルを起動し、先ほど作成したEC2にSSH接続する。
 ```
@@ -188,44 +179,32 @@ $ cd vuls
 $ make install
 ```
 
-vulsを既にインストール済みでupdateしたい場合は
-
-```bash
-$ go get -u github.com/future-architect/vuls
-```
-
-で可能である。
-
-go getでエラーが発生した場合は、以下の点を確認する。
-- Gitのバージョンがv2以降か？
-- Go依存パッケージの問題でgo getに失敗する場合は [deploying with glide](https://github.com/future-architect/vuls/blob/master/README.md#deploy-with-glide) を試す。
-
-## Step6. Config
+## Step5. Config
 
 Vulsの設定ファイルを作成する（TOMLフォーマット）
-設定ファイルのチェックを行う
 
 ```
 $ cd $HOME
 $ cat config.toml
 [servers]
 
-[servers.172-31-4-82]
-host         = "172.31.4.82"
-port        = "22"
-user        = "ec2-user"
-keyPath     = "/home/ec2-user/.ssh/id_rsa"
-
+[servers.localhost]
+host         = "localhost"
+port        = "local"
 ```
 
-## Step7. Check config.toml and settings on the server before scanning
+Root権限が必要なディストリビューションもあるで、スキャン対象サーバの/etc/sudoersを変更する。
+パスワードありのsudoはセキュリティ上の理由からサポート指定いないので、スキャンに必要なコマンドは、`NOPASSAWORD`として、remote host上の`etc/sudoers`に定義しておく。
+See [Usage: Configtest#Check /etc/sudoers](#check-etcsudoers)
+
+## Step6. Check config.toml and settings on the server before scanning
 
 ```
 $ vuls configtest
 ```
 詳細は [Usage: configtest](#usage-configtest) を参照
 
-## Step8. Start Scanning
+## Step7. Start Scanning
 
 
 ```
@@ -234,11 +213,11 @@ $ vuls scan
 
 Scan Summary
 ============
-172-31-4-82       amazon 2015.09         94 CVEs      103 updatable packages
+localhost       amazon 2015.09         94 CVEs      103 updatable packages
 
 ```
 
-## Step9. Reporting
+## Step8. Reporting
 
 View one-line summary
 
@@ -247,7 +226,7 @@ $ vuls report -format-one-line-text -cvedb-path=$PWD/cve.sqlite3
 
 One Line Summary
 ================
-172-31-4-82   Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
+localhost   Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
 
 ```
 
@@ -256,7 +235,7 @@ View short summary.
 ```
 $ vuls report -format-short-text -cvedb-path=$PWD/cve.sqlite3 --lang=ja
 
-172-31-4-8 (amazon 2015.09)
+localhost (amazon 2015.09)
 ===========================
 Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
 
@@ -276,7 +255,7 @@ View full report.
 ```
 $ vuls report -format-full-text -cvedb-path=$PWD/cve.sqlite3 --lang=ja
 
-172-31-4-82 (amazon 2015.09)
+localhost (amazon 2015.09)
 ============================
 Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
 
@@ -307,7 +286,7 @@ Confidence      100 / YumUpdateSecurityMatch
 ... snip ...
 ```
 
-## Step10. TUI
+## Step9. TUI
 
 Vulsにはスキャン結果の詳細を参照できるイカしたTUI(Terminal-Based User Interface)が付属している。
 
@@ -317,10 +296,102 @@ $ vuls tui
 
 ![Vuls-TUI](img/hello-vuls-tui.png)
 
-## Step11. Web UI
+## Step10. Web UI
 
 [VulsRepo](https://github.com/usiusi360/vulsrepo)はスキャン結果をビボットテーブルのように分析可能にするWeb UIである。  
 [Online Demo](http://usiusi360.github.io/vulsrepo/)があるので試してみて。
+
+----
+
+# Tutorial: Remote Scan Mode
+
+SSHを用いてリモートのホストをスキャンする方法を説明する。
+
+1. Amazon Linuxを新規に1台作成（スキャン対象）
+1. 必要なソフトウェアをインストール
+1. RemoteホストにlocalhostからSSH可能にする
+1. 設定
+1. 設定ファイルと、スキャン対象サーバの設定のチェック
+1. Scan
+1. Reporting
+
+先程のチュートリアルで作成したVulsサーバ(以下localhostと記述)を用いる。
+
+## Step1. Launch Another Amazon Linux
+
+[Tutorial: Local Scan Mode#Step1. Launch Amazon Linux](#step1-launch-amazon-linux)と同じ  
+新規にターミナルを開いて今作成したEC2にSSH接続する。
+
+## Step2. Install Dependencies on the Remote Server
+
+ディストリビューションによってはスキャンに必要な依存ソフトウェアをインストールする必要がある。  
+これらはリモートサーバ上に手動かAnsibleなどでインストールする。  
+依存ソフトウェアの詳細は [Dependencies on Target Servers](#dependencies-on-target-servers) を参照。
+
+## Step3. Enable to SSH from Localhost
+
+VulsはSSHパスワード認証をサポートしてない。SSHの鍵認証の設定をしなければならない。  
+localhost上でkeypairを作成し、remote host上のauthorized_keysに追加する。  
+
+- Localhost
+```bash
+$ ssh-keygen -t rsa
+```
+Copy ~/.ssh/id_rsa.pub to the clipboard.
+
+- Remote Host
+```
+$ mkdir ~/.ssh
+$ chmod 700 ~/.ssh
+$ touch ~/.ssh/authorized_keys
+$ chmod 600 ~/.ssh/authorized_keys
+$ vim ~/.ssh/authorized_keys
+```
+Paste from the clipboard to ~/.ssh/.authorized_keys
+
+パスワードありのsudoはセキュリティ上の理由からサポート指定いないので、スキャンに必要なコマンドは、`NOPASSAWORD`として、remote host上の`etc/sudoers`に定義しておく。
+See [Usage: Configtest#Check /etc/sudoers](https://github.com/future-architect/vuls#check-etcsudoers)
+
+## Step4. Config
+
+- Localhost
+```
+$ cd $HOME
+$ cat config.toml
+[servers]
+
+[servers.172-31-4-82]
+host         = "172.31.4.82"
+port        = "22"
+user        = "ec2-user"
+keyPath     = "/home/ec2-user/.ssh/id_rsa"
+```
+
+## Step5. Check config.toml and settings on the server before scanning
+
+```
+$ vuls configtest
+```
+
+see [Usage: configtest](#usage-configtest)
+
+## Step6. Start Scanning
+
+```
+$ vuls scan
+... snip ...
+
+Scan Summary
+============
+172-31-4-82       amazon 2015.09         94 CVEs      103 updatable packages
+
+```
+
+## Step7. Reporting
+
+See [Tutorial: Local Scan Mode#Step8. Reporting](#step8-reporting)  
+See [Tutorial: Local Scan Mode#Step9. TUI](#step9-tui)  
+See [Tutorial: Local Scan Mode#Step10. Web UI](#step10-web-ui)
 
 ----
 
@@ -1242,7 +1313,7 @@ optional = [
 ```
 $ vuls report \
       -cvedb-type=mysql \
-      -cvedb-url="user:pass@tcp(localhost:3306)/dbname"
+      -cvedb-url="user:pass@tcp(localhost:3306)/dbname?parseTime=true"
 ```
 
 ----
@@ -1303,32 +1374,38 @@ VulsとDependency Checkを連携すると以下の利点がある
 ## Display the latest scan results
 
 ```
-$ vuls tui -h
 tui:
         tui
                 [-cvedb-type=sqlite3|mysql]
                 [-cvedb-path=/path/to/cve.sqlite3]
                 [-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
-                [-results-dir=/path/to/results]
                 [-refresh-cve]
+                [-results-dir=/path/to/results]
+                [-log-dir=/path/to/log]
+                [-debug]
                 [-debug-sql]
                 [-pipe]
 
   -cvedb-path string
-        /path/to/sqlite3 (For get cve detail from cve.sqlite3)
+        /path/to/sqlite3 (For get cve detail from cve.sqlite3) 
   -cvedb-type string
-        DB type for fetching CVE dictionary (sqlite3 or mysql)
+        DB type for fetching CVE dictionary (sqlite3 or mysql) (default "sqlite3")
   -cvedb-url string
         http://cve-dictionary.com:8080 or mysql connection string
+  -debug
+        debug mode
   -debug-sql
         debug SQL
+  -log-dir string
+        /path/to/log (default "/var/log/vuls")
   -pipe
         Use stdin via PIPE
   -refresh-cve
         Refresh CVE information in JSON file under results dir
   -results-dir string
-        /path/to/results
+        /path/to/results 
 ```
+
 
 Key binding is below.
 
