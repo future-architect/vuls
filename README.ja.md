@@ -193,8 +193,8 @@ host         = "localhost"
 port        = "local"
 ```
 
-Root権限が必要なディストリビューションもあるで、スキャン対象サーバの/etc/sudoersを変更する。
-パスワードありのsudoはセキュリティ上の理由からサポート指定いないので、スキャンに必要なコマンドは、`NOPASSAWORD`として、remote host上の`etc/sudoers`に定義しておく。
+Root権限が必要なディストリビューションもあるので、スキャン対象サーバの/etc/sudoersを変更する。
+パスワードありのsudoはセキュリティ上の理由からサポートしていないので、スキャンに必要なコマンドは、`NOPASSAWORD`として、remote host上の`etc/sudoers`に定義しておく。
 See [Usage: Configtest#Check /etc/sudoers](#check-etcsudoers)
 
 ## Step6. Check config.toml and settings on the server before scanning
