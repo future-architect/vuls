@@ -431,7 +431,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 		results = []models.ScanResult{}
 		for _, r := range history.ScanResults {
-			filled, _ := fillCveInfoFromCveDB(r)
+			filled, _ := r.FillCveDetail()
 			results = append(results, *filled)
 		}
 	}
