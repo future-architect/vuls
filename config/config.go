@@ -75,6 +75,7 @@ type Config struct {
 	AzureContainer string
 
 	Pipe bool
+	Diff bool
 }
 
 // ValidateOnConfigtest validates

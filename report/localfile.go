@@ -50,7 +50,13 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		path := filepath.Join(w.CurrentDir, r.ReportFileName())
 
 		if c.Conf.FormatJSON {
-			p := path + ".json"
+			var p string
+			if c.Conf.Diff {
+				p = path + "_diff.json"
+			} else {
+				p = path + ".json"
+			}
+
 			var b []byte
 			if b, err = json.Marshal(r); err != nil {
 				return fmt.Errorf("Failed to Marshal to JSON: %s", err)
@@ -61,7 +67,13 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 
 		if c.Conf.FormatShortText {
-			p := path + "_short.txt"
+			var p string
+			if c.Conf.Diff {
+				p = path + "_short_diff.txt"
+			} else {
+				p = path + "_short.txt"
+			}
+
 			if err := writeFile(
 				p, []byte(formatShortPlainText(r)), 0600); err != nil {
 				return fmt.Errorf(
@@ -70,7 +82,13 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 
 		if c.Conf.FormatFullText {
-			p := path + "_full.txt"
+			var p string
+			if c.Conf.Diff {
+				p = path + "_full_diff.txt"
+			} else {
+				p = path + "_full.txt"
+			}
+
 			if err := writeFile(
 				p, []byte(formatFullPlainText(r)), 0600); err != nil {
 				return fmt.Errorf(
@@ -79,7 +97,13 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 
 		if c.Conf.FormatXML {
-			p := path + ".xml"
+			var p string
+			if c.Conf.Diff {
+				p = path + "_diff.xml"
+			} else {
+				p = path + ".xml"
+			}
+
 			var b []byte
 			if b, err = xml.Marshal(r); err != nil {
 				return fmt.Errorf("Failed to Marshal to XML: %s", err)

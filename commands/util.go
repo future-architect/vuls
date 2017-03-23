@@ -26,6 +26,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/cveapi"
@@ -121,6 +122,19 @@ func jsonDir(args []string) (string, error) {
 	return dirs[0], nil
 }
 
+// loadOneServerScanResult read JSON data of one server
+func loadOneServerScanResult(jsonFile string) (result models.ScanResult, err error) {
+	var data []byte
+	if data, err = ioutil.ReadFile(jsonFile); err != nil {
+		err = fmt.Errorf("Failed to read %s: %s", jsonFile, err)
+		return
+	}
+	if json.Unmarshal(data, &result) != nil {
+		err = fmt.Errorf("Failed to parse %s: %s", jsonFile, err)
+	}
+	return
+}
+
 // loadOneScanHistory read JSON data
 func loadOneScanHistory(jsonDir string) (scanHistory models.ScanHistory, err error) {
 	var results []models.ScanResult
@@ -130,20 +144,16 @@ func loadOneScanHistory(jsonDir string) (scanHistory models.ScanHistory, err err
 		return
 	}
 	for _, f := range files {
-		if filepath.Ext(f.Name()) != ".json" {
+		if filepath.Ext(f.Name()) != ".json" || strings.HasSuffix(f.Name(), "_diff.json") {
 			continue
 		}
+
 		var r models.ScanResult
-		var data []byte
 		path := filepath.Join(jsonDir, f.Name())
-		if data, err = ioutil.ReadFile(path); err != nil {
-			err = fmt.Errorf("Failed to read %s: %s", path, err)
+		if r, err = loadOneServerScanResult(path); err != nil {
 			return
 		}
-		if json.Unmarshal(data, &r) != nil {
-			err = fmt.Errorf("Failed to parse %s: %s", path, err)
-			return
-		}
+
 		results = append(results, r)
 	}
 	if len(results) == 0 {
@@ -170,14 +180,111 @@ func fillCveInfoFromCveDB(r models.ScanResult) (*models.ScanResult, error) {
 	return r.FillCveDetail()
 }
 
+func loadPreviousScanHistory(current models.ScanHistory) (previous models.ScanHistory, err error) {
+	var dirs jsonDirs
+	if dirs, err = lsValidJSONDirs(); err != nil {
+		return
+	}
+
+	for _, result := range current.ScanResults {
+		for _, dir := range dirs[1:] {
+			var r models.ScanResult
+			path := filepath.Join(dir, result.ServerName+".json")
+			if r, err = loadOneServerScanResult(path); err != nil {
+				continue
+			}
+			if r.Family == result.Family && r.Release == result.Release {
+				previous.ScanResults = append(previous.ScanResults, r)
+				break
+			}
+		}
+	}
+	return previous, nil
+}
+
+func diff(currentHistory, previousHistory models.ScanHistory) (diffHistory models.ScanHistory, err error) {
+	for _, currentResult := range currentHistory.ScanResults {
+		found := false
+		var previousResult models.ScanResult
+		for _, previousResult = range previousHistory.ScanResults {
+			if currentResult.ServerName == previousResult.ServerName {
+				found = true
+				break
+			}
+		}
+
+		if found {
+			currentResult.ScannedCves = getNewCves(previousResult, currentResult)
+
+			currentResult.KnownCves = []models.CveInfo{}
+			currentResult.UnknownCves = []models.CveInfo{}
+
+			currentResult.Packages = models.PackageInfoList{}
+			for _, s := range currentResult.ScannedCves {
+				currentResult.Packages = append(currentResult.Packages, s.Packages...)
+			}
+			currentResult.Packages = currentResult.Packages.UniqByName()
+		}
+
+		diffHistory.ScanResults = append(diffHistory.ScanResults, currentResult)
+	}
+	return diffHistory, err
+}
+
+func getNewCves(previousResult, currentResult models.ScanResult) (newVulninfos []models.VulnInfo) {
+	previousCveIDsSet := map[string]bool{}
+	for _, previousVulnInfo := range previousResult.ScannedCves {
+		previousCveIDsSet[previousVulnInfo.CveID] = true
+	}
+
+	for _, v := range currentResult.ScannedCves {
+		if previousCveIDsSet[v.CveID] {
+			if isCveInfoUpdated(currentResult, previousResult, v.CveID) {
+				newVulninfos = append(newVulninfos, v)
+			}
+		} else {
+			newVulninfos = append(newVulninfos, v)
+		}
+	}
+	return
+}
+
+func isCveInfoUpdated(currentResult, previousResult models.ScanResult, CveID string) bool {
+	type lastModified struct {
+		Nvd time.Time
+		Jvn time.Time
+	}
+
+	previousModifies := lastModified{}
+	for _, c := range previousResult.KnownCves {
+		if CveID == c.CveID {
+			previousModifies.Nvd = c.CveDetail.Nvd.LastModifiedDate
+			previousModifies.Jvn = c.CveDetail.Jvn.LastModifiedDate
+		}
+	}
+
+	currentModifies := lastModified{}
+	for _, c := range currentResult.KnownCves {
+		if CveID == c.CveDetail.CveID {
+			currentModifies.Nvd = c.CveDetail.Nvd.LastModifiedDate
+			currentModifies.Jvn = c.CveDetail.Jvn.LastModifiedDate
+		}
+	}
+	return !currentModifies.Nvd.Equal(previousModifies.Nvd) ||
+		!currentModifies.Jvn.Equal(previousModifies.Jvn)
+}
+
 func overwriteJSONFile(dir string, r models.ScanResult) error {
 	before := c.Conf.FormatJSON
+	beforeDiff := c.Conf.Diff
 	c.Conf.FormatJSON = true
+	c.Conf.Diff = false
 	w := report.LocalFileWriter{CurrentDir: dir}
 	if err := w.Write(r); err != nil {
 		return fmt.Errorf("Failed to write summary report: %s", err)
 	}
 	c.Conf.FormatJSON = before
+	c.Conf.Diff = beforeDiff
 	return nil
 }
 
