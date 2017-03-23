@@ -939,6 +939,7 @@ report:
                 [-cvedb-path=/path/to/cve.sqlite3]
                 [-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
                 [-cvss-over=7]
+                [-diff]
                 [-ignore-unscored-cves]
                 [-to-email]
                 [-to-slack]
@@ -986,6 +987,8 @@ report:
         http://cve-dictionary.com:8080 or mysql connection string
   -cvss-over float
         -cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))
+  -diff
+        Difference between previous result and current result
   -debug
         debug mode
   -debug-sql

@@ -74,6 +74,8 @@ type ReportCmd struct {
 	azureContainer string
 
 	pipe bool
+
+	diff bool
 }
 
 // Name return subcommand name
@@ -95,6 +97,7 @@ func (*ReportCmd) Usage() string {
 		[-cvedb-path=/path/to/cve.sqlite3]
 		[-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
 		[-cvss-over=7]
+		[-diff]
 		[-ignore-unscored-cves]
 		[-to-email]
 		[-to-slack]
@@ -170,6 +173,11 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"cvss-over",
 		0,
 		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
+
+	f.BoolVar(&p.diff,
+		"diff",
+		false,
+		fmt.Sprintf("Difference between previous result and current result "))
 
 	f.BoolVar(
 		&p.ignoreUnscoredCves,
@@ -273,11 +281,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.HTTPProxy = p.httpProxy
 
 	c.Conf.Pipe = p.pipe
-	jsonDir, err := jsonDir(f.Args())
-	if err != nil {
-		util.Log.Errorf("Failed to read from JSON: %s", err)
-		return subcommands.ExitFailure
-	}
 
 	c.Conf.FormatXML = p.formatXML
 	c.Conf.FormatJSON = p.formatJSON
@@ -287,6 +290,19 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.FormatFullText = p.formatFullText
 
 	c.Conf.GZIP = p.gzip
+	c.Conf.Diff = p.diff
+
+	var dir string
+	var err error
+	if p.diff {
+		dir, err = jsonDir([]string{})
+	} else {
+		dir, err = jsonDir(f.Args())
+	}
+	if err != nil {
+		util.Log.Errorf("Failed to read from JSON: %s", err)
+		return subcommands.ExitFailure
+	}
 
 	// report
 	reports := []report.ResultWriter{
@@ -303,7 +319,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if p.toLocalFile {
 		reports = append(reports, report.LocalFileWriter{
-			CurrentDir: jsonDir,
+			CurrentDir: dir,
 		})
 	}
 
@@ -363,40 +379,40 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	history, err := loadOneScanHistory(jsonDir)
+	var history models.ScanHistory
+	history, err = loadOneScanHistory(dir)
 	if err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}
 	util.Log.Infof("Loaded: %s", jsonDir)
 
-	var results []models.ScanResult
-	for _, r := range history.ScanResults {
-		if p.refreshCve || needToRefreshCve(r) {
-			util.Log.Debugf("need to refresh")
-			if c.Conf.CveDBType == "sqlite3" && c.Conf.CveDBURL == "" {
-				if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
-					util.Log.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
-						c.Conf.CveDBPath)
-					return subcommands.ExitFailure
-				}
-			}
+	results := refreshCve(p.refreshCve, history)
+	for _, s := range results {
+		if err := overwriteJSONFile(dir, s); err != nil {
+			util.Log.Errorf("Failed to write JSON: %s", err)
+			return subcommands.ExitFailure
+		}
+	}
 
-			filled, err := fillCveInfoFromCveDB(r)
-			if err != nil {
-				util.Log.Errorf("Failed to fill CVE information: %s", err)
-				return subcommands.ExitFailure
-			}
-			filled.Lang = c.Conf.Lang
+	if p.diff {
+		currentHistory := models.ScanHistory{ScanResults: results}
+		previousHistory, err := loadPreviousScanHistory(currentHistory)
+		if err != nil {
+			util.Log.Error(err)
+			return subcommands.ExitFailure
+		}
+		previousHistory = models.ScanHistory{ScanResults: refreshCve(p.refreshCve, previousHistory)}
 
-			if err := overwriteJSONFile(jsonDir, *filled); err != nil {
-				util.Log.Errorf("Failed to write JSON: %s", err)
-				return subcommands.ExitFailure
-			}
+		history, err = diff(currentHistory, previousHistory)
+		if err != nil {
+			util.Log.Error(err)
+			return subcommands.ExitFailure
+		}
+		results = []models.ScanResult{}
+		for _, r := range history.ScanResults {
+			filled, _ := fillCveInfoFromCveDB(r)
 			results = append(results, *filled)
-		} else {
-			util.Log.Debugf("no need to refresh")
-			results = append(results, r)
 		}
 	}
 
@@ -404,6 +420,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	for _, r := range results {
 		res = append(res, r.FilterByCvssOver())
 	}
+
 	for _, w := range reports {
 		if err := w.Write(res...); err != nil {
 			util.Log.Errorf("Failed to report: %s", err)
