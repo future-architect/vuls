@@ -37,6 +37,7 @@ type ConfigtestCmd struct {
 	askKeyPassword bool
 	sshExternal    bool
 	httpProxy      string
+	timeoutSec     int
 
 	debug bool
 }
@@ -54,6 +55,7 @@ func (*ConfigtestCmd) Usage() string {
 			[-config=/path/to/config.toml]
 			[-log-dir=/path/to/log]
 			[-ask-key-password]
+			[-timeout=300]
 			[-ssh-external]
 			[-http-proxy=http://192.168.0.1:8080]
 			[-debug]
@@ -72,6 +74,8 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.logDir, "log-dir", defaultLogDir, "/path/to/log")
 
 	f.BoolVar(&p.debug, "debug", false, "debug mode")
+
+	f.IntVar(&p.timeoutSec, "timeout", 5*60, "Timeout(Sec)")
 
 	f.BoolVar(
 		&p.askKeyPassword,
@@ -157,10 +161,10 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	}
 
 	util.Log.Info("Checking dependendies...")
-	scan.CheckDependencies()
+	scan.CheckDependencies(p.timeoutSec)
 
 	util.Log.Info("Checking sudo settings...")
-	scan.CheckIfSudoNoPasswd()
+	scan.CheckIfSudoNoPasswd(p.timeoutSec)
 
 	scan.PrintSSHableServerNames()
 	return subcommands.ExitSuccess

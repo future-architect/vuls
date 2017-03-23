@@ -668,6 +668,7 @@ configtest:
                         [-log-dir=/path/to/log]
                         [-ask-key-password]
                         [-ssh-external]
+                        [-timeout=300]
                         [-http-proxy=http://192.168.0.1:8080]
                         [-debug]
 
@@ -684,6 +685,8 @@ configtest:
         /path/to/log (default "/var/log/vuls")
   -ssh-external
         Use external ssh command. Default: Use the Go native implementation
+  -timeout int
+        Timeout(Sec) (default 300)
 ```
 
 configtestサブコマンドは以下をチェックする
