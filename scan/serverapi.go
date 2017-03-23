@@ -342,8 +342,7 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 }
 
 // CheckDependencies checks dependencies are installed on target servers.
-func CheckDependencies() {
-	timeoutSec := 5 * 60
+func CheckDependencies(timeoutSec int) {
 	parallelExec(func(o osTypeInterface) error {
 		return o.checkDependencies()
 	}, timeoutSec)
@@ -351,8 +350,7 @@ func CheckDependencies() {
 }
 
 // CheckIfSudoNoPasswd checks whether vuls can sudo with nopassword via SSH
-func CheckIfSudoNoPasswd() {
-	timeoutSec := 5 * 60
+func CheckIfSudoNoPasswd(timeoutSec int) {
 	parallelExec(func(o osTypeInterface) error {
 		return o.checkIfSudoNoPasswd()
 	}, timeoutSec)

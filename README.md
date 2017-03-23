@@ -676,6 +676,7 @@ configtest:
                         [-log-dir=/path/to/log]
                         [-ask-key-password]
                         [-ssh-external]
+                        [-timeout=300]
                         [-debug]
 
                         [SERVER]...
@@ -691,6 +692,9 @@ configtest:
         /path/to/log (default "/var/log/vuls")
   -ssh-external
         Use external ssh command. Default: Use the Go native implementation
+  -timeout int
+        Timeout(Sec) (default 300)
+
 ```
 
 The configtest subcommand checks the following
