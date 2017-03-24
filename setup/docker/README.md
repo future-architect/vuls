@@ -115,15 +115,6 @@ keyPath     = "/root/.ssh/id_rsa" # path to ssh private key in docker
 ```
 
 
-```console
-$ docker run --rm \
-    -v ~/.ssh:/root/.ssh:ro \
-    -v $PWD:/vuls \
-    -v $PWD/vuls-log:/var/log/vuls \
-    vuls/vuls configtest \
-    -config=./config.toml # path to config.toml in docker
-```
-
 ## Step3. Configtest
 
 ```console
