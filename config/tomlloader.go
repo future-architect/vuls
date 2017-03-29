@@ -183,7 +183,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 					repos = repos + "," + repo		
 				default:
 					return fmt.Errorf(
-						"For now, enablerepo have to be base ,updates: %s, servername: %s",
+						"For now, enablerepo have to be base or updates: %s, servername: %s",
 						s.Enablerepo, name)
 				}
 			}
