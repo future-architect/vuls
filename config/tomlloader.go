@@ -27,16 +27,16 @@ import (
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
 )
 
-func removeDup(aSlice []string) string {
-	results := make([]string, 0 ,len(aSlice))
+func removeDup(repos []string) (uniq []string) {
+	results := []string{}
 	seen := map[string]bool{}
-	for i := 0; i < len(aSlice); i++ {
-		if !seen[aSlice[i]] {
-			seen[aSlice[i]] = true
-			results = append(results, aSlice[i])
+	for _, s := range repos {
+		if !seen[s] {
+			seen[s] = true
+			results = append(results, s)
 		}
 	}
-	return strings.Join(results,",")
+	return results
 }
 
 // TOMLLoader loads config
@@ -170,28 +170,29 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 				s.Optional = append(s.Optional, dkv)
 			}
 		}
-		repos := ""
+		//		repos := ""
 		s.Enablerepo = v.Enablerepo
 		if len(s.Enablerepo) == 0 {
 			s.Enablerepo = d.Enablerepo
 		}
 		if len(s.Enablerepo) != 0 {
+			repos := ""
 			for _, repo := range strings.Split(s.Enablerepo, ",") {
-                                repo = strings.TrimSpace(repo)
+				repo = strings.TrimSpace(repo)
 				switch repo {
 				case "base", "updates":
-					repos = repos + "," + repo		
+					repos = repos + "," + repo
 				default:
 					return fmt.Errorf(
 						"For now, enablerepo have to be base or updates: %s, servername: %s",
 						s.Enablerepo, name)
 				}
 			}
-			if strings.HasPrefix(repos,","){
-				repos = strings.Replace(repos,",","",1)
+			if strings.HasPrefix(repos, ",") {
+				repos = strings.Replace(repos, ",", "", 1)
 				repos = strings.TrimSpace(repos)
 			}
-			s.Enablerepo = removeDup(strings.Split(repos,","))
+			s.Enablerepo = strings.Join(removeDup(strings.Split(repos, ",")), ",")
 		}
 
 		s.LogMsgAnsiColor = Colors[i%len(Colors)]
