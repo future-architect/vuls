@@ -385,7 +385,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}
-	util.Log.Infof("Loaded: %s", jsonDir)
+	util.Log.Infof("Loaded: %s", dir)
 
 	var results []models.ScanResult
 	for _, r := range history.ScanResults {
