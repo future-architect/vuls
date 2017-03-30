@@ -188,10 +188,6 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 						s.Enablerepo, name)
 				}
 			}
-			if strings.HasPrefix(repos, ",") {
-				repos = strings.Replace(repos, ",", "", 1)
-				repos = strings.TrimSpace(repos)
-			}
 			s.Enablerepo = strings.Join(removeDup(strings.Split(repos, ",")), ",")
 		}
 
