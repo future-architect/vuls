@@ -35,6 +35,7 @@ type ConfigtestCmd struct {
 	configPath     string
 	logDir         string
 	askKeyPassword bool
+	containersOnly bool
 	sshExternal    bool
 	httpProxy      string
 	timeoutSec     int
@@ -57,6 +58,7 @@ func (*ConfigtestCmd) Usage() string {
 			[-ask-key-password]
 			[-timeout=300]
 			[-ssh-external]
+			[-containers-only]
 			[-http-proxy=http://192.168.0.1:8080]
 			[-debug]
 
@@ -96,6 +98,12 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 		"ssh-external",
 		false,
 		"Use external ssh command. Default: Use the Go native implementation")
+
+	f.BoolVar(
+		&p.containersOnly,
+		"containers-only",
+		false,
+		"Test containers only. Default: Test both of hosts and containers")
 }
 
 // Execute execute
@@ -124,6 +132,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	}
 	c.Conf.SSHExternal = p.sshExternal
 	c.Conf.HTTPProxy = p.httpProxy
+	c.Conf.ContainersOnly = p.containersOnly
 
 	var servernames []string
 	if 0 < len(f.Args()) {
