@@ -164,7 +164,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	}
 
 	util.Log.Info("Detecting Server/Container OS... ")
-	if err := scan.InitServers(); err != nil {
+	if err := scan.InitServers(p.timeoutSec); err != nil {
 		util.Log.Errorf("Failed to init servers: %s", err)
 		return subcommands.ExitFailure
 	}
