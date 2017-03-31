@@ -1030,6 +1030,11 @@ ChangeLog for: file-5.04-30.el6.x86_64, file-libs-5.04-30.el6.x86_64
 - fix CVE-2014-9620 (limit the number of ELF notes processed)
 - fix CVE-2014-9653 (malformed elf file causes access to uninitialized memory)
 
+ChangeLog for: 1:openssl-1.0.1e-60.el7_3.1.x86_64,
+             : 1:openssl-libs-1.0.1e-60.el7_3.1.x86_64
+* Mon Feb  6 21:00:00 2017 Tomáš Mráz <tmraz@redhat.com> 1.0.1e-60.1
+- fix CVE-2017-3731 - DoS via truncated packets with RC4-MD5 cipher
+- fix CVE-2016-8610 - DoS of single-threaded servers via excessive alerts
 
 Dependencies Resolved
 
