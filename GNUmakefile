@@ -1,7 +1,6 @@
 .PHONY: \
-	glide \
-	deps \
-	update \
+	dep \
+	depup \
 	build \
 	install \
 	all \
@@ -22,21 +21,20 @@ REVISION := $(shell git rev-parse --short HEAD)
 LDFLAGS := -X 'main.version=$(VERSION)' \
 	-X 'main.revision=$(REVISION)'
 
-all: glide deps build test
+all: dep build test
 
-glide:
-	go get github.com/Masterminds/glide
+dep:
+	go get -u github.com/golang/dep/...
+	dep ensure
 
-deps: glide
-	glide install
+depup:
+	go get -u github.com/golang/dep/...
+	dep ensure -update
 
-update: glide
-	glide update
-
-build: main.go deps
+build: main.go dep
 	go build -ldflags "$(LDFLAGS)" -o vuls $<
 
-install: main.go deps
+install: main.go dep
 	go install -ldflags "$(LDFLAGS)"
 
 
