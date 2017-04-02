@@ -785,6 +785,8 @@ scan:
                 [-ask-key-password]
                 [-debug]
                 [-pipe]
+                [-timeout]
+                [-timeout-scan]
 
                 [SERVER]...
   -ask-key-password
@@ -809,6 +811,10 @@ scan:
         [For CentOS] yum update changelog with --skip-broken option
   -ssh-native-insecure
         Use Native Go implementation of SSH. Default: Use the external command
+  -timeout int
+        Number of seconds for detecting platform for all servers (default 60)
+  -timeout-scan int
+        Number of second for scaning vulnerabilities for all servers (default 7200)
 ```
 
 ## -ssh-native-insecure option

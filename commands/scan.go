@@ -35,17 +35,19 @@ import (
 
 // ScanCmd is Subcommand of host discovery mode
 type ScanCmd struct {
-	debug          bool
-	configPath     string
-	resultsDir     string
-	logDir         string
-	cacheDBPath    string
-	httpProxy      string
-	askKeyPassword bool
-	containersOnly bool
-	skipBroken     bool
-	sshNative      bool
-	pipe           bool
+	debug            bool
+	configPath       string
+	resultsDir       string
+	logDir           string
+	cacheDBPath      string
+	httpProxy        string
+	askKeyPassword   bool
+	containersOnly   bool
+	skipBroken       bool
+	sshNative        bool
+	pipe             bool
+	scanTimeoutSec   int
+	detectTimeoutSec int
 }
 
 // Name return subcommand name
@@ -69,6 +71,8 @@ func (*ScanCmd) Usage() string {
 		[-ask-key-password]
 		[-debug]
 		[-pipe]
+		[-timeout]
+		[-timeout-detect-platform]
 
 		[SERVER]...
 `
@@ -133,6 +137,20 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		"pipe",
 		false,
 		"Use stdin via PIPE")
+
+	f.IntVar(
+		&p.detectTimeoutSec,
+		"timeout",
+		1*60,
+		"Number of seconds for detecting platform for all servers",
+	)
+
+	f.IntVar(
+		&p.scanTimeoutSec,
+		"timeout-scan",
+		120*60,
+		"Number of second for scaning vulnerabilities for all servers",
+	)
 }
 
 // Execute execute
@@ -219,10 +237,10 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	util.Log.Info("Detecting Platforms... ")
-	scan.DetectPlatforms()
+	scan.DetectPlatforms(p.detectTimeoutSec)
 
 	util.Log.Info("Scanning vulnerabilities... ")
-	if err := scan.Scan(); err != nil {
+	if err := scan.Scan(p.scanTimeoutSec); err != nil {
 		util.Log.Errorf("Failed to scan. err: %s", err)
 		return subcommands.ExitFailure
 	}
