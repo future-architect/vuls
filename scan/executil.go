@@ -364,8 +364,9 @@ func getAgentAuth() (auth ssh.AuthMethod, ok bool) {
 func tryAgentConnect(c conf.ServerInfo) *ssh.Client {
 	if auth, ok := getAgentAuth(); ok {
 		config := &ssh.ClientConfig{
-			User: c.User,
-			Auth: []ssh.AuthMethod{auth},
+			User:            c.User,
+			Auth:            []ssh.AuthMethod{auth},
+			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		}
 		client, _ := ssh.Dial("tcp", c.Host+":"+c.Port, config)
 		return client
@@ -385,8 +386,9 @@ func sshConnect(c conf.ServerInfo) (client *ssh.Client, err error) {
 
 	// http://blog.ralch.com/tutorial/golang-ssh-connection/
 	config := &ssh.ClientConfig{
-		User: c.User,
-		Auth: auths,
+		User:            c.User,
+		Auth:            auths,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
 	notifyFunc := func(e error, t time.Duration) {
