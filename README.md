@@ -1468,14 +1468,14 @@ see [go-cve-dictionary#usage-fetch-nvd-data](https://github.com/kotakanbe/go-cve
 
 ----
 
-# Update Vuls With Glide
+# How to Update
 
 - Update go-cve-dictionary  
 If the DB schema was changed, please specify new SQLite3 or MySQL DB file.
 ```
 $ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
 $ git pull
-$ mv vendor /tmp/foo
+$ rm -r vendor
 $ make install
 ```
 
@@ -1483,7 +1483,7 @@ $ make install
 ```
 $ cd $GOPATH/src/github.com/future-architect/vuls
 $ git pull
-$ mv vendor /tmp/bar
+$ rm -r vendor
 $ make install
 ```
 Binary file was built under $GOPATH/bin
