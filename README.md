@@ -657,7 +657,7 @@ You can customize your configuration using this template.
     - optional: Add additional information to JSON report.
     - containers: see [Example: Scan containers (Docker/LXD)(#example-scan-containers-dockerlxd)
 
-    Vuls supports two types of SSH. One is native go implementation. The other is external SSH command. For details, see [-ssh-external option](https://github.com/future-architect/vuls#-ssh-external-option)
+    Vuls supports two types of SSH. One is external command. The other is native go implementation. For details, see [-ssh-native-insecure option](https://github.com/future-architect/vuls#-ssh-native-insecure-option)
 
     Multiple SSH authentication methods are supported.  
     - SSH agent
@@ -675,7 +675,7 @@ configtest:
                         [-config=/path/to/config.toml]
                         [-log-dir=/path/to/log]
                         [-ask-key-password]
-                        [-ssh-external]
+                        [-ssh-native-insecure]
                         [-containers-only]
                         [-timeout=300]
                         [-debug]
@@ -693,8 +693,8 @@ configtest:
         http://proxy-url:port (default: empty)
   -log-dir string
         /path/to/log (default "/var/log/vuls")
-  -ssh-external
-        Use external ssh command. Default: Use the Go native implementation
+  -ssh-native-insecure
+        Use Native Go implementation of SSH. Default: Use the external command
   -timeout int
         Timeout(Sec) (default 300)
 
@@ -772,7 +772,7 @@ scan:
                 [-results-dir=/path/to/results]
                 [-log-dir=/path/to/log]
                 [-cachedb-path=/path/to/cache.db]
-                [-ssh-external]
+                [-ssh-native-insecure]
                 [-containers-only]
                 [-skip-broken]
                 [-http-proxy=http://192.168.0.1:8080]
@@ -801,23 +801,25 @@ scan:
         /path/to/results
   -skip-broken
         [For CentOS] yum update changelog with --skip-broken option
-  -ssh-external
-        Use external ssh command. Default: Use the Go native implementation
+  -ssh-native-insecure
+        Use Native Go implementation of SSH. Default: Use the external command
 ```
 
-## -ssh-external option
+## -ssh-native-insecure option
 
 Vuls supports different types of SSH.  
 
-By Default, using a native Go implementation from crypto/ssh.   
-This is useful in situations where you may not have access to traditional UNIX tools.
-
-To use external SSH command, specify this option.   
+By Default, external SSH command will be used.
 This is useful If you want to use ProxyCommand or cipher algorithm of SSH that is not supported by native go implementation.  
 Don't forget to add below line to /etc/sudoers on the target servers. (username: vuls)
 ```
 Defaults:vuls !requiretty
 ```
+
+To use native Go implementation from crypto/ssh, specify this option.   
+This is useful in situations where you may not have access to traditional UNIX tools.
+But It is important to note that this mode does not check the host key.
+
 
 
 ## -ask-key-password option

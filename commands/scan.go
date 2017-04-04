@@ -44,7 +44,7 @@ type ScanCmd struct {
 	askKeyPassword bool
 	containersOnly bool
 	skipBroken     bool
-	sshExternal    bool
+	sshNative      bool
 	pipe           bool
 }
 
@@ -62,7 +62,7 @@ func (*ScanCmd) Usage() string {
 		[-results-dir=/path/to/results]
 		[-log-dir=/path/to/log]
 		[-cachedb-path=/path/to/cache.db]
-		[-ssh-external]
+		[-ssh-native-insecure]
 		[-containers-only]
 		[-skip-broken]
 		[-http-proxy=http://192.168.0.1:8080]
@@ -97,10 +97,10 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		"/path/to/cache.db (local cache of changelog for Ubuntu/Debian)")
 
 	f.BoolVar(
-		&p.sshExternal,
-		"ssh-external",
+		&p.sshNative,
+		"ssh-native-insecure",
 		false,
-		"Use external ssh command. Default: Use the Go native implementation")
+		"Use Native Go implementation of SSH. Default: Use the external command")
 
 	f.BoolVar(
 		&p.containersOnly,
@@ -202,7 +202,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	c.Conf.ResultsDir = p.resultsDir
 	c.Conf.CacheDBPath = p.cacheDBPath
-	c.Conf.SSHExternal = p.sshExternal
+	c.Conf.SSHNative = p.sshNative
 	c.Conf.HTTPProxy = p.httpProxy
 	c.Conf.ContainersOnly = p.containersOnly
 	c.Conf.SkipBroken = p.skipBroken
