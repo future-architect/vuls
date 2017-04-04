@@ -668,6 +668,7 @@ configtest:
                         [-log-dir=/path/to/log]
                         [-ask-key-password]
                         [-ssh-external]
+                        [-containers-only]
                         [-timeout=300]
                         [-http-proxy=http://192.168.0.1:8080]
                         [-debug]
@@ -677,6 +678,8 @@ configtest:
         Ask ssh privatekey password before scanning
   -config string
         /path/to/toml (default "/Users/kotakanbe/go/src/github.com/future-architect/vuls/config.toml")
+  -containers-only
+        Test containers only. Default: Test both of hosts and containers
   -debug
         debug mode
   -http-proxy string
