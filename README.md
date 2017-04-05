@@ -724,7 +724,11 @@ In order to scan, the following dependencies are required, so you need to instal
 
 ## Check /etc/sudoers 
 
-The configtest subcommand checks sudo settings on target servers whether Vuls is able to SUDO with nopassword via SSH.  
+The configtest subcommand checks sudo settings on target servers whether Vuls is able to SUDO with nopassword via SSH. And if you run Vuls without -ssh-native-insecure option, requiretty must be defined in /etc/sudoers.
+```
+Defaults:vuls !requiretty
+```
+For details, see [-ssh-native-insecure option](#-ssh-native-insecure-option)
 
 Example of /etc/sudoers on target servers
 
@@ -848,7 +852,7 @@ With this sample command, it will ..
 ## Example: Scan via shell instead of SSH.
 
 Vuls scans localhost instead of SSH if the host address is `localhst or 127.0.0.1` and the port is `local` in config.
-For more details, see [Architecture section](https://github.com/future-architect/vuls#architecture)
+For more details, see [Architecture section](#architecture)
 
 - config.toml
   ```
@@ -873,7 +877,7 @@ see [Docker Blog:Why you don't need to run SSHd in your Docker containers](https
 ### Docker
 
 Vuls scans Docker containers via `docker exec` instead of SSH.  
-For more details, see [Architecture section](https://github.com/future-architect/vuls#architecture)
+For more details, see [Architecture section](#architecture)
 
 - To scan all of running containers  
   `"${running}"` needs to be set in the containers item.
