@@ -352,6 +352,8 @@ Paste from the clipboard to ~/.ssh/.authorized_keys
 パスワードありのsudoはセキュリティ上の理由からサポート指定いないので、スキャンに必要なコマンドは、`NOPASSAWORD`として、remote host上の`etc/sudoers`に定義しておく。
 See [Usage: Configtest#Check /etc/sudoers](#check-etcsudoers)
 
+また、localhostのknown_hostsにremote hostのホストキーが登録されている必要があるので確認すること。
+
 ## Step4. Config
 
 - Localhost
