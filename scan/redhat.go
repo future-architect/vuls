@@ -509,10 +509,6 @@ func (o *redhat) getChangelogCVELines(rpm2changelog map[string]*string, packInfo
 	return retLine
 }
 
-var yumChangelogFirstPattern = regexp.MustCompile(`^ChangeLog for: `)
-var yumChangelogNextPattern = regexp.MustCompile(`^ {13}: `)
-var yumChangelogLastPattern = regexp.MustCompile(`\,$`)
-
 func (o *redhat) divideChangelogByPackage(allChangelog string) (map[string]*string, error) {
 	var majorVersion int
 	var err error
@@ -558,16 +554,16 @@ func (o *redhat) divideChangelogByPackage(allChangelog string) (map[string]*stri
 		} else {
 			/* for CentOS6,7 (yum-util >= 1.1.20) */
 			line := orglines[i]
-			if yumChangelogFirstPattern.MatchString(line) {
-				line = o.regexpReplace(line, `^ChangeLog for: `, "")
-				if yumChangelogLastPattern.MatchString(line) {
+			if strings.HasPrefix(line, "ChangeLog for: ") {
+				line = strings.TrimPrefix(line, "ChangeLog for: ")
+				if strings.HasSuffix(line, ",") {
 					tmpline = fmt.Sprintf("%s", line)
 				} else {
 					lines = append(lines, line)
 				}
-			} else if yumChangelogNextPattern.MatchString(line) {
-				line = o.regexpReplace(line, `^ {13}: `, "")
-				if yumChangelogLastPattern.MatchString(line) {
+			} else if strings.HasPrefix(line, "             : ") {
+				line = strings.TrimPrefix(line, "             : ")
+				if strings.HasSuffix(line, ",") {
 					tmpline = fmt.Sprintf("%s%s", tmpline, line)
 				} else {
 					tmpline = fmt.Sprintf("%s%s", tmpline, line)

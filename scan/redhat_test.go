@@ -1173,6 +1173,26 @@ func TestGetChangelogCVELines(t *testing.T) {
 - fix CVE-2014-9653 (malformed elf file causes access to uninitialized memory)
 `,
 		},
+		{
+			models.PackageInfo{
+				Name:       "openssl",
+				NewVersion: "1.0.1e",
+				NewRelease: "60.el7_3.1",
+			},
+			`- fix CVE-2017-3731 - DoS via truncated packets with RC4-MD5 cipher
+- fix CVE-2016-8610 - DoS of single-threaded servers via excessive alerts
+`,
+		},
+		{
+			models.PackageInfo{
+				Name:       "openssl-libs",
+				NewVersion: "1.0.1e",
+				NewRelease: "60.el7_3.1",
+			},
+			`- fix CVE-2017-3731 - DoS via truncated packets with RC4-MD5 cipher
+- fix CVE-2016-8610 - DoS of single-threaded servers via excessive alerts
+`,
+		},
 	}
 
 	r := newRedhat(config.ServerInfo{})
