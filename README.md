@@ -818,7 +818,7 @@ Defaults:vuls !requiretty
 
 To use native Go implementation from crypto/ssh, specify this option.   
 This is useful in situations where you may not have access to traditional UNIX tools.
-But It is important to note that this mode does not check the host key.
+But it is important to note that this mode does not check the host key.
 
 
 

@@ -83,7 +83,7 @@ func (c Config) ValidateOnConfigtest() bool {
 	errs := []error{}
 
 	if runtime.GOOS == "windows" && !c.SSHNative {
-		errs = append(errs, fmt.Errorf("-ssh-native is needed on windows"))
+		errs = append(errs, fmt.Errorf("-ssh-native-insecure is needed on windows"))
 	}
 
 	_, err := valid.ValidateStruct(c)
