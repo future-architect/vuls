@@ -350,7 +350,9 @@ $ vim ~/.ssh/authorized_keys
 Paste from the clipboard to ~/.ssh/.authorized_keys
 
 パスワードありのsudoはセキュリティ上の理由からサポート指定いないので、スキャンに必要なコマンドは、`NOPASSAWORD`として、remote host上の`etc/sudoers`に定義しておく。
-See [Usage: Configtest#Check /etc/sudoers](https://github.com/future-architect/vuls#check-etcsudoers)
+See [Usage: Configtest#Check /etc/sudoers](#check-etcsudoers)
+
+また、localhostのknown_hostsにremote hostのホストキーが登録されている必要があるので確認すること。
 
 ## Step4. Config
 
@@ -642,14 +644,14 @@ host         = "172.31.4.82"
     - port: SSH Port number
     - user: SSH username
     - keyPath: SSH private key path
-    - cpeNames: see [Usage: Scan vulnerability of non-OS package](https://github.com/future-architect/vuls/blob/master/README.ja.md#usage-scan-vulnerability-of-non-os-package)
+    - cpeNames: see [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerability-of-non-os-package)
     - ignoreCves: CVE IDs that will not be reported. But output to JSON file.
     - optional: JSONレポートに含めたい追加情報
-    - containers: see [Usage: Scan Docker containers](https://github.com/future-architect/vuls/blob/master/README.ja.md#usage-scan-docker-containers)
+    - containers: see [Usage: Scan Docker containers](#usage-scan-docker-containers)
 
 
     Vulsは各サーバにSSHで接続するが、OSコマンドでの接続と、Goのネイティブ実装の２種類のSSH接続方法をサポートしている。
-    詳細は [-ssh-native-insecure option](https://github.com/future-architect/vuls/blob/master/README.ja.md#-ssh-native-insecure-option) を参照。
+    詳細は [-ssh-native-insecure option](#-ssh-native-insecure-option) を参照。
 
     また、以下のSSH認証をサポートしている。
     - SSH agent
@@ -714,7 +716,13 @@ configtestサブコマンドは以下をチェックする
 
 ## Check /etc/sudoers 
 
-スキャン対象サーバに対してパスワードなしでSUDO可能な状態かもチェックする。  
+スキャン対象サーバに対してパスワードなしでSUDO可能な状態か確認する。  
+また、requirettyも定義されているか確認する。(--ssh-native-insecureオプションでscanする場合はrequirettyは定義しなくても良い)
+```
+Defaults:vuls !requiretty
+```
+For details, see [-ssh-native-insecure option](#-ssh-native-insecure-option)
+
 スキャン対象サーバ上の`/etc/sudoers`のサンプル
 
 - CentOS
@@ -836,7 +844,7 @@ $ vuls scan server1 server2
 
 ローカルホストのスキャンする場合、SSHではなく直接コマンドの発行が可能。  
 config.tomlのhostに`localhost または 127.0.0.1`かつ、portに`local`を設定する必要がある。  
-For more details, see [Architecture section](https://github.com/future-architect/vuls#architecture)
+For more details, see [Architecture section](#architecture)
 
 - config.toml
   ```
@@ -863,7 +871,7 @@ Defaults:vuls !requiretty
 ### Docker
 
 Vulsは、DockerホストにSSHで接続し、`docker exec`でDockerコンテナにコマンドを発行して脆弱性をスキャンする。  
-詳細は、[Architecture section](https://github.com/future-architect/vuls#architecture)を参照
+詳細は、[Architecture section](#architecture)を参照
 
 - 全ての起動中のDockerコンテナをスキャン  
   `"${running}"` をcontainersに指定する

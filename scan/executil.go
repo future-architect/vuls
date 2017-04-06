@@ -259,8 +259,7 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 
 	defaultSSHArgs := []string{
 		"-tt",
-		"-o", "StrictHostKeyChecking=no",
-		"-o", "UserKnownHostsFile=/dev/null",
+		"-o", "StrictHostKeyChecking=yes",
 		"-o", "LogLevel=quiet",
 		"-o", "ConnectionAttempts=3",
 		"-o", "ConnectTimeout=10",
