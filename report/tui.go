@@ -776,10 +776,11 @@ func detailLines() (string, error) {
 	cweURL := cweURL(cveInfo.CveDetail.CweID())
 
 	links := []string{
-		fmt.Sprintf("[NVD]( %s )", fmt.Sprintf("%s?vulnId=%s", nvdBaseURL, cveID)),
+		fmt.Sprintf("[NVD]( %s )", fmt.Sprintf("%s/%s", nvdBaseURL, cveID)),
 		fmt.Sprintf("[MITRE]( %s )", fmt.Sprintf("%s%s", mitreBaseURL, cveID)),
 		fmt.Sprintf("[CveDetais]( %s )", fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID)),
-		fmt.Sprintf("[CVSSv2 Caluclator]( %s )", fmt.Sprintf(cvssV2CalcURLTemplate, cveID, cvssVector)),
+		fmt.Sprintf("[CVSSv2 Calc]( %s )", fmt.Sprintf(cvssV2CalcBaseURL, cveID)),
+		fmt.Sprintf("[CVSSv3 Calc]( %s )", fmt.Sprintf(cvssV3CalcBaseURL, cveID)),
 	}
 	dlinks := distroLinks(cveInfo, currentScanResult.Family)
 	for _, link := range dlinks {

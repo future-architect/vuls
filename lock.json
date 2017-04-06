@@ -1,5 +1,5 @@
 {
-    "memo": "140762535167718dbd48285b8f9333e5bd98cfdf0e07db7d4a3c823e1d898f83",
+    "memo": "404d058cf6b46d820e153afc5721e1ab2aa2b10ec345d969b9c460097f99add3",
     "projects": [
         {
             "name": "github.com/Azure/azure-storage-go",
@@ -193,7 +193,7 @@
         {
             "name": "github.com/kotakanbe/go-cve-dictionary",
             "branch": "master",
-            "revision": "65eb51c29cf8f7d708c3baa5d2b6cf4992f4b997",
+            "revision": "8fb43afc719094af43ed782c567d30b58557ac78",
             "packages": [
                 "config",
                 "db",
@@ -303,7 +303,7 @@
         {
             "name": "golang.org/x/crypto",
             "branch": "master",
-            "revision": "3cb07270c9455e8ad27956a70891c962d121a228",
+            "revision": "c2303dcbe84172e0c0da4c9f083eeca54c06f298",
             "packages": [
                 "curve25519",
                 "ed25519",
@@ -326,7 +326,7 @@
         {
             "name": "golang.org/x/sys",
             "branch": "master",
-            "revision": "9a7256cb28ed514b4e1e5f68959914c4c28a92e0",
+            "revision": "39e3dc274464e7d2f663aa606a830611bae5f1db",
             "packages": [
                 "unix"
             ]
