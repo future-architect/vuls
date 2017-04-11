@@ -268,15 +268,12 @@ func formatPlainTextUnknownCve(cveInfo models.CveInfo, osFamily string) string {
 	dtable.AddRow(cveID)
 	dtable.AddRow("-------------")
 	dtable.AddRow("Score", "?")
-	dtable.AddRow("NVD",
-		fmt.Sprintf("%s?vulnId=%s", nvdBaseURL, cveID))
-	dtable.AddRow("CVE Details",
-		fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID))
-
+	dtable.AddRow("NVD", fmt.Sprintf("%s/%s", nvdBaseURL, cveID))
 	dlinks := distroLinks(cveInfo, osFamily)
 	for _, link := range dlinks {
 		dtable.AddRow(link.title, link.url)
 	}
+	dtable.AddRow("CVE Details", fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID))
 	dtable = addPackageInfos(dtable, cveInfo.Packages)
 	dtable = addCpeNames(dtable, cveInfo.CpeNames)
 	dtable.AddRow("Confidence", cveInfo.VulnInfo.Confidence)
@@ -310,10 +307,11 @@ func formatPlainTextDetailsLangJa(cveInfo models.CveInfo, osFamily string) strin
 	dtable.AddRow(cveDetail.CweID()+"(JVN)", cweJvnURL(cveDetail.CweID()))
 
 	dtable.AddRow("JVN", jvn.Link())
-	dtable.AddRow("NVD", fmt.Sprintf("%s?vulnId=%s", nvdBaseURL, cveID))
+	dtable.AddRow("NVD", fmt.Sprintf("%s/%s", nvdBaseURL, cveID))
 	dtable.AddRow("MITRE", fmt.Sprintf("%s%s", mitreBaseURL, cveID))
 	dtable.AddRow("CVE Details", fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID))
-	dtable.AddRow("CVSS Claculator", cveDetail.CvssV2CalculatorLink("ja"))
+	dtable.AddRow("CVSSv2 Clac", fmt.Sprintf(cvssV2CalcBaseURL, cveID))
+	dtable.AddRow("CVSSv3 Clac", fmt.Sprintf(cvssV3CalcBaseURL, cveID))
 
 	dlinks := distroLinks(cveInfo, osFamily)
 	for _, link := range dlinks {
@@ -352,10 +350,11 @@ func formatPlainTextDetailsLangEn(d models.CveInfo, osFamily string) string {
 	dtable.AddRow("Summary", nvd.CveSummary())
 	dtable.AddRow("CWE", cweURL(cveDetail.CweID()))
 
-	dtable.AddRow("NVD", fmt.Sprintf("%s?vulnId=%s", nvdBaseURL, cveID))
+	dtable.AddRow("NVD", fmt.Sprintf("%s/%s", nvdBaseURL, cveID))
 	dtable.AddRow("MITRE", fmt.Sprintf("%s%s", mitreBaseURL, cveID))
 	dtable.AddRow("CVE Details", fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID))
-	dtable.AddRow("CVSS Claculator", cveDetail.CvssV2CalculatorLink("en"))
+	dtable.AddRow("CVSSv2 Clac", fmt.Sprintf(cvssV2CalcBaseURL, cveID))
+	dtable.AddRow("CVSSv3 Clac", fmt.Sprintf(cvssV3CalcBaseURL, cveID))
 
 	links := distroLinks(d, osFamily)
 	for _, link := range links {
@@ -373,7 +372,7 @@ type distroLink struct {
 	url   string
 }
 
-// addVendorSite add Vendor site of the CVE to table
+// distroLinks add Vendor URL of the CVE to table
 func distroLinks(cveInfo models.CveInfo, osFamily string) []distroLink {
 	cveID := cveInfo.CveDetail.CveID
 	switch osFamily {

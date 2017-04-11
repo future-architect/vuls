@@ -358,8 +358,8 @@ func CheckIfSudoNoPasswd(timeoutSec int) {
 }
 
 // DetectPlatforms detects the platform of each servers.
-func DetectPlatforms() {
-	detectPlatforms()
+func DetectPlatforms(timeoutSec int) {
+	detectPlatforms(timeoutSec)
 	for i, s := range servers {
 		if s.getServerInfo().IsContainer() {
 			util.Log.Infof("(%d/%d) %s on %s is running on %s",
@@ -380,8 +380,7 @@ func DetectPlatforms() {
 	return
 }
 
-func detectPlatforms() {
-	timeoutSec := 1 * 60
+func detectPlatforms(timeoutSec int) {
 	parallelExec(func(o osTypeInterface) error {
 		o.detectPlatform()
 		// Logging only if platform can not be specified
@@ -391,7 +390,7 @@ func detectPlatforms() {
 }
 
 // Scan scan
-func Scan() error {
+func Scan(timeoutSec int) error {
 	if len(servers) == 0 {
 		return fmt.Errorf("No server defined. Check the configuration")
 	}
@@ -411,7 +410,7 @@ func Scan() error {
 	if err != nil {
 		return err
 	}
-	if err := scanVulns(dir, scannedAt); err != nil {
+	if err := scanVulns(dir, scannedAt, timeoutSec); err != nil {
 		return err
 	}
 
@@ -435,9 +434,8 @@ func setupChangelogCache() error {
 	return nil
 }
 
-func scanVulns(jsonDir string, scannedAt time.Time) error {
+func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 	var results models.ScanResults
-	timeoutSec := 120 * 60
 	parallelExec(func(o osTypeInterface) error {
 		return o.scanPackages()
 	}, timeoutSec)

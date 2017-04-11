@@ -183,7 +183,7 @@ func toSlackAttachments(scanResult models.ScanResult) (attaches []*attachment) {
 
 		a := attachment{
 			Title:     cveID,
-			TitleLink: fmt.Sprintf("%s?vulnId=%s", nvdBaseURL, cveID),
+			TitleLink: fmt.Sprintf("%s/%s", nvdBaseURL, cveID),
 			Text:      attachmentText(cveInfo, scanResult.Family),
 			MrkdwnIn:  []string{"text", "pretext"},
 			Fields: []*field{
@@ -230,8 +230,7 @@ func attachmentText(cveInfo models.CveInfo, osFamily string) string {
 		return fmt.Sprintf("*%4.1f (%s)* <%s|%s>\n%s\n%s\n*Confidence:* %v",
 			cveInfo.CveDetail.CvssScore(config.Conf.Lang),
 			jvn.CvssSeverity(),
-			fmt.Sprintf(cvssV2CalcURLTemplate,
-				cveInfo.CveDetail.CveID, jvn.CvssVector()),
+			fmt.Sprintf(cvssV2CalcBaseURL, cveInfo.CveDetail.CveID),
 			jvn.CvssVector(),
 			jvn.CveTitle(),
 			linkText,
@@ -242,8 +241,7 @@ func attachmentText(cveInfo models.CveInfo, osFamily string) string {
 		return fmt.Sprintf("*%4.1f (%s)* <%s|%s>\n%s\n%s\n*Confidence:* %v",
 			cveInfo.CveDetail.CvssScore(config.Conf.Lang),
 			nvd.CvssSeverity(),
-			fmt.Sprintf(cvssV2CalcURLTemplate,
-				cveInfo.CveDetail.CveID, nvd.CvssVector()),
+			fmt.Sprintf(cvssV2CalcBaseURL, cveInfo.CveDetail.CveID),
 			nvd.CvssVector(),
 			nvd.CveSummary(),
 			linkText,
@@ -274,16 +272,15 @@ func links(cveInfo models.CveInfo, osFamily string) string {
 		jvn := fmt.Sprintf("<%s|JVN>", cveInfo.CveDetail.Jvn.Link())
 		links = append(links, jvn)
 	}
-	links = append(links, fmt.Sprintf("<%s|CVEDetails>",
-		fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID)))
-	links = append(links, fmt.Sprintf("<%s|MITRE>",
-		fmt.Sprintf("%s%s", mitreBaseURL, cveID)))
-
 	dlinks := distroLinks(cveInfo, osFamily)
 	for _, link := range dlinks {
 		links = append(links,
 			fmt.Sprintf("<%s|%s>", link.url, link.title))
 	}
+	links = append(links, fmt.Sprintf("<%s|MITRE>",
+		fmt.Sprintf("%s%s", mitreBaseURL, cveID)))
+	links = append(links, fmt.Sprintf("<%s|CVEDetails>",
+		fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID)))
 
 	return strings.Join(links, " / ")
 }

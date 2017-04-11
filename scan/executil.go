@@ -151,10 +151,10 @@ func exec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (resul
 	if c.Port == "local" &&
 		(c.Host == "127.0.0.1" || c.Host == "localhost") {
 		result = localExec(c, cmd, sudo)
-	} else if conf.Conf.SSHExternal {
-		result = sshExecExternal(c, cmd, sudo)
-	} else {
+	} else if conf.Conf.SSHNative {
 		result = sshExecNative(c, cmd, sudo)
+	} else {
+		result = sshExecExternal(c, cmd, sudo)
 	}
 
 	logger := getSSHLogger(log...)
@@ -259,8 +259,7 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 
 	defaultSSHArgs := []string{
 		"-tt",
-		"-o", "StrictHostKeyChecking=no",
-		"-o", "UserKnownHostsFile=/dev/null",
+		"-o", "StrictHostKeyChecking=yes",
 		"-o", "LogLevel=quiet",
 		"-o", "ConnectionAttempts=3",
 		"-o", "ConnectTimeout=10",

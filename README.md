@@ -330,7 +330,7 @@ For details of dependent libraries, see [Dependencies on Target Servers](#depend
 ## Step3. Enable to SSH from Localhost
 
 Vuls doesn't support SSH password authentication. So you have to use SSH key-based authentication.  
-Create a keypair on the localhost then append public key to authorized_keys on the remote host.
+Create a keypair on the localhost then append public key to authorized_keys on the remote host.  
 
 - Localhost
 ```bash
@@ -348,8 +348,10 @@ $ vim ~/.ssh/authorized_keys
 ```
 Paste from the clipboard to ~/.ssh/.authorized_keys
 
-And also, SUDO with password is not supported for security reasons. So you have to define NOPASSWORD in /etc/sudoers on target servers.  
-See [Usage: Configtest#Check /etc/sudoers](https://github.com/future-architect/vuls#check-etcsudoers)
+SUDO with password is not supported for security reasons. So you have to define NOPASSWORD in /etc/sudoers on target servers.  
+See [Usage: Configtest#Check /etc/sudoers](#check-etcsudoers)
+
+And also, confirm that the host keys of scan target servers has been registered in the known_hosts of the Localhost.
 
 ## Step4. Config
 
@@ -652,12 +654,12 @@ You can customize your configuration using this template.
     - port: SSH Port number
     - user: SSH username
     - keyPath: SSH private key path
-    - cpeNames: see [Usage: Scan vulnerability of non-OS package](https://github.com/future-architect/vuls#usage-scan-vulnerability-of-non-os-package)
+    - cpeNames: see [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerability-of-non-os-package)
     - ignoreCves: CVE IDs that will not be reported. But output to JSON file.
     - optional: Add additional information to JSON report.
     - containers: see [Example: Scan containers (Docker/LXD)(#example-scan-containers-dockerlxd)
 
-    Vuls supports two types of SSH. One is native go implementation. The other is external SSH command. For details, see [-ssh-external option](https://github.com/future-architect/vuls#-ssh-external-option)
+    Vuls supports two types of SSH. One is external command. The other is native go implementation. For details, see [-ssh-native-insecure option](#-ssh-native-insecure-option)
 
     Multiple SSH authentication methods are supported.  
     - SSH agent
@@ -675,7 +677,7 @@ configtest:
                         [-config=/path/to/config.toml]
                         [-log-dir=/path/to/log]
                         [-ask-key-password]
-                        [-ssh-external]
+                        [-ssh-native-insecure]
                         [-containers-only]
                         [-timeout=300]
                         [-debug]
@@ -693,8 +695,8 @@ configtest:
         http://proxy-url:port (default: empty)
   -log-dir string
         /path/to/log (default "/var/log/vuls")
-  -ssh-external
-        Use external ssh command. Default: Use the Go native implementation
+  -ssh-native-insecure
+        Use Native Go implementation of SSH. Default: Use the external command
   -timeout int
         Timeout(Sec) (default 300)
 
@@ -724,7 +726,11 @@ In order to scan, the following dependencies are required, so you need to instal
 
 ## Check /etc/sudoers 
 
-The configtest subcommand checks sudo settings on target servers whether Vuls is able to SUDO with nopassword via SSH.  
+The configtest subcommand checks sudo settings on target servers whether Vuls is able to SUDO with nopassword via SSH. And if you run Vuls without -ssh-native-insecure option, requiretty must be defined in /etc/sudoers.
+```
+Defaults:vuls !requiretty
+```
+For details, see [-ssh-native-insecure option](#-ssh-native-insecure-option)
 
 Example of /etc/sudoers on target servers
 
@@ -772,13 +778,15 @@ scan:
                 [-results-dir=/path/to/results]
                 [-log-dir=/path/to/log]
                 [-cachedb-path=/path/to/cache.db]
-                [-ssh-external]
+                [-ssh-native-insecure]
                 [-containers-only]
                 [-skip-broken]
                 [-http-proxy=http://192.168.0.1:8080]
                 [-ask-key-password]
                 [-debug]
                 [-pipe]
+                [-timeout]
+                [-timeout-scan]
 
                 [SERVER]...
   -ask-key-password
@@ -801,23 +809,29 @@ scan:
         /path/to/results
   -skip-broken
         [For CentOS] yum update changelog with --skip-broken option
-  -ssh-external
-        Use external ssh command. Default: Use the Go native implementation
+  -ssh-native-insecure
+        Use Native Go implementation of SSH. Default: Use the external command
+  -timeout int
+        Number of seconds for detecting platform for all servers (default 60)
+  -timeout-scan int
+        Number of second for scaning vulnerabilities for all servers (default 7200)
 ```
 
-## -ssh-external option
+## -ssh-native-insecure option
 
 Vuls supports different types of SSH.  
 
-By Default, using a native Go implementation from crypto/ssh.   
-This is useful in situations where you may not have access to traditional UNIX tools.
-
-To use external SSH command, specify this option.   
+By Default, external SSH command will be used.
 This is useful If you want to use ProxyCommand or cipher algorithm of SSH that is not supported by native go implementation.  
 Don't forget to add below line to /etc/sudoers on the target servers. (username: vuls)
 ```
 Defaults:vuls !requiretty
 ```
+
+To use native Go implementation from crypto/ssh, specify this option.   
+This is useful in situations where you may not have access to traditional UNIX tools.
+But it is important to note that this mode does not check the host key.
+
 
 
 ## -ask-key-password option
@@ -846,7 +860,7 @@ With this sample command, it will ..
 ## Example: Scan via shell instead of SSH.
 
 Vuls scans localhost instead of SSH if the host address is `localhst or 127.0.0.1` and the port is `local` in config.
-For more details, see [Architecture section](https://github.com/future-architect/vuls#architecture)
+For more details, see [Architecture section](#architecture)
 
 - config.toml
   ```
@@ -871,7 +885,7 @@ see [Docker Blog:Why you don't need to run SSHd in your Docker containers](https
 ### Docker
 
 Vuls scans Docker containers via `docker exec` instead of SSH.  
-For more details, see [Architecture section](https://github.com/future-architect/vuls#architecture)
+For more details, see [Architecture section](#architecture)
 
 - To scan all of running containers  
   `"${running}"` needs to be set in the containers item.

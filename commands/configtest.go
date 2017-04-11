@@ -36,7 +36,7 @@ type ConfigtestCmd struct {
 	logDir         string
 	askKeyPassword bool
 	containersOnly bool
-	sshExternal    bool
+	sshNative      bool
 	httpProxy      string
 	timeoutSec     int
 
@@ -94,10 +94,10 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 	)
 
 	f.BoolVar(
-		&p.sshExternal,
-		"ssh-external",
+		&p.sshNative,
+		"ssh-native-insecure",
 		false,
-		"Use external ssh command. Default: Use the Go native implementation")
+		"Use Native Go implementation of SSH. Default: Use the external command")
 
 	f.BoolVar(
 		&p.containersOnly,
@@ -130,7 +130,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		util.Log.Errorf("Please check README: https://github.com/future-architect/vuls#configuration")
 		return subcommands.ExitUsageError
 	}
-	c.Conf.SSHExternal = p.sshExternal
+	c.Conf.SSHNative = p.sshNative
 	c.Conf.HTTPProxy = p.httpProxy
 	c.Conf.ContainersOnly = p.containersOnly
 
