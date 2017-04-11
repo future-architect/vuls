@@ -41,21 +41,20 @@ type Config struct {
 	Default ServerInfo
 	Servers map[string]ServerInfo
 
-	CveDictionaryURL string `valid:"url"`
-
 	CvssScoreOver      float64
 	IgnoreUnscoredCves bool
 
-	AssumeYes      bool
-	SSHExternal    bool
+	SSHNative      bool
 	ContainersOnly bool
 	SkipBroken     bool
 
-	HTTPProxy   string `valid:"url"`
-	LogDir      string
-	ResultsDir  string
+	HTTPProxy  string `valid:"url"`
+	LogDir     string
+	ResultsDir string
+
 	CveDBType   string
 	CveDBPath   string
+	CveDBURL    string
 	CacheDBPath string
 
 	FormatXML         bool
@@ -76,14 +75,15 @@ type Config struct {
 	AzureContainer string
 
 	Pipe bool
+	Diff bool
 }
 
 // ValidateOnConfigtest validates
 func (c Config) ValidateOnConfigtest() bool {
 	errs := []error{}
 
-	if runtime.GOOS == "windows" && c.SSHExternal {
-		errs = append(errs, fmt.Errorf("-ssh-external cannot be used on windows"))
+	if runtime.GOOS == "windows" && !c.SSHNative {
+		errs = append(errs, fmt.Errorf("-ssh-native-insecure is needed on windows"))
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -114,8 +114,8 @@ func (c Config) ValidateOnScan() bool {
 		}
 	}
 
-	if runtime.GOOS == "windows" && c.SSHExternal {
-		errs = append(errs, fmt.Errorf("-ssh-external cannot be used on windows"))
+	if runtime.GOOS == "windows" && !c.SSHNative {
+		errs = append(errs, fmt.Errorf("-ssh-native-insecure is needed on windows"))
 	}
 
 	if len(c.ResultsDir) != 0 {
@@ -155,16 +155,21 @@ func (c Config) ValidateOnReport() bool {
 		}
 	}
 
-	if c.CveDBType != "sqlite3" && c.CveDBType != "mysql" {
-		errs = append(errs, fmt.Errorf(
-			"CVE DB type must be either 'sqlite3' or 'mysql'.  -cve-dictionary-dbtype: %s", c.CveDBType))
-	}
-
-	if c.CveDBType == "sqlite3" {
+	switch c.CveDBType {
+	case "sqlite3":
 		if ok, _ := valid.IsFilePath(c.CveDBPath); !ok {
 			errs = append(errs, fmt.Errorf(
-				"SQLite3 DB(CVE-Dictionary) path must be a *Absolute* file path. -cve-dictionary-dbpath: %s", c.CveDBPath))
+				"SQLite3 DB(CVE-Dictionary) path must be a *Absolute* file path. -cvedb-path: %s",
+				c.CveDBPath))
 		}
+	case "mysql":
+		if c.CveDBURL == "" {
+			errs = append(errs, fmt.Errorf(
+				`MySQL connection string is needed. -cvedb-url="user:pass@tcp(localhost:3306)/dbname"`))
+		}
+	default:
+		errs = append(errs, fmt.Errorf(
+			"CVE DB type must be either 'sqlite3' or 'mysql'.  -cvedb-type: %s", c.CveDBType))
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -339,7 +344,7 @@ type ServerInfo struct {
 	DependencyCheckXMLPath string
 
 	// Container Names or IDs
-	Containers []string
+	Containers Containers
 
 	IgnoreCves []string
 
@@ -394,10 +399,16 @@ func (s *ServerInfo) SetContainer(d Container) {
 	s.Container = d
 }
 
+// Containers has Containers information.
+type Containers struct {
+	Type     string
+	Includes []string
+	Excludes []string
+}
+
 // Container has Container information.
 type Container struct {
 	ContainerID string
 	Name        string
-	Type        string
 	Image       string
 }

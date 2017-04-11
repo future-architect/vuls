@@ -79,7 +79,7 @@ type ScanResult struct {
 
 // FillCveDetail fetches CVE detailed information from
 // CVE Database, and then set to fields.
-func (r ScanResult) FillCveDetail() (ScanResult, error) {
+func (r ScanResult) FillCveDetail() (*ScanResult, error) {
 	set := map[string]VulnInfo{}
 	var cveIDs []string
 	for _, v := range r.ScannedCves {
@@ -89,7 +89,7 @@ func (r ScanResult) FillCveDetail() (ScanResult, error) {
 
 	ds, err := cveapi.CveClient.FetchCveDetails(cveIDs)
 	if err != nil {
-		return r, err
+		return nil, err
 	}
 
 	known, unknown, ignored := CveInfos{}, CveInfos{}, CveInfos{}
@@ -128,7 +128,7 @@ func (r ScanResult) FillCveDetail() (ScanResult, error) {
 	r.KnownCves = known
 	r.UnknownCves = unknown
 	r.IgnoredCves = ignored
-	return r, nil
+	return &r, nil
 }
 
 // FilterByCvssOver is filter function.
@@ -541,6 +541,7 @@ type Container struct {
 	ContainerID string
 	Name        string
 	Image       string
+	Type        string
 }
 
 // Platform has platform information

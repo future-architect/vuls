@@ -259,7 +259,7 @@ func detectContainerOSes() (actives, inactives []osTypeInterface) {
 
 func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeInterface) {
 	containerHostInfo := containerHost.getServerInfo()
-	if len(containerHostInfo.Containers) == 0 {
+	if len(containerHostInfo.Containers.Includes) == 0 {
 		return
 	}
 
@@ -271,14 +271,24 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 		return append(oses, containerHost)
 	}
 
-	if containerHostInfo.Containers[0] == "${running}" {
+	if containerHostInfo.Containers.Includes[0] == "${running}" {
 		for _, containerInfo := range running {
+
+			found := false
+			for _, ex := range containerHost.getServerInfo().Containers.Excludes {
+				if containerInfo.Name == ex || containerInfo.ContainerID == ex {
+					found = true
+				}
+			}
+			if found {
+				continue
+			}
+
 			copied := containerHostInfo
 			copied.SetContainer(config.Container{
 				ContainerID: containerInfo.ContainerID,
 				Name:        containerInfo.Name,
 				Image:       containerInfo.Image,
-				Type:        containerHostInfo.Container.Type,
 			})
 			os := detectOS(copied)
 			oses = append(oses, os)
@@ -295,7 +305,7 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 	}
 
 	var exited, unknown []string
-	for _, container := range containerHostInfo.Containers {
+	for _, container := range containerHostInfo.Containers.Includes {
 		found := false
 		for _, c := range running {
 			if c.ContainerID == container || c.Name == container {
@@ -332,8 +342,7 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 }
 
 // CheckDependencies checks dependencies are installed on target servers.
-func CheckDependencies() {
-	timeoutSec := 5 * 60
+func CheckDependencies(timeoutSec int) {
 	parallelExec(func(o osTypeInterface) error {
 		return o.checkDependencies()
 	}, timeoutSec)
@@ -341,8 +350,7 @@ func CheckDependencies() {
 }
 
 // CheckIfSudoNoPasswd checks whether vuls can sudo with nopassword via SSH
-func CheckIfSudoNoPasswd() {
-	timeoutSec := 5 * 60
+func CheckIfSudoNoPasswd(timeoutSec int) {
 	parallelExec(func(o osTypeInterface) error {
 		return o.checkIfSudoNoPasswd()
 	}, timeoutSec)
@@ -350,8 +358,8 @@ func CheckIfSudoNoPasswd() {
 }
 
 // DetectPlatforms detects the platform of each servers.
-func DetectPlatforms() {
-	detectPlatforms()
+func DetectPlatforms(timeoutSec int) {
+	detectPlatforms(timeoutSec)
 	for i, s := range servers {
 		if s.getServerInfo().IsContainer() {
 			util.Log.Infof("(%d/%d) %s on %s is running on %s",
@@ -372,8 +380,7 @@ func DetectPlatforms() {
 	return
 }
 
-func detectPlatforms() {
-	timeoutSec := 1 * 60
+func detectPlatforms(timeoutSec int) {
 	parallelExec(func(o osTypeInterface) error {
 		o.detectPlatform()
 		// Logging only if platform can not be specified
@@ -383,7 +390,7 @@ func detectPlatforms() {
 }
 
 // Scan scan
-func Scan() error {
+func Scan(timeoutSec int) error {
 	if len(servers) == 0 {
 		return fmt.Errorf("No server defined. Check the configuration")
 	}
@@ -403,7 +410,7 @@ func Scan() error {
 	if err != nil {
 		return err
 	}
-	if err := scanVulns(dir, scannedAt); err != nil {
+	if err := scanVulns(dir, scannedAt, timeoutSec); err != nil {
 		return err
 	}
 
@@ -427,9 +434,8 @@ func setupChangelogCache() error {
 	return nil
 }
 
-func scanVulns(jsonDir string, scannedAt time.Time) error {
+func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 	var results models.ScanResults
-	timeoutSec := 120 * 60
 	parallelExec(func(o osTypeInterface) error {
 		return o.scanPackages()
 	}, timeoutSec)

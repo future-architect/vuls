@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/storage"
+	"github.com/Azure/azure-storage-go"
 
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -104,11 +104,19 @@ func CheckIfAzureContainerExists() error {
 	if err != nil {
 		return err
 	}
-	ok, err := cli.ContainerExists(c.Conf.AzureContainer)
+	r, err := cli.ListContainers(storage.ListContainersParameters{})
 	if err != nil {
 		return err
 	}
-	if !ok {
+
+	found := false
+	for _, con := range r.Containers {
+		if con.Name == c.Conf.AzureContainer {
+			found = true
+			break
+		}
+	}
+	if !found {
 		return fmt.Errorf("Container not found. Container: %s", c.Conf.AzureContainer)
 	}
 	return nil

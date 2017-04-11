@@ -139,9 +139,10 @@ host         = "{{$ip}}"
 #optional = [
 #    ["key", "value"],
 #]
-#containers = ["${running}"]
-#[servers.{{index $names $i}}.container]
+#[servers.{{index $names $i}}.containers]
 #type = "docker" #or "lxd" defualt: docker
+#includes = ["${running}"]
+#excludes = ["container_name_a", "4aa37a8b63b9"]
 
 
 {{end}}

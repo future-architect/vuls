@@ -127,11 +127,9 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		}
 
 		s.Containers = v.Containers
-		if len(s.Containers) == 0 {
+		if len(s.Containers.Includes) == 0 {
 			s.Containers = d.Containers
 		}
-
-		s.Container.Type = v.Container.Type
 
 		s.IgnoreCves = v.IgnoreCves
 		for _, cve := range d.IgnoreCves {

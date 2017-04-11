@@ -85,7 +85,7 @@ vuls v0.1.xxx xxxx
 
 1. fetch nvd (vuls/go-cve-dictionary)
 1. configuration (vuls/vuls)
-1. prepare (vuls/vuls)
+1. configtest (vuls/vuls)
 1. scan (vuls/vuls)
 1. vulsrepo (vuls/vulsrepo)
 
@@ -113,25 +113,16 @@ port        = "22"
 user        = "vuls-user"
 keyPath     = "/root/.ssh/id_rsa" # path to ssh private key in docker
 ```
-　
 
-```console
-$ docker run --rm \
-    -v ~/.ssh:/root/.ssh:ro \
-    -v $PWD:/vuls \
-    -v $PWD/vuls-log:/var/log/vuls \
-    vuls/vuls configtest \
-    -config=./config.toml # path to config.toml in docker
-```
 
-## Step3. Prepare
+## Step3. Configtest
 
 ```console
 $ docker run --rm -it\
     -v ~/.ssh:/root/.ssh:ro \
     -v $PWD:/vuls \
     -v $PWD/vuls-log:/var/log/vuls \
-    vuls/vuls prepare \
+    vuls/vuls configtest \
     -config=./config.toml # path to config.toml in docker
 ```
 

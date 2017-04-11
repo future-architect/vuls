@@ -35,8 +35,10 @@ type ConfigtestCmd struct {
 	configPath     string
 	logDir         string
 	askKeyPassword bool
-	sshExternal    bool
+	containersOnly bool
+	sshNative      bool
 	httpProxy      string
+	timeoutSec     int
 
 	debug bool
 }
@@ -54,7 +56,9 @@ func (*ConfigtestCmd) Usage() string {
 			[-config=/path/to/config.toml]
 			[-log-dir=/path/to/log]
 			[-ask-key-password]
+			[-timeout=300]
 			[-ssh-external]
+			[-containers-only]
 			[-http-proxy=http://192.168.0.1:8080]
 			[-debug]
 
@@ -73,6 +77,8 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 
 	f.BoolVar(&p.debug, "debug", false, "debug mode")
 
+	f.IntVar(&p.timeoutSec, "timeout", 5*60, "Timeout(Sec)")
+
 	f.BoolVar(
 		&p.askKeyPassword,
 		"ask-key-password",
@@ -88,10 +94,16 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 	)
 
 	f.BoolVar(
-		&p.sshExternal,
-		"ssh-external",
+		&p.sshNative,
+		"ssh-native-insecure",
 		false,
-		"Use external ssh command. Default: Use the Go native implementation")
+		"Use Native Go implementation of SSH. Default: Use the external command")
+
+	f.BoolVar(
+		&p.containersOnly,
+		"containers-only",
+		false,
+		"Test containers only. Default: Test both of hosts and containers")
 }
 
 // Execute execute
@@ -114,10 +126,13 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	err = c.Load(p.configPath, keyPass)
 	if err != nil {
 		util.Log.Errorf("Error loading %s, %s", p.configPath, err)
+		util.Log.Errorf("If you update Vuls and get this error, there may be incompatible changes in config.toml")
+		util.Log.Errorf("Please check README: https://github.com/future-architect/vuls#configuration")
 		return subcommands.ExitUsageError
 	}
-	c.Conf.SSHExternal = p.sshExternal
+	c.Conf.SSHNative = p.sshNative
 	c.Conf.HTTPProxy = p.httpProxy
+	c.Conf.ContainersOnly = p.containersOnly
 
 	var servernames []string
 	if 0 < len(f.Args()) {
@@ -155,10 +170,10 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	}
 
 	util.Log.Info("Checking dependendies...")
-	scan.CheckDependencies()
+	scan.CheckDependencies(p.timeoutSec)
 
 	util.Log.Info("Checking sudo settings...")
-	scan.CheckIfSudoNoPasswd()
+	scan.CheckIfSudoNoPasswd(p.timeoutSec)
 
 	scan.PrintSSHableServerNames()
 	return subcommands.ExitSuccess

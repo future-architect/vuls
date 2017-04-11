@@ -68,7 +68,6 @@ Vulsのセットアップは以下の３パターンがある
 
 -  Dockerコンテナ上にセットアップ  
 see https://github.com/future-architect/vuls/tree/master/setup/docker  
-[日本語README](https://github.com/future-architect/vuls/blob/master/setup/docker/README.ja.md)  
 - Chefでセットアップ  
 see https://github.com/sadayuki-matsuno/vuls-cookbook
 - 手動でセットアップ  
@@ -76,13 +75,12 @@ Hello Vulsチュートリアルでは手動でのセットアップ方法で説�
 
 ----
 
-# Hello Vuls
+# Tutorial: Local Scan Mode
 
 本チュートリアルでは、Amazon EC2にVulsをセットアップし、自分に存在する脆弱性をスキャンする方法を説明する。
 手順は以下の通り
 
 1. Amazon Linuxを新規作成
-1. 自分自身にSSH接続できるように設定
 1. 必要なソフトウェアをインストール
 1. go-cve-dictionaryをデプロイ
 1. Vulsをデプロイ
@@ -105,21 +103,7 @@ Hello Vulsチュートリアルでは手動でのセットアップ方法で説�
 
     - [Q: How do I disable the automatic installation of critical and important security updates on initial launch?](https://aws.amazon.com/amazon-linux-ami/faqs/?nc1=h_ls)
 
-## Step2. SSH setting
-
-ローカルホストにSSH接続できるようにする。
-
-SSHキーペアを作成し、公開鍵をauthorized_keysに追加する。
-```bash
-$ ssh-keygen -t rsa
-$ cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-$ chmod 600 ~/.ssh/authorized_keys
-```
-
-VulsはSSHパスワード認証をサポートしていない。SSH公開鍵鍵認証を使う必要がある。
-また、パスワードありのSUDOもセキュリティ上の理由によりサポートしていないため、スキャン対象サーバに/etc/sudoersにNOPASSWDを設定して、パスワードなしでSUDO可能にする必要がある。
-
-## Step3. Install requirements
+## Step2. Install requirements
 
 Vulsセットアップに必要な以下のソフトウェアをインストールする。
 
@@ -150,7 +134,7 @@ export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 $ source /etc/profile.d/goenv.sh
 ```
 
-## Step4. Deploy [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
+## Step3. Deploy [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
 
 ```bash
 $ sudo mkdir /var/log/vuls
@@ -177,7 +161,14 @@ $ ls -alh cve.sqlite3
 -rw-r--r-- 1 ec2-user ec2-user 7.0M Mar 24 13:20 cve.sqlite3
 ```
 
-## Step5. Deploy Vuls
+日本語化したい場合は、JVNから脆弱性データベースを取得する。  
+
+```bash
+$ cd $HOME
+$ for i in `seq 1998 $(date +"%Y")`; do go-cve-dictionary fetchjvn -years $i; done
+```
+
+## Step4. Deploy Vuls
 
 新規にターミナルを起動し、先ほど作成したEC2にSSH接続する。
 ```
@@ -188,44 +179,32 @@ $ cd vuls
 $ make install
 ```
 
-vulsを既にインストール済みでupdateしたい場合は
-
-```bash
-$ go get -u github.com/future-architect/vuls
-```
-
-で可能である。
-
-go getでエラーが発生した場合は、以下の点を確認する。
-- Gitのバージョンがv2以降か？
-- Go依存パッケージの問題でgo getに失敗する場合は [deploying with glide](https://github.com/future-architect/vuls/blob/master/README.md#deploy-with-glide) を試す。
-
-## Step6. Config
+## Step5. Config
 
 Vulsの設定ファイルを作成する（TOMLフォーマット）
-設定ファイルのチェックを行う
 
 ```
 $ cd $HOME
 $ cat config.toml
 [servers]
 
-[servers.172-31-4-82]
-host         = "172.31.4.82"
-port        = "22"
-user        = "ec2-user"
-keyPath     = "/home/ec2-user/.ssh/id_rsa"
-
+[servers.localhost]
+host         = "localhost"
+port        = "local"
 ```
 
-## Step7. Check config.toml and settings on the server before scanning
+Root権限が必要なディストリビューションもあるので、スキャン対象サーバの/etc/sudoersを変更する。
+パスワードありのsudoはセキュリティ上の理由からサポートしていないので、スキャンに必要なコマンドは、`NOPASSAWORD`として、remote host上の`etc/sudoers`に定義しておく。
+See [Usage: Configtest#Check /etc/sudoers](#check-etcsudoers)
+
+## Step6. Check config.toml and settings on the server before scanning
 
 ```
 $ vuls configtest
 ```
 詳細は [Usage: configtest](#usage-configtest) を参照
 
-## Step8. Start Scanning
+## Step7. Start Scanning
 
 
 ```
@@ -234,11 +213,11 @@ $ vuls scan
 
 Scan Summary
 ============
-172-31-4-82       amazon 2015.09         94 CVEs      103 updatable packages
+localhost       amazon 2015.09         94 CVEs      103 updatable packages
 
 ```
 
-## Step9. Reporting
+## Step8. Reporting
 
 View one-line summary
 
@@ -247,7 +226,7 @@ $ vuls report -format-one-line-text -cvedb-path=$PWD/cve.sqlite3
 
 One Line Summary
 ================
-172-31-4-82   Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
+localhost   Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
 
 ```
 
@@ -256,7 +235,7 @@ View short summary.
 ```
 $ vuls report -format-short-text -cvedb-path=$PWD/cve.sqlite3 --lang=ja
 
-172-31-4-8 (amazon 2015.09)
+localhost (amazon 2015.09)
 ===========================
 Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
 
@@ -276,7 +255,7 @@ View full report.
 ```
 $ vuls report -format-full-text -cvedb-path=$PWD/cve.sqlite3 --lang=ja
 
-172-31-4-82 (amazon 2015.09)
+localhost (amazon 2015.09)
 ============================
 Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
 
@@ -307,7 +286,7 @@ Confidence      100 / YumUpdateSecurityMatch
 ... snip ...
 ```
 
-## Step10. TUI
+## Step9. TUI
 
 Vulsにはスキャン結果の詳細を参照できるイカしたTUI(Terminal-Based User Interface)が付属している。
 
@@ -317,10 +296,104 @@ $ vuls tui
 
 ![Vuls-TUI](img/hello-vuls-tui.png)
 
-## Step11. Web UI
+## Step10. Web UI
 
 [VulsRepo](https://github.com/usiusi360/vulsrepo)はスキャン結果をビボットテーブルのように分析可能にするWeb UIである。  
 [Online Demo](http://usiusi360.github.io/vulsrepo/)があるので試してみて。
+
+----
+
+# Tutorial: Remote Scan Mode
+
+SSHを用いてリモートのホストをスキャンする方法を説明する。
+
+1. Amazon Linuxを新規に1台作成（スキャン対象）
+1. 必要なソフトウェアをインストール
+1. RemoteホストにlocalhostからSSH可能にする
+1. 設定
+1. 設定ファイルと、スキャン対象サーバの設定のチェック
+1. Scan
+1. Reporting
+
+先程のチュートリアルで作成したVulsサーバ(以下localhostと記述)を用いる。
+
+## Step1. Launch Another Amazon Linux
+
+[Tutorial: Local Scan Mode#Step1. Launch Amazon Linux](#step1-launch-amazon-linux)と同じ  
+新規にターミナルを開いて今作成したEC2にSSH接続する。
+
+## Step2. Install Dependencies on the Remote Server
+
+ディストリビューションによってはスキャンに必要な依存ソフトウェアをインストールする必要がある。  
+これらはリモートサーバ上に手動かAnsibleなどでインストールする。  
+依存ソフトウェアの詳細は [Dependencies on Target Servers](#dependencies-on-target-servers) を参照。
+
+## Step3. Enable to SSH from Localhost
+
+VulsはSSHパスワード認証をサポートしてない。SSHの鍵認証の設定をしなければならない。  
+localhost上でkeypairを作成し、remote host上のauthorized_keysに追加する。  
+
+- Localhost
+```bash
+$ ssh-keygen -t rsa
+```
+Copy ~/.ssh/id_rsa.pub to the clipboard.
+
+- Remote Host
+```
+$ mkdir ~/.ssh
+$ chmod 700 ~/.ssh
+$ touch ~/.ssh/authorized_keys
+$ chmod 600 ~/.ssh/authorized_keys
+$ vim ~/.ssh/authorized_keys
+```
+Paste from the clipboard to ~/.ssh/.authorized_keys
+
+パスワードありのsudoはセキュリティ上の理由からサポート指定いないので、スキャンに必要なコマンドは、`NOPASSAWORD`として、remote host上の`etc/sudoers`に定義しておく。
+See [Usage: Configtest#Check /etc/sudoers](#check-etcsudoers)
+
+また、localhostのknown_hostsにremote hostのホストキーが登録されている必要があるので確認すること。
+
+## Step4. Config
+
+- Localhost
+```
+$ cd $HOME
+$ cat config.toml
+[servers]
+
+[servers.172-31-4-82]
+host         = "172.31.4.82"
+port        = "22"
+user        = "ec2-user"
+keyPath     = "/home/ec2-user/.ssh/id_rsa"
+```
+
+## Step5. Check config.toml and settings on the server before scanning
+
+```
+$ vuls configtest
+```
+
+see [Usage: configtest](#usage-configtest)
+
+## Step6. Start Scanning
+
+```
+$ vuls scan
+... snip ...
+
+Scan Summary
+============
+172-31-4-82       amazon 2015.09         94 CVEs      103 updatable packages
+
+```
+
+## Step7. Reporting
+
+See [Tutorial: Local Scan Mode#Step8. Reporting](#step8-reporting)  
+See [Tutorial: Local Scan Mode#Step9. TUI](#step9-tui)  
+See [Tutorial: Local Scan Mode#Step10. Web UI](#step10-web-ui)
 
 ----
 
@@ -446,7 +519,6 @@ subjectPrefix = "[vuls]"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
-#containers = ["${running}"]
 #optional = [
 #    ["key", "value"],
 #]
@@ -461,10 +533,13 @@ host         = "172.31.4.82"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
-#containers = ["${running}"]
 #optional = [
 #    ["key", "value"],
 #]
+#[servers.172-31-4-82.containers]
+#type = "lxd" # or "docker"
+#includes = ["${running}"]
+#excludes = ["container_name", "container_id"]
 ```
 
 このテンプレート使ってVulsの設定ファイルを作ってもよい。
@@ -530,11 +605,14 @@ host         = "172.31.4.82"
     #cpeNames = [
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
-    #containers = ["${running}"]
     #ignoreCves = ["CVE-2016-6313"]
     #optional = [
     #    ["key", "value"],
     #]
+    #[servers.172-31-4-82.containers]
+    #type = "lxd" # or "docker"
+    #includes = ["${running}"]
+    #excludes = ["container_name", "container_id"]
     ```
     下記serversセクションで値が指定されなかった場合のデフォルト値
 
@@ -555,7 +633,7 @@ host         = "172.31.4.82"
     #    ["key", "value"],
     #]
     #containers = ["${running}"]
-    #[servers.172-31-4-82.container]
+    #[servers.172-31-4-82.containers]
     #type = "lxd"
     ```
 
@@ -566,14 +644,14 @@ host         = "172.31.4.82"
     - port: SSH Port number
     - user: SSH username
     - keyPath: SSH private key path
-    - cpeNames: see [Usage: Scan vulnerability of non-OS package](https://github.com/future-architect/vuls/blob/master/README.ja.md#usage-scan-vulnerability-of-non-os-package)
+    - cpeNames: see [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerability-of-non-os-package)
     - ignoreCves: CVE IDs that will not be reported. But output to JSON file.
     - optional: JSONレポートに含めたい追加情報
-    - containers: see [Usage: Scan Docker containers](https://github.com/future-architect/vuls/blob/master/README.ja.md#usage-scan-docker-containers)
+    - containers: see [Usage: Scan Docker containers](#usage-scan-docker-containers)
 
 
-    Vulsは各サーバにSSHで接続するが、Goのネイティブ実装と、OSコマンドの２種類のSSH接続方法をサポートしている。
-    詳細は [-ssh-external option](https://github.com/future-architect/vuls/blob/master/README.ja.md#-ssh-external-option) を参照。
+    Vulsは各サーバにSSHで接続するが、OSコマンドでの接続と、Goのネイティブ実装の２種類のSSH接続方法をサポートしている。
+    詳細は [-ssh-native-insecure option](#-ssh-native-insecure-option) を参照。
 
     また、以下のSSH認証をサポートしている。
     - SSH agent
@@ -591,7 +669,9 @@ configtest:
                         [-config=/path/to/config.toml]
                         [-log-dir=/path/to/log]
                         [-ask-key-password]
-                        [-ssh-external]
+                        [-ssh-native-insecure]
+                        [-containers-only]
+                        [-timeout=300]
                         [-http-proxy=http://192.168.0.1:8080]
                         [-debug]
 
@@ -600,14 +680,18 @@ configtest:
         Ask ssh privatekey password before scanning
   -config string
         /path/to/toml (default "/Users/kotakanbe/go/src/github.com/future-architect/vuls/config.toml")
+  -containers-only
+        Test containers only. Default: Test both of hosts and containers
   -debug
         debug mode
   -http-proxy string
         http://proxy-url:port (default: empty)
   -log-dir string
         /path/to/log (default "/var/log/vuls")
-  -ssh-external
-        Use external ssh command. Default: Use the Go native implementation
+  -ssh-native-insecure
+        Use Native Go implementation of SSH. Default: Use the external command
+  -timeout int
+        Timeout(Sec) (default 300)
 ```
 
 configtestサブコマンドは以下をチェックする
@@ -632,7 +716,13 @@ configtestサブコマンドは以下をチェックする
 
 ## Check /etc/sudoers 
 
-スキャン対象サーバに対してパスワードなしでSUDO可能な状態かもチェックする。  
+スキャン対象サーバに対してパスワードなしでSUDO可能な状態か確認する。  
+また、requirettyも定義されているか確認する。(--ssh-native-insecureオプションでscanする場合はrequirettyは定義しなくても良い)
+```
+Defaults:vuls !requiretty
+```
+For details, see [-ssh-native-insecure option](#-ssh-native-insecure-option)
+
 スキャン対象サーバ上の`/etc/sudoers`のサンプル
 
 - CentOS
@@ -679,13 +769,15 @@ scan:
                 [-results-dir=/path/to/results]
                 [-log-dir=/path/to/log]
                 [-cachedb-path=/path/to/cache.db]
-                [-ssh-external]
+                [-ssh-native-insecure]
                 [-containers-only]
                 [-skip-broken]
                 [-http-proxy=http://192.168.0.1:8080]
                 [-ask-key-password]
                 [-debug]
                 [-pipe]
+                [-timeout]
+                [-timeout-scan]
 
                 [SERVER]...
   -ask-key-password
@@ -708,23 +800,27 @@ scan:
         /path/to/results
   -skip-broken
         [For CentOS] yum update changelog with --skip-broken option
-  -ssh-external
-        Use external ssh command. Default: Use the Go native implementation
+  -ssh-native-insecure
+        Use Native Go implementation of SSH. Default: Use the external command
+  -timeout int
+        Number of seconds for detecting platform for all servers (default 60)
+  -timeout-scan int
+        Number of second for scaning vulnerabilities for all servers (default 7200)
 ```
 
-## -ssh-external option
+## -ssh-native-insecure option
 
 Vulsは２種類のSSH接続方法をサポートしている。
 
-デフォルトでは、Goのネイティブ実装 (crypto/ssh) を使ってスキャンする。
-これは、SSHコマンドがインストールされていない環境でも動作する（Windowsなど）  
 
-外部SSHコマンドを使ってスキャンするためには、`-ssh-external`を指定する。
+デフォルトでは、外部SSHコマンドを使ってスキャンする。
 SSH Configが使えるので、ProxyCommandを使った多段SSHなどが可能。  
 CentOSでは、スキャン対象サーバの/etc/sudoersに以下を追加する必要がある(user: vuls)
 ```
 Defaults:vuls !requiretty
 ```
+
+-ssh-native-insecureを指定すると、Goのネイティブ実装 (crypto/ssh) を使ってスキャンする。これは、SSHコマンドがインストールされていない環境でも動作する（Windowsなど）。-ssh-native-insecureは、ホストキーのチェックをしないことに注意すべき。
 
 ## -ask-key-password option
 
@@ -754,7 +850,7 @@ $ vuls scan server1 server2
 
 ローカルホストのスキャンする場合、SSHではなく直接コマンドの発行が可能。  
 config.tomlのhostに`localhost または 127.0.0.1`かつ、portに`local`を設定する必要がある。  
-For more details, see [Architecture section](https://github.com/future-architect/vuls#architecture)
+For more details, see [Architecture section](#architecture)
 
 - config.toml
   ```
@@ -781,7 +877,7 @@ Defaults:vuls !requiretty
 ### Docker
 
 Vulsは、DockerホストにSSHで接続し、`docker exec`でDockerコンテナにコマンドを発行して脆弱性をスキャンする。  
-詳細は、[Architecture section](https://github.com/future-architect/vuls#architecture)を参照
+詳細は、[Architecture section](#architecture)を参照
 
 - 全ての起動中のDockerコンテナをスキャン  
   `"${running}"` をcontainersに指定する
@@ -792,7 +888,9 @@ Vulsは、DockerホストにSSHで接続し、`docker exec`でDockerコンテナ
     host         = "172.31.4.82"
     user        = "ec2-user"
     keyPath     = "/home/username/.ssh/id_rsa"
-    containers = ["${running}"]
+
+    [servers.172-31-4-82.containers]
+    includes = ["${running}"]
     ```
 
 - あるコンテナのみスキャン  
@@ -806,7 +904,23 @@ Vulsは、DockerホストにSSHで接続し、`docker exec`でDockerコンテナ
     host         = "172.31.4.82"
     user        = "ec2-user"
     keyPath     = "/home/username/.ssh/id_rsa"
-    containers = ["container_name_a", "4aa37a8b63b9"]
+
+    [servers.172-31-4-82.containers]
+    includes = ["container_name_a", "4aa37a8b63b9"]
+    ```
+
+- あるコンテナ以外をスキャン  
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+    host         = "172.31.4.82"
+    user        = "ec2-user"
+    keyPath     = "/home/username/.ssh/id_rsa"
+
+    [servers.172-31-4-82.containers]
+    includes = ["${running}"]
+    excludes = ["container_name_a", "4aa37a8b63b9"]
     ```
 
 - コンテナのみをスキャンする場合（ホストはスキャンしない）  
@@ -822,9 +936,10 @@ Vulsは、ホストにSSHで接続し、`lxc exec`でLXDコンテナにコマン
 host         = "172.31.4.82"
 user        = "ec2-user"
 keyPath     = "/home/username/.ssh/id_rsa"
-containers = ["${running}"]
-[servers.172-31-4-82.container]
+
+[servers.172-31-4-82.containers]
 type = "lxd"
+includes = ["${running}"]
 ```
 
 # Usage: Report
@@ -841,6 +956,7 @@ report:
                 [-cvedb-path=/path/to/cve.sqlite3]
                 [-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
                 [-cvss-over=7]
+                [-diff]
                 [-ignore-unscored-cves]
                 [-to-email]
                 [-to-slack]
@@ -888,6 +1004,8 @@ report:
         http://cve-dictionary.com:8080 or mysql connection string
   -cvss-over float
         -cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))
+  -diff
+        Difference between previous result and current result
   -debug
         debug mode
   -debug-sql
@@ -1216,9 +1334,9 @@ optional = [
 ## Example: Use MySQL as a DB storage back-end
 
 ```
-$ vuls scan \
-      -cve-dictionary-dbtype=mysql \
-      -cve-dictionary-dbpath="user:pass@tcp(localhost:3306)/dbname?parseTime=true"
+$ vuls report \
+      -cvedb-type=mysql \
+      -cvedb-url="user:pass@tcp(localhost:3306)/dbname?parseTime=true"
 ```
 
 ----
@@ -1279,37 +1397,43 @@ VulsとDependency Checkを連携すると以下の利点がある
 ## Display the latest scan results
 
 ```
-$ vuls tui -h
 tui:
         tui
                 [-cvedb-type=sqlite3|mysql]
                 [-cvedb-path=/path/to/cve.sqlite3]
                 [-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
-                [-results-dir=/path/to/results]
                 [-refresh-cve]
+                [-results-dir=/path/to/results]
+                [-log-dir=/path/to/log]
+                [-debug]
                 [-debug-sql]
                 [-pipe]
 
   -cvedb-path string
-        /path/to/sqlite3 (For get cve detail from cve.sqlite3)
+        /path/to/sqlite3 (For get cve detail from cve.sqlite3) 
   -cvedb-type string
-        DB type for fetching CVE dictionary (sqlite3 or mysql)
+        DB type for fetching CVE dictionary (sqlite3 or mysql) (default "sqlite3")
   -cvedb-url string
         http://cve-dictionary.com:8080 or mysql connection string
+  -debug
+        debug mode
   -debug-sql
         debug SQL
+  -log-dir string
+        /path/to/log (default "/var/log/vuls")
   -pipe
         Use stdin via PIPE
   -refresh-cve
         Refresh CVE information in JSON file under results dir
   -results-dir string
-        /path/to/results
+        /path/to/results 
 ```
+
 
 Key binding is below.
 
 | key | |
-|:-----------------|:-------|:------|
+|:-----------------|:-------|
 | TAB | move cursor among the panes |
 | Arrow up/down | move cursor to up/down |
 | Ctrl+j, Ctrl+k | move cursor to up/down |

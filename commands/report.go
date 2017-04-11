@@ -46,9 +46,9 @@ type ReportCmd struct {
 	ignoreUnscoredCves bool
 	httpProxy          string
 
-	cvedbtype        string
-	cvedbpath        string
-	cveDictionaryURL string
+	cvedbtype string
+	cvedbpath string
+	cvedbURL  string
 
 	toSlack     bool
 	toEMail     bool
@@ -74,6 +74,8 @@ type ReportCmd struct {
 	azureContainer string
 
 	pipe bool
+
+	diff bool
 }
 
 // Name return subcommand name
@@ -95,6 +97,7 @@ func (*ReportCmd) Usage() string {
 		[-cvedb-path=/path/to/cve.sqlite3]
 		[-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
 		[-cvss-over=7]
+		[-diff]
 		[-ignore-unscored-cves]
 		[-to-email]
 		[-to-slack]
@@ -160,7 +163,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"/path/to/sqlite3 (For get cve detail from cve.sqlite3)")
 
 	f.StringVar(
-		&p.cveDictionaryURL,
+		&p.cvedbURL,
 		"cvedb-url",
 		"",
 		"http://cve-dictionary.com:8080 or mysql connection string")
@@ -170,6 +173,11 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"cvss-over",
 		0,
 		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
+
+	f.BoolVar(&p.diff,
+		"diff",
+		false,
+		fmt.Sprintf("Difference between previous result and current result "))
 
 	f.BoolVar(
 		&p.ignoreUnscoredCves,
@@ -267,17 +275,12 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.ResultsDir = p.resultsDir
 	c.Conf.CveDBType = p.cvedbtype
 	c.Conf.CveDBPath = p.cvedbpath
-	c.Conf.CveDictionaryURL = p.cveDictionaryURL
+	c.Conf.CveDBURL = p.cvedbURL
 	c.Conf.CvssScoreOver = p.cvssScoreOver
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
 	c.Conf.HTTPProxy = p.httpProxy
 
 	c.Conf.Pipe = p.pipe
-	jsonDir, err := jsonDir(f.Args())
-	if err != nil {
-		util.Log.Errorf("Failed to read from JSON: %s", err)
-		return subcommands.ExitFailure
-	}
 
 	c.Conf.FormatXML = p.formatXML
 	c.Conf.FormatJSON = p.formatJSON
@@ -287,6 +290,19 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.FormatFullText = p.formatFullText
 
 	c.Conf.GZIP = p.gzip
+	c.Conf.Diff = p.diff
+
+	var dir string
+	var err error
+	if p.diff {
+		dir, err = jsonDir([]string{})
+	} else {
+		dir, err = jsonDir(f.Args())
+	}
+	if err != nil {
+		util.Log.Errorf("Failed to read from JSON: %s", err)
+		return subcommands.ExitFailure
+	}
 
 	// report
 	reports := []report.ResultWriter{
@@ -303,7 +319,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if p.toLocalFile {
 		reports = append(reports, report.LocalFileWriter{
-			CurrentDir: jsonDir,
+			CurrentDir: dir,
 		})
 	}
 
@@ -355,26 +371,27 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with --cvedb-path option")
 		return subcommands.ExitFailure
 	}
-	if c.Conf.CveDictionaryURL != "" {
-		util.Log.Infof("cve-dictionary: %s", c.Conf.CveDictionaryURL)
+	if c.Conf.CveDBURL != "" {
+		util.Log.Infof("cve-dictionary: %s", c.Conf.CveDBURL)
 	} else {
 		if c.Conf.CveDBType == "sqlite3" {
 			util.Log.Infof("cve-dictionary: %s", c.Conf.CveDBPath)
 		}
 	}
 
-	history, err := loadOneScanHistory(jsonDir)
+	var history models.ScanHistory
+	history, err = loadOneScanHistory(dir)
 	if err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}
-	util.Log.Infof("Loaded: %s", jsonDir)
+	util.Log.Infof("Loaded: %s", dir)
 
 	var results []models.ScanResult
 	for _, r := range history.ScanResults {
 		if p.refreshCve || needToRefreshCve(r) {
 			util.Log.Debugf("need to refresh")
-			if c.Conf.CveDBType == "sqlite3" && c.Conf.CveDictionaryURL == "" {
+			if c.Conf.CveDBType == "sqlite3" && c.Conf.CveDBURL == "" {
 				if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
 					util.Log.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
 						c.Conf.CveDBPath)
@@ -388,15 +405,34 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 				return subcommands.ExitFailure
 			}
 			filled.Lang = c.Conf.Lang
-
-			if err := overwriteJSONFile(jsonDir, filled); err != nil {
+			if err := overwriteJSONFile(dir, *filled); err != nil {
 				util.Log.Errorf("Failed to write JSON: %s", err)
 				return subcommands.ExitFailure
 			}
-			results = append(results, filled)
+			results = append(results, *filled)
 		} else {
 			util.Log.Debugf("no need to refresh")
 			results = append(results, r)
+		}
+	}
+
+	if p.diff {
+		currentHistory := models.ScanHistory{ScanResults: results}
+		previousHistory, err := loadPreviousScanHistory(currentHistory)
+		if err != nil {
+			util.Log.Error(err)
+			return subcommands.ExitFailure
+		}
+
+		history, err = diff(currentHistory, previousHistory)
+		if err != nil {
+			util.Log.Error(err)
+			return subcommands.ExitFailure
+		}
+		results = []models.ScanResult{}
+		for _, r := range history.ScanResults {
+			filled, _ := r.FillCveDetail()
+			results = append(results, *filled)
 		}
 	}
 
@@ -404,6 +440,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	for _, r := range results {
 		res = append(res, r.FilterByCvssOver())
 	}
+
 	for _, w := range reports {
 		if err := w.Write(res...); err != nil {
 			util.Log.Errorf("Failed to report: %s", err)

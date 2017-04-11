@@ -151,10 +151,10 @@ func exec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (resul
 	if c.Port == "local" &&
 		(c.Host == "127.0.0.1" || c.Host == "localhost") {
 		result = localExec(c, cmd, sudo)
-	} else if conf.Conf.SSHExternal {
-		result = sshExecExternal(c, cmd, sudo)
-	} else {
+	} else if conf.Conf.SSHNative {
 		result = sshExecNative(c, cmd, sudo)
+	} else {
+		result = sshExecExternal(c, cmd, sudo)
 	}
 
 	logger := getSSHLogger(log...)
@@ -259,8 +259,7 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 
 	defaultSSHArgs := []string{
 		"-tt",
-		"-o", "StrictHostKeyChecking=no",
-		"-o", "UserKnownHostsFile=/dev/null",
+		"-o", "StrictHostKeyChecking=yes",
 		"-o", "LogLevel=quiet",
 		"-o", "ConnectionAttempts=3",
 		"-o", "ConnectTimeout=10",
@@ -339,9 +338,9 @@ func decorateCmd(c conf.ServerInfo, cmd string, sudo bool) string {
 	//  }
 
 	if c.IsContainer() {
-		switch c.Container.Type {
+		switch c.Containers.Type {
 		case "", "docker":
-			cmd = fmt.Sprintf(`docker exec %s /bin/bash -c "%s"`, c.Container.ContainerID, cmd)
+			cmd = fmt.Sprintf(`docker exec --user 0 %s /bin/bash -c "%s"`, c.Container.ContainerID, cmd)
 		case "lxd":
 			cmd = fmt.Sprintf(`lxc exec %s -- /bin/bash -c "%s"`, c.Container.Name, cmd)
 		}
@@ -364,8 +363,9 @@ func getAgentAuth() (auth ssh.AuthMethod, ok bool) {
 func tryAgentConnect(c conf.ServerInfo) *ssh.Client {
 	if auth, ok := getAgentAuth(); ok {
 		config := &ssh.ClientConfig{
-			User: c.User,
-			Auth: []ssh.AuthMethod{auth},
+			User:            c.User,
+			Auth:            []ssh.AuthMethod{auth},
+			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		}
 		client, _ := ssh.Dial("tcp", c.Host+":"+c.Port, config)
 		return client
@@ -385,8 +385,9 @@ func sshConnect(c conf.ServerInfo) (client *ssh.Client, err error) {
 
 	// http://blog.ralch.com/tutorial/golang-ssh-connection/
 	config := &ssh.ClientConfig{
-		User: c.User,
-		Auth: auths,
+		User:            c.User,
+		Auth:            auths,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
 	notifyFunc := func(e error, t time.Duration) {

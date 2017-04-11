@@ -25,14 +25,17 @@ import (
 )
 
 const (
-	nvdBaseURL            = "https://web.nvd.nist.gov/view/vuln/detail"
-	mitreBaseURL          = "https://cve.mitre.org/cgi-bin/cvename.cgi?name="
-	cveDetailsBaseURL     = "http://www.cvedetails.com/cve"
-	cvssV2CalcURLTemplate = "https://nvd.nist.gov/cvss/v2-calculator?name=%s&vector=%s"
+	nvdBaseURL        = "https://nvd.nist.gov/vuln/detail"
+	mitreBaseURL      = "https://cve.mitre.org/cgi-bin/cvename.cgi?name="
+	cveDetailsBaseURL = "http://www.cvedetails.com/cve"
+	cvssV2CalcBaseURL = "https://nvd.nist.gov/vuln-metrics/cvss/v2-calculator?name=%s"
+	cvssV3CalcBaseURL = "https://nvd.nist.gov/vuln-metrics/cvss/v3-calculator?name=%s"
 
 	redhatSecurityBaseURL = "https://access.redhat.com/security/cve"
 	redhatRHSABaseBaseURL = "https://rhn.redhat.com/errata/%s.html"
 	amazonSecurityBaseURL = "https://alas.aws.amazon.com/%s.html"
+	oracleSecurityBaseURL = "https://linux.oracle.com/cve/%s.html"
+	oracleELSABaseBaseURL = "https://linux.oracle.com/errata/%s.html"
 
 	ubuntuSecurityBaseURL = "http://people.ubuntu.com/~ubuntu-security/cve"
 	debianTrackerBaseURL  = "https://security-tracker.debian.org/tracker"

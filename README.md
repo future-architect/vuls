@@ -46,7 +46,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 # Main Features
 
 - Scan for any vulnerabilities in Linux/FreeBSD Server
-    - Supports Ubuntu, Debian, CentOS, Amazon Linux, RHEL, FreeBSD and Raspbian
+    - Supports Ubuntu, Debian, CentOS, Amazon Linux, RHEL, Oracle Linux, FreeBSD and Raspbian
     - Cloud, on-premise, Docker
 - Scan middleware that are not included in OS package management
     - Scan middleware, programming language libraries and framework for vulnerability
@@ -78,17 +78,16 @@ You can run install and run Vuls on your machine with only a few commands.
 see https://github.com/future-architect/vuls/tree/master/setup/docker
 
 - Manually  
-Hello Vuls Tutorial shows how to setup vuls manually.
+Tutorial shows how to setup vuls manually.
 
 ----
 
-# Tutorial: Hello Vuls
+# Tutorial: Local Scan Mode
 
 This tutorial will let you scan the vulnerabilities on the localhost with Vuls.   
 This can be done in the following steps.  
 
 1. Launch Amazon Linux
-1. Enable to ssh from localhost
 1. Install requirements
 1. Deploy go-cve-dictionary
 1. Deploy Vuls
@@ -111,21 +110,7 @@ This can be done in the following steps.
 
     - [Q: How do I disable the automatic installation of critical and important security updates on initial launch?](https://aws.amazon.com/amazon-linux-ami/faqs/?nc1=h_ls)
 
-## Step2. SSH setting
-
-This is required to ssh to itself.
-
-Create a keypair then append public key to authorized_keys
-```bash
-$ ssh-keygen -t rsa
-$ cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-$ chmod 600 ~/.ssh/authorized_keys
-```
-
-Vuls doesn't support SSH password authentication. So you have to use SSH key-based authentication.  
-And also, SUDO with password is not supported for security reasons. So you have to define NOPASSWORD in /etc/sudoers on target servers.  
-
-## Step3. Install requirements
+## Step2. Install requirements
 
 Vuls requires the following packages.
 
@@ -156,7 +141,7 @@ Set the OS environment variable to current shell
 $ source /etc/profile.d/goenv.sh
 ```
 
-## Step4. Deploy [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
+## Step3. Deploy [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
 
 ```bash
 $ sudo mkdir /var/log/vuls
@@ -182,7 +167,7 @@ $ ls -alh cve.sqlite3
 -rw-r--r-- 1 ec2-user ec2-user 7.0M Mar 24 13:20 cve.sqlite3
 ```
 
-## Step5. Deploy Vuls
+## Step4. Deploy Vuls
 
 Launch a new terminal and SSH to the ec2 instance.
 
@@ -195,25 +180,24 @@ $ make install
 ```
 The binary was built under `$GOPATH/bin`
 
-## Step6. Config
+## Step5. Config
 
 Create a config file(TOML format).  
-Then check the config.
-
 ```
 $ cd $HOME
 $ cat config.toml
 [servers]
 
-[servers.172-31-4-82]
-host         = "172.31.4.82"
-port        = "22"
-user        = "ec2-user"
-keyPath     = "/home/ec2-user/.ssh/id_rsa"
-
+[servers.localhost]
+host         = "localhost"
+port        = "local"
 ```
 
-## Step7. Check config.toml and settings on the server before scanning
+Root privilege is needed on Some distributions.
+Sudo with password is not supported for security reasons. So you have to define NOPASSWORD in /etc/sudoers.
+See [Usage: Configtest#Check /etc/sudoers](#check-etcsudoers)
+
+## Step6. Check config.toml and settings on the server before scanning
 
 ```
 $ vuls configtest
@@ -221,7 +205,7 @@ $ vuls configtest
 
 see [Usage: configtest](#usage-configtest)
 
-## Step8. Start Scanning
+## Step7. Start Scanning
 
 ```
 $ vuls scan
@@ -229,11 +213,11 @@ $ vuls scan
 
 Scan Summary
 ============
-172-31-4-82       amazon 2015.09         94 CVEs      103 updatable packages
+localhost       amazon 2015.09         94 CVEs      103 updatable packages
 
 ```
 
-## Step9. Reporting
+## Step8. Reporting
 
 View one-line summary
 
@@ -242,7 +226,7 @@ $ vuls report -format-one-line-text -cvedb-path=$PWD/cve.sqlite3
 
 One Line Summary
 ================
-172-31-4-82   Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
+localhost   Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
 
 ```
 
@@ -251,7 +235,7 @@ View short summary.
 ```
 $ vuls report -format-short-text
 
-172-31-4-8 (amazon 2015.09)
+localhost (amazon 2015.09)
 ===========================
 Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
 
@@ -273,7 +257,7 @@ View full report.
 ```
 $ vuls report -format-full-text
 
-172-31-4-82 (amazon 2015.09)
+localhost (amazon 2015.09)
 ============================
 Total: 94 (High:19 Medium:54 Low:7 ?:14)        103 updatable packages
 
@@ -300,7 +284,7 @@ Confidence      100 / YumUpdateSecurityMatch
 ... snip ...
 ```
 
-## Step10. TUI
+## Step9. TUI
 
 Vuls has Terminal-Based User Interface to display the scan result.
 
@@ -310,10 +294,105 @@ $ vuls tui
 
 ![Vuls-TUI](img/hello-vuls-tui.png)
 
-## Step11. Web UI
+## Step10. Web UI
 
 [VulsRepo](https://github.com/usiusi360/vulsrepo) is a awesome Web UI for Vuls.  
 Check it out the [Online Demo](http://usiusi360.github.io/vulsrepo/).
+
+----
+
+# Tutorial: Remote Scan Mode
+
+This tutorial will let you scan the vulnerabilities on the remote host via SSH with Vuls.   
+This can be done in the following steps.  
+
+1. Launch Another Amazon Linux
+1. Install Dependencies on the Remote Host
+1. Enable to SSH from Localhost
+1. Configuration
+1. Check config.toml and settings on the server before scanning
+1. Scan
+1. Reporting
+
+We will use the Vuls server (called localhost) created in the previous tutorial.
+
+## Step1. Launch Another Amazon Linux
+
+Same as [Tutorial: Local Scan Mode#Step1. Launch Amazon Linux](#step1-launch-amazon-linux)  
+Launch a new terminal and SSH to the Remote Server.
+
+## Step2. Install Dependencies on the Remote Server
+
+Depending on the distribution you need to install dependent modules.
+Install these dependencies manually or using Ansible etc.
+For details of dependent libraries, see [Dependencies on Target Servers](#dependencies-on-target-servers)
+
+## Step3. Enable to SSH from Localhost
+
+Vuls doesn't support SSH password authentication. So you have to use SSH key-based authentication.  
+Create a keypair on the localhost then append public key to authorized_keys on the remote host.  
+
+- Localhost
+```bash
+$ ssh-keygen -t rsa
+```
+Copy ~/.ssh/id_rsa.pub to the clipboard.
+
+- Remote Host
+```
+$ mkdir ~/.ssh
+$ chmod 700 ~/.ssh
+$ touch ~/.ssh/authorized_keys
+$ chmod 600 ~/.ssh/authorized_keys
+$ vim ~/.ssh/authorized_keys
+```
+Paste from the clipboard to ~/.ssh/.authorized_keys
+
+SUDO with password is not supported for security reasons. So you have to define NOPASSWORD in /etc/sudoers on target servers.  
+See [Usage: Configtest#Check /etc/sudoers](#check-etcsudoers)
+
+And also, confirm that the host keys of scan target servers has been registered in the known_hosts of the Localhost.
+
+## Step4. Config
+
+- Localhost
+```
+$ cd $HOME
+$ cat config.toml
+[servers]
+
+[servers.172-31-4-82]
+host         = "172.31.4.82"
+port        = "22"
+user        = "ec2-user"
+keyPath     = "/home/ec2-user/.ssh/id_rsa"
+```
+
+## Step5. Check config.toml and settings on the server before scanning
+
+```
+$ vuls configtest
+```
+
+see [Usage: configtest](#usage-configtest)
+
+## Step6. Start Scanning
+
+```
+$ vuls scan
+... snip ...
+
+Scan Summary
+============
+172-31-4-82       amazon 2015.09         94 CVEs      103 updatable packages
+
+```
+
+## Step7. Reporting
+
+See [Tutorial: Local Scan Mode#Step8. Reporting](#step8-reporting)  
+See [Tutorial: Local Scan Mode#Step9. TUI](#step9-tui)  
+See [Tutorial: Local Scan Mode#Step10. Web UI](#step10-web-ui)
 
 ----
 
@@ -337,13 +416,13 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 ![Vuls-Architecture Local Scan Mode](img/vuls-architecture-localscan.png)
 [Details](#example-scan-via-shell-instead-of-ssh)
 
-## [go-cve-dictinary](https://github.com/kotakanbe/go-cve-dictionary)  
+## [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)  
 - Fetch vulnerability information from NVD and JVN(Japanese), then insert into SQLite3 or MySQL.
 
 ## Scanning Flow
 ![Vuls-Scan-Flow](img/vuls-scan-flow.png)
 - Scan vulnerabilities on the servers via SSH and collect a list of the CVE ID
-  - To scan Docker containers, Vuls connect via ssh to the Docker host and then `docker exec` to the containers. So, no need to run sshd daemon on the containers.
+  - To scan Docker containers, Vuls connects via SSH to the Docker host and then `docker exec` to the containers. So, no need to run sshd daemon on the containers.
 
 ----
 # Performance Considerations
@@ -361,15 +440,16 @@ Scan speed is fast and resource usage is light.
 - On Amazon, RHEL and FreeBSD  
 High speed scan and resource usage is light because Vuls can get CVE IDs by using package manager(no need to parse a changelog).
 
-| Distribution|         Scan Speed |
-|:------------|:-------------------|:-------------|
-| Ubuntu      |  First time: Slow / From the second time: Fast |
-| Debian      |  First time: Slow / From the second time: Fast |
-| CentOS      |               Fast |
-| Amazon      |               Fast |
-| RHEL        |               Fast |
-| FreeBSD     |               Fast |
-| Raspbian    |  First time: Slow / From the second time: Fast |
+| Distribution |         Scan Speed |
+|:-------------|:-------------------|
+| Ubuntu       |  First time: Slow / From the second time: Fast |
+| Debian       |  First time: Slow / From the second time: Fast |
+| CentOS       |               Fast |
+| Amazon       |               Fast |
+| RHEL         |               Fast |
+| Oracle Linux |               Fast |
+| FreeBSD      |               Fast |
+| Raspbian     |  First time: Slow / From the second time: Fast |
 
 ----
 
@@ -393,15 +473,16 @@ If there is a staging environment with the same configuration as the production 
 
 # Support OS
 
-| Distribution|            Release |
-|:------------|-------------------:|
-| Ubuntu      |          12, 14, 16|
-| Debian      |                7, 8|
-| RHEL        |             5, 6, 7|
-| CentOS      |                6, 7|
-| Amazon Linux|                 All|
-| FreeBSD     |              10, 11|
-| Raspbian    |     Wheezy, Jessie |
+| Distribution |            Release |
+|:-------------|-------------------:|
+| Ubuntu       |          12, 14, 16|
+| Debian       |                7, 8|
+| RHEL         |             5, 6, 7|
+| Oracle Linux |             5, 6, 7|
+| CentOS       |                6, 7|
+| Amazon Linux |                 All|
+| FreeBSD      |              10, 11|
+| Raspbian     |     Wheezy, Jessie |
 
 ----
 
@@ -447,7 +528,6 @@ subjectPrefix = "[vuls]"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
-#containers = ["${running}"]
 #ignoreCves = ["CVE-2016-6313"]
 #optional = [
 #    ["key", "value"],
@@ -467,9 +547,10 @@ host         = "172.31.4.82"
 #optional = [
 #    ["key", "value"],
 #]
-#containers = ["${running}"]
-#[servers.172-31-4-82.container]
-#type = "lxd"
+#[servers.172-31-4-82.containers]
+#type = "lxd" # or "docker"
+#includes = ["${running}"]
+#excludes = ["container_name", "container_id"]
 ```
 
 You can customize your configuration using this template.
@@ -538,7 +619,6 @@ You can customize your configuration using this template.
     #cpeNames = [
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
-    #containers = ["${running}"]
     #ignoreCves = ["CVE-2016-6313"]
     #optional = [
     #    ["key", "value"],
@@ -562,9 +642,10 @@ You can customize your configuration using this template.
     #optional = [
     #    ["key", "value"],
     #]
-    #containers = ["${running}"]
-    #[servers.172-31-4-82.container]
-    #type = "lxd"
+    #[servers.172-31-4-82.containers]
+    #type = "lxd" # or "docker"
+    #includes = ["${running}"]
+    #excludes = ["container_name", "container_id"]
     ```
 
     You can overwrite the default value specified in default section.  
@@ -573,12 +654,12 @@ You can customize your configuration using this template.
     - port: SSH Port number
     - user: SSH username
     - keyPath: SSH private key path
-    - cpeNames: see [Usage: Scan vulnerability of non-OS package](https://github.com/future-architect/vuls#usage-scan-vulnerability-of-non-os-package)
+    - cpeNames: see [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerability-of-non-os-package)
     - ignoreCves: CVE IDs that will not be reported. But output to JSON file.
     - optional: Add additional information to JSON report.
     - containers: see [Example: Scan containers (Docker/LXD)(#example-scan-containers-dockerlxd)
 
-    Vuls supports two types of SSH. One is native go implementation. The other is external SSH command. For details, see [-ssh-external option](https://github.com/future-architect/vuls#-ssh-external-option)
+    Vuls supports two types of SSH. One is external command. The other is native go implementation. For details, see [-ssh-native-insecure option](#-ssh-native-insecure-option)
 
     Multiple SSH authentication methods are supported.  
     - SSH agent
@@ -596,7 +677,9 @@ configtest:
                         [-config=/path/to/config.toml]
                         [-log-dir=/path/to/log]
                         [-ask-key-password]
-                        [-ssh-external]
+                        [-ssh-native-insecure]
+                        [-containers-only]
+                        [-timeout=300]
                         [-debug]
 
                         [SERVER]...
@@ -604,18 +687,23 @@ configtest:
         Ask ssh privatekey password before scanning
   -config string
         /path/to/toml (default "/Users/kotakanbe/go/src/github.com/future-architect/vuls/config.toml")
+  -containers-only
+        Test containers only. Default: Test both of hosts and containers
   -debug
         debug mode
   -http-proxy string
         http://proxy-url:port (default: empty)
   -log-dir string
         /path/to/log (default "/var/log/vuls")
-  -ssh-external
-        Use external ssh command. Default: Use the Go native implementation
+  -ssh-native-insecure
+        Use Native Go implementation of SSH. Default: Use the external command
+  -timeout int
+        Timeout(Sec) (default 300)
+
 ```
 
 The configtest subcommand checks the following
-- Whether vuls is able to connect via ssh to servers/containers defined in the config.toml
+- Whether vuls is able to connect via SSH to servers/containers defined in the config.toml
 - Whether Dependent package is installed on the scan target server
 - Check /etc/sudoers
 
@@ -623,20 +711,26 @@ The configtest subcommand checks the following
 
 In order to scan, the following dependencies are required, so you need to install them manually or with tools such as Ansible.
 
-| Distribution|            Release | Requirements |
-|:------------|-------------------:|:-------------|
-| Ubuntu      |          12, 14, 16| -            |
-| Debian      |                7, 8| aptitude     |
-| CentOS      |                6, 7| yum-plugin-changelog |
-| Amazon      |                All | - |
-| RHEL        |                  5 | yum-security             |
-| RHEL        |               6, 7 | -  |
-| FreeBSD     |                 10 | -            |
-| Raspbian    |     Wheezy, Jessie | -            |
+| Distribution |            Release | Requirements |
+|:-------------|-------------------:|:-------------|
+| Ubuntu       |          12, 14, 16| -            |
+| Debian       |                7, 8| aptitude     |
+| CentOS       |                6, 7| yum-plugin-changelog |
+| Amazon       |                All | -            |
+| RHEL         |                  5 | yum-security |
+| RHEL         |               6, 7 | -            |
+| Oracle Linux |                  5 | yum-security |
+| Oracle Linux |               6, 7 | -            |
+| FreeBSD      |                 10 | -            |
+| Raspbian     |     Wheezy, Jessie | -            |
 
 ## Check /etc/sudoers 
 
-The configtest subcommand checks sudo settings on target servers whether Vuls is able to SUDO with nopassword via SSH.  
+The configtest subcommand checks sudo settings on target servers whether Vuls is able to SUDO with nopassword via SSH. And if you run Vuls without -ssh-native-insecure option, requiretty must be defined in /etc/sudoers.
+```
+Defaults:vuls !requiretty
+```
+For details, see [-ssh-native-insecure option](#-ssh-native-insecure-option)
 
 Example of /etc/sudoers on target servers
 
@@ -646,13 +740,13 @@ vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --changelog --assumeno update *
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 ```
 
-- RHEL 5 
+- RHEL 5 / Oracle Linux 5
 ```
 vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never list-security --security, /usr/bin/yum --color=never check-update, /usr/bin/yum --color=never info-security
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 ```
 
-- RHEL 6, 7
+- RHEL 6, 7 / Oracle Linux 6, 7
 ```
 vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never --security updateinfo list updates, /usr/bin/yum --color=never check-update, /usr/bin/yum --color=never --security updateinfo updates
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
@@ -684,13 +778,15 @@ scan:
                 [-results-dir=/path/to/results]
                 [-log-dir=/path/to/log]
                 [-cachedb-path=/path/to/cache.db]
-                [-ssh-external]
+                [-ssh-native-insecure]
                 [-containers-only]
                 [-skip-broken]
                 [-http-proxy=http://192.168.0.1:8080]
                 [-ask-key-password]
                 [-debug]
                 [-pipe]
+                [-timeout]
+                [-timeout-scan]
 
                 [SERVER]...
   -ask-key-password
@@ -713,23 +809,29 @@ scan:
         /path/to/results
   -skip-broken
         [For CentOS] yum update changelog with --skip-broken option
-  -ssh-external
-        Use external ssh command. Default: Use the Go native implementation
+  -ssh-native-insecure
+        Use Native Go implementation of SSH. Default: Use the external command
+  -timeout int
+        Number of seconds for detecting platform for all servers (default 60)
+  -timeout-scan int
+        Number of second for scaning vulnerabilities for all servers (default 7200)
 ```
 
-## -ssh-external option
+## -ssh-native-insecure option
 
 Vuls supports different types of SSH.  
 
-By Default, using a native Go implementation from crypto/ssh.   
-This is useful in situations where you may not have access to traditional UNIX tools.
-
-To use external ssh command, specify this option.   
+By Default, external SSH command will be used.
 This is useful If you want to use ProxyCommand or cipher algorithm of SSH that is not supported by native go implementation.  
 Don't forget to add below line to /etc/sudoers on the target servers. (username: vuls)
 ```
 Defaults:vuls !requiretty
 ```
+
+To use native Go implementation from crypto/ssh, specify this option.   
+This is useful in situations where you may not have access to traditional UNIX tools.
+But it is important to note that this mode does not check the host key.
+
 
 
 ## -ask-key-password option
@@ -758,7 +860,7 @@ With this sample command, it will ..
 ## Example: Scan via shell instead of SSH.
 
 Vuls scans localhost instead of SSH if the host address is `localhst or 127.0.0.1` and the port is `local` in config.
-For more details, see [Architecture section](https://github.com/future-architect/vuls#architecture)
+For more details, see [Architecture section](#architecture)
 
 - config.toml
   ```
@@ -783,7 +885,7 @@ see [Docker Blog:Why you don't need to run SSHd in your Docker containers](https
 ### Docker
 
 Vuls scans Docker containers via `docker exec` instead of SSH.  
-For more details, see [Architecture section](https://github.com/future-architect/vuls#architecture)
+For more details, see [Architecture section](#architecture)
 
 - To scan all of running containers  
   `"${running}"` needs to be set in the containers item.
@@ -794,7 +896,9 @@ For more details, see [Architecture section](https://github.com/future-architect
     host         = "172.31.4.82"
     user        = "ec2-user"
     keyPath     = "/home/username/.ssh/id_rsa"
-    containers = ["${running}"]
+
+    [servers.172-31-4-82.containers]
+    includes = ["${running}"]
     ```
 
 - To scan specific containers  
@@ -809,8 +913,25 @@ For more details, see [Architecture section](https://github.com/future-architect
     host         = "172.31.4.82"
     user        = "ec2-user"
     keyPath     = "/home/username/.ssh/id_rsa"
-    containers = ["container_name_a", "4aa37a8b63b9"]
+
+    [servers.172-31-4-82.containers]
+    includes = ["container_name_a", "4aa37a8b63b9"]
     ```
+
+- To scan except specific containers  
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+    host         = "172.31.4.82"
+    user        = "ec2-user"
+    keyPath     = "/home/username/.ssh/id_rsa"
+
+    [servers.172-31-4-82.containers]
+    includes = ["${running}"]
+    excludes = ["container_name_a", "4aa37a8b63b9"]
+    ```
+
 - To scan containers only
   - --containers-only option is available.
 
@@ -824,9 +945,10 @@ Vuls scans lxd via `lxc exec` instead of SSH.
 host         = "172.31.4.82"
 user        = "ec2-user"
 keyPath     = "/home/username/.ssh/id_rsa"
-containers = ["${running}"]
-[servers.172-31-4-82.container]
+
+[servers.172-31-4-82.containers]
 type = "lxd"
+includes = ["${running}"]
 ```
 
 ----
@@ -845,6 +967,7 @@ report:
                 [-cvedb-path=/path/to/cve.sqlite3]
                 [-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
                 [-cvss-over=7]
+                [-diff]
                 [-ignore-unscored-cves]
                 [-to-email]
                 [-to-slack]
@@ -892,6 +1015,8 @@ report:
         http://cve-dictionary.com:8080 or mysql connection string
   -cvss-over float
         -cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))
+  -diff
+        Difference between previous result and current result
   -debug
         debug mode
   -debug-sql
@@ -1013,6 +1138,7 @@ Confidence      100 / YumUpdateSecurityMatch
 - `CWE` means [CWE - Common Weakness Enumeration](https://nvd.nist.gov/cwe.cfm) of the CVE.
 - `NVD` `MITRE` `CVE Details` `CVSS Caluculator`
 - `RHEL-CVE` means the URL of OS distributor support.
+- `Oracle-CVE` means the URL of the Oracle Linux errata information.
 - `Package` shows the package version information including this vulnerability.
 - `Confidence` means the reliability of detection.
   - `100` is highly reliable
@@ -1021,7 +1147,7 @@ Confidence      100 / YumUpdateSecurityMatch
 
   | Detection Method       | Confidence         |  OS                              |Description|
   |:-----------------------|-------------------:|:---------------------------------|:--|
-  | YumUpdateSecurityMatch | 100                |               RHEL, Amazon Linux |Detection using yum-plugin-security|
+  | YumUpdateSecurityMatch | 100                | RHEL, Oracle Linux, Amazon Linux |Detection using yum-plugin-security|
   | ChangelogExactMatch    | 95                 | CentOS, Ubuntu, Debian, Raspbian |Exact version match between changelog and package version|
   | ChangelogLenientMatch  | 50                 |         Ubuntu, Debian, Raspbian |Lenient version match between changelog and package version| 
   | PkgAuditMatch          | 100                |                          FreeBSD |Detection using pkg audit|
@@ -1212,7 +1338,7 @@ optional = [
 ## Example: Use MySQL as a DB storage back-end
 
 ```
-$ vuls scan \
+$ vuls report \
       -cvedb-type=mysql \
       -cvedb-url="user:pass@tcp(localhost:3306)/dbname?parseTime=true"
 ```
@@ -1268,8 +1394,6 @@ How to integrate Vuls with OWASP Dependency Check
     ```
 
 
-
-
 # Usage: TUI
 
 ## Display the latest scan results
@@ -1280,31 +1404,37 @@ tui:
                 [-cvedb-type=sqlite3|mysql]
                 [-cvedb-path=/path/to/cve.sqlite3]
                 [-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
-                [-results-dir=/path/to/results]
                 [-refresh-cve]
+                [-results-dir=/path/to/results]
+                [-log-dir=/path/to/log]
+                [-debug]
                 [-debug-sql]
                 [-pipe]
 
   -cvedb-path string
-        /path/to/sqlite3 (For get cve detail from cve.sqlite3) (default "/Users/kotakanbe/go/src/github.com/future-architect/vuls/cve.sqlite3")
+        /path/to/sqlite3 (For get cve detail from cve.sqlite3) 
   -cvedb-type string
         DB type for fetching CVE dictionary (sqlite3 or mysql) (default "sqlite3")
   -cvedb-url string
         http://cve-dictionary.com:8080 or mysql connection string
+  -debug
+        debug mode
   -debug-sql
         debug SQL
+  -log-dir string
+        /path/to/log (default "/var/log/vuls")
   -pipe
         Use stdin via PIPE
   -refresh-cve
         Refresh CVE information in JSON file under results dir
   -results-dir string
-        /path/to/results (default "/Users/kotakanbe/go/src/github.com/future-architect/vuls/results")
+        /path/to/results 
 ```
 
 Key binding is below.
 
 | key | |
-|:-----------------|:-------|:------|
+|:-----------------|:-------|
 | TAB | move cursor among the panes |
 | Arrow up/down | move cursor to up/down |
 | Ctrl+j, Ctrl+k | move cursor to up/down |
@@ -1355,14 +1485,14 @@ see [go-cve-dictionary#usage-fetch-nvd-data](https://github.com/kotakanbe/go-cve
 
 ----
 
-# Update Vuls With Glide
+# How to Update
 
 - Update go-cve-dictionary  
 If the DB schema was changed, please specify new SQLite3 or MySQL DB file.
 ```
 $ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
 $ git pull
-$ mv vendor /tmp/foo
+$ rm -r vendor
 $ make install
 ```
 
@@ -1370,7 +1500,7 @@ $ make install
 ```
 $ cd $GOPATH/src/github.com/future-architect/vuls
 $ git pull
-$ mv vendor /tmp/bar
+$ rm -r vendor
 $ make install
 ```
 Binary file was built under $GOPATH/bin
@@ -1412,7 +1542,7 @@ Run with --debug, --sql-debug option.
 - Adjusting Open File Limit  
 [Riak docs](http://docs.basho.com/riak/latest/ops/tuning/open-files-limit/) is awesome.
 
-- Does Vuls accept ssh connections with fish-shell or old zsh as the login shell?  
+- Does Vuls accept SSH connections with fish-shell or old zsh as the login shell?  
 No, Vuls needs a user on the server for bash login. see also [#8](/../../issues/8)
 
 - Windows  

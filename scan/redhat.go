@@ -54,6 +54,23 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 		return true, red
 	}
 
+	if r := exec(c, "ls /etc/oracle-release", noSudo); r.isSuccess() {
+		// Need to discover Oracle Linux first, because it provides an
+		// /etc/redhat-release that matches the upstream distribution
+		if r := exec(c, "cat /etc/oracle-release", noSudo); r.isSuccess() {
+			re := regexp.MustCompile(`(.*) release (\d[\d.]*)`)
+			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
+			if len(result) != 3 {
+				util.Log.Warn("Failed to parse Oracle Linux version: %s", r)
+				return true, red
+			}
+
+			release := result[2]
+			red.setDistro("oraclelinux", release)
+			return true, red
+		}
+	}
+
 	if r := exec(c, "ls /etc/redhat-release", noSudo); r.isSuccess() {
 		// https://www.rackaid.com/blog/how-to-determine-centos-or-red-hat-version/
 		// e.g.
@@ -115,7 +132,7 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 			{"yum --changelog --assumeno update yum", []int{0, 1}},
 		}
 
-	case "rhel":
+	case "rhel", "oraclelinux":
 		majorVersion, err := o.Distro.MajorVersion()
 		if err != nil {
 			return fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
@@ -187,7 +204,7 @@ func (o *redhat) checkDependencies() error {
 	switch o.Distro.Family {
 	case "centos":
 		packName = "yum-plugin-changelog"
-	case "rhel":
+	case "rhel", "oraclelinux":
 		if majorVersion < 6 {
 			packName = "yum-security"
 		} else {
@@ -265,7 +282,7 @@ func (o *redhat) parseScannedPackagesLine(line string) (models.PackageInfo, erro
 
 func (o *redhat) scanVulnInfos() ([]models.VulnInfo, error) {
 	if o.Distro.Family != "centos" {
-		// Amazon, RHEL has yum updateinfo as default
+		// Amazon, RHEL, Oracle Linux has yum updateinfo as default
 		// yum updateinfo can collenct vendor advisory information.
 		return o.scanUnsecurePackagesUsingYumPluginSecurity()
 	}
@@ -643,7 +660,7 @@ type distroAdvisoryCveIDs struct {
 }
 
 // Scaning unsecure packages using yum-plugin-security.
-// Amazon, RHEL
+// Amazon, RHEL, Oracle Linux
 func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos, error) {
 	if o.Distro.Family == "centos" {
 		// CentOS has no security channel.
@@ -658,13 +675,13 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 
-	// get advisoryID(RHSA, ALAS) - package name,version
+	// get advisoryID(RHSA, ALAS, ELSA) - package name,version
 	major, err := (o.Distro.MajorVersion())
 	if err != nil {
 		return nil, fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
 	}
 
-	if o.Distro.Family == "rhel" && major == 5 {
+	if (o.Distro.Family == "rhel" || o.Distro.Family == "oraclelinux") && major == 5 {
 		cmd = "yum --color=never list-security --security"
 	} else {
 		cmd = "yum --color=never --security updateinfo list updates"
@@ -706,8 +723,8 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 		dict[advIDPackNames.AdvisoryID] = packInfoList
 	}
 
-	// get advisoryID(RHSA, ALAS) - CVE IDs
-	if o.Distro.Family == "rhel" && major == 5 {
+	// get advisoryID(RHSA, ALAS, ELSA) - CVE IDs
+	if (o.Distro.Family == "rhel" || o.Distro.Family == "oraclelinux") && major == 5 {
 		cmd = "yum --color=never info-security"
 	} else {
 		cmd = "yum --color=never --security updateinfo updates"
@@ -807,7 +824,7 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 				// So use yum check-update && parse changelog
 				return result, fmt.Errorf(
 					"yum updateinfo is not suppported on  CentOS")
-			case "rhel", "amazon":
+			case "rhel", "amazon", "oraclelinux":
 				// nop
 			}
 
@@ -968,14 +985,15 @@ func (o *redhat) extractPackNameVerRel(nameVerRel string) (name, ver, rel string
 	return
 }
 
-// parseYumUpdateinfoListAvailable collect AdvisorID(RHSA, ALAS), packages
+// parseYumUpdateinfoListAvailable collect AdvisorID(RHSA, ALAS, ELSA), packages
 func (o *redhat) parseYumUpdateinfoListAvailable(stdout string) (advisoryIDPacksList, error) {
 	result := []advisoryIDPacks{}
 	lines := strings.Split(stdout, "\n")
 	for _, line := range lines {
 
 		if !(strings.HasPrefix(line, "RHSA") ||
-			strings.HasPrefix(line, "ALAS")) {
+			strings.HasPrefix(line, "ALAS") ||
+			strings.HasPrefix(line, "ELSA")) {
 			continue
 		}
 
