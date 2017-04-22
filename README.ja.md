@@ -27,7 +27,7 @@ Slackチームは[こちらから](http://goo.gl/forms/xm5KFo35tu)参加でき�
 - [Tutorial: Local Scan Mode](#tutorial-local-scan-mode)
   * [Step1. Launch Amazon Linux](#step1-launch-amazon-linux)
   * [Step2. Install requirements](#step2-install-requirements)
-  * [Step3. Deploy [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)](#step3-deploy-go-cve-dictionaryhttpsgithubcomkotakanbego-cve-dictionary)
+  * [Step3. Deploy go-cve-dictionary](#step3-deploy-go-cve-dictionary)
   * [Step4. Deploy Vuls](#step4-deploy-vuls)
   * [Step5. Config](#step5-config)
   * [Step6. Check config.toml and settings on the server before scanning](#step6-check-configtoml-and-settings-on-the-server-before-scanning)
@@ -151,12 +151,11 @@ Vulsは上に挙げた手動運用での課題を解決するツールであり�
 
 # Setup Vuls
 
-Vulsのセットアップは以下の３パターンがある
+Vulsのセットアップは以下の2パターンがある
 
 -  Dockerコンテナ上にセットアップ  
 see https://github.com/future-architect/vuls/tree/master/setup/docker  
-- Chefでセットアップ  
-see https://github.com/sadayuki-matsuno/vuls-cookbook
+
 - 手動でセットアップ  
 Hello Vulsチュートリアルでは手動でのセットアップ方法で説明する
 
@@ -221,7 +220,9 @@ export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 $ source /etc/profile.d/goenv.sh
 ```
 
-## Step3. Deploy [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
+## Step3. Deploy go-cve-dictionary
+
+[go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
 
 ```bash
 $ sudo mkdir /var/log/vuls

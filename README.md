@@ -32,7 +32,7 @@ We have a slack team. [Join slack team](http://goo.gl/forms/xm5KFo35tu)
 - [Tutorial: Local Scan Mode](#tutorial-local-scan-mode)
   * [Step1. Launch Amazon Linux](#step1-launch-amazon-linux)
   * [Step2. Install requirements](#step2-install-requirements)
-  * [Step3. Deploy [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)](#step3-deploy-go-cve-dictionaryhttpsgithubcomkotakanbego-cve-dictionary)
+  * [Step3. Deploy go-cve-dictionary](#step3-deploy-go-cve-dictionary)
   * [Step4. Deploy Vuls](#step4-deploy-vuls)
   * [Step5. Config](#step5-config)
   * [Step6. Check config.toml and settings on the server before scanning](#step6-check-configtoml-and-settings-on-the-server-before-scanning)
@@ -225,7 +225,9 @@ Set the OS environment variable to current shell
 $ source /etc/profile.d/goenv.sh
 ```
 
-## Step3. Deploy [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
+## Step3. Deploy go-cve-dictionary
+
+[go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
 
 ```bash
 $ sudo mkdir /var/log/vuls
