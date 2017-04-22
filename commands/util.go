@@ -185,13 +185,13 @@ func fillCveInfoFromOvalDB(r models.ScanResult) (*models.ScanResult, error) {
 	var ovalClient oval.OvalClient
 	switch r.Family {
 	case "ubuntu", "debian":
-		// ovalClient = oval.NewDebianOvalClient()
-		ovalClient = oval.NewRedhatOvalClient()
+		ovalClient = oval.NewDebian()
+		fmt.Println("hello")
 	case "redhat":
-		ovalClient = oval.NewRedhatOvalClient()
+		// ovalClient = oval.NewRedhat()
 	}
-	ovalClient.FillCveInfoFromOvalDB()
-	return nil, nil
+	result, _ := ovalClient.FillCveInfoFromOvalDB(r)
+	return result, nil
 }
 
 func loadPreviousScanHistory(current models.ScanHistory) (previous models.ScanHistory, err error) {

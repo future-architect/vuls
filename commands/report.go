@@ -399,14 +399,15 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 				}
 			}
 
-			filled, err := fillCveInfoFromCveDB(r)
+			filled, _ := fillCveInfoFromOvalDB(r)
+			// filled, _ = fillCveInfoFromOvalDB(*filled)
+			// return subcommands.ExitFailure
+
+			filled, err := fillCveInfoFromCveDB(*filled)
 			if err != nil {
 				util.Log.Errorf("Failed to fill CVE information: %s", err)
 				return subcommands.ExitFailure
 			}
-
-			fillCveInfoFromOvalDB(r)
-			return subcommands.ExitFailure
 
 			filled.Lang = c.Conf.Lang
 			if err := overwriteJSONFile(dir, *filled); err != nil {

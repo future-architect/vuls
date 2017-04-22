@@ -1,11 +1,11 @@
 package oval
 
-type redhatOvalClient struct{}
+type redhat struct{}
 
-func NewRedhatOvalClient() redhatOvalClient {
-	return redhatOvalClient{}
+func NewRedhat() redhat {
+	return redhat{}
 }
 
-func (o redhatOvalClient) FillCveInfoFromOvalDB() {
+func (o redhat) FillCveInfoFromOvalDB() {
 
 }
