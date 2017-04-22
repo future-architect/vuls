@@ -404,6 +404,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 				util.Log.Errorf("Failed to fill CVE information: %s", err)
 				return subcommands.ExitFailure
 			}
+
+			fillCveInfoFromOvalDB(r)
+			return subcommands.ExitFailure
+
 			filled.Lang = c.Conf.Lang
 			if err := overwriteJSONFile(dir, *filled); err != nil {
 				util.Log.Errorf("Failed to write JSON: %s", err)
