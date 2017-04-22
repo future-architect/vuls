@@ -25,6 +25,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/cveapi"
 	cve "github.com/kotakanbe/go-cve-dictionary/models"
+	goval "github.com/kotakanbe/goval-dictionary/models"
 )
 
 // ScanHistory is the history of Scanning.
@@ -134,8 +135,13 @@ func (r ScanResult) FillCveDetail() (*ScanResult, error) {
 // FilterByCvssOver is filter function.
 func (r ScanResult) FilterByCvssOver() ScanResult {
 	cveInfos := []CveInfo{}
+	// TODO: Set correct default value
+	if config.Conf.CvssScoreOver == 0 {
+		config.Conf.CvssScoreOver = -1.1
+	}
+
 	for _, cveInfo := range r.KnownCves {
-		if config.Conf.CvssScoreOver < cveInfo.CveDetail.CvssScore(config.Conf.Lang) {
+		if config.Conf.CvssScoreOver <= cveInfo.CveDetail.CvssScore(config.Conf.Lang) {
 			cveInfos = append(cveInfos, cveInfo)
 		}
 	}
@@ -260,6 +266,9 @@ const (
 	// PkgAuditMatchStr is a String representation of PkgAuditMatch
 	PkgAuditMatchStr = "PkgAuditMatch"
 
+	// OvalMatchStr is a String representation of OvalMatch
+	OvalMatchStr = "OvalMatch"
+
 	// ChangelogExactMatchStr is a String representation of ChangelogExactMatch
 	ChangelogExactMatchStr = "ChangelogExactMatch"
 
@@ -281,6 +290,9 @@ var YumUpdateSecurityMatch = Confidence{100, YumUpdateSecurityMatchStr}
 
 // PkgAuditMatch is a ranking how confident the CVE-ID was deteted correctly
 var PkgAuditMatch = Confidence{100, PkgAuditMatchStr}
+
+// OvalMatch is a ranking how confident the CVE-ID was deteted correctly
+var OvalMatch = Confidence{100, OvalMatchStr}
 
 // ChangelogExactMatch is a ranking how confident the CVE-ID was deteted correctly
 var ChangelogExactMatch = Confidence{95, ChangelogExactMatchStr}
@@ -370,7 +382,8 @@ func (c CveInfos) Less(i, j int) bool {
 
 // CveInfo has Cve Information.
 type CveInfo struct {
-	CveDetail cve.CveDetail
+	CveDetail  cve.CveDetail
+	OvalDetail goval.Definition
 	VulnInfo
 }
 

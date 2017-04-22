@@ -50,6 +50,9 @@ type ReportCmd struct {
 	cvedbpath string
 	cvedbURL  string
 
+	ovaldbtype string
+	ovaldbpath string
+
 	toSlack     bool
 	toEMail     bool
 	toLocalFile bool
@@ -161,6 +164,19 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"cvedb-path",
 		defaultCveDBPath,
 		"/path/to/sqlite3 (For get cve detail from cve.sqlite3)")
+
+	f.StringVar(
+		&p.ovaldbtype,
+		"ovaldb-type",
+		"sqlite3",
+		"DB type for fetching OVAL dictionary (sqlite3 or mysql)")
+
+	defaultOvalDBPath := filepath.Join(wd, "oval.sqlite3")
+	f.StringVar(
+		&p.ovaldbpath,
+		"ovaldb-path",
+		defaultOvalDBPath,
+		"/path/to/sqlite3 (For get oval detail from oval.sqlite3)")
 
 	f.StringVar(
 		&p.cvedbURL,
@@ -276,6 +292,8 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.CveDBType = p.cvedbtype
 	c.Conf.CveDBPath = p.cvedbpath
 	c.Conf.CveDBURL = p.cvedbURL
+	c.Conf.OvalDBType = p.ovaldbtype
+	c.Conf.OvalDBPath = p.ovaldbpath
 	c.Conf.CvssScoreOver = p.cvssScoreOver
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
 	c.Conf.HTTPProxy = p.httpProxy
@@ -399,11 +417,18 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 				}
 			}
 
-			filled, err := fillCveInfoFromCveDB(r)
+			filled, err := fillCveInfoFromOvalDB(r)
+			if err != nil {
+				util.Log.Errorf("Failed to fill OVAL information: %s", err)
+				return subcommands.ExitFailure
+			}
+
+			filled, err = fillCveInfoFromCveDB(*filled)
 			if err != nil {
 				util.Log.Errorf("Failed to fill CVE information: %s", err)
 				return subcommands.ExitFailure
 			}
+
 			filled.Lang = c.Conf.Lang
 			if err := overwriteJSONFile(dir, *filled); err != nil {
 				util.Log.Errorf("Failed to write JSON: %s", err)
