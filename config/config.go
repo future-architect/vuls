@@ -57,6 +57,9 @@ type Config struct {
 	CveDBURL    string
 	CacheDBPath string
 
+	OvalDBType string
+	OvalDBPath string
+
 	FormatXML         bool
 	FormatJSON        bool
 	FormatOneEMail    bool

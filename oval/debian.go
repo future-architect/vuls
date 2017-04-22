@@ -3,7 +3,9 @@ package oval
 import (
 	"fmt"
 
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/util"
 	"github.com/k0kubun/pp"
 	ver "github.com/knqyf263/go-deb-version"
 	cve "github.com/kotakanbe/go-cve-dictionary/models"
@@ -22,20 +24,19 @@ func NewDebian() Debian {
 
 // FillCveInfoFromOvalDB returns scan result after updating CVE info by OVAL
 func (o Debian) FillCveInfoFromOvalDB(r models.ScanResult) (*models.ScanResult, error) {
-	ovalconf.Conf.DBType = "sqlite3"
-	ovalconf.Conf.DBPath = "/Users/teppei/src/github.com/future-architect/vuls/oval.sqlite3"
+	util.Log.Debugf("open oval-dictionary db (%s)", config.Conf.OvalDBType)
+	ovalconf.Conf.DBType = config.Conf.OvalDBType
+	ovalconf.Conf.DBPath = config.Conf.CveDBPath
+
 	if err := db.OpenDB(); err != nil {
-		fmt.Errorf("DB Open error")
-		return nil, err
+		return nil, fmt.Errorf("Failed to open OVAL DB. err: %s", err)
 	}
 
 	d := db.NewDebian()
 	for _, pack := range r.Packages {
-		// pp.Println(pack.Name)
 		definitions, err := d.GetByPackName("8.2", pack.Name)
 		if err != nil {
-			fmt.Errorf("err")
-			return nil, err
+			return nil, fmt.Errorf("Failed to get OVAL info by package name: %v", err)
 		}
 		for _, definition := range definitions {
 			current, _ := ver.NewVersion(pack.Version)
@@ -54,7 +55,6 @@ func (o Debian) FillCveInfoFromOvalDB(r models.ScanResult) (*models.ScanResult, 
 }
 
 func (o Debian) fillOvalInfo(r models.ScanResult, definition ovalmodels.Definition) models.ScanResult {
-
 	// Update KnownCves by OVAL info
 	known, unknown := models.CveInfos{}, models.CveInfos{}
 	for _, k := range r.KnownCves {

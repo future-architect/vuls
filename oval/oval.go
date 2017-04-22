@@ -5,6 +5,7 @@ import (
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
+// OvalClient is the interface of OVAL client.
 type OvalClient interface {
 	FillCveInfoFromOvalDB(r models.ScanResult) (*models.ScanResult, error)
 }
