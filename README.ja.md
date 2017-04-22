@@ -774,10 +774,10 @@ scan:
                 [-skip-broken]
                 [-http-proxy=http://192.168.0.1:8080]
                 [-ask-key-password]
+                [-timeout=300]
+                [-timeout-scan=7200]
                 [-debug]
                 [-pipe]
-                [-timeout]
-                [-timeout-scan]
 
                 [SERVER]...
   -ask-key-password
@@ -803,7 +803,7 @@ scan:
   -ssh-native-insecure
         Use Native Go implementation of SSH. Default: Use the external command
   -timeout int
-        Number of seconds for detecting platform for all servers (default 60)
+        Number of seconds for processing other than scan (default 300)
   -timeout-scan int
         Number of second for scaning vulnerabilities for all servers (default 7200)
 ```

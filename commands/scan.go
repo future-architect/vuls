@@ -35,19 +35,19 @@ import (
 
 // ScanCmd is Subcommand of host discovery mode
 type ScanCmd struct {
-	debug            bool
-	configPath       string
-	resultsDir       string
-	logDir           string
-	cacheDBPath      string
-	httpProxy        string
-	askKeyPassword   bool
-	containersOnly   bool
-	skipBroken       bool
-	sshNative        bool
-	pipe             bool
-	scanTimeoutSec   int
-	detectTimeoutSec int
+	debug          bool
+	configPath     string
+	resultsDir     string
+	logDir         string
+	cacheDBPath    string
+	httpProxy      string
+	askKeyPassword bool
+	containersOnly bool
+	skipBroken     bool
+	sshNative      bool
+	pipe           bool
+	timeoutSec     int
+	scanTimeoutSec int
 }
 
 // Name return subcommand name
@@ -69,10 +69,10 @@ func (*ScanCmd) Usage() string {
 		[-skip-broken]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-ask-key-password]
+		[-timeout=300]
+		[-timeout-scan=7200]
 		[-debug]
 		[-pipe]
-		[-timeout]
-		[-timeout-detect-platform]
 
 		[SERVER]...
 `
@@ -139,17 +139,17 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		"Use stdin via PIPE")
 
 	f.IntVar(
-		&p.detectTimeoutSec,
+		&p.timeoutSec,
 		"timeout",
-		1*60,
-		"Number of seconds for detecting platform for all servers",
+		5*60,
+		"Number of seconds for processing other than scan",
 	)
 
 	f.IntVar(
 		&p.scanTimeoutSec,
 		"timeout-scan",
 		120*60,
-		"Number of second for scaning vulnerabilities for all servers",
+		"Number of seconds for scaning vulnerabilities for all servers",
 	)
 }
 
@@ -231,13 +231,13 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	util.Log.Info("Detecting Server/Container OS... ")
-	if err := scan.InitServers(); err != nil {
+	if err := scan.InitServers(p.timeoutSec); err != nil {
 		util.Log.Errorf("Failed to init servers: %s", err)
 		return subcommands.ExitFailure
 	}
 
 	util.Log.Info("Detecting Platforms... ")
-	scan.DetectPlatforms(p.detectTimeoutSec)
+	scan.DetectPlatforms(p.timeoutSec)
 
 	util.Log.Info("Scanning vulnerabilities... ")
 	if err := scan.Scan(p.scanTimeoutSec); err != nil {
