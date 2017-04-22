@@ -31,6 +31,7 @@ import (
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/cveapi"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
 )
@@ -178,6 +179,23 @@ func fillCveInfoFromCveDB(r models.ScanResult) (*models.ScanResult, error) {
 	}
 	r.ScannedCves = vs
 	return r.FillCveDetail()
+}
+
+func fillCveInfoFromOvalDB(r models.ScanResult) (*models.ScanResult, error) {
+	var ovalClient oval.OvalClient
+	switch r.Family {
+	case "ubuntu", "debian":
+		ovalClient = oval.NewDebian()
+		fmt.Println("hello")
+	case "redhat":
+		// TODO: RedHat
+		// ovalClient = oval.NewRedhat()
+	}
+	result, err := ovalClient.FillCveInfoFromOvalDB(r)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func loadPreviousScanHistory(current models.ScanHistory) (previous models.ScanHistory, err error) {

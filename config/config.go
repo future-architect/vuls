@@ -44,9 +44,10 @@ type Config struct {
 	CvssScoreOver      float64
 	IgnoreUnscoredCves bool
 
-	SSHNative      bool
-	ContainersOnly bool
-	SkipBroken     bool
+	SSHNative       bool
+	ContainersOnly  bool
+	PackageListOnly bool
+	SkipBroken      bool
 
 	HTTPProxy  string `valid:"url"`
 	LogDir     string
@@ -56,6 +57,9 @@ type Config struct {
 	CveDBPath   string
 	CveDBURL    string
 	CacheDBPath string
+
+	OvalDBType string
+	OvalDBPath string
 
 	FormatXML         bool
 	FormatJSON        bool
