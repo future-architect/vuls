@@ -16,6 +16,93 @@ Slackチームは[こちらから](http://goo.gl/forms/xm5KFo35tu)参加でき�
 
 ----
 
+# TOC
+
+- [Vuls: VULnerability Scanner](#vuls-vulnerability-scanner)
+- [TOC](#toc)
+- [Abstract](#abstract)
+- [Main Features](#main-features)
+- [What Vuls Doesn't Do](#what-vuls-doesnt-do)
+- [Setup Vuls](#setup-vuls)
+- [Tutorial: Local Scan Mode](#tutorial-local-scan-mode)
+  * [Step1. Launch Amazon Linux](#step1-launch-amazon-linux)
+  * [Step2. Install requirements](#step2-install-requirements)
+  * [Step3. Deploy go-cve-dictionary](#step3-deploy-go-cve-dictionary)
+  * [Step4. Deploy Vuls](#step4-deploy-vuls)
+  * [Step5. Config](#step5-config)
+  * [Step6. Check config.toml and settings on the server before scanning](#step6-check-configtoml-and-settings-on-the-server-before-scanning)
+  * [Step7. Start Scanning](#step7-start-scanning)
+  * [Step8. Reporting](#step8-reporting)
+  * [Step9. TUI](#step9-tui)
+  * [Step10. Web UI](#step10-web-ui)
+- [Tutorial: Remote Scan Mode](#tutorial-remote-scan-mode)
+  * [Step1. Launch Another Amazon Linux](#step1-launch-another-amazon-linux)
+  * [Step2. Install Dependencies on the Remote Server](#step2-install-dependencies-on-the-remote-server)
+  * [Step3. Enable to SSH from Localhost](#step3-enable-to-ssh-from-localhost)
+  * [Step4. Config](#step4-config)
+  * [Step5. Check config.toml and settings on the server before scanning](#step5-check-configtoml-and-settings-on-the-server-before-scanning)
+  * [Step6. Start Scanning](#step6-start-scanning)
+  * [Step7. Reporting](#step7-reporting)
+- [Architecture](#architecture)
+  * [A. Scan via SSH Mode (Remote Scan Mode)](#a-scan-via-ssh-mode-remote-scan-mode)
+  * [B. Scan without SSH (Local Scan Mode)](#b-scan-without-ssh-local-scan-mode)
+  * [go-cve-dictionary](#go-cve-dictionary)
+  * [Vuls](#vuls)
+- [Performance Considerations](#performance-considerations)
+- [Use Cases](#use-cases)
+  * [Scan all servers](#scan-all-servers)
+  * [Scan a single server](#scan-a-single-server)
+- [Support OS](#support-os)
+- [Usage: Automatic Server Discovery](#usage-automatic-server-discovery)
+  * [Example](#example)
+- [Configuration](#configuration)
+- [Usage: Configtest](#usage-configtest)
+  * [Dependencies on Target Servers](#dependencies-on-target-servers)
+  * [Check /etc/sudoers](#check-etcsudoers)
+- [Usage: Scan](#usage-scan)
+  * [-ssh-native-insecure option](#-ssh-native-insecure-option)
+  * [-ask-key-password option](#-ask-key-password-option)
+  * [Example: Scan all servers defined in config file](#example-scan-all-servers-defined-in-config-file)
+  * [Example: Scan specific servers](#example-scan-specific-servers)
+  * [Example: Scan via shell instead of SSH.](#example-scan-via-shell-instead-of-ssh)
+    + [cronで動かす場合](#cron%E3%81%A7%E5%8B%95%E3%81%8B%E3%81%99%E5%A0%B4%E5%90%88)
+  * [Example: Scan containers (Docker/LXD)](#example-scan-containers-dockerlxd)
+    + [Docker](#docker)
+    + [LXDコンテナをスキャンする場合](#lxd%E3%82%B3%E3%83%B3%E3%83%86%E3%83%8A%E3%82%92%E3%82%B9%E3%82%AD%E3%83%A3%E3%83%B3%E3%81%99%E3%82%8B%E5%A0%B4%E5%90%88)
+- [Usage: Report](#usage-report)
+  * [How to read a report](#how-to-read-a-report)
+    + [Example](#example-1)
+    + [Summary part](#summary-part)
+    + [Detailed Part](#detailed-part)
+    + [Changelog Part](#changelog-part)
+  * [Example: Send scan results to Slack](#example-send-scan-results-to-slack)
+  * [Example: Put results in S3 bucket](#example-put-results-in-s3-bucket)
+  * [Example: Put results in Azure Blob storage](#example-put-results-in-azure-blob-storage)
+  * [Example: IgnoreCves](#example-ignorecves)
+  * [Example: Add optional key-value pairs to JSON](#example-add-optional-key-value-pairs-to-json)
+  * [Example: Use MySQL as a DB storage back-end](#example-use-mysql-as-a-db-storage-back-end)
+- [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerability-of-non-os-package)
+- [Usage: Integrate with OWASP Dependency Check to Automatic update when the libraries are updated (Experimental)](#usage-integrate-with-owasp-dependency-check-to-automatic-update-when-the-libraries-are-updated-experimental)
+- [Usage: TUI](#usage-tui)
+  * [Display the latest scan results](#display-the-latest-scan-results)
+  * [Display the previous scan results](#display-the-previous-scan-results)
+- [Display the previous scan results using peco](#display-the-previous-scan-results-using-peco)
+- [Usage: go-cve-dictonary on different server](#usage-go-cve-dictonary-on-different-server)
+- [Usage: Update NVD Data](#usage-update-nvd-data)
+- [レポートの日本語化](#%E3%83%AC%E3%83%9D%E3%83%BC%E3%83%88%E3%81%AE%E6%97%A5%E6%9C%AC%E8%AA%9E%E5%8C%96)
+  * [fetchnvd, fetchjvnの実行順序の注意](#fetchnvd-fetchjvn%E3%81%AE%E5%AE%9F%E8%A1%8C%E9%A0%86%E5%BA%8F%E3%81%AE%E6%B3%A8%E6%84%8F)
+  * [スキャン実行](#%E3%82%B9%E3%82%AD%E3%83%A3%E3%83%B3%E5%AE%9F%E8%A1%8C)
+- [Update Vuls With Glide](#update-vuls-with-glide)
+- [Misc](#misc)
+- [Related Projects](#related-projects)
+- [Data Source](#data-source)
+- [Authors](#authors)
+- [Contribute](#contribute)
+- [Change Log](#change-log)
+- [License](#license)
+
+----
+
 # Abstract
 
 毎日のように発見される脆弱性の調査やソフトウェアアップデート作業は、システム管理者にとって負荷の高いタスクである。
@@ -64,12 +151,11 @@ Vulsは上に挙げた手動運用での課題を解決するツールであり�
 
 # Setup Vuls
 
-Vulsのセットアップは以下の３パターンがある
+Vulsのセットアップは以下の2パターンがある
 
 -  Dockerコンテナ上にセットアップ  
 see https://github.com/future-architect/vuls/tree/master/setup/docker  
-- Chefでセットアップ  
-see https://github.com/sadayuki-matsuno/vuls-cookbook
+
 - 手動でセットアップ  
 Hello Vulsチュートリアルでは手動でのセットアップ方法で説明する
 
@@ -134,7 +220,9 @@ export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 $ source /etc/profile.d/goenv.sh
 ```
 
-## Step3. Deploy [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
+## Step3. Deploy go-cve-dictionary
+
+[go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
 
 ```bash
 $ sudo mkdir /var/log/vuls
