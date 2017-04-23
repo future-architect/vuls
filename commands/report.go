@@ -424,6 +424,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			}
 
 			filled, err = fillCveInfoFromCveDB(*filled)
+			// // filled, err := fillCveInfoFromCveDB(r)
 			if err != nil {
 				util.Log.Errorf("Failed to fill CVE information: %s", err)
 				return subcommands.ExitFailure

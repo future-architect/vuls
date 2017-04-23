@@ -43,6 +43,7 @@ type ScanCmd struct {
 	httpProxy        string
 	askKeyPassword   bool
 	containersOnly   bool
+	packageListOnly  bool
 	skipBroken       bool
 	sshNative        bool
 	pipe             bool
@@ -131,6 +132,12 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		"Ask ssh privatekey password before scanning",
 	)
+
+	f.BoolVar(
+		&p.packageListOnly,
+		"package-list-only",
+		false,
+		"List all packages without scan")
 
 	f.BoolVar(
 		&p.pipe,
@@ -223,6 +230,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	c.Conf.SSHNative = p.sshNative
 	c.Conf.HTTPProxy = p.httpProxy
 	c.Conf.ContainersOnly = p.containersOnly
+	c.Conf.PackageListOnly = p.packageListOnly
 	c.Conf.SkipBroken = p.skipBroken
 
 	util.Log.Info("Validating config...")

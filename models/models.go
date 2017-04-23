@@ -68,9 +68,9 @@ type ScanResult struct {
 	// Scanned Vulns via SSH + CPE Vulns
 	ScannedCves []VulnInfo
 
-	KnownCves   []CveInfo
-	UnknownCves []CveInfo
-	IgnoredCves []CveInfo
+	KnownCves   CveInfos
+	UnknownCves CveInfos
+	IgnoredCves CveInfos
 
 	Packages PackageInfoList
 
@@ -93,7 +93,7 @@ func (r ScanResult) FillCveDetail() (*ScanResult, error) {
 		return nil, err
 	}
 
-	known, unknown, ignored := CveInfos{}, CveInfos{}, CveInfos{}
+	r.IgnoredCves = CveInfos{}
 	for _, d := range ds {
 		cinfo := CveInfo{
 			CveDetail: d,
@@ -105,7 +105,7 @@ func (r ScanResult) FillCveDetail() (*ScanResult, error) {
 		found := false
 		for _, icve := range config.Conf.Servers[r.ServerName].IgnoreCves {
 			if icve == d.CveID {
-				ignored = append(ignored, cinfo)
+				r.IgnoredCves.Insert(cinfo)
 				found = true
 				break
 			}
@@ -114,21 +114,32 @@ func (r ScanResult) FillCveDetail() (*ScanResult, error) {
 			continue
 		}
 
+		// Update known if KnownCves already have cinfo
+		if c, ok := r.KnownCves.Get(cinfo.CveID); ok {
+			c.CveDetail = d
+			r.KnownCves.Update(c)
+			continue
+		}
+
+		// Update unknown if UnknownCves already have cinfo
+		if c, ok := r.UnknownCves.Get(cinfo.CveID); ok {
+			c.CveDetail = d
+			r.UnknownCves.Update(c)
+			continue
+		}
+
 		// unknown
 		if d.CvssScore(config.Conf.Lang) <= 0 {
-			unknown = append(unknown, cinfo)
+			r.UnknownCves.Insert(cinfo)
 			continue
 		}
 
 		// known
-		known = append(known, cinfo)
+		r.KnownCves.Insert(cinfo)
 	}
-	sort.Sort(known)
-	sort.Sort(unknown)
-	sort.Sort(ignored)
-	r.KnownCves = known
-	r.UnknownCves = unknown
-	r.IgnoredCves = ignored
+	sort.Sort(r.KnownCves)
+	sort.Sort(r.UnknownCves)
+	sort.Sort(r.IgnoredCves)
 	return &r, nil
 }
 
@@ -378,6 +389,45 @@ func (c CveInfos) Less(i, j int) bool {
 		return c[i].CveDetail.CveID < c[j].CveDetail.CveID
 	}
 	return c[j].CveDetail.CvssScore(lang) < c[i].CveDetail.CvssScore(lang)
+}
+
+func (c CveInfos) Get(cveID string) (CveInfo, bool) {
+	for _, cve := range c {
+		if cve.VulnInfo.CveID == cveID {
+			return cve, true
+		}
+	}
+	return CveInfo{}, false
+}
+
+func (c CveInfos) Delete(cveID string) {
+	for i, cve := range c {
+		if cve.VulnInfo.CveID == cveID {
+			c = append(c[:i], c[i+1:]...)
+			break
+		}
+	}
+}
+
+func (c *CveInfos) Insert(cveInfo CveInfo) {
+	*c = append(*c, cveInfo)
+}
+
+func (c CveInfos) Update(cveInfo CveInfo) (ok bool) {
+	for i, cve := range c {
+		if cve.VulnInfo.CveID == cveInfo.VulnInfo.CveID {
+			c[i] = cveInfo
+			return true
+		}
+	}
+	return false
+}
+
+func (c *CveInfos) Upsert(cveInfo CveInfo) {
+	ok := c.Update(cveInfo)
+	if !ok {
+		c.Insert(cveInfo)
+	}
 }
 
 // CveInfo has Cve Information.

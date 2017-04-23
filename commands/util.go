@@ -188,9 +188,13 @@ func fillCveInfoFromOvalDB(r models.ScanResult) (*models.ScanResult, error) {
 		ovalClient = oval.NewDebian()
 		fmt.Println("hello")
 	case "redhat":
+		// TODO: RedHat
 		// ovalClient = oval.NewRedhat()
 	}
-	result, _ := ovalClient.FillCveInfoFromOvalDB(r)
+	result, err := ovalClient.FillCveInfoFromOvalDB(r)
+	if err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 
