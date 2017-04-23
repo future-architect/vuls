@@ -400,10 +400,11 @@ func (c CveInfos) Get(cveID string) (CveInfo, bool) {
 	return CveInfo{}, false
 }
 
-func (c CveInfos) Delete(cveID string) {
-	for i, cve := range c {
+func (c *CveInfos) Delete(cveID string) {
+	cveInfos := *c
+	for i, cve := range cveInfos {
 		if cve.VulnInfo.CveID == cveID {
-			c = append(c[:i], c[i+1:]...)
+			*c = append(cveInfos[:i], cveInfos[i+1:]...)
 			break
 		}
 	}
