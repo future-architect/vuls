@@ -21,7 +21,15 @@
 
 [[dependencies]]
   branch = "master"
+  name = "github.com/k0kubun/pp"
+
+[[dependencies]]
+  branch = "master"
   name = "github.com/kotakanbe/go-cve-dictionary"
+
+[[dependencies]]
+  branch = "master"
+  name = "github.com/kotakanbe/goval-dictionary"
 
 [[dependencies]]
   branch = "master"

@@ -1,4 +1,4 @@
-memo = "0851217ca0cf4879a4cf7b2041f2ff852c408df45e075fbaccb7805164db4507"
+memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
 
 [[projects]]
   branch = "master"
@@ -141,7 +141,7 @@ memo = "0851217ca0cf4879a4cf7b2041f2ff852c408df45e075fbaccb7805164db4507"
   branch = "master"
   name = "github.com/kotakanbe/goval-dictionary"
   packages = ["config","db","log","models"]
-  revision = "931528ebc56092a6abc0799665cb74f944d0705b"
+  revision = "c33f7c4a77c3522ea25a70b9c38e1ae910f106cb"
 
 [[projects]]
   branch = "master"
@@ -243,22 +243,22 @@ memo = "0851217ca0cf4879a4cf7b2041f2ff852c408df45e075fbaccb7805164db4507"
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["curve25519","ed25519","ed25519/internal/edwards25519","ssh","ssh/agent","ssh/terminal"]
-  revision = "ed779e1bec0180cdfce8135ca6558067b388777b"
+  revision = "96846453c37f0876340a66a47f3f75b1f3a6cd2d"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","idna","publicsuffix"]
-  revision = "d1e1b351919c6738fdeb9893d5c998b161464f0c"
+  revision = "d212a1ef2de2f5d441c327b8f26cf3ea3ea9f265"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "f3918c30c5c2cb527c0b071a27c35120a6c0719a"
+  revision = "ea9bcade75cb975a0b9738936568ab388b845617"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["internal/gen","internal/triegen","internal/ucd","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
-  revision = "f4b4367115ec2de254587813edaa901bc1c723a8"
+  revision = "a9a820217f98f7c8a207ec1e45a874e1fe12c478"
