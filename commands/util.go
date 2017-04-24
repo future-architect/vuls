@@ -187,9 +187,8 @@ func fillCveInfoFromOvalDB(r models.ScanResult) (*models.ScanResult, error) {
 	case "ubuntu", "debian":
 		ovalClient = oval.NewDebian()
 		fmt.Println("hello")
-	case "redhat":
-		// TODO: RedHat
-		// ovalClient = oval.NewRedhat()
+	case "redhat", "centos":
+		ovalClient = oval.NewRedhat()
 	}
 	result, err := ovalClient.FillCveInfoFromOvalDB(r)
 	if err != nil {

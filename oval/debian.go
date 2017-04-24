@@ -35,7 +35,7 @@ func (o Debian) FillCveInfoFromOvalDB(r models.ScanResult) (*models.ScanResult, 
 	for _, pack := range r.Packages {
 		definitions, err := d.GetByPackName(r.Release, pack.Name)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to get OVAL info by package name: %v", err)
+			return nil, fmt.Errorf("Failed to get Debian OVAL info by package name: %v", err)
 		}
 		for _, definition := range definitions {
 			current, _ := ver.NewVersion(pack.Version)
