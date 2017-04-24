@@ -1,4 +1,4 @@
-memo = "404d058cf6b46d820e153afc5721e1ab2aa2b10ec345d969b9c460097f99add3"
+memo = "0851217ca0cf4879a4cf7b2041f2ff852c408df45e075fbaccb7805164db4507"
 
 [[projects]]
   branch = "master"
@@ -114,10 +114,16 @@ memo = "404d058cf6b46d820e153afc5721e1ab2aa2b10ec345d969b9c460097f99add3"
   revision = "612b0b2987ec1a6af46d7008cef1efd4b3898346"
 
 [[projects]]
+  branch = "master"
   name = "github.com/k0kubun/pp"
   packages = ["."]
-  revision = "027a6d1765d673d337e687394dbe780dd64e2a1e"
-  version = "v2.3.0"
+  revision = "d1532fc5d94ecdf2da29e24d7b99721f3287de4a"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/knqyf263/go-deb-version"
+  packages = ["."]
+  revision = "bec774d791d03b721a20bd3ca1fbdd566fd0f2b9"
 
 [[projects]]
   branch = "master"
@@ -133,6 +139,12 @@ memo = "404d058cf6b46d820e153afc5721e1ab2aa2b10ec345d969b9c460097f99add3"
 
 [[projects]]
   branch = "master"
+  name = "github.com/kotakanbe/goval-dictionary"
+  packages = ["config","db","log","models"]
+  revision = "931528ebc56092a6abc0799665cb74f944d0705b"
+
+[[projects]]
+  branch = "master"
   name = "github.com/kotakanbe/logrus-prefixed-formatter"
   packages = ["."]
   revision = "e7519b8c80ba008a3bfc57ffa31232bf2a77f455"
@@ -142,6 +154,12 @@ memo = "404d058cf6b46d820e153afc5721e1ab2aa2b10ec345d969b9c460097f99add3"
   name = "github.com/lib/pq"
   packages = [".","hstore","oid"]
   revision = "2704adc878c21e1329f46f6e56a1c387d788ff94"
+
+[[projects]]
+  name = "github.com/labstack/gommon"
+  packages = ["color","log"]
+  revision = "9cedb429ffbe71a32a3ae7c65fd109cb7ae07804"
+  version = "v0.2.0"
 
 [[projects]]
   name = "github.com/mattn/go-colorable"
@@ -202,6 +220,24 @@ memo = "404d058cf6b46d820e153afc5721e1ab2aa2b10ec345d969b9c460097f99add3"
   packages = ["."]
   revision = "2adb3e0c4ddd8778c4adde609d2dfd4fbe6096ea"
   version = "1.6"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/valyala/bytebufferpool"
+  packages = ["."]
+  revision = "e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/valyala/fasttemplate"
+  packages = ["."]
+  revision = "dcecefd839c4193db0d35b88ec65b4c12d360ab0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/ymomoi/goval-parser"
+  packages = ["oval"]
+  revision = "fa7d8e949108b0b2b7d124bef9a7f2bda9b6dd69"
 
 [[projects]]
   branch = "master"

@@ -161,27 +161,30 @@ func (o *debian) checkDependencies() error {
 }
 
 func (o *debian) scanPackages() error {
-	var err error
-	var packs []models.PackageInfo
-	if packs, err = o.scanInstalledPackages(); err != nil {
+	installed, upgradable, err := o.scanInstalledPackages()
+	if err != nil {
 		o.log.Errorf("Failed to scan installed packages")
 		return err
 	}
-	o.setPackages(packs)
+	o.setPackages(installed)
 
-	var unsecurePacks []models.VulnInfo
-	if unsecurePacks, err = o.scanUnsecurePackages(packs); err != nil {
+	if config.Conf.PackageListOnly {
+		return nil
+	}
+
+	unsecure, err := o.scanUnsecurePackages(upgradable)
+	if err != nil {
 		o.log.Errorf("Failed to scan vulnerable packages")
 		return err
 	}
-	o.setVulnInfos(unsecurePacks)
+	o.setVulnInfos(unsecure)
 	return nil
 }
 
-func (o *debian) scanInstalledPackages() (packs []models.PackageInfo, err error) {
+func (o *debian) scanInstalledPackages() (installed models.PackageInfoList, upgradable models.PackageInfoList, err error) {
 	r := o.exec("dpkg-query -W", noSudo)
 	if !r.isSuccess() {
-		return packs, fmt.Errorf("Failed to SSH: %s", r)
+		return nil, nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 
 	//  e.g.
@@ -192,15 +195,36 @@ func (o *debian) scanInstalledPackages() (packs []models.PackageInfo, err error)
 		if trimmed := strings.TrimSpace(line); len(trimmed) != 0 {
 			name, version, err := o.parseScannedPackagesLine(trimmed)
 			if err != nil {
-				return nil, fmt.Errorf(
+				return nil, nil, fmt.Errorf(
 					"Debian: Failed to parse package line: %s", line)
 			}
-			packs = append(packs, models.PackageInfo{
+			installed = append(installed, models.PackageInfo{
 				Name:    name,
 				Version: version,
 			})
 		}
 	}
+
+	upgradableNames, err := o.GetUpgradablePackNames()
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, name := range upgradableNames {
+		for _, pack := range installed {
+			if pack.Name == name {
+				upgradable = append(upgradable, pack)
+				break
+			}
+		}
+	}
+
+	// Fill the candidate versions of upgradable packages
+	upgradable, err = o.fillCandidateVersion(upgradable)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Failed to fill candidate versions. err: %s", err)
+	}
+	installed.MergeNewVersion(upgradable)
+
 	return
 }
 
@@ -221,51 +245,34 @@ func (o *debian) parseScannedPackagesLine(line string) (name, version string, er
 	return "", "", fmt.Errorf("Unknown format: %s", line)
 }
 
-func (o *debian) scanUnsecurePackages(installed []models.PackageInfo) ([]models.VulnInfo, error) {
+func (o *debian) aptGetUpdate() error {
 	o.log.Infof("apt-get update...")
 	cmd := util.PrependProxyEnv("apt-get update")
 	if r := o.exec(cmd, sudo); !r.isSuccess() {
-		return nil, fmt.Errorf("Failed to SSH: %s", r)
+		return fmt.Errorf("Failed to SSH: %s", r)
 	}
+	return nil
+}
 
-	// Convert the name of upgradable packages to PackageInfo struct
-	upgradableNames, err := o.GetUpgradablePackNames()
-	if err != nil {
-		return nil, err
-	}
-	var upgradablePacks []models.PackageInfo
-	for _, name := range upgradableNames {
-		for _, pack := range installed {
-			if pack.Name == name {
-				upgradablePacks = append(upgradablePacks, pack)
-				break
-			}
-		}
-	}
+func (o *debian) scanUnsecurePackages(upgradable []models.PackageInfo) ([]models.VulnInfo, error) {
 
-	// Fill the candidate versions of upgradable packages
-	upgradablePacks, err = o.fillCandidateVersion(upgradablePacks)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to fill candidate versions. err: %s", err)
-	}
-
-	o.Packages.MergeNewVersion(upgradablePacks)
+	o.aptGetUpdate()
 
 	// Setup changelog cache
 	current := cache.Meta{
 		Name:   o.getServerInfo().GetServerName(),
 		Distro: o.getServerInfo().Distro,
-		Packs:  upgradablePacks,
+		Packs:  upgradable,
 	}
 
 	o.log.Debugf("Ensure changelog cache: %s", current.Name)
-	var meta *cache.Meta
-	if meta, err = o.ensureChangelogCache(current); err != nil {
+	meta, err := o.ensureChangelogCache(current)
+	if err != nil {
 		return nil, err
 	}
 
 	// Collect CVE information of upgradable packages
-	vulnInfos, err := o.scanVulnInfos(upgradablePacks, meta)
+	vulnInfos, err := o.scanVulnInfos(upgradable, meta)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to scan unsecure packages. err: %s", err)
 	}
