@@ -33,8 +33,7 @@ func (o Debian) FillCveInfoFromOvalDB(r models.ScanResult) (*models.ScanResult, 
 
 	d := db.NewDebian()
 	for _, pack := range r.Packages {
-		// TODO: Set the correct release after implementing LIKE in goval-dictionary
-		definitions, err := d.GetByPackName("8.2", pack.Name)
+		definitions, err := d.GetByPackName(r.Release, pack.Name)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to get OVAL info by package name: %v", err)
 		}
