@@ -417,7 +417,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 				}
 			}
 
-			filled, err := fillCveInfoFromOvalDB(r)
+			filled, err := fillCveInfoFromOvalDB(&r)
 			if err != nil {
 				util.Log.Errorf("Failed to fill OVAL information: %s", err)
 				return subcommands.ExitFailure

@@ -22,7 +22,7 @@ func NewRedhat() Redhat {
 }
 
 // FillCveInfoFromOvalDB returns scan result after updating CVE info by OVAL
-func (o Redhat) FillCveInfoFromOvalDB(r models.ScanResult) (*models.ScanResult, error) {
+func (o Redhat) FillCveInfoFromOvalDB(r *models.ScanResult) (*models.ScanResult, error) {
 	util.Log.Debugf("open oval-dictionary db (%s)", config.Conf.OvalDBType)
 
 	ovalconf.Conf.DBType = config.Conf.OvalDBType
@@ -47,15 +47,15 @@ func (o Redhat) FillCveInfoFromOvalDB(r models.ScanResult) (*models.ScanResult, 
 				}
 				affected, _ := ver.NewVersion(p.Version)
 				if current.LessThan(affected) {
-					r = o.fillOvalInfo(r, definition)
+					r = o.fillOvalInfo(r, &definition)
 				}
 			}
 		}
 	}
-	return &r, nil
+	return r, nil
 }
 
-func (o Redhat) fillOvalInfo(r models.ScanResult, definition ovalmodels.Definition) models.ScanResult {
+func (o Redhat) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Definition) *models.ScanResult {
 	found := make(map[string]bool)
 	vulnInfos := make(map[string]models.VulnInfo)
 	packageInfoList := getPackageInfoList(r, definition)
@@ -100,7 +100,7 @@ func (o Redhat) fillOvalInfo(r models.ScanResult, definition ovalmodels.Definiti
 			}
 			cveInfo.VulnInfo = vulnInfos[c.CveID]
 		}
-		cveInfo.OvalDetail = definition
+		cveInfo.OvalDetail = *definition
 		if cveInfo.VulnInfo.Confidence.Score < models.OvalMatch.Score {
 			cveInfo.Confidence = models.OvalMatch
 		}
@@ -111,7 +111,7 @@ func (o Redhat) fillOvalInfo(r models.ScanResult, definition ovalmodels.Definiti
 	for _, c := range definition.Advisory.Cves {
 		cveInfo, ok := r.UnknownCves.Get(c.CveID)
 		if ok {
-			cveInfo.OvalDetail = definition
+			cveInfo.OvalDetail = *definition
 			if cveInfo.VulnInfo.Confidence.Score < models.OvalMatch.Score {
 				cveInfo.Confidence = models.OvalMatch
 			}
