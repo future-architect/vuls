@@ -141,7 +141,7 @@ memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
   branch = "master"
   name = "github.com/kotakanbe/goval-dictionary"
   packages = ["config","db","log","models"]
-  revision = "c33f7c4a77c3522ea25a70b9c38e1ae910f106cb"
+  revision = "9aba0cebf04ef546c7ae8666fea5e142b9e90fc1"
 
 [[projects]]
   branch = "master"
@@ -237,25 +237,25 @@ memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
   branch = "master"
   name = "github.com/ymomoi/goval-parser"
   packages = ["oval"]
-  revision = "fa7d8e949108b0b2b7d124bef9a7f2bda9b6dd69"
+  revision = "4ddf6fc4f1a1af026f7cae41f76979c7ff2b2e2f"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["curve25519","ed25519","ed25519/internal/edwards25519","ssh","ssh/agent","ssh/terminal"]
-  revision = "96846453c37f0876340a66a47f3f75b1f3a6cd2d"
+  revision = "3543873453996aaab2fc6b3928a35fc5ca2b5afb"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","idna","publicsuffix"]
-  revision = "d212a1ef2de2f5d441c327b8f26cf3ea3ea9f265"
+  revision = "da118f7b8e5954f39d0d2130ab35d4bf0e3cb344"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "ea9bcade75cb975a0b9738936568ab388b845617"
+  revision = "8c0a5eacbac818f9011015b17992f53d9cec3e8f"
 
 [[projects]]
   branch = "master"
