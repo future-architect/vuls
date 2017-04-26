@@ -31,7 +31,13 @@ func (o Debian) FillCveInfoFromOvalDB(r *models.ScanResult) (*models.ScanResult,
 		return nil, fmt.Errorf("Failed to open OVAL DB. err: %s", err)
 	}
 
-	d := db.NewDebian()
+	var d db.OvalDB
+	switch r.Family {
+	case "debian":
+		d = db.NewDebian()
+	case "ubuntu":
+		d = db.NewUbuntu()
+	}
 	for _, pack := range r.Packages {
 		definitions, err := d.GetByPackName(r.Release, pack.Name)
 		if err != nil {
@@ -76,6 +82,7 @@ func (o Debian) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Defini
 
 	if !found {
 		cves = append(cves, vuln)
+		util.Log.Debugf("%s is newly detected by OVAL", vuln.CveID)
 	}
 	r.ScannedCves = cves
 
