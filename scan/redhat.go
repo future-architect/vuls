@@ -86,7 +86,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 
 			release := result[2]
 			switch strings.ToLower(result[1]) {
-			case "centos", "centos linux":
+			case "centos", "centos linux", "cloudlinux", "cloudlinux server":
 				red.setDistro("centos", release)
 			default:
 				red.setDistro("rhel", release)
