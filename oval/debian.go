@@ -22,7 +22,7 @@ func NewDebian() Debian {
 }
 
 // FillCveInfoFromOvalDB returns scan result after updating CVE info by OVAL
-func (o Debian) FillCveInfoFromOvalDB(r models.ScanResult) (*models.ScanResult, error) {
+func (o Debian) FillCveInfoFromOvalDB(r *models.ScanResult) (*models.ScanResult, error) {
 	util.Log.Debugf("open oval-dictionary db (%s)", config.Conf.OvalDBType)
 	ovalconf.Conf.DBType = config.Conf.OvalDBType
 	ovalconf.Conf.DBPath = config.Conf.OvalDBPath
@@ -45,15 +45,15 @@ func (o Debian) FillCveInfoFromOvalDB(r models.ScanResult) (*models.ScanResult, 
 				}
 				affected, _ := ver.NewVersion(p.Version)
 				if current.LessThan(affected) {
-					r = o.fillOvalInfo(r, definition)
+					r = o.fillOvalInfo(r, &definition)
 				}
 			}
 		}
 	}
-	return &r, nil
+	return r, nil
 }
 
-func (o Debian) fillOvalInfo(r models.ScanResult, definition ovalmodels.Definition) models.ScanResult {
+func (o Debian) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Definition) *models.ScanResult {
 	// Update ScannedCves by OVAL info
 	found := false
 	cves := []models.VulnInfo{}
@@ -87,7 +87,7 @@ func (o Debian) fillOvalInfo(r models.ScanResult, definition ovalmodels.Definiti
 		}
 		cveInfo.VulnInfo = vuln
 	}
-	cveInfo.OvalDetail = definition
+	cveInfo.OvalDetail = *definition
 	if cveInfo.VulnInfo.Confidence.Score < models.OvalMatch.Score {
 		cveInfo.Confidence = models.OvalMatch
 	}
@@ -96,7 +96,7 @@ func (o Debian) fillOvalInfo(r models.ScanResult, definition ovalmodels.Definiti
 	// Update UnknownCves by OVAL info
 	cveInfo, ok = r.UnknownCves.Get(definition.Debian.CveID)
 	if ok {
-		cveInfo.OvalDetail = definition
+		cveInfo.OvalDetail = *definition
 		if cveInfo.VulnInfo.Confidence.Score < models.OvalMatch.Score {
 			cveInfo.Confidence = models.OvalMatch
 		}
