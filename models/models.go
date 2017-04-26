@@ -391,6 +391,7 @@ func (c CveInfos) Less(i, j int) bool {
 	return c[j].CveDetail.CvssScore(lang) < c[i].CveDetail.CvssScore(lang)
 }
 
+// Get cveInfo by cveID
 func (c CveInfos) Get(cveID string) (CveInfo, bool) {
 	for _, cve := range c {
 		if cve.VulnInfo.CveID == cveID {
@@ -400,6 +401,7 @@ func (c CveInfos) Get(cveID string) (CveInfo, bool) {
 	return CveInfo{}, false
 }
 
+// Delete by cveID
 func (c *CveInfos) Delete(cveID string) {
 	cveInfos := *c
 	for i, cve := range cveInfos {
@@ -410,10 +412,12 @@ func (c *CveInfos) Delete(cveID string) {
 	}
 }
 
+// Insert cveInfo
 func (c *CveInfos) Insert(cveInfo CveInfo) {
 	*c = append(*c, cveInfo)
 }
 
+// Update cveInfo
 func (c CveInfos) Update(cveInfo CveInfo) (ok bool) {
 	for i, cve := range c {
 		if cve.VulnInfo.CveID == cveInfo.VulnInfo.CveID {
@@ -424,6 +428,7 @@ func (c CveInfos) Update(cveInfo CveInfo) (ok bool) {
 	return false
 }
 
+// Upsert cveInfo
 func (c *CveInfos) Upsert(cveInfo CveInfo) {
 	ok := c.Update(cveInfo)
 	if !ok {
