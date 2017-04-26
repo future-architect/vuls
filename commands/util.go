@@ -188,7 +188,7 @@ func fillCveInfoFromOvalDB(r *models.ScanResult) (*models.ScanResult, error) {
 		ovalClient = oval.NewDebian()
 	case "rhel", "centos":
 		ovalClient = oval.NewRedhat()
-	case "amazon", "oraclelinux", "Raspbian":
+	case "amazon", "oraclelinux", "Raspbian", "FreeBSD":
 		//TODO implement OracleLinux
 		return r, nil
 	default:
