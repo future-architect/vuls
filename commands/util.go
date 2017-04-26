@@ -186,11 +186,10 @@ func fillCveInfoFromOvalDB(r *models.ScanResult) (*models.ScanResult, error) {
 	switch r.Family {
 	case "ubuntu", "debian":
 		ovalClient = oval.NewDebian()
-		fmt.Println("hello")
 	case "rhel", "centos":
 		ovalClient = oval.NewRedhat()
-		fmt.Println("good morning")
-	case "amazon":
+	case "amazon", "oraclelinux", "Raspbian":
+		//TODO implement OracleLinux
 		return r, nil
 	default:
 		return nil, fmt.Errorf("Oval %s is not implemented yet", r.Family)

@@ -27,8 +27,8 @@ memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
 [[projects]]
   name = "github.com/asaskevich/govalidator"
   packages = ["."]
-  revision = "7b3beb6df3c42abd3509abfc3bcacc0fbfb7c877"
-  version = "v5"
+  revision = "4918b99a7cb949bb295f3c7bbaf24b577d806e35"
+  version = "v6"
 
 [[projects]]
   name = "github.com/aws/aws-sdk-go"
@@ -141,7 +141,7 @@ memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
   branch = "master"
   name = "github.com/kotakanbe/goval-dictionary"
   packages = ["config","db","log","models"]
-  revision = "9aba0cebf04ef546c7ae8666fea5e142b9e90fc1"
+  revision = "5470d7565a9de51593f53327ce14c97d466b05ab"
 
 [[projects]]
   branch = "master"
@@ -243,7 +243,7 @@ memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["curve25519","ed25519","ed25519/internal/edwards25519","ssh","ssh/agent","ssh/terminal"]
-  revision = "3543873453996aaab2fc6b3928a35fc5ca2b5afb"
+  revision = "c7af5bf2638a1164f2eb5467c39c6cffbd13a02e"
 
 [[projects]]
   branch = "master"
@@ -255,7 +255,7 @@ memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "8c0a5eacbac818f9011015b17992f53d9cec3e8f"
+  revision = "9f30dcbe5be197894515a338a9bda9253567ea8f"
 
 [[projects]]
   branch = "master"
