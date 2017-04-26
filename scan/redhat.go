@@ -244,7 +244,7 @@ func (o *redhat) scanPackages() error {
 }
 
 func (o *redhat) scanInstalledPackages() (installedPackages models.PackageInfoList, err error) {
-	cmd := "rpm -qa --queryformat '%{NAME}\t%{VERSION}\t%{RELEASE}\n'"
+	cmd := "rpm -qa --queryformat '%{NAME}\t%{EPOCHNUM}\t%{VERSION}\t%{RELEASE}\n'"
 	r := o.exec(cmd, noSudo)
 	if r.isSuccess() {
 		//  e.g.
@@ -269,14 +269,20 @@ func (o *redhat) scanInstalledPackages() (installedPackages models.PackageInfoLi
 
 func (o *redhat) parseScannedPackagesLine(line string) (models.PackageInfo, error) {
 	fields := strings.Fields(line)
-	if len(fields) != 3 {
+	if len(fields) != 4 {
 		return models.PackageInfo{},
 			fmt.Errorf("Failed to parse package line: %s", line)
 	}
+	ver := ""
+	if fields[1] == "0" {
+		ver = fields[2]
+	} else {
+		ver = fmt.Sprintf("%s:%s", fields[1], fields[2])
+	}
 	return models.PackageInfo{
 		Name:    fields[0],
-		Version: fields[1],
-		Release: fields[2],
+		Version: ver,
+		Release: fields[3],
 	}, nil
 }
 
@@ -471,13 +477,12 @@ func (o *redhat) parseYumCheckUpdateLine(line string) (models.PackageInfo, error
 	if len(verfields) != 2 {
 		return models.PackageInfo{}, fmt.Errorf("Unknown format: %s", line)
 	}
-	version := o.regexpReplace(verfields[0], `^[0-9]+:`, "")
 	release := verfields[1]
 	repos := strings.Join(fields[2:len(fields)], " ")
 
 	return models.PackageInfo{
 		Name:       packName,
-		NewVersion: version,
+		NewVersion: verfields[0],
 		NewRelease: release,
 		Repository: repos,
 	}, nil
