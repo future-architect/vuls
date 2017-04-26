@@ -35,7 +35,7 @@ func (o Redhat) FillCveInfoFromOvalDB(r models.ScanResult) (*models.ScanResult, 
 	d := db.NewRedHat()
 
 	for _, pack := range r.Packages {
-		definitions, err := d.GetByPackName("6", pack.Name)
+		definitions, err := d.GetByPackName(r.Release, pack.Name)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to get RedHat OVAL info by package name: %v", err)
 		}
@@ -86,6 +86,7 @@ func (o Redhat) fillOvalInfo(r models.ScanResult, definition ovalmodels.Definiti
 	for cveID, found := range found {
 		if !found {
 			cves = append(cves, vulnInfos[cveID])
+			util.Log.Debugf("%s is newly detected by OVAL", cveID)
 		}
 	}
 	r.ScannedCves = cves

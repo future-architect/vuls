@@ -187,8 +187,11 @@ func fillCveInfoFromOvalDB(r models.ScanResult) (*models.ScanResult, error) {
 	case "ubuntu", "debian":
 		ovalClient = oval.NewDebian()
 		fmt.Println("hello")
-	case "redhat", "centos":
+	case "rhel", "centos":
 		ovalClient = oval.NewRedhat()
+		fmt.Println("good morning")
+	default:
+		return nil, fmt.Errorf("Oval %s is not implemented yet", r.Family)
 	}
 	result, err := ovalClient.FillCveInfoFromOvalDB(r)
 	if err != nil {
