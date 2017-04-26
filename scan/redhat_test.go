@@ -41,7 +41,7 @@ func TestParseScanedPackagesLineRedhat(t *testing.T) {
 		pack models.PackageInfo
 	}{
 		{
-			"openssl	1.0.1e	30.el6.11",
+			"openssl	0	1.0.1e	30.el6.11",
 			models.PackageInfo{
 				Name:    "openssl",
 				Version: "1.0.1e",
@@ -49,10 +49,10 @@ func TestParseScanedPackagesLineRedhat(t *testing.T) {
 			},
 		},
 		{
-			"Percona-Server-shared-56 5.6.19 rel67.0.el6",
+			"Percona-Server-shared-56	1	5.6.19	rel67.0.el6",
 			models.PackageInfo{
 				Name:    "Percona-Server-shared-56",
-				Version: "5.6.19",
+				Version: "1:5.6.19",
 				Release: "rel67.0.el6",
 			},
 		},
@@ -359,7 +359,7 @@ Description : [32:9.9.4-38.2]
             : - Fix and test caching CNAME before DNAME (ISC
             :   change 4558)
    Severity : Moderate
-   
+
 ===============================================================================
    openssl security update
 ===============================================================================
@@ -376,7 +376,7 @@ Description : [1.0.1e-48.4]
             : - fix CVE-2016-8610 - DoS of single-threaded
             :   servers via excessive alerts
    Severity : Moderate
-   
+
 ===============================================================================
    Unbreakable Enterprise kernel security update
 ===============================================================================
@@ -758,7 +758,7 @@ pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 					Name:       "bind-utils",
 					Version:    "1.0",
 					Release:    "1",
-					NewVersion: "9.3.6",
+					NewVersion: "30:9.3.6",
 					NewRelease: "25.P1.el5_11.8",
 					Repository: "updates",
 				},
@@ -828,7 +828,7 @@ if-not-architecture        100-200                         amzn-main
 					Name:       "bind-libs",
 					Version:    "9.8.0",
 					Release:    "0.33.rc1.45.amzn1",
-					NewVersion: "9.8.2",
+					NewVersion: "32:9.8.2",
 					NewRelease: "0.37.rc1.45.amzn1",
 					Repository: "amzn-main",
 				},
