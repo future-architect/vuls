@@ -28,11 +28,6 @@ import (
 	goval "github.com/kotakanbe/goval-dictionary/models"
 )
 
-// ScanHistory is the history of Scanning.
-type ScanHistory struct {
-	ScanResults ScanResults
-}
-
 // ScanResults is slice of ScanResult.
 type ScanResults []ScanResult
 

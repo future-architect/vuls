@@ -397,8 +397,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	var history models.ScanHistory
-	history, err = loadOneScanHistory(dir)
+	rs, err := loadScanResults(dir)
 	if err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
@@ -406,7 +405,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	util.Log.Infof("Loaded: %s", dir)
 
 	var results []models.ScanResult
-	for _, r := range history.ScanResults {
+	for _, r := range rs {
 		if p.refreshCve || needToRefreshCve(r) {
 			util.Log.Debugf("need to refresh")
 			if c.Conf.CveDBType == "sqlite3" && c.Conf.CveDBURL == "" {
@@ -442,20 +441,19 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if p.diff {
-		currentHistory := models.ScanHistory{ScanResults: results}
-		previousHistory, err := loadPreviousScanHistory(currentHistory)
+		previous, err := loadPrevious(results)
 		if err != nil {
 			util.Log.Error(err)
 			return subcommands.ExitFailure
 		}
 
-		history, err = diff(currentHistory, previousHistory)
+		diff, err := diff(results, previous)
 		if err != nil {
 			util.Log.Error(err)
 			return subcommands.ExitFailure
 		}
 		results = []models.ScanResult{}
-		for _, r := range history.ScanResults {
+		for _, r := range diff {
 			filled, _ := r.FillCveDetail()
 			results = append(results, *filled)
 		}

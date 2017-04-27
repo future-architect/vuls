@@ -34,14 +34,14 @@ import (
 	cve "github.com/kotakanbe/go-cve-dictionary/models"
 )
 
-var scanHistory models.ScanHistory
+var scanResults models.ScanResults
 var currentScanResult models.ScanResult
 var currentCveInfo int
 var currentDetailLimitY int
 
 // RunTui execute main logic
-func RunTui(history models.ScanHistory) subcommands.ExitStatus {
-	scanHistory = history
+func RunTui(results models.ScanResults) subcommands.ExitStatus {
+	scanResults = results
 
 	g, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
@@ -216,7 +216,7 @@ func previousView(g *gocui.Gui, v *gocui.View) error {
 func movable(v *gocui.View, nextY int) (ok bool, yLimit int) {
 	switch v.Name() {
 	case "side":
-		yLimit = len(scanHistory.ScanResults) - 1
+		yLimit = len(scanResults) - 1
 		if yLimit < nextY {
 			return false, yLimit
 		}
@@ -439,7 +439,7 @@ func changeHost(g *gocui.Gui, v *gocui.View) error {
 	}
 	serverName := strings.TrimSpace(l)
 
-	for _, r := range scanHistory.ScanResults {
+	for _, r := range scanResults {
 		if serverName == strings.TrimSpace(r.ServerInfoTui()) {
 			currentScanResult = r
 			break
@@ -562,13 +562,13 @@ func setSideLayout(g *gocui.Gui) error {
 		}
 		v.Highlight = true
 
-		for _, result := range scanHistory.ScanResults {
+		for _, result := range scanResults {
 			fmt.Fprintln(v, result.ServerInfoTui())
 		}
-		if len(scanHistory.ScanResults) == 0 {
+		if len(scanResults) == 0 {
 			return fmt.Errorf("No scan results")
 		}
-		currentScanResult = scanHistory.ScanResults[0]
+		currentScanResult = scanResults[0]
 		if _, err := g.SetCurrentView("side"); err != nil {
 			return err
 		}
