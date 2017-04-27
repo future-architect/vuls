@@ -142,14 +142,14 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		return subcommands.ExitFailure
 	}
 
-	history, err := loadOneScanHistory(jsonDir)
+	results, err := loadScanResults(jsonDir)
 	if err != nil {
 		log.Errorf("Failed to read from JSON: %s", err)
 		return subcommands.ExitFailure
 	}
 
-	var results []models.ScanResult
-	for _, r := range history.ScanResults {
+	var filledResults []models.ScanResult
+	for _, r := range results {
 		if p.refreshCve || needToRefreshCve(r) {
 			if c.Conf.CveDBType == "sqlite3" {
 				if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
@@ -169,11 +169,10 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 				log.Errorf("Failed to write JSON: %s", err)
 				return subcommands.ExitFailure
 			}
-			results = append(results, *filled)
+			filledResults = append(filledResults, *filled)
 		} else {
-			results = append(results, r)
+			filledResults = append(filledResults, r)
 		}
 	}
-	history.ScanResults = results
-	return report.RunTui(history)
+	return report.RunTui(filledResults)
 }

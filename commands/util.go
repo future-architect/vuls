@@ -136,13 +136,11 @@ func loadOneServerScanResult(jsonFile string) (result models.ScanResult, err err
 	return
 }
 
-// loadOneScanHistory read JSON data
-func loadOneScanHistory(jsonDir string) (scanHistory models.ScanHistory, err error) {
-	var results []models.ScanResult
+// loadScanResults read JSON data
+func loadScanResults(jsonDir string) (results models.ScanResults, err error) {
 	var files []os.FileInfo
 	if files, err = ioutil.ReadDir(jsonDir); err != nil {
-		err = fmt.Errorf("Failed to read %s: %s", jsonDir, err)
-		return
+		return nil, fmt.Errorf("Failed to read %s: %s", jsonDir, err)
 	}
 	for _, f := range files {
 		if filepath.Ext(f.Name()) != ".json" || strings.HasSuffix(f.Name(), "_diff.json") {
@@ -152,18 +150,13 @@ func loadOneScanHistory(jsonDir string) (scanHistory models.ScanHistory, err err
 		var r models.ScanResult
 		path := filepath.Join(jsonDir, f.Name())
 		if r, err = loadOneServerScanResult(path); err != nil {
-			return
+			return nil, err
 		}
 
 		results = append(results, r)
 	}
 	if len(results) == 0 {
-		err = fmt.Errorf("There is no json file under %s", jsonDir)
-		return
-	}
-
-	scanHistory = models.ScanHistory{
-		ScanResults: results,
+		return nil, fmt.Errorf("There is no json file under %s", jsonDir)
 	}
 	return
 }
@@ -201,13 +194,13 @@ func fillCveInfoFromOvalDB(r *models.ScanResult) (*models.ScanResult, error) {
 	return result, nil
 }
 
-func loadPreviousScanHistory(current models.ScanHistory) (previous models.ScanHistory, err error) {
+func loadPrevious(current models.ScanResults) (previous models.ScanResults, err error) {
 	var dirs jsonDirs
 	if dirs, err = lsValidJSONDirs(); err != nil {
 		return
 	}
 
-	for _, result := range current.ScanResults {
+	for _, result := range current {
 		for _, dir := range dirs[1:] {
 			var r models.ScanResult
 			path := filepath.Join(dir, result.ServerName+".json")
@@ -215,7 +208,8 @@ func loadPreviousScanHistory(current models.ScanHistory) (previous models.ScanHi
 				continue
 			}
 			if r.Family == result.Family && r.Release == result.Release {
-				previous.ScanResults = append(previous.ScanResults, r)
+				previous = append(previous, r)
+				util.Log.Infof("Privious json found: %s", path)
 				break
 			}
 		}
@@ -223,11 +217,11 @@ func loadPreviousScanHistory(current models.ScanHistory) (previous models.ScanHi
 	return previous, nil
 }
 
-func diff(currentHistory, previousHistory models.ScanHistory) (diffHistory models.ScanHistory, err error) {
-	for _, currentResult := range currentHistory.ScanResults {
+func diff(current, previous models.ScanResults) (diff models.ScanResults, err error) {
+	for _, currentResult := range current {
 		found := false
 		var previousResult models.ScanResult
-		for _, previousResult = range previousHistory.ScanResults {
+		for _, previousResult = range previous {
 			if currentResult.ServerName == previousResult.ServerName {
 				found = true
 				break
@@ -247,9 +241,9 @@ func diff(currentHistory, previousHistory models.ScanHistory) (diffHistory model
 			currentResult.Packages = currentResult.Packages.UniqByName()
 		}
 
-		diffHistory.ScanResults = append(diffHistory.ScanResults, currentResult)
+		diff = append(diff, currentResult)
 	}
-	return diffHistory, err
+	return diff, err
 }
 
 func getNewCves(previousResult, currentResult models.ScanResult) (newVulninfos []models.VulnInfo) {
