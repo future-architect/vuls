@@ -568,8 +568,8 @@ type Changelog struct {
 	Method   string
 }
 
-// ToStringCurrentVersion returns package name-version-release
-func (p PackageInfo) ToStringCurrentVersion() string {
+// FormatCurrentVer returns package name-version-release
+func (p PackageInfo) FormatCurrentVer() string {
 	str := p.Name
 	if 0 < len(p.Version) {
 		str = fmt.Sprintf("%s-%s", str, p.Version)
@@ -580,8 +580,8 @@ func (p PackageInfo) ToStringCurrentVersion() string {
 	return str
 }
 
-// ToStringNewVersion returns package name-version-release
-func (p PackageInfo) ToStringNewVersion() string {
+// FormatNewVer returns package name-version-release
+func (p PackageInfo) FormatNewVer() string {
 	str := p.Name
 	if 0 < len(p.NewVersion) {
 		str = fmt.Sprintf("%s-%s", str, p.NewVersion)

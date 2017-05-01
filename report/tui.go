@@ -799,8 +799,8 @@ func detailLines() (string, error) {
 		packages = append(packages,
 			fmt.Sprintf(
 				"%s -> %s",
-				pack.ToStringCurrentVersion(),
-				pack.ToStringNewVersion()))
+				pack.FormatCurrentVer(),
+				pack.FormatNewVer()))
 	}
 
 	data := dataForTmpl{

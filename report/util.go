@@ -118,7 +118,7 @@ No CVE-IDs are found in updatable packages.
 		var packsVer string
 		for _, p := range d.Packages {
 			packsVer += fmt.Sprintf(
-				"%s -> %s\n", p.ToStringCurrentVersion(), p.ToStringNewVersion())
+				"%s -> %s\n", p.FormatCurrentVer(), p.FormatNewVer())
 		}
 		for _, n := range d.CpeNames {
 			packsVer += n
@@ -460,7 +460,7 @@ func addPackageInfos(table *uitable.Table, packs []models.PackageInfo) *uitable.
 			title = "Package"
 		}
 		ver := fmt.Sprintf(
-			"%s -> %s", p.ToStringCurrentVersion(), p.ToStringNewVersion())
+			"%s -> %s", p.FormatCurrentVer(), p.FormatNewVer())
 		table.AddRow(title, ver)
 	}
 	return table
@@ -501,7 +501,7 @@ func formatOneChangelog(p models.PackageInfo) string {
 	}
 
 	packVer := fmt.Sprintf("%s -> %s",
-		p.ToStringCurrentVersion(), p.ToStringNewVersion())
+		p.FormatCurrentVer(), p.FormatNewVer())
 	var delim bytes.Buffer
 	for i := 0; i < len(packVer); i++ {
 		delim.WriteString("-")
