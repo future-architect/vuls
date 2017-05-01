@@ -342,7 +342,7 @@ CVE-2016-5636           10.0 (High)     Integer overflow in the get_data functio
 View full report.
 
 ```
-$ vuls report -format-full-text
+$ vuls report -format-full-text | less
 
 localhost (amazon 2015.09)
 ============================

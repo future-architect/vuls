@@ -170,7 +170,7 @@ func toSlackAttachments(scanResult models.ScanResult) (attaches []*attachment) {
 
 		curentPackages := []string{}
 		for _, p := range cveInfo.Packages {
-			curentPackages = append(curentPackages, p.ToStringCurrentVersion())
+			curentPackages = append(curentPackages, p.FormatCurrentVer())
 		}
 		for _, n := range cveInfo.CpeNames {
 			curentPackages = append(curentPackages, n)
@@ -178,7 +178,7 @@ func toSlackAttachments(scanResult models.ScanResult) (attaches []*attachment) {
 
 		newPackages := []string{}
 		for _, p := range cveInfo.Packages {
-			newPackages = append(newPackages, p.ToStringNewVersion())
+			newPackages = append(newPackages, p.FormatNewVer())
 		}
 
 		a := attachment{
