@@ -1,0 +1,28 @@
+
+[[dependencies]]
+  branch = "master"
+  name = "github.com/Azure/azure-storage-go"
+
+[[dependencies]]
+  branch = "master"
+  name = "github.com/BurntSushi/toml"
+
+[[dependencies]]
+  branch = "master"
+  name = "github.com/Sirupsen/logrus"
+
+[[dependencies]]
+  name = "github.com/aws/aws-sdk-go"
+  revision = "5b341290c488aa6bd76b335d819b4a68516ec3ab"
+
+[[dependencies]]
+  branch = "master"
+  name = "github.com/jroimartin/gocui"
+
+[[dependencies]]
+  branch = "master"
+  name = "github.com/kotakanbe/go-cve-dictionary"
+
+[[dependencies]]
+  branch = "master"
+  name = "github.com/kotakanbe/logrus-prefixed-formatter"

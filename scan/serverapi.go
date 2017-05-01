@@ -121,13 +121,13 @@ func PrintSSHableServerNames() {
 }
 
 // InitServers detect the kind of OS distribution of target servers
-func InitServers() error {
-	servers, errServers = detectServerOSes()
+func InitServers(timeoutSec int) error {
+	servers, errServers = detectServerOSes(timeoutSec)
 	if len(servers) == 0 {
 		return fmt.Errorf("No scannable servers")
 	}
 
-	actives, inactives := detectContainerOSes()
+	actives, inactives := detectContainerOSes(timeoutSec)
 	if config.Conf.ContainersOnly {
 		servers = actives
 		errServers = inactives
@@ -138,7 +138,7 @@ func InitServers() error {
 	return nil
 }
 
-func detectServerOSes() (servers, errServers []osTypeInterface) {
+func detectServerOSes(timeoutSec int) (servers, errServers []osTypeInterface) {
 	util.Log.Info("Detecting OS of servers... ")
 	osTypeChan := make(chan osTypeInterface, len(config.Conf.Servers))
 	defer close(osTypeChan)
@@ -153,7 +153,7 @@ func detectServerOSes() (servers, errServers []osTypeInterface) {
 		}(s)
 	}
 
-	timeout := time.After(30 * time.Second)
+	timeout := time.After(time.Duration(timeoutSec) * time.Second)
 	for i := 0; i < len(config.Conf.Servers); i++ {
 		select {
 		case res := <-osTypeChan:
@@ -199,7 +199,7 @@ func detectServerOSes() (servers, errServers []osTypeInterface) {
 	return
 }
 
-func detectContainerOSes() (actives, inactives []osTypeInterface) {
+func detectContainerOSes(timeoutSec int) (actives, inactives []osTypeInterface) {
 	util.Log.Info("Detecting OS of containers... ")
 	osTypesChan := make(chan []osTypeInterface, len(servers))
 	defer close(osTypesChan)
@@ -215,7 +215,7 @@ func detectContainerOSes() (actives, inactives []osTypeInterface) {
 		}(s)
 	}
 
-	timeout := time.After(30 * time.Second)
+	timeout := time.After(time.Duration(timeoutSec) * time.Second)
 	for i := 0; i < len(servers); i++ {
 		select {
 		case res := <-osTypesChan:

@@ -19,7 +19,91 @@ We have a slack team. [Join slack team](http://goo.gl/forms/xm5KFo35tu)
 
 ![Vuls-slack](img/vuls-slack-en.png)
 
+----
 
+# TOC
+
+- [Vuls: VULnerability Scanner](#vuls-vulnerability-scanner)
+- [TOC](#toc)
+- [Abstract](#abstract)
+- [Main Features](#main-features)
+- [What Vuls Doesn't Do](#what-vuls-doesnt-do)
+- [Setup Vuls](#setup-vuls)
+- [Tutorial: Local Scan Mode](#tutorial-local-scan-mode)
+  * [Step1. Launch Amazon Linux](#step1-launch-amazon-linux)
+  * [Step2. Install requirements](#step2-install-requirements)
+  * [Step3. Deploy go-cve-dictionary](#step3-deploy-go-cve-dictionary)
+  * [Step4. Deploy Vuls](#step4-deploy-vuls)
+  * [Step5. Config](#step5-config)
+  * [Step6. Check config.toml and settings on the server before scanning](#step6-check-configtoml-and-settings-on-the-server-before-scanning)
+  * [Step7. Start Scanning](#step7-start-scanning)
+  * [Step8. Reporting](#step8-reporting)
+  * [Step9. TUI](#step9-tui)
+  * [Step10. Web UI](#step10-web-ui)
+- [Tutorial: Remote Scan Mode](#tutorial-remote-scan-mode)
+  * [Step1. Launch Another Amazon Linux](#step1-launch-another-amazon-linux)
+  * [Step2. Install Dependencies on the Remote Server](#step2-install-dependencies-on-the-remote-server)
+  * [Step3. Enable to SSH from Localhost](#step3-enable-to-ssh-from-localhost)
+  * [Step4. Config](#step4-config)
+  * [Step5. Check config.toml and settings on the server before scanning](#step5-check-configtoml-and-settings-on-the-server-before-scanning)
+  * [Step6. Start Scanning](#step6-start-scanning)
+  * [Step7. Reporting](#step7-reporting)
+- [Setup Vuls in a Docker Container](#setup-vuls-in-a-docker-container)
+- [Architecture](#architecture)
+  * [A. Scan via SSH Mode (Remote Scan Mode)](#a-scan-via-ssh-mode-remote-scan-mode)
+  * [B. Scan without SSH (Local Scan Mode)](#b-scan-without-ssh-local-scan-mode)
+  * [go-cve-dictionary](#go-cve-dictionary)
+  * [Scanning Flow](#scanning-flow)
+- [Performance Considerations](#performance-considerations)
+- [Use Cases](#use-cases)
+  * [Scan All Servers](#scan-all-servers)
+  * [Scan a Single Server](#scan-a-single-server)
+  * [Scan Staging Environment](#scan-staging-environment)
+- [Support OS](#support-os)
+- [Usage: Automatic Server Discovery](#usage-automatic-server-discovery)
+  * [Example](#example)
+- [Configuration](#configuration)
+- [Usage: Configtest](#usage-configtest)
+  * [Dependencies on Target Servers](#dependencies-on-target-servers)
+  * [Check /etc/sudoers](#check-etcsudoers)
+- [Usage: Scan](#usage-scan)
+  * [-ssh-native-insecure option](#-ssh-native-insecure-option)
+  * [-ask-key-password option](#-ask-key-password-option)
+  * [Example: Scan all servers defined in config file](#example-scan-all-servers-defined-in-config-file)
+  * [Example: Scan specific servers](#example-scan-specific-servers)
+  * [Example: Scan via shell instead of SSH.](#example-scan-via-shell-instead-of-ssh)
+    + [cron](#cron)
+  * [Example: Scan containers (Docker/LXD)](#example-scan-containers-dockerlxd)
+    + [Docker](#docker)
+    + [LXD](#lxd)
+- [Usage: Report](#usage-report)
+  * [How to read a report](#how-to-read-a-report)
+    + [Example](#example-1)
+    + [Summary part](#summary-part)
+    + [Detailed Part](#detailed-part)
+    + [Changelog Part](#changelog-part)
+  * [Example: Send scan results to Slack](#example-send-scan-results-to-slack)
+  * [Example: Put results in S3 bucket](#example-put-results-in-s3-bucket)
+  * [Example: Put results in Azure Blob storage](#example-put-results-in-azure-blob-storage)
+  * [Example: IgnoreCves](#example-ignorecves)
+  * [Example: Add optional key-value pairs to JSON](#example-add-optional-key-value-pairs-to-json)
+  * [Example: Use MySQL as a DB storage back-end](#example-use-mysql-as-a-db-storage-back-end)
+- [Usage: Scan vulnerabilites of non-OS packages](#usage-scan-vulnerabilites-of-non-os-packages)
+- [Usage: Integrate with OWASP Dependency Check to Automatic update when the libraries are updated (Experimental)](#usage-integrate-with-owasp-dependency-check-to-automatic-update-when-the-libraries-are-updated-experimental)
+- [Usage: TUI](#usage-tui)
+  * [Display the latest scan results](#display-the-latest-scan-results)
+  * [Display the previous scan results](#display-the-previous-scan-results)
+- [Display the previous scan results using peco](#display-the-previous-scan-results-using-peco)
+- [Usage: go-cve-dictionary on different server](#usage-go-cve-dictionary-on-different-server)
+- [Usage: Update NVD Data](#usage-update-nvd-data)
+- [How to Update](#how-to-update)
+- [Misc](#misc)
+- [Related Projects](#related-projects)
+- [Data Source](#data-source)
+- [Authors](#authors)
+- [Contribute](#contribute)
+- [Change Log](#change-log)
+- [License](#license)
 
 ----
 
@@ -141,7 +225,9 @@ Set the OS environment variable to current shell
 $ source /etc/profile.d/goenv.sh
 ```
 
-## Step3. Deploy [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
+## Step3. Deploy go-cve-dictionary
+
+[go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)
 
 ```bash
 $ sudo mkdir /var/log/vuls
@@ -783,10 +869,10 @@ scan:
                 [-skip-broken]
                 [-http-proxy=http://192.168.0.1:8080]
                 [-ask-key-password]
+                [-timeout=300]
+                [-timeout-scan=7200]
                 [-debug]
                 [-pipe]
-                [-timeout]
-                [-timeout-scan]
 
                 [SERVER]...
   -ask-key-password
@@ -812,7 +898,7 @@ scan:
   -ssh-native-insecure
         Use Native Go implementation of SSH. Default: Use the external command
   -timeout int
-        Number of seconds for detecting platform for all servers (default 60)
+        Number of seconds for processing other than scan (default 300)
   -timeout-scan int
         Number of second for scaning vulnerabilities for all servers (default 7200)
 ```
