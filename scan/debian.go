@@ -374,6 +374,24 @@ func (o *debian) parseAptGetUpgrade(stdout string) (upgradableNames []string, er
 			o.log.Debugf("Found the stop line. line: %s", line)
 			break
 		}
+		// To catch old versions of apt that dont follow standard output
+		stopRe := regexp.MustCompile(`^(\d+) to upgrade.*`)
+		result2 := stopRe.FindStringSubmatch(line)
+		if len(result2) == 2 {
+			numUpgradablePacks, err := strconv.Atoi(result2[1])
+			if err != nil {
+				return nil, fmt.Errorf(
+					"Failed to scan upgradable packages number. line: %s", line)
+			}
+			if numUpgradablePacks != len(upgradableNames) {
+				return nil, fmt.Errorf(
+					"Failed to scan upgradable packages, expected: %s, detected: %d",
+					result2[1], len(upgradableNames))
+			}
+			stopLineFound = true
+			o.log.Debugf("Found the stop line. line: %s", line)
+			break
+		}
 		upgradableNames = append(upgradableNames, strings.Fields(line)...)
 	}
 	if !startLineFound {
