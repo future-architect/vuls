@@ -7,7 +7,6 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	ver "github.com/knqyf263/go-deb-version"
-	cve "github.com/kotakanbe/go-cve-dictionary/models"
 	ovalconf "github.com/kotakanbe/goval-dictionary/config"
 	db "github.com/kotakanbe/goval-dictionary/db"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
@@ -56,69 +55,108 @@ func (o Redhat) FillCveInfoFromOvalDB(r *models.ScanResult) (*models.ScanResult,
 }
 
 func (o Redhat) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Definition) *models.ScanResult {
-	found := make(map[string]bool)
-	vulnInfos := make(map[string]models.VulnInfo)
-	packageInfoList := getPackageInfoList(r, definition)
+	cveIDSet := make(map[string]bool)
+	cveID2VulnInfo := make(map[string]models.VulnInfo)
 	for _, cve := range definition.Advisory.Cves {
-		found[cve.CveID] = false
-		vulnInfos[cve.CveID] = models.VulnInfo{
+		cveIDSet[cve.CveID] = false
+		cveID2VulnInfo[cve.CveID] = models.VulnInfo{
 			CveID:      cve.CveID,
 			Confidence: models.OvalMatch,
-			Packages:   packageInfoList,
+			Packages:   getPackageInfoList(r, definition),
 		}
 	}
 
 	// Update ScannedCves by OVAL info
-	cves := []models.VulnInfo{}
-	for _, scannedCve := range r.ScannedCves {
+	updatedCves := []models.VulnInfo{}
+	for _, scanned := range r.ScannedCves {
+		// Update scanned confidence to ovalmatch
 		for _, c := range definition.Advisory.Cves {
-			if scannedCve.CveID == c.CveID {
-				found[c.CveID] = true
-				if scannedCve.Confidence.Score < models.OvalMatch.Score {
-					scannedCve.Confidence = models.OvalMatch
+			if scanned.CveID == c.CveID {
+				cveIDSet[c.CveID] = true
+				if scanned.Confidence.Score < models.OvalMatch.Score {
+					scanned.Confidence = models.OvalMatch
 				}
 				break
 			}
 		}
-		cves = append(cves, scannedCve)
+		updatedCves = append(updatedCves, scanned)
 	}
 
-	for cveID, found := range found {
+	for cveID, found := range cveIDSet {
 		if !found {
-			cves = append(cves, vulnInfos[cveID])
 			util.Log.Debugf("%s is newly detected by OVAL", cveID)
+			updatedCves = append(updatedCves, cveID2VulnInfo[cveID])
 		}
 	}
-	r.ScannedCves = cves
+	r.ScannedCves = updatedCves
 
 	// Update KnownCves by OVAL info
 	for _, c := range definition.Advisory.Cves {
-		cveInfo, ok := r.KnownCves.Get(c.CveID)
+		ovalContent := *o.convertToModel(c.CveID, definition)
+		cInfo, ok := r.KnownCves.Get(c.CveID)
 		if !ok {
-			cveInfo.CveDetail = cve.CveDetail{
-				CveID: c.CveID,
-			}
-			cveInfo.VulnInfo = vulnInfos[c.CveID]
+			cInfo.VulnInfo = cveID2VulnInfo[c.CveID]
+			cInfo.CveContents = []models.CveContent{ovalContent}
 		}
-		cveInfo.OvalDetail = *definition
-		if cveInfo.VulnInfo.Confidence.Score < models.OvalMatch.Score {
-			cveInfo.Confidence = models.OvalMatch
+		if !cInfo.Update(ovalContent) {
+			cInfo.Insert(ovalContent)
 		}
-		r.KnownCves.Upsert(cveInfo)
+		if cInfo.VulnInfo.Confidence.Score < models.OvalMatch.Score {
+			cInfo.Confidence = models.OvalMatch
+		}
+		r.KnownCves.Upsert(cInfo)
 	}
 
 	// Update UnknownCves by OVAL info
 	for _, c := range definition.Advisory.Cves {
-		cveInfo, ok := r.UnknownCves.Get(c.CveID)
+		cInfo, ok := r.UnknownCves.Get(c.CveID)
 		if ok {
-			cveInfo.OvalDetail = *definition
-			if cveInfo.VulnInfo.Confidence.Score < models.OvalMatch.Score {
-				cveInfo.Confidence = models.OvalMatch
-			}
 			r.UnknownCves.Delete(c.CveID)
-			r.KnownCves.Upsert(cveInfo)
+
+			// Insert new CveInfo
+			ovalContent := *o.convertToModel(c.CveID, definition)
+			if !cInfo.Update(ovalContent) {
+				cInfo.Insert(ovalContent)
+			}
+			if cInfo.VulnInfo.Confidence.Score < models.OvalMatch.Score {
+				cInfo.Confidence = models.OvalMatch
+			}
+			r.KnownCves.Upsert(cInfo)
 		}
 	}
 
 	return r
+}
+
+func (o Redhat) convertToModel(cveID string, def *ovalmodels.Definition) *models.CveContent {
+	for _, cve := range def.Advisory.Cves {
+		if cve.CveID != cveID {
+			continue
+		}
+		var refs []models.Reference
+		//TODO RHSAのリンクを入れる
+		for _, r := range def.References {
+			refs = append(refs, models.Reference{
+				Link:   r.RefURL,
+				Source: r.Source,
+				RefID:  r.RefID,
+			})
+		}
+
+		//  util.ParseCvss2()
+
+		return &models.CveContent{
+			Type:     models.RedHat,
+			CveID:    cve.CveID,
+			Title:    def.Title,
+			Summary:  def.Description,
+			Severity: def.Advisory.Severity,
+			//  V2Score:    v2Score,   // TODO divide into score and vector
+			Cvss2Vector: cve.Cvss2, // TODO divide into score and vector
+			Cvss3Vector: cve.Cvss3, // TODO divide into score and vector
+			References:  refs,
+			CweID:       cve.Cwe,
+		}
+	}
+	return nil
 }

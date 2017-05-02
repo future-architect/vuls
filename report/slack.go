@@ -166,7 +166,7 @@ func toSlackAttachments(scanResult models.ScanResult) (attaches []*attachment) {
 	}
 
 	for _, cveInfo := range cves {
-		cveID := cveInfo.CveDetail.CveID
+		cveID := cveInfo.VulnInfo.CveID
 
 		curentPackages := []string{}
 		for _, p := range cveInfo.Packages {
@@ -199,7 +199,7 @@ func toSlackAttachments(scanResult models.ScanResult) (attaches []*attachment) {
 					Short: true,
 				},
 			},
-			Color: color(cveInfo.CveDetail.CvssScore(config.Conf.Lang)),
+			Color: color(cveInfo.CvssV2Score()),
 		}
 		attaches = append(attaches, &a)
 	}
@@ -221,57 +221,61 @@ func color(cvssScore float64) string {
 }
 
 func attachmentText(cveInfo models.CveInfo, osFamily string) string {
-	linkText := links(cveInfo, osFamily)
-	switch {
-	case config.Conf.Lang == "ja" &&
-		0 < cveInfo.CveDetail.Jvn.CvssScore():
+	//  linkText := links(cveInfo, osFamily)
+	//TODO
+	return ""
+	//  switch {
+	//  case config.Conf.Lang == "ja" &&
+	//      0 < cveInfo.CveDetail.Jvn.CvssScore():
 
-		jvn := cveInfo.CveDetail.Jvn
-		return fmt.Sprintf("*%4.1f (%s)* <%s|%s>\n%s\n%s\n*Confidence:* %v",
-			cveInfo.CveDetail.CvssScore(config.Conf.Lang),
-			jvn.CvssSeverity(),
-			fmt.Sprintf(cvssV2CalcBaseURL, cveInfo.CveDetail.CveID),
-			jvn.CvssVector(),
-			jvn.CveTitle(),
-			linkText,
-			cveInfo.VulnInfo.Confidence,
-		)
-	case 0 < cveInfo.CveDetail.CvssScore("en"):
-		nvd := cveInfo.CveDetail.Nvd
-		return fmt.Sprintf("*%4.1f (%s)* <%s|%s>\n%s\n%s\n*Confidence:* %v",
-			cveInfo.CveDetail.CvssScore(config.Conf.Lang),
-			nvd.CvssSeverity(),
-			fmt.Sprintf(cvssV2CalcBaseURL, cveInfo.CveDetail.CveID),
-			nvd.CvssVector(),
-			nvd.CveSummary(),
-			linkText,
-			cveInfo.VulnInfo.Confidence,
-		)
-	default:
-		nvd := cveInfo.CveDetail.Nvd
-		return fmt.Sprintf("?\n%s\n%s\n*Confidence:* %v",
-			nvd.CveSummary(), linkText, cveInfo.VulnInfo.Confidence)
-	}
+	//      jvn := cveInfo.CveDetail.Jvn
+	//      return fmt.Sprintf("*%4.1f (%s)* <%s|%s>\n%s\n%s\n*Confidence:* %v",
+	//          cveInfo.CveDetail.CvssScore(config.Conf.Lang),
+	//          jvn.CvssSeverity(),
+	//          fmt.Sprintf(cvssV2CalcBaseURL, cveInfo.CveDetail.CveID),
+	//          jvn.CvssVector(),
+	//          jvn.CveTitle(),
+	//          linkText,
+	//          cveInfo.VulnInfo.Confidence,
+	//      )
+	//  case 0 < cveInfo.CveDetail.CvssScore("en"):
+	//      nvd := cveInfo.CveDetail.Nvd
+	//      return fmt.Sprintf("*%4.1f (%s)* <%s|%s>\n%s\n%s\n*Confidence:* %v",
+	//          cveInfo.CveDetail.CvssScore(config.Conf.Lang),
+	//          nvd.CvssSeverity(),
+	//          fmt.Sprintf(cvssV2CalcBaseURL, cveInfo.CveDetail.CveID),
+	//          nvd.CvssVector(),
+	//          nvd.CveSummary(),
+	//          linkText,
+	//          cveInfo.VulnInfo.Confidence,
+	//      )
+	//  default:
+	//      nvd := cveInfo.CveDetail.Nvd
+	//      return fmt.Sprintf("?\n%s\n%s\n*Confidence:* %v",
+	//          nvd.CveSummary(), linkText, cveInfo.VulnInfo.Confidence)
+	//  }
 }
 
 func links(cveInfo models.CveInfo, osFamily string) string {
 	links := []string{}
 
-	cweID := cveInfo.CveDetail.CweID()
-	if 0 < len(cweID) {
-		links = append(links, fmt.Sprintf("<%s|%s>",
-			cweURL(cweID), cweID))
-		if config.Conf.Lang == "ja" {
-			links = append(links, fmt.Sprintf("<%s|%s(JVN)>",
-				cweJvnURL(cweID), cweID))
-		}
-	}
+	//TODO
+	//  cweID := cveInfo.CveDetail.CweID()
+	//  if 0 < len(cweID) {
+	//      links = append(links, fmt.Sprintf("<%s|%s>",
+	//          cweURL(cweID), cweID))
+	//      if config.Conf.Lang == "ja" {
+	//          links = append(links, fmt.Sprintf("<%s|%s(JVN)>",
+	//              cweJvnURL(cweID), cweID))
+	//      }
+	//  }
 
-	cveID := cveInfo.CveDetail.CveID
-	if config.Conf.Lang == "ja" && 0 < len(cveInfo.CveDetail.Jvn.Link()) {
-		jvn := fmt.Sprintf("<%s|JVN>", cveInfo.CveDetail.Jvn.Link())
-		links = append(links, jvn)
-	}
+	cveID := cveInfo.VulnInfo.CveID
+	//TODO
+	//  if config.Conf.Lang == "ja" && 0 < len(cveInfo.CveDetail.Jvn.Link()) {
+	//      jvn := fmt.Sprintf("<%s|JVN>", cveInfo.CveDetail.Jvn.Link())
+	//      links = append(links, jvn)
+	//  }
 	dlinks := distroLinks(cveInfo, osFamily)
 	for _, link := range dlinks {
 		links = append(links,

@@ -20,12 +20,12 @@ package models
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/cveapi"
-	cve "github.com/kotakanbe/go-cve-dictionary/models"
-	goval "github.com/kotakanbe/goval-dictionary/models"
+	cvedict "github.com/kotakanbe/go-cve-dictionary/models"
 )
 
 // ScanResults is slice of ScanResult.
@@ -73,8 +73,7 @@ type ScanResult struct {
 	Optional [][]interface{}
 }
 
-// FillCveDetail fetches CVE detailed information from
-// CVE Database, and then set to fields.
+// FillCveDetail fetches NVD, JVN from CVE Database, and then set to fields.
 func (r ScanResult) FillCveDetail() (*ScanResult, error) {
 	set := map[string]VulnInfo{}
 	var cveIDs []string
@@ -90,35 +89,45 @@ func (r ScanResult) FillCveDetail() (*ScanResult, error) {
 
 	r.IgnoredCves = CveInfos{}
 	for _, d := range ds {
+		nvd := *r.convertNvdToModel(d.CveID, d.Nvd)
+		jvn := *r.convertJvnToModel(d.CveID, d.Jvn)
 		cinfo := CveInfo{
-			CveDetail: d,
-			VulnInfo:  set[d.CveID],
+			CveContents: []CveContent{nvd, jvn},
+			VulnInfo:    set[d.CveID],
 		}
 		cinfo.NilSliceToEmpty()
 
 		// ignored
-		found := false
+		ignore := false
 		for _, icve := range config.Conf.Servers[r.ServerName].IgnoreCves {
 			if icve == d.CveID {
 				r.IgnoredCves.Insert(cinfo)
-				found = true
+				ignore = true
 				break
 			}
 		}
-		if found {
+		if ignore {
 			continue
 		}
 
 		// Update known if KnownCves already have cinfo
 		if c, ok := r.KnownCves.Get(cinfo.CveID); ok {
-			c.CveDetail = d
+			for _, con := range []CveContent{nvd, jvn} {
+				if !c.Update(con) {
+					c.Insert(con)
+				}
+			}
 			r.KnownCves.Update(c)
 			continue
 		}
 
 		// Update unknown if UnknownCves already have cinfo
 		if c, ok := r.UnknownCves.Get(cinfo.CveID); ok {
-			c.CveDetail = d
+			for _, con := range []CveContent{nvd, jvn} {
+				if !c.Update(con) {
+					c.Insert(con)
+				}
+			}
 			r.UnknownCves.Update(c)
 			continue
 		}
@@ -138,6 +147,93 @@ func (r ScanResult) FillCveDetail() (*ScanResult, error) {
 	return &r, nil
 }
 
+func (r ScanResult) convertNvdToModel(cveID string, nvd cvedict.Nvd) *CveContent {
+	var cpes []Cpe
+	for _, c := range nvd.Cpes {
+		cpes = append(cpes, Cpe{CpeName: c.CpeName})
+	}
+
+	var refs []Reference
+	for _, r := range nvd.References {
+		refs = append(refs, Reference{
+			Link:   r.Link,
+			Source: r.Source,
+		})
+	}
+
+	validVec := true
+	for _, v := range []string{
+		nvd.AccessVector,
+		nvd.AccessComplexity,
+		nvd.Authentication,
+		nvd.ConfidentialityImpact,
+		nvd.IntegrityImpact,
+		nvd.AvailabilityImpact,
+	} {
+		if len(v) == 0 {
+			validVec = false
+		}
+	}
+
+	vector := ""
+	if validVec {
+		vector = fmt.Sprintf("AV:%s/AC:%s/Au:%s/C:%s/I:%s/A:%s",
+			string(nvd.AccessVector[0]),
+			string(nvd.AccessComplexity[0]),
+			string(nvd.Authentication[0]),
+			string(nvd.ConfidentialityImpact[0]),
+			string(nvd.IntegrityImpact[0]),
+			string(nvd.AvailabilityImpact[0]))
+	}
+
+	//TODO CVSSv3
+	return &CveContent{
+		Type:         NVD,
+		CveID:        cveID,
+		Summary:      nvd.Summary,
+		Cvss2Score:   nvd.Score,
+		Cvss2Vector:  vector,
+		Cpes:         cpes,
+		CweID:        nvd.CweID,
+		References:   refs,
+		Published:    nvd.PublishedDate,
+		LastModified: nvd.LastModifiedDate,
+	}
+}
+
+func (r ScanResult) convertJvnToModel(cveID string, jvn cvedict.Jvn) *CveContent {
+	var cpes []Cpe
+	for _, c := range jvn.Cpes {
+		cpes = append(cpes, Cpe{CpeName: c.CpeName})
+	}
+
+	refs := []Reference{{
+		Link:   jvn.JvnLink,
+		Source: string(JVN),
+	}}
+	for _, r := range jvn.References {
+		refs = append(refs, Reference{
+			Link:   r.Link,
+			Source: r.Source,
+		})
+	}
+
+	vector := strings.TrimSuffix(strings.TrimPrefix(jvn.Vector, "("), ")")
+	return &CveContent{
+		Type:         JVN,
+		CveID:        cveID,
+		Title:        jvn.Title,
+		Summary:      jvn.Summary,
+		Severity:     jvn.Severity,
+		Cvss2Score:   jvn.Score,
+		Cvss2Vector:  vector,
+		Cpes:         cpes,
+		References:   refs,
+		Published:    jvn.PublishedDate,
+		LastModified: jvn.LastModifiedDate,
+	}
+}
+
 // FilterByCvssOver is filter function.
 func (r ScanResult) FilterByCvssOver() ScanResult {
 	cveInfos := []CveInfo{}
@@ -147,7 +243,7 @@ func (r ScanResult) FilterByCvssOver() ScanResult {
 	}
 
 	for _, cveInfo := range r.KnownCves {
-		if config.Conf.CvssScoreOver <= cveInfo.CveDetail.CvssScore(config.Conf.Lang) {
+		if config.Conf.CvssScoreOver <= cveInfo.CvssV2Score() {
 			cveInfos = append(cveInfos, cveInfo)
 		}
 	}
@@ -217,7 +313,7 @@ func (r ScanResult) CveSummary() string {
 	var high, medium, low, unknown int
 	cves := append(r.KnownCves, r.UnknownCves...)
 	for _, cveInfo := range cves {
-		score := cveInfo.CveDetail.CvssScore(config.Conf.Lang)
+		score := cveInfo.CvssV2Score()
 		switch {
 		case 7.0 <= score:
 			high++
@@ -379,11 +475,10 @@ func (c CveInfos) Swap(i, j int) {
 }
 
 func (c CveInfos) Less(i, j int) bool {
-	lang := config.Conf.Lang
-	if c[i].CveDetail.CvssScore(lang) == c[j].CveDetail.CvssScore(lang) {
-		return c[i].CveDetail.CveID < c[j].CveDetail.CveID
+	if c[i].CvssV2Score() == c[j].CvssV2Score() {
+		return c[i].CveID < c[j].CveID
 	}
-	return c[j].CveDetail.CvssScore(lang) < c[i].CveDetail.CvssScore(lang)
+	return c[j].CvssV2Score() < c[i].CvssV2Score()
 }
 
 // Get cveInfo by cveID
@@ -431,27 +526,120 @@ func (c *CveInfos) Upsert(cveInfo CveInfo) {
 	}
 }
 
-// CveInfo has Cve Information.
+// CveInfo has CVE detailed Information.
 type CveInfo struct {
-	CveDetail  cve.CveDetail
-	OvalDetail goval.Definition
 	VulnInfo
+	CveContents []CveContent
+}
+
+// Get a CveContent specified by arg
+func (c *CveInfo) Get(typestr CveContentType) (*CveContent, bool) {
+	for _, cont := range c.CveContents {
+		if cont.Type == typestr {
+			return &cont, true
+		}
+	}
+	return &CveContent{}, false
+}
+
+// Insert a CveContent to specified by arg
+func (c *CveInfo) Insert(con CveContent) {
+	c.CveContents = append(c.CveContents, con)
+}
+
+// Update a CveContent to specified by arg
+func (c *CveInfo) Update(to CveContent) bool {
+	for i, cont := range c.CveContents {
+		if cont.Type == to.Type {
+			c.CveContents[i] = to
+			return true
+		}
+	}
+	return false
+}
+
+// CvssV2Score returns CVSS V2 Score
+func (c *CveInfo) CvssV2Score() float64 {
+	//TODO
+	if cont, found := c.Get(NVD); found {
+		return cont.Cvss2Score
+	} else if cont, found := c.Get(JVN); found {
+		return cont.Cvss2Score
+	} else if cont, found := c.Get(RedHat); found {
+		return cont.Cvss2Score
+	}
+	return -1
 }
 
 // NilSliceToEmpty set nil slice fields to empty slice to avoid null in JSON
 func (c *CveInfo) NilSliceToEmpty() {
-	if c.CveDetail.Nvd.Cpes == nil {
-		c.CveDetail.Nvd.Cpes = []cve.Cpe{}
-	}
-	if c.CveDetail.Jvn.Cpes == nil {
-		c.CveDetail.Jvn.Cpes = []cve.Cpe{}
-	}
-	if c.CveDetail.Nvd.References == nil {
-		c.CveDetail.Nvd.References = []cve.Reference{}
-	}
-	if c.CveDetail.Jvn.References == nil {
-		c.CveDetail.Jvn.References = []cve.Reference{}
-	}
+	return
+	// TODO
+	//  if c.CveDetail.Nvd.Cpes == nil {
+	//      c.CveDetail.Nvd.Cpes = []cve.Cpe{}
+	//  }
+	//  if c.CveDetail.Jvn.Cpes == nil {
+	//      c.CveDetail.Jvn.Cpes = []cve.Cpe{}
+	//  }
+	//  if c.CveDetail.Nvd.References == nil {
+	//      c.CveDetail.Nvd.References = []cve.Reference{}
+	//  }
+	//  if c.CveDetail.Jvn.References == nil {
+	//      c.CveDetail.Jvn.References = []cve.Reference{}
+	//  }
+}
+
+// CveContentType is a source of CVE information
+type CveContentType string
+
+const (
+	// NVD is NVD
+	NVD CveContentType = "nvd"
+
+	// JVN is JVN
+	JVN CveContentType = "jvn"
+
+	// RedHat is RedHat
+	RedHat CveContentType = "redhat"
+
+	// CentOS is CentOS
+	CentOS CveContentType = "centos"
+
+	// Debian is Debian
+	Debian CveContentType = "debian"
+
+	// Ubuntu is Ubuntu
+	Ubuntu CveContentType = "ubuntu"
+)
+
+// CveContent has abstraction of various vulnerability information
+type CveContent struct {
+	Type         CveContentType
+	CveID        string
+	Title        string
+	Summary      string
+	Severity     string
+	Cvss2Score   float64
+	Cvss2Vector  string
+	Cvss3Score   float64
+	Cvss3Vector  string
+	Cpes         []Cpe
+	References   []Reference
+	CweID        string
+	Published    time.Time
+	LastModified time.Time
+}
+
+// Cpe is Common Platform Enumeration
+type Cpe struct {
+	CpeName string
+}
+
+// Reference has a related link of the CVE
+type Reference struct {
+	RefID  string
+	Source string
+	Link   string
 }
 
 // PackageInfoList is slice of PackageInfo
@@ -552,13 +740,14 @@ func (a PackageInfosByName) Less(i, j int) bool { return a[i].Name < a[j].Name }
 
 // PackageInfo has installed packages.
 type PackageInfo struct {
-	Name       string
-	Version    string
-	Release    string
-	NewVersion string
-	NewRelease string
-	Repository string
-	Changelog  Changelog
+	Name        string
+	Version     string
+	Release     string
+	NewVersion  string
+	NewRelease  string
+	Repository  string
+	Changelog   Changelog
+	NotFixedYet bool // Ubuntu OVAL Only
 }
 
 // Changelog has contents of changelog and how to get it.

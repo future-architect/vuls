@@ -25,7 +25,6 @@ import (
 
 	"github.com/future-architect/vuls/models"
 	"github.com/k0kubun/pp"
-	cve "github.com/kotakanbe/go-cve-dictionary/models"
 )
 
 func TestDiff(t *testing.T) {
@@ -174,10 +173,11 @@ func TestDiff(t *testing.T) {
 					},
 					KnownCves: []models.CveInfo{
 						{
-							CveDetail: cve.CveDetail{
-								CveID: "CVE-2016-6662",
-								Nvd: cve.Nvd{
-									LastModifiedDate: time.Date(2016, 1, 1, 0, 0, 0, 0, time.Local),
+							CveContents: []models.CveContent{
+								{
+									Type:         models.NVD,
+									CveID:        "CVE-2016-6662",
+									LastModified: time.Date(2016, 1, 1, 0, 0, 0, 0, time.Local),
 								},
 							},
 							VulnInfo: models.VulnInfo{
@@ -214,10 +214,11 @@ func TestDiff(t *testing.T) {
 					},
 					KnownCves: []models.CveInfo{
 						{
-							CveDetail: cve.CveDetail{
-								CveID: "CVE-2016-6662",
-								Nvd: cve.Nvd{
-									LastModifiedDate: time.Date(2017, 3, 15, 13, 40, 57, 0, time.Local),
+							CveContents: []models.CveContent{
+								{
+									Type:         models.NVD,
+									CveID:        "CVE-2016-6662",
+									LastModified: time.Date(2017, 3, 15, 13, 40, 57, 0, time.Local),
 								},
 							},
 							VulnInfo: models.VulnInfo{
