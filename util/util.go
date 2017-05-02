@@ -20,6 +20,7 @@ package util
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/future-architect/vuls/config"
@@ -134,4 +135,32 @@ func Truncate(str string, length int) string {
 		return str[:length]
 	}
 	return str
+}
+
+// ParseCvss2 divide CVSSv2 string into score and vector
+// 5/AV:N/AC:L/Au:N/C:N/I:N/A:P
+func ParseCvss2(scoreVector string) (score float64, vector string) {
+	var err error
+	ss := strings.Split(scoreVector, "/")
+	if 1 < len(ss) {
+		if score, err = strconv.ParseFloat(ss[0], 64); err != nil {
+			return 0, ""
+		}
+		return score, strings.Join(ss[1:len(ss)], "/")
+	}
+	return 0, ""
+}
+
+// ParseCvss3 divide CVSSv3 string into score and vector
+// 5.6/CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L
+func ParseCvss3(scoreVector string) (score float64, vector string) {
+	var err error
+	ss := strings.Split(scoreVector, "/CVSS:3.0/")
+	if 1 < len(ss) {
+		if score, err = strconv.ParseFloat(ss[0], 64); err != nil {
+			return 0, ""
+		}
+		return score, strings.Join(ss[1:len(ss)], "/")
+	}
+	return 0, ""
 }

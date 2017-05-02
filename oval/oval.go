@@ -15,6 +15,7 @@ func getPackageInfoList(r *models.ScanResult, d *ovalmodels.Definition) models.P
 	for _, pack := range d.AffectedPacks {
 		for _, p := range r.Packages {
 			if pack.Name == p.Name {
+				p.Changelog = models.Changelog{}
 				packageInfoList = append(packageInfoList, p)
 				break
 			}

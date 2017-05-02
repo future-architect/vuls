@@ -246,15 +246,15 @@ func diff(current, previous models.ScanResults) (diff models.ScanResults, err er
 	return diff, err
 }
 
-func getNewCves(previousResult, currentResult models.ScanResult) (newVulninfos []models.VulnInfo) {
+func getNewCves(previous, current models.ScanResult) (newVulninfos []models.VulnInfo) {
 	previousCveIDsSet := map[string]bool{}
-	for _, previousVulnInfo := range previousResult.ScannedCves {
+	for _, previousVulnInfo := range previous.ScannedCves {
 		previousCveIDsSet[previousVulnInfo.CveID] = true
 	}
 
-	for _, v := range currentResult.ScannedCves {
+	for _, v := range current.ScannedCves {
 		if previousCveIDsSet[v.CveID] {
-			if isCveInfoUpdated(currentResult, previousResult, v.CveID) {
+			if isCveInfoUpdated(current, previous, v.CveID) {
 				newVulninfos = append(newVulninfos, v)
 			}
 		} else {
@@ -264,25 +264,35 @@ func getNewCves(previousResult, currentResult models.ScanResult) (newVulninfos [
 	return
 }
 
-func isCveInfoUpdated(currentResult, previousResult models.ScanResult, CveID string) bool {
+func isCveInfoUpdated(current, previous models.ScanResult, CveID string) bool {
 	type lastModified struct {
 		Nvd time.Time
 		Jvn time.Time
 	}
 
 	previousModifies := lastModified{}
-	for _, c := range previousResult.KnownCves {
+	for _, c := range previous.KnownCves {
 		if CveID == c.CveID {
-			previousModifies.Nvd = c.CveDetail.Nvd.LastModifiedDate
-			previousModifies.Jvn = c.CveDetail.Jvn.LastModifiedDate
+			//TODO
+			if nvd, found := c.Get(models.NVD); found {
+				previousModifies.Nvd = nvd.LastModified
+			}
+			if jvn, found := c.Get(models.JVN); found {
+				previousModifies.Jvn = jvn.LastModified
+			}
 		}
 	}
 
 	currentModifies := lastModified{}
-	for _, c := range currentResult.KnownCves {
-		if CveID == c.CveDetail.CveID {
-			currentModifies.Nvd = c.CveDetail.Nvd.LastModifiedDate
-			currentModifies.Jvn = c.CveDetail.Jvn.LastModifiedDate
+	for _, c := range current.KnownCves {
+		if CveID == c.VulnInfo.CveID {
+			//TODO
+			if nvd, found := c.Get(models.NVD); found {
+				previousModifies.Nvd = nvd.LastModified
+			}
+			if jvn, found := c.Get(models.JVN); found {
+				previousModifies.Jvn = jvn.LastModified
+			}
 		}
 	}
 	return !currentModifies.Nvd.Equal(previousModifies.Nvd) ||

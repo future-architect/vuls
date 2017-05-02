@@ -26,7 +26,6 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/google/subcommands"
 	"github.com/gosuri/uitable"
@@ -613,39 +612,53 @@ func summaryLines() string {
 
 	for i, d := range currentScanResult.AllCves() {
 		var cols []string
-		//  packs := []string{}
-		//  for _, pack := range d.Packages {
-		//      packs = append(packs, pack.Name)
-		//  }
-		if config.Conf.Lang == "ja" && 0 < d.CveDetail.Jvn.CvssScore() {
-			summary := d.CveDetail.Jvn.CveTitle()
-			cols = []string{
-				fmt.Sprintf(indexFormat, i+1),
-				d.CveDetail.CveID,
-				fmt.Sprintf("| %4.1f",
-					d.CveDetail.CvssScore(config.Conf.Lang)),
-				fmt.Sprintf("| %3d |", d.VulnInfo.Confidence.Score),
-				summary,
-			}
-		} else {
-			summary := d.CveDetail.Nvd.CveSummary()
-
-			var cvssScore string
-			if d.CveDetail.CvssScore("en") <= 0 {
-				cvssScore = "|   ?"
-			} else {
-				cvssScore = fmt.Sprintf("| %4.1f",
-					d.CveDetail.CvssScore(config.Conf.Lang))
-			}
-
-			cols = []string{
-				fmt.Sprintf(indexFormat, i+1),
-				d.CveDetail.CveID,
-				cvssScore,
-				fmt.Sprintf("| %3d |", d.VulnInfo.Confidence.Score),
-				summary,
-			}
+		//TODO
+		var summary string
+		if cont, found := d.Get(models.NVD); found {
+			summary = cont.Summary
 		}
+		var cvssScore string
+		if d.CvssV2Score() <= 0 {
+			cvssScore = "|   ?"
+		} else {
+			cvssScore = fmt.Sprintf("| %4.1f", d.CvssV2Score())
+		}
+		cols = []string{
+			fmt.Sprintf(indexFormat, i+1),
+			d.VulnInfo.CveID,
+			cvssScore,
+			fmt.Sprintf("| %3d |", d.VulnInfo.Confidence.Score),
+			summary,
+		}
+		//  if config.Conf.Lang == "ja" && 0 < d.CveDetail.Jvn.CvssScore() {
+		//      summary := d.CveDetail.Jvn.CveTitle()
+		//      cols = []string{
+		//          fmt.Sprintf(indexFormat, i+1),
+		//          d.CveDetail.CveID,
+		//          fmt.Sprintf("| %4.1f",
+		//              d.CveDetail.CvssScore(config.Conf.Lang)),
+		//          fmt.Sprintf("| %3d |", d.VulnInfo.Confidence.Score),
+		//          summary,
+		//      }
+		//  } else {
+		//      summary := d.CveDetail.Nvd.CveSummary()
+
+		//      var cvssScore string
+		//      if d.CveDetail.CvssScore("en") <= 0 {
+		//          cvssScore = "|   ?"
+		//      } else {
+		//          cvssScore = fmt.Sprintf("| %4.1f",
+		//              d.CveDetail.CvssScore(config.Conf.Lang))
+		//      }
+
+		//      cols = []string{
+		//          fmt.Sprintf(indexFormat, i+1),
+		//          d.CveDetail.CveID,
+		//          cvssScore,
+		//          fmt.Sprintf("| %3d |", d.VulnInfo.Confidence.Score),
+		//          summary,
+		//      }
+		//  }
 
 		icols := make([]interface{}, len(cols))
 		for j := range cols {
@@ -748,7 +761,7 @@ func detailLines() (string, error) {
 	}
 
 	cveInfo := currentScanResult.AllCves()[currentCveInfo]
-	cveID := cveInfo.CveDetail.CveID
+	cveID := cveInfo.VulnInfo.CveID
 
 	tmpl, err := template.New("detail").Parse(detailTemplate())
 	if err != nil {
@@ -758,22 +771,27 @@ func detailLines() (string, error) {
 	var cvssSeverity, cvssVector, summary string
 	var refs []cve.Reference
 	switch {
-	case config.Conf.Lang == "ja" &&
-		0 < cveInfo.CveDetail.Jvn.CvssScore():
-		jvn := cveInfo.CveDetail.Jvn
-		cvssSeverity = jvn.CvssSeverity()
-		cvssVector = jvn.CvssVector()
-		summary = fmt.Sprintf("%s\n%s", jvn.CveTitle(), jvn.CveSummary())
-		refs = jvn.VulnSiteReferences()
+	//TODO
+	//  case config.Conf.Lang == "ja" &&
+	//      0 < cveInfo.CveDetail.Jvn.CvssScore():
+	//      jvn := cveInfo.CveDetail.Jvn
+	//      cvssSeverity = jvn.CvssSeverity()
+	//      cvssVector = jvn.CvssVector()
+	//      summary = fmt.Sprintf("%s\n%s", jvn.CveTitle(), jvn.CveSummary())
+	//      refs = jvn.VulnSiteReferences()
 	default:
-		nvd := cveInfo.CveDetail.Nvd
-		cvssSeverity = nvd.CvssSeverity()
-		cvssVector = nvd.CvssVector()
-		summary = nvd.CveSummary()
-		refs = nvd.VulnSiteReferences()
+		var nvd *models.CveContent
+		if cont, found := cveInfo.Get(models.NVD); found {
+			nvd = cont
+		}
+		//  cvssSeverity = nvd.CvssSeverity()
+		//  cvssVector = nvd.CvssVector()
+		summary = nvd.Summary
+		//  refs = nvd.VulnSiteReferences()
 	}
 
-	cweURL := cweURL(cveInfo.CveDetail.CweID())
+	//TODO
+	//  cweURL := cweURL(cveInfo.CveDetail.CweID())
 
 	links := []string{
 		fmt.Sprintf("[NVD]( %s )", fmt.Sprintf("%s/%s", nvdBaseURL, cveID)),
@@ -787,11 +805,12 @@ func detailLines() (string, error) {
 		links = append(links, fmt.Sprintf("[%s]( %s )", link.title, link.url))
 	}
 
+	//TODO
 	var cvssScore string
-	if cveInfo.CveDetail.CvssScore(config.Conf.Lang) == -1 {
+	if cveInfo.CvssV2Score() == -1 {
 		cvssScore = "?"
-	} else {
-		cvssScore = fmt.Sprintf("%4.1f", cveInfo.CveDetail.CvssScore(config.Conf.Lang))
+		//  } else {
+		//      cvssScore = fmt.Sprintf("%4.1f", cveInfo.CveDetail.CvssScore(config.Conf.Lang))
 	}
 
 	packages := []string{}
@@ -804,13 +823,14 @@ func detailLines() (string, error) {
 	}
 
 	data := dataForTmpl{
-		CveID:         cveID,
-		CvssScore:     cvssScore,
-		CvssSeverity:  cvssSeverity,
-		CvssVector:    cvssVector,
-		Summary:       summary,
-		Confidence:    cveInfo.VulnInfo.Confidence,
-		CweURL:        cweURL,
+		CveID:        cveID,
+		CvssScore:    cvssScore,
+		CvssSeverity: cvssSeverity,
+		CvssVector:   cvssVector,
+		Summary:      summary,
+		Confidence:   cveInfo.VulnInfo.Confidence,
+		//TODO
+		//  CweURL:        cweURL,
 		VulnSiteLinks: links,
 		References:    refs,
 		Packages:      packages,

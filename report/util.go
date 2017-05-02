@@ -126,38 +126,43 @@ No CVE-IDs are found in updatable packages.
 
 		var scols []string
 		switch {
-		case config.Conf.Lang == "ja" &&
-			0 < d.CveDetail.Jvn.CvssScore():
-			summary := fmt.Sprintf("%s\n%s\n%s\n%sConfidence: %v",
-				d.CveDetail.Jvn.CveTitle(),
-				d.CveDetail.Jvn.Link(),
-				distroLinks(d, r.Family)[0].url,
-				packsVer,
-				d.VulnInfo.Confidence,
-			)
-			scols = []string{
-				d.CveDetail.CveID,
-				fmt.Sprintf("%-4.1f (%s)",
-					d.CveDetail.CvssScore(config.Conf.Lang),
-					d.CveDetail.Jvn.CvssSeverity(),
-				),
-				summary,
-			}
+		//  case config.Conf.Lang == "ja" &&
+		//TODO
+		//  0 < d.CveDetail.Jvn.CvssScore():
+		//  summary := fmt.Sprintf("%s\n%s\n%s\n%sConfidence: %v",
+		//      d.CveDetail.Jvn.CveTitle(),
+		//      d.CveDetail.Jvn.Link(),
+		//      distroLinks(d, r.Family)[0].url,
+		//      packsVer,
+		//      d.VulnInfo.Confidence,
+		//  )
+		//  scols = []string{
+		//      d.CveDetail.CveID,
+		//      fmt.Sprintf("%-4.1f (%s)",
+		//          d.CveDetail.CvssScore(config.Conf.Lang),
+		//          d.CveDetail.Jvn.CvssSeverity(),
+		//      ),
+		//      summary,
+		//  }
 
-		case 0 < d.CveDetail.CvssScore("en"):
+		case 0 < d.CvssV2Score():
+			var nvd *models.CveContent
+			if cont, found := d.Get(models.NVD); found {
+				nvd = cont
+			}
 			summary := fmt.Sprintf("%s\n%s/%s\n%s\n%sConfidence: %v",
-				d.CveDetail.Nvd.CveSummary(),
+				nvd.Summary,
 				cveDetailsBaseURL,
-				d.CveDetail.CveID,
+				d.VulnInfo.CveID,
 				distroLinks(d, r.Family)[0].url,
 				packsVer,
 				d.VulnInfo.Confidence,
 			)
 			scols = []string{
-				d.CveDetail.CveID,
+				d.VulnInfo.CveID,
 				fmt.Sprintf("%-4.1f (%s)",
-					d.CveDetail.CvssScore(config.Conf.Lang),
-					d.CveDetail.Nvd.CvssSeverity(),
+					d.CvssV2Score(),
+					"TODO",
 				),
 				summary,
 			}
@@ -165,7 +170,7 @@ No CVE-IDs are found in updatable packages.
 			summary := fmt.Sprintf("%s\n%sConfidence: %v",
 				distroLinks(d, r.Family)[0].url, packsVer, d.VulnInfo.Confidence)
 			scols = []string{
-				d.CveDetail.CveID,
+				d.VulnInfo.CveID,
 				"?",
 				summary,
 			}
@@ -229,39 +234,40 @@ No CVE-IDs are found in updatable packages.
 	return fmt.Sprintf("%s\n%s\n%s", header, detail, formatChangelogs(r))
 }
 
+//TODO
 func formatPlainTextDetails(r models.ScanResult, osFamily string) (scoredReport, unscoredReport []string) {
-	for _, cve := range r.KnownCves {
-		switch config.Conf.Lang {
-		case "en":
-			if 0 < cve.CveDetail.Nvd.CvssScore() {
-				scoredReport = append(
-					scoredReport, formatPlainTextDetailsLangEn(cve, osFamily))
-			} else {
-				scoredReport = append(
-					scoredReport, formatPlainTextUnknownCve(cve, osFamily))
-			}
-		case "ja":
-			if 0 < cve.CveDetail.Jvn.CvssScore() {
-				scoredReport = append(
-					scoredReport, formatPlainTextDetailsLangJa(cve, osFamily))
-			} else if 0 < cve.CveDetail.Nvd.CvssScore() {
-				scoredReport = append(
-					scoredReport, formatPlainTextDetailsLangEn(cve, osFamily))
-			} else {
-				scoredReport = append(
-					scoredReport, formatPlainTextUnknownCve(cve, osFamily))
-			}
-		}
-	}
-	for _, cve := range r.UnknownCves {
-		unscoredReport = append(
-			unscoredReport, formatPlainTextUnknownCve(cve, osFamily))
-	}
+	//  for _, cve := range r.KnownCves {
+	//      switch config.Conf.Lang {
+	//      case "en":
+	//          if 0 < cve.CveDetail.Nvd.CvssScore() {
+	//              scoredReport = append(
+	//                  scoredReport, formatPlainTextDetailsLangEn(cve, osFamily))
+	//          } else {
+	//              scoredReport = append(
+	//                  scoredReport, formatPlainTextUnknownCve(cve, osFamily))
+	//          }
+	//      case "ja":
+	//          if 0 < cve.CveDetail.Jvn.CvssScore() {
+	//              scoredReport = append(
+	//                  scoredReport, formatPlainTextDetailsLangJa(cve, osFamily))
+	//          } else if 0 < cve.CveDetail.Nvd.CvssScore() {
+	//              scoredReport = append(
+	//                  scoredReport, formatPlainTextDetailsLangEn(cve, osFamily))
+	//          } else {
+	//              scoredReport = append(
+	//                  scoredReport, formatPlainTextUnknownCve(cve, osFamily))
+	//          }
+	//      }
+	//  }
+	//  for _, cve := range r.UnknownCves {
+	//      unscoredReport = append(
+	//          unscoredReport, formatPlainTextUnknownCve(cve, osFamily))
+	//  }
 	return
 }
 
 func formatPlainTextUnknownCve(cveInfo models.CveInfo, osFamily string) string {
-	cveID := cveInfo.CveDetail.CveID
+	cveID := cveInfo.VulnInfo.CveID
 	dtable := uitable.New()
 	dtable.MaxColWidth = maxColWidth
 	dtable.Wrap = true
@@ -281,90 +287,94 @@ func formatPlainTextUnknownCve(cveInfo models.CveInfo, osFamily string) string {
 	return fmt.Sprintf("%s", dtable)
 }
 
+//TODO
 func formatPlainTextDetailsLangJa(cveInfo models.CveInfo, osFamily string) string {
-	cveDetail := cveInfo.CveDetail
-	cveID := cveDetail.CveID
-	jvn := cveDetail.Jvn
+	return "TODO"
+	//  cveDetail := cveInfo.CveDetail
+	//  cveID := cveDetail.CveID
+	//  jvn := cveDetail.Jvn
 
-	dtable := uitable.New()
-	dtable.MaxColWidth = maxColWidth
-	dtable.Wrap = true
-	dtable.AddRow(cveID)
-	dtable.AddRow("-------------")
-	if score := cveDetail.Jvn.CvssScore(); 0 < score {
-		dtable.AddRow("Score",
-			fmt.Sprintf("%4.1f (%s)",
-				cveDetail.Jvn.CvssScore(),
-				jvn.CvssSeverity(),
-			))
-	} else {
-		dtable.AddRow("Score", "?")
-	}
-	dtable.AddRow("Vector", jvn.CvssVector())
-	dtable.AddRow("Title", jvn.CveTitle())
-	dtable.AddRow("Description", jvn.CveSummary())
-	dtable.AddRow(cveDetail.CweID(), cweURL(cveDetail.CweID()))
-	dtable.AddRow(cveDetail.CweID()+"(JVN)", cweJvnURL(cveDetail.CweID()))
+	//  dtable := uitable.New()
+	//  dtable.MaxColWidth = maxColWidth
+	//  dtable.Wrap = true
+	//  dtable.AddRow(cveID)
+	//  dtable.AddRow("-------------")
+	//  if score := cveDetail.Jvn.CvssScore(); 0 < score {
+	//      dtable.AddRow("Score",
+	//          fmt.Sprintf("%4.1f (%s)",
+	//              cveDetail.Jvn.CvssScore(),
+	//              jvn.CvssSeverity(),
+	//          ))
+	//  } else {
+	//      dtable.AddRow("Score", "?")
+	//  }
+	//  dtable.AddRow("Vector", jvn.CvssVector())
+	//  dtable.AddRow("Title", jvn.CveTitle())
+	//  dtable.AddRow("Description", jvn.CveSummary())
+	//  dtable.AddRow(cveDetail.CweID(), cweURL(cveDetail.CweID()))
+	//  dtable.AddRow(cveDetail.CweID()+"(JVN)", cweJvnURL(cveDetail.CweID()))
 
-	dtable.AddRow("JVN", jvn.Link())
-	dtable.AddRow("NVD", fmt.Sprintf("%s/%s", nvdBaseURL, cveID))
-	dtable.AddRow("MITRE", fmt.Sprintf("%s%s", mitreBaseURL, cveID))
-	dtable.AddRow("CVE Details", fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID))
-	dtable.AddRow("CVSSv2 Clac", fmt.Sprintf(cvssV2CalcBaseURL, cveID))
-	dtable.AddRow("CVSSv3 Clac", fmt.Sprintf(cvssV3CalcBaseURL, cveID))
+	//  dtable.AddRow("JVN", jvn.Link())
+	//  dtable.AddRow("NVD", fmt.Sprintf("%s/%s", nvdBaseURL, cveID))
+	//  dtable.AddRow("MITRE", fmt.Sprintf("%s%s", mitreBaseURL, cveID))
+	//  dtable.AddRow("CVE Details", fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID))
+	//  dtable.AddRow("CVSSv2 Clac", fmt.Sprintf(cvssV2CalcBaseURL, cveID))
+	//  dtable.AddRow("CVSSv3 Clac", fmt.Sprintf(cvssV3CalcBaseURL, cveID))
 
-	dlinks := distroLinks(cveInfo, osFamily)
-	for _, link := range dlinks {
-		dtable.AddRow(link.title, link.url)
-	}
+	//  dlinks := distroLinks(cveInfo, osFamily)
+	//  for _, link := range dlinks {
+	//      dtable.AddRow(link.title, link.url)
+	//  }
 
-	dtable = addPackageInfos(dtable, cveInfo.Packages)
-	dtable = addCpeNames(dtable, cveInfo.CpeNames)
-	dtable.AddRow("Confidence", cveInfo.VulnInfo.Confidence)
+	//  dtable = addPackageInfos(dtable, cveInfo.Packages)
+	//  dtable = addCpeNames(dtable, cveInfo.CpeNames)
+	//  dtable.AddRow("Confidence", cveInfo.VulnInfo.Confidence)
 
-	return fmt.Sprintf("%s", dtable)
+	//  return fmt.Sprintf("%s", dtable)
 }
 
+//TODO
 func formatPlainTextDetailsLangEn(d models.CveInfo, osFamily string) string {
-	cveDetail := d.CveDetail
-	cveID := cveDetail.CveID
-	nvd := cveDetail.Nvd
+	return ""
+	//  cveDetail := d.CveDetail
+	//  cveID := cveDetail.CveID
+	//  nvd := cveDetail.Nvd
 
-	dtable := uitable.New()
-	dtable.MaxColWidth = maxColWidth
-	dtable.Wrap = true
-	dtable.AddRow(cveID)
-	dtable.AddRow("-------------")
+	//  dtable := uitable.New()
+	//  dtable.MaxColWidth = maxColWidth
+	//  dtable.Wrap = true
+	//  dtable.AddRow(cveID)
+	//  dtable.AddRow("-------------")
 
-	if score := cveDetail.Nvd.CvssScore(); 0 < score {
-		dtable.AddRow("Score",
-			fmt.Sprintf("%4.1f (%s)",
-				cveDetail.Nvd.CvssScore(),
-				nvd.CvssSeverity(),
-			))
-	} else {
-		dtable.AddRow("Score", "?")
-	}
+	//  if score := cveDetail.Nvd.CvssScore(); 0 < score {
+	//      dtable.AddRow("Score",
+	//          fmt.Sprintf("%4.1f (%s)",
+	//              cveDetail.Nvd.CvssScore(),
+	//              nvd.CvssSeverity(),
+	//          ))
+	//  } else {
+	//      dtable.AddRow("Score", "?")
+	//  }
 
-	dtable.AddRow("Vector", nvd.CvssVector())
-	dtable.AddRow("Summary", nvd.CveSummary())
-	dtable.AddRow("CWE", cweURL(cveDetail.CweID()))
+	//  dtable.AddRow("Vector", nvd.CvssVector())
+	//  dtable.AddRow("Summary", nvd.CveSummary())
+	//  dtable.AddRow("CWE", cweURL(cveDetail.CweID()))
 
-	dtable.AddRow("NVD", fmt.Sprintf("%s/%s", nvdBaseURL, cveID))
-	dtable.AddRow("MITRE", fmt.Sprintf("%s%s", mitreBaseURL, cveID))
-	dtable.AddRow("CVE Details", fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID))
-	dtable.AddRow("CVSSv2 Clac", fmt.Sprintf(cvssV2CalcBaseURL, cveID))
-	dtable.AddRow("CVSSv3 Clac", fmt.Sprintf(cvssV3CalcBaseURL, cveID))
+	//  dtable.AddRow("NVD", fmt.Sprintf("%s/%s", nvdBaseURL, cveID))
+	//  dtable.AddRow("MITRE", fmt.Sprintf("%s%s", mitreBaseURL, cveID))
+	//  dtable.AddRow("CVE Details", fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID))
+	//  dtable.AddRow("CVSSv2 Clac", fmt.Sprintf(cvssV2CalcBaseURL, cveID))
+	//  dtable.AddRow("CVSSv3 Clac", fmt.Sprintf(cvssV3CalcBaseURL, cveID))
 
-	links := distroLinks(d, osFamily)
-	for _, link := range links {
-		dtable.AddRow(link.title, link.url)
-	}
-	dtable = addPackageInfos(dtable, d.Packages)
-	dtable = addCpeNames(dtable, d.CpeNames)
-	dtable.AddRow("Confidence", d.VulnInfo.Confidence)
+	//  links := distroLinks(d, osFamily)
+	//  for _, link := range links {
+	//      dtable.AddRow(link.title, link.url)
+	//  }
+	//  dtable = addPackageInfos(dtable, d.Packages)
+	//  dtable = addCpeNames(dtable, d.CpeNames)
+	//  dtable.AddRow("Confidence", d.VulnInfo.Confidence)
 
-	return fmt.Sprintf("%s\n", dtable)
+	//  return fmt.Sprintf("%s\n", dtable)
 }
 
 type distroLink struct {
@@ -374,7 +384,7 @@ type distroLink struct {
 
 // distroLinks add Vendor URL of the CVE to table
 func distroLinks(cveInfo models.CveInfo, osFamily string) []distroLink {
-	cveID := cveInfo.CveDetail.CveID
+	cveID := cveInfo.VulnInfo.CveID
 	switch osFamily {
 	case "rhel", "centos":
 		links := []distroLink{

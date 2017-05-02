@@ -30,6 +30,7 @@ import (
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
+	"github.com/k0kubun/pp"
 )
 
 // ReportCmd is subcommand for reporting
@@ -421,6 +422,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 				util.Log.Errorf("Failed to fill OVAL information: %s", err)
 				return subcommands.ExitFailure
 			}
+			pp.Println(filled)
 
 			filled, err = fillCveInfoFromCveDB(*filled)
 			if err != nil {

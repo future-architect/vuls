@@ -7,7 +7,6 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	ver "github.com/knqyf263/go-deb-version"
-	cve "github.com/kotakanbe/go-cve-dictionary/models"
 	ovalconf "github.com/kotakanbe/goval-dictionary/config"
 	db "github.com/kotakanbe/goval-dictionary/db"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
@@ -62,54 +61,78 @@ func (o Debian) FillCveInfoFromOvalDB(r *models.ScanResult) (*models.ScanResult,
 func (o Debian) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Definition) *models.ScanResult {
 	// Update ScannedCves by OVAL info
 	found := false
-	cves := []models.VulnInfo{}
-	for _, cve := range r.ScannedCves {
-		if cve.CveID == definition.Debian.CveID {
+	updatedCves := []models.VulnInfo{}
+
+	// Update scanned confidence to ovalmatch
+	for _, scanned := range r.ScannedCves {
+		if scanned.CveID == definition.Debian.CveID {
 			found = true
-			if cve.Confidence.Score < models.OvalMatch.Score {
-				cve.Confidence = models.OvalMatch
+			if scanned.Confidence.Score < models.OvalMatch.Score {
+				scanned.Confidence = models.OvalMatch
 			}
 		}
-		cves = append(cves, cve)
+		updatedCves = append(updatedCves, scanned)
 	}
 
-	packageInfoList := getPackageInfoList(r, definition)
 	vuln := models.VulnInfo{
 		CveID:      definition.Debian.CveID,
 		Confidence: models.OvalMatch,
-		Packages:   packageInfoList,
+		Packages:   getPackageInfoList(r, definition),
 	}
 
 	if !found {
-		cves = append(cves, vuln)
 		util.Log.Debugf("%s is newly detected by OVAL", vuln.CveID)
+		updatedCves = append(updatedCves, vuln)
 	}
-	r.ScannedCves = cves
+	r.ScannedCves = updatedCves
 
 	// Update KnownCves by OVAL info
-	cveInfo, ok := r.KnownCves.Get(definition.Debian.CveID)
+	ovalContent := *o.convertToModel(definition)
+	ovalContent.Type = models.CveContentType(r.Family)
+	cInfo, ok := r.KnownCves.Get(definition.Debian.CveID)
 	if !ok {
-		cveInfo.CveDetail = cve.CveDetail{
-			CveID: definition.Debian.CveID,
-		}
-		cveInfo.VulnInfo = vuln
+		cInfo.VulnInfo = vuln
+		cInfo.CveContents = []models.CveContent{ovalContent}
 	}
-	cveInfo.OvalDetail = *definition
-	if cveInfo.VulnInfo.Confidence.Score < models.OvalMatch.Score {
-		cveInfo.Confidence = models.OvalMatch
+	if !cInfo.Update(ovalContent) {
+		cInfo.Insert(ovalContent)
 	}
-	r.KnownCves.Upsert(cveInfo)
+	if cInfo.VulnInfo.Confidence.Score < models.OvalMatch.Score {
+		cInfo.Confidence = models.OvalMatch
+	}
+	r.KnownCves.Upsert(cInfo)
 
 	// Update UnknownCves by OVAL info
-	cveInfo, ok = r.UnknownCves.Get(definition.Debian.CveID)
+	cInfo, ok = r.UnknownCves.Get(definition.Debian.CveID)
 	if ok {
-		cveInfo.OvalDetail = *definition
-		if cveInfo.VulnInfo.Confidence.Score < models.OvalMatch.Score {
-			cveInfo.Confidence = models.OvalMatch
-		}
 		r.UnknownCves.Delete(definition.Debian.CveID)
-		r.KnownCves.Upsert(cveInfo)
+
+		// Insert new CveInfo
+		if !cInfo.Update(ovalContent) {
+			cInfo.Insert(ovalContent)
+		}
+		if cInfo.VulnInfo.Confidence.Score < models.OvalMatch.Score {
+			cInfo.Confidence = models.OvalMatch
+		}
+		r.KnownCves.Upsert(cInfo)
 	}
 
 	return r
+}
+
+func (o Debian) convertToModel(def *ovalmodels.Definition) *models.CveContent {
+	var refs []models.Reference
+	for _, r := range def.References {
+		refs = append(refs, models.Reference{
+			Link:   r.RefURL,
+			Source: r.Source,
+			RefID:  r.RefID,
+		})
+	}
+	return &models.CveContent{
+		CveID:      def.Debian.CveID,
+		Title:      def.Title,
+		Summary:    def.Description,
+		References: refs,
+	}
 }
