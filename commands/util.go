@@ -217,37 +217,35 @@ func loadPrevious(current models.ScanResults) (previous models.ScanResults, err 
 	return previous, nil
 }
 
-func diff(current, previous models.ScanResults) (diff models.ScanResults, err error) {
-	for _, currentResult := range current {
+func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults, err error) {
+	for _, current := range curResults {
 		found := false
-		var previousResult models.ScanResult
-		for _, previousResult = range previous {
-			if currentResult.ServerName == previousResult.ServerName {
+		var previous models.ScanResult
+		for _, r := range preResults {
+			if current.ServerName == r.ServerName {
 				found = true
+				previous = r
 				break
 			}
 		}
 
 		if found {
-			currentResult.ScannedCves = getNewCves(previousResult, currentResult)
+			new, updated := getDiffCves(previous, current)
+			current.ScannedCves = append(new, updated...)
 
-			//TODO
-			//  currentResult.KnownCves = []models.CveInfo{}
-			//  currentResult.UnknownCves = []models.CveInfo{}
-
-			currentResult.Packages = models.PackageInfoList{}
-			for _, s := range currentResult.ScannedCves {
-				currentResult.Packages = append(currentResult.Packages, s.Packages...)
+			current.Packages = models.PackageInfoList{}
+			for _, s := range current.ScannedCves {
+				current.Packages = append(current.Packages, s.Packages...)
 			}
-			currentResult.Packages = currentResult.Packages.UniqByName()
+			current.Packages = current.Packages.UniqByName()
 		}
 
-		diff = append(diff, currentResult)
+		diffed = append(diffed, current)
 	}
-	return diff, err
+	return diffed, err
 }
 
-func getNewCves(previous, current models.ScanResult) (newVulninfos []models.VulnInfo) {
+func getDiffCves(previous, current models.ScanResult) (new, updated []models.VulnInfo) {
 	previousCveIDsSet := map[string]bool{}
 	for _, previousVulnInfo := range previous.ScannedCves {
 		previousCveIDsSet[previousVulnInfo.CveID] = true
@@ -256,10 +254,10 @@ func getNewCves(previous, current models.ScanResult) (newVulninfos []models.Vuln
 	for _, v := range current.ScannedCves {
 		if previousCveIDsSet[v.CveID] {
 			if isCveInfoUpdated(current, previous, v.CveID) {
-				newVulninfos = append(newVulninfos, v)
+				updated = append(updated, v)
 			}
 		} else {
-			newVulninfos = append(newVulninfos, v)
+			new = append(new, v)
 		}
 	}
 	return

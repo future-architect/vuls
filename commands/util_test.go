@@ -18,10 +18,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package commands
 
 import (
+	"reflect"
 	"testing"
 	"time"
-
-	"reflect"
 
 	"github.com/future-architect/vuls/models"
 	"github.com/k0kubun/pp"
@@ -36,7 +35,7 @@ func TestDiff(t *testing.T) {
 		out        models.ScanResult
 	}{
 		{
-			models.ScanResults{
+			inCurrent: models.ScanResults{
 				{
 					ScannedAt:  atCurrent,
 					ServerName: "u16",
@@ -74,17 +73,12 @@ func TestDiff(t *testing.T) {
 							CpeNames:         []string{},
 						},
 					},
-					KnownCves:   []models.CveInfo{},
-					UnknownCves: []models.CveInfo{},
-					IgnoredCves: []models.CveInfo{},
-
-					Packages: models.PackageInfoList{},
-
+					Packages: []models.PackageInfo{},
 					Errors:   []string{},
 					Optional: [][]interface{}{},
 				},
 			},
-			models.ScanResults{
+			inPrevious: models.ScanResults{
 				{
 					ScannedAt:  atPrevious,
 					ServerName: "u16",
@@ -122,33 +116,23 @@ func TestDiff(t *testing.T) {
 							CpeNames:         []string{},
 						},
 					},
-					KnownCves:   []models.CveInfo{},
-					UnknownCves: []models.CveInfo{},
-					IgnoredCves: []models.CveInfo{},
-
-					Packages: models.PackageInfoList{},
-
+					Packages: []models.PackageInfo{},
 					Errors:   []string{},
 					Optional: [][]interface{}{},
 				},
 			},
-			models.ScanResult{
-				ScannedAt:   atCurrent,
-				ServerName:  "u16",
-				Family:      "ubuntu",
-				Release:     "16.04",
-				KnownCves:   []models.CveInfo{},
-				UnknownCves: []models.CveInfo{},
-				IgnoredCves: []models.CveInfo{},
-
-				// Packages: models.PackageInfoList{},
-
-				Errors:   []string{},
-				Optional: [][]interface{}{},
+			out: models.ScanResult{
+				ScannedAt:  atCurrent,
+				ServerName: "u16",
+				Family:     "ubuntu",
+				Release:    "16.04",
+				Packages:   []models.PackageInfo{},
+				Errors:     []string{},
+				Optional:   [][]interface{}{},
 			},
 		},
 		{
-			models.ScanResults{
+			inCurrent: models.ScanResults{
 				{
 					ScannedAt:  atCurrent,
 					ServerName: "u16",
@@ -171,66 +155,18 @@ func TestDiff(t *testing.T) {
 							CpeNames:         []string{},
 						},
 					},
-					KnownCves: []models.CveInfo{
-						{
-							CveContents: []models.CveContent{
-								{
-									Type:         models.NVD,
-									CveID:        "CVE-2016-6662",
-									LastModified: time.Date(2016, 1, 1, 0, 0, 0, 0, time.Local),
-								},
-							},
-							VulnInfo: models.VulnInfo{
-								CveID: "CVE-2016-6662",
-							},
-						},
-					},
-					UnknownCves: []models.CveInfo{},
-					IgnoredCves: []models.CveInfo{},
 				},
 			},
-			models.ScanResults{
+			inPrevious: models.ScanResults{
 				{
-					ScannedAt:  atPrevious,
-					ServerName: "u16",
-					Family:     "ubuntu",
-					Release:    "16.04",
-					ScannedCves: []models.VulnInfo{
-						{
-							CveID: "CVE-2016-6662",
-							Packages: models.PackageInfoList{
-								{
-									Name:       "mysql-libs",
-									Version:    "5.1.73",
-									Release:    "7.el6",
-									NewVersion: "5.1.73",
-									NewRelease: "8.el6_8",
-									Repository: "",
-								},
-							},
-							DistroAdvisories: []models.DistroAdvisory{},
-							CpeNames:         []string{},
-						},
-					},
-					KnownCves: []models.CveInfo{
-						{
-							CveContents: []models.CveContent{
-								{
-									Type:         models.NVD,
-									CveID:        "CVE-2016-6662",
-									LastModified: time.Date(2017, 3, 15, 13, 40, 57, 0, time.Local),
-								},
-							},
-							VulnInfo: models.VulnInfo{
-								CveID: "CVE-2016-6662",
-							},
-						},
-					},
-					UnknownCves: []models.CveInfo{},
-					IgnoredCves: []models.CveInfo{},
+					ScannedAt:   atPrevious,
+					ServerName:  "u16",
+					Family:      "ubuntu",
+					Release:     "16.04",
+					ScannedCves: []models.VulnInfo{},
 				},
 			},
-			models.ScanResult{
+			out: models.ScanResult{
 				ScannedAt:  atCurrent,
 				ServerName: "u16",
 				Family:     "ubuntu",
@@ -252,9 +188,6 @@ func TestDiff(t *testing.T) {
 						CpeNames:         []string{},
 					},
 				},
-				KnownCves:   []models.CveInfo{},
-				UnknownCves: []models.CveInfo{},
-				IgnoredCves: []models.CveInfo{},
 				Packages: models.PackageInfoList{
 					models.PackageInfo{
 						Name:       "mysql-libs",
@@ -273,13 +206,21 @@ func TestDiff(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
+	for i, tt := range tests {
 		diff, _ := diff(tt.inCurrent, tt.inPrevious)
 		for _, actual := range diff {
-			if !reflect.DeepEqual(actual, tt.out) {
-				h := pp.Sprint(actual)
-				x := pp.Sprint(tt.out)
-				t.Errorf("diff result : \n %s \n output result : \n %s", h, x)
+			if !reflect.DeepEqual(actual.ScannedCves, tt.out.ScannedCves) {
+				h := pp.Sprint(actual.ScannedCves)
+				x := pp.Sprint(tt.out.ScannedCves)
+				t.Errorf("[%d] actual: \n %s \n expected: \n %s", i, h, x)
+			}
+
+			for j := range tt.out.Packages {
+				if !reflect.DeepEqual(tt.out.Packages[j], actual.Packages[j]) {
+					h := pp.Sprint(tt.out.Packages[j])
+					x := pp.Sprint(actual.Packages[j])
+					t.Errorf("[%d] actual: \n %s \n expected: \n %s", i, x, h)
+				}
 			}
 		}
 	}

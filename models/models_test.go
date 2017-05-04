@@ -116,7 +116,7 @@ func TestVulnInfosSetGet(t *testing.T) {
 	//  var ps packageCveInfos
 	var ps VulnInfos
 	for _, cid := range test.in {
-		ps = ps.set(cid, VulnInfo{CveID: cid})
+		ps.Upsert(VulnInfo{CveID: cid})
 	}
 
 	if len(test.out) != len(ps) {
@@ -129,7 +129,7 @@ func TestVulnInfosSetGet(t *testing.T) {
 		}
 	}
 	for _, cid := range test.in {
-		p, _ := ps.FindByCveID(cid)
+		p, _ := ps.Get(cid)
 		if p.CveID != cid {
 			t.Errorf("expected %s, actual %s", cid, p.CveID)
 		}
