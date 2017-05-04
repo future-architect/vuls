@@ -4,13 +4,13 @@ memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
   branch = "master"
   name = "github.com/Azure/azure-storage-go"
   packages = ["."]
-  revision = "12ccaadb081cdd217702067d28da9a7ff4305239"
+  revision = "4fe73b0b4f68bf8a7cad2920ef563fe4c40ac5c0"
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
-  packages = ["autorest","autorest/azure","autorest/date"]
-  revision = "a2fdd780c9a50455cecd249b00bdc3eb73a78e31"
-  version = "v7.3.1"
+  packages = ["autorest","autorest/adal","autorest/azure","autorest/date"]
+  revision = "58f6f26e200fa5dfb40c9cd1c83f3e2c860d779d"
+  version = "v8.0.0"
 
 [[projects]]
   name = "github.com/BurntSushi/toml"
@@ -22,7 +22,7 @@ memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
   branch = "master"
   name = "github.com/Sirupsen/logrus"
   packages = ["."]
-  revision = "10f801ebc38b33738c9d17d50860f484a0988ff5"
+  revision = "508f304878257fb578be3e863e3990ed9ec3aa2e"
 
 [[projects]]
   name = "github.com/asaskevich/govalidator"
@@ -141,7 +141,7 @@ memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
   branch = "master"
   name = "github.com/kotakanbe/goval-dictionary"
   packages = ["config","db","log","models"]
-  revision = "5470d7565a9de51593f53327ce14c97d466b05ab"
+  revision = "545199055508ae62a6d3bd34ef83034fbfc04d7f"
 
 [[projects]]
   branch = "master"
@@ -222,6 +222,12 @@ memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
   version = "1.6"
 
 [[projects]]
+  name = "github.com/satori/uuid"
+  packages = ["."]
+  revision = "879c5887cd475cd7864858769793b2ceb0d44feb"
+  version = "v1.1.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/valyala/bytebufferpool"
   packages = ["."]
@@ -237,28 +243,28 @@ memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
   branch = "master"
   name = "github.com/ymomoi/goval-parser"
   packages = ["oval"]
-  revision = "4ddf6fc4f1a1af026f7cae41f76979c7ff2b2e2f"
+  revision = "003ac9af5fffac6c97ab1def025d2cb73e88469a"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["curve25519","ed25519","ed25519/internal/edwards25519","ssh","ssh/agent","ssh/terminal"]
-  revision = "c7af5bf2638a1164f2eb5467c39c6cffbd13a02e"
+  revision = "04eae0b62feaaf659a0ce2c4e8dc70b6ae2fff67"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","idna","publicsuffix"]
-  revision = "da118f7b8e5954f39d0d2130ab35d4bf0e3cb344"
+  revision = "feeb485667d1fdabe727840fe00adc22431bc86e"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "9f30dcbe5be197894515a338a9bda9253567ea8f"
+  revision = "9ccfe848b9db8435a24c424abbc07a921adf1df5"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["internal/gen","internal/triegen","internal/ucd","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
-  revision = "a9a820217f98f7c8a207ec1e45a874e1fe12c478"
+  revision = "470f45bf29f4147d6fbd7dfd0a02a848e49f5bf4"

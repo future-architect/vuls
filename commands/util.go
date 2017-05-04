@@ -231,8 +231,9 @@ func diff(current, previous models.ScanResults) (diff models.ScanResults, err er
 		if found {
 			currentResult.ScannedCves = getNewCves(previousResult, currentResult)
 
-			currentResult.KnownCves = []models.CveInfo{}
-			currentResult.UnknownCves = []models.CveInfo{}
+			//TODO
+			//  currentResult.KnownCves = []models.CveInfo{}
+			//  currentResult.UnknownCves = []models.CveInfo{}
 
 			currentResult.Packages = models.PackageInfoList{}
 			for _, s := range currentResult.ScannedCves {
@@ -270,27 +271,28 @@ func isCveInfoUpdated(current, previous models.ScanResult, CveID string) bool {
 		Jvn time.Time
 	}
 
+	//TODO
 	previousModifies := lastModified{}
-	for _, c := range previous.KnownCves {
+	for _, c := range previous.ScannedCves {
 		if CveID == c.CveID {
 			//TODO
-			if nvd, found := c.Get(models.NVD); found {
+			if nvd, found := c.CveContents.Get(models.NVD); found {
 				previousModifies.Nvd = nvd.LastModified
 			}
-			if jvn, found := c.Get(models.JVN); found {
+			if jvn, found := c.CveContents.Get(models.JVN); found {
 				previousModifies.Jvn = jvn.LastModified
 			}
 		}
 	}
 
 	currentModifies := lastModified{}
-	for _, c := range current.KnownCves {
-		if CveID == c.VulnInfo.CveID {
+	for _, c := range current.ScannedCves {
+		if CveID == c.CveID {
 			//TODO
-			if nvd, found := c.Get(models.NVD); found {
+			if nvd, found := c.CveContents.Get(models.NVD); found {
 				previousModifies.Nvd = nvd.LastModified
 			}
-			if jvn, found := c.Get(models.JVN); found {
+			if jvn, found := c.CveContents.Get(models.JVN); found {
 				previousModifies.Jvn = jvn.LastModified
 			}
 		}
@@ -352,7 +354,14 @@ func scanVulnByCpeNames(cpeNames []string, scannedVulns []models.VulnInfo) ([]mo
 }
 
 func needToRefreshCve(r models.ScanResult) bool {
-	return r.Lang != c.Conf.Lang || len(r.KnownCves) == 0 &&
-		len(r.UnknownCves) == 0 &&
-		len(r.IgnoredCves) == 0
+	if r.Lang != c.Conf.Lang {
+		return true
+	}
+
+	for _, cve := range r.ScannedCves {
+		if 0 < len(cve.CveContents) {
+			return false
+		}
+	}
+	return true
 }

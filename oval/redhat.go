@@ -2,6 +2,8 @@ package oval
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -55,76 +57,26 @@ func (o Redhat) FillCveInfoFromOvalDB(r *models.ScanResult) (*models.ScanResult,
 }
 
 func (o Redhat) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Definition) *models.ScanResult {
-	cveIDSet := make(map[string]bool)
-	cveID2VulnInfo := make(map[string]models.VulnInfo)
 	for _, cve := range definition.Advisory.Cves {
-		cveIDSet[cve.CveID] = false
-		cveID2VulnInfo[cve.CveID] = models.VulnInfo{
-			CveID:      cve.CveID,
-			Confidence: models.OvalMatch,
-			Packages:   getPackageInfoList(r, definition),
-		}
-	}
-
-	// Update ScannedCves by OVAL info
-	updatedCves := []models.VulnInfo{}
-	for _, scanned := range r.ScannedCves {
-		// Update scanned confidence to ovalmatch
-		for _, c := range definition.Advisory.Cves {
-			if scanned.CveID == c.CveID {
-				cveIDSet[c.CveID] = true
-				if scanned.Confidence.Score < models.OvalMatch.Score {
-					scanned.Confidence = models.OvalMatch
-				}
-				break
-			}
-		}
-		updatedCves = append(updatedCves, scanned)
-	}
-
-	for cveID, found := range cveIDSet {
-		if !found {
-			util.Log.Debugf("%s is newly detected by OVAL", cveID)
-			updatedCves = append(updatedCves, cveID2VulnInfo[cveID])
-		}
-	}
-	r.ScannedCves = updatedCves
-
-	// Update KnownCves by OVAL info
-	for _, c := range definition.Advisory.Cves {
-		ovalContent := *o.convertToModel(c.CveID, definition)
-		cInfo, ok := r.KnownCves.Get(c.CveID)
+		ovalContent := *o.convertToModel(cve.CveID, definition)
+		vinfo, ok := r.ScannedCves.Get(cve.CveID)
 		if !ok {
-			cInfo.VulnInfo = cveID2VulnInfo[c.CveID]
-			cInfo.CveContents = []models.CveContent{ovalContent}
-		}
-		if !cInfo.Update(ovalContent) {
-			cInfo.Insert(ovalContent)
-		}
-		if cInfo.VulnInfo.Confidence.Score < models.OvalMatch.Score {
-			cInfo.Confidence = models.OvalMatch
-		}
-		r.KnownCves.Upsert(cInfo)
-	}
-
-	// Update UnknownCves by OVAL info
-	for _, c := range definition.Advisory.Cves {
-		cInfo, ok := r.UnknownCves.Get(c.CveID)
-		if ok {
-			r.UnknownCves.Delete(c.CveID)
-
-			// Insert new CveInfo
-			ovalContent := *o.convertToModel(c.CveID, definition)
-			if !cInfo.Update(ovalContent) {
-				cInfo.Insert(ovalContent)
+			util.Log.Infof("%s is newly detected by OVAL",
+				definition.Debian.CveID)
+			vinfo = models.VulnInfo{
+				CveID:       cve.CveID,
+				Confidence:  models.OvalMatch,
+				Packages:    getPackageInfoList(r, definition),
+				CveContents: []models.CveContent{ovalContent},
 			}
-			if cInfo.VulnInfo.Confidence.Score < models.OvalMatch.Score {
-				cInfo.Confidence = models.OvalMatch
+		} else {
+			if vinfo.Confidence.Score < models.OvalMatch.Score {
+				vinfo.Confidence = models.OvalMatch
 			}
-			r.KnownCves.Upsert(cInfo)
+			vinfo.CveContents.Upsert(ovalContent)
 		}
+		r.ScannedCves.Upsert(vinfo)
 	}
-
 	return r
 }
 
@@ -134,7 +86,6 @@ func (o Redhat) convertToModel(cveID string, def *ovalmodels.Definition) *models
 			continue
 		}
 		var refs []models.Reference
-		//TODO RHSAのリンクを入れる
 		for _, r := range def.References {
 			refs = append(refs, models.Reference{
 				Link:   r.RefURL,
@@ -143,20 +94,52 @@ func (o Redhat) convertToModel(cveID string, def *ovalmodels.Definition) *models
 			})
 		}
 
-		//  util.ParseCvss2()
+		score2, vec2 := o.parseCvss2(cve.Cvss2)
+		score3, vec3 := o.parseCvss3(cve.Cvss3)
 
 		return &models.CveContent{
-			Type:     models.RedHat,
-			CveID:    cve.CveID,
-			Title:    def.Title,
-			Summary:  def.Description,
-			Severity: def.Advisory.Severity,
-			//  V2Score:    v2Score,   // TODO divide into score and vector
-			Cvss2Vector: cve.Cvss2, // TODO divide into score and vector
-			Cvss3Vector: cve.Cvss3, // TODO divide into score and vector
-			References:  refs,
-			CweID:       cve.Cwe,
+			Type:         models.RedHat,
+			CveID:        cve.CveID,
+			Title:        def.Title,
+			Summary:      def.Description,
+			Severity:     def.Advisory.Severity,
+			Cvss2Score:   score2,
+			Cvss2Vector:  vec2,
+			Cvss3Score:   score3,
+			Cvss3Vector:  vec3,
+			References:   refs,
+			CweID:        cve.Cwe,
+			Published:    def.Advisory.Issued,
+			LastModified: def.Advisory.Updated,
 		}
 	}
 	return nil
+}
+
+// ParseCvss2 divide CVSSv2 string into score and vector
+// 5/AV:N/AC:L/Au:N/C:N/I:N/A:P
+func (o Redhat) parseCvss2(scoreVector string) (score float64, vector string) {
+	var err error
+	ss := strings.Split(scoreVector, "/")
+	if 1 < len(ss) {
+		if score, err = strconv.ParseFloat(ss[0], 64); err != nil {
+			return 0, ""
+		}
+		return score, strings.Join(ss[1:len(ss)], "/")
+	}
+	return 0, ""
+}
+
+// ParseCvss3 divide CVSSv3 string into score and vector
+// 5.6/CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L
+func (o Redhat) parseCvss3(scoreVector string) (score float64, vector string) {
+	var err error
+	ss := strings.Split(scoreVector, "/CVSS:3.0/")
+	if 1 < len(ss) {
+		if score, err = strconv.ParseFloat(ss[0], 64); err != nil {
+			return 0, ""
+		}
+		return score, strings.Join(ss[1:len(ss)], "/")
+	}
+	return 0, ""
 }

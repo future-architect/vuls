@@ -422,7 +422,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 				util.Log.Errorf("Failed to fill OVAL information: %s", err)
 				return subcommands.ExitFailure
 			}
-			pp.Println(filled)
 
 			filled, err = fillCveInfoFromCveDB(*filled)
 			if err != nil {
@@ -463,6 +462,13 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	var res models.ScanResults
 	for _, r := range results {
+		//TODO remove
+		for _, vuln := range r.ScannedCves {
+			if _, ok := vuln.CveContents.Get(models.CveContentType(r.Family)); !ok {
+				fmt.Println("not in oval")
+				pp.Println(vuln)
+			}
+		}
 		res = append(res, r.FilterByCvssOver())
 	}
 

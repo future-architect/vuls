@@ -60,25 +60,19 @@ type ScanResult struct {
 	Container  Container
 	Platform   Platform
 
-	// Scanned Vulns via SSH + CPE Vulns
-	ScannedCves []VulnInfo
-
-	KnownCves   CveInfos
-	UnknownCves CveInfos
-	IgnoredCves CveInfos
+	// Scanned Vulns by SSH scan + CPE + OVAL
+	ScannedCves VulnInfos
 
 	Packages PackageInfoList
-
 	Errors   []string
 	Optional [][]interface{}
 }
 
 // FillCveDetail fetches NVD, JVN from CVE Database, and then set to fields.
+//TODO rename to FillCveDictionary
 func (r ScanResult) FillCveDetail() (*ScanResult, error) {
-	set := map[string]VulnInfo{}
 	var cveIDs []string
 	for _, v := range r.ScannedCves {
-		set[v.CveID] = v
 		cveIDs = append(cveIDs, v.CveID)
 	}
 
@@ -86,64 +80,24 @@ func (r ScanResult) FillCveDetail() (*ScanResult, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	r.IgnoredCves = CveInfos{}
 	for _, d := range ds {
 		nvd := *r.convertNvdToModel(d.CveID, d.Nvd)
 		jvn := *r.convertJvnToModel(d.CveID, d.Jvn)
-		cinfo := CveInfo{
-			CveContents: []CveContent{nvd, jvn},
-			VulnInfo:    set[d.CveID],
-		}
-		cinfo.NilSliceToEmpty()
-
-		// ignored
-		ignore := false
-		for _, icve := range config.Conf.Servers[r.ServerName].IgnoreCves {
-			if icve == d.CveID {
-				r.IgnoredCves.Insert(cinfo)
-				ignore = true
+		for i, sc := range r.ScannedCves {
+			if sc.CveID == d.CveID {
+				for _, con := range []CveContent{nvd, jvn} {
+					if !con.Empty() {
+						r.ScannedCves[i].CveContents.Upsert(con)
+					}
+				}
 				break
 			}
 		}
-		if ignore {
-			continue
-		}
-
-		// Update known if KnownCves already have cinfo
-		if c, ok := r.KnownCves.Get(cinfo.CveID); ok {
-			for _, con := range []CveContent{nvd, jvn} {
-				if !c.Update(con) {
-					c.Insert(con)
-				}
-			}
-			r.KnownCves.Update(c)
-			continue
-		}
-
-		// Update unknown if UnknownCves already have cinfo
-		if c, ok := r.UnknownCves.Get(cinfo.CveID); ok {
-			for _, con := range []CveContent{nvd, jvn} {
-				if !c.Update(con) {
-					c.Insert(con)
-				}
-			}
-			r.UnknownCves.Update(c)
-			continue
-		}
-
-		// unknown
-		if d.CvssScore(config.Conf.Lang) <= 0 {
-			r.UnknownCves.Insert(cinfo)
-			continue
-		}
-
-		// known
-		r.KnownCves.Insert(cinfo)
 	}
-	sort.Sort(r.KnownCves)
-	sort.Sort(r.UnknownCves)
-	sort.Sort(r.IgnoredCves)
+	//TODO sort
+	//  sort.Sort(r.KnownCves)
+	//  sort.Sort(r.UnknownCves)
+	//  sort.Sort(r.IgnoredCves)
 	return &r, nil
 }
 
@@ -236,19 +190,21 @@ func (r ScanResult) convertJvnToModel(cveID string, jvn cvedict.Jvn) *CveContent
 
 // FilterByCvssOver is filter function.
 func (r ScanResult) FilterByCvssOver() ScanResult {
-	cveInfos := []CveInfo{}
 	// TODO: Set correct default value
 	if config.Conf.CvssScoreOver == 0 {
 		config.Conf.CvssScoreOver = -1.1
 	}
 
-	for _, cveInfo := range r.KnownCves {
-		if config.Conf.CvssScoreOver <= cveInfo.CvssV2Score() {
-			cveInfos = append(cveInfos, cveInfo)
+	// TODO: Filter by ignore cves???
+	filtered := VulnInfos{}
+	for _, sc := range r.ScannedCves {
+		if config.Conf.CvssScoreOver <= sc.CveContents.CvssV2Score() {
+			filtered = append(filtered, sc)
 		}
 	}
-	r.KnownCves = cveInfos
-	return r
+	copiedScanResult := r
+	copiedScanResult.ScannedCves = filtered
+	return copiedScanResult
 }
 
 // ReportFileName returns the filename on localhost without extention
@@ -311,9 +267,8 @@ func (r ScanResult) FormatServerName() string {
 // CveSummary summarize the number of CVEs group by CVSSv2 Severity
 func (r ScanResult) CveSummary() string {
 	var high, medium, low, unknown int
-	cves := append(r.KnownCves, r.UnknownCves...)
-	for _, cveInfo := range cves {
-		score := cveInfo.CvssV2Score()
+	for _, vInfo := range r.ScannedCves {
+		score := vInfo.CveContents.CvssV2Score()
 		switch {
 		case 7.0 <= score:
 			high++
@@ -334,18 +289,14 @@ func (r ScanResult) CveSummary() string {
 		high+medium+low+unknown, high, medium, low, unknown)
 }
 
-// AllCves returns Known and Unknown CVEs
-func (r ScanResult) AllCves() []CveInfo {
-	return append(r.KnownCves, r.UnknownCves...)
-}
-
 // NWLink has network link information.
-type NWLink struct {
-	IPAddress string
-	Netmask   string
-	DevName   string
-	LinkState string
-}
+//TODO remove
+//  type NWLink struct {
+//      IPAddress string
+//      Netmask   string
+//      DevName   string
+//      LinkState string
+//  }
 
 // Confidence is a ranking how confident the CVE-ID was deteted correctly
 // Score: 0 - 100
@@ -405,6 +356,89 @@ var ChangelogLenientMatch = Confidence{50, ChangelogLenientMatchStr}
 // VulnInfos is VulnInfo list, getter/setter, sortable methods.
 type VulnInfos []VulnInfo
 
+// FindByCveID find by CVEID
+// TODO remove
+//  func (v *VulnInfos) FindByCveID(cveID string) (VulnInfo, bool) {
+//      for _, p := range s {
+//          if cveID == p.CveID {
+//              return p, true
+//          }
+//      }
+//      return VulnInfo{CveID: cveID}, false
+//  }
+
+// Get VulnInfo by cveID
+func (v *VulnInfos) Get(cveID string) (VulnInfo, bool) {
+	for _, vv := range *v {
+		if vv.CveID == cveID {
+			return vv, true
+		}
+	}
+	return VulnInfo{}, false
+}
+
+// Delete by cveID
+func (v *VulnInfos) Delete(cveID string) {
+	vInfos := *v
+	for i, vv := range vInfos {
+		if vv.CveID == cveID {
+			*v = append(vInfos[:i], vInfos[i+1:]...)
+			break
+		}
+	}
+}
+
+// Insert VulnInfo
+func (v *VulnInfos) Insert(vinfo VulnInfo) {
+	*v = append(*v, vinfo)
+}
+
+// Update VulnInfo
+func (v *VulnInfos) Update(vInfo VulnInfo) (ok bool) {
+	for i, vv := range *v {
+		if vv.CveID == vInfo.CveID {
+			(*v)[i] = vInfo
+			return true
+		}
+	}
+	return false
+}
+
+// Upsert cveInfo
+func (v *VulnInfos) Upsert(vInfo VulnInfo) {
+	ok := v.Update(vInfo)
+	if !ok {
+		v.Insert(vInfo)
+	}
+}
+
+// immutable
+//  func (v *VulnInfos) set(cveID string, v VulnInfo) VulnInfos {
+//      for i, p := range s {
+//          if cveID == p.CveID {
+//              s[i] = v
+//              return s
+//          }
+//      }
+//      return append(s, v)
+//  }
+
+//TODO GO 1.8
+// Len implement Sort Interface
+//  func (s VulnInfos) Len() int {
+//      return len(s)
+//  }
+
+//  // Swap implement Sort Interface
+//  func (s VulnInfos) Swap(i, j int) {
+//      s[i], s[j] = s[j], s[i]
+//  }
+
+//  // Less implement Sort Interface
+//  func (s VulnInfos) Less(i, j int) bool {
+//      return s[i].CveID < s[j].CveID
+//  }
+
 // VulnInfo holds a vulnerability information and unsecure packages
 type VulnInfo struct {
 	CveID            string
@@ -412,6 +446,7 @@ type VulnInfo struct {
 	Packages         PackageInfoList
 	DistroAdvisories []DistroAdvisory // for Aamazon, RHEL, FreeBSD
 	CpeNames         []string
+	CveContents      CveContents
 }
 
 // NilSliceToEmpty set nil slice fields to empty slice to avoid null in JSON
@@ -427,167 +462,132 @@ func (v *VulnInfo) NilSliceToEmpty() {
 	}
 }
 
-// FindByCveID find by CVEID
-func (s VulnInfos) FindByCveID(cveID string) (VulnInfo, bool) {
-	for _, p := range s {
-		if cveID == p.CveID {
-			return p, true
-		}
-	}
-	return VulnInfo{CveID: cveID}, false
-}
-
-// immutable
-func (s VulnInfos) set(cveID string, v VulnInfo) VulnInfos {
-	for i, p := range s {
-		if cveID == p.CveID {
-			s[i] = v
-			return s
-		}
-	}
-	return append(s, v)
-}
-
-// Len implement Sort Interface
-func (s VulnInfos) Len() int {
-	return len(s)
-}
-
-// Swap implement Sort Interface
-func (s VulnInfos) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-// Less implement Sort Interface
-func (s VulnInfos) Less(i, j int) bool {
-	return s[i].CveID < s[j].CveID
-}
-
 // CveInfos is for sorting
-type CveInfos []CveInfo
+//  type CveInfos []CveInfo
 
-func (c CveInfos) Len() int {
-	return len(c)
-}
+//  func (c CveInfos) Len() int {
+//      return len(c)
+//  }
 
-func (c CveInfos) Swap(i, j int) {
-	c[i], c[j] = c[j], c[i]
-}
+//  func (c CveInfos) Swap(i, j int) {
+//      c[i], c[j] = c[j], c[i]
+//  }
 
-func (c CveInfos) Less(i, j int) bool {
-	if c[i].CvssV2Score() == c[j].CvssV2Score() {
-		return c[i].CveID < c[j].CveID
-	}
-	return c[j].CvssV2Score() < c[i].CvssV2Score()
-}
+//  func (c CveInfos) Less(i, j int) bool {
+//      if c[i].CvssV2Score() == c[j].CvssV2Score() {
+//          return c[i].CveID < c[j].CveID
+//      }
+//      return c[j].CvssV2Score() < c[i].CvssV2Score()
+//  }
 
-// Get cveInfo by cveID
-func (c CveInfos) Get(cveID string) (CveInfo, bool) {
-	for _, cve := range c {
-		if cve.VulnInfo.CveID == cveID {
-			return cve, true
-		}
-	}
-	return CveInfo{}, false
-}
+//  // Get cveInfo by cveID
+//  func (c CveInfos) Get(cveID string) (CveInfo, bool) {
+//      for _, cve := range c {
+//          if cve.VulnInfo.CveID == cveID {
+//              return cve, true
+//          }
+//      }
+//      return CveInfo{}, false
+//  }
 
-// Delete by cveID
-func (c *CveInfos) Delete(cveID string) {
-	cveInfos := *c
-	for i, cve := range cveInfos {
-		if cve.VulnInfo.CveID == cveID {
-			*c = append(cveInfos[:i], cveInfos[i+1:]...)
-			break
-		}
-	}
-}
+//  // Delete by cveID
+//  func (c *CveInfos) Delete(cveID string) {
+//      cveInfos := *c
+//      for i, cve := range cveInfos {
+//          if cve.VulnInfo.CveID == cveID {
+//              *c = append(cveInfos[:i], cveInfos[i+1:]...)
+//              break
+//          }
+//      }
+//  }
 
-// Insert cveInfo
-func (c *CveInfos) Insert(cveInfo CveInfo) {
-	*c = append(*c, cveInfo)
-}
+//  // Insert cveInfo
+//  func (c *CveInfos) Insert(cveInfo CveInfo) {
+//      *c = append(*c, cveInfo)
+//  }
 
-// Update cveInfo
-func (c CveInfos) Update(cveInfo CveInfo) (ok bool) {
-	for i, cve := range c {
-		if cve.VulnInfo.CveID == cveInfo.VulnInfo.CveID {
-			c[i] = cveInfo
-			return true
-		}
-	}
-	return false
-}
+//  // Update cveInfo
+//  func (c CveInfos) Update(cveInfo CveInfo) (ok bool) {
+//      for i, cve := range c {
+//          if cve.VulnInfo.CveID == cveInfo.VulnInfo.CveID {
+//              c[i] = cveInfo
+//              return true
+//          }
+//      }
+//      return false
+//  }
 
-// Upsert cveInfo
-func (c *CveInfos) Upsert(cveInfo CveInfo) {
-	ok := c.Update(cveInfo)
-	if !ok {
-		c.Insert(cveInfo)
-	}
-}
+//  // Upsert cveInfo
+//  func (c *CveInfos) Upsert(cveInfo CveInfo) {
+//      ok := c.Update(cveInfo)
+//      if !ok {
+//          c.Insert(cveInfo)
+//      }
+//  }
 
+//TODO
 // CveInfo has CVE detailed Information.
-type CveInfo struct {
-	VulnInfo
-	CveContents []CveContent
-}
+//  type CveInfo struct {
+//      VulnInfo
+//      CveContents []CveContent
+//  }
 
 // Get a CveContent specified by arg
-func (c *CveInfo) Get(typestr CveContentType) (*CveContent, bool) {
-	for _, cont := range c.CveContents {
-		if cont.Type == typestr {
-			return &cont, true
-		}
-	}
-	return &CveContent{}, false
-}
+//  func (c *CveInfo) Get(typestr CveContentType) (*CveContent, bool) {
+//      for _, cont := range c.CveContents {
+//          if cont.Type == typestr {
+//              return &cont, true
+//          }
+//      }
+//      return &CveContent{}, false
+//  }
 
-// Insert a CveContent to specified by arg
-func (c *CveInfo) Insert(con CveContent) {
-	c.CveContents = append(c.CveContents, con)
-}
+//  // Insert a CveContent to specified by arg
+//  func (c *CveInfo) Insert(con CveContent) {
+//      c.CveContents = append(c.CveContents, con)
+//  }
 
-// Update a CveContent to specified by arg
-func (c *CveInfo) Update(to CveContent) bool {
-	for i, cont := range c.CveContents {
-		if cont.Type == to.Type {
-			c.CveContents[i] = to
-			return true
-		}
-	}
-	return false
-}
+//  // Update a CveContent to specified by arg
+//  func (c *CveInfo) Update(to CveContent) bool {
+//      for i, cont := range c.CveContents {
+//          if cont.Type == to.Type {
+//              c.CveContents[i] = to
+//              return true
+//          }
+//      }
+//      return false
+//  }
 
-// CvssV2Score returns CVSS V2 Score
-func (c *CveInfo) CvssV2Score() float64 {
-	//TODO
-	if cont, found := c.Get(NVD); found {
-		return cont.Cvss2Score
-	} else if cont, found := c.Get(JVN); found {
-		return cont.Cvss2Score
-	} else if cont, found := c.Get(RedHat); found {
-		return cont.Cvss2Score
-	}
-	return -1
-}
+//  // CvssV2Score returns CVSS V2 Score
+//  func (c *CveInfo) CvssV2Score() float64 {
+//      //TODO
+//      if cont, found := c.Get(NVD); found {
+//          return cont.Cvss2Score
+//      } else if cont, found := c.Get(JVN); found {
+//          return cont.Cvss2Score
+//      } else if cont, found := c.Get(RedHat); found {
+//          return cont.Cvss2Score
+//      }
+//      return -1
+//  }
 
-// NilSliceToEmpty set nil slice fields to empty slice to avoid null in JSON
-func (c *CveInfo) NilSliceToEmpty() {
-	return
-	// TODO
-	//  if c.CveDetail.Nvd.Cpes == nil {
-	//      c.CveDetail.Nvd.Cpes = []cve.Cpe{}
-	//  }
-	//  if c.CveDetail.Jvn.Cpes == nil {
-	//      c.CveDetail.Jvn.Cpes = []cve.Cpe{}
-	//  }
-	//  if c.CveDetail.Nvd.References == nil {
-	//      c.CveDetail.Nvd.References = []cve.Reference{}
-	//  }
-	//  if c.CveDetail.Jvn.References == nil {
-	//      c.CveDetail.Jvn.References = []cve.Reference{}
-	//  }
-}
+//  // NilSliceToEmpty set nil slice fields to empty slice to avoid null in JSON
+//  func (c *CveInfo) NilSliceToEmpty() {
+//      return
+//      // TODO
+//      //  if c.CveDetail.Nvd.Cpes == nil {
+//      //      c.CveDetail.Nvd.Cpes = []cve.Cpe{}
+//      //  }
+//      //  if c.CveDetail.Jvn.Cpes == nil {
+//      //      c.CveDetail.Jvn.Cpes = []cve.Cpe{}
+//      //  }
+//      //  if c.CveDetail.Nvd.References == nil {
+//      //      c.CveDetail.Nvd.References = []cve.Reference{}
+//      //  }
+//      //  if c.CveDetail.Jvn.References == nil {
+//      //      c.CveDetail.Jvn.References = []cve.Reference{}
+//      //  }
+//  }
 
 // CveContentType is a source of CVE information
 type CveContentType string
@@ -612,6 +612,68 @@ const (
 	Ubuntu CveContentType = "ubuntu"
 )
 
+// CveContents has slice of CveContent
+type CveContents []CveContent
+
+// Get CveContent by cveID
+// TODO Pointer
+func (v *CveContents) Get(typestr CveContentType) (CveContent, bool) {
+	for _, vv := range *v {
+		if vv.Type == typestr {
+			return vv, true
+		}
+	}
+	return CveContent{}, false
+}
+
+// Delete by cveID
+func (v *CveContents) Delete(typestr CveContentType) {
+	cveContents := *v
+	for i, cc := range cveContents {
+		if cc.Type == typestr {
+			*v = append(cveContents[:i], cveContents[i+1:]...)
+			break
+		}
+	}
+}
+
+// Insert CveContent
+func (v *CveContents) Insert(cont CveContent) {
+	*v = append(*v, cont)
+}
+
+// Update VulnInfo
+func (v *CveContents) Update(cont CveContent) (ok bool) {
+	for i, vv := range *v {
+		if vv.Type == cont.Type {
+			(*v)[i] = cont
+			return true
+		}
+	}
+	return false
+}
+
+// Upsert CveContent
+func (v *CveContents) Upsert(cont CveContent) {
+	ok := v.Update(cont)
+	if !ok {
+		v.Insert(cont)
+	}
+}
+
+// CvssV2Score returns CVSS V2 Score
+func (v *CveContents) CvssV2Score() float64 {
+	//TODO
+	if cont, found := v.Get(NVD); found {
+		return cont.Cvss2Score
+	} else if cont, found := v.Get(JVN); found {
+		return cont.Cvss2Score
+	} else if cont, found := v.Get(RedHat); found {
+		return cont.Cvss2Score
+	}
+	return -1
+}
+
 // CveContent has abstraction of various vulnerability information
 type CveContent struct {
 	Type         CveContentType
@@ -628,6 +690,11 @@ type CveContent struct {
 	CweID        string
 	Published    time.Time
 	LastModified time.Time
+}
+
+// Empty checks the content is empty
+func (c CveContent) Empty() bool {
+	return c.Summary == ""
 }
 
 // Cpe is Common Platform Enumeration

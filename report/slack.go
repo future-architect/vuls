@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -67,11 +66,12 @@ func (w SlackWriter) Write(rs ...models.ScanResult) error {
 		}
 
 		if 0 < len(r.Errors) {
-			serverInfo := fmt.Sprintf("*%s*", r.ServerInfo())
-			notifyUsers := getNotifyUsers(config.Conf.Slack.NotifyUsers)
-			txt := fmt.Sprintf("%s\n%s\nError: %s", notifyUsers, serverInfo, r.Errors)
+			//TODO
+			//  serverInfo := fmt.Sprintf("*%s*", r.ServerInfo())
+			//  notifyUsers := getNotifyUsers(config.Conf.Slack.NotifyUsers)
+			//  txt := fmt.Sprintf("%s\n%s\nError: %s", notifyUsers, serverInfo, r.Errors)
 			msg := message{
-				Text:      txt,
+				//  Text:      txt,
 				Username:  conf.AuthUser,
 				IconEmoji: conf.IconEmoji,
 				Channel:   channel,
@@ -152,57 +152,57 @@ func send(msg message) error {
 
 func msgText(r models.ScanResult) string {
 	notifyUsers := ""
-	if 0 < len(r.KnownCves) || 0 < len(r.UnknownCves) {
-		notifyUsers = getNotifyUsers(config.Conf.Slack.NotifyUsers)
-	}
+	//  if 0 < len(r.KnownCves) || 0 < len(r.UnknownCves) {
+	//      notifyUsers = getNotifyUsers(config.Conf.Slack.NotifyUsers)
+	//  }
 	serverInfo := fmt.Sprintf("*%s*", r.ServerInfo())
 	return fmt.Sprintf("%s\n%s\n>%s", notifyUsers, serverInfo, r.CveSummary())
 }
 
 func toSlackAttachments(scanResult models.ScanResult) (attaches []*attachment) {
-	cves := scanResult.KnownCves
-	if !config.Conf.IgnoreUnscoredCves {
-		cves = append(cves, scanResult.UnknownCves...)
-	}
+	//  cves := scanResult.KnownCves
+	//  if !config.Conf.IgnoreUnscoredCves {
+	//      cves = append(cves, scanResult.UnknownCves...)
+	//  }
 
-	for _, cveInfo := range cves {
-		cveID := cveInfo.VulnInfo.CveID
+	//  for _, cveInfo := range cves {
+	//      cveID := cveInfo.VulnInfo.CveID
 
-		curentPackages := []string{}
-		for _, p := range cveInfo.Packages {
-			curentPackages = append(curentPackages, p.FormatCurrentVer())
-		}
-		for _, n := range cveInfo.CpeNames {
-			curentPackages = append(curentPackages, n)
-		}
+	//      curentPackages := []string{}
+	//      for _, p := range cveInfo.Packages {
+	//          curentPackages = append(curentPackages, p.FormatCurrentVer())
+	//      }
+	//      for _, n := range cveInfo.CpeNames {
+	//          curentPackages = append(curentPackages, n)
+	//      }
 
-		newPackages := []string{}
-		for _, p := range cveInfo.Packages {
-			newPackages = append(newPackages, p.FormatNewVer())
-		}
+	//      newPackages := []string{}
+	//      for _, p := range cveInfo.Packages {
+	//          newPackages = append(newPackages, p.FormatNewVer())
+	//      }
 
-		a := attachment{
-			Title:     cveID,
-			TitleLink: fmt.Sprintf("%s/%s", nvdBaseURL, cveID),
-			Text:      attachmentText(cveInfo, scanResult.Family),
-			MrkdwnIn:  []string{"text", "pretext"},
-			Fields: []*field{
-				{
-					//  Title: "Current Package/CPE",
-					Title: "Installed",
-					Value: strings.Join(curentPackages, "\n"),
-					Short: true,
-				},
-				{
-					Title: "Candidate",
-					Value: strings.Join(newPackages, "\n"),
-					Short: true,
-				},
-			},
-			Color: color(cveInfo.CvssV2Score()),
-		}
-		attaches = append(attaches, &a)
-	}
+	//      a := attachment{
+	//          Title:     cveID,
+	//          TitleLink: fmt.Sprintf("%s/%s", nvdBaseURL, cveID),
+	//          Text:      attachmentText(cveInfo, scanResult.Family),
+	//          MrkdwnIn:  []string{"text", "pretext"},
+	//          Fields: []*field{
+	//              {
+	//                  //  Title: "Current Package/CPE",
+	//                  Title: "Installed",
+	//                  Value: strings.Join(curentPackages, "\n"),
+	//                  Short: true,
+	//              },
+	//              {
+	//                  Title: "Candidate",
+	//                  Value: strings.Join(newPackages, "\n"),
+	//                  Short: true,
+	//              },
+	//          },
+	//          Color: color(cveInfo.CvssV2Score()),
+	//      }
+	//      attaches = append(attaches, &a)
+	//  }
 	return
 }
 
@@ -220,80 +220,80 @@ func color(cvssScore float64) string {
 	}
 }
 
-func attachmentText(cveInfo models.CveInfo, osFamily string) string {
-	//  linkText := links(cveInfo, osFamily)
-	//TODO
-	return ""
-	//  switch {
-	//  case config.Conf.Lang == "ja" &&
-	//      0 < cveInfo.CveDetail.Jvn.CvssScore():
+//  func attachmentText(cveInfo models.CveInfo, osFamily string) string {
+//  linkText := links(cveInfo, osFamily)
+//TODO
+//  return ""
+//  switch {
+//  case config.Conf.Lang == "ja" &&
+//      0 < cveInfo.CveDetail.Jvn.CvssScore():
 
-	//      jvn := cveInfo.CveDetail.Jvn
-	//      return fmt.Sprintf("*%4.1f (%s)* <%s|%s>\n%s\n%s\n*Confidence:* %v",
-	//          cveInfo.CveDetail.CvssScore(config.Conf.Lang),
-	//          jvn.CvssSeverity(),
-	//          fmt.Sprintf(cvssV2CalcBaseURL, cveInfo.CveDetail.CveID),
-	//          jvn.CvssVector(),
-	//          jvn.CveTitle(),
-	//          linkText,
-	//          cveInfo.VulnInfo.Confidence,
-	//      )
-	//  case 0 < cveInfo.CveDetail.CvssScore("en"):
-	//      nvd := cveInfo.CveDetail.Nvd
-	//      return fmt.Sprintf("*%4.1f (%s)* <%s|%s>\n%s\n%s\n*Confidence:* %v",
-	//          cveInfo.CveDetail.CvssScore(config.Conf.Lang),
-	//          nvd.CvssSeverity(),
-	//          fmt.Sprintf(cvssV2CalcBaseURL, cveInfo.CveDetail.CveID),
-	//          nvd.CvssVector(),
-	//          nvd.CveSummary(),
-	//          linkText,
-	//          cveInfo.VulnInfo.Confidence,
-	//      )
-	//  default:
-	//      nvd := cveInfo.CveDetail.Nvd
-	//      return fmt.Sprintf("?\n%s\n%s\n*Confidence:* %v",
-	//          nvd.CveSummary(), linkText, cveInfo.VulnInfo.Confidence)
-	//  }
-}
+//      jvn := cveInfo.CveDetail.Jvn
+//      return fmt.Sprintf("*%4.1f (%s)* <%s|%s>\n%s\n%s\n*Confidence:* %v",
+//          cveInfo.CveDetail.CvssScore(config.Conf.Lang),
+//          jvn.CvssSeverity(),
+//          fmt.Sprintf(cvssV2CalcBaseURL, cveInfo.CveDetail.CveID),
+//          jvn.CvssVector(),
+//          jvn.CveTitle(),
+//          linkText,
+//          cveInfo.VulnInfo.Confidence,
+//      )
+//  case 0 < cveInfo.CveDetail.CvssScore("en"):
+//      nvd := cveInfo.CveDetail.Nvd
+//      return fmt.Sprintf("*%4.1f (%s)* <%s|%s>\n%s\n%s\n*Confidence:* %v",
+//          cveInfo.CveDetail.CvssScore(config.Conf.Lang),
+//          nvd.CvssSeverity(),
+//          fmt.Sprintf(cvssV2CalcBaseURL, cveInfo.CveDetail.CveID),
+//          nvd.CvssVector(),
+//          nvd.CveSummary(),
+//          linkText,
+//          cveInfo.VulnInfo.Confidence,
+//      )
+//  default:
+//      nvd := cveInfo.CveDetail.Nvd
+//      return fmt.Sprintf("?\n%s\n%s\n*Confidence:* %v",
+//          nvd.CveSummary(), linkText, cveInfo.VulnInfo.Confidence)
+//  }
+//  }
 
-func links(cveInfo models.CveInfo, osFamily string) string {
-	links := []string{}
+//  func links(cveInfo models.CveInfo, osFamily string) string {
+//      links := []string{}
 
-	//TODO
-	//  cweID := cveInfo.CveDetail.CweID()
-	//  if 0 < len(cweID) {
-	//      links = append(links, fmt.Sprintf("<%s|%s>",
-	//          cweURL(cweID), cweID))
-	//      if config.Conf.Lang == "ja" {
-	//          links = append(links, fmt.Sprintf("<%s|%s(JVN)>",
-	//              cweJvnURL(cweID), cweID))
-	//      }
-	//  }
+//      //TODO
+//      //  cweID := cveInfo.CveDetail.CweID()
+//      //  if 0 < len(cweID) {
+//      //      links = append(links, fmt.Sprintf("<%s|%s>",
+//      //          cweURL(cweID), cweID))
+//      //      if config.Conf.Lang == "ja" {
+//      //          links = append(links, fmt.Sprintf("<%s|%s(JVN)>",
+//      //              cweJvnURL(cweID), cweID))
+//      //      }
+//      //  }
 
-	cveID := cveInfo.VulnInfo.CveID
-	//TODO
-	//  if config.Conf.Lang == "ja" && 0 < len(cveInfo.CveDetail.Jvn.Link()) {
-	//      jvn := fmt.Sprintf("<%s|JVN>", cveInfo.CveDetail.Jvn.Link())
-	//      links = append(links, jvn)
-	//  }
-	dlinks := distroLinks(cveInfo, osFamily)
-	for _, link := range dlinks {
-		links = append(links,
-			fmt.Sprintf("<%s|%s>", link.url, link.title))
-	}
-	links = append(links, fmt.Sprintf("<%s|MITRE>",
-		fmt.Sprintf("%s%s", mitreBaseURL, cveID)))
-	links = append(links, fmt.Sprintf("<%s|CVEDetails>",
-		fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID)))
+//      cveID := cveInfo.VulnInfo.CveID
+//      //TODO
+//      //  if config.Conf.Lang == "ja" && 0 < len(cveInfo.CveDetail.Jvn.Link()) {
+//      //      jvn := fmt.Sprintf("<%s|JVN>", cveInfo.CveDetail.Jvn.Link())
+//      //      links = append(links, jvn)
+//      //  }
+//      dlinks := distroLinks(cveInfo, osFamily)
+//      for _, link := range dlinks {
+//          links = append(links,
+//              fmt.Sprintf("<%s|%s>", link.url, link.title))
+//      }
+//      links = append(links, fmt.Sprintf("<%s|MITRE>",
+//          fmt.Sprintf("%s%s", mitreBaseURL, cveID)))
+//      links = append(links, fmt.Sprintf("<%s|CVEDetails>",
+//          fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID)))
 
-	return strings.Join(links, " / ")
-}
+//      return strings.Join(links, " / ")
+//  }
 
-// See testcase
-func getNotifyUsers(notifyUsers []string) string {
-	slackStyleTexts := []string{}
-	for _, username := range notifyUsers {
-		slackStyleTexts = append(slackStyleTexts, fmt.Sprintf("<%s>", username))
-	}
-	return strings.Join(slackStyleTexts, " ")
-}
+//  // See testcase
+//  func getNotifyUsers(notifyUsers []string) string {
+//      slackStyleTexts := []string{}
+//      for _, username := range notifyUsers {
+//          slackStyleTexts = append(slackStyleTexts, fmt.Sprintf("<%s>", username))
+//      }
+//      return strings.Join(slackStyleTexts, " ")
+//  }
