@@ -267,9 +267,11 @@ func (l base) isAwsInstanceID(str string) bool {
 
 func (l *base) convertToModel() models.ScanResult {
 	for _, p := range l.VulnInfos {
+		//TODO
 		sort.Sort(models.PackageInfosByName(p.Packages))
 	}
-	sort.Sort(l.VulnInfos)
+	//TODO
+	//  sort.Sort(l.VulnInfos)
 
 	ctype := l.ServerInfo.Containers.Type
 	if l.ServerInfo.Container.ContainerID != "" && ctype == "" {

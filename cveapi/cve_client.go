@@ -69,6 +69,7 @@ type response struct {
 	CveDetail cve.CveDetail
 }
 
+//TODO rename to FetchCveDictionary
 func (api cvedictClient) FetchCveDetails(cveIDs []string) (cveDetails cve.CveDetails, err error) {
 	switch config.Conf.CveDBType {
 	case "sqlite3", "mysql", "postgres":

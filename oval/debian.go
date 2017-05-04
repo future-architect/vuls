@@ -59,64 +59,30 @@ func (o Debian) FillCveInfoFromOvalDB(r *models.ScanResult) (*models.ScanResult,
 }
 
 func (o Debian) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Definition) *models.ScanResult {
-	// Update ScannedCves by OVAL info
-	found := false
-	updatedCves := []models.VulnInfo{}
-
-	// Update scanned confidence to ovalmatch
-	for _, scanned := range r.ScannedCves {
-		if scanned.CveID == definition.Debian.CveID {
-			found = true
-			if scanned.Confidence.Score < models.OvalMatch.Score {
-				scanned.Confidence = models.OvalMatch
-			}
-		}
-		updatedCves = append(updatedCves, scanned)
-	}
-
-	vuln := models.VulnInfo{
-		CveID:      definition.Debian.CveID,
-		Confidence: models.OvalMatch,
-		Packages:   getPackageInfoList(r, definition),
-	}
-
-	if !found {
-		util.Log.Debugf("%s is newly detected by OVAL", vuln.CveID)
-		updatedCves = append(updatedCves, vuln)
-	}
-	r.ScannedCves = updatedCves
-
-	// Update KnownCves by OVAL info
 	ovalContent := *o.convertToModel(definition)
 	ovalContent.Type = models.CveContentType(r.Family)
-	cInfo, ok := r.KnownCves.Get(definition.Debian.CveID)
+	vinfo, ok := r.ScannedCves.Get(definition.Debian.CveID)
 	if !ok {
-		cInfo.VulnInfo = vuln
-		cInfo.CveContents = []models.CveContent{ovalContent}
-	}
-	if !cInfo.Update(ovalContent) {
-		cInfo.Insert(ovalContent)
-	}
-	if cInfo.VulnInfo.Confidence.Score < models.OvalMatch.Score {
-		cInfo.Confidence = models.OvalMatch
-	}
-	r.KnownCves.Upsert(cInfo)
-
-	// Update UnknownCves by OVAL info
-	cInfo, ok = r.UnknownCves.Get(definition.Debian.CveID)
-	if ok {
-		r.UnknownCves.Delete(definition.Debian.CveID)
-
-		// Insert new CveInfo
-		if !cInfo.Update(ovalContent) {
-			cInfo.Insert(ovalContent)
+		util.Log.Infof("%s is newly detected by OVAL",
+			definition.Debian.CveID)
+		vinfo = models.VulnInfo{
+			CveID:       definition.Debian.CveID,
+			Confidence:  models.OvalMatch,
+			Packages:    getPackageInfoList(r, definition),
+			CveContents: []models.CveContent{ovalContent},
 		}
-		if cInfo.VulnInfo.Confidence.Score < models.OvalMatch.Score {
-			cInfo.Confidence = models.OvalMatch
+	} else {
+		if _, ok := vinfo.CveContents.Get(models.CveContentType(r.Family)); !ok {
+			util.Log.Infof("%s is also detected by OVAL", definition.Debian.CveID)
+		} else {
+			util.Log.Infof("%s will be updated by OVAL", definition.Debian.CveID)
 		}
-		r.KnownCves.Upsert(cInfo)
+		if vinfo.Confidence.Score < models.OvalMatch.Score {
+			vinfo.Confidence = models.OvalMatch
+		}
+		vinfo.CveContents.Upsert(ovalContent)
 	}
-
+	r.ScannedCves.Upsert(vinfo)
 	return r
 }
 
@@ -133,6 +99,7 @@ func (o Debian) convertToModel(def *ovalmodels.Definition) *models.CveContent {
 		CveID:      def.Debian.CveID,
 		Title:      def.Title,
 		Summary:    def.Description,
+		Severity:   def.Advisory.Severity,
 		References: refs,
 	}
 }
