@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sort"
 	"time"
 
 	"github.com/cenkalti/backoff"
@@ -69,7 +68,6 @@ type response struct {
 	CveDetail cve.CveDetail
 }
 
-//TODO rename to FetchCveDictionary
 func (api cvedictClient) FetchCveDetails(cveIDs []string) (cveDetails cve.CveDetails, err error) {
 	switch config.Conf.CveDBType {
 	case "sqlite3", "mysql", "postgres":
@@ -130,7 +128,8 @@ func (api cvedictClient) FetchCveDetails(cveIDs []string) (cveDetails cve.CveDet
 			fmt.Errorf("Failed to fetch CVE. err: %v", errs)
 	}
 
-	sort.Sort(cveDetails)
+	//TODO
+	//  sort.Sort(cveDetails)
 	return
 }
 
@@ -158,8 +157,9 @@ func (api cvedictClient) FetchCveDetailsFromCveDB(cveIDs []string) (cveDetails c
 		}
 	}
 
+	//TODO
 	// order by CVE ID desc
-	sort.Sort(cveDetails)
+	//  sort.Sort(cveDetails)
 	return
 }
 

@@ -19,7 +19,6 @@ package models
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
@@ -30,23 +29,24 @@ import (
 // ScanResults is slice of ScanResult.
 type ScanResults []ScanResult
 
-// Len implement Sort Interface
-func (s ScanResults) Len() int {
-	return len(s)
-}
+//TODO
+//  // Len implement Sort Interface
+//  func (s ScanResults) Len() int {
+//      return len(s)
+//  }
 
-// Swap implement Sort Interface
-func (s ScanResults) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
+//  // Swap implement Sort Interface
+//  func (s ScanResults) Swap(i, j int) {
+//      s[i], s[j] = s[j], s[i]
+//  }
 
-// Less implement Sort Interface
-func (s ScanResults) Less(i, j int) bool {
-	if s[i].ServerName == s[j].ServerName {
-		return s[i].Container.ContainerID < s[i].Container.ContainerID
-	}
-	return s[i].ServerName < s[j].ServerName
-}
+//  // Less implement Sort Interface
+//  func (s ScanResults) Less(i, j int) bool {
+//      if s[i].ServerName == s[j].ServerName {
+//          return s[i].Container.ContainerID < s[i].Container.ContainerID
+//      }
+//      return s[i].ServerName < s[j].ServerName
+//  }
 
 // ScanResult has the result of scanned CVE information.
 type ScanResult struct {
@@ -260,15 +260,6 @@ func (r ScanResult) CveSummary() string {
 		high+medium+low+unknown, high, medium, low, unknown)
 }
 
-// NWLink has network link information.
-//TODO remove
-//  type NWLink struct {
-//      IPAddress string
-//      Netmask   string
-//      DevName   string
-//      LinkState string
-//  }
-
 // Confidence is a ranking how confident the CVE-ID was deteted correctly
 // Score: 0 - 100
 type Confidence struct {
@@ -382,33 +373,6 @@ func (v *VulnInfos) Upsert(vInfo VulnInfo) {
 	}
 }
 
-// immutable
-//  func (v *VulnInfos) set(cveID string, v VulnInfo) VulnInfos {
-//      for i, p := range s {
-//          if cveID == p.CveID {
-//              s[i] = v
-//              return s
-//          }
-//      }
-//      return append(s, v)
-//  }
-
-//TODO GO 1.8
-// Len implement Sort Interface
-//  func (s VulnInfos) Len() int {
-//      return len(s)
-//  }
-
-//  // Swap implement Sort Interface
-//  func (s VulnInfos) Swap(i, j int) {
-//      s[i], s[j] = s[j], s[i]
-//  }
-
-//  // Less implement Sort Interface
-//  func (s VulnInfos) Less(i, j int) bool {
-//      return s[i].CveID < s[j].CveID
-//  }
-
 // VulnInfo holds a vulnerability information and unsecure packages
 type VulnInfo struct {
 	CveID            string
@@ -431,133 +395,6 @@ func (v *VulnInfo) NilSliceToEmpty() {
 		v.Packages = PackageInfoList{}
 	}
 }
-
-// CveInfos is for sorting
-//  type CveInfos []CveInfo
-
-//  func (c CveInfos) Len() int {
-//      return len(c)
-//  }
-
-//  func (c CveInfos) Swap(i, j int) {
-//      c[i], c[j] = c[j], c[i]
-//  }
-
-//  func (c CveInfos) Less(i, j int) bool {
-//      if c[i].CvssV2Score() == c[j].CvssV2Score() {
-//          return c[i].CveID < c[j].CveID
-//      }
-//      return c[j].CvssV2Score() < c[i].CvssV2Score()
-//  }
-
-//  // Get cveInfo by cveID
-//  func (c CveInfos) Get(cveID string) (CveInfo, bool) {
-//      for _, cve := range c {
-//          if cve.VulnInfo.CveID == cveID {
-//              return cve, true
-//          }
-//      }
-//      return CveInfo{}, false
-//  }
-
-//  // Delete by cveID
-//  func (c *CveInfos) Delete(cveID string) {
-//      cveInfos := *c
-//      for i, cve := range cveInfos {
-//          if cve.VulnInfo.CveID == cveID {
-//              *c = append(cveInfos[:i], cveInfos[i+1:]...)
-//              break
-//          }
-//      }
-//  }
-
-//  // Insert cveInfo
-//  func (c *CveInfos) Insert(cveInfo CveInfo) {
-//      *c = append(*c, cveInfo)
-//  }
-
-//  // Update cveInfo
-//  func (c CveInfos) Update(cveInfo CveInfo) (ok bool) {
-//      for i, cve := range c {
-//          if cve.VulnInfo.CveID == cveInfo.VulnInfo.CveID {
-//              c[i] = cveInfo
-//              return true
-//          }
-//      }
-//      return false
-//  }
-
-//  // Upsert cveInfo
-//  func (c *CveInfos) Upsert(cveInfo CveInfo) {
-//      ok := c.Update(cveInfo)
-//      if !ok {
-//          c.Insert(cveInfo)
-//      }
-//  }
-
-//TODO
-// CveInfo has CVE detailed Information.
-//  type CveInfo struct {
-//      VulnInfo
-//      CveContents []CveContent
-//  }
-
-// Get a CveContent specified by arg
-//  func (c *CveInfo) Get(typestr CveContentType) (*CveContent, bool) {
-//      for _, cont := range c.CveContents {
-//          if cont.Type == typestr {
-//              return &cont, true
-//          }
-//      }
-//      return &CveContent{}, false
-//  }
-
-//  // Insert a CveContent to specified by arg
-//  func (c *CveInfo) Insert(con CveContent) {
-//      c.CveContents = append(c.CveContents, con)
-//  }
-
-//  // Update a CveContent to specified by arg
-//  func (c *CveInfo) Update(to CveContent) bool {
-//      for i, cont := range c.CveContents {
-//          if cont.Type == to.Type {
-//              c.CveContents[i] = to
-//              return true
-//          }
-//      }
-//      return false
-//  }
-
-//  // CvssV2Score returns CVSS V2 Score
-//  func (c *CveInfo) CvssV2Score() float64 {
-//      //TODO
-//      if cont, found := c.Get(NVD); found {
-//          return cont.Cvss2Score
-//      } else if cont, found := c.Get(JVN); found {
-//          return cont.Cvss2Score
-//      } else if cont, found := c.Get(RedHat); found {
-//          return cont.Cvss2Score
-//      }
-//      return -1
-//  }
-
-//  // NilSliceToEmpty set nil slice fields to empty slice to avoid null in JSON
-//  func (c *CveInfo) NilSliceToEmpty() {
-//      return
-//      // TODO
-//      //  if c.CveDetail.Nvd.Cpes == nil {
-//      //      c.CveDetail.Nvd.Cpes = []cve.Cpe{}
-//      //  }
-//      //  if c.CveDetail.Jvn.Cpes == nil {
-//      //      c.CveDetail.Jvn.Cpes = []cve.Cpe{}
-//      //  }
-//      //  if c.CveDetail.Nvd.References == nil {
-//      //      c.CveDetail.Nvd.References = []cve.Reference{}
-//      //  }
-//      //  if c.CveDetail.Jvn.References == nil {
-//      //      c.CveDetail.Jvn.References = []cve.Reference{}
-//      //  }
-//  }
 
 // CveContentType is a source of CVE information
 type CveContentType string
@@ -732,7 +569,8 @@ func (ps PackageInfoList) UniqByName() (distincted PackageInfoList) {
 	for key := range set {
 		keys = append(keys, key)
 	}
-	sort.Strings(keys)
+	//TODO remove
+	//  sort.Strings(keys)
 	for _, key := range keys {
 		distincted = append(distincted, set[key])
 	}
@@ -799,10 +637,6 @@ func (ps PackageInfoList) FormatUpdatablePacksSummary() string {
 // PackageInfosByName implements sort.Interface for []PackageInfo based on
 // the Name field.
 type PackageInfosByName []PackageInfo
-
-func (a PackageInfosByName) Len() int           { return len(a) }
-func (a PackageInfosByName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a PackageInfosByName) Less(i, j int) bool { return a[i].Name < a[j].Name }
 
 // PackageInfo has installed packages.
 type PackageInfo struct {

@@ -44,17 +44,6 @@ var jsonDirPattern = regexp.MustCompile(
 // JSONDirs is array of json files path.
 type jsonDirs []string
 
-// sort as recent directories are at the head
-func (d jsonDirs) Len() int {
-	return len(d)
-}
-func (d jsonDirs) Swap(i, j int) {
-	d[i], d[j] = d[j], d[i]
-}
-func (d jsonDirs) Less(i, j int) bool {
-	return d[j] < d[i]
-}
-
 // getValidJSONDirs return valid json directory as array
 // Returned array is sorted so that recent directories are at the head
 func lsValidJSONDirs() (dirs jsonDirs, err error) {
@@ -69,7 +58,9 @@ func lsValidJSONDirs() (dirs jsonDirs, err error) {
 			dirs = append(dirs, jsonDir)
 		}
 	}
-	sort.Sort(dirs)
+	sort.Slice(dirs, func(i, j int) bool {
+		return dirs[j] < dirs[i]
+	})
 	return
 }
 

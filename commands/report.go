@@ -463,7 +463,11 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	var res models.ScanResults
 	for _, r := range results {
-		//TODO remove
+		res = append(res, r.FilterByCvssOver())
+
+		// TODO Add sort function to ScanResults
+
+		//remove
 		//  for _, vuln := range r.ScannedCves {
 		//      //  if _, ok := vuln.CveContents.Get(models.NewCveContentType(r.Family)); !ok {
 		//      //      pp.Printf("not in oval: %s %f\n%v\n",
@@ -477,7 +481,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		//      //      pp.Println(vuln)
 		//      //  }
 		//  }
-		res = append(res, r.FilterByCvssOver())
 	}
 
 	for _, w := range reports {
@@ -490,7 +493,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 }
 
 // fillCveDetail fetches NVD, JVN from CVE Database, and then set to fields.
-//TODO rename to FillCveDictionary
 func fillCveDetail(r *models.ScanResult) error {
 	var cveIDs []string
 	for _, v := range r.ScannedCves {
@@ -515,10 +517,13 @@ func fillCveDetail(r *models.ScanResult) error {
 			}
 		}
 	}
-	//TODO sort
-	//  sort.Sort(r.KnownCves)
-	//  sort.Sort(r.UnknownCves)
-	//  sort.Sort(r.IgnoredCves)
+	//TODO Remove
+	//  sort.Slice(r.ScannedCves, func(i, j int) bool {
+	//      if r.ScannedCves[j].CveContents.CvssV2Score() == r.ScannedCves[i].CveContents.CvssV2Score() {
+	//          return r.ScannedCves[j].CveContents.CvssV2Score() < r.ScannedCves[i].CveContents.CvssV2Score()
+	//      }
+	//      return r.ScannedCves[j].CveContents.CvssV2Score() < r.ScannedCves[i].CveContents.CvssV2Score()
+	//  })
 	return nil
 }
 
