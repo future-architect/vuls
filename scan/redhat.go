@@ -577,8 +577,17 @@ func (o *redhat) divideChangelogByPackage(allChangelog string) (map[string]*stri
 			writePointer = pNewString
 			for _, rpm := range rpms {
 				rpm = strings.TrimSpace(rpm)
-				rpm = o.regexpReplace(rpm, `^[0-9]+:`, "")
 				rpm = o.regexpReplace(rpm, `\.(i386|i486|i586|i686|k6|athlon|x86_64|noarch|ppc|alpha|sparc)$`, "")
+				if ss := strings.Split(rpm, ":"); 1 < len(ss) {
+					epoch := ss[0]
+					packVersion := strings.Join(ss[1:len(ss)], ":")
+					if sss := strings.Split(packVersion, "-"); 2 < len(sss) {
+						version := strings.Join(sss[len(sss)-2:len(sss)], "-")
+						name := strings.Join(sss[0:len(sss)-2], "-")
+						rpm = fmt.Sprintf("%s-%s:%s", name, epoch, version)
+					}
+				}
+
 				rpm2changelog[rpm] = pNewString
 			}
 		} else {
