@@ -71,7 +71,7 @@ func (o *bsd) checkDependencies() error {
 
 func (o *bsd) scanPackages() error {
 	var err error
-	var packs []models.PackageInfo
+	var packs []models.Package
 	if packs, err = o.scanInstalledPackages(); err != nil {
 		o.log.Errorf("Failed to scan installed packages")
 		return err
@@ -87,7 +87,7 @@ func (o *bsd) scanPackages() error {
 	return nil
 }
 
-func (o *bsd) scanInstalledPackages() ([]models.PackageInfo, error) {
+func (o *bsd) scanInstalledPackages() ([]models.Package, error) {
 	cmd := util.PrependProxyEnv("pkg version -v")
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
@@ -143,7 +143,7 @@ func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
 	}
 
 	for k := range cveIDAdtMap {
-		packs := []models.PackageInfo{}
+		packs := []models.Package{}
 		for _, r := range cveIDAdtMap[k] {
 			packs = append(packs, r.pack)
 		}
@@ -165,7 +165,7 @@ func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
 	return
 }
 
-func (o *bsd) parsePkgVersion(stdout string) (packs []models.PackageInfo) {
+func (o *bsd) parsePkgVersion(stdout string) (packs []models.Package) {
 	lines := strings.Split(stdout, "\n")
 	for _, l := range lines {
 		fields := strings.Fields(l)
@@ -180,13 +180,13 @@ func (o *bsd) parsePkgVersion(stdout string) (packs []models.PackageInfo) {
 
 		switch fields[1] {
 		case "?", "=":
-			packs = append(packs, models.PackageInfo{
+			packs = append(packs, models.Package{
 				Name:    name,
 				Version: ver,
 			})
 		case "<":
 			candidate := strings.TrimSuffix(fields[6], ")")
-			packs = append(packs, models.PackageInfo{
+			packs = append(packs, models.Package{
 				Name:       name,
 				Version:    ver,
 				NewVersion: candidate,
@@ -202,7 +202,7 @@ type vulnIDCveIDs struct {
 }
 
 type pkgAuditResult struct {
-	pack         models.PackageInfo
+	pack         models.Package
 	vulnIDCveIDs vulnIDCveIDs
 }
 

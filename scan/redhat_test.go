@@ -39,11 +39,11 @@ func TestParseScanedPackagesLineRedhat(t *testing.T) {
 
 	var packagetests = []struct {
 		in   string
-		pack models.PackageInfo
+		pack models.Package
 	}{
 		{
 			"openssl	0	1.0.1e	30.el6.11",
-			models.PackageInfo{
+			models.Package{
 				Name:    "openssl",
 				Version: "1.0.1e",
 				Release: "30.el6.11",
@@ -51,7 +51,7 @@ func TestParseScanedPackagesLineRedhat(t *testing.T) {
 		},
 		{
 			"Percona-Server-shared-56	1	5.6.19	rel67.0.el6",
-			models.PackageInfo{
+			models.Package{
 				Name:    "Percona-Server-shared-56",
 				Version: "1:5.6.19",
 				Release: "rel67.0.el6",
@@ -686,7 +686,7 @@ bind-utils.x86_64                       30:9.3.6-25.P1.el5_11.8          updates
 pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 `
 
-	r.Packages = []models.PackageInfo{
+	r.Packages = []models.Package{
 		{
 			Name:    "audit-libs",
 			Version: "2.3.6",
@@ -720,11 +720,11 @@ pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 	}
 	var tests = []struct {
 		in  string
-		out models.PackageInfoList
+		out models.Packages
 	}{
 		{
 			stdout,
-			models.PackageInfoList{
+			models.Packages{
 				{
 					Name:       "audit-libs",
 					Version:    "2.3.6",
@@ -778,15 +778,15 @@ pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 	}
 
 	for _, tt := range tests {
-		packInfoList, err := r.parseYumCheckUpdateLines(tt.in)
+		packages, err := r.parseYumCheckUpdateLines(tt.in)
 		if err != nil {
 			t.Errorf("Error has occurred, err: %s\ntt.in: %v", err, tt.in)
 			return
 		}
-		for i, ePackInfo := range tt.out {
-			if !reflect.DeepEqual(ePackInfo, packInfoList[i]) {
-				e := pp.Sprintf("%v", ePackInfo)
-				a := pp.Sprintf("%v", packInfoList[i])
+		for i, ePack := range tt.out {
+			if !reflect.DeepEqual(ePack, packages[i]) {
+				e := pp.Sprintf("%v", ePack)
+				a := pp.Sprintf("%v", packages[i])
 				t.Errorf("[%d] expected %s, actual %s", i, e, a)
 			}
 		}
@@ -803,7 +803,7 @@ bind-libs.x86_64           32:9.8.2-0.37.rc1.45.amzn1      amzn-main
 java-1.7.0-openjdk.x86_64  1.7.0.95-2.6.4.0.65.amzn1     amzn-main
 if-not-architecture        100-200                         amzn-main
 `
-	r.Packages = []models.PackageInfo{
+	r.Packages = []models.Package{
 		{
 			Name:    "bind-libs",
 			Version: "9.8.0",
@@ -822,11 +822,11 @@ if-not-architecture        100-200                         amzn-main
 	}
 	var tests = []struct {
 		in  string
-		out models.PackageInfoList
+		out models.Packages
 	}{
 		{
 			stdout,
-			models.PackageInfoList{
+			models.Packages{
 				{
 					Name:       "bind-libs",
 					Version:    "9.8.0",
@@ -856,15 +856,15 @@ if-not-architecture        100-200                         amzn-main
 	}
 
 	for _, tt := range tests {
-		packInfoList, err := r.parseYumCheckUpdateLines(tt.in)
+		packages, err := r.parseYumCheckUpdateLines(tt.in)
 		if err != nil {
 			t.Errorf("Error has occurred, err: %s\ntt.in: %v", err, tt.in)
 			return
 		}
-		for i, ePackInfo := range tt.out {
-			if !reflect.DeepEqual(ePackInfo, packInfoList[i]) {
-				e := pp.Sprintf("%v", ePackInfo)
-				a := pp.Sprintf("%v", packInfoList[i])
+		for i, ePack := range tt.out {
+			if !reflect.DeepEqual(ePack, packages[i]) {
+				e := pp.Sprintf("%v", ePack)
+				a := pp.Sprintf("%v", packages[i])
 				t.Errorf("[%d] expected %s, actual %s", i, e, a)
 			}
 		}
@@ -1095,11 +1095,11 @@ Dependencies Resolved
 
 func TestGetChangelogCVELines(t *testing.T) {
 	var testsCentos6 = []struct {
-		in  models.PackageInfo
+		in  models.Package
 		out string
 	}{
 		{
-			models.PackageInfo{
+			models.Package{
 				Name:       "binutils",
 				NewVersion: "2.20.51.0.2",
 				NewRelease: "5.44.el6",
@@ -1107,7 +1107,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 			"",
 		},
 		{
-			models.PackageInfo{
+			models.Package{
 				Name:       "centos-release",
 				NewVersion: "6",
 				NewRelease: "8.el6.centos.12.3",
@@ -1116,7 +1116,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 `,
 		},
 		{
-			models.PackageInfo{
+			models.Package{
 				Name:       "dhclient",
 				NewVersion: "12:4.1.1",
 				NewRelease: "51.P1.el6.centos",
@@ -1125,7 +1125,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 `,
 		},
 		{
-			models.PackageInfo{
+			models.Package{
 				Name:       "dhcp-common",
 				NewVersion: "12:4.1.1",
 				NewRelease: "51.P1.el6.centos",
@@ -1134,7 +1134,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 `,
 		},
 		{
-			models.PackageInfo{
+			models.Package{
 				Name:       "coreutils-libs",
 				NewVersion: "8.4",
 				NewRelease: "43.el6",
@@ -1142,7 +1142,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 			"",
 		},
 		{
-			models.PackageInfo{
+			models.Package{
 				Name:       "file",
 				NewVersion: "5.04",
 				NewRelease: "30.el6",
@@ -1157,7 +1157,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 `,
 		},
 		{
-			models.PackageInfo{
+			models.Package{
 				Name:       "file-libs",
 				NewVersion: "5.04",
 				NewRelease: "30.el6",
@@ -1190,11 +1190,11 @@ func TestGetChangelogCVELines(t *testing.T) {
 	}
 
 	var testsCentos5 = []struct {
-		in  models.PackageInfo
+		in  models.Package
 		out string
 	}{
 		{
-			models.PackageInfo{
+			models.Package{
 				Name:       "libuser",
 				NewVersion: "0.54.7",
 				NewRelease: "3.el5",
@@ -1202,7 +1202,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 			"",
 		},
 		{
-			models.PackageInfo{
+			models.Package{
 				Name:       "nss_db",
 				NewVersion: "2.2",
 				NewRelease: "38.el5_11",
@@ -1210,7 +1210,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 			"",
 		},
 		{
-			models.PackageInfo{
+			models.Package{
 				Name:       "acpid",
 				NewVersion: "1.0.4",
 				NewRelease: "82.el5",
@@ -1218,7 +1218,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 			"",
 		},
 		{
-			models.PackageInfo{
+			models.Package{
 				Name:       "mkinitrd",
 				NewVersion: "5.1.19.6",
 				NewRelease: "82.el5",
@@ -1226,7 +1226,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 			"",
 		},
 		{
-			models.PackageInfo{
+			models.Package{
 				Name:       "util-linux",
 				NewVersion: "2.13",
 				NewRelease: "0.59.el5_8",
@@ -1235,7 +1235,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 `,
 		},
 		{
-			models.PackageInfo{
+			models.Package{
 				Name:       "bind-libs",
 				NewVersion: "30:9.3.6",
 				NewRelease: "25.P1.el5_11.8",
@@ -1247,7 +1247,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 `,
 		},
 		{
-			models.PackageInfo{
+			models.Package{
 				Name:       "bind-utils",
 				NewVersion: "30:9.3.6",
 				NewRelease: "25.P1.el5_11.8",

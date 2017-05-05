@@ -10,16 +10,16 @@ type Client interface {
 	FillCveInfoFromOvalDB(r *models.ScanResult) error
 }
 
-func getPackageInfoList(r *models.ScanResult, d *ovalmodels.Definition) models.PackageInfoList {
-	var packageInfoList models.PackageInfoList
+func getPackages(r *models.ScanResult, d *ovalmodels.Definition) models.Packages {
+	var packages models.Packages
 	for _, pack := range d.AffectedPacks {
 		for _, p := range r.Packages {
 			if pack.Name == p.Name {
 				p.Changelog = models.Changelog{}
-				packageInfoList = append(packageInfoList, p)
+				packages = append(packages, p)
 				break
 			}
 		}
 	}
-	return packageInfoList
+	return packages
 }

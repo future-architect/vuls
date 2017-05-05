@@ -473,8 +473,8 @@ type distroLink struct {
 //      }
 //  }
 
-// addPackageInfos add package information related the CVE to table
-func addPackageInfos(table *uitable.Table, packs []models.PackageInfo) *uitable.Table {
+// addPackages add package information related the CVE to table
+func addPackages(table *uitable.Table, packs []models.Package) *uitable.Table {
 	for i, p := range packs {
 		var title string
 		if i == 0 {
@@ -515,7 +515,7 @@ func formatChangelogs(r models.ScanResult) string {
 	return strings.Join(buf, "\n")
 }
 
-func formatOneChangelog(p models.PackageInfo) string {
+func formatOneChangelog(p models.Package) string {
 	buf := []string{}
 	if p.NewVersion == "" {
 		return ""

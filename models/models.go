@@ -62,7 +62,7 @@ type ScanResult struct {
 	// Scanned Vulns by SSH scan + CPE + OVAL
 	ScannedCves VulnInfos
 
-	Packages PackageInfoList
+	Packages Packages
 	Errors   []string
 	Optional [][]interface{}
 }
@@ -377,7 +377,7 @@ func (v *VulnInfos) Upsert(vInfo VulnInfo) {
 type VulnInfo struct {
 	CveID            string
 	Confidence       Confidence
-	Packages         PackageInfoList
+	Packages         Packages
 	DistroAdvisories []DistroAdvisory // for Aamazon, RHEL, FreeBSD
 	CpeNames         []string
 	CveContents      CveContents
@@ -392,7 +392,7 @@ func (v *VulnInfo) NilToEmpty() {
 		v.DistroAdvisories = []DistroAdvisory{}
 	}
 	if v.Packages == nil {
-		v.Packages = PackageInfoList{}
+		v.Packages = Packages{}
 	}
 	if v.CveContents == nil {
 		v.CveContents = NewCveContents()
@@ -547,11 +547,11 @@ type Reference struct {
 	Link   string
 }
 
-// PackageInfoList is slice of PackageInfo
-type PackageInfoList []PackageInfo
+// Packages is slice of Package
+type Packages []Package
 
 // Exists returns true if exists the name
-func (ps PackageInfoList) Exists(name string) bool {
+func (ps Packages) Exists(name string) bool {
 	for _, p := range ps {
 		if p.Name == name {
 			return true
@@ -561,8 +561,8 @@ func (ps PackageInfoList) Exists(name string) bool {
 }
 
 // UniqByName be uniq by name.
-func (ps PackageInfoList) UniqByName() (distincted PackageInfoList) {
-	set := make(map[string]PackageInfo)
+func (ps Packages) UniqByName() (distincted Packages) {
+	set := make(map[string]Package)
 	for _, p := range ps {
 		set[p.Name] = p
 	}
@@ -572,18 +572,18 @@ func (ps PackageInfoList) UniqByName() (distincted PackageInfoList) {
 	return
 }
 
-// FindByName search PackageInfo by name
-func (ps PackageInfoList) FindByName(name string) (result PackageInfo, found bool) {
+// FindByName search Package by name
+func (ps Packages) FindByName(name string) (result Package, found bool) {
 	for _, p := range ps {
 		if p.Name == name {
 			return p, true
 		}
 	}
-	return PackageInfo{}, false
+	return Package{}, false
 }
 
 // MergeNewVersion merges candidate version information to the receiver struct
-func (ps PackageInfoList) MergeNewVersion(as PackageInfoList) {
+func (ps Packages) MergeNewVersion(as Packages) {
 	for _, a := range as {
 		for i, p := range ps {
 			if p.Name == a.Name {
@@ -594,7 +594,7 @@ func (ps PackageInfoList) MergeNewVersion(as PackageInfoList) {
 	}
 }
 
-func (ps PackageInfoList) countUpdatablePacks() int {
+func (ps Packages) countUpdatablePacks() int {
 	count := 0
 	set := make(map[string]bool)
 	for _, p := range ps {
@@ -607,34 +607,13 @@ func (ps PackageInfoList) countUpdatablePacks() int {
 }
 
 // FormatUpdatablePacksSummary returns a summary of updatable packages
-func (ps PackageInfoList) FormatUpdatablePacksSummary() string {
+func (ps Packages) FormatUpdatablePacksSummary() string {
 	return fmt.Sprintf("%d updatable packages",
 		ps.countUpdatablePacks())
 }
 
-// Find search PackageInfo by name-version-release
-//  func (ps PackageInfoList) find(nameVersionRelease string) (PackageInfo, bool) {
-//      for _, p := range ps {
-//          joined := p.Name
-//          if 0 < len(p.Version) {
-//              joined = fmt.Sprintf("%s-%s", joined, p.Version)
-//          }
-//          if 0 < len(p.Release) {
-//              joined = fmt.Sprintf("%s-%s", joined, p.Release)
-//          }
-//          if joined == nameVersionRelease {
-//              return p, true
-//          }
-//      }
-//      return PackageInfo{}, false
-//  }
-
-// PackageInfosByName implements sort.Interface for []PackageInfo based on
-// the Name field.
-type PackageInfosByName []PackageInfo
-
-// PackageInfo has installed packages.
-type PackageInfo struct {
+// Package has installed packages.
+type Package struct {
 	Name        string
 	Version     string
 	Release     string
@@ -653,7 +632,7 @@ type Changelog struct {
 }
 
 // FormatCurrentVer returns package name-version-release
-func (p PackageInfo) FormatCurrentVer() string {
+func (p Package) FormatCurrentVer() string {
 	str := p.Name
 	if 0 < len(p.Version) {
 		str = fmt.Sprintf("%s-%s", str, p.Version)
@@ -665,7 +644,7 @@ func (p PackageInfo) FormatCurrentVer() string {
 }
 
 // FormatNewVer returns package name-version-release
-func (p PackageInfo) FormatNewVer() string {
+func (p Package) FormatNewVer() string {
 	str := p.Name
 	if 0 < len(p.NewVersion) {
 		str = fmt.Sprintf("%s-%s", str, p.NewVersion)

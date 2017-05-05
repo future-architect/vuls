@@ -190,7 +190,7 @@ func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults,
 			new, updated := getDiffCves(previous, current)
 			current.ScannedCves = append(new, updated...)
 
-			current.Packages = models.PackageInfoList{}
+			current.Packages = models.Packages{}
 			for _, s := range current.ScannedCves {
 				current.Packages = append(current.Packages, s.Packages...)
 			}

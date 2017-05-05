@@ -613,7 +613,7 @@ Calculating upgrade... Done
 
 func TestGetChangelogCache(t *testing.T) {
 	const servername = "server1"
-	pack := models.PackageInfo{
+	pack := models.Package{
 		Name:       "apt",
 		Version:    "1.0.0",
 		NewVersion: "1.0.1",
@@ -624,7 +624,7 @@ func TestGetChangelogCache(t *testing.T) {
 			Family:  "ubuntu",
 			Release: "16.04",
 		},
-		Packs: []models.PackageInfo{pack},
+		Packs: []models.Package{pack},
 	}
 
 	const path = "/tmp/vuls-test-cache-11111111.db"

@@ -181,7 +181,7 @@ func (o *debian) scanPackages() error {
 	return nil
 }
 
-func (o *debian) scanInstalledPackages() (installed models.PackageInfoList, upgradable models.PackageInfoList, err error) {
+func (o *debian) scanInstalledPackages() (installed models.Packages, upgradable models.Packages, err error) {
 	r := o.exec("dpkg-query -W", noSudo)
 	if !r.isSuccess() {
 		return nil, nil, fmt.Errorf("Failed to SSH: %s", r)
@@ -198,7 +198,7 @@ func (o *debian) scanInstalledPackages() (installed models.PackageInfoList, upgr
 				return nil, nil, fmt.Errorf(
 					"Debian: Failed to parse package line: %s", line)
 			}
-			installed = append(installed, models.PackageInfo{
+			installed = append(installed, models.Package{
 				Name:    name,
 				Version: version,
 			})
@@ -254,7 +254,7 @@ func (o *debian) aptGetUpdate() error {
 	return nil
 }
 
-func (o *debian) scanUnsecurePackages(upgradable []models.PackageInfo) ([]models.VulnInfo, error) {
+func (o *debian) scanUnsecurePackages(upgradable []models.Package) ([]models.VulnInfo, error) {
 
 	o.aptGetUpdate()
 
@@ -315,7 +315,7 @@ func (o *debian) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
 	return &cached, nil
 }
 
-func (o *debian) fillCandidateVersion(before models.PackageInfoList) (filled []models.PackageInfo, err error) {
+func (o *debian) fillCandidateVersion(before models.Packages) (filled []models.Package, err error) {
 	names := []string{}
 	for _, p := range before {
 		names = append(names, p.Name)
@@ -394,13 +394,13 @@ func (o *debian) parseAptGetUpgrade(stdout string) (upgradableNames []string, er
 	return
 }
 
-func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo, meta *cache.Meta) (models.VulnInfos, error) {
+func (o *debian) scanVulnInfos(upgradablePacks []models.Package, meta *cache.Meta) (models.VulnInfos, error) {
 	resChan := make(chan struct {
-		models.PackageInfo
+		models.Package
 		DetectedCveIDs
 	}, len(upgradablePacks))
 	errChan := make(chan error, len(upgradablePacks))
-	reqChan := make(chan models.PackageInfo, len(upgradablePacks))
+	reqChan := make(chan models.Package, len(upgradablePacks))
 	defer close(resChan)
 	defer close(errChan)
 	defer close(reqChan)
@@ -418,12 +418,12 @@ func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo, meta *cache
 		tasks <- func() {
 			select {
 			case pack := <-reqChan:
-				func(p models.PackageInfo) {
+				func(p models.Package) {
 					changelog := o.getChangelogCache(meta, p)
 					if 0 < len(changelog) {
 						cveIDs, _ := o.getCveIDsFromChangelog(changelog, p.Name, p.Version)
 						resChan <- struct {
-							models.PackageInfo
+							models.Package
 							DetectedCveIDs
 						}{p, cveIDs}
 						return
@@ -436,7 +436,7 @@ func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo, meta *cache
 						errChan <- err
 					} else {
 						resChan <- struct {
-							models.PackageInfo
+							models.Package
 							DetectedCveIDs
 						}{p, cveIDs}
 					}
@@ -445,19 +445,19 @@ func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo, meta *cache
 		}
 	}
 
-	// { DetectedCveID{} : [packageInfo] }
-	cvePackages := make(map[DetectedCveID][]models.PackageInfo)
+	// { DetectedCveID{} : [package] }
+	cvePackages := make(map[DetectedCveID][]models.Package)
 	errs := []error{}
 	for i := 0; i < len(upgradablePacks); i++ {
 		select {
 		case pair := <-resChan:
-			pack := pair.PackageInfo
+			pack := pair.Package
 			cveIDs := pair.DetectedCveIDs
 			for _, cveID := range cveIDs {
 				cvePackages[cveID] = appendPackIfMissing(cvePackages[cveID], pack)
 			}
 			o.log.Infof("(%d/%d) Scanned %s-%s : %s",
-				i+1, len(upgradablePacks), pair.Name, pair.PackageInfo.Version, cveIDs)
+				i+1, len(upgradablePacks), pair.Name, pair.Package.Version, cveIDs)
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
@@ -491,7 +491,7 @@ func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo, meta *cache
 	return vinfos, nil
 }
 
-func (o *debian) getChangelogCache(meta *cache.Meta, pack models.PackageInfo) string {
+func (o *debian) getChangelogCache(meta *cache.Meta, pack models.Package) string {
 	cachedPack, found := meta.FindPack(pack.Name)
 	if !found {
 		o.log.Debugf("Not found: %s", pack.Name)
@@ -519,7 +519,7 @@ func (o *debian) getChangelogCache(meta *cache.Meta, pack models.PackageInfo) st
 	return changelog
 }
 
-func (o *debian) scanPackageCveIDs(pack models.PackageInfo) ([]DetectedCveID, error) {
+func (o *debian) scanPackageCveIDs(pack models.Package) ([]DetectedCveID, error) {
 	cmd := ""
 	switch o.Distro.Family {
 	case "ubuntu", "raspbian":
@@ -730,7 +730,7 @@ func (o *debian) parseAptCachePolicy(stdout, name string) (packCandidateVer, err
 	return ver, fmt.Errorf("Unknown Format: %s", stdout)
 }
 
-func appendPackIfMissing(slice []models.PackageInfo, s models.PackageInfo) []models.PackageInfo {
+func appendPackIfMissing(slice []models.Package, s models.Package) []models.Package {
 	for _, ele := range slice {
 		if ele.Name == s.Name &&
 			ele.Version == s.Version &&

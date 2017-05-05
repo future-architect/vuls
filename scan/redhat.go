@@ -226,7 +226,7 @@ func (o *redhat) checkDependencies() error {
 
 func (o *redhat) scanPackages() error {
 	var err error
-	var packs []models.PackageInfo
+	var packs []models.Package
 	if packs, err = o.scanInstalledPackages(); err != nil {
 		o.log.Errorf("Failed to scan installed packages")
 		return err
@@ -242,7 +242,7 @@ func (o *redhat) scanPackages() error {
 	return nil
 }
 
-func (o *redhat) scanInstalledPackages() (installedPackages models.PackageInfoList, err error) {
+func (o *redhat) scanInstalledPackages() (installedPackages models.Packages, err error) {
 	cmd := "rpm -qa --queryformat '%{NAME}\t%{EPOCHNUM}\t%{VERSION}\t%{RELEASE}\n'"
 	r := o.exec(cmd, noSudo)
 	if r.isSuccess() {
@@ -251,11 +251,11 @@ func (o *redhat) scanInstalledPackages() (installedPackages models.PackageInfoLi
 		lines := strings.Split(r.Stdout, "\n")
 		for _, line := range lines {
 			if trimed := strings.TrimSpace(line); len(trimed) != 0 {
-				var packinfo models.PackageInfo
-				if packinfo, err = o.parseScannedPackagesLine(line); err != nil {
+				var pack models.Package
+				if pack, err = o.parseScannedPackagesLine(line); err != nil {
 					return
 				}
-				installedPackages = append(installedPackages, packinfo)
+				installedPackages = append(installedPackages, pack)
 			}
 		}
 		return
@@ -266,10 +266,10 @@ func (o *redhat) scanInstalledPackages() (installedPackages models.PackageInfoLi
 		r.ExitStatus, r.Stdout, r.Stderr)
 }
 
-func (o *redhat) parseScannedPackagesLine(line string) (models.PackageInfo, error) {
+func (o *redhat) parseScannedPackagesLine(line string) (models.Package, error) {
 	fields := strings.Fields(line)
 	if len(fields) != 4 {
-		return models.PackageInfo{},
+		return models.Package{},
 			fmt.Errorf("Failed to parse package line: %s", line)
 	}
 	ver := ""
@@ -278,7 +278,7 @@ func (o *redhat) parseScannedPackagesLine(line string) (models.PackageInfo, erro
 	} else {
 		ver = fmt.Sprintf("%s:%s", fields[1], fields[2])
 	}
-	return models.PackageInfo{
+	return models.Package{
 		Name:    fields[0],
 		Version: ver,
 		Release: fields[3],
@@ -312,22 +312,22 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 	}
 
 	// get Updateble package name, installed, candidate version.
-	packInfoList, err := o.parseYumCheckUpdateLines(r.Stdout)
+	packages, err := o.parseYumCheckUpdateLines(r.Stdout)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse %s. err: %s", cmd, err)
 	}
-	o.log.Debugf("%s", pp.Sprintf("%v", packInfoList))
+	o.log.Debugf("%s", pp.Sprintf("%v", packages))
 
 	// set candidate version info
-	o.Packages.MergeNewVersion(packInfoList)
+	o.Packages.MergeNewVersion(packages)
 
 	// Collect CVE-IDs in changelog
-	type PackInfoCveIDs struct {
-		PackInfo models.PackageInfo
-		CveIDs   []string
+	type PackageCveIDs struct {
+		Package models.Package
+		CveIDs  []string
 	}
 
-	allChangelog, err := o.getAllChangelog(packInfoList)
+	allChangelog, err := o.getAllChangelog(packages)
 	if err != nil {
 		o.log.Errorf("Failed to getAllchangelog. err: %s", err)
 		return nil, err
@@ -354,9 +354,9 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 		}
 	}
 
-	var results []PackInfoCveIDs
-	for i, packInfo := range packInfoList {
-		changelog := o.getChangelogCVELines(rpm2changelog, packInfo)
+	var results []PackageCveIDs
+	for i, pack := range packages {
+		changelog := o.getChangelogCVELines(rpm2changelog, pack)
 
 		// Collect unique set of CVE-ID in each changelog
 		uniqueCveIDMap := make(map[string]bool)
@@ -373,20 +373,20 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 		for k := range uniqueCveIDMap {
 			cveIDs = append(cveIDs, k)
 		}
-		p := PackInfoCveIDs{
-			PackInfo: packInfo,
-			CveIDs:   cveIDs,
+		p := PackageCveIDs{
+			Package: pack,
+			CveIDs:  cveIDs,
 		}
 		results = append(results, p)
 
 		o.log.Infof("(%d/%d) Scanned %s-%s-%s -> %s-%s : %s",
 			i+1,
-			len(packInfoList),
-			p.PackInfo.Name,
-			p.PackInfo.Version,
-			p.PackInfo.Release,
-			p.PackInfo.NewVersion,
-			p.PackInfo.NewRelease,
+			len(packages),
+			p.Package.Name,
+			p.Package.Version,
+			p.Package.Release,
+			p.Package.NewVersion,
+			p.Package.NewRelease,
 			p.CveIDs)
 	}
 
@@ -394,24 +394,24 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 	// - From
 	// [
 	//   {
-	//     PackInfo:    models.PackageInfo,
+	//     Pack:    models.Packages,
 	//     CveIDs:      []string,
 	//   },
 	// ]
 	// - To
 	// map {
-	//   CveID: []models.PackageInfo
+	//   CveID: []models.Package
 	// }
-	cveIDPackInfoMap := make(map[string][]models.PackageInfo)
+	cveIDPackMap := make(map[string][]models.Package)
 	for _, res := range results {
 		for _, cveID := range res.CveIDs {
-			cveIDPackInfoMap[cveID] = append(
-				cveIDPackInfoMap[cveID], res.PackInfo)
+			cveIDPackMap[cveID] = append(
+				cveIDPackMap[cveID], res.Package)
 		}
 	}
 
 	vinfos := []models.VulnInfo{}
-	for k, v := range cveIDPackInfoMap {
+	for k, v := range cveIDPackMap {
 		// Amazon, RHEL do not use this method, so VendorAdvisory do not set.
 		vinfos = append(vinfos, models.VulnInfo{
 			CveID:      k,
@@ -423,7 +423,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 }
 
 // parseYumCheckUpdateLines parse yum check-update to get package name, candidate version
-func (o *redhat) parseYumCheckUpdateLines(stdout string) (results models.PackageInfoList, err error) {
+func (o *redhat) parseYumCheckUpdateLines(stdout string) (results models.Packages, err error) {
 	needToParse := false
 	lines := strings.Split(stdout, "\n")
 	for _, line := range lines {
@@ -459,10 +459,10 @@ func (o *redhat) parseYumCheckUpdateLines(stdout string) (results models.Package
 	return
 }
 
-func (o *redhat) parseYumCheckUpdateLine(line string) (models.PackageInfo, error) {
+func (o *redhat) parseYumCheckUpdateLine(line string) (models.Package, error) {
 	fields := strings.Fields(line)
 	if len(fields) < 3 {
-		return models.PackageInfo{}, fmt.Errorf("Unknown format: %s", line)
+		return models.Package{}, fmt.Errorf("Unknown format: %s", line)
 	}
 	splitted := strings.Split(fields[0], ".")
 	packName := ""
@@ -474,12 +474,12 @@ func (o *redhat) parseYumCheckUpdateLine(line string) (models.PackageInfo, error
 
 	verfields := strings.Split(fields[1], "-")
 	if len(verfields) != 2 {
-		return models.PackageInfo{}, fmt.Errorf("Unknown format: %s", line)
+		return models.Package{}, fmt.Errorf("Unknown format: %s", line)
 	}
 	release := verfields[1]
 	repos := strings.Join(fields[2:len(fields)], " ")
 
-	return models.PackageInfo{
+	return models.Package{
 		Name:       packName,
 		NewVersion: verfields[0],
 		NewRelease: release,
@@ -499,8 +499,8 @@ func (o *redhat) regexpReplace(src string, pat string, rep string) string {
 
 var changeLogCVEPattern = regexp.MustCompile(`CVE-[0-9]+-[0-9]+`)
 
-func (o *redhat) getChangelogCVELines(rpm2changelog map[string]*string, packInfo models.PackageInfo) string {
-	rpm := fmt.Sprintf("%s-%s-%s", packInfo.Name, packInfo.NewVersion, packInfo.NewRelease)
+func (o *redhat) getChangelogCVELines(rpm2changelog map[string]*string, pack models.Package) string {
+	rpm := fmt.Sprintf("%s-%s-%s", pack.Name, pack.NewVersion, pack.NewRelease)
 	retLine := ""
 	if rpm2changelog[rpm] != nil {
 		lines := strings.Split(*rpm2changelog[rpm], "\n")
@@ -601,10 +601,10 @@ func (o *redhat) divideChangelogByPackage(allChangelog string) (map[string]*stri
 }
 
 // CentOS
-func (o *redhat) getAllChangelog(packInfoList models.PackageInfoList) (stdout string, err error) {
+func (o *redhat) getAllChangelog(packages models.Packages) (stdout string, err error) {
 	packageNames := ""
-	for _, packInfo := range packInfoList {
-		packageNames += fmt.Sprintf("%s ", packInfo.Name)
+	for _, pack := range packages {
+		packageNames += fmt.Sprintf("%s ", pack.Name)
 	}
 
 	command := ""
@@ -686,19 +686,19 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 	// set candidate version info
 	o.Packages.MergeNewVersion(updatable)
 
-	dict := map[string][]models.PackageInfo{}
+	dict := map[string][]models.Package{}
 	for _, advIDPackNames := range advIDPackNamesList {
-		packInfoList := models.PackageInfoList{}
+		packages := models.Packages{}
 		for _, packName := range advIDPackNames.PackNames {
-			packInfo, found := updatable.FindByName(packName)
+			pack, found := updatable.FindByName(packName)
 			if !found {
 				return nil, fmt.Errorf(
-					"PackInfo not found. packInfo: %#v", packName)
+					"Package not found. pack: %#v", packName)
 			}
-			packInfoList = append(packInfoList, packInfo)
+			packages = append(packages, pack)
 			continue
 		}
-		dict[advIDPackNames.AdvisoryID] = packInfoList
+		dict[advIDPackNames.AdvisoryID] = packages
 	}
 
 	// get advisoryID(RHSA, ALAS, ELSA) - CVE IDs
