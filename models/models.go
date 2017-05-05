@@ -383,8 +383,8 @@ type VulnInfo struct {
 	CveContents      CveContents
 }
 
-// NilSliceToEmpty set nil slice fields to empty slice to avoid null in JSON
-func (v *VulnInfo) NilSliceToEmpty() {
+// NilToEmpty set nil slice or map fields to empty to avoid null in JSON
+func (v *VulnInfo) NilToEmpty() {
 	if v.CpeNames == nil {
 		v.CpeNames = []string{}
 	}
@@ -393,6 +393,9 @@ func (v *VulnInfo) NilSliceToEmpty() {
 	}
 	if v.Packages == nil {
 		v.Packages = PackageInfoList{}
+	}
+	if v.CveContents == nil {
+		v.CveContents = NewCveContents()
 	}
 }
 
@@ -440,49 +443,48 @@ const (
 	Unknown CveContentType = "unknown"
 )
 
-// CveContents has slice of CveContent
-type CveContents []CveContent
+// CveContents has CveContent
+type CveContents map[CveContentType]CveContent
+
+// NewCveContents create CveContents
+func NewCveContents(conts ...CveContent) CveContents {
+	m := make(map[CveContentType]CveContent)
+	for _, cont := range conts {
+		m[cont.Type] = cont
+	}
+	return m
+}
 
 // Get CveContent by cveID
 // TODO Pointer
-func (v *CveContents) Get(typestr CveContentType) (CveContent, bool) {
-	for _, vv := range *v {
-		if vv.Type == typestr {
-			return vv, true
-		}
+func (v CveContents) Get(typestr CveContentType) (CveContent, bool) {
+	if vv, ok := v[typestr]; ok {
+		return vv, true
 	}
 	return CveContent{}, false
 }
 
 // Delete by cveID
-func (v *CveContents) Delete(typestr CveContentType) {
-	cveContents := *v
-	for i, cc := range cveContents {
-		if cc.Type == typestr {
-			*v = append(cveContents[:i], cveContents[i+1:]...)
-			break
-		}
-	}
+func (v CveContents) Delete(typestr CveContentType) {
+	delete(v, typestr)
 }
 
 // Insert CveContent
-func (v *CveContents) Insert(cont CveContent) {
-	*v = append(*v, cont)
+func (v CveContents) Insert(cont CveContent) {
+	v[cont.Type] = cont
 }
 
 // Update VulnInfo
-func (v *CveContents) Update(cont CveContent) (ok bool) {
-	for i, vv := range *v {
-		if vv.Type == cont.Type {
-			(*v)[i] = cont
-			return true
-		}
+func (v CveContents) Update(cont CveContent) (ok bool) {
+	if _, ok := v[cont.Type]; ok {
+		v[cont.Type] = cont
+		return true
 	}
 	return false
 }
 
 // Upsert CveContent
-func (v *CveContents) Upsert(cont CveContent) {
+func (v CveContents) Upsert(cont CveContent) {
 	ok := v.Update(cont)
 	if !ok {
 		v.Insert(cont)
@@ -490,7 +492,7 @@ func (v *CveContents) Upsert(cont CveContent) {
 }
 
 // CvssV2Score returns CVSS V2 Score
-func (v *CveContents) CvssV2Score() float64 {
+func (v CveContents) CvssV2Score() float64 {
 	//TODO
 	if cont, found := v.Get(NVD); found {
 		return cont.Cvss2Score
@@ -503,7 +505,7 @@ func (v *CveContents) CvssV2Score() float64 {
 }
 
 // CvssV3Score returns CVSS V2 Score
-func (v *CveContents) CvssV3Score() float64 {
+func (v CveContents) CvssV3Score() float64 {
 	if cont, found := v.Get(RedHat); found {
 		return cont.Cvss3Score
 	}

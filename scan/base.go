@@ -293,7 +293,7 @@ func (l *base) convertToModel() models.ScanResult {
 
 	// Avoid null slice being null in JSON
 	for i := range l.VulnInfos {
-		l.VulnInfos[i].NilSliceToEmpty()
+		l.VulnInfos[i].NilToEmpty()
 	}
 
 	return models.ScanResult{
