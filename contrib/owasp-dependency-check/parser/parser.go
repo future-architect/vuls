@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"sort"
 	"strings"
 )
 
@@ -35,18 +34,18 @@ func appendIfMissing(slice []string, str string) []string {
 func Parse(path string) ([]string, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return []string{}, fmt.Errorf("Failed to open: %s", err)
+		return nil, fmt.Errorf("Failed to open: %s", err)
 	}
 	defer file.Close()
 
 	b, err := ioutil.ReadAll(file)
 	if err != nil {
-		return []string{}, fmt.Errorf("Failed to read: %s", err)
+		return nil, fmt.Errorf("Failed to read: %s", err)
 	}
 
 	var anal analysis
 	if err := xml.Unmarshal(b, &anal); err != nil {
-		fmt.Errorf("Failed to unmarshal: %s", err)
+		return nil, fmt.Errorf("Failed to unmarshal: %s", err)
 	}
 
 	cpes := []string{}
@@ -59,6 +58,7 @@ func Parse(path string) ([]string, error) {
 			}
 		}
 	}
-	sort.Strings(cpes)
+	//TODO remove
+	//  sort.Strings(cpes)
 	return cpes, nil
 }

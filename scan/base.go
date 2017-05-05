@@ -20,7 +20,6 @@ package scan
 import (
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -266,12 +265,15 @@ func (l base) isAwsInstanceID(str string) bool {
 }
 
 func (l *base) convertToModel() models.ScanResult {
-	for _, p := range l.VulnInfos {
-		//TODO
-		sort.Sort(models.PackageInfosByName(p.Packages))
-	}
-	//TODO
-	//  sort.Sort(l.VulnInfos)
+	//TODO Remove
+	//  for _, p := range l.VulnInfos {
+	//      sort.Slice(p.Packages, func(i, j int) bool {
+	//          return p.Packages[i].Name < p.Packages[j].Name
+	//      })
+	//  }
+	//  sort.Slice(l.VulnInfos, func(i, j int) bool {
+	//      return l.VulnInfos[i].CveID < l.VulnInfos[j].CveID
+	//  })
 
 	ctype := l.ServerInfo.Containers.Type
 	if l.ServerInfo.Container.ContainerID != "" && ctype == "" {

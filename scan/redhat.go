@@ -20,7 +20,6 @@ package scan
 import (
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -770,7 +769,9 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 				for cveID := range cveIDsSetInThisSection {
 					foundCveIDs = append(foundCveIDs, cveID)
 				}
-				sort.Strings(foundCveIDs)
+				//TODO remove
+				//  sort.Strings(foundCveIDs)
+
 				result = append(result, distroAdvisoryCveIDs{
 					DistroAdvisory: advisory,
 					CveIDs:         foundCveIDs,
