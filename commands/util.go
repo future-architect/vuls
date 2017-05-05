@@ -295,7 +295,7 @@ func scanVulnByCpeNames(cpeNames []string, scannedVulns []models.VulnInfo) ([]mo
 					CpeNames:   []string{name},
 					Confidence: models.CpeNameMatch,
 				}
-				v.NilSliceToEmpty()
+				v.NilToEmpty()
 				set[detail.CveID] = v
 			}
 		}

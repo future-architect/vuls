@@ -66,7 +66,7 @@ func (o Redhat) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Defini
 				CveID:       cve.CveID,
 				Confidence:  models.OvalMatch,
 				Packages:    getPackageInfoList(r, definition),
-				CveContents: []models.CveContent{ovalContent},
+				CveContents: models.NewCveContents(ovalContent),
 			}
 		} else {
 			if _, ok := vinfo.CveContents.Get(models.RedHat); !ok {

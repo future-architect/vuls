@@ -148,6 +148,9 @@ func parallelExec(fn func(osTypeInterface) error, timeoutSec ...int) {
 }
 
 func exec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (result execResult) {
+	logger := getSSHLogger(log...)
+	logger.Debugf("Executing... %s", strings.Replace(cmd, "\n", "", -1))
+
 	if c.Port == "local" &&
 		(c.Host == "127.0.0.1" || c.Host == "localhost") {
 		result = localExec(c, cmd, sudo)
@@ -157,7 +160,6 @@ func exec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (resul
 		result = sshExecExternal(c, cmd, sudo)
 	}
 
-	logger := getSSHLogger(log...)
 	logger.Debug(result)
 	return
 }

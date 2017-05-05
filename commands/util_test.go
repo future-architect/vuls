@@ -48,13 +48,13 @@ func TestIsCveInfoUpdated(t *testing.T) {
 					ScannedCves: []models.VulnInfo{
 						{
 							CveID: "CVE-2017-0001",
-							CveContents: []models.CveContent{
-								{
+							CveContents: models.NewCveContents(
+								models.CveContent{
 									Type:         models.NVD,
 									CveID:        "CVE-2017-0001",
 									LastModified: time.Time{},
 								},
-							},
+							),
 						},
 					},
 				},
@@ -62,13 +62,13 @@ func TestIsCveInfoUpdated(t *testing.T) {
 					ScannedCves: []models.VulnInfo{
 						{
 							CveID: "CVE-2017-0001",
-							CveContents: []models.CveContent{
-								{
+							CveContents: models.NewCveContents(
+								models.CveContent{
 									Type:         models.NVD,
 									CveID:        "CVE-2017-0001",
 									LastModified: time.Time{},
 								},
-							},
+							),
 						},
 					},
 				},
@@ -83,13 +83,13 @@ func TestIsCveInfoUpdated(t *testing.T) {
 					ScannedCves: []models.VulnInfo{
 						{
 							CveID: "CVE-2017-0002",
-							CveContents: []models.CveContent{
-								{
-									Type:         models.JVN,
+							CveContents: models.NewCveContents(
+								models.CveContent{
+									Type:         models.NVD,
 									CveID:        "CVE-2017-0002",
 									LastModified: old,
 								},
-							},
+							),
 						},
 					},
 				},
@@ -97,13 +97,13 @@ func TestIsCveInfoUpdated(t *testing.T) {
 					ScannedCves: []models.VulnInfo{
 						{
 							CveID: "CVE-2017-0002",
-							CveContents: []models.CveContent{
-								{
-									Type:         models.JVN,
+							CveContents: models.NewCveContents(
+								models.CveContent{
+									Type:         models.NVD,
 									CveID:        "CVE-2017-0002",
 									LastModified: old,
 								},
-							},
+							),
 						},
 					},
 				},
@@ -119,13 +119,13 @@ func TestIsCveInfoUpdated(t *testing.T) {
 					ScannedCves: []models.VulnInfo{
 						{
 							CveID: "CVE-2017-0003",
-							CveContents: []models.CveContent{
-								{
-									Type:         models.Ubuntu,
-									CveID:        "CVE-2017-0003",
+							CveContents: models.NewCveContents(
+								models.CveContent{
+									Type:         models.NVD,
+									CveID:        "CVE-2017-0002",
 									LastModified: new,
 								},
-							},
+							),
 						},
 					},
 				},
@@ -134,13 +134,13 @@ func TestIsCveInfoUpdated(t *testing.T) {
 					ScannedCves: []models.VulnInfo{
 						{
 							CveID: "CVE-2017-0003",
-							CveContents: []models.CveContent{
-								{
-									Type:         models.Ubuntu,
-									CveID:        "CVE-2017-0003",
+							CveContents: models.NewCveContents(
+								models.CveContent{
+									Type:         models.NVD,
+									CveID:        "CVE-2017-0002",
 									LastModified: old,
 								},
-							},
+							),
 						},
 					},
 				},
@@ -156,13 +156,13 @@ func TestIsCveInfoUpdated(t *testing.T) {
 					ScannedCves: []models.VulnInfo{
 						{
 							CveID: "CVE-2017-0004",
-							CveContents: []models.CveContent{
-								{
-									Type:         models.RedHat,
-									CveID:        "CVE-2017-0004",
+							CveContents: models.NewCveContents(
+								models.CveContent{
+									Type:         models.NVD,
+									CveID:        "CVE-2017-0002",
 									LastModified: old,
 								},
-							},
+							),
 						},
 					},
 				},

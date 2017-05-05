@@ -70,7 +70,7 @@ func (o Debian) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Defini
 			CveID:       definition.Debian.CveID,
 			Confidence:  models.OvalMatch,
 			Packages:    getPackageInfoList(r, definition),
-			CveContents: []models.CveContent{ovalContent},
+			CveContents: models.NewCveContents(ovalContent),
 		}
 	} else {
 		if _, ok := vinfo.CveContents.Get(models.NewCveContentType(r.Family)); !ok {
