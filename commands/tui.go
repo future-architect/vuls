@@ -159,20 +159,17 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 				}
 			}
 
-			filled, err := fillCveInfoFromCveDB(r)
-			if err != nil {
+			if err := fillCveInfoFromCveDB(&r); err != nil {
 				log.Errorf("Failed to fill CVE information: %s", err)
 				return subcommands.ExitFailure
 			}
 
-			if err := overwriteJSONFile(jsonDir, *filled); err != nil {
+			if err := overwriteJSONFile(jsonDir, r); err != nil {
 				log.Errorf("Failed to write JSON: %s", err)
 				return subcommands.ExitFailure
 			}
-			filledResults = append(filledResults, *filled)
-		} else {
-			filledResults = append(filledResults, r)
 		}
+		filledResults = append(filledResults, r)
 	}
 	return report.RunTui(filledResults)
 }
