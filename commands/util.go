@@ -219,7 +219,7 @@ func getDiffCves(previous, current models.ScanResult) (new, updated []models.Vul
 
 	for _, v := range current.ScannedCves {
 		if previousCveIDsSet[v.CveID] {
-			if isCveInfoUpdated(current, previous, v.CveID) {
+			if isCveInfoUpdated(v.CveID, previous, current) {
 				updated = append(updated, v)
 			}
 		} else {
@@ -229,40 +229,40 @@ func getDiffCves(previous, current models.ScanResult) (new, updated []models.Vul
 	return
 }
 
-func isCveInfoUpdated(current, previous models.ScanResult, CveID string) bool {
-	type lastModified struct {
-		Nvd time.Time
-		Jvn time.Time
+func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
+	cTypes := []models.CveContentType{
+		models.NVD,
+		models.JVN,
+		models.NewCveContentType(current.Family),
 	}
 
-	//TODO
-	previousModifies := lastModified{}
+	prevLastModified := map[models.CveContentType]time.Time{}
 	for _, c := range previous.ScannedCves {
-		if CveID == c.CveID {
-			//TODO
-			if nvd, found := c.CveContents.Get(models.NVD); found {
-				previousModifies.Nvd = nvd.LastModified
+		if cveID == c.CveID {
+			for _, cType := range cTypes {
+				content, _ := c.CveContents.Get(cType)
+				prevLastModified[cType] = content.LastModified
 			}
-			if jvn, found := c.CveContents.Get(models.JVN); found {
-				previousModifies.Jvn = jvn.LastModified
-			}
+			break
 		}
 	}
 
-	currentModifies := lastModified{}
+	curLastModified := map[models.CveContentType]time.Time{}
 	for _, c := range current.ScannedCves {
-		if CveID == c.CveID {
-			//TODO
-			if nvd, found := c.CveContents.Get(models.NVD); found {
-				previousModifies.Nvd = nvd.LastModified
+		if cveID == c.CveID {
+			for _, cType := range cTypes {
+				content, _ := c.CveContents.Get(cType)
+				curLastModified[cType] = content.LastModified
 			}
-			if jvn, found := c.CveContents.Get(models.JVN); found {
-				previousModifies.Jvn = jvn.LastModified
-			}
+			break
 		}
 	}
-	return !currentModifies.Nvd.Equal(previousModifies.Nvd) ||
-		!currentModifies.Jvn.Equal(previousModifies.Jvn)
+	for _, cType := range cTypes {
+		if equal := prevLastModified[cType].Equal(curLastModified[cType]); !equal {
+			return true
+		}
+	}
+	return false
 }
 
 func overwriteJSONFile(dir string, r models.ScanResult) error {
