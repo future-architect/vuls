@@ -7,7 +7,7 @@ import (
 
 // Client is the interface of OVAL client.
 type Client interface {
-	FillCveInfoFromOvalDB(r *models.ScanResult) (*models.ScanResult, error)
+	FillCveInfoFromOvalDB(r *models.ScanResult) error
 }
 
 func getPackageInfoList(r *models.ScanResult, d *ovalmodels.Definition) models.PackageInfoList {

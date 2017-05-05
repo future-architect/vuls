@@ -22,8 +22,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/gosuri/uitable"
+	"github.com/k0kubun/pp"
 )
 
 const maxColWidth = 80
@@ -83,11 +85,17 @@ func formatShortPlainText(r models.ScanResult) string {
 	stable.MaxColWidth = maxColWidth
 	stable.Wrap = true
 
-	//TODO
-	//  cves := r.KnownCves
-	//  if !config.Conf.IgnoreUnscoredCves {
-	//      cves = append(cves, r.UnknownCves...)
-	//  }
+	vulns := r.ScannedCves
+	if !config.Conf.IgnoreUnscoredCves {
+		//TODO Refactoring
+		vulns = r.ScannedCves.Find(func(v models.VulnInfo) bool {
+			if 0 < v.CveContents.CvssV2Score() || 0 < v.CveContents.CvssV3Score() {
+				return true
+			}
+			return false
+		})
+	}
+	pp.Println(vulns)
 
 	var buf bytes.Buffer
 	for i := 0; i < len(r.ServerInfo()); i++ {

@@ -23,14 +23,14 @@ func NewRedhat() Redhat {
 }
 
 // FillCveInfoFromOvalDB returns scan result after updating CVE info by OVAL
-func (o Redhat) FillCveInfoFromOvalDB(r *models.ScanResult) (*models.ScanResult, error) {
-	util.Log.Debugf("open oval-dictionary db (%s)", config.Conf.OvalDBType)
-
+func (o Redhat) FillCveInfoFromOvalDB(r *models.ScanResult) error {
 	ovalconf.Conf.DBType = config.Conf.OvalDBType
 	ovalconf.Conf.DBPath = config.Conf.OvalDBPath
+	util.Log.Infof("open oval-dictionary db (%s): %s",
+		config.Conf.OvalDBType, config.Conf.OvalDBPath)
 
 	if err := db.OpenDB(); err != nil {
-		return nil, fmt.Errorf("Failed to open OVAL DB. err: %s", err)
+		return fmt.Errorf("Failed to open OVAL DB. err: %s", err)
 	}
 
 	d := db.NewRedHat()
@@ -38,7 +38,7 @@ func (o Redhat) FillCveInfoFromOvalDB(r *models.ScanResult) (*models.ScanResult,
 	for _, pack := range r.Packages {
 		definitions, err := d.GetByPackName(r.Release, pack.Name)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to get RedHat OVAL info by package name: %v", err)
+			return fmt.Errorf("Failed to get RedHat OVAL info by package name: %v", err)
 		}
 		for _, definition := range definitions {
 			current, _ := ver.NewVersion(fmt.Sprintf("%s-%s", pack.Version, pack.Release))
@@ -48,15 +48,15 @@ func (o Redhat) FillCveInfoFromOvalDB(r *models.ScanResult) (*models.ScanResult,
 				}
 				affected, _ := ver.NewVersion(p.Version)
 				if current.LessThan(affected) {
-					r = o.fillOvalInfo(r, &definition)
+					o.fillOvalInfo(r, &definition)
 				}
 			}
 		}
 	}
-	return r, nil
+	return nil
 }
 
-func (o Redhat) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Definition) *models.ScanResult {
+func (o Redhat) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Definition) {
 	for _, cve := range definition.Advisory.Cves {
 		ovalContent := *o.convertToModel(cve.CveID, definition)
 		vinfo, ok := r.ScannedCves.Get(cve.CveID)
@@ -81,7 +81,6 @@ func (o Redhat) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Defini
 		}
 		r.ScannedCves.Upsert(vinfo)
 	}
-	return r
 }
 
 func (o Redhat) convertToModel(cveID string, def *ovalmodels.Definition) *models.CveContent {

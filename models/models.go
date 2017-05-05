@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/cveapi"
 	cvedict "github.com/kotakanbe/go-cve-dictionary/models"
 )
 
@@ -68,40 +67,8 @@ type ScanResult struct {
 	Optional [][]interface{}
 }
 
-// FillCveDetail fetches NVD, JVN from CVE Database, and then set to fields.
-//TODO rename to FillCveDictionary
-func (r ScanResult) FillCveDetail() (*ScanResult, error) {
-	var cveIDs []string
-	for _, v := range r.ScannedCves {
-		cveIDs = append(cveIDs, v.CveID)
-	}
-
-	ds, err := cveapi.CveClient.FetchCveDetails(cveIDs)
-	if err != nil {
-		return nil, err
-	}
-	for _, d := range ds {
-		nvd := *r.convertNvdToModel(d.CveID, d.Nvd)
-		jvn := *r.convertJvnToModel(d.CveID, d.Jvn)
-		for i, sc := range r.ScannedCves {
-			if sc.CveID == d.CveID {
-				for _, con := range []CveContent{nvd, jvn} {
-					if !con.Empty() {
-						r.ScannedCves[i].CveContents.Upsert(con)
-					}
-				}
-				break
-			}
-		}
-	}
-	//TODO sort
-	//  sort.Sort(r.KnownCves)
-	//  sort.Sort(r.UnknownCves)
-	//  sort.Sort(r.IgnoredCves)
-	return &r, nil
-}
-
-func (r ScanResult) convertNvdToModel(cveID string, nvd cvedict.Nvd) *CveContent {
+// ConvertNvdToModel convert NVD to CveContent
+func (r ScanResult) ConvertNvdToModel(cveID string, nvd cvedict.Nvd) *CveContent {
 	var cpes []Cpe
 	for _, c := range nvd.Cpes {
 		cpes = append(cpes, Cpe{CpeName: c.CpeName})
@@ -155,7 +122,8 @@ func (r ScanResult) convertNvdToModel(cveID string, nvd cvedict.Nvd) *CveContent
 	}
 }
 
-func (r ScanResult) convertJvnToModel(cveID string, jvn cvedict.Jvn) *CveContent {
+// ConvertJvnToModel convert JVN to CveContent
+func (r ScanResult) ConvertJvnToModel(cveID string, jvn cvedict.Jvn) *CveContent {
 	var cpes []Cpe
 	for _, c := range jvn.Cpes {
 		cpes = append(cpes, Cpe{CpeName: c.CpeName})
@@ -269,6 +237,9 @@ func (r ScanResult) CveSummary() string {
 	var high, medium, low, unknown int
 	for _, vInfo := range r.ScannedCves {
 		score := vInfo.CveContents.CvssV2Score()
+		if score < 0.1 {
+			score = vInfo.CveContents.CvssV3Score()
+		}
 		switch {
 		case 7.0 <= score:
 			high++
@@ -356,16 +327,15 @@ var ChangelogLenientMatch = Confidence{50, ChangelogLenientMatchStr}
 // VulnInfos is VulnInfo list, getter/setter, sortable methods.
 type VulnInfos []VulnInfo
 
-// FindByCveID find by CVEID
-// TODO remove
-//  func (v *VulnInfos) FindByCveID(cveID string) (VulnInfo, bool) {
-//      for _, p := range s {
-//          if cveID == p.CveID {
-//              return p, true
-//          }
-//      }
-//      return VulnInfo{CveID: cveID}, false
-//  }
+// Find elements that matches the function passed in argument
+func (v *VulnInfos) Find(f func(VulnInfo) bool) (filtered VulnInfos) {
+	for _, vv := range *v {
+		if f(vv) {
+			filtered = append(filtered, vv)
+		}
+	}
+	return
+}
 
 // Get VulnInfo by cveID
 func (v *VulnInfos) Get(cveID string) (VulnInfo, bool) {
@@ -592,6 +562,24 @@ func (v *VulnInfo) NilSliceToEmpty() {
 // CveContentType is a source of CVE information
 type CveContentType string
 
+// NewCveContentType create CveContentType
+func NewCveContentType(name string) CveContentType {
+	switch name {
+	case "nvd":
+		return NVD
+	case "jvn":
+		return JVN
+	case "redhat", "centos":
+		return RedHat
+	case "ubuntu":
+		return Ubuntu
+	case "debian":
+		return Debian
+	default:
+		return Unknown
+	}
+}
+
 const (
 	// NVD is NVD
 	NVD CveContentType = "nvd"
@@ -610,6 +598,9 @@ const (
 
 	// Ubuntu is Ubuntu
 	Ubuntu CveContentType = "ubuntu"
+
+	// Unknown is Unknown
+	Unknown CveContentType = "unknown"
 )
 
 // CveContents has slice of CveContent
@@ -671,7 +662,15 @@ func (v *CveContents) CvssV2Score() float64 {
 	} else if cont, found := v.Get(RedHat); found {
 		return cont.Cvss2Score
 	}
-	return -1
+	return -1.1
+}
+
+// CvssV3Score returns CVSS V2 Score
+func (v *CveContents) CvssV3Score() float64 {
+	if cont, found := v.Get(RedHat); found {
+		return cont.Cvss3Score
+	}
+	return -1.1
 }
 
 // CveContent has abstraction of various vulnerability information

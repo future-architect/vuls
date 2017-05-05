@@ -31,7 +31,6 @@ import (
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/cveapi"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
 )
@@ -159,39 +158,6 @@ func loadScanResults(jsonDir string) (results models.ScanResults, err error) {
 		return nil, fmt.Errorf("There is no json file under %s", jsonDir)
 	}
 	return
-}
-
-func fillCveInfoFromCveDB(r models.ScanResult) (*models.ScanResult, error) {
-	var err error
-	var vs []models.VulnInfo
-
-	sInfo := c.Conf.Servers[r.ServerName]
-	vs, err = scanVulnByCpeNames(sInfo.CpeNames, r.ScannedCves)
-	if err != nil {
-		return nil, err
-	}
-	r.ScannedCves = vs
-	return r.FillCveDetail()
-}
-
-func fillCveInfoFromOvalDB(r *models.ScanResult) (*models.ScanResult, error) {
-	var ovalClient oval.Client
-	switch r.Family {
-	case "ubuntu", "debian":
-		ovalClient = oval.NewDebian()
-	case "rhel", "centos":
-		ovalClient = oval.NewRedhat()
-	case "amazon", "oraclelinux", "Raspbian", "FreeBSD":
-		//TODO implement OracleLinux
-		return r, nil
-	default:
-		return nil, fmt.Errorf("Oval %s is not implemented yet", r.Family)
-	}
-	result, err := ovalClient.FillCveInfoFromOvalDB(r)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
 }
 
 func loadPrevious(current models.ScanResults) (previous models.ScanResults, err error) {

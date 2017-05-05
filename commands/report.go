@@ -27,10 +27,10 @@ import (
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/cveapi"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
-	"github.com/k0kubun/pp"
 )
 
 // ReportCmd is subcommand for reporting
@@ -417,24 +417,22 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 				}
 			}
 
-			filled, err := fillCveInfoFromOvalDB(&r)
-			if err != nil {
+			if err := fillCveInfoFromOvalDB(&r); err != nil {
 				util.Log.Errorf("Failed to fill OVAL information: %s", err)
 				return subcommands.ExitFailure
 			}
 
-			filled, err = fillCveInfoFromCveDB(*filled)
-			if err != nil {
+			if err := fillCveInfoFromCveDB(&r); err != nil {
 				util.Log.Errorf("Failed to fill CVE information: %s", err)
 				return subcommands.ExitFailure
 			}
 
-			filled.Lang = c.Conf.Lang
-			if err := overwriteJSONFile(dir, *filled); err != nil {
+			r.Lang = c.Conf.Lang
+			if err := overwriteJSONFile(dir, r); err != nil {
 				util.Log.Errorf("Failed to write JSON: %s", err)
 				return subcommands.ExitFailure
 			}
-			results = append(results, *filled)
+			results = append(results, r)
 		} else {
 			util.Log.Debugf("no need to refresh")
 			results = append(results, r)
@@ -455,20 +453,30 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 		results = []models.ScanResult{}
 		for _, r := range diff {
-			filled, _ := r.FillCveDetail()
-			results = append(results, *filled)
+			if err := fillCveDetail(&r); err != nil {
+				util.Log.Error(err)
+				return subcommands.ExitFailure
+			}
+			results = append(results, r)
 		}
 	}
 
 	var res models.ScanResults
 	for _, r := range results {
 		//TODO remove
-		for _, vuln := range r.ScannedCves {
-			if _, ok := vuln.CveContents.Get(models.CveContentType(r.Family)); !ok {
-				fmt.Println("not in oval")
-				pp.Println(vuln)
-			}
-		}
+		//  for _, vuln := range r.ScannedCves {
+		//      //  if _, ok := vuln.CveContents.Get(models.NewCveContentType(r.Family)); !ok {
+		//      //      pp.Printf("not in oval: %s %f\n%v\n",
+		//      //          vuln.CveID, vuln.CveContents.CvssV2Score(), vuln.Packages)
+		//      //  } else {
+		//      //      fmt.Printf("    in oval: %s %f\n",
+		//      //          vuln.CveID, vuln.CveContents.CvssV2Score())
+		//      //  }
+		//      //  if vuln.CveContents.CvssV2Score() < 0.1 &&
+		//      //      vuln.CveContents.CvssV3Score() < 0.1 {
+		//      //      pp.Println(vuln)
+		//      //  }
+		//  }
 		res = append(res, r.FilterByCvssOver())
 	}
 
@@ -479,4 +487,72 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 	return subcommands.ExitSuccess
+}
+
+// fillCveDetail fetches NVD, JVN from CVE Database, and then set to fields.
+//TODO rename to FillCveDictionary
+func fillCveDetail(r *models.ScanResult) error {
+	var cveIDs []string
+	for _, v := range r.ScannedCves {
+		cveIDs = append(cveIDs, v.CveID)
+	}
+
+	ds, err := cveapi.CveClient.FetchCveDetails(cveIDs)
+	if err != nil {
+		return err
+	}
+	for _, d := range ds {
+		nvd := *r.ConvertNvdToModel(d.CveID, d.Nvd)
+		jvn := *r.ConvertJvnToModel(d.CveID, d.Jvn)
+		for i, sc := range r.ScannedCves {
+			if sc.CveID == d.CveID {
+				for _, con := range []models.CveContent{nvd, jvn} {
+					if !con.Empty() {
+						r.ScannedCves[i].CveContents.Upsert(con)
+					}
+				}
+				break
+			}
+		}
+	}
+	//TODO sort
+	//  sort.Sort(r.KnownCves)
+	//  sort.Sort(r.UnknownCves)
+	//  sort.Sort(r.IgnoredCves)
+	return nil
+}
+
+func fillCveInfoFromCveDB(r *models.ScanResult) error {
+	var err error
+	var vs []models.VulnInfo
+
+	sInfo := c.Conf.Servers[r.ServerName]
+	vs, err = scanVulnByCpeNames(sInfo.CpeNames, r.ScannedCves)
+	if err != nil {
+		return err
+	}
+	r.ScannedCves = vs
+	if err := fillCveDetail(r); err != nil {
+		return err
+	}
+	return nil
+}
+
+func fillCveInfoFromOvalDB(r *models.ScanResult) error {
+	var ovalClient oval.Client
+	switch r.Family {
+	case "ubuntu", "debian":
+		ovalClient = oval.NewDebian()
+	case "rhel", "centos":
+		ovalClient = oval.NewRedhat()
+	case "amazon", "oraclelinux", "Raspbian", "FreeBSD":
+		//TODO implement OracleLinux
+		return nil
+	default:
+		return fmt.Errorf("Oval %s is not implemented yet", r.Family)
+	}
+	if err := ovalClient.FillCveInfoFromOvalDB(r); err != nil {
+		return err
+	}
+	return nil
 }
