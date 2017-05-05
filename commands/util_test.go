@@ -26,6 +26,162 @@ import (
 	"github.com/k0kubun/pp"
 )
 
+func TestIsCveInfoUpdated(t *testing.T) {
+	f := "2006-01-02"
+	old, _ := time.Parse(f, "2015-12-15")
+	new, _ := time.Parse(f, "2015-12-16")
+
+	type In struct {
+		cveID string
+		cur   models.ScanResult
+		prev  models.ScanResult
+	}
+	var tests = []struct {
+		in       In
+		expected bool
+	}{
+		// NVD compare non-initialized times
+		{
+			in: In{
+				cveID: "CVE-2017-0001",
+				cur: models.ScanResult{
+					ScannedCves: []models.VulnInfo{
+						{
+							CveID: "CVE-2017-0001",
+							CveContents: []models.CveContent{
+								{
+									Type:         models.NVD,
+									CveID:        "CVE-2017-0001",
+									LastModified: time.Time{},
+								},
+							},
+						},
+					},
+				},
+				prev: models.ScanResult{
+					ScannedCves: []models.VulnInfo{
+						{
+							CveID: "CVE-2017-0001",
+							CveContents: []models.CveContent{
+								{
+									Type:         models.NVD,
+									CveID:        "CVE-2017-0001",
+									LastModified: time.Time{},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		// JVN not updated
+		{
+			in: In{
+				cveID: "CVE-2017-0002",
+				cur: models.ScanResult{
+					ScannedCves: []models.VulnInfo{
+						{
+							CveID: "CVE-2017-0002",
+							CveContents: []models.CveContent{
+								{
+									Type:         models.JVN,
+									CveID:        "CVE-2017-0002",
+									LastModified: old,
+								},
+							},
+						},
+					},
+				},
+				prev: models.ScanResult{
+					ScannedCves: []models.VulnInfo{
+						{
+							CveID: "CVE-2017-0002",
+							CveContents: []models.CveContent{
+								{
+									Type:         models.JVN,
+									CveID:        "CVE-2017-0002",
+									LastModified: old,
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		// OVAL updated
+		{
+			in: In{
+				cveID: "CVE-2017-0003",
+				cur: models.ScanResult{
+					Family: "ubuntu",
+					ScannedCves: []models.VulnInfo{
+						{
+							CveID: "CVE-2017-0003",
+							CveContents: []models.CveContent{
+								{
+									Type:         models.Ubuntu,
+									CveID:        "CVE-2017-0003",
+									LastModified: new,
+								},
+							},
+						},
+					},
+				},
+				prev: models.ScanResult{
+					Family: "ubuntu",
+					ScannedCves: []models.VulnInfo{
+						{
+							CveID: "CVE-2017-0003",
+							CveContents: []models.CveContent{
+								{
+									Type:         models.Ubuntu,
+									CveID:        "CVE-2017-0003",
+									LastModified: old,
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: true,
+		},
+		// OVAL newly detected
+		{
+			in: In{
+				cveID: "CVE-2017-0004",
+				cur: models.ScanResult{
+					Family: "redhat",
+					ScannedCves: []models.VulnInfo{
+						{
+							CveID: "CVE-2017-0004",
+							CveContents: []models.CveContent{
+								{
+									Type:         models.RedHat,
+									CveID:        "CVE-2017-0004",
+									LastModified: old,
+								},
+							},
+						},
+					},
+				},
+				prev: models.ScanResult{
+					Family:      "redhat",
+					ScannedCves: []models.VulnInfo{},
+				},
+			},
+			expected: true,
+		},
+	}
+	for i, tt := range tests {
+		actual := isCveInfoUpdated(tt.in.cveID, tt.in.prev, tt.in.cur)
+		if actual != tt.expected {
+			t.Errorf("[%d] actual: %t, expected: %t", i, actual, tt.expected)
+		}
+	}
+}
+
 func TestDiff(t *testing.T) {
 	atCurrent, _ := time.Parse("2006-01-02", "2014-12-31")
 	atPrevious, _ := time.Parse("2006-01-02", "2014-11-31")
