@@ -65,7 +65,7 @@ func (o Redhat) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Defini
 			vinfo = models.VulnInfo{
 				CveID:       cve.CveID,
 				Confidence:  models.OvalMatch,
-				Packages:    getPackageInfoList(r, definition),
+				Packages:    getPackages(r, definition),
 				CveContents: models.NewCveContents(ovalContent),
 			}
 		} else {

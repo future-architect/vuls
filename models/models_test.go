@@ -25,12 +25,12 @@ import (
 	"github.com/k0kubun/pp"
 )
 
-func TestPackageInfoListUniqByName(t *testing.T) {
+func TestPackagesUniqByName(t *testing.T) {
 	var test = struct {
-		in  PackageInfoList
-		out PackageInfoList
+		in  Packages
+		out Packages
 	}{
-		PackageInfoList{
+		Packages{
 			{
 				Name: "hoge",
 			},
@@ -41,7 +41,7 @@ func TestPackageInfoListUniqByName(t *testing.T) {
 				Name: "hoge",
 			},
 		},
-		PackageInfoList{
+		Packages{
 			{
 				Name: "hoge",
 			},
@@ -67,23 +67,23 @@ func TestPackageInfoListUniqByName(t *testing.T) {
 
 func TestMergeNewVersion(t *testing.T) {
 	var test = struct {
-		a        PackageInfoList
-		b        PackageInfoList
-		expected PackageInfoList
+		a        Packages
+		b        Packages
+		expected Packages
 	}{
-		PackageInfoList{
+		Packages{
 			{
 				Name: "hoge",
 			},
 		},
-		PackageInfoList{
+		Packages{
 			{
 				Name:       "hoge",
 				NewVersion: "1.0.0",
 				NewRelease: "release1",
 			},
 		},
-		PackageInfoList{
+		Packages{
 			{
 				Name:       "hoge",
 				NewVersion: "1.0.0",

@@ -59,13 +59,13 @@ type osTypeInterface interface {
 // osPackages is included by base struct
 type osPackages struct {
 	// installed packages
-	Packages models.PackageInfoList
+	Packages models.Packages
 
 	// unsecure packages
 	VulnInfos models.VulnInfos
 }
 
-func (p *osPackages) setPackages(pi models.PackageInfoList) {
+func (p *osPackages) setPackages(pi models.Packages) {
 	p.Packages = pi
 }
 
