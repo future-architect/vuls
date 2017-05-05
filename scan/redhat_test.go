@@ -562,12 +562,14 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
 	}
 	for _, tt := range tests {
 		actual, _ := r.parseYumUpdateinfo(tt.in)
-		for i, advisoryCveIDs := range actual {
-			if !reflect.DeepEqual(tt.out[i], advisoryCveIDs) {
-				e := pp.Sprintf("%v", tt.out[i])
+		for j, advisoryCveIDs := range actual {
+			sort.Strings(tt.out[j].CveIDs)
+			sort.Strings(advisoryCveIDs.CveIDs)
+			if !reflect.DeepEqual(tt.out[j], advisoryCveIDs) {
+				e := pp.Sprintf("%v", tt.out[j])
 				a := pp.Sprintf("%v", advisoryCveIDs)
 				t.Errorf("[%d] Alas is not same. \nexpected: %s\nactual: %s",
-					i, e, a)
+					j, e, a)
 			}
 		}
 	}
