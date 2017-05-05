@@ -564,15 +564,8 @@ func (ps PackageInfoList) UniqByName() (distincted PackageInfoList) {
 	for _, p := range ps {
 		set[p.Name] = p
 	}
-	//sort by key
-	keys := []string{}
-	for key := range set {
-		keys = append(keys, key)
-	}
-	//TODO remove
-	//  sort.Strings(keys)
-	for _, key := range keys {
-		distincted = append(distincted, set[key])
+	for _, v := range set {
+		distincted = append(distincted, v)
 	}
 	return
 }

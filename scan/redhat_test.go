@@ -19,6 +19,7 @@ package scan
 
 import (
 	"reflect"
+	"sort"
 	"testing"
 	"time"
 
@@ -653,6 +654,8 @@ Description : Package updates are available for Amazon Linux AMI that fix the
 	for _, tt := range tests {
 		actual, _ := r.parseYumUpdateinfo(tt.in)
 		for i, advisoryCveIDs := range actual {
+			sort.Strings(tt.out[i].CveIDs)
+			sort.Strings(actual[i].CveIDs)
 			if !reflect.DeepEqual(tt.out[i], advisoryCveIDs) {
 				e := pp.Sprintf("%v", tt.out[i])
 				a := pp.Sprintf("%v", advisoryCveIDs)
@@ -1115,7 +1118,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 		{
 			models.PackageInfo{
 				Name:       "dhclient",
-				NewVersion: "4.1.1",
+				NewVersion: "12:4.1.1",
 				NewRelease: "51.P1.el6.centos",
 			},
 			`- TESTSTRING CVE-1111-1111
@@ -1124,7 +1127,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 		{
 			models.PackageInfo{
 				Name:       "dhcp-common",
-				NewVersion: "4.1.1",
+				NewVersion: "12:4.1.1",
 				NewRelease: "51.P1.el6.centos",
 			},
 			`- TESTSTRING CVE-1111-1111
@@ -1234,7 +1237,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 		{
 			models.PackageInfo{
 				Name:       "bind-libs",
-				NewVersion: "9.3.6",
+				NewVersion: "30:9.3.6",
 				NewRelease: "25.P1.el5_11.8",
 			},
 			`- Fix issue with patch for CVE-2016-1285 and CVE-2016-1286 found by test suite
@@ -1246,7 +1249,7 @@ func TestGetChangelogCVELines(t *testing.T) {
 		{
 			models.PackageInfo{
 				Name:       "bind-utils",
-				NewVersion: "9.3.6",
+				NewVersion: "30:9.3.6",
 				NewRelease: "25.P1.el5_11.8",
 			},
 			`- Fix issue with patch for CVE-2016-1285 and CVE-2016-1286 found by test suite
