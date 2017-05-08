@@ -11,15 +11,11 @@ type Client interface {
 }
 
 func getPackages(r *models.ScanResult, d *ovalmodels.Definition) models.Packages {
-	var packages models.Packages
-	for _, pack := range d.AffectedPacks {
-		for _, p := range r.Packages {
-			if pack.Name == p.Name {
-				p.Changelog = models.Changelog{}
-				packages = append(packages, p)
-				break
-			}
-		}
+	packages := models.Packages{}
+	for _, affectedPack := range d.AffectedPacks {
+		pack, _ := r.Packages[affectedPack.Name]
+		//  pack.Changelog = models.Changelog{}
+		packages[affectedPack.Name] = pack
 	}
 	return packages
 }

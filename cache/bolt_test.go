@@ -37,8 +37,8 @@ var meta = Meta{
 		Family:  "ubuntu",
 		Release: "16.04",
 	},
-	Packs: []models.Package{
-		{
+	Packs: models.Packages{
+		"apt": {
 			Name:    "apt",
 			Version: "1",
 		},

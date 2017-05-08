@@ -12,7 +12,7 @@ import (
 func TestParsePkgVersion(t *testing.T) {
 	var tests = []struct {
 		in       string
-		expected []models.Package
+		expected models.Packages
 	}{
 		{
 			`Updating FreeBSD repository catalogue...
@@ -23,22 +23,22 @@ gettext-0.18.3.1                   <   needs updating (remote has 0.19.7)
 tcl84-8.4.20_2,1                   =   up-to-date with remote
 teTeX-base-3.0_25                  ?   orphaned: print/teTeX-base`,
 
-			[]models.Package{
-				{
+			models.Packages{
+				"bash": {
 					Name:       "bash",
 					Version:    "4.2.45",
 					NewVersion: "4.3.42_1",
 				},
-				{
+				"gettext": {
 					Name:       "gettext",
 					Version:    "0.18.3.1",
 					NewVersion: "0.19.7",
 				},
-				{
+				"tcl84": {
 					Name:    "tcl84",
 					Version: "8.4.20_2,1",
 				},
-				{
+				"teTeX-base": {
 					Name:    "teTeX-base",
 					Version: "3.0_25",
 				},

@@ -231,7 +231,7 @@ func (o *redhat) scanPackages() error {
 		o.log.Errorf("Failed to scan installed packages")
 		return err
 	}
-	o.setPackages(packs)
+	o.setPackages(models.NewPackages(packs...))
 
 	var vinfos []models.VulnInfo
 	if vinfos, err = o.scanVulnInfos(); err != nil {
@@ -242,7 +242,7 @@ func (o *redhat) scanPackages() error {
 	return nil
 }
 
-func (o *redhat) scanInstalledPackages() (installedPackages models.Packages, err error) {
+func (o *redhat) scanInstalledPackages() (installed []models.Package, err error) {
 	cmd := "rpm -qa --queryformat '%{NAME}\t%{EPOCHNUM}\t%{VERSION}\t%{RELEASE}\n'"
 	r := o.exec(cmd, noSudo)
 	if r.isSuccess() {
@@ -255,13 +255,13 @@ func (o *redhat) scanInstalledPackages() (installedPackages models.Packages, err
 				if pack, err = o.parseScannedPackagesLine(line); err != nil {
 					return
 				}
-				installedPackages = append(installedPackages, pack)
+				installed = append(installed, pack)
 			}
 		}
 		return
 	}
 
-	return installedPackages, fmt.Errorf(
+	return nil, fmt.Errorf(
 		"Scan packages failed. status: %d, stdout: %s, stderr: %s",
 		r.ExitStatus, r.Stdout, r.Stderr)
 }
@@ -341,22 +341,23 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 	}
 
 	for name, clog := range rpm2changelog {
-		for i, p := range o.Packages {
-			n := fmt.Sprintf("%s-%s-%s",
-				p.Name, p.NewVersion, p.NewRelease)
+		for _, p := range o.Packages {
+			n := fmt.Sprintf("%s-%s-%s", p.Name, p.NewVersion, p.NewRelease)
 			if name == n {
-				o.Packages[i].Changelog = models.Changelog{
+				p.Changelog = models.Changelog{
 					Contents: *clog,
 					Method:   models.ChangelogExactMatchStr,
 				}
+				o.Packages[p.Name] = p
 				break
 			}
 		}
 	}
 
 	var results []PackageCveIDs
-	for i, pack := range packages {
-		changelog := o.getChangelogCVELines(rpm2changelog, pack)
+	i := 0
+	for name := range packages {
+		changelog := o.getChangelogCVELines(rpm2changelog, packages[name])
 
 		// Collect unique set of CVE-ID in each changelog
 		uniqueCveIDMap := make(map[string]bool)
@@ -374,7 +375,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 			cveIDs = append(cveIDs, k)
 		}
 		p := PackageCveIDs{
-			Package: pack,
+			Package: packages[name],
 			CveIDs:  cveIDs,
 		}
 		results = append(results, p)
@@ -388,6 +389,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 			p.Package.NewVersion,
 			p.Package.NewRelease,
 			p.CveIDs)
+		i++
 	}
 
 	// transform datastructure
@@ -415,7 +417,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 		// Amazon, RHEL do not use this method, so VendorAdvisory do not set.
 		vinfos = append(vinfos, models.VulnInfo{
 			CveID:      k,
-			Packages:   v,
+			Packages:   models.NewPackages(v...),
 			Confidence: models.ChangelogExactMatch,
 		})
 	}
@@ -423,7 +425,8 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 }
 
 // parseYumCheckUpdateLines parse yum check-update to get package name, candidate version
-func (o *redhat) parseYumCheckUpdateLines(stdout string) (results models.Packages, err error) {
+func (o *redhat) parseYumCheckUpdateLines(stdout string) (models.Packages, error) {
+	results := models.Packages{}
 	needToParse := false
 	lines := strings.Split(stdout, "\n")
 	for _, line := range lines {
@@ -443,20 +446,20 @@ func (o *redhat) parseYumCheckUpdateLines(stdout string) (results models.Package
 				return results, err
 			}
 
-			installed, found := o.Packages.FindByName(candidate.Name)
+			installed, found := o.Packages[candidate.Name]
 			if !found {
 				o.log.Warnf("Not found the package in rpm -qa. candidate: %s-%s-%s",
 					candidate.Name, candidate.Version, candidate.Release)
-				results = append(results, candidate)
+				results[candidate.Name] = candidate
 				continue
 			}
 			installed.NewVersion = candidate.NewVersion
 			installed.NewRelease = candidate.NewRelease
 			installed.Repository = candidate.Repository
-			results = append(results, installed)
+			results[installed.Name] = installed
 		}
 	}
-	return
+	return results, nil
 }
 
 func (o *redhat) parseYumCheckUpdateLine(line string) (models.Package, error) {
@@ -686,16 +689,16 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 	// set candidate version info
 	o.Packages.MergeNewVersion(updatable)
 
-	dict := map[string][]models.Package{}
+	dict := make(map[string]models.Packages)
 	for _, advIDPackNames := range advIDPackNamesList {
 		packages := models.Packages{}
 		for _, packName := range advIDPackNames.PackNames {
-			pack, found := updatable.FindByName(packName)
+			pack, found := updatable[packName]
 			if !found {
 				return nil, fmt.Errorf(
 					"Package not found. pack: %#v", packName)
 			}
-			packages = append(packages, pack)
+			packages[pack.Name] = pack
 			continue
 		}
 		dict[advIDPackNames.AdvisoryID] = packages
@@ -729,7 +732,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 					vinfos[i].DistroAdvisories = advAppended
 
 					packs := dict[advIDCveIDs.DistroAdvisory.AdvisoryID]
-					vinfos[i].Packages = append(vinfos[i].Packages, packs...)
+					vinfos[i].Packages = vinfos[i].Packages.Merge(packs)
 					found = true
 					break
 				}

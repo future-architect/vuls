@@ -448,7 +448,7 @@ type CveContents map[CveContentType]CveContent
 
 // NewCveContents create CveContents
 func NewCveContents(conts ...CveContent) CveContents {
-	m := make(map[CveContentType]CveContent)
+	m := map[CveContentType]CveContent{}
 	for _, cont := range conts {
 		m[cont.Type] = cont
 	}
@@ -547,69 +547,51 @@ type Reference struct {
 	Link   string
 }
 
-// Packages is slice of Package
-type Packages []Package
+// Packages is Map of Package
+// { "package-name": Package }
+type Packages map[string]Package
 
-// Exists returns true if exists the name
-func (ps Packages) Exists(name string) bool {
-	for _, p := range ps {
-		if p.Name == name {
-			return true
-		}
+// NewPackages create Packages
+func NewPackages(packs ...Package) Packages {
+	m := Packages{}
+	for _, pack := range packs {
+		m[pack.Name] = pack
 	}
-	return false
-}
-
-// UniqByName be uniq by name.
-func (ps Packages) UniqByName() (distincted Packages) {
-	set := make(map[string]Package)
-	for _, p := range ps {
-		set[p.Name] = p
-	}
-	for _, v := range set {
-		distincted = append(distincted, v)
-	}
-	return
-}
-
-// FindByName search Package by name
-func (ps Packages) FindByName(name string) (result Package, found bool) {
-	for _, p := range ps {
-		if p.Name == name {
-			return p, true
-		}
-	}
-	return Package{}, false
+	return m
 }
 
 // MergeNewVersion merges candidate version information to the receiver struct
 func (ps Packages) MergeNewVersion(as Packages) {
 	for _, a := range as {
-		for i, p := range ps {
-			if p.Name == a.Name {
-				ps[i].NewVersion = a.NewVersion
-				ps[i].NewRelease = a.NewRelease
-			}
+		if pack, ok := ps[a.Name]; ok {
+			pack.NewVersion = a.NewVersion
+			pack.NewRelease = a.NewRelease
+			ps[a.Name] = pack
 		}
 	}
 }
 
-func (ps Packages) countUpdatablePacks() int {
-	count := 0
-	set := make(map[string]bool)
-	for _, p := range ps {
-		if len(p.NewVersion) != 0 && !set[p.Name] {
-			count++
-			set[p.Name] = true
-		}
+// Merge returns merged map (immutable)
+func (ps Packages) Merge(other Packages) Packages {
+	merged := map[string]Package{}
+	for k, v := range ps {
+		merged[k] = v
 	}
-	return count
+	for k, v := range other {
+		merged[k] = v
+	}
+	return merged
 }
 
 // FormatUpdatablePacksSummary returns a summary of updatable packages
 func (ps Packages) FormatUpdatablePacksSummary() string {
-	return fmt.Sprintf("%d updatable packages",
-		ps.countUpdatablePacks())
+	nUpdatable := 0
+	for _, p := range ps {
+		if p.NewVersion != "" {
+			nUpdatable++
+		}
+	}
+	return fmt.Sprintf("%d updatable packages", nUpdatable)
 }
 
 // Package has installed packages.

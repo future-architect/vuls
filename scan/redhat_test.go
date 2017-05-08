@@ -440,11 +440,13 @@ Description : kernel-uek
 	for _, tt := range tests {
 		actual, _ := r.parseYumUpdateinfo(tt.in)
 		for i, advisoryCveIDs := range actual {
-			if !reflect.DeepEqual(tt.out[i], advisoryCveIDs) {
-				e := pp.Sprintf("%v", tt.out[i])
-				a := pp.Sprintf("%v", advisoryCveIDs)
+			if tt.out[i].DistroAdvisory != advisoryCveIDs.DistroAdvisory {
 				t.Errorf("[%d] Alas is not same. \nexpected: %s\nactual: %s",
-					i, e, a)
+					i, tt.out[i].DistroAdvisory, advisoryCveIDs.DistroAdvisory)
+			}
+			if !reflect.DeepEqual(tt.out[i].CveIDs, advisoryCveIDs.CveIDs) {
+				t.Errorf("[%d] Alas is not same. \nexpected: %s\nactual: %s",
+					i, tt.out[i].CveIDs, advisoryCveIDs.CveIDs)
 			}
 		}
 	}
@@ -562,14 +564,14 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
 	}
 	for _, tt := range tests {
 		actual, _ := r.parseYumUpdateinfo(tt.in)
-		for j, advisoryCveIDs := range actual {
-			sort.Strings(tt.out[j].CveIDs)
+		for i, advisoryCveIDs := range actual {
+			sort.Strings(tt.out[i].CveIDs)
 			sort.Strings(advisoryCveIDs.CveIDs)
-			if !reflect.DeepEqual(tt.out[j], advisoryCveIDs) {
-				e := pp.Sprintf("%v", tt.out[j])
+			if !reflect.DeepEqual(tt.out[i], advisoryCveIDs) {
+				e := pp.Sprintf("%v", tt.out[i])
 				a := pp.Sprintf("%v", advisoryCveIDs)
 				t.Errorf("[%d] Alas is not same. \nexpected: %s\nactual: %s",
-					j, e, a)
+					i, e, a)
 			}
 		}
 	}
@@ -688,46 +690,46 @@ bind-utils.x86_64                       30:9.3.6-25.P1.el5_11.8          updates
 pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 `
 
-	r.Packages = []models.Package{
-		{
+	r.setPackages(models.NewPackages(
+		models.Package{
 			Name:    "audit-libs",
 			Version: "2.3.6",
 			Release: "4.el6",
 		},
-		{
+		models.Package{
 			Name:    "bash",
 			Version: "4.1.1",
 			Release: "33",
 		},
-		{
+		models.Package{
 			Name:    "python-libs",
 			Version: "2.6.0",
 			Release: "1.1-0",
 		},
-		{
+		models.Package{
 			Name:    "python-ordereddict",
 			Version: "1.0",
 			Release: "1",
 		},
-		{
+		models.Package{
 			Name:    "bind-utils",
 			Version: "1.0",
 			Release: "1",
 		},
-		{
+		models.Package{
 			Name:    "pytalloc",
 			Version: "2.0.1",
 			Release: "0",
 		},
-	}
+	))
 	var tests = []struct {
 		in  string
 		out models.Packages
 	}{
 		{
 			stdout,
-			models.Packages{
-				{
+			models.NewPackages(
+				models.Package{
 					Name:       "audit-libs",
 					Version:    "2.3.6",
 					Release:    "4.el6",
@@ -735,7 +737,7 @@ pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 					NewRelease: "5.el6",
 					Repository: "base",
 				},
-				{
+				models.Package{
 					Name:       "bash",
 					Version:    "4.1.1",
 					Release:    "33",
@@ -743,7 +745,7 @@ pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 					NewRelease: "33.el6_7.1",
 					Repository: "updates",
 				},
-				{
+				models.Package{
 					Name:       "python-libs",
 					Version:    "2.6.0",
 					Release:    "1.1-0",
@@ -751,7 +753,7 @@ pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 					NewRelease: "64.el6",
 					Repository: "rhui-REGION-rhel-server-releases",
 				},
-				{
+				models.Package{
 					Name:       "python-ordereddict",
 					Version:    "1.0",
 					Release:    "1",
@@ -759,7 +761,7 @@ pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 					NewRelease: "3.el6ev",
 					Repository: "installed",
 				},
-				{
+				models.Package{
 					Name:       "bind-utils",
 					Version:    "1.0",
 					Release:    "1",
@@ -767,7 +769,7 @@ pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 					NewRelease: "25.P1.el5_11.8",
 					Repository: "updates",
 				},
-				{
+				models.Package{
 					Name:       "pytalloc",
 					Version:    "2.0.1",
 					Release:    "0",
@@ -775,7 +777,7 @@ pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 					NewRelease: "2.el6",
 					Repository: "@CentOS 6.5/6.5",
 				},
-			},
+			),
 		},
 	}
 
@@ -785,11 +787,11 @@ pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 			t.Errorf("Error has occurred, err: %s\ntt.in: %v", err, tt.in)
 			return
 		}
-		for i, ePack := range tt.out {
-			if !reflect.DeepEqual(ePack, packages[i]) {
+		for name, ePack := range tt.out {
+			if !reflect.DeepEqual(ePack, packages[name]) {
 				e := pp.Sprintf("%v", ePack)
-				a := pp.Sprintf("%v", packages[i])
-				t.Errorf("[%d] expected %s, actual %s", i, e, a)
+				a := pp.Sprintf("%v", packages[name])
+				t.Errorf("expected %s, actual %s", e, a)
 			}
 		}
 	}
@@ -805,31 +807,31 @@ bind-libs.x86_64           32:9.8.2-0.37.rc1.45.amzn1      amzn-main
 java-1.7.0-openjdk.x86_64  1.7.0.95-2.6.4.0.65.amzn1     amzn-main
 if-not-architecture        100-200                         amzn-main
 `
-	r.Packages = []models.Package{
-		{
+	r.Packages = models.NewPackages(
+		models.Package{
 			Name:    "bind-libs",
 			Version: "9.8.0",
 			Release: "0.33.rc1.45.amzn1",
 		},
-		{
+		models.Package{
 			Name:    "java-1.7.0-openjdk",
 			Version: "1.7.0.0",
 			Release: "2.6.4.0.0.amzn1",
 		},
-		{
+		models.Package{
 			Name:    "if-not-architecture",
 			Version: "10",
 			Release: "20",
 		},
-	}
+	)
 	var tests = []struct {
 		in  string
 		out models.Packages
 	}{
 		{
 			stdout,
-			models.Packages{
-				{
+			models.NewPackages(
+				models.Package{
 					Name:       "bind-libs",
 					Version:    "9.8.0",
 					Release:    "0.33.rc1.45.amzn1",
@@ -837,7 +839,7 @@ if-not-architecture        100-200                         amzn-main
 					NewRelease: "0.37.rc1.45.amzn1",
 					Repository: "amzn-main",
 				},
-				{
+				models.Package{
 					Name:       "java-1.7.0-openjdk",
 					Version:    "1.7.0.0",
 					Release:    "2.6.4.0.0.amzn1",
@@ -845,7 +847,7 @@ if-not-architecture        100-200                         amzn-main
 					NewRelease: "2.6.4.0.65.amzn1",
 					Repository: "amzn-main",
 				},
-				{
+				models.Package{
 					Name:       "if-not-architecture",
 					Version:    "10",
 					Release:    "20",
@@ -853,7 +855,7 @@ if-not-architecture        100-200                         amzn-main
 					NewRelease: "200",
 					Repository: "amzn-main",
 				},
-			},
+			),
 		},
 	}
 
@@ -863,11 +865,11 @@ if-not-architecture        100-200                         amzn-main
 			t.Errorf("Error has occurred, err: %s\ntt.in: %v", err, tt.in)
 			return
 		}
-		for i, ePack := range tt.out {
-			if !reflect.DeepEqual(ePack, packages[i]) {
+		for name, ePack := range tt.out {
+			if !reflect.DeepEqual(ePack, packages[name]) {
 				e := pp.Sprintf("%v", ePack)
-				a := pp.Sprintf("%v", packages[i])
-				t.Errorf("[%d] expected %s, actual %s", i, e, a)
+				a := pp.Sprintf("%v", packages[name])
+				t.Errorf("[%s] expected %s, actual %s", name, e, a)
 			}
 		}
 	}

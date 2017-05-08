@@ -19,51 +19,10 @@ package models
 
 import (
 	"reflect"
-	"sort"
 	"testing"
 
 	"github.com/k0kubun/pp"
 )
-
-func TestPackagesUniqByName(t *testing.T) {
-	var test = struct {
-		in  Packages
-		out Packages
-	}{
-		Packages{
-			{
-				Name: "hoge",
-			},
-			{
-				Name: "fuga",
-			},
-			{
-				Name: "hoge",
-			},
-		},
-		Packages{
-			{
-				Name: "hoge",
-			},
-			{
-				Name: "fuga",
-			},
-		},
-	}
-
-	actual := test.in.UniqByName()
-	sort.Slice(actual, func(i, j int) bool {
-		return actual[i].Name < actual[j].Name
-	})
-	sort.Slice(test.out, func(i, j int) bool {
-		return test.out[i].Name < test.out[j].Name
-	})
-	for i, ePack := range test.out {
-		if actual[i].Name != ePack.Name {
-			t.Errorf("expected %#v, actual %#v", ePack.Name, actual[i].Name)
-		}
-	}
-}
 
 func TestMergeNewVersion(t *testing.T) {
 	var test = struct {
@@ -72,19 +31,19 @@ func TestMergeNewVersion(t *testing.T) {
 		expected Packages
 	}{
 		Packages{
-			{
+			"hoge": {
 				Name: "hoge",
 			},
 		},
 		Packages{
-			{
+			"hoge": {
 				Name:       "hoge",
 				NewVersion: "1.0.0",
 				NewRelease: "release1",
 			},
 		},
 		Packages{
-			{
+			"hoge": {
 				Name:       "hoge",
 				NewVersion: "1.0.0",
 				NewRelease: "release1",
