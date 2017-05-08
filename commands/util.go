@@ -33,6 +33,7 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
+	"github.com/howeyc/gopass"
 )
 
 // jsonDirPattern is file name pattern of JSON directory
@@ -190,11 +191,14 @@ func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults,
 			new, updated := getDiffCves(previous, current)
 			current.ScannedCves = append(new, updated...)
 
-			current.Packages = models.Packages{}
+			packages := models.Packages{}
 			for _, s := range current.ScannedCves {
-				current.Packages = append(current.Packages, s.Packages...)
+				for _, pack := range s.Packages {
+					p := current.Packages[pack.Name]
+					packages[pack.Name] = p
+				}
 			}
-			current.Packages = current.Packages.UniqByName()
+			current.Packages = packages
 		}
 
 		diffed = append(diffed, current)
@@ -319,4 +323,18 @@ func needToRefreshCve(r models.ScanResult) bool {
 		}
 	}
 	return true
+}
+
+func getPasswd(prompt string) (string, error) {
+	for {
+		fmt.Print(prompt)
+		pass, err := gopass.GetPasswdMasked()
+		if err != nil {
+			return "", fmt.Errorf("Failed to read password")
+		}
+		if 0 < len(pass) {
+			return string(pass[:]), nil
+		}
+	}
+
 }

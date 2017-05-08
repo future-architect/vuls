@@ -201,7 +201,7 @@ func TestDiff(t *testing.T) {
 						{
 							CveID: "CVE-2012-6702",
 							Packages: models.Packages{
-								{
+								"libexpat1": {
 									Name:       "libexpat1",
 									Version:    "2.1.0-7",
 									Release:    "",
@@ -216,7 +216,7 @@ func TestDiff(t *testing.T) {
 						{
 							CveID: "CVE-2014-9761",
 							Packages: models.Packages{
-								{
+								"libc-bin": {
 									Name:       "libc-bin",
 									Version:    "2.21-0ubuntu5",
 									Release:    "",
@@ -229,7 +229,7 @@ func TestDiff(t *testing.T) {
 							CpeNames:         []string{},
 						},
 					},
-					Packages: []models.Package{},
+					Packages: models.Packages{},
 					Errors:   []string{},
 					Optional: [][]interface{}{},
 				},
@@ -244,7 +244,7 @@ func TestDiff(t *testing.T) {
 						{
 							CveID: "CVE-2012-6702",
 							Packages: models.Packages{
-								{
+								"libexpat1": {
 									Name:       "libexpat1",
 									Version:    "2.1.0-7",
 									Release:    "",
@@ -259,7 +259,7 @@ func TestDiff(t *testing.T) {
 						{
 							CveID: "CVE-2014-9761",
 							Packages: models.Packages{
-								{
+								"libc-bin": {
 									Name:       "libc-bin",
 									Version:    "2.21-0ubuntu5",
 									Release:    "",
@@ -272,7 +272,7 @@ func TestDiff(t *testing.T) {
 							CpeNames:         []string{},
 						},
 					},
-					Packages: []models.Package{},
+					Packages: models.Packages{},
 					Errors:   []string{},
 					Optional: [][]interface{}{},
 				},
@@ -282,7 +282,7 @@ func TestDiff(t *testing.T) {
 				ServerName: "u16",
 				Family:     "ubuntu",
 				Release:    "16.04",
-				Packages:   []models.Package{},
+				Packages:   models.Packages{},
 				Errors:     []string{},
 				Optional:   [][]interface{}{},
 			},
@@ -298,7 +298,7 @@ func TestDiff(t *testing.T) {
 						{
 							CveID: "CVE-2016-6662",
 							Packages: models.Packages{
-								{
+								"mysql-libs": {
 									Name:       "mysql-libs",
 									Version:    "5.1.73",
 									Release:    "7.el6",
@@ -331,7 +331,7 @@ func TestDiff(t *testing.T) {
 					{
 						CveID: "CVE-2016-6662",
 						Packages: models.Packages{
-							{
+							"mysql-libs": {
 								Name:       "mysql-libs",
 								Version:    "5.1.73",
 								Release:    "7.el6",
@@ -345,7 +345,7 @@ func TestDiff(t *testing.T) {
 					},
 				},
 				Packages: models.Packages{
-					models.Package{
+					"mysql-libs": {
 						Name:       "mysql-libs",
 						Version:    "5.1.73",
 						Release:    "7.el6",
@@ -368,14 +368,14 @@ func TestDiff(t *testing.T) {
 			if !reflect.DeepEqual(actual.ScannedCves, tt.out.ScannedCves) {
 				h := pp.Sprint(actual.ScannedCves)
 				x := pp.Sprint(tt.out.ScannedCves)
-				t.Errorf("[%d] actual: \n %s \n expected: \n %s", i, h, x)
+				t.Errorf("[%d] cves actual: \n %s \n expected: \n %s", i, h, x)
 			}
 
 			for j := range tt.out.Packages {
 				if !reflect.DeepEqual(tt.out.Packages[j], actual.Packages[j]) {
 					h := pp.Sprint(tt.out.Packages[j])
 					x := pp.Sprint(actual.Packages[j])
-					t.Errorf("[%d] actual: \n %s \n expected: \n %s", i, x, h)
+					t.Errorf("[%d] packages actual: \n %s \n expected: \n %s", i, x, h)
 				}
 			}
 		}

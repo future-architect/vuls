@@ -624,7 +624,9 @@ func TestGetChangelogCache(t *testing.T) {
 			Family:  "ubuntu",
 			Release: "16.04",
 		},
-		Packs: []models.Package{pack},
+		Packs: models.Packages{
+			"apt": pack,
+		},
 	}
 
 	const path = "/tmp/vuls-test-cache-11111111.db"

@@ -71,7 +71,7 @@ func (o *bsd) checkDependencies() error {
 
 func (o *bsd) scanPackages() error {
 	var err error
-	var packs []models.Package
+	var packs models.Packages
 	if packs, err = o.scanInstalledPackages(); err != nil {
 		o.log.Errorf("Failed to scan installed packages")
 		return err
@@ -87,7 +87,7 @@ func (o *bsd) scanPackages() error {
 	return nil
 }
 
-func (o *bsd) scanInstalledPackages() ([]models.Package, error) {
+func (o *bsd) scanInstalledPackages() (models.Packages, error) {
 	cmd := util.PrependProxyEnv("pkg version -v")
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
@@ -121,7 +121,7 @@ func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
 		if len(cveIDs) == 0 {
 			continue
 		}
-		pack, found := o.Packages.FindByName(name)
+		pack, found := o.Packages[name]
 		if !found {
 			return nil, fmt.Errorf("Vulnerable package: %s is not found", name)
 		}
@@ -143,9 +143,9 @@ func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
 	}
 
 	for k := range cveIDAdtMap {
-		packs := []models.Package{}
+		packs := models.Packages{}
 		for _, r := range cveIDAdtMap[k] {
-			packs = append(packs, r.pack)
+			packs[r.pack.Name] = r.pack
 		}
 
 		disAdvs := []models.DistroAdvisory{}
@@ -165,7 +165,8 @@ func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
 	return
 }
 
-func (o *bsd) parsePkgVersion(stdout string) (packs []models.Package) {
+func (o *bsd) parsePkgVersion(stdout string) models.Packages {
+	packs := models.Packages{}
 	lines := strings.Split(stdout, "\n")
 	for _, l := range lines {
 		fields := strings.Fields(l)
@@ -180,20 +181,20 @@ func (o *bsd) parsePkgVersion(stdout string) (packs []models.Package) {
 
 		switch fields[1] {
 		case "?", "=":
-			packs = append(packs, models.Package{
+			packs[name] = models.Package{
 				Name:    name,
 				Version: ver,
-			})
+			}
 		case "<":
 			candidate := strings.TrimSuffix(fields[6], ")")
-			packs = append(packs, models.Package{
+			packs[name] = models.Package{
 				Name:       name,
 				Version:    ver,
 				NewVersion: candidate,
-			})
+			}
 		}
 	}
-	return
+	return packs
 }
 
 type vulnIDCveIDs struct {
