@@ -377,7 +377,7 @@ func (v *VulnInfos) Upsert(vInfo VulnInfo) {
 type VulnInfo struct {
 	CveID            string
 	Confidence       Confidence
-	Packages         Packages
+	PackageNames     []string
 	DistroAdvisories []DistroAdvisory // for Aamazon, RHEL, FreeBSD
 	CpeNames         []string
 	CveContents      CveContents
@@ -391,8 +391,8 @@ func (v *VulnInfo) NilToEmpty() {
 	if v.DistroAdvisories == nil {
 		v.DistroAdvisories = []DistroAdvisory{}
 	}
-	if v.Packages == nil {
-		v.Packages = Packages{}
+	if v.PackageNames == nil {
+		v.PackageNames = []string{}
 	}
 	if v.CveContents == nil {
 		v.CveContents = NewCveContents()

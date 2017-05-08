@@ -10,12 +10,9 @@ type Client interface {
 	FillCveInfoFromOvalDB(r *models.ScanResult) error
 }
 
-func getPackages(r *models.ScanResult, d *ovalmodels.Definition) models.Packages {
-	packages := models.Packages{}
+func getPackages(r *models.ScanResult, d *ovalmodels.Definition) (names []string) {
 	for _, affectedPack := range d.AffectedPacks {
-		pack, _ := r.Packages[affectedPack.Name]
-		//  pack.Changelog = models.Changelog{}
-		packages[affectedPack.Name] = pack
+		names = append(names, affectedPack.Name)
 	}
-	return packages
+	return
 }

@@ -199,32 +199,14 @@ func TestDiff(t *testing.T) {
 					Release:    "16.04",
 					ScannedCves: []models.VulnInfo{
 						{
-							CveID: "CVE-2012-6702",
-							Packages: models.Packages{
-								"libexpat1": {
-									Name:       "libexpat1",
-									Version:    "2.1.0-7",
-									Release:    "",
-									NewVersion: "2.1.0-7ubuntu0.16.04.2",
-									NewRelease: "",
-									Repository: "",
-								},
-							},
+							CveID:            "CVE-2012-6702",
+							PackageNames:     []string{"libexpat1"},
 							DistroAdvisories: []models.DistroAdvisory{},
 							CpeNames:         []string{},
 						},
 						{
-							CveID: "CVE-2014-9761",
-							Packages: models.Packages{
-								"libc-bin": {
-									Name:       "libc-bin",
-									Version:    "2.21-0ubuntu5",
-									Release:    "",
-									NewVersion: "2.23-0ubuntu5",
-									NewRelease: "",
-									Repository: "",
-								},
-							},
+							CveID:            "CVE-2014-9761",
+							PackageNames:     []string{"libc-bin"},
 							DistroAdvisories: []models.DistroAdvisory{},
 							CpeNames:         []string{},
 						},
@@ -242,32 +224,14 @@ func TestDiff(t *testing.T) {
 					Release:    "16.04",
 					ScannedCves: []models.VulnInfo{
 						{
-							CveID: "CVE-2012-6702",
-							Packages: models.Packages{
-								"libexpat1": {
-									Name:       "libexpat1",
-									Version:    "2.1.0-7",
-									Release:    "",
-									NewVersion: "2.1.0-7ubuntu0.16.04.2",
-									NewRelease: "",
-									Repository: "",
-								},
-							},
+							CveID:            "CVE-2012-6702",
+							PackageNames:     []string{"libexpat1"},
 							DistroAdvisories: []models.DistroAdvisory{},
 							CpeNames:         []string{},
 						},
 						{
-							CveID: "CVE-2014-9761",
-							Packages: models.Packages{
-								"libc-bin": {
-									Name:       "libc-bin",
-									Version:    "2.21-0ubuntu5",
-									Release:    "",
-									NewVersion: "2.23-0ubuntu5",
-									NewRelease: "",
-									Repository: "",
-								},
-							},
+							CveID:            "CVE-2014-9761",
+							PackageNames:     []string{"libc-bin"},
 							DistroAdvisories: []models.DistroAdvisory{},
 							CpeNames:         []string{},
 						},
@@ -296,19 +260,24 @@ func TestDiff(t *testing.T) {
 					Release:    "16.04",
 					ScannedCves: []models.VulnInfo{
 						{
-							CveID: "CVE-2016-6662",
-							Packages: models.Packages{
-								"mysql-libs": {
-									Name:       "mysql-libs",
-									Version:    "5.1.73",
-									Release:    "7.el6",
-									NewVersion: "5.1.73",
-									NewRelease: "8.el6_8",
-									Repository: "",
-								},
-							},
+							CveID:            "CVE-2016-6662",
+							PackageNames:     []string{"mysql-libs"},
 							DistroAdvisories: []models.DistroAdvisory{},
 							CpeNames:         []string{},
+						},
+					},
+					Packages: models.Packages{
+						"mysql-libs": {
+							Name:       "mysql-libs",
+							Version:    "5.1.73",
+							Release:    "7.el6",
+							NewVersion: "5.1.73",
+							NewRelease: "8.el6_8",
+							Repository: "",
+							Changelog: models.Changelog{
+								Contents: "",
+								Method:   "",
+							},
 						},
 					},
 				},
@@ -329,17 +298,8 @@ func TestDiff(t *testing.T) {
 				Release:    "16.04",
 				ScannedCves: []models.VulnInfo{
 					{
-						CveID: "CVE-2016-6662",
-						Packages: models.Packages{
-							"mysql-libs": {
-								Name:       "mysql-libs",
-								Version:    "5.1.73",
-								Release:    "7.el6",
-								NewVersion: "5.1.73",
-								NewRelease: "8.el6_8",
-								Repository: "",
-							},
-						},
+						CveID:            "CVE-2016-6662",
+						PackageNames:     []string{"mysql-libs"},
 						DistroAdvisories: []models.DistroAdvisory{},
 						CpeNames:         []string{},
 					},

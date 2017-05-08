@@ -37,7 +37,14 @@ type debian struct {
 
 // NewDebian is constructor
 func newDebian(c config.ServerInfo) *debian {
-	d := &debian{}
+	d := &debian{
+		base: base{
+			osPackages: osPackages{
+				Packages:  models.Packages{},
+				VulnInfos: models.VulnInfos{},
+			},
+		},
+	}
 	d.log = util.NewCustomLogger(c)
 	d.setServerInfo(c)
 	return d
@@ -397,11 +404,20 @@ func (o *debian) parseAptGetUpgrade(stdout string) (upgradableNames []string, er
 	return
 }
 
+// DetectedCveID has CveID, Confidence and DetectionMethod fields
+// LenientMatching will be true if this vulnerability is not detected by accurate version matching.
+// see https://github.com/future-architect/vuls/pull/328
+type DetectedCveID struct {
+	CveID      string
+	Confidence models.Confidence
+}
+
 func (o *debian) scanVulnInfos(upgradablePacks models.Packages, meta *cache.Meta) (models.VulnInfos, error) {
-	resChan := make(chan struct {
-		models.Package
-		DetectedCveIDs
-	}, len(upgradablePacks))
+	type response struct {
+		packName       string
+		DetectedCveIDs []DetectedCveID
+	}
+	resChan := make(chan response, len(upgradablePacks))
 	errChan := make(chan error, len(upgradablePacks))
 	reqChan := make(chan models.Package, len(upgradablePacks))
 	defer close(resChan)
@@ -415,7 +431,7 @@ func (o *debian) scanVulnInfos(upgradablePacks models.Packages, meta *cache.Meta
 	}()
 
 	timeout := time.After(30 * 60 * time.Second)
-	concurrency := 1
+	concurrency := 10
 	tasks := util.GenWorkers(concurrency)
 	for range upgradablePacks {
 		tasks <- func() {
@@ -425,10 +441,7 @@ func (o *debian) scanVulnInfos(upgradablePacks models.Packages, meta *cache.Meta
 					changelog := o.getChangelogCache(meta, p)
 					if 0 < len(changelog) {
 						cveIDs, _ := o.getCveIDsFromChangelog(changelog, p.Name, p.Version)
-						resChan <- struct {
-							models.Package
-							DetectedCveIDs
-						}{p, cveIDs}
+						resChan <- response{p.Name, cveIDs}
 						return
 					}
 
@@ -438,10 +451,7 @@ func (o *debian) scanVulnInfos(upgradablePacks models.Packages, meta *cache.Meta
 					if cveIDs, err := o.scanPackageCveIDs(p); err != nil {
 						errChan <- err
 					} else {
-						resChan <- struct {
-							models.Package
-							DetectedCveIDs
-						}{p, cveIDs}
+						resChan <- response{p.Name, cveIDs}
 					}
 				}(pack)
 			}
@@ -449,23 +459,23 @@ func (o *debian) scanVulnInfos(upgradablePacks models.Packages, meta *cache.Meta
 	}
 
 	// { DetectedCveID{} : [package] }
-	cvePackages := make(map[DetectedCveID]models.Packages)
+	cvePackages := make(map[DetectedCveID][]string)
 	errs := []error{}
 	for i := 0; i < len(upgradablePacks); i++ {
 		select {
-		case pair := <-resChan:
-			cves := pair.DetectedCveIDs
+		case response := <-resChan:
+			cves := response.DetectedCveIDs
 			for _, cve := range cves {
-				packs, ok := cvePackages[cve]
+				packNames, ok := cvePackages[cve]
 				if ok {
-					packs[cve.CveID] = pair.Package
+					packNames = append(packNames, response.packName)
 				} else {
-					packs = models.Packages{}
+					packNames = []string{response.packName}
 				}
-				cvePackages[cve] = packs
+				cvePackages[cve] = packNames
 			}
-			o.log.Infof("(%d/%d) Scanned %s-%s : %s",
-				i+1, len(upgradablePacks), pair.Name, pair.Package.Version, cves)
+			o.log.Infof("(%d/%d) Scanned %s: %s",
+				i+1, len(upgradablePacks), response.packName, cves)
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
@@ -482,11 +492,11 @@ func (o *debian) scanVulnInfos(upgradablePacks models.Packages, meta *cache.Meta
 	}
 	o.log.Debugf("%d Cves are found. cves: %v", len(cveIDs), cveIDs)
 	var vinfos models.VulnInfos
-	for k, v := range cvePackages {
+	for cveID, names := range cvePackages {
 		vinfos = append(vinfos, models.VulnInfo{
-			CveID:      k.CveID,
-			Confidence: k.Confidence,
-			Packages:   v,
+			CveID:        cveID.CveID,
+			Confidence:   cveID.Confidence,
+			PackageNames: names,
 		})
 	}
 
@@ -615,6 +625,7 @@ func (o *debian) getCveIDsFromChangelog(
 		Contents: "",
 		Method:   models.FailedToFindVersionInChangelog,
 	}
+	//TODO Mutex
 	o.Packages[name] = pack
 
 	// If the version is not in changelog, return entire changelog to put into cache
@@ -623,17 +634,6 @@ func (o *debian) getCveIDsFromChangelog(
 		Method:   models.FailedToFindVersionInChangelog,
 	}
 }
-
-// DetectedCveID has CveID, Confidence and DetectionMethod fields
-// LenientMatching will be true if this vulnerability is not detected by accurate version matching.
-// see https://github.com/future-architect/vuls/pull/328
-type DetectedCveID struct {
-	CveID      string
-	Confidence models.Confidence
-}
-
-// DetectedCveIDs is a slice of DetectedCveID
-type DetectedCveIDs []DetectedCveID
 
 var cveRe = regexp.MustCompile(`(CVE-\d{4}-\d{4,})`)
 

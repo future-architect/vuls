@@ -67,10 +67,10 @@ func (o Debian) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Defini
 		util.Log.Infof("%s is newly detected by OVAL",
 			definition.Debian.CveID)
 		vinfo = models.VulnInfo{
-			CveID:       definition.Debian.CveID,
-			Confidence:  models.OvalMatch,
-			Packages:    getPackages(r, definition),
-			CveContents: models.NewCveContents(ovalContent),
+			CveID:        definition.Debian.CveID,
+			Confidence:   models.OvalMatch,
+			PackageNames: getPackages(r, definition),
+			CveContents:  models.NewCveContents(ovalContent),
 		}
 	} else {
 		if _, ok := vinfo.CveContents.Get(models.NewCveContentType(r.Family)); !ok {
