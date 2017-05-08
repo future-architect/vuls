@@ -37,7 +37,14 @@ type redhat struct {
 
 // NewRedhat is constructor
 func newRedhat(c config.ServerInfo) *redhat {
-	r := &redhat{}
+	r := &redhat{
+		base: base{
+			osPackages: osPackages{
+				Packages:  models.Packages{},
+				VulnInfos: models.VulnInfos{},
+			},
+		},
+	}
 	r.log = util.NewCustomLogger(c)
 	r.setServerInfo(c)
 	return r
@@ -402,23 +409,32 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 	// ]
 	// - To
 	// map {
-	//   CveID: []models.Package
+	//   CveID: models.Packages{}
 	// }
-	cveIDPackMap := make(map[string][]models.Package)
+	cveIDPackages := make(map[string]models.Packages)
 	for _, res := range results {
 		for _, cveID := range res.CveIDs {
-			cveIDPackMap[cveID] = append(
-				cveIDPackMap[cveID], res.Package)
+			if packages, ok := cveIDPackages[cveID]; ok {
+				packages[res.Package.Name] = res.Package
+				cveIDPackages[cveID] = packages
+			} else {
+				cveIDPackages[cveID] = models.NewPackages(res.Package)
+			}
 		}
 	}
 
 	vinfos := []models.VulnInfo{}
-	for k, v := range cveIDPackMap {
+	for cveID, packs := range cveIDPackages {
+		names := []string{}
+		for name := range packs {
+			names = append(names, name)
+		}
+
 		// Amazon, RHEL do not use this method, so VendorAdvisory do not set.
 		vinfos = append(vinfos, models.VulnInfo{
-			CveID:      k,
-			Packages:   models.NewPackages(v...),
-			Confidence: models.ChangelogExactMatch,
+			CveID:        cveID,
+			PackageNames: names,
+			Confidence:   models.ChangelogExactMatch,
 		})
 	}
 	return vinfos, nil
@@ -732,17 +748,24 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 					vinfos[i].DistroAdvisories = advAppended
 
 					packs := dict[advIDCveIDs.DistroAdvisory.AdvisoryID]
-					vinfos[i].Packages = vinfos[i].Packages.Merge(packs)
+					for _, pack := range packs {
+						vinfos[i].PackageNames = append(vinfos[i].PackageNames, pack.Name)
+					}
 					found = true
 					break
 				}
 			}
 
 			if !found {
+				names := []string{}
+				packs := dict[advIDCveIDs.DistroAdvisory.AdvisoryID]
+				for _, pack := range packs {
+					names = append(names, pack.Name)
+				}
 				cpinfo := models.VulnInfo{
 					CveID:            cveID,
 					DistroAdvisories: []models.DistroAdvisory{advIDCveIDs.DistroAdvisory},
-					Packages:         dict[advIDCveIDs.DistroAdvisory.AdvisoryID],
+					PackageNames:     names,
 					Confidence:       models.YumUpdateSecurityMatch,
 				}
 				vinfos = append(vinfos, cpinfo)

@@ -63,10 +63,10 @@ func (o Redhat) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Defini
 		if !ok {
 			util.Log.Infof("%s is newly detected by OVAL", cve.CveID)
 			vinfo = models.VulnInfo{
-				CveID:       cve.CveID,
-				Confidence:  models.OvalMatch,
-				Packages:    getPackages(r, definition),
-				CveContents: models.NewCveContents(ovalContent),
+				CveID:        cve.CveID,
+				Confidence:   models.OvalMatch,
+				PackageNames: getPackages(r, definition),
+				CveContents:  models.NewCveContents(ovalContent),
 			}
 		} else {
 			if _, ok := vinfo.CveContents.Get(models.RedHat); !ok {

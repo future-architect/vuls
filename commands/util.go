@@ -193,9 +193,9 @@ func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults,
 
 			packages := models.Packages{}
 			for _, s := range current.ScannedCves {
-				for _, pack := range s.Packages {
-					p := current.Packages[pack.Name]
-					packages[pack.Name] = p
+				for _, name := range s.PackageNames {
+					p := current.Packages[name]
+					packages[name] = p
 				}
 			}
 			current.Packages = packages

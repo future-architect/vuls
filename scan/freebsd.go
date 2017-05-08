@@ -33,7 +33,14 @@ type bsd struct {
 
 // NewBSD constructor
 func newBsd(c config.ServerInfo) *bsd {
-	d := &bsd{}
+	d := &bsd{
+		base: base{
+			osPackages: osPackages{
+				Packages:  models.Packages{},
+				VulnInfos: models.VulnInfos{},
+			},
+		},
+	}
 	d.log = util.NewCustomLogger(c)
 	d.setServerInfo(c)
 	return d
@@ -155,9 +162,13 @@ func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
 			})
 		}
 
+		names := []string{}
+		for name := range packs {
+			names = append(names, name)
+		}
 		vulnInfos = append(vulnInfos, models.VulnInfo{
 			CveID:            k,
-			Packages:         packs,
+			PackageNames:     names,
 			DistroAdvisories: disAdvs,
 			Confidence:       models.PkgAuditMatch,
 		})
