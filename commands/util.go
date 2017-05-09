@@ -188,9 +188,7 @@ func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults,
 		}
 
 		if found {
-			new, updated := getDiffCves(previous, current)
-			current.ScannedCves = append(new, updated...)
-
+			current.ScannedCves = getDiffCves(previous, current)
 			packages := models.Packages{}
 			for _, s := range current.ScannedCves {
 				for _, name := range s.PackageNames {
@@ -206,22 +204,28 @@ func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults,
 	return diffed, err
 }
 
-func getDiffCves(previous, current models.ScanResult) (new, updated []models.VulnInfo) {
+func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
 	previousCveIDsSet := map[string]bool{}
 	for _, previousVulnInfo := range previous.ScannedCves {
 		previousCveIDsSet[previousVulnInfo.CveID] = true
 	}
 
+	new := models.VulnInfos{}
+	updated := models.VulnInfos{}
 	for _, v := range current.ScannedCves {
 		if previousCveIDsSet[v.CveID] {
 			if isCveInfoUpdated(v.CveID, previous, current) {
-				updated = append(updated, v)
+				updated[v.CveID] = v
 			}
 		} else {
-			new = append(new, v)
+			new[v.CveID] = v
 		}
 	}
-	return
+
+	for cveID, vuln := range new {
+		updated[cveID] = vuln
+	}
+	return updated
 }
 
 func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
@@ -274,42 +278,32 @@ func overwriteJSONFile(dir string, r models.ScanResult) error {
 	return nil
 }
 
-func scanVulnByCpeNames(cpeNames []string, scannedVulns []models.VulnInfo) ([]models.VulnInfo, error) {
-	// To remove duplicate
-	set := map[string]models.VulnInfo{}
-	for _, v := range scannedVulns {
-		set[v.CveID] = v
-	}
-
+func fillVulnByCpeNames(cpeNames []string, scannedVulns models.VulnInfos) error {
 	for _, name := range cpeNames {
 		details, err := cveapi.CveClient.FetchCveDetailsByCpeName(name)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		for _, detail := range details {
-			if val, ok := set[detail.CveID]; ok {
+			if val, ok := scannedVulns[detail.CveID]; ok {
 				names := val.CpeNames
 				names = util.AppendIfMissing(names, name)
 				val.CpeNames = names
 				val.Confidence = models.CpeNameMatch
-				set[detail.CveID] = val
+				scannedVulns[detail.CveID] = val
 			} else {
 				v := models.VulnInfo{
 					CveID:      detail.CveID,
 					CpeNames:   []string{name},
 					Confidence: models.CpeNameMatch,
 				}
-				v.NilToEmpty()
-				set[detail.CveID] = v
+				//TODO
+				//  v.NilToEmpty()
+				scannedVulns[detail.CveID] = v
 			}
 		}
 	}
-
-	vinfos := []models.VulnInfo{}
-	for key := range set {
-		vinfos = append(vinfos, set[key])
-	}
-	return vinfos, nil
+	return nil
 }
 
 func needToRefreshCve(r models.ScanResult) bool {

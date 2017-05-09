@@ -45,8 +45,8 @@ func TestIsCveInfoUpdated(t *testing.T) {
 			in: In{
 				cveID: "CVE-2017-0001",
 				cur: models.ScanResult{
-					ScannedCves: []models.VulnInfo{
-						{
+					ScannedCves: models.VulnInfos{
+						"CVE-2017-0001": {
 							CveID: "CVE-2017-0001",
 							CveContents: models.NewCveContents(
 								models.CveContent{
@@ -59,8 +59,8 @@ func TestIsCveInfoUpdated(t *testing.T) {
 					},
 				},
 				prev: models.ScanResult{
-					ScannedCves: []models.VulnInfo{
-						{
+					ScannedCves: models.VulnInfos{
+						"CVE-2017-0001": {
 							CveID: "CVE-2017-0001",
 							CveContents: models.NewCveContents(
 								models.CveContent{
@@ -80,8 +80,8 @@ func TestIsCveInfoUpdated(t *testing.T) {
 			in: In{
 				cveID: "CVE-2017-0002",
 				cur: models.ScanResult{
-					ScannedCves: []models.VulnInfo{
-						{
+					ScannedCves: models.VulnInfos{
+						"CVE-2017-0002": {
 							CveID: "CVE-2017-0002",
 							CveContents: models.NewCveContents(
 								models.CveContent{
@@ -94,8 +94,8 @@ func TestIsCveInfoUpdated(t *testing.T) {
 					},
 				},
 				prev: models.ScanResult{
-					ScannedCves: []models.VulnInfo{
-						{
+					ScannedCves: models.VulnInfos{
+						"CVE-2017-0002": {
 							CveID: "CVE-2017-0002",
 							CveContents: models.NewCveContents(
 								models.CveContent{
@@ -116,8 +116,8 @@ func TestIsCveInfoUpdated(t *testing.T) {
 				cveID: "CVE-2017-0003",
 				cur: models.ScanResult{
 					Family: "ubuntu",
-					ScannedCves: []models.VulnInfo{
-						{
+					ScannedCves: models.VulnInfos{
+						"CVE-2017-0003": {
 							CveID: "CVE-2017-0003",
 							CveContents: models.NewCveContents(
 								models.CveContent{
@@ -131,8 +131,8 @@ func TestIsCveInfoUpdated(t *testing.T) {
 				},
 				prev: models.ScanResult{
 					Family: "ubuntu",
-					ScannedCves: []models.VulnInfo{
-						{
+					ScannedCves: models.VulnInfos{
+						"CVE-2017-0003": {
 							CveID: "CVE-2017-0003",
 							CveContents: models.NewCveContents(
 								models.CveContent{
@@ -153,8 +153,8 @@ func TestIsCveInfoUpdated(t *testing.T) {
 				cveID: "CVE-2017-0004",
 				cur: models.ScanResult{
 					Family: "redhat",
-					ScannedCves: []models.VulnInfo{
-						{
+					ScannedCves: models.VulnInfos{
+						"CVE-2017-0004": {
 							CveID: "CVE-2017-0004",
 							CveContents: models.NewCveContents(
 								models.CveContent{
@@ -168,7 +168,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 				},
 				prev: models.ScanResult{
 					Family:      "redhat",
-					ScannedCves: []models.VulnInfo{},
+					ScannedCves: models.VulnInfos{},
 				},
 			},
 			expected: true,
@@ -197,14 +197,14 @@ func TestDiff(t *testing.T) {
 					ServerName: "u16",
 					Family:     "ubuntu",
 					Release:    "16.04",
-					ScannedCves: []models.VulnInfo{
-						{
+					ScannedCves: models.VulnInfos{
+						"CVE-2012-6702": {
 							CveID:            "CVE-2012-6702",
 							PackageNames:     []string{"libexpat1"},
 							DistroAdvisories: []models.DistroAdvisory{},
 							CpeNames:         []string{},
 						},
-						{
+						"CVE-2014-9761": {
 							CveID:            "CVE-2014-9761",
 							PackageNames:     []string{"libc-bin"},
 							DistroAdvisories: []models.DistroAdvisory{},
@@ -222,14 +222,14 @@ func TestDiff(t *testing.T) {
 					ServerName: "u16",
 					Family:     "ubuntu",
 					Release:    "16.04",
-					ScannedCves: []models.VulnInfo{
-						{
+					ScannedCves: models.VulnInfos{
+						"CVE-2012-6702": {
 							CveID:            "CVE-2012-6702",
 							PackageNames:     []string{"libexpat1"},
 							DistroAdvisories: []models.DistroAdvisory{},
 							CpeNames:         []string{},
 						},
-						{
+						"CVE-2014-9761": {
 							CveID:            "CVE-2014-9761",
 							PackageNames:     []string{"libc-bin"},
 							DistroAdvisories: []models.DistroAdvisory{},
@@ -242,13 +242,14 @@ func TestDiff(t *testing.T) {
 				},
 			},
 			out: models.ScanResult{
-				ScannedAt:  atCurrent,
-				ServerName: "u16",
-				Family:     "ubuntu",
-				Release:    "16.04",
-				Packages:   models.Packages{},
-				Errors:     []string{},
-				Optional:   [][]interface{}{},
+				ScannedAt:   atCurrent,
+				ServerName:  "u16",
+				Family:      "ubuntu",
+				Release:     "16.04",
+				Packages:    models.Packages{},
+				ScannedCves: models.VulnInfos{},
+				Errors:      []string{},
+				Optional:    [][]interface{}{},
 			},
 		},
 		{
@@ -258,8 +259,8 @@ func TestDiff(t *testing.T) {
 					ServerName: "u16",
 					Family:     "ubuntu",
 					Release:    "16.04",
-					ScannedCves: []models.VulnInfo{
-						{
+					ScannedCves: models.VulnInfos{
+						"CVE-2016-6662": {
 							CveID:            "CVE-2016-6662",
 							PackageNames:     []string{"mysql-libs"},
 							DistroAdvisories: []models.DistroAdvisory{},
@@ -288,7 +289,7 @@ func TestDiff(t *testing.T) {
 					ServerName:  "u16",
 					Family:      "ubuntu",
 					Release:     "16.04",
-					ScannedCves: []models.VulnInfo{},
+					ScannedCves: models.VulnInfos{},
 				},
 			},
 			out: models.ScanResult{
@@ -296,8 +297,8 @@ func TestDiff(t *testing.T) {
 				ServerName: "u16",
 				Family:     "ubuntu",
 				Release:    "16.04",
-				ScannedCves: []models.VulnInfo{
-					{
+				ScannedCves: models.VulnInfos{
+					"CVE-2016-6662": {
 						CveID:            "CVE-2016-6662",
 						PackageNames:     []string{"mysql-libs"},
 						DistroAdvisories: []models.DistroAdvisory{},

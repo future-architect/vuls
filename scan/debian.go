@@ -264,8 +264,7 @@ func (o *debian) aptGetUpdate() error {
 	return nil
 }
 
-func (o *debian) scanUnsecurePackages(upgradable models.Packages) ([]models.VulnInfo, error) {
-
+func (o *debian) scanUnsecurePackages(upgradable models.Packages) (models.VulnInfos, error) {
 	o.aptGetUpdate()
 
 	// Setup changelog cache
@@ -491,13 +490,13 @@ func (o *debian) scanVulnInfos(upgradablePacks models.Packages, meta *cache.Meta
 		cveIDs = append(cveIDs, k)
 	}
 	o.log.Debugf("%d Cves are found. cves: %v", len(cveIDs), cveIDs)
-	var vinfos models.VulnInfos
+	vinfos := models.VulnInfos{}
 	for cveID, names := range cvePackages {
-		vinfos = append(vinfos, models.VulnInfo{
+		vinfos[cveID.CveID] = models.VulnInfo{
 			CveID:        cveID.CveID,
 			Confidence:   cveID.Confidence,
 			PackageNames: names,
-		})
+		}
 	}
 
 	// Update meta package information of changelog cache to the latest one.

@@ -85,7 +85,7 @@ func (o *bsd) scanPackages() error {
 	}
 	o.setPackages(packs)
 
-	var vinfos []models.VulnInfo
+	var vinfos models.VulnInfos
 	if vinfos, err = o.scanUnsecurePackages(); err != nil {
 		o.log.Errorf("Failed to scan vulnerable packages")
 		return err
@@ -103,7 +103,7 @@ func (o *bsd) scanInstalledPackages() (models.Packages, error) {
 	return o.parsePkgVersion(r.Stdout), nil
 }
 
-func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
+func (o *bsd) scanUnsecurePackages() (models.VulnInfos, error) {
 	const vulndbPath = "/tmp/vuln.db"
 	cmd := "rm -f " + vulndbPath
 	r := o.exec(cmd, noSudo)
@@ -118,7 +118,7 @@ func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
 	}
 	if r.ExitStatus == 0 {
 		// no vulnerabilities
-		return []models.VulnInfo{}, nil
+		return nil, nil
 	}
 
 	var packAdtRslt []pkgAuditResult
@@ -149,14 +149,15 @@ func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
 		}
 	}
 
-	for k := range cveIDAdtMap {
+	vinfos := models.VulnInfos{}
+	for cveID := range cveIDAdtMap {
 		packs := models.Packages{}
-		for _, r := range cveIDAdtMap[k] {
+		for _, r := range cveIDAdtMap[cveID] {
 			packs[r.pack.Name] = r.pack
 		}
 
 		disAdvs := []models.DistroAdvisory{}
-		for _, r := range cveIDAdtMap[k] {
+		for _, r := range cveIDAdtMap[cveID] {
 			disAdvs = append(disAdvs, models.DistroAdvisory{
 				AdvisoryID: r.vulnIDCveIDs.vulnID,
 			})
@@ -166,14 +167,14 @@ func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
 		for name := range packs {
 			names = append(names, name)
 		}
-		vulnInfos = append(vulnInfos, models.VulnInfo{
-			CveID:            k,
+		vinfos[cveID] = models.VulnInfo{
+			CveID:            cveID,
 			PackageNames:     names,
 			DistroAdvisories: disAdvs,
 			Confidence:       models.PkgAuditMatch,
-		})
+		}
 	}
-	return
+	return vinfos, nil
 }
 
 func (o *bsd) parsePkgVersion(stdout string) models.Packages {
