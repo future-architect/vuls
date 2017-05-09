@@ -59,7 +59,7 @@ func (o Redhat) FillCveInfoFromOvalDB(r *models.ScanResult) error {
 func (o Redhat) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Definition) {
 	for _, cve := range definition.Advisory.Cves {
 		ovalContent := *o.convertToModel(cve.CveID, definition)
-		vinfo, ok := r.ScannedCves.Get(cve.CveID)
+		vinfo, ok := r.ScannedCves[cve.CveID]
 		if !ok {
 			util.Log.Infof("%s is newly detected by OVAL", cve.CveID)
 			vinfo = models.VulnInfo{
@@ -69,17 +69,21 @@ func (o Redhat) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Defini
 				CveContents:  models.NewCveContents(ovalContent),
 			}
 		} else {
-			if _, ok := vinfo.CveContents.Get(models.RedHat); !ok {
-				util.Log.Infof("%s is also detected by OVAL", cve.CveID)
-			} else {
+			cveContents := vinfo.CveContents
+			if _, ok := vinfo.CveContents.Get(models.RedHat); ok {
 				util.Log.Infof("%s will be updated by OVAL", cve.CveID)
+			} else {
+				util.Log.Infof("%s is also detected by OVAL", cve.CveID)
+				cveContents = models.CveContents{}
 			}
+
 			if vinfo.Confidence.Score < models.OvalMatch.Score {
 				vinfo.Confidence = models.OvalMatch
 			}
-			vinfo.CveContents.Upsert(ovalContent)
+			cveContents.Upsert(ovalContent)
+			vinfo.CveContents = cveContents
 		}
-		r.ScannedCves.Upsert(vinfo)
+		r.ScannedCves[cve.CveID] = vinfo
 	}
 }
 

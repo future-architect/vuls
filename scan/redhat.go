@@ -240,7 +240,7 @@ func (o *redhat) scanPackages() error {
 	}
 	o.setPackages(models.NewPackages(packs...))
 
-	var vinfos []models.VulnInfo
+	var vinfos models.VulnInfos
 	if vinfos, err = o.scanVulnInfos(); err != nil {
 		o.log.Errorf("Failed to scan vulnerable packages")
 		return err
@@ -292,7 +292,7 @@ func (o *redhat) parseScannedPackagesLine(line string) (models.Package, error) {
 	}, nil
 }
 
-func (o *redhat) scanVulnInfos() ([]models.VulnInfo, error) {
+func (o *redhat) scanVulnInfos() (models.VulnInfos, error) {
 	if o.Distro.Family != "centos" {
 		// Amazon, RHEL, Oracle Linux has yum updateinfo as default
 		// yum updateinfo can collenct vendor advisory information.
@@ -423,7 +423,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 		}
 	}
 
-	vinfos := []models.VulnInfo{}
+	vinfos := models.VulnInfos{}
 	for cveID, packs := range cveIDPackages {
 		names := []string{}
 		for name := range packs {
@@ -431,11 +431,11 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 		}
 
 		// Amazon, RHEL do not use this method, so VendorAdvisory do not set.
-		vinfos = append(vinfos, models.VulnInfo{
+		vinfos[cveID] = models.VulnInfo{
 			CveID:        cveID,
 			PackageNames: names,
 			Confidence:   models.ChangelogExactMatch,
-		})
+		}
 	}
 	return vinfos, nil
 }
@@ -741,36 +741,29 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 	vinfos := models.VulnInfos{}
 	for _, advIDCveIDs := range advisoryCveIDsList {
 		for _, cveID := range advIDCveIDs.CveIDs {
-			found := false
-			for i, p := range vinfos {
-				if cveID == p.CveID {
-					advAppended := append(p.DistroAdvisories, advIDCveIDs.DistroAdvisory)
-					vinfos[i].DistroAdvisories = advAppended
+			vinfo, found := vinfos[cveID]
+			if found {
+				advAppended := append(vinfo.DistroAdvisories, advIDCveIDs.DistroAdvisory)
+				vinfo.DistroAdvisories = advAppended
 
-					packs := dict[advIDCveIDs.DistroAdvisory.AdvisoryID]
-					for _, pack := range packs {
-						vinfos[i].PackageNames = append(vinfos[i].PackageNames, pack.Name)
-					}
-					found = true
-					break
+				packs := dict[advIDCveIDs.DistroAdvisory.AdvisoryID]
+				for _, pack := range packs {
+					vinfo.PackageNames = append(vinfo.PackageNames, pack.Name)
 				}
-			}
-
-			if !found {
+			} else {
 				names := []string{}
 				packs := dict[advIDCveIDs.DistroAdvisory.AdvisoryID]
 				for _, pack := range packs {
 					names = append(names, pack.Name)
 				}
-				cpinfo := models.VulnInfo{
+				vinfo = models.VulnInfo{
 					CveID:            cveID,
 					DistroAdvisories: []models.DistroAdvisory{advIDCveIDs.DistroAdvisory},
 					PackageNames:     names,
 					Confidence:       models.YumUpdateSecurityMatch,
 				}
-				vinfos = append(vinfos, cpinfo)
 			}
-
+			vinfos[cveID] = vinfo
 		}
 	}
 	return vinfos, nil

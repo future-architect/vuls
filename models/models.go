@@ -164,12 +164,10 @@ func (r ScanResult) FilterByCvssOver() ScanResult {
 	}
 
 	// TODO: Filter by ignore cves???
-	filtered := VulnInfos{}
-	for _, sc := range r.ScannedCves {
-		if config.Conf.CvssScoreOver <= sc.CveContents.CvssV2Score() {
-			filtered = append(filtered, sc)
-		}
-	}
+	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
+		return config.Conf.CvssScoreOver <= v.CveContents.CvssV2Score()
+	})
+
 	copiedScanResult := r
 	copiedScanResult.ScannedCves = filtered
 	return copiedScanResult
@@ -316,61 +314,17 @@ var ChangelogExactMatch = Confidence{95, ChangelogExactMatchStr}
 var ChangelogLenientMatch = Confidence{50, ChangelogLenientMatchStr}
 
 // VulnInfos is VulnInfo list, getter/setter, sortable methods.
-type VulnInfos []VulnInfo
+type VulnInfos map[string]VulnInfo
 
 // Find elements that matches the function passed in argument
-func (v *VulnInfos) Find(f func(VulnInfo) bool) (filtered VulnInfos) {
-	for _, vv := range *v {
+func (v VulnInfos) Find(f func(VulnInfo) bool) VulnInfos {
+	filtered := VulnInfos{}
+	for _, vv := range v {
 		if f(vv) {
-			filtered = append(filtered, vv)
+			filtered[vv.CveID] = vv
 		}
 	}
-	return
-}
-
-// Get VulnInfo by cveID
-func (v *VulnInfos) Get(cveID string) (VulnInfo, bool) {
-	for _, vv := range *v {
-		if vv.CveID == cveID {
-			return vv, true
-		}
-	}
-	return VulnInfo{}, false
-}
-
-// Delete by cveID
-func (v *VulnInfos) Delete(cveID string) {
-	vInfos := *v
-	for i, vv := range vInfos {
-		if vv.CveID == cveID {
-			*v = append(vInfos[:i], vInfos[i+1:]...)
-			break
-		}
-	}
-}
-
-// Insert VulnInfo
-func (v *VulnInfos) Insert(vinfo VulnInfo) {
-	*v = append(*v, vinfo)
-}
-
-// Update VulnInfo
-func (v *VulnInfos) Update(vInfo VulnInfo) (ok bool) {
-	for i, vv := range *v {
-		if vv.CveID == vInfo.CveID {
-			(*v)[i] = vInfo
-			return true
-		}
-	}
-	return false
-}
-
-// Upsert cveInfo
-func (v *VulnInfos) Upsert(vInfo VulnInfo) {
-	ok := v.Update(vInfo)
-	if !ok {
-		v.Insert(vInfo)
-	}
+	return filtered
 }
 
 // VulnInfo holds a vulnerability information and unsecure packages

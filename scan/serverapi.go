@@ -69,7 +69,7 @@ func (p *osPackages) setPackages(pi models.Packages) {
 	p.Packages = pi
 }
 
-func (p *osPackages) setVulnInfos(vi []models.VulnInfo) {
+func (p *osPackages) setVulnInfos(vi models.VulnInfos) {
 	p.VulnInfos = vi
 }
 

@@ -504,15 +504,19 @@ func fillCveDetail(r *models.ScanResult) error {
 		return err
 	}
 	for _, d := range ds {
-		nvd := *r.ConvertNvdToModel(d.CveID, d.Nvd)
-		jvn := *r.ConvertJvnToModel(d.CveID, d.Jvn)
-		for i, sc := range r.ScannedCves {
-			if sc.CveID == d.CveID {
-				for _, con := range []models.CveContent{nvd, jvn} {
+		nvd := r.ConvertNvdToModel(d.CveID, d.Nvd)
+		jvn := r.ConvertJvnToModel(d.CveID, d.Jvn)
+		for cveID, vinfo := range r.ScannedCves {
+			if vinfo.CveID == d.CveID {
+				if vinfo.CveContents == nil {
+					vinfo.CveContents = models.CveContents{}
+				}
+				for _, con := range []models.CveContent{*nvd, *jvn} {
 					if !con.Empty() {
-						r.ScannedCves[i].CveContents.Upsert(con)
+						vinfo.CveContents.Upsert(con)
 					}
 				}
+				r.ScannedCves[cveID] = vinfo
 				break
 			}
 		}
@@ -528,15 +532,10 @@ func fillCveDetail(r *models.ScanResult) error {
 }
 
 func fillCveInfoFromCveDB(r *models.ScanResult) error {
-	var err error
-	var vs []models.VulnInfo
-
 	sInfo := c.Conf.Servers[r.ServerName]
-	vs, err = scanVulnByCpeNames(sInfo.CpeNames, r.ScannedCves)
-	if err != nil {
+	if err := fillVulnByCpeNames(sInfo.CpeNames, r.ScannedCves); err != nil {
 		return err
 	}
-	r.ScannedCves = vs
 	if err := fillCveDetail(r); err != nil {
 		return err
 	}
