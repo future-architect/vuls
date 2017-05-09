@@ -26,6 +26,9 @@ import (
 	cvedict "github.com/kotakanbe/go-cve-dictionary/models"
 )
 
+// JSONVersion is JSON Version
+const JSONVersion = "0.3.0"
+
 // ScanResults is slice of ScanResult.
 type ScanResults []ScanResult
 
@@ -50,14 +53,14 @@ type ScanResults []ScanResult
 
 // ScanResult has the result of scanned CVE information.
 type ScanResult struct {
-	ScannedAt time.Time
-
-	Lang       string
-	ServerName string // TOML Section key
-	Family     string
-	Release    string
-	Container  Container
-	Platform   Platform
+	ScannedAt   time.Time
+	JSONVersion string
+	Lang        string
+	ServerName  string // TOML Section key
+	Family      string
+	Release     string
+	Container   Container
+	Platform    Platform
 
 	// Scanned Vulns by SSH scan + CPE + OVAL
 	ScannedCves VulnInfos

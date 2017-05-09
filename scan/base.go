@@ -298,6 +298,7 @@ func (l *base) convertToModel() models.ScanResult {
 	//  }
 
 	return models.ScanResult{
+		JSONVersion: models.JSONVersion,
 		ServerName:  l.ServerInfo.ServerName,
 		ScannedAt:   time.Now(),
 		Family:      l.Distro.Family,
