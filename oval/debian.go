@@ -73,7 +73,8 @@ func (o Debian) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Defini
 		}
 	} else {
 		cveContents := vinfo.CveContents
-		if _, ok := vinfo.CveContents.Get(models.NewCveContentType(r.Family)); ok {
+		ctype := models.NewCveContentType(r.Family)
+		if _, ok := vinfo.CveContents[ctype]; ok {
 			util.Log.Infof("%s will be updated by OVAL", definition.Debian.CveID)
 		} else {
 			util.Log.Infof("%s is also detected by OVAL", definition.Debian.CveID)
@@ -82,7 +83,7 @@ func (o Debian) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Defini
 		if vinfo.Confidence.Score < models.OvalMatch.Score {
 			vinfo.Confidence = models.OvalMatch
 		}
-		cveContents.Upsert(ovalContent)
+		cveContents[ctype] = ovalContent
 		vinfo.CveContents = cveContents
 	}
 	r.ScannedCves[definition.Debian.CveID] = vinfo

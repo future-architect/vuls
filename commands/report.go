@@ -513,7 +513,7 @@ func fillCveDetail(r *models.ScanResult) error {
 				}
 				for _, con := range []models.CveContent{*nvd, *jvn} {
 					if !con.Empty() {
-						vinfo.CveContents.Upsert(con)
+						vinfo.CveContents[con.Type] = con
 					}
 				}
 				r.ScannedCves[cveID] = vinfo
