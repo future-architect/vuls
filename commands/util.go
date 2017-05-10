@@ -239,7 +239,7 @@ func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
 	for _, c := range previous.ScannedCves {
 		if cveID == c.CveID {
 			for _, cType := range cTypes {
-				content, _ := c.CveContents.Get(cType)
+				content, _ := c.CveContents[cType]
 				prevLastModified[cType] = content.LastModified
 			}
 			break
@@ -250,7 +250,7 @@ func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
 	for _, c := range current.ScannedCves {
 		if cveID == c.CveID {
 			for _, cType := range cTypes {
-				content, _ := c.CveContents.Get(cType)
+				content, _ := c.CveContents[cType]
 				curLastModified[cType] = content.LastModified
 			}
 			break

@@ -412,50 +412,14 @@ func NewCveContents(conts ...CveContent) CveContents {
 	return m
 }
 
-// Get CveContent by cveID
-// TODO Pointer
-func (v CveContents) Get(typestr CveContentType) (CveContent, bool) {
-	if vv, ok := v[typestr]; ok {
-		return vv, true
-	}
-	return CveContent{}, false
-}
-
-// Delete by cveID
-func (v CveContents) Delete(typestr CveContentType) {
-	delete(v, typestr)
-}
-
-// Insert CveContent
-func (v CveContents) Insert(cont CveContent) {
-	v[cont.Type] = cont
-}
-
-// Update VulnInfo
-func (v CveContents) Update(cont CveContent) (ok bool) {
-	if _, ok := v[cont.Type]; ok {
-		v[cont.Type] = cont
-		return true
-	}
-	return false
-}
-
-// Upsert CveContent
-func (v CveContents) Upsert(cont CveContent) {
-	ok := v.Update(cont)
-	if !ok {
-		v.Insert(cont)
-	}
-}
-
 // CvssV2Score returns CVSS V2 Score
 func (v CveContents) CvssV2Score() float64 {
 	//TODO
-	if cont, found := v.Get(NVD); found {
+	if cont, found := v[NVD]; found {
 		return cont.Cvss2Score
-	} else if cont, found := v.Get(JVN); found {
+	} else if cont, found := v[JVN]; found {
 		return cont.Cvss2Score
-	} else if cont, found := v.Get(RedHat); found {
+	} else if cont, found := v[RedHat]; found {
 		return cont.Cvss2Score
 	}
 	return -1.1
@@ -463,7 +427,7 @@ func (v CveContents) CvssV2Score() float64 {
 
 // CvssV3Score returns CVSS V2 Score
 func (v CveContents) CvssV3Score() float64 {
-	if cont, found := v.Get(RedHat); found {
+	if cont, found := v[RedHat]; found {
 		return cont.Cvss3Score
 	}
 	return -1.1

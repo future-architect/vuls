@@ -70,7 +70,7 @@ func (o Redhat) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Defini
 			}
 		} else {
 			cveContents := vinfo.CveContents
-			if _, ok := vinfo.CveContents.Get(models.RedHat); ok {
+			if _, ok := vinfo.CveContents[models.RedHat]; ok {
 				util.Log.Infof("%s will be updated by OVAL", cve.CveID)
 			} else {
 				util.Log.Infof("%s is also detected by OVAL", cve.CveID)
@@ -80,7 +80,7 @@ func (o Redhat) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Defini
 			if vinfo.Confidence.Score < models.OvalMatch.Score {
 				vinfo.Confidence = models.OvalMatch
 			}
-			cveContents.Upsert(ovalContent)
+			cveContents[models.RedHat] = ovalContent
 			vinfo.CveContents = cveContents
 		}
 		r.ScannedCves[cve.CveID] = vinfo
