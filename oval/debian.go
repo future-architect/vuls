@@ -12,34 +12,23 @@ import (
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
-// Debian is the interface for Debian OVAL
-type Debian struct{}
+// DebianBase is the base struct of Debian and Ubuntu
+type DebianBase struct{}
 
-// NewDebian creates OVAL client for Debian
-func NewDebian() Debian {
-	return Debian{}
-}
-
-// FillCveInfoFromOvalDB returns scan result after updating CVE info by OVAL
-func (o Debian) FillCveInfoFromOvalDB(r *models.ScanResult) error {
+// fillCveInfoFromOvalDB returns scan result after updating CVE info by OVAL
+func (o DebianBase) fillCveInfoFromOvalDB(r *models.ScanResult) error {
 	ovalconf.Conf.DBType = config.Conf.OvalDBType
 	ovalconf.Conf.DBPath = config.Conf.OvalDBPath
 	util.Log.Infof("open oval-dictionary db (%s): %s",
 		config.Conf.OvalDBType, config.Conf.OvalDBPath)
 
-	if err := db.OpenDB(); err != nil {
-		return fmt.Errorf("Failed to open OVAL DB. err: %s", err)
+	ovaldb, err := db.NewDB(r.Family)
+	if err != nil {
+		return err
 	}
 
-	var d db.OvalDB
-	switch r.Family {
-	case "debian":
-		d = db.NewDebian()
-	case "ubuntu":
-		d = db.NewUbuntu()
-	}
 	for _, pack := range r.Packages {
-		definitions, err := d.GetByPackName(r.Release, pack.Name)
+		definitions, err := ovaldb.GetByPackName(r.Release, pack.Name)
 		if err != nil {
 			return fmt.Errorf("Failed to get Debian OVAL info by package name: %v", err)
 		}
@@ -59,7 +48,7 @@ func (o Debian) FillCveInfoFromOvalDB(r *models.ScanResult) error {
 	return nil
 }
 
-func (o Debian) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Definition) {
+func (o DebianBase) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Definition) {
 	ovalContent := *o.convertToModel(definition)
 	ovalContent.Type = models.NewCveContentType(r.Family)
 	vinfo, ok := r.ScannedCves[definition.Debian.CveID]
@@ -89,7 +78,7 @@ func (o Debian) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Defini
 	r.ScannedCves[definition.Debian.CveID] = vinfo
 }
 
-func (o Debian) convertToModel(def *ovalmodels.Definition) *models.CveContent {
+func (o DebianBase) convertToModel(def *ovalmodels.Definition) *models.CveContent {
 	var refs []models.Reference
 	for _, r := range def.References {
 		refs = append(refs, models.Reference{
@@ -98,6 +87,7 @@ func (o Debian) convertToModel(def *ovalmodels.Definition) *models.CveContent {
 			RefID:  r.RefID,
 		})
 	}
+
 	return &models.CveContent{
 		CveID:      def.Debian.CveID,
 		Title:      def.Title,
@@ -105,4 +95,52 @@ func (o Debian) convertToModel(def *ovalmodels.Definition) *models.CveContent {
 		Severity:   def.Advisory.Severity,
 		References: refs,
 	}
+}
+
+// Debian is the interface for Debian OVAL
+type Debian struct {
+	DebianBase
+}
+
+// NewDebian creates OVAL client for Debian
+func NewDebian() *Debian {
+	return &Debian{}
+}
+
+// FillCveInfoFromOvalDB returns scan result after updating CVE info by OVAL
+func (o Debian) FillCveInfoFromOvalDB(r *models.ScanResult) error {
+	if err := o.fillCveInfoFromOvalDB(r); err != nil {
+		return err
+	}
+	for _, vuln := range r.ScannedCves {
+		if cont, ok := vuln.CveContents[models.Debian]; ok {
+			cont.SourceLink = "https://security-tracker.debian.org/tracker/" + cont.CveID
+			vuln.CveContents[models.Debian] = cont
+		}
+	}
+	return nil
+}
+
+// Ubuntu is the interface for Debian OVAL
+type Ubuntu struct {
+	DebianBase
+}
+
+// NewUbuntu creates OVAL client for Debian
+func NewUbuntu() *Ubuntu {
+	return &Ubuntu{}
+}
+
+// FillCveInfoFromOvalDB returns scan result after updating CVE info by OVAL
+func (o Ubuntu) FillCveInfoFromOvalDB(r *models.ScanResult) error {
+	if err := o.fillCveInfoFromOvalDB(r); err != nil {
+		return err
+	}
+	for _, vuln := range r.ScannedCves {
+		if cont, ok := vuln.CveContents[models.Ubuntu]; ok {
+			cont.SourceLink = "http://people.ubuntu.com/~ubuntu-security/cve/" + cont.CveID
+			vuln.CveContents[models.Ubuntu] = cont
+		}
+	}
+	return nil
 }

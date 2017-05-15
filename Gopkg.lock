@@ -1,10 +1,10 @@
-memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
+memo = "e59ec63c1c329674a0e5e4236131c787e5b81bab37529104fdc02ed8fdf29283"
 
 [[projects]]
   branch = "master"
   name = "github.com/Azure/azure-storage-go"
   packages = ["."]
-  revision = "4fe73b0b4f68bf8a7cad2920ef563fe4c40ac5c0"
+  revision = "32cfbe17a139c17f84be16bdf8f9c45c840a046b"
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
@@ -22,7 +22,7 @@ memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
   branch = "master"
   name = "github.com/Sirupsen/logrus"
   packages = ["."]
-  revision = "508f304878257fb578be3e863e3990ed9ec3aa2e"
+  revision = "acfabf31db8f45a9174f54a0d48ea4d15627af4d"
 
 [[projects]]
   name = "github.com/asaskevich/govalidator"
@@ -50,8 +50,8 @@ memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
 [[projects]]
   name = "github.com/cheggaaa/pb"
   packages = ["."]
-  revision = "b6229822fa186496fcbf34111237e7a9693c6971"
-  version = "v1.0.13"
+  revision = "f6ccf2184de4dd34495277e38dc19b6e7fbe0ea2"
+  version = "v1.0.15"
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
@@ -123,7 +123,7 @@ memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
   branch = "master"
   name = "github.com/knqyf263/go-deb-version"
   packages = ["."]
-  revision = "bec774d791d03b721a20bd3ca1fbdd566fd0f2b9"
+  revision = "9865fe14d09b1c729188ac810466dde90f897ee3"
 
 [[projects]]
   branch = "master"
@@ -138,10 +138,10 @@ memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
   version = "v0.1.0"
 
 [[projects]]
-  branch = "master"
+  branch = "improve-db"
   name = "github.com/kotakanbe/goval-dictionary"
   packages = ["config","db","log","models"]
-  revision = "545199055508ae62a6d3bd34ef83034fbfc04d7f"
+  revision = "5f7aa97d45d565eaccc70c0c365e21624a9c6e3f"
 
 [[projects]]
   branch = "master"
@@ -158,8 +158,8 @@ memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
 [[projects]]
   name = "github.com/labstack/gommon"
   packages = ["color","log"]
-  revision = "9cedb429ffbe71a32a3ae7c65fd109cb7ae07804"
-  version = "v0.2.0"
+  revision = "1121fd3e243c202482226a7afe4dcd07ffc4139a"
+  version = "v0.2.1"
 
 [[projects]]
   name = "github.com/mattn/go-colorable"
@@ -249,22 +249,22 @@ memo = "bd95ed8c2b0aa32327ae55d88bff888b8198d238f7a71eee0f8663494664a0ac"
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["curve25519","ed25519","ed25519/internal/edwards25519","ssh","ssh/agent","ssh/terminal"]
-  revision = "04eae0b62feaaf659a0ce2c4e8dc70b6ae2fff67"
+  revision = "ab89591268e0c8b748cbe4047b00197516011af5"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","idna","publicsuffix"]
-  revision = "feeb485667d1fdabe727840fe00adc22431bc86e"
+  revision = "84f0e6f92b10139f986b1756e149a7d9de270cdc"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "9ccfe848b9db8435a24c424abbc07a921adf1df5"
+  revision = "1e99a4f9d247b28c670884b9a8d6801f39a47b77"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["internal/gen","internal/triegen","internal/ucd","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
-  revision = "470f45bf29f4147d6fbd7dfd0a02a848e49f5bf4"
+  revision = "19e51611da83d6be54ddafce4a4af510cb3e9ea4"

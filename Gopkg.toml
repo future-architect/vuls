@@ -28,7 +28,7 @@
   name = "github.com/kotakanbe/go-cve-dictionary"
 
 [[dependencies]]
-  branch = "master"
+  branch = "improve-db"
   name = "github.com/kotakanbe/goval-dictionary"
 
 [[dependencies]]

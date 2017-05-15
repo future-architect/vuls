@@ -27,7 +27,7 @@ func TestParseCvss2(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		s, v := Redhat{}.parseCvss2(tt.in)
+		s, v := RedHatBase{}.parseCvss2(tt.in)
 		if s != tt.out.score || v != tt.out.vector {
 			t.Errorf("\nexpected: %f, %s\n  actual: %f, %s",
 				tt.out.score, tt.out.vector, s, v)
@@ -60,7 +60,7 @@ func TestParseCvss3(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		s, v := Redhat{}.parseCvss3(tt.in)
+		s, v := RedHatBase{}.parseCvss3(tt.in)
 		if s != tt.out.score || v != tt.out.vector {
 			t.Errorf("\nexpected: %f, %s\n  actual: %f, %s",
 				tt.out.score, tt.out.vector, s, v)
