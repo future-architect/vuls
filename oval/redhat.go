@@ -14,27 +14,31 @@ import (
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
-// Redhat is the interface for Redhat OVAL
-type Redhat struct{}
+// RedHatBase is the base struct for RedHat and CentOS
+type RedHatBase struct{}
 
-// NewRedhat creates OVAL client for Redhat
-func NewRedhat() Redhat {
-	return Redhat{}
+// FillCveInfoFromOvalDB returns scan result after updating CVE info by OVAL
+func (o RedHatBase) FillCveInfoFromOvalDB(r *models.ScanResult) error {
+	if err := o.fillCveInfoFromOvalDB(r); err != nil {
+		return err
+	}
+	for _, vuln := range r.ScannedCves {
+		if cont, ok := vuln.CveContents[models.RedHat]; ok {
+			cont.SourceLink = "https://access.redhat.com/security/cve/" + cont.CveID
+		}
+	}
+	return nil
 }
 
 // FillCveInfoFromOvalDB returns scan result after updating CVE info by OVAL
-func (o Redhat) FillCveInfoFromOvalDB(r *models.ScanResult) error {
+func (o RedHatBase) fillCveInfoFromOvalDB(r *models.ScanResult) error {
 	ovalconf.Conf.DBType = config.Conf.OvalDBType
 	ovalconf.Conf.DBPath = config.Conf.OvalDBPath
 	util.Log.Infof("open oval-dictionary db (%s): %s",
 		config.Conf.OvalDBType, config.Conf.OvalDBPath)
 
-	if err := db.OpenDB(); err != nil {
-		return fmt.Errorf("Failed to open OVAL DB. err: %s", err)
-	}
-
 	d := db.NewRedHat()
-
+	defer d.Close()
 	for _, pack := range r.Packages {
 		definitions, err := d.GetByPackName(r.Release, pack.Name)
 		if err != nil {
@@ -56,7 +60,7 @@ func (o Redhat) FillCveInfoFromOvalDB(r *models.ScanResult) error {
 	return nil
 }
 
-func (o Redhat) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Definition) {
+func (o RedHatBase) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Definition) {
 	for _, cve := range definition.Advisory.Cves {
 		ovalContent := *o.convertToModel(cve.CveID, definition)
 		vinfo, ok := r.ScannedCves[cve.CveID]
@@ -87,7 +91,7 @@ func (o Redhat) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Defini
 	}
 }
 
-func (o Redhat) convertToModel(cveID string, def *ovalmodels.Definition) *models.CveContent {
+func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *models.CveContent {
 	for _, cve := range def.Advisory.Cves {
 		if cve.CveID != cveID {
 			continue
@@ -114,6 +118,7 @@ func (o Redhat) convertToModel(cveID string, def *ovalmodels.Definition) *models
 			Cvss2Vector:  vec2,
 			Cvss3Score:   score3,
 			Cvss3Vector:  vec3,
+			SourceLink:   "https://access.redhat.com/security/cve/" + cve.CveID,
 			References:   refs,
 			CweID:        cve.Cwe,
 			Published:    def.Advisory.Issued,
@@ -125,7 +130,7 @@ func (o Redhat) convertToModel(cveID string, def *ovalmodels.Definition) *models
 
 // ParseCvss2 divide CVSSv2 string into score and vector
 // 5/AV:N/AC:L/Au:N/C:N/I:N/A:P
-func (o Redhat) parseCvss2(scoreVector string) (score float64, vector string) {
+func (o RedHatBase) parseCvss2(scoreVector string) (score float64, vector string) {
 	var err error
 	ss := strings.Split(scoreVector, "/")
 	if 1 < len(ss) {
@@ -139,7 +144,7 @@ func (o Redhat) parseCvss2(scoreVector string) (score float64, vector string) {
 
 // ParseCvss3 divide CVSSv3 string into score and vector
 // 5.6/CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L
-func (o Redhat) parseCvss3(scoreVector string) (score float64, vector string) {
+func (o RedHatBase) parseCvss3(scoreVector string) (score float64, vector string) {
 	var err error
 	ss := strings.Split(scoreVector, "/CVSS:3.0/")
 	if 1 < len(ss) {
@@ -149,4 +154,24 @@ func (o Redhat) parseCvss3(scoreVector string) (score float64, vector string) {
 		return score, strings.Join(ss[1:len(ss)], "/")
 	}
 	return 0, ""
+}
+
+// RedHat is the interface for RedhatBase OVAL
+type RedHat struct {
+	RedHatBase
+}
+
+// NewRedhat creates OVAL client for Redhat
+func NewRedhat() RedHat {
+	return RedHat{}
+}
+
+// CentOS is the interface for CentOS OVAL
+type CentOS struct {
+	RedHatBase
+}
+
+// NewCentOS creates OVAL client for CentOS
+func NewCentOS() CentOS {
+	return CentOS{}
 }

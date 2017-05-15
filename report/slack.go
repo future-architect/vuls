@@ -156,7 +156,10 @@ func msgText(r models.ScanResult) string {
 	//      notifyUsers = getNotifyUsers(config.Conf.Slack.NotifyUsers)
 	//  }
 	serverInfo := fmt.Sprintf("*%s*", r.ServerInfo())
-	return fmt.Sprintf("%s\n%s\n>%s", notifyUsers, serverInfo, r.CveSummary())
+	return fmt.Sprintf("%s\n%s\n>%s",
+		notifyUsers,
+		serverInfo,
+		r.CveSummary(config.Conf.IgnoreUnscoredCves))
 }
 
 func toSlackAttachments(scanResult models.ScanResult) (attaches []*attachment) {

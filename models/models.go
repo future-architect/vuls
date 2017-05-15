@@ -22,7 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/future-architect/vuls/config"
 	cvedict "github.com/kotakanbe/go-cve-dictionary/models"
 )
 
@@ -117,6 +116,8 @@ func (r ScanResult) ConvertNvdToModel(cveID string, nvd cvedict.Nvd) *CveContent
 		Summary:      nvd.Summary,
 		Cvss2Score:   nvd.Score,
 		Cvss2Vector:  vector,
+		Severity:     "", // severity is not contained in NVD
+		SourceLink:   "https://nvd.nist.gov/vuln/detail/" + cveID,
 		Cpes:         cpes,
 		CweID:        nvd.CweID,
 		References:   refs,
@@ -132,10 +133,7 @@ func (r ScanResult) ConvertJvnToModel(cveID string, jvn cvedict.Jvn) *CveContent
 		cpes = append(cpes, Cpe{CpeName: c.CpeName})
 	}
 
-	refs := []Reference{{
-		Link:   jvn.JvnLink,
-		Source: string(JVN),
-	}}
+	refs := []Reference{}
 	for _, r := range jvn.References {
 		refs = append(refs, Reference{
 			Link:   r.Link,
@@ -152,6 +150,7 @@ func (r ScanResult) ConvertJvnToModel(cveID string, jvn cvedict.Jvn) *CveContent
 		Severity:     jvn.Severity,
 		Cvss2Score:   jvn.Score,
 		Cvss2Vector:  vector,
+		SourceLink:   jvn.JvnLink,
 		Cpes:         cpes,
 		References:   refs,
 		Published:    jvn.PublishedDate,
@@ -160,15 +159,22 @@ func (r ScanResult) ConvertJvnToModel(cveID string, jvn cvedict.Jvn) *CveContent
 }
 
 // FilterByCvssOver is filter function.
-func (r ScanResult) FilterByCvssOver() ScanResult {
+func (r ScanResult) FilterByCvssOver(over float64) ScanResult {
 	// TODO: Set correct default value
-	if config.Conf.CvssScoreOver == 0 {
-		config.Conf.CvssScoreOver = -1.1
+	if over == 0 {
+		over = -1.1
 	}
 
 	// TODO: Filter by ignore cves???
 	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
-		return config.Conf.CvssScoreOver <= v.CveContents.CvssV2Score()
+		values := v.CveContents.Cvss2Scores()
+		for _, v := range values {
+			score := v.Value.Score
+			if over <= score {
+				return true
+			}
+		}
+		return false
 	})
 
 	copiedScanResult := r
@@ -234,12 +240,12 @@ func (r ScanResult) FormatServerName() string {
 }
 
 // CveSummary summarize the number of CVEs group by CVSSv2 Severity
-func (r ScanResult) CveSummary() string {
+func (r ScanResult) CveSummary(ignoreUnscoreCves bool) string {
 	var high, medium, low, unknown int
 	for _, vInfo := range r.ScannedCves {
-		score := vInfo.CveContents.CvssV2Score()
+		score := vInfo.CveContents.MaxCvss2Score().Value.Score
 		if score < 0.1 {
-			score = vInfo.CveContents.CvssV3Score()
+			score = vInfo.CveContents.MaxCvss3Score().Value.Score
 		}
 		switch {
 		case 7.0 <= score:
@@ -253,7 +259,7 @@ func (r ScanResult) CveSummary() string {
 		}
 	}
 
-	if config.Conf.IgnoreUnscoredCves {
+	if ignoreUnscoreCves {
 		return fmt.Sprintf("Total: %d (High:%d Medium:%d Low:%d)",
 			high+medium+low, high, medium, low)
 	}
@@ -298,23 +304,25 @@ const (
 	FailedToFindVersionInChangelog = "FailedToFindVersionInChangelog"
 )
 
-// CpeNameMatch is a ranking how confident the CVE-ID was deteted correctly
-var CpeNameMatch = Confidence{100, CpeNameMatchStr}
+var (
+	// CpeNameMatch is a ranking how confident the CVE-ID was deteted correctly
+	CpeNameMatch = Confidence{100, CpeNameMatchStr}
 
-// YumUpdateSecurityMatch is a ranking how confident the CVE-ID was deteted correctly
-var YumUpdateSecurityMatch = Confidence{100, YumUpdateSecurityMatchStr}
+	// YumUpdateSecurityMatch is a ranking how confident the CVE-ID was deteted correctly
+	YumUpdateSecurityMatch = Confidence{100, YumUpdateSecurityMatchStr}
 
-// PkgAuditMatch is a ranking how confident the CVE-ID was deteted correctly
-var PkgAuditMatch = Confidence{100, PkgAuditMatchStr}
+	// PkgAuditMatch is a ranking how confident the CVE-ID was deteted correctly
+	PkgAuditMatch = Confidence{100, PkgAuditMatchStr}
 
-// OvalMatch is a ranking how confident the CVE-ID was deteted correctly
-var OvalMatch = Confidence{100, OvalMatchStr}
+	// OvalMatch is a ranking how confident the CVE-ID was deteted correctly
+	OvalMatch = Confidence{100, OvalMatchStr}
 
-// ChangelogExactMatch is a ranking how confident the CVE-ID was deteted correctly
-var ChangelogExactMatch = Confidence{95, ChangelogExactMatchStr}
+	// ChangelogExactMatch is a ranking how confident the CVE-ID was deteted correctly
+	ChangelogExactMatch = Confidence{95, ChangelogExactMatchStr}
 
-// ChangelogLenientMatch is a ranking how confident the CVE-ID was deteted correctly
-var ChangelogLenientMatch = Confidence{50, ChangelogLenientMatchStr}
+	// ChangelogLenientMatch is a ranking how confident the CVE-ID was deteted correctly
+	ChangelogLenientMatch = Confidence{50, ChangelogLenientMatchStr}
+)
 
 // VulnInfos is VulnInfo list, getter/setter, sortable methods.
 type VulnInfos map[string]VulnInfo
@@ -340,21 +348,32 @@ type VulnInfo struct {
 	CveContents      CveContents
 }
 
-// NilToEmpty set nil slice or map fields to empty to avoid null in JSON
-func (v *VulnInfo) NilToEmpty() {
-	if v.CpeNames == nil {
-		v.CpeNames = []string{}
-	}
-	if v.DistroAdvisories == nil {
-		v.DistroAdvisories = []DistroAdvisory{}
-	}
-	if v.PackageNames == nil {
-		v.PackageNames = []string{}
-	}
-	if v.CveContents == nil {
-		v.CveContents = NewCveContents()
-	}
+// Cvss2CalcURL returns CVSS v2 caluclator's URL
+func (v VulnInfo) Cvss2CalcURL() string {
+	return "https://nvd.nist.gov/vuln-metrics/cvss/v2-calculator?name=" + v.CveID
 }
+
+// Cvss3CalcURL returns CVSS v3 caluclator's URL
+func (v VulnInfo) Cvss3CalcURL() string {
+	return "https://nvd.nist.gov/vuln-metrics/cvss/v3-calculator?name=" + v.CveID
+}
+
+// TODO
+// NilToEmpty set nil slice or map fields to empty to avoid null in JSON
+//  func (v *VulnInfo) NilToEmpty() {
+//      if v.CpeNames == nil {
+//          v.CpeNames = []string{}
+//      }
+//      if v.DistroAdvisories == nil {
+//          v.DistroAdvisories = []DistroAdvisory{}
+//      }
+//      if v.PackageNames == nil {
+//          v.PackageNames = []string{}
+//      }
+//      if v.CveContents == nil {
+//          v.CveContents = NewCveContents()
+//      }
+//  }
 
 // CveContentType is a source of CVE information
 type CveContentType string
@@ -387,9 +406,6 @@ const (
 	// RedHat is RedHat
 	RedHat CveContentType = "redhat"
 
-	// CentOS is CentOS
-	CentOS CveContentType = "centos"
-
 	// Debian is Debian
 	Debian CveContentType = "debian"
 
@@ -399,6 +415,29 @@ const (
 	// Unknown is Unknown
 	Unknown CveContentType = "unknown"
 )
+
+// CveContentTypes has slide of CveContentType
+type CveContentTypes []CveContentType
+
+// AllCveContetTypes has all of CveContentTypes
+var AllCveContetTypes = CveContentTypes{NVD, JVN, RedHat, Debian, Ubuntu}
+
+// Except returns CveContentTypes except for given args
+func (c CveContentTypes) Except(excepts ...CveContentType) (excepted CveContentTypes) {
+	for _, ctype := range c {
+		found := false
+		for _, except := range excepts {
+			if ctype == except {
+				found = true
+				break
+			}
+		}
+		if !found {
+			excepted = append(excepted, ctype)
+		}
+	}
+	return
+}
 
 // CveContents has CveContent
 type CveContents map[CveContentType]CveContent
@@ -412,25 +451,339 @@ func NewCveContents(conts ...CveContent) CveContents {
 	return m
 }
 
-// CvssV2Score returns CVSS V2 Score
-func (v CveContents) CvssV2Score() float64 {
-	//TODO
-	if cont, found := v[NVD]; found {
-		return cont.Cvss2Score
-	} else if cont, found := v[JVN]; found {
-		return cont.Cvss2Score
-	} else if cont, found := v[RedHat]; found {
-		return cont.Cvss2Score
-	}
-	return -1.1
+// CveContentStr has CveContentType and Value
+type CveContentStr struct {
+	Type  CveContentType
+	Value string
 }
 
-// CvssV3Score returns CVSS V2 Score
-func (v CveContents) CvssV3Score() float64 {
-	if cont, found := v[RedHat]; found {
-		return cont.Cvss3Score
+// Except returns CveContents except given keys for enumeration
+func (v CveContents) Except(exceptCtypes ...CveContentType) (values CveContents) {
+	for ctype, content := range v {
+		found := false
+		for _, exceptCtype := range exceptCtypes {
+			if ctype == exceptCtype {
+				found = true
+				break
+			}
+		}
+		if !found {
+			values[ctype] = content
+		}
 	}
-	return -1.1
+	return
+}
+
+// CveContentCvss2 has CveContentType and Cvss2
+type CveContentCvss2 struct {
+	Type  CveContentType
+	Value Cvss2
+}
+
+// Cvss2 has CVSS v2
+type Cvss2 struct {
+	Score    float64
+	Vector   string
+	Severity string
+}
+
+func cvss2ScoreToSeverity(score float64) string {
+	if 7.0 <= score {
+		return "HIGH"
+	} else if 4.0 <= score {
+		return "MEDIUM"
+	}
+	return "LOW"
+}
+
+// Cvss2Scores returns CVSS V2 Scores
+func (v CveContents) Cvss2Scores() (values []CveContentCvss2) {
+	order := []CveContentType{NVD, RedHat, JVN}
+	for _, ctype := range order {
+		if cont, found := v[ctype]; found && 0 < cont.Cvss2Score {
+			// https://nvd.nist.gov/vuln-metrics/cvss
+			sev := cont.Severity
+			if ctype == NVD {
+				sev = cvss2ScoreToSeverity(cont.Cvss2Score)
+			}
+			values = append(values, CveContentCvss2{
+				Type: ctype,
+				Value: Cvss2{
+					Score:    cont.Cvss2Score,
+					Vector:   cont.Cvss2Vector,
+					Severity: sev,
+				},
+			})
+		}
+	}
+	return
+}
+
+// MaxCvss2Score returns Max CVSS V2 Score
+func (v CveContents) MaxCvss2Score() CveContentCvss2 {
+	//TODO Severity Ubuntu, Debian...
+	order := []CveContentType{NVD, RedHat, JVN}
+	max := 0.0
+	value := CveContentCvss2{
+		Type:  Unknown,
+		Value: Cvss2{},
+	}
+	for _, ctype := range order {
+		if cont, found := v[ctype]; found && max < cont.Cvss2Score {
+			// https://nvd.nist.gov/vuln-metrics/cvss
+			sev := cont.Severity
+			if ctype == NVD {
+				sev = cvss2ScoreToSeverity(cont.Cvss2Score)
+			}
+			value = CveContentCvss2{
+				Type: ctype,
+				Value: Cvss2{
+					Score:    cont.Cvss2Score,
+					Vector:   cont.Cvss2Vector,
+					Severity: sev,
+				},
+			}
+			max = cont.Cvss2Score
+		}
+	}
+	return value
+}
+
+// CveContentCvss3 has CveContentType and Cvss3
+type CveContentCvss3 struct {
+	Type  CveContentType
+	Value Cvss3
+}
+
+// Cvss3 has CVSS v3
+type Cvss3 struct {
+	Score    float64
+	Vector   string
+	Severity string
+}
+
+func cvss3ScoreToSeverity(score float64) string {
+	if 9.0 <= score {
+		return "CRITICAL"
+	} else if 7.0 <= score {
+		return "HIGH"
+	} else if 4.0 <= score {
+		return "MEDIUM"
+	}
+	return "LOW"
+}
+
+// Cvss3Scores returns CVSS V3 Score
+func (v CveContents) Cvss3Scores() (values []CveContentCvss3) {
+	//TODO Severity Ubuntu, Debian...
+	order := []CveContentType{RedHat}
+	for _, ctype := range order {
+		if cont, found := v[ctype]; found && 0 < cont.Cvss3Score {
+			// https://nvd.nist.gov/vuln-metrics/cvss
+			sev := cont.Severity
+			if ctype == NVD {
+				sev = cvss3ScoreToSeverity(cont.Cvss2Score)
+			}
+			values = append(values, CveContentCvss3{
+				Type: ctype,
+				Value: Cvss3{
+					Score:    cont.Cvss3Score,
+					Vector:   cont.Cvss3Vector,
+					Severity: sev,
+				},
+			})
+		}
+	}
+	return
+}
+
+// MaxCvss3Score returns Max CVSS V3 Score
+func (v CveContents) MaxCvss3Score() CveContentCvss3 {
+	//TODO Severity Ubuntu, Debian...
+	order := []CveContentType{RedHat}
+	max := 0.0
+	value := CveContentCvss3{
+		Type:  Unknown,
+		Value: Cvss3{},
+	}
+	for _, ctype := range order {
+		if cont, found := v[ctype]; found && max < cont.Cvss3Score {
+			// https://nvd.nist.gov/vuln-metrics/cvss
+			sev := cont.Severity
+			if ctype == NVD {
+				sev = cvss3ScoreToSeverity(cont.Cvss2Score)
+			}
+			value = CveContentCvss3{
+				Type: ctype,
+				Value: Cvss3{
+					Score:    cont.Cvss3Score,
+					Vector:   cont.Cvss3Vector,
+					Severity: sev,
+				},
+			}
+			max = cont.Cvss3Score
+		}
+	}
+	return value
+}
+
+// Titles returns tilte (TUI)
+func (v CveContents) Titles(lang, myFamily string) (values []CveContentStr) {
+	if lang == "ja" {
+		if cont, found := v[JVN]; found && 0 < len(cont.Title) {
+			values = append(values, CveContentStr{JVN, cont.Title})
+		}
+	}
+
+	order := CveContentTypes{NVD, NewCveContentType(myFamily)}
+	order = append(order, AllCveContetTypes.Except(append(order, JVN)...)...)
+	for _, ctype := range order {
+		// Only JVN has meaningful title. so return first 100 char of summary
+		if cont, found := v[ctype]; found && 0 < len(cont.Summary) {
+			summary := strings.Replace(cont.Summary, "\n", " ", -1)
+			index := 75
+			if len(summary) < index {
+				index = len(summary)
+			}
+			values = append(values, CveContentStr{
+				Type:  ctype,
+				Value: summary[0:index] + "...",
+			})
+		}
+	}
+
+	if len(values) == 0 {
+		values = []CveContentStr{{
+			Type:  Unknown,
+			Value: "-",
+		}}
+	}
+	return
+}
+
+// Summaries returns summaries
+func (v CveContents) Summaries(lang, myFamily string) (values []CveContentStr) {
+	if lang == "ja" {
+		if cont, found := v[JVN]; found && 0 < len(cont.Summary) {
+			summary := cont.Title
+			summary += "\n" + strings.Replace(
+				strings.Replace(cont.Summary, "\n", " ", -1), "\r", " ", -1)
+			values = append(values, CveContentStr{JVN, summary})
+		}
+	}
+
+	order := CveContentTypes{NVD, NewCveContentType(myFamily)}
+	order = append(order, AllCveContetTypes.Except(append(order, JVN)...)...)
+	for _, ctype := range order {
+		if cont, found := v[ctype]; found && 0 < len(cont.Summary) {
+			summary := strings.Replace(cont.Summary, "\n", " ", -1)
+			values = append(values, CveContentStr{
+				Type:  ctype,
+				Value: summary,
+			})
+		}
+	}
+
+	if len(values) == 0 {
+		values = []CveContentStr{{
+			Type:  Unknown,
+			Value: "-",
+		}}
+	}
+	return
+}
+
+// SourceLinks returns link of source
+func (v CveContents) SourceLinks(lang, myFamily string) (values []CveContentStr) {
+	if lang == "ja" {
+		if cont, found := v[JVN]; found && !cont.Empty() {
+			values = append(values, CveContentStr{JVN, cont.SourceLink})
+		}
+	}
+
+	order := CveContentTypes{NVD, NewCveContentType(myFamily)}
+	for _, ctype := range order {
+		if cont, found := v[ctype]; found {
+			values = append(values, CveContentStr{ctype, cont.SourceLink})
+		}
+	}
+	return
+}
+
+// Severities returns Severities
+//  func (v CveContents) Severities(myFamily string) (values []CveContentValue) {
+//      order := CveContentTypes{NVD, NewCveContentType(myFamily)}
+//      order = append(order, AllCveContetTypes.Except(append(order)...)...)
+
+//      for _, ctype := range order {
+//          if cont, found := v[ctype]; found && 0 < len(cont.Severity) {
+//              values = append(values, CveContentValue{
+//                  Type:  ctype,
+//                  Value: cont.Severity,
+//              })
+//          }
+//      }
+//      return
+//  }
+
+// CveContentCpes has CveContentType and Value
+type CveContentCpes struct {
+	Type  CveContentType
+	Value []Cpe
+}
+
+// Cpes returns affected CPEs of this Vulnerability
+func (v CveContents) Cpes(myFamily string) (values []CveContentCpes) {
+	order := CveContentTypes{NewCveContentType(myFamily)}
+	order = append(order, AllCveContetTypes.Except(append(order)...)...)
+
+	for _, ctype := range order {
+		if cont, found := v[ctype]; found && 0 < len(cont.Cpes) {
+			values = append(values, CveContentCpes{
+				Type:  ctype,
+				Value: cont.Cpes,
+			})
+		}
+	}
+	return
+}
+
+// CveContentRefs has CveContentType and Cpes
+type CveContentRefs struct {
+	Type  CveContentType
+	Value []Reference
+}
+
+// References returns References
+func (v CveContents) References(myFamily string) (values []CveContentRefs) {
+	order := CveContentTypes{NewCveContentType(myFamily)}
+	order = append(order, AllCveContetTypes.Except(append(order)...)...)
+
+	for _, ctype := range order {
+		if cont, found := v[ctype]; found && 0 < len(cont.References) {
+			values = append(values, CveContentRefs{
+				Type:  ctype,
+				Value: cont.References,
+			})
+		}
+	}
+	return
+}
+
+// CweIDs returns CweIDs
+func (v CveContents) CweIDs(myFamily string) (values []CveContentStr) {
+	order := CveContentTypes{NewCveContentType(myFamily)}
+	order = append(order, AllCveContetTypes.Except(append(order)...)...)
+
+	for _, ctype := range order {
+		if cont, found := v[ctype]; found && 0 < len(cont.CweID) {
+			values = append(values, CveContentStr{
+				Type:  ctype,
+				Value: cont.CweID,
+			})
+		}
+	}
+	return
 }
 
 // CveContent has abstraction of various vulnerability information
@@ -444,8 +797,9 @@ type CveContent struct {
 	Cvss2Vector  string
 	Cvss3Score   float64
 	Cvss3Vector  string
+	SourceLink   string
 	Cpes         []Cpe
-	References   []Reference
+	References   References
 	CweID        string
 	Published    time.Time
 	LastModified time.Time
@@ -461,11 +815,22 @@ type Cpe struct {
 	CpeName string
 }
 
+// References is a slice of Reference
+type References []Reference
+
+// Find elements that matches the function passed in argument
+func (r References) Find(f func(r Reference) bool) (refs []Reference) {
+	for _, rr := range r {
+		refs = append(refs, rr)
+	}
+	return
+}
+
 // Reference has a related link of the CVE
 type Reference struct {
-	RefID  string
 	Source string
 	Link   string
+	RefID  string
 }
 
 // Packages is Map of Package
@@ -504,6 +869,15 @@ func (ps Packages) Merge(other Packages) Packages {
 	return merged
 }
 
+// FormatVersionsFromTo returns updatable packages
+func (ps Packages) FormatVersionsFromTo() string {
+	ss := []string{}
+	for _, pack := range ps {
+		ss = append(ss, pack.FormatVersionFromTo())
+	}
+	return strings.Join(ss, "\n")
+}
+
 // FormatUpdatablePacksSummary returns a summary of updatable packages
 func (ps Packages) FormatUpdatablePacksSummary() string {
 	nUpdatable := 0
@@ -527,15 +901,8 @@ type Package struct {
 	NotFixedYet bool // Ubuntu OVAL Only
 }
 
-// Changelog has contents of changelog and how to get it.
-// Method: modesl.detectionMethodStr
-type Changelog struct {
-	Contents string
-	Method   string
-}
-
-// FormatCurrentVer returns package name-version-release
-func (p Package) FormatCurrentVer() string {
+// FormatVer returns package name-version-release
+func (p Package) FormatVer() string {
 	str := p.Name
 	if 0 < len(p.Version) {
 		str = fmt.Sprintf("%s-%s", str, p.Version)
@@ -556,6 +923,18 @@ func (p Package) FormatNewVer() string {
 		str = fmt.Sprintf("%s-%s", str, p.NewRelease)
 	}
 	return str
+}
+
+// FormatVersionFromTo formats installed and new package version
+func (p Package) FormatVersionFromTo() string {
+	return fmt.Sprintf("%s -> %s", p.FormatVer(), p.FormatNewVer())
+}
+
+// Changelog has contents of changelog and how to get it.
+// Method: modesl.detectionMethodStr
+type Changelog struct {
+	Contents string
+	Method   string
 }
 
 // DistroAdvisory has Amazon Linux, RHEL, FreeBSD Security Advisory information.

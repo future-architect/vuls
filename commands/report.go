@@ -463,7 +463,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	var res models.ScanResults
 	for _, r := range results {
-		res = append(res, r.FilterByCvssOver())
+		res = append(res, r.FilterByCvssOver(c.Conf.CvssScoreOver))
 
 		// TODO Add sort function to ScanResults
 
@@ -545,10 +545,14 @@ func fillCveInfoFromCveDB(r *models.ScanResult) error {
 func fillCveInfoFromOvalDB(r *models.ScanResult) error {
 	var ovalClient oval.Client
 	switch r.Family {
-	case "ubuntu", "debian":
+	case "debian":
 		ovalClient = oval.NewDebian()
-	case "rhel", "centos":
+	case "ubuntu":
+		ovalClient = oval.NewUbuntu()
+	case "rhel":
 		ovalClient = oval.NewRedhat()
+	case "centos":
+		ovalClient = oval.NewCentOS()
 	case "amazon", "oraclelinux", "Raspbian", "FreeBSD":
 		//TODO implement OracleLinux
 		return nil

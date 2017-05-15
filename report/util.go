@@ -25,10 +25,9 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/gosuri/uitable"
-	"github.com/k0kubun/pp"
 )
 
-const maxColWidth = 80
+const maxColWidth = 100
 
 func formatScanSummary(rs ...models.ScanResult) string {
 	table := uitable.New()
@@ -65,7 +64,7 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 		if len(r.Errors) == 0 {
 			cols = []interface{}{
 				r.FormatServerName(),
-				r.CveSummary(),
+				r.CveSummary(config.Conf.IgnoreUnscoredCves),
 				r.Packages.FormatUpdatablePacksSummary(),
 			}
 		} else {
@@ -87,15 +86,14 @@ func formatShortPlainText(r models.ScanResult) string {
 
 	vulns := r.ScannedCves
 	if !config.Conf.IgnoreUnscoredCves {
-		//TODO Refactoring
 		vulns = r.ScannedCves.Find(func(v models.VulnInfo) bool {
-			if 0 < v.CveContents.CvssV2Score() || 0 < v.CveContents.CvssV3Score() {
+			if 0 < v.CveContents.MaxCvss2Score().Value.Score ||
+				0 < v.CveContents.MaxCvss3Score().Value.Score {
 				return true
 			}
 			return false
 		})
 	}
-	pp.Println(vulns)
 
 	var buf bytes.Buffer
 	for i := 0; i < len(r.ServerInfo()); i++ {
@@ -104,7 +102,7 @@ func formatShortPlainText(r models.ScanResult) string {
 	header := fmt.Sprintf("%s\n%s\n%s\t%s\n\n",
 		r.ServerInfo(),
 		buf.String(),
-		r.CveSummary(),
+		r.CveSummary(config.Conf.IgnoreUnscoredCves),
 		r.Packages.FormatUpdatablePacksSummary(),
 	)
 
@@ -114,84 +112,91 @@ func formatShortPlainText(r models.ScanResult) string {
 			header, r.Errors)
 	}
 
-	//TODO
-	//      if len(cves) == 0 {
-	//          return fmt.Sprintf(`
-	//  %s
-	//  No CVE-IDs are found in updatable packages.
-	//  %s
-	//  `, header, r.Packages.FormatUpdatablePacksSummary())
-	//      }
+	if len(vulns) == 0 {
+		return fmt.Sprintf(`
+	 %s
+	 No CVE-IDs are found in updatable packages.
+	 %s
+	 `, header, r.Packages.FormatUpdatablePacksSummary())
+	}
 
-	//      for _, d := range cves {
-	//          var packsVer string
-	//          for _, p := range d.Packages {
-	//              packsVer += fmt.Sprintf(
-	//                  "%s -> %s\n", p.FormatCurrentVer(), p.FormatNewVer())
-	//          }
-	//          for _, n := range d.CpeNames {
-	//              packsVer += n
-	//          }
+	for _, vuln := range vulns {
+		//TODO
+		//  var packsVer string
+		//  for _, name := range vuln.PackageNames {
+		//      // packages detected by OVAL may not be actually installed
+		//      if pack, ok := r.Packages[name]; ok {
+		//          packsVer += fmt.Sprintf("%s\n",
+		//              pack.FormatVersionFromTo())
+		//      }
+		//  }
+		//  for _, name := range vuln.CpeNames {
+		//      packsVer += name + "\n"
+		//  }
 
-	//          var scols []string
-	//          switch {
-	//          //  case config.Conf.Lang == "ja" &&
-	//          //TODO
-	//          //  0 < d.CveDetail.Jvn.CvssScore():
-	//          //  summary := fmt.Sprintf("%s\n%s\n%s\n%sConfidence: %v",
-	//          //      d.CveDetail.Jvn.CveTitle(),
-	//          //      d.CveDetail.Jvn.Link(),
-	//          //      distroLinks(d, r.Family)[0].url,
-	//          //      packsVer,
-	//          //      d.VulnInfo.Confidence,
-	//          //  )
-	//          //  scols = []string{
-	//          //      d.CveDetail.CveID,
-	//          //      fmt.Sprintf("%-4.1f (%s)",
-	//          //          d.CveDetail.CvssScore(config.Conf.Lang),
-	//          //          d.CveDetail.Jvn.CvssSeverity(),
-	//          //      ),
-	//          //      summary,
-	//          //  }
+		summaries := vuln.CveContents.Summaries(config.Conf.Lang, r.Family)
+		links := vuln.CveContents.SourceLinks(config.Conf.Lang, r.Family)
+		if len(links) == 0 {
+			links = []models.CveContentStr{{
+				Type:  models.NVD,
+				Value: "https://nvd.nist.gov/vuln/detail/" + vuln.CveID,
+			}}
+		}
 
-	//          case 0 < d.CvssV2Score():
-	//              var nvd *models.CveContent
-	//              if cont, found := d.Get(models.NVD); found {
-	//                  nvd = cont
-	//              }
-	//              summary := fmt.Sprintf("%s\n%s/%s\n%s\n%sConfidence: %v",
-	//                  nvd.Summary,
-	//                  cveDetailsBaseURL,
-	//                  d.VulnInfo.CveID,
-	//                  distroLinks(d, r.Family)[0].url,
-	//                  packsVer,
-	//                  d.VulnInfo.Confidence,
-	//              )
-	//              scols = []string{
-	//                  d.VulnInfo.CveID,
-	//                  fmt.Sprintf("%-4.1f (%s)",
-	//                      d.CvssV2Score(),
-	//                      "TODO",
-	//                  ),
-	//                  summary,
-	//              }
-	//          default:
-	//              summary := fmt.Sprintf("%s\n%sConfidence: %v",
-	//                  distroLinks(d, r.Family)[0].url, packsVer, d.VulnInfo.Confidence)
-	//              scols = []string{
-	//                  d.VulnInfo.CveID,
-	//                  "?",
-	//                  summary,
-	//              }
-	//          }
+		cvsses := ""
+		for _, cvss := range vuln.CveContents.Cvss2Scores() {
+			c2 := cvss.Value
+			cvsses += fmt.Sprintf("%3.1f/%s (%s)\n",
+				c2.Score, c2.Vector, cvss.Type)
+		}
+		cvsses += fmt.Sprintf("%s\n", vuln.Cvss2CalcURL())
 
-	//          cols := make([]interface{}, len(scols))
-	//          for i := range cols {
-	//              cols[i] = scols[i]
-	//          }
-	//          stable.AddRow(cols...)
-	//          stable.AddRow("")
-	//      }
+		for _, cvss := range vuln.CveContents.Cvss3Scores() {
+			c3 := cvss.Value
+			cvsses += fmt.Sprintf("%3.1f/CVSS:3.0/%s (%s)\n",
+				c3.Score, c3.Vector, cvss.Type)
+		}
+		if 0 < len(vuln.CveContents.Cvss3Scores()) {
+			cvsses += fmt.Sprintf("%s\n", vuln.Cvss3CalcURL())
+		}
+
+		var maxCvss string
+		v2Max := vuln.CveContents.MaxCvss2Score()
+		v3Max := vuln.CveContents.MaxCvss3Score()
+		if v2Max.Value.Score <= v3Max.Value.Score {
+			maxCvss = fmt.Sprintf("%3.1f %s (%s)",
+				v3Max.Value.Score,
+				strings.ToUpper(v3Max.Value.Severity),
+				v3Max.Type)
+		} else {
+			maxCvss = fmt.Sprintf("%3.1f %s (%s)",
+				v2Max.Value.Score,
+				strings.ToUpper(v2Max.Value.Severity),
+				v2Max.Type)
+		}
+
+		rightCol := fmt.Sprintf(`%s
+%s
+---
+%s
+%sConfidence: %v`,
+			maxCvss,
+			summaries[0].Value,
+			links[0].Value,
+			cvsses,
+			//  packsVer,
+			vuln.Confidence,
+		)
+
+		leftCol := fmt.Sprintf("%s", vuln.CveID)
+		scols := []string{leftCol, rightCol}
+		cols := make([]interface{}, len(scols))
+		for i := range cols {
+			cols[i] = scols[i]
+		}
+		stable.AddRow(cols...)
+		stable.AddRow("")
+	}
 	return fmt.Sprintf("%s\n%s\n", header, stable)
 }
 
@@ -205,7 +210,7 @@ func formatFullPlainText(r models.ScanResult) string {
 	header := fmt.Sprintf("%s\n%s\n%s\t%s\n",
 		r.ServerInfo(),
 		buf.String(),
-		r.CveSummary(),
+		r.CveSummary(config.Conf.IgnoreUnscoredCves),
 		r.Packages.FormatUpdatablePacksSummary(),
 	)
 
@@ -481,7 +486,7 @@ func addPackages(table *uitable.Table, packs []models.Package) *uitable.Table {
 			title = "Package"
 		}
 		ver := fmt.Sprintf(
-			"%s -> %s", p.FormatCurrentVer(), p.FormatNewVer())
+			"%s -> %s", p.FormatVer(), p.FormatNewVer())
 		table.AddRow(title, ver)
 	}
 	return table
@@ -522,7 +527,7 @@ func formatOneChangelog(p models.Package) string {
 	}
 
 	packVer := fmt.Sprintf("%s -> %s",
-		p.FormatCurrentVer(), p.FormatNewVer())
+		p.FormatVer(), p.FormatNewVer())
 	var delim bytes.Buffer
 	for i := 0; i < len(packVer); i++ {
 		delim.WriteString("-")

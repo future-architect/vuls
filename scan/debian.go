@@ -673,6 +673,7 @@ func (o *debian) parseChangelog(changelog, name, ver string, confidence models.C
 
 	pack := o.Packages[name]
 	pack.Changelog = clog
+	// TODO Mutex
 	o.Packages[name] = pack
 
 	cves := []DetectedCveID{}
