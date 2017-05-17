@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/models"
 )
 
 // GenWorkers generates goroutine
@@ -134,4 +135,22 @@ func Truncate(str string, length int) string {
 		return str[:length]
 	}
 	return str
+}
+
+// VendorLink returns a URL of the given OS family and CVEID
+//TODO
+func VendorLink(family, cveID string) string {
+	cType := models.NewCveContentType(family)
+	switch cType {
+	case models.RedHat:
+		return "https://access.redhat.com/security/cve/" + cveID
+	case models.Debian:
+		return "https://security-tracker.debian.org/tracker/" + cveID
+	case models.Ubuntu:
+		return "http://people.ubuntu.com/~ubuntu-security/cve/" + cveID
+		//  case models.FreeBSD:
+		//      return "http://people.ubuntu.com/~ubuntu-security/cve/" + cveID
+	}
+
+	return ""
 }
