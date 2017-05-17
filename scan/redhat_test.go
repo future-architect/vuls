@@ -444,6 +444,8 @@ Description : kernel-uek
 				t.Errorf("[%d] Alas is not same. \nexpected: %s\nactual: %s",
 					i, tt.out[i].DistroAdvisory, advisoryCveIDs.DistroAdvisory)
 			}
+			sort.Strings(tt.out[i].CveIDs)
+			sort.Strings(advisoryCveIDs.CveIDs)
 			if !reflect.DeepEqual(tt.out[i].CveIDs, advisoryCveIDs.CveIDs) {
 				t.Errorf("[%d] Alas is not same. \nexpected: %s\nactual: %s",
 					i, tt.out[i].CveIDs, advisoryCveIDs.CveIDs)
