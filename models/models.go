@@ -18,10 +18,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package models
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/future-architect/vuls/config"
 	cvedict "github.com/kotakanbe/go-cve-dictionary/models"
 )
 
@@ -267,6 +269,21 @@ func (r ScanResult) CveSummary(ignoreUnscoreCves bool) string {
 		high+medium+low+unknown, high, medium, low, unknown)
 }
 
+// FormatTextReportHeadedr returns header of text report
+func (r ScanResult) FormatTextReportHeadedr() string {
+	serverInfo := r.ServerInfo()
+	var buf bytes.Buffer
+	for i := 0; i < len(serverInfo); i++ {
+		buf.WriteString("=")
+	}
+	return fmt.Sprintf("%s\n%s\n%s\t%s\n",
+		r.ServerInfo(),
+		buf.String(),
+		r.CveSummary(config.Conf.IgnoreUnscoredCves),
+		r.Packages.FormatUpdatablePacksSummary(),
+	)
+}
+
 // Confidence is a ranking how confident the CVE-ID was deteted correctly
 // Score: 0 - 100
 type Confidence struct {
@@ -336,6 +353,17 @@ func (v VulnInfos) Find(f func(VulnInfo) bool) VulnInfos {
 		}
 	}
 	return filtered
+}
+
+// FindScoredVulns return socred vulnerabilities
+func (v VulnInfos) FindScoredVulns() VulnInfos {
+	return v.Find(func(vv VulnInfo) bool {
+		if 0 < vv.CveContents.MaxCvss2Score().Value.Score ||
+			0 < vv.CveContents.MaxCvss3Score().Value.Score {
+			return true
+		}
+		return false
+	})
 }
 
 // VulnInfo holds a vulnerability information and unsecure packages
@@ -487,6 +515,11 @@ type Cvss2 struct {
 	Severity string
 }
 
+// Format CVSS Score and Vector
+func (c Cvss2) Format() string {
+	return fmt.Sprintf("%3.1f/%s", c.Score, c.Vector)
+}
+
 func cvss2ScoreToSeverity(score float64) string {
 	if 7.0 <= score {
 		return "HIGH"
@@ -555,11 +588,16 @@ type CveContentCvss3 struct {
 	Value Cvss3
 }
 
-// Cvss3 has CVSS v3
+// Cvss3 has CVSS v3 Score, Vector and  Severity
 type Cvss3 struct {
 	Score    float64
 	Vector   string
 	Severity string
+}
+
+// Format CVSS Score and Vector
+func (c Cvss3) Format() string {
+	return fmt.Sprintf("%3.1f/CVSS:3.0/%s", c.Score, c.Vector)
 }
 
 func cvss3ScoreToSeverity(score float64) string {
@@ -625,6 +663,22 @@ func (v CveContents) MaxCvss3Score() CveContentCvss3 {
 		}
 	}
 	return value
+}
+
+// FormatMaxCvssScore returns Max CVSS Score
+func (v CveContents) FormatMaxCvssScore() string {
+	v2Max := v.MaxCvss2Score()
+	v3Max := v.MaxCvss3Score()
+	if v2Max.Value.Score <= v3Max.Value.Score {
+		return fmt.Sprintf("%3.1f %s (%s)",
+			v3Max.Value.Score,
+			strings.ToUpper(v3Max.Value.Severity),
+			v3Max.Type)
+	}
+	return fmt.Sprintf("%3.1f %s (%s)",
+		v2Max.Value.Score,
+		strings.ToUpper(v2Max.Value.Severity),
+		v2Max.Type)
 }
 
 // Titles returns tilte (TUI)
@@ -694,7 +748,7 @@ func (v CveContents) Summaries(lang, myFamily string) (values []CveContentStr) {
 }
 
 // SourceLinks returns link of source
-func (v CveContents) SourceLinks(lang, myFamily string) (values []CveContentStr) {
+func (v CveContents) SourceLinks(lang, myFamily, cveID string) (values []CveContentStr) {
 	if lang == "ja" {
 		if cont, found := v[JVN]; found && !cont.Empty() {
 			values = append(values, CveContentStr{JVN, cont.SourceLink})
@@ -707,7 +761,23 @@ func (v CveContents) SourceLinks(lang, myFamily string) (values []CveContentStr)
 			values = append(values, CveContentStr{ctype, cont.SourceLink})
 		}
 	}
-	return
+
+	if len(values) == 0 {
+		return []CveContentStr{{
+			Type:  NVD,
+			Value: "https://nvd.nist.gov/vuln/detail/" + cveID,
+		}}
+	}
+	return values
+}
+
+// VendorLink returns link of source
+func (v CveContents) VendorLink(myFamily string) CveContentStr {
+	ctype := NewCveContentType(myFamily)
+	if cont, ok := v[ctype]; ok {
+		return CveContentStr{ctype, cont.SourceLink}
+	}
+	return CveContentStr{ctype, ""}
 }
 
 // Severities returns Severities
@@ -770,17 +840,20 @@ func (v CveContents) References(myFamily string) (values []CveContentRefs) {
 	return
 }
 
-// CweIDs returns CweIDs
+// CweIDs returns related CweIDs of the vulnerability
 func (v CveContents) CweIDs(myFamily string) (values []CveContentStr) {
 	order := CveContentTypes{NewCveContentType(myFamily)}
 	order = append(order, AllCveContetTypes.Except(append(order)...)...)
 
 	for _, ctype := range order {
 		if cont, found := v[ctype]; found && 0 < len(cont.CweID) {
-			values = append(values, CveContentStr{
-				Type:  ctype,
-				Value: cont.CweID,
-			})
+			// RedHat's OVAL sometimes contains multiple CWE-IDs separated by spaces
+			for _, cweID := range strings.Fields(cont.CweID) {
+				values = append(values, CveContentStr{
+					Type:  ctype,
+					Value: cweID,
+				})
+			}
 		}
 	}
 	return
