@@ -88,6 +88,7 @@ We have a slack team. [Join slack team](http://goo.gl/forms/xm5KFo35tu)
   * [Example: IgnoreCves](#example-ignorecves)
   * [Example: Add optional key-value pairs to JSON](#example-add-optional-key-value-pairs-to-json)
   * [Example: Use MySQL as a DB storage back-end](#example-use-mysql-as-a-db-storage-back-end)
+  * [Example: Use PostgreSQL as a DB storage back-end](#example-use-postgresql-as-a-db-storage-back-end)
 - [Usage: Scan vulnerabilites of non-OS packages](#usage-scan-vulnerabilites-of-non-os-packages)
 - [Usage: Integrate with OWASP Dependency Check to Automatic update when the libraries are updated (Experimental)](#usage-integrate-with-owasp-dependency-check-to-automatic-update-when-the-libraries-are-updated-experimental)
 - [Usage: TUI](#usage-tui)
@@ -1049,9 +1050,9 @@ report:
                 [-results-dir=/path/to/results]
                 [-log-dir=/path/to/log]
                 [-refresh-cve]
-                [-cvedb-type=sqlite3|mysql]
+                [-cvedb-type=sqlite3|mysql|postgres]
                 [-cvedb-path=/path/to/cve.sqlite3]
-                [-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
+                [-cvedb-url=http://127.0.0.1:1323 DB connection string]
                 [-cvss-over=7]
                 [-diff]
                 [-ignore-unscored-cves]
@@ -1096,9 +1097,9 @@ report:
   -cvedb-path string
         /path/to/sqlite3 (For get cve detail from cve.sqlite3)
   -cvedb-type string
-        DB type for fetching CVE dictionary (sqlite3 or mysql) (default "sqlite3")
+        DB type for fetching CVE dictionary (sqlite3, mysql or postgres) (default "sqlite3")
   -cvedb-url string
-        http://cve-dictionary.com:8080 or mysql connection string
+        http://cve-dictionary.com:8080 DB connection string
   -cvss-over float
         -cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))
   -diff
@@ -1429,6 +1430,14 @@ $ vuls report \
       -cvedb-url="user:pass@tcp(localhost:3306)/dbname?parseTime=true"
 ```
 
+## Example: Use PostgreSQL as a DB storage back-end
+
+```
+$ vuls report \
+      -cvedb-type=postgres \
+      -cvedb-url=""host=myhost user=user dbname=dbname sslmode=disable password=password""
+```
+
 ----
 
 # Usage: Scan vulnerabilites of non-OS packages
@@ -1487,9 +1496,9 @@ How to integrate Vuls with OWASP Dependency Check
 ```
 tui:
         tui
-                [-cvedb-type=sqlite3|mysql]
+                [-cvedb-type=sqlite3|mysql|postgres]
                 [-cvedb-path=/path/to/cve.sqlite3]
-                [-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
+                [-cvedb-url=http://127.0.0.1:1323 DB connection string]
                 [-refresh-cve]
                 [-results-dir=/path/to/results]
                 [-log-dir=/path/to/log]
@@ -1500,9 +1509,9 @@ tui:
   -cvedb-path string
         /path/to/sqlite3 (For get cve detail from cve.sqlite3) 
   -cvedb-type string
-        DB type for fetching CVE dictionary (sqlite3 or mysql) (default "sqlite3")
+        DB type for fetching CVE dictionary (sqlite3, mysql or postgres) (default "sqlite3")
   -cvedb-url string
-        http://cve-dictionary.com:8080 or mysql connection string
+        http://cve-dictionary.com:8080 DB connection string
   -debug
         debug mode
   -debug-sql
