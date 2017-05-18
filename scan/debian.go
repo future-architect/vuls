@@ -413,7 +413,7 @@ type DetectedCveID struct {
 
 func (o *debian) scanVulnInfos(upgradablePacks models.Packages, meta *cache.Meta) (models.VulnInfos, error) {
 	type response struct {
-		packName       string
+		pack           *models.Package
 		DetectedCveIDs []DetectedCveID
 	}
 	resChan := make(chan response, len(upgradablePacks))
@@ -439,18 +439,18 @@ func (o *debian) scanVulnInfos(upgradablePacks models.Packages, meta *cache.Meta
 				func(p models.Package) {
 					changelog := o.getChangelogCache(meta, p)
 					if 0 < len(changelog) {
-						cveIDs, _ := o.getCveIDsFromChangelog(changelog, p.Name, p.Version)
-						resChan <- response{p.Name, cveIDs}
+						cveIDs, pack := o.getCveIDsFromChangelog(changelog, p.Name, p.Version)
+						resChan <- response{pack, cveIDs}
 						return
 					}
 
 					// if the changelog is not in cache or failed to get from local cache,
 					// get the changelog of the package via internet.
 					// After that, store it in the cache.
-					if cveIDs, err := o.scanPackageCveIDs(p); err != nil {
+					if cveIDs, pack, err := o.scanPackageCveIDs(p); err != nil {
 						errChan <- err
 					} else {
-						resChan <- response{p.Name, cveIDs}
+						resChan <- response{pack, cveIDs}
 					}
 				}(pack)
 			}
@@ -463,18 +463,19 @@ func (o *debian) scanVulnInfos(upgradablePacks models.Packages, meta *cache.Meta
 	for i := 0; i < len(upgradablePacks); i++ {
 		select {
 		case response := <-resChan:
+			o.Packages[response.pack.Name] = *response.pack
 			cves := response.DetectedCveIDs
 			for _, cve := range cves {
 				packNames, ok := cvePackages[cve]
 				if ok {
-					packNames = append(packNames, response.packName)
+					packNames = append(packNames, response.pack.Name)
 				} else {
-					packNames = []string{response.packName}
+					packNames = []string{response.pack.Name}
 				}
 				cvePackages[cve] = packNames
 			}
 			o.log.Infof("(%d/%d) Scanned %s: %s",
-				i+1, len(upgradablePacks), response.packName, cves)
+				i+1, len(upgradablePacks), response.pack.Name, cves)
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
@@ -536,7 +537,7 @@ func (o *debian) getChangelogCache(meta *cache.Meta, pack models.Package) string
 	return changelog
 }
 
-func (o *debian) scanPackageCveIDs(pack models.Package) ([]DetectedCveID, error) {
+func (o *debian) scanPackageCveIDs(pack models.Package) ([]DetectedCveID, *models.Package, error) {
 	cmd := ""
 	switch o.Distro.Family {
 	case "ubuntu", "raspbian":
@@ -550,43 +551,43 @@ func (o *debian) scanPackageCveIDs(pack models.Package) ([]DetectedCveID, error)
 	if !r.isSuccess() {
 		o.log.Warnf("Failed to SSH: %s", r)
 		// Ignore this Error.
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	stdout := strings.Replace(r.Stdout, "\r", "", -1)
-	cveIDs, clog := o.getCveIDsFromChangelog(
-		stdout, pack.Name, pack.Version)
+	cveIDs, clogFilledPack := o.getCveIDsFromChangelog(stdout, pack.Name, pack.Version)
 
-	if clog.Method != models.FailedToGetChangelog {
-		err := cache.DB.PutChangelog(o.getServerInfo().GetServerName(), pack.Name, clog.Contents)
+	if clogFilledPack.Changelog.Method != models.FailedToGetChangelog {
+		err := cache.DB.PutChangelog(
+			o.getServerInfo().GetServerName(), pack.Name, pack.Changelog.Contents)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to put changelog into cache")
+			return nil, nil, fmt.Errorf("Failed to put changelog into cache")
 		}
 	}
 
 	// No error will be returned. Only logging.
-	return cveIDs, nil
+	return cveIDs, clogFilledPack, nil
 }
 
 // Debian Version Numbers
 // https://readme.phys.ethz.ch/documentation/debian_version_numbers/
+// TODO Changed to parse and compare versions
 func (o *debian) getCveIDsFromChangelog(
-	changelog, name, ver string) ([]DetectedCveID, models.Changelog) {
+	changelog, name, ver string) ([]DetectedCveID, *models.Package) {
 
-	if cveIDs, relevant, err := o.parseChangelog(
+	if cveIDs, pack, err := o.parseChangelog(
 		changelog, name, ver, models.ChangelogExactMatch); err == nil {
-		return cveIDs, relevant
+		return cveIDs, pack
 	}
 
 	var verAfterColon string
-	var err error
 
 	splittedByColon := strings.Split(ver, ":")
 	if 1 < len(splittedByColon) {
 		verAfterColon = splittedByColon[1]
-		if cveIDs, relevant, err := o.parseChangelog(
+		if cveIDs, pack, err := o.parseChangelog(
 			changelog, name, verAfterColon, models.ChangelogLenientMatch); err == nil {
-			return cveIDs, relevant
+			return cveIDs, pack
 		}
 	}
 
@@ -601,44 +602,40 @@ func (o *debian) getCveIDsFromChangelog(
 	for _, d := range delim {
 		ss := strings.Split(ver, d)
 		if 1 < len(ss) {
-			if cveIDs, relevant, err := o.parseChangelog(
+			if cveIDs, pack, err := o.parseChangelog(
 				changelog, name, ss[0], models.ChangelogLenientMatch); err == nil {
-				return cveIDs, relevant
+				return cveIDs, pack
 			}
 		}
 
 		ss = strings.Split(verAfterColon, d)
 		if 1 < len(ss) {
-			if cveIDs, relevant, err := o.parseChangelog(
+			if cveIDs, pack, err := o.parseChangelog(
 				changelog, name, ss[0], models.ChangelogLenientMatch); err == nil {
-				return cveIDs, relevant
+				return cveIDs, pack
 			}
 		}
 	}
 
 	// Only logging the error.
-	o.log.Error(err)
-
-	pack := o.Packages[name]
-	pack.Changelog = models.Changelog{
-		Contents: "",
-		Method:   models.FailedToFindVersionInChangelog,
-	}
-	//TODO Mutex
-	o.Packages[name] = pack
+	o.log.Warnf("Failed to find the version in changelog: %s-%s", name, ver)
+	o.log.Debugf("Changelog of : %s-%s", name, ver, changelog)
 
 	// If the version is not in changelog, return entire changelog to put into cache
-	return []DetectedCveID{}, models.Changelog{
+	pack := o.Packages[name]
+	pack.Changelog = models.Changelog{
 		Contents: changelog,
 		Method:   models.FailedToFindVersionInChangelog,
 	}
+
+	return []DetectedCveID{}, &pack
 }
 
 var cveRe = regexp.MustCompile(`(CVE-\d{4}-\d{4,})`)
 
 // Collect CVE-IDs included in the changelog.
 // The version which specified in argument(versionOrLater) is excluded.
-func (o *debian) parseChangelog(changelog, name, ver string, confidence models.Confidence) ([]DetectedCveID, models.Changelog, error) {
+func (o *debian) parseChangelog(changelog, name, ver string, confidence models.Confidence) ([]DetectedCveID, *models.Package, error) {
 	buf, cveIDs := []string{}, []string{}
 	stopRe := regexp.MustCompile(fmt.Sprintf(`\(%s\)`, regexp.QuoteMeta(ver)))
 	stopLineFound := false
@@ -656,32 +653,29 @@ func (o *debian) parseChangelog(changelog, name, ver string, confidence models.C
 		}
 	}
 	if !stopLineFound {
-		return nil, models.Changelog{
-				Contents: "",
-				Method:   models.FailedToFindVersionInChangelog,
-			}, fmt.Errorf(
-				"Failed to scan CVE IDs. The version is not in changelog. name: %s, version: %s",
-				name,
-				ver,
-			)
+		pack := o.Packages[name]
+		pack.Changelog = models.Changelog{
+			Contents: "",
+			Method:   models.FailedToFindVersionInChangelog,
+		}
+		return nil, &pack, fmt.Errorf(
+			"Failed to scan CVE IDs. The version is not in changelog. name: %s, version: %s",
+			name, ver)
 	}
 
 	clog := models.Changelog{
 		Contents: strings.Join(buf, "\n"),
 		Method:   string(confidence.DetectionMethod),
 	}
-
 	pack := o.Packages[name]
 	pack.Changelog = clog
-	// TODO Mutex
-	o.Packages[name] = pack
 
 	cves := []DetectedCveID{}
 	for _, id := range cveIDs {
 		cves = append(cves, DetectedCveID{id, confidence})
 	}
 
-	return cves, clog, nil
+	return cves, &pack, nil
 }
 
 func (o *debian) splitAptCachePolicy(stdout string) map[string]string {
