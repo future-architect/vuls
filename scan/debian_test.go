@@ -273,7 +273,7 @@ systemd (228-4) unstable; urgency=medium`,
 	d := newDebian(config.ServerInfo{})
 	d.Distro.Family = "ubuntu"
 	for i, tt := range tests {
-		aCveIDs, aClog := d.getCveIDsFromChangelog(tt.in[2], tt.in[0], tt.in[1])
+		aCveIDs, aPack := d.getCveIDsFromChangelog(tt.in[2], tt.in[0], tt.in[1])
 		if len(aCveIDs) != len(tt.cveIDs) {
 			t.Errorf("[%d] Len of return array are'nt same. expected %#v, actual %#v", i, tt.cveIDs, aCveIDs)
 			t.Errorf(pp.Sprintf("%s", tt.in))
@@ -285,12 +285,12 @@ systemd (228-4) unstable; urgency=medium`,
 			}
 		}
 
-		if aClog.Contents != tt.changelog.Contents {
-			t.Errorf(pp.Sprintf("expected: %s, actual: %s", tt.changelog.Contents, aClog.Contents))
+		if aPack.Changelog.Contents != tt.changelog.Contents {
+			t.Errorf(pp.Sprintf("expected: %s, actual: %s", tt.changelog.Contents, aPack.Changelog.Contents))
 		}
 
-		if aClog.Method != tt.changelog.Method {
-			t.Errorf(pp.Sprintf("expected: %s, actual: %s", tt.changelog.Method, aClog.Method))
+		if aPack.Changelog.Method != tt.changelog.Method {
+			t.Errorf(pp.Sprintf("expected: %s, actual: %s", tt.changelog.Method, aPack.Changelog.Method))
 		}
 	}
 }

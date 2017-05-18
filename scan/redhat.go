@@ -326,7 +326,6 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 	o.log.Debugf("%s", pp.Sprintf("%v", packages))
 
 	// set candidate version info
-	//TODO Mutex??
 	o.Packages.MergeNewVersion(packages)
 
 	// Collect CVE-IDs in changelog
@@ -356,7 +355,6 @@ func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate() (models.VulnInfos, er
 					Contents: *clog,
 					Method:   models.ChangelogExactMatchStr,
 				}
-				//TODO Mutex
 				o.Packages[p.Name] = p
 				break
 			}
@@ -736,7 +734,6 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 	if err != nil {
 		return nil, err
 	}
-	//  pp.Println(advisoryCveIDsList)
 
 	// All information collected.
 	// Convert to VulnInfos.
