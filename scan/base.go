@@ -47,7 +47,7 @@ func (l *base) setServerInfo(c config.ServerInfo) {
 	l.ServerInfo = c
 }
 
-func (l base) getServerInfo() config.ServerInfo {
+func (l *base) getServerInfo() config.ServerInfo {
 	return l.ServerInfo
 }
 
@@ -63,7 +63,7 @@ func (l *base) setDistro(fam, rel string) {
 	l.setServerInfo(s)
 }
 
-func (l base) getDistro() config.Distro {
+func (l *base) getDistro() config.Distro {
 	return l.Distro
 }
 
@@ -71,11 +71,11 @@ func (l *base) setPlatform(p models.Platform) {
 	l.Platform = p
 }
 
-func (l base) getPlatform() models.Platform {
+func (l *base) getPlatform() models.Platform {
 	return l.Platform
 }
 
-func (l base) allContainers() (containers []config.Container, err error) {
+func (l *base) allContainers() (containers []config.Container, err error) {
 	switch l.ServerInfo.Containers.Type {
 	case "", "docker":
 		stdout, err := l.dockerPs("-a --format '{{.ID}} {{.Names}} {{.Image}}'")
@@ -212,7 +212,7 @@ func (l *base) detectPlatform() {
 	return
 }
 
-func (l base) detectRunningOnAws() (ok bool, instanceID string, err error) {
+func (l *base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 	if r := l.exec("type curl", noSudo); r.isSuccess() {
 		cmd := "curl --max-time 1 --retry 3 --noproxy 169.254.169.254 http://169.254.169.254/latest/meta-data/instance-id"
 		r := l.exec(cmd, noSudo)
@@ -260,7 +260,7 @@ func (l base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 // http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/resource-ids.html
 var awsInstanceIDPattern = regexp.MustCompile(`^i-[0-9a-f]+$`)
 
-func (l base) isAwsInstanceID(str string) bool {
+func (l *base) isAwsInstanceID(str string) bool {
 	return awsInstanceIDPattern.MatchString(str)
 }
 
@@ -316,6 +316,6 @@ func (l *base) setErrs(errs []error) {
 	l.errs = errs
 }
 
-func (l base) getErrs() []error {
+func (l *base) getErrs() []error {
 	return l.errs
 }
