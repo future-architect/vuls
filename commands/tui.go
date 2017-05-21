@@ -24,8 +24,6 @@ import (
 	"path/filepath"
 
 	c "github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
 )
@@ -136,40 +134,41 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	}
 
 	c.Conf.Pipe = p.pipe
-	jsonDir, err := jsonDir(f.Args())
-	if err != nil {
-		log.Errorf("Failed to read json dir under results: %s", err)
-		return subcommands.ExitFailure
-	}
+	//  jsonDir, err := report.JSONDir(f.Args())
+	//  if err != nil {
+	//      log.Errorf("Failed to read json dir under results: %s", err)
+	//      return subcommands.ExitFailure
+	//  }
 
-	results, err := loadScanResults(jsonDir)
-	if err != nil {
-		log.Errorf("Failed to read from JSON: %s", err)
-		return subcommands.ExitFailure
-	}
+	//  results, err := report.LoadScanResults(jsonDir)
+	//  if err != nil {
+	//      log.Errorf("Failed to read from JSON: %s", err)
+	//      return subcommands.ExitFailure
+	//  }
 
-	var filledResults []models.ScanResult
-	for _, r := range results {
-		if p.refreshCve || needToRefreshCve(r) {
-			if c.Conf.CveDBType == "sqlite3" {
-				if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
-					log.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
-						c.Conf.CveDBPath)
-					return subcommands.ExitFailure
-				}
-			}
+	//  var filledResults []models.ScanResult
+	//  for _, r := range results {
+	//      if p.refreshCve || needToRefreshCve(r) {
+	//          if c.Conf.CveDBType == "sqlite3" {
+	//              if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
+	//                  log.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
+	//                      c.Conf.CveDBPath)
+	//                  return subcommands.ExitFailure
+	//              }
+	//          }
 
-			if err := fillCveInfoFromCveDB(&r); err != nil {
-				log.Errorf("Failed to fill CVE information: %s", err)
-				return subcommands.ExitFailure
-			}
+	//          if err := fillCveInfoFromCveDB(&r); err != nil {
+	//              log.Errorf("Failed to fill CVE information: %s", err)
+	//              return subcommands.ExitFailure
+	//          }
 
-			if err := overwriteJSONFile(jsonDir, r); err != nil {
-				log.Errorf("Failed to write JSON: %s", err)
-				return subcommands.ExitFailure
-			}
-		}
-		filledResults = append(filledResults, r)
-	}
-	return report.RunTui(filledResults)
+	//          if err := overwriteJSONFile(jsonDir, r); err != nil {
+	//              log.Errorf("Failed to write JSON: %s", err)
+	//              return subcommands.ExitFailure
+	//          }
+	//      }
+	//      filledResults = append(filledResults, r)
+	//  }
+	//  return report.RunTui(filledResults)
+	return subcommands.ExitFailure
 }

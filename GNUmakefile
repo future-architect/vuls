@@ -15,7 +15,7 @@
 	clean
 
 SRCS = $(shell git ls-files '*.go')
-PKGS = ./. ./config ./models ./report ./cveapi ./scan ./util ./commands ./cache
+PKGS = ./. ./cache ./commands ./config ./models ./oval ./report ./scan ./util 
 VERSION := $(shell git describe --tags --abbrev=0)
 REVISION := $(shell git rev-parse --short HEAD)
 LDFLAGS := -X 'main.version=$(VERSION)' \

@@ -61,6 +61,8 @@ type Config struct {
 	OvalDBType string
 	OvalDBPath string
 
+	RefreshCve bool
+
 	FormatXML         bool
 	FormatJSON        bool
 	FormatOneEMail    bool
