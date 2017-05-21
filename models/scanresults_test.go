@@ -15,3 +15,193 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 package models
+
+import (
+	"reflect"
+	"testing"
+	"time"
+
+	"github.com/k0kubun/pp"
+)
+
+func TestFilterByCvssOver(t *testing.T) {
+	type in struct {
+		over float64
+		rs   ScanResult
+	}
+	var tests = []struct {
+		in  in
+		out ScanResult
+	}{
+		{
+			in: in{
+				over: 7.0,
+				rs: ScanResult{
+					ScannedCves: VulnInfos{
+						"CVE-2017-0001": {
+							CveID: "CVE-2017-0001",
+							CveContents: NewCveContents(
+								CveContent{
+									Type:         NVD,
+									CveID:        "CVE-2017-0001",
+									Cvss2Score:   7.1,
+									LastModified: time.Time{},
+								},
+							),
+						},
+						"CVE-2017-0002": {
+							CveID: "CVE-2017-0002",
+							CveContents: NewCveContents(
+								CveContent{
+									Type:         NVD,
+									CveID:        "CVE-2017-0002",
+									Cvss2Score:   6.9,
+									LastModified: time.Time{},
+								},
+							),
+						},
+						"CVE-2017-0003": {
+							CveID: "CVE-2017-0003",
+							CveContents: NewCveContents(
+								CveContent{
+									Type:         NVD,
+									CveID:        "CVE-2017-0003",
+									Cvss2Score:   6.9,
+									LastModified: time.Time{},
+								},
+								CveContent{
+									Type:         JVN,
+									CveID:        "CVE-2017-0003",
+									Cvss2Score:   7.2,
+									LastModified: time.Time{},
+								},
+							),
+						},
+					},
+				},
+			},
+			out: ScanResult{
+				ScannedCves: VulnInfos{
+					"CVE-2017-0001": {
+						CveID: "CVE-2017-0001",
+						CveContents: NewCveContents(
+							CveContent{
+								Type:         NVD,
+								CveID:        "CVE-2017-0001",
+								Cvss2Score:   7.1,
+								LastModified: time.Time{},
+							},
+						),
+					},
+					"CVE-2017-0003": {
+						CveID: "CVE-2017-0003",
+						CveContents: NewCveContents(
+							CveContent{
+								Type:         NVD,
+								CveID:        "CVE-2017-0003",
+								Cvss2Score:   6.9,
+								LastModified: time.Time{},
+							},
+							CveContent{
+								Type:         JVN,
+								CveID:        "CVE-2017-0003",
+								Cvss2Score:   7.2,
+								LastModified: time.Time{},
+							},
+						),
+					},
+				},
+			},
+		},
+		// OVAL Severity
+		{
+			in: in{
+				over: 7.0,
+				rs: ScanResult{
+					ScannedCves: VulnInfos{
+						"CVE-2017-0001": {
+							CveID: "CVE-2017-0001",
+							CveContents: NewCveContents(
+								CveContent{
+									Type:         Ubuntu,
+									CveID:        "CVE-2017-0001",
+									Severity:     "HIGH",
+									LastModified: time.Time{},
+								},
+							),
+						},
+						"CVE-2017-0002": {
+							CveID: "CVE-2017-0002",
+							CveContents: NewCveContents(
+								CveContent{
+									Type:         RedHat,
+									CveID:        "CVE-2017-0002",
+									Severity:     "CRITICAL",
+									LastModified: time.Time{},
+								},
+							),
+						},
+						"CVE-2017-0003": {
+							CveID: "CVE-2017-0003",
+							CveContents: NewCveContents(
+								CveContent{
+									Type:         Oracle,
+									CveID:        "CVE-2017-0003",
+									Severity:     "IMPORTANT",
+									LastModified: time.Time{},
+								},
+							),
+						},
+					},
+				},
+			},
+			out: ScanResult{
+				ScannedCves: VulnInfos{
+					"CVE-2017-0001": {
+						CveID: "CVE-2017-0001",
+						CveContents: NewCveContents(
+							CveContent{
+								Type:         Ubuntu,
+								CveID:        "CVE-2017-0001",
+								Severity:     "HIGH",
+								LastModified: time.Time{},
+							},
+						),
+					},
+					"CVE-2017-0002": {
+						CveID: "CVE-2017-0002",
+						CveContents: NewCveContents(
+							CveContent{
+								Type:         RedHat,
+								CveID:        "CVE-2017-0002",
+								Severity:     "CRITICAL",
+								LastModified: time.Time{},
+							},
+						),
+					},
+					"CVE-2017-0003": {
+						CveID: "CVE-2017-0003",
+						CveContents: NewCveContents(
+							CveContent{
+								Type:         Oracle,
+								CveID:        "CVE-2017-0003",
+								Severity:     "IMPORTANT",
+								LastModified: time.Time{},
+							},
+						),
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		actual := tt.in.rs.FilterByCvssOver(tt.in.over)
+		for k := range tt.out.ScannedCves {
+			if !reflect.DeepEqual(tt.out.ScannedCves[k], actual.ScannedCves[k]) {
+				o := pp.Sprintf("%v", tt.out.ScannedCves[k])
+				a := pp.Sprintf("%v", actual.ScannedCves[k])
+				t.Errorf("[%s] expected: %v\n  actual: %v\n", k, o, a)
+			}
+		}
+	}
+}

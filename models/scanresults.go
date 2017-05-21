@@ -166,13 +166,14 @@ func (r ScanResult) FilterByCvssOver(over float64) ScanResult {
 
 	// TODO: Filter by ignore cves???
 	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
-		//TODO in the case of only oval, no cvecontents
-		values := v.CveContents.Cvss2Scores()
-		for _, vals := range values {
-			score := vals.Value.Score
-			if over <= score {
-				return true
-			}
+		v2Max := v.CveContents.MaxCvss2Score()
+		v3Max := v.CveContents.MaxCvss3Score()
+		max := v2Max.Value.Score
+		if max < v3Max.Value.Score {
+			max = v3Max.Value.Score
+		}
+		if over <= max {
+			return true
 		}
 		return false
 	})
