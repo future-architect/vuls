@@ -27,7 +27,7 @@ import (
 	cvedict "github.com/kotakanbe/go-cve-dictionary/models"
 )
 
-// ScanResults is slice of ScanResult.
+// ScanResults is a slide of ScanResult
 type ScanResults []ScanResult
 
 //TODO
