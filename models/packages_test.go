@@ -57,3 +57,91 @@ func TestMergeNewVersion(t *testing.T) {
 		t.Errorf("expected %s, actual %s", e, a)
 	}
 }
+
+func TestMerge(t *testing.T) {
+	var test = struct {
+		a        Packages
+		b        Packages
+		expected Packages
+	}{
+		Packages{
+			"hoge": {Name: "hoge"},
+			"fuga": {Name: "fuga"},
+		},
+		Packages{
+			"hega": {Name: "hega"},
+			"hage": {Name: "hage"},
+		},
+		Packages{
+			"hoge": {Name: "hoge"},
+			"fuga": {Name: "fuga"},
+			"hega": {Name: "hega"},
+			"hage": {Name: "hage"},
+		},
+	}
+
+	actual := test.a.Merge(test.b)
+	if !reflect.DeepEqual(actual, test.expected) {
+		e := pp.Sprintf("%v", test.expected)
+		a := pp.Sprintf("%v", actual)
+		t.Errorf("expected %s, actual %s", e, a)
+	}
+}
+
+func TestFormatVersionsFromTo(t *testing.T) {
+	var tests = []struct {
+		packs    Packages
+		expected string
+	}{
+		{
+			packs: Packages{
+				"hoge": {
+					Name:       "hoge",
+					Version:    "1.0.0",
+					Release:    "release1",
+					NewVersion: "1.0.1",
+					NewRelease: "release2",
+				},
+			},
+			expected: "hoge-1.0.0-release1 -> hoge-1.0.1-release2",
+		},
+		{
+			packs: Packages{
+				"hoge": {
+					Name:       "hoge",
+					Version:    "1.0.0",
+					Release:    "",
+					NewVersion: "1.0.1",
+					NewRelease: "",
+				},
+			},
+			expected: "hoge-1.0.0 -> hoge-1.0.1",
+		},
+		{
+			packs: Packages{
+				"hoge": {
+					Name:       "hoge",
+					Version:    "1.0.0",
+					Release:    "",
+					NewVersion: "1.0.1",
+					NewRelease: "",
+				},
+				"fuga": {
+					Name:       "fuga",
+					Version:    "2.0.0",
+					Release:    "",
+					NewVersion: "2.0.1",
+					NewRelease: "",
+				},
+			},
+			expected: "hoge-1.0.0 -> hoge-1.0.1\nfuga-2.0.0 -> fuga-2.0.1",
+		},
+	}
+
+	for _, tt := range tests {
+		actual := tt.packs.FormatVersionsFromTo()
+		if !reflect.DeepEqual(tt.expected, actual) {
+			t.Errorf("\nexpected: %v\n  actual: %v\n", tt.expected, actual)
+		}
+	}
+}
