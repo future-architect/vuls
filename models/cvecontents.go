@@ -28,7 +28,7 @@ type CveContents map[CveContentType]CveContent
 
 // NewCveContents create CveContents
 func NewCveContents(conts ...CveContent) CveContents {
-	m := map[CveContentType]CveContent{}
+	m := CveContents{}
 	for _, cont := range conts {
 		m[cont.Type] = cont
 	}
@@ -43,6 +43,7 @@ type CveContentStr struct {
 
 // Except returns CveContents except given keys for enumeration
 func (v CveContents) Except(exceptCtypes ...CveContentType) (values CveContents) {
+	values = CveContents{}
 	for ctype, content := range v {
 		found := false
 		for _, exceptCtype := range exceptCtypes {
@@ -252,12 +253,12 @@ func (v CveContents) Titles(lang, myFamily string) (values []CveContentStr) {
 		if cont, found := v[ctype]; found && 0 < len(cont.Summary) {
 			summary := strings.Replace(cont.Summary, "\n", " ", -1)
 			index := 75
-			if len(summary) < index {
-				index = len(summary)
+			if index < len(summary) {
+				summary = summary[0:index] + "..."
 			}
 			values = append(values, CveContentStr{
 				Type:  ctype,
-				Value: summary[0:index] + "...",
+				Value: summary,
 			})
 		}
 	}
@@ -306,7 +307,7 @@ func (v CveContents) Summaries(lang, myFamily string) (values []CveContentStr) {
 // SourceLinks returns link of source
 func (v CveContents) SourceLinks(lang, myFamily, cveID string) (values []CveContentStr) {
 	if lang == "ja" {
-		if cont, found := v[JVN]; found && !cont.Empty() {
+		if cont, found := v[JVN]; found && 0 < len(cont.SourceLink) {
 			values = append(values, CveContentStr{JVN, cont.SourceLink})
 		}
 	}
