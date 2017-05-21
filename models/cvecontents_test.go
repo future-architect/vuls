@@ -158,6 +158,22 @@ func TestMaxCvss2Scores(t *testing.T) {
 				},
 			},
 		},
+		// Severity in OVAL
+		{
+			in: CveContents{
+				Ubuntu: {
+					Type:     Ubuntu,
+					Severity: "HIGH",
+				},
+			},
+			out: CveContentCvss2{
+				Type: Ubuntu,
+				Value: Cvss2{
+					Score:    10,
+					Severity: "HIGH",
+				},
+			},
+		},
 		// Empty
 		{
 			in: CveContents{},

@@ -106,6 +106,7 @@ func (v CveContents) Cvss2Scores() (values []CveContentCvss2) {
 			})
 		}
 	}
+
 	return
 }
 
@@ -136,7 +137,67 @@ func (v CveContents) MaxCvss2Score() CveContentCvss2 {
 			max = cont.Cvss2Score
 		}
 	}
+	if 0 < max {
+		return value
+	}
+
+	// If CVSS score isn't on NVD, RedHat and JVN use OVAL's Severity information.
+	// Convert severity to cvss srore, then returns max severity.
+	// Only Ubuntu, RedHat and Oracle OVAL has severity data.
+	order = []CveContentType{Ubuntu, RedHat, Oracle}
+	for _, ctype := range order {
+		if cont, found := v[ctype]; found && 0 < len(cont.Severity) {
+			score := 0.0
+			switch cont.Type {
+			case Ubuntu:
+				score = severityToScoreForUbuntu(cont.Severity)
+			case Oracle, RedHat:
+				score = severityToScoreForRedHat(cont.Severity)
+			}
+			if max < score {
+				value = CveContentCvss2{
+					Type: ctype,
+					Value: Cvss2{
+						Score:    score,
+						Vector:   cont.Cvss2Vector,
+						Severity: cont.Severity,
+					},
+				}
+			}
+			max = score
+		}
+	}
 	return value
+}
+
+// Convert Severity to Score for Ubuntu OVAL
+func severityToScoreForUbuntu(severity string) float64 {
+	switch strings.ToUpper(severity) {
+	case "HIGH":
+		return 10.0
+	case "MEDIUM":
+		return 6.9
+	case "LOW":
+		return 3.9
+	}
+	return 0
+}
+
+// Convert Severity to Score for RedHat, Oracle OVAL
+// https://access.redhat.com/security/updates/classification
+// Since I don't know the definition, Use the definition of CVSSv3
+func severityToScoreForRedHat(severity string) float64 {
+	switch strings.ToUpper(severity) {
+	case "CRITICAL":
+		return 10.0
+	case "IMPORTANT":
+		return 8.9
+	case "MODERATE":
+		return 6.9
+	case "LOW":
+		return 3.9
+	}
+	return 0
 }
 
 // CveContentCvss3 has CveContentType and Cvss3
@@ -476,6 +537,9 @@ const (
 
 	// Ubuntu is Ubuntu
 	Ubuntu CveContentType = "ubuntu"
+
+	// Oracle is Oracle Linux
+	Oracle CveContentType = "oracle"
 
 	// Unknown is Unknown
 	Unknown CveContentType = "unknown"
