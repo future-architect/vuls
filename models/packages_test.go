@@ -14,5 +14,46 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 package models
+
+import (
+	"reflect"
+	"testing"
+
+	"github.com/k0kubun/pp"
+)
+
+func TestMergeNewVersion(t *testing.T) {
+	var test = struct {
+		a        Packages
+		b        Packages
+		expected Packages
+	}{
+		Packages{
+			"hoge": {
+				Name: "hoge",
+			},
+		},
+		Packages{
+			"hoge": {
+				Name:       "hoge",
+				NewVersion: "1.0.0",
+				NewRelease: "release1",
+			},
+		},
+		Packages{
+			"hoge": {
+				Name:       "hoge",
+				NewVersion: "1.0.0",
+				NewRelease: "release1",
+			},
+		},
+	}
+
+	test.a.MergeNewVersion(test.b)
+	if !reflect.DeepEqual(test.a, test.expected) {
+		e := pp.Sprintf("%v", test.a)
+		a := pp.Sprintf("%v", test.expected)
+		t.Errorf("expected %s, actual %s", e, a)
+	}
+}

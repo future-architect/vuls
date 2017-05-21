@@ -25,9 +25,7 @@ import (
 	"path/filepath"
 
 	c "github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/cveapi"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
@@ -290,6 +288,8 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	c.Conf.Lang = p.lang
 	c.Conf.ResultsDir = p.resultsDir
+	c.Conf.RefreshCve = p.refreshCve
+	c.Conf.Diff = p.diff
 	c.Conf.CveDBType = p.cvedbtype
 	c.Conf.CveDBPath = p.cvedbpath
 	c.Conf.CveDBURL = p.cvedbURL
@@ -314,9 +314,9 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	var dir string
 	var err error
 	if p.diff {
-		dir, err = jsonDir([]string{})
+		dir, err = report.JSONDir([]string{})
 	} else {
-		dir, err = jsonDir(f.Args())
+		dir, err = report.JSONDir(f.Args())
 	}
 	if err != nil {
 		util.Log.Errorf("Failed to read from JSON: %s", err)
@@ -385,7 +385,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	if !c.Conf.ValidateOnReport() {
 		return subcommands.ExitUsageError
 	}
-	if ok, err := cveapi.CveClient.CheckHealth(); !ok {
+	if ok, err := report.CveClient.CheckHealth(); !ok {
 		util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
 		util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with --cvedb-path option")
 		return subcommands.ExitFailure
@@ -398,90 +398,36 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	rs, err := loadScanResults(dir)
-	if err != nil {
+	var res models.ScanResults
+	if res, err = report.LoadScanResults(dir); err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}
 	util.Log.Infof("Loaded: %s", dir)
 
-	var results []models.ScanResult
-	for _, r := range rs {
-		if p.refreshCve || needToRefreshCve(r) {
-			util.Log.Debugf("need to refresh")
-			if c.Conf.CveDBType == "sqlite3" && c.Conf.CveDBURL == "" {
-				if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
-					util.Log.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
-						c.Conf.CveDBPath)
-					return subcommands.ExitFailure
-				}
-			}
-
-			if err := fillCveInfoFromOvalDB(&r); err != nil {
-				util.Log.Errorf("Failed to fill OVAL information: %s", err)
-				return subcommands.ExitFailure
-			}
-
-			if err := fillCveInfoFromCveDB(&r); err != nil {
-				util.Log.Errorf("Failed to fill CVE information: %s", err)
-				return subcommands.ExitFailure
-			}
-
-			r.Lang = c.Conf.Lang
-			if err := overwriteJSONFile(dir, r); err != nil {
-				util.Log.Errorf("Failed to write JSON: %s", err)
-				return subcommands.ExitFailure
-			}
-			results = append(results, r)
-		} else {
-			util.Log.Debugf("no need to refresh")
-			results = append(results, r)
-		}
+	//TODO dir
+	if res, err = report.FillCveInfos(res, dir); err != nil {
+		util.Log.Error(err)
+		return subcommands.ExitFailure
 	}
 
-	if p.diff {
-		previous, err := loadPrevious(results)
-		if err != nil {
-			util.Log.Error(err)
-			return subcommands.ExitFailure
-		}
-
-		diff, err := diff(results, previous)
-		if err != nil {
-			util.Log.Error(err)
-			return subcommands.ExitFailure
-		}
-		results = []models.ScanResult{}
-		for _, r := range diff {
-			if err := fillCveDetail(&r); err != nil {
-				util.Log.Error(err)
-				return subcommands.ExitFailure
-			}
-			results = append(results, r)
-		}
-	}
-
-	var res models.ScanResults
-	for _, r := range results {
-		res = append(res, r.FilterByCvssOver(c.Conf.CvssScoreOver))
-
-		// TODO Add sort function to ScanResults
-
-		//remove
-		//  for _, vuln := range r.ScannedCves {
-		//      //  if _, ok := vuln.CveContents.Get(models.NewCveContentType(r.Family)); !ok {
-		//      //      pp.Printf("not in oval: %s %f\n%v\n",
-		//      //          vuln.CveID, vuln.CveContents.CvssV2Score(), vuln.Packages)
-		//      //  } else {
-		//      //      fmt.Printf("    in oval: %s %f\n",
-		//      //          vuln.CveID, vuln.CveContents.CvssV2Score())
-		//      //  }
-		//      //  if vuln.CveContents.CvssV2Score() < 0.1 &&
-		//      //      vuln.CveContents.CvssV3Score() < 0.1 {
-		//      //      pp.Println(vuln)
-		//      //  }
-		//  }
-	}
+	// TODO Filter, Sort
+	// TODO Add sort function to ScanResults
+	//remove
+	//  for _, vuln := range r.ScannedCves {
+	//      //  if _, ok := vuln.CveContents.Get(models.NewCveContentType(r.Family)); !ok {
+	//      //      pp.Printf("not in oval: %s %f\n%v\n",
+	//      //          vuln.CveID, vuln.CveContents.CvssV2Score(), vuln.Packages)
+	//      //  } else {
+	//      //      fmt.Printf("    in oval: %s %f\n",
+	//      //          vuln.CveID, vuln.CveContents.CvssV2Score())
+	//      //  }
+	//      //  if vuln.CveContents.CvssV2Score() < 0.1 &&
+	//      //      vuln.CveContents.CvssV3Score() < 0.1 {
+	//      //      pp.Println(vuln)
+	//      //  }
+	//  }
+	//  }
 
 	for _, w := range reports {
 		if err := w.Write(res...); err != nil {
@@ -490,77 +436,4 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 	return subcommands.ExitSuccess
-}
-
-// fillCveDetail fetches NVD, JVN from CVE Database, and then set to fields.
-func fillCveDetail(r *models.ScanResult) error {
-	var cveIDs []string
-	for _, v := range r.ScannedCves {
-		cveIDs = append(cveIDs, v.CveID)
-	}
-
-	ds, err := cveapi.CveClient.FetchCveDetails(cveIDs)
-	if err != nil {
-		return err
-	}
-	for _, d := range ds {
-		nvd := r.ConvertNvdToModel(d.CveID, d.Nvd)
-		jvn := r.ConvertJvnToModel(d.CveID, d.Jvn)
-		for cveID, vinfo := range r.ScannedCves {
-			if vinfo.CveID == d.CveID {
-				if vinfo.CveContents == nil {
-					vinfo.CveContents = models.CveContents{}
-				}
-				for _, con := range []models.CveContent{*nvd, *jvn} {
-					if !con.Empty() {
-						vinfo.CveContents[con.Type] = con
-					}
-				}
-				r.ScannedCves[cveID] = vinfo
-				break
-			}
-		}
-	}
-	//TODO Remove
-	//  sort.Slice(r.ScannedCves, func(i, j int) bool {
-	//      if r.ScannedCves[j].CveContents.CvssV2Score() == r.ScannedCves[i].CveContents.CvssV2Score() {
-	//          return r.ScannedCves[j].CveContents.CvssV2Score() < r.ScannedCves[i].CveContents.CvssV2Score()
-	//      }
-	//      return r.ScannedCves[j].CveContents.CvssV2Score() < r.ScannedCves[i].CveContents.CvssV2Score()
-	//  })
-	return nil
-}
-
-func fillCveInfoFromCveDB(r *models.ScanResult) error {
-	sInfo := c.Conf.Servers[r.ServerName]
-	if err := fillVulnByCpeNames(sInfo.CpeNames, r.ScannedCves); err != nil {
-		return err
-	}
-	if err := fillCveDetail(r); err != nil {
-		return err
-	}
-	return nil
-}
-
-func fillCveInfoFromOvalDB(r *models.ScanResult) error {
-	var ovalClient oval.Client
-	switch r.Family {
-	case "debian":
-		ovalClient = oval.NewDebian()
-	case "ubuntu":
-		ovalClient = oval.NewUbuntu()
-	case "rhel":
-		ovalClient = oval.NewRedhat()
-	case "centos":
-		ovalClient = oval.NewCentOS()
-	case "amazon", "oraclelinux", "Raspbian", "FreeBSD":
-		//TODO implement OracleLinux
-		return nil
-	default:
-		return fmt.Errorf("Oval %s is not implemented yet", r.Family)
-	}
-	if err := ovalClient.FillCveInfoFromOvalDB(r); err != nil {
-		return err
-	}
-	return nil
 }
