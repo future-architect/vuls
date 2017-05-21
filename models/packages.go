@@ -48,7 +48,7 @@ func (ps Packages) MergeNewVersion(as Packages) {
 
 // Merge returns merged map (immutable)
 func (ps Packages) Merge(other Packages) Packages {
-	merged := map[string]Package{}
+	merged := Packages{}
 	for k, v := range ps {
 		merged[k] = v
 	}
