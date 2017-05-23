@@ -66,6 +66,7 @@ func FillCveInfos(rs []models.ScanResult, dir string) ([]models.ScanResult, erro
 		}
 	}
 
+	//TODO remove debug code
 	for _, r := range filled {
 		pp.Printf("filled: %d\n", len(r.ScannedCves))
 	}
@@ -75,11 +76,11 @@ func FillCveInfos(rs []models.ScanResult, dir string) ([]models.ScanResult, erro
 		filtered = append(filtered, r.FilterByCvssOver(c.Conf.CvssScoreOver))
 	}
 
+	//TODO remove debug code
 	for _, r := range filtered {
 		pp.Printf("filtered: %d\n", len(r.ScannedCves))
 	}
 
-	// TODO Sort
 	return filtered, nil
 }
 

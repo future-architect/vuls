@@ -30,25 +30,6 @@ import (
 // ScanResults is a slide of ScanResult
 type ScanResults []ScanResult
 
-//TODO
-//  // Len implement Sort Interface
-//  func (s ScanResults) Len() int {
-//      return len(s)
-//  }
-
-//  // Swap implement Sort Interface
-//  func (s ScanResults) Swap(i, j int) {
-//      s[i], s[j] = s[j], s[i]
-//  }
-
-//  // Less implement Sort Interface
-//  func (s ScanResults) Less(i, j int) bool {
-//      if s[i].ServerName == s[j].ServerName {
-//          return s[i].Container.ContainerID < s[i].Container.ContainerID
-//      }
-//      return s[i].ServerName < s[j].ServerName
-//  }
-
 // ScanResult has the result of scanned CVE information.
 type ScanResult struct {
 	ScannedAt   time.Time
@@ -159,12 +140,6 @@ func (r ScanResult) ConvertJvnToModel(cveID string, jvn cvedict.Jvn) *CveContent
 
 // FilterByCvssOver is filter function.
 func (r ScanResult) FilterByCvssOver(over float64) ScanResult {
-	// TODO: Set correct default value
-	if over == 0 {
-		over = -1.1
-	}
-
-	// TODO: Filter by ignore cves???
 	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
 		v2Max := v.CveContents.MaxCvss2Score()
 		v3Max := v.CveContents.MaxCvss3Score()
@@ -241,7 +216,7 @@ func (r ScanResult) FormatServerName() string {
 }
 
 // CveSummary summarize the number of CVEs group by CVSSv2 Severity
-func (r ScanResult) CveSummary(ignoreUnscoreCves bool) string {
+func (r ScanResult) CveSummary() string {
 	var high, medium, low, unknown int
 	for _, vInfo := range r.ScannedCves {
 		score := vInfo.CveContents.MaxCvss2Score().Value.Score
@@ -260,7 +235,7 @@ func (r ScanResult) CveSummary(ignoreUnscoreCves bool) string {
 		}
 	}
 
-	if ignoreUnscoreCves {
+	if config.Conf.IgnoreUnscoredCves {
 		return fmt.Sprintf("Total: %d (High:%d Medium:%d Low:%d)",
 			high+medium+low, high, medium, low)
 	}
@@ -278,7 +253,7 @@ func (r ScanResult) FormatTextReportHeadedr() string {
 	return fmt.Sprintf("%s\n%s\n%s\t%s\n",
 		r.ServerInfo(),
 		buf.String(),
-		r.CveSummary(config.Conf.IgnoreUnscoredCves),
+		r.CveSummary(),
 		r.Packages.FormatUpdatablePacksSummary(),
 	)
 }

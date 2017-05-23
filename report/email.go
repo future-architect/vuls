@@ -52,7 +52,7 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 				subject = fmt.Sprintf("%s%s %s",
 					conf.EMail.SubjectPrefix,
 					r.ServerInfo(),
-					r.CveSummary(config.Conf.IgnoreUnscoredCves))
+					r.CveSummary())
 			}
 			message = formatFullPlainText(r)
 			if err := sender.Send(subject, message); err != nil {
@@ -74,7 +74,7 @@ One Line Summary
 
 		subject := fmt.Sprintf("%s %s",
 			conf.EMail.SubjectPrefix,
-			totalResult.CveSummary(config.Conf.IgnoreUnscoredCves),
+			totalResult.CveSummary(),
 		)
 		return sender.Send(subject, message)
 	}
