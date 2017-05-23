@@ -72,7 +72,7 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 		if len(r.Errors) == 0 {
 			cols = []interface{}{
 				r.FormatServerName(),
-				r.CveSummary(config.Conf.IgnoreUnscoredCves),
+				r.CveSummary(),
 				r.Packages.FormatUpdatablePacksSummary(),
 			}
 		} else {
@@ -96,7 +96,7 @@ func formatShortPlainText(r models.ScanResult) string {
 	}
 
 	vulns := r.ScannedCves
-	if !config.Conf.IgnoreUnscoredCves {
+	if config.Conf.IgnoreUnscoredCves {
 		vulns = vulns.FindScoredVulns()
 	}
 
@@ -163,7 +163,7 @@ func formatFullPlainText(r models.ScanResult) string {
 	}
 
 	vulns := r.ScannedCves
-	if !config.Conf.IgnoreUnscoredCves {
+	if config.Conf.IgnoreUnscoredCves {
 		vulns = vulns.FindScoredVulns()
 	}
 
