@@ -19,6 +19,7 @@ package models
 
 import (
 	"fmt"
+	"sort"
 	"time"
 )
 
@@ -36,7 +37,7 @@ func (v VulnInfos) Find(f func(VulnInfo) bool) VulnInfos {
 	return filtered
 }
 
-// FindScoredVulns return socred vulnerabilities
+// FindScoredVulns return scored vulnerabilities
 func (v VulnInfos) FindScoredVulns() VulnInfos {
 	return v.Find(func(vv VulnInfo) bool {
 		if 0 < vv.CveContents.MaxCvss2Score().Value.Score ||
@@ -45,6 +46,22 @@ func (v VulnInfos) FindScoredVulns() VulnInfos {
 		}
 		return false
 	})
+}
+
+// ToSortedSlice returns slice of VulnInfos that is sorted by CVE-ID
+func (v VulnInfos) ToSortedSlice() (sorted []VulnInfo) {
+	for k := range v {
+		sorted = append(sorted, v[k])
+	}
+	sort.Slice(sorted, func(i, j int) bool {
+		maxI := sorted[i].CveContents.MaxCvssScore()
+		maxJ := sorted[j].CveContents.MaxCvssScore()
+		if maxI != maxJ {
+			return maxJ < maxI
+		}
+		return sorted[i].CveID < sorted[j].CveID
+	})
+	return
 }
 
 // VulnInfo holds a vulnerability information and unsecure packages

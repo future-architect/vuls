@@ -185,7 +185,7 @@ func severityToScoreForUbuntu(severity string) float64 {
 
 // Convert Severity to Score for RedHat, Oracle OVAL
 // https://access.redhat.com/security/updates/classification
-// Since I don't know the definition, Use the definition of CVSSv3
+// Use the definition of CVSSv3 because the exact definition of severity and score is not described.
 func severityToScoreForRedHat(severity string) float64 {
 	switch strings.ToUpper(severity) {
 	case "CRITICAL":
@@ -231,7 +231,6 @@ func cvss3ScoreToSeverity(score float64) string {
 
 // Cvss3Scores returns CVSS V3 Score
 func (v CveContents) Cvss3Scores() (values []CveContentCvss3) {
-	//TODO Severity Ubuntu, Debian...
 	order := []CveContentType{RedHat}
 	for _, ctype := range order {
 		if cont, found := v[ctype]; found && 0 < cont.Cvss3Score {
@@ -255,7 +254,6 @@ func (v CveContents) Cvss3Scores() (values []CveContentCvss3) {
 
 // MaxCvss3Score returns Max CVSS V3 Score
 func (v CveContents) MaxCvss3Score() CveContentCvss3 {
-	//TODO Severity Ubuntu, Debian...
 	order := []CveContentType{RedHat}
 	max := 0.0
 	value := CveContentCvss3{
@@ -281,6 +279,18 @@ func (v CveContents) MaxCvss3Score() CveContentCvss3 {
 		}
 	}
 	return value
+}
+
+// MaxCvssScore returns max CVSS Score
+// If there is no CVSS Score, return Severity as a numerical value.
+func (v CveContents) MaxCvssScore() float64 {
+	v3Max := v.MaxCvss3Score()
+	v2Max := v.MaxCvss2Score()
+	max := v3Max.Value.Score
+	if max < v2Max.Value.Score {
+		max = v2Max.Value.Score
+	}
+	return max
 }
 
 // FormatMaxCvssScore returns Max CVSS Score

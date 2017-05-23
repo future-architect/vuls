@@ -21,18 +21,6 @@ import (
 	"testing"
 )
 
-var m = CveContent{
-	Type:        RedHat,
-	CveID:       "CVE-2017-0001",
-	Title:       "title",
-	Summary:     "summary",
-	Severity:    "High",
-	Cvss2Score:  8.0,
-	Cvss2Vector: "AV:N/AC:L/Au:N/C:N/I:N/A:P",
-	Cvss3Score:  9.0,
-	Cvss3Vector: "AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
-}
-
 func TestExcept(t *testing.T) {
 	var tests = []struct {
 		in  CveContents
@@ -280,6 +268,69 @@ func TestMaxCvss3Scores(t *testing.T) {
 		actual := tt.in.MaxCvss3Score()
 		if !reflect.DeepEqual(tt.out, actual) {
 			t.Errorf("\nexpected: %v\n  actual: %v\n", tt.out, actual)
+		}
+	}
+}
+
+func TestMaxCvssScores(t *testing.T) {
+	var tests = []struct {
+		in  CveContents
+		out float64
+	}{
+		{
+			in: CveContents{
+				NVD: {
+					Type:       NVD,
+					Cvss3Score: 7.0,
+				},
+				RedHat: {
+					Type:       RedHat,
+					Cvss2Score: 8.0,
+				},
+			},
+			out: 8.0,
+		},
+		{
+			in: CveContents{
+				RedHat: {
+					Type:       RedHat,
+					Cvss3Score: 8.0,
+				},
+			},
+			out: 8.0,
+		},
+		{
+			in: CveContents{
+				Ubuntu: {
+					Type:     Ubuntu,
+					Severity: "HIGH",
+				},
+			},
+			out: 10.0,
+		},
+		{
+			in: CveContents{
+				Ubuntu: {
+					Type:     Ubuntu,
+					Severity: "MEDIUM",
+				},
+				NVD: {
+					Type:       NVD,
+					Cvss2Score: 7.0,
+				},
+			},
+			out: 7.0,
+		},
+		// Empty
+		{
+			in:  CveContents{},
+			out: 0,
+		},
+	}
+	for i, tt := range tests {
+		actual := tt.in.MaxCvssScore()
+		if !reflect.DeepEqual(tt.out, actual) {
+			t.Errorf("\n[%d] expected: %v\n  actual: %v\n", i, tt.out, actual)
 		}
 	}
 }
