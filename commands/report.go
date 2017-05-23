@@ -299,8 +299,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
 	c.Conf.HTTPProxy = p.httpProxy
 
-	c.Conf.Pipe = p.pipe
-
 	c.Conf.FormatXML = p.formatXML
 	c.Conf.FormatJSON = p.formatJSON
 	c.Conf.FormatOneEMail = p.formatOneEMail
@@ -310,6 +308,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	c.Conf.GZIP = p.gzip
 	c.Conf.Diff = p.diff
+	c.Conf.Pipe = p.pipe
 
 	var dir string
 	var err error
@@ -405,29 +404,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 	util.Log.Infof("Loaded: %s", dir)
 
-	//TODO dir
 	if res, err = report.FillCveInfos(res, dir); err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}
-
-	// TODO Filter, Sort
-	// TODO Add sort function to ScanResults
-	//remove
-	//  for _, vuln := range r.ScannedCves {
-	//      //  if _, ok := vuln.CveContents.Get(models.NewCveContentType(r.Family)); !ok {
-	//      //      pp.Printf("not in oval: %s %f\n%v\n",
-	//      //          vuln.CveID, vuln.CveContents.CvssV2Score(), vuln.Packages)
-	//      //  } else {
-	//      //      fmt.Printf("    in oval: %s %f\n",
-	//      //          vuln.CveID, vuln.CveContents.CvssV2Score())
-	//      //  }
-	//      //  if vuln.CveContents.CvssV2Score() < 0.1 &&
-	//      //      vuln.CveContents.CvssV3Score() < 0.1 {
-	//      //      pp.Println(vuln)
-	//      //  }
-	//  }
-	//  }
 
 	for _, w := range reports {
 		if err := w.Write(res...); err != nil {

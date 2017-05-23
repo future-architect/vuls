@@ -111,7 +111,7 @@ func formatShortPlainText(r models.ScanResult) string {
 	stable := uitable.New()
 	stable.MaxColWidth = maxColWidth
 	stable.Wrap = true
-	for _, vuln := range vulns {
+	for _, vuln := range vulns.ToSortedSlice() {
 		summaries := vuln.CveContents.Summaries(config.Conf.Lang, r.Family)
 		links := vuln.CveContents.SourceLinks(
 			config.Conf.Lang, r.Family, vuln.CveID)
@@ -178,7 +178,7 @@ func formatFullPlainText(r models.ScanResult) string {
 	table := uitable.New()
 	table.MaxColWidth = maxColWidth
 	table.Wrap = true
-	for _, vuln := range vulns {
+	for _, vuln := range vulns.ToSortedSlice() {
 		table.AddRow(vuln.CveID)
 		table.AddRow("----------------")
 		table.AddRow("Max Score", vuln.CveContents.FormatMaxCvssScore())
@@ -209,12 +209,14 @@ func formatFullPlainText(r models.ScanResult) string {
 		}
 
 		packsVer := []string{}
+		sort.Strings(vuln.PackageNames)
 		for _, name := range vuln.PackageNames {
 			// packages detected by OVAL may not be actually installed
 			if pack, ok := r.Packages[name]; ok {
 				packsVer = append(packsVer, pack.FormatVersionFromTo())
 			}
 		}
+		sort.Strings(vuln.CpeNames)
 		for _, name := range vuln.CpeNames {
 			packsVer = append(packsVer, name)
 		}
