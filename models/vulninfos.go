@@ -20,6 +20,7 @@ package models
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -82,6 +83,46 @@ func (v VulnInfo) Cvss2CalcURL() string {
 // Cvss3CalcURL returns CVSS v3 caluclator's URL
 func (v VulnInfo) Cvss3CalcURL() string {
 	return "https://nvd.nist.gov/vuln-metrics/cvss/v3-calculator?name=" + v.CveID
+}
+
+// VendorLinks returns links of vendor support's URL
+func (v VulnInfo) VendorLinks(family string) map[string]string {
+	links := map[string]string{}
+	switch family {
+	case "rhel", "centos":
+		links["RHEL-CVE"] = "https://access.redhat.com/security/cve/" + v.CveID
+		for _, advisory := range v.DistroAdvisories {
+			aidURL := strings.Replace(advisory.AdvisoryID, ":", "-", -1)
+			links[advisory.AdvisoryID] = fmt.Sprintf("https://rhn.redhat.com/errata/%s.html", aidURL)
+		}
+		return links
+	case "oraclelinux":
+		links["Oracle-CVE"] = fmt.Sprintf("https://linux.oracle.com/cve/%s.html", v.CveID)
+		for _, advisory := range v.DistroAdvisories {
+			links[advisory.AdvisoryID] =
+				fmt.Sprintf("https://linux.oracle.com/errata/%s.html", advisory.AdvisoryID)
+		}
+		return links
+	case "amazon":
+		links["RHEL-CVE"] = "https://access.redhat.com/security/cve/" + v.CveID
+		for _, advisory := range v.DistroAdvisories {
+			links[advisory.AdvisoryID] =
+				fmt.Sprintf("https://alas.aws.amazon.com/%s.html", advisory.AdvisoryID)
+		}
+		return links
+	case "ubuntu":
+		links["Ubuntu-CVE"] = "http://people.ubuntu.com/~ubuntu-security/cve/" + v.CveID
+		return links
+	case "debian":
+		links["Debian-CVE"] = "https://security-tracker.debian.org/tracker/" + v.CveID
+	case "FreeBSD":
+		for _, advisory := range v.DistroAdvisories {
+			links["FreeBSD-VuXML"] = fmt.Sprintf("https://vuxml.freebsd.org/freebsd/%s.html", advisory.AdvisoryID)
+
+		}
+		return links
+	}
+	return links
 }
 
 // TODO

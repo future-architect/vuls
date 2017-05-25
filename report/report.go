@@ -28,6 +28,11 @@ import (
 	"github.com/k0kubun/pp"
 )
 
+const (
+	vulsOpenTag  = "<vulsreport>"
+	vulsCloseTag = "</vulsreport>"
+)
+
 // FillCveInfos fills CVE Detailed Information
 func FillCveInfos(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 	var filled []models.ScanResult
