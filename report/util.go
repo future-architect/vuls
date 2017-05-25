@@ -116,6 +116,11 @@ func formatShortPlainText(r models.ScanResult) string {
 		links := vuln.CveContents.SourceLinks(
 			config.Conf.Lang, r.Family, vuln.CveID)
 
+		vlinks := []string{}
+		for name, url := range vuln.VendorLinks(r.Family) {
+			vlinks = append(vlinks, fmt.Sprintf("%s (%s)", url, name))
+		}
+
 		cvsses := ""
 		for _, cvss := range vuln.CveContents.Cvss2Scores() {
 			cvsses += fmt.Sprintf("%s (%s)\n", cvss.Value.Format(), cvss.Type)
@@ -133,10 +138,12 @@ func formatShortPlainText(r models.ScanResult) string {
 %s
 ---
 %s
+%s
 %sConfidence: %v`,
 			maxCvss,
 			summaries[0].Value,
 			links[0].Value,
+			strings.Join(vlinks, "\n"),
 			cvsses,
 			//  packsVer,
 			vuln.Confidence,

@@ -41,8 +41,6 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 	for _, r := range rs {
 		if conf.FormatOneEMail {
 			message += formatFullPlainText(r) + "\r\n\r\n"
-			//  totalResult.KnownCves = append(totalResult.KnownCves, r.KnownCves...)
-			//  totalResult.UnknownCves = append(totalResult.UnknownCves, r.UnknownCves...)
 		} else {
 			var subject string
 			if len(r.Errors) != 0 {
