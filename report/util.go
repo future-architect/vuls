@@ -201,8 +201,10 @@ func formatFullPlainText(r models.ScanResult) string {
 			config.Conf.Lang, r.Family, vuln.CveID)
 		table.AddRow("Source", links[0].Value)
 
-		vendorLink := vuln.CveContents.VendorLink(r.Family)
-		table.AddRow(fmt.Sprintf("Vendor (%s)", vendorLink.Type), vendorLink.Value)
+		vlinks := vuln.VendorLinks(r.Family)
+		for name, url := range vlinks {
+			table.AddRow(name, url)
+		}
 
 		for _, v := range vuln.CveContents.CweIDs(r.Family) {
 			table.AddRow(fmt.Sprintf("%s (%s)", v.Value, v.Type), cweURL(v.Value))
@@ -456,27 +458,6 @@ func formatPlainTextDetails(r models.ScanResult, osFamily string) (scoredReport,
 //          return []distroLink{}
 //      }
 //  }
-
-// addPackages add package information related the CVE to table
-func addPackages(table *uitable.Table, packs []models.Package) *uitable.Table {
-	for i, p := range packs {
-		var title string
-		if i == 0 {
-			title = "Package"
-		}
-		ver := fmt.Sprintf(
-			"%s -> %s", p.FormatVer(), p.FormatNewVer())
-		table.AddRow(title, ver)
-	}
-	return table
-}
-
-func addCpeNames(table *uitable.Table, names []string) *uitable.Table {
-	for _, n := range names {
-		table.AddRow("CPE", fmt.Sprintf("%s", n))
-	}
-	return table
-}
 
 func cweURL(cweID string) string {
 	return fmt.Sprintf("https://cwe.mitre.org/data/definitions/%s.html",

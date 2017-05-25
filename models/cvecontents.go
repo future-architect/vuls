@@ -399,15 +399,6 @@ func (v CveContents) SourceLinks(lang, myFamily, cveID string) (values []CveCont
 	return values
 }
 
-// VendorLink returns link of source
-func (v CveContents) VendorLink(myFamily string) CveContentStr {
-	ctype := NewCveContentType(myFamily)
-	if cont, ok := v[ctype]; ok {
-		return CveContentStr{ctype, cont.SourceLink}
-	}
-	return CveContentStr{ctype, ""}
-}
-
 // Severities returns Severities
 //  func (v CveContents) Severities(myFamily string) (values []CveContentValue) {
 //      order := CveContentTypes{NVD, NewCveContentType(myFamily)}
