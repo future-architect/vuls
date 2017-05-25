@@ -687,55 +687,61 @@ func TestSourceLinks(t *testing.T) {
 func TestVendorLink(t *testing.T) {
 	type in struct {
 		family string
-		cont   CveContents
+		vinfo  VulnInfo
 	}
 	var tests = []struct {
 		in  in
-		out CveContentStr
+		out map[string]string
 	}{
 		{
 			in: in{
-				family: "redhat",
-				cont: CveContents{
-					JVN: {
-						Type:       JVN,
-						SourceLink: "https://jvn.jp/vu/JVNVU93610402/",
-					},
-					RedHat: {
-						Type:       RedHat,
-						SourceLink: "https://access.redhat.com/security/cve/CVE-2017-6074",
-					},
-					NVD: {
-						Type:       NVD,
-						SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
+				family: "rhel",
+				vinfo: VulnInfo{
+					CveID: "CVE-2017-6074",
+					CveContents: CveContents{
+						JVN: {
+							Type:       JVN,
+							SourceLink: "https://jvn.jp/vu/JVNVU93610402/",
+						},
+						RedHat: {
+							Type:       RedHat,
+							SourceLink: "https://access.redhat.com/security/cve/CVE-2017-6074",
+						},
+						NVD: {
+							Type:       NVD,
+							SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
+						},
 					},
 				},
 			},
-			out: CveContentStr{
-				Type:  RedHat,
-				Value: "https://access.redhat.com/security/cve/CVE-2017-6074",
+			out: map[string]string{
+				"RHEL-CVE": "https://access.redhat.com/security/cve/CVE-2017-6074",
 			},
 		},
 		{
 			in: in{
 				family: "ubuntu",
-				cont: CveContents{
-					RedHat: {
-						Type:       RedHat,
-						SourceLink: "https://access.redhat.com/security/cve/CVE-2017-6074",
+				vinfo: VulnInfo{
+					CveID: "CVE-2017-6074",
+					CveContents: CveContents{
+						RedHat: {
+							Type:       Ubuntu,
+							SourceLink: "https://access.redhat.com/security/cve/CVE-2017-6074",
+						},
 					},
 				},
 			},
-			out: CveContentStr{
-				Type:  Ubuntu,
-				Value: "",
+			out: map[string]string{
+				"Ubuntu-CVE": "http://people.ubuntu.com/~ubuntu-security/cve/CVE-2017-6074",
 			},
 		},
 	}
 	for _, tt := range tests {
-		actual := tt.in.cont.VendorLink(tt.in.family)
-		if !reflect.DeepEqual(tt.out, actual) {
-			t.Errorf("\nexpected: %v\n  actual: %v\n", tt.out, actual)
+		actual := tt.in.vinfo.VendorLinks(tt.in.family)
+		for k := range tt.out {
+			if tt.out[k] != actual[k] {
+				t.Errorf("\nexpected: %s\n  actual: %s\n", tt.out[k], actual[k])
+			}
 		}
 	}
 }
