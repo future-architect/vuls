@@ -21,6 +21,67 @@ import (
 	"testing"
 )
 
+func TestCountGroupBySeverity(t *testing.T) {
+	var tests = []struct {
+		in  VulnInfos
+		out map[string]int
+	}{
+		{
+			in: VulnInfos{
+				"CVE-2017-0002": {
+					CveID: "CVE-2017-0002",
+					CveContents: CveContents{
+						NVD: {
+							Type:       NVD,
+							Cvss2Score: 6.0,
+						},
+						RedHat: {
+							Type:       RedHat,
+							Cvss2Score: 7.0,
+						},
+					},
+				},
+				"CVE-2017-0003": {
+					CveID: "CVE-2017-0003",
+					CveContents: CveContents{
+						NVD: {
+							Type:       NVD,
+							Cvss2Score: 2.0,
+						},
+					},
+				},
+				"CVE-2017-0004": {
+					CveID: "CVE-2017-0004",
+					CveContents: CveContents{
+						NVD: {
+							Type:       NVD,
+							Cvss2Score: 5.0,
+						},
+					},
+				},
+				"CVE-2017-0005": {
+					CveID: "CVE-2017-0005",
+				},
+			},
+			out: map[string]int{
+				"High":    1,
+				"Medium":  1,
+				"Low":     1,
+				"Unknown": 1,
+			},
+		},
+	}
+	for _, tt := range tests {
+		actual := tt.in.CountGroupBySeverity()
+		for k := range tt.out {
+			if tt.out[k] != actual[k] {
+				t.Errorf("\nexpected %s: %d\n  actual %d\n",
+					k, tt.out[k], actual[k])
+			}
+		}
+	}
+}
+
 func TestToSortedSlice(t *testing.T) {
 	var tests = []struct {
 		in  VulnInfos
@@ -33,11 +94,11 @@ func TestToSortedSlice(t *testing.T) {
 					CveContents: CveContents{
 						NVD: {
 							Type:       NVD,
-							Cvss3Score: 6.0,
+							Cvss2Score: 6.0,
 						},
 						RedHat: {
 							Type:       RedHat,
-							Cvss2Score: 7.0,
+							Cvss3Score: 7.0,
 						},
 					},
 				},
@@ -46,11 +107,11 @@ func TestToSortedSlice(t *testing.T) {
 					CveContents: CveContents{
 						NVD: {
 							Type:       NVD,
-							Cvss3Score: 7.0,
+							Cvss2Score: 7.0,
 						},
 						RedHat: {
 							Type:       RedHat,
-							Cvss2Score: 8.0,
+							Cvss3Score: 8.0,
 						},
 					},
 				},
@@ -61,11 +122,11 @@ func TestToSortedSlice(t *testing.T) {
 					CveContents: CveContents{
 						NVD: {
 							Type:       NVD,
-							Cvss3Score: 7.0,
+							Cvss2Score: 7.0,
 						},
 						RedHat: {
 							Type:       RedHat,
-							Cvss2Score: 8.0,
+							Cvss3Score: 8.0,
 						},
 					},
 				},
@@ -74,11 +135,11 @@ func TestToSortedSlice(t *testing.T) {
 					CveContents: CveContents{
 						NVD: {
 							Type:       NVD,
-							Cvss3Score: 6.0,
+							Cvss2Score: 6.0,
 						},
 						RedHat: {
 							Type:       RedHat,
-							Cvss2Score: 7.0,
+							Cvss3Score: 7.0,
 						},
 					},
 				},
@@ -92,11 +153,11 @@ func TestToSortedSlice(t *testing.T) {
 					CveContents: CveContents{
 						NVD: {
 							Type:       NVD,
-							Cvss3Score: 6.0,
+							Cvss2Score: 6.0,
 						},
 						RedHat: {
 							Type:       RedHat,
-							Cvss2Score: 7.0,
+							Cvss3Score: 7.0,
 						},
 					},
 				},
@@ -125,11 +186,11 @@ func TestToSortedSlice(t *testing.T) {
 					CveContents: CveContents{
 						NVD: {
 							Type:       NVD,
-							Cvss3Score: 6.0,
+							Cvss2Score: 6.0,
 						},
 						RedHat: {
 							Type:       RedHat,
-							Cvss2Score: 7.0,
+							Cvss3Score: 7.0,
 						},
 					},
 				},
