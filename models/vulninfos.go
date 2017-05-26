@@ -22,6 +22,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/future-architect/vuls/config"
 )
 
 // VulnInfos is VulnInfo list, getter/setter, sortable methods.
@@ -65,7 +67,42 @@ func (v VulnInfos) ToSortedSlice() (sorted []VulnInfo) {
 	return
 }
 
-// VulnInfo holds a vulnerability information and unsecure packages
+// CountGroupBySeverity summarize the number of CVEs group by CVSSv2 Severity
+func (v VulnInfos) CountGroupBySeverity() map[string]int {
+	m := map[string]int{}
+	for _, vInfo := range v {
+		score := vInfo.CveContents.MaxCvss2Score().Value.Score
+		if score < 0.1 {
+			score = vInfo.CveContents.MaxCvss3Score().Value.Score
+		}
+		switch {
+		case 7.0 <= score:
+			m["High"]++
+		case 4.0 <= score:
+			m["Medium"]++
+		case 0 < score:
+			m["Low"]++
+		default:
+			m["Unknown"]++
+		}
+	}
+	return m
+}
+
+// FormatCveSummary summarize the number of CVEs group by CVSSv2 Severity
+func (v VulnInfos) FormatCveSummary() string {
+	m := v.CountGroupBySeverity()
+
+	if config.Conf.IgnoreUnscoredCves {
+		return fmt.Sprintf("Total: %d (High:%d Medium:%d Low:%d)",
+			m["High"]+m["Medium"]+m["Low"], m["High"], m["Medium"], m["Low"])
+	}
+	return fmt.Sprintf("Total: %d (High:%d Medium:%d Low:%d ?:%d)",
+		m["High"]+m["Medium"]+m["Low"]+m["Unknown"],
+		m["High"], m["Medium"], m["Low"], m["Unknown"])
+}
+
+// VulnInfo has a vulnerability information and unsecure packages
 type VulnInfo struct {
 	CveID            string
 	Confidence       Confidence

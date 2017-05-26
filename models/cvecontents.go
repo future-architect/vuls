@@ -231,14 +231,12 @@ func cvss3ScoreToSeverity(score float64) string {
 
 // Cvss3Scores returns CVSS V3 Score
 func (v CveContents) Cvss3Scores() (values []CveContentCvss3) {
+	// TODO implement NVD
 	order := []CveContentType{RedHat}
 	for _, ctype := range order {
 		if cont, found := v[ctype]; found && 0 < cont.Cvss3Score {
 			// https://nvd.nist.gov/vuln-metrics/cvss
 			sev := cont.Severity
-			if ctype == NVD {
-				sev = cvss3ScoreToSeverity(cont.Cvss2Score)
-			}
 			values = append(values, CveContentCvss3{
 				Type: ctype,
 				Value: Cvss3{
@@ -254,6 +252,7 @@ func (v CveContents) Cvss3Scores() (values []CveContentCvss3) {
 
 // MaxCvss3Score returns Max CVSS V3 Score
 func (v CveContents) MaxCvss3Score() CveContentCvss3 {
+	// TODO implement NVD
 	order := []CveContentType{RedHat}
 	max := 0.0
 	value := CveContentCvss3{
@@ -264,9 +263,6 @@ func (v CveContents) MaxCvss3Score() CveContentCvss3 {
 		if cont, found := v[ctype]; found && max < cont.Cvss3Score {
 			// https://nvd.nist.gov/vuln-metrics/cvss
 			sev := cont.Severity
-			if ctype == NVD {
-				sev = cvss3ScoreToSeverity(cont.Cvss2Score)
-			}
 			value = CveContentCvss3{
 				Type: ctype,
 				Value: Cvss3{

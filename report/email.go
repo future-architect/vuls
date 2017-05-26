@@ -35,12 +35,18 @@ type EMailWriter struct{}
 func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 	conf := config.Conf
 	var message string
-	var totalResult models.ScanResult
 	sender := NewEMailSender()
 
+	m := map[string]int{}
 	for _, r := range rs {
 		if conf.FormatOneEMail {
 			message += formatFullPlainText(r) + "\r\n\r\n"
+
+			mm := r.ScannedCves.CountGroupBySeverity()
+			keys := []string{"High", "Medium", "Low", "Unknown"}
+			for _, k := range keys {
+				m[k] += mm[k]
+			}
 		} else {
 			var subject string
 			if len(r.Errors) != 0 {
@@ -50,7 +56,7 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 				subject = fmt.Sprintf("%s%s %s",
 					conf.EMail.SubjectPrefix,
 					r.ServerInfo(),
-					r.CveSummary())
+					r.ScannedCves.FormatCveSummary())
 			}
 			message = formatFullPlainText(r)
 			if err := sender.Send(subject, message); err != nil {
@@ -58,6 +64,15 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 			}
 		}
 	}
+
+	summary := ""
+	if config.Conf.IgnoreUnscoredCves {
+		summary = fmt.Sprintf("Total: %d (High:%d Medium:%d Low:%d)",
+			m["High"]+m["Medium"]+m["Low"], m["High"], m["Medium"], m["Low"])
+	}
+	summary = fmt.Sprintf("Total: %d (High:%d Medium:%d Low:%d ?:%d)",
+		m["High"]+m["Medium"]+m["Low"]+m["Unknown"],
+		m["High"], m["Medium"], m["Low"], m["Unknown"])
 
 	if conf.FormatOneEMail {
 		message = fmt.Sprintf(
@@ -71,9 +86,7 @@ One Line Summary
 			formatOneLineSummary(rs...), message)
 
 		subject := fmt.Sprintf("%s %s",
-			conf.EMail.SubjectPrefix,
-			totalResult.CveSummary(),
-		)
+			conf.EMail.SubjectPrefix, summary)
 		return sender.Send(subject, message)
 	}
 	return nil

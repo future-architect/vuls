@@ -159,7 +159,7 @@ func msgText(r models.ScanResult) string {
 	return fmt.Sprintf("%s\n%s\n>%s",
 		notifyUsers,
 		serverInfo,
-		r.CveSummary())
+		r.ScannedCves.FormatCveSummary())
 }
 
 func toSlackAttachments(scanResult models.ScanResult) (attaches []*attachment) {

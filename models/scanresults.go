@@ -23,7 +23,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/future-architect/vuls/config"
 	cvedict "github.com/kotakanbe/go-cve-dictionary/models"
 )
 
@@ -215,34 +214,6 @@ func (r ScanResult) FormatServerName() string {
 		r.Container.Name, r.ServerName)
 }
 
-// CveSummary summarize the number of CVEs group by CVSSv2 Severity
-func (r ScanResult) CveSummary() string {
-	var high, medium, low, unknown int
-	for _, vInfo := range r.ScannedCves {
-		score := vInfo.CveContents.MaxCvss2Score().Value.Score
-		if score < 0.1 {
-			score = vInfo.CveContents.MaxCvss3Score().Value.Score
-		}
-		switch {
-		case 7.0 <= score:
-			high++
-		case 4.0 <= score:
-			medium++
-		case 0 < score:
-			low++
-		default:
-			unknown++
-		}
-	}
-
-	if config.Conf.IgnoreUnscoredCves {
-		return fmt.Sprintf("Total: %d (High:%d Medium:%d Low:%d)",
-			high+medium+low, high, medium, low)
-	}
-	return fmt.Sprintf("Total: %d (High:%d Medium:%d Low:%d ?:%d)",
-		high+medium+low+unknown, high, medium, low, unknown)
-}
-
 // FormatTextReportHeadedr returns header of text report
 func (r ScanResult) FormatTextReportHeadedr() string {
 	serverInfo := r.ServerInfo()
@@ -253,7 +224,7 @@ func (r ScanResult) FormatTextReportHeadedr() string {
 	return fmt.Sprintf("%s\n%s\n%s\t%s\n",
 		r.ServerInfo(),
 		buf.String(),
-		r.CveSummary(),
+		r.ScannedCves.FormatCveSummary(),
 		r.Packages.FormatUpdatablePacksSummary(),
 	)
 }
