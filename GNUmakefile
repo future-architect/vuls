@@ -44,7 +44,7 @@ lint:
 
 vet:
 	#  @-go get -v golang.org/x/tools/cmd/vet
-	$(foreach pkg,$(PKGS),go vet $(pkg);)
+	echo $(PKGS) | xargs go vet || exit;
 
 fmt:
 	gofmt -w $(SRCS)
@@ -55,7 +55,8 @@ fmtcheck:
 pretest: lint vet fmtcheck
 
 test: pretest
-	$(foreach pkg,$(PKGS),go test -cover -v $(pkg) || exit;)
+	go install
+	echo $(PKGS) | xargs go test -cover -v || exit;
 
 unused :
 	$(foreach pkg,$(PKGS),unused $(pkg);)
@@ -66,5 +67,5 @@ cov:
 	gocov test | gocov report
 
 clean:
-	$(foreach pkg,$(PKGS),go clean $(pkg) || exit;)
+	echo $(PKGS) | xargs go clean || exit;
 
