@@ -59,22 +59,40 @@ func (v CveContents) Except(exceptCtypes ...CveContentType) (values CveContents)
 	return
 }
 
-// CveContentCvss2 has CveContentType and Cvss2
-type CveContentCvss2 struct {
+// CveContentCvss has CveContentType and Cvss2
+type CveContentCvss struct {
 	Type  CveContentType
-	Value Cvss2
+	Value Cvss
 }
 
-// Cvss2 has CVSS v2
-type Cvss2 struct {
+// CvssType Represent the type of CVSS
+type CvssType string
+
+const (
+	// CVSS2 means CVSS vesion2
+	CVSS2 CvssType = "2"
+
+	// CVSS3 means CVSS vesion3
+	CVSS3 CvssType = "3"
+)
+
+// Cvss has CVSS Score
+type Cvss struct {
+	Type     CvssType
 	Score    float64
 	Vector   string
 	Severity string
 }
 
 // Format CVSS Score and Vector
-func (c Cvss2) Format() string {
-	return fmt.Sprintf("%3.1f/%s", c.Score, c.Vector)
+func (c Cvss) Format() string {
+	switch c.Type {
+	case CVSS2:
+		return fmt.Sprintf("%3.1f/%s", c.Score, c.Vector)
+	case CVSS3:
+		return fmt.Sprintf("%3.1f/CVSS:3.0/%s", c.Score, c.Vector)
+	}
+	return ""
 }
 
 func cvss2ScoreToSeverity(score float64) string {
@@ -87,7 +105,7 @@ func cvss2ScoreToSeverity(score float64) string {
 }
 
 // Cvss2Scores returns CVSS V2 Scores
-func (v CveContents) Cvss2Scores() (values []CveContentCvss2) {
+func (v CveContents) Cvss2Scores() (values []CveContentCvss) {
 	order := []CveContentType{NVD, RedHat, JVN}
 	for _, ctype := range order {
 		if cont, found := v[ctype]; found && 0 < cont.Cvss2Score {
@@ -96,9 +114,10 @@ func (v CveContents) Cvss2Scores() (values []CveContentCvss2) {
 			if ctype == NVD {
 				sev = cvss2ScoreToSeverity(cont.Cvss2Score)
 			}
-			values = append(values, CveContentCvss2{
+			values = append(values, CveContentCvss{
 				Type: ctype,
-				Value: Cvss2{
+				Value: Cvss{
+					Type:     CVSS2,
 					Score:    cont.Cvss2Score,
 					Vector:   cont.Cvss2Vector,
 					Severity: sev,
@@ -111,13 +130,13 @@ func (v CveContents) Cvss2Scores() (values []CveContentCvss2) {
 }
 
 // MaxCvss2Score returns Max CVSS V2 Score
-func (v CveContents) MaxCvss2Score() CveContentCvss2 {
+func (v CveContents) MaxCvss2Score() CveContentCvss {
 	//TODO Severity Ubuntu, Debian...
 	order := []CveContentType{NVD, RedHat, JVN}
 	max := 0.0
-	value := CveContentCvss2{
+	value := CveContentCvss{
 		Type:  Unknown,
-		Value: Cvss2{},
+		Value: Cvss{Type: CVSS2},
 	}
 	for _, ctype := range order {
 		if cont, found := v[ctype]; found && max < cont.Cvss2Score {
@@ -126,9 +145,10 @@ func (v CveContents) MaxCvss2Score() CveContentCvss2 {
 			if ctype == NVD {
 				sev = cvss2ScoreToSeverity(cont.Cvss2Score)
 			}
-			value = CveContentCvss2{
+			value = CveContentCvss{
 				Type: ctype,
-				Value: Cvss2{
+				Value: Cvss{
+					Type:     CVSS2,
 					Score:    cont.Cvss2Score,
 					Vector:   cont.Cvss2Vector,
 					Severity: sev,
@@ -155,9 +175,10 @@ func (v CveContents) MaxCvss2Score() CveContentCvss2 {
 				score = severityToScoreForRedHat(cont.Severity)
 			}
 			if max < score {
-				value = CveContentCvss2{
+				value = CveContentCvss{
 					Type: ctype,
-					Value: Cvss2{
+					Value: Cvss{
+						Type:     CVSS2,
 						Score:    score,
 						Vector:   cont.Cvss2Vector,
 						Severity: cont.Severity,
@@ -201,45 +222,46 @@ func severityToScoreForRedHat(severity string) float64 {
 }
 
 // CveContentCvss3 has CveContentType and Cvss3
-type CveContentCvss3 struct {
-	Type  CveContentType
-	Value Cvss3
-}
+//  type CveContentCvss3 struct {
+//      Type  CveContentType
+//      Value Cvss3
+//  }
 
 // Cvss3 has CVSS v3 Score, Vector and  Severity
-type Cvss3 struct {
-	Score    float64
-	Vector   string
-	Severity string
-}
+//  type Cvss3 struct {
+//      Score    float64
+//      Vector   string
+//      Severity string
+//  }
 
 // Format CVSS Score and Vector
-func (c Cvss3) Format() string {
-	return fmt.Sprintf("%3.1f/CVSS:3.0/%s", c.Score, c.Vector)
-}
+//  func (c Cvss3) Format() string {
+//      return fmt.Sprintf("%3.1f/CVSS:3.0/%s", c.Score, c.Vector)
+//  }
 
-func cvss3ScoreToSeverity(score float64) string {
-	if 9.0 <= score {
-		return "CRITICAL"
-	} else if 7.0 <= score {
-		return "HIGH"
-	} else if 4.0 <= score {
-		return "MEDIUM"
-	}
-	return "LOW"
-}
+//  func cvss3ScoreToSeverity(score float64) string {
+//      if 9.0 <= score {
+//          return "CRITICAL"
+//      } else if 7.0 <= score {
+//          return "HIGH"
+//      } else if 4.0 <= score {
+//          return "MEDIUM"
+//      }
+//      return "LOW"
+//  }
 
 // Cvss3Scores returns CVSS V3 Score
-func (v CveContents) Cvss3Scores() (values []CveContentCvss3) {
+func (v CveContents) Cvss3Scores() (values []CveContentCvss) {
 	// TODO implement NVD
 	order := []CveContentType{RedHat}
 	for _, ctype := range order {
 		if cont, found := v[ctype]; found && 0 < cont.Cvss3Score {
 			// https://nvd.nist.gov/vuln-metrics/cvss
 			sev := cont.Severity
-			values = append(values, CveContentCvss3{
+			values = append(values, CveContentCvss{
 				Type: ctype,
-				Value: Cvss3{
+				Value: Cvss{
+					Type:     CVSS3,
 					Score:    cont.Cvss3Score,
 					Vector:   cont.Cvss3Vector,
 					Severity: sev,
@@ -251,21 +273,22 @@ func (v CveContents) Cvss3Scores() (values []CveContentCvss3) {
 }
 
 // MaxCvss3Score returns Max CVSS V3 Score
-func (v CveContents) MaxCvss3Score() CveContentCvss3 {
+func (v CveContents) MaxCvss3Score() CveContentCvss {
 	// TODO implement NVD
 	order := []CveContentType{RedHat}
 	max := 0.0
-	value := CveContentCvss3{
+	value := CveContentCvss{
 		Type:  Unknown,
-		Value: Cvss3{},
+		Value: Cvss{Type: CVSS3},
 	}
 	for _, ctype := range order {
 		if cont, found := v[ctype]; found && max < cont.Cvss3Score {
 			// https://nvd.nist.gov/vuln-metrics/cvss
 			sev := cont.Severity
-			value = CveContentCvss3{
+			value = CveContentCvss{
 				Type: ctype,
-				Value: Cvss3{
+				Value: Cvss{
+					Type:     CVSS3,
 					Score:    cont.Cvss3Score,
 					Vector:   cont.Cvss3Vector,
 					Severity: sev,
@@ -279,12 +302,12 @@ func (v CveContents) MaxCvss3Score() CveContentCvss3 {
 
 // MaxCvssScore returns max CVSS Score
 // If there is no CVSS Score, return Severity as a numerical value.
-func (v CveContents) MaxCvssScore() float64 {
+func (v CveContents) MaxCvssScore() CveContentCvss {
 	v3Max := v.MaxCvss3Score()
 	v2Max := v.MaxCvss2Score()
-	max := v3Max.Value.Score
-	if max < v2Max.Value.Score {
-		max = v2Max.Value.Score
+	max := v3Max
+	if max.Value.Score < v2Max.Value.Score {
+		max = v2Max
 	}
 	return max
 }
@@ -396,13 +419,13 @@ func (v CveContents) SourceLinks(lang, myFamily, cveID string) (values []CveCont
 }
 
 // Severities returns Severities
-//  func (v CveContents) Severities(myFamily string) (values []CveContentValue) {
+//  func (v CveContents) Severities(myFamily string) (values []CveContentStr) {
 //      order := CveContentTypes{NVD, NewCveContentType(myFamily)}
 //      order = append(order, AllCveContetTypes.Except(append(order)...)...)
 
 //      for _, ctype := range order {
 //          if cont, found := v[ctype]; found && 0 < len(cont.Severity) {
-//              values = append(values, CveContentValue{
+//              values = append(values, CveContentStr{
 //                  Type:  ctype,
 //                  Value: cont.Severity,
 //              })

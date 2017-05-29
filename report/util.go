@@ -493,8 +493,8 @@ func formatOneChangelog(p models.Package) string {
 		return ""
 	}
 
-	packVer := fmt.Sprintf("%s -> %s",
-		p.FormatVer(), p.FormatNewVer())
+	packVer := fmt.Sprintf("%s-%s -> %s",
+		p.Name, p.FormatVer(), p.FormatNewVer())
 	var delim bytes.Buffer
 	for i := 0; i < len(packVer); i++ {
 		delim.WriteString("-")

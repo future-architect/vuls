@@ -59,8 +59,8 @@ func (v VulnInfos) ToSortedSlice() (sorted []VulnInfo) {
 	sort.Slice(sorted, func(i, j int) bool {
 		maxI := sorted[i].CveContents.MaxCvssScore()
 		maxJ := sorted[j].CveContents.MaxCvssScore()
-		if maxI != maxJ {
-			return maxJ < maxI
+		if maxI.Value.Score != maxJ.Value.Score {
+			return maxJ.Value.Score < maxI.Value.Score
 		}
 		return sorted[i].CveID < sorted[j].CveID
 	})

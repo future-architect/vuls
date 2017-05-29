@@ -90,33 +90,28 @@ type Package struct {
 	NotFixedYet bool // Ubuntu OVAL Only
 }
 
-// FormatVer returns package name-version-release
+// FormatVer returns package version-release
 func (p Package) FormatVer() string {
-	str := p.Name
-	if 0 < len(p.Version) {
-		str = fmt.Sprintf("%s-%s", str, p.Version)
-	}
+	ver := p.Version
 	if 0 < len(p.Release) {
-		str = fmt.Sprintf("%s-%s", str, p.Release)
+		ver = fmt.Sprintf("%s-%s", ver, p.Release)
 	}
-	return str
+	return ver
 }
 
-// FormatNewVer returns package name-version-release
+// FormatNewVer returns package version-release
 func (p Package) FormatNewVer() string {
-	str := p.Name
-	if 0 < len(p.NewVersion) {
-		str = fmt.Sprintf("%s-%s", str, p.NewVersion)
-	}
+	ver := p.NewVersion
 	if 0 < len(p.NewRelease) {
-		str = fmt.Sprintf("%s-%s", str, p.NewRelease)
+		ver = fmt.Sprintf("%s-%s", ver, p.NewRelease)
 	}
-	return str
+	return ver
 }
 
 // FormatVersionFromTo formats installed and new package version
 func (p Package) FormatVersionFromTo() string {
-	return fmt.Sprintf("%s -> %s", p.FormatVer(), p.FormatNewVer())
+	return fmt.Sprintf("%s-%s -> %s",
+		p.Name, p.FormatVer(), p.FormatNewVer())
 }
 
 // Changelog has contents of changelog and how to get it.
