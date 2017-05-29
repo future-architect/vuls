@@ -47,7 +47,7 @@ func TestExcept(t *testing.T) {
 func TestCvss2Scores(t *testing.T) {
 	var tests = []struct {
 		in  CveContents
-		out []CveContentCvss2
+		out []CveContentCvss
 	}{
 		{
 			in: CveContents{
@@ -70,10 +70,11 @@ func TestCvss2Scores(t *testing.T) {
 					// Severity is NIOT included in NVD
 				},
 			},
-			out: []CveContentCvss2{
+			out: []CveContentCvss{
 				{
 					Type: NVD,
-					Value: Cvss2{
+					Value: Cvss{
+						Type:     CVSS2,
 						Score:    8.1,
 						Vector:   "AV:N/AC:L/Au:N/C:N/I:N/A:P",
 						Severity: "HIGH",
@@ -81,7 +82,8 @@ func TestCvss2Scores(t *testing.T) {
 				},
 				{
 					Type: RedHat,
-					Value: Cvss2{
+					Value: Cvss{
+						Type:     CVSS2,
 						Score:    8.0,
 						Vector:   "AV:N/AC:L/Au:N/C:N/I:N/A:P",
 						Severity: "HIGH",
@@ -89,7 +91,8 @@ func TestCvss2Scores(t *testing.T) {
 				},
 				{
 					Type: JVN,
-					Value: Cvss2{
+					Value: Cvss{
+						Type:     CVSS2,
 						Score:    8.2,
 						Vector:   "AV:N/AC:L/Au:N/C:N/I:N/A:P",
 						Severity: "HIGH",
@@ -114,7 +117,7 @@ func TestCvss2Scores(t *testing.T) {
 func TestMaxCvss2Scores(t *testing.T) {
 	var tests = []struct {
 		in  CveContents
-		out CveContentCvss2
+		out CveContentCvss
 	}{
 		{
 			in: CveContents{
@@ -137,9 +140,10 @@ func TestMaxCvss2Scores(t *testing.T) {
 					// Severity is NIOT included in NVD
 				},
 			},
-			out: CveContentCvss2{
+			out: CveContentCvss{
 				Type: JVN,
-				Value: Cvss2{
+				Value: Cvss{
+					Type:     CVSS2,
 					Score:    8.2,
 					Vector:   "AV:N/AC:L/Au:N/C:N/I:N/A:P",
 					Severity: "HIGH",
@@ -154,9 +158,10 @@ func TestMaxCvss2Scores(t *testing.T) {
 					Severity: "HIGH",
 				},
 			},
-			out: CveContentCvss2{
+			out: CveContentCvss{
 				Type: Ubuntu,
-				Value: Cvss2{
+				Value: Cvss{
+					Type:     CVSS2,
 					Score:    10,
 					Severity: "HIGH",
 				},
@@ -165,9 +170,10 @@ func TestMaxCvss2Scores(t *testing.T) {
 		// Empty
 		{
 			in: CveContents{},
-			out: CveContentCvss2{
+			out: CveContentCvss{
 				Type: Unknown,
-				Value: Cvss2{
+				Value: Cvss{
+					Type:     CVSS2,
 					Score:    0.0,
 					Vector:   "",
 					Severity: "",
@@ -186,7 +192,7 @@ func TestMaxCvss2Scores(t *testing.T) {
 func TestCvss3Scores(t *testing.T) {
 	var tests = []struct {
 		in  CveContents
-		out []CveContentCvss3
+		out []CveContentCvss
 	}{
 		{
 			in: CveContents{
@@ -203,10 +209,11 @@ func TestCvss3Scores(t *testing.T) {
 					// Severity is NIOT included in NVD
 				},
 			},
-			out: []CveContentCvss3{
+			out: []CveContentCvss{
 				{
 					Type: RedHat,
-					Value: Cvss3{
+					Value: Cvss{
+						Type:     CVSS3,
 						Score:    8.0,
 						Vector:   "AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
 						Severity: "HIGH",
@@ -231,7 +238,7 @@ func TestCvss3Scores(t *testing.T) {
 func TestMaxCvss3Scores(t *testing.T) {
 	var tests = []struct {
 		in  CveContents
-		out CveContentCvss3
+		out CveContentCvss
 	}{
 		{
 			in: CveContents{
@@ -242,9 +249,10 @@ func TestMaxCvss3Scores(t *testing.T) {
 					Cvss3Vector: "AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
 				},
 			},
-			out: CveContentCvss3{
+			out: CveContentCvss{
 				Type: RedHat,
-				Value: Cvss3{
+				Value: Cvss{
+					Type:     CVSS3,
 					Score:    8.0,
 					Vector:   "AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
 					Severity: "HIGH",
@@ -254,9 +262,10 @@ func TestMaxCvss3Scores(t *testing.T) {
 		// Empty
 		{
 			in: CveContents{},
-			out: CveContentCvss3{
+			out: CveContentCvss{
 				Type: Unknown,
-				Value: Cvss3{
+				Value: Cvss{
+					Type:     CVSS3,
 					Score:    0.0,
 					Vector:   "",
 					Severity: "",
@@ -275,7 +284,7 @@ func TestMaxCvss3Scores(t *testing.T) {
 func TestMaxCvssScores(t *testing.T) {
 	var tests = []struct {
 		in  CveContents
-		out float64
+		out CveContentCvss
 	}{
 		{
 			in: CveContents{
@@ -288,7 +297,13 @@ func TestMaxCvssScores(t *testing.T) {
 					Cvss2Score: 8.0,
 				},
 			},
-			out: 8.0,
+			out: CveContentCvss{
+				Type: RedHat,
+				Value: Cvss{
+					Type:  CVSS2,
+					Score: 8.0,
+				},
+			},
 		},
 		{
 			in: CveContents{
@@ -297,7 +312,13 @@ func TestMaxCvssScores(t *testing.T) {
 					Cvss3Score: 8.0,
 				},
 			},
-			out: 8.0,
+			out: CveContentCvss{
+				Type: RedHat,
+				Value: Cvss{
+					Type:  CVSS3,
+					Score: 8.0,
+				},
+			},
 		},
 		{
 			in: CveContents{
@@ -306,7 +327,14 @@ func TestMaxCvssScores(t *testing.T) {
 					Severity: "HIGH",
 				},
 			},
-			out: 10.0,
+			out: CveContentCvss{
+				Type: Ubuntu,
+				Value: Cvss{
+					Type:     CVSS2,
+					Score:    10.0,
+					Severity: "HIGH",
+				},
+			},
 		},
 		{
 			in: CveContents{
@@ -319,12 +347,25 @@ func TestMaxCvssScores(t *testing.T) {
 					Cvss2Score: 7.0,
 				},
 			},
-			out: 7.0,
+			out: CveContentCvss{
+				Type: NVD,
+				Value: Cvss{
+					Type:     CVSS2,
+					Score:    7.0,
+					Severity: "HIGH",
+				},
+			},
 		},
 		// Empty
 		{
-			in:  CveContents{},
-			out: 0,
+			in: CveContents{},
+			out: CveContentCvss{
+				Type: Unknown,
+				Value: Cvss{
+					Type:  CVSS3,
+					Score: 0,
+				},
+			},
 		},
 	}
 	for i, tt := range tests {
