@@ -20,21 +20,25 @@ package report
 import (
 	"bytes"
 	"fmt"
+	"html/template"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
 	"github.com/gosuri/uitable"
 	"github.com/jroimartin/gocui"
-	cve "github.com/kotakanbe/go-cve-dictionary/models"
 )
 
 var scanResults models.ScanResults
 var currentScanResult models.ScanResult
-var currentCveInfo int
+var vinfos []models.VulnInfo
+var currentVinfo int
 var currentDetailLimitY int
 
 // RunTui execute main logic
@@ -220,8 +224,7 @@ func movable(v *gocui.View, nextY int) (ok bool, yLimit int) {
 		}
 		return true, yLimit
 	case "summary":
-		//TODO
-		//  yLimit = len(currentScanResult.AllCves()) - 1
+		yLimit = len(currentScanResult.ScannedCves) - 1
 		if yLimit < nextY {
 			return false, yLimit
 		}
@@ -279,7 +282,7 @@ func cursorDown(g *gocui.Gui, v *gocui.View) error {
 		//  ok,  := movable(v, oy+cy+1)
 		//  _, maxY := v.Size()
 		ok, _ := movable(v, oy+cy+1)
-		//  log.Info(cy, oy, maxY, yLimit)
+		//  log.Info(cy, oy)
 		if !ok {
 			return nil
 		}
@@ -290,6 +293,10 @@ func cursorDown(g *gocui.Gui, v *gocui.View) error {
 		}
 		onMovingCursorRedrawView(g, v)
 	}
+
+	cx, cy := v.Cursor()
+	ox, oy := v.Origin()
+	debug(g, fmt.Sprintf("%v, %v, %v, %v", cx, cy, ox, oy))
 	return nil
 }
 
@@ -441,6 +448,7 @@ func changeHost(g *gocui.Gui, v *gocui.View) error {
 	for _, r := range scanResults {
 		if serverName == strings.TrimSpace(r.ServerInfoTui()) {
 			currentScanResult = r
+			vinfos = r.ScannedCves.ToSortedSlice()
 			break
 		}
 	}
@@ -509,7 +517,8 @@ func showMsg(g *gocui.Gui, v *gocui.View) error {
 	//  maxX, maxY := v.Size()
 	_, maxY := v.Size()
 
-	l := fmt.Sprintf("cy: %d, oy: %d, maxY: %d, yLimit: %d, curCve %d, ok: %v", cy, oy, maxY, yLimit, currentCveInfo, ok)
+	l := fmt.Sprintf("cy: %d, oy: %d, maxY: %d, yLimit: %d, curCve %d, ok: %v",
+		cy, oy, maxY, yLimit, currentVinfo, ok)
 	//  if v, err := g.SetView("msg", maxX/2-30, maxY/2, maxX/2+30, maxY/2+2); err != nil {
 	if v, err := g.SetView("msg", 10, maxY/2, 10+50, maxY/2+2); err != nil {
 		if err != gocui.ErrUnknownView {
@@ -550,6 +559,20 @@ func layout(g *gocui.Gui) error {
 	if err := setChangelogLayout(g); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func debug(g *gocui.Gui, str string) error {
+	if config.Conf.Debug {
+		maxX, maxY := g.Size()
+		if _, err := g.View("debug"); err != gocui.ErrUnknownView {
+			g.DeleteView("debug")
+		}
+		if v, err := g.SetView("debug", maxX/2-7, maxY/2, maxX/2+7, maxY/2+2); err != nil {
+			fmt.Fprintf(v, str)
+		}
+	}
 	return nil
 }
 
@@ -568,6 +591,7 @@ func setSideLayout(g *gocui.Gui) error {
 			return fmt.Errorf("No scan results")
 		}
 		currentScanResult = scanResults[0]
+		vinfos = scanResults[0].ScannedCves.ToSortedSlice()
 		if _, err := g.SetCurrentView("side"); err != nil {
 			return err
 		}
@@ -601,72 +625,35 @@ func summaryLines() string {
 		return "Error: Scan with --debug to view the details"
 	}
 
-	//TODO
-	//  indexFormat := ""
-	//  if len(currentScanResult.AllCves()) < 10 {
-	//      indexFormat = "[%1d]"
-	//  } else if len(currentScanResult.AllCves()) < 100 {
-	//      indexFormat = "[%2d]"
-	//  } else {
-	//      indexFormat = "[%3d]"
-	//  }
+	indexFormat := ""
+	if len(currentScanResult.ScannedCves) < 10 {
+		indexFormat = "[%1d]"
+	} else if len(currentScanResult.ScannedCves) < 100 {
+		indexFormat = "[%2d]"
+	} else {
+		indexFormat = "[%3d]"
+	}
 
-	//  for i, d := range currentScanResult.AllCves() {
-	//      var cols []string
-	//      //TODO
-	//      var summary string
-	//      if cont, found := d.Get(models.NVD); found {
-	//          summary = cont.Summary
-	//      }
-	//      var cvssScore string
-	//      if d.CvssV2Score() <= 0 {
-	//          cvssScore = "|   ?"
-	//      } else {
-	//          cvssScore = fmt.Sprintf("| %4.1f", d.CvssV2Score())
-	//      }
-	//      cols = []string{
-	//          fmt.Sprintf(indexFormat, i+1),
-	//          d.VulnInfo.CveID,
-	//          cvssScore,
-	//          fmt.Sprintf("| %3d |", d.VulnInfo.Confidence.Score),
-	//          summary,
-	//      }
-	//      //  if config.Conf.Lang == "ja" && 0 < d.CveDetail.Jvn.CvssScore() {
-	//      //      summary := d.CveDetail.Jvn.CveTitle()
-	//      //      cols = []string{
-	//      //          fmt.Sprintf(indexFormat, i+1),
-	//      //          d.CveDetail.CveID,
-	//      //          fmt.Sprintf("| %4.1f",
-	//      //              d.CveDetail.CvssScore(config.Conf.Lang)),
-	//      //          fmt.Sprintf("| %3d |", d.VulnInfo.Confidence.Score),
-	//      //          summary,
-	//      //      }
-	//      //  } else {
-	//      //      summary := d.CveDetail.Nvd.CveSummary()
+	for i, vinfo := range vinfos {
+		summary := vinfo.CveContents.Summaries(
+			config.Conf.Lang, currentScanResult.Family)[0].Value
+		cvssScore := fmt.Sprintf("| %4.1f",
+			vinfo.CveContents.MaxCvssScore().Value.Score)
 
-	//      //      var cvssScore string
-	//      //      if d.CveDetail.CvssScore("en") <= 0 {
-	//      //          cvssScore = "|   ?"
-	//      //      } else {
-	//      //          cvssScore = fmt.Sprintf("| %4.1f",
-	//      //              d.CveDetail.CvssScore(config.Conf.Lang))
-	//      //      }
-
-	//      //      cols = []string{
-	//      //          fmt.Sprintf(indexFormat, i+1),
-	//      //          d.CveDetail.CveID,
-	//      //          cvssScore,
-	//      //          fmt.Sprintf("| %3d |", d.VulnInfo.Confidence.Score),
-	//      //          summary,
-	//      //      }
-	//      //  }
-
-	//      icols := make([]interface{}, len(cols))
-	//      for j := range cols {
-	//          icols[j] = cols[j]
-	//      }
-	//      stable.AddRow(icols...)
-	//  }
+		var cols []string
+		cols = []string{
+			fmt.Sprintf(indexFormat, i+1),
+			vinfo.CveID,
+			cvssScore,
+			fmt.Sprintf("| %3d |", vinfo.Confidence.Score),
+			summary,
+		}
+		icols := make([]interface{}, len(cols))
+		for j := range cols {
+			icols[j] = cols[j]
+		}
+		stable.AddRow(icols...)
+	}
 	return fmt.Sprintf("%s", stable)
 }
 
@@ -679,7 +666,7 @@ func setDetailLayout(g *gocui.Gui) error {
 	}
 	_, cy := summaryView.Cursor()
 	_, oy := summaryView.Origin()
-	currentCveInfo = cy + oy
+	currentVinfo = cy + oy
 
 	if v, err := g.SetView("detail", -1, int(float64(maxY)*0.2), int(float64(maxX)*0.5), maxY); err != nil {
 		if err != gocui.ErrUnknownView {
@@ -707,27 +694,26 @@ func setChangelogLayout(g *gocui.Gui) error {
 	}
 	_, cy := summaryView.Cursor()
 	_, oy := summaryView.Origin()
-	currentCveInfo = cy + oy
+	currentVinfo = cy + oy
 
 	if v, err := g.SetView("changelog", int(float64(maxX)*0.5), int(float64(maxY)*0.2), maxX, maxY); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		//TODO
-		//  if len(currentScanResult.Errors) != 0 || len(currentScanResult.AllCves()) == 0 {
-		//      return nil
-		//  }
+		if len(currentScanResult.Errors) != 0 || len(currentScanResult.ScannedCves) == 0 {
+			return nil
+		}
 
 		lines := []string{}
-		//TODO
-		//  cveInfo := currentScanResult.AllCves()[currentCveInfo]
-		//  for _, pack := range cveInfo.Packages {
-		//      for _, p := range currentScanResult.Packages {
-		//          if pack.Name == p.Name {
-		//              lines = append(lines, formatOneChangelog(p), "\n")
-		//          }
-		//      }
-		//  }
+		vinfo := vinfos[currentVinfo]
+		for _, name := range vinfo.PackageNames {
+			pack := currentScanResult.Packages[name]
+			for _, p := range currentScanResult.Packages {
+				if pack.Name == p.Name {
+					lines = append(lines, p.FormatChangelog(), "\n")
+				}
+			}
+		}
 		text := strings.Join(lines, "\n")
 		fmt.Fprint(v, text)
 		v.Editable = false
@@ -740,14 +726,12 @@ func setChangelogLayout(g *gocui.Gui) error {
 
 type dataForTmpl struct {
 	CveID            string
-	CvssScore        string
-	CvssVector       string
-	CvssSeverity     string
+	Cvsses           []models.CveContentCvss
 	Summary          string
 	Confidence       models.Confidence
-	CweURL           string
-	VulnSiteLinks    []string
-	References       []cve.Reference
+	Cwes             []models.CveContentStr
+	Links            []string
+	References       []models.Reference
 	Packages         []string
 	CpeNames         []string
 	PublishedDate    time.Time
@@ -755,123 +739,99 @@ type dataForTmpl struct {
 }
 
 func detailLines() (string, error) {
-	if len(currentScanResult.Errors) != 0 {
+	r := currentScanResult
+	if len(r.Errors) != 0 {
 		return "", nil
 	}
 
-	//TODO
-	//  if len(currentScanResult.AllCves()) == 0 {
-	//      return "No vulnerable packages", nil
-	//  }
-	//  cveInfo := currentScanResult.AllCves()[currentCveInfo]
-	//  cveID := cveInfo.VulnInfo.CveID
-
-	//  tmpl, err := template.New("detail").Parse(detailTemplate())
-	//  if err != nil {
-	//      return "", err
-	//  }
-
-	//  var cvssSeverity, cvssVector, summary string
-	//  var refs []cve.Reference
-	switch {
-	//TODO
-	//  case config.Conf.Lang == "ja" &&
-	//      0 < cveInfo.CveDetail.Jvn.CvssScore():
-	//      jvn := cveInfo.CveDetail.Jvn
-	//      cvssSeverity = jvn.CvssSeverity()
-	//      cvssVector = jvn.CvssVector()
-	//      summary = fmt.Sprintf("%s\n%s", jvn.CveTitle(), jvn.CveSummary())
-	//      refs = jvn.VulnSiteReferences()
-	default:
-		//  var nvd *models.CveContent
-		//TODO
-		//  if cont, found := cveInfo.Get(models.NVD); found {
-		//      nvd = cont
-		//  }
-		//  cvssSeverity = nvd.CvssSeverity()
-		//  cvssVector = nvd.CvssVector()
-		//  summary = nvd.Summary
-		//  refs = nvd.VulnSiteReferences()
+	if len(r.ScannedCves) == 0 {
+		return "No vulnerable packages", nil
 	}
 
-	//TODO
-	//  cweURL := cweURL(cveInfo.CveDetail.CweID())
-	//  links := []string{
-	//      fmt.Sprintf("[NVD]( %s )", fmt.Sprintf("%s/%s", nvdBaseURL, cveID)),
-	//      fmt.Sprintf("[MITRE]( %s )", fmt.Sprintf("%s%s", mitreBaseURL, cveID)),
-	//      fmt.Sprintf("[CveDetais]( %s )", fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID)),
-	//      fmt.Sprintf("[CVSSv2 Calc]( %s )", fmt.Sprintf(cvssV2CalcBaseURL, cveID)),
-	//      fmt.Sprintf("[CVSSv3 Calc]( %s )", fmt.Sprintf(cvssV3CalcBaseURL, cveID)),
-	//  }
-	//  dlinks := distroLinks(cveInfo, currentScanResult.Family)
-	//  for _, link := range dlinks {
-	//      links = append(links, fmt.Sprintf("[%s]( %s )", link.title, link.url))
-	//  }
+	tmpl, err := template.New("detail").Parse(mdTemplate)
+	if err != nil {
+		return "", err
+	}
 
-	//TODO
-	//  var cvssScore string
-	//  if cveInfo.CvssV2Score() == -1 {
-	//      cvssScore = "?"
-	//      //  } else {
-	//      //      cvssScore = fmt.Sprintf("%4.1f", cveInfo.CveDetail.CvssScore(config.Conf.Lang))
-	//  }
+	vinfo := vinfos[currentVinfo]
 
-	//  packages := []string{}
-	//  for _, pack := range cveInfo.Packages {
-	//      packages = append(packages,
-	//          fmt.Sprintf(
-	//              "%s -> %s",
-	//              pack.FormatCurrentVer(),
-	//              pack.FormatNewVer()))
-	//  }
+	packsVer := []string{}
+	sort.Strings(vinfo.PackageNames)
+	for _, name := range vinfo.PackageNames {
+		// packages detected by OVAL may not be actually installed
+		if pack, ok := r.Packages[name]; ok {
+			packsVer = append(packsVer, pack.FormatVersionFromTo())
+		}
+	}
+	sort.Strings(vinfo.CpeNames)
+	for _, name := range vinfo.CpeNames {
+		packsVer = append(packsVer, name)
+	}
 
-	//  data := dataForTmpl{
-	//      CveID:        cveID,
-	//      CvssScore:    cvssScore,
-	//      CvssSeverity: cvssSeverity,
-	//      CvssVector:   cvssVector,
-	//      Summary:      summary,
-	//      Confidence:   cveInfo.VulnInfo.Confidence,
-	//      //TODO
-	//      //  CweURL:        cweURL,
-	//      VulnSiteLinks: links,
-	//      References:    refs,
-	//      Packages:      packages,
-	//      CpeNames:      cveInfo.CpeNames,
-	//  }
+	links := []string{vinfo.CveContents.SourceLinks(
+		config.Conf.Lang, r.Family, vinfo.CveID)[0].Value,
+		vinfo.Cvss2CalcURL(),
+		vinfo.Cvss3CalcURL()}
+	for _, url := range vinfo.VendorLinks(r.Family) {
+		links = append(links, url)
+	}
+	//  links = util.Distinct(links)
+
+	refs := []models.Reference{}
+	for _, rr := range vinfo.CveContents.References(r.Family) {
+		for _, ref := range rr.Value {
+			refs = append(refs, ref)
+		}
+	}
+
+	data := dataForTmpl{
+		CveID:      vinfo.CveID,
+		Cvsses:     append(vinfo.CveContents.Cvss3Scores(), vinfo.CveContents.MaxCvss2Score()),
+		Summary:    vinfo.CveContents.Summaries(r.Lang, r.Family)[0].Value,
+		Confidence: vinfo.Confidence,
+		Cwes:       vinfo.CveContents.CweIDs(r.Family),
+		Links:      util.Distinct(links),
+		Packages:   packsVer,
+		References: refs,
+	}
 
 	buf := bytes.NewBuffer(nil) // create empty buffer
-	//  if err := tmpl.Execute(buf, data); err != nil {
-	//      return "", err
-	//  }
+	if err := tmpl.Execute(buf, data); err != nil {
+		return "", err
+	}
 
 	return string(buf.Bytes()), nil
 }
 
-func detailTemplate() string {
-	return `
+const mdTemplate = `
 {{.CveID}}
 ==============
 
-CVSS Score
+CVSS Scores
 --------------
 
-{{.CvssScore}} ({{.CvssSeverity}}) {{.CvssVector}}
+{{range .Cvsses -}}
+* {{.Value.Format}} ({{.Type}})
+{{end}}
 
 Summary
 --------------
 
  {{.Summary }}
 
-Confidence
+Links
 --------------
 
- {{.Confidence }}
+{{range $link := .Links -}}
+* {{$link}}
+{{end}}
 
 CWE
 --------------
 
- {{.CweURL }}
+{{range .Cwes -}}
+* {{.Value}} ({{.Type}})
+{{end}}
 
 Package/CPE
 --------------
@@ -882,12 +842,13 @@ Package/CPE
 {{range $name := .CpeNames -}}
 * {{$name}}
 {{end}}
-Links
+
+Confidence
 --------------
 
-{{range $link := .VulnSiteLinks -}}
-* {{$link}}
-{{end}}
+ {{.Confidence }}
+
+
 References
 --------------
 
@@ -896,4 +857,3 @@ References
 {{end}}
 
 `
-}

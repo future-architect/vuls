@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package report
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -238,149 +237,6 @@ func formatFullPlainText(r models.ScanResult) string {
 	return fmt.Sprintf("%s\n%s", header, table)
 }
 
-//TODO
-func formatPlainTextDetails(r models.ScanResult, osFamily string) (scoredReport, unscoredReport []string) {
-	//  for _, cve := range r.KnownCves {
-	//      switch config.Conf.Lang {
-	//      case "en":
-	//          if 0 < cve.CveDetail.Nvd.CvssScore() {
-	//              scoredReport = append(
-	//                  scoredReport, formatPlainTextDetailsLangEn(cve, osFamily))
-	//          } else {
-	//              scoredReport = append(
-	//                  scoredReport, formatPlainTextUnknownCve(cve, osFamily))
-	//          }
-	//      case "ja":
-	//          if 0 < cve.CveDetail.Jvn.CvssScore() {
-	//              scoredReport = append(
-	//                  scoredReport, formatPlainTextDetailsLangJa(cve, osFamily))
-	//          } else if 0 < cve.CveDetail.Nvd.CvssScore() {
-	//              scoredReport = append(
-	//                  scoredReport, formatPlainTextDetailsLangEn(cve, osFamily))
-	//          } else {
-	//              scoredReport = append(
-	//                  scoredReport, formatPlainTextUnknownCve(cve, osFamily))
-	//          }
-	//      }
-	//  }
-	//  for _, cve := range r.UnknownCves {
-	//      unscoredReport = append(
-	//          unscoredReport, formatPlainTextUnknownCve(cve, osFamily))
-	//  }
-	return
-}
-
-//  func formatPlainTextUnknownCve(cveInfo models.CveInfo, osFamily string) string {
-//      cveID := cveInfo.VulnInfo.CveID
-//      dtable := uitable.New()
-//      dtable.MaxColWidth = maxColWidth
-//      dtable.Wrap = true
-//      dtable.AddRow(cveID)
-//      dtable.AddRow("-------------")
-//      dtable.AddRow("Score", "?")
-//      dtable.AddRow("NVD", fmt.Sprintf("%s/%s", nvdBaseURL, cveID))
-//      dlinks := distroLinks(cveInfo, osFamily)
-//      for _, link := range dlinks {
-//          dtable.AddRow(link.title, link.url)
-//      }
-//      dtable.AddRow("CVE Details", fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID))
-//      dtable = addPackageInfos(dtable, cveInfo.Packages)
-//      dtable = addCpeNames(dtable, cveInfo.CpeNames)
-//      dtable.AddRow("Confidence", cveInfo.VulnInfo.Confidence)
-
-//      return fmt.Sprintf("%s", dtable)
-//  }
-
-//TODO
-//  func formatPlainTextDetailsLangJa(cveInfo models.CveInfo, osFamily string) string {
-//  return "TODO"
-//  cveDetail := cveInfo.CveDetail
-//  cveID := cveDetail.CveID
-//  jvn := cveDetail.Jvn
-
-//  dtable := uitable.New()
-//  dtable.MaxColWidth = maxColWidth
-//  dtable.Wrap = true
-//  dtable.AddRow(cveID)
-//  dtable.AddRow("-------------")
-//  if score := cveDetail.Jvn.CvssScore(); 0 < score {
-//      dtable.AddRow("Score",
-//          fmt.Sprintf("%4.1f (%s)",
-//              cveDetail.Jvn.CvssScore(),
-//              jvn.CvssSeverity(),
-//          ))
-//  } else {
-//      dtable.AddRow("Score", "?")
-//  }
-//  dtable.AddRow("Vector", jvn.CvssVector())
-//  dtable.AddRow("Title", jvn.CveTitle())
-//  dtable.AddRow("Description", jvn.CveSummary())
-//  dtable.AddRow(cveDetail.CweID(), cweURL(cveDetail.CweID()))
-//  dtable.AddRow(cveDetail.CweID()+"(JVN)", cweJvnURL(cveDetail.CweID()))
-
-//  dtable.AddRow("JVN", jvn.Link())
-//  dtable.AddRow("NVD", fmt.Sprintf("%s/%s", nvdBaseURL, cveID))
-//  dtable.AddRow("MITRE", fmt.Sprintf("%s%s", mitreBaseURL, cveID))
-//  dtable.AddRow("CVE Details", fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID))
-//  dtable.AddRow("CVSSv2 Clac", fmt.Sprintf(cvssV2CalcBaseURL, cveID))
-//  dtable.AddRow("CVSSv3 Clac", fmt.Sprintf(cvssV3CalcBaseURL, cveID))
-
-//  dlinks := distroLinks(cveInfo, osFamily)
-//  for _, link := range dlinks {
-//      dtable.AddRow(link.title, link.url)
-//  }
-
-//  dtable = addPackageInfos(dtable, cveInfo.Packages)
-//  dtable = addCpeNames(dtable, cveInfo.CpeNames)
-//  dtable.AddRow("Confidence", cveInfo.VulnInfo.Confidence)
-
-//  return fmt.Sprintf("%s", dtable)
-//  }
-
-//TODO
-//  func formatPlainTextDetailsLangEn(d models.CveInfo, osFamily string) string {
-//  return ""
-//  cveDetail := d.CveDetail
-//  cveID := cveDetail.CveID
-//  nvd := cveDetail.Nvd
-
-//  dtable := uitable.New()
-//  dtable.MaxColWidth = maxColWidth
-//  dtable.Wrap = true
-//  dtable.AddRow(cveID)
-//  dtable.AddRow("-------------")
-
-//  if score := cveDetail.Nvd.CvssScore(); 0 < score {
-//      dtable.AddRow("Score",
-//          fmt.Sprintf("%4.1f (%s)",
-//              cveDetail.Nvd.CvssScore(),
-//              nvd.CvssSeverity(),
-//          ))
-//  } else {
-//      dtable.AddRow("Score", "?")
-//  }
-
-//  dtable.AddRow("Vector", nvd.CvssVector())
-//  dtable.AddRow("Summary", nvd.CveSummary())
-//  dtable.AddRow("CWE", cweURL(cveDetail.CweID()))
-
-//  dtable.AddRow("NVD", fmt.Sprintf("%s/%s", nvdBaseURL, cveID))
-//  dtable.AddRow("MITRE", fmt.Sprintf("%s%s", mitreBaseURL, cveID))
-//  dtable.AddRow("CVE Details", fmt.Sprintf("%s/%s", cveDetailsBaseURL, cveID))
-//  dtable.AddRow("CVSSv2 Clac", fmt.Sprintf(cvssV2CalcBaseURL, cveID))
-//  dtable.AddRow("CVSSv3 Clac", fmt.Sprintf(cvssV3CalcBaseURL, cveID))
-
-//  links := distroLinks(d, osFamily)
-//  for _, link := range links {
-//      dtable.AddRow(link.title, link.url)
-//  }
-//  dtable = addPackageInfos(dtable, d.Packages)
-//  dtable = addCpeNames(dtable, d.CpeNames)
-//  dtable.AddRow("Confidence", d.VulnInfo.Confidence)
-
-//  return fmt.Sprintf("%s\n", dtable)
-//  }
-
 //  type distroLink struct {
 //      title string
 //      url   string
@@ -481,37 +337,9 @@ func formatChangelogs(r models.ScanResult) string {
 		if p.NewVersion == "" {
 			continue
 		}
-		clog := formatOneChangelog(p)
+		clog := p.FormatChangelog()
 		buf = append(buf, clog, "\n\n")
 	}
-	return strings.Join(buf, "\n")
-}
-
-func formatOneChangelog(p models.Package) string {
-	buf := []string{}
-	if p.NewVersion == "" {
-		return ""
-	}
-
-	packVer := fmt.Sprintf("%s-%s -> %s",
-		p.Name, p.FormatVer(), p.FormatNewVer())
-	var delim bytes.Buffer
-	for i := 0; i < len(packVer); i++ {
-		delim.WriteString("-")
-	}
-
-	clog := p.Changelog.Contents
-	if lines := strings.Split(clog, "\n"); len(lines) != 0 {
-		clog = strings.Join(lines[0:len(lines)-1], "\n")
-	}
-
-	switch p.Changelog.Method {
-	case models.FailedToGetChangelog:
-		clog = "No changelogs"
-	case models.FailedToFindVersionInChangelog:
-		clog = "Failed to parse changelogs. For detials, check yourself"
-	}
-	buf = append(buf, packVer, delim.String(), clog)
 	return strings.Join(buf, "\n")
 }
 

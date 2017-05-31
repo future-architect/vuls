@@ -596,14 +596,6 @@ type Cpe struct {
 // References is a slice of Reference
 type References []Reference
 
-// Find elements that matches the function passed in argument
-func (r References) Find(f func(r Reference) bool) (refs []Reference) {
-	for _, rr := range r {
-		refs = append(refs, rr)
-	}
-	return
-}
-
 // Reference has a related link of the CVE
 type Reference struct {
 	Source string

@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package models
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 )
@@ -110,8 +111,37 @@ func (p Package) FormatNewVer() string {
 
 // FormatVersionFromTo formats installed and new package version
 func (p Package) FormatVersionFromTo() string {
-	return fmt.Sprintf("%s-%s -> %s",
+	return fmt.Sprintf("%s-%s - %s",
 		p.Name, p.FormatVer(), p.FormatNewVer())
+}
+
+// FormatChangelog formats the changelog
+func (p Package) FormatChangelog() string {
+	buf := []string{}
+	if p.NewVersion == "" {
+		return ""
+	}
+
+	packVer := fmt.Sprintf("%s-%s -> %s",
+		p.Name, p.FormatVer(), p.FormatNewVer())
+	var delim bytes.Buffer
+	for i := 0; i < len(packVer); i++ {
+		delim.WriteString("-")
+	}
+
+	clog := p.Changelog.Contents
+	if lines := strings.Split(clog, "\n"); len(lines) != 0 {
+		clog = strings.Join(lines[0:len(lines)-1], "\n")
+	}
+
+	switch p.Changelog.Method {
+	case FailedToGetChangelog:
+		clog = "No changelogs"
+	case FailedToFindVersionInChangelog:
+		clog = "Failed to parse changelogs. For detials, check yourself"
+	}
+	buf = append(buf, packVer, delim.String(), clog)
+	return strings.Join(buf, "\n")
 }
 
 // Changelog has contents of changelog and how to get it.
