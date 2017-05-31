@@ -25,7 +25,6 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/util"
-	"github.com/k0kubun/pp"
 )
 
 const (
@@ -72,9 +71,9 @@ func FillCveInfos(rs []models.ScanResult, dir string) ([]models.ScanResult, erro
 	}
 
 	//TODO remove debug code
-	for _, r := range filled {
-		pp.Printf("filled: %d\n", len(r.ScannedCves))
-	}
+	//  for _, r := range filled {
+	//      pp.Printf("filled: %d\n", len(r.ScannedCves))
+	//  }
 
 	filtered := []models.ScanResult{}
 	for _, r := range filled {
@@ -82,9 +81,9 @@ func FillCveInfos(rs []models.ScanResult, dir string) ([]models.ScanResult, erro
 	}
 
 	//TODO remove debug code
-	for _, r := range filtered {
-		pp.Printf("filtered: %d\n", len(r.ScannedCves))
-	}
+	//  for _, r := range filtered {
+	//      pp.Printf("filtered: %d\n", len(r.ScannedCves))
+	//  }
 
 	return filtered, nil
 }
