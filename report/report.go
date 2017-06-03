@@ -136,13 +136,6 @@ func fillCveDetail(r *models.ScanResult) error {
 			}
 		}
 	}
-	//TODO Remove
-	//  sort.Slice(r.ScannedCves, func(i, j int) bool {
-	//      if r.ScannedCves[j].CveContents.CvssV2Score() == r.ScannedCves[i].CveContents.CvssV2Score() {
-	//          return r.ScannedCves[j].CveContents.CvssV2Score() < r.ScannedCves[i].CveContents.CvssV2Score()
-	//      }
-	//      return r.ScannedCves[j].CveContents.CvssV2Score() < r.ScannedCves[i].CveContents.CvssV2Score()
-	//  })
 	return nil
 }
 

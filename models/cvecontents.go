@@ -131,7 +131,6 @@ func (v CveContents) Cvss2Scores() (values []CveContentCvss) {
 
 // MaxCvss2Score returns Max CVSS V2 Score
 func (v CveContents) MaxCvss2Score() CveContentCvss {
-	//TODO Severity Ubuntu, Debian...
 	order := []CveContentType{NVD, RedHat, JVN}
 	max := 0.0
 	value := CveContentCvss{

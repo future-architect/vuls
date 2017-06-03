@@ -58,7 +58,5 @@ func Parse(path string) ([]string, error) {
 			}
 		}
 	}
-	//TODO remove
-	//  sort.Strings(cpes)
 	return cpes, nil
 }
