@@ -775,7 +775,6 @@ func detailLines() (string, error) {
 	for _, url := range vinfo.VendorLinks(r.Family) {
 		links = append(links, url)
 	}
-	//  links = util.Distinct(links)
 
 	refs := []models.Reference{}
 	for _, rr := range vinfo.CveContents.References(r.Family) {
@@ -786,7 +785,7 @@ func detailLines() (string, error) {
 
 	data := dataForTmpl{
 		CveID:      vinfo.CveID,
-		Cvsses:     append(vinfo.CveContents.Cvss3Scores(), vinfo.CveContents.MaxCvss2Score()),
+		Cvsses:     append(vinfo.CveContents.Cvss3Scores(), vinfo.CveContents.Cvss2Scores()...),
 		Summary:    vinfo.CveContents.Summaries(r.Lang, r.Family)[0].Value,
 		Confidence: vinfo.Confidence,
 		Cwes:       vinfo.CveContents.CweIDs(r.Family),
