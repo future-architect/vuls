@@ -104,6 +104,11 @@ func fillCveInfo(r *models.ScanResult) error {
 	if err := fillCveInfoFromCveDB(r); err != nil {
 		return fmt.Errorf("Failed to fill CVE information: %s", err)
 	}
+
+	for cveID := range r.ScannedCves {
+		vinfo := r.ScannedCves[cveID]
+		r.ScannedCves[cveID] = *vinfo.NilToEmpty()
+	}
 	return nil
 }
 
@@ -192,8 +197,6 @@ func fillVulnByCpeNames(cpeNames []string, scannedVulns models.VulnInfos) error 
 					CpeNames:   []string{name},
 					Confidence: models.CpeNameMatch,
 				}
-				//TODO
-				//  v.NilToEmpty()
 				scannedVulns[detail.CveID] = v
 			}
 		}
