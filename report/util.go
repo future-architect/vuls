@@ -293,13 +293,13 @@ func loadPrevious(current models.ScanResults) (previous models.ScanResults, err 
 
 	for _, result := range current {
 		for _, dir := range dirs[1:] {
-			var r models.ScanResult
+			var r *models.ScanResult
 			path := filepath.Join(dir, result.ServerName+".json")
 			if r, err = loadOneServerScanResult(path); err != nil {
 				continue
 			}
 			if r.Family == result.Family && r.Release == result.Release {
-				previous = append(previous, r)
+				previous = append(previous, *r)
 				util.Log.Infof("Privious json found: %s", path)
 				break
 			}
@@ -484,13 +484,12 @@ func LoadScanResults(jsonDir string) (results models.ScanResults, err error) {
 			continue
 		}
 
-		var r models.ScanResult
+		var r *models.ScanResult
 		path := filepath.Join(jsonDir, f.Name())
 		if r, err = loadOneServerScanResult(path); err != nil {
 			return nil, err
 		}
-
-		results = append(results, r)
+		results = append(results, *r)
 	}
 	if len(results) == 0 {
 		return nil, fmt.Errorf("There is no json file under %s", jsonDir)
@@ -499,14 +498,17 @@ func LoadScanResults(jsonDir string) (results models.ScanResults, err error) {
 }
 
 // loadOneServerScanResult read JSON data of one server
-func loadOneServerScanResult(jsonFile string) (result models.ScanResult, err error) {
-	var data []byte
+func loadOneServerScanResult(jsonFile string) (*models.ScanResult, error) {
+	var (
+		data []byte
+		err  error
+	)
 	if data, err = ioutil.ReadFile(jsonFile); err != nil {
-		err = fmt.Errorf("Failed to read %s: %s", jsonFile, err)
-		return
+		return nil, fmt.Errorf("Failed to read %s: %s", jsonFile, err)
 	}
-	if json.Unmarshal(data, &result) != nil {
-		err = fmt.Errorf("Failed to parse %s: %s", jsonFile, err)
+	result := &models.ScanResult{}
+	if err := json.Unmarshal(data, result); err != nil {
+		return nil, fmt.Errorf("Failed to parse %s: %s", jsonFile, err)
 	}
-	return
+	return result, nil
 }
