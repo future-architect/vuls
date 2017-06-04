@@ -808,33 +808,28 @@ const mdTemplate = `
 
 CVSS Scores
 --------------
-
 {{range .Cvsses -}}
 * {{.Value.Format}} ({{.Type}})
 {{end}}
 
 Summary
 --------------
-
  {{.Summary }}
 
 Links
 --------------
-
 {{range $link := .Links -}}
 * {{$link}}
 {{end}}
 
 CWE
 --------------
-
 {{range .Cwes -}}
 * {{.Value}} ({{.Type}})
 {{end}}
 
 Package/CPE
 --------------
-
 {{range $pack := .Packages -}}
 * {{$pack}}
 {{end -}}
@@ -844,13 +839,11 @@ Package/CPE
 
 Confidence
 --------------
-
  {{.Confidence }}
 
 
 References
 --------------
-
 {{range .References -}}
 * [{{.Source}}]( {{.Link}} )
 {{end}}
