@@ -60,8 +60,7 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err err
 			return false, deb, nil
 		}
 		if r.ExitStatus == 255 {
-			return false, deb, fmt.Errorf(
-				"Unable to connect via SSH. Check SSH settings. %s", r)
+			return false, deb, fmt.Errorf("Unable to connect via SSH. Check SSH settings. If you have never SSH to the host to be scanned, SSH to the host before scanning in order to add a HostKey. %s", r)
 		}
 		util.Log.Debugf("Not Debian like Linux. %s", r)
 		return false, deb, nil
