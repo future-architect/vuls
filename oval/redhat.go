@@ -17,11 +17,22 @@ import (
 // RedHatBase is the base struct for RedHat and CentOS
 type RedHatBase struct{}
 
-// FillCveInfoFromOvalDB returns scan result after updating CVE info by OVAL
-func (o RedHatBase) FillCveInfoFromOvalDB(r *models.ScanResult) error {
-	if err := o.fillCveInfoFromOvalDB(r); err != nil {
-		return err
+// FillWithOval returns scan result after updating CVE info by OVAL
+func (o RedHatBase) FillWithOval(r *models.ScanResult) error {
+	if config.Conf.OvalDBURL != "" {
+		defs, err := getDefsByPackNameViaHTTP(r)
+		if err != nil {
+			return err
+		}
+		for _, def := range defs {
+			o.update(r, &def)
+		}
+	} else {
+		if err := o.fillFromOvalDB(r); err != nil {
+			return err
+		}
 	}
+
 	for _, vuln := range r.ScannedCves {
 		if cont, ok := vuln.CveContents[models.RedHat]; ok {
 			cont.SourceLink = "https://access.redhat.com/security/cve/" + cont.CveID
@@ -30,8 +41,21 @@ func (o RedHatBase) FillCveInfoFromOvalDB(r *models.ScanResult) error {
 	return nil
 }
 
-// FillCveInfoFromOvalDB returns scan result after updating CVE info by OVAL
-func (o RedHatBase) fillCveInfoFromOvalDB(r *models.ScanResult) error {
+// fillFromOvalDB returns scan result after updating CVE info by OVAL
+func (o RedHatBase) fillFromOvalDB(r *models.ScanResult) error {
+	defs, err := o.getDefsByPackNameFromOvalDB(r.Release, r.Packages)
+	if err != nil {
+		return err
+	}
+	for _, def := range defs {
+		o.update(r, &def)
+	}
+	return nil
+}
+
+func (o RedHatBase) getDefsByPackNameFromOvalDB(osRelease string,
+	packs models.Packages) (relatedDefs []ovalmodels.Definition, err error) {
+
 	ovalconf.Conf.DBType = config.Conf.OvalDBType
 	ovalconf.Conf.DBPath = config.Conf.OvalDBPath
 	util.Log.Infof("open oval-dictionary db (%s): %s",
@@ -39,28 +63,26 @@ func (o RedHatBase) fillCveInfoFromOvalDB(r *models.ScanResult) error {
 
 	d := db.NewRedHat()
 	defer d.Close()
-	for _, pack := range r.Packages {
-		definitions, err := d.GetByPackName(r.Release, pack.Name)
+	for _, pack := range packs {
+		definitions, err := d.GetByPackName(osRelease, pack.Name)
 		if err != nil {
-			return fmt.Errorf("Failed to get RedHat OVAL info by package name: %v", err)
+			return nil, fmt.Errorf("Failed to get RedHat OVAL info by package name: %v", err)
 		}
-		for _, definition := range definitions {
+		for _, def := range definitions {
 			current, _ := ver.NewVersion(fmt.Sprintf("%s-%s", pack.Version, pack.Release))
-			for _, p := range definition.AffectedPacks {
-				if pack.Name != p.Name {
+			for _, p := range def.AffectedPacks {
+				affected, _ := ver.NewVersion(p.Version)
+				if pack.Name != p.Name || !current.LessThan(affected) {
 					continue
 				}
-				affected, _ := ver.NewVersion(p.Version)
-				if current.LessThan(affected) {
-					o.fillOvalInfo(r, &definition)
-				}
+				relatedDefs = append(relatedDefs, def)
 			}
 		}
 	}
-	return nil
+	return
 }
 
-func (o RedHatBase) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Definition) {
+func (o RedHatBase) update(r *models.ScanResult, definition *ovalmodels.Definition) {
 	for _, cve := range definition.Advisory.Cves {
 		ovalContent := *o.convertToModel(cve.CveID, definition)
 		vinfo, ok := r.ScannedCves[cve.CveID]
@@ -77,7 +99,7 @@ func (o RedHatBase) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.De
 			if _, ok := vinfo.CveContents[models.RedHat]; ok {
 				util.Log.Infof("%s will be updated by OVAL", cve.CveID)
 			} else {
-				util.Log.Infof("%s is also detected by OVAL", cve.CveID)
+				util.Log.Infof("%s also detected by OVAL", cve.CveID)
 				cveContents = models.CveContents{}
 			}
 

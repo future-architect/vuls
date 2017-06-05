@@ -38,11 +38,16 @@ type TuiCmd struct {
 	configPath string
 	logDir     string
 
-	resultsDir       string
-	refreshCve       bool
+	resultsDir string
+	refreshCve bool
+
 	cvedbtype        string
 	cvedbpath        string
 	cveDictionaryURL string
+
+	ovalDBType string
+	ovalDBPath string
+	ovalDBURL  string
 
 	pipe bool
 }
@@ -61,6 +66,9 @@ func (*TuiCmd) Usage() string {
 		[-cvedb-type=sqlite3|mysql|postgres]
 		[-cvedb-path=/path/to/cve.sqlite3]
 		[-cvedb-url=http://127.0.0.1:1323 or DB connection string]
+		[-ovaldb-type=sqlite3|mysql]
+		[-ovaldb-path=/path/to/oval.sqlite3]
+		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
 		[-refresh-cve]
 		[-results-dir=/path/to/results]
 		[-log-dir=/path/to/log]
@@ -110,7 +118,26 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 		&p.cveDictionaryURL,
 		"cvedb-url",
 		"",
-		"http://cve-dictionary.com:8080 or DB connection string")
+		"http://cve-dictionary.com:1323 or mysql connection string")
+
+	f.StringVar(
+		&p.ovalDBType,
+		"ovaldb-type",
+		"sqlite3",
+		"DB type for fetching OVAL dictionary (sqlite3 or mysql)")
+
+	defaultOvalDBPath := filepath.Join(wd, "oval.sqlite3")
+	f.StringVar(
+		&p.ovalDBPath,
+		"ovaldb-path",
+		defaultOvalDBPath,
+		"/path/to/sqlite3 (For get oval detail from oval.sqlite3)")
+
+	f.StringVar(
+		&p.ovalDBURL,
+		"ovaldb-url",
+		"",
+		"http://goval-dictionary.com:1324 or mysql connection string")
 
 	f.BoolVar(
 		&p.pipe,
@@ -139,6 +166,9 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	c.Conf.CveDBType = p.cvedbtype
 	c.Conf.CveDBPath = p.cvedbpath
 	c.Conf.CveDBURL = p.cveDictionaryURL
+	c.Conf.OvalDBType = p.ovalDBType
+	c.Conf.OvalDBPath = p.ovalDBPath
+	c.Conf.OvalDBURL = p.ovalDBURL
 
 	log.Info("Validating config...")
 	if !c.Conf.ValidateOnTui() {

@@ -783,10 +783,12 @@ func detailLines() (string, error) {
 		}
 	}
 
+	summary := vinfo.CveContents.Summaries(r.Lang, r.Family)[0]
+
 	data := dataForTmpl{
 		CveID:      vinfo.CveID,
 		Cvsses:     append(vinfo.CveContents.Cvss3Scores(), vinfo.CveContents.Cvss2Scores()...),
-		Summary:    vinfo.CveContents.Summaries(r.Lang, r.Family)[0].Value,
+		Summary:    fmt.Sprintf("%s (%s)", summary.Value, summary.Type),
 		Confidence: vinfo.Confidence,
 		Cwes:       vinfo.CveContents.CweIDs(r.Family),
 		Links:      util.Distinct(links),

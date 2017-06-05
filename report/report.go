@@ -90,18 +90,29 @@ func FillCveInfos(rs []models.ScanResult, dir string) ([]models.ScanResult, erro
 
 func fillCveInfo(r *models.ScanResult) error {
 	util.Log.Debugf("need to refresh")
-	if c.Conf.CveDBType == "sqlite3" && c.Conf.CveDBURL == "" {
-		if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
-			return fmt.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
-				c.Conf.CveDBPath)
+	if c.Conf.CveDBType == "sqlite3" {
+		if c.Conf.CveDBURL == "" {
+			if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
+				return fmt.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
+					c.Conf.CveDBPath)
+			}
+		}
+		if c.Conf.OvalDBURL == "" {
+			if _, err := os.Stat(c.Conf.OvalDBPath); os.IsNotExist(err) {
+				//TODO Warning
+				return fmt.Errorf("SQLite3 DB(OVAL-Dictionary) is not exist: %s",
+					c.Conf.OvalDBPath)
+			}
 		}
 	}
 
-	if err := fillCveInfoFromOvalDB(r); err != nil {
+	util.Log.Debugf("Fill CVE detailed information with OVAL")
+	if err := fillWithOvalDB(r); err != nil {
 		return fmt.Errorf("Failed to fill OVAL information: %s", err)
 	}
 
-	if err := fillCveInfoFromCveDB(r); err != nil {
+	util.Log.Debugf("Fill CVE detailed information with CVE-DB")
+	if err := fillWithCveDB(r); err != nil {
 		return fmt.Errorf("Failed to fill CVE information: %s", err)
 	}
 
@@ -144,7 +155,7 @@ func fillCveDetail(r *models.ScanResult) error {
 	return nil
 }
 
-func fillCveInfoFromCveDB(r *models.ScanResult) error {
+func fillWithCveDB(r *models.ScanResult) error {
 	sInfo := c.Conf.Servers[r.ServerName]
 	if err := fillVulnByCpeNames(sInfo.CpeNames, r.ScannedCves); err != nil {
 		return err
@@ -155,7 +166,7 @@ func fillCveInfoFromCveDB(r *models.ScanResult) error {
 	return nil
 }
 
-func fillCveInfoFromOvalDB(r *models.ScanResult) error {
+func fillWithOvalDB(r *models.ScanResult) error {
 	var ovalClient oval.Client
 	switch r.Family {
 	case "debian":
@@ -172,7 +183,7 @@ func fillCveInfoFromOvalDB(r *models.ScanResult) error {
 	default:
 		return fmt.Errorf("Oval %s is not implemented yet", r.Family)
 	}
-	if err := ovalClient.FillCveInfoFromOvalDB(r); err != nil {
+	if err := ovalClient.FillWithOval(r); err != nil {
 		return err
 	}
 	return nil

@@ -53,13 +53,15 @@ type Config struct {
 	LogDir     string
 	ResultsDir string
 
-	CveDBType   string
-	CveDBPath   string
-	CveDBURL    string
-	CacheDBPath string
+	CveDBType string
+	CveDBPath string
+	CveDBURL  string
 
 	OvalDBType string
 	OvalDBPath string
+	OvalDBURL  string
+
+	CacheDBPath string
 
 	RefreshCve bool
 
