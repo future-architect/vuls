@@ -15,8 +15,8 @@ import (
 // DebianBase is the base struct of Debian and Ubuntu
 type DebianBase struct{}
 
-// fillCveInfoFromOvalDB returns scan result after updating CVE info by OVAL
-func (o DebianBase) fillCveInfoFromOvalDB(r *models.ScanResult) error {
+// fillFromOvalDB returns scan result after updating CVE info by OVAL
+func (o DebianBase) fillFromOvalDB(r *models.ScanResult) error {
 	ovalconf.Conf.DBType = config.Conf.OvalDBType
 	ovalconf.Conf.DBPath = config.Conf.OvalDBPath
 	util.Log.Infof("open oval-dictionary db (%s): %s",
@@ -40,7 +40,7 @@ func (o DebianBase) fillCveInfoFromOvalDB(r *models.ScanResult) error {
 				}
 				affected, _ := ver.NewVersion(p.Version)
 				if current.LessThan(affected) {
-					o.fillOvalInfo(r, &def)
+					o.update(r, &def)
 				}
 			}
 		}
@@ -48,7 +48,7 @@ func (o DebianBase) fillCveInfoFromOvalDB(r *models.ScanResult) error {
 	return nil
 }
 
-func (o DebianBase) fillOvalInfo(r *models.ScanResult, definition *ovalmodels.Definition) {
+func (o DebianBase) update(r *models.ScanResult, definition *ovalmodels.Definition) {
 	ovalContent := *o.convertToModel(definition)
 	ovalContent.Type = models.NewCveContentType(r.Family)
 	vinfo, ok := r.ScannedCves[definition.Debian.CveID]
@@ -103,15 +103,26 @@ type Debian struct {
 }
 
 // NewDebian creates OVAL client for Debian
-func NewDebian() *Debian {
-	return &Debian{}
+func NewDebian() Debian {
+	return Debian{}
 }
 
-// FillCveInfoFromOvalDB returns scan result after updating CVE info by OVAL
-func (o Debian) FillCveInfoFromOvalDB(r *models.ScanResult) error {
-	if err := o.fillCveInfoFromOvalDB(r); err != nil {
-		return err
+// FillWithOval returns scan result after updating CVE info by OVAL
+func (o Debian) FillWithOval(r *models.ScanResult) error {
+	if config.Conf.OvalDBURL != "" {
+		defs, err := getDefsByPackNameViaHTTP(r)
+		if err != nil {
+			return err
+		}
+		for _, def := range defs {
+			o.update(r, &def)
+		}
+	} else {
+		if err := o.fillFromOvalDB(r); err != nil {
+			return err
+		}
 	}
+
 	for _, vuln := range r.ScannedCves {
 		if cont, ok := vuln.CveContents[models.Debian]; ok {
 			cont.SourceLink = "https://security-tracker.debian.org/tracker/" + cont.CveID
@@ -127,13 +138,13 @@ type Ubuntu struct {
 }
 
 // NewUbuntu creates OVAL client for Debian
-func NewUbuntu() *Ubuntu {
-	return &Ubuntu{}
+func NewUbuntu() Ubuntu {
+	return Ubuntu{}
 }
 
-// FillCveInfoFromOvalDB returns scan result after updating CVE info by OVAL
-func (o Ubuntu) FillCveInfoFromOvalDB(r *models.ScanResult) error {
-	if err := o.fillCveInfoFromOvalDB(r); err != nil {
+// FillWithOval returns scan result after updating CVE info by OVAL
+func (o Ubuntu) FillWithOval(r *models.ScanResult) error {
+	if err := o.fillFromOvalDB(r); err != nil {
 		return err
 	}
 	for _, vuln := range r.ScannedCves {

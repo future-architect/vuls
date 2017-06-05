@@ -45,12 +45,13 @@ type ReportCmd struct {
 	ignoreUnscoredCves bool
 	httpProxy          string
 
-	cvedbtype string
-	cvedbpath string
-	cvedbURL  string
+	cveDBType string
+	cveDBPath string
+	cveDBURL  string
 
-	ovaldbtype string
-	ovaldbpath string
+	ovalDBType string
+	ovalDBPath string
+	ovalDBURL  string
 
 	toSlack     bool
 	toEMail     bool
@@ -98,6 +99,9 @@ func (*ReportCmd) Usage() string {
 		[-cvedb-type=sqlite3|mysql|postgres]
 		[-cvedb-path=/path/to/cve.sqlite3]
 		[-cvedb-url=http://127.0.0.1:1323 or DB connection string]
+		[-ovaldb-type=sqlite3|mysql]
+		[-ovaldb-path=/path/to/oval.sqlite3]
+		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
 		[-cvss-over=7]
 		[-diff]
 		[-ignore-unscored-cves]
@@ -152,36 +156,42 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"Refresh CVE information in JSON file under results dir")
 
 	f.StringVar(
-		&p.cvedbtype,
+		&p.cveDBType,
 		"cvedb-type",
 		"sqlite3",
 		"DB type for fetching CVE dictionary (sqlite3, mysql or postgres)")
 
 	defaultCveDBPath := filepath.Join(wd, "cve.sqlite3")
 	f.StringVar(
-		&p.cvedbpath,
+		&p.cveDBPath,
 		"cvedb-path",
 		defaultCveDBPath,
 		"/path/to/sqlite3 (For get cve detail from cve.sqlite3)")
 
 	f.StringVar(
-		&p.ovaldbtype,
+		&p.cveDBURL,
+		"cvedb-url",
+		"",
+		"http://cve-dictionary.com:1323 or mysql connection string")
+
+	f.StringVar(
+		&p.ovalDBType,
 		"ovaldb-type",
 		"sqlite3",
 		"DB type for fetching OVAL dictionary (sqlite3 or mysql)")
 
 	defaultOvalDBPath := filepath.Join(wd, "oval.sqlite3")
 	f.StringVar(
-		&p.ovaldbpath,
+		&p.ovalDBPath,
 		"ovaldb-path",
 		defaultOvalDBPath,
 		"/path/to/sqlite3 (For get oval detail from oval.sqlite3)")
 
 	f.StringVar(
-		&p.cvedbURL,
-		"cvedb-url",
+		&p.ovalDBURL,
+		"ovaldb-url",
 		"",
-		"http://cve-dictionary.com:8080 or DB connection string")
+		"http://goval-dictionary.com:1324 or mysql connection string")
 
 	f.Float64Var(
 		&p.cvssScoreOver,
@@ -290,11 +300,12 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.ResultsDir = p.resultsDir
 	c.Conf.RefreshCve = p.refreshCve
 	c.Conf.Diff = p.diff
-	c.Conf.CveDBType = p.cvedbtype
-	c.Conf.CveDBPath = p.cvedbpath
-	c.Conf.CveDBURL = p.cvedbURL
-	c.Conf.OvalDBType = p.ovaldbtype
-	c.Conf.OvalDBPath = p.ovaldbpath
+	c.Conf.CveDBType = p.cveDBType
+	c.Conf.CveDBPath = p.cveDBPath
+	c.Conf.CveDBURL = p.cveDBURL
+	c.Conf.OvalDBType = p.ovalDBType
+	c.Conf.OvalDBPath = p.ovalDBPath
+	c.Conf.OvalDBURL = p.ovalDBURL
 	c.Conf.CvssScoreOver = p.cvssScoreOver
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
 	c.Conf.HTTPProxy = p.httpProxy
