@@ -32,10 +32,11 @@ import (
 
 // TuiCmd is Subcommand of host discovery mode
 type TuiCmd struct {
-	lang     string
-	debugSQL bool
-	debug    bool
-	logDir   string
+	lang       string
+	debugSQL   bool
+	debug      bool
+	configPath string
+	logDir     string
 
 	resultsDir       string
 	refreshCve       bool
@@ -56,6 +57,7 @@ func (*TuiCmd) Synopsis() string { return "Run Tui view to anayze vulnerabilites
 func (*TuiCmd) Usage() string {
 	return `tui:
 	tui
+		[-config=/path/to/config.toml]
 		[-cvedb-type=sqlite3|mysql]
 		[-cvedb-path=/path/to/cve.sqlite3]
 		[-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
@@ -81,6 +83,9 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	wd, _ := os.Getwd()
 	defaultResultsDir := filepath.Join(wd, "results")
 	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+
+	defaultConfPath := filepath.Join(wd, "config.toml")
+	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
 	f.BoolVar(
 		&p.refreshCve,
@@ -124,6 +129,11 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	c.Conf.LogDir = p.logDir
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
 	log := util.Log
+
+	if err := c.Load(p.configPath, ""); err != nil {
+		util.Log.Errorf("Error loading %s, %s", p.configPath, err)
+		return subcommands.ExitUsageError
+	}
 
 	c.Conf.ResultsDir = p.resultsDir
 	c.Conf.CveDBType = p.cvedbtype
