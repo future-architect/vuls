@@ -164,20 +164,25 @@ func (api cvedictClient) httpGet(key, url string, resChan chan<- response, errCh
 		//  resp, body, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
 		resp, body, errs = gorequest.New().Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-			return fmt.Errorf("HTTP GET error: %v, url: %s, resp: %v", errs, url, resp)
+			return fmt.Errorf("HTTP GET error: %v, url: %s, resp: %v",
+				errs, url, resp)
 		}
 		return nil
 	}
 	notify := func(err error, t time.Duration) {
-		util.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %s", t, err)
+		util.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %s",
+			t, err)
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {
 		errChan <- fmt.Errorf("HTTP Error %s", err)
+		return
 	}
 	cveDetail := cve.CveDetail{}
 	if err := json.Unmarshal([]byte(body), &cveDetail); err != nil {
-		errChan <- fmt.Errorf("Failed to Unmarshall. body: %s, err: %s", body, err)
+		errChan <- fmt.Errorf("Failed to Unmarshall. body: %s, err: %s",
+			body, err)
+		return
 	}
 	resChan <- response{
 		key,

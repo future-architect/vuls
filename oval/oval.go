@@ -104,11 +104,17 @@ func httpGet(url string, pack *models.Package, resChan chan<- response, errChan 
 	var body string
 	var errs []error
 	var resp *http.Response
+	count, retryMax := 0, 3
 	f := func() (err error) {
 		//  resp, body, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
 		resp, body, errs = gorequest.New().Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-			return fmt.Errorf("HTTP GET error: %v, url: %s, resp: %v", errs, url, resp)
+			count++
+			if count == retryMax {
+				return nil
+			}
+			return fmt.Errorf("HTTP GET error: %v, url: %s, resp: %v",
+				errs, url, resp)
 		}
 		return nil
 	}
@@ -118,10 +124,18 @@ func httpGet(url string, pack *models.Package, resChan chan<- response, errChan 
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {
 		errChan <- fmt.Errorf("HTTP Error %s", err)
+		return
 	}
+	if count == retryMax {
+		errChan <- fmt.Errorf("HRetry count exceeded")
+		return
+	}
+
 	defs := []ovalmodels.Definition{}
 	if err := json.Unmarshal([]byte(body), &defs); err != nil {
-		errChan <- fmt.Errorf("Failed to Unmarshall. body: %s, err: %s", body, err)
+		errChan <- fmt.Errorf("Failed to Unmarshall. body: %s, err: %s",
+			body, err)
+		return
 	}
 	resChan <- response{
 		pack: pack,
