@@ -45,10 +45,10 @@ func (api *cvedictClient) initialize() {
 	api.baseURL = config.Conf.CveDBURL
 }
 
-func (api cvedictClient) CheckHealth() (ok bool, err error) {
-	if config.Conf.CveDBURL == "" || config.Conf.CveDBType == "mysql" || config.Conf.CveDBType == "postgres" {
+func (api cvedictClient) CheckHealth() error {
+	if !api.isFetchViaHTTP() {
 		util.Log.Debugf("get cve-dictionary from %s", config.Conf.CveDBType)
-		return true, nil
+		return nil
 	}
 
 	api.initialize()
@@ -58,9 +58,10 @@ func (api cvedictClient) CheckHealth() (ok bool, err error) {
 	resp, _, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
 	//  resp, _, errs = gorequest.New().Proxy(api.httpProxy).Get(url).End()
 	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-		return false, fmt.Errorf("Failed to request to CVE server. url: %s, errs: %v", url, errs)
+		return fmt.Errorf("Failed to request to CVE server. url: %s, errs: %v",
+			url, errs)
 	}
-	return true, nil
+	return nil
 }
 
 type response struct {
@@ -69,8 +70,7 @@ type response struct {
 }
 
 func (api cvedictClient) FetchCveDetails(cveIDs []string) (cveDetails cve.CveDetails, err error) {
-	switch config.Conf.CveDBType {
-	case "sqlite3", "mysql", "postgres":
+	if !api.isFetchViaHTTP() {
 		return api.FetchCveDetailsFromCveDB(cveIDs)
 	}
 
@@ -195,21 +195,28 @@ type responseGetCveDetailByCpeName struct {
 	CveDetails []cve.CveDetail
 }
 
+func (api cvedictClient) isFetchViaHTTP() bool {
+	// Default value of CveDBType is sqlite3
+	if config.Conf.CveDBURL != "" && config.Conf.CveDBType == "sqlite3" {
+		return true
+	}
+	return false
+}
+
 func (api cvedictClient) FetchCveDetailsByCpeName(cpeName string) ([]cve.CveDetail, error) {
-	switch config.Conf.CveDBType {
-	case "sqlite3", "mysql", "postgres":
-		return api.FetchCveDetailsByCpeNameFromDB(cpeName)
+	if api.isFetchViaHTTP() {
+		api.baseURL = config.Conf.CveDBURL
+		url, err := util.URLPathJoin(api.baseURL, "cpes")
+		if err != nil {
+			return []cve.CveDetail{}, err
+		}
+
+		query := map[string]string{"name": cpeName}
+		util.Log.Debugf("HTTP Request to %s, query: %#v", url, query)
+		return api.httpPost(cpeName, url, query)
 	}
 
-	api.baseURL = config.Conf.CveDBURL
-	url, err := util.URLPathJoin(api.baseURL, "cpes")
-	if err != nil {
-		return []cve.CveDetail{}, err
-	}
-
-	query := map[string]string{"name": cpeName}
-	util.Log.Debugf("HTTP Request to %s, query: %#v", url, query)
-	return api.httpPost(cpeName, url, query)
+	return api.FetchCveDetailsByCpeNameFromDB(cpeName)
 }
 
 func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]cve.CveDetail, error) {
@@ -217,7 +224,8 @@ func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]c
 	var errs []error
 	var resp *http.Response
 	f := func() (err error) {
-		req := gorequest.New().SetDebug(config.Conf.Debug).Post(url)
+		//  req := gorequest.New().SetDebug(config.Conf.Debug).Post(url)
+		req := gorequest.New().Post(url)
 		for key := range query {
 			req = req.Send(fmt.Sprintf("%s=%s", key, query[key])).Type("json")
 		}

@@ -13,7 +13,7 @@ import (
 )
 
 // DebianBase is the base struct of Debian and Ubuntu
-type DebianBase struct{}
+type DebianBase struct{ Base }
 
 // fillFromOvalDB returns scan result after updating CVE info by OVAL
 func (o DebianBase) fillFromOvalDB(r *models.ScanResult) error {
@@ -109,7 +109,7 @@ func NewDebian() Debian {
 
 // FillWithOval returns scan result after updating CVE info by OVAL
 func (o Debian) FillWithOval(r *models.ScanResult) error {
-	if config.Conf.OvalDBURL != "" {
+	if o.isFetchViaHTTP() {
 		defs, err := getDefsByPackNameViaHTTP(r)
 		if err != nil {
 			return err
@@ -144,9 +144,20 @@ func NewUbuntu() Ubuntu {
 
 // FillWithOval returns scan result after updating CVE info by OVAL
 func (o Ubuntu) FillWithOval(r *models.ScanResult) error {
-	if err := o.fillFromOvalDB(r); err != nil {
-		return err
+	if o.isFetchViaHTTP() {
+		defs, err := getDefsByPackNameViaHTTP(r)
+		if err != nil {
+			return err
+		}
+		for _, def := range defs {
+			o.update(r, &def)
+		}
+	} else {
+		if err := o.fillFromOvalDB(r); err != nil {
+			return err
+		}
 	}
+
 	for _, vuln := range r.ScannedCves {
 		if cont, ok := vuln.CveContents[models.Ubuntu]; ok {
 			cont.SourceLink = "http://people.ubuntu.com/~ubuntu-security/cve/" + cont.CveID

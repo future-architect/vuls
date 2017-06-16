@@ -17,7 +17,38 @@ import (
 
 // Client is the interface of OVAL client.
 type Client interface {
+	CheckHealth() error
 	FillWithOval(r *models.ScanResult) error
+}
+
+// Base is a base struct
+type Base struct{}
+
+// CheckHealth do health check
+func (b Base) CheckHealth() error {
+	if !b.isFetchViaHTTP() {
+		return nil
+	}
+
+	url := fmt.Sprintf("%s/health", config.Conf.OvalDBURL)
+	var errs []error
+	var resp *http.Response
+	resp, _, errs = gorequest.New().Get(url).End()
+	//  resp, _, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
+	//  resp, _, errs = gorequest.New().Proxy(api.httpProxy).Get(url).End()
+	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
+		return fmt.Errorf("Failed to request to OVAL server. url: %s, errs: %v",
+			url, errs)
+	}
+	return nil
+}
+
+func (b Base) isFetchViaHTTP() bool {
+	// Default value of OvalDBType is sqlite3
+	if config.Conf.OvalDBURL != "" && config.Conf.OvalDBType == "sqlite3" {
+		return true
+	}
+	return false
 }
 
 type request struct {
@@ -33,7 +64,6 @@ type response struct {
 func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 	relatedDefs []ovalmodels.Definition, err error) {
 
-	//TODO Health Check
 	reqChan := make(chan request, len(r.Packages))
 	resChan := make(chan response, len(r.Packages))
 	errChan := make(chan error, len(r.Packages))

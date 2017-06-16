@@ -70,44 +70,31 @@ func FillCveInfos(rs []models.ScanResult, dir string) ([]models.ScanResult, erro
 		}
 	}
 
-	//TODO remove debug code
-	//  for _, r := range filled {
-	//      pp.Printf("filled: %d\n", len(r.ScannedCves))
-	//  }
-
 	filtered := []models.ScanResult{}
 	for _, r := range filled {
 		filtered = append(filtered, r.FilterByCvssOver(c.Conf.CvssScoreOver))
 	}
-
-	//TODO remove debug code
-	//  for _, r := range filtered {
-	//      pp.Printf("filtered: %d\n", len(r.ScannedCves))
-	//  }
-
 	return filtered, nil
 }
 
 func fillCveInfo(r *models.ScanResult) error {
 	util.Log.Debugf("need to refresh")
-	if c.Conf.CveDBType == "sqlite3" {
-		if c.Conf.CveDBURL == "" {
-			if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
-				return fmt.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
-					c.Conf.CveDBPath)
-			}
+	if c.Conf.CveDBType == "sqlite3" && c.Conf.CveDBURL == "" {
+		if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
+			return fmt.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
+				c.Conf.CveDBPath)
 		}
-		if c.Conf.OvalDBURL == "" {
-			if _, err := os.Stat(c.Conf.OvalDBPath); os.IsNotExist(err) {
-				//TODO Warning
-				return fmt.Errorf("SQLite3 DB(OVAL-Dictionary) is not exist: %s",
-					c.Conf.OvalDBPath)
-			}
+	}
+	if c.Conf.OvalDBType == "sqlite3" && c.Conf.OvalDBURL == "" {
+		if _, err := os.Stat(c.Conf.OvalDBPath); os.IsNotExist(err) {
+			// TODO Warning??
+			return fmt.Errorf("SQLite3 DB(OVAL-Dictionary) is not exist: %s",
+				c.Conf.OvalDBPath)
 		}
 	}
 
 	util.Log.Debugf("Fill CVE detailed information with OVAL")
-	if err := fillWithOvalDB(r); err != nil {
+	if err := fillWithOval(r); err != nil {
 		return fmt.Errorf("Failed to fill OVAL information: %s", err)
 	}
 
@@ -166,7 +153,7 @@ func fillWithCveDB(r *models.ScanResult) error {
 	return nil
 }
 
-func fillWithOvalDB(r *models.ScanResult) error {
+func fillWithOval(r *models.ScanResult) error {
 	var ovalClient oval.Client
 	switch r.Family {
 	case "debian":
