@@ -26,6 +26,7 @@ import (
 
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
@@ -395,7 +396,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	if !c.Conf.ValidateOnReport() {
 		return subcommands.ExitUsageError
 	}
-	if ok, err := report.CveClient.CheckHealth(); !ok {
+	if err := report.CveClient.CheckHealth(); err != nil {
 		util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
 		util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with --cvedb-path option")
 		return subcommands.ExitFailure
@@ -405,6 +406,15 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	} else {
 		if c.Conf.CveDBType == "sqlite3" {
 			util.Log.Infof("cve-dictionary: %s", c.Conf.CveDBPath)
+		}
+	}
+
+	if c.Conf.OvalDBURL != "" {
+		err := oval.Base{}.CheckHealth()
+		if err != nil {
+			util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
+			util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with --ovaldb-path option")
+			return subcommands.ExitFailure
 		}
 	}
 

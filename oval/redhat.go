@@ -15,11 +15,11 @@ import (
 )
 
 // RedHatBase is the base struct for RedHat and CentOS
-type RedHatBase struct{}
+type RedHatBase struct{ Base }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
 func (o RedHatBase) FillWithOval(r *models.ScanResult) error {
-	if config.Conf.OvalDBURL != "" {
+	if o.isFetchViaHTTP() {
 		defs, err := getDefsByPackNameViaHTTP(r)
 		if err != nil {
 			return err
