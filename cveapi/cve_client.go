@@ -47,7 +47,7 @@ func (api *cvedictClient) initialize() {
 }
 
 func (api cvedictClient) CheckHealth() (ok bool, err error) {
-	if config.Conf.CveDBURL == "" || config.Conf.CveDBType == "mysql" {
+	if config.Conf.CveDBURL == "" || config.Conf.CveDBType == "mysql" || config.Conf.CveDBType == "postgres" {
 		util.Log.Debugf("get cve-dictionary from %s", config.Conf.CveDBType)
 		return true, nil
 	}
@@ -71,7 +71,7 @@ type response struct {
 
 func (api cvedictClient) FetchCveDetails(cveIDs []string) (cveDetails cve.CveDetails, err error) {
 	switch config.Conf.CveDBType {
-	case "sqlite3", "mysql":
+	case "sqlite3", "mysql", "postgres":
 		return api.FetchCveDetailsFromCveDB(cveIDs)
 	}
 
@@ -198,7 +198,7 @@ type responseGetCveDetailByCpeName struct {
 
 func (api cvedictClient) FetchCveDetailsByCpeName(cpeName string) ([]cve.CveDetail, error) {
 	switch config.Conf.CveDBType {
-	case "sqlite3", "mysql":
+	case "sqlite3", "mysql", "postgres":
 		return api.FetchCveDetailsByCpeNameFromDB(cpeName)
 	}
 

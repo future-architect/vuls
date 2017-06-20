@@ -167,9 +167,14 @@ func (c Config) ValidateOnReport() bool {
 			errs = append(errs, fmt.Errorf(
 				`MySQL connection string is needed. -cvedb-url="user:pass@tcp(localhost:3306)/dbname"`))
 		}
+	case "postgres":
+		if c.CveDBURL == "" {
+			errs = append(errs, fmt.Errorf(
+				`PostgreSQL connection string is needed. -cvedb-url=""host=myhost user=user dbname=dbname sslmode=disable password=password""`))
+		}
 	default:
 		errs = append(errs, fmt.Errorf(
-			"CVE DB type must be either 'sqlite3' or 'mysql'.  -cvedb-type: %s", c.CveDBType))
+			"CVE DB type must be either 'sqlite3', 'mysql' or 'postgres'.  -cvedb-type: %s", c.CveDBType))
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -203,9 +208,9 @@ func (c Config) ValidateOnTui() bool {
 		}
 	}
 
-	if c.CveDBType != "sqlite3" && c.CveDBType != "mysql" {
+	if c.CveDBType != "sqlite3" && c.CveDBType != "mysql" && c.CveDBType != "postgres" {
 		errs = append(errs, fmt.Errorf(
-			"CVE DB type must be either 'sqlite3' or 'mysql'.  -cve-dictionary-dbtype: %s", c.CveDBType))
+			"CVE DB type must be either 'sqlite3', 'mysql' or 'postgres'.  -cve-dictionary-dbtype: %s", c.CveDBType))
 	}
 
 	if c.CveDBType == "sqlite3" {
