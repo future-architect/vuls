@@ -88,7 +88,7 @@ Slackチームは[こちらから](http://goo.gl/forms/xm5KFo35tu)参加でき�
   * [Display the latest scan results](#display-the-latest-scan-results)
   * [Display the previous scan results](#display-the-previous-scan-results)
 - [Display the previous scan results using peco](#display-the-previous-scan-results-using-peco)
-- [Usage: go-cve-dictonary on different server](#usage-go-cve-dictonary-on-different-server)
+- [Usage: go-cve-dictionary on different server](#usage-go-cve-dictionary-on-different-server)
 - [Usage: Update NVD Data](#usage-update-nvd-data)
 - [レポートの日本語化](#%E3%83%AC%E3%83%9D%E3%83%BC%E3%83%88%E3%81%AE%E6%97%A5%E6%9C%AC%E8%AA%9E%E5%8C%96)
   * [fetchnvd, fetchjvnの実行順序の注意](#fetchnvd-fetchjvn%E3%81%AE%E5%AE%9F%E8%A1%8C%E9%A0%86%E5%BA%8F%E3%81%AE%E6%B3%A8%E6%84%8F)
@@ -1565,7 +1565,7 @@ $ vuls history | peco | vuls tui -pipe
 
 [![asciicast](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8.png)](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8)
 
-# Usage: go-cve-dictonary on different server
+# Usage: go-cve-dictionary on different server
 
 Run go-cve-dictionary as server mode before scanning on 192.168.10.1
 ```
