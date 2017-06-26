@@ -9,6 +9,7 @@ import (
 	ver "github.com/knqyf263/go-deb-version"
 	ovalconf "github.com/kotakanbe/goval-dictionary/config"
 	db "github.com/kotakanbe/goval-dictionary/db"
+	ovallog "github.com/kotakanbe/goval-dictionary/log"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
@@ -19,13 +20,27 @@ type DebianBase struct{ Base }
 func (o DebianBase) fillFromOvalDB(r *models.ScanResult) error {
 	ovalconf.Conf.DBType = config.Conf.OvalDBType
 	ovalconf.Conf.DBPath = config.Conf.OvalDBPath
+	if ovalconf.Conf.DBType == "sqlite3" {
+		ovalconf.Conf.DBPath = config.Conf.OvalDBPath
+	} else {
+		ovalconf.Conf.DBPath = config.Conf.OvalDBURL
+	}
 	util.Log.Infof("open oval-dictionary db (%s): %s",
-		config.Conf.OvalDBType, config.Conf.OvalDBPath)
+		ovalconf.Conf.DBType, ovalconf.Conf.DBPath)
 
-	ovaldb, err := db.NewDB(r.Family)
-	if err != nil {
+	ovallog.Initialize(config.Conf.LogDir)
+
+	var err error
+	var ovaldb db.DB
+	if ovaldb, err = db.NewDB(
+		ovalconf.Debian,
+		ovalconf.Conf.DBType,
+		ovalconf.Conf.DBPath,
+		ovalconf.Conf.DebugSQL,
+	); err != nil {
 		return err
 	}
+	defer ovaldb.CloseDB()
 
 	for _, pack := range r.Packages {
 		definitions, err := ovaldb.GetByPackName(r.Release, pack.Name)

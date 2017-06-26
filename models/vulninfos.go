@@ -126,33 +126,33 @@ func (v VulnInfo) Cvss3CalcURL() string {
 func (v VulnInfo) VendorLinks(family string) map[string]string {
 	links := map[string]string{}
 	switch family {
-	case "rhel", "centos":
+	case config.RedHat, config.CentOS:
 		links["RHEL-CVE"] = "https://access.redhat.com/security/cve/" + v.CveID
 		for _, advisory := range v.DistroAdvisories {
 			aidURL := strings.Replace(advisory.AdvisoryID, ":", "-", -1)
 			links[advisory.AdvisoryID] = fmt.Sprintf("https://rhn.redhat.com/errata/%s.html", aidURL)
 		}
 		return links
-	case "oraclelinux":
+	case config.Oracle:
 		links["Oracle-CVE"] = fmt.Sprintf("https://linux.oracle.com/cve/%s.html", v.CveID)
 		for _, advisory := range v.DistroAdvisories {
 			links[advisory.AdvisoryID] =
 				fmt.Sprintf("https://linux.oracle.com/errata/%s.html", advisory.AdvisoryID)
 		}
 		return links
-	case "amazon":
+	case config.Amazon:
 		links["RHEL-CVE"] = "https://access.redhat.com/security/cve/" + v.CveID
 		for _, advisory := range v.DistroAdvisories {
 			links[advisory.AdvisoryID] =
 				fmt.Sprintf("https://alas.aws.amazon.com/%s.html", advisory.AdvisoryID)
 		}
 		return links
-	case "ubuntu":
+	case config.Ubuntu:
 		links["Ubuntu-CVE"] = "http://people.ubuntu.com/~ubuntu-security/cve/" + v.CveID
 		return links
-	case "debian":
+	case config.Debian:
 		links["Debian-CVE"] = "https://security-tracker.debian.org/tracker/" + v.CveID
-	case "FreeBSD":
+	case config.FreeBSD:
 		for _, advisory := range v.DistroAdvisories {
 			links["FreeBSD-VuXML"] = fmt.Sprintf("https://vuxml.freebsd.org/freebsd/%s.html", advisory.AdvisoryID)
 

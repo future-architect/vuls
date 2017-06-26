@@ -11,6 +11,7 @@ import (
 	ver "github.com/knqyf263/go-deb-version"
 	ovalconf "github.com/kotakanbe/goval-dictionary/config"
 	db "github.com/kotakanbe/goval-dictionary/db"
+	ovallog "github.com/kotakanbe/goval-dictionary/log"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
@@ -57,14 +58,28 @@ func (o RedHatBase) getDefsByPackNameFromOvalDB(osRelease string,
 	packs models.Packages) (relatedDefs []ovalmodels.Definition, err error) {
 
 	ovalconf.Conf.DBType = config.Conf.OvalDBType
-	ovalconf.Conf.DBPath = config.Conf.OvalDBPath
+	if ovalconf.Conf.DBType == "sqlite3" {
+		ovalconf.Conf.DBPath = config.Conf.OvalDBPath
+	} else {
+		ovalconf.Conf.DBPath = config.Conf.OvalDBURL
+	}
 	util.Log.Infof("open oval-dictionary db (%s): %s",
-		config.Conf.OvalDBType, config.Conf.OvalDBPath)
+		ovalconf.Conf.DBType, ovalconf.Conf.DBPath)
 
-	d := db.NewRedHat()
-	defer d.Close()
+	ovallog.Initialize(config.Conf.LogDir)
+
+	var ovaldb db.DB
+	if ovaldb, err = db.NewDB(
+		ovalconf.RedHat,
+		ovalconf.Conf.DBType,
+		ovalconf.Conf.DBPath,
+		ovalconf.Conf.DebugSQL,
+	); err != nil {
+		return
+	}
+	defer ovaldb.CloseDB()
 	for _, pack := range packs {
-		definitions, err := d.GetByPackName(osRelease, pack.Name)
+		definitions, err := ovaldb.GetByPackName(osRelease, pack.Name)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to get RedHat OVAL info by package name: %v", err)
 		}

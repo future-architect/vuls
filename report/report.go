@@ -19,7 +19,6 @@ package report
 
 import (
 	"fmt"
-	"os"
 
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -79,19 +78,6 @@ func FillCveInfos(rs []models.ScanResult, dir string) ([]models.ScanResult, erro
 
 func fillCveInfo(r *models.ScanResult) error {
 	util.Log.Debugf("need to refresh")
-	if c.Conf.CveDBType == "sqlite3" && c.Conf.CveDBURL == "" {
-		if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
-			return fmt.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
-				c.Conf.CveDBPath)
-		}
-	}
-	if c.Conf.OvalDBType == "sqlite3" && c.Conf.OvalDBURL == "" {
-		if _, err := os.Stat(c.Conf.OvalDBPath); os.IsNotExist(err) {
-			// TODO Warning??
-			return fmt.Errorf("SQLite3 DB(OVAL-Dictionary) is not exist: %s",
-				c.Conf.OvalDBPath)
-		}
-	}
 
 	util.Log.Debugf("Fill CVE detailed information with OVAL")
 	if err := fillWithOval(r); err != nil {
@@ -156,15 +142,15 @@ func fillWithCveDB(r *models.ScanResult) error {
 func fillWithOval(r *models.ScanResult) error {
 	var ovalClient oval.Client
 	switch r.Family {
-	case "debian":
+	case c.Debian:
 		ovalClient = oval.NewDebian()
-	case "ubuntu":
+	case c.Ubuntu:
 		ovalClient = oval.NewUbuntu()
-	case "rhel":
+	case c.RedHat:
 		ovalClient = oval.NewRedhat()
-	case "centos":
+	case c.CentOS:
 		ovalClient = oval.NewCentOS()
-	case "amazon", "oraclelinux", "Raspbian", "FreeBSD":
+	case c.Amazon, c.Oracle, c.Raspbian, c.FreeBSD:
 		//TODO implement OracleLinux
 		return nil
 	default:

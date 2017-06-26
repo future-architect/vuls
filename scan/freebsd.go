@@ -51,13 +51,13 @@ func detectFreebsd(c config.ServerInfo) (itsMe bool, bsd osTypeInterface) {
 	bsd = newBsd(c)
 
 	// Prevent from adding `set -o pipefail` option
-	c.Distro = config.Distro{Family: "FreeBSD"}
+	c.Distro = config.Distro{Family: config.FreeBSD}
 
 	if r := exec(c, "uname", noSudo); r.isSuccess() {
-		if strings.Contains(r.Stdout, "FreeBSD") == true {
+		if strings.Contains(r.Stdout, config.FreeBSD) == true {
 			if b := exec(c, "freebsd-version", noSudo); b.isSuccess() {
 				rel := strings.TrimSpace(b.Stdout)
-				bsd.setDistro("FreeBSD", rel)
+				bsd.setDistro(config.FreeBSD, rel)
 				return true, bsd
 			}
 		}
