@@ -89,6 +89,7 @@ We have a slack team. [Join slack team](http://goo.gl/forms/xm5KFo35tu)
   * [Example: Add optional key-value pairs to JSON](#example-add-optional-key-value-pairs-to-json)
   * [Example: Use MySQL as a DB storage back-end](#example-use-mysql-as-a-db-storage-back-end)
   * [Example: Use PostgreSQL as a DB storage back-end](#example-use-postgresql-as-a-db-storage-back-end)
+  * [Example: Use Redis as a DB storage back-end](#example-use-redis-as-a-db-storage-back-end)
 - [Usage: Scan vulnerabilites of non-OS packages](#usage-scan-vulnerabilites-of-non-os-packages)
 - [Usage: Integrate with OWASP Dependency Check to Automatic update when the libraries are updated (Experimental)](#usage-integrate-with-owasp-dependency-check-to-automatic-update-when-the-libraries-are-updated-experimental)
 - [Usage: TUI](#usage-tui)
@@ -199,7 +200,7 @@ This can be done in the following steps.
 
 Vuls requires the following packages.
 
-- SQLite3 or MySQL
+- SQLite3, MySQL, PostgreSQL, Redis
 - git
 - gcc
 - GNU Make
@@ -504,7 +505,7 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 [Details](#example-scan-via-shell-instead-of-ssh)
 
 ## [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)  
-- Fetch vulnerability information from NVD and JVN(Japanese), then insert into SQLite3 or MySQL.
+- Fetch vulnerability information from NVD and JVN(Japanese), then insert into SQLite3, MySQL, PostgreSQL or Redis.
 
 ## Scanning Flow
 ![Vuls-Scan-Flow](img/vuls-scan-flow.png)
@@ -1438,6 +1439,14 @@ $ vuls report \
       -cvedb-url=""host=myhost user=user dbname=dbname sslmode=disable password=password""
 ```
 
+## Example: Use Redis as a DB storage back-end
+
+```
+$ vuls report \
+  -cvedb-type=redis -cvedb-url="redis://localhost/0" 
+  -ovaldb-type=redis  -ovaldb-url="redis://localhost/1"
+```
+
 ----
 
 # Usage: Scan vulnerabilites of non-OS packages
@@ -1583,7 +1592,7 @@ see [go-cve-dictionary#usage-fetch-nvd-data](https://github.com/kotakanbe/go-cve
 # How to Update
 
 - Update go-cve-dictionary  
-If the DB schema was changed, please specify new SQLite3 or MySQL DB file.
+If the DB schema was changed, please specify new SQLite3, MySQL, PostgreSQL or Redis DB file.
 ```
 $ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
 $ git pull

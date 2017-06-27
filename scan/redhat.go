@@ -55,7 +55,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 	red = newRedhat(c)
 
 	if r := exec(c, "ls /etc/fedora-release", noSudo); r.isSuccess() {
-		red.setDistro("fedora", "unknown")
+		red.setDistro(config.Fedora, "unknown")
 		util.Log.Warn("Fedora not tested yet: %s", r)
 		return true, red
 	}
@@ -72,7 +72,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 			}
 
 			release := result[2]
-			red.setDistro("oraclelinux", release)
+			red.setDistro(config.Oracle, release)
 			return true, red
 		}
 	}
@@ -93,9 +93,9 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 			release := result[2]
 			switch strings.ToLower(result[1]) {
 			case "centos", "centos linux":
-				red.setDistro("centos", release)
+				red.setDistro(config.CentOS, release)
 			default:
-				red.setDistro("rhel", release)
+				red.setDistro(config.RedHat, release)
 			}
 			return true, red
 		}
@@ -103,7 +103,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 	}
 
 	if r := exec(c, "ls /etc/system-release", noSudo); r.isSuccess() {
-		family := "amazon"
+		family := config.Amazon
 		release := "unknown"
 		if r := exec(c, "cat /etc/system-release", noSudo); r.isSuccess() {
 			fields := strings.Fields(r.Stdout)
@@ -133,12 +133,12 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 	var zero = []int{0}
 
 	switch o.Distro.Family {
-	case "centos":
+	case config.CentOS:
 		cmds = []cmd{
 			{"yum --changelog --assumeno update yum", []int{0, 1}},
 		}
 
-	case "rhel", "oraclelinux":
+	case config.RedHat, config.Oracle:
 		majorVersion, err := o.Distro.MajorVersion()
 		if err != nil {
 			return fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
@@ -180,7 +180,7 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 // Amazon 		... -
 func (o *redhat) checkDependencies() error {
 	var packName string
-	if o.Distro.Family == "amazon" {
+	if o.Distro.Family == config.Amazon {
 		return nil
 	}
 
@@ -191,7 +191,7 @@ func (o *redhat) checkDependencies() error {
 		return fmt.Errorf(msg)
 	}
 
-	if o.Distro.Family == "centos" {
+	if o.Distro.Family == config.CentOS {
 		if majorVersion < 6 {
 			msg := fmt.Sprintf("CentOS %s is not supported", o.Distro.Release)
 			o.log.Errorf(msg)
@@ -208,9 +208,9 @@ func (o *redhat) checkDependencies() error {
 	}
 
 	switch o.Distro.Family {
-	case "centos":
+	case config.CentOS:
 		packName = "yum-plugin-changelog"
-	case "rhel", "oraclelinux":
+	case config.RedHat, config.Oracle:
 		if majorVersion < 6 {
 			packName = "yum-security"
 		} else {
@@ -293,7 +293,7 @@ func (o *redhat) parseScannedPackagesLine(line string) (models.Package, error) {
 }
 
 func (o *redhat) scanVulnInfos() (models.VulnInfos, error) {
-	if o.Distro.Family != "centos" {
+	if o.Distro.Family != config.CentOS {
 		// Amazon, RHEL, Oracle Linux has yum updateinfo as default
 		// yum updateinfo can collenct vendor advisory information.
 		return o.scanUnsecurePackagesUsingYumPluginSecurity()
@@ -535,7 +535,7 @@ func (o *redhat) getChangelogCVELines(rpm2changelog map[string]*string, pack mod
 func (o *redhat) divideChangelogByPackage(allChangelog string) (map[string]*string, error) {
 	var majorVersion int
 	var err error
-	if o.Distro.Family == "centos" {
+	if o.Distro.Family == config.CentOS {
 		majorVersion, err = o.Distro.MajorVersion()
 		if err != nil {
 			return nil, fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
@@ -659,7 +659,7 @@ type distroAdvisoryCveIDs struct {
 // Scaning unsecure packages using yum-plugin-security.
 // Amazon, RHEL, Oracle Linux
 func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos, error) {
-	if o.Distro.Family == "centos" {
+	if o.Distro.Family == config.CentOS {
 		// CentOS has no security channel.
 		// So use yum check-update && parse changelog
 		return nil, fmt.Errorf(
@@ -678,7 +678,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 		return nil, fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
 	}
 
-	if (o.Distro.Family == "rhel" || o.Distro.Family == "oraclelinux") && major == 5 {
+	if (o.Distro.Family == config.RedHat || o.Distro.Family == config.Oracle) && major == 5 {
 		cmd = "yum --color=never list-security --security"
 	} else {
 		cmd = "yum --color=never --security updateinfo list updates"
@@ -721,7 +721,7 @@ func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity() (models.VulnInfos,
 	}
 
 	// get advisoryID(RHSA, ALAS, ELSA) - CVE IDs
-	if (o.Distro.Family == "rhel" || o.Distro.Family == "oraclelinux") && major == 5 {
+	if (o.Distro.Family == config.RedHat || o.Distro.Family == config.Oracle) && major == 5 {
 		cmd = "yum --color=never info-security"
 	} else {
 		cmd = "yum --color=never --security updateinfo updates"
@@ -817,12 +817,12 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 		switch sectionState {
 		case Header:
 			switch o.Distro.Family {
-			case "centos":
+			case config.CentOS:
 				// CentOS has no security channel.
 				// So use yum check-update && parse changelog
 				return result, fmt.Errorf(
 					"yum updateinfo is not suppported on  CentOS")
-			case "rhel", "amazon", "oraclelinux":
+			case config.RedHat, config.Amazon, config.Oracle:
 				// nop
 			}
 
@@ -1032,7 +1032,7 @@ func (o *redhat) clone() osTypeInterface {
 
 func (o *redhat) sudo() bool {
 	switch o.Distro.Family {
-	case "amazon":
+	case config.Amazon:
 		return false
 	default:
 		return true

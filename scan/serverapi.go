@@ -421,7 +421,7 @@ func setupChangelogCache() error {
 	needToSetupCache := false
 	for _, s := range servers {
 		switch s.getDistro().Family {
-		case "ubuntu", "debian", "raspbian":
+		case config.Ubuntu, config.Debian, config.Raspbian:
 			needToSetupCache = true
 			break
 		}

@@ -19,6 +19,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -29,6 +30,35 @@ import (
 
 // Conf has Configuration
 var Conf Config
+
+const (
+	// RedHat is
+	RedHat = "redhat"
+
+	// Debian is
+	Debian = "debian"
+
+	// Ubuntu is
+	Ubuntu = "ubuntu"
+
+	// CentOS is
+	CentOS = "centos"
+
+	// Fedora is
+	Fedora = "fedora"
+
+	// Amazon is
+	Amazon = "amazon"
+
+	// Oracle is
+	Oracle = "oracle"
+
+	// FreeBSD is
+	FreeBSD = "freebsd"
+
+	// Raspbian is
+	Raspbian = "raspbian"
+)
 
 //Config is struct of Configuration
 type Config struct {
@@ -163,26 +193,12 @@ func (c Config) ValidateOnReport() bool {
 		}
 	}
 
-	switch c.CveDBType {
-	case "sqlite3":
-		if ok, _ := valid.IsFilePath(c.CveDBPath); !ok {
-			errs = append(errs, fmt.Errorf(
-				"SQLite3 DB(CVE-Dictionary) path must be a *Absolute* file path. -cvedb-path: %s",
-				c.CveDBPath))
-		}
-	case "mysql":
-		if c.CveDBURL == "" {
-			errs = append(errs, fmt.Errorf(
-				`MySQL connection string is needed. -cvedb-url="user:pass@tcp(localhost:3306)/dbname"`))
-		}
-	case "postgres":
-		if c.CveDBURL == "" {
-			errs = append(errs, fmt.Errorf(
-				`PostgreSQL connection string is needed. -cvedb-url=""host=myhost user=user dbname=dbname sslmode=disable password=password""`))
-		}
-	default:
-		errs = append(errs, fmt.Errorf(
-			"CVE DB type must be either 'sqlite3', 'mysql' or 'postgres'.  -cvedb-type: %s", c.CveDBType))
+	if err := validateDB("cvedb", c.CveDBType, c.CveDBPath, c.CveDBURL); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := validateDB("ovaldb", c.OvalDBType, c.OvalDBPath, c.OvalDBURL); err != nil {
+		errs = append(errs, err)
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -216,16 +232,8 @@ func (c Config) ValidateOnTui() bool {
 		}
 	}
 
-	if c.CveDBType != "sqlite3" && c.CveDBType != "mysql" && c.CveDBType != "postgres" {
-		errs = append(errs, fmt.Errorf(
-			"CVE DB type must be either 'sqlite3', 'mysql' or 'postgres'.  -cve-dictionary-dbtype: %s", c.CveDBType))
-	}
-
-	if c.CveDBType == "sqlite3" {
-		if ok, _ := valid.IsFilePath(c.CveDBPath); !ok {
-			errs = append(errs, fmt.Errorf(
-				"SQLite3 DB(CVE-Dictionary) path must be a *Absolute* file path. -cve-dictionary-dbpath: %s", c.CveDBPath))
-		}
+	if err := validateDB("cvedb", c.CveDBType, c.CveDBPath, c.CveDBURL); err != nil {
+		errs = append(errs, err)
 	}
 
 	for _, err := range errs {
@@ -233,6 +241,51 @@ func (c Config) ValidateOnTui() bool {
 	}
 
 	return len(errs) == 0
+}
+
+// validateDB validates configuration
+//  dictionaryDB name is 'cvedb' or 'ovaldb'
+func validateDB(dictionaryDBName, dbType, dbPath, dbURL string) error {
+	switch dbType {
+	case "sqlite3":
+		if ok, _ := valid.IsFilePath(dbPath); !ok {
+			return fmt.Errorf(
+				"SQLite3 DB path (%s) must be a *Absolute* file path. -%s-path: %s",
+				dictionaryDBName,
+				dictionaryDBName,
+				dbPath)
+		}
+		if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+			return fmt.Errorf("SQLite3 DB path (%s) is not exist: %s",
+				dictionaryDBName,
+				dbPath)
+		}
+	case "mysql":
+		if dbURL == "" {
+			return fmt.Errorf(
+				`MySQL connection string is needed. -%s-url="user:pass@tcp(localhost:3306)/dbname"`,
+				dictionaryDBName)
+		}
+	case "postgres":
+		if dbURL == "" {
+			return fmt.Errorf(
+				`PostgreSQL connection string is needed. -%s-url="host=myhost user=user dbname=dbname sslmode=disable password=password"`,
+				dictionaryDBName)
+		}
+	case "redis":
+		if dbURL == "" {
+			return fmt.Errorf(
+				`Redis connection string is needed. -%s-url="redis://localhost/0"`,
+				dictionaryDBName)
+		}
+	default:
+		return fmt.Errorf(
+			"%s type must be either 'sqlite3', 'mysql', 'postgres' or 'redis'.  -%s-type: %s",
+			dictionaryDBName,
+			dictionaryDBName,
+			dbType)
+	}
+	return nil
 }
 
 // SMTPConf is smtp config

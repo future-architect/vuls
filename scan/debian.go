@@ -73,7 +73,7 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err err
 		//  e.g.
 		//  Raspbian GNU/Linux 7 \n \l
 		result := strings.Fields(r.Stdout)
-		if len(result) > 2 && result[0] == "Raspbian" {
+		if len(result) > 2 && result[0] == config.Raspbian {
 			distro := strings.ToLower(trim(result[0]))
 			deb.setDistro(distro, trim(result[2]))
 			return true, deb, nil
@@ -121,7 +121,7 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err err
 	// Debian
 	cmd := "cat /etc/debian_version"
 	if r := exec(c, cmd, noSudo); r.isSuccess() {
-		deb.setDistro("debian", trim(r.Stdout))
+		deb.setDistro(config.Debian, trim(r.Stdout))
 		return true, deb, nil
 	}
 
@@ -147,10 +147,10 @@ func (o *debian) checkIfSudoNoPasswd() error {
 
 func (o *debian) checkDependencies() error {
 	switch o.Distro.Family {
-	case "ubuntu", "raspbian":
+	case config.Ubuntu, config.Raspbian:
 		return nil
 
-	case "debian":
+	case config.Debian:
 		// Debian needs aptitude to get changelogs.
 		// Because unable to get changelogs via apt-get changelog on Debian.
 		if r := o.exec("test -f /usr/bin/aptitude", noSudo); !r.isSuccess() {
@@ -539,9 +539,9 @@ func (o *debian) getChangelogCache(meta *cache.Meta, pack models.Package) string
 func (o *debian) scanPackageCveIDs(pack models.Package) ([]DetectedCveID, *models.Package, error) {
 	cmd := ""
 	switch o.Distro.Family {
-	case "ubuntu", "raspbian":
+	case config.Ubuntu, config.Raspbian:
 		cmd = fmt.Sprintf(`PAGER=cat apt-get -q=2 changelog %s`, pack.Name)
-	case "debian":
+	case config.Debian:
 		cmd = fmt.Sprintf(`PAGER=cat aptitude -q=2 changelog %s`, pack.Name)
 	}
 	cmd = util.PrependProxyEnv(cmd)
@@ -592,10 +592,10 @@ func (o *debian) getCveIDsFromChangelog(
 
 	delim := []string{"+", "~", "build"}
 	switch o.Distro.Family {
-	case "ubuntu":
-		delim = append(delim, "ubuntu")
-	case "debian":
-	case "Raspbian":
+	case config.Ubuntu:
+		delim = append(delim, config.Ubuntu)
+	case config.Debian:
+	case config.Raspbian:
 	}
 
 	for _, d := range delim {

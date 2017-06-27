@@ -736,7 +736,7 @@ func TestVendorLink(t *testing.T) {
 	}{
 		{
 			in: in{
-				family: "rhel",
+				family: "redhat",
 				vinfo: VulnInfo{
 					CveID: "CVE-2017-6074",
 					CveContents: CveContents{
