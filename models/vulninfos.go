@@ -26,7 +26,8 @@ import (
 	"github.com/future-architect/vuls/config"
 )
 
-// VulnInfos is VulnInfo list, getter/setter, sortable methods.
+// VulnInfos has a map of VulnInfo
+// Key: CveID
 type VulnInfos map[string]VulnInfo
 
 // Find elements that matches the function passed in argument

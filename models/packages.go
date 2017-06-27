@@ -42,6 +42,7 @@ func (ps Packages) MergeNewVersion(as Packages) {
 		if pack, ok := ps[a.Name]; ok {
 			pack.NewVersion = a.NewVersion
 			pack.NewRelease = a.NewRelease
+			pack.Repository = a.Repository
 			ps[a.Name] = pack
 		}
 	}
@@ -145,7 +146,7 @@ func (p Package) FormatChangelog() string {
 }
 
 // Changelog has contents of changelog and how to get it.
-// Method: modesl.detectionMethodStr
+// Method: models.detectionMethodStr
 type Changelog struct {
 	Contents string
 	Method   string

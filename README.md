@@ -803,12 +803,12 @@ In order to scan, the following dependencies are required, so you need to instal
 |:-------------|-------------------:|:-------------|
 | Ubuntu       |          12, 14, 16| -            |
 | Debian       |                7, 8| aptitude     |
-| CentOS       |                6, 7| yum-plugin-changelog |
-| Amazon       |                All | -            |
-| RHEL         |                  5 | yum-security |
-| RHEL         |               6, 7 | -            |
-| Oracle Linux |                  5 | yum-security |
-| Oracle Linux |               6, 7 | -            |
+| CentOS       |                6, 7| yum-plugin-changelog, yum-utils |
+| Amazon       |                All | -            | TODO yum-utils?, yum-plugin-changelog
+| RHEL         |                  5 | yum-security | TODO yum-utils?
+| RHEL         |               6, 7 | -            | TODO yum-utils?
+| Oracle Linux |                  5 | yum-security | TODO yum-utils?
+| Oracle Linux |               6, 7 | -            |TODO yum-utils?  
 | FreeBSD      |                 10 | -            |
 | Raspbian     |     Wheezy, Jessie | -            |
 
