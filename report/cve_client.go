@@ -26,12 +26,12 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/parnurzeal/gorequest"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/util"
 	cveconfig "github.com/kotakanbe/go-cve-dictionary/config"
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
 	cve "github.com/kotakanbe/go-cve-dictionary/models"
+	log "github.com/sirupsen/logrus"
 )
 
 // CveClient is api client of CVE disctionary service.

@@ -27,8 +27,8 @@ import (
 
 	"github.com/google/subcommands"
 
-	"github.com/Sirupsen/logrus"
 	ps "github.com/kotakanbe/go-pingscanner"
+	"github.com/sirupsen/logrus"
 )
 
 // DiscoverCmd is Subcommand of host discovery mode

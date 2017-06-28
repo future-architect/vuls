@@ -23,8 +23,8 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	log "github.com/Sirupsen/logrus"
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
+	log "github.com/sirupsen/logrus"
 )
 
 // TOMLLoader loads config
