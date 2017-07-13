@@ -310,11 +310,8 @@ func (o *redhat) parseInstalledPackagesLine(line string) (models.Package, error)
 
 func (o *redhat) scanUpdatablePackages() (models.Packages, error) {
 	cmd := "repoquery --all --pkgnarrow=updates --qf='%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPO}'"
-	if o.getServerInfo().Enablerepo != "" {
-		//TODO yum enablerepo option should be splitted by space
-		//TODO but vuls's Config is comma separated...
-		//TOOD -skip-broken
-		cmd += " --enablerepo=" + o.getServerInfo().Enablerepo
+	for _, repo := range o.getServerInfo().Enablerepo {
+		cmd += " --enablerepo=" + repo
 	}
 
 	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
@@ -450,11 +447,9 @@ func (o *redhat) fillChangelogs(updatables models.Packages) error {
 }
 
 func (o *redhat) getAvailableChangelog(packName string) (string, error) {
-	//TODO yum enablerepo option should be splitted by space
-	//TODO but vuls's Config is comma separated...
 	yumopts := ""
-	if o.getServerInfo().Enablerepo != "" {
-		yumopts = " --enablerepo=" + o.getServerInfo().Enablerepo
+	if 0 < len(o.getServerInfo().Enablerepo) {
+		yumopts = " --enablerepo=" + strings.Join(o.getServerInfo().Enablerepo, ",")
 	}
 	if config.Conf.SkipBroken {
 		yumopts += " --skip-broken"

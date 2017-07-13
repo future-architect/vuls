@@ -20,7 +20,6 @@ package config
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/BurntSushi/toml"
 	log "github.com/Sirupsen/logrus"
@@ -164,7 +163,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			s.Enablerepo = d.Enablerepo
 		}
 		if len(s.Enablerepo) != 0 {
-			for _, repo := range strings.Split(s.Enablerepo, ",") {
+			for _, repo := range s.Enablerepo {
 				switch repo {
 				case "base", "updates":
 					// nop

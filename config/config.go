@@ -418,7 +418,7 @@ type ServerInfo struct {
 	Optional [][]interface{}
 
 	// For CentOS, RHEL, Amazon
-	Enablerepo string
+	Enablerepo []string
 
 	// used internal
 	LogMsgAnsiColor string // DebugLog Color
