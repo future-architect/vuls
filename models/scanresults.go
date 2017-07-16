@@ -32,7 +32,7 @@ type ScanResults []ScanResult
 // ScanResult has the result of scanned CVE information.
 type ScanResult struct {
 	ScannedAt   time.Time
-	JSONVersion string
+	JSONVersion int
 	Lang        string
 	ServerName  string // TOML Section key
 	Family      string

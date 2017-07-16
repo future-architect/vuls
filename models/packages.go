@@ -80,6 +80,16 @@ func (ps Packages) FormatUpdatablePacksSummary() string {
 	return fmt.Sprintf("%d updatable packages", nUpdatable)
 }
 
+// FindOne search a element by name-newver-newrel-arch
+func (ps Packages) FindOne(f func(Package) bool) (string, Package, bool) {
+	for key, p := range ps {
+		if f(p) {
+			return key, p, true
+		}
+	}
+	return "", Package{}, false
+}
+
 // Package has installed packages.
 type Package struct {
 	Name        string
@@ -87,6 +97,7 @@ type Package struct {
 	Release     string
 	NewVersion  string
 	NewRelease  string
+	Arch        string
 	Repository  string
 	Changelog   Changelog
 	NotFixedYet bool // Ubuntu OVAL Only

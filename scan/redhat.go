@@ -27,6 +27,8 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+
+	//TODO change to go-rpm-version
 	ver "github.com/knqyf263/go-deb-version"
 )
 
@@ -153,7 +155,6 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 			}
 		} else {
 			cmds = []cmd{
-				//TODO repoquery
 				{"yum --color=never repolist", zero},
 				// {"yum --color=never check-update", []int{0, 100}},
 				{"yum --color=never --security updateinfo list updates", zero},
@@ -207,6 +208,7 @@ func (o *redhat) checkDependencies() error {
 		}
 	}
 
+	//TODO Check if yum-plugin-changelog is installed when scan with --changelog option on Amazon,RHEL, Oracle
 	var packNames []string
 	switch o.Distro.Family {
 	case config.CentOS:
@@ -253,6 +255,12 @@ func (o *redhat) scanPackages() error {
 		return nil
 	}
 
+	//TODO Cache changelogs to bolt
+	//TODO --with-changelog
+	if err := o.fillChangelogs(updatable); err != nil {
+		return nil
+	}
+
 	var vinfos models.VulnInfos
 	if vinfos, err = o.scanUnsecurePackages(updatable); err != nil {
 		o.log.Errorf("Failed to scan vulnerable packages")
@@ -264,11 +272,10 @@ func (o *redhat) scanPackages() error {
 
 func (o *redhat) scanInstalledPackages() (models.Packages, error) {
 	installed := models.Packages{}
-	// cmd := "repoquery --all --pkgnarrow=installed --qf='%{NAME} %{EPOCH} %{VERSION} %{RELEASE}'"
-	cmd := "rpm -qa --queryformat '%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE}\n'"
+	cmd := "rpm -qa --queryformat '%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n'"
 	r := o.exec(cmd, noSudo)
 	if r.isSuccess() {
-		// openssl 0 1.0.1e	30.el6.11 base
+		// openssl 0 1.0.1e	30.el6.11 x86_64
 		lines := strings.Split(r.Stdout, "\n")
 		for _, line := range lines {
 			if trimed := strings.TrimSpace(line); len(trimed) != 0 {
@@ -289,7 +296,7 @@ func (o *redhat) scanInstalledPackages() (models.Packages, error) {
 
 func (o *redhat) parseInstalledPackagesLine(line string) (models.Package, error) {
 	fields := strings.Fields(line)
-	if len(fields) != 4 {
+	if len(fields) != 5 {
 		return models.Package{},
 			fmt.Errorf("Failed to parse package line: %s", line)
 	}
@@ -305,6 +312,7 @@ func (o *redhat) parseInstalledPackagesLine(line string) (models.Package, error)
 		Name:    fields[0],
 		Version: ver,
 		Release: fields[3],
+		Arch:    fields[4],
 	}, nil
 }
 
@@ -320,11 +328,11 @@ func (o *redhat) scanUpdatablePackages() (models.Packages, error) {
 	}
 
 	// Collect Updateble packages, installed, candidate version and repository.
-	return o.parseScanUpdatablePacksLines(r.Stdout)
+	return o.parseUpdatablePacksLines(r.Stdout)
 }
 
-// parseScanUpdatablePacksLines parse the stdout of repoquery to get package name, candidate version
-func (o *redhat) parseScanUpdatablePacksLines(stdout string) (models.Packages, error) {
+// parseUpdatablePacksLines parse the stdout of repoquery to get package name, candidate version
+func (o *redhat) parseUpdatablePacksLines(stdout string) (models.Packages, error) {
 	updatable := models.Packages{}
 	lines := strings.Split(stdout, "\n")
 	for _, line := range lines {
@@ -337,7 +345,7 @@ func (o *redhat) parseScanUpdatablePacksLines(stdout string) (models.Packages, e
 		if len(strings.TrimSpace(line)) == 0 {
 			continue
 		}
-		pack, err := o.parseScanUpdatablePacksLine(line)
+		pack, err := o.parseUpdatablePacksLine(line)
 		if err != nil {
 			return updatable, err
 		}
@@ -346,7 +354,7 @@ func (o *redhat) parseScanUpdatablePacksLines(stdout string) (models.Packages, e
 	return updatable, nil
 }
 
-func (o *redhat) parseScanUpdatablePacksLine(line string) (models.Package, error) {
+func (o *redhat) parseUpdatablePacksLine(line string) (models.Package, error) {
 	fields := strings.Fields(line)
 	if len(fields) < 5 {
 		return models.Package{}, fmt.Errorf("Unknown format: %s, fields: %s", line, fields)
@@ -375,78 +383,43 @@ func (o *redhat) scanUnsecurePackages(updatable models.Packages) (models.VulnInf
 	if o.Distro.Family != config.CentOS {
 		// Amazon, RHEL, Oracle Linux has yum updateinfo as default
 		// yum updateinfo can collenct vendor advisory information.
-		return o.scanUnsecurePackagesUsingYumPluginSecurity(updatable)
+		return o.scanCveIDsByCommands(updatable)
 	}
-	// CentOS does not have security channel...
-	// So, yum check-update then parse chnagelog.
-	return o.scanUnsecurePackagesUsingYumCheckUpdate(updatable)
+
+	// Parse chnagelog because CentOS does not have security channel...
+	return o.scanCveIDsInChangelog(updatable)
 }
 
 func (o *redhat) fillChangelogs(updatables models.Packages) error {
-	type response struct {
-		packName  string
-		changelog string
+	names := []string{}
+	for name := range updatables {
+		names = append(names, name)
 	}
-	reqChan := make(chan string, len(updatables))
-	errChan := make(chan error, len(updatables))
-	resChan := make(chan response, len(updatables))
-	defer close(reqChan)
-	defer close(resChan)
-	defer close(errChan)
 
-	go func() {
-		for _, pack := range updatables {
-			reqChan <- pack.Name
-		}
-	}()
+	if err := o.fillDiffChangelogs(names); err != nil {
+		return err
+	}
 
-	timeout := time.After(10 * 60 * time.Second)
-	concurrency := 1
-	tasks := util.GenWorkers(concurrency)
-	for range updatables {
-		tasks <- func() {
-			select {
-			case packName := <-reqChan:
-				func(name string) {
-					if changelog, err := o.getAvailableChangelog(name); err != nil {
-						errChan <- err
-					} else {
-						pack := o.Packages[name]
-						diff, err := o.getDiffChangelog(pack, changelog)
-						if err != nil {
-							errChan <- err
-						}
-						resChan <- response{name, diff}
-					}
-				}(packName)
-			}
+	emptyChangelogPackNames := []string{}
+	for _, pack := range o.Packages {
+		if pack.NewVersion != "" && pack.Changelog.Contents == "" {
+			emptyChangelogPackNames = append(emptyChangelogPackNames, pack.Name)
 		}
 	}
 
-	errs := []error{}
-	for i := 0; i < len(updatables); i++ {
-		select {
-		case response := <-resChan:
-			p := o.Packages[response.packName]
-			p.Changelog = models.Changelog{
-				Contents: response.changelog,
-				Method:   models.ChangelogExactMatchStr,
-			}
-			o.Packages[response.packName] = p
-			o.log.Infof("(%d/%d) Fetched Changelogs %s", i+1, len(updatables), response.packName)
-		case err := <-errChan:
-			errs = append(errs, err)
-		case <-timeout:
-			errs = append(errs, fmt.Errorf("Timeout scanPackageCveIDs"))
+	i := 0
+	for _, name := range emptyChangelogPackNames {
+		i++
+		o.log.Infof("(%d/%d) Fetched Changelogs %s", i, len(emptyChangelogPackNames), name)
+		if err := o.fillDiffChangelogs([]string{name}); err != nil {
+			return err
 		}
 	}
-	if 0 < len(errs) {
-		return fmt.Errorf("%v", errs)
-	}
+
 	return nil
 }
 
-func (o *redhat) getAvailableChangelog(packName string) (string, error) {
+func (o *redhat) getAvailableChangelogs(packNames []string) (map[string]string, error) {
 	yumopts := ""
 	if 0 < len(o.getServerInfo().Enablerepo) {
 		yumopts = " --enablerepo=" + strings.Join(o.getServerInfo().Enablerepo, ",")
@@ -454,14 +427,94 @@ func (o *redhat) getAvailableChangelog(packName string) (string, error) {
 	if config.Conf.SkipBroken {
 		yumopts += " --skip-broken"
 	}
-
 	cmd := `yum --color=never %s changelog all %s | grep -A 10000 '==================== Available Packages ===================='`
-	cmd = fmt.Sprintf(cmd, yumopts, packName)
+	cmd = fmt.Sprintf(cmd, yumopts, strings.Join(packNames, " "))
+
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess(0, 1) {
-		return "", fmt.Errorf("Failed to SSH: %s", r)
+		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
-	return r.Stdout, nil
+
+	return o.divideChangelogsIntoEachPackages(r.Stdout), nil
+}
+
+// Divide available change logs of all updatable packages into each package's changelog
+func (o *redhat) divideChangelogsIntoEachPackages(stdout string) map[string]string {
+	changelogs := make(map[string]string)
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+
+	crlf, newBlock := false, true
+	packNameVer, contents := "", []string{}
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "==================== Available Packages ====================") {
+			continue
+		}
+		if newBlock {
+			left := strings.Fields(line)[0]
+			// ss := strings.Split(left, ".")
+			// packNameVer = strings.Join(ss[0:len(ss)-1], ".")
+			packNameVer = left
+			newBlock = false
+			continue
+		}
+		if len(strings.TrimSpace(line)) == 0 {
+			if crlf {
+				changelogs[packNameVer] = strings.Join(contents, "\n")
+				packNameVer = ""
+				contents = []string{}
+				newBlock = true
+				crlf = false
+			} else {
+				contents = append(contents, line)
+				crlf = true
+			}
+		} else {
+			contents = append(contents, line)
+			crlf = false
+		}
+	}
+	if 0 < len(contents) {
+		changelogs[packNameVer] = strings.Join(contents, "\n")
+	}
+	return changelogs
+}
+
+func (o *redhat) fillDiffChangelogs(packNames []string) error {
+	changelogs, err := o.getAvailableChangelogs(packNames)
+	if err != nil {
+		return err
+	}
+
+	for s := range changelogs {
+		// name, pack, found := o.Packages.FindOne(func(p models.Package) bool {
+		name, pack, found := o.Packages.FindOne(func(p models.Package) bool {
+			var epochNameVerRel string
+			if index := strings.Index(p.NewVersion, ":"); 0 < index {
+				epoch := p.NewVersion[0:index]
+				ver := p.NewVersion[index+1 : len(p.NewVersion)]
+				epochNameVerRel = fmt.Sprintf("%s:%s-%s",
+					epoch, p.Name, ver)
+			} else {
+				epochNameVerRel = fmt.Sprintf("%s-%s",
+					p.Name, p.NewVersion)
+			}
+			return strings.HasPrefix(s, epochNameVerRel)
+		})
+
+		if found {
+			diff, err := o.getDiffChangelog(pack, changelogs[s])
+			if err != nil {
+				return err
+			}
+			pack.Changelog = models.Changelog{
+				Contents: diff,
+				Method:   models.ChangelogExactMatchStr,
+			}
+			o.Packages[name] = pack
+		}
+	}
+	return nil
 }
 
 func (o *redhat) getDiffChangelog(pack models.Package, availableChangelog string) (string, error) {
@@ -479,16 +532,27 @@ func (o *redhat) getDiffChangelog(pack models.Package, availableChangelog string
 			continue
 		}
 
-		ss := strings.Split(line, " ")
+		// openssh on RHEL
+		//   openssh-server-6.6.1p1-35.el7_3.x86_64   rhui-rhel-7-server-rhui-rpms
+		//   Wed Mar  1 21:00:00 2017 Jakub Jelen <jjelen@redhat.com> - 6.6.1p1-35 + 0.9.3-9
+		ss := strings.Split(line, " + ")
+		if 1 < len(ss) {
+			line = ss[0]
+		}
+
+		ss = strings.Split(line, " ")
 		if len(ss) < 2 {
 			diff = append(diff, line)
 			continue
 		}
 		v := ss[len(ss)-1]
 		v = strings.TrimPrefix(v, "-")
+		v = strings.TrimPrefix(v, "[")
+		v = strings.TrimSuffix(v, "]")
 		version, err := ver.NewVersion(v)
 		if err != nil {
-			o.log.Debugf("Failed to parse version in changelog. %s, err: %s", pack, err)
+			// o.log.Debugf("Failed to parse version in changelog. %s, %s, err: %s", v, pack, err)
+			diff = append(diff, line)
 			continue
 		}
 
@@ -499,20 +563,10 @@ func (o *redhat) getDiffChangelog(pack models.Package, availableChangelog string
 	}
 
 	// pp.Println(pack, strings.Split(availableChangelog, "\r\n"), diff)
-	if 2 < len(diff) {
-		diff = diff[2:len(diff)]
-	}
 	return strings.TrimSpace(strings.Join(diff, "\n")), nil
 }
 
-//TODO rename grepCveIDsFromChangelog
-func (o *redhat) scanUnsecurePackagesUsingYumCheckUpdate(updatable models.Packages) (models.VulnInfos, error) {
-	//TODO move to appropriate position
-	if err := o.fillChangelogs(updatable); err != nil {
-		return nil, err
-	}
-
-	// TODO goroutine if this logic is too slow
+func (o *redhat) scanCveIDsInChangelog(updatable models.Packages) (models.VulnInfos, error) {
 	packCveIDs := make(map[string][]string)
 	for name := range updatable {
 		cveIDs := []string{}
@@ -560,7 +614,7 @@ type distroAdvisoryCveIDs struct {
 
 // Scaning unsecure packages using yum-plugin-security.
 // Amazon, RHEL, Oracle Linux
-func (o *redhat) scanUnsecurePackagesUsingYumPluginSecurity(updatable models.Packages) (models.VulnInfos, error) {
+func (o *redhat) scanCveIDsByCommands(updatable models.Packages) (models.VulnInfos, error) {
 	if o.Distro.Family == config.CentOS {
 		// CentOS has no security channel.
 		// So use yum check-update && parse changelog
@@ -765,24 +819,6 @@ func (o *redhat) changeSectionState(state int) (newState int) {
 		newState = Content
 	}
 	return newState
-}
-
-var rpmPackageArchPattern = regexp.MustCompile(
-	`^[^ ]+\.(i386|i486|i586|i686|k6|athlon|x86_64|noarch|ppc|alpha|sparc)$`)
-
-func (o *redhat) isRpmPackageNameLine(line string) (bool, error) {
-	s := strings.TrimPrefix(line, "ChangeLog for: ")
-	ss := strings.Split(s, ", ")
-	if len(ss) == 0 {
-		return false, nil
-	}
-	for _, s := range ss {
-		s = strings.TrimRight(s, " \r\n")
-		if !rpmPackageArchPattern.MatchString(s) {
-			return false, nil
-		}
-	}
-	return true, nil
 }
 
 var yumCveIDPattern = regexp.MustCompile(`(CVE-\d{4}-\d{4,})`)
