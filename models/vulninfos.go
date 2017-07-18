@@ -189,10 +189,11 @@ func (v *VulnInfo) NilToEmpty() *VulnInfo {
 
 // DistroAdvisory has Amazon Linux, RHEL, FreeBSD Security Advisory information.
 type DistroAdvisory struct {
-	AdvisoryID string
-	Severity   string
-	Issued     time.Time
-	Updated    time.Time
+	AdvisoryID  string
+	Severity    string
+	Issued      time.Time
+	Updated     time.Time
+	Description string
 }
 
 // Confidence is a ranking how confident the CVE-ID was deteted correctly

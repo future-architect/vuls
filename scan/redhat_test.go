@@ -307,9 +307,6 @@ func TestParseYumUpdateinfoOL(t *testing.T) {
      Issued : 2017-02-15
        CVEs : CVE-2017-3135
 Description : [32:9.9.4-38.2]
-            : - Fix CVE-2017-3135 (ISC change 4557)
-            : - Fix and test caching CNAME before DNAME (ISC
-            :   change 4558)
    Severity : Moderate
 
 ===============================================================================
@@ -323,10 +320,6 @@ Description : [32:9.9.4-38.2]
        CVEs : CVE-2016-8610
 	    : CVE-2017-3731
 Description : [1.0.1e-48.4]
-            : - fix CVE-2017-3731 - DoS via truncated packets
-            :   with RC4-MD5 cipher
-            : - fix CVE-2016-8610 - DoS of single-threaded
-            :   servers via excessive alerts
    Severity : Moderate
 
 ===============================================================================
@@ -339,10 +332,6 @@ Description : [1.0.1e-48.4]
      Issued : 2017-02-15
        CVEs : CVE-2017-6074
 Description : kernel-uek
-            : [4.1.12-61.1.28]
-            : - dccp: fix freeing skb too early for
-            :   IPV6_RECVPKTINFO (Andrey Konovalov)  [Orabug:
-            :   25598257]  {CVE-2017-6074}
    Severity : Important
 
 	`
@@ -360,17 +349,19 @@ Description : kernel-uek
 			[]distroAdvisoryCveIDs{
 				{
 					DistroAdvisory: models.DistroAdvisory{
-						AdvisoryID: "ELSA-2017-0276",
-						Severity:   "Moderate",
-						Issued:     issued,
+						AdvisoryID:  "ELSA-2017-0276",
+						Severity:    "Moderate",
+						Issued:      issued,
+						Description: "[32:9.9.4-38.2] ",
 					},
 					CveIDs: []string{"CVE-2017-3135"},
 				},
 				{
 					DistroAdvisory: models.DistroAdvisory{
-						AdvisoryID: "ELSA-2017-0286",
-						Severity:   "Moderate",
-						Issued:     issued,
+						AdvisoryID:  "ELSA-2017-0286",
+						Severity:    "Moderate",
+						Issued:      issued,
+						Description: "[1.0.1e-48.4] ",
 					},
 					CveIDs: []string{
 						"CVE-2016-8610",
@@ -379,9 +370,10 @@ Description : kernel-uek
 				},
 				{
 					DistroAdvisory: models.DistroAdvisory{
-						AdvisoryID: "ELSA-2017-3520",
-						Severity:   "Important",
-						Issued:     issued,
+						AdvisoryID:  "ELSA-2017-3520",
+						Severity:    "Important",
+						Issued:      issued,
+						Description: "kernel-uek ",
 					},
 					CveIDs: []string{"CVE-2017-6074"},
 				},
@@ -418,12 +410,6 @@ func TestParseYumUpdateinfoRHEL(t *testing.T) {
        Bugs : 1259087 - CVE-2015-5722 bind: malformed DNSSEC key failed assertion denial of service
        CVEs : CVE-2015-5722
 Description : The Berkeley Internet Name Domain (BIND) is an implementation of
-            : the Domain Name System (DNS) protocols. BIND
-            : includes a DNS server (named); a resolver library
-            : (routines for applications to use when interfacing
-            : with DNS); and tools for verifying that the DNS
-            : server is operating correctly.
-            :
    Severity : Important
 
 ===============================================================================
@@ -439,12 +425,6 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
        CVEs : CVE-2015-8000
             : CVE-2015-8001
 Description : The Berkeley Internet Name Domain (BIND) is an implementation of
-            : the Domain Name System (DNS) protocols. BIND
-            : includes a DNS server (named); a resolver library
-            : (routines for applications to use when interfacing
-            : with DNS); and tools for verifying that the DNS
-            : server is operating correctly.
-            :
    Severity : Low
 
 ===============================================================================
@@ -458,12 +438,6 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
        Bugs : 1299364 - CVE-2015-8704 bind: specific APL data could trigger an INSIST in apl_42.c      CVEs : CVE-2015-8704
 	        : CVE-2015-8705
 Description : The Berkeley Internet Name Domain (BIND) is an implementation of
-            : the Domain Name System (DNS) protocols. BIND
-            : includes a DNS server (named); a resolver library
-            : (routines for applications to use when interfacing
-            : with DNS); and tools for verifying that the DNS
-            : server is operating correctly.
-            :
    Severity : Moderate
 
 	`
@@ -482,18 +456,20 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
 			[]distroAdvisoryCveIDs{
 				{
 					DistroAdvisory: models.DistroAdvisory{
-						AdvisoryID: "RHSA-2015:1705",
-						Severity:   "Important",
-						Issued:     issued,
+						AdvisoryID:  "RHSA-2015:1705",
+						Severity:    "Important",
+						Issued:      issued,
+						Description: "The Berkeley Internet Name Domain (BIND) is an implementation of ",
 					},
 					CveIDs: []string{"CVE-2015-5722"},
 				},
 				{
 					DistroAdvisory: models.DistroAdvisory{
-						AdvisoryID: "RHSA-2015:2655",
-						Severity:   "Low",
-						Issued:     issued,
-						Updated:    updated,
+						AdvisoryID:  "RHSA-2015:2655",
+						Severity:    "Low",
+						Issued:      issued,
+						Updated:     updated,
+						Description: "The Berkeley Internet Name Domain (BIND) is an implementation of ",
 					},
 					CveIDs: []string{
 						"CVE-2015-8000",
@@ -502,10 +478,10 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
 				},
 				{
 					DistroAdvisory: models.DistroAdvisory{
-						AdvisoryID: "RHSA-2016:0073",
-						Severity:   "Moderate",
-						Issued:     issued,
-						Updated:    updated,
+						AdvisoryID:  "RHSA-2016:0073",
+						Severity:    "Moderate",
+						Issued:      issued,
+						Description: "The Berkeley Internet Name Domain (BIND) is an implementation of ",
 					},
 					CveIDs: []string{
 						"CVE-2015-8704",
@@ -553,10 +529,6 @@ func TestParseYumUpdateinfoAmazon(t *testing.T) {
      Issued : 2015-12-15 13:30
        CVEs : CVE-2016-1494
 Description : Package updates are available for Amazon Linux AMI that fix the
-            : following vulnerabilities: CVE-2016-1494:
-            :         1295869:
-            : CVE-2016-1494 python-rsa: Signature forgery using
-            : Bleichenbacher'06 attack
    Severity : medium
 
 ===============================================================================
@@ -571,32 +543,25 @@ Description : Package updates are available for Amazon Linux AMI that fix the
             : CVE-2015-3195
             : CVE-2015-3196
 Description : Package updates are available for Amazon Linux AMI that fix the
-            : following vulnerabilities: CVE-2015-3196:
-            :         1288326:
-            : CVE-2015-3196 OpenSSL: Race condition handling PSK
-            : identify hint A race condition flaw, leading to a
-            : double free, was found in the way OpenSSL handled
-            : pre-shared keys (PSKs). A remote attacker could
-            : use this flaw to crash a multi-threaded SSL/TLS
-            : client.
-            :
    Severity : medium`,
 
 			[]distroAdvisoryCveIDs{
 				{
 					DistroAdvisory: models.DistroAdvisory{
-						AdvisoryID: "ALAS-2016-644",
-						Severity:   "medium",
-						Issued:     issued,
+						AdvisoryID:  "ALAS-2016-644",
+						Severity:    "medium",
+						Issued:      issued,
+						Description: "Package updates are available for Amazon Linux AMI that fix the ",
 					},
 					CveIDs: []string{"CVE-2016-1494"},
 				},
 				{
 					DistroAdvisory: models.DistroAdvisory{
-						AdvisoryID: "ALAS-2015-614",
-						Severity:   "medium",
-						Issued:     issued,
-						Updated:    updated,
+						AdvisoryID:  "ALAS-2015-614",
+						Severity:    "medium",
+						Issued:      issued,
+						Updated:     updated,
+						Description: "Package updates are available for Amazon Linux AMI that fix the ",
 					},
 					CveIDs: []string{
 						"CVE-2015-3194",
