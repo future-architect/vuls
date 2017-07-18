@@ -42,6 +42,7 @@ func (ps Packages) MergeNewVersion(as Packages) {
 		if pack, ok := ps[a.Name]; ok {
 			pack.NewVersion = a.NewVersion
 			pack.NewRelease = a.NewRelease
+			pack.Repository = a.Repository
 			ps[a.Name] = pack
 		}
 	}
@@ -79,6 +80,16 @@ func (ps Packages) FormatUpdatablePacksSummary() string {
 	return fmt.Sprintf("%d updatable packages", nUpdatable)
 }
 
+// FindOne search a element by name-newver-newrel-arch
+func (ps Packages) FindOne(f func(Package) bool) (string, Package, bool) {
+	for key, p := range ps {
+		if f(p) {
+			return key, p, true
+		}
+	}
+	return "", Package{}, false
+}
+
 // Package has installed packages.
 type Package struct {
 	Name        string
@@ -86,6 +97,7 @@ type Package struct {
 	Release     string
 	NewVersion  string
 	NewRelease  string
+	Arch        string
 	Repository  string
 	Changelog   Changelog
 	NotFixedYet bool // Ubuntu OVAL Only
@@ -145,8 +157,8 @@ func (p Package) FormatChangelog() string {
 }
 
 // Changelog has contents of changelog and how to get it.
-// Method: modesl.detectionMethodStr
+// Method: models.detectionMethodStr
 type Changelog struct {
 	Contents string
-	Method   string
+	Method   DetectionMethod
 }
