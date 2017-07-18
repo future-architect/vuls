@@ -67,6 +67,7 @@ func (*ScanCmd) Usage() string {
 		[-cachedb-path=/path/to/cache.db]
 		[-ssh-native-insecure]
 		[-containers-only]
+		[-package-list-only]
 		[-skip-broken]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-ask-key-password]

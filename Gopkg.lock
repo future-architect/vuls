@@ -2,10 +2,10 @@
 
 
 [[projects]]
-  branch = "master"
-  name = "github.com/Azure/azure-storage-go"
-  packages = ["."]
-  revision = "32cfbe17a139c17f84be16bdf8f9c45c840a046b"
+  name = "github.com/Azure/azure-sdk-for-go"
+  packages = ["storage"]
+  revision = "59c277f1b488b81b1a5f944212f25b69bea8ece3"
+  version = "v10.1.0-beta"
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
@@ -14,10 +14,10 @@
   version = "v8.1.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/BurntSushi/toml"
   packages = ["."]
-  revision = "a368813c5e648fee92e5f6c30e3944ff9d5e8895"
+  revision = "b26d9c308763d68093482582cea63d69be07a0f0"
+  version = "v0.3.0"
 
 [[projects]]
   name = "github.com/asaskevich/govalidator"
@@ -27,14 +27,15 @@
 
 [[projects]]
   name = "github.com/aws/aws-sdk-go"
-  packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/defaults","aws/ec2metadata","aws/request","aws/session","aws/signer/v4","private/endpoints","private/protocol","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/restxml","private/protocol/xml/xmlutil","private/waiter","service/s3","service/sts"]
-  revision = "5b341290c488aa6bd76b335d819b4a68516ec3ab"
+  packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/shareddefaults","private/protocol","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/restxml","private/protocol/xml/xmlutil","service/s3","service/sts"]
+  revision = "6d7fc1a00fcae6bbb53550f4a0b98324fd7aa250"
+  version = "v1.10.12"
 
 [[projects]]
   name = "github.com/boltdb/bolt"
   packages = ["."]
-  revision = "583e8937c61f1af6513608ccc75c97b6abdf4ff9"
-  version = "v1.3.0"
+  revision = "2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8"
+  version = "v1.3.1"
 
 [[projects]]
   name = "github.com/cenkalti/backoff"
@@ -63,8 +64,8 @@
 [[projects]]
   name = "github.com/go-redis/redis"
   packages = [".","internal","internal/consistenthash","internal/hashtag","internal/pool","internal/proto"]
-  revision = "e14976b254c5bc5f399dd0ae9314b1d02a176897"
-  version = "v6.5.0"
+  revision = "da63fe7def48e378caf9539abf64b9b1e37bc01e"
+  version = "v6.5.3"
 
 [[projects]]
   name = "github.com/go-sql-driver/mysql"
@@ -109,10 +110,10 @@
   version = "0.2.2"
 
 [[projects]]
-  branch = "master"
   name = "github.com/jroimartin/gocui"
   packages = ["."]
-  revision = "612b0b2987ec1a6af46d7008cef1efd4b3898346"
+  revision = "4e9ce9a8e26f2ef33dfe297dbdfca148733b6b9b"
+  version = "v0.3.0"
 
 [[projects]]
   branch = "master"
@@ -128,9 +129,15 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/knqyf263/go-rpm-version"
+  packages = ["."]
+  revision = "74609b86c936dff800c69ec89fcf4bc52d5f13a4"
+
+[[projects]]
   name = "github.com/kotakanbe/go-cve-dictionary"
   packages = ["config","db","jvn","log","models","nvd","util"]
   revision = "89e381b4e7e5a31097bbd5779cbb555f5bd3fe87"
+  version = "v0.1.1"
 
 [[projects]]
   name = "github.com/kotakanbe/go-pingscanner"
@@ -153,14 +160,14 @@
 [[projects]]
   name = "github.com/labstack/gommon"
   packages = ["color","log"]
-  revision = "1121fd3e243c202482226a7afe4dcd07ffc4139a"
-  version = "v0.2.1"
+  revision = "779b8a8b9850a97acba6a3fe20feb628c39e17c1"
+  version = "0.2.2"
 
 [[projects]]
   branch = "master"
   name = "github.com/lib/pq"
   packages = [".","hstore","oid"]
-  revision = "8837942c3e09574accbc5f150e2c5e057189cace"
+  revision = "dd1fe2071026ce53f36a39112e645b4d4f5793a4"
 
 [[projects]]
   name = "github.com/mattn/go-colorable"
@@ -202,7 +209,7 @@
   branch = "master"
   name = "github.com/nsf/termbox-go"
   packages = ["."]
-  revision = "72800b73ab9a3c78df350738298b0361354772ff"
+  revision = "4ed959e0540971545eddb8c75514973d670cf739"
 
 [[projects]]
   name = "github.com/parnurzeal/gorequest"
@@ -232,7 +239,7 @@
   branch = "master"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "3d4380f53a34dcdc95f0c1db702615992b38d9a4"
+  revision = "5ff5dd844dfeb4e23e27528f79f1f845bc8bb78f"
 
 [[projects]]
   branch = "master"
@@ -254,37 +261,31 @@
 
 [[projects]]
   branch = "master"
-  name = "go4.org"
-  packages = ["syncutil"]
-  revision = "034d17a462f7b2dcd1a4a73553ec5357ff6e6c6e"
-
-[[projects]]
-  branch = "master"
   name = "golang.org/x/crypto"
   packages = ["curve25519","ed25519","ed25519/internal/edwards25519","ssh","ssh/agent","ssh/terminal"]
-  revision = "adbae1b6b6fb4b02448a0fc0dbbc9ba2b95b294d"
+  revision = "7f7c0c2d75ebb4e32a21396ce36e87b6dadc91c9"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","idna","publicsuffix"]
-  revision = "455220fa52c866a8aa14ff5e8cc68cde16b8395e"
+  revision = "b3756b4b77d7b13260a0a2ec658753cf48922eac"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "90796e5a05ce440b41c768bd9af257005e470461"
+  revision = "4cd6d1a821c7175768725b55ca82f14683a29ea4"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["internal/gen","internal/triegen","internal/ucd","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
-  revision = "6353ef0f924300eea566d3438817aa4d3374817e"
+  revision = "836efe42bb4aa16aaa17b9c155d8813d336ed720"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a6b387c74e75e1f971ee643c8904f6fd4e3dfdb7fa36119ab7bc28d9cfd66427"
+  inputs-digest = "269ff02f8e4540ba049a340068dac0ff4f0495df9f8eeb21d4a545ea5dedf2dd"
   solver-name = "gps-cdcl"
   solver-version = 1

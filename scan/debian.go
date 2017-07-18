@@ -167,7 +167,7 @@ func (o *debian) checkDependencies() error {
 }
 
 func (o *debian) scanPackages() error {
-	installed, upgradable, err := o.scanInstalledPackages()
+	installed, updatable, err := o.scanInstalledPackages()
 	if err != nil {
 		o.log.Errorf("Failed to scan installed packages")
 		return err
@@ -178,7 +178,7 @@ func (o *debian) scanPackages() error {
 		return nil
 	}
 
-	unsecure, err := o.scanUnsecurePackages(upgradable)
+	unsecure, err := o.scanUnsecurePackages(updatable)
 	if err != nil {
 		o.log.Errorf("Failed to scan vulnerable packages")
 		return err
@@ -189,7 +189,7 @@ func (o *debian) scanPackages() error {
 
 func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, error) {
 	installed := models.Packages{}
-	upgradable := models.Packages{}
+	updatable := models.Packages{}
 
 	r := o.exec("dpkg-query -W", noSudo)
 	if !r.isSuccess() {
@@ -214,27 +214,27 @@ func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, erro
 		}
 	}
 
-	upgradableNames, err := o.GetUpgradablePackNames()
+	updatableNames, err := o.getUpdatablePackNames()
 	if err != nil {
 		return nil, nil, err
 	}
-	for _, name := range upgradableNames {
+	for _, name := range updatableNames {
 		for _, pack := range installed {
 			if pack.Name == name {
-				upgradable[name] = pack
+				updatable[name] = pack
 				break
 			}
 		}
 	}
 
 	// Fill the candidate versions of upgradable packages
-	err = o.fillCandidateVersion(upgradable)
+	err = o.fillCandidateVersion(updatable)
 	if err != nil {
 		return nil, nil, fmt.Errorf("Failed to fill candidate versions. err: %s", err)
 	}
-	installed.MergeNewVersion(upgradable)
+	installed.MergeNewVersion(updatable)
 
-	return installed, upgradable, nil
+	return installed, updatable, nil
 }
 
 var packageLinePattern = regexp.MustCompile(`^([^\t']+)\t(.+)$`)
@@ -263,14 +263,14 @@ func (o *debian) aptGetUpdate() error {
 	return nil
 }
 
-func (o *debian) scanUnsecurePackages(upgradable models.Packages) (models.VulnInfos, error) {
+func (o *debian) scanUnsecurePackages(updatable models.Packages) (models.VulnInfos, error) {
 	o.aptGetUpdate()
 
 	// Setup changelog cache
 	current := cache.Meta{
 		Name:   o.getServerInfo().GetServerName(),
 		Distro: o.getServerInfo().Distro,
-		Packs:  upgradable,
+		Packs:  updatable,
 	}
 
 	o.log.Debugf("Ensure changelog cache: %s", current.Name)
@@ -280,7 +280,7 @@ func (o *debian) scanUnsecurePackages(upgradable models.Packages) (models.VulnIn
 	}
 
 	// Collect CVE information of upgradable packages
-	vulnInfos, err := o.scanVulnInfos(upgradable, meta)
+	vulnInfos, err := o.scanVulnInfos(updatable, meta)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to scan unsecure packages. err: %s", err)
 	}
@@ -349,7 +349,7 @@ func (o *debian) fillCandidateVersion(packages models.Packages) (err error) {
 	return
 }
 
-func (o *debian) GetUpgradablePackNames() (packNames []string, err error) {
+func (o *debian) getUpdatablePackNames() (packNames []string, err error) {
 	cmd := util.PrependProxyEnv("LANGUAGE=en_US.UTF-8 apt-get upgrade --dry-run")
 	r := o.exec(cmd, noSudo)
 	if r.isSuccess(0, 1) {
@@ -360,7 +360,7 @@ func (o *debian) GetUpgradablePackNames() (packNames []string, err error) {
 		cmd, r.ExitStatus, r.Stdout, r.Stderr)
 }
 
-func (o *debian) parseAptGetUpgrade(stdout string) (upgradableNames []string, err error) {
+func (o *debian) parseAptGetUpgrade(stdout string) (updatableNames []string, err error) {
 	startRe := regexp.MustCompile(`The following packages will be upgraded:`)
 	stopRe := regexp.MustCompile(`^(\d+) upgraded.*`)
 	startLineFound, stopLineFound := false, false
@@ -375,21 +375,21 @@ func (o *debian) parseAptGetUpgrade(stdout string) (upgradableNames []string, er
 		}
 		result := stopRe.FindStringSubmatch(line)
 		if len(result) == 2 {
-			numUpgradablePacks, err := strconv.Atoi(result[1])
+			nUpdatable, err := strconv.Atoi(result[1])
 			if err != nil {
 				return nil, fmt.Errorf(
 					"Failed to scan upgradable packages number. line: %s", line)
 			}
-			if numUpgradablePacks != len(upgradableNames) {
+			if nUpdatable != len(updatableNames) {
 				return nil, fmt.Errorf(
 					"Failed to scan upgradable packages, expected: %s, detected: %d",
-					result[1], len(upgradableNames))
+					result[1], len(updatableNames))
 			}
 			stopLineFound = true
 			o.log.Debugf("Found the stop line. line: %s", line)
 			break
 		}
-		upgradableNames = append(upgradableNames, strings.Fields(line)...)
+		updatableNames = append(updatableNames, strings.Fields(line)...)
 	}
 	if !startLineFound {
 		// no upgrades
@@ -410,20 +410,20 @@ type DetectedCveID struct {
 	Confidence models.Confidence
 }
 
-func (o *debian) scanVulnInfos(upgradablePacks models.Packages, meta *cache.Meta) (models.VulnInfos, error) {
+func (o *debian) scanVulnInfos(updatablePacks models.Packages, meta *cache.Meta) (models.VulnInfos, error) {
 	type response struct {
 		pack           *models.Package
 		DetectedCveIDs []DetectedCveID
 	}
-	resChan := make(chan response, len(upgradablePacks))
-	errChan := make(chan error, len(upgradablePacks))
-	reqChan := make(chan models.Package, len(upgradablePacks))
+	resChan := make(chan response, len(updatablePacks))
+	errChan := make(chan error, len(updatablePacks))
+	reqChan := make(chan models.Package, len(updatablePacks))
 	defer close(resChan)
 	defer close(errChan)
 	defer close(reqChan)
 
 	go func() {
-		for _, pack := range upgradablePacks {
+		for _, pack := range updatablePacks {
 			reqChan <- pack
 		}
 	}()
@@ -431,7 +431,7 @@ func (o *debian) scanVulnInfos(upgradablePacks models.Packages, meta *cache.Meta
 	timeout := time.After(30 * 60 * time.Second)
 	concurrency := 10
 	tasks := util.GenWorkers(concurrency)
-	for range upgradablePacks {
+	for range updatablePacks {
 		tasks <- func() {
 			select {
 			case pack := <-reqChan:
@@ -459,7 +459,7 @@ func (o *debian) scanVulnInfos(upgradablePacks models.Packages, meta *cache.Meta
 	// { DetectedCveID{} : [package] }
 	cvePackages := make(map[DetectedCveID][]string)
 	errs := []error{}
-	for i := 0; i < len(upgradablePacks); i++ {
+	for i := 0; i < len(updatablePacks); i++ {
 		select {
 		case response := <-resChan:
 			o.Packages[response.pack.Name] = *response.pack
@@ -474,7 +474,7 @@ func (o *debian) scanVulnInfos(upgradablePacks models.Packages, meta *cache.Meta
 				cvePackages[cve] = packNames
 			}
 			o.log.Infof("(%d/%d) Scanned %s: %s",
-				i+1, len(upgradablePacks), response.pack.Name, cves)
+				i+1, len(updatablePacks), response.pack.Name, cves)
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
@@ -500,7 +500,7 @@ func (o *debian) scanVulnInfos(upgradablePacks models.Packages, meta *cache.Meta
 	}
 
 	// Update meta package information of changelog cache to the latest one.
-	meta.Packs = upgradablePacks
+	meta.Packs = updatablePacks
 	if err := cache.DB.RefreshMeta(*meta); err != nil {
 		return nil, err
 	}
@@ -664,7 +664,7 @@ func (o *debian) parseChangelog(changelog, name, ver string, confidence models.C
 
 	clog := models.Changelog{
 		Contents: strings.Join(buf, "\n"),
-		Method:   string(confidence.DetectionMethod),
+		Method:   confidence.DetectionMethod,
 	}
 	pack := o.Packages[name]
 	pack.Changelog = clog

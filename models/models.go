@@ -18,4 +18,4 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package models
 
 // JSONVersion is JSON Version
-const JSONVersion = "0.3.0"
+const JSONVersion = 2
