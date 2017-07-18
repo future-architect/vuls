@@ -33,10 +33,10 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/cenkalti/backoff"
 	conf "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/util"
+	"github.com/sirupsen/logrus"
 )
 
 type execResult struct {

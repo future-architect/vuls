@@ -22,8 +22,8 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/rifflock/lfshook"
+	"github.com/sirupsen/logrus"
 
 	"github.com/future-architect/vuls/config"
 	formatter "github.com/kotakanbe/logrus-prefixed-formatter"

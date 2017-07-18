@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Azure/azure-storage-go"
+	storage "github.com/Azure/azure-sdk-for-go/storage"
 
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"

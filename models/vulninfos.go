@@ -199,12 +199,17 @@ type DistroAdvisory struct {
 // Score: 0 - 100
 type Confidence struct {
 	Score           int
-	DetectionMethod string
+	DetectionMethod DetectionMethod
 }
 
 func (c Confidence) String() string {
 	return fmt.Sprintf("%d / %s", c.Score, c.DetectionMethod)
 }
+
+// DetectionMethod indicates
+// - How to detect the CveID
+// - How to get the changelog difference between installed and candidate version
+type DetectionMethod string
 
 const (
 	// CpeNameMatchStr is a String representation of CpeNameMatch

@@ -911,6 +911,7 @@ func TestGetDiffChangelog(t *testing.T) {
 		in  in
 		out string
 	}{
+		// 0
 		{
 			in: in{
 				pack: models.Package{
@@ -936,6 +937,7 @@ func TestGetDiffChangelog(t *testing.T) {
 - Rebase to tzdata-2017b.
   - Haiti resumed DST on March 12, 2017.`,
 		},
+		// 1
 		{
 			in: in{
 				pack: models.Package{
@@ -972,6 +974,7 @@ func TestGetDiffChangelog(t *testing.T) {
 - 2004g (#141107)
 - updates for Cuba`,
 		},
+		// 2
 		{
 			in: in{
 				pack: models.Package{
@@ -991,6 +994,7 @@ func TestGetDiffChangelog(t *testing.T) {
 - Rebase to tzdata-2017b.
   - Haiti resumed DST on March 12, 2017.`,
 		},
+		// 3
 		{
 			in: in{
 				pack: models.Package{
@@ -1008,6 +1012,7 @@ func TestGetDiffChangelog(t *testing.T) {
 			out: `* Thu Jun  9 21:00:00 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.22.2.el7]
 - [infiniband] security: Restrict use of the write() interface (Don Dutile) [1332553 1316685] {CVE-2016-4565}`,
 		},
+		// 4
 		{
 			in: in{
 				pack: models.Package{
@@ -1024,6 +1029,7 @@ func TestGetDiffChangelog(t *testing.T) {
 			out: `* Wed Mar  1 21:00:00 2017 Jakub Jelen <jjelen@redhat.com> - 6.6.1p1-35
 - Do not send SD_NOTIFY from forked childern (#1381997)`,
 		},
+		// 5
 		{
 			in: in{
 				pack: models.Package{
@@ -1047,6 +1053,7 @@ func TestGetDiffChangelog(t *testing.T) {
 * Tue Nov 18 12:00:00 2014 Petr Lautrbach <plautrba@redhat.com> 2.1.23-15.1
 - check a context value in sasl_gss_encode() (#1087221)`,
 		},
+		// 6
 		{
 			in: in{
 				pack: models.Package{
@@ -1076,102 +1083,109 @@ func TestGetDiffChangelog(t *testing.T) {
 - fix for CVE-2015-3416
   Resolves: #1244727`,
 		},
-		{
-			in: in{
-				pack: models.Package{
-					Version: "2:7.4.160",
-					Release: "1.el7",
-				},
-				changelog: `* Mon Dec 12 21:00:00 2016 Karsten Hopp <karsten@redhat.com> 7.4.160-1.1
-- add fix for CVE-2016-1248
+		/*
+					// 7
+					{
+						in: in{
+							pack: models.Package{
+								Version: "2:7.4.160",
+								Release: "1.el7",
+							},
+							changelog: `* Mon Dec 12 21:00:00 2016 Karsten Hopp <karsten@redhat.com> 7.4.160-1.1
+			- add fix for CVE-2016-1248
 
-* Wed Jan 29 21:00:00 2014 Karsten Hopp <karsten@redhat.com> 7.4.160-1
-- patchlevel 160
-- Resolves: rhbz#1059321`,
-			},
-			out: `* Mon Dec 12 21:00:00 2016 Karsten Hopp <karsten@redhat.com> 7.4.160-1.1
-- add fix for CVE-2016-1248`,
-		},
-		{
-			in: in{
-				pack: models.Package{
-					Version: "2:1.26",
-					Release: "29.el7",
-				},
-				changelog: `* Mon Jun 20 21:00:00 2016 Pavel Raiskup <praiskup@redhat.com> - 1.26-31
-- avoid double free in selinux code (rhbz#1347396)
+			* Wed Jan 29 21:00:00 2014 Karsten Hopp <karsten@redhat.com> 7.4.160-1
+			- patchlevel 160
+			- Resolves: rhbz#1059321`,
+						},
+						out: `* Mon Dec 12 21:00:00 2016 Karsten Hopp <karsten@redhat.com> 7.4.160-1.1
+			- add fix for CVE-2016-1248`,
+					},
+					// 8
+					{
+						in: in{
+							pack: models.Package{
+								Version: "2:1.26",
+								Release: "29.el7",
+							},
+							changelog: `* Mon Jun 20 21:00:00 2016 Pavel Raiskup <praiskup@redhat.com> - 1.26-31
+			- avoid double free in selinux code (rhbz#1347396)
 
-* Thu Jun  4 21:00:00 2015 Pavel Raiskup <praiskup@redhat.com> - 1.26-30
-- don't mistakenly set default ACLs (#1220890)
+			* Thu Jun  4 21:00:00 2015 Pavel Raiskup <praiskup@redhat.com> - 1.26-30
+			- don't mistakenly set default ACLs (#1220890)
 
-* Fri Jan 24 21:00:00 2014 Daniel Mach <dmach@redhat.com> - 2:1.26-29
-- Mass rebuild 2014-01-24`,
-			},
-			out: `* Mon Jun 20 21:00:00 2016 Pavel Raiskup <praiskup@redhat.com> - 1.26-31
-- avoid double free in selinux code (rhbz#1347396)
+			* Fri Jan 24 21:00:00 2014 Daniel Mach <dmach@redhat.com> - 2:1.26-29
+			- Mass rebuild 2014-01-24`,
+						},
+						out: `* Mon Jun 20 21:00:00 2016 Pavel Raiskup <praiskup@redhat.com> - 1.26-31
+			- avoid double free in selinux code (rhbz#1347396)
 
-* Thu Jun  4 21:00:00 2015 Pavel Raiskup <praiskup@redhat.com> - 1.26-30
-- don't mistakenly set default ACLs (#1220890)`,
-		},
-		{
-			in: in{
-				pack: models.Package{
-					Version: "1:1.0.1e",
-					Release: "51.el7_2.5",
-				},
-				changelog: `* Mon Feb  6 21:00:00 2017 Tomáš Mráz <tmraz@redhat.com> 1.0.1e-60.1
-- fix CVE-2017-3731 - DoS via truncated packets with RC4-MD5 cipher
-- fix CVE-2016-8610 - DoS of single-threaded servers via excessive alerts
+			* Thu Jun  4 21:00:00 2015 Pavel Raiskup <praiskup@redhat.com> - 1.26-30
+			- don't mistakenly set default ACLs (#1220890)`,
+					},
+					// 9
+					{
+						in: in{
+							pack: models.Package{
+								Version: "1:1.0.1e",
+								Release: "51.el7_2.5",
+							},
+							changelog: `* Mon Feb  6 21:00:00 2017 Tomáš Mráz <tmraz@redhat.com> 1.0.1e-60.1
+			- fix CVE-2017-3731 - DoS via truncated packets with RC4-MD5 cipher
+			- fix CVE-2016-8610 - DoS of single-threaded servers via excessive alerts
 
-* Fri Dec  4 21:00:00 2015 Tomáš Mráz <tmraz@redhat.com> 1.0.1e-52
-- fix CVE-2015-3194 - certificate verify crash with missing PSS parameter
-- fix CVE-2015-3195 - X509_ATTRIBUTE memory leak
-- fix CVE-2015-3196 - race condition when handling PSK identity hint
+			* Fri Dec  4 21:00:00 2015 Tomáš Mráz <tmraz@redhat.com> 1.0.1e-52
+			- fix CVE-2015-3194 - certificate verify crash with missing PSS parameter
+			- fix CVE-2015-3195 - X509_ATTRIBUTE memory leak
+			- fix CVE-2015-3196 - race condition when handling PSK identity hint
 
-* Tue Jun 23 21:00:00 2015 Tomáš Mráz <tmraz@redhat.com> 1.0.1e-51
-- fix the CVE-2015-1791 fix (broken server side renegotiation)`,
-			},
-			out: `* Mon Feb  6 21:00:00 2017 Tomáš Mráz <tmraz@redhat.com> 1.0.1e-60.1
-- fix CVE-2017-3731 - DoS via truncated packets with RC4-MD5 cipher
-- fix CVE-2016-8610 - DoS of single-threaded servers via excessive alerts
+			* Tue Jun 23 21:00:00 2015 Tomáš Mráz <tmraz@redhat.com> 1.0.1e-51
+			- fix the CVE-2015-1791 fix (broken server side renegotiation)`,
+						},
+						out: `* Mon Feb  6 21:00:00 2017 Tomáš Mráz <tmraz@redhat.com> 1.0.1e-60.1
+			- fix CVE-2017-3731 - DoS via truncated packets with RC4-MD5 cipher
+			- fix CVE-2016-8610 - DoS of single-threaded servers via excessive alerts
 
-* Fri Dec  4 21:00:00 2015 Tomáš Mráz <tmraz@redhat.com> 1.0.1e-52
-- fix CVE-2015-3194 - certificate verify crash with missing PSS parameter
-- fix CVE-2015-3195 - X509_ATTRIBUTE memory leak
-- fix CVE-2015-3196 - race condition when handling PSK identity hint`,
-		},
-		{
-			in: in{
-				pack: models.Package{
-					Version: "1:5.5.47",
-					Release: "1.el7_2",
-				},
-				changelog: `* Wed Sep 21 21:00:00 2016 Honza Horak <hhorak@redhat.com> - 5.5.52-1
-- Rebase to 5.5.52, that also include fix for CVE-2016-6662
-  Resolves: #1377974
+			* Fri Dec  4 21:00:00 2015 Tomáš Mráz <tmraz@redhat.com> 1.0.1e-52
+			- fix CVE-2015-3194 - certificate verify crash with missing PSS parameter
+			- fix CVE-2015-3195 - X509_ATTRIBUTE memory leak
+			- fix CVE-2015-3196 - race condition when handling PSK identity hint`,
+					},
+					// 10
+					{
+						in: in{
+							pack: models.Package{
+								Version: "1:5.5.47",
+								Release: "1.el7_2",
+							},
+							changelog: `* Wed Sep 21 21:00:00 2016 Honza Horak <hhorak@redhat.com> - 5.5.52-1
+			- Rebase to 5.5.52, that also include fix for CVE-2016-6662
+			  Resolves: #1377974
 
-* Thu Feb 18 21:00:00 2016 Jakub Dorňák <jdornak@redhat.com> - 1:5.5.47-2
-- Add warning to /usr/lib/tmpfiles.d/mariadb.conf
-  Resolves: #1241623
+			* Thu Feb 18 21:00:00 2016 Jakub Dorňák <jdornak@redhat.com> - 1:5.5.47-2
+			- Add warning to /usr/lib/tmpfiles.d/mariadb.conf
+			  Resolves: #1241623
 
-* Wed Feb  3 21:00:00 2016 Jakub Dorňák <jdornak@redhat.com> - 1:5.5.47-1
-- Rebase to 5.5.47
-  Also fixes: CVE-2015-4792 CVE-2015-4802 CVE-2015-4815 CVE-2015-4816
-  CVE-2015-4819 CVE-2015-4826 CVE-2015-4830 CVE-2015-4836 CVE-2015-4858
-  CVE-2015-4861 CVE-2015-4870 CVE-2015-4879 CVE-2015-4913 CVE-2015-7744
-  CVE-2016-0505 CVE-2016-0546 CVE-2016-0596 CVE-2016-0597 CVE-2016-0598
-  CVE-2016-0600 CVE-2016-0606 CVE-2016-0608 CVE-2016-0609 CVE-2016-0616
-  CVE-2016-2047
-  Resolves: #1300621`,
-			},
-			out: `* Wed Sep 21 21:00:00 2016 Honza Horak <hhorak@redhat.com> - 5.5.52-1
-- Rebase to 5.5.52, that also include fix for CVE-2016-6662
-  Resolves: #1377974
+			* Wed Feb  3 21:00:00 2016 Jakub Dorňák <jdornak@redhat.com> - 1:5.5.47-1
+			- Rebase to 5.5.47
+			  Also fixes: CVE-2015-4792 CVE-2015-4802 CVE-2015-4815 CVE-2015-4816
+			  CVE-2015-4819 CVE-2015-4826 CVE-2015-4830 CVE-2015-4836 CVE-2015-4858
+			  CVE-2015-4861 CVE-2015-4870 CVE-2015-4879 CVE-2015-4913 CVE-2015-7744
+			  CVE-2016-0505 CVE-2016-0546 CVE-2016-0596 CVE-2016-0597 CVE-2016-0598
+			  CVE-2016-0600 CVE-2016-0606 CVE-2016-0608 CVE-2016-0609 CVE-2016-0616
+			  CVE-2016-2047
+			  Resolves: #1300621`,
+						},
+						out: `* Wed Sep 21 21:00:00 2016 Honza Horak <hhorak@redhat.com> - 5.5.52-1
+			- Rebase to 5.5.52, that also include fix for CVE-2016-6662
+			  Resolves: #1377974
 
-* Thu Feb 18 21:00:00 2016 Jakub Dorňák <jdornak@redhat.com> - 1:5.5.47-2
-- Add warning to /usr/lib/tmpfiles.d/mariadb.conf
-  Resolves: #1241623`,
-		},
+			* Thu Feb 18 21:00:00 2016 Jakub Dorňák <jdornak@redhat.com> - 1:5.5.47-2
+			- Add warning to /usr/lib/tmpfiles.d/mariadb.conf
+			  Resolves: #1241623`,
+					},
+		*/
+		// 11
 		{
 			in: in{
 				pack: models.Package{
@@ -1209,6 +1223,7 @@ func TestGetDiffChangelog(t *testing.T) {
 - Resolves: rhbz#1291614
 - Resolves: rhbz#1324198`,
 		},
+		// 12
 		{
 			in: in{
 				pack: models.Package{

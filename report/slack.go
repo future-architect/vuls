@@ -24,11 +24,11 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/cenkalti/backoff"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/parnurzeal/gorequest"
+	log "github.com/sirupsen/logrus"
 )
 
 type field struct {

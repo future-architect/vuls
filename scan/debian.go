@@ -344,7 +344,6 @@ func (o *debian) fillCandidateVersion(packages models.Packages) (err error) {
 			return fmt.Errorf("Not found: %s", k)
 		}
 		pack.NewVersion = ver.Candidate
-		//TODO Repository
 		packages[k] = pack
 	}
 	return
@@ -631,7 +630,6 @@ func (o *debian) getCveIDsFromChangelog(
 	return []DetectedCveID{}, &pack
 }
 
-//TODO move to scann.go
 var cveRe = regexp.MustCompile(`(CVE-\d{4}-\d{4,})`)
 
 // Collect CVE-IDs included in the changelog.
@@ -666,7 +664,7 @@ func (o *debian) parseChangelog(changelog, name, ver string, confidence models.C
 
 	clog := models.Changelog{
 		Contents: strings.Join(buf, "\n"),
-		Method:   string(confidence.DetectionMethod),
+		Method:   confidence.DetectionMethod,
 	}
 	pack := o.Packages[name]
 	pack.Changelog = clog

@@ -26,13 +26,13 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
 	"github.com/gosuri/uitable"
 	"github.com/jroimartin/gocui"
+	log "github.com/sirupsen/logrus"
 )
 
 var scanResults models.ScanResults
@@ -45,14 +45,12 @@ var currentDetailLimitY int
 func RunTui(results models.ScanResults) subcommands.ExitStatus {
 	scanResults = results
 
-	g, err := gocui.NewGui(gocui.OutputNormal)
-	if err != nil {
-		log.Errorf("%s", err)
-		return subcommands.ExitFailure
-	}
+	// g, err := gocui.NewGui(gocui.OutputNormal)
+	g := gocui.NewGui()
 	defer g.Close()
 
-	g.SetManagerFunc(layout)
+	g.SetLayout(layout)
+	// g.SetManagerFunc(layout)
 	if err := keybindings(g); err != nil {
 		log.Errorf("%s", err)
 		return subcommands.ExitFailure
@@ -177,19 +175,19 @@ func nextView(g *gocui.Gui, v *gocui.View) error {
 	var err error
 
 	if v == nil {
-		_, err = g.SetCurrentView("side")
+		err = g.SetCurrentView("side")
 	}
 	switch v.Name() {
 	case "side":
-		_, err = g.SetCurrentView("summary")
+		err = g.SetCurrentView("summary")
 	case "summary":
-		_, err = g.SetCurrentView("detail")
+		err = g.SetCurrentView("detail")
 	case "detail":
-		_, err = g.SetCurrentView("changelog")
+		err = g.SetCurrentView("changelog")
 	case "changelog":
-		_, err = g.SetCurrentView("side")
+		err = g.SetCurrentView("side")
 	default:
-		_, err = g.SetCurrentView("summary")
+		err = g.SetCurrentView("summary")
 	}
 	return err
 }
@@ -198,19 +196,19 @@ func previousView(g *gocui.Gui, v *gocui.View) error {
 	var err error
 
 	if v == nil {
-		_, err = g.SetCurrentView("side")
+		err = g.SetCurrentView("side")
 	}
 	switch v.Name() {
 	case "side":
-		_, err = g.SetCurrentView("side")
+		err = g.SetCurrentView("side")
 	case "summary":
-		_, err = g.SetCurrentView("side")
+		err = g.SetCurrentView("side")
 	case "detail":
-		_, err = g.SetCurrentView("summary")
+		err = g.SetCurrentView("summary")
 	case "changelog":
-		_, err = g.SetCurrentView("detail")
+		err = g.SetCurrentView("detail")
 	default:
-		_, err = g.SetCurrentView("side")
+		err = g.SetCurrentView("side")
 	}
 	return err
 }
@@ -393,7 +391,7 @@ func cursorPageUp(g *gocui.Gui, v *gocui.View) error {
 func previousSummary(g *gocui.Gui, v *gocui.View) error {
 	if v != nil {
 		// cursor to summary
-		if _, err := g.SetCurrentView("summary"); err != nil {
+		if err := g.SetCurrentView("summary"); err != nil {
 			return err
 		}
 		// move next line
@@ -401,7 +399,7 @@ func previousSummary(g *gocui.Gui, v *gocui.View) error {
 			return err
 		}
 		// cursor to detail
-		if _, err := g.SetCurrentView("detail"); err != nil {
+		if err := g.SetCurrentView("detail"); err != nil {
 			return err
 		}
 	}
@@ -411,7 +409,7 @@ func previousSummary(g *gocui.Gui, v *gocui.View) error {
 func nextSummary(g *gocui.Gui, v *gocui.View) error {
 	if v != nil {
 		// cursor to summary
-		if _, err := g.SetCurrentView("summary"); err != nil {
+		if err := g.SetCurrentView("summary"); err != nil {
 			return err
 		}
 		// move next line
@@ -419,7 +417,7 @@ func nextSummary(g *gocui.Gui, v *gocui.View) error {
 			return err
 		}
 		// cursor to detail
-		if _, err := g.SetCurrentView("detail"); err != nil {
+		if err := g.SetCurrentView("detail"); err != nil {
 			return err
 		}
 	}
@@ -502,7 +500,7 @@ func getLine(g *gocui.Gui, v *gocui.View) error {
 			return err
 		}
 		fmt.Fprintln(v, l)
-		if _, err := g.SetCurrentView("msg"); err != nil {
+		if err := g.SetCurrentView("msg"); err != nil {
 			return err
 		}
 	}
@@ -525,7 +523,7 @@ func showMsg(g *gocui.Gui, v *gocui.View) error {
 			return err
 		}
 		fmt.Fprintln(v, l)
-		if _, err := g.SetCurrentView("msg"); err != nil {
+		if err := g.SetCurrentView("msg"); err != nil {
 			return err
 		}
 	}
@@ -536,7 +534,7 @@ func delMsg(g *gocui.Gui, v *gocui.View) error {
 	if err := g.DeleteView("msg"); err != nil {
 		return err
 	}
-	if _, err := g.SetCurrentView("summary"); err != nil {
+	if err := g.SetCurrentView("summary"); err != nil {
 		return err
 	}
 	return nil
@@ -592,7 +590,7 @@ func setSideLayout(g *gocui.Gui) error {
 		}
 		currentScanResult = scanResults[0]
 		vinfos = scanResults[0].ScannedCves.ToSortedSlice()
-		if _, err := g.SetCurrentView("side"); err != nil {
+		if err := g.SetCurrentView("side"); err != nil {
 			return err
 		}
 	}

@@ -28,8 +28,7 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 
-	//TODO change to go-rpm-version
-	ver "github.com/knqyf263/go-deb-version"
+	ver "github.com/knqyf263/go-rpm-version"
 )
 
 // inherit OsTypeInterface
@@ -504,12 +503,31 @@ func (o *redhat) fillDiffChangelogs(packNames []string) error {
 
 		if found {
 			diff, err := o.getDiffChangelog(pack, changelogs[s])
+			detectionMethod := models.ChangelogExactMatchStr
+
 			if err != nil {
-				return err
+				o.log.Debug(err)
+				// Try without epoch
+				if index := strings.Index(pack.Version, ":"); 0 < index {
+					pack.Version = pack.Version[index+1 : len(pack.Version)]
+					o.log.Debug("Try without epoch", pack)
+					diff, err = o.getDiffChangelog(pack, changelogs[s])
+					if err != nil {
+						o.log.Debugf("Failed to find the version in changelog: %s-%s-%s",
+							pack.Name, pack.Version, pack.Release)
+						detectionMethod = models.FailedToFindVersionInChangelog
+					} else {
+						o.log.Debugf("Found the version in changelog without epoch: %s-%s-%s",
+							pack.Name, pack.Version, pack.Release)
+						detectionMethod = models.ChangelogLenientMatchStr
+					}
+				}
 			}
+
+			pack = o.Packages[name]
 			pack.Changelog = models.Changelog{
 				Contents: diff,
-				Method:   models.ChangelogExactMatchStr,
+				Method:   models.DetectionMethod(detectionMethod),
 			}
 			o.Packages[name] = pack
 		}
@@ -518,13 +536,10 @@ func (o *redhat) fillDiffChangelogs(packNames []string) error {
 }
 
 func (o *redhat) getDiffChangelog(pack models.Package, availableChangelog string) (string, error) {
-	installedVer, err := ver.NewVersion(fmt.Sprintf("%s-%s", pack.Version, pack.Release))
-	if err != nil {
-		return "", fmt.Errorf("Failed to parse installed version: %s", err)
-	}
-
+	installedVer := ver.NewVersion(fmt.Sprintf("%s-%s", pack.Version, pack.Release))
 	scanner := bufio.NewScanner(strings.NewReader(availableChangelog))
 	diff := []string{}
+	found := false
 	for scanner.Scan() {
 		line := scanner.Text()
 		if !strings.HasPrefix(line, "* ") {
@@ -549,20 +564,19 @@ func (o *redhat) getDiffChangelog(pack models.Package, availableChangelog string
 		v = strings.TrimPrefix(v, "-")
 		v = strings.TrimPrefix(v, "[")
 		v = strings.TrimSuffix(v, "]")
-		version, err := ver.NewVersion(v)
-		if err != nil {
-			// o.log.Debugf("Failed to parse version in changelog. %s, %s, err: %s", v, pack, err)
-			diff = append(diff, line)
-			continue
-		}
-
+		version := ver.NewVersion(v)
 		if installedVer.Equal(version) || installedVer.GreaterThan(version) {
+			found = true
 			break
 		}
 		diff = append(diff, line)
 	}
 
-	// pp.Println(pack, strings.Split(availableChangelog, "\r\n"), diff)
+	if len(diff) == 0 || !found {
+		return availableChangelog,
+			fmt.Errorf("Failed to find the version in changelog: %s-%s-%s",
+				pack.Name, pack.Version, pack.Release)
+	}
 	return strings.TrimSpace(strings.Join(diff, "\n")), nil
 }
 
@@ -570,7 +584,11 @@ func (o *redhat) scanCveIDsInChangelog(updatable models.Packages) (models.VulnIn
 	packCveIDs := make(map[string][]string)
 	for name := range updatable {
 		cveIDs := []string{}
-		scanner := bufio.NewScanner(strings.NewReader(o.Packages[name].Changelog.Contents))
+		pack := o.Packages[name]
+		if pack.Changelog.Method == models.FailedToFindVersionInChangelog {
+			continue
+		}
+		scanner := bufio.NewScanner(strings.NewReader(pack.Changelog.Contents))
 		for scanner.Scan() {
 			if matches := cveRe.FindAllString(scanner.Text(), -1); 0 < len(matches) {
 				for _, m := range matches {

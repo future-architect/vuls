@@ -160,5 +160,5 @@ func (p Package) FormatChangelog() string {
 // Method: models.detectionMethodStr
 type Changelog struct {
 	Contents string
-	Method   string
+	Method   DetectionMethod
 }

@@ -23,9 +23,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/sirupsen/logrus"
 )
 
 type base struct {

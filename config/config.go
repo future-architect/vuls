@@ -24,8 +24,8 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
 	valid "github.com/asaskevich/govalidator"
+	log "github.com/sirupsen/logrus"
 )
 
 // Conf has Configuration
