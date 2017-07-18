@@ -564,6 +564,13 @@ func (o *redhat) getDiffChangelog(pack models.Package, availableChangelog string
 		v = strings.TrimPrefix(v, "-")
 		v = strings.TrimPrefix(v, "[")
 		v = strings.TrimSuffix(v, "]")
+
+		// On Amazon often end with email address. <aaa@aaa.com> Go to next line
+		if strings.HasPrefix(v, "<") && strings.HasSuffix(v, ">") {
+			diff = append(diff, line)
+			continue
+		}
+
 		version := ver.NewVersion(v)
 		if installedVer.Equal(version) || installedVer.GreaterThan(version) {
 			found = true
@@ -746,15 +753,12 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 
 		// find the new section pattern
 		if horizontalRulePattern.MatchString(line) {
-
 			// set previous section's result to return-variable
 			if sectionState == Content {
-
 				foundCveIDs := []string{}
 				for cveID := range cveIDsSetInThisSection {
 					foundCveIDs = append(foundCveIDs, cveID)
 				}
-
 				result = append(result, distroAdvisoryCveIDs{
 					DistroAdvisory: advisory,
 					CveIDs:         foundCveIDs,
@@ -763,6 +767,7 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 				// reset for next section.
 				cveIDsSetInThisSection = make(map[string]bool)
 				inDesctiption = false
+				advisory = models.DistroAdvisory{}
 			}
 
 			// Go to next section
@@ -785,16 +790,24 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 		case Content:
 			if found := o.isDescriptionLine(line); found {
 				inDesctiption = true
+				ss := strings.Split(line, ":")
+				advisory.Description += fmt.Sprintf("%s ",
+					strings.TrimSpace(strings.Join(ss[1:len(ss)], ":")))
+				continue
 			}
 
 			// severity
-			severity, found := o.parseYumUpdateinfoToGetSeverity(line)
-			if found {
+			if severity, found := o.parseYumUpdateinfoToGetSeverity(line); found {
 				advisory.Severity = severity
+				continue
 			}
 
 			// No need to parse in description except severity
 			if inDesctiption {
+				if ss := strings.Split(line, ":"); 1 < len(ss) {
+					advisory.Description += fmt.Sprintf("%s ",
+						strings.TrimSpace(strings.Join(ss[1:len(ss)], ":")))
+				}
 				continue
 			}
 
@@ -806,16 +819,19 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 			advisoryID, found := o.parseYumUpdateinfoToGetAdvisoryID(line)
 			if found {
 				advisory.AdvisoryID = advisoryID
+				continue
 			}
 
 			issued, found := o.parseYumUpdateinfoLineToGetIssued(line)
 			if found {
 				advisory.Issued = issued
+				continue
 			}
 
 			updated, found := o.parseYumUpdateinfoLineToGetUpdated(line)
 			if found {
 				advisory.Updated = updated
+				continue
 			}
 		}
 	}
