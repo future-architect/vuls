@@ -790,9 +790,9 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 		case Content:
 			if found := o.isDescriptionLine(line); found {
 				inDesctiption = true
-				ss := strings.Split(line, ":")
-				advisory.Description += fmt.Sprintf("%s ",
-					strings.TrimSpace(strings.Join(ss[1:len(ss)], ":")))
+				ss := strings.Split(line, " : ")
+				advisory.Description += fmt.Sprintf("%s\n",
+					strings.Join(ss[1:len(ss)], " : "))
 				continue
 			}
 
@@ -804,9 +804,9 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 
 			// No need to parse in description except severity
 			if inDesctiption {
-				if ss := strings.Split(line, ":"); 1 < len(ss) {
-					advisory.Description += fmt.Sprintf("%s ",
-						strings.TrimSpace(strings.Join(ss[1:len(ss)], ":")))
+				if ss := strings.Split(line, ": "); 1 < len(ss) {
+					advisory.Description += fmt.Sprintf("%s\n",
+						strings.Join(ss[1:len(ss)], ": "))
 				}
 				continue
 			}

@@ -708,6 +708,10 @@ func setChangelogLayout(g *gocui.Gui) error {
 
 		lines := []string{}
 		vinfo := vinfos[currentVinfo]
+		for _, adv := range vinfo.DistroAdvisories {
+			lines = append(lines, adv.Format())
+		}
+
 		for _, name := range vinfo.PackageNames {
 			pack := currentScanResult.Packages[name]
 			for _, p := range currentScanResult.Packages {

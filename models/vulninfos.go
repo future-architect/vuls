@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package models
 
 import (
+	"bytes"
 	"fmt"
 	"sort"
 	"strings"
@@ -194,6 +195,20 @@ type DistroAdvisory struct {
 	Issued      time.Time
 	Updated     time.Time
 	Description string
+}
+
+// Format the distro advisory information
+func (p DistroAdvisory) Format() string {
+	if p.AdvisoryID == "" {
+		return ""
+	}
+
+	var delim bytes.Buffer
+	for i := 0; i < len(p.AdvisoryID); i++ {
+		delim.WriteString("-")
+	}
+	buf := []string{p.AdvisoryID, delim.String(), p.Description}
+	return strings.Join(buf, "\n")
 }
 
 // Confidence is a ranking how confident the CVE-ID was deteted correctly
