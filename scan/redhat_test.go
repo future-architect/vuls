@@ -352,7 +352,7 @@ Description : kernel-uek
 						AdvisoryID:  "ELSA-2017-0276",
 						Severity:    "Moderate",
 						Issued:      issued,
-						Description: "[32:9.9.4-38.2] ",
+						Description: "[32:9.9.4-38.2]\n",
 					},
 					CveIDs: []string{"CVE-2017-3135"},
 				},
@@ -361,7 +361,7 @@ Description : kernel-uek
 						AdvisoryID:  "ELSA-2017-0286",
 						Severity:    "Moderate",
 						Issued:      issued,
-						Description: "[1.0.1e-48.4] ",
+						Description: "[1.0.1e-48.4]\n",
 					},
 					CveIDs: []string{
 						"CVE-2016-8610",
@@ -373,7 +373,7 @@ Description : kernel-uek
 						AdvisoryID:  "ELSA-2017-3520",
 						Severity:    "Important",
 						Issued:      issued,
-						Description: "kernel-uek ",
+						Description: "kernel-uek\n",
 					},
 					CveIDs: []string{"CVE-2017-6074"},
 				},
@@ -459,7 +459,7 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
 						AdvisoryID:  "RHSA-2015:1705",
 						Severity:    "Important",
 						Issued:      issued,
-						Description: "The Berkeley Internet Name Domain (BIND) is an implementation of ",
+						Description: "The Berkeley Internet Name Domain (BIND) is an implementation of\n",
 					},
 					CveIDs: []string{"CVE-2015-5722"},
 				},
@@ -469,7 +469,7 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
 						Severity:    "Low",
 						Issued:      issued,
 						Updated:     updated,
-						Description: "The Berkeley Internet Name Domain (BIND) is an implementation of ",
+						Description: "The Berkeley Internet Name Domain (BIND) is an implementation of\n",
 					},
 					CveIDs: []string{
 						"CVE-2015-8000",
@@ -481,7 +481,7 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
 						AdvisoryID:  "RHSA-2016:0073",
 						Severity:    "Moderate",
 						Issued:      issued,
-						Description: "The Berkeley Internet Name Domain (BIND) is an implementation of ",
+						Description: "The Berkeley Internet Name Domain (BIND) is an implementation of\n",
 					},
 					CveIDs: []string{
 						"CVE-2015-8704",
@@ -543,6 +543,8 @@ Description : Package updates are available for Amazon Linux AMI that fix the
             : CVE-2015-3195
             : CVE-2015-3196
 Description : Package updates are available for Amazon Linux AMI that fix the
+            : foo bar baz
+            : hoge fuga hega
    Severity : medium`,
 
 			[]distroAdvisoryCveIDs{
@@ -551,7 +553,7 @@ Description : Package updates are available for Amazon Linux AMI that fix the
 						AdvisoryID:  "ALAS-2016-644",
 						Severity:    "medium",
 						Issued:      issued,
-						Description: "Package updates are available for Amazon Linux AMI that fix the ",
+						Description: "Package updates are available for Amazon Linux AMI that fix the\n",
 					},
 					CveIDs: []string{"CVE-2016-1494"},
 				},
@@ -561,7 +563,7 @@ Description : Package updates are available for Amazon Linux AMI that fix the
 						Severity:    "medium",
 						Issued:      issued,
 						Updated:     updated,
-						Description: "Package updates are available for Amazon Linux AMI that fix the ",
+						Description: "Package updates are available for Amazon Linux AMI that fix the\nfoo bar baz\nhoge fuga hega\n",
 					},
 					CveIDs: []string{
 						"CVE-2015-3194",
