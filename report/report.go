@@ -173,7 +173,7 @@ func fillWithOval(r *models.ScanResult) (err error) {
 		return err
 	}
 	if !ok {
-		util.Log.Warnf("OVAL is emtpy: %s-%s. It's recommended to use OVAL to improve scanning accuracy. To fetch OVAL database, see https://github.com/kotakanbe/goval-dictionary#usage", r.Family, r.Release)
+		util.Log.Warnf("OVAL entries of %s-%s are not found. It's recommended to use OVAL to improve scanning accuracy. To fetch OVAL, see https://github.com/kotakanbe/goval-dictionary#usage , Then report with --ovaldb-path or --ovaldb-url flag", r.Family, r.Release)
 		return nil
 	}
 

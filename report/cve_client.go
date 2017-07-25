@@ -147,7 +147,7 @@ func (api cvedictClient) FetchCveDetailsFromCveDB(cveIDs []string) (cveDetails [
 		return []*cve.CveDetail{}, fmt.Errorf("Failed to New DB. err: %s", err)
 	}
 
-	util.Log.Infof("Opening DB (%s).", driver.Name())
+	util.Log.Debugf("Opening DB (%s).", driver.Name())
 	if err := driver.OpenDB(
 		cveconfig.Conf.DBType,
 		cveconfig.Conf.DBPath,
@@ -281,7 +281,7 @@ func (api cvedictClient) FetchCveDetailsByCpeNameFromDB(cpeName string) (cveDeta
 		return []*cve.CveDetail{}, fmt.Errorf("Failed to New DB. err: %s", err)
 	}
 
-	log.Infof("Opening DB (%s).", driver.Name())
+	util.Log.Debugf("Opening DB (%s).", driver.Name())
 	if err = driver.OpenDB(
 		cveconfig.Conf.DBType,
 		cveconfig.Conf.DBPath,
