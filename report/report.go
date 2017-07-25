@@ -79,12 +79,12 @@ func FillCveInfos(rs []models.ScanResult, dir string) ([]models.ScanResult, erro
 func fillCveInfo(r *models.ScanResult) error {
 	util.Log.Debugf("need to refresh")
 
-	util.Log.Debugf("Fill CVE detailed information with OVAL")
+	util.Log.Infof("Fill CVE detailed information with OVAL")
 	if err := fillWithOval(r); err != nil {
 		return fmt.Errorf("Failed to fill OVAL information: %s", err)
 	}
 
-	util.Log.Debugf("Fill CVE detailed information with CVE-DB")
+	util.Log.Infof("Fill CVE detailed information with CVE-DB")
 	if err := fillWithCveDB(r); err != nil {
 		return fmt.Errorf("Failed to fill CVE information: %s", err)
 	}
@@ -139,23 +139,50 @@ func fillWithCveDB(r *models.ScanResult) error {
 	return nil
 }
 
-func fillWithOval(r *models.ScanResult) error {
+func fillWithOval(r *models.ScanResult) (err error) {
 	var ovalClient oval.Client
+	var ovalFamily string
+
+	// TODO
 	switch r.Family {
 	case c.Debian:
 		ovalClient = oval.NewDebian()
+		ovalFamily = c.Debian
 	case c.Ubuntu:
 		ovalClient = oval.NewUbuntu()
+		ovalFamily = c.Ubuntu
 	case c.RedHat:
 		ovalClient = oval.NewRedhat()
+		ovalFamily = c.RedHat
 	case c.CentOS:
 		ovalClient = oval.NewCentOS()
+		//use RedHat's OVAL
+		ovalFamily = c.RedHat
+	//TODO implement OracleLinux
+	// case c.Oracle:
+	// ovalClient = oval.New()
+	// ovalFamily = c.Oracle
 	case c.Amazon, c.Oracle, c.Raspbian, c.FreeBSD:
-		//TODO implement OracleLinux
 		return nil
 	default:
 		return fmt.Errorf("Oval %s is not implemented yet", r.Family)
 	}
+
+	ok, err := ovalClient.CheckIfOvalFetched(ovalFamily, r.Release)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		util.Log.Warnf("OVAL is emtpy: %s-%s. It's recommended to use OVAL to improve scanning accuracy. To fetch OVAL database, see https://github.com/kotakanbe/goval-dictionary#usage", r.Family, r.Release)
+		return nil
+	}
+
+	_, err = ovalClient.CheckIfOvalFresh(ovalFamily, r.Release)
+	if err != nil {
+		return err
+	}
+	util.Log.Infof("OVAL is fresh: %s-%s ", r.Family, r.Release)
+
 	if err := ovalClient.FillWithOval(r); err != nil {
 		return err
 	}

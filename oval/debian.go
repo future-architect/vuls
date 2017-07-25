@@ -25,7 +25,7 @@ func (o DebianBase) fillFromOvalDB(r *models.ScanResult) error {
 	} else {
 		ovalconf.Conf.DBPath = config.Conf.OvalDBURL
 	}
-	util.Log.Infof("open oval-dictionary db (%s): %s",
+	util.Log.Infof("Open oval-dictionary db (%s): %s",
 		ovalconf.Conf.DBType, ovalconf.Conf.DBPath)
 
 	ovallog.Initialize(config.Conf.LogDir)
@@ -68,7 +68,7 @@ func (o DebianBase) update(r *models.ScanResult, definition *ovalmodels.Definiti
 	ovalContent.Type = models.NewCveContentType(r.Family)
 	vinfo, ok := r.ScannedCves[definition.Debian.CveID]
 	if !ok {
-		util.Log.Infof("%s is newly detected by OVAL", definition.Debian.CveID)
+		util.Log.Debugf("%s is newly detected by OVAL", definition.Debian.CveID)
 		vinfo = models.VulnInfo{
 			CveID:        definition.Debian.CveID,
 			Confidence:   models.OvalMatch,
@@ -79,9 +79,9 @@ func (o DebianBase) update(r *models.ScanResult, definition *ovalmodels.Definiti
 		cveContents := vinfo.CveContents
 		ctype := models.NewCveContentType(r.Family)
 		if _, ok := vinfo.CveContents[ctype]; ok {
-			util.Log.Infof("%s will be updated by OVAL", definition.Debian.CveID)
+			util.Log.Debugf("%s will be updated by OVAL", definition.Debian.CveID)
 		} else {
-			util.Log.Infof("%s is also detected by OVAL", definition.Debian.CveID)
+			util.Log.Debugf("%s is also detected by OVAL", definition.Debian.CveID)
 			cveContents = models.CveContents{}
 		}
 		if vinfo.Confidence.Score < models.OvalMatch.Score {
