@@ -254,12 +254,6 @@ func (o *redhat) scanPackages() error {
 		return nil
 	}
 
-	//TODO Cache changelogs to bolt
-	//TODO --with-changelog
-	if err := o.fillChangelogs(updatable); err != nil {
-		return nil
-	}
-
 	var vinfos models.VulnInfos
 	if vinfos, err = o.scanUnsecurePackages(updatable); err != nil {
 		o.log.Errorf("Failed to scan vulnerable packages")
@@ -379,6 +373,12 @@ func (o *redhat) parseUpdatablePacksLine(line string) (models.Package, error) {
 }
 
 func (o *redhat) scanUnsecurePackages(updatable models.Packages) (models.VulnInfos, error) {
+	//TODO Cache changelogs to bolt
+	//TODO --with-changelog
+	if err := o.fillChangelogs(updatable); err != nil {
+		return nil, err
+	}
+
 	if o.Distro.Family != config.CentOS {
 		// Amazon, RHEL, Oracle Linux has yum updateinfo as default
 		// yum updateinfo can collenct vendor advisory information.

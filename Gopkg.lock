@@ -4,8 +4,8 @@
 [[projects]]
   name = "github.com/Azure/azure-sdk-for-go"
   packages = ["storage"]
-  revision = "59c277f1b488b81b1a5f944212f25b69bea8ece3"
-  version = "v10.1.0-beta"
+  revision = "5b6066bbd213e47c49a5fa2be2b29529bbcb6704"
+  version = "v10.1.1-beta"
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
@@ -28,8 +28,8 @@
 [[projects]]
   name = "github.com/aws/aws-sdk-go"
   packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/shareddefaults","private/protocol","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/restxml","private/protocol/xml/xmlutil","service/s3","service/sts"]
-  revision = "6d7fc1a00fcae6bbb53550f4a0b98324fd7aa250"
-  version = "v1.10.12"
+  revision = "6ff7be1a127941b8dc9a408ac9c2dd6eb2167a5d"
+  version = "v1.10.15"
 
 [[projects]]
   name = "github.com/boltdb/bolt"
@@ -64,8 +64,8 @@
 [[projects]]
   name = "github.com/go-redis/redis"
   packages = [".","internal","internal/consistenthash","internal/hashtag","internal/pool","internal/proto"]
-  revision = "da63fe7def48e378caf9539abf64b9b1e37bc01e"
-  version = "v6.5.3"
+  revision = "a005081ecd2d0d963a1a20efda049223205cf90a"
+  version = "v6.5.4"
 
 [[projects]]
   name = "github.com/go-sql-driver/mysql"
@@ -149,7 +149,7 @@
   branch = "master"
   name = "github.com/kotakanbe/goval-dictionary"
   packages = ["config","db","db/rdb","log","models"]
-  revision = "adf0b39cd7fea8f4493f7b65e7316179634be95d"
+  revision = "2c949ba2967dcd35574f2a78a12551c5326de6a9"
 
 [[projects]]
   branch = "master"
@@ -239,7 +239,7 @@
   branch = "master"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "5ff5dd844dfeb4e23e27528f79f1f845bc8bb78f"
+  revision = "3eef8ce63d02f65d2da43214faf7bb19b0b2bb7a"
 
 [[projects]]
   branch = "master"
@@ -263,19 +263,19 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["curve25519","ed25519","ed25519/internal/edwards25519","ssh","ssh/agent","ssh/terminal"]
-  revision = "7f7c0c2d75ebb4e32a21396ce36e87b6dadc91c9"
+  revision = "6914964337150723782436d56b3f21610a74ce7b"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","idna","publicsuffix"]
-  revision = "b3756b4b77d7b13260a0a2ec658753cf48922eac"
+  revision = "ab5485076ff3407ad2d02db054635913f017b0ed"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "4cd6d1a821c7175768725b55ca82f14683a29ea4"
+  revision = "c4489faa6e5ab84c0ef40d6ee878f7a030281f0f"
 
 [[projects]]
   branch = "master"

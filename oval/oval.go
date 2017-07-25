@@ -11,21 +11,27 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	ver "github.com/knqyf263/go-deb-version"
+	"github.com/kotakanbe/goval-dictionary/db"
+	ovallog "github.com/kotakanbe/goval-dictionary/log"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 	"github.com/parnurzeal/gorequest"
 )
 
 // Client is the interface of OVAL client.
 type Client interface {
-	CheckHealth() error
+	CheckHTTPHealth() error
 	FillWithOval(r *models.ScanResult) error
+
+	// CheckIfOvalFetched checks if oval entries are in DB by family, release.
+	CheckIfOvalFetched(string, string) (bool, error)
+	CheckIfOvalFresh(string, string) (bool, error)
 }
 
 // Base is a base struct
 type Base struct{}
 
-// CheckHealth do health check
-func (b Base) CheckHealth() error {
+// CheckHTTPHealth do health check
+func (b Base) CheckHTTPHealth() error {
 	if !b.isFetchViaHTTP() {
 		return nil
 	}
@@ -41,6 +47,82 @@ func (b Base) CheckHealth() error {
 			url, errs)
 	}
 	return nil
+}
+
+// CheckIfOvalFetched checks if oval entries are in DB by family, release.
+func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err error) {
+	ovallog.Initialize(config.Conf.LogDir)
+	if !b.isFetchViaHTTP() {
+		var ovaldb db.DB
+		if ovaldb, err = db.NewDB(
+			osFamily,
+			config.Conf.OvalDBType,
+			config.Conf.OvalDBPath,
+			config.Conf.DebugSQL,
+		); err != nil {
+			return false, err
+		}
+		defer ovaldb.CloseDB()
+		count, err := ovaldb.CountDefs(osFamily, release)
+		if err != nil {
+			return false, fmt.Errorf("Failed to count OVAL defs: %s, %s, %v",
+				osFamily, release, err)
+		}
+		return 0 < count, nil
+	}
+
+	url, _ := util.URLPathJoin(config.Conf.OvalDBURL, "count", osFamily, release)
+	resp, body, errs := gorequest.New().Get(url).End()
+	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
+		return false, fmt.Errorf("HTTP GET error: %v, url: %s, resp: %v",
+			errs, url, resp)
+	}
+	count := 0
+	if err := json.Unmarshal([]byte(body), &count); err != nil {
+		return false, fmt.Errorf("Failed to Unmarshall. body: %s, err: %s",
+			body, err)
+	}
+	return 0 < count, nil
+}
+
+// CheckIfOvalFresh checks if oval entries are fresh enough
+func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
+	ovallog.Initialize(config.Conf.LogDir)
+	var lastModified time.Time
+	if !b.isFetchViaHTTP() {
+		var ovaldb db.DB
+		if ovaldb, err = db.NewDB(
+			osFamily,
+			config.Conf.OvalDBType,
+			config.Conf.OvalDBPath,
+			config.Conf.DebugSQL,
+		); err != nil {
+			return false, err
+		}
+		defer ovaldb.CloseDB()
+		lastModified = ovaldb.GetLastModified(osFamily, release)
+	} else {
+		url, _ := util.URLPathJoin(config.Conf.OvalDBURL, "lastmodified", osFamily, release)
+		resp, body, errs := gorequest.New().Get(url).End()
+		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
+			return false, fmt.Errorf("HTTP GET error: %v, url: %s, resp: %v",
+				errs, url, resp)
+		}
+
+		if err := json.Unmarshal([]byte(body), &lastModified); err != nil {
+			return false, fmt.Errorf("Failed to Unmarshall. body: %s, err: %s",
+				body, err)
+		}
+	}
+
+	since := time.Now()
+	since = since.AddDate(0, 0, -3)
+	if lastModified.Before(since) {
+		util.Log.Warnf("%s-%s OVAL is old, last modified is %s. It's recommended to update OVAL to improve scanning accuracy. To update OVAL database, see https://github.com/kotakanbe/goval-dictionary#usage",
+			osFamily, release, lastModified)
+		return false, nil
+	}
+	return true, nil
 }
 
 func (b Base) isFetchViaHTTP() bool {

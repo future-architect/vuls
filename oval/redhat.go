@@ -8,7 +8,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	ver "github.com/knqyf263/go-deb-version"
+	ver "github.com/knqyf263/go-rpm-version"
 	ovalconf "github.com/kotakanbe/goval-dictionary/config"
 	db "github.com/kotakanbe/goval-dictionary/db"
 	ovallog "github.com/kotakanbe/goval-dictionary/log"
@@ -63,7 +63,7 @@ func (o RedHatBase) getDefsByPackNameFromOvalDB(osRelease string,
 	} else {
 		ovalconf.Conf.DBPath = config.Conf.OvalDBURL
 	}
-	util.Log.Infof("open oval-dictionary db (%s): %s",
+	util.Log.Infof("Open oval-dictionary db (%s): %s",
 		ovalconf.Conf.DBType, ovalconf.Conf.DBPath)
 
 	ovallog.Initialize(config.Conf.LogDir)
@@ -84,9 +84,9 @@ func (o RedHatBase) getDefsByPackNameFromOvalDB(osRelease string,
 			return nil, fmt.Errorf("Failed to get RedHat OVAL info by package name: %v", err)
 		}
 		for _, def := range definitions {
-			current, _ := ver.NewVersion(fmt.Sprintf("%s-%s", pack.Version, pack.Release))
+			current := ver.NewVersion(fmt.Sprintf("%s-%s", pack.Version, pack.Release))
 			for _, p := range def.AffectedPacks {
-				affected, _ := ver.NewVersion(p.Version)
+				affected := ver.NewVersion(p.Version)
 				if pack.Name != p.Name || !current.LessThan(affected) {
 					continue
 				}

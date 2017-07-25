@@ -47,6 +47,10 @@ func RunTui(results models.ScanResults) subcommands.ExitStatus {
 
 	// g, err := gocui.NewGui(gocui.OutputNormal)
 	g := gocui.NewGui()
+	if err := g.Init(); err != nil {
+		log.Errorf("%s", err)
+		return subcommands.ExitFailure
+	}
 	defer g.Close()
 
 	g.SetLayout(layout)

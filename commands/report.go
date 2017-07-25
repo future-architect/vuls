@@ -410,7 +410,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if c.Conf.OvalDBURL != "" {
-		err := oval.Base{}.CheckHealth()
+		err := oval.Base{}.CheckHTTPHealth()
 		if err != nil {
 			util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
 			util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with --ovaldb-path option")
