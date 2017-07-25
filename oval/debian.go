@@ -25,7 +25,7 @@ func (o DebianBase) fillFromOvalDB(r *models.ScanResult) error {
 	} else {
 		ovalconf.Conf.DBPath = config.Conf.OvalDBURL
 	}
-	util.Log.Infof("Open oval-dictionary db (%s): %s",
+	util.Log.Debugf("Open oval-dictionary db (%s): %s",
 		ovalconf.Conf.DBType, ovalconf.Conf.DBPath)
 
 	ovallog.Initialize(config.Conf.LogDir)

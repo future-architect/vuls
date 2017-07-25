@@ -63,7 +63,7 @@ func (o RedHatBase) getDefsByPackNameFromOvalDB(osRelease string,
 	} else {
 		ovalconf.Conf.DBPath = config.Conf.OvalDBURL
 	}
-	util.Log.Infof("Open oval-dictionary db (%s): %s",
+	util.Log.Debugf("Open oval-dictionary db (%s): %s",
 		ovalconf.Conf.DBType, ovalconf.Conf.DBPath)
 
 	ovallog.Initialize(config.Conf.LogDir)
@@ -102,7 +102,7 @@ func (o RedHatBase) update(r *models.ScanResult, definition *ovalmodels.Definiti
 		ovalContent := *o.convertToModel(cve.CveID, definition)
 		vinfo, ok := r.ScannedCves[cve.CveID]
 		if !ok {
-			util.Log.Infof("%s is newly detected by OVAL", cve.CveID)
+			util.Log.Debugf("%s is newly detected by OVAL", cve.CveID)
 			vinfo = models.VulnInfo{
 				CveID:        cve.CveID,
 				Confidence:   models.OvalMatch,
@@ -112,9 +112,9 @@ func (o RedHatBase) update(r *models.ScanResult, definition *ovalmodels.Definiti
 		} else {
 			cveContents := vinfo.CveContents
 			if _, ok := vinfo.CveContents[models.RedHat]; ok {
-				util.Log.Infof("%s will be updated by OVAL", cve.CveID)
+				util.Log.Debugf("%s will be updated by OVAL", cve.CveID)
 			} else {
-				util.Log.Infof("%s also detected by OVAL", cve.CveID)
+				util.Log.Debugf("%s also detected by OVAL", cve.CveID)
 				cveContents = models.CveContents{}
 			}
 

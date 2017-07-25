@@ -149,7 +149,7 @@
   branch = "master"
   name = "github.com/kotakanbe/goval-dictionary"
   packages = ["config","db","db/rdb","log","models"]
-  revision = "2c949ba2967dcd35574f2a78a12551c5326de6a9"
+  revision = "766b881c46d2037c75833ec0021da1c3da1ad2a1"
 
 [[projects]]
   branch = "master"
@@ -239,7 +239,7 @@
   branch = "master"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "3eef8ce63d02f65d2da43214faf7bb19b0b2bb7a"
+  revision = "86bd21e371d71c8885b29e8dfb161c6034dc4abe"
 
 [[projects]]
   branch = "master"
