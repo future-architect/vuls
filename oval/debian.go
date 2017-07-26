@@ -18,6 +18,7 @@ type DebianBase struct{ Base }
 
 // fillFromOvalDB returns scan result after updating CVE info by OVAL
 func (o DebianBase) fillFromOvalDB(r *models.ScanResult) error {
+	ovalconf.Conf.DebugSQL = config.Conf.DebugSQL
 	ovalconf.Conf.DBType = config.Conf.OvalDBType
 	ovalconf.Conf.DBPath = config.Conf.OvalDBPath
 	if ovalconf.Conf.DBType == "sqlite3" {
@@ -33,7 +34,7 @@ func (o DebianBase) fillFromOvalDB(r *models.ScanResult) error {
 	var err error
 	var ovaldb db.DB
 	if ovaldb, err = db.NewDB(
-		ovalconf.Debian,
+		r.Family,
 		ovalconf.Conf.DBType,
 		ovalconf.Conf.DBPath,
 		ovalconf.Conf.DebugSQL,

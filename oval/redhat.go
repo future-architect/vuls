@@ -57,6 +57,7 @@ func (o RedHatBase) fillFromOvalDB(r *models.ScanResult) error {
 func (o RedHatBase) getDefsByPackNameFromOvalDB(osRelease string,
 	packs models.Packages) (relatedDefs []ovalmodels.Definition, err error) {
 
+	ovalconf.Conf.DebugSQL = config.Conf.DebugSQL
 	ovalconf.Conf.DBType = config.Conf.OvalDBType
 	if ovalconf.Conf.DBType == "sqlite3" {
 		ovalconf.Conf.DBPath = config.Conf.OvalDBPath
