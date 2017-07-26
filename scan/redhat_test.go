@@ -435,11 +435,25 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
        Type : security
      Status : final
      Issued : 2015-09-03 02:00:00
-       Bugs : 1299364 - CVE-2015-8704 bind: specific APL data could trigger an INSIST in apl_42.c      CVEs : CVE-2015-8704
+       Bugs : 1299364 - CVE-2015-8704 bind: specific APL data could trigger an INSIST in apl_42.c
+	   CVEs : CVE-2015-8704
 	        : CVE-2015-8705
 Description : The Berkeley Internet Name Domain (BIND) is an implementation of
+	        : CVE-2015-10000
    Severity : Moderate
 
+===============================================================================
+  Moderate: sudo security update
+===============================================================================
+  Update ID : RHSA-2017:1574
+    Release : 0
+       Type : security
+     Status : final
+     Issued : 2015-09-03 02:00:00
+       Bugs : 1459152 - CVE-2017-1000368 sudo: Privilege escalation via improper get_process_ttyname() parsing (insufficient fix for CVE-2017-1000367)       CVEs : CVE-2017-1000368
+Description : The sudo packages contain the sudo utility which allows system
+            : administrators to provide certain users with the
+   Severity : Moderate
 	`
 	issued, _ := time.Parse("2006-01-02", "2015-09-03")
 	updated, _ := time.Parse("2006-01-02", "2015-09-04")
@@ -481,11 +495,22 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
 						AdvisoryID:  "RHSA-2016:0073",
 						Severity:    "Moderate",
 						Issued:      issued,
-						Description: "The Berkeley Internet Name Domain (BIND) is an implementation of\n",
+						Description: "The Berkeley Internet Name Domain (BIND) is an implementation of\nCVE-2015-10000\n",
 					},
 					CveIDs: []string{
 						"CVE-2015-8704",
 						"CVE-2015-8705",
+					},
+				},
+				{
+					DistroAdvisory: models.DistroAdvisory{
+						AdvisoryID:  "RHSA-2017:1574",
+						Severity:    "Moderate",
+						Issued:      issued,
+						Description: "The sudo packages contain the sudo utility which allows system\nadministrators to provide certain users with the\n",
+					},
+					CveIDs: []string{
+						"CVE-2017-1000368",
 					},
 				},
 			},
@@ -499,7 +524,7 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
 			if !reflect.DeepEqual(tt.out[i], advisoryCveIDs) {
 				e := pp.Sprintf("%v", tt.out[i])
 				a := pp.Sprintf("%v", advisoryCveIDs)
-				t.Errorf("[%d] Alas is not same. \nexpected: %s\nactual: %s",
+				t.Errorf("[%d] not same. \nexpected: %s\nactual: %s",
 					i, e, a)
 			}
 		}
@@ -512,7 +537,7 @@ func TestParseYumUpdateinfoAmazon(t *testing.T) {
 	r.Distro = config.Distro{Family: "redhat"}
 
 	issued, _ := time.Parse("2006-01-02", "2015-12-15")
-	updated, _ := time.Parse("2006-01-02", "2015-12-16")
+	// updated, _ := time.Parse("2006-01-02", "2015-12-16")
 
 	var tests = []struct {
 		in  string
@@ -529,6 +554,8 @@ func TestParseYumUpdateinfoAmazon(t *testing.T) {
      Issued : 2015-12-15 13:30
        CVEs : CVE-2016-1494
 Description : Package updates are available for Amazon Linux AMI that fix the
+            : CVE-20160-1111
+            : hogehoge
    Severity : medium
 
 ===============================================================================
@@ -553,7 +580,7 @@ Description : Package updates are available for Amazon Linux AMI that fix the
 						AdvisoryID:  "ALAS-2016-644",
 						Severity:    "medium",
 						Issued:      issued,
-						Description: "Package updates are available for Amazon Linux AMI that fix the\n",
+						Description: "Package updates are available for Amazon Linux AMI that fix the\nCVE-20160-1111\nhogehoge\n",
 					},
 					CveIDs: []string{"CVE-2016-1494"},
 				},
@@ -562,7 +589,6 @@ Description : Package updates are available for Amazon Linux AMI that fix the
 						AdvisoryID:  "ALAS-2015-614",
 						Severity:    "medium",
 						Issued:      issued,
-						Updated:     updated,
 						Description: "Package updates are available for Amazon Linux AMI that fix the\nfoo bar baz\nhoge fuga hega\n",
 					},
 					CveIDs: []string{
