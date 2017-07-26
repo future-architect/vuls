@@ -746,7 +746,7 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 	cveIDsSetInThisSection := make(map[string]bool)
 
 	// use this flag to Collect CVE IDs in CVEs field.
-	var inDesctiption = false
+	inDesctiption, inCves := false, false
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -766,7 +766,7 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 
 				// reset for next section.
 				cveIDsSetInThisSection = make(map[string]bool)
-				inDesctiption = false
+				inDesctiption, inCves = false, false
 				advisory = models.DistroAdvisory{}
 			}
 
@@ -789,7 +789,7 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 
 		case Content:
 			if found := o.isDescriptionLine(line); found {
-				inDesctiption = true
+				inDesctiption, inCves = true, false
 				ss := strings.Split(line, " : ")
 				advisory.Description += fmt.Sprintf("%s\n",
 					strings.Join(ss[1:len(ss)], " : "))
@@ -811,9 +811,22 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 				continue
 			}
 
-			cveIDs := o.parseYumUpdateinfoLineToGetCveIDs(line)
-			for _, cveID := range cveIDs {
-				cveIDsSetInThisSection[cveID] = true
+			if found := o.isCvesHeaderLine(line); found {
+				inCves = true
+				ss := strings.Split(line, "CVEs : ")
+				line = strings.Join(ss[1:len(ss)], " ")
+				cveIDs := o.parseYumUpdateinfoLineToGetCveIDs(line)
+				for _, cveID := range cveIDs {
+					cveIDsSetInThisSection[cveID] = true
+				}
+				continue
+			}
+
+			if inCves {
+				cveIDs := o.parseYumUpdateinfoLineToGetCveIDs(line)
+				for _, cveID := range cveIDs {
+					cveIDsSetInThisSection[cveID] = true
+				}
 			}
 
 			advisoryID, found := o.parseYumUpdateinfoToGetAdvisoryID(line)
@@ -853,6 +866,10 @@ func (o *redhat) changeSectionState(state int) (newState int) {
 		newState = Content
 	}
 	return newState
+}
+
+func (o *redhat) isCvesHeaderLine(line string) bool {
+	return strings.Contains(line, "CVEs : ")
 }
 
 var yumCveIDPattern = regexp.MustCompile(`(CVE-\d{4}-\d{4,})`)
