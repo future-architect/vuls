@@ -462,6 +462,9 @@ func (o *debian) scanVulnInfos(updatablePacks models.Packages, meta *cache.Meta)
 	for i := 0; i < len(updatablePacks); i++ {
 		select {
 		case response := <-resChan:
+			if response.pack == nil {
+				continue
+			}
 			o.Packages[response.pack.Name] = *response.pack
 			cves := response.DetectedCveIDs
 			for _, cve := range cves {
@@ -511,7 +514,7 @@ func (o *debian) scanVulnInfos(updatablePacks models.Packages, meta *cache.Meta)
 func (o *debian) getChangelogCache(meta *cache.Meta, pack models.Package) string {
 	cachedPack, found := meta.Packs[pack.Name]
 	if !found {
-		o.log.Debugf("Not found: %s", pack.Name)
+		o.log.Debugf("Not found in cache: %s", pack.Name)
 		return ""
 	}
 
