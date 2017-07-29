@@ -40,6 +40,7 @@ var currentScanResult models.ScanResult
 var vinfos []models.VulnInfo
 var currentVinfo int
 var currentDetailLimitY int
+var currentChangelogLimitY int
 
 // RunTui execute main logic
 func RunTui(results models.ScanResults) subcommands.ExitStatus {
@@ -237,10 +238,10 @@ func movable(v *gocui.View, nextY int) (ok bool, yLimit int) {
 		}
 		return true, currentDetailLimitY
 	case "changelog":
-		if currentDetailLimitY < nextY {
-			return false, currentDetailLimitY
+		if currentChangelogLimitY < nextY {
+			return false, currentChangelogLimitY
 		}
-		return true, currentDetailLimitY
+		return true, currentChangelogLimitY
 	default:
 		return true, 0
 	}
@@ -725,7 +726,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 		v.Editable = false
 		v.Wrap = true
 
-		currentDetailLimitY = len(strings.Split(text, "\n")) - 1
+		currentChangelogLimitY = len(strings.Split(text, "\n")) - 1
 	}
 	return nil
 }
