@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package scan
 
 import (
+	"bufio"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -28,6 +29,8 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+
+	"github.com/knqyf263/go-deb-version"
 )
 
 // inherit OsTypeInterface
@@ -571,9 +574,6 @@ func (o *debian) scanPackageCveIDs(pack models.Package) ([]DetectedCveID, *model
 	return cveIDs, clogFilledPack, nil
 }
 
-// Debian Version Numbers
-// https://readme.phys.ethz.ch/documentation/debian_version_numbers/
-// TODO Changed to parse and compare versions
 func (o *debian) getCveIDsFromChangelog(
 	changelog, name, ver string) ([]DetectedCveID, *models.Package) {
 
@@ -636,25 +636,43 @@ func (o *debian) getCveIDsFromChangelog(
 var cveRe = regexp.MustCompile(`(CVE-\d{4}-\d{4,})`)
 
 // Collect CVE-IDs included in the changelog.
-// The version which specified in argument(versionOrLater) is excluded.
+// The version specified in argument(versionOrLater) is used to compare.
 func (o *debian) parseChangelog(changelog, name, ver string, confidence models.Confidence) ([]DetectedCveID, *models.Package, error) {
+	installedVer, err := version.NewVersion(ver)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Failed to parse installed version: %s, %s", ver, err)
+	}
 	buf, cveIDs := []string{}, []string{}
-	stopRe := regexp.MustCompile(fmt.Sprintf(`\(%s\)`, regexp.QuoteMeta(ver)))
-	stopLineFound := false
-	lines := strings.Split(changelog, "\n")
-	for _, line := range lines {
+	scanner := bufio.NewScanner(strings.NewReader(changelog))
+	found := false
+	for scanner.Scan() {
+		line := scanner.Text()
 		buf = append(buf, line)
-		if match := stopRe.MatchString(line); match {
-			//  o.log.Debugf("Found the stop line: %s", line)
-			stopLineFound = true
-			break
-		} else if matches := cveRe.FindAllString(line, -1); 0 < len(matches) {
+		if matches := cveRe.FindAllString(line, -1); 0 < len(matches) {
 			for _, m := range matches {
 				cveIDs = util.AppendIfMissing(cveIDs, m)
 			}
 		}
+
+		ss := strings.Fields(line)
+		if len(ss) < 2 {
+			continue
+		}
+
+		if !strings.HasPrefix(ss[1], "(") || !strings.HasSuffix(ss[1], ")") {
+			continue
+		}
+		clogVer, err := version.NewVersion(ss[1][1 : len(ss[1])-1])
+		if err != nil {
+			continue
+		}
+		if installedVer.Equal(clogVer) || installedVer.GreaterThan(clogVer) {
+			found = true
+			break
+		}
 	}
-	if !stopLineFound {
+
+	if !found {
 		pack := o.Packages[name]
 		pack.Changelog = models.Changelog{
 			Contents: "",
@@ -666,7 +684,7 @@ func (o *debian) parseChangelog(changelog, name, ver string, confidence models.C
 	}
 
 	clog := models.Changelog{
-		Contents: strings.Join(buf, "\n"),
+		Contents: strings.Join(buf[0:len(buf)-1], "\n"),
 		Method:   confidence.DetectionMethod,
 	}
 	pack := o.Packages[name]

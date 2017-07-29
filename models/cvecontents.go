@@ -160,7 +160,7 @@ func (v CveContents) MaxCvss2Score() CveContentCvss {
 		return value
 	}
 
-	// If CVSS score isn't on NVD, RedHat and JVN use OVAL's Severity information.
+	// If CVSS score isn't on NVD, RedHat and JVN, use OVAL's Severity information.
 	// Convert severity to cvss srore, then returns max severity.
 	// Only Ubuntu, RedHat and Oracle OVAL has severity data.
 	order = []CveContentType{Ubuntu, RedHat, Oracle}

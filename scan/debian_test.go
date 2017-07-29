@@ -66,7 +66,7 @@ func TestGetCveIDsFromChangelog(t *testing.T) {
 		changelog models.Changelog
 	}{
 		{
-			// verubuntu1
+			//0 verubuntu1
 			[]string{
 				"systemd",
 				"228-4ubuntu1",
@@ -81,9 +81,9 @@ systemd (228-4) unstable; urgency=medium
 systemd (228-3) unstable; urgency=medium`,
 			},
 			[]DetectedCveID{
-				{"CVE-2015-2325", models.ChangelogLenientMatch},
-				{"CVE-2015-2326", models.ChangelogLenientMatch},
-				{"CVE-2015-3210", models.ChangelogLenientMatch},
+				{"CVE-2015-2325", models.ChangelogExactMatch},
+				{"CVE-2015-2326", models.ChangelogExactMatch},
+				{"CVE-2015-3210", models.ChangelogExactMatch},
 			},
 			models.Changelog{
 				Contents: `systemd (229-2) unstable; urgency=medium
@@ -92,13 +92,12 @@ systemd (228-6) unstable; urgency=medium
 CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
 CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
 CVE-2015-3210: heap buffer overflow in pcre_compile2() /
-systemd (228-5) unstable; urgency=medium
-systemd (228-4) unstable; urgency=medium`,
-				Method: models.ChangelogLenientMatchStr,
+systemd (228-5) unstable; urgency=medium`,
+				Method: models.ChangelogExactMatchStr,
 			},
 		},
 		{
-			// ver
+			//1 ver
 			[]string{
 				"libpcre3",
 				"2:8.35-7.1ubuntu1",
@@ -115,9 +114,9 @@ systemd (228-4) unstable; urgency=medium`,
 		 pcre3 (2:8.35-7) unstable; urgency=medium`,
 			},
 			[]DetectedCveID{
-				{"CVE-2015-2325", models.ChangelogLenientMatch},
-				{"CVE-2015-2326", models.ChangelogLenientMatch},
-				{"CVE-2015-3210", models.ChangelogLenientMatch},
+				{"CVE-2015-2325", models.ChangelogExactMatch},
+				{"CVE-2015-2326", models.ChangelogExactMatch},
+				{"CVE-2015-3210", models.ChangelogExactMatch},
 			},
 			models.Changelog{
 				Contents: `pcre3 (2:8.38-2) unstable; urgency=low
@@ -128,13 +127,12 @@ systemd (228-4) unstable; urgency=medium`,
 		 pcre3 (2:8.35-7.2) unstable; urgency=low
 		 CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
 		 CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
-		 CVE-2015-3210: heap buffer overflow in pcre_compile2() /
-		 pcre3 (2:8.35-7.1) unstable; urgency=medium`,
-				Method: models.ChangelogLenientMatchStr,
+		 CVE-2015-3210: heap buffer overflow in pcre_compile2() /`,
+				Method: models.ChangelogExactMatchStr,
 			},
 		},
 		{
-			// ver-ubuntu3
+			//2 ver-ubuntu3
 			[]string{
 				"sysvinit",
 				"2.88dsf-59.2ubuntu3",
@@ -168,13 +166,12 @@ systemd (228-4) unstable; urgency=medium`,
 		 sysvinit (2.88dsf-59.3) unstable; urgency=medium
 		 CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
 		 CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
-		 CVE-2015-3210: heap buffer overflow in pcre_compile2() /
-		 sysvinit (2.88dsf-59.2ubuntu3) xenial; urgency=medium`,
+		 CVE-2015-3210: heap buffer overflow in pcre_compile2() /`,
 				Method: models.ChangelogExactMatchStr,
 			},
 		},
 		{
-			// 1:ver-ubuntu3
+			//3  1:ver-ubuntu3
 			[]string{
 				"bsdutils",
 				"1:2.27.1-1ubuntu3",
@@ -192,25 +189,25 @@ systemd (228-4) unstable; urgency=medium`,
 		 util-linux (2.27-3ubuntu1) xenial; urgency=medium`,
 			},
 			[]DetectedCveID{
-				{"CVE-2015-2325", models.ChangelogLenientMatch},
-				{"CVE-2015-2326", models.ChangelogLenientMatch},
-				{"CVE-2015-3210", models.ChangelogLenientMatch},
-				{"CVE-2016-1000000", models.ChangelogLenientMatch},
+			// {"CVE-2015-2325", models.ChangelogLenientMatch},
+			// {"CVE-2015-2326", models.ChangelogLenientMatch},
+			// {"CVE-2015-3210", models.ChangelogLenientMatch},
+			// {"CVE-2016-1000000", models.ChangelogLenientMatch},
 			},
 			models.Changelog{
-				Contents: `util-linux (2.27.1-3ubuntu1) xenial; urgency=medium
-		 util-linux (2.27.1-3) unstable; urgency=medium
-		 CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
-		 CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
-		 CVE-2015-3210: CVE-2016-1000000heap buffer overflow in pcre_compile2() /
-		 util-linux (2.27.1-2) unstable; urgency=medium
-		 util-linux (2.27.1-1ubuntu4) xenial; urgency=medium
-		 util-linux (2.27.1-1ubuntu3) xenial; urgency=medium`,
-				Method: models.ChangelogLenientMatchStr,
+				// Contents: `util-linux (2.27.1-3ubuntu1) xenial; urgency=medium
+				// util-linux (2.27.1-3) unstable; urgency=medium
+				// CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
+				// CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
+				// CVE-2015-3210: CVE-2016-1000000heap buffer overflow in pcre_compile2() /
+				// util-linux (2.27.1-2) unstable; urgency=medium
+				// util-linux (2.27.1-1ubuntu4) xenial; urgency=medium
+				// util-linux (2.27.1-1ubuntu3) xenial; urgency=medium`,
+				Method: models.ChangelogExactMatchStr,
 			},
 		},
 		{
-			// 1:ver-ubuntu3
+			//4 1:ver-ubuntu3
 			[]string{
 				"bsdutils",
 				"1:2.27-3ubuntu3",
@@ -228,29 +225,28 @@ systemd (228-4) unstable; urgency=medium`,
 		 util-linux (2.27-3) xenial; urgency=medium`,
 			},
 			[]DetectedCveID{
-				{"CVE-2015-2325", models.ChangelogLenientMatch},
-				{"CVE-2015-2326", models.ChangelogLenientMatch},
-				{"CVE-2015-3210", models.ChangelogLenientMatch},
-				{"CVE-2016-1000000", models.ChangelogLenientMatch},
+			// {"CVE-2015-2325", models.ChangelogLenientMatch},
+			// {"CVE-2015-2326", models.ChangelogLenientMatch},
+			// {"CVE-2015-3210", models.ChangelogLenientMatch},
+			// {"CVE-2016-1000000", models.ChangelogLenientMatch},
 			},
 			models.Changelog{
-				Contents: `util-linux (2.27.1-3ubuntu1) xenial; urgency=medium
-		 util-linux (2.27.1-3) unstable; urgency=medium
-		 CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
-		 CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
-		 CVE-2015-3210: CVE-2016-1000000heap buffer overflow in pcre_compile2() /
-		 util-linux (2.27.1-2) unstable; urgency=medium
-		 util-linux (2.27.1-1ubuntu4) xenial; urgency=medium
-		 util-linux (2.27.1-1ubuntu3) xenial; urgency=medium
-		 util-linux (2.27.1-1ubuntu2) xenial; urgency=medium
-		 util-linux (2.27.1-1ubuntu1) xenial; urgency=medium
-		 util-linux (2.27.1-1) unstable; urgency=medium
-		 util-linux (2.27-3) xenial; urgency=medium`,
-				Method: models.ChangelogLenientMatchStr,
+				// Contents: `util-linux (2.27.1-3ubuntu1) xenial; urgency=medium
+				// util-linux (2.27.1-3) unstable; urgency=medium
+				// CVE-2015-2325: heap buffer overflow in compile_branch(). (Closes: #781795)
+				// CVE-2015-2326: heap buffer overflow in pcre_compile2(). (Closes: #783285)
+				// CVE-2015-3210: CVE-2016-1000000heap buffer overflow in pcre_compile2() /
+				// util-linux (2.27.1-2) unstable; urgency=medium
+				// util-linux (2.27.1-1ubuntu4) xenial; urgency=medium
+				// util-linux (2.27.1-1ubuntu3) xenial; urgency=medium
+				// util-linux (2.27.1-1ubuntu2) xenial; urgency=medium
+				// util-linux (2.27.1-1ubuntu1) xenial; urgency=medium
+				// util-linux (2.27.1-1) unstable; urgency=medium`,
+				Method: models.ChangelogExactMatchStr,
 			},
 		},
 		{
-			// https://github.com/future-architect/vuls/pull/350
+			//5 https://github.com/future-architect/vuls/pull/350
 			[]string{
 				"tar",
 				"1.27.1-2+b1",
@@ -259,13 +255,12 @@ systemd (228-4) unstable; urgency=medium`,
 		 tar (1.27.1-2) unstable; urgency=low`,
 			},
 			[]DetectedCveID{
-				{"CVE-2016-6321", models.ChangelogLenientMatch},
+				{"CVE-2016-6321", models.ChangelogExactMatch},
 			},
 			models.Changelog{
 				Contents: `tar (1.27.1-2+deb8u1) jessie-security; urgency=high
-		   * CVE-2016-6321: Bypassing the extract path name.
-		 tar (1.27.1-2) unstable; urgency=low`,
-				Method: models.ChangelogLenientMatchStr,
+		   * CVE-2016-6321: Bypassing the extract path name.`,
+				Method: models.ChangelogExactMatchStr,
 			},
 		},
 	}
@@ -286,11 +281,11 @@ systemd (228-4) unstable; urgency=medium`,
 		}
 
 		if aPack.Changelog.Contents != tt.changelog.Contents {
-			t.Errorf(pp.Sprintf("expected: %s, actual: %s", tt.changelog.Contents, aPack.Changelog.Contents))
+			t.Error(pp.Sprintf("[%d] expected: %s, actual: %s", i, tt.changelog.Contents, aPack.Changelog.Contents))
 		}
 
 		if aPack.Changelog.Method != tt.changelog.Method {
-			t.Errorf(pp.Sprintf("expected: %s, actual: %s", tt.changelog.Method, aPack.Changelog.Method))
+			t.Error(pp.Sprintf("[%d] expected: %s, actual: %s", i, tt.changelog.Method, aPack.Changelog.Method))
 		}
 	}
 }
