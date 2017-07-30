@@ -114,6 +114,83 @@ type VulnInfo struct {
 	CveContents      CveContents
 }
 
+// Titles returns tilte (TUI)
+func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
+	if lang == "ja" {
+		if cont, found := v.CveContents[JVN]; found && 0 < len(cont.Title) {
+			values = append(values, CveContentStr{JVN, cont.Title})
+		}
+	}
+
+	order := CveContentTypes{NVD, NewCveContentType(myFamily)}
+	order = append(order, AllCveContetTypes.Except(append(order, JVN)...)...)
+	for _, ctype := range order {
+		// Only JVN has meaningful title. so return first 100 char of summary
+		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Summary) {
+			summary := strings.Replace(cont.Summary, "\n", " ", -1)
+			values = append(values, CveContentStr{
+				Type:  ctype,
+				Value: summary,
+			})
+		}
+	}
+
+	for _, adv := range v.DistroAdvisories {
+		values = append(values, CveContentStr{
+			Type:  "Vendor",
+			Value: strings.Replace(adv.Description, "\n", " ", -1),
+		})
+	}
+
+	if len(values) == 0 {
+		values = []CveContentStr{{
+			Type:  Unknown,
+			Value: "-",
+		}}
+	}
+	return
+}
+
+// Summaries returns summaries
+func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
+	if lang == "ja" {
+		if cont, found := v.CveContents[JVN]; found && 0 < len(cont.Summary) {
+			summary := cont.Title
+			summary += "\n" + strings.Replace(
+				strings.Replace(cont.Summary, "\n", " ", -1), "\r", " ", -1)
+			values = append(values, CveContentStr{JVN, summary})
+		}
+	}
+
+	order := CveContentTypes{NVD, NewCveContentType(myFamily)}
+	order = append(order, AllCveContetTypes.Except(append(order, JVN)...)...)
+	for _, ctype := range order {
+		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Summary) {
+			summary := strings.Replace(cont.Summary, "\n", " ", -1)
+			values = append(values, CveContentStr{
+				Type:  ctype,
+				Value: summary,
+			})
+		}
+	}
+
+	for _, adv := range v.DistroAdvisories {
+		values = append(values, CveContentStr{
+			Type:  "Vendor",
+			Value: adv.Description,
+		})
+	}
+
+	if len(values) == 0 {
+		return []CveContentStr{{
+			Type:  Unknown,
+			Value: "-",
+		}}
+	}
+
+	return
+}
+
 // Cvss2Scores returns CVSS V2 Scores
 func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
 	order := []CveContentType{NVD, RedHat, JVN}

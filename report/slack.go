@@ -270,7 +270,7 @@ func attachmentText(vinfo models.VulnInfo, osFamily string) string {
 		severity,
 		cweIDs(vinfo, osFamily),
 		strings.Join(vectors, "\n"),
-		vinfo.CveContents.Summaries(config.Conf.Lang, osFamily)[0].Value,
+		vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
 	)
 }
 
