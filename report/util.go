@@ -120,18 +120,18 @@ func formatShortPlainText(r models.ScanResult) string {
 		}
 
 		cvsses := ""
-		for _, cvss := range vuln.CveContents.Cvss2Scores() {
+		for _, cvss := range vuln.Cvss2Scores() {
 			cvsses += fmt.Sprintf("%s (%s)\n", cvss.Value.Format(), cvss.Type)
 		}
 		cvsses += vuln.Cvss2CalcURL() + "\n"
-		for _, cvss := range vuln.CveContents.Cvss3Scores() {
+		for _, cvss := range vuln.Cvss3Scores() {
 			cvsses += fmt.Sprintf("%s (%s)\n", cvss.Value.Format(), cvss.Type)
 		}
-		if 0 < len(vuln.CveContents.Cvss3Scores()) {
+		if 0 < len(vuln.Cvss3Scores()) {
 			cvsses += vuln.Cvss3CalcURL() + "\n"
 		}
 
-		maxCvss := vuln.CveContents.FormatMaxCvssScore()
+		maxCvss := vuln.FormatMaxCvssScore()
 		rightCol := fmt.Sprintf(`%s
 %s
 ---
@@ -186,17 +186,17 @@ func formatFullPlainText(r models.ScanResult) string {
 	for _, vuln := range vulns.ToSortedSlice() {
 		table.AddRow(vuln.CveID)
 		table.AddRow("----------------")
-		table.AddRow("Max Score", vuln.CveContents.FormatMaxCvssScore())
-		for _, cvss := range vuln.CveContents.Cvss2Scores() {
+		table.AddRow("Max Score", vuln.FormatMaxCvssScore())
+		for _, cvss := range vuln.Cvss2Scores() {
 			table.AddRow(cvss.Type, cvss.Value.Format())
 		}
-		for _, cvss := range vuln.CveContents.Cvss3Scores() {
+		for _, cvss := range vuln.Cvss3Scores() {
 			table.AddRow(cvss.Type, cvss.Value.Format())
 		}
-		if 0 < len(vuln.CveContents.Cvss2Scores()) {
+		if 0 < len(vuln.Cvss2Scores()) {
 			table.AddRow("CVSSv2 Calc", vuln.Cvss2CalcURL())
 		}
-		if 0 < len(vuln.CveContents.Cvss3Scores()) {
+		if 0 < len(vuln.Cvss3Scores()) {
 			table.AddRow("CVSSv3 Calc", vuln.Cvss3CalcURL())
 		}
 		table.AddRow("Summary", vuln.CveContents.Summaries(

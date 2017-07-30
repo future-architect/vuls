@@ -216,7 +216,7 @@ func toSlackAttachments(r models.ScanResult) (attaches []*attachment) {
 					Short: true,
 				},
 			},
-			Color: color(vinfo.CveContents.MaxCvssScore().Value.Score),
+			Color: color(vinfo.MaxCvssScore().Value.Score),
 		}
 		attaches = append(attaches, &a)
 	}
@@ -238,9 +238,9 @@ func color(cvssScore float64) string {
 }
 
 func attachmentText(vinfo models.VulnInfo, osFamily string) string {
-	maxCvss := vinfo.CveContents.MaxCvssScore()
+	maxCvss := vinfo.MaxCvssScore()
 	vectors := []string{}
-	for _, cvss := range vinfo.CveContents.Cvss2Scores() {
+	for _, cvss := range vinfo.Cvss2Scores() {
 		calcURL := ""
 		switch cvss.Value.Type {
 		case models.CVSS2:

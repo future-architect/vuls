@@ -641,7 +641,7 @@ func summaryLines() string {
 		summary := vinfo.CveContents.Summaries(
 			config.Conf.Lang, currentScanResult.Family)[0].Value
 		cvssScore := fmt.Sprintf("| %4.1f",
-			vinfo.CveContents.MaxCvssScore().Value.Score)
+			vinfo.MaxCvssScore().Value.Score)
 
 		var cols []string
 		cols = []string{
@@ -794,7 +794,7 @@ func detailLines() (string, error) {
 
 	data := dataForTmpl{
 		CveID:      vinfo.CveID,
-		Cvsses:     append(vinfo.CveContents.Cvss3Scores(), vinfo.CveContents.Cvss2Scores()...),
+		Cvsses:     append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores()...),
 		Summary:    fmt.Sprintf("%s (%s)", summary.Value, summary.Type),
 		Confidence: vinfo.Confidence,
 		Cwes:       vinfo.CveContents.CweIDs(r.Family),
@@ -818,7 +818,7 @@ const mdTemplate = `
 CVSS Scores
 --------------
 {{range .Cvsses -}}
-* {{.Value.Format}} ({{.Type}})
+* {{.Value.Severity}} {{.Value.Format}} ({{.Type}})
 {{end}}
 
 Summary
