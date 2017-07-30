@@ -45,8 +45,8 @@ func (v VulnInfos) Find(f func(VulnInfo) bool) VulnInfos {
 // FindScoredVulns return scored vulnerabilities
 func (v VulnInfos) FindScoredVulns() VulnInfos {
 	return v.Find(func(vv VulnInfo) bool {
-		if 0 < vv.CveContents.MaxCvss2Score().Value.Score ||
-			0 < vv.CveContents.MaxCvss3Score().Value.Score {
+		if 0 < vv.MaxCvss2Score().Value.Score ||
+			0 < vv.MaxCvss3Score().Value.Score {
 			return true
 		}
 		return false
@@ -59,8 +59,8 @@ func (v VulnInfos) ToSortedSlice() (sorted []VulnInfo) {
 		sorted = append(sorted, v[k])
 	}
 	sort.Slice(sorted, func(i, j int) bool {
-		maxI := sorted[i].CveContents.MaxCvssScore()
-		maxJ := sorted[j].CveContents.MaxCvssScore()
+		maxI := sorted[i].MaxCvssScore()
+		maxJ := sorted[j].MaxCvssScore()
 		if maxI.Value.Score != maxJ.Value.Score {
 			return maxJ.Value.Score < maxI.Value.Score
 		}
@@ -73,9 +73,9 @@ func (v VulnInfos) ToSortedSlice() (sorted []VulnInfo) {
 func (v VulnInfos) CountGroupBySeverity() map[string]int {
 	m := map[string]int{}
 	for _, vInfo := range v {
-		score := vInfo.CveContents.MaxCvss2Score().Value.Score
+		score := vInfo.MaxCvss2Score().Value.Score
 		if score < 0.1 {
-			score = vInfo.CveContents.MaxCvss3Score().Value.Score
+			score = vInfo.MaxCvss3Score().Value.Score
 		}
 		switch {
 		case 7.0 <= score:
@@ -112,6 +112,296 @@ type VulnInfo struct {
 	DistroAdvisories []DistroAdvisory // for Aamazon, RHEL, FreeBSD
 	CpeNames         []string
 	CveContents      CveContents
+}
+
+// Cvss2Scores returns CVSS V2 Scores
+func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
+	order := []CveContentType{NVD, RedHat, JVN}
+	for _, ctype := range order {
+		if cont, found := v.CveContents[ctype]; found && 0 < cont.Cvss2Score {
+			// https://nvd.nist.gov/vuln-metrics/cvss
+			sev := cont.Severity
+			if ctype == NVD {
+				sev = cvss2ScoreToSeverity(cont.Cvss2Score)
+			}
+			values = append(values, CveContentCvss{
+				Type: ctype,
+				Value: Cvss{
+					Type:     CVSS2,
+					Score:    cont.Cvss2Score,
+					Vector:   cont.Cvss2Vector,
+					Severity: strings.ToUpper(sev),
+				},
+			})
+		}
+	}
+
+	for _, adv := range v.DistroAdvisories {
+		if adv.Severity != "" {
+			values = append(values, CveContentCvss{
+				Type: "Vendor",
+				Value: Cvss{
+					Type:     CVSS2,
+					Score:    severityToV2ScoreRoughly(adv.Severity),
+					Vector:   "-",
+					Severity: strings.ToUpper(adv.Severity),
+				},
+			})
+		}
+	}
+
+	return
+}
+
+// Cvss3Scores returns CVSS V3 Score
+func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
+	// TODO implement NVD
+	order := []CveContentType{RedHat}
+	for _, ctype := range order {
+		if cont, found := v.CveContents[ctype]; found && 0 < cont.Cvss3Score {
+			// https://nvd.nist.gov/vuln-metrics/cvss
+			sev := cont.Severity
+			values = append(values, CveContentCvss{
+				Type: ctype,
+				Value: Cvss{
+					Type:     CVSS3,
+					Score:    cont.Cvss3Score,
+					Vector:   cont.Cvss3Vector,
+					Severity: sev,
+				},
+			})
+		}
+	}
+	return
+}
+
+// MaxCvss3Score returns Max CVSS V3 Score
+func (v VulnInfo) MaxCvss3Score() CveContentCvss {
+	// TODO implement NVD
+	order := []CveContentType{RedHat}
+	max := 0.0
+	value := CveContentCvss{
+		Type:  Unknown,
+		Value: Cvss{Type: CVSS3},
+	}
+	for _, ctype := range order {
+		if cont, found := v.CveContents[ctype]; found && max < cont.Cvss3Score {
+			// https://nvd.nist.gov/vuln-metrics/cvss
+			sev := cont.Severity
+			value = CveContentCvss{
+				Type: ctype,
+				Value: Cvss{
+					Type:     CVSS3,
+					Score:    cont.Cvss3Score,
+					Vector:   cont.Cvss3Vector,
+					Severity: sev,
+				},
+			}
+			max = cont.Cvss3Score
+		}
+	}
+	return value
+}
+
+// MaxCvssScore returns max CVSS Score
+// If there is no CVSS Score, return Severity as a numerical value.
+func (v VulnInfo) MaxCvssScore() CveContentCvss {
+	v3Max := v.MaxCvss3Score()
+	v2Max := v.MaxCvss2Score()
+	max := v3Max
+	if max.Value.Score < v2Max.Value.Score {
+		max = v2Max
+	}
+	return max
+}
+
+// MaxCvss2Score returns Max CVSS V2 Score
+func (v VulnInfo) MaxCvss2Score() CveContentCvss {
+	order := []CveContentType{NVD, RedHat, JVN}
+	max := 0.0
+	value := CveContentCvss{
+		Type:  Unknown,
+		Value: Cvss{Type: CVSS2},
+	}
+	for _, ctype := range order {
+		if cont, found := v.CveContents[ctype]; found && max < cont.Cvss2Score {
+			// https://nvd.nist.gov/vuln-metrics/cvss
+			sev := cont.Severity
+			if ctype == NVD {
+				sev = cvss2ScoreToSeverity(cont.Cvss2Score)
+			}
+			value = CveContentCvss{
+				Type: ctype,
+				Value: Cvss{
+					Type:     CVSS2,
+					Score:    cont.Cvss2Score,
+					Vector:   cont.Cvss2Vector,
+					Severity: sev,
+				},
+			}
+			max = cont.Cvss2Score
+		}
+	}
+	if 0 < max {
+		return value
+	}
+
+	// If CVSS score isn't on NVD, RedHat and JVN, use OVAL and advisory Severity.
+	// Convert severity to cvss srore roughly, then returns max severity.
+	// Only Ubuntu, RedHat and Oracle OVAL has severity data in OVAL.
+	order = []CveContentType{Ubuntu, RedHat, Oracle}
+	for _, ctype := range order {
+		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Severity) {
+			score := severityToV2ScoreRoughly(cont.Severity)
+			if max < score {
+				value = CveContentCvss{
+					Type: ctype,
+					Value: Cvss{
+						Type:     CVSS2,
+						Score:    score,
+						Vector:   cont.Cvss2Vector,
+						Severity: cont.Severity,
+					},
+				}
+			}
+			max = score
+		}
+	}
+
+	// Only RedHat, Oracle and Amazon has severity data in advisory.
+	for _, adv := range v.DistroAdvisories {
+		if adv.Severity != "" {
+			score := severityToV2ScoreRoughly(adv.Severity)
+			if max < score {
+				value = CveContentCvss{
+					Type: "Vendor",
+					Value: Cvss{
+						Type:     CVSS2,
+						Score:    score,
+						Vector:   "-",
+						Severity: adv.Severity,
+					},
+				}
+			}
+		}
+	}
+	return value
+}
+
+// CveContentCvss has CveContentType and Cvss2
+type CveContentCvss struct {
+	Type  CveContentType
+	Value Cvss
+}
+
+// CvssType Represent the type of CVSS
+type CvssType string
+
+const (
+	// CVSS2 means CVSS vesion2
+	CVSS2 CvssType = "2"
+
+	// CVSS3 means CVSS vesion3
+	CVSS3 CvssType = "3"
+)
+
+// Cvss has CVSS Score
+type Cvss struct {
+	Type     CvssType
+	Score    float64
+	Vector   string
+	Severity string
+}
+
+// Format CVSS Score and Vector
+func (c Cvss) Format() string {
+	switch c.Type {
+	case CVSS2:
+		return fmt.Sprintf("%3.1f/%s", c.Score, c.Vector)
+	case CVSS3:
+		return fmt.Sprintf("%3.1f/CVSS:3.0/%s", c.Score, c.Vector)
+	}
+	return ""
+}
+
+func cvss2ScoreToSeverity(score float64) string {
+	if 7.0 <= score {
+		return "HIGH"
+	} else if 4.0 <= score {
+		return "MEDIUM"
+	}
+	return "LOW"
+}
+
+// Amazon Linux Security Advisory
+// Critical, Important, Medium, Low
+// https://alas.aws.amazon.com/
+//
+// RedHat, Oracle OVAL
+// Critical, Important, Moderate, Low
+// https://access.redhat.com/security/updates/classification
+//
+// Ubuntu OVAL
+// Critical, High, Medium, Low
+// https://wiki.ubuntu.com/Bugs/Importance
+// https://people.canonical.com/~ubuntu-security/cve/priority.html
+func severityToV2ScoreRoughly(severity string) float64 {
+	switch strings.ToUpper(severity) {
+	case "CRITICAL":
+		return 10.0
+	case "IMPORTANT", "HIGH":
+		return 8.9
+	case "MODERATE", "MEDIUM":
+		return 6.9
+	case "LOW":
+		return 3.9
+	}
+	return 0
+}
+
+// CveContentCvss3 has CveContentType and Cvss3
+//  type CveContentCvss3 struct {
+//      Type  CveContentType
+//      Value Cvss3
+//  }
+
+// Cvss3 has CVSS v3 Score, Vector and  Severity
+//  type Cvss3 struct {
+//      Score    float64
+//      Vector   string
+//      Severity string
+//  }
+
+// Format CVSS Score and Vector
+//  func (c Cvss3) Format() string {
+//      return fmt.Sprintf("%3.1f/CVSS:3.0/%s", c.Score, c.Vector)
+//  }
+
+//  func cvss3ScoreToSeverity(score float64) string {
+//      if 9.0 <= score {
+//          return "CRITICAL"
+//      } else if 7.0 <= score {
+//          return "HIGH"
+//      } else if 4.0 <= score {
+//          return "MEDIUM"
+//      }
+//      return "LOW"
+//  }
+
+// FormatMaxCvssScore returns Max CVSS Score
+func (v VulnInfo) FormatMaxCvssScore() string {
+	v2Max := v.MaxCvss2Score()
+	v3Max := v.MaxCvss3Score()
+	if v2Max.Value.Score <= v3Max.Value.Score {
+		return fmt.Sprintf("%3.1f %s (%s)",
+			v3Max.Value.Score,
+			strings.ToUpper(v3Max.Value.Severity),
+			v3Max.Type)
+	}
+	return fmt.Sprintf("%3.1f %s (%s)",
+		v2Max.Value.Score,
+		strings.ToUpper(v2Max.Value.Severity),
+		v2Max.Type)
 }
 
 // Cvss2CalcURL returns CVSS v2 caluclator's URL

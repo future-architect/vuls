@@ -140,8 +140,8 @@ func (r ScanResult) ConvertJvnToModel(cveID string, jvn cvedict.Jvn) *CveContent
 // FilterByCvssOver is filter function.
 func (r ScanResult) FilterByCvssOver(over float64) ScanResult {
 	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
-		v2Max := v.CveContents.MaxCvss2Score()
-		v3Max := v.CveContents.MaxCvss3Score()
+		v2Max := v.MaxCvss2Score()
+		v3Max := v.MaxCvss3Score()
 		max := v2Max.Value.Score
 		if max < v3Max.Value.Score {
 			max = v3Max.Value.Score

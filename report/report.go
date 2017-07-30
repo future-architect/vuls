@@ -158,8 +158,11 @@ func fillWithOval(r *models.ScanResult) (err error) {
 		ovalClient = oval.NewCentOS()
 		//use RedHat's OVAL
 		ovalFamily = c.RedHat
-	//TODO implement OracleLinux
+		//TODO
 	// case c.Oracle:
+	// ovalClient = oval.New()
+	// ovalFamily = c.Oracle
+	// case c.Suse:
 	// ovalClient = oval.New()
 	// ovalFamily = c.Oracle
 	case c.Amazon, c.Oracle, c.Raspbian, c.FreeBSD:
