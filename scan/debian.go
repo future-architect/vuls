@@ -177,7 +177,7 @@ func (o *debian) scanPackages() error {
 	}
 	o.setPackages(installed)
 
-	if config.Conf.PackageListOnly {
+	if !config.Conf.Deep {
 		return nil
 	}
 

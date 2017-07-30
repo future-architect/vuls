@@ -74,10 +74,10 @@ type Config struct {
 	CvssScoreOver      float64
 	IgnoreUnscoredCves bool
 
-	SSHNative       bool
-	ContainersOnly  bool
-	PackageListOnly bool
-	SkipBroken      bool
+	SSHNative      bool
+	ContainersOnly bool
+	Deep           bool
+	SkipBroken     bool
 
 	HTTPProxy  string `valid:"url"`
 	LogDir     string
