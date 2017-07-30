@@ -250,7 +250,7 @@ func (o *redhat) scanPackages() error {
 	installed.MergeNewVersion(updatable)
 	o.setPackages(installed)
 
-	if config.Conf.PackageListOnly {
+	if !config.Conf.Deep && o.Distro.Family != config.Amazon {
 		return nil
 	}
 
@@ -373,10 +373,11 @@ func (o *redhat) parseUpdatablePacksLine(line string) (models.Package, error) {
 }
 
 func (o *redhat) scanUnsecurePackages(updatable models.Packages) (models.VulnInfos, error) {
-	//TODO Cache changelogs to bolt
-	//TODO --with-changelog
-	if err := o.fillChangelogs(updatable); err != nil {
-		return nil, err
+	if config.Conf.Deep {
+		//TODO Cache changelogs to bolt
+		if err := o.fillChangelogs(updatable); err != nil {
+			return nil, err
+		}
 	}
 
 	if o.Distro.Family != config.CentOS {

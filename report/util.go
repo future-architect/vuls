@@ -43,16 +43,9 @@ func formatScanSummary(rs ...models.ScanResult) string {
 	for _, r := range rs {
 		var cols []interface{}
 		if len(r.Errors) == 0 {
-			var cves string
-			if config.Conf.PackageListOnly {
-				cves = fmt.Sprintf("- CVEs")
-			} else {
-				cves = fmt.Sprintf("%d CVEs", len(r.ScannedCves))
-			}
 			cols = []interface{}{
 				r.FormatServerName(),
 				fmt.Sprintf("%s%s", r.Family, r.Release),
-				cves,
 				r.Packages.FormatUpdatablePacksSummary(),
 			}
 		} else {

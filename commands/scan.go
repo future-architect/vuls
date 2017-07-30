@@ -35,20 +35,20 @@ import (
 
 // ScanCmd is Subcommand of host discovery mode
 type ScanCmd struct {
-	debug           bool
-	configPath      string
-	resultsDir      string
-	logDir          string
-	cacheDBPath     string
-	httpProxy       string
-	askKeyPassword  bool
-	containersOnly  bool
-	packageListOnly bool
-	skipBroken      bool
-	sshNative       bool
-	pipe            bool
-	timeoutSec      int
-	scanTimeoutSec  int
+	debug          bool
+	configPath     string
+	resultsDir     string
+	logDir         string
+	cacheDBPath    string
+	httpProxy      string
+	askKeyPassword bool
+	containersOnly bool
+	deep           bool
+	skipBroken     bool
+	sshNative      bool
+	pipe           bool
+	timeoutSec     int
+	scanTimeoutSec int
 }
 
 // Name return subcommand name
@@ -61,13 +61,13 @@ func (*ScanCmd) Synopsis() string { return "Scan vulnerabilities" }
 func (*ScanCmd) Usage() string {
 	return `scan:
 	scan
+		[-deep]
 		[-config=/path/to/config.toml]
 		[-results-dir=/path/to/results]
 		[-log-dir=/path/to/log]
 		[-cachedb-path=/path/to/cache.db]
 		[-ssh-native-insecure]
 		[-containers-only]
-		[-package-list-only]
 		[-skip-broken]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-ask-key-password]
@@ -135,10 +135,10 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	)
 
 	f.BoolVar(
-		&p.packageListOnly,
-		"package-list-only",
+		&p.deep,
+		"deep",
 		false,
-		"List all packages without scan")
+		"Deep scan mode. Scan accuracy improves and information becomes richer. Since analysis of changelog, issue commands requiring sudo, but is slower and heavy")
 
 	f.BoolVar(
 		&p.pipe,
@@ -231,7 +231,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	c.Conf.SSHNative = p.sshNative
 	c.Conf.HTTPProxy = p.httpProxy
 	c.Conf.ContainersOnly = p.containersOnly
-	c.Conf.PackageListOnly = p.packageListOnly
+	c.Conf.Deep = p.deep
 	c.Conf.SkipBroken = p.skipBroken
 
 	util.Log.Info("Validating config...")
