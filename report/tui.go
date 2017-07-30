@@ -638,7 +638,7 @@ func summaryLines() string {
 	}
 
 	for i, vinfo := range vinfos {
-		summary := vinfo.CveContents.Summaries(
+		summary := vinfo.Titles(
 			config.Conf.Lang, currentScanResult.Family)[0].Value
 		cvssScore := fmt.Sprintf("| %4.1f",
 			vinfo.MaxCvssScore().Value.Score)
@@ -790,7 +790,7 @@ func detailLines() (string, error) {
 		}
 	}
 
-	summary := vinfo.CveContents.Summaries(r.Lang, r.Family)[0]
+	summary := vinfo.Summaries(r.Lang, r.Family)[0]
 
 	data := dataForTmpl{
 		CveID:      vinfo.CveID,

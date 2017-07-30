@@ -21,6 +21,210 @@ import (
 	"testing"
 )
 
+func TestTitles(t *testing.T) {
+	type in struct {
+		lang string
+		cont VulnInfo
+	}
+	var tests = []struct {
+		in  in
+		out []CveContentStr
+	}{
+		// lang: ja
+		{
+			in: in{
+				lang: "ja",
+				cont: VulnInfo{
+					CveContents: CveContents{
+						JVN: {
+							Type:  JVN,
+							Title: "Title1",
+						},
+						RedHat: {
+							Type:    RedHat,
+							Summary: "Summary RedHat",
+						},
+						NVD: {
+							Type:    NVD,
+							Summary: "Summary NVD",
+							// Severity is NIOT included in NVD
+						},
+					},
+				},
+			},
+			out: []CveContentStr{
+				{
+					Type:  JVN,
+					Value: "Title1",
+				},
+				{
+					Type:  NVD,
+					Value: "Summary NVD",
+				},
+				{
+					Type:  RedHat,
+					Value: "Summary RedHat",
+				},
+			},
+		},
+		// lang: en
+		{
+			in: in{
+				lang: "en",
+				cont: VulnInfo{
+					CveContents: CveContents{
+						JVN: {
+							Type:  JVN,
+							Title: "Title1",
+						},
+						RedHat: {
+							Type:    RedHat,
+							Summary: "Summary RedHat",
+						},
+						NVD: {
+							Type:    NVD,
+							Summary: "Summary NVD",
+							// Severity is NIOT included in NVD
+						},
+					},
+				},
+			},
+			out: []CveContentStr{
+				{
+					Type:  NVD,
+					Value: "Summary NVD",
+				},
+				{
+					Type:  RedHat,
+					Value: "Summary RedHat",
+				},
+			},
+		},
+		// lang: empty
+		{
+			in: in{
+				lang: "en",
+				cont: VulnInfo{},
+			},
+			out: []CveContentStr{
+				{
+					Type:  Unknown,
+					Value: "-",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		actual := tt.in.cont.Titles(tt.in.lang, "redhat")
+		if !reflect.DeepEqual(tt.out, actual) {
+			t.Errorf("\nexpected: %v\n  actual: %v\n", tt.out, actual)
+		}
+	}
+}
+
+func TestSummaries(t *testing.T) {
+	type in struct {
+		lang string
+		cont VulnInfo
+	}
+	var tests = []struct {
+		in  in
+		out []CveContentStr
+	}{
+		// lang: ja
+		{
+			in: in{
+				lang: "ja",
+				cont: VulnInfo{
+					CveContents: CveContents{
+						JVN: {
+							Type:    JVN,
+							Title:   "Title JVN",
+							Summary: "Summary JVN",
+						},
+						RedHat: {
+							Type:    RedHat,
+							Summary: "Summary RedHat",
+						},
+						NVD: {
+							Type:    NVD,
+							Summary: "Summary NVD",
+							// Severity is NIOT included in NVD
+						},
+					},
+				},
+			},
+			out: []CveContentStr{
+				{
+					Type:  JVN,
+					Value: "Title JVN\nSummary JVN",
+				},
+				{
+					Type:  NVD,
+					Value: "Summary NVD",
+				},
+				{
+					Type:  RedHat,
+					Value: "Summary RedHat",
+				},
+			},
+		},
+		// lang: en
+		{
+			in: in{
+				lang: "en",
+				cont: VulnInfo{
+					CveContents: CveContents{
+						JVN: {
+							Type:    JVN,
+							Title:   "Title JVN",
+							Summary: "Summary JVN",
+						},
+						RedHat: {
+							Type:    RedHat,
+							Summary: "Summary RedHat",
+						},
+						NVD: {
+							Type:    NVD,
+							Summary: "Summary NVD",
+							// Severity is NIOT included in NVD
+						},
+					},
+				},
+			},
+			out: []CveContentStr{
+				{
+					Type:  NVD,
+					Value: "Summary NVD",
+				},
+				{
+					Type:  RedHat,
+					Value: "Summary RedHat",
+				},
+			},
+		},
+		// lang: empty
+		{
+			in: in{
+				lang: "en",
+				cont: VulnInfo{},
+			},
+			out: []CveContentStr{
+				{
+					Type:  Unknown,
+					Value: "-",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		actual := tt.in.cont.Summaries(tt.in.lang, "redhat")
+		if !reflect.DeepEqual(tt.out, actual) {
+			t.Errorf("\nexpected: %v\n  actual: %v\n", tt.out, actual)
+		}
+	}
+}
+
 func TestCountGroupBySeverity(t *testing.T) {
 	var tests = []struct {
 		in  VulnInfos
@@ -574,6 +778,24 @@ func TestMaxCvssScores(t *testing.T) {
 				Value: Cvss{
 					Type:     CVSS2,
 					Score:    7.0,
+					Severity: "HIGH",
+				},
+			},
+		},
+		{
+			in: VulnInfo{
+				DistroAdvisories: []DistroAdvisory{
+					{
+						Severity: "HIGH",
+					},
+				},
+			},
+			out: CveContentCvss{
+				Type: "Vendor",
+				Value: Cvss{
+					Type:     CVSS2,
+					Score:    8.9,
+					Vector:   "-",
 					Severity: "HIGH",
 				},
 			},

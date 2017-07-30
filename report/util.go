@@ -110,7 +110,7 @@ func formatShortPlainText(r models.ScanResult) string {
 	stable.MaxColWidth = maxColWidth
 	stable.Wrap = true
 	for _, vuln := range vulns.ToSortedSlice() {
-		summaries := vuln.CveContents.Summaries(config.Conf.Lang, r.Family)
+		summaries := vuln.Summaries(config.Conf.Lang, r.Family)
 		links := vuln.CveContents.SourceLinks(
 			config.Conf.Lang, r.Family, vuln.CveID)
 
@@ -199,7 +199,7 @@ func formatFullPlainText(r models.ScanResult) string {
 		if 0 < len(vuln.Cvss3Scores()) {
 			table.AddRow("CVSSv3 Calc", vuln.Cvss3CalcURL())
 		}
-		table.AddRow("Summary", vuln.CveContents.Summaries(
+		table.AddRow("Summary", vuln.Summaries(
 			config.Conf.Lang, r.Family)[0].Value)
 
 		links := vuln.CveContents.SourceLinks(
