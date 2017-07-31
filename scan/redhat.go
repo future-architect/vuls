@@ -265,7 +265,13 @@ func (o *redhat) scanPackages() error {
 
 func (o *redhat) scanInstalledPackages() (models.Packages, error) {
 	installed := models.Packages{}
-	cmd := "rpm -qa --queryformat '%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n'"
+	var cmd string
+	majorVersion, _ := o.Distro.MajorVersion()
+	if majorVersion < 6 {
+		cmd = "rpm -qa --queryformat '%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n'"
+	} else {
+		cmd = "rpm -qa --queryformat '%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n'"
+	}
 	r := o.exec(cmd, noSudo)
 	if r.isSuccess() {
 		// openssl 0 1.0.1e	30.el6.11 x86_64
@@ -295,7 +301,7 @@ func (o *redhat) parseInstalledPackagesLine(line string) (models.Package, error)
 	}
 	ver := ""
 	epoch := fields[1]
-	if epoch == "0" {
+	if epoch == "0" || epoch == "(none)" {
 		ver = fields[2]
 	} else {
 		ver = fmt.Sprintf("%s:%s", epoch, fields[2])

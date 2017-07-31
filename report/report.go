@@ -19,6 +19,7 @@ package report
 
 import (
 	"fmt"
+	"strings"
 
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -158,17 +159,17 @@ func fillWithOval(r *models.ScanResult) (err error) {
 		ovalClient = oval.NewCentOS()
 		//use RedHat's OVAL
 		ovalFamily = c.RedHat
+	case c.Oracle:
+		ovalClient = oval.NewOracle()
+		ovalFamily = c.Oracle
 		//TODO
-	// case c.Oracle:
-	// ovalClient = oval.New()
-	// ovalFamily = c.Oracle
 	// case c.Suse:
 	// ovalClient = oval.New()
 	// ovalFamily = c.Oracle
-	case c.Amazon, c.Oracle, c.Raspbian, c.FreeBSD:
+	case c.Amazon, c.Raspbian, c.FreeBSD:
 		return nil
 	default:
-		return fmt.Errorf("Oval %s is not implemented yet", r.Family)
+		return fmt.Errorf("OVAL for %s is not implemented yet", r.Family)
 	}
 
 	ok, err := ovalClient.CheckIfOvalFetched(ovalFamily, r.Release)
@@ -176,7 +177,8 @@ func fillWithOval(r *models.ScanResult) (err error) {
 		return err
 	}
 	if !ok {
-		util.Log.Warnf("OVAL entries of %s-%s are not found. It's recommended to use OVAL to improve scanning accuracy. To fetch OVAL, see https://github.com/kotakanbe/goval-dictionary#usage , Then report with --ovaldb-path or --ovaldb-url flag", r.Family, r.Release)
+		major := strings.Split(r.Release, ".")[0]
+		util.Log.Warnf("OVAL entries of %s %s are not found. It's recommended to use OVAL to improve scanning accuracy. To fetch OVAL, see https://github.com/kotakanbe/goval-dictionary#usage , Then report with --ovaldb-path or --ovaldb-url flag", ovalFamily, major)
 		return nil
 	}
 
@@ -184,7 +186,6 @@ func fillWithOval(r *models.ScanResult) (err error) {
 	if err != nil {
 		return err
 	}
-	util.Log.Infof("OVAL is fresh: %s-%s ", r.Family, r.Release)
 
 	if err := ovalClient.FillWithOval(r); err != nil {
 		return err

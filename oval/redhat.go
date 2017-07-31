@@ -16,7 +16,10 @@ import (
 )
 
 // RedHatBase is the base struct for RedHat and CentOS
-type RedHatBase struct{ Base }
+type RedHatBase struct {
+	Base
+	family string
+}
 
 // FillWithOval returns scan result after updating CVE info by OVAL
 func (o RedHatBase) FillWithOval(r *models.ScanResult) error {
@@ -34,9 +37,17 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) error {
 		}
 	}
 
+	// TODO merge to VulnInfo.VendorLinks
 	for _, vuln := range r.ScannedCves {
-		if cont, ok := vuln.CveContents[models.RedHat]; ok {
-			cont.SourceLink = "https://access.redhat.com/security/cve/" + cont.CveID
+		switch models.NewCveContentType(o.family) {
+		case models.RedHat:
+			if cont, ok := vuln.CveContents[models.RedHat]; ok {
+				cont.SourceLink = "https://access.redhat.com/security/cve/" + cont.CveID
+			}
+		case models.Oracle:
+			if cont, ok := vuln.CveContents[models.Oracle]; ok {
+				cont.SourceLink = fmt.Sprintf("https://linux.oracle.com/cve/%s.html", cont.CveID)
+			}
 		}
 	}
 	return nil
@@ -71,7 +82,7 @@ func (o RedHatBase) getDefsByPackNameFromOvalDB(osRelease string,
 
 	var ovaldb db.DB
 	if ovaldb, err = db.NewDB(
-		ovalconf.RedHat,
+		o.family,
 		ovalconf.Conf.DBType,
 		ovalconf.Conf.DBPath,
 		ovalconf.Conf.DebugSQL,
@@ -82,7 +93,7 @@ func (o RedHatBase) getDefsByPackNameFromOvalDB(osRelease string,
 	for _, pack := range packs {
 		definitions, err := ovaldb.GetByPackName(osRelease, pack.Name)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to get RedHat OVAL info by package name: %v", err)
+			return nil, fmt.Errorf("Failed to get %s OVAL info by package name: %v", o.family, err)
 		}
 		for _, def := range definitions {
 			current := ver.NewVersion(fmt.Sprintf("%s-%s", pack.Version, pack.Release))
@@ -99,6 +110,7 @@ func (o RedHatBase) getDefsByPackNameFromOvalDB(osRelease string,
 }
 
 func (o RedHatBase) update(r *models.ScanResult, definition *ovalmodels.Definition) {
+	ctype := models.NewCveContentType(o.family)
 	for _, cve := range definition.Advisory.Cves {
 		ovalContent := *o.convertToModel(cve.CveID, definition)
 		vinfo, ok := r.ScannedCves[cve.CveID]
@@ -112,7 +124,7 @@ func (o RedHatBase) update(r *models.ScanResult, definition *ovalmodels.Definiti
 			}
 		} else {
 			cveContents := vinfo.CveContents
-			if _, ok := vinfo.CveContents[models.RedHat]; ok {
+			if _, ok := vinfo.CveContents[ctype]; ok {
 				util.Log.Debugf("%s will be updated by OVAL", cve.CveID)
 			} else {
 				util.Log.Debugf("%s also detected by OVAL", cve.CveID)
@@ -122,7 +134,7 @@ func (o RedHatBase) update(r *models.ScanResult, definition *ovalmodels.Definiti
 			if vinfo.Confidence.Score < models.OvalMatch.Score {
 				vinfo.Confidence = models.OvalMatch
 			}
-			cveContents[models.RedHat] = ovalContent
+			cveContents[ctype] = ovalContent
 			vinfo.CveContents = cveContents
 		}
 		r.ScannedCves[cve.CveID] = vinfo
@@ -147,7 +159,7 @@ func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *mo
 		score3, vec3 := o.parseCvss3(cve.Cvss3)
 
 		return &models.CveContent{
-			Type:         models.RedHat,
+			Type:         models.NewCveContentType(o.family),
 			CveID:        cve.CveID,
 			Title:        def.Title,
 			Summary:      def.Description,
@@ -156,7 +168,6 @@ func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *mo
 			Cvss2Vector:  vec2,
 			Cvss3Score:   score3,
 			Cvss3Vector:  vec3,
-			SourceLink:   "https://access.redhat.com/security/cve/" + cve.CveID,
 			References:   refs,
 			CweID:        cve.Cwe,
 			Published:    def.Advisory.Issued,
@@ -201,7 +212,11 @@ type RedHat struct {
 
 // NewRedhat creates OVAL client for Redhat
 func NewRedhat() RedHat {
-	return RedHat{}
+	return RedHat{
+		RedHatBase{
+			family: config.RedHat,
+		},
+	}
 }
 
 // CentOS is the interface for CentOS OVAL
@@ -211,5 +226,23 @@ type CentOS struct {
 
 // NewCentOS creates OVAL client for CentOS
 func NewCentOS() CentOS {
-	return CentOS{}
+	return CentOS{
+		RedHatBase{
+			family: config.CentOS,
+		},
+	}
+}
+
+// Oracle is the interface for CentOS OVAL
+type Oracle struct {
+	RedHatBase
+}
+
+// NewOracle creates OVAL client for Oracle
+func NewOracle() Oracle {
+	return Oracle{
+		RedHatBase{
+			family: config.Oracle,
+		},
+	}
 }

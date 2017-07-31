@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff"
@@ -115,13 +116,15 @@ func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 		}
 	}
 
+	major := strings.Split(release, ".")[0]
 	since := time.Now()
 	since = since.AddDate(0, 0, -3)
 	if lastModified.Before(since) {
-		util.Log.Warnf("%s-%s OVAL is old, last modified is %s. It's recommended to update OVAL to improve scanning accuracy. To update OVAL database, see https://github.com/kotakanbe/goval-dictionary#usage",
-			osFamily, release, lastModified)
+		util.Log.Warnf("OVAL for %s %s is old, last modified is %s. It's recommended to update OVAL to improve scanning accuracy. How to update OVAL database, see https://github.com/kotakanbe/goval-dictionary#usage",
+			osFamily, major, lastModified)
 		return false, nil
 	}
+	util.Log.Infof("OVAL is fresh: %s %s ", osFamily, major)
 	return true, nil
 }
 

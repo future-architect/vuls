@@ -139,6 +139,7 @@ func (o Debian) FillWithOval(r *models.ScanResult) error {
 		}
 	}
 
+	// TODO merge to VulnInfo.VendorLinks
 	for _, vuln := range r.ScannedCves {
 		if cont, ok := vuln.CveContents[models.Debian]; ok {
 			cont.SourceLink = "https://security-tracker.debian.org/tracker/" + cont.CveID
@@ -174,6 +175,7 @@ func (o Ubuntu) FillWithOval(r *models.ScanResult) error {
 		}
 	}
 
+	// TODO merge to VulnInfo.VendorLinks
 	for _, vuln := range r.ScannedCves {
 		if cont, ok := vuln.CveContents[models.Ubuntu]; ok {
 			cont.SourceLink = "http://people.ubuntu.com/~ubuntu-security/cve/" + cont.CveID

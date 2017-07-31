@@ -199,6 +199,8 @@ func NewCveContentType(name string) CveContentType {
 		return JVN
 	case "redhat", "centos":
 		return RedHat
+	case "oracle":
+		return Oracle
 	case "ubuntu":
 		return Ubuntu
 	case "debian":

@@ -53,7 +53,7 @@ func (v VulnInfos) FindScoredVulns() VulnInfos {
 	})
 }
 
-// ToSortedSlice returns slice of VulnInfos that is sorted by CVE-ID
+// ToSortedSlice returns slice of VulnInfos that is sorted by Score, CVE-ID
 func (v VulnInfos) ToSortedSlice() (sorted []VulnInfo) {
 	for k := range v {
 		sorted = append(sorted, v[k])
@@ -244,7 +244,7 @@ func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 					Type:     CVSS3,
 					Score:    cont.Cvss3Score,
 					Vector:   cont.Cvss3Vector,
-					Severity: sev,
+					Severity: strings.ToUpper(sev),
 				},
 			})
 		}
