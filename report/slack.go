@@ -245,19 +245,37 @@ func attachmentText(vinfo models.VulnInfo, osFamily string) string {
 		switch cvss.Value.Type {
 		case models.CVSS2:
 			calcURL = fmt.Sprintf(
-				"https://nvd.nist.gov/vuln-metrics/cvss/v2-calculator?vector=%s",
-				cvss.Value.Vector)
+				"https://nvd.nist.gov/vuln-metrics/cvss/v2-calculator?name=%s",
+				vinfo.CveID)
 		case models.CVSS3:
 			calcURL = fmt.Sprintf(
-				"https://nvd.nist.gov/vuln-metrics/cvss/v3-calculator?vector=%s",
-				cvss.Value.Vector)
+				"https://nvd.nist.gov/vuln-metrics/cvss/v3-calculator?name=%s",
+				vinfo.CveID)
 		}
-		v := fmt.Sprintf("<%s|%s> (<%s|%s>)",
-			calcURL,
-			cvss.Value.Format(),
-			vinfo.CveContents[cvss.Type].SourceLink,
-			cvss.Type)
-		vectors = append(vectors, v)
+
+		if cont, ok := vinfo.CveContents[cvss.Type]; ok {
+			v := fmt.Sprintf("<%s|%s> (<%s|%s>)",
+				calcURL,
+				cvss.Value.Format(),
+				cont.SourceLink,
+				cvss.Type)
+			vectors = append(vectors, v)
+
+		} else {
+			if 0 < len(vinfo.DistroAdvisories) {
+				links := []string{}
+				for k, v := range vinfo.VendorLinks(osFamily) {
+					links = append(links, fmt.Sprintf("<%s|%s>",
+						v, k))
+				}
+
+				v := fmt.Sprintf("<%s|%s> (%s)",
+					calcURL,
+					cvss.Value.Format(),
+					strings.Join(links, ", "))
+				vectors = append(vectors, v)
+			}
+		}
 	}
 
 	severity := strings.ToUpper(maxCvss.Value.Severity)
