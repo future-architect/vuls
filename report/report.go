@@ -109,8 +109,8 @@ func fillCveDetail(r *models.ScanResult) error {
 		return err
 	}
 	for _, d := range ds {
-		nvd := r.ConvertNvdToModel(d.CveID, d.Nvd)
-		jvn := r.ConvertJvnToModel(d.CveID, d.Jvn)
+		nvd := models.ConvertNvdToModel(d.CveID, d.Nvd)
+		jvn := models.ConvertJvnToModel(d.CveID, d.Jvn)
 		for cveID, vinfo := range r.ScannedCves {
 			if vinfo.CveID == d.CveID {
 				if vinfo.CveContents == nil {
