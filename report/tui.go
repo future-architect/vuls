@@ -233,14 +233,14 @@ func movable(v *gocui.View, nextY int) (ok bool, yLimit int) {
 		}
 		return true, yLimit
 	case "detail":
-		if currentDetailLimitY < nextY {
-			return false, currentDetailLimitY
-		}
+		// if currentDetailLimitY < nextY {
+		// return false, currentDetailLimitY
+		// }
 		return true, currentDetailLimitY
 	case "changelog":
-		if currentChangelogLimitY < nextY {
-			return false, currentChangelogLimitY
-		}
+		// if currentChangelogLimitY < nextY {
+		// return false, currentChangelogLimitY
+		// }
 		return true, currentChangelogLimitY
 	default:
 		return true, 0
@@ -733,7 +733,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 
 type dataForTmpl struct {
 	CveID            string
-	Cvsses           []models.CveContentCvss
+	Cvsses           string
 	Summary          string
 	Confidence       models.Confidence
 	Cwes             []models.CveContentStr
@@ -792,9 +792,23 @@ func detailLines() (string, error) {
 
 	summary := vinfo.Summaries(r.Lang, r.Family)[0]
 
+	table := uitable.New()
+	table.MaxColWidth = maxColWidth
+	table.Wrap = true
+	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores()...)
+	var cols []interface{}
+	for _, score := range scores {
+		cols = []interface{}{
+			score.Value.Severity,
+			score.Value.Format(),
+			score.Type,
+		}
+		table.AddRow(cols...)
+	}
+
 	data := dataForTmpl{
 		CveID:      vinfo.CveID,
-		Cvsses:     append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores()...),
+		Cvsses:     fmt.Sprintf("%s\n", table),
 		Summary:    fmt.Sprintf("%s (%s)", summary.Value, summary.Type),
 		Confidence: vinfo.Confidence,
 		Cwes:       vinfo.CveContents.CweIDs(r.Family),
@@ -817,9 +831,7 @@ const mdTemplate = `
 
 CVSS Scores
 --------------
-{{range .Cvsses -}}
-* {{.Value.Severity}} {{.Value.Format}} ({{.Type}})
-{{end}}
+{{.Cvsses }}
 
 Summary
 --------------

@@ -100,9 +100,9 @@ func formatShortPlainText(r models.ScanResult) string {
 
 	if len(vulns) == 0 {
 		return fmt.Sprintf(`
-	 %s
-	 No CVE-IDs are found in updatable packages.
-	 %s
+%s
+No CVE-IDs are found in updatable packages.
+%s
 	 `, header, r.Packages.FormatUpdatablePacksSummary())
 	}
 
@@ -174,9 +174,9 @@ func formatFullPlainText(r models.ScanResult) string {
 
 	if len(vulns) == 0 {
 		return fmt.Sprintf(`
-	 %s
-	 No CVE-IDs are found in updatable packages.
-	 %s
+%s
+No CVE-IDs are found in updatable packages.
+%s
 	 `, header, r.Packages.FormatUpdatablePacksSummary())
 	}
 
