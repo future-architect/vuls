@@ -343,6 +343,8 @@ func decorateCmd(c conf.ServerInfo, cmd string, sudo bool) string {
 			cmd = fmt.Sprintf(`docker exec --user 0 %s /bin/bash -c "%s"`, c.Container.ContainerID, cmd)
 		case "lxd":
 			cmd = fmt.Sprintf(`lxc exec %s -- /bin/bash -c "%s"`, c.Container.Name, cmd)
+                case "jail":
+                        cmd = fmt.Sprintf(`jexec %s /bin/sh -c "%s"`, c.Container.Name, cmd)
 		}
 	}
 	//  cmd = fmt.Sprintf("set -x; %s", cmd)
