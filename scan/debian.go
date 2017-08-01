@@ -137,6 +137,10 @@ func trim(str string) string {
 }
 
 func (o *debian) checkIfSudoNoPasswd() error {
+	if !config.Conf.Deep {
+		o.log.Infof("sudo ... No need")
+		return nil
+	}
 	cmd := util.PrependProxyEnv("apt-get update")
 	o.log.Infof("Checking... sudo %s", cmd)
 	r := o.exec(cmd, sudo)
@@ -149,6 +153,10 @@ func (o *debian) checkIfSudoNoPasswd() error {
 }
 
 func (o *debian) checkDependencies() error {
+	if !config.Conf.Deep {
+		o.log.Infof("Dependencies... No need")
+		return nil
+	}
 	switch o.Distro.Family {
 	case config.Ubuntu, config.Raspbian:
 		return nil
