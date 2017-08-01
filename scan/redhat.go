@@ -121,7 +121,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 }
 
 func (o *redhat) checkIfSudoNoPasswd() error {
-	if !o.sudo() {
+	if !config.Conf.Deep || !o.sudo() {
 		o.log.Infof("sudo ... No need")
 		return nil
 	}
@@ -134,11 +134,6 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 	var zero = []int{0}
 
 	switch o.Distro.Family {
-	case config.CentOS:
-		cmds = []cmd{
-			{"yum --changelog --assumeno update yum", []int{0, 1}},
-		}
-
 	case config.RedHat, config.Oracle:
 		majorVersion, err := o.Distro.MajorVersion()
 		if err != nil {
@@ -175,12 +170,17 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 	return nil
 }
 
-// CentOS 6, 7 	... yum-plugin-changelog, yum-utils
-// RHEL 5     	... yum-security
-// RHEL 6, 7    ... -
-// Amazon 		... -
+// - Fast scan mode
+//    No additional dependencies needed
+//
+// - Deep scan mode
+//    CentOS 6, 7 	... yum-utils
+//    RHEL 5     	... yum-security
+//    RHEL 6, 7     ... yum-utils
+//    Amazon 		... yum-utils
 func (o *redhat) checkDependencies() error {
-	if o.Distro.Family == config.Amazon {
+	if !config.Conf.Deep {
+		o.log.Infof("Dependencies... No need")
 		return nil
 	}
 
@@ -207,14 +207,13 @@ func (o *redhat) checkDependencies() error {
 		}
 	}
 
-	//TODO Check if yum-plugin-changelog is installed when scan with --changelog option on Amazon,RHEL, Oracle
 	var packNames []string
 	switch o.Distro.Family {
-	case config.CentOS:
-		packNames = []string{"yum-plugin-changelog", "yum-utils"}
+	case config.CentOS, config.Amazon:
+		packNames = []string{"yum-utils"}
 	case config.RedHat, config.Oracle:
 		if majorVersion < 6 {
-			packNames = []string{"yum-security"}
+			packNames = []string{"yum-utils", "yum-security"}
 		} else {
 			// yum-plugin-security is installed by default on RHEL6, 7
 			return nil
