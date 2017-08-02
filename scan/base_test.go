@@ -97,6 +97,39 @@ func TestParseLxdPs(t *testing.T) {
 	}
 }
 
+func TestParseJailPs(t *testing.T) {
+
+        var test = struct {
+                in       string
+                expected []config.Container
+        }{
+                `1 test1
+2 test2`,
+                []config.Container{
+                        {
+                                ContainerID: "1",
+                                Name:        "test1",
+                        },
+                        {
+                                ContainerID: "2",
+                                Name:        "test2",
+                        },
+                },
+        }
+
+        r := newRedhat(config.ServerInfo{})
+        actual, err := r.parseJailPs(test.in)
+        if err != nil {
+                t.Errorf("Error occurred. in: %s, err: %s", test.in, err)
+                return
+        }
+        for i, e := range test.expected {
+                if !reflect.DeepEqual(e, actual[i]) {
+                        t.Errorf("expected %v, actual %v", e, actual[i])
+                }
+        }
+}
+
 func TestIsAwsInstanceID(t *testing.T) {
 	var tests = []struct {
 		in       string
