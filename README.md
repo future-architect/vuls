@@ -89,6 +89,7 @@ We have a slack team. [Join slack team](http://goo.gl/forms/xm5KFo35tu)
   * [Example: Add optional key-value pairs to JSON](#example-add-optional-key-value-pairs-to-json)
   * [Example: Use MySQL as a DB storage back-end](#example-use-mysql-as-a-db-storage-back-end)
   * [Example: Use PostgreSQL as a DB storage back-end](#example-use-postgresql-as-a-db-storage-back-end)
+  * [Example: Use Redis as a DB storage back-end](#example-use-redis-as-a-db-storage-back-end)
 - [Usage: Scan vulnerabilites of non-OS packages](#usage-scan-vulnerabilites-of-non-os-packages)
 - [Usage: Integrate with OWASP Dependency Check to Automatic update when the libraries are updated (Experimental)](#usage-integrate-with-owasp-dependency-check-to-automatic-update-when-the-libraries-are-updated-experimental)
 - [Usage: TUI](#usage-tui)
@@ -199,7 +200,7 @@ This can be done in the following steps.
 
 Vuls requires the following packages.
 
-- SQLite3 or MySQL
+- SQLite3, MySQL, PostgreSQL, Redis
 - git
 - gcc
 - GNU Make
@@ -342,7 +343,7 @@ CVE-2016-5636           10.0 (High)     Integer overflow in the get_data functio
 View full report.
 
 ```
-$ vuls report -format-full-text
+$ vuls report -format-full-text | less
 
 localhost (amazon 2015.09)
 ============================
@@ -504,7 +505,7 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 [Details](#example-scan-via-shell-instead-of-ssh)
 
 ## [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)  
-- Fetch vulnerability information from NVD and JVN(Japanese), then insert into SQLite3 or MySQL.
+- Fetch vulnerability information from NVD and JVN(Japanese), then insert into SQLite3, MySQL, PostgreSQL or Redis.
 
 ## Scanning Flow
 ![Vuls-Scan-Flow](img/vuls-scan-flow.png)
@@ -802,12 +803,12 @@ In order to scan, the following dependencies are required, so you need to instal
 |:-------------|-------------------:|:-------------|
 | Ubuntu       |          12, 14, 16| -            |
 | Debian       |                7, 8| aptitude     |
-| CentOS       |                6, 7| yum-plugin-changelog |
-| Amazon       |                All | -            |
-| RHEL         |                  5 | yum-security |
-| RHEL         |               6, 7 | -            |
-| Oracle Linux |                  5 | yum-security |
-| Oracle Linux |               6, 7 | -            |
+| CentOS       |                6, 7| yum-plugin-changelog, yum-utils |
+| Amazon       |                All | -            | TODO yum-utils?, yum-plugin-changelog
+| RHEL         |                  5 | yum-security | TODO yum-utils?
+| RHEL         |               6, 7 | -            | TODO yum-utils?
+| Oracle Linux |                  5 | yum-security | TODO yum-utils?
+| Oracle Linux |               6, 7 | -            |TODO yum-utils?  
 | FreeBSD      |                 10 | -            |
 | Raspbian     |     Wheezy, Jessie | -            |
 
@@ -1071,6 +1072,7 @@ report:
                 [-aws-profile=default]
                 [-aws-region=us-west-2]
                 [-aws-s3-bucket=bucket_name]
+                [-aws-s3-dir=/path/to/results's/parent]
                 [-azure-account=accout]
                 [-azure-key=key]
                 [-azure-container=container]
@@ -1086,6 +1088,8 @@ report:
         AWS region to use (default "us-east-1")
   -aws-s3-bucket string
         S3 bucket name
+  -aws-s3-dir string
+        /path/to/results's/parent (option)
   -azure-account string
         Azure account name to use. AZURE_STORAGE_ACCOUNT environment variable is used if not specified
   -azure-container string
@@ -1143,7 +1147,7 @@ report:
   -to-localfile
         Write report to localfile
   -to-s3
-        Write report to S3 (bucket/yyyyMMdd_HHmm/servername.json/xml/txt)
+        Write report to S3 (bucket/dir/yyyyMMdd_HHmm/servername.json/xml/txt)
   -to-slack
         Send report via Slack
 ```
@@ -1314,6 +1318,7 @@ $ vuls report \
       -format-json \
       -aws-region=ap-northeast-1 \
       -aws-s3-bucket=vuls \
+      -aws-s3-dir=team/environment \
       -aws-profile=default
 ```
 With this sample command, it will ..
@@ -1436,6 +1441,14 @@ $ vuls report \
 $ vuls report \
       -cvedb-type=postgres \
       -cvedb-url=""host=myhost user=user dbname=dbname sslmode=disable password=password""
+```
+
+## Example: Use Redis as a DB storage back-end
+
+```
+$ vuls report \
+  -cvedb-type=redis -cvedb-url="redis://localhost/0" 
+  -ovaldb-type=redis  -ovaldb-url="redis://localhost/1"
 ```
 
 ----
@@ -1583,7 +1596,7 @@ see [go-cve-dictionary#usage-fetch-nvd-data](https://github.com/kotakanbe/go-cve
 # How to Update
 
 - Update go-cve-dictionary  
-If the DB schema was changed, please specify new SQLite3 or MySQL DB file.
+If the DB schema was changed, please specify new SQLite3, MySQL, PostgreSQL or Redis DB file.
 ```
 $ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
 $ git pull

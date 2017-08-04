@@ -82,6 +82,7 @@ Slackチームは[こちらから](http://goo.gl/forms/xm5KFo35tu)参加でき�
   * [Example: Add optional key-value pairs to JSON](#example-add-optional-key-value-pairs-to-json)
   * [Example: Use MySQL as a DB storage back-end](#example-use-mysql-as-a-db-storage-back-end)
   * [Example: Use PostgreSQL as a DB storage back-end](#example-use-postgresql-as-a-db-storage-back-end)
+  * [Example: Use Redis as a DB storage back-end](#example-use-redis-as-a-db-storage-back-end)
 - [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerability-of-non-os-package)
 - [Usage: Integrate with OWASP Dependency Check to Automatic update when the libraries are updated (Experimental)](#usage-integrate-with-owasp-dependency-check-to-automatic-update-when-the-libraries-are-updated-experimental)
 - [Usage: TUI](#usage-tui)
@@ -194,7 +195,7 @@ Hello Vulsチュートリアルでは手動でのセットアップ方法で説�
 
 Vulsセットアップに必要な以下のソフトウェアをインストールする。
 
-- SQLite3 or MySQL
+- SQLite3, MySQL, PostgreSQL or Redis
 - git
 - gcc
 - GNU Make
@@ -1041,7 +1042,7 @@ report:
                 [-results-dir=/path/to/results]
                 [-log-dir=/path/to/log]
                 [-refresh-cve]
-                [-cvedb-type=sqlite3|mysql|postgres]
+                [-cvedb-type=sqlite3|mysql|postgres|redis]
                 [-cvedb-path=/path/to/cve.sqlite3]
                 [-cvedb-url=http://127.0.0.1:1323 or DB connection string]
                 [-cvss-over=7]
@@ -1088,7 +1089,7 @@ report:
   -cvedb-path string
         /path/to/sqlite3 (For get cve detail from cve.sqlite3)
   -cvedb-type string
-        DB type for fetching CVE dictionary (sqlite3, mysql or postgres) (default "sqlite3")
+        DB type for fetching CVE dictionary (sqlite3, mysql, postgres or redis) (default "sqlite3")
   -cvedb-url string
         http://cve-dictionary.com:8080 or DB connection string
   -cvss-over float
@@ -1436,6 +1437,14 @@ $ vuls report \
       -cvedb-url=""host=myhost user=user dbname=dbname sslmode=disable password=password""
 ```
 
+## Example: Use Redis as a DB storage back-end
+
+```
+$ vuls report \
+  -cvedb-type=redis -cvedb-url="redis://localhost/0" 
+  -ovaldb-type=redis  -ovaldb-url="redis://localhost/1"
+```
+
 ----
 
 # Usage: Scan vulnerability of non-OS package
@@ -1496,7 +1505,7 @@ VulsとDependency Checkを連携すると以下の利点がある
 ```
 tui:
         tui
-                [-cvedb-type=sqlite3|mysql|postgres]
+                [-cvedb-type=sqlite3|mysql|postgres|redis]
                 [-cvedb-path=/path/to/cve.sqlite3]
                 [-cvedb-url=http://127.0.0.1:1323 DB connection string]
                 [-refresh-cve]
@@ -1509,7 +1518,7 @@ tui:
   -cvedb-path string
         /path/to/sqlite3 (For get cve detail from cve.sqlite3) 
   -cvedb-type string
-        DB type for fetching CVE dictionary (sqlite3, mysql or postgres) (default "sqlite3")
+        DB type for fetching CVE dictionary (sqlite3, mysql, postgres or redis) (default "sqlite3")
   -cvedb-url string
         http://cve-dictionary.com:8080 or DB connection string
   -debug
@@ -1621,7 +1630,7 @@ slack, emailは日本語対応済み TUIは日本語表示未対応
 # Update Vuls With Glide
 
 - Update go-cve-dictionary  
-If the DB schema was changed, please specify new SQLite3 or MySQL DB file.
+If the DB schema was changed, please specify new SQLite3, MySQL, PostgreSQL or Redis DB file.
 ```
 $ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
 $ git pull

@@ -59,17 +59,17 @@ type osTypeInterface interface {
 // osPackages is included by base struct
 type osPackages struct {
 	// installed packages
-	Packages models.PackageInfoList
+	Packages models.Packages
 
 	// unsecure packages
 	VulnInfos models.VulnInfos
 }
 
-func (p *osPackages) setPackages(pi models.PackageInfoList) {
+func (p *osPackages) setPackages(pi models.Packages) {
 	p.Packages = pi
 }
 
-func (p *osPackages) setVulnInfos(vi []models.VulnInfo) {
+func (p *osPackages) setVulnInfos(vi models.VulnInfos) {
 	p.VulnInfos = vi
 }
 
@@ -421,7 +421,7 @@ func setupChangelogCache() error {
 	needToSetupCache := false
 	for _, s := range servers {
 		switch s.getDistro().Family {
-		case "ubuntu", "debian", "raspbian":
+		case config.Ubuntu, config.Debian, config.Raspbian:
 			needToSetupCache = true
 			break
 		}

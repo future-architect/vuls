@@ -22,10 +22,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/sirupsen/logrus"
 )
 
 const path = "/tmp/vuls-test-cache-11111111.db"
@@ -37,8 +37,8 @@ var meta = Meta{
 		Family:  "ubuntu",
 		Release: "16.04",
 	},
-	Packs: []models.PackageInfo{
-		{
+	Packs: models.Packages{
+		"apt": {
 			Name:    "apt",
 			Version: "1",
 		},

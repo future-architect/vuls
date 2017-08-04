@@ -135,3 +135,15 @@ func Truncate(str string, length int) string {
 	}
 	return str
 }
+
+// Distinct a slice
+func Distinct(ss []string) (distincted []string) {
+	m := map[string]bool{}
+	for _, s := range ss {
+		if _, found := m[s]; !found {
+			m[s] = true
+			distincted = append(distincted, s)
+		}
+	}
+	return
+}

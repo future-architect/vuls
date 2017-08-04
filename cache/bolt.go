@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
 	"github.com/future-architect/vuls/util"
+	"github.com/sirupsen/logrus"
 )
 
 // Bolt holds a pointer of bolt.DB

@@ -37,11 +37,16 @@ type TuiCmd struct {
 	debug    bool
 	logDir   string
 
-	resultsDir       string
-	refreshCve       bool
+	resultsDir string
+	refreshCve bool
+
 	cvedbtype        string
 	cvedbpath        string
 	cveDictionaryURL string
+
+	ovalDBType string
+	ovalDBPath string
+	ovalDBURL  string
 
 	pipe bool
 }
@@ -59,6 +64,9 @@ func (*TuiCmd) Usage() string {
 		[-cvedb-type=sqlite3|mysql|postgres]
 		[-cvedb-path=/path/to/cve.sqlite3]
 		[-cvedb-url=http://127.0.0.1:1323 or DB connection string]
+		[-ovaldb-type=sqlite3|mysql]
+		[-ovaldb-path=/path/to/oval.sqlite3]
+		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
 		[-refresh-cve]
 		[-results-dir=/path/to/results]
 		[-log-dir=/path/to/log]
@@ -105,7 +113,26 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 		&p.cveDictionaryURL,
 		"cvedb-url",
 		"",
-		"http://cve-dictionary.com:8080 or DB connection string")
+		"http://cve-dictionary.com:1323 or mysql connection string")
+
+	f.StringVar(
+		&p.ovalDBType,
+		"ovaldb-type",
+		"sqlite3",
+		"DB type for fetching OVAL dictionary (sqlite3 or mysql)")
+
+	defaultOvalDBPath := filepath.Join(wd, "oval.sqlite3")
+	f.StringVar(
+		&p.ovalDBPath,
+		"ovaldb-path",
+		defaultOvalDBPath,
+		"/path/to/sqlite3 (For get oval detail from oval.sqlite3)")
+
+	f.StringVar(
+		&p.ovalDBURL,
+		"ovaldb-url",
+		"",
+		"http://goval-dictionary.com:1324 or mysql connection string")
 
 	f.BoolVar(
 		&p.pipe,
@@ -129,6 +156,9 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	c.Conf.CveDBType = p.cvedbtype
 	c.Conf.CveDBPath = p.cvedbpath
 	c.Conf.CveDBURL = p.cveDictionaryURL
+	c.Conf.OvalDBType = p.ovalDBType
+	c.Conf.OvalDBPath = p.ovalDBPath
+	c.Conf.OvalDBURL = p.ovalDBURL
 
 	log.Info("Validating config...")
 	if !c.Conf.ValidateOnTui() {
@@ -136,44 +166,22 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	}
 
 	c.Conf.Pipe = p.pipe
-	jsonDir, err := jsonDir(f.Args())
+
+	dir, err := report.JSONDir(f.Args())
 	if err != nil {
-		log.Errorf("Failed to read json dir under results: %s", err)
+		util.Log.Errorf("Failed to read from JSON: %s", err)
 		return subcommands.ExitFailure
 	}
-
-	history, err := loadOneScanHistory(jsonDir)
-	if err != nil {
-		log.Errorf("Failed to read from JSON: %s", err)
+	var res models.ScanResults
+	if res, err = report.LoadScanResults(dir); err != nil {
+		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}
+	util.Log.Infof("Loaded: %s", dir)
 
-	var results []models.ScanResult
-	for _, r := range history.ScanResults {
-		if p.refreshCve || needToRefreshCve(r) {
-			if c.Conf.CveDBType == "sqlite3" {
-				if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
-					log.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
-						c.Conf.CveDBPath)
-					return subcommands.ExitFailure
-				}
-			}
-
-			filled, err := fillCveInfoFromCveDB(r)
-			if err != nil {
-				log.Errorf("Failed to fill CVE information: %s", err)
-				return subcommands.ExitFailure
-			}
-
-			if err := overwriteJSONFile(jsonDir, *filled); err != nil {
-				log.Errorf("Failed to write JSON: %s", err)
-				return subcommands.ExitFailure
-			}
-			results = append(results, *filled)
-		} else {
-			results = append(results, r)
-		}
+	if res, err = report.FillCveInfos(res, dir); err != nil {
+		util.Log.Error(err)
+		return subcommands.ExitFailure
 	}
-	history.ScanResults = results
-	return report.RunTui(history)
+	return report.RunTui(res)
 }

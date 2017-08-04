@@ -43,6 +43,7 @@ type ScanCmd struct {
 	httpProxy      string
 	askKeyPassword bool
 	containersOnly bool
+	deep           bool
 	skipBroken     bool
 	sshNative      bool
 	pipe           bool
@@ -60,6 +61,7 @@ func (*ScanCmd) Synopsis() string { return "Scan vulnerabilities" }
 func (*ScanCmd) Usage() string {
 	return `scan:
 	scan
+		[-deep]
 		[-config=/path/to/config.toml]
 		[-results-dir=/path/to/results]
 		[-log-dir=/path/to/log]
@@ -131,6 +133,12 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		"Ask ssh privatekey password before scanning",
 	)
+
+	f.BoolVar(
+		&p.deep,
+		"deep",
+		false,
+		"Deep scan mode. Scan accuracy improves and information becomes richer. Since analysis of changelog, issue commands requiring sudo, but is slower and heavy")
 
 	f.BoolVar(
 		&p.pipe,
@@ -223,6 +231,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	c.Conf.SSHNative = p.sshNative
 	c.Conf.HTTPProxy = p.httpProxy
 	c.Conf.ContainersOnly = p.containersOnly
+	c.Conf.Deep = p.deep
 	c.Conf.SkipBroken = p.skipBroken
 
 	util.Log.Info("Validating config...")
