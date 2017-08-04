@@ -107,6 +107,7 @@ type Config struct {
 	AwsProfile string
 	AwsRegion  string
 	S3Bucket   string
+	S3Dir      string
 
 	AzureAccount   string
 	AzureKey       string

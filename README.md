@@ -1072,6 +1072,7 @@ report:
                 [-aws-profile=default]
                 [-aws-region=us-west-2]
                 [-aws-s3-bucket=bucket_name]
+                [-aws-s3-dir=/path/to/results's/parent]
                 [-azure-account=accout]
                 [-azure-key=key]
                 [-azure-container=container]
@@ -1087,6 +1088,8 @@ report:
         AWS region to use (default "us-east-1")
   -aws-s3-bucket string
         S3 bucket name
+  -aws-s3-dir string
+        /path/to/results's/parent (option)
   -azure-account string
         Azure account name to use. AZURE_STORAGE_ACCOUNT environment variable is used if not specified
   -azure-container string
@@ -1144,7 +1147,7 @@ report:
   -to-localfile
         Write report to localfile
   -to-s3
-        Write report to S3 (bucket/yyyyMMdd_HHmm/servername.json/xml/txt)
+        Write report to S3 (bucket/dir/yyyyMMdd_HHmm/servername.json/xml/txt)
   -to-slack
         Send report via Slack
 ```
@@ -1315,6 +1318,7 @@ $ vuls report \
       -format-json \
       -aws-region=ap-northeast-1 \
       -aws-s3-bucket=vuls \
+      -aws-s3-dir=team/environment \
       -aws-profile=default
 ```
 With this sample command, it will ..
