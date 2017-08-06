@@ -138,7 +138,7 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		&p.deep,
 		"deep",
 		false,
-		"Deep scan mode. Scan accuracy improves and information becomes richer. Since analysis of changelog, issue commands requiring sudo, but is slower and heavy")
+		"Deep scan mode. Scan accuracy improves and scanned information becomes richer. Since analysis of changelog, issue commands requiring sudo, but it may be slower and high load on the tareget server")
 
 	f.BoolVar(
 		&p.pipe,
