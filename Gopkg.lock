@@ -44,10 +44,10 @@
   version = "v1.0.0"
 
 [[projects]]
+  branch = "master"
   name = "github.com/cheggaaa/pb"
   packages = ["."]
-  revision = "f6ccf2184de4dd34495277e38dc19b6e7fbe0ea2"
-  version = "v1.0.15"
+  revision = "0af82b7d15eb9371fbdf8f468ff10cbba62e0414"
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"

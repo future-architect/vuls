@@ -104,9 +104,10 @@ type Config struct {
 
 	GZIP bool
 
-	AwsProfile string
-	AwsRegion  string
-	S3Bucket   string
+	AwsProfile   string
+	AwsRegion    string
+	S3Bucket     string
+	S3ResultsDir string
 
 	AzureAccount   string
 	AzureKey       string
