@@ -31,6 +31,7 @@ type ScanResult struct {
 	ScannedAt   time.Time
 	JSONVersion int
 	Lang        string
+	ServerUUID  string
 	ServerName  string // TOML Section key
 	Family      string
 	Release     string
