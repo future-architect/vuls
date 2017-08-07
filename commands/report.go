@@ -69,9 +69,10 @@ type ReportCmd struct {
 
 	gzip bool
 
-	awsProfile  string
-	awsS3Bucket string
-	awsRegion   string
+	awsProfile      string
+	awsS3Bucket     string
+	awsS3ResultsDir string
+	awsRegion       string
 
 	azureAccount   string
 	azureKey       string
@@ -121,6 +122,7 @@ func (*ReportCmd) Usage() string {
 		[-aws-profile=default]
 		[-aws-region=us-west-2]
 		[-aws-s3-bucket=bucket_name]
+		[-aws-s3-results-dir=/bucket/path/to/results]
 		[-azure-account=accout]
 		[-azure-key=key]
 		[-azure-container=container]
@@ -263,6 +265,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.awsProfile, "aws-profile", "default", "AWS profile to use")
 	f.StringVar(&p.awsRegion, "aws-region", "us-east-1", "AWS region to use")
 	f.StringVar(&p.awsS3Bucket, "aws-s3-bucket", "", "S3 bucket name")
+	f.StringVar(&p.awsS3ResultsDir, "aws-s3-results-dir", "", "/bucket/path/to/results")
 
 	f.BoolVar(&p.toAzureBlob,
 		"to-azure-blob",
@@ -357,6 +360,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		c.Conf.AwsRegion = p.awsRegion
 		c.Conf.AwsProfile = p.awsProfile
 		c.Conf.S3Bucket = p.awsS3Bucket
+		c.Conf.S3ResultsDir = p.awsS3ResultsDir
 		if err := report.CheckIfBucketExists(); err != nil {
 			util.Log.Errorf("Check if there is a bucket beforehand: %s, err: %s", c.Conf.S3Bucket, err)
 			return subcommands.ExitUsageError
