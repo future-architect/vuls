@@ -141,7 +141,7 @@ func (o *debian) checkIfSudoNoPasswd() error {
 
 func (o *debian) checkDependencies() error {
 	switch o.Distro.Family {
-	case "ubuntu", "raspbian":
+	case "ubuntu", "raspbian", "kali":
 		return nil
 
 	case "debian":
