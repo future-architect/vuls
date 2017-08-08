@@ -421,8 +421,14 @@ func setupChangelogCache() error {
 	needToSetupCache := false
 	for _, s := range servers {
 		switch s.getDistro().Family {
-		case config.Ubuntu, config.Debian, config.Raspbian:
+		case config.Raspbian:
 			needToSetupCache = true
+			break
+		case config.Ubuntu, config.Debian:
+			//TODO changelopg cache for RedHat, Oracle, Amazon, CentOS is not implemented yet.
+			if config.Conf.Deep {
+				needToSetupCache = true
+			}
 			break
 		}
 	}
