@@ -58,9 +58,9 @@ func (*TuiCmd) Usage() string {
 	return `tui:
 	tui
 		[-config=/path/to/config.toml]
-		[-cvedb-type=sqlite3|mysql]
+		[-cvedb-type=sqlite3|mysql|postgres]
 		[-cvedb-path=/path/to/cve.sqlite3]
-		[-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
+		[-cvedb-url=http://127.0.0.1:1323 or DB connection string]
 		[-refresh-cve]
 		[-results-dir=/path/to/results]
 		[-log-dir=/path/to/log]
@@ -97,7 +97,7 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 		&p.cvedbtype,
 		"cvedb-type",
 		"sqlite3",
-		"DB type for fetching CVE dictionary (sqlite3 or mysql)")
+		"DB type for fetching CVE dictionary (sqlite3, mysql or postgres)")
 
 	defaultCveDBPath := filepath.Join(wd, "cve.sqlite3")
 	f.StringVar(
@@ -110,7 +110,7 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 		&p.cveDictionaryURL,
 		"cvedb-url",
 		"",
-		"http://cve-dictionary.com:8080 or mysql connection string")
+		"http://cve-dictionary.com:8080 or DB connection string")
 
 	f.BoolVar(
 		&p.pipe,

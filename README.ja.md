@@ -81,13 +81,14 @@ Slackチームは[こちらから](http://goo.gl/forms/xm5KFo35tu)参加でき�
   * [Example: IgnoreCves](#example-ignorecves)
   * [Example: Add optional key-value pairs to JSON](#example-add-optional-key-value-pairs-to-json)
   * [Example: Use MySQL as a DB storage back-end](#example-use-mysql-as-a-db-storage-back-end)
+  * [Example: Use PostgreSQL as a DB storage back-end](#example-use-postgresql-as-a-db-storage-back-end)
 - [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerability-of-non-os-package)
 - [Usage: Integrate with OWASP Dependency Check to Automatic update when the libraries are updated (Experimental)](#usage-integrate-with-owasp-dependency-check-to-automatic-update-when-the-libraries-are-updated-experimental)
 - [Usage: TUI](#usage-tui)
   * [Display the latest scan results](#display-the-latest-scan-results)
   * [Display the previous scan results](#display-the-previous-scan-results)
 - [Display the previous scan results using peco](#display-the-previous-scan-results-using-peco)
-- [Usage: go-cve-dictonary on different server](#usage-go-cve-dictonary-on-different-server)
+- [Usage: go-cve-dictionary on different server](#usage-go-cve-dictionary-on-different-server)
 - [Usage: Update NVD Data](#usage-update-nvd-data)
 - [レポートの日本語化](#%E3%83%AC%E3%83%9D%E3%83%BC%E3%83%88%E3%81%AE%E6%97%A5%E6%9C%AC%E8%AA%9E%E5%8C%96)
   * [fetchnvd, fetchjvnの実行順序の注意](#fetchnvd-fetchjvn%E3%81%AE%E5%AE%9F%E8%A1%8C%E9%A0%86%E5%BA%8F%E3%81%AE%E6%B3%A8%E6%84%8F)
@@ -1040,9 +1041,9 @@ report:
                 [-results-dir=/path/to/results]
                 [-log-dir=/path/to/log]
                 [-refresh-cve]
-                [-cvedb-type=sqlite3|mysql]
+                [-cvedb-type=sqlite3|mysql|postgres]
                 [-cvedb-path=/path/to/cve.sqlite3]
-                [-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
+                [-cvedb-url=http://127.0.0.1:1323 or DB connection string]
                 [-cvss-over=7]
                 [-diff]
                 [-ignore-unscored-cves]
@@ -1087,9 +1088,9 @@ report:
   -cvedb-path string
         /path/to/sqlite3 (For get cve detail from cve.sqlite3)
   -cvedb-type string
-        DB type for fetching CVE dictionary (sqlite3 or mysql) (default "sqlite3")
+        DB type for fetching CVE dictionary (sqlite3, mysql or postgres) (default "sqlite3")
   -cvedb-url string
-        http://cve-dictionary.com:8080 or mysql connection string
+        http://cve-dictionary.com:8080 or DB connection string
   -cvss-over float
         -cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))
   -diff
@@ -1427,6 +1428,14 @@ $ vuls report \
       -cvedb-url="user:pass@tcp(localhost:3306)/dbname?parseTime=true"
 ```
 
+## Example: Use PostgreSQL as a DB storage back-end
+
+```
+$ vuls report \
+      -cvedb-type=postgres \
+      -cvedb-url=""host=myhost user=user dbname=dbname sslmode=disable password=password""
+```
+
 ----
 
 # Usage: Scan vulnerability of non-OS package
@@ -1487,9 +1496,9 @@ VulsとDependency Checkを連携すると以下の利点がある
 ```
 tui:
         tui
-                [-cvedb-type=sqlite3|mysql]
+                [-cvedb-type=sqlite3|mysql|postgres]
                 [-cvedb-path=/path/to/cve.sqlite3]
-                [-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
+                [-cvedb-url=http://127.0.0.1:1323 DB connection string]
                 [-refresh-cve]
                 [-results-dir=/path/to/results]
                 [-log-dir=/path/to/log]
@@ -1500,9 +1509,9 @@ tui:
   -cvedb-path string
         /path/to/sqlite3 (For get cve detail from cve.sqlite3) 
   -cvedb-type string
-        DB type for fetching CVE dictionary (sqlite3 or mysql) (default "sqlite3")
+        DB type for fetching CVE dictionary (sqlite3, mysql or postgres) (default "sqlite3")
   -cvedb-url string
-        http://cve-dictionary.com:8080 or mysql connection string
+        http://cve-dictionary.com:8080 or DB connection string
   -debug
         debug mode
   -debug-sql
@@ -1556,7 +1565,7 @@ $ vuls history | peco | vuls tui -pipe
 
 [![asciicast](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8.png)](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8)
 
-# Usage: go-cve-dictonary on different server
+# Usage: go-cve-dictionary on different server
 
 Run go-cve-dictionary as server mode before scanning on 192.168.10.1
 ```
