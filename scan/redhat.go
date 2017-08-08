@@ -143,14 +143,12 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 		if majorVersion < 6 {
 			cmds = []cmd{
 				{"yum --color=never repolist", zero},
-				// {"yum --color=never check-update", []int{0, 100}},
 				{"yum --color=never list-security --security", zero},
 				{"yum --color=never info-security", zero},
 			}
 		} else {
 			cmds = []cmd{
 				{"yum --color=never repolist", zero},
-				// {"yum --color=never check-update", []int{0, 100}},
 				{"yum --color=never --security updateinfo list updates", zero},
 				{"yum --color=never --security updateinfo updates", zero},
 			}
@@ -210,13 +208,12 @@ func (o *redhat) checkDependencies() error {
 	var packNames []string
 	switch o.Distro.Family {
 	case config.CentOS, config.Amazon:
-		packNames = []string{"yum-utils"}
+		packNames = []string{"yum-utils, yum-plugin-changelog"}
 	case config.RedHat, config.Oracle:
 		if majorVersion < 6 {
-			packNames = []string{"yum-utils", "yum-security"}
+			packNames = []string{"yum-utils", "yum-security", "yum-changelog"}
 		} else {
-			// yum-plugin-security is installed by default on RHEL6, 7
-			return nil
+			packNames = []string{"yum-plugin-changelog"}
 		}
 	default:
 		return fmt.Errorf("Not implemented yet: %s", o.Distro)
@@ -648,7 +645,6 @@ type distroAdvisoryCveIDs struct {
 func (o *redhat) scanCveIDsByCommands(updatable models.Packages) (models.VulnInfos, error) {
 	if o.Distro.Family == config.CentOS {
 		// CentOS has no security channel.
-		// So use yum check-update && parse changelog
 		return nil, fmt.Errorf(
 			"yum updateinfo is not suppported on CentOS")
 	}
@@ -786,7 +782,6 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 			switch o.Distro.Family {
 			case config.CentOS:
 				// CentOS has no security channel.
-				// So use yum check-update && parse changelog
 				return result, fmt.Errorf(
 					"yum updateinfo is not suppported on  CentOS")
 			case config.RedHat, config.Amazon, config.Oracle:
