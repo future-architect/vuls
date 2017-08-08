@@ -554,9 +554,26 @@ func (o *redhat) divideChangelogByPackage(allChangelog string) (map[string]*stri
 		} else {
 			/* for CentOS6,7 (yum-util >= 1.1.20) */
 			line := orglines[i]
-			line = o.regexpReplace(line, `^ChangeLog for: `, "")
-			line = o.regexpReplace(line, `^\*\*\sNo\sChangeLog\sfor:.*`, "")
-			lines = append(lines, line)
+			if strings.HasPrefix(line, "ChangeLog for: ") {
+				line = strings.TrimPrefix(line, "ChangeLog for: ")
+				if strings.HasSuffix(line, ",") {
+					tmpline = fmt.Sprintf("%s", line)
+				} else {
+					lines = append(lines, line)
+				}
+			} else if strings.HasPrefix(line, "             : ") {
+				line = strings.TrimPrefix(line, "             : ")
+				if strings.HasSuffix(line, ",") {
+					tmpline = fmt.Sprintf("%s%s", tmpline, line)
+				} else {
+					tmpline = fmt.Sprintf("%s%s", tmpline, line)
+					lines = append(lines, tmpline)
+					tmpline = ""
+				}
+			} else {
+				line = o.regexpReplace(line, `^\*\*\sNo\sChangeLog\sfor:.*`, "")
+				lines = append(lines, line)
+			}
 		}
 	}
 
