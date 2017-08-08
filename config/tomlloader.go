@@ -27,6 +27,18 @@ import (
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
 )
 
+func removeDup(repos []string) (uniq []string) {
+	results := []string{}
+	seen := map[string]bool{}
+	for _, s := range repos {
+		if !seen[s] {
+			seen[s] = true
+			results = append(results, s)
+		}
+	}
+	return results
+}
+
 // TOMLLoader loads config
 type TOMLLoader struct {
 }
@@ -158,22 +170,25 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 				s.Optional = append(s.Optional, dkv)
 			}
 		}
-
+		//		repos := ""
 		s.Enablerepo = v.Enablerepo
 		if len(s.Enablerepo) == 0 {
 			s.Enablerepo = d.Enablerepo
 		}
 		if len(s.Enablerepo) != 0 {
+			repos := ""
 			for _, repo := range strings.Split(s.Enablerepo, ",") {
+				repo = strings.TrimSpace(repo)
 				switch repo {
 				case "base", "updates":
-					// nop
+					repos = repos + "," + repo
 				default:
 					return fmt.Errorf(
 						"For now, enablerepo have to be base or updates: %s, servername: %s",
 						s.Enablerepo, name)
 				}
 			}
+			s.Enablerepo = strings.Join(removeDup(strings.Split(repos, ",")), ",")
 		}
 
 		s.LogMsgAnsiColor = Colors[i%len(Colors)]
