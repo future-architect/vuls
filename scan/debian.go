@@ -137,18 +137,19 @@ func trim(str string) string {
 }
 
 func (o *debian) checkIfSudoNoPasswd() error {
-	if !config.Conf.Deep {
-		o.log.Infof("sudo ... No need")
+	if config.Conf.Deep || o.Distro.Family == config.Raspbian {
+		cmd := util.PrependProxyEnv("apt-get update")
+		o.log.Infof("Checking... sudo %s", cmd)
+		r := o.exec(cmd, sudo)
+		if !r.isSuccess() {
+			o.log.Errorf("sudo error on %s", r)
+			return fmt.Errorf("Failed to sudo: %s", r)
+		}
+		o.log.Infof("Sudo... Pass")
 		return nil
 	}
-	cmd := util.PrependProxyEnv("apt-get update")
-	o.log.Infof("Checking... sudo %s", cmd)
-	r := o.exec(cmd, sudo)
-	if !r.isSuccess() {
-		o.log.Errorf("sudo error on %s", r)
-		return fmt.Errorf("Failed to sudo: %s", r)
-	}
-	o.log.Infof("Sudo... Pass")
+
+	o.log.Infof("sudo ... No need")
 	return nil
 }
 
@@ -159,6 +160,7 @@ func (o *debian) checkDependencies() error {
 	}
 	switch o.Distro.Family {
 	case config.Ubuntu, config.Raspbian:
+		o.log.Infof("Dependencies... No need")
 		return nil
 
 	case config.Debian:
@@ -185,16 +187,16 @@ func (o *debian) scanPackages() error {
 	}
 	o.setPackages(installed)
 
-	if !config.Conf.Deep {
+	if config.Conf.Deep || o.Distro.Family == config.Raspbian {
+		unsecure, err := o.scanUnsecurePackages(updatable)
+		if err != nil {
+			o.log.Errorf("Failed to scan vulnerable packages")
+			return err
+		}
+		o.setVulnInfos(unsecure)
 		return nil
 	}
 
-	unsecure, err := o.scanUnsecurePackages(updatable)
-	if err != nil {
-		o.log.Errorf("Failed to scan vulnerable packages")
-		return err
-	}
-	o.setVulnInfos(unsecure)
 	return nil
 }
 
