@@ -218,10 +218,11 @@ func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
 			values = append(values, CveContentCvss{
 				Type: "Vendor",
 				Value: Cvss{
-					Type:     CVSS2,
-					Score:    severityToV2ScoreRoughly(adv.Severity),
-					Vector:   "-",
-					Severity: strings.ToUpper(adv.Severity),
+					Type:                 CVSS2,
+					Score:                severityToV2ScoreRoughly(adv.Severity),
+					CalculatedBySeverity: true,
+					Vector:               "-",
+					Severity:             strings.ToUpper(adv.Severity),
 				},
 			})
 		}
@@ -286,7 +287,11 @@ func (v VulnInfo) MaxCvssScore() CveContentCvss {
 	v3Max := v.MaxCvss3Score()
 	v2Max := v.MaxCvss2Score()
 	max := v3Max
-	if max.Value.Score < v2Max.Value.Score {
+	if max.Type == Unknown {
+		return v2Max
+	}
+
+	if max.Value.Score < v2Max.Value.Score && !v2Max.Value.CalculatedBySeverity {
 		max = v2Max
 	}
 	return max
@@ -325,7 +330,7 @@ func (v VulnInfo) MaxCvss2Score() CveContentCvss {
 
 	// If CVSS score isn't on NVD, RedHat and JVN, use OVAL and advisory Severity.
 	// Convert severity to cvss srore roughly, then returns max severity.
-	// Only Ubuntu, RedHat and Oracle OVAL has severity data in OVAL.
+	// Only Ubuntu, RedHat and Oracle have severity data in OVAL.
 	order = []CveContentType{Ubuntu, RedHat, Oracle}
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Severity) {
@@ -334,10 +339,11 @@ func (v VulnInfo) MaxCvss2Score() CveContentCvss {
 				value = CveContentCvss{
 					Type: ctype,
 					Value: Cvss{
-						Type:     CVSS2,
-						Score:    score,
-						Vector:   cont.Cvss2Vector,
-						Severity: cont.Severity,
+						Type:                 CVSS2,
+						Score:                score,
+						CalculatedBySeverity: true,
+						Vector:               cont.Cvss2Vector,
+						Severity:             cont.Severity,
 					},
 				}
 			}
@@ -353,10 +359,11 @@ func (v VulnInfo) MaxCvss2Score() CveContentCvss {
 				value = CveContentCvss{
 					Type: "Vendor",
 					Value: Cvss{
-						Type:     CVSS2,
-						Score:    score,
-						Vector:   "-",
-						Severity: adv.Severity,
+						Type:                 CVSS2,
+						Score:                score,
+						CalculatedBySeverity: true,
+						Vector:               "-",
+						Severity:             adv.Severity,
 					},
 				}
 			}
@@ -384,10 +391,11 @@ const (
 
 // Cvss has CVSS Score
 type Cvss struct {
-	Type     CvssType
-	Score    float64
-	Vector   string
-	Severity string
+	Type                 CvssType
+	Score                float64
+	CalculatedBySeverity bool
+	Vector               string
+	Severity             string
 }
 
 // Format CVSS Score and Vector

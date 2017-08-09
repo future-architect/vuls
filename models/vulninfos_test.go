@@ -516,10 +516,10 @@ func TestCvss2Scores(t *testing.T) {
 			out: nil,
 		},
 	}
-	for _, tt := range tests {
+	for i, tt := range tests {
 		actual := tt.in.Cvss2Scores()
 		if !reflect.DeepEqual(tt.out, actual) {
-			t.Errorf("\nexpected: %v\n  actual: %v\n", tt.out, actual)
+			t.Errorf("[%d] expected: %v\n  actual: %v\n", i, tt.out, actual)
 		}
 	}
 }
@@ -575,9 +575,10 @@ func TestMaxCvss2Scores(t *testing.T) {
 			out: CveContentCvss{
 				Type: Ubuntu,
 				Value: Cvss{
-					Type:     CVSS2,
-					Score:    8.9,
-					Severity: "HIGH",
+					Type:                 CVSS2,
+					Score:                8.9,
+					CalculatedBySeverity: true,
+					Severity:             "HIGH",
 				},
 			},
 		},
@@ -595,10 +596,10 @@ func TestMaxCvss2Scores(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
+	for i, tt := range tests {
 		actual := tt.in.MaxCvss2Score()
 		if !reflect.DeepEqual(tt.out, actual) {
-			t.Errorf("\nexpected: %v\n  actual: %v\n", tt.out, actual)
+			t.Errorf("[%d] expected: %v\n  actual: %v\n", i, tt.out, actual)
 		}
 	}
 }
@@ -742,6 +743,7 @@ func TestMaxCvssScores(t *testing.T) {
 				},
 			},
 		},
+		//2
 		{
 			in: VulnInfo{
 				CveContents: CveContents{
@@ -754,12 +756,14 @@ func TestMaxCvssScores(t *testing.T) {
 			out: CveContentCvss{
 				Type: Ubuntu,
 				Value: Cvss{
-					Type:     CVSS2,
-					Score:    8.9,
-					Severity: "HIGH",
+					Type:                 CVSS2,
+					Score:                8.9,
+					CalculatedBySeverity: true,
+					Severity:             "HIGH",
 				},
 			},
 		},
+		//3
 		{
 			in: VulnInfo{
 				CveContents: CveContents{
@@ -782,6 +786,7 @@ func TestMaxCvssScores(t *testing.T) {
 				},
 			},
 		},
+		//4
 		{
 			in: VulnInfo{
 				DistroAdvisories: []DistroAdvisory{
@@ -793,10 +798,38 @@ func TestMaxCvssScores(t *testing.T) {
 			out: CveContentCvss{
 				Type: "Vendor",
 				Value: Cvss{
+					Type:                 CVSS2,
+					Score:                8.9,
+					CalculatedBySeverity: true,
+					Vector:               "-",
+					Severity:             "HIGH",
+				},
+			},
+		},
+		{
+			in: VulnInfo{
+				CveContents: CveContents{
+					Ubuntu: {
+						Type:     Ubuntu,
+						Severity: "MEDIUM",
+					},
+					NVD: {
+						Type:       NVD,
+						Cvss2Score: 4.0,
+					},
+				},
+				DistroAdvisories: []DistroAdvisory{
+					{
+						Severity: "HIGH",
+					},
+				},
+			},
+			out: CveContentCvss{
+				Type: NVD,
+				Value: Cvss{
 					Type:     CVSS2,
-					Score:    8.9,
-					Vector:   "-",
-					Severity: "HIGH",
+					Score:    4,
+					Severity: "MEDIUM",
 				},
 			},
 		},
@@ -806,7 +839,7 @@ func TestMaxCvssScores(t *testing.T) {
 			out: CveContentCvss{
 				Type: Unknown,
 				Value: Cvss{
-					Type:  CVSS3,
+					Type:  CVSS2,
 					Score: 0,
 				},
 			},
