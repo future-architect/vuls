@@ -178,7 +178,7 @@ func fillWithOval(r *models.ScanResult) (err error) {
 	}
 	if !ok {
 		major := strings.Split(r.Release, ".")[0]
-		util.Log.Warnf("OVAL entries of %s %s are not found. It's recommended to use OVAL to improve scanning accuracy. To fetch OVAL, see https://github.com/kotakanbe/goval-dictionary#usage , Then report with --ovaldb-path or --ovaldb-url flag", ovalFamily, major)
+		util.Log.Warnf("OVAL entries of %s %s are not found. It's recommended to use OVAL to improve scanning accuracy. For details, see https://github.com/kotakanbe/goval-dictionary#usage , Then report with --ovaldb-path or --ovaldb-url flag", ovalFamily, major)
 		return nil
 	}
 

@@ -197,6 +197,11 @@ func (c Config) ValidateOnReport() bool {
 	if err := validateDB("cvedb", c.CveDBType, c.CveDBPath, c.CveDBURL); err != nil {
 		errs = append(errs, err)
 	}
+	if c.CveDBType == "sqlite3" {
+		if _, err := os.Stat(c.CveDBPath); os.IsNotExist(err) {
+			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDBPath))
+		}
+	}
 
 	if err := validateDB("ovaldb", c.OvalDBType, c.OvalDBPath, c.OvalDBURL); err != nil {
 		errs = append(errs, err)
@@ -236,6 +241,11 @@ func (c Config) ValidateOnTui() bool {
 	if err := validateDB("cvedb", c.CveDBType, c.CveDBPath, c.CveDBURL); err != nil {
 		errs = append(errs, err)
 	}
+	if c.CveDBType == "sqlite3" {
+		if _, err := os.Stat(c.CveDBPath); os.IsNotExist(err) {
+			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDBPath))
+		}
+	}
 
 	for _, err := range errs {
 		log.Error(err)
@@ -253,11 +263,6 @@ func validateDB(dictionaryDBName, dbType, dbPath, dbURL string) error {
 			return fmt.Errorf(
 				"SQLite3 DB path (%s) must be a *Absolute* file path. -%s-path: %s",
 				dictionaryDBName,
-				dictionaryDBName,
-				dbPath)
-		}
-		if _, err := os.Stat(dbPath); os.IsNotExist(err) {
-			return fmt.Errorf("SQLite3 DB path (%s) is not exist: %s",
 				dictionaryDBName,
 				dbPath)
 		}
