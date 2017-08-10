@@ -1700,6 +1700,12 @@ Please see [CHANGELOG](https://github.com/future-architect/vuls/blob/master/CHAN
 
 ----
 
+# Stargazers over time
+
+[![Stargazers over time](https://starcharts.herokuapp.com/future-architect/vuls.svg)](https://starcharts.herokuapp.com/future-architect/vuls)
+      
+----
+
 # License
 
 Please see [LICENSE](https://github.com/future-architect/vuls/blob/master/LICENSE).
