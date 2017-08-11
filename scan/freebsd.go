@@ -33,7 +33,14 @@ type bsd struct {
 
 // NewBSD constructor
 func newBsd(c config.ServerInfo) *bsd {
-	d := &bsd{}
+	d := &bsd{
+		base: base{
+			osPackages: osPackages{
+				Packages:  models.Packages{},
+				VulnInfos: models.VulnInfos{},
+			},
+		},
+	}
 	d.log = util.NewCustomLogger(c)
 	d.setServerInfo(c)
 	return d
@@ -44,13 +51,13 @@ func detectFreebsd(c config.ServerInfo) (itsMe bool, bsd osTypeInterface) {
 	bsd = newBsd(c)
 
 	// Prevent from adding `set -o pipefail` option
-	c.Distro = config.Distro{Family: "FreeBSD"}
+	c.Distro = config.Distro{Family: config.FreeBSD}
 
 	if r := exec(c, "uname", noSudo); r.isSuccess() {
-		if strings.Contains(r.Stdout, "FreeBSD") == true {
+		if strings.Contains(r.Stdout, config.FreeBSD) == true {
 			if b := exec(c, "freebsd-version", noSudo); b.isSuccess() {
 				rel := strings.TrimSpace(b.Stdout)
-				bsd.setDistro("FreeBSD", rel)
+				bsd.setDistro(config.FreeBSD, rel)
 				return true, bsd
 			}
 		}
@@ -66,19 +73,20 @@ func (o *bsd) checkIfSudoNoPasswd() error {
 }
 
 func (o *bsd) checkDependencies() error {
+	o.log.Infof("Dependencies... No need")
 	return nil
 }
 
 func (o *bsd) scanPackages() error {
 	var err error
-	var packs []models.PackageInfo
+	var packs models.Packages
 	if packs, err = o.scanInstalledPackages(); err != nil {
 		o.log.Errorf("Failed to scan installed packages")
 		return err
 	}
 	o.setPackages(packs)
 
-	var vinfos []models.VulnInfo
+	var vinfos models.VulnInfos
 	if vinfos, err = o.scanUnsecurePackages(); err != nil {
 		o.log.Errorf("Failed to scan vulnerable packages")
 		return err
@@ -87,7 +95,7 @@ func (o *bsd) scanPackages() error {
 	return nil
 }
 
-func (o *bsd) scanInstalledPackages() ([]models.PackageInfo, error) {
+func (o *bsd) scanInstalledPackages() (models.Packages, error) {
 	cmd := util.PrependProxyEnv("pkg version -v")
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
@@ -96,7 +104,7 @@ func (o *bsd) scanInstalledPackages() ([]models.PackageInfo, error) {
 	return o.parsePkgVersion(r.Stdout), nil
 }
 
-func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
+func (o *bsd) scanUnsecurePackages() (models.VulnInfos, error) {
 	const vulndbPath = "/tmp/vuln.db"
 	cmd := "rm -f " + vulndbPath
 	r := o.exec(cmd, noSudo)
@@ -111,7 +119,7 @@ func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
 	}
 	if r.ExitStatus == 0 {
 		// no vulnerabilities
-		return []models.VulnInfo{}, nil
+		return nil, nil
 	}
 
 	var packAdtRslt []pkgAuditResult
@@ -121,7 +129,7 @@ func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
 		if len(cveIDs) == 0 {
 			continue
 		}
-		pack, found := o.Packages.FindByName(name)
+		pack, found := o.Packages[name]
 		if !found {
 			return nil, fmt.Errorf("Vulnerable package: %s is not found", name)
 		}
@@ -142,30 +150,36 @@ func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
 		}
 	}
 
-	for k := range cveIDAdtMap {
-		packs := []models.PackageInfo{}
-		for _, r := range cveIDAdtMap[k] {
-			packs = append(packs, r.pack)
+	vinfos := models.VulnInfos{}
+	for cveID := range cveIDAdtMap {
+		packs := models.Packages{}
+		for _, r := range cveIDAdtMap[cveID] {
+			packs[r.pack.Name] = r.pack
 		}
 
 		disAdvs := []models.DistroAdvisory{}
-		for _, r := range cveIDAdtMap[k] {
+		for _, r := range cveIDAdtMap[cveID] {
 			disAdvs = append(disAdvs, models.DistroAdvisory{
 				AdvisoryID: r.vulnIDCveIDs.vulnID,
 			})
 		}
 
-		vulnInfos = append(vulnInfos, models.VulnInfo{
-			CveID:            k,
-			Packages:         packs,
+		names := []string{}
+		for name := range packs {
+			names = append(names, name)
+		}
+		vinfos[cveID] = models.VulnInfo{
+			CveID:            cveID,
+			PackageNames:     names,
 			DistroAdvisories: disAdvs,
 			Confidence:       models.PkgAuditMatch,
-		})
+		}
 	}
-	return
+	return vinfos, nil
 }
 
-func (o *bsd) parsePkgVersion(stdout string) (packs []models.PackageInfo) {
+func (o *bsd) parsePkgVersion(stdout string) models.Packages {
+	packs := models.Packages{}
 	lines := strings.Split(stdout, "\n")
 	for _, l := range lines {
 		fields := strings.Fields(l)
@@ -180,20 +194,20 @@ func (o *bsd) parsePkgVersion(stdout string) (packs []models.PackageInfo) {
 
 		switch fields[1] {
 		case "?", "=":
-			packs = append(packs, models.PackageInfo{
+			packs[name] = models.Package{
 				Name:    name,
 				Version: ver,
-			})
+			}
 		case "<":
 			candidate := strings.TrimSuffix(fields[6], ")")
-			packs = append(packs, models.PackageInfo{
+			packs[name] = models.Package{
 				Name:       name,
 				Version:    ver,
 				NewVersion: candidate,
-			})
+			}
 		}
 	}
-	return
+	return packs
 }
 
 type vulnIDCveIDs struct {
@@ -202,7 +216,7 @@ type vulnIDCveIDs struct {
 }
 
 type pkgAuditResult struct {
-	pack         models.PackageInfo
+	pack         models.Package
 	vulnIDCveIDs vulnIDCveIDs
 }
 

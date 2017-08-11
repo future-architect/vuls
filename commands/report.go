@@ -25,8 +25,8 @@ import (
 	"path/filepath"
 
 	c "github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/cveapi"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
@@ -46,9 +46,13 @@ type ReportCmd struct {
 	ignoreUnscoredCves bool
 	httpProxy          string
 
-	cvedbtype string
-	cvedbpath string
-	cvedbURL  string
+	cveDBType string
+	cveDBPath string
+	cveDBURL  string
+
+	ovalDBType string
+	ovalDBPath string
+	ovalDBURL  string
 
 	toSlack     bool
 	toEMail     bool
@@ -65,9 +69,10 @@ type ReportCmd struct {
 
 	gzip bool
 
-	awsProfile  string
-	awsS3Bucket string
-	awsRegion   string
+	awsProfile      string
+	awsS3Bucket     string
+	awsS3ResultsDir string
+	awsRegion       string
 
 	azureAccount   string
 	azureKey       string
@@ -96,6 +101,9 @@ func (*ReportCmd) Usage() string {
 		[-cvedb-type=sqlite3|mysql|postgres]
 		[-cvedb-path=/path/to/cve.sqlite3]
 		[-cvedb-url=http://127.0.0.1:1323 or DB connection string]
+		[-ovaldb-type=sqlite3|mysql]
+		[-ovaldb-path=/path/to/oval.sqlite3]
+		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
 		[-cvss-over=7]
 		[-diff]
 		[-ignore-unscored-cves]
@@ -114,6 +122,7 @@ func (*ReportCmd) Usage() string {
 		[-aws-profile=default]
 		[-aws-region=us-west-2]
 		[-aws-s3-bucket=bucket_name]
+		[-aws-s3-results-dir=/bucket/path/to/results]
 		[-azure-account=accout]
 		[-azure-key=key]
 		[-azure-container=container]
@@ -150,23 +159,42 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"Refresh CVE information in JSON file under results dir")
 
 	f.StringVar(
-		&p.cvedbtype,
+		&p.cveDBType,
 		"cvedb-type",
 		"sqlite3",
 		"DB type for fetching CVE dictionary (sqlite3, mysql or postgres)")
 
 	defaultCveDBPath := filepath.Join(wd, "cve.sqlite3")
 	f.StringVar(
-		&p.cvedbpath,
+		&p.cveDBPath,
 		"cvedb-path",
 		defaultCveDBPath,
 		"/path/to/sqlite3 (For get cve detail from cve.sqlite3)")
 
 	f.StringVar(
-		&p.cvedbURL,
+		&p.cveDBURL,
 		"cvedb-url",
 		"",
-		"http://cve-dictionary.com:8080 or DB connection string")
+		"http://cve-dictionary.com:1323 or mysql connection string")
+
+	f.StringVar(
+		&p.ovalDBType,
+		"ovaldb-type",
+		"sqlite3",
+		"DB type for fetching OVAL dictionary (sqlite3 or mysql)")
+
+	defaultOvalDBPath := filepath.Join(wd, "oval.sqlite3")
+	f.StringVar(
+		&p.ovalDBPath,
+		"ovaldb-path",
+		defaultOvalDBPath,
+		"/path/to/sqlite3 (For get oval detail from oval.sqlite3)")
+
+	f.StringVar(
+		&p.ovalDBURL,
+		"ovaldb-url",
+		"",
+		"http://goval-dictionary.com:1324 or mysql connection string")
 
 	f.Float64Var(
 		&p.cvssScoreOver,
@@ -237,6 +265,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.awsProfile, "aws-profile", "default", "AWS profile to use")
 	f.StringVar(&p.awsRegion, "aws-region", "us-east-1", "AWS region to use")
 	f.StringVar(&p.awsS3Bucket, "aws-s3-bucket", "", "S3 bucket name")
+	f.StringVar(&p.awsS3ResultsDir, "aws-s3-results-dir", "", "/bucket/path/to/results")
 
 	f.BoolVar(&p.toAzureBlob,
 		"to-azure-blob",
@@ -273,14 +302,17 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	c.Conf.Lang = p.lang
 	c.Conf.ResultsDir = p.resultsDir
-	c.Conf.CveDBType = p.cvedbtype
-	c.Conf.CveDBPath = p.cvedbpath
-	c.Conf.CveDBURL = p.cvedbURL
+	c.Conf.RefreshCve = p.refreshCve
+	c.Conf.Diff = p.diff
+	c.Conf.CveDBType = p.cveDBType
+	c.Conf.CveDBPath = p.cveDBPath
+	c.Conf.CveDBURL = p.cveDBURL
+	c.Conf.OvalDBType = p.ovalDBType
+	c.Conf.OvalDBPath = p.ovalDBPath
+	c.Conf.OvalDBURL = p.ovalDBURL
 	c.Conf.CvssScoreOver = p.cvssScoreOver
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
 	c.Conf.HTTPProxy = p.httpProxy
-
-	c.Conf.Pipe = p.pipe
 
 	c.Conf.FormatXML = p.formatXML
 	c.Conf.FormatJSON = p.formatJSON
@@ -291,13 +323,14 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	c.Conf.GZIP = p.gzip
 	c.Conf.Diff = p.diff
+	c.Conf.Pipe = p.pipe
 
 	var dir string
 	var err error
 	if p.diff {
-		dir, err = jsonDir([]string{})
+		dir, err = report.JSONDir([]string{})
 	} else {
-		dir, err = jsonDir(f.Args())
+		dir, err = report.JSONDir(f.Args())
 	}
 	if err != nil {
 		util.Log.Errorf("Failed to read from JSON: %s", err)
@@ -327,6 +360,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		c.Conf.AwsRegion = p.awsRegion
 		c.Conf.AwsProfile = p.awsProfile
 		c.Conf.S3Bucket = p.awsS3Bucket
+		c.Conf.S3ResultsDir = p.awsS3ResultsDir
 		if err := report.CheckIfBucketExists(); err != nil {
 			util.Log.Errorf("Check if there is a bucket beforehand: %s, err: %s", c.Conf.S3Bucket, err)
 			return subcommands.ExitUsageError
@@ -366,7 +400,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	if !c.Conf.ValidateOnReport() {
 		return subcommands.ExitUsageError
 	}
-	if ok, err := cveapi.CveClient.CheckHealth(); !ok {
+	if err := report.CveClient.CheckHealth(); err != nil {
 		util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
 		util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with --cvedb-path option")
 		return subcommands.ExitFailure
@@ -379,66 +413,25 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	var history models.ScanHistory
-	history, err = loadOneScanHistory(dir)
-	if err != nil {
+	if c.Conf.OvalDBURL != "" {
+		err := oval.Base{}.CheckHTTPHealth()
+		if err != nil {
+			util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
+			util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with --ovaldb-path option")
+			return subcommands.ExitFailure
+		}
+	}
+
+	var res models.ScanResults
+	if res, err = report.LoadScanResults(dir); err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}
 	util.Log.Infof("Loaded: %s", dir)
 
-	var results []models.ScanResult
-	for _, r := range history.ScanResults {
-		if p.refreshCve || needToRefreshCve(r) {
-			util.Log.Debugf("need to refresh")
-			if c.Conf.CveDBType == "sqlite3" && c.Conf.CveDBURL == "" {
-				if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
-					util.Log.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
-						c.Conf.CveDBPath)
-					return subcommands.ExitFailure
-				}
-			}
-
-			filled, err := fillCveInfoFromCveDB(r)
-			if err != nil {
-				util.Log.Errorf("Failed to fill CVE information: %s", err)
-				return subcommands.ExitFailure
-			}
-			filled.Lang = c.Conf.Lang
-			if err := overwriteJSONFile(dir, *filled); err != nil {
-				util.Log.Errorf("Failed to write JSON: %s", err)
-				return subcommands.ExitFailure
-			}
-			results = append(results, *filled)
-		} else {
-			util.Log.Debugf("no need to refresh")
-			results = append(results, r)
-		}
-	}
-
-	if p.diff {
-		currentHistory := models.ScanHistory{ScanResults: results}
-		previousHistory, err := loadPreviousScanHistory(currentHistory)
-		if err != nil {
-			util.Log.Error(err)
-			return subcommands.ExitFailure
-		}
-
-		history, err = diff(currentHistory, previousHistory)
-		if err != nil {
-			util.Log.Error(err)
-			return subcommands.ExitFailure
-		}
-		results = []models.ScanResult{}
-		for _, r := range history.ScanResults {
-			filled, _ := r.FillCveDetail()
-			results = append(results, *filled)
-		}
-	}
-
-	var res models.ScanResults
-	for _, r := range results {
-		res = append(res, r.FilterByCvssOver())
+	if res, err = report.FillCveInfos(res, dir); err != nil {
+		util.Log.Error(err)
+		return subcommands.ExitFailure
 	}
 
 	for _, w := range reports {

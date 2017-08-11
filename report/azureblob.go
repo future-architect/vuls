@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Azure/azure-storage-go"
+	storage "github.com/Azure/azure-sdk-for-go/storage"
 
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -139,13 +139,9 @@ func createBlockBlob(cli storage.BlobStorageClient, k string, b []byte) error {
 		k = k + ".gz"
 	}
 
-	if err := cli.CreateBlockBlobFromReader(
-		c.Conf.AzureContainer,
-		k,
-		uint64(len(b)),
-		bytes.NewReader(b),
-		map[string]string{},
-	); err != nil {
+	ref := cli.GetContainerReference(c.Conf.AzureContainer)
+	blob := ref.GetBlobReference(k)
+	if err := blob.CreateBlockBlobFromReader(bytes.NewReader(b), nil); err != nil {
 		return fmt.Errorf("Failed to upload data to %s/%s, %s",
 			c.Conf.AzureContainer, k, err)
 	}

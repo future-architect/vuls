@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"path"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -147,8 +148,8 @@ func putObject(svc *s3.S3, k string, b []byte) error {
 	}
 
 	if _, err := svc.PutObject(&s3.PutObjectInput{
-		Bucket: &c.Conf.S3Bucket,
-		Key:    &k,
+		Bucket: aws.String(c.Conf.S3Bucket),
+		Key:    aws.String(path.Join(c.Conf.S3ResultsDir, k)),
 		Body:   bytes.NewReader(b),
 	}); err != nil {
 		return fmt.Errorf("Failed to upload data to %s/%s, %s",
