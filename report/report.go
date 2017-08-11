@@ -81,7 +81,7 @@ func fillCveInfo(r *models.ScanResult) error {
 	util.Log.Debugf("need to refresh")
 
 	util.Log.Infof("Fill CVE detailed information with OVAL")
-	if err := fillWithOval(r); err != nil {
+	if err := FillWithOval(r); err != nil {
 		return fmt.Errorf("Failed to fill OVAL information: %s", err)
 	}
 
@@ -140,7 +140,8 @@ func fillWithCveDB(r *models.ScanResult) error {
 	return nil
 }
 
-func fillWithOval(r *models.ScanResult) (err error) {
+// FillWithOval fetches OVAL database, and then set to fields.
+func FillWithOval(r *models.ScanResult) (err error) {
 	var ovalClient oval.Client
 	var ovalFamily string
 
