@@ -19,6 +19,7 @@ package oval
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -35,23 +36,22 @@ type RedHatBase struct {
 
 // FillWithOval returns scan result after updating CVE info by OVAL
 func (o RedHatBase) FillWithOval(r *models.ScanResult) (err error) {
-	var defs []ovalmodels.Definition
+	var relatedDefs ovalResult
 	if o.isFetchViaHTTP() {
-		if defs, err = getDefsByPackNameViaHTTP(r); err != nil {
+		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
 			return err
 		}
 	} else {
-		if defs, err = getDefsByPackNameFromOvalDB(
+		if relatedDefs, err = getDefsByPackNameFromOvalDB(
 			o.family, r.Release, r.Packages); err != nil {
 			return err
 		}
 	}
 
-	for _, def := range defs {
-		o.update(r, &def)
+	for _, defPacks := range relatedDefs.entries {
+		o.update(r, defPacks)
 	}
 
-	// TODO merge to VulnInfo.VendorLinks
 	for _, vuln := range r.ScannedCves {
 		switch models.NewCveContentType(o.family) {
 		case models.RedHat:
@@ -69,23 +69,22 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) (err error) {
 	return nil
 }
 
-func (o RedHatBase) update(r *models.ScanResult, definition *ovalmodels.Definition) {
+func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) {
 	ctype := models.NewCveContentType(o.family)
-	for _, cve := range definition.Advisory.Cves {
-		ovalContent := *o.convertToModel(cve.CveID, definition)
+	for _, cve := range defPacks.def.Advisory.Cves {
+		ovalContent := *o.convertToModel(cve.CveID, &defPacks.def)
 		vinfo, ok := r.ScannedCves[cve.CveID]
 		if !ok {
 			util.Log.Debugf("%s is newly detected by OVAL", cve.CveID)
 			vinfo = models.VulnInfo{
-				CveID:        cve.CveID,
-				Confidence:   models.OvalMatch,
-				PackageNames: getPackages(r, definition),
-				CveContents:  models.NewCveContents(ovalContent),
+				CveID:       cve.CveID,
+				Confidence:  models.OvalMatch,
+				CveContents: models.NewCveContents(ovalContent),
 			}
 		} else {
 			cveContents := vinfo.CveContents
 			if _, ok := vinfo.CveContents[ctype]; ok {
-				util.Log.Debugf("%s will be updated by OVAL", cve.CveID)
+				util.Log.Debugf("%s OVAL will be overwritten", cve.CveID)
 			} else {
 				util.Log.Debugf("%s also detected by OVAL", cve.CveID)
 				cveContents = models.CveContents{}
@@ -97,6 +96,13 @@ func (o RedHatBase) update(r *models.ScanResult, definition *ovalmodels.Definiti
 			cveContents[ctype] = ovalContent
 			vinfo.CveContents = cveContents
 		}
+
+		// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
+		for _, name := range vinfo.PackageNames {
+			defPacks.actuallyAffectedPackNames[name] = true
+		}
+		vinfo.PackageNames = defPacks.packNames()
+		sort.Strings(vinfo.PackageNames)
 		r.ScannedCves[cve.CveID] = vinfo
 	}
 }

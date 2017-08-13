@@ -218,7 +218,6 @@ No CVE-IDs are found in updatable packages.
 		packsVer := []string{}
 		sort.Strings(vuln.PackageNames)
 		for _, name := range vuln.PackageNames {
-			// packages detected by OVAL may not be actually installed
 			if pack, ok := r.Packages[name]; ok {
 				packsVer = append(packsVer, pack.FormatVersionFromTo())
 			}

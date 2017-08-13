@@ -35,6 +35,36 @@ import (
 	"github.com/parnurzeal/gorequest"
 )
 
+type ovalResult struct {
+	entries []defPacks
+}
+
+type defPacks struct {
+	def                       ovalmodels.Definition
+	actuallyAffectedPackNames map[string]bool
+}
+
+func (e defPacks) packNames() (names []string) {
+	for k := range e.actuallyAffectedPackNames {
+		names = append(names, k)
+	}
+	return
+}
+
+func (e *ovalResult) upsert(def ovalmodels.Definition, packName string) (upserted bool) {
+	for i, entry := range e.entries {
+		if entry.def.DefinitionID == def.DefinitionID {
+			e.entries[i].actuallyAffectedPackNames[packName] = true
+			return true
+		}
+	}
+	e.entries = append(e.entries, defPacks{
+		def: def,
+		actuallyAffectedPackNames: map[string]bool{packName: true},
+	})
+	return false
+}
+
 type request struct {
 	pack models.Package
 }
@@ -46,7 +76,7 @@ type response struct {
 
 // getDefsByPackNameViaHTTP fetches OVAL information via HTTP
 func getDefsByPackNameViaHTTP(r *models.ScanResult) (
-	relatedDefs []ovalmodels.Definition, err error) {
+	relatedDefs ovalResult, err error) {
 
 	reqChan := make(chan request, len(r.Packages))
 	resChan := make(chan response, len(r.Packages))
@@ -102,18 +132,18 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 							util.Log.Debugf("%#v\n%#v", *res.pack, p)
 						}
 					} else if less {
-						relatedDefs = append(relatedDefs, def)
+						relatedDefs.upsert(def, p.Name)
 					}
 				}
 			}
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
-			return nil, fmt.Errorf("Timeout Fetching OVAL")
+			return relatedDefs, fmt.Errorf("Timeout Fetching OVAL")
 		}
 	}
 	if len(errs) != 0 {
-		return nil, fmt.Errorf("Failed to fetch OVAL. err: %v", errs)
+		return relatedDefs, fmt.Errorf("Failed to fetch OVAL. err: %v", errs)
 	}
 	return
 }
@@ -161,15 +191,8 @@ func httpGet(url string, pack *models.Package, resChan chan<- response, errChan 
 	}
 }
 
-func getPackages(r *models.ScanResult, d *ovalmodels.Definition) (names []string) {
-	for _, affectedPack := range d.AffectedPacks {
-		names = append(names, affectedPack.Name)
-	}
-	return
-}
-
 func getDefsByPackNameFromOvalDB(family, osRelease string,
-	packs models.Packages) (relatedDefs []ovalmodels.Definition, err error) {
+	packs models.Packages) (relatedDefs ovalResult, err error) {
 
 	ovallog.Initialize(config.Conf.LogDir)
 	path := config.Conf.OvalDBURL
@@ -191,7 +214,7 @@ func getDefsByPackNameFromOvalDB(family, osRelease string,
 	for _, pack := range packs {
 		definitions, err := ovaldb.GetByPackName(osRelease, pack.Name)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to get %s OVAL info by package name: %v", family, err)
+			return relatedDefs, fmt.Errorf("Failed to get %s OVAL info by package name: %v", family, err)
 		}
 		for _, def := range definitions {
 			for _, p := range def.AffectedPacks {
@@ -204,7 +227,7 @@ func getDefsByPackNameFromOvalDB(family, osRelease string,
 						util.Log.Debugf("%#v\n%#v", pack, p)
 					}
 				} else if less {
-					relatedDefs = append(relatedDefs, def)
+					relatedDefs.upsert(def, pack.Name)
 				}
 			}
 		}

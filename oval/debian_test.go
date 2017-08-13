@@ -26,73 +26,7 @@ import (
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
-func TestParseCvss2(t *testing.T) {
-	type out struct {
-		score  float64
-		vector string
-	}
-	var tests = []struct {
-		in  string
-		out out
-	}{
-		{
-			in: "5/AV:N/AC:L/Au:N/C:N/I:N/A:P",
-			out: out{
-				score:  5.0,
-				vector: "AV:N/AC:L/Au:N/C:N/I:N/A:P",
-			},
-		},
-		{
-			in: "",
-			out: out{
-				score:  0,
-				vector: "",
-			},
-		},
-	}
-	for _, tt := range tests {
-		s, v := RedHatBase{}.parseCvss2(tt.in)
-		if s != tt.out.score || v != tt.out.vector {
-			t.Errorf("\nexpected: %f, %s\n  actual: %f, %s",
-				tt.out.score, tt.out.vector, s, v)
-		}
-	}
-}
-
-func TestParseCvss3(t *testing.T) {
-	type out struct {
-		score  float64
-		vector string
-	}
-	var tests = []struct {
-		in  string
-		out out
-	}{
-		{
-			in: "5.6/CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
-			out: out{
-				score:  5.6,
-				vector: "AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
-			},
-		},
-		{
-			in: "",
-			out: out{
-				score:  0,
-				vector: "",
-			},
-		},
-	}
-	for _, tt := range tests {
-		s, v := RedHatBase{}.parseCvss3(tt.in)
-		if s != tt.out.score || v != tt.out.vector {
-			t.Errorf("\nexpected: %f, %s\n  actual: %f, %s",
-				tt.out.score, tt.out.vector, s, v)
-		}
-	}
-}
-
-func TestPackNamesOfUpdate(t *testing.T) {
+func TestPackNamesOfUpdateDebian(t *testing.T) {
 	var tests = []struct {
 		in       models.ScanResult
 		defPacks defPacks
@@ -108,12 +42,8 @@ func TestPackNamesOfUpdate(t *testing.T) {
 			},
 			defPacks: defPacks{
 				def: ovalmodels.Definition{
-					Advisory: ovalmodels.Advisory{
-						Cves: []ovalmodels.Cve{
-							{
-								CveID: "CVE-2000-1000",
-							},
-						},
+					Debian: ovalmodels.Debian{
+						CveID: "CVE-2000-1000",
 					},
 				},
 				actuallyAffectedPackNames: map[string]bool{
@@ -135,7 +65,7 @@ func TestPackNamesOfUpdate(t *testing.T) {
 
 	util.Log = util.NewCustomLogger(config.ServerInfo{})
 	for i, tt := range tests {
-		RedHat{}.update(&tt.in, tt.defPacks)
+		Debian{}.update(&tt.in, tt.defPacks)
 		e := tt.out.ScannedCves["CVE-2000-1000"].PackageNames
 		a := tt.in.ScannedCves["CVE-2000-1000"].PackageNames
 		if !reflect.DeepEqual(a, e) {

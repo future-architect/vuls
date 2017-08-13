@@ -14,9 +14,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 package oval
 
 import (
+	"sort"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -30,19 +33,19 @@ type DebianBase struct {
 
 // FillWithOval returns scan result after updating CVE info by OVAL
 func (o DebianBase) FillWithOval(r *models.ScanResult) (err error) {
-	var defs []ovalmodels.Definition
+	var relatedDefs ovalResult
 	if o.isFetchViaHTTP() {
-		if defs, err = getDefsByPackNameViaHTTP(r); err != nil {
+		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
 			return err
 		}
 	} else {
-		if defs, err = getDefsByPackNameFromOvalDB(o.family, r.Release, r.Packages); err != nil {
+		if relatedDefs, err = getDefsByPackNameFromOvalDB(o.family, r.Release, r.Packages); err != nil {
 			return err
 		}
 	}
 
-	for _, def := range defs {
-		o.update(r, &def)
+	for _, defPacks := range relatedDefs.entries {
+		o.update(r, defPacks)
 	}
 
 	for _, vuln := range r.ScannedCves {
@@ -62,25 +65,26 @@ func (o DebianBase) FillWithOval(r *models.ScanResult) (err error) {
 	return nil
 }
 
-func (o DebianBase) update(r *models.ScanResult, definition *ovalmodels.Definition) {
-	ovalContent := *o.convertToModel(definition)
+func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
+	ovalContent := *o.convertToModel(&defPacks.def)
 	ovalContent.Type = models.NewCveContentType(o.family)
-	vinfo, ok := r.ScannedCves[definition.Debian.CveID]
+	vinfo, ok := r.ScannedCves[defPacks.def.Debian.CveID]
 	if !ok {
-		util.Log.Debugf("%s is newly detected by OVAL", definition.Debian.CveID)
+		util.Log.Debugf("%s is newly detected by OVAL", defPacks.def.Debian.CveID)
 		vinfo = models.VulnInfo{
-			CveID:        definition.Debian.CveID,
-			Confidence:   models.OvalMatch,
-			PackageNames: getPackages(r, definition),
-			CveContents:  models.NewCveContents(ovalContent),
+			CveID:       defPacks.def.Debian.CveID,
+			Confidence:  models.OvalMatch,
+			CveContents: models.NewCveContents(ovalContent),
 		}
 	} else {
 		cveContents := vinfo.CveContents
 		ctype := models.NewCveContentType(o.family)
 		if _, ok := vinfo.CveContents[ctype]; ok {
-			util.Log.Debugf("%s will be updated by OVAL", definition.Debian.CveID)
+			util.Log.Debugf("%s OVAL will be overwritten",
+				defPacks.def.Debian.CveID)
 		} else {
-			util.Log.Debugf("%s is also detected by OVAL", definition.Debian.CveID)
+			util.Log.Debugf("%s is also detected by OVAL",
+				defPacks.def.Debian.CveID)
 			cveContents = models.CveContents{}
 		}
 		if vinfo.Confidence.Score < models.OvalMatch.Score {
@@ -89,7 +93,14 @@ func (o DebianBase) update(r *models.ScanResult, definition *ovalmodels.Definiti
 		cveContents[ctype] = ovalContent
 		vinfo.CveContents = cveContents
 	}
-	r.ScannedCves[definition.Debian.CveID] = vinfo
+
+	// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
+	for _, name := range vinfo.PackageNames {
+		defPacks.actuallyAffectedPackNames[name] = true
+	}
+	vinfo.PackageNames = defPacks.packNames()
+	sort.Strings(vinfo.PackageNames)
+	r.ScannedCves[defPacks.def.Debian.CveID] = vinfo
 }
 
 func (o DebianBase) convertToModel(def *ovalmodels.Definition) *models.CveContent {
