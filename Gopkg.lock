@@ -4,14 +4,14 @@
 [[projects]]
   name = "github.com/Azure/azure-sdk-for-go"
   packages = ["storage"]
-  revision = "5b6066bbd213e47c49a5fa2be2b29529bbcb6704"
-  version = "v10.1.1-beta"
+  revision = "2d49bb8f2cee530cc16f1f1a9f0aae763dee257d"
+  version = "v10.2.1-beta"
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
   packages = ["autorest","autorest/adal","autorest/azure","autorest/date"]
-  revision = "10791a4516e77c53ab10f198f144804cca3d5b43"
-  version = "v8.1.0"
+  revision = "f6e08fe5e4d45c9a66e40196d3fed5f37331d224"
+  version = "v8.1.1"
 
 [[projects]]
   name = "github.com/BurntSushi/toml"
@@ -28,8 +28,8 @@
 [[projects]]
   name = "github.com/aws/aws-sdk-go"
   packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/shareddefaults","private/protocol","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/restxml","private/protocol/xml/xmlutil","service/s3","service/sts"]
-  revision = "6ff7be1a127941b8dc9a408ac9c2dd6eb2167a5d"
-  version = "v1.10.15"
+  revision = "19490d4d23f5f6dd8061abf91542af8433d28d63"
+  version = "v1.10.24"
 
 [[projects]]
   name = "github.com/boltdb/bolt"
@@ -58,14 +58,14 @@
 [[projects]]
   name = "github.com/go-ini/ini"
   packages = ["."]
-  revision = "d3de07a94d22b4a0972deb4b96d790c2c0ce8333"
-  version = "v1.28.0"
+  revision = "20b96f641a5ea98f2f8619ff4f3e061cff4833bd"
+  version = "v1.28.2"
 
 [[projects]]
   name = "github.com/go-redis/redis"
   packages = [".","internal","internal/consistenthash","internal/hashtag","internal/pool","internal/proto"]
-  revision = "a005081ecd2d0d963a1a20efda049223205cf90a"
-  version = "v6.5.4"
+  revision = "89515eebd1b5761486abd32d9e84a8f55dda7740"
+  version = "v6.5.6"
 
 [[projects]]
   name = "github.com/go-sql-driver/mysql"
@@ -149,13 +149,13 @@
   branch = "master"
   name = "github.com/kotakanbe/goval-dictionary"
   packages = ["config","db","db/rdb","log","models"]
-  revision = "766b881c46d2037c75833ec0021da1c3da1ad2a1"
+  revision = "597ee7aff9dcf36eb8c254d8b1ba8704ade521a6"
 
 [[projects]]
   branch = "master"
   name = "github.com/kotakanbe/logrus-prefixed-formatter"
   packages = ["."]
-  revision = "5ea278a9a3f980f7cdf1dc787dc4a85ac72502d9"
+  revision = "75edb2e85a38873f0318be05a458446681d1022f"
 
 [[projects]]
   name = "github.com/labstack/gommon"
@@ -167,13 +167,13 @@
   branch = "master"
   name = "github.com/lib/pq"
   packages = [".","hstore","oid"]
-  revision = "dd1fe2071026ce53f36a39112e645b4d4f5793a4"
+  revision = "e42267488fe361b9dc034be7a6bffef5b195bceb"
 
 [[projects]]
   name = "github.com/mattn/go-colorable"
   packages = ["."]
-  revision = "941b50ebc6efddf4c41c8e4537a5f68a4e686b24"
-  version = "v0.0.8"
+  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
+  version = "v0.0.9"
 
 [[projects]]
   name = "github.com/mattn/go-isatty"
@@ -239,7 +239,7 @@
   branch = "master"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "86bd21e371d71c8885b29e8dfb161c6034dc4abe"
+  revision = "181d419aa9e2223811b824e8f0b4af96f9ba9302"
 
 [[projects]]
   branch = "master"
@@ -257,35 +257,35 @@
   branch = "master"
   name = "github.com/ymomoi/goval-parser"
   packages = ["oval"]
-  revision = "003ac9af5fffac6c97ab1def025d2cb73e88469a"
+  revision = "0a0be1dd9d0855b50be0be5a10ad3085382b6d59"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["curve25519","ed25519","ed25519/internal/edwards25519","ssh","ssh/agent","ssh/terminal"]
-  revision = "6914964337150723782436d56b3f21610a74ce7b"
+  revision = "b176d7def5d71bdd214203491f89843ed217f420"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","idna","publicsuffix"]
-  revision = "ab5485076ff3407ad2d02db054635913f017b0ed"
+  revision = "1c05540f6879653db88113bc4a2b70aec4bd491f"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix"]
-  revision = "c4489faa6e5ab84c0ef40d6ee878f7a030281f0f"
+  packages = ["unix","windows"]
+  revision = "e42485b6e20ae7d2304ec72e535b103ed350cc02"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["internal/gen","internal/triegen","internal/ucd","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
-  revision = "836efe42bb4aa16aaa17b9c155d8813d336ed720"
+  revision = "b19bf474d317b857955b12035d2c5acb57ce8b01"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "269ff02f8e4540ba049a340068dac0ff4f0495df9f8eeb21d4a545ea5dedf2dd"
+  inputs-digest = "3590a66561bd65dbedefd34aa043c662111483be0bc1b68df264de0c53346552"
   solver-name = "gps-cdcl"
   solver-version = 1
