@@ -124,12 +124,17 @@ func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *mo
 		score2, vec2 := o.parseCvss2(cve.Cvss2)
 		score3, vec3 := o.parseCvss3(cve.Cvss3)
 
+		severity := def.Advisory.Severity
+		if cve.Impact != "" {
+			severity = cve.Impact
+		}
+
 		return &models.CveContent{
 			Type:         models.NewCveContentType(o.family),
 			CveID:        cve.CveID,
 			Title:        def.Title,
 			Summary:      def.Description,
-			Severity:     def.Advisory.Severity,
+			Severity:     severity,
 			Cvss2Score:   score2,
 			Cvss2Vector:  vec2,
 			Cvss3Score:   score3,
