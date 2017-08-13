@@ -28,14 +28,36 @@ type DebianBase struct {
 	Base
 }
 
-// fillFromOvalDB returns scan result after updating CVE info by OVAL
-func (o DebianBase) fillFromOvalDB(r *models.ScanResult) error {
-	defs, err := getDefsByPackNameFromOvalDB(o.family, r.Release, r.Packages)
-	if err != nil {
-		return err
+// FillWithOval returns scan result after updating CVE info by OVAL
+func (o DebianBase) FillWithOval(r *models.ScanResult) (err error) {
+	var defs []ovalmodels.Definition
+	if o.isFetchViaHTTP() {
+		if defs, err = getDefsByPackNameViaHTTP(r); err != nil {
+			return err
+		}
+	} else {
+		if defs, err = getDefsByPackNameFromOvalDB(o.family, r.Release, r.Packages); err != nil {
+			return err
+		}
 	}
+
 	for _, def := range defs {
 		o.update(r, &def)
+	}
+
+	for _, vuln := range r.ScannedCves {
+		switch models.NewCveContentType(o.family) {
+		case models.Debian:
+			if cont, ok := vuln.CveContents[models.Debian]; ok {
+				cont.SourceLink = "https://security-tracker.debian.org/tracker/" + cont.CveID
+				vuln.CveContents[models.Debian] = cont
+			}
+		case models.Ubuntu:
+			if cont, ok := vuln.CveContents[models.Ubuntu]; ok {
+				cont.SourceLink = "http://people.ubuntu.com/~ubuntu-security/cve/" + cont.CveID
+				vuln.CveContents[models.Ubuntu] = cont
+			}
+		}
 	}
 	return nil
 }
@@ -105,32 +127,6 @@ func NewDebian() Debian {
 	}
 }
 
-// FillWithOval returns scan result after updating CVE info by OVAL
-func (o Debian) FillWithOval(r *models.ScanResult) error {
-	if o.isFetchViaHTTP() {
-		defs, err := getDefsByPackNameViaHTTP(r)
-		if err != nil {
-			return err
-		}
-		for _, def := range defs {
-			o.update(r, &def)
-		}
-	} else {
-		if err := o.fillFromOvalDB(r); err != nil {
-			return err
-		}
-	}
-
-	// TODO merge to VulnInfo.VendorLinks
-	for _, vuln := range r.ScannedCves {
-		if cont, ok := vuln.CveContents[models.Debian]; ok {
-			cont.SourceLink = "https://security-tracker.debian.org/tracker/" + cont.CveID
-			vuln.CveContents[models.Debian] = cont
-		}
-	}
-	return nil
-}
-
 // Ubuntu is the interface for Debian OVAL
 type Ubuntu struct {
 	DebianBase
@@ -145,30 +141,4 @@ func NewUbuntu() Ubuntu {
 			},
 		},
 	}
-}
-
-// FillWithOval returns scan result after updating CVE info by OVAL
-func (o Ubuntu) FillWithOval(r *models.ScanResult) error {
-	if o.isFetchViaHTTP() {
-		defs, err := getDefsByPackNameViaHTTP(r)
-		if err != nil {
-			return err
-		}
-		for _, def := range defs {
-			o.update(r, &def)
-		}
-	} else {
-		if err := o.fillFromOvalDB(r); err != nil {
-			return err
-		}
-	}
-
-	// TODO merge to VulnInfo.VendorLinks
-	for _, vuln := range r.ScannedCves {
-		if cont, ok := vuln.CveContents[models.Ubuntu]; ok {
-			cont.SourceLink = "http://people.ubuntu.com/~ubuntu-security/cve/" + cont.CveID
-			vuln.CveContents[models.Ubuntu] = cont
-		}
-	}
-	return nil
 }

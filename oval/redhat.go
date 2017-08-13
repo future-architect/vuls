@@ -34,19 +34,21 @@ type RedHatBase struct {
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o RedHatBase) FillWithOval(r *models.ScanResult) error {
+func (o RedHatBase) FillWithOval(r *models.ScanResult) (err error) {
+	var defs []ovalmodels.Definition
 	if o.isFetchViaHTTP() {
-		defs, err := getDefsByPackNameViaHTTP(r)
-		if err != nil {
+		if defs, err = getDefsByPackNameViaHTTP(r); err != nil {
 			return err
-		}
-		for _, def := range defs {
-			o.update(r, &def)
 		}
 	} else {
-		if err := o.fillFromOvalDB(r); err != nil {
+		if defs, err = getDefsByPackNameFromOvalDB(
+			o.family, r.Release, r.Packages); err != nil {
 			return err
 		}
+	}
+
+	for _, def := range defs {
+		o.update(r, &def)
 	}
 
 	// TODO merge to VulnInfo.VendorLinks
@@ -55,24 +57,14 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) error {
 		case models.RedHat:
 			if cont, ok := vuln.CveContents[models.RedHat]; ok {
 				cont.SourceLink = "https://access.redhat.com/security/cve/" + cont.CveID
+				vuln.CveContents[models.RedHat] = cont
 			}
 		case models.Oracle:
 			if cont, ok := vuln.CveContents[models.Oracle]; ok {
 				cont.SourceLink = fmt.Sprintf("https://linux.oracle.com/cve/%s.html", cont.CveID)
+				vuln.CveContents[models.Oracle] = cont
 			}
 		}
-	}
-	return nil
-}
-
-// fillFromOvalDB returns scan result after updating CVE info by OVAL
-func (o RedHatBase) fillFromOvalDB(r *models.ScanResult) error {
-	defs, err := getDefsByPackNameFromOvalDB(o.family, r.Release, r.Packages)
-	if err != nil {
-		return err
-	}
-	for _, def := range defs {
-		o.update(r, &def)
 	}
 	return nil
 }
