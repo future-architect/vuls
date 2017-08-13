@@ -1,26 +1,36 @@
+/* Vuls - Vulnerability Scanner
+Copyright (C) 2016  Future Architect, Inc. Japan.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 package oval
 
 import (
-	"fmt"
-
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	ver "github.com/knqyf263/go-deb-version"
-	db "github.com/kotakanbe/goval-dictionary/db"
-	ovallog "github.com/kotakanbe/goval-dictionary/log"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
 // DebianBase is the base struct of Debian and Ubuntu
 type DebianBase struct {
 	Base
-	family string
 }
 
 // fillFromOvalDB returns scan result after updating CVE info by OVAL
 func (o DebianBase) fillFromOvalDB(r *models.ScanResult) error {
-	defs, err := o.getDefsByPackNameFromOvalDB(r.Release, r.Packages)
+	defs, err := getDefsByPackNameFromOvalDB(o.family, r.Release, r.Packages)
 	if err != nil {
 		return err
 	}
@@ -30,51 +40,9 @@ func (o DebianBase) fillFromOvalDB(r *models.ScanResult) error {
 	return nil
 }
 
-func (o DebianBase) getDefsByPackNameFromOvalDB(osRelease string,
-	packs models.Packages) (relatedDefs []ovalmodels.Definition, err error) {
-
-	ovallog.Initialize(config.Conf.LogDir)
-	path := config.Conf.OvalDBURL
-	if config.Conf.OvalDBType == "sqlite3" {
-		path = config.Conf.OvalDBPath
-	}
-	util.Log.Debugf("Open oval-dictionary db (%s): %s", config.Conf.OvalDBType, path)
-
-	var ovaldb db.DB
-	if ovaldb, err = db.NewDB(
-		o.family,
-		config.Conf.OvalDBType,
-		path,
-		config.Conf.DebugSQL,
-	); err != nil {
-		return
-	}
-	defer ovaldb.CloseDB()
-
-	for _, pack := range packs {
-		definitions, err := ovaldb.GetByPackName(osRelease, pack.Name)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to get %s OVAL info by package name: %v", o.family, err)
-		}
-		for _, def := range definitions {
-			current, _ := ver.NewVersion(pack.Version)
-			for _, p := range def.AffectedPacks {
-				if pack.Name != p.Name {
-					continue
-				}
-				affected, _ := ver.NewVersion(p.Version)
-				if current.LessThan(affected) {
-					relatedDefs = append(relatedDefs, def)
-				}
-			}
-		}
-	}
-	return
-}
-
 func (o DebianBase) update(r *models.ScanResult, definition *ovalmodels.Definition) {
 	ovalContent := *o.convertToModel(definition)
-	ovalContent.Type = models.NewCveContentType(r.Family)
+	ovalContent.Type = models.NewCveContentType(o.family)
 	vinfo, ok := r.ScannedCves[definition.Debian.CveID]
 	if !ok {
 		util.Log.Debugf("%s is newly detected by OVAL", definition.Debian.CveID)
@@ -86,7 +54,7 @@ func (o DebianBase) update(r *models.ScanResult, definition *ovalmodels.Definiti
 		}
 	} else {
 		cveContents := vinfo.CveContents
-		ctype := models.NewCveContentType(r.Family)
+		ctype := models.NewCveContentType(o.family)
 		if _, ok := vinfo.CveContents[ctype]; ok {
 			util.Log.Debugf("%s will be updated by OVAL", definition.Debian.CveID)
 		} else {
@@ -130,7 +98,9 @@ type Debian struct {
 func NewDebian() Debian {
 	return Debian{
 		DebianBase{
-			family: config.Debian,
+			Base{
+				family: config.Debian,
+			},
 		},
 	}
 }
@@ -170,7 +140,9 @@ type Ubuntu struct {
 func NewUbuntu() Ubuntu {
 	return Ubuntu{
 		DebianBase{
-			family: config.Ubuntu,
+			Base{
+				family: config.Ubuntu,
+			},
 		},
 	}
 }

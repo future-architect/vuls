@@ -1,3 +1,20 @@
+/* Vuls - Vulnerability Scanner
+Copyright (C) 2016  Future Architect, Inc. Japan.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package oval
 
 import (
@@ -8,16 +25,12 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	ver "github.com/knqyf263/go-rpm-version"
-	db "github.com/kotakanbe/goval-dictionary/db"
-	ovallog "github.com/kotakanbe/goval-dictionary/log"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
 // RedHatBase is the base struct for RedHat and CentOS
 type RedHatBase struct {
 	Base
-	family string
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
@@ -54,7 +67,7 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) error {
 
 // fillFromOvalDB returns scan result after updating CVE info by OVAL
 func (o RedHatBase) fillFromOvalDB(r *models.ScanResult) error {
-	defs, err := o.getDefsByPackNameFromOvalDB(r.Release, r.Packages)
+	defs, err := getDefsByPackNameFromOvalDB(o.family, r.Release, r.Packages)
 	if err != nil {
 		return err
 	}
@@ -62,47 +75,6 @@ func (o RedHatBase) fillFromOvalDB(r *models.ScanResult) error {
 		o.update(r, &def)
 	}
 	return nil
-}
-
-func (o RedHatBase) getDefsByPackNameFromOvalDB(osRelease string,
-	packs models.Packages) (relatedDefs []ovalmodels.Definition, err error) {
-
-	ovallog.Initialize(config.Conf.LogDir)
-	path := config.Conf.OvalDBURL
-	if config.Conf.OvalDBType == "sqlite3" {
-		path = config.Conf.OvalDBPath
-	}
-	util.Log.Debugf("Open oval-dictionary db (%s): %s", config.Conf.OvalDBType, path)
-
-	var ovaldb db.DB
-	if ovaldb, err = db.NewDB(
-		o.family,
-		config.Conf.OvalDBType,
-		path,
-		config.Conf.DebugSQL,
-	); err != nil {
-		return
-	}
-	defer ovaldb.CloseDB()
-	for _, pack := range packs {
-		definitions, err := ovaldb.GetByPackName(osRelease, pack.Name)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to get %s OVAL info by package name: %v", o.family, err)
-		}
-		for _, def := range definitions {
-			current := ver.NewVersion(fmt.Sprintf("%s-%s", pack.Version, pack.Release))
-			for _, p := range def.AffectedPacks {
-				if pack.Name != p.Name {
-					continue
-				}
-				affected := ver.NewVersion(p.Version)
-				if current.LessThan(affected) {
-					relatedDefs = append(relatedDefs, def)
-				}
-			}
-		}
-	}
-	return
 }
 
 func (o RedHatBase) update(r *models.ScanResult, definition *ovalmodels.Definition) {
@@ -210,7 +182,9 @@ type RedHat struct {
 func NewRedhat() RedHat {
 	return RedHat{
 		RedHatBase{
-			family: config.RedHat,
+			Base{
+				family: config.RedHat,
+			},
 		},
 	}
 }
@@ -224,7 +198,9 @@ type CentOS struct {
 func NewCentOS() CentOS {
 	return CentOS{
 		RedHatBase{
-			family: config.CentOS,
+			Base{
+				family: config.CentOS,
+			},
 		},
 	}
 }
@@ -238,7 +214,9 @@ type Oracle struct {
 func NewOracle() Oracle {
 	return Oracle{
 		RedHatBase{
-			family: config.Oracle,
+			Base{
+				family: config.Oracle,
+			},
 		},
 	}
 }
