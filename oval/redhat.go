@@ -9,7 +9,6 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	ver "github.com/knqyf263/go-rpm-version"
-	ovalconf "github.com/kotakanbe/goval-dictionary/config"
 	db "github.com/kotakanbe/goval-dictionary/db"
 	ovallog "github.com/kotakanbe/goval-dictionary/log"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
@@ -68,24 +67,19 @@ func (o RedHatBase) fillFromOvalDB(r *models.ScanResult) error {
 func (o RedHatBase) getDefsByPackNameFromOvalDB(osRelease string,
 	packs models.Packages) (relatedDefs []ovalmodels.Definition, err error) {
 
-	ovalconf.Conf.DebugSQL = config.Conf.DebugSQL
-	ovalconf.Conf.DBType = config.Conf.OvalDBType
-	if ovalconf.Conf.DBType == "sqlite3" {
-		ovalconf.Conf.DBPath = config.Conf.OvalDBPath
-	} else {
-		ovalconf.Conf.DBPath = config.Conf.OvalDBURL
-	}
-	util.Log.Debugf("Open oval-dictionary db (%s): %s",
-		ovalconf.Conf.DBType, ovalconf.Conf.DBPath)
-
 	ovallog.Initialize(config.Conf.LogDir)
+	path := config.Conf.OvalDBURL
+	if config.Conf.OvalDBType == "sqlite3" {
+		path = config.Conf.OvalDBPath
+	}
+	util.Log.Debugf("Open oval-dictionary db (%s): %s", config.Conf.OvalDBType, path)
 
 	var ovaldb db.DB
 	if ovaldb, err = db.NewDB(
 		o.family,
-		ovalconf.Conf.DBType,
-		ovalconf.Conf.DBPath,
-		ovalconf.Conf.DebugSQL,
+		config.Conf.OvalDBType,
+		path,
+		config.Conf.DebugSQL,
 	); err != nil {
 		return
 	}
@@ -98,11 +92,13 @@ func (o RedHatBase) getDefsByPackNameFromOvalDB(osRelease string,
 		for _, def := range definitions {
 			current := ver.NewVersion(fmt.Sprintf("%s-%s", pack.Version, pack.Release))
 			for _, p := range def.AffectedPacks {
-				affected := ver.NewVersion(p.Version)
-				if pack.Name != p.Name || !current.LessThan(affected) {
+				if pack.Name != p.Name {
 					continue
 				}
-				relatedDefs = append(relatedDefs, def)
+				affected := ver.NewVersion(p.Version)
+				if current.LessThan(affected) {
+					relatedDefs = append(relatedDefs, def)
+				}
 			}
 		}
 	}

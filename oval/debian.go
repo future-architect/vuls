@@ -7,46 +7,54 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	ver "github.com/knqyf263/go-deb-version"
-	ovalconf "github.com/kotakanbe/goval-dictionary/config"
 	db "github.com/kotakanbe/goval-dictionary/db"
 	ovallog "github.com/kotakanbe/goval-dictionary/log"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
 // DebianBase is the base struct of Debian and Ubuntu
-type DebianBase struct{ Base }
+type DebianBase struct {
+	Base
+	family string
+}
 
 // fillFromOvalDB returns scan result after updating CVE info by OVAL
 func (o DebianBase) fillFromOvalDB(r *models.ScanResult) error {
-	ovalconf.Conf.DebugSQL = config.Conf.DebugSQL
-	ovalconf.Conf.DBType = config.Conf.OvalDBType
-	ovalconf.Conf.DBPath = config.Conf.OvalDBPath
-	if ovalconf.Conf.DBType == "sqlite3" {
-		ovalconf.Conf.DBPath = config.Conf.OvalDBPath
-	} else {
-		ovalconf.Conf.DBPath = config.Conf.OvalDBURL
+	defs, err := o.getDefsByPackNameFromOvalDB(r.Release, r.Packages)
+	if err != nil {
+		return err
 	}
-	util.Log.Debugf("Open oval-dictionary db (%s): %s",
-		ovalconf.Conf.DBType, ovalconf.Conf.DBPath)
+	for _, def := range defs {
+		o.update(r, &def)
+	}
+	return nil
+}
+
+func (o DebianBase) getDefsByPackNameFromOvalDB(osRelease string,
+	packs models.Packages) (relatedDefs []ovalmodels.Definition, err error) {
 
 	ovallog.Initialize(config.Conf.LogDir)
+	path := config.Conf.OvalDBURL
+	if config.Conf.OvalDBType == "sqlite3" {
+		path = config.Conf.OvalDBPath
+	}
+	util.Log.Debugf("Open oval-dictionary db (%s): %s", config.Conf.OvalDBType, path)
 
-	var err error
 	var ovaldb db.DB
 	if ovaldb, err = db.NewDB(
-		r.Family,
-		ovalconf.Conf.DBType,
-		ovalconf.Conf.DBPath,
-		ovalconf.Conf.DebugSQL,
+		o.family,
+		config.Conf.OvalDBType,
+		path,
+		config.Conf.DebugSQL,
 	); err != nil {
-		return err
+		return
 	}
 	defer ovaldb.CloseDB()
 
-	for _, pack := range r.Packages {
-		definitions, err := ovaldb.GetByPackName(r.Release, pack.Name)
+	for _, pack := range packs {
+		definitions, err := ovaldb.GetByPackName(osRelease, pack.Name)
 		if err != nil {
-			return fmt.Errorf("Failed to get Debian OVAL info by package name: %v", err)
+			return nil, fmt.Errorf("Failed to get %s OVAL info by package name: %v", o.family, err)
 		}
 		for _, def := range definitions {
 			current, _ := ver.NewVersion(pack.Version)
@@ -56,12 +64,12 @@ func (o DebianBase) fillFromOvalDB(r *models.ScanResult) error {
 				}
 				affected, _ := ver.NewVersion(p.Version)
 				if current.LessThan(affected) {
-					o.update(r, &def)
+					relatedDefs = append(relatedDefs, def)
 				}
 			}
 		}
 	}
-	return nil
+	return
 }
 
 func (o DebianBase) update(r *models.ScanResult, definition *ovalmodels.Definition) {
@@ -120,7 +128,11 @@ type Debian struct {
 
 // NewDebian creates OVAL client for Debian
 func NewDebian() Debian {
-	return Debian{}
+	return Debian{
+		DebianBase{
+			family: config.Debian,
+		},
+	}
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
@@ -156,7 +168,11 @@ type Ubuntu struct {
 
 // NewUbuntu creates OVAL client for Debian
 func NewUbuntu() Ubuntu {
-	return Ubuntu{}
+	return Ubuntu{
+		DebianBase{
+			family: config.Ubuntu,
+		},
+	}
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
