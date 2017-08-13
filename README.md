@@ -479,13 +479,35 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 ## [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)  
 - Fetch vulnerability information from NVD and JVN(Japanese), then insert into SQLite3, MySQL, PostgreSQL or Redis.
 
-## Scanning Flow
-![Vuls-Scan-Flow](img/vuls-scan-flow.png)
-- Scan vulnerabilities on the servers via SSH and collect a list of the CVE ID
-  - To scan Docker containers, Vuls connects via SSH to the Docker host and then `docker exec` to the containers. So, no need to run sshd daemon on the containers.
+## Vuls
+### Fast Scan
+![Vuls-Scan-Flow](img/vuls-scan-flow-fast.png)
+- Scan without Root Privilege
 
-----
-# Performance Considerations
+| Distribution|         Scan Speed | Root Privilege | OVAL |
+|:------------|:-------------------|:---------------|:-----|
+| CentOS      |               Fast |　           No | Yes |
+| Amazon      |               Fast |　           No |  No |
+| RHEL        |               Fast |　           No | Yes |
+| Oracle      |               Fast |　           No | Yes |
+| FreeBSD     |               Fast |　           No |  No |
+| Ubuntu      |               Fast |　           No | Yes |
+| Debian      |               Fast |　           No | Yes |
+| Raspbian    |First time: Slow / From the second time: Fast|　     Yes | No |
+
+### Deep Scan
+![Vuls-Scan-Flow](img/vuls-scan-flow.png)
+
+| Distribution|         Scan Speed | Root Privilege | OVAL |
+|:------------|:-------------------|:---------------|:-----|
+| CentOS      |               Slow |　           No | Yes|
+| Amazon      |               Slow |　           No | No|
+| RHEL        |               Slow |　           Yes| Yes|
+| Oracle      |               Slow |　           Yes| Yes|
+| Ubuntu      |First time: Slow / From the second time: Fast|　     Yes| Yes|
+| Debian      |First time: Slow / From the second time: Fast|　     Yes| Yes|
+| Raspbian    |First time: Slow / From the second time: Fast|　     Yes| No |
+| FreeBSD     |               Fast |　           No | No|
 
 - On Ubuntu, Debian and Raspbian
 Vuls issues `apt-get changelog` for each upgradable packages and parse the changelog.  
@@ -493,23 +515,10 @@ Vuls issues `apt-get changelog` for each upgradable packages and parse the chang
 Vuls stores these changelogs to KVS([boltdb](https://github.com/boltdb/bolt)).  
 From the second time on, the scan speed is fast by using the local cache.
 
-- On CentOS  
-Vuls issues `yum update --changelog` to get changelogs of upgradable packages at once and parse the changelog.  
-Scan speed is fast and resource usage is light.  
-
-- On Amazon, RHEL and FreeBSD  
-High speed scan and resource usage is light because Vuls can get CVE IDs by using package manager(no need to parse a changelog).
-
-| Distribution |         Scan Speed |
-|:-------------|:-------------------|
-| Ubuntu       |  First time: Slow / From the second time: Fast |
-| Debian       |  First time: Slow / From the second time: Fast |
-| CentOS       |               Fast |
-| Amazon       |               Fast |
-| RHEL         |               Fast |
-| Oracle Linux |               Fast |
-| FreeBSD      |               Fast |
-| Raspbian     |  First time: Slow / From the second time: Fast |
+- On CentOS
+Vuls issues `yum changelog` to get changelogs of upgradable packages at once and parse the changelog.  
+- On RHEL, Oracle, Amazon and FreeBSD
+Detect CVE IDs by using package manager.
 
 ----
 
@@ -1289,7 +1298,6 @@ $ vuls report \
       -format-json \
       -aws-region=ap-northeast-1 \
       -aws-s3-bucket=vuls \
-      -aws-s3-results-dir=/bucket/path/to/results \
       -aws-profile=default
 ```
 With this sample command, it will ..
@@ -1553,6 +1561,8 @@ $ vuls history | peco | vuls tui -pipe
 
 [![asciicast](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8.png)](https://asciinema.org/a/emi7y7docxr60bq080z10t7v8)
 
+----
+
 # Usage: go-cve-dictionary on different server
 
 Run go-cve-dictionary as server mode before scanning on 192.168.10.1
@@ -1569,6 +1579,8 @@ $ vuls report -cvedb-url=http://192.168.0.1:1323
 # Usage: Update NVD Data
 
 see [go-cve-dictionary#usage-fetch-nvd-data](https://github.com/kotakanbe/go-cve-dictionary#usage-fetch-nvd-data)
+
+----
 
 # Usage: goval-dictionary on different server
 
@@ -1699,12 +1711,11 @@ kotakanbe ([@kotakanbe](https://twitter.com/kotakanbe)) created vuls and [these 
 Please see [CHANGELOG](https://github.com/future-architect/vuls/blob/master/CHANGELOG.md).
 
 ----
+# Stargazers over time		
+		
+[![Stargazers over time](https://starcharts.herokuapp.com/future-architect/vuls.svg)](https://starcharts.herokuapp.com/future-architect/vuls)		
 
-# Stargazers over time
-
-[![Stargazers over time](https://starcharts.herokuapp.com/future-architect/vuls.svg)](https://starcharts.herokuapp.com/future-architect/vuls)
-      
-----
+-----
 
 # License
 

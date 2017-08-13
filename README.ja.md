@@ -470,16 +470,38 @@ Vulsをスキャン対象サーバにデプロイする。Vulsはローカルホ
 - NVDとJVN(日本語)から脆弱性データベースを取得し、SQLite3に格納する。
 
 ## Vuls
+### Fast Scan
+![Vuls-Scan-Flow](img/vuls-scan-flow-fast.png)
+- Root権限不要でスキャン可能なモード（Raspbian以外）
+- OVALが提供されているディストリビューションは、スキャン時はパッケージのバージョンを取得するのみ。レポート時にOVAL DBとバージョン比較により脆弱性を検知する
+- OVALが提供されいていないディストリビューションはスキャン時にコマンドを発行して脆弱性を検知する
+
+| Distribution|         Scan Speed | Root Privilege | OVAL |
+|:------------|:-------------------|:---------------|:-----|
+| CentOS      |               速い |　           不要 | 有 |
+| Amazon      |               速い |　           不要 | 無 |
+| RHEL        |               速い |　           不要 | 有 |
+| Oracle      |               速い |　           不要 | 有 |
+| FreeBSD     |               速い |　           不要 | 無 |
+| Ubuntu      |               速い |　           不要 | 有 |
+| Debian      |               速い |　           不要 | 有 |
+| Raspbian    | 初回は遅い / 2回目以降速い　|　     必要 | 無 |
+
+### Deep Scan
 ![Vuls-Scan-Flow](img/vuls-scan-flow.png)
-- SSHでサーバに存在する脆弱性をスキャンし、CVE IDのリストを作成する
-  - Dockerコンテナのスキャンする場合、VulsはまずDockerホストにSSHで接続する。その後、Dockerホスト上で `docker exec` 経由でコマンドを実効する。Dockerコンテナ内にSSHデーモンを起動する必要はない
-- 検出されたCVEの詳細情報をgo-cve-dictionaryから取得する
-- スキャン結果レポートを生成し、SlackやEmailなどで送信する
-- スキャン結果をJSONファイルに出力すると詳細情報をターミナル上で参照可能
+- Root権限が必要なコマンドも発行し、より深いスキャンを行うモード
+- ChangelogをパースしてCVE-IDを検知するのでFastよりも検知漏れが減る
 
-
-----
-# Performance Considerations
+| Distribution|         Scan Speed | Root Privilege | OVAL |
+|:------------|:-------------------|:---------------|:-----|
+| CentOS      |               遅い |　           不要 | 有 |
+| Amazon      |               遅い |　           不要 | 無 |
+| RHEL        |               遅い |　           必要 | 有 |
+| Oracle      |               遅い |　           必要 | 有 |
+| Ubuntu      | 初回は遅い / 2回目以降速い　|　     必要 | 有 |
+| Debian      | 初回は遅い / 2回目以降速い　|　     必要 | 有 |
+| Raspbian    | 初回は遅い / 2回目以降速い　|　     必要 | 無 |
+| FreeBSD     |               速い |　           不要 | 無 |
 
 - Ubuntu, Debian, Raspbian
 `apt-get changelog`でアップデート対象のパッケージのチェンジログを取得し、含まれるCVE IDをパースする。
@@ -487,20 +509,10 @@ Vulsをスキャン対象サーバにデプロイする。Vulsはローカルホ
 ただ、２回目以降はキャッシュしたchangelogを使うので速くなる。  
 
 - CentOS  
-アップデート対象すべてのchangelogを一度で取得しパースする。スキャンスピードは速い、サーバリソース消費量は小さい。
+`yum changelog`でアップデート対象のパッケージのチェンジログを取得し、含まれるCVE IDをパースする。
 
 - Amazon, RHEL and FreeBSD  
-高速にスキャンし、スキャン対象サーバのリソース消費量は小さい。
-
-| Distribution|         Scan Speed |
-|:------------|:-------------------|
-| Ubuntu      | 初回は遅い / 2回目以降速い　|
-| Debian      | 初回は遅い / 2回目以降速い　|
-| CentOS      |               速い |
-| Amazon      |               速い |
-| RHEL        |               速い |
-| FreeBSD     |               速い |
-| Raspbian    | 初回は遅い / 2回目以降速い　|
+`yum changelog`でアップデート対象のパッケージのチェンジログを取得する(パースはしない)。
 
 ----
 
@@ -1739,6 +1751,11 @@ kotakanbe ([@kotakanbe](https://twitter.com/kotakanbe)) created vuls and [these 
 Please see [CHANGELOG](https://github.com/future-architect/vuls/blob/master/CHANGELOG.md).
 
 ----
+# Stargazers over time		
+		
+[![Stargazers over time](https://starcharts.herokuapp.com/future-architect/vuls.svg)](https://starcharts.herokuapp.com/future-architect/vuls)		
+
+-----
 
 # License
 
