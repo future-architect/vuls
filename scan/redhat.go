@@ -177,11 +177,6 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 //    RHEL 6, 7     ... yum-utils
 //    Amazon 		... yum-utils
 func (o *redhat) checkDependencies() error {
-	if !config.Conf.Deep {
-		o.log.Infof("Dependencies... No need")
-		return nil
-	}
-
 	majorVersion, err := o.Distro.MajorVersion()
 	if err != nil {
 		msg := fmt.Sprintf("Not implemented yet: %s, err: %s", o.Distro, err)
@@ -195,28 +190,22 @@ func (o *redhat) checkDependencies() error {
 			o.log.Errorf(msg)
 			return fmt.Errorf(msg)
 		}
-
-		// --assumeno option of yum is needed.
-		cmd := "yum -h | grep assumeno"
-		if r := o.exec(cmd, noSudo); !r.isSuccess() {
-			msg := fmt.Sprintf("Installed yum is old. Please update yum and then retry")
-			o.log.Errorf(msg)
-			return fmt.Errorf(msg)
-		}
 	}
 
-	var packNames []string
-	switch o.Distro.Family {
-	case config.CentOS, config.Amazon:
-		packNames = []string{"yum-utils, yum-plugin-changelog"}
-	case config.RedHat, config.Oracle:
-		if majorVersion < 6 {
-			packNames = []string{"yum-utils", "yum-security", "yum-changelog"}
-		} else {
-			packNames = []string{"yum-plugin-changelog"}
+	packNames := []string{"yum-utils"}
+	if config.Conf.Deep {
+		switch o.Distro.Family {
+		case config.CentOS, config.Amazon:
+			packNames = append(packNames, "yum-plugin-changelog")
+		case config.RedHat, config.Oracle:
+			if majorVersion < 6 {
+				packNames = append(packNames, "yum-security", "yum-changelog")
+			} else {
+				packNames = append(packNames, "yum-plugin-changelog")
+			}
+		default:
+			return fmt.Errorf("Not implemented yet: %s", o.Distro)
 		}
-	default:
-		return fmt.Errorf("Not implemented yet: %s", o.Distro)
 	}
 
 	for _, name := range packNames {
