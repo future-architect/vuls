@@ -50,16 +50,17 @@ Vulsは上に挙げた手動運用での課題を解決するツールであり�
     - Ubuntu, Debian, CentOS, Amazon Linux, RHEL, Raspbianに対応
     - クラウド、オンプレミス、Docker
 - 高精度なスキャン
-    - Vulsは複数の脆弱性データベースを使っている
-        - OVAL
+    - Vulsは複数の脆弱性データベース、複数の検知方法を組み合わせることで高精度なスキャンを実現している
+        - OVAL
         - RHSA/ALAS/ELSA/FreeBSD-SA
         - Changelog
 - FastスキャンとDeepスキャン
     - Fastスキャン
         - root権限必要なし
         - スキャン対象サーバの負荷ほぼなし
-    - Deepスキャン
-        - Changelogの差分を取得し、そこに含まれる脆弱性を検知
+	- スキャン対象サーバがインターネットに接続していなくてもスキャンできる
+    - Deepスキャン
+        - Changelogの差分を取得し、そこに書かれているCVE-IDを検知
         - スキャン対象サーバに負荷がかかる場合がある
 - リモートスキャンとローカルスキャン
     - リモートスキャン
