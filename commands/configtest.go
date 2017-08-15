@@ -174,7 +174,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		return subcommands.ExitFailure
 	}
 
-	util.Log.Info("Checking dependendies...")
+	util.Log.Info("Checking dependencies...")
 	scan.CheckDependencies(p.timeoutSec)
 
 	util.Log.Info("Checking sudo settings...")
