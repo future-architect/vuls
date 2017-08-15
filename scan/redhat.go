@@ -306,7 +306,7 @@ func (o *redhat) scanUpdatablePackages() (models.Packages, error) {
 		cmd += " --enablerepo=" + repo
 	}
 
-	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
+	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
