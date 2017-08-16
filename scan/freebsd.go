@@ -205,6 +205,12 @@ func (o *bsd) parsePkgVersion(stdout string) models.Packages {
 				Version:    ver,
 				NewVersion: candidate,
 			}
+		case ">":
+			o.log.Warn("The installed version of the %s is newer than the current version. *This situation can arise with an out of date index file, or when testing new ports.*", name)
+			packs[name] = models.Package{
+				Name:    name,
+				Version: ver,
+			}
 		}
 	}
 	return packs
