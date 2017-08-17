@@ -173,8 +173,8 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 //
 // - Deep scan mode
 //    CentOS 6, 7 	... yum-utils
-//    RHEL 5     	... yum-security
-//    RHEL 6, 7     ... yum-utils
+//    RHEL 5     	... yum-security, yum-changelog
+//    RHEL 6, 7     ... yum-utils, yum-plugin-changelog
 //    Amazon 		... yum-utils
 func (o *redhat) checkDependencies() error {
 	majorVersion, err := o.Distro.MajorVersion()
@@ -306,7 +306,7 @@ func (o *redhat) scanUpdatablePackages() (models.Packages, error) {
 		cmd += " --enablerepo=" + repo
 	}
 
-	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
+	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
@@ -421,7 +421,7 @@ func (o *redhat) getAvailableChangelogs(packNames []string) (map[string]string, 
 	cmd := `yum --color=never %s changelog all %s | grep -A 10000 '==================== Available Packages ===================='`
 	cmd = fmt.Sprintf(cmd, yumopts, strings.Join(packNames, " "))
 
-	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
+	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess(0, 1) {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
@@ -997,7 +997,7 @@ func (o *redhat) sudo() bool {
 	case config.Amazon, config.CentOS:
 		return false
 	default:
-		// RHEL
-		return true
+		// RHEL, Oracle
+		return config.Conf.Deep
 	}
 }
