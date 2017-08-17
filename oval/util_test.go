@@ -100,27 +100,37 @@ func TestUpsert(t *testing.T) {
 }
 
 func TestDefpacksToPackStatuses(t *testing.T) {
+	type in struct {
+		dp     defPacks
+		family string
+		packs  models.Packages
+	}
 	var tests = []struct {
-		in  defPacks
+		in  in
 		out models.PackageStatuses
 	}{
+		// Ubuntu
 		{
-			in: defPacks{
-				def: ovalmodels.Definition{
-					AffectedPacks: []ovalmodels.Package{
-						{
-							Name:        "a",
-							NotFixedYet: true,
-						},
-						{
-							Name:        "b",
-							NotFixedYet: false,
+			in: in{
+				family: "ubuntu",
+				packs:  models.Packages{},
+				dp: defPacks{
+					def: ovalmodels.Definition{
+						AffectedPacks: []ovalmodels.Package{
+							{
+								Name:        "a",
+								NotFixedYet: true,
+							},
+							{
+								Name:        "b",
+								NotFixedYet: false,
+							},
 						},
 					},
-				},
-				actuallyAffectedPackNames: map[string]bool{
-					"a": true,
-					"b": false,
+					actuallyAffectedPackNames: map[string]bool{
+						"a": true,
+						"b": true,
+					},
 				},
 			},
 			out: models.PackageStatuses{
@@ -134,9 +144,98 @@ func TestDefpacksToPackStatuses(t *testing.T) {
 				},
 			},
 		},
+
+		// RedHat, Amazon, Debian
+		{
+			in: in{
+				family: "redhat",
+				packs:  models.Packages{},
+				dp: defPacks{
+					def: ovalmodels.Definition{
+						AffectedPacks: []ovalmodels.Package{
+							{
+								Name: "a",
+							},
+							{
+								Name: "b",
+							},
+						},
+					},
+					actuallyAffectedPackNames: map[string]bool{
+						"a": true,
+						"b": true,
+					},
+				},
+			},
+			out: models.PackageStatuses{
+				{
+					Name:        "a",
+					NotFixedYet: false,
+				},
+				{
+					Name:        "b",
+					NotFixedYet: false,
+				},
+			},
+		},
+
+		// CentOS
+		{
+			in: in{
+				family: "centos",
+				packs: models.Packages{
+					"a": {Version: "1.0.0"},
+					"b": {
+						Version:    "1.0.0",
+						NewVersion: "2.0.0",
+					},
+					"c": {
+						Version:    "1.0.0",
+						NewVersion: "1.5.0",
+					},
+				},
+				dp: defPacks{
+					def: ovalmodels.Definition{
+						AffectedPacks: []ovalmodels.Package{
+							{
+								Name:    "a",
+								Version: "1.0.1",
+							},
+							{
+								Name:    "b",
+								Version: "1.5.0",
+							},
+							{
+								Name:    "c",
+								Version: "2.0.0",
+							},
+						},
+					},
+					actuallyAffectedPackNames: map[string]bool{
+						"a": true,
+						"b": true,
+						"c": true,
+					},
+				},
+			},
+			out: models.PackageStatuses{
+				{
+					Name:        "a",
+					NotFixedYet: true,
+				},
+				{
+					Name:        "b",
+					NotFixedYet: false,
+				},
+				{
+					Name:        "c",
+					NotFixedYet: true,
+				},
+			},
+		},
 	}
 	for i, tt := range tests {
-		actual := tt.in.toPackStatuses()
+		actual := tt.in.dp.toPackStatuses(tt.in.family, tt.in.packs)
 		sort.Slice(actual, func(i, j int) bool {
 			return actual[i].Name < actual[j].Name
 		})

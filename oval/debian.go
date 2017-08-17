@@ -96,7 +96,7 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 	for _, pack := range vinfo.AffectedPackages {
 		defPacks.actuallyAffectedPackNames[pack.Name] = true
 	}
-	vinfo.AffectedPackages = defPacks.toPackStatuses()
+	vinfo.AffectedPackages = defPacks.toPackStatuses(r.Family, r.Packages)
 	vinfo.AffectedPackages.Sort()
 	r.ScannedCves[defPacks.def.Debian.CveID] = vinfo
 }

@@ -44,17 +44,77 @@ type defPacks struct {
 	actuallyAffectedPackNames map[string]bool
 }
 
-func (e defPacks) toPackStatuses() (ps models.PackageStatuses) {
-	packNotFixedYet := map[string]bool{}
-	for _, p := range e.def.AffectedPacks {
-		packNotFixedYet[p.Name] = p.NotFixedYet
+func (e defPacks) toPackStatuses(family string, packs models.Packages) (ps models.PackageStatuses) {
+	switch family {
+	case config.Ubuntu:
+		packNotFixedYet := map[string]bool{}
+		for _, p := range e.def.AffectedPacks {
+			packNotFixedYet[p.Name] = p.NotFixedYet
+		}
+		for k := range e.actuallyAffectedPackNames {
+			ps = append(ps, models.PackageStatus{
+				Name:        k,
+				NotFixedYet: packNotFixedYet[k],
+			})
+		}
+
+	case config.CentOS:
+		// There are many packages that has been fixed in RedHat, but not been fixed in CentOS
+		for name := range e.actuallyAffectedPackNames {
+			pack, ok := packs[name]
+			if !ok {
+				util.Log.Warnf("Faild to find in Package list: %s", name)
+				return
+			}
+
+			ovalPackVer := ""
+			for _, p := range e.def.AffectedPacks {
+				if p.Name == name {
+					ovalPackVer = p.Version
+					break
+				}
+			}
+			if ovalPackVer == "" {
+				util.Log.Warnf("Faild to find in Oval Package list: %s", name)
+				return
+			}
+
+			packNewVer := fmt.Sprintf("%s-%s", pack.NewVersion, pack.NewRelease)
+			if packNewVer == "" {
+				// compare version: installed vs oval
+				vera := rpmver.NewVersion(fmt.Sprintf("%s-%s", pack.Version, pack.Release))
+				verb := rpmver.NewVersion(ovalPackVer)
+				notFixedYet := false
+				if vera.LessThan(verb) {
+					notFixedYet = true
+				}
+				ps = append(ps, models.PackageStatus{
+					Name:        name,
+					NotFixedYet: notFixedYet,
+				})
+			} else {
+				// compare version: newVer vs oval
+				vera := rpmver.NewVersion(packNewVer)
+				verb := rpmver.NewVersion(ovalPackVer)
+				notFixedYet := false
+				if vera.LessThan(verb) {
+					notFixedYet = true
+				}
+				ps = append(ps, models.PackageStatus{
+					Name:        name,
+					NotFixedYet: notFixedYet,
+				})
+			}
+		}
+
+	default:
+		for k := range e.actuallyAffectedPackNames {
+			ps = append(ps, models.PackageStatus{
+				Name: k,
+			})
+		}
 	}
-	for k := range e.actuallyAffectedPackNames {
-		ps = append(ps, models.PackageStatus{
-			Name:        k,
-			NotFixedYet: packNotFixedYet[k],
-		})
-	}
+
 	return
 }
 
