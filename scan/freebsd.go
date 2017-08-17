@@ -164,13 +164,15 @@ func (o *bsd) scanUnsecurePackages() (models.VulnInfos, error) {
 			})
 		}
 
-		names := []string{}
+		affected := models.PackageStatuses{}
 		for name := range packs {
-			names = append(names, name)
+			affected = append(affected, models.PackageStatus{
+				Name: name,
+			})
 		}
 		vinfos[cveID] = models.VulnInfo{
 			CveID:            cveID,
-			PackageNames:     names,
+			AffectedPackages: affected,
 			DistroAdvisories: disAdvs,
 			Confidence:       models.PkgAuditMatch,
 		}

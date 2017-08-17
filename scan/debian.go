@@ -508,10 +508,15 @@ func (o *debian) scanVulnInfos(updatablePacks models.Packages, meta *cache.Meta)
 	o.log.Debugf("%d Cves are found. cves: %v", len(cveIDs), cveIDs)
 	vinfos := models.VulnInfos{}
 	for cveID, names := range cvePackages {
+		affected := models.PackageStatuses{}
+		for _, n := range names {
+			affected = append(affected, models.PackageStatus{Name: n})
+		}
+
 		vinfos[cveID.CveID] = models.VulnInfo{
-			CveID:        cveID.CveID,
-			Confidence:   cveID.Confidence,
-			PackageNames: names,
+			CveID:            cveID.CveID,
+			Confidence:       cveID.Confidence,
+			AffectedPackages: affected,
 		}
 	}
 

@@ -183,13 +183,13 @@ func TestDiff(t *testing.T) {
 					ScannedCves: models.VulnInfos{
 						"CVE-2012-6702": {
 							CveID:            "CVE-2012-6702",
-							PackageNames:     []string{"libexpat1"},
+							AffectedPackages: models.PackageStatuses{{Name: "libexpat1"}},
 							DistroAdvisories: []models.DistroAdvisory{},
 							CpeNames:         []string{},
 						},
 						"CVE-2014-9761": {
 							CveID:            "CVE-2014-9761",
-							PackageNames:     []string{"libc-bin"},
+							AffectedPackages: models.PackageStatuses{{Name: "libc-bin"}},
 							DistroAdvisories: []models.DistroAdvisory{},
 							CpeNames:         []string{},
 						},
@@ -208,13 +208,13 @@ func TestDiff(t *testing.T) {
 					ScannedCves: models.VulnInfos{
 						"CVE-2012-6702": {
 							CveID:            "CVE-2012-6702",
-							PackageNames:     []string{"libexpat1"},
+							AffectedPackages: models.PackageStatuses{{Name: "libexpat1"}},
 							DistroAdvisories: []models.DistroAdvisory{},
 							CpeNames:         []string{},
 						},
 						"CVE-2014-9761": {
 							CveID:            "CVE-2014-9761",
-							PackageNames:     []string{"libc-bin"},
+							AffectedPackages: models.PackageStatuses{{Name: "libc-bin"}},
 							DistroAdvisories: []models.DistroAdvisory{},
 							CpeNames:         []string{},
 						},
@@ -245,7 +245,7 @@ func TestDiff(t *testing.T) {
 					ScannedCves: models.VulnInfos{
 						"CVE-2016-6662": {
 							CveID:            "CVE-2016-6662",
-							PackageNames:     []string{"mysql-libs"},
+							AffectedPackages: models.PackageStatuses{{Name: "mysql-libs"}},
 							DistroAdvisories: []models.DistroAdvisory{},
 							CpeNames:         []string{},
 						},
@@ -283,7 +283,7 @@ func TestDiff(t *testing.T) {
 				ScannedCves: models.VulnInfos{
 					"CVE-2016-6662": {
 						CveID:            "CVE-2016-6662",
-						PackageNames:     []string{"mysql-libs"},
+						AffectedPackages: models.PackageStatuses{{Name: "mysql-libs"}},
 						DistroAdvisories: []models.DistroAdvisory{},
 						CpeNames:         []string{},
 					},

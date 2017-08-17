@@ -92,15 +92,14 @@ func (ps Packages) FindOne(f func(Package) bool) (string, Package, bool) {
 
 // Package has installed packages.
 type Package struct {
-	Name        string
-	Version     string
-	Release     string
-	NewVersion  string
-	NewRelease  string
-	Arch        string
-	Repository  string
-	Changelog   Changelog
-	NotFixedYet bool // Ubuntu OVAL Only
+	Name       string
+	Version    string
+	Release    string
+	NewVersion string
+	NewRelease string
+	Arch       string
+	Repository string
+	Changelog  Changelog
 }
 
 // FormatVer returns package version-release

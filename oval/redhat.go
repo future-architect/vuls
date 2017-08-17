@@ -19,7 +19,6 @@ package oval
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -98,11 +97,11 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) {
 		}
 
 		// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
-		for _, name := range vinfo.PackageNames {
-			defPacks.actuallyAffectedPackNames[name] = true
+		for _, pack := range vinfo.AffectedPackages {
+			defPacks.actuallyAffectedPackNames[pack.Name] = true
 		}
-		vinfo.PackageNames = defPacks.packNames()
-		sort.Strings(vinfo.PackageNames)
+		vinfo.AffectedPackages = defPacks.toPackStatuses()
+		vinfo.AffectedPackages.Sort()
 		r.ScannedCves[cve.CveID] = vinfo
 	}
 }

@@ -174,12 +174,12 @@ func toSlackAttachments(r models.ScanResult) (attaches []*attachment) {
 
 	for _, vinfo := range vinfos {
 		curent := []string{}
-		for _, name := range vinfo.PackageNames {
-			if p, ok := r.Packages[name]; ok {
+		for _, affected := range vinfo.AffectedPackages {
+			if p, ok := r.Packages[affected.Name]; ok {
 				curent = append(curent,
 					fmt.Sprintf("%s-%s", p.Name, p.FormatVer()))
 			} else {
-				curent = append(curent, name)
+				curent = append(curent, affected.Name)
 			}
 		}
 		for _, n := range vinfo.CpeNames {
@@ -187,8 +187,8 @@ func toSlackAttachments(r models.ScanResult) (attaches []*attachment) {
 		}
 
 		new := []string{}
-		for _, name := range vinfo.PackageNames {
-			if p, ok := r.Packages[name]; ok {
+		for _, affected := range vinfo.AffectedPackages {
+			if p, ok := r.Packages[affected.Name]; ok {
 				new = append(new, p.FormatNewVer())
 			} else {
 				new = append(new, "?")

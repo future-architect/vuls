@@ -216,9 +216,9 @@ No CVE-IDs are found in updatable packages.
 		}
 
 		packsVer := []string{}
-		sort.Strings(vuln.PackageNames)
-		for _, name := range vuln.PackageNames {
-			if pack, ok := r.Packages[name]; ok {
+		vuln.AffectedPackages.Sort()
+		for _, affected := range vuln.AffectedPackages {
+			if pack, ok := r.Packages[affected.Name]; ok {
 				packsVer = append(packsVer, pack.FormatVersionFromTo())
 			}
 		}
@@ -322,9 +322,9 @@ func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults,
 			current.ScannedCves = getDiffCves(previous, current)
 			packages := models.Packages{}
 			for _, s := range current.ScannedCves {
-				for _, name := range s.PackageNames {
-					p := current.Packages[name]
-					packages[name] = p
+				for _, affected := range s.AffectedPackages {
+					p := current.Packages[affected.Name]
+					packages[affected.Name] = p
 				}
 			}
 			current.Packages = packages

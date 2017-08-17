@@ -104,11 +104,28 @@ func (v VulnInfos) FormatCveSummary() string {
 		m["High"], m["Medium"], m["Low"], m["Unknown"])
 }
 
+// PackageStatuses is a list of PackageStatus
+type PackageStatuses []PackageStatus
+
+// Sort by Name
+func (p PackageStatuses) Sort() {
+	sort.Slice(p, func(i, j int) bool {
+		return p[i].Name < p[j].Name
+	})
+	return
+}
+
+// PackageStatus has name and other status abount the package
+type PackageStatus struct {
+	Name        string
+	NotFixedYet bool
+}
+
 // VulnInfo has a vulnerability information and unsecure packages
 type VulnInfo struct {
 	CveID            string
 	Confidence       Confidence
-	PackageNames     []string
+	AffectedPackages PackageStatuses
 	DistroAdvisories []DistroAdvisory // for Aamazon, RHEL, FreeBSD
 	CpeNames         []string
 	CveContents      CveContents
@@ -547,8 +564,8 @@ func (v *VulnInfo) NilToEmpty() *VulnInfo {
 	if v.DistroAdvisories == nil {
 		v.DistroAdvisories = []DistroAdvisory{}
 	}
-	if v.PackageNames == nil {
-		v.PackageNames = []string{}
+	if v.AffectedPackages == nil {
+		v.AffectedPackages = PackageStatuses{}
 	}
 	if v.CveContents == nil {
 		v.CveContents = NewCveContents()

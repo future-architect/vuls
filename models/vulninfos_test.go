@@ -910,3 +910,27 @@ func TestFormatMaxCvssScore(t *testing.T) {
 		}
 	}
 }
+
+func TestSortPackageStatues(t *testing.T) {
+	var tests = []struct {
+		in  PackageStatuses
+		out PackageStatuses
+	}{
+		{
+			in: PackageStatuses{
+				{Name: "b"},
+				{Name: "a"},
+			},
+			out: PackageStatuses{
+				{Name: "a"},
+				{Name: "b"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt.in.Sort()
+		if !reflect.DeepEqual(tt.in, tt.out) {
+			t.Errorf("\nexpected: %v\n  actual: %v\n", tt.out, tt.in)
+		}
+	}
+}

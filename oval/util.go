@@ -44,9 +44,9 @@ type defPacks struct {
 	actuallyAffectedPackNames map[string]bool
 }
 
-func (e defPacks) packNames() (names []string) {
+func (e defPacks) toPackStatuses() (ps models.PackageStatuses) {
 	for k := range e.actuallyAffectedPackNames {
-		names = append(names, k)
+		ps = append(ps, models.PackageStatus{Name: k})
 	}
 	return
 }
@@ -192,7 +192,7 @@ func httpGet(url string, pack *models.Package, resChan chan<- response, errChan 
 }
 
 func getDefsByPackNameFromOvalDB(family, osRelease string,
-	packs models.Packages) (relatedDefs ovalResult, err error) {
+	installedPacks models.Packages) (relatedDefs ovalResult, err error) {
 
 	ovallog.Initialize(config.Conf.LogDir)
 	path := config.Conf.OvalDBURL
@@ -211,7 +211,7 @@ func getDefsByPackNameFromOvalDB(family, osRelease string,
 		return
 	}
 	defer ovaldb.CloseDB()
-	for _, pack := range packs {
+	for _, pack := range installedPacks {
 		definitions, err := ovaldb.GetByPackName(osRelease, pack.Name)
 		if err != nil {
 			return relatedDefs, fmt.Errorf("Failed to get %s OVAL info by package name: %v", family, err)

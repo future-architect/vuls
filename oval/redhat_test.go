@@ -102,7 +102,7 @@ func TestPackNamesOfUpdate(t *testing.T) {
 			in: models.ScanResult{
 				ScannedCves: models.VulnInfos{
 					"CVE-2000-1000": models.VulnInfo{
-						PackageNames: []string{"packA"},
+						AffectedPackages: models.PackageStatuses{{Name: "packA"}},
 					},
 				},
 			},
@@ -123,9 +123,9 @@ func TestPackNamesOfUpdate(t *testing.T) {
 			out: models.ScanResult{
 				ScannedCves: models.VulnInfos{
 					"CVE-2000-1000": models.VulnInfo{
-						PackageNames: []string{
-							"packA",
-							"packB",
+						AffectedPackages: models.PackageStatuses{
+							{Name: "packA"},
+							{Name: "packB"},
 						},
 					},
 				},
@@ -136,8 +136,8 @@ func TestPackNamesOfUpdate(t *testing.T) {
 	util.Log = util.NewCustomLogger(config.ServerInfo{})
 	for i, tt := range tests {
 		RedHat{}.update(&tt.in, tt.defPacks)
-		e := tt.out.ScannedCves["CVE-2000-1000"].PackageNames
-		a := tt.in.ScannedCves["CVE-2000-1000"].PackageNames
+		e := tt.out.ScannedCves["CVE-2000-1000"].AffectedPackages
+		a := tt.in.ScannedCves["CVE-2000-1000"].AffectedPackages
 		if !reflect.DeepEqual(a, e) {
 			t.Errorf("[%d] expected: %v\n  actual: %v\n", i, e, a)
 		}

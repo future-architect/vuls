@@ -18,8 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package oval
 
 import (
-	"sort"
-
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -95,11 +93,11 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 	}
 
 	// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
-	for _, name := range vinfo.PackageNames {
-		defPacks.actuallyAffectedPackNames[name] = true
+	for _, pack := range vinfo.AffectedPackages {
+		defPacks.actuallyAffectedPackNames[pack.Name] = true
 	}
-	vinfo.PackageNames = defPacks.packNames()
-	sort.Strings(vinfo.PackageNames)
+	vinfo.AffectedPackages = defPacks.toPackStatuses()
+	vinfo.AffectedPackages.Sort()
 	r.ScannedCves[defPacks.def.Debian.CveID] = vinfo
 }
 

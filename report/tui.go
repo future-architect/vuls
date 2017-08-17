@@ -713,8 +713,8 @@ func setChangelogLayout(g *gocui.Gui) error {
 			lines = append(lines, adv.Format())
 		}
 
-		for _, name := range vinfo.PackageNames {
-			pack := currentScanResult.Packages[name]
+		for _, affected := range vinfo.AffectedPackages {
+			pack := currentScanResult.Packages[affected.Name]
 			for _, p := range currentScanResult.Packages {
 				if pack.Name == p.Name {
 					lines = append(lines, p.FormatChangelog(), "\n")
@@ -763,10 +763,10 @@ func detailLines() (string, error) {
 	vinfo := vinfos[currentVinfo]
 
 	packsVer := []string{}
-	sort.Strings(vinfo.PackageNames)
-	for _, name := range vinfo.PackageNames {
+	vinfo.AffectedPackages.Sort()
+	for _, affected := range vinfo.AffectedPackages {
 		// packages detected by OVAL may not be actually installed
-		if pack, ok := r.Packages[name]; ok {
+		if pack, ok := r.Packages[affected.Name]; ok {
 			packsVer = append(packsVer, pack.FormatVersionFromTo())
 		}
 	}
