@@ -60,15 +60,6 @@ func (ps Packages) Merge(other Packages) Packages {
 	return merged
 }
 
-// FormatVersionsFromTo returns updatable packages
-func (ps Packages) FormatVersionsFromTo() string {
-	ss := []string{}
-	for _, pack := range ps {
-		ss = append(ss, pack.FormatVersionFromTo())
-	}
-	return strings.Join(ss, "\n")
-}
-
 // FormatUpdatablePacksSummary returns a summary of updatable packages
 func (ps Packages) FormatUpdatablePacksSummary() string {
 	nUpdatable := 0
@@ -121,9 +112,12 @@ func (p Package) FormatNewVer() string {
 }
 
 // FormatVersionFromTo formats installed and new package version
-func (p Package) FormatVersionFromTo() string {
-	return fmt.Sprintf("%s-%s - %s",
-		p.Name, p.FormatVer(), p.FormatNewVer())
+func (p Package) FormatVersionFromTo(notFixedYet bool) string {
+	to := p.FormatNewVer()
+	if notFixedYet {
+		to = "Not Fixed Yet"
+	}
+	return fmt.Sprintf("%s-%s - %s", p.Name, p.FormatVer(), to)
 }
 
 // FormatChangelog formats the changelog

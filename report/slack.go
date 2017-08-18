@@ -189,7 +189,11 @@ func toSlackAttachments(r models.ScanResult) (attaches []*attachment) {
 		new := []string{}
 		for _, affected := range vinfo.AffectedPackages {
 			if p, ok := r.Packages[affected.Name]; ok {
-				new = append(new, p.FormatNewVer())
+				if affected.NotFixedYet {
+					new = append(new, "Not Fixed Yet")
+				} else {
+					new = append(new, p.FormatNewVer())
+				}
 			} else {
 				new = append(new, "?")
 			}
