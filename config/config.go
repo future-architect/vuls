@@ -110,7 +110,7 @@ type Config struct {
 	S3ResultsDir string
 
 	AzureAccount   string
-	AzureKey       string
+	AzureKey       string `json:"-"`
 	AzureContainer string
 
 	Pipe bool
@@ -300,7 +300,7 @@ type SMTPConf struct {
 	SMTPPort string `valid:"port"`
 
 	User          string
-	Password      string
+	Password      string `json:"-"`
 	From          string
 	To            []string
 	Cc            []string
@@ -360,7 +360,7 @@ func (c *SMTPConf) Validate() (errs []error) {
 
 // SlackConf is slack config
 type SlackConf struct {
-	HookURL   string `valid:"url"`
+	HookURL   string `valid:"url" json:"-"`
 	Channel   string `json:"channel"`
 	IconEmoji string `json:"icon_emoji"`
 	AuthUser  string `json:"username"`
@@ -410,7 +410,7 @@ type ServerInfo struct {
 	Host        string
 	Port        string
 	KeyPath     string
-	KeyPassword string
+	KeyPassword string `json:"-"`
 
 	CpeNames               []string
 	DependencyCheckXMLPath string

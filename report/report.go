@@ -20,6 +20,7 @@ package report
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -35,12 +36,18 @@ const (
 // FillCveInfos fills CVE Detailed Information
 func FillCveInfos(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 	var filled []models.ScanResult
+	reportedAt := time.Now()
 	for _, r := range rs {
 		if c.Conf.RefreshCve || needToRefreshCve(r) {
 			if err := fillCveInfo(&r); err != nil {
 				return nil, err
 			}
 			r.Lang = c.Conf.Lang
+			r.ReportedAt = reportedAt
+			r.Config.Report = c.Conf
+			r.Config.Report.Servers = map[string]c.ServerInfo{
+				r.ServerName: c.Conf.Servers[r.ServerName],
+			}
 			if err := overwriteJSONFile(dir, r); err != nil {
 				return nil, fmt.Errorf("Failed to write JSON: %s", err)
 			}

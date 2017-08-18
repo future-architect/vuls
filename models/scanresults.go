@@ -21,6 +21,8 @@ import (
 	"bytes"
 	"fmt"
 	"time"
+
+	"github.com/future-architect/vuls/config"
 )
 
 // ScanResults is a slide of ScanResult
@@ -29,6 +31,7 @@ type ScanResults []ScanResult
 // ScanResult has the result of scanned CVE information.
 type ScanResult struct {
 	ScannedAt   time.Time
+	ReportedAt  time.Time
 	JSONVersion int
 	Lang        string
 	ServerUUID  string
@@ -44,6 +47,11 @@ type ScanResult struct {
 	Packages Packages
 	Errors   []string
 	Optional [][]interface{}
+
+	Config struct {
+		Scan   config.Config
+		Report config.Config
+	}
 }
 
 // FilterByCvssOver is filter function.
