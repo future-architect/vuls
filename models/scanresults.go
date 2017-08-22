@@ -44,14 +44,22 @@ type ScanResult struct {
 	// Scanned Vulns by SSH scan + CPE + OVAL
 	ScannedCves VulnInfos
 
-	Packages Packages
-	Errors   []string
-	Optional [][]interface{}
+	RunningKernel Kernel
+	Packages      Packages
+	Errors        []string
+	Optional      [][]interface{}
 
 	Config struct {
 		Scan   config.Config
 		Report config.Config
 	}
+}
+
+// Kernel has the Release, version and whether need restart
+type Kernel struct {
+	Release        string
+	Version        string
+	RebootRequired bool
 }
 
 // FilterByCvssOver is filter function.

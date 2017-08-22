@@ -58,7 +58,7 @@ func (e defPacks) toPackStatuses(family string, packs models.Packages) (ps model
 			})
 		}
 
-	case config.CentOS:
+	case config.CentOS, config.Debian:
 		// There are many packages that has been fixed in RedHat, but not been fixed in CentOS
 		for name := range e.actuallyAffectedPackNames {
 			pack, ok := packs[name]
@@ -79,8 +79,7 @@ func (e defPacks) toPackStatuses(family string, packs models.Packages) (ps model
 				return
 			}
 
-			packNewVer := fmt.Sprintf("%s-%s", pack.NewVersion, pack.NewRelease)
-			if packNewVer == "" {
+			if pack.NewVersion == "" {
 				// compare version: installed vs oval
 				vera := rpmver.NewVersion(fmt.Sprintf("%s-%s", pack.Version, pack.Release))
 				verb := rpmver.NewVersion(ovalPackVer)
@@ -94,6 +93,7 @@ func (e defPacks) toPackStatuses(family string, packs models.Packages) (ps model
 				})
 			} else {
 				// compare version: newVer vs oval
+				packNewVer := fmt.Sprintf("%s-%s", pack.NewVersion, pack.NewRelease)
 				vera := rpmver.NewVersion(packNewVer)
 				verb := rpmver.NewVersion(ovalPackVer)
 				notFixedYet := false
@@ -193,11 +193,15 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 					if res.pack.Name != p.Name {
 						continue
 					}
+
+					if p.NotFixedYet {
+						relatedDefs.upsert(def, p.Name)
+						continue
+					}
+
 					if less, err := lessThan(r.Family, *res.pack, p); err != nil {
-						if !p.NotFixedYet {
-							util.Log.Debugf("Failed to parse versions: %s", err)
-							util.Log.Debugf("%#v\n%#v", *res.pack, p)
-						}
+						util.Log.Debugf("Failed to parse versions: %s", err)
+						util.Log.Debugf("%#v\n%#v", *res.pack, p)
 					} else if less {
 						relatedDefs.upsert(def, p.Name)
 					}
@@ -278,23 +282,28 @@ func getDefsByPackNameFromOvalDB(family, osRelease string,
 		return
 	}
 	defer ovaldb.CloseDB()
-	for _, pack := range installedPacks {
-		definitions, err := ovaldb.GetByPackName(osRelease, pack.Name)
+	for _, installedPack := range installedPacks {
+		definitions, err := ovaldb.GetByPackName(osRelease, installedPack.Name)
 		if err != nil {
 			return relatedDefs, fmt.Errorf("Failed to get %s OVAL info by package name: %v", family, err)
 		}
 		for _, def := range definitions {
-			for _, p := range def.AffectedPacks {
-				if pack.Name != p.Name {
+			for _, ovalPack := range def.AffectedPacks {
+				if installedPack.Name != ovalPack.Name {
 					continue
 				}
-				if less, err := lessThan(family, pack, p); err != nil {
-					if !p.NotFixedYet {
-						util.Log.Debugf("Failed to parse versions: %s", err)
-						util.Log.Debugf("%#v\n%#v", pack, p)
-					}
+
+				if ovalPack.NotFixedYet {
+					relatedDefs.upsert(def, installedPack.Name)
+					continue
+				}
+
+				less, err := lessThan(family, installedPack, ovalPack)
+				if err != nil {
+					util.Log.Debugf("Failed to parse versions: %s", err)
+					util.Log.Debugf("%#v\n%#v", installedPack, ovalPack)
 				} else if less {
-					relatedDefs.upsert(def, pack.Name)
+					relatedDefs.upsert(def, installedPack.Name)
 				}
 			}
 		}

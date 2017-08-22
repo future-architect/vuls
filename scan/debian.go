@@ -154,56 +154,92 @@ func (o *debian) checkIfSudoNoPasswd() error {
 }
 
 func (o *debian) checkDependencies() error {
-	if !config.Conf.Deep {
-		o.log.Infof("Dependencies... No need")
-		return nil
-	}
+	packNames := []string{}
+
 	switch o.Distro.Family {
 	case config.Ubuntu, config.Raspbian:
 		o.log.Infof("Dependencies... No need")
 		return nil
 
 	case config.Debian:
-		// Debian needs aptitude to get changelogs.
-		// Because unable to get changelogs via apt-get changelog on Debian.
-		if r := o.exec("test -f /usr/bin/aptitude", noSudo); !r.isSuccess() {
-			msg := fmt.Sprintf("aptitude is not installed: %s", r)
-			o.log.Errorf(msg)
-			return fmt.Errorf(msg)
+		// https://askubuntu.com/a/742844
+		packNames = append(packNames, "reboot-notifier")
+
+		if !config.Conf.Deep {
+			// Debian needs aptitude to get changelogs.
+			// Because unable to get changelogs via apt-get changelog on Debian.
+			packNames = append(packNames, "aptitude")
 		}
-		o.log.Infof("Dependencies... Pass")
-		return nil
 
 	default:
 		return fmt.Errorf("Not implemented yet: %s", o.Distro)
 	}
-}
 
-func (o *debian) scanPackages() error {
-	installed, updatable, err := o.scanInstalledPackages()
-	if err != nil {
-		o.log.Errorf("Failed to scan installed packages")
-		return err
-	}
-	o.setPackages(installed)
-
-	if config.Conf.Deep || o.Distro.Family == config.Raspbian {
-		unsecure, err := o.scanUnsecurePackages(updatable)
-		if err != nil {
-			o.log.Errorf("Failed to scan vulnerable packages")
-			return err
+	for _, name := range packNames {
+		//TODO --show-format
+		cmd := "dpkg-query -W " + name
+		if r := o.exec(cmd, noSudo); !r.isSuccess() {
+			msg := fmt.Sprintf("%s is not installed", name)
+			o.log.Errorf(msg)
+			return fmt.Errorf(msg)
 		}
-		o.setVulnInfos(unsecure)
-		return nil
 	}
-
+	o.log.Infof("Dependencies... Pass")
 	return nil
 }
 
-func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, error) {
-	installed := models.Packages{}
-	updatable := models.Packages{}
+func (o *debian) scanPackages() error {
+	// collect the running kernel information
+	release, version, err := o.runningKernel()
+	if err != nil {
+		o.log.Errorf("Failed to scan the running kernel version: %s", err)
+		return err
+	}
+	rebootRequired, err := o.rebootRequired()
+	if err != nil {
+		o.log.Errorf("Failed to detect the kernel reboot required: %s", err)
+		return err
+	}
+	o.Kernel = models.Kernel{
+		Version:        version,
+		Release:        release,
+		RebootRequired: rebootRequired,
+	}
 
+	installed, updatable, err := o.scanInstalledPackages()
+	if err != nil {
+		o.log.Errorf("Failed to scan installed packages: %s", err)
+		return err
+	}
+	o.Packages = installed
+
+	if config.Conf.Deep || o.Distro.Family == config.Raspbian {
+		unsecures, err := o.scanUnsecurePackages(updatable)
+		if err != nil {
+			o.log.Errorf("Failed to scan vulnerable packages: %s", err)
+			return err
+		}
+		o.VulnInfos = unsecures
+		return nil
+	}
+	return nil
+}
+
+// https://askubuntu.com/a/742844
+func (o *debian) rebootRequired() (bool, error) {
+	r := o.exec("test -f /var/run/reboot-required", noSudo)
+	switch r.ExitStatus {
+	case 0:
+		return true, nil
+	case 1:
+		return false, nil
+	default:
+		return false, fmt.Errorf("Failed to check reboot reauired: %s", r)
+	}
+}
+
+func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, error) {
+	installed, updatable := models.Packages{}, models.Packages{}
 	r := o.exec("dpkg-query -W", noSudo)
 	if !r.isSuccess() {
 		return nil, nil, fmt.Errorf("Failed to SSH: %s", r)
@@ -336,9 +372,9 @@ func (o *debian) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
 	return &cached, nil
 }
 
-func (o *debian) fillCandidateVersion(packages models.Packages) (err error) {
+func (o *debian) fillCandidateVersion(updatables models.Packages) (err error) {
 	names := []string{}
-	for name := range packages {
+	for name := range updatables {
 		names = append(names, name)
 	}
 	cmd := fmt.Sprintf("LANGUAGE=en_US.UTF-8 apt-cache policy %s", strings.Join(names, " "))
@@ -352,18 +388,18 @@ func (o *debian) fillCandidateVersion(packages models.Packages) (err error) {
 		if err != nil {
 			return fmt.Errorf("Failed to parse %s", err)
 		}
-		pack, ok := packages[k]
+		pack, ok := updatables[k]
 		if !ok {
 			return fmt.Errorf("Not found: %s", k)
 		}
 		pack.NewVersion = ver.Candidate
-		packages[k] = pack
+		updatables[k] = pack
 	}
 	return
 }
 
 func (o *debian) getUpdatablePackNames() (packNames []string, err error) {
-	cmd := util.PrependProxyEnv("LANGUAGE=en_US.UTF-8 apt-get upgrade --dry-run")
+	cmd := util.PrependProxyEnv("LANGUAGE=en_US.UTF-8 apt-get dist-upgrade --dry-run")
 	r := o.exec(cmd, noSudo)
 	if r.isSuccess(0, 1) {
 		return o.parseAptGetUpgrade(r.Stdout)

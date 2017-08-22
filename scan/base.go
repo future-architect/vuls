@@ -75,6 +75,27 @@ func (l *base) getPlatform() models.Platform {
 	return l.Platform
 }
 
+func (l *base) runningKernel() (release, version string, err error) {
+	r := l.exec("uname -r", noSudo)
+	if !r.isSuccess() {
+		return "", "", fmt.Errorf("Failed to SSH: %s", r)
+	}
+	release = strings.TrimSpace(r.Stdout)
+
+	switch l.Distro.Family {
+	case config.Debian:
+		r := l.exec("uname -a", noSudo)
+		if !r.isSuccess() {
+			return "", "", fmt.Errorf("Failed to SSH: %s", r)
+		}
+		ss := strings.Fields(r.Stdout)
+		if 6 < len(ss) {
+			version = ss[6]
+		}
+	}
+	return
+}
+
 func (l *base) allContainers() (containers []config.Container, err error) {
 	switch l.ServerInfo.Containers.Type {
 	case "", "docker":
@@ -265,16 +286,6 @@ func (l *base) isAwsInstanceID(str string) bool {
 }
 
 func (l *base) convertToModel() models.ScanResult {
-	//TODO Remove
-	//  for _, p := range l.VulnInfos {
-	//      sort.Slice(p.Packages, func(i, j int) bool {
-	//          return p.Packages[i].Name < p.Packages[j].Name
-	//      })
-	//  }
-	//  sort.Slice(l.VulnInfos, func(i, j int) bool {
-	//      return l.VulnInfos[i].CveID < l.VulnInfos[j].CveID
-	//  })
-
 	ctype := l.ServerInfo.Containers.Type
 	if l.ServerInfo.Container.ContainerID != "" && ctype == "" {
 		ctype = "docker"
@@ -291,24 +302,19 @@ func (l *base) convertToModel() models.ScanResult {
 		errs = append(errs, fmt.Sprintf("%s", e))
 	}
 
-	//TODO Remove
-	// Avoid null slice being null in JSON
-	//  for cveID := range l.VulnInfos {
-	//      l.VulnInfos[i].NilToEmpty()
-	//  }
-
 	return models.ScanResult{
-		JSONVersion: models.JSONVersion,
-		ServerName:  l.ServerInfo.ServerName,
-		ScannedAt:   time.Now(),
-		Family:      l.Distro.Family,
-		Release:     l.Distro.Release,
-		Container:   container,
-		Platform:    l.Platform,
-		ScannedCves: l.VulnInfos,
-		Packages:    l.Packages,
-		Optional:    l.ServerInfo.Optional,
-		Errors:      errs,
+		JSONVersion:   models.JSONVersion,
+		ServerName:    l.ServerInfo.ServerName,
+		ScannedAt:     time.Now(),
+		Family:        l.Distro.Family,
+		Release:       l.Distro.Release,
+		Container:     container,
+		Platform:      l.Platform,
+		ScannedCves:   l.VulnInfos,
+		RunningKernel: l.Kernel,
+		Packages:      l.Packages,
+		Optional:      l.ServerInfo.Optional,
+		Errors:        errs,
 	}
 }
 

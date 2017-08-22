@@ -223,32 +223,58 @@ func (o *redhat) checkDependencies() error {
 func (o *redhat) scanPackages() error {
 	installed, err := o.scanInstalledPackages()
 	if err != nil {
-		o.log.Errorf("Failed to scan installed packages")
+		o.log.Errorf("Failed to scan installed packages: %s", err)
 		return err
 	}
 
+	rebootRequired, err := o.rebootRequired()
+	if err != nil {
+		o.log.Errorf("Failed to detect the kernel reboot required: %s", err)
+		return err
+	}
+	o.Kernel.RebootRequired = rebootRequired
+
 	updatable, err := o.scanUpdatablePackages()
 	if err != nil {
-		o.log.Errorf("Failed to scan installed packages")
+		o.log.Errorf("Failed to scan installed packages: %s", err)
 		return err
 	}
 	installed.MergeNewVersion(updatable)
-	o.setPackages(installed)
+	o.Packages = installed
 
 	if !config.Conf.Deep && o.Distro.Family != config.Amazon {
 		return nil
 	}
 
-	var vinfos models.VulnInfos
-	if vinfos, err = o.scanUnsecurePackages(updatable); err != nil {
-		o.log.Errorf("Failed to scan vulnerable packages")
+	var unsecures models.VulnInfos
+	if unsecures, err = o.scanUnsecurePackages(updatable); err != nil {
+		o.log.Errorf("Failed to scan vulnerable packages: %s", err)
 		return err
 	}
-	o.setVulnInfos(vinfos)
+	o.VulnInfos = unsecures
 	return nil
 }
 
+func (o *redhat) rebootRequired() (bool, error) {
+	r := o.exec("rpm -q --last kernel | head -n1", noSudo)
+	if !r.isSuccess() {
+		return false, fmt.Errorf("Failed to detect the last installed kernel : %v", r)
+	}
+	lastInstalledKernelVer := strings.Fields(r.Stdout)[0]
+	running := fmt.Sprintf("kernel-%s", o.Kernel.Release)
+	return running != lastInstalledKernelVer, nil
+}
+
 func (o *redhat) scanInstalledPackages() (models.Packages, error) {
+	release, version, err := o.runningKernel()
+	if err != nil {
+		return nil, err
+	}
+	o.Kernel = models.Kernel{
+		Release: release,
+		Version: version,
+	}
+
 	installed := models.Packages{}
 	var cmd string
 	majorVersion, _ := o.Distro.MajorVersion()
@@ -258,24 +284,35 @@ func (o *redhat) scanInstalledPackages() (models.Packages, error) {
 		cmd = "rpm -qa --queryformat '%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n'"
 	}
 	r := o.exec(cmd, noSudo)
-	if r.isSuccess() {
-		// openssl 0 1.0.1e	30.el6.11 x86_64
-		lines := strings.Split(r.Stdout, "\n")
-		for _, line := range lines {
-			if trimed := strings.TrimSpace(line); len(trimed) != 0 {
-				pack, err := o.parseInstalledPackagesLine(line)
-				if err != nil {
-					return nil, err
-				}
-				installed[pack.Name] = pack
-			}
-		}
-		return installed, nil
+	if !r.isSuccess() {
+		return nil, fmt.Errorf("Scan packages failed: %s", r)
 	}
 
-	return nil, fmt.Errorf("Scan packages failed. status: %d, stdout: %s, stderr: %s",
-		r.ExitStatus, r.Stdout, r.Stderr)
+	// openssl 0 1.0.1e	30.el6.11 x86_64
+	lines := strings.Split(r.Stdout, "\n")
+	for _, line := range lines {
+		if trimed := strings.TrimSpace(line); len(trimed) != 0 {
+			pack, err := o.parseInstalledPackagesLine(line)
+			if err != nil {
+				return nil, err
+			}
 
+			// Kernel package may be isntalled multiple versions.
+			// From the viewpoint of vulnerability detection,
+			// pay attention only to the running kernel
+			if pack.Name == "kernel" {
+				ver := fmt.Sprintf("%s-%s.%s", pack.Version, pack.Release, pack.Arch)
+				if o.Kernel.Release != ver {
+					o.log.Debugf("Not a running kernel: %s, uname: %s", ver, release)
+					continue
+				} else {
+					o.log.Debugf("Running kernel: %s, uname: %s", ver, release)
+				}
+			}
+			installed[pack.Name] = pack
+		}
+	}
+	return installed, nil
 }
 
 func (o *redhat) parseInstalledPackagesLine(line string) (models.Package, error) {

@@ -146,8 +146,5 @@ func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 
 func (b Base) isFetchViaHTTP() bool {
 	// Default value of OvalDBType is sqlite3
-	if config.Conf.OvalDBURL != "" && config.Conf.OvalDBType == "sqlite3" {
-		return true
-	}
-	return false
+	return config.Conf.OvalDBURL != "" && config.Conf.OvalDBType == "sqlite3"
 }

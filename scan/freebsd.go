@@ -78,21 +78,46 @@ func (o *bsd) checkDependencies() error {
 }
 
 func (o *bsd) scanPackages() error {
-	var err error
-	var packs models.Packages
-	if packs, err = o.scanInstalledPackages(); err != nil {
-		o.log.Errorf("Failed to scan installed packages")
+	// collect the running kernel information
+	release, version, err := o.runningKernel()
+	if err != nil {
+		o.log.Errorf("Failed to scan the running kernel version: %s", err)
 		return err
 	}
-	o.setPackages(packs)
+	o.Kernel = models.Kernel{
+		Release: release,
+		Version: version,
+	}
 
-	var vinfos models.VulnInfos
-	if vinfos, err = o.scanUnsecurePackages(); err != nil {
-		o.log.Errorf("Failed to scan vulnerable packages")
+	rebootRequired, err := o.rebootRequired()
+	if err != nil {
+		o.log.Errorf("Failed to detect the kernel reboot required: %s", err)
 		return err
 	}
-	o.setVulnInfos(vinfos)
+	o.Kernel.RebootRequired = rebootRequired
+
+	packs, err := o.scanInstalledPackages()
+	if err != nil {
+		o.log.Errorf("Failed to scan installed packages: %s", err)
+		return err
+	}
+	o.Packages = packs
+
+	unsecures, err := o.scanUnsecurePackages()
+	if err != nil {
+		o.log.Errorf("Failed to scan vulnerable packages: %s", err)
+		return err
+	}
+	o.VulnInfos = unsecures
 	return nil
+}
+
+func (o *bsd) rebootRequired() (bool, error) {
+	r := o.exec("freebsd-version -k", noSudo)
+	if !r.isSuccess() {
+		return false, fmt.Errorf("Failed to SSH: %s", r)
+	}
+	return o.Kernel.Release != strings.TrimSpace(r.Stdout), nil
 }
 
 func (o *bsd) scanInstalledPackages() (models.Packages, error) {

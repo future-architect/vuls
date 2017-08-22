@@ -63,14 +63,9 @@ type osPackages struct {
 
 	// unsecure packages
 	VulnInfos models.VulnInfos
-}
 
-func (p *osPackages) setPackages(pi models.Packages) {
-	p.Packages = pi
-}
-
-func (p *osPackages) setVulnInfos(vi models.VulnInfos) {
-	p.VulnInfos = vi
+	// kernel information
+	Kernel models.Kernel
 }
 
 func detectOS(c config.ServerInfo) (osType osTypeInterface) {

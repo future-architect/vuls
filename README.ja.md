@@ -767,6 +767,19 @@ configtest:
 
 configtestサブコマンドは、config.tomlで定義されたサーバ/コンテナに対してSSH可能かどうかをチェックする。
 
+## Fast Scan Mode
+
+| Distribution |            Release | Requirements |
+|:-------------|-------------------:|:-------------|
+| Ubuntu       |          12, 14, 16| - |
+| Debian       |                7, 8| reboot-notifier|
+| CentOS       |                6, 7| - |
+| Amazon       |                All | - |
+| RHEL         |            5, 6, 7 | - | 
+| Oracle Linux |            5, 6, 7 | - |
+| FreeBSD      |             10, 11 | - |
+| Raspbian     |    Jessie, Stretch | - |
+
 ## Deep Scan Mode
 
 Deep Scan Modeではスキャン対象サーバ上にいくつかの依存パッケージが必要。
@@ -781,7 +794,7 @@ Deep Scan Modeでスキャンするためには、下記のパッケージが必
 | Distribution |            Release | Requirements |
 |:-------------|-------------------:|:-------------|
 | Ubuntu       |          12, 14, 16| -            |
-| Debian       |                7, 8| aptitude     |
+| Debian       |                7, 8| aptitude, reboot-notifier   |
 | CentOS       |                6, 7| yum-plugin-changelog, yum-utils |
 | Amazon       |                All | yum-plugin-changelog, yum-utils |
 | RHEL         |                  5 | yum-utils, yum-security, yum-changelog |
