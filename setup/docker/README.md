@@ -6,6 +6,8 @@ This is the Git repo of the official Docker image for vuls.
 
 - go-cve-dictionary
   - [`latest` (*go-cve-dictionary:latest Dockerfile*)]()
+- goval-dictionary
+  - [`latest` (*goval-dictionary:latest Dockerfile*)]()
 - vuls
   - [`latest` (*vuls:latest Dockerfile*)]()
 - vulsrepo
@@ -28,6 +30,14 @@ $ docker run  --rm  vuls/go-cve-dictionary -v
 go-cve-dictionary v0.0.xxx xxxx
 ```
 
+- go-cve-dictionary
+
+```console
+$ docker run  --rm  vuls/goval-dictionary -v
+
+goval-dictionary v0.0.xxx xxxx
+```
+
 - vuls
 
 ```console
@@ -44,6 +54,12 @@ vuls v0.0.xxx xxxx
 $ docker rmi vuls/go-cve-dictionary
 ```
 
+- goval-dictionary
+
+```
+$ docker rmi vuls/goval-dictionary
+```
+
 - vuls
 
 ```
@@ -56,6 +72,12 @@ $ docker rmi vuls/vuls
 
 ```
 $ docker pull vuls/go-cve-dictionary
+```
+
+- goval-dictionary
+
+```
+$ docker pull vuls/goval-dictionary
 ```
 
 - vuls
@@ -72,6 +94,12 @@ $ docker run  --rm  vuls/go-cve-dictionary -v
 go-cve-dictionary v0.1.xxx xxxx
 ```
 
+```console
+$ docker run  --rm  vuls/goval-dictionary -v
+
+goval-dictionary v0.1.xxx xxxx
+```
+
 - vuls
 
 ```console
@@ -84,6 +112,7 @@ vuls v0.1.xxx xxxx
 # How to use this image
 
 1. fetch nvd (vuls/go-cve-dictionary)
+1. fetch oval (vuls/goval-dictionary)
 1. configuration (vuls/vuls)
 1. configtest (vuls/vuls)
 1. scan (vuls/vuls)
@@ -97,6 +126,17 @@ $ for i in `seq 2002 $(date +"%Y")`; do \
     -v $PWD:/vuls \
     -v $PWD/go-cve-dictionary-log:/var/log/vuls \
     vuls/go-cve-dictionary fetchnvd -years $i; \
+  done
+```
+
+## Step2. Fetch OVAL (e.g. redhat)
+
+```console
+$ for i in `seq 5 7`; do \
+    docker run --rm -it \
+    -v $PWD:/vuls \
+    -v $PWD/goval-dictionary-log:/var/log/vuls \
+    vuls/goval-dictionary fetch-redhat $i; \
   done
 ```
 
