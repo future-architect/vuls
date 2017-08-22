@@ -4,14 +4,14 @@
 [[projects]]
   name = "github.com/Azure/azure-sdk-for-go"
   packages = ["storage"]
-  revision = "2d49bb8f2cee530cc16f1f1a9f0aae763dee257d"
-  version = "v10.2.1-beta"
+  revision = "57db66900881e9fd21fd041a9d013514700ecab3"
+  version = "v10.3.0-beta"
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
   packages = ["autorest","autorest/adal","autorest/azure","autorest/date"]
-  revision = "f6e08fe5e4d45c9a66e40196d3fed5f37331d224"
-  version = "v8.1.1"
+  revision = "77a52603f06947221c672f10275abc9bf2c7d557"
+  version = "v8.3.0"
 
 [[projects]]
   name = "github.com/BurntSushi/toml"
@@ -28,8 +28,8 @@
 [[projects]]
   name = "github.com/aws/aws-sdk-go"
   packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/shareddefaults","private/protocol","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/restxml","private/protocol/xml/xmlutil","service/s3","service/sts"]
-  revision = "19490d4d23f5f6dd8061abf91542af8433d28d63"
-  version = "v1.10.24"
+  revision = "264af29009637e0a9e5d4a276d0969c3ed918ffd"
+  version = "v1.10.29"
 
 [[projects]]
   name = "github.com/boltdb/bolt"
@@ -40,14 +40,14 @@
 [[projects]]
   name = "github.com/cenkalti/backoff"
   packages = ["."]
-  revision = "32cd0c5b3aef12c76ed64aaf678f6c79736be7dc"
-  version = "v1.0.0"
+  revision = "61153c768f31ee5f130071d08fc82b85208528de"
+  version = "v1.1.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/cheggaaa/pb"
   packages = ["."]
-  revision = "0af82b7d15eb9371fbdf8f468ff10cbba62e0414"
+  revision = "0d6285554e726cc0620cbecc7e6969c945dcc63b"
+  version = "v1.0.17"
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
@@ -64,8 +64,8 @@
 [[projects]]
   name = "github.com/go-redis/redis"
   packages = [".","internal","internal/consistenthash","internal/hashtag","internal/pool","internal/proto"]
-  revision = "89515eebd1b5761486abd32d9e84a8f55dda7740"
-  version = "v6.5.6"
+  revision = "19c1c2272e00c1aaa903cf574c746cd449f9cd3c"
+  version = "v6.5.7"
 
 [[projects]]
   name = "github.com/go-sql-driver/mysql"
@@ -134,10 +134,10 @@
   revision = "74609b86c936dff800c69ec89fcf4bc52d5f13a4"
 
 [[projects]]
+  branch = "master"
   name = "github.com/kotakanbe/go-cve-dictionary"
   packages = ["config","db","jvn","log","models","nvd","util"]
-  revision = "89e381b4e7e5a31097bbd5779cbb555f5bd3fe87"
-  version = "v0.1.1"
+  revision = "c20fa7e1d07f7c700baf12c855f7fcf61525f1b6"
 
 [[projects]]
   name = "github.com/kotakanbe/go-pingscanner"
@@ -149,7 +149,7 @@
   branch = "master"
   name = "github.com/kotakanbe/goval-dictionary"
   packages = ["config","db","db/rdb","log","models"]
-  revision = "aa1dbe07a21bd51943893086d37e9e57c6020ce0"
+  revision = "3523cc174e68f285d0572d07c68ffa3a9290799c"
 
 [[projects]]
   branch = "master"
@@ -239,7 +239,7 @@
   branch = "master"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "181d419aa9e2223811b824e8f0b4af96f9ba9302"
+  revision = "84573d5f03ab3740f524c7842c3a9bf617961d32"
 
 [[projects]]
   branch = "master"
@@ -263,7 +263,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["curve25519","ed25519","ed25519/internal/edwards25519","ssh","ssh/agent","ssh/terminal"]
-  revision = "b176d7def5d71bdd214203491f89843ed217f420"
+  revision = "eb71ad9bd329b5ac0fd0148dd99bd62e8be8e035"
 
 [[projects]]
   branch = "master"
@@ -275,17 +275,17 @@
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "e42485b6e20ae7d2304ec72e535b103ed350cc02"
+  revision = "07c182904dbd53199946ba614a412c61d3c548f5"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["internal/gen","internal/triegen","internal/ucd","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
-  revision = "b19bf474d317b857955b12035d2c5acb57ce8b01"
+  revision = "e56139fd9c5bc7244c76116c68e500765bb6db6b"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3590a66561bd65dbedefd34aa043c662111483be0bc1b68df264de0c53346552"
+  inputs-digest = "36d700add80d36c56484ed310b9a7e622b3e308ab22eb42bdfb02fd8f5c90407"
   solver-name = "gps-cdcl"
   solver-version = 1
