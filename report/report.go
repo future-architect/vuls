@@ -79,7 +79,9 @@ func FillCveInfos(rs []models.ScanResult, dir string) ([]models.ScanResult, erro
 
 	filtered := []models.ScanResult{}
 	for _, r := range filled {
-		filtered = append(filtered, r.FilterByCvssOver(c.Conf.CvssScoreOver))
+		r = r.FilterByCvssOver(c.Conf.CvssScoreOver)
+		r = r.FilterIgnoreCves(c.Conf.Servers[r.ServerName].IgnoreCves)
+		filtered = append(filtered, r)
 	}
 	return filtered, nil
 }

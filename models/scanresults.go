@@ -82,6 +82,21 @@ func (r ScanResult) FilterByCvssOver(over float64) ScanResult {
 	return copiedScanResult
 }
 
+// FilterIgnoreCves is filter function.
+func (r ScanResult) FilterIgnoreCves(cveIDs []string) ScanResult {
+	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
+		for _, c := range cveIDs {
+			if v.CveID == c {
+				return false
+			}
+		}
+		return true
+	})
+	copiedScanResult := r
+	copiedScanResult.ScannedCves = filtered
+	return copiedScanResult
+}
+
 // ReportFileName returns the filename on localhost without extention
 func (r ScanResult) ReportFileName() (name string) {
 	if len(r.Container.ContainerID) == 0 {
