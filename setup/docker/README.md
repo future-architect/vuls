@@ -30,7 +30,7 @@ $ docker run  --rm  vuls/go-cve-dictionary -v
 go-cve-dictionary v0.0.xxx xxxx
 ```
 
-- go-cve-dictionary
+- goval-dictionary
 
 ```console
 $ docker run  --rm  vuls/goval-dictionary -v
@@ -129,16 +129,18 @@ $ for i in `seq 2002 $(date +"%Y")`; do \
   done
 ```
 
+- To fetch JVN(Japanese), See [README](https://github.com/kotakanbe/go-cve-dictionary#usage-fetch-jvn-data)
+
 ## Step2. Fetch OVAL (e.g. redhat)
 
 ```console
-$ for i in `seq 5 7`; do \
-    docker run --rm -it \
+$ docker run --rm -it \
     -v $PWD:/vuls \
     -v $PWD/goval-dictionary-log:/var/log/vuls \
-    vuls/goval-dictionary fetch-redhat $i; \
-  done
+    vuls/goval-dictionary fetch-redhat 5 6 7
 ```
+
+- To fetch other OVAL, See [README](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-redhat)
 
 ## Step2. Configuration
 
@@ -189,6 +191,7 @@ $ docker run --rm -it \
     -v /etc/localtime:/etc/localtime:ro \
     vuls/vuls report \
     -cvedb-path=/vuls/cve.sqlite3 \
+    -ovaldb-path=/vuls/oval.sqlite3 \
     -format-short-text \
     -config=./config.toml # path to config.toml in docker
 ```
