@@ -117,16 +117,12 @@ func (p Package) FormatVersionFromTo(notFixedYet bool) string {
 	if notFixedYet {
 		to = "Not Fixed Yet"
 	}
-	return fmt.Sprintf("%s-%s - %s", p.Name, p.FormatVer(), to)
+	return fmt.Sprintf("%s-%s -> %s", p.Name, p.FormatVer(), to)
 }
 
 // FormatChangelog formats the changelog
 func (p Package) FormatChangelog() string {
 	buf := []string{}
-	if p.NewVersion == "" {
-		return ""
-	}
-
 	packVer := fmt.Sprintf("%s-%s -> %s",
 		p.Name, p.FormatVer(), p.FormatNewVer())
 	var delim bytes.Buffer

@@ -20,10 +20,10 @@ package report
 import (
 	"bytes"
 	"fmt"
-	"html/template"
 	"os"
 	"sort"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/future-architect/vuls/config"
