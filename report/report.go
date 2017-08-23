@@ -39,7 +39,7 @@ func FillCveInfos(rs []models.ScanResult, dir string) ([]models.ScanResult, erro
 	reportedAt := time.Now()
 	for _, r := range rs {
 		if c.Conf.RefreshCve || needToRefreshCve(r) {
-			if err := fillCveInfo(&r); err != nil {
+			if err := FillCveInfo(&r); err != nil {
 				return nil, err
 			}
 			r.Lang = c.Conf.Lang
@@ -86,7 +86,8 @@ func FillCveInfos(rs []models.ScanResult, dir string) ([]models.ScanResult, erro
 	return filtered, nil
 }
 
-func fillCveInfo(r *models.ScanResult) error {
+// FillCveInfo fill scanResult with cve info.
+func FillCveInfo(r *models.ScanResult) error {
 	util.Log.Debugf("need to refresh")
 
 	util.Log.Infof("Fill CVE detailed information with OVAL")
