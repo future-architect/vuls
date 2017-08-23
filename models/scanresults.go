@@ -118,12 +118,11 @@ func (r ScanResult) ReportKeyName() (name string) {
 func (r ScanResult) ServerInfo() string {
 	if len(r.Container.ContainerID) == 0 {
 		return fmt.Sprintf("%s (%s%s)",
-			r.ServerName, r.Family, r.Release)
+			r.FormatServerName(), r.Family, r.Release)
 	}
 	return fmt.Sprintf(
-		"%s / %s (%s%s) on %s",
-		r.Container.Name,
-		r.Container.ContainerID,
+		"%s (%s%s) on %s",
+		r.FormatServerName(),
 		r.Family,
 		r.Release,
 		r.ServerName,
@@ -133,25 +132,33 @@ func (r ScanResult) ServerInfo() string {
 // ServerInfoTui returns server infromation for TUI sidebar
 func (r ScanResult) ServerInfoTui() string {
 	if len(r.Container.ContainerID) == 0 {
-		return fmt.Sprintf("%s (%s%s)",
+		line := fmt.Sprintf("%s (%s%s)",
 			r.ServerName, r.Family, r.Release)
+		if r.RunningKernel.RebootRequired {
+			return "[Reboot] " + line
+		}
+		return line
 	}
-	return fmt.Sprintf(
-		"|-- %s (%s%s)",
-		r.Container.Name,
-		r.Family,
-		r.Release,
-		//  r.Container.ContainerID,
-	)
+
+	fmtstr := "|-- %s (%s%s)"
+	if r.RunningKernel.RebootRequired {
+		fmtstr = "|-- [Reboot] %s (%s%s)"
+	}
+	return fmt.Sprintf(fmtstr, r.Container.Name, r.Family, r.Release)
 }
 
 // FormatServerName returns server and container name
-func (r ScanResult) FormatServerName() string {
+func (r ScanResult) FormatServerName() (name string) {
 	if len(r.Container.ContainerID) == 0 {
-		return r.ServerName
+		name = r.ServerName
+	} else {
+		name = fmt.Sprintf("%s@%s",
+			r.Container.Name, r.ServerName)
 	}
-	return fmt.Sprintf("%s@%s",
-		r.Container.Name, r.ServerName)
+	if r.RunningKernel.RebootRequired {
+		name = "[Reboot Required] " + name
+	}
+	return
 }
 
 // FormatTextReportHeadedr returns header of text report
