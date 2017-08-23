@@ -8,9 +8,9 @@
 
 ![Vuls-logo](img/vuls_logo.png)  
 
-Vulnerability scanner for Linux/FreeBSD, agentless, written in golang.
-
+Vulnerability scanner for Linux/FreeBSD, agentless, written in golang.  
 We have a slack team. [Join slack team](http://goo.gl/forms/xm5KFo35tu)  
+Twitter: [@vuls_en](https://twitter.com/vuls_en)
 
 [README 日本語](https://github.com/future-architect/vuls/blob/master/README.ja.md)  
 [README in French](https://github.com/future-architect/vuls/blob/master/README.fr.md)  
@@ -52,7 +52,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 # Main Features
 
 - Scan for any vulnerabilities in Linux/FreeBSD Server
-    - Supports Ubuntu, Debian, CentOS, Amazon Linux, RHEL, Oracle Linux, FreeBSD and Raspbian
+    - Supports FreeBSD, Ubuntu, Debian, CentOS, Amazon Linux, RHEL, Oracle Linux and Raspbian
     - Cloud, on-premise, Docker
 - High quality scan
     - Vuls uses Multiple vulnerability databases
@@ -62,6 +62,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 - Fast scan and Deep scan
     - Fast Scan
         - Scan without root privilege
+        - Scan with No internet access. (RedHat, CentOS, OracleLinux, Ubuntu, Debian)
         - Almost no load on the scan target server
     - Deep Scan
         - Scan with root privilege
@@ -231,8 +232,14 @@ If the installation process stops halfway, try increasing the instance type of E
  Then fetch OVAL data of RedHat since the server to be scanned is CentOS. [README](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-redhat)
 
 ```bash
-$ goval-dictionary fetch-redhat 5 6 7
+$ goval-dictionary fetch-redhat 7
 ```
+
+If you want to scan other than CentOS 7, fetch OVAL data according to the OS type and version of scan target server in advance.
+- [RedHat, CentOS](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-redhat)
+- [Debian](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-debian)
+- [Ubuntu](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-ubuntu)
+- [Oracle Linux](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-oracle)
 
 ## Step5. Deploy Vuls
 
@@ -450,9 +457,9 @@ ubuntu  ubuntu16.04     30 updatable packages
 
 ## Step6. Reporting
 
-See [Tutorial: Local Scan Mode#Step8. Reporting](#step8-reporting)  
-See [Tutorial: Local Scan Mode#Step9. TUI](#step9-tui)  
-See [Tutorial: Local Scan Mode#Step10. Web UI](#step10-web-ui)
+See [Tutorial: Local Scan Mode#Step9. Reporting](#step9-reporting)  
+See [Tutorial: Local Scan Mode#Step10. TUI](#step10-tui)  
+See [Tutorial: Local Scan Mode#Step11. Web UI](#step11-web-ui)
 
 ----
 
@@ -476,38 +483,43 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 ![Vuls-Architecture Local Scan Mode](img/vuls-architecture-localscan.png)
 [Details](#example-scan-via-shell-instead-of-ssh)
 
-## [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)  
-- Fetch vulnerability information from NVD and JVN(Japanese), then insert into SQLite3, MySQL, PostgreSQL or Redis.
+----
 
-## Vuls
+## Fast Scan and Deep Scan
+
 ### Fast Scan
 ![Vuls-Scan-Flow](img/vuls-scan-flow-fast.png)
 - Scan without Root Privilege
+- Scan with No internet access on some OS.
 
-| Distribution|         Scan Speed | Root Privilege | OVAL |
-|:------------|:-------------------|:---------------|:-----|
-| CentOS      |               Fast |　           No | Yes |
-| Amazon      |               Fast |　           No |  No |
-| RHEL        |               Fast |　           No | Yes |
-| Oracle      |               Fast |　           No | Yes |
-| FreeBSD     |               Fast |　           No |  No |
-| Ubuntu      |               Fast |　           No | Yes |
-| Debian      |               Fast |　           No | Yes |
-| Raspbian    |First time: Slow / From the second time: Fast|　     Yes | No |
+| Distribution|                             Scan Speed | Need Root Privilege |       OVAL | Need Internet Access <br>on scan tareget|
+|:------------|:--------------------------------------:|:-------------------:|:----------:|:---------------------------------------:|
+| CentOS      |                                   Fast |　                No |  Supported |                                      No | 
+| RHEL        |                                   Fast |　                No |  Supported |                                      No |
+| Oracle      |                                   Fast |　                No |  Supported |                                      No |
+| Ubuntu      |                                   Fast |　                No |  Supported |                                      No |
+| Debian      |                                   Fast |　                No |  Supported |                                      No |
+| Raspbian    |1st time: Slow <br> From 2nd time: Fast |                Need |         No |                                    Need |
+| FreeBSD     |                                   Fast |　                No |         No |                                    Need |
+| Amazon      |                                   Fast |　                No |         No |                                    Need | 
+
+
+---------
 
 ### Deep Scan
 ![Vuls-Scan-Flow](img/vuls-scan-flow.png)
 
-| Distribution|         Scan Speed | Root Privilege | OVAL |
-|:------------|:-------------------|:---------------|:-----|
-| CentOS      |               Slow |　           No | Yes|
-| Amazon      |               Slow |　           No | No|
-| RHEL        |               Slow |　           Yes| Yes|
-| Oracle      |               Slow |　           Yes| Yes|
-| Ubuntu      |First time: Slow / From the second time: Fast|　     Yes| Yes|
-| Debian      |First time: Slow / From the second time: Fast|　     Yes| Yes|
-| Raspbian    |First time: Slow / From the second time: Fast|　     Yes| No |
-| FreeBSD     |               Fast |　           No | No|
+| Distribution|                            Scan Speed |       Need Root Privilege |      OVAL | Need Internet Access <br>on scan tareget|
+|:------------|:-------------------------------------:|:-------------------------:|:---------:|:---------------------------------------:|
+| CentOS      |                                  Slow |　                      No | Supported |                                    Need | 
+| RHEL        |                                  Slow |　                    Need | Supported |                                    Need |
+| Oracle      |                                  Slow |　                    Need | Supported |                                    Need |
+| Ubuntu      |1st time: Slow <br> From 2nd time: Fast|                      Need | Supported |                                    Need |
+| Debian      |1st time: Slow <br> From 2nd time: Fast|                      Need | Supported |                                    Need |
+| Raspbian    |1st time: Slow <br> From 2nd time: Fast|                      Need |        No |                                    Need |
+| FreeBSD     |                                  Fast |　                      No |        No |                                    Need |
+| Amazon      |                                  Slow |　                      No |        No |                                    Need |
+
 
 - On Ubuntu, Debian and Raspbian
 Vuls issues `apt-get changelog` for each upgradable packages and parse the changelog.  
@@ -551,7 +563,7 @@ If there is a staging environment with the same configuration as the production 
 | CentOS       |                6, 7|
 | Amazon Linux |                 All|
 | FreeBSD      |              10, 11|
-| Raspbian     |     Wheezy, Jessie |
+| Raspbian     |    Jessie, Stretch |
 
 ----
 

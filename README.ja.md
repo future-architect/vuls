@@ -8,7 +8,8 @@
 Vulnerability scanner for Linux/FreeBSD, agentless, written in golang.
 
 [README in English](https://github.com/future-architect/vuls/blob/master/README.md)  
-Slackチームは[こちらから](http://goo.gl/forms/xm5KFo35tu)参加できます。(日本語でオッケーです)
+Slackチームは[こちらから](http://goo.gl/forms/xm5KFo35tu)参加できます。(日本語でオッケーです)  
+Twitter:  日本語: [@vuls_ja](https://twitter.com/vuls_ja), 英語: [@vuls_en](https://twitter.com/vuls_en)
 
 ![Vuls-Abstract](img/vuls-abstract.png)
 
@@ -46,21 +47,21 @@ Vulsは上に挙げた手動運用での課題を解決するツールであり�
 
 # Main Features
 
-- Linuxサーバに存在する脆弱性をスキャン
-    - Ubuntu, Debian, CentOS, Amazon Linux, RHEL, Raspbianに対応
+- サーバに存在する脆弱性をスキャン
+    - FreeBSD, Ubuntu, Debian, CentOS, Amazon Linux, RHEL, Raspbianに対応
     - クラウド、オンプレミス、Docker
 - 高精度なスキャン
-    - Vulsは複数の脆弱性データベース、複数の検知方法を組み合わせることで高精度なスキャンを実現している
-        - OVAL
+    - Vulsは複数の脆弱性データベース、複数の検知方法を組み合わせることで高精度なスキャンを実現している
+        - OVAL
         - RHSA/ALAS/ELSA/FreeBSD-SA
         - Changelog
 - FastスキャンとDeepスキャン
     - Fastスキャン
         - root権限必要なし
         - スキャン対象サーバの負荷ほぼなし
-	- スキャン対象サーバがインターネットに接続していなくてもスキャンできる
-    - Deepスキャン
-        - Changelogの差分を取得し、そこに書かれているCVE-IDを検知
+        - インターネットに接続していない環境でもスキャン可能 (RedHat, CentOS, OracleLinux, Ubuntu, Debian)
+    - Deepスキャン
+        - Changelogの差分を取得し、そこに書かれているCVE-IDを検知
         - スキャン対象サーバに負荷がかかる場合がある
 - リモートスキャンとローカルスキャン
     - リモートスキャン
@@ -224,8 +225,15 @@ The binary was built under `$GOPATH/bin`
 今回はCentOSがスキャン対象なので、RedHatが公開しているOVAL情報を取り込む. [README](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-redhat)
 
 ```bash
-$ goval-dictionary fetch-redhat 5 6 7
+$ goval-dictionary fetch-redhat 7
 ```
+
+今回はスキャン対象がCentOS 7なので、RedHat 7のOVALを取得している。
+他の種類のOSをスキャンする場合は以下を参照し、スキャン対象用のOVALを取得しておくこと
+- [RedHat, CentOS](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-redhat)
+- [Debian](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-debian)
+- [Ubuntu](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-ubuntu)
+- [Oracle Linux](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-oracle)
 
 ## Step5. Deploy Vuls
 
@@ -447,9 +455,9 @@ ubuntu  ubuntu16.04     30 updatable packages
 
 ## Step6. Reporting
 
-See [Tutorial: Local Scan Mode#Step8. Reporting](#step8-reporting)  
-See [Tutorial: Local Scan Mode#Step9. TUI](#step9-tui)  
-See [Tutorial: Local Scan Mode#Step10. Web UI](#step10-web-ui)
+See [Tutorial: Local Scan Mode#Step9. Reporting](#step9-reporting)  
+See [Tutorial: Local Scan Mode#Step10. TUI](#step10-tui)  
+See [Tutorial: Local Scan Mode#Step11. Web UI](#step11-web-ui)
 
 ----
 
@@ -467,42 +475,45 @@ Vulsをスキャン対象サーバにデプロイする。Vulsはローカルホ
 ![Vuls-Architecture Local Scan Mode](img/vuls-architecture-localscan.png)
 [詳細](#example-scan-via-shell-instead-of-ssh)
 
-## [go-cve-dictionary](https://github.com/kotakanbe/go-cve-dictionary)  
-- NVDとJVN(日本語)から脆弱性データベースを取得し、SQLite3に格納する。
+-----
 
-## Vuls
+## Fast Scan and Deep Scan
+
 ### Fast Scan
 ![Vuls-Scan-Flow](img/vuls-scan-flow-fast.png)
 - Root権限不要でスキャン可能なモード（Raspbian以外）
 - OVALが提供されているディストリビューションは、スキャン時はパッケージのバージョンを取得するのみ。レポート時にOVAL DBとバージョン比較により脆弱性を検知する
 - OVALが提供されいていないディストリビューションはスキャン時にコマンドを発行して脆弱性を検知する
 
-| Distribution|         Scan Speed | Root Privilege | OVAL |
-|:------------|:-------------------|:---------------|:-----|
-| CentOS      |               速い |　           不要 | 有 |
-| Amazon      |               速い |　           不要 | 無 |
-| RHEL        |               速い |　           不要 | 有 |
-| Oracle      |               速い |　           不要 | 有 |
-| FreeBSD     |               速い |　           不要 | 無 |
-| Ubuntu      |               速い |　           不要 | 有 |
-| Debian      |               速い |　           不要 | 有 |
-| Raspbian    | 初回は遅い / 2回目以降速い　|　     必要 | 無 |
+| Distribution|                             Scan Speed | Need Root Privilege |       OVAL | Need Internet Access <br>on scan tareget|
+|:------------|:--------------------------------------:|:-------------------:|:----------:|:---------------------------------------:|
+| CentOS      |                                   Fast |　                No |  Supported |                                      No | 
+| RHEL        |                                   Fast |　                No |  Supported |                                      No |
+| Oracle      |                                   Fast |　                No |  Supported |                                      No |
+| Ubuntu      |                                   Fast |　                No |  Supported |                                      No |
+| Debian      |                                   Fast |　                No |  Supported |                                      No |
+| FreeBSD     |                                   Fast |　                No |         No |                                    Need |
+| Amazon      |                                   Fast |　                No |         No |                                    Need | 
+| Raspbian    |1st time: Slow <br> From 2nd time: Fast |                Need |         No |                                    Need |
+
+----
 
 ### Deep Scan
 ![Vuls-Scan-Flow](img/vuls-scan-flow.png)
 - Root権限が必要なコマンドも発行し、より深いスキャンを行うモード
 - ChangelogをパースしてCVE-IDを検知するのでFastよりも検知漏れが減る
 
-| Distribution|         Scan Speed | Root Privilege | OVAL |
-|:------------|:-------------------|:---------------|:-----|
-| CentOS      |               遅い |　           不要 | 有 |
-| Amazon      |               遅い |　           不要 | 無 |
-| RHEL        |               遅い |　           必要 | 有 |
-| Oracle      |               遅い |　           必要 | 有 |
-| Ubuntu      | 初回は遅い / 2回目以降速い　|　     必要 | 有 |
-| Debian      | 初回は遅い / 2回目以降速い　|　     必要 | 有 |
-| Raspbian    | 初回は遅い / 2回目以降速い　|　     必要 | 無 |
-| FreeBSD     |               速い |　           不要 | 無 |
+| Distribution|                            Scan Speed |       Need Root Privilege |      OVAL | Need Internet Access <br>on scan tareget|
+|:------------|:-------------------------------------:|:-------------------------:|:---------:|:---------------------------------------:|
+| CentOS      |                                  Slow |　                      No | Supported |                                    Need | 
+| RHEL        |                                  Slow |　                    Need | Supported |                                    Need |
+| Oracle      |                                  Slow |　                    Need | Supported |                                    Need |
+| Ubuntu      |1st time: Slow <br> From 2nd time: Fast|                      Need | Supported |                                    Need |
+| Debian      |1st time: Slow <br> From 2nd time: Fast|                      Need | Supported |                                    Need |
+| FreeBSD     |                                  Fast |　                      No |        No |                                    Need |
+| Amazon      |                                  Slow |　                      No |        No |                                    Need |
+| Raspbian    |1st time: Slow <br> From 2nd time: Fast|                      Need |        No |                                    Need |
+
 
 - Ubuntu, Debian, Raspbian
 `apt-get changelog`でアップデート対象のパッケージのチェンジログを取得し、含まれるCVE IDをパースする。
@@ -541,7 +552,7 @@ web/app server in the same configuration under the load balancer
 | CentOS      |                6, 7|
 | Amazon Linux|                 All|
 | FreeBSD     |              10, 11|
-| Raspbian    |     Wheezy, Jessie |
+| Raspbian    |    Jessie, Stretch |
 
 ----
 
