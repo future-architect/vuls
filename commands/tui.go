@@ -56,7 +56,7 @@ type TuiCmd struct {
 func (*TuiCmd) Name() string { return "tui" }
 
 // Synopsis return synopsis
-func (*TuiCmd) Synopsis() string { return "Run Tui view to anayze vulnerabilites" }
+func (*TuiCmd) Synopsis() string { return "Run Tui view to analyze vulnerabilities" }
 
 // Usage return usage
 func (*TuiCmd) Usage() string {
@@ -118,7 +118,7 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 		&p.cveDictionaryURL,
 		"cvedb-url",
 		"",
-		"http://cve-dictionary.com:1323 or mysql connection string")
+		"http://cve-dictionary.example.com:1323 or mysql connection string")
 
 	f.StringVar(
 		&p.ovalDBType,
@@ -137,7 +137,7 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 		&p.ovalDBURL,
 		"ovaldb-url",
 		"",
-		"http://goval-dictionary.com:1324 or mysql connection string")
+		"http://goval-dictionary.example.com:1324 or mysql connection string")
 
 	f.BoolVar(
 		&p.pipe,

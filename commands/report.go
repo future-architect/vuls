@@ -123,7 +123,7 @@ func (*ReportCmd) Usage() string {
 		[-aws-region=us-west-2]
 		[-aws-s3-bucket=bucket_name]
 		[-aws-s3-results-dir=/bucket/path/to/results]
-		[-azure-account=accout]
+		[-azure-account=account]
 		[-azure-key=key]
 		[-azure-container=container]
 		[-http-proxy=http://192.168.0.1:8080]
@@ -381,7 +381,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 		c.Conf.AzureContainer = p.azureContainer
 		if len(c.Conf.AzureContainer) == 0 {
-			util.Log.Error("Azure storage container name is requied with --azure-container option")
+			util.Log.Error("Azure storage container name is required with -azure-container option")
 			return subcommands.ExitUsageError
 		}
 		if err := report.CheckIfAzureContainerExists(); err != nil {
@@ -402,7 +402,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 	if err := report.CveClient.CheckHealth(); err != nil {
 		util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
-		util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with --cvedb-path option")
+		util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with -cvedb-path option")
 		return subcommands.ExitFailure
 	}
 	if c.Conf.CveDBURL != "" {
@@ -417,7 +417,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		err := oval.Base{}.CheckHTTPHealth()
 		if err != nil {
 			util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
-			util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with --ovaldb-path option")
+			util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with -ovaldb-path option")
 			return subcommands.ExitFailure
 		}
 	}

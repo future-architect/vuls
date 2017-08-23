@@ -138,7 +138,7 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		&p.deep,
 		"deep",
 		false,
-		"Deep scan mode. Scan accuracy improves and scanned information becomes richer. Since analysis of changelog, issue commands requiring sudo, but it may be slower and high load on the tareget server")
+		"Deep scan mode. Scan accuracy improves and scanned information becomes richer. Since analysis of changelog, issue commands requiring sudo, but it may be slower and high load on the target server")
 
 	f.BoolVar(
 		&p.pipe,
@@ -157,7 +157,7 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		&p.scanTimeoutSec,
 		"timeout-scan",
 		120*60,
-		"Number of seconds for scaning vulnerabilities for all servers",
+		"Number of seconds for scanning vulnerabilities for all servers",
 	)
 }
 
