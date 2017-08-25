@@ -21,7 +21,98 @@ Twitter:  日本語: [@vuls_ja](https://twitter.com/vuls_ja), 英語: [@vuls_en]
 
 # TOC
 
-TODO
+Table of Contents
+=================
+
+   * [Vuls: VULnerability Scanner](#vuls-vulnerability-scanner)
+   * [TOC](#toc)
+   * [Abstract](#abstract)
+   * [Main Features](#main-features)
+   * [What Vuls Doesn't Do](#what-vuls-doesnt-do)
+   * [Setup Vuls](#setup-vuls)
+   * [Tutorial](#tutorial)
+   * [Tutorial: Local Scan Mode](#tutorial-local-scan-mode)
+      * [Step1. Launch CentOS7](#step1-launch-centos7)
+      * [Step2. Install requirements](#step2-install-requirements)
+      * [Step3. Deploy go-cve-dictionary](#step3-deploy-go-cve-dictionary)
+      * [Step4. Deploy goval-dictionary](#step4-deploy-goval-dictionary)
+      * [Step5. Deploy Vuls](#step5-deploy-vuls)
+      * [Step6. Config](#step6-config)
+      * [Step7. Check config.toml and settings on the server before scanning](#step7-check-configtoml-and-settings-on-the-server-before-scanning)
+      * [Step8. Start Scanning](#step8-start-scanning)
+      * [Step9. Reporting](#step9-reporting)
+      * [Step10. TUI](#step10-tui)
+      * [Step11. Web UI](#step11-web-ui)
+   * [Tutorial: Remote Scan Mode](#tutorial-remote-scan-mode)
+      * [Step1. Launch new Ubuntu Linux (the server to be sacnned)](#step1-launch-new-ubuntu-linux-the-server-to-be-sacnned)
+      * [Step2. Enable to SSH from localhost](#step2-enable-to-ssh-from-localhost)
+      * [Step3. config.tomlの設定](#step3-configtomlの設定)
+      * [Step4. Check config.toml and settings on the server before scanning](#step4-check-configtoml-and-settings-on-the-server-before-scanning)
+      * [Step5. Start Scanning](#step5-start-scanning)
+      * [Step6. Reporting](#step6-reporting)
+   * [Architecture](#architecture)
+      * [A. Scan via SSH Mode (Remote Scan Mode)](#a-scan-via-ssh-mode-remote-scan-mode)
+      * [B. Scan without SSH (Local Scan Mode)](#b-scan-without-ssh-local-scan-mode)
+      * [Fast Scan and Deep Scan](#fast-scan-and-deep-scan)
+         * [Fast Scan](#fast-scan)
+         * [Deep Scan](#deep-scan)
+   * [Use Cases](#use-cases)
+      * [Scan all servers](#scan-all-servers)
+      * [Scan a single server](#scan-a-single-server)
+   * [Support OS](#support-os)
+   * [Usage: Automatic Server Discovery](#usage-automatic-server-discovery)
+      * [Example](#example)
+   * [Configuration](#configuration)
+   * [Usage: Configtest](#usage-configtest)
+      * [Fast Scan Mode](#fast-scan-mode)
+      * [Deep Scan Mode](#deep-scan-mode)
+         * [Dependencies and /etc/sudoers on Target Servers](#dependencies-and-etcsudoers-on-target-servers)
+   * [Usage: Scan](#usage-scan)
+      * [-deep option](#-deep-option)
+      * [-ssh-native-insecure option](#-ssh-native-insecure-option)
+      * [-ask-key-password option](#-ask-key-password-option)
+      * [Example: Scan all servers defined in config file](#example-scan-all-servers-defined-in-config-file)
+      * [Example: Scan specific servers](#example-scan-specific-servers)
+      * [Example: Scan via shell instead of SSH.](#example-scan-via-shell-instead-of-ssh)
+         * [cronで動かす場合](#cronで動かす場合)
+      * [Example: Scan containers (Docker/LXD)](#example-scan-containers-dockerlxd)
+         * [Docker](#docker)
+         * [LXDコンテナをスキャンする場合](#lxdコンテナをスキャンする場合)
+   * [Usage: Report](#usage-report)
+      * [How to read a report](#how-to-read-a-report)
+         * [Example](#example-1)
+         * [Summary part](#summary-part)
+         * [Detailed Part](#detailed-part)
+      * [Example: Send scan results to Slack](#example-send-scan-results-to-slack)
+      * [Example: Put results in S3 bucket](#example-put-results-in-s3-bucket)
+      * [Example: Put results in Azure Blob storage](#example-put-results-in-azure-blob-storage)
+      * [Example: IgnoreCves](#example-ignorecves)
+      * [Example: Add optional key-value pairs to JSON](#example-add-optional-key-value-pairs-to-json)
+      * [Example: Use MySQL as a DB storage back-end](#example-use-mysql-as-a-db-storage-back-end)
+      * [Example: Use PostgreSQL as a DB storage back-end](#example-use-postgresql-as-a-db-storage-back-end)
+      * [Example: Use Redis as a DB storage back-end](#example-use-redis-as-a-db-storage-back-end)
+   * [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerability-of-non-os-package)
+   * [Usage: Integrate with OWASP Dependency Check to Automatic update when the libraries are updated (Experimental)](#usage-integrate-with-owasp-dependency-check-to-automatic-update-when-the-libraries-are-updated-experimental)
+   * [Usage: TUI](#usage-tui)
+      * [Display the latest scan results](#display-the-latest-scan-results)
+      * [Display the previous scan results](#display-the-previous-scan-results)
+   * [Display the previous scan results using peco](#display-the-previous-scan-results-using-peco)
+   * [Usage: go-cve-dictionary on different server](#usage-go-cve-dictionary-on-different-server)
+   * [Usage: Update NVD Data](#usage-update-nvd-data)
+   * [Usage: goval-dictionary on different server](#usage-goval-dictionary-on-different-server)
+   * [Usage: Update OVAL Data](#usage-update-oval-data)
+   * [レポートの日本語化](#レポートの日本語化)
+      * [fetchnvd, fetchjvnの実行順序の注意](#fetchnvd-fetchjvnの実行順序の注意)
+      * [スキャン実行](#スキャン実行)
+   * [How to Update to the Latest Version](#how-to-update-to-the-latest-version)
+   * [Misc](#misc)
+   * [Related Projects](#related-projects)
+   * [Data Source](#data-source)
+   * [Authors](#authors)
+   * [Contribute](#contribute)
+   * [Change Log](#change-log)
+   * [Stargazers over time](#stargazers-over-time)
+   * [License](#license)
 
 ----
 
@@ -68,6 +159,9 @@ Vulsは上に挙げた手動運用での課題を解決するツールであり�
         - スキャン対象サーバにSSH接続可能なマシン1台にセットアップするだけで動作
     - ローカルスキャン
         - もし中央のサーバから各サーバにSSH接続できない環境の場合はローカルスキャンモードでスキャン可能
+- **動的** スキャナ
+    - サーバにSSH接続してコマンドを発行可能なのでサーバの状態を取得可能
+        - カーネルアップデート後再起動していない場合に警告してくれる
 - OSパッケージ管理対象外のミドルウェアをスキャン
     - プログラミング言語のライブラリやフレームワーク、ミドルウェアの脆弱性スキャン
     - CPEに登録されているソフトウェアが対象
@@ -408,10 +502,10 @@ $ touch ~/.ssh/authorized_keys
 $ chmod 600 ~/.ssh/authorized_keys
 $ vim ~/.ssh/authorized_keys
 ```
-Paste from the clipboard to ~/.ssh/.authorized_keys
+Paste from the clipboard to `~/.ssh/.authorized_keys`
 
 localhostのknown_hostsにremote hostのホストキーが登録されている必要があるので確認すること。
-$HOME/.ssh/known_hostsにリモートホストのHost Keyを追加するために、スキャン前にリモートホストにSSH接続する必要がある。
+`$HOME/.ssh/known_hosts`にリモートホストのHost Keyを追加するために、スキャン前にリモートホストにSSH接続する必要がある。
 
 
 - localhost
@@ -547,7 +641,7 @@ web/app server in the same configuration under the load balancer
 | Distribution|            Release |
 |:------------|-------------------:|
 | Ubuntu      |          12, 14, 16|
-| Debian      |                7, 8|
+| Debian      |             7, 8, 9|
 | RHEL        |             5, 6, 7|
 | CentOS      |                6, 7|
 | Amazon Linux|                 All|
@@ -783,7 +877,7 @@ configtestサブコマンドは、config.tomlで定義されたサーバ/コン�
 | Distribution |            Release | Requirements |
 |:-------------|-------------------:|:-------------|
 | Ubuntu       |          12, 14, 16| - |
-| Debian       |                7, 8| reboot-notifier|
+| Debian       |             7, 8, 9| reboot-notifier|
 | CentOS       |                6, 7| - |
 | Amazon       |                All | - |
 | RHEL         |            5, 6, 7 | - | 
@@ -805,7 +899,7 @@ Deep Scan Modeでスキャンするためには、下記のパッケージが必
 | Distribution |            Release | Requirements |
 |:-------------|-------------------:|:-------------|
 | Ubuntu       |          12, 14, 16| -            |
-| Debian       |                7, 8| aptitude, reboot-notifier   |
+| Debian       |             7, 8, 9| aptitude, reboot-notifier   |
 | CentOS       |                6, 7| yum-plugin-changelog, yum-utils |
 | Amazon       |                All | yum-plugin-changelog, yum-utils |
 | RHEL         |                  5 | yum-utils, yum-security, yum-changelog |
@@ -901,18 +995,9 @@ scan:
 
 You need to execute `vuls configtest --deep` to check the configuration of the target server before scanning with -deep flag.
 
-| Distribution | Changelog | 
-|:-------------|:---------:|
-| Ubuntu       |  yes      |
-| Debian       |  yes      |
-| CentOS       |  yes      | 
-| Amazon       |  yes      | 
-| RHEL         |  yes      | 
-| RHEL         |  yes      | 
-| Oracle Linux |  yes      | 
-| Oracle Linux |  yes      | 
-| FreeBSD      |   no      | 
-| Raspbian     |  yes      | 
+For details about deep scan mode, see below.  
+* [Architecture/Deep Scan](#deep-scan)
+* [Configtest/Deep Scan Mode](#deep-scan-mode)
 
 ## -ssh-native-insecure option
 
@@ -1664,14 +1749,23 @@ slack, emailは日本語対応済み TUIは日本語表示未対応
 
 ----
 
-# Update Vuls With Glide
+# How to Update to the Latest Version
 
 - Update go-cve-dictionary  
 If the DB schema was changed, please specify new SQLite3, MySQL, PostgreSQL or Redis DB file.
 ```
 $ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
 $ git pull
-$ mv vendor /tmp/foo
+$ rm -r vendor
+$ make install
+```
+
+- Update goval-dictionary  
+If the DB schema was changed, please specify new SQLite3, MySQL, PostgreSQL or Redis DB file.
+```
+$ cd $GOPATH/src/github.com/kotakanbe/goval-dictionary
+$ git pull
+$ rm -r vendor
 $ make install
 ```
 
@@ -1679,10 +1773,11 @@ $ make install
 ```
 $ cd $GOPATH/src/github.com/future-architect/vuls
 $ git pull
-$ mv vendor /tmp/bar
+$ rm -r vendor
 $ make install
 ```
 - バイナリファイルは`$GOPATH/bin`以下に作成される
+- もしエラーが出る場合は `$GOPATH/pkg` を削除してから実行する
 
 ---
 

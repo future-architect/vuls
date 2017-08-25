@@ -25,7 +25,99 @@ Twitter: [@vuls_en](https://twitter.com/vuls_en)
 
 # TOC
 
-TODO 
+Table of Contents
+=================
+
+   * [Vuls: VULnerability Scanner](#vuls-vulnerability-scanner)
+   * [TOC](#toc)
+   * [Abstract](#abstract)
+   * [Main Features](#main-features)
+   * [What Vuls Doesn't Do](#what-vuls-doesnt-do)
+   * [Setup Vuls](#setup-vuls)
+   * [Tutorial](#tutorial)
+   * [Tutorial: Local Scan Mode](#tutorial-local-scan-mode)
+      * [Step1. Launch CentOS7](#step1-launch-centos7)
+      * [Step2. Install requirements](#step2-install-requirements)
+      * [Step3. Deploy go-cve-dictionary](#step3-deploy-go-cve-dictionary)
+      * [Step4. Deploy goval-dictionary](#step4-deploy-goval-dictionary)
+      * [Step5. Deploy Vuls](#step5-deploy-vuls)
+      * [Step6. Configuration](#step6-configuration)
+      * [Step7. Check config.toml and settings on the server before scanning](#step7-check-configtoml-and-settings-on-the-server-before-scanning)
+      * [Step8. Start Scanning](#step8-start-scanning)
+      * [Step9. Reporting](#step9-reporting)
+      * [Step10. TUI](#step10-tui)
+      * [Step11. Web UI](#step11-web-ui)
+   * [Tutorial: Remote Scan Mode](#tutorial-remote-scan-mode)
+      * [Step1. Launch new Ubuntu Linux](#step1-launch-new-ubuntu-linux)
+      * [Step2. Enable to SSH from localhost](#step2-enable-to-ssh-from-localhost)
+      * [Step3. Configure (config.toml)](#step3-configure-configtoml)
+      * [Step4. Check config.toml and settings on the server before scanning](#step4-check-configtoml-and-settings-on-the-server-before-scanning)
+      * [Step5. Start Scanning](#step5-start-scanning)
+      * [Step6. Reporting](#step6-reporting)
+   * [Setup Vuls in a Docker Container](#setup-vuls-in-a-docker-container)
+   * [Architecture](#architecture)
+      * [A. Scan via SSH Mode (Remote Scan Mode)](#a-scan-via-ssh-mode-remote-scan-mode)
+      * [B. Scan without SSH (Local Scan Mode)](#b-scan-without-ssh-local-scan-mode)
+      * [Fast Scan and Deep Scan](#fast-scan-and-deep-scan)
+         * [Fast Scan](#fast-scan)
+         * [Deep Scan](#deep-scan)
+   * [Use Cases](#use-cases)
+      * [Scan All Servers](#scan-all-servers)
+      * [Scan a Single Server](#scan-a-single-server)
+      * [Scan Staging Environment](#scan-staging-environment)
+   * [Support OS](#support-os)
+   * [Usage: Automatic Server Discovery](#usage-automatic-server-discovery)
+      * [Example](#example)
+   * [Configuration](#configuration)
+   * [Usage: Configtest](#usage-configtest)
+      * [Fast Scan Mode](#fast-scan-mode)
+      * [Deep Scan Mode](#deep-scan-mode)
+         * [Dependencies and /etc/sudoers on Target Servers](#dependencies-and-etcsudoers-on-target-servers)
+   * [Usage: Scan](#usage-scan)
+      * [-deep option](#-deep-option)
+      * [-ssh-native-insecure option](#-ssh-native-insecure-option)
+      * [-ask-key-password option](#-ask-key-password-option)
+      * [Example: Scan all servers defined in config file](#example-scan-all-servers-defined-in-config-file)
+      * [Example: Scan specific servers](#example-scan-specific-servers)
+      * [Example: Scan via shell instead of SSH.](#example-scan-via-shell-instead-of-ssh)
+         * [cron](#cron)
+      * [Example: Scan containers (Docker/LXD)](#example-scan-containers-dockerlxd)
+         * [Docker](#docker)
+         * [LXD](#lxd)
+   * [Usage: Report](#usage-report)
+      * [How to read a report](#how-to-read-a-report)
+         * [Example](#example-1)
+         * [Summary part](#summary-part)
+         * [Detailed Part](#detailed-part)
+      * [Example: Send scan results to Slack](#example-send-scan-results-to-slack)
+      * [Example: Put results in S3 bucket](#example-put-results-in-s3-bucket)
+      * [Example: Put results in Azure Blob storage](#example-put-results-in-azure-blob-storage)
+      * [Example: IgnoreCves](#example-ignorecves)
+      * [Example: Add optional key-value pairs to JSON](#example-add-optional-key-value-pairs-to-json)
+      * [Example: Use MySQL as a DB storage back-end](#example-use-mysql-as-a-db-storage-back-end)
+      * [Example: Use PostgreSQL as a DB storage back-end](#example-use-postgresql-as-a-db-storage-back-end)
+      * [Example: Use Redis as a DB storage back-end](#example-use-redis-as-a-db-storage-back-end)
+   * [Usage: Scan vulnerabilites of non-OS packages](#usage-scan-vulnerabilites-of-non-os-packages)
+   * [Usage: Integrate with OWASP Dependency Check to Automatic update when the libraries are updated (Experimental)](#usage-integrate-with-owasp-dependency-check-to-automatic-update-when-the-libraries-are-updated-experimental)
+   * [Usage: TUI](#usage-tui)
+      * [Display the latest scan results](#display-the-latest-scan-results)
+      * [Display the previous scan results](#display-the-previous-scan-results)
+   * [Display the previous scan results using peco](#display-the-previous-scan-results-using-peco)
+   * [Usage: go-cve-dictionary on different server](#usage-go-cve-dictionary-on-different-server)
+   * [Usage: Update NVD Data](#usage-update-nvd-data)
+   * [Usage: goval-dictionary on different server](#usage-goval-dictionary-on-different-server)
+   * [Usage: Update OVAL Data](#usage-update-oval-data)
+   * [How to Update to the Latest Version](#how-to-update-to-the-latest-version)
+   * [Misc](#misc)
+   * [Related Projects](#related-projects)
+   * [Data Source](#data-source)
+   * [Authors](#authors)
+   * [Contribute](#contribute)
+   * [Change Log](#change-log)
+   * [Stargazers over time](#stargazers-over-time)
+   * [License](#license)
+
+Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
 ----
 
@@ -76,6 +168,9 @@ Vuls is a tool created to solve the problems listed above. It has the following 
         - User is required to only setup one machine that is connected to other target servers via SSH
     - Local Scan 
         - If you don't want the central Vuls server to connect to each server by SSH, you can use Vuls in the Local Scan mode.
+- **Dynamic** Analysis
+    - It is possible to acquire the state of the server by connecting via SSH and executing the command
+        - Vuls warns when the scan target server was updated the kernel etc. but not restarting it.
 - Scan middleware that are not included in OS package management
     - Scan middleware, programming language libraries and framework for vulnerability
     - Support software registered in CPE
@@ -411,10 +506,10 @@ $ touch ~/.ssh/authorized_keys
 $ chmod 600 ~/.ssh/authorized_keys
 $ vim ~/.ssh/authorized_keys
 ```
-Paste from the clipboard to ~/.ssh/.authorized_keys
+Paste from the clipboard to `~/.ssh/.authorized_keys`
 
 And also, confirm that the host keys of scan target servers has been registered in the known_hosts of the localhost.
-To add the remote host's Host Key to $HOME/.ssh/known_hosts, you need to log in to the remote host through SSH before scanning.
+To add the remote host's Host Key to `$HOME/.ssh/known_hosts`, you need to log in to the remote host through SSH before scanning.
 
 - localhost
 ```
@@ -557,7 +652,7 @@ If there is a staging environment with the same configuration as the production 
 | Distribution |            Release |
 |:-------------|-------------------:|
 | Ubuntu       |          12, 14, 16|
-| Debian       |                7, 8|
+| Debian       |             7, 8, 9|
 | RHEL         |             5, 6, 7|
 | Oracle Linux |             5, 6, 7|
 | CentOS       |                6, 7|
@@ -793,7 +888,7 @@ The configtest subcommand checks whether vuls is able to connect via SSH to serv
 | Distribution |            Release | Requirements |
 |:-------------|-------------------:|:-------------|
 | Ubuntu       |          12, 14, 16| - |
-| Debian       |                7, 8| reboot-notifier|
+| Debian       |             7, 8, 9| reboot-notifier|
 | CentOS       |                6, 7| - |
 | Amazon       |                All | - |
 | RHEL         |            5, 6, 7 | - | 
@@ -813,7 +908,7 @@ In order to scan with deep scan mode, the following dependencies are required, s
 | Distribution |            Release | Requirements |
 |:-------------|-------------------:|:-------------|
 | Ubuntu       |          12, 14, 16| -            |
-| Debian       |                7, 8| aptitude, reboot-notifier     |
+| Debian       |             7, 8, 9| aptitude, reboot-notifier     |
 | CentOS       |                6, 7| yum-plugin-changelog, yum-utils |
 | Amazon       |                All | yum-plugin-changelog, yum-utils |
 | RHEL         |                  5 | yum-utils, yum-security, yum-changelog |
@@ -909,18 +1004,9 @@ scan:
 
 You need to execute `vuls configtest --deep` to check the configuration of the target server before scanning with -deep flag.
 
-| Distribution | Changelog | 
-|:-------------|:---------:|
-| Ubuntu       |  yes      |
-| Debian       |  yes      |
-| CentOS       |  yes      | 
-| Amazon       |  yes      | 
-| RHEL         |  yes      | 
-| RHEL         |  yes      | 
-| Oracle Linux |  yes      | 
-| Oracle Linux |  yes      | 
-| FreeBSD      |   no      | 
-| Raspbian     |  yes      | 
+For details about deep scan mode, see below.  
+* [Architecture/Deep Scan](#deep-scan)
+* [Configtest/Deep Scan Mode](#deep-scan-mode)
 
 ## -ssh-native-insecure option
 
@@ -1628,12 +1714,21 @@ $ vuls report -ovaldb-url=http://192.168.0.1:1323
 
 ----
 
-# How to Update
+# How to Update to the Latest Version
 
 - Update go-cve-dictionary  
 If the DB schema was changed, please specify new SQLite3, MySQL, PostgreSQL or Redis DB file.
 ```
 $ cd $GOPATH/src/github.com/kotakanbe/go-cve-dictionary
+$ git pull
+$ rm -r vendor
+$ make install
+```
+
+- Update goval-dictionary  
+If the DB schema was changed, please specify new SQLite3, MySQL, PostgreSQL or Redis DB file.
+```
+$ cd $GOPATH/src/github.com/kotakanbe/goval-dictionary
 $ git pull
 $ rm -r vendor
 $ make install
@@ -1646,7 +1741,9 @@ $ git pull
 $ rm -r vendor
 $ make install
 ```
-Binary file was built under $GOPATH/bin
+
+- Binary file was built under $GOPATH/bin
+- If an error occurs, delete `$GOPATH/pkg` before executing it
 
 ---
 
