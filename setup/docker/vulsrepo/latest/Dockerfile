@@ -1,31 +1,17 @@
-FROM httpd:2.4
+FROM alpine:3.6
 
-MAINTAINER hikachan sadayuki-matsuno
-# install packages
-RUN apt-get update \
-        && apt-get install -y --no-install-recommends \
-      	  ca-certificates \
-          vim \
-          git \
-          libcgi-pm-perl \
-          libjson-perl \
-        && rm -r /var/lib/apt/lists/*
-
-# env
-ENV HTTPD_PREFIX /usr/local/apache2
+MAINTAINER hikachan sadayuki-matsuno usiusi360
 
 VOLUME /vuls
 
-WORKDIR ${HTTPD_PREFIX}/htdocs
-RUN git clone https://github.com/usiusi360/vulsrepo.git \
-     && echo "LoadModule cgid_module modules/mod_cgid.so" >> $HTTPD_PREFIX/conf/httpd.conf \
-     && echo "<Directory \"$HTTPD_PREFIX/htdocs/vulsrepo/dist/cgi\">" >> $HTTPD_PREFIX/conf/httpd.conf \
-     && echo "  Options +ExecCGI +FollowSymLinks" >> $HTTPD_PREFIX/conf/httpd.conf \
-     && echo "  AddHandler cgi-script cgi" >> $HTTPD_PREFIX/conf/httpd.conf \
-     && echo "</Directory>" >> $HTTPD_PREFIX/conf/httpd.conf \
-     && sed -i -e 's/User daemon/#User/g' $HTTPD_PREFIX/conf/httpd.conf \
-     && sed -i -e 's/Group daemon/#Group/g' $HTTPD_PREFIX/conf/httpd.conf \
-     && ln -snf /vuls/results /usr/local/apache2/htdocs/vulsrepo/results
+RUN apk --no-cache add git \
+   && git clone https://github.com/usiusi360/vulsrepo.git
 
-EXPOSE 80
-CMD ["httpd-foreground"]
+RUN cd /vulsrepo/server \
+   && sed -i -e 's/\/home\/vuls-user//g' vulsrepo-config.toml \
+   && sed -i -e 's/\/opt//g' vulsrepo-config.toml \
+   && mkdir /lib64 \
+   && ln -s /lib/ld-musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2
+
+EXPOSE 5111
+CMD ["/vulsrepo/server/vulsrepo-server"]
