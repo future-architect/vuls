@@ -20,13 +20,12 @@ package scan
 import (
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/sirupsen/logrus"
 )
 
 type base struct {
@@ -48,7 +47,7 @@ func (l *base) setServerInfo(c config.ServerInfo) {
 	l.ServerInfo = c
 }
 
-func (l base) getServerInfo() config.ServerInfo {
+func (l *base) getServerInfo() config.ServerInfo {
 	return l.ServerInfo
 }
 
@@ -64,7 +63,7 @@ func (l *base) setDistro(fam, rel string) {
 	l.setServerInfo(s)
 }
 
-func (l base) getDistro() config.Distro {
+func (l *base) getDistro() config.Distro {
 	return l.Distro
 }
 
@@ -72,11 +71,32 @@ func (l *base) setPlatform(p models.Platform) {
 	l.Platform = p
 }
 
-func (l base) getPlatform() models.Platform {
+func (l *base) getPlatform() models.Platform {
 	return l.Platform
 }
 
-func (l base) allContainers() (containers []config.Container, err error) {
+func (l *base) runningKernel() (release, version string, err error) {
+	r := l.exec("uname -r", noSudo)
+	if !r.isSuccess() {
+		return "", "", fmt.Errorf("Failed to SSH: %s", r)
+	}
+	release = strings.TrimSpace(r.Stdout)
+
+	switch l.Distro.Family {
+	case config.Debian:
+		r := l.exec("uname -a", noSudo)
+		if !r.isSuccess() {
+			return "", "", fmt.Errorf("Failed to SSH: %s", r)
+		}
+		ss := strings.Fields(r.Stdout)
+		if 6 < len(ss) {
+			version = ss[6]
+		}
+	}
+	return
+}
+
+func (l *base) allContainers() (containers []config.Container, err error) {
 	switch l.ServerInfo.Containers.Type {
 	case "", "docker":
 		stdout, err := l.dockerPs("-a --format '{{.ID}} {{.Names}} {{.Image}}'")
@@ -213,7 +233,7 @@ func (l *base) detectPlatform() {
 	return
 }
 
-func (l base) detectRunningOnAws() (ok bool, instanceID string, err error) {
+func (l *base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 	if r := l.exec("type curl", noSudo); r.isSuccess() {
 		cmd := "curl --max-time 1 --retry 3 --noproxy 169.254.169.254 http://169.254.169.254/latest/meta-data/instance-id"
 		r := l.exec(cmd, noSudo)
@@ -261,16 +281,11 @@ func (l base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 // http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/resource-ids.html
 var awsInstanceIDPattern = regexp.MustCompile(`^i-[0-9a-f]+$`)
 
-func (l base) isAwsInstanceID(str string) bool {
+func (l *base) isAwsInstanceID(str string) bool {
 	return awsInstanceIDPattern.MatchString(str)
 }
 
 func (l *base) convertToModel() models.ScanResult {
-	for _, p := range l.VulnInfos {
-		sort.Sort(models.PackageInfosByName(p.Packages))
-	}
-	sort.Sort(l.VulnInfos)
-
 	ctype := l.ServerInfo.Containers.Type
 	if l.ServerInfo.Container.ContainerID != "" && ctype == "" {
 		ctype = "docker"
@@ -287,22 +302,19 @@ func (l *base) convertToModel() models.ScanResult {
 		errs = append(errs, fmt.Sprintf("%s", e))
 	}
 
-	// Avoid null slice being null in JSON
-	for i := range l.VulnInfos {
-		l.VulnInfos[i].NilSliceToEmpty()
-	}
-
 	return models.ScanResult{
-		ServerName:  l.ServerInfo.ServerName,
-		ScannedAt:   time.Now(),
-		Family:      l.Distro.Family,
-		Release:     l.Distro.Release,
-		Container:   container,
-		Platform:    l.Platform,
-		ScannedCves: l.VulnInfos,
-		Packages:    l.Packages,
-		Optional:    l.ServerInfo.Optional,
-		Errors:      errs,
+		JSONVersion:   models.JSONVersion,
+		ServerName:    l.ServerInfo.ServerName,
+		ScannedAt:     time.Now(),
+		Family:        l.Distro.Family,
+		Release:       l.Distro.Release,
+		Container:     container,
+		Platform:      l.Platform,
+		ScannedCves:   l.VulnInfos,
+		RunningKernel: l.Kernel,
+		Packages:      l.Packages,
+		Optional:      l.ServerInfo.Optional,
+		Errors:        errs,
 	}
 }
 
@@ -310,6 +322,6 @@ func (l *base) setErrs(errs []error) {
 	l.errs = errs
 }
 
-func (l base) getErrs() []error {
+func (l *base) getErrs() []error {
 	return l.errs
 }

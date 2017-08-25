@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package scan
 
 import (
+	"bufio"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -28,6 +29,8 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+
+	"github.com/knqyf263/go-deb-version"
 )
 
 // inherit OsTypeInterface
@@ -37,7 +40,14 @@ type debian struct {
 
 // NewDebian is constructor
 func newDebian(c config.ServerInfo) *debian {
-	d := &debian{}
+	d := &debian{
+		base: base{
+			osPackages: osPackages{
+				Packages:  models.Packages{},
+				VulnInfos: models.VulnInfos{},
+			},
+		},
+	}
 	d.log = util.NewCustomLogger(c)
 	d.setServerInfo(c)
 	return d
@@ -53,8 +63,7 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err err
 			return false, deb, nil
 		}
 		if r.ExitStatus == 255 {
-			return false, deb, fmt.Errorf(
-				"Unable to connect via SSH. Check SSH settings. %s", r)
+			return false, deb, fmt.Errorf("Unable to connect via SSH. Check SSH settings. If you have never SSH to the host to be scanned, SSH to the host before scanning in order to add the HostKey. %s@%s port: %s\n%s", c.User, c.Host, c.Port, r)
 		}
 		util.Log.Debugf("Not Debian like Linux. %s", r)
 		return false, deb, nil
@@ -67,7 +76,7 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err err
 		//  e.g.
 		//  Raspbian GNU/Linux 7 \n \l
 		result := strings.Fields(r.Stdout)
-		if len(result) > 2 && result[0] == "Raspbian" {
+		if len(result) > 2 && result[0] == config.Raspbian {
 			distro := strings.ToLower(trim(result[0]))
 			deb.setDistro(distro, trim(result[2]))
 			return true, deb, nil
@@ -115,7 +124,7 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err err
 	// Debian
 	cmd := "cat /etc/debian_version"
 	if r := exec(c, cmd, noSudo); r.isSuccess() {
-		deb.setDistro("debian", trim(r.Stdout))
+		deb.setDistro(config.Debian, trim(r.Stdout))
 		return true, deb, nil
 	}
 
@@ -128,60 +137,112 @@ func trim(str string) string {
 }
 
 func (o *debian) checkIfSudoNoPasswd() error {
-	cmd := util.PrependProxyEnv("apt-get update")
-	o.log.Infof("Checking... sudo %s", cmd)
-	r := o.exec(cmd, sudo)
-	if !r.isSuccess() {
-		o.log.Errorf("sudo error on %s", r)
-		return fmt.Errorf("Failed to sudo: %s", r)
+	if config.Conf.Deep || o.Distro.Family == config.Raspbian {
+		cmd := util.PrependProxyEnv("apt-get update")
+		o.log.Infof("Checking... sudo %s", cmd)
+		r := o.exec(cmd, sudo)
+		if !r.isSuccess() {
+			o.log.Errorf("sudo error on %s", r)
+			return fmt.Errorf("Failed to sudo: %s", r)
+		}
+		o.log.Infof("Sudo... Pass")
+		return nil
 	}
-	o.log.Infof("Sudo... Pass")
+
+	o.log.Infof("sudo ... No need")
 	return nil
 }
 
 func (o *debian) checkDependencies() error {
+	packNames := []string{}
+
 	switch o.Distro.Family {
-	case "ubuntu", "raspbian":
+	case config.Ubuntu, config.Raspbian:
+		o.log.Infof("Dependencies... No need")
 		return nil
 
-	case "debian":
-		// Debian needs aptitude to get changelogs.
-		// Because unable to get changelogs via apt-get changelog on Debian.
-		if r := o.exec("test -f /usr/bin/aptitude", noSudo); !r.isSuccess() {
-			msg := fmt.Sprintf("aptitude is not installed: %s", r)
-			o.log.Errorf(msg)
-			return fmt.Errorf(msg)
+	case config.Debian:
+		// https://askubuntu.com/a/742844
+		packNames = append(packNames, "reboot-notifier")
+
+		if !config.Conf.Deep {
+			// Debian needs aptitude to get changelogs.
+			// Because unable to get changelogs via apt-get changelog on Debian.
+			packNames = append(packNames, "aptitude")
 		}
-		o.log.Infof("Dependencies... Pass")
-		return nil
 
 	default:
 		return fmt.Errorf("Not implemented yet: %s", o.Distro)
 	}
-}
 
-func (o *debian) scanPackages() error {
-	var err error
-	var packs []models.PackageInfo
-	if packs, err = o.scanInstalledPackages(); err != nil {
-		o.log.Errorf("Failed to scan installed packages")
-		return err
+	for _, name := range packNames {
+		//TODO --show-format
+		cmd := "dpkg-query -W " + name
+		if r := o.exec(cmd, noSudo); !r.isSuccess() {
+			msg := fmt.Sprintf("%s is not installed", name)
+			o.log.Errorf(msg)
+			return fmt.Errorf(msg)
+		}
 	}
-	o.setPackages(packs)
-
-	var unsecurePacks []models.VulnInfo
-	if unsecurePacks, err = o.scanUnsecurePackages(packs); err != nil {
-		o.log.Errorf("Failed to scan vulnerable packages")
-		return err
-	}
-	o.setVulnInfos(unsecurePacks)
+	o.log.Infof("Dependencies... Pass")
 	return nil
 }
 
-func (o *debian) scanInstalledPackages() (packs []models.PackageInfo, err error) {
+func (o *debian) scanPackages() error {
+	// collect the running kernel information
+	release, version, err := o.runningKernel()
+	if err != nil {
+		o.log.Errorf("Failed to scan the running kernel version: %s", err)
+		return err
+	}
+	rebootRequired, err := o.rebootRequired()
+	if err != nil {
+		o.log.Errorf("Failed to detect the kernel reboot required: %s", err)
+		return err
+	}
+	o.Kernel = models.Kernel{
+		Version:        version,
+		Release:        release,
+		RebootRequired: rebootRequired,
+	}
+
+	installed, updatable, err := o.scanInstalledPackages()
+	if err != nil {
+		o.log.Errorf("Failed to scan installed packages: %s", err)
+		return err
+	}
+	o.Packages = installed
+
+	if config.Conf.Deep || o.Distro.Family == config.Raspbian {
+		unsecures, err := o.scanUnsecurePackages(updatable)
+		if err != nil {
+			o.log.Errorf("Failed to scan vulnerable packages: %s", err)
+			return err
+		}
+		o.VulnInfos = unsecures
+		return nil
+	}
+	return nil
+}
+
+// https://askubuntu.com/a/742844
+func (o *debian) rebootRequired() (bool, error) {
+	r := o.exec("test -f /var/run/reboot-required", noSudo)
+	switch r.ExitStatus {
+	case 0:
+		return true, nil
+	case 1:
+		return false, nil
+	default:
+		return false, fmt.Errorf("Failed to check reboot reauired: %s", r)
+	}
+}
+
+func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, error) {
+	installed, updatable := models.Packages{}, models.Packages{}
 	r := o.exec("dpkg-query -W", noSudo)
 	if !r.isSuccess() {
-		return packs, fmt.Errorf("Failed to SSH: %s", r)
+		return nil, nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 
 	//  e.g.
@@ -192,16 +253,37 @@ func (o *debian) scanInstalledPackages() (packs []models.PackageInfo, err error)
 		if trimmed := strings.TrimSpace(line); len(trimmed) != 0 {
 			name, version, err := o.parseScannedPackagesLine(trimmed)
 			if err != nil {
-				return nil, fmt.Errorf(
+				return nil, nil, fmt.Errorf(
 					"Debian: Failed to parse package line: %s", line)
 			}
-			packs = append(packs, models.PackageInfo{
+			installed[name] = models.Package{
 				Name:    name,
 				Version: version,
-			})
+			}
 		}
 	}
-	return
+
+	updatableNames, err := o.getUpdatablePackNames()
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, name := range updatableNames {
+		for _, pack := range installed {
+			if pack.Name == name {
+				updatable[name] = pack
+				break
+			}
+		}
+	}
+
+	// Fill the candidate versions of upgradable packages
+	err = o.fillCandidateVersion(updatable)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Failed to fill candidate versions. err: %s", err)
+	}
+	installed.MergeNewVersion(updatable)
+
+	return installed, updatable, nil
 }
 
 var packageLinePattern = regexp.MustCompile(`^([^\t']+)\t(.+)$`)
@@ -221,51 +303,33 @@ func (o *debian) parseScannedPackagesLine(line string) (name, version string, er
 	return "", "", fmt.Errorf("Unknown format: %s", line)
 }
 
-func (o *debian) scanUnsecurePackages(installed []models.PackageInfo) ([]models.VulnInfo, error) {
+func (o *debian) aptGetUpdate() error {
 	o.log.Infof("apt-get update...")
 	cmd := util.PrependProxyEnv("apt-get update")
 	if r := o.exec(cmd, sudo); !r.isSuccess() {
-		return nil, fmt.Errorf("Failed to SSH: %s", r)
+		return fmt.Errorf("Failed to SSH: %s", r)
 	}
+	return nil
+}
 
-	// Convert the name of upgradable packages to PackageInfo struct
-	upgradableNames, err := o.GetUpgradablePackNames()
-	if err != nil {
-		return nil, err
-	}
-	var upgradablePacks []models.PackageInfo
-	for _, name := range upgradableNames {
-		for _, pack := range installed {
-			if pack.Name == name {
-				upgradablePacks = append(upgradablePacks, pack)
-				break
-			}
-		}
-	}
-
-	// Fill the candidate versions of upgradable packages
-	upgradablePacks, err = o.fillCandidateVersion(upgradablePacks)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to fill candidate versions. err: %s", err)
-	}
-
-	o.Packages.MergeNewVersion(upgradablePacks)
+func (o *debian) scanUnsecurePackages(updatable models.Packages) (models.VulnInfos, error) {
+	o.aptGetUpdate()
 
 	// Setup changelog cache
 	current := cache.Meta{
 		Name:   o.getServerInfo().GetServerName(),
 		Distro: o.getServerInfo().Distro,
-		Packs:  upgradablePacks,
+		Packs:  updatable,
 	}
 
 	o.log.Debugf("Ensure changelog cache: %s", current.Name)
-	var meta *cache.Meta
-	if meta, err = o.ensureChangelogCache(current); err != nil {
+	meta, err := o.ensureChangelogCache(current)
+	if err != nil {
 		return nil, err
 	}
 
 	// Collect CVE information of upgradable packages
-	vulnInfos, err := o.scanVulnInfos(upgradablePacks, meta)
+	vulnInfos, err := o.scanVulnInfos(updatable, meta)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to scan unsecure packages. err: %s", err)
 	}
@@ -308,34 +372,34 @@ func (o *debian) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
 	return &cached, nil
 }
 
-func (o *debian) fillCandidateVersion(before models.PackageInfoList) (filled []models.PackageInfo, err error) {
+func (o *debian) fillCandidateVersion(updatables models.Packages) (err error) {
 	names := []string{}
-	for _, p := range before {
-		names = append(names, p.Name)
+	for name := range updatables {
+		names = append(names, name)
 	}
 	cmd := fmt.Sprintf("LANGUAGE=en_US.UTF-8 apt-cache policy %s", strings.Join(names, " "))
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return nil, fmt.Errorf("Failed to SSH: %s", r)
+		return fmt.Errorf("Failed to SSH: %s", r)
 	}
 	packChangelog := o.splitAptCachePolicy(r.Stdout)
 	for k, v := range packChangelog {
 		ver, err := o.parseAptCachePolicy(v, k)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to parse %s", err)
+			return fmt.Errorf("Failed to parse %s", err)
 		}
-		p, found := before.FindByName(k)
-		if !found {
-			return nil, fmt.Errorf("Not found: %s", k)
+		pack, ok := updatables[k]
+		if !ok {
+			return fmt.Errorf("Not found: %s", k)
 		}
-		p.NewVersion = ver.Candidate
-		filled = append(filled, p)
+		pack.NewVersion = ver.Candidate
+		updatables[k] = pack
 	}
 	return
 }
 
-func (o *debian) GetUpgradablePackNames() (packNames []string, err error) {
-	cmd := util.PrependProxyEnv("LANGUAGE=en_US.UTF-8 apt-get upgrade --dry-run")
+func (o *debian) getUpdatablePackNames() (packNames []string, err error) {
+	cmd := util.PrependProxyEnv("LANGUAGE=en_US.UTF-8 apt-get dist-upgrade --dry-run")
 	r := o.exec(cmd, noSudo)
 	if r.isSuccess(0, 1) {
 		return o.parseAptGetUpgrade(r.Stdout)
@@ -345,7 +409,7 @@ func (o *debian) GetUpgradablePackNames() (packNames []string, err error) {
 		cmd, r.ExitStatus, r.Stdout, r.Stderr)
 }
 
-func (o *debian) parseAptGetUpgrade(stdout string) (upgradableNames []string, err error) {
+func (o *debian) parseAptGetUpgrade(stdout string) (updatableNames []string, err error) {
 	startRe := regexp.MustCompile(`The following packages will be upgraded:`)
 	stopRe := regexp.MustCompile(`^(\d+) upgraded.*`)
 	startLineFound, stopLineFound := false, false
@@ -360,21 +424,21 @@ func (o *debian) parseAptGetUpgrade(stdout string) (upgradableNames []string, er
 		}
 		result := stopRe.FindStringSubmatch(line)
 		if len(result) == 2 {
-			numUpgradablePacks, err := strconv.Atoi(result[1])
+			nUpdatable, err := strconv.Atoi(result[1])
 			if err != nil {
 				return nil, fmt.Errorf(
 					"Failed to scan upgradable packages number. line: %s", line)
 			}
-			if numUpgradablePacks != len(upgradableNames) {
+			if nUpdatable != len(updatableNames) {
 				return nil, fmt.Errorf(
 					"Failed to scan upgradable packages, expected: %s, detected: %d",
-					result[1], len(upgradableNames))
+					result[1], len(updatableNames))
 			}
 			stopLineFound = true
 			o.log.Debugf("Found the stop line. line: %s", line)
 			break
 		}
-		upgradableNames = append(upgradableNames, strings.Fields(line)...)
+		updatableNames = append(updatableNames, strings.Fields(line)...)
 	}
 	if !startLineFound {
 		// no upgrades
@@ -387,19 +451,28 @@ func (o *debian) parseAptGetUpgrade(stdout string) (upgradableNames []string, er
 	return
 }
 
-func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo, meta *cache.Meta) (models.VulnInfos, error) {
-	resChan := make(chan struct {
-		models.PackageInfo
-		DetectedCveIDs
-	}, len(upgradablePacks))
-	errChan := make(chan error, len(upgradablePacks))
-	reqChan := make(chan models.PackageInfo, len(upgradablePacks))
+// DetectedCveID has CveID, Confidence and DetectionMethod fields
+// LenientMatching will be true if this vulnerability is not detected by accurate version matching.
+// see https://github.com/future-architect/vuls/pull/328
+type DetectedCveID struct {
+	CveID      string
+	Confidence models.Confidence
+}
+
+func (o *debian) scanVulnInfos(updatablePacks models.Packages, meta *cache.Meta) (models.VulnInfos, error) {
+	type response struct {
+		pack           *models.Package
+		DetectedCveIDs []DetectedCveID
+	}
+	resChan := make(chan response, len(updatablePacks))
+	errChan := make(chan error, len(updatablePacks))
+	reqChan := make(chan models.Package, len(updatablePacks))
 	defer close(resChan)
 	defer close(errChan)
 	defer close(reqChan)
 
 	go func() {
-		for _, pack := range upgradablePacks {
+		for _, pack := range updatablePacks {
 			reqChan <- pack
 		}
 	}()
@@ -407,50 +480,53 @@ func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo, meta *cache
 	timeout := time.After(30 * 60 * time.Second)
 	concurrency := 10
 	tasks := util.GenWorkers(concurrency)
-	for range upgradablePacks {
+	for range updatablePacks {
 		tasks <- func() {
 			select {
 			case pack := <-reqChan:
-				func(p models.PackageInfo) {
+				func(p models.Package) {
 					changelog := o.getChangelogCache(meta, p)
 					if 0 < len(changelog) {
-						cveIDs, _ := o.getCveIDsFromChangelog(changelog, p.Name, p.Version)
-						resChan <- struct {
-							models.PackageInfo
-							DetectedCveIDs
-						}{p, cveIDs}
+						cveIDs, pack := o.getCveIDsFromChangelog(changelog, p.Name, p.Version)
+						resChan <- response{pack, cveIDs}
 						return
 					}
 
 					// if the changelog is not in cache or failed to get from local cache,
 					// get the changelog of the package via internet.
 					// After that, store it in the cache.
-					if cveIDs, err := o.scanPackageCveIDs(p); err != nil {
+					if cveIDs, pack, err := o.scanPackageCveIDs(p); err != nil {
 						errChan <- err
 					} else {
-						resChan <- struct {
-							models.PackageInfo
-							DetectedCveIDs
-						}{p, cveIDs}
+						resChan <- response{pack, cveIDs}
 					}
 				}(pack)
 			}
 		}
 	}
 
-	// { DetectedCveID{} : [packageInfo] }
-	cvePackages := make(map[DetectedCveID][]models.PackageInfo)
+	// { DetectedCveID{} : [package] }
+	cvePackages := make(map[DetectedCveID][]string)
 	errs := []error{}
-	for i := 0; i < len(upgradablePacks); i++ {
+	for i := 0; i < len(updatablePacks); i++ {
 		select {
-		case pair := <-resChan:
-			pack := pair.PackageInfo
-			cveIDs := pair.DetectedCveIDs
-			for _, cveID := range cveIDs {
-				cvePackages[cveID] = appendPackIfMissing(cvePackages[cveID], pack)
+		case response := <-resChan:
+			if response.pack == nil {
+				continue
 			}
-			o.log.Infof("(%d/%d) Scanned %s-%s : %s",
-				i+1, len(upgradablePacks), pair.Name, pair.PackageInfo.Version, cveIDs)
+			o.Packages[response.pack.Name] = *response.pack
+			cves := response.DetectedCveIDs
+			for _, cve := range cves {
+				packNames, ok := cvePackages[cve]
+				if ok {
+					packNames = append(packNames, response.pack.Name)
+				} else {
+					packNames = []string{response.pack.Name}
+				}
+				cvePackages[cve] = packNames
+			}
+			o.log.Infof("(%d/%d) Scanned %s: %s",
+				i+1, len(updatablePacks), response.pack.Name, cves)
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
@@ -466,17 +542,22 @@ func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo, meta *cache
 		cveIDs = append(cveIDs, k)
 	}
 	o.log.Debugf("%d Cves are found. cves: %v", len(cveIDs), cveIDs)
-	var vinfos models.VulnInfos
-	for k, v := range cvePackages {
-		vinfos = append(vinfos, models.VulnInfo{
-			CveID:      k.CveID,
-			Confidence: k.Confidence,
-			Packages:   v,
-		})
+	vinfos := models.VulnInfos{}
+	for cveID, names := range cvePackages {
+		affected := models.PackageStatuses{}
+		for _, n := range names {
+			affected = append(affected, models.PackageStatus{Name: n})
+		}
+
+		vinfos[cveID.CveID] = models.VulnInfo{
+			CveID:            cveID.CveID,
+			Confidence:       cveID.Confidence,
+			AffectedPackages: affected,
+		}
 	}
 
 	// Update meta package information of changelog cache to the latest one.
-	meta.Packs = upgradablePacks
+	meta.Packs = updatablePacks
 	if err := cache.DB.RefreshMeta(*meta); err != nil {
 		return nil, err
 	}
@@ -484,10 +565,10 @@ func (o *debian) scanVulnInfos(upgradablePacks []models.PackageInfo, meta *cache
 	return vinfos, nil
 }
 
-func (o *debian) getChangelogCache(meta *cache.Meta, pack models.PackageInfo) string {
-	cachedPack, found := meta.FindPack(pack.Name)
+func (o *debian) getChangelogCache(meta *cache.Meta, pack models.Package) string {
+	cachedPack, found := meta.Packs[pack.Name]
 	if !found {
-		o.log.Debugf("Not found: %s", pack.Name)
+		o.log.Debugf("Not found in cache: %s", pack.Name)
 		return ""
 	}
 
@@ -512,12 +593,12 @@ func (o *debian) getChangelogCache(meta *cache.Meta, pack models.PackageInfo) st
 	return changelog
 }
 
-func (o *debian) scanPackageCveIDs(pack models.PackageInfo) ([]DetectedCveID, error) {
+func (o *debian) scanPackageCveIDs(pack models.Package) ([]DetectedCveID, *models.Package, error) {
 	cmd := ""
 	switch o.Distro.Family {
-	case "ubuntu", "raspbian":
+	case config.Ubuntu, config.Raspbian:
 		cmd = fmt.Sprintf(`PAGER=cat apt-get -q=2 changelog %s`, pack.Name)
-	case "debian":
+	case config.Debian:
 		cmd = fmt.Sprintf(`PAGER=cat aptitude -q=2 changelog %s`, pack.Name)
 	}
 	cmd = util.PrependProxyEnv(cmd)
@@ -526,151 +607,146 @@ func (o *debian) scanPackageCveIDs(pack models.PackageInfo) ([]DetectedCveID, er
 	if !r.isSuccess() {
 		o.log.Warnf("Failed to SSH: %s", r)
 		// Ignore this Error.
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	stdout := strings.Replace(r.Stdout, "\r", "", -1)
-	cveIDs, clog := o.getCveIDsFromChangelog(
-		stdout, pack.Name, pack.Version)
+	cveIDs, clogFilledPack := o.getCveIDsFromChangelog(stdout, pack.Name, pack.Version)
 
-	if clog.Method != models.FailedToGetChangelog {
-		err := cache.DB.PutChangelog(o.getServerInfo().GetServerName(), pack.Name, clog.Contents)
+	if clogFilledPack.Changelog.Method != models.FailedToGetChangelog {
+		err := cache.DB.PutChangelog(
+			o.getServerInfo().GetServerName(), pack.Name, pack.Changelog.Contents)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to put changelog into cache")
+			return nil, nil, fmt.Errorf("Failed to put changelog into cache")
 		}
 	}
 
 	// No error will be returned. Only logging.
-	return cveIDs, nil
+	return cveIDs, clogFilledPack, nil
 }
 
-// Debian Version Numbers
-// https://readme.phys.ethz.ch/documentation/debian_version_numbers/
 func (o *debian) getCveIDsFromChangelog(
-	changelog, name, ver string) ([]DetectedCveID, models.Changelog) {
+	changelog, name, ver string) ([]DetectedCveID, *models.Package) {
 
-	if cveIDs, relevant, err := o.parseChangelog(
+	if cveIDs, pack, err := o.parseChangelog(
 		changelog, name, ver, models.ChangelogExactMatch); err == nil {
-		return cveIDs, relevant
+		return cveIDs, pack
 	}
 
 	var verAfterColon string
-	var err error
 
 	splittedByColon := strings.Split(ver, ":")
 	if 1 < len(splittedByColon) {
 		verAfterColon = splittedByColon[1]
-		if cveIDs, relevant, err := o.parseChangelog(
+		if cveIDs, pack, err := o.parseChangelog(
 			changelog, name, verAfterColon, models.ChangelogLenientMatch); err == nil {
-			return cveIDs, relevant
+			return cveIDs, pack
 		}
 	}
 
 	delim := []string{"+", "~", "build"}
 	switch o.Distro.Family {
-	case "ubuntu":
-		delim = append(delim, "ubuntu")
-	case "debian":
-	case "Raspbian":
+	case config.Ubuntu:
+		delim = append(delim, config.Ubuntu)
+	case config.Debian:
+	case config.Raspbian:
 	}
 
 	for _, d := range delim {
 		ss := strings.Split(ver, d)
 		if 1 < len(ss) {
-			if cveIDs, relevant, err := o.parseChangelog(
+			if cveIDs, pack, err := o.parseChangelog(
 				changelog, name, ss[0], models.ChangelogLenientMatch); err == nil {
-				return cveIDs, relevant
+				return cveIDs, pack
 			}
 		}
 
 		ss = strings.Split(verAfterColon, d)
 		if 1 < len(ss) {
-			if cveIDs, relevant, err := o.parseChangelog(
+			if cveIDs, pack, err := o.parseChangelog(
 				changelog, name, ss[0], models.ChangelogLenientMatch); err == nil {
-				return cveIDs, relevant
+				return cveIDs, pack
 			}
 		}
 	}
 
 	// Only logging the error.
-	o.log.Error(err)
-
-	for i, p := range o.Packages {
-		if p.Name == name {
-			o.Packages[i].Changelog = models.Changelog{
-				Contents: "",
-				Method:   models.FailedToFindVersionInChangelog,
-			}
-		}
-	}
+	o.log.Warnf("Failed to find the version in changelog: %s-%s", name, ver)
+	o.log.Debugf("Changelog of : %s-%s", name, ver, changelog)
 
 	// If the version is not in changelog, return entire changelog to put into cache
-	return []DetectedCveID{}, models.Changelog{
+	pack := o.Packages[name]
+	pack.Changelog = models.Changelog{
 		Contents: changelog,
 		Method:   models.FailedToFindVersionInChangelog,
 	}
-}
 
-// DetectedCveID has CveID, Confidence and DetectionMethod fields
-// LenientMatching will be true if this vulnerability is not detected by accurate version matching.
-// see https://github.com/future-architect/vuls/pull/328
-type DetectedCveID struct {
-	CveID      string
-	Confidence models.Confidence
+	return []DetectedCveID{}, &pack
 }
-
-// DetectedCveIDs is a slice of DetectedCveID
-type DetectedCveIDs []DetectedCveID
 
 var cveRe = regexp.MustCompile(`(CVE-\d{4}-\d{4,})`)
 
 // Collect CVE-IDs included in the changelog.
-// The version which specified in argument(versionOrLater) is excluded.
-func (o *debian) parseChangelog(changelog, name, ver string, confidence models.Confidence) ([]DetectedCveID, models.Changelog, error) {
+// The version specified in argument(versionOrLater) is used to compare.
+func (o *debian) parseChangelog(changelog, name, ver string, confidence models.Confidence) ([]DetectedCveID, *models.Package, error) {
+	installedVer, err := version.NewVersion(ver)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Failed to parse installed version: %s, %s", ver, err)
+	}
 	buf, cveIDs := []string{}, []string{}
-	stopRe := regexp.MustCompile(fmt.Sprintf(`\(%s\)`, regexp.QuoteMeta(ver)))
-	stopLineFound := false
-	lines := strings.Split(changelog, "\n")
-	for _, line := range lines {
+	scanner := bufio.NewScanner(strings.NewReader(changelog))
+	found := false
+	for scanner.Scan() {
+		line := scanner.Text()
 		buf = append(buf, line)
-		if match := stopRe.MatchString(line); match {
-			//  o.log.Debugf("Found the stop line: %s", line)
-			stopLineFound = true
-			break
-		} else if matches := cveRe.FindAllString(line, -1); 0 < len(matches) {
+		if matches := cveRe.FindAllString(line, -1); 0 < len(matches) {
 			for _, m := range matches {
 				cveIDs = util.AppendIfMissing(cveIDs, m)
 			}
 		}
+
+		ss := strings.Fields(line)
+		if len(ss) < 2 {
+			continue
+		}
+
+		if !strings.HasPrefix(ss[1], "(") || !strings.HasSuffix(ss[1], ")") {
+			continue
+		}
+		clogVer, err := version.NewVersion(ss[1][1 : len(ss[1])-1])
+		if err != nil {
+			continue
+		}
+		if installedVer.Equal(clogVer) || installedVer.GreaterThan(clogVer) {
+			found = true
+			break
+		}
 	}
-	if !stopLineFound {
-		return nil, models.Changelog{
-				Contents: "",
-				Method:   models.FailedToFindVersionInChangelog,
-			}, fmt.Errorf(
-				"Failed to scan CVE IDs. The version is not in changelog. name: %s, version: %s",
-				name,
-				ver,
-			)
+
+	if !found {
+		pack := o.Packages[name]
+		pack.Changelog = models.Changelog{
+			Contents: "",
+			Method:   models.FailedToFindVersionInChangelog,
+		}
+		return nil, &pack, fmt.Errorf(
+			"Failed to scan CVE IDs. The version is not in changelog. name: %s, version: %s",
+			name, ver)
 	}
 
 	clog := models.Changelog{
-		Contents: strings.Join(buf, "\n"),
-		Method:   string(confidence.DetectionMethod),
+		Contents: strings.Join(buf[0:len(buf)-1], "\n"),
+		Method:   confidence.DetectionMethod,
 	}
-
-	for i, p := range o.Packages {
-		if p.Name == name {
-			o.Packages[i].Changelog = clog
-		}
-	}
+	pack := o.Packages[name]
+	pack.Changelog = clog
 
 	cves := []DetectedCveID{}
 	for _, id := range cveIDs {
 		cves = append(cves, DetectedCveID{id, confidence})
 	}
 
-	return cves, clog, nil
+	return cves, &pack, nil
 }
 
 func (o *debian) splitAptCachePolicy(stdout string) map[string]string {
@@ -721,15 +797,4 @@ func (o *debian) parseAptCachePolicy(stdout, name string) (packCandidateVer, err
 		}
 	}
 	return ver, fmt.Errorf("Unknown Format: %s", stdout)
-}
-
-func appendPackIfMissing(slice []models.PackageInfo, s models.PackageInfo) []models.PackageInfo {
-	for _, ele := range slice {
-		if ele.Name == s.Name &&
-			ele.Version == s.Version &&
-			ele.Release == s.Release {
-			return slice
-		}
-	}
-	return append(slice, s)
 }

@@ -45,16 +45,6 @@ type Cache interface {
 type Meta struct {
 	Name      string
 	Distro    config.Distro
-	Packs     []models.PackageInfo
+	Packs     models.Packages
 	CreatedAt time.Time
-}
-
-// FindPack search a PackageInfo
-func (m Meta) FindPack(name string) (pack models.PackageInfo, found bool) {
-	for _, p := range m.Packs {
-		if name == p.Name {
-			return p, true
-		}
-	}
-	return pack, false
 }

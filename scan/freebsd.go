@@ -33,7 +33,14 @@ type bsd struct {
 
 // NewBSD constructor
 func newBsd(c config.ServerInfo) *bsd {
-	d := &bsd{}
+	d := &bsd{
+		base: base{
+			osPackages: osPackages{
+				Packages:  models.Packages{},
+				VulnInfos: models.VulnInfos{},
+			},
+		},
+	}
 	d.log = util.NewCustomLogger(c)
 	d.setServerInfo(c)
 	return d
@@ -44,13 +51,13 @@ func detectFreebsd(c config.ServerInfo) (itsMe bool, bsd osTypeInterface) {
 	bsd = newBsd(c)
 
 	// Prevent from adding `set -o pipefail` option
-	c.Distro = config.Distro{Family: "FreeBSD"}
+	c.Distro = config.Distro{Family: config.FreeBSD}
 
 	if r := exec(c, "uname", noSudo); r.isSuccess() {
-		if strings.Contains(r.Stdout, "FreeBSD") == true {
+		if strings.Contains(strings.ToLower(r.Stdout), config.FreeBSD) == true {
 			if b := exec(c, "freebsd-version", noSudo); b.isSuccess() {
 				rel := strings.TrimSpace(b.Stdout)
-				bsd.setDistro("FreeBSD", rel)
+				bsd.setDistro(config.FreeBSD, rel)
 				return true, bsd
 			}
 		}
@@ -66,28 +73,54 @@ func (o *bsd) checkIfSudoNoPasswd() error {
 }
 
 func (o *bsd) checkDependencies() error {
+	o.log.Infof("Dependencies... No need")
 	return nil
 }
 
 func (o *bsd) scanPackages() error {
-	var err error
-	var packs []models.PackageInfo
-	if packs, err = o.scanInstalledPackages(); err != nil {
-		o.log.Errorf("Failed to scan installed packages")
+	// collect the running kernel information
+	release, version, err := o.runningKernel()
+	if err != nil {
+		o.log.Errorf("Failed to scan the running kernel version: %s", err)
 		return err
 	}
-	o.setPackages(packs)
+	o.Kernel = models.Kernel{
+		Release: release,
+		Version: version,
+	}
 
-	var vinfos []models.VulnInfo
-	if vinfos, err = o.scanUnsecurePackages(); err != nil {
-		o.log.Errorf("Failed to scan vulnerable packages")
+	rebootRequired, err := o.rebootRequired()
+	if err != nil {
+		o.log.Errorf("Failed to detect the kernel reboot required: %s", err)
 		return err
 	}
-	o.setVulnInfos(vinfos)
+	o.Kernel.RebootRequired = rebootRequired
+
+	packs, err := o.scanInstalledPackages()
+	if err != nil {
+		o.log.Errorf("Failed to scan installed packages: %s", err)
+		return err
+	}
+	o.Packages = packs
+
+	unsecures, err := o.scanUnsecurePackages()
+	if err != nil {
+		o.log.Errorf("Failed to scan vulnerable packages: %s", err)
+		return err
+	}
+	o.VulnInfos = unsecures
 	return nil
 }
 
-func (o *bsd) scanInstalledPackages() ([]models.PackageInfo, error) {
+func (o *bsd) rebootRequired() (bool, error) {
+	r := o.exec("freebsd-version -k", noSudo)
+	if !r.isSuccess() {
+		return false, fmt.Errorf("Failed to SSH: %s", r)
+	}
+	return o.Kernel.Release != strings.TrimSpace(r.Stdout), nil
+}
+
+func (o *bsd) scanInstalledPackages() (models.Packages, error) {
 	cmd := util.PrependProxyEnv("pkg version -v")
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
@@ -96,7 +129,7 @@ func (o *bsd) scanInstalledPackages() ([]models.PackageInfo, error) {
 	return o.parsePkgVersion(r.Stdout), nil
 }
 
-func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
+func (o *bsd) scanUnsecurePackages() (models.VulnInfos, error) {
 	const vulndbPath = "/tmp/vuln.db"
 	cmd := "rm -f " + vulndbPath
 	r := o.exec(cmd, noSudo)
@@ -111,7 +144,7 @@ func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
 	}
 	if r.ExitStatus == 0 {
 		// no vulnerabilities
-		return []models.VulnInfo{}, nil
+		return nil, nil
 	}
 
 	var packAdtRslt []pkgAuditResult
@@ -121,7 +154,7 @@ func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
 		if len(cveIDs) == 0 {
 			continue
 		}
-		pack, found := o.Packages.FindByName(name)
+		pack, found := o.Packages[name]
 		if !found {
 			return nil, fmt.Errorf("Vulnerable package: %s is not found", name)
 		}
@@ -142,30 +175,38 @@ func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
 		}
 	}
 
-	for k := range cveIDAdtMap {
-		packs := []models.PackageInfo{}
-		for _, r := range cveIDAdtMap[k] {
-			packs = append(packs, r.pack)
+	vinfos := models.VulnInfos{}
+	for cveID := range cveIDAdtMap {
+		packs := models.Packages{}
+		for _, r := range cveIDAdtMap[cveID] {
+			packs[r.pack.Name] = r.pack
 		}
 
 		disAdvs := []models.DistroAdvisory{}
-		for _, r := range cveIDAdtMap[k] {
+		for _, r := range cveIDAdtMap[cveID] {
 			disAdvs = append(disAdvs, models.DistroAdvisory{
 				AdvisoryID: r.vulnIDCveIDs.vulnID,
 			})
 		}
 
-		vulnInfos = append(vulnInfos, models.VulnInfo{
-			CveID:            k,
-			Packages:         packs,
+		affected := models.PackageStatuses{}
+		for name := range packs {
+			affected = append(affected, models.PackageStatus{
+				Name: name,
+			})
+		}
+		vinfos[cveID] = models.VulnInfo{
+			CveID:            cveID,
+			AffectedPackages: affected,
 			DistroAdvisories: disAdvs,
 			Confidence:       models.PkgAuditMatch,
-		})
+		}
 	}
-	return
+	return vinfos, nil
 }
 
-func (o *bsd) parsePkgVersion(stdout string) (packs []models.PackageInfo) {
+func (o *bsd) parsePkgVersion(stdout string) models.Packages {
+	packs := models.Packages{}
 	lines := strings.Split(stdout, "\n")
 	for _, l := range lines {
 		fields := strings.Fields(l)
@@ -180,20 +221,26 @@ func (o *bsd) parsePkgVersion(stdout string) (packs []models.PackageInfo) {
 
 		switch fields[1] {
 		case "?", "=":
-			packs = append(packs, models.PackageInfo{
+			packs[name] = models.Package{
 				Name:    name,
 				Version: ver,
-			})
+			}
 		case "<":
 			candidate := strings.TrimSuffix(fields[6], ")")
-			packs = append(packs, models.PackageInfo{
+			packs[name] = models.Package{
 				Name:       name,
 				Version:    ver,
 				NewVersion: candidate,
-			})
+			}
+		case ">":
+			o.log.Warn("The installed version of the %s is newer than the current version. *This situation can arise with an out of date index file, or when testing new ports.*", name)
+			packs[name] = models.Package{
+				Name:    name,
+				Version: ver,
+			}
 		}
 	}
-	return
+	return packs
 }
 
 type vulnIDCveIDs struct {
@@ -202,7 +249,7 @@ type vulnIDCveIDs struct {
 }
 
 type pkgAuditResult struct {
-	pack         models.PackageInfo
+	pack         models.Package
 	vulnIDCveIDs vulnIDCveIDs
 }
 

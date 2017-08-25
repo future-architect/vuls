@@ -36,6 +36,7 @@ type ConfigtestCmd struct {
 	logDir         string
 	askKeyPassword bool
 	containersOnly bool
+	deep           bool
 	sshNative      bool
 	httpProxy      string
 	timeoutSec     int
@@ -53,6 +54,7 @@ func (*ConfigtestCmd) Synopsis() string { return "Test configuration" }
 func (*ConfigtestCmd) Usage() string {
 	return `configtest:
 	configtest
+			[-deep]
 			[-config=/path/to/config.toml]
 			[-log-dir=/path/to/log]
 			[-ask-key-password]
@@ -85,6 +87,8 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		"Ask ssh privatekey password before scanning",
 	)
+
+	f.BoolVar(&p.deep, "deep", false, "Config test for deep scan mode")
 
 	f.StringVar(
 		&p.httpProxy,
@@ -133,6 +137,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	c.Conf.SSHNative = p.sshNative
 	c.Conf.HTTPProxy = p.httpProxy
 	c.Conf.ContainersOnly = p.containersOnly
+	c.Conf.Deep = p.deep
 
 	var servernames []string
 	if 0 < len(f.Args()) {
@@ -169,7 +174,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		return subcommands.ExitFailure
 	}
 
-	util.Log.Info("Checking dependendies...")
+	util.Log.Info("Checking dependencies...")
 	scan.CheckDependencies(p.timeoutSec)
 
 	util.Log.Info("Checking sudo settings...")
