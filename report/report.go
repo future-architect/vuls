@@ -173,7 +173,7 @@ func FillWithOval(r *models.ScanResult) (err error) {
 	case c.Oracle:
 		ovalClient = oval.NewOracle()
 		ovalFamily = c.Oracle
-	case c.Amazon, c.Raspbian, c.FreeBSD:
+	case c.Amazon, c.Raspbian, c.FreeBSD, c.Windows:
 		return nil
 	default:
 		return fmt.Errorf("OVAL for %s is not implemented yet", r.Family)

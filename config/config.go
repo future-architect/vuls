@@ -58,6 +58,9 @@ const (
 
 	// Raspbian is
 	Raspbian = "raspbian"
+
+	// Windows is
+	Windows = "windows"
 )
 
 //Config is struct of Configuration
