@@ -57,6 +57,7 @@ func (p *DiscoverCmd) SetFlags(f *flag.FlagSet) {
 func (p *DiscoverCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	// validate
 	if len(f.Args()) == 0 {
+		logrus.Errorf("Usage: " + p.Usage())
 		return subcommands.ExitUsageError
 	}
 
@@ -65,7 +66,6 @@ func (p *DiscoverCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface
 			CIDR: cidr,
 			PingOptions: []string{
 				"-c1",
-				"-t1",
 			},
 			NumOfConcurrency: 100,
 		}
