@@ -792,13 +792,17 @@ You can customize your configuration using this template.
     #port        = "22"
     #user        = "username"
     #keyPath     = "/home/username/.ssh/id_rsa"
+    #Memo        = "DB Server" 
     #cpeNames = [
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
     #ignoreCves = ["CVE-2016-6313"]
-    #optional = [
-    #    ["key", "value"],
-    #]
+    #[default.containers]
+    #type = "lxd" # or "docker"
+    #includes = ["${running}"]
+    #excludes = ["container_name", "container_id"]
+    #[default.optional]
+    #key = "value"
     ```
     Items of the default section will be used if not specified.
 
@@ -815,13 +819,12 @@ You can customize your configuration using this template.
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
     #ignoreCves = ["CVE-2016-6314"]
-    #optional = [
-    #    ["key", "value"],
-    #]
     #[servers.172-31-4-82.containers]
     #type = "lxd" # or "docker"
     #includes = ["${running}"]
     #excludes = ["container_name", "container_id"]
+    #[servers.172-31-4-82.optional]
+    #key = "value"
     ```
 
     You can overwrite the default value specified in default section.  
@@ -833,7 +836,7 @@ You can customize your configuration using this template.
     - cpeNames: see [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerability-of-non-os-package)
     - ignoreCves: CVE IDs that will not be reported. But output to JSON file.
     - optional: Add additional information to JSON report.
-    - containers: see [Example: Scan containers (Docker/LXD)(#example-scan-containers-dockerlxd)
+    - containers: see [Example: Scan containers (Docker/LXD)](#example-scan-containers-dockerlxd)
 
     Vuls supports two types of SSH. One is external command. The other is native go implementation. For details, see [-ssh-native-insecure option](#-ssh-native-insecure-option)
 
@@ -1186,6 +1189,7 @@ report:
                 [-debug]
                 [-debug-sql]
                 [-pipe]
+                [-pipe]
 
 		[RFC3339 datetime format under results dir]
 
@@ -1263,6 +1267,8 @@ report:
         Write report to S3 (bucket/dir/yyyyMMdd_HHmm/servername.json/xml/txt)
   -to-slack
         Send report via Slack
+  -uuid
+        Auto generate of scan target servers and then write to config.toml and scan result
 ```
 
 ## How to read a report
@@ -1443,7 +1449,7 @@ $ vuls scan \
 
 ## Example: IgnoreCves
 
-Define ignoreCves in config if you don't want to report(Slack, EMail, Text...) specific CVE IDs. But these ignoreCves will be output to JSON file like below.
+Define ignoreCves in config if you don't want to report(Slack, EMail, Text...) specific CVE IDs. 
 
 - config.toml
 ```toml
@@ -1456,28 +1462,6 @@ user     = "kanbe"
 ignoreCves = ["CVE-2016-6314"]
 ```
 
-- bsd.json
-```json
-[
-  {
-    "ServerName": "bsd",
-    "Family": "FreeBSD",
-    "Release": "10.3-RELEASE",
-    "IgnoredCves" : [
-      "CveDetail" : {
-        "CVE-2016-6313",
-        ...
-      },
-      "CveDetail" : {
-        "CVE-2016-6314",
-        ...
-      }
-    ]
-  }
-]
-```
-
-
 ## Example: Add optional key-value pairs to JSON
 
 Optional key-value can be outputted to JSON.  
@@ -1487,18 +1471,16 @@ For instance, you can use this field for Azure ResourceGroup name, Azure VM Name
 - config.toml
 ```toml
 [default]
-optional = [
-	["key1", "default_value"],
-	["key3", "val3"],
-]
+[default.optional]
+key1 = "default_value"
+key3 = val3
 
 [servers.bsd]
 host     = "192.168.11.11"
 user     = "kanbe"
-optional = [
-	["key1", "val1"],
-	["key2", "val2"],
-]
+[servers.bsd.optional]
+key1 = "val1"
+key2 = "val2"
 ```
 
 - bsd.json
@@ -1509,11 +1491,11 @@ optional = [
     "Family": "FreeBSD",
     "Release": "10.3-RELEASE",
     .... snip ...
-    "Optional": [
-      [  "key1", "val1" ],
-      [  "key2", "val2" ],
-      [  "key3", "val3" ]
-    ]
+    "Optional": {
+      "key1": "val1" ,
+      "key2": "val2" ,
+      "key3": "val3" 
+    }
   }
 ]
 ```

@@ -46,8 +46,8 @@
 [[projects]]
   name = "github.com/cheggaaa/pb"
   packages = ["."]
-  revision = "0d6285554e726cc0620cbecc7e6969c945dcc63b"
-  version = "v1.0.17"
+  revision = "657164d0228d6bebe316fdf725c69f131a50fb10"
+  version = "v1.0.18"
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
@@ -84,6 +84,12 @@
   name = "github.com/gosuri/uitable"
   packages = [".","util/strutil","util/wordwrap"]
   revision = "36ee7e946282a3fb1cfecd476ddc9b35d8847e42"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/uuid"
+  packages = ["."]
+  revision = "ebb0a03e909c9c642a36d2527729104324c44fdb"
 
 [[projects]]
   branch = "master"
@@ -286,6 +292,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "36d700add80d36c56484ed310b9a7e622b3e308ab22eb42bdfb02fd8f5c90407"
+  inputs-digest = "0c23b5c957347ae72a4d8ca746920d2236b8e39ede1eb78290ead8c42fcaa1a7"
   solver-name = "gps-cdcl"
   solver-version = 1

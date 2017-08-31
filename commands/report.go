@@ -78,8 +78,8 @@ type ReportCmd struct {
 	azureKey       string
 	azureContainer string
 
+	uuid bool
 	pipe bool
-
 	diff bool
 }
 
@@ -126,6 +126,7 @@ func (*ReportCmd) Usage() string {
 		[-azure-account=account]
 		[-azure-key=key]
 		[-azure-container=container]
+		[-uuid]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-debug]
 		[-debug-sql]
@@ -281,6 +282,8 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified")
 	f.StringVar(&p.azureContainer, "azure-container", "", "Azure storage container name")
 
+	f.BoolVar(&p.uuid, "uuid", false, "Auto generate of scan target servers and then write to config.toml and scan result")
+
 	f.BoolVar(
 		&p.pipe,
 		"pipe",
@@ -324,6 +327,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.GZIP = p.gzip
 	c.Conf.Diff = p.diff
 	c.Conf.Pipe = p.pipe
+	c.Conf.UUID = p.uuid
 
 	var dir string
 	var err error
@@ -429,6 +433,14 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 	util.Log.Infof("Loaded: %s", dir)
 
+	if c.Conf.UUID {
+		// Ensure UUIDs of scan target servers in config.toml
+		if err := report.EnsureUUIDs(p.configPath, res); err != nil {
+			util.Log.Errorf("Failed to ensure UUIDs: %s", err)
+			return subcommands.ExitFailure
+		}
+	}
+
 	if res, err = report.FillCveInfos(res, dir); err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
@@ -440,5 +452,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitFailure
 		}
 	}
+
 	return subcommands.ExitSuccess
 }

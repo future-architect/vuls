@@ -779,13 +779,12 @@ host         = "172.31.4.82"
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
     #ignoreCves = ["CVE-2016-6313"]
-    #optional = [
-    #    ["key", "value"],
-    #]
-    #[servers.172-31-4-82.containers]
+    #[default.containers]
     #type = "lxd" # or "docker"
     #includes = ["${running}"]
     #excludes = ["container_name", "container_id"]
+    #[default.optional]
+    #key = "value"
     ```
     下記serversセクションで値が指定されなかった場合のデフォルト値
 
@@ -798,16 +797,17 @@ host         = "172.31.4.82"
     #port        = "22"
     #user        = "root"
     #keyPath     = "/home/username/.ssh/id_rsa"
+    #Memo        = "DB Server" 
     #cpeNames = [
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
     #ignoreCves = ["CVE-2016-6314"]
-    #optional = [
-    #    ["key", "value"],
-    #]
-    #containers = ["${running}"]
     #[servers.172-31-4-82.containers]
-    #type = "lxd"
+    #type = "lxd" # or "docker"
+    #includes = ["${running}"]
+    #excludes = ["container_name", "container_id"]
+    #[servers.172-31-4-82.optional]
+    #key = "value"
     ```
 
     serversセクションの値は、defaultセクションの値よりも優先される。
@@ -820,7 +820,7 @@ host         = "172.31.4.82"
     - cpeNames: see [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerability-of-non-os-package)
     - ignoreCves: CVE IDs that will not be reported. But output to JSON file.
     - optional: JSONレポートに含めたい追加情報
-    - containers: see [Usage: Scan Docker containers](#usage-scan-docker-containers)
+    - containers: see [Example: Scan containers (Docker/LXD)](#example-scan-containers-dockerlxd)
 
 
     Vulsは各サーバにSSHで接続するが、OSコマンドでの接続と、Goのネイティブ実装の２種類のSSH接続方法をサポートしている。
@@ -1175,6 +1175,7 @@ report:
                 [-debug]
                 [-debug-sql]
                 [-pipe]
+                [-uuid]
 
 		[RFC3339 datetime format under results dir]
 
@@ -1252,6 +1253,8 @@ report:
         Write report to S3 (bucket/dir/yyyyMMdd_HHmm/servername.json/xml/txt)
   -to-slack
         Send report via Slack
+  -uuid
+        Auto generate of scan target servers and then write to config.toml and scan result
 ```
 
 ## How to read a report
@@ -1440,7 +1443,6 @@ $ vuls scan \
 ## Example: IgnoreCves
 
 Slack, EMail, テキスト出力しないくないCVE IDがある場合は、設定ファイルに定義することでレポートされなくなる。
-ただ、JSONファイルには以下のように出力される。
 
 - config.toml
 ```toml
@@ -1453,27 +1455,6 @@ user     = "kanbe"
 ignoreCves = ["CVE-2016-6314"]
 ```
 
-- bsd.json
-```json
-[
-  {
-    "ServerName": "bsd",
-    "Family": "FreeBSD",
-    "Release": "10.3-RELEASE",
-    "IgnoredCves" : [
-      "CveDetail" : {
-        "CVE-2016-6313",
-        ...
-      },
-      "CveDetail" : {
-        "CVE-2016-6314",
-        ...
-      }
-    ]
-  }
-]
-```
-
 ## Example: Add optional key-value pairs to JSON
 
 追加情報をJSONに含めることができる。  
@@ -1483,18 +1464,16 @@ ignoreCves = ["CVE-2016-6314"]
 - config.toml
 ```toml
 [default]
-optional = [
-	["key1", "default_value"],
-	["key3", "val3"],
-]
+[default.optional]
+key1 = "default_value"
+key3 = val3
 
 [servers.bsd]
 host     = "192.168.11.11"
 user     = "kanbe"
-optional = [
-	["key1", "val1"],
-	["key2", "val2"],
-]
+[servers.bsd.optional]
+key1 = "val1"
+key2 = "val2"
 ```
 
 - bsd.json
@@ -1505,11 +1484,11 @@ optional = [
     "Family": "FreeBSD",
     "Release": "10.3-RELEASE",
     .... snip ...
-    "Optional": [
-      [  "key1", "val1" ],
-      [  "key2", "val2" ],
-      [  "key3", "val3" ]
-    ]
+    "Optional": {
+      "key1": "val1" ,
+      "key2": "val2" ,
+      "key3": "val3" 
+    }
   }
 ]
 ```

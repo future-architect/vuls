@@ -44,6 +44,9 @@ func (l *base) exec(cmd string, sudo bool) execResult {
 }
 
 func (l *base) setServerInfo(c config.ServerInfo) {
+	if c.Containers == nil {
+		c.Containers = &config.Containers{}
+	}
 	l.ServerInfo = c
 }
 
