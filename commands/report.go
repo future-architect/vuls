@@ -131,7 +131,7 @@ func (*ReportCmd) Usage() string {
 		[-debug-sql]
 		[-pipe]
 
-		[SERVER]...
+		[RFC3339 datetime format under results dir]
 `
 }
 
