@@ -141,7 +141,7 @@ func (p Package) FormatChangelog() string {
 	case FailedToGetChangelog:
 		clog = "No changelogs"
 	case FailedToFindVersionInChangelog:
-		clog = "Failed to parse changelogs. For detials, check yourself"
+		// clog = "Failed to parse changelogs. For detials, check yourself"
 	}
 	buf = append(buf, packVer, delim.String(), clog)
 	return strings.Join(buf, "\n")

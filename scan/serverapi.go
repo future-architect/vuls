@@ -436,7 +436,7 @@ func setupChangelogCache() error {
 		case config.Raspbian:
 			needToSetupCache = true
 			break
-		case config.Ubuntu, config.Debian:
+		case config.Ubuntu, config.Debian, config.CentOS, config.Oracle, config.RedHat, config.Amazon:
 			//TODO changelopg cache for RedHat, Oracle, Amazon, CentOS is not implemented yet.
 			if config.Conf.Deep {
 				needToSetupCache = true

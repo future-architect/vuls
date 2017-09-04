@@ -234,18 +234,6 @@ func cweJvnURL(cweID string) string {
 	return fmt.Sprintf("http://jvndb.jvn.jp/ja/cwe/%s.html", cweID)
 }
 
-func formatChangelogs(r models.ScanResult) string {
-	buf := []string{}
-	for _, p := range r.Packages {
-		if p.NewVersion == "" {
-			continue
-		}
-		clog := p.FormatChangelog()
-		buf = append(buf, clog, "\n\n")
-	}
-	return strings.Join(buf, "\n")
-}
-
 func needToRefreshCve(r models.ScanResult) bool {
 	if r.Lang != config.Conf.Lang {
 		return true

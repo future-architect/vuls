@@ -615,29 +615,31 @@ Vulsをスキャン対象サーバにデプロイする。Vulsはローカルホ
 | Distribution|                            Scan Speed |       Need Root Privilege |      OVAL | Need Internet Access <br>on scan tareget|
 |:------------|:-------------------------------------:|:-------------------------:|:---------:|:---------------------------------------:|
 | Alpine      |                                  Fast |　                      No | Supported |                                    Need |
-| CentOS      |                                  Slow |　                      No | Supported |                                    Need |
-| RHEL        |                                  Slow |　                    Need | Supported |                                    Need |
-| Oracle      |                                  Slow |　                    Need | Supported |                                    Need |
+| CentOS      |1st time: Slow <br> From 2nd time: Fast|　                    Need | Supported |                                    Need | 
+| RHEL        |1st time: Slow <br> From 2nd time: Fast|　                    Need | Supported |                                    Need |
+| Oracle      |1st time: Slow <br> From 2nd time: Fast|　                    Need | Supported |                                    Need |
+| Amazon      |1st time: Slow <br> From 2nd time: Fast|　                    Need |        No |                                    Need |
 | Ubuntu      |1st time: Slow <br> From 2nd time: Fast|                      Need | Supported |                                    Need |
 | Debian      |1st time: Slow <br> From 2nd time: Fast|                      Need | Supported |                                    Need |
 | Raspbian    |1st time: Slow <br> From 2nd time: Fast|                      Need |        No |                                    Need |
 | FreeBSD     |                                  Fast |　                      No |        No |                                    Need |
-| Amazon      |                                  Slow |　                      No |        No |                                    Need |
 | SUSE Enterprise |                              Fast |　                      No |  Supported |                                     No |
 
-
-- On Ubuntu, Debian and Raspbian
-`apt-get changelog`でアップデート対象のパッケージのチェンジログを取得し、含まれるCVE IDをパースする。
+- Ubuntu, Debian and Raspbian, RedHat, CentOS, Oracle Linux and Amazon Linux
+`apt-get changelog` や `yum changelog` でアップデート対象のパッケージのチェンジログを取得する。
 アップデート対象のパッケージが沢山ある場合、チェンジログの取得に時間がかかるので、初回のスキャンは遅い。  
 ただ、２回目以降はキャッシュしたchangelogを使うので速くなる。  
 
-- On CentOS
-`yum changelog`でアップデート対象のパッケージのチェンジログを取得し、含まれるCVE IDをパースする。
+- Ubuntu, Debian and Raspbian
+チェンジログに含まれるCVE IDをパースする。
 
-- On RHEL, Oracle, Amazon and FreeBSD
+- CentOS  
+チェンジログに含まれるCVE IDをパースする。
+
+- RHEL, Oracle, Amazon and FreeBSD
 `yum changelog`でアップデート対象のパッケージのチェンジログを取得する(パースはしない)。
 
-- On SUSE Enterprise Linux and Alpine Linux
+- SUSE Enterprise Linux and Alpine Linux
 Same as fast scan mode for now.
 
 ----

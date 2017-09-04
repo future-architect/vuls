@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/future-architect/vuls/cache"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/sirupsen/logrus"
@@ -325,4 +326,39 @@ func (l *base) setErrs(errs []error) {
 
 func (l *base) getErrs() []error {
 	return l.errs
+}
+
+func (l *base) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
+	// Search from cache
+	cached, found, err := cache.DB.GetMeta(current.Name)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"Failed to get meta. Please remove cache.db and then try again. err: %s", err)
+	}
+
+	if !found {
+		l.log.Debugf("Not found in meta: %s", current.Name)
+		err = cache.DB.EnsureBuckets(current)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to ensure buckets. err: %s", err)
+		}
+		return &current, nil
+	}
+
+	if current.Distro.Family != cached.Distro.Family ||
+		current.Distro.Release != cached.Distro.Release {
+		l.log.Debugf("Need to refesh meta: %s", current.Name)
+		err = cache.DB.EnsureBuckets(current)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to ensure buckets. err: %s", err)
+		}
+		return &current, nil
+
+	}
+
+	l.log.Debugf("Reuse meta: %s", current.Name)
+	if config.Conf.Debug {
+		cache.DB.PrettyPrint(current)
+	}
+	return &cached, nil
 }

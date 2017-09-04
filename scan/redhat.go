@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/future-architect/vuls/cache"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -265,16 +266,16 @@ func (o *redhat) scanPackages() error {
 		}
 	}
 
-	updatable, err := o.scanUpdatablePackages()
+	updatables, err := o.scanUpdatablePackages()
 	if err != nil {
 		o.log.Errorf("Failed to scan installed packages: %s", err)
 		return err
 	}
-	installed.MergeNewVersion(updatable)
+	installed.MergeNewVersion(updatables)
 	o.Packages = installed
 
 	var unsecures models.VulnInfos
-	if unsecures, err = o.scanUnsecurePackages(updatable); err != nil {
+	if unsecures, err = o.scanUnsecurePackages(updatables); err != nil {
 		o.log.Errorf("Failed to scan vulnerable packages: %s", err)
 		return err
 	}
@@ -425,7 +426,6 @@ func (o *redhat) parseUpdatablePacksLine(line string) (models.Package, error) {
 
 func (o *redhat) scanUnsecurePackages(updatable models.Packages) (models.VulnInfos, error) {
 	if config.Conf.Deep && o.Distro.Family != config.Amazon {
-		//TODO Cache changelogs to bolt
 		if err := o.fillChangelogs(updatable); err != nil {
 			return nil, err
 		}
@@ -442,29 +442,123 @@ func (o *redhat) scanUnsecurePackages(updatable models.Packages) (models.VulnInf
 }
 
 func (o *redhat) fillChangelogs(updatables models.Packages) error {
-	names := []string{}
-	for name := range updatables {
-		names = append(names, name)
-	}
-
-	if err := o.fillDiffChangelogs(names); err != nil {
+	// Setup changelog cache
+	meta, err := o.ensureChangelogCache(cache.Meta{
+		Name:   o.getServerInfo().GetServerName(),
+		Distro: o.getServerInfo().Distro,
+		Packs:  updatables,
+	})
+	if err != nil {
 		return err
 	}
 
-	emptyChangelogPackNames := []string{}
-	for _, pack := range o.Packages {
-		if pack.NewVersion != "" && pack.Changelog.Contents == "" {
-			emptyChangelogPackNames = append(emptyChangelogPackNames, pack.Name)
+	// Find changelogs from localcache
+	for _, pack := range updatables {
+		cachedPack, found := meta.Packs[pack.Name]
+		if !found {
+			o.log.Debugf("NotFound: %s", pack.Name)
+			continue
+		}
+		if cachedPack.FormatNewVer() != pack.FormatNewVer() {
+			o.log.Debugf("Expired: %s, cache: %s, new: %s",
+				pack.Name, cachedPack.FormatNewVer(), pack.FormatNewVer())
+			continue
+		}
+		changelog, err := cache.DB.GetChangelog(meta.Name, pack.Name)
+		if err != nil {
+			o.log.Warnf("Failed to get changelog. bucket: %s, key:%s, err: %s",
+				meta.Name, pack.Name, err)
+			continue
+		}
+		if len(changelog) == 0 {
+			o.log.Debugf("Empty string: %s", pack.Name)
+			continue
+		}
+
+		o.log.Debugf("Hit: %s, %s, cache: %s, new: %s len: %d, %s...",
+			meta.Name, pack.Name, cachedPack.NewVersion, pack.NewVersion, len(changelog), util.Truncate(changelog, 30))
+		pack := o.Packages[pack.Name]
+		pack.Changelog = models.Changelog{
+			Contents: changelog,
+		}
+		o.Packages[pack.Name] = pack
+	}
+
+	// If there is no changelog on localcache or already expired, fetch it from internet.
+	// First, attempt to fetch changelogs of all packages at once.
+	noChangelogPackNames := []string{}
+	for name, pack := range o.Packages {
+		if pack.NewVersion == "" {
+			continue
+		}
+		if pack.Changelog.Contents == "" {
+			noChangelogPackNames = append(noChangelogPackNames, name)
 		}
 	}
 
-	i := 0
-	for _, name := range emptyChangelogPackNames {
-		i++
-		o.log.Infof("(%d/%d) Fetched Changelogs %s", i, len(emptyChangelogPackNames), name)
-		if err := o.fillDiffChangelogs([]string{name}); err != nil {
+	if len(noChangelogPackNames) != 0 {
+		o.log.Infof("Fetching Changelogs of %d Packages", len(noChangelogPackNames))
+		if err := o.fillDiffChangelogs(noChangelogPackNames); err != nil {
 			return err
 		}
+
+		noChangelogPackNames := []string{}
+		for name, pack := range o.Packages {
+			if pack.NewVersion == "" {
+				continue
+			}
+			if pack.Changelog.Contents == "" {
+				noChangelogPackNames = append(noChangelogPackNames, name)
+			}
+		}
+		o.log.Infof("%d of %d Fetched Successfully",
+			len(updatables)-len(noChangelogPackNames), len(updatables))
+	}
+
+	if len(noChangelogPackNames) != 0 {
+		// Some packages need to fetch individually
+		i := 0
+		for _, name := range noChangelogPackNames {
+			i++
+			o.log.Infof("(%d/%d) fetching %s", i, len(noChangelogPackNames), name)
+			if err := o.fillDiffChangelogs([]string{name}); err != nil {
+				return err
+			}
+		}
+	}
+
+	packsWithChangelog, noChangelogPackNames := models.Packages{}, []string{}
+	for name, pack := range o.Packages {
+		if pack.NewVersion == "" {
+			continue
+		}
+		if pack.Changelog.Contents != "" {
+			packsWithChangelog[name] = pack
+		} else {
+			noChangelogPackNames = append(noChangelogPackNames, name)
+		}
+	}
+	o.log.Infof("%d of %d Fetched Changelogs Successfully",
+		len(packsWithChangelog), len(updatables))
+	if 0 < len(noChangelogPackNames) {
+		o.log.Infof("Followinpackages failed: %s", noChangelogPackNames)
+	}
+
+	// Update local changelog cache to the latest one.
+	for name, pack := range packsWithChangelog {
+		err := cache.DB.PutChangelog(
+			o.getServerInfo().GetServerName(),
+			name,
+			pack.Changelog.Contents)
+		if err != nil {
+			return fmt.Errorf("Failed to put changelog into cache: %s",
+				pack)
+		}
+	}
+	meta.Packs = updatables
+	if err := cache.DB.RefreshMeta(*meta); err != nil {
+		o.log.Errorf("Failed to refresh changelog cache: %s", err)
+		return err
 	}
 
 	return nil
@@ -503,8 +597,6 @@ func (o *redhat) divideChangelogsIntoEachPackages(stdout string) map[string]stri
 		}
 		if newBlock {
 			left := strings.Fields(line)[0]
-			// ss := strings.Split(left, ".")
-			// packNameVer = strings.Join(ss[0:len(ss)-1], ".")
 			packNameVer = left
 			newBlock = false
 			continue
@@ -538,7 +630,6 @@ func (o *redhat) fillDiffChangelogs(packNames []string) error {
 	}
 
 	for s := range changelogs {
-		// name, pack, found := o.Packages.FindOne(func(p models.Package) bool {
 		name, pack, found := o.Packages.FindOne(func(p models.Package) bool {
 			var epochNameVerRel string
 			if index := strings.Index(p.NewVersion, ":"); 0 < index {

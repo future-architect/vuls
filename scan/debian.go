@@ -355,14 +355,11 @@ func (o *debian) scanUnsecurePackages(updatable models.Packages) (models.VulnInf
 	o.aptGetUpdate()
 
 	// Setup changelog cache
-	current := cache.Meta{
+	meta, err := o.ensureChangelogCache(cache.Meta{
 		Name:   o.getServerInfo().GetServerName(),
 		Distro: o.getServerInfo().Distro,
 		Packs:  updatable,
-	}
-
-	o.log.Debugf("Ensure changelog cache: %s", current.Name)
-	meta, err := o.ensureChangelogCache(current)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -374,41 +371,6 @@ func (o *debian) scanUnsecurePackages(updatable models.Packages) (models.VulnInf
 	}
 
 	return vulnInfos, nil
-}
-
-func (o *debian) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
-	// Search from cache
-	cached, found, err := cache.DB.GetMeta(current.Name)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"Failed to get meta. Please remove cache.db and then try again. err: %s", err)
-	}
-
-	if !found {
-		o.log.Debugf("Not found in meta: %s", current.Name)
-		err = cache.DB.EnsureBuckets(current)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to ensure buckets. err: %s", err)
-		}
-		return &current, nil
-	}
-
-	if current.Distro.Family != cached.Distro.Family ||
-		current.Distro.Release != cached.Distro.Release {
-		o.log.Debugf("Need to refesh meta: %s", current.Name)
-		err = cache.DB.EnsureBuckets(current)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to ensure buckets. err: %s", err)
-		}
-		return &current, nil
-
-	}
-
-	o.log.Debugf("Reuse meta: %s", current.Name)
-	if config.Conf.Debug {
-		cache.DB.PrettyPrint(current)
-	}
-	return &cached, nil
 }
 
 func (o *debian) fillCandidateVersion(updatables models.Packages) (err error) {
