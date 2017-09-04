@@ -1176,7 +1176,8 @@ report:
                 [-debug-sql]
                 [-pipe]
 
-                [SERVER]...
+		[RFC3339 datetime format under results dir]
+
   -aws-profile string
         AWS profile to use (default "default")
   -aws-region string
