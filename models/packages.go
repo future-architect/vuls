@@ -71,7 +71,7 @@ func (ps Packages) FormatUpdatablePacksSummary() string {
 	return fmt.Sprintf("%d updatable packages", nUpdatable)
 }
 
-// FindOne search a element by name-newver-newrel-arch
+// FindOne search a element
 func (ps Packages) FindOne(f func(Package) bool) (string, Package, bool) {
 	for key, p := range ps {
 		if f(p) {
@@ -83,14 +83,15 @@ func (ps Packages) FindOne(f func(Package) bool) (string, Package, bool) {
 
 // Package has installed packages.
 type Package struct {
-	Name       string
-	Version    string
-	Release    string
-	NewVersion string
-	NewRelease string
-	Arch       string
-	Repository string
-	Changelog  Changelog
+	Name          string
+	Version       string
+	Release       string
+	NewVersion    string
+	NewRelease    string
+	Arch          string
+	Repository    string
+	Changelog     Changelog
+	AffectedProcs []AffectedProc `json:",omitempty"`
 }
 
 // FormatVer returns package version-release
@@ -150,4 +151,14 @@ func (p Package) FormatChangelog() string {
 type Changelog struct {
 	Contents string
 	Method   DetectionMethod
+}
+
+// AffectedProc keep a processes information affected by software update
+type AffectedProc struct {
+	PID      string
+	ProcName string
+	CPU      string
+	RSS      string
+	State    string
+	Uptime   string
 }

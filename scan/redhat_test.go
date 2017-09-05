@@ -1297,3 +1297,175 @@ func TestDivideChangelogsIntoEachPackages(t *testing.T) {
 	}
 
 }
+
+func TestParseYumPS(t *testing.T) {
+	r := newRedhat(config.ServerInfo{})
+	r.Distro = config.Distro{Family: "centos"}
+	r.Packages = models.NewPackages(
+		models.Package{
+			Name:    "python",
+			Version: "2.7.5",
+			Release: "34.el7",
+			Arch:    "x86_64",
+		},
+		models.Package{
+			Name:    "util-linux",
+			Version: "2.23.2",
+			Release: "26.el7",
+			Arch:    "x86_64",
+		},
+		models.Package{
+			Name:    "wpa_supplicant",
+			Version: "1:2.0",
+			Release: "17.el7_1",
+			Arch:    "x86_64",
+		},
+		models.Package{
+			Name:    "yum",
+			Version: "3.4.3",
+			Release: "150.el7.centos",
+			Arch:    "noarch",
+		},
+	)
+
+	var tests = []struct {
+		in  string
+		out models.Packages
+	}{
+		{
+			`       pid proc                  CPU      RSS      State uptime
+python-2.7.5-34.el7.x86_64 Upgrade 2.7.5-48.el7.x86_64
+       741 tuned                1:54    16 MB   Sleeping:  14 day(s) 21:52:32
+     38755 yum                  0:00    42 MB    Running:  00:00
+util-linux-2.23.2-26.el7.x86_64 Upgrade 2.23.2-33.el7_3.2.x86_64
+       626 agetty               0:00   848 kB   Sleeping:  14 day(s) 21:52:37
+       628 agetty               0:00   848 kB   Sleeping:  14 day(s) 21:52:37
+1:wpa_supplicant-2.0-17.el7_1.x86_64 Upgrade 1:2.0-21.el7_3.x86_64
+       638 wpa_supplicant       0:00   2.6 MB   Sleeping:  14 day(s) 21:52:37
+yum-3.4.3-150.el7.centos.noarch
+     38755 yum                  0:00    42 MB    Running:  00:00
+ps
+	 `,
+			models.NewPackages(
+				models.Package{
+					Name:    "python",
+					Version: "2.7.5",
+					Release: "34.el7",
+					Arch:    "x86_64",
+					// NewVersion: "2.7.5-",
+					// NewRelease: "48.el7.x86_64",
+					AffectedProcs: []models.AffectedProc{
+						{
+							PID:      "741",
+							ProcName: "tuned",
+							CPU:      "1:54",
+							RSS:      "16 MB",
+							State:    "Sleeping",
+							Uptime:   "14 day(s) 21:52:32",
+						},
+						{
+							PID:      "38755",
+							ProcName: "yum",
+							CPU:      "0:00",
+							RSS:      "42 MB",
+							State:    "Running",
+							Uptime:   "00:00",
+						},
+					},
+				},
+				models.Package{
+					Name:    "util-linux",
+					Version: "2.23.2",
+					Release: "26.el7",
+					Arch:    "x86_64",
+					// NewVersion: "2.7.5",
+					// NewRelease: "48.el7.x86_64",
+					AffectedProcs: []models.AffectedProc{
+						{
+							PID:      "626",
+							ProcName: "agetty",
+							CPU:      "0:00",
+							RSS:      "848 kB",
+							State:    "Sleeping",
+							Uptime:   "14 day(s) 21:52:37",
+						},
+						{
+							PID:      "628",
+							ProcName: "agetty",
+							CPU:      "0:00",
+							RSS:      "848 kB",
+							State:    "Sleeping",
+							Uptime:   "14 day(s) 21:52:37",
+						},
+					},
+				},
+				models.Package{
+					Name:    "wpa_supplicant",
+					Version: "1:2.0",
+					Release: "17.el7_1",
+					Arch:    "x86_64",
+					// NewVersion: "1:2.0",
+					// NewRelease: "21.el7_3.x86_64",
+					AffectedProcs: []models.AffectedProc{
+						{
+							PID:      "638",
+							ProcName: "wpa_supplicant",
+							CPU:      "0:00",
+							RSS:      "2.6 MB",
+							State:    "Sleeping",
+							Uptime:   "14 day(s) 21:52:37",
+						},
+					},
+				},
+			),
+		},
+		{
+			`    pid proc                  CPU      RSS      State uptime
+acpid-2.0.19-6.7.amzn1.x86_64
+      2388 acpid                0:00   1.4 MB   Sleeping:  21:08
+at-3.1.10-48.15.amzn1.x86_64
+      2546 atd                  0:00   164 kB   Sleeping:  21:06
+cronie-anacron-1.4.4-15.8.amzn1.x86_64
+      2637 anacron              0:00   1.5 MB   Sleeping:  13:14
+12:dhclient-4.1.1-51.P1.26.amzn1.x86_64
+      2061 dhclient             0:00   1.4 MB   Sleeping:  21:10
+      2193 dhclient             0:00   2.1 MB   Sleeping:  21:08
+mingetty-1.08-5.9.amzn1.x86_64
+      2572 mingetty             0:00   1.4 MB   Sleeping:  21:06
+      2575 mingetty             0:00   1.4 MB   Sleeping:  21:06
+      2578 mingetty             0:00   1.5 MB   Sleeping:  21:06
+      2580 mingetty             0:00   1.4 MB   Sleeping:  21:06
+      2582 mingetty             0:00   1.4 MB   Sleeping:  21:06
+      2584 mingetty             0:00   1.4 MB   Sleeping:  21:06
+openssh-server-6.6.1p1-33.66.amzn1.x86_64
+      2481 sshd                 0:00   2.6 MB   Sleeping:  21:07
+python27-2.7.12-2.120.amzn1.x86_64
+      2649 yum                  0:00    35 MB    Running:  00:01
+rsyslog-5.8.10-9.26.amzn1.x86_64
+      2261 rsyslogd             0:00   2.6 MB   Sleeping:  21:08
+udev-173-4.13.amzn1.x86_64
+      1528 udevd                0:00   2.5 MB   Sleeping:  21:12
+      1652 udevd                0:00   2.1 MB   Sleeping:  21:12
+      1653 udevd                0:00   2.0 MB   Sleeping:  21:12
+upstart-0.6.5-13.3.13.amzn1.x86_64
+         1 init                 0:00   2.5 MB   Sleeping:  21:13
+util-linux-2.23.2-33.28.amzn1.x86_64
+      2569 agetty               0:00   1.6 MB   Sleeping:  21:06
+yum-3.4.3-150.70.amzn1.noarch
+      2649 yum                  0:00    35 MB    Running:  00:01
+`,
+			models.Packages{},
+		},
+	}
+
+	for _, tt := range tests {
+		packages := r.parseYumPS(tt.in)
+		for name, ePack := range tt.out {
+			if !reflect.DeepEqual(ePack, packages[name]) {
+				e := pp.Sprintf("%v", ePack)
+				a := pp.Sprintf("%v", packages[name])
+				t.Errorf("expected %s, actual %s", e, a)
+			}
+		}
+	}
+}

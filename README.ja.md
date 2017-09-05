@@ -150,9 +150,12 @@ Vulsは上に挙げた手動運用での課題を解決するツールであり�
     - Fastスキャン
         - root権限必要なし
         - スキャン対象サーバの負荷ほぼなし
-        - インターネットに接続していない環境でもスキャン可能 (RedHat, CentOS, OracleLinux, Ubuntu, Debian)
+        - インターネットに接続していない環境でもスキャン可能 (RedHat, CentOS, OracleLinux, Ubuntu and Debian)
     - Deepスキャン
+		- Root権限が必要
         - Changelogの差分を取得し、そこに書かれているCVE-IDを検知
+        - Updateに影響のあるプロセスの情報を、アップデート前に取得可能 (RedHat, CentOS, OracleLinux and Amazon Linux)
+
         - スキャン対象サーバに負荷がかかる場合がある
 - リモートスキャンとローカルスキャン
     - リモートスキャン
@@ -609,7 +612,8 @@ Vulsをスキャン対象サーバにデプロイする。Vulsはローカルホ
 | Raspbian    |1st time: Slow <br> From 2nd time: Fast|                      Need |        No |                                    Need |
 
 
-- Ubuntu, Debian, Raspbian
+#### Changelog
+- Ubuntu, Debian and Raspbian
 `apt-get changelog`でアップデート対象のパッケージのチェンジログを取得し、含まれるCVE IDをパースする。
 アップデート対象のパッケージが沢山ある場合、チェンジログの取得に時間がかかるので、初回のスキャンは遅い。  
 ただ、２回目以降はキャッシュしたchangelogを使うので速くなる。  
@@ -619,6 +623,10 @@ Vulsをスキャン対象サーバにデプロイする。Vulsはローカルホ
 
 - Amazon, RHEL and FreeBSD  
 `yum changelog`でアップデート対象のパッケージのチェンジログを取得する(パースはしない)。
+
+#### Detect processes affected by update using yum-ps
+- RedHat, CentOS, OracleLinux and Amazon Linux
+次回のソフトウェアアップデートに影響のあるプロセスを事前に知ることができる。
 
 ----
 
@@ -899,13 +907,13 @@ Deep Scan Modeでスキャンするためには、下記のパッケージが必
 | Distribution |            Release | Requirements |
 |:-------------|-------------------:|:-------------|
 | Ubuntu       |          12, 14, 16| -            |
-| Debian       |             7, 8, 9| aptitude, reboot-notifier   |
-| CentOS       |                6, 7| yum-plugin-changelog, yum-utils |
-| Amazon       |                All | yum-plugin-changelog, yum-utils |
+| Debian       |             7, 8, 9| aptitude, reboot-notifier     |
+| CentOS       |                6, 7| yum-plugin-changelog, yum-utils, yum-plugin-ps |
+| Amazon       |                All | yum-plugin-changelog, yum-utils, yum-plugin-ps  |
 | RHEL         |                  5 | yum-utils, yum-security, yum-changelog |
-| RHEL         |               6, 7 | yum-utils, yum-plugin-changelog |
+| RHEL         |               6, 7 | yum-utils, yum-plugin-changelog, yum-plugin-ps  |
 | Oracle Linux |                  5 | yum-utils, yum-security, yum-changelog |
-| Oracle Linux |               6, 7 | yum-utils, yum-plugin-changelog |
+| Oracle Linux |               6, 7 | yum-utils, yum-plugin-changelog, yum-plugin-ps  |
 | FreeBSD      |                 10 | -            |
 | Raspbian     |     Wheezy, Jessie | -            |
 
@@ -925,7 +933,13 @@ Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 
 - RHEL 6, 7 / Oracle Linux 6, 7
 ```
-vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never --security updateinfo list updates, /usr/bin/yum --color=never --security updateinfo updates
+vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never --security updateinfo list updates, /usr/bin/yum --color=never --security updateinfo updates, /usr/bin/yum --color=never -q ps all
+Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
+```
+
+- Amazon Linux, CentOS
+```
+vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never -q ps all
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 ```
 
@@ -935,7 +949,7 @@ vuls ALL=(ALL) NOPASSWD: /usr/bin/apt-get update
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 ```
 
-- CentOS, Amazon Linux, FreeBSDは今のところRoot権限なしでスキャン可能
+- FreeBSDは今のところRoot権限なしでスキャン可能
 
 ----
 
