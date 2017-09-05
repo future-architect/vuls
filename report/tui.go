@@ -45,6 +45,12 @@ var currentChangelogLimitY int
 // RunTui execute main logic
 func RunTui(results models.ScanResults) subcommands.ExitStatus {
 	scanResults = results
+	sort.Slice(scanResults, func(i, j int) bool {
+		if scanResults[i].ServerName == scanResults[j].ServerName {
+			return scanResults[i].Container.Name < scanResults[j].Container.Name
+		}
+		return scanResults[i].ServerName < scanResults[j].ServerName
+	})
 
 	// g, err := gocui.NewGui(gocui.OutputNormal)
 	g := gocui.NewGui()
