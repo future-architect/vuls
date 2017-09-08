@@ -154,10 +154,11 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 - Fast scan and Deep scan
     - Fast Scan
         - Scan without root privilege
-        - Scan with No internet access. (RedHat, CentOS, OracleLinux, Ubuntu, Debian)
+        - Scan with No internet access. (RedHat, CentOS, OracleLinux, Ubuntu and Debian)
         - Almost no load on the scan target server
     - Deep Scan
         - Scan with root privilege
+		- Detect processes affected by update using yum-ps (RedHat, CentOS, OracleLinux and Amazon Linux)
         - Parses the Changelog  
             Changelog has a history of version changes. When a security issue is fixed, the relevant CVE ID is listed.
             By parsing the changelog and analysing the updates between the installed version of software on the server and the newest version of that software
@@ -587,16 +588,16 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 - Scan without Root Privilege
 - Scan with No internet access on some OS.
 
-| Distribution|                             Scan Speed | Need Root Privilege |       OVAL | Need Internet Access <br>on scan tareget|
-|:------------|:--------------------------------------:|:-------------------:|:----------:|:---------------------------------------:|
-| CentOS      |                                   Fast |　                No |  Supported |                                      No | 
-| RHEL        |                                   Fast |　                No |  Supported |                                      No |
-| Oracle      |                                   Fast |　                No |  Supported |                                      No |
-| Ubuntu      |                                   Fast |　                No |  Supported |                                      No |
-| Debian      |                                   Fast |　                No |  Supported |                                      No |
-| Raspbian    |1st time: Slow <br> From 2nd time: Fast |                Need |         No |                                    Need |
-| FreeBSD     |                                   Fast |　                No |         No |                                    Need |
-| Amazon      |                                   Fast |　                No |         No |                                    Need | 
+| Distribution|                             Scan Speed | Need Root |       OVAL | Need Internet Access <br>on scan tareget|
+|:------------|:--------------------------------------:|:---------:|:----------:|:---------------------------------------:|
+| CentOS      |                                   Fast |        No |  Supported |                                      No | 
+| RHEL        |                                   Fast |        No |  Supported |                                      No |
+| Oracle      |                                   Fast |        No |  Supported |                                      No |
+| Ubuntu      |                                   Fast |        No |  Supported |                                      No |
+| Debian      |                                   Fast |        No |  Supported |                                      No |
+| Raspbian    |1st time: Slow <br> From 2nd time: Fast |      Need |         No |                                    Need |
+| FreeBSD     |                                   Fast |        No |         No |                                    Need |
+| Amazon      |                                   Fast |        No |         No |                                    Need | 
 
 
 ---------
@@ -604,18 +605,19 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 ### Deep Scan
 ![Vuls-Scan-Flow](img/vuls-scan-flow.png)
 
-| Distribution|                            Scan Speed |       Need Root Privilege |      OVAL | Need Internet Access <br>on scan tareget|
-|:------------|:-------------------------------------:|:-------------------------:|:---------:|:---------------------------------------:|
-| CentOS      |                                  Slow |　                      No | Supported |                                    Need | 
-| RHEL        |                                  Slow |　                    Need | Supported |                                    Need |
-| Oracle      |                                  Slow |　                    Need | Supported |                                    Need |
-| Ubuntu      |1st time: Slow <br> From 2nd time: Fast|                      Need | Supported |                                    Need |
-| Debian      |1st time: Slow <br> From 2nd time: Fast|                      Need | Supported |                                    Need |
-| Raspbian    |1st time: Slow <br> From 2nd time: Fast|                      Need |        No |                                    Need |
-| FreeBSD     |                                  Fast |　                      No |        No |                                    Need |
-| Amazon      |                                  Slow |　                      No |        No |                                    Need |
+| Distribution|                            Scan Speed | Need Root |      OVAL | Need Internet Access <br>on scan tareget|
+|:------------|:-------------------------------------:|:---------:|:---------:|:---------------------------------------:|
+| CentOS      |                                  Slow |        No | Supported |                                    Need | 
+| RHEL        |                                  Slow |      Need | Supported |                                    Need |
+| Oracle      |                                  Slow |      Need | Supported |                                    Need |
+| Ubuntu      |1st time: Slow <br> From 2nd time: Fast|      Need | Supported |                                    Need |
+| Debian      |1st time: Slow <br> From 2nd time: Fast|      Need | Supported |                                    Need |
+| Raspbian    |1st time: Slow <br> From 2nd time: Fast|      Need |        No |                                    Need |
+| FreeBSD     |                                  Fast |        No |        No |                                    Need |
+| Amazon      |                                  Slow |        No |        No |                                    Need |
 
 
+#### Changelog
 - On Ubuntu, Debian and Raspbian
 Vuls issues `apt-get changelog` for each upgradable packages and parse the changelog.  
 `apt-get changelog` is slow and resource usage is heavy when there are many updatable packages on target server.   
@@ -626,6 +628,10 @@ From the second time on, the scan speed is fast by using the local cache.
 Vuls issues `yum changelog` to get changelogs of upgradable packages at once and parse the changelog.  
 - On RHEL, Oracle, Amazon and FreeBSD
 Detect CVE IDs by using package manager.
+
+#### Detect processes affected by update using yum-ps
+- RedHat, CentOS, OracleLinux and Amazon Linux
+It is possible to know processes affecting software update in advance.
 
 ----
 
@@ -912,12 +918,12 @@ In order to scan with deep scan mode, the following dependencies are required, s
 |:-------------|-------------------:|:-------------|
 | Ubuntu       |          12, 14, 16| -            |
 | Debian       |             7, 8, 9| aptitude, reboot-notifier     |
-| CentOS       |                6, 7| yum-plugin-changelog, yum-utils |
-| Amazon       |                All | yum-plugin-changelog, yum-utils |
+| CentOS       |                6, 7| yum-plugin-changelog, yum-utils, yum-plugin-ps |
+| Amazon       |                All | yum-plugin-changelog, yum-utils, yum-plugin-ps  |
 | RHEL         |                  5 | yum-utils, yum-security, yum-changelog |
-| RHEL         |               6, 7 | yum-utils, yum-plugin-changelog |
+| RHEL         |               6, 7 | yum-utils, yum-plugin-changelog, yum-plugin-ps  |
 | Oracle Linux |                  5 | yum-utils, yum-security, yum-changelog |
-| Oracle Linux |               6, 7 | yum-utils, yum-plugin-changelog |
+| Oracle Linux |               6, 7 | yum-utils, yum-plugin-changelog, yum-plugin-ps  |
 | FreeBSD      |                 10 | -            |
 | Raspbian     |     Wheezy, Jessie | -            |
 
@@ -937,7 +943,13 @@ Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 
 - RHEL 6, 7 / Oracle Linux 6, 7
 ```
-vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never --security updateinfo list updates, /usr/bin/yum --color=never --security updateinfo updates
+vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never --security updateinfo list updates, /usr/bin/yum --color=never --security updateinfo updates, /usr/bin/yum --color=never -q ps all
+Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
+```
+
+- Amazon Linux, CentOS
+```
+vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never -q ps all
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 ```
 
@@ -947,7 +959,7 @@ vuls ALL=(ALL) NOPASSWD: /usr/bin/apt-get update
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 ```
 
-- On CentOS, Amazon Linux, FreeBSD, it is possible to scan without root privilege for now.
+- On FreeBSD, it is possible to scan without root privilege for now.
 
 ----
 
