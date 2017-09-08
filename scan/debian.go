@@ -240,18 +240,25 @@ func (o *debian) rebootRequired() (bool, error) {
 
 func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, error) {
 	installed, updatable := models.Packages{}, models.Packages{}
-	r := o.exec("dpkg-query -W", noSudo)
+	r := o.exec("dpkg-query -W -f=\"\\${binary:Package}\\t\\${db:Status-Abbrev}\\t\\${Version}\n\"", noSudo)
 	if !r.isSuccess() {
 		return nil, nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 
 	//  e.g.
-	//  curl	7.19.7-40.el6_6.4
-	//  openldap	2.4.39-8.el6
+	//  curl	ii 	7.47.0-1ubuntu2.2
+	//  openssh-server	rc 	1:7.2p2-4ubuntu2.2
 	lines := strings.Split(r.Stdout, "\n")
 	for _, line := range lines {
 		if trimmed := strings.TrimSpace(line); len(trimmed) != 0 {
-			name, version, err := o.parseScannedPackagesLine(trimmed)
+			name, status, version, err := o.parseScannedPackagesLine(trimmed)
+			installStatus := status[1]
+			// n -- not-installed
+			// c -- config-files
+			if installStatus == 'n' || installStatus == 'c' {
+				o.log.Debugf("%s status is '%c', ignoring", name, installStatus)
+				continue
+			}
 			if err != nil {
 				return nil, nil, fmt.Errorf(
 					"Debian: Failed to parse package line: %s", line)
@@ -286,21 +293,22 @@ func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, erro
 	return installed, updatable, nil
 }
 
-var packageLinePattern = regexp.MustCompile(`^([^\t']+)\t(.+)$`)
+var packageLinePattern = regexp.MustCompile(`^([^\t']+)\t(.+)\t(.+)$`)
 
-func (o *debian) parseScannedPackagesLine(line string) (name, version string, err error) {
+func (o *debian) parseScannedPackagesLine(line string) (name, status, version string, err error) {
 	result := packageLinePattern.FindStringSubmatch(line)
-	if len(result) == 3 {
+	if len(result) == 4 {
 		// remove :amd64, i386...
 		name = result[1]
 		if i := strings.IndexRune(name, ':'); i >= 0 {
 			name = name[:i]
 		}
-		version = result[2]
+		status = result[2]
+		version = result[3]
 		return
 	}
 
-	return "", "", fmt.Errorf("Unknown format: %s", line)
+	return "", "", "", fmt.Errorf("Unknown format: %s", line)
 }
 
 func (o *debian) aptGetUpdate() error {
