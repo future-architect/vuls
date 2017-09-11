@@ -240,7 +240,7 @@ func (o *debian) rebootRequired() (bool, error) {
 
 func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, error) {
 	installed, updatable := models.Packages{}, models.Packages{}
-	r := o.exec("dpkg-query -W -f=\"\\${binary:Package}\\t\\${db:Status-Abbrev}\\t\\${Version}\n\"", noSudo)
+	r := o.exec(`dpkg-query -W -f='${binary:Package}\t${db:Status-Abbrev}\t${Version}\n'`, noSudo)
 	if !r.isSuccess() {
 		return nil, nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
