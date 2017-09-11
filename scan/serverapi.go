@@ -89,6 +89,11 @@ func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 		return
 	}
 
+	if itsMe, osType = detectSUSE(c); itsMe {
+		util.Log.Debugf("SUSE Linux. Host: %s:%s", c.Host, c.Port)
+		return
+	}
+
 	if itsMe, osType = detectFreebsd(c); itsMe {
 		util.Log.Debugf("FreeBSD. Host: %s:%s", c.Host, c.Port)
 		return

@@ -323,10 +323,12 @@ func lessThan(family string, packA models.Package, packB ovalmodels.Package) (bo
 			return false, err
 		}
 		return vera.LessThan(verb), nil
-	case config.RedHat, config.CentOS, config.Oracle:
+	case config.RedHat, config.CentOS, config.Oracle, config.SUSEEnterpriseServer:
 		vera := rpmver.NewVersion(fmt.Sprintf("%s-%s", packA.Version, packA.Release))
 		verb := rpmver.NewVersion(packB.Version)
 		return vera.LessThan(verb), nil
+	default:
+		util.Log.Errorf("Not implemented yet: %s", family)
 	}
 	return false, fmt.Errorf("Package version comparison not supported: %s", family)
 }
