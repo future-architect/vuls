@@ -156,23 +156,33 @@ func (o *debian) checkIfSudoNoPasswd() error {
 func (o *debian) checkDependencies() error {
 	packNames := []string{}
 
-	switch o.Distro.Family {
-	case config.Ubuntu, config.Raspbian:
-		o.log.Infof("Dependencies... No need")
-		return nil
+	if config.Conf.Deep {
+		// checkrestart
+		packNames = append(packNames, "debian-goodies")
 
-	case config.Debian:
-		// https://askubuntu.com/a/742844
-		packNames = append(packNames, "reboot-notifier")
+		switch o.Distro.Family {
+		case config.Debian:
+			// https://askubuntu.com/a/742844
+			packNames = append(packNames, "reboot-notifier")
 
-		if !config.Conf.Deep {
 			// Debian needs aptitude to get changelogs.
 			// Because unable to get changelogs via apt-get changelog on Debian.
 			packNames = append(packNames, "aptitude")
+
+		case config.Ubuntu, config.Raspbian:
+			// No need
 		}
 
-	default:
-		return fmt.Errorf("Not implemented yet: %s", o.Distro)
+	} else {
+		// Fast scan mode
+		switch o.Distro.Family {
+		case config.Debian:
+			// https://askubuntu.com/a/742844
+			packNames = append(packNames, "reboot-notifier")
+
+		case config.Ubuntu, config.Raspbian:
+			// No need
+		}
 	}
 
 	for _, name := range packNames {
@@ -797,4 +807,33 @@ func (o *debian) parseAptCachePolicy(stdout, name string) (packCandidateVer, err
 		}
 	}
 	return ver, fmt.Errorf("Unknown Format: %s", stdout)
+}
+
+func (o *debian) parseCheckRestart(stdout string) (packs models.Packages) {
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	name := ""
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasSuffix(line, ":") {
+			name = strings.TrimSuffix(line, ":")
+			continue
+		}
+		if strings.HasPrefix(line, "\t") {
+			ss := strings.Fields(line)
+			if len(ss) != 2 {
+				continue
+			}
+			if pack, ok := o.Packages[name]; ok {
+				procs := pack.AffectedProcs
+				procs = append(procs, models.AffectedProc{
+					PID:      ss[0],
+					ProcName: ss[1],
+				})
+				pack.AffectedProcs = procs
+				o.Packages[name] = pack
+
+			}
+		}
+	}
+	return o.Packages
 }
