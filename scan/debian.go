@@ -798,3 +798,9 @@ func (o *debian) parseAptCachePolicy(stdout, name string) (packCandidateVer, err
 	}
 	return ver, fmt.Errorf("Unknown Format: %s", stdout)
 }
+
+func (o *debian) parseCheckRestart(stdout string) models.Packages {
+	//TODO
+	packs := models.Packages{}
+	return packs
+}

@@ -616,3 +616,125 @@ func TestParseAptCachePolicy(t *testing.T) {
 		}
 	}
 }
+
+func TestCheckRestart(t *testing.T) {
+	r := newDebian(config.ServerInfo{})
+	r.Distro = config.Distro{Family: "debian"}
+	r.Packages = models.NewPackages(
+		models.Package{
+			Name:    "varnish",
+			Version: "2.7.5",
+			Release: "34.el7",
+			Arch:    "x86_64",
+		},
+		models.Package{
+			Name:    "util-linux",
+			Version: "2.23.2",
+			Release: "26.el7",
+			Arch:    "x86_64",
+		},
+		models.Package{
+			Name:    "memcached",
+			Version: "1.0.0",
+			Release: "01",
+			Arch:    "x86_64",
+		},
+	)
+
+	var tests = []struct {
+		in  string
+		out models.Packages
+	}{
+		{
+			`Found 27 processes using old versions of upgraded files
+(19 distinct programs)
+(15 distinct packages)
+
+Of these, 14 seem to contain systemd service definitions or init scripts which can be used to restart them.
+The following packages seem to have definitions that could be used
+to restart their services:
+varnish:
+	3490	/usr/sbin/varnishd
+	3704	/usr/sbin/varnishd
+memcached:
+	3636	/usr/bin/memcached
+
+These are the systemd services:
+systemctl restart accounts-daemon.service
+
+These are the initd scripts:
+service varnish restart
+service varnishncsa restart
+service varnishlog restart
+service memcached restart
+
+These processes (1) do not seem to have an associated init script to restart them:
+util-linux:
+	3650	/sbin/agetty
+	3648	/sbin/agetty`,
+			models.NewPackages(
+				models.Package{
+					Name:    "varnish",
+					Version: "2.7.5",
+					Release: "34.el7",
+					Arch:    "x86_64",
+					AffectedProcs: []models.AffectedProc{
+						{
+							PID:      "3490",
+							ProcName: "/usr/sbin/varnishd",
+						},
+						{
+							PID:      "3704",
+							ProcName: "/usr/sbin/varnishd",
+						},
+					},
+				},
+				models.Package{
+					Name:    "memcached",
+					Version: "1.0.0",
+					Release: "01",
+					Arch:    "x86_64",
+					AffectedProcs: []models.AffectedProc{
+						{
+							PID:      "3636",
+							ProcName: "/usr/bin/memcached",
+						},
+					},
+				},
+				models.Package{
+					Name:    "util-linux",
+					Version: "2.23.2",
+					Release: "26.el7",
+					Arch:    "x86_64",
+					AffectedProcs: []models.AffectedProc{
+						{
+							PID:      "3650",
+							ProcName: "/sbin/agetty",
+						},
+						{
+							PID:      "3648",
+							ProcName: "/sbin/agetty",
+						},
+					},
+				},
+			),
+		},
+		{
+			//TODO no process needs to be restart
+			``,
+			models.Packages{},
+		},
+	}
+
+	for _, tt := range tests {
+		packages := r.parseCheckRestart(tt.in)
+		for name, ePack := range tt.out {
+			pp.Println(name, ePack)
+			if !reflect.DeepEqual(ePack, packages[name]) {
+				e := pp.Sprintf("%v", ePack)
+				a := pp.Sprintf("%v", packages[name])
+				t.Errorf("expected %s, actual %s", e, a)
+			}
+		}
+	}
+}
