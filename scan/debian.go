@@ -252,11 +252,18 @@ func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, erro
 	for _, line := range lines {
 		if trimmed := strings.TrimSpace(line); len(trimmed) != 0 {
 			name, status, version, err := o.parseScannedPackagesLine(trimmed)
-			installStatus := status[1]
-			// n -- not-installed
-			// c -- config-files
-			if installStatus == 'n' || installStatus == 'c' {
-				o.log.Debugf("%s status is '%c', ignoring", name, installStatus)
+			packageStatus := status[1]
+			// Package status:
+			//     n = Not-installed
+			//     c = Config-files
+			//     H = Half-installed
+			//     U = Unpacked
+			//     F = Half-configured
+			//     W = Triggers-awaiting
+			//     t = Triggers-pending
+			//     i = Installed
+			if packageStatus != 'i' {
+				o.log.Debugf("%s package status is '%c', ignoring", name, packageStatus)
 				continue
 			}
 			if err != nil {
