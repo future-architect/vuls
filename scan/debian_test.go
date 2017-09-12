@@ -53,7 +53,7 @@ func TestParseScannedPackagesLineDebian(t *testing.T) {
 			t.Errorf("name: expected %s, actual %s", tt.name, n)
 		}
 		if s != tt.status {
-			t.Errorf("status: expected %s, actual %s", tt.name, n)
+			t.Errorf("status: expected %s, actual %s", tt.status, s)
 		}
 		if v != tt.version {
 			t.Errorf("version: expected %s, actual %s", tt.version, v)
