@@ -255,12 +255,12 @@ Vuls requires the following packages.
 - git
 - gcc
 - GNU Make
+- Yum Utils
 - go v1.8.3 or later (The latest version is recommended)
     - https://golang.org/doc/install
 
 ```bash
-$ ssh centos@52.100.100.100  -i ~/.ssh/private.pem
-$ sudo yum -y install sqlite git gcc make wget
+$ sudo yum -y install sqlite git gcc make wget yum-utils
 $ wget https://storage.googleapis.com/golang/go1.8.3.linux-amd64.tar.gz
 $ sudo tar -C /usr/local -xzf go1.8.3.linux-amd64.tar.gz
 $ mkdir $HOME/go
