@@ -153,6 +153,10 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 				{"yum --color=never --security updateinfo updates", zero},
 			}
 		}
+
+		if o.Distro.Family == config.RedHat {
+			cmds = append(cmds, cmd{"repoquery -h", zero})
+		}
 	}
 
 	for _, c := range cmds {
