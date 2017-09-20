@@ -63,7 +63,7 @@ func (e defPacks) toPackStatuses(family string, packs models.Packages) (ps model
 		for name := range e.actuallyAffectedPackNames {
 			pack, ok := packs[name]
 			if !ok {
-				util.Log.Warnf("Faild to find in Package list: %s", name)
+				util.Log.Warnf("Failed to find in Package list: %s", name)
 				return
 			}
 
@@ -75,7 +75,7 @@ func (e defPacks) toPackStatuses(family string, packs models.Packages) (ps model
 				}
 			}
 			if ovalPackVer == "" {
-				util.Log.Warnf("Faild to find in Oval Package list: %s", name)
+				util.Log.Warnf("Failed to find in Oval Package list: %s", name)
 				return
 			}
 
