@@ -889,7 +889,7 @@ configtestサブコマンドは、config.tomlで定義されたサーバ/コン�
 
 Deep Scan Modeではスキャン対象サーバ上にいくつかの依存パッケージが必要。
 configtestに--deepをつけて実行するとSSH接続に加えて以下もチェックする。
-- スキャン対象のサーバ上に依存パッケーがインストールされているか
+- スキャン対象のサーバ上に依存パッケージがインストールされているか
 - /etc/sudoers
 
 ### Dependencies and /etc/sudoers on Target Servers
