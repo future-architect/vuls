@@ -83,6 +83,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 		// e.g.
 		// $ cat /etc/redhat-release
 		// CentOS release 6.5 (Final)
+		// Scientific Linux release 7.3 (Nitrogen)
 		if r := exec(c, "cat /etc/redhat-release", noSudo); r.isSuccess() {
 			re := regexp.MustCompile(`(.*) release (\d[\d.]*)`)
 			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
@@ -95,6 +96,8 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 			switch strings.ToLower(result[1]) {
 			case "centos", "centos linux":
 				red.setDistro(config.CentOS, release)
+			case "scientific", "scientific linux":
+				red.setDistro(config.Scientific, release)
 			default:
 				red.setDistro(config.RedHat, release)
 			}
@@ -192,10 +195,18 @@ func (o *redhat) checkDependencies() error {
 		}
 	}
 
+	if o.Distro.Family == config.Scientific {
+		if majorVersion < 6 {
+			msg := fmt.Sprintf("Scientific %s is not supported", o.Distro.Release)
+			o.log.Errorf(msg)
+			return fmt.Errorf(msg)
+		}
+	}
+
 	packNames := []string{"yum-utils"}
 	if config.Conf.Deep {
 		switch o.Distro.Family {
-		case config.CentOS, config.Amazon:
+		case config.CentOS, config.Scientific, config.Amazon:
 			packNames = append(packNames, "yum-plugin-changelog")
 		case config.RedHat, config.Oracle:
 			if majorVersion < 6 {
@@ -1031,7 +1042,7 @@ func (o *redhat) clone() osTypeInterface {
 
 func (o *redhat) sudo() bool {
 	switch o.Distro.Family {
-	case config.Amazon, config.CentOS:
+	case config.Amazon, config.CentOS, config.Scientific:
 		return false
 	default:
 		// RHEL, Oracle
