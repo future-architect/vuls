@@ -8,6 +8,7 @@ RUN apk --no-cache add git \
    && git clone https://github.com/usiusi360/vulsrepo.git
 
 RUN cd /vulsrepo/server \
+   && cp vulsrepo-config.toml.sample vulsrepo-config.toml \
    && sed -i -e 's/\/home\/vuls-user//g' vulsrepo-config.toml \
    && sed -i -e 's/\/opt//g' vulsrepo-config.toml \
    && mkdir /lib64 \
