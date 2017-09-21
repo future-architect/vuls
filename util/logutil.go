@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package util
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -26,14 +27,24 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/future-architect/vuls/config"
+	ovallog "github.com/kotakanbe/goval-dictionary/log"
 	formatter "github.com/kotakanbe/logrus-prefixed-formatter"
 )
 
 // Log for localhsot
 var Log *logrus.Entry
 
+func init() {
+	log := logrus.New()
+	log.Out = ioutil.Discard
+	fields := logrus.Fields{"prefix": ""}
+	Log = log.WithFields(fields)
+}
+
 // NewCustomLogger creates logrus
 func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
+	ovallog.Initialize(config.Conf.LogDir)
+
 	log := logrus.New()
 	log.Formatter = &formatter.TextFormatter{MsgAnsiColor: c.LogMsgAnsiColor}
 	log.Out = os.Stderr

@@ -25,6 +25,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	"github.com/kotakanbe/goval-dictionary/db"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
@@ -34,14 +35,14 @@ type RedHatBase struct {
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o RedHatBase) FillWithOval(r *models.ScanResult) (err error) {
+func (o RedHatBase) FillWithOval(driver db.DB, r *models.ScanResult) (err error) {
 	var relatedDefs ovalResult
 	if o.isFetchViaHTTP() {
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
 			return err
 		}
 	} else {
-		if relatedDefs, err = getDefsByPackNameFromOvalDB(r); err != nil {
+		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
 			return err
 		}
 	}

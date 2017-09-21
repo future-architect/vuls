@@ -28,18 +28,17 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/kotakanbe/goval-dictionary/db"
-	ovallog "github.com/kotakanbe/goval-dictionary/log"
 	"github.com/parnurzeal/gorequest"
 )
 
 // Client is the interface of OVAL client.
 type Client interface {
 	CheckHTTPHealth() error
-	FillWithOval(r *models.ScanResult) error
+	FillWithOval(db.DB, *models.ScanResult) error
 
 	// CheckIfOvalFetched checks if oval entries are in DB by family, release.
-	CheckIfOvalFetched(string, string) (bool, error)
-	CheckIfOvalFresh(string, string) (bool, error)
+	CheckIfOvalFetched(db.DB, string, string) (bool, error)
+	CheckIfOvalFresh(db.DB, string, string) (bool, error)
 }
 
 // Base is a base struct
@@ -67,20 +66,9 @@ func (b Base) CheckHTTPHealth() error {
 }
 
 // CheckIfOvalFetched checks if oval entries are in DB by family, release.
-func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err error) {
-	ovallog.Initialize(config.Conf.LogDir)
+func (b Base) CheckIfOvalFetched(driver db.DB, osFamily, release string) (fetched bool, err error) {
 	if !b.isFetchViaHTTP() {
-		var ovaldb db.DB
-		if ovaldb, err = db.NewDB(
-			osFamily,
-			config.Conf.OvalDBType,
-			config.Conf.OvalDBPath,
-			config.Conf.DebugSQL,
-		); err != nil {
-			return false, err
-		}
-		defer ovaldb.CloseDB()
-		count, err := ovaldb.CountDefs(osFamily, release)
+		count, err := driver.CountDefs(osFamily, release)
 		if err != nil {
 			return false, fmt.Errorf("Failed to count OVAL defs: %s, %s, %v",
 				osFamily, release, err)
@@ -103,21 +91,10 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err er
 }
 
 // CheckIfOvalFresh checks if oval entries are fresh enough
-func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
-	ovallog.Initialize(config.Conf.LogDir)
+func (b Base) CheckIfOvalFresh(driver db.DB, osFamily, release string) (ok bool, err error) {
 	var lastModified time.Time
 	if !b.isFetchViaHTTP() {
-		var ovaldb db.DB
-		if ovaldb, err = db.NewDB(
-			osFamily,
-			config.Conf.OvalDBType,
-			config.Conf.OvalDBPath,
-			config.Conf.DebugSQL,
-		); err != nil {
-			return false, err
-		}
-		defer ovaldb.CloseDB()
-		lastModified = ovaldb.GetLastModified(osFamily, release)
+		lastModified = driver.GetLastModified(osFamily, release)
 	} else {
 		url, _ := util.URLPathJoin(config.Conf.OvalDBURL, "lastmodified", osFamily, release)
 		resp, body, errs := gorequest.New().Get(url).End()

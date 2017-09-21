@@ -451,7 +451,22 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	if res, err = report.FillCveInfos(res, dir); err != nil {
+	var dbclient report.DBClient
+	if dbclient, err = report.NewDBClient(
+		c.Conf.CveDBType,
+		c.Conf.CveDBURL,
+		c.Conf.CveDBPath,
+		c.Conf.OvalDBType,
+		c.Conf.OvalDBURL,
+		c.Conf.OvalDBPath,
+		c.Conf.DebugSQL,
+	); err != nil {
+		util.Log.Errorf("Failed to New DB Clients: %s", err)
+		return subcommands.ExitFailure
+	}
+	defer dbclient.CloseDB()
+
+	if res, err = report.FillCveInfos(dbclient, res, dir); err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}

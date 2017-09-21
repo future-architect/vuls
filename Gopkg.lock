@@ -142,7 +142,7 @@
   branch = "master"
   name = "github.com/kotakanbe/go-cve-dictionary"
   packages = ["config","db","jvn","log","models","nvd","util"]
-  revision = "f5406ffe8226f01f64544723339c6a17b2bd74af"
+  revision = "a64c5fc25cd9669b213986e1a02831c71a5c601d"
 
 [[projects]]
   name = "github.com/kotakanbe/go-pingscanner"
@@ -273,6 +273,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0c23b5c957347ae72a4d8ca746920d2236b8e39ede1eb78290ead8c42fcaa1a7"
+  inputs-digest = "d85264d511a7e68069e74d6b0720555d5ab6e4672317521f618e9d6a3ec6c39a"
   solver-name = "gps-cdcl"
   solver-version = 1

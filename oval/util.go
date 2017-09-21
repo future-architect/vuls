@@ -30,7 +30,6 @@ import (
 	debver "github.com/knqyf263/go-deb-version"
 	rpmver "github.com/knqyf263/go-rpm-version"
 	"github.com/kotakanbe/goval-dictionary/db"
-	ovallog "github.com/kotakanbe/goval-dictionary/log"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 	"github.com/parnurzeal/gorequest"
 )
@@ -215,21 +214,7 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 	}
 }
 
-func getDefsByPackNameFromOvalDB(r *models.ScanResult) (relatedDefs ovalResult, err error) {
-	ovallog.Initialize(config.Conf.LogDir)
-	path := config.Conf.OvalDBURL
-	if config.Conf.OvalDBType == "sqlite3" {
-		path = config.Conf.OvalDBPath
-	}
-	util.Log.Debugf("Open oval-dictionary db (%s): %s", config.Conf.OvalDBType, path)
-
-	var ovaldb db.DB
-	if ovaldb, err = db.NewDB(r.Family, config.Conf.OvalDBType,
-		path, config.Conf.DebugSQL); err != nil {
-		return
-	}
-	defer ovaldb.CloseDB()
-
+func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDefs ovalResult, err error) {
 	requests := []request{}
 	for _, pack := range r.Packages {
 		requests = append(requests, request{
@@ -249,7 +234,7 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult) (relatedDefs ovalResult, 
 	}
 
 	for _, req := range requests {
-		definitions, err := ovaldb.GetByPackName(r.Release, req.packName)
+		definitions, err := driver.GetByPackName(r.Release, req.packName)
 		if err != nil {
 			return relatedDefs, fmt.Errorf("Failed to get %s OVAL info by package name: %v", r.Family, err)
 		}
