@@ -126,9 +126,18 @@ func (o *suse) scanPackages() error {
 	return nil
 }
 
-//TODO
 func (o *suse) rebootRequired() (bool, error) {
-	return false, nil
+	r := o.exec("rpm -q --last kernel-default | head -n1", noSudo)
+	if !r.isSuccess() {
+		return false, fmt.Errorf("Failed to detect the last installed kernel : %v", r)
+	}
+	stdout := strings.Fields(r.Stdout)[0]
+	ss := strings.Split(stdout, ".")
+	rel := strings.Join(ss[0:len(ss)-2], ".")
+	lastInstalledKernelVer := fmt.Sprintf("%s-default", rel)
+
+	running := fmt.Sprintf("kernel-default-%s", o.Kernel.Release)
+	return running != lastInstalledKernelVer, nil
 }
 
 func (o *suse) scanUpdatablePackages() (models.Packages, error) {
