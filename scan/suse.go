@@ -45,7 +45,6 @@ func detectSUSE(c config.ServerInfo) (itsMe bool, suse osTypeInterface) {
 					//TODO check opensuse or opensuse.leap
 					name = config.OpenSUSE
 				} else if strings.Contains(r.Stdout, `NAME="SLES"`) {
-					//TODO check suse.enterprise.server or suse.enterprise.desktop
 					name = config.SUSEEnterpriseServer
 				} else {
 					util.Log.Warn("Failed to parse SUSE edition: %s", r)
@@ -65,22 +64,26 @@ func detectSUSE(c config.ServerInfo) (itsMe bool, suse osTypeInterface) {
 	} else if r := exec(c, "ls /etc/SuSE-release", noSudo); r.isSuccess() {
 		if r := exec(c, "zypper -V", noSudo); r.isSuccess() {
 			if r := exec(c, "cat /etc/SuSE-release", noSudo); r.isSuccess() {
-				re := regexp.MustCompile(`SUSE Linux Enterprise Server (\d+)`)
+				re := regexp.MustCompile(`openSUSE (\d+\.\d+|\d+)`)
 				result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
-				if len(result) == 2 {
-					//TODO check suse.enterprise.server or suse.enterprise.desktop
-					suse.setDistro(config.SUSEEnterpriseServer, result[1])
-					return true, suse
-				}
-
-				re = regexp.MustCompile(`openSUSE (\d+\.\d+|\d+)`)
-				result = re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 				if len(result) == 2 {
 					//TODO check opensuse or opensuse.leap
 					suse.setDistro(config.OpenSUSE, result[1])
 					return true, suse
 				}
 
+				re = regexp.MustCompile(`VERSION = (\d+)`)
+				result = re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
+				if len(result) == 2 {
+					version := result[1]
+					re = regexp.MustCompile(`PATCHLEVEL = (\d+)`)
+					result = re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
+					if len(result) == 2 {
+						suse.setDistro(config.SUSEEnterpriseServer,
+							fmt.Sprintf("%s.%s", version, result[1]))
+						return true, suse
+					}
+				}
 				util.Log.Warn("Failed to parse SUSE Linux version: %s", r)
 				return true, suse
 			}

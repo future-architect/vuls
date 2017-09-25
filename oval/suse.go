@@ -21,7 +21,6 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	"github.com/k0kubun/pp"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
@@ -42,17 +41,6 @@ func NewSUSE() SUSE {
 
 // FillWithOval returns scan result after updating CVE info by OVAL
 func (o SUSE) FillWithOval(r *models.ScanResult) (err error) {
-	// TODO
-	//Debian's uname gives both of kernel release(uname -r), version(kernel-image version)
-	// linuxImage := "linux-image-" + r.RunningKernel.Release
-	// // Add linux and set the version of running kernel to search OVAL.
-	// if r.Container.ContainerID == "" {
-	// r.Packages["linux"] = models.Package{
-	// Name:    "linux",
-	// Version: r.RunningKernel.Version,
-	// }
-	// }
-
 	var relatedDefs ovalResult
 	if o.isFetchViaHTTP() {
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
@@ -63,31 +51,12 @@ func (o SUSE) FillWithOval(r *models.ScanResult) (err error) {
 			return err
 		}
 	}
-	pp.Println(relatedDefs)
-
-	//TODO
-	// delete(r.Packages, "linux")
-
 	for _, defPacks := range relatedDefs.entries {
-		//TODO
-		// Remove linux added above to search for oval
-		// linux is not a real package name (key of affected packages in OVAL)
-		// if _, ok := defPacks.actuallyAffectedPackNames["linux"]; ok {
-		// defPacks.actuallyAffectedPackNames[linuxImage] = true
-		// delete(defPacks.actuallyAffectedPackNames, "linux")
-		// for i, p := range defPacks.def.AffectedPacks {
-		// if p.Name == "linux" {
-		// p.Name = linuxImage
-		// defPacks.def.AffectedPacks[i] = p
-		// }
-		// }
-		// }
 		o.update(r, defPacks)
 	}
 
 	for _, vuln := range r.ScannedCves {
 		if cont, ok := vuln.CveContents[models.SUSE]; ok {
-			//TODO
 			cont.SourceLink = "https://security-tracker.debian.org/tracker/" + cont.CveID
 			vuln.CveContents[models.SUSE] = cont
 		}
