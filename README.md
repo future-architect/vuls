@@ -259,7 +259,6 @@ Vuls requires the following packages.
     - https://golang.org/doc/install
 
 ```bash
-$ ssh centos@52.100.100.100  -i ~/.ssh/private.pem
 $ sudo yum -y install sqlite git gcc make wget
 $ wget https://storage.googleapis.com/golang/go1.8.3.linux-amd64.tar.gz
 $ sudo tar -C /usr/local -xzf go1.8.3.linux-amd64.tar.gz
