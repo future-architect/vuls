@@ -139,7 +139,7 @@ Vulsは上に挙げた手動運用での課題を解決するツールであり�
 # Main Features
 
 - サーバに存在する脆弱性をスキャン
-    - FreeBSD, Ubuntu, Debian, CentOS, Amazon Linux, RHEL, Raspbianに対応
+    - FreeBSD, Ubuntu, Debian, CentOS, Amazon Linux, RHEL, Oracle Linux, SUSE Enterprise, Raspbianに対応
     - クラウド、オンプレミス、Docker
 - 高精度なスキャン
     - Vulsは複数の脆弱性データベース、複数の検知方法を組み合わせることで高精度なスキャンを実現している
@@ -328,6 +328,7 @@ $ goval-dictionary fetch-redhat 7
 - [Debian](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-debian)
 - [Ubuntu](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-ubuntu)
 - [Oracle Linux](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-oracle)
+- [SUSE](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-suse)
 
 ## Step5. Deploy Vuls
 
@@ -586,9 +587,10 @@ Vulsをスキャン対象サーバにデプロイする。Vulsはローカルホ
 | Oracle      |                                   Fast |　                No |  Supported |                                      No |
 | Ubuntu      |                                   Fast |　                No |  Supported |                                      No |
 | Debian      |                                   Fast |　                No |  Supported |                                      No |
+| Raspbian    |1st time: Slow <br> From 2nd time: Fast |                Need |         No |                                    Need |
 | FreeBSD     |                                   Fast |　                No |         No |                                    Need |
 | Amazon      |                                   Fast |　                No |         No |                                    Need | 
-| Raspbian    |1st time: Slow <br> From 2nd time: Fast |                Need |         No |                                    Need |
+| SUSE Enterprise |                               Fast |　                No |  Supported |                                      No| 
 
 ----
 
@@ -604,21 +606,25 @@ Vulsをスキャン対象サーバにデプロイする。Vulsはローカルホ
 | Oracle      |                                  Slow |　                    Need | Supported |                                    Need |
 | Ubuntu      |1st time: Slow <br> From 2nd time: Fast|                      Need | Supported |                                    Need |
 | Debian      |1st time: Slow <br> From 2nd time: Fast|                      Need | Supported |                                    Need |
+| Raspbian    |1st time: Slow <br> From 2nd time: Fast|                      Need |        No |                                    Need |
 | FreeBSD     |                                  Fast |　                      No |        No |                                    Need |
 | Amazon      |                                  Slow |　                      No |        No |                                    Need |
-| Raspbian    |1st time: Slow <br> From 2nd time: Fast|                      Need |        No |                                    Need |
+| SUSE Enterprise |                               Fast |　                     No |  Supported |                                      No| 
 
 
-- Ubuntu, Debian, Raspbian
+- On Ubuntu, Debian and Raspbian
 `apt-get changelog`でアップデート対象のパッケージのチェンジログを取得し、含まれるCVE IDをパースする。
 アップデート対象のパッケージが沢山ある場合、チェンジログの取得に時間がかかるので、初回のスキャンは遅い。  
 ただ、２回目以降はキャッシュしたchangelogを使うので速くなる。  
 
-- CentOS  
+- On CentOS
 `yum changelog`でアップデート対象のパッケージのチェンジログを取得し、含まれるCVE IDをパースする。
 
-- Amazon, RHEL and FreeBSD  
+- On RHEL, Oracle, Amazon and FreeBSD
 `yum changelog`でアップデート対象のパッケージのチェンジログを取得する(パースはしない)。
+
+- On SUSE Enterprise Linux
+Same as fast scan mode for now.
 
 ----
 
@@ -646,6 +652,7 @@ web/app server in the same configuration under the load balancer
 | CentOS      |                6, 7|
 | Amazon Linux|                 All|
 | FreeBSD     |              10, 11|
+| SUSE Enterprise |           11, 12|
 | Raspbian    |    Jessie, Stretch |
 
 ----
@@ -882,6 +889,7 @@ configtestサブコマンドは、config.tomlで定義されたサーバ/コン�
 | Amazon       |                All | - |
 | RHEL         |            5, 6, 7 | - | 
 | Oracle Linux |            5, 6, 7 | - |
+| SUSE Enterprise|            11, 12 | - |
 | FreeBSD      |             10, 11 | - |
 | Raspbian     |    Jessie, Stretch | - |
 
@@ -899,13 +907,14 @@ Deep Scan Modeでスキャンするためには、下記のパッケージが必
 | Distribution |            Release | Requirements |
 |:-------------|-------------------:|:-------------|
 | Ubuntu       |          12, 14, 16| -            |
-| Debian       |             7, 8, 9| aptitude, reboot-notifier   |
+| Debian       |             7, 8, 9| aptitude, reboot-notifier     |
 | CentOS       |                6, 7| yum-plugin-changelog, yum-utils |
 | Amazon       |                All | yum-plugin-changelog, yum-utils |
 | RHEL         |                  5 | yum-utils, yum-security, yum-changelog |
 | RHEL         |               6, 7 | yum-utils, yum-plugin-changelog |
 | Oracle Linux |                  5 | yum-utils, yum-security, yum-changelog |
 | Oracle Linux |               6, 7 | yum-utils, yum-plugin-changelog |
+| SUSE Enterprise|            11, 12 | - |
 | FreeBSD      |                 10 | -            |
 | Raspbian     |     Wheezy, Jessie | -            |
 
@@ -935,7 +944,7 @@ vuls ALL=(ALL) NOPASSWD: /usr/bin/apt-get update
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 ```
 
-- CentOS, Amazon Linux, FreeBSDは今のところRoot権限なしでスキャン可能
+- CentOS, Amazon Linux, SUSE Enterprise, FreeBSDは今のところRoot権限なしでスキャン可能
 
 ----
 
@@ -1338,7 +1347,7 @@ Confidence              100 / OvalMatch
 
   | Detection Method       | Confidence         |  OS                              |Description|
   |:-----------------------|-------------------:|:---------------------------------|:--|
-  | OvalMatch              | 100                |                          CentOS, RHEL, Oracle, Ubuntu, Debian |Detection using OVAL |
+  | OvalMatch              | 100                | CentOS, RHEL, Oracle, Ubuntu, Debian, SUSE |Detection using OVAL |
   | YumUpdateSecurityMatch | 100                |               RHEL, Amazon, Oracle |Detection using yum-plugin-security|
   | ChangelogExactMatch    | 95                 | CentOS, Ubuntu, Debian, Raspbian |Exact version match between changelog and package version|
   | ChangelogLenientMatch  | 50                 |         Ubuntu, Debian, Raspbian |Lenient version match between changelog and package version| 
@@ -1713,6 +1722,7 @@ $ vuls report -ovaldb-url=http://192.168.0.1:1323
 - [Ubuntu](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-ubuntu)
 - [Debian](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-debian)
 - [Oracle](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-oracle)
+- [SUSE](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-suse)
 
 ----
 
