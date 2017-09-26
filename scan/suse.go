@@ -135,16 +135,17 @@ func (o *suse) rebootRequired() (bool, error) {
 		return false, fmt.Errorf("Failed to detect the last installed kernel : %v", r)
 	}
 	stdout := strings.Fields(r.Stdout)[0]
-	ss := strings.Split(stdout, ".")
-	rel := strings.Join(ss[0:len(ss)-2], ".")
-	lastInstalledKernelVer := fmt.Sprintf("%s-default", rel)
-
-	running := fmt.Sprintf("kernel-default-%s", o.Kernel.Release)
-	return running != lastInstalledKernelVer, nil
+	return !strings.Contains(stdout, strings.TrimSuffix(o.Kernel.Release, "-default")), nil
 }
 
 func (o *suse) scanUpdatablePackages() (models.Packages, error) {
-	r := o.exec("zypper --no-color -q lu", noSudo)
+	cmd := ""
+	if v, _ := o.Distro.MajorVersion(); v < 12 {
+		cmd = "zypper -q lu"
+	} else {
+		cmd = "zypper --no-color -q lu"
+	}
+	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to scan updatable packages: %v", r)
 	}

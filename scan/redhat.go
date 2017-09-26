@@ -280,14 +280,7 @@ func (o *redhat) scanInstalledPackages() (models.Packages, error) {
 	}
 
 	installed := models.Packages{}
-	var cmd string
-	majorVersion, _ := o.Distro.MajorVersion()
-	if majorVersion < 6 {
-		cmd = "rpm -qa --queryformat '%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n'"
-	} else {
-		cmd = "rpm -qa --queryformat '%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n'"
-	}
-	r := o.exec(cmd, noSudo)
+	r := o.exec(rpmQa(o.Distro), noSudo)
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Scan packages failed: %s", r)
 	}
