@@ -58,7 +58,7 @@ func (e defPacks) toPackStatuses(family string, packs models.Packages) (ps model
 			})
 		}
 
-	case config.CentOS, config.Debian:
+	case config.CentOS, config.Scientific, config.Debian:
 		// There are many packages that has been fixed in RedHat, but not been fixed in CentOS
 		for name := range e.actuallyAffectedPackNames {
 			pack, ok := packs[name]
@@ -323,7 +323,7 @@ func lessThan(family string, packA models.Package, packB ovalmodels.Package) (bo
 			return false, err
 		}
 		return vera.LessThan(verb), nil
-	case config.RedHat, config.CentOS, config.Oracle:
+	case config.RedHat, config.CentOS, config.Scientific, config.Oracle:
 		vera := rpmver.NewVersion(fmt.Sprintf("%s-%s", packA.Version, packA.Release))
 		verb := rpmver.NewVersion(packB.Version)
 		return vera.LessThan(verb), nil

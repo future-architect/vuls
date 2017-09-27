@@ -207,6 +207,22 @@ func NewCentOS() CentOS {
 	}
 }
 
+// Scientific is the interface for Scientific Linux OVAL
+type Scientific struct {
+	RedHatBase
+}
+
+// NewScientific creates OVAL client for Scientific Linux
+func NewScientific() Scientific {
+	return Scientific{
+		RedHatBase{
+			Base{
+				family: config.Scientific,
+			},
+		},
+	}
+}
+
 // Oracle is the interface for CentOS OVAL
 type Oracle struct {
 	RedHatBase
