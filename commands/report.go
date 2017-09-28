@@ -44,7 +44,9 @@ type ReportCmd struct {
 
 	cvssScoreOver      float64
 	ignoreUnscoredCves bool
-	httpProxy          string
+	ignoreUnfixed      bool
+
+	httpProxy string
 
 	cveDBType string
 	cveDBPath string
@@ -107,6 +109,7 @@ func (*ReportCmd) Usage() string {
 		[-cvss-over=7]
 		[-diff]
 		[-ignore-unscored-cves]
+		[-ignore-unfixed]
 		[-to-email]
 		[-to-slack]
 		[-to-localfile]
@@ -213,6 +216,12 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		"Don't report the unscored CVEs")
 
+	f.BoolVar(
+		&p.ignoreUnfixed,
+		"ignore-unfixed",
+		false,
+		"Don't report the unfixed CVEs")
+
 	f.StringVar(
 		&p.httpProxy,
 		"http-proxy",
@@ -312,6 +321,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.OvalDBURL = p.ovalDBURL
 	c.Conf.CvssScoreOver = p.cvssScoreOver
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
+	c.Conf.IgnoreUnfixed = p.ignoreUnfixed
 	c.Conf.HTTPProxy = p.httpProxy
 
 	c.Conf.FormatXML = p.formatXML

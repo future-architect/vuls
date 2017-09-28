@@ -76,10 +76,8 @@ func (r ScanResult) FilterByCvssOver(over float64) ScanResult {
 		}
 		return false
 	})
-
-	copiedScanResult := r
-	copiedScanResult.ScannedCves = filtered
-	return copiedScanResult
+	r.ScannedCves = filtered
+	return r
 }
 
 // FilterIgnoreCves is filter function.
@@ -92,9 +90,24 @@ func (r ScanResult) FilterIgnoreCves(cveIDs []string) ScanResult {
 		}
 		return true
 	})
-	copiedScanResult := r
-	copiedScanResult.ScannedCves = filtered
-	return copiedScanResult
+	r.ScannedCves = filtered
+	return r
+}
+
+// FilterUnfixed is filter function.
+func (r ScanResult) FilterUnfixed() ScanResult {
+	if !config.Conf.IgnoreUnfixed {
+		return r
+	}
+	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
+		NotFixedAll := true
+		for _, p := range v.AffectedPackages {
+			NotFixedAll = NotFixedAll && p.NotFixedYet
+		}
+		return !NotFixedAll
+	})
+	r.ScannedCves = filtered
+	return r
 }
 
 // ReportFileName returns the filename on localhost without extention
