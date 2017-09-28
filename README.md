@@ -144,7 +144,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 # Main Features
 
 - Scan for any vulnerabilities in Linux/FreeBSD Server
-    - Supports FreeBSD, Ubuntu, Debian, CentOS, Amazon Linux, RHEL, Oracle Linux and Raspbian
+    - Supports FreeBSD, Ubuntu, Debian, CentOS, Amazon Linux, RHEL, Oracle Linux, SUSE Enterprise Linux and Raspbian
     - Cloud, on-premise, Docker
 - High quality scan
     - Vuls uses Multiple vulnerability databases
@@ -335,6 +335,7 @@ If you want to scan other than CentOS 7, fetch OVAL data according to the OS typ
 - [Debian](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-debian)
 - [Ubuntu](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-ubuntu)
 - [Oracle Linux](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-oracle)
+- [SUSE](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-suse)
 
 ## Step5. Deploy Vuls
 
@@ -597,6 +598,7 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 | Raspbian    |1st time: Slow <br> From 2nd time: Fast |                Need |         No |                                    Need |
 | FreeBSD     |                                   Fast |　                No |         No |                                    Need |
 | Amazon      |                                   Fast |　                No |         No |                                    Need | 
+| SUSE Enterprise |                               Fast |　                No |  Supported |                                      No| 
 
 
 ---------
@@ -614,6 +616,7 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 | Raspbian    |1st time: Slow <br> From 2nd time: Fast|                      Need |        No |                                    Need |
 | FreeBSD     |                                  Fast |　                      No |        No |                                    Need |
 | Amazon      |                                  Slow |　                      No |        No |                                    Need |
+| SUSE Enterprise |                               Fast |　                     No |  Supported |                                      No| 
 
 
 - On Ubuntu, Debian and Raspbian
@@ -624,8 +627,12 @@ From the second time on, the scan speed is fast by using the local cache.
 
 - On CentOS
 Vuls issues `yum changelog` to get changelogs of upgradable packages at once and parse the changelog.  
+
 - On RHEL, Oracle, Amazon and FreeBSD
 Detect CVE IDs by using package manager.
+
+- On SUSE Enterprise Linux
+Same as fast scan mode for now.
 
 ----
 
@@ -658,6 +665,7 @@ If there is a staging environment with the same configuration as the production 
 | CentOS       |                6, 7|
 | Amazon Linux |                 All|
 | FreeBSD      |              10, 11|
+| SUSE Enterprise |           11, 12|
 | Raspbian     |    Jessie, Stretch |
 
 ----
@@ -893,6 +901,7 @@ The configtest subcommand checks whether vuls is able to connect via SSH to serv
 | Amazon       |                All | - |
 | RHEL         |            5, 6, 7 | - | 
 | Oracle Linux |            5, 6, 7 | - |
+| SUSE Enterprise|            11, 12 | - |
 | FreeBSD      |             10, 11 | - |
 | Raspbian     |    Jessie, Stretch | - |
 
@@ -915,6 +924,7 @@ In order to scan with deep scan mode, the following dependencies are required, s
 | RHEL         |               6, 7 | yum-utils, yum-plugin-changelog |
 | Oracle Linux |                  5 | yum-utils, yum-security, yum-changelog |
 | Oracle Linux |               6, 7 | yum-utils, yum-plugin-changelog |
+| SUSE Enterprise|            11, 12 | - |
 | FreeBSD      |                 10 | -            |
 | Raspbian     |     Wheezy, Jessie | -            |
 
@@ -944,7 +954,7 @@ vuls ALL=(ALL) NOPASSWD: /usr/bin/apt-get update
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 ```
 
-- On CentOS, Amazon Linux, FreeBSD, it is possible to scan without root privilege for now.
+- On CentOS, Amazon Linux, SUSE Enterprise, FreeBSD, it is possible to scan without root privilege for now.
 
 ----
 
@@ -1349,7 +1359,7 @@ Confidence              100 / OvalMatch
 
   | Detection Method       | Confidence         |  OS                              |Description|
   |:-----------------------|-------------------:|:---------------------------------|:--|
-  | OvalMatch              | 100                |                          CentOS, RHEL, Oracle, Ubuntu, Debian |Detection using OVAL |
+  | OvalMatch              | 100                | CentOS, RHEL, Oracle, Ubuntu, Debian, SUSE |Detection using OVAL |
   | YumUpdateSecurityMatch | 100                |               RHEL, Amazon, Oracle |Detection using yum-plugin-security|
   | ChangelogExactMatch    | 95                 | CentOS, Ubuntu, Debian, Raspbian |Exact version match between changelog and package version|
   | ChangelogLenientMatch  | 50                 |         Ubuntu, Debian, Raspbian |Lenient version match between changelog and package version| 
@@ -1712,6 +1722,7 @@ $ vuls report -ovaldb-url=http://192.168.0.1:1323
 - [Ubuntu](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-ubuntu)
 - [Debian](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-debian)
 - [Oracle](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-oracle)
+- [SUSE](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-suse)
 
 ----
 

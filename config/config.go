@@ -61,6 +61,21 @@ const (
 
 	// Windows is
 	Windows = "windows"
+
+	// OpenSUSE is
+	OpenSUSE = "opensuse"
+
+	// OpenSUSELeap is
+	OpenSUSELeap = "opensuse.leap"
+
+	// SUSEEnterpriseServer is
+	SUSEEnterpriseServer = "suse.linux.enterprise.server"
+
+	// SUSEEnterpriseDesktop is
+	SUSEEnterpriseDesktop = "suse.linux.enterprise.desktop"
+
+	// SUSEOpenstackCloud is
+	SUSEOpenstackCloud = "suse.openstack.cloud"
 )
 
 //Config is struct of Configuration

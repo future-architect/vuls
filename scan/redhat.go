@@ -280,14 +280,7 @@ func (o *redhat) scanInstalledPackages() (models.Packages, error) {
 	}
 
 	installed := models.Packages{}
-	var cmd string
-	majorVersion, _ := o.Distro.MajorVersion()
-	if majorVersion < 6 {
-		cmd = "rpm -qa --queryformat '%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n'"
-	} else {
-		cmd = "rpm -qa --queryformat '%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n'"
-	}
-	r := o.exec(cmd, noSudo)
+	r := o.exec(rpmQa(o.Distro), noSudo)
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Scan packages failed: %s", r)
 	}
@@ -304,14 +297,13 @@ func (o *redhat) scanInstalledPackages() (models.Packages, error) {
 			// Kernel package may be isntalled multiple versions.
 			// From the viewpoint of vulnerability detection,
 			// pay attention only to the running kernel
-			if pack.Name == "kernel" {
-				ver := fmt.Sprintf("%s-%s.%s", pack.Version, pack.Release, pack.Arch)
-				if o.Kernel.Release != ver {
-					o.log.Debugf("Not a running kernel: %s, uname: %s", ver, release)
+			isKernel, running := isRunningKernel(pack, o.Distro.Family, o.Kernel)
+			if isKernel {
+				if !running {
+					o.log.Debugf("Not a running kernel. pack: %#v, kernel: %#v", pack, o.Kernel)
 					continue
-				} else {
-					o.log.Debugf("Running kernel: %s, uname: %s", ver, release)
 				}
+				o.log.Debugf("Found a running kernel. pack: %#v, kernel: %#v", pack, o.Kernel)
 			}
 			installed[pack.Name] = pack
 		}

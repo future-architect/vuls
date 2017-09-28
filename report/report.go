@@ -173,6 +173,10 @@ func FillWithOval(r *models.ScanResult) (err error) {
 	case c.Oracle:
 		ovalClient = oval.NewOracle()
 		ovalFamily = c.Oracle
+	case c.SUSEEnterpriseServer:
+		// TODO other suse family
+		ovalClient = oval.NewSUSE()
+		ovalFamily = c.SUSEEnterpriseServer
 	case c.Amazon, c.Raspbian, c.FreeBSD, c.Windows:
 		return nil
 	default:
