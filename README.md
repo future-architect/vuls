@@ -1614,13 +1614,16 @@ How to integrate Vuls with OWASP Dependency Check
 ```
 tui:
         tui
+                [-refresh-cve]
                 [-cvedb-type=sqlite3|mysql|postgres]
                 [-cvedb-path=/path/to/cve.sqlite3]
                 [-cvedb-url=http://127.0.0.1:1323 DB connection string]
                 [-ovaldb-type=sqlite3|mysql]
                 [-ovaldb-path=/path/to/oval.sqlite3]
                 [-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
-                [-refresh-cve]
+				[-cvss-over=7]
+				[-ignore-unscored-cves]
+				[-ignore-unfixed]
                 [-results-dir=/path/to/results]
                 [-log-dir=/path/to/log]
                 [-debug]
@@ -1639,6 +1642,12 @@ tui:
         DB type for fetching OVAL dictionary (sqlite3 or mysql) (default "sqlite3")
   -ovaldb-url string
         http://goval-dictionary.com:1324 or mysql connection string
+  -cvss-over float
+        -cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))
+  -ignore-unfixed
+        Don't report the unfixed CVEs
+  -ignore-unscored-cves
+        Don't report the unscored CVEs
   -debug
         debug mode
   -debug-sql

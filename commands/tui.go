@@ -49,6 +49,10 @@ type TuiCmd struct {
 	ovalDBPath string
 	ovalDBURL  string
 
+	cvssScoreOver      float64
+	ignoreUnscoredCves bool
+	ignoreUnfixed      bool
+
 	pipe bool
 }
 
@@ -62,6 +66,7 @@ func (*TuiCmd) Synopsis() string { return "Run Tui view to analyze vulnerabiliti
 func (*TuiCmd) Usage() string {
 	return `tui:
 	tui
+		[-refresh-cve]
 		[-config=/path/to/config.toml]
 		[-cvedb-type=sqlite3|mysql|postgres]
 		[-cvedb-path=/path/to/cve.sqlite3]
@@ -69,7 +74,9 @@ func (*TuiCmd) Usage() string {
 		[-ovaldb-type=sqlite3|mysql]
 		[-ovaldb-path=/path/to/oval.sqlite3]
 		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
-		[-refresh-cve]
+		[-cvss-over=7]
+		[-ignore-unscored-cves]
+		[-ignore-unfixed]
 		[-results-dir=/path/to/results]
 		[-log-dir=/path/to/log]
 		[-debug]
@@ -139,6 +146,24 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 		"",
 		"http://goval-dictionary.example.com:1324 or mysql connection string")
 
+	f.Float64Var(
+		&p.cvssScoreOver,
+		"cvss-over",
+		0,
+		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
+
+	f.BoolVar(
+		&p.ignoreUnscoredCves,
+		"ignore-unscored-cves",
+		false,
+		"Don't report the unscored CVEs")
+
+	f.BoolVar(
+		&p.ignoreUnfixed,
+		"ignore-unfixed",
+		false,
+		"Don't report the unfixed CVEs")
+
 	f.BoolVar(
 		&p.pipe,
 		"pipe",
@@ -169,6 +194,9 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	c.Conf.OvalDBType = p.ovalDBType
 	c.Conf.OvalDBPath = p.ovalDBPath
 	c.Conf.OvalDBURL = p.ovalDBURL
+	c.Conf.CvssScoreOver = p.cvssScoreOver
+	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
+	c.Conf.IgnoreUnfixed = p.ignoreUnfixed
 
 	log.Info("Validating config...")
 	if !c.Conf.ValidateOnTui() {
