@@ -165,13 +165,7 @@ func msgText(r models.ScanResult) string {
 }
 
 func toSlackAttachments(r models.ScanResult) (attaches []*attachment) {
-	var vinfos []models.VulnInfo
-	if config.Conf.IgnoreUnscoredCves {
-		vinfos = r.ScannedCves.FindScoredVulns().ToSortedSlice()
-	} else {
-		vinfos = r.ScannedCves.ToSortedSlice()
-	}
-
+	vinfos := r.ScannedCves.ToSortedSlice()
 	for _, vinfo := range vinfos {
 		curent := []string{}
 		for _, affected := range vinfo.AffectedPackages {
