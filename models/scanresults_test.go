@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/future-architect/vuls/config"
 	"github.com/k0kubun/pp"
 )
 
@@ -252,6 +253,86 @@ func TestFilterIgnoreCveIDs(t *testing.T) {
 				a := pp.Sprintf("%v", actual.ScannedCves[k])
 				t.Errorf("[%s] expected: %v\n  actual: %v\n", k, o, a)
 			}
+		}
+	}
+}
+
+func TestFilterUnfixed(t *testing.T) {
+	var tests = []struct {
+		in  ScanResult
+		out ScanResult
+	}{
+		{
+			in: ScanResult{
+				ScannedCves: VulnInfos{
+					"CVE-2017-0001": {
+						CveID: "CVE-2017-0001",
+						AffectedPackages: PackageStatuses{
+							{
+								Name:        "a",
+								NotFixedYet: true,
+							},
+						},
+					},
+					"CVE-2017-0002": {
+						CveID: "CVE-2017-0002",
+						AffectedPackages: PackageStatuses{
+							{
+								Name:        "b",
+								NotFixedYet: false,
+							},
+						},
+					},
+					"CVE-2017-0003": {
+						CveID: "CVE-2017-0003",
+						AffectedPackages: PackageStatuses{
+							{
+								Name:        "c",
+								NotFixedYet: true,
+							},
+							{
+								Name:        "d",
+								NotFixedYet: false,
+							},
+						},
+					},
+				},
+			},
+			out: ScanResult{
+				ScannedCves: VulnInfos{
+					"CVE-2017-0002": {
+						CveID: "CVE-2017-0002",
+						AffectedPackages: PackageStatuses{
+							{
+								Name:        "b",
+								NotFixedYet: false,
+							},
+						},
+					},
+					"CVE-2017-0003": {
+						CveID: "CVE-2017-0003",
+						AffectedPackages: PackageStatuses{
+							{
+								Name:        "c",
+								NotFixedYet: true,
+							},
+							{
+								Name:        "d",
+								NotFixedYet: false,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	for i, tt := range tests {
+		config.Conf.IgnoreUnfixed = true
+		actual := tt.in.FilterUnfixed()
+		if !reflect.DeepEqual(tt.out.ScannedCves, actual.ScannedCves) {
+			o := pp.Sprintf("%v", tt.out.ScannedCves)
+			a := pp.Sprintf("%v", actual.ScannedCves)
+			t.Errorf("[%d] expected: %v\n  actual: %v\n", i, o, a)
 		}
 	}
 }

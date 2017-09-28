@@ -1174,6 +1174,7 @@ report:
                 [-cvss-over=7]
                 [-diff]
                 [-ignore-unscored-cves]
+                [-ignore-unfixed]
                 [-to-email]
                 [-to-slack]
                 [-to-localfile]
@@ -1248,6 +1249,8 @@ report:
         http://proxy-url:port (default: empty)
   -ignore-unscored-cves
         Don't report the unscored CVEs
+  -ignore-unfixed
+        Don't report the unfixed CVEs
   -lang string
         [en|ja] (default "en")
   -log-dir string

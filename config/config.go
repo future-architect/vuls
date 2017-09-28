@@ -91,6 +91,7 @@ type Config struct {
 
 	CvssScoreOver      float64
 	IgnoreUnscoredCves bool
+	IgnoreUnfixed      bool
 
 	SSHNative      bool
 	ContainersOnly bool

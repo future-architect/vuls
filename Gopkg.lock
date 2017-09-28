@@ -28,8 +28,8 @@
 [[projects]]
   name = "github.com/aws/aws-sdk-go"
   packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/shareddefaults","private/protocol","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/restxml","private/protocol/xml/xmlutil","service/s3","service/sts"]
-  revision = "b69f447375c7fa0047ebcdd8ae5d585d5aac2f71"
-  version = "v1.10.51"
+  revision = "c652f9369083515c3ddf1fbaf6df68da2c101545"
+  version = "v1.12.1"
 
 [[projects]]
   name = "github.com/boltdb/bolt"
@@ -106,8 +106,7 @@
 [[projects]]
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
-  revision = "3433f3ea46d9f8019119e7dd41274e112a2359a9"
-  version = "0.2.2"
+  revision = "0b12d6b5"
 
 [[projects]]
   name = "github.com/jroimartin/gocui"
@@ -119,7 +118,7 @@
   branch = "master"
   name = "github.com/k0kubun/pp"
   packages = ["."]
-  revision = "d1532fc5d94ecdf2da29e24d7b99721f3287de4a"
+  revision = "e057ee7a28277be4d2af303443b6da377768181f"
 
 [[projects]]
   branch = "master"
@@ -149,7 +148,7 @@
   branch = "master"
   name = "github.com/kotakanbe/goval-dictionary"
   packages = ["config","db","db/rdb","log","models"]
-  revision = "a9de1f6e9126c5e75b46b39e4049624cde8c8bb4"
+  revision = "fd8ff5a6343912117d1b7db16fbd5fa1f4116c3a"
 
 [[projects]]
   branch = "master"
@@ -245,19 +244,19 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["curve25519","ed25519","ed25519/internal/edwards25519","ssh","ssh/agent","ssh/terminal"]
-  revision = "847319b7fc94cab682988f93da778204da164588"
+  revision = "c84b36c635ad003a10f0c755dff5685ceef18c71"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","idna","publicsuffix"]
-  revision = "0744d001aa8470aaa53df28d32e5ceeb8af9bd70"
+  revision = "0a9397675ba34b2845f758fe3cd68828369c6517"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "429f518978ab01db8bb6f44b66785088e7fba58b"
+  revision = "314a259e304ff91bd6985da2a7149bbf91237993"
 
 [[projects]]
   branch = "master"
