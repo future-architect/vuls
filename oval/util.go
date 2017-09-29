@@ -162,6 +162,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 
 	concurrency := 10
 	tasks := util.GenWorkers(concurrency)
+	// TODO search by pack.SrcName if pack.Srcname != "" && name != pack.srcName
 	for range r.Packages {
 		tasks <- func() {
 			select {
@@ -191,6 +192,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 			for _, def := range res.defs {
 				for _, p := range def.AffectedPacks {
 					if res.pack.Name != p.Name {
+						//TODO check if installedPack.SrcName == ovalPack.Name
 						continue
 					}
 
@@ -283,6 +285,7 @@ func getDefsByPackNameFromOvalDB(family, osRelease string,
 	}
 	defer ovaldb.CloseDB()
 	for _, installedPack := range installedPacks {
+		// TODO search by pack.SrcName if pack.Srcname != "" && name != pack.srcName
 		definitions, err := ovaldb.GetByPackName(osRelease, installedPack.Name)
 		if err != nil {
 			return relatedDefs, fmt.Errorf("Failed to get %s OVAL info by package name: %v", family, err)
@@ -290,6 +293,7 @@ func getDefsByPackNameFromOvalDB(family, osRelease string,
 		for _, def := range definitions {
 			for _, ovalPack := range def.AffectedPacks {
 				if installedPack.Name != ovalPack.Name {
+					//TODO check if installedPack.SrcName == ovalPack.Name
 					continue
 				}
 
