@@ -264,9 +264,7 @@ func httpGet(url string, pack *models.Package, resChan chan<- response, errChan 
 	}
 }
 
-func getDefsByPackNameFromOvalDB(family, osRelease string,
-	installedPacks models.Packages) (relatedDefs ovalResult, err error) {
-
+func getDefsByPackNameFromOvalDB(r *models.ScanResult) (relatedDefs ovalResult, err error) {
 	ovallog.Initialize(config.Conf.LogDir)
 	path := config.Conf.OvalDBURL
 	if config.Conf.OvalDBType == "sqlite3" {
@@ -276,7 +274,7 @@ func getDefsByPackNameFromOvalDB(family, osRelease string,
 
 	var ovaldb db.DB
 	if ovaldb, err = db.NewDB(
-		family,
+		r.Family,
 		config.Conf.OvalDBType,
 		path,
 		config.Conf.DebugSQL,
@@ -284,11 +282,11 @@ func getDefsByPackNameFromOvalDB(family, osRelease string,
 		return
 	}
 	defer ovaldb.CloseDB()
-	for _, installedPack := range installedPacks {
+	for _, installedPack := range r.Packages {
 		// TODO search by pack.SrcName if pack.Srcname != "" && name != pack.srcName
-		definitions, err := ovaldb.GetByPackName(osRelease, installedPack.Name)
+		definitions, err := ovaldb.GetByPackName(r.Release, installedPack.Name)
 		if err != nil {
-			return relatedDefs, fmt.Errorf("Failed to get %s OVAL info by package name: %v", family, err)
+			return relatedDefs, fmt.Errorf("Failed to get %s OVAL info by package name: %v", r.Family, err)
 		}
 		for _, def := range definitions {
 			for _, ovalPack := range def.AffectedPacks {
@@ -302,7 +300,7 @@ func getDefsByPackNameFromOvalDB(family, osRelease string,
 					continue
 				}
 
-				less, err := lessThan(family, installedPack, ovalPack)
+				less, err := lessThan(r.Family, installedPack, ovalPack)
 				if err != nil {
 					util.Log.Debugf("Failed to parse versions: %s", err)
 					util.Log.Debugf("%#v\n%#v", installedPack, ovalPack)

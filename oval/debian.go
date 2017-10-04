@@ -121,7 +121,7 @@ func (o Debian) FillWithOval(r *models.ScanResult) (err error) {
 			return err
 		}
 	} else {
-		if relatedDefs, err = getDefsByPackNameFromOvalDB(o.family, r.Release, r.Packages); err != nil {
+		if relatedDefs, err = getDefsByPackNameFromOvalDB(r); err != nil {
 			return err
 		}
 	}
@@ -230,7 +230,7 @@ func (o Ubuntu) FillWithOval(r *models.ScanResult) (err error) {
 			return err
 		}
 	} else {
-		if relatedDefs, err = getDefsByPackNameFromOvalDB(o.family, r.Release, r.Packages); err != nil {
+		if relatedDefs, err = getDefsByPackNameFromOvalDB(r); err != nil {
 			return err
 		}
 	}
