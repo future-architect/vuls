@@ -156,7 +156,7 @@ func (o RedHatBase) parseCvss2(scoreVector string) (score float64, vector string
 		if score, err = strconv.ParseFloat(ss[0], 64); err != nil {
 			return 0, ""
 		}
-		return score, strings.Join(ss[1:len(ss)], "/")
+		return score, strings.Join(ss[1:], "/")
 	}
 	return 0, ""
 }
@@ -170,7 +170,7 @@ func (o RedHatBase) parseCvss3(scoreVector string) (score float64, vector string
 		if score, err = strconv.ParseFloat(ss[0], 64); err != nil {
 			return 0, ""
 		}
-		return score, strings.Join(ss[1:len(ss)], "/")
+		return score, strings.Join(ss[1:], "/")
 	}
 	return 0, ""
 }

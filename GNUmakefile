@@ -31,10 +31,10 @@ depup:
 	go get -u github.com/golang/dep/...
 	dep ensure -update
 
-build: main.go dep
+build: main.go dep pretest
 	go build -ldflags "$(LDFLAGS)" -o vuls $<
 
-install: main.go dep
+install: main.go dep pretest
 	go install -ldflags "$(LDFLAGS)"
 
 
@@ -47,10 +47,10 @@ vet:
 	echo $(PKGS) | xargs go vet || exit;
 
 fmt:
-	gofmt -w $(SRCS)
+	gofmt -s -w $(SRCS)
 
 fmtcheck:
-	$(foreach file,$(SRCS),gofmt -d $(file);)
+	$(foreach file,$(SRCS),gofmt -s -d $(file);)
 
 pretest: lint vet fmtcheck
 
