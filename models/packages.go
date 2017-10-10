@@ -116,6 +116,8 @@ func (p Package) FormatVersionFromTo(notFixedYet bool) string {
 	to := p.FormatNewVer()
 	if notFixedYet {
 		to = "Not Fixed Yet"
+	} else if p.NewVersion == "" {
+		to = "Unknown"
 	}
 	return fmt.Sprintf("%s-%s -> %s", p.Name, p.FormatVer(), to)
 }

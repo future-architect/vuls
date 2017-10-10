@@ -292,6 +292,15 @@ func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, mode
 		}
 	}
 
+	// Remove "linux"
+	// kernel-related packages are showed "linux" as source package name
+	// If "linux" is left, oval detection will cause trouble, so delete.
+	delete(srcPacks, "linux")
+	// Remove duplicate
+	for name := range installed {
+		delete(srcPacks, name)
+	}
+
 	updatableNames, err := o.getUpdatablePackNames()
 	if err != nil {
 		return nil, nil, nil, err

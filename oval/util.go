@@ -40,105 +40,48 @@ type ovalResult struct {
 }
 
 type defPacks struct {
-	def                       ovalmodels.Definition
+	def ovalmodels.Definition
+
+	// BinaryPackageName : NotFixedYet
 	actuallyAffectedPackNames map[string]bool
 }
 
 func (e defPacks) toPackStatuses(family string, packs models.Packages) (ps models.PackageStatuses) {
-	switch family {
-	case config.Ubuntu:
-		packNotFixedYet := map[string]bool{}
-		for _, p := range e.def.AffectedPacks {
-			packNotFixedYet[p.Name] = p.NotFixedYet
-		}
-		for k := range e.actuallyAffectedPackNames {
-			ps = append(ps, models.PackageStatus{
-				Name:        k,
-				NotFixedYet: packNotFixedYet[k],
-			})
-		}
-
-	case config.CentOS, config.Debian:
-		// There are many packages that has been fixed in RedHat, but not been fixed in CentOS
-		for name := range e.actuallyAffectedPackNames {
-			pack, ok := packs[name]
-			if !ok {
-				util.Log.Warnf("Failed to find in Package list: %s", name)
-				return
-			}
-
-			ovalPackVer := ""
-			for _, p := range e.def.AffectedPacks {
-				if p.Name == name {
-					ovalPackVer = p.Version
-					break
-				}
-			}
-			if ovalPackVer == "" {
-				util.Log.Warnf("Failed to find in Oval Package list: %s", name)
-				return
-			}
-
-			if pack.NewVersion == "" {
-				// compare version: installed vs oval
-				vera := rpmver.NewVersion(fmt.Sprintf("%s-%s", pack.Version, pack.Release))
-				verb := rpmver.NewVersion(ovalPackVer)
-				notFixedYet := false
-				if vera.LessThan(verb) {
-					notFixedYet = true
-				}
-				ps = append(ps, models.PackageStatus{
-					Name:        name,
-					NotFixedYet: notFixedYet,
-				})
-			} else {
-				// compare version: newVer vs oval
-				packNewVer := fmt.Sprintf("%s-%s", pack.NewVersion, pack.NewRelease)
-				vera := rpmver.NewVersion(packNewVer)
-				verb := rpmver.NewVersion(ovalPackVer)
-				notFixedYet := false
-				if vera.LessThan(verb) {
-					notFixedYet = true
-				}
-				ps = append(ps, models.PackageStatus{
-					Name:        name,
-					NotFixedYet: notFixedYet,
-				})
-			}
-		}
-
-	default:
-		for k := range e.actuallyAffectedPackNames {
-			ps = append(ps, models.PackageStatus{
-				Name: k,
-			})
-		}
+	for name, notFixedYet := range e.actuallyAffectedPackNames {
+		ps = append(ps, models.PackageStatus{
+			Name:        name,
+			NotFixedYet: notFixedYet,
+		})
 	}
-
 	return
 }
 
-func (e *ovalResult) upsert(def ovalmodels.Definition, packName string) (upserted bool) {
+func (e *ovalResult) upsert(def ovalmodels.Definition, packName string, notFixedYet bool) (upserted bool) {
 	for i, entry := range e.entries {
 		if entry.def.DefinitionID == def.DefinitionID {
-			e.entries[i].actuallyAffectedPackNames[packName] = true
+			e.entries[i].actuallyAffectedPackNames[packName] = notFixedYet
 			return true
 		}
 	}
 	e.entries = append(e.entries, defPacks{
 		def: def,
-		actuallyAffectedPackNames: map[string]bool{packName: true},
+		actuallyAffectedPackNames: map[string]bool{packName: notFixedYet},
 	})
+
 	return false
 }
 
 type request struct {
-	pack models.Package
+	packName          string
+	versionRelease    string
+	NewVersionRelease string
+	binaryPackNames   []string
+	isSrcPack         bool
 }
 
 type response struct {
-	pack *models.Package
-	defs []ovalmodels.Definition
+	request request
+	defs    []ovalmodels.Definition
 }
 
 // getDefsByPackNameViaHTTP fetches OVAL information via HTTP
@@ -152,18 +95,32 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 	defer close(resChan)
 	defer close(errChan)
 
+	names := []string{}
 	go func() {
 		for _, pack := range r.Packages {
+			names = append(names, pack.Name)
 			reqChan <- request{
-				pack: pack,
+				packName:          pack.Name,
+				versionRelease:    pack.FormatVer(),
+				NewVersionRelease: pack.FormatVer(),
+				isSrcPack:         false,
 			}
+			for _, pack := range r.SrcPackages {
+				names = append(names, pack.Name)
+				reqChan <- request{
+					packName:        pack.Name,
+					binaryPackNames: pack.BinaryNames,
+					versionRelease:  pack.Version,
+					isSrcPack:       true,
+				}
+			}
+
 		}
 	}()
 
 	concurrency := 10
 	tasks := util.GenWorkers(concurrency)
-	// TODO search by pack.SrcName if pack.Srcname != "" && name != pack.srcName
-	for range r.Packages {
+	for range names {
 		tasks <- func() {
 			select {
 			case req := <-reqChan:
@@ -172,13 +129,13 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 					"packs",
 					r.Family,
 					r.Release,
-					req.pack.Name,
+					req.packName,
 				)
 				if err != nil {
 					errChan <- err
 				} else {
 					util.Log.Debugf("HTTP Request to %s", url)
-					httpGet(url, &req.pack, resChan, errChan)
+					httpGet(url, req, resChan, errChan)
 				}
 			}
 		}
@@ -186,27 +143,21 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 
 	timeout := time.After(2 * 60 * time.Second)
 	var errs []error
-	for range r.Packages {
+	for range names {
 		select {
 		case res := <-resChan:
 			for _, def := range res.defs {
-				for _, p := range def.AffectedPacks {
-					if res.pack.Name != p.Name {
-						//TODO check if installedPack.SrcName == ovalPack.Name
-						continue
-					}
+				affected, notFixedYet := isOvalDefAffected(def, r.Family, res.request)
+				if !affected {
+					continue
+				}
 
-					if p.NotFixedYet {
-						relatedDefs.upsert(def, p.Name)
-						continue
+				if res.request.isSrcPack {
+					for _, n := range res.request.binaryPackNames {
+						relatedDefs.upsert(def, n, false)
 					}
-
-					if less, err := lessThan(r.Family, *res.pack, p); err != nil {
-						util.Log.Debugf("Failed to parse versions: %s", err)
-						util.Log.Debugf("%#v\n%#v", *res.pack, p)
-					} else if less {
-						relatedDefs.upsert(def, p.Name)
-					}
+				} else {
+					relatedDefs.upsert(def, res.request.packName, notFixedYet)
 				}
 			}
 		case err := <-errChan:
@@ -221,7 +172,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 	return
 }
 
-func httpGet(url string, pack *models.Package, resChan chan<- response, errChan chan<- error) {
+func httpGet(url string, req request, resChan chan<- response, errChan chan<- error) {
 	var body string
 	var errs []error
 	var resp *http.Response
@@ -259,8 +210,8 @@ func httpGet(url string, pack *models.Package, resChan chan<- response, errChan 
 		return
 	}
 	resChan <- response{
-		pack: pack,
-		defs: defs,
+		request: req,
+		defs:    defs,
 	}
 }
 
@@ -273,50 +224,96 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult) (relatedDefs ovalResult, 
 	util.Log.Debugf("Open oval-dictionary db (%s): %s", config.Conf.OvalDBType, path)
 
 	var ovaldb db.DB
-	if ovaldb, err = db.NewDB(
-		r.Family,
-		config.Conf.OvalDBType,
-		path,
-		config.Conf.DebugSQL,
-	); err != nil {
+	if ovaldb, err = db.NewDB(r.Family, config.Conf.OvalDBType,
+		path, config.Conf.DebugSQL); err != nil {
 		return
 	}
 	defer ovaldb.CloseDB()
-	for _, installedPack := range r.Packages {
-		// TODO search by pack.SrcName if pack.Srcname != "" && name != pack.srcName
-		definitions, err := ovaldb.GetByPackName(r.Release, installedPack.Name)
+
+	requests := []request{}
+	for _, pack := range r.Packages {
+		requests = append(requests, request{
+			packName:          pack.Name,
+			versionRelease:    pack.FormatVer(),
+			NewVersionRelease: pack.FormatNewVer(),
+			isSrcPack:         false,
+		})
+	}
+	for _, pack := range r.SrcPackages {
+		requests = append(requests, request{
+			packName:        pack.Name,
+			binaryPackNames: pack.BinaryNames,
+			versionRelease:  pack.Version,
+			isSrcPack:       true,
+		})
+	}
+
+	for _, req := range requests {
+		definitions, err := ovaldb.GetByPackName(r.Release, req.packName)
 		if err != nil {
 			return relatedDefs, fmt.Errorf("Failed to get %s OVAL info by package name: %v", r.Family, err)
 		}
 		for _, def := range definitions {
-			for _, ovalPack := range def.AffectedPacks {
-				if installedPack.Name != ovalPack.Name {
-					//TODO check if installedPack.SrcName == ovalPack.Name
-					continue
-				}
+			affected, notFixedYet := isOvalDefAffected(def, r.Family, req)
+			if !affected {
+				continue
+			}
 
-				if ovalPack.NotFixedYet {
-					relatedDefs.upsert(def, installedPack.Name)
-					continue
+			if req.isSrcPack {
+				for _, n := range req.binaryPackNames {
+					relatedDefs.upsert(def, n, false)
 				}
-
-				less, err := lessThan(r.Family, installedPack, ovalPack)
-				if err != nil {
-					util.Log.Debugf("Failed to parse versions: %s", err)
-					util.Log.Debugf("%#v\n%#v", installedPack, ovalPack)
-				} else if less {
-					relatedDefs.upsert(def, installedPack.Name)
-				}
+			} else {
+				relatedDefs.upsert(def, req.packName, notFixedYet)
 			}
 		}
 	}
 	return
 }
 
-func lessThan(family string, packA models.Package, packB ovalmodels.Package) (bool, error) {
+func isOvalDefAffected(def ovalmodels.Definition, family string, req request) (affected, notFixedYet bool) {
+	for _, ovalPack := range def.AffectedPacks {
+		if req.packName != ovalPack.Name {
+			continue
+		}
+
+		if ovalPack.NotFixedYet {
+			return true, true
+		}
+
+		less, err := lessThan(family, req.versionRelease, ovalPack)
+		if err != nil {
+			util.Log.Debugf("Failed to parse versions: %s, Ver: %#v, OVAL: %#v, DefID: %s",
+				err, req.versionRelease, ovalPack, def.DefinitionID)
+			return false, false
+		}
+
+		if less {
+			if req.isSrcPack {
+				// Unable to judge whether fixed or not fixed of src package(Ubuntu, Debian)
+				return true, false
+			}
+			if req.NewVersionRelease == "" {
+				return true, true
+			}
+
+			// compare version: newVer vs oval
+			less, err := lessThan(family, req.NewVersionRelease, ovalPack)
+			if err != nil {
+				util.Log.Debugf("Failed to parse versions: %s, NewVer: %#v, OVAL: %#v, DefID: %s",
+					err, req.NewVersionRelease, ovalPack, def.DefinitionID)
+				return false, false
+			}
+			return true, less
+		}
+	}
+	return false, false
+}
+
+func lessThan(family, versionRelease string, packB ovalmodels.Package) (bool, error) {
 	switch family {
 	case config.Debian, config.Ubuntu:
-		vera, err := debver.NewVersion(packA.Version)
+		vera, err := debver.NewVersion(versionRelease)
 		if err != nil {
 			return false, err
 		}
@@ -326,7 +323,7 @@ func lessThan(family string, packA models.Package, packB ovalmodels.Package) (bo
 		}
 		return vera.LessThan(verb), nil
 	case config.RedHat, config.CentOS, config.Oracle, config.SUSEEnterpriseServer:
-		vera := rpmver.NewVersion(fmt.Sprintf("%s-%s", packA.Version, packA.Release))
+		vera := rpmver.NewVersion(versionRelease)
 		verb := rpmver.NewVersion(packB.Version)
 		return vera.LessThan(verb), nil
 	default:

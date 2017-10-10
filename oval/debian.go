@@ -60,8 +60,10 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 
 	// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
 	for _, pack := range vinfo.AffectedPackages {
-		defPacks.actuallyAffectedPackNames[pack.Name] = true
+		notFixedYet, _ := defPacks.actuallyAffectedPackNames[pack.Name]
+		defPacks.actuallyAffectedPackNames[pack.Name] = notFixedYet
 	}
+
 	vinfo.AffectedPackages = defPacks.toPackStatuses(r.Family, r.Packages)
 	vinfo.AffectedPackages.Sort()
 	r.ScannedCves[defPacks.def.Debian.CveID] = vinfo
@@ -107,11 +109,17 @@ func (o Debian) FillWithOval(r *models.ScanResult) (err error) {
 
 	//Debian's uname gives both of kernel release(uname -r), version(kernel-image version)
 	linuxImage := "linux-image-" + r.RunningKernel.Release
+
 	// Add linux and set the version of running kernel to search OVAL.
+	newVer := ""
+	if p, ok := r.Packages[linuxImage]; ok {
+		newVer = p.NewVersion
+	}
 	if r.Container.ContainerID == "" {
 		r.Packages["linux"] = models.Package{
-			Name:    "linux",
-			Version: r.RunningKernel.Version,
+			Name:       "linux",
+			Version:    r.RunningKernel.Version,
+			NewVersion: newVer,
 		}
 	}
 
@@ -129,10 +137,10 @@ func (o Debian) FillWithOval(r *models.ScanResult) (err error) {
 	delete(r.Packages, "linux")
 
 	for _, defPacks := range relatedDefs.entries {
-		// Remove linux added above to search for oval
+		// Remove "linux" added above for oval search
 		// linux is not a real package name (key of affected packages in OVAL)
-		if _, ok := defPacks.actuallyAffectedPackNames["linux"]; ok {
-			defPacks.actuallyAffectedPackNames[linuxImage] = true
+		if notFixedYet, ok := defPacks.actuallyAffectedPackNames["linux"]; ok {
+			defPacks.actuallyAffectedPackNames[linuxImage] = notFixedYet
 			delete(defPacks.actuallyAffectedPackNames, "linux")
 			for i, p := range defPacks.def.AffectedPacks {
 				if p.Name == "linux" {
@@ -141,6 +149,7 @@ func (o Debian) FillWithOval(r *models.ScanResult) (err error) {
 				}
 			}
 		}
+
 		o.update(r, defPacks)
 	}
 
@@ -240,7 +249,6 @@ func (o Ubuntu) FillWithOval(r *models.ScanResult) (err error) {
 	}
 
 	for _, defPacks := range relatedDefs.entries {
-
 		// Remove "linux" added above to search for oval
 		// "linux" is not a real package name (key of affected packages in OVAL)
 		if _, ok := defPacks.actuallyAffectedPackNames["linux"]; !found && ok {
@@ -253,6 +261,7 @@ func (o Ubuntu) FillWithOval(r *models.ScanResult) (err error) {
 				}
 			}
 		}
+
 		o.update(r, defPacks)
 	}
 
