@@ -61,6 +61,9 @@ type osPackages struct {
 	// installed packages
 	Packages models.Packages
 
+	// installed source packages (Debian based only)
+	SrcPackages models.SrcPackages
+
 	// unsecure packages
 	VulnInfos models.VulnInfos
 

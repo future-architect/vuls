@@ -47,7 +47,7 @@ func (o SUSE) FillWithOval(r *models.ScanResult) (err error) {
 			return err
 		}
 	} else {
-		if relatedDefs, err = getDefsByPackNameFromOvalDB(o.family, r.Release, r.Packages); err != nil {
+		if relatedDefs, err = getDefsByPackNameFromOvalDB(r); err != nil {
 			return err
 		}
 	}
@@ -93,7 +93,8 @@ func (o SUSE) update(r *models.ScanResult, defPacks defPacks) {
 
 	// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
 	for _, pack := range vinfo.AffectedPackages {
-		defPacks.actuallyAffectedPackNames[pack.Name] = true
+		notFixedYet, _ := defPacks.actuallyAffectedPackNames[pack.Name]
+		defPacks.actuallyAffectedPackNames[pack.Name] = notFixedYet
 	}
 	vinfo.AffectedPackages = defPacks.toPackStatuses(r.Family, r.Packages)
 	vinfo.AffectedPackages.Sort()
