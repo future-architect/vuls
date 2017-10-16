@@ -186,7 +186,6 @@ func (o *debian) checkDependencies() error {
 	}
 
 	for _, name := range packNames {
-		//TODO --show-format
 		cmd := "dpkg-query -W " + name
 		if r := o.exec(cmd, noSudo); !r.isSuccess() {
 			msg := fmt.Sprintf("%s is not installed", name)
@@ -216,12 +215,13 @@ func (o *debian) scanPackages() error {
 		RebootRequired: rebootRequired,
 	}
 
-	installed, updatable, err := o.scanInstalledPackages()
+	installed, updatable, srcPacks, err := o.scanInstalledPackages()
 	if err != nil {
 		o.log.Errorf("Failed to scan installed packages: %s", err)
 		return err
 	}
 	o.Packages = installed
+	o.SrcPackages = srcPacks
 
 	if config.Conf.Deep || o.Distro.Family == config.Raspbian {
 		unsecures, err := o.scanUnsecurePackages(updatable)
@@ -248,34 +248,72 @@ func (o *debian) rebootRequired() (bool, error) {
 	}
 }
 
-func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, error) {
-	installed, updatable := models.Packages{}, models.Packages{}
-	r := o.exec("dpkg-query -W", noSudo)
+func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, models.SrcPackages, error) {
+	installed, updatable, srcPacks := models.Packages{}, models.Packages{}, models.SrcPackages{}
+	r := o.exec(`dpkg-query -W -f='${binary:Package},${db:Status-Abbrev},${Version},${Source},${source:Version}\n'`, noSudo)
 	if !r.isSuccess() {
-		return nil, nil, fmt.Errorf("Failed to SSH: %s", r)
+		return nil, nil, nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 
-	//  e.g.
-	//  curl	7.19.7-40.el6_6.4
-	//  openldap	2.4.39-8.el6
+	// e.g.
+	// curl,ii ,7.38.0-4+deb8u2,,7.38.0-4+deb8u2
+	// openssh-server,ii ,1:6.7p1-5+deb8u3,openssh,1:6.7p1-5+deb8u3
+	// tar,ii ,1.27.1-2+b1,tar (1.27.1-2),1.27.1-2
 	lines := strings.Split(r.Stdout, "\n")
 	for _, line := range lines {
 		if trimmed := strings.TrimSpace(line); len(trimmed) != 0 {
-			name, version, err := o.parseScannedPackagesLine(trimmed)
+			name, status, version, srcName, srcVersion, err := o.parseScannedPackagesLine(trimmed)
 			if err != nil {
-				return nil, nil, fmt.Errorf(
+				return nil, nil, nil, fmt.Errorf(
 					"Debian: Failed to parse package line: %s", line)
+			}
+
+			packageStatus := status[1]
+			// Package status:
+			//     n = Not-installed
+			//     c = Config-files
+			//     H = Half-installed
+			//     U = Unpacked
+			//     F = Half-configured
+			//     W = Triggers-awaiting
+			//     t = Triggers-pending
+			//     i = Installed
+			if packageStatus != 'i' {
+				o.log.Debugf("%s package status is '%c', ignoring", name, packageStatus)
+				continue
 			}
 			installed[name] = models.Package{
 				Name:    name,
 				Version: version,
 			}
+
+			if srcName != "" && srcName != name {
+				if pack, ok := srcPacks[srcName]; ok {
+					pack.AddBinaryName(name)
+					srcPacks[srcName] = pack
+				} else {
+					srcPacks[srcName] = models.SrcPackage{
+						Name:        srcName,
+						Version:     srcVersion,
+						BinaryNames: []string{name},
+					}
+				}
+			}
 		}
+	}
+
+	// Remove "linux"
+	// kernel-related packages are showed "linux" as source package name
+	// If "linux" is left, oval detection will cause trouble, so delete.
+	delete(srcPacks, "linux")
+	// Remove duplicate
+	for name := range installed {
+		delete(srcPacks, name)
 	}
 
 	updatableNames, err := o.getUpdatablePackNames()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	for _, name := range updatableNames {
 		for _, pack := range installed {
@@ -289,28 +327,30 @@ func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, erro
 	// Fill the candidate versions of upgradable packages
 	err = o.fillCandidateVersion(updatable)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Failed to fill candidate versions. err: %s", err)
+		return nil, nil, nil, fmt.Errorf("Failed to fill candidate versions. err: %s", err)
 	}
 	installed.MergeNewVersion(updatable)
 
-	return installed, updatable, nil
+	return installed, updatable, srcPacks, nil
 }
 
-var packageLinePattern = regexp.MustCompile(`^([^\t']+)\t(.+)$`)
-
-func (o *debian) parseScannedPackagesLine(line string) (name, version string, err error) {
-	result := packageLinePattern.FindStringSubmatch(line)
-	if len(result) == 3 {
+func (o *debian) parseScannedPackagesLine(line string) (name, status, version, srcName, srcVersion string, err error) {
+	ss := strings.Split(line, ",")
+	if len(ss) == 5 {
 		// remove :amd64, i386...
-		name = result[1]
+		name = ss[0]
 		if i := strings.IndexRune(name, ':'); i >= 0 {
 			name = name[:i]
 		}
-		version = result[2]
+		status = ss[1]
+		version = ss[2]
+		// remove version. ex: tar (1.27.1-2)
+		srcName = strings.Split(ss[3], " ")[0]
+		srcVersion = ss[4]
 		return
 	}
 
-	return "", "", fmt.Errorf("Unknown format: %s", line)
+	return "", "", "", "", "", fmt.Errorf("Unknown format: %s", line)
 }
 
 func (o *debian) aptGetUpdate() error {

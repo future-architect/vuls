@@ -29,35 +29,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func TestParseScannedPackagesLineDebian(t *testing.T) {
-
-	var packagetests = []struct {
-		in      string
-		name    string
-		version string
-	}{
-		{"base-passwd	3.5.33", "base-passwd", "3.5.33"},
-		{"bzip2	1.0.6-5", "bzip2", "1.0.6-5"},
-		{"adduser	3.113+nmu3ubuntu3", "adduser", "3.113+nmu3ubuntu3"},
-		{"bash	4.3-7ubuntu1.5", "bash", "4.3-7ubuntu1.5"},
-		{"bsdutils	1:2.20.1-5.1ubuntu20.4", "bsdutils", "1:2.20.1-5.1ubuntu20.4"},
-		{"ca-certificates	20141019ubuntu0.14.04.1", "ca-certificates", "20141019ubuntu0.14.04.1"},
-		{"apt	1.0.1ubuntu2.8", "apt", "1.0.1ubuntu2.8"},
-	}
-
-	d := newDebian(config.ServerInfo{})
-	for _, tt := range packagetests {
-		n, v, _ := d.parseScannedPackagesLine(tt.in)
-		if n != tt.name {
-			t.Errorf("name: expected %s, actual %s", tt.name, n)
-		}
-		if v != tt.version {
-			t.Errorf("version: expected %s, actual %s", tt.version, v)
-		}
-	}
-
-}
-
 func TestGetCveIDsFromChangelog(t *testing.T) {
 
 	var tests = []struct {

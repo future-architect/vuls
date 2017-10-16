@@ -229,6 +229,9 @@ const (
 	// Oracle is Oracle Linux
 	Oracle CveContentType = "oracle"
 
+	// SUSE is SUSE Linux
+	SUSE CveContentType = "suse"
+
 	// Unknown is Unknown
 	Unknown CveContentType = "unknown"
 )

@@ -151,8 +151,13 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 				{"yum --color=never repolist", zero},
 				{"yum --color=never --security updateinfo list updates", zero},
 				{"yum --color=never --security updateinfo updates", zero},
+				{"yum --color=never -q ps all", zero},
 			}
 		}
+		if o.Distro.Family == config.RedHat {
+			cmds = append(cmds, cmd{"repoquery -h", zero})
+		}
+
 	case config.CentOS, config.Amazon:
 		cmds = []cmd{
 			{"yum --color=never -q ps all", zero},
@@ -286,14 +291,7 @@ func (o *redhat) scanInstalledPackages() (models.Packages, error) {
 	}
 
 	installed := models.Packages{}
-	var cmd string
-	majorVersion, _ := o.Distro.MajorVersion()
-	if majorVersion < 6 {
-		cmd = "rpm -qa --queryformat '%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n'"
-	} else {
-		cmd = "rpm -qa --queryformat '%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n'"
-	}
-	r := o.exec(cmd, noSudo)
+	r := o.exec(rpmQa(o.Distro), noSudo)
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Scan packages failed: %s", r)
 	}
@@ -310,14 +308,13 @@ func (o *redhat) scanInstalledPackages() (models.Packages, error) {
 			// Kernel package may be isntalled multiple versions.
 			// From the viewpoint of vulnerability detection,
 			// pay attention only to the running kernel
-			if pack.Name == "kernel" {
-				ver := fmt.Sprintf("%s-%s.%s", pack.Version, pack.Release, pack.Arch)
-				if o.Kernel.Release != ver {
-					o.log.Debugf("Not a running kernel: %s, uname: %s", ver, release)
+			isKernel, running := isRunningKernel(pack, o.Distro.Family, o.Kernel)
+			if isKernel {
+				if !running {
+					o.log.Debugf("Not a running kernel. pack: %#v, kernel: %#v", pack, o.Kernel)
 					continue
-				} else {
-					o.log.Debugf("Running kernel: %s, uname: %s", ver, release)
 				}
+				o.log.Debugf("Found a running kernel. pack: %#v, kernel: %#v", pack, o.Kernel)
 			}
 			installed[pack.Name] = pack
 		}
@@ -399,7 +396,7 @@ func (o *redhat) parseUpdatablePacksLine(line string) (models.Package, error) {
 		ver = fmt.Sprintf("%s:%s", epoch, fields[2])
 	}
 
-	repos := strings.Join(fields[4:len(fields)], " ")
+	repos := strings.Join(fields[4:], " ")
 
 	p := models.Package{
 		Name:       fields[0],
@@ -837,7 +834,7 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 				inDesctiption, inCves = true, false
 				ss := strings.Split(line, " : ")
 				advisory.Description += fmt.Sprintf("%s\n",
-					strings.Join(ss[1:len(ss)], " : "))
+					strings.Join(ss[1:], " : "))
 				continue
 			}
 
@@ -851,7 +848,7 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 			if inDesctiption {
 				if ss := strings.Split(line, ": "); 1 < len(ss) {
 					advisory.Description += fmt.Sprintf("%s\n",
-						strings.Join(ss[1:len(ss)], ": "))
+						strings.Join(ss[1:], ": "))
 				}
 				continue
 			}
@@ -859,7 +856,7 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 			if found := o.isCvesHeaderLine(line); found {
 				inCves = true
 				ss := strings.Split(line, "CVEs : ")
-				line = strings.Join(ss[1:len(ss)], " ")
+				line = strings.Join(ss[1:], " ")
 				cveIDs := o.parseYumUpdateinfoLineToGetCveIDs(line)
 				for _, cveID := range cveIDs {
 					cveIDsSetInThisSection[cveID] = true
@@ -1109,7 +1106,7 @@ func (o *redhat) parseYumPS(stdout string) models.Packages {
 					CPU:      fields[2],
 					RSS:      fields[3] + " " + fields[4],
 					State:    strings.TrimSuffix(fields[5], ":"),
-					Uptime:   strings.Join(fields[6:len(fields)], " "),
+					Uptime:   strings.Join(fields[6:], " "),
 				}
 				pack := packs[currentPackName]
 				pack.AffectedProcs = append(pack.AffectedProcs, proc)

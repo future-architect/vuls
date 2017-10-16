@@ -93,12 +93,7 @@ func formatShortPlainText(r models.ScanResult) string {
 			header, r.Errors)
 	}
 
-	vulns := r.ScannedCves
-	if config.Conf.IgnoreUnscoredCves {
-		vulns = vulns.FindScoredVulns()
-	}
-
-	if len(vulns) == 0 {
+	if len(r.ScannedCves) == 0 {
 		return fmt.Sprintf(`
 %s
 No CVE-IDs are found in updatable packages.
@@ -109,7 +104,7 @@ No CVE-IDs are found in updatable packages.
 	stable := uitable.New()
 	stable.MaxColWidth = maxColWidth
 	stable.Wrap = true
-	for _, vuln := range vulns.ToSortedSlice() {
+	for _, vuln := range r.ScannedCves.ToSortedSlice() {
 		summaries := vuln.Summaries(config.Conf.Lang, r.Family)
 		links := vuln.CveContents.SourceLinks(
 			config.Conf.Lang, r.Family, vuln.CveID)
@@ -167,12 +162,7 @@ func formatFullPlainText(r models.ScanResult) string {
 			header, r.Errors)
 	}
 
-	vulns := r.ScannedCves
-	if config.Conf.IgnoreUnscoredCves {
-		vulns = vulns.FindScoredVulns()
-	}
-
-	if len(vulns) == 0 {
+	if len(r.ScannedCves) == 0 {
 		return fmt.Sprintf(`
 %s
 No CVE-IDs are found in updatable packages.
@@ -183,7 +173,7 @@ No CVE-IDs are found in updatable packages.
 	table := uitable.New()
 	table.MaxColWidth = maxColWidth
 	table.Wrap = true
-	for _, vuln := range vulns.ToSortedSlice() {
+	for _, vuln := range r.ScannedCves.ToSortedSlice() {
 		table.AddRow(vuln.CveID)
 		table.AddRow("----------------")
 		table.AddRow("Max Score", vuln.FormatMaxCvssScore())

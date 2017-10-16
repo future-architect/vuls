@@ -546,6 +546,8 @@ func (v VulnInfo) VendorLinks(family string) map[string]string {
 		return links
 	case config.Debian:
 		links["Debian-CVE"] = "https://security-tracker.debian.org/tracker/" + v.CveID
+	case config.SUSEEnterpriseServer:
+		links["SUSE-CVE"] = "https://www.suse.com/security/cve/" + v.CveID
 	case config.FreeBSD:
 		for _, advisory := range v.DistroAdvisories {
 			links["FreeBSD-VuXML"] = fmt.Sprintf("https://vuxml.freebsd.org/freebsd/%s.html", advisory.AdvisoryID)

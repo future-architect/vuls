@@ -89,6 +89,10 @@ func FillCveInfos(rs []models.ScanResult, dir string) ([]models.ScanResult, erro
 	for _, r := range filled {
 		r = r.FilterByCvssOver(c.Conf.CvssScoreOver)
 		r = r.FilterIgnoreCves(c.Conf.Servers[r.ServerName].IgnoreCves)
+		r = r.FilterUnfixed()
+		if c.Conf.IgnoreUnscoredCves {
+			r.ScannedCves = r.ScannedCves.FindScoredVulns()
+		}
 		filtered = append(filtered, r)
 	}
 	return filtered, nil
@@ -181,6 +185,10 @@ func FillWithOval(r *models.ScanResult) (err error) {
 	case c.Oracle:
 		ovalClient = oval.NewOracle()
 		ovalFamily = c.Oracle
+	case c.SUSEEnterpriseServer:
+		// TODO other suse family
+		ovalClient = oval.NewSUSE()
+		ovalFamily = c.SUSEEnterpriseServer
 	case c.Amazon, c.Raspbian, c.FreeBSD, c.Windows:
 		return nil
 	default:

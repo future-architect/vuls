@@ -61,6 +61,9 @@ type osPackages struct {
 	// installed packages
 	Packages models.Packages
 
+	// installed source packages (Debian based only)
+	SrcPackages models.SrcPackages
+
 	// unsecure packages
 	VulnInfos models.VulnInfos
 
@@ -86,6 +89,11 @@ func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 
 	if itsMe, osType = detectRedhat(c); itsMe {
 		util.Log.Debugf("Redhat like Linux. Host: %s:%s", c.Host, c.Port)
+		return
+	}
+
+	if itsMe, osType = detectSUSE(c); itsMe {
+		util.Log.Debugf("SUSE Linux. Host: %s:%s", c.Host, c.Port)
 		return
 	}
 
