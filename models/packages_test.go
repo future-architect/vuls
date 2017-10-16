@@ -87,3 +87,49 @@ func TestMerge(t *testing.T) {
 		t.Errorf("expected %s, actual %s", e, a)
 	}
 }
+
+func TestAddBinaryName(t *testing.T) {
+	var tests = []struct {
+		in       SrcPackage
+		name     string
+		expected SrcPackage
+	}{
+		{
+			SrcPackage{Name: "hoge"},
+			"curl",
+			SrcPackage{
+				Name:        "hoge",
+				BinaryNames: []string{"curl"},
+			},
+		},
+		{
+			SrcPackage{
+				Name:        "hoge",
+				BinaryNames: []string{"curl"},
+			},
+			"curl",
+			SrcPackage{
+				Name:        "hoge",
+				BinaryNames: []string{"curl"},
+			},
+		},
+		{
+			SrcPackage{
+				Name:        "hoge",
+				BinaryNames: []string{"curl"},
+			},
+			"openssh",
+			SrcPackage{
+				Name:        "hoge",
+				BinaryNames: []string{"curl", "openssh"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt.in.AddBinaryName(tt.name)
+		if !reflect.DeepEqual(tt.in, tt.expected) {
+			t.Errorf("expected %#v, actual %#v", tt.in, tt.expected)
+		}
+	}
+}

@@ -46,8 +46,10 @@ type ScanResult struct {
 
 	RunningKernel Kernel
 	Packages      Packages
-	Errors        []string
-	Optional      [][]interface{}
+	SrcPackages   SrcPackages
+
+	Errors   []string
+	Optional [][]interface{}
 
 	Config struct {
 		Scan   config.Config

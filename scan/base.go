@@ -313,6 +313,7 @@ func (l *base) convertToModel() models.ScanResult {
 		ScannedCves:   l.VulnInfos,
 		RunningKernel: l.Kernel,
 		Packages:      l.Packages,
+		SrcPackages:   l.SrcPackages,
 		Optional:      l.ServerInfo.Optional,
 		Errors:        errs,
 	}

@@ -81,7 +81,7 @@ func (ps Packages) FindOne(f func(Package) bool) (string, Package, bool) {
 	return "", Package{}, false
 }
 
-// Package has installed packages.
+// Package has installed binary packages.
 type Package struct {
 	Name       string
 	Version    string
@@ -116,6 +116,8 @@ func (p Package) FormatVersionFromTo(notFixedYet bool) string {
 	to := p.FormatNewVer()
 	if notFixedYet {
 		to = "Not Fixed Yet"
+	} else if p.NewVersion == "" {
+		to = "Unknown"
 	}
 	return fmt.Sprintf("%s-%s -> %s", p.Name, p.FormatVer(), to)
 }
@@ -151,3 +153,31 @@ type Changelog struct {
 	Contents string
 	Method   DetectionMethod
 }
+
+// SrcPackage has installed source package information.
+// Debian based Linux has both of package and source information in dpkg.
+// OVAL database often includes a source version (Not a binary version),
+// so it is also needed to capture source version for OVAL version comparison.
+// https://github.com/future-architect/vuls/issues/504
+type SrcPackage struct {
+	Name        string
+	Version     string
+	BinaryNames []string
+}
+
+// AddBinaryName add the name if not exists
+func (s *SrcPackage) AddBinaryName(name string) {
+	found := false
+	for _, n := range s.BinaryNames {
+		if n == name {
+			return
+		}
+	}
+	if !found {
+		s.BinaryNames = append(s.BinaryNames, name)
+	}
+}
+
+// SrcPackages is Map of SrcPackage
+// { "package-name": SrcPackage }
+type SrcPackages map[string]SrcPackage

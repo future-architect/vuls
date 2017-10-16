@@ -385,7 +385,7 @@ func (o *redhat) parseUpdatablePacksLine(line string) (models.Package, error) {
 		ver = fmt.Sprintf("%s:%s", epoch, fields[2])
 	}
 
-	repos := strings.Join(fields[4:len(fields)], " ")
+	repos := strings.Join(fields[4:], " ")
 
 	p := models.Package{
 		Name:       fields[0],
@@ -816,7 +816,7 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 				inDesctiption, inCves = true, false
 				ss := strings.Split(line, " : ")
 				advisory.Description += fmt.Sprintf("%s\n",
-					strings.Join(ss[1:len(ss)], " : "))
+					strings.Join(ss[1:], " : "))
 				continue
 			}
 
@@ -830,7 +830,7 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 			if inDesctiption {
 				if ss := strings.Split(line, ": "); 1 < len(ss) {
 					advisory.Description += fmt.Sprintf("%s\n",
-						strings.Join(ss[1:len(ss)], ": "))
+						strings.Join(ss[1:], ": "))
 				}
 				continue
 			}
@@ -838,7 +838,7 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 			if found := o.isCvesHeaderLine(line); found {
 				inCves = true
 				ss := strings.Split(line, "CVEs : ")
-				line = strings.Join(ss[1:len(ss)], " ")
+				line = strings.Join(ss[1:], " ")
 				cveIDs := o.parseYumUpdateinfoLineToGetCveIDs(line)
 				for _, cveID := range cveIDs {
 					cveIDsSetInThisSection[cveID] = true
