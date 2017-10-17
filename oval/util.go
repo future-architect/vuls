@@ -88,17 +88,16 @@ type response struct {
 func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 	relatedDefs ovalResult, err error) {
 
-	reqChan := make(chan request, len(r.Packages))
-	resChan := make(chan response, len(r.Packages))
-	errChan := make(chan error, len(r.Packages))
+	nReq := len(r.Packages) + len(r.SrcPackages)
+	reqChan := make(chan request, nReq)
+	resChan := make(chan response, nReq)
+	errChan := make(chan error, nReq)
 	defer close(reqChan)
 	defer close(resChan)
 	defer close(errChan)
 
-	names := []string{}
 	go func() {
 		for _, pack := range r.Packages {
-			names = append(names, pack.Name)
 			reqChan <- request{
 				packName:          pack.Name,
 				versionRelease:    pack.FormatVer(),
@@ -106,7 +105,6 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 				isSrcPack:         false,
 			}
 			for _, pack := range r.SrcPackages {
-				names = append(names, pack.Name)
 				reqChan <- request{
 					packName:        pack.Name,
 					binaryPackNames: pack.BinaryNames,
@@ -120,7 +118,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 
 	concurrency := 10
 	tasks := util.GenWorkers(concurrency)
-	for range names {
+	for i := 0; i < nReq; i++ {
 		tasks <- func() {
 			select {
 			case req := <-reqChan:
@@ -143,7 +141,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 
 	timeout := time.After(2 * 60 * time.Second)
 	var errs []error
-	for range names {
+	for i := 0; i < nReq; i++ {
 		select {
 		case res := <-resChan:
 			for _, def := range res.defs {
