@@ -47,7 +47,8 @@ func FillCveInfos(rs []models.ScanResult, dir string) ([]models.ScanResult, erro
 	reportedAt := time.Now()
 	for _, r := range rs {
 		if c.Conf.RefreshCve || needToRefreshCve(r) {
-			if err := FillCveInfo(&r); err != nil {
+			cpeNames := c.Conf.Servers[r.ServerName].CpeNames
+			if err := FillCveInfo(&r, cpeNames); err != nil {
 				return nil, err
 			}
 			r.Lang = c.Conf.Lang
@@ -99,7 +100,7 @@ func FillCveInfos(rs []models.ScanResult, dir string) ([]models.ScanResult, erro
 }
 
 // FillCveInfo fill scanResult with cve info.
-func FillCveInfo(r *models.ScanResult) error {
+func FillCveInfo(r *models.ScanResult, cpeNames []string) error {
 	util.Log.Debugf("need to refresh")
 
 	util.Log.Infof("Fill CVE detailed information with OVAL")
@@ -108,7 +109,7 @@ func FillCveInfo(r *models.ScanResult) error {
 	}
 
 	util.Log.Infof("Fill CVE detailed information with CVE-DB")
-	if err := fillWithCveDB(r); err != nil {
+	if err := fillWithCveDB(r, cpeNames); err != nil {
 		return fmt.Errorf("Failed to fill CVE information: %s", err)
 	}
 
@@ -151,9 +152,8 @@ func fillCveDetail(r *models.ScanResult) error {
 	return nil
 }
 
-func fillWithCveDB(r *models.ScanResult) error {
-	sInfo := c.Conf.Servers[r.ServerName]
-	if err := fillVulnByCpeNames(sInfo.CpeNames, r.ScannedCves); err != nil {
+func fillWithCveDB(r *models.ScanResult, cpeNames []string) error {
+	if err := fillVulnByCpeNames(cpeNames, r.ScannedCves); err != nil {
 		return err
 	}
 	if err := fillCveDetail(r); err != nil {
