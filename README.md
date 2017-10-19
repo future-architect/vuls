@@ -167,7 +167,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 - Remote scan and Local scan
     - Remote Scan
         - User is required to only setup one machine that is connected to other target servers via SSH
-    - Local Scan 
+    - Local Scan
         - If you don't want the central Vuls server to connect to each server by SSH, you can use Vuls in the Local Scan mode.
 - **Dynamic** Analysis
     - It is possible to acquire the state of the server by connecting via SSH and executing the command
@@ -207,7 +207,7 @@ Tutorial shows how to setup vuls manually.
 
 # Tutorial
 
-To give you an idea of how easy Vuls is to use. 
+To give you an idea of how easy Vuls is to use.
 This tutorial consists of three steps.
 1. Tutorial: Local Scan Mode
       - Launch CentOS on AWS
@@ -591,15 +591,15 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 
 | Distribution|                             Scan Speed | Need Root Privilege |       OVAL | Need Internet Access <br>on scan tareget|
 |:------------|:--------------------------------------:|:-------------------:|:----------:|:---------------------------------------:|
-| CentOS      |                                   Fast |　                No |  Supported |                                      No | 
+| CentOS      |                                   Fast |　                No |  Supported |                                      No |
 | RHEL        |                                   Fast |　                No |  Supported |                                      No |
 | Oracle      |                                   Fast |　                No |  Supported |                                      No |
 | Ubuntu      |                                   Fast |　                No |  Supported |                                      No |
 | Debian      |                                   Fast |　                No |  Supported |                                      No |
 | Raspbian    |1st time: Slow <br> From 2nd time: Fast |                Need |         No |                                    Need |
 | FreeBSD     |                                   Fast |　                No |         No |                                    Need |
-| Amazon      |                                   Fast |　                No |         No |                                    Need | 
-| SUSE Enterprise |                               Fast |　                No |  Supported |                                      No| 
+| Amazon      |                                   Fast |　                No |         No |                                    Need |
+| SUSE Enterprise |                               Fast |　                No |  Supported |                                      No|
 
 
 ---------
@@ -609,7 +609,7 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 
 | Distribution|                            Scan Speed |       Need Root Privilege |      OVAL | Need Internet Access <br>on scan tareget|
 |:------------|:-------------------------------------:|:-------------------------:|:---------:|:---------------------------------------:|
-| CentOS      |                                  Slow |　                      No | Supported |                                    Need | 
+| CentOS      |                                  Slow |　                      No | Supported |                                    Need |
 | RHEL        |                                  Slow |　                    Need | Supported |                                    Need |
 | Oracle      |                                  Slow |　                    Need | Supported |                                    Need |
 | Ubuntu      |1st time: Slow <br> From 2nd time: Fast|                      Need | Supported |                                    Need |
@@ -617,7 +617,7 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 | Raspbian    |1st time: Slow <br> From 2nd time: Fast|                      Need |        No |                                    Need |
 | FreeBSD     |                                  Fast |　                      No |        No |                                    Need |
 | Amazon      |                                  Slow |　                      No |        No |                                    Need |
-| SUSE Enterprise |                               Fast |　                     No |  Supported |                                      No| 
+| SUSE Enterprise |                               Fast |　                     No |  Supported |                                      No|
 
 
 - On Ubuntu, Debian and Raspbian
@@ -900,7 +900,7 @@ The configtest subcommand checks whether vuls is able to connect via SSH to serv
 | Debian       |             7, 8, 9| reboot-notifier|
 | CentOS       |                6, 7| - |
 | Amazon       |                All | - |
-| RHEL         |            5, 6, 7 | - | 
+| RHEL         |            5, 6, 7 | - |
 | Oracle Linux |            5, 6, 7 | - |
 | SUSE Enterprise|            11, 12 | - |
 | FreeBSD      |             10, 11 | - |
@@ -1302,7 +1302,7 @@ CWE             https://cwe.mitre.org/data/definitions/190.html
 NVD             https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-5636
 MITRE           https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-5636
 CVE Details     http://www.cvedetails.com/cve/CVE-2016-5636
-CVSS Claculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-5636&vector=(AV:N/AC:L/...
+CVSS Calculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-5636&vector=(AV:N/AC:L/...
 RHEL-CVE        https://access.redhat.com/security/cve/CVE-2016-5636
 ALAS-2016-724   https://alas.aws.amazon.com/ALAS-2016-724.html
 Package         python27-2.7.10-4.119.amzn1 -> python27-2.7.12-2.120.amzn1
@@ -1352,7 +1352,7 @@ Confidence              100 / OvalMatch
 - `Max Score` means Max CVSS Score.
 - `nvd` shows [CVSS Vector](https://nvd.nist.gov/CVSS/Vector-v2.aspx) of  NVD
 - `redhat` shows [CVSS Vector](https://nvd.nist.gov/CVSS/Vector-v2.aspx) of RedHat OVAL
-- `jvn` shows [CVSS Vector](https://nvd.nist.gov/CVSS/Vector-v2.aspx) of JVN 
+- `jvn` shows [CVSS Vector](https://nvd.nist.gov/CVSS/Vector-v2.aspx) of JVN
 - `Summary` means Summary of the CVE.
 - `CWE` means [CWE - Common Weakness Enumeration](https://nvd.nist.gov/cwe.cfm) of the CVE.
 - `Package` shows the package version information including this vulnerability.
@@ -1366,7 +1366,7 @@ Confidence              100 / OvalMatch
   | OvalMatch              | 100                | CentOS, RHEL, Oracle, Ubuntu, Debian, SUSE |Detection using OVAL |
   | YumUpdateSecurityMatch | 100                |               RHEL, Amazon, Oracle |Detection using yum-plugin-security|
   | ChangelogExactMatch    | 95                 | CentOS, Ubuntu, Debian, Raspbian |Exact version match between changelog and package version|
-  | ChangelogLenientMatch  | 50                 |         Ubuntu, Debian, Raspbian |Lenient version match between changelog and package version| 
+  | ChangelogLenientMatch  | 50                 |         Ubuntu, Debian, Raspbian |Lenient version match between changelog and package version|
   | PkgAuditMatch          | 100                |                          FreeBSD |Detection using pkg audit|
   | CpeNameMatch           | 100                |                              All |Search for NVD information with CPE name specified in config.toml|
 
@@ -1552,7 +1552,7 @@ $ vuls report \
 
 ```
 $ vuls report \
-  -cvedb-type=redis -cvedb-url="redis://localhost/0" 
+  -cvedb-type=redis -cvedb-url="redis://localhost/0"
   -ovaldb-type=redis  -ovaldb-url="redis://localhost/1"
 ```
 
@@ -1631,7 +1631,7 @@ tui:
                 [-pipe]
 
   -cvedb-path string
-        /path/to/sqlite3 (For get cve detail from cve.sqlite3) 
+        /path/to/sqlite3 (For get cve detail from cve.sqlite3)
   -cvedb-type string
         DB type for fetching CVE dictionary (sqlite3, mysql or postgres) (default "sqlite3")
   -cvedb-url string
@@ -1659,7 +1659,7 @@ tui:
   -refresh-cve
         Refresh CVE information in JSON file under results dir
   -results-dir string
-        /path/to/results 
+        /path/to/results
 ```
 
 Key binding is below.
@@ -1859,7 +1859,7 @@ Please see [CHANGELOG](https://github.com/future-architect/vuls/blob/master/CHAN
 
 ----
 # Stargazers over time		
-		
+
 [![Stargazers over time](https://starcharts.herokuapp.com/future-architect/vuls.svg)](https://starcharts.herokuapp.com/future-architect/vuls)		
 
 -----
