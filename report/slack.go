@@ -27,6 +27,7 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/nlopes/slack"
 	"github.com/parnurzeal/gorequest"
 	log "github.com/sirupsen/logrus"
 )
@@ -36,31 +37,23 @@ type field struct {
 	Value string `json:"value"`
 	Short bool   `json:"short"`
 }
-type attachment struct {
-	Title     string   `json:"title"`
-	TitleLink string   `json:"title_link"`
-	Fallback  string   `json:"fallback"`
-	Text      string   `json:"text"`
-	Pretext   string   `json:"pretext"`
-	Color     string   `json:"color"`
-	Fields    []*field `json:"fields"`
-	MrkdwnIn  []string `json:"mrkdwn_in"`
-	Footer    string   `json:"footer"`
-}
+
 type message struct {
-	Text        string        `json:"text"`
-	Username    string        `json:"username"`
-	IconEmoji   string        `json:"icon_emoji"`
-	Channel     string        `json:"channel"`
-	Attachments []*attachment `json:"attachments"`
+	Text            string             `json:"text"`
+	Username        string             `json:"username"`
+	IconEmoji       string             `json:"icon_emoji"`
+	Channel         string             `json:"channel"`
+	ThreadTimeStamp string             `json:"thread_ts"`
+	Attachments     []slack.Attachment `json:"attachments"`
 }
 
 // SlackWriter send report to slack
 type SlackWriter struct{}
 
-func (w SlackWriter) Write(rs ...models.ScanResult) error {
+func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 	conf := config.Conf.Slack
 	channel := conf.Channel
+	token := conf.LegacyToken
 
 	for _, r := range rs {
 		if channel == "${servername}" {
@@ -78,7 +71,7 @@ func (w SlackWriter) Write(rs ...models.ScanResult) error {
 				IconEmoji: conf.IconEmoji,
 				Channel:   channel,
 			}
-			if err := send(msg); err != nil {
+			if err = send(msg); err != nil {
 				return err
 			}
 			continue
@@ -88,7 +81,7 @@ func (w SlackWriter) Write(rs ...models.ScanResult) error {
 		// Split into chunks with 100 elements
 		// https://api.slack.com/methods/chat.postMessage
 		maxAttachments := 100
-		m := map[int][]*attachment{}
+		m := map[int][]slack.Attachment{}
 		for i, a := range toSlackAttachments(r) {
 			m[i/maxAttachments] = append(m[i/maxAttachments], a)
 		}
@@ -98,20 +91,48 @@ func (w SlackWriter) Write(rs ...models.ScanResult) error {
 		}
 		sort.Ints(chunkKeys)
 
-		for i, k := range chunkKeys {
-			txt := ""
-			if i == 0 {
-				txt = msgText(r)
+		// Send slack by API
+		if 0 < len(token) {
+			api := slack.New(token)
+			ParentMsg := slack.PostMessageParameters{
+				//			Text:      msgText(r),
+				Username:  conf.AuthUser,
+				IconEmoji: conf.IconEmoji,
 			}
-			msg := message{
-				Text:        txt,
-				Username:    conf.AuthUser,
-				IconEmoji:   conf.IconEmoji,
-				Channel:     channel,
-				Attachments: m[k],
-			}
-			if err := send(msg); err != nil {
+
+			var ts string
+			if _, ts, err = api.PostMessage(channel, msgText(r), ParentMsg); err != nil {
 				return err
+			}
+
+			for _, k := range chunkKeys {
+				params := slack.PostMessageParameters{
+					//		Text:            msgText(r),
+					Username:        conf.AuthUser,
+					IconEmoji:       conf.IconEmoji,
+					Attachments:     m[k],
+					ThreadTimestamp: ts,
+				}
+				if _, _, err = api.PostMessage(channel, msgText(r), params); err != nil {
+					return err
+				}
+			}
+		} else {
+			for i, k := range chunkKeys {
+				txt := ""
+				if i == 0 {
+					txt = msgText(r)
+				}
+				msg := message{
+					Text:        txt,
+					Username:    conf.AuthUser,
+					IconEmoji:   conf.IconEmoji,
+					Channel:     channel,
+					Attachments: m[k],
+				}
+				if err = send(msg); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -164,7 +185,7 @@ func msgText(r models.ScanResult) string {
 		r.ScannedCves.FormatCveSummary())
 }
 
-func toSlackAttachments(r models.ScanResult) (attaches []*attachment) {
+func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 	vinfos := r.ScannedCves.ToSortedSlice()
 	for _, vinfo := range vinfos {
 		curent := []string{}
@@ -196,12 +217,12 @@ func toSlackAttachments(r models.ScanResult) (attaches []*attachment) {
 			new = append(new, "?")
 		}
 
-		a := attachment{
-			Title:     vinfo.CveID,
-			TitleLink: "https://nvd.nist.gov/vuln/detail/" + vinfo.CveID,
-			Text:      attachmentText(vinfo, r.Family),
-			MrkdwnIn:  []string{"text", "pretext"},
-			Fields: []*field{
+		a := slack.Attachment{
+			Title:      vinfo.CveID,
+			TitleLink:  "https://nvd.nist.gov/vuln/detail/" + vinfo.CveID,
+			Text:       attachmentText(vinfo, r.Family),
+			MarkdownIn: []string{"text", "pretext"},
+			Fields: []slack.AttachmentField{
 				{
 					// Title: "Current Package/CPE",
 					Title: "Installed",
@@ -216,7 +237,7 @@ func toSlackAttachments(r models.ScanResult) (attaches []*attachment) {
 			},
 			Color: color(vinfo.MaxCvssScore().Value.Score),
 		}
-		attaches = append(attaches, &a)
+		attaches = append(attaches, a)
 	}
 	return
 }

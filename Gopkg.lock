@@ -87,6 +87,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/hashicorp/uuid"
+  packages = ["."]
+  revision = "ebb0a03e909c9c642a36d2527729104324c44fdb"
+
+[[projects]]
+  branch = "master"
   name = "github.com/howeyc/gopass"
   packages = ["."]
   revision = "bf9dde6d0d2c004a008c27aaee91170c786f6db8"
@@ -199,6 +205,12 @@
   revision = "9ac6cf4d929b2fa8fd2d2e6dec5bb0feb4f4911d"
 
 [[projects]]
+  name = "github.com/nlopes/slack"
+  packages = ["."]
+  revision = "c86337c0ef2486a15edd804355d9c73d2f2caed1"
+  version = "v0.1.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/nsf/termbox-go"
   packages = ["."]
@@ -249,7 +261,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","idna","publicsuffix"]
+  packages = ["context","idna","publicsuffix","websocket"]
   revision = "0a9397675ba34b2845f758fe3cd68828369c6517"
 
 [[projects]]
@@ -267,6 +279,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "36d700add80d36c56484ed310b9a7e622b3e308ab22eb42bdfb02fd8f5c90407"
+  inputs-digest = "a1a930024748f9419c11b784649bc52492fb0b5a1c95c3dc4a36d52a688dcc48"
   solver-name = "gps-cdcl"
   solver-version = 1

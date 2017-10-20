@@ -117,10 +117,12 @@ subjectPrefix = "[vuls]"
 #]
 #dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"
 #ignoreCves = ["CVE-2014-6271"]
-#optional = [
-#    ["key", "value"],
-#]
-#containers = ["${running}"]
+#[default.containers]
+#type = "lxd" # or "docker"
+#includes = ["${running}"]
+#excludes = ["container_name", "container_id"]
+#[default.optional]
+#key = "value"
 
 
 [servers]
@@ -131,18 +133,18 @@ host         = "{{$ip}}"
 #port        = "22"
 #user        = "root"
 #keyPath     = "/home/username/.ssh/id_rsa"
+#Memo        = "DB Server"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
 #dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"
 #ignoreCves = ["CVE-2014-0160"]
-#optional = [
-#    ["key", "value"],
-#]
 #[servers.{{index $names $i}}.containers]
 #type = "docker" #or "lxd" default: docker
 #includes = ["${running}"]
 #excludes = ["container_name_a", "4aa37a8b63b9"]
+#[servers.{{index $names $i}}.optional]
+#key = "value1"
 
 
 {{end}}

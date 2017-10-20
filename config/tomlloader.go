@@ -41,7 +41,6 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		log.Error("Load config failed", err)
 		return err
 	}
-
 	Conf.EMail = conf.EMail
 	Conf.Slack = conf.Slack
 
@@ -126,8 +125,13 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		}
 
 		s.Containers = v.Containers
-		if len(s.Containers.Includes) == 0 {
+		if s.Containers != nil && len(s.Containers.Includes) == 0 {
 			s.Containers = d.Containers
+		}
+
+		s.Memo = v.Memo
+		if s.Memo == "" {
+			s.Memo = d.Memo
 		}
 
 		s.IgnoreCves = v.IgnoreCves
@@ -144,19 +148,14 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			}
 		}
 
-		s.Optional = v.Optional
-		for _, dkv := range d.Optional {
-			found := false
-			for _, kv := range s.Optional {
-				if dkv[0] == kv[0] {
-					found = true
-					break
-				}
-			}
-			if !found {
-				s.Optional = append(s.Optional, dkv)
-			}
+		opt := map[string]interface{}{}
+		for k, v := range d.Optional {
+			opt[k] = v
 		}
+		for k, v := range v.Optional {
+			opt[k] = v
+		}
+		s.Optional = opt
 
 		s.Enablerepo = v.Enablerepo
 		if len(s.Enablerepo) == 0 {
@@ -174,6 +173,8 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 				}
 			}
 		}
+
+		s.UUIDs = v.UUIDs
 
 		s.LogMsgAnsiColor = Colors[i%len(Colors)]
 		i++

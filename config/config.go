@@ -134,6 +134,7 @@ type Config struct {
 
 	Pipe bool
 	Diff bool
+	UUID bool
 }
 
 // ValidateOnConfigtest validates
@@ -315,17 +316,14 @@ func validateDB(dictionaryDBName, dbType, dbPath, dbURL string) error {
 
 // SMTPConf is smtp config
 type SMTPConf struct {
-	SMTPAddr string
-	SMTPPort string `valid:"port"`
-
-	User          string
-	Password      string `json:"-"`
-	From          string
-	To            []string
-	Cc            []string
-	SubjectPrefix string
-
-	UseThisTime bool
+	SMTPAddr      string   `toml:"smtpAddr,omitempty"`
+	SMTPPort      string   `toml:"smtpPort,omitempty" valid:"port"`
+	User          string   `toml:"user,omitempty"`
+	Password      string   `toml:"password,omitempty" json:"-"`
+	From          string   `toml:"from,omitempty"`
+	To            []string `toml:"to,omitempty"`
+	Cc            []string `toml:"cc,omitempty"`
+	SubjectPrefix string   `toml:"subjectPrefix,omitempty"`
 }
 
 func checkEmails(emails []string) (errs []error) {
@@ -342,11 +340,9 @@ func checkEmails(emails []string) (errs []error) {
 
 // Validate SMTP configuration
 func (c *SMTPConf) Validate() (errs []error) {
-
-	if !c.UseThisTime {
+	if c.SMTPAddr == "" {
 		return
 	}
-
 	// Check Emails fromat
 	emails := []string{}
 	emails = append(emails, c.From)
@@ -379,25 +375,18 @@ func (c *SMTPConf) Validate() (errs []error) {
 
 // SlackConf is slack config
 type SlackConf struct {
-	HookURL   string `valid:"url" json:"-"`
-	Channel   string `json:"channel"`
-	IconEmoji string `json:"icon_emoji"`
-	AuthUser  string `json:"username"`
-
-	NotifyUsers []string
-	Text        string `json:"text"`
-
-	UseThisTime bool
+	LegacyToken string   `json:"token" toml:"legacyToken,omitempty"`
+	HookURL     string   `valid:"url" json:"-" toml:"hookURL,omitempty"`
+	Channel     string   `json:"channel" toml:"channel,omitempty"`
+	IconEmoji   string   `json:"icon_emoji" toml:"iconEmoji,omitempty"`
+	AuthUser    string   `json:"username" toml:"authUser,omitempty"`
+	NotifyUsers []string `toml:"notifyUsers,omitempty"`
 }
 
 // Validate validates configuration
 func (c *SlackConf) Validate() (errs []error) {
-	if !c.UseThisTime {
-		return
-	}
-
-	if len(c.HookURL) == 0 {
-		errs = append(errs, fmt.Errorf("hookURL must not be empty"))
+	if c.HookURL == "" {
+		return nil
 	}
 
 	if len(c.Channel) == 0 {
@@ -424,31 +413,29 @@ func (c *SlackConf) Validate() (errs []error) {
 
 // ServerInfo has SSH Info, additional CPE packages to scan.
 type ServerInfo struct {
-	ServerName  string
-	User        string
-	Host        string
-	Port        string
-	KeyPath     string
-	KeyPassword string `json:"-"`
-
-	CpeNames               []string
-	DependencyCheckXMLPath string
-
-	// Container Names or IDs
-	Containers Containers
-
-	IgnoreCves []string
-
-	// Optional key-value set that will be outputted to JSON
-	Optional [][]interface{}
+	ServerName             string            `toml:"-"`
+	User                   string            `toml:"user,omitempty"`
+	Host                   string            `toml:"host,omitempty"`
+	Port                   string            `toml:"port,omitempty"`
+	KeyPath                string            `toml:"keyPath,omitempty"`
+	KeyPassword            string            `json:"-" toml:"-"`
+	CpeNames               []string          `toml:"cpeNames,omitempty"`
+	DependencyCheckXMLPath string            `toml:"dependencyCheckXMLPath,omitempty"`
+	IgnoreCves             []string          `toml:"ignoreCves,omitempty"`
+	Containers             *Containers       `toml:"containers,omitempty"`
+	UUIDs                  map[string]string `toml:"uuids,omitempty"`
+	Memo                   string            `toml:"memo,omitempty"`
 
 	// For CentOS, RHEL, Amazon
-	Enablerepo []string
+	Enablerepo []string `toml:",omitempty"`
+
+	// Optional key-value set that will be outputted to JSON
+	Optional map[string]interface{} `toml:",omitempty"`
 
 	// used internal
-	LogMsgAnsiColor string // DebugLog Color
-	Container       Container
-	Distro          Distro
+	LogMsgAnsiColor string    `toml:"-"` // DebugLog Color
+	Container       Container `toml:"-"`
+	Distro          Distro    `toml:"-"`
 }
 
 // GetServerName returns ServerName if this serverInfo is about host.
@@ -492,9 +479,9 @@ func (s *ServerInfo) SetContainer(d Container) {
 
 // Containers has Containers information.
 type Containers struct {
-	Type     string
-	Includes []string
-	Excludes []string
+	Type     string   `toml:"type,omitempty"`
+	Includes []string `toml:"includes,omitempty"`
+	Excludes []string `toml:"excludes,omitempty"`
 }
 
 // Container has Container information.

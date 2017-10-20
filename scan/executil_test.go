@@ -71,7 +71,7 @@ func TestDecorateCmd(t *testing.T) {
 			conf: config.ServerInfo{
 				User:       "root",
 				Container:  config.Container{ContainerID: "abc"},
-				Containers: config.Containers{Type: "docker"},
+				Containers: &config.Containers{Type: "docker"},
 			},
 			cmd:      "ls",
 			sudo:     false,
@@ -82,7 +82,7 @@ func TestDecorateCmd(t *testing.T) {
 			conf: config.ServerInfo{
 				User:       "root",
 				Container:  config.Container{ContainerID: "abc"},
-				Containers: config.Containers{Type: "docker"},
+				Containers: &config.Containers{Type: "docker"},
 			},
 			cmd:      "ls",
 			sudo:     true,
@@ -93,7 +93,7 @@ func TestDecorateCmd(t *testing.T) {
 			conf: config.ServerInfo{
 				User:       "non-root",
 				Container:  config.Container{ContainerID: "abc"},
-				Containers: config.Containers{Type: "docker"},
+				Containers: &config.Containers{Type: "docker"},
 			},
 			cmd:      "ls",
 			sudo:     false,
@@ -104,7 +104,7 @@ func TestDecorateCmd(t *testing.T) {
 			conf: config.ServerInfo{
 				User:       "non-root",
 				Container:  config.Container{ContainerID: "abc"},
-				Containers: config.Containers{Type: "docker"},
+				Containers: &config.Containers{Type: "docker"},
 			},
 			cmd:      "ls",
 			sudo:     true,
@@ -115,7 +115,7 @@ func TestDecorateCmd(t *testing.T) {
 			conf: config.ServerInfo{
 				User:       "non-root",
 				Container:  config.Container{ContainerID: "abc"},
-				Containers: config.Containers{Type: "docker"},
+				Containers: &config.Containers{Type: "docker"},
 			},
 			cmd:      "ls | grep hoge",
 			sudo:     true,
@@ -127,7 +127,7 @@ func TestDecorateCmd(t *testing.T) {
 			conf: config.ServerInfo{
 				User:       "root",
 				Container:  config.Container{ContainerID: "abc", Name: "def"},
-				Containers: config.Containers{Type: "lxd"},
+				Containers: &config.Containers{Type: "lxd"},
 			},
 			cmd:      "ls",
 			sudo:     false,
@@ -138,7 +138,7 @@ func TestDecorateCmd(t *testing.T) {
 			conf: config.ServerInfo{
 				User:       "root",
 				Container:  config.Container{ContainerID: "abc", Name: "def"},
-				Containers: config.Containers{Type: "lxd"},
+				Containers: &config.Containers{Type: "lxd"},
 			},
 			cmd:      "ls",
 			sudo:     true,
@@ -149,7 +149,7 @@ func TestDecorateCmd(t *testing.T) {
 			conf: config.ServerInfo{
 				User:       "non-root",
 				Container:  config.Container{ContainerID: "abc", Name: "def"},
-				Containers: config.Containers{Type: "lxd"},
+				Containers: &config.Containers{Type: "lxd"},
 			},
 			cmd:      "ls",
 			sudo:     false,
@@ -160,7 +160,7 @@ func TestDecorateCmd(t *testing.T) {
 			conf: config.ServerInfo{
 				User:       "non-root",
 				Container:  config.Container{ContainerID: "abc", Name: "def"},
-				Containers: config.Containers{Type: "lxd"},
+				Containers: &config.Containers{Type: "lxd"},
 			},
 			cmd:      "ls",
 			sudo:     true,
@@ -171,7 +171,7 @@ func TestDecorateCmd(t *testing.T) {
 			conf: config.ServerInfo{
 				User:       "non-root",
 				Container:  config.Container{ContainerID: "abc", Name: "def"},
-				Containers: config.Containers{Type: "lxd"},
+				Containers: &config.Containers{Type: "lxd"},
 			},
 			cmd:      "ls | grep hoge",
 			sudo:     true,

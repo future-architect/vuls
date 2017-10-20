@@ -155,10 +155,11 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 - Fast scan and Deep scan
     - Fast Scan
         - Scan without root privilege
-        - Scan with No internet access. (RedHat, CentOS, OracleLinux, Ubuntu, Debian)
+        - Scan with No internet access. (RedHat, CentOS, OracleLinux, Ubuntu and Debian)
         - Almost no load on the scan target server
     - Deep Scan
         - Scan with root privilege
+		- Detect processes affected by update using yum-ps (RedHat, CentOS, OracleLinux and Amazon Linux)
         - Parses the Changelog  
             Changelog has a history of version changes. When a security issue is fixed, the relevant CVE ID is listed.
             By parsing the changelog and analysing the updates between the installed version of software on the server and the newest version of that software
@@ -620,6 +621,7 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 | SUSE Enterprise |                               Fast |　                     No |  Supported |                                      No| 
 
 
+#### Changelog
 - On Ubuntu, Debian and Raspbian
 Vuls issues `apt-get changelog` for each upgradable packages and parse the changelog.  
 `apt-get changelog` is slow and resource usage is heavy when there are many updatable packages on target server.   
@@ -634,6 +636,10 @@ Detect CVE IDs by using package manager.
 
 - On SUSE Enterprise Linux
 Same as fast scan mode for now.
+
+#### Detect processes affected by update using yum-ps
+- RedHat, CentOS, OracleLinux and Amazon Linux
+It is possible to know processes affecting software update in advance.
 
 ----
 
@@ -801,13 +807,17 @@ You can customize your configuration using this template.
     #port        = "22"
     #user        = "username"
     #keyPath     = "/home/username/.ssh/id_rsa"
+    #Memo        = "DB Server" 
     #cpeNames = [
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
     #ignoreCves = ["CVE-2016-6313"]
-    #optional = [
-    #    ["key", "value"],
-    #]
+    #[default.containers]
+    #type = "lxd" # or "docker"
+    #includes = ["${running}"]
+    #excludes = ["container_name", "container_id"]
+    #[default.optional]
+    #key = "value"
     ```
     Items of the default section will be used if not specified.
 
@@ -824,13 +834,12 @@ You can customize your configuration using this template.
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
     #ignoreCves = ["CVE-2016-6314"]
-    #optional = [
-    #    ["key", "value"],
-    #]
     #[servers.172-31-4-82.containers]
     #type = "lxd" # or "docker"
     #includes = ["${running}"]
     #excludes = ["container_name", "container_id"]
+    #[servers.172-31-4-82.optional]
+    #key = "value"
     ```
 
     You can overwrite the default value specified in default section.  
@@ -842,7 +851,7 @@ You can customize your configuration using this template.
     - cpeNames: see [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerability-of-non-os-package)
     - ignoreCves: CVE IDs that will not be reported. But output to JSON file.
     - optional: Add additional information to JSON report.
-    - containers: see [Example: Scan containers (Docker/LXD)(#example-scan-containers-dockerlxd)
+    - containers: see [Example: Scan containers (Docker/LXD)](#example-scan-containers-dockerlxd)
 
     Vuls supports two types of SSH. One is external command. The other is native go implementation. For details, see [-ssh-native-insecure option](#-ssh-native-insecure-option)
 
@@ -892,7 +901,7 @@ configtest:
 
 The configtest subcommand checks whether vuls is able to connect via SSH to servers/containers defined in the config.toml
 
-  ## Fast Scan Mode
+## Fast Scan Mode
 
 | Distribution |            Release | Requirements |
 |:-------------|-------------------:|:-------------|
@@ -919,12 +928,12 @@ In order to scan with deep scan mode, the following dependencies are required, s
 |:-------------|-------------------:|:-------------|
 | Ubuntu       |          12, 14, 16| -            |
 | Debian       |             7, 8, 9| aptitude, reboot-notifier     |
-| CentOS       |                6, 7| yum-plugin-changelog, yum-utils |
-| Amazon       |                All | yum-plugin-changelog, yum-utils |
+| CentOS       |                6, 7| yum-plugin-changelog, yum-utils, yum-plugin-ps |
+| Amazon       |                All | yum-plugin-changelog, yum-utils, yum-plugin-ps  |
 | RHEL         |                  5 | yum-utils, yum-security, yum-changelog |
-| RHEL         |               6, 7 | yum-utils, yum-plugin-changelog |
+| RHEL         |               6, 7 | yum-utils, yum-plugin-changelog, yum-plugin-ps  |
 | Oracle Linux |                  5 | yum-utils, yum-security, yum-changelog |
-| Oracle Linux |               6, 7 | yum-utils, yum-plugin-changelog |
+| Oracle Linux |               6, 7 | yum-utils, yum-plugin-changelog, yum-plugin-ps  |
 | SUSE Enterprise|            11, 12 | - |
 | FreeBSD      |                 10 | -            |
 | Raspbian     |     Wheezy, Jessie | -            |
@@ -945,7 +954,15 @@ Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 
 - RHEL 6, 7 / Oracle Linux 6, 7
 ```
-vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never --security updateinfo list updates, /usr/bin/yum --color=never --security updateinfo updates, /usr/bin/repoquery
+vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never --security updateinfo list updates, /usr/bin/yum --color=never --security updateinfo updates, /usr/bin/yum --color=never -q ps all
+Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
+```
+
+- Amazon Linux, CentOS
+```
+vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never -q ps all
+=======
+vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never --security updateinfo list updates, /usr/bin/yum --color=never --security updateinfo updates, /usr/bin/repoquery, /usr/bin/yum --color=never -q ps all
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 ```
 
@@ -955,7 +972,7 @@ vuls ALL=(ALL) NOPASSWD: /usr/bin/apt-get update
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 ```
 
-- On CentOS, Amazon Linux, SUSE Enterprise, FreeBSD, it is possible to scan without root privilege for now.
+- On FreeBSD, it is possible to scan without root privilege for now.
 
 ----
 
@@ -1198,6 +1215,7 @@ report:
                 [-debug]
                 [-debug-sql]
                 [-pipe]
+                [-pipe]
 
 		[RFC3339 datetime format under results dir]
 
@@ -1277,6 +1295,8 @@ report:
         Write report to S3 (bucket/dir/yyyyMMdd_HHmm/servername.json/xml/txt)
   -to-slack
         Send report via Slack
+  -uuid
+        Auto generate of scan target servers and then write to config.toml and scan result
 ```
 
 ## How to read a report
@@ -1457,7 +1477,7 @@ $ vuls scan \
 
 ## Example: IgnoreCves
 
-Define ignoreCves in config if you don't want to report(Slack, EMail, Text...) specific CVE IDs. But these ignoreCves will be output to JSON file like below.
+Define ignoreCves in config if you don't want to report(Slack, EMail, Text...) specific CVE IDs. 
 
 - config.toml
 ```toml
@@ -1470,28 +1490,6 @@ user     = "kanbe"
 ignoreCves = ["CVE-2016-6314"]
 ```
 
-- bsd.json
-```json
-[
-  {
-    "ServerName": "bsd",
-    "Family": "FreeBSD",
-    "Release": "10.3-RELEASE",
-    "IgnoredCves" : [
-      "CveDetail" : {
-        "CVE-2016-6313",
-        ...
-      },
-      "CveDetail" : {
-        "CVE-2016-6314",
-        ...
-      }
-    ]
-  }
-]
-```
-
-
 ## Example: Add optional key-value pairs to JSON
 
 Optional key-value can be outputted to JSON.  
@@ -1501,18 +1499,16 @@ For instance, you can use this field for Azure ResourceGroup name, Azure VM Name
 - config.toml
 ```toml
 [default]
-optional = [
-	["key1", "default_value"],
-	["key3", "val3"],
-]
+[default.optional]
+key1 = "default_value"
+key3 = val3
 
 [servers.bsd]
 host     = "192.168.11.11"
 user     = "kanbe"
-optional = [
-	["key1", "val1"],
-	["key2", "val2"],
-]
+[servers.bsd.optional]
+key1 = "val1"
+key2 = "val2"
 ```
 
 - bsd.json
@@ -1523,11 +1519,11 @@ optional = [
     "Family": "FreeBSD",
     "Release": "10.3-RELEASE",
     .... snip ...
-    "Optional": [
-      [  "key1", "val1" ],
-      [  "key2", "val2" ],
-      [  "key3", "val3" ]
-    ]
+    "Optional": {
+      "key1": "val1" ,
+      "key2": "val2" ,
+      "key3": "val3" 
+    }
   }
 ]
 ```

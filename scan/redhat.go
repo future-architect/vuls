@@ -121,7 +121,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 }
 
 func (o *redhat) checkIfSudoNoPasswd() error {
-	if !config.Conf.Deep || !o.sudo() {
+	if !config.Conf.Deep {
 		o.log.Infof("sudo ... No need")
 		return nil
 	}
@@ -151,11 +151,16 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 				{"yum --color=never repolist", zero},
 				{"yum --color=never --security updateinfo list updates", zero},
 				{"yum --color=never --security updateinfo updates", zero},
+				{"yum --color=never -q ps all", zero},
 			}
 		}
-
 		if o.Distro.Family == config.RedHat {
 			cmds = append(cmds, cmd{"repoquery -h", zero})
+		}
+
+	case config.CentOS, config.Amazon:
+		cmds = []cmd{
+			{"yum --color=never -q ps all", zero},
 		}
 	}
 
@@ -176,10 +181,10 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 //    No additional dependencies needed
 //
 // - Deep scan mode
-//    CentOS 6, 7 	... yum-utils
-//    RHEL 5     	... yum-security, yum-changelog
-//    RHEL 6, 7     ... yum-utils, yum-plugin-changelog
-//    Amazon 		... yum-utils
+//    RHEL 5     	... yum-utils, yum-security, yum-changelog
+//    RHEL 6, 7     ... yum-utils, yum-plugin-ps, yum-plugin-changelog
+//    CentOS 6, 7 	... yum-utils, yum-plugin-ps, yum-plugin-changelog
+//    Amazon 		... yum-utils, yum-plugin-ps, yum-plugin-changelog
 func (o *redhat) checkDependencies() error {
 	majorVersion, err := o.Distro.MajorVersion()
 	if err != nil {
@@ -200,12 +205,18 @@ func (o *redhat) checkDependencies() error {
 	if config.Conf.Deep {
 		switch o.Distro.Family {
 		case config.CentOS, config.Amazon:
-			packNames = append(packNames, "yum-plugin-changelog")
+			packNames = append(packNames,
+				"yum-plugin-changelog",
+				"yum-plugin-ps",
+			)
 		case config.RedHat, config.Oracle:
 			if majorVersion < 6 {
 				packNames = append(packNames, "yum-security", "yum-changelog")
 			} else {
-				packNames = append(packNames, "yum-plugin-changelog")
+				packNames = append(packNames,
+					"yum-plugin-changelog",
+					"yum-plugin-ps",
+				)
 			}
 		default:
 			return fmt.Errorf("Not implemented yet: %s", o.Distro)
@@ -398,7 +409,16 @@ func (o *redhat) parseUpdatablePacksLine(line string) (models.Package, error) {
 
 func (o *redhat) scanUnsecurePackages(updatable models.Packages) (models.VulnInfos, error) {
 	if config.Conf.Deep {
-		//TODO Cache changelogs to bolt
+		packs, err := o.yumPS()
+		if err != nil {
+			return nil, err
+		}
+		for name, pack := range packs {
+			p := o.Packages[name]
+			p.AffectedProcs = pack.AffectedProcs
+			o.Packages[name] = p
+		}
+
 		if err := o.fillChangelogs(updatable); err != nil {
 			return nil, err
 		}
@@ -517,11 +537,9 @@ func (o *redhat) fillDiffChangelogs(packNames []string) error {
 			if index := strings.Index(p.NewVersion, ":"); 0 < index {
 				epoch := p.NewVersion[0:index]
 				ver := p.NewVersion[index+1 : len(p.NewVersion)]
-				epochNameVerRel = fmt.Sprintf("%s:%s-%s",
-					epoch, p.Name, ver)
+				epochNameVerRel = fmt.Sprintf("%s:%s-%s", epoch, p.Name, ver)
 			} else {
-				epochNameVerRel = fmt.Sprintf("%s-%s",
-					p.Name, p.NewVersion)
+				epochNameVerRel = fmt.Sprintf("%s-%s", p.Name, p.NewVersion)
 			}
 			return strings.HasPrefix(s, epochNameVerRel)
 		})
@@ -1026,11 +1044,78 @@ func (o *redhat) clone() osTypeInterface {
 }
 
 func (o *redhat) sudo() bool {
-	switch o.Distro.Family {
-	case config.Amazon, config.CentOS:
-		return false
-	default:
-		// RHEL, Oracle
-		return config.Conf.Deep
+	return config.Conf.Deep
+}
+
+func (o *redhat) yumPS() (models.Packages, error) {
+	cmd := "LANGUAGE=en_US.UTF-8 yum --color=never -q ps all"
+	r := o.exec(util.PrependProxyEnv(cmd), sudo)
+	if !r.isSuccess() {
+		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
+	return o.parseYumPS(r.Stdout), nil
+}
+
+func (o *redhat) parseYumPS(stdout string) models.Packages {
+	packs := models.Packages{}
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	isPackageLine, needToParseProcline := false, false
+	currentPackName := ""
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Fields(line)
+		if len(fields) == 0 ||
+			len(fields) == 1 && fields[0] == "ps" ||
+			len(fields) == 6 && fields[0] == "pid" {
+			continue
+		}
+
+		isPackageLine = !strings.HasPrefix(line, " ")
+		if isPackageLine {
+			if 1 < len(fields) && fields[1] == "Upgrade" {
+				needToParseProcline = true
+
+				// Search o.Packages to divide into name, version, release
+				name, pack, found := o.Packages.FindOne(func(p models.Package) bool {
+					var epochNameVerRel string
+					if index := strings.Index(p.Version, ":"); 0 < index {
+						epoch := p.Version[0:index]
+						ver := p.Version[index+1 : len(p.Version)]
+						epochNameVerRel = fmt.Sprintf("%s:%s-%s-%s.%s",
+							epoch, p.Name, ver, p.Release, p.Arch)
+					} else {
+						epochNameVerRel = fmt.Sprintf("%s-%s-%s.%s",
+							p.Name, p.Version, p.Release, p.Arch)
+					}
+					return strings.HasPrefix(fields[0], epochNameVerRel)
+				})
+				if !found {
+					o.log.Errorf("`yum ps` Package is not found: %s", line)
+					continue
+				}
+				packs[name] = pack
+				currentPackName = name
+			} else {
+				needToParseProcline = false
+			}
+		} else if needToParseProcline {
+			if 6 < len(fields) {
+				proc := models.AffectedProc{
+					PID:      fields[0],
+					ProcName: fields[1],
+					CPU:      fields[2],
+					RSS:      fields[3] + " " + fields[4],
+					State:    strings.TrimSuffix(fields[5], ":"),
+					Uptime:   strings.Join(fields[6:], " "),
+				}
+				pack := packs[currentPackName]
+				pack.AffectedProcs = append(pack.AffectedProcs, proc)
+				packs[currentPackName] = pack
+			} else {
+				o.log.Errorf("`yum ps` Unknown Format: %s", line)
+				continue
+			}
+		}
+	}
+	return packs
 }

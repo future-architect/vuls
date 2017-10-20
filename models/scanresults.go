@@ -30,27 +30,26 @@ type ScanResults []ScanResult
 
 // ScanResult has the result of scanned CVE information.
 type ScanResult struct {
+	JSONVersion int
 	ScannedAt   time.Time
 	ReportedAt  time.Time
-	JSONVersion int
 	Lang        string
-	ServerUUID  string
-	ServerName  string // TOML Section key
-	Family      string
-	Release     string
-	Container   Container
 	Platform    Platform
 
-	// Scanned Vulns by SSH scan + CPE + OVAL
-	ScannedCves VulnInfos
+	ServerUUID string
+	ServerName string // TOML Section key
+	Family     string
+	Release    string
 
+	Container Container
+
+	ScannedCves   VulnInfos
 	RunningKernel Kernel
 	Packages      Packages
+	Optional      map[string]interface{}
 	SrcPackages   SrcPackages
 
-	Errors   []string
-	Optional [][]interface{}
-
+	Errors []string
 	Config struct {
 		Scan   config.Config
 		Report config.Config
@@ -191,12 +190,18 @@ func (r ScanResult) FormatTextReportHeadedr() string {
 	)
 }
 
+// IsContainer returns whether this ServerInfo is about container
+func (r ScanResult) IsContainer() bool {
+	return 0 < len(r.Container.ContainerID)
+}
+
 // Container has Container information
 type Container struct {
 	ContainerID string
 	Name        string
 	Image       string
 	Type        string
+	UUID        string
 }
 
 // Platform has platform information

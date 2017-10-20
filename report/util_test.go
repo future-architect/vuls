@@ -196,7 +196,7 @@ func TestDiff(t *testing.T) {
 					},
 					Packages: models.Packages{},
 					Errors:   []string{},
-					Optional: [][]interface{}{},
+					Optional: map[string]interface{}{},
 				},
 			},
 			inPrevious: models.ScanResults{
@@ -221,7 +221,7 @@ func TestDiff(t *testing.T) {
 					},
 					Packages: models.Packages{},
 					Errors:   []string{},
-					Optional: [][]interface{}{},
+					Optional: map[string]interface{}{},
 				},
 			},
 			out: models.ScanResult{
@@ -232,7 +232,7 @@ func TestDiff(t *testing.T) {
 				Packages:    models.Packages{},
 				ScannedCves: models.VulnInfos{},
 				Errors:      []string{},
-				Optional:    [][]interface{}{},
+				Optional:    map[string]interface{}{},
 			},
 		},
 		{
