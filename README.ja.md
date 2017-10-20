@@ -740,6 +740,7 @@ host         = "172.31.4.82"
     ```
     [slack]
     hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
+    #legacyToken  = "xoxp-11111111111-222222222222-3333333333"
     channel      = "#channel-name"
     #channel      = "${servername}"
     iconEmoji    = ":ghost:"
@@ -747,10 +748,12 @@ host         = "172.31.4.82"
     notifyUsers  = ["@username"]
     ```
 
-    - hookURL : Incoming webhook's URL  
+    - hookURL : Incoming webhook's URL (legacyTokenが設定されている場合、hookURLは無視される。)
+    - legacyToken : slack legacy token (https://api.slack.com/custom-integrations/legacy-tokens)
     - channel : channel name.  
     channelに`${servername}`を指定すると、結果レポートをサーバごとに別チャネルにすることが出来る。
     以下のサンプルでは、`#server1`チャネルと`#server2`チャネルに送信される。スキャン前にチャネルを作成する必要がある。
+    **legacyTokenが設定されている場合、channelは実在するchannelでなければならない。**
       ```
       [slack]
       channel      = "${servername}"

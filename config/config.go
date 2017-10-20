@@ -375,6 +375,7 @@ func (c *SMTPConf) Validate() (errs []error) {
 
 // SlackConf is slack config
 type SlackConf struct {
+	LegacyToken string   `json:"token" toml:"legacyToken,omitempty"`
 	HookURL     string   `valid:"url" json:"-" toml:"hookURL,omitempty"`
 	Channel     string   `json:"channel" toml:"channel,omitempty"`
 	IconEmoji   string   `json:"icon_emoji" toml:"iconEmoji,omitempty"`
