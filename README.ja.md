@@ -1289,7 +1289,7 @@ CWE             https://cwe.mitre.org/data/definitions/190.html
 NVD             https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-5636
 MITRE           https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-5636
 CVE Details     http://www.cvedetails.com/cve/CVE-2016-5636
-CVSS Claculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-5636&vector=(AV:N/AC:L/...
+CVSS Calculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-5636&vector=(AV:N/AC:L/...
 RHEL-CVE        https://access.redhat.com/security/cve/CVE-2016-5636
 ALAS-2016-724   https://alas.aws.amazon.com/ALAS-2016-724.html
 Package         python27-2.7.10-4.119.amzn1 -> python27-2.7.12-2.120.amzn1
