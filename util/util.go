@@ -109,7 +109,7 @@ func ProxyEnv() string {
 	return httpProxyEnv
 }
 
-// PrependProxyEnv prepends proxy enviroment variable
+// PrependProxyEnv prepends proxy environment variable
 func PrependProxyEnv(cmd string) string {
 	if len(config.Conf.HTTPProxy) == 0 {
 		return cmd
