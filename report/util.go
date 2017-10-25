@@ -288,7 +288,7 @@ func loadPrevious(current models.ScanResults) (previous models.ScanResults, err 
 			}
 			if r.Family == result.Family && r.Release == result.Release {
 				previous = append(previous, *r)
-				util.Log.Infof("Privious json found: %s", path)
+				util.Log.Infof("Previous json found: %s", path)
 				break
 			}
 		}
