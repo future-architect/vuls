@@ -676,6 +676,7 @@ $ vuls discover 172.31.4.0/24
 
 [slack]
 hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
+#legacyToken  = "xoxp-11111111111-222222222222-3333333333"
 channel      = "#channel-name"
 #channel      = "${servername}"
 iconEmoji    = ":ghost:"
@@ -740,8 +741,17 @@ host         = "172.31.4.82"
     notifyUsers  = ["@username"]
     ```
 
-    - hookURL : Incoming webhook's URL (legacyTokenが設定されている場合、hookURLは無視される。)
-    - legacyToken : slack legacy token (https://api.slack.com/custom-integrations/legacy-tokens)
+    - hookURL or legacyToken  
+    どちらか一方を指定する。  
+    もし脆弱性が沢山有る場合はlegacyTokenの利用をおすすめする。legacyTokenはSlackのスレッド形式でポストされる。  
+    スキャンサーバ単位で集約されるのでSlack通知が氾濫しない。
+
+      - hookURL : Incoming webhook's URL (legacyTokenが設定されている場合、hookURLは無視される。)
+      ![Vuls-slack](img/vuls-slack-en.png)
+
+      - legacyToken : slack legacy token (https://api.slack.com/custom-integrations/legacy-tokens)  
+      ![Vuls-slack-thread](https://user-images.githubusercontent.com/8997330/31842418-02b703f2-b629-11e7-8ec3-beda5d3a397e.png)
+
     - channel : channel name.  
     channelに`${servername}`を指定すると、結果レポートをサーバごとに別チャネルにすることが出来る。
     以下のサンプルでは、`#server1`チャネルと`#server2`チャネルに送信される。スキャン前にチャネルを作成する必要がある。

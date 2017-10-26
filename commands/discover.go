@@ -92,6 +92,7 @@ func printConfigToml(ips []string) (err error) {
 	const tomlTemplate = `
 [slack]
 hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
+#legacyToken  = "xoxp-11111111111-222222222222-3333333333"
 channel      = "#channel-name"
 #channel      = "${servername}"
 iconEmoji    = ":ghost:"

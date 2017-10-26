@@ -690,6 +690,7 @@ $ vuls discover 172.31.4.0/24
 
 [slack]
 hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
+#legacyToken  = "xoxp-11111111111-222222222222-3333333333"
 channel      = "#channel-name"
 #channel      = "${servername}"
 iconEmoji    = ":ghost:"
@@ -756,13 +757,19 @@ You can customize your configuration using this template.
     notifyUsers  = ["@username"]
     ```
 
-    - hookURL : Incoming webhook's URL (hookURL is ignored when legacyToken is set.)
-    - legacyToken : slack legacy token (https://api.slack.com/custom-integrations/legacy-tokens)
+    - hookURL or legacyToken.  
+    If there are a lot of vulnerabilities, it is better to use legacyToken since the Slack notification will be flooded.
+
+      - hookURL : Incoming webhook's URL (hookURL is ignored when legacyToken is set.)  
+      ![Vuls-slack](img/vuls-slack-en.png)
+
+      - legacyToken : slack legacy token (https://api.slack.com/custom-integrations/legacy-tokens)  
+      ![Vuls-slack-thread](https://user-images.githubusercontent.com/8997330/31842418-02b703f2-b629-11e7-8ec3-beda5d3a397e.png)
+
     - channel : channel name. 
     If you set `${servername}` to channel, the report will be sent to each channel.  
     In the following example, the report will be sent to the `#server1` and `#server2`.  
     Be sure to create these channels before scanning.
-    **if legacyToken is set, you must set up an existing channel**
       ```
       [slack]
       channel      = "${servername}"
