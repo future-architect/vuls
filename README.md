@@ -748,6 +748,7 @@ You can customize your configuration using this template.
     ```
     [slack]
     hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
+    #legacyToken  = "xoxp-11111111111-222222222222-3333333333"
     channel      = "#channel-name"
     #channel      = "${servername}"
     iconEmoji    = ":ghost:"
@@ -755,11 +756,13 @@ You can customize your configuration using this template.
     notifyUsers  = ["@username"]
     ```
 
-    - hookURL : Incoming webhook's URL  
-    - channel : channel name.  
+    - hookURL : Incoming webhook's URL (hookURL is ignored when legacyToken is set.)
+    - legacyToken : slack legacy token (https://api.slack.com/custom-integrations/legacy-tokens)
+    - channel : channel name. 
     If you set `${servername}` to channel, the report will be sent to each channel.  
     In the following example, the report will be sent to the `#server1` and `#server2`.  
     Be sure to create these channels before scanning.
+    **if legacyToken is set, you must set up an existing channel**
       ```
       [slack]
       channel      = "${servername}"
@@ -1372,6 +1375,17 @@ Confidence              100 / OvalMatch
 
 
 ## Example: Send scan results to Slack
+```
+$ vuls report \
+      -to-slack \
+      -cvss-over=7 \
+      -cvedb-path=$PWD/cve.sqlite3
+```
+With this sample command, it will ..
+- Send scan results to slack
+- Only Report CVEs that CVSS score is over 7
+
+
 ```
 $ vuls report \
       -to-slack \
