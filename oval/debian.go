@@ -21,6 +21,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	"github.com/kotakanbe/goval-dictionary/db"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
@@ -105,7 +106,7 @@ func NewDebian() Debian {
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o Debian) FillWithOval(r *models.ScanResult) (err error) {
+func (o Debian) FillWithOval(driver db.DB, r *models.ScanResult) (err error) {
 
 	//Debian's uname gives both of kernel release(uname -r), version(kernel-image version)
 	linuxImage := "linux-image-" + r.RunningKernel.Release
@@ -129,7 +130,7 @@ func (o Debian) FillWithOval(r *models.ScanResult) (err error) {
 			return err
 		}
 	} else {
-		if relatedDefs, err = getDefsByPackNameFromOvalDB(r); err != nil {
+		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
 			return err
 		}
 	}
@@ -179,7 +180,7 @@ func NewUbuntu() Ubuntu {
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o Ubuntu) FillWithOval(r *models.ScanResult) (err error) {
+func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (err error) {
 	ovalKernelImageNames := []string{
 		"linux-aws",
 		"linux-azure",
@@ -239,7 +240,7 @@ func (o Ubuntu) FillWithOval(r *models.ScanResult) (err error) {
 			return err
 		}
 	} else {
-		if relatedDefs, err = getDefsByPackNameFromOvalDB(r); err != nil {
+		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
 			return err
 		}
 	}

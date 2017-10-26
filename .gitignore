@@ -1,6 +1,7 @@
 vuls
 .vscode
 *.txt
+*.json
 *.sqlite3*
 *.db
 tags
