@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
 	"github.com/future-architect/vuls/util"
+	"github.com/sirupsen/logrus"
 )
 
 // Bolt holds a pointer of bolt.DB
@@ -163,7 +163,7 @@ func (b Bolt) GetChangelog(servername, packName string) (changelog string, err e
 	err = b.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket([]byte(servername))
 		if bkt == nil {
-			return fmt.Errorf("Faild to get Bucket: %s", servername)
+			return fmt.Errorf("Failed to get Bucket: %s", servername)
 		}
 		v := bkt.Get([]byte(packName))
 		if v == nil {
@@ -181,7 +181,7 @@ func (b Bolt) PutChangelog(servername, packName, changelog string) error {
 	return b.db.Update(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket([]byte(servername))
 		if bkt == nil {
-			return fmt.Errorf("Faild to get Bucket: %s", servername)
+			return fmt.Errorf("Failed to get Bucket: %s", servername)
 		}
 		if err := bkt.Put([]byte(packName), []byte(changelog)); err != nil {
 			return err

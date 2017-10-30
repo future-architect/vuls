@@ -6,6 +6,8 @@ This is the Git repo of the official Docker image for vuls.
 
 - go-cve-dictionary
   - [`latest` (*go-cve-dictionary:latest Dockerfile*)]()
+- goval-dictionary
+  - [`latest` (*goval-dictionary:latest Dockerfile*)]()
 - vuls
   - [`latest` (*vuls:latest Dockerfile*)]()
 - vulsrepo
@@ -28,6 +30,14 @@ $ docker run  --rm  vuls/go-cve-dictionary -v
 go-cve-dictionary v0.0.xxx xxxx
 ```
 
+- goval-dictionary
+
+```console
+$ docker run  --rm  vuls/goval-dictionary -v
+
+goval-dictionary v0.0.xxx xxxx
+```
+
 - vuls
 
 ```console
@@ -44,6 +54,12 @@ vuls v0.0.xxx xxxx
 $ docker rmi vuls/go-cve-dictionary
 ```
 
+- goval-dictionary
+
+```
+$ docker rmi vuls/goval-dictionary
+```
+
 - vuls
 
 ```
@@ -56,6 +72,12 @@ $ docker rmi vuls/vuls
 
 ```
 $ docker pull vuls/go-cve-dictionary
+```
+
+- goval-dictionary
+
+```
+$ docker pull vuls/goval-dictionary
 ```
 
 - vuls
@@ -72,6 +94,12 @@ $ docker run  --rm  vuls/go-cve-dictionary -v
 go-cve-dictionary v0.1.xxx xxxx
 ```
 
+```console
+$ docker run  --rm  vuls/goval-dictionary -v
+
+goval-dictionary v0.1.xxx xxxx
+```
+
 - vuls
 
 ```console
@@ -84,6 +112,7 @@ vuls v0.1.xxx xxxx
 # How to use this image
 
 1. fetch nvd (vuls/go-cve-dictionary)
+1. fetch oval (vuls/goval-dictionary)
 1. configuration (vuls/vuls)
 1. configtest (vuls/vuls)
 1. scan (vuls/vuls)
@@ -99,6 +128,19 @@ $ for i in `seq 2002 $(date +"%Y")`; do \
     vuls/go-cve-dictionary fetchnvd -years $i; \
   done
 ```
+
+- To fetch JVN(Japanese), See [README](https://github.com/kotakanbe/go-cve-dictionary#usage-fetch-jvn-data)
+
+## Step2. Fetch OVAL (e.g. redhat)
+
+```console
+$ docker run --rm -it \
+    -v $PWD:/vuls \
+    -v $PWD/goval-dictionary-log:/var/log/vuls \
+    vuls/goval-dictionary fetch-redhat 5 6 7
+```
+
+- To fetch other OVAL, See [README](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-redhat)
 
 ## Step2. Configuration
 
@@ -149,6 +191,7 @@ $ docker run --rm -it \
     -v /etc/localtime:/etc/localtime:ro \
     vuls/vuls report \
     -cvedb-path=/vuls/cve.sqlite3 \
+    -ovaldb-path=/vuls/oval.sqlite3 \
     -format-short-text \
     -config=./config.toml # path to config.toml in docker
 ```
@@ -158,7 +201,7 @@ $ docker run --rm -it \
 ```console
 $docker run -dt \
     -v $PWD:/vuls \
-    -p 80:80 \
+    -p 5111:5111 \
     vuls/vulsrepo
 ```
 

@@ -59,18 +59,16 @@ type osTypeInterface interface {
 // osPackages is included by base struct
 type osPackages struct {
 	// installed packages
-	Packages models.PackageInfoList
+	Packages models.Packages
+
+	// installed source packages (Debian based only)
+	SrcPackages models.SrcPackages
 
 	// unsecure packages
 	VulnInfos models.VulnInfos
-}
 
-func (p *osPackages) setPackages(pi models.PackageInfoList) {
-	p.Packages = pi
-}
-
-func (p *osPackages) setVulnInfos(vi []models.VulnInfo) {
-	p.VulnInfos = vi
+	// kernel information
+	Kernel models.Kernel
 }
 
 func detectOS(c config.ServerInfo) (osType osTypeInterface) {
@@ -91,6 +89,11 @@ func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 
 	if itsMe, osType = detectRedhat(c); itsMe {
 		util.Log.Debugf("Redhat like Linux. Host: %s:%s", c.Host, c.Port)
+		return
+	}
+
+	if itsMe, osType = detectSUSE(c); itsMe {
+		util.Log.Debugf("SUSE Linux. Host: %s:%s", c.Host, c.Port)
 		return
 	}
 
@@ -421,8 +424,14 @@ func setupChangelogCache() error {
 	needToSetupCache := false
 	for _, s := range servers {
 		switch s.getDistro().Family {
-		case "ubuntu", "debian", "raspbian":
+		case config.Raspbian:
 			needToSetupCache = true
+			break
+		case config.Ubuntu, config.Debian:
+			//TODO changelopg cache for RedHat, Oracle, Amazon, CentOS is not implemented yet.
+			if config.Conf.Deep {
+				needToSetupCache = true
+			}
 			break
 		}
 	}
@@ -443,6 +452,7 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 	for _, s := range append(servers, errServers...) {
 		r := s.convertToModel()
 		r.ScannedAt = scannedAt
+		r.Config.Scan = config.Conf
 		results = append(results, r)
 	}
 

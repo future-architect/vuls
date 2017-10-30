@@ -6,9 +6,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
@@ -19,6 +17,8 @@ package scan
 
 import (
 	"reflect"
+	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -38,28 +38,28 @@ func TestParseScanedPackagesLineRedhat(t *testing.T) {
 
 	var packagetests = []struct {
 		in   string
-		pack models.PackageInfo
+		pack models.Package
 	}{
 		{
-			"openssl	1.0.1e	30.el6.11",
-			models.PackageInfo{
+			"openssl	0	1.0.1e	30.el6.11 x86_64",
+			models.Package{
 				Name:    "openssl",
 				Version: "1.0.1e",
 				Release: "30.el6.11",
 			},
 		},
 		{
-			"Percona-Server-shared-56 5.6.19 rel67.0.el6",
-			models.PackageInfo{
+			"Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x84_64",
+			models.Package{
 				Name:    "Percona-Server-shared-56",
-				Version: "5.6.19",
+				Version: "1:5.6.19",
 				Release: "rel67.0.el6",
 			},
 		},
 	}
 
 	for _, tt := range packagetests {
-		p, _ := r.parseScannedPackagesLine(tt.in)
+		p, _ := r.parseInstalledPackagesLine(tt.in)
 		if p.Name != tt.pack.Name {
 			t.Errorf("name: expected %s, actual %s", tt.pack.Name, p.Name)
 		}
@@ -261,54 +261,6 @@ func TestIsDescriptionLine(t *testing.T) {
 	}
 }
 
-func TestIsRpmPackageNameLine(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
-	var tests = []struct {
-		in    string
-		found bool
-	}{
-		{
-			"stunnel-4.15-2.el5.2.i386",
-			true,
-		},
-		{
-			"iproute-2.6.18-15.el5.i386",
-			true,
-		},
-		{
-			"1:yum-updatesd-0.9-6.el5_10.noarch",
-			true,
-		},
-		{
-			"glibc-2.12-1.192.el6.x86_64",
-			true,
-		},
-		{
-			" glibc-2.12-1.192.el6.x86_64",
-			false,
-		},
-		{
-			"glibc-2.12-1.192.el6.x86_64, iproute-2.6.18-15.el5.i386",
-			true,
-		},
-		{
-			"k6 hoge.i386",
-			false,
-		},
-		{
-			"triathlon",
-			false,
-		},
-	}
-
-	for i, tt := range tests {
-		found, err := r.isRpmPackageNameLine(tt.in)
-		if tt.found != found {
-			t.Errorf("[%d] line: %s, expected %t, actual %t, err %v", i, tt.in, tt.found, found, err)
-		}
-	}
-}
-
 func TestParseYumUpdateinfoToGetSeverity(t *testing.T) {
 	r := newRedhat(config.ServerInfo{})
 	var tests = []struct {
@@ -355,11 +307,8 @@ func TestParseYumUpdateinfoOL(t *testing.T) {
      Issued : 2017-02-15
        CVEs : CVE-2017-3135
 Description : [32:9.9.4-38.2]
-            : - Fix CVE-2017-3135 (ISC change 4557)
-            : - Fix and test caching CNAME before DNAME (ISC
-            :   change 4558)
    Severity : Moderate
-   
+
 ===============================================================================
    openssl security update
 ===============================================================================
@@ -371,12 +320,8 @@ Description : [32:9.9.4-38.2]
        CVEs : CVE-2016-8610
 	    : CVE-2017-3731
 Description : [1.0.1e-48.4]
-            : - fix CVE-2017-3731 - DoS via truncated packets
-            :   with RC4-MD5 cipher
-            : - fix CVE-2016-8610 - DoS of single-threaded
-            :   servers via excessive alerts
    Severity : Moderate
-   
+
 ===============================================================================
    Unbreakable Enterprise kernel security update
 ===============================================================================
@@ -387,10 +332,6 @@ Description : [1.0.1e-48.4]
      Issued : 2017-02-15
        CVEs : CVE-2017-6074
 Description : kernel-uek
-            : [4.1.12-61.1.28]
-            : - dccp: fix freeing skb too early for
-            :   IPV6_RECVPKTINFO (Andrey Konovalov)  [Orabug:
-            :   25598257]  {CVE-2017-6074}
    Severity : Important
 
 	`
@@ -408,17 +349,19 @@ Description : kernel-uek
 			[]distroAdvisoryCveIDs{
 				{
 					DistroAdvisory: models.DistroAdvisory{
-						AdvisoryID: "ELSA-2017-0276",
-						Severity:   "Moderate",
-						Issued:     issued,
+						AdvisoryID:  "ELSA-2017-0276",
+						Severity:    "Moderate",
+						Issued:      issued,
+						Description: "[32:9.9.4-38.2]\n",
 					},
 					CveIDs: []string{"CVE-2017-3135"},
 				},
 				{
 					DistroAdvisory: models.DistroAdvisory{
-						AdvisoryID: "ELSA-2017-0286",
-						Severity:   "Moderate",
-						Issued:     issued,
+						AdvisoryID:  "ELSA-2017-0286",
+						Severity:    "Moderate",
+						Issued:      issued,
+						Description: "[1.0.1e-48.4]\n",
 					},
 					CveIDs: []string{
 						"CVE-2016-8610",
@@ -427,9 +370,10 @@ Description : kernel-uek
 				},
 				{
 					DistroAdvisory: models.DistroAdvisory{
-						AdvisoryID: "ELSA-2017-3520",
-						Severity:   "Important",
-						Issued:     issued,
+						AdvisoryID:  "ELSA-2017-3520",
+						Severity:    "Important",
+						Issued:      issued,
+						Description: "kernel-uek\n",
 					},
 					CveIDs: []string{"CVE-2017-6074"},
 				},
@@ -439,11 +383,15 @@ Description : kernel-uek
 	for _, tt := range tests {
 		actual, _ := r.parseYumUpdateinfo(tt.in)
 		for i, advisoryCveIDs := range actual {
-			if !reflect.DeepEqual(tt.out[i], advisoryCveIDs) {
-				e := pp.Sprintf("%v", tt.out[i])
-				a := pp.Sprintf("%v", advisoryCveIDs)
+			if tt.out[i].DistroAdvisory != advisoryCveIDs.DistroAdvisory {
 				t.Errorf("[%d] Alas is not same. \nexpected: %s\nactual: %s",
-					i, e, a)
+					i, tt.out[i].DistroAdvisory, advisoryCveIDs.DistroAdvisory)
+			}
+			sort.Strings(tt.out[i].CveIDs)
+			sort.Strings(advisoryCveIDs.CveIDs)
+			if !reflect.DeepEqual(tt.out[i].CveIDs, advisoryCveIDs.CveIDs) {
+				t.Errorf("[%d] Alas is not same. \nexpected: %s\nactual: %s",
+					i, tt.out[i].CveIDs, advisoryCveIDs.CveIDs)
 			}
 		}
 	}
@@ -462,12 +410,6 @@ func TestParseYumUpdateinfoRHEL(t *testing.T) {
        Bugs : 1259087 - CVE-2015-5722 bind: malformed DNSSEC key failed assertion denial of service
        CVEs : CVE-2015-5722
 Description : The Berkeley Internet Name Domain (BIND) is an implementation of
-            : the Domain Name System (DNS) protocols. BIND
-            : includes a DNS server (named); a resolver library
-            : (routines for applications to use when interfacing
-            : with DNS); and tools for verifying that the DNS
-            : server is operating correctly.
-            :
    Severity : Important
 
 ===============================================================================
@@ -483,12 +425,6 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
        CVEs : CVE-2015-8000
             : CVE-2015-8001
 Description : The Berkeley Internet Name Domain (BIND) is an implementation of
-            : the Domain Name System (DNS) protocols. BIND
-            : includes a DNS server (named); a resolver library
-            : (routines for applications to use when interfacing
-            : with DNS); and tools for verifying that the DNS
-            : server is operating correctly.
-            :
    Severity : Low
 
 ===============================================================================
@@ -499,17 +435,25 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
        Type : security
      Status : final
      Issued : 2015-09-03 02:00:00
-       Bugs : 1299364 - CVE-2015-8704 bind: specific APL data could trigger an INSIST in apl_42.c      CVEs : CVE-2015-8704
+       Bugs : 1299364 - CVE-2015-8704 bind: specific APL data could trigger an INSIST in apl_42.c
+	   CVEs : CVE-2015-8704
 	        : CVE-2015-8705
 Description : The Berkeley Internet Name Domain (BIND) is an implementation of
-            : the Domain Name System (DNS) protocols. BIND
-            : includes a DNS server (named); a resolver library
-            : (routines for applications to use when interfacing
-            : with DNS); and tools for verifying that the DNS
-            : server is operating correctly.
-            :
+	        : CVE-2015-10000
    Severity : Moderate
 
+===============================================================================
+  Moderate: sudo security update
+===============================================================================
+  Update ID : RHSA-2017:1574
+    Release : 0
+       Type : security
+     Status : final
+     Issued : 2015-09-03 02:00:00
+       Bugs : 1459152 - CVE-2017-1000368 sudo: Privilege escalation via improper get_process_ttyname() parsing (insufficient fix for CVE-2017-1000367)       CVEs : CVE-2017-1000368
+Description : The sudo packages contain the sudo utility which allows system
+            : administrators to provide certain users with the
+   Severity : Moderate
 	`
 	issued, _ := time.Parse("2006-01-02", "2015-09-03")
 	updated, _ := time.Parse("2006-01-02", "2015-09-04")
@@ -526,18 +470,20 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
 			[]distroAdvisoryCveIDs{
 				{
 					DistroAdvisory: models.DistroAdvisory{
-						AdvisoryID: "RHSA-2015:1705",
-						Severity:   "Important",
-						Issued:     issued,
+						AdvisoryID:  "RHSA-2015:1705",
+						Severity:    "Important",
+						Issued:      issued,
+						Description: "The Berkeley Internet Name Domain (BIND) is an implementation of\n",
 					},
 					CveIDs: []string{"CVE-2015-5722"},
 				},
 				{
 					DistroAdvisory: models.DistroAdvisory{
-						AdvisoryID: "RHSA-2015:2655",
-						Severity:   "Low",
-						Issued:     issued,
-						Updated:    updated,
+						AdvisoryID:  "RHSA-2015:2655",
+						Severity:    "Low",
+						Issued:      issued,
+						Updated:     updated,
+						Description: "The Berkeley Internet Name Domain (BIND) is an implementation of\n",
 					},
 					CveIDs: []string{
 						"CVE-2015-8000",
@@ -546,14 +492,25 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
 				},
 				{
 					DistroAdvisory: models.DistroAdvisory{
-						AdvisoryID: "RHSA-2016:0073",
-						Severity:   "Moderate",
-						Issued:     issued,
-						Updated:    updated,
+						AdvisoryID:  "RHSA-2016:0073",
+						Severity:    "Moderate",
+						Issued:      issued,
+						Description: "The Berkeley Internet Name Domain (BIND) is an implementation of\nCVE-2015-10000\n",
 					},
 					CveIDs: []string{
 						"CVE-2015-8704",
 						"CVE-2015-8705",
+					},
+				},
+				{
+					DistroAdvisory: models.DistroAdvisory{
+						AdvisoryID:  "RHSA-2017:1574",
+						Severity:    "Moderate",
+						Issued:      issued,
+						Description: "The sudo packages contain the sudo utility which allows system\nadministrators to provide certain users with the\n",
+					},
+					CveIDs: []string{
+						"CVE-2017-1000368",
 					},
 				},
 			},
@@ -562,10 +519,12 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
 	for _, tt := range tests {
 		actual, _ := r.parseYumUpdateinfo(tt.in)
 		for i, advisoryCveIDs := range actual {
+			sort.Strings(tt.out[i].CveIDs)
+			sort.Strings(advisoryCveIDs.CveIDs)
 			if !reflect.DeepEqual(tt.out[i], advisoryCveIDs) {
 				e := pp.Sprintf("%v", tt.out[i])
 				a := pp.Sprintf("%v", advisoryCveIDs)
-				t.Errorf("[%d] Alas is not same. \nexpected: %s\nactual: %s",
+				t.Errorf("[%d] not same. \nexpected: %s\nactual: %s",
 					i, e, a)
 			}
 		}
@@ -578,7 +537,7 @@ func TestParseYumUpdateinfoAmazon(t *testing.T) {
 	r.Distro = config.Distro{Family: "redhat"}
 
 	issued, _ := time.Parse("2006-01-02", "2015-12-15")
-	updated, _ := time.Parse("2006-01-02", "2015-12-16")
+	// updated, _ := time.Parse("2006-01-02", "2015-12-16")
 
 	var tests = []struct {
 		in  string
@@ -595,10 +554,8 @@ func TestParseYumUpdateinfoAmazon(t *testing.T) {
      Issued : 2015-12-15 13:30
        CVEs : CVE-2016-1494
 Description : Package updates are available for Amazon Linux AMI that fix the
-            : following vulnerabilities: CVE-2016-1494:
-            :         1295869:
-            : CVE-2016-1494 python-rsa: Signature forgery using
-            : Bleichenbacher'06 attack
+            : CVE-20160-1111
+            : hogehoge
    Severity : medium
 
 ===============================================================================
@@ -613,32 +570,26 @@ Description : Package updates are available for Amazon Linux AMI that fix the
             : CVE-2015-3195
             : CVE-2015-3196
 Description : Package updates are available for Amazon Linux AMI that fix the
-            : following vulnerabilities: CVE-2015-3196:
-            :         1288326:
-            : CVE-2015-3196 OpenSSL: Race condition handling PSK
-            : identify hint A race condition flaw, leading to a
-            : double free, was found in the way OpenSSL handled
-            : pre-shared keys (PSKs). A remote attacker could
-            : use this flaw to crash a multi-threaded SSL/TLS
-            : client.
-            :
+            : foo bar baz
+            : hoge fuga hega
    Severity : medium`,
 
 			[]distroAdvisoryCveIDs{
 				{
 					DistroAdvisory: models.DistroAdvisory{
-						AdvisoryID: "ALAS-2016-644",
-						Severity:   "medium",
-						Issued:     issued,
+						AdvisoryID:  "ALAS-2016-644",
+						Severity:    "medium",
+						Issued:      issued,
+						Description: "Package updates are available for Amazon Linux AMI that fix the\nCVE-20160-1111\nhogehoge\n",
 					},
 					CveIDs: []string{"CVE-2016-1494"},
 				},
 				{
 					DistroAdvisory: models.DistroAdvisory{
-						AdvisoryID: "ALAS-2015-614",
-						Severity:   "medium",
-						Issued:     issued,
-						Updated:    updated,
+						AdvisoryID:  "ALAS-2015-614",
+						Severity:    "medium",
+						Issued:      issued,
+						Description: "Package updates are available for Amazon Linux AMI that fix the\nfoo bar baz\nhoge fuga hega\n",
 					},
 					CveIDs: []string{
 						"CVE-2015-3194",
@@ -653,6 +604,8 @@ Description : Package updates are available for Amazon Linux AMI that fix the
 	for _, tt := range tests {
 		actual, _ := r.parseYumUpdateinfo(tt.in)
 		for i, advisoryCveIDs := range actual {
+			sort.Strings(tt.out[i].CveIDs)
+			sort.Strings(actual[i].CveIDs)
 			if !reflect.DeepEqual(tt.out[i], advisoryCveIDs) {
 				e := pp.Sprintf("%v", tt.out[i])
 				a := pp.Sprintf("%v", advisoryCveIDs)
@@ -663,128 +616,123 @@ Description : Package updates are available for Amazon Linux AMI that fix the
 	}
 }
 
-func TestParseYumCheckUpdateLines(t *testing.T) {
+func TestParseYumCheckUpdateLine(t *testing.T) {
 	r := newRedhat(config.ServerInfo{})
 	r.Distro = config.Distro{Family: "centos"}
-	stdout := `Loaded plugins: changelog, fastestmirror, keys, protect-packages, protectbase, security
-Loading mirror speeds from cached hostfile
- * base: mirror.fairway.ne.jp
- * epel: epel.mirror.srv.co.ge
- * extras: mirror.fairway.ne.jp
- * updates: mirror.fairway.ne.jp
-0 packages excluded due to repository protections
-
-audit-libs.x86_64              2.3.7-5.el6                   base
-bash.x86_64                    4.1.2-33.el6_7.1              updates
-Obsoleting Packages
-python-libs.i686    2.6.6-64.el6   rhui-REGION-rhel-server-releases
-    python-ordereddict.noarch     1.1-3.el6ev    installed
-bind-utils.x86_64                       30:9.3.6-25.P1.el5_11.8          updates
-pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
-`
-
-	r.Packages = []models.PackageInfo{
-		{
-			Name:    "audit-libs",
-			Version: "2.3.6",
-			Release: "4.el6",
-		},
-		{
-			Name:    "bash",
-			Version: "4.1.1",
-			Release: "33",
-		},
-		{
-			Name:    "python-libs",
-			Version: "2.6.0",
-			Release: "1.1-0",
-		},
-		{
-			Name:    "python-ordereddict",
-			Version: "1.0",
-			Release: "1",
-		},
-		{
-			Name:    "bind-utils",
-			Version: "1.0",
-			Release: "1",
-		},
-		{
-			Name:    "pytalloc",
-			Version: "2.0.1",
-			Release: "0",
-		},
-	}
 	var tests = []struct {
 		in  string
-		out models.PackageInfoList
+		out models.Package
 	}{
 		{
-			stdout,
-			models.PackageInfoList{
-				{
-					Name:       "audit-libs",
-					Version:    "2.3.6",
-					Release:    "4.el6",
-					NewVersion: "2.3.7",
-					NewRelease: "5.el6",
-					Repository: "base",
-				},
-				{
-					Name:       "bash",
-					Version:    "4.1.1",
-					Release:    "33",
-					NewVersion: "4.1.2",
-					NewRelease: "33.el6_7.1",
-					Repository: "updates",
-				},
-				{
-					Name:       "python-libs",
-					Version:    "2.6.0",
-					Release:    "1.1-0",
-					NewVersion: "2.6.6",
-					NewRelease: "64.el6",
-					Repository: "rhui-REGION-rhel-server-releases",
-				},
-				{
-					Name:       "python-ordereddict",
-					Version:    "1.0",
-					Release:    "1",
-					NewVersion: "1.1",
-					NewRelease: "3.el6ev",
-					Repository: "installed",
-				},
-				{
-					Name:       "bind-utils",
-					Version:    "1.0",
-					Release:    "1",
-					NewVersion: "9.3.6",
-					NewRelease: "25.P1.el5_11.8",
-					Repository: "updates",
-				},
-				{
-					Name:       "pytalloc",
-					Version:    "2.0.1",
-					Release:    "0",
-					NewVersion: "2.0.7",
-					NewRelease: "2.el6",
-					Repository: "@CentOS 6.5/6.5",
-				},
+			"zlib 0 1.2.7 17.el7 rhui-REGION-rhel-server-releases",
+			models.Package{
+				Name:       "zlib",
+				NewVersion: "1.2.7",
+				NewRelease: "17.el7",
+				Repository: "rhui-REGION-rhel-server-releases",
+			},
+		},
+		{
+			"shadow-utils 2 4.1.5.1 24.el7 rhui-REGION-rhel-server-releases",
+			models.Package{
+				Name:       "shadow-utils",
+				NewVersion: "2:4.1.5.1",
+				NewRelease: "24.el7",
+				Repository: "rhui-REGION-rhel-server-releases",
 			},
 		},
 	}
 
 	for _, tt := range tests {
-		packInfoList, err := r.parseYumCheckUpdateLines(tt.in)
+		aPack, err := r.parseUpdatablePacksLine(tt.in)
 		if err != nil {
 			t.Errorf("Error has occurred, err: %s\ntt.in: %v", err, tt.in)
 			return
 		}
-		for i, ePackInfo := range tt.out {
-			if !reflect.DeepEqual(ePackInfo, packInfoList[i]) {
-				e := pp.Sprintf("%v", ePackInfo)
-				a := pp.Sprintf("%v", packInfoList[i])
-				t.Errorf("[%d] expected %s, actual %s", i, e, a)
+		if !reflect.DeepEqual(tt.out, aPack) {
+			e := pp.Sprintf("%v", tt.out)
+			a := pp.Sprintf("%v", aPack)
+			t.Errorf("expected %s, actual %s", e, a)
+		}
+	}
+}
+
+func TestParseYumCheckUpdateLines(t *testing.T) {
+	r := newRedhat(config.ServerInfo{})
+	r.Distro = config.Distro{Family: "centos"}
+	stdout := `audit-libs 0 2.3.7 5.el6 base
+bash 0 4.1.2 33.el6_7.1 updates
+python-libs 0 2.6.6 64.el6 rhui-REGION-rhel-server-releases
+python-ordereddict 0 1.1 3.el6ev installed
+bind-utils 30 9.3.6 25.P1.el5_11.8 updates
+pytalloc 0 2.0.7 2.el6 @CentOS 6.5/6.5`
+
+	r.Packages = models.NewPackages(
+		models.Package{Name: "audit-libs"},
+		models.Package{Name: "bash"},
+		models.Package{Name: "python-libs"},
+		models.Package{Name: "python-ordereddict"},
+		models.Package{Name: "bind-utils"},
+		models.Package{Name: "pytalloc"},
+	)
+	var tests = []struct {
+		in  string
+		out models.Packages
+	}{
+		{
+			stdout,
+			models.NewPackages(
+				models.Package{
+					Name:       "audit-libs",
+					NewVersion: "2.3.7",
+					NewRelease: "5.el6",
+					Repository: "base",
+				},
+				models.Package{
+					Name:       "bash",
+					NewVersion: "4.1.2",
+					NewRelease: "33.el6_7.1",
+					Repository: "updates",
+				},
+				models.Package{
+					Name:       "python-libs",
+					NewVersion: "2.6.6",
+					NewRelease: "64.el6",
+					Repository: "rhui-REGION-rhel-server-releases",
+				},
+				models.Package{
+					Name:       "python-ordereddict",
+					NewVersion: "1.1",
+					NewRelease: "3.el6ev",
+					Repository: "installed",
+				},
+				models.Package{
+					Name:       "bind-utils",
+					NewVersion: "30:9.3.6",
+					NewRelease: "25.P1.el5_11.8",
+					Repository: "updates",
+				},
+				models.Package{
+					Name:       "pytalloc",
+					NewVersion: "2.0.7",
+					NewRelease: "2.el6",
+					Repository: "@CentOS 6.5/6.5",
+				},
+			),
+		},
+	}
+
+	for _, tt := range tests {
+		packages, err := r.parseUpdatablePacksLines(tt.in)
+		if err != nil {
+			t.Errorf("Error has occurred, err: %s\ntt.in: %v", err, tt.in)
+			return
+		}
+		for name, ePack := range tt.out {
+			if !reflect.DeepEqual(ePack, packages[name]) {
+				e := pp.Sprintf("%v", ePack)
+				a := pp.Sprintf("%v", packages[name])
+				t.Errorf("expected %s, actual %s", e, a)
 			}
 		}
 	}
@@ -793,76 +741,54 @@ pytalloc.x86_64                 2.0.7-2.el6                      @CentOS 6.5/6.5
 func TestParseYumCheckUpdateLinesAmazon(t *testing.T) {
 	r := newRedhat(config.ServerInfo{})
 	r.Distro = config.Distro{Family: "amazon"}
-	stdout := `Loaded plugins: priorities, update-motd, upgrade-helper
-34 package(s) needed for security, out of 71 available
-
-bind-libs.x86_64           32:9.8.2-0.37.rc1.45.amzn1      amzn-main
-java-1.7.0-openjdk.x86_64  1.7.0.95-2.6.4.0.65.amzn1     amzn-main
-if-not-architecture        100-200                         amzn-main
-`
-	r.Packages = []models.PackageInfo{
-		{
-			Name:    "bind-libs",
-			Version: "9.8.0",
-			Release: "0.33.rc1.45.amzn1",
-		},
-		{
-			Name:    "java-1.7.0-openjdk",
-			Version: "1.7.0.0",
-			Release: "2.6.4.0.0.amzn1",
-		},
-		{
-			Name:    "if-not-architecture",
-			Version: "10",
-			Release: "20",
-		},
-	}
+	stdout := `bind-libs 32 9.8.2 0.37.rc1.45.amzn1 amzn-main
+java-1.7.0-openjdk  0 1.7.0.95 2.6.4.0.65.amzn1 amzn-main
+if-not-architecture 0 100 200 amzn-main`
+	r.Packages = models.NewPackages(
+		models.Package{Name: "bind-libs"},
+		models.Package{Name: "java-1.7.0-openjdk"},
+		models.Package{Name: "if-not-architecture"},
+	)
 	var tests = []struct {
 		in  string
-		out models.PackageInfoList
+		out models.Packages
 	}{
 		{
 			stdout,
-			models.PackageInfoList{
-				{
+			models.NewPackages(
+				models.Package{
 					Name:       "bind-libs",
-					Version:    "9.8.0",
-					Release:    "0.33.rc1.45.amzn1",
-					NewVersion: "9.8.2",
+					NewVersion: "32:9.8.2",
 					NewRelease: "0.37.rc1.45.amzn1",
 					Repository: "amzn-main",
 				},
-				{
+				models.Package{
 					Name:       "java-1.7.0-openjdk",
-					Version:    "1.7.0.0",
-					Release:    "2.6.4.0.0.amzn1",
 					NewVersion: "1.7.0.95",
 					NewRelease: "2.6.4.0.65.amzn1",
 					Repository: "amzn-main",
 				},
-				{
+				models.Package{
 					Name:       "if-not-architecture",
-					Version:    "10",
-					Release:    "20",
 					NewVersion: "100",
 					NewRelease: "200",
 					Repository: "amzn-main",
 				},
-			},
+			),
 		},
 	}
 
 	for _, tt := range tests {
-		packInfoList, err := r.parseYumCheckUpdateLines(tt.in)
+		packages, err := r.parseUpdatablePacksLines(tt.in)
 		if err != nil {
 			t.Errorf("Error has occurred, err: %s\ntt.in: %v", err, tt.in)
 			return
 		}
-		for i, ePackInfo := range tt.out {
-			if !reflect.DeepEqual(ePackInfo, packInfoList[i]) {
-				e := pp.Sprintf("%v", ePackInfo)
-				a := pp.Sprintf("%v", packInfoList[i])
-				t.Errorf("[%d] expected %s, actual %s", i, e, a)
+		for name, ePack := range tt.out {
+			if !reflect.DeepEqual(ePack, packages[name]) {
+				e := pp.Sprintf("%v", ePack)
+				a := pp.Sprintf("%v", packages[name])
+				t.Errorf("[%s] expected %s, actual %s", name, e, a)
 			}
 		}
 	}
@@ -967,308 +893,407 @@ func TestExtractPackNameVerRel(t *testing.T) {
 
 }
 
-const (
-	/* for CentOS6,7 (yum-util >= 1.1.20) */
-	stdoutCentos6 = `---> Package libaio.x86_64 0:0.3.107-10.el6 will be installed
---> Finished Dependency Resolution
-
-Changes in packages about to be updated:
-
-ChangeLog for: binutils-2.20.51.0.2-5.44.el6.x86_64
-* Mon Dec  7 21:00:00 2015 Nick Clifton <nickc@redhat.com> - 2.20.51.0.2-5.44
-- Backport upstream RELRO fixes. (#1227839)
-
-** No ChangeLog for: chkconfig-1.3.49.5-1.el6.x86_64
-
-ChangeLog for: coreutils-8.4-43.el6.x86_64, coreutils-libs-8.4-43.el6.x86_64
-* Wed Feb 10 21:00:00 2016 Ondrej Vasik <ovasik@redhat.com> - 8.4-43
-- sed should actually be /bin/sed (related #1222140)
-
-* Wed Jan  6 21:00:00 2016 Ondrej Vasik <ovasik@redhat.com> - 8.4-41
-- colorls.sh,colorls.csh - call utilities with complete path (#1222140)
-- mkdir, mkfifo, mknod - respect default umask/acls when
-  COREUTILS_CHILD_DEFAULT_ACLS envvar is set (to match rhel 7 behaviour,
-
-ChangeLog for: centos-release-6-8.el6.centos.12.3.x86_64
-* Wed May 18 21:00:00 2016 Johnny Hughes <johnny@centos.org> 6-8.el6.centos.12.3
-- CentOS-6.8 Released
-- TESTSTRING CVE-0000-0000
-
-ChangeLog for: 12:dhclient-4.1.1-51.P1.el6.centos.x86_64, 12:dhcp-common-4.1.1-51.P1.el6.centos.x86_64
-* Tue May 10 21:00:00 2016 Johnny Hughes <johnny@centos.org> - 12:4.1.1-51.P1
-- created patch 1000 for CentOS Branding
-- replaced vvendor variable with CentOS in the SPEC file
-- TESTSTRING CVE-1111-1111
-
-* Mon Jan 11 21:00:00 2016 Jiri Popelka <jpopelka@redhat.com> - 12:4.1.1-51.P1
-- send unicast request/release via correct interface (#1297445)
-
-* Thu Dec  3 21:00:00 2015 Jiri Popelka <jpopelka@redhat.com> - 12:4.1.1-50.P1
-- Lease table overflow crash. (#1133917)
-- Add ignore-client-uids option. (#1196768)
-- dhclient-script: it's OK if the arping reply comes from our system. (#1204095)
-- VLAN ID is only bottom 12-bits of TCI. (#1259552)
-- dhclient: Make sure link-local address is ready in stateless mode. (#1263466)
-- dhclient-script: make_resolv_conf(): Keep old nameservers
-  if server sends domain-name/search, but no nameservers. (#1269595)
-
-ChangeLog for: file-5.04-30.el6.x86_64, file-libs-5.04-30.el6.x86_64
-* Tue Feb 16 21:00:00 2016 Jan Kaluza <jkaluza@redhat.com> 5.04-30
-- fix CVE-2014-3538 (unrestricted regular expression matching)
-
-* Tue Jan  5 21:00:00 2016 Jan Kaluza <jkaluza@redhat.com> 5.04-29
-- fix #1284826 - try to read ELF header to detect corrupted one
-
-* Wed Dec 16 21:00:00 2015 Jan Kaluza <jkaluza@redhat.com> 5.04-28
-- fix #1263987 - fix bugs found by coverity in the patch
-
-* Thu Nov 26 21:00:00 2015 Jan Kaluza <jkaluza@redhat.com> 5.04-27
-- fix CVE-2014-3587 (incomplete fix for CVE-2012-1571)
-- fix CVE-2014-3710 (out-of-bounds read in elf note headers)
-- fix CVE-2014-8116 (multiple DoS issues (resource consumption))
-- fix CVE-2014-8117 (denial of service issue (resource consumption))
-- fix CVE-2014-9620 (limit the number of ELF notes processed)
-- fix CVE-2014-9653 (malformed elf file causes access to uninitialized memory)
-
-
-Dependencies Resolved
-
-`
-	/* for CentOS5 (yum-util < 1.1.20) */
-	stdoutCentos5 = `---> Package portmap.i386 0:4.0-65.2.2.1 set to be updated
---> Finished Dependency Resolution
-
-Changes in packages about to be updated:
-
-libuser-0.54.7-3.el5.i386
-nss_db-2.2-38.el5_11.i386
-* Thu Nov 20 23:00:00 2014 Nalin Dahyabhai <nalin@redhat.com> - 2.2-38
-- build without strict aliasing (internal build tooling)
-
-* Sat Nov 15 23:00:00 2014 Nalin Dahyabhai <nalin@redhat.com> - 2.2-37
-- pull in fix for a memory leak in nss_db (#1163493)
-
-acpid-1.0.4-12.el5.i386
-* Thu Oct  6 00:00:00 2011 Jiri Skala <jskala@redhat.com> - 1.0.4-12
-- Resolves: #729769 - acpid dumping useless info to log
-
-nash-5.1.19.6-82.el5.i386, mkinitrd-5.1.19.6-82.el5.i386
-* Tue Apr 15 00:00:00 2014 Brian C. Lane <bcl@redhat.com> 5.1.19.6-82
-- Use ! instead of / when searching sysfs for ccis device
-  Resolves: rhbz#988020
-- Always include ahci module (except on s390) (bcl)
-  Resolves: rhbz#978245
-- Prompt to recreate default initrd (karsten)
-  Resolves: rhbz#472764
-
-util-linux-2.13-0.59.el5_8.i386
-* Wed Oct 17 00:00:00 2012 Karel Zak <kzak@redhat.com> 2.13-0.59.el5_8
-- fix #865791 - fdisk fails to partition disk not in use
-
-* Wed Dec 21 23:00:00 2011 Karel Zak <kzak@redhat.com> 2.13-0.59
-- fix #768382 - CVE-2011-1675 CVE-2011-1677 util-linux various flaws
-
-* Wed Oct 26 00:00:00 2011 Karel Zak <kzak@redhat.com> 2.13-0.58
-- fix #677452 - util-linux fails to build with gettext-0.17
-
-30:bind-utils-9.3.6-25.P1.el5_11.8.i386, 30:bind-libs-9.3.6-25.P1.el5_11.8.i386
-* Mon Mar 14 23:00:00 2016 Tomas Hozza <thozza@redhat.com> - 30:9.3.6-25.P1.8
-- Fix issue with patch for CVE-2016-1285 and CVE-2016-1286 found by test suite
-
-* Wed Mar  9 23:00:00 2016 Tomas Hozza <thozza@redhat.com> - 30:9.3.6-25.P1.7
-- Fix CVE-2016-1285 and CVE-2016-1286
-
-* Mon Jan 18 23:00:00 2016 Tomas Hozza <thozza@redhat.com> - 30:9.3.6-25.P1.6
-- Fix CVE-2015-8704
-
-* Thu Sep  3 00:00:00 2015 Tomas Hozza <thozza@redhat.com> - 30:9.3.6-25.P1.5
-- Fix CVE-2015-8000
-
-
-Dependencies Resolved
-
-`
-)
-
-func TestGetChangelogCVELines(t *testing.T) {
-	var testsCentos6 = []struct {
-		in  models.PackageInfo
-		out string
-	}{
-		{
-			models.PackageInfo{
-				Name:       "binutils",
-				NewVersion: "2.20.51.0.2",
-				NewRelease: "5.44.el6",
-			},
-			"",
-		},
-		{
-			models.PackageInfo{
-				Name:       "centos-release",
-				NewVersion: "6",
-				NewRelease: "8.el6.centos.12.3",
-			},
-			`- TESTSTRING CVE-0000-0000
-`,
-		},
-		{
-			models.PackageInfo{
-				Name:       "dhclient",
-				NewVersion: "4.1.1",
-				NewRelease: "51.P1.el6.centos",
-			},
-			`- TESTSTRING CVE-1111-1111
-`,
-		},
-		{
-			models.PackageInfo{
-				Name:       "dhcp-common",
-				NewVersion: "4.1.1",
-				NewRelease: "51.P1.el6.centos",
-			},
-			`- TESTSTRING CVE-1111-1111
-`,
-		},
-		{
-			models.PackageInfo{
-				Name:       "coreutils-libs",
-				NewVersion: "8.4",
-				NewRelease: "43.el6",
-			},
-			"",
-		},
-		{
-			models.PackageInfo{
-				Name:       "file",
-				NewVersion: "5.04",
-				NewRelease: "30.el6",
-			},
-			`- fix CVE-2014-3538 (unrestricted regular expression matching)
-- fix CVE-2014-3587 (incomplete fix for CVE-2012-1571)
-- fix CVE-2014-3710 (out-of-bounds read in elf note headers)
-- fix CVE-2014-8116 (multiple DoS issues (resource consumption))
-- fix CVE-2014-8117 (denial of service issue (resource consumption))
-- fix CVE-2014-9620 (limit the number of ELF notes processed)
-- fix CVE-2014-9653 (malformed elf file causes access to uninitialized memory)
-`,
-		},
-		{
-			models.PackageInfo{
-				Name:       "file-libs",
-				NewVersion: "5.04",
-				NewRelease: "30.el6",
-			},
-			`- fix CVE-2014-3538 (unrestricted regular expression matching)
-- fix CVE-2014-3587 (incomplete fix for CVE-2012-1571)
-- fix CVE-2014-3710 (out-of-bounds read in elf note headers)
-- fix CVE-2014-8116 (multiple DoS issues (resource consumption))
-- fix CVE-2014-8117 (denial of service issue (resource consumption))
-- fix CVE-2014-9620 (limit the number of ELF notes processed)
-- fix CVE-2014-9653 (malformed elf file causes access to uninitialized memory)
-`,
-		},
-	}
-
+func TestGetDiffChangelog(t *testing.T) {
 	r := newRedhat(config.ServerInfo{})
-	r.Distro = config.Distro{
-		Family:  "centos",
-		Release: "6.7",
-	}
-	for _, tt := range testsCentos6 {
-		rpm2changelog, err := r.divideChangelogByPackage(stdoutCentos6)
-		if err != nil {
-			t.Errorf("err: %s", err)
-		}
-		changelog := r.getChangelogCVELines(rpm2changelog, tt.in)
-		if tt.out != changelog {
-			t.Errorf("line: expected %s, actual %s, tt: %#v", tt.out, changelog, tt)
-		}
+	type in struct {
+		pack      models.Package
+		changelog string
 	}
 
-	var testsCentos5 = []struct {
-		in  models.PackageInfo
+	var tests = []struct {
+		in  in
 		out string
 	}{
+		// 0
 		{
-			models.PackageInfo{
-				Name:       "libuser",
-				NewVersion: "0.54.7",
-				NewRelease: "3.el5",
+			in: in{
+				pack: models.Package{
+					Version: "2017a",
+					Release: "1",
+				},
+				changelog: `* Mon Mar 20 12:00:00 2017 Patsy Franklin <pfrankli@redhat.com> - 2017b-1
+- Rebase to tzdata-2017b.
+  - Haiti resumed DST on March 12, 2017.
+
+* Thu Mar  2 12:00:00 2017 Patsy Franklin <pfrankli@redhat.com> - 2017a-1
+- Rebase to tzdata-2017a
+  - Mongolia no longer observes DST. (BZ #1425222)
+  - Add upstream patch to fix over-runing of POSIX limit on zone abbreviations.
+- Add zone1970.tab file to the install list. (BZ #1427694)
+
+* Wed Nov 23 12:00:00 2016 Patsy Franklin <pfrankli@redhat.com> - 2016j-1
+- Rebase to tzdata-2016ij
+  - Saratov region of Russia is moving from +03 offset to +04 offset
+    on 2016-12-04.`,
 			},
-			"",
+			out: `* Mon Mar 20 12:00:00 2017 Patsy Franklin <pfrankli@redhat.com> - 2017b-1
+- Rebase to tzdata-2017b.
+  - Haiti resumed DST on March 12, 2017.`,
 		},
+		// 1
 		{
-			models.PackageInfo{
-				Name:       "nss_db",
-				NewVersion: "2.2",
-				NewRelease: "38.el5_11",
+			in: in{
+				pack: models.Package{
+					Version: "2004e",
+					Release: "2",
+				},
+				changelog: `* Mon Mar 20 12:00:00 2017 Patsy Franklin <pfrankli@redhat.com> - 2017b-1
+- Rebase to tzdata-2017b.
+  - Haiti resumed DST on March 12, 2017.
+
+* Wed Nov 23 12:00:00 2016 Patsy Franklin <pfrankli@redhat.com> - 2016j-1
+- Rebase to tzdata-2016ij
+  - Saratov region of Russia is moving from +03 offset to +04 offset
+    on 2016-12-04.
+
+* Mon Nov 29 12:00:00 2004 Jakub Jelinek <jakub@redhat.com> 2004g-1
+- 2004g (#141107)
+- updates for Cuba
+
+* Mon Oct 11 12:00:00 2004 Jakub Jelinek <jakub@redhat.com> 2004e-2
+- 2004e (#135194)
+- updates for Brazil, Uruguay and Argentina`,
 			},
-			"",
+			out: `* Mon Mar 20 12:00:00 2017 Patsy Franklin <pfrankli@redhat.com> - 2017b-1
+- Rebase to tzdata-2017b.
+  - Haiti resumed DST on March 12, 2017.
+
+* Wed Nov 23 12:00:00 2016 Patsy Franklin <pfrankli@redhat.com> - 2016j-1
+- Rebase to tzdata-2016ij
+  - Saratov region of Russia is moving from +03 offset to +04 offset
+    on 2016-12-04.
+
+* Mon Nov 29 12:00:00 2004 Jakub Jelinek <jakub@redhat.com> 2004g-1
+- 2004g (#141107)
+- updates for Cuba`,
 		},
+		// 2
 		{
-			models.PackageInfo{
-				Name:       "acpid",
-				NewVersion: "1.0.4",
-				NewRelease: "82.el5",
+			in: in{
+				pack: models.Package{
+					Version: "2016j",
+					Release: "1",
+				},
+				changelog: `* Mon Mar 20 12:00:00 2017 Patsy Franklin <pfrankli@redhat.com> -2017b-1
+- Rebase to tzdata-2017b.
+  - Haiti resumed DST on March 12, 2017.
+
+* Wed Nov 23 12:00:00 2016 Patsy Franklin <pfrankli@redhat.com> -2016j-1
+- Rebase to tzdata-2016ij
+  - Saratov region of Russia is moving from +03 offset to +04 offset
+    on 2016-12-04.`,
 			},
-			"",
+			out: `* Mon Mar 20 12:00:00 2017 Patsy Franklin <pfrankli@redhat.com> -2017b-1
+- Rebase to tzdata-2017b.
+  - Haiti resumed DST on March 12, 2017.`,
 		},
+		// 3
 		{
-			models.PackageInfo{
-				Name:       "mkinitrd",
-				NewVersion: "5.1.19.6",
-				NewRelease: "82.el5",
+			in: in{
+				pack: models.Package{
+					Version: "3.10.0",
+					Release: "327.22.1.el7",
+				},
+				changelog: `* Thu Jun  9 21:00:00 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.22.2.el7]
+- [infiniband] security: Restrict use of the write() interface (Don Dutile) [1332553 1316685] {CVE-2016-4565}
+
+* Mon May 16 21:00:00 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.22.1.el7]
+- [mm] mmu_notifier: fix memory corruption (Jerome Glisse) [1335727 1307042]
+- [misc] cxl: Increase timeout for detection of AFU mmio hang (Steve Best) [1335419 1329682]
+- [misc] cxl: Configure the PSL for two CAPI ports on POWER8NVL (Steve Best) [1336389 1278793]`,
 			},
-			"",
+			out: `* Thu Jun  9 21:00:00 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.22.2.el7]
+- [infiniband] security: Restrict use of the write() interface (Don Dutile) [1332553 1316685] {CVE-2016-4565}`,
 		},
+		// 4
 		{
-			models.PackageInfo{
-				Name:       "util-linux",
-				NewVersion: "2.13",
-				NewRelease: "0.59.el5_8",
+			in: in{
+				pack: models.Package{
+					Version: "6.6.1p1",
+					Release: "34",
+				},
+
+				changelog: `* Wed Mar  1 21:00:00 2017 Jakub Jelen <jjelen@redhat.com> - 6.6.1p1-35 + 0.9.3-9
+- Do not send SD_NOTIFY from forked childern (#1381997)
+
+* Fri Feb 24 21:00:00 2017 Jakub Jelen <jjelen@redhat.com> - 6.6.1p1-34 + 0.9.3-9
+- Add SD_NOTIFY code to help systemd to track running service (#1381997)`,
 			},
-			`- fix #768382 - CVE-2011-1675 CVE-2011-1677 util-linux various flaws
-`,
+			out: `* Wed Mar  1 21:00:00 2017 Jakub Jelen <jjelen@redhat.com> - 6.6.1p1-35
+- Do not send SD_NOTIFY from forked childern (#1381997)`,
 		},
+		// 5
 		{
-			models.PackageInfo{
-				Name:       "bind-libs",
-				NewVersion: "9.3.6",
-				NewRelease: "25.P1.el5_11.8",
+			in: in{
+				pack: models.Package{
+					Version: "2.1.23",
+					Release: "15.el6",
+				},
+				changelog: `* Fri Feb 27 12:00:00 2015 Jakub Jelen <jjelen@redhat.com> 2.1.23-15.2
+- Support AIX SASL GSSAPI (#1174315)
+
+* Tue Nov 18 12:00:00 2014 Petr Lautrbach <plautrba@redhat.com> 2.1.23-15.1
+- check a context value in sasl_gss_encode() (#1087221)
+
+* Mon Jun 23 12:00:00 2014 Petr Lautrbach <plautrba@redhat.com> 2.1.23-15
+- don't use " for saslauth user's description (#1081445)
+- backport the ad_compat option (#994242)
+- fixed a memory leak in the client side DIGEST-MD5 code (#838628)`,
 			},
-			`- Fix issue with patch for CVE-2016-1285 and CVE-2016-1286 found by test suite
-- Fix CVE-2016-1285 and CVE-2016-1286
-- Fix CVE-2015-8704
-- Fix CVE-2015-8000
-`,
+			out: `* Fri Feb 27 12:00:00 2015 Jakub Jelen <jjelen@redhat.com> 2.1.23-15.2
+- Support AIX SASL GSSAPI (#1174315)
+
+* Tue Nov 18 12:00:00 2014 Petr Lautrbach <plautrba@redhat.com> 2.1.23-15.1
+- check a context value in sasl_gss_encode() (#1087221)`,
 		},
+		// 6
 		{
-			models.PackageInfo{
-				Name:       "bind-utils",
-				NewVersion: "9.3.6",
-				NewRelease: "25.P1.el5_11.8",
+			in: in{
+				pack: models.Package{
+					Version: "3.6.20",
+					Release: "1.el6",
+				},
+				changelog: `* Wed Jul 29 12:00:00 2015 Jan Stanek <jstanek@redhat.com> - 3.6.20-1.2
+- Add patch for compiler warnings highlighted by rpmdiff.
+  Related: rhbz#1244727
+
+* Wed Jul 22 12:00:00 2015 Viktor Jancik <vjancik@redhat.com> - 3.6.20-1.el6_7.1
+- fix for CVE-2015-3416
+  Resolves: #1244727
+
+* Tue Nov 17 12:00:00 2009 Panu Matilainen <pmatilai@redhat.com> - 3.6.20-1
+- update to 3.6.20 (http://www.sqlite.org/releaselog/3_6_20.html)
+
+* Tue Oct  6 12:00:00 2009 Panu Matilainen <pmatilai@redhat.com> - 3.6.18-1
+- update to 3.6.18 (http://www.sqlite.org/releaselog/3_6_18.html)
+- drop no longer needed test-disabler patches`,
 			},
-			`- Fix issue with patch for CVE-2016-1285 and CVE-2016-1286 found by test suite
-- Fix CVE-2016-1285 and CVE-2016-1286
-- Fix CVE-2015-8704
-- Fix CVE-2015-8000
-`,
+			out: `* Wed Jul 29 12:00:00 2015 Jan Stanek <jstanek@redhat.com> - 3.6.20-1.2
+- Add patch for compiler warnings highlighted by rpmdiff.
+  Related: rhbz#1244727
+
+* Wed Jul 22 12:00:00 2015 Viktor Jancik <vjancik@redhat.com> - 3.6.20-1.el6_7.1
+- fix for CVE-2015-3416
+  Resolves: #1244727`,
+		},
+		/*
+					// 7
+					{
+						in: in{
+							pack: models.Package{
+								Version: "2:7.4.160",
+								Release: "1.el7",
+							},
+							changelog: `* Mon Dec 12 21:00:00 2016 Karsten Hopp <karsten@redhat.com> 7.4.160-1.1
+			- add fix for CVE-2016-1248
+
+			* Wed Jan 29 21:00:00 2014 Karsten Hopp <karsten@redhat.com> 7.4.160-1
+			- patchlevel 160
+			- Resolves: rhbz#1059321`,
+						},
+						out: `* Mon Dec 12 21:00:00 2016 Karsten Hopp <karsten@redhat.com> 7.4.160-1.1
+			- add fix for CVE-2016-1248`,
+					},
+					// 8
+					{
+						in: in{
+							pack: models.Package{
+								Version: "2:1.26",
+								Release: "29.el7",
+							},
+							changelog: `* Mon Jun 20 21:00:00 2016 Pavel Raiskup <praiskup@redhat.com> - 1.26-31
+			- avoid double free in selinux code (rhbz#1347396)
+
+			* Thu Jun  4 21:00:00 2015 Pavel Raiskup <praiskup@redhat.com> - 1.26-30
+			- don't mistakenly set default ACLs (#1220890)
+
+			* Fri Jan 24 21:00:00 2014 Daniel Mach <dmach@redhat.com> - 2:1.26-29
+			- Mass rebuild 2014-01-24`,
+						},
+						out: `* Mon Jun 20 21:00:00 2016 Pavel Raiskup <praiskup@redhat.com> - 1.26-31
+			- avoid double free in selinux code (rhbz#1347396)
+
+			* Thu Jun  4 21:00:00 2015 Pavel Raiskup <praiskup@redhat.com> - 1.26-30
+			- don't mistakenly set default ACLs (#1220890)`,
+					},
+					// 9
+					{
+						in: in{
+							pack: models.Package{
+								Version: "1:1.0.1e",
+								Release: "51.el7_2.5",
+							},
+							changelog: `* Mon Feb  6 21:00:00 2017 Tomáš Mráz <tmraz@redhat.com> 1.0.1e-60.1
+			- fix CVE-2017-3731 - DoS via truncated packets with RC4-MD5 cipher
+			- fix CVE-2016-8610 - DoS of single-threaded servers via excessive alerts
+
+			* Fri Dec  4 21:00:00 2015 Tomáš Mráz <tmraz@redhat.com> 1.0.1e-52
+			- fix CVE-2015-3194 - certificate verify crash with missing PSS parameter
+			- fix CVE-2015-3195 - X509_ATTRIBUTE memory leak
+			- fix CVE-2015-3196 - race condition when handling PSK identity hint
+
+			* Tue Jun 23 21:00:00 2015 Tomáš Mráz <tmraz@redhat.com> 1.0.1e-51
+			- fix the CVE-2015-1791 fix (broken server side renegotiation)`,
+						},
+						out: `* Mon Feb  6 21:00:00 2017 Tomáš Mráz <tmraz@redhat.com> 1.0.1e-60.1
+			- fix CVE-2017-3731 - DoS via truncated packets with RC4-MD5 cipher
+			- fix CVE-2016-8610 - DoS of single-threaded servers via excessive alerts
+
+			* Fri Dec  4 21:00:00 2015 Tomáš Mráz <tmraz@redhat.com> 1.0.1e-52
+			- fix CVE-2015-3194 - certificate verify crash with missing PSS parameter
+			- fix CVE-2015-3195 - X509_ATTRIBUTE memory leak
+			- fix CVE-2015-3196 - race condition when handling PSK identity hint`,
+					},
+					// 10
+					{
+						in: in{
+							pack: models.Package{
+								Version: "1:5.5.47",
+								Release: "1.el7_2",
+							},
+							changelog: `* Wed Sep 21 21:00:00 2016 Honza Horak <hhorak@redhat.com> - 5.5.52-1
+			- Rebase to 5.5.52, that also include fix for CVE-2016-6662
+			  Resolves: #1377974
+
+			* Thu Feb 18 21:00:00 2016 Jakub Dorňák <jdornak@redhat.com> - 1:5.5.47-2
+			- Add warning to /usr/lib/tmpfiles.d/mariadb.conf
+			  Resolves: #1241623
+
+			* Wed Feb  3 21:00:00 2016 Jakub Dorňák <jdornak@redhat.com> - 1:5.5.47-1
+			- Rebase to 5.5.47
+			  Also fixes: CVE-2015-4792 CVE-2015-4802 CVE-2015-4815 CVE-2015-4816
+			  CVE-2015-4819 CVE-2015-4826 CVE-2015-4830 CVE-2015-4836 CVE-2015-4858
+			  CVE-2015-4861 CVE-2015-4870 CVE-2015-4879 CVE-2015-4913 CVE-2015-7744
+			  CVE-2016-0505 CVE-2016-0546 CVE-2016-0596 CVE-2016-0597 CVE-2016-0598
+			  CVE-2016-0600 CVE-2016-0606 CVE-2016-0608 CVE-2016-0609 CVE-2016-0616
+			  CVE-2016-2047
+			  Resolves: #1300621`,
+						},
+						out: `* Wed Sep 21 21:00:00 2016 Honza Horak <hhorak@redhat.com> - 5.5.52-1
+			- Rebase to 5.5.52, that also include fix for CVE-2016-6662
+			  Resolves: #1377974
+
+			* Thu Feb 18 21:00:00 2016 Jakub Dorňák <jdornak@redhat.com> - 1:5.5.47-2
+			- Add warning to /usr/lib/tmpfiles.d/mariadb.conf
+			  Resolves: #1241623`,
+					},
+		*/
+		// 11
+		{
+			in: in{
+				pack: models.Package{
+					Version: "0.252",
+					Release: "8.1.el7",
+				},
+				changelog: `* Thu Sep 29 21:00:00 2016 Vitezslav Crhonek <vcrhonek@redhat.com> - 0.252-8.4
+- Remove wrong entry from usb ids.
+  Resolves: #1380159
+
+* Mon Sep 26 21:00:00 2016 Vitezslav Crhonek <vcrhonek@redhat.com> - 0.252-8.3
+- Updated pci, usb and vendor ids.
+- Resolves: rhbz#1292382
+
+* Tue Jun 28 21:00:00 2016 Michal Minar <miminar@redhat.com> 0.252-8.2
+- Updated pci, usb and vendor ids.
+- Resolves: rhbz#1292382
+- Resolves: rhbz#1291614
+- Resolves: rhbz#1324198
+
+* Fri Oct 23 21:00:00 2015 Michal Minar <miminar@redhat.com> 0.252-8.1
+- Updated pci, usb and vendor ids.`,
+			},
+			out: `* Thu Sep 29 21:00:00 2016 Vitezslav Crhonek <vcrhonek@redhat.com> - 0.252-8.4
+- Remove wrong entry from usb ids.
+  Resolves: #1380159
+
+* Mon Sep 26 21:00:00 2016 Vitezslav Crhonek <vcrhonek@redhat.com> - 0.252-8.3
+- Updated pci, usb and vendor ids.
+- Resolves: rhbz#1292382
+
+* Tue Jun 28 21:00:00 2016 Michal Minar <miminar@redhat.com> 0.252-8.2
+- Updated pci, usb and vendor ids.
+- Resolves: rhbz#1292382
+- Resolves: rhbz#1291614
+- Resolves: rhbz#1324198`,
+		},
+		// 12
+		{
+			in: in{
+				pack: models.Package{
+					Version: "1:2.02",
+					Release: "0.34.el7_2",
+				},
+				changelog: `* Mon Aug 29 21:00:00 2016 Peter Jones <pjones@redhat.com> - 2.02-0.44
+- Work around tftp servers that don't work with multiple consecutive slashes in
+  file paths.
+  Resolves: rhbz#1217243`,
+			},
+			out: `* Mon Aug 29 21:00:00 2016 Peter Jones <pjones@redhat.com> - 2.02-0.44
+- Work around tftp servers that don't work with multiple consecutive slashes in
+  file paths.
+  Resolves: rhbz#1217243`,
 		},
 	}
 
-	r.Distro = config.Distro{
-		Family:  "centos",
-		Release: "5.6",
-	}
-	for _, tt := range testsCentos5 {
-		rpm2changelog, err := r.divideChangelogByPackage(stdoutCentos5)
-		if err != nil {
-			t.Errorf("err: %s", err)
-		}
-		changelog := r.getChangelogCVELines(rpm2changelog, tt.in)
-		if tt.out != changelog {
-			t.Errorf("line: expected %s, actual %s, tt: %#v", tt.out, changelog, tt)
+	for i, tt := range tests {
+		diff, _ := r.getDiffChangelog(tt.in.pack, tt.in.changelog)
+		if tt.out != diff {
+			t.Errorf("[%d] name: expected \n%s\nactual \n%s", i, tt.out, diff)
 		}
 	}
+
+}
+
+func TestDivideChangelogsIntoEachPackages(t *testing.T) {
+	r := newRedhat(config.ServerInfo{})
+	type in struct {
+		pack      models.Package
+		changelog string
+	}
+
+	var tests = []struct {
+		in  string
+		out map[string]string
+	}{
+		{
+			in: `==================== Available Packages ====================
+1:NetworkManager-1.4.0-20.el7_3.x86_64   rhui-rhel-7-server-rhui-rpms
+* Mon Apr 24 21:00:00 2017 Beniamino Galvani <bgalvani@redhat.com> - 1:1.4.0-20
+- vlan: use parent interface mtu as default (rh#1414186)
+
+* Wed Mar 29 21:00:00 2017 Beniamino Galvani <bgalvani@redhat.com> - 1:1.4.0-19
+- core: alyways force a sync of the default route (rh#1431268)
+
+
+1:NetworkManager-0.9.9.1-25.git20140326. rhui-rhel-7-server-rhui-optional-rpms
+* Tue Jul  1 21:00:00 2014 Jiří Klimeš <jklimes@redhat.com> - 1:0.9.9.1-25.git20140326
+- core: fix MTU handling while merging/subtracting IP configs (rh #1093231)
+
+* Mon Jun 23 21:00:00 2014 Thomas Haller <thaller@redhat.com> - 1:0.9.9.1-24.git20140326
+- core: fix crash on failure of reading bridge sysctl values (rh #1112020)`,
+			out: map[string]string{
+				"1:NetworkManager-1.4.0-20.el7_3.x86_64": `* Mon Apr 24 21:00:00 2017 Beniamino Galvani <bgalvani@redhat.com> - 1:1.4.0-20
+- vlan: use parent interface mtu as default (rh#1414186)
+
+* Wed Mar 29 21:00:00 2017 Beniamino Galvani <bgalvani@redhat.com> - 1:1.4.0-19
+- core: alyways force a sync of the default route (rh#1431268)`,
+
+				"1:NetworkManager-0.9.9.1-25.git20140326.": `* Tue Jul  1 21:00:00 2014 Jiří Klimeš <jklimes@redhat.com> - 1:0.9.9.1-25.git20140326
+- core: fix MTU handling while merging/subtracting IP configs (rh #1093231)
+
+* Mon Jun 23 21:00:00 2014 Thomas Haller <thaller@redhat.com> - 1:0.9.9.1-24.git20140326
+- core: fix crash on failure of reading bridge sysctl values (rh #1112020)`,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		changelogs := r.divideChangelogsIntoEachPackages(tt.in)
+		for k, v := range tt.out {
+			if strings.TrimSpace(v) != strings.TrimSpace(changelogs[k]) {
+				t.Errorf("expected: %v\nactual: %v", pp.Sprint(tt.out), pp.Sprint(changelogs))
+			}
+		}
+	}
+
 }

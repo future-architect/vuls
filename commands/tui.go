@@ -32,16 +32,26 @@ import (
 
 // TuiCmd is Subcommand of host discovery mode
 type TuiCmd struct {
-	lang     string
-	debugSQL bool
-	debug    bool
-	logDir   string
+	lang       string
+	debugSQL   bool
+	debug      bool
+	configPath string
+	logDir     string
 
-	resultsDir       string
-	refreshCve       bool
+	resultsDir string
+	refreshCve bool
+
 	cvedbtype        string
 	cvedbpath        string
 	cveDictionaryURL string
+
+	ovalDBType string
+	ovalDBPath string
+	ovalDBURL  string
+
+	cvssScoreOver      float64
+	ignoreUnscoredCves bool
+	ignoreUnfixed      bool
 
 	pipe bool
 }
@@ -50,16 +60,23 @@ type TuiCmd struct {
 func (*TuiCmd) Name() string { return "tui" }
 
 // Synopsis return synopsis
-func (*TuiCmd) Synopsis() string { return "Run Tui view to anayze vulnerabilites" }
+func (*TuiCmd) Synopsis() string { return "Run Tui view to analyze vulnerabilities" }
 
 // Usage return usage
 func (*TuiCmd) Usage() string {
 	return `tui:
 	tui
-		[-cvedb-type=sqlite3|mysql]
-		[-cvedb-path=/path/to/cve.sqlite3]
-		[-cvedb-url=http://127.0.0.1:1323 or mysql connection string]
 		[-refresh-cve]
+		[-config=/path/to/config.toml]
+		[-cvedb-type=sqlite3|mysql|postgres]
+		[-cvedb-path=/path/to/cve.sqlite3]
+		[-cvedb-url=http://127.0.0.1:1323 or DB connection string]
+		[-ovaldb-type=sqlite3|mysql]
+		[-ovaldb-path=/path/to/oval.sqlite3]
+		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
+		[-cvss-over=7]
+		[-ignore-unscored-cves]
+		[-ignore-unfixed]
 		[-results-dir=/path/to/results]
 		[-log-dir=/path/to/log]
 		[-debug]
@@ -82,6 +99,9 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	defaultResultsDir := filepath.Join(wd, "results")
 	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 
+	defaultConfPath := filepath.Join(wd, "config.toml")
+	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
+
 	f.BoolVar(
 		&p.refreshCve,
 		"refresh-cve",
@@ -92,7 +112,7 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 		&p.cvedbtype,
 		"cvedb-type",
 		"sqlite3",
-		"DB type for fetching CVE dictionary (sqlite3 or mysql)")
+		"DB type for fetching CVE dictionary (sqlite3, mysql or postgres)")
 
 	defaultCveDBPath := filepath.Join(wd, "cve.sqlite3")
 	f.StringVar(
@@ -105,7 +125,44 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 		&p.cveDictionaryURL,
 		"cvedb-url",
 		"",
-		"http://cve-dictionary.com:8080 or mysql connection string")
+		"http://cve-dictionary.example.com:1323 or mysql connection string")
+
+	f.StringVar(
+		&p.ovalDBType,
+		"ovaldb-type",
+		"sqlite3",
+		"DB type for fetching OVAL dictionary (sqlite3 or mysql)")
+
+	defaultOvalDBPath := filepath.Join(wd, "oval.sqlite3")
+	f.StringVar(
+		&p.ovalDBPath,
+		"ovaldb-path",
+		defaultOvalDBPath,
+		"/path/to/sqlite3 (For get oval detail from oval.sqlite3)")
+
+	f.StringVar(
+		&p.ovalDBURL,
+		"ovaldb-url",
+		"",
+		"http://goval-dictionary.example.com:1324 or mysql connection string")
+
+	f.Float64Var(
+		&p.cvssScoreOver,
+		"cvss-over",
+		0,
+		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
+
+	f.BoolVar(
+		&p.ignoreUnscoredCves,
+		"ignore-unscored-cves",
+		false,
+		"Don't report the unscored CVEs")
+
+	f.BoolVar(
+		&p.ignoreUnfixed,
+		"ignore-unfixed",
+		false,
+		"Don't report the unfixed CVEs")
 
 	f.BoolVar(
 		&p.pipe,
@@ -125,10 +182,21 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
 	log := util.Log
 
+	if err := c.Load(p.configPath, ""); err != nil {
+		util.Log.Errorf("Error loading %s, %s", p.configPath, err)
+		return subcommands.ExitUsageError
+	}
+
 	c.Conf.ResultsDir = p.resultsDir
 	c.Conf.CveDBType = p.cvedbtype
 	c.Conf.CveDBPath = p.cvedbpath
 	c.Conf.CveDBURL = p.cveDictionaryURL
+	c.Conf.OvalDBType = p.ovalDBType
+	c.Conf.OvalDBPath = p.ovalDBPath
+	c.Conf.OvalDBURL = p.ovalDBURL
+	c.Conf.CvssScoreOver = p.cvssScoreOver
+	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
+	c.Conf.IgnoreUnfixed = p.ignoreUnfixed
 
 	log.Info("Validating config...")
 	if !c.Conf.ValidateOnTui() {
@@ -136,44 +204,22 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	}
 
 	c.Conf.Pipe = p.pipe
-	jsonDir, err := jsonDir(f.Args())
+
+	dir, err := report.JSONDir(f.Args())
 	if err != nil {
-		log.Errorf("Failed to read json dir under results: %s", err)
+		util.Log.Errorf("Failed to read from JSON: %s", err)
 		return subcommands.ExitFailure
 	}
-
-	history, err := loadOneScanHistory(jsonDir)
-	if err != nil {
-		log.Errorf("Failed to read from JSON: %s", err)
+	var res models.ScanResults
+	if res, err = report.LoadScanResults(dir); err != nil {
+		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}
+	util.Log.Infof("Loaded: %s", dir)
 
-	var results []models.ScanResult
-	for _, r := range history.ScanResults {
-		if p.refreshCve || needToRefreshCve(r) {
-			if c.Conf.CveDBType == "sqlite3" {
-				if _, err := os.Stat(c.Conf.CveDBPath); os.IsNotExist(err) {
-					log.Errorf("SQLite3 DB(CVE-Dictionary) is not exist: %s",
-						c.Conf.CveDBPath)
-					return subcommands.ExitFailure
-				}
-			}
-
-			filled, err := fillCveInfoFromCveDB(r)
-			if err != nil {
-				log.Errorf("Failed to fill CVE information: %s", err)
-				return subcommands.ExitFailure
-			}
-
-			if err := overwriteJSONFile(jsonDir, *filled); err != nil {
-				log.Errorf("Failed to write JSON: %s", err)
-				return subcommands.ExitFailure
-			}
-			results = append(results, *filled)
-		} else {
-			results = append(results, r)
-		}
+	if res, err = report.FillCveInfos(res, dir); err != nil {
+		util.Log.Error(err)
+		return subcommands.ExitFailure
 	}
-	history.ScanResults = results
-	return report.RunTui(history)
+	return report.RunTui(res)
 }

@@ -1,5 +1,80 @@
 # Change Log
 
+## [v0.4.0](https://github.com/future-architect/vuls/tree/v0.4.0) (2017-08-25)
+[Full Changelog](https://github.com/future-architect/vuls/compare/v0.3.0...v0.4.0)
+
+**Implemented enhancements:**
+
+- Output changelog in report, TUI and JSON for RHEL [\#367](https://github.com/future-architect/vuls/issues/367)
+- Output changelog in report, TUI and JSON for Amazon Linux [\#366](https://github.com/future-architect/vuls/issues/366)
+- Improve scanning accuracy by checking package versions [\#256](https://github.com/future-architect/vuls/issues/256)
+- Improve SSH [\#415](https://github.com/future-architect/vuls/issues/415)
+- Enable to scan even if target server can not connect to the Internet [\#258](https://github.com/future-architect/vuls/issues/258)
+- SSH Hostkey check [\#417](https://github.com/future-architect/vuls/pull/417) ([kotakanbe](https://github.com/kotakanbe))
+- v0.4.0 [\#449](https://github.com/future-architect/vuls/pull/449) ([kotakanbe](https://github.com/kotakanbe))
+- Change default ssh method from go library to external command [\#416](https://github.com/future-architect/vuls/pull/416) ([kotakanbe](https://github.com/kotakanbe))
+- Add containers-only option to configtest [\#411](https://github.com/future-architect/vuls/pull/411) ([knqyf263](https://github.com/knqyf263))
+
+**Fixed bugs:**
+
+-  Running Vuls tui before vuls report does not show vulnerabilities checked by CPE [\#396](https://github.com/future-architect/vuls/issues/396)
+- With a long package name, Local shell mode \(stty dont' work\) [\#444](https://github.com/future-architect/vuls/issues/444)
+- Improve SSH [\#415](https://github.com/future-architect/vuls/issues/415)
+- Report that a vulnerability exists in the wrong package [\#408](https://github.com/future-architect/vuls/issues/408)
+- With a long package name, a parse error occurs. [\#391](https://github.com/future-architect/vuls/issues/391)
+- Ubuntu failed to scan vulnerable packages [\#205](https://github.com/future-architect/vuls/issues/205)
+- CVE-ID in changelog can't be picked up. [\#154](https://github.com/future-architect/vuls/issues/154)
+- v0.4.0 [\#449](https://github.com/future-architect/vuls/pull/449) ([kotakanbe](https://github.com/kotakanbe))
+- Fix SSH dial error [\#413](https://github.com/future-architect/vuls/pull/413) ([kotakanbe](https://github.com/kotakanbe))
+- Update deps, Change deps tool from glide to dep [\#412](https://github.com/future-architect/vuls/pull/412) ([kotakanbe](https://github.com/kotakanbe))
+- fix report option Loaded error-info [\#406](https://github.com/future-architect/vuls/pull/406) ([hogehogehugahuga](https://github.com/hogehogehugahuga))
+- Add --user root to docker exec command [\#389](https://github.com/future-architect/vuls/pull/389) ([PaulFurtado](https://github.com/PaulFurtado))
+
+**Closed issues:**
+
+- README.md.ja not include "Oracle Linux, FreeBSD"  [\#465](https://github.com/future-architect/vuls/issues/465)
+- Can't scan remote server - \(centos 7 - updated\) [\#451](https://github.com/future-architect/vuls/issues/451)
+- An abnormality in the result of vuls tui [\#439](https://github.com/future-architect/vuls/issues/439)
+- compile faild [\#436](https://github.com/future-architect/vuls/issues/436)
+- Can't install vuls on CentOS 7 [\#432](https://github.com/future-architect/vuls/issues/432)
+- Vuls scan doesn't show severity score in any of the vulnerable packages [\#430](https://github.com/future-architect/vuls/issues/430)
+- Load config failedtoml: cannot load TOML value of type string into a Go slice [\#429](https://github.com/future-architect/vuls/issues/429)
+- vuls scan not running check-update with sudo for Centos 7 [\#428](https://github.com/future-architect/vuls/issues/428)
+- options for configtest not being activated [\#422](https://github.com/future-architect/vuls/issues/422)
+- "could not find project Gopkg.toml, use dep init to initiate a manifest" when installing vuls [\#420](https://github.com/future-architect/vuls/issues/420)
+- go get not get  [\#407](https://github.com/future-architect/vuls/issues/407)
+- Failed to scan via docker. err: Unknown format [\#404](https://github.com/future-architect/vuls/issues/404)
+- Failed to scan - kernel-xxx is an installed security update [\#403](https://github.com/future-architect/vuls/issues/403)
+- 169.254.169.254 port 80: Connection refused [\#402](https://github.com/future-architect/vuls/issues/402)
+- vuls scan --debug cause `invalid memory address` error [\#397](https://github.com/future-architect/vuls/issues/397)
+- Provide a command line flag that will automatically install aptitude on debian? [\#390](https://github.com/future-architect/vuls/issues/390)
+
+**Merged pull requests:**
+
+- export fill cve info [\#467](https://github.com/future-architect/vuls/pull/467) ([sadayuki-matsuno](https://github.com/sadayuki-matsuno))
+- add oval docker [\#466](https://github.com/future-architect/vuls/pull/466) ([sadayuki-matsuno](https://github.com/sadayuki-matsuno))
+- fix typos in commands. [\#464](https://github.com/future-architect/vuls/pull/464) ([ymomoi](https://github.com/ymomoi))
+- Update README [\#463](https://github.com/future-architect/vuls/pull/463) ([kotakanbe](https://github.com/kotakanbe))
+- export FillWithOval [\#462](https://github.com/future-architect/vuls/pull/462) ([sadayuki-matsuno](https://github.com/sadayuki-matsuno))
+- add serveruuid field [\#458](https://github.com/future-architect/vuls/pull/458) ([sadayuki-matsuno](https://github.com/sadayuki-matsuno))
+- add s3 dirctory option [\#457](https://github.com/future-architect/vuls/pull/457) ([sadayuki-matsuno](https://github.com/sadayuki-matsuno))
+- Extract Advisory.Description on RHEL, Amazon, Oracle [\#450](https://github.com/future-architect/vuls/pull/450) ([kotakanbe](https://github.com/kotakanbe))
+- nosudo on CentOS and Fetch Changelogs on Amazon, RHEL [\#448](https://github.com/future-architect/vuls/pull/448) ([kotakanbe](https://github.com/kotakanbe))
+- change logrus package to lowercase and update other packages [\#446](https://github.com/future-architect/vuls/pull/446) ([sadayuki-matsuno](https://github.com/sadayuki-matsuno))
+- add db backend redis [\#445](https://github.com/future-architect/vuls/pull/445) ([sadayuki-matsuno](https://github.com/sadayuki-matsuno))
+- fast test [\#435](https://github.com/future-architect/vuls/pull/435) ([sadayuki-matsuno](https://github.com/sadayuki-matsuno))
+- fix typo [\#433](https://github.com/future-architect/vuls/pull/433) ([sadayuki-matsuno](https://github.com/sadayuki-matsuno))
+- Add support for PostgreSQL as a DB storage back-end [\#431](https://github.com/future-architect/vuls/pull/431) ([sadayuki-matsuno](https://github.com/sadayuki-matsuno))
+- typo README.js.md [\#426](https://github.com/future-architect/vuls/pull/426) ([ryurock](https://github.com/ryurock))
+- Add TOC to README [\#425](https://github.com/future-architect/vuls/pull/425) ([kotakanbe](https://github.com/kotakanbe))
+- Fixing \#420 where lock and manifest have moved to TOML [\#421](https://github.com/future-architect/vuls/pull/421) ([elfgoh](https://github.com/elfgoh))
+- Define timeout for vulnerabilities scan and platform detection [\#414](https://github.com/future-architect/vuls/pull/414) ([s7anley](https://github.com/s7anley))
+- Enable -timeout option when detecting OS [\#410](https://github.com/future-architect/vuls/pull/410) ([knqyf263](https://github.com/knqyf263))
+- Remove duplicate command in README [\#401](https://github.com/future-architect/vuls/pull/401) ([knqyf263](https://github.com/knqyf263))
+- Fix to read config.toml at tui [\#441](https://github.com/future-architect/vuls/pull/441) ([usiusi360](https://github.com/usiusi360))
+- Change NVD URL to new one [\#419](https://github.com/future-architect/vuls/pull/419) ([kotakanbe](https://github.com/kotakanbe))
+- Add some testcases [\#418](https://github.com/future-architect/vuls/pull/418) ([kotakanbe](https://github.com/kotakanbe))
+
 ## [v0.3.0](https://github.com/future-architect/vuls/tree/v0.3.0) (2017-03-24)
 [Full Changelog](https://github.com/future-architect/vuls/compare/v0.2.0...v0.3.0)
 

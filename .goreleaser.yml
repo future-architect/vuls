@@ -1,0 +1,24 @@
+project_name: vuls
+release:
+  github:
+    owner: future-architect
+    name: vuls
+builds:
+- goos:
+  - linux
+  goarch:
+  - amd64
+  main: .
+  ldflags: -s -w -X main.version={{.Version}} -X main.revision={{.Commit}}
+  binary: vuls
+archive:
+  format: tar.gz
+  name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{
+    .Arm }}{{ end }}'
+  files:
+  - LICENSE
+  - NOTICE
+  - README*
+  - CHANGELOG.md
+snapshot:
+  name_template: SNAPSHOT-{{ .Commit }}

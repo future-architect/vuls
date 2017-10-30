@@ -26,7 +26,7 @@ func (o *unknown) checkIfSudoNoPasswd() error {
 	return nil
 }
 
-func (o unknown) checkDependencies() error {
+func (o *unknown) checkDependencies() error {
 	return nil
 }
 

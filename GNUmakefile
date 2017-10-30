@@ -15,7 +15,7 @@
 	clean
 
 SRCS = $(shell git ls-files '*.go')
-PKGS = ./. ./config ./models ./report ./cveapi ./scan ./util ./commands ./cache
+PKGS = ./. ./cache ./commands ./config ./models ./oval ./report ./scan ./util 
 VERSION := $(shell git describe --tags --abbrev=0)
 REVISION := $(shell git rev-parse --short HEAD)
 LDFLAGS := -X 'main.version=$(VERSION)' \
@@ -31,10 +31,10 @@ depup:
 	go get -u github.com/golang/dep/...
 	dep ensure -update
 
-build: main.go dep
+build: main.go dep pretest
 	go build -ldflags "$(LDFLAGS)" -o vuls $<
 
-install: main.go dep
+install: main.go dep pretest
 	go install -ldflags "$(LDFLAGS)"
 
 
@@ -44,18 +44,19 @@ lint:
 
 vet:
 	#  @-go get -v golang.org/x/tools/cmd/vet
-	$(foreach pkg,$(PKGS),go vet $(pkg);)
+	echo $(PKGS) | xargs go vet || exit;
 
 fmt:
-	gofmt -w $(SRCS)
+	gofmt -s -w $(SRCS)
 
 fmtcheck:
-	$(foreach file,$(SRCS),gofmt -d $(file);)
+	$(foreach file,$(SRCS),gofmt -s -d $(file);)
 
 pretest: lint vet fmtcheck
 
 test: pretest
-	$(foreach pkg,$(PKGS),go test -cover -v $(pkg) || exit;)
+	go install
+	echo $(PKGS) | xargs go test -cover -v || exit;
 
 unused :
 	$(foreach pkg,$(PKGS),unused $(pkg);)
@@ -66,5 +67,5 @@ cov:
 	gocov test | gocov report
 
 clean:
-	$(foreach pkg,$(PKGS),go clean $(pkg) || exit;)
+	echo $(PKGS) | xargs go clean || exit;
 

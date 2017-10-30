@@ -23,7 +23,7 @@ VulsRepo is visualized based on the json report output in [vuls](https://github.
 ```console
 $docker run -dt \
     -v $PWD:/vuls \
-    -p 80:80 \
+    -p 5111:5111 \
     vuls/vulsrepo
 ```
 

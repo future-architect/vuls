@@ -19,16 +19,64 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
 	valid "github.com/asaskevich/govalidator"
+	log "github.com/sirupsen/logrus"
 )
 
 // Conf has Configuration
 var Conf Config
+
+const (
+	// RedHat is
+	RedHat = "redhat"
+
+	// Debian is
+	Debian = "debian"
+
+	// Ubuntu is
+	Ubuntu = "ubuntu"
+
+	// CentOS is
+	CentOS = "centos"
+
+	// Fedora is
+	Fedora = "fedora"
+
+	// Amazon is
+	Amazon = "amazon"
+
+	// Oracle is
+	Oracle = "oracle"
+
+	// FreeBSD is
+	FreeBSD = "freebsd"
+
+	// Raspbian is
+	Raspbian = "raspbian"
+
+	// Windows is
+	Windows = "windows"
+
+	// OpenSUSE is
+	OpenSUSE = "opensuse"
+
+	// OpenSUSELeap is
+	OpenSUSELeap = "opensuse.leap"
+
+	// SUSEEnterpriseServer is
+	SUSEEnterpriseServer = "suse.linux.enterprise.server"
+
+	// SUSEEnterpriseDesktop is
+	SUSEEnterpriseDesktop = "suse.linux.enterprise.desktop"
+
+	// SUSEOpenstackCloud is
+	SUSEOpenstackCloud = "suse.openstack.cloud"
+)
 
 //Config is struct of Configuration
 type Config struct {
@@ -43,19 +91,28 @@ type Config struct {
 
 	CvssScoreOver      float64
 	IgnoreUnscoredCves bool
+	IgnoreUnfixed      bool
 
 	SSHNative      bool
 	ContainersOnly bool
+	Deep           bool
 	SkipBroken     bool
 
 	HTTPProxy  string `valid:"url"`
 	LogDir     string
 	ResultsDir string
 
-	CveDBType   string
-	CveDBPath   string
-	CveDBURL    string
+	CveDBType string
+	CveDBPath string
+	CveDBURL  string
+
+	OvalDBType string
+	OvalDBPath string
+	OvalDBURL  string
+
 	CacheDBPath string
+
+	RefreshCve bool
 
 	FormatXML         bool
 	FormatJSON        bool
@@ -66,12 +123,13 @@ type Config struct {
 
 	GZIP bool
 
-	AwsProfile string
-	AwsRegion  string
-	S3Bucket   string
+	AwsProfile   string
+	AwsRegion    string
+	S3Bucket     string
+	S3ResultsDir string
 
 	AzureAccount   string
-	AzureKey       string
+	AzureKey       string `json:"-"`
 	AzureContainer string
 
 	Pipe bool
@@ -155,21 +213,17 @@ func (c Config) ValidateOnReport() bool {
 		}
 	}
 
-	switch c.CveDBType {
-	case "sqlite3":
-		if ok, _ := valid.IsFilePath(c.CveDBPath); !ok {
-			errs = append(errs, fmt.Errorf(
-				"SQLite3 DB(CVE-Dictionary) path must be a *Absolute* file path. -cvedb-path: %s",
-				c.CveDBPath))
+	if err := validateDB("cvedb", c.CveDBType, c.CveDBPath, c.CveDBURL); err != nil {
+		errs = append(errs, err)
+	}
+	if c.CveDBType == "sqlite3" {
+		if _, err := os.Stat(c.CveDBPath); os.IsNotExist(err) {
+			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDBPath))
 		}
-	case "mysql":
-		if c.CveDBURL == "" {
-			errs = append(errs, fmt.Errorf(
-				`MySQL connection string is needed. -cvedb-url="user:pass@tcp(localhost:3306)/dbname"`))
-		}
-	default:
-		errs = append(errs, fmt.Errorf(
-			"CVE DB type must be either 'sqlite3' or 'mysql'.  -cvedb-type: %s", c.CveDBType))
+	}
+
+	if err := validateDB("ovaldb", c.OvalDBType, c.OvalDBPath, c.OvalDBURL); err != nil {
+		errs = append(errs, err)
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -203,15 +257,12 @@ func (c Config) ValidateOnTui() bool {
 		}
 	}
 
-	if c.CveDBType != "sqlite3" && c.CveDBType != "mysql" {
-		errs = append(errs, fmt.Errorf(
-			"CVE DB type must be either 'sqlite3' or 'mysql'.  -cve-dictionary-dbtype: %s", c.CveDBType))
+	if err := validateDB("cvedb", c.CveDBType, c.CveDBPath, c.CveDBURL); err != nil {
+		errs = append(errs, err)
 	}
-
 	if c.CveDBType == "sqlite3" {
-		if ok, _ := valid.IsFilePath(c.CveDBPath); !ok {
-			errs = append(errs, fmt.Errorf(
-				"SQLite3 DB(CVE-Dictionary) path must be a *Absolute* file path. -cve-dictionary-dbpath: %s", c.CveDBPath))
+		if _, err := os.Stat(c.CveDBPath); os.IsNotExist(err) {
+			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDBPath))
 		}
 	}
 
@@ -222,13 +273,53 @@ func (c Config) ValidateOnTui() bool {
 	return len(errs) == 0
 }
 
+// validateDB validates configuration
+//  dictionaryDB name is 'cvedb' or 'ovaldb'
+func validateDB(dictionaryDBName, dbType, dbPath, dbURL string) error {
+	switch dbType {
+	case "sqlite3":
+		if ok, _ := valid.IsFilePath(dbPath); !ok {
+			return fmt.Errorf(
+				"SQLite3 DB path (%s) must be a *Absolute* file path. -%s-path: %s",
+				dictionaryDBName,
+				dictionaryDBName,
+				dbPath)
+		}
+	case "mysql":
+		if dbURL == "" {
+			return fmt.Errorf(
+				`MySQL connection string is needed. -%s-url="user:pass@tcp(localhost:3306)/dbname"`,
+				dictionaryDBName)
+		}
+	case "postgres":
+		if dbURL == "" {
+			return fmt.Errorf(
+				`PostgreSQL connection string is needed. -%s-url="host=myhost user=user dbname=dbname sslmode=disable password=password"`,
+				dictionaryDBName)
+		}
+	case "redis":
+		if dbURL == "" {
+			return fmt.Errorf(
+				`Redis connection string is needed. -%s-url="redis://localhost/0"`,
+				dictionaryDBName)
+		}
+	default:
+		return fmt.Errorf(
+			"%s type must be either 'sqlite3', 'mysql', 'postgres' or 'redis'.  -%s-type: %s",
+			dictionaryDBName,
+			dictionaryDBName,
+			dbType)
+	}
+	return nil
+}
+
 // SMTPConf is smtp config
 type SMTPConf struct {
 	SMTPAddr string
 	SMTPPort string `valid:"port"`
 
 	User          string
-	Password      string
+	Password      string `json:"-"`
 	From          string
 	To            []string
 	Cc            []string
@@ -288,10 +379,11 @@ func (c *SMTPConf) Validate() (errs []error) {
 
 // SlackConf is slack config
 type SlackConf struct {
-	HookURL   string `valid:"url"`
-	Channel   string `json:"channel"`
-	IconEmoji string `json:"icon_emoji"`
-	AuthUser  string `json:"username"`
+	HookURL     string `valid:"url" json:"-"`
+	LegacyToken string `json:"token" toml:"legacyToken,omitempty"`
+	Channel     string `json:"channel"`
+	IconEmoji   string `json:"icon_emoji"`
+	AuthUser    string `json:"username"`
 
 	NotifyUsers []string
 	Text        string `json:"text"`
@@ -338,7 +430,7 @@ type ServerInfo struct {
 	Host        string
 	Port        string
 	KeyPath     string
-	KeyPassword string
+	KeyPassword string `json:"-"`
 
 	CpeNames               []string
 	DependencyCheckXMLPath string
@@ -352,7 +444,7 @@ type ServerInfo struct {
 	Optional [][]interface{}
 
 	// For CentOS, RHEL, Amazon
-	Enablerepo string
+	Enablerepo []string
 
 	// used internal
 	LogMsgAnsiColor string // DebugLog Color
