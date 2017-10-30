@@ -266,14 +266,13 @@ $ git clone https://github.com/future-architect/vuls.git
 $ cd vuls
 $ make install
 ```
+もし、あなたが以前にvulsをインストールしていて update をする場合は以下を実施してください。
 ```
-もし、あなたが以前にvulsをインストールしていて update をする場合は
 $ rm -rf  $GOPATH/pkg/linux_amd64/github.com/future-architect/vuls/
 $ rm -rf  $GOPATH/src/github.com/future-architect/vuls/
 $ git clone https://github.com/future-architect/vuls.git
 $ cd vuls
 $ make install
-を実施すると問題が解決すると思われる。
 ```
 
 ## Step5. Config
