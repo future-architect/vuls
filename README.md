@@ -349,6 +349,15 @@ $ git clone https://github.com/future-architect/vuls.git
 $ cd vuls
 $ make install
 ```
+If you have previously installed vuls and want to update, please do the following
+```
+$ rm -rf $GOPATH/pkg/linux_amd64/github.com/future-architect/vuls/
+$ rm -rf $GOPATH/src/github.com/future-architect/vuls/
+$ git clone https://github.com/future-architect/vuls.git
+$ cd Vuls
+$ make install
+```
+
 The binary was built under `$GOPATH/bin`
 If the installation process stops halfway, try increasing the instance type of EC2. An out of memory error may have occurred.
 

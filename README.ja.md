@@ -340,8 +340,18 @@ $ git clone https://github.com/future-architect/vuls.git
 $ cd vuls
 $ make install
 ```
+
 The binary was built under `$GOPATH/bin`
 もしもインストールプロセスが途中で止まる場合は、Out of memory errorが発生している可能性があるので、インスタンスタイプを大きくして再実行してみてください。
+
+もし、あなたが以前にvulsをインストールしていて update をする場合は以下を実施してください。
+```
+$ rm -rf  $GOPATH/pkg/linux_amd64/github.com/future-architect/vuls/
+$ rm -rf  $GOPATH/src/github.com/future-architect/vuls/
+$ git clone https://github.com/future-architect/vuls.git
+$ cd vuls
+$ make install
+```
 
 ## Step6. Config
 
