@@ -132,6 +132,7 @@ host         = "{{$ip}}"
 #port        = "22"
 #user        = "root"
 #keyPath     = "/home/username/.ssh/id_rsa"
+#type 		 = "pseudo"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]

@@ -78,6 +78,11 @@ const (
 	SUSEOpenstackCloud = "suse.openstack.cloud"
 )
 
+const (
+	// ServerTypePseudo is used for ServerInfo.Type
+	ServerTypePseudo = "pseudo"
+)
+
 //Config is struct of Configuration
 type Config struct {
 	Debug    bool
@@ -445,6 +450,9 @@ type ServerInfo struct {
 
 	// For CentOS, RHEL, Amazon
 	Enablerepo []string
+
+	// "pseudo" or ""
+	Type string
 
 	// used internal
 	LogMsgAnsiColor string // DebugLog Color

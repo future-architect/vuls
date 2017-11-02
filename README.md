@@ -735,6 +735,7 @@ host         = "172.31.4.82"
 #port        = "22"
 #user        = "root"
 #keyPath     = "/home/username/.ssh/id_rsa"
+#type 		 = "pseudo"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
@@ -839,6 +840,7 @@ You can customize your configuration using this template.
     #port        = "22"
     #user        = "root"
     #keyPath     = "/home/username/.ssh/id_rsa"
+    #type 		 = "pseudo"
     #cpeNames = [
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
@@ -858,6 +860,7 @@ You can customize your configuration using this template.
     - port: SSH Port number
     - user: SSH username
     - keyPath: SSH private key path
+    - type: "pseudo" for non-ssh scanning. see [#531](https://github.com/future-architect/vuls/pull/531)
     - cpeNames: see [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerability-of-non-os-package)
     - ignoreCves: CVE IDs that will not be reported. But output to JSON file.
     - optional: Add additional information to JSON report.
@@ -1608,6 +1611,20 @@ To detect the vulnerability of Ruby on Rails v4.2.1, cpeNames needs to be set in
     host         = "172.31.4.82"
     user        = "ec2-user"
     keyPath     = "/home/username/.ssh/id_rsa"
+    cpeNames = [
+      "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
+    ]
+    ```
+
+- type="pseudo"
+Specify this when you want to detect vulnerability by specifying cpename without SSH connection.
+The pseudo type does not do anything when scanning.
+Search for NVD at report time and detect vulnerability of software specified as cpenamae.
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+	type = "pseudo"
     cpeNames = [
       "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     ]

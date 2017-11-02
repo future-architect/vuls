@@ -91,7 +91,7 @@ Table of Contents
       * [Example: Use MySQL as a DB storage back-end](#example-use-mysql-as-a-db-storage-back-end)
       * [Example: Use PostgreSQL as a DB storage back-end](#example-use-postgresql-as-a-db-storage-back-end)
       * [Example: Use Redis as a DB storage back-end](#example-use-redis-as-a-db-storage-back-end)
-   * [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerability-of-non-os-package)
+   * [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerabilites-of-non-os-packages)
    * [Usage: Integrate with OWASP Dependency Check to Automatic update when the libraries are updated (Experimental)](#usage-integrate-with-owasp-dependency-check-to-automatic-update-when-the-libraries-are-updated-experimental)
    * [Usage: TUI](#usage-tui)
       * [Display the latest scan results](#display-the-latest-scan-results)
@@ -721,6 +721,7 @@ host         = "172.31.4.82"
 #port        = "22"
 #user        = "root"
 #keyPath     = "/home/username/.ssh/id_rsa"
+#type 		 = "pseudo"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
@@ -831,6 +832,7 @@ host         = "172.31.4.82"
     #cpeNames = [
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
+    #type 		 = "pseudo"
     #ignoreCves = ["CVE-2016-6314"]
     #optional = [
     #    ["key", "value"],
@@ -847,6 +849,7 @@ host         = "172.31.4.82"
     - port: SSH Port number
     - user: SSH username
     - keyPath: SSH private key path
+    - type: "pseudo" for non-ssh scanning. see [#531](https://github.com/future-architect/vuls/pull/531)
     - cpeNames: see [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerability-of-non-os-package)
     - ignoreCves: CVE IDs that will not be reported. But output to JSON file.
     - optional: JSONレポートに含めたい追加情報
@@ -1596,6 +1599,18 @@ Vulsは、[CPE](https://nvd.nist.gov/cpe.cfm)に登録されているソフト�
     host         = "172.31.4.82"
     user        = "ec2-user"
     keyPath     = "/home/username/.ssh/id_rsa"
+    cpeNames = [
+      "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
+    ]
+    ```
+
+- Configuration  
+ネットワーク機器など、スキャン対象にSSH接続しない場合は`type="pseudo"`を指定する。 
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+	type = "pseudo"
     cpeNames = [
       "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     ]
