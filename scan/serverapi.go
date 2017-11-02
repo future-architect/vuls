@@ -41,7 +41,6 @@ type osTypeInterface interface {
 	detectPlatform()
 	getPlatform() models.Platform
 
-	// checkDependencies checks if dependencies are installed on the target server.
 	checkDependencies() error
 	checkIfSudoNoPasswd() error
 
@@ -74,6 +73,11 @@ type osPackages struct {
 func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 	var itsMe bool
 	var fatalErr error
+
+	if itsMe, osType, _ = detectPseudo(c); itsMe {
+		util.Log.Debugf("Pseudo. Host: %s:%s", c.Host, c.Port)
+		return
+	}
 
 	itsMe, osType, fatalErr = detectDebian(c)
 	if fatalErr != nil {

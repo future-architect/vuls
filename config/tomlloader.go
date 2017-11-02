@@ -175,6 +175,8 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			}
 		}
 
+		s.Type = v.Type
+
 		s.LogMsgAnsiColor = Colors[i%len(Colors)]
 		i++
 
