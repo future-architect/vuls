@@ -75,7 +75,7 @@ func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 	var fatalErr error
 
 	if itsMe, osType, _ = detectPseudo(c); itsMe {
-		util.Log.Debugf("Pseudo. Host: %s:%s", c.Host, c.Port)
+		util.Log.Debugf("Pseudo")
 		return
 	}
 

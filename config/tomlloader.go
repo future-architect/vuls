@@ -62,7 +62,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		s := ServerInfo{ServerName: name}
 
 		s.Host = v.Host
-		if len(s.Host) == 0 {
+		if len(s.Host) == 0 && v.Type != ServerTypePseudo {
 			return fmt.Errorf("%s is invalid. host is empty", name)
 		}
 
