@@ -260,11 +260,13 @@ func (o *redhat) scanPackages() error {
 }
 
 func (o *redhat) rebootRequired() (bool, error) {
-	r := o.exec("rpm -q --last kernel | head -n1", noSudo)
-	if !r.isSuccess() {
-		return false, fmt.Errorf("Failed to detect the last installed kernel : %v", r)
+	r := o.exec("rpm -q --last kernel", noSudo)
+	scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
+	if !r.isSuccess() || !scanner.Scan() {
+		o.log.Warn("Failed to detect the last installed kernel : %v", r)
+		return false, nil
 	}
-	lastInstalledKernelVer := strings.Fields(r.Stdout)[0]
+	lastInstalledKernelVer := strings.Fields(scanner.Text())[0]
 	running := fmt.Sprintf("kernel-%s", o.Kernel.Release)
 	return running != lastInstalledKernelVer, nil
 }
