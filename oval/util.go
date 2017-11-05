@@ -321,7 +321,19 @@ func lessThan(family, versionRelease string, packB ovalmodels.Package) (bool, er
 			return false, err
 		}
 		return vera.LessThan(verb), nil
-	case config.RedHat, config.Oracle, config.SUSEEnterpriseServer:
+	case config.Oracle, config.SUSEEnterpriseServer:
+		vera := rpmver.NewVersion(versionRelease)
+		verb := rpmver.NewVersion(packB.Version)
+		return vera.LessThan(verb), nil
+	case config.RedHat:
+		// TODO: Separate code when supporting Scientific Linux
+		rea := regexp.MustCompile(`\.sl(\d+)`)
+		reb := regexp.MustCompile(`\.el(\d+)(?:_\d+)?`)
+		if rea.MatchString(versionRelease) {
+			vera := rpmver.NewVersion(rea.ReplaceAllString(versionRelease, ".el$1"))
+			verb := rpmver.NewVersion(reb.ReplaceAllString(packB.Version, ".el$1"))
+			return vera.LessThan(verb), nil
+		}
 		vera := rpmver.NewVersion(versionRelease)
 		verb := rpmver.NewVersion(packB.Version)
 		return vera.LessThan(verb), nil
