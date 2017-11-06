@@ -61,46 +61,48 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 
 		s := ServerInfo{ServerName: name}
 
-		s.Host = v.Host
-		if len(s.Host) == 0 && v.Type != ServerTypePseudo {
-			return fmt.Errorf("%s is invalid. host is empty", name)
-		}
-
-		switch {
-		case v.Port != "":
-			s.Port = v.Port
-		case d.Port != "":
-			s.Port = d.Port
-		default:
-			s.Port = "22"
-		}
-
-		switch {
-		case v.User != "":
-			s.User = v.User
-		case d.User != "":
-			s.User = d.User
-		default:
-			if s.Port != "local" {
-				return fmt.Errorf("%s is invalid. User is empty", name)
+		if v.Type != ServerTypePseudo {
+			s.Host = v.Host
+			if len(s.Host) == 0 {
+				return fmt.Errorf("%s is invalid. host is empty", name)
 			}
-		}
 
-		s.KeyPath = v.KeyPath
-		if len(s.KeyPath) == 0 {
-			s.KeyPath = d.KeyPath
-		}
-		if s.KeyPath != "" {
-			if _, err := os.Stat(s.KeyPath); err != nil {
-				return fmt.Errorf(
-					"%s is invalid. keypath: %s not exists", name, s.KeyPath)
+			switch {
+			case v.Port != "":
+				s.Port = v.Port
+			case d.Port != "":
+				s.Port = d.Port
+			default:
+				s.Port = "22"
 			}
-		}
 
-		//  s.KeyPassword = keyPass
-		s.KeyPassword = v.KeyPassword
-		if len(s.KeyPassword) == 0 {
-			s.KeyPassword = d.KeyPassword
+			switch {
+			case v.User != "":
+				s.User = v.User
+			case d.User != "":
+				s.User = d.User
+			default:
+				if s.Port != "local" {
+					return fmt.Errorf("%s is invalid. User is empty", name)
+				}
+			}
+
+			s.KeyPath = v.KeyPath
+			if len(s.KeyPath) == 0 {
+				s.KeyPath = d.KeyPath
+			}
+			if s.KeyPath != "" {
+				if _, err := os.Stat(s.KeyPath); err != nil {
+					return fmt.Errorf(
+						"%s is invalid. keypath: %s not exists", name, s.KeyPath)
+				}
+			}
+
+			//  s.KeyPassword = keyPass
+			s.KeyPassword = v.KeyPassword
+			if len(s.KeyPassword) == 0 {
+				s.KeyPassword = d.KeyPassword
+			}
 		}
 
 		s.CpeNames = v.CpeNames
