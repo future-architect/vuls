@@ -261,7 +261,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 		//   req.isSrcPack == false
 		//   Version comparison
 		//     oval vs NewVersion
-		//       oval.version < installed.newVersion
+		//       oval.version > installed.newVersion
 		{
 			in: in{
 				family: "ubuntu",
@@ -318,6 +318,618 @@ func TestIsOvalDefAffected(t *testing.T) {
 				},
 			},
 			affected:    true,
+			notFixedYet: false,
+		},
+		// RedHat
+		{
+			in: in{
+				family: "redhat",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6_7.7",
+				},
+			},
+			affected:    true,
+			notFixedYet: true,
+		},
+		{
+			in: in{
+				family: "redhat",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6_7.8",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "redhat",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6_7.9",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "redhat",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.el6_7.6",
+					NewVersionRelease: "0:1.2.3-45.el6_7.7",
+				},
+			},
+			affected:    true,
+			notFixedYet: true,
+		},
+		{
+			in: in{
+				family: "redhat",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.el6_7.6",
+					NewVersionRelease: "0:1.2.3-45.el6_7.8",
+				},
+			},
+			affected:    true,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "redhat",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.el6_7.6",
+					NewVersionRelease: "0:1.2.3-45.el6_7.9",
+				},
+			},
+			affected:    true,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "redhat",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6.8",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "redhat",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6_7.8",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		// CentOS
+		{
+			in: in{
+				family: "centos",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6.centos.7",
+				},
+			},
+			affected:    true,
+			notFixedYet: true,
+		},
+		{
+			in: in{
+				family: "centos",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6.centos.8",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "centos",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6.centos.9",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "centos",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.el6.centos.6",
+					NewVersionRelease: "0:1.2.3-45.el6.centos.7",
+				},
+			},
+			affected:    true,
+			notFixedYet: true,
+		},
+		{
+			in: in{
+				family: "centos",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.el6.centos.6",
+					NewVersionRelease: "0:1.2.3-45.el6.centos.8",
+				},
+			},
+			affected:    true,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "centos",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.el6.centos.6",
+					NewVersionRelease: "0:1.2.3-45.el6.centos.9",
+				},
+			},
+			affected:    true,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "centos",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6.8",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "centos",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6_7.8",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		// TODO: If vuls support Scientific, replace "centos" below to "scientific".
+		{
+			in: in{
+				family: "centos",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.sl6.7",
+				},
+			},
+			affected:    true,
+			notFixedYet: true,
+		},
+		{
+			in: in{
+				family: "centos",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.sl6.8",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "centos",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.sl6.9",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "centos",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.sl6.6",
+					NewVersionRelease: "0:1.2.3-45.sl6.7",
+				},
+			},
+			affected:    true,
+			notFixedYet: true,
+		},
+		{
+			in: in{
+				family: "centos",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.sl6.6",
+					NewVersionRelease: "0:1.2.3-45.sl6.8",
+				},
+			},
+			affected:    true,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "centos",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.sl6.6",
+					NewVersionRelease: "0:1.2.3-45.sl6.9",
+				},
+			},
+			affected:    true,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "centos",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6.8",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "centos",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6_7.8",
+				},
+			},
+			affected:    false,
 			notFixedYet: false,
 		},
 	}
