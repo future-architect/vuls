@@ -14,7 +14,6 @@ We have a slack team. [Join slack team](http://goo.gl/forms/xm5KFo35tu)
 Twitter: [@vuls_en](https://twitter.com/vuls_en)
 
 [README 日本語](https://github.com/future-architect/vuls/blob/master/README.ja.md)  
-[README in French](https://github.com/future-architect/vuls/blob/master/README.fr.md)  
 
 ![Vuls-Abstract](img/vuls-abstract.png)
 
