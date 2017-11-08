@@ -454,7 +454,7 @@ func (o *redhat) getAvailableChangelogs(packNames []string) (map[string]string, 
 	cmd := `yum --color=never %s changelog all %s | grep -A 10000 '==================== Available Packages ===================='`
 	cmd = fmt.Sprintf(cmd, yumopts, strings.Join(packNames, " "))
 
-	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
+	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess(0, 1) {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
