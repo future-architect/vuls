@@ -348,6 +348,7 @@ The binary was built under `$GOPATH/bin`
 ```
 $ rm -rf  $GOPATH/pkg/linux_amd64/github.com/future-architect/vuls/
 $ rm -rf  $GOPATH/src/github.com/future-architect/vuls/
+$ cd $GOPATH/src/github.com/future-architect
 $ git clone https://github.com/future-architect/vuls.git
 $ cd vuls
 $ make install
