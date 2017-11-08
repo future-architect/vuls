@@ -325,28 +325,11 @@ func lessThan(family, versionRelease string, packB ovalmodels.Package) (bool, er
 		vera := rpmver.NewVersion(versionRelease)
 		verb := rpmver.NewVersion(packB.Version)
 		return vera.LessThan(verb), nil
-	case config.RedHat:
-		// TODO: Separate code when supporting Scientific Linux
-		rea := regexp.MustCompile(`\.sl(\d+)`)
+	case config.RedHat, config.CentOS: // TODO: Suport config.Scientific
+		rea := regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.centos)?`)
 		reb := regexp.MustCompile(`\.el(\d+)(?:_\d+)?`)
-		if rea.MatchString(versionRelease) {
-			vera := rpmver.NewVersion(rea.ReplaceAllString(versionRelease, ".el$1"))
-			verb := rpmver.NewVersion(reb.ReplaceAllString(packB.Version, ".el$1"))
-			return vera.LessThan(verb), nil
-		}
-		vera := rpmver.NewVersion(versionRelease)
-		verb := rpmver.NewVersion(packB.Version)
-		return vera.LessThan(verb), nil
-	case config.CentOS:
-		rea := regexp.MustCompile(`\.el(\d+)(?:_\d+)?\.centos`)
-		reb := regexp.MustCompile(`\.el(\d+)(?:_\d+)?`)
-		if rea.MatchString(versionRelease) {
-			vera := rpmver.NewVersion(rea.ReplaceAllString(versionRelease, ".el$1"))
-			verb := rpmver.NewVersion(reb.ReplaceAllString(packB.Version, ".el$1"))
-			return vera.LessThan(verb), nil
-		}
-		vera := rpmver.NewVersion(versionRelease)
-		verb := rpmver.NewVersion(packB.Version)
+		vera := rpmver.NewVersion(rea.ReplaceAllString(versionRelease, ".el$1"))
+		verb := rpmver.NewVersion(reb.ReplaceAllString(packB.Version, ".el$1"))
 		return vera.LessThan(verb), nil
 	default:
 		util.Log.Errorf("Not implemented yet: %s", family)
