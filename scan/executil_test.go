@@ -63,7 +63,7 @@ func TestDecorateCmd(t *testing.T) {
 			conf:     config.ServerInfo{User: "non-roor"},
 			cmd:      "ls | grep hoge",
 			sudo:     true,
-			expected: "sudo -S ls | sudo  grep hoge",
+			expected: "sudo -S ls | grep hoge",
 		},
 		// -------------docker-------------
 		// root sudo false docker
