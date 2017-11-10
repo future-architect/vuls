@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff"
@@ -146,7 +147,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 		select {
 		case res := <-resChan:
 			for _, def := range res.defs {
-				affected, notFixedYet := isOvalDefAffected(def, r.Family, res.request)
+				affected, notFixedYet := isOvalDefAffected(def, res.request, r.Family, r.RunningKernel)
 				if !affected {
 					continue
 				}
@@ -253,7 +254,7 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult) (relatedDefs ovalResult, 
 			return relatedDefs, fmt.Errorf("Failed to get %s OVAL info by package name: %v", r.Family, err)
 		}
 		for _, def := range definitions {
-			affected, notFixedYet := isOvalDefAffected(def, r.Family, req)
+			affected, notFixedYet := isOvalDefAffected(def, req, r.Family, r.RunningKernel)
 			if !affected {
 				continue
 			}
@@ -270,10 +271,33 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult) (relatedDefs ovalResult, 
 	return
 }
 
-func isOvalDefAffected(def ovalmodels.Definition, family string, req request) (affected, notFixedYet bool) {
+func major(version string) string {
+	ss := strings.SplitN(version, ":", 2)
+	ver := ""
+	if len(ss) == 1 {
+		ver = ss[0]
+	} else {
+		ver = ss[1]
+	}
+	return ver[0:strings.Index(ver, ".")]
+}
+
+func isOvalDefAffected(def ovalmodels.Definition, req request, family string, running models.Kernel) (affected, notFixedYet bool) {
 	for _, ovalPack := range def.AffectedPacks {
 		if req.packName != ovalPack.Name {
 			continue
+		}
+
+		if running.Release != "" {
+			switch family {
+			case config.RedHat, config.CentOS:
+				// For kernel related packages, ignore OVAL information with different major versions
+				if _, ok := kernelRelatedPackNames[ovalPack.Name]; ok {
+					if major(ovalPack.Version) != major(running.Release) {
+						continue
+					}
+				}
+			}
 		}
 
 		if ovalPack.NotFixedYet {
