@@ -5,6 +5,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
@@ -167,8 +168,9 @@ func TestDefpacksToPackStatuses(t *testing.T) {
 func TestIsOvalDefAffected(t *testing.T) {
 	type in struct {
 		def    ovalmodels.Definition
-		family string
 		req    request
+		family string
+		kernel models.Kernel
 	}
 	var tests = []struct {
 		in          in
@@ -932,14 +934,85 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected:    false,
 			notFixedYet: false,
 		},
+		// For kernel related packages, ignore OVAL with different major versions
+		{
+			in: in{
+				family: config.CentOS,
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "kernel",
+							Version:     "4.1.0",
+							NotFixedYet: false,
+						},
+					},
+				},
+				req: request{
+					packName:          "kernel",
+					versionRelease:    "3.0.0",
+					NewVersionRelease: "3.2.0",
+				},
+				kernel: models.Kernel{
+					Release: "3.0.0",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: config.CentOS,
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "kernel",
+							Version:     "3.1.0",
+							NotFixedYet: false,
+						},
+					},
+				},
+				req: request{
+					packName:          "kernel",
+					versionRelease:    "3.0.0",
+					NewVersionRelease: "3.2.0",
+				},
+				kernel: models.Kernel{
+					Release: "3.0.0",
+				},
+			},
+			affected:    true,
+			notFixedYet: false,
+		},
 	}
 	for i, tt := range tests {
-		affected, notFixedYet := isOvalDefAffected(tt.in.def, tt.in.family, tt.in.req)
+		affected, notFixedYet := isOvalDefAffected(tt.in.def, tt.in.req, tt.in.family, tt.in.kernel)
 		if tt.affected != affected {
 			t.Errorf("[%d] affected\nexpected: %v\n  actual: %v\n", i, tt.affected, affected)
 		}
 		if tt.notFixedYet != notFixedYet {
 			t.Errorf("[%d] notfixedyet\nexpected: %v\n  actual: %v\n", i, tt.notFixedYet, notFixedYet)
+		}
+	}
+}
+
+func TestMajor(t *testing.T) {
+	var tests = []struct {
+		in       string
+		expected string
+	}{
+		{
+			in:       "4.1",
+			expected: "4",
+		},
+		{
+			in:       "0:4.1",
+			expected: "4",
+		},
+	}
+	for i, tt := range tests {
+		a := major(tt.in)
+		if tt.expected != a {
+			t.Errorf("[%d]\nexpected: %s\n  actual: %s\n", i, tt.expected, a)
 		}
 	}
 }
