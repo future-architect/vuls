@@ -399,7 +399,7 @@ func (o *redhat) parseUpdatablePacksLine(line string) (models.Package, error) {
 }
 
 func (o *redhat) scanUnsecurePackages(updatable models.Packages) (models.VulnInfos, error) {
-	if config.Conf.Deep {
+	if config.Conf.Deep && o.Distro.Family != config.Amazon {
 		//TODO Cache changelogs to bolt
 		if err := o.fillChangelogs(updatable); err != nil {
 			return nil, err
@@ -453,7 +453,7 @@ func (o *redhat) getAvailableChangelogs(packNames []string) (map[string]string, 
 	if config.Conf.SkipBroken {
 		yumopts += " --skip-broken"
 	}
-	cmd := `yum --color=never %s changelog all %s | grep -A 10000 '==================== Available Packages ===================='`
+	cmd := `yum --color=never changelog all %s %s | grep -A 1000000 '==================== Available Packages ===================='`
 	cmd = fmt.Sprintf(cmd, yumopts, strings.Join(packNames, " "))
 
 	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
