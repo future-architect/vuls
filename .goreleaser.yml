@@ -6,15 +6,8 @@ release:
 builds:
 - goos:
   - linux
-  - freebsd
   goarch:
-  - "386"
   - amd64
-  - arm
-  - arm64
-  goarm:
-  - "6"
-  - "7"
   main: .
   ldflags: -s -w -X main.version={{.Version}} -X main.revision={{.Commit}}
   binary: vuls

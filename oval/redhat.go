@@ -68,6 +68,35 @@ func (o RedHatBase) FillWithOval(driver db.DB, r *models.ScanResult) (err error)
 	return nil
 }
 
+var kernelRelatedPackNames = map[string]bool{
+	"kernel":                  true,
+	"kernel-aarch64":          true,
+	"kernel-abi-whitelists":   true,
+	"kernel-bootwrapper":      true,
+	"kernel-debug":            true,
+	"kernel-debug-devel":      true,
+	"kernel-devel":            true,
+	"kernel-doc":              true,
+	"kernel-headers":          true,
+	"kernel-kdump":            true,
+	"kernel-kdump-devel":      true,
+	"kernel-rt":               true,
+	"kernel-rt-debug":         true,
+	"kernel-rt-debug-devel":   true,
+	"kernel-rt-debug-kvm":     true,
+	"kernel-rt-devel":         true,
+	"kernel-rt-doc":           true,
+	"kernel-rt-kvm":           true,
+	"kernel-rt-trace":         true,
+	"kernel-rt-trace-devel":   true,
+	"kernel-rt-trace-kvm":     true,
+	"kernel-rt-virt":          true,
+	"kernel-rt-virt-devel":    true,
+	"kernel-tools":            true,
+	"kernel-tools-libs":       true,
+	"kernel-tools-libs-devel": true,
+}
+
 func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) {
 	ctype := models.NewCveContentType(o.family)
 	for _, cve := range defPacks.def.Advisory.Cves {

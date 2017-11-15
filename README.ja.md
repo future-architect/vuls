@@ -91,7 +91,7 @@ Table of Contents
       * [Example: Use MySQL as a DB storage back-end](#example-use-mysql-as-a-db-storage-back-end)
       * [Example: Use PostgreSQL as a DB storage back-end](#example-use-postgresql-as-a-db-storage-back-end)
       * [Example: Use Redis as a DB storage back-end](#example-use-redis-as-a-db-storage-back-end)
-   * [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerability-of-non-os-package)
+   * [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerabilites-of-non-os-packages)
    * [Usage: Integrate with OWASP Dependency Check to Automatic update when the libraries are updated (Experimental)](#usage-integrate-with-owasp-dependency-check-to-automatic-update-when-the-libraries-are-updated-experimental)
    * [Usage: TUI](#usage-tui)
       * [Display the latest scan results](#display-the-latest-scan-results)
@@ -343,8 +343,19 @@ $ git clone https://github.com/future-architect/vuls.git
 $ cd vuls
 $ make install
 ```
+
 The binary was built under `$GOPATH/bin`
 もしもインストールプロセスが途中で止まる場合は、Out of memory errorが発生している可能性があるので、インスタンスタイプを大きくして再実行してみてください。
+
+もし、あなたが以前にvulsをインストールしていて update をする場合は以下を実施してください。
+```
+$ rm -rf  $GOPATH/pkg/linux_amd64/github.com/future-architect/vuls/
+$ rm -rf  $GOPATH/src/github.com/future-architect/vuls/
+$ cd $GOPATH/src/github.com/future-architect
+$ git clone https://github.com/future-architect/vuls.git
+$ cd vuls
+$ make install
+```
 
 ## Step6. Config
 
@@ -684,6 +695,7 @@ $ vuls discover 172.31.4.0/24
 
 [slack]
 hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
+#legacyToken  = "xoxp-11111111111-222222222222-3333333333"
 channel      = "#channel-name"
 #channel      = "${servername}"
 iconEmoji    = ":ghost:"
@@ -718,6 +730,7 @@ host         = "172.31.4.82"
 #port        = "22"
 #user        = "root"
 #keyPath     = "/home/username/.ssh/id_rsa"
+#type 		 = "pseudo"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
@@ -740,6 +753,7 @@ host         = "172.31.4.82"
     ```
     [slack]
     hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
+    #legacyToken  = "xoxp-11111111111-222222222222-3333333333"
     channel      = "#channel-name"
     #channel      = "${servername}"
     iconEmoji    = ":ghost:"
@@ -747,10 +761,21 @@ host         = "172.31.4.82"
     notifyUsers  = ["@username"]
     ```
 
-    - hookURL : Incoming webhook's URL  
+    - hookURL or legacyToken  
+    どちらか一方を指定する。  
+    もし脆弱性が沢山有る場合はlegacyTokenの利用をおすすめする。legacyTokenはSlackのスレッド形式でポストされる。  
+    スキャンサーバ単位で集約されるのでSlack通知が氾濫しない。
+
+      - hookURL : Incoming webhook's URL (legacyTokenが設定されている場合、hookURLは無視される。)
+      ![Vuls-slack](img/vuls-slack-en.png)
+
+      - legacyToken : slack legacy token (https://api.slack.com/custom-integrations/legacy-tokens)  
+      ![Vuls-slack-thread](https://user-images.githubusercontent.com/8997330/31842418-02b703f2-b629-11e7-8ec3-beda5d3a397e.png)
+
     - channel : channel name.  
     channelに`${servername}`を指定すると、結果レポートをサーバごとに別チャネルにすることが出来る。
     以下のサンプルでは、`#server1`チャネルと`#server2`チャネルに送信される。スキャン前にチャネルを作成する必要がある。
+    **legacyTokenが設定されている場合、channelは実在するchannelでなければならない。**
       ```
       [slack]
       channel      = "${servername}"
@@ -816,6 +841,7 @@ host         = "172.31.4.82"
     #cpeNames = [
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
+    #type 		 = "pseudo"
     #ignoreCves = ["CVE-2016-6314"]
     #[servers.172-31-4-82.containers]
     #type = "lxd" # or "docker"
@@ -832,6 +858,7 @@ host         = "172.31.4.82"
     - port: SSH Port number
     - user: SSH username
     - keyPath: SSH private key path
+    - type: "pseudo" for non-ssh scanning. see [#531](https://github.com/future-architect/vuls/pull/531)
     - cpeNames: see [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerability-of-non-os-package)
     - ignoreCves: CVE IDs that will not be reported. But output to JSON file.
     - optional: JSONレポートに含めたい追加情報
@@ -935,19 +962,19 @@ For details, see [-ssh-native-insecure option](#-ssh-native-insecure-option)
 
 - RHEL 5 / Oracle Linux 5
 ```
-vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never list-security --security, /usr/bin/yum --color=never info-security, /usr/bin/repoquery
+vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never list-security --security, /usr/bin/yum --color=never info-security, /usr/bin/repoquery, /usr/bin/yum --color=never changelog all *
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 ```
 
 - RHEL 6, 7 / Oracle Linux 6, 7
 ```
-vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never --security updateinfo list updates, /usr/bin/yum --color=never --security updateinfo updates, /usr/bin/yum --color=never -q ps all
+vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never --security updateinfo list updates, /usr/bin/yum --color=never --security updateinfo updates, /usr/bin/yum --color=never -q ps all, /usr/bin/yum --color=never changelog all *
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 ```
 
 - Amazon Linux, CentOS
 ```
-vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never --security updateinfo list updates, /usr/bin/yum --color=never --security updateinfo updates, /usr/bin/repoquery, /usr/bin/yum --color=never -q ps all
+vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never -q ps all
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 ```
 
@@ -1305,7 +1332,7 @@ CWE             https://cwe.mitre.org/data/definitions/190.html
 NVD             https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-5636
 MITRE           https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-5636
 CVE Details     http://www.cvedetails.com/cve/CVE-2016-5636
-CVSS Claculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-5636&vector=(AV:N/AC:L/...
+CVSS Calculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-5636&vector=(AV:N/AC:L/...
 RHEL-CVE        https://access.redhat.com/security/cve/CVE-2016-5636
 ALAS-2016-724   https://alas.aws.amazon.com/ALAS-2016-724.html
 Package         python27-2.7.10-4.119.amzn1 -> python27-2.7.12-2.120.amzn1
@@ -1565,6 +1592,18 @@ Vulsは、[CPE](https://nvd.nist.gov/cpe.cfm)に登録されているソフト�
     host         = "172.31.4.82"
     user        = "ec2-user"
     keyPath     = "/home/username/.ssh/id_rsa"
+    cpeNames = [
+      "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
+    ]
+    ```
+
+- Configuration  
+ネットワーク機器など、スキャン対象にSSH接続しない場合は`type="pseudo"`を指定する。 
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+	type = "pseudo"
     cpeNames = [
       "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     ]

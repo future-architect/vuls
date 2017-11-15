@@ -193,6 +193,8 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (err error) {
 		ovalFamily = c.SUSEEnterpriseServer
 	case c.Amazon, c.Raspbian, c.FreeBSD, c.Windows:
 		return nil
+	case c.ServerTypePseudo:
+		return nil
 	default:
 		return fmt.Errorf("OVAL for %s is not implemented yet", r.Family)
 	}

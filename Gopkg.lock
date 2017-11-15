@@ -205,6 +205,12 @@
   revision = "9ac6cf4d929b2fa8fd2d2e6dec5bb0feb4f4911d"
 
 [[projects]]
+  name = "github.com/nlopes/slack"
+  packages = ["."]
+  revision = "c86337c0ef2486a15edd804355d9c73d2f2caed1"
+  version = "v0.1.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/nsf/termbox-go"
   packages = ["."]
@@ -255,7 +261,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","idna","publicsuffix"]
+  packages = ["context","idna","publicsuffix","websocket"]
   revision = "0a9397675ba34b2845f758fe3cd68828369c6517"
 
 [[projects]]
@@ -273,6 +279,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d85264d511a7e68069e74d6b0720555d5ab6e4672317521f618e9d6a3ec6c39a"
+  inputs-digest = "1d1c714a94d668485b254551f1e2293eb20a4b2894d3f331d723747bd13b98ed"
   solver-name = "gps-cdcl"
   solver-version = 1

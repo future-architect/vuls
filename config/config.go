@@ -78,6 +78,11 @@ const (
 	SUSEOpenstackCloud = "suse.openstack.cloud"
 )
 
+const (
+	// ServerTypePseudo is used for ServerInfo.Type
+	ServerTypePseudo = "pseudo"
+)
+
 //Config is struct of Configuration
 type Config struct {
 	Debug    bool
@@ -376,10 +381,12 @@ func (c *SMTPConf) Validate() (errs []error) {
 // SlackConf is slack config
 type SlackConf struct {
 	HookURL     string   `valid:"url" json:"-" toml:"hookURL,omitempty"`
+	LegacyToken string   `json:"token" toml:"legacyToken,omitempty"`
 	Channel     string   `json:"channel" toml:"channel,omitempty"`
 	IconEmoji   string   `json:"icon_emoji" toml:"iconEmoji,omitempty"`
 	AuthUser    string   `json:"username" toml:"authUser,omitempty"`
 	NotifyUsers []string `toml:"notifyUsers,omitempty"`
+	Text        string   `json:"text"`
 }
 
 // Validate validates configuration
@@ -430,6 +437,9 @@ type ServerInfo struct {
 
 	// Optional key-value set that will be outputted to JSON
 	Optional map[string]interface{} `toml:",omitempty"`
+
+	// "pseudo" or ""
+	Type string
 
 	// used internal
 	LogMsgAnsiColor string    `toml:"-"` // DebugLog Color

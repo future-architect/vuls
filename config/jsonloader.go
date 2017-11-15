@@ -23,7 +23,7 @@ import "fmt"
 type JSONLoader struct {
 }
 
-// Load load the configuraiton JSON file specified by path arg.
+// Load load the configuration JSON file specified by path arg.
 func (c JSONLoader) Load(path, sudoPass, keyPass string) (err error) {
 	return fmt.Errorf("Not implement yet")
 }

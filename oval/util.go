@@ -21,6 +21,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff"
@@ -87,17 +89,16 @@ type response struct {
 func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 	relatedDefs ovalResult, err error) {
 
-	reqChan := make(chan request, len(r.Packages))
-	resChan := make(chan response, len(r.Packages))
-	errChan := make(chan error, len(r.Packages))
+	nReq := len(r.Packages) + len(r.SrcPackages)
+	reqChan := make(chan request, nReq)
+	resChan := make(chan response, nReq)
+	errChan := make(chan error, nReq)
 	defer close(reqChan)
 	defer close(resChan)
 	defer close(errChan)
 
-	names := []string{}
 	go func() {
 		for _, pack := range r.Packages {
-			names = append(names, pack.Name)
 			reqChan <- request{
 				packName:          pack.Name,
 				versionRelease:    pack.FormatVer(),
@@ -105,7 +106,6 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 				isSrcPack:         false,
 			}
 			for _, pack := range r.SrcPackages {
-				names = append(names, pack.Name)
 				reqChan <- request{
 					packName:        pack.Name,
 					binaryPackNames: pack.BinaryNames,
@@ -119,7 +119,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 
 	concurrency := 10
 	tasks := util.GenWorkers(concurrency)
-	for range names {
+	for i := 0; i < nReq; i++ {
 		tasks <- func() {
 			select {
 			case req := <-reqChan:
@@ -142,11 +142,11 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 
 	timeout := time.After(2 * 60 * time.Second)
 	var errs []error
-	for range names {
+	for i := 0; i < nReq; i++ {
 		select {
 		case res := <-resChan:
 			for _, def := range res.defs {
-				affected, notFixedYet := isOvalDefAffected(def, r.Family, res.request)
+				affected, notFixedYet := isOvalDefAffected(def, res.request, r.Family, r.RunningKernel)
 				if !affected {
 					continue
 				}
@@ -239,7 +239,7 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 			return relatedDefs, fmt.Errorf("Failed to get %s OVAL info by package name: %v", r.Family, err)
 		}
 		for _, def := range definitions {
-			affected, notFixedYet := isOvalDefAffected(def, r.Family, req)
+			affected, notFixedYet := isOvalDefAffected(def, req, r.Family, r.RunningKernel)
 			if !affected {
 				continue
 			}
@@ -256,10 +256,33 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 	return
 }
 
-func isOvalDefAffected(def ovalmodels.Definition, family string, req request) (affected, notFixedYet bool) {
+func major(version string) string {
+	ss := strings.SplitN(version, ":", 2)
+	ver := ""
+	if len(ss) == 1 {
+		ver = ss[0]
+	} else {
+		ver = ss[1]
+	}
+	return ver[0:strings.Index(ver, ".")]
+}
+
+func isOvalDefAffected(def ovalmodels.Definition, req request, family string, running models.Kernel) (affected, notFixedYet bool) {
 	for _, ovalPack := range def.AffectedPacks {
 		if req.packName != ovalPack.Name {
 			continue
+		}
+
+		if running.Release != "" {
+			switch family {
+			case config.RedHat, config.CentOS:
+				// For kernel related packages, ignore OVAL information with different major versions
+				if _, ok := kernelRelatedPackNames[ovalPack.Name]; ok {
+					if major(ovalPack.Version) != major(running.Release) {
+						continue
+					}
+				}
+			}
 		}
 
 		if ovalPack.NotFixedYet {
@@ -307,9 +330,15 @@ func lessThan(family, versionRelease string, packB ovalmodels.Package) (bool, er
 			return false, err
 		}
 		return vera.LessThan(verb), nil
-	case config.RedHat, config.CentOS, config.Oracle, config.SUSEEnterpriseServer:
+	case config.Oracle, config.SUSEEnterpriseServer:
 		vera := rpmver.NewVersion(versionRelease)
 		verb := rpmver.NewVersion(packB.Version)
+		return vera.LessThan(verb), nil
+	case config.RedHat, config.CentOS: // TODO: Suport config.Scientific
+		rea := regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.centos)?`)
+		reb := regexp.MustCompile(`\.el(\d+)(?:_\d+)?`)
+		vera := rpmver.NewVersion(rea.ReplaceAllString(versionRelease, ".el$1"))
+		verb := rpmver.NewVersion(reb.ReplaceAllString(packB.Version, ".el$1"))
 		return vera.LessThan(verb), nil
 	default:
 		util.Log.Errorf("Not implemented yet: %s", family)

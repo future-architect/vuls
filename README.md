@@ -14,7 +14,6 @@ We have a slack team. [Join slack team](http://goo.gl/forms/xm5KFo35tu)
 Twitter: [@vuls_en](https://twitter.com/vuls_en)
 
 [README 日本語](https://github.com/future-architect/vuls/blob/master/README.ja.md)  
-[README in French](https://github.com/future-architect/vuls/blob/master/README.fr.md)  
 
 ![Vuls-Abstract](img/vuls-abstract.png)
 
@@ -350,6 +349,16 @@ $ git clone https://github.com/future-architect/vuls.git
 $ cd vuls
 $ make install
 ```
+If you have previously installed vuls and want to update, please do the following
+```
+$ rm -rf $GOPATH/pkg/linux_amd64/github.com/future-architect/vuls/
+$ rm -rf $GOPATH/src/github.com/future-architect/vuls/
+$ cd $GOPATH/src/github.com/future-architect
+$ git clone https://github.com/future-architect/vuls.git
+$ cd vuls
+$ make install
+```
+
 The binary was built under `$GOPATH/bin`
 If the installation process stops halfway, try increasing the instance type of EC2. An out of memory error may have occurred.
 
@@ -696,6 +705,7 @@ $ vuls discover 172.31.4.0/24
 
 [slack]
 hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
+#legacyToken  = "xoxp-11111111111-222222222222-3333333333"
 channel      = "#channel-name"
 #channel      = "${servername}"
 iconEmoji    = ":ghost:"
@@ -731,6 +741,7 @@ host         = "172.31.4.82"
 #port        = "22"
 #user        = "root"
 #keyPath     = "/home/username/.ssh/id_rsa"
+#type 		 = "pseudo"
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
@@ -754,6 +765,7 @@ You can customize your configuration using this template.
     ```
     [slack]
     hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
+    #legacyToken  = "xoxp-11111111111-222222222222-3333333333"
     channel      = "#channel-name"
     #channel      = "${servername}"
     iconEmoji    = ":ghost:"
@@ -761,8 +773,16 @@ You can customize your configuration using this template.
     notifyUsers  = ["@username"]
     ```
 
-    - hookURL : Incoming webhook's URL  
-    - channel : channel name.  
+    - hookURL or legacyToken.  
+    If there are a lot of vulnerabilities, it is better to use legacyToken since the Slack notification will be flooded.
+
+      - hookURL : Incoming webhook's URL (hookURL is ignored when legacyToken is set.)  
+      ![Vuls-slack](img/vuls-slack-en.png)
+
+      - legacyToken : slack legacy token (https://api.slack.com/custom-integrations/legacy-tokens)  
+      ![Vuls-slack-thread](https://user-images.githubusercontent.com/8997330/31842418-02b703f2-b629-11e7-8ec3-beda5d3a397e.png)
+
+    - channel : channel name. 
     If you set `${servername}` to channel, the report will be sent to each channel.  
     In the following example, the report will be sent to the `#server1` and `#server2`.  
     Be sure to create these channels before scanning.
@@ -830,6 +850,7 @@ You can customize your configuration using this template.
     #port        = "22"
     #user        = "root"
     #keyPath     = "/home/username/.ssh/id_rsa"
+    #type 		 = "pseudo"
     #cpeNames = [
     #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     #]
@@ -848,6 +869,7 @@ You can customize your configuration using this template.
     - port: SSH Port number
     - user: SSH username
     - keyPath: SSH private key path
+    - type: "pseudo" for non-ssh scanning. see [#531](https://github.com/future-architect/vuls/pull/531)
     - cpeNames: see [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerability-of-non-os-package)
     - ignoreCves: CVE IDs that will not be reported. But output to JSON file.
     - optional: Add additional information to JSON report.
@@ -948,21 +970,19 @@ Example of /etc/sudoers on target servers
 
 - RHEL 5 / Oracle Linux 5
 ```
-vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never list-security --security, /usr/bin/yum --color=never info-security, /usr/bin/repoquery
+vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never list-security --security, /usr/bin/yum --color=never info-security, /usr/bin/repoquery, /usr/bin/yum --color=never changelog all *
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 ```
 
 - RHEL 6, 7 / Oracle Linux 6, 7
 ```
-vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never --security updateinfo list updates, /usr/bin/yum --color=never --security updateinfo updates, /usr/bin/yum --color=never -q ps all
+vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never --security updateinfo list updates, /usr/bin/yum --color=never --security updateinfo updates, /usr/bin/yum --color=never -q ps all, /usr/bin/yum --color=never changelog all *
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 ```
 
 - Amazon Linux, CentOS
 ```
 vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never -q ps all
-=======
-vuls ALL=(ALL) NOPASSWD:/usr/bin/yum --color=never repolist, /usr/bin/yum --color=never --security updateinfo list updates, /usr/bin/yum --color=never --security updateinfo updates, /usr/bin/repoquery, /usr/bin/yum --color=never -q ps all
 Defaults:vuls env_keep="http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
 ```
 
@@ -1322,7 +1342,7 @@ CWE             https://cwe.mitre.org/data/definitions/190.html
 NVD             https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-5636
 MITRE           https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-5636
 CVE Details     http://www.cvedetails.com/cve/CVE-2016-5636
-CVSS Claculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-5636&vector=(AV:N/AC:L/...
+CVSS Calculator https://nvd.nist.gov/cvss/v2-calculator?name=CVE-2016-5636&vector=(AV:N/AC:L/...
 RHEL-CVE        https://access.redhat.com/security/cve/CVE-2016-5636
 ALAS-2016-724   https://alas.aws.amazon.com/ALAS-2016-724.html
 Package         python27-2.7.10-4.119.amzn1 -> python27-2.7.12-2.120.amzn1
@@ -1392,6 +1412,17 @@ Confidence              100 / OvalMatch
 
 
 ## Example: Send scan results to Slack
+```
+$ vuls report \
+      -to-slack \
+      -cvss-over=7 \
+      -cvedb-path=$PWD/cve.sqlite3
+```
+With this sample command, it will ..
+- Send scan results to slack
+- Only Report CVEs that CVSS score is over 7
+
+
 ```
 $ vuls report \
       -to-slack \
@@ -1574,6 +1605,20 @@ To detect the vulnerability of Ruby on Rails v4.2.1, cpeNames needs to be set in
     host         = "172.31.4.82"
     user        = "ec2-user"
     keyPath     = "/home/username/.ssh/id_rsa"
+    cpeNames = [
+      "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
+    ]
+    ```
+
+- type="pseudo"
+Specify this when you want to detect vulnerability by specifying cpename without SSH connection.
+The pseudo type does not do anything when scanning.
+Search for NVD at report time and detect vulnerability of software specified as cpenamae.
+    ```
+    [servers]
+
+    [servers.172-31-4-82]
+	type = "pseudo"
     cpeNames = [
       "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
     ]

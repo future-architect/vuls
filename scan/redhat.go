@@ -271,11 +271,13 @@ func (o *redhat) scanPackages() error {
 }
 
 func (o *redhat) rebootRequired() (bool, error) {
-	r := o.exec("rpm -q --last kernel | head -n1", noSudo)
-	if !r.isSuccess() {
-		return false, fmt.Errorf("Failed to detect the last installed kernel : %v", r)
+	r := o.exec("rpm -q --last kernel", noSudo)
+	scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
+	if !r.isSuccess() || !scanner.Scan() {
+		o.log.Warn("Failed to detect the last installed kernel : %v", r)
+		return false, nil
 	}
-	lastInstalledKernelVer := strings.Fields(r.Stdout)[0]
+	lastInstalledKernelVer := strings.Fields(scanner.Text())[0]
 	running := fmt.Sprintf("kernel-%s", o.Kernel.Release)
 	return running != lastInstalledKernelVer, nil
 }
@@ -418,7 +420,9 @@ func (o *redhat) scanUnsecurePackages(updatable models.Packages) (models.VulnInf
 			p.AffectedProcs = pack.AffectedProcs
 			o.Packages[name] = p
 		}
+	}
 
+	if config.Conf.Deep && o.Distro.Family != config.Amazon {
 		if err := o.fillChangelogs(updatable); err != nil {
 			return nil, err
 		}
@@ -471,7 +475,7 @@ func (o *redhat) getAvailableChangelogs(packNames []string) (map[string]string, 
 	if config.Conf.SkipBroken {
 		yumopts += " --skip-broken"
 	}
-	cmd := `yum --color=never %s changelog all %s | grep -A 10000 '==================== Available Packages ===================='`
+	cmd := `yum --color=never changelog all %s %s | grep -A 1000000 '==================== Available Packages ===================='`
 	cmd = fmt.Sprintf(cmd, yumopts, strings.Join(packNames, " "))
 
 	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())

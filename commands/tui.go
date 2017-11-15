@@ -197,6 +197,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	c.Conf.CvssScoreOver = p.cvssScoreOver
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
 	c.Conf.IgnoreUnfixed = p.ignoreUnfixed
+	c.Conf.RefreshCve = p.refreshCve
 
 	log.Info("Validating config...")
 	if !c.Conf.ValidateOnTui() {

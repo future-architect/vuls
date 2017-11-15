@@ -63,7 +63,7 @@ func TestDecorateCmd(t *testing.T) {
 			conf:     config.ServerInfo{User: "non-roor"},
 			cmd:      "ls | grep hoge",
 			sudo:     true,
-			expected: "sudo -S ls | sudo  grep hoge",
+			expected: "sudo -S ls | grep hoge",
 		},
 		// -------------docker-------------
 		// root sudo false docker
@@ -75,7 +75,7 @@ func TestDecorateCmd(t *testing.T) {
 			},
 			cmd:      "ls",
 			sudo:     false,
-			expected: `docker exec --user 0 abc /bin/bash -c "ls"`,
+			expected: `docker exec --user 0 abc /bin/bash -c 'ls'`,
 		},
 		// root sudo true docker
 		{
@@ -86,7 +86,7 @@ func TestDecorateCmd(t *testing.T) {
 			},
 			cmd:      "ls",
 			sudo:     true,
-			expected: `docker exec --user 0 abc /bin/bash -c "ls"`,
+			expected: `docker exec --user 0 abc /bin/bash -c 'ls'`,
 		},
 		// non-root sudo false, docker
 		{
@@ -97,7 +97,7 @@ func TestDecorateCmd(t *testing.T) {
 			},
 			cmd:      "ls",
 			sudo:     false,
-			expected: `docker exec --user 0 abc /bin/bash -c "ls"`,
+			expected: `docker exec --user 0 abc /bin/bash -c 'ls'`,
 		},
 		// non-root sudo true, docker
 		{
@@ -108,7 +108,7 @@ func TestDecorateCmd(t *testing.T) {
 			},
 			cmd:      "ls",
 			sudo:     true,
-			expected: `docker exec --user 0 abc /bin/bash -c "ls"`,
+			expected: `docker exec --user 0 abc /bin/bash -c 'ls'`,
 		},
 		// non-root sudo true, docker
 		{
@@ -119,7 +119,7 @@ func TestDecorateCmd(t *testing.T) {
 			},
 			cmd:      "ls | grep hoge",
 			sudo:     true,
-			expected: `docker exec --user 0 abc /bin/bash -c "ls | grep hoge"`,
+			expected: `docker exec --user 0 abc /bin/bash -c 'ls | grep hoge'`,
 		},
 		// -------------lxd-------------
 		// root sudo false lxd
@@ -131,7 +131,7 @@ func TestDecorateCmd(t *testing.T) {
 			},
 			cmd:      "ls",
 			sudo:     false,
-			expected: `lxc exec def -- /bin/bash -c "ls"`,
+			expected: `lxc exec def -- /bin/bash -c 'ls'`,
 		},
 		// root sudo true lxd
 		{
@@ -142,7 +142,7 @@ func TestDecorateCmd(t *testing.T) {
 			},
 			cmd:      "ls",
 			sudo:     true,
-			expected: `lxc exec def -- /bin/bash -c "ls"`,
+			expected: `lxc exec def -- /bin/bash -c 'ls'`,
 		},
 		// non-root sudo false, lxd
 		{
@@ -153,7 +153,7 @@ func TestDecorateCmd(t *testing.T) {
 			},
 			cmd:      "ls",
 			sudo:     false,
-			expected: `lxc exec def -- /bin/bash -c "ls"`,
+			expected: `lxc exec def -- /bin/bash -c 'ls'`,
 		},
 		// non-root sudo true, lxd
 		{
@@ -164,7 +164,7 @@ func TestDecorateCmd(t *testing.T) {
 			},
 			cmd:      "ls",
 			sudo:     true,
-			expected: `lxc exec def -- /bin/bash -c "ls"`,
+			expected: `lxc exec def -- /bin/bash -c 'ls'`,
 		},
 		// non-root sudo true lxd
 		{
@@ -175,7 +175,7 @@ func TestDecorateCmd(t *testing.T) {
 			},
 			cmd:      "ls | grep hoge",
 			sudo:     true,
-			expected: `lxc exec def -- /bin/bash -c "ls | grep hoge"`,
+			expected: `lxc exec def -- /bin/bash -c 'ls | grep hoge'`,
 		},
 	}
 
