@@ -157,8 +157,8 @@ func (o *suse) parseZypperLULines(stdout string) (models.Packages, error) {
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasPrefix(line, "S | Repository") ||
-			strings.HasPrefix(line, "--+----------------") {
+		if strings.Index(line, "S | Repository") != -1 ||
+			strings.Index(line, "--+----------------") != -1 {
 			continue
 		}
 		pack, err := o.parseZypperLUOneLine(line)
