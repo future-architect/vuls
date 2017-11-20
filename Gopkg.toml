@@ -88,3 +88,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/kotakanbe/go-cve-dictionary"
+
+[[constraint]]
+  branch = "suport-alpine"
+  name = "github.com/kotakanbe/goval-dictionary"

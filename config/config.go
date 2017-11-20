@@ -76,6 +76,9 @@ const (
 
 	// SUSEOpenstackCloud is
 	SUSEOpenstackCloud = "suse.openstack.cloud"
+
+	// Alpine is
+	Alpine = "alpine"
 )
 
 const (
@@ -466,7 +469,7 @@ func (s ServerInfo) GetServerName() string {
 	if len(s.Container.ContainerID) == 0 {
 		return s.ServerName
 	}
-	return fmt.Sprintf("%s@%s", s.Container.ContainerID, s.ServerName)
+	return fmt.Sprintf("%s@%s", s.Container.Name, s.ServerName)
 }
 
 // Distro has distribution info
