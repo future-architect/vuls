@@ -912,10 +912,10 @@ configtestサブコマンドは、config.tomlで定義されたサーバ/コン�
 |:-------------|-------------------:|:-------------|
 | Ubuntu       |          12, 14, 16| - |
 | Debian       |             7, 8, 9| reboot-notifier|
-| CentOS       |                6, 7| - |
-| Amazon       |                All | - |
-| RHEL         |            5, 6, 7 | - | 
-| Oracle Linux |            5, 6, 7 | - |
+| CentOS       |                6, 7| yum-utils |
+| Amazon       |                All | yum-utils |
+| RHEL         |            5, 6, 7 | yum-utils | 
+| Oracle Linux |            5, 6, 7 | yum-utils |
 | SUSE Enterprise|            11, 12 | - |
 | FreeBSD      |             10, 11 | - |
 | Raspbian     |    Jessie, Stretch | - |
@@ -935,11 +935,11 @@ Deep Scan Modeでスキャンするためには、下記のパッケージが必
 |:-------------|-------------------:|:-------------|
 | Ubuntu       |          12, 14, 16| -            |
 | Debian       |             7, 8, 9| aptitude, reboot-notifier     |
-| CentOS       |                6, 7| yum-plugin-changelog, yum-utils |
-| Amazon       |                All | yum-plugin-changelog, yum-utils |
-| RHEL         |                  5 | yum-utils, yum-security, yum-changelog |
+| CentOS       |                6, 7| yum-utils, yum-plugin-changelog |
+| Amazon       |                All | yum-utils, yum-plugin-changelog |
+| RHEL         |                  5 | yum-utils, yum-changelog, yum-security |
 | RHEL         |               6, 7 | yum-utils, yum-plugin-changelog |
-| Oracle Linux |                  5 | yum-utils, yum-security, yum-changelog |
+| Oracle Linux |                  5 | yum-utils, yum-changelog, yum-security |
 | Oracle Linux |               6, 7 | yum-utils, yum-plugin-changelog |
 | SUSE Enterprise|            11, 12 | - |
 | FreeBSD      |                 10 | -            |
