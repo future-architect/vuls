@@ -144,7 +144,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 # Main Features
 
 - Scan for any vulnerabilities in Linux/FreeBSD Server
-    - Supports FreeBSD, Ubuntu, Debian, CentOS, Amazon Linux, RHEL, Oracle Linux, SUSE Enterprise Linux and Raspbian
+    - Supports Alpine, Ubuntu, Debian, CentOS, Amazon Linux, RHEL, Oracle Linux, SUSE Enterprise Linux and Raspbian, FreeBSD
     - Cloud, on-premise, Docker
 - High quality scan
     - Vuls uses Multiple vulnerability databases
@@ -331,6 +331,7 @@ $ goval-dictionary fetch-redhat 7
 ```
 
 If you want to scan other than CentOS 7, fetch OVAL data according to the OS type and version of scan target server in advance.
+- [Alpine](https://github.com/kotakanbe/goval-dictionary#usage-fetch-alpine-secdb-as-oval-data-type)
 - [RedHat, CentOS](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-redhat)
 - [Debian](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-debian)
 - [Ubuntu](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-ubuntu)
@@ -600,16 +601,16 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 
 | Distribution|                             Scan Speed | Need Root Privilege |       OVAL | Need Internet Access <br>on scan tareget|
 |:------------|:--------------------------------------:|:-------------------:|:----------:|:---------------------------------------:|
-| CentOS      |                                   Fast |　                No |  Supported |                                      No | 
+| Alpine      |                                   Fast |　                No |  Supported |                                      No |
+| CentOS      |                                   Fast |　                No |  Supported |                                      No |
 | RHEL        |                                   Fast |　                No |  Supported |                                      No |
 | Oracle      |                                   Fast |　                No |  Supported |                                      No |
 | Ubuntu      |                                   Fast |　                No |  Supported |                                      No |
 | Debian      |                                   Fast |　                No |  Supported |                                      No |
 | Raspbian    |1st time: Slow <br> From 2nd time: Fast |                Need |         No |                                    Need |
 | FreeBSD     |                                   Fast |　                No |         No |                                    Need |
-| Amazon      |                                   Fast |　                No |         No |                                    Need | 
-| SUSE Enterprise |                               Fast |　                No |  Supported |                                      No| 
-
+| Amazon      |                                   Fast |　                No |         No |                                    Need |
+| SUSE Enterprise |                               Fast |　                No |  Supported |                                      No |
 
 ---------
 
@@ -618,7 +619,8 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 
 | Distribution|                            Scan Speed |       Need Root Privilege |      OVAL | Need Internet Access <br>on scan tareget|
 |:------------|:-------------------------------------:|:-------------------------:|:---------:|:---------------------------------------:|
-| CentOS      |                                  Slow |　                      No | Supported |                                    Need | 
+| Alpine      |                                  Fast |　                      No |  Supported |                                     No |
+| CentOS      |                                  Slow |　                      No | Supported |                                    Need |
 | RHEL        |                                  Slow |　                    Need | Supported |                                    Need |
 | Oracle      |                                  Slow |　                    Need | Supported |                                    Need |
 | Ubuntu      |1st time: Slow <br> From 2nd time: Fast|                      Need | Supported |                                    Need |
@@ -626,7 +628,7 @@ On the aggregation server, you can refer to the scanning result of each scan tar
 | Raspbian    |1st time: Slow <br> From 2nd time: Fast|                      Need |        No |                                    Need |
 | FreeBSD     |                                  Fast |　                      No |        No |                                    Need |
 | Amazon      |                                  Slow |　                      No |        No |                                    Need |
-| SUSE Enterprise |                               Fast |　                     No |  Supported |                                      No| 
+| SUSE Enterprise |                              Fast |　                      No |  Supported |                                     No |
 
 
 - On Ubuntu, Debian and Raspbian
@@ -641,7 +643,7 @@ Vuls issues `yum changelog` to get changelogs of upgradable packages at once and
 - On RHEL, Oracle, Amazon and FreeBSD
 Detect CVE IDs by using package manager.
 
-- On SUSE Enterprise Linux
+- On SUSE Enterprise Linux and Alpine Linux
 Same as fast scan mode for now.
 
 ----
@@ -677,6 +679,7 @@ If there is a staging environment with the same configuration as the production 
 | FreeBSD      |              10, 11|
 | SUSE Enterprise |           11, 12|
 | Raspbian     |    Jessie, Stretch |
+| Alpine       |    3.2 and later |
 
 ----
 
@@ -918,6 +921,7 @@ The configtest subcommand checks whether vuls is able to connect via SSH to serv
 
 | Distribution |            Release | Requirements |
 |:-------------|-------------------:|:-------------|
+| Alpine       |      3.2 and later | - |
 | Ubuntu       |          12, 14, 16| - |
 | Debian       |             7, 8, 9| reboot-notifier|
 | CentOS       |                6, 7| - |
@@ -939,6 +943,7 @@ In order to scan with deep scan mode, the following dependencies are required, s
 
 | Distribution |            Release | Requirements |
 |:-------------|-------------------:|:-------------|
+| Alpine       |      3.2 and later | - |
 | Ubuntu       |          12, 14, 16| -            |
 | Debian       |             7, 8, 9| aptitude, reboot-notifier     |
 | CentOS       |                6, 7| yum-plugin-changelog, yum-utils |
@@ -1855,7 +1860,8 @@ Run with --debug, --sql-debug option.
 [Riak docs](http://docs.basho.com/riak/latest/ops/tuning/open-files-limit/) is awesome.
 
 - Does Vuls accept SSH connections with fish-shell or old zsh as the login shell?  
-No, Vuls needs a user on the server for bash login. see also [#8](/../../issues/8)
+~~No, Vuls needs a user on the server for bash login. see also [#8](/../../issues/8)~~  
+Yes, fixed in [#545](https://github.com/future-architect/vuls/pull/545)
 
 - Windows  
 Use Microsoft Baseline Security Analyzer. [MBSA](https://technet.microsoft.com/en-us/security/cc184924.aspx)

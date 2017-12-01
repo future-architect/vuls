@@ -29,8 +29,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-
-	"github.com/knqyf263/go-deb-version"
+	version "github.com/knqyf263/go-deb-version"
 )
 
 // inherit OsTypeInterface

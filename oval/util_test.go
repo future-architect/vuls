@@ -117,7 +117,6 @@ func TestDefpacksToPackStatuses(t *testing.T) {
 		{
 			in: in{
 				family: "ubuntu",
-				packs:  models.Packages{},
 				dp: defPacks{
 					def: ovalmodels.Definition{
 						AffectedPacks: []ovalmodels.Package{
@@ -155,7 +154,7 @@ func TestDefpacksToPackStatuses(t *testing.T) {
 		},
 	}
 	for i, tt := range tests {
-		actual := tt.in.dp.toPackStatuses(tt.in.family, tt.in.packs)
+		actual := tt.in.dp.toPackStatuses(tt.in.family)
 		sort.Slice(actual, func(i, j int) bool {
 			return actual[i].Name < actual[j].Name
 		})

@@ -19,7 +19,6 @@ package report
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	c "github.com/future-architect/vuls/config"
@@ -181,6 +180,9 @@ func FillWithOval(r *models.ScanResult) (err error) {
 		// TODO other suse family
 		ovalClient = oval.NewSUSE()
 		ovalFamily = c.SUSEEnterpriseServer
+	case c.Alpine:
+		ovalClient = oval.NewAlpine()
+		ovalFamily = c.Alpine
 	case c.Amazon, c.Raspbian, c.FreeBSD, c.Windows:
 		return nil
 	case c.ServerTypePseudo:
@@ -189,13 +191,14 @@ func FillWithOval(r *models.ScanResult) (err error) {
 		return fmt.Errorf("OVAL for %s is not implemented yet", r.Family)
 	}
 
+	util.Log.Debugf("Check whether oval is already fetched: %s %s",
+		ovalFamily, r.Release)
 	ok, err := ovalClient.CheckIfOvalFetched(ovalFamily, r.Release)
 	if err != nil {
 		return err
 	}
 	if !ok {
-		major := strings.Split(r.Release, ".")[0]
-		util.Log.Warnf("OVAL entries of %s %s are not found. It's recommended to use OVAL to improve scanning accuracy. For details, see https://github.com/kotakanbe/goval-dictionary#usage , Then report with --ovaldb-path or --ovaldb-url flag", ovalFamily, major)
+		util.Log.Warnf("OVAL entries of %s %s are not found. It's recommended to use OVAL to improve scanning accuracy. For details, see https://github.com/kotakanbe/goval-dictionary#usage , Then report with --ovaldb-path or --ovaldb-url flag", ovalFamily, r.Release)
 		return nil
 	}
 

@@ -48,7 +48,7 @@ type defPacks struct {
 	actuallyAffectedPackNames map[string]bool
 }
 
-func (e defPacks) toPackStatuses(family string, packs models.Packages) (ps models.PackageStatuses) {
+func (e defPacks) toPackStatuses(family string) (ps models.PackageStatuses) {
 	for name, notFixedYet := range e.actuallyAffectedPackNames {
 		ps = append(ps, models.PackageStatus{
 			Name:        name,
@@ -59,10 +59,13 @@ func (e defPacks) toPackStatuses(family string, packs models.Packages) (ps model
 }
 
 func (e *ovalResult) upsert(def ovalmodels.Definition, packName string, notFixedYet bool) (upserted bool) {
-	for i, entry := range e.entries {
-		if entry.def.DefinitionID == def.DefinitionID {
-			e.entries[i].actuallyAffectedPackNames[packName] = notFixedYet
-			return true
+	// alpine's entry is empty since Alpine secdb is not OVAL format
+	if def.DefinitionID != "" {
+		for i, entry := range e.entries {
+			if entry.def.DefinitionID == def.DefinitionID {
+				e.entries[i].actuallyAffectedPackNames[packName] = notFixedYet
+				return true
+			}
 		}
 	}
 	e.entries = append(e.entries, defPacks{
@@ -345,7 +348,7 @@ func lessThan(family, versionRelease string, packB ovalmodels.Package) (bool, er
 			return false, err
 		}
 		return vera.LessThan(verb), nil
-	case config.Oracle, config.SUSEEnterpriseServer:
+	case config.Oracle, config.SUSEEnterpriseServer, config.Alpine:
 		vera := rpmver.NewVersion(versionRelease)
 		verb := rpmver.NewVersion(packB.Version)
 		return vera.LessThan(verb), nil

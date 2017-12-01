@@ -142,19 +142,9 @@ func (api cvedictClient) FetchCveDetailsFromCveDB(cveIDs []string) (cveDetails [
 	cveconfig.Conf.DebugSQL = config.Conf.DebugSQL
 
 	var driver cvedb.DB
-	if driver, err = cvedb.NewDB(cveconfig.Conf.DBType); err != nil {
+	if driver, err = cvedb.NewDB(cveconfig.Conf.DBType, cveconfig.Conf.DBPath, cveconfig.Conf.DebugSQL); err != nil {
 		log.Error(err)
 		return []*cve.CveDetail{}, fmt.Errorf("Failed to New DB. err: %s", err)
-	}
-
-	util.Log.Debugf("Opening DB (%s).", driver.Name())
-	if err := driver.OpenDB(
-		cveconfig.Conf.DBType,
-		cveconfig.Conf.DBPath,
-		cveconfig.Conf.DebugSQL,
-	); err != nil {
-		return []*cve.CveDetail{},
-			fmt.Errorf("Failed to open DB. err: %s", err)
 	}
 
 	for _, cveID := range cveIDs {
@@ -276,19 +266,11 @@ func (api cvedictClient) FetchCveDetailsByCpeNameFromDB(cpeName string) (cveDeta
 	cveconfig.Conf.DebugSQL = config.Conf.DebugSQL
 
 	var driver cvedb.DB
-	if driver, err = cvedb.NewDB(cveconfig.Conf.DBType); err != nil {
+	if driver, err = cvedb.NewDB(cveconfig.Conf.DBType, cveconfig.Conf.DBPath, cveconfig.Conf.DebugSQL); err != nil {
 		log.Error(err)
 		return []*cve.CveDetail{}, fmt.Errorf("Failed to New DB. err: %s", err)
 	}
 
 	util.Log.Debugf("Opening DB (%s).", driver.Name())
-	if err = driver.OpenDB(
-		cveconfig.Conf.DBType,
-		cveconfig.Conf.DBPath,
-		cveconfig.Conf.DebugSQL,
-	); err != nil {
-		return []*cve.CveDetail{},
-			fmt.Errorf("Failed to open DB. err: %s", err)
-	}
 	return driver.GetByCpeName(cpeName), nil
 }
