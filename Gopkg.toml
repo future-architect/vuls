@@ -90,5 +90,5 @@
   name = "github.com/kotakanbe/go-cve-dictionary"
 
 [[constraint]]
-  branch = "suport-alpine"
+  branch = "master"
   name = "github.com/kotakanbe/goval-dictionary"

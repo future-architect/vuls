@@ -145,10 +145,10 @@
   version = "v0.1.0"
 
 [[projects]]
-  branch = "suport-alpine"
+  branch = "master"
   name = "github.com/kotakanbe/goval-dictionary"
   packages = ["config","db","db/rdb","log","models"]
-  revision = "f0867997767252557eef939cbf903baf465d7a37"
+  revision = "dca4f21940cbf2245a50817177fed7eb6793e72c"
 
 [[projects]]
   branch = "master"
@@ -273,6 +273,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "26b02bf6655210c59083574809b51de6761773b59cfd88843deb4ab1ba763069"
+  inputs-digest = "58ae46498625e705c582d70591148e07dbac30bc4f75cadef3d2fda514cd5099"
   solver-name = "gps-cdcl"
   solver-version = 1
