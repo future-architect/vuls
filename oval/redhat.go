@@ -94,6 +94,8 @@ var kernelRelatedPackNames = map[string]bool{
 	"kernel-tools":            true,
 	"kernel-tools-libs":       true,
 	"kernel-tools-libs-devel": true,
+	"perf":        true,
+	"python-perf": true,
 }
 
 func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) {
