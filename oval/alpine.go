@@ -21,7 +21,6 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
 // Alpine is the struct of Alpine Linux
@@ -58,25 +57,17 @@ func (o Alpine) FillWithOval(r *models.ScanResult) (err error) {
 }
 
 func (o Alpine) update(r *models.ScanResult, defPacks defPacks) {
-	ovalContent := *o.convertToModel(&defPacks.def)
 	cveID := defPacks.def.Advisory.Cves[0].CveID
 	vinfo, ok := r.ScannedCves[cveID]
 	if !ok {
 		util.Log.Debugf("%s is newly detected by OVAL", cveID)
 		vinfo = models.VulnInfo{
-			CveID:       cveID,
-			Confidence:  models.OvalMatch,
-			CveContents: models.NewCveContents(ovalContent),
+			CveID:      cveID,
+			Confidence: models.OvalMatch,
 		}
 	}
 
 	vinfo.AffectedPackages = defPacks.toPackStatuses(r.Family)
 	vinfo.AffectedPackages.Sort()
 	r.ScannedCves[cveID] = vinfo
-}
-
-func (o Alpine) convertToModel(def *ovalmodels.Definition) *models.CveContent {
-	return &models.CveContent{
-		CveID: def.Advisory.Cves[0].CveID,
-	}
 }

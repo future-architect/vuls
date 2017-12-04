@@ -594,7 +594,7 @@ Vulsをスキャン対象サーバにデプロイする。Vulsはローカルホ
 
 | Distribution|                             Scan Speed | Need Root Privilege |       OVAL | Need Internet Access <br>on scan tareget|
 |:------------|:--------------------------------------:|:-------------------:|:----------:|:---------------------------------------:|
-| Alpine      |                                   Fast |　                No |  Supported |                                      No |
+| Alpine      |                                   Fast |　                No |  Supported |                                    Need |
 | CentOS      |                                   Fast |　                No |  Supported |                                      No |
 | RHEL        |                                   Fast |　                No |  Supported |                                      No |
 | Oracle      |                                   Fast |　                No |  Supported |                                      No |
@@ -614,7 +614,7 @@ Vulsをスキャン対象サーバにデプロイする。Vulsはローカルホ
 
 | Distribution|                            Scan Speed |       Need Root Privilege |      OVAL | Need Internet Access <br>on scan tareget|
 |:------------|:-------------------------------------:|:-------------------------:|:---------:|:---------------------------------------:|
-| Alpine      |                                  Fast |　                      No |  Supported |                                     No |
+| Alpine      |                                  Fast |　                      No | Supported |                                    Need |
 | CentOS      |                                  Slow |　                      No | Supported |                                    Need |
 | RHEL        |                                  Slow |　                    Need | Supported |                                    Need |
 | Oracle      |                                  Slow |　                    Need | Supported |                                    Need |
@@ -660,8 +660,8 @@ web/app server in the same configuration under the load balancer
 
 | Distribution|            Release |
 |:------------|-------------------:|
-| Alpine      |    3.2 and later |
-| Ubuntu      |          12, 14, 16|
+| Alpine      |      3.2 and later |
+| Ubuntu      |              14, 16|
 | Debian      |             7, 8, 9|
 | RHEL        |             5, 6, 7|
 | CentOS      |                6, 7|
@@ -1661,6 +1661,9 @@ tui:
                 [-ovaldb-type=sqlite3|mysql]
                 [-ovaldb-path=/path/to/oval.sqlite3]
                 [-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
+                [-cvss-over=7]
+                [-ignore-unscored-cves]
+                [-ignore-unfixed]
                 [-refresh-cve]
                 [-results-dir=/path/to/results]
                 [-log-dir=/path/to/log]
@@ -1680,6 +1683,12 @@ tui:
         DB type for fetching OVAL dictionary (sqlite3 or mysql) (default "sqlite3")
   -ovaldb-url string
         http://goval-dictionary.com:1324 or mysql connection string
+  -cvss-over float
+        -cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))
+  -ignore-unfixed
+        Don't report the unfixed CVEs
+  -ignore-unscored-cves
+        Don't report the unscored CVEs
   -debug
         debug mode
   -debug-sql
@@ -1905,6 +1914,12 @@ Youtube
 
 - [NVD](https://nvd.nist.gov/)
 - [JVN(Japanese)](http://jvndb.jvn.jp/apis/myjvn/)
+- [RedHat](https://www.redhat.com/security/data/oval/)
+- [Debian](https://www.debian.org/security/oval/)
+- [Ubuntu](https://people.canonical.com/~ubuntu-security/oval/)
+- [SUSE](http://ftp.suse.com/pub/projects/security/oval/)
+- [Oracle Linux](https://linux.oracle.com/security/oval/)
+- [Alpine-secdb](https://git.alpinelinux.org/cgit/alpine-secdb/)
 
 
 # Authors
