@@ -92,3 +92,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/hashicorp/uuid"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/kotakanbe/goval-dictionary"

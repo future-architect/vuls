@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/future-architect/vuls/config"
@@ -109,15 +108,14 @@ func (b Base) CheckIfOvalFresh(driver db.DB, osFamily, release string) (ok bool,
 		}
 	}
 
-	major := strings.Split(release, ".")[0]
 	since := time.Now()
 	since = since.AddDate(0, 0, -3)
 	if lastModified.Before(since) {
 		util.Log.Warnf("OVAL for %s %s is old, last modified is %s. It's recommended to update OVAL to improve scanning accuracy. How to update OVAL database, see https://github.com/kotakanbe/goval-dictionary#usage",
-			osFamily, major, lastModified)
+			osFamily, release, lastModified)
 		return false, nil
 	}
-	util.Log.Infof("OVAL is fresh: %s %s ", osFamily, major)
+	util.Log.Infof("OVAL is fresh: %s %s ", osFamily, release)
 	return true, nil
 }
 

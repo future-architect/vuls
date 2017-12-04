@@ -130,7 +130,7 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) {
 			notFixedYet, _ := defPacks.actuallyAffectedPackNames[pack.Name]
 			defPacks.actuallyAffectedPackNames[pack.Name] = notFixedYet
 		}
-		vinfo.AffectedPackages = defPacks.toPackStatuses(r.Family, r.Packages)
+		vinfo.AffectedPackages = defPacks.toPackStatuses(r.Family)
 		vinfo.AffectedPackages.Sort()
 		r.ScannedCves[cve.CveID] = vinfo
 	}

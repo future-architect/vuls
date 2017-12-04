@@ -65,7 +65,7 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 		defPacks.actuallyAffectedPackNames[pack.Name] = notFixedYet
 	}
 
-	vinfo.AffectedPackages = defPacks.toPackStatuses(r.Family, r.Packages)
+	vinfo.AffectedPackages = defPacks.toPackStatuses(r.Family)
 	vinfo.AffectedPackages.Sort()
 	r.ScannedCves[defPacks.def.Debian.CveID] = vinfo
 }

@@ -173,11 +173,6 @@ func (api cvedictClient) httpGet(key, url string, resChan chan<- response, errCh
 	}
 }
 
-type responseGetCveDetailByCpeName struct {
-	CpeName    string
-	CveDetails []cve.CveDetail
-}
-
 func (api cvedictClient) isFetchViaHTTP() bool {
 	// Default value of CveDBType is sqlite3
 	if config.Conf.CveDBURL != "" && config.Conf.CveDBType == "sqlite3" {

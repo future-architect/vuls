@@ -139,7 +139,7 @@ Vulsは上に挙げた手動運用での課題を解決するツールであり�
 # Main Features
 
 - サーバに存在する脆弱性をスキャン
-    - FreeBSD, Ubuntu, Debian, CentOS, Amazon Linux, RHEL, Oracle Linux, SUSE Enterprise, Raspbianに対応
+    - Alpine, Ubuntu, Debian, CentOS, Amazon Linux, RHEL, Oracle Linux, SUSE Enterprise, Raspbian, FreeBSD に対応
     - クラウド、オンプレミス、Docker
 - 高精度なスキャン
     - Vulsは複数の脆弱性データベース、複数の検知方法を組み合わせることで高精度なスキャンを実現している
@@ -327,6 +327,7 @@ $ goval-dictionary fetch-redhat 7
 
 今回はスキャン対象がCentOS 7なので、RedHat 7のOVALを取得している。
 他の種類のOSをスキャンする場合は以下を参照し、スキャン対象用のOVALを取得しておくこと
+- [Alpine](https://github.com/kotakanbe/goval-dictionary#usage-fetch-alpine-secdb-as-oval-data-type)
 - [RedHat, CentOS](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-redhat)
 - [Debian](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-debian)
 - [Ubuntu](https://github.com/kotakanbe/goval-dictionary#usage-fetch-oval-data-from-ubuntu)
@@ -596,15 +597,16 @@ Vulsをスキャン対象サーバにデプロイする。Vulsはローカルホ
 
 | Distribution|                             Scan Speed | Need Root Privilege |       OVAL | Need Internet Access <br>on scan tareget|
 |:------------|:--------------------------------------:|:-------------------:|:----------:|:---------------------------------------:|
-| CentOS      |                                   Fast |　                No |  Supported |                                      No | 
+| Alpine      |                                   Fast |　                No |  Supported |                                      No |
+| CentOS      |                                   Fast |　                No |  Supported |                                      No |
 | RHEL        |                                   Fast |　                No |  Supported |                                      No |
 | Oracle      |                                   Fast |　                No |  Supported |                                      No |
 | Ubuntu      |                                   Fast |　                No |  Supported |                                      No |
 | Debian      |                                   Fast |　                No |  Supported |                                      No |
 | Raspbian    |1st time: Slow <br> From 2nd time: Fast |                Need |         No |                                    Need |
 | FreeBSD     |                                   Fast |　                No |         No |                                    Need |
-| Amazon      |                                   Fast |　                No |         No |                                    Need | 
-| SUSE Enterprise |                               Fast |　                No |  Supported |                                      No| 
+| Amazon      |                                   Fast |　                No |         No |                                    Need |
+| SUSE Enterprise |                               Fast |　                No |  Supported |                                      No |
 
 ----
 
@@ -615,7 +617,8 @@ Vulsをスキャン対象サーバにデプロイする。Vulsはローカルホ
 
 | Distribution|                            Scan Speed |       Need Root Privilege |      OVAL | Need Internet Access <br>on scan tareget|
 |:------------|:-------------------------------------:|:-------------------------:|:---------:|:---------------------------------------:|
-| CentOS      |                                  Slow |　                      No | Supported |                                    Need | 
+| Alpine      |                                  Fast |　                      No |  Supported |                                     No |
+| CentOS      |                                  Slow |　                      No | Supported |                                    Need |
 | RHEL        |                                  Slow |　                    Need | Supported |                                    Need |
 | Oracle      |                                  Slow |　                    Need | Supported |                                    Need |
 | Ubuntu      |1st time: Slow <br> From 2nd time: Fast|                      Need | Supported |                                    Need |
@@ -623,7 +626,7 @@ Vulsをスキャン対象サーバにデプロイする。Vulsはローカルホ
 | Raspbian    |1st time: Slow <br> From 2nd time: Fast|                      Need |        No |                                    Need |
 | FreeBSD     |                                  Fast |　                      No |        No |                                    Need |
 | Amazon      |                                  Slow |　                      No |        No |                                    Need |
-| SUSE Enterprise |                               Fast |　                     No |  Supported |                                      No| 
+| SUSE Enterprise |                              Fast |　                      No |  Supported |                                     No |
 
 
 #### Changelog
@@ -638,7 +641,7 @@ Vulsをスキャン対象サーバにデプロイする。Vulsはローカルホ
 - On RHEL, Oracle, Amazon and FreeBSD
 `yum changelog`でアップデート対象のパッケージのチェンジログを取得する(パースはしない)。
 
-- On SUSE Enterprise Linux
+- On SUSE Enterprise Linux and Alpine Linux
 Same as fast scan mode for now.
 
 #### Detect processes affected by update using yum-ps
@@ -665,6 +668,7 @@ web/app server in the same configuration under the load balancer
 
 | Distribution|            Release |
 |:------------|-------------------:|
+| Alpine      |    3.2 and later |
 | Ubuntu      |          12, 14, 16|
 | Debian      |             7, 8, 9|
 | RHEL        |             5, 6, 7|
@@ -918,12 +922,13 @@ configtestサブコマンドは、config.tomlで定義されたサーバ/コン�
 
 | Distribution |            Release | Requirements |
 |:-------------|-------------------:|:-------------|
+| Alpine       |    3.2 and later | - |
 | Ubuntu       |          12, 14, 16| - |
 | Debian       |             7, 8, 9| reboot-notifier|
-| CentOS       |                6, 7| - |
-| Amazon       |                All | - |
-| RHEL         |            5, 6, 7 | - | 
-| Oracle Linux |            5, 6, 7 | - |
+| CentOS       |                6, 7| yum-utils |
+| Amazon       |                All | yum-utils |
+| RHEL         |            5, 6, 7 | yum-utils | 
+| Oracle Linux |            5, 6, 7 | yum-utils |
 | SUSE Enterprise|            11, 12 | - |
 | FreeBSD      |             10, 11 | - |
 | Raspbian     |    Jessie, Stretch | - |
@@ -941,12 +946,14 @@ Deep Scan Modeでスキャンするためには、下記のパッケージが必
 
 | Distribution |            Release | Requirements |
 |:-------------|-------------------:|:-------------|
+| Alpine       |      3.2 and later | - |
 | Ubuntu       |          12, 14, 16| -            |
 | Debian       |             7, 8, 9| aptitude, reboot-notifier     |
-| CentOS       |                6, 7| yum-plugin-changelog, yum-utils, yum-plugin-ps |
-| Amazon       |                All | yum-plugin-changelog, yum-utils, yum-plugin-ps  |
-| RHEL         |                  5 | yum-utils, yum-security, yum-changelog |
+| CentOS       |                6, 7| yum-utils, yum-plugin-changelog, yum-plugin-ps |
+| Amazon       |                All | yum-utils, yum-plugin-changelog, yum-plugin-ps  |
+| RHEL         |                  5 | yum-utils, yum-changelog, yum-security |
 | RHEL         |               6, 7 | yum-utils, yum-plugin-changelog, yum-plugin-ps  |
+| Oracle Linux |                  5 | yum-utils, yum-changelog, yum-security |
 | Oracle Linux |               6, 7 | yum-utils, yum-plugin-changelog, yum-plugin-ps  |
 | SUSE Enterprise|            11, 12 | - |
 | FreeBSD      |                 10 | -            |
@@ -1866,7 +1873,8 @@ Run with --debug, --sql-debug option.
 [Riak docs](http://docs.basho.com/riak/latest/ops/tuning/open-files-limit/) is awesome.
 
 - Does Vuls accept ssh connections with fish-shell or old zsh as the login shell?  
-No, Vuls needs a user on the server for bash login. see also [#8](/../../issues/8)
+~~No, Vuls needs a user on the server for bash login. see also [#8](/../../issues/8)~~  
+Yes, fixed in [#545](https://github.com/future-architect/vuls/pull/545)
 
 - Windows  
 Use Microsoft Baseline Security Analyzer. [MBSA](https://technet.microsoft.com/en-us/security/cc184924.aspx)
