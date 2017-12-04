@@ -458,11 +458,13 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 		return o.scanPackages()
 	}, timeoutSec)
 
+	hostname, _ := os.Hostname()
 	for _, s := range append(servers, errServers...) {
 		r := s.convertToModel()
 		r.ScannedAt = scannedAt
 		r.ScannedVersion = config.Version
 		r.ScannedRevision = config.Revision
+		r.ScannedBy = hostname
 		r.Config.Scan = config.Conf
 		results = append(results, r)
 	}

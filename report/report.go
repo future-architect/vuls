@@ -47,6 +47,7 @@ const (
 func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 	var filled []models.ScanResult
 	reportedAt := time.Now()
+	hostname, _ := os.Hostname()
 	for _, r := range rs {
 		if c.Conf.RefreshCve || needToRefreshCve(r) {
 			cpeNames := c.Conf.Servers[r.ServerName].CpeNames
@@ -57,6 +58,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			r.ReportedAt = reportedAt
 			r.ReportedVersion = c.Version
 			r.ReportedRevision = c.Revision
+			r.ReportedBy = hostname
 			r.Config.Report = c.Conf
 			r.Config.Report.Servers = map[string]c.ServerInfo{
 				r.ServerName: c.Conf.Servers[r.ServerName],

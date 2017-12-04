@@ -35,10 +35,12 @@ type ScanResult struct {
 	ScannedAt       time.Time
 	ScannedVersion  string
 	ScannedRevision string
+	ScannedBy       string
 
 	ReportedAt       time.Time
 	ReportedVersion  string
 	ReportedRevision string
+	ReportedBy       string
 
 	Lang     string
 	Platform Platform
