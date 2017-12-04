@@ -367,6 +367,9 @@ func decorateCmd(c conf.ServerInfo, cmd string, sudo bool) string {
 		case "lxd":
 			cmd = fmt.Sprintf(`lxc exec %s -- %s -c '%s'`,
 				c.Container.Name, dockerShell(c.Distro.Family), cmd)
+		case "lxc":
+			cmd = fmt.Sprintf(`lxc-attach -n %s 2>/dev/null -- %s -c '%s'`,
+				c.Container.Name, dockerShell(c.Distro.Family), cmd)
 		}
 	}
 	//  cmd = fmt.Sprintf("set -x; %s", cmd)
