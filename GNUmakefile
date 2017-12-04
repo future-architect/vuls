@@ -18,8 +18,8 @@ SRCS = $(shell git ls-files '*.go')
 PKGS = ./. ./cache ./commands ./config ./models ./oval ./report ./scan ./util 
 VERSION := $(shell git describe --tags --abbrev=0)
 REVISION := $(shell git rev-parse --short HEAD)
-LDFLAGS := -X 'main.version=$(VERSION)' \
-	-X 'main.revision=$(REVISION)'
+LDFLAGS := -X 'github.com/future-architect/vuls/config.Version=$(VERSION)' \
+	-X 'github.com/future-architect/vuls/config.Revision=$(REVISION)'
 
 all: dep build test
 

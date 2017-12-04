@@ -20,12 +20,6 @@
   version = "v0.3.0"
 
 [[projects]]
-  name = "github.com/apex/log"
-  packages = ["."]
-  revision = "0296d6eb16bb28f8a0c55668affcf4876dc269be"
-  version = "v1.0.0"
-
-[[projects]]
   name = "github.com/asaskevich/govalidator"
   packages = ["."]
   revision = "4918b99a7cb949bb295f3c7bbaf24b577d806e35"
@@ -285,6 +279,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e8272378986d2c49841c6423bedf5a7174b471999a54dfc4e49b6c721ff6387b"
+  inputs-digest = "bd8685f55497556d872cfde09f209a44f20c406b8978f5561843fe826afdf07f"
   solver-name = "gps-cdcl"
   solver-version = 1

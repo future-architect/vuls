@@ -55,6 +55,8 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			}
 			r.Lang = c.Conf.Lang
 			r.ReportedAt = reportedAt
+			r.ReportedVersion = c.Version
+			r.ReportedRevision = c.Revision
 			r.Config.Report = c.Conf
 			r.Config.Report.Servers = map[string]c.ServerInfo{
 				r.ServerName: c.Conf.Servers[r.ServerName],

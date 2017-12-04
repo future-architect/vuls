@@ -28,6 +28,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Version of Vuls
+var Version = "0.5.0"
+
+// Revision of Git
+var Revision string
+
 // Conf has Configuration
 var Conf Config
 
