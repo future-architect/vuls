@@ -336,7 +336,7 @@ func (o *redhat) parseInstalledPackagesLine(line string) (models.Package, error)
 }
 
 func (o *redhat) scanUpdatablePackages() (models.Packages, error) {
-	cmd := "repoquery --all --pkgnarrow=updates --qf='%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPO}'"
+	cmd := `repoquery --all --pkgnarrow=updates --qf="%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPO}"`
 	for _, repo := range o.getServerInfo().Enablerepo {
 		cmd += " --enablerepo=" + repo
 	}
@@ -453,7 +453,7 @@ func (o *redhat) getAvailableChangelogs(packNames []string) (map[string]string, 
 	if config.Conf.SkipBroken {
 		yumopts += " --skip-broken"
 	}
-	cmd := `yum --color=never changelog all %s %s | grep -A 1000000 '==================== Available Packages ===================='`
+	cmd := `yum --color=never changelog all %s %s | grep -A 1000000 "==================== Available Packages ===================="`
 	cmd = fmt.Sprintf(cmd, yumopts, strings.Join(packNames, " "))
 
 	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
