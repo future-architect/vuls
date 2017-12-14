@@ -917,10 +917,10 @@ configtestサブコマンドは、config.tomlで定義されたサーバ/コン�
 | Alpine       |    3.2 and later | - |
 | Ubuntu       |          12, 14, 16| - |
 | Debian       |             7, 8, 9| reboot-notifier|
-| CentOS       |                6, 7| yum-utils |
+| CentOS       |                6, 7| - |
 | Amazon       |                All | yum-utils |
-| RHEL         |            5, 6, 7 | yum-utils | 
-| Oracle Linux |            5, 6, 7 | yum-utils |
+| RHEL         |            5, 6, 7 | - | 
+| Oracle Linux |            5, 6, 7 | - |
 | SUSE Enterprise|            11, 12 | - |
 | FreeBSD      |             10, 11 | - |
 | Raspbian     |    Jessie, Stretch | - |
@@ -944,9 +944,11 @@ Deep Scan Modeでスキャンするためには、下記のパッケージが必
 | CentOS       |                6, 7| yum-utils, yum-plugin-changelog |
 | Amazon       |                All | yum-utils, yum-plugin-changelog |
 | RHEL         |                  5 | yum-utils, yum-changelog, yum-security |
-| RHEL         |               6, 7 | yum-utils, yum-plugin-changelog |
+| RHEL         |                  6 | yum-utils, yum-plugin-changelog, yum-plugin-security |
+| RHEL         |                  7 | yum-utils, yum-plugin-changelog |
 | Oracle Linux |                  5 | yum-utils, yum-changelog, yum-security |
-| Oracle Linux |               6, 7 | yum-utils, yum-plugin-changelog |
+| Oracle Linux |                  6 | yum-utils, yum-plugin-changelog, yum-plugin-security |
+| Oracle Linux |                  7 | yum-utils, yum-plugin-changelog |
 | SUSE Enterprise|            11, 12 | - |
 | FreeBSD      |                 10 | -            |
 | Raspbian     |     Wheezy, Jessie | -            |
