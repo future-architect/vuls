@@ -365,11 +365,16 @@ func decorateCmd(c conf.ServerInfo, cmd string, sudo bool) string {
 			cmd = fmt.Sprintf(`docker exec --user 0 %s %s -c '%s'`,
 				c.Container.ContainerID, dockerShell(c.Distro.Family), cmd)
 		case "lxd":
+			// If the user belong to the "lxd" group, root privilege is not required.
 			cmd = fmt.Sprintf(`lxc exec %s -- %s -c '%s'`,
 				c.Container.Name, dockerShell(c.Distro.Family), cmd)
 		case "lxc":
 			cmd = fmt.Sprintf(`lxc-attach -n %s 2>/dev/null -- %s -c '%s'`,
 				c.Container.Name, dockerShell(c.Distro.Family), cmd)
+			// LXC required root privilege
+			if c.User != "root" {
+				cmd = fmt.Sprintf("sudo -S %s", cmd)
+			}
 		}
 	}
 	//  cmd = fmt.Sprintf("set -x; %s", cmd)

@@ -189,7 +189,7 @@ func TestDecorateCmd(t *testing.T) {
 			sudo:     false,
 			expected: `lxc-attach -n def 2>/dev/null -- /bin/sh -c 'ls'`,
 		},
-		// root sudo true lxd
+		// root sudo true lxc
 		{
 			conf: config.ServerInfo{
 				User:       "root",
@@ -200,7 +200,7 @@ func TestDecorateCmd(t *testing.T) {
 			sudo:     true,
 			expected: `lxc-attach -n def 2>/dev/null -- /bin/sh -c 'ls'`,
 		},
-		// non-root sudo false, lxd
+		// non-root sudo false, lxc
 		{
 			conf: config.ServerInfo{
 				User:       "non-root",
@@ -209,9 +209,9 @@ func TestDecorateCmd(t *testing.T) {
 			},
 			cmd:      "ls",
 			sudo:     false,
-			expected: `lxc-attach -n def 2>/dev/null -- /bin/sh -c 'ls'`,
+			expected: `sudo -S lxc-attach -n def 2>/dev/null -- /bin/sh -c 'ls'`,
 		},
-		// non-root sudo true, lxd
+		// non-root sudo true, lxc
 		{
 			conf: config.ServerInfo{
 				User:       "non-root",
@@ -220,9 +220,9 @@ func TestDecorateCmd(t *testing.T) {
 			},
 			cmd:      "ls",
 			sudo:     true,
-			expected: `lxc-attach -n def 2>/dev/null -- /bin/sh -c 'ls'`,
+			expected: `sudo -S lxc-attach -n def 2>/dev/null -- /bin/sh -c 'ls'`,
 		},
-		// non-root sudo true lxd
+		// non-root sudo true lxc
 		{
 			conf: config.ServerInfo{
 				User:       "non-root",
@@ -231,7 +231,7 @@ func TestDecorateCmd(t *testing.T) {
 			},
 			cmd:      "ls | grep hoge",
 			sudo:     true,
-			expected: `lxc-attach -n def 2>/dev/null -- /bin/sh -c 'ls | grep hoge'`,
+			expected: `sudo -S lxc-attach -n def 2>/dev/null -- /bin/sh -c 'ls | grep hoge'`,
 		},
 	}
 
