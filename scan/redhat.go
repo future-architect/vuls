@@ -107,9 +107,14 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 		family := config.Amazon
 		release := "unknown"
 		if r := exec(c, "cat /etc/system-release", noSudo); r.isSuccess() {
-			fields := strings.Fields(r.Stdout)
-			if len(fields) == 5 {
-				release = fields[4]
+			if strings.HasPrefix(r.Stdout, "Amazon Linux release 2") {
+				fields := strings.Fields(r.Stdout)
+				release = fmt.Sprintf("%s %s", fields[3], fields[4])
+			} else {
+				fields := strings.Fields(r.Stdout)
+				if len(fields) == 5 {
+					release = fields[4]
+				}
 			}
 		}
 		red.setDistro(family, release)
