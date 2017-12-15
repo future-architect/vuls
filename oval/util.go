@@ -351,8 +351,9 @@ func lessThan(family, versionRelease string, packB ovalmodels.Package) (bool, er
 		vera := rpmver.NewVersion(versionRelease)
 		verb := rpmver.NewVersion(packB.Version)
 		return vera.LessThan(verb), nil
-	case config.RedHat, config.CentOS: // TODO: Suport config.Scientific
-		rea := regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.centos)?`)
+	case config.RedHat, config.CentOS:
+		// TODO: Asianux Support (.AXS4 / .el7.AXS7)
+		rea := regexp.MustCompile(`\.(?:el|sl|sdl|v)(\d+)(?:_\d+)?(?:\.centos)?`)
 		reb := regexp.MustCompile(`\.el(\d+)(?:_\d+)?`)
 		vera := rpmver.NewVersion(rea.ReplaceAllString(versionRelease, ".el$1"))
 		verb := rpmver.NewVersion(reb.ReplaceAllString(packB.Version, ".el$1"))

@@ -55,70 +55,79 @@ func newRedhat(c config.ServerInfo) *redhat {
 func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 	red = newRedhat(c)
 
-	if r := exec(c, "ls /etc/fedora-release", noSudo); r.isSuccess() {
-		red.setDistro(config.Fedora, "unknown")
-		util.Log.Warn("Fedora not tested yet: %s", r)
-		return true, red
+	// Need to discover Oracle Linux first, because it provides an
+	// /etc/redhat-release that matches the upstream distribution
+	releases := []string{
+		"/etc/oracle-release",
+		"/etc/fedora-release",
+		"/etc/redhat-release",
+		"/etc/system-release",
 	}
 
-	if r := exec(c, "ls /etc/oracle-release", noSudo); r.isSuccess() {
-		// Need to discover Oracle Linux first, because it provides an
-		// /etc/redhat-release that matches the upstream distribution
-		if r := exec(c, "cat /etc/oracle-release", noSudo); r.isSuccess() {
+	for _, dist := range releases {
+		if r := exec(c, "cat "+dist, noSudo); r.isSuccess() {
+			// Almost everything can be covered with regular expressions
 			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
 			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
-			if len(result) != 3 {
-				util.Log.Warn("Failed to parse Oracle Linux version: %s", r)
-				return true, red
-			}
 
-			release := result[2]
-			red.setDistro(config.Oracle, release)
-			return true, red
-		}
-	}
+			if len(result) == 3 {
+				release := result[2]
 
-	if r := exec(c, "ls /etc/redhat-release", noSudo); r.isSuccess() {
-		// https://www.rackaid.com/blog/how-to-determine-centos-or-red-hat-version/
-		// e.g.
-		// $ cat /etc/redhat-release
-		// CentOS release 6.5 (Final)
-		if r := exec(c, "cat /etc/redhat-release", noSudo); r.isSuccess() {
-			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
-			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
-			if len(result) != 3 {
-				util.Log.Warn("Failed to parse RedHat/CentOS version: %s", r)
-				return true, red
-			}
-
-			release := result[2]
-			switch strings.ToLower(result[1]) {
-			case "centos", "centos linux":
-				red.setDistro(config.CentOS, release)
-			default:
-				red.setDistro(config.RedHat, release)
-			}
-			return true, red
-		}
-		return true, red
-	}
-
-	if r := exec(c, "ls /etc/system-release", noSudo); r.isSuccess() {
-		family := config.Amazon
-		release := "unknown"
-		if r := exec(c, "cat /etc/system-release", noSudo); r.isSuccess() {
-			if strings.HasPrefix(r.Stdout, "Amazon Linux release 2") {
-				fields := strings.Fields(r.Stdout)
-				release = fmt.Sprintf("%s %s", fields[3], fields[4])
-			} else {
-				fields := strings.Fields(r.Stdout)
-				if len(fields) == 5 {
-					release = fields[4]
+				switch strings.ToLower(strings.Fields(result[1])[0]) {
+				case "amazon":
+					release = "unknown"
+					if strings.HasPrefix(r.Stdout, "Amazon Linux release 2") {
+						fields := strings.Fields(r.Stdout)
+						release = fmt.Sprintf("%s %s", fields[3], fields[4])
+					} else {
+						fields := strings.Fields(r.Stdout)
+						if len(fields) == 5 {
+							release = fields[4]
+						}
+					}
+					red.setDistro(config.Amazon, release)
+				case "clearos":
+					if config.Conf.Deep {
+						// ClearOS: yum-plugin-changelog is not found
+						util.Log.Warnf("%s is not support Deep Scan", result[1])
+					}
+					fallthrough
+				case "scientific", "springdale":
+					// Clones of RHEL are handled equally to CentOS
+					util.Log.Warnf("%s is handled equally to CentOS", result[1])
+					fallthrough
+				case "centos":
+					red.setDistro(config.CentOS, release)
+				case "fedora":
+					// Fedora Core is too old
+					if strings.HasPrefix(result[1], "Fedora Core") {
+						util.Log.Warnf("%s is not supported forever. servername: %s", result[1], c.ServerName)
+						return false, red
+					}
+					red.setDistro(config.Fedora, release)
+				case "oracle":
+					red.setDistro(config.Oracle, release)
+				case "pu_ias":
+					util.Log.Warnf("%s is not supported", result[1])
+					return false, red
+				case "red":
+					// Red Flag Linux does not satisfy regular expressions
+					// but Red Hat Linux (not RHEL) will match the regular expression
+					if strings.HasPrefix(result[1], "Red Hat Linux") {
+						util.Log.Warnf("%s (not RHEL) is not supported forever. servername: %s", result[1], c.ServerName)
+						return false, red
+					}
+					// Asianux (a.k.a. MIRACLE Linux) is not tested yet.
+					if r := exec(c, "ls /etc/asianux-release", noSudo); r.isSuccess() {
+						util.Log.Warnf("Asianux is not tested")
+					}
+					red.setDistro(config.RedHat, release)
+				default:
+					util.Log.Warnf("Failed to parse RedHat like Linux version: %s", r)
 				}
+				return true, red
 			}
 		}
-		red.setDistro(family, release)
-		return true, red
 	}
 
 	util.Log.Debugf("Not RedHat like Linux. servername: %s", c.ServerName)
