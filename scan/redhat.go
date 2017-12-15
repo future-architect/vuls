@@ -65,7 +65,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 		// Need to discover Oracle Linux first, because it provides an
 		// /etc/redhat-release that matches the upstream distribution
 		if r := exec(c, "cat /etc/oracle-release", noSudo); r.isSuccess() {
-			re := regexp.MustCompile(`(.*) release (\d[\d.]*)`)
+			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
 			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
 				util.Log.Warn("Failed to parse Oracle Linux version: %s", r)
@@ -84,7 +84,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 		// $ cat /etc/redhat-release
 		// CentOS release 6.5 (Final)
 		if r := exec(c, "cat /etc/redhat-release", noSudo); r.isSuccess() {
-			re := regexp.MustCompile(`(.*) release (\d[\d.]*)`)
+			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
 			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
 				util.Log.Warn("Failed to parse RedHat/CentOS version: %s", r)
@@ -173,13 +173,14 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 }
 
 // - Fast scan mode
-//    No additional dependencies needed
+//    Amazon        ... yum-utils
 //
 // - Deep scan mode
-//    CentOS 6, 7 	... yum-utils
-//    RHEL 5     	... yum-security, yum-changelog
-//    RHEL 6, 7     ... yum-utils, yum-plugin-changelog
-//    Amazon 		... yum-utils
+//    CentOS 6,7    ... yum-utils, yum-plugin-changelog
+//    RHEL 5 (U1-)  ... yum-utils, yum-security, yum-changelog
+//    RHEL 6        ... yum-utils, yum-security, yum-plugin-changelog
+//    RHEL 7        ... yum-utils, yum-plugin-changelog
+//    Amazon        ... yum-utils
 func (o *redhat) checkDependencies() error {
 	majorVersion, err := o.Distro.MajorVersion()
 	if err != nil {
@@ -196,16 +197,27 @@ func (o *redhat) checkDependencies() error {
 		}
 	}
 
-	packNames := []string{"yum-utils"}
-	if config.Conf.Deep {
+	packNames := []string{}
+
+	if !config.Conf.Deep {
+		// Fast Scan
+		switch o.Distro.Family {
+		case config.Amazon:
+			packNames = append(packNames, "yum-utils")
+		}
+	} else {
+		// Deep Scan
 		switch o.Distro.Family {
 		case config.CentOS, config.Amazon:
-			packNames = append(packNames, "yum-plugin-changelog")
+			packNames = append(packNames, "yum-utils", "yum-plugin-changelog")
 		case config.RedHat, config.Oracle:
-			if majorVersion < 6 {
-				packNames = append(packNames, "yum-security", "yum-changelog")
-			} else {
-				packNames = append(packNames, "yum-plugin-changelog")
+			switch majorVersion {
+			case 5:
+				packNames = append(packNames, "yum-utils", "yum-security", "yum-changelog")
+			case 6:
+				packNames = append(packNames, "yum-utils", "yum-plugin-security", "yum-plugin-changelog")
+			default:
+				packNames = append(packNames, "yum-utils", "yum-plugin-changelog")
 			}
 		default:
 			return fmt.Errorf("Not implemented yet: %s", o.Distro)
@@ -238,6 +250,16 @@ func (o *redhat) scanPackages() error {
 	}
 	o.Kernel.RebootRequired = rebootRequired
 
+	if !config.Conf.Deep {
+		switch o.Distro.Family {
+		case config.Amazon:
+			// nop
+		default:
+			o.Packages = installed
+			return nil
+		}
+	}
+
 	updatable, err := o.scanUpdatablePackages()
 	if err != nil {
 		o.log.Errorf("Failed to scan installed packages: %s", err)
@@ -245,10 +267,6 @@ func (o *redhat) scanPackages() error {
 	}
 	installed.MergeNewVersion(updatable)
 	o.Packages = installed
-
-	if !config.Conf.Deep && o.Distro.Family != config.Amazon {
-		return nil
-	}
 
 	var unsecures models.VulnInfos
 	if unsecures, err = o.scanUnsecurePackages(updatable); err != nil {
@@ -455,7 +473,7 @@ func (o *redhat) getAvailableChangelogs(packNames []string) (map[string]string, 
 	if config.Conf.SkipBroken {
 		yumopts += " --skip-broken"
 	}
-	cmd := `yum --color=never changelog all %s %s | grep -A 1000000 "==================== Available Packages ===================="`
+	cmd := `yum --color=never changelog all %s updates %s | grep -A 1000000 "==================== Updated Packages ===================="`
 	cmd = fmt.Sprintf(cmd, yumopts, strings.Join(packNames, " "))
 
 	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
@@ -475,7 +493,7 @@ func (o *redhat) divideChangelogsIntoEachPackages(stdout string) map[string]stri
 	packNameVer, contents := "", []string{}
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasPrefix(line, "==================== Available Packages ====================") {
+		if strings.HasPrefix(line, "==================== Updated Packages ====================") {
 			continue
 		}
 		if newBlock {
