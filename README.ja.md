@@ -75,9 +75,10 @@ Table of Contents
       * [Example: Scan specific servers](#example-scan-specific-servers)
       * [Example: Scan via shell instead of SSH.](#example-scan-via-shell-instead-of-ssh)
          * [cronで動かす場合](#cronで動かす場合)
-      * [Example: Scan containers (Docker/LXD)](#example-scan-containers-dockerlxd)
+      * [Example: Scan containers (Docker/LXD/LXC)](#example-scan-containers-dockerlxdlxc)
          * [Docker](#docker)
          * [LXDコンテナをスキャンする場合](#lxdコンテナをスキャンする場合)
+         * [LXCコンテナをスキャンする場合](#lxcコンテナをスキャンする場合)
    * [Usage: Report](#usage-report)
       * [How to read a report](#how-to-read-a-report)
          * [Example](#example-1)
@@ -734,7 +735,7 @@ host         = "172.31.4.82"
 #    ["key", "value"],
 #]
 #[servers.172-31-4-82.containers]
-#type = "lxd" # or "docker"
+#type = "lxd" # or "docker" or "lxc"
 #includes = ["${running}"]
 #excludes = ["container_name", "container_id"]
 ```
@@ -819,7 +820,7 @@ host         = "172.31.4.82"
     #    ["key", "value"],
     #]
     #[servers.172-31-4-82.containers]
-    #type = "lxd" # or "docker"
+    #type = "lxd" # or "docker" or "lxc"
     #includes = ["${running}"]
     #excludes = ["container_name", "container_id"]
     ```
@@ -1103,7 +1104,7 @@ RHEL/CentOSの場合、スキャン対象サーバの/etc/sudoersに以下を追
 Defaults:vuls !requiretty
 ```
 
-## Example: Scan containers (Docker/LXD)
+## Example: Scan containers (Docker/LXD/LXC)
 
 
 コンテナはSSHデーモンを起動しないで運用するケースが一般的。  
@@ -1175,6 +1176,30 @@ keyPath     = "/home/username/.ssh/id_rsa"
 [servers.172-31-4-82.containers]
 type = "lxd"
 includes = ["${running}"]
+```
+
+### LXC
+
+Vulsは、ホストにSSHで接続し、`lxc-attach`でLXCコンテナにコマンドを発行して脆弱性をスキャンする。  
+```
+[servers]
+
+[servers.172-31-4-82]
+host         = "172.31.4.82"
+user        = "ec2-user"
+keyPath     = "/home/username/.ssh/id_rsa"
+
+[servers.172-31-4-82.containers]
+type = "lxc"
+includes = ["${running}"]
+```
+
+LXCコンテナの操作にはroot権限が必要です。  
+
+スキャン対象サーバ上の`/etc/sudoers`のサンプル
+
+```
+vuls ALL=(ALL) NOPASSWD:/usr/bin/lxc-attach -n *, /usr/bin/lxc-ls *
 ```
 
 # Usage: Report

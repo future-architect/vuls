@@ -46,21 +46,21 @@ func TestDecorateCmd(t *testing.T) {
 		},
 		// non-root sudo false
 		{
-			conf:     config.ServerInfo{User: "non-roor"},
+			conf:     config.ServerInfo{User: "non-root"},
 			cmd:      "ls",
 			sudo:     false,
 			expected: "ls",
 		},
 		// non-root sudo true
 		{
-			conf:     config.ServerInfo{User: "non-roor"},
+			conf:     config.ServerInfo{User: "non-root"},
 			cmd:      "ls",
 			sudo:     true,
 			expected: "sudo -S ls",
 		},
 		// non-root sudo true
 		{
-			conf:     config.ServerInfo{User: "non-roor"},
+			conf:     config.ServerInfo{User: "non-root"},
 			cmd:      "ls | grep hoge",
 			sudo:     true,
 			expected: "sudo -S ls | grep hoge",
@@ -70,7 +70,7 @@ func TestDecorateCmd(t *testing.T) {
 		{
 			conf: config.ServerInfo{
 				User:       "root",
-				Container:  config.Container{ContainerID: "abc"},
+				Container:  config.Container{ContainerID: "abc", Name: "def"},
 				Containers: config.Containers{Type: "docker"},
 			},
 			cmd:      "ls",
@@ -81,7 +81,7 @@ func TestDecorateCmd(t *testing.T) {
 		{
 			conf: config.ServerInfo{
 				User:       "root",
-				Container:  config.Container{ContainerID: "abc"},
+				Container:  config.Container{ContainerID: "abc", Name: "def"},
 				Containers: config.Containers{Type: "docker"},
 			},
 			cmd:      "ls",
@@ -92,7 +92,7 @@ func TestDecorateCmd(t *testing.T) {
 		{
 			conf: config.ServerInfo{
 				User:       "non-root",
-				Container:  config.Container{ContainerID: "abc"},
+				Container:  config.Container{ContainerID: "abc", Name: "def"},
 				Containers: config.Containers{Type: "docker"},
 			},
 			cmd:      "ls",
@@ -103,7 +103,7 @@ func TestDecorateCmd(t *testing.T) {
 		{
 			conf: config.ServerInfo{
 				User:       "non-root",
-				Container:  config.Container{ContainerID: "abc"},
+				Container:  config.Container{ContainerID: "abc", Name: "def"},
 				Containers: config.Containers{Type: "docker"},
 			},
 			cmd:      "ls",
@@ -114,7 +114,7 @@ func TestDecorateCmd(t *testing.T) {
 		{
 			conf: config.ServerInfo{
 				User:       "non-root",
-				Container:  config.Container{ContainerID: "abc"},
+				Container:  config.Container{ContainerID: "abc", Name: "def"},
 				Containers: config.Containers{Type: "docker"},
 			},
 			cmd:      "ls | grep hoge",
@@ -176,6 +176,62 @@ func TestDecorateCmd(t *testing.T) {
 			cmd:      "ls | grep hoge",
 			sudo:     true,
 			expected: `lxc exec def -- /bin/sh -c 'ls | grep hoge'`,
+		},
+		// -------------lxc-------------
+		// root sudo false lxc
+		{
+			conf: config.ServerInfo{
+				User:       "root",
+				Container:  config.Container{ContainerID: "abc", Name: "def"},
+				Containers: config.Containers{Type: "lxc"},
+			},
+			cmd:      "ls",
+			sudo:     false,
+			expected: `lxc-attach -n def 2>/dev/null -- /bin/sh -c 'ls'`,
+		},
+		// root sudo true lxc
+		{
+			conf: config.ServerInfo{
+				User:       "root",
+				Container:  config.Container{ContainerID: "abc", Name: "def"},
+				Containers: config.Containers{Type: "lxc"},
+			},
+			cmd:      "ls",
+			sudo:     true,
+			expected: `lxc-attach -n def 2>/dev/null -- /bin/sh -c 'ls'`,
+		},
+		// non-root sudo false, lxc
+		{
+			conf: config.ServerInfo{
+				User:       "non-root",
+				Container:  config.Container{ContainerID: "abc", Name: "def"},
+				Containers: config.Containers{Type: "lxc"},
+			},
+			cmd:      "ls",
+			sudo:     false,
+			expected: `sudo -S lxc-attach -n def 2>/dev/null -- /bin/sh -c 'ls'`,
+		},
+		// non-root sudo true, lxc
+		{
+			conf: config.ServerInfo{
+				User:       "non-root",
+				Container:  config.Container{ContainerID: "abc", Name: "def"},
+				Containers: config.Containers{Type: "lxc"},
+			},
+			cmd:      "ls",
+			sudo:     true,
+			expected: `sudo -S lxc-attach -n def 2>/dev/null -- /bin/sh -c 'ls'`,
+		},
+		// non-root sudo true lxc
+		{
+			conf: config.ServerInfo{
+				User:       "non-root",
+				Container:  config.Container{ContainerID: "abc", Name: "def"},
+				Containers: config.Containers{Type: "lxc"},
+			},
+			cmd:      "ls | grep hoge",
+			sudo:     true,
+			expected: `sudo -S lxc-attach -n def 2>/dev/null -- /bin/sh -c 'ls | grep hoge'`,
 		},
 	}
 
