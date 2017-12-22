@@ -38,7 +38,7 @@ func isRunningKernel(pack models.Package, family string, kernel models.Kernel) (
 		}
 		return false, false
 
-	case config.RedHat, config.Oracle, config.CentOS, config.Amazon:
+	case config.RedHat, config.Oracle, config.CentOS, config.Amazon, config.Fedora:
 		if pack.Name == "kernel" {
 			ver := fmt.Sprintf("%s-%s.%s", pack.Version, pack.Release, pack.Arch)
 			return true, kernel.Release == ver
@@ -52,11 +52,17 @@ func isRunningKernel(pack models.Package, family string, kernel models.Kernel) (
 }
 
 func rpmQa(distro config.Distro) string {
+	// rpm < 4.8.0
 	const old = "rpm -qa --queryformat \"%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n\""
 	const new = "rpm -qa --queryformat \"%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n\""
 	switch distro.Family {
 	case config.SUSEEnterpriseServer:
 		if v, _ := distro.MajorVersion(); v < 12 {
+			return old
+		}
+		return new
+	case config.Fedora:
+		if v, _ := distro.MajorVersion(); v < 13 {
 			return old
 		}
 		return new

@@ -347,13 +347,22 @@ func lessThan(family, versionRelease string, packB ovalmodels.Package) (bool, er
 			return false, err
 		}
 		return vera.LessThan(verb), nil
+	case config.RedHat:
+		rea := regexp.MustCompile(`(?:\.el\d+)?\.AXS\d+?`)
+		reb := regexp.MustCompile(`\.el(\d+)(?:_\d+)?`)
+		ver := reb.FindStringSubmatch(packB.Version)
+		if len(ver) == 2 {
+			vera := rpmver.NewVersion(rea.ReplaceAllString(versionRelease, ".el"+ver[1]))
+			verb := rpmver.NewVersion(reb.ReplaceAllString(packB.Version, ".el$1"))
+			return vera.LessThan(verb), nil
+		}
+		fallthrough
 	case config.Oracle, config.SUSEEnterpriseServer, config.Alpine:
 		vera := rpmver.NewVersion(versionRelease)
 		verb := rpmver.NewVersion(packB.Version)
 		return vera.LessThan(verb), nil
-	case config.RedHat, config.CentOS:
-		// TODO: Asianux Support (.AXS4 / .el7.AXS7)
-		rea := regexp.MustCompile(`\.(?:el|sl|sdl|v)(\d+)(?:_\d+)?(?:\.centos)?`)
+	case config.CentOS:
+		rea := regexp.MustCompile(`\.(?:el|sd?l|v)(\d+)(?:_\d+)?(?:\.centos)?`)
 		reb := regexp.MustCompile(`\.el(\d+)(?:_\d+)?`)
 		vera := rpmver.NewVersion(rea.ReplaceAllString(versionRelease, ".el$1"))
 		verb := rpmver.NewVersion(reb.ReplaceAllString(packB.Version, ".el$1"))
