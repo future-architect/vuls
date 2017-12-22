@@ -501,7 +501,7 @@ func (o *redhat) divideChangelogsIntoEachPackages(stdout string) map[string]stri
 		if strings.HasPrefix(line, "==================== Updated Packages ====================") {
 			continue
 		}
-		if newBlock {
+		if len(strings.TrimSpace(line)) != 0 && newBlock {
 			left := strings.Fields(line)[0]
 			// ss := strings.Split(left, ".")
 			// packNameVer = strings.Join(ss[0:len(ss)-1], ".")
