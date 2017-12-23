@@ -293,7 +293,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 
 		if running.Release != "" {
 			switch family {
-			case config.RedHat, config.CentOS:
+			case config.RedHat, config.CentOS, config.Scientific:
 				// For kernel related packages, ignore OVAL information with different major versions
 				if _, ok := kernelRelatedPackNames[ovalPack.Name]; ok {
 					if major(ovalPack.Version) != major(running.Release) {
@@ -352,7 +352,7 @@ func lessThan(family, versionRelease string, packB ovalmodels.Package) (bool, er
 		vera := rpmver.NewVersion(versionRelease)
 		verb := rpmver.NewVersion(packB.Version)
 		return vera.LessThan(verb), nil
-	case config.RedHat, config.CentOS: // TODO: Suport config.Scientific
+	case config.RedHat, config.CentOS, config.Scientific:
 		rea := regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.centos)?`)
 		reb := regexp.MustCompile(`\.el(\d+)(?:_\d+)?`)
 		vera := rpmver.NewVersion(rea.ReplaceAllString(versionRelease, ".el$1"))

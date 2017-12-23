@@ -173,6 +173,10 @@ func FillWithOval(r *models.ScanResult) (err error) {
 		ovalClient = oval.NewCentOS()
 		//use RedHat's OVAL
 		ovalFamily = c.RedHat
+	case c.Scientific:
+		ovalClient = oval.NewScientific()
+		//use RedHat's OVAL
+		ovalFamily = c.RedHat
 	case c.Oracle:
 		ovalClient = oval.NewOracle()
 		ovalFamily = c.Oracle
