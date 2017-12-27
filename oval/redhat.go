@@ -28,7 +28,7 @@ import (
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
-// RedHatBase is the base struct for RedHat and CentOS
+// RedHatBase is the base struct for RedHat, CentOS, and Scientific
 type RedHatBase struct {
 	Base
 }
@@ -233,6 +233,22 @@ func NewCentOS() CentOS {
 		RedHatBase{
 			Base{
 				family: config.CentOS,
+			},
+		},
+	}
+}
+
+// Scientific is the interface for Scientific OVAL
+type Scientific struct {
+	RedHatBase
+}
+
+// NewCentOS creates OVAL client for CentOS
+func NewScientific() Scientific {
+	return Scientific{
+		RedHatBase{
+			Base{
+				family: config.Scientific,
 			},
 		},
 	}

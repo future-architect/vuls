@@ -44,6 +44,9 @@ const (
 	// CentOS is
 	CentOS = "centos"
 
+	// Scientific is
+	Scientific = "scientific"
+
 	// Fedora is
 	Fedora = "fedora"
 

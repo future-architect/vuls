@@ -87,7 +87,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
 			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
-				util.Log.Warn("Failed to parse RedHat/CentOS version: %s", r)
+				util.Log.Warn("Failed to parse RedHat/CentOS/Scientific version: %s", r)
 				return true, red
 			}
 
@@ -95,6 +95,8 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 			switch strings.ToLower(result[1]) {
 			case "centos", "centos linux":
 				red.setDistro(config.CentOS, release)
+			case "scientific", "scientific linux":
+				red.setDistro(config.Scientific, release)
 			default:
 				red.setDistro(config.RedHat, release)
 			}
@@ -215,7 +217,7 @@ func (o *redhat) checkDependencies() error {
 		switch o.Distro.Family {
 		case config.CentOS, config.Amazon:
 			packNames = append(packNames, "yum-utils", "yum-plugin-changelog")
-		case config.RedHat, config.Oracle:
+		case config.RedHat, config.Oracle, config.Scientific:
 			switch majorVersion {
 			case 5:
 				packNames = append(packNames, "yum-utils", "yum-security", "yum-changelog")
@@ -432,7 +434,7 @@ func (o *redhat) scanUnsecurePackages(updatable models.Packages) (models.VulnInf
 	}
 
 	if o.Distro.Family != config.CentOS {
-		// Amazon, RHEL, Oracle Linux has yum updateinfo as default
+		// Amazon, RHEL, Scientific, Oracle Linux have yum updateinfo as default
 		// yum updateinfo can collenct vendor advisory information.
 		return o.scanCveIDsByCommands(updatable)
 	}
@@ -690,7 +692,7 @@ type distroAdvisoryCveIDs struct {
 }
 
 // Scaning unsecure packages using yum-plugin-security.
-// Amazon, RHEL, Oracle Linux
+// Amazon, RHEL, Scientific, Oracle Linux
 func (o *redhat) scanCveIDsByCommands(updatable models.Packages) (models.VulnInfos, error) {
 	if o.Distro.Family == config.CentOS {
 		// CentOS has no security channel.
@@ -834,7 +836,7 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 				// CentOS has no security channel.
 				return result, fmt.Errorf(
 					"yum updateinfo is not suppported on  CentOS")
-			case config.RedHat, config.Amazon, config.Oracle:
+			case config.RedHat, config.Scientific, config.Amazon, config.Oracle:
 				// nop
 			}
 
@@ -1057,7 +1059,7 @@ func (o *redhat) sudo() bool {
 	case config.Amazon, config.CentOS:
 		return false
 	default:
-		// RHEL, Oracle
+		// RHEL, Scientific, Oracle
 		return config.Conf.Deep
 	}
 }
