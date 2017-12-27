@@ -520,7 +520,7 @@ func (v VulnInfo) Cvss3CalcURL() string {
 func (v VulnInfo) VendorLinks(family string) map[string]string {
 	links := map[string]string{}
 	switch family {
-	case config.RedHat, config.CentOS, c.Scientific:
+	case config.RedHat, config.CentOS, config.Scientific:
 		links["RHEL-CVE"] = "https://access.redhat.com/security/cve/" + v.CveID
 		for _, advisory := range v.DistroAdvisories {
 			aidURL := strings.Replace(advisory.AdvisoryID, ":", "-", -1)
