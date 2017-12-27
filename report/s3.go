@@ -132,7 +132,7 @@ func CheckIfBucketExists() error {
 	}
 	if !found {
 		return fmt.Errorf(
-			"Failed to find the buckets. profile: %s, region: %s, bukdet: %s",
+			"Failed to find the buckets. profile: %s, region: %s, bucket: %s",
 			c.Conf.AwsProfile, c.Conf.AwsRegion, c.Conf.S3Bucket)
 	}
 	return nil
