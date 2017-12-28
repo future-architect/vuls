@@ -68,7 +68,8 @@ func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
 			logrus.ErrorLevel: path,
 			logrus.FatalLevel: path,
 			logrus.PanicLevel: path,
-		}))
+		},
+    &logrus.JSONFormatter{},))
 	}
 
 	fields := logrus.Fields{"prefix": whereami}
