@@ -238,7 +238,7 @@ func NewCentOS() CentOS {
 	}
 }
 
-// Oracle is the interface for CentOS OVAL
+// Oracle is the interface for Oracle OVAL
 type Oracle struct {
 	RedHatBase
 }
