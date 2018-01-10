@@ -81,9 +81,10 @@ Table of Contents
       * [Example: Scan specific servers](#example-scan-specific-servers)
       * [Example: Scan via shell instead of SSH.](#example-scan-via-shell-instead-of-ssh)
          * [cron](#cron)
-      * [Example: Scan containers (Docker/LXD)](#example-scan-containers-dockerlxd)
+      * [Example: Scan containers (Docker/LXD/LXC)](#example-scan-containers-dockerlxdlxc)
          * [Docker](#docker)
          * [LXD](#lxd)
+	 * [LXC](#lxc)
    * [Usage: Report](#usage-report)
       * [How to read a report](#how-to-read-a-report)
          * [Example](#example-1)
@@ -753,7 +754,7 @@ host         = "172.31.4.82"
 #    ["key", "value"],
 #]
 #[servers.172-31-4-82.containers]
-#type = "lxd" # or "docker"
+#type = "lxd" # or "docker" or "lxc"
 #includes = ["${running}"]
 #excludes = ["container_name", "container_id"]
 ```
@@ -859,7 +860,7 @@ You can customize your configuration using this template.
     #]
     #ignoreCves = ["CVE-2016-6314"]
     #[servers.172-31-4-82.containers]
-    #type = "lxd" # or "docker"
+    #type = "lxd" # or "docker" or "lxc"
     #includes = ["${running}"]
     #excludes = ["container_name", "container_id"]
     #[servers.172-31-4-82.optional]
@@ -876,7 +877,7 @@ You can customize your configuration using this template.
     - cpeNames: see [Usage: Scan vulnerability of non-OS package](#usage-scan-vulnerability-of-non-os-package)
     - ignoreCves: CVE IDs that will not be reported. But output to JSON file.
     - optional: Add additional information to JSON report.
-    - containers: see [Example: Scan containers (Docker/LXD)](#example-scan-containers-dockerlxd)
+    - containers: see [Example: Scan containers (Docker/LXD/LXC)(#example-scan-containers-dockerlxdlxc)
 
     Vuls supports two types of SSH. One is external command. The other is native go implementation. For details, see [-ssh-native-insecure option](#-ssh-native-insecure-option)
 
@@ -933,10 +934,10 @@ The configtest subcommand checks whether vuls is able to connect via SSH to serv
 | Alpine       |      3.2 and later | - |
 | Ubuntu       |          12, 14, 16| - |
 | Debian       |             7, 8, 9| reboot-notifier|
-| CentOS       |                6, 7| yum-utils |
+| CentOS       |                6, 7| - |
 | Amazon       |                All | yum-utils |
-| RHEL         |            5, 6, 7 | yum-utils | 
-| Oracle Linux |            5, 6, 7 | yum-utils |
+| RHEL         |            5, 6, 7 | - |
+| Oracle Linux |            5, 6, 7 | - |
 | SUSE Enterprise|            11, 12 | - |
 | FreeBSD      |             10, 11 | - |
 | Raspbian     |    Jessie, Stretch | - |
@@ -958,9 +959,11 @@ In order to scan with deep scan mode, the following dependencies are required, s
 | CentOS       |                6, 7| yum-utils, yum-plugin-changelog, yum-plugin-ps |
 | Amazon       |                All | yum-utils, yum-plugin-changelog, yum-plugin-ps  |
 | RHEL         |                  5 | yum-utils, yum-changelog, yum-security |
-| RHEL         |               6, 7 | yum-utils, yum-plugin-changelog, yum-plugin-ps  |
+| RHEL         |                  6 | yum-utils, yum-plugin-changelog, yum-plugin-security |
+| RHEL         |                  7 | yum-utils, yum-plugin-changelog, yum-plugin-ps |
 | Oracle Linux |                  5 | yum-utils, yum-changelog, yum-security |
-| Oracle Linux |               6, 7 | yum-utils, yum-plugin-changelog, yum-plugin-ps  |
+| Oracle Linux |                  6 | yum-utils, yum-plugin-changelog, yum-plugin-security, yum-plugin-ps |
+| Oracle Linux |                  7 | yum-utils, yum-plugin-changelog, yum-plugin-ps |
 | SUSE Enterprise|            11, 12 | - |
 | FreeBSD      |                 10 | -            |
 | Raspbian     |     Wheezy, Jessie | -            |
@@ -1121,7 +1124,7 @@ If you use local scan mode for cron jobs, don't forget to add below line to `/et
 Defaults:vuls !requiretty
 ```
 
-## Example: Scan containers (Docker/LXD)
+## Example: Scan containers (Docker/LXD/LXC)
 
 It is common that keep containers running without SSHd daemon.  
 see [Docker Blog:Why you don't need to run SSHd in your Docker containers](https://blog.docker.com/2014/06/why-you-dont-need-to-run-sshd-in-docker/)
@@ -1193,6 +1196,30 @@ keyPath     = "/home/username/.ssh/id_rsa"
 [servers.172-31-4-82.containers]
 type = "lxd"
 includes = ["${running}"]
+```
+
+### LXC
+
+Vuls scans lxc via `lxc-attach` instead of SSH.  
+```
+[servers]
+
+[servers.172-31-4-82]
+host         = "172.31.4.82"
+user        = "ec2-user"
+keyPath     = "/home/username/.ssh/id_rsa"
+
+[servers.172-31-4-82.containers]
+type = "lxc"
+includes = ["${running}"]
+```
+
+LXC required root privilege.  
+
+Example of /etc/sudoers on target servers
+
+```
+vuls ALL=(ALL) NOPASSWD:/usr/bin/lxc-attach -n *, /usr/bin/lxc-ls *
 ```
 
 ----

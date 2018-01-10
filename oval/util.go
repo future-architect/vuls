@@ -108,15 +108,14 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 				NewVersionRelease: pack.FormatVer(),
 				isSrcPack:         false,
 			}
-			for _, pack := range r.SrcPackages {
-				reqChan <- request{
-					packName:        pack.Name,
-					binaryPackNames: pack.BinaryNames,
-					versionRelease:  pack.Version,
-					isSrcPack:       true,
-				}
+		}
+		for _, pack := range r.SrcPackages {
+			reqChan <- request{
+				packName:        pack.Name,
+				binaryPackNames: pack.BinaryNames,
+				versionRelease:  pack.Version,
+				isSrcPack:       true,
 			}
-
 		}
 	}()
 

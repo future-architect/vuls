@@ -1256,7 +1256,7 @@ func TestDivideChangelogsIntoEachPackages(t *testing.T) {
 		out map[string]string
 	}{
 		{
-			in: `==================== Available Packages ====================
+			in: `==================== Updated Packages ====================
 1:NetworkManager-1.4.0-20.el7_3.x86_64   rhui-rhel-7-server-rhui-rpms
 * Mon Apr 24 21:00:00 2017 Beniamino Galvani <bgalvani@redhat.com> - 1:1.4.0-20
 - vlan: use parent interface mtu as default (rh#1414186)

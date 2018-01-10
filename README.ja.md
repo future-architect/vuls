@@ -75,9 +75,10 @@ Table of Contents
       * [Example: Scan specific servers](#example-scan-specific-servers)
       * [Example: Scan via shell instead of SSH.](#example-scan-via-shell-instead-of-ssh)
          * [cronで動かす場合](#cronで動かす場合)
-      * [Example: Scan containers (Docker/LXD)](#example-scan-containers-dockerlxd)
+      * [Example: Scan containers (Docker/LXD/LXC)](#example-scan-containers-dockerlxdlxc)
          * [Docker](#docker)
          * [LXDコンテナをスキャンする場合](#lxdコンテナをスキャンする場合)
+         * [LXCコンテナをスキャンする場合](#lxcコンテナをスキャンする場合)
    * [Usage: Report](#usage-report)
       * [How to read a report](#how-to-read-a-report)
          * [Example](#example-1)
@@ -170,7 +171,7 @@ Vulsは上に挙げた手動運用での課題を解決するツールであり�
     - CPEに登録されているソフトウェアが対象
 - 非破壊スキャン(SSHでコマンド発行するだけ)
 - AWSでの脆弱性/侵入テスト事前申請は必要なし
-    - 毎日スケジュール実行すれば新規に公開された脆弱性にすぐに気付くことができる
+    - 毎日スケジュール実行すれば新規に公開された脆弱性にすぐに気付くことができる
 - 設定ファイルのテンプレート自動生成
     - CIDRを指定してサーバを自動検出、設定ファイルのテンプレートを生成
 - EmailやSlackで通知可能（日本語でのレポートも可能）
@@ -742,7 +743,7 @@ host         = "172.31.4.82"
 #    ["key", "value"],
 #]
 #[servers.172-31-4-82.containers]
-#type = "lxd" # or "docker"
+#type = "lxd" # or "docker" or "lxc"
 #includes = ["${running}"]
 #excludes = ["container_name", "container_id"]
 ```
@@ -824,7 +825,7 @@ host         = "172.31.4.82"
     #]
     #ignoreCves = ["CVE-2016-6313"]
     #[default.containers]
-    #type = "lxd" # or "docker"
+    #type = "lxd" # or "docker" or "lxc"
     #includes = ["${running}"]
     #excludes = ["container_name", "container_id"]
     #[default.optional]
@@ -925,10 +926,10 @@ configtestサブコマンドは、config.tomlで定義されたサーバ/コン�
 | Alpine       |    3.2 and later | - |
 | Ubuntu       |          12, 14, 16| - |
 | Debian       |             7, 8, 9| reboot-notifier|
-| CentOS       |                6, 7| yum-utils |
+| CentOS       |                6, 7| - |
 | Amazon       |                All | yum-utils |
-| RHEL         |            5, 6, 7 | yum-utils | 
-| Oracle Linux |            5, 6, 7 | yum-utils |
+| RHEL         |            5, 6, 7 | - | 
+| Oracle Linux |            5, 6, 7 | - |
 | SUSE Enterprise|            11, 12 | - |
 | FreeBSD      |             10, 11 | - |
 | Raspbian     |    Jessie, Stretch | - |
@@ -952,9 +953,11 @@ Deep Scan Modeでスキャンするためには、下記のパッケージが必
 | CentOS       |                6, 7| yum-utils, yum-plugin-changelog, yum-plugin-ps |
 | Amazon       |                All | yum-utils, yum-plugin-changelog, yum-plugin-ps  |
 | RHEL         |                  5 | yum-utils, yum-changelog, yum-security |
-| RHEL         |               6, 7 | yum-utils, yum-plugin-changelog, yum-plugin-ps  |
+| RHEL         |                  6 | yum-utils, yum-plugin-changelog, yum-plugin-security |
+| RHEL         |                  7 | yum-utils, yum-plugin-changelog, yum-plugin-ps |
 | Oracle Linux |                  5 | yum-utils, yum-changelog, yum-security |
-| Oracle Linux |               6, 7 | yum-utils, yum-plugin-changelog, yum-plugin-ps  |
+| Oracle Linux |                  6 | yum-utils, yum-plugin-changelog, yum-plugin-security, yum-plugin-ps |
+| Oracle Linux |                  7 | yum-utils, yum-plugin-changelog, yum-plugin-ps |
 | SUSE Enterprise|            11, 12 | - |
 | FreeBSD      |                 10 | -            |
 | Raspbian     |     Wheezy, Jessie | -            |
@@ -1115,7 +1118,7 @@ RHEL/CentOSの場合、スキャン対象サーバの/etc/sudoersに以下を追
 Defaults:vuls !requiretty
 ```
 
-## Example: Scan containers (Docker/LXD)
+## Example: Scan containers (Docker/LXD/LXC)
 
 
 コンテナはSSHデーモンを起動しないで運用するケースが一般的。  
@@ -1187,6 +1190,30 @@ keyPath     = "/home/username/.ssh/id_rsa"
 [servers.172-31-4-82.containers]
 type = "lxd"
 includes = ["${running}"]
+```
+
+### LXC
+
+Vulsは、ホストにSSHで接続し、`lxc-attach`でLXCコンテナにコマンドを発行して脆弱性をスキャンする。  
+```
+[servers]
+
+[servers.172-31-4-82]
+host         = "172.31.4.82"
+user        = "ec2-user"
+keyPath     = "/home/username/.ssh/id_rsa"
+
+[servers.172-31-4-82.containers]
+type = "lxc"
+includes = ["${running}"]
+```
+
+LXCコンテナの操作にはroot権限が必要です。  
+
+スキャン対象サーバ上の`/etc/sudoers`のサンプル
+
+```
+vuls ALL=(ALL) NOPASSWD:/usr/bin/lxc-attach -n *, /usr/bin/lxc-ls *
 ```
 
 # Usage: Report

@@ -113,6 +113,12 @@ func (l *base) allContainers() (containers []config.Container, err error) {
 			return containers, err
 		}
 		return l.parseLxdPs(stdout)
+	case "lxc":
+		stdout, err := l.lxcPs("-1")
+		if err != nil {
+			return containers, err
+		}
+		return l.parseLxcPs(stdout)
 	default:
 		return containers, fmt.Errorf(
 			"Not supported yet: %s", l.ServerInfo.Containers.Type)
@@ -133,6 +139,12 @@ func (l *base) runningContainers() (containers []config.Container, err error) {
 			return containers, err
 		}
 		return l.parseLxdPs(stdout)
+	case "lxc":
+		stdout, err := l.lxcPs("-1 --running")
+		if err != nil {
+			return containers, err
+		}
+		return l.parseLxcPs(stdout)
 	default:
 		return containers, fmt.Errorf(
 			"Not supported yet: %s", l.ServerInfo.Containers.Type)
@@ -153,6 +165,12 @@ func (l *base) exitedContainers() (containers []config.Container, err error) {
 			return containers, err
 		}
 		return l.parseLxdPs(stdout)
+	case "lxc":
+		stdout, err := l.lxcPs("-1 --stopped")
+		if err != nil {
+			return containers, err
+		}
+		return l.parseLxcPs(stdout)
 	default:
 		return containers, fmt.Errorf(
 			"Not supported yet: %s", l.ServerInfo.Containers.Type)
@@ -171,6 +189,15 @@ func (l *base) dockerPs(option string) (string, error) {
 func (l *base) lxdPs(option string) (string, error) {
 	cmd := fmt.Sprintf("lxc list %s", option)
 	r := l.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		return "", fmt.Errorf("failed to SSH: %s", r)
+	}
+	return r.Stdout, nil
+}
+
+func (l *base) lxcPs(option string) (string, error) {
+	cmd := fmt.Sprintf("lxc-ls %s 2>/dev/null", option)
+	r := l.exec(cmd, sudo)
 	if !r.isSuccess() {
 		return "", fmt.Errorf("failed to SSH: %s", r)
 	}
@@ -208,6 +235,21 @@ func (l *base) parseLxdPs(stdout string) (containers []config.Container, err err
 		}
 		if len(fields) != 1 {
 			return containers, fmt.Errorf("Unknown format: %s", line)
+		}
+		containers = append(containers, config.Container{
+			ContainerID: fields[0],
+			Name:        fields[0],
+		})
+	}
+	return
+}
+
+func (l *base) parseLxcPs(stdout string) (containers []config.Container, err error) {
+	lines := strings.Split(stdout, "\n")
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			break
 		}
 		containers = append(containers, config.Container{
 			ContainerID: fields[0],

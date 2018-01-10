@@ -52,8 +52,8 @@ func isRunningKernel(pack models.Package, family string, kernel models.Kernel) (
 }
 
 func rpmQa(distro config.Distro) string {
-	const old = "rpm -qa --queryformat '%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n'"
-	const new = "rpm -qa --queryformat '%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n'"
+	const old = "rpm -qa --queryformat \"%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n\""
+	const new = "rpm -qa --queryformat \"%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n\""
 	switch distro.Family {
 	case config.SUSEEnterpriseServer:
 		if v, _ := distro.MajorVersion(); v < 12 {
