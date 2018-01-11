@@ -436,10 +436,10 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
      Status : final
      Issued : 2015-09-03 02:00:00
        Bugs : 1299364 - CVE-2015-8704 bind: specific APL data could trigger an INSIST in apl_42.c
-	   CVEs : CVE-2015-8704
-	        : CVE-2015-8705
+       CVEs : CVE-2015-8704
+            : CVE-2015-8705
 Description : The Berkeley Internet Name Domain (BIND) is an implementation of
-	        : CVE-2015-10000
+            : CVE-2015-10000
    Severity : Moderate
 
 ===============================================================================
@@ -450,7 +450,8 @@ Description : The Berkeley Internet Name Domain (BIND) is an implementation of
        Type : security
      Status : final
      Issued : 2015-09-03 02:00:00
-       Bugs : 1459152 - CVE-2017-1000368 sudo: Privilege escalation via improper get_process_ttyname() parsing (insufficient fix for CVE-2017-1000367)       CVEs : CVE-2017-1000368
+       Bugs : 1459152 - CVE-2017-1000368 sudo: Privilege escalation via improper get_process_ttyname() parsing (insufficient fix for CVE-2017-1000367)
+       CVEs : CVE-2017-1000368
 Description : The sudo packages contain the sudo utility which allows system
             : administrators to provide certain users with the
    Severity : Moderate

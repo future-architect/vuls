@@ -86,7 +86,7 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 						}
 					}
 					red.setDistro(config.Amazon, release)
-				case "clearos", "scientific", "springdale":
+				case "clearos", "rosa", "scientific", "springdale":
 					// Clones of RHEL are handled equally to CentOS
 					util.Log.Warnf("%s is handled equally to CentOS", result[1])
 					fallthrough
@@ -111,7 +111,12 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 						util.Log.Warnf("%s (not RHEL) is not supported forever. servername: %s", result[1], c.ServerName)
 						return false, red
 					}
-					red.setDistro(config.RedHat, release)
+					if r := exec(c, "ls /etc/asianux-release", noSudo); r.isSuccess() {
+						util.Log.Warnf("Asianux is handled equally to CentOS")
+						red.setDistro(config.CentOS, release)
+					} else {
+						red.setDistro(config.RedHat, release)
+					}
 				default:
 					util.Log.Warnf("Failed to parse RedHat like Linux version: %s", r)
 				}
@@ -939,7 +944,8 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 	// Amazon Linux AMI Security Information
 	advisory := models.DistroAdvisory{}
 
-	cveIDsSetInThisSection := make(map[string]bool)
+	cveIDsSetInCVEsSection := make(map[string]bool)
+	cveIDsSetInOtherSection := make(map[string]bool)
 
 	// use this flag to Collect CVE IDs in Description / CVEs / Bugs field.
 	inDesctiption, inCves, inBugs := false, false, false
@@ -952,8 +958,14 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 			// set previous section's result to return-variable
 			if sectionState == Content {
 				foundCveIDs := []string{}
-				for cveID := range cveIDsSetInThisSection {
-					foundCveIDs = append(foundCveIDs, cveID)
+				if len(cveIDsSetInCVEsSection) > 0 {
+					for cveID := range cveIDsSetInCVEsSection {
+						foundCveIDs = append(foundCveIDs, cveID)
+					}
+				} else {
+					for cveID := range cveIDsSetInOtherSection {
+						foundCveIDs = append(foundCveIDs, cveID)
+					}
 				}
 				result = append(result, distroAdvisoryCveIDs{
 					DistroAdvisory: advisory,
@@ -961,7 +973,8 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 				})
 
 				// reset for next section.
-				cveIDsSetInThisSection = make(map[string]bool)
+				cveIDsSetInCVEsSection = make(map[string]bool)
+				cveIDsSetInOtherSection = make(map[string]bool)
 				inDesctiption, inCves, inBugs = false, false, false
 				advisory = models.DistroAdvisory{}
 			}
@@ -982,7 +995,7 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 					strings.Join(ss[1:], " : "))
 				cveIDs := o.parseYumUpdateinfoLineToGetCveIDs(line)
 				for _, cveID := range cveIDs {
-					cveIDsSetInThisSection[cveID] = true
+					cveIDsSetInOtherSection[cveID] = true
 				}
 				continue
 			}
@@ -1001,7 +1014,7 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 				}
 				cveIDs := o.parseYumUpdateinfoLineToGetCveIDs(line)
 				for _, cveID := range cveIDs {
-					cveIDsSetInThisSection[cveID] = true
+					cveIDsSetInOtherSection[cveID] = true
 				}
 				continue
 			}
@@ -1012,7 +1025,7 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 				//line = strings.Join(ss[1:], " ")
 				cveIDs := o.parseYumUpdateinfoLineToGetCveIDs(line)
 				for _, cveID := range cveIDs {
-					cveIDsSetInThisSection[cveID] = true
+					cveIDsSetInOtherSection[cveID] = true
 				}
 				continue
 			}
@@ -1023,15 +1036,22 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 				//line = strings.Join(ss[1:], " ")
 				cveIDs := o.parseYumUpdateinfoLineToGetCveIDs(line)
 				for _, cveID := range cveIDs {
-					cveIDsSetInThisSection[cveID] = true
+					cveIDsSetInCVEsSection[cveID] = true
 				}
 				continue
 			}
 
-			if inCves || inBugs {
+			if inCves {
 				cveIDs := o.parseYumUpdateinfoLineToGetCveIDs(line)
 				for _, cveID := range cveIDs {
-					cveIDsSetInThisSection[cveID] = true
+					cveIDsSetInCVEsSection[cveID] = true
+				}
+			}
+
+			if inBugs {
+				cveIDs := o.parseYumUpdateinfoLineToGetCveIDs(line)
+				for _, cveID := range cveIDs {
+					cveIDsSetInOtherSection[cveID] = true
 				}
 			}
 
