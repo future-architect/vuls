@@ -154,7 +154,7 @@
   branch = "master"
   name = "github.com/kotakanbe/goval-dictionary"
   packages = ["config","db","db/rdb","log","models"]
-  revision = "dca4f21940cbf2245a50817177fed7eb6793e72c"
+  revision = "b6ef2b745443a025f3f86554d49e4be5106581b5"
 
 [[projects]]
   branch = "master"
