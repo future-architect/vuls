@@ -361,20 +361,6 @@ func TestDiff(t *testing.T) {
 						CpeNames:         []string{},
 					},
 				},
-				Packages: models.Packages{
-					"mysql-libs": {
-						Name:       "mysql-libs",
-						Version:    "5.1.73",
-						Release:    "7.el6",
-						NewVersion: "5.1.73",
-						NewRelease: "8.el6_8",
-						Repository: "",
-						Changelog: models.Changelog{
-							Contents: "",
-							Method:   "",
-						},
-					},
-				},
 			},
 		},
 	}
