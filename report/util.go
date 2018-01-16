@@ -297,7 +297,7 @@ func loadPrevious(current models.ScanResults) (previous models.ScanResults, err 
 }
 
 func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults, err error) {
-for _, current := range curResults {
+	for _, current := range curResults {
 		found := false
 		var previous models.ScanResult
 		for _, r := range preResults {
@@ -335,8 +335,8 @@ for _, current := range curResults {
 		}
 
 		if found {
-			for _, s := range diffed.ScanResults {
-				if s.ServerName == current {
+			for _, s := range diffed {
+				if s.ServerName == current.ServerName {
 					previous.PatchedPackage = isPachedServer(current, previous)
 				}
 			}
