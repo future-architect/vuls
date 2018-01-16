@@ -297,7 +297,7 @@ func loadPrevious(current models.ScanResults) (previous models.ScanResults, err 
 }
 
 func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults, err error) {
-	for _, current := range curResults {
+for _, current := range curResults {
 		found := false
 		var previous models.ScanResult
 		for _, r := range preResults {
@@ -322,7 +322,41 @@ func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults,
 
 		diffed = append(diffed, current)
 	}
+
+	for _, previous := range preResults {
+		found := false
+		var current models.ScanResult
+		for _, r := range curResults {
+			if current.ServerName == r.ServerName {
+				found = true
+				current = r
+				break
+			}
+		}
+
+		if found {
+			for _, s := range diffed.ScanResults {
+				if s.ServerName == current {
+					previous.PatchedPackage = isPachedServer(current, previous)
+				}
+			}
+		}
+	}
+
 	return diffed, err
+}
+
+func isPachedServer(current, previous models.ScanResult) models.VulnInfos {
+	currentCveIDsSet := map[string]bool{}
+	for _, currentVulnInfo := range current.ScannedCves {
+		currentCveIDsSet[currentVulnInfo.CveID] = true
+	}
+
+	pached := models.VulnInfos{}
+	for _, v := range previous.ScannedCves {
+		pached[v.CveID] = v
+	}
+	return pached
 }
 
 func getDiffCves(previous, current models.ScanResult) models.VulnInfos {

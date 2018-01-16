@@ -40,6 +40,7 @@ type ScanResult struct {
 	Release     string
 	Container   Container
 	Platform    Platform
+	PatchedPackage VulnInfos
 
 	// Scanned Vulns by SSH scan + CPE + OVAL
 	ScannedCves VulnInfos
