@@ -297,13 +297,13 @@ func loadPrevious(current models.ScanResults) (previous models.ScanResults, err 
 }
 
 func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults, err error) {
-	plus(curResults, preResults)
-	minus(curResults, preResults)
+	diffed = plus(curResults, preResults)
+	diffed = minus(curResults, preResults, diffed)
 
 	return diffed, err
 }
 
-func plus(curResults, preResults models.ScanResults) (diffed models.ScanResults, err error) {
+func plus(curResults, preResults models.ScanResults) (diffed models.ScanResults) {
 	for _, current := range curResults {
 		found := false
 		var previous models.ScanResult
@@ -330,10 +330,10 @@ func plus(curResults, preResults models.ScanResults) (diffed models.ScanResults,
 		diffed = append(diffed, current)
 	}
 
-	return diffed, err
+	return diffed
 }
 
-func minus(curResults, preResults models.ScanResults) (diffed models.ScanResults, err error) {
+func minus(curResults, preResults, diffed models.ScanResults) models.ScanResults {
 	for _, previous := range preResults {
 		found := false
 		var current models.ScanResult
@@ -348,15 +348,17 @@ func minus(curResults, preResults models.ScanResults) (diffed models.ScanResults
 		if found {
 			for _, s := range diffed {
 				if s.ServerName == current.ServerName {
-					previous.PatchedPackage = isPatchedPackage(current, previous)
+					previous.PatchedPackage = getPatchedPackages(current, previous)
 				}
 			}
 		}
+
+		diffed = append(diffed, current)
 	}
-	return diffed, err
+	return diffed
 }
 
-func isPatchedPackage(current, previous models.ScanResult) models.VulnInfos {
+func getPatchedPackages(current, previous models.ScanResult) models.VulnInfos {
 	currentCveIDsSet := map[string]bool{}
 	for _, currentVulnInfo := range current.ScannedCves {
 		currentCveIDsSet[currentVulnInfo.CveID] = true
