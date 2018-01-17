@@ -297,8 +297,26 @@ func loadPrevious(current models.ScanResults) (previous models.ScanResults, err 
 }
 
 func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults, err error) {
-	diffed = plus(curResults, preResults)
-	diffed = minus(curResults, preResults, diffed)
+	pdiffed := plus(curResults, preResults)
+	mdiffed := minus(curResults, preResults, pdiffed)
+
+	for _, p := range pdiffed {
+		found := false
+		var patchedPackage models.VulnInfos
+		for _, m := range mdiffed {
+			if m.ServerName == p.ServerName {
+				found = true
+				patchedPackage = m.PatchedPackage
+				break
+			}
+		}
+
+		if found {
+			p.PatchedPackage = patchedPackage
+		}
+
+		diffed = append(diffed, p)
+	}
 
 	return diffed, err
 }
