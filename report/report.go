@@ -183,12 +183,13 @@ func FillWithOval(r *models.ScanResult) (err error) {
 	case c.Alpine:
 		ovalClient = oval.NewAlpine()
 		ovalFamily = c.Alpine
-	case c.Amazon, c.Raspbian, c.FreeBSD, c.Windows:
+	case c.Amazon, c.Raspbian, c.FreeBSD, c.Windows, c.Fedora:
 		return nil
 	case c.ServerTypePseudo:
 		return nil
 	default:
-		return fmt.Errorf("OVAL for %s is not implemented yet", r.Family)
+		util.Log.Warnf("OVAL for %s is not implemented yet", r.Family)
+		return nil
 	}
 
 	util.Log.Debugf("Check whether oval is already fetched: %s %s",

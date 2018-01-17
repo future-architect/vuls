@@ -55,70 +55,74 @@ func newRedhat(c config.ServerInfo) *redhat {
 func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 	red = newRedhat(c)
 
-	if r := exec(c, "ls /etc/fedora-release", noSudo); r.isSuccess() {
-		red.setDistro(config.Fedora, "unknown")
-		util.Log.Warn("Fedora not tested yet: %s", r)
-		return true, red
+	// Need to discover Oracle Linux first, because it provides an
+	// /etc/redhat-release that matches the upstream distribution
+	releases := []string{
+		"/etc/oracle-release",
+		"/etc/fedora-release",
+		"/etc/redhat-release",
+		"/etc/system-release",
 	}
 
-	if r := exec(c, "ls /etc/oracle-release", noSudo); r.isSuccess() {
-		// Need to discover Oracle Linux first, because it provides an
-		// /etc/redhat-release that matches the upstream distribution
-		if r := exec(c, "cat /etc/oracle-release", noSudo); r.isSuccess() {
+	for _, dist := range releases {
+		if r := exec(c, "cat "+dist, noSudo); r.isSuccess() {
+			// Almost everything can be covered with regular expressions
 			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
 			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
-			if len(result) != 3 {
-				util.Log.Warn("Failed to parse Oracle Linux version: %s", r)
-				return true, red
-			}
 
-			release := result[2]
-			red.setDistro(config.Oracle, release)
-			return true, red
-		}
-	}
+			if len(result) == 3 {
+				release := result[2]
 
-	if r := exec(c, "ls /etc/redhat-release", noSudo); r.isSuccess() {
-		// https://www.rackaid.com/blog/how-to-determine-centos-or-red-hat-version/
-		// e.g.
-		// $ cat /etc/redhat-release
-		// CentOS release 6.5 (Final)
-		if r := exec(c, "cat /etc/redhat-release", noSudo); r.isSuccess() {
-			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
-			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
-			if len(result) != 3 {
-				util.Log.Warn("Failed to parse RedHat/CentOS version: %s", r)
-				return true, red
-			}
-
-			release := result[2]
-			switch strings.ToLower(result[1]) {
-			case "centos", "centos linux":
-				red.setDistro(config.CentOS, release)
-			default:
-				red.setDistro(config.RedHat, release)
-			}
-			return true, red
-		}
-		return true, red
-	}
-
-	if r := exec(c, "ls /etc/system-release", noSudo); r.isSuccess() {
-		family := config.Amazon
-		release := "unknown"
-		if r := exec(c, "cat /etc/system-release", noSudo); r.isSuccess() {
-			if strings.HasPrefix(r.Stdout, "Amazon Linux release 2") {
-				fields := strings.Fields(r.Stdout)
-				release = fmt.Sprintf("%s %s", fields[3], fields[4])
-			} else {
-				fields := strings.Fields(r.Stdout)
-				if len(fields) == 5 {
-					release = fields[4]
+				switch strings.ToLower(strings.Fields(result[1])[0]) {
+				case "amazon":
+					release = "unknown"
+					if strings.HasPrefix(r.Stdout, "Amazon Linux release 2") {
+						fields := strings.Fields(r.Stdout)
+						release = fmt.Sprintf("%s %s", fields[3], fields[4])
+					} else {
+						fields := strings.Fields(r.Stdout)
+						if len(fields) == 5 {
+							release = fields[4]
+						}
+					}
+					red.setDistro(config.Amazon, release)
+				case "clearos", "rosa", "scientific", "springdale":
+					// Clones of RHEL are handled equally to CentOS
+					util.Log.Warnf("%s is handled equally to CentOS", result[1])
+					fallthrough
+				case "centos":
+					red.setDistro(config.CentOS, release)
+				case "fedora":
+					// Fedora Core is too old
+					if strings.HasPrefix(result[1], "Fedora Core") {
+						util.Log.Warnf("%s is not supported forever. servername: %s", result[1], c.ServerName)
+						return false, red
+					}
+					red.setDistro(config.Fedora, release)
+				case "oracle":
+					red.setDistro(config.Oracle, release)
+				case "pu_ias":
+					util.Log.Warnf("%s is not supported", result[1])
+					return false, red
+				case "red":
+					// Red Flag Linux does not satisfy regular expressions
+					// but Red Hat Linux (not RHEL) will match the regular expression
+					if strings.HasPrefix(result[1], "Red Hat Linux") {
+						util.Log.Warnf("%s (not RHEL) is not supported forever. servername: %s", result[1], c.ServerName)
+						return false, red
+					}
+					if r := exec(c, "ls /etc/asianux-release", noSudo); r.isSuccess() {
+						util.Log.Warnf("Asianux is handled equally to CentOS")
+						red.setDistro(config.CentOS, release)
+					} else {
+						red.setDistro(config.RedHat, release)
+					}
+				default:
+					util.Log.Warnf("Failed to parse RedHat like Linux version: %s", r)
 				}
+				return true, red
 			}
 		}
-		red.setDistro(family, release)
-		return true, red
 	}
 
 	util.Log.Debugf("Not RedHat like Linux. servername: %s", c.ServerName)
@@ -149,13 +153,13 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 			cmds = []cmd{
 				{"yum --color=never repolist", zero},
 				{"yum --color=never list-security --security", zero},
-				{"yum --color=never info-security", zero},
+				{"yum --color=never info-security --security", zero},
 			}
 		} else {
 			cmds = []cmd{
 				{"yum --color=never repolist", zero},
-				{"yum --color=never --security updateinfo list updates", zero},
-				{"yum --color=never --security updateinfo updates", zero},
+				{"yum --color=never updateinfo -q list --security updates", zero},
+				{"yum --color=never updateinfo -q info --security updates", zero},
 			}
 		}
 
@@ -181,9 +185,14 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 //    Amazon        ... yum-utils
 //
 // - Deep scan mode
-//    CentOS 6,7    ... yum-utils, yum-plugin-changelog
+//    Fedora 7-8    ... yum-utils, yum-security
+//    Fedora 9-10   ... yum-utils, yum-security, yum-changelog
+//    Fedora 11-20  ... yum-utils, yum-plugin-security, yum-plugin-changelog
+//    Fedora 21-22  ... yum-utils, yum-plugin-changelog
+//    Fedora 23-27  ... yum, yum-plugin-changelog
+//    CentOS 6, 7   ... yum-utils, yum-plugin-changelog
 //    RHEL 5 (U1-)  ... yum-utils, yum-security, yum-changelog
-//    RHEL 6        ... yum-utils, yum-security, yum-plugin-changelog
+//    RHEL 6        ... yum-utils, yum-plugin-security, yum-plugin-changelog
 //    RHEL 7        ... yum-utils, yum-plugin-changelog
 //    Amazon        ... yum-utils
 func (o *redhat) checkDependencies() error {
@@ -194,27 +203,77 @@ func (o *redhat) checkDependencies() error {
 		return fmt.Errorf(msg)
 	}
 
-	if o.Distro.Family == config.CentOS {
-		if majorVersion < 6 {
-			msg := fmt.Sprintf("CentOS %s is not supported", o.Distro.Release)
+	switch o.Distro.Family {
+	case config.Fedora:
+		if majorVersion < 7 {
+			msg := fmt.Sprintf("fedora %s is not supported", o.Distro.Release)
 			o.log.Errorf(msg)
 			return fmt.Errorf(msg)
+		}
+		if majorVersion < 25 {
+			msg := fmt.Sprintf("fedora %s is deprecated", o.Distro.Release)
+			o.log.Warnf(msg)
+		}
+	case config.RedHat:
+		if majorVersion < 5 {
+			msg := fmt.Sprintf("red hat enterprise linux %s is not supported", o.Distro.Release)
+			o.log.Errorf(msg)
+			return fmt.Errorf(msg)
+		}
+	case config.Oracle:
+		if majorVersion < 5 {
+			msg := fmt.Sprintf("oracle linux %s is not supported", o.Distro.Release)
+			o.log.Errorf(msg)
+			return fmt.Errorf(msg)
+		}
+	case config.CentOS:
+		if majorVersion < 5 {
+			msg := fmt.Sprintf("%s %s is not supported", o.Distro.Family, o.Distro.Release)
+			o.log.Errorf(msg)
+			return fmt.Errorf(msg)
+		}
+		if majorVersion < 6 {
+			msg := fmt.Sprintf("%s %s is deprecated", o.Distro.Family, o.Distro.Release)
+			o.log.Warnf(msg)
 		}
 	}
 
 	packNames := []string{}
 
-	if !config.Conf.Deep {
-		// Fast Scan
-		switch o.Distro.Family {
-		case config.Amazon:
+	switch o.Distro.Family {
+	case config.Fedora:
+		switch majorVersion {
+		case 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22:
 			packNames = append(packNames, "yum-utils")
+		default:
+			packNames = append(packNames, "yum")
 		}
-	} else {
-		// Deep Scan
+	case config.Amazon:
+		packNames = append(packNames, "yum-utils")
+	}
+
+	if config.Conf.Deep {
 		switch o.Distro.Family {
-		case config.CentOS, config.Amazon:
-			packNames = append(packNames, "yum-utils", "yum-plugin-changelog")
+		case config.Fedora:
+			switch majorVersion {
+			case 7, 8:
+				packNames = append(packNames, "yum-security")
+			case 9, 10:
+				packNames = append(packNames, "yum-security", "yum-changelog")
+			case 11, 12, 13, 14, 15, 16, 17, 18, 19, 20:
+				packNames = append(packNames, "yum-plugin-security", "yum-plugin-changelog")
+			default:
+				packNames = append(packNames, "yum-plugin-changelog")
+			}
+		case config.CentOS:
+			switch majorVersion {
+			case 5:
+				packNames = append(packNames, "yum-utils", "yum-changelog")
+			default:
+				packNames = append(packNames, "yum-utils", "yum-plugin-changelog")
+			}
+		case config.Amazon:
+			packNames = append(packNames, "yum-plugin-changelog")
 		case config.RedHat, config.Oracle:
 			switch majorVersion {
 			case 5:
@@ -257,8 +316,8 @@ func (o *redhat) scanPackages() error {
 
 	if !config.Conf.Deep {
 		switch o.Distro.Family {
-		case config.Amazon:
-			// nop
+		case config.Amazon, config.Fedora:
+			// OVAL is not supported
 		default:
 			o.Packages = installed
 			return nil
@@ -324,13 +383,15 @@ func (o *redhat) scanInstalledPackages() (models.Packages, error) {
 			// Kernel package may be isntalled multiple versions.
 			// From the viewpoint of vulnerability detection,
 			// pay attention only to the running kernel
-			isKernel, running := isRunningKernel(pack, o.Distro.Family, o.Kernel)
-			if isKernel {
-				if !running {
-					o.log.Debugf("Not a running kernel. pack: %#v, kernel: %#v", pack, o.Kernel)
-					continue
+			if strings.Contains(pack.Name, "kernel") {
+				isKernel, running := isRunningKernel(pack, o.Distro.Family, o.Kernel)
+				if isKernel {
+					if !running {
+						o.log.Debugf("Not a running kernel. pack: %#v, kernel: %#v", pack, o.Kernel)
+						continue
+					}
+					o.log.Debugf("Found a running kernel. pack: %#v, kernel: %#v", pack, o.Kernel)
 				}
-				o.log.Debugf("Found a running kernel. pack: %#v, kernel: %#v", pack, o.Kernel)
 			}
 			installed[pack.Name] = pack
 		}
@@ -361,10 +422,28 @@ func (o *redhat) parseInstalledPackagesLine(line string) (models.Package, error)
 }
 
 func (o *redhat) scanUpdatablePackages() (models.Packages, error) {
-	cmd := `repoquery --all --pkgnarrow=updates --qf="%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPO}"`
+	// Network Connection is required
+	cmd := "repoquery"
+	majorVersion, _ := o.Distro.MajorVersion()
+
+	switch o.Distro.Family {
+	case config.Fedora:
+		if majorVersion >= 23 {
+			// dnf-plugins-core > 0.1.10
+			cmd = "dnf"
+		}
+	}
+
+	switch cmd {
+	case "repoquery":
+		cmd = "repoquery -q --all --pkgnarrow=updates --qf=\"%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPO}\""
+	case "dnf":
+		cmd = "dnf --color=never repoquery -q --upgrades --qf=\"%{name} %{epoch} %{version} %{release} %{reponame}\""
+	}
 	for _, repo := range o.getServerInfo().Enablerepo {
 		cmd += " --enablerepo=" + repo
 	}
+	cmd += " 2>/dev/null"
 
 	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess() {
@@ -424,21 +503,34 @@ func (o *redhat) parseUpdatablePacksLine(line string) (models.Package, error) {
 }
 
 func (o *redhat) scanUnsecurePackages(updatable models.Packages) (models.VulnInfos, error) {
-	if config.Conf.Deep && o.Distro.Family != config.Amazon {
-		//TODO Cache changelogs to bolt
-		if err := o.fillChangelogs(updatable); err != nil {
-			return nil, err
+	majorVersion, _ := o.Distro.MajorVersion()
+
+	if config.Conf.Deep {
+		switch o.Distro.Family {
+		case config.Amazon:
+			// nop
+		case config.Fedora:
+			if majorVersion < 9 {
+				break
+			}
+			fallthrough
+		default:
+			//TODO Cache changelogs to bolt
+			if err := o.fillChangelogs(updatable); err != nil {
+				return nil, err
+			}
 		}
 	}
 
-	if o.Distro.Family != config.CentOS {
-		// Amazon, RHEL, Oracle Linux has yum updateinfo as default
+	switch o.Distro.Family {
+	case config.CentOS:
+		// Parse chnagelog because CentOS does not have security channel...
+		return o.scanCveIDsInChangelog(updatable)
+	default:
+		// Amazon, RHEL, Oracle Linux, Fedora has yum updateinfo as default
 		// yum updateinfo can collenct vendor advisory information.
 		return o.scanCveIDsByCommands(updatable)
 	}
-
-	// Parse chnagelog because CentOS does not have security channel...
-	return o.scanCveIDsInChangelog(updatable)
 }
 
 func (o *redhat) fillChangelogs(updatables models.Packages) error {
@@ -471,14 +563,32 @@ func (o *redhat) fillChangelogs(updatables models.Packages) error {
 }
 
 func (o *redhat) getAvailableChangelogs(packNames []string) (map[string]string, error) {
+	yum := "yum --color=never"
 	yumopts := ""
+
+	majorVersion, _ := o.Distro.MajorVersion()
+
+	switch o.Distro.Family {
+	case config.Fedora:
+		switch majorVersion {
+		case 9, 10:
+			// yum < 3.2.21
+			yum = "TERM=dumb yum"
+		case 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21:
+			// nop
+		default:
+			yum = "yum-deprecated --color=never"
+		}
+	}
+
 	if 0 < len(o.getServerInfo().Enablerepo) {
-		yumopts = " --enablerepo=" + strings.Join(o.getServerInfo().Enablerepo, ",")
+		yumopts += " --enablerepo=" + strings.Join(o.getServerInfo().Enablerepo, ",")
 	}
 	if config.Conf.SkipBroken {
 		yumopts += " --skip-broken"
 	}
-	cmd := `yum --color=never changelog all %s updates %s | grep -A 1000000 "==================== Updated Packages ===================="`
+	cmd := yum + ` changelog all %s updates %s | grep -A 1000000 "==================== Updated Packages ===================="`
+	cmd += " 2>/dev/null"
 	cmd = fmt.Sprintf(cmd, yumopts, strings.Join(packNames, " "))
 
 	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
@@ -690,31 +800,66 @@ type distroAdvisoryCveIDs struct {
 }
 
 // Scaning unsecure packages using yum-plugin-security.
-// Amazon, RHEL, Oracle Linux
+// Amazon, RHEL, Oracle Linux, Fedora
 func (o *redhat) scanCveIDsByCommands(updatable models.Packages) (models.VulnInfos, error) {
-	if o.Distro.Family == config.CentOS {
-		// CentOS has no security channel.
-		return nil, fmt.Errorf(
-			"yum updateinfo is not suppported on CentOS")
-	}
+	yum := "yum --color=never"
+	updateinfo := true
 
-	cmd := "yum --color=never repolist"
-	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
-	if !r.isSuccess() {
-		return nil, fmt.Errorf("Failed to SSH: %s", r)
-	}
-
-	// get advisoryID(RHSA, ALAS, ELSA) - package name,version
 	major, err := (o.Distro.MajorVersion())
 	if err != nil {
 		return nil, fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
 	}
 
-	if (o.Distro.Family == config.RedHat || o.Distro.Family == config.Oracle) && major == 5 {
-		cmd = "yum --color=never list-security --security"
-	} else {
-		cmd = "yum --color=never --security updateinfo list updates"
+	switch o.Distro.Family {
+	case config.RedHat, config.Oracle:
+		switch major {
+		case 5:
+			updateinfo = false
+		}
+	case config.CentOS:
+		// not supported yet
+		switch major {
+		case 5:
+			updateinfo = false
+			name := "yum-security"
+			cmd := "rpm -q " + name
+			if r := o.exec(cmd, noSudo); !r.isSuccess() {
+				return nil, fmt.Errorf("%s is not installed", name)
+			}
+		}
+	case config.Fedora:
+		switch major {
+		case 7, 8, 9, 10:
+			// yum < 3.2.21
+			yum = "TERM=dumb yum"
+			// yum-plugin-changelog < 1.1.28
+			updateinfo = false
+		case 11, 12:
+			// yum-plugin-changelog < 1.1.28
+			updateinfo = false
+		case 13, 14, 15, 16, 17, 18, 19, 20, 21:
+			// nop
+		default:
+			yum = "dnf --color=never"
+		}
 	}
+
+	cmd := yum + " repolist -q 2>/dev/null"
+	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
+	if !r.isSuccess() {
+		return nil, fmt.Errorf("Failed to SSH: %s", r)
+	}
+
+	// get advisoryID(RHSA, ALAS, ELSA, FEDORA) - package name,version
+	cmd = "LANG=C "
+	if yum == "dnf --color=never" {
+		cmd += yum + " updateinfo -q list updates security"
+	} else if updateinfo {
+		cmd += yum + " updateinfo -q list --security updates"
+	} else {
+		cmd += yum + " list-security --security"
+	}
+	cmd += " 2>/dev/null"
 	r = o.exec(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
@@ -736,12 +881,16 @@ func (o *redhat) scanCveIDsByCommands(updatable models.Packages) (models.VulnInf
 		dict[advIDPackNames.AdvisoryID] = packages
 	}
 
-	// get advisoryID(RHSA, ALAS, ELSA) - CVE IDs
-	if (o.Distro.Family == config.RedHat || o.Distro.Family == config.Oracle) && major == 5 {
-		cmd = "yum --color=never info-security"
+	// get advisoryID(RHSA, ALAS, ELSA, FEDORA) - CVE IDs
+	cmd = "LANG=C "
+	if yum == "dnf --color=never" {
+		cmd += yum + " updateinfo -q info updates security"
+	} else if updateinfo {
+		cmd += yum + " updateinfo -q info --security updates"
 	} else {
-		cmd = "yum --color=never --security updateinfo updates"
+		cmd += yum + " info-security --security"
 	}
+	cmd += " 2>/dev/null"
 	r = o.exec(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
@@ -795,10 +944,11 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 	// Amazon Linux AMI Security Information
 	advisory := models.DistroAdvisory{}
 
-	cveIDsSetInThisSection := make(map[string]bool)
+	cveIDsSetInCVEsSection := make(map[string]bool)
+	cveIDsSetInOtherSection := make(map[string]bool)
 
-	// use this flag to Collect CVE IDs in CVEs field.
-	inDesctiption, inCves := false, false
+	// use this flag to Collect CVE IDs in Description / CVEs / Bugs field.
+	inDesctiption, inCves, inBugs := false, false, false
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -808,8 +958,14 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 			// set previous section's result to return-variable
 			if sectionState == Content {
 				foundCveIDs := []string{}
-				for cveID := range cveIDsSetInThisSection {
-					foundCveIDs = append(foundCveIDs, cveID)
+				if len(cveIDsSetInCVEsSection) > 0 {
+					for cveID := range cveIDsSetInCVEsSection {
+						foundCveIDs = append(foundCveIDs, cveID)
+					}
+				} else {
+					for cveID := range cveIDsSetInOtherSection {
+						foundCveIDs = append(foundCveIDs, cveID)
+					}
 				}
 				result = append(result, distroAdvisoryCveIDs{
 					DistroAdvisory: advisory,
@@ -817,8 +973,9 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 				})
 
 				// reset for next section.
-				cveIDsSetInThisSection = make(map[string]bool)
-				inDesctiption, inCves = false, false
+				cveIDsSetInCVEsSection = make(map[string]bool)
+				cveIDsSetInOtherSection = make(map[string]bool)
+				inDesctiption, inCves, inBugs = false, false, false
 				advisory = models.DistroAdvisory{}
 			}
 
@@ -829,21 +986,17 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 
 		switch sectionState {
 		case Header:
-			switch o.Distro.Family {
-			case config.CentOS:
-				// CentOS has no security channel.
-				return result, fmt.Errorf(
-					"yum updateinfo is not suppported on  CentOS")
-			case config.RedHat, config.Amazon, config.Oracle:
-				// nop
-			}
-
+			// nop
 		case Content:
 			if found := o.isDescriptionLine(line); found {
-				inDesctiption, inCves = true, false
+				inDesctiption, inCves, inBugs = true, false, false
 				ss := strings.Split(line, " : ")
 				advisory.Description += fmt.Sprintf("%s\n",
 					strings.Join(ss[1:], " : "))
+				cveIDs := o.parseYumUpdateinfoLineToGetCveIDs(line)
+				for _, cveID := range cveIDs {
+					cveIDsSetInOtherSection[cveID] = true
+				}
 				continue
 			}
 
@@ -859,16 +1012,31 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 					advisory.Description += fmt.Sprintf("%s\n",
 						strings.Join(ss[1:], ": "))
 				}
+				cveIDs := o.parseYumUpdateinfoLineToGetCveIDs(line)
+				for _, cveID := range cveIDs {
+					cveIDsSetInOtherSection[cveID] = true
+				}
+				continue
+			}
+
+			if found := o.isBugsHeaderLine(line); found {
+				inDesctiption, inCves, inBugs = false, false, true
+				//ss := strings.Split(line, "Bugs : ")
+				//line = strings.Join(ss[1:], " ")
+				cveIDs := o.parseYumUpdateinfoLineToGetCveIDs(line)
+				for _, cveID := range cveIDs {
+					cveIDsSetInOtherSection[cveID] = true
+				}
 				continue
 			}
 
 			if found := o.isCvesHeaderLine(line); found {
-				inCves = true
-				ss := strings.Split(line, "CVEs : ")
-				line = strings.Join(ss[1:], " ")
+				inDesctiption, inCves, inBugs = false, true, false
+				//ss := strings.Split(line, "CVEs : ")
+				//line = strings.Join(ss[1:], " ")
 				cveIDs := o.parseYumUpdateinfoLineToGetCveIDs(line)
 				for _, cveID := range cveIDs {
-					cveIDsSetInThisSection[cveID] = true
+					cveIDsSetInCVEsSection[cveID] = true
 				}
 				continue
 			}
@@ -876,7 +1044,14 @@ func (o *redhat) parseYumUpdateinfo(stdout string) (result []distroAdvisoryCveID
 			if inCves {
 				cveIDs := o.parseYumUpdateinfoLineToGetCveIDs(line)
 				for _, cveID := range cveIDs {
-					cveIDsSetInThisSection[cveID] = true
+					cveIDsSetInCVEsSection[cveID] = true
+				}
+			}
+
+			if inBugs {
+				cveIDs := o.parseYumUpdateinfoLineToGetCveIDs(line)
+				for _, cveID := range cveIDs {
+					cveIDsSetInOtherSection[cveID] = true
 				}
 			}
 
@@ -917,6 +1092,10 @@ func (o *redhat) changeSectionState(state int) (newState int) {
 		newState = Content
 	}
 	return newState
+}
+
+func (o *redhat) isBugsHeaderLine(line string) bool {
+	return strings.Contains(line, "Bugs : ")
 }
 
 func (o *redhat) isCvesHeaderLine(line string) bool {
@@ -1005,7 +1184,7 @@ func (o *redhat) extractPackNameVerRel(nameVerRel string) (name, ver, rel string
 	return
 }
 
-// parseYumUpdateinfoListAvailable collect AdvisorID(RHSA, ALAS, ELSA), packages
+// parseYumUpdateinfoListAvailable collect AdvisorID(RHSA, ALAS, ELSA, FEDORA), packages
 func (o *redhat) parseYumUpdateinfoListAvailable(stdout string) (advisoryIDPacksList, error) {
 	result := []advisoryIDPacks{}
 	lines := strings.Split(stdout, "\n")
@@ -1013,7 +1192,8 @@ func (o *redhat) parseYumUpdateinfoListAvailable(stdout string) (advisoryIDPacks
 
 		if !(strings.HasPrefix(line, "RHSA") ||
 			strings.HasPrefix(line, "ALAS") ||
-			strings.HasPrefix(line, "ELSA")) {
+			strings.HasPrefix(line, "ELSA") ||
+			strings.HasPrefix(line, "FEDORA")) {
 			continue
 		}
 
@@ -1054,10 +1234,10 @@ func (o *redhat) clone() osTypeInterface {
 
 func (o *redhat) sudo() bool {
 	switch o.Distro.Family {
-	case config.Amazon, config.CentOS:
-		return false
-	default:
+	case config.RedHat, config.Oracle:
 		// RHEL, Oracle
 		return config.Conf.Deep
 	}
+
+	return false
 }

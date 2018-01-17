@@ -351,8 +351,20 @@ func lessThan(family, versionRelease string, packB ovalmodels.Package) (bool, er
 		vera := rpmver.NewVersion(versionRelease)
 		verb := rpmver.NewVersion(packB.Version)
 		return vera.LessThan(verb), nil
-	case config.RedHat, config.CentOS: // TODO: Suport config.Scientific
-		rea := regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.centos)?`)
+	case config.RedHat, config.CentOS:
+		if strings.LastIndex(versionRelease, ".AXS") != -1 {
+			// Asianux
+			rea := regexp.MustCompile(`(?:\.el\d+(?:_\d+))?\.AXS\d+`)
+			reb := regexp.MustCompile(`\.el(\d+)(?:_\d+)?`)
+			ver := reb.FindStringSubmatch(packB.Version)
+			if len(ver) == 2 {
+				vera := rpmver.NewVersion(rea.ReplaceAllString(versionRelease, ".el"+ver[1]))
+				verb := rpmver.NewVersion(reb.ReplaceAllString(packB.Version, ".el$1"))
+				return vera.LessThan(verb), nil
+			}
+		}
+		// CentOS / ClearOS / ROSA / Scientific / Springdale
+		rea := regexp.MustCompile(`\.(?:el|res|sd?l|v)(\d+)(?:_\d+)?(?:\.centos)?`)
 		reb := regexp.MustCompile(`\.el(\d+)(?:_\d+)?`)
 		vera := rpmver.NewVersion(rea.ReplaceAllString(versionRelease, ".el$1"))
 		verb := rpmver.NewVersion(reb.ReplaceAllString(packB.Version, ".el$1"))
