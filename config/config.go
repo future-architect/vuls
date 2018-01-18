@@ -103,6 +103,8 @@ type Config struct {
 
 	SSHNative      bool
 	ContainersOnly bool
+	Fast           bool
+	Offline        bool
 	Deep           bool
 	SkipBroken     bool
 
@@ -196,6 +198,16 @@ func (c Config) ValidateOnScan() bool {
 			errs = append(errs, fmt.Errorf(
 				"Cache DB path must be a *Absolute* file path. -cache-dbpath: %s", c.CacheDBPath))
 		}
+	}
+
+	numTrue := 0
+	for _, b := range []bool{c.Fast, c.Offline, c.Deep} {
+		if b {
+			numTrue++
+		}
+	}
+	if numTrue != 1 {
+		errs = append(errs, fmt.Errorf("Specify only one of -fast, -fast-offline, -deep"))
 	}
 
 	_, err := valid.ValidateStruct(c)

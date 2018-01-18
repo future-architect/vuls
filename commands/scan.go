@@ -43,6 +43,8 @@ type ScanCmd struct {
 	httpProxy      string
 	askKeyPassword bool
 	containersOnly bool
+	fast           bool
+	offline        bool
 	deep           bool
 	skipBroken     bool
 	sshNative      bool
@@ -61,6 +63,8 @@ func (*ScanCmd) Synopsis() string { return "Scan vulnerabilities" }
 func (*ScanCmd) Usage() string {
 	return `scan:
 	scan
+		[-fast]
+		[-offline]
 		[-deep]
 		[-config=/path/to/config.toml]
 		[-results-dir=/path/to/results]
@@ -135,6 +139,18 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	)
 
 	f.BoolVar(
+		&p.fast,
+		"fast",
+		false,
+		"Online fast scan mode.")
+
+	f.BoolVar(
+		&p.offline,
+		"offline",
+		false,
+		"Offline scan mode. Unable to get updatable packages information.")
+
+	f.BoolVar(
 		&p.deep,
 		"deep",
 		false,
@@ -163,7 +179,6 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-
 	// Setup Logger
 	c.Conf.Debug = p.debug
 	c.Conf.LogDir = p.logDir
@@ -231,8 +246,14 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	c.Conf.SSHNative = p.sshNative
 	c.Conf.HTTPProxy = p.httpProxy
 	c.Conf.ContainersOnly = p.containersOnly
-	c.Conf.Deep = p.deep
 	c.Conf.SkipBroken = p.skipBroken
+
+	c.Conf.Fast = p.fast
+	c.Conf.Offline = p.offline
+	c.Conf.Deep = p.deep
+	if !(c.Conf.Fast || c.Conf.Offline || c.Conf.Deep) {
+		c.Conf.Fast = true
+	}
 
 	util.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnScan() {

@@ -177,8 +177,11 @@ func (o *redhat) checkIfSudoNoPasswd() error {
 	return nil
 }
 
-// - Fast scan mode
+// - Fast offline scan mode
 //    Amazon        ... yum-utils
+//
+// - Fast scan mode
+//    All           ... yum-utils
 //
 // - Deep scan mode
 //    CentOS 6,7    ... yum-utils, yum-plugin-changelog
@@ -203,11 +206,13 @@ func (o *redhat) checkDependencies() error {
 	}
 
 	packNames := []string{}
-
-	if !config.Conf.Deep {
-		// Fast Scan
+	if config.Conf.Fast {
+		// Online fast scan needs yum-utils to issue repoquery cmd
+		packNames = append(packNames, "yum-utils")
+	} else if config.Conf.Offline {
 		switch o.Distro.Family {
 		case config.Amazon:
+			// Offline scan doesn't support Amazon Linux
 			packNames = append(packNames, "yum-utils")
 		}
 	} else {
@@ -255,7 +260,7 @@ func (o *redhat) scanPackages() error {
 	}
 	o.Kernel.RebootRequired = rebootRequired
 
-	if !config.Conf.Deep {
+	if config.Conf.Offline {
 		switch o.Distro.Family {
 		case config.Amazon:
 			// nop
