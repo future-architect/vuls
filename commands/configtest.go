@@ -36,10 +36,13 @@ type ConfigtestCmd struct {
 	logDir         string
 	askKeyPassword bool
 	containersOnly bool
-	deep           bool
 	sshNative      bool
 	httpProxy      string
 	timeoutSec     int
+
+	fast    bool
+	offline bool
+	deep    bool
 
 	debug bool
 }
@@ -54,6 +57,8 @@ func (*ConfigtestCmd) Synopsis() string { return "Test configuration" }
 func (*ConfigtestCmd) Usage() string {
 	return `configtest:
 	configtest
+			[-fast]
+			[-offline]
 			[-deep]
 			[-config=/path/to/config.toml]
 			[-log-dir=/path/to/log]
@@ -87,6 +92,18 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		"Ask ssh privatekey password before scanning",
 	)
+
+	f.BoolVar(
+		&p.fast,
+		"fast",
+		false,
+		"Config test for online fast scan mode")
+
+	f.BoolVar(
+		&p.offline,
+		"offline",
+		false,
+		"Config test for offline scan mode")
 
 	f.BoolVar(&p.deep, "deep", false, "Config test for deep scan mode")
 
@@ -137,7 +154,13 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	c.Conf.SSHNative = p.sshNative
 	c.Conf.HTTPProxy = p.httpProxy
 	c.Conf.ContainersOnly = p.containersOnly
+
+	c.Conf.Fast = p.fast
+	c.Conf.Offline = p.offline
 	c.Conf.Deep = p.deep
+	if !(c.Conf.Fast || c.Conf.Offline || c.Conf.Deep) {
+		c.Conf.Fast = true
+	}
 
 	var servernames []string
 	if 0 < len(f.Args()) {

@@ -164,7 +164,7 @@ func (o *debian) checkDependencies() error {
 		// https://askubuntu.com/a/742844
 		packNames = append(packNames, "reboot-notifier")
 
-		if !config.Conf.Deep {
+		if config.Conf.Deep {
 			// Debian needs aptitude to get changelogs.
 			// Because unable to get changelogs via apt-get changelog on Debian.
 			packNames = append(packNames, "aptitude")
@@ -211,6 +211,10 @@ func (o *debian) scanPackages() error {
 	}
 	o.Packages = installed
 	o.SrcPackages = srcPacks
+
+	if config.Conf.Offline {
+		return nil
+	}
 
 	if config.Conf.Deep || o.Distro.Family == config.Raspbian {
 		unsecures, err := o.scanUnsecurePackages(updatable)
@@ -300,6 +304,13 @@ func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, mode
 		delete(srcPacks, name)
 	}
 
+	if config.Conf.Offline {
+		return installed, updatable, srcPacks, nil
+	}
+
+	if err := o.aptGetUpdate(); err != nil {
+		return nil, nil, nil, err
+	}
 	updatableNames, err := o.getUpdatablePackNames()
 	if err != nil {
 		return nil, nil, nil, err
@@ -346,14 +357,12 @@ func (o *debian) aptGetUpdate() error {
 	o.log.Infof("apt-get update...")
 	cmd := util.PrependProxyEnv("apt-get update")
 	if r := o.exec(cmd, sudo); !r.isSuccess() {
-		return fmt.Errorf("Failed to SSH: %s", r)
+		return fmt.Errorf("Failed to apt-get update: %s", r)
 	}
 	return nil
 }
 
 func (o *debian) scanUnsecurePackages(updatable models.Packages) (models.VulnInfos, error) {
-	o.aptGetUpdate()
-
 	// Setup changelog cache
 	current := cache.Meta{
 		Name:   o.getServerInfo().GetServerName(),
