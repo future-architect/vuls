@@ -390,8 +390,7 @@ func updatejuger(cveID string, previous, current models.ScanResult) (bool, model
 		if equal := prevLastModified[cType].Equal(curLastModified[cType]); !equal {
 			for _, c := range current.ScannedCves {
 				if cveID == c.CveID {
-					c.UpdatedDictionary = append(c.UpdatedDictionary, cType)
-					updatecurrent = c
+					updatecurrent = detectUpdateDictionary(c)
 					break
 				}
 			}
@@ -399,6 +398,11 @@ func updatejuger(cveID string, previous, current models.ScanResult) (bool, model
 		}
 	}
 	return false, updatecurrent
+}
+
+func detectUpdateDictionary (c models.VulnInfo) models.VulnInfo {
+	c.UpdatedDictionary = append(c.UpdatedDictionary, cType)
+	return c
 }
 
 // jsonDirPattern is file name pattern of JSON directory
