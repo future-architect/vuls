@@ -129,7 +129,7 @@ type VulnInfo struct {
 	DistroAdvisories  []DistroAdvisory // for Aamazon, RHEL, FreeBSD
 	CpeNames          []string
 	CveContents       CveContents
-	UpdatedDictionary []string
+	UpdatedDictionary []CveContentType
 }
 
 // Titles returns tilte (TUI)
