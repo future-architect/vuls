@@ -21,6 +21,8 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
+
+	"github.com/future-architect/vuls/config"
 )
 
 // Packages is Map of Package
@@ -62,13 +64,17 @@ func (ps Packages) Merge(other Packages) Packages {
 
 // FormatUpdatablePacksSummary returns a summary of updatable packages
 func (ps Packages) FormatUpdatablePacksSummary() string {
+	if config.Conf.Offline {
+		return fmt.Sprintf("%d installed", len(ps))
+	}
+
 	nUpdatable := 0
 	for _, p := range ps {
 		if p.NewVersion != "" {
 			nUpdatable++
 		}
 	}
-	return fmt.Sprintf("%d updatable packages", nUpdatable)
+	return fmt.Sprintf("%d installed, %d updatable", len(ps), nUpdatable)
 }
 
 // FindOne search a element
