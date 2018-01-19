@@ -335,11 +335,11 @@ func getDiffCves(previous models.ScanResult, current models.ScanResult) models.V
 	updated := models.VulnInfos{}
 	for _, v := range current.ScannedCves {
 		if previousCveIDsSet[v.CveID] {
+			_, newvulninfo := updatejudger(v.CveID, previous, current)
+			v.UpdatedDictionary = newvulninfo.UpdatedDictionary
 			if isCveInfoUpdated(v.CveID, previous, current) {
 				updated[v.CveID] = v
 			}
-			_, newvulninfo := updatejudger(v.CveID, previous, current)
-			v.UpdatedDictionary = newvulninfo.UpdatedDictionary
 		} else {
 			new[v.CveID] = v
 		}
@@ -387,6 +387,7 @@ func updatejudger(cveID string, previous, current models.ScanResult) (bool,  mod
 	}
 
 	var i models.VulnInfo
+	i.UpdatedDictionary = append(i.UpdatedDictionary, "New")
 	for _, cType := range cTypes {
 		if equal := prevLastModified[cType].Equal(curLastModified[cType]); !equal {
 			i.UpdatedDictionary = append(i.UpdatedDictionary, cType)
