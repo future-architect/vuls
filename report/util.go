@@ -338,7 +338,7 @@ func getDiffCves(previous models.ScanResult, current models.ScanResult) models.V
 			if isCveInfoUpdated(v.CveID, previous, current) {
 				updated[v.CveID] = v
 			}
-			_, newvulninfo := updatejuger(v.CveID, previous, current)
+			_, newvulninfo := updatejudger(v.CveID, previous, current)
 			v.UpdatedDictionary = newvulninfo.UpdatedDictionary
 		} else {
 			new[v.CveID] = v
@@ -353,11 +353,11 @@ func getDiffCves(previous models.ScanResult, current models.ScanResult) models.V
 }
 
 func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
-	i, _ := updatejuger(cveID, previous, current)
+	i, _ := updatejudger(cveID, previous, current)
 	return i
 }
 
-func updatejuger(cveID string, previous, current models.ScanResult) (bool, models.VulnInfo) {
+func updatejudger(cveID string, previous, current models.ScanResult) (bool, models.VulnInfo) {
 	cTypes := []models.CveContentType{
 		models.NVD,
 		models.JVN,
@@ -390,7 +390,7 @@ func updatejuger(cveID string, previous, current models.ScanResult) (bool, model
 		if equal := prevLastModified[cType].Equal(curLastModified[cType]); !equal {
 			for _, c := range current.ScannedCves {
 				if cveID == c.CveID {
-					updatecurrent = detectUpdateDictionary(c, cType)
+					updatecurrent = detectUpdatedDictionary(c, cType)
 					break
 				}
 			}
@@ -400,7 +400,7 @@ func updatejuger(cveID string, previous, current models.ScanResult) (bool, model
 	return false, updatecurrent
 }
 
-func detectUpdateDictionary(c models.VulnInfo, cType models.CveContentType) models.VulnInfo {
+func detectUpdatedDictionary(c models.VulnInfo, cType models.CveContentType) models.VulnInfo {
 	c.UpdatedDictionary = append(c.UpdatedDictionary, cType)
 	return c
 }
