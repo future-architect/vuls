@@ -325,7 +325,7 @@ func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults,
 	return diffed, err
 }
 
-func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
+func getDiffCves(previous models.ScanResult, current models.ScanResult) models.VulnInfos {
 	previousCveIDsSet := map[string]bool{}
 	for _, previousVulnInfo := range previous.ScannedCves {
 		previousCveIDsSet[previousVulnInfo.CveID] = true
@@ -338,6 +338,8 @@ func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
 			if isCveInfoUpdated(v.CveID, previous, current) {
 				updated[v.CveID] = v
 			}
+			_, o := hoge(v.CveID, previous, current)
+			v.UpdatedDictionary = o.UpdatedDictionary
 		} else {
 			new[v.CveID] = v
 		}
@@ -346,10 +348,16 @@ func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
 	for cveID, vuln := range new {
 		updated[cveID] = vuln
 	}
+
 	return updated
 }
 
 func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
+	i, _ := hoge(cveID, previous, current)
+	return i
+}
+
+func hoge(cveID string, previous, current models.ScanResult) (bool, models.VulnInfo) {
 	cTypes := []models.CveContentType{
 		models.NVD,
 		models.JVN,
@@ -377,16 +385,22 @@ func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
 			break
 		}
 	}
+	var updatecurrent models.VulnInfo
 	for _, cType := range cTypes {
 		if equal := prevLastModified[cType].Equal(curLastModified[cType]); !equal {
-			var i models.VulnInfo = *current.ScannedCves
-			i.UpdatedDictionary = cType
-
-			return true
+			for _, c := range current.ScannedCves {
+				if cveID == c.CveID {
+					c.UpdatedDictionary = append(c.UpdatedDictionary, cType)
+					updatecurrent = c
+					break
+				}
+			}
+			return true, updatecurrent
 		}
 	}
-	return false
+	return false, updatecurrent
 }
+
 
 // jsonDirPattern is file name pattern of JSON directory
 // 2016-11-16T10:43:28+09:00
