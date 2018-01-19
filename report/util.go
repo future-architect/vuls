@@ -338,8 +338,8 @@ func getDiffCves(previous models.ScanResult, current models.ScanResult) models.V
 			if isCveInfoUpdated(v.CveID, previous, current) {
 				updated[v.CveID] = v
 			}
-			_, o := hoge(v.CveID, previous, current)
-			v.UpdatedDictionary = o.UpdatedDictionary
+			_, newvulninfo := updatejuger(v.CveID, previous, current)
+			v.UpdatedDictionary = newvulninfo.UpdatedDictionary
 		} else {
 			new[v.CveID] = v
 		}
@@ -353,11 +353,11 @@ func getDiffCves(previous models.ScanResult, current models.ScanResult) models.V
 }
 
 func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
-	i, _ := hoge(cveID, previous, current)
+	i, _ := updatejuger(cveID, previous, current)
 	return i
 }
 
-func hoge(cveID string, previous, current models.ScanResult) (bool, models.VulnInfo) {
+func updatejuger(cveID string, previous, current models.ScanResult) (bool, models.VulnInfo) {
 	cTypes := []models.CveContentType{
 		models.NVD,
 		models.JVN,
@@ -400,7 +400,6 @@ func hoge(cveID string, previous, current models.ScanResult) (bool, models.VulnI
 	}
 	return false, updatecurrent
 }
-
 
 // jsonDirPattern is file name pattern of JSON directory
 // 2016-11-16T10:43:28+09:00
