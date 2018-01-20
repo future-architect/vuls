@@ -305,7 +305,7 @@ func attachmentText(vinfo models.VulnInfo, osFamily string) string {
 
 	if config.Conf.Diff {
 		return fmt.Sprintf("%s\n *%4.1f (%s)* %s\n%s\n```%s```",
-			vinfo.UpdatedDictionary,
+			cveContentType2string(vinfo.UpdatedDictionary),
 			maxCvss.Value.Score,
 			severity,
 			cweIDs(vinfo, osFamily),
