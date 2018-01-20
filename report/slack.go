@@ -55,6 +55,7 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 	channel := conf.Channel
 	token := conf.LegacyToken
 
+
 	for _, r := range rs {
 		if channel == "${servername}" {
 			channel = fmt.Sprintf("#%s", r.ServerName)
@@ -303,15 +304,15 @@ func attachmentText(vinfo models.VulnInfo, osFamily string) string {
 	}
 
 	if config.Conf.Diff {
-		return fmt.Sprintf("*%4.1f (%s)* (%s)* %s\n%s\n```%s```",
-			maxCvss.Value.Score,
+		return fmt.Sprintf("%s\n *%4.1f (%s)* %s\n%s\n```%s```",
 			vinfo.UpdatedDictionary,
+			maxCvss.Value.Score,
 			severity,
 			cweIDs(vinfo, osFamily),
 			strings.Join(vectors, "\n"),
 			vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
 		)
-	} else {
+	}else {
 		return fmt.Sprintf("*%4.1f (%s)* %s\n%s\n```%s```",
 			maxCvss.Value.Score,
 			severity,
