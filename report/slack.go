@@ -302,13 +302,24 @@ func attachmentText(vinfo models.VulnInfo, osFamily string) string {
 		severity = "?"
 	}
 
-	return fmt.Sprintf("*%4.1f (%s)* %s\n%s\n```%s```",
-		maxCvss.Value.Score,
-		severity,
-		cweIDs(vinfo, osFamily),
-		strings.Join(vectors, "\n"),
-		vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
-	)
+	if config.Conf.Diff {
+		return fmt.Sprintf("*%4.1f (%s)* %s\n%s\n```%s```",
+			maxCvss.Value.Score,
+			vinfo.UpdatedDictionary,
+			severity,
+			cweIDs(vinfo, osFamily),
+			strings.Join(vectors, "\n"),
+			vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
+		)
+	} else {
+		return fmt.Sprintf("*%4.1f (%s)* %s\n%s\n```%s```",
+			maxCvss.Value.Score,
+			severity,
+			cweIDs(vinfo, osFamily),
+			strings.Join(vectors, "\n"),
+			vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
+		)
+	}
 }
 
 func cweIDs(vinfo models.VulnInfo, osFamily string) string {
