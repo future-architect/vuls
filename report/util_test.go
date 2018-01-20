@@ -38,6 +38,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 									LastModified: time.Time{},
 								},
 							),
+							UpdatedDictionary: []models.CveContentType{},
 						},
 					},
 				},
@@ -52,6 +53,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 									LastModified: time.Time{},
 								},
 							),
+							UpdatedDictionary: []models.CveContentType{},
 						},
 					},
 				},
@@ -73,6 +75,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 									LastModified: old,
 								},
 							),
+							UpdatedDictionary: []models.CveContentType{},
 						},
 					},
 				},
@@ -87,6 +90,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 									LastModified: old,
 								},
 							),
+							UpdatedDictionary: []models.CveContentType{},
 						},
 					},
 				},
@@ -109,6 +113,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 									LastModified: new,
 								},
 							),
+							UpdatedDictionary: []models.CveContentType{},
 						},
 					},
 				},
@@ -124,6 +129,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 									LastModified: old,
 								},
 							),
+							UpdatedDictionary: []models.CveContentType{},
 						},
 					},
 				},
@@ -146,6 +152,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 									LastModified: old,
 								},
 							),
+							UpdatedDictionary: []models.CveContentType{},
 						},
 					},
 				},
@@ -325,3 +332,5 @@ func TestDiff(t *testing.T) {
 		}
 	}
 }
+
+
