@@ -32,7 +32,6 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/gosuri/uitable"
-	"github.com/k0kubun/pp"
 )
 
 const maxColWidth = 80

@@ -38,7 +38,6 @@ func TestIsCveInfoUpdated(t *testing.T) {
 									LastModified: time.Time{},
 								},
 							),
-							UpdatedDictionary: []models.CveContentType{},
 						},
 					},
 				},
@@ -53,7 +52,6 @@ func TestIsCveInfoUpdated(t *testing.T) {
 									LastModified: time.Time{},
 								},
 							),
-							UpdatedDictionary: []models.CveContentType{},
 						},
 					},
 				},
@@ -75,7 +73,6 @@ func TestIsCveInfoUpdated(t *testing.T) {
 									LastModified: old,
 								},
 							),
-							UpdatedDictionary: []models.CveContentType{},
 						},
 					},
 				},
@@ -90,7 +87,6 @@ func TestIsCveInfoUpdated(t *testing.T) {
 									LastModified: old,
 								},
 							),
-							UpdatedDictionary: []models.CveContentType{},
 						},
 					},
 				},
@@ -113,7 +109,6 @@ func TestIsCveInfoUpdated(t *testing.T) {
 									LastModified: new,
 								},
 							),
-							UpdatedDictionary: []models.CveContentType{},
 						},
 					},
 				},
@@ -129,7 +124,6 @@ func TestIsCveInfoUpdated(t *testing.T) {
 									LastModified: old,
 								},
 							),
-							UpdatedDictionary: []models.CveContentType{},
 						},
 					},
 				},
@@ -152,7 +146,6 @@ func TestIsCveInfoUpdated(t *testing.T) {
 									LastModified: old,
 								},
 							),
-							UpdatedDictionary: []models.CveContentType{},
 						},
 					},
 				},
@@ -334,3 +327,98 @@ func TestDiff(t *testing.T) {
 }
 
 
+func TestUpdateJudger(t *testing.T) {
+	atCurrent, _ := time.Parse("2006-01-02", "2014-12-31")
+	atPrevious, _ := time.Parse("2006-01-02", "2014-11-31")
+	var tests = []struct {
+		inCurrent  models.ScanResults
+		inPrevious models.ScanResults
+		out        models.ScanResult
+	}{
+		{
+			inCurrent: models.ScanResults{
+				{
+					ScannedAt:  atCurrent,
+					ServerName: "u16",
+					Family:     "ubuntu",
+					Release:    "16.04",
+					ScannedCves: models.VulnInfos{
+						"CVE-2012-6702": {
+							CveID:            "CVE-2012-6702",
+							CveContents: models.NewCveContents(
+								models.CveContent{
+									Type:         models.NVD,
+									CveID:        "CVE-2012-6702",
+									LastModified: time.Time{},
+								},
+							),
+							AffectedPackages: models.PackageStatuses{{Name: "libexpat1"}},
+							DistroAdvisories: []models.DistroAdvisory{},
+							CpeNames:         []string{},
+						},
+						"CVE-2014-9761": {
+							CveID:            "CVE-2014-9761",
+							CveContents: models.NewCveContents(
+								models.CveContent{
+									Type:         models.NVD,
+									CveID:        "CVE-2014-9761",
+									LastModified: time.Time{},
+								},
+							),
+							AffectedPackages: models.PackageStatuses{{Name: "libc-bin"}},
+							DistroAdvisories: []models.DistroAdvisory{},
+							CpeNames:         []string{},
+						},
+					},
+					Packages: models.Packages{},
+					Errors:   []string{},
+					Optional: [][]interface{}{},
+				},
+			},
+			inPrevious: models.ScanResults{
+				{
+					ScannedAt:  atPrevious,
+					ServerName: "u16",
+					Family:     "ubuntu",
+					Release:    "16.04",
+					ScannedCves: models.VulnInfos{},
+					Packages: models.Packages{},
+					Errors:   []string{},
+					Optional: [][]interface{}{},
+				},
+			},
+			out: models.ScanResult{
+				ScannedAt:   atCurrent,
+				ServerName:  "u16",
+				Family:      "ubuntu",
+				Release:     "16.04",
+				Packages:    models.Packages{},
+				ScannedCves: models.VulnInfos{
+					UpdatedDictionary:{
+						"NVD",
+					},
+				},
+				Errors:      []string{},
+				Optional:    [][]interface{}{},
+			},
+		},
+	}
+	for i, tt := range tests {
+		diff, _ := diff(tt.inCurrent, tt.inPrevious)
+		for _, actual := range diff {
+			if !reflect.DeepEqual(actual.ScannedCves, tt.out.ScannedCves) {
+				h := pp.Sprint(actual.ScannedCves)
+				x := pp.Sprint(tt.out.ScannedCves)
+				t.Errorf("[%d] cves actual: \n %s \n expected: \n %s", i, h, x)
+			}
+
+			for j := range tt.out.Packages {
+				if !reflect.DeepEqual(tt.out.Packages[j], actual.Packages[j]) {
+					h := pp.Sprint(tt.out.Packages[j])
+					x := pp.Sprint(actual.Packages[j])
+					t.Errorf("[%d] packages actual: \n %s \n expected: \n %s", i, x, h)
+				}
+			}
+		}
+	}
+}
