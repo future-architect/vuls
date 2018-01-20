@@ -326,7 +326,7 @@ func TestDiff(t *testing.T) {
 	}
 }
 
-
+/*
 func TestUpdateJudger(t *testing.T) {
 	atCurrent, _ := time.Parse("2006-01-02", "2014-12-31")
 	atPrevious, _ := time.Parse("2006-01-02", "2014-11-31")
@@ -336,89 +336,77 @@ func TestUpdateJudger(t *testing.T) {
 		out        models.ScanResult
 	}{
 		{
-			inCurrent: models.ScanResults{
-				{
-					ScannedAt:  atCurrent,
-					ServerName: "u16",
-					Family:     "ubuntu",
-					Release:    "16.04",
-					ScannedCves: models.VulnInfos{
-						"CVE-2012-6702": {
-							CveID:            "CVE-2012-6702",
-							CveContents: models.NewCveContents(
-								models.CveContent{
-									Type:         models.NVD,
-									CveID:        "CVE-2012-6702",
-									LastModified: time.Time{},
-								},
-							),
-							AffectedPackages: models.PackageStatuses{{Name: "libexpat1"}},
-							DistroAdvisories: []models.DistroAdvisory{},
-							CpeNames:         []string{},
-						},
-						"CVE-2014-9761": {
-							CveID:            "CVE-2014-9761",
-							CveContents: models.NewCveContents(
-								models.CveContent{
-									Type:         models.NVD,
-									CveID:        "CVE-2014-9761",
-									LastModified: time.Time{},
-								},
-							),
-							AffectedPackages: models.PackageStatuses{{Name: "libc-bin"}},
-							DistroAdvisories: []models.DistroAdvisory{},
-							CpeNames:         []string{},
-						},
-					},
-					Packages: models.Packages{},
-					Errors:   []string{},
-					Optional: [][]interface{}{},
-				},
-			},
-			inPrevious: models.ScanResults{
-				{
-					ScannedAt:  atPrevious,
-					ServerName: "u16",
-					Family:     "ubuntu",
-					Release:    "16.04",
-					ScannedCves: models.VulnInfos{},
-					Packages: models.Packages{},
-					Errors:   []string{},
-					Optional: [][]interface{}{},
-				},
-			},
-			out: models.ScanResult{
-				ScannedAt:   atCurrent,
-				ServerName:  "u16",
-				Family:      "ubuntu",
-				Release:     "16.04",
-				Packages:    models.Packages{},
+			inCurrent: models.ScanResult{
+				ScannedAt:  atCurrent,
+				ServerName: "u16",
+				Family:     "ubuntu",
+				Release:    "16.04",
 				ScannedCves: models.VulnInfos{
-					UpdatedDictionary:{
+					"CVE-2012-6702": {
+						CveID: "CVE-2012-6702",
+						CveContents: models.NewCveContents(
+							models.CveContent{
+								Type:         models.NVD,
+								CveID:        "CVE-2012-6702",
+								LastModified: time.Date(2015, time.December, 31, 12, 13, 24, 0, time.UTC),
+							},
+						),
+						AffectedPackages: models.PackageStatuses{{Name: "libexpat1"}},
+						DistroAdvisories: []models.DistroAdvisory{},
+						CpeNames:         []string{},
+					},
+				},
+				Packages: models.Packages{},
+				Errors:   []string{},
+				Optional: [][]interface{}{},
+			},
+			inPrevious: models.ScanResult{
+				ScannedAt:  atPrevious,
+				ServerName: "u16",
+				Family:     "ubuntu",
+				Release:    "16.04",
+				ScannedCves: models.VulnInfos{
+					"CVE-2012-6702": {
+						CveID: "CVE-2012-6702",
+						CveContents: models.NewCveContents(
+							models.CveContent{
+								Type:         models.NVD,
+								CveID:        "CVE-2012-6702",
+								LastModified: time.Date(2014, time.December, 31, 12, 13, 24, 0, time.UTC),
+							},
+						),
+						AffectedPackages: models.PackageStatuses{{Name: "libexpat1"}},
+						DistroAdvisories: []models.DistroAdvisory{},
+						CpeNames:         []string{},
+					},
+				},
+				Packages: models.Packages{},
+				Errors:   []string{},
+				Optional: [][]interface{}{},
+			},
+			out: models.ScanResults{{
+				ScannedAt:  atCurrent,
+				ServerName: "u16",
+				Family:     "ubuntu",
+				Release:    "16.04",
+				Packages:   models.Packages{},
+				ScannedCves: models.VulnInfos{
+					UpdatedDictionary: {
 						"NVD",
 					},
 				},
-				Errors:      []string{},
-				Optional:    [][]interface{}{},
-			},
+				Errors:   []string{},
+				Optional: [][]interface{}{},
+			}},
 		},
 	}
 	for i, tt := range tests {
-		diff, _ := diff(tt.inCurrent, tt.inPrevious)
-		for _, actual := range diff {
-			if !reflect.DeepEqual(actual.ScannedCves, tt.out.ScannedCves) {
-				h := pp.Sprint(actual.ScannedCves)
-				x := pp.Sprint(tt.out.ScannedCves)
-				t.Errorf("[%d] cves actual: \n %s \n expected: \n %s", i, h, x)
-			}
-
-			for j := range tt.out.Packages {
-				if !reflect.DeepEqual(tt.out.Packages[j], actual.Packages[j]) {
-					h := pp.Sprint(tt.out.Packages[j])
-					x := pp.Sprint(actual.Packages[j])
-					t.Errorf("[%d] packages actual: \n %s \n expected: \n %s", i, x, h)
-				}
-			}
+		_, actual := updatejudger("CVE-2012-6702", tt.inCurrent, tt.inPrevious)
+		if !reflect.DeepEqual(actual, tt.out) {
+			h := pp.Sprint(actual)
+			x := pp.Sprint(tt.out)
+			t.Errorf("[%d] cves actual: \n %s \n expected: \n %s", i, h, x)
 		}
 	}
 }
+*/
