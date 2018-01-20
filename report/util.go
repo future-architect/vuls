@@ -388,6 +388,7 @@ func updatejudger(cveID string, previous, current models.ScanResult) (bool,  mod
 
 	var i models.VulnInfo
 	i.UpdatedDictionary = append(i.UpdatedDictionary, "new")
+
 	var flag bool
 	for _, cType := range cTypes {
 		if equal := prevLastModified[cType].Equal(curLastModified[cType]); !equal {
