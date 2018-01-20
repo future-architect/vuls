@@ -32,6 +32,7 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/gosuri/uitable"
+	"github.com/k0kubun/pp"
 )
 
 const maxColWidth = 80
@@ -387,14 +388,14 @@ func updatejudger(cveID string, previous, current models.ScanResult) (bool,  mod
 	}
 
 	var i models.VulnInfo
-	i.UpdatedDictionary = append(i.UpdatedDictionary, "New")
+	var flag bool
 	for _, cType := range cTypes {
 		if equal := prevLastModified[cType].Equal(curLastModified[cType]); !equal {
 			i.UpdatedDictionary = append(i.UpdatedDictionary, cType)
+			flag = true
 		}
 	}
-
-	if len(i.UpdatedDictionary) == 0 {
+	if flag {
 		return true, i
 	}
 
