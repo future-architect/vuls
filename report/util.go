@@ -357,7 +357,7 @@ func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
 	return i
 }
 
-func updatejudger(cveID string, previous, current models.ScanResult) (bool, models.VulnInfo) {
+func updatejudger(cveID string, previous, current models.ScanResult) (bool,  models.VulnInfo) {
 	cTypes := []models.CveContentType{
 		models.NVD,
 		models.JVN,
@@ -387,9 +387,13 @@ func updatejudger(cveID string, previous, current models.ScanResult) (bool, mode
 	}
 
 	var i models.VulnInfo
+	i.UpdatedDictionary = append(i.UpdatedDictionary, "new")
 	var flag bool
 	for _, cType := range cTypes {
 		if equal := prevLastModified[cType].Equal(curLastModified[cType]); !equal {
+			if i.UpdatedDictionary[0] == "new" {
+				i.UpdatedDictionary = []models.CveContentType{}
+			}
 			i.UpdatedDictionary = append(i.UpdatedDictionary, cType)
 			flag = true
 		}
@@ -400,6 +404,7 @@ func updatejudger(cveID string, previous, current models.ScanResult) (bool, mode
 
 	return false, i
 }
+
 
 // jsonDirPattern is file name pattern of JSON directory
 // 2016-11-16T10:43:28+09:00
