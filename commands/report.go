@@ -339,6 +339,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	var err error
 	if p.diff {
 		dir, err = report.JSONDir([]string{})
+		if len(dir) == 1 {
+			util.Log.Errorf("Only one JSON: %s", err)
+			return subcommands.ExitFailure
+		}
 	} else {
 		dir, err = report.JSONDir(f.Args())
 	}
