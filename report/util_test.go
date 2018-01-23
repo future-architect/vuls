@@ -102,13 +102,13 @@ func TestIsCveInfoUpdated(t *testing.T) {
 					ScannedCves: models.VulnInfos{
 						"CVE-2017-0003": {
 							CveID: "CVE-2017-0003",
-							CveContents: models.NewCveContents(
-								models.CveContent{
+							CveContents: models.CveContents{
+								"NVD": models.CveContent{
 									Type:         models.NVD,
 									CveID:        "CVE-2017-0002",
 									LastModified: new,
 								},
-							),
+							},
 						},
 					},
 				},
@@ -117,13 +117,13 @@ func TestIsCveInfoUpdated(t *testing.T) {
 					ScannedCves: models.VulnInfos{
 						"CVE-2017-0003": {
 							CveID: "CVE-2017-0003",
-							CveContents: models.NewCveContents(
-								models.CveContent{
+							CveContents: models.CveContents{
+								"NVD": models.CveContent{
 									Type:         models.NVD,
 									CveID:        "CVE-2017-0002",
 									LastModified: old,
 								},
-							),
+							},
 						},
 					},
 				},
@@ -166,6 +166,10 @@ func TestIsCveInfoUpdated(t *testing.T) {
 }
 
 func TestDiff(t *testing.T) {
+	f := "2006-01-02"
+	old, _ := time.Parse(f, "2015-12-15")
+	new, _ := time.Parse(f, "2015-12-16")
+
 	atCurrent, _ := time.Parse("2006-01-02", "2014-12-31")
 	atPrevious, _ := time.Parse("2006-01-02", "2014-11-31")
 	var tests = []struct {
@@ -273,6 +277,7 @@ func TestDiff(t *testing.T) {
 					Family:      "ubuntu",
 					Release:     "16.04",
 					ScannedCves: models.VulnInfos{},
+
 				},
 			},
 			out: models.ScanResult{
@@ -304,6 +309,87 @@ func TestDiff(t *testing.T) {
 				},
 			},
 		},
+		{
+			inCurrent: models.ScanResults{
+				{
+					ScannedAt:  atCurrent,
+					ServerName: "u16",
+					Family:     "ubuntu",
+					Release:    "16.04",
+					ScannedCves: models.VulnInfos{
+						"CVE-2016-6662": {
+							CveID:            "CVE-2016-6662",
+							CpeNames:         []string{},
+							CveContents: models.CveContents{
+								"NVD": models.CveContent{
+									Type:         models.NewCveContentType("nvd"),
+									CveID:        "CVE-2017-0001",
+									LastModified: new,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{inPrevious: models.ScanResults{
+			{
+				ScannedAt:   atPrevious,
+				ServerName:  "u16",
+				Family:      "ubuntu",
+				Release:     "16.04",
+				ScannedCves: models.VulnInfos{
+					"CVE-2016-6662": {
+						CveID:            "CVE-2016-6662",
+						CveContents: models.CveContents{
+							"NVD": models.CveContent{
+								Type:         models.NewCveContentType("nvd"),
+								CveID:        "CVE-2017-0001",
+								LastModified: old,
+							},
+						},
+					},
+				},
+
+			},
+		},
+			out: models.ScanResult{
+				ScannedAt:  atCurrent,
+				ServerName: "u16",
+				Family:     "ubuntu",
+				Release:    "16.04",
+				ScannedCves: models.VulnInfos{
+					"CVE-2016-6662": {
+						CveID:      "CVE-2016-6662",
+						Confidence: models.Confidence{
+							Score:           0,
+							DetectionMethod: "",
+						},
+						AffectedPackages: models.PackageStatuses{},
+						DistroAdvisories: []models.DistroAdvisory{},
+						CpeNames:         []string{},
+						CveContents:      models.CveContents{"NVD": models.CveContent{
+							Type:         "nvd",
+							CveID:        "CVE-2017-0001",
+							Title:        "",
+							Summary:      "",
+							Severity:     "",
+							Cvss2Score:   0.000000,
+							Cvss2Vector:  "",
+							Cvss3Score:   0.000000,
+							Cvss3Vector:  "",
+							SourceLink:   "",
+							Cpes:         []models.Cpe{},
+							References:   models.References{},
+							CweID:        "",
+							Published:    time.Time{},
+							LastModified: time.Time{},
+						},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for i, tt := range tests {
@@ -326,87 +412,5 @@ func TestDiff(t *testing.T) {
 	}
 }
 
-/*
-func TestUpdateJudger(t *testing.T) {
-	atCurrent, _ := time.Parse("2006-01-02", "2014-12-31")
-	atPrevious, _ := time.Parse("2006-01-02", "2014-11-31")
-	var tests = []struct {
-		inCurrent  models.ScanResults
-		inPrevious models.ScanResults
-		out        models.ScanResult
-	}{
-		{
-			inCurrent: models.ScanResult{
-				ScannedAt:  atCurrent,
-				ServerName: "u16",
-				Family:     "ubuntu",
-				Release:    "16.04",
-				ScannedCves: models.VulnInfos{
-					"CVE-2012-6702": {
-						CveID: "CVE-2012-6702",
-						CveContents: models.NewCveContents(
-							models.CveContent{
-								Type:         models.NVD,
-								CveID:        "CVE-2012-6702",
-								LastModified: time.Date(2015, time.December, 31, 12, 13, 24, 0, time.UTC),
-							},
-						),
-						AffectedPackages: models.PackageStatuses{{Name: "libexpat1"}},
-						DistroAdvisories: []models.DistroAdvisory{},
-						CpeNames:         []string{},
-					},
-				},
-				Packages: models.Packages{},
-				Errors:   []string{},
-				Optional: [][]interface{}{},
-			},
-			inPrevious: models.ScanResult{
-				ScannedAt:  atPrevious,
-				ServerName: "u16",
-				Family:     "ubuntu",
-				Release:    "16.04",
-				ScannedCves: models.VulnInfos{
-					"CVE-2012-6702": {
-						CveID: "CVE-2012-6702",
-						CveContents: models.NewCveContents(
-							models.CveContent{
-								Type:         models.NVD,
-								CveID:        "CVE-2012-6702",
-								LastModified: time.Date(2014, time.December, 31, 12, 13, 24, 0, time.UTC),
-							},
-						),
-						AffectedPackages: models.PackageStatuses{{Name: "libexpat1"}},
-						DistroAdvisories: []models.DistroAdvisory{},
-						CpeNames:         []string{},
-					},
-				},
-				Packages: models.Packages{},
-				Errors:   []string{},
-				Optional: [][]interface{}{},
-			},
-			out: models.ScanResults{{
-				ScannedAt:  atCurrent,
-				ServerName: "u16",
-				Family:     "ubuntu",
-				Release:    "16.04",
-				Packages:   models.Packages{},
-				ScannedCves: models.VulnInfos{
-					UpdatedDictionary: {
-						"NVD",
-					},
-				},
-				Errors:   []string{},
-				Optional: [][]interface{}{},
-			}},
-		},
-	}
-	for i, tt := range tests {
-		_, actual := updatejudger("CVE-2012-6702", tt.inCurrent, tt.inPrevious)
-		if !reflect.DeepEqual(actual, tt.out) {
-			h := pp.Sprint(actual)
-			x := pp.Sprint(tt.out)
-			t.Errorf("[%d] cves actual: \n %s \n expected: \n %s", i, h, x)
-		}
-	}
-}
-*/
+
+
