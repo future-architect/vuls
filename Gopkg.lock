@@ -4,14 +4,19 @@
 [[projects]]
   name = "github.com/Azure/azure-sdk-for-go"
   packages = ["storage"]
-  revision = "7692b0cef22674113fcf71cc17ac3ccc1a7fef48"
-  version = "v11.2.2-beta"
+  revision = "eae258195456be76b2ec9ad2ee2ab63cdda365d9"
+  version = "v12.2.0-beta"
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
-  packages = ["autorest","autorest/adal","autorest/azure","autorest/date"]
-  revision = "c67b24a8e30d876542a85022ebbdecf0e5a935e8"
-  version = "v9.4.1"
+  packages = [
+    "autorest",
+    "autorest/adal",
+    "autorest/azure",
+    "autorest/date"
+  ]
+  revision = "c2a68353555b68de3ee8455a4fd3e890a0ac6d99"
+  version = "v9.8.1"
 
 [[projects]]
   name = "github.com/BurntSushi/toml"
@@ -22,14 +27,40 @@
 [[projects]]
   name = "github.com/asaskevich/govalidator"
   packages = ["."]
-  revision = "4918b99a7cb949bb295f3c7bbaf24b577d806e35"
-  version = "v6"
+  revision = "521b25f4b05fd26bec69d9dedeb8f9c9a83939a8"
+  version = "v8"
 
 [[projects]]
   name = "github.com/aws/aws-sdk-go"
-  packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/shareddefaults","private/protocol","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/restxml","private/protocol/xml/xmlutil","service/s3","service/sts"]
-  revision = "e4f7e38b704e3ed0acc4a7f8196b777696f6f1f3"
-  version = "v1.12.30"
+  packages = [
+    "aws",
+    "aws/awserr",
+    "aws/awsutil",
+    "aws/client",
+    "aws/client/metadata",
+    "aws/corehandlers",
+    "aws/credentials",
+    "aws/credentials/ec2rolecreds",
+    "aws/credentials/endpointcreds",
+    "aws/credentials/stscreds",
+    "aws/defaults",
+    "aws/ec2metadata",
+    "aws/endpoints",
+    "aws/request",
+    "aws/session",
+    "aws/signer/v4",
+    "internal/shareddefaults",
+    "private/protocol",
+    "private/protocol/query",
+    "private/protocol/query/queryutil",
+    "private/protocol/rest",
+    "private/protocol/restxml",
+    "private/protocol/xml/xmlutil",
+    "service/s3",
+    "service/sts"
+  ]
+  revision = "decd990ddc5dcdf2f73309cbcab90d06b996ca28"
+  version = "v1.12.67"
 
 [[projects]]
   name = "github.com/boltdb/bolt"
@@ -46,8 +77,8 @@
 [[projects]]
   name = "github.com/cheggaaa/pb"
   packages = ["."]
-  revision = "657164d0228d6bebe316fdf725c69f131a50fb10"
-  version = "v1.0.18"
+  revision = "5119518d88fbf604cab04dafd667dc7022e3b5ac"
+  version = "v1.0.21"
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
@@ -63,9 +94,16 @@
 
 [[projects]]
   name = "github.com/go-redis/redis"
-  packages = [".","internal","internal/consistenthash","internal/hashtag","internal/pool","internal/proto"]
-  revision = "e5e021257bfc6d5fbf0beac33e30194311fb189f"
-  version = "v6.7.4"
+  packages = [
+    ".",
+    "internal",
+    "internal/consistenthash",
+    "internal/hashtag",
+    "internal/pool",
+    "internal/proto"
+  ]
+  revision = "4021ace05686f632ff17fd824bbed229fc474cf8"
+  version = "v6.8.2"
 
 [[projects]]
   name = "github.com/go-sql-driver/mysql"
@@ -82,7 +120,11 @@
 [[projects]]
   branch = "master"
   name = "github.com/gosuri/uitable"
-  packages = [".","util/strutil","util/wordwrap"]
+  packages = [
+    ".",
+    "util/strutil",
+    "util/wordwrap"
+  ]
   revision = "36ee7e946282a3fb1cfecd476ddc9b35d8847e42"
 
 [[projects]]
@@ -93,7 +135,12 @@
 
 [[projects]]
   name = "github.com/jinzhu/gorm"
-  packages = [".","dialects/mysql","dialects/postgres","dialects/sqlite"]
+  packages = [
+    ".",
+    "dialects/mysql",
+    "dialects/postgres",
+    "dialects/sqlite"
+  ]
   revision = "5174cc5c242a728b435ea2be8a2f7f998e15429b"
   version = "v1.0"
 
@@ -135,8 +182,16 @@
 [[projects]]
   branch = "master"
   name = "github.com/kotakanbe/go-cve-dictionary"
-  packages = ["config","db","jvn","log","models","nvd","util"]
-  revision = "a64c5fc25cd9669b213986e1a02831c71a5c601d"
+  packages = [
+    "config",
+    "db",
+    "jvn",
+    "log",
+    "models",
+    "nvd",
+    "util"
+  ]
+  revision = "c640d74072007e0b3b86968388c12c54acd8f97e"
 
 [[projects]]
   name = "github.com/kotakanbe/go-pingscanner"
@@ -147,20 +202,35 @@
 [[projects]]
   branch = "master"
   name = "github.com/kotakanbe/goval-dictionary"
-  packages = ["config","db","db/rdb","log","models"]
-  revision = "dca4f21940cbf2245a50817177fed7eb6793e72c"
+  packages = [
+    "config",
+    "db",
+    "db/rdb",
+    "log",
+    "models"
+  ]
+  revision = "eda9803e0e770516046db375c44b558de883856c"
 
 [[projects]]
   branch = "master"
   name = "github.com/kotakanbe/logrus-prefixed-formatter"
   packages = ["."]
-  revision = "75edb2e85a38873f0318be05a458446681d1022f"
+  revision = "928f7356cb964637e2489a6ef37eee55181676c5"
 
 [[projects]]
   branch = "master"
   name = "github.com/lib/pq"
-  packages = [".","hstore","oid"]
-  revision = "8c6ee72f3e6bcb1542298dd5f76cb74af9742cec"
+  packages = [
+    ".",
+    "hstore",
+    "oid"
+  ]
+  revision = "61fe37aa2ee24fabcdbe5c4ac1d4ac566f88f345"
+
+[[projects]]
+  name = "github.com/marstr/guid"
+  packages = ["."]
+  revision = "8bdf7d1a087ccc975cf37dd6507da50698fd19ca"
 
 [[projects]]
   name = "github.com/mattn/go-colorable"
@@ -183,8 +253,8 @@
 [[projects]]
   name = "github.com/mattn/go-sqlite3"
   packages = ["."]
-  revision = "ed69081a91fd053f17672236b0dd52ba7485e1a3"
-  version = "v1.4.0"
+  revision = "6c771bb9887719704b210e87e934f08be014bdb1"
+  version = "v1.6.0"
 
 [[projects]]
   branch = "master"
@@ -208,7 +278,7 @@
   branch = "master"
   name = "github.com/nsf/termbox-go"
   packages = ["."]
-  revision = "aa4a75b1c20a2b03751b1a9f7e41d58bd6f71c43"
+  revision = "157ff97de075fe3e9e54bda782b8ca6b552dfff7"
 
 [[projects]]
   name = "github.com/parnurzeal/gorequest"
@@ -225,20 +295,19 @@
 [[projects]]
   name = "github.com/rifflock/lfshook"
   packages = ["."]
-  revision = "6844c808343cb8fa357d7f141b1b990e05d24e41"
-  version = "1.7"
+  revision = "1fdc019a35147ddbb3d25aedf713ad6d1430c144"
+  version = "v2.2"
 
 [[projects]]
-  name = "github.com/satori/uuid"
+  name = "github.com/satori/go.uuid"
   packages = ["."]
-  revision = "879c5887cd475cd7864858769793b2ceb0d44feb"
-  version = "v1.1.0"
+  revision = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3"
+  version = "v1.2.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "95cd2b9c79aa5e72ab0bc69b7ccc2be15bf850f6"
+  revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
 
 [[projects]]
   branch = "master"
@@ -249,30 +318,62 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["curve25519","ed25519","ed25519/internal/edwards25519","ssh","ssh/agent","ssh/terminal"]
-  revision = "9f005a07e0d31d45e6656d241bb5c0f2efd4bc94"
+  packages = [
+    "curve25519",
+    "ed25519",
+    "ed25519/internal/edwards25519",
+    "internal/chacha20",
+    "poly1305",
+    "ssh",
+    "ssh/agent",
+    "ssh/terminal"
+  ]
+  revision = "3d37316aaa6bd9929127ac9a527abf408178ea7b"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","idna","publicsuffix","websocket"]
-  revision = "9dfe39835686865bff950a07b394c12a98ddc811"
+  packages = [
+    "context",
+    "idna",
+    "publicsuffix",
+    "websocket"
+  ]
+  revision = "5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix","windows"]
-  revision = "0ac51a24ef1c37380f98ba8b98f56e3bffd59850"
+  packages = [
+    "unix",
+    "windows"
+  ]
+  revision = "af50095a40f9041b3b38960738837185c26e9419"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
-  packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
-  revision = "88f656faf3f37f690df1a32515b479415e1a6769"
+  packages = [
+    "collate",
+    "collate/build",
+    "internal/colltab",
+    "internal/gen",
+    "internal/tag",
+    "internal/triegen",
+    "internal/ucd",
+    "language",
+    "secure/bidirule",
+    "transform",
+    "unicode/bidi",
+    "unicode/cldr",
+    "unicode/norm",
+    "unicode/rangetable"
+  ]
+  revision = "e19ae1496984b1c655b8044a65c0300a3c878dd3"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "58ae46498625e705c582d70591148e07dbac30bc4f75cadef3d2fda514cd5099"
+  inputs-digest = "bfe830562c6df05e01e16b1337e1e4d97844ae0235cfda39c55eee38ba838f68"
   solver-name = "gps-cdcl"
   solver-version = 1
