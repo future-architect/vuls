@@ -57,7 +57,7 @@ type ReportCmd struct {
 	ovalDBURL  string
 
 	toSlack     bool
-	toHipChat     bool
+	toHipChat   bool
 	toEMail     bool
 	toLocalFile bool
 	toS3        bool
