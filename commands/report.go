@@ -57,6 +57,7 @@ type ReportCmd struct {
 	ovalDBURL  string
 
 	toSlack     bool
+	toHipChat     bool
 	toEMail     bool
 	toLocalFile bool
 	toS3        bool
@@ -112,6 +113,7 @@ func (*ReportCmd) Usage() string {
 		[-ignore-unfixed]
 		[-to-email]
 		[-to-slack]
+		[-to-hipchat]
 		[-to-localfile]
 		[-to-s3]
 		[-to-azure-blob]
@@ -261,6 +263,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.gzip, "gzip", false, "gzip compression")
 
 	f.BoolVar(&p.toSlack, "to-slack", false, "Send report via Slack")
+	f.BoolVar(&p.toHipChat, "to-hipchat", false, "Send report via hipchat")
 	f.BoolVar(&p.toEMail, "to-email", false, "Send report via Email")
 	f.BoolVar(&p.toLocalFile,
 		"to-localfile",
@@ -354,6 +357,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if p.toSlack {
 		reports = append(reports, report.SlackWriter{})
+	}
+
+	if p.toHipChat {
+		reports = append(reports, report.HipChatWriter{})
 	}
 
 	if p.toEMail {
