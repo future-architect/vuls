@@ -9,7 +9,12 @@
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
-  packages = ["autorest","autorest/adal","autorest/azure","autorest/date"]
+  packages = [
+    "autorest",
+    "autorest/adal",
+    "autorest/azure",
+    "autorest/date"
+  ]
   revision = "c67b24a8e30d876542a85022ebbdecf0e5a935e8"
   version = "v9.4.1"
 
@@ -22,12 +27,38 @@
 [[projects]]
   name = "github.com/asaskevich/govalidator"
   packages = ["."]
-  revision = "4918b99a7cb949bb295f3c7bbaf24b577d806e35"
-  version = "v6"
+  revision = "521b25f4b05fd26bec69d9dedeb8f9c9a83939a8"
+  version = "v8"
 
 [[projects]]
   name = "github.com/aws/aws-sdk-go"
-  packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/shareddefaults","private/protocol","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/restxml","private/protocol/xml/xmlutil","service/s3","service/sts"]
+  packages = [
+    "aws",
+    "aws/awserr",
+    "aws/awsutil",
+    "aws/client",
+    "aws/client/metadata",
+    "aws/corehandlers",
+    "aws/credentials",
+    "aws/credentials/ec2rolecreds",
+    "aws/credentials/endpointcreds",
+    "aws/credentials/stscreds",
+    "aws/defaults",
+    "aws/ec2metadata",
+    "aws/endpoints",
+    "aws/request",
+    "aws/session",
+    "aws/signer/v4",
+    "internal/shareddefaults",
+    "private/protocol",
+    "private/protocol/query",
+    "private/protocol/query/queryutil",
+    "private/protocol/rest",
+    "private/protocol/restxml",
+    "private/protocol/xml/xmlutil",
+    "service/s3",
+    "service/sts"
+  ]
   revision = "e4f7e38b704e3ed0acc4a7f8196b777696f6f1f3"
   version = "v1.12.30"
 
@@ -46,8 +77,8 @@
 [[projects]]
   name = "github.com/cheggaaa/pb"
   packages = ["."]
-  revision = "657164d0228d6bebe316fdf725c69f131a50fb10"
-  version = "v1.0.18"
+  revision = "5119518d88fbf604cab04dafd667dc7022e3b5ac"
+  version = "v1.0.21"
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
@@ -63,7 +94,14 @@
 
 [[projects]]
   name = "github.com/go-redis/redis"
-  packages = [".","internal","internal/consistenthash","internal/hashtag","internal/pool","internal/proto"]
+  packages = [
+    ".",
+    "internal",
+    "internal/consistenthash",
+    "internal/hashtag",
+    "internal/pool",
+    "internal/proto"
+  ]
   revision = "e5e021257bfc6d5fbf0beac33e30194311fb189f"
   version = "v6.7.4"
 
@@ -82,7 +120,11 @@
 [[projects]]
   branch = "master"
   name = "github.com/gosuri/uitable"
-  packages = [".","util/strutil","util/wordwrap"]
+  packages = [
+    ".",
+    "util/strutil",
+    "util/wordwrap"
+  ]
   revision = "36ee7e946282a3fb1cfecd476ddc9b35d8847e42"
 
 [[projects]]
@@ -99,7 +141,12 @@
 
 [[projects]]
   name = "github.com/jinzhu/gorm"
-  packages = [".","dialects/mysql","dialects/postgres","dialects/sqlite"]
+  packages = [
+    ".",
+    "dialects/mysql",
+    "dialects/postgres",
+    "dialects/sqlite"
+  ]
   revision = "5174cc5c242a728b435ea2be8a2f7f998e15429b"
   version = "v1.0"
 
@@ -141,8 +188,16 @@
 [[projects]]
   branch = "master"
   name = "github.com/kotakanbe/go-cve-dictionary"
-  packages = ["config","db","jvn","log","models","nvd","util"]
-  revision = "a64c5fc25cd9669b213986e1a02831c71a5c601d"
+  packages = [
+    "config",
+    "db",
+    "jvn",
+    "log",
+    "models",
+    "nvd",
+    "util"
+  ]
+  revision = "c640d74072007e0b3b86968388c12c54acd8f97e"
 
 [[projects]]
   name = "github.com/kotakanbe/go-pingscanner"
@@ -153,8 +208,14 @@
 [[projects]]
   branch = "master"
   name = "github.com/kotakanbe/goval-dictionary"
-  packages = ["config","db","db/rdb","log","models"]
-  revision = "b6ef2b745443a025f3f86554d49e4be5106581b5"
+  packages = [
+    "config",
+    "db",
+    "db/rdb",
+    "log",
+    "models"
+  ]
+  revision = "eda9803e0e770516046db375c44b558de883856c"
 
 [[projects]]
   branch = "master"
@@ -165,7 +226,11 @@
 [[projects]]
   branch = "master"
   name = "github.com/lib/pq"
-  packages = [".","hstore","oid"]
+  packages = [
+    ".",
+    "hstore",
+    "oid"
+  ]
   revision = "8c6ee72f3e6bcb1542298dd5f76cb74af9742cec"
 
 [[projects]]
@@ -231,8 +296,8 @@
 [[projects]]
   name = "github.com/rifflock/lfshook"
   packages = ["."]
-  revision = "6844c808343cb8fa357d7f141b1b990e05d24e41"
-  version = "1.7"
+  revision = "1fdc019a35147ddbb3d25aedf713ad6d1430c144"
+  version = "v2.2"
 
 [[projects]]
   name = "github.com/satori/uuid"
@@ -255,30 +320,60 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["curve25519","ed25519","ed25519/internal/edwards25519","ssh","ssh/agent","ssh/terminal"]
+  packages = [
+    "curve25519",
+    "ed25519",
+    "ed25519/internal/edwards25519",
+    "ssh",
+    "ssh/agent",
+    "ssh/terminal"
+  ]
   revision = "9f005a07e0d31d45e6656d241bb5c0f2efd4bc94"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","idna","publicsuffix","websocket"]
+  packages = [
+    "context",
+    "idna",
+    "publicsuffix",
+    "websocket"
+  ]
   revision = "9dfe39835686865bff950a07b394c12a98ddc811"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix","windows"]
+  packages = [
+    "unix",
+    "windows"
+  ]
   revision = "0ac51a24ef1c37380f98ba8b98f56e3bffd59850"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
-  packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
+  packages = [
+    "collate",
+    "collate/build",
+    "internal/colltab",
+    "internal/gen",
+    "internal/tag",
+    "internal/triegen",
+    "internal/ucd",
+    "language",
+    "secure/bidirule",
+    "transform",
+    "unicode/bidi",
+    "unicode/cldr",
+    "unicode/norm",
+    "unicode/rangetable"
+  ]
   revision = "88f656faf3f37f690df1a32515b479415e1a6769"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "bd8685f55497556d872cfde09f209a44f20c406b8978f5561843fe826afdf07f"
+  inputs-digest = "83a824b25e5f3a0f80a4e552ac68377cbc404a4cb4f5fe87d9d3234d2b890af3"
   solver-name = "gps-cdcl"
   solver-version = 1

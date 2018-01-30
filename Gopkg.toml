@@ -27,7 +27,7 @@
 
 [[constraint]]
   name = "github.com/asaskevich/govalidator"
-  version = "6.0.0"
+  version = "8.0.0"
 
 [[constraint]]
   name = "github.com/boltdb/bolt"
@@ -35,7 +35,7 @@
 
 [[constraint]]
   name = "github.com/cenkalti/backoff"
-  version = "1.0.0"
+  version = "1.1.0"
 
 [[constraint]]
   branch = "master"
@@ -79,7 +79,7 @@
 
 [[constraint]]
   name = "github.com/rifflock/lfshook"
-  version = "1.7.0"
+  version = "2.2.0"
 
 [[constraint]]
   branch = "master"
