@@ -56,6 +56,14 @@ func (o *pseudo) checkDependencies() error {
 	return nil
 }
 
+func (o *pseudo) preCure() error {
+	return nil
+}
+
+func (o *pseudo) postScan() error {
+	return nil
+}
+
 func (o *pseudo) scanPackages() error {
 	return nil
 }

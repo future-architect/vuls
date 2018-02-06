@@ -19,6 +19,7 @@ package scan
 
 import (
 	"fmt"
+	"net"
 	"regexp"
 	"strings"
 	"time"
@@ -256,6 +257,44 @@ func (l *base) parseLxcPs(stdout string) (containers []config.Container, err err
 	return
 }
 
+// ip executes ip command and returns IP addresses
+func (l *base) ip() ([]string, []string, error) {
+	// e.g.
+	// 2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000\    link/ether 52:54:00:2a:86:4c brd ff:ff:ff:ff:ff:ff
+	// 2: eth0    inet 10.0.2.15/24 brd 10.0.2.255 scope global eth0
+	// 2: eth0    inet6 fe80::5054:ff:fe2a:864c/64 scope link \       valid_lft forever preferred_lft forever
+	r := l.exec("/sbin/ip -o addr", noSudo)
+	if !r.isSuccess() {
+		return nil, nil, fmt.Errorf("Failed to detect IP address: %v", r)
+	}
+	ipv4Addrs, ipv6Addrs := l.parseIP(r.Stdout)
+	return ipv4Addrs, ipv6Addrs, nil
+}
+
+// parseIP parses the results of ip command
+func (l *base) parseIP(stdout string) (ipv4Addrs []string, ipv6Addrs []string) {
+	lines := strings.Split(stdout, "\n")
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		if len(fields) < 4 {
+			continue
+		}
+		ip, _, err := net.ParseCIDR(fields[3])
+		if err != nil {
+			continue
+		}
+		if !ip.IsGlobalUnicast() {
+			continue
+		}
+		if ipv4 := ip.To4(); ipv4 != nil {
+			ipv4Addrs = append(ipv4Addrs, ipv4.String())
+		} else {
+			ipv6Addrs = append(ipv6Addrs, ip.String())
+		}
+	}
+	return
+}
+
 func (l *base) detectPlatform() {
 	ok, instanceID, err := l.detectRunningOnAws()
 	if err != nil {
@@ -352,6 +391,8 @@ func (l *base) convertToModel() models.ScanResult {
 		Release:       l.Distro.Release,
 		Container:     container,
 		Platform:      l.Platform,
+		IPv4Addrs:     l.ServerInfo.IPv4Addrs,
+		IPv6Addrs:     l.ServerInfo.IPv6Addrs,
 		ScannedCves:   l.VulnInfos,
 		RunningKernel: l.Kernel,
 		Packages:      l.Packages,

@@ -473,6 +473,10 @@ type ServerInfo struct {
 	LogMsgAnsiColor string // DebugLog Color
 	Container       Container
 	Distro          Distro
+
+	// IP addresses
+	IPv4Addrs []string
+	IPv6Addrs []string
 }
 
 // GetServerName returns ServerName if this serverInfo is about host.
