@@ -277,7 +277,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.awsRegion, "aws-region", "us-east-1", "AWS region to use")
 	f.StringVar(&p.awsS3Bucket, "aws-s3-bucket", "", "S3 bucket name")
 	f.StringVar(&p.awsS3ResultsDir, "aws-s3-results-dir", "", "/bucket/path/to/results")
-	f.StringVar(&p.awsS3ServerSideEncryption, "aws-s3-server-side-encryption", "", "AES256")
+	f.StringVar(&p.awsS3ServerSideEncryption, "aws-s3-server-side-encryption", "", "The Server-side encryption algorithm used when storing the reports in S3 (e.g., AES256, aws:kms).")
 
 	f.BoolVar(&p.toAzureBlob,
 		"to-azure-blob",
