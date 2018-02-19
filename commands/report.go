@@ -428,11 +428,16 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if c.Conf.OvalDBURL != "" {
+		util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDBURL)
 		err := oval.Base{}.CheckHTTPHealth()
 		if err != nil {
 			util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
 			util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with -ovaldb-path option")
 			return subcommands.ExitFailure
+		}
+	} else {
+		if c.Conf.OvalDBType == "sqlite3" {
+			util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDBPath)
 		}
 	}
 
