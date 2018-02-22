@@ -101,8 +101,8 @@
   version = "2.2.0"
 
 [[constraint]]
+  branch = "master"
   name = "github.com/sirupsen/logrus"
-  version = "1.0.4"
 
 [[constraint]]
   branch = "master"
