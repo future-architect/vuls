@@ -15,8 +15,8 @@
     "autorest/azure",
     "autorest/date"
   ]
-  revision = "c2a68353555b68de3ee8455a4fd3e890a0ac6d99"
-  version = "v9.8.1"
+  revision = "fc3b03a2d2d1f43fad3007038bd16f044f870722"
+  version = "v9.10.0"
 
 [[projects]]
   name = "github.com/BurntSushi/toml"
@@ -49,6 +49,7 @@
     "aws/request",
     "aws/session",
     "aws/signer/v4",
+    "internal/sdkrand",
     "internal/shareddefaults",
     "private/protocol",
     "private/protocol/query",
@@ -59,8 +60,8 @@
     "service/s3",
     "service/sts"
   ]
-  revision = "decd990ddc5dcdf2f73309cbcab90d06b996ca28"
-  version = "v1.12.67"
+  revision = "adeb60566bc8c9202b0f1be7e3a675beedbc11f0"
+  version = "v1.13.2"
 
 [[projects]]
   name = "github.com/boltdb/bolt"
@@ -75,10 +76,10 @@
   version = "v1.1.0"
 
 [[projects]]
+  branch = "master"
   name = "github.com/cheggaaa/pb"
   packages = ["."]
-  revision = "5119518d88fbf604cab04dafd667dc7022e3b5ac"
-  version = "v1.0.21"
+  revision = "521e54ab5f0d0e5260964d094a414759c65fcbb3"
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
@@ -100,10 +101,11 @@
     "internal/consistenthash",
     "internal/hashtag",
     "internal/pool",
-    "internal/proto"
+    "internal/proto",
+    "internal/singleflight"
   ]
-  revision = "4021ace05686f632ff17fd824bbed229fc474cf8"
-  version = "v6.8.2"
+  revision = "fa7f64f7f27348658ecfa71dd71dfb2d112e2f86"
+  version = "v6.9.0"
 
 [[projects]]
   name = "github.com/go-sql-driver/mysql"
@@ -191,7 +193,7 @@
     "nvd",
     "util"
   ]
-  revision = "c640d74072007e0b3b86968388c12c54acd8f97e"
+  revision = "fde71467f9c6a941490af81dd1d34e8bff0aba01"
 
 [[projects]]
   name = "github.com/kotakanbe/go-pingscanner"
@@ -209,7 +211,7 @@
     "log",
     "models"
   ]
-  revision = "eda9803e0e770516046db375c44b558de883856c"
+  revision = "85c10368a38d0c020d76b8bd93155f00324dcb08"
 
 [[projects]]
   branch = "master"
@@ -225,7 +227,7 @@
     "hstore",
     "oid"
   ]
-  revision = "61fe37aa2ee24fabcdbe5c4ac1d4ac566f88f345"
+  revision = "88edab0803230a3898347e77b474f8c1820a1f20"
 
 [[projects]]
   name = "github.com/marstr/guid"
@@ -278,7 +280,7 @@
   branch = "master"
   name = "github.com/nsf/termbox-go"
   packages = ["."]
-  revision = "157ff97de075fe3e9e54bda782b8ca6b552dfff7"
+  revision = "88b7b944be8bc8d8ec6195fca97c5869ba20f99d"
 
 [[projects]]
   name = "github.com/parnurzeal/gorequest"
@@ -305,9 +307,10 @@
   version = "v1.2.0"
 
 [[projects]]
+  branch = "master"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
+  revision = "8c0189d9f6bbf301e5d055d34268156b317016af"
 
 [[projects]]
   branch = "master"
@@ -328,7 +331,7 @@
     "ssh/agent",
     "ssh/terminal"
   ]
-  revision = "3d37316aaa6bd9929127ac9a527abf408178ea7b"
+  revision = "432090b8f568c018896cd8a0fb0345872bbac6ce"
 
 [[projects]]
   branch = "master"
@@ -339,7 +342,7 @@
     "publicsuffix",
     "websocket"
   ]
-  revision = "5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec"
+  revision = "cbe0f9307d0156177f9dd5dc85da1a31abc5f2fb"
 
 [[projects]]
   branch = "master"
@@ -348,10 +351,9 @@
     "unix",
     "windows"
   ]
-  revision = "af50095a40f9041b3b38960738837185c26e9419"
+  revision = "37707fdb30a5b38865cfb95e5aab41707daec7fd"
 
 [[projects]]
-  branch = "master"
   name = "golang.org/x/text"
   packages = [
     "collate",
@@ -369,11 +371,12 @@
     "unicode/norm",
     "unicode/rangetable"
   ]
-  revision = "e19ae1496984b1c655b8044a65c0300a3c878dd3"
+  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
+  version = "v0.3.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "bfe830562c6df05e01e16b1337e1e4d97844ae0235cfda39c55eee38ba838f68"
+  inputs-digest = "1a43293a9ffc91270316199bec5474167594f96a3612f899842532c0f224d694"
   solver-name = "gps-cdcl"
   solver-version = 1

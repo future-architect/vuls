@@ -58,6 +58,7 @@ type ReportCmd struct {
 
 	toSlack     bool
 	toEMail     bool
+	toSyslog    bool
 	toLocalFile bool
 	toS3        bool
 	toAzureBlob bool
@@ -264,6 +265,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 
 	f.BoolVar(&p.toSlack, "to-slack", false, "Send report via Slack")
 	f.BoolVar(&p.toEMail, "to-email", false, "Send report via Email")
+	f.BoolVar(&p.toSyslog, "to-syslog", false, "Send report via Syslog")
 	f.BoolVar(&p.toLocalFile,
 		"to-localfile",
 		false,
@@ -361,6 +363,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if p.toEMail {
 		reports = append(reports, report.EMailWriter{})
+	}
+
+	if p.toSyslog {
+		reports = append(reports, report.SyslogWriter{})
 	}
 
 	if p.toLocalFile {

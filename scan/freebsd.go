@@ -79,7 +79,7 @@ func (o *bsd) checkDependencies() error {
 }
 
 func (o *bsd) preCure() error {
-	if err := o.detectIPAddr(); err != nil{
+	if err := o.detectIPAddr(); err != nil {
 		o.log.Debugf("Failed to detect IP addresses: %s", err)
 	}
 	// Ignore this error as it just failed to detect the IP addresses
