@@ -25,11 +25,11 @@ all: dep build test
 
 dep:
 	go get -u github.com/golang/dep/...
-	dep ensure
+	dep ensure -v
 
 depup:
 	go get -u github.com/golang/dep/...
-	dep ensure -update
+	dep ensure -update -v
 
 build: main.go dep pretest
 	go build -ldflags "$(LDFLAGS)" -o vuls $<

@@ -31,6 +31,15 @@ type ScanResults []ScanResult
 // ScanResult has the result of scanned CVE information.
 type ScanResult struct {
 	JSONVersion int
+	Lang        string
+	ServerUUID  string
+	ServerName  string // TOML Section key
+	Family      string
+	Release     string
+	Container   Container
+	Platform    Platform
+	IPv4Addrs   []string // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
+	IPv6Addrs   []string // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
 
 	ScannedAt       time.Time
 	ScannedVersion  string
@@ -41,16 +50,6 @@ type ScanResult struct {
 	ReportedVersion  string
 	ReportedRevision string
 	ReportedBy       string
-
-	Lang     string
-	Platform Platform
-
-	ServerUUID string
-	ServerName string // TOML Section key
-	Family     string
-	Release    string
-
-	Container Container
 
 	ScannedCves   VulnInfos
 	RunningKernel Kernel

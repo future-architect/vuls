@@ -203,6 +203,9 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (err error) {
 	case c.ServerTypePseudo:
 		return nil
 	default:
+		if r.Family == "" {
+			return fmt.Errorf("Probably an error occurred during scanning. Check the error message")
+		}
 		return fmt.Errorf("OVAL for %s is not implemented yet", r.Family)
 	}
 	if err = driver.NewOvalDB(ovalFamily); err != nil {

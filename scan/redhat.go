@@ -251,6 +251,23 @@ func (o *redhat) checkDependencies() error {
 	return nil
 }
 
+func (o *redhat) preCure() error {
+	if err := o.detectIPAddr(); err != nil {
+		o.log.Debugf("Failed to detect IP addresses: %s", err)
+	}
+	// Ignore this error as it just failed to detect the IP addresses
+	return nil
+}
+
+func (o *redhat) postScan() error {
+	return nil
+}
+
+func (o *redhat) detectIPAddr() (err error) {
+	o.ServerInfo.IPv4Addrs, o.ServerInfo.IPv6Addrs, err = o.ip()
+	return err
+}
+
 func (o *redhat) scanPackages() error {
 	installed, err := o.scanInstalledPackages()
 	if err != nil {

@@ -97,6 +97,36 @@ func TestParseLxdPs(t *testing.T) {
 	}
 }
 
+func TestParseIp(t *testing.T) {
+
+	var test = struct {
+		in        string
+		expected4 []string
+		expected6 []string
+	}{
+		in: `1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN \    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+1: lo    inet 127.0.0.1/8 scope host lo
+1: lo    inet6 ::1/128 scope host \       valid_lft forever preferred_lft forever
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000\    link/ether 52:54:00:2a:86:4c brd ff:ff:ff:ff:ff:ff
+2: eth0    inet 10.0.2.15/24 brd 10.0.2.255 scope global eth0
+2: eth0    inet6 fe80::5054:ff:fe2a:864c/64 scope link \       valid_lft forever preferred_lft forever
+3: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000\    link/ether 08:00:27:36:76:60 brd ff:ff:ff:ff:ff:ff
+3: eth1    inet 192.168.33.11/24 brd 192.168.33.255 scope global eth1
+3: eth1    inet6 2001:db8::68/64 scope link \       valid_lft forever preferred_lft forever `,
+		expected4: []string{"10.0.2.15", "192.168.33.11"},
+		expected6: []string{"2001:db8::68"},
+	}
+
+	r := newRedhat(config.ServerInfo{})
+	actual4, actual6 := r.parseIP(test.in)
+	if !reflect.DeepEqual(test.expected4, actual4) {
+		t.Errorf("expected %v, actual %v", test.expected4, actual4)
+	}
+	if !reflect.DeepEqual(test.expected6, actual6) {
+		t.Errorf("expected %v, actual %v", test.expected6, actual6)
+	}
+}
+
 func TestIsAwsInstanceID(t *testing.T) {
 	var tests = []struct {
 		in       string

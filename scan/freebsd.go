@@ -19,6 +19,7 @@ package scan
 
 import (
 	"fmt"
+	"net"
 	"strings"
 
 	"github.com/future-architect/vuls/config"
@@ -75,6 +76,51 @@ func (o *bsd) checkIfSudoNoPasswd() error {
 func (o *bsd) checkDependencies() error {
 	o.log.Infof("Dependencies... No need")
 	return nil
+}
+
+func (o *bsd) preCure() error {
+	if err := o.detectIPAddr(); err != nil {
+		o.log.Debugf("Failed to detect IP addresses: %s", err)
+	}
+	// Ignore this error as it just failed to detect the IP addresses
+	return nil
+}
+
+func (o *bsd) postScan() error {
+	return nil
+}
+
+func (o *bsd) detectIPAddr() (err error) {
+	r := o.exec("/sbin/ifconfig", noSudo)
+	if !r.isSuccess() {
+		return fmt.Errorf("Failed to detect IP address: %v", r)
+	}
+	o.ServerInfo.IPv4Addrs, o.ServerInfo.IPv6Addrs = o.parseIfconfig(r.Stdout)
+	return nil
+}
+
+func (l *base) parseIfconfig(stdout string) (ipv4Addrs []string, ipv6Addrs []string) {
+	lines := strings.Split(stdout, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		fields := strings.Fields(line)
+		if len(fields) < 4 || !strings.HasPrefix(fields[0], "inet") {
+			continue
+		}
+		ip := net.ParseIP(fields[1])
+		if ip == nil {
+			continue
+		}
+		if !ip.IsGlobalUnicast() {
+			continue
+		}
+		if ipv4 := ip.To4(); ipv4 != nil {
+			ipv4Addrs = append(ipv4Addrs, ipv4.String())
+		} else {
+			ipv6Addrs = append(ipv6Addrs, ip.String())
+		}
+	}
+	return
 }
 
 func (o *bsd) scanPackages() error {
