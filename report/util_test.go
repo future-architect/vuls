@@ -277,7 +277,6 @@ func TestDiff(t *testing.T) {
 					Family:      "ubuntu",
 					Release:     "16.04",
 					ScannedCves: models.VulnInfos{},
-
 				},
 			},
 			out: models.ScanResult{
@@ -318,41 +317,38 @@ func TestDiff(t *testing.T) {
 					Release:    "16.04",
 					ScannedCves: models.VulnInfos{
 						"CVE-2016-6662": {
-							CveID:            "CVE-2016-6662",
-							CpeNames:         []string{},
-							CveContents: models.CveContents{
-								"NVD": models.CveContent{
+							CveID:    "CVE-2016-6662",
+							CveContents: models.NewCveContents(
+								models.CveContent{
 									Type:         models.NewCveContentType("nvd"),
-									CveID:        "CVE-2017-0001",
+									CveID:        "CVE-2017-6662",
 									LastModified: new,
 								},
-							},
+							),
 						},
 					},
 				},
 			},
-		},
-		{inPrevious: models.ScanResults{
-			{
-				ScannedAt:   atPrevious,
-				ServerName:  "u16",
-				Family:      "ubuntu",
-				Release:     "16.04",
-				ScannedCves: models.VulnInfos{
-					"CVE-2016-6662": {
-						CveID:            "CVE-2016-6662",
-						CveContents: models.CveContents{
-							"NVD": models.CveContent{
-								Type:         models.NewCveContentType("nvd"),
-								CveID:        "CVE-2017-0001",
-								LastModified: old,
-							},
+			inPrevious: models.ScanResults{
+				{
+					ScannedAt:  atPrevious,
+					ServerName: "u16",
+					Family:     "ubuntu",
+					Release:    "16.04",
+					ScannedCves: models.VulnInfos{
+						"CVE-2016-6662": {
+							CveID: "CVE-2016-6662",
+							CveContents: models.NewCveContents(
+								models.CveContent{
+									Type:         models.NewCveContentType("nvd"),
+									CveID:        "CVE-2017-6662",
+									LastModified: old,
+								},
+							),
 						},
 					},
 				},
-
 			},
-		},
 			out: models.ScanResult{
 				ScannedAt:  atCurrent,
 				ServerName: "u16",
@@ -360,7 +356,7 @@ func TestDiff(t *testing.T) {
 				Release:    "16.04",
 				ScannedCves: models.VulnInfos{
 					"CVE-2016-6662": {
-						CveID:      "CVE-2016-6662",
+						CveID: "CVE-2016-6662",
 						Confidence: models.Confidence{
 							Score:           0,
 							DetectionMethod: "",
@@ -368,10 +364,10 @@ func TestDiff(t *testing.T) {
 						AffectedPackages: models.PackageStatuses{},
 						DistroAdvisories: []models.DistroAdvisory{},
 						CpeNames:         []string{},
-						CveContents:      models.CveContents{
-							"NVD": models.CveContent{
+						CveContents: models.CveContents{
+							"nvd": models.CveContent{
 								Type:         "nvd",
-								CveID:        "CVE-2017-0001",
+								CveID:        "CVE-2017-6662",
 								Title:        "",
 								Summary:      "",
 								Severity:     "",
@@ -384,14 +380,19 @@ func TestDiff(t *testing.T) {
 								References:   models.References{},
 								CweID:        "",
 								Published:    time.Time{},
-								LastModified: time.Time{},
+								LastModified: time.Date(2015, time.December, 16, 0, 0, 0, 0, time.UTC),
 							},
+
+						},
+						UpdatedDictionary: []models.CveContentType{
+							"nvd",
 						},
 					},
 				},
 			},
 		},
 	}
+
 
 	for i, tt := range tests {
 		diff, _ := diff(tt.inCurrent, tt.inPrevious)
@@ -412,6 +413,3 @@ func TestDiff(t *testing.T) {
 		}
 	}
 }
-
-
-
