@@ -321,11 +321,12 @@ func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults,
 		}
 
 		diffed = append(diffed, current)
+
 	}
 	return diffed, err
 }
 
-func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
+func getDiffCves(previous models.ScanResult, current models.ScanResult) models.VulnInfos {
 	previousCveIDsSet := map[string]bool{}
 	for _, previousVulnInfo := range previous.ScannedCves {
 		previousCveIDsSet[previousVulnInfo.CveID] = true
@@ -335,6 +336,8 @@ func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
 	updated := models.VulnInfos{}
 	for _, v := range current.ScannedCves {
 		if previousCveIDsSet[v.CveID] {
+			_, newvulninfo := updatejudger(v.CveID, previous, current)
+			v.UpdatedDictionary = newvulninfo.UpdatedDictionary
 			if isCveInfoUpdated(v.CveID, previous, current) {
 				updated[v.CveID] = v
 			}
@@ -346,10 +349,16 @@ func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
 	for cveID, vuln := range new {
 		updated[cveID] = vuln
 	}
+
 	return updated
 }
 
 func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
+	i, _ := updatejudger(cveID, previous, current)
+	return i
+}
+
+func updatejudger(cveID string, previous, current models.ScanResult) (bool, models.VulnInfo) {
 	cTypes := []models.CveContentType{
 		models.NVD,
 		models.JVN,
@@ -377,12 +386,32 @@ func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
 			break
 		}
 	}
+
+	var i models.VulnInfo
+
+	var flag bool
 	for _, cType := range cTypes {
 		if equal := prevLastModified[cType].Equal(curLastModified[cType]); !equal {
-			return true
+			i.UpdatedDictionary = append(i.UpdatedDictionary, cType)
+			flag = true
 		}
 	}
-	return false
+	if flag {
+		return true, i
+	}
+	return false, i
+}
+
+func cveContentType2string(cTypes []models.CveContentType) (str string) {
+	for _, s := range cTypes {
+		if str == "" {
+			str = str + string(s)
+		} else {
+			str = str + "," + string(s)
+
+		}
+	}
+	return
 }
 
 // jsonDirPattern is file name pattern of JSON directory

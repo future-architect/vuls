@@ -123,12 +123,13 @@ type PackageStatus struct {
 
 // VulnInfo has a vulnerability information and unsecure packages
 type VulnInfo struct {
-	CveID            string
-	Confidence       Confidence
-	AffectedPackages PackageStatuses
-	DistroAdvisories []DistroAdvisory // for Aamazon, RHEL, FreeBSD
-	CpeNames         []string
-	CveContents      CveContents
+	CveID             string
+	Confidence        Confidence
+	AffectedPackages  PackageStatuses
+	DistroAdvisories  []DistroAdvisory // for Aamazon, RHEL, FreeBSD
+	CpeNames          []string
+	CveContents       CveContents
+	UpdatedDictionary []CveContentType
 }
 
 // Titles returns tilte (TUI)

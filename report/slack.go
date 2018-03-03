@@ -55,6 +55,7 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 	channel := conf.Channel
 	token := conf.LegacyToken
 
+
 	for _, r := range rs {
 		if channel == "${servername}" {
 			channel = fmt.Sprintf("#%s", r.ServerName)
@@ -302,13 +303,24 @@ func attachmentText(vinfo models.VulnInfo, osFamily string) string {
 		severity = "?"
 	}
 
-	return fmt.Sprintf("*%4.1f (%s)* %s\n%s\n```%s```",
-		maxCvss.Value.Score,
-		severity,
-		cweIDs(vinfo, osFamily),
-		strings.Join(vectors, "\n"),
-		vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
-	)
+	if config.Conf.Diff {
+		return fmt.Sprintf("%s\n *%4.1f (%s)* %s\n%s\n```%s```",
+			cveContentType2string(vinfo.UpdatedDictionary),
+			maxCvss.Value.Score,
+			severity,
+			cweIDs(vinfo, osFamily),
+			strings.Join(vectors, "\n"),
+			vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
+		)
+	}else {
+		return fmt.Sprintf("*%4.1f (%s)* %s\n%s\n```%s```",
+			maxCvss.Value.Score,
+			severity,
+			cweIDs(vinfo, osFamily),
+			strings.Join(vectors, "\n"),
+			vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
+		)
+	}
 }
 
 func cweIDs(vinfo models.VulnInfo, osFamily string) string {
