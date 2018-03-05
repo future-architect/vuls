@@ -32,9 +32,10 @@ func TestSyslogWriterEncodeSyslog(t *testing.T) {
 						},
 						CveContents: models.CveContents{
 							models.NVD: models.CveContent{
-								Cvss2Score:  5.0,
-								Cvss2Vector: "AV:L/AC:L/Au:N/C:N/I:N/A:C",
-								CweIDs:      []string{"CWE-20"},
+								Cvss2Score:    5.0,
+								Cvss2Vector:   "AV:L/AC:L/Au:N/C:N/I:N/A:C",
+								Cvss2Severity: "MEDIUM",
+								CweIDs:        []string{"CWE-20"},
 							},
 						},
 					},
@@ -86,7 +87,7 @@ func TestSyslogWriterEncodeSyslog(t *testing.T) {
 		for j, m := range messages {
 			e := tt.expectedMessages[j]
 			if e != m {
-				t.Errorf("test: %d, Messsage %d: expected %s, actual %s", i, j, e, m)
+				t.Errorf("test: %d, Messsage %d: \nexpected %s \nactual   %s", i, j, e, m)
 			}
 		}
 	}

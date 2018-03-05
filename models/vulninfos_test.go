@@ -473,10 +473,10 @@ func TestCvss2Scores(t *testing.T) {
 						Cvss2Vector:   "AV:N/AC:L/Au:N/C:N/I:N/A:P",
 					},
 					NVD: {
-						Type:        NVD,
-						Cvss2Score:  8.1,
-						Cvss2Vector: "AV:N/AC:L/Au:N/C:N/I:N/A:P",
-						// Severity is NIOT included in NVD
+						Type:          NVD,
+						Cvss2Score:    8.1,
+						Cvss2Vector:   "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+						Cvss2Severity: "HIGH",
 					},
 				},
 			},
@@ -517,9 +517,9 @@ func TestCvss2Scores(t *testing.T) {
 		},
 	}
 	for i, tt := range tests {
-		actual := tt.in.Cvss2Scores()
+		actual := tt.in.Cvss2Scores("redhat")
 		if !reflect.DeepEqual(tt.out, actual) {
-			t.Errorf("[%d] expected: %v\n  actual: %v\n", i, tt.out, actual)
+			t.Errorf("[%d]\nexpected: %v\n  actual: %v\n", i, tt.out, actual)
 		}
 	}
 }
