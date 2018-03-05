@@ -407,8 +407,8 @@ func TestToSortedSlice(t *testing.T) {
 					CveID: "CVE-2017-0002",
 					CveContents: CveContents{
 						Ubuntu: {
-							Type:     Ubuntu,
-							Severity: "High",
+							Type:          Ubuntu,
+							Cvss2Severity: "High",
 						},
 					},
 				},
@@ -416,8 +416,8 @@ func TestToSortedSlice(t *testing.T) {
 					CveID: "CVE-2017-0001",
 					CveContents: CveContents{
 						Ubuntu: {
-							Type:     Ubuntu,
-							Severity: "Low",
+							Type:          Ubuntu,
+							Cvss2Severity: "Low",
 						},
 					},
 				},
@@ -427,8 +427,8 @@ func TestToSortedSlice(t *testing.T) {
 					CveID: "CVE-2017-0002",
 					CveContents: CveContents{
 						Ubuntu: {
-							Type:     Ubuntu,
-							Severity: "High",
+							Type:          Ubuntu,
+							Cvss2Severity: "High",
 						},
 					},
 				},
@@ -436,8 +436,8 @@ func TestToSortedSlice(t *testing.T) {
 					CveID: "CVE-2017-0001",
 					CveContents: CveContents{
 						Ubuntu: {
-							Type:     Ubuntu,
-							Severity: "Low",
+							Type:          Ubuntu,
+							Cvss2Severity: "Low",
 						},
 					},
 				},
@@ -461,16 +461,16 @@ func TestCvss2Scores(t *testing.T) {
 			in: VulnInfo{
 				CveContents: CveContents{
 					JVN: {
-						Type:        JVN,
-						Severity:    "HIGH",
-						Cvss2Score:  8.2,
-						Cvss2Vector: "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+						Type:          JVN,
+						Cvss2Severity: "HIGH",
+						Cvss2Score:    8.2,
+						Cvss2Vector:   "AV:N/AC:L/Au:N/C:N/I:N/A:P",
 					},
 					RedHat: {
-						Type:        RedHat,
-						Severity:    "HIGH",
-						Cvss2Score:  8.0,
-						Cvss2Vector: "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+						Type:          RedHat,
+						Cvss2Severity: "HIGH",
+						Cvss2Score:    8.0,
+						Cvss2Vector:   "AV:N/AC:L/Au:N/C:N/I:N/A:P",
 					},
 					NVD: {
 						Type:        NVD,
@@ -533,16 +533,16 @@ func TestMaxCvss2Scores(t *testing.T) {
 			in: VulnInfo{
 				CveContents: CveContents{
 					JVN: {
-						Type:        JVN,
-						Severity:    "HIGH",
-						Cvss2Score:  8.2,
-						Cvss2Vector: "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+						Type:          JVN,
+						Cvss2Severity: "HIGH",
+						Cvss2Score:    8.2,
+						Cvss2Vector:   "AV:N/AC:L/Au:N/C:N/I:N/A:P",
 					},
 					RedHat: {
-						Type:        RedHat,
-						Severity:    "HIGH",
-						Cvss2Score:  8.0,
-						Cvss2Vector: "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+						Type:          RedHat,
+						Cvss2Severity: "HIGH",
+						Cvss2Score:    8.0,
+						Cvss2Vector:   "AV:N/AC:L/Au:N/C:N/I:N/A:P",
 					},
 					NVD: {
 						Type:        NVD,
@@ -567,8 +567,8 @@ func TestMaxCvss2Scores(t *testing.T) {
 			in: VulnInfo{
 				CveContents: CveContents{
 					Ubuntu: {
-						Type:     Ubuntu,
-						Severity: "HIGH",
+						Type:          Ubuntu,
+						Cvss2Severity: "HIGH",
 					},
 				},
 			},
@@ -613,16 +613,16 @@ func TestCvss3Scores(t *testing.T) {
 			in: VulnInfo{
 				CveContents: CveContents{
 					RedHat: {
-						Type:        RedHat,
-						Severity:    "HIGH",
-						Cvss3Score:  8.0,
-						Cvss3Vector: "AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
+						Type:          RedHat,
+						Cvss3Severity: "HIGH",
+						Cvss3Score:    8.0,
+						Cvss3Vector:   "AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
 					},
 					NVD: {
-						Type:        NVD,
-						Cvss3Score:  8.1,
-						Cvss3Vector: "AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
-						// Severity is NIOT included in NVD
+						Type:          NVD,
+						Cvss2Score:    8.1,
+						Cvss2Vector:   "AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
+						Cvss2Severity: "HIGH",
 					},
 				},
 			},
@@ -661,10 +661,10 @@ func TestMaxCvss3Scores(t *testing.T) {
 			in: VulnInfo{
 				CveContents: CveContents{
 					RedHat: {
-						Type:        RedHat,
-						Severity:    "HIGH",
-						Cvss3Score:  8.0,
-						Cvss3Vector: "AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
+						Type:          RedHat,
+						Cvss3Severity: "HIGH",
+						Cvss3Score:    8.0,
+						Cvss3Vector:   "AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
 					},
 				},
 			},
@@ -748,8 +748,8 @@ func TestMaxCvssScores(t *testing.T) {
 			in: VulnInfo{
 				CveContents: CveContents{
 					Ubuntu: {
-						Type:     Ubuntu,
-						Severity: "HIGH",
+						Type:          Ubuntu,
+						Cvss2Severity: "HIGH",
 					},
 				},
 			},
@@ -768,12 +768,13 @@ func TestMaxCvssScores(t *testing.T) {
 			in: VulnInfo{
 				CveContents: CveContents{
 					Ubuntu: {
-						Type:     Ubuntu,
-						Severity: "MEDIUM",
+						Type:          Ubuntu,
+						Cvss2Severity: "MEDIUM",
 					},
 					NVD: {
-						Type:       NVD,
-						Cvss2Score: 7.0,
+						Type:          NVD,
+						Cvss2Score:    7.0,
+						Cvss2Severity: "HIGH",
 					},
 				},
 			},
@@ -810,12 +811,13 @@ func TestMaxCvssScores(t *testing.T) {
 			in: VulnInfo{
 				CveContents: CveContents{
 					Ubuntu: {
-						Type:     Ubuntu,
-						Severity: "MEDIUM",
+						Type:          Ubuntu,
+						Cvss2Severity: "MEDIUM",
 					},
 					NVD: {
-						Type:       NVD,
-						Cvss2Score: 4.0,
+						Type:          NVD,
+						Cvss2Score:    4.0,
+						Cvss2Severity: "MEDIUM",
 					},
 				},
 				DistroAdvisories: []DistroAdvisory{
@@ -862,14 +864,14 @@ func TestFormatMaxCvssScore(t *testing.T) {
 			in: VulnInfo{
 				CveContents: CveContents{
 					JVN: {
-						Type:       JVN,
-						Severity:   "HIGH",
-						Cvss2Score: 8.3,
+						Type:          JVN,
+						Cvss2Severity: "HIGH",
+						Cvss2Score:    8.3,
 					},
 					RedHat: {
-						Type:       RedHat,
-						Severity:   "HIGH",
-						Cvss3Score: 8.0,
+						Type:          RedHat,
+						Cvss2Severity: "HIGH",
+						Cvss3Score:    8.0,
 					},
 					NVD: {
 						Type:       NVD,
@@ -884,15 +886,16 @@ func TestFormatMaxCvssScore(t *testing.T) {
 			in: VulnInfo{
 				CveContents: CveContents{
 					JVN: {
-						Type:       JVN,
-						Severity:   "HIGH",
-						Cvss2Score: 8.3,
+						Type:          JVN,
+						Cvss2Severity: "HIGH",
+						Cvss2Score:    8.3,
 					},
 					RedHat: {
-						Type:       RedHat,
-						Severity:   "HIGH",
-						Cvss2Score: 8.0,
-						Cvss3Score: 9.9,
+						Type:          RedHat,
+						Cvss2Severity: "HIGH",
+						Cvss2Score:    8.0,
+						Cvss3Severity: "HIGH",
+						Cvss3Score:    9.9,
 					},
 					NVD: {
 						Type:       NVD,

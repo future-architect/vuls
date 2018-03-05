@@ -74,7 +74,7 @@
 
 [[constraint]]
   name = "github.com/kotakanbe/go-cve-dictionary"
-  branch = "master"
+  branch = "nvd-json"
 
 [[constraint]]
   name = "github.com/kotakanbe/go-pingscanner"

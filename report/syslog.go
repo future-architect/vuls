@@ -83,7 +83,8 @@ func (w SyslogWriter) encodeSyslog(result models.ScanResult) (messages []string)
 		}
 
 		if content, ok := vinfo.CveContents[models.NVD]; ok {
-			kvPairs = append(kvPairs, fmt.Sprintf(`cwe_id="%s"`, content.CweID))
+			cwes := strings.Join(content.CweIDs, ",")
+			kvPairs = append(kvPairs, fmt.Sprintf(`cwe_ids="%s"`, cwes))
 			if config.Conf.Syslog.Verbose {
 				kvPairs = append(kvPairs, fmt.Sprintf(`source_link="%s"`, content.SourceLink))
 				kvPairs = append(kvPairs, fmt.Sprintf(`summary="%s"`, content.Summary))

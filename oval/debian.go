@@ -81,11 +81,11 @@ func (o DebianBase) convertToModel(def *ovalmodels.Definition) *models.CveConten
 	}
 
 	return &models.CveContent{
-		CveID:      def.Debian.CveID,
-		Title:      def.Title,
-		Summary:    def.Description,
-		Severity:   def.Advisory.Severity,
-		References: refs,
+		CveID:         def.Debian.CveID,
+		Title:         def.Title,
+		Summary:       def.Description,
+		Cvss2Severity: def.Advisory.Severity,
+		References:    refs,
 	}
 }
 

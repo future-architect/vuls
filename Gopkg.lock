@@ -132,6 +132,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/hashicorp/go-version"
+  packages = ["."]
+  revision = "4fe82ae3040f80a03d04d2cccb5606a626b8e1ee"
+
+[[projects]]
+  branch = "master"
   name = "github.com/hashicorp/uuid"
   packages = ["."]
   revision = "ebb0a03e909c9c642a36d2527729104324c44fdb"
@@ -178,6 +184,16 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/knqyf263/go-cpe"
+  packages = [
+    "common",
+    "matching",
+    "naming"
+  ]
+  revision = "147dfccd6cdbadb8b64b0a0420c6698974862fcd"
+
+[[projects]]
+  branch = "master"
   name = "github.com/knqyf263/go-deb-version"
   packages = ["."]
   revision = "9865fe14d09b1c729188ac810466dde90f897ee3"
@@ -189,18 +205,15 @@
   revision = "74609b86c936dff800c69ec89fcf4bc52d5f13a4"
 
 [[projects]]
-  branch = "master"
+  branch = "nvd-json"
   name = "github.com/kotakanbe/go-cve-dictionary"
   packages = [
     "config",
     "db",
-    "jvn",
     "log",
-    "models",
-    "nvd",
-    "util"
+    "models"
   ]
-  revision = "2a3c286d7d791fb75f0b0b9e81fae2bc2b558dc7"
+  revision = "572c891a421da564e10eb2a8c44dc79fa96344fd"
 
 [[projects]]
   name = "github.com/kotakanbe/go-pingscanner"
@@ -218,7 +231,7 @@
     "log",
     "models"
   ]
-  revision = "85c10368a38d0c020d76b8bd93155f00324dcb08"
+  revision = "67f34a5be0566f8b79d97dc7c4d3e444d7125b16"
 
 [[projects]]
   branch = "master"
@@ -287,7 +300,7 @@
   branch = "master"
   name = "github.com/nsf/termbox-go"
   packages = ["."]
-  revision = "88b7b944be8bc8d8ec6195fca97c5869ba20f99d"
+  revision = "e2050e41c8847748ec5288741c0b19a8cb26d084"
 
 [[projects]]
   name = "github.com/parnurzeal/gorequest"
@@ -358,7 +371,7 @@
     "unix",
     "windows"
   ]
-  revision = "f6cff0780e542efa0c8e864dc8fa522808f6a598"
+  revision = "dd2ff4accc098aceecb86b36eaa7829b2a17b1c9"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -384,6 +397,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e050431047503815239a74a8ceda493ec75269622c626e1c00155cfd5f94b9ce"
+  inputs-digest = "d87fd3fb744ace7b69ab5a6af1df8273d1b11da5152dd0ac37d1911d0e2b75eb"
   solver-name = "gps-cdcl"
   solver-version = 1

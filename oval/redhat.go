@@ -160,20 +160,24 @@ func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *mo
 			severity = cve.Impact
 		}
 
+		// CWE-ID in RedHat OVAL may have multiple cweIDs separated by space
+		cwes := strings.Fields(cve.Cwe)
+
 		return &models.CveContent{
-			Type:         models.NewCveContentType(o.family),
-			CveID:        cve.CveID,
-			Title:        def.Title,
-			Summary:      def.Description,
-			Severity:     severity,
-			Cvss2Score:   score2,
-			Cvss2Vector:  vec2,
-			Cvss3Score:   score3,
-			Cvss3Vector:  vec3,
-			References:   refs,
-			CweID:        cve.Cwe,
-			Published:    def.Advisory.Issued,
-			LastModified: def.Advisory.Updated,
+			Type:          models.NewCveContentType(o.family),
+			CveID:         cve.CveID,
+			Title:         def.Title,
+			Summary:       def.Description,
+			Cvss2Score:    score2,
+			Cvss2Vector:   vec2,
+			Cvss2Severity: severity,
+			Cvss3Score:    score3,
+			Cvss3Vector:   vec3,
+			Cvss3Severity: severity,
+			References:    refs,
+			CweIDs:        cwes,
+			Published:     def.Advisory.Issued,
+			LastModified:  def.Advisory.Updated,
 		}
 	}
 	return nil

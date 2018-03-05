@@ -61,7 +61,7 @@ func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
 
 	if _, err := os.Stat(logDir); os.IsNotExist(err) {
 		if err := os.Mkdir(logDir, 0700); err != nil {
-			log.Errorf("Failed to create log directory: %s", err)
+			log.Errorf("Failed to create log directory. path: %s, err: %s", logDir, err)
 		}
 	}
 

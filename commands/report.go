@@ -30,6 +30,7 @@ import (
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
+	cvelog "github.com/kotakanbe/go-cve-dictionary/log"
 )
 
 // ReportCmd is subcommand for reporting
@@ -311,6 +312,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.DebugSQL = p.debugSQL
 	c.Conf.LogDir = p.logDir
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
+	cvelog.Initialize(p.logDir, p.debug, os.Stderr)
 
 	if err := c.Load(p.configPath, ""); err != nil {
 		util.Log.Errorf("Error loading %s, %s", p.configPath, err)

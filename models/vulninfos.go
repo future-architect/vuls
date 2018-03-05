@@ -214,7 +214,7 @@ func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found && 0 < cont.Cvss2Score {
 			// https://nvd.nist.gov/vuln-metrics/cvss
-			sev := cont.Severity
+			sev := cont.Cvss2Severity
 			if ctype == NVD {
 				sev = cvss2ScoreToSeverity(cont.Cvss2Score)
 			}
@@ -255,14 +255,13 @@ func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found && 0 < cont.Cvss3Score {
 			// https://nvd.nist.gov/vuln-metrics/cvss
-			sev := cont.Severity
 			values = append(values, CveContentCvss{
 				Type: ctype,
 				Value: Cvss{
 					Type:     CVSS3,
 					Score:    cont.Cvss3Score,
 					Vector:   cont.Cvss3Vector,
-					Severity: strings.ToUpper(sev),
+					Severity: strings.ToUpper(cont.Cvss3Severity),
 				},
 			})
 		}
@@ -282,14 +281,13 @@ func (v VulnInfo) MaxCvss3Score() CveContentCvss {
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found && max < cont.Cvss3Score {
 			// https://nvd.nist.gov/vuln-metrics/cvss
-			sev := cont.Severity
 			value = CveContentCvss{
 				Type: ctype,
 				Value: Cvss{
 					Type:     CVSS3,
 					Score:    cont.Cvss3Score,
 					Vector:   cont.Cvss3Vector,
-					Severity: sev,
+					Severity: strings.ToUpper(cont.Cvss3Severity),
 				},
 			}
 			max = cont.Cvss3Score
@@ -325,17 +323,13 @@ func (v VulnInfo) MaxCvss2Score() CveContentCvss {
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found && max < cont.Cvss2Score {
 			// https://nvd.nist.gov/vuln-metrics/cvss
-			sev := cont.Severity
-			if ctype == NVD {
-				sev = cvss2ScoreToSeverity(cont.Cvss2Score)
-			}
 			value = CveContentCvss{
 				Type: ctype,
 				Value: Cvss{
 					Type:     CVSS2,
 					Score:    cont.Cvss2Score,
 					Vector:   cont.Cvss2Vector,
-					Severity: sev,
+					Severity: strings.ToUpper(cont.Cvss2Severity),
 				},
 			}
 			max = cont.Cvss2Score
@@ -350,8 +344,8 @@ func (v VulnInfo) MaxCvss2Score() CveContentCvss {
 	// Only Ubuntu, RedHat and Oracle have severity data in OVAL.
 	order = []CveContentType{Ubuntu, RedHat, Oracle}
 	for _, ctype := range order {
-		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Severity) {
-			score := severityToV2ScoreRoughly(cont.Severity)
+		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Cvss2Severity) {
+			score := severityToV2ScoreRoughly(cont.Cvss2Severity)
 			if max < score {
 				value = CveContentCvss{
 					Type: ctype,
@@ -360,7 +354,7 @@ func (v VulnInfo) MaxCvss2Score() CveContentCvss {
 						Score:                score,
 						CalculatedBySeverity: true,
 						Vector:               cont.Cvss2Vector,
-						Severity:             cont.Severity,
+						Severity:             strings.ToUpper(cont.Cvss2Severity),
 					},
 				}
 			}

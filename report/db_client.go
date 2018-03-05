@@ -62,6 +62,10 @@ func NewOvalDB(oType, oURL, oPath string, debug bool) (driver ovaldb.DB) {
 
 // CloseDB close dbs
 func (d DBClient) CloseDB() {
-	d.OvalDB.CloseDB()
-	d.CveDB.CloseDB()
+	if err := d.OvalDB.CloseDB(); err != nil {
+		util.Log.Errorf("Failed to close DB: %s", err)
+	}
+	if err := d.CveDB.CloseDB(); err != nil {
+		util.Log.Errorf("Failed to close DB: %s", err)
+	}
 }

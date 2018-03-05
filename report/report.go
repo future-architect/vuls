@@ -139,15 +139,17 @@ func fillCveDetail(driver cvedb.DB, r *models.ScanResult) error {
 	}
 	for _, d := range ds {
 		nvd := models.ConvertNvdToModel(d.CveID, d.Nvd)
+		nvdjson := models.ConvertNvdJSONToModel(d.CveID, d.NvdJSON)
 		jvn := models.ConvertJvnToModel(d.CveID, d.Jvn)
+
 		for cveID, vinfo := range r.ScannedCves {
 			if vinfo.CveID == d.CveID {
 				if vinfo.CveContents == nil {
 					vinfo.CveContents = models.CveContents{}
 				}
-				for _, con := range []models.CveContent{*nvd, *jvn} {
-					if !con.Empty() {
-						vinfo.CveContents[con.Type] = con
+				for _, con := range []*models.CveContent{nvd, nvdjson, jvn} {
+					if con != nil && !con.Empty() {
+						vinfo.CveContents[con.Type] = *con
 					}
 				}
 				r.ScannedCves[cveID] = vinfo
@@ -162,10 +164,7 @@ func fillWithCveDB(driver cvedb.DB, r *models.ScanResult, cpeNames []string) err
 	if err := fillVulnByCpeNames(driver, r.ScannedCves, cpeNames); err != nil {
 		return err
 	}
-	if err := fillCveDetail(driver, r); err != nil {
-		return err
-	}
-	return nil
+	return fillCveDetail(driver, r)
 }
 
 // FillWithOval fetches OVAL database, and then set to fields.
@@ -173,7 +172,6 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (err error) {
 	var ovalClient oval.Client
 	var ovalFamily string
 
-	// TODO
 	switch r.Family {
 	case c.Debian:
 		ovalClient = oval.NewDebian()
@@ -228,10 +226,7 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (err error) {
 		return err
 	}
 
-	if err := ovalClient.FillWithOval(driver, r); err != nil {
-		return err
-	}
-	return nil
+	return ovalClient.FillWithOval(driver, r)
 }
 
 func fillVulnByCpeNames(driver cvedb.DB, scannedVulns models.VulnInfos, cpeNames []string) error {
@@ -383,11 +378,7 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 		"# See REAME for details: https://github.com/future-architect/vuls#example",
 		str)
 
-	if err := ioutil.WriteFile(realPath, []byte(str), 0600); err != nil {
-		return err
-	}
-
-	return nil
+	return ioutil.WriteFile(realPath, []byte(str), 0600)
 }
 
 func cleanForTOMLEncoding(server c.ServerInfo, def c.ServerInfo) c.ServerInfo {
