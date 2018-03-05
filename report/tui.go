@@ -785,12 +785,15 @@ func detailLines() (string, error) {
 	table := uitable.New()
 	table.MaxColWidth = maxColWidth
 	table.Wrap = true
-	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores()...)
+	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores(r.Family)...)
 	var cols []interface{}
 	for _, score := range scores {
+		cvssstr := score.Value.Format()
+		if cvssstr == "" {
+			continue
+		}
 		cols = []interface{}{
-			score.Value.Severity,
-			score.Value.Format(),
+			cvssstr,
 			score.Type,
 		}
 		table.AddRow(cols...)

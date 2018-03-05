@@ -259,7 +259,9 @@ func color(cvssScore float64) string {
 func attachmentText(vinfo models.VulnInfo, osFamily string) string {
 	maxCvss := vinfo.MaxCvssScore()
 	vectors := []string{}
-	for _, cvss := range vinfo.Cvss2Scores() {
+
+	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores(osFamily)...)
+	for _, cvss := range scores {
 		calcURL := ""
 		switch cvss.Value.Type {
 		case models.CVSS2:
@@ -273,11 +275,12 @@ func attachmentText(vinfo models.VulnInfo, osFamily string) string {
 		}
 
 		if cont, ok := vinfo.CveContents[cvss.Type]; ok {
+			cvssstr := cvss.Value.Format()
+			if cvssstr == "" {
+				continue
+			}
 			v := fmt.Sprintf("<%s|%s> (<%s|%s>)",
-				calcURL,
-				cvss.Value.Format(),
-				cont.SourceLink,
-				cvss.Type)
+				calcURL, cvssstr, cont.SourceLink, cvss.Type)
 			vectors = append(vectors, v)
 
 		} else {
@@ -302,7 +305,7 @@ func attachmentText(vinfo models.VulnInfo, osFamily string) string {
 		severity = "?"
 	}
 
-	return fmt.Sprintf("*%4.1f (%s)* %s\n%s\n```%s```",
+	return fmt.Sprintf("*%4.1f (%s)* %s\n%s\n```\n%s\n```\n",
 		maxCvss.Value.Score,
 		severity,
 		cweIDs(vinfo, osFamily),

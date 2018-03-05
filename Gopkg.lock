@@ -213,7 +213,7 @@
     "log",
     "models"
   ]
-  revision = "572c891a421da564e10eb2a8c44dc79fa96344fd"
+  revision = "0e8055030bc2e5ce356af099fabbbb23a96ccd68"
 
 [[projects]]
   name = "github.com/kotakanbe/go-pingscanner"
