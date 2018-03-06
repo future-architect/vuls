@@ -45,7 +45,7 @@ const (
 
 // FillCveInfos fills CVE Detailed Information
 func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
-	var filled []models.ScanResult
+	var filledResults []models.ScanResult
 	reportedAt := time.Now()
 	hostname, _ := os.Hostname()
 	for _, r := range rs {
@@ -66,34 +66,34 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			if err := overwriteJSONFile(dir, r); err != nil {
 				return nil, fmt.Errorf("Failed to write JSON: %s", err)
 			}
-			filled = append(filled, r)
+			filledResults = append(filledResults, r)
 		} else {
 			util.Log.Debugf("No need to refresh")
-			filled = append(filled, r)
+			filledResults = append(filledResults, r)
 		}
 	}
 
 	if c.Conf.Diff {
-		previous, err := loadPrevious(filled)
+		prevs, err := loadPrevious(filledResults)
 		if err != nil {
 			return nil, err
 		}
 
-		diff, err := diff(filled, previous)
+		diff, err := diff(filledResults, prevs)
 		if err != nil {
 			return nil, err
 		}
-		filled = []models.ScanResult{}
+		filledResults = []models.ScanResult{}
 		for _, r := range diff {
 			if err := fillCveDetail(dbclient.CveDB, &r); err != nil {
 				return nil, err
 			}
-			filled = append(filled, r)
+			filledResults = append(filledResults, r)
 		}
 	}
 
 	filtered := []models.ScanResult{}
-	for _, r := range filled {
+	for _, r := range filledResults {
 		r = r.FilterByCvssOver(c.Conf.CvssScoreOver)
 		r = r.FilterIgnoreCves(c.Conf.Servers[r.ServerName].IgnoreCves)
 		r = r.FilterUnfixed()

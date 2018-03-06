@@ -1,13 +1,22 @@
 package report
 
 import (
+	"os"
 	"reflect"
 	"testing"
 	"time"
 
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/util"
 	"github.com/k0kubun/pp"
 )
+
+func TestMain(m *testing.M) {
+	util.Log = util.NewCustomLogger(config.ServerInfo{})
+	code := m.Run()
+	os.Exit(code)
+}
 
 func TestIsCveInfoUpdated(t *testing.T) {
 	f := "2006-01-02"
