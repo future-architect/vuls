@@ -78,6 +78,28 @@ func detectRedhat(c config.ServerInfo) (itsMe bool, red osTypeInterface) {
 		}
 	}
 
+	// https://bugzilla.redhat.com/show_bug.cgi?id=1332025
+	// CentOS cloud image
+	if r := exec(c, "ls /etc/centos-release", noSudo); r.isSuccess() {
+		if r := exec(c, "cat /etc/centos-release", noSudo); r.isSuccess() {
+			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
+			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
+			if len(result) != 3 {
+				util.Log.Warn("Failed to parse CentOS version: %s", r)
+				return true, red
+			}
+
+			release := result[2]
+			switch strings.ToLower(result[1]) {
+			case "centos", "centos linux":
+				red.setDistro(config.CentOS, release)
+				return true, red
+			default:
+				util.Log.Warn("Failed to parse CentOS: %s", r)
+			}
+		}
+	}
+
 	if r := exec(c, "ls /etc/redhat-release", noSudo); r.isSuccess() {
 		// https://www.rackaid.com/blog/how-to-determine-centos-or-red-hat-version/
 		// e.g.
@@ -244,6 +266,23 @@ func (o *redhat) checkDependencies() error {
 	}
 	o.log.Infof("Dependencies ... Pass")
 	return nil
+}
+
+func (o *redhat) preCure() error {
+	if err := o.detectIPAddr(); err != nil {
+		o.log.Debugf("Failed to detect IP addresses: %s", err)
+	}
+	// Ignore this error as it just failed to detect the IP addresses
+	return nil
+}
+
+func (o *redhat) postScan() error {
+	return nil
+}
+
+func (o *redhat) detectIPAddr() (err error) {
+	o.ServerInfo.IPv4Addrs, o.ServerInfo.IPv6Addrs, err = o.ip()
+	return err
 }
 
 func (o *redhat) scanPackages() error {

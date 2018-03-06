@@ -147,11 +147,17 @@ func putObject(svc *s3.S3, k string, b []byte) error {
 		k = k + ".gz"
 	}
 
-	if _, err := svc.PutObject(&s3.PutObjectInput{
+	putObjectInput := &s3.PutObjectInput{
 		Bucket: aws.String(c.Conf.S3Bucket),
 		Key:    aws.String(path.Join(c.Conf.S3ResultsDir, k)),
 		Body:   bytes.NewReader(b),
-	}); err != nil {
+	}
+
+	if c.Conf.S3ServerSideEncryption != "" {
+		putObjectInput.ServerSideEncryption = aws.String(c.Conf.S3ServerSideEncryption)
+	}
+
+	if _, err := svc.PutObject(putObjectInput); err != nil {
 		return fmt.Errorf("Failed to upload data to %s/%s, %s",
 			c.Conf.S3Bucket, k, err)
 	}

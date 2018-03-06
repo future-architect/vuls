@@ -40,6 +40,8 @@ type ScanResult struct {
 	Release     string
 	Container   Container
 	Platform    Platform
+	IPv4Addrs   []string // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
+	IPv6Addrs   []string // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
 
 	// Scanned Vulns by SSH scan + CPE + OVAL
 	ScannedCves VulnInfos

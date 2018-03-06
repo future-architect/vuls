@@ -378,7 +378,7 @@ func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
 		}
 	}
 	for _, cType := range cTypes {
-		if equal := prevLastModified[cType].Equal(curLastModified[cType]); !equal {
+		if !prevLastModified[cType].Equal(curLastModified[cType]) {
 			return true
 		}
 	}
