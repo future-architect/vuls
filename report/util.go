@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"sort"
 	"strings"
@@ -286,27 +287,35 @@ func overwriteJSONFile(dir string, r models.ScanResult) error {
 	return nil
 }
 
-func loadPrevious(current models.ScanResults) (previous models.ScanResults, err error) {
+func loadPrevious(currs models.ScanResults) (prevs models.ScanResults, err error) {
 	dirs, err := ListValidJSONDirs()
 	if err != nil {
 		return
 	}
 
-	for _, result := range current {
+	for _, result := range currs {
+		filename := result.ServerName + ".json"
+		if result.Container.Name != "" {
+			filename = fmt.Sprintf("%s@%s.json", result.Container.Name, result.ServerName)
+		}
 		for _, dir := range dirs[1:] {
-			var r *models.ScanResult
-			path := filepath.Join(dir, result.ServerName+".json")
-			if r, err = loadOneServerScanResult(path); err != nil {
+			path := filepath.Join(dir, filename)
+			r, err := loadOneServerScanResult(path)
+			if err != nil {
+				util.Log.Errorf("%s", err)
 				continue
 			}
 			if r.Family == result.Family && r.Release == result.Release {
-				previous = append(previous, *r)
+				prevs = append(prevs, *r)
 				util.Log.Infof("Previous json found: %s", path)
 				break
+			} else {
+				util.Log.Infof("Previous json is different family.Release: %s, pre: %s.%s cur: %s.%s",
+					path, r.Family, r.Release, result.Family, result.Release)
 			}
 		}
 	}
-	return previous, nil
+	return prevs, nil
 }
 
 func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults, err error) {
@@ -314,7 +323,7 @@ func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults,
 		found := false
 		var previous models.ScanResult
 		for _, r := range preResults {
-			if current.ServerName == r.ServerName {
+			if current.ServerName == r.ServerName && current.Container.Name == r.Container.Name {
 				found = true
 				previous = r
 				break
@@ -350,8 +359,12 @@ func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
 		if previousCveIDsSet[v.CveID] {
 			if isCveInfoUpdated(v.CveID, previous, current) {
 				updated[v.CveID] = v
+				util.Log.Debugf("updated: %s", v.CveID)
+			} else {
+				util.Log.Debugf("same: %s", v.CveID)
 			}
 		} else {
+			util.Log.Debugf("newsame: %s", v.CveID)
 			new[v.CveID] = v
 		}
 	}
@@ -370,32 +383,28 @@ func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
 	}
 
 	prevLastModified := map[models.CveContentType]time.Time{}
-	for _, c := range previous.ScannedCves {
-		if cveID == c.CveID {
-			for _, cType := range cTypes {
-				content, _ := c.CveContents[cType]
-				prevLastModified[cType] = content.LastModified
-			}
-			break
+	preVinfo, ok := previous.ScannedCves[cveID]
+	if !ok {
+		return true
+	}
+	for _, cType := range cTypes {
+		if content, ok := preVinfo.CveContents[cType]; ok {
+			prevLastModified[cType] = content.LastModified
 		}
 	}
 
 	curLastModified := map[models.CveContentType]time.Time{}
-	for _, c := range current.ScannedCves {
-		if cveID == c.CveID {
-			for _, cType := range cTypes {
-				content, _ := c.CveContents[cType]
-				curLastModified[cType] = content.LastModified
-			}
-			break
-		}
+	curVinfo, ok := current.ScannedCves[cveID]
+	if !ok {
+		return true
 	}
 	for _, cType := range cTypes {
-		if !prevLastModified[cType].Equal(curLastModified[cType]) {
-			return true
+		if content, ok := curVinfo.CveContents[cType]; ok {
+			curLastModified[cType] = content.LastModified
 		}
 	}
-	return false
+
+	return !reflect.DeepEqual(curLastModified, prevLastModified)
 }
 
 // jsonDirPattern is file name pattern of JSON directory
