@@ -96,6 +96,7 @@ type Config struct {
 
 	EMail   SMTPConf
 	Slack   SlackConf
+	HipChat HipChatConf
 	Syslog  SyslogConf
 	Default ServerInfo
 	Servers map[string]ServerInfo
@@ -263,6 +264,10 @@ func (c Config) ValidateOnReport() bool {
 		errs = append(errs, slackerrs...)
 	}
 
+	if hipchaterrs := c.HipChat.Validate(); 0 < len(hipchaterrs) {
+		errs = append(errs, hipchaterrs...)
+  }
+  
 	if syslogerrs := c.Syslog.Validate(); 0 < len(syslogerrs) {
 		errs = append(errs, syslogerrs...)
 	}
@@ -441,6 +446,30 @@ func (c *SlackConf) Validate() (errs []error) {
 
 	if len(c.AuthUser) == 0 {
 		errs = append(errs, fmt.Errorf("authUser must not be empty"))
+	}
+
+	_, err := valid.ValidateStruct(c)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	return
+}
+
+// HipChatConf is HipChat config
+type HipChatConf struct {
+	AuthToken string `json:"AuthToken"`
+	Room  string `json:"Room"`
+}
+
+// Validate validates configuration
+func (c *HipChatConf) Validate() (errs []error) {
+	if len(c.Room) == 0 {
+		errs = append(errs, fmt.Errorf("room must not be empty"))
+	}
+
+	if len(c.AuthToken) == 0 {
+		errs = append(errs, fmt.Errorf("AuthToken must not be empty"))
 	}
 
 	_, err := valid.ValidateStruct(c)
