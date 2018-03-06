@@ -112,8 +112,14 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) {
 			}
 		} else {
 			cveContents := vinfo.CveContents
-			if _, ok := vinfo.CveContents[ctype]; ok {
-				util.Log.Debugf("%s OVAL will be overwritten", cve.CveID)
+			if v, ok := vinfo.CveContents[ctype]; ok {
+				if v.LastModified.After(ovalContent.LastModified) {
+					util.Log.Debugf("%s, OvalID: %s ignroed: ",
+						cve.CveID, defPacks.def.ID)
+					continue
+				} else {
+					util.Log.Debugf("%s OVAL will be overwritten", cve.CveID)
+				}
 			} else {
 				util.Log.Debugf("%s also detected by OVAL", cve.CveID)
 				cveContents = models.CveContents{}
