@@ -332,6 +332,14 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.IgnoreUnfixed = p.ignoreUnfixed
 	c.Conf.HTTPProxy = p.httpProxy
 
+	c.Conf.ToSlack = p.toSlack
+	c.Conf.ToHipChat = p.toHipChat
+	c.Conf.ToEmail = p.toEMail
+	c.Conf.ToSyslog = p.toSyslog
+	c.Conf.ToLocalFile = p.toLocalFile
+	c.Conf.ToS3 = p.toS3
+	c.Conf.ToAzureBlob = p.toAzureBlob
+
 	c.Conf.FormatXML = p.formatXML
 	c.Conf.FormatJSON = p.formatJSON
 	c.Conf.FormatOneEMail = p.formatOneEMail

@@ -128,6 +128,14 @@ type Config struct {
 
 	RefreshCve bool
 
+	ToSlack     bool
+	ToHipChat   bool
+	ToEmail     bool
+	ToSyslog    bool
+	ToLocalFile bool
+	ToS3        bool
+	ToAzureBlob bool
+
 	FormatXML         bool
 	FormatJSON        bool
 	FormatOneEMail    bool
@@ -264,6 +272,10 @@ func (c Config) ValidateOnReport() bool {
 		errs = append(errs, slackerrs...)
 	}
 
+	if hipchaterrs := c.HipChat.Validate(); 0 < len(hipchaterrs) {
+		errs = append(errs, hipchaterrs...)
+	}
+
 	if syslogerrs := c.Syslog.Validate(); 0 < len(syslogerrs) {
 		errs = append(errs, syslogerrs...)
 	}
@@ -353,8 +365,6 @@ type SMTPConf struct {
 	To            []string
 	Cc            []string
 	SubjectPrefix string
-
-	UseThisTime bool
 }
 
 func checkEmails(emails []string) (errs []error) {
@@ -371,8 +381,7 @@ func checkEmails(emails []string) (errs []error) {
 
 // Validate SMTP configuration
 func (c *SMTPConf) Validate() (errs []error) {
-
-	if !c.UseThisTime {
+	if !Conf.ToEmail {
 		return
 	}
 
@@ -387,16 +396,16 @@ func (c *SMTPConf) Validate() (errs []error) {
 	}
 
 	if len(c.SMTPAddr) == 0 {
-		errs = append(errs, fmt.Errorf("smtpAddr must not be empty"))
+		errs = append(errs, fmt.Errorf("email.smtpAddr must not be empty"))
 	}
 	if len(c.SMTPPort) == 0 {
-		errs = append(errs, fmt.Errorf("smtpPort must not be empty"))
+		errs = append(errs, fmt.Errorf("email.smtpPort must not be empty"))
 	}
 	if len(c.To) == 0 {
-		errs = append(errs, fmt.Errorf("To required at least one address"))
+		errs = append(errs, fmt.Errorf("email.To required at least one address"))
 	}
 	if len(c.From) == 0 {
-		errs = append(errs, fmt.Errorf("From required at least one address"))
+		errs = append(errs, fmt.Errorf("email.From required at least one address"))
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -416,22 +425,20 @@ type SlackConf struct {
 
 	NotifyUsers []string
 	Text        string `json:"text"`
-
-	UseThisTime bool
 }
 
 // Validate validates configuration
 func (c *SlackConf) Validate() (errs []error) {
-	if !c.UseThisTime {
+	if !Conf.ToSlack {
 		return
 	}
 
-	if len(c.HookURL) == 0 {
-		errs = append(errs, fmt.Errorf("hookURL must not be empty"))
+	if len(c.HookURL) == 0 && len(c.LegacyToken) == 0 {
+		errs = append(errs, fmt.Errorf("slack.hookURL or slack.LegacyToken must not be empty"))
 	}
 
 	if len(c.Channel) == 0 {
-		errs = append(errs, fmt.Errorf("channel must not be empty"))
+		errs = append(errs, fmt.Errorf("slack.channel must not be empty"))
 	} else {
 		if !(strings.HasPrefix(c.Channel, "#") ||
 			c.Channel == "${servername}") {
@@ -441,7 +448,7 @@ func (c *SlackConf) Validate() (errs []error) {
 	}
 
 	if len(c.AuthUser) == 0 {
-		errs = append(errs, fmt.Errorf("authUser must not be empty"))
+		errs = append(errs, fmt.Errorf("slack.authUser must not be empty"))
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -458,6 +465,26 @@ type HipChatConf struct {
 	Room      string `json:"Room"`
 }
 
+// Validate validates configuration
+func (c *HipChatConf) Validate() (errs []error) {
+	if !Conf.ToHipChat {
+		return
+	}
+	if len(c.Room) == 0 {
+		errs = append(errs, fmt.Errorf("hipcaht.room must not be empty"))
+	}
+
+	if len(c.AuthToken) == 0 {
+		errs = append(errs, fmt.Errorf("hipcaht.AuthToken must not be empty"))
+	}
+
+	_, err := valid.ValidateStruct(c)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	return
+}
+
 // SyslogConf is syslog config
 type SyslogConf struct {
 	Protocol string
@@ -472,9 +499,12 @@ type SyslogConf struct {
 
 // Validate validates configuration
 func (c *SyslogConf) Validate() (errs []error) {
+	if !Conf.ToSyslog {
+		return nil
+	}
 	//  If protocol is empty, it will connect to the local syslog server.
 	if len(c.Protocol) > 0 && c.Protocol != "tcp" && c.Protocol != "udp" {
-		errs = append(errs, errors.New(`protocol must be "tcp" or "udp"`))
+		errs = append(errs, errors.New(`syslog.protocol must be "tcp" or "udp"`))
 	}
 
 	// Default port: 514
