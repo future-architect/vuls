@@ -58,6 +58,7 @@ type ReportCmd struct {
 	ovalDBURL  string
 
 	toSlack     bool
+	toHipChat   bool
 	toEMail     bool
 	toSyslog    bool
 	toLocalFile bool
@@ -115,6 +116,7 @@ func (*ReportCmd) Usage() string {
 		[-ignore-unfixed]
 		[-to-email]
 		[-to-slack]
+		[-to-hipchat]
 		[-to-localfile]
 		[-to-s3]
 		[-to-azure-blob]
@@ -266,6 +268,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.gzip, "gzip", false, "gzip compression")
 
 	f.BoolVar(&p.toSlack, "to-slack", false, "Send report via Slack")
+	f.BoolVar(&p.toHipChat, "to-hipchat", false, "Send report via hipchat")
 	f.BoolVar(&p.toEMail, "to-email", false, "Send report via Email")
 	f.BoolVar(&p.toSyslog, "to-syslog", false, "Send report via Syslog")
 	f.BoolVar(&p.toLocalFile,
@@ -334,6 +337,14 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.IgnoreUnfixed = p.ignoreUnfixed
 	c.Conf.HTTPProxy = p.httpProxy
 
+	c.Conf.ToSlack = p.toSlack
+	c.Conf.ToHipChat = p.toHipChat
+	c.Conf.ToEmail = p.toEMail
+	c.Conf.ToSyslog = p.toSyslog
+	c.Conf.ToLocalFile = p.toLocalFile
+	c.Conf.ToS3 = p.toS3
+	c.Conf.ToAzureBlob = p.toAzureBlob
+
 	c.Conf.FormatXML = p.formatXML
 	c.Conf.FormatJSON = p.formatJSON
 	c.Conf.FormatOneEMail = p.formatOneEMail
@@ -365,6 +376,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if p.toSlack {
 		reports = append(reports, report.SlackWriter{})
+	}
+
+	if p.toHipChat {
+		reports = append(reports, report.HipChatWriter{})
 	}
 
 	if p.toEMail {
