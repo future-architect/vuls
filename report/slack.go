@@ -61,12 +61,8 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 
 		if 0 < len(r.Errors) {
-			serverInfo := fmt.Sprintf("*%s*", r.ServerInfo())
-			notifyUsers := getNotifyUsers(config.Conf.Slack.NotifyUsers)
-			txt := fmt.Sprintf("%s\n%s\nError: %s",
-				notifyUsers, serverInfo, r.Errors)
 			msg := message{
-				Text:      txt,
+				Text:      msgText(r),
 				Username:  conf.AuthUser,
 				IconEmoji: conf.IconEmoji,
 				Channel:   channel,
@@ -179,10 +175,20 @@ func msgText(r models.ScanResult) string {
 		notifyUsers = getNotifyUsers(config.Conf.Slack.NotifyUsers)
 	}
 	serverInfo := fmt.Sprintf("*%s*", r.ServerInfo())
-	return fmt.Sprintf("%s\n%s\n>%s",
+
+	if 0 < len(r.Errors) {
+		return fmt.Sprintf("%s\n%s\n%s\n%s\nError: %s",
+			notifyUsers,
+			serverInfo,
+			r.ScannedCves.FormatCveSummary(),
+			r.Packages.FormatUpdatablePacksSummary(),
+			r.Errors)
+	}
+	return fmt.Sprintf("%s\n%s\n%s\n%s",
 		notifyUsers,
 		serverInfo,
-		r.ScannedCves.FormatCveSummary())
+		r.ScannedCves.FormatCveSummary(),
+		r.Packages.FormatUpdatablePacksSummary())
 }
 
 func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
