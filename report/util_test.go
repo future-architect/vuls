@@ -334,3 +334,84 @@ func TestDiff(t *testing.T) {
 		}
 	}
 }
+
+func TestIsNewRelease(t *testing.T) {
+	type In struct {
+		v    models.VulnInfo
+		prev models.ScanResult
+	}
+	var tests = []struct {
+		in       In
+		expected bool
+	}{
+		{
+			in: In{
+				v: models.VulnInfo{
+					CveID:            "CVE-2017-0001",
+					AffectedPackages: models.PackageStatuses{{NotFixedYet: true}},
+					CveContents: models.NewCveContents(
+						models.CveContent{
+							Type:         models.NVD,
+							CveID:        "CVE-2017-0001",
+							LastModified: time.Time{},
+						},
+					),
+				},
+				prev: models.ScanResult{
+					ScannedCves: models.VulnInfos{
+						"CVE-2017-0001": {
+							CveID:            "CVE-2017-0001",
+							AffectedPackages: models.PackageStatuses{{NotFixedYet: false}},
+							CveContents: models.NewCveContents(
+								models.CveContent{
+									Type:         models.NVD,
+									CveID:        "CVE-2017-0001",
+									LastModified: time.Time{},
+								},
+							),
+						},
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			in: In{
+				v: models.VulnInfo{
+					CveID:            "CVE-2017-0001",
+					AffectedPackages: models.PackageStatuses{{NotFixedYet: true}},
+					CveContents: models.NewCveContents(
+						models.CveContent{
+							Type:         models.NVD,
+							CveID:        "CVE-2017-0001",
+							LastModified: time.Time{},
+						},
+					),
+				},
+				prev: models.ScanResult{
+					ScannedCves: models.VulnInfos{
+						"CVE-2017-0001": {
+							CveID:            "CVE-2017-0001",
+							AffectedPackages: models.PackageStatuses{{NotFixedYet: true}},
+							CveContents: models.NewCveContents(
+								models.CveContent{
+									Type:         models.NVD,
+									CveID:        "CVE-2017-0001",
+									LastModified: time.Time{},
+								},
+							),
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+	}
+
+	for i, tt := range tests {
+		actual := isNewRelease(tt.in.v, tt.in.prev)
+		if actual != tt.expected {
+			t.Errorf("[%d] actual: %t, expected: %t", i, actual, tt.expected)
+		}
+	}
+}
