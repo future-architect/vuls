@@ -362,19 +362,19 @@ func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
 	return updated
 }
 
-func isNewRelease(v models.VulnInfo, previous models.ScanResult) bool {
-	var prefix bool
-	preVinfo, _ := previous.ScannedCves[v.CveID]
+func isNewRelease(current models.VulnInfo, previous models.ScanResult) bool {
+	var preNotFixedYet bool
+	preVinfo, _ := previous.ScannedCves[current.CveID]
 	for _, h := range preVinfo.AffectedPackages {
-		prefix = h.NotFixedYet
+		preNotFixedYet = h.NotFixedYet
 	}
 
-	var curfix bool
-	for _, h := range v.AffectedPackages {
-		curfix = h.NotFixedYet
+	var curNotFixedYet bool
+	for _, h := range current.AffectedPackages {
+		curNotFixedYet = h.NotFixedYet
 	}
 
-	if (prefix == false) && (curfix == true) {
+	if (preNotFixedYet == false) && (curNotFixedYet == true) {
 		return true
 	}
 
