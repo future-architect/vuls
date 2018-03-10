@@ -344,7 +344,7 @@ func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
 	updated := models.VulnInfos{}
 	for _, v := range current.ScannedCves {
 		if previousCveIDsSet[v.CveID] {
-			if isCveInfoUpdated(v.CveID, previous, current) {
+			if isCveInfoUpdated(v.CveID, previous, current) || isNewRelease(v, previous) {
 				updated[v.CveID] = v
 				util.Log.Debugf("updated: %s", v.CveID)
 			} else {
@@ -360,6 +360,25 @@ func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
 		updated[cveID] = vuln
 	}
 	return updated
+}
+
+func isNewRelease(v models.VulnInfo, previous models.ScanResult) bool {
+	var prefix bool
+	preVinfo, _ := previous.ScannedCves[v.CveID]
+	for _, h := range preVinfo.AffectedPackages {
+		prefix = h.NotFixedYet
+	}
+
+	var curfix bool
+	for _, h := range v.AffectedPackages {
+		curfix = h.NotFixedYet
+	}
+
+	if (prefix == false) && (curfix == true) {
+		return true
+	}
+
+	return false
 }
 
 func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
