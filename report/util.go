@@ -374,7 +374,7 @@ func isNewRelease(current models.VulnInfo, previous models.ScanResult) bool {
 		curNotFixedYet = h.NotFixedYet
 	}
 
-	if (preNotFixedYet == false) && (curNotFixedYet == true) {
+	if (preNotFixedYet == true) && (curNotFixedYet == false) {
 		return true
 	}
 

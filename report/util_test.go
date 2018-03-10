@@ -348,7 +348,7 @@ func TestIsNewRelease(t *testing.T) {
 			in: In{
 				v: models.VulnInfo{
 					CveID:            "CVE-2017-0001",
-					AffectedPackages: models.PackageStatuses{{NotFixedYet: true}},
+					AffectedPackages: models.PackageStatuses{{NotFixedYet: false}},
 					CveContents: models.NewCveContents(
 						models.CveContent{
 							Type:         models.NVD,
@@ -361,7 +361,7 @@ func TestIsNewRelease(t *testing.T) {
 					ScannedCves: models.VulnInfos{
 						"CVE-2017-0001": {
 							CveID:            "CVE-2017-0001",
-							AffectedPackages: models.PackageStatuses{{NotFixedYet: false}},
+							AffectedPackages: models.PackageStatuses{{NotFixedYet: true}},
 							CveContents: models.NewCveContents(
 								models.CveContent{
 									Type:         models.NVD,
