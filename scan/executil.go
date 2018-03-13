@@ -275,13 +275,9 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 		"-o", "LogLevel=quiet",
 		"-o", "ConnectionAttempts=3",
 		"-o", "ConnectTimeout=10",
-		"-o", "ControlMaster=no",
-		"-o", "ControlPath=none",
-
-		// TODO ssh session multiplexing
-		//  "-o", "ControlMaster=auto",
-		//  "-o", `ControlPath=~/.ssh/controlmaster-%r-%h.%p`,
-		//  "-o", "Controlpersist=30m",
+		"-o", "ControlMaster=auto",
+		"-o", `ControlPath=~/.ssh/controlmaster-%r-%h.%p`,
+		"-o", "Controlpersist=10m",
 	}
 	args := append(defaultSSHArgs, fmt.Sprintf("%s@%s", c.User, c.Host))
 	args = append(args, "-p", c.Port)
