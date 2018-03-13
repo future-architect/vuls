@@ -31,7 +31,7 @@ func (w HipChatWriter) Write(rs ...models.ScanResult) (err error) {
 				severity = "?"
 			}
 
-			message = `<a href="https://nvd.nist.gov/vuln/detail\">` + vinfo.CveID + "</a>" + "<br/>" + strconv.FormatFloat(maxCvss.Value.Score, 'f', 1, 64) + " " + "(" + severity + ")" + "<br/>" + vinfo.Summaries(config.Conf.Lang, r.Family)[0].Value
+			message = `<a href="https://nvd.nist.gov/vuln/detail\` + vinfo.CveID + ">" + vinfo.CveID + ">" + vinfo.CveID + "</a>" + "<br/>" + strconv.FormatFloat(maxCvss.Value.Score, 'f', 1, 64) + " " + "(" + severity + ")" + "<br/>" + vinfo.Summaries(config.Conf.Lang, r.Family)[0].Value
 
 			err = postMessage(conf.Room, conf.AuthToken, message)
 			if err != nil {
