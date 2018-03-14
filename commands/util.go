@@ -19,8 +19,11 @@ package commands
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/howeyc/gopass"
+	homedir "github.com/mitchellh/go-homedir"
 )
 
 func getPasswd(prompt string) (string, error) {
@@ -35,4 +38,18 @@ func getPasswd(prompt string) (string, error) {
 		}
 	}
 
+}
+
+func mkdirDotVuls() error {
+	home, err := homedir.Dir()
+	if err != nil {
+		return err
+	}
+	dotVuls := filepath.Join(home, ".vuls")
+	if _, err := os.Stat(dotVuls); os.IsNotExist(err) {
+		if err := os.Mkdir(dotVuls, 0700); err != nil {
+			return err
+		}
+	}
+	return nil
 }
