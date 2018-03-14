@@ -156,6 +156,7 @@ type Config struct {
 	AzureContainer string
 
 	Pipe bool
+	Vvv  bool
 	Diff bool
 }
 
