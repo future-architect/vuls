@@ -266,6 +266,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/mitchellh/go-homedir"
+  packages = ["."]
+  revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
+
+[[projects]]
+  branch = "master"
   name = "github.com/moul/http2curl"
   packages = ["."]
   revision = "9ac6cf4d929b2fa8fd2d2e6dec5bb0feb4f4911d"
@@ -377,6 +383,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1a43293a9ffc91270316199bec5474167594f96a3612f899842532c0f224d694"
+  inputs-digest = "17ca5502a80ae70140ecf819a5b2757898b42deca821221afebce63488b691ea"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -188,6 +188,11 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	c.Conf.LogDir = p.logDir
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
 
+	if err := mkdirDotVuls(); err != nil {
+		util.Log.Errorf("Failed to create .vuls: %s", err)
+		return subcommands.ExitUsageError
+	}
+
 	var keyPass string
 	var err error
 	if p.askKeyPassword {
