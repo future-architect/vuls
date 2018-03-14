@@ -26,6 +26,7 @@ import (
 	"net"
 	"os"
 	ex "os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -36,6 +37,7 @@ import (
 	"github.com/cenkalti/backoff"
 	conf "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/util"
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 )
 
@@ -269,6 +271,15 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 		return sshExecNative(c, cmd, sudo)
 	}
 
+	home, err := homedir.Dir()
+	if err != nil {
+		msg := fmt.Sprintf("Failed to get HOME directory: %s", err)
+		result.Stderr = msg
+		result.ExitStatus = 997
+		return
+	}
+	controlPath := filepath.Join(home, ".vuls", `controlmaster-%r-%h.%p`)
+
 	defaultSSHArgs := []string{
 		"-tt",
 		"-o", "StrictHostKeyChecking=yes",
@@ -276,7 +287,7 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 		"-o", "ConnectionAttempts=3",
 		"-o", "ConnectTimeout=10",
 		"-o", "ControlMaster=auto",
-		"-o", `ControlPath=~/.ssh/controlmaster-%r-%h.%p`,
+		"-o", fmt.Sprintf("ControlPath=%s", controlPath),
 		"-o", "Controlpersist=10m",
 	}
 	if conf.Conf.Vvv {
