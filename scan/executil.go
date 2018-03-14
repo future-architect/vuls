@@ -279,6 +279,10 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 		"-o", `ControlPath=~/.ssh/controlmaster-%r-%h.%p`,
 		"-o", "Controlpersist=10m",
 	}
+	if conf.Conf.Vvv {
+		defaultSSHArgs = append(defaultSSHArgs, "-vvv")
+	}
+
 	args := append(defaultSSHArgs, fmt.Sprintf("%s@%s", c.User, c.Host))
 	args = append(args, "-p", c.Port)
 
