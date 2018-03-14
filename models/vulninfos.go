@@ -524,30 +524,6 @@ func (v VulnInfo) VendorLinks(family string) map[string]string {
 	return links
 }
 
-// NilToEmpty set nil slice or map fields to empty to avoid null in JSON
-func (v *VulnInfo) NilToEmpty() *VulnInfo {
-	if v.CpeNames == nil {
-		v.CpeNames = []string{}
-	}
-	if v.DistroAdvisories == nil {
-		v.DistroAdvisories = []DistroAdvisory{}
-	}
-	if v.AffectedPackages == nil {
-		v.AffectedPackages = PackageStatuses{}
-	}
-	if v.CveContents == nil {
-		v.CveContents = NewCveContents()
-	}
-	for key := range v.CveContents {
-		if v.CveContents[key].Cpes == nil {
-			cont := v.CveContents[key]
-			cont.Cpes = []Cpe{}
-			v.CveContents[key] = cont
-		}
-	}
-	return v
-}
-
 // DistroAdvisory has Amazon Linux, RHEL, FreeBSD Security Advisory information.
 type DistroAdvisory struct {
 	AdvisoryID  string

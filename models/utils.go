@@ -57,11 +57,11 @@ func ConvertNvdToModel(cveID string, nvd *cvedict.Nvd) *CveContent {
 		Cvss2Vector:   nvd.Cvss2.VectorString,
 		Cvss2Severity: nvd.Cvss2.Severity,
 		SourceLink:    "https://nvd.nist.gov/vuln/detail/" + cveID,
-		Cpes:          cpes,
-		CweIDs:        cweIDs,
-		References:    refs,
-		Published:     nvd.PublishedDate,
-		LastModified:  nvd.LastModifiedDate,
+		// Cpes:          cpes,
+		CweIDs:       cweIDs,
+		References:   refs,
+		Published:    nvd.PublishedDate,
+		LastModified: nvd.LastModifiedDate,
 	}
 }
 
@@ -98,10 +98,10 @@ func ConvertJvnToModel(cveID string, jvn *cvedict.Jvn) *CveContent {
 		Cvss3Vector:   jvn.Cvss3.VectorString,
 		Cvss3Severity: jvn.Cvss3.BaseSeverity,
 		SourceLink:    jvn.JvnLink,
-		Cpes:          cpes,
-		References:    refs,
-		Published:     jvn.PublishedDate,
-		LastModified:  jvn.LastModifiedDate,
+		// Cpes:          cpes,
+		References:   refs,
+		Published:    jvn.PublishedDate,
+		LastModified: jvn.LastModifiedDate,
 	}
 }
 
@@ -147,10 +147,10 @@ func ConvertNvdJSONToModel(cveID string, nvd *cvedict.NvdJSON) *CveContent {
 		Cvss3Vector:   nvd.Cvss3.VectorString,
 		Cvss3Severity: nvd.Cvss3.BaseSeverity,
 		SourceLink:    "https://nvd.nist.gov/vuln/detail/" + cveID,
-		Cpes:          cpes,
-		CweIDs:        cweIDs,
-		References:    refs,
-		Published:     nvd.PublishedDate,
-		LastModified:  nvd.LastModifiedDate,
+		// Cpes:          cpes,
+		CweIDs:       cweIDs,
+		References:   refs,
+		Published:    nvd.PublishedDate,
+		LastModified: nvd.LastModifiedDate,
 	}
 }

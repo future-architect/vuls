@@ -119,10 +119,6 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeNames []string) err
 		return fmt.Errorf("Failed to fill CVE information: %s", err)
 	}
 
-	for cveID := range r.ScannedCves {
-		vinfo := r.ScannedCves[cveID]
-		r.ScannedCves[cveID] = *vinfo.NilToEmpty()
-	}
 	return nil
 }
 

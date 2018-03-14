@@ -173,9 +173,9 @@ type CveContent struct {
 	Cvss3Vector   string
 	Cvss3Severity string
 	SourceLink    string
-	Cpes          []Cpe
-	References    References
-	CweIDs        []string
+	Cpes          []Cpe      `json:",omitempty"`
+	References    References `json:",omitempty"`
+	CweIDs        []string   `json:",omitempty"`
 	Published     time.Time
 	LastModified  time.Time
 }
@@ -193,6 +193,8 @@ func NewCveContentType(name string) CveContentType {
 	switch name {
 	case "nvd":
 		return NVD
+	case "nvdjson":
+		return NVDJSON
 	case "jvn":
 		return JVN
 	case "redhat", "centos":
