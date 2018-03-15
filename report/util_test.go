@@ -347,35 +347,35 @@ func TestIsCveFixed(t *testing.T) {
 		{
 			in: In{
 				v: models.VulnInfo{
-					CveID:            "CVE-2017-0001",
+					CveID: "CVE-2016-6662",
 					AffectedPackages: models.PackageStatuses{
 						{
-							Name: "aaa",
+							Name:        "mysql-libs",
 							NotFixedYet: false,
 						},
 					},
 					CveContents: models.NewCveContents(
 						models.CveContent{
 							Type:         models.NVD,
-							CveID:        "CVE-2017-0001",
+							CveID:        "CVE-2016-6662",
 							LastModified: time.Time{},
 						},
 					),
 				},
 				prev: models.ScanResult{
 					ScannedCves: models.VulnInfos{
-						"CVE-2017-0001": {
-							CveID:            "CVE-2017-0001",
+						"CVE-2016-6662": {
+							CveID: "CVE-2016-6662",
 							AffectedPackages: models.PackageStatuses{
 								{
-									Name: "aaa",
+									Name:        "mysql-libs",
 									NotFixedYet: true,
 								},
 							},
 							CveContents: models.NewCveContents(
 								models.CveContent{
 									Type:         models.NVD,
-									CveID:        "CVE-2017-0001",
+									CveID:        "CVE-2016-6662",
 									LastModified: time.Time{},
 								},
 							),
@@ -388,35 +388,35 @@ func TestIsCveFixed(t *testing.T) {
 		{
 			in: In{
 				v: models.VulnInfo{
-					CveID:            "CVE-2017-0001",
+					CveID: "CVE-2016-6662",
 					AffectedPackages: models.PackageStatuses{
 						{
-							Name: "aaa",
+							Name:        "mysql-libs",
 							NotFixedYet: true,
 						},
 					},
 					CveContents: models.NewCveContents(
 						models.CveContent{
 							Type:         models.NVD,
-							CveID:        "CVE-2017-0001",
+							CveID:        "CVE-2016-6662",
 							LastModified: time.Time{},
 						},
 					),
 				},
 				prev: models.ScanResult{
 					ScannedCves: models.VulnInfos{
-						"CVE-2017-0001": {
-							CveID:            "CVE-2017-0001",
+						"CVE-2016-6662": {
+							CveID: "CVE-2016-6662",
 							AffectedPackages: models.PackageStatuses{
 								{
-									Name: "aaa",
+									Name:        "mysql-libs",
 									NotFixedYet: true,
 								},
 							},
 							CveContents: models.NewCveContents(
 								models.CveContent{
 									Type:         models.NVD,
-									CveID:        "CVE-2017-0001",
+									CveID:        "CVE-2016-6662",
 									LastModified: time.Time{},
 								},
 							),
