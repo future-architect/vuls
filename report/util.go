@@ -363,22 +363,18 @@ func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
 }
 
 func isCveFixed(current models.VulnInfo, previous models.ScanResult) bool {
-	var preNotFixedYet bool
 	preVinfo, _ := previous.ScannedCves[current.CveID]
+	pre := map[string]bool{}
 	for _, h := range preVinfo.AffectedPackages {
-		preNotFixedYet = h.NotFixedYet
+		pre[h.Name] = h.NotFixedYet
 	}
 
-	var curNotFixedYet bool
+	cur := map[string]bool{}
 	for _, h := range current.AffectedPackages {
-		curNotFixedYet = h.NotFixedYet
+		cur[h.Name] = h.NotFixedYet
 	}
 
-	if (preNotFixedYet == true) && (curNotFixedYet == false) {
-		return true
-	}
-
-	return false
+	return !reflect.DeepEqual(pre, cur)
 }
 
 func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
