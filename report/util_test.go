@@ -335,7 +335,7 @@ func TestDiff(t *testing.T) {
 	}
 }
 
-func TestIsNewRelease(t *testing.T) {
+func TestIsCveFixed(t *testing.T) {
 	type In struct {
 		v    models.VulnInfo
 		prev models.ScanResult
@@ -348,7 +348,12 @@ func TestIsNewRelease(t *testing.T) {
 			in: In{
 				v: models.VulnInfo{
 					CveID:            "CVE-2017-0001",
-					AffectedPackages: models.PackageStatuses{{NotFixedYet: false}},
+					AffectedPackages: models.PackageStatuses{
+						{
+							Name: "aaa",
+							NotFixedYet: false,
+						},
+					},
 					CveContents: models.NewCveContents(
 						models.CveContent{
 							Type:         models.NVD,
@@ -361,7 +366,12 @@ func TestIsNewRelease(t *testing.T) {
 					ScannedCves: models.VulnInfos{
 						"CVE-2017-0001": {
 							CveID:            "CVE-2017-0001",
-							AffectedPackages: models.PackageStatuses{{NotFixedYet: true}},
+							AffectedPackages: models.PackageStatuses{
+								{
+									Name: "aaa",
+									NotFixedYet: true,
+								},
+							},
 							CveContents: models.NewCveContents(
 								models.CveContent{
 									Type:         models.NVD,
@@ -379,7 +389,12 @@ func TestIsNewRelease(t *testing.T) {
 			in: In{
 				v: models.VulnInfo{
 					CveID:            "CVE-2017-0001",
-					AffectedPackages: models.PackageStatuses{{NotFixedYet: true}},
+					AffectedPackages: models.PackageStatuses{
+						{
+							Name: "aaa",
+							NotFixedYet: true,
+						},
+					},
 					CveContents: models.NewCveContents(
 						models.CveContent{
 							Type:         models.NVD,
@@ -392,7 +407,12 @@ func TestIsNewRelease(t *testing.T) {
 					ScannedCves: models.VulnInfos{
 						"CVE-2017-0001": {
 							CveID:            "CVE-2017-0001",
-							AffectedPackages: models.PackageStatuses{{NotFixedYet: true}},
+							AffectedPackages: models.PackageStatuses{
+								{
+									Name: "aaa",
+									NotFixedYet: true,
+								},
+							},
 							CveContents: models.NewCveContents(
 								models.CveContent{
 									Type:         models.NVD,
@@ -409,7 +429,7 @@ func TestIsNewRelease(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		actual := isNewRelease(tt.in.v, tt.in.prev)
+		actual := isCveFixed(tt.in.v, tt.in.prev)
 		if actual != tt.expected {
 			t.Errorf("[%d] actual: %t, expected: %t", i, actual, tt.expected)
 		}
