@@ -49,6 +49,7 @@ type ScanCmd struct {
 	skipBroken     bool
 	sshNative      bool
 	pipe           bool
+	vvv            bool
 	timeoutSec     int
 	scanTimeoutSec int
 }
@@ -79,6 +80,7 @@ func (*ScanCmd) Usage() string {
 		[-timeout-scan=7200]
 		[-debug]
 		[-pipe]
+		[-vvv]
 
 		[SERVER]...
 `
@@ -162,6 +164,8 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		"Use stdin via PIPE")
 
+	f.BoolVar(&p.vvv, "vvv", false, "ssh -vvv")
+
 	f.IntVar(
 		&p.timeoutSec,
 		"timeout",
@@ -183,6 +187,11 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	c.Conf.Debug = p.debug
 	c.Conf.LogDir = p.logDir
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
+
+	if err := mkdirDotVuls(); err != nil {
+		util.Log.Errorf("Failed to create .vuls: %s", err)
+		return subcommands.ExitUsageError
+	}
 
 	var keyPass string
 	var err error
@@ -206,6 +215,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	util.Log.Infof("config: %s", p.configPath)
 
 	c.Conf.Pipe = p.pipe
+	c.Conf.Vvv = p.vvv
 	var servernames []string
 	if 0 < len(f.Args()) {
 		servernames = f.Args()

@@ -49,6 +49,7 @@
     "aws/request",
     "aws/session",
     "aws/signer/v4",
+    "internal/sdkio",
     "internal/sdkrand",
     "internal/shareddefaults",
     "private/protocol",
@@ -60,8 +61,8 @@
     "service/s3",
     "service/sts"
   ]
-  revision = "aace5875a5c3b85a3902c6d72b9caed301d64cce"
-  version = "v1.13.8"
+  revision = "28d0127967e59b0c41cede1e8d548ed85374bbbc"
+  version = "v1.13.14"
 
 [[projects]]
   name = "github.com/boltdb/bolt"
@@ -79,19 +80,19 @@
   branch = "master"
   name = "github.com/cheggaaa/pb"
   packages = ["."]
-  revision = "521e54ab5f0d0e5260964d094a414759c65fcbb3"
+  revision = "75a8cbd866a7bad0d4a3b2b8cb6cab48a1475155"
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
   packages = ["."]
-  revision = "dbeaa9332f19a944acb5736b4456cfcc02140e29"
-  version = "v3.1.0"
+  revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
+  version = "v3.2.0"
 
 [[projects]]
   name = "github.com/go-ini/ini"
   packages = ["."]
-  revision = "32e4c1e6bc4e7d0d8451aa6b75200d19e37a536a"
-  version = "v1.32.0"
+  revision = "6333e38ac20b8949a8dd68baa3650f4dee8f39f0"
+  version = "v1.33.0"
 
 [[projects]]
   name = "github.com/go-redis/redis"
@@ -105,8 +106,8 @@
     "internal/singleflight",
     "internal/util"
   ]
-  revision = "68362cfda1eeb3a69316e7bc00169a9a8de4823a"
-  version = "v6.9.2"
+  revision = "877867d2845fbaf86798befe410b6ceb6f5c29a3"
+  version = "v6.10.2"
 
 [[projects]]
   name = "github.com/go-sql-driver/mysql"
@@ -118,7 +119,7 @@
   branch = "master"
   name = "github.com/google/subcommands"
   packages = ["."]
-  revision = "ce3d4cfc062faac7115d44e5befec8b5a08c3faa"
+  revision = "a3682377147edf596d303faabd89f81977b3f678"
 
 [[projects]]
   branch = "master"
@@ -157,7 +158,7 @@
   branch = "master"
   name = "github.com/jinzhu/inflection"
   packages = ["."]
-  revision = "1c35d901db3da928c72a72d8458480cc9ade058f"
+  revision = "04140366298a54a039076d798123ffa108fff46c"
 
 [[projects]]
   name = "github.com/jmespath/go-jmespath"
@@ -218,7 +219,7 @@
     "log",
     "models"
   ]
-  revision = "85c10368a38d0c020d76b8bd93155f00324dcb08"
+  revision = "67f34a5be0566f8b79d97dc7c4d3e444d7125b16"
 
 [[projects]]
   branch = "master"
@@ -273,6 +274,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/mitchellh/go-homedir"
+  packages = ["."]
+  revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
+
+[[projects]]
+  branch = "master"
   name = "github.com/moul/http2curl"
   packages = ["."]
   revision = "9ac6cf4d929b2fa8fd2d2e6dec5bb0feb4f4911d"
@@ -287,7 +294,7 @@
   branch = "master"
   name = "github.com/nsf/termbox-go"
   packages = ["."]
-  revision = "88b7b944be8bc8d8ec6195fca97c5869ba20f99d"
+  revision = "e2050e41c8847748ec5288741c0b19a8cb26d084"
 
 [[projects]]
   name = "github.com/parnurzeal/gorequest"
@@ -317,7 +324,7 @@
   branch = "master"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "f4ee69125072b22721efbe639bd0da9c9d19b8cc"
+  revision = "90150a8ed11b6ce285e77e8af2b0109559ce4777"
 
 [[projects]]
   branch = "master"
@@ -338,7 +345,7 @@
     "ssh/agent",
     "ssh/terminal"
   ]
-  revision = "91a49db82a88618983a78a06c1cbd4e00ab749ab"
+  revision = "21652f85b0fdddb6c2b6b77a5beca5c5a908174a"
 
 [[projects]]
   branch = "master"
@@ -349,7 +356,7 @@
     "publicsuffix",
     "websocket"
   ]
-  revision = "22ae77b79946ea320088417e4d50825671d82d57"
+  revision = "e0c57d8f86c17f0724497efcb3bc617e82834821"
 
 [[projects]]
   branch = "master"
@@ -358,7 +365,7 @@
     "unix",
     "windows"
   ]
-  revision = "f6cff0780e542efa0c8e864dc8fa522808f6a598"
+  revision = "89ac7f292d17a339edab4de8efcba5d8672ff661"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -384,6 +391,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e050431047503815239a74a8ceda493ec75269622c626e1c00155cfd5f94b9ce"
+  inputs-digest = "d62bf8e7c801590a638fd75f6366c6730f3c07dbbf964dab6406f25f17b4a4bb"
   solver-name = "gps-cdcl"
   solver-version = 1
