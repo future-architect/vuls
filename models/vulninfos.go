@@ -269,7 +269,6 @@ func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 
 // MaxCvss3Score returns Max CVSS V3 Score
 func (v VulnInfo) MaxCvss3Score() CveContentCvss {
-	// TODO implement NVD
 	order := []CveContentType{NVDJSON, RedHat, JVN}
 	max := 0.0
 	value := CveContentCvss{
