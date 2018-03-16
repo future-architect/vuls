@@ -20,6 +20,7 @@ package commands
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -54,6 +55,7 @@ type TuiCmd struct {
 	ignoreUnfixed      bool
 
 	pipe bool
+	diff bool
 }
 
 // Name return subcommand name
@@ -75,6 +77,7 @@ func (*TuiCmd) Usage() string {
 		[-ovaldb-path=/path/to/oval.sqlite3]
 		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
 		[-cvss-over=7]
+		[-diff]
 		[-ignore-unscored-cves]
 		[-ignore-unfixed]
 		[-results-dir=/path/to/results]
@@ -152,6 +155,11 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 		0,
 		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
 
+	f.BoolVar(&p.diff,
+		"diff",
+		false,
+		fmt.Sprintf("Difference between previous result and current result "))
+
 	f.BoolVar(
 		&p.ignoreUnscoredCves,
 		"ignore-unscored-cves",
@@ -205,8 +213,15 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	}
 
 	c.Conf.Pipe = p.pipe
+	c.Conf.Diff = p.diff
 
-	dir, err := report.JSONDir(f.Args())
+	var dir string
+	var err error
+	if p.diff {
+		dir, err = report.JSONDir([]string{})
+	} else {
+		dir, err = report.JSONDir(f.Args())
+	}
 	if err != nil {
 		util.Log.Errorf("Failed to read from JSON: %s", err)
 		return subcommands.ExitFailure
