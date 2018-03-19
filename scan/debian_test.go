@@ -649,7 +649,7 @@ util-linux:
 					Version: "2.7.5",
 					Release: "34.el7",
 					Arch:    "x86_64",
-					AffectedProcs: []models.AffectedProc{
+					NeedRestartProcs: []models.Process{
 						{
 							PID:      "3490",
 							ProcName: "/usr/sbin/varnishd",
@@ -665,7 +665,7 @@ util-linux:
 					Version: "1.0.0",
 					Release: "01",
 					Arch:    "x86_64",
-					AffectedProcs: []models.AffectedProc{
+					NeedRestartProcs: []models.Process{
 						{
 							PID:      "3636",
 							ProcName: "/usr/bin/memcached",
@@ -677,7 +677,7 @@ util-linux:
 					Version: "2.23.2",
 					Release: "26.el7",
 					Arch:    "x86_64",
-					AffectedProcs: []models.AffectedProc{
+					NeedRestartProcs: []models.Process{
 						{
 							PID:      "3650",
 							ProcName: "/sbin/agetty",

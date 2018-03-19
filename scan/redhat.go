@@ -1167,13 +1167,9 @@ func (o *redhat) parseYumPS(stdout string) models.Packages {
 			}
 		} else if needToParseProcline {
 			if 6 < len(fields) {
-				proc := models.AffectedProc{
+				proc := models.Process{
 					PID:      fields[0],
 					ProcName: fields[1],
-					CPU:      fields[2],
-					RSS:      fields[3] + " " + fields[4],
-					State:    strings.TrimSuffix(fields[5], ":"),
-					Uptime:   strings.Join(fields[6:], " "),
 				}
 				pack := packs[currentPackName]
 				pack.AffectedProcs = append(pack.AffectedProcs, proc)

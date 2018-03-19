@@ -89,15 +89,16 @@ func (ps Packages) FindOne(f func(Package) bool) (string, Package, bool) {
 
 // Package has installed binary packages.
 type Package struct {
-	Name          string
-	Version       string
-	Release       string
-	NewVersion    string
-	NewRelease    string
-	Arch          string
-	Repository    string
-	Changelog     Changelog
-	AffectedProcs []AffectedProc `json:",omitempty"`
+	Name             string
+	Version          string
+	Release          string
+	NewVersion       string
+	NewRelease       string
+	Arch             string
+	Repository       string
+	Changelog        Changelog
+	AffectedProcs    []Process `json:",omitempty"`
+	NeedRestartProcs []Process `json:",omitempty"`
 }
 
 // FormatVer returns package version-release
@@ -161,14 +162,10 @@ type Changelog struct {
 	Method   DetectionMethod
 }
 
-// AffectedProc keep a processes information affected by software update
-type AffectedProc struct {
+// Process keep a processes information affected by software update
+type Process struct {
 	PID      string
 	ProcName string
-	CPU      string
-	RSS      string
-	State    string
-	Uptime   string
 }
 
 // SrcPackage has installed source package information.

@@ -206,6 +206,9 @@ func (o *debian) preCure() error {
 }
 
 func (o *debian) postScan() error {
+	if config.Conf.Deep {
+		return o.checkrestart()
+	}
 	return nil
 }
 
@@ -875,6 +878,18 @@ func (o *debian) parseAptCachePolicy(stdout, name string) (packCandidateVer, err
 	return ver, fmt.Errorf("Unknown Format: %s", stdout)
 }
 
+func (o *debian) checkrestart() error {
+	cmd := util.PrependProxyEnv("LANGUAGE=en_US.UTF-8 checkrestart")
+	r := o.exec(cmd, noSudo)
+	if r.isSuccess() {
+		o.parseCheckRestart(r.Stdout)
+		return nil
+	}
+	return fmt.Errorf(
+		"Failed to %s. status: %d, stdout: %s, stderr: %s",
+		cmd, r.ExitStatus, r.Stdout, r.Stderr)
+}
+
 func (o *debian) parseCheckRestart(stdout string) (packs models.Packages) {
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	name := ""
@@ -890,14 +905,13 @@ func (o *debian) parseCheckRestart(stdout string) (packs models.Packages) {
 				continue
 			}
 			if pack, ok := o.Packages[name]; ok {
-				procs := pack.AffectedProcs
-				procs = append(procs, models.AffectedProc{
+				procs := pack.NeedRestartProcs
+				procs = append(procs, models.Process{
 					PID:      ss[0],
 					ProcName: ss[1],
 				})
-				pack.AffectedProcs = procs
+				pack.NeedRestartProcs = procs
 				o.Packages[name] = pack
-
 			}
 		}
 	}
