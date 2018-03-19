@@ -347,11 +347,14 @@ func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
 			if isCveInfoUpdated(v.CveID, previous, current) {
 				updated[v.CveID] = v
 				util.Log.Debugf("updated: %s", v.CveID)
+			} else if isCveFixed(v, previous) {
+				updated[v.CveID] = v
+				util.Log.Debugf("fixed: %s", v.CveID)
 			} else {
 				util.Log.Debugf("same: %s", v.CveID)
 			}
 		} else {
-			util.Log.Debugf("newsame: %s", v.CveID)
+			util.Log.Debugf("new: %s", v.CveID)
 			new[v.CveID] = v
 		}
 	}
@@ -360,6 +363,21 @@ func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
 		updated[cveID] = vuln
 	}
 	return updated
+}
+
+func isCveFixed(current models.VulnInfo, previous models.ScanResult) bool {
+	preVinfo, _ := previous.ScannedCves[current.CveID]
+	pre := map[string]bool{}
+	for _, h := range preVinfo.AffectedPackages {
+		pre[h.Name] = h.NotFixedYet
+	}
+
+	cur := map[string]bool{}
+	for _, h := range current.AffectedPackages {
+		cur[h.Name] = h.NotFixedYet
+	}
+
+	return !reflect.DeepEqual(pre, cur)
 }
 
 func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
@@ -391,7 +409,14 @@ func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
 		}
 	}
 
-	return !reflect.DeepEqual(curLastModified, prevLastModified)
+	for _, t := range cTypes {
+		if !curLastModified[t].Equal(prevLastModified[t]) {
+			util.Log.Debugf("%s LastModified not equal: \n%s\n%s",
+				cveID, curLastModified[t], prevLastModified[t])
+			return true
+		}
+	}
+	return false
 }
 
 // jsonDirPattern is file name pattern of JSON directory

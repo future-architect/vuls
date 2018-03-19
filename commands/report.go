@@ -323,7 +323,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.Lang = p.lang
 	c.Conf.ResultsDir = p.resultsDir
 	c.Conf.RefreshCve = p.refreshCve
-	c.Conf.Diff = p.diff
 	c.Conf.CveDBType = p.cveDBType
 	c.Conf.CveDBPath = p.cveDBPath
 	c.Conf.CveDBURL = p.cveDBURL
