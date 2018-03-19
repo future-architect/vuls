@@ -77,7 +77,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 							CveID: "CVE-2017-0002",
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.NVD,
+									Type:         models.JVN,
 									CveID:        "CVE-2017-0002",
 									LastModified: old,
 								},
@@ -91,7 +91,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 							CveID: "CVE-2017-0002",
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.NVD,
+									Type:         models.JVN,
 									CveID:        "CVE-2017-0002",
 									LastModified: old,
 								},
@@ -331,6 +331,107 @@ func TestDiff(t *testing.T) {
 					t.Errorf("[%d] packages actual: \n %s \n expected: \n %s", i, x, h)
 				}
 			}
+		}
+	}
+}
+
+func TestIsCveFixed(t *testing.T) {
+	type In struct {
+		v    models.VulnInfo
+		prev models.ScanResult
+	}
+	var tests = []struct {
+		in       In
+		expected bool
+	}{
+		{
+			in: In{
+				v: models.VulnInfo{
+					CveID: "CVE-2016-6662",
+					AffectedPackages: models.PackageStatuses{
+						{
+							Name:        "mysql-libs",
+							NotFixedYet: false,
+						},
+					},
+					CveContents: models.NewCveContents(
+						models.CveContent{
+							Type:         models.NVD,
+							CveID:        "CVE-2016-6662",
+							LastModified: time.Time{},
+						},
+					),
+				},
+				prev: models.ScanResult{
+					ScannedCves: models.VulnInfos{
+						"CVE-2016-6662": {
+							CveID: "CVE-2016-6662",
+							AffectedPackages: models.PackageStatuses{
+								{
+									Name:        "mysql-libs",
+									NotFixedYet: true,
+								},
+							},
+							CveContents: models.NewCveContents(
+								models.CveContent{
+									Type:         models.NVD,
+									CveID:        "CVE-2016-6662",
+									LastModified: time.Time{},
+								},
+							),
+						},
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			in: In{
+				v: models.VulnInfo{
+					CveID: "CVE-2016-6662",
+					AffectedPackages: models.PackageStatuses{
+						{
+							Name:        "mysql-libs",
+							NotFixedYet: true,
+						},
+					},
+					CveContents: models.NewCveContents(
+						models.CveContent{
+							Type:         models.NVD,
+							CveID:        "CVE-2016-6662",
+							LastModified: time.Time{},
+						},
+					),
+				},
+				prev: models.ScanResult{
+					ScannedCves: models.VulnInfos{
+						"CVE-2016-6662": {
+							CveID: "CVE-2016-6662",
+							AffectedPackages: models.PackageStatuses{
+								{
+									Name:        "mysql-libs",
+									NotFixedYet: true,
+								},
+							},
+							CveContents: models.NewCveContents(
+								models.CveContent{
+									Type:         models.NVD,
+									CveID:        "CVE-2016-6662",
+									LastModified: time.Time{},
+								},
+							),
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+	}
+
+	for i, tt := range tests {
+		actual := isCveFixed(tt.in.v, tt.in.prev)
+		if actual != tt.expected {
+			t.Errorf("[%d] actual: %t, expected: %t", i, actual, tt.expected)
 		}
 	}
 }
