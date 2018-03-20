@@ -282,6 +282,9 @@ func (o *redhat) preCure() error {
 }
 
 func (o *redhat) postScan() error {
+	if config.Conf.Deep {
+		return o.yumPS()
+	}
 	return nil
 }
 
@@ -473,18 +476,6 @@ func (o *redhat) parseUpdatablePacksLine(line string) (models.Package, error) {
 }
 
 func (o *redhat) scanUnsecurePackages(updatable models.Packages) (models.VulnInfos, error) {
-	if config.Conf.Deep {
-		packs, err := o.yumPS()
-		if err != nil {
-			return nil, err
-		}
-		for name, pack := range packs {
-			p := o.Packages[name]
-			p.AffectedProcs = pack.AffectedProcs
-			o.Packages[name] = p
-		}
-	}
-
 	if config.Conf.Deep && o.Distro.Family != config.Amazon {
 		if err := o.fillChangelogs(updatable); err != nil {
 			return nil, err
@@ -1114,13 +1105,19 @@ func (o *redhat) sudo() bool {
 	return config.Conf.Deep
 }
 
-func (o *redhat) yumPS() (models.Packages, error) {
+func (o *redhat) yumPS() error {
 	cmd := "LANGUAGE=en_US.UTF-8 yum --color=never -q ps all"
 	r := o.exec(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
-		return nil, fmt.Errorf("Failed to SSH: %s", r)
+		return fmt.Errorf("Failed to SSH: %s", r)
 	}
-	return o.parseYumPS(r.Stdout), nil
+	packs := o.parseYumPS(r.Stdout)
+	for name, pack := range packs {
+		p := o.Packages[name]
+		p.AffectedProcs = pack.AffectedProcs
+		o.Packages[name] = p
+	}
+	return nil
 }
 
 func (o *redhat) parseYumPS(stdout string) models.Packages {
@@ -1157,7 +1154,7 @@ func (o *redhat) parseYumPS(stdout string) models.Packages {
 					return strings.HasPrefix(fields[0], epochNameVerRel)
 				})
 				if !found {
-					o.log.Errorf("`yum ps` Package is not found: %s", line)
+					o.log.Errorf("`yum ps` package is not found: %s", line)
 					continue
 				}
 				packs[name] = pack
