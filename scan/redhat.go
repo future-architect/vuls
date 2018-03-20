@@ -282,6 +282,14 @@ func (o *redhat) preCure() error {
 }
 
 func (o *redhat) postScan() error {
+	if config.Conf.Deep {
+		if err := o.yumPS(); err != nil {
+			return fmt.Errorf("Failed to execute yum-ps: %s", err)
+		}
+		if err := o.needsRestarting(); err != nil {
+			return fmt.Errorf("Failed to execute need-restarting: %s", err)
+		}
+	}
 	return nil
 }
 
@@ -473,18 +481,6 @@ func (o *redhat) parseUpdatablePacksLine(line string) (models.Package, error) {
 }
 
 func (o *redhat) scanUnsecurePackages(updatable models.Packages) (models.VulnInfos, error) {
-	if config.Conf.Deep {
-		packs, err := o.yumPS()
-		if err != nil {
-			return nil, err
-		}
-		for name, pack := range packs {
-			p := o.Packages[name]
-			p.AffectedProcs = pack.AffectedProcs
-			o.Packages[name] = p
-		}
-	}
-
 	if config.Conf.Deep && o.Distro.Family != config.Amazon {
 		if err := o.fillChangelogs(updatable); err != nil {
 			return nil, err
@@ -1114,13 +1110,19 @@ func (o *redhat) sudo() bool {
 	return config.Conf.Deep
 }
 
-func (o *redhat) yumPS() (models.Packages, error) {
+func (o *redhat) yumPS() error {
 	cmd := "LANGUAGE=en_US.UTF-8 yum --color=never -q ps all"
 	r := o.exec(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
-		return nil, fmt.Errorf("Failed to SSH: %s", r)
+		return fmt.Errorf("Failed to SSH: %s", r)
 	}
-	return o.parseYumPS(r.Stdout), nil
+	packs := o.parseYumPS(r.Stdout)
+	for name, pack := range packs {
+		p := o.Packages[name]
+		p.AffectedProcs = pack.AffectedProcs
+		o.Packages[name] = p
+	}
+	return nil
 }
 
 func (o *redhat) parseYumPS(stdout string) models.Packages {
@@ -1157,7 +1159,7 @@ func (o *redhat) parseYumPS(stdout string) models.Packages {
 					return strings.HasPrefix(fields[0], epochNameVerRel)
 				})
 				if !found {
-					o.log.Errorf("`yum ps` Package is not found: %s", line)
+					o.log.Errorf("`yum ps` package is not found: %s", line)
 					continue
 				}
 				packs[name] = pack
@@ -1167,13 +1169,9 @@ func (o *redhat) parseYumPS(stdout string) models.Packages {
 			}
 		} else if needToParseProcline {
 			if 6 < len(fields) {
-				proc := models.AffectedProc{
+				proc := models.Process{
 					PID:      fields[0],
 					ProcName: fields[1],
-					CPU:      fields[2],
-					RSS:      fields[3] + " " + fields[4],
-					State:    strings.TrimSuffix(fields[5], ":"),
-					Uptime:   strings.Join(fields[6:], " "),
 				}
 				pack := packs[currentPackName]
 				pack.AffectedProcs = append(pack.AffectedProcs, proc)
@@ -1185,4 +1183,54 @@ func (o *redhat) parseYumPS(stdout string) models.Packages {
 		}
 	}
 	return packs
+}
+
+func (o *redhat) needsRestarting() error {
+	cmd := "LANGUAGE=en_US.UTF-8 needs-restarting"
+	r := o.exec(util.PrependProxyEnv(cmd), sudo)
+	if !r.isSuccess() {
+		return fmt.Errorf("Failed to SSH: %s", r)
+	}
+	procs := o.parseNeedsRestarting(r.Stdout)
+	for _, proc := range procs {
+		fqpn, err := o.procPathToFQPN(proc.ProcName)
+		if err != nil {
+			return err
+		}
+		pack, err := o.Packages.FindByFQPN(fqpn)
+		if err != nil {
+			return err
+		}
+		pack.NeedRestartProcs = append(pack.NeedRestartProcs, proc)
+		o.Packages[pack.Name] = *pack
+	}
+	return nil
+}
+
+func (o *redhat) parseNeedsRestarting(stdout string) (procs []models.Process) {
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := scanner.Text()
+		ss := strings.Split(line, " : ")
+		if len(ss) < 2 {
+			continue
+		}
+		procs = append(procs, models.Process{
+			PID:      ss[0],
+			ProcName: ss[1],
+		})
+	}
+	return
+}
+
+// procPathToFQPN returns Fully-Qualified-Package-Name from the command
+func (o *redhat) procPathToFQPN(execCommand string) (string, error) {
+	path := strings.Fields(execCommand)[0]
+	cmd := `LANGUAGE=en_US.UTF-8 rpm -qf --queryformat "%{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}.%{ARCH}\n" ` + path
+	r := o.exec(util.PrependProxyEnv(cmd), sudo)
+	if !r.isSuccess() {
+		return "", fmt.Errorf("Failed to SSH: %s", r)
+	}
+	fqpn := strings.TrimSpace(r.Stdout)
+	return strings.Replace(fqpn, "-(none):", "-", -1), nil
 }
