@@ -1449,3 +1449,35 @@ yum-3.4.3-150.70.amzn1.noarch
 		}
 	}
 }
+
+func TestParseNeedsRestarting(t *testing.T) {
+	r := newRedhat(config.ServerInfo{})
+	r.Distro = config.Distro{Family: "centos"}
+
+	var tests = []struct {
+		in  string
+		out []models.Process
+	}{
+		{
+			`1 : /usr/lib/systemd/systemd --switched-root --system --deserialize 21
+437 : /usr/sbin/NetworkManager --no-daemon`,
+			[]models.Process{
+				{
+					PID:      "1",
+					ProcName: "/usr/lib/systemd/systemd --switched-root --system --deserialize 21",
+				},
+				{
+					PID:      "437",
+					ProcName: "/usr/sbin/NetworkManager --no-daemon",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		procs := r.parseNeedsRestarting(tt.in)
+		if !reflect.DeepEqual(tt.out, procs) {
+			t.Errorf("expected %s, actual %s", tt.out, procs)
+		}
+	}
+}

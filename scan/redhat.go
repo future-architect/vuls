@@ -283,7 +283,12 @@ func (o *redhat) preCure() error {
 
 func (o *redhat) postScan() error {
 	if config.Conf.Deep {
-		return o.yumPS()
+		if err := o.yumPS(); err != nil {
+			return fmt.Errorf("Failed to execute yum-ps: %s", err)
+		}
+		if err := o.needsRestarting(); err != nil {
+			return fmt.Errorf("Failed to execute need-restarting: %s", err)
+		}
 	}
 	return nil
 }
@@ -1178,4 +1183,54 @@ func (o *redhat) parseYumPS(stdout string) models.Packages {
 		}
 	}
 	return packs
+}
+
+func (o *redhat) needsRestarting() error {
+	cmd := "LANGUAGE=en_US.UTF-8 needs-restarting"
+	r := o.exec(util.PrependProxyEnv(cmd), sudo)
+	if !r.isSuccess() {
+		return fmt.Errorf("Failed to SSH: %s", r)
+	}
+	procs := o.parseNeedsRestarting(r.Stdout)
+	for _, proc := range procs {
+		fqpn, err := o.procPathToFQPN(proc.ProcName)
+		if err != nil {
+			return err
+		}
+		pack, err := o.Packages.FindByFQPN(fqpn)
+		if err != nil {
+			return err
+		}
+		pack.NeedRestartProcs = append(pack.NeedRestartProcs, proc)
+		o.Packages[pack.Name] = *pack
+	}
+	return nil
+}
+
+func (o *redhat) parseNeedsRestarting(stdout string) (procs []models.Process) {
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := scanner.Text()
+		ss := strings.Split(line, " : ")
+		if len(ss) < 2 {
+			continue
+		}
+		procs = append(procs, models.Process{
+			PID:      ss[0],
+			ProcName: ss[1],
+		})
+	}
+	return
+}
+
+// procPathToFQPN returns Fully-Qualified-Package-Name from the command
+func (o *redhat) procPathToFQPN(execCommand string) (string, error) {
+	path := strings.Fields(execCommand)[0]
+	cmd := `LANGUAGE=en_US.UTF-8 rpm -qf --queryformat "%{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}.%{ARCH}\n" ` + path
+	r := o.exec(util.PrependProxyEnv(cmd), sudo)
+	if !r.isSuccess() {
+		return "", fmt.Errorf("Failed to SSH: %s", r)
+	}
+	fqpn := strings.TrimSpace(r.Stdout)
+	return strings.Replace(fqpn, "-(none):", "-", -1), nil
 }
