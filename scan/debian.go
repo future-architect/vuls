@@ -186,9 +186,17 @@ func (o *debian) checkDependencies() error {
 	}
 
 	for _, name := range packNames {
-		cmd := "dpkg-query -W " + name
-		if r := o.exec(cmd, noSudo); !r.isSuccess() {
-			msg := fmt.Sprintf("%s is not installed", name)
+		cmd := fmt.Sprintf("%s %s", dpkgQuery, name)
+		r := o.exec(cmd, noSudo)
+
+		msg := fmt.Sprintf("%s is not installed", name)
+		if !r.isSuccess() {
+			o.log.Errorf(msg)
+			return fmt.Errorf(msg)
+		}
+
+		_, status, _, _, _, _ := o.parseScannedPackagesLine(r.Stdout)
+		if status != "ii" {
 			o.log.Errorf(msg)
 			return fmt.Errorf(msg)
 		}
@@ -206,6 +214,9 @@ func (o *debian) preCure() error {
 }
 
 func (o *debian) postScan() error {
+	if config.Conf.Deep {
+		return o.checkrestart()
+	}
 	return nil
 }
 
@@ -269,9 +280,11 @@ func (o *debian) rebootRequired() (bool, error) {
 	}
 }
 
+const dpkgQuery = `dpkg-query -W -f="\${binary:Package},\${db:Status-Abbrev},\${Version},\${Source},\${source:Version}\n"`
+
 func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, models.SrcPackages, error) {
 	installed, updatable, srcPacks := models.Packages{}, models.Packages{}, models.SrcPackages{}
-	r := o.exec(`dpkg-query -W -f="\${binary:Package},\${db:Status-Abbrev},\${Version},\${Source},\${source:Version}\n"`, noSudo)
+	r := o.exec(dpkgQuery, noSudo)
 	if !r.isSuccess() {
 		return nil, nil, nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
@@ -370,7 +383,7 @@ func (o *debian) parseScannedPackagesLine(line string) (name, status, version, s
 		if i := strings.IndexRune(name, ':'); i >= 0 {
 			name = name[:i]
 		}
-		status = ss[1]
+		status = strings.TrimSpace(ss[1])
 		version = ss[2]
 		// remove version. ex: tar (1.27.1-2)
 		srcName = strings.Split(ss[3], " ")[0]
@@ -875,7 +888,23 @@ func (o *debian) parseAptCachePolicy(stdout, name string) (packCandidateVer, err
 	return ver, fmt.Errorf("Unknown Format: %s", stdout)
 }
 
-func (o *debian) parseCheckRestart(stdout string) (packs models.Packages) {
+func (o *debian) checkrestart() error {
+	cmd := util.PrependProxyEnv("LANGUAGE=en_US.UTF-8 checkrestart")
+	r := o.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		return fmt.Errorf(
+			"Failed to %s. status: %d, stdout: %s, stderr: %s",
+			cmd, r.ExitStatus, r.Stdout, r.Stderr)
+	}
+	packs := o.parseCheckRestart(r.Stdout)
+	for name, pack := range packs {
+		o.Packages[name] = pack
+	}
+	return nil
+}
+
+func (o *debian) parseCheckRestart(stdout string) models.Packages {
+	packs := models.Packages{}
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	name := ""
 	for scanner.Scan() {
@@ -889,17 +918,25 @@ func (o *debian) parseCheckRestart(stdout string) (packs models.Packages) {
 			if len(ss) != 2 {
 				continue
 			}
-			if pack, ok := o.Packages[name]; ok {
-				procs := pack.AffectedProcs
-				procs = append(procs, models.AffectedProc{
-					PID:      ss[0],
-					ProcName: ss[1],
-				})
-				pack.AffectedProcs = procs
-				o.Packages[name] = pack
-
+			var pack models.Package
+			if p, ok := packs[name]; ok {
+				pack = p
+			} else {
+				if p, ok := o.Packages[name]; ok {
+					pack = p
+				} else {
+					util.Log.Warnf("Unknown package: yum-ps: %s", line)
+					continue
+				}
 			}
+			procs := pack.NeedRestartProcs
+			procs = append(procs, models.Process{
+				PID:      ss[0],
+				ProcName: ss[1],
+			})
+			pack.NeedRestartProcs = procs
+			packs[name] = pack
 		}
 	}
-	return o.Packages
+	return packs
 }

@@ -1354,22 +1354,14 @@ ps
 					Arch:    "x86_64",
 					// NewVersion: "2.7.5-",
 					// NewRelease: "48.el7.x86_64",
-					AffectedProcs: []models.AffectedProc{
+					AffectedProcs: []models.Process{
 						{
 							PID:      "741",
 							ProcName: "tuned",
-							CPU:      "1:54",
-							RSS:      "16 MB",
-							State:    "Sleeping",
-							Uptime:   "14 day(s) 21:52:32",
 						},
 						{
 							PID:      "38755",
 							ProcName: "yum",
-							CPU:      "0:00",
-							RSS:      "42 MB",
-							State:    "Running",
-							Uptime:   "00:00",
 						},
 					},
 				},
@@ -1380,22 +1372,14 @@ ps
 					Arch:    "x86_64",
 					// NewVersion: "2.7.5",
 					// NewRelease: "48.el7.x86_64",
-					AffectedProcs: []models.AffectedProc{
+					AffectedProcs: []models.Process{
 						{
 							PID:      "626",
 							ProcName: "agetty",
-							CPU:      "0:00",
-							RSS:      "848 kB",
-							State:    "Sleeping",
-							Uptime:   "14 day(s) 21:52:37",
 						},
 						{
 							PID:      "628",
 							ProcName: "agetty",
-							CPU:      "0:00",
-							RSS:      "848 kB",
-							State:    "Sleeping",
-							Uptime:   "14 day(s) 21:52:37",
 						},
 					},
 				},
@@ -1406,14 +1390,10 @@ ps
 					Arch:    "x86_64",
 					// NewVersion: "1:2.0",
 					// NewRelease: "21.el7_3.x86_64",
-					AffectedProcs: []models.AffectedProc{
+					AffectedProcs: []models.Process{
 						{
 							PID:      "638",
 							ProcName: "wpa_supplicant",
-							CPU:      "0:00",
-							RSS:      "2.6 MB",
-							State:    "Sleeping",
-							Uptime:   "14 day(s) 21:52:37",
 						},
 					},
 				},
