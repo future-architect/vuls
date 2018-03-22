@@ -931,8 +931,8 @@ func (o *debian) parseCheckRestart(stdout string) models.Packages {
 			}
 			procs := pack.NeedRestartProcs
 			procs = append(procs, models.Process{
-				PID:      ss[0],
-				ProcName: ss[1],
+				PID:  ss[0],
+				Name: ss[1],
 			})
 			pack.NeedRestartProcs = procs
 			packs[name] = pack

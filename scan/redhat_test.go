@@ -1356,12 +1356,12 @@ ps
 					// NewRelease: "48.el7.x86_64",
 					AffectedProcs: []models.Process{
 						{
-							PID:      "741",
-							ProcName: "tuned",
+							PID:  "741",
+							Name: "tuned",
 						},
 						{
-							PID:      "38755",
-							ProcName: "yum",
+							PID:  "38755",
+							Name: "yum",
 						},
 					},
 				},
@@ -1374,12 +1374,12 @@ ps
 					// NewRelease: "48.el7.x86_64",
 					AffectedProcs: []models.Process{
 						{
-							PID:      "626",
-							ProcName: "agetty",
+							PID:  "626",
+							Name: "agetty",
 						},
 						{
-							PID:      "628",
-							ProcName: "agetty",
+							PID:  "628",
+							Name: "agetty",
 						},
 					},
 				},
@@ -1392,8 +1392,8 @@ ps
 					// NewRelease: "21.el7_3.x86_64",
 					AffectedProcs: []models.Process{
 						{
-							PID:      "638",
-							ProcName: "wpa_supplicant",
+							PID:  "638",
+							Name: "wpa_supplicant",
 						},
 					},
 				},
@@ -1463,12 +1463,12 @@ func TestParseNeedsRestarting(t *testing.T) {
 437 : /usr/sbin/NetworkManager --no-daemon`,
 			[]models.Process{
 				{
-					PID:      "1",
-					ProcName: "/usr/lib/systemd/systemd --switched-root --system --deserialize 21",
+					PID:  "1",
+					Name: "/usr/lib/systemd/systemd --switched-root --system --deserialize 21",
 				},
 				{
-					PID:      "437",
-					ProcName: "/usr/sbin/NetworkManager --no-daemon",
+					PID:  "437",
+					Name: "/usr/sbin/NetworkManager --no-daemon",
 				},
 			},
 		},

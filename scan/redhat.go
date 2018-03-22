@@ -1170,8 +1170,8 @@ func (o *redhat) parseYumPS(stdout string) models.Packages {
 		} else if needToParseProcline {
 			if 6 < len(fields) {
 				proc := models.Process{
-					PID:      fields[0],
-					ProcName: fields[1],
+					PID:  fields[0],
+					Name: fields[1],
 				}
 				pack := packs[currentPackName]
 				pack.AffectedProcs = append(pack.AffectedProcs, proc)
@@ -1193,7 +1193,7 @@ func (o *redhat) needsRestarting() error {
 	}
 	procs := o.parseNeedsRestarting(r.Stdout)
 	for _, proc := range procs {
-		fqpn, err := o.procPathToFQPN(proc.ProcName)
+		fqpn, err := o.procPathToFQPN(proc.Name)
 		if err != nil {
 			return err
 		}
@@ -1216,8 +1216,8 @@ func (o *redhat) parseNeedsRestarting(stdout string) (procs []models.Process) {
 			continue
 		}
 		procs = append(procs, models.Process{
-			PID:      ss[0],
-			ProcName: ss[1],
+			PID:  ss[0],
+			Name: ss[1],
 		})
 	}
 	return

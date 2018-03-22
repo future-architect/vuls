@@ -191,7 +191,7 @@ type Changelog struct {
 // Process keep a processes information affected by software update
 type Process struct {
 	PID         string
-	ProcName    string
+	Name        string
 	ServiceName string
 }
 

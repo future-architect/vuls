@@ -651,12 +651,12 @@ util-linux:
 					Arch:    "x86_64",
 					NeedRestartProcs: []models.Process{
 						{
-							PID:      "3490",
-							ProcName: "/usr/sbin/varnishd",
+							PID:  "3490",
+							Name: "/usr/sbin/varnishd",
 						},
 						{
-							PID:      "3704",
-							ProcName: "/usr/sbin/varnishd",
+							PID:  "3704",
+							Name: "/usr/sbin/varnishd",
 						},
 					},
 				},
@@ -667,8 +667,8 @@ util-linux:
 					Arch:    "x86_64",
 					NeedRestartProcs: []models.Process{
 						{
-							PID:      "3636",
-							ProcName: "/usr/bin/memcached",
+							PID:  "3636",
+							Name: "/usr/bin/memcached",
 						},
 					},
 				},
@@ -679,12 +679,12 @@ util-linux:
 					Arch:    "x86_64",
 					NeedRestartProcs: []models.Process{
 						{
-							PID:      "3650",
-							ProcName: "/sbin/agetty",
+							PID:  "3650",
+							Name: "/sbin/agetty",
 						},
 						{
-							PID:      "3648",
-							ProcName: "/sbin/agetty",
+							PID:  "3648",
+							Name: "/sbin/agetty",
 						},
 					},
 				},
