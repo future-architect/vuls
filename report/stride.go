@@ -1,11 +1,8 @@
 package report
 
 import (
-	"fmt"
 	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
+	"bytes"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -15,45 +12,20 @@ import (
 type StrideWriter struct{}
 
 func (w StrideWriter) Write(rs ...models.ScanResult) (err error) {
-	conf := config.Conf.HipChat
-
-	var message string
-	for _, r := range rs {
-		err = postMessage(conf.Room, conf.AuthToken, r.ServerName)
-		if err != nil {
-			return err
-		}
-
-		for _, vinfo := range r.ScannedCves {
-			maxCvss := vinfo.MaxCvssScore()
-			severity := strings.ToUpper(maxCvss.Value.Severity)
-			if severity == "" {
-				severity = "?"
-			}
-
-			message = `<a href="https://nvd.nist.gov/vuln/detail\` + vinfo.CveID + ">" + vinfo.CveID + ">" + vinfo.CveID + "</a>" + "<br/>" + strconv.FormatFloat(maxCvss.Value.Score, 'f', 1, 64) + " " + "(" + severity + ")" + "<br/>" + vinfo.Summaries(config.Conf.Lang, r.Family)[0].Value
-
-			err = postMessage(conf.Room, conf.AuthToken, message)
-			if err != nil {
-				return err
-			}
-		}
-
-	}
+	conf := config.Conf.Stride
+	sendMessage(conf.HookURL, conf.AuthToken)
 	return nil
 }
 
-func postMessage(room, token, message string) error {
-	uri := fmt.Sprintf("https://api.hipchat.com/v2/room/%s/notification?auth_token=%s", room, token)
+func sendMessage(uri, token string) error {
 
-	payload := url.Values{
-		"color":          {"purple"},
-		"message_format": {"html"},
-		"message":        {message},
-	}
-	reqs, err := http.NewRequest("POST", uri, strings.NewReader(payload.Encode()))
+	jsonStr := `{"body":{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"message"}]}]}}`
 
-	reqs.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	reqs, err := http.NewRequest("POST", uri, bytes.NewBuffer([]byte(jsonStr)))
+
+	reqs.Header.Add("Content-Type", "application/json")
+	reqs.Header.Add("Authorization", "Bearer " + token)
+
 
 	if err != nil {
 		return err
