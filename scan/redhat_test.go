@@ -1463,10 +1463,6 @@ func TestParseNeedsRestarting(t *testing.T) {
 437 : /usr/sbin/NetworkManager --no-daemon`,
 			[]models.Process{
 				{
-					PID:  "1",
-					Name: "/usr/lib/systemd/systemd --switched-root --system --deserialize 21",
-				},
-				{
 					PID:  "437",
 					Name: "/usr/sbin/NetworkManager --no-daemon",
 				},

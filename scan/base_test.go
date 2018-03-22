@@ -25,7 +25,6 @@ import (
 )
 
 func TestParseDockerPs(t *testing.T) {
-
 	var test = struct {
 		in       string
 		expected []config.Container
@@ -60,7 +59,6 @@ f570ae647edc agitated_lovelace centos:latest`,
 }
 
 func TestParseLxdPs(t *testing.T) {
-
 	var test = struct {
 		in       string
 		expected []config.Container
@@ -145,6 +143,38 @@ func TestIsAwsInstanceID(t *testing.T) {
 		actual := r.isAwsInstanceID(tt.in)
 		if tt.expected != actual {
 			t.Errorf("expected %t, actual %t, str: %s", tt.expected, actual, tt.in)
+		}
+	}
+}
+
+func TestParseSystemctlStatus(t *testing.T) {
+	var tests = []struct {
+		in  string
+		out string
+	}{
+		{
+			in: `● NetworkManager.service - Network Manager
+   Loaded: loaded (/usr/lib/systemd/system/NetworkManager.service; enabled; vendor preset: enabled)
+   Active: active (running) since Wed 2018-01-10 17:15:39 JST; 2 months 10 days ago
+     Docs: man:NetworkManager(8)
+ Main PID: 437 (NetworkManager)
+   Memory: 424.0K
+   CGroup: /system.slice/NetworkManager.service
+           ├─437 /usr/sbin/NetworkManager --no-daemon
+           └─572 /sbin/dhclient -d -q -sf /usr/libexec/nm-dhcp-helper -pf /var/run/dhclient-ens160.pid -lf /var/lib/NetworkManager/dhclient-241ed966-e1c7-4d5c-a6a0-8a6dba457277-ens160.lease -cf /var/lib/NetworkManager/dhclient-ens160.conf ens160`,
+			out: "NetworkManager.service",
+		},
+		{
+			in:  `Failed to get unit for PID 700: PID 700 does not belong to any loaded unit.`,
+			out: "",
+		},
+	}
+
+	r := newRedhat(config.ServerInfo{})
+	for _, tt := range tests {
+		actual := r.parseSystemctlStatus(tt.in)
+		if tt.out != actual {
+			t.Errorf("expected %v, actual %v", tt.out, actual)
 		}
 	}
 }

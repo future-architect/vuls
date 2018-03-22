@@ -1186,6 +1186,12 @@ func (o *redhat) parseYumPS(stdout string) models.Packages {
 }
 
 func (o *redhat) needsRestarting() error {
+	initName, err := o.detectInitSystem()
+	if err != nil {
+		o.log.Warn(err)
+		// continue scanning
+	}
+
 	cmd := "LANGUAGE=en_US.UTF-8 needs-restarting"
 	r := o.exec(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
@@ -1201,6 +1207,14 @@ func (o *redhat) needsRestarting() error {
 		if err != nil {
 			return err
 		}
+		if initName == systemd {
+			name, err := o.detectServiceName(proc.PID)
+			if err != nil {
+				o.log.Warn(err)
+				// continue scanning
+			}
+			proc.ServiceName = name
+		}
 		pack.NeedRestartProcs = append(pack.NeedRestartProcs, proc)
 		o.Packages[pack.Name] = *pack
 	}
@@ -1213,6 +1227,10 @@ func (o *redhat) parseNeedsRestarting(stdout string) (procs []models.Process) {
 		line := scanner.Text()
 		ss := strings.Split(line, " : ")
 		if len(ss) < 2 {
+			continue
+		}
+		// https://unix.stackexchange.com/a/419375
+		if ss[0] == "1" {
 			continue
 		}
 		procs = append(procs, models.Process{
