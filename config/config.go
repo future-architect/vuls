@@ -96,6 +96,7 @@ type Config struct {
 
 	EMail   SMTPConf
 	Slack   SlackConf
+	Stride  StrideConf
 	HipChat HipChatConf
 	Syslog  SyslogConf
 	Default ServerInfo
@@ -129,6 +130,7 @@ type Config struct {
 	RefreshCve bool
 
 	ToSlack     bool
+	ToStride    bool
 	ToHipChat   bool
 	ToEmail     bool
 	ToSyslog    bool
@@ -413,6 +415,14 @@ func (c *SMTPConf) Validate() (errs []error) {
 	if err != nil {
 		errs = append(errs, err)
 	}
+	return
+}
+
+// StrideConf is stride config
+type StrideConf struct {
+}
+// Validate validates configuration
+func (c *StrideConf) Validate() (errs []error) {
 	return
 }
 
