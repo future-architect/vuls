@@ -420,9 +420,25 @@ func (c *SMTPConf) Validate() (errs []error) {
 
 // StrideConf is stride config
 type StrideConf struct {
+	HookURL   string `json:"hook_url"`
+	AuthToken string `json:"AuthToken"`
 }
+
 // Validate validates configuration
 func (c *StrideConf) Validate() (errs []error) {
+
+	if len(c.HookURL) == 0 {
+		errs = append(errs, fmt.Errorf("HookURL must not be empty"))
+	}
+
+	if len(c.AuthToken) == 0 {
+		errs = append(errs, fmt.Errorf("AuthToken must not be empty"))
+	}
+
+	_, err := valid.ValidateStruct(c)
+	if err != nil {
+		errs = append(errs, err)
+	}
 	return
 }
 
