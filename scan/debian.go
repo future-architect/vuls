@@ -889,6 +889,12 @@ func (o *debian) parseAptCachePolicy(stdout, name string) (packCandidateVer, err
 }
 
 func (o *debian) checkrestart() error {
+	initName, err := o.detectInitSystem()
+	if err != nil {
+		o.log.Warn(err)
+		// continue scanning
+	}
+
 	cmd := util.PrependProxyEnv("LANGUAGE=en_US.UTF-8 checkrestart")
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
@@ -897,8 +903,19 @@ func (o *debian) checkrestart() error {
 			cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
 	packs := o.parseCheckRestart(r.Stdout)
-	for name, pack := range packs {
-		o.Packages[name] = pack
+
+	for i, pack := range packs {
+		for j, proc := range pack.NeedRestartProcs {
+			if initName == systemd {
+				name, err := o.detectServiceName(proc.PID)
+				if err != nil {
+					o.log.Warn(err)
+					// continue scanning
+				}
+				packs[i].NeedRestartProcs[j].ServiceName = name
+			}
+		}
+		o.Packages[pack.Name] = pack
 	}
 	return nil
 }
