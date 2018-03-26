@@ -347,9 +347,14 @@ func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
 			if isCveInfoUpdated(v.CveID, previous, current) {
 				updated[v.CveID] = v
 				util.Log.Debugf("updated: %s", v.CveID)
-			} else if isCveFixed(v, previous) {
-				updated[v.CveID] = v
-				util.Log.Debugf("fixed: %s", v.CveID)
+
+				// TODO commented out beause  a bug of diff logic when multiple oval defs found for a certain CVE-ID and same updated_at
+				// if these OVAL defs have different affected packages, this logic detects as updated.
+				// This logic will be uncommented after integration with ghost https://github.com/knqyf263/gost
+				// } else if isCveFixed(v, previous) {
+				// updated[v.CveID] = v
+				// util.Log.Debugf("fixed: %s", v.CveID)
+
 			} else {
 				util.Log.Debugf("same: %s", v.CveID)
 			}
