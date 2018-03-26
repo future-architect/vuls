@@ -308,7 +308,8 @@ func attachmentText(vinfo models.VulnInfo, osFamily string) string {
 		severity = "?"
 	}
 
-	return fmt.Sprintf("*%4.1f (%s)* %s\n%s\n```%s```",
+	return fmt.Sprintf("%s\n *%4.1f (%s)* %s\n%s\n```%s```",
+		vinfo.UpdatedStatus,
 		maxCvss.Value.Score,
 		severity,
 		cweIDs(vinfo, osFamily),

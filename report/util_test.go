@@ -295,6 +295,7 @@ func TestDiff(t *testing.T) {
 						AffectedPackages: models.PackageStatuses{{Name: "mysql-libs"}},
 						DistroAdvisories: []models.DistroAdvisory{},
 						CpeNames:         []string{},
+						UpdatedStatus:    "new",
 					},
 				},
 				Packages: models.Packages{
