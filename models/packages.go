@@ -107,8 +107,8 @@ type Package struct {
 	Arch             string
 	Repository       string
 	Changelog        Changelog
-	AffectedProcs    []Process `json:",omitempty"`
-	NeedRestartProcs []Process `json:",omitempty"`
+	AffectedProcs    []AffectedProcess    `json:",omitempty"`
+	NeedRestartProcs []NeedRestartProcess `json:",omitempty"`
 }
 
 // FQPN returns Fully-Qualified-Package-Name
@@ -188,11 +188,19 @@ type Changelog struct {
 	Method   DetectionMethod
 }
 
-// Process keep a processes information affected by software update
-type Process struct {
+// AffectedProcess keep a processes information affected by software update
+type AffectedProcess struct {
+	PID  string
+	Name string
+}
+
+// NeedRestartProcess keep a processes information affected by software update
+type NeedRestartProcess struct {
 	PID         string
-	Name        string
+	Path        string
 	ServiceName string
+	InitSystem  string
+	HasInit     bool `json:"-"`
 }
 
 // SrcPackage has installed source package information.

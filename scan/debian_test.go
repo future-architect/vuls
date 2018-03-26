@@ -588,36 +588,16 @@ func TestParseAptCachePolicy(t *testing.T) {
 	}
 }
 
-func TestCheckRestart(t *testing.T) {
+func TestParseCheckRestart(t *testing.T) {
 	r := newDebian(config.ServerInfo{})
 	r.Distro = config.Distro{Family: "debian"}
-	r.Packages = models.NewPackages(
-		models.Package{
-			Name:    "varnish",
-			Version: "2.7.5",
-			Release: "34.el7",
-			Arch:    "x86_64",
-		},
-		models.Package{
-			Name:    "util-linux",
-			Version: "2.23.2",
-			Release: "26.el7",
-			Arch:    "x86_64",
-		},
-		models.Package{
-			Name:    "memcached",
-			Version: "1.0.0",
-			Release: "01",
-			Arch:    "x86_64",
-		},
-	)
-
 	var tests = []struct {
-		in  string
-		out models.Packages
+		in              string
+		out             models.Packages
+		unknownServices []string
 	}{
 		{
-			`Found 27 processes using old versions of upgraded files
+			in: `Found 27 processes using old versions of upgraded files
 (19 distinct programs)
 (15 distinct packages)
 
@@ -629,81 +609,117 @@ varnish:
 	3704	/usr/sbin/varnishd
 memcached:
 	3636	/usr/bin/memcached
+openssh-server:
+	1252	/usr/sbin/sshd
+	1184	/usr/sbin/sshd
+accountsservice:
+	462     /usr/lib/accountsservice/accounts-daemon
 
 These are the systemd services:
 systemctl restart accounts-daemon.service
 
 These are the initd scripts:
 service varnish restart
-service varnishncsa restart
-service varnishlog restart
 service memcached restart
+service ssh restart
 
 These processes (1) do not seem to have an associated init script to restart them:
 util-linux:
 	3650	/sbin/agetty
 	3648	/sbin/agetty`,
-			models.NewPackages(
+			out: models.NewPackages(
 				models.Package{
-					Name:    "varnish",
-					Version: "2.7.5",
-					Release: "34.el7",
-					Arch:    "x86_64",
-					NeedRestartProcs: []models.Process{
+					Name: "varnish",
+					NeedRestartProcs: []models.NeedRestartProcess{
 						{
-							PID:  "3490",
-							Name: "/usr/sbin/varnishd",
+							PID:         "3490",
+							Path:        "/usr/sbin/varnishd",
+							ServiceName: "varnish",
+							HasInit:     true,
 						},
 						{
-							PID:  "3704",
-							Name: "/usr/sbin/varnishd",
+							PID:         "3704",
+							Path:        "/usr/sbin/varnishd",
+							ServiceName: "varnish",
+							HasInit:     true,
 						},
 					},
 				},
 				models.Package{
-					Name:    "memcached",
-					Version: "1.0.0",
-					Release: "01",
-					Arch:    "x86_64",
-					NeedRestartProcs: []models.Process{
+					Name: "memcached",
+					NeedRestartProcs: []models.NeedRestartProcess{
 						{
-							PID:  "3636",
-							Name: "/usr/bin/memcached",
+							PID:         "3636",
+							Path:        "/usr/bin/memcached",
+							ServiceName: "memcached",
+							HasInit:     true,
 						},
 					},
 				},
 				models.Package{
-					Name:    "util-linux",
-					Version: "2.23.2",
-					Release: "26.el7",
-					Arch:    "x86_64",
-					NeedRestartProcs: []models.Process{
+					Name: "openssh-server",
+					NeedRestartProcs: []models.NeedRestartProcess{
 						{
-							PID:  "3650",
-							Name: "/sbin/agetty",
+							PID:         "1252",
+							Path:        "/usr/sbin/sshd",
+							ServiceName: "",
+							HasInit:     true,
 						},
 						{
-							PID:  "3648",
-							Name: "/sbin/agetty",
+							PID:         "1184",
+							Path:        "/usr/sbin/sshd",
+							ServiceName: "",
+							HasInit:     true,
+						},
+					},
+				},
+				models.Package{
+					Name: "accountsservice",
+					NeedRestartProcs: []models.NeedRestartProcess{
+						{
+							PID:         "462",
+							Path:        "/usr/lib/accountsservice/accounts-daemon",
+							ServiceName: "",
+							HasInit:     true,
+						},
+					},
+				},
+				models.Package{
+					Name: "util-linux",
+					NeedRestartProcs: []models.NeedRestartProcess{
+						{
+							PID:     "3650",
+							Path:    "/sbin/agetty",
+							HasInit: false,
+						},
+						{
+							PID:     "3648",
+							Path:    "/sbin/agetty",
+							HasInit: false,
 						},
 					},
 				},
 			),
+			unknownServices: []string{"ssh"},
 		},
 		{
-			`Found 0 processes using old versions of upgraded files`,
-			models.Packages{},
+			in:              `Found 0 processes using old versions of upgraded files`,
+			out:             models.Packages{},
+			unknownServices: []string{},
 		},
 	}
 
 	for _, tt := range tests {
-		packages := r.parseCheckRestart(tt.in)
+		packages, services := r.parseCheckRestart(tt.in)
 		for name, ePack := range tt.out {
 			if !reflect.DeepEqual(ePack, packages[name]) {
 				e := pp.Sprintf("%v", ePack)
 				a := pp.Sprintf("%v", packages[name])
 				t.Errorf("expected %s, actual %s", e, a)
 			}
+		}
+		if !reflect.DeepEqual(tt.unknownServices, services) {
+			t.Errorf("expected %s, actual %s", tt.unknownServices, services)
 		}
 	}
 }

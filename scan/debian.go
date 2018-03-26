@@ -895,17 +895,38 @@ func (o *debian) checkrestart() error {
 		// continue scanning
 	}
 
-	cmd := util.PrependProxyEnv("LANGUAGE=en_US.UTF-8 checkrestart")
-	r := o.exec(cmd, noSudo)
+	cmd := "LANGUAGE=en_US.UTF-8 checkrestart"
+	r := o.exec(cmd, sudo)
 	if !r.isSuccess() {
 		return fmt.Errorf(
 			"Failed to %s. status: %d, stdout: %s, stderr: %s",
 			cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
-	packs := o.parseCheckRestart(r.Stdout)
+	packs, unknownServices := o.parseCheckRestart(r.Stdout)
+	pidService := map[string]string{}
+	if initName != systemd {
+		for _, s := range unknownServices {
+			cmd := "LANGUAGE=en_US.UTF-8 initctl status " + s
+			r := o.exec(cmd, sudo)
+			if !r.isSuccess() {
+				continue
+			}
+			if ss := strings.Fields(r.Stdout); len(ss) == 4 && ss[2] == "process" {
+				pidService[ss[3]] = s
+			}
+		}
+	}
 
-	for i, pack := range packs {
-		for j, proc := range pack.NeedRestartProcs {
+	for i, p := range packs {
+		pack := o.Packages[p.Name]
+		pack.NeedRestartProcs = p.NeedRestartProcs
+		o.Packages[p.Name] = pack
+
+		for j, proc := range p.NeedRestartProcs {
+			if proc.HasInit == false {
+				continue
+			}
+			packs[i].NeedRestartProcs[j].InitSystem = initName
 			if initName == systemd {
 				name, err := o.detectServiceName(proc.PID)
 				if err != nil {
@@ -913,21 +934,47 @@ func (o *debian) checkrestart() error {
 					// continue scanning
 				}
 				packs[i].NeedRestartProcs[j].ServiceName = name
+			} else {
+				if proc.ServiceName == "" {
+					if ss := strings.Fields(r.Stdout); len(ss) == 4 && ss[2] == "process" {
+						if name, ok := pidService[ss[3]]; ok {
+							packs[i].NeedRestartProcs[j].ServiceName = name
+						}
+					}
+				}
 			}
 		}
-		o.Packages[pack.Name] = pack
+		o.Packages[p.Name] = p
 	}
 	return nil
 }
 
-func (o *debian) parseCheckRestart(stdout string) models.Packages {
-	packs := models.Packages{}
+func (o *debian) parseCheckRestart(stdout string) (models.Packages, []string) {
+	services := []string{}
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
-	name := ""
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasSuffix(line, ":") {
-			name = strings.TrimSuffix(line, ":")
+		if strings.HasPrefix(line, "service") && strings.HasSuffix(line, "restart") {
+			ss := strings.Fields(line)
+			if len(ss) != 3 {
+				continue
+			}
+			services = append(services, ss[1])
+		}
+	}
+
+	packs := models.Packages{}
+	packName := ""
+	hasInit := true
+	scanner = bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasSuffix(line, "do not seem to have an associated init script to restart them:") {
+			hasInit = false
+			continue
+		}
+		if strings.HasSuffix(line, ":") && len(strings.Fields(line)) == 1 {
+			packName = strings.TrimSuffix(line, ":")
 			continue
 		}
 		if strings.HasPrefix(line, "\t") {
@@ -935,25 +982,50 @@ func (o *debian) parseCheckRestart(stdout string) models.Packages {
 			if len(ss) != 2 {
 				continue
 			}
-			var pack models.Package
-			if p, ok := packs[name]; ok {
-				pack = p
-			} else {
-				if p, ok := o.Packages[name]; ok {
-					pack = p
-				} else {
-					util.Log.Warnf("Unknown package: yum-ps: %s", line)
-					continue
+
+			serviceName := ""
+			for _, s := range services {
+				if packName == s {
+					serviceName = s
 				}
 			}
-			procs := pack.NeedRestartProcs
-			procs = append(procs, models.Process{
-				PID:  ss[0],
-				Name: ss[1],
-			})
-			pack.NeedRestartProcs = procs
-			packs[name] = pack
+			if p, ok := packs[packName]; ok {
+				p.NeedRestartProcs = append(p.NeedRestartProcs, models.NeedRestartProcess{
+					PID:         ss[0],
+					Path:        ss[1],
+					ServiceName: serviceName,
+					HasInit:     hasInit,
+				})
+				packs[packName] = p
+			} else {
+				packs[packName] = models.Package{
+					Name: packName,
+					NeedRestartProcs: []models.NeedRestartProcess{
+						{
+							PID:         ss[0],
+							Path:        ss[1],
+							ServiceName: serviceName,
+							HasInit:     hasInit,
+						},
+					},
+				}
+			}
 		}
 	}
-	return packs
+
+	unknownServices := []string{}
+	for _, s := range services {
+		found := false
+		for _, p := range packs {
+			for _, proc := range p.NeedRestartProcs {
+				if proc.ServiceName == s {
+					found = true
+				}
+			}
+		}
+		if !found {
+			unknownServices = append(unknownServices, s)
+		}
+	}
+	return packs, unknownServices
 }

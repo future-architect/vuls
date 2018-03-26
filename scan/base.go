@@ -415,8 +415,9 @@ func (l *base) getErrs() []error {
 }
 
 const (
-	systemd = "systemd"
-	upstart = "upstart"
+	systemd  = "systemd"
+	upstart  = "upstart"
+	sysVinit = "init"
 )
 
 // https://unix.stackexchange.com/questions/196166/how-to-find-out-if-a-system-uses-sysv-upstart-or-systemd-initsystem
@@ -434,8 +435,16 @@ func (l *base) detectInitSystem() (string, error) {
 			return systemd, nil
 		} else if strings.Contains(line, "upstart") {
 			return upstart, nil
-		} else if strings.Contains(line, "/sbin/init") {
-			return f("/sbin/init")
+		} else if strings.Contains(line, "File: '/proc/1/exe' -> '/sbin/init'") {
+			return f("stat /sbin/init")
+		} else if strings.TrimSpace(line) == "File: '/sbin/init'" {
+			r := l.exec("/sbin/init --version", noSudo)
+			if r.isSuccess() {
+				if strings.Contains(r.Stdout, "upstart") {
+					return upstart, nil
+				}
+			}
+			return sysVinit, nil
 		}
 		return "", fmt.Errorf("Failed to detect a init system: %s", line)
 	}

@@ -1169,7 +1169,7 @@ func (o *redhat) parseYumPS(stdout string) models.Packages {
 			}
 		} else if needToParseProcline {
 			if 6 < len(fields) {
-				proc := models.Process{
+				proc := models.AffectedProcess{
 					PID:  fields[0],
 					Name: fields[1],
 				}
@@ -1199,7 +1199,7 @@ func (o *redhat) needsRestarting() error {
 	}
 	procs := o.parseNeedsRestarting(r.Stdout)
 	for _, proc := range procs {
-		fqpn, err := o.procPathToFQPN(proc.Name)
+		fqpn, err := o.procPathToFQPN(proc.Path)
 		if err != nil {
 			return err
 		}
@@ -1214,6 +1214,7 @@ func (o *redhat) needsRestarting() error {
 				// continue scanning
 			}
 			proc.ServiceName = name
+			proc.InitSystem = systemd
 		}
 		pack.NeedRestartProcs = append(pack.NeedRestartProcs, proc)
 		o.Packages[pack.Name] = *pack
@@ -1221,7 +1222,7 @@ func (o *redhat) needsRestarting() error {
 	return nil
 }
 
-func (o *redhat) parseNeedsRestarting(stdout string) (procs []models.Process) {
+func (o *redhat) parseNeedsRestarting(stdout string) (procs []models.NeedRestartProcess) {
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -1233,9 +1234,10 @@ func (o *redhat) parseNeedsRestarting(stdout string) (procs []models.Process) {
 		if ss[0] == "1" {
 			continue
 		}
-		procs = append(procs, models.Process{
-			PID:  ss[0],
-			Name: ss[1],
+		procs = append(procs, models.NeedRestartProcess{
+			PID:     ss[0],
+			Path:    ss[1],
+			HasInit: true,
 		})
 	}
 	return
@@ -1245,7 +1247,7 @@ func (o *redhat) parseNeedsRestarting(stdout string) (procs []models.Process) {
 func (o *redhat) procPathToFQPN(execCommand string) (string, error) {
 	path := strings.Fields(execCommand)[0]
 	cmd := `LANGUAGE=en_US.UTF-8 rpm -qf --queryformat "%{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}.%{ARCH}\n" ` + path
-	r := o.exec(util.PrependProxyEnv(cmd), sudo)
+	r := o.exec(cmd, sudo)
 	if !r.isSuccess() {
 		return "", fmt.Errorf("Failed to SSH: %s", r)
 	}
