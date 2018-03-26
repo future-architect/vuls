@@ -432,6 +432,8 @@ func (o *redhat) parseUpdatablePacksLines(stdout string) (models.Packages, error
 		// }
 		if len(strings.TrimSpace(line)) == 0 {
 			continue
+		} else if strings.HasPrefix(line, "Loading") {
+			continue
 		}
 		pack, err := o.parseUpdatablePacksLine(line)
 		if err != nil {
@@ -522,7 +524,10 @@ func (o *redhat) getAvailableChangelogs(packNames []string) (map[string]string, 
 	if config.Conf.SkipBroken {
 		yumopts += " --skip-broken"
 	}
-	cmd := `yum --color=never changelog all %s updates %s | grep -A 1000000 "==================== Updated Packages ===================="`
+	if o.hasYumColorOption() {
+		yumopts += " --color=never"
+	}
+	cmd := `yum changelog all %s updates %s | grep -A 1000000 "==================== Updated Packages ===================="`
 	cmd = fmt.Sprintf(cmd, yumopts, strings.Join(packNames, " "))
 
 	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
@@ -742,24 +747,30 @@ func (o *redhat) scanCveIDsByCommands(updatable models.Packages) (models.VulnInf
 			"yum updateinfo is not suppported on CentOS")
 	}
 
-	cmd := "yum --color=never repolist"
-	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
-	if !r.isSuccess() {
-		return nil, fmt.Errorf("Failed to SSH: %s", r)
-	}
-
 	// get advisoryID(RHSA, ALAS, ELSA) - package name,version
 	major, err := (o.Distro.MajorVersion())
 	if err != nil {
 		return nil, fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
 	}
 
+	var cmd string
+	if (o.Distro.Family == config.RedHat || o.Distro.Family == config.Oracle) && major > 5 {
+		cmd = "yum --color=never repolist"
+		r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
+		if !r.isSuccess() {
+			return nil, fmt.Errorf("Failed to SSH: %s", r)
+		}
+	}
+
 	if (o.Distro.Family == config.RedHat || o.Distro.Family == config.Oracle) && major == 5 {
-		cmd = "yum --color=never list-security --security"
+		cmd = "yum list-security --security"
+		if o.hasYumColorOption() {
+			cmd += " --color=never"
+		}
 	} else {
 		cmd = "yum --color=never --security updateinfo list updates"
 	}
-	r = o.exec(util.PrependProxyEnv(cmd), o.sudo())
+	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
@@ -782,7 +793,10 @@ func (o *redhat) scanCveIDsByCommands(updatable models.Packages) (models.VulnInf
 
 	// get advisoryID(RHSA, ALAS, ELSA) - CVE IDs
 	if (o.Distro.Family == config.RedHat || o.Distro.Family == config.Oracle) && major == 5 {
-		cmd = "yum --color=never info-security"
+		cmd = "yum info-security"
+		if o.hasYumColorOption() {
+			cmd += " --color=never"
+		}
 	} else {
 		cmd = "yum --color=never --security updateinfo updates"
 	}
@@ -1104,4 +1118,10 @@ func (o *redhat) sudo() bool {
 		// RHEL, Oracle
 		return config.Conf.Deep
 	}
+}
+
+func (o *redhat) hasYumColorOption() bool {
+	cmd := "yum --help | grep color"
+	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
+	return len(r.Stdout) > 0
 }
