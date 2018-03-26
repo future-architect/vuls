@@ -445,6 +445,8 @@ func (o *redhat) parseUpdatablePacksLines(stdout string) (models.Packages, error
 		// }
 		if len(strings.TrimSpace(line)) == 0 {
 			continue
+		} else if strings.HasPrefix(line, "Loading") {
+			continue
 		}
 		pack, err := o.parseUpdatablePacksLine(line)
 		if err != nil {
@@ -534,7 +536,10 @@ func (o *redhat) getAvailableChangelogs(packNames []string) (map[string]string, 
 	if config.Conf.SkipBroken {
 		yumopts += " --skip-broken"
 	}
-	cmd := `yum --color=never changelog all %s updates %s | grep -A 1000000 "==================== Updated Packages ===================="`
+	if o.hasYumColorOption() {
+		yumopts += " --color=never"
+	}
+	cmd := `yum changelog all %s updates %s | grep -A 1000000 "==================== Updated Packages ===================="`
 	cmd = fmt.Sprintf(cmd, yumopts, strings.Join(packNames, " "))
 
 	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
@@ -752,24 +757,30 @@ func (o *redhat) scanCveIDsByCommands(updatable models.Packages) (models.VulnInf
 			"yum updateinfo is not suppported on CentOS")
 	}
 
-	cmd := "yum --color=never repolist"
-	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
-	if !r.isSuccess() {
-		return nil, fmt.Errorf("Failed to SSH: %s", r)
-	}
-
 	// get advisoryID(RHSA, ALAS, ELSA) - package name,version
 	major, err := (o.Distro.MajorVersion())
 	if err != nil {
 		return nil, fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
 	}
 
+	var cmd string
+	if (o.Distro.Family == config.RedHat || o.Distro.Family == config.Oracle) && major > 5 {
+		cmd = "yum --color=never repolist"
+		r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
+		if !r.isSuccess() {
+			return nil, fmt.Errorf("Failed to SSH: %s", r)
+		}
+	}
+
 	if (o.Distro.Family == config.RedHat || o.Distro.Family == config.Oracle) && major == 5 {
-		cmd = "yum --color=never list-security --security"
+		cmd = "yum list-security --security"
+		if o.hasYumColorOption() {
+			cmd += " --color=never"
+		}
 	} else {
 		cmd = "yum --color=never --security updateinfo list updates"
 	}
-	r = o.exec(util.PrependProxyEnv(cmd), o.sudo())
+	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
@@ -792,7 +803,10 @@ func (o *redhat) scanCveIDsByCommands(updatable models.Packages) (models.VulnInf
 
 	// get advisoryID(RHSA, ALAS, ELSA) - CVE IDs
 	if (o.Distro.Family == config.RedHat || o.Distro.Family == config.Oracle) && major == 5 {
-		cmd = "yum --color=never info-security"
+		cmd = "yum info-security"
+		if o.hasYumColorOption() {
+			cmd += " --color=never"
+		}
 	} else {
 		cmd = "yum --color=never --security updateinfo updates"
 	}
@@ -1169,9 +1183,9 @@ func (o *redhat) parseYumPS(stdout string) models.Packages {
 			}
 		} else if needToParseProcline {
 			if 6 < len(fields) {
-				proc := models.Process{
-					PID:      fields[0],
-					ProcName: fields[1],
+				proc := models.AffectedProcess{
+					PID:  fields[0],
+					Name: fields[1],
 				}
 				pack := packs[currentPackName]
 				pack.AffectedProcs = append(pack.AffectedProcs, proc)
@@ -1186,6 +1200,12 @@ func (o *redhat) parseYumPS(stdout string) models.Packages {
 }
 
 func (o *redhat) needsRestarting() error {
+	initName, err := o.detectInitSystem()
+	if err != nil {
+		o.log.Warn(err)
+		// continue scanning
+	}
+
 	cmd := "LANGUAGE=en_US.UTF-8 needs-restarting"
 	r := o.exec(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
@@ -1193,7 +1213,7 @@ func (o *redhat) needsRestarting() error {
 	}
 	procs := o.parseNeedsRestarting(r.Stdout)
 	for _, proc := range procs {
-		fqpn, err := o.procPathToFQPN(proc.ProcName)
+		fqpn, err := o.procPathToFQPN(proc.Path)
 		if err != nil {
 			return err
 		}
@@ -1201,13 +1221,22 @@ func (o *redhat) needsRestarting() error {
 		if err != nil {
 			return err
 		}
+		if initName == systemd {
+			name, err := o.detectServiceName(proc.PID)
+			if err != nil {
+				o.log.Warn(err)
+				// continue scanning
+			}
+			proc.ServiceName = name
+			proc.InitSystem = systemd
+		}
 		pack.NeedRestartProcs = append(pack.NeedRestartProcs, proc)
 		o.Packages[pack.Name] = *pack
 	}
 	return nil
 }
 
-func (o *redhat) parseNeedsRestarting(stdout string) (procs []models.Process) {
+func (o *redhat) parseNeedsRestarting(stdout string) (procs []models.NeedRestartProcess) {
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -1215,9 +1244,14 @@ func (o *redhat) parseNeedsRestarting(stdout string) (procs []models.Process) {
 		if len(ss) < 2 {
 			continue
 		}
-		procs = append(procs, models.Process{
-			PID:      ss[0],
-			ProcName: ss[1],
+		// https://unix.stackexchange.com/a/419375
+		if ss[0] == "1" {
+			continue
+		}
+		procs = append(procs, models.NeedRestartProcess{
+			PID:     ss[0],
+			Path:    ss[1],
+			HasInit: true,
 		})
 	}
 	return
@@ -1227,10 +1261,16 @@ func (o *redhat) parseNeedsRestarting(stdout string) (procs []models.Process) {
 func (o *redhat) procPathToFQPN(execCommand string) (string, error) {
 	path := strings.Fields(execCommand)[0]
 	cmd := `LANGUAGE=en_US.UTF-8 rpm -qf --queryformat "%{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}.%{ARCH}\n" ` + path
-	r := o.exec(util.PrependProxyEnv(cmd), sudo)
+	r := o.exec(cmd, sudo)
 	if !r.isSuccess() {
 		return "", fmt.Errorf("Failed to SSH: %s", r)
 	}
 	fqpn := strings.TrimSpace(r.Stdout)
 	return strings.Replace(fqpn, "-(none):", "-", -1), nil
+}
+
+func (o *redhat) hasYumColorOption() bool {
+	cmd := "yum --help | grep color"
+	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
+	return len(r.Stdout) > 0
 }

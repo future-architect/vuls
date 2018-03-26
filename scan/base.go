@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package scan
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"regexp"
@@ -411,4 +412,61 @@ func (l *base) setErrs(errs []error) {
 
 func (l *base) getErrs() []error {
 	return l.errs
+}
+
+const (
+	systemd  = "systemd"
+	upstart  = "upstart"
+	sysVinit = "init"
+)
+
+// https://unix.stackexchange.com/questions/196166/how-to-find-out-if-a-system-uses-sysv-upstart-or-systemd-initsystem
+func (l *base) detectInitSystem() (string, error) {
+	var f func(string) (string, error)
+	f = func(cmd string) (string, error) {
+		r := l.exec(cmd, sudo)
+		if !r.isSuccess() {
+			return "", fmt.Errorf("Failed to stat %s: %s", cmd, r)
+		}
+		scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
+		scanner.Scan()
+		line := scanner.Text()
+		if strings.Contains(line, "systemd") {
+			return systemd, nil
+		} else if strings.Contains(line, "upstart") {
+			return upstart, nil
+		} else if strings.Contains(line, "File: '/proc/1/exe' -> '/sbin/init'") {
+			return f("stat /sbin/init")
+		} else if strings.TrimSpace(line) == "File: '/sbin/init'" {
+			r := l.exec("/sbin/init --version", noSudo)
+			if r.isSuccess() {
+				if strings.Contains(r.Stdout, "upstart") {
+					return upstart, nil
+				}
+			}
+			return sysVinit, nil
+		}
+		return "", fmt.Errorf("Failed to detect a init system: %s", line)
+	}
+	return f("stat /proc/1/exe")
+}
+
+func (l *base) detectServiceName(pid string) (string, error) {
+	cmd := fmt.Sprintf("systemctl status --quiet --no-pager %s", pid)
+	r := l.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		return "", fmt.Errorf("Failed to stat %s: %s", cmd, r)
+	}
+	return l.parseSystemctlStatus(r.Stdout), nil
+}
+
+func (l *base) parseSystemctlStatus(stdout string) string {
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	scanner.Scan()
+	line := scanner.Text()
+	ss := strings.Fields(line)
+	if len(ss) < 2 || strings.HasPrefix(line, "Failed to get unit for PID") {
+		return ""
+	}
+	return ss[1]
 }

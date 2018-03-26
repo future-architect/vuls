@@ -1354,14 +1354,14 @@ ps
 					Arch:    "x86_64",
 					// NewVersion: "2.7.5-",
 					// NewRelease: "48.el7.x86_64",
-					AffectedProcs: []models.Process{
+					AffectedProcs: []models.AffectedProcess{
 						{
-							PID:      "741",
-							ProcName: "tuned",
+							PID:  "741",
+							Name: "tuned",
 						},
 						{
-							PID:      "38755",
-							ProcName: "yum",
+							PID:  "38755",
+							Name: "yum",
 						},
 					},
 				},
@@ -1372,14 +1372,14 @@ ps
 					Arch:    "x86_64",
 					// NewVersion: "2.7.5",
 					// NewRelease: "48.el7.x86_64",
-					AffectedProcs: []models.Process{
+					AffectedProcs: []models.AffectedProcess{
 						{
-							PID:      "626",
-							ProcName: "agetty",
+							PID:  "626",
+							Name: "agetty",
 						},
 						{
-							PID:      "628",
-							ProcName: "agetty",
+							PID:  "628",
+							Name: "agetty",
 						},
 					},
 				},
@@ -1390,10 +1390,10 @@ ps
 					Arch:    "x86_64",
 					// NewVersion: "1:2.0",
 					// NewRelease: "21.el7_3.x86_64",
-					AffectedProcs: []models.Process{
+					AffectedProcs: []models.AffectedProcess{
 						{
-							PID:      "638",
-							ProcName: "wpa_supplicant",
+							PID:  "638",
+							Name: "wpa_supplicant",
 						},
 					},
 				},
@@ -1456,19 +1456,16 @@ func TestParseNeedsRestarting(t *testing.T) {
 
 	var tests = []struct {
 		in  string
-		out []models.Process
+		out []models.NeedRestartProcess
 	}{
 		{
 			`1 : /usr/lib/systemd/systemd --switched-root --system --deserialize 21
 437 : /usr/sbin/NetworkManager --no-daemon`,
-			[]models.Process{
+			[]models.NeedRestartProcess{
 				{
-					PID:      "1",
-					ProcName: "/usr/lib/systemd/systemd --switched-root --system --deserialize 21",
-				},
-				{
-					PID:      "437",
-					ProcName: "/usr/sbin/NetworkManager --no-daemon",
+					PID:     "437",
+					Path:    "/usr/sbin/NetworkManager --no-daemon",
+					HasInit: true,
 				},
 			},
 		},
@@ -1477,7 +1474,7 @@ func TestParseNeedsRestarting(t *testing.T) {
 	for _, tt := range tests {
 		procs := r.parseNeedsRestarting(tt.in)
 		if !reflect.DeepEqual(tt.out, procs) {
-			t.Errorf("expected %s, actual %s", tt.out, procs)
+			t.Errorf("expected %#v, actual %#v", tt.out, procs)
 		}
 	}
 }
