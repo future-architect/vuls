@@ -134,8 +134,10 @@ func fillCveDetail(driver cvedb.DB, r *models.ScanResult) error {
 		return err
 	}
 	for _, d := range ds {
-		nvd := models.ConvertNvdToModel(d.CveID, d.Nvd)
-		nvdjson := models.ConvertNvdJSONToModel(d.CveID, d.NvdJSON)
+		nvd := models.ConvertNvdJSONToModel(d.CveID, d.NvdJSON)
+		if nvd == nil {
+			nvd = models.ConvertNvdXMLToModel(d.CveID, d.NvdXML)
+		}
 		jvn := models.ConvertJvnToModel(d.CveID, d.Jvn)
 
 		for cveID, vinfo := range r.ScannedCves {
@@ -143,7 +145,7 @@ func fillCveDetail(driver cvedb.DB, r *models.ScanResult) error {
 				if vinfo.CveContents == nil {
 					vinfo.CveContents = models.CveContents{}
 				}
-				for _, con := range []*models.CveContent{nvd, nvdjson, jvn} {
+				for _, con := range []*models.CveContent{nvd, jvn} {
 					if con != nil && !con.Empty() {
 						vinfo.CveContents[con.Type] = *con
 					}

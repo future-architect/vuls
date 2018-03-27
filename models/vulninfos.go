@@ -139,7 +139,7 @@ func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := CveContentTypes{NVD, NewCveContentType(myFamily)}
+	order := CveContentTypes{NvdXML, NewCveContentType(myFamily)}
 	order = append(order, AllCveContetTypes.Except(append(order, JVN)...)...)
 	for _, ctype := range order {
 		// Only JVN has meaningful title. so return first 100 char of summary
@@ -179,7 +179,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := CveContentTypes{NVD, NewCveContentType(myFamily)}
+	order := CveContentTypes{NvdXML, NewCveContentType(myFamily)}
 	order = append(order, AllCveContetTypes.Except(append(order, JVN)...)...)
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Summary) {
@@ -210,7 +210,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 
 // Cvss2Scores returns CVSS V2 Scores
 func (v VulnInfo) Cvss2Scores(myFamily string) (values []CveContentCvss) {
-	order := []CveContentType{NVD, NVDJSON, RedHat, JVN}
+	order := []CveContentType{NvdXML, Nvd, RedHat, JVN}
 	if myFamily != config.RedHat && myFamily != config.CentOS {
 		order = append(order, NewCveContentType(myFamily))
 	}
@@ -249,7 +249,7 @@ func (v VulnInfo) Cvss2Scores(myFamily string) (values []CveContentCvss) {
 
 // Cvss3Scores returns CVSS V3 Score
 func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
-	order := []CveContentType{NVDJSON, RedHat, JVN}
+	order := []CveContentType{Nvd, RedHat, JVN}
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found {
 			// https://nvd.nist.gov/vuln-metrics/cvss
@@ -269,7 +269,7 @@ func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 
 // MaxCvss3Score returns Max CVSS V3 Score
 func (v VulnInfo) MaxCvss3Score() CveContentCvss {
-	order := []CveContentType{NVDJSON, RedHat, JVN}
+	order := []CveContentType{Nvd, RedHat, JVN}
 	max := 0.0
 	value := CveContentCvss{
 		Type:  Unknown,
@@ -311,7 +311,7 @@ func (v VulnInfo) MaxCvssScore() CveContentCvss {
 
 // MaxCvss2Score returns Max CVSS V2 Score
 func (v VulnInfo) MaxCvss2Score() CveContentCvss {
-	order := []CveContentType{NVD, NVDJSON, RedHat, JVN}
+	order := []CveContentType{NvdXML, Nvd, RedHat, JVN}
 	max := 0.0
 	value := CveContentCvss{
 		Type:  Unknown,

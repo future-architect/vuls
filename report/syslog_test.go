@@ -31,7 +31,7 @@ func TestSyslogWriterEncodeSyslog(t *testing.T) {
 							models.PackageStatus{Name: "pkg4"},
 						},
 						CveContents: models.CveContents{
-							models.NVD: models.CveContent{
+							models.NvdXML: models.CveContent{
 								Cvss2Score:    5.0,
 								Cvss2Vector:   "AV:L/AC:L/Au:N/C:N/I:N/A:C",
 								Cvss2Severity: "MEDIUM",

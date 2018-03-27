@@ -42,7 +42,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 							CveID: "CVE-2017-0001",
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.NVD,
+									Type:         models.NvdXML,
 									CveID:        "CVE-2017-0001",
 									LastModified: time.Time{},
 								},
@@ -56,7 +56,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 							CveID: "CVE-2017-0001",
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.NVD,
+									Type:         models.NvdXML,
 									CveID:        "CVE-2017-0001",
 									LastModified: time.Time{},
 								},
@@ -113,7 +113,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 							CveID: "CVE-2017-0003",
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.NVD,
+									Type:         models.NvdXML,
 									CveID:        "CVE-2017-0002",
 									LastModified: new,
 								},
@@ -128,7 +128,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 							CveID: "CVE-2017-0003",
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.NVD,
+									Type:         models.NvdXML,
 									CveID:        "CVE-2017-0002",
 									LastModified: old,
 								},
@@ -150,7 +150,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 							CveID: "CVE-2017-0004",
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.NVD,
+									Type:         models.NvdXML,
 									CveID:        "CVE-2017-0002",
 									LastModified: old,
 								},
@@ -356,7 +356,7 @@ func TestIsCveFixed(t *testing.T) {
 					},
 					CveContents: models.NewCveContents(
 						models.CveContent{
-							Type:         models.NVD,
+							Type:         models.NvdXML,
 							CveID:        "CVE-2016-6662",
 							LastModified: time.Time{},
 						},
@@ -374,7 +374,7 @@ func TestIsCveFixed(t *testing.T) {
 							},
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.NVD,
+									Type:         models.NvdXML,
 									CveID:        "CVE-2016-6662",
 									LastModified: time.Time{},
 								},
@@ -397,7 +397,7 @@ func TestIsCveFixed(t *testing.T) {
 					},
 					CveContents: models.NewCveContents(
 						models.CveContent{
-							Type:         models.NVD,
+							Type:         models.NvdXML,
 							CveID:        "CVE-2016-6662",
 							LastModified: time.Time{},
 						},
@@ -415,7 +415,7 @@ func TestIsCveFixed(t *testing.T) {
 							},
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.NVD,
+									Type:         models.NvdXML,
 									CveID:        "CVE-2016-6662",
 									LastModified: time.Time{},
 								},

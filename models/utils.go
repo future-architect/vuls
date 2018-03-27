@@ -23,8 +23,8 @@ import (
 	cvedict "github.com/kotakanbe/go-cve-dictionary/models"
 )
 
-// ConvertNvdToModel convert NVD to CveContent
-func ConvertNvdToModel(cveID string, nvd *cvedict.Nvd) *CveContent {
+// ConvertNvdXMLToModel convert NVD to CveContent
+func ConvertNvdXMLToModel(cveID string, nvd *cvedict.NvdXML) *CveContent {
 	if nvd == nil {
 		return nil
 	}
@@ -50,7 +50,7 @@ func ConvertNvdToModel(cveID string, nvd *cvedict.Nvd) *CveContent {
 	}
 
 	return &CveContent{
-		Type:          NVD,
+		Type:          Nvd,
 		CveID:         cveID,
 		Summary:       nvd.Summary,
 		Cvss2Score:    nvd.Cvss2.BaseScore,
@@ -137,7 +137,7 @@ func ConvertNvdJSONToModel(cveID string, nvd *cvedict.NvdJSON) *CveContent {
 	}
 
 	return &CveContent{
-		Type:          NVDJSON,
+		Type:          Nvd,
 		CveID:         cveID,
 		Summary:       strings.Join(desc, "\n"),
 		Cvss2Score:    nvd.Cvss2.BaseScore,

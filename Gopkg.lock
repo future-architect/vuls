@@ -61,8 +61,8 @@
     "service/s3",
     "service/sts"
   ]
-  revision = "28d0127967e59b0c41cede1e8d548ed85374bbbc"
-  version = "v1.13.14"
+  revision = "fb28e64a158b01377883badcc176216ac0fde3dd"
+  version = "v1.13.21"
 
 [[projects]]
   name = "github.com/boltdb/bolt"
@@ -135,7 +135,7 @@
   branch = "master"
   name = "github.com/hashicorp/go-version"
   packages = ["."]
-  revision = "4fe82ae3040f80a03d04d2cccb5606a626b8e1ee"
+  revision = "23480c0665776210b5fbbac6eaaee40e3e6a96b7"
 
 [[projects]]
   branch = "master"
@@ -191,7 +191,7 @@
     "matching",
     "naming"
   ]
-  revision = "147dfccd6cdbadb8b64b0a0420c6698974862fcd"
+  revision = "659663f6eca2ff32258e282557e7808115ea498a"
 
 [[projects]]
   branch = "master"
@@ -214,7 +214,7 @@
     "log",
     "models"
   ]
-  revision = "e161ecb9243c9a10e2716e2e0e216378bf80a1ad"
+  revision = "e09bebe98fe78ce80224f51d2c072946477476a6"
 
 [[projects]]
   name = "github.com/kotakanbe/go-pingscanner"
@@ -232,7 +232,7 @@
     "log",
     "models"
   ]
-  revision = "67f34a5be0566f8b79d97dc7c4d3e444d7125b16"
+  revision = "5f6caf8e94afbd280b9d55026cef351cb24c0889"
 
 [[projects]]
   branch = "master"
@@ -248,7 +248,7 @@
     "hstore",
     "oid"
   ]
-  revision = "88edab0803230a3898347e77b474f8c1820a1f20"
+  revision = "d34b9ff171c21ad295489235aec8b6626023cd04"
 
 [[projects]]
   name = "github.com/marstr/guid"
@@ -358,7 +358,7 @@
     "ssh/agent",
     "ssh/terminal"
   ]
-  revision = "21652f85b0fdddb6c2b6b77a5beca5c5a908174a"
+  revision = "88942b9c40a4c9d203b82b3731787b672d6e809b"
 
 [[projects]]
   branch = "master"
@@ -369,7 +369,7 @@
     "publicsuffix",
     "websocket"
   ]
-  revision = "e0c57d8f86c17f0724497efcb3bc617e82834821"
+  revision = "6078986fec03a1dcc236c34816c71b0e05018fda"
 
 [[projects]]
   branch = "master"
@@ -378,7 +378,7 @@
     "unix",
     "windows"
   ]
-  revision = "89ac7f292d17a339edab4de8efcba5d8672ff661"
+  revision = "13d03a9a82fba647c21a0ef8fba44a795d0f0835"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -404,6 +404,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d62bf8e7c801590a638fd75f6366c6730f3c07dbbf964dab6406f25f17b4a4bb"
+  inputs-digest = "905649d09f4b12a6c3c67526e2cf870cfa8ca1b31a0ff48a94c1e8de8c32eb3b"
   solver-name = "gps-cdcl"
   solver-version = 1
