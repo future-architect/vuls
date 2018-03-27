@@ -424,11 +424,7 @@ func Scan(timeoutSec int) error {
 	if err != nil {
 		return err
 	}
-	if err := scanVulns(dir, scannedAt, timeoutSec); err != nil {
-		return err
-	}
-
-	return nil
+	return scanVulns(dir, scannedAt, timeoutSec)
 }
 
 func setupChangelogCache() error {

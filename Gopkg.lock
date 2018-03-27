@@ -61,8 +61,8 @@
     "service/s3",
     "service/sts"
   ]
-  revision = "28d0127967e59b0c41cede1e8d548ed85374bbbc"
-  version = "v1.13.14"
+  revision = "fb28e64a158b01377883badcc176216ac0fde3dd"
+  version = "v1.13.21"
 
 [[projects]]
   name = "github.com/boltdb/bolt"
@@ -133,6 +133,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/hashicorp/go-version"
+  packages = ["."]
+  revision = "23480c0665776210b5fbbac6eaaee40e3e6a96b7"
+
+[[projects]]
+  branch = "master"
   name = "github.com/hashicorp/uuid"
   packages = ["."]
   revision = "ebb0a03e909c9c642a36d2527729104324c44fdb"
@@ -179,6 +185,16 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/knqyf263/go-cpe"
+  packages = [
+    "common",
+    "matching",
+    "naming"
+  ]
+  revision = "659663f6eca2ff32258e282557e7808115ea498a"
+
+[[projects]]
+  branch = "master"
   name = "github.com/knqyf263/go-deb-version"
   packages = ["."]
   revision = "9865fe14d09b1c729188ac810466dde90f897ee3"
@@ -190,18 +206,15 @@
   revision = "74609b86c936dff800c69ec89fcf4bc52d5f13a4"
 
 [[projects]]
-  branch = "master"
+  branch = "nvd-json"
   name = "github.com/kotakanbe/go-cve-dictionary"
   packages = [
     "config",
     "db",
-    "jvn",
     "log",
-    "models",
-    "nvd",
-    "util"
+    "models"
   ]
-  revision = "2a3c286d7d791fb75f0b0b9e81fae2bc2b558dc7"
+  revision = "e09bebe98fe78ce80224f51d2c072946477476a6"
 
 [[projects]]
   name = "github.com/kotakanbe/go-pingscanner"
@@ -219,7 +232,7 @@
     "log",
     "models"
   ]
-  revision = "67f34a5be0566f8b79d97dc7c4d3e444d7125b16"
+  revision = "5f6caf8e94afbd280b9d55026cef351cb24c0889"
 
 [[projects]]
   branch = "master"
@@ -235,7 +248,7 @@
     "hstore",
     "oid"
   ]
-  revision = "88edab0803230a3898347e77b474f8c1820a1f20"
+  revision = "d34b9ff171c21ad295489235aec8b6626023cd04"
 
 [[projects]]
   name = "github.com/marstr/guid"
@@ -345,7 +358,7 @@
     "ssh/agent",
     "ssh/terminal"
   ]
-  revision = "21652f85b0fdddb6c2b6b77a5beca5c5a908174a"
+  revision = "88942b9c40a4c9d203b82b3731787b672d6e809b"
 
 [[projects]]
   branch = "master"
@@ -356,7 +369,7 @@
     "publicsuffix",
     "websocket"
   ]
-  revision = "e0c57d8f86c17f0724497efcb3bc617e82834821"
+  revision = "6078986fec03a1dcc236c34816c71b0e05018fda"
 
 [[projects]]
   branch = "master"
@@ -365,7 +378,7 @@
     "unix",
     "windows"
   ]
-  revision = "89ac7f292d17a339edab4de8efcba5d8672ff661"
+  revision = "13d03a9a82fba647c21a0ef8fba44a795d0f0835"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -391,6 +404,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d62bf8e7c801590a638fd75f6366c6730f3c07dbbf964dab6406f25f17b4a4bb"
+  inputs-digest = "905649d09f4b12a6c3c67526e2cf870cfa8ca1b31a0ff48a94c1e8de8c32eb3b"
   solver-name = "gps-cdcl"
   solver-version = 1

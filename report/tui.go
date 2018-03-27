@@ -468,10 +468,7 @@ func changeHost(g *gocui.Gui, v *gocui.View) error {
 	if err := setDetailLayout(g); err != nil {
 		return err
 	}
-	if err := setChangelogLayout(g); err != nil {
-		return err
-	}
-	return nil
+	return setChangelogLayout(g)
 }
 
 func redrawDetail(g *gocui.Gui) error {
@@ -479,10 +476,7 @@ func redrawDetail(g *gocui.Gui) error {
 		return err
 	}
 
-	if err := setDetailLayout(g); err != nil {
-		return err
-	}
-	return nil
+	return setDetailLayout(g)
 }
 
 func redrawChangelog(g *gocui.Gui) error {
@@ -490,10 +484,7 @@ func redrawChangelog(g *gocui.Gui) error {
 		return err
 	}
 
-	if err := setChangelogLayout(g); err != nil {
-		return err
-	}
-	return nil
+	return setChangelogLayout(g)
 }
 
 func getLine(g *gocui.Gui, v *gocui.View) error {
@@ -545,10 +536,7 @@ func delMsg(g *gocui.Gui, v *gocui.View) error {
 	if err := g.DeleteView("msg"); err != nil {
 		return err
 	}
-	if err := g.SetCurrentView("summary"); err != nil {
-		return err
-	}
-	return nil
+	return g.SetCurrentView("summary")
 }
 
 func quit(g *gocui.Gui, v *gocui.View) error {
@@ -565,11 +553,7 @@ func layout(g *gocui.Gui) error {
 	if err := setDetailLayout(g); err != nil {
 		return err
 	}
-	if err := setChangelogLayout(g); err != nil {
-		return err
-	}
-
-	return nil
+	return setChangelogLayout(g)
 }
 
 func debug(g *gocui.Gui, str string) error {
@@ -801,12 +785,15 @@ func detailLines() (string, error) {
 	table := uitable.New()
 	table.MaxColWidth = maxColWidth
 	table.Wrap = true
-	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores()...)
+	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores(r.Family)...)
 	var cols []interface{}
 	for _, score := range scores {
+		cvssstr := score.Value.Format()
+		if cvssstr == "" {
+			continue
+		}
 		cols = []interface{}{
-			score.Value.Severity,
-			score.Value.Format(),
+			cvssstr,
 			score.Type,
 		}
 		table.AddRow(cols...)

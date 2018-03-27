@@ -31,10 +31,11 @@ func TestSyslogWriterEncodeSyslog(t *testing.T) {
 							models.PackageStatus{Name: "pkg4"},
 						},
 						CveContents: models.CveContents{
-							models.NVD: models.CveContent{
-								Cvss2Score:  5.0,
-								Cvss2Vector: "AV:L/AC:L/Au:N/C:N/I:N/A:C",
-								CweID:       "CWE-20",
+							models.NvdXML: models.CveContent{
+								Cvss2Score:    5.0,
+								Cvss2Vector:   "AV:L/AC:L/Au:N/C:N/I:N/A:C",
+								Cvss2Severity: "MEDIUM",
+								CweIDs:        []string{"CWE-20"},
 							},
 						},
 					},
@@ -42,7 +43,7 @@ func TestSyslogWriterEncodeSyslog(t *testing.T) {
 			},
 			expectedMessages: []string{
 				`server_name="teste01" os_family="ubuntu" os_release="16.04" ipv4_addr="192.168.0.1,10.0.2.15" ipv6_addr="" packages="pkg1,pkg2" cve_id="CVE-2017-0001"`,
-				`server_name="teste01" os_family="ubuntu" os_release="16.04" ipv4_addr="192.168.0.1,10.0.2.15" ipv6_addr="" packages="pkg3,pkg4" cve_id="CVE-2017-0002" severity="MEDIUM" cvss_score_v2="5.00" cvss_vector_v2="AV:L/AC:L/Au:N/C:N/I:N/A:C" cwe_id="CWE-20"`,
+				`server_name="teste01" os_family="ubuntu" os_release="16.04" ipv4_addr="192.168.0.1,10.0.2.15" ipv6_addr="" packages="pkg3,pkg4" cve_id="CVE-2017-0002" severity="MEDIUM" cvss_score_v2="5.00" cvss_vector_v2="AV:L/AC:L/Au:N/C:N/I:N/A:C" cwe_ids="CWE-20"`,
 			},
 		},
 		{
@@ -60,7 +61,7 @@ func TestSyslogWriterEncodeSyslog(t *testing.T) {
 							models.RedHat: models.CveContent{
 								Cvss3Score:  5.0,
 								Cvss3Vector: "AV:L/AC:L/Au:N/C:N/I:N/A:C",
-								CweID:       "CWE-284",
+								CweIDs:      []string{"CWE-284"},
 							},
 						},
 					},
@@ -86,7 +87,7 @@ func TestSyslogWriterEncodeSyslog(t *testing.T) {
 		for j, m := range messages {
 			e := tt.expectedMessages[j]
 			if e != m {
-				t.Errorf("test: %d, Messsage %d: expected %s, actual %s", i, j, e, m)
+				t.Errorf("test: %d, Messsage %d: \nexpected %s \nactual   %s", i, j, e, m)
 			}
 		}
 	}

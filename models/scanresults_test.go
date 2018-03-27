@@ -43,7 +43,7 @@ func TestFilterByCvssOver(t *testing.T) {
 							CveID: "CVE-2017-0001",
 							CveContents: NewCveContents(
 								CveContent{
-									Type:         NVD,
+									Type:         NvdXML,
 									CveID:        "CVE-2017-0001",
 									Cvss2Score:   7.1,
 									LastModified: time.Time{},
@@ -54,7 +54,7 @@ func TestFilterByCvssOver(t *testing.T) {
 							CveID: "CVE-2017-0002",
 							CveContents: NewCveContents(
 								CveContent{
-									Type:         NVD,
+									Type:         NvdXML,
 									CveID:        "CVE-2017-0002",
 									Cvss2Score:   6.9,
 									LastModified: time.Time{},
@@ -65,7 +65,7 @@ func TestFilterByCvssOver(t *testing.T) {
 							CveID: "CVE-2017-0003",
 							CveContents: NewCveContents(
 								CveContent{
-									Type:         NVD,
+									Type:         NvdXML,
 									CveID:        "CVE-2017-0003",
 									Cvss2Score:   6.9,
 									LastModified: time.Time{},
@@ -87,7 +87,7 @@ func TestFilterByCvssOver(t *testing.T) {
 						CveID: "CVE-2017-0001",
 						CveContents: NewCveContents(
 							CveContent{
-								Type:         NVD,
+								Type:         NvdXML,
 								CveID:        "CVE-2017-0001",
 								Cvss2Score:   7.1,
 								LastModified: time.Time{},
@@ -98,7 +98,7 @@ func TestFilterByCvssOver(t *testing.T) {
 						CveID: "CVE-2017-0003",
 						CveContents: NewCveContents(
 							CveContent{
-								Type:         NVD,
+								Type:         NvdXML,
 								CveID:        "CVE-2017-0003",
 								Cvss2Score:   6.9,
 								LastModified: time.Time{},
@@ -124,10 +124,10 @@ func TestFilterByCvssOver(t *testing.T) {
 							CveID: "CVE-2017-0001",
 							CveContents: NewCveContents(
 								CveContent{
-									Type:         Ubuntu,
-									CveID:        "CVE-2017-0001",
-									Severity:     "HIGH",
-									LastModified: time.Time{},
+									Type:          Ubuntu,
+									CveID:         "CVE-2017-0001",
+									Cvss2Severity: "HIGH",
+									LastModified:  time.Time{},
 								},
 							),
 						},
@@ -135,10 +135,10 @@ func TestFilterByCvssOver(t *testing.T) {
 							CveID: "CVE-2017-0002",
 							CveContents: NewCveContents(
 								CveContent{
-									Type:         RedHat,
-									CveID:        "CVE-2017-0002",
-									Severity:     "CRITICAL",
-									LastModified: time.Time{},
+									Type:          RedHat,
+									CveID:         "CVE-2017-0002",
+									Cvss2Severity: "CRITICAL",
+									LastModified:  time.Time{},
 								},
 							),
 						},
@@ -146,10 +146,10 @@ func TestFilterByCvssOver(t *testing.T) {
 							CveID: "CVE-2017-0003",
 							CveContents: NewCveContents(
 								CveContent{
-									Type:         Oracle,
-									CveID:        "CVE-2017-0003",
-									Severity:     "IMPORTANT",
-									LastModified: time.Time{},
+									Type:          Oracle,
+									CveID:         "CVE-2017-0003",
+									Cvss2Severity: "IMPORTANT",
+									LastModified:  time.Time{},
 								},
 							),
 						},
@@ -162,10 +162,10 @@ func TestFilterByCvssOver(t *testing.T) {
 						CveID: "CVE-2017-0001",
 						CveContents: NewCveContents(
 							CveContent{
-								Type:         Ubuntu,
-								CveID:        "CVE-2017-0001",
-								Severity:     "HIGH",
-								LastModified: time.Time{},
+								Type:          Ubuntu,
+								CveID:         "CVE-2017-0001",
+								Cvss2Severity: "HIGH",
+								LastModified:  time.Time{},
 							},
 						),
 					},
@@ -173,10 +173,10 @@ func TestFilterByCvssOver(t *testing.T) {
 						CveID: "CVE-2017-0002",
 						CveContents: NewCveContents(
 							CveContent{
-								Type:         RedHat,
-								CveID:        "CVE-2017-0002",
-								Severity:     "CRITICAL",
-								LastModified: time.Time{},
+								Type:          RedHat,
+								CveID:         "CVE-2017-0002",
+								Cvss2Severity: "CRITICAL",
+								LastModified:  time.Time{},
 							},
 						),
 					},
@@ -184,10 +184,10 @@ func TestFilterByCvssOver(t *testing.T) {
 						CveID: "CVE-2017-0003",
 						CveContents: NewCveContents(
 							CveContent{
-								Type:         Oracle,
-								CveID:        "CVE-2017-0003",
-								Severity:     "IMPORTANT",
-								LastModified: time.Time{},
+								Type:          Oracle,
+								CveID:         "CVE-2017-0003",
+								Cvss2Severity: "IMPORTANT",
+								LastModified:  time.Time{},
 							},
 						),
 					},

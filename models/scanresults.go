@@ -38,8 +38,8 @@ type ScanResult struct {
 	Release     string
 	Container   Container
 	Platform    Platform
-	IPv4Addrs   []string // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
-	IPv6Addrs   []string // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
+	IPv4Addrs   []string `json:",omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
+	IPv6Addrs   []string `json:",omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
 
 	ScannedAt       time.Time
 	ScannedVersion  string
@@ -54,8 +54,8 @@ type ScanResult struct {
 	ScannedCves   VulnInfos
 	RunningKernel Kernel
 	Packages      Packages
-	Optional      map[string]interface{}
-	SrcPackages   SrcPackages
+	Optional      map[string]interface{} `json:",omitempty"`
+	SrcPackages   SrcPackages            `json:",omitempty"`
 
 	Errors []string
 	Config struct {

@@ -73,8 +73,8 @@ func (w SyslogWriter) encodeSyslog(result models.ScanResult) (messages []string)
 		kvPairs = append(kvPairs, fmt.Sprintf(`packages="%s"`, pkgs))
 
 		kvPairs = append(kvPairs, fmt.Sprintf(`cve_id="%s"`, cveID))
-		for _, cvss := range vinfo.Cvss2Scores() {
-			if cvss.Type != models.NVD {
+		for _, cvss := range vinfo.Cvss2Scores(result.Family) {
+			if cvss.Type != models.NvdXML {
 				continue
 			}
 			kvPairs = append(kvPairs, fmt.Sprintf(`severity="%s"`, cvss.Value.Severity))
@@ -82,8 +82,9 @@ func (w SyslogWriter) encodeSyslog(result models.ScanResult) (messages []string)
 			kvPairs = append(kvPairs, fmt.Sprintf(`cvss_vector_v2="%s"`, cvss.Value.Vector))
 		}
 
-		if content, ok := vinfo.CveContents[models.NVD]; ok {
-			kvPairs = append(kvPairs, fmt.Sprintf(`cwe_id="%s"`, content.CweID))
+		if content, ok := vinfo.CveContents[models.NvdXML]; ok {
+			cwes := strings.Join(content.CweIDs, ",")
+			kvPairs = append(kvPairs, fmt.Sprintf(`cwe_ids="%s"`, cwes))
 			if config.Conf.Syslog.Verbose {
 				kvPairs = append(kvPairs, fmt.Sprintf(`source_link="%s"`, content.SourceLink))
 				kvPairs = append(kvPairs, fmt.Sprintf(`summary="%s"`, content.Summary))

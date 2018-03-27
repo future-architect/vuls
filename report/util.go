@@ -116,16 +116,23 @@ No CVE-IDs are found in updatable packages.
 		}
 
 		cvsses := ""
-		for _, cvss := range vuln.Cvss2Scores() {
-			cvsses += fmt.Sprintf("%s (%s)\n", cvss.Value.Format(), cvss.Type)
-		}
-		cvsses += vuln.Cvss2CalcURL() + "\n"
 		for _, cvss := range vuln.Cvss3Scores() {
-			cvsses += fmt.Sprintf("%s (%s)\n", cvss.Value.Format(), cvss.Type)
+			cvssstr := cvss.Value.Format()
+			if cvssstr != "" {
+				cvsses += fmt.Sprintf("%s (%s)\n", cvssstr, cvss.Type)
+			}
 		}
 		if 0 < len(vuln.Cvss3Scores()) {
 			cvsses += vuln.Cvss3CalcURL() + "\n"
 		}
+		for _, cvss := range vuln.Cvss2Scores(r.Family) {
+			cvssstr := cvss.Value.Format()
+			if cvssstr == "" {
+				continue
+			}
+			cvsses += fmt.Sprintf("%s (%s)\n", cvssstr, cvss.Type)
+		}
+		cvsses += vuln.Cvss2CalcURL() + "\n"
 
 		maxCvss := vuln.FormatMaxCvssScore()
 		rightCol := fmt.Sprintf(`%s
@@ -178,13 +185,19 @@ No CVE-IDs are found in updatable packages.
 		table.AddRow(vuln.CveID)
 		table.AddRow("----------------")
 		table.AddRow("Max Score", vuln.FormatMaxCvssScore())
-		for _, cvss := range vuln.Cvss2Scores() {
-			table.AddRow(cvss.Type, cvss.Value.Format())
-		}
 		for _, cvss := range vuln.Cvss3Scores() {
-			table.AddRow(cvss.Type, cvss.Value.Format())
+			cvssstr := cvss.Value.Format()
+			if cvssstr != "" {
+				table.AddRow(cvss.Type, cvssstr)
+			}
 		}
-		if 0 < len(vuln.Cvss2Scores()) {
+		for _, cvss := range vuln.Cvss2Scores(r.Family) {
+			cvssstr := cvss.Value.Format()
+			if cvssstr != "" {
+				table.AddRow(cvss.Type, cvssstr)
+			}
+		}
+		if 0 < len(vuln.Cvss2Scores(r.Family)) {
 			table.AddRow("CVSSv2 Calc", vuln.Cvss2CalcURL())
 		}
 		if 0 < len(vuln.Cvss3Scores()) {
@@ -387,7 +400,7 @@ func isCveFixed(current models.VulnInfo, previous models.ScanResult) bool {
 
 func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
 	cTypes := []models.CveContentType{
-		models.NVD,
+		models.NvdXML,
 		models.JVN,
 		models.NewCveContentType(current.Family),
 	}

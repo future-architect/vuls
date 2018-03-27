@@ -68,16 +68,19 @@ type response struct {
 	CveDetail cve.CveDetail
 }
 
-func (api cvedictClient) FetchCveDetails(driver cvedb.DB, cveIDs []string) (cveDetails []*cve.CveDetail, err error) {
+func (api cvedictClient) FetchCveDetails(driver cvedb.DB, cveIDs []string) (cveDetails []cve.CveDetail, err error) {
 	if !api.isFetchViaHTTP() {
 		for _, cveID := range cveIDs {
-			cveDetail := driver.Get(cveID)
+			cveDetail, err := driver.Get(cveID)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to fetch CVE. err: %s", err)
+			}
 			if len(cveDetail.CveID) == 0 {
-				cveDetails = append(cveDetails, &cve.CveDetail{
+				cveDetails = append(cveDetails, cve.CveDetail{
 					CveID: cveID,
 				})
 			} else {
-				cveDetails = append(cveDetails, cveDetail)
+				cveDetails = append(cveDetails, *cveDetail)
 			}
 		}
 		return
@@ -120,20 +123,20 @@ func (api cvedictClient) FetchCveDetails(driver cvedb.DB, cveIDs []string) (cveD
 		select {
 		case res := <-resChan:
 			if len(res.CveDetail.CveID) == 0 {
-				cveDetails = append(cveDetails, &cve.CveDetail{
+				cveDetails = append(cveDetails, cve.CveDetail{
 					CveID: res.Key,
 				})
 			} else {
-				cveDetails = append(cveDetails, &res.CveDetail)
+				cveDetails = append(cveDetails, res.CveDetail)
 			}
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
-			return []*cve.CveDetail{}, fmt.Errorf("Timeout Fetching CVE")
+			return nil, fmt.Errorf("Timeout Fetching CVE")
 		}
 	}
 	if len(errs) != 0 {
-		return []*cve.CveDetail{},
+		return nil,
 			fmt.Errorf("Failed to fetch CVE. err: %v", errs)
 	}
 	return
@@ -181,22 +184,22 @@ func (api cvedictClient) isFetchViaHTTP() bool {
 	return false
 }
 
-func (api cvedictClient) FetchCveDetailsByCpeName(driver cvedb.DB, cpeName string) ([]*cve.CveDetail, error) {
+func (api cvedictClient) FetchCveDetailsByCpeName(driver cvedb.DB, cpeName string) ([]cve.CveDetail, error) {
 	if api.isFetchViaHTTP() {
 		api.baseURL = config.Conf.CveDBURL
 		url, err := util.URLPathJoin(api.baseURL, "cpes")
 		if err != nil {
-			return []*cve.CveDetail{}, err
+			return nil, err
 		}
 
 		query := map[string]string{"name": cpeName}
 		util.Log.Debugf("HTTP Request to %s, query: %#v", url, query)
 		return api.httpPost(cpeName, url, query)
 	}
-	return driver.GetByCpeName(cpeName), nil
+	return driver.GetByCpeURI(cpeName)
 }
 
-func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]*cve.CveDetail, error) {
+func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]cve.CveDetail, error) {
 	var body string
 	var errs []error
 	var resp *http.Response
@@ -217,12 +220,12 @@ func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]*
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {
-		return []*cve.CveDetail{}, fmt.Errorf("HTTP Error %s", err)
+		return nil, fmt.Errorf("HTTP Error %s", err)
 	}
 
-	cveDetails := []*cve.CveDetail{}
+	cveDetails := []cve.CveDetail{}
 	if err := json.Unmarshal([]byte(body), &cveDetails); err != nil {
-		return []*cve.CveDetail{},
+		return nil,
 			fmt.Errorf("Failed to Unmarshall. body: %s, err: %s", body, err)
 	}
 	return cveDetails, nil

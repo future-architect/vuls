@@ -369,8 +369,8 @@ type SMTPConf struct {
 	User          string   `toml:"user,omitempty"`
 	Password      string   `toml:"password,omitempty" json:"-"`
 	From          string   `toml:"from,omitempty"`
-	To            []string `toml:"to,omitempty"`
-	Cc            []string `toml:"cc,omitempty"`
+	To            []string `toml:"to,omitempty" json:",omitempty"`
+	Cc            []string `toml:"cc,omitempty" json:",omitempty"`
 	SubjectPrefix string   `toml:"subjectPrefix,omitempty"`
 }
 
@@ -619,18 +619,18 @@ type ServerInfo struct {
 	Port                   string            `toml:"port,omitempty"`
 	KeyPath                string            `toml:"keyPath,omitempty"`
 	KeyPassword            string            `json:"-" toml:"-"`
-	CpeNames               []string          `toml:"cpeNames,omitempty"`
+	CpeNames               []string          `toml:"cpeNames,omitempty" json:",omitempty"`
 	DependencyCheckXMLPath string            `toml:"dependencyCheckXMLPath,omitempty"`
-	IgnoreCves             []string          `toml:"ignoreCves,omitempty"`
-	Containers             *Containers       `toml:"containers,omitempty"`
-	UUIDs                  map[string]string `toml:"uuids,omitempty"`
+	IgnoreCves             []string          `toml:"ignoreCves,omitempty" json:",omitempty"`
+	Containers             *Containers       `toml:"containers,omitempty" json:",omitempty"`
+	UUIDs                  map[string]string `toml:"uuids,omitempty" json:",omitempty"`
 	Memo                   string            `toml:"memo,omitempty"`
 
 	// For CentOS, RHEL, Amazon
-	Enablerepo []string `toml:",omitempty"`
+	Enablerepo []string `toml:",omitempty" json:",omitempty"`
 
 	// Optional key-value set that will be outputted to JSON
-	Optional map[string]interface{} `toml:",omitempty"`
+	Optional map[string]interface{} `toml:",omitempty" json:",omitempty"`
 
 	// "pseudo" or ""
 	Type string
@@ -641,8 +641,8 @@ type ServerInfo struct {
 	Distro          Distro    `toml:"-"`
 
 	// IP addresses
-	IPv4Addrs []string `toml:"-"`
-	IPv6Addrs []string `toml:"-"`
+	IPv4Addrs []string `toml:"-" json:",omitempty"`
+	IPv6Addrs []string `toml:"-" json:",omitempty"`
 }
 
 // GetServerName returns ServerName if this serverInfo is about host.
@@ -687,8 +687,8 @@ func (s *ServerInfo) SetContainer(d Container) {
 // Containers has Containers information.
 type Containers struct {
 	Type     string   `toml:"type,omitempty"`
-	Includes []string `toml:"includes,omitempty"`
-	Excludes []string `toml:"excludes,omitempty"`
+	Includes []string `toml:"includes,omitempty" json:",omitempty"`
+	Excludes []string `toml:"excludes,omitempty" json:",omitempty"`
 }
 
 // Container has Container information.

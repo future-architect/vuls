@@ -166,20 +166,32 @@ func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *mo
 			severity = cve.Impact
 		}
 
+		sev2, sev3 := "", ""
+		if score2 != 0 {
+			sev2 = severity
+		}
+		if score3 != 0 {
+			sev3 = severity
+		}
+
+		// CWE-ID in RedHat OVAL may have multiple cweIDs separated by space
+		cwes := strings.Fields(cve.Cwe)
+
 		return &models.CveContent{
-			Type:         models.NewCveContentType(o.family),
-			CveID:        cve.CveID,
-			Title:        def.Title,
-			Summary:      def.Description,
-			Severity:     severity,
-			Cvss2Score:   score2,
-			Cvss2Vector:  vec2,
-			Cvss3Score:   score3,
-			Cvss3Vector:  vec3,
-			References:   refs,
-			CweID:        cve.Cwe,
-			Published:    def.Advisory.Issued,
-			LastModified: def.Advisory.Updated,
+			Type:          models.NewCveContentType(o.family),
+			CveID:         cve.CveID,
+			Title:         def.Title,
+			Summary:       def.Description,
+			Cvss2Score:    score2,
+			Cvss2Vector:   vec2,
+			Cvss2Severity: sev2,
+			Cvss3Score:    score3,
+			Cvss3Vector:   vec3,
+			Cvss3Severity: sev3,
+			References:    refs,
+			CweIDs:        cwes,
+			Published:     def.Advisory.Issued,
+			LastModified:  def.Advisory.Updated,
 		}
 	}
 	return nil
@@ -208,7 +220,7 @@ func (o RedHatBase) parseCvss3(scoreVector string) (score float64, vector string
 		if score, err = strconv.ParseFloat(ss[0], 64); err != nil {
 			return 0, ""
 		}
-		return score, strings.Join(ss[1:], "/")
+		return score, fmt.Sprintf("CVSS:3.0/%s", ss[1])
 	}
 	return 0, ""
 }
