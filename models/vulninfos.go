@@ -124,10 +124,10 @@ type PackageStatus struct {
 // VulnInfo has a vulnerability information and unsecure packages
 type VulnInfo struct {
 	CveID            string
-	Confidence       Confidence
+	Confidences      Confidences
 	AffectedPackages PackageStatuses
-	DistroAdvisories []DistroAdvisory // for Aamazon, RHEL, FreeBSD
-	CpeNames         []string
+	DistroAdvisories []DistroAdvisory `json:",omitempty"` // for Aamazon, RHEL, FreeBSD
+	CpeNames         []string         `json:",omitempty"`
 	CveContents      CveContents
 }
 
@@ -546,11 +546,33 @@ func (p DistroAdvisory) Format() string {
 	return strings.Join(buf, "\n")
 }
 
+// Confidences is a list of Confidence
+type Confidences []Confidence
+
+// AppendIfMissing appends confidence to the list if missiong
+func (cs *Confidences) AppendIfMissing(confidence Confidence) {
+	for _, c := range *cs {
+		if c.DetectionMethod == confidence.DetectionMethod {
+			return
+		}
+	}
+	*cs = append(*cs, confidence)
+}
+
+// SortByConfident sorts Confidences
+func (cs Confidences) SortByConfident() Confidences {
+	sort.Slice(cs, func(i, j int) bool {
+		return cs[i].SortOrder < cs[j].SortOrder
+	})
+	return cs
+}
+
 // Confidence is a ranking how confident the CVE-ID was deteted correctly
 // Score: 0 - 100
 type Confidence struct {
 	Score           int
 	DetectionMethod DetectionMethod
+	SortOrder       int
 }
 
 func (c Confidence) String() string {
@@ -590,20 +612,20 @@ const (
 
 var (
 	// CpeNameMatch is a ranking how confident the CVE-ID was deteted correctly
-	CpeNameMatch = Confidence{100, CpeNameMatchStr}
+	CpeNameMatch = Confidence{100, CpeNameMatchStr, 1}
 
 	// YumUpdateSecurityMatch is a ranking how confident the CVE-ID was deteted correctly
-	YumUpdateSecurityMatch = Confidence{100, YumUpdateSecurityMatchStr}
+	YumUpdateSecurityMatch = Confidence{100, YumUpdateSecurityMatchStr, 2}
 
 	// PkgAuditMatch is a ranking how confident the CVE-ID was deteted correctly
-	PkgAuditMatch = Confidence{100, PkgAuditMatchStr}
+	PkgAuditMatch = Confidence{100, PkgAuditMatchStr, 2}
 
 	// OvalMatch is a ranking how confident the CVE-ID was deteted correctly
-	OvalMatch = Confidence{100, OvalMatchStr}
+	OvalMatch = Confidence{100, OvalMatchStr, 0}
 
 	// ChangelogExactMatch is a ranking how confident the CVE-ID was deteted correctly
-	ChangelogExactMatch = Confidence{95, ChangelogExactMatchStr}
+	ChangelogExactMatch = Confidence{95, ChangelogExactMatchStr, 3}
 
 	// ChangelogLenientMatch is a ranking how confident the CVE-ID was deteted correctly
-	ChangelogLenientMatch = Confidence{50, ChangelogLenientMatchStr}
+	ChangelogLenientMatch = Confidence{50, ChangelogLenientMatchStr, 4}
 )

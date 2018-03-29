@@ -640,7 +640,7 @@ func (o *debian) scanVulnInfos(updatablePacks models.Packages, meta *cache.Meta)
 
 		vinfos[cveID.CveID] = models.VulnInfo{
 			CveID:            cveID.CveID,
-			Confidence:       cveID.Confidence,
+			Confidences:      models.Confidences{cveID.Confidence},
 			AffectedPackages: affected,
 		}
 	}

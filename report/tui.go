@@ -638,7 +638,7 @@ func summaryLines() string {
 			fmt.Sprintf(indexFormat, i+1),
 			vinfo.CveID,
 			cvssScore,
-			fmt.Sprintf("| %3d |", vinfo.Confidence.Score),
+			fmt.Sprintf("| %3d |", vinfo.Confidences.SortByConfident()[0].Score),
 			summary,
 		}
 		icols := make([]interface{}, len(cols))
@@ -725,7 +725,7 @@ type dataForTmpl struct {
 	CveID            string
 	Cvsses           string
 	Summary          string
-	Confidence       models.Confidence
+	Confidences      models.Confidences
 	Cwes             []models.CveContentStr
 	Links            []string
 	References       []models.Reference
@@ -800,14 +800,14 @@ func detailLines() (string, error) {
 	}
 
 	data := dataForTmpl{
-		CveID:      vinfo.CveID,
-		Cvsses:     fmt.Sprintf("%s\n", table),
-		Summary:    fmt.Sprintf("%s (%s)", summary.Value, summary.Type),
-		Confidence: vinfo.Confidence,
-		Cwes:       vinfo.CveContents.CweIDs(r.Family),
-		Links:      util.Distinct(links),
-		Packages:   packsVer,
-		References: refs,
+		CveID:       vinfo.CveID,
+		Cvsses:      fmt.Sprintf("%s\n", table),
+		Summary:     fmt.Sprintf("%s (%s)", summary.Value, summary.Type),
+		Confidences: vinfo.Confidences,
+		Cwes:        vinfo.CveContents.CweIDs(r.Family),
+		Links:       util.Distinct(links),
+		Packages:    packsVer,
+		References:  refs,
 	}
 
 	buf := bytes.NewBuffer(nil) // create empty buffer
@@ -854,8 +854,9 @@ Package/CPE
 
 Confidence
 --------------
- {{.Confidence }}
-
+{{range $confidence := .Confidences -}}
+* {{$confidence.DetectionMethod}}
+{{end}}
 
 References
 --------------

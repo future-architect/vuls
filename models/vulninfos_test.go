@@ -937,3 +937,71 @@ func TestSortPackageStatues(t *testing.T) {
 		}
 	}
 }
+
+func TestAppendIfMissing(t *testing.T) {
+	var tests = []struct {
+		in  Confidences
+		arg Confidence
+		out Confidences
+	}{
+		{
+			in: Confidences{
+				CpeNameMatch,
+			},
+			arg: CpeNameMatch,
+			out: Confidences{
+				CpeNameMatch,
+			},
+		},
+		{
+			in: Confidences{
+				CpeNameMatch,
+			},
+			arg: ChangelogExactMatch,
+			out: Confidences{
+				CpeNameMatch,
+				ChangelogExactMatch,
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt.in.AppendIfMissing(tt.arg)
+		if !reflect.DeepEqual(tt.in, tt.out) {
+			t.Errorf("\nexpected: %v\n  actual: %v\n", tt.out, tt.in)
+		}
+	}
+}
+
+func TestSortByConfiden(t *testing.T) {
+	var tests = []struct {
+		in  Confidences
+		out Confidences
+	}{
+		{
+			in: Confidences{
+				OvalMatch,
+				CpeNameMatch,
+			},
+			out: Confidences{
+				OvalMatch,
+				CpeNameMatch,
+			},
+		},
+		{
+			in: Confidences{
+				CpeNameMatch,
+				OvalMatch,
+			},
+			out: Confidences{
+				OvalMatch,
+				CpeNameMatch,
+			},
+		},
+	}
+	for _, tt := range tests {
+		act := tt.in.SortByConfident()
+		if !reflect.DeepEqual(tt.out, act) {
+			t.Errorf("\nexpected: %v\n  actual: %v\n", tt.out, act)
+		}
+	}
+}

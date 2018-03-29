@@ -238,13 +238,13 @@ func fillVulnByCpeNames(driver cvedb.DB, scannedVulns models.VulnInfos, cpeNames
 				names := val.CpeNames
 				names = util.AppendIfMissing(names, name)
 				val.CpeNames = names
-				val.Confidence = models.CpeNameMatch
+				val.Confidences.AppendIfMissing(models.CpeNameMatch)
 				scannedVulns[detail.CveID] = val
 			} else {
 				v := models.VulnInfo{
-					CveID:      detail.CveID,
-					CpeNames:   []string{name},
-					Confidence: models.CpeNameMatch,
+					CveID:       detail.CveID,
+					CpeNames:    []string{name},
+					Confidences: models.Confidences{models.CpeNameMatch},
 				}
 				scannedVulns[detail.CveID] = v
 			}

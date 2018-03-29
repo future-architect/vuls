@@ -38,7 +38,7 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 		util.Log.Debugf("%s is newly detected by OVAL", defPacks.def.Debian.CveID)
 		vinfo = models.VulnInfo{
 			CveID:       defPacks.def.Debian.CveID,
-			Confidence:  models.OvalMatch,
+			Confidences: []models.Confidence{models.OvalMatch},
 			CveContents: models.NewCveContents(ovalContent),
 		}
 	} else {
@@ -52,9 +52,7 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 				defPacks.def.Debian.CveID)
 			cveContents = models.CveContents{}
 		}
-		if vinfo.Confidence.Score < models.OvalMatch.Score {
-			vinfo.Confidence = models.OvalMatch
-		}
+		vinfo.Confidences.AppendIfMissing(models.OvalMatch)
 		cveContents[ctype] = ovalContent
 		vinfo.CveContents = cveContents
 	}

@@ -613,9 +613,8 @@ func (o *redhat) fillDiffChangelogs(packNames []string) error {
 		})
 
 		if found {
-			diff, err := o.getDiffChangelog(pack, changelogs[s])
 			var detectionMethod string
-
+			diff, err := o.getDiffChangelog(pack, changelogs[s])
 			if err == nil {
 				detectionMethod = models.ChangelogExactMatchStr
 			} else {
@@ -749,7 +748,7 @@ func (o *redhat) scanCveIDsInChangelog(updatable models.Packages) (models.VulnIn
 				vinfos[cid] = models.VulnInfo{
 					CveID:            cid,
 					AffectedPackages: models.PackageStatuses{{Name: name}},
-					Confidence:       models.ChangelogExactMatch,
+					Confidences:      models.Confidences{models.ChangelogExactMatch},
 				}
 			}
 		}
@@ -858,7 +857,7 @@ func (o *redhat) scanCveIDsByCommands(updatable models.Packages) (models.VulnInf
 					CveID:            cveID,
 					DistroAdvisories: []models.DistroAdvisory{advIDCveIDs.DistroAdvisory},
 					AffectedPackages: affected,
-					Confidence:       models.YumUpdateSecurityMatch,
+					Confidences:      models.Confidences{models.YumUpdateSecurityMatch},
 				}
 			}
 			vinfos[cveID] = vinfo

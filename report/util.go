@@ -147,7 +147,7 @@ No CVE-IDs are found in updatable packages.
 			strings.Join(vlinks, "\n"),
 			cvsses,
 			//  packsVer,
-			vuln.Confidence,
+			vuln.Confidences,
 		)
 
 		leftCol := fmt.Sprintf("%s", vuln.CveID)
@@ -231,7 +231,7 @@ No CVE-IDs are found in updatable packages.
 			packsVer = append(packsVer, name)
 		}
 		table.AddRow("Package/CPE", strings.Join(packsVer, "\n"))
-		table.AddRow("Confidence", vuln.Confidence)
+		table.AddRow("Confidence", vuln.Confidences)
 
 		table.AddRow("\n")
 	}

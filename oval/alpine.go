@@ -63,8 +63,8 @@ func (o Alpine) update(r *models.ScanResult, defPacks defPacks) {
 	if !ok {
 		util.Log.Debugf("%s is newly detected by OVAL", cveID)
 		vinfo = models.VulnInfo{
-			CveID:      cveID,
-			Confidence: models.OvalMatch,
+			CveID:       cveID,
+			Confidences: []models.Confidence{models.OvalMatch},
 		}
 	}
 

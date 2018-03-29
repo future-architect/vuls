@@ -73,7 +73,7 @@ func (o SUSE) update(r *models.ScanResult, defPacks defPacks) {
 		util.Log.Debugf("%s is newly detected by OVAL", defPacks.def.Title)
 		vinfo = models.VulnInfo{
 			CveID:       defPacks.def.Title,
-			Confidence:  models.OvalMatch,
+			Confidences: models.Confidences{models.OvalMatch},
 			CveContents: models.NewCveContents(ovalContent),
 		}
 	} else {
@@ -85,9 +85,7 @@ func (o SUSE) update(r *models.ScanResult, defPacks defPacks) {
 			util.Log.Debugf("%s is also detected by OVAL", defPacks.def.Title)
 			cveContents = models.CveContents{}
 		}
-		if vinfo.Confidence.Score < models.OvalMatch.Score {
-			vinfo.Confidence = models.OvalMatch
-		}
+		vinfo.Confidences.AppendIfMissing(models.OvalMatch)
 		cveContents[ctype] = ovalContent
 		vinfo.CveContents = cveContents
 	}
