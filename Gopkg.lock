@@ -61,8 +61,8 @@
     "service/s3",
     "service/sts"
   ]
-  revision = "fb28e64a158b01377883badcc176216ac0fde3dd"
-  version = "v1.13.21"
+  revision = "bb206ce0d6a50da7807694a823aed5c601c57ce0"
+  version = "v1.13.23"
 
 [[projects]]
   name = "github.com/boltdb/bolt"
@@ -87,6 +87,12 @@
   packages = ["."]
   revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
   version = "v3.2.0"
+
+[[projects]]
+  name = "github.com/fatih/color"
+  packages = ["."]
+  revision = "507f6050b8568533fb3f5504de8e5205fa62a114"
+  version = "v1.6.0"
 
 [[projects]]
   name = "github.com/go-ini/ini"
@@ -214,7 +220,7 @@
     "log",
     "models"
   ]
-  revision = "e09bebe98fe78ce80224f51d2c072946477476a6"
+  revision = "1671ffa59da21c069ba61e754994dd7359edabf4"
 
 [[projects]]
   name = "github.com/kotakanbe/go-pingscanner"
@@ -232,7 +238,7 @@
     "log",
     "models"
   ]
-  revision = "5f6caf8e94afbd280b9d55026cef351cb24c0889"
+  revision = "ad20e5b993f4198a6d3f10c7f92800285b20122f"
 
 [[projects]]
   branch = "master"
