@@ -604,9 +604,11 @@ func (o *redhat) fillDiffChangelogs(packNames []string) error {
 
 		if found {
 			diff, err := o.getDiffChangelog(pack, changelogs[s])
-			detectionMethod := models.ChangelogExactMatchStr
+			var detectionMethod string
 
-			if err != nil {
+			if err == nil {
+				detectionMethod = models.ChangelogExactMatchStr
+			} else {
 				o.log.Debug(err)
 				// Try without epoch
 				if index := strings.Index(pack.Version, ":"); 0 < index {
@@ -616,11 +618,23 @@ func (o *redhat) fillDiffChangelogs(packNames []string) error {
 					if err != nil {
 						o.log.Debugf("Failed to find the version in changelog: %s-%s-%s",
 							pack.Name, pack.Version, pack.Release)
-						detectionMethod = models.FailedToFindVersionInChangelog
+						if len(diff) == 0 {
+							detectionMethod = models.FailedToGetChangelog
+						} else {
+							detectionMethod = models.FailedToFindVersionInChangelog
+							diff = ""
+						}
 					} else {
 						o.log.Debugf("Found the version in changelog without epoch: %s-%s-%s",
 							pack.Name, pack.Version, pack.Release)
 						detectionMethod = models.ChangelogLenientMatchStr
+					}
+				} else {
+					if len(diff) == 0 {
+						detectionMethod = models.FailedToGetChangelog
+					} else {
+						detectionMethod = models.FailedToFindVersionInChangelog
+						diff = ""
 					}
 				}
 			}

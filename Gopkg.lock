@@ -49,6 +49,7 @@
     "aws/request",
     "aws/session",
     "aws/signer/v4",
+    "internal/sdkio",
     "internal/sdkrand",
     "internal/shareddefaults",
     "private/protocol",
@@ -60,8 +61,8 @@
     "service/s3",
     "service/sts"
   ]
-  revision = "adeb60566bc8c9202b0f1be7e3a675beedbc11f0"
-  version = "v1.13.2"
+  revision = "bb206ce0d6a50da7807694a823aed5c601c57ce0"
+  version = "v1.13.23"
 
 [[projects]]
   name = "github.com/boltdb/bolt"
@@ -79,19 +80,19 @@
   branch = "master"
   name = "github.com/cheggaaa/pb"
   packages = ["."]
-  revision = "521e54ab5f0d0e5260964d094a414759c65fcbb3"
+  revision = "75a8cbd866a7bad0d4a3b2b8cb6cab48a1475155"
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
   packages = ["."]
-  revision = "dbeaa9332f19a944acb5736b4456cfcc02140e29"
-  version = "v3.1.0"
+  revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
+  version = "v3.2.0"
 
 [[projects]]
   name = "github.com/go-ini/ini"
   packages = ["."]
-  revision = "32e4c1e6bc4e7d0d8451aa6b75200d19e37a536a"
-  version = "v1.32.0"
+  revision = "6333e38ac20b8949a8dd68baa3650f4dee8f39f0"
+  version = "v1.33.0"
 
 [[projects]]
   name = "github.com/go-redis/redis"
@@ -102,10 +103,11 @@
     "internal/hashtag",
     "internal/pool",
     "internal/proto",
-    "internal/singleflight"
+    "internal/singleflight",
+    "internal/util"
   ]
-  revision = "fa7f64f7f27348658ecfa71dd71dfb2d112e2f86"
-  version = "v6.9.0"
+  revision = "877867d2845fbaf86798befe410b6ceb6f5c29a3"
+  version = "v6.10.2"
 
 [[projects]]
   name = "github.com/go-sql-driver/mysql"
@@ -117,7 +119,7 @@
   branch = "master"
   name = "github.com/google/subcommands"
   packages = ["."]
-  revision = "ce3d4cfc062faac7115d44e5befec8b5a08c3faa"
+  revision = "a3682377147edf596d303faabd89f81977b3f678"
 
 [[projects]]
   branch = "master"
@@ -143,14 +145,14 @@
     "dialects/postgres",
     "dialects/sqlite"
   ]
-  revision = "5174cc5c242a728b435ea2be8a2f7f998e15429b"
-  version = "v1.0"
+  revision = "6ed508ec6a4ecb3531899a69cbc746ccf65a4166"
+  version = "v1.9.1"
 
 [[projects]]
   branch = "master"
   name = "github.com/jinzhu/inflection"
   packages = ["."]
-  revision = "1c35d901db3da928c72a72d8458480cc9ade058f"
+  revision = "04140366298a54a039076d798123ffa108fff46c"
 
 [[projects]]
   name = "github.com/jmespath/go-jmespath"
@@ -193,7 +195,7 @@
     "nvd",
     "util"
   ]
-  revision = "fde71467f9c6a941490af81dd1d34e8bff0aba01"
+  revision = "2a3c286d7d791fb75f0b0b9e81fae2bc2b558dc7"
 
 [[projects]]
   name = "github.com/kotakanbe/go-pingscanner"
@@ -211,7 +213,7 @@
     "log",
     "models"
   ]
-  revision = "85c10368a38d0c020d76b8bd93155f00324dcb08"
+  revision = "5f6caf8e94afbd280b9d55026cef351cb24c0889"
 
 [[projects]]
   branch = "master"
@@ -227,7 +229,7 @@
     "hstore",
     "oid"
   ]
-  revision = "88edab0803230a3898347e77b474f8c1820a1f20"
+  revision = "d34b9ff171c21ad295489235aec8b6626023cd04"
 
 [[projects]]
   name = "github.com/marstr/guid"
@@ -286,7 +288,7 @@
   branch = "master"
   name = "github.com/nsf/termbox-go"
   packages = ["."]
-  revision = "88b7b944be8bc8d8ec6195fca97c5869ba20f99d"
+  revision = "e2050e41c8847748ec5288741c0b19a8cb26d084"
 
 [[projects]]
   name = "github.com/parnurzeal/gorequest"
@@ -303,8 +305,8 @@
 [[projects]]
   name = "github.com/rifflock/lfshook"
   packages = ["."]
-  revision = "1fdc019a35147ddbb3d25aedf713ad6d1430c144"
-  version = "v2.2"
+  revision = "bf539943797a1f34c1f502d07de419b5238ae6c6"
+  version = "v2.3"
 
 [[projects]]
   name = "github.com/satori/go.uuid"
@@ -316,7 +318,7 @@
   branch = "master"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "8c0189d9f6bbf301e5d055d34268156b317016af"
+  revision = "90150a8ed11b6ce285e77e8af2b0109559ce4777"
 
 [[projects]]
   branch = "master"
@@ -337,7 +339,7 @@
     "ssh/agent",
     "ssh/terminal"
   ]
-  revision = "432090b8f568c018896cd8a0fb0345872bbac6ce"
+  revision = "88942b9c40a4c9d203b82b3731787b672d6e809b"
 
 [[projects]]
   branch = "master"
@@ -348,7 +350,7 @@
     "publicsuffix",
     "websocket"
   ]
-  revision = "cbe0f9307d0156177f9dd5dc85da1a31abc5f2fb"
+  revision = "6078986fec03a1dcc236c34816c71b0e05018fda"
 
 [[projects]]
   branch = "master"
@@ -357,7 +359,7 @@
     "unix",
     "windows"
   ]
-  revision = "37707fdb30a5b38865cfb95e5aab41707daec7fd"
+  revision = "13d03a9a82fba647c21a0ef8fba44a795d0f0835"
 
 [[projects]]
   name = "golang.org/x/text"
