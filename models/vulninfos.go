@@ -107,10 +107,19 @@ func (v VulnInfos) FormatCveSummary() string {
 // PackageStatuses is a list of PackageStatus
 type PackageStatuses []PackageStatus
 
+// FormatTuiSummary format packname to show TUI summary
+func (ps PackageStatuses) FormatTuiSummary() string {
+	names := []string{}
+	for _, p := range ps {
+		names = append(names, p.Name)
+	}
+	return strings.Join(names, ", ")
+}
+
 // Sort by Name
-func (p PackageStatuses) Sort() {
-	sort.Slice(p, func(i, j int) bool {
-		return p[i].Name < p[j].Name
+func (ps PackageStatuses) Sort() {
+	sort.Slice(ps, func(i, j int) bool {
+		return ps[i].Name < ps[j].Name
 	})
 	return
 }
@@ -572,7 +581,7 @@ func (cs Confidences) SortByConfident() Confidences {
 type Confidence struct {
 	Score           int
 	DetectionMethod DetectionMethod
-	SortOrder       int
+	SortOrder       int `json:"-"`
 }
 
 func (c Confidence) String() string {

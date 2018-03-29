@@ -30,6 +30,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/cwe"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/util"
@@ -118,7 +119,7 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeNames []string) err
 	if err := fillWithCveDB(dbclient.CveDB, r, cpeNames); err != nil {
 		return fmt.Errorf("Failed to fill CVE information: %s", err)
 	}
-
+	fillCweDict(r)
 	return nil
 }
 
@@ -251,6 +252,35 @@ func fillVulnByCpeNames(driver cvedb.DB, scannedVulns models.VulnInfos, cpeNames
 		}
 	}
 	return nil
+}
+
+func fillCweDict(r *models.ScanResult) {
+	uniqCweIDMap := map[string]bool{}
+	for _, vinfo := range r.ScannedCves {
+		for _, cont := range vinfo.CveContents {
+			for _, id := range cont.CweIDs {
+				if strings.HasPrefix(id, "CWE-") {
+					id = strings.TrimPrefix(id, "CWE-")
+					uniqCweIDMap[id] = true
+				}
+			}
+		}
+	}
+
+	// TODO check the format of CWEID, clean CWEID
+	// JVN, NVD XML, JSON, OVALs
+
+	dict := map[string]models.CweDictEntry{}
+	for id := range uniqCweIDMap {
+		if cwe, ok := cwe.CweDictEn[id]; ok {
+			dict[id] = models.CweDictEntry{En: &cwe}
+		} else {
+			util.Log.Warnf("CWE-ID %s is not found", id)
+		}
+	}
+
+	r.CweDict = dict
+	return
 }
 
 const reUUID = "[\\da-f]{8}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{12}"

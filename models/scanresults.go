@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/cwe"
 )
 
 // ScanResults is a slide of ScanResult
@@ -54,14 +55,23 @@ type ScanResult struct {
 	ScannedCves   VulnInfos
 	RunningKernel Kernel
 	Packages      Packages
-	Optional      map[string]interface{} `json:",omitempty"`
-	SrcPackages   SrcPackages            `json:",omitempty"`
+	CweDict       map[string]CweDictEntry
+
+	Optional    map[string]interface{} `json:",omitempty"`
+	SrcPackages SrcPackages            `json:",omitempty"`
 
 	Errors []string
 	Config struct {
 		Scan   config.Config
 		Report config.Config
 	}
+}
+
+// CweDictEntry is a dictionary of scanned CWE
+type CweDictEntry struct {
+	En *cwe.Cwe `json:",omitempty"`
+	//TODO
+	Ja *cwe.Cwe `json:",omitempty"`
 }
 
 // Kernel has the Release, version and whether need restart

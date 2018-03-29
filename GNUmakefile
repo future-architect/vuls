@@ -15,7 +15,7 @@
 	clean
 
 SRCS = $(shell git ls-files '*.go')
-PKGS = ./. ./cache ./commands ./config ./models ./oval ./report ./scan ./util 
+PKGS = ./. ./cache ./commands ./config ./models ./oval ./report ./scan ./util ./cwe
 VERSION := $(shell git describe --tags --abbrev=0)
 REVISION := $(shell git rev-parse --short HEAD)
 LDFLAGS := -X 'github.com/future-architect/vuls/config.Version=$(VERSION)' \

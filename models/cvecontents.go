@@ -150,6 +150,11 @@ func (v CveContents) CweIDs(myFamily string) (values []CveContentStr) {
 	for _, ctype := range order {
 		if cont, found := v[ctype]; found && 0 < len(cont.CweIDs) {
 			for _, cweID := range cont.CweIDs {
+				for _, val := range values {
+					if val.Value == cweID {
+						continue
+					}
+				}
 				values = append(values, CveContentStr{
 					Type:  ctype,
 					Value: cweID,

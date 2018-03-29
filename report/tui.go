@@ -633,12 +633,15 @@ func summaryLines() string {
 		cvssScore := fmt.Sprintf("| %4.1f",
 			vinfo.MaxCvssScore().Value.Score)
 
+		packname := vinfo.AffectedPackages.FormatTuiSummary()
+		packname += strings.Join(vinfo.CpeNames, ", ")
+
 		var cols []string
 		cols = []string{
 			fmt.Sprintf(indexFormat, i+1),
 			vinfo.CveID,
-			cvssScore,
-			fmt.Sprintf("| %3d |", vinfo.Confidences.SortByConfident()[0].Score),
+			cvssScore + " |",
+			packname,
 			summary,
 		}
 		icols := make([]interface{}, len(cols))
@@ -726,7 +729,7 @@ type dataForTmpl struct {
 	Cvsses           string
 	Summary          string
 	Confidences      models.Confidences
-	Cwes             []models.CveContentStr
+	Cwes             []models.CweDictEntry
 	Links            []string
 	References       []models.Reference
 	Packages         []string
@@ -799,12 +802,22 @@ func detailLines() (string, error) {
 		table.AddRow(cols...)
 	}
 
+	uniqCweIDs := vinfo.CveContents.CweIDs(r.Family)
+	cwes := []models.CweDictEntry{}
+	for _, cweID := range uniqCweIDs {
+		if strings.HasPrefix(cweID.Value, "CWE-") {
+			if dict, ok := r.CweDict[strings.TrimPrefix(cweID.Value, "CWE-")]; ok {
+				cwes = append(cwes, dict)
+			}
+		}
+	}
+
 	data := dataForTmpl{
 		CveID:       vinfo.CveID,
 		Cvsses:      fmt.Sprintf("%s\n", table),
 		Summary:     fmt.Sprintf("%s (%s)", summary.Value, summary.Type),
 		Confidences: vinfo.Confidences,
-		Cwes:        vinfo.CveContents.CweIDs(r.Family),
+		Cwes:        cwes,
 		Links:       util.Distinct(links),
 		Packages:    packsVer,
 		References:  refs,
@@ -825,24 +838,20 @@ const mdTemplate = `
 CVSS Scores
 --------------
 {{.Cvsses }}
-
 Summary
 --------------
  {{.Summary }}
-
 
 Links
 --------------
 {{range $link := .Links -}}
 * {{$link}}
 {{end}}
-
 CWE
 --------------
 {{range .Cwes -}}
-* {{.Value}} ({{.Type}})
+* {{.En.CweID}} [{{.En.Name}}](https://cwe.mitre.org/data/definitions/{{.En.CweID}}.html)
 {{end}}
-
 Package/CPE
 --------------
 {{range $pack := .Packages -}}
@@ -851,17 +860,15 @@ Package/CPE
 {{range $name := .CpeNames -}}
 * {{$name}}
 {{end}}
-
 Confidence
 --------------
 {{range $confidence := .Confidences -}}
 * {{$confidence.DetectionMethod}}
 {{end}}
-
 References
 --------------
 {{range .References -}}
-* [{{.Source}}]( {{.Link}} )
+* [{{.Source}}]({{.Link}})
 {{end}}
 
 `
