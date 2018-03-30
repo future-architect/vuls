@@ -119,6 +119,7 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeNames []string) err
 	if err := fillWithCveDB(dbclient.CveDB, r, cpeNames); err != nil {
 		return fmt.Errorf("Failed to fill CVE information: %s", err)
 	}
+
 	fillCweDict(r)
 	return nil
 }
@@ -272,13 +273,24 @@ func fillCweDict(r *models.ScanResult) {
 
 	dict := map[string]models.CweDictEntry{}
 	for id := range uniqCweIDMap {
+		entry := models.CweDictEntry{}
 		if cwe, ok := cwe.CweDictEn[id]; ok {
-			dict[id] = models.CweDictEntry{En: &cwe}
+			entry.En = &cwe
 		} else {
-			util.Log.Warnf("CWE-ID %s is not found", id)
+			util.Log.Debugf("CWE-ID %s is not found in English CWE Dict", id)
+			// entry.En = nil
 		}
-	}
 
+		if c.Conf.Lang == "ja" {
+			if cwe, ok := cwe.CweDictJa[id]; ok {
+				entry.Ja = &cwe
+			} else {
+				util.Log.Debugf("CWE-ID %s is not found in Japanese CWE Dict", id)
+				// entry.Ja = nil
+			}
+		}
+		dict[id] = entry
+	}
 	r.CweDict = dict
 	return
 }

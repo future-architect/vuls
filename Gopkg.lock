@@ -61,8 +61,8 @@
     "service/s3",
     "service/sts"
   ]
-  revision = "bb206ce0d6a50da7807694a823aed5c601c57ce0"
-  version = "v1.13.23"
+  revision = "4b5324816e154564ef4e490842c2e40560971f75"
+  version = "v1.13.24"
 
 [[projects]]
   name = "github.com/boltdb/bolt"
@@ -220,7 +220,7 @@
     "log",
     "models"
   ]
-  revision = "1671ffa59da21c069ba61e754994dd7359edabf4"
+  revision = "4bd4c27138693120ac30d57441ca424446bfbdaf"
 
 [[projects]]
   name = "github.com/kotakanbe/go-pingscanner"
@@ -343,7 +343,7 @@
   branch = "master"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "90150a8ed11b6ce285e77e8af2b0109559ce4777"
+  revision = "778f2e774c725116edbc3d039dc0dfc1cc62aae8"
 
 [[projects]]
   branch = "master"
@@ -384,7 +384,7 @@
     "unix",
     "windows"
   ]
-  revision = "13d03a9a82fba647c21a0ef8fba44a795d0f0835"
+  revision = "378d26f46672a356c46195c28f61bdb4c0a781dd"
 
 [[projects]]
   name = "golang.org/x/text"
