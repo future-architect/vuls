@@ -274,16 +274,22 @@ func fillCweDict(r *models.ScanResult) {
 	dict := map[string]models.CweDictEntry{}
 	for id := range uniqCweIDMap {
 		entry := models.CweDictEntry{}
-		if cwe, ok := cwe.CweDictEn[id]; ok {
-			entry.En = &cwe
+		if e, ok := cwe.CweDictEn[id]; ok {
+			if rank, ok := cwe.OwaspTopTen2017[id]; ok {
+				entry.OwaspTopTen2017 = rank
+			}
+			entry.En = &e
 		} else {
 			util.Log.Debugf("CWE-ID %s is not found in English CWE Dict", id)
 			// entry.En = nil
 		}
 
 		if c.Conf.Lang == "ja" {
-			if cwe, ok := cwe.CweDictJa[id]; ok {
-				entry.Ja = &cwe
+			if e, ok := cwe.CweDictJa[id]; ok {
+				if rank, ok := cwe.OwaspTopTen2017[id]; ok {
+					entry.OwaspTopTen2017 = rank
+				}
+				entry.Ja = &e
 			} else {
 				util.Log.Debugf("CWE-ID %s is not found in Japanese CWE Dict", id)
 				// entry.Ja = nil

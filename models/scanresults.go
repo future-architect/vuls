@@ -69,9 +69,9 @@ type ScanResult struct {
 
 // CweDictEntry is a dictionary of scanned CWE
 type CweDictEntry struct {
-	En *cwe.Cwe `json:",omitempty"`
-	//TODO
-	Ja *cwe.Cwe `json:",omitempty"`
+	En              *cwe.Cwe `json:",omitempty"`
+	Ja              *cwe.Cwe `json:",omitempty"`
+	OwaspTopTen2017 string
 }
 
 // Kernel has the Release, version and whether need restart
