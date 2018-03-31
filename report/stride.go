@@ -1,11 +1,13 @@
 package report
 
 import (
-	"net/http"
 	"bytes"
+	"net/http"
+	"strings"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"strconv"
 )
 
 // StrideWriter send report to Stride
@@ -13,19 +15,44 @@ type StrideWriter struct{}
 
 func (w StrideWriter) Write(rs ...models.ScanResult) (err error) {
 	conf := config.Conf.Stride
-	sendMessage(conf.HookURL, conf.AuthToken)
+
+	for _, r := range rs {
+		jsonStr := `{"body":{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"` + r.ServerName + `"}]}]}}`
+		err = sendMessage(conf.HookURL, conf.AuthToken, jsonStr)
+		if err != nil {
+			return err
+		}
+
+		for _, vinfo := range r.ScannedCves {
+			maxCvss := vinfo.MaxCvssScore()
+
+			jsonStr = `{"body":{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"` + vinfo.CveID + `"}]}]}}`
+			sendMessage(conf.HookURL, conf.AuthToken, jsonStr)
+			if err != nil {
+				return err
+			}
+			jsonStr = `{"body":{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"` + strconv.FormatFloat(maxCvss.Value.Score, 'f', 1, 64) + `"}]}]}}`
+			sendMessage(conf.HookURL, conf.AuthToken, jsonStr)
+			if err != nil {
+				return err
+			}
+
+			jsonStr = `{"body":{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"` + vinfo.Summaries(config.Conf.Lang, r.Family)[0].Value + `"}]}]}}`
+			sendMessage(conf.HookURL, conf.AuthToken, jsonStr)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
-func sendMessage(uri, token string) error {
-
-	jsonStr := `{"body":{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"message"}]}]}}`
+func sendMessage(uri, token, jsonStr string) error {
 
 	reqs, err := http.NewRequest("POST", uri, bytes.NewBuffer([]byte(jsonStr)))
 
 	reqs.Header.Add("Content-Type", "application/json")
-	reqs.Header.Add("Authorization", "Bearer " + token)
-
+	reqs.Header.Add("Authorization", "Bearer "+token)
 
 	if err != nil {
 		return err
