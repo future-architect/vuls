@@ -3,11 +3,11 @@ package report
 import (
 	"bytes"
 	"net/http"
-	"strings"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"strconv"
+	"strings"
 )
 
 // StrideWriter send report to Stride
@@ -25,13 +25,17 @@ func (w StrideWriter) Write(rs ...models.ScanResult) (err error) {
 
 		for _, vinfo := range r.ScannedCves {
 			maxCvss := vinfo.MaxCvssScore()
+			severity := strings.ToUpper(maxCvss.Value.Severity)
+			if severity == "" {
+				severity = "?"
+			}
 
-			jsonStr = `{"body":{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"` + vinfo.CveID + `"}]}]}}`
+			jsonStr = `{"body":{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"` + vinfo.CveID + `","marks": [ { "type": "link", "attrs": { "href": "https://nvd.nist.gov/vuln/detail/`+ vinfo.CveID + `", "title": "cve" } } ]}]}]}}`
 			sendMessage(conf.HookURL, conf.AuthToken, jsonStr)
 			if err != nil {
 				return err
 			}
-			jsonStr = `{"body":{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"` + strconv.FormatFloat(maxCvss.Value.Score, 'f', 1, 64) + `"}]}]}}`
+			jsonStr = `{"body":{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"` + strconv.FormatFloat(maxCvss.Value.Score, 'f', 1, 64) + "(" + severity + ")" + `"}]}]}}`
 			sendMessage(conf.HookURL, conf.AuthToken, jsonStr)
 			if err != nil {
 				return err
