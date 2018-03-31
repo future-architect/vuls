@@ -30,7 +30,7 @@ func (w StrideWriter) Write(rs ...models.ScanResult) (err error) {
 				severity = "?"
 			}
 
-			jsonStr = `{"body":{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"` + vinfo.CveID + `","marks": [ { "type": "link", "attrs": { "href": "https://nvd.nist.gov/vuln/detail/`+ vinfo.CveID + `", "title": "cve" } } ]}]}]}}`
+			jsonStr = `{"body":{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"` + vinfo.CveID + `","marks": [ { "type": "link", "attrs": { "href": "https://nvd.nist.gov/vuln/detail/` + vinfo.CveID + `", "title": "cve" } } ]}]}]}}`
 			sendMessage(conf.HookURL, conf.AuthToken, jsonStr)
 			if err != nil {
 				return err
