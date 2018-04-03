@@ -44,6 +44,7 @@ type ScanCmd struct {
 	askKeyPassword bool
 	containersOnly bool
 	fast           bool
+	fastRoot       bool
 	offline        bool
 	deep           bool
 	skipBroken     bool
@@ -65,6 +66,7 @@ func (*ScanCmd) Usage() string {
 	return `scan:
 	scan
 		[-fast]
+		[-fast-root]
 		[-offline]
 		[-deep]
 		[-config=/path/to/config.toml]
@@ -144,7 +146,13 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		&p.fast,
 		"fast",
 		false,
-		"Online fast scan mode.")
+		"fast scan mode.")
+
+	f.BoolVar(
+		&p.fastRoot,
+		"fast-root",
+		false,
+		"fast scan with root privilege mode.")
 
 	f.BoolVar(
 		&p.offline,
@@ -259,9 +267,10 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	c.Conf.SkipBroken = p.skipBroken
 
 	c.Conf.Fast = p.fast
+	c.Conf.FastRoot = p.fastRoot
 	c.Conf.Offline = p.offline
 	c.Conf.Deep = p.deep
-	if !(c.Conf.Fast || c.Conf.Offline || c.Conf.Deep) {
+	if !(c.Conf.Fast || c.Conf.FastRoot || c.Conf.Offline || c.Conf.Deep) {
 		c.Conf.Fast = true
 	}
 

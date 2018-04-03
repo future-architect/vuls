@@ -13,13 +13,13 @@ import (
 
 // inherit OsTypeInterface
 type suse struct {
-	redhat
+	redhatBase
 }
 
 // NewRedhat is constructor
 func newSUSE(c config.ServerInfo) *suse {
 	r := &suse{
-		redhat: redhat{
+		redhatBase: redhatBase{
 			base: base{
 				osPackages: osPackages{
 					Packages:  models.Packages{},
@@ -93,7 +93,7 @@ func detectSUSE(c config.ServerInfo) (itsMe bool, suse osTypeInterface) {
 	return false, suse
 }
 
-func (o *suse) checkDependencies() error {
+func (o *suse) checkDeps() error {
 	o.log.Infof("Dependencies... No need")
 	return nil
 }

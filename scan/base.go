@@ -300,6 +300,9 @@ func (l *base) parseIP(stdout string) (ipv4Addrs []string, ipv6Addrs []string) {
 }
 
 func (l *base) detectPlatform() {
+	if config.Conf.Offline {
+		return
+	}
 	ok, instanceID, err := l.detectRunningOnAws()
 	if err != nil {
 		l.setPlatform(models.Platform{Name: "other"})
@@ -320,7 +323,7 @@ func (l *base) detectPlatform() {
 
 func (l *base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 	if r := l.exec("type curl", noSudo); r.isSuccess() {
-		cmd := "curl --max-time 1 --retry 3 --noproxy 169.254.169.254 http://169.254.169.254/latest/meta-data/instance-id"
+		cmd := "curl --max-time 1 --noproxy 169.254.169.254 http://169.254.169.254/latest/meta-data/instance-id"
 		r := l.exec(cmd, noSudo)
 		if r.isSuccess() {
 			id := strings.TrimSpace(r.Stdout)

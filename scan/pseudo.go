@@ -52,7 +52,7 @@ func (o *pseudo) checkIfSudoNoPasswd() error {
 	return nil
 }
 
-func (o *pseudo) checkDependencies() error {
+func (o *pseudo) checkDeps() error {
 	return nil
 }
 

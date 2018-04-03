@@ -114,6 +114,7 @@ type Config struct {
 	SSHNative      bool
 	ContainersOnly bool
 	Fast           bool
+	FastRoot       bool
 	Offline        bool
 	Deep           bool
 	SkipBroken     bool
@@ -175,6 +176,20 @@ func (c Config) ValidateOnConfigtest() bool {
 		errs = append(errs, fmt.Errorf("-ssh-native-insecure is needed on windows"))
 	}
 
+	numTrue := 0
+	for _, b := range []bool{c.Fast, c.FastRoot, c.Deep} {
+		if b {
+			numTrue++
+		}
+	}
+	if numTrue != 1 {
+		errs = append(errs, fmt.Errorf("Specify only one of -fast, -fast-root or -deep"))
+	}
+
+	if c.Offline && c.Deep {
+		errs = append(errs, fmt.Errorf("Can't specify both --deep and -offline"))
+	}
+
 	_, err := valid.ValidateStruct(c)
 	if err != nil {
 		errs = append(errs, err)
@@ -185,11 +200,6 @@ func (c Config) ValidateOnConfigtest() bool {
 	}
 
 	return len(errs) == 0
-}
-
-// ValidateOnPrepare validates configuration
-func (c Config) ValidateOnPrepare() bool {
-	return c.ValidateOnConfigtest()
 }
 
 // ValidateOnScan validates configuration
@@ -222,13 +232,17 @@ func (c Config) ValidateOnScan() bool {
 	}
 
 	numTrue := 0
-	for _, b := range []bool{c.Fast, c.Offline, c.Deep} {
+	for _, b := range []bool{c.Fast, c.FastRoot, c.Deep} {
 		if b {
 			numTrue++
 		}
 	}
 	if numTrue != 1 {
-		errs = append(errs, fmt.Errorf("Specify only one of -fast, -fast-offline, -deep"))
+		errs = append(errs, fmt.Errorf("Specify only one of -fast, -fast-root or -deep"))
+	}
+
+	if c.Offline && c.Deep {
+		errs = append(errs, fmt.Errorf("Can't specify both --deep and -offline"))
 	}
 
 	_, err := valid.ValidateStruct(c)

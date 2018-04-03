@@ -33,8 +33,7 @@ import (
 //  }
 
 func TestParseScanedPackagesLineRedhat(t *testing.T) {
-
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 
 	var packagetests = []struct {
 		in   string
@@ -74,7 +73,7 @@ func TestParseScanedPackagesLineRedhat(t *testing.T) {
 }
 
 func TestChangeSectionState(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	var tests = []struct {
 		oldState int
 		newState int
@@ -92,7 +91,7 @@ func TestChangeSectionState(t *testing.T) {
 }
 
 func TestParseYumUpdateinfoLineToGetCveIDs(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	var tests = []struct {
 		in  string
 		out []string
@@ -122,7 +121,7 @@ func TestParseYumUpdateinfoLineToGetCveIDs(t *testing.T) {
 }
 
 func TestParseYumUpdateinfoToGetAdvisoryID(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	var tests = []struct {
 		in    string
 		out   string
@@ -160,7 +159,7 @@ func TestParseYumUpdateinfoLineToGetIssued(t *testing.T) {
 
 	date, _ := time.Parse("2006-01-02", "2015-12-15")
 
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	var tests = []struct {
 		in    string
 		out   time.Time
@@ -195,10 +194,9 @@ func TestParseYumUpdateinfoLineToGetIssued(t *testing.T) {
 }
 
 func TestParseYumUpdateinfoLineToGetUpdated(t *testing.T) {
-
 	date, _ := time.Parse("2006-01-02", "2015-12-15")
 
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	var tests = []struct {
 		in    string
 		out   time.Time
@@ -234,7 +232,7 @@ func TestParseYumUpdateinfoLineToGetUpdated(t *testing.T) {
 }
 
 func TestIsDescriptionLine(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	var tests = []struct {
 		in    string
 		found bool
@@ -262,7 +260,7 @@ func TestIsDescriptionLine(t *testing.T) {
 }
 
 func TestParseYumUpdateinfoToGetSeverity(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	var tests = []struct {
 		in    string
 		out   string
@@ -337,7 +335,7 @@ Description : kernel-uek
 	`
 	issued, _ := time.Parse("2006-01-02", "2017-02-15")
 
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	r.Distro = config.Distro{Family: "oraclelinux"}
 
 	var tests = []struct {
@@ -458,7 +456,7 @@ Description : The sudo packages contain the sudo utility which allows system
 	issued, _ := time.Parse("2006-01-02", "2015-09-03")
 	updated, _ := time.Parse("2006-01-02", "2015-09-04")
 
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	r.Distro = config.Distro{Family: "redhat"}
 
 	var tests = []struct {
@@ -532,8 +530,7 @@ Description : The sudo packages contain the sudo utility which allows system
 }
 
 func TestParseYumUpdateinfoAmazon(t *testing.T) {
-
-	r := newRedhat(config.ServerInfo{})
+	r := newAmazon(config.ServerInfo{})
 	r.Distro = config.Distro{Family: "redhat"}
 
 	issued, _ := time.Parse("2006-01-02", "2015-12-15")
@@ -617,7 +614,7 @@ Description : Package updates are available for Amazon Linux AMI that fix the
 }
 
 func TestParseYumCheckUpdateLine(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newCentOS(config.ServerInfo{})
 	r.Distro = config.Distro{Family: "centos"}
 	var tests = []struct {
 		in  string
@@ -658,7 +655,7 @@ func TestParseYumCheckUpdateLine(t *testing.T) {
 }
 
 func TestParseYumCheckUpdateLines(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newCentOS(config.ServerInfo{})
 	r.Distro = config.Distro{Family: "centos"}
 	stdout := `audit-libs 0 2.3.7 5.el6 base
 bash 0 4.1.2 33.el6_7.1 updates
@@ -739,7 +736,7 @@ pytalloc 0 2.0.7 2.el6 @CentOS 6.5/6.5`
 }
 
 func TestParseYumCheckUpdateLinesAmazon(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newAmazon(config.ServerInfo{})
 	r.Distro = config.Distro{Family: "amazon"}
 	stdout := `bind-libs 32 9.8.2 0.37.rc1.45.amzn1 amzn-main
 java-1.7.0-openjdk  0 1.7.0.95 2.6.4.0.65.amzn1 amzn-main
@@ -795,7 +792,7 @@ if-not-architecture 0 100 200 amzn-main`
 }
 
 func TestParseYumUpdateinfoListAvailable(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	rhelStdout := `RHSA-2015:2315 Moderate/Sec.  NetworkManager-1:1.0.6-27.el7.x86_64
 RHSA-2015:2315 Moderate/Sec.  NetworkManager-config-server-1:1.0.6-27.el7.x86_64
 RHSA-2015:1705 Important/Sec. bind-libs-lite-32:9.9.4-18.el7_1.5.x86_64
@@ -859,7 +856,7 @@ updateinfo list done`
 }
 
 func TestExtractPackNameVerRel(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newAmazon(config.ServerInfo{})
 	var tests = []struct {
 		in  string
 		out []string
@@ -894,7 +891,7 @@ func TestExtractPackNameVerRel(t *testing.T) {
 }
 
 func TestGetDiffChangelog(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newCentOS(config.ServerInfo{})
 	type in struct {
 		pack      models.Package
 		changelog string
@@ -1245,7 +1242,7 @@ func TestGetDiffChangelog(t *testing.T) {
 }
 
 func TestDivideChangelogsIntoEachPackages(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	type in struct {
 		pack      models.Package
 		changelog string
@@ -1298,8 +1295,79 @@ func TestDivideChangelogsIntoEachPackages(t *testing.T) {
 
 }
 
+func TestCheckYumPsInstalled(t *testing.T) {
+	r := newCentOS(config.ServerInfo{})
+	var tests = []struct {
+		in  string
+		out bool
+	}{
+		{
+			in: `Loaded plugins: changelog, fastestmirror, ps, remove-with-leaves, show-leaves
+Loading mirror speeds from cached hostfile
+ * base: ftp.tsukuba.wide.ad.jp
+ * extras: ftp.tsukuba.wide.ad.jp
+ * updates: ftp.tsukuba.wide.ad.jp
+Installed Packages
+Name        : yum
+Arch        : noarch
+Version     : 3.4.3
+Release     : 150.el7.centos
+Size        : 5.5 M
+Repo        : installed
+From repo   : anaconda
+Summary     : RPM package installer/updater/manager
+URL         : http://yum.baseurl.org/
+License     : GPLv2+
+Description : Yum is a utility that can check for and automatically download and
+            : install updated RPM packages. Dependencies are obtained and downloaded
+            : automatically, prompting the user for permission as necessary.
+
+Available Packages
+Name        : yum
+Arch        : noarch
+Version     : 3.4.3
+Release     : 154.el7.centos.1
+Size        : 1.2 M
+Repo        : updates/7/x86_64
+Summary     : RPM package installer/updater/manager
+URL         : http://yum.baseurl.org/
+License     : GPLv2+
+Description : Yum is a utility that can check for and automatically download and
+            : install updated RPM packages. Dependencies are obtained and downloaded
+            : automatically, prompting the user for permission as necessary.`,
+			out: true,
+		},
+		{
+			in: `Failed to set locale, defaulting to C
+Loaded plugins: amazon-id, rhui-lb, search-disabled-repos
+Installed Packages
+Name        : yum
+Arch        : noarch
+Version     : 3.4.3
+Release     : 154.el7
+Size        : 5.5 M
+Repo        : installed
+From repo   : rhui-REGION-rhel-server-releases
+Summary     : RPM package installer/updater/manager
+URL         : http://yum.baseurl.org/
+License     : GPLv2+
+Description : Yum is a utility that can check for and automatically download and
+            : install updated RPM packages. Dependencies are obtained and downloaded
+            : automatically, prompting the user for permission as necessary.`,
+			out: false,
+		},
+	}
+
+	for _, tt := range tests {
+		ok := r.checkYumPsInstalled(tt.in)
+		if ok != tt.out {
+			t.Errorf("expected: %v\nactual: %v", tt.out, ok)
+		}
+	}
+}
+
 func TestParseYumPS(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newCentOS(config.ServerInfo{})
 	r.Distro = config.Distro{Family: "centos"}
 	r.Packages = models.NewPackages(
 		models.Package{
@@ -1451,7 +1519,7 @@ yum-3.4.3-150.70.amzn1.noarch
 }
 
 func TestParseNeedsRestarting(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newCentOS(config.ServerInfo{})
 	r.Distro = config.Distro{Family: "centos"}
 
 	var tests = []struct {
@@ -1475,6 +1543,144 @@ func TestParseNeedsRestarting(t *testing.T) {
 		procs := r.parseNeedsRestarting(tt.in)
 		if !reflect.DeepEqual(tt.out, procs) {
 			t.Errorf("expected %#v, actual %#v", tt.out, procs)
+		}
+	}
+}
+
+func TestIsExecScanUsingYum(t *testing.T) {
+	r := newRHEL(config.ServerInfo{})
+	var tests = []struct {
+		offline  bool
+		fast     bool
+		fastRoot bool
+		deep     bool
+		family   string
+		out      bool
+	}{
+		{
+			offline: true,
+			out:     false,
+		},
+		{
+			offline: false,
+			family:  config.CentOS,
+			out:     false,
+		},
+		{
+			offline:  false,
+			family:   config.Amazon,
+			fastRoot: true,
+			out:      true,
+		},
+		{
+			offline: false,
+			family:  config.Amazon,
+			deep:    true,
+			out:     true,
+		},
+	}
+
+	for i, tt := range tests {
+		r.Distro.Family = tt.family
+		config.Conf.Offline = tt.offline
+		config.Conf.Fast = tt.fast
+		config.Conf.FastRoot = tt.fastRoot
+		config.Conf.Deep = tt.deep
+		out := r.isExecScanUsingYum()
+		if out != tt.out {
+			t.Errorf("[%d] expected %#v, actual %#v", i, tt.out, out)
+		}
+	}
+}
+
+func TestIsExecFillChangelogs(t *testing.T) {
+	r := newRHEL(config.ServerInfo{})
+	var tests = []struct {
+		offline  bool
+		fast     bool
+		fastRoot bool
+		deep     bool
+		family   string
+		out      bool
+	}{
+		{
+			offline: true,
+			out:     false,
+		},
+		{
+			offline: false,
+			deep:    true,
+			family:  config.CentOS,
+			out:     true,
+		},
+		{
+			offline: false,
+			family:  config.Amazon,
+			deep:    true,
+			out:     false,
+		},
+		{
+			offline: false,
+			family:  config.RedHat,
+			deep:    true,
+			out:     true,
+		},
+	}
+
+	for i, tt := range tests {
+		r.Distro.Family = tt.family
+		config.Conf.Offline = tt.offline
+		config.Conf.Fast = tt.fast
+		config.Conf.FastRoot = tt.fastRoot
+		config.Conf.Deep = tt.deep
+		out := r.isExecFillChangelogs()
+		if out != tt.out {
+			t.Errorf("[%d] expected %#v, actual %#v", i, tt.out, out)
+		}
+	}
+}
+
+func TestIsScanChangelogs(t *testing.T) {
+	r := newCentOS(config.ServerInfo{})
+	var tests = []struct {
+		offline  bool
+		fast     bool
+		fastRoot bool
+		deep     bool
+		family   string
+		out      bool
+	}{
+		{
+			offline: true,
+			out:     false,
+		},
+		{
+			offline: false,
+			fast:    true,
+			out:     false,
+		},
+		{
+			offline:  false,
+			fastRoot: true,
+			out:      false,
+		},
+		{
+			offline: false,
+			deep:    true,
+			family:  config.RedHat,
+			out:     true,
+		},
+	}
+
+	for i, tt := range tests {
+		r.Distro.Family = tt.family
+		config.Conf.Offline = tt.offline
+		config.Conf.Fast = tt.fast
+		config.Conf.FastRoot = tt.fastRoot
+		config.Conf.Deep = tt.deep
+		out := r.isExecScanChangelogs()
+		if out != tt.out {
+			t.Errorf("[%d] expected %#v, actual %#v", i, tt.out, out)
 		}
 	}
 }

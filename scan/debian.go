@@ -136,7 +136,7 @@ func trim(str string) string {
 }
 
 func (o *debian) checkIfSudoNoPasswd() error {
-	if config.Conf.Deep || o.Distro.Family == config.Raspbian {
+	if config.Conf.Deep || config.Conf.FastRoot || o.Distro.Family == config.Raspbian {
 		cmd := util.PrependProxyEnv("apt-get update")
 		o.log.Infof("Checking... sudo %s", cmd)
 		r := o.exec(cmd, sudo)
@@ -152,10 +152,10 @@ func (o *debian) checkIfSudoNoPasswd() error {
 	return nil
 }
 
-func (o *debian) checkDependencies() error {
+func (o *debian) checkDeps() error {
 	packNames := []string{}
 
-	if config.Conf.Deep {
+	if config.Conf.Deep || config.Conf.FastRoot {
 		// checkrestart
 		packNames = append(packNames, "debian-goodies")
 
@@ -164,6 +164,7 @@ func (o *debian) checkDependencies() error {
 			// https://askubuntu.com/a/742844
 			packNames = append(packNames, "reboot-notifier")
 
+			// Changelogs will be fetched only in deep scan mode
 			if config.Conf.Deep {
 				// Debian needs aptitude to get changelogs.
 				// Because unable to get changelogs via apt-get changelog on Debian.
@@ -214,7 +215,7 @@ func (o *debian) preCure() error {
 }
 
 func (o *debian) postScan() error {
-	if config.Conf.Deep {
+	if config.Conf.Deep || config.Conf.FastRoot {
 		return o.checkrestart()
 	}
 	return nil
@@ -418,7 +419,7 @@ func (o *debian) scanUnsecurePackages(updatable models.Packages) (models.VulnInf
 	}
 
 	// Collect CVE information of upgradable packages
-	vulnInfos, err := o.scanVulnInfos(updatable, meta)
+	vulnInfos, err := o.scanChangelogs(updatable, meta)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to scan unsecure packages. err: %s", err)
 	}
@@ -548,7 +549,7 @@ type DetectedCveID struct {
 	Confidence models.Confidence
 }
 
-func (o *debian) scanVulnInfos(updatablePacks models.Packages, meta *cache.Meta) (models.VulnInfos, error) {
+func (o *debian) scanChangelogs(updatablePacks models.Packages, meta *cache.Meta) (models.VulnInfos, error) {
 	type response struct {
 		pack           *models.Package
 		DetectedCveIDs []DetectedCveID
@@ -584,7 +585,7 @@ func (o *debian) scanVulnInfos(updatablePacks models.Packages, meta *cache.Meta)
 					// if the changelog is not in cache or failed to get from local cache,
 					// get the changelog of the package via internet.
 					// After that, store it in the cache.
-					if cveIDs, pack, err := o.scanPackageCveIDs(p); err != nil {
+					if cveIDs, pack, err := o.fetchParseChangelog(p); err != nil {
 						errChan <- err
 					} else {
 						resChan <- response{pack, cveIDs}
@@ -682,7 +683,7 @@ func (o *debian) getChangelogCache(meta *cache.Meta, pack models.Package) string
 	return changelog
 }
 
-func (o *debian) scanPackageCveIDs(pack models.Package) ([]DetectedCveID, *models.Package, error) {
+func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *models.Package, error) {
 	cmd := ""
 	switch o.Distro.Family {
 	case config.Ubuntu, config.Raspbian:

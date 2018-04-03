@@ -41,7 +41,7 @@ type osTypeInterface interface {
 	detectPlatform()
 	getPlatform() models.Platform
 
-	checkDependencies() error
+	checkDeps() error
 	checkIfSudoNoPasswd() error
 
 	preCure() error
@@ -358,7 +358,7 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 // CheckDependencies checks dependencies are installed on target servers.
 func CheckDependencies(timeoutSec int) {
 	parallelExec(func(o osTypeInterface) error {
-		return o.checkDependencies()
+		return o.checkDeps()
 	}, timeoutSec)
 	return
 }

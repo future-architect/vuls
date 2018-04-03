@@ -73,7 +73,7 @@ func (o *bsd) checkIfSudoNoPasswd() error {
 	return nil
 }
 
-func (o *bsd) checkDependencies() error {
+func (o *bsd) checkDeps() error {
 	o.log.Infof("Dependencies... No need")
 	return nil
 }

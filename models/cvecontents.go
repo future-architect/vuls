@@ -248,7 +248,7 @@ const (
 type CveContentTypes []CveContentType
 
 // AllCveContetTypes has all of CveContentTypes
-var AllCveContetTypes = CveContentTypes{NvdXML, JVN, RedHat, Debian, Ubuntu}
+var AllCveContetTypes = CveContentTypes{Nvd, NvdXML, JVN, RedHat, Debian, Ubuntu}
 
 // Except returns CveContentTypes except for given args
 func (c CveContentTypes) Except(excepts ...CveContentType) (excepted CveContentTypes) {

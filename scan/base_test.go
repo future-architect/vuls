@@ -45,7 +45,7 @@ f570ae647edc agitated_lovelace centos:latest`,
 		},
 	}
 
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	actual, err := r.parseDockerPs(test.in)
 	if err != nil {
 		t.Errorf("Error occurred. in: %s, err: %s", test.in, err)
@@ -82,7 +82,7 @@ func TestParseLxdPs(t *testing.T) {
 		},
 	}
 
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	actual, err := r.parseLxdPs(test.in)
 	if err != nil {
 		t.Errorf("Error occurred. in: %s, err: %s", test.in, err)
@@ -115,7 +115,7 @@ func TestParseIp(t *testing.T) {
 		expected6: []string{"2001:db8::68"},
 	}
 
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	actual4, actual6 := r.parseIP(test.in)
 	if !reflect.DeepEqual(test.expected4, actual4) {
 		t.Errorf("expected %v, actual %v", test.expected4, actual4)
@@ -138,7 +138,7 @@ func TestIsAwsInstanceID(t *testing.T) {
 		{"no data", false},
 	}
 
-	r := newRedhat(config.ServerInfo{})
+	r := newAmazon(config.ServerInfo{})
 	for _, tt := range tests {
 		actual := r.isAwsInstanceID(tt.in)
 		if tt.expected != actual {
@@ -170,7 +170,7 @@ func TestParseSystemctlStatus(t *testing.T) {
 		},
 	}
 
-	r := newRedhat(config.ServerInfo{})
+	r := newCentOS(config.ServerInfo{})
 	for _, tt := range tests {
 		actual := r.parseSystemctlStatus(tt.in)
 		if tt.out != actual {

@@ -39,13 +39,12 @@ type ConfigtestCmd struct {
 	sshNative      bool
 	httpProxy      string
 	timeoutSec     int
-
-	fast    bool
-	offline bool
-	deep    bool
-
-	debug bool
-	vvv   bool
+	fast           bool
+	fastRoot       bool
+	offline        bool
+	deep           bool
+	debug          bool
+	vvv            bool
 }
 
 // Name return subcommand name
@@ -59,6 +58,7 @@ func (*ConfigtestCmd) Usage() string {
 	return `configtest:
 	configtest
 			[-fast]
+			[-fast-root]
 			[-offline]
 			[-deep]
 			[-config=/path/to/config.toml]
@@ -100,6 +100,12 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 		"fast",
 		false,
 		"Config test for online fast scan mode")
+
+	f.BoolVar(
+		&p.fastRoot,
+		"fast-root",
+		false,
+		"fast scan with root privilege mode.")
 
 	f.BoolVar(
 		&p.offline,
@@ -165,9 +171,10 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	c.Conf.ContainersOnly = p.containersOnly
 
 	c.Conf.Fast = p.fast
+	c.Conf.FastRoot = p.fastRoot
 	c.Conf.Offline = p.offline
 	c.Conf.Deep = p.deep
-	if !(c.Conf.Fast || c.Conf.Offline || c.Conf.Deep) {
+	if !(c.Conf.Fast || c.Conf.FastRoot || c.Conf.Offline || c.Conf.Deep) {
 		c.Conf.Fast = true
 	}
 	c.Conf.Vvv = p.vvv

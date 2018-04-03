@@ -136,7 +136,7 @@ type VulnInfo struct {
 	Confidences      Confidences
 	AffectedPackages PackageStatuses
 	DistroAdvisories []DistroAdvisory `json:",omitempty"` // for Aamazon, RHEL, FreeBSD
-	CpeNames         []string         `json:",omitempty"`
+	CpeNames         []string         `json:",omitempty"` // CPENames related to this CVE defined in config.toml
 	CveContents      CveContents
 }
 
@@ -148,7 +148,7 @@ func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := CveContentTypes{NvdXML, NewCveContentType(myFamily)}
+	order := CveContentTypes{Nvd, NvdXML, NewCveContentType(myFamily)}
 	order = append(order, AllCveContetTypes.Except(append(order, JVN)...)...)
 	for _, ctype := range order {
 		// Only JVN has meaningful title. so return first 100 char of summary
@@ -188,7 +188,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := CveContentTypes{NvdXML, NewCveContentType(myFamily)}
+	order := CveContentTypes{Nvd, NvdXML, NewCveContentType(myFamily)}
 	order = append(order, AllCveContetTypes.Except(append(order, JVN)...)...)
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Summary) {
@@ -219,7 +219,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 
 // Cvss2Scores returns CVSS V2 Scores
 func (v VulnInfo) Cvss2Scores(myFamily string) (values []CveContentCvss) {
-	order := []CveContentType{NvdXML, Nvd, RedHat, JVN}
+	order := []CveContentType{Nvd, NvdXML, RedHat, JVN}
 	if myFamily != config.RedHat && myFamily != config.CentOS {
 		order = append(order, NewCveContentType(myFamily))
 	}
@@ -320,7 +320,7 @@ func (v VulnInfo) MaxCvssScore() CveContentCvss {
 
 // MaxCvss2Score returns Max CVSS V2 Score
 func (v VulnInfo) MaxCvss2Score() CveContentCvss {
-	order := []CveContentType{NvdXML, Nvd, RedHat, JVN}
+	order := []CveContentType{Nvd, NvdXML, RedHat, JVN}
 	max := 0.0
 	value := CveContentCvss{
 		Type:  Unknown,
