@@ -60,8 +60,8 @@ func TestSourceLinks(t *testing.T) {
 				lang:  "ja",
 				cveID: "CVE-2017-6074",
 				cont: CveContents{
-					JVN: {
-						Type:       JVN,
+					Jvn: {
+						Type:       Jvn,
 						SourceLink: "https://jvn.jp/vu/JVNVU93610402/",
 					},
 					RedHat: {
@@ -76,7 +76,7 @@ func TestSourceLinks(t *testing.T) {
 			},
 			out: []CveContentStr{
 				{
-					Type:  JVN,
+					Type:  Jvn,
 					Value: "https://jvn.jp/vu/JVNVU93610402/",
 				},
 				{
@@ -95,8 +95,8 @@ func TestSourceLinks(t *testing.T) {
 				lang:  "en",
 				cveID: "CVE-2017-6074",
 				cont: CveContents{
-					JVN: {
-						Type:       JVN,
+					Jvn: {
+						Type:       Jvn,
 						SourceLink: "https://jvn.jp/vu/JVNVU93610402/",
 					},
 					RedHat: {
@@ -158,8 +158,8 @@ func TestVendorLink(t *testing.T) {
 				vinfo: VulnInfo{
 					CveID: "CVE-2017-6074",
 					CveContents: CveContents{
-						JVN: {
-							Type:       JVN,
+						Jvn: {
+							Type:       Jvn,
 							SourceLink: "https://jvn.jp/vu/JVNVU93610402/",
 						},
 						RedHat: {

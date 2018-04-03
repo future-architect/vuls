@@ -36,8 +36,8 @@ func TestTitles(t *testing.T) {
 				lang: "ja",
 				cont: VulnInfo{
 					CveContents: CveContents{
-						JVN: {
-							Type:  JVN,
+						Jvn: {
+							Type:  Jvn,
 							Title: "Title1",
 						},
 						RedHat: {
@@ -54,7 +54,7 @@ func TestTitles(t *testing.T) {
 			},
 			out: []CveContentStr{
 				{
-					Type:  JVN,
+					Type:  Jvn,
 					Value: "Title1",
 				},
 				{
@@ -73,8 +73,8 @@ func TestTitles(t *testing.T) {
 				lang: "en",
 				cont: VulnInfo{
 					CveContents: CveContents{
-						JVN: {
-							Type:  JVN,
+						Jvn: {
+							Type:  Jvn,
 							Title: "Title1",
 						},
 						RedHat: {
@@ -137,8 +137,8 @@ func TestSummaries(t *testing.T) {
 				lang: "ja",
 				cont: VulnInfo{
 					CveContents: CveContents{
-						JVN: {
-							Type:    JVN,
+						Jvn: {
+							Type:    Jvn,
 							Title:   "Title JVN",
 							Summary: "Summary JVN",
 						},
@@ -156,7 +156,7 @@ func TestSummaries(t *testing.T) {
 			},
 			out: []CveContentStr{
 				{
-					Type:  JVN,
+					Type:  Jvn,
 					Value: "Title JVN\nSummary JVN",
 				},
 				{
@@ -175,8 +175,8 @@ func TestSummaries(t *testing.T) {
 				lang: "en",
 				cont: VulnInfo{
 					CveContents: CveContents{
-						JVN: {
-							Type:    JVN,
+						Jvn: {
+							Type:    Jvn,
 							Title:   "Title JVN",
 							Summary: "Summary JVN",
 						},
@@ -460,8 +460,8 @@ func TestCvss2Scores(t *testing.T) {
 		{
 			in: VulnInfo{
 				CveContents: CveContents{
-					JVN: {
-						Type:          JVN,
+					Jvn: {
+						Type:          Jvn,
 						Cvss2Severity: "HIGH",
 						Cvss2Score:    8.2,
 						Cvss2Vector:   "AV:N/AC:L/Au:N/C:N/I:N/A:P",
@@ -500,7 +500,7 @@ func TestCvss2Scores(t *testing.T) {
 					},
 				},
 				{
-					Type: JVN,
+					Type: Jvn,
 					Value: Cvss{
 						Type:     CVSS2,
 						Score:    8.2,
@@ -532,8 +532,8 @@ func TestMaxCvss2Scores(t *testing.T) {
 		{
 			in: VulnInfo{
 				CveContents: CveContents{
-					JVN: {
-						Type:          JVN,
+					Jvn: {
+						Type:          Jvn,
 						Cvss2Severity: "HIGH",
 						Cvss2Score:    8.2,
 						Cvss2Vector:   "AV:N/AC:L/Au:N/C:N/I:N/A:P",
@@ -553,7 +553,7 @@ func TestMaxCvss2Scores(t *testing.T) {
 				},
 			},
 			out: CveContentCvss{
-				Type: JVN,
+				Type: Jvn,
 				Value: Cvss{
 					Type:     CVSS2,
 					Score:    8.2,
@@ -863,8 +863,8 @@ func TestFormatMaxCvssScore(t *testing.T) {
 		{
 			in: VulnInfo{
 				CveContents: CveContents{
-					JVN: {
-						Type:          JVN,
+					Jvn: {
+						Type:          Jvn,
 						Cvss2Severity: "HIGH",
 						Cvss2Score:    8.3,
 					},
@@ -885,8 +885,8 @@ func TestFormatMaxCvssScore(t *testing.T) {
 		{
 			in: VulnInfo{
 				CveContents: CveContents{
-					JVN: {
-						Type:          JVN,
+					Jvn: {
+						Type:          Jvn,
 						Cvss2Severity: "HIGH",
 						Cvss2Score:    8.3,
 					},

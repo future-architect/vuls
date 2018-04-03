@@ -60,12 +60,12 @@ func (v CveContents) Except(exceptCtypes ...CveContentType) (values CveContents)
 // SourceLinks returns link of source
 func (v CveContents) SourceLinks(lang, myFamily, cveID string) (values []CveContentStr) {
 	if lang == "ja" {
-		if cont, found := v[JVN]; found && 0 < len(cont.SourceLink) {
-			values = append(values, CveContentStr{JVN, cont.SourceLink})
+		if cont, found := v[Jvn]; found && 0 < len(cont.SourceLink) {
+			values = append(values, CveContentStr{Jvn, cont.SourceLink})
 		}
 	}
 
-	order := CveContentTypes{NvdXML, NewCveContentType(myFamily)}
+	order := CveContentTypes{Nvd, NvdXML, NewCveContentType(myFamily)}
 	for _, ctype := range order {
 		if cont, found := v[ctype]; found {
 			values = append(values, CveContentStr{ctype, cont.SourceLink})
@@ -74,7 +74,7 @@ func (v CveContents) SourceLinks(lang, myFamily, cveID string) (values []CveCont
 
 	if len(values) == 0 {
 		return []CveContentStr{{
-			Type:  NvdXML,
+			Type:  Nvd,
 			Value: "https://nvd.nist.gov/vuln/detail/" + cveID,
 		}}
 	}
@@ -201,7 +201,7 @@ func NewCveContentType(name string) CveContentType {
 	case "nvd":
 		return Nvd
 	case "jvn":
-		return JVN
+		return Jvn
 	case "redhat", "centos":
 		return RedHat
 	case "oracle":
@@ -222,8 +222,8 @@ const (
 	// Nvd is Nvd
 	Nvd CveContentType = "nvd"
 
-	// JVN is JVN
-	JVN CveContentType = "jvn"
+	// Jvn is Jvn
+	Jvn CveContentType = "jvn"
 
 	// RedHat is RedHat
 	RedHat CveContentType = "redhat"
@@ -248,7 +248,7 @@ const (
 type CveContentTypes []CveContentType
 
 // AllCveContetTypes has all of CveContentTypes
-var AllCveContetTypes = CveContentTypes{Nvd, NvdXML, JVN, RedHat, Debian, Ubuntu}
+var AllCveContetTypes = CveContentTypes{Nvd, NvdXML, Jvn, RedHat, Debian, Ubuntu}
 
 // Except returns CveContentTypes except for given args
 func (c CveContentTypes) Except(excepts ...CveContentType) (excepted CveContentTypes) {

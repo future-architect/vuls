@@ -143,13 +143,13 @@ type VulnInfo struct {
 // Titles returns tilte (TUI)
 func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 	if lang == "ja" {
-		if cont, found := v.CveContents[JVN]; found && 0 < len(cont.Title) {
-			values = append(values, CveContentStr{JVN, cont.Title})
+		if cont, found := v.CveContents[Jvn]; found && 0 < len(cont.Title) {
+			values = append(values, CveContentStr{Jvn, cont.Title})
 		}
 	}
 
 	order := CveContentTypes{Nvd, NvdXML, NewCveContentType(myFamily)}
-	order = append(order, AllCveContetTypes.Except(append(order, JVN)...)...)
+	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		// Only JVN has meaningful title. so return first 100 char of summary
 		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Summary) {
@@ -180,16 +180,16 @@ func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 // Summaries returns summaries
 func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 	if lang == "ja" {
-		if cont, found := v.CveContents[JVN]; found && 0 < len(cont.Summary) {
+		if cont, found := v.CveContents[Jvn]; found && 0 < len(cont.Summary) {
 			summary := cont.Title
 			summary += "\n" + strings.Replace(
 				strings.Replace(cont.Summary, "\n", " ", -1), "\r", " ", -1)
-			values = append(values, CveContentStr{JVN, summary})
+			values = append(values, CveContentStr{Jvn, summary})
 		}
 	}
 
 	order := CveContentTypes{Nvd, NvdXML, NewCveContentType(myFamily)}
-	order = append(order, AllCveContetTypes.Except(append(order, JVN)...)...)
+	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Summary) {
 			summary := strings.Replace(cont.Summary, "\n", " ", -1)
@@ -219,7 +219,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 
 // Cvss2Scores returns CVSS V2 Scores
 func (v VulnInfo) Cvss2Scores(myFamily string) (values []CveContentCvss) {
-	order := []CveContentType{Nvd, NvdXML, RedHat, JVN}
+	order := []CveContentType{Nvd, NvdXML, RedHat, Jvn}
 	if myFamily != config.RedHat && myFamily != config.CentOS {
 		order = append(order, NewCveContentType(myFamily))
 	}
@@ -258,7 +258,7 @@ func (v VulnInfo) Cvss2Scores(myFamily string) (values []CveContentCvss) {
 
 // Cvss3Scores returns CVSS V3 Score
 func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
-	order := []CveContentType{Nvd, RedHat, JVN}
+	order := []CveContentType{Nvd, RedHat, Jvn}
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found {
 			// https://nvd.nist.gov/vuln-metrics/cvss
@@ -278,7 +278,7 @@ func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 
 // MaxCvss3Score returns Max CVSS V3 Score
 func (v VulnInfo) MaxCvss3Score() CveContentCvss {
-	order := []CveContentType{Nvd, RedHat, JVN}
+	order := []CveContentType{Nvd, RedHat, Jvn}
 	max := 0.0
 	value := CveContentCvss{
 		Type:  Unknown,
@@ -320,7 +320,7 @@ func (v VulnInfo) MaxCvssScore() CveContentCvss {
 
 // MaxCvss2Score returns Max CVSS V2 Score
 func (v VulnInfo) MaxCvss2Score() CveContentCvss {
-	order := []CveContentType{Nvd, NvdXML, RedHat, JVN}
+	order := []CveContentType{Nvd, NvdXML, RedHat, Jvn}
 	max := 0.0
 	value := CveContentCvss{
 		Type:  Unknown,

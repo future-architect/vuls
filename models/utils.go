@@ -87,7 +87,7 @@ func ConvertJvnToModel(cveID string, jvn *cvedict.Jvn) *CveContent {
 	}
 
 	return &CveContent{
-		Type:          JVN,
+		Type:          Jvn,
 		CveID:         cveID,
 		Title:         jvn.Title,
 		Summary:       jvn.Summary,

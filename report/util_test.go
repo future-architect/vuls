@@ -77,7 +77,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 							CveID: "CVE-2017-0002",
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.JVN,
+									Type:         models.Jvn,
 									CveID:        "CVE-2017-0002",
 									LastModified: old,
 								},
@@ -91,7 +91,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 							CveID: "CVE-2017-0002",
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.JVN,
+									Type:         models.Jvn,
 									CveID:        "CVE-2017-0002",
 									LastModified: old,
 								},

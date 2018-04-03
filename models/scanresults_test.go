@@ -71,7 +71,7 @@ func TestFilterByCvssOver(t *testing.T) {
 									LastModified: time.Time{},
 								},
 								CveContent{
-									Type:         JVN,
+									Type:         Jvn,
 									CveID:        "CVE-2017-0003",
 									Cvss2Score:   7.2,
 									LastModified: time.Time{},
@@ -104,7 +104,7 @@ func TestFilterByCvssOver(t *testing.T) {
 								LastModified: time.Time{},
 							},
 							CveContent{
-								Type:         JVN,
+								Type:         Jvn,
 								CveID:        "CVE-2017-0003",
 								Cvss2Score:   7.2,
 								LastModified: time.Time{},
