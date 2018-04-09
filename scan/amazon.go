@@ -23,6 +23,7 @@ func newAmazon(c config.ServerInfo) *amazon {
 					VulnInfos: models.VulnInfos{},
 				},
 			},
+			sudo: rootPrivAmazon{},
 		},
 	}
 	r.log = util.NewCustomLogger(c)
@@ -41,9 +42,13 @@ func (o *amazon) checkDeps() error {
 	return fmt.Errorf("Unknown scan mode")
 }
 
-// func (o *amazon) depsFast() []string {
-// return []string{}
-// }
+func (o *amazon) depsFast() []string {
+	if config.Conf.Offline {
+		return []string{}
+	}
+	// repoquery
+	return []string{"yum-utils"}
+}
 
 func (o *amazon) depsFastRoot() []string {
 	return []string{
@@ -88,4 +93,22 @@ func (o *amazon) nosudoCmdsFastRoot() []cmd {
 
 func (o *amazon) nosudoCmdsDeep() []cmd {
 	return o.nosudoCmdsFastRoot()
+}
+
+type rootPrivAmazon struct{}
+
+func (o rootPrivAmazon) repoquery() bool {
+	return false
+}
+
+func (o rootPrivAmazon) yumRepolist() bool {
+	return false
+}
+
+func (o rootPrivAmazon) yumUpdateInfo() bool {
+	return false
+}
+
+func (o rootPrivAmazon) yumChangelog() bool {
+	return false
 }

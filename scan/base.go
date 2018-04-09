@@ -34,7 +34,6 @@ type base struct {
 	ServerInfo config.ServerInfo
 	Distro     config.Distro
 	Platform   models.Platform
-
 	osPackages
 
 	log  *logrus.Entry

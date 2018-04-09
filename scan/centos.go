@@ -21,6 +21,7 @@ func newCentOS(c config.ServerInfo) *centos {
 					VulnInfos: models.VulnInfos{},
 				},
 			},
+			sudo: rootPrivCentos{},
 		},
 	}
 	r.log = util.NewCustomLogger(c)
@@ -38,10 +39,15 @@ func (o *centos) checkDeps() error {
 	}
 }
 
-func (o *centos) depsFastRoot() []string {
+func (o *centos) depsFast() []string {
 	if config.Conf.Offline {
-		return []string{"yum-plugin-ps"}
+		return []string{}
 	}
+	// repoquery
+	return []string{"yum-utils"}
+}
+
+func (o *centos) depsFastRoot() []string {
 	return []string{
 		"yum-utils",
 		"yum-plugin-ps",
@@ -51,8 +57,8 @@ func (o *centos) depsFastRoot() []string {
 func (o *centos) depsDeep() []string {
 	return []string{
 		"yum-utils",
-		"yum-plugin-changelog",
 		"yum-plugin-ps",
+		"yum-plugin-changelog",
 	}
 }
 
@@ -71,29 +77,40 @@ func (o *centos) nosudoCmdsFast() []cmd {
 }
 
 func (o *centos) nosudoCmdsFastRoot() []cmd {
-	cmds := []cmd{{"needs-restarting", exitStatusZero}}
 	if config.Conf.Offline {
-		return cmds
-	}
-
-	majorVersion, _ := o.Distro.MajorVersion()
-	if majorVersion < 6 {
+		// yum ps needs internet connection
 		return []cmd{
-			{"yum --color=never repolist", exitStatusZero},
-			{"yum --color=never list-security --security", exitStatusZero},
-			{"yum --color=never info-security", exitStatusZero},
-			{"repoquery -h", exitStatusZero},
+			{"stat /proc/1/exe", exitStatusZero},
+			{"needs-restarting", exitStatusZero},
+			{"which which", exitStatusZero},
 		}
 	}
-	return append(cmds,
-		cmd{"yum --color=never repolist", exitStatusZero},
-		cmd{"yum --color=never --security updateinfo list updates", exitStatusZero},
-		cmd{"yum --color=never --security updateinfo updates", exitStatusZero},
-		cmd{"repoquery -h", exitStatusZero})
+	return []cmd{
+		{"yum -q ps all --color=never", exitStatusZero},
+		{"stat /proc/1/exe", exitStatusZero},
+		{"needs-restarting", exitStatusZero},
+		{"which which", exitStatusZero},
+	}
 }
 
 func (o *centos) nosudoCmdsDeep() []cmd {
-	return append(o.nosudoCmdsFastRoot(),
-		cmd{"yum --color=never repolist", exitStatusZero},
-		cmd{"yum changelog all updates", exitStatusZero})
+	return o.nosudoCmdsFastRoot()
+}
+
+type rootPrivCentos struct{}
+
+func (o rootPrivCentos) repoquery() bool {
+	return false
+}
+
+func (o rootPrivCentos) yumRepolist() bool {
+	return false
+}
+
+func (o rootPrivCentos) yumUpdateInfo() bool {
+	return false
+}
+
+func (o rootPrivCentos) yumChangelog() bool {
+	return false
 }

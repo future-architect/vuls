@@ -21,6 +21,7 @@ func newOracle(c config.ServerInfo) *oracle {
 					VulnInfos: models.VulnInfos{},
 				},
 			},
+			sudo: rootPrivOracle{},
 		},
 	}
 	r.log = util.NewCustomLogger(c)
@@ -36,6 +37,14 @@ func (o *oracle) checkDeps() error {
 	} else {
 		return o.execCheckDeps(o.depsDeep())
 	}
+}
+
+func (o *oracle) depsFast() []string {
+	if config.Conf.Offline {
+		return []string{}
+	}
+	// repoquery
+	return []string{"yum-utils"}
 }
 
 func (o *oracle) depsFastRoot() []string {
@@ -134,4 +143,24 @@ func (o *oracle) nosudoCmdsDeep() []cmd {
 	return append(o.nosudoCmdsFastRoot(),
 		cmd{"yum --color=never repolist", exitStatusZero},
 		cmd{"yum changelog all updates", exitStatusZero})
+}
+
+type rootPrivOracle struct{}
+
+// TODO
+func (o rootPrivOracle) repoquery() bool {
+	return true
+}
+
+func (o rootPrivOracle) yumRepolist() bool {
+	return false
+}
+
+func (o rootPrivOracle) yumUpdateInfo() bool {
+	return false
+}
+
+// TODO
+func (o rootPrivOracle) yumChangelog() bool {
+	return false
 }

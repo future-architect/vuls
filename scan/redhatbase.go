@@ -31,11 +31,6 @@ import (
 	ver "github.com/knqyf263/go-rpm-version"
 )
 
-// inherit OsTypeInterface
-type redhatBase struct {
-	base
-}
-
 // https://github.com/serverspec/specinfra/blob/master/lib/specinfra/helper/detect_os/redhat.rb
 func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 	if r := exec(c, "ls /etc/fedora-release", noSudo); r.isSuccess() {
@@ -135,6 +130,19 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 	return false, &unknown{}
 }
 
+// inherit OsTypeInterface
+type redhatBase struct {
+	base
+	sudo rootPriv
+}
+
+type rootPriv interface {
+	repoquery() bool
+	yumRepolist() bool
+	yumUpdateInfo() bool
+	yumChangelog() bool
+}
+
 type cmd struct {
 	cmd                 string
 	expectedStatusCodes []int
@@ -146,7 +154,7 @@ func (o *redhatBase) execCheckIfSudoNoPasswd(cmds []cmd) error {
 	for _, c := range cmds {
 		cmd := util.PrependProxyEnv(c.cmd)
 		o.log.Infof("Checking... sudo %s", cmd)
-		r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
+		r := o.exec(util.PrependProxyEnv(cmd), sudo)
 		if !r.isSuccess(c.expectedStatusCodes...) {
 			o.log.Errorf("Check sudo or proxy settings: %s", r)
 			return fmt.Errorf("Failed to sudo: %s", r)
@@ -205,11 +213,11 @@ func (o *redhatBase) _checkIfSudoNoPasswd() error {
 	for _, c := range cmds {
 		cmd := util.PrependProxyEnv(c.cmd)
 		o.log.Infof("Checking... sudo %s", cmd)
-		r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
-		if !r.isSuccess(c.expectedStatusCodes...) {
-			o.log.Errorf("Check sudo or proxy settings: %s", r)
-			return fmt.Errorf("Failed to sudo: %s", r)
-		}
+		// r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
+		// if !r.isSuccess(c.expectedStatusCodes...) {
+		// o.log.Errorf("Check sudo or proxy settings: %s", r)
+		// return fmt.Errorf("Failed to sudo: %s", r)
+		// }
 	}
 	o.log.Infof("Sudo... Pass")
 	return nil
@@ -327,14 +335,6 @@ func (o *redhatBase) _checkDeps() error {
 	return nil
 }
 
-func (o *redhatBase) depsFast() []string {
-	if !config.Conf.Offline {
-		// Online fast scan needs yum-utils to issue repoquery cmd
-		return []string{"yum-utils"}
-	}
-	return []string{}
-}
-
 func (o *redhatBase) execCheckDeps(packNames []string) error {
 	for _, name := range packNames {
 		cmd := "rpm -q " + name
@@ -357,10 +357,12 @@ func (o *redhatBase) preCure() error {
 }
 
 func (o *redhatBase) postScan() error {
-	if config.Conf.Deep || config.Conf.FastRoot {
+	if o.isExecYumPS() {
 		if err := o.yumPS(); err != nil {
 			return fmt.Errorf("Failed to execute yum-ps: %s", err)
 		}
+	}
+	if config.Conf.Deep || config.Conf.FastRoot {
 		if err := o.needsRestarting(); err != nil {
 			return fmt.Errorf("Failed to execute need-restarting: %s", err)
 		}
@@ -498,7 +500,7 @@ func (o *redhatBase) scanUpdatablePackages() (models.Packages, error) {
 		cmd += " --enablerepo=" + repo
 	}
 
-	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
+	r := o.exec(util.PrependProxyEnv(cmd), o.sudo.repoquery())
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
@@ -581,10 +583,15 @@ func (o *redhatBase) isExecFillChangelogs() bool {
 }
 
 func (o *redhatBase) isExecScanChangelogs() bool {
-	if config.Conf.Offline {
+	if config.Conf.Offline || config.Conf.Fast || config.Conf.FastRoot {
 		return false
 	}
-	if config.Conf.Fast || config.Conf.FastRoot {
+	return true
+}
+
+func (o *redhatBase) isExecYumPS() bool {
+	// yum ps needs internet connection
+	if config.Conf.Offline || config.Conf.Fast {
 		return false
 	}
 	return true
@@ -652,7 +659,7 @@ func (o *redhatBase) getAvailableChangelogs(packNames []string) (map[string]stri
 	cmd := `yum changelog all updates %s %s | grep -A 1000000 "==================== Updated Packages ===================="`
 	cmd = fmt.Sprintf(cmd, yumopts, strings.Join(packNames, " "))
 
-	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
+	r := o.exec(util.PrependProxyEnv(cmd), o.sudo.yumChangelog())
 	if !r.isSuccess(0, 1) {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
@@ -889,7 +896,7 @@ func (o *redhatBase) scanUsingYum(updatable models.Packages) (models.VulnInfos, 
 	var cmd string
 	if (o.Distro.Family == config.RedHat || o.Distro.Family == config.Oracle) && major > 5 {
 		cmd = "yum --color=never repolist"
-		r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
+		r := o.exec(util.PrependProxyEnv(cmd), o.sudo.yumRepolist())
 		if !r.isSuccess() {
 			return nil, fmt.Errorf("Failed to SSH: %s", r)
 		}
@@ -903,7 +910,7 @@ func (o *redhatBase) scanUsingYum(updatable models.Packages) (models.VulnInfos, 
 	} else {
 		cmd = "yum updateinfo list updates --security --color=never"
 	}
-	r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
+	r := o.exec(util.PrependProxyEnv(cmd), o.sudo.yumUpdateInfo())
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
@@ -933,7 +940,7 @@ func (o *redhatBase) scanUsingYum(updatable models.Packages) (models.VulnInfos, 
 	} else {
 		cmd = "yum updateinfo updates --security --color=never"
 	}
-	r = o.exec(util.PrependProxyEnv(cmd), o.sudo())
+	r = o.exec(util.PrependProxyEnv(cmd), o.sudo.yumUpdateInfo())
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
@@ -1239,10 +1246,6 @@ func (o *redhatBase) parseYumUpdateinfoListAvailable(stdout string) (advisoryIDP
 	return result, nil
 }
 
-func (o *redhatBase) sudo() bool {
-	return config.Conf.Deep || config.Conf.FastRoot
-}
-
 func (o *redhatBase) yumPS() error {
 	cmd := "LANGUAGE=en_US.UTF-8 yum info yum"
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
@@ -1270,6 +1273,7 @@ func (o *redhatBase) yumPS() error {
 	}
 	return nil
 }
+
 func (o *redhatBase) checkYumPsInstalled(stdout string) bool {
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {

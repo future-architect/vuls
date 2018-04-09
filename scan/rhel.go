@@ -23,11 +23,20 @@ func newRHEL(c config.ServerInfo) *rhel {
 					VulnInfos: models.VulnInfos{},
 				},
 			},
+			sudo: rootPrivRHEL{},
 		},
 	}
 	r.log = util.NewCustomLogger(c)
 	r.setServerInfo(c)
 	return r
+}
+
+func (o *rhel) depsFast() []string {
+	if config.Conf.Offline {
+		return []string{}
+	}
+	// repoquery
+	return []string{"yum-utils"}
 }
 
 func (o *rhel) checkDeps() error {
@@ -129,4 +138,24 @@ func (o *rhel) nosudoCmdsDeep() []cmd {
 	return append(o.nosudoCmdsFastRoot(),
 		cmd{"yum --color=never repolist", exitStatusZero},
 		cmd{"yum changelog all updates", exitStatusZero})
+}
+
+type rootPrivRHEL struct{}
+
+// TODO
+func (o rootPrivRHEL) repoquery() bool {
+	return true
+}
+
+func (o rootPrivRHEL) yumRepolist() bool {
+	return false
+}
+
+func (o rootPrivRHEL) yumUpdateInfo() bool {
+	return false
+}
+
+// TODO
+func (o rootPrivRHEL) yumChangelog() bool {
+	return false
 }
