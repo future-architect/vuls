@@ -664,6 +664,14 @@ func (l Distro) String() string {
 
 // MajorVersion returns Major version
 func (l Distro) MajorVersion() (ver int, err error) {
+	if l.Family == Amazon {
+		ss := strings.Fields(l.Release)
+		if len(ss) == 1 {
+			return 1, nil
+		}
+		ver, err = strconv.Atoi(ss[0])
+		return
+	}
 	if 0 < len(l.Release) {
 		ver, err = strconv.Atoi(strings.Split(l.Release, ".")[0])
 	} else {
