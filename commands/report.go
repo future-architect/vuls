@@ -58,6 +58,7 @@ type ReportCmd struct {
 	ovalDBURL  string
 
 	toSlack     bool
+	toStride    bool
 	toHipChat   bool
 	toEMail     bool
 	toSyslog    bool
@@ -116,6 +117,7 @@ func (*ReportCmd) Usage() string {
 		[-ignore-unfixed]
 		[-to-email]
 		[-to-slack]
+		[-to-stride]
 		[-to-hipchat]
 		[-to-localfile]
 		[-to-s3]
@@ -268,6 +270,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.gzip, "gzip", false, "gzip compression")
 
 	f.BoolVar(&p.toSlack, "to-slack", false, "Send report via Slack")
+	f.BoolVar(&p.toStride, "to-stride", false, "Send report via Stride")
 	f.BoolVar(&p.toHipChat, "to-hipchat", false, "Send report via hipchat")
 	f.BoolVar(&p.toEMail, "to-email", false, "Send report via Email")
 	f.BoolVar(&p.toSyslog, "to-syslog", false, "Send report via Syslog")
@@ -337,6 +340,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.HTTPProxy = p.httpProxy
 
 	c.Conf.ToSlack = p.toSlack
+	c.Conf.ToStride = p.toStride
 	c.Conf.ToHipChat = p.toHipChat
 	c.Conf.ToEmail = p.toEMail
 	c.Conf.ToSyslog = p.toSyslog
@@ -375,6 +379,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if p.toSlack {
 		reports = append(reports, report.SlackWriter{})
+	}
+
+	if p.toStride {
+		reports = append(reports, report.StrideWriter{})
 	}
 
 	if p.toHipChat {

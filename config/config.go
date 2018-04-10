@@ -102,6 +102,7 @@ type Config struct {
 
 	EMail   SMTPConf
 	Slack   SlackConf
+	Stride  StrideConf
 	HipChat HipChatConf
 	Syslog  SyslogConf
 	Default ServerInfo
@@ -136,6 +137,7 @@ type Config struct {
 	RefreshCve bool
 
 	ToSlack     bool
+	ToStride    bool
 	ToHipChat   bool
 	ToEmail     bool
 	ToSyslog    bool
@@ -298,6 +300,10 @@ func (c Config) ValidateOnReport() bool {
 		errs = append(errs, hipchaterrs...)
 	}
 
+	if strideerrs := c.Stride.Validate(); 0 < len(strideerrs) {
+		errs = append(errs, strideerrs...)
+	}
+
 	if syslogerrs := c.Syslog.Validate(); 0 < len(syslogerrs) {
 		errs = append(errs, syslogerrs...)
 	}
@@ -426,6 +432,33 @@ func (c *SMTPConf) Validate() (errs []error) {
 	}
 	if len(c.From) == 0 {
 		errs = append(errs, fmt.Errorf("email.From required at least one address"))
+	}
+
+	_, err := valid.ValidateStruct(c)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	return
+}
+
+// StrideConf is stride config
+type StrideConf struct {
+	HookURL   string `json:"hook_url"`
+	AuthToken string `json:"AuthToken"`
+}
+
+// Validate validates configuration
+func (c *StrideConf) Validate() (errs []error) {
+	if !Conf.ToStride {
+		return
+	}
+
+	if len(c.HookURL) == 0 {
+		errs = append(errs, fmt.Errorf("stride.HookURL must not be empty"))
+	}
+
+	if len(c.AuthToken) == 0 {
+		errs = append(errs, fmt.Errorf("stride.AuthToken must not be empty"))
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -680,6 +713,14 @@ func (l Distro) String() string {
 
 // MajorVersion returns Major version
 func (l Distro) MajorVersion() (ver int, err error) {
+	if l.Family == Amazon {
+		ss := strings.Fields(l.Release)
+		if len(ss) == 1 {
+			return 1, nil
+		}
+		ver, err = strconv.Atoi(ss[0])
+		return
+	}
 	if 0 < len(l.Release) {
 		ver, err = strconv.Atoi(strings.Split(l.Release, ".")[0])
 	} else {
