@@ -362,7 +362,7 @@ func (o *redhatBase) postScan() error {
 			return fmt.Errorf("Failed to execute yum-ps: %s", err)
 		}
 	}
-	if config.Conf.Deep || config.Conf.FastRoot {
+	if o.isExecNeedsRestarting() {
 		if err := o.needsRestarting(); err != nil {
 			return fmt.Errorf("Failed to execute need-restarting: %s", err)
 		}
@@ -394,6 +394,11 @@ func (o *redhatBase) scanPackages() error {
 		case config.Amazon:
 			// nop
 		default:
+			o.Packages = installed
+			return nil
+		}
+	} else if o.Distro.Family == config.RedHat {
+		if config.Conf.Fast {
 			o.Packages = installed
 			return nil
 		}
@@ -590,8 +595,34 @@ func (o *redhatBase) isExecScanChangelogs() bool {
 }
 
 func (o *redhatBase) isExecYumPS() bool {
+	// RedHat has no yum-ps
+	if o.Distro.Family == config.RedHat {
+		return false
+	}
 	// yum ps needs internet connection
 	if config.Conf.Offline || config.Conf.Fast {
+		return false
+	}
+	return true
+}
+
+func (o *redhatBase) isExecNeedsRestarting() bool {
+	if o.Distro.Family == config.RedHat {
+		majorVersion, err := o.Distro.MajorVersion()
+		if err != nil || majorVersion < 6 {
+			o.log.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
+			return false
+		}
+
+		if config.Conf.Offline {
+			return false
+		} else if config.Conf.FastRoot || config.Conf.Deep {
+			return true
+		}
+		return false
+	}
+
+	if config.Conf.Fast {
 		return false
 	}
 	return true
@@ -895,7 +926,7 @@ func (o *redhatBase) scanUsingYum(updatable models.Packages) (models.VulnInfos, 
 
 	var cmd string
 	if (o.Distro.Family == config.RedHat || o.Distro.Family == config.Oracle) && major > 5 {
-		cmd = "yum --color=never repolist"
+		cmd = "yum repolist --color=never"
 		r := o.exec(util.PrependProxyEnv(cmd), o.sudo.yumRepolist())
 		if !r.isSuccess() {
 			return nil, fmt.Errorf("Failed to SSH: %s", r)

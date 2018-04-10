@@ -31,14 +31,6 @@ func newRHEL(c config.ServerInfo) *rhel {
 	return r
 }
 
-func (o *rhel) depsFast() []string {
-	if config.Conf.Offline {
-		return []string{}
-	}
-	// repoquery
-	return []string{"yum-utils"}
-}
-
 func (o *rhel) checkDeps() error {
 	if config.Conf.Fast {
 		return o.execCheckDeps(o.depsFast())
@@ -50,10 +42,13 @@ func (o *rhel) checkDeps() error {
 	return fmt.Errorf("Unknown scan mode")
 }
 
+func (o *rhel) depsFast() []string {
+	return []string{}
+}
+
 func (o *rhel) depsFastRoot() []string {
 	if config.Conf.Offline {
-		// `needs-restarting` for online and offline
-		return []string{"yum-utils"}
+		return []string{}
 	}
 
 	majorVersion, _ := o.Distro.MajorVersion()
@@ -113,49 +108,48 @@ func (o *rhel) nosudoCmdsFast() []cmd {
 }
 
 func (o *rhel) nosudoCmdsFastRoot() []cmd {
-	cmds := []cmd{{"needs-restarting", exitStatusZero}}
 	if config.Conf.Offline {
-		return cmds
+		return []cmd{}
 	}
 
 	majorVersion, _ := o.Distro.MajorVersion()
 	if majorVersion < 6 {
 		return []cmd{
-			{"yum --color=never repolist", exitStatusZero},
-			{"yum --color=never list-security --security", exitStatusZero},
-			{"yum --color=never info-security", exitStatusZero},
+			// {"needs-restarting", exitStatusZero},
+			{"yum repolist --color=never", exitStatusZero},
+			{"yum list-security --security --color=never", exitStatusZero},
+			{"yum info-security --color=never", exitStatusZero},
 			{"repoquery -h", exitStatusZero},
 		}
 	}
-	return append(cmds,
-		cmd{"yum --color=never repolist", exitStatusZero},
-		cmd{"yum --color=never --security updateinfo list updates", exitStatusZero},
-		cmd{"yum --color=never --security updateinfo updates", exitStatusZero},
-		cmd{"repoquery -h", exitStatusZero})
+	return []cmd{
+		{"yum repolist --color=never", exitStatusZero},
+		{"yum updateinfo list updates --security --color=never", exitStatusZero},
+		{"yum updateinfo updates --security --color=never ", exitStatusZero},
+		{"repoquery -h", exitStatusZero},
+		{"needs-restarting", exitStatusZero},
+	}
 }
 
 func (o *rhel) nosudoCmdsDeep() []cmd {
 	return append(o.nosudoCmdsFastRoot(),
-		cmd{"yum --color=never repolist", exitStatusZero},
-		cmd{"yum changelog all updates", exitStatusZero})
+		cmd{"yum changelog all updates --color=never", exitStatusZero})
 }
 
 type rootPrivRHEL struct{}
 
-// TODO
 func (o rootPrivRHEL) repoquery() bool {
 	return true
 }
 
 func (o rootPrivRHEL) yumRepolist() bool {
-	return false
+	return true
 }
 
 func (o rootPrivRHEL) yumUpdateInfo() bool {
-	return false
+	return true
 }
 
-// TODO
 func (o rootPrivRHEL) yumChangelog() bool {
-	return false
+	return true
 }
