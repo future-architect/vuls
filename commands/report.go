@@ -315,7 +315,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.DebugSQL = p.debugSQL
 	c.Conf.LogDir = p.logDir
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
-	cvelog.Initialize(p.logDir, p.debug, os.Stderr)
+	cvelog.SetLogger(p.logDir, false, c.Conf.Debug)
 
 	if err := c.Load(p.configPath, ""); err != nil {
 		util.Log.Errorf("Error loading %s, %s", p.configPath, err)

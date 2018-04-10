@@ -3,9 +3,12 @@
 
 [[projects]]
   name = "github.com/Azure/azure-sdk-for-go"
-  packages = ["storage"]
-  revision = "eae258195456be76b2ec9ad2ee2ab63cdda365d9"
-  version = "v12.2.0-beta"
+  packages = [
+    "storage",
+    "version"
+  ]
+  revision = "0b745831a99da5f43aa3cc641cfcb9ed323e1f9f"
+  version = "v15.1.0"
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
@@ -15,8 +18,8 @@
     "autorest/azure",
     "autorest/date"
   ]
-  revision = "fc3b03a2d2d1f43fad3007038bd16f044f870722"
-  version = "v9.10.0"
+  revision = "9ad9326b278af8fa5cc67c30c0ce9a58cc0862b2"
+  version = "v10.6.0"
 
 [[projects]]
   name = "github.com/BurntSushi/toml"
@@ -27,8 +30,8 @@
 [[projects]]
   name = "github.com/asaskevich/govalidator"
   packages = ["."]
-  revision = "521b25f4b05fd26bec69d9dedeb8f9c9a83939a8"
-  version = "v8"
+  revision = "ccb8e960c48f04d6935e72476ae4a51028f9e22f"
+  version = "v9"
 
 [[projects]]
   name = "github.com/aws/aws-sdk-go"
@@ -61,8 +64,8 @@
     "service/s3",
     "service/sts"
   ]
-  revision = "4b5324816e154564ef4e490842c2e40560971f75"
-  version = "v1.13.24"
+  revision = "a72204b9bf8d48230ee0fe8995613b394c66f2da"
+  version = "v1.13.31"
 
 [[projects]]
   name = "github.com/boltdb/bolt"
@@ -73,14 +76,14 @@
 [[projects]]
   name = "github.com/cenkalti/backoff"
   packages = ["."]
-  revision = "61153c768f31ee5f130071d08fc82b85208528de"
-  version = "v1.1.0"
+  revision = "2ea60e5f094469f9e65adb9cd103795b73ae743e"
+  version = "v2.0.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/cheggaaa/pb"
   packages = ["."]
-  revision = "75a8cbd866a7bad0d4a3b2b8cb6cab48a1475155"
+  revision = "c112833d014c77e8bde723fd0158e3156951639f"
+  version = "v2.0.6"
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
@@ -97,8 +100,8 @@
 [[projects]]
   name = "github.com/go-ini/ini"
   packages = ["."]
-  revision = "6333e38ac20b8949a8dd68baa3650f4dee8f39f0"
-  version = "v1.33.0"
+  revision = "5e9692864e22d02ac79e2fa499cffb00520b4fea"
+  version = "v1.34.0"
 
 [[projects]]
   name = "github.com/go-redis/redis"
@@ -122,10 +125,22 @@
   version = "v1.3"
 
 [[projects]]
+  name = "github.com/go-stack/stack"
+  packages = ["."]
+  revision = "259ab82a6cad3992b4e21ff5cac294ccb06474bc"
+  version = "v1.7.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/google/subcommands"
   packages = ["."]
   revision = "a3682377147edf596d303faabd89f81977b3f678"
+
+[[projects]]
+  name = "github.com/gorilla/websocket"
+  packages = ["."]
+  revision = "ea4d1f681babbce9545c9c5f3d5194a789c89f5b"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
@@ -156,6 +171,12 @@
   revision = "bf9dde6d0d2c004a008c27aaee91170c786f6db8"
 
 [[projects]]
+  name = "github.com/inconshreveable/log15"
+  packages = ["."]
+  revision = "0decfc6c20d9ca0ad143b0e89dcaa20f810b4fb3"
+  version = "v2.13"
+
+[[projects]]
   name = "github.com/jinzhu/gorm"
   packages = [
     ".",
@@ -184,10 +205,10 @@
   version = "v0.3.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/k0kubun/pp"
   packages = ["."]
-  revision = "e057ee7a28277be4d2af303443b6da377768181f"
+  revision = "027a6d1765d673d337e687394dbe780dd64e2a1e"
+  version = "v2.3.0"
 
 [[projects]]
   branch = "master"
@@ -220,7 +241,7 @@
     "log",
     "models"
   ]
-  revision = "4bd4c27138693120ac30d57441ca424446bfbdaf"
+  revision = "f397225f43694be586bdc460d6c1d7c21c783ad0"
 
 [[projects]]
   name = "github.com/kotakanbe/go-pingscanner"
@@ -235,10 +256,9 @@
     "config",
     "db",
     "db/rdb",
-    "log",
     "models"
   ]
-  revision = "ad20e5b993f4198a6d3f10c7f92800285b20122f"
+  revision = "4358b6b3f4dd9c53a65b4263e9631d1f43dfcead"
 
 [[projects]]
   branch = "master"
@@ -259,7 +279,8 @@
 [[projects]]
   name = "github.com/marstr/guid"
   packages = ["."]
-  revision = "8bdf7d1a087ccc975cf37dd6507da50698fd19ca"
+  revision = "8bd9a64bf37eb297b492a4101fb28e80ac0b290f"
+  version = "v1.1.0"
 
 [[projects]]
   name = "github.com/mattn/go-colorable"
@@ -306,14 +327,14 @@
 [[projects]]
   name = "github.com/nlopes/slack"
   packages = ["."]
-  revision = "c86337c0ef2486a15edd804355d9c73d2f2caed1"
-  version = "v0.1.0"
+  revision = "8ab4d0b364ef1e9af5d102531da20d5ec902b6c4"
+  version = "v0.2.0"
 
 [[projects]]
   branch = "master"
   name = "github.com/nsf/termbox-go"
   packages = ["."]
-  revision = "e2050e41c8847748ec5288741c0b19a8cb26d084"
+  revision = "3e24a7b6661e09b87a9f49d693034219f81602fa"
 
 [[projects]]
   name = "github.com/parnurzeal/gorequest"
@@ -364,7 +385,7 @@
     "ssh/agent",
     "ssh/terminal"
   ]
-  revision = "88942b9c40a4c9d203b82b3731787b672d6e809b"
+  revision = "beb2a9779c3b677077c41673505f150149fce895"
 
 [[projects]]
   branch = "master"
@@ -372,10 +393,9 @@
   packages = [
     "context",
     "idna",
-    "publicsuffix",
-    "websocket"
+    "publicsuffix"
   ]
-  revision = "6078986fec03a1dcc236c34816c71b0e05018fda"
+  revision = "61147c48b25b599e5b561d2e9c4f3e1ef489ca41"
 
 [[projects]]
   branch = "master"
@@ -384,7 +404,7 @@
     "unix",
     "windows"
   ]
-  revision = "378d26f46672a356c46195c28f61bdb4c0a781dd"
+  revision = "3b87a42e500a6dc65dae1a55d0b641295971163e"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -407,9 +427,45 @@
   revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
   version = "v0.3.0"
 
+[[projects]]
+  name = "gopkg.in/VividCortex/ewma.v1"
+  packages = ["."]
+  revision = "b24eb346a94c3ba12c1da1e564dbac1b498a77ce"
+  version = "v1.1.1"
+
+[[projects]]
+  name = "gopkg.in/cheggaaa/pb.v2"
+  packages = ["termutil"]
+  revision = "c112833d014c77e8bde723fd0158e3156951639f"
+  version = "v2.0.6"
+
+[[projects]]
+  name = "gopkg.in/fatih/color.v1"
+  packages = ["."]
+  revision = "507f6050b8568533fb3f5504de8e5205fa62a114"
+  version = "v1.6.0"
+
+[[projects]]
+  name = "gopkg.in/mattn/go-colorable.v0"
+  packages = ["."]
+  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
+  version = "v0.0.9"
+
+[[projects]]
+  name = "gopkg.in/mattn/go-isatty.v0"
+  packages = ["."]
+  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
+  version = "v0.0.3"
+
+[[projects]]
+  name = "gopkg.in/mattn/go-runewidth.v0"
+  packages = ["."]
+  revision = "9e777a8366cce605130a531d2cd6363d07ad7317"
+  version = "v0.0.2"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "905649d09f4b12a6c3c67526e2cf870cfa8ca1b31a0ff48a94c1e8de8c32eb3b"
+  inputs-digest = "fa4c77932bef97caf0df762b61ac5c14a3c38a366f400f1d2d0590dc628902ce"
   solver-name = "gps-cdcl"
   solver-version = 1
