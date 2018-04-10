@@ -279,6 +279,10 @@ func (c Config) ValidateOnReport() bool {
 		errs = append(errs, hipchaterrs...)
 	}
 
+	if strideerrs := c.HipChat.Validate(); 0 < len(strideerrs) {
+		errs = append(errs, strideerrs...)
+	}
+
 	if syslogerrs := c.Syslog.Validate(); 0 < len(syslogerrs) {
 		errs = append(errs, syslogerrs...)
 	}
@@ -426,13 +430,16 @@ type StrideConf struct {
 
 // Validate validates configuration
 func (c *StrideConf) Validate() (errs []error) {
+	if !Conf.ToStride {
+		return
+	}
 
 	if len(c.HookURL) == 0 {
-		errs = append(errs, fmt.Errorf("HookURL must not be empty"))
+		errs = append(errs, fmt.Errorf("stride.HookURL must not be empty"))
 	}
 
 	if len(c.AuthToken) == 0 {
-		errs = append(errs, fmt.Errorf("AuthToken must not be empty"))
+		errs = append(errs, fmt.Errorf("stride.AuthToken must not be empty"))
 	}
 
 	_, err := valid.ValidateStruct(c)
