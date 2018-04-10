@@ -58,11 +58,7 @@ func (o *amazon) depsFastRoot() []string {
 }
 
 func (o *amazon) depsDeep() []string {
-	return []string{
-		"yum-utils",
-		"yum-plugin-ps",
-		"yum-plugin-changelog",
-	}
+	return o.depsFastRoot()
 }
 
 func (o *amazon) checkIfSudoNoPasswd() error {
@@ -81,9 +77,6 @@ func (o *amazon) nosudoCmdsFast() []cmd {
 
 func (o *amazon) nosudoCmdsFastRoot() []cmd {
 	return []cmd{
-		{"repoquery -h", exitStatusZero},
-		{"yum updateinfo list updates --security --color=never", exitStatusZero},
-		{"yum updateinfo updates --security --color=never", exitStatusZero},
 		{"yum -q ps all --color=never", exitStatusZero},
 		{"stat /proc/1/exe", exitStatusZero},
 		{"needs-restarting", exitStatusZero},
