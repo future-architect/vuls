@@ -279,7 +279,7 @@ func (c Config) ValidateOnReport() bool {
 		errs = append(errs, hipchaterrs...)
 	}
 
-	if strideerrs := c.HipChat.Validate(); 0 < len(strideerrs) {
+	if strideerrs := c.Stride.Validate(); 0 < len(strideerrs) {
 		errs = append(errs, strideerrs...)
 	}
 
