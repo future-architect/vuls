@@ -1284,11 +1284,12 @@ func (o *redhatBase) yumPS() error {
 		return fmt.Errorf("Failed to SSH: %s", r)
 	}
 	if !o.checkYumPsInstalled(r.Stdout) {
-		// TODO Oracle
-		if o.Distro.Family != config.RedHat {
+		switch o.Distro.Family {
+		case config.RedHat, config.Oracle:
+			return nil
+		default:
 			return fmt.Errorf("yum-plugin-ps is not installed")
 		}
-		return nil
 	}
 
 	cmd = "LANGUAGE=en_US.UTF-8 yum -q ps all --color=never"

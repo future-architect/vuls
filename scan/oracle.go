@@ -126,41 +126,38 @@ func (o *oracle) nosudoCmdsFastRoot() []cmd {
 	majorVersion, _ := o.Distro.MajorVersion()
 	if majorVersion < 6 {
 		return []cmd{
-			{"yum --color=never repolist", exitStatusZero},
-			{"yum --color=never list-security --security", exitStatusZero},
-			{"yum --color=never info-security", exitStatusZero},
+			{"yum repolist --color=never", exitStatusZero},
+			{"yum list-security --security --color=never", exitStatusZero},
+			{"yum info-security --color=never", exitStatusZero},
 			{"repoquery -h", exitStatusZero},
 		}
 	}
 	return append(cmds,
-		cmd{"yum --color=never repolist", exitStatusZero},
-		cmd{"yum --color=never --security updateinfo list updates", exitStatusZero},
-		cmd{"yum --color=never --security updateinfo updates", exitStatusZero},
+		cmd{"yum repolist --color=never", exitStatusZero},
+		cmd{"yum updateinfo list updates --security --color=never", exitStatusZero},
+		cmd{"yum updateinfo updates --security --color=never", exitStatusZero},
 		cmd{"repoquery -h", exitStatusZero})
 }
 
 func (o *oracle) nosudoCmdsDeep() []cmd {
-	return append(o.nosudoCmdsFastRoot(),
-		cmd{"yum --color=never repolist", exitStatusZero},
-		cmd{"yum changelog all updates", exitStatusZero})
+	return o.nosudoCmdsFastRoot()
 }
 
 type rootPrivOracle struct{}
 
-// TODO
 func (o rootPrivOracle) repoquery() bool {
 	return true
 }
 
 func (o rootPrivOracle) yumRepolist() bool {
-	return false
+	return true
 }
 
 func (o rootPrivOracle) yumUpdateInfo() bool {
-	return false
+	return true
 }
 
-// TODO
+// root privilege isn't needed
 func (o rootPrivOracle) yumChangelog() bool {
 	return false
 }
