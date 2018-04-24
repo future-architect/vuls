@@ -40,8 +40,12 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 	m := map[string]int{}
 	for _, r := range rs {
 		if conf.FormatOneEMail {
-			message += formatFullPlainText(r) + "\r\n\r\n"
-
+			if conf.formatOneLineSummary{
+				message += formatOneLineSummary(r) + "\r\n\r\n"
+			}
+			else{
+				message += formatFullPlainText(r) + "\r\n\r\n"
+			}
 			mm := r.ScannedCves.CountGroupBySeverity()
 			keys := []string{"High", "Medium", "Low", "Unknown"}
 			for _, k := range keys {
