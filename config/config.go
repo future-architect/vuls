@@ -98,7 +98,7 @@ type Config struct {
 	Slack   SlackConf
 	Stride  StrideConf
 	HipChat HipChatConf
-    ChatWork ChatWorkConf
+	ChatWork ChatWorkConf
 	Syslog  SyslogConf
 	Default ServerInfo
 	Servers map[string]ServerInfo
@@ -281,10 +281,10 @@ func (c Config) ValidateOnReport() bool {
 		errs = append(errs, hipchaterrs...)
 	}
 
-    if chatworkerrs := c.ChatWork.Validate(); 0 < len(chatworkerrs) {
-        errs = append(errs, chatworkerrs...)
-    }
-
+	if chatworkerrs := c.ChatWork.Validate(); 0 < len(chatworkerrs) {
+		errs = append(errs, chatworkerrs...)
+	}
+    
 	if strideerrs := c.Stride.Validate(); 0 < len(strideerrs) {
 		errs = append(errs, strideerrs...)
 	}
