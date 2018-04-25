@@ -94,14 +94,14 @@ type Config struct {
 	DebugSQL bool
 	Lang     string
 
-	EMail   SMTPConf
-	Slack   SlackConf
-	Stride  StrideConf
-	HipChat HipChatConf
+	EMail    SMTPConf
+	Slack    SlackConf
+	Stride   StrideConf
+	HipChat  HipChatConf
 	ChatWork ChatWorkConf
-	Syslog  SyslogConf
-	Default ServerInfo
-	Servers map[string]ServerInfo
+	Syslog   SyslogConf
+	Default  ServerInfo
+	Servers  map[string]ServerInfo
 
 	CvssScoreOver      float64
 	IgnoreUnscoredCves bool
@@ -133,7 +133,7 @@ type Config struct {
 	ToSlack     bool
 	ToStride    bool
 	ToHipChat   bool
-	ToChatWork   bool
+	ToChatWork  bool
 	ToEmail     bool
 	ToSyslog    bool
 	ToLocalFile bool
@@ -284,7 +284,7 @@ func (c Config) ValidateOnReport() bool {
 	if chatworkerrs := c.ChatWork.Validate(); 0 < len(chatworkerrs) {
 		errs = append(errs, chatworkerrs...)
 	}
-    
+
 	if strideerrs := c.Stride.Validate(); 0 < len(strideerrs) {
 		errs = append(errs, strideerrs...)
 	}
@@ -527,28 +527,28 @@ func (c *HipChatConf) Validate() (errs []error) {
 
 // ChatWorkConf is ChatWork config
 type ChatWorkConf struct {
-        ApiToken string `json:"ApiToken"`
-        Room      string `json:"Room"`
+	ApiToken string `json:"ApiToken"`
+	Room     string `json:"Room"`
 }
 
 // Validate validates configuration
 func (c *ChatWorkConf) Validate() (errs []error) {
-    if !Conf.ToChatWork {
-       return
-    }
-    if len(c.Room) == 0 {
-        errs = append(errs, fmt.Errorf("chatworkcaht.room must not be empty"))
-    }
+	if !Conf.ToChatWork {
+		return
+	}
+	if len(c.Room) == 0 {
+		errs = append(errs, fmt.Errorf("chatworkcaht.room must not be empty"))
+	}
 
-   if len(c.ApiToken) == 0 {
-        errs = append(errs, fmt.Errorf("chatworkcaht.ApiToken must not be empty"))
-   }
+	if len(c.ApiToken) == 0 {
+		errs = append(errs, fmt.Errorf("chatworkcaht.ApiToken must not be empty"))
+	}
 
-   _, err := valid.ValidateStruct(c)
-    if err != nil {
-        errs = append(errs, err)
-   }
-    return
+	_, err := valid.ValidateStruct(c)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	return
 }
 
 // SyslogConf is syslog config

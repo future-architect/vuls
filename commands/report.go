@@ -385,7 +385,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	if p.toHipChat {
 		reports = append(reports, report.HipChatWriter{})
 	}
-	
+
 	if p.toChatWork {
 		reports = append(reports, report.ChatWorkWriter{})
 	}
