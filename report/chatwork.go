@@ -20,7 +20,8 @@ func (w ChatWorkWriter) Write(rs ...models.ScanResult) (err error) {
 
         var message string
         for _, r := range rs {
-                err = ChatWorkpostMessage(conf.Room, conf.ApiToken, r.ServerName)
+                serverInfo := fmt.Sprintf("%s",r.ServerInfo())
+                err = ChatWorkpostMessage(conf.Room, conf.ApiToken, serverInfo)
                 if err != nil {
                         return err
                 }
