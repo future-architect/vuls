@@ -20,8 +20,7 @@ func (w ChatWorkWriter) Write(rs ...models.ScanResult) (err error) {
 	var message string
 	for _, r := range rs {
 		serverInfo := fmt.Sprintf("%s", r.ServerInfo())
-		err = ChatWorkpostMessage(conf.Room, conf.ApiToken, serverInfo)
-		if err != nil {
+		if err = ChatWorkpostMessage(conf.Room, conf.ApiToken, serverInfo); err != nil {
 			return err
 		}
 
@@ -34,8 +33,7 @@ func (w ChatWorkWriter) Write(rs ...models.ScanResult) (err error) {
 
 			message = serverInfo + "[info]" + "[title]" + `https://nvd.nist.gov/vuln/detail/` + vinfo.CveID + "  " + strconv.FormatFloat(maxCvss.Value.Score, 'f', 1, 64) + " " + "(" + severity + ")" + "[/title]" + vinfo.Summaries(config.Conf.Lang, r.Family)[0].Value + "[/info]"
 
-			err = ChatWorkpostMessage(conf.Room, conf.ApiToken, message)
-			if err != nil {
+			if err = ChatWorkpostMessage(conf.Room, conf.ApiToken, message); err != nil {
 				return err
 			}
 		}
@@ -50,6 +48,7 @@ func ChatWorkpostMessage(room, token, message string) error {
 	payload := url.Values{
 		"body": {message},
 	}
+
 	reqs, err := http.NewRequest("POST", uri, strings.NewReader(payload.Encode()))
 
 	reqs.Header.Add("X-ChatWorkToken", token)
