@@ -17,10 +17,9 @@ type HipChatWriter struct{}
 func (w HipChatWriter) Write(rs ...models.ScanResult) (err error) {
 	conf := config.Conf.HipChat
 
-	var message string
 	for _, r := range rs {
-		err = postMessage(conf.Room, conf.AuthToken, r.ServerName)
-		if err != nil {
+		serverInfo := fmt.Sprintf("%s", r.ServerInfo())
+		if err = postMessage(conf.Room, conf.AuthToken, serverInfo); err != nil {
 			return err
 		}
 
@@ -31,10 +30,15 @@ func (w HipChatWriter) Write(rs ...models.ScanResult) (err error) {
 				severity = "?"
 			}
 
-			message = `<a href="https://nvd.nist.gov/vuln/detail\` + vinfo.CveID + ">" + vinfo.CveID + ">" + vinfo.CveID + "</a>" + "<br/>" + strconv.FormatFloat(maxCvss.Value.Score, 'f', 1, 64) + " " + "(" + severity + ")" + "<br/>" + vinfo.Summaries(config.Conf.Lang, r.Family)[0].Value
+			message := fmt.Sprintf(`<a href="https://nvd.nist.gov/vuln/detail\%s"> %s </a> <br/>%s (%s)<br/>%s`,
+				vinfo.CveID,
+				vinfo.CveID,
+				strconv.FormatFloat(maxCvss.Value.Score, 'f', 1, 64),
+				severity,
+				vinfo.Summaries(config.Conf.Lang, r.Family)[0].Value,
+			)
 
-			err = postMessage(conf.Room, conf.AuthToken, message)
-			if err != nil {
+			if err = postMessage(conf.Room, conf.AuthToken, message); err != nil {
 				return err
 			}
 		}
