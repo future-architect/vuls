@@ -56,12 +56,12 @@ func postMessage(room, token, message string) error {
 		"message":        {message},
 	}
 	reqs, err := http.NewRequest("POST", uri, strings.NewReader(payload.Encode()))
-
-	reqs.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
 	if err != nil {
 		return err
 	}
+
+	reqs.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
 	client := &http.Client{}
 
 	resp, err := client.Do(reqs)
