@@ -94,13 +94,14 @@ type Config struct {
 	DebugSQL bool
 	Lang     string
 
-	EMail   SMTPConf
-	Slack   SlackConf
-	Stride  StrideConf
-	HipChat HipChatConf
-	Syslog  SyslogConf
-	Default ServerInfo
-	Servers map[string]ServerInfo
+	EMail    SMTPConf
+	Slack    SlackConf
+	Stride   StrideConf
+	HipChat  HipChatConf
+	ChatWork ChatWorkConf
+	Syslog   SyslogConf
+	Default  ServerInfo
+	Servers  map[string]ServerInfo
 
 	CvssScoreOver      float64
 	IgnoreUnscoredCves bool
@@ -132,6 +133,7 @@ type Config struct {
 	ToSlack     bool
 	ToStride    bool
 	ToHipChat   bool
+	ToChatWork  bool
 	ToEmail     bool
 	ToSyslog    bool
 	ToLocalFile bool
@@ -277,6 +279,10 @@ func (c Config) ValidateOnReport() bool {
 
 	if hipchaterrs := c.HipChat.Validate(); 0 < len(hipchaterrs) {
 		errs = append(errs, hipchaterrs...)
+	}
+
+	if chatworkerrs := c.ChatWork.Validate(); 0 < len(chatworkerrs) {
+		errs = append(errs, chatworkerrs...)
 	}
 
 	if strideerrs := c.Stride.Validate(); 0 < len(strideerrs) {
@@ -510,6 +516,32 @@ func (c *HipChatConf) Validate() (errs []error) {
 
 	if len(c.AuthToken) == 0 {
 		errs = append(errs, fmt.Errorf("hipcaht.AuthToken must not be empty"))
+	}
+
+	_, err := valid.ValidateStruct(c)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	return
+}
+
+// ChatWorkConf is ChatWork config
+type ChatWorkConf struct {
+	ApiToken string `json:"ApiToken"`
+	Room     string `json:"Room"`
+}
+
+// Validate validates configuration
+func (c *ChatWorkConf) Validate() (errs []error) {
+	if !Conf.ToChatWork {
+		return
+	}
+	if len(c.Room) == 0 {
+		errs = append(errs, fmt.Errorf("chatworkcaht.room must not be empty"))
+	}
+
+	if len(c.ApiToken) == 0 {
+		errs = append(errs, fmt.Errorf("chatworkcaht.ApiToken must not be empty"))
 	}
 
 	_, err := valid.ValidateStruct(c)
