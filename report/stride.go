@@ -1,8 +1,8 @@
 package report
 
 import (
-	"fmt"
 	"bytes"
+	"fmt"
 	"net/http"
 
 	"github.com/future-architect/vuls/config"
@@ -25,7 +25,7 @@ func (w StrideWriter) Write(rs ...models.ScanResult) (err error) {
 		message := fmt.Sprintf(`{"body":{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":" %s  "}]}]}}`,
 			serverInfo,
 		)
-		if err = w.sendMessage(conf.HookURL, conf.AuthToken, message); err != nil{
+		if err = w.sendMessage(conf.HookURL, conf.AuthToken, message); err != nil {
 			return err
 		}
 
@@ -44,7 +44,7 @@ func (w StrideWriter) Write(rs ...models.ScanResult) (err error) {
 				return err
 			}
 
-			message = fmt.Sprintf(`{"body":{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":" %s (%s) + "}]}]}}`,
+			message = fmt.Sprintf(`{"body":{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":" %s (%s) "}]}]}}`,
 				strconv.FormatFloat(maxCvss.Value.Score, 'f', 1, 64),
 				severity,
 			)
@@ -66,13 +66,13 @@ func (w StrideWriter) Write(rs ...models.ScanResult) (err error) {
 func (w StrideSender) sendMessage(uri, token, jsonStr string) error {
 
 	reqs, err := http.NewRequest("POST", uri, bytes.NewBuffer([]byte(jsonStr)))
+	if err != nil {
+		return err
+	}
 
 	reqs.Header.Add("Content-Type", "application/json")
 	reqs.Header.Add("Authorization", "Bearer "+token)
 
-	if err != nil {
-		return err
-	}
 	client := &http.Client{}
 
 	resp, err := client.Do(reqs)
