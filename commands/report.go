@@ -60,6 +60,7 @@ type ReportCmd struct {
 	toSlack     bool
 	toStride    bool
 	toHipChat   bool
+	toChatWork  bool
 	toEMail     bool
 	toSyslog    bool
 	toLocalFile bool
@@ -119,6 +120,7 @@ func (*ReportCmd) Usage() string {
 		[-to-slack]
 		[-to-stride]
 		[-to-hipchat]
+		[-to-chatwork]
 		[-to-localfile]
 		[-to-s3]
 		[-to-azure-blob]
@@ -272,6 +274,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.toSlack, "to-slack", false, "Send report via Slack")
 	f.BoolVar(&p.toStride, "to-stride", false, "Send report via Stride")
 	f.BoolVar(&p.toHipChat, "to-hipchat", false, "Send report via hipchat")
+	f.BoolVar(&p.toChatWork, "to-chatwork", false, "Send report via chatwork")
 	f.BoolVar(&p.toEMail, "to-email", false, "Send report via Email")
 	f.BoolVar(&p.toSyslog, "to-syslog", false, "Send report via Syslog")
 	f.BoolVar(&p.toLocalFile,
@@ -342,6 +345,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.ToSlack = p.toSlack
 	c.Conf.ToStride = p.toStride
 	c.Conf.ToHipChat = p.toHipChat
+	c.Conf.ToChatWork = p.toChatWork
 	c.Conf.ToEmail = p.toEMail
 	c.Conf.ToSyslog = p.toSyslog
 	c.Conf.ToLocalFile = p.toLocalFile
@@ -387,6 +391,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if p.toHipChat {
 		reports = append(reports, report.HipChatWriter{})
+	}
+
+	if p.toChatWork {
+		reports = append(reports, report.ChatWorkWriter{})
 	}
 
 	if p.toEMail {

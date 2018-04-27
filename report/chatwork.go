@@ -11,15 +11,15 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
-// HipChatWriter send report to HipChat
-type HipChatWriter struct{}
+// ChatWorkWriter send report to ChatWork
+type ChatWorkWriter struct{}
 
-func (w HipChatWriter) Write(rs ...models.ScanResult) (err error) {
-	conf := config.Conf.HipChat
+func (w ChatWorkWriter) Write(rs ...models.ScanResult) (err error) {
+	conf := config.Conf.ChatWork
 
 	for _, r := range rs {
 		serverInfo := fmt.Sprintf("%s", r.ServerInfo())
-		if err = postMessage(conf.Room, conf.AuthToken, serverInfo); err != nil {
+		if err = ChatWorkpostMessage(conf.Room, conf.ApiToken, serverInfo); err != nil {
 			return err
 		}
 
@@ -30,15 +30,14 @@ func (w HipChatWriter) Write(rs ...models.ScanResult) (err error) {
 				severity = "?"
 			}
 
-			message := fmt.Sprintf(`<a href="https://nvd.nist.gov/vuln/detail\%s"> %s </a> <br/>%s (%s)<br/>%s`,
-				vinfo.CveID,
+			message := fmt.Sprintf(`%s[info][title]"https://nvd.nist.gov/vuln/detail/%s" %s %s[/title]%s[/info]`,
+				serverInfo,
 				vinfo.CveID,
 				strconv.FormatFloat(maxCvss.Value.Score, 'f', 1, 64),
 				severity,
-				vinfo.Summaries(config.Conf.Lang, r.Family)[0].Value,
-			)
+				vinfo.Summaries(config.Conf.Lang, r.Family)[0].Value)
 
-			if err = postMessage(conf.Room, conf.AuthToken, message); err != nil {
+			if err = ChatWorkpostMessage(conf.Room, conf.ApiToken, message); err != nil {
 				return err
 			}
 		}
@@ -47,21 +46,21 @@ func (w HipChatWriter) Write(rs ...models.ScanResult) (err error) {
 	return nil
 }
 
-func postMessage(room, token, message string) error {
-	uri := fmt.Sprintf("https://api.hipchat.com/v2/room/%s/notification?auth_token=%s", room, token)
+func ChatWorkpostMessage(room, token, message string) error {
+	uri := fmt.Sprintf("https://api.chatwork.com/v2/rooms/%s/messages=%s", room, token)
 
 	payload := url.Values{
-		"color":          {"purple"},
-		"message_format": {"html"},
-		"message":        {message},
+		"body": {message},
 	}
+
 	reqs, err := http.NewRequest("POST", uri, strings.NewReader(payload.Encode()))
+
+	reqs.Header.Add("X-ChatWorkToken", token)
+	reqs.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
 	if err != nil {
 		return err
 	}
-
-	reqs.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
 	client := &http.Client{}
 
 	resp, err := client.Do(reqs)
