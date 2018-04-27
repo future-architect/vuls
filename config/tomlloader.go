@@ -30,7 +30,7 @@ import (
 type TOMLLoader struct {
 }
 
-// Load load the configuraiton TOML file specified by path arg.
+// Load load the configuration TOML file specified by path arg.
 func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	if Conf.Debug {
 		log.SetLevel(log.DebugLevel)
