@@ -160,10 +160,10 @@ systemd (228-5) unstable; urgency=medium`,
 		 util-linux (2.27-3ubuntu1) xenial; urgency=medium`,
 			},
 			[]DetectedCveID{
-			// {"CVE-2015-2325", models.ChangelogLenientMatch},
-			// {"CVE-2015-2326", models.ChangelogLenientMatch},
-			// {"CVE-2015-3210", models.ChangelogLenientMatch},
-			// {"CVE-2016-1000000", models.ChangelogLenientMatch},
+				// {"CVE-2015-2325", models.ChangelogLenientMatch},
+				// {"CVE-2015-2326", models.ChangelogLenientMatch},
+				// {"CVE-2015-3210", models.ChangelogLenientMatch},
+				// {"CVE-2016-1000000", models.ChangelogLenientMatch},
 			},
 			models.Changelog{
 				// Contents: `util-linux (2.27.1-3ubuntu1) xenial; urgency=medium
@@ -196,10 +196,10 @@ systemd (228-5) unstable; urgency=medium`,
 		 util-linux (2.27-3) xenial; urgency=medium`,
 			},
 			[]DetectedCveID{
-			// {"CVE-2015-2325", models.ChangelogLenientMatch},
-			// {"CVE-2015-2326", models.ChangelogLenientMatch},
-			// {"CVE-2015-3210", models.ChangelogLenientMatch},
-			// {"CVE-2016-1000000", models.ChangelogLenientMatch},
+				// {"CVE-2015-2325", models.ChangelogLenientMatch},
+				// {"CVE-2015-2326", models.ChangelogLenientMatch},
+				// {"CVE-2015-3210", models.ChangelogLenientMatch},
+				// {"CVE-2016-1000000", models.ChangelogLenientMatch},
 			},
 			models.Changelog{
 				// Contents: `util-linux (2.27.1-3ubuntu1) xenial; urgency=medium
