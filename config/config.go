@@ -527,7 +527,7 @@ func (c *HipChatConf) Validate() (errs []error) {
 
 // ChatWorkConf is ChatWork config
 type ChatWorkConf struct {
-	ApiToken string `json:"ApiToken"`
+	APIToken string `json:"ApiToken"`
 	Room     string `json:"Room"`
 }
 
@@ -540,7 +540,7 @@ func (c *ChatWorkConf) Validate() (errs []error) {
 		errs = append(errs, fmt.Errorf("chatworkcaht.room must not be empty"))
 	}
 
-	if len(c.ApiToken) == 0 {
+	if len(c.APIToken) == 0 {
 		errs = append(errs, fmt.Errorf("chatworkcaht.ApiToken must not be empty"))
 	}
 

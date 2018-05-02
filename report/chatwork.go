@@ -19,7 +19,7 @@ func (w ChatWorkWriter) Write(rs ...models.ScanResult) (err error) {
 
 	for _, r := range rs {
 		serverInfo := fmt.Sprintf("%s", r.ServerInfo())
-		if err = ChatWorkpostMessage(conf.Room, conf.ApiToken, serverInfo); err != nil {
+		if err = chatWorkpostMessage(conf.Room, conf.APIToken, serverInfo); err != nil {
 			return err
 		}
 
@@ -37,7 +37,7 @@ func (w ChatWorkWriter) Write(rs ...models.ScanResult) (err error) {
 				severity,
 				vinfo.Summaries(config.Conf.Lang, r.Family)[0].Value)
 
-			if err = ChatWorkpostMessage(conf.Room, conf.ApiToken, message); err != nil {
+			if err = chatWorkpostMessage(conf.Room, conf.APIToken, message); err != nil {
 				return err
 			}
 		}
@@ -46,7 +46,7 @@ func (w ChatWorkWriter) Write(rs ...models.ScanResult) (err error) {
 	return nil
 }
 
-func ChatWorkpostMessage(room, token, message string) error {
+func chatWorkpostMessage(room, token, message string) error {
 	uri := fmt.Sprintf("https://api.chatwork.com/v2/rooms/%s/messages=%s", room, token)
 
 	payload := url.Values{
