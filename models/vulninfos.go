@@ -233,13 +233,35 @@ func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
 	for _, adv := range v.DistroAdvisories {
 		if adv.Severity != "" {
 			values = append(values, CveContentCvss{
-				Type: "Vendor",
+				Type: "Advisory",
 				Value: Cvss{
 					Type:                 CVSS2,
 					Score:                severityToV2ScoreRoughly(adv.Severity),
 					CalculatedBySeverity: true,
 					Vector:               "-",
 					Severity:             strings.ToUpper(adv.Severity),
+				},
+			})
+		}
+	}
+
+	// An OVAL entry in Ubuntu and Debian has only severity (CVSS score isn't included).
+	// Show severity and dummy score calculated roghly.
+	order = append(order, AllCveContetTypes.Except(order...)...)
+	for _, ctype := range order {
+		if cont, found := v.CveContents[ctype]; found &&
+			cont.Cvss2Score == 0 &&
+			cont.Cvss3Score == 0 &&
+			cont.Severity != "" {
+
+			values = append(values, CveContentCvss{
+				Type: cont.Type,
+				Value: Cvss{
+					Type:                 CVSS2,
+					Score:                severityToV2ScoreRoughly(cont.Severity),
+					CalculatedBySeverity: true,
+					Vector:               "-",
+					Severity:             strings.ToUpper(cont.Severity),
 				},
 			})
 		}
