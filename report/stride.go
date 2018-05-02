@@ -5,21 +5,22 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/models"
 	"strconv"
 	"strings"
+
+	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/models"
 )
 
 // StrideWriter send report to Stride
 type StrideWriter struct{}
-type StrideSender struct{}
+type strideSender struct{}
 
 func (w StrideWriter) Write(rs ...models.ScanResult) (err error) {
 	conf := config.Conf.Stride
 
 	for _, r := range rs {
-		w := StrideSender{}
+		w := strideSender{}
 
 		serverInfo := fmt.Sprintf("%s", r.ServerInfo())
 		message := fmt.Sprintf(`{"body":{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":" %s  "}]}]}}`,
@@ -63,23 +64,18 @@ func (w StrideWriter) Write(rs ...models.ScanResult) (err error) {
 	return nil
 }
 
-func (w StrideSender) sendMessage(uri, token, jsonStr string) error {
-
+func (w strideSender) sendMessage(uri, token, jsonStr string) error {
 	reqs, err := http.NewRequest("POST", uri, bytes.NewBuffer([]byte(jsonStr)))
 	if err != nil {
 		return err
 	}
-
 	reqs.Header.Add("Content-Type", "application/json")
 	reqs.Header.Add("Authorization", "Bearer "+token)
-
 	client := &http.Client{}
-
 	resp, err := client.Do(reqs)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-
 	return nil
 }
