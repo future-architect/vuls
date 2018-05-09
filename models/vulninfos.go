@@ -260,16 +260,16 @@ func (v VulnInfo) Cvss2Scores(myFamily string) (values []CveContentCvss) {
 		if cont, found := v.CveContents[ctype]; found &&
 			cont.Cvss2Score == 0 &&
 			cont.Cvss3Score == 0 &&
-			cont.Severity != "" {
+			cont.Cvss2Severity != "" {
 
 			values = append(values, CveContentCvss{
 				Type: cont.Type,
 				Value: Cvss{
 					Type:                 CVSS2,
-					Score:                severityToV2ScoreRoughly(cont.Severity),
+					Score:                severityToV2ScoreRoughly(cont.Cvss2Severity),
 					CalculatedBySeverity: true,
 					Vector:               "-",
-					Severity:             strings.ToUpper(cont.Severity),
+					Severity:             strings.ToUpper(cont.Cvss2Severity),
 				},
 			})
 		}
