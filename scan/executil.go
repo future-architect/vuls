@@ -278,7 +278,7 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 		result.ExitStatus = 997
 		return
 	}
-	controlPath := filepath.Join(home, ".vuls", `controlmaster-%r-%h.%p`)
+	controlPath := filepath.Join(home, ".vuls", `controlmaster-%r-`+c.ServerName+`.%p`)
 
 	defaultSSHArgs := []string{
 		"-tt",
@@ -296,11 +296,6 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 
 	args := append(defaultSSHArgs, fmt.Sprintf("%s@%s", c.User, c.Host))
 	args = append(args, "-p", c.Port)
-
-	//  if conf.Conf.Debug {
-	//      args = append(args, "-v")
-	//  }
-
 	if 0 < len(c.KeyPath) {
 		args = append(args, "-i", c.KeyPath)
 		args = append(args, "-o", "PasswordAuthentication=no")
