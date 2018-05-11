@@ -59,6 +59,7 @@ func (w SyslogWriter) encodeSyslog(result models.ScanResult) (messages []string)
 
 	for cveID, vinfo := range result.ScannedCves {
 		var kvPairs []string
+		kvPairs = append(kvPairs, fmt.Sprintf(`scanned_at="%s"`, result.ScannedAt))
 		kvPairs = append(kvPairs, fmt.Sprintf(`server_name="%s"`, result.ServerName))
 		kvPairs = append(kvPairs, fmt.Sprintf(`os_family="%s"`, result.Family))
 		kvPairs = append(kvPairs, fmt.Sprintf(`os_release="%s"`, result.Release))
