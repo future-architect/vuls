@@ -57,14 +57,16 @@ func (w SyslogWriter) encodeSyslog(result models.ScanResult) (messages []string)
 	ipv4Addrs := strings.Join(result.IPv4Addrs, ",")
 	ipv6Addrs := strings.Join(result.IPv6Addrs, ",")
 
+	var commonKvPairs []string
+	commonKvPairs = append(commonKvPairs, fmt.Sprintf(`scanned_at="%s"`, result.ScannedAt))
+	commonKvPairs = append(commonKvPairs, fmt.Sprintf(`server_name="%s"`, result.ServerName))
+	commonKvPairs = append(commonKvPairs, fmt.Sprintf(`os_family="%s"`, result.Family))
+	commonKvPairs = append(commonKvPairs, fmt.Sprintf(`os_release="%s"`, result.Release))
+	commonKvPairs = append(commonKvPairs, fmt.Sprintf(`ipv4_addr="%s"`, ipv4Addrs))
+	commonKvPairs = append(commonKvPairs, fmt.Sprintf(`ipv6_addr="%s"`, ipv6Addrs))
+
 	for cveID, vinfo := range result.ScannedCves {
-		var kvPairs []string
-		kvPairs = append(kvPairs, fmt.Sprintf(`scanned_at="%s"`, result.ScannedAt))
-		kvPairs = append(kvPairs, fmt.Sprintf(`server_name="%s"`, result.ServerName))
-		kvPairs = append(kvPairs, fmt.Sprintf(`os_family="%s"`, result.Family))
-		kvPairs = append(kvPairs, fmt.Sprintf(`os_release="%s"`, result.Release))
-		kvPairs = append(kvPairs, fmt.Sprintf(`ipv4_addr="%s"`, ipv4Addrs))
-		kvPairs = append(kvPairs, fmt.Sprintf(`ipv6_addr="%s"`, ipv6Addrs))
+		kvPairs := commonKvPairs
 
 		var pkgNames []string
 		for _, pkg := range vinfo.AffectedPackages {
@@ -93,6 +95,11 @@ func (w SyslogWriter) encodeSyslog(result models.ScanResult) (messages []string)
 
 		// message: key1="value1" key2="value2"...
 		messages = append(messages, strings.Join(kvPairs, " "))
+	}
+
+	if len(messages) == 0 {
+		commonKvPairs = append(commonKvPairs, `message="No CVE-IDs are found"`)
+		messages = append(messages, strings.Join(commonKvPairs, " "))
 	}
 	return messages
 }
