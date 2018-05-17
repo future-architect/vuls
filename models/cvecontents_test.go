@@ -129,16 +129,16 @@ func TestSourceLinks(t *testing.T) {
 			},
 			out: []CveContentStr{
 				{
-					Type:  NvdXML,
+					Type:  Nvd,
 					Value: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
 				},
 			},
 		},
 	}
-	for _, tt := range tests {
+	for i, tt := range tests {
 		actual := tt.in.cont.SourceLinks(tt.in.lang, "redhat", tt.in.cveID)
 		if !reflect.DeepEqual(tt.out, actual) {
-			t.Errorf("\nexpected: %v\n  actual: %v\n", tt.out, actual)
+			t.Errorf("\n[%d] expected: %v\n  actual: %v\n", i, tt.out, actual)
 		}
 	}
 }

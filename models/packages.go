@@ -62,9 +62,31 @@ func (ps Packages) Merge(other Packages) Packages {
 	return merged
 }
 
-// FormatUpdatablePacksSummary returns a summary of updatable packages
-func (ps Packages) FormatUpdatablePacksSummary() string {
+func isDisplayUpdatableNum(family string) bool {
 	if config.Conf.Offline {
+		return false
+	}
+	if config.Conf.FastRoot || config.Conf.Deep {
+		return true
+	}
+	if config.Conf.Fast {
+		switch family {
+		case config.RedHat,
+			config.Oracle,
+			config.Debian,
+			config.Ubuntu,
+			config.Raspbian:
+			return false
+		default:
+			return true
+		}
+	}
+	return false
+}
+
+// FormatUpdatablePacksSummary returns a summary of updatable packages
+func (ps Packages) FormatUpdatablePacksSummary(family string) string {
+	if !isDisplayUpdatableNum(family) {
 		return fmt.Sprintf("%d installed", len(ps))
 	}
 

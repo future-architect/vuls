@@ -136,19 +136,42 @@ func trim(str string) string {
 }
 
 func (o *debian) checkIfSudoNoPasswd() error {
-	if config.Conf.Deep || config.Conf.FastRoot || o.Distro.Family == config.Raspbian {
-		cmd := util.PrependProxyEnv("apt-get update")
+	if config.Conf.Fast {
+		o.log.Infof("sudo ... No need")
+		return nil
+	}
+
+	cmds := []string{
+		"checkrestart",
+		"stat /proc/1/exe",
+	}
+
+	if !config.Conf.Offline {
+		cmds = append(cmds, "apt-get update")
+	}
+
+	for _, cmd := range cmds {
+		cmd = util.PrependProxyEnv(cmd)
 		o.log.Infof("Checking... sudo %s", cmd)
 		r := o.exec(cmd, sudo)
 		if !r.isSuccess() {
 			o.log.Errorf("sudo error on %s", r)
 			return fmt.Errorf("Failed to sudo: %s", r)
 		}
-		o.log.Infof("Sudo... Pass")
-		return nil
 	}
 
-	o.log.Infof("sudo ... No need")
+	initName, err := o.detectInitSystem()
+	if initName != systemd && err != nil {
+		cmd := util.PrependProxyEnv("initctl status --help")
+		o.log.Infof("Checking... sudo %s", cmd)
+		r := o.exec(cmd, sudo)
+		if !r.isSuccess() {
+			o.log.Errorf("sudo error on %s", r)
+			return fmt.Errorf("Failed to sudo: %s", r)
+		}
+	}
+
+	o.log.Infof("Sudo... Pass")
 	return nil
 }
 
@@ -158,46 +181,39 @@ func (o *debian) checkDeps() error {
 	if config.Conf.Deep || config.Conf.FastRoot {
 		// checkrestart
 		packNames = append(packNames, "debian-goodies")
+	}
 
-		switch o.Distro.Family {
-		case config.Debian:
-			// https://askubuntu.com/a/742844
-			packNames = append(packNames, "reboot-notifier")
+	if o.Distro.Family == config.Debian {
+		// https://askubuntu.com/a/742844
+		packNames = append(packNames, "reboot-notifier")
 
-			// Changelogs will be fetched only in deep scan mode
-			if config.Conf.Deep {
-				// Debian needs aptitude to get changelogs.
-				// Because unable to get changelogs via apt-get changelog on Debian.
-				packNames = append(packNames, "aptitude")
-			}
-		case config.Ubuntu, config.Raspbian:
-			// No need
-		}
-
-	} else {
-		// Fast scan mode
-		switch o.Distro.Family {
-		case config.Debian:
-			// https://askubuntu.com/a/742844
-			packNames = append(packNames, "reboot-notifier")
-
-		case config.Ubuntu, config.Raspbian:
-			// No need
+		// Changelogs will be fetched only in deep scan mode
+		if config.Conf.Deep {
+			// Debian needs aptitude to get changelogs.
+			// Because unable to get changelogs via `apt-get changelog` on Debian.
+			packNames = append(packNames, "aptitude")
 		}
 	}
 
 	for _, name := range packNames {
 		cmd := fmt.Sprintf("%s %s", dpkgQuery, name)
 		r := o.exec(cmd, noSudo)
-
 		msg := fmt.Sprintf("%s is not installed", name)
 		if !r.isSuccess() {
+			if o.Distro.Family == config.Debian &&
+				name == "reboot-notifier" {
+				msg += additionalMsgDebian
+			}
 			o.log.Errorf(msg)
 			return fmt.Errorf(msg)
 		}
 
 		_, status, _, _, _, _ := o.parseScannedPackagesLine(r.Stdout)
 		if status != "ii" {
+			if o.Distro.Family == config.Debian &&
+				name == "reboot-notifier" {
+				msg += additionalMsgDebian
+			}
 			o.log.Errorf(msg)
 			return fmt.Errorf(msg)
 		}
@@ -205,6 +221,8 @@ func (o *debian) checkDeps() error {
 	o.log.Infof("Dependencies... Pass")
 	return nil
 }
+
+const additionalMsgDebian = ". To install reboot-notifier on Debian, see https://feeding.cloud.geek.nz/posts/introducing-reboot-notifier/"
 
 func (o *debian) preCure() error {
 	if err := o.detectIPAddr(); err != nil {
@@ -346,7 +364,7 @@ func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, mode
 		delete(srcPacks, name)
 	}
 
-	if config.Conf.Offline {
+	if config.Conf.Offline || config.Conf.Fast {
 		return installed, updatable, srcPacks, nil
 	}
 
@@ -905,7 +923,7 @@ func (o *debian) checkrestart() error {
 	}
 	packs, unknownServices := o.parseCheckRestart(r.Stdout)
 	pidService := map[string]string{}
-	if initName != systemd {
+	if initName == upstart {
 		for _, s := range unknownServices {
 			cmd := "LANGUAGE=en_US.UTF-8 initctl status " + s
 			r := o.exec(cmd, sudo)

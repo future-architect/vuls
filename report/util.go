@@ -47,7 +47,7 @@ func formatScanSummary(rs ...models.ScanResult) string {
 			cols = []interface{}{
 				r.FormatServerName(),
 				fmt.Sprintf("%s%s", r.Family, r.Release),
-				r.Packages.FormatUpdatablePacksSummary(),
+				r.Packages.FormatUpdatablePacksSummary(r.Family),
 			}
 		} else {
 			cols = []interface{}{
@@ -72,7 +72,7 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 			cols = []interface{}{
 				r.FormatServerName(),
 				r.ScannedCves.FormatCveSummary(),
-				r.Packages.FormatUpdatablePacksSummary(),
+				r.Packages.FormatUpdatablePacksSummary(r.Family),
 			}
 		} else {
 			cols = []interface{}{
@@ -99,7 +99,7 @@ func formatShortPlainText(r models.ScanResult) string {
 %s
 No CVE-IDs are found in updatable packages.
 %s
-	 `, header, r.Packages.FormatUpdatablePacksSummary())
+	 `, header, r.Packages.FormatUpdatablePacksSummary(r.Family))
 	}
 
 	stable := uitable.New()
@@ -175,7 +175,7 @@ func formatFullPlainText(r models.ScanResult) string {
 %s
 No CVE-IDs are found in updatable packages.
 %s
-	 `, header, r.Packages.FormatUpdatablePacksSummary())
+	 `, header, r.Packages.FormatUpdatablePacksSummary(r.Family))
 	}
 
 	table := uitable.New()

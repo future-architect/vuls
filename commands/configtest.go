@@ -174,7 +174,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	c.Conf.FastRoot = p.fastRoot
 	c.Conf.Offline = p.offline
 	c.Conf.Deep = p.deep
-	if !(c.Conf.Fast || c.Conf.FastRoot || c.Conf.Offline || c.Conf.Deep) {
+	if !(c.Conf.Fast || c.Conf.FastRoot || c.Conf.Deep) {
 		c.Conf.Fast = true
 	}
 	c.Conf.Vvv = p.vvv

@@ -204,7 +204,7 @@ func (r ScanResult) FormatTextReportHeadedr() string {
 		r.ServerInfo(),
 		buf.String(),
 		r.ScannedCves.FormatCveSummary(),
-		r.Packages.FormatUpdatablePacksSummary(),
+		r.Packages.FormatUpdatablePacksSummary(r.Family),
 	)
 }
 
