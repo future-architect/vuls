@@ -162,7 +162,9 @@ func (o *debian) checkDependencies() error {
 
 	case config.Debian:
 		// https://askubuntu.com/a/742844
-		packNames = append(packNames, "reboot-notifier")
+		if !o.ServerInfo.IsContainer() {
+			packNames = append(packNames, "reboot-notifier")
+		}
 
 		if config.Conf.Deep {
 			// Debian needs aptitude to get changelogs.
