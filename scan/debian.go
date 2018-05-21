@@ -152,8 +152,15 @@ func (o *debian) checkIfSudoNoPasswd() error {
 	return nil
 }
 
+type dep struct {
+	packName      string
+	required      bool
+	logFunc       func(string, ...interface{})
+	additionalMsg string
+}
+
 func (o *debian) checkDependencies() error {
-	packNames := []string{}
+	deps := []dep{}
 
 	switch o.Distro.Family {
 	case config.Ubuntu, config.Raspbian:
@@ -163,25 +170,39 @@ func (o *debian) checkDependencies() error {
 	case config.Debian:
 		// https://askubuntu.com/a/742844
 		if !o.ServerInfo.IsContainer() {
-			packNames = append(packNames, "reboot-notifier")
+			deps = append(deps, dep{
+				packName:      "reboot-notifier",
+				required:      false,
+				logFunc:       o.log.Warnf,
+				additionalMsg: ". If you want to detect whether not rebooted after kernel update.",
+			})
 		}
 
 		if config.Conf.Deep {
 			// Debian needs aptitude to get changelogs.
 			// Because unable to get changelogs via apt-get changelog on Debian.
-			packNames = append(packNames, "aptitude")
+			deps = append(deps, dep{
+				packName: "aptitude",
+				required: true,
+				logFunc:  o.log.Errorf,
+			})
 		}
 
 	default:
 		return fmt.Errorf("Not implemented yet: %s", o.Distro)
 	}
 
-	for _, name := range packNames {
-		cmd := "dpkg-query -W " + name
+	for _, dep := range deps {
+		cmd := "dpkg-query -W " + dep.packName
 		if r := o.exec(cmd, noSudo); !r.isSuccess() {
-			msg := fmt.Sprintf("%s is not installed", name)
-			o.log.Errorf(msg)
-			return fmt.Errorf(msg)
+			msg := fmt.Sprintf("%s is not installed", dep.packName)
+			if dep.additionalMsg != "" {
+				msg += dep.additionalMsg
+			}
+			dep.logFunc(msg)
+			if dep.required {
+				return fmt.Errorf(msg)
+			}
 		}
 	}
 	o.log.Infof("Dependencies... Pass")
