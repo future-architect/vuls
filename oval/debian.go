@@ -64,6 +64,17 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 		defPacks.actuallyAffectedPackNames[pack.Name] = notFixedYet
 	}
 
+	// update notFixedYet of SrcPackage
+	for binName := range defPacks.actuallyAffectedPackNames {
+		if srcPack, ok := r.SrcPackages.FindByBinName(binName); ok {
+			for _, p := range defPacks.def.AffectedPacks {
+				if p.Name == srcPack.Name {
+					defPacks.actuallyAffectedPackNames[binName] = p.NotFixedYet
+				}
+			}
+		}
+	}
+
 	vinfo.AffectedPackages = defPacks.toPackStatuses()
 	vinfo.AffectedPackages.Sort()
 	r.ScannedCves[defPacks.def.Debian.CveID] = vinfo
