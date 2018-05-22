@@ -161,7 +161,7 @@ func (o *debian) checkIfSudoNoPasswd() error {
 	}
 
 	initName, err := o.detectInitSystem()
-	if initName != systemd && err != nil {
+	if initName == upstart && err == nil {
 		cmd := util.PrependProxyEnv("initctl status --help")
 		o.log.Infof("Checking... sudo %s", cmd)
 		r := o.exec(cmd, sudo)
@@ -175,54 +175,77 @@ func (o *debian) checkIfSudoNoPasswd() error {
 	return nil
 }
 
-func (o *debian) checkDeps() error {
-	packNames := []string{}
+type dep struct {
+	packName      string
+	required      bool
+	logFunc       func(string, ...interface{})
+	additionalMsg string
+}
 
+func (o *debian) checkDeps() error {
+	deps := []dep{}
 	if config.Conf.Deep || config.Conf.FastRoot {
 		// checkrestart
-		packNames = append(packNames, "debian-goodies")
+		deps = append(deps, dep{
+			packName: "debian-goodies",
+			required: true,
+			logFunc:  o.log.Errorf,
+		})
 	}
 
 	if o.Distro.Family == config.Debian {
 		// https://askubuntu.com/a/742844
-		packNames = append(packNames, "reboot-notifier")
+		if !o.ServerInfo.IsContainer() {
+			deps = append(deps, dep{
+				packName:      "reboot-notifier",
+				required:      false,
+				logFunc:       o.log.Warnf,
+				additionalMsg: ". Install it if you want to detect whether not rebooted after kernel update. To install `reboot-notifier` on Debian, see https://feeding.cloud.geek.nz/posts/introducing-reboot-notifier/",
+			})
+		}
 
 		// Changelogs will be fetched only in deep scan mode
 		if config.Conf.Deep {
 			// Debian needs aptitude to get changelogs.
 			// Because unable to get changelogs via `apt-get changelog` on Debian.
-			packNames = append(packNames, "aptitude")
+			deps = append(deps, dep{
+				packName: "aptitude",
+				required: true,
+				logFunc:  o.log.Errorf,
+			})
 		}
 	}
 
-	for _, name := range packNames {
-		cmd := fmt.Sprintf("%s %s", dpkgQuery, name)
+	for _, dep := range deps {
+		cmd := fmt.Sprintf("%s %s", dpkgQuery, dep.packName)
+		msg := fmt.Sprintf("%s is not installed", dep.packName)
 		r := o.exec(cmd, noSudo)
-		msg := fmt.Sprintf("%s is not installed", name)
 		if !r.isSuccess() {
-			if o.Distro.Family == config.Debian &&
-				name == "reboot-notifier" {
-				msg += additionalMsgDebian
+			if dep.additionalMsg != "" {
+				msg += dep.additionalMsg
 			}
-			o.log.Errorf(msg)
-			return fmt.Errorf(msg)
+			dep.logFunc(msg)
+			if dep.required {
+				return fmt.Errorf(msg)
+			}
+			continue
 		}
 
 		_, status, _, _, _, _ := o.parseScannedPackagesLine(r.Stdout)
 		if status != "ii" {
-			if o.Distro.Family == config.Debian &&
-				name == "reboot-notifier" {
-				msg += additionalMsgDebian
+			if dep.additionalMsg != "" {
+				msg += dep.additionalMsg
 			}
-			o.log.Errorf(msg)
-			return fmt.Errorf(msg)
+			dep.logFunc(msg)
+			if dep.required {
+				return fmt.Errorf(msg)
+			}
 		}
+
 	}
 	o.log.Infof("Dependencies... Pass")
 	return nil
 }
-
-const additionalMsgDebian = ". To install reboot-notifier on Debian, see https://feeding.cloud.geek.nz/posts/introducing-reboot-notifier/"
 
 func (o *debian) preCure() error {
 	if err := o.detectIPAddr(); err != nil {

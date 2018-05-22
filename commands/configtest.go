@@ -220,6 +220,10 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	util.Log.Info("Checking sudo settings...")
 	scan.CheckIfSudoNoPasswd(p.timeoutSec)
 
+	if !c.Conf.Fast {
+		util.Log.Info("It can be scanned with -fast scan mode even if warn or err messages are displayed due to lack of dependent packages or sudo settings.")
+	}
+
 	scan.PrintSSHableServerNames()
 	return subcommands.ExitSuccess
 }
