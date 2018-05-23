@@ -68,7 +68,7 @@ func (o Alpine) update(r *models.ScanResult, defPacks defPacks) {
 		}
 	}
 
-	vinfo.AffectedPackages = defPacks.toPackStatuses(r.Family)
+	vinfo.AffectedPackages = defPacks.toPackStatuses()
 	vinfo.AffectedPackages.Sort()
 	r.ScannedCves[cveID] = vinfo
 }

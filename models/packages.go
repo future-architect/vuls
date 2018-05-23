@@ -252,3 +252,15 @@ func (s *SrcPackage) AddBinaryName(name string) {
 // SrcPackages is Map of SrcPackage
 // { "package-name": SrcPackage }
 type SrcPackages map[string]SrcPackage
+
+// FindByBinName finds by bin-package-name
+func (s SrcPackages) FindByBinName(name string) (*SrcPackage, bool) {
+	for _, p := range s {
+		for _, binName := range p.BinaryNames {
+			if binName == name {
+				return &p, true
+			}
+		}
+	}
+	return nil, false
+}

@@ -95,7 +95,7 @@ func (o SUSE) update(r *models.ScanResult, defPacks defPacks) {
 		notFixedYet, _ := defPacks.actuallyAffectedPackNames[pack.Name]
 		defPacks.actuallyAffectedPackNames[pack.Name] = notFixedYet
 	}
-	vinfo.AffectedPackages = defPacks.toPackStatuses(r.Family)
+	vinfo.AffectedPackages = defPacks.toPackStatuses()
 	vinfo.AffectedPackages.Sort()
 	r.ScannedCves[defPacks.def.Title] = vinfo
 }

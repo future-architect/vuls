@@ -239,3 +239,61 @@ func TestIsDisplayUpdatableNum(t *testing.T) {
 		}
 	}
 }
+
+func TestFindByBinName(t *testing.T) {
+	var tests = []struct {
+		in       SrcPackages
+		name     string
+		expected *SrcPackage
+		ok       bool
+	}{
+		{
+			in: map[string]SrcPackage{
+				"packA": {
+					Name:        "srcA",
+					BinaryNames: []string{"binA"},
+					Version:     "1.0.0",
+				},
+				"packB": {
+					Name:        "srcB",
+					BinaryNames: []string{"binB"},
+					Version:     "2.0.0",
+				},
+			},
+			name: "binA",
+			expected: &SrcPackage{
+				Name:        "srcA",
+				BinaryNames: []string{"binA"},
+				Version:     "1.0.0",
+			},
+			ok: true,
+		},
+		{
+			in: map[string]SrcPackage{
+				"packA": {
+					Name:        "srcA",
+					BinaryNames: []string{"binA"},
+					Version:     "1.0.0",
+				},
+				"packB": {
+					Name:        "srcB",
+					BinaryNames: []string{"binB"},
+					Version:     "2.0.0",
+				},
+			},
+			name:     "nobin",
+			expected: nil,
+			ok:       false,
+		},
+	}
+
+	for i, tt := range tests {
+		act, ok := tt.in.FindByBinName(tt.name)
+		if ok != tt.ok {
+			t.Errorf("[%d] expected %#v, actual %#v", i, tt.in, tt.expected)
+		}
+		if act != nil && !reflect.DeepEqual(*tt.expected, *act) {
+			t.Errorf("[%d] expected %#v, actual %#v", i, tt.in, tt.expected)
+		}
+	}
+}

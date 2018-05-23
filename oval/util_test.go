@@ -105,9 +105,8 @@ func TestUpsert(t *testing.T) {
 
 func TestDefpacksToPackStatuses(t *testing.T) {
 	type in struct {
-		dp     defPacks
-		family string
-		packs  models.Packages
+		dp    defPacks
+		packs models.Packages
 	}
 	var tests = []struct {
 		in  in
@@ -116,7 +115,6 @@ func TestDefpacksToPackStatuses(t *testing.T) {
 		// Ubuntu
 		{
 			in: in{
-				family: "ubuntu",
 				dp: defPacks{
 					def: ovalmodels.Definition{
 						AffectedPacks: []ovalmodels.Package{
@@ -154,7 +152,7 @@ func TestDefpacksToPackStatuses(t *testing.T) {
 		},
 	}
 	for i, tt := range tests {
-		actual := tt.in.dp.toPackStatuses(tt.in.family)
+		actual := tt.in.dp.toPackStatuses()
 		sort.Slice(actual, func(i, j int) bool {
 			return actual[i].Name < actual[j].Name
 		})
