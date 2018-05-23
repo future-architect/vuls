@@ -1,15 +1,28 @@
-FROM golang:latest
+FROM golang:alpine as builder
+
+RUN apk add --no-cache \
+        git \
+        make \
+        gcc \
+        musl-dev
+
+ENV REPOSITORY github.com/kotakanbe/goval-dictionary
+RUN git clone https://$REPOSITORY.git $GOPATH/src/$REPOSITORY \
+    && cd $GOPATH/src/$REPOSITORY \
+    && make install
+
+
+FROM alpine:3.7
 
 MAINTAINER sadayuki-matsuno
 
-ENV REPOSITORY github.com/kotakanbe/goval-dictionary
 ENV LOGDIR /var/log/vuls
 ENV WORKDIR /vuls
-# goval-dictionary install
-RUN git clone https://$REPOSITORY.git $GOPATH/src/$REPOSITORY \
-    && cd $GOPATH/src/$REPOSITORY \
-    && make install \
-    && mkdir -p $LOGDIR
+
+RUN apk add --no-cache ca-certificates \
+    && mkdir -p $WORKDIR $LOGDIR
+
+COPY --from=builder /go/bin/goval-dictionary /usr/local/bin/
 
 VOLUME [$WORKDIR, $LOGDIR]
 WORKDIR $WORKDIR
