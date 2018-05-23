@@ -1,15 +1,28 @@
-FROM golang:latest
+FROM golang:alpine as builder
+
+RUN apk add --no-cache \
+        git \
+        make \
+        gcc \
+        musl-dev
+
+ENV REPOSITORY github.com/future-architect/vuls
+RUN git clone https://$REPOSITORY.git $GOPATH/src/$REPOSITORY \
+    && cd $GOPATH/src/$REPOSITORY \
+    && make install
+
+
+FROM alpine:3.7
 
 MAINTAINER hikachan sadayuki-matsuno
 
-ENV REPOSITORY github.com/future-architect/vuls
 ENV LOGDIR /var/log/vuls
 ENV WORKDIR /vuls
-# go-cve-dictionary install
-RUN git clone https://$REPOSITORY.git $GOPATH/src/$REPOSITORY \
-    && cd $GOPATH/src/$REPOSITORY \
-    && make install \
-    && mkdir -p $LOGDIR
+
+RUN apk add --no-cache openssh-client \
+    && mkdir -p $WORKDIR $LOGDIR
+
+COPY --from=builder /go/bin/vuls /usr/local/bin/
 
 VOLUME [$WORKDIR, $LOGDIR]
 WORKDIR $WORKDIR
