@@ -45,7 +45,7 @@ func TestSyslogWriterEncodeSyslog(t *testing.T) {
 			},
 			expectedMessages: []string{
 				`scanned_at="2018-06-13 16:10:00 +0000 UTC" server_name="teste01" os_family="ubuntu" os_release="16.04" ipv4_addr="192.168.0.1,10.0.2.15" ipv6_addr="" packages="pkg1,pkg2" cve_id="CVE-2017-0001"`,
-				`scanned_at="2018-06-13 16:10:00 +0000 UTC" server_name="teste01" os_family="ubuntu" os_release="16.04" ipv4_addr="192.168.0.1,10.0.2.15" ipv6_addr="" packages="pkg3,pkg4" cve_id="CVE-2017-0002" severity="MEDIUM" cvss_score_v2="5.00" cvss_vector_v2="AV:L/AC:L/Au:N/C:N/I:N/A:C" cwe_id="CWE-20"`,
+				`scanned_at="2018-06-13 16:10:00 +0000 UTC" server_name="teste01" os_family="ubuntu" os_release="16.04" ipv4_addr="192.168.0.1,10.0.2.15" ipv6_addr="" packages="pkg3,pkg4" cve_id="CVE-2017-0002" severity="MEDIUM" cvss_score_v2="5.00" cvss_vector_v2="AV:L/AC:L/Au:N/C:N/I:N/A:C" cwe_ids="CWE-20"`,
 			},
 		},
 		{
