@@ -119,7 +119,11 @@ func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 }
 
 // PrintSSHableServerNames print SSH-able servernames
-func PrintSSHableServerNames() {
+func PrintSSHableServerNames() bool {
+	if len(servers) == 0 {
+		util.Log.Error("No scannable servers")
+		return false
+	}
 	util.Log.Info("Scannable servers are below...")
 	for _, s := range servers {
 		if s.getServerInfo().IsContainer() {
@@ -132,6 +136,7 @@ func PrintSSHableServerNames() {
 		}
 	}
 	fmt.Printf("\n")
+	return true
 }
 
 // InitServers detect the kind of OS distribution of target servers

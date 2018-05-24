@@ -224,6 +224,8 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		util.Log.Info("It can be scanned with -fast scan mode even if warn or err messages are displayed due to lack of dependent packages or sudo settings.")
 	}
 
-	scan.PrintSSHableServerNames()
-	return subcommands.ExitSuccess
+	if scan.PrintSSHableServerNames() {
+		return subcommands.ExitSuccess
+	}
+	return subcommands.ExitFailure
 }
