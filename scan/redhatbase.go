@@ -575,7 +575,7 @@ func (o *redhatBase) isExecScanUsingYum() bool {
 	if config.Conf.FastRoot || config.Conf.Deep {
 		return true
 	}
-	return false
+	return true
 }
 
 func (o *redhatBase) isExecFillChangelogs() bool {
