@@ -19,7 +19,9 @@ MAINTAINER hikachan sadayuki-matsuno
 ENV LOGDIR /var/log/vuls
 ENV WORKDIR /vuls
 
-RUN apk add --no-cache openssh-client \
+RUN apk add --no-cache \
+        openssh-client \
+        ca-certificates \
     && mkdir -p $WORKDIR $LOGDIR
 
 COPY --from=builder /go/bin/vuls /usr/local/bin/
