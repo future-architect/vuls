@@ -432,14 +432,14 @@ func (l *base) detectInitSystem() (string, error) {
 		}
 		scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
 		scanner.Scan()
-		line := scanner.Text()
+		line := strings.TrimSpace(scanner.Text())
 		if strings.Contains(line, "systemd") {
 			return systemd, nil
 		} else if strings.Contains(line, "upstart") {
 			return upstart, nil
-		} else if strings.Contains(line, "File: '/proc/1/exe' -> '/sbin/init'") {
+		} else if strings.Contains(line, "File: ‘/proc/1/exe’ -> ‘/sbin/init’") {
 			return f("stat /sbin/init")
-		} else if strings.TrimSpace(line) == "File: '/sbin/init'" {
+		} else if line == "File: ‘/sbin/init’" {
 			r := l.exec("/sbin/init --version", noSudo)
 			if r.isSuccess() {
 				if strings.Contains(r.Stdout, "upstart") {
