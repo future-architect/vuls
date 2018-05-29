@@ -117,6 +117,9 @@ func (o *suse) scanPackages() error {
 		return err
 	}
 	o.Kernel.RebootRequired = rebootRequired
+	if config.Conf.Offline {
+		return nil
+	}
 
 	updatable, err := o.scanUpdatablePackages()
 	if err != nil {
