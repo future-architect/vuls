@@ -791,8 +791,12 @@ func detailLines() (string, error) {
 	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores(r.Family)...)
 	var cols []interface{}
 	for _, score := range scores {
+		if score.Value.Score == 0 {
+			continue
+		}
+		scoreVec := fmt.Sprintf("%3.1f/%s", score.Value.Score, score.Value.Vector)
 		cols = []interface{}{
-			fmt.Sprintf("%3.1f/%s", score.Value.Score, score.Value.Vector),
+			scoreVec,
 			score.Value.Severity,
 			score.Type,
 		}
