@@ -164,177 +164,6 @@ func (o *redhatBase) execCheckIfSudoNoPasswd(cmds []cmd) error {
 	return nil
 }
 
-//TODO move to each concrete struct
-func (o *redhatBase) _checkIfSudoNoPasswd() error {
-	if !(config.Conf.Deep || config.Conf.FastRoot) {
-		o.log.Infof("sudo ... No need")
-		return nil
-	}
-
-	type cmd struct {
-		cmd                 string
-		expectedStatusCodes []int
-	}
-	var cmds []cmd
-	var zero = []int{0}
-
-	switch o.Distro.Family {
-	case config.RedHat, config.Oracle:
-		majorVersion, err := o.Distro.MajorVersion()
-		if err != nil {
-			return fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
-		}
-
-		if majorVersion < 6 {
-			cmds = []cmd{
-				{"yum --color=never repolist", zero},
-				{"yum --color=never list-security --security", zero},
-				{"yum --color=never info-security", zero},
-			}
-		} else {
-			cmds = []cmd{
-				{"yum --color=never repolist", zero},
-				{"yum --color=never --security updateinfo list updates", zero},
-				{"yum --color=never --security updateinfo updates", zero},
-				//TODO only CentOS , amazon?, oracle?
-				{"yum --color=never -q ps all", zero},
-			}
-		}
-		if o.Distro.Family == config.RedHat {
-			cmds = append(cmds, cmd{"repoquery -h", zero})
-		}
-
-	case config.CentOS, config.Amazon:
-		cmds = []cmd{
-			{"yum --color=never -q ps all", zero},
-		}
-	}
-
-	for _, c := range cmds {
-		cmd := util.PrependProxyEnv(c.cmd)
-		o.log.Infof("Checking... sudo %s", cmd)
-		// r := o.exec(util.PrependProxyEnv(cmd), o.sudo())
-		// if !r.isSuccess(c.expectedStatusCodes...) {
-		// o.log.Errorf("Check sudo or proxy settings: %s", r)
-		// return fmt.Errorf("Failed to sudo: %s", r)
-		// }
-	}
-	o.log.Infof("Sudo... Pass")
-	return nil
-}
-
-// https://docs.google.com/spreadsheets/d/1F0QjkafI7ouz5fCV2-wbqzOXQgYuCPuBR9A2d9zdVKk/edit?usp=sharing
-//TODO fix doc: add yum info yum to sudoers on RHEL7
-//TODO remove
-func (o *redhatBase) _checkDeps() error {
-	majorVersion, err := o.Distro.MajorVersion()
-	if err != nil {
-		msg := fmt.Sprintf("Not implemented yet: %s, err: %s", o.Distro, err)
-		o.log.Errorf(msg)
-		return fmt.Errorf(msg)
-	}
-
-	if o.Distro.Family == config.CentOS {
-		if majorVersion < 6 {
-			msg := fmt.Sprintf("CentOS %s is not supported any more", o.Distro.Release)
-			o.log.Errorf(msg)
-			return fmt.Errorf(msg)
-		}
-	}
-
-	packNames := []string{}
-	switch {
-	case config.Conf.Fast:
-		// Fast Scan
-		if !config.Conf.Offline {
-			// Online fast scan needs yum-utils to issue repoquery cmd
-			packNames = append(packNames, "yum-utils")
-		}
-
-	case config.Conf.FastRoot:
-		// Fast-Root Scan
-		switch o.Distro.Family {
-		case config.Amazon:
-			// Offline scan doesn't support Amazon Linux
-			packNames = append(packNames,
-				"yum-utils",
-				"yum-plugin-ps")
-
-		default:
-			if config.Conf.Offline {
-				if o.Distro.Family == config.CentOS {
-					// TODO Check Oracle linux
-					packNames = append(packNames, "yum-plugin-ps")
-				}
-			} else {
-				switch o.Distro.Family {
-				case config.CentOS:
-					packNames = append(packNames,
-						"yum-utils",
-						"yum-plugin-ps")
-				case config.RedHat, config.Oracle:
-					switch majorVersion {
-					case 5:
-						packNames = append(packNames,
-							"yum-utils",
-							"yum-security")
-					case 6:
-						packNames = append(packNames,
-							"yum-utils",
-							"yum-plugin-security")
-					default:
-						packNames = append(packNames, "yum-utils")
-					}
-				}
-			}
-		}
-
-	default:
-		// Deep Scan
-		switch o.Distro.Family {
-		case config.CentOS, config.Amazon:
-			packNames = append(packNames,
-				"yum-utils",
-				"yum-plugin-changelog",
-				//TODO check whether Amazon linux has yum-plugin-ps
-				"yum-plugin-ps")
-		case config.RedHat, config.Oracle:
-			switch majorVersion {
-			case 5:
-				packNames = append(packNames,
-					"yum-utils",
-					"yum-security",
-					"yum-changelog",
-				)
-			case 6:
-				packNames = append(packNames,
-					"yum-utils",
-					"yum-plugin-security",
-					"yum-plugin-changelog",
-				)
-			default:
-				packNames = append(packNames,
-					"yum-utils",
-					"yum-plugin-changelog",
-				)
-			}
-		default:
-			return fmt.Errorf("Not implemented yet: %s", o.Distro)
-		}
-	}
-
-	// for _, name := range packNames {
-	// cmd := "rpm -q " + name
-	// if r := o.exec(cmd, noSudo); !r.isSuccess() {
-	// msg := fmt.Sprintf("%s is not installed", name)
-	// o.log.Errorf(msg)
-	// return fmt.Errorf(msg)
-	// }
-	// }
-	o.log.Infof("Dependencies ... Pass")
-	return nil
-}
-
 func (o *redhatBase) execCheckDeps(packNames []string) error {
 	for _, name := range packNames {
 		cmd := "rpm -q " + name
@@ -1396,7 +1225,9 @@ func (o *redhatBase) needsRestarting() error {
 	for _, proc := range procs {
 		fqpn, err := o.procPathToFQPN(proc.Path)
 		if err != nil {
-			return err
+			o.log.Warnf("Failed to detect a package name of need restarting process from the command path: %s, %s",
+				proc.Path, err)
+			continue
 		}
 		pack, err := o.Packages.FindByFQPN(fqpn)
 		if err != nil {
@@ -1421,6 +1252,7 @@ func (o *redhatBase) parseNeedsRestarting(stdout string) (procs []models.NeedRes
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
 		line := scanner.Text()
+		line = strings.Replace(line, "\x00", " ", -1) // for CentOS6.9
 		ss := strings.Split(line, " : ")
 		if len(ss) < 2 {
 			continue
@@ -1440,7 +1272,7 @@ func (o *redhatBase) parseNeedsRestarting(stdout string) (procs []models.NeedRes
 			cmd := fmt.Sprintf("LANGUAGE=en_US.UTF-8 which %s", path)
 			r := o.exec(cmd, sudo)
 			if !r.isSuccess() {
-				o.log.Warnf("Failed to exec type -p %s: %s", path, r)
+				o.log.Warnf("Failed to exec which %s: %s", path, r)
 				continue
 			}
 			path = strings.TrimSpace(r.Stdout)
@@ -1457,6 +1289,7 @@ func (o *redhatBase) parseNeedsRestarting(stdout string) (procs []models.NeedRes
 
 // procPathToFQPN returns Fully-Qualified-Package-Name from the command
 func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
+	execCommand = strings.Replace(execCommand, "\x00", " ", -1) // for CentOS6.9
 	path := strings.Fields(execCommand)[0]
 	cmd := `LANGUAGE=en_US.UTF-8 rpm -qf --queryformat "%{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}.%{ARCH}\n" ` + path
 	r := o.exec(cmd, noSudo)

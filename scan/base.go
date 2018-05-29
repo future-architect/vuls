@@ -437,9 +437,11 @@ func (l *base) detectInitSystem() (string, error) {
 			return systemd, nil
 		} else if strings.Contains(line, "upstart") {
 			return upstart, nil
-		} else if strings.Contains(line, "File: ‘/proc/1/exe’ -> ‘/sbin/init’") {
+		} else if strings.Contains(line, "File: ‘/proc/1/exe’ -> ‘/sbin/init’") ||
+			strings.Contains(line, "File: `/proc/1/exe' -> `/sbin/init'") {
 			return f("stat /sbin/init")
-		} else if line == "File: ‘/sbin/init’" {
+		} else if line == "File: ‘/sbin/init’" ||
+			line == "File: `/sbin/init'" {
 			r := l.exec("/sbin/init --version", noSudo)
 			if r.isSuccess() {
 				if strings.Contains(r.Stdout, "upstart") {
