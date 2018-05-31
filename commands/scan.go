@@ -154,19 +154,19 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		&p.fast,
 		"fast",
 		false,
-		"fast scan mode.")
+		"Fast scan mode. no deps, no root privilege")
 
 	f.BoolVar(
 		&p.fastRoot,
 		"fast-root",
 		false,
-		"fast scan with root privilege mode.")
+		"Fast scan with root privilege")
 
 	f.BoolVar(
 		&p.offline,
 		"offline",
 		false,
-		"Offline scan mode. Unable to get updatable packages information.")
+		"Offline scan mode. Unable to get information such as updatable packages version")
 
 	f.BoolVar(
 		&p.deep,

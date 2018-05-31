@@ -100,13 +100,13 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 		&p.fast,
 		"fast",
 		false,
-		"Config test for online fast scan mode")
+		"Config test for fast scan mode")
 
 	f.BoolVar(
 		&p.fastRoot,
 		"fast-root",
 		false,
-		"fast scan with root privilege mode.")
+		"Config test for fast-root scan mode")
 
 	f.BoolVar(
 		&p.offline,
@@ -114,7 +114,10 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		"Config test for offline scan mode")
 
-	f.BoolVar(&p.deep, "deep", false, "Config test for deep scan mode")
+	f.BoolVar(&p.deep,
+		"deep",
+		false,
+		"Config test for deep scan mode")
 
 	f.StringVar(
 		&p.httpProxy,
