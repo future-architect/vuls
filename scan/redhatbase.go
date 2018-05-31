@@ -200,6 +200,7 @@ func (o *redhatBase) postScan() error {
 }
 
 func (o *redhatBase) detectIPAddr() (err error) {
+	o.log.Infof("Scanning in %s", o.getServerInfo().Mode)
 	o.ServerInfo.IPv4Addrs, o.ServerInfo.IPv6Addrs, err = o.ip()
 	return err
 }
@@ -218,7 +219,7 @@ func (o *redhatBase) scanPackages() error {
 	}
 	o.Kernel.RebootRequired = rebootRequired
 
-	if config.Conf.Offline {
+	if o.getServerInfo().Mode.IsOffline() {
 		switch o.Distro.Family {
 		case config.Amazon:
 			// nop
@@ -227,7 +228,7 @@ func (o *redhatBase) scanPackages() error {
 			return nil
 		}
 	} else if o.Distro.Family == config.RedHat {
-		if config.Conf.Fast {
+		if o.getServerInfo().Mode.IsFast() {
 			o.Packages = installed
 			return nil
 		}
@@ -394,30 +395,32 @@ func (o *redhatBase) parseUpdatablePacksLine(line string) (models.Package, error
 }
 
 func (o *redhatBase) isExecScanUsingYum() bool {
-	if config.Conf.Offline {
+	if o.getServerInfo().Mode.IsOffline() {
 		return false
 	}
 	if o.Distro.Family == config.CentOS {
 		// CentOS doesn't have security channel
 		return false
 	}
-	if config.Conf.FastRoot || config.Conf.Deep {
+	if o.getServerInfo().Mode.IsFastRoot() || o.getServerInfo().Mode.IsDeep() {
 		return true
 	}
 	return true
 }
 
 func (o *redhatBase) isExecFillChangelogs() bool {
-	if config.Conf.Offline {
+	if o.getServerInfo().Mode.IsOffline() {
 		return false
 	}
 	// Amazon linux has no changelos for updates
-	return config.Conf.Deep &&
+	return o.getServerInfo().Mode.IsDeep() &&
 		o.Distro.Family != config.Amazon
 }
 
 func (o *redhatBase) isExecScanChangelogs() bool {
-	if config.Conf.Offline || config.Conf.Fast || config.Conf.FastRoot {
+	if o.getServerInfo().Mode.IsOffline() ||
+		o.getServerInfo().Mode.IsFast() ||
+		o.getServerInfo().Mode.IsFastRoot() {
 		return false
 	}
 	return true
@@ -429,7 +432,7 @@ func (o *redhatBase) isExecYumPS() bool {
 		return false
 	}
 	// yum ps needs internet connection
-	if config.Conf.Offline || config.Conf.Fast {
+	if o.getServerInfo().Mode.IsOffline() || o.getServerInfo().Mode.IsFast() {
 		return false
 	}
 	return true
@@ -443,15 +446,16 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 			return false
 		}
 
-		if config.Conf.Offline {
+		if o.getServerInfo().Mode.IsOffline() {
 			return false
-		} else if config.Conf.FastRoot || config.Conf.Deep {
+		} else if o.getServerInfo().Mode.IsFastRoot() ||
+			o.getServerInfo().Mode.IsDeep() {
 			return true
 		}
 		return false
 	}
 
-	if config.Conf.Fast {
+	if o.getServerInfo().Mode.IsFast() {
 		return false
 	}
 	return true

@@ -30,9 +30,9 @@ func newCentOS(c config.ServerInfo) *centos {
 }
 
 func (o *centos) checkDeps() error {
-	if config.Conf.Fast {
+	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckDeps(o.depsFast())
-	} else if config.Conf.FastRoot {
+	} else if o.getServerInfo().Mode.IsFastRoot() {
 		return o.execCheckDeps(o.depsFastRoot())
 	} else {
 		return o.execCheckDeps(o.depsDeep())
@@ -40,7 +40,7 @@ func (o *centos) checkDeps() error {
 }
 
 func (o *centos) depsFast() []string {
-	if config.Conf.Offline {
+	if o.getServerInfo().Mode.IsOffline() {
 		return []string{}
 	}
 	// repoquery
@@ -63,9 +63,9 @@ func (o *centos) depsDeep() []string {
 }
 
 func (o *centos) checkIfSudoNoPasswd() error {
-	if config.Conf.Fast {
+	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsFast())
-	} else if config.Conf.FastRoot {
+	} else if o.getServerInfo().Mode.IsFastRoot() {
 		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsFastRoot())
 	} else {
 		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsDeep())
@@ -77,7 +77,7 @@ func (o *centos) nosudoCmdsFast() []cmd {
 }
 
 func (o *centos) nosudoCmdsFastRoot() []cmd {
-	if config.Conf.Offline {
+	if o.getServerInfo().Mode.IsOffline() {
 		// yum ps needs internet connection
 		return []cmd{
 			{"stat /proc/1/exe", exitStatusZero},

@@ -32,18 +32,18 @@ func newAmazon(c config.ServerInfo) *amazon {
 }
 
 func (o *amazon) checkDeps() error {
-	if config.Conf.Fast {
+	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckDeps(o.depsFast())
-	} else if config.Conf.FastRoot {
+	} else if o.getServerInfo().Mode.IsFastRoot() {
 		return o.execCheckDeps(o.depsFastRoot())
-	} else if config.Conf.Deep {
+	} else if o.getServerInfo().Mode.IsDeep() {
 		return o.execCheckDeps(o.depsDeep())
 	}
 	return fmt.Errorf("Unknown scan mode")
 }
 
 func (o *amazon) depsFast() []string {
-	if config.Conf.Offline {
+	if o.getServerInfo().Mode.IsOffline() {
 		return []string{}
 	}
 	// repoquery
@@ -62,9 +62,9 @@ func (o *amazon) depsDeep() []string {
 }
 
 func (o *amazon) checkIfSudoNoPasswd() error {
-	if config.Conf.Fast {
+	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsFast())
-	} else if config.Conf.FastRoot {
+	} else if o.getServerInfo().Mode.IsFastRoot() {
 		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsFastRoot())
 	} else {
 		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsDeep())

@@ -108,6 +108,28 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			}
 		}
 
+		s.ScanMode = v.ScanMode
+		if len(s.ScanMode) == 0 {
+			s.ScanMode = d.ScanMode
+		}
+		for _, m := range s.ScanMode {
+			switch m {
+			case "fast":
+				s.Mode.Set(Fast)
+			case "fast-root":
+				s.Mode.Set(FastRoot)
+			case "deep":
+				s.Mode.Set(Deep)
+			case "offline":
+				s.Mode.Set(Offline)
+			default:
+				return fmt.Errorf("scanMode: %s of %s is invalie. Specify -fast, -fast-root, -deep or offline", m, name)
+			}
+		}
+		if err := s.Mode.validate(); err != nil {
+			return fmt.Errorf("%s in %s", err, name)
+		}
+
 		s.CpeNames = v.CpeNames
 		if len(s.CpeNames) == 0 {
 			s.CpeNames = d.CpeNames

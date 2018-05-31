@@ -32,11 +32,11 @@ func newRHEL(c config.ServerInfo) *rhel {
 }
 
 func (o *rhel) checkDeps() error {
-	if config.Conf.Fast {
+	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckDeps(o.depsFast())
-	} else if config.Conf.FastRoot {
+	} else if o.getServerInfo().Mode.IsFastRoot() {
 		return o.execCheckDeps(o.depsFastRoot())
-	} else if config.Conf.Deep {
+	} else if o.getServerInfo().Mode.IsDeep() {
 		return o.execCheckDeps(o.depsDeep())
 	}
 	return fmt.Errorf("Unknown scan mode")
@@ -47,7 +47,7 @@ func (o *rhel) depsFast() []string {
 }
 
 func (o *rhel) depsFastRoot() []string {
-	if config.Conf.Offline {
+	if o.getServerInfo().Mode.IsOffline() {
 		return []string{}
 	}
 
@@ -94,9 +94,9 @@ func (o *rhel) depsDeep() []string {
 }
 
 func (o *rhel) checkIfSudoNoPasswd() error {
-	if config.Conf.Fast {
+	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsFast())
-	} else if config.Conf.FastRoot {
+	} else if o.getServerInfo().Mode.IsFastRoot() {
 		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsFastRoot())
 	} else {
 		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsDeep())
@@ -108,7 +108,7 @@ func (o *rhel) nosudoCmdsFast() []cmd {
 }
 
 func (o *rhel) nosudoCmdsFastRoot() []cmd {
-	if config.Conf.Offline {
+	if o.getServerInfo().Mode.IsOffline() {
 		return []cmd{}
 	}
 

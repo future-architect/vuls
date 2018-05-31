@@ -136,7 +136,7 @@ func trim(str string) string {
 }
 
 func (o *debian) checkIfSudoNoPasswd() error {
-	if config.Conf.Fast {
+	if o.getServerInfo().Mode.IsFast() {
 		o.log.Infof("sudo ... No need")
 		return nil
 	}
@@ -146,7 +146,7 @@ func (o *debian) checkIfSudoNoPasswd() error {
 		"stat /proc/1/exe",
 	}
 
-	if !config.Conf.Offline {
+	if !o.getServerInfo().Mode.IsOffline() {
 		cmds = append(cmds, "apt-get update")
 	}
 
@@ -184,7 +184,7 @@ type dep struct {
 
 func (o *debian) checkDeps() error {
 	deps := []dep{}
-	if config.Conf.Deep || config.Conf.FastRoot {
+	if o.getServerInfo().Mode.IsDeep() || o.getServerInfo().Mode.IsFastRoot() {
 		// checkrestart
 		deps = append(deps, dep{
 			packName: "debian-goodies",
@@ -205,7 +205,7 @@ func (o *debian) checkDeps() error {
 		}
 
 		// Changelogs will be fetched only in deep scan mode
-		if config.Conf.Deep {
+		if o.getServerInfo().Mode.IsDeep() {
 			// Debian needs aptitude to get changelogs.
 			// Because unable to get changelogs via `apt-get changelog` on Debian.
 			deps = append(deps, dep{
@@ -248,6 +248,7 @@ func (o *debian) checkDeps() error {
 }
 
 func (o *debian) preCure() error {
+	o.log.Infof("Scanning in %s", o.getServerInfo().Mode)
 	if err := o.detectIPAddr(); err != nil {
 		o.log.Debugf("Failed to detect IP addresses: %s", err)
 	}
@@ -256,7 +257,7 @@ func (o *debian) preCure() error {
 }
 
 func (o *debian) postScan() error {
-	if config.Conf.Deep || config.Conf.FastRoot {
+	if o.getServerInfo().Mode.IsDeep() || o.getServerInfo().Mode.IsFastRoot() {
 		return o.checkrestart()
 	}
 	return nil
@@ -293,11 +294,11 @@ func (o *debian) scanPackages() error {
 	o.Packages = installed
 	o.SrcPackages = srcPacks
 
-	if config.Conf.Offline {
+	if o.getServerInfo().Mode.IsOffline() {
 		return nil
 	}
 
-	if config.Conf.Deep || o.Distro.Family == config.Raspbian {
+	if o.getServerInfo().Mode.IsDeep() || o.Distro.Family == config.Raspbian {
 		unsecures, err := o.scanUnsecurePackages(updatable)
 		if err != nil {
 			o.log.Errorf("Failed to scan vulnerable packages: %s", err)
@@ -387,7 +388,7 @@ func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, mode
 		delete(srcPacks, name)
 	}
 
-	if config.Conf.Offline || config.Conf.Fast {
+	if o.getServerInfo().Mode.IsOffline() || o.getServerInfo().Mode.IsFast() {
 		return installed, updatable, srcPacks, nil
 	}
 

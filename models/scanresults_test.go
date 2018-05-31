@@ -336,3 +336,92 @@ func TestFilterUnfixed(t *testing.T) {
 		}
 	}
 }
+
+func TestIsDisplayUpdatableNum(t *testing.T) {
+	var tests = []struct {
+		mode     []byte
+		family   string
+		expected bool
+	}{
+		{
+			mode:     []byte{config.Offline},
+			expected: false,
+		},
+		{
+			mode:     []byte{config.FastRoot},
+			expected: true,
+		},
+		{
+			mode:     []byte{config.Deep},
+			expected: true,
+		},
+		{
+			mode:     []byte{config.Fast},
+			family:   config.RedHat,
+			expected: false,
+		},
+		{
+			mode:     []byte{config.Fast},
+			family:   config.Oracle,
+			expected: false,
+		},
+		{
+			mode:     []byte{config.Fast},
+			family:   config.Debian,
+			expected: false,
+		},
+		{
+			mode:     []byte{config.Fast},
+			family:   config.Ubuntu,
+			expected: false,
+		},
+		{
+			mode:     []byte{config.Fast},
+			family:   config.Raspbian,
+			expected: false,
+		},
+		{
+			mode:     []byte{config.Fast},
+			family:   config.CentOS,
+			expected: true,
+		},
+		{
+			mode:     []byte{config.Fast},
+			family:   config.Amazon,
+			expected: true,
+		},
+		{
+			mode:     []byte{config.Fast},
+			family:   config.FreeBSD,
+			expected: true,
+		},
+		{
+			mode:     []byte{config.Fast},
+			family:   config.OpenSUSE,
+			expected: true,
+		},
+		{
+			mode:     []byte{config.Fast},
+			family:   config.Alpine,
+			expected: true,
+		},
+	}
+
+	for i, tt := range tests {
+		mode := config.ScanMode{}
+		for _, m := range tt.mode {
+			mode.Set(m)
+		}
+		config.Conf.Servers = map[string]config.ServerInfo{
+			"name": {Mode: mode},
+		}
+		r := ScanResult{
+			ServerName: "name",
+			Family:     tt.family,
+		}
+		act := r.isDisplayUpdatableNum()
+		if tt.expected != act {
+			t.Errorf("[%d] expected %#v, actual %#v", i, tt.expected, act)
+		}
+	}
+}

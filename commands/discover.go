@@ -113,6 +113,7 @@ subjectPrefix = "[vuls]"
 #port        = "22"
 #user        = "username"
 #keyPath     = "/home/username/.ssh/id_rsa"
+#scanMode    = ["fast"]
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
@@ -134,6 +135,7 @@ host         = "{{$ip}}"
 #port        = "22"
 #user        = "root"
 #keyPath     = "/home/username/.ssh/id_rsa"
+#scanMode 	 = ["fast", "fast-root", "deep", "offline"]
 #type 		 = "pseudo"
 #Memo        = "DB Server"
 #cpeNames = [

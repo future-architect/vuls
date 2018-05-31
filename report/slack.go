@@ -181,14 +181,14 @@ func msgText(r models.ScanResult) string {
 			notifyUsers,
 			serverInfo,
 			r.ScannedCves.FormatCveSummary(),
-			r.Packages.FormatUpdatablePacksSummary(r.Family),
+			r.FormatUpdatablePacksSummary(),
 			r.Errors)
 	}
 	return fmt.Sprintf("%s\n%s\n%s\n%s",
 		notifyUsers,
 		serverInfo,
 		r.ScannedCves.FormatCveSummary(),
-		r.Packages.FormatUpdatablePacksSummary(r.Family))
+		r.FormatUpdatablePacksSummary())
 }
 
 func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {

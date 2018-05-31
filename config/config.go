@@ -117,10 +117,6 @@ type Config struct {
 	SSHConfig bool
 
 	ContainersOnly bool
-	Fast           bool
-	FastRoot       bool
-	Offline        bool
-	Deep           bool
 	SkipBroken     bool
 
 	HTTPProxy  string `valid:"url"`
@@ -182,20 +178,6 @@ func (c Config) ValidateOnConfigtest() bool {
 		errs = append(errs, fmt.Errorf("-ssh-native-insecure is needed on windows"))
 	}
 
-	numTrue := 0
-	for _, b := range []bool{c.Fast, c.FastRoot, c.Deep} {
-		if b {
-			numTrue++
-		}
-	}
-	if numTrue != 1 {
-		errs = append(errs, fmt.Errorf("Specify only one of -fast, -fast-root or -deep"))
-	}
-
-	if c.Offline && c.Deep {
-		errs = append(errs, fmt.Errorf("Can't specify both --deep and -offline"))
-	}
-
 	_, err := valid.ValidateStruct(c)
 	if err != nil {
 		errs = append(errs, err)
@@ -235,20 +217,6 @@ func (c Config) ValidateOnScan() bool {
 			errs = append(errs, fmt.Errorf(
 				"Cache DB path must be a *Absolute* file path. -cache-dbpath: %s", c.CacheDBPath))
 		}
-	}
-
-	numTrue := 0
-	for _, b := range []bool{c.Fast, c.FastRoot, c.Deep} {
-		if b {
-			numTrue++
-		}
-	}
-	if numTrue != 1 {
-		errs = append(errs, fmt.Errorf("Specify only one of -fast, -fast-root or -deep"))
-	}
-
-	if c.Offline && c.Deep {
-		errs = append(errs, fmt.Errorf("Can't specify both --deep and -offline"))
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -701,6 +669,7 @@ type ServerInfo struct {
 	KeyPath                string            `toml:"keyPath,omitempty"`
 	KeyPassword            string            `json:"-" toml:"-"`
 	CpeNames               []string          `toml:"cpeNames,omitempty" json:",omitempty"`
+	ScanMode               []string          `toml:"scanMode,omitempty" json:",omitempty"`
 	DependencyCheckXMLPath string            `toml:"dependencyCheckXMLPath,omitempty"`
 	IgnoreCves             []string          `toml:"ignoreCves,omitempty" json:",omitempty"`
 	Containers             *Containers       `toml:"containers,omitempty" json:",omitempty"`
@@ -720,11 +689,85 @@ type ServerInfo struct {
 	LogMsgAnsiColor string    `toml:"-"` // DebugLog Color
 	Container       Container `toml:"-"`
 	Distro          Distro    `toml:"-"`
+	Mode            ScanMode  `toml:"-"`
 
 	// IP addresses
 	IPv4Addrs []string `toml:"-" json:",omitempty"`
 	IPv6Addrs []string `toml:"-" json:",omitempty"`
 }
+
+// ScanMode has a type of scan mode. fast, fast-root, deep and offline
+type ScanMode struct {
+	flag byte
+}
+
+// Set mode
+func (s *ScanMode) Set(f byte) {
+	s.flag |= f
+}
+
+// IsFast return whether scan mode is fast
+func (s ScanMode) IsFast() bool {
+	return s.flag&Fast == Fast
+}
+
+// IsFastRoot return whether scan mode is fastroot
+func (s ScanMode) IsFastRoot() bool {
+	return s.flag&FastRoot == FastRoot
+}
+
+// IsDeep return whether scan mode is deep
+func (s ScanMode) IsDeep() bool {
+	return s.flag&Deep == Deep
+}
+
+// IsOffline return whether scan mode is offline
+func (s ScanMode) IsOffline() bool {
+	return s.flag&Offline == Offline
+}
+
+func (s ScanMode) validate() error {
+	numTrue := 0
+	for _, b := range []bool{s.IsFast(), s.IsFastRoot(), s.IsDeep()} {
+		if b {
+			numTrue++
+		}
+	}
+	if numTrue == 0 {
+		s.Set(Fast)
+	} else if s.IsDeep() && s.IsOffline() {
+		return fmt.Errorf("Don't specify both of -deep and offline")
+	} else if numTrue != 1 {
+		return fmt.Errorf("Specify only one of -fast, -fast-root or -deep")
+	}
+	return nil
+}
+
+func (s ScanMode) String() string {
+	ss := ""
+	if s.IsFast() {
+		ss = "fast"
+	} else if s.IsFastRoot() {
+		ss = "fast-root"
+	} else if s.IsDeep() {
+		ss = "deep"
+	}
+	if s.IsOffline() {
+		ss += " offline"
+	}
+	return ss + " mode"
+}
+
+const (
+	// Fast is fast scan mode
+	Fast = byte(1 << iota)
+	// FastRoot is fast-root scan mode
+	FastRoot
+	// Deep is deep scan mode
+	Deep
+	// Offline is offline scan mode
+	Offline
+)
 
 // GetServerName returns ServerName if this serverInfo is about host.
 // If this serverInfo is abount a container, returns containerID@ServerName

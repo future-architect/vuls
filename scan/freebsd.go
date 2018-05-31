@@ -79,6 +79,7 @@ func (o *bsd) checkDeps() error {
 }
 
 func (o *bsd) preCure() error {
+	o.log.Infof("Scanning in %s", o.getServerInfo().Mode)
 	if err := o.detectIPAddr(); err != nil {
 		o.log.Debugf("Failed to detect IP addresses: %s", err)
 	}

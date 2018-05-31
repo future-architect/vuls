@@ -1550,42 +1550,42 @@ func TestParseNeedsRestarting(t *testing.T) {
 func TestIsExecScanUsingYum(t *testing.T) {
 	r := newRHEL(config.ServerInfo{})
 	var tests = []struct {
-		offline  bool
-		fast     bool
-		fastRoot bool
-		deep     bool
-		family   string
-		out      bool
+		modes  []byte
+		family string
+		out    bool
 	}{
 		{
-			offline: true,
-			out:     false,
+			modes: []byte{config.Offline},
+			out:   false,
 		},
 		{
-			offline: false,
-			family:  config.CentOS,
-			out:     false,
+			modes:  []byte{},
+			family: config.CentOS,
+			out:    false,
 		},
 		{
-			offline:  false,
-			family:   config.Amazon,
-			fastRoot: true,
-			out:      true,
+			family: config.Amazon,
+			modes:  []byte{config.FastRoot},
+			out:    true,
 		},
 		{
-			offline: false,
-			family:  config.Amazon,
-			deep:    true,
-			out:     true,
+			family: config.Amazon,
+			modes:  []byte{config.Deep},
+			out:    true,
 		},
 	}
 
 	for i, tt := range tests {
 		r.Distro.Family = tt.family
-		config.Conf.Offline = tt.offline
-		config.Conf.Fast = tt.fast
-		config.Conf.FastRoot = tt.fastRoot
-		config.Conf.Deep = tt.deep
+		mode := config.ScanMode{}
+		for _, m := range tt.modes {
+			mode.Set(m)
+		}
+
+		si := r.getServerInfo()
+		si.Mode = mode
+		r.setServerInfo(si)
+
 		out := r.isExecScanUsingYum()
 		if out != tt.out {
 			t.Errorf("[%d] expected %#v, actual %#v", i, tt.out, out)
@@ -1596,43 +1596,41 @@ func TestIsExecScanUsingYum(t *testing.T) {
 func TestIsExecFillChangelogs(t *testing.T) {
 	r := newRHEL(config.ServerInfo{})
 	var tests = []struct {
-		offline  bool
-		fast     bool
-		fastRoot bool
-		deep     bool
-		family   string
-		out      bool
+		modes  []byte
+		family string
+		out    bool
 	}{
 		{
-			offline: true,
-			out:     false,
+			modes: []byte{config.Offline},
+			out:   false,
 		},
 		{
-			offline: false,
-			deep:    true,
-			family:  config.CentOS,
-			out:     true,
+			modes:  []byte{config.Deep},
+			family: config.CentOS,
+			out:    true,
 		},
 		{
-			offline: false,
-			family:  config.Amazon,
-			deep:    true,
-			out:     false,
+			family: config.Amazon,
+			modes:  []byte{config.Deep},
+			out:    false,
 		},
 		{
-			offline: false,
-			family:  config.RedHat,
-			deep:    true,
-			out:     true,
+			modes:  []byte{config.Deep},
+			family: config.RedHat,
+			out:    true,
 		},
 	}
 
 	for i, tt := range tests {
 		r.Distro.Family = tt.family
-		config.Conf.Offline = tt.offline
-		config.Conf.Fast = tt.fast
-		config.Conf.FastRoot = tt.fastRoot
-		config.Conf.Deep = tt.deep
+		mode := config.ScanMode{}
+		for _, m := range tt.modes {
+			mode.Set(m)
+		}
+
+		si := r.getServerInfo()
+		si.Mode = mode
+		r.setServerInfo(si)
 		out := r.isExecFillChangelogs()
 		if out != tt.out {
 			t.Errorf("[%d] expected %#v, actual %#v", i, tt.out, out)
@@ -1643,41 +1641,39 @@ func TestIsExecFillChangelogs(t *testing.T) {
 func TestIsScanChangelogs(t *testing.T) {
 	r := newCentOS(config.ServerInfo{})
 	var tests = []struct {
-		offline  bool
-		fast     bool
-		fastRoot bool
-		deep     bool
-		family   string
-		out      bool
+		modes  []byte
+		family string
+		out    bool
 	}{
 		{
-			offline: true,
-			out:     false,
+			modes: []byte{config.Offline},
+			out:   false,
 		},
 		{
-			offline: false,
-			fast:    true,
-			out:     false,
+			modes: []byte{config.Fast},
+			out:   false,
 		},
 		{
-			offline:  false,
-			fastRoot: true,
-			out:      false,
+			modes: []byte{config.FastRoot},
+			out:   false,
 		},
 		{
-			offline: false,
-			deep:    true,
-			family:  config.RedHat,
-			out:     true,
+			modes:  []byte{config.Deep},
+			family: config.RedHat,
+			out:    true,
 		},
 	}
 
 	for i, tt := range tests {
 		r.Distro.Family = tt.family
-		config.Conf.Offline = tt.offline
-		config.Conf.Fast = tt.fast
-		config.Conf.FastRoot = tt.fastRoot
-		config.Conf.Deep = tt.deep
+		mode := config.ScanMode{}
+		for _, m := range tt.modes {
+			mode.Set(m)
+		}
+
+		si := r.getServerInfo()
+		si.Mode = mode
+		r.setServerInfo(si)
 		out := r.isExecScanChangelogs()
 		if out != tt.out {
 			t.Errorf("[%d] expected %#v, actual %#v", i, tt.out, out)

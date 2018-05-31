@@ -30,9 +30,9 @@ func newOracle(c config.ServerInfo) *oracle {
 }
 
 func (o *oracle) checkDeps() error {
-	if config.Conf.Fast {
+	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckDeps(o.depsFast())
-	} else if config.Conf.FastRoot {
+	} else if o.getServerInfo().Mode.IsFastRoot() {
 		return o.execCheckDeps(o.depsFastRoot())
 	} else {
 		return o.execCheckDeps(o.depsDeep())
@@ -40,7 +40,7 @@ func (o *oracle) checkDeps() error {
 }
 
 func (o *oracle) depsFast() []string {
-	if config.Conf.Offline {
+	if o.getServerInfo().Mode.IsOffline() {
 		return []string{}
 	}
 	// repoquery
@@ -48,7 +48,7 @@ func (o *oracle) depsFast() []string {
 }
 
 func (o *oracle) depsFastRoot() []string {
-	if config.Conf.Offline {
+	if o.getServerInfo().Mode.IsOffline() {
 		//TODO
 		// return []string{"yum-plugin-ps"}
 	}
@@ -104,9 +104,9 @@ func (o *oracle) depsDeep() []string {
 }
 
 func (o *oracle) checkIfSudoNoPasswd() error {
-	if config.Conf.Fast {
+	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsFast())
-	} else if config.Conf.FastRoot {
+	} else if o.getServerInfo().Mode.IsFastRoot() {
 		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsFastRoot())
 	} else {
 		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsDeep())
@@ -119,7 +119,7 @@ func (o *oracle) nosudoCmdsFast() []cmd {
 
 func (o *oracle) nosudoCmdsFastRoot() []cmd {
 	cmds := []cmd{{"needs-restarting", exitStatusZero}}
-	if config.Conf.Offline {
+	if o.getServerInfo().Mode.IsOffline() {
 		return cmds
 	}
 

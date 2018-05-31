@@ -43,10 +43,6 @@ type ScanCmd struct {
 	httpProxy      string
 	askKeyPassword bool
 	containersOnly bool
-	fast           bool
-	fastRoot       bool
-	offline        bool
-	deep           bool
 	skipBroken     bool
 	sshNative      bool
 	sshConfig      bool
@@ -66,10 +62,6 @@ func (*ScanCmd) Synopsis() string { return "Scan vulnerabilities" }
 func (*ScanCmd) Usage() string {
 	return `scan:
 	scan
-		[-fast]
-		[-fast-root]
-		[-offline]
-		[-deep]
 		[-config=/path/to/config.toml]
 		[-results-dir=/path/to/results]
 		[-log-dir=/path/to/log]
@@ -149,30 +141,6 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		"Ask ssh privatekey password before scanning",
 	)
-
-	f.BoolVar(
-		&p.fast,
-		"fast",
-		false,
-		"Fast scan mode. no deps, no root privilege")
-
-	f.BoolVar(
-		&p.fastRoot,
-		"fast-root",
-		false,
-		"Fast scan with root privilege")
-
-	f.BoolVar(
-		&p.offline,
-		"offline",
-		false,
-		"Offline scan mode. Unable to get information such as updatable packages version")
-
-	f.BoolVar(
-		&p.deep,
-		"deep",
-		false,
-		"Deep scan mode. Scan accuracy improves and scanned information becomes richer. Since analysis of changelog, issue commands requiring sudo, but it may be slower and high load on the target server")
 
 	f.BoolVar(
 		&p.pipe,
@@ -274,14 +242,6 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	c.Conf.HTTPProxy = p.httpProxy
 	c.Conf.ContainersOnly = p.containersOnly
 	c.Conf.SkipBroken = p.skipBroken
-
-	c.Conf.Fast = p.fast
-	c.Conf.FastRoot = p.fastRoot
-	c.Conf.Offline = p.offline
-	c.Conf.Deep = p.deep
-	if !(c.Conf.Fast || c.Conf.FastRoot || c.Conf.Deep) {
-		c.Conf.Fast = true
-	}
 
 	util.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnScan() {

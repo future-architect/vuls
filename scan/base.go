@@ -299,7 +299,8 @@ func (l *base) parseIP(stdout string) (ipv4Addrs []string, ipv6Addrs []string) {
 }
 
 func (l *base) detectPlatform() {
-	if config.Conf.Offline {
+	if l.getServerInfo().Mode.IsOffline() {
+		l.setPlatform(models.Platform{Name: "unknown"})
 		return
 	}
 	ok, instanceID, err := l.detectRunningOnAws()

@@ -40,10 +40,6 @@ type ConfigtestCmd struct {
 	sshConfig      bool
 	httpProxy      string
 	timeoutSec     int
-	fast           bool
-	fastRoot       bool
-	offline        bool
-	deep           bool
 	debug          bool
 	vvv            bool
 }
@@ -58,10 +54,6 @@ func (*ConfigtestCmd) Synopsis() string { return "Test configuration" }
 func (*ConfigtestCmd) Usage() string {
 	return `configtest:
 	configtest
-			[-fast]
-			[-fast-root]
-			[-offline]
-			[-deep]
 			[-config=/path/to/config.toml]
 			[-log-dir=/path/to/log]
 			[-ask-key-password]
@@ -95,29 +87,6 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		"Ask ssh privatekey password before scanning",
 	)
-
-	f.BoolVar(
-		&p.fast,
-		"fast",
-		false,
-		"Config test for fast scan mode")
-
-	f.BoolVar(
-		&p.fastRoot,
-		"fast-root",
-		false,
-		"Config test for fast-root scan mode")
-
-	f.BoolVar(
-		&p.offline,
-		"offline",
-		false,
-		"Config test for offline scan mode")
-
-	f.BoolVar(&p.deep,
-		"deep",
-		false,
-		"Config test for deep scan mode")
 
 	f.StringVar(
 		&p.httpProxy,
@@ -182,13 +151,6 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	c.Conf.HTTPProxy = p.httpProxy
 	c.Conf.ContainersOnly = p.containersOnly
 
-	c.Conf.Fast = p.fast
-	c.Conf.FastRoot = p.fastRoot
-	c.Conf.Offline = p.offline
-	c.Conf.Deep = p.deep
-	if !(c.Conf.Fast || c.Conf.FastRoot || c.Conf.Deep) {
-		c.Conf.Fast = true
-	}
 	c.Conf.Vvv = p.vvv
 
 	var servernames []string
@@ -232,9 +194,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	util.Log.Info("Checking sudo settings...")
 	scan.CheckIfSudoNoPasswd(p.timeoutSec)
 
-	if !c.Conf.Fast {
-		util.Log.Info("It can be scanned with -fast scan mode even if warn or err messages are displayed due to lack of dependent packages or sudo settings.")
-	}
+	util.Log.Info("It can be scanned with fast scan mode even if warn or err messages are displayed due to lack of dependent packages or sudo settings in fast-root or deep scan mode")
 
 	if scan.PrintSSHableServerNames() {
 		return subcommands.ExitSuccess

@@ -20,7 +20,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/future-architect/vuls/config"
 	"github.com/k0kubun/pp"
 )
 
@@ -131,111 +130,6 @@ func TestAddBinaryName(t *testing.T) {
 		tt.in.AddBinaryName(tt.name)
 		if !reflect.DeepEqual(tt.in, tt.expected) {
 			t.Errorf("expected %#v, actual %#v", tt.in, tt.expected)
-		}
-	}
-}
-
-func TestIsDisplayUpdatableNum(t *testing.T) {
-	var tests = []struct {
-		cnf      config.Config
-		family   string
-		expected bool
-	}{
-		{
-			cnf: config.Config{
-				Offline: true,
-			},
-			expected: false,
-		},
-		{
-			cnf: config.Config{
-				FastRoot: true,
-			},
-			expected: true,
-		},
-		{
-			cnf: config.Config{
-				Deep: true,
-			},
-			expected: true,
-		},
-		{
-			cnf: config.Config{
-				Fast: true,
-			},
-			family:   config.RedHat,
-			expected: false,
-		},
-		{
-			cnf: config.Config{
-				Fast: true,
-			},
-			family:   config.Oracle,
-			expected: false,
-		},
-		{
-			cnf: config.Config{
-				Fast: true,
-			},
-			family:   config.Debian,
-			expected: false,
-		},
-		{
-			cnf: config.Config{
-				Fast: true,
-			},
-			family:   config.Ubuntu,
-			expected: false,
-		},
-		{
-			cnf: config.Config{
-				Fast: true,
-			},
-			family:   config.Raspbian,
-			expected: false,
-		},
-		{
-			cnf: config.Config{
-				Fast: true,
-			},
-			family:   config.CentOS,
-			expected: true,
-		},
-		{
-			cnf: config.Config{
-				Fast: true,
-			},
-			family:   config.Amazon,
-			expected: true,
-		},
-		{
-			cnf: config.Config{
-				Fast: true,
-			},
-			family:   config.FreeBSD,
-			expected: true,
-		},
-		{
-			cnf: config.Config{
-				Fast: true,
-			},
-			family:   config.OpenSUSE,
-			expected: true,
-		},
-		{
-			cnf: config.Config{
-				Fast: true,
-			},
-			family:   config.Alpine,
-			expected: true,
-		},
-	}
-
-	for i, tt := range tests {
-		config.Conf = tt.cnf
-		act := isDisplayUpdatableNum(tt.family)
-		if tt.expected != act {
-			t.Errorf("[%d] expected %#v, actual %#v", i, tt.expected, act)
 		}
 	}
 }

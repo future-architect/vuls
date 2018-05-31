@@ -195,17 +195,60 @@ func (r ScanResult) FormatServerName() (name string) {
 
 // FormatTextReportHeadedr returns header of text report
 func (r ScanResult) FormatTextReportHeadedr() string {
-	serverInfo := r.ServerInfo()
 	var buf bytes.Buffer
-	for i := 0; i < len(serverInfo); i++ {
+	for i := 0; i < len(r.ServerInfo()); i++ {
 		buf.WriteString("=")
 	}
+
 	return fmt.Sprintf("%s\n%s\n%s\t%s\n",
 		r.ServerInfo(),
 		buf.String(),
 		r.ScannedCves.FormatCveSummary(),
-		r.Packages.FormatUpdatablePacksSummary(r.Family),
+		r.FormatUpdatablePacksSummary(),
 	)
+}
+
+// FormatUpdatablePacksSummary returns a summary of updatable packages
+func (r ScanResult) FormatUpdatablePacksSummary() string {
+	if !r.isDisplayUpdatableNum() {
+		return fmt.Sprintf("%d installed", len(r.Packages))
+	}
+
+	nUpdatable := 0
+	for _, p := range r.Packages {
+		if p.NewVersion != "" {
+			nUpdatable++
+		}
+	}
+	return fmt.Sprintf("%d installed, %d updatable",
+		len(r.Packages),
+		nUpdatable)
+}
+
+func (r ScanResult) isDisplayUpdatableNum() bool {
+	var mode config.ScanMode
+	s, _ := config.Conf.Servers[r.ServerName]
+	mode = s.Mode
+
+	if mode.IsOffline() {
+		return false
+	}
+	if mode.IsFastRoot() || mode.IsDeep() {
+		return true
+	}
+	if mode.IsFast() {
+		switch r.Family {
+		case config.RedHat,
+			config.Oracle,
+			config.Debian,
+			config.Ubuntu,
+			config.Raspbian:
+			return false
+		default:
+			return true
+		}
+	}
+	return false
 }
 
 // IsContainer returns whether this ServerInfo is about container
