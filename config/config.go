@@ -107,7 +107,9 @@ type Config struct {
 	IgnoreUnscoredCves bool
 	IgnoreUnfixed      bool
 
-	SSHNative      bool
+	SSHNative bool
+	SSHConfig bool
+
 	ContainersOnly bool
 	Fast           bool
 	Offline        bool

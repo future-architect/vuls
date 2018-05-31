@@ -37,6 +37,7 @@ type ConfigtestCmd struct {
 	askKeyPassword bool
 	containersOnly bool
 	sshNative      bool
+	sshConfig      bool
 	httpProxy      string
 	timeoutSec     int
 
@@ -123,6 +124,12 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 		"Use Native Go implementation of SSH. Default: Use the external command")
 
 	f.BoolVar(
+		&p.sshConfig,
+		"ssh-config",
+		false,
+		"Use SSH options specified in ssh_config preferentially")
+
+	f.BoolVar(
 		&p.containersOnly,
 		"containers-only",
 		false,
@@ -161,6 +168,8 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		return subcommands.ExitUsageError
 	}
 	c.Conf.SSHNative = p.sshNative
+	c.Conf.SSHConfig = p.sshConfig
+
 	c.Conf.HTTPProxy = p.httpProxy
 	c.Conf.ContainersOnly = p.containersOnly
 
