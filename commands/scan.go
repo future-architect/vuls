@@ -49,6 +49,7 @@ type ScanCmd struct {
 	deep           bool
 	skipBroken     bool
 	sshNative      bool
+	sshConfig      bool
 	pipe           bool
 	vvv            bool
 	timeoutSec     int
@@ -74,6 +75,7 @@ func (*ScanCmd) Usage() string {
 		[-log-dir=/path/to/log]
 		[-cachedb-path=/path/to/cache.db]
 		[-ssh-native-insecure]
+		[-ssh-config]
 		[-containers-only]
 		[-skip-broken]
 		[-http-proxy=http://192.168.0.1:8080]
@@ -115,6 +117,12 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		"ssh-native-insecure",
 		false,
 		"Use Native Go implementation of SSH. Default: Use the external command")
+
+	f.BoolVar(
+		&p.sshConfig,
+		"ssh-config",
+		false,
+		"Use SSH options specified in ssh_config preferentially")
 
 	f.BoolVar(
 		&p.containersOnly,
@@ -262,6 +270,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	c.Conf.ResultsDir = p.resultsDir
 	c.Conf.CacheDBPath = p.cacheDBPath
 	c.Conf.SSHNative = p.sshNative
+	c.Conf.SSHConfig = p.sshConfig
 	c.Conf.HTTPProxy = p.httpProxy
 	c.Conf.ContainersOnly = p.containersOnly
 	c.Conf.SkipBroken = p.skipBroken
