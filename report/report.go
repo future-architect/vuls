@@ -452,8 +452,8 @@ func cleanForTOMLEncoding(server c.ServerInfo, def c.ServerInfo) c.ServerInfo {
 		server.CpeURIs = nil
 	}
 
-	if def.DependencyCheckXMLPath == server.DependencyCheckXMLPath {
-		server.DependencyCheckXMLPath = ""
+	if def.OwaspDCXMLPath == server.OwaspDCXMLPath {
+		server.OwaspDCXMLPath = ""
 	}
 
 	if reflect.DeepEqual(server.IgnoreCves, def.IgnoreCves) {

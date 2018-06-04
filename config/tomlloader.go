@@ -124,23 +124,27 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			return fmt.Errorf("%s in %s", err, name)
 		}
 
+		if len(v.CpeNames) != 0 || len(d.CpeNames) != 0 {
+			return fmt.Errorf("[DEPRECATED] cpeNames IS DEPRECATED. USE cpeURIs INSTEAD: %s", name)
+		}
+
 		s.CpeURIs = v.CpeURIs
 		if len(s.CpeURIs) == 0 {
 			s.CpeURIs = d.CpeURIs
 		}
 
-		if len(v.CpeNames) != 0 || len(d.CpeNames) != 0 {
-			return fmt.Errorf("[DEPRECATED] cpeNames IS DEPRECATED. USE cpeURIs INSTEAD: %s", name)
+		if len(v.DependencyCheckXMLPath) != 0 || len(d.DependencyCheckXMLPath) != 0 {
+			return fmt.Errorf("[DEPRECATED] dependencyCheckXMLPath IS DEPRECATED. USE owaspDCXMLPath INSTEAD: %s", name)
 		}
 
-		s.DependencyCheckXMLPath = v.DependencyCheckXMLPath
-		if len(s.DependencyCheckXMLPath) == 0 {
-			s.DependencyCheckXMLPath = d.DependencyCheckXMLPath
+		s.OwaspDCXMLPath = v.OwaspDCXMLPath
+		if len(s.OwaspDCXMLPath) == 0 {
+			s.OwaspDCXMLPath = d.OwaspDCXMLPath
 		}
 
 		// Load CPEs from OWASP Dependency Check XML
-		if len(s.DependencyCheckXMLPath) != 0 {
-			cpes, err := parser.Parse(s.DependencyCheckXMLPath)
+		if len(s.OwaspDCXMLPath) != 0 {
+			cpes, err := parser.Parse(s.OwaspDCXMLPath)
 			if err != nil {
 				return fmt.Errorf(
 					"Failed to read OWASP Dependency Check XML: %s", err)

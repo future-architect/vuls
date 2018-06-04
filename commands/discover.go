@@ -113,11 +113,11 @@ subjectPrefix = "[vuls]"
 #port        = "22"
 #user        = "username"
 #keyPath     = "/home/username/.ssh/id_rsa"
-#scanMode    = ["fast"]
+#scanMode 	 = ["fast", "fast-root", "deep", "offline"]
 #cpeURIs = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
-#dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"
+#owaspDCXMLPath = "/tmp/dependency-check-report.xml"
 #ignoreCves = ["CVE-2014-6271"]
 #[default.containers]
 #type = "lxd" # or "docker"
@@ -141,7 +141,7 @@ host         = "{{$ip}}"
 #cpeURIs = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
-#dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"
+#owaspDCXMLPath = "/tmp/dependency-check-report.xml"
 #ignoreCves = ["CVE-2014-0160"]
 #[servers.{{index $names $i}}.containers]
 #type = "docker" #or "lxd" default: docker

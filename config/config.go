@@ -669,10 +669,12 @@ type ServerInfo struct {
 	KeyPath     string `toml:"keyPath,omitempty"`
 	KeyPassword string `json:"-" toml:"-"`
 	// TODO Deprecated remove in near future
-	CpeNames               []string          `toml:"cpeNames,omitempty" json:",omitempty"`
-	CpeURIs                []string          `toml:"cpeURIs,omitempty" json:",omitempty"`
-	ScanMode               []string          `toml:"scanMode,omitempty" json:",omitempty"`
+	CpeNames []string `toml:"cpeNames,omitempty" json:",omitempty"`
+	CpeURIs  []string `toml:"cpeURIs,omitempty" json:",omitempty"`
+	ScanMode []string `toml:"scanMode,omitempty" json:",omitempty"`
+	// TODO Deprecated remove in near future
 	DependencyCheckXMLPath string            `toml:"dependencyCheckXMLPath,omitempty"`
+	OwaspDCXMLPath         string            `toml:"owaspDCXMLPath,omitempty"`
 	IgnoreCves             []string          `toml:"ignoreCves,omitempty" json:",omitempty"`
 	Containers             *Containers       `toml:"containers,omitempty" json:",omitempty"`
 	UUIDs                  map[string]string `toml:"uuids,omitempty" json:",omitempty"`
