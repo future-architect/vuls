@@ -634,7 +634,7 @@ func summaryLines() string {
 			vinfo.MaxCvssScore().Value.Score)
 
 		packname := vinfo.AffectedPackages.FormatTuiSummary()
-		packname += strings.Join(vinfo.CpeNames, ", ")
+		packname += strings.Join(vinfo.CpeURIs, ", ")
 
 		var cols []string
 		cols = []string{
@@ -733,7 +733,7 @@ type dataForTmpl struct {
 	Links            []string
 	References       []models.Reference
 	Packages         []string
-	CpeNames         []string
+	CpeURIs          []string
 	PublishedDate    time.Time
 	LastModifiedDate time.Time
 }
@@ -763,8 +763,8 @@ func detailLines() (string, error) {
 			packsVer = append(packsVer, pack.FormatVersionFromTo(affected.NotFixedYet))
 		}
 	}
-	sort.Strings(vinfo.CpeNames)
-	for _, name := range vinfo.CpeNames {
+	sort.Strings(vinfo.CpeURIs)
+	for _, name := range vinfo.CpeURIs {
 		packsVer = append(packsVer, name)
 	}
 
@@ -858,7 +858,7 @@ Package/CPE
 {{range $pack := .Packages -}}
 * {{$pack}}
 {{end -}}
-{{range $name := .CpeNames -}}
+{{range $name := .CpeURIs -}}
 * {{$name}}
 {{end}}
 Confidence

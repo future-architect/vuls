@@ -203,7 +203,7 @@ func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 				curent = append(curent, affected.Name)
 			}
 		}
-		for _, n := range vinfo.CpeNames {
+		for _, n := range vinfo.CpeURIs {
 			curent = append(curent, n)
 		}
 
@@ -219,7 +219,7 @@ func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 				new = append(new, "?")
 			}
 		}
-		for range vinfo.CpeNames {
+		for range vinfo.CpeURIs {
 			new = append(new, "?")
 		}
 

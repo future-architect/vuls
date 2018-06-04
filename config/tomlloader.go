@@ -23,7 +23,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
-	log "github.com/sirupsen/logrus"
 )
 
 // TOMLLoader loads config
@@ -32,13 +31,8 @@ type TOMLLoader struct {
 
 // Load load the configuration TOML file specified by path arg.
 func (c TOMLLoader) Load(pathToToml, keyPass string) error {
-	if Conf.Debug {
-		log.SetLevel(log.DebugLevel)
-	}
-
 	var conf Config
 	if _, err := toml.DecodeFile(pathToToml, &conf); err != nil {
-		log.Error("Load config failed", err)
 		return err
 	}
 	Conf.EMail = conf.EMail
@@ -59,7 +53,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	i := 0
 	for name, v := range conf.Servers {
 		if 0 < len(v.KeyPassword) {
-			log.Warn("[Deprecated] KEYPASSWORD IN CONFIG FILE ARE UNSECURE. REMOVE THEM IMMEDIATELY FOR A SECURITY REASONS. THEY WILL BE REMOVED IN A FUTURE RELEASE.")
+			return fmt.Errorf("[Deprecated] KEYPASSWORD IN CONFIG FILE ARE UNSECURE. REMOVE THEM IMMEDIATELY FOR A SECURITY REASONS. THEY WILL BE REMOVED IN A FUTURE RELEASE: %s", name)
 		}
 
 		s := ServerInfo{ServerName: name}
@@ -130,9 +124,13 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			return fmt.Errorf("%s in %s", err, name)
 		}
 
-		s.CpeNames = v.CpeNames
-		if len(s.CpeNames) == 0 {
-			s.CpeNames = d.CpeNames
+		s.CpeURIs = v.CpeURIs
+		if len(s.CpeURIs) == 0 {
+			s.CpeURIs = d.CpeURIs
+		}
+
+		if len(v.CpeNames) != 0 || len(d.CpeNames) != 0 {
+			return fmt.Errorf("[DEPRECATED] cpeNames IS DEPRECATED. USE cpeURIs INSTEAD: %s", name)
 		}
 
 		s.DependencyCheckXMLPath = v.DependencyCheckXMLPath
@@ -147,9 +145,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 				return fmt.Errorf(
 					"Failed to read OWASP Dependency Check XML: %s", err)
 			}
-			log.Debugf("Loaded from OWASP Dependency Check XML: %s",
-				s.ServerName)
-			s.CpeNames = append(s.CpeNames, cpes...)
+			s.CpeURIs = append(s.CpeURIs, cpes...)
 		}
 
 		s.Containers = v.Containers

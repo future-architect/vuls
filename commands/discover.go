@@ -114,7 +114,7 @@ subjectPrefix = "[vuls]"
 #user        = "username"
 #keyPath     = "/home/username/.ssh/id_rsa"
 #scanMode    = ["fast"]
-#cpeNames = [
+#cpeURIs = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
 #dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"
@@ -138,7 +138,7 @@ host         = "{{$ip}}"
 #scanMode 	 = ["fast", "fast-root", "deep", "offline"]
 #type 		 = "pseudo"
 #Memo        = "DB Server"
-#cpeNames = [
+#cpeURIs = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
 #dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"

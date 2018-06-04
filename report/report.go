@@ -51,8 +51,8 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 	hostname, _ := os.Hostname()
 	for _, r := range rs {
 		if c.Conf.RefreshCve || needToRefreshCve(r) {
-			cpeNames := c.Conf.Servers[r.ServerName].CpeNames
-			if err := FillCveInfo(dbclient, &r, cpeNames); err != nil {
+			cpeURIs := c.Conf.Servers[r.ServerName].CpeURIs
+			if err := FillCveInfo(dbclient, &r, cpeURIs); err != nil {
 				return nil, err
 			}
 			r.Lang = c.Conf.Lang
@@ -107,7 +107,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 }
 
 // FillCveInfo fill scanResult with cve info.
-func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeNames []string) error {
+func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string) error {
 	util.Log.Debugf("need to refresh")
 
 	util.Log.Infof("Fill CVE detailed information with OVAL")
@@ -116,7 +116,7 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeNames []string) err
 	}
 
 	util.Log.Infof("Fill CVE detailed information with CVE-DB")
-	if err := fillWithCveDB(dbclient.CveDB, r, cpeNames); err != nil {
+	if err := fillWithCveDB(dbclient.CveDB, r, cpeURIs); err != nil {
 		return fmt.Errorf("Failed to fill CVE information: %s", err)
 	}
 
@@ -160,8 +160,8 @@ func fillCveDetail(driver cvedb.DB, r *models.ScanResult) error {
 	return nil
 }
 
-func fillWithCveDB(driver cvedb.DB, r *models.ScanResult, cpeNames []string) error {
-	if err := fillVulnByCpeNames(driver, r.ScannedCves, cpeNames); err != nil {
+func fillWithCveDB(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) error {
+	if err := fillVulnByCpeURIs(driver, r.ScannedCves, cpeURIs); err != nil {
 		return err
 	}
 	return fillCveDetail(driver, r)
@@ -229,23 +229,23 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (err error) {
 	return ovalClient.FillWithOval(driver, r)
 }
 
-func fillVulnByCpeNames(driver cvedb.DB, scannedVulns models.VulnInfos, cpeNames []string) error {
-	for _, name := range cpeNames {
+func fillVulnByCpeURIs(driver cvedb.DB, scannedVulns models.VulnInfos, cpeURIs []string) error {
+	for _, name := range cpeURIs {
 		details, err := CveClient.FetchCveDetailsByCpeName(driver, name)
 		if err != nil {
 			return err
 		}
 		for _, detail := range details {
 			if val, ok := scannedVulns[detail.CveID]; ok {
-				names := val.CpeNames
+				names := val.CpeURIs
 				names = util.AppendIfMissing(names, name)
-				val.CpeNames = names
+				val.CpeURIs = names
 				val.Confidences.AppendIfMissing(models.CpeNameMatch)
 				scannedVulns[detail.CveID] = val
 			} else {
 				v := models.VulnInfo{
 					CveID:       detail.CveID,
-					CpeNames:    []string{name},
+					CpeURIs:     []string{name},
 					Confidences: models.Confidences{models.CpeNameMatch},
 				}
 				scannedVulns[detail.CveID] = v
@@ -448,8 +448,8 @@ func cleanForTOMLEncoding(server c.ServerInfo, def c.ServerInfo) c.ServerInfo {
 		server.KeyPath = ""
 	}
 
-	if reflect.DeepEqual(server.CpeNames, def.CpeNames) {
-		server.CpeNames = nil
+	if reflect.DeepEqual(server.CpeURIs, def.CpeURIs) {
+		server.CpeURIs = nil
 	}
 
 	if def.DependencyCheckXMLPath == server.DependencyCheckXMLPath {

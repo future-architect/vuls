@@ -136,7 +136,7 @@ type VulnInfo struct {
 	Confidences      Confidences
 	AffectedPackages PackageStatuses
 	DistroAdvisories []DistroAdvisory `json:",omitempty"` // for Aamazon, RHEL, FreeBSD
-	CpeNames         []string         `json:",omitempty"` // CPENames related to this CVE defined in config.toml
+	CpeURIs          []string         `json:",omitempty"` // CpeURIs related to this CVE defined in config.toml
 	CveContents      CveContents
 }
 

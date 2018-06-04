@@ -662,13 +662,15 @@ func (c *SyslogConf) GetFacility() (syslog.Priority, error) {
 
 // ServerInfo has SSH Info, additional CPE packages to scan.
 type ServerInfo struct {
-	ServerName             string            `toml:"-"`
-	User                   string            `toml:"user,omitempty"`
-	Host                   string            `toml:"host,omitempty"`
-	Port                   string            `toml:"port,omitempty"`
-	KeyPath                string            `toml:"keyPath,omitempty"`
-	KeyPassword            string            `json:"-" toml:"-"`
+	ServerName  string `toml:"-"`
+	User        string `toml:"user,omitempty"`
+	Host        string `toml:"host,omitempty"`
+	Port        string `toml:"port,omitempty"`
+	KeyPath     string `toml:"keyPath,omitempty"`
+	KeyPassword string `json:"-" toml:"-"`
+	// TODO Deprecated remove in near future
 	CpeNames               []string          `toml:"cpeNames,omitempty" json:",omitempty"`
+	CpeURIs                []string          `toml:"cpeURIs,omitempty" json:",omitempty"`
 	ScanMode               []string          `toml:"scanMode,omitempty" json:",omitempty"`
 	DependencyCheckXMLPath string            `toml:"dependencyCheckXMLPath,omitempty"`
 	IgnoreCves             []string          `toml:"ignoreCves,omitempty" json:",omitempty"`
