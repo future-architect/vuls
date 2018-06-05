@@ -64,13 +64,14 @@ func TestSyslogWriterEncodeSyslog(t *testing.T) {
 								Cvss3Score:  5.0,
 								Cvss3Vector: "AV:L/AC:L/Au:N/C:N/I:N/A:C",
 								CweID:       "CWE-284",
+								Title:       "RHSA-2017:0001: pkg5 security update (Important)",
 							},
 						},
 					},
 				},
 			},
 			expectedMessages: []string{
-				`scanned_at="2018-06-13 17:10:00 +0000 UTC" server_name="teste02" os_family="centos" os_release="6" ipv4_addr="" ipv6_addr="2001:0DB8::1" packages="pkg5" cve_id="CVE-2017-0003"`,
+				`scanned_at="2018-06-13 17:10:00 +0000 UTC" server_name="teste02" os_family="centos" os_release="6" ipv4_addr="" ipv6_addr="2001:0DB8::1" packages="pkg5" cve_id="CVE-2017-0003" title="RHSA-2017:0001: pkg5 security update (Important)"`,
 			},
 		},
 		{
