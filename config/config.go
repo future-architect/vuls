@@ -673,12 +673,17 @@ type ServerInfo struct {
 	CpeURIs  []string `toml:"cpeURIs,omitempty" json:",omitempty"`
 	ScanMode []string `toml:"scanMode,omitempty" json:",omitempty"`
 	// TODO Deprecated remove in near future
-	DependencyCheckXMLPath string            `toml:"dependencyCheckXMLPath,omitempty"`
-	OwaspDCXMLPath         string            `toml:"owaspDCXMLPath,omitempty"`
-	IgnoreCves             []string          `toml:"ignoreCves,omitempty" json:",omitempty"`
-	Containers             *Containers       `toml:"containers,omitempty" json:",omitempty"`
-	UUIDs                  map[string]string `toml:"uuids,omitempty" json:",omitempty"`
-	Memo                   string            `toml:"memo,omitempty"`
+	DependencyCheckXMLPath string `toml:"dependencyCheckXMLPath,omitempty"`
+	OwaspDCXMLPath         string `toml:"owaspDCXMLPath,omitempty"`
+
+	ContainersIncluded []string `toml:"containersIncluded,omitempty" json:",omitempty"`
+	ContainersExcluded []string `toml:"containersExcluded,omitempty" json:",omitempty"`
+	ContainerType      string   `toml:"containerType,omitempty" json:",omitempty"`
+
+	IgnoreCves []string `toml:"ignoreCves,omitempty" json:",omitempty"`
+
+	UUIDs map[string]string `toml:"uuids,omitempty" json:",omitempty"`
+	Memo  string            `toml:"memo,omitempty"`
 
 	// For CentOS, RHEL, Amazon
 	Enablerepo []string `toml:",omitempty" json:",omitempty"`
@@ -818,13 +823,6 @@ func (s ServerInfo) IsContainer() bool {
 // SetContainer set container
 func (s *ServerInfo) SetContainer(d Container) {
 	s.Container = d
-}
-
-// Containers has Containers information.
-type Containers struct {
-	Type     string   `toml:"type,omitempty"`
-	Includes []string `toml:"includes,omitempty" json:",omitempty"`
-	Excludes []string `toml:"excludes,omitempty" json:",omitempty"`
 }
 
 // Container has Container information.

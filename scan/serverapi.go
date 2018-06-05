@@ -278,7 +278,7 @@ func detectContainerOSes(timeoutSec int) (actives, inactives []osTypeInterface) 
 
 func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeInterface) {
 	containerHostInfo := containerHost.getServerInfo()
-	if len(containerHostInfo.Containers.Includes) == 0 {
+	if len(containerHostInfo.ContainersIncluded) == 0 {
 		return
 	}
 
@@ -290,11 +290,11 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 		return append(oses, containerHost)
 	}
 
-	if containerHostInfo.Containers.Includes[0] == "${running}" {
+	if containerHostInfo.ContainersIncluded[0] == "${running}" {
 		for _, containerInfo := range running {
 
 			found := false
-			for _, ex := range containerHost.getServerInfo().Containers.Excludes {
+			for _, ex := range containerHost.getServerInfo().ContainersExcluded {
 				if containerInfo.Name == ex || containerInfo.ContainerID == ex {
 					found = true
 				}
@@ -324,7 +324,7 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 	}
 
 	var exited, unknown []string
-	for _, container := range containerHostInfo.Containers.Includes {
+	for _, container := range containerHostInfo.ContainersIncluded {
 		found := false
 		for _, c := range running {
 			if c.ContainerID == container || c.Name == container {

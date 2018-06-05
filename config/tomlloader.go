@@ -152,9 +152,19 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			s.CpeURIs = append(s.CpeURIs, cpes...)
 		}
 
-		s.Containers = v.Containers
-		if s.Containers != nil && len(s.Containers.Includes) == 0 {
-			s.Containers = d.Containers
+		s.ContainersIncluded = v.ContainersIncluded
+		if len(s.ContainersIncluded) == 0 {
+			s.ContainersIncluded = d.ContainersIncluded
+		}
+
+		s.ContainersExcluded = v.ContainersExcluded
+		if len(s.ContainersExcluded) == 0 {
+			s.ContainersExcluded = d.ContainersExcluded
+		}
+
+		s.ContainerType = v.ContainerType
+		if len(s.ContainerType) == 0 {
+			s.ContainerType = d.ContainerType
 		}
 
 		s.Memo = v.Memo

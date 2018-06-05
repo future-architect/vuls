@@ -45,9 +45,6 @@ func (l *base) exec(cmd string, sudo bool) execResult {
 }
 
 func (l *base) setServerInfo(c config.ServerInfo) {
-	if c.Containers == nil {
-		c.Containers = &config.Containers{}
-	}
 	l.ServerInfo = c
 }
 
@@ -101,7 +98,7 @@ func (l *base) runningKernel() (release, version string, err error) {
 }
 
 func (l *base) allContainers() (containers []config.Container, err error) {
-	switch l.ServerInfo.Containers.Type {
+	switch l.ServerInfo.ContainerType {
 	case "", "docker":
 		stdout, err := l.dockerPs("-a --format '{{.ID}} {{.Names}} {{.Image}}'")
 		if err != nil {
@@ -122,12 +119,12 @@ func (l *base) allContainers() (containers []config.Container, err error) {
 		return l.parseLxcPs(stdout)
 	default:
 		return containers, fmt.Errorf(
-			"Not supported yet: %s", l.ServerInfo.Containers.Type)
+			"Not supported yet: %s", l.ServerInfo.ContainerType)
 	}
 }
 
 func (l *base) runningContainers() (containers []config.Container, err error) {
-	switch l.ServerInfo.Containers.Type {
+	switch l.ServerInfo.ContainerType {
 	case "", "docker":
 		stdout, err := l.dockerPs("--format '{{.ID}} {{.Names}} {{.Image}}'")
 		if err != nil {
@@ -148,12 +145,12 @@ func (l *base) runningContainers() (containers []config.Container, err error) {
 		return l.parseLxcPs(stdout)
 	default:
 		return containers, fmt.Errorf(
-			"Not supported yet: %s", l.ServerInfo.Containers.Type)
+			"Not supported yet: %s", l.ServerInfo.ContainerType)
 	}
 }
 
 func (l *base) exitedContainers() (containers []config.Container, err error) {
-	switch l.ServerInfo.Containers.Type {
+	switch l.ServerInfo.ContainerType {
 	case "", "docker":
 		stdout, err := l.dockerPs("--filter 'status=exited' --format '{{.ID}} {{.Names}} {{.Image}}'")
 		if err != nil {
@@ -174,7 +171,7 @@ func (l *base) exitedContainers() (containers []config.Container, err error) {
 		return l.parseLxcPs(stdout)
 	default:
 		return containers, fmt.Errorf(
-			"Not supported yet: %s", l.ServerInfo.Containers.Type)
+			"Not supported yet: %s", l.ServerInfo.ContainerType)
 	}
 }
 
@@ -374,7 +371,7 @@ func (l *base) isAwsInstanceID(str string) bool {
 }
 
 func (l *base) convertToModel() models.ScanResult {
-	ctype := l.ServerInfo.Containers.Type
+	ctype := l.ServerInfo.ContainerType
 	if l.ServerInfo.Container.ContainerID != "" && ctype == "" {
 		ctype = "docker"
 	}
