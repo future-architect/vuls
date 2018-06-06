@@ -30,6 +30,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
 	"github.com/future-architect/vuls/cwe"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/oval"
@@ -54,10 +55,28 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			cpeURIs := []string{}
 			if len(r.Container.ContainerID) == 0 {
 				cpeURIs = c.Conf.Servers[r.ServerName].CpeURIs
+				owaspDCXMLPath := c.Conf.Servers[r.ServerName].OwaspDCXMLPath
+				if owaspDCXMLPath != "" {
+					cpes, err := parser.Parse(owaspDCXMLPath)
+					if err != nil {
+						return nil, fmt.Errorf("Failed to read OWASP Dependency Check XML: %s, %s, %s",
+							r.ServerName, owaspDCXMLPath, err)
+					}
+					cpeURIs = append(cpeURIs, cpes...)
+				}
 			} else {
 				if s, ok := c.Conf.Servers[r.ServerName]; ok {
 					if con, ok := s.Containers[r.Container.Name]; ok {
 						cpeURIs = con.CpeURIs
+						owaspDCXMLPath := con.OwaspDCXMLPath
+						if owaspDCXMLPath != "" {
+							cpes, err := parser.Parse(owaspDCXMLPath)
+							if err != nil {
+								return nil, fmt.Errorf("Failed to read OWASP Dependency Check XML: %s, %s, %s",
+									r.ServerInfo(), owaspDCXMLPath, err)
+							}
+							cpeURIs = append(cpeURIs, cpes...)
+						}
 					}
 				}
 			}
@@ -316,7 +335,6 @@ const reUUID = "[\\da-f]{8}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{12}"
 // EnsureUUIDs generate a new UUID of the scan target server if UUID is not assigned yet.
 // And then set the generated UUID to config.toml and scan results.
 func EnsureUUIDs(configPath string, results models.ScanResults) error {
-
 	// Sort Host->Container
 	sort.Slice(results, func(i, j int) bool {
 		if results[i].ServerName == results[j].ServerName {

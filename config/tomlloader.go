@@ -22,7 +22,6 @@ import (
 	"os"
 
 	"github.com/BurntSushi/toml"
-	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
 )
 
 // TOMLLoader loads config
@@ -133,25 +132,6 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			s.CpeURIs = d.CpeURIs
 		}
 
-		if len(v.DependencyCheckXMLPath) != 0 || len(d.DependencyCheckXMLPath) != 0 {
-			return fmt.Errorf("[DEPRECATED] dependencyCheckXMLPath IS DEPRECATED. USE owaspDCXMLPath INSTEAD: %s", name)
-		}
-
-		s.OwaspDCXMLPath = v.OwaspDCXMLPath
-		if len(s.OwaspDCXMLPath) == 0 {
-			s.OwaspDCXMLPath = d.OwaspDCXMLPath
-		}
-
-		// Load CPEs from OWASP Dependency Check XML
-		if len(s.OwaspDCXMLPath) != 0 {
-			cpes, err := parser.Parse(s.OwaspDCXMLPath)
-			if err != nil {
-				return fmt.Errorf(
-					"Failed to read OWASP Dependency Check XML: %s", err)
-			}
-			s.CpeURIs = append(s.CpeURIs, cpes...)
-		}
-
 		s.ContainersIncluded = v.ContainersIncluded
 		if len(s.ContainersIncluded) == 0 {
 			s.ContainersIncluded = d.ContainersIncluded
@@ -170,6 +150,15 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		s.Containers = v.Containers
 		if len(s.Containers) == 0 {
 			s.Containers = d.Containers
+		}
+
+		if len(v.DependencyCheckXMLPath) != 0 || len(d.DependencyCheckXMLPath) != 0 {
+			return fmt.Errorf("[DEPRECATED] dependencyCheckXMLPath IS DEPRECATED. USE owaspDCXMLPath INSTEAD: %s", name)
+		}
+
+		s.OwaspDCXMLPath = v.OwaspDCXMLPath
+		if len(s.OwaspDCXMLPath) == 0 {
+			s.OwaspDCXMLPath = d.OwaspDCXMLPath
 		}
 
 		s.Memo = v.Memo
