@@ -51,7 +51,17 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 	hostname, _ := os.Hostname()
 	for _, r := range rs {
 		if c.Conf.RefreshCve || needToRefreshCve(r) {
-			cpeURIs := c.Conf.Servers[r.ServerName].CpeURIs
+			cpeURIs := []string{}
+			if len(r.Container.ContainerID) == 0 {
+				cpeURIs = c.Conf.Servers[r.ServerName].CpeURIs
+			} else {
+				if s, ok := c.Conf.Servers[r.ServerName]; ok {
+					if con, ok := s.Containers[r.Container.Name]; ok {
+						cpeURIs = con.CpeURIs
+					}
+				}
+			}
+
 			if err := FillCveInfo(dbclient, &r, cpeURIs); err != nil {
 				return nil, err
 			}

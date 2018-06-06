@@ -167,6 +167,11 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			s.ContainerType = d.ContainerType
 		}
 
+		s.Containers = v.Containers
+		if len(s.Containers) == 0 {
+			s.Containers = d.Containers
+		}
+
 		s.Memo = v.Memo
 		if s.Memo == "" {
 			s.Memo = d.Memo

@@ -679,6 +679,7 @@ type ServerInfo struct {
 	ContainersIncluded []string `toml:"containersIncluded,omitempty" json:",omitempty"`
 	ContainersExcluded []string `toml:"containersExcluded,omitempty" json:",omitempty"`
 	ContainerType      string   `toml:"containerType,omitempty" json:",omitempty"`
+	Containers         map[string]ContainerSetting
 
 	IgnoreCves []string `toml:"ignoreCves,omitempty" json:",omitempty"`
 
@@ -703,6 +704,12 @@ type ServerInfo struct {
 	// IP addresses
 	IPv4Addrs []string `toml:"-" json:",omitempty"`
 	IPv6Addrs []string `toml:"-" json:",omitempty"`
+}
+
+// ContainerSetting is used for loading container setting in config.toml
+type ContainerSetting struct {
+	CpeURIs        []string
+	OwaspDCXMLPath string
 }
 
 // ScanMode has a type of scan mode. fast, fast-root, deep and offline

@@ -292,7 +292,6 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 
 	if containerHostInfo.ContainersIncluded[0] == "${running}" {
 		for _, containerInfo := range running {
-
 			found := false
 			for _, ex := range containerHost.getServerInfo().ContainersExcluded {
 				if containerInfo.Name == ex || containerInfo.ContainerID == ex {
