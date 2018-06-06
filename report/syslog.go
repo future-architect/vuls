@@ -93,6 +93,9 @@ func (w SyslogWriter) encodeSyslog(result models.ScanResult) (messages []string)
 				kvPairs = append(kvPairs, fmt.Sprintf(`summary="%s"`, content.Summary))
 			}
 		}
+		if content, ok := vinfo.CveContents[models.RedHat]; ok {
+			kvPairs = append(kvPairs, fmt.Sprintf(`title="%s"`, content.Title))
+		}
 
 		// message: key1="value1" key2="value2"...
 		messages = append(messages, strings.Join(kvPairs, " "))
