@@ -119,13 +119,9 @@ subjectPrefix = "[vuls]"
 #]
 #owaspDCXMLPath = "/tmp/dependency-check-report.xml"
 #ignoreCves = ["CVE-2014-6271"]
-#[default.containers]
-#type = "lxd" # or "docker"
-#includes = ["${running}"]
-#excludes = ["container_name", "container_id"]
-#[default.optional]
-#key = "value"
-
+#containerType = "docker" #or "lxd" or "lxc" default: docker
+#containersIncluded = ["${running}"]
+#ContainersExcluded= ["container_name_a"]
 
 [servers]
 {{- $names:=  .Names}}
@@ -137,16 +133,18 @@ host         = "{{$ip}}"
 #keyPath     = "/home/username/.ssh/id_rsa"
 #scanMode 	 = ["fast", "fast-root", "deep", "offline"]
 #type 		 = "pseudo"
-#Memo        = "DB Server"
-#cpeURIs = [
-#  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
-#]
-#owaspDCXMLPath = "/tmp/dependency-check-report.xml"
+#memo        = "DB Server"
+#cpeURIs = [ "cpe:/a:rubyonrails:ruby_on_rails:4.2.1" ]
+#owaspDCXMLPath = "/path/to/dependency-check-report.xml"
 #ignoreCves = ["CVE-2014-0160"]
-#[servers.{{index $names $i}}.containers]
-#type = "docker" #or "lxd" default: docker
-#includes = ["${running}"]
-#excludes = ["container_name_a", "4aa37a8b63b9"]
+#containerType = "docker" #or "lxd" or "lxc" default: docker
+#containersIncluded = ["${running}"]
+#ContainersExcluded= ["container_name_a"]
+
+#[servers.{{index $names $i}}.containers.container_name_a]
+#cpeURIs = [ "cpe:/a:rubyonrails:ruby_on_rails:4.2.1" ]
+#owaspDCXMLPath = "/path/to/dependency-check-report.xml"
+
 #[servers.{{index $names $i}}.optional]
 #key = "value1"
 
