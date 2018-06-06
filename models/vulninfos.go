@@ -514,18 +514,11 @@ func severityToV2ScoreRoughly(severity string) float64 {
 
 // FormatMaxCvssScore returns Max CVSS Score
 func (v VulnInfo) FormatMaxCvssScore() string {
-	v2Max := v.MaxCvss2Score()
-	v3Max := v.MaxCvss3Score()
-	if v2Max.Value.Score <= v3Max.Value.Score {
-		return fmt.Sprintf("%3.1f %s (%s)",
-			v3Max.Value.Score,
-			strings.ToUpper(v3Max.Value.Severity),
-			v3Max.Type)
-	}
+	max := v.MaxCvssScore()
 	return fmt.Sprintf("%3.1f %s (%s)",
-		v2Max.Value.Score,
-		strings.ToUpper(v2Max.Value.Severity),
-		v2Max.Type)
+		max.Value.Score,
+		strings.ToUpper(max.Value.Severity),
+		max.Type)
 }
 
 // Cvss2CalcURL returns CVSS v2 caluclator's URL
