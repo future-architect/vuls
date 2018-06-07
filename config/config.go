@@ -681,7 +681,8 @@ type ServerInfo struct {
 	ContainerType      string   `toml:"containerType,omitempty" json:",omitempty"`
 	Containers         map[string]ContainerSetting
 
-	IgnoreCves []string `toml:"ignoreCves,omitempty" json:",omitempty"`
+	IgnoreCves       []string `toml:"ignoreCves,omitempty" json:",omitempty"`
+	IgnorePkgsRegexp []string `toml:"ignorePkgsRegexp,omitempty" json:",omitempty"`
 
 	UUIDs map[string]string `toml:"uuids,omitempty" json:",omitempty"`
 	Memo  string            `toml:"memo,omitempty"`
@@ -708,8 +709,9 @@ type ServerInfo struct {
 
 // ContainerSetting is used for loading container setting in config.toml
 type ContainerSetting struct {
-	CpeURIs        []string
-	OwaspDCXMLPath string
+	CpeURIs          []string
+	OwaspDCXMLPath   string
+	IgnorePkgsRegexp []string
 }
 
 // ScanMode has a type of scan mode. fast, fast-root, deep and offline

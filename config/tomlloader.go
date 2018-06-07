@@ -20,6 +20,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"regexp"
 
 	"github.com/BurntSushi/toml"
 )
@@ -177,6 +178,36 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			}
 			if !found {
 				s.IgnoreCves = append(s.IgnoreCves, cve)
+			}
+		}
+
+		s.IgnorePkgsRegexp = v.IgnorePkgsRegexp
+		for _, pkg := range d.IgnorePkgsRegexp {
+			found := false
+			for _, p := range s.IgnorePkgsRegexp {
+				if pkg == p {
+					found = true
+					break
+				}
+			}
+			if !found {
+				s.IgnorePkgsRegexp = append(s.IgnorePkgsRegexp, pkg)
+			}
+		}
+
+		for _, reg := range s.IgnorePkgsRegexp {
+			_, err := regexp.Compile(reg)
+			if err != nil {
+				return fmt.Errorf("Faild to parse %s in %s. err: %s", reg, name, err)
+			}
+		}
+		for contName, cont := range s.Containers {
+			for _, reg := range cont.IgnorePkgsRegexp {
+				_, err := regexp.Compile(reg)
+				if err != nil {
+					return fmt.Errorf("Faild to parse %s in %s@%s. err: %s",
+						reg, contName, name, err)
+				}
 			}
 		}
 

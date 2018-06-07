@@ -21,7 +21,7 @@ REVISION := $(shell git rev-parse --short HEAD)
 LDFLAGS := -X 'github.com/future-architect/vuls/config.Version=$(VERSION)' \
 	-X 'github.com/future-architect/vuls/config.Revision=$(REVISION)'
 
-all: dep build test
+all: dep build
 
 dep:
 	go get -u github.com/golang/dep/...
@@ -54,8 +54,7 @@ fmtcheck:
 
 pretest: lint vet fmtcheck
 
-test: pretest
-	go install
+test: 
 	echo $(PKGS) | xargs go test -cover -v || exit;
 
 unused :

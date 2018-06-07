@@ -127,6 +127,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 		r = r.FilterByCvssOver(c.Conf.CvssScoreOver)
 		r = r.FilterIgnoreCves(c.Conf.Servers[r.ServerName].IgnoreCves)
 		r = r.FilterUnfixed()
+		r = r.FilterIgnorePkgs()
 		if c.Conf.IgnoreUnscoredCves {
 			r.ScannedCves = r.ScannedCves.FindScoredVulns()
 		}

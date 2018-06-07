@@ -20,10 +20,12 @@ package models
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/cwe"
+	"github.com/future-architect/vuls/util"
 )
 
 // ScanResults is a slide of ScanResult
@@ -125,6 +127,63 @@ func (r ScanResult) FilterUnfixed() ScanResult {
 		}
 		return !NotFixedAll
 	})
+	r.ScannedCves = filtered
+	return r
+}
+
+// FilterIgnorePkgs is filter function.
+func (r ScanResult) FilterIgnorePkgs() ScanResult {
+	ignorePkgsRegexps := []string{}
+	if len(r.Container.Name) == 0 {
+		ignorePkgsRegexps = config.Conf.Servers[r.ServerName].IgnorePkgsRegexp
+	} else {
+		if s, ok := config.Conf.Servers[r.ServerName]; ok {
+			if con, ok := s.Containers[r.Container.Name]; ok {
+				ignorePkgsRegexps = con.IgnorePkgsRegexp
+			} else {
+				util.Log.Errorf("%s is not found in config.toml",
+					r.Container.Name)
+				return r
+			}
+		} else {
+			util.Log.Errorf("%s is not found in config.toml",
+				r.ServerName)
+			return r
+		}
+	}
+
+	regexps := []*regexp.Regexp{}
+	for _, pkgRegexp := range ignorePkgsRegexps {
+		re, err := regexp.Compile(pkgRegexp)
+		if err != nil {
+			util.Log.Errorf("Faild to parse %s, %s", pkgRegexp, err)
+			continue
+		} else {
+			regexps = append(regexps, re)
+		}
+	}
+	if len(regexps) == 0 {
+		return r
+	}
+
+	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
+		if len(v.AffectedPackages) == 0 {
+			return true
+		}
+		for _, p := range v.AffectedPackages {
+			match := false
+			for _, re := range regexps {
+				if re.MatchString(p.Name) {
+					match = true
+				}
+			}
+			if !match {
+				return true
+			}
+		}
+		return false
+	})
+
 	r.ScannedCves = filtered
 	return r
 }

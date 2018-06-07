@@ -337,6 +337,236 @@ func TestFilterUnfixed(t *testing.T) {
 	}
 }
 
+func TestFilterIgnorePkgs(t *testing.T) {
+	type in struct {
+		ignorePkgsRegexp []string
+		rs               ScanResult
+	}
+	var tests = []struct {
+		in  in
+		out ScanResult
+	}{
+		{
+			in: in{
+				ignorePkgsRegexp: []string{"^kernel"},
+				rs: ScanResult{
+					ServerName: "name",
+					ScannedCves: VulnInfos{
+						"CVE-2017-0001": {
+							CveID: "CVE-2017-0001",
+							AffectedPackages: PackageStatuses{
+								{Name: "kernel"},
+							},
+						},
+						"CVE-2017-0002": {
+							CveID: "CVE-2017-0002",
+						},
+					},
+				},
+			},
+			out: ScanResult{
+				ServerName: "name",
+				ScannedCves: VulnInfos{
+					"CVE-2017-0002": {
+						CveID: "CVE-2017-0002",
+					},
+				},
+			},
+		},
+		{
+			in: in{
+				ignorePkgsRegexp: []string{"^kernel"},
+				rs: ScanResult{
+					ServerName: "name",
+					ScannedCves: VulnInfos{
+						"CVE-2017-0001": {
+							CveID: "CVE-2017-0001",
+							AffectedPackages: PackageStatuses{
+								{Name: "kernel"},
+								{Name: "vim"},
+							},
+						},
+					},
+				},
+			},
+			out: ScanResult{
+				ServerName: "name",
+				ScannedCves: VulnInfos{
+					"CVE-2017-0001": {
+						CveID: "CVE-2017-0001",
+						AffectedPackages: PackageStatuses{
+							{Name: "kernel"},
+							{Name: "vim"},
+						},
+					},
+				},
+			},
+		},
+		{
+			in: in{
+				ignorePkgsRegexp: []string{"^kernel", "^vim", "^bind"},
+				rs: ScanResult{
+					ServerName: "name",
+					ScannedCves: VulnInfos{
+						"CVE-2017-0001": {
+							CveID: "CVE-2017-0001",
+							AffectedPackages: PackageStatuses{
+								{Name: "kernel"},
+								{Name: "vim"},
+							},
+						},
+					},
+				},
+			},
+			out: ScanResult{
+				ServerName:  "name",
+				ScannedCves: VulnInfos{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		config.Conf.Servers = map[string]config.ServerInfo{
+			"name": {IgnorePkgsRegexp: tt.in.ignorePkgsRegexp},
+		}
+		actual := tt.in.rs.FilterIgnorePkgs()
+		for k := range tt.out.ScannedCves {
+			if !reflect.DeepEqual(tt.out.ScannedCves[k], actual.ScannedCves[k]) {
+				o := pp.Sprintf("%v", tt.out.ScannedCves[k])
+				a := pp.Sprintf("%v", actual.ScannedCves[k])
+				t.Errorf("[%s] expected: %v\n  actual: %v\n", k, o, a)
+			}
+		}
+		for k := range actual.ScannedCves {
+			if !reflect.DeepEqual(tt.out.ScannedCves[k], actual.ScannedCves[k]) {
+				o := pp.Sprintf("%v", tt.out.ScannedCves[k])
+				a := pp.Sprintf("%v", actual.ScannedCves[k])
+				t.Errorf("[%s] expected: %v\n  actual: %v\n", k, o, a)
+			}
+		}
+	}
+}
+
+func TestFilterIgnorePkgsContainer(t *testing.T) {
+	type in struct {
+		ignorePkgsRegexp []string
+		rs               ScanResult
+	}
+	var tests = []struct {
+		in  in
+		out ScanResult
+	}{
+		{
+			in: in{
+				ignorePkgsRegexp: []string{"^kernel"},
+				rs: ScanResult{
+					ServerName: "name",
+					Container:  Container{Name: "dockerA"},
+					ScannedCves: VulnInfos{
+						"CVE-2017-0001": {
+							CveID: "CVE-2017-0001",
+							AffectedPackages: PackageStatuses{
+								{Name: "kernel"},
+							},
+						},
+						"CVE-2017-0002": {
+							CveID: "CVE-2017-0002",
+						},
+					},
+				},
+			},
+			out: ScanResult{
+				ServerName: "name",
+				Container:  Container{Name: "dockerA"},
+				ScannedCves: VulnInfos{
+					"CVE-2017-0002": {
+						CveID: "CVE-2017-0002",
+					},
+				},
+			},
+		},
+		{
+			in: in{
+				ignorePkgsRegexp: []string{"^kernel"},
+				rs: ScanResult{
+					ServerName: "name",
+					Container:  Container{Name: "dockerA"},
+					ScannedCves: VulnInfos{
+						"CVE-2017-0001": {
+							CveID: "CVE-2017-0001",
+							AffectedPackages: PackageStatuses{
+								{Name: "kernel"},
+								{Name: "vim"},
+							},
+						},
+					},
+				},
+			},
+			out: ScanResult{
+				ServerName: "name",
+				Container:  Container{Name: "dockerA"},
+				ScannedCves: VulnInfos{
+					"CVE-2017-0001": {
+						CveID: "CVE-2017-0001",
+						AffectedPackages: PackageStatuses{
+							{Name: "kernel"},
+							{Name: "vim"},
+						},
+					},
+				},
+			},
+		},
+		{
+			in: in{
+				ignorePkgsRegexp: []string{"^kernel", "^vim", "^bind"},
+				rs: ScanResult{
+					ServerName: "name",
+					Container:  Container{Name: "dockerA"},
+					ScannedCves: VulnInfos{
+						"CVE-2017-0001": {
+							CveID: "CVE-2017-0001",
+							AffectedPackages: PackageStatuses{
+								{Name: "kernel"},
+								{Name: "vim"},
+							},
+						},
+					},
+				},
+			},
+			out: ScanResult{
+				ServerName:  "name",
+				Container:   Container{Name: "dockerA"},
+				ScannedCves: VulnInfos{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		config.Conf.Servers = map[string]config.ServerInfo{
+			"name": {
+				Containers: map[string]config.ContainerSetting{
+					"dockerA": {
+						IgnorePkgsRegexp: tt.in.ignorePkgsRegexp,
+					},
+				},
+			},
+		}
+		actual := tt.in.rs.FilterIgnorePkgs()
+		for k := range tt.out.ScannedCves {
+			if !reflect.DeepEqual(tt.out.ScannedCves[k], actual.ScannedCves[k]) {
+				o := pp.Sprintf("%v", tt.out.ScannedCves[k])
+				a := pp.Sprintf("%v", actual.ScannedCves[k])
+				t.Errorf("[%s] expected: %v\n  actual: %v\n", k, o, a)
+			}
+		}
+		for k := range actual.ScannedCves {
+			if !reflect.DeepEqual(tt.out.ScannedCves[k], actual.ScannedCves[k]) {
+				o := pp.Sprintf("%v", tt.out.ScannedCves[k])
+				a := pp.Sprintf("%v", actual.ScannedCves[k])
+				t.Errorf("[%s] expected: %v\n  actual: %v\n", k, o, a)
+			}
+		}
+	}
+}
+
 func TestIsDisplayUpdatableNum(t *testing.T) {
 	var tests = []struct {
 		mode     []byte
