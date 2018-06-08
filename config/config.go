@@ -712,6 +712,7 @@ type ContainerSetting struct {
 	CpeURIs          []string
 	OwaspDCXMLPath   string
 	IgnorePkgsRegexp []string
+	IgnoreCves       []string
 }
 
 // ScanMode has a type of scan mode. fast, fast-root, deep and offline

@@ -30,6 +30,7 @@ import (
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
+	"github.com/k0kubun/pp"
 	cvelog "github.com/kotakanbe/go-cve-dictionary/log"
 )
 
@@ -489,6 +490,12 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitFailure
 	}
 	util.Log.Infof("Loaded: %s", dir)
+
+	for _, r := range res {
+		util.Log.Debugf("%s: %s",
+			r.ServerInfo(),
+			pp.Sprintf("%s", c.Conf.Servers[r.ServerName]))
+	}
 
 	if c.Conf.UUID {
 		// Ensure UUIDs of scan target servers in config.toml

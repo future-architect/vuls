@@ -149,8 +149,9 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		}
 
 		s.Containers = v.Containers
-		if len(s.Containers) == 0 {
-			s.Containers = d.Containers
+		for contName, cont := range s.Containers {
+			cont.IgnoreCves = append(cont.IgnoreCves, d.IgnoreCves...)
+			s.Containers[contName] = cont
 		}
 
 		if len(v.DependencyCheckXMLPath) != 0 || len(d.DependencyCheckXMLPath) != 0 {
@@ -194,7 +195,6 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 				s.IgnorePkgsRegexp = append(s.IgnorePkgsRegexp, pkg)
 			}
 		}
-
 		for _, reg := range s.IgnorePkgsRegexp {
 			_, err := regexp.Compile(reg)
 			if err != nil {

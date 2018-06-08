@@ -102,9 +102,29 @@ func (r ScanResult) FilterByCvssOver(over float64) ScanResult {
 }
 
 // FilterIgnoreCves is filter function.
-func (r ScanResult) FilterIgnoreCves(cveIDs []string) ScanResult {
+func (r ScanResult) FilterIgnoreCves() ScanResult {
+
+	ignoreCves := []string{}
+	if len(r.Container.Name) == 0 {
+		ignoreCves = config.Conf.Servers[r.ServerName].IgnoreCves
+	} else {
+		if s, ok := config.Conf.Servers[r.ServerName]; ok {
+			if con, ok := s.Containers[r.Container.Name]; ok {
+				ignoreCves = con.IgnoreCves
+			} else {
+				util.Log.Errorf("%s is not found in config.toml",
+					r.Container.Name)
+				return r
+			}
+		} else {
+			util.Log.Errorf("%s is not found in config.toml",
+				r.ServerName)
+			return r
+		}
+	}
+
 	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
-		for _, c := range cveIDs {
+		for _, c := range ignoreCves {
 			if v.CveID == c {
 				return false
 			}

@@ -144,6 +144,7 @@ host         = "{{$ip}}"
 #[servers.{{index $names $i}}.containers.container_name_a]
 #cpeURIs = [ "cpe:/a:rubyonrails:ruby_on_rails:4.2.1" ]
 #owaspDCXMLPath = "/path/to/dependency-check-report.xml"
+#ignoreCves = ["CVE-2014-0160"]
 
 #[servers.{{index $names $i}}.optional]
 #key = "value1"

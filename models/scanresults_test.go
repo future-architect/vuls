@@ -206,7 +206,6 @@ func TestFilterByCvssOver(t *testing.T) {
 		}
 	}
 }
-
 func TestFilterIgnoreCveIDs(t *testing.T) {
 	type in struct {
 		cves []string
@@ -220,6 +219,7 @@ func TestFilterIgnoreCveIDs(t *testing.T) {
 			in: in{
 				cves: []string{"CVE-2017-0002"},
 				rs: ScanResult{
+					ServerName: "name",
 					ScannedCves: VulnInfos{
 						"CVE-2017-0001": {
 							CveID: "CVE-2017-0001",
@@ -234,6 +234,7 @@ func TestFilterIgnoreCveIDs(t *testing.T) {
 				},
 			},
 			out: ScanResult{
+				ServerName: "name",
 				ScannedCves: VulnInfos{
 					"CVE-2017-0001": {
 						CveID: "CVE-2017-0001",
@@ -246,8 +247,88 @@ func TestFilterIgnoreCveIDs(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		actual := tt.in.rs.FilterIgnoreCves(tt.in.cves)
+		config.Conf.Servers = map[string]config.ServerInfo{
+			"name": {IgnoreCves: tt.in.cves},
+		}
+		actual := tt.in.rs.FilterIgnoreCves()
 		for k := range tt.out.ScannedCves {
+			if !reflect.DeepEqual(tt.out.ScannedCves[k], actual.ScannedCves[k]) {
+				o := pp.Sprintf("%v", tt.out.ScannedCves[k])
+				a := pp.Sprintf("%v", actual.ScannedCves[k])
+				t.Errorf("[%s] expected: %v\n  actual: %v\n", k, o, a)
+			}
+		}
+		for k := range actual.ScannedCves {
+			if !reflect.DeepEqual(tt.out.ScannedCves[k], actual.ScannedCves[k]) {
+				o := pp.Sprintf("%v", tt.out.ScannedCves[k])
+				a := pp.Sprintf("%v", actual.ScannedCves[k])
+				t.Errorf("[%s] expected: %v\n  actual: %v\n", k, o, a)
+			}
+		}
+	}
+}
+
+func TestFilterIgnoreCveIDsContainer(t *testing.T) {
+	type in struct {
+		cves []string
+		rs   ScanResult
+	}
+	var tests = []struct {
+		in  in
+		out ScanResult
+	}{
+		{
+			in: in{
+				cves: []string{"CVE-2017-0002"},
+				rs: ScanResult{
+					ServerName: "name",
+					Container:  Container{Name: "dockerA"},
+					ScannedCves: VulnInfos{
+						"CVE-2017-0001": {
+							CveID: "CVE-2017-0001",
+						},
+						"CVE-2017-0002": {
+							CveID: "CVE-2017-0002",
+						},
+						"CVE-2017-0003": {
+							CveID: "CVE-2017-0003",
+						},
+					},
+				},
+			},
+			out: ScanResult{
+				ServerName: "name",
+				Container:  Container{Name: "dockerA"},
+				ScannedCves: VulnInfos{
+					"CVE-2017-0001": {
+						CveID: "CVE-2017-0001",
+					},
+					"CVE-2017-0003": {
+						CveID: "CVE-2017-0003",
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		config.Conf.Servers = map[string]config.ServerInfo{
+			"name": {
+				Containers: map[string]config.ContainerSetting{
+					"dockerA": {
+						IgnoreCves: tt.in.cves,
+					},
+				},
+			},
+		}
+		actual := tt.in.rs.FilterIgnoreCves()
+		for k := range tt.out.ScannedCves {
+			if !reflect.DeepEqual(tt.out.ScannedCves[k], actual.ScannedCves[k]) {
+				o := pp.Sprintf("%v", tt.out.ScannedCves[k])
+				a := pp.Sprintf("%v", actual.ScannedCves[k])
+				t.Errorf("[%s] expected: %v\n  actual: %v\n", k, o, a)
+			}
+		}
+		for k := range actual.ScannedCves {
 			if !reflect.DeepEqual(tt.out.ScannedCves[k], actual.ScannedCves[k]) {
 				o := pp.Sprintf("%v", tt.out.ScannedCves[k])
 				a := pp.Sprintf("%v", actual.ScannedCves[k])
