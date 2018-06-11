@@ -32,7 +32,6 @@ import (
 	"github.com/google/subcommands"
 	"github.com/gosuri/uitable"
 	"github.com/jroimartin/gocui"
-	log "github.com/sirupsen/logrus"
 )
 
 var scanResults models.ScanResults
@@ -55,7 +54,7 @@ func RunTui(results models.ScanResults) subcommands.ExitStatus {
 	// g, err := gocui.NewGui(gocui.OutputNormal)
 	g := gocui.NewGui()
 	if err := g.Init(); err != nil {
-		log.Errorf("%s", err)
+		util.Log.Errorf("%s", err)
 		return subcommands.ExitFailure
 	}
 	defer g.Close()
@@ -63,7 +62,7 @@ func RunTui(results models.ScanResults) subcommands.ExitStatus {
 	g.SetLayout(layout)
 	// g.SetManagerFunc(layout)
 	if err := keybindings(g); err != nil {
-		log.Errorf("%s", err)
+		util.Log.Errorf("%s", err)
 		return subcommands.ExitFailure
 	}
 	g.SelBgColor = gocui.ColorGreen
@@ -72,7 +71,7 @@ func RunTui(results models.ScanResults) subcommands.ExitStatus {
 
 	if err := g.MainLoop(); err != nil {
 		g.Close()
-		log.Errorf("%s", err)
+		util.Log.Errorf("%s", err)
 		os.Exit(1)
 	}
 	return subcommands.ExitSuccess

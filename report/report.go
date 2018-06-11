@@ -311,7 +311,7 @@ func fillCweDict(r *models.ScanResult) {
 			entry.En = &e
 		} else {
 			util.Log.Debugf("CWE-ID %s is not found in English CWE Dict", id)
-			// entry.En = nil
+			entry.En = &cwe.Cwe{CweID: id}
 		}
 
 		if c.Conf.Lang == "ja" {
@@ -322,7 +322,7 @@ func fillCweDict(r *models.ScanResult) {
 				entry.Ja = &e
 			} else {
 				util.Log.Debugf("CWE-ID %s is not found in Japanese CWE Dict", id)
-				// entry.Ja = nil
+				entry.Ja = &cwe.Cwe{CweID: id}
 			}
 		}
 		dict[id] = entry
