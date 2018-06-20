@@ -59,7 +59,13 @@ func detectSUSE(c config.ServerInfo) (itsMe bool, suse osTypeInterface) {
 					util.Log.Warn("Failed to parse SUSE Linux version: %s", r)
 					return true, suse
 				}
-				suse.setDistro(name, result[1])
+				version := ""
+				if len(result[1]) <= 4 {
+					version = result[1]
+				} else {
+					version = result[1][0:4]
+				}
+				suse.setDistro(name, version)
 				return true, suse
 			}
 		}
