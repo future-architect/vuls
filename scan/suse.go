@@ -46,18 +46,26 @@ func detectSUSE(c config.ServerInfo) (itsMe bool, suse osTypeInterface) {
 					name = config.OpenSUSE
 				} else if strings.Contains(r.Stdout, `NAME="SLES"`) {
 					name = config.SUSEEnterpriseServer
+				}else if strings.Contains(r.Stdout, `NAME="SLES_SAP"`) {
+					name = config.SUSEEnterpriseServer
 				} else {
 					util.Log.Warn("Failed to parse SUSE edition: %s", r)
 					return true, suse
 				}
 
-				re := regexp.MustCompile(`VERSION_ID=\"(\d+\.\d+|\d+)\"`)
+				re := regexp.MustCompile(`VERSION_ID=\"(\d+\.\d+\.\d+\.\d+|\d+\.\d+|\d+|)\"`)
 				result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 				if len(result) != 2 {
 					util.Log.Warn("Failed to parse SUSE Linux version: %s", r)
 					return true, suse
 				}
-				suse.setDistro(name, result[1])
+				version := ""
+				if len(result[1]) <= 4 {
+					version = result[1]
+				} else {
+					version = result[1][0:4]
+				}
+				suse.setDistro(name, version)
 				return true, suse
 			}
 		}
