@@ -104,3 +104,46 @@ func TestScanUpdatablePackage(t *testing.T) {
 		}
 	}
 }
+
+func TestParseOSRelease(t *testing.T) {
+	var tests = []struct {
+		in   string
+		name string
+		ver  string
+	}{
+		{
+			in: `NAME="openSUSE Leap"
+ID=opensuse
+VERSION_ID="42.3.4"`,
+			name: config.OpenSUSE,
+			ver:  "42.3.4",
+		},
+		{
+			in: `NAME="SLES"
+VERSION="12-SP1"
+VERSION_ID="12.1"
+ID="sles"`,
+			name: config.SUSEEnterpriseServer,
+			ver:  "12.1",
+		},
+		{
+			in: `NAME="SLES_SAP"
+VERSION="12-SP1"
+VERSION_ID="12.1.0.1"
+ID="sles"`,
+			name: config.SUSEEnterpriseServer,
+			ver:  "12.1.0.1",
+		},
+	}
+
+	r := newSUSE(config.ServerInfo{})
+	for i, tt := range tests {
+		name, ver := r.parseOSRelease(tt.in)
+		if tt.name != name {
+			t.Errorf("[%d] expected %s, actual %s", i, tt.name, name)
+		}
+		if tt.ver != ver {
+			t.Errorf("[%d] expected %s, actual %s", i, tt.ver, ver)
+		}
+	}
+}
