@@ -34,31 +34,14 @@ func newSUSE(c config.ServerInfo) *suse {
 }
 
 // https://github.com/mizzy/specinfra/blob/master/lib/specinfra/helper/detect_os/suse.rb
-func detectSUSE(c config.ServerInfo) (itsMe bool, suse osTypeInterface) {
-	suse = newSUSE(c)
-
+func detectSUSE(c config.ServerInfo) (bool, osTypeInterface) {
+	s := newSUSE(c)
 	if r := exec(c, "ls /etc/os-release", noSudo); r.isSuccess() {
 		if r := exec(c, "zypper -V", noSudo); r.isSuccess() {
 			if r := exec(c, "cat /etc/os-release", noSudo); r.isSuccess() {
-				name := ""
-				if strings.Contains(r.Stdout, "ID=opensuse") {
-					//TODO check opensuse or opensuse.leap
-					name = config.OpenSUSE
-				} else if strings.Contains(r.Stdout, `NAME="SLES"`) {
-					name = config.SUSEEnterpriseServer
-				} else {
-					util.Log.Warn("Failed to parse SUSE edition: %s", r)
-					return true, suse
-				}
-
-				re := regexp.MustCompile(`VERSION_ID=\"(\d+\.\d+|\d+)\"`)
-				result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
-				if len(result) != 2 {
-					util.Log.Warn("Failed to parse SUSE Linux version: %s", r)
-					return true, suse
-				}
-				suse.setDistro(name, result[1])
-				return true, suse
+				name, ver := s.parseOSRelease(r.Stdout)
+				s.setDistro(name, ver)
+				return true, s
 			}
 		}
 	} else if r := exec(c, "ls /etc/SuSE-release", noSudo); r.isSuccess() {
@@ -68,8 +51,8 @@ func detectSUSE(c config.ServerInfo) (itsMe bool, suse osTypeInterface) {
 				result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 				if len(result) == 2 {
 					//TODO check opensuse or opensuse.leap
-					suse.setDistro(config.OpenSUSE, result[1])
-					return true, suse
+					s.setDistro(config.OpenSUSE, result[1])
+					return true, s
 				}
 
 				re = regexp.MustCompile(`VERSION = (\d+)`)
@@ -79,18 +62,40 @@ func detectSUSE(c config.ServerInfo) (itsMe bool, suse osTypeInterface) {
 					re = regexp.MustCompile(`PATCHLEVEL = (\d+)`)
 					result = re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 					if len(result) == 2 {
-						suse.setDistro(config.SUSEEnterpriseServer,
+						s.setDistro(config.SUSEEnterpriseServer,
 							fmt.Sprintf("%s.%s", version, result[1]))
-						return true, suse
+						return true, s
 					}
 				}
 				util.Log.Warn("Failed to parse SUSE Linux version: %s", r)
-				return true, suse
+				return true, s
 			}
 		}
 	}
 	util.Log.Debugf("Not SUSE Linux. servername: %s", c.ServerName)
-	return false, suse
+	return false, s
+}
+
+func (o *suse) parseOSRelease(content string) (name string, ver string) {
+	if strings.Contains(content, "ID=opensuse") {
+		//TODO check opensuse or opensuse.leap
+		name = config.OpenSUSE
+	} else if strings.Contains(content, `NAME="SLES"`) {
+		name = config.SUSEEnterpriseServer
+	} else if strings.Contains(content, `NAME="SLES_SAP"`) {
+		name = config.SUSEEnterpriseServer
+	} else {
+		util.Log.Warn("Failed to parse SUSE edition: %s", content)
+		return "unknown", "unknown"
+	}
+
+	re := regexp.MustCompile(`VERSION_ID=\"(.+)\"`)
+	result := re.FindStringSubmatch(strings.TrimSpace(content))
+	if len(result) != 2 {
+		util.Log.Warn("Failed to parse SUSE Linux version: %s", content)
+		return "unknown", "unknown"
+	}
+	return name, result[1]
 }
 
 func (o *suse) checkDeps() error {
