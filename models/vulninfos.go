@@ -116,6 +116,18 @@ func (ps PackageStatuses) FormatTuiSummary() string {
 	return strings.Join(names, ", ")
 }
 
+// Store insert given pkg if missing, updaste pkg if exists
+func (ps PackageStatuses) Store(pkg PackageStatus) PackageStatuses {
+	for i, p := range ps {
+		if p.Name == pkg.Name {
+			ps[i] = pkg
+			return ps
+		}
+	}
+	ps = append(ps, pkg)
+	return ps
+}
+
 // Sort by Name
 func (ps PackageStatuses) Sort() {
 	sort.Slice(ps, func(i, j int) bool {
@@ -128,6 +140,7 @@ func (ps PackageStatuses) Sort() {
 type PackageStatus struct {
 	Name        string
 	NotFixedYet bool
+	FixState    string
 }
 
 // VulnInfo has a vulnerability information and unsecure packages
@@ -624,6 +637,9 @@ const (
 	// OvalMatchStr is a String representation of OvalMatch
 	OvalMatchStr = "OvalMatch"
 
+	// RedHatAPIStr is a String representation of RedHatAPIMatch
+	RedHatAPIStr = "RedHatAPIMatch"
+
 	// ChangelogExactMatchStr is a String representation of ChangelogExactMatch
 	ChangelogExactMatchStr = "ChangelogExactMatch"
 
@@ -649,6 +665,9 @@ var (
 
 	// OvalMatch is a ranking how confident the CVE-ID was deteted correctly
 	OvalMatch = Confidence{100, OvalMatchStr, 0}
+
+	// RedHatAPIMatch ranking how confident the CVE-ID was deteted correctly
+	RedHatAPIMatch = Confidence{100, RedHatAPIStr, 0}
 
 	// ChangelogExactMatch is a ranking how confident the CVE-ID was deteted correctly
 	ChangelogExactMatch = Confidence{95, ChangelogExactMatchStr, 3}

@@ -115,7 +115,7 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) {
 			cveContents := vinfo.CveContents
 			if v, ok := vinfo.CveContents[ctype]; ok {
 				if v.LastModified.After(ovalContent.LastModified) {
-					util.Log.Debugf("%s, OvalID: %s ignroed: ",
+					util.Log.Debugf("%s, OvalID: %d ignroed: ",
 						cve.CveID, defPacks.def.ID)
 					continue
 				} else {

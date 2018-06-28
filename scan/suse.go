@@ -67,7 +67,7 @@ func detectSUSE(c config.ServerInfo) (bool, osTypeInterface) {
 						return true, s
 					}
 				}
-				util.Log.Warn("Failed to parse SUSE Linux version: %s", r)
+				util.Log.Warnf("Failed to parse SUSE Linux version: %s", r)
 				return true, s
 			}
 		}
@@ -85,14 +85,14 @@ func (o *suse) parseOSRelease(content string) (name string, ver string) {
 	} else if strings.Contains(content, `NAME="SLES_SAP"`) {
 		name = config.SUSEEnterpriseServer
 	} else {
-		util.Log.Warn("Failed to parse SUSE edition: %s", content)
+		util.Log.Warnf("Failed to parse SUSE edition: %s", content)
 		return "unknown", "unknown"
 	}
 
 	re := regexp.MustCompile(`VERSION_ID=\"(.+)\"`)
 	result := re.FindStringSubmatch(strings.TrimSpace(content))
 	if len(result) != 2 {
-		util.Log.Warn("Failed to parse SUSE Linux version: %s", content)
+		util.Log.Warnf("Failed to parse SUSE Linux version: %s", content)
 		return "unknown", "unknown"
 	}
 	return name, result[1]

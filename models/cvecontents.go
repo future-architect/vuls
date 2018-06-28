@@ -183,6 +183,7 @@ type CveContent struct {
 	CweIDs        []string   `json:",omitempty"`
 	Published     time.Time
 	LastModified  time.Time
+	Mitigation    string // RedHat API
 }
 
 // Empty checks the content is empty
@@ -210,6 +211,8 @@ func NewCveContentType(name string) CveContentType {
 		return Ubuntu
 	case "debian":
 		return Debian
+	case "redhat_api":
+		return RedHatAPI
 	default:
 		return Unknown
 	}
@@ -227,6 +230,9 @@ const (
 
 	// RedHat is RedHat
 	RedHat CveContentType = "redhat"
+
+	// RedHatAPI is RedHat
+	RedHatAPI CveContentType = "redhat_api"
 
 	// Debian is Debian
 	Debian CveContentType = "debian"

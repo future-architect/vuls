@@ -82,6 +82,10 @@
   name = "github.com/knqyf263/go-rpm-version"
 
 [[constraint]]
+  branch = "unfixed-cves"
+  name = "github.com/knqyf263/gost"
+
+[[constraint]]
   branch = "nvd-json"
   name = "github.com/kotakanbe/go-cve-dictionary"
 

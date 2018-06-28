@@ -58,6 +58,10 @@ type ReportCmd struct {
 	ovalDBPath string
 	ovalDBURL  string
 
+	gostDBType string
+	gostDBPath string
+	gostDBURL  string
+
 	toSlack     bool
 	toStride    bool
 	toHipChat   bool
@@ -113,6 +117,9 @@ func (*ReportCmd) Usage() string {
 		[-ovaldb-type=sqlite3|mysql]
 		[-ovaldb-path=/path/to/oval.sqlite3]
 		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
+		[-gostdb-type=sqlite3|mysql]
+		[-gostdb-path=/path/to/gost.sqlite3]
+		[-gostdb-url=http://127.0.0.1:1325 or DB connection string]
 		[-cvss-over=7]
 		[-diff]
 		[-ignore-unscored-cves]
@@ -177,7 +184,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		&p.cveDBType,
 		"cvedb-type",
 		"sqlite3",
-		"DB type for fetching CVE dictionary (sqlite3, mysql or postgres)")
+		"DB type of CVE dictionary (sqlite3, mysql or postgres)")
 
 	defaultCveDBPath := filepath.Join(wd, "cve.sqlite3")
 	f.StringVar(
@@ -196,7 +203,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		&p.ovalDBType,
 		"ovaldb-type",
 		"sqlite3",
-		"DB type for fetching OVAL dictionary (sqlite3 or mysql)")
+		"DB type of OVAL dictionary (sqlite3 or mysql)")
 
 	defaultOvalDBPath := filepath.Join(wd, "oval.sqlite3")
 	f.StringVar(
@@ -210,6 +217,25 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"ovaldb-url",
 		"",
 		"http://goval-dictionary.com:1324 or mysql connection string")
+
+	f.StringVar(
+		&p.gostDBType,
+		"gostdb-type",
+		"sqlite3",
+		"DB type for gost dictionary (sqlite3 or mysql)")
+
+	defaultgostDBPath := filepath.Join(wd, "gost.sqlite3")
+	f.StringVar(
+		&p.gostDBPath,
+		"gostdb-path",
+		defaultgostDBPath,
+		"/path/to/gost.sqlite3")
+
+	f.StringVar(
+		&p.gostDBURL,
+		"gostdb-url",
+		"",
+		"http://gost-dictionary.com:1324 or mysql connection string")
 
 	f.Float64Var(
 		&p.cvssScoreOver,
@@ -322,7 +348,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.DebugSQL = p.debugSQL
 	c.Conf.LogDir = p.logDir
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
-	cvelog.SetLogger(p.logDir, false, c.Conf.Debug)
+	cvelog.SetLogger(p.logDir, false, c.Conf.Debug, false)
 
 	if err := c.Load(p.configPath, ""); err != nil {
 		util.Log.Errorf("Error loading %s, %s", p.configPath, err)
@@ -332,12 +358,19 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.Lang = p.lang
 	c.Conf.ResultsDir = p.resultsDir
 	c.Conf.RefreshCve = p.refreshCve
+
 	c.Conf.CveDBType = p.cveDBType
 	c.Conf.CveDBPath = p.cveDBPath
 	c.Conf.CveDBURL = p.cveDBURL
+
 	c.Conf.OvalDBType = p.ovalDBType
 	c.Conf.OvalDBPath = p.ovalDBPath
 	c.Conf.OvalDBURL = p.ovalDBURL
+
+	c.Conf.GostDBType = p.gostDBType
+	c.Conf.GostDBPath = p.gostDBPath
+	c.Conf.GostDBURL = p.gostDBURL
+
 	c.Conf.CvssScoreOver = p.cvssScoreOver
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
 	c.Conf.IgnoreUnfixed = p.ignoreUnfixed
@@ -506,15 +539,18 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	var dbclient report.DBClient
-	if dbclient, err = report.NewDBClient(
-		c.Conf.CveDBType,
-		c.Conf.CveDBURL,
-		c.Conf.CveDBPath,
-		c.Conf.OvalDBType,
-		c.Conf.OvalDBURL,
-		c.Conf.OvalDBPath,
-		c.Conf.DebugSQL,
-	); err != nil {
+	if dbclient, err = report.NewDBClient(report.DBClientConf{
+		CveDBType:  c.Conf.CveDBType,
+		CveDBURL:   c.Conf.CveDBURL,
+		CveDBPath:  c.Conf.CveDBPath,
+		OvalDBType: c.Conf.OvalDBType,
+		OvalDBURL:  c.Conf.OvalDBURL,
+		OvalDBPath: c.Conf.OvalDBPath,
+		GostDBType: c.Conf.GostDBType,
+		GostDBURL:  c.Conf.GostDBURL,
+		GostDBPath: c.Conf.GostDBPath,
+		DebugSQL:   c.Conf.DebugSQL,
+	}); err != nil {
 		util.Log.Errorf("Failed to New DB Clients: %s", err)
 		return subcommands.ExitFailure
 	}

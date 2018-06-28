@@ -804,7 +804,7 @@ func (o *debian) getCveIDsFromChangelog(
 
 	// Only logging the error.
 	o.log.Warnf("Failed to find the version in changelog: %s-%s", name, ver)
-	o.log.Debugf("Changelog of : %s-%s", name, ver, changelog)
+	o.log.Debugf("Changelog of %s-%s: %s", name, ver, changelog)
 
 	// If the version is not in changelog, return entire changelog to put into cache
 	pack := o.Packages[name]
