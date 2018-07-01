@@ -275,19 +275,27 @@ func (o *redhatBase) scanInstalledPackages() (models.Packages, error) {
 		Version: version,
 	}
 
-	installed := models.Packages{}
 	r := o.exec(rpmQa(o.Distro), noSudo)
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Scan packages failed: %s", r)
 	}
+	installed, _, err := o.parseInstalledPackages(r.Stdout)
+	if err != nil {
+		return nil, err
+	}
+	return installed, nil
+}
+
+func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, models.SrcPackages, error) {
+	installed := models.Packages{}
 
 	// openssl 0 1.0.1e	30.el6.11 x86_64
-	lines := strings.Split(r.Stdout, "\n")
+	lines := strings.Split(stdout, "\n")
 	for _, line := range lines {
 		if trimed := strings.TrimSpace(line); len(trimed) != 0 {
 			pack, err := o.parseInstalledPackagesLine(line)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 
 			// Kernel package may be isntalled multiple versions.
@@ -304,7 +312,7 @@ func (o *redhatBase) scanInstalledPackages() (models.Packages, error) {
 			installed[pack.Name] = pack
 		}
 	}
-	return installed, nil
+	return installed, nil, nil
 }
 
 func (o *redhatBase) parseInstalledPackagesLine(line string) (models.Package, error) {

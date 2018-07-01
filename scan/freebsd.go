@@ -159,6 +159,10 @@ func (o *bsd) scanPackages() error {
 	return nil
 }
 
+func (o *bsd) parseInstalledPackages(string) (models.Packages, models.SrcPackages, error) {
+	return nil, nil, nil
+}
+
 func (o *bsd) rebootRequired() (bool, error) {
 	r := o.exec("freebsd-version -k", noSudo)
 	if !r.isSuccess() {

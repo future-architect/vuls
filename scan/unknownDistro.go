@@ -17,6 +17,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 package scan
 
+import "github.com/future-architect/vuls/models"
+
 // inherit OsTypeInterface
 type unknown struct {
 	base
@@ -40,4 +42,8 @@ func (o *unknown) postScan() error {
 
 func (o *unknown) scanPackages() error {
 	return nil
+}
+
+func (o *unknown) parseInstalledPackages(string) (models.Packages, models.SrcPackages, error) {
+	return nil, nil, nil
 }

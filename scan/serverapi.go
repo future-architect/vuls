@@ -18,7 +18,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package scan
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -48,6 +50,8 @@ type osTypeInterface interface {
 	postScan() error
 	scanPackages() error
 	convertToModel() models.ScanResult
+
+	parseInstalledPackages(string) (models.Packages, models.SrcPackages, error)
 
 	runningContainers() ([]config.Container, error)
 	exitedContainers() ([]config.Container, error)
@@ -429,6 +433,81 @@ func Scan(timeoutSec int) error {
 		return err
 	}
 	return scanVulns(dir, scannedAt, timeoutSec)
+}
+
+// ViaHTTP scans servers by HTTP header and body
+func ViaHTTP(header http.Header, body string) (models.ScanResult, error) {
+	family := header.Get("X-Vuls-OS-Family")
+	if family == "" {
+		return models.ScanResult{}, errors.New("X-Vuls-OS-Family header is required")
+	}
+
+	release := header.Get("X-Vuls-OS-Release")
+	if release == "" {
+		return models.ScanResult{}, errors.New("X-Vuls-OS-Release header is required")
+	}
+
+	kernelRelease := header.Get("X-Vuls-Kernel-Release")
+	if kernelRelease == "" {
+		return models.ScanResult{}, errors.New("X-Vuls-Kernel-Release header is required")
+	}
+
+	kernelVersion := header.Get("X-Vuls-Kernel-Version")
+	if family == config.Debian && kernelVersion == "" {
+		return models.ScanResult{}, errors.New("X-Vuls-Kernel-Version header is required")
+	}
+
+	distro := config.Distro{
+		Family:  family,
+		Release: release,
+	}
+
+	kernel := models.Kernel{
+		Release: kernelRelease,
+		Version: kernelVersion,
+	}
+	base := base{
+		Distro: distro,
+		osPackages: osPackages{
+			Kernel: kernel,
+		},
+		log: util.Log,
+	}
+
+	var osType osTypeInterface
+	switch family {
+	case config.Debian, config.Ubuntu:
+		osType = &debian{base: base}
+	case config.RedHat:
+		osType = &rhel{
+			redhatBase: redhatBase{base: base},
+		}
+	case config.CentOS:
+		osType = &centos{
+			redhatBase: redhatBase{base: base},
+		}
+	default:
+		return models.ScanResult{}, fmt.Errorf("Server mode for %s is not implemented yet", family)
+	}
+
+	installedPackages, srcPackages, err := osType.parseInstalledPackages(body)
+	if err != nil {
+		return models.ScanResult{}, err
+	}
+
+	result := models.ScanResult{
+		Family:  family,
+		Release: release,
+		RunningKernel: models.Kernel{
+			Release: kernelRelease,
+			Version: kernelVersion,
+		},
+		Packages:    installedPackages,
+		SrcPackages: srcPackages,
+		ScannedCves: models.VulnInfos{},
+	}
+
+	return result, nil
 }
 
 func setupChangelogCache() error {
