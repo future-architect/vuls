@@ -27,7 +27,7 @@
 
 [[constraint]]
   name = "github.com/Azure/azure-sdk-for-go"
-  version = "15.1.0"
+  version = "18.0.0"
 
 [[constraint]]
   name = "github.com/BurntSushi/toml"
@@ -39,7 +39,7 @@
 
 [[constraint]]
   name = "github.com/aws/aws-sdk-go"
-  version = "1.13.31"
+  version = "1.14.19"
 
 [[constraint]]
   name = "github.com/boltdb/bolt"
@@ -86,8 +86,8 @@
   name = "github.com/knqyf263/gost"
 
 [[constraint]]
-  branch = "nvd-json"
   name = "github.com/kotakanbe/go-cve-dictionary"
+  branch = "nvd-json"
 
 [[constraint]]
   name = "github.com/kotakanbe/go-pingscanner"
@@ -100,6 +100,10 @@
 [[constraint]]
   branch = "master"
   name = "github.com/kotakanbe/logrus-prefixed-formatter"
+
+[[constraint]]
+  name = "github.com/mattn/go-sqlite3"
+  version = "1.9.0"
 
 [[constraint]]
   branch = "master"

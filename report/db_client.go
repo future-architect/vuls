@@ -7,7 +7,6 @@ import (
 	gostdb "github.com/knqyf263/gost/db"
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
 	ovaldb "github.com/kotakanbe/goval-dictionary/db"
-	log "github.com/sirupsen/logrus"
 )
 
 // DBClient is a dictionarie's db client for reporting
@@ -35,68 +34,88 @@ type DBClientConf struct {
 }
 
 // NewDBClient returns db clients
-func NewDBClient(cnf DBClientConf) (dbclient DBClient, err error) {
-	var cveDriver cvedb.DB
-	if cveDriver, err = NewCveDB(cnf); err != nil {
-		return DBClient{}, fmt.Errorf("Failed to New DB Client. err: %s", err)
+func NewDBClient(cnf DBClientConf) (dbclient *DBClient, locked bool, err error) {
+	cveDriver, locked, err := NewCveDB(cnf)
+	if err != nil {
+		return nil, locked, err
 	}
-	return DBClient{
+
+	ovaldb, locked, err := NewOvalDB(cnf)
+	if locked {
+		return nil, true, fmt.Errorf("OvalDB is locked: %s", cnf.OvalDBPath)
+	} else if err != nil {
+		util.Log.Warnf("Unable to use OvalDB: %s, err: %s", cnf.OvalDBPath, err)
+	}
+
+	gostdb, locked, err := NewGostDB(cnf)
+	if locked {
+		return nil, true, fmt.Errorf("GostDB is locked: %s", cnf.GostDBPath)
+	} else if err != nil {
+		util.Log.Warnf("Unable to use GostDB: %s, err: %s", cnf.GostDBPath, err)
+	}
+
+	return &DBClient{
 		CveDB:  cveDriver,
-		OvalDB: NewOvalDB(cnf),
-		GostDB: NewGostDB(cnf),
-	}, nil
+		OvalDB: ovaldb,
+		GostDB: gostdb,
+	}, false, nil
 }
 
 // NewCveDB returns cve db client
-func NewCveDB(cnf DBClientConf) (driver cvedb.DB, err error) {
+func NewCveDB(cnf DBClientConf) (driver cvedb.DB, locked bool, err error) {
 	util.Log.Debugf("open cve-dictionary db (%s)", cnf.CveDBType)
 	path := cnf.CveDBURL
 	if cnf.CveDBType == "sqlite3" {
 		path = cnf.CveDBPath
 	}
 
-	util.Log.Debugf("Open cve-dictionary db (%s): %s",
-		cnf.CveDBType, path)
-	if driver, err = cvedb.NewDB(cnf.CveDBType, path, cnf.DebugSQL); err != nil {
-		log.Error(err)
-		return nil, fmt.Errorf("Failed to New Cve DB. err: %s", err)
+	util.Log.Debugf("Open cve-dictionary db (%s): %s", cnf.CveDBType, path)
+	driver, locked, err = cvedb.NewDB(cnf.CveDBType, path, cnf.DebugSQL)
+	if err != nil {
+		err = fmt.Errorf("Failed to init Cve DB. err: %s, path: %s", err, path)
+		if locked {
+			return nil, true, err
+		}
+		return nil, true, err
 	}
-
-	return driver, nil
+	return driver, false, nil
 }
 
 // NewOvalDB returns oval db client
-func NewOvalDB(cnf DBClientConf) (driver ovaldb.DB) {
-	var err error
+func NewOvalDB(cnf DBClientConf) (driver ovaldb.DB, locked bool, err error) {
 	path := cnf.OvalDBPath
 	if cnf.OvalDBType == "sqlite3" {
 		path = cnf.OvalDBPath
 	}
 
-	util.Log.Debugf("Open oval-dictionary db (%s): %s",
-		cnf.OvalDBType, path)
-
-	if driver, err = ovaldb.NewDB("", cnf.OvalDBType, path, cnf.DebugSQL); err != nil {
-		util.Log.Debugf("oval-dictionary db is not detected")
-		return nil
+	util.Log.Debugf("Open oval-dictionary db (%s): %s", cnf.OvalDBType, path)
+	driver, locked, err = ovaldb.NewDB("", cnf.OvalDBType, path, cnf.DebugSQL)
+	if err != nil {
+		err = fmt.Errorf("Failed to new OVAL DB. err: %s", err)
+		if locked {
+			return nil, true, err
+		}
+		return nil, false, err
 	}
-	return driver
+	return driver, false, nil
 }
 
 // NewGostDB returns db client for Gost
-func NewGostDB(cnf DBClientConf) (driver gostdb.DB) {
-	var err error
+func NewGostDB(cnf DBClientConf) (driver gostdb.DB, locked bool, err error) {
 	path := cnf.GostDBPath
 	if cnf.GostDBType == "sqlite3" {
 		path = cnf.GostDBPath
 	}
 
 	util.Log.Debugf("Open gost db (%s): %s", cnf.GostDBType, path)
-	if driver, err = gostdb.NewDB(cnf.GostDBType, path, cnf.DebugSQL); err != nil {
-		util.Log.Debugf("oval-dictionary db is not detected")
-		return nil
+	if driver, locked, err = gostdb.NewDB(cnf.GostDBType, path, cnf.DebugSQL); err != nil {
+		if locked {
+			util.Log.Debugf("gost db is locked: %s, %T", err, err)
+			return nil, true, err
+		}
+		return nil, false, err
 	}
-	return driver
+	return driver, false, nil
 }
 
 // CloseDB close dbs

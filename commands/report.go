@@ -538,8 +538,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	var dbclient report.DBClient
-	if dbclient, err = report.NewDBClient(report.DBClientConf{
+	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
 		CveDBType:  c.Conf.CveDBType,
 		CveDBURL:   c.Conf.CveDBURL,
 		CveDBPath:  c.Conf.CveDBPath,
@@ -550,13 +549,20 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		GostDBURL:  c.Conf.GostDBURL,
 		GostDBPath: c.Conf.GostDBPath,
 		DebugSQL:   c.Conf.DebugSQL,
-	}); err != nil {
-		util.Log.Errorf("Failed to New DB Clients: %s", err)
+	})
+	if err != nil {
+		util.Log.Errorf("Failed to init DB Clients: %s", err)
 		return subcommands.ExitFailure
 	}
+
+	if locked {
+		util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %s", err)
+		return subcommands.ExitFailure
+	}
+
 	defer dbclient.CloseDB()
 
-	if res, err = report.FillCveInfos(dbclient, res, dir); err != nil {
+	if res, err = report.FillCveInfos(*dbclient, res, dir); err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}

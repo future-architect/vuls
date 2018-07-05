@@ -7,8 +7,8 @@
     "storage",
     "version"
   ]
-  revision = "fad8443a79b0e755c18c3bec29a8d2bedab0b421"
-  version = "v15.3.0"
+  revision = "fbe7db0e3f9793ba3e5704efbab84f51436c136e"
+  version = "v18.0.0"
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
@@ -67,8 +67,8 @@
     "service/s3",
     "service/sts"
   ]
-  revision = "8f7d1442888a1f96115869cec4af9855018ece98"
-  version = "v1.14.18"
+  revision = "e4f914808a9655ef3220bb0082002239cc7f3561"
+  version = "v1.14.19"
 
 [[projects]]
   name = "github.com/boltdb/bolt"
@@ -267,7 +267,7 @@
     "models",
     "util"
   ]
-  revision = "ffa776869080c4ccf55aa660cf42e3fcd41442b3"
+  revision = "35721fdbb0398ad9e3b94189c0997dcb05ba558c"
 
 [[projects]]
   branch = "nvd-json"
@@ -278,7 +278,7 @@
     "log",
     "models"
   ]
-  revision = "f0efbb5f9578cb58a9e88fa9216b54fbe5ca805d"
+  revision = "9bc55b42b35d7a4134189c15b39b1be666ee52d6"
 
 [[projects]]
   name = "github.com/kotakanbe/go-pingscanner"
@@ -295,7 +295,7 @@
     "db/rdb",
     "models"
   ]
-  revision = "6f9ce97436c38698331c75909bfb9acaf8796a53"
+  revision = "da00f5d2aa0b10aa0c5e8bf554db0a8ee47336f5"
 
 [[projects]]
   branch = "master"
@@ -493,7 +493,7 @@
     "unix",
     "windows"
   ]
-  revision = "7138fd3d9dc8335c567ca206f4333fb75eb05d56"
+  revision = "151529c776cdc58ddbe7963ba9af779f3577b419"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -573,6 +573,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a3a25ab3ad523e7f2842fb1eb64bdc0d00566734d005a44ded26851432c04907"
+  inputs-digest = "0cf77a3dfd7894c04f836e435ffb2df840f88bbe4be9870c2f9b8e0b7552e789"
   solver-name = "gps-cdcl"
   solver-version = 1
