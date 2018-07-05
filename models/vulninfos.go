@@ -640,6 +640,9 @@ const (
 	// RedHatAPIStr is a String representation of RedHatAPIMatch
 	RedHatAPIStr = "RedHatAPIMatch"
 
+	// DebianSecurityTrackerMatchStr is a String representation of DebianSecurityTrackerMatch
+	DebianSecurityTrackerMatchStr = "DebianSecurityTrackerMatch"
+
 	// ChangelogExactMatchStr is a String representation of ChangelogExactMatch
 	ChangelogExactMatchStr = "ChangelogExactMatch"
 
@@ -668,6 +671,9 @@ var (
 
 	// RedHatAPIMatch ranking how confident the CVE-ID was deteted correctly
 	RedHatAPIMatch = Confidence{100, RedHatAPIStr, 0}
+
+	// DebianSecurityTrackerMatch ranking how confident the CVE-ID was deteted correctly
+	DebianSecurityTrackerMatch = Confidence{100, DebianSecurityTrackerMatchStr, 0}
 
 	// ChangelogExactMatch is a ranking how confident the CVE-ID was deteted correctly
 	ChangelogExactMatch = Confidence{95, ChangelogExactMatchStr, 3}

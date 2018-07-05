@@ -156,7 +156,7 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string) erro
 	}
 
 	util.Log.Infof("Fill CVE detailed information with CVE-DB")
-	if err := fillWithCveDB(dbclient.CveDB, r, cpeURIs); err != nil {
+	if err := fillCveDetail(dbclient.CveDB, r); err != nil {
 		return fmt.Errorf("Failed to fill with CVE: %s", err)
 	}
 
@@ -198,10 +198,6 @@ func fillCveDetail(driver cvedb.DB, r *models.ScanResult) error {
 		}
 	}
 	return nil
-}
-
-func fillWithCveDB(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) error {
-	return fillCveDetail(driver, r)
 }
 
 // FillWithOval fetches OVAL database
@@ -271,39 +267,8 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (err error) {
 func FillWithGost(driver gostdb.DB, r *models.ScanResult) (err error) {
 	gostClient := gost.NewClient(r.Family)
 
-	// var family string
-	// switch r.Family {
-	// case c.RedHat, c.CentOS:
-	// gostClient = gost.Base{}
-	// family = c.RedHat
-	// //TODO Debian
-	// // case c.Amazon, c.Raspbian, c.FreeBSD, c.Windows:
-	// // return nil
-	// case c.ServerTypePseudo:
-	// return nil
-	// default:
-	// if r.Family == "" {
-	// return fmt.Errorf("Probably an error occurred during scanning. Check the error message")
-	// }
-	// return nil
-	// }
-
-	// TODO
-	// util.Log.Debugf("Check whether oval is already fetched: %s %s",
-	// family, r.Release)
-	// ok, err := ovalClient.CheckIfOvalFetched(driver, ovalFamily, r.Release)
-	// if err != nil {
-	// return err
-	// }
-	// if !ok {
-	// util.Log.Warnf("OVAL entries of %s %s are not found. It's recommended to use OVAL to improve scanning accuracy. For details, see https://github.com/kotakanbe/goval-dictionary#usage , Then report with --ovaldb-path or --ovaldb-url flag", ovalFamily, r.Release)
-	// return nil
-	// }
-	// _, err = ovalClient.CheckIfOvalFresh(driver, ovalFamily, r.Release)
-	// if err != nil {
-	// return err
-	// }
-
+	// TODO chekc if gostfetched
+	// TODO chekc if gost fresh
 	return gostClient.FillWithGost(driver, r)
 }
 

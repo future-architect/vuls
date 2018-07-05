@@ -18,8 +18,8 @@
     "autorest/azure",
     "autorest/date"
   ]
-  revision = "e6d2a85bbb5cd2a3162e4942594e1e520e442b0b"
-  version = "v10.11.4"
+  revision = "1f7cd6cfe0adea687ad44a512dfe76140f804318"
+  version = "v10.12.0"
 
 [[projects]]
   name = "github.com/BurntSushi/toml"
@@ -67,8 +67,8 @@
     "service/s3",
     "service/sts"
   ]
-  revision = "fde4ded7becdeae4d26bf1212916aabba79349b4"
-  version = "v1.14.12"
+  revision = "8f7d1442888a1f96115869cec4af9855018ece98"
+  version = "v1.14.18"
 
 [[projects]]
   name = "github.com/boltdb/bolt"
@@ -267,7 +267,7 @@
     "models",
     "util"
   ]
-  revision = "ff2e89041a2636fcd713098df26994f919ee92cb"
+  revision = "ffa776869080c4ccf55aa660cf42e3fcd41442b3"
 
 [[projects]]
   branch = "nvd-json"
@@ -278,7 +278,7 @@
     "log",
     "models"
   ]
-  revision = "bcb397de010279b6d5f5420638eeb1f98f40bf3a"
+  revision = "f0efbb5f9578cb58a9e88fa9216b54fbe5ca805d"
 
 [[projects]]
   name = "github.com/kotakanbe/go-pingscanner"
@@ -295,7 +295,7 @@
     "db/rdb",
     "models"
   ]
-  revision = "1e34531957d224f29d6f401416e88c38834ee9b1"
+  revision = "6f9ce97436c38698331c75909bfb9acaf8796a53"
 
 [[projects]]
   branch = "master"
@@ -419,7 +419,7 @@
   branch = "master"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "75068beb13ada9c0ddde611f678523fda7352650"
+  revision = "e54a77765aca7bbdd8e56c1c54f60579968b2dc9"
 
 [[projects]]
   name = "github.com/spf13/afero"
@@ -484,7 +484,7 @@
     "idna",
     "publicsuffix"
   ]
-  revision = "afe8f62b1d6bbd81f31868121a50b06d8188e1f9"
+  revision = "ed29d75add3d7c4bf7ca65aac0c6df3d1420216f"
 
 [[projects]]
   branch = "master"
@@ -493,7 +493,7 @@
     "unix",
     "windows"
   ]
-  revision = "ad87a3a340fa7f3bed189293fbfa7a9b7e021ae1"
+  revision = "7138fd3d9dc8335c567ca206f4333fb75eb05d56"
 
 [[projects]]
   name = "golang.org/x/text"
