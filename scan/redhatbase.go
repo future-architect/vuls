@@ -305,7 +305,8 @@ func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, mod
 			isKernel, running := isRunningKernel(pack, o.Distro.Family, o.Kernel)
 			if isKernel {
 				if o.Kernel.Release == "" {
-					// When the running kernel release is unknown, use the latest version
+					// When the running kernel release is unknown,
+					// use the latest release among the installed release
 					kernelRelease := ver.NewVersion(fmt.Sprintf("%s-%s", pack.Version, pack.Release))
 					if kernelRelease.LessThan(latestKernelRelease) {
 						continue

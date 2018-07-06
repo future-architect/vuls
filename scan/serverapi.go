@@ -32,6 +32,12 @@ import (
 	"github.com/future-architect/vuls/util"
 )
 
+var (
+	errOSFamilyHeader      = errors.New("X-Vuls-OS-Family header is required")
+	errOSReleaseHeader     = errors.New("X-Vuls-OS-Release header is required")
+	errKernelVersionHeader = errors.New("X-Vuls-Kernel-Version header is required")
+)
+
 var servers, errServers []osTypeInterface
 
 // Base Interface of redhat, debian, freebsd
@@ -439,12 +445,12 @@ func Scan(timeoutSec int) error {
 func ViaHTTP(header http.Header, body string) (models.ScanResult, error) {
 	family := header.Get("X-Vuls-OS-Family")
 	if family == "" {
-		return models.ScanResult{}, errors.New("X-Vuls-OS-Family header is required")
+		return models.ScanResult{}, errOSFamilyHeader
 	}
 
 	release := header.Get("X-Vuls-OS-Release")
 	if release == "" {
-		return models.ScanResult{}, errors.New("X-Vuls-OS-Release header is required")
+		return models.ScanResult{}, errOSReleaseHeader
 	}
 
 	kernelRelease := header.Get("X-Vuls-Kernel-Release")
@@ -454,7 +460,7 @@ func ViaHTTP(header http.Header, body string) (models.ScanResult, error) {
 
 	kernelVersion := header.Get("X-Vuls-Kernel-Version")
 	if family == config.Debian && kernelVersion == "" {
-		return models.ScanResult{}, errors.New("X-Vuls-Kernel-Version header is required")
+		return models.ScanResult{}, errKernelVersionHeader
 	}
 
 	distro := config.Distro{
