@@ -37,6 +37,7 @@ import (
 	"github.com/future-architect/vuls/scan"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
+	cvelog "github.com/kotakanbe/go-cve-dictionary/log"
 )
 
 // ServerCmd is subcommand for server
@@ -197,6 +198,7 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.DebugSQL = p.debugSQL
 	c.Conf.LogDir = p.logDir
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
+	cvelog.SetLogger(p.logDir, false, c.Conf.Debug)
 
 	c.Conf.Lang = p.lang
 	c.Conf.CveDBType = p.cveDBType
