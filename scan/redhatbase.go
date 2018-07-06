@@ -288,6 +288,7 @@ func (o *redhatBase) scanInstalledPackages() (models.Packages, error) {
 
 func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, models.SrcPackages, error) {
 	installed := models.Packages{}
+	latestKernelRelease := ver.NewVersion("")
 
 	// openssl 0 1.0.1e	30.el6.11 x86_64
 	lines := strings.Split(stdout, "\n")
@@ -303,11 +304,19 @@ func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, mod
 			// pay attention only to the running kernel
 			isKernel, running := isRunningKernel(pack, o.Distro.Family, o.Kernel)
 			if isKernel {
-				if !running {
+				if o.Kernel.Release == "" {
+					// When the running kernel release is unknown, use the latest version
+					kernelRelease := ver.NewVersion(fmt.Sprintf("%s-%s", pack.Version, pack.Release))
+					if kernelRelease.LessThan(latestKernelRelease) {
+						continue
+					}
+					latestKernelRelease = kernelRelease
+				} else if !running {
 					o.log.Debugf("Not a running kernel. pack: %#v, kernel: %#v", pack, o.Kernel)
 					continue
+				} else {
+					o.log.Debugf("Found a running kernel. pack: %#v, kernel: %#v", pack, o.Kernel)
 				}
-				o.log.Debugf("Found a running kernel. pack: %#v, kernel: %#v", pack, o.Kernel)
 			}
 			installed[pack.Name] = pack
 		}

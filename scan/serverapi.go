@@ -449,7 +449,7 @@ func ViaHTTP(header http.Header, body string) (models.ScanResult, error) {
 
 	kernelRelease := header.Get("X-Vuls-Kernel-Release")
 	if kernelRelease == "" {
-		return models.ScanResult{}, errors.New("X-Vuls-Kernel-Release header is required")
+		util.Log.Warn("If X-Vuls-Kernel-Release is not specified, there is a possibility of false detection")
 	}
 
 	kernelVersion := header.Get("X-Vuls-Kernel-Version")
