@@ -627,10 +627,14 @@ func summaryLines() string {
 	}
 
 	for i, vinfo := range vinfos {
-		summary := vinfo.Titles(
-			config.Conf.Lang, currentScanResult.Family)[0].Value
-		cvssScore := fmt.Sprintf("| %4.1f",
-			vinfo.MaxCvssScore().Value.Score)
+		// summary := vinfo.Titles(
+		// config.Conf.Lang, currentScanResult.Family)[0].Value
+
+		max := vinfo.MaxCvssScore().Value.Score
+		cvssScore := "|     "
+		if 0 < max {
+			cvssScore = fmt.Sprintf("| %4.1f", max)
+		}
 
 		packname := vinfo.AffectedPackages.FormatTuiSummary()
 		packname += strings.Join(vinfo.CpeURIs, ", ")
@@ -640,8 +644,9 @@ func summaryLines() string {
 			fmt.Sprintf(indexFormat, i+1),
 			vinfo.CveID,
 			cvssScore + " |",
+			fmt.Sprintf("%7s |", vinfo.AttackVector()),
+			fmt.Sprintf("%7s |", vinfo.PatchStatus()),
 			packname,
-			summary,
 		}
 		icols := make([]interface{}, len(cols))
 		for j := range cols {
@@ -790,10 +795,14 @@ func detailLines() (string, error) {
 	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores(r.Family)...)
 	var cols []interface{}
 	for _, score := range scores {
-		if score.Value.Score == 0 {
+		if score.Value.Score == 0 && score.Value.Severity == "" {
 			continue
 		}
-		scoreVec := fmt.Sprintf("%3.1f/%s", score.Value.Score, score.Value.Vector)
+		scoreStr := "-"
+		if 0 < score.Value.Score {
+			scoreStr = fmt.Sprintf("%3.1f", score.Value.Score)
+		}
+		scoreVec := fmt.Sprintf("%s/%s", scoreStr, score.Value.Vector)
 		cols = []interface{}{
 			scoreVec,
 			score.Value.Severity,

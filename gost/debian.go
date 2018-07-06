@@ -64,7 +64,6 @@ func (deb Debian) convertToModel(cve *gostmodels.DebianCVE) *models.CveContent {
 			break
 		}
 	}
-	//TODO sccope
 	return &models.CveContent{
 		Type:          models.DebianSecurityTracker,
 		CveID:         cve.CveID,
@@ -72,5 +71,8 @@ func (deb Debian) convertToModel(cve *gostmodels.DebianCVE) *models.CveContent {
 		Cvss2Severity: severity,
 		Cvss3Severity: severity,
 		SourceLink:    "https://security-tracker.debian.org/tracker/" + cve.CveID,
+		Optional: map[string]string{
+			"attack range": cve.Scope,
+		},
 	}
 }

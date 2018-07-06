@@ -161,6 +161,11 @@ func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
+	// RedHat API has one line title.
+	if cont, found := v.CveContents[RedHatAPI]; found && 0 < len(cont.Title) {
+		values = append(values, CveContentStr{RedHatAPI, cont.Title})
+	}
+
 	order := CveContentTypes{Nvd, NvdXML, NewCveContentType(myFamily)}
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
@@ -270,7 +275,7 @@ func (v VulnInfo) Cvss2Scores(myFamily string) (values []CveContentCvss) {
 	}
 
 	// An OVAL entry in Ubuntu and Debian has only severity (CVSS score isn't included).
-	// Show severity and dummy score calculated roghly.
+	// Show severity and dummy score calculated roughly.
 	order = append(order, AllCveContetTypes.Except(order...)...)
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found &&
@@ -427,7 +432,45 @@ func (v VulnInfo) MaxCvss2Score() CveContentCvss {
 	return value
 }
 
-// CveContentCvss has CveContentType and Cvss2
+// AttackVector returns attack vector string
+func (v VulnInfo) AttackVector() string {
+	for _, cnt := range v.CveContents {
+		if strings.HasPrefix(cnt.Cvss2Vector, "AV:N") ||
+			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:N") {
+			return "Network"
+		} else if strings.HasPrefix(cnt.Cvss2Vector, "AV:A") ||
+			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:A") {
+			return "Adjacent Network"
+		} else if strings.HasPrefix(cnt.Cvss2Vector, "AV:L") ||
+			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:L") {
+			return "Local"
+		} else if strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:P") {
+			return "Physical"
+		}
+	}
+	if cont, found := v.CveContents[DebianSecurityTracker]; found {
+		if attackRange, found := cont.Optional["attack range"]; found {
+			return attackRange
+		}
+	}
+	return ""
+}
+
+// PatchStatus returns attack vector string
+func (v VulnInfo) PatchStatus() string {
+	// Vuls don't know patch status of the CPE
+	if len(v.CpeURIs) != 0 {
+		return ""
+	}
+	for _, p := range v.AffectedPackages {
+		if p.NotFixedYet {
+			return "Unfixed"
+		}
+	}
+	return "Fixed"
+}
+
+// CveContentCvss has CVSS information
 type CveContentCvss struct {
 	Type  CveContentType
 	Value Cvss

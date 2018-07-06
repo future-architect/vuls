@@ -183,7 +183,8 @@ type CveContent struct {
 	CweIDs        []string   `json:",omitempty"`
 	Published     time.Time
 	LastModified  time.Time
-	Mitigation    string // RedHat API
+	Mitigation    string            // RedHat API
+	Optional      map[string]string `json:",omitempty"`
 }
 
 // Empty checks the content is empty
@@ -213,6 +214,8 @@ func NewCveContentType(name string) CveContentType {
 		return Debian
 	case "redhat_api":
 		return RedHatAPI
+	case "debian_security_tracker":
+		return DebianSecurityTracker
 	default:
 		return Unknown
 	}
@@ -257,7 +260,16 @@ const (
 type CveContentTypes []CveContentType
 
 // AllCveContetTypes has all of CveContentTypes
-var AllCveContetTypes = CveContentTypes{Nvd, NvdXML, Jvn, RedHat, Debian, Ubuntu}
+var AllCveContetTypes = CveContentTypes{
+	Nvd,
+	NvdXML,
+	Jvn,
+	RedHat,
+	Debian,
+	Ubuntu,
+	RedHatAPI,
+	DebianSecurityTracker,
+}
 
 // Except returns CveContentTypes except for given args
 func (c CveContentTypes) Except(excepts ...CveContentType) (excepted CveContentTypes) {

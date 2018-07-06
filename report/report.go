@@ -151,6 +151,7 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string) erro
 		return fmt.Errorf("Failed to detect vulns of %s: %s", cpeURIs, err)
 	}
 
+	util.Log.Infof("Fill with Gost")
 	if err := FillWithGost(dbclient.GostDB, r); err != nil {
 		return fmt.Errorf("Failed to fill with Gost: %s", err)
 	}
