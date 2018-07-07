@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package report
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 
@@ -25,13 +26,31 @@ import (
 	"github.com/pkg/errors"
 )
 
-// HTTPWriter writes results to S3
-type HTTPWriter struct {
+// HTTPRequestWriter writes results to HTTP request
+type HTTPRequestWriter struct {
+	URL string
+}
+
+// Write sends results as HTTP response
+func (w HTTPRequestWriter) Write(rs ...models.ScanResult) (err error) {
+	for _, r := range rs {
+		b := new(bytes.Buffer)
+		json.NewEncoder(b).Encode(r)
+		_, err = http.Post(w.URL, "application/json; charset=utf-8", b)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// HTTPResponseWriter writes results to HTTP response
+type HTTPResponseWriter struct {
 	Writer http.ResponseWriter
 }
 
 // Write sends results as HTTP response
-func (w HTTPWriter) Write(rs ...models.ScanResult) (err error) {
+func (w HTTPResponseWriter) Write(rs ...models.ScanResult) (err error) {
 	res, err := json.Marshal(rs)
 	if err != nil {
 		return errors.Wrap(err, "Failed to marshal scah results")

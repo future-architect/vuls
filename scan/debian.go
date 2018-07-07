@@ -375,7 +375,6 @@ func (o *debian) parseInstalledPackages(stdout string) (models.Packages, models.
 	// openssh-server,ii ,1:6.7p1-5+deb8u3,openssh,1:6.7p1-5+deb8u3
 	// tar,ii ,1.27.1-2+b1,tar (1.27.1-2),1.27.1-2
 	lines := strings.Split(stdout, "\n")
-	fmt.Println(lines)
 	for _, line := range lines {
 		if trimmed := strings.TrimSpace(line); len(trimmed) != 0 {
 			name, status, version, srcName, srcVersion, err := o.parseScannedPackagesLine(trimmed)

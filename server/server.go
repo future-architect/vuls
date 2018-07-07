@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"time"
 
@@ -42,13 +43,20 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	result := models.ScanResult{ScannedCves: models.VulnInfos{}}
 
 	contentType := r.Header.Get("Content-Type")
-	if contentType == "application/json" {
+	mediatype, _, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		util.Log.Error(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if mediatype == "application/json" {
 		if err = json.NewDecoder(r.Body).Decode(&result); err != nil {
 			util.Log.Error(err)
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
-	} else if contentType == "text/plain" {
+	} else if mediatype == "text/plain" {
 		buf := new(bytes.Buffer)
 		io.Copy(buf, r.Body)
 		if result, err = scan.ViaHTTP(r.Header, buf.String()); err != nil {
@@ -57,6 +65,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
+		util.Log.Error(mediatype)
 		http.Error(w, fmt.Sprintf("Invalid Content-Type: %s", contentType), http.StatusUnsupportedMediaType)
 		return
 	}
@@ -69,10 +78,13 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// report
 	reports := []report.ResultWriter{
-		report.HTTPWriter{Writer: w},
+		report.HTTPResponseWriter{Writer: w},
 	}
 	if c.Conf.ToLocalFile {
-		scannedAt := time.Now().Truncate(1 * time.Hour)
+		scannedAt := result.ScannedAt
+		if scannedAt.IsZero() {
+			scannedAt = time.Now().Truncate(1 * time.Hour)
+		}
 		dir, err := scan.EnsureResultDir(scannedAt)
 		if err != nil {
 			util.Log.Errorf("Failed to ensure the result directory: %s", err)
