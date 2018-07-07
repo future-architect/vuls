@@ -36,6 +36,7 @@ var (
 	errOSFamilyHeader      = errors.New("X-Vuls-OS-Family header is required")
 	errOSReleaseHeader     = errors.New("X-Vuls-OS-Release header is required")
 	errKernelVersionHeader = errors.New("X-Vuls-Kernel-Version header is required")
+	errServerNameHeader    = errors.New("X-Vuls-Server-Name header is required")
 )
 
 var servers, errServers []osTypeInterface
@@ -434,7 +435,7 @@ func Scan(timeoutSec int) error {
 
 	util.Log.Info("Scanning vulnerable OS packages...")
 	scannedAt := time.Now()
-	dir, err := ensureResultDir(scannedAt)
+	dir, err := EnsureResultDir(scannedAt)
 	if err != nil {
 		return err
 	}
@@ -461,6 +462,11 @@ func ViaHTTP(header http.Header, body string) (models.ScanResult, error) {
 	kernelVersion := header.Get("X-Vuls-Kernel-Version")
 	if family == config.Debian && kernelVersion == "" {
 		return models.ScanResult{}, errKernelVersionHeader
+	}
+
+	serverName := header.Get("X-Vuls-Server-Name")
+	if config.Conf.ToLocalFile && serverName == "" {
+		return models.ScanResult{}, errServerNameHeader
 	}
 
 	distro := config.Distro{
@@ -502,8 +508,9 @@ func ViaHTTP(header http.Header, body string) (models.ScanResult, error) {
 	}
 
 	result := models.ScanResult{
-		Family:  family,
-		Release: release,
+		ServerName: serverName,
+		Family:     family,
+		Release:    release,
 		RunningKernel: models.Kernel{
 			Release: kernelRelease,
 			Version: kernelVersion,
@@ -576,7 +583,8 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 	return nil
 }
 
-func ensureResultDir(scannedAt time.Time) (currentDir string, err error) {
+// EnsureResultDir ensures the directory for scan results
+func EnsureResultDir(scannedAt time.Time) (currentDir string, err error) {
 	jsonDirName := scannedAt.Format(time.RFC3339)
 
 	resultsDir := config.Conf.ResultsDir

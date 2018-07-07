@@ -18,12 +18,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package commands
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -31,10 +28,9 @@ import (
 	// "github.com/future-architect/vuls/Server"
 
 	c "github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/report"
-	"github.com/future-architect/vuls/scan"
+	"github.com/future-architect/vuls/server"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
 	cvelog "github.com/kotakanbe/go-cve-dictionary/log"
@@ -46,6 +42,7 @@ type ServerCmd struct {
 	debug      bool
 	debugSQL   bool
 	configPath string
+	resultsDir string
 	logDir     string
 
 	cvssScoreOver      float64
@@ -62,6 +59,10 @@ type ServerCmd struct {
 	ovalDBType string
 	ovalDBPath string
 	ovalDBURL  string
+
+	toLocalFile bool
+
+	formatJSON bool
 }
 
 // Name return subcommand name
@@ -120,6 +121,9 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
+
+	defaultResultsDir := filepath.Join(wd, "results")
+	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 
 	defaultLogDir := util.GetDefaultLogDir()
 	f.StringVar(&p.logDir, "log-dir", defaultLogDir, "/path/to/log")
@@ -185,6 +189,15 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 		"http-proxy",
 		"",
 		"http://proxy-url:port (default: empty)")
+	f.BoolVar(&p.formatJSON,
+		"format-json",
+		false,
+		fmt.Sprintf("JSON format"))
+
+	f.BoolVar(&p.toLocalFile,
+		"to-localfile",
+		false,
+		fmt.Sprintf("Write report to localfile"))
 	f.StringVar(
 		&p.listen,
 		"listen",
@@ -201,6 +214,7 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	cvelog.SetLogger(p.logDir, false, c.Conf.Debug)
 
 	c.Conf.Lang = p.lang
+	c.Conf.ResultsDir = p.resultsDir
 	c.Conf.CveDBType = p.cveDBType
 	c.Conf.CveDBPath = p.cveDBPath
 	c.Conf.CveDBURL = p.cveDBURL
@@ -212,11 +226,17 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.IgnoreUnfixed = p.ignoreUnfixed
 	c.Conf.HTTPProxy = p.httpProxy
 
+	c.Conf.ToLocalFile = p.toLocalFile
+
+	c.Conf.FormatJSON = p.formatJSON
+
+	var err error
+
 	util.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnReport() {
 		return subcommands.ExitUsageError
 	}
-	if err := report.CveClient.CheckHealth(); err != nil {
+	if err = report.CveClient.CheckHealth(); err != nil {
 		util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
 		util.Log.Errorf("Run go-cve-dictionary as server mode before Servering or run with -cvedb-path option")
 		return subcommands.ExitFailure
@@ -231,7 +251,7 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if c.Conf.OvalDBURL != "" {
 		util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDBURL)
-		err := oval.Base{}.CheckHTTPHealth()
+		err = oval.Base{}.CheckHTTPHealth()
 		if err != nil {
 			util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
 			util.Log.Errorf("Run goval-dictionary as server mode before Servering or run with -ovaldb-path option")
@@ -244,7 +264,6 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	var dbclient report.DBClient
-	var err error
 	if dbclient, err = report.NewDBClient(
 		c.Conf.CveDBType,
 		c.Conf.CveDBURL,
@@ -259,52 +278,13 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 	defer dbclient.CloseDB()
 
-	http.Handle("/", vulsHandler{dbclient: dbclient})
+	http.Handle("/", server.VulsHandler{
+		DBclient: dbclient,
+	})
 	util.Log.Infof("Listening on %s", p.listen)
 	if err := http.ListenAndServe(p.listen, nil); err != nil {
 		util.Log.Errorf("Failed to start server: %s", err)
 		return subcommands.ExitFailure
 	}
 	return subcommands.ExitSuccess
-}
-
-type vulsHandler struct {
-	dbclient report.DBClient
-}
-
-func (h vulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var err error
-	result := models.ScanResult{ScannedCves: models.VulnInfos{}}
-
-	contentType := r.Header.Get("Content-Type")
-	if contentType == "application/json" {
-		if err = json.NewDecoder(r.Body).Decode(&result); err != nil {
-			http.Error(w, "Invalid JSON", http.StatusBadRequest)
-			return
-		}
-	} else if contentType == "text/plain" {
-		buf := new(bytes.Buffer)
-		io.Copy(buf, r.Body)
-		if result, err = scan.ViaHTTP(r.Header, buf.String()); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-	} else {
-		http.Error(w, fmt.Sprintf("Invalid Content-Type: %s", contentType), http.StatusUnsupportedMediaType)
-		return
-	}
-
-	if err := report.FillCveInfo(h.dbclient, &result, []string{}); err != nil {
-		util.Log.Error(err)
-		return
-	}
-
-	res, err := json.Marshal(result)
-	if err != nil {
-		util.Log.Error(err)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(res)
 }
