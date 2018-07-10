@@ -71,6 +71,7 @@ type ReportCmd struct {
 	toLocalFile bool
 	toS3        bool
 	toAzureBlob bool
+	toHTTP      string
 
 	formatJSON        bool
 	formatXML         bool
@@ -125,6 +126,7 @@ func (*ReportCmd) Usage() string {
 		[-ignore-unscored-cves]
 		[-ignore-unfixed]
 		[-to-email]
+		[-to-http=http://vuls-server]
 		[-to-slack]
 		[-to-stride]
 		[-to-hipchat]
@@ -313,6 +315,11 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"to-s3",
 		false,
 		"Write report to S3 (bucket/yyyyMMdd_HHmm/servername.json/xml/txt)")
+	f.StringVar(&p.toHTTP,
+		"to-http",
+		"",
+		"http://vuls-server (default: empty)")
+
 	f.StringVar(&p.awsProfile, "aws-profile", "default", "AWS profile to use")
 	f.StringVar(&p.awsRegion, "aws-region", "us-east-1", "AWS region to use")
 	f.StringVar(&p.awsS3Bucket, "aws-s3-bucket", "", "S3 bucket name")
@@ -381,6 +388,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.ToHipChat = p.toHipChat
 	c.Conf.ToChatWork = p.toChatWork
 	c.Conf.ToEmail = p.toEMail
+	c.Conf.ToHTTP = p.toHTTP
 	c.Conf.ToSyslog = p.toSyslog
 	c.Conf.ToLocalFile = p.toLocalFile
 	c.Conf.ToS3 = p.toS3
@@ -437,6 +445,12 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if p.toSyslog {
 		reports = append(reports, report.SyslogWriter{})
+	}
+
+	if p.toHTTP != "" {
+		reports = append(reports, report.HTTPRequestWriter{
+			URL: p.toHTTP,
+		})
 	}
 
 	if p.toLocalFile {
@@ -550,13 +564,13 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		GostDBPath: c.Conf.GostDBPath,
 		DebugSQL:   c.Conf.DebugSQL,
 	})
-	if err != nil {
-		util.Log.Errorf("Failed to init DB Clients: %s", err)
+	if locked {
+		util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %s", err)
 		return subcommands.ExitFailure
 	}
 
-	if locked {
-		util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %s", err)
+	if err != nil {
+		util.Log.Errorf("Failed to init DB Clients: %s", err)
 		return subcommands.ExitFailure
 	}
 

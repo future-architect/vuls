@@ -68,6 +68,10 @@ func (o *pseudo) scanPackages() error {
 	return nil
 }
 
+func (o *pseudo) parseInstalledPackages(string) (models.Packages, models.SrcPackages, error) {
+	return nil, nil, nil
+}
+
 func (o *pseudo) detectPlatform() {
 	o.setPlatform(models.Platform{Name: "other"})
 	return

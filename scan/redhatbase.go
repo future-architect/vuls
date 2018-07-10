@@ -275,19 +275,28 @@ func (o *redhatBase) scanInstalledPackages() (models.Packages, error) {
 		Version: version,
 	}
 
-	installed := models.Packages{}
 	r := o.exec(rpmQa(o.Distro), noSudo)
 	if !r.isSuccess() {
 		return nil, fmt.Errorf("Scan packages failed: %s", r)
 	}
+	installed, _, err := o.parseInstalledPackages(r.Stdout)
+	if err != nil {
+		return nil, err
+	}
+	return installed, nil
+}
+
+func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, models.SrcPackages, error) {
+	installed := models.Packages{}
+	latestKernelRelease := ver.NewVersion("")
 
 	// openssl 0 1.0.1e	30.el6.11 x86_64
-	lines := strings.Split(r.Stdout, "\n")
+	lines := strings.Split(stdout, "\n")
 	for _, line := range lines {
 		if trimed := strings.TrimSpace(line); len(trimed) != 0 {
 			pack, err := o.parseInstalledPackagesLine(line)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 
 			// Kernel package may be isntalled multiple versions.
@@ -295,16 +304,25 @@ func (o *redhatBase) scanInstalledPackages() (models.Packages, error) {
 			// pay attention only to the running kernel
 			isKernel, running := isRunningKernel(pack, o.Distro.Family, o.Kernel)
 			if isKernel {
-				if !running {
+				if o.Kernel.Release == "" {
+					// When the running kernel release is unknown,
+					// use the latest release among the installed release
+					kernelRelease := ver.NewVersion(fmt.Sprintf("%s-%s", pack.Version, pack.Release))
+					if kernelRelease.LessThan(latestKernelRelease) {
+						continue
+					}
+					latestKernelRelease = kernelRelease
+				} else if !running {
 					o.log.Debugf("Not a running kernel. pack: %#v, kernel: %#v", pack, o.Kernel)
 					continue
+				} else {
+					o.log.Debugf("Found a running kernel. pack: %#v, kernel: %#v", pack, o.Kernel)
 				}
-				o.log.Debugf("Found a running kernel. pack: %#v, kernel: %#v", pack, o.Kernel)
 			}
 			installed[pack.Name] = pack
 		}
 	}
-	return installed, nil
+	return installed, nil, nil
 }
 
 func (o *redhatBase) parseInstalledPackagesLine(line string) (models.Package, error) {

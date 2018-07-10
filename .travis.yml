@@ -1,7 +1,7 @@
 language: go
 
 go:
-  - 1.x
+  - "1.10"
 
 after_success:
   - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash

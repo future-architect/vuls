@@ -32,6 +32,88 @@ import (
 //      return t
 //  }
 
+func TestParseInstalledPackagesLinesRedhat(t *testing.T) {
+	r := newRHEL(config.ServerInfo{})
+	r.Distro = config.Distro{Family: config.RedHat}
+
+	var packagetests = []struct {
+		in       string
+		kernel   models.Kernel
+		packages models.Packages
+	}{
+		{
+			in: `openssl	0	1.0.1e	30.el6.11 x86_64
+                 Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x84_64
+                 kernel 0 2.6.32 696.20.1.el6 x86_64
+                 kernel 0 2.6.32 696.20.3.el6 x86_64
+				 kernel 0 2.6.32 695.20.3.el6 x86_64`,
+			kernel: models.Kernel{},
+			packages: models.Packages{
+				"openssl": models.Package{
+					Name:    "openssl",
+					Version: "1.0.1e",
+					Release: "30.el6.11",
+				},
+				"Percona-Server-shared-56": models.Package{
+					Name:    "Percona-Server-shared-56",
+					Version: "1:5.6.19",
+					Release: "rel67.0.el6",
+				},
+				"kernel": models.Package{
+					Name:    "kernel",
+					Version: "2.6.32",
+					Release: "696.20.3.el6",
+				},
+			},
+		},
+		{
+			in: `openssl	0	1.0.1e	30.el6.11 x86_64
+                 Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x84_64
+                 kernel 0 2.6.32 696.20.1.el6 x86_64
+                 kernel 0 2.6.32 696.20.3.el6 x86_64
+				 kernel 0 2.6.32 695.20.3.el6 x86_64`,
+			kernel: models.Kernel{Release: "2.6.32-695.20.3.el6.x86_64"},
+			packages: models.Packages{
+				"openssl": models.Package{
+					Name:    "openssl",
+					Version: "1.0.1e",
+					Release: "30.el6.11",
+				},
+				"Percona-Server-shared-56": models.Package{
+					Name:    "Percona-Server-shared-56",
+					Version: "1:5.6.19",
+					Release: "rel67.0.el6",
+				},
+				"kernel": models.Package{
+					Name:    "kernel",
+					Version: "2.6.32",
+					Release: "695.20.3.el6",
+				},
+			},
+		},
+	}
+
+	for _, tt := range packagetests {
+		r.Kernel = tt.kernel
+		packages, _, err := r.parseInstalledPackages(tt.in)
+		if err != nil {
+			t.Errorf("Unexpected error: %s", err)
+		}
+		for name, expectedPack := range tt.packages {
+			pack := packages[name]
+			if pack.Name != expectedPack.Name {
+				t.Errorf("name: expected %s, actual %s", expectedPack.Name, pack.Name)
+			}
+			if pack.Version != expectedPack.Version {
+				t.Errorf("version: expected %s, actual %s", expectedPack.Version, pack.Version)
+			}
+			if pack.Release != expectedPack.Release {
+				t.Errorf("release: expected %s, actual %s", expectedPack.Release, pack.Release)
+			}
+		}
+	}
+
+}
 func TestParseScanedPackagesLineRedhat(t *testing.T) {
 	r := newRHEL(config.ServerInfo{})
 

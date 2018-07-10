@@ -67,8 +67,8 @@
     "service/s3",
     "service/sts"
   ]
-  revision = "e4f914808a9655ef3220bb0082002239cc7f3561"
-  version = "v1.14.19"
+  revision = "66e86be40287fdef6990768b65f713f4bce11deb"
+  version = "v1.14.23"
 
 [[projects]]
   name = "github.com/boltdb/bolt"
@@ -278,7 +278,7 @@
     "log",
     "models"
   ]
-  revision = "9bc55b42b35d7a4134189c15b39b1be666ee52d6"
+  revision = "52e5d8e1554f6be479bfcb9484685571e6554b54"
 
 [[projects]]
   name = "github.com/kotakanbe/go-pingscanner"
@@ -295,7 +295,7 @@
     "db/rdb",
     "models"
   ]
-  revision = "da00f5d2aa0b10aa0c5e8bf554db0a8ee47336f5"
+  revision = "f3255b2e6a0a38b88eaa25b5696d7e73868e46dc"
 
 [[projects]]
   branch = "master"
@@ -484,7 +484,7 @@
     "idna",
     "publicsuffix"
   ]
-  revision = "ed29d75add3d7c4bf7ca65aac0c6df3d1420216f"
+  revision = "292b43bbf7cb8d35ddf40f8d5100ef3837cced3f"
 
 [[projects]]
   branch = "master"
@@ -493,7 +493,7 @@
     "unix",
     "windows"
   ]
-  revision = "151529c776cdc58ddbe7963ba9af779f3577b419"
+  revision = "1b2967e3c290b7c545b3db0deeda16e9be4f98a2"
 
 [[projects]]
   name = "golang.org/x/text"
