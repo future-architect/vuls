@@ -144,6 +144,7 @@ type Config struct {
 	ToLocalFile bool
 	ToS3        bool
 	ToAzureBlob bool
+	ToHTTP      string
 
 	FormatXML         bool
 	FormatJSON        bool

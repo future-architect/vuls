@@ -326,22 +326,60 @@ func (o *debian) rebootRequired() (bool, error) {
 const dpkgQuery = `dpkg-query -W -f="\${binary:Package},\${db:Status-Abbrev},\${Version},\${Source},\${source:Version}\n"`
 
 func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, models.SrcPackages, error) {
-	installed, updatable, srcPacks := models.Packages{}, models.Packages{}, models.SrcPackages{}
+	updatable := models.Packages{}
 	r := o.exec(dpkgQuery, noSudo)
 	if !r.isSuccess() {
 		return nil, nil, nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 
+	installed, srcPacks, err := o.parseInstalledPackages(r.Stdout)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	if o.getServerInfo().Mode.IsOffline() || o.getServerInfo().Mode.IsFast() {
+		return installed, updatable, srcPacks, nil
+	}
+
+	if err := o.aptGetUpdate(); err != nil {
+		return nil, nil, nil, err
+	}
+	updatableNames, err := o.getUpdatablePackNames()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	for _, name := range updatableNames {
+		for _, pack := range installed {
+			if pack.Name == name {
+				updatable[name] = pack
+				break
+			}
+		}
+	}
+
+	// Fill the candidate versions of upgradable packages
+	err = o.fillCandidateVersion(updatable)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("Failed to fill candidate versions. err: %s", err)
+	}
+	installed.MergeNewVersion(updatable)
+
+	return installed, updatable, srcPacks, nil
+}
+
+func (o *debian) parseInstalledPackages(stdout string) (models.Packages, models.SrcPackages, error) {
+	installed, srcPacks := models.Packages{}, models.SrcPackages{}
+
 	// e.g.
 	// curl,ii ,7.38.0-4+deb8u2,,7.38.0-4+deb8u2
 	// openssh-server,ii ,1:6.7p1-5+deb8u3,openssh,1:6.7p1-5+deb8u3
 	// tar,ii ,1.27.1-2+b1,tar (1.27.1-2),1.27.1-2
-	lines := strings.Split(r.Stdout, "\n")
+	lines := strings.Split(stdout, "\n")
 	for _, line := range lines {
 		if trimmed := strings.TrimSpace(line); len(trimmed) != 0 {
 			name, status, version, srcName, srcVersion, err := o.parseScannedPackagesLine(trimmed)
-			if err != nil {
-				return nil, nil, nil, fmt.Errorf(
+			if err != nil || len(status) < 2 {
+				return nil, nil, fmt.Errorf(
 					"Debian: Failed to parse package line: %s", line)
 			}
 
@@ -387,35 +425,7 @@ func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, mode
 	for name := range installed {
 		delete(srcPacks, name)
 	}
-
-	if o.getServerInfo().Mode.IsOffline() || o.getServerInfo().Mode.IsFast() {
-		return installed, updatable, srcPacks, nil
-	}
-
-	if err := o.aptGetUpdate(); err != nil {
-		return nil, nil, nil, err
-	}
-	updatableNames, err := o.getUpdatablePackNames()
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	for _, name := range updatableNames {
-		for _, pack := range installed {
-			if pack.Name == name {
-				updatable[name] = pack
-				break
-			}
-		}
-	}
-
-	// Fill the candidate versions of upgradable packages
-	err = o.fillCandidateVersion(updatable)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("Failed to fill candidate versions. err: %s", err)
-	}
-	installed.MergeNewVersion(updatable)
-
-	return installed, updatable, srcPacks, nil
+	return installed, srcPacks, nil
 }
 
 func (o *debian) parseScannedPackagesLine(line string) (name, status, version, srcName, srcVersion string, err error) {

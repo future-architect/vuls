@@ -141,6 +141,11 @@ func (o *alpine) scanInstalledPackages() (models.Packages, error) {
 	return o.parseApkInfo(r.Stdout)
 }
 
+func (o *alpine) parseInstalledPackages(stdout string) (models.Packages, models.SrcPackages, error) {
+	installedPackages, err := o.parseApkInfo(stdout)
+	return installedPackages, nil, err
+}
+
 func (o *alpine) parseApkInfo(stdout string) (models.Packages, error) {
 	packs := models.Packages{}
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
