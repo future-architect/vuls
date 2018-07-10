@@ -48,27 +48,32 @@ func (red RedHat) FillWithGost(driver db.DB, r *models.ScanResult) error {
 				}
 			}
 
-			r.ScannedCves[cve.Name] = *red.setPackageStates(&v,
+			pkgStats := red.setPackageStates(v,
 				cve.PackageState, r.Packages, r.Release)
+			if 0 < len(pkgStats) {
+				v.AffectedPackages = pkgStats
+				r.ScannedCves[cve.Name] = v
+			}
 		}
 	}
 	return nil
 }
 
-func (red RedHat) setPackageStates(v *models.VulnInfo, ps []gostmodels.RedhatPackageState, installed models.Packages, release string) *models.VulnInfo {
+func (red RedHat) setPackageStates(v models.VulnInfo, ps []gostmodels.RedhatPackageState, installed models.Packages, release string) (pkgStats models.PackageStatuses) {
+	pkgStats = v.AffectedPackages
 	for _, pstate := range ps {
 		if pstate.Cpe !=
 			"cpe:/o:redhat:enterprise_linux:"+major(release) {
-			return v
+			return
 		}
 
 		if !(pstate.FixState == "Will not fix" ||
 			pstate.FixState == "Fix deferred") {
-			return v
+			return
 		}
 
 		if _, ok := installed[pstate.PackageName]; !ok {
-			return v
+			return
 		}
 
 		notFixedYet := false
@@ -77,13 +82,13 @@ func (red RedHat) setPackageStates(v *models.VulnInfo, ps []gostmodels.RedhatPac
 			notFixedYet = true
 		}
 
-		v.AffectedPackages = v.AffectedPackages.Store(models.PackageStatus{
+		pkgStats = pkgStats.Store(models.PackageStatus{
 			Name:        pstate.PackageName,
 			FixState:    pstate.FixState,
 			NotFixedYet: notFixedYet,
 		})
 	}
-	return v
+	return
 }
 
 func (red RedHat) convertToModel(cve *gostmodels.RedhatCVE) *models.CveContent {

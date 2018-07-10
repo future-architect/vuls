@@ -440,7 +440,7 @@ func (v VulnInfo) AttackVector() string {
 			return "Network"
 		} else if strings.HasPrefix(cnt.Cvss2Vector, "AV:A") ||
 			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:A") {
-			return "Adjacent Network"
+			return "Adjacent"
 		} else if strings.HasPrefix(cnt.Cvss2Vector, "AV:L") ||
 			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:L") {
 			return "Local"
