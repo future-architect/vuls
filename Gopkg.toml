@@ -24,7 +24,6 @@
 #   go-tests = true
 #   unused-packages = true
 
-
 [[constraint]]
   branch = "nvd-json"
   name = "github.com/kotakanbe/go-cve-dictionary"

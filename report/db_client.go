@@ -36,7 +36,7 @@ func NewCveDB(cType, cURL, cPath string, debug bool) (driver cvedb.DB, err error
 	}
 
 	util.Log.Debugf("Open cve-dictionary db (%s): %s", cType, path)
-	if driver, err = cvedb.NewDB(cType, path, debug); err != nil {
+	if driver, _, err = cvedb.NewDB(cType, path, debug); err != nil {
 		log.Error(err)
 		return nil, fmt.Errorf("Failed to New Cve DB. err: %s", err)
 	}
@@ -53,7 +53,7 @@ func NewOvalDB(oType, oURL, oPath string, debug bool) (driver ovaldb.DB) {
 	}
 
 	util.Log.Debugf("Open oval-dictionary db (%s): %s", oType, path)
-	if driver, err = ovaldb.NewDB("", oType, path, debug); err != nil {
+	if driver, _, err = ovaldb.NewDB("", oType, path, debug); err != nil {
 		util.Log.Debugf("oval-dictionary db is not detected")
 		return nil
 	}
