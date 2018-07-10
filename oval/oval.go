@@ -27,7 +27,6 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/kotakanbe/goval-dictionary/db"
-	ovallog "github.com/kotakanbe/goval-dictionary/log"
 	"github.com/parnurzeal/gorequest"
 )
 
@@ -67,10 +66,9 @@ func (b Base) CheckHTTPHealth() error {
 
 // CheckIfOvalFetched checks if oval entries are in DB by family, release.
 func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err error) {
-	ovallog.Initialize(config.Conf.LogDir)
 	if !b.isFetchViaHTTP() {
 		var ovaldb db.DB
-		if ovaldb, err = db.NewDB(
+		if ovaldb, _, err = db.NewDB(
 			osFamily,
 			config.Conf.OvalDBType,
 			config.Conf.OvalDBPath,
@@ -103,11 +101,10 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err er
 
 // CheckIfOvalFresh checks if oval entries are fresh enough
 func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
-	ovallog.Initialize(config.Conf.LogDir)
 	var lastModified time.Time
 	if !b.isFetchViaHTTP() {
 		var ovaldb db.DB
-		if ovaldb, err = db.NewDB(
+		if ovaldb, _, err = db.NewDB(
 			osFamily,
 			config.Conf.OvalDBType,
 			config.Conf.OvalDBPath,
