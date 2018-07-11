@@ -146,6 +146,7 @@ func (api cvedictClient) FetchCveDetailsFromCveDB(cveIDs []string) (cveDetails [
 		log.Error(err)
 		return []*cve.CveDetail{}, fmt.Errorf("Failed to New DB. err: %s", err)
 	}
+	defer driver.CloseDB()
 
 	for _, cveID := range cveIDs {
 		cveDetail := driver.Get(cveID)
