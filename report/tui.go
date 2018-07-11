@@ -732,6 +732,7 @@ type dataForTmpl struct {
 	CveID            string
 	Cvsses           string
 	Summary          string
+	Mitigation       string
 	Confidences      models.Confidences
 	Cwes             []models.CweDictEntry
 	Links            []string
@@ -788,6 +789,7 @@ func detailLines() (string, error) {
 	}
 
 	summary := vinfo.Summaries(r.Lang, r.Family)[0]
+	mitigation := vinfo.Mitigations(r.Family)[0]
 
 	table := uitable.New()
 	table.MaxColWidth = maxColWidth
@@ -825,6 +827,7 @@ func detailLines() (string, error) {
 		CveID:       vinfo.CveID,
 		Cvsses:      fmt.Sprintf("%s\n", table),
 		Summary:     fmt.Sprintf("%s (%s)", summary.Value, summary.Type),
+		Mitigation:  fmt.Sprintf("%s (%s)", mitigation.Value, mitigation.Type),
 		Confidences: vinfo.Confidences,
 		Cwes:        cwes,
 		Links:       util.Distinct(links),
@@ -850,6 +853,10 @@ CVSS Scores
 Summary
 --------------
  {{.Summary }}
+
+Mitigation
+--------------
+ {{.Mitigation }}
 
 Links
 --------------

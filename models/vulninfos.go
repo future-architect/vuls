@@ -235,6 +235,27 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 	return
 }
 
+// Mitigations returns mitigations
+func (v VulnInfo) Mitigations(myFamily string) (values []CveContentStr) {
+	order := CveContentTypes{RedHatAPI}
+	for _, ctype := range order {
+		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Mitigation) {
+			values = append(values, CveContentStr{
+				Type:  ctype,
+				Value: cont.Mitigation,
+			})
+		}
+	}
+
+	if len(values) == 0 {
+		return []CveContentStr{{
+			Type:  Unknown,
+			Value: "-",
+		}}
+	}
+	return
+}
+
 // Cvss2Scores returns CVSS V2 Scores
 func (v VulnInfo) Cvss2Scores(myFamily string) (values []CveContentCvss) {
 	order := []CveContentType{Nvd, NvdXML, RedHat, Jvn}
