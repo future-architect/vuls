@@ -151,9 +151,16 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string) erro
 		return fmt.Errorf("Failed to detect vulns of %s: %s", cpeURIs, err)
 	}
 
-	util.Log.Infof("Fill with Gost")
-	if err := FillWithGost(dbclient.GostDB, r); err != nil {
-		return fmt.Errorf("Failed to fill with Gost: %s", err)
+	if dbclient.GostDB != nil {
+		util.Log.Infof("Fill with gost")
+		if err := FillWithGost(dbclient.GostDB, r); err != nil {
+			return fmt.Errorf("Failed to fill with gost: %s", err)
+		}
+	} else {
+		switch r.Family {
+		case c.RedHat, c.CentOS, c.Debian:
+			util.Log.Warn("Not-fixed-CVEs will be detected if you report with gost. For details, see the link(TODO)")
+		}
 	}
 
 	util.Log.Infof("Fill CVE detailed information with CVE-DB")

@@ -49,9 +49,9 @@ func NewDBClient(cnf DBClientConf) (dbclient *DBClient, locked bool, err error) 
 
 	gostdb, locked, err := NewGostDB(cnf)
 	if locked {
-		return nil, true, fmt.Errorf("GostDB is locked: %s", cnf.GostDBPath)
+		return nil, true, fmt.Errorf("gostDB is locked: %s", cnf.GostDBPath)
 	} else if err != nil {
-		util.Log.Warnf("Unable to use GostDB: %s, err: %s", cnf.GostDBPath, err)
+		util.Log.Warnf("Unable to use gostDB: %s, err: %s", cnf.GostDBPath, err)
 	}
 
 	return &DBClient{
@@ -72,18 +72,15 @@ func NewCveDB(cnf DBClientConf) (driver cvedb.DB, locked bool, err error) {
 	util.Log.Debugf("Open cve-dictionary db (%s): %s", cnf.CveDBType, path)
 	driver, locked, err = cvedb.NewDB(cnf.CveDBType, path, cnf.DebugSQL)
 	if err != nil {
-		err = fmt.Errorf("Failed to init Cve DB. err: %s, path: %s", err, path)
-		if locked {
-			return nil, true, err
-		}
-		return nil, true, err
+		err = fmt.Errorf("Failed to init CVE DB. err: %s, path: %s", err, path)
+		return nil, locked, err
 	}
 	return driver, false, nil
 }
 
 // NewOvalDB returns oval db client
 func NewOvalDB(cnf DBClientConf) (driver ovaldb.DB, locked bool, err error) {
-	path := cnf.OvalDBPath
+	path := cnf.OvalDBURL
 	if cnf.OvalDBType == "sqlite3" {
 		path = cnf.OvalDBPath
 	}
@@ -102,7 +99,7 @@ func NewOvalDB(cnf DBClientConf) (driver ovaldb.DB, locked bool, err error) {
 
 // NewGostDB returns db client for Gost
 func NewGostDB(cnf DBClientConf) (driver gostdb.DB, locked bool, err error) {
-	path := cnf.GostDBPath
+	path := cnf.GostDBURL
 	if cnf.GostDBType == "sqlite3" {
 		path = cnf.GostDBPath
 	}
@@ -110,7 +107,7 @@ func NewGostDB(cnf DBClientConf) (driver gostdb.DB, locked bool, err error) {
 	util.Log.Debugf("Open gost db (%s): %s", cnf.GostDBType, path)
 	if driver, locked, err = gostdb.NewDB(cnf.GostDBType, path, cnf.DebugSQL); err != nil {
 		if locked {
-			util.Log.Debugf("gost db is locked: %s, %T", err, err)
+			util.Log.Debugf("gostDB is locked: %s, %T", err, err)
 			return nil, true, err
 		}
 		return nil, false, err

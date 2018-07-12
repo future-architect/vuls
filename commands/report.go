@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 
 	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/report"
@@ -186,7 +187,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		&p.cveDBType,
 		"cvedb-type",
 		"sqlite3",
-		"DB type of CVE dictionary (sqlite3, mysql or postgres)")
+		"DB type of CVE dictionary (sqlite3, mysql, postgres or redis)")
 
 	defaultCveDBPath := filepath.Join(wd, "cve.sqlite3")
 	f.StringVar(
@@ -199,13 +200,13 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		&p.cveDBURL,
 		"cvedb-url",
 		"",
-		"http://cve-dictionary.com:1323 or mysql connection string")
+		"http://cve-dictionary.com:1323 or DB connection string")
 
 	f.StringVar(
 		&p.ovalDBType,
 		"ovaldb-type",
 		"sqlite3",
-		"DB type of OVAL dictionary (sqlite3 or mysql)")
+		"DB type of OVAL dictionary (sqlite3, mysql, postgres or redis)")
 
 	defaultOvalDBPath := filepath.Join(wd, "oval.sqlite3")
 	f.StringVar(
@@ -218,13 +219,13 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		&p.ovalDBURL,
 		"ovaldb-url",
 		"",
-		"http://goval-dictionary.com:1324 or mysql connection string")
+		"http://goval-dictionary.com:1324 or DB connection string")
 
 	f.StringVar(
 		&p.gostDBType,
 		"gostdb-type",
 		"sqlite3",
-		"DB type for gost dictionary (sqlite3 or mysql)")
+		"DB type for gost dictionary (sqlite3, mysql, postgres or redis)")
 
 	defaultgostDBPath := filepath.Join(wd, "gost.sqlite3")
 	f.StringVar(
@@ -237,7 +238,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		&p.gostDBURL,
 		"gostdb-url",
 		"",
-		"http://gost-dictionary.com:1324 or mysql connection string")
+		"http://gost-dictionary.com:1324 or DB connection string")
 
 	f.Float64Var(
 		&p.cvssScoreOver,
@@ -523,6 +524,20 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	} else {
 		if c.Conf.OvalDBType == "sqlite3" {
 			util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDBPath)
+		}
+	}
+
+	if c.Conf.GostDBURL != "" {
+		util.Log.Infof("gost: %s", c.Conf.GostDBURL)
+		err := gost.Base{}.CheckHTTPHealth()
+		if err != nil {
+			util.Log.Errorf("gost HTTP server is not running. err: %s", err)
+			util.Log.Errorf("Run gost as server mode before reporting or run with -gostdb-path option")
+			return subcommands.ExitFailure
+		}
+	} else {
+		if c.Conf.GostDBType == "sqlite3" {
+			util.Log.Infof("gost:", c.Conf.GostDBPath)
 		}
 	}
 

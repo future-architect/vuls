@@ -6,7 +6,7 @@
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
     "storage",
-    "version"
+    "version",
   ]
   pruneopts = "UT"
   revision = "fbe7db0e3f9793ba3e5704efbab84f51436c136e"
@@ -19,7 +19,7 @@
     "autorest",
     "autorest/adal",
     "autorest/azure",
-    "autorest/date"
+    "autorest/date",
   ]
   pruneopts = "UT"
   revision = "1f7cd6cfe0adea687ad44a512dfe76140f804318"
@@ -74,7 +74,7 @@
     "private/protocol/restxml",
     "private/protocol/xml/xmlutil",
     "service/s3",
-    "service/sts"
+    "service/sts",
   ]
   pruneopts = "UT"
   revision = "fefacb6d45b233a9e20097a176c1c46e85a782d3"
@@ -147,7 +147,7 @@
     "internal/pool",
     "internal/proto",
     "internal/singleflight",
-    "internal/util"
+    "internal/util",
   ]
   pruneopts = "UT"
   revision = "83fb42932f6145ce52df09860384a4653d2d332a"
@@ -192,7 +192,7 @@
   packages = [
     ".",
     "util/strutil",
-    "util/wordwrap"
+    "util/wordwrap",
   ]
   pruneopts = "UT"
   revision = "36ee7e946282a3fb1cfecd476ddc9b35d8847e42"
@@ -219,7 +219,7 @@
     "hcl/token",
     "json/parser",
     "json/scanner",
-    "json/token"
+    "json/token",
   ]
   pruneopts = "UT"
   revision = "ef8a98b0bbce4a65b5aa4c368430a80ddc533168"
@@ -255,7 +255,7 @@
     ".",
     "dialects/mysql",
     "dialects/postgres",
-    "dialects/sqlite"
+    "dialects/sqlite",
   ]
   pruneopts = "UT"
   revision = "6ed508ec6a4ecb3531899a69cbc746ccf65a4166"
@@ -299,7 +299,7 @@
   packages = [
     "common",
     "matching",
-    "naming"
+    "naming",
   ]
   pruneopts = "UT"
   revision = "659663f6eca2ff32258e282557e7808115ea498a"
@@ -322,16 +322,16 @@
 
 [[projects]]
   branch = "unfixed-cves"
-  digest = "1:46104723d4282e748187c2fe1d5f2d5ade7491c3de9d47330c525a4ee7f49204"
+  digest = "1:5e876c86b29b35bfac63d905553be751042736eb9b85f5231084e3f7cf37e392"
   name = "github.com/knqyf263/gost"
   packages = [
     "config",
     "db",
     "models",
-    "util"
+    "util",
   ]
   pruneopts = "UT"
-  revision = "35721fdbb0398ad9e3b94189c0997dcb05ba558c"
+  revision = "a5d65b60274a0418592de0e954418e065d386814"
 
 [[projects]]
   branch = "nvd-json"
@@ -341,7 +341,7 @@
     "config",
     "db",
     "log",
-    "models"
+    "models",
   ]
   pruneopts = "UT"
   revision = "52e5d8e1554f6be479bfcb9484685571e6554b54"
@@ -362,7 +362,7 @@
     "config",
     "db",
     "db/rdb",
-    "models"
+    "models",
   ]
   pruneopts = "UT"
   revision = "f3255b2e6a0a38b88eaa25b5696d7e73868e46dc"
@@ -376,13 +376,24 @@
   revision = "928f7356cb964637e2489a6ef37eee55181676c5"
 
 [[projects]]
+  digest = "1:ee674994a468c0d0698bcf5c51853586d88d9567fc7e9fc31bf926ef716e8bcf"
+  name = "github.com/labstack/gommon"
+  packages = [
+    "color",
+    "log",
+  ]
+  pruneopts = "UT"
+  revision = "d6898124de917583f5ff5592ef931d1dfe0ddc05"
+  version = "0.2.6"
+
+[[projects]]
   branch = "master"
   digest = "1:defb20f3cbe2ee567752a32f4f5a41ed22d648654545147fb5c94e28beec3fca"
   name = "github.com/lib/pq"
   packages = [
     ".",
     "hstore",
-    "oid"
+    "oid",
   ]
   pruneopts = "UT"
   revision = "90697d60dd844d5ef6ff15135d0203f65d2f53b8"
@@ -536,7 +547,7 @@
   name = "github.com/spf13/afero"
   packages = [
     ".",
-    "mem"
+    "mem",
   ]
   pruneopts = "UT"
   revision = "787d034dfe70e44075ccc060d346146ef53270ad"
@@ -576,6 +587,22 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:c468422f334a6b46a19448ad59aaffdfc0a36b08fdcc1c749a0b29b6453d7e59"
+  name = "github.com/valyala/bytebufferpool"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7"
+
+[[projects]]
+  branch = "master"
+  digest = "1:268b8bce0064e8c057d7b913605459f9a26dcab864c0886a56d196540fbf003f"
+  name = "github.com/valyala/fasttemplate"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "dcecefd839c4193db0d35b88ec65b4c12d360ab0"
+
+[[projects]]
+  branch = "master"
   digest = "1:0792df7c7ff49b81c7a8c5a2a47aee897c5bab31fb348c8e2f80a560d675f941"
   name = "github.com/ymomoi/goval-parser"
   packages = ["oval"]
@@ -595,7 +622,7 @@
     "poly1305",
     "ssh",
     "ssh/agent",
-    "ssh/terminal"
+    "ssh/terminal",
   ]
   pruneopts = "UT"
   revision = "a49355c7e3f8fe157a85be2f77e6e269a0f89602"
@@ -607,10 +634,10 @@
   packages = [
     "context",
     "idna",
-    "publicsuffix"
+    "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "039a4258aec0ad3c79b905677cceeab13b296a77"
+  revision = "cffdcf672aee934982473246bc7e9a8ba446aa9b"
 
 [[projects]]
   branch = "master"
@@ -618,7 +645,7 @@
   name = "golang.org/x/sys"
   packages = [
     "unix",
-    "windows"
+    "windows",
   ]
   pruneopts = "UT"
   revision = "1b2967e3c290b7c545b3db0deeda16e9be4f98a2"
@@ -640,7 +667,7 @@
     "unicode/bidi",
     "unicode/cldr",
     "unicode/norm",
-    "unicode/rangetable"
+    "unicode/rangetable",
   ]
   pruneopts = "UT"
   revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
@@ -757,7 +784,7 @@
     "github.com/rifflock/lfshook",
     "github.com/sirupsen/logrus",
     "golang.org/x/crypto/ssh",
-    "golang.org/x/crypto/ssh/agent"
+    "golang.org/x/crypto/ssh/agent",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -87,7 +87,8 @@ func (b Base) CheckIfGostFresh(driver db.DB, osFamily string) (ok bool, err erro
 	return true, nil
 }
 
-func (b Base) isFetchViaHTTP() bool { // Default value of OvalDBType is sqlite3
+func (b Base) isFetchViaHTTP() bool {
+	// Default value of OvalDBType is sqlite3
 	return config.Conf.GostDBURL != "" && config.Conf.GostDBType == "sqlite3"
 }
 
