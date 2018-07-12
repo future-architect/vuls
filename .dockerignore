@@ -1,0 +1,7 @@
+.dockerignore
+Dockerfile
+vendor/
+cve.sqlite3*
+oval.sqlite3*
+setup/
+img/
