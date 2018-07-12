@@ -41,6 +41,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	Conf.HipChat = conf.HipChat
 	Conf.ChatWork = conf.ChatWork
 	Conf.Syslog = conf.Syslog
+	Conf.HTTP = conf.HTTP
 
 	d := conf.Default
 	Conf.Default = d

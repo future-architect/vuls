@@ -22,21 +22,21 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/future-architect/vuls/models"
 	"github.com/pkg/errors"
+
+	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/models"
 )
 
 // HTTPRequestWriter writes results to HTTP request
-type HTTPRequestWriter struct {
-	URL string
-}
+type HTTPRequestWriter struct{}
 
 // Write sends results as HTTP response
 func (w HTTPRequestWriter) Write(rs ...models.ScanResult) (err error) {
 	for _, r := range rs {
 		b := new(bytes.Buffer)
 		json.NewEncoder(b).Encode(r)
-		_, err = http.Post(w.URL, "application/json; charset=utf-8", b)
+		_, err = http.Post(c.Conf.HTTP.URL, "application/json; charset=utf-8", b)
 		if err != nil {
 			return err
 		}

@@ -106,6 +106,7 @@ type Config struct {
 	HipChat  HipChatConf
 	ChatWork ChatWorkConf
 	Syslog   SyslogConf
+	HTTP     HTTPConf
 	Default  ServerInfo
 	Servers  map[string]ServerInfo
 
@@ -148,7 +149,7 @@ type Config struct {
 	ToLocalFile bool
 	ToS3        bool
 	ToAzureBlob bool
-	ToHTTP      string
+	ToHTTP      bool
 
 	FormatXML         bool
 	FormatJSON        bool
@@ -287,6 +288,10 @@ func (c Config) ValidateOnReport() bool {
 
 	if syslogerrs := c.Syslog.Validate(); 0 < len(syslogerrs) {
 		errs = append(errs, syslogerrs...)
+	}
+
+	if httperrs := c.HTTP.Validate(); 0 < len(httperrs) {
+		errs = append(errs, httperrs...)
 	}
 
 	for _, err := range errs {
@@ -663,6 +668,23 @@ func (c *SyslogConf) GetFacility() (syslog.Priority, error) {
 	default:
 		return -1, fmt.Errorf("Invalid facility: %s", c.Facility)
 	}
+}
+
+// HTTPConf is HTTP config
+type HTTPConf struct {
+	URL string `valid:"url"`
+}
+
+// Validate validates configuration
+func (c *HTTPConf) Validate() (errs []error) {
+	if !Conf.ToHTTP {
+		return nil
+	}
+
+	if _, err := valid.ValidateStruct(c); err != nil {
+		errs = append(errs, err)
+	}
+	return errs
 }
 
 // ServerInfo has SSH Info, additional CPE packages to scan.

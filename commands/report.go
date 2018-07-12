@@ -71,7 +71,7 @@ type ReportCmd struct {
 	toLocalFile bool
 	toS3        bool
 	toAzureBlob bool
-	toHTTP      string
+	toHTTP      bool
 
 	formatJSON        bool
 	formatXML         bool
@@ -126,7 +126,7 @@ func (*ReportCmd) Usage() string {
 		[-ignore-unscored-cves]
 		[-ignore-unfixed]
 		[-to-email]
-		[-to-http=http://vuls-server]
+		[-to-http]
 		[-to-slack]
 		[-to-stride]
 		[-to-hipchat]
@@ -315,10 +315,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"to-s3",
 		false,
 		"Write report to S3 (bucket/yyyyMMdd_HHmm/servername.json/xml/txt)")
-	f.StringVar(&p.toHTTP,
-		"to-http",
-		"",
-		"http://vuls-server (default: empty)")
+	f.BoolVar(&p.toHTTP, "to-http", false, "Send report via HTTP POST")
 
 	f.StringVar(&p.awsProfile, "aws-profile", "default", "AWS profile to use")
 	f.StringVar(&p.awsRegion, "aws-region", "us-east-1", "AWS region to use")
@@ -447,10 +444,8 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		reports = append(reports, report.SyslogWriter{})
 	}
 
-	if p.toHTTP != "" {
-		reports = append(reports, report.HTTPRequestWriter{
-			URL: p.toHTTP,
-		})
+	if p.toHTTP {
+		reports = append(reports, report.HTTPRequestWriter{})
 	}
 
 	if p.toLocalFile {
