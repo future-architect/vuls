@@ -8,16 +8,16 @@ import (
 	gostmodels "github.com/knqyf263/gost/models"
 )
 
-func TestStorePackageStatueses(t *testing.T) {
+func TestSetPackageStates(t *testing.T) {
 	var tests = []struct {
 		pkgstats  []gostmodels.RedhatPackageState
 		installed models.Packages
 		release   string
 		in        models.VulnInfo
-		out       models.VulnInfo
+		out       models.PackageStatuses
 	}{
 
-		// one
+		//0 one
 		{
 			pkgstats: []gostmodels.RedhatPackageState{
 				{
@@ -31,18 +31,16 @@ func TestStorePackageStatueses(t *testing.T) {
 			},
 			release: "7",
 			in:      models.VulnInfo{},
-			out: models.VulnInfo{
-				AffectedPackages: []models.PackageStatus{
-					{
-						Name:        "bouncycastle",
-						FixState:    "Will not fix",
-						NotFixedYet: true,
-					},
+			out: []models.PackageStatus{
+				{
+					Name:        "bouncycastle",
+					FixState:    "Will not fix",
+					NotFixedYet: true,
 				},
 			},
 		},
 
-		// two
+		//1 two
 		{
 			pkgstats: []gostmodels.RedhatPackageState{
 				{
@@ -68,23 +66,21 @@ func TestStorePackageStatueses(t *testing.T) {
 			},
 			release: "7",
 			in:      models.VulnInfo{},
-			out: models.VulnInfo{
-				AffectedPackages: []models.PackageStatus{
-					{
-						Name:        "bouncycastle",
-						FixState:    "Will not fix",
-						NotFixedYet: true,
-					},
-					{
-						Name:        "pack_a",
-						FixState:    "Fix deferred",
-						NotFixedYet: true,
-					},
+			out: []models.PackageStatus{
+				{
+					Name:        "bouncycastle",
+					FixState:    "Will not fix",
+					NotFixedYet: true,
+				},
+				{
+					Name:        "pack_a",
+					FixState:    "Fix deferred",
+					NotFixedYet: true,
 				},
 			},
 		},
 
-		// ignore affected
+		//2 ignore affected
 		{
 			pkgstats: []gostmodels.RedhatPackageState{
 				{
@@ -97,11 +93,13 @@ func TestStorePackageStatueses(t *testing.T) {
 				"bouncycastle": models.Package{},
 			},
 			release: "7",
-			in:      models.VulnInfo{},
-			out:     models.VulnInfo{},
+			in: models.VulnInfo{
+				AffectedPackages: models.PackageStatuses{},
+			},
+			out: models.PackageStatuses{},
 		},
 
-		// look only the same os release.
+		//3 look only the same os release.
 		{
 			pkgstats: []gostmodels.RedhatPackageState{
 				{
@@ -114,16 +112,18 @@ func TestStorePackageStatueses(t *testing.T) {
 				"bouncycastle": models.Package{},
 			},
 			release: "7",
-			in:      models.VulnInfo{},
-			out:     models.VulnInfo{},
+			in: models.VulnInfo{
+				AffectedPackages: models.PackageStatuses{},
+			},
+			out: models.PackageStatuses{},
 		},
 	}
 
 	r := RedHat{}
 	for i, tt := range tests {
-		out := r.setPackageStates(&tt.in, tt.pkgstats, tt.installed, tt.release)
-		if ok := reflect.DeepEqual(tt.out, *out); !ok {
-			t.Errorf("[%d]\nexpected: %v\n  actual: %v\n", i, tt.out, *out)
+		out := r.setPackageStates(tt.in, tt.pkgstats, tt.installed, tt.release)
+		if ok := reflect.DeepEqual(tt.out, out); !ok {
+			t.Errorf("[%d]\nexpected: %v:%T\n  actual: %v:%T\n", i, tt.out, tt.out, out, out)
 		}
 	}
 }
