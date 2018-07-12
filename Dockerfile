@@ -6,10 +6,9 @@ RUN apk add --no-cache \
         gcc \
         musl-dev
 
-ENV REPOSITORY github.com/kotakanbe/go-cve-dictionary
-RUN git clone https://$REPOSITORY.git $GOPATH/src/$REPOSITORY \
-    && cd $GOPATH/src/$REPOSITORY \
-    && make install
+ENV REPOSITORY github.com/future-architect/vuls
+COPY . $GOPATH/src/$REPOSITORY
+RUN cd $GOPATH/src/$REPOSITORY && make install
 
 
 FROM alpine:3.7
@@ -19,14 +18,16 @@ MAINTAINER hikachan sadayuki-matsuno
 ENV LOGDIR /var/log/vuls
 ENV WORKDIR /vuls
 
-RUN apk add --no-cache ca-certificates \
+RUN apk add --no-cache \
+        openssh-client \
+        ca-certificates \
     && mkdir -p $WORKDIR $LOGDIR
 
-COPY --from=builder /go/bin/go-cve-dictionary /usr/local/bin/
+COPY --from=builder /go/bin/vuls /usr/local/bin/
 
 VOLUME [$WORKDIR, $LOGDIR]
 WORKDIR $WORKDIR
 ENV PWD $WORKDIR
 
-ENTRYPOINT ["go-cve-dictionary"]
+ENTRYPOINT ["vuls"]
 CMD ["--help"]
