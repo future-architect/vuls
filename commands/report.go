@@ -537,7 +537,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	} else {
 		if c.Conf.GostDBType == "sqlite3" {
-			util.Log.Infof("gost:", c.Conf.GostDBPath)
+			util.Log.Infof("gost: %s", c.Conf.GostDBPath)
 		}
 	}
 

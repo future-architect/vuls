@@ -117,10 +117,14 @@ func NewGostDB(cnf DBClientConf) (driver gostdb.DB, locked bool, err error) {
 
 // CloseDB close dbs
 func (d DBClient) CloseDB() {
-	if err := d.OvalDB.CloseDB(); err != nil {
-		util.Log.Errorf("Failed to close DB: %s", err)
+	if d.CveDB != nil {
+		if err := d.CveDB.CloseDB(); err != nil {
+			util.Log.Errorf("Failed to close DB: %s", err)
+		}
 	}
-	if err := d.CveDB.CloseDB(); err != nil {
-		util.Log.Errorf("Failed to close DB: %s", err)
+	if d.OvalDB != nil {
+		if err := d.OvalDB.CloseDB(); err != nil {
+			util.Log.Errorf("Failed to close DB: %s", err)
+		}
 	}
 }
