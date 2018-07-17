@@ -293,7 +293,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 			case config.RedHat, config.CentOS:
 				// For kernel related packages, ignore OVAL information with different major versions
 				if _, ok := kernelRelatedPackNames[ovalPack.Name]; ok {
-					if major(ovalPack.Version) != major(running.Release) {
+					if major(ovalPack.Version) != major(req.versionRelease) {
 						continue
 					}
 				}
