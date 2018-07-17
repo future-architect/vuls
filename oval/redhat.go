@@ -1,5 +1,5 @@
 /* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Architect, Inc. Japan.
+Copyright (C) 2016  Future Corporation , Japan.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
