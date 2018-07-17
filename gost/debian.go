@@ -19,6 +19,7 @@ package gost
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -78,6 +79,9 @@ func (deb Debian) FillWithGost(driver db.DB, r *models.ScanResult) error {
 			})
 		}
 	} else {
+		if driver == nil {
+			return fmt.Errorf("Gost DB Driver is nil")
+		}
 		for _, pack := range r.Packages {
 			cveDebs := driver.GetUnfixedCvesDebian(major(r.Release), pack.Name)
 			cves := []models.CveContent{}

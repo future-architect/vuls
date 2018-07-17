@@ -18,10 +18,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package gost
 
 import (
+	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/util"
 	"github.com/knqyf263/gost/db"
 	gostmodels "github.com/knqyf263/gost/models"
 )
@@ -34,11 +38,23 @@ type RedHat struct {
 // FillWithGost fills cve information that has in Gost
 func (red RedHat) FillWithGost(driver db.DB, r *models.ScanResult) error {
 	for _, pack := range r.Packages {
-
 		cves := map[string]gostmodels.RedhatCVE{}
 		if red.isFetchViaHTTP() {
-			// TODO
+			url, _ := util.URLPathJoin(config.Conf.GostDBURL,
+				"redhat", major(r.Release), "pkgs")
+			responses, err := getUnfixedCvesViaHTTP(r, url)
+			if err != nil {
+				return err
+			}
+			for _, res := range responses {
+				if err := json.Unmarshal([]byte(res.json), &cves); err != nil {
+					return err
+				}
+			}
 		} else {
+			if driver == nil {
+				return fmt.Errorf("Gost DB Driver is nil")
+			}
 			cves = driver.GetUnfixedCvesRedhat(major(r.Release), pack.Name)
 		}
 

@@ -323,7 +323,7 @@
 
 [[projects]]
   branch = "unfixed-cves"
-  digest = "1:01cd677685327ca3adbeaf9e868e9db4105852cba996117afd196c2dae3b17bb"
+  digest = "1:10e65558f91a6f6fe24552634b64fc90f9fcc3a881bdffe301abf53bc41a6201"
   name = "github.com/knqyf263/gost"
   packages = [
     "config",
@@ -332,7 +332,7 @@
     "util",
   ]
   pruneopts = "UT"
-  revision = "bc11848a3f7669f19a4980b2f40010c8642aeb6d"
+  revision = "c6ca1cbe8f5090be097719d3437848c56b6c23b3"
 
 [[projects]]
   branch = "nvd-json"
