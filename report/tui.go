@@ -765,7 +765,8 @@ func detailLines() (string, error) {
 	for _, affected := range vinfo.AffectedPackages {
 		// packages detected by OVAL may not be actually installed
 		if pack, ok := r.Packages[affected.Name]; ok {
-			packsVer = append(packsVer, pack.FormatVersionFromTo(affected.NotFixedYet))
+			packsVer = append(packsVer,
+				pack.FormatVersionFromTo(affected.NotFixedYet, affected.FixState))
 		}
 	}
 	sort.Strings(vinfo.CpeURIs)
