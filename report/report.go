@@ -142,27 +142,18 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string) error {
 	util.Log.Debugf("need to refresh")
 
-	if dbclient.OvalDB != nil {
-		util.Log.Infof("Fill CVE detailed information with OVAL")
-		if err := FillWithOval(dbclient.OvalDB, r); err != nil {
-			return fmt.Errorf("Failed to fill with OVAL: %s", err)
-		}
+	util.Log.Infof("Fill CVE detailed information with OVAL")
+	if err := FillWithOval(dbclient.OvalDB, r); err != nil {
+		return fmt.Errorf("Failed to fill with OVAL: %s", err)
 	}
 
 	if err := fillVulnByCpeURIs(dbclient.CveDB, r, cpeURIs); err != nil {
 		return fmt.Errorf("Failed to detect vulns of %s: %s", cpeURIs, err)
 	}
 
-	if dbclient.GostDB != nil {
-		util.Log.Infof("Fill with gost")
-		if err := FillWithGost(dbclient.GostDB, r); err != nil {
-			return fmt.Errorf("Failed to fill with gost: %s", err)
-		}
-	} else {
-		switch r.Family {
-		case c.RedHat, c.CentOS, c.Debian:
-			util.Log.Warn("Not-fixed-CVEs will be detected if you report with gost. For details, see the link(TODO)")
-		}
+	util.Log.Infof("Fill with gost")
+	if err := FillWithGost(dbclient.GostDB, r); err != nil {
+		return fmt.Errorf("Failed to fill with gost: %s", err)
 	}
 
 	util.Log.Infof("Fill CVE detailed information with CVE-DB")

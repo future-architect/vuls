@@ -121,11 +121,11 @@ func (o Debian) FillWithOval(driver db.DB, r *models.ScanResult) (err error) {
 	linuxImage := "linux-image-" + r.RunningKernel.Release
 
 	// Add linux and set the version of running kernel to search OVAL.
-	newVer := ""
-	if p, ok := r.Packages[linuxImage]; ok {
-		newVer = p.NewVersion
-	}
 	if r.Container.ContainerID == "" {
+		newVer := ""
+		if p, ok := r.Packages[linuxImage]; ok {
+			newVer = p.NewVersion
+		}
 		r.Packages["linux"] = models.Package{
 			Name:       "linux",
 			Version:    r.RunningKernel.Version,

@@ -34,7 +34,14 @@ type RedHat struct {
 // FillWithGost fills cve information that has in Gost
 func (red RedHat) FillWithGost(driver db.DB, r *models.ScanResult) error {
 	for _, pack := range r.Packages {
-		cves := driver.GetUnfixedCvesRedhat(major(r.Release), pack.Name)
+
+		cves := map[string]gostmodels.RedhatCVE{}
+		if red.isFetchViaHTTP() {
+			// TODO
+		} else {
+			cves = driver.GetUnfixedCvesRedhat(major(r.Release), pack.Name)
+		}
+
 		for _, cve := range cves {
 			cveCont := red.convertToModel(&cve)
 			v, ok := r.ScannedCves[cve.Name]

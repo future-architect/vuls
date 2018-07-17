@@ -116,7 +116,7 @@ func (ps PackageStatuses) FormatTuiSummary() string {
 	return strings.Join(names, ", ")
 }
 
-// Store insert given pkg if missing, updaste pkg if exists
+// Store insert given pkg if missing, update pkg if exists
 func (ps PackageStatuses) Store(pkg PackageStatus) PackageStatuses {
 	for i, p := range ps {
 		if p.Name == pkg.Name {

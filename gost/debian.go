@@ -18,7 +18,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package gost
 
 import (
+	"encoding/json"
+
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/util"
 	"github.com/knqyf263/gost/db"
 	gostmodels "github.com/knqyf263/gost/models"
 )
@@ -28,28 +32,119 @@ type Debian struct {
 	Base
 }
 
+type packCves struct {
+	packName  string
+	isSrcPack bool
+	cves      []models.CveContent
+}
+
 // FillWithGost fills cve information that has in Gost
 func (deb Debian) FillWithGost(driver db.DB, r *models.ScanResult) error {
-	for _, pack := range r.Packages {
-		cves := driver.GetUnfixedCvesDebian(major(r.Release), pack.Name)
-		for _, cve := range cves {
-			cveCont := deb.convertToModel(&cve)
+	linuxImage := "linux-image-" + r.RunningKernel.Release
+	// Add linux and set the version of running kernel to search OVAL.
+	if r.Container.ContainerID == "" {
+		newVer := ""
+		if p, ok := r.Packages[linuxImage]; ok {
+			newVer = p.NewVersion
+		}
+		r.Packages["linux"] = models.Package{
+			Name:       "linux",
+			Version:    r.RunningKernel.Version,
+			NewVersion: newVer,
+		}
+	}
+
+	packCvesList := []packCves{}
+	if deb.isFetchViaHTTP() {
+		url, _ := util.URLPathJoin(config.Conf.GostDBURL, "debian", major(r.Release), "pkgs")
+		responses, err := getUnfixedCvesViaHTTP(r, url)
+		if err != nil {
+			return err
+		}
+
+		for _, res := range responses {
+			debCves := map[string]gostmodels.DebianCVE{}
+			if err := json.Unmarshal([]byte(res.json), &debCves); err != nil {
+				return err
+			}
+			cves := []models.CveContent{}
+			for _, debcve := range debCves {
+				cves = append(cves, *deb.convertToModel(&debcve))
+			}
+			packCvesList = append(packCvesList, packCves{
+				packName:  res.request.packName,
+				isSrcPack: res.request.isSrcPack,
+				cves:      cves,
+			})
+		}
+	} else {
+		for _, pack := range r.Packages {
+			cveDebs := driver.GetUnfixedCvesDebian(major(r.Release), pack.Name)
+			cves := []models.CveContent{}
+			for _, cveDeb := range cveDebs {
+				cves = append(cves, *deb.convertToModel(&cveDeb))
+			}
+			packCvesList = append(packCvesList, packCves{
+				packName:  pack.Name,
+				isSrcPack: false,
+				cves:      cves,
+			})
+		}
+
+		// SrcPack
+		for _, pack := range r.SrcPackages {
+			cveDebs := driver.GetUnfixedCvesDebian(major(r.Release), pack.Name)
+			cves := []models.CveContent{}
+			for _, cveDeb := range cveDebs {
+				cves = append(cves, *deb.convertToModel(&cveDeb))
+			}
+			packCvesList = append(packCvesList, packCves{
+				packName:  pack.Name,
+				isSrcPack: true,
+				cves:      cves,
+			})
+		}
+	}
+
+	delete(r.Packages, "linux")
+
+	for _, p := range packCvesList {
+		for _, cve := range p.cves {
 			v, ok := r.ScannedCves[cve.CveID]
 			if ok {
-				v.CveContents[models.DebianSecurityTracker] = *cveCont
+				v.CveContents[models.DebianSecurityTracker] = cve
 			} else {
 				v = models.VulnInfo{
-					CveID:       cveCont.CveID,
-					CveContents: models.NewCveContents(*cveCont),
+					CveID:       cve.CveID,
+					CveContents: models.NewCveContents(cve),
 					Confidences: models.Confidences{models.DebianSecurityTrackerMatch},
 				}
 			}
 
-			v.AffectedPackages = v.AffectedPackages.Store(models.PackageStatus{
-				Name:        pack.Name,
-				FixState:    "open",
-				NotFixedYet: true,
-			})
+			names := []string{}
+			if p.isSrcPack {
+				if srcPack, ok := r.SrcPackages[p.packName]; ok {
+					for _, binName := range srcPack.BinaryNames {
+						if _, ok := r.Packages[binName]; ok {
+							names = append(names, binName)
+						}
+					}
+				}
+			} else {
+				if p.packName == "linux" {
+					names = append(names, linuxImage)
+				} else {
+					names = append(names, p.packName)
+				}
+			}
+
+			for _, name := range names {
+				v.AffectedPackages = v.AffectedPackages.Store(models.PackageStatus{
+					Name:        name,
+					FixState:    "open",
+					NotFixedYet: true,
+				})
+			}
 			r.ScannedCves[cve.CveID] = v
 		}
 	}

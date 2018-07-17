@@ -33,6 +33,18 @@ type DBClientConf struct {
 	DebugSQL bool
 }
 
+func (c DBClientConf) isCveDBViaHTTP() bool {
+	return c.CveDBURL != "" && c.CveDBType == "sqlite3"
+}
+
+func (c DBClientConf) isOvalViaHTTP() bool {
+	return c.OvalDBURL != "" && c.OvalDBType == "sqlite3"
+}
+
+func (c DBClientConf) isGostViaHTTP() bool {
+	return c.GostDBURL != "" && c.GostDBType == "sqlite3"
+}
+
 // NewDBClient returns db clients
 func NewDBClient(cnf DBClientConf) (dbclient *DBClient, locked bool, err error) {
 	cveDriver, locked, err := NewCveDB(cnf)
@@ -63,6 +75,9 @@ func NewDBClient(cnf DBClientConf) (dbclient *DBClient, locked bool, err error) 
 
 // NewCveDB returns cve db client
 func NewCveDB(cnf DBClientConf) (driver cvedb.DB, locked bool, err error) {
+	if cnf.isCveDBViaHTTP() {
+		return nil, false, nil
+	}
 	util.Log.Debugf("open cve-dictionary db (%s)", cnf.CveDBType)
 	path := cnf.CveDBURL
 	if cnf.CveDBType == "sqlite3" {
@@ -80,6 +95,9 @@ func NewCveDB(cnf DBClientConf) (driver cvedb.DB, locked bool, err error) {
 
 // NewOvalDB returns oval db client
 func NewOvalDB(cnf DBClientConf) (driver ovaldb.DB, locked bool, err error) {
+	if cnf.isOvalViaHTTP() {
+		return nil, false, nil
+	}
 	path := cnf.OvalDBURL
 	if cnf.OvalDBType == "sqlite3" {
 		path = cnf.OvalDBPath
@@ -99,6 +117,9 @@ func NewOvalDB(cnf DBClientConf) (driver ovaldb.DB, locked bool, err error) {
 
 // NewGostDB returns db client for Gost
 func NewGostDB(cnf DBClientConf) (driver gostdb.DB, locked bool, err error) {
+	if cnf.isGostViaHTTP() {
+		return nil, false, nil
+	}
 	path := cnf.GostDBURL
 	if cnf.GostDBType == "sqlite3" {
 		path = cnf.GostDBPath

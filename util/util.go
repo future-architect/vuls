@@ -70,7 +70,7 @@ func URLPathJoin(baseURL string, paths ...string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	url.Path += strings.Join(trimedPaths, "/")
+	url.Path += "/" + strings.Join(trimedPaths, "/")
 	return url.String(), nil
 }
 

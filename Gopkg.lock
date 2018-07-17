@@ -2,18 +2,18 @@
 
 
 [[projects]]
-  digest = "1:5fa4dde7611b07310d44d104e4fbebb2830cb03a2cf99798433d2f828c7012ca"
+  digest = "1:c9d46edf143105da698144d5c63aef27f5fce846c9ce39865d0aff4b69cfd5fa"
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
     "storage",
     "version",
   ]
   pruneopts = "UT"
-  revision = "fbe7db0e3f9793ba3e5704efbab84f51436c136e"
-  version = "v18.0.0"
+  revision = "34e80a61f817f18afd85d0c6d12ee6400d6506b2"
+  version = "v18.1.0"
 
 [[projects]]
-  digest = "1:2de18968f9e072e3c6f9588c651a3d72780a0199f721216d4fbb29cc6f9ac201"
+  digest = "1:4591fb65738d26dbafd8ed746252ffe73fb76d4eb4cf9b0e82f1ce51bff041e3"
   name = "github.com/Azure/go-autorest"
   packages = [
     "autorest",
@@ -22,8 +22,8 @@
     "autorest/date",
   ]
   pruneopts = "UT"
-  revision = "1f7cd6cfe0adea687ad44a512dfe76140f804318"
-  version = "v10.12.0"
+  revision = "894522ed0d5cab8d143c39116ddc5f605a1931ee"
+  version = "v10.13.0"
 
 [[projects]]
   digest = "1:282acb7fe0ca456de4ea5c3174c2691a2bd74008462e966b69094ad0b2c23e6e"
@@ -42,7 +42,7 @@
   version = "v9"
 
 [[projects]]
-  digest = "1:7ebca797a2a99e349c67b378cc9d634f1e5a40cb6b9ed9480a921ef645cf73a8"
+  digest = "1:c384b89e3c192a4c273a36f0e91a402c86e105c6ab0e1f85e3a52c222c23d731"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -64,6 +64,7 @@
     "aws/signer/v4",
     "internal/sdkio",
     "internal/sdkrand",
+    "internal/sdkuri",
     "internal/shareddefaults",
     "private/protocol",
     "private/protocol/eventstream",
@@ -77,8 +78,8 @@
     "service/sts",
   ]
   pruneopts = "UT"
-  revision = "fefacb6d45b233a9e20097a176c1c46e85a782d3"
-  version = "v1.14.25"
+  revision = "94b80148ea4b1b136682116294b151766a3b85c2"
+  version = "v1.14.27"
 
 [[projects]]
   digest = "1:0f98f59e9a2f4070d66f0c9c39561f68fcd1dc837b22a852d28d0003aebd1b1e"
@@ -129,12 +130,12 @@
   version = "v1.4.7"
 
 [[projects]]
-  digest = "1:5c4ab890ab6d82f75947e24cdf1a3ab29d37c0e545384dd1a29431b66daa0deb"
+  digest = "1:fe8a03a8222d5b913f256972933d26d24ad7c8286692a42943bc01633cc8fce3"
   name = "github.com/go-ini/ini"
   packages = ["."]
   pruneopts = "UT"
-  revision = "af26abd521cd7697481572fdbc4a53cbea3dde1b"
-  version = "v1.38.0"
+  revision = "358ee7663966325963d4e8b2e1fbd570c5195153"
+  version = "v1.38.1"
 
 [[projects]]
   digest = "1:f0e9573388aa6e99341cbea024d15775f8209896f9f7826cd92a3044f1f8ea39"
@@ -199,11 +200,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e12b92b8bb20af6e299e9829534cfe790857702a988d3f0443e772c9d82a4fd2"
+  digest = "1:32c0e96a63bd093eccf37db757fb314be5996f34de93969321c2cbef893a7bd6"
   name = "github.com/hashicorp/go-version"
   packages = ["."]
   pruneopts = "UT"
-  revision = "23480c0665776210b5fbbac6eaaee40e3e6a96b7"
+  revision = "270f2f71b1ee587f3b609f00f422b76a6b28f348"
 
 [[projects]]
   branch = "master"
@@ -322,7 +323,7 @@
 
 [[projects]]
   branch = "unfixed-cves"
-  digest = "1:5e876c86b29b35bfac63d905553be751042736eb9b85f5231084e3f7cf37e392"
+  digest = "1:01cd677685327ca3adbeaf9e868e9db4105852cba996117afd196c2dae3b17bb"
   name = "github.com/knqyf263/gost"
   packages = [
     "config",
@@ -331,11 +332,11 @@
     "util",
   ]
   pruneopts = "UT"
-  revision = "a5d65b60274a0418592de0e954418e065d386814"
+  revision = "bc11848a3f7669f19a4980b2f40010c8642aeb6d"
 
 [[projects]]
   branch = "nvd-json"
-  digest = "1:d891e48c784314872824febba46c03b9dfa690523f8fc44a565ccbdaf4ee9aa8"
+  digest = "1:f52cea10c649b38a8578f521226143b1e5ed053316ef7bcfe178ee0cb4d394f1"
   name = "github.com/kotakanbe/go-cve-dictionary"
   packages = [
     "config",
@@ -344,7 +345,7 @@
     "models",
   ]
   pruneopts = "UT"
-  revision = "52e5d8e1554f6be479bfcb9484685571e6554b54"
+  revision = "b943ea7b965b052636e02ab05c7216302f323267"
 
 [[projects]]
   digest = "1:54d3c90db1164399906830313a6fce7770917d7e4a12da8f2d8693d18ff5ef27"
@@ -356,7 +357,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ede6d917a203511d006d81c0f491687df3e3ad81a546215831cefa2f39373ba4"
+  digest = "1:107fdfc5bce1c26407981f204dd4ebbd5d48ba9c422975ad26bf77704124f757"
   name = "github.com/kotakanbe/goval-dictionary"
   packages = [
     "config",
@@ -365,7 +366,7 @@
     "models",
   ]
   pruneopts = "UT"
-  revision = "f3255b2e6a0a38b88eaa25b5696d7e73868e46dc"
+  revision = "c60a1b8964d3c63c8c8b13cbdf6916d507d9d0ef"
 
 [[projects]]
   branch = "master"
@@ -464,11 +465,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e730597b38a4d56e2361e0b6236cb800e52c73cace2ff91396f4ff35792ddfa7"
+  digest = "1:5ab79470a1d0fb19b041a624415612f8236b3c06070161a910562f2b2d064355"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
   pruneopts = "UT"
-  revision = "bb74f1db0675b241733089d5a1faa5dd8b0ef57b"
+  revision = "f15292f7a699fcc1a38a80977f80a046874ba8ac"
 
 [[projects]]
   branch = "master"
@@ -536,11 +537,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:04330644a1b03ccdf9b31b2f98a0978e2697d967892c07c426f58676209428f6"
+  digest = "1:f0a733af3673f2e73f9c8529a6ba7e0766b16ec574528811bf721643f8488b22"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   pruneopts = "UT"
-  revision = "e54a77765aca7bbdd8e56c1c54f60579968b2dc9"
+  revision = "92052687f8ec598ff0da626d2909478cfd1e3a3c"
 
 [[projects]]
   digest = "1:37ace7f35375adec11634126944bdc45a673415e2fcc07382d03b75ec76ea94c"
@@ -637,7 +638,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "cffdcf672aee934982473246bc7e9a8ba446aa9b"
+  revision = "d0887baf81f4598189d4e12a37c6da86f0bba4d0"
 
 [[projects]]
   branch = "master"
@@ -648,7 +649,7 @@
     "windows",
   ]
   pruneopts = "UT"
-  revision = "1b2967e3c290b7c545b3db0deeda16e9be4f98a2"
+  revision = "ac767d655b305d4e9612f5f6e33120b9176c4ad4"
 
 [[projects]]
   digest = "1:7509ba4347d1f8de6ae9be8818b0cd1abc3deeffe28aeaf4be6d4b6b5178d9ca"

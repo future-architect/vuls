@@ -578,12 +578,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %s", err)
 		return subcommands.ExitFailure
 	}
-
 	if err != nil {
 		util.Log.Errorf("Failed to init DB Clients: %s", err)
 		return subcommands.ExitFailure
 	}
-
 	defer dbclient.CloseDB()
 
 	if res, err = report.FillCveInfos(*dbclient, res, dir); err != nil {
