@@ -28,10 +28,6 @@
   name = "github.com/kotakanbe/go-cve-dictionary"
   branch = "nvd-json"
 
-[[constraint]]
-  branch = "unfixed-cves"
-  name = "github.com/knqyf263/gost"
-
 [prune]
   go-tests = true
   unused-packages = true

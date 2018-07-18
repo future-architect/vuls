@@ -42,7 +42,7 @@
   version = "v9"
 
 [[projects]]
-  digest = "1:c384b89e3c192a4c273a36f0e91a402c86e105c6ab0e1f85e3a52c222c23d731"
+  digest = "1:c461adf4c4881516e488ddb237e581c8b23e381de4a0c1f4b46d6c111998e991"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -78,8 +78,8 @@
     "service/sts",
   ]
   pruneopts = "UT"
-  revision = "94b80148ea4b1b136682116294b151766a3b85c2"
-  version = "v1.14.27"
+  revision = "c25475dd537f7becaf29e97c14617c8082f6b5d4"
+  version = "v1.14.28"
 
 [[projects]]
   digest = "1:0f98f59e9a2f4070d66f0c9c39561f68fcd1dc837b22a852d28d0003aebd1b1e"
@@ -322,7 +322,7 @@
   revision = "74609b86c936dff800c69ec89fcf4bc52d5f13a4"
 
 [[projects]]
-  branch = "unfixed-cves"
+  branch = "master"
   digest = "1:10e65558f91a6f6fe24552634b64fc90f9fcc3a881bdffe301abf53bc41a6201"
   name = "github.com/knqyf263/gost"
   packages = [
@@ -332,7 +332,7 @@
     "util",
   ]
   pruneopts = "UT"
-  revision = "c6ca1cbe8f5090be097719d3437848c56b6c23b3"
+  revision = "cde2748ee7cf064327a0061787090275601c2791"
 
 [[projects]]
   branch = "nvd-json"
