@@ -321,13 +321,20 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 		nwvec = fmt.Sprintf("*%s*", nwvec)
 	}
 
-	return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n```\n%s\n```\n%s\n",
+	mitigation := ""
+	if vinfo.Mitigations(osFamily)[0].Type != models.Unknown {
+		mitigation = fmt.Sprintf("\nMitigation:\n```%s```\n",
+			vinfo.Mitigations(osFamily)[0].Value)
+	}
+
+	return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n```\n%s\n```%s\n%s\n",
 		maxCvss.Value.Score,
 		severity,
 		nwvec,
 		vinfo.PatchStatus(),
 		strings.Join(vectors, "\n"),
 		vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
+		mitigation,
 		cweIDs(vinfo, osFamily, cweDict),
 	)
 }
