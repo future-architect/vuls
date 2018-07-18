@@ -72,6 +72,7 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 			cols = []interface{}{
 				r.FormatServerName(),
 				r.ScannedCves.FormatCveSummary(),
+				r.ScannedCves.FormatFixedStatus(),
 				r.FormatUpdatablePacksSummary(),
 			}
 		} else {

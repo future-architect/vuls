@@ -178,17 +178,19 @@ func msgText(r models.ScanResult) string {
 	serverInfo := fmt.Sprintf("*%s*", r.ServerInfo())
 
 	if 0 < len(r.Errors) {
-		return fmt.Sprintf("%s\n%s\n%s\n%s\nError: %s",
+		return fmt.Sprintf("%s\n%s\n%s\n%s\n%s\nError: %s",
 			notifyUsers,
 			serverInfo,
 			r.ScannedCves.FormatCveSummary(),
+			r.ScannedCves.FormatFixedStatus(),
 			r.FormatUpdatablePacksSummary(),
 			r.Errors)
 	}
-	return fmt.Sprintf("%s\n%s\n%s\n%s",
+	return fmt.Sprintf("%s\n%s\n%s\n%s\n%s",
 		notifyUsers,
 		serverInfo,
 		r.ScannedCves.FormatCveSummary(),
+		r.ScannedCves.FormatFixedStatus(),
 		r.FormatUpdatablePacksSummary())
 }
 

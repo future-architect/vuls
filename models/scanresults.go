@@ -279,10 +279,11 @@ func (r ScanResult) FormatTextReportHeadedr() string {
 		buf.WriteString("=")
 	}
 
-	return fmt.Sprintf("%s\n%s\n%s\t%s\n",
+	return fmt.Sprintf("%s\n%s\n%s, %s, %s\n",
 		r.ServerInfo(),
 		buf.String(),
 		r.ScannedCves.FormatCveSummary(),
+		r.ScannedCves.FormatFixedStatus(),
 		r.FormatUpdatablePacksSummary(),
 	)
 }

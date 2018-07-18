@@ -104,6 +104,18 @@ func (v VulnInfos) FormatCveSummary() string {
 		m["High"], m["Medium"], m["Low"], m["Unknown"])
 }
 
+// FormatFixedStatus summarize the number of cves are fixed.
+func (v VulnInfos) FormatFixedStatus() string {
+	total, fixed := 0, 0
+	for _, vInfo := range v {
+		total++
+		if vInfo.PatchStatus() == "Fixed" {
+			fixed++
+		}
+	}
+	return fmt.Sprintf("%d/%d Fixed", fixed, total)
+}
+
 // PackageStatuses is a list of PackageStatus
 type PackageStatuses []PackageStatus
 
