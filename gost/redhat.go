@@ -116,12 +116,14 @@ func (red RedHat) setPackageStates(v models.VulnInfo, ps []gostmodels.RedhatPack
 
 func (red RedHat) convertToModel(cve *gostmodels.RedhatCVE) *models.CveContent {
 	cwes := []string{}
-	s := strings.TrimPrefix(cve.Cwe, "(")
-	s = strings.TrimSuffix(s, ")")
-	if strings.Contains(cve.Cwe, "|") {
-		cwes = strings.Split(cve.Cwe, "|")
-	} else {
-		cwes = append(strings.Split(s, "->"))
+	if cve.Cwe != "" {
+		s := strings.TrimPrefix(cve.Cwe, "(")
+		s = strings.TrimSuffix(s, ")")
+		if strings.Contains(cve.Cwe, "|") {
+			cwes = strings.Split(cve.Cwe, "|")
+		} else {
+			cwes = append(strings.Split(s, "->"))
+		}
 	}
 
 	details := []string{}

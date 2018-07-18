@@ -26,6 +26,7 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/cwe"
 	"github.com/future-architect/vuls/models"
 	"github.com/nlopes/slack"
 	"github.com/parnurzeal/gorequest"
@@ -226,7 +227,7 @@ func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 		a := slack.Attachment{
 			Title:      vinfo.CveID,
 			TitleLink:  "https://nvd.nist.gov/vuln/detail/" + vinfo.CveID,
-			Text:       attachmentText(vinfo, r.Family),
+			Text:       attachmentText(vinfo, r.Family, r.CweDict),
 			MarkdownIn: []string{"text", "pretext"},
 			Fields: []slack.AttachmentField{
 				{
@@ -262,12 +263,15 @@ func color(cvssScore float64) string {
 	}
 }
 
-func attachmentText(vinfo models.VulnInfo, osFamily string) string {
+func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]models.CweDictEntry) string {
 	maxCvss := vinfo.MaxCvssScore()
 	vectors := []string{}
 
 	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores(osFamily)...)
 	for _, cvss := range scores {
+		if cvss.Value.Severity == "" {
+			continue
+		}
 		calcURL := ""
 		switch cvss.Value.Type {
 		case models.CVSS2:
@@ -281,12 +285,12 @@ func attachmentText(vinfo models.VulnInfo, osFamily string) string {
 		}
 
 		if cont, ok := vinfo.CveContents[cvss.Type]; ok {
-			cvssstr := cvss.Value.Format()
-			if cvssstr == "" {
-				continue
-			}
-			v := fmt.Sprintf("<%s|%s> (<%s|%s>)",
-				calcURL, cvssstr, cont.SourceLink, cvss.Type)
+			v := fmt.Sprintf("<%s|%s> %s (<%s|%s>)",
+				calcURL,
+				fmt.Sprintf("%3.1f/%s", cvss.Value.Score, cvss.Value.Vector),
+				cvss.Value.Severity,
+				cont.SourceLink,
+				cvss.Type)
 			vectors = append(vectors, v)
 
 		} else {
@@ -297,9 +301,10 @@ func attachmentText(vinfo models.VulnInfo, osFamily string) string {
 						v, k))
 				}
 
-				v := fmt.Sprintf("<%s|%s> (%s)",
+				v := fmt.Sprintf("<%s|%s> %s (%s)",
 					calcURL,
-					cvss.Value.Format(),
+					fmt.Sprintf("%3.1f/%s", cvss.Value.Score, cvss.Value.Vector),
+					cvss.Value.Severity,
 					strings.Join(links, ", "))
 				vectors = append(vectors, v)
 			}
@@ -311,27 +316,66 @@ func attachmentText(vinfo models.VulnInfo, osFamily string) string {
 		severity = "?"
 	}
 
-	return fmt.Sprintf("*%4.1f (%s)* %s\n%s\n```\n%s\n```\n",
+	nwvec := vinfo.AttackVector()
+	if nwvec == "Network" || nwvec == "remote" {
+		nwvec = fmt.Sprintf("*%s*", nwvec)
+	}
+
+	return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n```\n%s\n```\n%s\n",
 		maxCvss.Value.Score,
 		severity,
-		cweIDs(vinfo, osFamily),
+		nwvec,
+		vinfo.PatchStatus(),
 		strings.Join(vectors, "\n"),
 		vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
+		cweIDs(vinfo, osFamily, cweDict),
 	)
 }
 
-func cweIDs(vinfo models.VulnInfo, osFamily string) string {
+func cweIDs(vinfo models.VulnInfo, osFamily string, cweDict map[string]models.CweDictEntry) string {
 	links := []string{}
-	for _, cwe := range vinfo.CveContents.UniqCweIDs(osFamily) {
+	for _, c := range vinfo.CveContents.UniqCweIDs(osFamily) {
+		cweNum := strings.TrimPrefix(c.Value, "CWE-")
 		if config.Conf.Lang == "ja" {
-			links = append(links, fmt.Sprintf("<%s|%s>",
-				cweJvnURL(cwe.Value), cwe.Value))
+			top10str := ""
+			if dict, ok := cweDict[cweNum]; ok {
+				if dict.OwaspTopTen2017 != "" {
+					top10str = fmt.Sprintf("<%s|[OWASP Top %s]>",
+						cwe.OwaspTopTen2017GitHubURLJa[dict.OwaspTopTen2017],
+						dict.OwaspTopTen2017)
+				}
+			}
+			if dict, ok := cwe.CweDictJa[cweNum]; ok {
+				links = append(links, fmt.Sprintf("%s <%s|%s>: %s",
+					top10str, cweJvnURL(c.Value), c.Value, dict.Name))
+			} else if dict, ok := cwe.CweDictEn[cweNum]; ok {
+				links = append(links, fmt.Sprintf("%s <%s|%s>: %s",
+					top10str, cweJvnURL(c.Value), c.Value, dict.Name))
+			} else {
+				links = append(links, fmt.Sprintf("%s <%s|%s>",
+					top10str, cweJvnURL(c.Value), c.Value))
+			}
+
 		} else {
-			links = append(links, fmt.Sprintf("<%s|%s>",
-				cweURL(cwe.Value), cwe.Value))
+			top10str := ""
+			if dict, ok := cweDict[cweNum]; ok {
+				if dict.OwaspTopTen2017 != "" {
+					top10str = fmt.Sprintf("<%s|[OWASP Top %s]>",
+						cwe.OwaspTopTen2017GitHubURLEn[dict.OwaspTopTen2017],
+						dict.OwaspTopTen2017)
+				}
+			}
+
+			if dict, ok := cwe.CweDictEn[cweNum]; ok {
+				links = append(links, fmt.Sprintf("%s <%s|%s>: %s",
+					top10str, cweURL(c.Value), c.Value, dict.Name))
+			} else {
+				links = append(links, fmt.Sprintf("%s <%s|%s>",
+					top10str, cweURL(c.Value), c.Value))
+			}
 		}
 	}
-	return strings.Join(links, " / ")
+	return strings.Join(links, "\n")
 }
 
 // See testcase
