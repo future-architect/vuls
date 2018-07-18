@@ -215,7 +215,7 @@ No CVE-IDs are found in updatable packages.
 			table.AddRow(name, url)
 		}
 
-		for _, v := range vuln.CveContents.CweIDs(r.Family) {
+		for _, v := range vuln.CveContents.UniqCweIDs(r.Family) {
 			table.AddRow(fmt.Sprintf("%s (%s)", v.Value, v.Type), cweURL(v.Value))
 		}
 

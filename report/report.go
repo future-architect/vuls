@@ -267,9 +267,8 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (err error) {
 // https://github.com/knqyf263/gost
 func FillWithGost(driver gostdb.DB, r *models.ScanResult) (err error) {
 	gostClient := gost.NewClient(r.Family)
-
-	// TODO chekc if gostfetched
-	// TODO chekc if gost fresh
+	// TODO chekc if fetched
+	// TODO chekc if fresh enough
 	return gostClient.FillWithGost(driver, r)
 }
 

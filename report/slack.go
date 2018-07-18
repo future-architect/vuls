@@ -322,7 +322,7 @@ func attachmentText(vinfo models.VulnInfo, osFamily string) string {
 
 func cweIDs(vinfo models.VulnInfo, osFamily string) string {
 	links := []string{}
-	for _, cwe := range vinfo.CveContents.CweIDs(osFamily) {
+	for _, cwe := range vinfo.CveContents.UniqCweIDs(osFamily) {
 		if config.Conf.Lang == "ja" {
 			links = append(links, fmt.Sprintf("<%s|%s>",
 				cweJvnURL(cwe.Value), cwe.Value))

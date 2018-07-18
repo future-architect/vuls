@@ -165,6 +165,18 @@ func (v CveContents) CweIDs(myFamily string) (values []CveContentStr) {
 	return
 }
 
+// UniqCweIDs returns Uniq CweIDs
+func (v CveContents) UniqCweIDs(myFamily string) (values []CveContentStr) {
+	uniq := map[string]CveContentStr{}
+	for _, cwes := range v.CweIDs(myFamily) {
+		uniq[cwes.Value] = cwes
+	}
+	for _, cwe := range uniq {
+		values = append(values, cwe)
+	}
+	return values
+}
+
 // CveContent has abstraction of various vulnerability information
 type CveContent struct {
 	Type          CveContentType

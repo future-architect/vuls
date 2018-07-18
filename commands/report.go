@@ -502,7 +502,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 	if err := report.CveClient.CheckHealth(); err != nil {
 		util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
-		util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with -cvedb-path option")
+		util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with -cvedb-path option instead of -cvedb-url")
 		return subcommands.ExitFailure
 	}
 	if c.Conf.CveDBURL != "" {
@@ -518,7 +518,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		err := oval.Base{}.CheckHTTPHealth()
 		if err != nil {
 			util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
-			util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with -ovaldb-path option")
+			util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with -ovaldb-path option instead of -ovaldb-url")
 			return subcommands.ExitFailure
 		}
 	} else {
@@ -532,7 +532,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		err := gost.Base{}.CheckHTTPHealth()
 		if err != nil {
 			util.Log.Errorf("gost HTTP server is not running. err: %s", err)
-			util.Log.Errorf("Run gost as server mode before reporting or run with -gostdb-path option")
+			util.Log.Errorf("Run gost as server mode before reporting or run with -gostdb-path option instead of -gostdb-url")
 			return subcommands.ExitFailure
 		}
 	} else {

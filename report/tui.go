@@ -814,7 +814,7 @@ func detailLines() (string, error) {
 		table.AddRow(cols...)
 	}
 
-	uniqCweIDs := vinfo.CveContents.CweIDs(r.Family)
+	uniqCweIDs := vinfo.CveContents.UniqCweIDs(r.Family)
 	cwes := []models.CweDictEntry{}
 	for _, cweID := range uniqCweIDs {
 		if strings.HasPrefix(cweID.Value, "CWE-") {
