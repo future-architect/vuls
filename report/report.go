@@ -32,10 +32,12 @@ import (
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
 	"github.com/future-architect/vuls/cwe"
+	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/util"
 	"github.com/hashicorp/uuid"
+	gostdb "github.com/knqyf263/gost/db"
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
 	ovaldb "github.com/kotakanbe/goval-dictionary/db"
 )
@@ -142,19 +144,28 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string) erro
 
 	util.Log.Infof("Fill CVE detailed information with OVAL")
 	if err := FillWithOval(dbclient.OvalDB, r); err != nil {
-		return fmt.Errorf("Failed to fill OVAL information: %s", err)
+		return fmt.Errorf("Failed to fill with OVAL: %s", err)
+	}
+
+	if err := fillVulnByCpeURIs(dbclient.CveDB, r, cpeURIs); err != nil {
+		return fmt.Errorf("Failed to detect vulns of %s: %s", cpeURIs, err)
+	}
+
+	util.Log.Infof("Fill with gost")
+	if err := FillWithGost(dbclient.GostDB, r); err != nil {
+		return fmt.Errorf("Failed to fill with gost: %s", err)
 	}
 
 	util.Log.Infof("Fill CVE detailed information with CVE-DB")
-	if err := fillWithCveDB(dbclient.CveDB, r, cpeURIs); err != nil {
-		return fmt.Errorf("Failed to fill CVE information: %s", err)
+	if err := fillCveDetail(dbclient.CveDB, r); err != nil {
+		return fmt.Errorf("Failed to fill with CVE: %s", err)
 	}
 
 	fillCweDict(r)
 	return nil
 }
 
-// fillCveDetail fetches NVD, JVN from CVE Database, and then set to fields.
+// fillCveDetail fetches NVD, JVN from CVE Database
 func fillCveDetail(driver cvedb.DB, r *models.ScanResult) error {
 	var cveIDs []string
 	for _, v := range r.ScannedCves {
@@ -190,14 +201,7 @@ func fillCveDetail(driver cvedb.DB, r *models.ScanResult) error {
 	return nil
 }
 
-func fillWithCveDB(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) error {
-	if err := fillVulnByCpeURIs(driver, r.ScannedCves, cpeURIs); err != nil {
-		return err
-	}
-	return fillCveDetail(driver, r)
-}
-
-// FillWithOval fetches OVAL database, and then set to fields.
+// FillWithOval fetches OVAL database
 func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (err error) {
 	var ovalClient oval.Client
 	var ovalFamily string
@@ -240,7 +244,7 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (err error) {
 		return fmt.Errorf("Failed to New Oval DB. err: %s", err)
 	}
 
-	util.Log.Debugf("Check whether oval is already fetched: %s %s",
+	util.Log.Debugf("Check whether oval fetched: %s %s",
 		ovalFamily, r.Release)
 	ok, err := ovalClient.CheckIfOvalFetched(driver, ovalFamily, r.Release)
 	if err != nil {
@@ -259,26 +263,35 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (err error) {
 	return ovalClient.FillWithOval(driver, r)
 }
 
-func fillVulnByCpeURIs(driver cvedb.DB, scannedVulns models.VulnInfos, cpeURIs []string) error {
+// FillWithGost fills CVEs with gost dataabase
+// https://github.com/knqyf263/gost
+func FillWithGost(driver gostdb.DB, r *models.ScanResult) (err error) {
+	gostClient := gost.NewClient(r.Family)
+	// TODO chekc if fetched
+	// TODO chekc if fresh enough
+	return gostClient.FillWithGost(driver, r)
+}
+
+func fillVulnByCpeURIs(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) error {
 	for _, name := range cpeURIs {
 		details, err := CveClient.FetchCveDetailsByCpeName(driver, name)
 		if err != nil {
 			return err
 		}
 		for _, detail := range details {
-			if val, ok := scannedVulns[detail.CveID]; ok {
+			if val, ok := r.ScannedCves[detail.CveID]; ok {
 				names := val.CpeURIs
 				names = util.AppendIfMissing(names, name)
 				val.CpeURIs = names
 				val.Confidences.AppendIfMissing(models.CpeNameMatch)
-				scannedVulns[detail.CveID] = val
+				r.ScannedCves[detail.CveID] = val
 			} else {
 				v := models.VulnInfo{
 					CveID:       detail.CveID,
 					CpeURIs:     []string{name},
 					Confidences: models.Confidences{models.CpeNameMatch},
 				}
-				scannedVulns[detail.CveID] = v
+				r.ScannedCves[detail.CveID] = v
 			}
 		}
 	}

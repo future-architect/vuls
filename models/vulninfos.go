@@ -104,6 +104,18 @@ func (v VulnInfos) FormatCveSummary() string {
 		m["High"], m["Medium"], m["Low"], m["Unknown"])
 }
 
+// FormatFixedStatus summarize the number of cves are fixed.
+func (v VulnInfos) FormatFixedStatus() string {
+	total, fixed := 0, 0
+	for _, vInfo := range v {
+		total++
+		if vInfo.PatchStatus() == "Fixed" {
+			fixed++
+		}
+	}
+	return fmt.Sprintf("%d/%d Fixed", fixed, total)
+}
+
 // PackageStatuses is a list of PackageStatus
 type PackageStatuses []PackageStatus
 
@@ -114,6 +126,18 @@ func (ps PackageStatuses) FormatTuiSummary() string {
 		names = append(names, p.Name)
 	}
 	return strings.Join(names, ", ")
+}
+
+// Store insert given pkg if missing, update pkg if exists
+func (ps PackageStatuses) Store(pkg PackageStatus) PackageStatuses {
+	for i, p := range ps {
+		if p.Name == pkg.Name {
+			ps[i] = pkg
+			return ps
+		}
+	}
+	ps = append(ps, pkg)
+	return ps
 }
 
 // Sort by Name
@@ -128,6 +152,7 @@ func (ps PackageStatuses) Sort() {
 type PackageStatus struct {
 	Name        string
 	NotFixedYet bool
+	FixState    string
 }
 
 // VulnInfo has a vulnerability information and unsecure packages
@@ -146,6 +171,11 @@ func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 		if cont, found := v.CveContents[Jvn]; found && 0 < len(cont.Title) {
 			values = append(values, CveContentStr{Jvn, cont.Title})
 		}
+	}
+
+	// RedHat API has one line title.
+	if cont, found := v.CveContents[RedHatAPI]; found && 0 < len(cont.Title) {
+		values = append(values, CveContentStr{RedHatAPI, cont.Title})
 	}
 
 	order := CveContentTypes{Nvd, NvdXML, NewCveContentType(myFamily)}
@@ -217,6 +247,27 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 	return
 }
 
+// Mitigations returns mitigations
+func (v VulnInfo) Mitigations(myFamily string) (values []CveContentStr) {
+	order := CveContentTypes{RedHatAPI}
+	for _, ctype := range order {
+		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Mitigation) {
+			values = append(values, CveContentStr{
+				Type:  ctype,
+				Value: cont.Mitigation,
+			})
+		}
+	}
+
+	if len(values) == 0 {
+		return []CveContentStr{{
+			Type:  Unknown,
+			Value: "-",
+		}}
+	}
+	return
+}
+
 // Cvss2Scores returns CVSS V2 Scores
 func (v VulnInfo) Cvss2Scores(myFamily string) (values []CveContentCvss) {
 	order := []CveContentType{Nvd, NvdXML, RedHat, Jvn}
@@ -257,7 +308,7 @@ func (v VulnInfo) Cvss2Scores(myFamily string) (values []CveContentCvss) {
 	}
 
 	// An OVAL entry in Ubuntu and Debian has only severity (CVSS score isn't included).
-	// Show severity and dummy score calculated roghly.
+	// Show severity and dummy score calculated roughly.
 	order = append(order, AllCveContetTypes.Except(order...)...)
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found &&
@@ -414,7 +465,45 @@ func (v VulnInfo) MaxCvss2Score() CveContentCvss {
 	return value
 }
 
-// CveContentCvss has CveContentType and Cvss2
+// AttackVector returns attack vector string
+func (v VulnInfo) AttackVector() string {
+	for _, cnt := range v.CveContents {
+		if strings.HasPrefix(cnt.Cvss2Vector, "AV:N") ||
+			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:N") {
+			return "Network"
+		} else if strings.HasPrefix(cnt.Cvss2Vector, "AV:A") ||
+			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:A") {
+			return "Adjacent"
+		} else if strings.HasPrefix(cnt.Cvss2Vector, "AV:L") ||
+			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:L") {
+			return "Local"
+		} else if strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:P") {
+			return "Physical"
+		}
+	}
+	if cont, found := v.CveContents[DebianSecurityTracker]; found {
+		if attackRange, found := cont.Optional["attack range"]; found {
+			return attackRange
+		}
+	}
+	return ""
+}
+
+// PatchStatus returns attack vector string
+func (v VulnInfo) PatchStatus() string {
+	// Vuls don't know patch status of the CPE
+	if len(v.CpeURIs) != 0 {
+		return ""
+	}
+	for _, p := range v.AffectedPackages {
+		if p.NotFixedYet {
+			return "Unfixed"
+		}
+	}
+	return "Fixed"
+}
+
+// CveContentCvss has CVSS information
 type CveContentCvss struct {
 	Type  CveContentType
 	Value Cvss
@@ -624,6 +713,12 @@ const (
 	// OvalMatchStr is a String representation of OvalMatch
 	OvalMatchStr = "OvalMatch"
 
+	// RedHatAPIStr is a String representation of RedHatAPIMatch
+	RedHatAPIStr = "RedHatAPIMatch"
+
+	// DebianSecurityTrackerMatchStr is a String representation of DebianSecurityTrackerMatch
+	DebianSecurityTrackerMatchStr = "DebianSecurityTrackerMatch"
+
 	// ChangelogExactMatchStr is a String representation of ChangelogExactMatch
 	ChangelogExactMatchStr = "ChangelogExactMatch"
 
@@ -649,6 +744,12 @@ var (
 
 	// OvalMatch is a ranking how confident the CVE-ID was deteted correctly
 	OvalMatch = Confidence{100, OvalMatchStr, 0}
+
+	// RedHatAPIMatch ranking how confident the CVE-ID was deteted correctly
+	RedHatAPIMatch = Confidence{100, RedHatAPIStr, 0}
+
+	// DebianSecurityTrackerMatch ranking how confident the CVE-ID was deteted correctly
+	DebianSecurityTrackerMatch = Confidence{100, DebianSecurityTrackerMatchStr, 0}
 
 	// ChangelogExactMatch is a ranking how confident the CVE-ID was deteted correctly
 	ChangelogExactMatch = Confidence{95, ChangelogExactMatchStr, 3}

@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 
 	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/report"
@@ -57,6 +58,10 @@ type ReportCmd struct {
 	ovalDBType string
 	ovalDBPath string
 	ovalDBURL  string
+
+	gostDBType string
+	gostDBPath string
+	gostDBURL  string
 
 	toSlack     bool
 	toStride    bool
@@ -114,6 +119,9 @@ func (*ReportCmd) Usage() string {
 		[-ovaldb-type=sqlite3|mysql]
 		[-ovaldb-path=/path/to/oval.sqlite3]
 		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
+		[-gostdb-type=sqlite3|mysql]
+		[-gostdb-path=/path/to/gost.sqlite3]
+		[-gostdb-url=http://127.0.0.1:1325 or DB connection string]
 		[-cvss-over=7]
 		[-diff]
 		[-ignore-unscored-cves]
@@ -179,7 +187,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		&p.cveDBType,
 		"cvedb-type",
 		"sqlite3",
-		"DB type for fetching CVE dictionary (sqlite3, mysql or postgres)")
+		"DB type of CVE dictionary (sqlite3, mysql, postgres or redis)")
 
 	defaultCveDBPath := filepath.Join(wd, "cve.sqlite3")
 	f.StringVar(
@@ -192,13 +200,13 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		&p.cveDBURL,
 		"cvedb-url",
 		"",
-		"http://cve-dictionary.com:1323 or mysql connection string")
+		"http://cve-dictionary.com:1323 or DB connection string")
 
 	f.StringVar(
 		&p.ovalDBType,
 		"ovaldb-type",
 		"sqlite3",
-		"DB type for fetching OVAL dictionary (sqlite3 or mysql)")
+		"DB type of OVAL dictionary (sqlite3, mysql, postgres or redis)")
 
 	defaultOvalDBPath := filepath.Join(wd, "oval.sqlite3")
 	f.StringVar(
@@ -211,7 +219,26 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		&p.ovalDBURL,
 		"ovaldb-url",
 		"",
-		"http://goval-dictionary.com:1324 or mysql connection string")
+		"http://goval-dictionary.com:1324 or DB connection string")
+
+	f.StringVar(
+		&p.gostDBType,
+		"gostdb-type",
+		"sqlite3",
+		"DB type for gost dictionary (sqlite3, mysql, postgres or redis)")
+
+	defaultgostDBPath := filepath.Join(wd, "gost.sqlite3")
+	f.StringVar(
+		&p.gostDBPath,
+		"gostdb-path",
+		defaultgostDBPath,
+		"/path/to/gost.sqlite3")
+
+	f.StringVar(
+		&p.gostDBURL,
+		"gostdb-url",
+		"",
+		"http://gost-dictionary.com:1324 or DB connection string")
 
 	f.Float64Var(
 		&p.cvssScoreOver,
@@ -336,12 +363,19 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.Lang = p.lang
 	c.Conf.ResultsDir = p.resultsDir
 	c.Conf.RefreshCve = p.refreshCve
+
 	c.Conf.CveDBType = p.cveDBType
 	c.Conf.CveDBPath = p.cveDBPath
 	c.Conf.CveDBURL = p.cveDBURL
+
 	c.Conf.OvalDBType = p.ovalDBType
 	c.Conf.OvalDBPath = p.ovalDBPath
 	c.Conf.OvalDBURL = p.ovalDBURL
+
+	c.Conf.GostDBType = p.gostDBType
+	c.Conf.GostDBPath = p.gostDBPath
+	c.Conf.GostDBURL = p.gostDBURL
+
 	c.Conf.CvssScoreOver = p.cvssScoreOver
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
 	c.Conf.IgnoreUnfixed = p.ignoreUnfixed
@@ -468,7 +502,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 	if err := report.CveClient.CheckHealth(); err != nil {
 		util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
-		util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with -cvedb-path option")
+		util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with -cvedb-path option instead of -cvedb-url")
 		return subcommands.ExitFailure
 	}
 	if c.Conf.CveDBURL != "" {
@@ -484,12 +518,26 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		err := oval.Base{}.CheckHTTPHealth()
 		if err != nil {
 			util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
-			util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with -ovaldb-path option")
+			util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with -ovaldb-path option instead of -ovaldb-url")
 			return subcommands.ExitFailure
 		}
 	} else {
 		if c.Conf.OvalDBType == "sqlite3" {
 			util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDBPath)
+		}
+	}
+
+	if c.Conf.GostDBURL != "" {
+		util.Log.Infof("gost: %s", c.Conf.GostDBURL)
+		err := gost.Base{}.CheckHTTPHealth()
+		if err != nil {
+			util.Log.Errorf("gost HTTP server is not running. err: %s", err)
+			util.Log.Errorf("Run gost as server mode before reporting or run with -gostdb-path option instead of -gostdb-url")
+			return subcommands.ExitFailure
+		}
+	} else {
+		if c.Conf.GostDBType == "sqlite3" {
+			util.Log.Infof("gost: %s", c.Conf.GostDBPath)
 		}
 	}
 
@@ -514,22 +562,29 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	var dbclient report.DBClient
-	if dbclient, err = report.NewDBClient(
-		c.Conf.CveDBType,
-		c.Conf.CveDBURL,
-		c.Conf.CveDBPath,
-		c.Conf.OvalDBType,
-		c.Conf.OvalDBURL,
-		c.Conf.OvalDBPath,
-		c.Conf.DebugSQL,
-	); err != nil {
-		util.Log.Errorf("Failed to New DB Clients: %s", err)
+	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
+		CveDBType:  c.Conf.CveDBType,
+		CveDBURL:   c.Conf.CveDBURL,
+		CveDBPath:  c.Conf.CveDBPath,
+		OvalDBType: c.Conf.OvalDBType,
+		OvalDBURL:  c.Conf.OvalDBURL,
+		OvalDBPath: c.Conf.OvalDBPath,
+		GostDBType: c.Conf.GostDBType,
+		GostDBURL:  c.Conf.GostDBURL,
+		GostDBPath: c.Conf.GostDBPath,
+		DebugSQL:   c.Conf.DebugSQL,
+	})
+	if locked {
+		util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %s", err)
+		return subcommands.ExitFailure
+	}
+	if err != nil {
+		util.Log.Errorf("Failed to init DB Clients: %s", err)
 		return subcommands.ExitFailure
 	}
 	defer dbclient.CloseDB()
 
-	if res, err = report.FillCveInfos(dbclient, res, dir); err != nil {
+	if res, err = report.FillCveInfos(*dbclient, res, dir); err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}

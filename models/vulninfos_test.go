@@ -938,6 +938,35 @@ func TestSortPackageStatues(t *testing.T) {
 	}
 }
 
+func TestStorePackageStatueses(t *testing.T) {
+	var tests = []struct {
+		pkgstats PackageStatuses
+		in       PackageStatus
+		out      PackageStatuses
+	}{
+		{
+			pkgstats: PackageStatuses{
+				{Name: "a"},
+				{Name: "b"},
+			},
+			in: PackageStatus{
+				Name: "c",
+			},
+			out: PackageStatuses{
+				{Name: "a"},
+				{Name: "b"},
+				{Name: "c"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		out := tt.pkgstats.Store(tt.in)
+		if ok := reflect.DeepEqual(tt.out, out); !ok {
+			t.Errorf("\nexpected: %v\n  actual: %v\n", tt.out, out)
+		}
+	}
+}
+
 func TestAppendIfMissing(t *testing.T) {
 	var tests = []struct {
 		in  Confidences

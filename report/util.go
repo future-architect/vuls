@@ -72,6 +72,7 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 			cols = []interface{}{
 				r.FormatServerName(),
 				r.ScannedCves.FormatCveSummary(),
+				r.ScannedCves.FormatFixedStatus(),
 				r.FormatUpdatablePacksSummary(),
 			}
 		} else {
@@ -215,7 +216,7 @@ No CVE-IDs are found in updatable packages.
 			table.AddRow(name, url)
 		}
 
-		for _, v := range vuln.CveContents.CweIDs(r.Family) {
+		for _, v := range vuln.CveContents.UniqCweIDs(r.Family) {
 			table.AddRow(fmt.Sprintf("%s (%s)", v.Value, v.Type), cweURL(v.Value))
 		}
 
@@ -223,7 +224,7 @@ No CVE-IDs are found in updatable packages.
 		vuln.AffectedPackages.Sort()
 		for _, affected := range vuln.AffectedPackages {
 			if pack, ok := r.Packages[affected.Name]; ok {
-				packsVer = append(packsVer, pack.FormatVersionFromTo(affected.NotFixedYet))
+				packsVer = append(packsVer, pack.FormatVersionFromTo(affected.NotFixedYet, affected.FixState))
 			}
 		}
 		sort.Strings(vuln.CpeURIs)

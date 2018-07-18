@@ -129,10 +129,14 @@ func (p Package) FormatNewVer() string {
 }
 
 // FormatVersionFromTo formats installed and new package version
-func (p Package) FormatVersionFromTo(notFixedYet bool) string {
+func (p Package) FormatVersionFromTo(notFixedYet bool, status string) string {
 	to := p.FormatNewVer()
 	if notFixedYet {
-		to = "Not Fixed Yet"
+		if status != "" {
+			to = status
+		} else {
+			to = "Not Fixed Yet"
+		}
 	} else if p.NewVersion == "" {
 		to = "Unknown"
 	}

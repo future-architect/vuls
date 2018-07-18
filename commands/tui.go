@@ -51,6 +51,10 @@ type TuiCmd struct {
 	ovalDBPath string
 	ovalDBURL  string
 
+	gostDBType string
+	gostDBPath string
+	gostDBURL  string
+
 	cvssScoreOver      float64
 	ignoreUnscoredCves bool
 	ignoreUnfixed      bool
@@ -77,6 +81,9 @@ func (*TuiCmd) Usage() string {
 		[-ovaldb-type=sqlite3|mysql]
 		[-ovaldb-path=/path/to/oval.sqlite3]
 		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
+		[-gostdb-type=sqlite3|mysql]
+		[-gostdb-path=/path/to/gost.sqlite3]
+		[-gostdb-url=http://127.0.0.1:1325 or DB connection string]
 		[-cvss-over=7]
 		[-diff]
 		[-ignore-unscored-cves]
@@ -150,6 +157,25 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 		"",
 		"http://goval-dictionary.example.com:1324 or mysql connection string")
 
+	f.StringVar(
+		&p.gostDBType,
+		"gostdb-type",
+		"sqlite3",
+		"DB type for gost dictionary (sqlite3 or mysql)")
+
+	defaultgostDBPath := filepath.Join(wd, "gost.sqlite3")
+	f.StringVar(
+		&p.gostDBPath,
+		"gostdb-path",
+		defaultgostDBPath,
+		"/path/to/gost.sqlite3")
+
+	f.StringVar(
+		&p.gostDBURL,
+		"gostdb-url",
+		"",
+		"http://gost-dictionary.com:1324 or mysql connection string")
+
 	f.Float64Var(
 		&p.cvssScoreOver,
 		"cvss-over",
@@ -197,12 +223,19 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	}
 
 	c.Conf.ResultsDir = p.resultsDir
+
 	c.Conf.CveDBType = p.cvedbtype
 	c.Conf.CveDBPath = p.cvedbpath
 	c.Conf.CveDBURL = p.cveDictionaryURL
+
 	c.Conf.OvalDBType = p.ovalDBType
 	c.Conf.OvalDBPath = p.ovalDBPath
 	c.Conf.OvalDBURL = p.ovalDBURL
+
+	c.Conf.GostDBType = p.gostDBType
+	c.Conf.GostDBPath = p.gostDBPath
+	c.Conf.GostDBURL = p.gostDBURL
+
 	c.Conf.CvssScoreOver = p.cvssScoreOver
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
 	c.Conf.IgnoreUnfixed = p.ignoreUnfixed
@@ -234,22 +267,31 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	}
 	util.Log.Infof("Loaded: %s", dir)
 
-	var dbclient report.DBClient
-	if dbclient, err = report.NewDBClient(
-		c.Conf.CveDBType,
-		c.Conf.CveDBURL,
-		c.Conf.CveDBPath,
-		c.Conf.OvalDBType,
-		c.Conf.OvalDBURL,
-		c.Conf.OvalDBPath,
-		c.Conf.DebugSQL,
-	); err != nil {
-		util.Log.Errorf("Failed to New DB Clients: %s", err)
+	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
+		CveDBType:  c.Conf.CveDBType,
+		CveDBURL:   c.Conf.CveDBURL,
+		CveDBPath:  c.Conf.CveDBPath,
+		OvalDBType: c.Conf.OvalDBType,
+		OvalDBURL:  c.Conf.OvalDBURL,
+		OvalDBPath: c.Conf.OvalDBPath,
+		GostDBType: c.Conf.GostDBType,
+		GostDBURL:  c.Conf.GostDBURL,
+		GostDBPath: c.Conf.GostDBPath,
+		DebugSQL:   c.Conf.DebugSQL,
+	})
+	if locked {
+		util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %s", err)
 		return subcommands.ExitFailure
 	}
+
+	if err != nil {
+		util.Log.Errorf("Failed to init DB Clients: %s", err)
+		return subcommands.ExitFailure
+	}
+
 	defer dbclient.CloseDB()
 
-	if res, err = report.FillCveInfos(dbclient, res, dir); err != nil {
+	if res, err = report.FillCveInfos(*dbclient, res, dir); err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}

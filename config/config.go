@@ -132,6 +132,10 @@ type Config struct {
 	OvalDBPath string
 	OvalDBURL  string
 
+	GostDBType string
+	GostDBPath string
+	GostDBURL  string
+
 	CacheDBPath string
 
 	RefreshCve bool

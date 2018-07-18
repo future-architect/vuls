@@ -627,10 +627,14 @@ func summaryLines() string {
 	}
 
 	for i, vinfo := range vinfos {
-		summary := vinfo.Titles(
-			config.Conf.Lang, currentScanResult.Family)[0].Value
-		cvssScore := fmt.Sprintf("| %4.1f",
-			vinfo.MaxCvssScore().Value.Score)
+		// summary := vinfo.Titles(
+		// config.Conf.Lang, currentScanResult.Family)[0].Value
+
+		max := vinfo.MaxCvssScore().Value.Score
+		cvssScore := "|     "
+		if 0 < max {
+			cvssScore = fmt.Sprintf("| %4.1f", max)
+		}
 
 		packname := vinfo.AffectedPackages.FormatTuiSummary()
 		packname += strings.Join(vinfo.CpeURIs, ", ")
@@ -640,8 +644,9 @@ func summaryLines() string {
 			fmt.Sprintf(indexFormat, i+1),
 			vinfo.CveID,
 			cvssScore + " |",
+			fmt.Sprintf("%7s |", vinfo.AttackVector()),
+			fmt.Sprintf("%7s |", vinfo.PatchStatus()),
 			packname,
-			summary,
 		}
 		icols := make([]interface{}, len(cols))
 		for j := range cols {
@@ -727,6 +732,7 @@ type dataForTmpl struct {
 	CveID            string
 	Cvsses           string
 	Summary          string
+	Mitigation       string
 	Confidences      models.Confidences
 	Cwes             []models.CweDictEntry
 	Links            []string
@@ -759,7 +765,8 @@ func detailLines() (string, error) {
 	for _, affected := range vinfo.AffectedPackages {
 		// packages detected by OVAL may not be actually installed
 		if pack, ok := r.Packages[affected.Name]; ok {
-			packsVer = append(packsVer, pack.FormatVersionFromTo(affected.NotFixedYet))
+			packsVer = append(packsVer,
+				pack.FormatVersionFromTo(affected.NotFixedYet, affected.FixState))
 		}
 	}
 	sort.Strings(vinfo.CpeURIs)
@@ -778,11 +785,15 @@ func detailLines() (string, error) {
 	refs := []models.Reference{}
 	for _, rr := range vinfo.CveContents.References(r.Family) {
 		for _, ref := range rr.Value {
+			if ref.Source == "" {
+				ref.Source = "-"
+			}
 			refs = append(refs, ref)
 		}
 	}
 
 	summary := vinfo.Summaries(r.Lang, r.Family)[0]
+	mitigation := vinfo.Mitigations(r.Family)[0]
 
 	table := uitable.New()
 	table.MaxColWidth = maxColWidth
@@ -790,10 +801,14 @@ func detailLines() (string, error) {
 	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores(r.Family)...)
 	var cols []interface{}
 	for _, score := range scores {
-		if score.Value.Score == 0 {
+		if score.Value.Score == 0 && score.Value.Severity == "" {
 			continue
 		}
-		scoreVec := fmt.Sprintf("%3.1f/%s", score.Value.Score, score.Value.Vector)
+		scoreStr := "-"
+		if 0 < score.Value.Score {
+			scoreStr = fmt.Sprintf("%3.1f", score.Value.Score)
+		}
+		scoreVec := fmt.Sprintf("%s/%s", scoreStr, score.Value.Vector)
 		cols = []interface{}{
 			scoreVec,
 			score.Value.Severity,
@@ -802,7 +817,7 @@ func detailLines() (string, error) {
 		table.AddRow(cols...)
 	}
 
-	uniqCweIDs := vinfo.CveContents.CweIDs(r.Family)
+	uniqCweIDs := vinfo.CveContents.UniqCweIDs(r.Family)
 	cwes := []models.CweDictEntry{}
 	for _, cweID := range uniqCweIDs {
 		if strings.HasPrefix(cweID.Value, "CWE-") {
@@ -816,6 +831,7 @@ func detailLines() (string, error) {
 		CveID:       vinfo.CveID,
 		Cvsses:      fmt.Sprintf("%s\n", table),
 		Summary:     fmt.Sprintf("%s (%s)", summary.Value, summary.Type),
+		Mitigation:  fmt.Sprintf("%s (%s)", mitigation.Value, mitigation.Type),
 		Confidences: vinfo.Confidences,
 		Cwes:        cwes,
 		Links:       util.Distinct(links),
@@ -841,6 +857,10 @@ CVSS Scores
 Summary
 --------------
  {{.Summary }}
+
+Mitigation
+--------------
+ {{.Mitigation }}
 
 Links
 --------------

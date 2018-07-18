@@ -165,6 +165,18 @@ func (v CveContents) CweIDs(myFamily string) (values []CveContentStr) {
 	return
 }
 
+// UniqCweIDs returns Uniq CweIDs
+func (v CveContents) UniqCweIDs(myFamily string) (values []CveContentStr) {
+	uniq := map[string]CveContentStr{}
+	for _, cwes := range v.CweIDs(myFamily) {
+		uniq[cwes.Value] = cwes
+	}
+	for _, cwe := range uniq {
+		values = append(values, cwe)
+	}
+	return values
+}
+
 // CveContent has abstraction of various vulnerability information
 type CveContent struct {
 	Type          CveContentType
@@ -183,6 +195,8 @@ type CveContent struct {
 	CweIDs        []string   `json:",omitempty"`
 	Published     time.Time
 	LastModified  time.Time
+	Mitigation    string            // RedHat API
+	Optional      map[string]string `json:",omitempty"`
 }
 
 // Empty checks the content is empty
@@ -210,6 +224,10 @@ func NewCveContentType(name string) CveContentType {
 		return Ubuntu
 	case "debian":
 		return Debian
+	case "redhat_api":
+		return RedHatAPI
+	case "debian_security_tracker":
+		return DebianSecurityTracker
 	default:
 		return Unknown
 	}
@@ -227,6 +245,12 @@ const (
 
 	// RedHat is RedHat
 	RedHat CveContentType = "redhat"
+
+	// RedHatAPI is RedHat
+	RedHatAPI CveContentType = "redhat_api"
+
+	// DebianSecurityTracker is Debian Secury tracker
+	DebianSecurityTracker CveContentType = "debian_security_tracker"
 
 	// Debian is Debian
 	Debian CveContentType = "debian"
@@ -248,7 +272,16 @@ const (
 type CveContentTypes []CveContentType
 
 // AllCveContetTypes has all of CveContentTypes
-var AllCveContetTypes = CveContentTypes{Nvd, NvdXML, Jvn, RedHat, Debian, Ubuntu}
+var AllCveContetTypes = CveContentTypes{
+	Nvd,
+	NvdXML,
+	Jvn,
+	RedHat,
+	Debian,
+	Ubuntu,
+	RedHatAPI,
+	DebianSecurityTracker,
+}
 
 // Except returns CveContentTypes except for given args
 func (c CveContentTypes) Except(excepts ...CveContentType) (excepted CveContentTypes) {
