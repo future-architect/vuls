@@ -785,6 +785,9 @@ func detailLines() (string, error) {
 	refs := []models.Reference{}
 	for _, rr := range vinfo.CveContents.References(r.Family) {
 		for _, ref := range rr.Value {
+			if ref.Source == "" {
+				ref.Source = "-"
+			}
 			refs = append(refs, ref)
 		}
 	}
