@@ -179,24 +179,24 @@ func (v CveContents) UniqCweIDs(myFamily string) (values []CveContentStr) {
 
 // CveContent has abstraction of various vulnerability information
 type CveContent struct {
-	Type          CveContentType
-	CveID         string
-	Title         string
-	Summary       string
-	Cvss2Score    float64
-	Cvss2Vector   string
-	Cvss2Severity string
-	Cvss3Score    float64
-	Cvss3Vector   string
-	Cvss3Severity string
-	SourceLink    string
-	Cpes          []Cpe      `json:",omitempty"`
-	References    References `json:",omitempty"`
-	CweIDs        []string   `json:",omitempty"`
-	Published     time.Time
-	LastModified  time.Time
-	Mitigation    string            // RedHat API
-	Optional      map[string]string `json:",omitempty"`
+	Type          CveContentType    `json:"type"`
+	CveID         string            `json:"cveID"`
+	Title         string            `json:"title"`
+	Summary       string            `json:"summary"`
+	Cvss2Score    float64           `json:"cvss2Score"`
+	Cvss2Vector   string            `json:"cvss2Vector"`
+	Cvss2Severity string            `json:"cvss2Severity"`
+	Cvss3Score    float64           `json:"cvss3Score"`
+	Cvss3Vector   string            `json:"cvss3Vector"`
+	Cvss3Severity string            `json:"cvss3Severity"`
+	SourceLink    string            `json:"sourceLink"`
+	Cpes          []Cpe             `json:"cpes,omitempty"`
+	References    References        `json:"references,omitempty"`
+	CweIDs        []string          `json:"cweIDs,omitempty"`
+	Published     time.Time         `json:"published"`
+	LastModified  time.Time         `json:"lastModified"`
+	Mitigation    string            `json:"mitigation"` // RedHat API
+	Optional      map[string]string `json:"optional,omitempty"`
 }
 
 // Empty checks the content is empty
@@ -302,8 +302,8 @@ func (c CveContentTypes) Except(excepts ...CveContentType) (excepted CveContentT
 
 // Cpe is Common Platform Enumeration
 type Cpe struct {
-	URI             string
-	FormattedString string
+	URI             string `json:"uri"`
+	FormattedString string `json:"formattedString"`
 }
 
 // References is a slice of Reference
@@ -311,7 +311,7 @@ type References []Reference
 
 // Reference has a related link of the CVE
 type Reference struct {
-	Source string
-	Link   string
-	RefID  string
+	Source string `json:"source"`
+	Link   string `json:"link"`
+	RefID  string `json:"refID"`
 }

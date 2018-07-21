@@ -82,14 +82,14 @@ func (ps Packages) FindByFQPN(nameVerRelArc string) (*Package, error) {
 
 // Package has installed binary packages.
 type Package struct {
-	Name             string
-	Version          string
-	Release          string
-	NewVersion       string
-	NewRelease       string
-	Arch             string
-	Repository       string
-	Changelog        Changelog
+	Name             string               `json:"name"`
+	Version          string               `json:"version"`
+	Release          string               `json:"release"`
+	NewVersion       string               `json:"newVersion"`
+	NewRelease       string               `json:"newRelease"`
+	Arch             string               `json:"arch"`
+	Repository       string               `json:"repository"`
+	Changelog        Changelog            `json:"changelog"`
 	AffectedProcs    []AffectedProcess    `json:",omitempty"`
 	NeedRestartProcs []NeedRestartProcess `json:",omitempty"`
 }
@@ -171,23 +171,23 @@ func (p Package) FormatChangelog() string {
 // Changelog has contents of changelog and how to get it.
 // Method: models.detectionMethodStr
 type Changelog struct {
-	Contents string
-	Method   DetectionMethod
+	Contents string          `json:"contents"`
+	Method   DetectionMethod `json:"method"`
 }
 
 // AffectedProcess keep a processes information affected by software update
 type AffectedProcess struct {
-	PID  string
-	Name string
+	PID  string `json:"pid"`
+	Name string `json:"name"`
 }
 
 // NeedRestartProcess keep a processes information affected by software update
 type NeedRestartProcess struct {
-	PID         string
-	Path        string
-	ServiceName string
-	InitSystem  string
-	HasInit     bool `json:"-"`
+	PID         string `json:"pid"`
+	Path        string `json:"path"`
+	ServiceName string `json:"serviceName"`
+	InitSystem  string `json:"initSystem"`
+	HasInit     bool   `json:"-"`
 }
 
 // SrcPackage has installed source package information.
@@ -196,9 +196,9 @@ type NeedRestartProcess struct {
 // so it is also needed to capture source version for OVAL version comparison.
 // https://github.com/future-architect/vuls/issues/504
 type SrcPackage struct {
-	Name        string
-	Version     string
-	BinaryNames []string
+	Name        string   `json:"name"`
+	Version     string   `json:"version"`
+	BinaryNames []string `json:"binaryNames"`
 }
 
 // AddBinaryName add the name if not exists

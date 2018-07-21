@@ -2,10 +2,10 @@ package cwe
 
 // Cwe has CWE information
 type Cwe struct {
-	CweID               string
-	Name                string
-	Description         string
-	ExtendedDescription string
+	CweID               string `json:"cweID"`
+	Name                string `json:"name"`
+	Description         string `json:"description"`
+	ExtendedDescription string `json:"extendedDescription"`
 	Lang                string `json:"-"`
 }
 

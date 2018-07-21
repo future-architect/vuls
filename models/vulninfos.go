@@ -150,19 +150,19 @@ func (ps PackageStatuses) Sort() {
 
 // PackageStatus has name and other status abount the package
 type PackageStatus struct {
-	Name        string
-	NotFixedYet bool
-	FixState    string
+	Name        string `json:"name"`
+	NotFixedYet bool   `json:"notFixedYet"`
+	FixState    string `json:"fixState"`
 }
 
 // VulnInfo has a vulnerability information and unsecure packages
 type VulnInfo struct {
-	CveID            string
-	Confidences      Confidences
-	AffectedPackages PackageStatuses
-	DistroAdvisories []DistroAdvisory `json:",omitempty"` // for Aamazon, RHEL, FreeBSD
-	CpeURIs          []string         `json:",omitempty"` // CpeURIs related to this CVE defined in config.toml
-	CveContents      CveContents
+	CveID            string           `json:"cveID"`
+	Confidences      Confidences      `json:"confidences"`
+	AffectedPackages PackageStatuses  `json:"affectedPackages"`
+	DistroAdvisories []DistroAdvisory `json:"distroAdvisories,omitempty"` // for Aamazon, RHEL, FreeBSD
+	CpeURIs          []string         `json:"cpeURIs,omitempty"`          // CpeURIs related to this CVE defined in config.toml
+	CveContents      CveContents      `json:"cveContents"`
 }
 
 // Titles returns tilte (TUI)
@@ -641,11 +641,11 @@ func (v VulnInfo) VendorLinks(family string) map[string]string {
 
 // DistroAdvisory has Amazon Linux, RHEL, FreeBSD Security Advisory information.
 type DistroAdvisory struct {
-	AdvisoryID  string
-	Severity    string
-	Issued      time.Time
-	Updated     time.Time
-	Description string
+	AdvisoryID  string    `json:"advisoryID"`
+	Severity    string    `json:"severity"`
+	Issued      time.Time `json:"issued"`
+	Updated     time.Time `json:"updated"`
+	Description string    `json:"description"`
 }
 
 // Format the distro advisory information
@@ -686,9 +686,9 @@ func (cs Confidences) SortByConfident() Confidences {
 // Confidence is a ranking how confident the CVE-ID was deteted correctly
 // Score: 0 - 100
 type Confidence struct {
-	Score           int
-	DetectionMethod DetectionMethod
-	SortOrder       int `json:"-"`
+	Score           int             `json:"score"`
+	DetectionMethod DetectionMethod `json:"detectionMethod"`
+	SortOrder       int             `json:"-"`
 }
 
 func (c Confidence) String() string {

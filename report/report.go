@@ -463,7 +463,7 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 	}
 	str := strings.Replace(buf.String(), "\n  [", "\n\n  [", -1)
 	str = fmt.Sprintf("%s\n\n%s",
-		"# See REAME for details: https://github.com/future-architect/vuls#example",
+		"# See REAME for details: https://vuls.io/docs/en/usage-settings.html",
 		str)
 
 	return ioutil.WriteFile(realPath, []byte(str), 0600)
@@ -488,6 +488,14 @@ func cleanForTOMLEncoding(server c.ServerInfo, def c.ServerInfo) c.ServerInfo {
 
 	if def.KeyPath == server.KeyPath {
 		server.KeyPath = ""
+	}
+
+	if reflect.DeepEqual(server.ScanMode, def.ScanMode) {
+		server.ScanMode = nil
+	}
+
+	if def.Type == server.Type {
+		server.Type = ""
 	}
 
 	if reflect.DeepEqual(server.CpeURIs, def.CpeURIs) {

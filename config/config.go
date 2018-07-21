@@ -96,84 +96,68 @@ const (
 
 //Config is struct of Configuration
 type Config struct {
-	Debug    bool
-	DebugSQL bool
-	Lang     string
-
-	EMail    SMTPConf
-	Slack    SlackConf
-	Stride   StrideConf
-	HipChat  HipChatConf
-	ChatWork ChatWorkConf
-	Syslog   SyslogConf
-	HTTP     HTTPConf
-	Default  ServerInfo
-	Servers  map[string]ServerInfo
-
-	CvssScoreOver      float64
-	IgnoreUnscoredCves bool
-	IgnoreUnfixed      bool
-
-	SSHNative bool
-	SSHConfig bool
-
-	ContainersOnly bool
-	SkipBroken     bool
-
-	HTTPProxy  string `valid:"url"`
-	LogDir     string
-	ResultsDir string
-
-	CveDBType string
-	CveDBPath string
-	CveDBURL  string
-
-	OvalDBType string
-	OvalDBPath string
-	OvalDBURL  string
-
-	GostDBType string
-	GostDBPath string
-	GostDBURL  string
-
-	CacheDBPath string
-
-	RefreshCve bool
-
-	ToSlack     bool
-	ToStride    bool
-	ToHipChat   bool
-	ToChatWork  bool
-	ToEmail     bool
-	ToSyslog    bool
-	ToLocalFile bool
-	ToS3        bool
-	ToAzureBlob bool
-	ToHTTP      bool
-
-	FormatXML         bool
-	FormatJSON        bool
-	FormatOneEMail    bool
-	FormatOneLineText bool
-	FormatShortText   bool
-	FormatFullText    bool
-
-	GZIP bool
-
-	AwsProfile             string
-	AwsRegion              string
-	S3Bucket               string
-	S3ResultsDir           string
-	S3ServerSideEncryption string
-
-	AzureAccount   string
-	AzureKey       string `json:"-"`
-	AzureContainer string
-
-	Pipe bool
-	Vvv  bool
-	Diff bool
-	UUID bool
+	Debug                  bool                  `json:"debug"`
+	DebugSQL               bool                  `json:"debugSQL"`
+	Lang                   string                `json:"lang"`
+	EMail                  SMTPConf              `json:"-"`
+	Slack                  SlackConf             `json:"-"`
+	Stride                 StrideConf            `json:"-"`
+	HipChat                HipChatConf           `json:"-"`
+	ChatWork               ChatWorkConf          `json:"-"`
+	Syslog                 SyslogConf            `json:"-"`
+	HTTP                   HTTPConf              `json:"-"`
+	Default                ServerInfo            `json:"default"`
+	Servers                map[string]ServerInfo `json:"servers"`
+	CvssScoreOver          float64               `json:"cvssScoreOver"`
+	IgnoreUnscoredCves     bool                  `json:"ignoreUnscoredCves"`
+	IgnoreUnfixed          bool                  `json:"ignoreUnfixed"`
+	SSHNative              bool                  `json:"sshNative"`
+	SSHConfig              bool                  `json:"sshConfig"`
+	ContainersOnly         bool                  `json:"containersOnly"`
+	SkipBroken             bool                  `json:"skipBroken"`
+	HTTPProxy              string                `valid:"url" json:"httpProxy"`
+	LogDir                 string                `json:"logDir"`
+	ResultsDir             string                `json:"resultsDir"`
+	CveDBType              string                `json:"cveDBType"`
+	CveDBPath              string                `json:"cveDBPath"`
+	CveDBURL               string                `json:"cveDBURL"`
+	OvalDBType             string                `json:"ovalDBType"`
+	OvalDBPath             string                `json:"ovalDBPath"`
+	OvalDBURL              string                `json:"ovalDBURL"`
+	GostDBType             string                `json:"gostDBType"`
+	GostDBPath             string                `json:"gostDBPath"`
+	GostDBURL              string                `json:"gostDBURL"`
+	CacheDBPath            string                `json:"cacheDBPath"`
+	RefreshCve             bool                  `json:"refreshCve"`
+	ToSlack                bool                  `json:"toSlack"`
+	ToStride               bool                  `json:"toStride"`
+	ToHipChat              bool                  `json:"toHipChat"`
+	ToChatWork             bool                  `json:"toChatWork"`
+	ToEmail                bool                  `json:"toEmail"`
+	ToSyslog               bool                  `json:"toSyslog"`
+	ToLocalFile            bool                  `json:"toLocalFile"`
+	ToS3                   bool                  `json:"toS3"`
+	ToAzureBlob            bool                  `json:"toAzureBlob"`
+	ToHTTP                 bool                  `json:"toHTTP"`
+	FormatXML              bool                  `json:"formatXML"`
+	FormatJSON             bool                  `json:"formatJSON"`
+	FormatOneEMail         bool                  `json:"formatOneEMail"`
+	FormatOneLineText      bool                  `json:"formatOneLineText"`
+	FormatShortText        bool                  `json:"formatShortText"`
+	FormatFullText         bool                  `json:"formatFullText"`
+	GZIP                   bool                  `json:"gzip"`
+	AwsProfile             string                `json:"awsProfile"`
+	AwsRegion              string                `json:"awsRegion"`
+	S3Bucket               string                `json:"s3Bucket"`
+	S3ResultsDir           string                `json:"s3ResultsDir"`
+	S3ServerSideEncryption string                `json:"s3ServerSideEncryption"`
+	AzureAccount           string                `json:"azureAccount"`
+	AzureKey               string                `json:"-"`
+	AzureContainer         string                `json:"azureContainer"`
+	Pipe                   bool                  `json:"pipe"`
+	Vvv                    bool                  `json:"vvv"`
+	Diff                   bool                  `json:"diff"`
+	UUID                   bool                  `json:"uuid"`
 }
 
 // ValidateOnConfigtest validates
@@ -370,14 +354,14 @@ func validateDB(dictionaryDBName, dbType, dbPath, dbURL string) error {
 
 // SMTPConf is smtp config
 type SMTPConf struct {
-	SMTPAddr      string   `toml:"smtpAddr,omitempty"`
-	SMTPPort      string   `toml:"smtpPort,omitempty" valid:"port"`
-	User          string   `toml:"user,omitempty"`
+	SMTPAddr      string   `toml:"smtpAddr,omitempty" json:"-"`
+	SMTPPort      string   `toml:"smtpPort,omitempty" valid:"port" json:"-"`
+	User          string   `toml:"user,omitempty" json:"-"`
 	Password      string   `toml:"password,omitempty" json:"-"`
-	From          string   `toml:"from,omitempty"`
-	To            []string `toml:"to,omitempty" json:",omitempty"`
-	Cc            []string `toml:"cc,omitempty" json:",omitempty"`
-	SubjectPrefix string   `toml:"subjectPrefix,omitempty"`
+	From          string   `toml:"from,omitempty" json:"-"`
+	To            []string `toml:"to,omitempty" json:"-"`
+	Cc            []string `toml:"cc,omitempty" json:"-"`
+	SubjectPrefix string   `toml:"subjectPrefix,omitempty" json:"-"`
 }
 
 func checkEmails(emails []string) (errs []error) {
@@ -429,8 +413,8 @@ func (c *SMTPConf) Validate() (errs []error) {
 
 // StrideConf is stride config
 type StrideConf struct {
-	HookURL   string `json:"hook_url"`
-	AuthToken string `json:"AuthToken"`
+	HookURL   string `json:"-"`
+	AuthToken string `json:"-"`
 }
 
 // Validate validates configuration
@@ -457,12 +441,12 @@ func (c *StrideConf) Validate() (errs []error) {
 // SlackConf is slack config
 type SlackConf struct {
 	HookURL     string   `valid:"url" json:"-" toml:"hookURL,omitempty"`
-	LegacyToken string   `json:"token" toml:"legacyToken,omitempty"`
-	Channel     string   `json:"channel" toml:"channel,omitempty"`
-	IconEmoji   string   `json:"icon_emoji" toml:"iconEmoji,omitempty"`
-	AuthUser    string   `json:"username" toml:"authUser,omitempty"`
-	NotifyUsers []string `toml:"notifyUsers,omitempty"`
-	Text        string   `json:"text"`
+	LegacyToken string   `json:"-" toml:"legacyToken,omitempty"`
+	Channel     string   `json:"-" toml:"channel,omitempty"`
+	IconEmoji   string   `json:"-" toml:"iconEmoji,omitempty"`
+	AuthUser    string   `json:"-" toml:"authUser,omitempty"`
+	NotifyUsers []string `toml:"notifyUsers,omitempty" json:"-"`
+	Text        string   `json:"-"`
 }
 
 // Validate validates configuration
@@ -499,8 +483,8 @@ func (c *SlackConf) Validate() (errs []error) {
 
 // HipChatConf is HipChat config
 type HipChatConf struct {
-	AuthToken string `json:"AuthToken"`
-	Room      string `json:"Room"`
+	AuthToken string `json:"-"`
+	Room      string `json:"-"`
 }
 
 // Validate validates configuration
@@ -525,8 +509,8 @@ func (c *HipChatConf) Validate() (errs []error) {
 
 // ChatWorkConf is ChatWork config
 type ChatWorkConf struct {
-	APIToken string `json:"ApiToken"`
-	Room     string `json:"Room"`
+	APIToken string `json:"-"`
+	Room     string `json:"-"`
 }
 
 // Validate validates configuration
@@ -551,14 +535,13 @@ func (c *ChatWorkConf) Validate() (errs []error) {
 
 // SyslogConf is syslog config
 type SyslogConf struct {
-	Protocol string
-	Host     string `valid:"host"`
-	Port     string `valid:"port"`
-	Severity string
-	Facility string
-	Tag      string
-
-	Verbose bool
+	Protocol string `json:"-"`
+	Host     string `valid:"host" json:"-"`
+	Port     string `valid:"port" json:"-"`
+	Severity string `json:"-"`
+	Facility string `json:"-"`
+	Tag      string `json:"-"`
+	Verbose  bool   `json:"-"`
 }
 
 // Validate validates configuration
@@ -672,7 +655,7 @@ func (c *SyslogConf) GetFacility() (syslog.Priority, error) {
 
 // HTTPConf is HTTP config
 type HTTPConf struct {
-	URL string `valid:"url"`
+	URL string `valid:"url" json:"-"`
 }
 
 // Validate validates configuration
@@ -689,57 +672,44 @@ func (c *HTTPConf) Validate() (errs []error) {
 
 // ServerInfo has SSH Info, additional CPE packages to scan.
 type ServerInfo struct {
-	ServerName  string `toml:"-"`
-	User        string `toml:"user,omitempty"`
-	Host        string `toml:"host,omitempty"`
-	Port        string `toml:"port,omitempty"`
-	KeyPath     string `toml:"keyPath,omitempty"`
-	KeyPassword string `json:"-" toml:"-"`
-	// TODO Deprecated remove in near future
-	CpeNames []string `toml:"cpeNames,omitempty" json:",omitempty"`
-	CpeURIs  []string `toml:"cpeURIs,omitempty" json:",omitempty"`
-	ScanMode []string `toml:"scanMode,omitempty" json:",omitempty"`
-	// TODO Deprecated remove in near future
-	DependencyCheckXMLPath string `toml:"dependencyCheckXMLPath,omitempty"`
-	OwaspDCXMLPath         string `toml:"owaspDCXMLPath,omitempty"`
-
-	ContainersIncluded []string `toml:"containersIncluded,omitempty" json:",omitempty"`
-	ContainersExcluded []string `toml:"containersExcluded,omitempty" json:",omitempty"`
-	ContainerType      string   `toml:"containerType,omitempty" json:",omitempty"`
-	Containers         map[string]ContainerSetting
-
-	IgnoreCves       []string `toml:"ignoreCves,omitempty" json:",omitempty"`
-	IgnorePkgsRegexp []string `toml:"ignorePkgsRegexp,omitempty" json:",omitempty"`
-
-	UUIDs map[string]string `toml:"uuids,omitempty" json:",omitempty"`
-	Memo  string            `toml:"memo,omitempty"`
-
-	// For CentOS, RHEL, Amazon
-	Enablerepo []string `toml:",omitempty" json:",omitempty"`
-
-	// Optional key-value set that will be outputted to JSON
-	Optional map[string]interface{} `toml:",omitempty" json:",omitempty"`
-
-	// "pseudo" or ""
-	Type string
+	ServerName             string                      `toml:"-" json:"serverName"`
+	User                   string                      `toml:"user,omitempty" json:"user"`
+	Host                   string                      `toml:"host,omitempty" json:"host"`
+	Port                   string                      `toml:"port,omitempty" json:"port"`
+	KeyPath                string                      `toml:"keyPath,omitempty" json:"keyPath"`
+	KeyPassword            string                      `json:"-" toml:"-"`
+	CpeNames               []string                    `toml:"cpeNames,omitempty" json:"-"` // TODO Deprecated remove in near future
+	CpeURIs                []string                    `toml:"cpeURIs,omitempty" json:"cpeURIs,omitempty"`
+	ScanMode               []string                    `toml:"scanMode,omitempty" json:"scanMode,omitempty"`
+	DependencyCheckXMLPath string                      `toml:"dependencyCheckXMLPath,omitempty" json:"-"` // TODO Deprecated remove in near future
+	OwaspDCXMLPath         string                      `toml:"owaspDCXMLPath,omitempty" json:"owaspDCXMLPath"`
+	ContainersIncluded     []string                    `toml:"containersIncluded,omitempty" json:"containersIncluded,omitempty"`
+	ContainersExcluded     []string                    `toml:"containersExcluded,omitempty" json:"containersExcluded,omitempty"`
+	ContainerType          string                      `toml:"containerType,omitempty" json:"containerType,omitempty"`
+	Containers             map[string]ContainerSetting `toml:"containers" json:"containers,omitempty"`
+	IgnoreCves             []string                    `toml:"ignoreCves,omitempty" json:"ignoreCves,omitempty"`
+	IgnorePkgsRegexp       []string                    `toml:"ignorePkgsRegexp,omitempty" json:"ignorePkgsRegexp,omitempty"`
+	UUIDs                  map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
+	Memo                   string                      `toml:"memo,omitempty" json:"memo"`
+	Enablerepo             []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, RHEL, Amazon
+	Optional               map[string]interface{}      `toml:"optional,omitempty" json:"optional,omitempty"`     // Optional key-value set that will be outputted to JSON
+	Type                   string                      `toml:"type,omitempty" json:"type"`                       // "pseudo" or ""
+	IPv4Addrs              []string                    `toml:"-" json:"ipv4Addrs,omitempty"`
+	IPv6Addrs              []string                    `toml:"-" json:"ipv6Addrs,omitempty"`
 
 	// used internal
-	LogMsgAnsiColor string    `toml:"-"` // DebugLog Color
-	Container       Container `toml:"-"`
-	Distro          Distro    `toml:"-"`
-	Mode            ScanMode  `toml:"-"`
-
-	// IP addresses
-	IPv4Addrs []string `toml:"-" json:",omitempty"`
-	IPv6Addrs []string `toml:"-" json:",omitempty"`
+	LogMsgAnsiColor string    `toml:"-" json:"-"` // DebugLog Color
+	Container       Container `toml:"-" json:"-"`
+	Distro          Distro    `toml:"-" json:"-"`
+	Mode            ScanMode  `toml:"-" json:"-"`
 }
 
 // ContainerSetting is used for loading container setting in config.toml
 type ContainerSetting struct {
-	CpeURIs          []string
-	OwaspDCXMLPath   string
-	IgnorePkgsRegexp []string
-	IgnoreCves       []string
+	CpeURIs          []string `json:"cpeURIs,omitempty"`
+	OwaspDCXMLPath   string   `json:"owaspDCXMLPath"`
+	IgnorePkgsRegexp []string `json:"ignorePkgsRegexp,omitempty"`
+	IgnoreCves       []string `json:"ignoreCves,omitempty"`
 }
 
 // ScanMode has a type of scan mode. fast, fast-root, deep and offline

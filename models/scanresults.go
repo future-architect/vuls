@@ -33,54 +33,49 @@ type ScanResults []ScanResult
 
 // ScanResult has the result of scanned CVE information.
 type ScanResult struct {
-	JSONVersion int
-	Lang        string
-	ServerUUID  string
-	ServerName  string // TOML Section key
-	Family      string
-	Release     string
-	Container   Container
-	Platform    Platform
-	IPv4Addrs   []string `json:",omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
-	IPv6Addrs   []string `json:",omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
-
-	ScannedAt       time.Time
-	ScannedVersion  string
-	ScannedRevision string
-	ScannedBy       string
-
-	ReportedAt       time.Time
-	ReportedVersion  string
-	ReportedRevision string
-	ReportedBy       string
-
-	ScannedCves   VulnInfos
-	RunningKernel Kernel
-	Packages      Packages
-	CweDict       map[string]CweDictEntry
-
-	Optional    map[string]interface{} `json:",omitempty"`
-	SrcPackages SrcPackages            `json:",omitempty"`
-
-	Errors []string
-	Config struct {
-		Scan   config.Config
-		Report config.Config
-	}
+	JSONVersion      int                     `json:"jsonVersion"`
+	Lang             string                  `json:"lang"`
+	ServerUUID       string                  `json:"serverUUID"`
+	ServerName       string                  `json:"serverName"` // TOML Section key
+	Family           string                  `json:"family"`
+	Release          string                  `json:"release"`
+	Container        Container               `json:"container"`
+	Platform         Platform                `json:"platform"`
+	IPv4Addrs        []string                `json:"ipv4Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
+	IPv6Addrs        []string                `json:"ipv6Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
+	ScannedAt        time.Time               `json:"scannedAt"`
+	ScannedVersion   string                  `json:"scannedVersion"`
+	ScannedRevision  string                  `json:"scannedRevision"`
+	ScannedBy        string                  `json:"scannedBy"`
+	ReportedAt       time.Time               `json:"reportedAt"`
+	ReportedVersion  string                  `json:"reportedVersion"`
+	ReportedRevision string                  `json:"reportedRevision"`
+	ReportedBy       string                  `json:"reportedBy"`
+	ScannedCves      VulnInfos               `json:"scannedCves"`
+	RunningKernel    Kernel                  `json:"runningKernel"`
+	Packages         Packages                `json:"packages"`
+	CweDict          map[string]CweDictEntry `json:"cweDict"`
+	Optional         map[string]interface{}  `json:",omitempty"`
+	SrcPackages      SrcPackages             `json:",omitempty"`
+	Errors           []string                `json:"errors"`
+	Config           struct {
+		Scan   config.Config `json:"scan"`
+		Report config.Config `json:"report"`
+	} `json:"config"`
 }
 
 // CweDictEntry is a dictionary of scanned CWE
 type CweDictEntry struct {
-	En              *cwe.Cwe `json:",omitempty"`
-	Ja              *cwe.Cwe `json:",omitempty"`
-	OwaspTopTen2017 string
+	En              *cwe.Cwe `json:"en,omitempty"`
+	Ja              *cwe.Cwe `json:"ja,omitempty"`
+	OwaspTopTen2017 string   `json:"owaspTopTen2017"`
 }
 
 // Kernel has the Release, version and whether need restart
 type Kernel struct {
-	Release        string
-	Version        string
-	RebootRequired bool
+	Release        string `json:"release"`
+	Version        string `json:"version"`
+	RebootRequired bool   `json:"rebootRequired"`
 }
 
 // FilterByCvssOver is filter function.
@@ -338,15 +333,15 @@ func (r ScanResult) IsContainer() bool {
 
 // Container has Container information
 type Container struct {
-	ContainerID string
-	Name        string
-	Image       string
-	Type        string
-	UUID        string
+	ContainerID string `json:"containerID"`
+	Name        string `json:"name"`
+	Image       string `json:"image"`
+	Type        string `json:"type"`
+	UUID        string `json:"uuid"`
 }
 
 // Platform has platform information
 type Platform struct {
-	Name       string // aws or azure or gcp or other...
-	InstanceID string
+	Name       string `json:"name"` // aws or azure or gcp or other...
+	InstanceID string `json:"instanceID"`
 }
