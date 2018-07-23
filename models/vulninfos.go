@@ -505,8 +505,8 @@ func (v VulnInfo) PatchStatus() string {
 
 // CveContentCvss has CVSS information
 type CveContentCvss struct {
-	Type  CveContentType
-	Value Cvss
+	Type  CveContentType `json:"type"`
+	Value Cvss           `json:"value"`
 }
 
 // CvssType Represent the type of CVSS
@@ -522,11 +522,11 @@ const (
 
 // Cvss has CVSS Score
 type Cvss struct {
-	Type                 CvssType
-	Score                float64
-	CalculatedBySeverity bool
-	Vector               string
-	Severity             string
+	Type                 CvssType `json:"type"`
+	Score                float64  `json:"score"`
+	CalculatedBySeverity bool     `json:"calculatedBySeverity"`
+	Vector               string   `json:"vector"`
+	Severity             string   `json:"severity"`
 }
 
 // Format CVSS Score and Vector
