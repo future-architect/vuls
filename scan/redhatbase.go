@@ -1160,9 +1160,9 @@ func (o *redhatBase) yumPS() error {
 func (o *redhatBase) checkYumPsInstalled(stdout string) bool {
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
-		line := scanner.Text()
+		line := strings.TrimSpace(scanner.Text())
 		if strings.HasPrefix(line, "Loaded plugins: ") {
-			if strings.Contains(line, "ps,") {
+			if strings.Contains(line, " ps,") || strings.HasSuffix(line, " ps") {
 				return true
 			}
 			return false
