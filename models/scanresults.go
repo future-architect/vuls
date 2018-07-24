@@ -331,6 +331,18 @@ func (r ScanResult) IsContainer() bool {
 	return 0 < len(r.Container.ContainerID)
 }
 
+// IsDeepScanMode checks if the scan mode is deep scan mode.
+func (r ScanResult) IsDeepScanMode() bool {
+	for _, s := range r.Config.Scan.Servers {
+		for _, m := range s.ScanMode {
+			if m == "deep" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // Container has Container information
 type Container struct {
 	ContainerID string `json:"containerID"`

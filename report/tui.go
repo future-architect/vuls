@@ -695,6 +695,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 	_, cy := summaryView.Cursor()
 	_, oy := summaryView.Origin()
 	currentVinfo = cy + oy
+	vinfo := vinfos[currentVinfo]
 
 	if v, err := g.SetView("changelog", int(float64(maxX)*0.5), int(float64(maxY)*0.2), maxX, maxY); err != nil {
 		if err != gocui.ErrUnknownView {
@@ -704,17 +705,51 @@ func setChangelogLayout(g *gocui.Gui) error {
 			return nil
 		}
 
-		lines := []string{}
-		vinfo := vinfos[currentVinfo]
+		lines := []string{
+			"Affected Packages, Processes",
+			"============================",
+		}
+		vinfo.AffectedPackages.Sort()
+		for _, affected := range vinfo.AffectedPackages {
+			// packages detected by OVAL may not be actually installed
+			if pack, ok := currentScanResult.Packages[affected.Name]; ok {
+				lines = append(lines,
+					"* "+pack.FormatVersionFromTo(
+						affected.NotFixedYet, affected.FixState))
+
+				if len(pack.AffectedProcs) == 0 {
+					lines = append(lines, fmt.Sprintf("  * No affected process"))
+				} else {
+					for _, p := range pack.AffectedProcs {
+						lines = append(lines, fmt.Sprintf("  * PID: %s %s", p.PID, p.Name))
+					}
+				}
+			}
+		}
+		sort.Strings(vinfo.CpeURIs)
+		for _, uri := range vinfo.CpeURIs {
+			lines = append(lines, "* "+uri)
+		}
+
 		for _, adv := range vinfo.DistroAdvisories {
+			lines = append(lines, "\n",
+				"Advisories",
+				"==========",
+			)
 			lines = append(lines, adv.Format())
 		}
 
-		for _, affected := range vinfo.AffectedPackages {
-			pack := currentScanResult.Packages[affected.Name]
-			for _, p := range currentScanResult.Packages {
-				if pack.Name == p.Name {
-					lines = append(lines, p.FormatChangelog(), "\n")
+		if currentScanResult.IsDeepScanMode() {
+			lines = append(lines, "\n",
+				"ChangeLogs",
+				"==========",
+			)
+			for _, affected := range vinfo.AffectedPackages {
+				pack := currentScanResult.Packages[affected.Name]
+				for _, p := range currentScanResult.Packages {
+					if pack.Name == p.Name {
+						lines = append(lines, p.FormatChangelog(), "\n")
+					}
 				}
 			}
 		}
@@ -759,21 +794,6 @@ func detailLines() (string, error) {
 	}
 
 	vinfo := vinfos[currentVinfo]
-
-	packsVer := []string{}
-	vinfo.AffectedPackages.Sort()
-	for _, affected := range vinfo.AffectedPackages {
-		// packages detected by OVAL may not be actually installed
-		if pack, ok := r.Packages[affected.Name]; ok {
-			packsVer = append(packsVer,
-				pack.FormatVersionFromTo(affected.NotFixedYet, affected.FixState))
-		}
-	}
-	sort.Strings(vinfo.CpeURIs)
-	for _, name := range vinfo.CpeURIs {
-		packsVer = append(packsVer, name)
-	}
-
 	links := []string{vinfo.CveContents.SourceLinks(
 		config.Conf.Lang, r.Family, vinfo.CveID)[0].Value,
 		vinfo.Cvss2CalcURL(),
@@ -835,7 +855,6 @@ func detailLines() (string, error) {
 		Confidences: vinfo.Confidences,
 		Cwes:        cwes,
 		Links:       util.Distinct(links),
-		Packages:    packsVer,
 		References:  refs,
 	}
 
@@ -849,44 +868,39 @@ func detailLines() (string, error) {
 
 const mdTemplate = `
 {{.CveID}}
-==============
+================
 
 CVSS Scores
---------------
+-----------
 {{.Cvsses }}
 Summary
---------------
+-----------
  {{.Summary }}
 
 Mitigation
---------------
+-----------
  {{.Mitigation }}
 
 Links
---------------
+-----------
 {{range $link := .Links -}}
 * {{$link}}
 {{end}}
 CWE
---------------
+-----------
 {{range .Cwes -}}
 * {{.En.CweID}} [{{.En.Name}}](https://cwe.mitre.org/data/definitions/{{.En.CweID}}.html)
 {{end}}
-Package/CPE
---------------
-{{range $pack := .Packages -}}
-* {{$pack}}
-{{end -}}
 {{range $name := .CpeURIs -}}
 * {{$name}}
 {{end}}
 Confidence
---------------
+-----------
 {{range $confidence := .Confidences -}}
 * {{$confidence.DetectionMethod}}
 {{end}}
 References
---------------
+-----------
 {{range .References -}}
 * [{{.Source}}]({{.Link}})
 {{end}}
