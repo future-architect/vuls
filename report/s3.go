@@ -82,7 +82,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 			}
 		}
 
-		if c.Conf.FormatShortText {
+		if c.Conf.FormatList {
 			k := key + "_short.txt"
 			text := formatShortPlainText(r)
 			if err := putObject(svc, k, []byte(text)); err != nil {

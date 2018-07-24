@@ -496,6 +496,14 @@
   revision = "5c94acc5e6eb520f1bcd183974e01171cc4c23b3"
 
 [[projects]]
+  branch = "master"
+  digest = "1:4daa045e1e1f3e23f4b07db6880cdf9f259dab65312dfe244a878e6070faaf77"
+  name = "github.com/olekukonko/tablewriter"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "d4647c9c7a84d847478d890b816b7d8b62b0b279"
+
+[[projects]]
   digest = "1:d776f3e95774a8719f2e57fabbbb33103035fe072dcf6f1864f33abd17b753e5"
   name = "github.com/parnurzeal/gorequest"
   packages = ["."]
@@ -780,6 +788,7 @@
     "github.com/kotakanbe/logrus-prefixed-formatter",
     "github.com/mitchellh/go-homedir",
     "github.com/nlopes/slack",
+    "github.com/olekukonko/tablewriter",
     "github.com/parnurzeal/gorequest",
     "github.com/pkg/errors",
     "github.com/rifflock/lfshook",

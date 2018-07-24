@@ -598,7 +598,7 @@ func setSummaryLayout(g *gocui.Gui) error {
 			return err
 		}
 
-		lines := summaryLines()
+		lines := summaryLines(currentScanResult)
 		fmt.Fprintf(v, lines)
 
 		v.Highlight = true
@@ -608,28 +608,25 @@ func setSummaryLayout(g *gocui.Gui) error {
 	return nil
 }
 
-func summaryLines() string {
+func summaryLines(r models.ScanResult) string {
 	stable := uitable.New()
 	stable.MaxColWidth = 1000
 	stable.Wrap = false
 
-	if len(currentScanResult.Errors) != 0 {
+	if len(r.Errors) != 0 {
 		return "Error: Scan with --debug to view the details"
 	}
 
 	indexFormat := ""
-	if len(currentScanResult.ScannedCves) < 10 {
+	if len(r.ScannedCves) < 10 {
 		indexFormat = "[%1d]"
-	} else if len(currentScanResult.ScannedCves) < 100 {
+	} else if len(r.ScannedCves) < 100 {
 		indexFormat = "[%2d]"
 	} else {
 		indexFormat = "[%3d]"
 	}
 
-	for i, vinfo := range vinfos {
-		// summary := vinfo.Titles(
-		// config.Conf.Lang, currentScanResult.Family)[0].Value
-
+	for i, vinfo := range r.ScannedCves.ToSortedSlice() {
 		max := vinfo.MaxCvssScore().Value.Score
 		cvssScore := "|     "
 		if 0 < max {
@@ -644,7 +641,7 @@ func summaryLines() string {
 			fmt.Sprintf(indexFormat, i+1),
 			vinfo.CveID,
 			cvssScore + " |",
-			fmt.Sprintf("%7s |", vinfo.AttackVector()),
+			fmt.Sprintf("%8s |", vinfo.AttackVector()),
 			fmt.Sprintf("%7s |", vinfo.PatchStatus()),
 			packname,
 		}

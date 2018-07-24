@@ -100,7 +100,7 @@ func (*ServerCmd) Usage() string {
 		[-format-xml]
 		[-format-one-email]
 		[-format-one-line-text]
-		[-format-short-text]
+		[-format-list]
 		[-format-full-text]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-debug]

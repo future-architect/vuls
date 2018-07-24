@@ -143,7 +143,7 @@ type Config struct {
 	FormatJSON             bool                  `json:"formatJSON"`
 	FormatOneEMail         bool                  `json:"formatOneEMail"`
 	FormatOneLineText      bool                  `json:"formatOneLineText"`
-	FormatShortText        bool                  `json:"formatShortText"`
+	FormatList             bool                  `json:"formatList"`
 	FormatFullText         bool                  `json:"formatFullText"`
 	GZIP                   bool                  `json:"gzip"`
 	AwsProfile             string                `json:"awsProfile"`

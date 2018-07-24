@@ -72,7 +72,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 			}
 		}
 
-		if c.Conf.FormatShortText {
+		if c.Conf.FormatList {
 			var p string
 			if c.Conf.Diff {
 				p = path + "_short_diff.txt"

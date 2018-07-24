@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package report
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -33,6 +34,7 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/gosuri/uitable"
+	"github.com/olekukonko/tablewriter"
 )
 
 const maxColWidth = 80
@@ -103,64 +105,50 @@ No CVE-IDs are found in updatable packages.
 	 `, header, r.FormatUpdatablePacksSummary())
 	}
 
-	stable := uitable.New()
-	stable.MaxColWidth = maxColWidth
-	stable.Wrap = true
-	for _, vuln := range r.ScannedCves.ToSortedSlice() {
-		summaries := vuln.Summaries(config.Conf.Lang, r.Family)
-		links := vuln.CveContents.SourceLinks(
-			config.Conf.Lang, r.Family, vuln.CveID)
+	data := [][]string{}
+	for _, vinfo := range r.ScannedCves.ToSortedSlice() {
+		max := vinfo.MaxCvssScore().Value.Score
+		// v2max := vinfo.MaxCvss2Score().Value.Score
+		// v3max := vinfo.MaxCvss3Score().Value.Score
 
-		vlinks := []string{}
-		for name, url := range vuln.VendorLinks(r.Family) {
-			vlinks = append(vlinks, fmt.Sprintf("%s (%s)", url, name))
-		}
+		// packname := vinfo.AffectedPackages.FormatTuiSummary()
+		// packname += strings.Join(vinfo.CpeURIs, ", ")
 
-		cvsses := ""
-		for _, cvss := range vuln.Cvss3Scores() {
-			cvssstr := cvss.Value.Format()
-			if cvssstr != "" {
-				cvsses += fmt.Sprintf("%s (%s)\n", cvssstr, cvss.Type)
-			}
-		}
-		if 0 < len(vuln.Cvss3Scores()) {
-			cvsses += vuln.Cvss3CalcURL() + "\n"
-		}
-		for _, cvss := range vuln.Cvss2Scores(r.Family) {
-			cvssstr := cvss.Value.Format()
-			if cvssstr == "" {
-				continue
-			}
-			cvsses += fmt.Sprintf("%s (%s)\n", cvssstr, cvss.Type)
-		}
-		cvsses += vuln.Cvss2CalcURL() + "\n"
-
-		maxCvss := vuln.FormatMaxCvssScore()
-		rightCol := fmt.Sprintf(`%s
-%s
----
-%s
-%s
-%sConfidence: %v`,
-			maxCvss,
-			summaries[0].Value,
-			links[0].Value,
-			strings.Join(vlinks, "\n"),
-			cvsses,
-			//  packsVer,
-			vuln.Confidences,
-		)
-
-		leftCol := fmt.Sprintf("%s", vuln.CveID)
-		scols := []string{leftCol, rightCol}
-		cols := make([]interface{}, len(scols))
-		for i := range cols {
-			cols[i] = scols[i]
-		}
-		stable.AddRow(cols...)
-		stable.AddRow("")
+		data = append(data, []string{
+			vinfo.CveID,
+			fmt.Sprintf("%4.1f", max),
+			// fmt.Sprintf("%4.1f", v2max),
+			// fmt.Sprintf("%4.1f", v3max),
+			fmt.Sprintf("%8s", vinfo.AttackVector()),
+			fmt.Sprintf("%7s", vinfo.PatchStatus()),
+			// packname,
+			fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", vinfo.CveID),
+		})
 	}
-	return fmt.Sprintf("%s\n%s\n", header, stable)
+
+	b := bytes.Buffer{}
+	table := tablewriter.NewWriter(&b)
+	table.SetHeader([]string{
+		"CVE-ID",
+		"CVSS",
+		// "v3",
+		// "v2",
+		"Attack",
+		"Fixed",
+		// "Pkg",
+		"NVD",
+	})
+	table.SetBorder(true)
+	table.SetHeaderColor(
+		tablewriter.Colors{tablewriter.Bold},
+		tablewriter.Colors{tablewriter.Bold},
+		tablewriter.Colors{tablewriter.Bold},
+		tablewriter.Colors{tablewriter.Bold},
+		tablewriter.Colors{tablewriter.Bold},
+	)
+	table.AppendBulk(data)
+	table.Render()
+	return fmt.Sprintf("%s\n%s", header, b.String())
 }
 
 func formatFullPlainText(r models.ScanResult) string {

@@ -67,7 +67,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 			}
 		}
 
-		if c.Conf.FormatShortText {
+		if c.Conf.FormatList {
 			k := key + "_short.txt"
 			b := []byte(formatShortPlainText(r))
 			if err := createBlockBlob(cli, k, b); err != nil {

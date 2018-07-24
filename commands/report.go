@@ -78,8 +78,8 @@ type ReportCmd struct {
 	formatXML         bool
 	formatOneEMail    bool
 	formatOneLineText bool
-	formatShortText   bool
 	formatFullText    bool
+	formatList        bool
 
 	gzip bool
 
@@ -139,7 +139,7 @@ func (*ReportCmd) Usage() string {
 		[-format-xml]
 		[-format-one-email]
 		[-format-one-line-text]
-		[-format-short-text]
+		[-format-list]
 		[-format-full-text]
 		[-gzip]
 		[-aws-profile=default]
@@ -289,10 +289,10 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		false,
 		fmt.Sprintf("One line summary in plain text"))
 
-	f.BoolVar(&p.formatShortText,
-		"format-short-text",
+	f.BoolVar(&p.formatList,
+		"format-list",
 		false,
-		fmt.Sprintf("Summary in plain text"))
+		fmt.Sprintf("Display as list format"))
 
 	f.BoolVar(&p.formatFullText,
 		"format-full-text",
@@ -396,7 +396,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.FormatJSON = p.formatJSON
 	c.Conf.FormatOneEMail = p.formatOneEMail
 	c.Conf.FormatOneLineText = p.formatOneLineText
-	c.Conf.FormatShortText = p.formatShortText
+	c.Conf.FormatList = p.formatList
 	c.Conf.FormatFullText = p.formatFullText
 
 	c.Conf.GZIP = p.gzip
@@ -492,8 +492,8 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if !(p.formatJSON || p.formatOneLineText ||
-		p.formatShortText || p.formatFullText || p.formatXML) {
-		c.Conf.FormatShortText = true
+		p.formatList || p.formatFullText || p.formatXML) {
+		c.Conf.FormatList = true
 	}
 
 	util.Log.Info("Validating config...")
