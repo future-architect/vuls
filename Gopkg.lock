@@ -6,7 +6,7 @@
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
     "storage",
-    "version"
+    "version",
   ]
   pruneopts = "UT"
   revision = "fbe7db0e3f9793ba3e5704efbab84f51436c136e"
@@ -19,7 +19,7 @@
     "autorest",
     "autorest/adal",
     "autorest/azure",
-    "autorest/date"
+    "autorest/date",
   ]
   pruneopts = "UT"
   revision = "1f7cd6cfe0adea687ad44a512dfe76140f804318"
@@ -74,7 +74,7 @@
     "private/protocol/restxml",
     "private/protocol/xml/xmlutil",
     "service/s3",
-    "service/sts"
+    "service/sts",
   ]
   pruneopts = "UT"
   revision = "66e86be40287fdef6990768b65f713f4bce11deb"
@@ -131,7 +131,7 @@
     "internal/pool",
     "internal/proto",
     "internal/singleflight",
-    "internal/util"
+    "internal/util",
   ]
   pruneopts = "UT"
   revision = "83fb42932f6145ce52df09860384a4653d2d332a"
@@ -176,7 +176,7 @@
   packages = [
     ".",
     "util/strutil",
-    "util/wordwrap"
+    "util/wordwrap",
   ]
   pruneopts = "UT"
   revision = "36ee7e946282a3fb1cfecd476ddc9b35d8847e42"
@@ -204,7 +204,7 @@
     ".",
     "dialects/mysql",
     "dialects/postgres",
-    "dialects/sqlite"
+    "dialects/sqlite",
   ]
   pruneopts = "UT"
   revision = "6ed508ec6a4ecb3531899a69cbc746ccf65a4166"
@@ -268,7 +268,7 @@
     "log",
     "models",
     "nvd",
-    "util"
+    "util",
   ]
   pruneopts = "UT"
   revision = "4ee71e8b928d387bdedfd8f1a0c394bbd84f273e"
@@ -289,7 +289,7 @@
     "config",
     "db",
     "db/rdb",
-    "models"
+    "models",
   ]
   pruneopts = "UT"
   revision = "f3255b2e6a0a38b88eaa25b5696d7e73868e46dc"
@@ -309,7 +309,7 @@
   packages = [
     ".",
     "hstore",
-    "oid"
+    "oid",
   ]
   pruneopts = "UT"
   revision = "90697d60dd844d5ef6ff15135d0203f65d2f53b8"
@@ -455,7 +455,7 @@
     "poly1305",
     "ssh",
     "ssh/agent",
-    "ssh/terminal"
+    "ssh/terminal",
   ]
   pruneopts = "UT"
   revision = "a49355c7e3f8fe157a85be2f77e6e269a0f89602"
@@ -467,7 +467,7 @@
   packages = [
     "context",
     "idna",
-    "publicsuffix"
+    "publicsuffix",
   ]
   pruneopts = "UT"
   revision = "292b43bbf7cb8d35ddf40f8d5100ef3837cced3f"
@@ -478,7 +478,7 @@
   name = "golang.org/x/sys"
   packages = [
     "unix",
-    "windows"
+    "windows",
   ]
   pruneopts = "UT"
   revision = "1b2967e3c290b7c545b3db0deeda16e9be4f98a2"
@@ -500,7 +500,7 @@
     "unicode/bidi",
     "unicode/cldr",
     "unicode/norm",
-    "unicode/rangetable"
+    "unicode/rangetable",
   ]
   pruneopts = "UT"
   revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
@@ -550,7 +550,7 @@
     "github.com/rifflock/lfshook",
     "github.com/sirupsen/logrus",
     "golang.org/x/crypto/ssh",
-    "golang.org/x/crypto/ssh/agent"
+    "golang.org/x/crypto/ssh/agent",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
