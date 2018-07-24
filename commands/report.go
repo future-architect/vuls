@@ -541,12 +541,22 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	var res models.ScanResults
-	if res, err = report.LoadScanResults(dir); err != nil {
+	var loaded models.ScanResults
+	if loaded, err = report.LoadScanResults(dir); err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}
 	util.Log.Infof("Loaded: %s", dir)
+
+	var res models.ScanResults
+	for _, r := range loaded {
+		if len(r.Errors) == 0 {
+			res = append(res, r)
+		} else {
+			util.Log.Warnf("Ignored since errors occurred during scanning: %s",
+				r.ServerName)
+		}
+	}
 
 	for _, r := range res {
 		util.Log.Debugf("%s: %s",

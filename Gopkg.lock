@@ -2,28 +2,29 @@
 
 
 [[projects]]
-  digest = "1:c9d46edf143105da698144d5c63aef27f5fce846c9ce39865d0aff4b69cfd5fa"
+  digest = "1:e226fb4e082f948e55b52673ee0cac7b2cd296b7b8c65fdcddd4bbea12c909fe"
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
     "storage",
     "version",
   ]
   pruneopts = "UT"
-  revision = "34e80a61f817f18afd85d0c6d12ee6400d6506b2"
-  version = "v18.1.0"
+  revision = "520918e6c8e8e1064154f51d13e02fad92b287b8"
+  version = "v19.0.0"
 
 [[projects]]
-  digest = "1:4591fb65738d26dbafd8ed746252ffe73fb76d4eb4cf9b0e82f1ce51bff041e3"
+  digest = "1:b2f66e711f275a67d0186d03b16e53769cec1bd301daf907ae60235277ef20e3"
   name = "github.com/Azure/go-autorest"
   packages = [
     "autorest",
     "autorest/adal",
     "autorest/azure",
     "autorest/date",
+    "version",
   ]
   pruneopts = "UT"
-  revision = "894522ed0d5cab8d143c39116ddc5f605a1931ee"
-  version = "v10.13.0"
+  revision = "bca49d5b51a50dc5bb17bbf6204c711c6dbded06"
+  version = "v10.14.0"
 
 [[projects]]
   digest = "1:282acb7fe0ca456de4ea5c3174c2691a2bd74008462e966b69094ad0b2c23e6e"
@@ -42,7 +43,7 @@
   version = "v9"
 
 [[projects]]
-  digest = "1:c461adf4c4881516e488ddb237e581c8b23e381de4a0c1f4b46d6c111998e991"
+  digest = "1:33cfec13a3534ccca9eebcb19db7f98a743d92bdf7b1ef9b7a3522b4c570ff09"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -78,8 +79,8 @@
     "service/sts",
   ]
   pruneopts = "UT"
-  revision = "c25475dd537f7becaf29e97c14617c8082f6b5d4"
-  version = "v1.14.28"
+  revision = "bc3f534c19ffdf835e524e11f0f825b3eaf541c3"
+  version = "v1.14.31"
 
 [[projects]]
   digest = "1:0f98f59e9a2f4070d66f0c9c39561f68fcd1dc837b22a852d28d0003aebd1b1e"
@@ -138,7 +139,7 @@
   version = "v1.38.1"
 
 [[projects]]
-  digest = "1:f0e9573388aa6e99341cbea024d15775f8209896f9f7826cd92a3044f1f8ea39"
+  digest = "1:94836e6196fd3150edd474bde9afeeea27e7d51700cd3f3d44bb859b1951e998"
   name = "github.com/go-redis/redis"
   packages = [
     ".",
@@ -151,8 +152,8 @@
     "internal/util",
   ]
   pruneopts = "UT"
-  revision = "83fb42932f6145ce52df09860384a4653d2d332a"
-  version = "v6.12.0"
+  revision = "480db94d33e6088e08d628833b6c0705451d24bb"
+  version = "v6.13.2"
 
 [[projects]]
   digest = "1:adea5a94903eb4384abef30f3d878dc9ff6b6b5b0722da25b82e5169216dfb61"
@@ -357,7 +358,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:107fdfc5bce1c26407981f204dd4ebbd5d48ba9c422975ad26bf77704124f757"
+  digest = "1:5359aed4c08dfa76f80e0f15feafce136eebe6b312f408512317076d199ce958"
   name = "github.com/kotakanbe/goval-dictionary"
   packages = [
     "config",
@@ -366,7 +367,7 @@
     "models",
   ]
   pruneopts = "UT"
-  revision = "c60a1b8964d3c63c8c8b13cbdf6916d507d9d0ef"
+  revision = "652b729755214f8663f61ef4d795492bc0015a53"
 
 [[projects]]
   branch = "master"
@@ -545,11 +546,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f0a733af3673f2e73f9c8529a6ba7e0766b16ec574528811bf721643f8488b22"
+  digest = "1:69ec144b7483f9fb363c6cfc427a1359e38a0cf47acd7476777a66b20a15bf7f"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   pruneopts = "UT"
-  revision = "92052687f8ec598ff0da626d2909478cfd1e3a3c"
+  revision = "c108f5553c369120b773da633aca62a8b42b1cf4"
 
 [[projects]]
   digest = "1:37ace7f35375adec11634126944bdc45a673415e2fcc07382d03b75ec76ea94c"
@@ -634,11 +635,11 @@
     "ssh/terminal",
   ]
   pruneopts = "UT"
-  revision = "a49355c7e3f8fe157a85be2f77e6e269a0f89602"
+  revision = "c126467f60eb25f8f27e5a981f32a87e3965053f"
 
 [[projects]]
   branch = "master"
-  digest = "1:79d16bf6031c953123613b78dffd6590ef0927cc4b02f5f2ec8b42e8d44c0508"
+  digest = "1:4d05d5e04a3546a7e424b1c056664686894ef03cd66f3096101a84a52c2ef234"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -646,7 +647,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "d0887baf81f4598189d4e12a37c6da86f0bba4d0"
+  revision = "a680a1efc54dd51c040b3b5ce4939ea3cf2ea0d1"
 
 [[projects]]
   branch = "master"
