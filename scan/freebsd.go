@@ -176,14 +176,18 @@ func (o *bsd) scanInstalledPackages() (models.Packages, error) {
 }
 
 func (o *bsd) scanUnsecurePackages() (models.VulnInfos, error) {
-	const vulndbPath = "/tmp/vuln.db"
-	cmd := "rm -f " + vulndbPath
+
+	vulndbPath := "/tmp/vuln.db"
+	cmd := util.PrependProxyEnv("pkg audit -F -r -f " + vulndbPath)
+	if o.ServerInfo.PkgAuditPath != "" {
+		vulndbPath = o.ServerInfo.PkgAuditPath
+		cmd = util.PrependProxyEnv("pkg audit -f " + vulndbPath)
+	}
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess(0) {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 
-	cmd = util.PrependProxyEnv("pkg audit -F -r -f " + vulndbPath)
 	r = o.exec(cmd, noSudo)
 	if !r.isSuccess(0, 1) {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)

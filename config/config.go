@@ -116,9 +116,10 @@ type Config struct {
 	Deep           bool
 	SkipBroken     bool
 
-	HTTPProxy  string `valid:"url"`
-	LogDir     string
-	ResultsDir string
+	HTTPProxy    string `valid:"url"`
+	LogDir       string
+	ResultsDir   string
+	PkgAuditPath string
 
 	CveDBType string
 	CveDBPath string
@@ -682,7 +683,8 @@ type ServerInfo struct {
 	Port        string
 	KeyPath     string
 	KeyPassword string `json:"-"`
-
+	PkgAuditPath    string
+	
 	CpeNames               []string
 	DependencyCheckXMLPath string
 

@@ -53,6 +53,7 @@ type ScanCmd struct {
 	vvv            bool
 	timeoutSec     int
 	scanTimeoutSec int
+	PkgAuditPath   string
 }
 
 // Name return subcommand name
@@ -83,6 +84,7 @@ func (*ScanCmd) Usage() string {
 		[-debug]
 		[-pipe]
 		[-vvv]
+		[-package-audit-path]
 
 		[SERVER]...
 `
@@ -93,6 +95,8 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.debug, "debug", false, "debug mode")
 
 	wd, _ := os.Getwd()
+	defaultPkgAuditPath := "/tmp/vuln.db"
+	f.StringVar(&p.PkgAuditPath, "package-audit-path", defaultPkgAuditPath, "Path to package audit file")
 
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
@@ -266,6 +270,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	c.Conf.HTTPProxy = p.httpProxy
 	c.Conf.ContainersOnly = p.containersOnly
 	c.Conf.SkipBroken = p.skipBroken
+	c.Conf.PkgAuditPath = p.PkgAuditPath
 
 	c.Conf.Fast = p.fast
 	c.Conf.Offline = p.offline
