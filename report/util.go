@@ -37,7 +37,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-const maxColWidth = 80
+const maxColWidth = 100
 
 func formatScanSummary(rs ...models.ScanResult) string {
 	table := uitable.New()
@@ -186,26 +186,22 @@ No CVE-IDs are found in updatable packages.
 				table.AddRow(cvss.Type, cvssstr)
 			}
 		}
-		if 0 < len(vuln.Cvss2Scores(r.Family)) {
-			table.AddRow("CVSSv2 Calc", vuln.Cvss2CalcURL())
-		}
-		if 0 < len(vuln.Cvss3Scores()) {
-			table.AddRow("CVSSv3 Calc", vuln.Cvss3CalcURL())
-		}
 		table.AddRow("Summary", vuln.Summaries(
 			config.Conf.Lang, r.Family)[0].Value)
 
-		links := vuln.CveContents.SourceLinks(
-			config.Conf.Lang, r.Family, vuln.CveID)
-		table.AddRow("Source", links[0].Value)
-
-		vlinks := vuln.VendorLinks(r.Family)
-		for name, url := range vlinks {
-			table.AddRow(name, url)
-		}
-
+		cweURLs, top10URLs := []string{}, []string{}
 		for _, v := range vuln.CveContents.UniqCweIDs(r.Family) {
-			table.AddRow(fmt.Sprintf("%s (%s)", v.Value, v.Type), cweURL(v.Value))
+			name, url, top10Rank, top10URL := r.CweDict.Get(v.Value, r.Lang)
+			if top10Rank != "" {
+				table.AddRow("CWE", fmt.Sprintf("[OWASP Top%s] %s: %s (%s)",
+					top10Rank, v.Value, name, v.Type))
+
+				top10URLs = append(top10URLs, top10URL)
+			} else {
+				table.AddRow("CWE", fmt.Sprintf("%s: %s (%s)",
+					v.Value, name, v.Type))
+			}
+			cweURLs = append(cweURLs, url)
 		}
 
 		packsVer := []string{}
@@ -215,12 +211,39 @@ No CVE-IDs are found in updatable packages.
 				packsVer = append(packsVer, pack.FormatVersionFromTo(affected.NotFixedYet, affected.FixState))
 			}
 		}
+		table.AddRow("Package/CPE", strings.Join(packsVer, "\n"))
 		sort.Strings(vuln.CpeURIs)
 		for _, name := range vuln.CpeURIs {
 			packsVer = append(packsVer, name)
 		}
-		table.AddRow("Package/CPE", strings.Join(packsVer, "\n"))
 		table.AddRow("Confidence", vuln.Confidences)
+
+		links := vuln.CveContents.SourceLinks(
+			config.Conf.Lang, r.Family, vuln.CveID)
+		table.AddRow("Source", links[0].Value)
+
+		if 0 < len(vuln.Cvss2Scores(r.Family)) {
+			table.AddRow("CVSSv2 Calc", vuln.Cvss2CalcURL())
+		}
+		if 0 < len(vuln.Cvss3Scores()) {
+			table.AddRow("CVSSv3 Calc", vuln.Cvss3CalcURL())
+		}
+		vlinks := vuln.VendorLinks(r.Family)
+		for name, url := range vlinks {
+			table.AddRow(name, url)
+		}
+		for _, url := range cweURLs {
+			table.AddRow("CWE", url)
+		}
+		for _, url := range top10URLs {
+			table.AddRow("OWASP Top10", url)
+		}
+
+		for _, rr := range vuln.CveContents.References(r.Family) {
+			for _, ref := range rr.Value {
+				table.AddRow(ref.Source, ref.Link)
+			}
+		}
 
 		table.AddRow("\n")
 	}

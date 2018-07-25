@@ -26,7 +26,6 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/cwe"
 	"github.com/future-architect/vuls/models"
 	"github.com/nlopes/slack"
 	"github.com/parnurzeal/gorequest"
@@ -341,48 +340,17 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 	)
 }
 
-func cweIDs(vinfo models.VulnInfo, osFamily string, cweDict map[string]models.CweDictEntry) string {
+func cweIDs(vinfo models.VulnInfo, osFamily string, cweDict models.CweDict) string {
 	links := []string{}
 	for _, c := range vinfo.CveContents.UniqCweIDs(osFamily) {
-		cweNum := strings.TrimPrefix(c.Value, "CWE-")
-		if config.Conf.Lang == "ja" {
-			top10str := ""
-			if dict, ok := cweDict[cweNum]; ok {
-				if dict.OwaspTopTen2017 != "" {
-					top10str = fmt.Sprintf("<%s|[OWASP Top %s]>",
-						cwe.OwaspTopTen2017GitHubURLJa[dict.OwaspTopTen2017],
-						dict.OwaspTopTen2017)
-				}
-			}
-			if dict, ok := cwe.CweDictJa[cweNum]; ok {
-				links = append(links, fmt.Sprintf("%s <%s|%s>: %s",
-					top10str, cweJvnURL(c.Value), c.Value, dict.Name))
-			} else if dict, ok := cwe.CweDictEn[cweNum]; ok {
-				links = append(links, fmt.Sprintf("%s <%s|%s>: %s",
-					top10str, cweJvnURL(c.Value), c.Value, dict.Name))
-			} else {
-				links = append(links, fmt.Sprintf("%s <%s|%s>",
-					top10str, cweJvnURL(c.Value), c.Value))
-			}
-
-		} else {
-			top10str := ""
-			if dict, ok := cweDict[cweNum]; ok {
-				if dict.OwaspTopTen2017 != "" {
-					top10str = fmt.Sprintf("<%s|[OWASP Top %s]>",
-						cwe.OwaspTopTen2017GitHubURLEn[dict.OwaspTopTen2017],
-						dict.OwaspTopTen2017)
-				}
-			}
-
-			if dict, ok := cwe.CweDictEn[cweNum]; ok {
-				links = append(links, fmt.Sprintf("%s <%s|%s>: %s",
-					top10str, cweURL(c.Value), c.Value, dict.Name))
-			} else {
-				links = append(links, fmt.Sprintf("%s <%s|%s>",
-					top10str, cweURL(c.Value), c.Value))
-			}
+		name, url, top10Rank, top10URL := cweDict.Get(c.Value, osFamily)
+		line := ""
+		if top10Rank != "" {
+			line = fmt.Sprintf("<%s|[OWASP Top %s]>",
+				top10URL, top10Rank)
 		}
+		links = append(links, fmt.Sprintf("%s <%s|%s>: %s",
+			line, url, c.Value, name))
 	}
 	return strings.Join(links, "\n")
 }

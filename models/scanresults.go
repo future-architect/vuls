@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/future-architect/vuls/config"
@@ -33,38 +34,72 @@ type ScanResults []ScanResult
 
 // ScanResult has the result of scanned CVE information.
 type ScanResult struct {
-	JSONVersion      int                     `json:"jsonVersion"`
-	Lang             string                  `json:"lang"`
-	ServerUUID       string                  `json:"serverUUID"`
-	ServerName       string                  `json:"serverName"` // TOML Section key
-	Family           string                  `json:"family"`
-	Release          string                  `json:"release"`
-	Container        Container               `json:"container"`
-	Platform         Platform                `json:"platform"`
-	IPv4Addrs        []string                `json:"ipv4Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
-	IPv6Addrs        []string                `json:"ipv6Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
-	ScannedAt        time.Time               `json:"scannedAt"`
-	ScannedVersion   string                  `json:"scannedVersion"`
-	ScannedRevision  string                  `json:"scannedRevision"`
-	ScannedBy        string                  `json:"scannedBy"`
-	ReportedAt       time.Time               `json:"reportedAt"`
-	ReportedVersion  string                  `json:"reportedVersion"`
-	ReportedRevision string                  `json:"reportedRevision"`
-	ReportedBy       string                  `json:"reportedBy"`
-	ScannedCves      VulnInfos               `json:"scannedCves"`
-	RunningKernel    Kernel                  `json:"runningKernel"`
-	Packages         Packages                `json:"packages"`
-	CweDict          map[string]CweDictEntry `json:"cweDict"`
-	Optional         map[string]interface{}  `json:",omitempty"`
-	SrcPackages      SrcPackages             `json:",omitempty"`
-	Errors           []string                `json:"errors"`
+	JSONVersion      int                    `json:"jsonVersion"`
+	Lang             string                 `json:"lang"`
+	ServerUUID       string                 `json:"serverUUID"`
+	ServerName       string                 `json:"serverName"` // TOML Section key
+	Family           string                 `json:"family"`
+	Release          string                 `json:"release"`
+	Container        Container              `json:"container"`
+	Platform         Platform               `json:"platform"`
+	IPv4Addrs        []string               `json:"ipv4Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
+	IPv6Addrs        []string               `json:"ipv6Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
+	ScannedAt        time.Time              `json:"scannedAt"`
+	ScannedVersion   string                 `json:"scannedVersion"`
+	ScannedRevision  string                 `json:"scannedRevision"`
+	ScannedBy        string                 `json:"scannedBy"`
+	ReportedAt       time.Time              `json:"reportedAt"`
+	ReportedVersion  string                 `json:"reportedVersion"`
+	ReportedRevision string                 `json:"reportedRevision"`
+	ReportedBy       string                 `json:"reportedBy"`
+	ScannedCves      VulnInfos              `json:"scannedCves"`
+	RunningKernel    Kernel                 `json:"runningKernel"`
+	Packages         Packages               `json:"packages"`
+	CweDict          CweDict                `json:"cweDict"`
+	Optional         map[string]interface{} `json:",omitempty"`
+	SrcPackages      SrcPackages            `json:",omitempty"`
+	Errors           []string               `json:"errors"`
 	Config           struct {
 		Scan   config.Config `json:"scan"`
 		Report config.Config `json:"report"`
 	} `json:"config"`
 }
 
-// CweDictEntry is a dictionary of scanned CWE
+// CweDict is a dictionary for CWE
+type CweDict map[string]CweDictEntry
+
+// Get the name, url, top10URL for the specified cweID, lang
+func (c CweDict) Get(cweID, lang string) (name, url, top10Rank, top10URL string) {
+	cweNum := strings.TrimPrefix(cweID, "CWE-")
+	switch config.Conf.Lang {
+	case "ja":
+		if dict, ok := c[cweNum]; ok && dict.OwaspTopTen2017 != "" {
+			top10Rank = dict.OwaspTopTen2017
+			top10URL = cwe.OwaspTopTen2017GitHubURLJa[dict.OwaspTopTen2017]
+		}
+		if dict, ok := cwe.CweDictJa[cweNum]; ok {
+			name = dict.Name
+			url = fmt.Sprintf("http://jvndb.jvn.jp/ja/cwe/%s.html", cweID)
+		} else {
+			if dict, ok := cwe.CweDictEn[cweNum]; ok {
+				name = dict.Name
+			}
+			url = fmt.Sprintf("https://cwe.mitre.org/data/definitions/%s.html", cweID)
+		}
+	default:
+		if dict, ok := c[cweNum]; ok && dict.OwaspTopTen2017 != "" {
+			top10Rank = dict.OwaspTopTen2017
+			top10URL = cwe.OwaspTopTen2017GitHubURLEn[dict.OwaspTopTen2017]
+		}
+		url = fmt.Sprintf("https://cwe.mitre.org/data/definitions/%s.html", cweID)
+		if dict, ok := cwe.CweDictEn[cweNum]; ok {
+			name = dict.Name
+		}
+	}
+	return
+}
+
+// CweDictEntry is a entry of CWE
 type CweDictEntry struct {
 	En              *cwe.Cwe `json:"en,omitempty"`
 	Ja              *cwe.Cwe `json:"ja,omitempty"`
