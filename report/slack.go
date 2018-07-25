@@ -243,7 +243,7 @@ func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 					Short: true,
 				},
 			},
-			Color: color(vinfo.MaxCvssScore().Value.Score),
+			Color: cvssColor(vinfo.MaxCvssScore().Value.Score),
 		}
 		attaches = append(attaches, a)
 	}
@@ -251,7 +251,7 @@ func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 }
 
 // https://api.slack.com/docs/attachments
-func color(cvssScore float64) string {
+func cvssColor(cvssScore float64) string {
 	switch {
 	case 7 <= cvssScore:
 		return "danger"

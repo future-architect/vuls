@@ -30,6 +30,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -89,7 +90,7 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 	return fmt.Sprintf("%s\n", table)
 }
 
-func formatShortPlainText(r models.ScanResult) string {
+func formatList(r models.ScanResult) string {
 	header := r.FormatTextReportHeadedr()
 	if len(r.Errors) != 0 {
 		return fmt.Sprintf(
@@ -126,6 +127,8 @@ No CVE-IDs are found in updatable packages.
 		})
 	}
 
+	color.Cyan("Prints text in cyan.")
+
 	b := bytes.Buffer{}
 	table := tablewriter.NewWriter(&b)
 	table.SetHeader([]string{
@@ -139,19 +142,12 @@ No CVE-IDs are found in updatable packages.
 		"NVD",
 	})
 	table.SetBorder(true)
-	table.SetHeaderColor(
-		tablewriter.Colors{tablewriter.Bold},
-		tablewriter.Colors{tablewriter.Bold},
-		tablewriter.Colors{tablewriter.Bold},
-		tablewriter.Colors{tablewriter.Bold},
-		tablewriter.Colors{tablewriter.Bold},
-	)
 	table.AppendBulk(data)
 	table.Render()
 	return fmt.Sprintf("%s\n%s", header, b.String())
 }
 
-func formatFullPlainText(r models.ScanResult) string {
+func formatFullPlainText(r models.ScanResult) (lines string) {
 	header := r.FormatTextReportHeadedr()
 	if len(r.Errors) != 0 {
 		return fmt.Sprintf(
@@ -167,88 +163,114 @@ No CVE-IDs are found in updatable packages.
 	 `, header, r.FormatUpdatablePacksSummary())
 	}
 
-	table := uitable.New()
-	table.MaxColWidth = maxColWidth
-	table.Wrap = true
+	lines = header + "\n"
+
 	for _, vuln := range r.ScannedCves.ToSortedSlice() {
-		table.AddRow(vuln.CveID)
-		table.AddRow("----------------")
-		table.AddRow("Max Score", vuln.FormatMaxCvssScore())
+		data := [][]string{}
+		data = append(data, []string{"Max Score", vuln.FormatMaxCvssScore()})
 		for _, cvss := range vuln.Cvss3Scores() {
-			cvssstr := cvss.Value.Format()
-			if cvssstr != "" {
-				table.AddRow(cvss.Type, cvssstr)
+			if cvssstr := cvss.Value.Format(); cvssstr != "" {
+				data = append(data, []string{string(cvss.Type), cvssstr})
 			}
 		}
+
 		for _, cvss := range vuln.Cvss2Scores(r.Family) {
-			cvssstr := cvss.Value.Format()
-			if cvssstr != "" {
-				table.AddRow(cvss.Type, cvssstr)
+			if cvssstr := cvss.Value.Format(); cvssstr != "" {
+				data = append(data, []string{string(cvss.Type), cvssstr})
 			}
 		}
-		table.AddRow("Summary", vuln.Summaries(
-			config.Conf.Lang, r.Family)[0].Value)
+
+		data = append(data, []string{"Summary", vuln.Summaries(
+			config.Conf.Lang, r.Family)[0].Value})
+
+		mitigation := vuln.Mitigations(r.Family)[0]
+		if mitigation.Type != models.Unknown {
+			data = append(data, []string{"Mitigation", mitigation.Value})
+		}
 
 		cweURLs, top10URLs := []string{}, []string{}
 		for _, v := range vuln.CveContents.UniqCweIDs(r.Family) {
 			name, url, top10Rank, top10URL := r.CweDict.Get(v.Value, r.Lang)
 			if top10Rank != "" {
-				table.AddRow("CWE", fmt.Sprintf("[OWASP Top%s] %s: %s (%s)",
-					top10Rank, v.Value, name, v.Type))
-
+				data = append(data, []string{"CWE",
+					fmt.Sprintf("[OWASP Top%s] %s: %s (%s)",
+						top10Rank, v.Value, name, v.Type)})
 				top10URLs = append(top10URLs, top10URL)
 			} else {
-				table.AddRow("CWE", fmt.Sprintf("%s: %s (%s)",
-					v.Value, name, v.Type))
+				data = append(data, []string{"CWE", fmt.Sprintf("%s: %s (%s)",
+					v.Value, name, v.Type)})
 			}
 			cweURLs = append(cweURLs, url)
 		}
 
-		packsVer := []string{}
 		vuln.AffectedPackages.Sort()
 		for _, affected := range vuln.AffectedPackages {
 			if pack, ok := r.Packages[affected.Name]; ok {
-				packsVer = append(packsVer, pack.FormatVersionFromTo(affected.NotFixedYet, affected.FixState))
+				data = append(data, []string{"Affected PKG",
+					pack.FormatVersionFromTo(affected.NotFixedYet, affected.FixState)})
+				if len(pack.AffectedProcs) != 0 {
+					for _, p := range pack.AffectedProcs {
+						data = append(data, []string{"",
+							fmt.Sprintf("  - PID: %s %s", p.PID, p.Name)})
+					}
+				}
 			}
 		}
-		table.AddRow("Package/CPE", strings.Join(packsVer, "\n"))
 		sort.Strings(vuln.CpeURIs)
 		for _, name := range vuln.CpeURIs {
-			packsVer = append(packsVer, name)
+			data = append(data, []string{"CPE", name})
 		}
-		table.AddRow("Confidence", vuln.Confidences)
+
+		for _, confidence := range vuln.Confidences {
+			data = append(data, []string{"Confidence", confidence.String()})
+		}
 
 		links := vuln.CveContents.SourceLinks(
 			config.Conf.Lang, r.Family, vuln.CveID)
-		table.AddRow("Source", links[0].Value)
+		data = append(data, []string{"Source", links[0].Value})
 
 		if 0 < len(vuln.Cvss2Scores(r.Family)) {
-			table.AddRow("CVSSv2 Calc", vuln.Cvss2CalcURL())
+			data = append(data, []string{"CVSSv2 Calc", vuln.Cvss2CalcURL()})
 		}
 		if 0 < len(vuln.Cvss3Scores()) {
-			table.AddRow("CVSSv3 Calc", vuln.Cvss3CalcURL())
+			data = append(data, []string{"CVSSv3 Calc", vuln.Cvss3CalcURL()})
 		}
+
 		vlinks := vuln.VendorLinks(r.Family)
 		for name, url := range vlinks {
-			table.AddRow(name, url)
+			data = append(data, []string{name, url})
 		}
 		for _, url := range cweURLs {
-			table.AddRow("CWE", url)
+			data = append(data, []string{"CWE", url})
 		}
 		for _, url := range top10URLs {
-			table.AddRow("OWASP Top10", url)
+			data = append(data, []string{"OWASP Top10", url})
 		}
 
-		for _, rr := range vuln.CveContents.References(r.Family) {
-			for _, ref := range rr.Value {
-				table.AddRow(ref.Source, ref.Link)
-			}
-		}
+		// for _, rr := range vuln.CveContents.References(r.Family) {
+		// for _, ref := range rr.Value {
+		// data = append(data, []string{ref.Source, ref.Link})
+		// }
+		// }
 
-		table.AddRow("\n")
+		b := bytes.Buffer{}
+		table := tablewriter.NewWriter(&b)
+		table.SetColWidth(80)
+		table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+		table.SetHeader([]string{
+			vuln.CveID,
+			"",
+		})
+		table.SetBorder(true)
+		table.SetHeaderColor(
+			tablewriter.Colors{tablewriter.Normal},
+			tablewriter.Colors{tablewriter.Normal},
+		)
+		table.AppendBulk(data)
+		table.Render()
+		lines += b.String() + "\n"
 	}
-
-	return fmt.Sprintf("%s\n%s", header, table)
+	return
 }
 
 func cweURL(cweID string) string {

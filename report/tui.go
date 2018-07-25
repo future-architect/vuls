@@ -714,12 +714,12 @@ func setChangelogLayout(g *gocui.Gui) error {
 					"* "+pack.FormatVersionFromTo(
 						affected.NotFixedYet, affected.FixState))
 
-				if len(pack.AffectedProcs) == 0 {
-					lines = append(lines, fmt.Sprintf("  * No affected process"))
-				} else {
+				if len(pack.AffectedProcs) != 0 {
 					for _, p := range pack.AffectedProcs {
 						lines = append(lines, fmt.Sprintf("  * PID: %s %s", p.PID, p.Name))
 					}
+				} else {
+					// lines = append(lines, fmt.Sprintf("  * No affected process"))
 				}
 			}
 		}
