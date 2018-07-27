@@ -2,7 +2,7 @@
 
 
 [[projects]]
-  digest = "1:e226fb4e082f948e55b52673ee0cac7b2cd296b7b8c65fdcddd4bbea12c909fe"
+  digest = "1:de80a0cfe3033d447c3daf8ec17465334537cc6f78ed754381a09064b65cc1b3"
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
     "storage",
@@ -13,7 +13,7 @@
   version = "v19.0.0"
 
 [[projects]]
-  digest = "1:b2f66e711f275a67d0186d03b16e53769cec1bd301daf907ae60235277ef20e3"
+  digest = "1:7e11a0a4c2d7792a108629e27c83ff4397b950dede4ccce23f99639bfa84846b"
   name = "github.com/Azure/go-autorest"
   packages = [
     "autorest",
@@ -27,7 +27,7 @@
   version = "v10.14.0"
 
 [[projects]]
-  digest = "1:282acb7fe0ca456de4ea5c3174c2691a2bd74008462e966b69094ad0b2c23e6e"
+  digest = "1:b16fbfbcc20645cb419f78325bb2e85ec729b338e996a228124d68931a6f2a37"
   name = "github.com/BurntSushi/toml"
   packages = ["."]
   pruneopts = "UT"
@@ -43,7 +43,7 @@
   version = "v9"
 
 [[projects]]
-  digest = "1:33cfec13a3534ccca9eebcb19db7f98a743d92bdf7b1ef9b7a3522b4c570ff09"
+  digest = "1:b42949704aad6dc86a9fa457ce3c80267d8875ba727bc3eb0eaa966e64e960b2"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -139,7 +139,7 @@
   version = "v1.38.1"
 
 [[projects]]
-  digest = "1:94836e6196fd3150edd474bde9afeeea27e7d51700cd3f3d44bb859b1951e998"
+  digest = "1:991bb96360eb8db70a40e9c496769fe6a7bbac4047f8376494d9837397078327"
   name = "github.com/go-redis/redis"
   packages = [
     ".",
@@ -189,7 +189,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:cfff48546cb55d9bfcb60078c1bb27b0cb8fbf403d8d481d7244a920359c8d7b"
+  digest = "1:4e08dc2383a46b3107f0b34ca338c4459e8fc8ee90e46a60e728aa8a2b21d558"
   name = "github.com/gosuri/uitable"
   packages = [
     ".",
@@ -209,7 +209,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ac64f01acc5eeea9dde40e326de6b6471e501392ec06524c3b51033aa50789bc"
+  digest = "1:a361611b8c8c75a1091f00027767f7779b29cb37c456a71b8f2604c88057ab40"
   name = "github.com/hashicorp/hcl"
   packages = [
     ".",
@@ -251,7 +251,7 @@
   version = "v2.13"
 
 [[projects]]
-  digest = "1:2e8f5374b87a5afd6529a07b4bcfffe5f44ddf005c8eb581ac2863875ece8bae"
+  digest = "1:8fe19266ce82209076d4a81007ff93f40dd349faca4a917aea59d33956bbd4fd"
   name = "github.com/jinzhu/gorm"
   packages = [
     ".",
@@ -296,7 +296,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:dc7261fdaec4b0502799ebb32c11fcb36fc1499bc22626fe318643ae8a83c797"
+  digest = "1:bdf08c9b41c029c60ba5dc99443a3ce74eedad842cf2adf9c255513f432422e2"
   name = "github.com/knqyf263/go-cpe"
   packages = [
     "common",
@@ -324,7 +324,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:10e65558f91a6f6fe24552634b64fc90f9fcc3a881bdffe301abf53bc41a6201"
+  digest = "1:69a5f084d071ecd64d410b1c1ee0c61f6e8f1a67b815a6220a9f4222e2feb832"
   name = "github.com/knqyf263/gost"
   packages = [
     "config",
@@ -337,7 +337,7 @@
 
 [[projects]]
   branch = "nvd-json"
-  digest = "1:f52cea10c649b38a8578f521226143b1e5ed053316ef7bcfe178ee0cb4d394f1"
+  digest = "1:a0936d2be9f1dfa483fb8c2251453a9202dca2a374b1e42c7d75036a87d1c69d"
   name = "github.com/kotakanbe/go-cve-dictionary"
   packages = [
     "config",
@@ -358,7 +358,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:5359aed4c08dfa76f80e0f15feafce136eebe6b312f408512317076d199ce958"
+  digest = "1:2cc1eeffaf8e419fe98c35df99fff6409a74a5d8a3845e6b829c05d9c4470742"
   name = "github.com/kotakanbe/goval-dictionary"
   packages = [
     "config",
@@ -378,7 +378,7 @@
   revision = "928f7356cb964637e2489a6ef37eee55181676c5"
 
 [[projects]]
-  digest = "1:ee674994a468c0d0698bcf5c51853586d88d9567fc7e9fc31bf926ef716e8bcf"
+  digest = "1:faee5b9f53eb1ae4eb04708c040c8c4dd685ce46509671e57a08520a15c54368"
   name = "github.com/labstack/gommon"
   packages = [
     "color",
@@ -390,7 +390,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:defb20f3cbe2ee567752a32f4f5a41ed22d648654545147fb5c94e28beec3fca"
+  digest = "1:2d370ad7a48d3523291ad53a04b9b1510c182880927f800b46221cc465427800"
   name = "github.com/lib/pq"
   packages = [
     ".",
@@ -553,7 +553,7 @@
   revision = "c108f5553c369120b773da633aca62a8b42b1cf4"
 
 [[projects]]
-  digest = "1:37ace7f35375adec11634126944bdc45a673415e2fcc07382d03b75ec76ea94c"
+  digest = "1:bd1ae00087d17c5a748660b8e89e1043e1e5479d0fea743352cda2f8dd8c4f84"
   name = "github.com/spf13/afero"
   packages = [
     ".",
@@ -621,7 +621,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:aa95bbd7d9184ef9595b69cbd51b2a96f15627ae9d7d4f762c81860f7824dba6"
+  digest = "1:528c3b867218fc6ce15b9fa7b1e6d90c3a4245cb2683ca33426d598a6fe9690b"
   name = "golang.org/x/crypto"
   packages = [
     "curve25519",
@@ -639,7 +639,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:4d05d5e04a3546a7e424b1c056664686894ef03cd66f3096101a84a52c2ef234"
+  digest = "1:10980effe62c525abf044479b1b0610b391eda48271fd9d66bce28149466bb41"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -651,7 +651,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:72d6244a51be9611f08994aca19677fcc31676b3e7b742c37e129e6ece4ad8fc"
+  digest = "1:3364d01296ce7eeca363e3d530ae63a2092d6f8efb85fb3d101e8f6d7de83452"
   name = "golang.org/x/sys"
   packages = [
     "unix",
@@ -661,7 +661,7 @@
   revision = "ac767d655b305d4e9612f5f6e33120b9176c4ad4"
 
 [[projects]]
-  digest = "1:7509ba4347d1f8de6ae9be8818b0cd1abc3deeffe28aeaf4be6d4b6b5178d9ca"
+  digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
   name = "golang.org/x/text"
   packages = [
     "collate",
@@ -770,6 +770,7 @@
     "github.com/aws/aws-sdk-go/service/s3",
     "github.com/boltdb/bolt",
     "github.com/cenkalti/backoff",
+    "github.com/fatih/color",
     "github.com/google/subcommands",
     "github.com/gosuri/uitable",
     "github.com/hashicorp/uuid",

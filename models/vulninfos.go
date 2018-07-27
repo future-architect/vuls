@@ -349,6 +349,27 @@ func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 			})
 		}
 	}
+
+	for _, v := range values {
+		if v.Type == RedHat {
+			return
+		}
+	}
+
+	// Set the CVSS v3 score of vuln that exists only in gost.
+	// Unfixed vulnerabilities detected by gost are not in OVAL, because
+	// OVAL data has only vulnerabilities for already fixed.
+	if cont, found := v.CveContents[RedHatAPI]; found {
+		values = append(values, CveContentCvss{
+			Type: RedHatAPI,
+			Value: Cvss{
+				Type:     CVSS3,
+				Score:    cont.Cvss3Score,
+				Vector:   cont.Cvss3Vector,
+				Severity: strings.ToUpper(cont.Cvss3Severity),
+			},
+		})
+	}
 	return
 }
 
