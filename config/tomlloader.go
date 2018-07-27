@@ -106,6 +106,9 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		s.ScanMode = v.ScanMode
 		if len(s.ScanMode) == 0 {
 			s.ScanMode = d.ScanMode
+			if len(s.ScanMode) == 0 {
+				s.ScanMode = []string{"fast"}
+			}
 		}
 		for _, m := range s.ScanMode {
 			switch m {
