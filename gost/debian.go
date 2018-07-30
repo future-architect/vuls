@@ -58,7 +58,7 @@ func (deb Debian) FillWithGost(driver db.DB, r *models.ScanResult) error {
 	packCvesList := []packCves{}
 	if deb.isFetchViaHTTP() {
 		url, _ := util.URLPathJoin(config.Conf.GostDBURL, "debian", major(r.Release), "pkgs")
-		responses, err := getUnfixedCvesViaHTTP(r, url)
+		responses, err := getAllUnfixedCvesViaHTTP(r, url)
 		if err != nil {
 			return err
 		}

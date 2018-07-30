@@ -121,7 +121,7 @@ func TestSetPackageStates(t *testing.T) {
 
 	r := RedHat{}
 	for i, tt := range tests {
-		out := r.setPackageStates(tt.in, tt.pkgstats, tt.installed, tt.release)
+		out := r.mergePackageStates(tt.in, tt.pkgstats, tt.installed, tt.release)
 		if ok := reflect.DeepEqual(tt.out, out); !ok {
 			t.Errorf("[%d]\nexpected: %v:%T\n  actual: %v:%T\n", i, tt.out, tt.out, out, out)
 		}
