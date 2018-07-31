@@ -39,22 +39,22 @@ func NewAlpine() Alpine {
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o Alpine) FillWithOval(driver db.DB, r *models.ScanResult) (err error) {
+func (o Alpine) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
 	var relatedDefs ovalResult
-	if o.isFetchViaHTTP() {
+	if o.IsFetchViaHTTP() {
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
-			return err
+			return 0, err
 		}
 	} else {
 		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
-			return err
+			return 0, err
 		}
 	}
 	for _, defPacks := range relatedDefs.entries {
 		o.update(r, defPacks)
 	}
 
-	return nil
+	return len(relatedDefs.entries), nil
 }
 
 func (o Alpine) update(r *models.ScanResult, defPacks defPacks) {

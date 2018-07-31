@@ -142,19 +142,25 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string) error {
 	util.Log.Debugf("need to refresh")
 
-	util.Log.Infof("Fill CVE detailed information with OVAL")
-	if err := FillWithOval(dbclient.OvalDB, r); err != nil {
+	nCVEs, err := FillWithOval(dbclient.OvalDB, r)
+	if err != nil {
 		return fmt.Errorf("Failed to fill with OVAL: %s", err)
 	}
+	util.Log.Infof("%s: %d CVEs are detected with OVAL",
+		r.FormatServerName(), nCVEs)
 
-	if err := fillVulnByCpeURIs(dbclient.CveDB, r, cpeURIs); err != nil {
+	nCVEs, err = fillVulnByCpeURIs(dbclient.CveDB, r, cpeURIs)
+	if err != nil {
 		return fmt.Errorf("Failed to detect vulns of %s: %s", cpeURIs, err)
 	}
+	util.Log.Infof("%s: %d CVEs are detected with CPE", r.FormatServerName(), nCVEs)
 
-	util.Log.Infof("Fill with gost")
-	if err := FillWithGost(dbclient.GostDB, r); err != nil {
+	nCVEs, err = FillWithGost(dbclient.GostDB, r)
+	if err != nil {
 		return fmt.Errorf("Failed to fill with gost: %s", err)
 	}
+	util.Log.Infof("%s: %d unfixed CVEs are detected with gost",
+		r.FormatServerName(), nCVEs)
 
 	util.Log.Infof("Fill CVE detailed information with CVE-DB")
 	if err := fillCveDetail(dbclient.CveDB, r); err != nil {
@@ -202,7 +208,7 @@ func fillCveDetail(driver cvedb.DB, r *models.ScanResult) error {
 }
 
 // FillWithOval fetches OVAL database
-func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (err error) {
+func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error) {
 	var ovalClient oval.Client
 	var ovalFamily string
 
@@ -231,33 +237,38 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (err error) {
 		ovalClient = oval.NewAlpine()
 		ovalFamily = c.Alpine
 	case c.Amazon, c.Raspbian, c.FreeBSD, c.Windows:
-		return nil
+		return 0, nil
 	case c.ServerTypePseudo:
-		return nil
+		return 0, nil
 	default:
 		if r.Family == "" {
-			return fmt.Errorf("Probably an error occurred during scanning. Check the error message")
+			return 0, fmt.Errorf("Probably an error occurred during scanning. Check the error message")
 		}
-		return fmt.Errorf("OVAL for %s is not implemented yet", r.Family)
+		return 0, fmt.Errorf("OVAL for %s is not implemented yet", r.Family)
 	}
+
+	if !ovalClient.IsFetchViaHTTP() && driver == nil {
+		return 0, nil
+	}
+
 	if err = driver.NewOvalDB(ovalFamily); err != nil {
-		return fmt.Errorf("Failed to New Oval DB. err: %s", err)
+		return 0, fmt.Errorf("Failed to New Oval DB. err: %s", err)
 	}
 
 	util.Log.Debugf("Check whether oval fetched: %s %s",
 		ovalFamily, r.Release)
 	ok, err := ovalClient.CheckIfOvalFetched(driver, ovalFamily, r.Release)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if !ok {
 		util.Log.Warnf("OVAL entries of %s %s are not found. It's recommended to use OVAL to improve scanning accuracy. For details, see https://github.com/kotakanbe/goval-dictionary#usage , Then report with --ovaldb-path or --ovaldb-url flag", ovalFamily, r.Release)
-		return nil
+		return 0, nil
 	}
 
 	_, err = ovalClient.CheckIfOvalFresh(driver, ovalFamily, r.Release)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	return ovalClient.FillWithOval(driver, r)
@@ -265,18 +276,18 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (err error) {
 
 // FillWithGost fills CVEs with gost dataabase
 // https://github.com/knqyf263/gost
-func FillWithGost(driver gostdb.DB, r *models.ScanResult) (err error) {
+func FillWithGost(driver gostdb.DB, r *models.ScanResult) (nCVEs int, err error) {
 	gostClient := gost.NewClient(r.Family)
 	// TODO chekc if fetched
 	// TODO chekc if fresh enough
 	return gostClient.FillWithGost(driver, r)
 }
 
-func fillVulnByCpeURIs(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) error {
+func fillVulnByCpeURIs(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) (nCVEs int, err error) {
 	for _, name := range cpeURIs {
 		details, err := CveClient.FetchCveDetailsByCpeName(driver, name)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		for _, detail := range details {
 			if val, ok := r.ScannedCves[detail.CveID]; ok {
@@ -292,10 +303,11 @@ func fillVulnByCpeURIs(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) 
 					Confidences: models.Confidences{models.CpeNameMatch},
 				}
 				r.ScannedCves[detail.CveID] = v
+				nCVEs++
 			}
 		}
 	}
-	return nil
+	return nCVEs, nil
 }
 
 func fillCweDict(r *models.ScanResult) {

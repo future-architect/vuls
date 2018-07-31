@@ -19,7 +19,6 @@ package gost
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -40,7 +39,7 @@ type packCves struct {
 }
 
 // FillWithGost fills cve information that has in Gost
-func (deb Debian) FillWithGost(driver db.DB, r *models.ScanResult) error {
+func (deb Debian) FillWithGost(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
 	linuxImage := "linux-image-" + r.RunningKernel.Release
 	// Add linux and set the version of running kernel to search OVAL.
 	if r.Container.ContainerID == "" {
@@ -60,13 +59,13 @@ func (deb Debian) FillWithGost(driver db.DB, r *models.ScanResult) error {
 		url, _ := util.URLPathJoin(config.Conf.GostDBURL, "debian", major(r.Release), "pkgs")
 		responses, err := getAllUnfixedCvesViaHTTP(r, url)
 		if err != nil {
-			return err
+			return 0, err
 		}
 
 		for _, res := range responses {
 			debCves := map[string]gostmodels.DebianCVE{}
 			if err := json.Unmarshal([]byte(res.json), &debCves); err != nil {
-				return err
+				return 0, err
 			}
 			cves := []models.CveContent{}
 			for _, debcve := range debCves {
@@ -80,7 +79,7 @@ func (deb Debian) FillWithGost(driver db.DB, r *models.ScanResult) error {
 		}
 	} else {
 		if driver == nil {
-			return fmt.Errorf("Gost DB Driver is nil")
+			return 0, nil
 		}
 		for _, pack := range r.Packages {
 			cveDebs := driver.GetUnfixedCvesDebian(major(r.Release), pack.Name)
@@ -123,6 +122,7 @@ func (deb Debian) FillWithGost(driver db.DB, r *models.ScanResult) error {
 					CveContents: models.NewCveContents(cve),
 					Confidences: models.Confidences{models.DebianSecurityTrackerMatch},
 				}
+				nCVEs++
 			}
 
 			names := []string{}
@@ -152,7 +152,7 @@ func (deb Debian) FillWithGost(driver db.DB, r *models.ScanResult) error {
 			r.ScannedCves[cve.CveID] = v
 		}
 	}
-	return nil
+	return nCVEs, nil
 }
 
 func (deb Debian) convertToModel(cve *gostmodels.DebianCVE) *models.CveContent {

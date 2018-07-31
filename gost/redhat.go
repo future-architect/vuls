@@ -19,7 +19,6 @@ package gost
 
 import (
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -36,11 +35,11 @@ type RedHat struct {
 }
 
 // FillWithGost fills cve information that has in Gost
-func (red RedHat) FillWithGost(driver db.DB, r *models.ScanResult) error {
-	if err := red.fillUnfixed(driver, r); err != nil {
-		return err
+func (red RedHat) FillWithGost(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
+	if nCVEs, err = red.fillUnfixed(driver, r); err != nil {
+		return 0, err
 	}
-	return red.fillFixed(driver, r)
+	return nCVEs, red.fillFixed(driver, r)
 }
 
 func (red RedHat) fillFixed(driver db.DB, r *models.ScanResult) error {
@@ -74,7 +73,7 @@ func (red RedHat) fillFixed(driver db.DB, r *models.ScanResult) error {
 		}
 	} else {
 		if driver == nil {
-			return fmt.Errorf("Gost DB Driver is nil")
+			return nil
 		}
 		for cveID, redCve := range driver.GetRedhatMulti(cveIDs) {
 			if redCve.ID == 0 {
@@ -90,19 +89,19 @@ func (red RedHat) fillFixed(driver db.DB, r *models.ScanResult) error {
 	return nil
 }
 
-func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult) error {
+func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
 	if red.isFetchViaHTTP() {
 		prefix, _ := util.URLPathJoin(config.Conf.GostDBURL,
 			"redhat", major(r.Release), "pkgs")
 		responses, err := getAllUnfixedCvesViaHTTP(r, prefix)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		for _, res := range responses {
 			// CVE-ID: RedhatCVE
 			cves := map[string]gostmodels.RedhatCVE{}
 			if err := json.Unmarshal([]byte(res.json), &cves); err != nil {
-				return err
+				return 0, err
 			}
 
 			for _, cve := range cves {
@@ -116,6 +115,7 @@ func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult) error {
 						CveContents: models.NewCveContents(*cveCont),
 						Confidences: models.Confidences{models.RedHatAPIMatch},
 					}
+					nCVEs++
 				}
 
 				pkgStats := red.mergePackageStates(v,
@@ -128,7 +128,7 @@ func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult) error {
 		}
 	} else {
 		if driver == nil {
-			return fmt.Errorf("Gost DB Driver is nil")
+			return 0, nil
 		}
 		for _, pack := range r.Packages {
 			// CVE-ID: RedhatCVE
@@ -145,6 +145,7 @@ func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult) error {
 						CveContents: models.NewCveContents(*cveCont),
 						Confidences: models.Confidences{models.RedHatAPIMatch},
 					}
+					nCVEs++
 				}
 
 				pkgStats := red.mergePackageStates(v,
@@ -156,7 +157,7 @@ func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult) error {
 			}
 		}
 	}
-	return nil
+	return nCVEs, nil
 }
 
 func (red RedHat) mergePackageStates(v models.VulnInfo, ps []gostmodels.RedhatPackageState, installed models.Packages, release string) (pkgStats models.PackageStatuses) {

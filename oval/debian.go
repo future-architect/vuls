@@ -115,7 +115,7 @@ func NewDebian() Debian {
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o Debian) FillWithOval(driver db.DB, r *models.ScanResult) (err error) {
+func (o Debian) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
 
 	//Debian's uname gives both of kernel release(uname -r), version(kernel-image version)
 	linuxImage := "linux-image-" + r.RunningKernel.Release
@@ -134,13 +134,13 @@ func (o Debian) FillWithOval(driver db.DB, r *models.ScanResult) (err error) {
 	}
 
 	var relatedDefs ovalResult
-	if o.isFetchViaHTTP() {
+	if o.IsFetchViaHTTP() {
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
-			return err
+			return 0, err
 		}
 	} else {
 		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
-			return err
+			return 0, err
 		}
 	}
 
@@ -169,7 +169,7 @@ func (o Debian) FillWithOval(driver db.DB, r *models.ScanResult) (err error) {
 			vuln.CveContents[models.Debian] = cont
 		}
 	}
-	return nil
+	return len(relatedDefs.entries), nil
 }
 
 // Ubuntu is the interface for Debian OVAL
@@ -189,7 +189,7 @@ func NewUbuntu() Ubuntu {
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (err error) {
+func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
 	ovalKernelImageNames := []string{
 		"linux-aws",
 		"linux-azure",
@@ -244,13 +244,13 @@ func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (err error) {
 	}
 
 	var relatedDefs ovalResult
-	if o.isFetchViaHTTP() {
+	if o.IsFetchViaHTTP() {
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
-			return err
+			return 0, err
 		}
 	} else {
 		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
-			return err
+			return 0, err
 		}
 	}
 
@@ -281,5 +281,5 @@ func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (err error) {
 			vuln.CveContents[models.Ubuntu] = cont
 		}
 	}
-	return nil
+	return len(relatedDefs.entries), nil
 }

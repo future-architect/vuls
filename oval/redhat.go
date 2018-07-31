@@ -35,20 +35,20 @@ type RedHatBase struct {
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o RedHatBase) FillWithOval(driver db.DB, r *models.ScanResult) (err error) {
+func (o RedHatBase) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
 	var relatedDefs ovalResult
-	if o.isFetchViaHTTP() {
+	if o.IsFetchViaHTTP() {
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
-			return err
+			return 0, err
 		}
 	} else {
 		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
-			return err
+			return 0, err
 		}
 	}
 
 	for _, defPacks := range relatedDefs.entries {
-		o.update(r, defPacks)
+		nCVEs += o.update(r, defPacks)
 	}
 
 	for _, vuln := range r.ScannedCves {
@@ -65,7 +65,8 @@ func (o RedHatBase) FillWithOval(driver db.DB, r *models.ScanResult) (err error)
 			}
 		}
 	}
-	return nil
+
+	return nCVEs, nil
 }
 
 var kernelRelatedPackNames = map[string]bool{
@@ -99,7 +100,7 @@ var kernelRelatedPackNames = map[string]bool{
 	"python-perf": true,
 }
 
-func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) {
+func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) {
 	ctype := models.NewCveContentType(o.family)
 	for _, cve := range defPacks.def.Advisory.Cves {
 		ovalContent := *o.convertToModel(cve.CveID, &defPacks.def)
@@ -111,6 +112,7 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) {
 				Confidences: models.Confidences{models.OvalMatch},
 				CveContents: models.NewCveContents(ovalContent),
 			}
+			nCVEs++
 		} else {
 			cveContents := vinfo.CveContents
 			if v, ok := vinfo.CveContents[ctype]; ok {
@@ -140,6 +142,7 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) {
 		vinfo.AffectedPackages.Sort()
 		r.ScannedCves[cve.CveID] = vinfo
 	}
+	return
 }
 
 func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *models.CveContent {

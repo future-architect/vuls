@@ -2,6 +2,7 @@ package report
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/future-architect/vuls/util"
 	gostdb "github.com/knqyf263/gost/db"
@@ -101,6 +102,11 @@ func NewOvalDB(cnf DBClientConf) (driver ovaldb.DB, locked bool, err error) {
 	path := cnf.OvalDBURL
 	if cnf.OvalDBType == "sqlite3" {
 		path = cnf.OvalDBPath
+
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			util.Log.Warnf("--ovaldb-path=%s is not found. It's recommended to use OVAL to improve scanning accuracy. For details, see https://github.com/kotakanbe/goval-dictionary#usage", path)
+			return nil, false, nil
+		}
 	}
 
 	util.Log.Debugf("Open oval-dictionary db (%s): %s", cnf.OvalDBType, path)
@@ -123,12 +129,17 @@ func NewGostDB(cnf DBClientConf) (driver gostdb.DB, locked bool, err error) {
 	path := cnf.GostDBURL
 	if cnf.GostDBType == "sqlite3" {
 		path = cnf.GostDBPath
+
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			util.Log.Warnf("--gostdb-path=%s is not found. If the scan target server is Debian, RHEL or CentOS, it's recommended to use gost to improve scanning accuracy. To use gost database, see https://github.com/knqyf263/gost#fetch-redhat", path)
+			return nil, false, nil
+		}
 	}
 
 	util.Log.Debugf("Open gost db (%s): %s", cnf.GostDBType, path)
 	if driver, locked, err = gostdb.NewDB(cnf.GostDBType, path, cnf.DebugSQL); err != nil {
 		if locked {
-			util.Log.Debugf("gostDB is locked: %s, %T", err, err)
+			util.Log.Errorf("gostDB is locked: %s", err)
 			return nil, true, err
 		}
 		return nil, false, err

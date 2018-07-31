@@ -33,11 +33,12 @@ import (
 // Client is the interface of OVAL client.
 type Client interface {
 	CheckHTTPHealth() error
-	FillWithOval(db.DB, *models.ScanResult) error
+	FillWithOval(db.DB, *models.ScanResult) (int, error)
 
 	// CheckIfOvalFetched checks if oval entries are in DB by family, release.
 	CheckIfOvalFetched(db.DB, string, string) (bool, error)
 	CheckIfOvalFresh(db.DB, string, string) (bool, error)
+	IsFetchViaHTTP() bool
 }
 
 // Base is a base struct
@@ -47,7 +48,7 @@ type Base struct {
 
 // CheckHTTPHealth do health check
 func (b Base) CheckHTTPHealth() error {
-	if !b.isFetchViaHTTP() {
+	if !b.IsFetchViaHTTP() {
 		return nil
 	}
 
@@ -66,7 +67,7 @@ func (b Base) CheckHTTPHealth() error {
 
 // CheckIfOvalFetched checks if oval entries are in DB by family, release.
 func (b Base) CheckIfOvalFetched(driver db.DB, osFamily, release string) (fetched bool, err error) {
-	if !b.isFetchViaHTTP() {
+	if !b.IsFetchViaHTTP() {
 		count, err := driver.CountDefs(osFamily, release)
 		if err != nil {
 			return false, fmt.Errorf("Failed to count OVAL defs: %s, %s, %v",
@@ -92,7 +93,7 @@ func (b Base) CheckIfOvalFetched(driver db.DB, osFamily, release string) (fetche
 // CheckIfOvalFresh checks if oval entries are fresh enough
 func (b Base) CheckIfOvalFresh(driver db.DB, osFamily, release string) (ok bool, err error) {
 	var lastModified time.Time
-	if !b.isFetchViaHTTP() {
+	if !b.IsFetchViaHTTP() {
 		lastModified = driver.GetLastModified(osFamily, release)
 	} else {
 		url, _ := util.URLPathJoin(config.Conf.OvalDBURL, "lastmodified", osFamily, release)
@@ -119,7 +120,8 @@ func (b Base) CheckIfOvalFresh(driver db.DB, osFamily, release string) (ok bool,
 	return true, nil
 }
 
-func (b Base) isFetchViaHTTP() bool {
+// IsFetchViaHTTP checks whether fetch via HTTP
+func (b Base) IsFetchViaHTTP() bool {
 	// Default value of OvalDBType is sqlite3
 	return config.Conf.OvalDBURL != "" && config.Conf.OvalDBType == "sqlite3"
 }

@@ -30,7 +30,7 @@ import (
 
 // Client is the interface of OVAL client.
 type Client interface {
-	FillWithGost(db.DB, *models.ScanResult) error
+	FillWithGost(db.DB, *models.ScanResult) (int, error)
 
 	//TODO implement
 	// CheckHTTPHealth() error
@@ -98,8 +98,8 @@ type Pseudo struct {
 }
 
 // FillWithGost fills cve information that has in Gost
-func (pse Pseudo) FillWithGost(driver db.DB, r *models.ScanResult) error {
-	return nil
+func (pse Pseudo) FillWithGost(driver db.DB, r *models.ScanResult) (int, error) {
+	return 0, nil
 }
 
 func major(osVer string) (majorVersion string) {

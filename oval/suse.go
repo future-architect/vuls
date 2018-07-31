@@ -41,15 +41,15 @@ func NewSUSE() SUSE {
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o SUSE) FillWithOval(driver db.DB, r *models.ScanResult) (err error) {
+func (o SUSE) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
 	var relatedDefs ovalResult
-	if o.isFetchViaHTTP() {
+	if o.IsFetchViaHTTP() {
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
-			return err
+			return 0, err
 		}
 	} else {
 		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
-			return err
+			return 0, err
 		}
 	}
 	for _, defPacks := range relatedDefs.entries {
@@ -62,7 +62,7 @@ func (o SUSE) FillWithOval(driver db.DB, r *models.ScanResult) (err error) {
 			vuln.CveContents[models.SUSE] = cont
 		}
 	}
-	return nil
+	return len(relatedDefs.entries), nil
 }
 
 func (o SUSE) update(r *models.ScanResult, defPacks defPacks) {
