@@ -75,7 +75,7 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 			cols = []interface{}{
 				r.FormatServerName(),
 				r.ScannedCves.FormatCveSummary(),
-				r.ScannedCves.FormatFixedStatus(),
+				r.ScannedCves.FormatFixedStatus(r.Packages),
 				r.FormatUpdatablePacksSummary(),
 			}
 		} else {
@@ -121,7 +121,7 @@ No CVE-IDs are found in updatable packages.
 			// fmt.Sprintf("%4.1f", v2max),
 			// fmt.Sprintf("%4.1f", v3max),
 			fmt.Sprintf("%8s", vinfo.AttackVector()),
-			fmt.Sprintf("%7s", vinfo.PatchStatus()),
+			fmt.Sprintf("%7s", vinfo.PatchStatus(r.Packages)),
 			// packname,
 			fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", vinfo.CveID),
 		})

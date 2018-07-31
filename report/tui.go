@@ -642,7 +642,7 @@ func summaryLines(r models.ScanResult) string {
 			vinfo.CveID,
 			cvssScore + " |",
 			fmt.Sprintf("%8s |", vinfo.AttackVector()),
-			fmt.Sprintf("%7s |", vinfo.PatchStatus()),
+			fmt.Sprintf("%7s |", vinfo.PatchStatus(r.Packages)),
 			packname,
 		}
 		icols := make([]interface{}, len(cols))

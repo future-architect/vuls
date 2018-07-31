@@ -105,11 +105,11 @@ func (v VulnInfos) FormatCveSummary() string {
 }
 
 // FormatFixedStatus summarize the number of cves are fixed.
-func (v VulnInfos) FormatFixedStatus() string {
+func (v VulnInfos) FormatFixedStatus(packs Packages) string {
 	total, fixed := 0, 0
 	for _, vInfo := range v {
 		total++
-		if vInfo.PatchStatus() == "Fixed" {
+		if vInfo.PatchStatus(packs) == "Fixed" {
 			fixed++
 		}
 	}
@@ -511,7 +511,7 @@ func (v VulnInfo) AttackVector() string {
 }
 
 // PatchStatus returns attack vector string
-func (v VulnInfo) PatchStatus() string {
+func (v VulnInfo) PatchStatus(packs Packages) string {
 	// Vuls don't know patch status of the CPE
 	if len(v.CpeURIs) != 0 {
 		return ""
@@ -519,6 +519,13 @@ func (v VulnInfo) PatchStatus() string {
 	for _, p := range v.AffectedPackages {
 		if p.NotFixedYet {
 			return "Unfixed"
+		}
+
+		// fast, offline mode doesn't have new version
+		if pack, ok := packs[p.Name]; ok {
+			if pack.NewVersion == "" {
+				return "Unknown"
+			}
 		}
 	}
 	return "Fixed"

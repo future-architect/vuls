@@ -38,6 +38,12 @@ func NewPackages(packs ...Package) Packages {
 
 // MergeNewVersion merges candidate version information to the receiver struct
 func (ps Packages) MergeNewVersion(as Packages) {
+	for name, pack := range ps {
+		pack.NewVersion = pack.Version
+		pack.NewRelease = pack.Release
+		ps[name] = pack
+	}
+
 	for _, a := range as {
 		if pack, ok := ps[a.Name]; ok {
 			pack.NewVersion = a.NewVersion

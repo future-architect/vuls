@@ -303,8 +303,12 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 				// Unable to judge whether fixed or not fixed of src package(Ubuntu, Debian)
 				return true, false
 			}
+
+			// `offline` or `fast` scan mode can't get a updatable version.
+			// In these mode, the blow field was set empty.
+			// Vuls can not judge fixed or unfixed.
 			if req.NewVersionRelease == "" {
-				return true, true
+				return true, false
 			}
 
 			// compare version: newVer vs oval

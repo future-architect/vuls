@@ -181,7 +181,7 @@ func msgText(r models.ScanResult) string {
 			notifyUsers,
 			serverInfo,
 			r.ScannedCves.FormatCveSummary(),
-			r.ScannedCves.FormatFixedStatus(),
+			r.ScannedCves.FormatFixedStatus(r.Packages),
 			r.FormatUpdatablePacksSummary(),
 			r.Errors)
 	}
@@ -189,7 +189,7 @@ func msgText(r models.ScanResult) string {
 		notifyUsers,
 		serverInfo,
 		r.ScannedCves.FormatCveSummary(),
-		r.ScannedCves.FormatFixedStatus(),
+		r.ScannedCves.FormatFixedStatus(r.Packages),
 		r.FormatUpdatablePacksSummary())
 }
 
@@ -228,7 +228,7 @@ func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 		a := slack.Attachment{
 			Title:      vinfo.CveID,
 			TitleLink:  "https://nvd.nist.gov/vuln/detail/" + vinfo.CveID,
-			Text:       attachmentText(vinfo, r.Family, r.CweDict),
+			Text:       attachmentText(vinfo, r.Family, r.CweDict, r.Packages),
 			MarkdownIn: []string{"text", "pretext"},
 			Fields: []slack.AttachmentField{
 				{
@@ -264,7 +264,7 @@ func cvssColor(cvssScore float64) string {
 	}
 }
 
-func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]models.CweDictEntry) string {
+func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]models.CweDictEntry, packs models.Packages) string {
 	maxCvss := vinfo.MaxCvssScore()
 	vectors := []string{}
 
@@ -332,7 +332,7 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 		maxCvss.Value.Score,
 		severity,
 		nwvec,
-		vinfo.PatchStatus(),
+		vinfo.PatchStatus(packs),
 		strings.Join(vectors, "\n"),
 		vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
 		mitigation,
