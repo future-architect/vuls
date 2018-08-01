@@ -326,7 +326,10 @@ func (r ScanResult) FormatUpdatablePacksSummary() string {
 
 	nUpdatable := 0
 	for _, p := range r.Packages {
-		if p.NewVersion != "" {
+		if p.NewVersion == "" {
+			continue
+		}
+		if p.Version != p.NewVersion || p.Release != p.NewRelease {
 			nUpdatable++
 		}
 	}

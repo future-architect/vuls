@@ -108,6 +108,9 @@ func (v VulnInfos) FormatCveSummary() string {
 func (v VulnInfos) FormatFixedStatus(packs Packages) string {
 	total, fixed := 0, 0
 	for _, vInfo := range v {
+		if len(vInfo.CpeURIs) != 0 {
+			continue
+		}
 		total++
 		if vInfo.PatchStatus(packs) == "Fixed" {
 			fixed++
