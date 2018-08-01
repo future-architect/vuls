@@ -149,6 +149,15 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string) erro
 	util.Log.Infof("%s: %d CVEs are detected with OVAL",
 		r.FormatServerName(), nCVEs)
 
+	for i, v := range r.ScannedCves {
+		for j, p := range v.AffectedPackages {
+			if p.NotFixedYet && p.FixState == "" {
+				p.FixState = "Not fixed yet"
+				r.ScannedCves[i].AffectedPackages[j] = p
+			}
+		}
+	}
+
 	nCVEs, err = fillVulnByCpeURIs(dbclient.CveDB, r, cpeURIs)
 	if err != nil {
 		return fmt.Errorf("Failed to detect vulns of %s: %s", cpeURIs, err)
