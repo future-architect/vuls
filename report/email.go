@@ -51,10 +51,10 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 			var subject string
 			if len(r.Errors) != 0 {
 				subject = fmt.Sprintf("%s%s An error occurred while scanning",
-					conf.EMail.SubjectPrefix, r.ServerInfo())
+					conf.Report.EMail.SubjectPrefix, r.ServerInfo())
 			} else {
 				subject = fmt.Sprintf("%s%s %s",
-					conf.EMail.SubjectPrefix,
+					conf.Report.EMail.SubjectPrefix,
 					r.ServerInfo(),
 					r.ScannedCves.FormatCveSummary())
 			}
@@ -86,7 +86,7 @@ One Line Summary
 			formatOneLineSummary(rs...), message)
 
 		subject := fmt.Sprintf("%s %s",
-			conf.EMail.SubjectPrefix, summary)
+			conf.Report.EMail.SubjectPrefix, summary)
 		return sender.Send(subject, message)
 	}
 	return nil
@@ -146,5 +146,5 @@ func (e *emailSender) Send(subject, body string) (err error) {
 
 // NewEMailSender creates emailSender
 func NewEMailSender() EMailSender {
-	return &emailSender{config.Conf.EMail, smtp.SendMail}
+	return &emailSender{config.Conf.Report.EMail, smtp.SendMail}
 }

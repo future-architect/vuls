@@ -36,7 +36,7 @@ func (w HTTPRequestWriter) Write(rs ...models.ScanResult) (err error) {
 	for _, r := range rs {
 		b := new(bytes.Buffer)
 		json.NewEncoder(b).Encode(r)
-		_, err = http.Post(c.Conf.HTTP.URL, "application/json; charset=utf-8", b)
+		_, err = http.Post(c.Conf.Report.HTTP.URL, "application/json; charset=utf-8", b)
 		if err != nil {
 			return err
 		}

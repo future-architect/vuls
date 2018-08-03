@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"log/syslog"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -96,68 +97,64 @@ const (
 
 //Config is struct of Configuration
 type Config struct {
-	Debug                  bool                  `json:"debug"`
-	DebugSQL               bool                  `json:"debugSQL"`
-	Lang                   string                `json:"lang"`
-	EMail                  SMTPConf              `json:"-"`
-	Slack                  SlackConf             `json:"-"`
-	Stride                 StrideConf            `json:"-"`
-	HipChat                HipChatConf           `json:"-"`
-	ChatWork               ChatWorkConf          `json:"-"`
-	Syslog                 SyslogConf            `json:"-"`
-	HTTP                   HTTPConf              `json:"-"`
-	Default                ServerInfo            `json:"default"`
-	Servers                map[string]ServerInfo `json:"servers"`
-	CvssScoreOver          float64               `json:"cvssScoreOver"`
-	IgnoreUnscoredCves     bool                  `json:"ignoreUnscoredCves"`
-	IgnoreUnfixed          bool                  `json:"ignoreUnfixed"`
-	SSHNative              bool                  `json:"sshNative"`
-	SSHConfig              bool                  `json:"sshConfig"`
-	ContainersOnly         bool                  `json:"containersOnly"`
-	SkipBroken             bool                  `json:"skipBroken"`
-	HTTPProxy              string                `valid:"url" json:"httpProxy"`
-	LogDir                 string                `json:"logDir"`
-	ResultsDir             string                `json:"resultsDir"`
-	CveDBType              string                `json:"cveDBType"`
-	CveDBPath              string                `json:"cveDBPath"`
-	CveDBURL               string                `json:"cveDBURL"`
-	OvalDBType             string                `json:"ovalDBType"`
-	OvalDBPath             string                `json:"ovalDBPath"`
-	OvalDBURL              string                `json:"ovalDBURL"`
-	GostDBType             string                `json:"gostDBType"`
-	GostDBPath             string                `json:"gostDBPath"`
-	GostDBURL              string                `json:"gostDBURL"`
-	CacheDBPath            string                `json:"cacheDBPath"`
-	RefreshCve             bool                  `json:"refreshCve"`
-	ToSlack                bool                  `json:"toSlack"`
-	ToStride               bool                  `json:"toStride"`
-	ToHipChat              bool                  `json:"toHipChat"`
-	ToChatWork             bool                  `json:"toChatWork"`
-	ToEmail                bool                  `json:"toEmail"`
-	ToSyslog               bool                  `json:"toSyslog"`
-	ToLocalFile            bool                  `json:"toLocalFile"`
-	ToS3                   bool                  `json:"toS3"`
-	ToAzureBlob            bool                  `json:"toAzureBlob"`
-	ToHTTP                 bool                  `json:"toHTTP"`
-	FormatXML              bool                  `json:"formatXML"`
-	FormatJSON             bool                  `json:"formatJSON"`
-	FormatOneEMail         bool                  `json:"formatOneEMail"`
-	FormatOneLineText      bool                  `json:"formatOneLineText"`
-	FormatList             bool                  `json:"formatList"`
-	FormatFullText         bool                  `json:"formatFullText"`
-	GZIP                   bool                  `json:"gzip"`
-	AwsProfile             string                `json:"awsProfile"`
-	AwsRegion              string                `json:"awsRegion"`
-	S3Bucket               string                `json:"s3Bucket"`
-	S3ResultsDir           string                `json:"s3ResultsDir"`
-	S3ServerSideEncryption string                `json:"s3ServerSideEncryption"`
-	AzureAccount           string                `json:"azureAccount"`
-	AzureKey               string                `json:"-"`
-	AzureContainer         string                `json:"azureContainer"`
-	Pipe                   bool                  `json:"pipe"`
-	Vvv                    bool                  `json:"vvv"`
-	Diff                   bool                  `json:"diff"`
-	UUID                   bool                  `json:"uuid"`
+	Debug      bool   `json:"debug"`
+	DebugSQL   bool   `json:"debugSQL"`
+	Lang       string `json:"lang"`
+	HTTPProxy  string `valid:"url" json:"httpProxy"`
+	LogDir     string `json:"logDir"`
+	ResultsDir string `json:"resultsDir"`
+	Pipe       bool   `json:"pipe"`
+
+	Default            ServerInfo            `json:"default"`
+	Servers            map[string]ServerInfo `json:"servers"`
+	CvssScoreOver      float64               `json:"cvssScoreOver"`
+	IgnoreUnscoredCves bool                  `json:"ignoreUnscoredCves"`
+	IgnoreUnfixed      bool                  `json:"ignoreUnfixed"`
+	SSHNative          bool                  `json:"sshNative"`
+	SSHConfig          bool                  `json:"sshConfig"`
+	ContainersOnly     bool                  `json:"containersOnly"`
+	SkipBroken         bool                  `json:"skipBroken"`
+	CacheDBPath        string                `json:"cacheDBPath"`
+	Vvv                bool                  `json:"vvv"`
+	UUID               bool                  `json:"uuid"`
+
+	Report            Report `json:"report"`
+	RefreshCve        bool   `json:"refreshCve"`
+	ToSlack           bool   `json:"toSlack"`
+	ToStride          bool   `json:"toStride"`
+	ToHipChat         bool   `json:"toHipChat"`
+	ToChatWork        bool   `json:"toChatWork"`
+	ToEmail           bool   `json:"toEmail"`
+	ToSyslog          bool   `json:"toSyslog"`
+	ToLocalFile       bool   `json:"toLocalFile"`
+	ToS3              bool   `json:"toS3"`
+	ToAzureBlob       bool   `json:"toAzureBlob"`
+	ToHTTP            bool   `json:"toHTTP"`
+	FormatXML         bool   `json:"formatXML"`
+	FormatJSON        bool   `json:"formatJSON"`
+	FormatOneEMail    bool   `json:"formatOneEMail"`
+	FormatOneLineText bool   `json:"formatOneLineText"`
+	FormatList        bool   `json:"formatList"`
+	FormatFullText    bool   `json:"formatFullText"`
+	GZIP              bool   `json:"gzip"`
+	Diff              bool   `json:"diff"`
+}
+
+// Report has options for report subcommand
+type Report struct {
+	CveDict  GoCveDictConf `json:"cveDict"`
+	OvalDict GovalDictConf `json:"ovalDict"`
+	Gost     GostConf      `json:"gost"`
+
+	EMail    SMTPConf     `json:"-"`
+	Slack    SlackConf    `json:"-"`
+	Stride   StrideConf   `json:"-"`
+	HipChat  HipChatConf  `json:"-"`
+	ChatWork ChatWorkConf `json:"-"`
+	Syslog   SyslogConf   `json:"-"`
+	HTTP     HTTPConf     `json:"-"`
+	AWS      AWS          `json:"aws"`
+	Azure    Azure        `json:"azure"`
 }
 
 // ValidateOnConfigtest validates
@@ -205,7 +202,8 @@ func (c Config) ValidateOnScan() bool {
 	if len(c.CacheDBPath) != 0 {
 		if ok, _ := valid.IsFilePath(c.CacheDBPath); !ok {
 			errs = append(errs, fmt.Errorf(
-				"Cache DB path must be a *Absolute* file path. -cache-dbpath: %s", c.CacheDBPath))
+				"Cache DB path must be a *Absolute* file path. -cache-dbpath: %s",
+				c.CacheDBPath))
 		}
 	}
 
@@ -232,16 +230,16 @@ func (c Config) ValidateOnReport() bool {
 		}
 	}
 
-	if err := validateDB("cvedb", c.CveDBType, c.CveDBPath, c.CveDBURL); err != nil {
+	if err := validateDB("cvedb", c.Report.CveDict.Type, c.Report.CveDict.Path, c.Report.CveDict.URL); err != nil {
 		errs = append(errs, err)
 	}
-	if c.CveDBType == "sqlite3" {
-		if _, err := os.Stat(c.CveDBPath); os.IsNotExist(err) {
-			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDBPath))
+	if c.Report.CveDict.Type == "sqlite3" {
+		if _, err := os.Stat(c.Report.CveDict.Path); os.IsNotExist(err) {
+			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.Report.CveDict.Path))
 		}
 	}
 
-	if err := validateDB("ovaldb", c.OvalDBType, c.OvalDBPath, c.OvalDBURL); err != nil {
+	if err := validateDB("ovaldb", c.Report.OvalDict.Type, c.Report.OvalDict.Path, c.Report.OvalDict.URL); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -250,31 +248,31 @@ func (c Config) ValidateOnReport() bool {
 		errs = append(errs, err)
 	}
 
-	if mailerrs := c.EMail.Validate(); 0 < len(mailerrs) {
+	if mailerrs := c.Report.EMail.Validate(); 0 < len(mailerrs) {
 		errs = append(errs, mailerrs...)
 	}
 
-	if slackerrs := c.Slack.Validate(); 0 < len(slackerrs) {
+	if slackerrs := c.Report.Slack.Validate(); 0 < len(slackerrs) {
 		errs = append(errs, slackerrs...)
 	}
 
-	if hipchaterrs := c.HipChat.Validate(); 0 < len(hipchaterrs) {
+	if hipchaterrs := c.Report.HipChat.Validate(); 0 < len(hipchaterrs) {
 		errs = append(errs, hipchaterrs...)
 	}
 
-	if chatworkerrs := c.ChatWork.Validate(); 0 < len(chatworkerrs) {
+	if chatworkerrs := c.Report.ChatWork.Validate(); 0 < len(chatworkerrs) {
 		errs = append(errs, chatworkerrs...)
 	}
 
-	if strideerrs := c.Stride.Validate(); 0 < len(strideerrs) {
+	if strideerrs := c.Report.Stride.Validate(); 0 < len(strideerrs) {
 		errs = append(errs, strideerrs...)
 	}
 
-	if syslogerrs := c.Syslog.Validate(); 0 < len(syslogerrs) {
+	if syslogerrs := c.Report.Syslog.Validate(); 0 < len(syslogerrs) {
 		errs = append(errs, syslogerrs...)
 	}
 
-	if httperrs := c.HTTP.Validate(); 0 < len(httperrs) {
+	if httperrs := c.Report.HTTP.Validate(); 0 < len(httperrs) {
 		errs = append(errs, httperrs...)
 	}
 
@@ -296,12 +294,12 @@ func (c Config) ValidateOnTui() bool {
 		}
 	}
 
-	if err := validateDB("cvedb", c.CveDBType, c.CveDBPath, c.CveDBURL); err != nil {
+	if err := validateDB("cvedb", c.Report.CveDict.Type, c.Report.CveDict.Path, c.Report.CveDict.URL); err != nil {
 		errs = append(errs, err)
 	}
-	if c.CveDBType == "sqlite3" {
-		if _, err := os.Stat(c.CveDBPath); os.IsNotExist(err) {
-			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDBPath))
+	if c.Report.CveDict.Type == "sqlite3" {
+		if _, err := os.Stat(c.Report.CveDict.Path); os.IsNotExist(err) {
+			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.Report.CveDict.Path))
 		}
 	}
 
@@ -668,6 +666,103 @@ func (c *HTTPConf) Validate() (errs []error) {
 		errs = append(errs, err)
 	}
 	return errs
+}
+
+// GoCveDictConf is go-cve-dictionary config
+type GoCveDictConf struct {
+	// DB type of CVE dictionary (sqlite3, mysql, postgres or redis)
+	Type string
+
+	// http://cve-dictionary.com:1323 or DB connection string
+	URL string `valid:"url" json:"-"`
+
+	// /path/to/cve.sqlite3
+	Path string `json:"-"`
+}
+
+func (cnf *GoCveDictConf) setDefault() {
+	if cnf.Type == "" {
+		cnf.Type = "sqlite3"
+	}
+	if cnf.Path == "" {
+		wd, _ := os.Getwd()
+		cnf.Path = filepath.Join(wd, "cve.sqlite3")
+	}
+}
+
+// GovalDictConf is goval-dictionary config
+type GovalDictConf struct {
+
+	// DB type of OVAL dictionary (sqlite3, mysql, postgres or redis)
+	Type string
+
+	// http://goval-dictionary.com:1324 or DB connection string
+	URL string `valid:"url" json:"-"`
+
+	// /path/to/oval.sqlite3
+	Path string `json:"-"`
+}
+
+func (cnf *GovalDictConf) setDefault() {
+	if cnf.Type == "" {
+		cnf.Type = "sqlite3"
+	}
+	if cnf.Path == "" {
+		wd, _ := os.Getwd()
+		cnf.Path = filepath.Join(wd, "oval.sqlite3")
+	}
+}
+
+// GostConf is gost config
+type GostConf struct {
+	// DB type for gost dictionary (sqlite3, mysql, postgres or redis)
+	Type string
+
+	// http://gost-dictionary.com:1324 or DB connection string
+	URL string `valid:"url" json:"-"`
+
+	// /path/to/gost.sqlite3
+	Path string `json:"-"`
+}
+
+func (cnf *GostConf) setDefault() {
+	if cnf.Type == "" {
+		cnf.Type = "sqlite3"
+	}
+	if cnf.Path == "" {
+		wd, _ := os.Getwd()
+		cnf.Path = filepath.Join(wd, "gost.sqlite3")
+	}
+}
+
+// AWS is aws config
+type AWS struct {
+	// AWS profile to use
+	Profile string `json:"profile"`
+
+	// AWS region to use
+	Region string `json:"region"`
+
+	// S3 bucket name
+	S3Bucket string `json:"s3Bucket"`
+
+	// /bucket/path/to/results
+	S3ResultsDir string `json:"s3ResultsDir"`
+
+	// The Server-side encryption algorithm used when storing the reports in S3 (e.g., AES256, aws:kms).
+	S3ServerSideEncryption string `json:"s3ServerSideEncryption"`
+}
+
+// Azure is azure config
+type Azure struct {
+	// Azure account name to use. AZURE_STORAGE_ACCOUNT environment variable is used if not specified
+	AccountName string `json:"accountName"`
+
+	// Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified
+	AccountKey string `json:"-"`
+
+	// Azure storage container name
+	ContainerName string `json:"containerName"`
 }
 
 // ServerInfo has SSH Info, additional CPE packages to scan.

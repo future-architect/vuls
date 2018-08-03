@@ -17,7 +17,7 @@ type StrideWriter struct{}
 type strideSender struct{}
 
 func (w StrideWriter) Write(rs ...models.ScanResult) (err error) {
-	conf := config.Conf.Stride
+	conf := config.Conf.Report.Stride
 
 	for _, r := range rs {
 		w := strideSender{}

@@ -38,31 +38,19 @@ import (
 
 // ServerCmd is subcommand for server
 type ServerCmd struct {
-	lang       string
-	debug      bool
-	debugSQL   bool
-	configPath string
-	resultsDir string
-	logDir     string
-
+	lang               string
+	debug              bool
+	debugSQL           bool
+	configPath         string
+	resultsDir         string
+	logDir             string
 	cvssScoreOver      float64
 	ignoreUnscoredCves bool
 	ignoreUnfixed      bool
-
-	httpProxy string
-	listen    string
-
-	cveDBType string
-	cveDBPath string
-	cveDBURL  string
-
-	ovalDBType string
-	ovalDBPath string
-	ovalDBURL  string
-
-	toLocalFile bool
-
-	formatJSON bool
+	httpProxy          string
+	listen             string
+	toLocalFile        bool
+	formatJSON         bool
 }
 
 // Name return subcommand name
@@ -78,12 +66,6 @@ func (*ServerCmd) Usage() string {
 		[-lang=en|ja]
 		[-config=/path/to/config.toml]
 		[-log-dir=/path/to/log]
-		[-cvedb-type=sqlite3|mysql|postgres]
-		[-cvedb-path=/path/to/cve.sqlite3]
-		[-cvedb-url=http://127.0.0.1:1323 or DB connection string]
-		[-ovaldb-type=sqlite3|mysql]
-		[-ovaldb-path=/path/to/oval.sqlite3]
-		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
 		[-cvss-over=7]
 		[-diff]
 		[-ignore-unscored-cves]
@@ -127,44 +109,6 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 
 	defaultLogDir := util.GetDefaultLogDir()
 	f.StringVar(&p.logDir, "log-dir", defaultLogDir, "/path/to/log")
-
-	f.StringVar(
-		&p.cveDBType,
-		"cvedb-type",
-		"sqlite3",
-		"DB type for fetching CVE dictionary (sqlite3, mysql or postgres)")
-
-	defaultCveDBPath := filepath.Join(wd, "cve.sqlite3")
-	f.StringVar(
-		&p.cveDBPath,
-		"cvedb-path",
-		defaultCveDBPath,
-		"/path/to/sqlite3 (For get cve detail from cve.sqlite3)")
-
-	f.StringVar(
-		&p.cveDBURL,
-		"cvedb-url",
-		"",
-		"http://cve-dictionary.com:1323 or mysql connection string")
-
-	f.StringVar(
-		&p.ovalDBType,
-		"ovaldb-type",
-		"sqlite3",
-		"DB type for fetching OVAL dictionary (sqlite3 or mysql)")
-
-	defaultOvalDBPath := filepath.Join(wd, "oval.sqlite3")
-	f.StringVar(
-		&p.ovalDBPath,
-		"ovaldb-path",
-		defaultOvalDBPath,
-		"/path/to/sqlite3 (For get oval detail from oval.sqlite3)")
-
-	f.StringVar(
-		&p.ovalDBURL,
-		"ovaldb-url",
-		"",
-		"http://goval-dictionary.com:1324 or mysql connection string")
 
 	f.Float64Var(
 		&p.cvssScoreOver,
@@ -215,12 +159,6 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	c.Conf.Lang = p.lang
 	c.Conf.ResultsDir = p.resultsDir
-	c.Conf.CveDBType = p.cveDBType
-	c.Conf.CveDBPath = p.cveDBPath
-	c.Conf.CveDBURL = p.cveDBURL
-	c.Conf.OvalDBType = p.ovalDBType
-	c.Conf.OvalDBPath = p.ovalDBPath
-	c.Conf.OvalDBURL = p.ovalDBURL
 	c.Conf.CvssScoreOver = p.cvssScoreOver
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
 	c.Conf.IgnoreUnfixed = p.ignoreUnfixed
@@ -241,16 +179,16 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		util.Log.Errorf("Run go-cve-dictionary as server mode before Servering or run with -cvedb-path option")
 		return subcommands.ExitFailure
 	}
-	if c.Conf.CveDBURL != "" {
-		util.Log.Infof("cve-dictionary: %s", c.Conf.CveDBURL)
+	if c.Conf.Report.CveDict.URL != "" {
+		util.Log.Infof("cve-dictionary: %s", c.Conf.Report.CveDict.URL)
 	} else {
-		if c.Conf.CveDBType == "sqlite3" {
-			util.Log.Infof("cve-dictionary: %s", c.Conf.CveDBPath)
+		if c.Conf.Report.CveDict.Type == "sqlite3" {
+			util.Log.Infof("cve-dictionary: %s", c.Conf.Report.CveDict.Path)
 		}
 	}
 
-	if c.Conf.OvalDBURL != "" {
-		util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDBURL)
+	if c.Conf.Report.OvalDict.URL != "" {
+		util.Log.Infof("oval-dictionary: %s", c.Conf.Report.OvalDict.URL)
 		err = oval.Base{}.CheckHTTPHealth()
 		if err != nil {
 			util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
@@ -258,22 +196,16 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitFailure
 		}
 	} else {
-		if c.Conf.OvalDBType == "sqlite3" {
-			util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDBPath)
+		if c.Conf.Report.OvalDict.Type == "sqlite3" {
+			util.Log.Infof("oval-dictionary: %s", c.Conf.Report.OvalDict.Path)
 		}
 	}
 
 	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
-		CveDBType:  c.Conf.CveDBType,
-		CveDBURL:   c.Conf.CveDBURL,
-		CveDBPath:  c.Conf.CveDBPath,
-		OvalDBType: c.Conf.OvalDBType,
-		OvalDBURL:  c.Conf.OvalDBURL,
-		OvalDBPath: c.Conf.OvalDBPath,
-		GostDBType: c.Conf.GostDBType,
-		GostDBURL:  c.Conf.GostDBURL,
-		GostDBPath: c.Conf.GostDBPath,
-		DebugSQL:   c.Conf.DebugSQL,
+		CveDictCnf:  c.Conf.Report.CveDict,
+		OvalDictCnf: c.Conf.Report.OvalDict,
+		GostCnf:     c.Conf.Report.Gost,
+		DebugSQL:    c.Conf.DebugSQL,
 	})
 	if locked {
 		util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %s", err)

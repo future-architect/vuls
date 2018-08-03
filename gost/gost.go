@@ -22,7 +22,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/future-architect/vuls/config"
+	cnf "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/knqyf263/gost/db"
 	"github.com/parnurzeal/gorequest"
@@ -42,9 +42,9 @@ type Client interface {
 // NewClient make Client by family
 func NewClient(family string) Client {
 	switch family {
-	case config.RedHat, config.CentOS:
+	case cnf.RedHat, cnf.CentOS:
 		return RedHat{}
-	case config.Debian:
+	case cnf.Debian:
 		return Debian{}
 	default:
 		return Pseudo{}
@@ -62,7 +62,7 @@ func (b Base) CheckHTTPHealth() error {
 		return nil
 	}
 
-	url := fmt.Sprintf("%s/health", config.Conf.GostDBURL)
+	url := fmt.Sprintf("%s/health", cnf.Conf.Report.Gost.URL)
 	var errs []error
 	var resp *http.Response
 	resp, _, errs = gorequest.New().Get(url).End()
@@ -89,7 +89,7 @@ func (b Base) CheckIfGostFresh(driver db.DB, osFamily string) (ok bool, err erro
 
 func (b Base) isFetchViaHTTP() bool {
 	// Default value of OvalDBType is sqlite3
-	return config.Conf.GostDBURL != "" && config.Conf.GostDBType == "sqlite3"
+	return cnf.Conf.Report.Gost.URL != "" && cnf.Conf.Report.Gost.Type == "sqlite3"
 }
 
 // Pseudo is Gost client except for RedHat family and Debian

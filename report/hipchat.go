@@ -15,7 +15,7 @@ import (
 type HipChatWriter struct{}
 
 func (w HipChatWriter) Write(rs ...models.ScanResult) (err error) {
-	conf := config.Conf.HipChat
+	conf := config.Conf.Report.HipChat
 
 	for _, r := range rs {
 		serverInfo := fmt.Sprintf("%s", r.ServerInfo())

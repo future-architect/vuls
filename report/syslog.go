@@ -32,7 +32,7 @@ import (
 type SyslogWriter struct{}
 
 func (w SyslogWriter) Write(rs ...models.ScanResult) (err error) {
-	conf := config.Conf.Syslog
+	conf := config.Conf.Report.Syslog
 	facility, _ := conf.GetFacility()
 	severity, _ := conf.GetSeverity()
 	raddr := fmt.Sprintf("%s:%s", conf.Host, conf.Port)
@@ -89,7 +89,7 @@ func (w SyslogWriter) encodeSyslog(result models.ScanResult) (messages []string)
 		if content, ok := vinfo.CveContents[models.NvdXML]; ok {
 			cwes := strings.Join(content.CweIDs, ",")
 			kvPairs = append(kvPairs, fmt.Sprintf(`cwe_ids="%s"`, cwes))
-			if config.Conf.Syslog.Verbose {
+			if config.Conf.Report.Syslog.Verbose {
 				kvPairs = append(kvPairs, fmt.Sprintf(`source_link="%s"`, content.SourceLink))
 				kvPairs = append(kvPairs, fmt.Sprintf(`summary="%s"`, content.Summary))
 			}

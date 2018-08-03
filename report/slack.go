@@ -51,7 +51,7 @@ type message struct {
 type SlackWriter struct{}
 
 func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
-	conf := config.Conf.Slack
+	conf := config.Conf.Report.Slack
 	channel := conf.Channel
 	token := conf.LegacyToken
 
@@ -136,7 +136,7 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 }
 
 func send(msg message) error {
-	conf := config.Conf.Slack
+	conf := config.Conf.Report.Slack
 	count, retryMax := 0, 10
 
 	bytes, _ := json.Marshal(msg)
@@ -172,7 +172,7 @@ func send(msg message) error {
 func msgText(r models.ScanResult) string {
 	notifyUsers := ""
 	if 0 < len(r.ScannedCves) {
-		notifyUsers = getNotifyUsers(config.Conf.Slack.NotifyUsers)
+		notifyUsers = getNotifyUsers(config.Conf.Report.Slack.NotifyUsers)
 	}
 	serverInfo := fmt.Sprintf("*%s*", r.ServerInfo())
 

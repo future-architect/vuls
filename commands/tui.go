@@ -34,33 +34,18 @@ import (
 
 // TuiCmd is Subcommand of host discovery mode
 type TuiCmd struct {
-	lang       string
-	debugSQL   bool
-	debug      bool
-	configPath string
-	logDir     string
-
-	resultsDir string
-	refreshCve bool
-
-	cvedbtype        string
-	cvedbpath        string
-	cveDictionaryURL string
-
-	ovalDBType string
-	ovalDBPath string
-	ovalDBURL  string
-
-	gostDBType string
-	gostDBPath string
-	gostDBURL  string
-
+	lang               string
+	debugSQL           bool
+	debug              bool
+	configPath         string
+	logDir             string
+	resultsDir         string
+	refreshCve         bool
 	cvssScoreOver      float64
 	ignoreUnscoredCves bool
 	ignoreUnfixed      bool
-
-	pipe bool
-	diff bool
+	pipe               bool
+	diff               bool
 }
 
 // Name return subcommand name
@@ -75,15 +60,6 @@ func (*TuiCmd) Usage() string {
 	tui
 		[-refresh-cve]
 		[-config=/path/to/config.toml]
-		[-cvedb-type=sqlite3|mysql|postgres]
-		[-cvedb-path=/path/to/cve.sqlite3]
-		[-cvedb-url=http://127.0.0.1:1323 or DB connection string]
-		[-ovaldb-type=sqlite3|mysql]
-		[-ovaldb-path=/path/to/oval.sqlite3]
-		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
-		[-gostdb-type=sqlite3|mysql]
-		[-gostdb-path=/path/to/gost.sqlite3]
-		[-gostdb-url=http://127.0.0.1:1325 or DB connection string]
 		[-cvss-over=7]
 		[-diff]
 		[-ignore-unscored-cves]
@@ -95,6 +71,7 @@ func (*TuiCmd) Usage() string {
 		[-pipe]
 
 `
+	//TODO
 }
 
 // SetFlags set flag
@@ -118,63 +95,6 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 		"refresh-cve",
 		false,
 		"Refresh CVE information in JSON file under results dir")
-
-	f.StringVar(
-		&p.cvedbtype,
-		"cvedb-type",
-		"sqlite3",
-		"DB type for fetching CVE dictionary (sqlite3, mysql or postgres)")
-
-	defaultCveDBPath := filepath.Join(wd, "cve.sqlite3")
-	f.StringVar(
-		&p.cvedbpath,
-		"cvedb-path",
-		defaultCveDBPath,
-		"/path/to/sqlite3 (For get cve detail from cve.sqlite3)")
-
-	f.StringVar(
-		&p.cveDictionaryURL,
-		"cvedb-url",
-		"",
-		"http://cve-dictionary.example.com:1323 or mysql connection string")
-
-	f.StringVar(
-		&p.ovalDBType,
-		"ovaldb-type",
-		"sqlite3",
-		"DB type for fetching OVAL dictionary (sqlite3 or mysql)")
-
-	defaultOvalDBPath := filepath.Join(wd, "oval.sqlite3")
-	f.StringVar(
-		&p.ovalDBPath,
-		"ovaldb-path",
-		defaultOvalDBPath,
-		"/path/to/sqlite3 (For get oval detail from oval.sqlite3)")
-
-	f.StringVar(
-		&p.ovalDBURL,
-		"ovaldb-url",
-		"",
-		"http://goval-dictionary.example.com:1324 or mysql connection string")
-
-	f.StringVar(
-		&p.gostDBType,
-		"gostdb-type",
-		"sqlite3",
-		"DB type for gost dictionary (sqlite3 or mysql)")
-
-	defaultgostDBPath := filepath.Join(wd, "gost.sqlite3")
-	f.StringVar(
-		&p.gostDBPath,
-		"gostdb-path",
-		defaultgostDBPath,
-		"/path/to/gost.sqlite3")
-
-	f.StringVar(
-		&p.gostDBURL,
-		"gostdb-url",
-		"",
-		"http://gost-dictionary.com:1324 or mysql connection string")
 
 	f.Float64Var(
 		&p.cvssScoreOver,
@@ -221,21 +141,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		util.Log.Errorf("Error loading %s, %s", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
-
 	c.Conf.ResultsDir = p.resultsDir
-
-	c.Conf.CveDBType = p.cvedbtype
-	c.Conf.CveDBPath = p.cvedbpath
-	c.Conf.CveDBURL = p.cveDictionaryURL
-
-	c.Conf.OvalDBType = p.ovalDBType
-	c.Conf.OvalDBPath = p.ovalDBPath
-	c.Conf.OvalDBURL = p.ovalDBURL
-
-	c.Conf.GostDBType = p.gostDBType
-	c.Conf.GostDBPath = p.gostDBPath
-	c.Conf.GostDBURL = p.gostDBURL
-
 	c.Conf.CvssScoreOver = p.cvssScoreOver
 	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
 	c.Conf.IgnoreUnfixed = p.ignoreUnfixed
@@ -268,16 +174,10 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	util.Log.Infof("Loaded: %s", dir)
 
 	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
-		CveDBType:  c.Conf.CveDBType,
-		CveDBURL:   c.Conf.CveDBURL,
-		CveDBPath:  c.Conf.CveDBPath,
-		OvalDBType: c.Conf.OvalDBType,
-		OvalDBURL:  c.Conf.OvalDBURL,
-		OvalDBPath: c.Conf.OvalDBPath,
-		GostDBType: c.Conf.GostDBType,
-		GostDBURL:  c.Conf.GostDBURL,
-		GostDBPath: c.Conf.GostDBPath,
-		DebugSQL:   c.Conf.DebugSQL,
+		CveDictCnf:  c.Conf.Report.CveDict,
+		OvalDictCnf: c.Conf.Report.OvalDict,
+		GostCnf:     c.Conf.Report.Gost,
+		DebugSQL:    c.Conf.DebugSQL,
 	})
 	if locked {
 		util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %s", err)

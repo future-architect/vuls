@@ -441,12 +441,12 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 		c.Conf.Servers[name] = server
 	}
 
-	email := &c.Conf.EMail
+	email := &c.Conf.Report.EMail
 	if email.SMTPAddr == "" {
 		email = nil
 	}
 
-	slack := &c.Conf.Slack
+	slack := &c.Conf.Report.Slack
 	if slack.HookURL == "" {
 		slack = nil
 	}

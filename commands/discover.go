@@ -90,7 +90,7 @@ func (p *DiscoverCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface
 // Output the template of config.toml
 func printConfigToml(ips []string) (err error) {
 	const tomlTemplate = `
-[slack]
+[report.slack]
 hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
 #legacyToken  = "xoxp-11111111111-222222222222-3333333333"
 channel      = "#channel-name"
@@ -99,7 +99,7 @@ iconEmoji    = ":ghost:"
 authUser     = "username"
 notifyUsers  = ["@username"]
 
-[email]
+[report.email]
 smtpAddr      = "smtp.example.com"
 smtpPort      = "587"
 user          = "username"
@@ -108,6 +108,33 @@ from          = "from@example.com"
 to            = ["to@example.com"]
 cc            = ["cc@example.com"]
 subjectPrefix = "[vuls]"
+
+[report.aws]
+profile = "default"
+region = "ap-northeast-1"
+s3Bucket = "vuls"
+s3ResultsDir = "/path/to/result"
+s3ServerSideEncryption = "AES256"
+
+[report.azure]
+accountName = "default"
+AccountKey = "xxxxxxxxxxxxxx"
+ContainerName = "vuls"
+
+[report.cveDict]
+type = "sqlite3"
+path = "/path/to/cve.sqlite3"
+# url = ""
+
+[report.ovalDict]
+type = "sqlite3"
+path = "/path/to/oval.sqlite3"
+# url = ""
+
+[report.gost]
+type = "sqlite3"
+path = "/path/to/gost.sqlite3"
+# url = ""
 
 [default]
 #port        = "22"

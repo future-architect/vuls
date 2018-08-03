@@ -41,10 +41,10 @@ type S3Writer struct{}
 
 func getS3() *s3.S3 {
 	Config := &aws.Config{
-		Region: aws.String(c.Conf.AwsRegion),
+		Region: aws.String(c.Conf.Report.AWS.Region),
 		Credentials: credentials.NewChainCredentials([]credentials.Provider{
 			&credentials.EnvProvider{},
-			&credentials.SharedCredentialsProvider{Filename: "", Profile: c.Conf.AwsProfile},
+			&credentials.SharedCredentialsProvider{Filename: "", Profile: c.Conf.Report.AWS.Profile},
 			&ec2rolecreds.EC2RoleProvider{Client: ec2metadata.New(session.New())},
 		}),
 	}
@@ -120,12 +120,12 @@ func CheckIfBucketExists() error {
 	if err != nil {
 		return fmt.Errorf(
 			"Failed to list buckets. err: %s, profile: %s, region: %s",
-			err, c.Conf.AwsProfile, c.Conf.AwsRegion)
+			err, c.Conf.Report.AWS.Profile, c.Conf.Report.AWS.Region)
 	}
 
 	found := false
 	for _, bucket := range result.Buckets {
-		if *bucket.Name == c.Conf.S3Bucket {
+		if *bucket.Name == c.Conf.Report.AWS.S3Bucket {
 			found = true
 			break
 		}
@@ -133,7 +133,7 @@ func CheckIfBucketExists() error {
 	if !found {
 		return fmt.Errorf(
 			"Failed to find the buckets. profile: %s, region: %s, bucket: %s",
-			c.Conf.AwsProfile, c.Conf.AwsRegion, c.Conf.S3Bucket)
+			c.Conf.Report.AWS.Profile, c.Conf.Report.AWS.Region, c.Conf.Report.AWS.S3Bucket)
 	}
 	return nil
 }
@@ -148,18 +148,18 @@ func putObject(svc *s3.S3, k string, b []byte) error {
 	}
 
 	putObjectInput := &s3.PutObjectInput{
-		Bucket: aws.String(c.Conf.S3Bucket),
-		Key:    aws.String(path.Join(c.Conf.S3ResultsDir, k)),
+		Bucket: aws.String(c.Conf.Report.AWS.S3Bucket),
+		Key:    aws.String(path.Join(c.Conf.Report.AWS.S3ResultsDir, k)),
 		Body:   bytes.NewReader(b),
 	}
 
-	if c.Conf.S3ServerSideEncryption != "" {
-		putObjectInput.ServerSideEncryption = aws.String(c.Conf.S3ServerSideEncryption)
+	if c.Conf.Report.AWS.S3ServerSideEncryption != "" {
+		putObjectInput.ServerSideEncryption = aws.String(c.Conf.Report.AWS.S3ServerSideEncryption)
 	}
 
 	if _, err := svc.PutObject(putObjectInput); err != nil {
 		return fmt.Errorf("Failed to upload data to %s/%s, %s",
-			c.Conf.S3Bucket, k, err)
+			c.Conf.Report.AWS.S3Bucket, k, err)
 	}
 	return nil
 }

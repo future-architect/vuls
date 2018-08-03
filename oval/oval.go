@@ -23,7 +23,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/future-architect/vuls/config"
+	cnf "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/kotakanbe/goval-dictionary/db"
@@ -52,7 +52,7 @@ func (b Base) CheckHTTPHealth() error {
 		return nil
 	}
 
-	url := fmt.Sprintf("%s/health", config.Conf.OvalDBURL)
+	url := fmt.Sprintf("%s/health", cnf.Conf.Report.OvalDict.URL)
 	var errs []error
 	var resp *http.Response
 	resp, _, errs = gorequest.New().Get(url).End()
@@ -76,7 +76,7 @@ func (b Base) CheckIfOvalFetched(driver db.DB, osFamily, release string) (fetche
 		return 0 < count, nil
 	}
 
-	url, _ := util.URLPathJoin(config.Conf.OvalDBURL, "count", osFamily, release)
+	url, _ := util.URLPathJoin(cnf.Conf.Report.OvalDict.URL, "count", osFamily, release)
 	resp, body, errs := gorequest.New().Get(url).End()
 	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 		return false, fmt.Errorf("HTTP GET error: %v, url: %s, resp: %v",
@@ -96,7 +96,7 @@ func (b Base) CheckIfOvalFresh(driver db.DB, osFamily, release string) (ok bool,
 	if !b.IsFetchViaHTTP() {
 		lastModified = driver.GetLastModified(osFamily, release)
 	} else {
-		url, _ := util.URLPathJoin(config.Conf.OvalDBURL, "lastmodified", osFamily, release)
+		url, _ := util.URLPathJoin(cnf.Conf.Report.OvalDict.URL, "lastmodified", osFamily, release)
 		resp, body, errs := gorequest.New().Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			return false, fmt.Errorf("HTTP GET error: %v, url: %s, resp: %v",
@@ -123,5 +123,5 @@ func (b Base) CheckIfOvalFresh(driver db.DB, osFamily, release string) (ok bool,
 // IsFetchViaHTTP checks whether fetch via HTTP
 func (b Base) IsFetchViaHTTP() bool {
 	// Default value of OvalDBType is sqlite3
-	return config.Conf.OvalDBURL != "" && config.Conf.OvalDBType == "sqlite3"
+	return cnf.Conf.Report.OvalDict.URL != "" && cnf.Conf.Report.OvalDict.Type == "sqlite3"
 }

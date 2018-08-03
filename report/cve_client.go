@@ -41,12 +41,12 @@ type cvedictClient struct {
 }
 
 func (api *cvedictClient) initialize() {
-	api.baseURL = config.Conf.CveDBURL
+	api.baseURL = config.Conf.Report.CveDict.URL
 }
 
 func (api cvedictClient) CheckHealth() error {
 	if !api.isFetchViaHTTP() {
-		util.Log.Debugf("get cve-dictionary from %s", config.Conf.CveDBType)
+		util.Log.Debugf("get cve-dictionary from %s", config.Conf.Report.CveDict.Type)
 		return nil
 	}
 
@@ -86,7 +86,7 @@ func (api cvedictClient) FetchCveDetails(driver cvedb.DB, cveIDs []string) (cveD
 		return
 	}
 
-	api.baseURL = config.Conf.CveDBURL
+	api.baseURL = config.Conf.Report.CveDict.URL
 	reqChan := make(chan string, len(cveIDs))
 	resChan := make(chan response, len(cveIDs))
 	errChan := make(chan error, len(cveIDs))
@@ -178,7 +178,7 @@ func (api cvedictClient) httpGet(key, url string, resChan chan<- response, errCh
 
 func (api cvedictClient) isFetchViaHTTP() bool {
 	// Default value of CveDBType is sqlite3
-	if config.Conf.CveDBURL != "" && config.Conf.CveDBType == "sqlite3" {
+	if config.Conf.Report.CveDict.URL != "" && config.Conf.Report.CveDict.Type == "sqlite3" {
 		return true
 	}
 	return false
@@ -186,7 +186,7 @@ func (api cvedictClient) isFetchViaHTTP() bool {
 
 func (api cvedictClient) FetchCveDetailsByCpeName(driver cvedb.DB, cpeName string) ([]cve.CveDetail, error) {
 	if api.isFetchViaHTTP() {
-		api.baseURL = config.Conf.CveDBURL
+		api.baseURL = config.Conf.Report.CveDict.URL
 		url, err := util.URLPathJoin(api.baseURL, "cpes")
 		if err != nil {
 			return nil, err
