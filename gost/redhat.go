@@ -66,7 +66,7 @@ func (red RedHat) fillFixed(driver db.DB, r *models.ScanResult) error {
 			if redCve.ID == 0 {
 				continue
 			}
-			cveCont := red.convertToModel(&redCve)
+			cveCont := red.ConvertToModel(&redCve)
 			v, _ := r.ScannedCves[res.request.cveID]
 			v.CveContents[models.RedHatAPI] = *cveCont
 			r.ScannedCves[res.request.cveID] = v
@@ -79,7 +79,7 @@ func (red RedHat) fillFixed(driver db.DB, r *models.ScanResult) error {
 			if redCve.ID == 0 {
 				continue
 			}
-			cveCont := red.convertToModel(&redCve)
+			cveCont := red.ConvertToModel(&redCve)
 			v, _ := r.ScannedCves[cveID]
 			v.CveContents[models.RedHatAPI] = *cveCont
 			r.ScannedCves[cveID] = v
@@ -105,7 +105,7 @@ func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult) (nCVEs int, er
 			}
 
 			for _, cve := range cves {
-				cveCont := red.convertToModel(&cve)
+				cveCont := red.ConvertToModel(&cve)
 				v, ok := r.ScannedCves[cve.Name]
 				if ok {
 					v.CveContents[models.RedHatAPI] = *cveCont
@@ -135,7 +135,7 @@ func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult) (nCVEs int, er
 			cves := map[string]gostmodels.RedhatCVE{}
 			cves = driver.GetUnfixedCvesRedhat(major(r.Release), pack.Name)
 			for _, cve := range cves {
-				cveCont := red.convertToModel(&cve)
+				cveCont := red.ConvertToModel(&cve)
 				v, ok := r.ScannedCves[cve.Name]
 				if ok {
 					v.CveContents[models.RedHatAPI] = *cveCont
@@ -192,7 +192,8 @@ func (red RedHat) mergePackageStates(v models.VulnInfo, ps []gostmodels.RedhatPa
 	return
 }
 
-func (red RedHat) convertToModel(cve *gostmodels.RedhatCVE) *models.CveContent {
+// ConvertToModel converts gost model to vuls model
+func (red RedHat) ConvertToModel(cve *gostmodels.RedhatCVE) *models.CveContent {
 	cwes := []string{}
 	if cve.Cwe != "" {
 		s := strings.TrimPrefix(cve.Cwe, "(")
