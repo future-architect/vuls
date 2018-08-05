@@ -453,44 +453,71 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 
 	cveDict := &c.Conf.CveDict
 	ovalDict := &c.Conf.OvalDict
-	// Gost     *c.GostConf      `toml:"gost"`
-	// AWS      *c.AWS           `toml:"aws"`
-	// Azure    *c.Azure         `toml:"azure"`
-	// HTTP     *c.HTTPConf      `toml:"http"`
-	// Stride   *c.StrideConf    `toml:"stride"`
-	// HipChat  *c.HipChatConf   `toml:"hipChat"`
-	// ChatWork *c.ChatWorkConf  `toml:"chatWork"`
-	// Syslog   *c.SyslogConf    `toml:"syslog"`
+	gost := &c.Conf.Gost
+	http := &c.Conf.HTTP
+	if http.URL == "" {
+		http = nil
+	}
+
+	syslog := &c.Conf.Syslog
+	if syslog.Host == "" {
+		syslog = nil
+	}
+
+	aws := &c.Conf.AWS
+	if aws.S3Bucket == "" {
+		aws = nil
+	}
+
+	azure := &c.Conf.Azure
+	if azure.AccountName == "" {
+		azure = nil
+	}
+
+	stride := &c.Conf.Stride
+	if stride.HookURL == "" {
+		stride = nil
+	}
+
+	hipChat := &c.Conf.HipChat
+	if hipChat.AuthToken == "" {
+		hipChat = nil
+	}
+
+	chatWork := &c.Conf.ChatWork
+	if chatWork.APIToken == "" {
+		chatWork = nil
+	}
 
 	c := struct {
-		Email    *c.SMTPConf      `toml:"email"`
-		Slack    *c.SlackConf     `toml:"slack"`
 		CveDict  *c.GoCveDictConf `toml:"cveDict"`
 		OvalDict *c.GovalDictConf `toml:"ovalDict"`
 		Gost     *c.GostConf      `toml:"gost"`
+		Slack    *c.SlackConf     `toml:"slack"`
+		Email    *c.SMTPConf      `toml:"email"`
+		HTTP     *c.HTTPConf      `toml:"http"`
+		Syslog   *c.SyslogConf    `toml:"syslog"`
 		AWS      *c.AWS           `toml:"aws"`
 		Azure    *c.Azure         `toml:"azure"`
-		HTTP     *c.HTTPConf      `toml:"http"`
 		Stride   *c.StrideConf    `toml:"stride"`
 		HipChat  *c.HipChatConf   `toml:"hipChat"`
 		ChatWork *c.ChatWorkConf  `toml:"chatWork"`
-		Syslog   *c.SyslogConf    `toml:"syslog"`
 
 		Default c.ServerInfo            `toml:"default"`
 		Servers map[string]c.ServerInfo `toml:"servers"`
 	}{
-		Email:    email,
-		Slack:    slack,
 		CveDict:  cveDict,
 		OvalDict: ovalDict,
-		// Gost     *c.GostConf      `toml:"gost"`
-		// AWS      *c.AWS           `toml:"aws"`
-		// Azure    *c.Azure         `toml:"azure"`
-		// HTTP     *c.HTTPConf      `toml:"http"`
-		// Stride   *c.StrideConf    `toml:"stride"`
-		// HipChat  *c.HipChatConf   `toml:"hipChat"`
-		// ChatWork *c.ChatWorkConf  `toml:"chatWork"`
-		// Syslog   *c.SyslogConf    `toml:"syslog"`
+		Gost:     gost,
+		Slack:    slack,
+		Email:    email,
+		HTTP:     http,
+		Syslog:   syslog,
+		AWS:      aws,
+		Azure:    azure,
+		Stride:   stride,
+		HipChat:  hipChat,
+		ChatWork: chatWork,
 
 		Default: c.Conf.Default,
 		Servers: c.Conf.Servers,

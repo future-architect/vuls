@@ -243,8 +243,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitUsageError
 	}
 
-	pp.Println(c.Conf)
-
 	c.Conf.Lang = p.lang
 	c.Conf.ResultsDir = p.resultsDir
 	c.Conf.RefreshCve = p.refreshCve
@@ -407,8 +405,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			util.Log.Infof("gost: %s", c.Conf.Gost.Path)
 		}
 	}
-
-	pp.Println(c.Conf)
 
 	var loaded models.ScanResults
 	if loaded, err = report.LoadScanResults(dir); err != nil {
