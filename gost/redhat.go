@@ -201,7 +201,7 @@ func (red RedHat) ConvertToModel(cve *gostmodels.RedhatCVE) *models.CveContent {
 		if strings.Contains(cve.Cwe, "|") {
 			cwes = strings.Split(cve.Cwe, "|")
 		} else {
-			cwes = append(strings.Split(s, "->"))
+			cwes = strings.Split(s, "->")
 		}
 	}
 
@@ -212,7 +212,7 @@ func (red RedHat) ConvertToModel(cve *gostmodels.RedhatCVE) *models.CveContent {
 
 	v2score := 0.0
 	if cve.Cvss.CvssBaseScore != "" {
-		v2score, _ = strconv.ParseFloat(cve.Cvss.CvssBaseScore, 32)
+		v2score, _ = strconv.ParseFloat(cve.Cvss.CvssBaseScore, 64)
 	}
 	v2severity := ""
 	if v2score != 0 {
@@ -221,7 +221,7 @@ func (red RedHat) ConvertToModel(cve *gostmodels.RedhatCVE) *models.CveContent {
 
 	v3score := 0.0
 	if cve.Cvss3.Cvss3BaseScore != "" {
-		v3score, _ = strconv.ParseFloat(cve.Cvss3.Cvss3BaseScore, 32)
+		v3score, _ = strconv.ParseFloat(cve.Cvss3.Cvss3BaseScore, 64)
 	}
 	v3severity := ""
 	if v3score != 0 {
