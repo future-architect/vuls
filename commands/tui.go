@@ -174,9 +174,9 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	util.Log.Infof("Loaded: %s", dir)
 
 	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
-		CveDictCnf:  c.Conf.Report.CveDict,
-		OvalDictCnf: c.Conf.Report.OvalDict,
-		GostCnf:     c.Conf.Report.Gost,
+		CveDictCnf:  c.Conf.CveDict,
+		OvalDictCnf: c.Conf.OvalDict,
+		GostCnf:     c.Conf.Gost,
 		DebugSQL:    c.Conf.DebugSQL,
 	})
 	if locked {

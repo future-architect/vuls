@@ -126,7 +126,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 			select {
 			case req := <-reqChan:
 				url, err := util.URLPathJoin(
-					config.Conf.Report.OvalDict.URL,
+					config.Conf.OvalDict.URL,
 					"packs",
 					r.Family,
 					r.Release,

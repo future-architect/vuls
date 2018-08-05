@@ -62,7 +62,7 @@ func (b Base) CheckHTTPHealth() error {
 		return nil
 	}
 
-	url := fmt.Sprintf("%s/health", cnf.Conf.Report.Gost.URL)
+	url := fmt.Sprintf("%s/health", cnf.Conf.Gost.URL)
 	var errs []error
 	var resp *http.Response
 	resp, _, errs = gorequest.New().Get(url).End()
@@ -89,7 +89,7 @@ func (b Base) CheckIfGostFresh(driver db.DB, osFamily string) (ok bool, err erro
 
 func (b Base) isFetchViaHTTP() bool {
 	// Default value of OvalDBType is sqlite3
-	return cnf.Conf.Report.Gost.URL != "" && cnf.Conf.Report.Gost.Type == "sqlite3"
+	return cnf.Conf.Gost.URL != "" && cnf.Conf.Gost.Type == "sqlite3"
 }
 
 // Pseudo is Gost client except for RedHat family and Debian

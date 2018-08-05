@@ -179,16 +179,16 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		util.Log.Errorf("Run go-cve-dictionary as server mode before Servering or run with -cvedb-path option")
 		return subcommands.ExitFailure
 	}
-	if c.Conf.Report.CveDict.URL != "" {
-		util.Log.Infof("cve-dictionary: %s", c.Conf.Report.CveDict.URL)
+	if c.Conf.CveDict.URL != "" {
+		util.Log.Infof("cve-dictionary: %s", c.Conf.CveDict.URL)
 	} else {
-		if c.Conf.Report.CveDict.Type == "sqlite3" {
-			util.Log.Infof("cve-dictionary: %s", c.Conf.Report.CveDict.Path)
+		if c.Conf.CveDict.Type == "sqlite3" {
+			util.Log.Infof("cve-dictionary: %s", c.Conf.CveDict.Path)
 		}
 	}
 
-	if c.Conf.Report.OvalDict.URL != "" {
-		util.Log.Infof("oval-dictionary: %s", c.Conf.Report.OvalDict.URL)
+	if c.Conf.OvalDict.URL != "" {
+		util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDict.URL)
 		err = oval.Base{}.CheckHTTPHealth()
 		if err != nil {
 			util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
@@ -196,15 +196,15 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitFailure
 		}
 	} else {
-		if c.Conf.Report.OvalDict.Type == "sqlite3" {
-			util.Log.Infof("oval-dictionary: %s", c.Conf.Report.OvalDict.Path)
+		if c.Conf.OvalDict.Type == "sqlite3" {
+			util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDict.Path)
 		}
 	}
 
 	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
-		CveDictCnf:  c.Conf.Report.CveDict,
-		OvalDictCnf: c.Conf.Report.OvalDict,
-		GostCnf:     c.Conf.Report.Gost,
+		CveDictCnf:  c.Conf.CveDict,
+		OvalDictCnf: c.Conf.OvalDict,
+		GostCnf:     c.Conf.Gost,
 		DebugSQL:    c.Conf.DebugSQL,
 	})
 	if locked {

@@ -15,7 +15,7 @@ import (
 type ChatWorkWriter struct{}
 
 func (w ChatWorkWriter) Write(rs ...models.ScanResult) (err error) {
-	conf := config.Conf.Report.ChatWork
+	conf := config.Conf.ChatWork
 
 	for _, r := range rs {
 		serverInfo := fmt.Sprintf("%s", r.ServerInfo())

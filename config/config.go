@@ -118,30 +118,6 @@ type Config struct {
 	Vvv                bool                  `json:"vvv"`
 	UUID               bool                  `json:"uuid"`
 
-	Report            Report `json:"report"`
-	RefreshCve        bool   `json:"refreshCve"`
-	ToSlack           bool   `json:"toSlack"`
-	ToStride          bool   `json:"toStride"`
-	ToHipChat         bool   `json:"toHipChat"`
-	ToChatWork        bool   `json:"toChatWork"`
-	ToEmail           bool   `json:"toEmail"`
-	ToSyslog          bool   `json:"toSyslog"`
-	ToLocalFile       bool   `json:"toLocalFile"`
-	ToS3              bool   `json:"toS3"`
-	ToAzureBlob       bool   `json:"toAzureBlob"`
-	ToHTTP            bool   `json:"toHTTP"`
-	FormatXML         bool   `json:"formatXML"`
-	FormatJSON        bool   `json:"formatJSON"`
-	FormatOneEMail    bool   `json:"formatOneEMail"`
-	FormatOneLineText bool   `json:"formatOneLineText"`
-	FormatList        bool   `json:"formatList"`
-	FormatFullText    bool   `json:"formatFullText"`
-	GZIP              bool   `json:"gzip"`
-	Diff              bool   `json:"diff"`
-}
-
-// Report has options for report subcommand
-type Report struct {
 	CveDict  GoCveDictConf `json:"cveDict"`
 	OvalDict GovalDictConf `json:"ovalDict"`
 	Gost     GostConf      `json:"gost"`
@@ -153,8 +129,28 @@ type Report struct {
 	ChatWork ChatWorkConf `json:"-"`
 	Syslog   SyslogConf   `json:"-"`
 	HTTP     HTTPConf     `json:"-"`
-	AWS      AWS          `json:"aws"`
-	Azure    Azure        `json:"azure"`
+	AWS      AWS          `json:"-"`
+	Azure    Azure        `json:"-"`
+
+	RefreshCve        bool `json:"refreshCve"`
+	ToSlack           bool `json:"toSlack"`
+	ToStride          bool `json:"toStride"`
+	ToHipChat         bool `json:"toHipChat"`
+	ToChatWork        bool `json:"toChatWork"`
+	ToEmail           bool `json:"toEmail"`
+	ToSyslog          bool `json:"toSyslog"`
+	ToLocalFile       bool `json:"toLocalFile"`
+	ToS3              bool `json:"toS3"`
+	ToAzureBlob       bool `json:"toAzureBlob"`
+	ToHTTP            bool `json:"toHTTP"`
+	FormatXML         bool `json:"formatXML"`
+	FormatJSON        bool `json:"formatJSON"`
+	FormatOneEMail    bool `json:"formatOneEMail"`
+	FormatOneLineText bool `json:"formatOneLineText"`
+	FormatList        bool `json:"formatList"`
+	FormatFullText    bool `json:"formatFullText"`
+	GZIP              bool `json:"gzip"`
+	Diff              bool `json:"diff"`
 }
 
 // ValidateOnConfigtest validates
@@ -230,16 +226,16 @@ func (c Config) ValidateOnReport() bool {
 		}
 	}
 
-	if err := validateDB("cvedb", c.Report.CveDict.Type, c.Report.CveDict.Path, c.Report.CveDict.URL); err != nil {
+	if err := validateDB("cvedb", c.CveDict.Type, c.CveDict.Path, c.CveDict.URL); err != nil {
 		errs = append(errs, err)
 	}
-	if c.Report.CveDict.Type == "sqlite3" {
-		if _, err := os.Stat(c.Report.CveDict.Path); os.IsNotExist(err) {
-			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.Report.CveDict.Path))
+	if c.CveDict.Type == "sqlite3" {
+		if _, err := os.Stat(c.CveDict.Path); os.IsNotExist(err) {
+			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDict.Path))
 		}
 	}
 
-	if err := validateDB("ovaldb", c.Report.OvalDict.Type, c.Report.OvalDict.Path, c.Report.OvalDict.URL); err != nil {
+	if err := validateDB("ovaldb", c.OvalDict.Type, c.OvalDict.Path, c.OvalDict.URL); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -248,31 +244,31 @@ func (c Config) ValidateOnReport() bool {
 		errs = append(errs, err)
 	}
 
-	if mailerrs := c.Report.EMail.Validate(); 0 < len(mailerrs) {
+	if mailerrs := c.EMail.Validate(); 0 < len(mailerrs) {
 		errs = append(errs, mailerrs...)
 	}
 
-	if slackerrs := c.Report.Slack.Validate(); 0 < len(slackerrs) {
+	if slackerrs := c.Slack.Validate(); 0 < len(slackerrs) {
 		errs = append(errs, slackerrs...)
 	}
 
-	if hipchaterrs := c.Report.HipChat.Validate(); 0 < len(hipchaterrs) {
+	if hipchaterrs := c.HipChat.Validate(); 0 < len(hipchaterrs) {
 		errs = append(errs, hipchaterrs...)
 	}
 
-	if chatworkerrs := c.Report.ChatWork.Validate(); 0 < len(chatworkerrs) {
+	if chatworkerrs := c.ChatWork.Validate(); 0 < len(chatworkerrs) {
 		errs = append(errs, chatworkerrs...)
 	}
 
-	if strideerrs := c.Report.Stride.Validate(); 0 < len(strideerrs) {
+	if strideerrs := c.Stride.Validate(); 0 < len(strideerrs) {
 		errs = append(errs, strideerrs...)
 	}
 
-	if syslogerrs := c.Report.Syslog.Validate(); 0 < len(syslogerrs) {
+	if syslogerrs := c.Syslog.Validate(); 0 < len(syslogerrs) {
 		errs = append(errs, syslogerrs...)
 	}
 
-	if httperrs := c.Report.HTTP.Validate(); 0 < len(httperrs) {
+	if httperrs := c.HTTP.Validate(); 0 < len(httperrs) {
 		errs = append(errs, httperrs...)
 	}
 
@@ -294,12 +290,12 @@ func (c Config) ValidateOnTui() bool {
 		}
 	}
 
-	if err := validateDB("cvedb", c.Report.CveDict.Type, c.Report.CveDict.Path, c.Report.CveDict.URL); err != nil {
+	if err := validateDB("cvedb", c.CveDict.Type, c.CveDict.Path, c.CveDict.URL); err != nil {
 		errs = append(errs, err)
 	}
-	if c.Report.CveDict.Type == "sqlite3" {
-		if _, err := os.Stat(c.Report.CveDict.Path); os.IsNotExist(err) {
-			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.Report.CveDict.Path))
+	if c.CveDict.Type == "sqlite3" {
+		if _, err := os.Stat(c.CveDict.Path); os.IsNotExist(err) {
+			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDict.Path))
 		}
 	}
 

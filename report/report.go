@@ -441,24 +441,57 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 		c.Conf.Servers[name] = server
 	}
 
-	email := &c.Conf.Report.EMail
+	email := &c.Conf.EMail
 	if email.SMTPAddr == "" {
 		email = nil
 	}
 
-	slack := &c.Conf.Report.Slack
+	slack := &c.Conf.Slack
 	if slack.HookURL == "" {
 		slack = nil
 	}
 
+	cveDict := &c.Conf.CveDict
+	ovalDict := &c.Conf.OvalDict
+	// Gost     *c.GostConf      `toml:"gost"`
+	// AWS      *c.AWS           `toml:"aws"`
+	// Azure    *c.Azure         `toml:"azure"`
+	// HTTP     *c.HTTPConf      `toml:"http"`
+	// Stride   *c.StrideConf    `toml:"stride"`
+	// HipChat  *c.HipChatConf   `toml:"hipChat"`
+	// ChatWork *c.ChatWorkConf  `toml:"chatWork"`
+	// Syslog   *c.SyslogConf    `toml:"syslog"`
+
 	c := struct {
-		Email   *c.SMTPConf             `toml:"email"`
-		Slack   *c.SlackConf            `toml:"slack"`
+		Email    *c.SMTPConf      `toml:"email"`
+		Slack    *c.SlackConf     `toml:"slack"`
+		CveDict  *c.GoCveDictConf `toml:"cveDict"`
+		OvalDict *c.GovalDictConf `toml:"ovalDict"`
+		Gost     *c.GostConf      `toml:"gost"`
+		AWS      *c.AWS           `toml:"aws"`
+		Azure    *c.Azure         `toml:"azure"`
+		HTTP     *c.HTTPConf      `toml:"http"`
+		Stride   *c.StrideConf    `toml:"stride"`
+		HipChat  *c.HipChatConf   `toml:"hipChat"`
+		ChatWork *c.ChatWorkConf  `toml:"chatWork"`
+		Syslog   *c.SyslogConf    `toml:"syslog"`
+
 		Default c.ServerInfo            `toml:"default"`
 		Servers map[string]c.ServerInfo `toml:"servers"`
 	}{
-		Email:   email,
-		Slack:   slack,
+		Email:    email,
+		Slack:    slack,
+		CveDict:  cveDict,
+		OvalDict: ovalDict,
+		// Gost     *c.GostConf      `toml:"gost"`
+		// AWS      *c.AWS           `toml:"aws"`
+		// Azure    *c.Azure         `toml:"azure"`
+		// HTTP     *c.HTTPConf      `toml:"http"`
+		// Stride   *c.StrideConf    `toml:"stride"`
+		// HipChat  *c.HipChatConf   `toml:"hipChat"`
+		// ChatWork *c.ChatWorkConf  `toml:"chatWork"`
+		// Syslog   *c.SyslogConf    `toml:"syslog"`
+
 		Default: c.Conf.Default,
 		Servers: c.Conf.Servers,
 	}

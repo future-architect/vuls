@@ -35,24 +35,24 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	if _, err := toml.DecodeFile(pathToToml, &conf); err != nil {
 		return err
 	}
-	Conf.Report.EMail = conf.Report.EMail
-	Conf.Report.Slack = conf.Report.Slack
-	Conf.Report.Stride = conf.Report.Stride
-	Conf.Report.HipChat = conf.Report.HipChat
-	Conf.Report.ChatWork = conf.Report.ChatWork
-	Conf.Report.Syslog = conf.Report.Syslog
-	Conf.Report.HTTP = conf.Report.HTTP
-	Conf.Report.AWS = conf.Report.AWS
-	Conf.Report.Azure = conf.Report.Azure
+	Conf.EMail = conf.EMail
+	Conf.Slack = conf.Slack
+	Conf.Stride = conf.Stride
+	Conf.HipChat = conf.HipChat
+	Conf.ChatWork = conf.ChatWork
+	Conf.Syslog = conf.Syslog
+	Conf.HTTP = conf.HTTP
+	Conf.AWS = conf.AWS
+	Conf.Azure = conf.Azure
 
-	Conf.Report.CveDict = conf.Report.CveDict
-	Conf.Report.CveDict.setDefault()
+	Conf.CveDict = conf.CveDict
+	Conf.CveDict.setDefault()
 
-	Conf.Report.OvalDict = conf.Report.OvalDict
-	Conf.Report.OvalDict.setDefault()
+	Conf.OvalDict = conf.OvalDict
+	Conf.OvalDict.setDefault()
 
-	Conf.Report.Gost = conf.Report.Gost
-	Conf.Report.Gost.setDefault()
+	Conf.Gost = conf.Gost
+	Conf.Gost.setDefault()
 
 	d := conf.Default
 	Conf.Default = d
