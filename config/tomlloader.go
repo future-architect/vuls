@@ -42,6 +42,17 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	Conf.ChatWork = conf.ChatWork
 	Conf.Syslog = conf.Syslog
 	Conf.HTTP = conf.HTTP
+	Conf.AWS = conf.AWS
+	Conf.Azure = conf.Azure
+
+	Conf.CveDict = conf.CveDict
+	Conf.CveDict.setDefault()
+
+	Conf.OvalDict = conf.OvalDict
+	Conf.OvalDict.setDefault()
+
+	Conf.Gost = conf.Gost
+	Conf.Gost.setDefault()
 
 	d := conf.Default
 	Conf.Default = d
