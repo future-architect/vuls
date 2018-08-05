@@ -122,15 +122,15 @@ type Config struct {
 	OvalDict GovalDictConf `json:"ovalDict"`
 	Gost     GostConf      `json:"gost"`
 
-	EMail    SMTPConf     `json:"-"`
 	Slack    SlackConf    `json:"-"`
+	EMail    SMTPConf     `json:"-"`
+	HTTP     HTTPConf     `json:"-"`
+	Syslog   SyslogConf   `json:"-"`
+	AWS      AWS          `json:"-"`
+	Azure    Azure        `json:"-"`
 	Stride   StrideConf   `json:"-"`
 	HipChat  HipChatConf  `json:"-"`
 	ChatWork ChatWorkConf `json:"-"`
-	Syslog   SyslogConf   `json:"-"`
-	HTTP     HTTPConf     `json:"-"`
-	AWS      AWS          `json:"-"`
-	Azure    Azure        `json:"-"`
 
 	RefreshCve        bool `json:"refreshCve"`
 	ToSlack           bool `json:"toSlack"`
