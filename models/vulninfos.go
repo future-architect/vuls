@@ -295,6 +295,26 @@ func (v VulnInfo) Cvss2Scores(myFamily string) (values []CveContentCvss) {
 		}
 	}
 
+	for _, v := range values {
+		if v.Type == RedHat {
+			return
+		}
+	}
+	// Set the CVSS v2 score of vuln that exists only in gost.
+	// Unfixed vulnerabilities detected by gost are not in OVAL, because
+	// OVAL data has only vulnerabilities for already fixed.
+	if cont, found := v.CveContents[RedHatAPI]; found {
+		values = append(values, CveContentCvss{
+			Type: RedHatAPI,
+			Value: Cvss{
+				Type:     CVSS2,
+				Score:    cont.Cvss2Score,
+				Vector:   cont.Cvss2Vector,
+				Severity: strings.ToUpper(cont.Cvss2Severity),
+			},
+		})
+	}
+
 	for _, adv := range v.DistroAdvisories {
 		if adv.Severity != "" {
 			values = append(values, CveContentCvss{
@@ -378,7 +398,7 @@ func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 
 // MaxCvss3Score returns Max CVSS V3 Score
 func (v VulnInfo) MaxCvss3Score() CveContentCvss {
-	order := []CveContentType{Nvd, RedHat, Jvn}
+	order := []CveContentType{Nvd, RedHat, RedHatAPI, Jvn}
 	max := 0.0
 	value := CveContentCvss{
 		Type:  Unknown,
@@ -420,7 +440,7 @@ func (v VulnInfo) MaxCvssScore() CveContentCvss {
 
 // MaxCvss2Score returns Max CVSS V2 Score
 func (v VulnInfo) MaxCvss2Score() CveContentCvss {
-	order := []CveContentType{Nvd, NvdXML, RedHat, Jvn}
+	order := []CveContentType{Nvd, NvdXML, RedHat, RedHatAPI, Jvn}
 	max := 0.0
 	value := CveContentCvss{
 		Type:  Unknown,

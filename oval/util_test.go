@@ -319,7 +319,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected:    true,
 			notFixedYet: false,
 		},
-		// RedHat
+		// 5 RedHat
 		{
 			in: in{
 				family: "redhat",
@@ -337,64 +337,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 					},
 				},
 				req: request{
-					packName:       "b",
-					isSrcPack:      false,
-					versionRelease: "0:1.2.3-45.el6_7.7",
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.el6_7.7",
+					NewVersionRelease: "",
 				},
 			},
 			affected:    true,
-			notFixedYet: true,
-		},
-		{
-			in: in{
-				family: "redhat",
-				def: ovalmodels.Definition{
-					AffectedPacks: []ovalmodels.Package{
-						{
-							Name:        "a",
-							NotFixedYet: false,
-						},
-						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
-						},
-					},
-				},
-				req: request{
-					packName:       "b",
-					isSrcPack:      false,
-					versionRelease: "0:1.2.3-45.el6_7.8",
-				},
-			},
-			affected:    false,
 			notFixedYet: false,
 		},
-		{
-			in: in{
-				family: "redhat",
-				def: ovalmodels.Definition{
-					AffectedPacks: []ovalmodels.Package{
-						{
-							Name:        "a",
-							NotFixedYet: false,
-						},
-						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
-						},
-					},
-				},
-				req: request{
-					packName:       "b",
-					isSrcPack:      false,
-					versionRelease: "0:1.2.3-45.el6_7.9",
-				},
-			},
-			affected:    false,
-			notFixedYet: false,
-		},
+		// 6 RedHat
 		{
 			in: in{
 				family: "redhat",
@@ -421,6 +373,86 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected:    true,
 			notFixedYet: true,
 		},
+		// 7 RedHat
+		{
+			in: in{
+				family: "redhat",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6_7.8",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		// 8 RedHat
+		{
+			in: in{
+				family: "redhat",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6_7.9",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		// 9 RedHat
+		{
+			in: in{
+				family: "redhat",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.el6_7.6",
+					NewVersionRelease: "0:1.2.3-45.el6_7.7",
+				},
+			},
+			affected:    true,
+			notFixedYet: true,
+		},
+		// 10 RedHat
 		{
 			in: in{
 				family: "redhat",
@@ -447,6 +479,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected:    true,
 			notFixedYet: false,
 		},
+		// 11 RedHat
 		{
 			in: in{
 				family: "redhat",
@@ -456,8 +489,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 							Name:        "a",
 							NotFixedYet: false,
 						},
-						{
-							Name:        "b",
+						{Name: "b",
 							NotFixedYet: false,
 							Version:     "0:1.2.3-45.el6_7.8",
 						},
@@ -473,6 +505,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected:    true,
 			notFixedYet: false,
 		},
+		// 12 RedHat
 		{
 			in: in{
 				family: "redhat",
@@ -498,6 +531,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected:    false,
 			notFixedYet: false,
 		},
+		// 13 RedHat
 		{
 			in: in{
 				family: "redhat",
@@ -523,7 +557,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected:    false,
 			notFixedYet: false,
 		},
-		// CentOS
+		// 14 CentOS
 		{
 			in: in{
 				family: "centos",
@@ -541,14 +575,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 					},
 				},
 				req: request{
-					packName:       "b",
-					isSrcPack:      false,
-					versionRelease: "0:1.2.3-45.el6.centos.7",
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.el6.centos.7",
+					NewVersionRelease: "",
 				},
 			},
 			affected:    true,
-			notFixedYet: true,
+			notFixedYet: false,
 		},
+		// 15
 		{
 			in: in{
 				family: "centos",
@@ -574,6 +610,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected:    false,
 			notFixedYet: false,
 		},
+		// 16
 		{
 			in: in{
 				family: "centos",
@@ -599,6 +636,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected:    false,
 			notFixedYet: false,
 		},
+		// 17
 		{
 			in: in{
 				family: "centos",
@@ -625,6 +663,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected:    true,
 			notFixedYet: true,
 		},
+		// 18
 		{
 			in: in{
 				family: "centos",
@@ -651,6 +690,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected:    true,
 			notFixedYet: false,
 		},
+		// 19
 		{
 			in: in{
 				family: "centos",
@@ -677,6 +717,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected:    true,
 			notFixedYet: false,
 		},
+		// 20
 		{
 			in: in{
 				family: "centos",
@@ -702,6 +743,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected:    false,
 			notFixedYet: false,
 		},
+		// 21
 		{
 			in: in{
 				family: "centos",
@@ -727,7 +769,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected:    false,
 			notFixedYet: false,
 		},
-		// TODO: If vuls support Scientific, replace "centos" below to "scientific".
+		// 22
 		{
 			in: in{
 				family: "centos",
@@ -751,7 +793,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 				},
 			},
 			affected:    true,
-			notFixedYet: true,
+			notFixedYet: false,
 		},
 		{
 			in: in{

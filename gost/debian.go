@@ -69,7 +69,7 @@ func (deb Debian) FillWithGost(driver db.DB, r *models.ScanResult) (nCVEs int, e
 			}
 			cves := []models.CveContent{}
 			for _, debcve := range debCves {
-				cves = append(cves, *deb.convertToModel(&debcve))
+				cves = append(cves, *deb.ConvertToModel(&debcve))
 			}
 			packCvesList = append(packCvesList, packCves{
 				packName:  res.request.packName,
@@ -85,7 +85,7 @@ func (deb Debian) FillWithGost(driver db.DB, r *models.ScanResult) (nCVEs int, e
 			cveDebs := driver.GetUnfixedCvesDebian(major(r.Release), pack.Name)
 			cves := []models.CveContent{}
 			for _, cveDeb := range cveDebs {
-				cves = append(cves, *deb.convertToModel(&cveDeb))
+				cves = append(cves, *deb.ConvertToModel(&cveDeb))
 			}
 			packCvesList = append(packCvesList, packCves{
 				packName:  pack.Name,
@@ -99,7 +99,7 @@ func (deb Debian) FillWithGost(driver db.DB, r *models.ScanResult) (nCVEs int, e
 			cveDebs := driver.GetUnfixedCvesDebian(major(r.Release), pack.Name)
 			cves := []models.CveContent{}
 			for _, cveDeb := range cveDebs {
-				cves = append(cves, *deb.convertToModel(&cveDeb))
+				cves = append(cves, *deb.ConvertToModel(&cveDeb))
 			}
 			packCvesList = append(packCvesList, packCves{
 				packName:  pack.Name,
@@ -155,7 +155,8 @@ func (deb Debian) FillWithGost(driver db.DB, r *models.ScanResult) (nCVEs int, e
 	return nCVEs, nil
 }
 
-func (deb Debian) convertToModel(cve *gostmodels.DebianCVE) *models.CveContent {
+// ConvertToModel converts gost model to vuls model
+func (deb Debian) ConvertToModel(cve *gostmodels.DebianCVE) *models.CveContent {
 	severity := ""
 	for _, p := range cve.Package {
 		for _, r := range p.Release {
