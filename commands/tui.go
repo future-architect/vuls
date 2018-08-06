@@ -20,7 +20,6 @@ package commands
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -34,18 +33,7 @@ import (
 
 // TuiCmd is Subcommand of host discovery mode
 type TuiCmd struct {
-	lang               string
-	debugSQL           bool
-	debug              bool
-	configPath         string
-	logDir             string
-	resultsDir         string
-	refreshCve         bool
-	cvssScoreOver      float64
-	ignoreUnscoredCves bool
-	ignoreUnfixed      bool
-	pipe               bool
-	diff               bool
+	configPath string
 }
 
 // Name return subcommand name
@@ -77,53 +65,36 @@ func (*TuiCmd) Usage() string {
 // SetFlags set flag
 func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	//  f.StringVar(&p.lang, "lang", "en", "[en|ja]")
-	f.BoolVar(&p.debugSQL, "debug-sql", false, "debug SQL")
-	f.BoolVar(&p.debug, "debug", false, "debug mode")
+	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "debug SQL")
+	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
 
 	defaultLogDir := util.GetDefaultLogDir()
-	f.StringVar(&p.logDir, "log-dir", defaultLogDir, "/path/to/log")
+	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 
 	wd, _ := os.Getwd()
 	defaultResultsDir := filepath.Join(wd, "results")
-	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
-	f.BoolVar(
-		&p.refreshCve,
-		"refresh-cve",
-		false,
+	f.BoolVar(&c.Conf.RefreshCve, "refresh-cve", false,
 		"Refresh CVE information in JSON file under results dir")
 
-	f.Float64Var(
-		&p.cvssScoreOver,
-		"cvss-over",
-		0,
+	f.Float64Var(&c.Conf.CvssScoreOver, "cvss-over", 0,
 		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
 
-	f.BoolVar(&p.diff,
-		"diff",
-		false,
-		fmt.Sprintf("Difference between previous result and current result "))
+	f.BoolVar(&c.Conf.Diff, "diff", false,
+		"Difference between previous result and current result ")
 
 	f.BoolVar(
-		&p.ignoreUnscoredCves,
-		"ignore-unscored-cves",
-		false,
+		&c.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
 		"Don't report the unscored CVEs")
 
-	f.BoolVar(
-		&p.ignoreUnfixed,
-		"ignore-unfixed",
-		false,
+	f.BoolVar(&c.Conf.IgnoreUnfixed, "ignore-unfixed", false,
 		"Don't report the unfixed CVEs")
 
-	f.BoolVar(
-		&p.pipe,
-		"pipe",
-		false,
-		"Use stdin via PIPE")
+	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use stdin via PIPE")
 }
 
 // Execute execute
@@ -131,33 +102,22 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	c.Conf.Lang = "en"
 
 	// Setup Logger
-	c.Conf.Debug = p.debug
-	c.Conf.DebugSQL = p.debugSQL
-	c.Conf.LogDir = p.logDir
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
-	cvelog.SetLogger(p.logDir, false, p.debug, false)
+	cvelog.SetLogger(c.Conf.LogDir, false, c.Conf.Debug, false)
 
 	if err := c.Load(p.configPath, ""); err != nil {
 		util.Log.Errorf("Error loading %s, %s", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
-	c.Conf.ResultsDir = p.resultsDir
-	c.Conf.CvssScoreOver = p.cvssScoreOver
-	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
-	c.Conf.IgnoreUnfixed = p.ignoreUnfixed
-	c.Conf.RefreshCve = p.refreshCve
 
 	util.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnTui() {
 		return subcommands.ExitUsageError
 	}
 
-	c.Conf.Pipe = p.pipe
-	c.Conf.Diff = p.diff
-
 	var dir string
 	var err error
-	if p.diff {
+	if c.Conf.Diff {
 		dir, err = report.JSONDir([]string{})
 	} else {
 		dir, err = report.JSONDir(f.Args())

@@ -33,15 +33,8 @@ import (
 // ConfigtestCmd is Subcommand
 type ConfigtestCmd struct {
 	configPath     string
-	logDir         string
 	askKeyPassword bool
-	containersOnly bool
-	sshNative      bool
-	sshConfig      bool
-	httpProxy      string
 	timeoutSec     int
-	debug          bool
-	vvv            bool
 }
 
 // Name return subcommand name
@@ -75,52 +68,33 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
 	defaultLogDir := util.GetDefaultLogDir()
-	f.StringVar(&p.logDir, "log-dir", defaultLogDir, "/path/to/log")
-
-	f.BoolVar(&p.debug, "debug", false, "debug mode")
+	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
+	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
 
 	f.IntVar(&p.timeoutSec, "timeout", 5*60, "Timeout(Sec)")
 
-	f.BoolVar(
-		&p.askKeyPassword,
-		"ask-key-password",
-		false,
+	f.BoolVar(&p.askKeyPassword, "ask-key-password", false,
 		"Ask ssh privatekey password before scanning",
 	)
 
-	f.StringVar(
-		&p.httpProxy,
-		"http-proxy",
-		"",
-		"http://proxy-url:port (default: empty)",
-	)
+	f.StringVar(&c.Conf.HTTPProxy, "http-proxy", "",
+		"http://proxy-url:port (default: empty)")
 
-	f.BoolVar(
-		&p.sshNative,
-		"ssh-native-insecure",
-		false,
+	f.BoolVar(&c.Conf.SSHNative, "ssh-native-insecure", false,
 		"Use Native Go implementation of SSH. Default: Use the external command")
 
-	f.BoolVar(
-		&p.sshConfig,
-		"ssh-config",
-		false,
+	f.BoolVar(&c.Conf.SSHConfig, "ssh-config", false,
 		"Use SSH options specified in ssh_config preferentially")
 
-	f.BoolVar(
-		&p.containersOnly,
-		"containers-only",
-		false,
+	f.BoolVar(&c.Conf.ContainersOnly, "containers-only", false,
 		"Test containers only. Default: Test both of hosts and containers")
 
-	f.BoolVar(&p.vvv, "vvv", false, "ssh -vvv")
+	f.BoolVar(&c.Conf.Vvv, "vvv", false, "ssh -vvv")
 }
 
 // Execute execute
 func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	// Setup Logger
-	c.Conf.Debug = p.debug
-	c.Conf.LogDir = p.logDir
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
 
 	if err := mkdirDotVuls(); err != nil {
@@ -145,13 +119,6 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		util.Log.Errorf("Please check README: https://github.com/future-architect/vuls#configuration")
 		return subcommands.ExitUsageError
 	}
-	c.Conf.SSHNative = p.sshNative
-	c.Conf.SSHConfig = p.sshConfig
-
-	c.Conf.HTTPProxy = p.httpProxy
-	c.Conf.ContainersOnly = p.containersOnly
-
-	c.Conf.Vvv = p.vvv
 
 	var servernames []string
 	if 0 < len(f.Args()) {

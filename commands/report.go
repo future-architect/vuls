@@ -20,7 +20,6 @@ package commands
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -37,37 +36,7 @@ import (
 
 // ReportCmd is subcommand for reporting
 type ReportCmd struct {
-	lang               string
-	debug              bool
-	debugSQL           bool
-	configPath         string
-	resultsDir         string
-	logDir             string
-	refreshCve         bool
-	cvssScoreOver      float64
-	ignoreUnscoredCves bool
-	ignoreUnfixed      bool
-	httpProxy          string
-	toSlack            bool
-	toStride           bool
-	toHipChat          bool
-	toChatWork         bool
-	toEMail            bool
-	toSyslog           bool
-	toLocalFile        bool
-	toS3               bool
-	toAzureBlob        bool
-	toHTTP             bool
-	formatJSON         bool
-	formatXML          bool
-	formatOneEMail     bool
-	formatOneLineText  bool
-	formatFullText     bool
-	formatList         bool
-	gzip               bool
-	uuid               bool
-	pipe               bool
-	diff               bool
+	configPath string
 }
 
 // Name return subcommand name
@@ -117,167 +86,82 @@ func (*ReportCmd) Usage() string {
 
 // SetFlags set flag
 func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&p.lang, "lang", "en", "[en|ja]")
-	f.BoolVar(&p.debug, "debug", false, "debug mode")
-	f.BoolVar(&p.debugSQL, "debug-sql", false, "SQL debug mode")
+	f.StringVar(&c.Conf.Lang, "lang", "en", "[en|ja]")
+	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
+	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
 
 	wd, _ := os.Getwd()
-
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
 	defaultResultsDir := filepath.Join(wd, "results")
-	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 
 	defaultLogDir := util.GetDefaultLogDir()
-	f.StringVar(&p.logDir, "log-dir", defaultLogDir, "/path/to/log")
+	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 
-	f.BoolVar(
-		&p.refreshCve,
-		"refresh-cve",
-		false,
+	f.BoolVar(&c.Conf.RefreshCve, "refresh-cve", false,
 		"Refresh CVE information in JSON file under results dir")
 
-	f.Float64Var(
-		&p.cvssScoreOver,
-		"cvss-over",
-		0,
+	f.Float64Var(&c.Conf.CvssScoreOver, "cvss-over", 0,
 		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
 
-	f.BoolVar(&p.diff,
-		"diff",
-		false,
-		fmt.Sprintf("Difference between previous result and current result "))
+	f.BoolVar(&c.Conf.Diff, "diff", false,
+		"Difference between previous result and current result ")
 
-	f.BoolVar(
-		&p.ignoreUnscoredCves,
-		"ignore-unscored-cves",
-		false,
+	f.BoolVar(&c.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
 		"Don't report the unscored CVEs")
 
 	f.BoolVar(
-		&p.ignoreUnfixed,
-		"ignore-unfixed",
-		false,
+		&c.Conf.IgnoreUnfixed, "ignore-unfixed", false,
 		"Don't report the unfixed CVEs")
 
 	f.StringVar(
-		&p.httpProxy,
-		"http-proxy",
-		"",
+		&c.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
 
-	f.BoolVar(&p.formatJSON,
-		"format-json",
-		false,
-		fmt.Sprintf("JSON format"))
-
-	f.BoolVar(&p.formatXML,
-		"format-xml",
-		false,
-		fmt.Sprintf("XML format"))
-
-	f.BoolVar(&p.formatOneEMail,
-		"format-one-email",
-		false,
+	f.BoolVar(&c.Conf.FormatJSON, "format-json", false, "JSON format")
+	f.BoolVar(&c.Conf.FormatXML, "format-xml", false, "XML format")
+	f.BoolVar(&c.Conf.FormatOneEMail, "format-one-email", false,
 		"Send all the host report via only one EMail (Specify with -to-email)")
+	f.BoolVar(&c.Conf.FormatOneLineText, "format-one-line-text", false,
+		"One line summary in plain text")
+	f.BoolVar(&c.Conf.FormatList, "format-list", false, "Display as list format")
+	f.BoolVar(&c.Conf.FormatFullText, "format-full-text", false,
+		"Detail report in plain text")
 
-	f.BoolVar(&p.formatOneLineText,
-		"format-one-line-text",
-		false,
-		fmt.Sprintf("One line summary in plain text"))
-
-	f.BoolVar(&p.formatList,
-		"format-list",
-		false,
-		fmt.Sprintf("Display as list format"))
-
-	f.BoolVar(&p.formatFullText,
-		"format-full-text",
-		false,
-		fmt.Sprintf("Detail report in plain text"))
-
-	f.BoolVar(&p.gzip, "gzip", false, "gzip compression")
-
-	f.BoolVar(&p.toSlack, "to-slack", false, "Send report via Slack")
-	f.BoolVar(&p.toStride, "to-stride", false, "Send report via Stride")
-	f.BoolVar(&p.toHipChat, "to-hipchat", false, "Send report via hipchat")
-	f.BoolVar(&p.toChatWork, "to-chatwork", false, "Send report via chatwork")
-	f.BoolVar(&p.toEMail, "to-email", false, "Send report via Email")
-	f.BoolVar(&p.toSyslog, "to-syslog", false, "Send report via Syslog")
-	f.BoolVar(&p.toLocalFile,
-		"to-localfile",
-		false,
-		fmt.Sprintf("Write report to localfile"))
-
-	f.BoolVar(&p.toS3,
-		"to-s3",
-		false,
+	f.BoolVar(&c.Conf.ToSlack, "to-slack", false, "Send report via Slack")
+	f.BoolVar(&c.Conf.ToStride, "to-stride", false, "Send report via Stride")
+	f.BoolVar(&c.Conf.ToHipChat, "to-hipchat", false, "Send report via hipchat")
+	f.BoolVar(&c.Conf.ToChatWork, "to-chatwork", false, "Send report via chatwork")
+	f.BoolVar(&c.Conf.ToEmail, "to-email", false, "Send report via Email")
+	f.BoolVar(&c.Conf.ToSyslog, "to-syslog", false, "Send report via Syslog")
+	f.BoolVar(&c.Conf.ToLocalFile, "to-localfile", false, "Write report to localfile")
+	f.BoolVar(&c.Conf.ToS3, "to-s3", false,
 		"Write report to S3 (bucket/yyyyMMdd_HHmm/servername.json/xml/txt)")
-	f.BoolVar(&p.toHTTP, "to-http", false, "Send report via HTTP POST")
-
-	f.BoolVar(&p.toAzureBlob,
-		"to-azure-blob",
-		false,
+	f.BoolVar(&c.Conf.ToHTTP, "to-http", false, "Send report via HTTP POST")
+	f.BoolVar(&c.Conf.ToAzureBlob, "to-azure-blob", false,
 		"Write report to Azure Storage blob (container/yyyyMMdd_HHmm/servername.json/xml/txt)")
 
-	f.BoolVar(&p.uuid, "uuid", false, "Auto generate of scan target servers and then write to config.toml and scan result")
-
-	f.BoolVar(
-		&p.pipe,
-		"pipe",
-		false,
-		"Use args passed via PIPE")
+	f.BoolVar(&c.Conf.GZIP, "gzip", false, "gzip compression")
+	f.BoolVar(&c.Conf.UUID, "uuid", false,
+		"Auto generate of scan target servers and then write to config.toml and scan result")
+	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use args passed via PIPE")
 }
 
 // Execute execute
 func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	c.Conf.Debug = p.debug
-	c.Conf.DebugSQL = p.debugSQL
-	c.Conf.LogDir = p.logDir
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
-	cvelog.SetLogger(p.logDir, false, c.Conf.Debug, false)
+	cvelog.SetLogger(c.Conf.LogDir, false, c.Conf.Debug, false)
 
 	if err := c.Load(p.configPath, ""); err != nil {
 		util.Log.Errorf("Error loading %s, %s", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
 
-	c.Conf.Lang = p.lang
-	c.Conf.ResultsDir = p.resultsDir
-	c.Conf.RefreshCve = p.refreshCve
-
-	c.Conf.CvssScoreOver = p.cvssScoreOver
-	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
-	c.Conf.IgnoreUnfixed = p.ignoreUnfixed
-	c.Conf.HTTPProxy = p.httpProxy
-
-	c.Conf.ToSlack = p.toSlack
-	c.Conf.ToStride = p.toStride
-	c.Conf.ToHipChat = p.toHipChat
-	c.Conf.ToChatWork = p.toChatWork
-	c.Conf.ToEmail = p.toEMail
-	c.Conf.ToHTTP = p.toHTTP
-	c.Conf.ToSyslog = p.toSyslog
-	c.Conf.ToLocalFile = p.toLocalFile
-	c.Conf.ToS3 = p.toS3
-	c.Conf.ToAzureBlob = p.toAzureBlob
-
-	c.Conf.FormatXML = p.formatXML
-	c.Conf.FormatJSON = p.formatJSON
-	c.Conf.FormatOneEMail = p.formatOneEMail
-	c.Conf.FormatOneLineText = p.formatOneLineText
-	c.Conf.FormatList = p.formatList
-	c.Conf.FormatFullText = p.formatFullText
-
-	c.Conf.GZIP = p.gzip
-	c.Conf.Diff = p.diff
-	c.Conf.Pipe = p.pipe
-	c.Conf.UUID = p.uuid
-
 	var dir string
 	var err error
-	if p.diff {
+	if c.Conf.Diff {
 		dir, err = report.JSONDir([]string{})
 	} else {
 		dir, err = report.JSONDir(f.Args())
@@ -292,41 +176,41 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		report.StdoutWriter{},
 	}
 
-	if p.toSlack {
+	if c.Conf.ToSlack {
 		reports = append(reports, report.SlackWriter{})
 	}
 
-	if p.toStride {
+	if c.Conf.ToStride {
 		reports = append(reports, report.StrideWriter{})
 	}
 
-	if p.toHipChat {
+	if c.Conf.ToHipChat {
 		reports = append(reports, report.HipChatWriter{})
 	}
 
-	if p.toChatWork {
+	if c.Conf.ToChatWork {
 		reports = append(reports, report.ChatWorkWriter{})
 	}
 
-	if p.toEMail {
+	if c.Conf.ToEmail {
 		reports = append(reports, report.EMailWriter{})
 	}
 
-	if p.toSyslog {
+	if c.Conf.ToSyslog {
 		reports = append(reports, report.SyslogWriter{})
 	}
 
-	if p.toHTTP {
+	if c.Conf.ToHTTP {
 		reports = append(reports, report.HTTPRequestWriter{})
 	}
 
-	if p.toLocalFile {
+	if c.Conf.ToLocalFile {
 		reports = append(reports, report.LocalFileWriter{
 			CurrentDir: dir,
 		})
 	}
 
-	if p.toS3 {
+	if c.Conf.ToS3 {
 		if err := report.CheckIfBucketExists(); err != nil {
 			util.Log.Errorf("Check if there is a bucket beforehand: %s, err: %s",
 				c.Conf.AWS.S3Bucket, err)
@@ -335,7 +219,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		reports = append(reports, report.S3Writer{})
 	}
 
-	if p.toAzureBlob {
+	if c.Conf.ToAzureBlob {
 		if len(c.Conf.Azure.AccountName) == 0 {
 			c.Conf.Azure.AccountName = os.Getenv("AZURE_STORAGE_ACCOUNT")
 		}
@@ -356,8 +240,8 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		reports = append(reports, report.AzureBlobWriter{})
 	}
 
-	if !(p.formatJSON || p.formatOneLineText ||
-		p.formatList || p.formatFullText || p.formatXML) {
+	if !(c.Conf.FormatJSON || c.Conf.FormatOneLineText ||
+		c.Conf.FormatList || c.Conf.FormatFullText || c.Conf.FormatXML) {
 		c.Conf.FormatList = true
 	}
 

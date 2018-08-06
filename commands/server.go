@@ -20,7 +20,6 @@ package commands
 import (
 	"context"
 	"flag"
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -38,19 +37,8 @@ import (
 
 // ServerCmd is subcommand for server
 type ServerCmd struct {
-	lang               string
-	debug              bool
-	debugSQL           bool
-	configPath         string
-	resultsDir         string
-	logDir             string
-	cvssScoreOver      float64
-	ignoreUnscoredCves bool
-	ignoreUnfixed      bool
-	httpProxy          string
-	listen             string
-	toLocalFile        bool
-	formatJSON         bool
+	configPath string
+	listen     string
 }
 
 // Name return subcommand name
@@ -95,86 +83,49 @@ func (*ServerCmd) Usage() string {
 
 // SetFlags set flag
 func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&p.lang, "lang", "en", "[en|ja]")
-	f.BoolVar(&p.debug, "debug", false, "debug mode")
-	f.BoolVar(&p.debugSQL, "debug-sql", false, "SQL debug mode")
+	f.StringVar(&c.Conf.Lang, "lang", "en", "[en|ja]")
+	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
+	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
 
 	wd, _ := os.Getwd()
-
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
 	defaultResultsDir := filepath.Join(wd, "results")
-	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 
 	defaultLogDir := util.GetDefaultLogDir()
-	f.StringVar(&p.logDir, "log-dir", defaultLogDir, "/path/to/log")
+	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 
-	f.Float64Var(
-		&p.cvssScoreOver,
-		"cvss-over",
-		0,
+	f.Float64Var(&c.Conf.CvssScoreOver, "cvss-over", 0,
 		"-cvss-over=6.5 means Servering CVSS Score 6.5 and over (default: 0 (means Server all))")
 
-	f.BoolVar(
-		&p.ignoreUnscoredCves,
-		"ignore-unscored-cves",
-		false,
+	f.BoolVar(&c.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
 		"Don't Server the unscored CVEs")
 
-	f.BoolVar(
-		&p.ignoreUnfixed,
-		"ignore-unfixed",
-		false,
+	f.BoolVar(&c.Conf.IgnoreUnfixed, "ignore-unfixed", false,
 		"Don't Server the unfixed CVEs")
 
-	f.StringVar(
-		&p.httpProxy,
-		"http-proxy",
-		"",
+	f.StringVar(&c.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
-	f.BoolVar(&p.formatJSON,
-		"format-json",
-		false,
-		fmt.Sprintf("JSON format"))
 
-	f.BoolVar(&p.toLocalFile,
-		"to-localfile",
-		false,
-		fmt.Sprintf("Write report to localfile"))
-	f.StringVar(
-		&p.listen,
-		"listen",
-		"localhost:5515",
+	f.BoolVar(&c.Conf.FormatJSON, "format-json", false, "JSON format")
+
+	f.BoolVar(&c.Conf.ToLocalFile, "to-localfile", false, "Write report to localfile")
+	f.StringVar(&p.listen, "listen", "localhost:5515",
 		"host:port (default: localhost:5515)")
 }
 
 // Execute execute
 func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	c.Conf.Debug = p.debug
-	c.Conf.DebugSQL = p.debugSQL
-	c.Conf.LogDir = p.logDir
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
-	cvelog.SetLogger(p.logDir, false, c.Conf.Debug, false)
-
-	c.Conf.Lang = p.lang
-	c.Conf.ResultsDir = p.resultsDir
-	c.Conf.CvssScoreOver = p.cvssScoreOver
-	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
-	c.Conf.IgnoreUnfixed = p.ignoreUnfixed
-	c.Conf.HTTPProxy = p.httpProxy
-
-	c.Conf.ToLocalFile = p.toLocalFile
-
-	c.Conf.FormatJSON = p.formatJSON
-
-	var err error
+	cvelog.SetLogger(c.Conf.LogDir, false, c.Conf.Debug, false)
 
 	util.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnReport() {
 		return subcommands.ExitUsageError
 	}
-	if err = report.CveClient.CheckHealth(); err != nil {
+	if err := report.CveClient.CheckHealth(); err != nil {
 		util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
 		util.Log.Errorf("Run go-cve-dictionary as server mode before Servering or run with -cvedb-path option")
 		return subcommands.ExitFailure
@@ -189,7 +140,7 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if c.Conf.OvalDict.URL != "" {
 		util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDict.URL)
-		err = oval.Base{}.CheckHTTPHealth()
+		err := oval.Base{}.CheckHTTPHealth()
 		if err != nil {
 			util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
 			util.Log.Errorf("Run goval-dictionary as server mode before Servering or run with -ovaldb-path option")
