@@ -48,19 +48,19 @@ func NewDBClient(cnf DBClientConf) (dbclient *DBClient, locked bool, err error) 
 	ovaldb, locked, err := NewOvalDB(cnf)
 	if locked {
 		return nil, true, fmt.Errorf("OvalDB is locked: %s",
-			cnf.OvalDictCnf.Path)
+			cnf.OvalDictCnf.SQLite3Path)
 	} else if err != nil {
 		util.Log.Warnf("Unable to use OvalDB: %s, err: %s",
-			cnf.OvalDictCnf.Path, err)
+			cnf.OvalDictCnf.SQLite3Path, err)
 	}
 
 	gostdb, locked, err := NewGostDB(cnf)
 	if locked {
 		return nil, true, fmt.Errorf("gostDB is locked: %s",
-			cnf.GostCnf.Path)
+			cnf.GostCnf.SQLite3Path)
 	} else if err != nil {
 		util.Log.Warnf("Unable to use gostDB: %s, err: %s",
-			cnf.GostCnf.Path, err)
+			cnf.GostCnf.SQLite3Path, err)
 	}
 
 	return &DBClient{
@@ -78,7 +78,7 @@ func NewCveDB(cnf DBClientConf) (driver cvedb.DB, locked bool, err error) {
 	util.Log.Debugf("open cve-dictionary db (%s)", cnf.CveDictCnf.Type)
 	path := cnf.CveDictCnf.URL
 	if cnf.CveDictCnf.Type == "sqlite3" {
-		path = cnf.CveDictCnf.Path
+		path = cnf.CveDictCnf.SQLite3Path
 	}
 
 	util.Log.Debugf("Open cve-dictionary db (%s): %s", cnf.CveDictCnf.Type, path)
@@ -97,7 +97,7 @@ func NewOvalDB(cnf DBClientConf) (driver ovaldb.DB, locked bool, err error) {
 	}
 	path := cnf.OvalDictCnf.URL
 	if cnf.OvalDictCnf.Type == "sqlite3" {
-		path = cnf.OvalDictCnf.Path
+		path = cnf.OvalDictCnf.SQLite3Path
 
 		if _, err := os.Stat(path); os.IsNotExist(err) {
 			util.Log.Warnf("--ovaldb-path=%s is not found. It's recommended to use OVAL to improve scanning accuracy. For details, see https://github.com/kotakanbe/goval-dictionary#usage", path)
@@ -124,7 +124,7 @@ func NewGostDB(cnf DBClientConf) (driver gostdb.DB, locked bool, err error) {
 	}
 	path := cnf.GostCnf.URL
 	if cnf.GostCnf.Type == "sqlite3" {
-		path = cnf.GostCnf.Path
+		path = cnf.GostCnf.SQLite3Path
 
 		if _, err := os.Stat(path); os.IsNotExist(err) {
 			util.Log.Warnf("--gostdb-path=%s is not found. If the scan target server is Debian, RHEL or CentOS, it's recommended to use gost to improve scanning accuracy. To use gost database, see https://github.com/knqyf263/gost#fetch-redhat", path)

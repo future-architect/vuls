@@ -37,6 +37,10 @@ import (
 // ReportCmd is subcommand for reporting
 type ReportCmd struct {
 	configPath string
+	cvelDict   c.GoCveDictConf
+	ovalDict   c.GovalDictConf
+	gostConf   c.GostConf
+	httpConf   c.HTTPConf
 }
 
 // Name return subcommand name
@@ -79,6 +83,16 @@ func (*ReportCmd) Usage() string {
 		[-debug]
 		[-debug-sql]
 		[-pipe]
+		[-cvedb-type=sqlite3|mysql|postgres|redis]
+		[-cvedb-path=/path/to/cve.sqlite3]
+		[-cvedb-url=http://127.0.0.1:1323 or DB connection string]
+		[-ovaldb-type=sqlite3|mysql|redis]
+		[-ovaldb-path=/path/to/oval.sqlite3]
+		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
+		[-gostdb-type=sqlite3|mysql|redis]
+		[-gostdb-path=/path/to/gost.sqlite3]
+		[-gostdb-url=http://127.0.0.1:1325 or DB connection string]
+		[-http="http://vuls-report-server"]
 
 		[RFC3339 datetime format under results dir]
 `
@@ -147,6 +161,27 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.Conf.UUID, "uuid", false,
 		"Auto generate of scan target servers and then write to config.toml and scan result")
 	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use args passed via PIPE")
+
+	f.StringVar(&p.cvelDict.Type, "cvedb-type", "sqlite3",
+		"DB type of go-cve-dictionary (sqlite3, mysql, postgres or redis)")
+	f.StringVar(&p.cvelDict.SQLite3Path, "cvedb-sqlite3-path", "", "/path/to/sqlite3")
+	f.StringVar(&p.cvelDict.URL, "cvedb-url", "",
+		"http://go-cve-dictionary.com:1323 or DB connection string")
+
+	f.StringVar(&p.ovalDict.Type, "ovaldb-type", "",
+		"DB type of goval-dictionary (sqlite3, mysql, postgres or redis)")
+	f.StringVar(&p.ovalDict.SQLite3Path, "ovaldb-sqlite3-path", "", "/path/to/sqlite3")
+	f.StringVar(&p.ovalDict.URL, "ovaldb-url", "",
+		"http://goval-dictionary.com:1324 or DB connection string")
+
+	f.StringVar(&p.gostConf.Type, "gostdb-type", "",
+		"DB type of gost (sqlite3, mysql, postgres or redis)")
+	f.StringVar(&p.gostConf.SQLite3Path, "gostdb-sqlite3-path", "", "/path/to/sqlite3")
+	f.StringVar(&p.gostConf.URL, "gostdb-url", "",
+		"http://gost.com:1325 or DB connection string")
+
+	f.StringVar(&p.httpConf.URL, "http", "", "-to-http http://vuls-report")
+
 }
 
 // Execute execute
@@ -158,6 +193,11 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		util.Log.Errorf("Error loading %s, %s", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
+
+	c.Conf.CveDict.Overwrite(p.cvelDict)
+	c.Conf.OvalDict.Overwrite(p.ovalDict)
+	c.Conf.Gost.Overwrite(p.gostConf)
+	c.Conf.HTTP.Overwrite(p.httpConf)
 
 	var dir string
 	var err error
@@ -258,7 +298,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		util.Log.Infof("cve-dictionary: %s", c.Conf.CveDict.URL)
 	} else {
 		if c.Conf.CveDict.Type == "sqlite3" {
-			util.Log.Infof("cve-dictionary: %s", c.Conf.CveDict.Path)
+			util.Log.Infof("cve-dictionary: %s", c.Conf.CveDict.SQLite3Path)
 		}
 	}
 
@@ -272,7 +312,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	} else {
 		if c.Conf.OvalDict.Type == "sqlite3" {
-			util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDict.Path)
+			util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDict.SQLite3Path)
 		}
 	}
 
@@ -286,7 +326,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	} else {
 		if c.Conf.Gost.Type == "sqlite3" {
-			util.Log.Infof("gost: %s", c.Conf.Gost.Path)
+			util.Log.Infof("gost: %s", c.Conf.Gost.SQLite3Path)
 		}
 	}
 

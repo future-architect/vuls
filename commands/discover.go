@@ -91,20 +91,23 @@ func (p *DiscoverCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface
 func printConfigToml(ips []string) (err error) {
 	const tomlTemplate = `
 
+# TODO Doc Link
 [cveDict]
-type = "sqlite3"
-path = "/path/to/cve.sqlite3"
-#url = ""
+type        = "sqlite3"
+sqlite3Path = "/path/to/cve.sqlite3"
+#url        = ""
 
+# TODO Doc Link
 [ovalDict]
-type = "sqlite3"
-path = "/path/to/oval.sqlite3"
-#url = ""
+type        = "sqlite3"
+sqlite3Path = "/path/to/oval.sqlite3"
+#url        = ""
 
+# TODO Doc Link
 [gost]
-type = "sqlite3"
-path = "/path/to/gost.sqlite3"
-#url = ""
+type        = "sqlite3"
+sqlite3Path = "/path/to/gost.sqlite3"
+#url        = ""
 
 # https://vuls.io/docs/en/usage-settings.html#slack-section
 #[slack]

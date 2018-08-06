@@ -226,16 +226,16 @@ func (c Config) ValidateOnReport() bool {
 		}
 	}
 
-	if err := validateDB("cvedb", c.CveDict.Type, c.CveDict.Path, c.CveDict.URL); err != nil {
+	if err := validateDB("cvedb", c.CveDict.Type, c.CveDict.SQLite3Path, c.CveDict.URL); err != nil {
 		errs = append(errs, err)
 	}
 	if c.CveDict.Type == "sqlite3" {
-		if _, err := os.Stat(c.CveDict.Path); os.IsNotExist(err) {
-			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDict.Path))
+		if _, err := os.Stat(c.CveDict.SQLite3Path); os.IsNotExist(err) {
+			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDict.SQLite3Path))
 		}
 	}
 
-	if err := validateDB("ovaldb", c.OvalDict.Type, c.OvalDict.Path, c.OvalDict.URL); err != nil {
+	if err := validateDB("ovaldb", c.OvalDict.Type, c.OvalDict.SQLite3Path, c.OvalDict.URL); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -290,12 +290,12 @@ func (c Config) ValidateOnTui() bool {
 		}
 	}
 
-	if err := validateDB("cvedb", c.CveDict.Type, c.CveDict.Path, c.CveDict.URL); err != nil {
+	if err := validateDB("cvedb", c.CveDict.Type, c.CveDict.SQLite3Path, c.CveDict.URL); err != nil {
 		errs = append(errs, err)
 	}
 	if c.CveDict.Type == "sqlite3" {
-		if _, err := os.Stat(c.CveDict.Path); os.IsNotExist(err) {
-			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDict.Path))
+		if _, err := os.Stat(c.CveDict.SQLite3Path); os.IsNotExist(err) {
+			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDict.SQLite3Path))
 		}
 	}
 
@@ -664,6 +664,21 @@ func (c *HTTPConf) Validate() (errs []error) {
 	return errs
 }
 
+const httpKey = "VULS_HTTP_URL"
+
+// Overwrite set options with the following priority.
+// 1. Command line option
+// 2. Environment variable
+// 3. config.toml
+func (c *HTTPConf) Overwrite(cmdOpt HTTPConf) {
+	if os.Getenv(httpKey) != "" {
+		c.URL = os.Getenv(httpKey)
+	}
+	if cmdOpt.URL != "" {
+		c.URL = cmdOpt.URL
+	}
+}
+
 // GoCveDictConf is go-cve-dictionary config
 type GoCveDictConf struct {
 	// DB type of CVE dictionary (sqlite3, mysql, postgres or redis)
@@ -673,17 +688,48 @@ type GoCveDictConf struct {
 	URL string `valid:"url" json:"-"`
 
 	// /path/to/cve.sqlite3
-	Path string `json:"-"`
+	SQLite3Path string `json:"-"`
 }
 
 func (cnf *GoCveDictConf) setDefault() {
 	if cnf.Type == "" {
 		cnf.Type = "sqlite3"
 	}
-	if cnf.Path == "" {
+	if cnf.URL == "" && cnf.SQLite3Path == "" {
 		wd, _ := os.Getwd()
-		cnf.Path = filepath.Join(wd, "cve.sqlite3")
+		cnf.SQLite3Path = filepath.Join(wd, "cve.sqlite3")
 	}
+}
+
+const cveDBType = "CVEDB_TYPE"
+const cveDBURL = "CVEDB_URL"
+const cveDBPATH = "CVEDB_SQLITE3_PATH"
+
+// Overwrite set options with the following priority.
+// 1. Command line option
+// 2. Environment variable
+// 3. config.toml
+func (cnf *GoCveDictConf) Overwrite(cmdOpt GoCveDictConf) {
+	if os.Getenv(cveDBType) != "" {
+		cnf.Type = os.Getenv(cveDBType)
+	}
+	if os.Getenv(cveDBURL) != "" {
+		cnf.URL = os.Getenv(cveDBURL)
+	}
+	if os.Getenv(cveDBPATH) != "" {
+		cnf.SQLite3Path = os.Getenv(cveDBPATH)
+	}
+
+	if cmdOpt.Type != "" {
+		cnf.Type = cmdOpt.Type
+	}
+	if cmdOpt.URL != "" {
+		cnf.URL = cmdOpt.URL
+	}
+	if cmdOpt.SQLite3Path != "" {
+		cnf.SQLite3Path = cmdOpt.SQLite3Path
+	}
+	cnf.setDefault()
 }
 
 // GovalDictConf is goval-dictionary config
@@ -696,17 +742,48 @@ type GovalDictConf struct {
 	URL string `valid:"url" json:"-"`
 
 	// /path/to/oval.sqlite3
-	Path string `json:"-"`
+	SQLite3Path string `json:"-"`
 }
 
 func (cnf *GovalDictConf) setDefault() {
 	if cnf.Type == "" {
 		cnf.Type = "sqlite3"
 	}
-	if cnf.Path == "" {
+	if cnf.URL == "" && cnf.SQLite3Path == "" {
 		wd, _ := os.Getwd()
-		cnf.Path = filepath.Join(wd, "oval.sqlite3")
+		cnf.SQLite3Path = filepath.Join(wd, "oval.sqlite3")
 	}
+}
+
+const govalType = "OVALDB_TYPE"
+const govalURL = "OVALDB_URL"
+const govalPATH = "OVALDB_SQLITE3_PATH"
+
+// Overwrite set options with the following priority.
+// 1. Command line option
+// 2. Environment variable
+// 3. config.toml
+func (cnf *GovalDictConf) Overwrite(cmdOpt GovalDictConf) {
+	if os.Getenv(govalType) != "" {
+		cnf.Type = os.Getenv(govalType)
+	}
+	if os.Getenv(govalURL) != "" {
+		cnf.URL = os.Getenv(govalURL)
+	}
+	if os.Getenv(govalPATH) != "" {
+		cnf.SQLite3Path = os.Getenv(govalPATH)
+	}
+
+	if cmdOpt.Type != "" {
+		cnf.Type = cmdOpt.Type
+	}
+	if cmdOpt.URL != "" {
+		cnf.URL = cmdOpt.URL
+	}
+	if cmdOpt.SQLite3Path != "" {
+		cnf.SQLite3Path = cmdOpt.SQLite3Path
+	}
+	cnf.setDefault()
 }
 
 // GostConf is gost config
@@ -718,17 +795,48 @@ type GostConf struct {
 	URL string `valid:"url" json:"-"`
 
 	// /path/to/gost.sqlite3
-	Path string `json:"-"`
+	SQLite3Path string `json:"-"`
 }
 
 func (cnf *GostConf) setDefault() {
 	if cnf.Type == "" {
 		cnf.Type = "sqlite3"
 	}
-	if cnf.Path == "" {
+	if cnf.URL == "" && cnf.SQLite3Path == "" {
 		wd, _ := os.Getwd()
-		cnf.Path = filepath.Join(wd, "gost.sqlite3")
+		cnf.SQLite3Path = filepath.Join(wd, "gost.sqlite3")
 	}
+}
+
+const gostDBType = "GOSTDB_TYPE"
+const gostDBURL = "GOSTDB_URL"
+const gostDBPATH = "GOSTDB_SQLITE3_PATH"
+
+// Overwrite set options with the following priority.
+// 1. Command line option
+// 2. Environment variable
+// 3. config.toml
+func (cnf *GostConf) Overwrite(cmdOpt GostConf) {
+	if os.Getenv(gostDBType) != "" {
+		cnf.Type = os.Getenv(gostDBType)
+	}
+	if os.Getenv(gostDBURL) != "" {
+		cnf.URL = os.Getenv(gostDBURL)
+	}
+	if os.Getenv(gostDBPATH) != "" {
+		cnf.SQLite3Path = os.Getenv(gostDBPATH)
+	}
+
+	if cmdOpt.Type != "" {
+		cnf.Type = cmdOpt.Type
+	}
+	if cmdOpt.URL != "" {
+		cnf.URL = cmdOpt.URL
+	}
+	if cmdOpt.SQLite3Path != "" {
+		cnf.SQLite3Path = cmdOpt.SQLite3Path
+	}
+	cnf.setDefault()
 }
 
 // AWS is aws config

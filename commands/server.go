@@ -20,6 +20,7 @@ package commands
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -39,6 +40,9 @@ import (
 type ServerCmd struct {
 	configPath string
 	listen     string
+	cvelDict   c.GoCveDictConf
+	ovalDict   c.GovalDictConf
+	gostConf   c.GostConf
 }
 
 // Name return subcommand name
@@ -76,6 +80,15 @@ func (*ServerCmd) Usage() string {
 		[-debug]
 		[-debug-sql]
 		[-listen=localhost:5515]
+		[-cvedb-type=sqlite3|mysql|postgres|redis]
+		[-cvedb-path=/path/to/cve.sqlite3]
+		[-cvedb-url=http://127.0.0.1:1323 or DB connection string]
+		[-ovaldb-type=sqlite3|mysql|redis]
+		[-ovaldb-path=/path/to/oval.sqlite3]
+		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
+		[-gostdb-type=sqlite3|mysql|redis]
+		[-gostdb-path=/path/to/gost.sqlite3]
+		[-gostdb-url=http://127.0.0.1:1325 or DB connection string]
 
 		[RFC3339 datetime format under results dir]
 `
@@ -114,6 +127,24 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.Conf.ToLocalFile, "to-localfile", false, "Write report to localfile")
 	f.StringVar(&p.listen, "listen", "localhost:5515",
 		"host:port (default: localhost:5515)")
+
+	f.StringVar(&p.cvelDict.Type, "cvedb-type", "sqlite3",
+		"DB type of go-cve-dictionary (sqlite3, mysql, postgres or redis)")
+	f.StringVar(&p.cvelDict.SQLite3Path, "cvedb-path", "", "/path/to/sqlite3")
+	f.StringVar(&p.cvelDict.URL, "cvedb-url", "",
+		"http://go-cve-dictionary.com:1323 or DB connection string")
+
+	f.StringVar(&p.ovalDict.Type, "ovaldb-type", "",
+		"DB type of goval-dictionary (sqlite3, mysql, postgres or redis)")
+	f.StringVar(&p.ovalDict.SQLite3Path, "ovaldb-path", "", "/path/to/sqlite3")
+	f.StringVar(&p.ovalDict.URL, "ovaldb-url", "",
+		"http://goval-dictionary.com:1324 or DB connection string")
+
+	f.StringVar(&p.gostConf.Type, "gostdb-type", "",
+		"DB type of gost (sqlite3, mysql, postgres or redis)")
+	f.StringVar(&p.gostConf.SQLite3Path, "gostdb-path", "", "/path/to/sqlite3")
+	f.StringVar(&p.gostConf.URL, "gostdb-url", "",
+		"http://gost.com:1325 or DB connection string")
 }
 
 // Execute execute
@@ -121,10 +152,15 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
 	cvelog.SetLogger(c.Conf.LogDir, false, c.Conf.Debug, false)
 
+	c.Conf.CveDict.Overwrite(p.cvelDict)
+	c.Conf.OvalDict.Overwrite(p.ovalDict)
+	c.Conf.Gost.Overwrite(p.gostConf)
+
 	util.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnReport() {
 		return subcommands.ExitUsageError
 	}
+
 	if err := report.CveClient.CheckHealth(); err != nil {
 		util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
 		util.Log.Errorf("Run go-cve-dictionary as server mode before Servering or run with -cvedb-path option")
@@ -134,7 +170,7 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		util.Log.Infof("cve-dictionary: %s", c.Conf.CveDict.URL)
 	} else {
 		if c.Conf.CveDict.Type == "sqlite3" {
-			util.Log.Infof("cve-dictionary: %s", c.Conf.CveDict.Path)
+			util.Log.Infof("cve-dictionary: %s", c.Conf.CveDict.SQLite3Path)
 		}
 	}
 
@@ -148,7 +184,7 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	} else {
 		if c.Conf.OvalDict.Type == "sqlite3" {
-			util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDict.Path)
+			util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDict.SQLite3Path)
 		}
 	}
 

@@ -34,6 +34,9 @@ import (
 // TuiCmd is Subcommand of host discovery mode
 type TuiCmd struct {
 	configPath string
+	cvelDict   c.GoCveDictConf
+	ovalDict   c.GovalDictConf
+	gostConf   c.GostConf
 }
 
 // Name return subcommand name
@@ -57,9 +60,17 @@ func (*TuiCmd) Usage() string {
 		[-debug]
 		[-debug-sql]
 		[-pipe]
+		[-cvedb-type=sqlite3|mysql|postgres|redis]
+		[-cvedb-path=/path/to/cve.sqlite3]
+		[-cvedb-url=http://127.0.0.1:1323 or DB connection string]
+		[-ovaldb-type=sqlite3|mysql|redis]
+		[-ovaldb-path=/path/to/oval.sqlite3]
+		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
+		[-gostdb-type=sqlite3|mysql|redis]
+		[-gostdb-path=/path/to/gost.sqlite3]
+		[-gostdb-url=http://127.0.0.1:1325 or DB connection string]
 
 `
-	//TODO
 }
 
 // SetFlags set flag
@@ -95,6 +106,24 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 		"Don't report the unfixed CVEs")
 
 	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use stdin via PIPE")
+
+	f.StringVar(&p.cvelDict.Type, "cvedb-type", "sqlite3",
+		"DB type of go-cve-dictionary (sqlite3, mysql, postgres or redis)")
+	f.StringVar(&p.cvelDict.SQLite3Path, "cvedb-path", "", "/path/to/sqlite3")
+	f.StringVar(&p.cvelDict.URL, "cvedb-url", "",
+		"http://go-cve-dictionary.com:1323 or DB connection string")
+
+	f.StringVar(&p.ovalDict.Type, "ovaldb-type", "",
+		"DB type of goval-dictionary (sqlite3, mysql, postgres or redis)")
+	f.StringVar(&p.ovalDict.SQLite3Path, "ovaldb-path", "", "/path/to/sqlite3")
+	f.StringVar(&p.ovalDict.URL, "ovaldb-url", "",
+		"http://goval-dictionary.com:1324 or DB connection string")
+
+	f.StringVar(&p.gostConf.Type, "gostdb-type", "",
+		"DB type of gost (sqlite3, mysql, postgres or redis)")
+	f.StringVar(&p.gostConf.SQLite3Path, "gostdb-path", "", "/path/to/sqlite3")
+	f.StringVar(&p.gostConf.URL, "gostdb-url", "",
+		"http://gost.com:1325 or DB connection string")
 }
 
 // Execute execute
@@ -109,6 +138,10 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		util.Log.Errorf("Error loading %s, %s", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
+
+	c.Conf.CveDict.Overwrite(p.cvelDict)
+	c.Conf.OvalDict.Overwrite(p.ovalDict)
+	c.Conf.Gost.Overwrite(p.gostConf)
 
 	util.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnTui() {
