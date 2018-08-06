@@ -219,7 +219,10 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	defer dbclient.CloseDB()
 
-	http.Handle("/", server.VulsHandler{DBclient: *dbclient})
+	http.Handle("/vuls", server.VulsHandler{DBclient: *dbclient})
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "ok")
+	})
 	util.Log.Infof("Listening on %s", p.listen)
 	if err := http.ListenAndServe(p.listen, nil); err != nil {
 		util.Log.Errorf("Failed to start server: %s", err)
