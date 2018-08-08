@@ -114,6 +114,9 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 			if strings.HasPrefix(r.Stdout, "Amazon Linux release 2") {
 				fields := strings.Fields(r.Stdout)
 				release = fmt.Sprintf("%s %s", fields[3], fields[4])
+			} else if strings.HasPrefix(r.Stdout, "Amazon Linux 2") {
+				fields := strings.Fields(r.Stdout)
+				release = strings.Join(fields[2:], " ")
 			} else {
 				fields := strings.Fields(r.Stdout)
 				if len(fields) == 5 {
