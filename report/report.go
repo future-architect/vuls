@@ -489,6 +489,11 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 		chatWork = nil
 	}
 
+	saas := &c.Conf.Saas
+	if saas.GroupID == 0 {
+		saas = nil
+	}
+
 	c := struct {
 		CveDict  *c.GoCveDictConf `toml:"cveDict"`
 		OvalDict *c.GovalDictConf `toml:"ovalDict"`
@@ -502,6 +507,7 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 		Stride   *c.StrideConf    `toml:"stride"`
 		HipChat  *c.HipChatConf   `toml:"hipChat"`
 		ChatWork *c.ChatWorkConf  `toml:"chatWork"`
+		Saas     *c.SaasConf      `toml:"saas"`
 
 		Default c.ServerInfo            `toml:"default"`
 		Servers map[string]c.ServerInfo `toml:"servers"`
@@ -518,6 +524,7 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 		Stride:   stride,
 		HipChat:  hipChat,
 		ChatWork: chatWork,
+		Saas:     saas,
 
 		Default: c.Conf.Default,
 		Servers: c.Conf.Servers,

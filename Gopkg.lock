@@ -769,6 +769,7 @@
     "github.com/aws/aws-sdk-go/aws/ec2metadata",
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/s3",
+    "github.com/aws/aws-sdk-go/service/sts",
     "github.com/boltdb/bolt",
     "github.com/cenkalti/backoff",
     "github.com/fatih/color",

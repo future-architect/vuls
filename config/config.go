@@ -131,6 +131,7 @@ type Config struct {
 	Stride   StrideConf   `json:"-"`
 	HipChat  HipChatConf  `json:"-"`
 	ChatWork ChatWorkConf `json:"-"`
+	Saas     SaasConf     `json:"-"`
 
 	RefreshCve        bool `json:"refreshCve"`
 	ToSlack           bool `json:"toSlack"`
@@ -142,6 +143,7 @@ type Config struct {
 	ToLocalFile       bool `json:"toLocalFile"`
 	ToS3              bool `json:"toS3"`
 	ToAzureBlob       bool `json:"toAzureBlob"`
+	ToSaas            bool `json:"toSaas"`
 	ToHTTP            bool `json:"toHTTP"`
 	FormatXML         bool `json:"formatXML"`
 	FormatJSON        bool `json:"formatJSON"`
@@ -215,16 +217,9 @@ func (c Config) ValidateOnScan() bool {
 	return len(errs) == 0
 }
 
-// ValidateOnReport validates configuration
-func (c Config) ValidateOnReport() bool {
+// ValidateOnReportDB validates configuration
+func (c Config) ValidateOnReportDB() bool {
 	errs := []error{}
-
-	if len(c.ResultsDir) != 0 {
-		if ok, _ := valid.IsFilePath(c.ResultsDir); !ok {
-			errs = append(errs, fmt.Errorf(
-				"JSON base directory must be a *Absolute* file path. -results-dir: %s", c.ResultsDir))
-		}
-	}
 
 	if err := validateDB("cvedb", c.CveDict.Type, c.CveDict.SQLite3Path, c.CveDict.URL); err != nil {
 		errs = append(errs, err)
@@ -237,6 +232,24 @@ func (c Config) ValidateOnReport() bool {
 
 	if err := validateDB("ovaldb", c.OvalDict.Type, c.OvalDict.SQLite3Path, c.OvalDict.URL); err != nil {
 		errs = append(errs, err)
+	}
+
+	for _, err := range errs {
+		log.Error(err)
+	}
+
+	return len(errs) == 0
+}
+
+// ValidateOnReport validates configuration
+func (c Config) ValidateOnReport() bool {
+	errs := []error{}
+
+	if len(c.ResultsDir) != 0 {
+		if ok, _ := valid.IsFilePath(c.ResultsDir); !ok {
+			errs = append(errs, fmt.Errorf(
+				"JSON base directory must be a *Absolute* file path. -results-dir: %s", c.ResultsDir))
+		}
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -262,6 +275,10 @@ func (c Config) ValidateOnReport() bool {
 
 	if strideerrs := c.Stride.Validate(); 0 < len(strideerrs) {
 		errs = append(errs, strideerrs...)
+	}
+
+	if saaserrs := c.Saas.Validate(); 0 < len(saaserrs) {
+		errs = append(errs, saaserrs...)
 	}
 
 	if syslogerrs := c.Syslog.Validate(); 0 < len(syslogerrs) {
@@ -518,6 +535,38 @@ func (c *ChatWorkConf) Validate() (errs []error) {
 
 	if len(c.APIToken) == 0 {
 		errs = append(errs, fmt.Errorf("chatworkcaht.ApiToken must not be empty"))
+	}
+
+	_, err := valid.ValidateStruct(c)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	return
+}
+
+// SaasConf is stride config
+type SaasConf struct {
+	GroupID int    `json:"-"`
+	Token   string `json:"-"`
+	URL     string `json:"-"`
+}
+
+// Validate validates configuration
+func (c *SaasConf) Validate() (errs []error) {
+	if !Conf.ToSaas {
+		return
+	}
+
+	if c.GroupID == 0 {
+		errs = append(errs, fmt.Errorf("saas.GroupID must not be empty"))
+	}
+
+	if len(c.Token) == 0 {
+		errs = append(errs, fmt.Errorf("saas.Token must not be empty"))
+	}
+
+	if len(c.URL) == 0 {
+		errs = append(errs, fmt.Errorf("saas.URL must not be empty"))
 	}
 
 	_, err := valid.ValidateStruct(c)

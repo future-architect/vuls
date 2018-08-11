@@ -71,6 +71,7 @@ func (*ReportCmd) Usage() string {
 		[-to-localfile]
 		[-to-s3]
 		[-to-azure-blob]
+		[-to-saas]
 		[-format-json]
 		[-format-xml]
 		[-format-one-email]
@@ -156,6 +157,8 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.Conf.ToHTTP, "to-http", false, "Send report via HTTP POST")
 	f.BoolVar(&c.Conf.ToAzureBlob, "to-azure-blob", false,
 		"Write report to Azure Storage blob (container/yyyyMMdd_HHmm/servername.json/xml/txt)")
+	f.BoolVar(&c.Conf.ToSaas, "to-saas", false,
+		"Upload report to Future Vuls(https://vuls.biz/) before report")
 
 	f.BoolVar(&c.Conf.GZIP, "gzip", false, "gzip compression")
 	f.BoolVar(&c.Conf.UUID, "uuid", false,
@@ -280,6 +283,14 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		reports = append(reports, report.AzureBlobWriter{})
 	}
 
+	if c.Conf.ToSaas {
+		if !c.Conf.UUID {
+			util.Log.Errorf("If you use the -to-saas option, you need to enable the uuid option")
+			return subcommands.ExitUsageError
+		}
+		reports = append(reports, report.SaasWriter{})
+	}
+
 	if !(c.Conf.FormatJSON || c.Conf.FormatOneLineText ||
 		c.Conf.FormatList || c.Conf.FormatFullText || c.Conf.FormatXML) {
 		c.Conf.FormatList = true
@@ -288,46 +299,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	util.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnReport() {
 		return subcommands.ExitUsageError
-	}
-	if err := report.CveClient.CheckHealth(); err != nil {
-		util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
-		util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with -cvedb-path option instead of -cvedb-url")
-		return subcommands.ExitFailure
-	}
-	if c.Conf.CveDict.URL != "" {
-		util.Log.Infof("cve-dictionary: %s", c.Conf.CveDict.URL)
-	} else {
-		if c.Conf.CveDict.Type == "sqlite3" {
-			util.Log.Infof("cve-dictionary: %s", c.Conf.CveDict.SQLite3Path)
-		}
-	}
-
-	if c.Conf.OvalDict.URL != "" {
-		util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDict.URL)
-		err := oval.Base{}.CheckHTTPHealth()
-		if err != nil {
-			util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
-			util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with -ovaldb-path option instead of -ovaldb-url")
-			return subcommands.ExitFailure
-		}
-	} else {
-		if c.Conf.OvalDict.Type == "sqlite3" {
-			util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDict.SQLite3Path)
-		}
-	}
-
-	if c.Conf.Gost.URL != "" {
-		util.Log.Infof("gost: %s", c.Conf.Gost.URL)
-		err := gost.Base{}.CheckHTTPHealth()
-		if err != nil {
-			util.Log.Errorf("gost HTTP server is not running. err: %s", err)
-			util.Log.Errorf("Run gost as server mode before reporting or run with -gostdb-path option instead of -gostdb-url")
-			return subcommands.ExitFailure
-		}
-	} else {
-		if c.Conf.Gost.Type == "sqlite3" {
-			util.Log.Infof("gost: %s", c.Conf.Gost.SQLite3Path)
-		}
 	}
 
 	var loaded models.ScanResults
@@ -361,25 +332,72 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
-		CveDictCnf:  c.Conf.CveDict,
-		OvalDictCnf: c.Conf.OvalDict,
-		GostCnf:     c.Conf.Gost,
-		DebugSQL:    c.Conf.DebugSQL,
-	})
-	if locked {
-		util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %s", err)
-		return subcommands.ExitFailure
-	}
-	if err != nil {
-		util.Log.Errorf("Failed to init DB Clients: %s", err)
-		return subcommands.ExitFailure
-	}
-	defer dbclient.CloseDB()
+	if (len(reports) != 2 || reports[1] != report.SaasWriter{}) {
+		util.Log.Info("Validating db config...")
+		if !c.Conf.ValidateOnReportDB() {
+			return subcommands.ExitUsageError
+		}
 
-	if res, err = report.FillCveInfos(*dbclient, res, dir); err != nil {
-		util.Log.Error(err)
-		return subcommands.ExitFailure
+		if err := report.CveClient.CheckHealth(); err != nil {
+			util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
+			util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with -cvedb-path option instead of -cvedb-url")
+			return subcommands.ExitFailure
+		}
+		if c.Conf.CveDict.URL != "" {
+			util.Log.Infof("cve-dictionary: %s", c.Conf.CveDict.URL)
+		} else {
+			if c.Conf.CveDict.Type == "sqlite3" {
+				util.Log.Infof("cve-dictionary: %s", c.Conf.CveDict.SQLite3Path)
+			}
+		}
+
+		if c.Conf.OvalDict.URL != "" {
+			util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDict.URL)
+			err := oval.Base{}.CheckHTTPHealth()
+			if err != nil {
+				util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
+				util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with -ovaldb-path option instead of -ovaldb-url")
+				return subcommands.ExitFailure
+			}
+		} else {
+			if c.Conf.OvalDict.Type == "sqlite3" {
+				util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDict.SQLite3Path)
+			}
+		}
+
+		if c.Conf.Gost.URL != "" {
+			util.Log.Infof("gost: %s", c.Conf.Gost.URL)
+			err := gost.Base{}.CheckHTTPHealth()
+			if err != nil {
+				util.Log.Errorf("gost HTTP server is not running. err: %s", err)
+				util.Log.Errorf("Run gost as server mode before reporting or run with -gostdb-path option instead of -gostdb-url")
+				return subcommands.ExitFailure
+			}
+		} else {
+			if c.Conf.Gost.Type == "sqlite3" {
+				util.Log.Infof("gost: %s", c.Conf.Gost.SQLite3Path)
+			}
+		}
+		dbclient, locked, err := report.NewDBClient(report.DBClientConf{
+			CveDictCnf:  c.Conf.CveDict,
+			OvalDictCnf: c.Conf.OvalDict,
+			GostCnf:     c.Conf.Gost,
+			DebugSQL:    c.Conf.DebugSQL,
+		})
+		if locked {
+			util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %s", err)
+			return subcommands.ExitFailure
+		}
+		if err != nil {
+			util.Log.Errorf("Failed to init DB Clients: %s", err)
+			return subcommands.ExitFailure
+		}
+		defer dbclient.CloseDB()
+
+		if res, err = report.FillCveInfos(*dbclient, res, dir); err != nil {
+			util.Log.Error(err)
+			return subcommands.ExitFailure
+		}
 	}
 
 	for _, w := range reports {
