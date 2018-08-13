@@ -332,7 +332,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	if c.Conf.ToSaas {
+	if !c.Conf.ToSaas {
 		util.Log.Info("Validating db config...")
 		if !c.Conf.ValidateOnReportDB() {
 			return subcommands.ExitUsageError
