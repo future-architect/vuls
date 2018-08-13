@@ -30,7 +30,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fatih/color"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -126,8 +125,6 @@ No CVE-IDs are found in updatable packages.
 			fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", vinfo.CveID),
 		})
 	}
-
-	color.Cyan("Prints text in cyan.")
 
 	b := bytes.Buffer{}
 	table := tablewriter.NewWriter(&b)
