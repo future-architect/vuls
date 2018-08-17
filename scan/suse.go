@@ -98,6 +98,10 @@ func (o *suse) parseOSRelease(content string) (name string, ver string) {
 	return name, result[1]
 }
 
+func (o *suse) checkScanMode() error {
+	return nil
+}
+
 func (o *suse) checkDeps() error {
 	o.log.Infof("Dependencies... No need")
 	return nil

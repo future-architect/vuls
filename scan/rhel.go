@@ -31,6 +31,10 @@ func newRHEL(c config.ServerInfo) *rhel {
 	return r
 }
 
+func (o *rhel) checkScanMode() error {
+	return nil
+}
+
 func (o *rhel) checkDeps() error {
 	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckDeps(o.depsFast())

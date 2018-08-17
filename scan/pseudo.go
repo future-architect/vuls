@@ -48,6 +48,10 @@ func newPseudo(c config.ServerInfo) *pseudo {
 	return d
 }
 
+func (o *pseudo) checkScanMode() error {
+	return nil
+}
+
 func (o *pseudo) checkIfSudoNoPasswd() error {
 	return nil
 }

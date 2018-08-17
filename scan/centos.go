@@ -29,6 +29,10 @@ func newCentOS(c config.ServerInfo) *centos {
 	return r
 }
 
+func (o *centos) checkScanMode() error {
+	return nil
+}
+
 func (o *centos) checkDeps() error {
 	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckDeps(o.depsFast())

@@ -135,6 +135,10 @@ func trim(str string) string {
 	return strings.TrimSpace(str)
 }
 
+func (o *debian) checkScanMode() error {
+	return nil
+}
+
 func (o *debian) checkIfSudoNoPasswd() error {
 	if o.getServerInfo().Mode.IsFast() {
 		o.log.Infof("sudo ... No need")

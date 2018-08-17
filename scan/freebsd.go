@@ -67,6 +67,13 @@ func detectFreebsd(c config.ServerInfo) (itsMe bool, bsd osTypeInterface) {
 	return false, bsd
 }
 
+func (o *bsd) checkScanMode() error {
+	if o.getServerInfo().Mode.IsOffline() {
+		return fmt.Errorf("Remove offline scan mode, FreeBSD needs internet connection")
+	}
+	return nil
+}
+
 func (o *bsd) checkIfSudoNoPasswd() error {
 	// FreeBSD doesn't need root privilege
 	o.log.Infof("sudo ... No need")

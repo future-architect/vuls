@@ -24,6 +24,10 @@ type unknown struct {
 	base
 }
 
+func (o *unknown) checkScanMode() error {
+	return nil
+}
+
 func (o *unknown) checkIfSudoNoPasswd() error {
 	return nil
 }

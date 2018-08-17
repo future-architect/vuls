@@ -64,6 +64,13 @@ func detectAlpine(c config.ServerInfo) (itsMe bool, os osTypeInterface) {
 	return false, os
 }
 
+func (o *alpine) checkScanMode() error {
+	if o.getServerInfo().Mode.IsOffline() {
+		return fmt.Errorf("Remove offline scan mode, Alpine needs internet connection")
+	}
+	return nil
+}
+
 func (o *alpine) checkDeps() error {
 	o.log.Infof("Dependencies... No need")
 	return nil

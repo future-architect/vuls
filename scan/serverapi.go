@@ -50,6 +50,7 @@ type osTypeInterface interface {
 	detectPlatform()
 	getPlatform() models.Platform
 
+	checkScanMode() error
 	checkDeps() error
 	checkIfSudoNoPasswd() error
 
@@ -368,6 +369,17 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 		return append(oses, containerHost)
 	}
 	return oses
+}
+
+// CheckScanModes checks scan mode
+func CheckScanModes() error {
+	for _, s := range servers {
+		if err := s.checkScanMode(); err != nil {
+			return fmt.Errorf("servers.%s.scanMode err: %s",
+				s.getServerInfo().GetServerName(), err)
+		}
+	}
+	return nil
 }
 
 // CheckDependencies checks dependencies are installed on target servers.

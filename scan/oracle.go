@@ -29,6 +29,10 @@ func newOracle(c config.ServerInfo) *oracle {
 	return r
 }
 
+func (o *oracle) checkScanMode() error {
+	return nil
+}
+
 func (o *oracle) checkDeps() error {
 	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckDeps(o.depsFast())

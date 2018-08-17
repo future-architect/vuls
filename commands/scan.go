@@ -197,6 +197,12 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitFailure
 	}
 
+	util.Log.Info("Checking Scan Modes... ")
+	if err := scan.CheckScanModes(); err != nil {
+		util.Log.Errorf("Fix config.toml: %s", err)
+		return subcommands.ExitFailure
+	}
+
 	util.Log.Info("Detecting Platforms... ")
 	scan.DetectPlatforms(p.timeoutSec)
 
