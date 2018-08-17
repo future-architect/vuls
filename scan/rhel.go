@@ -99,19 +99,19 @@ func (o *rhel) depsDeep() []string {
 
 func (o *rhel) checkIfSudoNoPasswd() error {
 	if o.getServerInfo().Mode.IsFast() {
-		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsFast())
+		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsFast())
 	} else if o.getServerInfo().Mode.IsFastRoot() {
-		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsFastRoot())
+		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsFastRoot())
 	} else {
-		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsDeep())
+		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsDeep())
 	}
 }
 
-func (o *rhel) nosudoCmdsFast() []cmd {
+func (o *rhel) sudoNoPasswdCmdsFast() []cmd {
 	return []cmd{}
 }
 
-func (o *rhel) nosudoCmdsFastRoot() []cmd {
+func (o *rhel) sudoNoPasswdCmdsFastRoot() []cmd {
 	if o.getServerInfo().Mode.IsOffline() {
 		return []cmd{}
 	}
@@ -135,8 +135,8 @@ func (o *rhel) nosudoCmdsFastRoot() []cmd {
 	}
 }
 
-func (o *rhel) nosudoCmdsDeep() []cmd {
-	return append(o.nosudoCmdsFastRoot(),
+func (o *rhel) sudoNoPasswdCmdsDeep() []cmd {
+	return append(o.sudoNoPasswdCmdsFastRoot(),
 		cmd{"yum changelog all updates --color=never", exitStatusZero})
 }
 

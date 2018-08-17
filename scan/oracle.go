@@ -109,19 +109,19 @@ func (o *oracle) depsDeep() []string {
 
 func (o *oracle) checkIfSudoNoPasswd() error {
 	if o.getServerInfo().Mode.IsFast() {
-		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsFast())
+		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsFast())
 	} else if o.getServerInfo().Mode.IsFastRoot() {
-		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsFastRoot())
+		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsFastRoot())
 	} else {
-		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsDeep())
+		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsDeep())
 	}
 }
 
-func (o *oracle) nosudoCmdsFast() []cmd {
+func (o *oracle) sudoNoPasswdCmdsFast() []cmd {
 	return []cmd{}
 }
 
-func (o *oracle) nosudoCmdsFastRoot() []cmd {
+func (o *oracle) sudoNoPasswdCmdsFastRoot() []cmd {
 	cmds := []cmd{{"needs-restarting", exitStatusZero}}
 	if o.getServerInfo().Mode.IsOffline() {
 		return cmds
@@ -143,8 +143,8 @@ func (o *oracle) nosudoCmdsFastRoot() []cmd {
 		cmd{"repoquery -h", exitStatusZero})
 }
 
-func (o *oracle) nosudoCmdsDeep() []cmd {
-	return o.nosudoCmdsFastRoot()
+func (o *oracle) sudoNoPasswdCmdsDeep() []cmd {
+	return o.sudoNoPasswdCmdsFastRoot()
 }
 
 type rootPrivOracle struct{}

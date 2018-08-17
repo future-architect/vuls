@@ -70,19 +70,19 @@ func (o *amazon) depsDeep() []string {
 
 func (o *amazon) checkIfSudoNoPasswd() error {
 	if o.getServerInfo().Mode.IsFast() {
-		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsFast())
+		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsFast())
 	} else if o.getServerInfo().Mode.IsFastRoot() {
-		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsFastRoot())
+		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsFastRoot())
 	} else {
-		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsDeep())
+		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsDeep())
 	}
 }
 
-func (o *amazon) nosudoCmdsFast() []cmd {
+func (o *amazon) sudoNoPasswdCmdsFast() []cmd {
 	return []cmd{}
 }
 
-func (o *amazon) nosudoCmdsFastRoot() []cmd {
+func (o *amazon) sudoNoPasswdCmdsFastRoot() []cmd {
 	return []cmd{
 		{"yum -q ps all --color=never", exitStatusZero},
 		{"stat /proc/1/exe", exitStatusZero},
@@ -91,8 +91,8 @@ func (o *amazon) nosudoCmdsFastRoot() []cmd {
 	}
 }
 
-func (o *amazon) nosudoCmdsDeep() []cmd {
-	return o.nosudoCmdsFastRoot()
+func (o *amazon) sudoNoPasswdCmdsDeep() []cmd {
+	return o.sudoNoPasswdCmdsFastRoot()
 }
 
 type rootPrivAmazon struct{}

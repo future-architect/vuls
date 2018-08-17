@@ -68,19 +68,19 @@ func (o *centos) depsDeep() []string {
 
 func (o *centos) checkIfSudoNoPasswd() error {
 	if o.getServerInfo().Mode.IsFast() {
-		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsFast())
+		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsFast())
 	} else if o.getServerInfo().Mode.IsFastRoot() {
-		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsFastRoot())
+		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsFastRoot())
 	} else {
-		return o.execCheckIfSudoNoPasswd(o.nosudoCmdsDeep())
+		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsDeep())
 	}
 }
 
-func (o *centos) nosudoCmdsFast() []cmd {
+func (o *centos) sudoNoPasswdCmdsFast() []cmd {
 	return []cmd{}
 }
 
-func (o *centos) nosudoCmdsFastRoot() []cmd {
+func (o *centos) sudoNoPasswdCmdsFastRoot() []cmd {
 	if o.getServerInfo().Mode.IsOffline() {
 		// yum ps needs internet connection
 		return []cmd{
@@ -97,8 +97,8 @@ func (o *centos) nosudoCmdsFastRoot() []cmd {
 	}
 }
 
-func (o *centos) nosudoCmdsDeep() []cmd {
-	return o.nosudoCmdsFastRoot()
+func (o *centos) sudoNoPasswdCmdsDeep() []cmd {
+	return o.sudoNoPasswdCmdsFastRoot()
 }
 
 type rootPrivCentos struct{}
