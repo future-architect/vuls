@@ -460,7 +460,8 @@ func (o *redhatBase) isExecYumPS() bool {
 }
 
 func (o *redhatBase) isExecNeedsRestarting() bool {
-	if o.Distro.Family == config.RedHat {
+	switch o.Distro.Family {
+	case config.RedHat, config.CentOS, config.Oracle:
 		majorVersion, err := o.Distro.MajorVersion()
 		if err != nil || majorVersion < 6 {
 			o.log.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
