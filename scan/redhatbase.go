@@ -449,9 +449,16 @@ func (o *redhatBase) isExecScanChangelogs() bool {
 
 func (o *redhatBase) isExecYumPS() bool {
 	// RedHat has no yum-ps
-	if o.Distro.Family == config.RedHat {
+	switch o.Distro.Family {
+	case config.RedHat,
+		config.OpenSUSE,
+		config.OpenSUSELeap,
+		config.SUSEEnterpriseServer,
+		config.SUSEEnterpriseDesktop,
+		config.SUSEOpenstackCloud:
 		return false
 	}
+
 	// yum ps needs internet connection
 	if o.getServerInfo().Mode.IsOffline() || o.getServerInfo().Mode.IsFast() {
 		return false
@@ -461,6 +468,14 @@ func (o *redhatBase) isExecYumPS() bool {
 
 func (o *redhatBase) isExecNeedsRestarting() bool {
 	switch o.Distro.Family {
+	case config.OpenSUSE,
+		config.OpenSUSELeap,
+		config.SUSEEnterpriseServer,
+		config.SUSEEnterpriseDesktop,
+		config.SUSEOpenstackCloud:
+		// TODO zypper ps
+		// https://github.com/future-architect/vuls/issues/696
+		return false
 	case config.RedHat, config.CentOS, config.Oracle:
 		majorVersion, err := o.Distro.MajorVersion()
 		if err != nil || majorVersion < 6 {
