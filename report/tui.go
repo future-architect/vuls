@@ -683,17 +683,12 @@ func setDetailLayout(g *gocui.Gui) error {
 }
 
 func setChangelogLayout(g *gocui.Gui) error {
-	maxX, maxY := g.Size()
-
 	summaryView, err := g.View("summary")
 	if err != nil {
 		return err
 	}
-	_, cy := summaryView.Cursor()
-	_, oy := summaryView.Origin()
-	currentVinfo = cy + oy
-	vinfo := vinfos[currentVinfo]
 
+	maxX, maxY := g.Size()
 	if v, err := g.SetView("changelog", int(float64(maxX)*0.5), int(float64(maxY)*0.2), maxX, maxY); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
@@ -706,6 +701,11 @@ func setChangelogLayout(g *gocui.Gui) error {
 			"Affected Packages, Processes",
 			"============================",
 		}
+
+		_, cy := summaryView.Cursor()
+		_, oy := summaryView.Origin()
+		currentVinfo = cy + oy
+		vinfo := vinfos[currentVinfo]
 		vinfo.AffectedPackages.Sort()
 		for _, affected := range vinfo.AffectedPackages {
 			// packages detected by OVAL may not be actually installed
