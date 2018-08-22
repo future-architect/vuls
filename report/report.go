@@ -56,7 +56,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 		if c.Conf.RefreshCve || needToRefreshCve(r) {
 			cpeURIs := []string{}
 			if len(r.Container.ContainerID) == 0 {
-				cpeURIs = c.Conf.Servers[r.ServerName].CpeURIs
+				cpeURIs = c.Conf.Servers[r.ServerName].CpeNames
 				owaspDCXMLPath := c.Conf.Servers[r.ServerName].OwaspDCXMLPath
 				if owaspDCXMLPath != "" {
 					cpes, err := parser.Parse(owaspDCXMLPath)
@@ -69,7 +69,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			} else {
 				if s, ok := c.Conf.Servers[r.ServerName]; ok {
 					if con, ok := s.Containers[r.Container.Name]; ok {
-						cpeURIs = con.CpeURIs
+						cpeURIs = con.Cpes
 						owaspDCXMLPath := con.OwaspDCXMLPath
 						if owaspDCXMLPath != "" {
 							cpes, err := parser.Parse(owaspDCXMLPath)
@@ -586,8 +586,8 @@ func cleanForTOMLEncoding(server c.ServerInfo, def c.ServerInfo) c.ServerInfo {
 		server.Type = ""
 	}
 
-	if reflect.DeepEqual(server.CpeURIs, def.CpeURIs) {
-		server.CpeURIs = nil
+	if reflect.DeepEqual(server.CpeNames, def.CpeNames) {
+		server.CpeNames = nil
 	}
 
 	if def.OwaspDCXMLPath == server.OwaspDCXMLPath {

@@ -926,8 +926,7 @@ type ServerInfo struct {
 	Port                   string                      `toml:"port,omitempty" json:"port"`
 	KeyPath                string                      `toml:"keyPath,omitempty" json:"keyPath"`
 	KeyPassword            string                      `json:"-" toml:"-"`
-	CpeNames               []string                    `toml:"cpeNames,omitempty" json:"-"` // TODO Deprecated remove in near future
-	CpeURIs                []string                    `toml:"cpeURIs,omitempty" json:"cpeURIs,omitempty"`
+	CpeNames               []string                    `toml:"cpeNames,omitempty" json:"cpeNames,omitempty"`
 	ScanMode               []string                    `toml:"scanMode,omitempty" json:"scanMode,omitempty"`
 	DependencyCheckXMLPath string                      `toml:"dependencyCheckXMLPath,omitempty" json:"-"` // TODO Deprecated remove in near future
 	OwaspDCXMLPath         string                      `toml:"owaspDCXMLPath,omitempty" json:"owaspDCXMLPath"`
@@ -954,7 +953,7 @@ type ServerInfo struct {
 
 // ContainerSetting is used for loading container setting in config.toml
 type ContainerSetting struct {
-	CpeURIs          []string `json:"cpeURIs,omitempty"`
+	Cpes             []string `json:"cpes,omitempty"`
 	OwaspDCXMLPath   string   `json:"owaspDCXMLPath"`
 	IgnorePkgsRegexp []string `json:"ignorePkgsRegexp,omitempty"`
 	IgnoreCves       []string `json:"ignoreCves,omitempty"`

@@ -21,8 +21,10 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/knqyf263/go-cpe/naming"
 )
 
 // TOMLLoader loads config
@@ -59,17 +61,16 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	}
 
 	i := 0
-	for name, v := range conf.Servers {
+	for serverName, v := range conf.Servers {
 		if 0 < len(v.KeyPassword) {
-			return fmt.Errorf("[Deprecated] KEYPASSWORD IN CONFIG FILE ARE UNSECURE. REMOVE THEM IMMEDIATELY FOR A SECURITY REASONS. THEY WILL BE REMOVED IN A FUTURE RELEASE: %s", name)
+			return fmt.Errorf("[Deprecated] KEYPASSWORD IN CONFIG FILE ARE UNSECURE. REMOVE THEM IMMEDIATELY FOR A SECURITY REASONS. THEY WILL BE REMOVED IN A FUTURE RELEASE: %s", serverName)
 		}
 
-		s := ServerInfo{ServerName: name}
-
+		s := ServerInfo{ServerName: serverName}
 		if v.Type != ServerTypePseudo {
 			s.Host = v.Host
 			if len(s.Host) == 0 {
-				return fmt.Errorf("%s is invalid. host is empty", name)
+				return fmt.Errorf("%s is invalid. host is empty", serverName)
 			}
 
 			switch {
@@ -88,7 +89,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 				s.User = d.User
 			default:
 				if s.Port != "local" {
-					return fmt.Errorf("%s is invalid. User is empty", name)
+					return fmt.Errorf("%s is invalid. User is empty", serverName)
 				}
 			}
 
@@ -99,7 +100,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			if s.KeyPath != "" {
 				if _, err := os.Stat(s.KeyPath); err != nil {
 					return fmt.Errorf(
-						"%s is invalid. keypath: %s not exists", name, s.KeyPath)
+						"%s is invalid. keypath: %s not exists", serverName, s.KeyPath)
 				}
 			}
 
@@ -128,20 +129,24 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			case "offline":
 				s.Mode.Set(Offline)
 			default:
-				return fmt.Errorf("scanMode: %s of %s is invalie. Specify -fast, -fast-root, -deep or offline", m, name)
+				return fmt.Errorf("scanMode: %s of %s is invalie. Specify -fast, -fast-root, -deep or offline", m, serverName)
 			}
 		}
 		if err := s.Mode.validate(); err != nil {
-			return fmt.Errorf("%s in %s", err, name)
+			return fmt.Errorf("%s in %s", err, serverName)
 		}
 
-		if len(v.CpeNames) != 0 || len(d.CpeNames) != 0 {
-			return fmt.Errorf("[DEPRECATED] cpeNames IS DEPRECATED. USE cpeURIs INSTEAD: %s", name)
+		s.CpeNames = v.CpeNames
+		if len(s.CpeNames) == 0 {
+			s.CpeNames = d.CpeNames
 		}
 
-		s.CpeURIs = v.CpeURIs
-		if len(s.CpeURIs) == 0 {
-			s.CpeURIs = d.CpeURIs
+		for i, n := range s.CpeNames {
+			uri, err := toCpeURI(n)
+			if err != nil {
+				return fmt.Errorf("Failed to parse CPENames %s in %s: %s", n, serverName, err)
+			}
+			s.CpeNames[i] = uri
 		}
 
 		s.ContainersIncluded = v.ContainersIncluded
@@ -166,7 +171,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		}
 
 		if len(v.DependencyCheckXMLPath) != 0 || len(d.DependencyCheckXMLPath) != 0 {
-			return fmt.Errorf("[DEPRECATED] dependencyCheckXMLPath IS DEPRECATED. USE owaspDCXMLPath INSTEAD: %s", name)
+			return fmt.Errorf("[DEPRECATED] dependencyCheckXMLPath IS DEPRECATED. USE owaspDCXMLPath INSTEAD: %s", serverName)
 		}
 
 		s.OwaspDCXMLPath = v.OwaspDCXMLPath
@@ -209,7 +214,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		for _, reg := range s.IgnorePkgsRegexp {
 			_, err := regexp.Compile(reg)
 			if err != nil {
-				return fmt.Errorf("Faild to parse %s in %s. err: %s", reg, name, err)
+				return fmt.Errorf("Faild to parse %s in %s. err: %s", reg, serverName, err)
 			}
 		}
 		for contName, cont := range s.Containers {
@@ -217,7 +222,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 				_, err := regexp.Compile(reg)
 				if err != nil {
 					return fmt.Errorf("Faild to parse %s in %s@%s. err: %s",
-						reg, contName, name, err)
+						reg, contName, serverName, err)
 				}
 			}
 		}
@@ -243,7 +248,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 				default:
 					return fmt.Errorf(
 						"For now, enablerepo have to be base or updates: %s, servername: %s",
-						s.Enablerepo, name)
+						s.Enablerepo, serverName)
 				}
 			}
 		}
@@ -254,8 +259,25 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		s.LogMsgAnsiColor = Colors[i%len(Colors)]
 		i++
 
-		servers[name] = s
+		servers[serverName] = s
 	}
 	Conf.Servers = servers
 	return nil
+}
+
+func toCpeURI(cpename string) (string, error) {
+	if strings.HasPrefix(cpename, "cpe:2.3:") {
+		wfn, err := naming.UnbindFS(cpename)
+		if err != nil {
+			return "", err
+		}
+		return naming.BindToURI(wfn), nil
+	} else if strings.HasPrefix(cpename, "cpe:/") {
+		wfn, err := naming.UnbindURI(cpename)
+		if err != nil {
+			return "", err
+		}
+		return naming.BindToURI(wfn), nil
+	}
+	return "", fmt.Errorf("Unknow CPE format: %s", cpename)
 }
