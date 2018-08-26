@@ -46,7 +46,7 @@ func isRunningKernel(pack models.Package, family string, kernel models.Kernel) (
 		return false, false
 
 	default:
-		util.Log.Warnf("Reboot required is not implemented yet: %s, %#v", family, kernel)
+		util.Log.Warnf("Reboot required is not implemented yet: %s, %v", family, kernel)
 	}
 	return false, false
 }
