@@ -68,7 +68,7 @@ func (e *ovalResult) upsert(def ovalmodels.Definition, packName string, notFixed
 		}
 	}
 	e.entries = append(e.entries, defPacks{
-		def: def,
+		def:                       def,
 		actuallyAffectedPackNames: map[string]bool{packName: notFixedYet},
 	})
 
