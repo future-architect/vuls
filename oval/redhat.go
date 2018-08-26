@@ -94,8 +94,8 @@ var kernelRelatedPackNames = map[string]bool{
 	"kernel-tools":            true,
 	"kernel-tools-libs":       true,
 	"kernel-tools-libs-devel": true,
-	"perf":        true,
-	"python-perf": true,
+	"perf":                    true,
+	"python-perf":             true,
 }
 
 func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) {
@@ -114,7 +114,7 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) {
 			cveContents := vinfo.CveContents
 			if v, ok := vinfo.CveContents[ctype]; ok {
 				if v.LastModified.After(ovalContent.LastModified) {
-					util.Log.Debugf("%s, OvalID: %s ignroed: ",
+					util.Log.Debugf("%s, OvalID: %d ignroed: ",
 						cve.CveID, defPacks.def.ID)
 					continue
 				} else {

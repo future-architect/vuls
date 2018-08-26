@@ -34,7 +34,7 @@ func GenWorkers(num int) chan<- func() {
 			defer func() {
 				if p := recover(); p != nil {
 					log := NewCustomLogger(config.ServerInfo{})
-					log.Debugf("Panic: %s")
+					log.Debugf("Panic: %s", p)
 				}
 			}()
 			for f := range tasks {
