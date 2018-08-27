@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package util
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -31,6 +32,13 @@ import (
 
 // Log for localhsot
 var Log *logrus.Entry
+
+func init() {
+	log := logrus.New()
+	log.Out = ioutil.Discard
+	fields := logrus.Fields{"prefix": ""}
+	Log = log.WithFields(fields)
+}
 
 // NewCustomLogger creates logrus
 func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
@@ -50,7 +58,7 @@ func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
 
 	if _, err := os.Stat(logDir); os.IsNotExist(err) {
 		if err := os.Mkdir(logDir, 0700); err != nil {
-			log.Errorf("Failed to create log directory: %s", err)
+			log.Errorf("Failed to create log directory. path: %s, err: %s", logDir, err)
 		}
 	}
 

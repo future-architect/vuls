@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package scan
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"regexp"
@@ -33,7 +34,6 @@ type base struct {
 	ServerInfo config.ServerInfo
 	Distro     config.Distro
 	Platform   models.Platform
-
 	osPackages
 
 	log  *logrus.Entry
@@ -98,7 +98,7 @@ func (l *base) runningKernel() (release, version string, err error) {
 }
 
 func (l *base) allContainers() (containers []config.Container, err error) {
-	switch l.ServerInfo.Containers.Type {
+	switch l.ServerInfo.ContainerType {
 	case "", "docker":
 		stdout, err := l.dockerPs("-a --format '{{.ID}} {{.Names}} {{.Image}}'")
 		if err != nil {
@@ -119,12 +119,12 @@ func (l *base) allContainers() (containers []config.Container, err error) {
 		return l.parseLxcPs(stdout)
 	default:
 		return containers, fmt.Errorf(
-			"Not supported yet: %s", l.ServerInfo.Containers.Type)
+			"Not supported yet: %s", l.ServerInfo.ContainerType)
 	}
 }
 
 func (l *base) runningContainers() (containers []config.Container, err error) {
-	switch l.ServerInfo.Containers.Type {
+	switch l.ServerInfo.ContainerType {
 	case "", "docker":
 		stdout, err := l.dockerPs("--format '{{.ID}} {{.Names}} {{.Image}}'")
 		if err != nil {
@@ -145,12 +145,12 @@ func (l *base) runningContainers() (containers []config.Container, err error) {
 		return l.parseLxcPs(stdout)
 	default:
 		return containers, fmt.Errorf(
-			"Not supported yet: %s", l.ServerInfo.Containers.Type)
+			"Not supported yet: %s", l.ServerInfo.ContainerType)
 	}
 }
 
 func (l *base) exitedContainers() (containers []config.Container, err error) {
-	switch l.ServerInfo.Containers.Type {
+	switch l.ServerInfo.ContainerType {
 	case "", "docker":
 		stdout, err := l.dockerPs("--filter 'status=exited' --format '{{.ID}} {{.Names}} {{.Image}}'")
 		if err != nil {
@@ -171,7 +171,7 @@ func (l *base) exitedContainers() (containers []config.Container, err error) {
 		return l.parseLxcPs(stdout)
 	default:
 		return containers, fmt.Errorf(
-			"Not supported yet: %s", l.ServerInfo.Containers.Type)
+			"Not supported yet: %s", l.ServerInfo.ContainerType)
 	}
 }
 
@@ -296,6 +296,10 @@ func (l *base) parseIP(stdout string) (ipv4Addrs []string, ipv6Addrs []string) {
 }
 
 func (l *base) detectPlatform() {
+	if l.getServerInfo().Mode.IsOffline() {
+		l.setPlatform(models.Platform{Name: "unknown"})
+		return
+	}
 	ok, instanceID, err := l.detectRunningOnAws()
 	if err != nil {
 		l.setPlatform(models.Platform{Name: "other"})
@@ -316,7 +320,7 @@ func (l *base) detectPlatform() {
 
 func (l *base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 	if r := l.exec("type curl", noSudo); r.isSuccess() {
-		cmd := "curl --max-time 1 --retry 3 --noproxy 169.254.169.254 http://169.254.169.254/latest/meta-data/instance-id"
+		cmd := "curl --max-time 1 --noproxy 169.254.169.254 http://169.254.169.254/latest/meta-data/instance-id"
 		r := l.exec(cmd, noSudo)
 		if r.isSuccess() {
 			id := strings.TrimSpace(r.Stdout)
@@ -367,7 +371,7 @@ func (l *base) isAwsInstanceID(str string) bool {
 }
 
 func (l *base) convertToModel() models.ScanResult {
-	ctype := l.ServerInfo.Containers.Type
+	ctype := l.ServerInfo.ContainerType
 	if l.ServerInfo.Container.ContainerID != "" && ctype == "" {
 		ctype = "docker"
 	}
@@ -408,4 +412,63 @@ func (l *base) setErrs(errs []error) {
 
 func (l *base) getErrs() []error {
 	return l.errs
+}
+
+const (
+	systemd  = "systemd"
+	upstart  = "upstart"
+	sysVinit = "init"
+)
+
+// https://unix.stackexchange.com/questions/196166/how-to-find-out-if-a-system-uses-sysv-upstart-or-systemd-initsystem
+func (l *base) detectInitSystem() (string, error) {
+	var f func(string) (string, error)
+	f = func(cmd string) (string, error) {
+		r := l.exec(cmd, sudo)
+		if !r.isSuccess() {
+			return "", fmt.Errorf("Failed to stat %s: %s", cmd, r)
+		}
+		scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
+		scanner.Scan()
+		line := strings.TrimSpace(scanner.Text())
+		if strings.Contains(line, "systemd") {
+			return systemd, nil
+		} else if strings.Contains(line, "upstart") {
+			return upstart, nil
+		} else if strings.Contains(line, "File: ‘/proc/1/exe’ -> ‘/sbin/init’") ||
+			strings.Contains(line, "File: `/proc/1/exe' -> `/sbin/init'") {
+			return f("stat /sbin/init")
+		} else if line == "File: ‘/sbin/init’" ||
+			line == "File: `/sbin/init'" {
+			r := l.exec("/sbin/init --version", noSudo)
+			if r.isSuccess() {
+				if strings.Contains(r.Stdout, "upstart") {
+					return upstart, nil
+				}
+			}
+			return sysVinit, nil
+		}
+		return "", fmt.Errorf("Failed to detect a init system: %s", line)
+	}
+	return f("stat /proc/1/exe")
+}
+
+func (l *base) detectServiceName(pid string) (string, error) {
+	cmd := fmt.Sprintf("systemctl status --quiet --no-pager %s", pid)
+	r := l.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		return "", fmt.Errorf("Failed to stat %s: %s", cmd, r)
+	}
+	return l.parseSystemctlStatus(r.Stdout), nil
+}
+
+func (l *base) parseSystemctlStatus(stdout string) string {
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	scanner.Scan()
+	line := scanner.Text()
+	ss := strings.Fields(line)
+	if len(ss) < 2 || strings.HasPrefix(line, "Failed to get unit for PID") {
+		return ""
+	}
+	return ss[1]
 }

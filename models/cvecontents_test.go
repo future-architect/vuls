@@ -60,27 +60,27 @@ func TestSourceLinks(t *testing.T) {
 				lang:  "ja",
 				cveID: "CVE-2017-6074",
 				cont: CveContents{
-					JVN: {
-						Type:       JVN,
+					Jvn: {
+						Type:       Jvn,
 						SourceLink: "https://jvn.jp/vu/JVNVU93610402/",
 					},
 					RedHat: {
 						Type:       RedHat,
 						SourceLink: "https://access.redhat.com/security/cve/CVE-2017-6074",
 					},
-					NVD: {
-						Type:       NVD,
+					NvdXML: {
+						Type:       NvdXML,
 						SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
 					},
 				},
 			},
 			out: []CveContentStr{
 				{
-					Type:  JVN,
+					Type:  Jvn,
 					Value: "https://jvn.jp/vu/JVNVU93610402/",
 				},
 				{
-					Type:  NVD,
+					Type:  NvdXML,
 					Value: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
 				},
 				{
@@ -95,23 +95,23 @@ func TestSourceLinks(t *testing.T) {
 				lang:  "en",
 				cveID: "CVE-2017-6074",
 				cont: CveContents{
-					JVN: {
-						Type:       JVN,
+					Jvn: {
+						Type:       Jvn,
 						SourceLink: "https://jvn.jp/vu/JVNVU93610402/",
 					},
 					RedHat: {
 						Type:       RedHat,
 						SourceLink: "https://access.redhat.com/security/cve/CVE-2017-6074",
 					},
-					NVD: {
-						Type:       NVD,
+					NvdXML: {
+						Type:       NvdXML,
 						SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
 					},
 				},
 			},
 			out: []CveContentStr{
 				{
-					Type:  NVD,
+					Type:  NvdXML,
 					Value: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
 				},
 				{
@@ -129,16 +129,16 @@ func TestSourceLinks(t *testing.T) {
 			},
 			out: []CveContentStr{
 				{
-					Type:  NVD,
+					Type:  Nvd,
 					Value: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
 				},
 			},
 		},
 	}
-	for _, tt := range tests {
+	for i, tt := range tests {
 		actual := tt.in.cont.SourceLinks(tt.in.lang, "redhat", tt.in.cveID)
 		if !reflect.DeepEqual(tt.out, actual) {
-			t.Errorf("\nexpected: %v\n  actual: %v\n", tt.out, actual)
+			t.Errorf("\n[%d] expected: %v\n  actual: %v\n", i, tt.out, actual)
 		}
 	}
 }
@@ -158,16 +158,16 @@ func TestVendorLink(t *testing.T) {
 				vinfo: VulnInfo{
 					CveID: "CVE-2017-6074",
 					CveContents: CveContents{
-						JVN: {
-							Type:       JVN,
+						Jvn: {
+							Type:       Jvn,
 							SourceLink: "https://jvn.jp/vu/JVNVU93610402/",
 						},
 						RedHat: {
 							Type:       RedHat,
 							SourceLink: "https://access.redhat.com/security/cve/CVE-2017-6074",
 						},
-						NVD: {
-							Type:       NVD,
+						NvdXML: {
+							Type:       NvdXML,
 							SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
 						},
 					},

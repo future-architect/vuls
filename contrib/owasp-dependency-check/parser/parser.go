@@ -32,7 +32,7 @@ func appendIfMissing(slice []string, str string) []string {
 	return append(slice, str)
 }
 
-// Parse parses XML and collect list of cpe
+// Parse parses OWASP dependency check XML and collect list of cpe
 func Parse(path string) ([]string, error) {
 	file, err := os.Open(path)
 	if err != nil {

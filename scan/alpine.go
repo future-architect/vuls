@@ -64,7 +64,14 @@ func detectAlpine(c config.ServerInfo) (itsMe bool, os osTypeInterface) {
 	return false, os
 }
 
-func (o *alpine) checkDependencies() error {
+func (o *alpine) checkScanMode() error {
+	if o.getServerInfo().Mode.IsOffline() {
+		return fmt.Errorf("Remove offline scan mode, Alpine needs internet connection")
+	}
+	return nil
+}
+
+func (o *alpine) checkDeps() error {
 	o.log.Infof("Dependencies... No need")
 	return nil
 }
@@ -83,6 +90,7 @@ func (o *alpine) apkUpdate() error {
 }
 
 func (o *alpine) preCure() error {
+	o.log.Infof("Scanning in %s", o.getServerInfo().Mode)
 	if err := o.detectIPAddr(); err != nil {
 		o.log.Debugf("Failed to detect IP addresses: %s", err)
 	}
@@ -138,6 +146,11 @@ func (o *alpine) scanInstalledPackages() (models.Packages, error) {
 		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 	return o.parseApkInfo(r.Stdout)
+}
+
+func (o *alpine) parseInstalledPackages(stdout string) (models.Packages, models.SrcPackages, error) {
+	installedPackages, err := o.parseApkInfo(stdout)
+	return installedPackages, nil, err
 }
 
 func (o *alpine) parseApkInfo(stdout string) (models.Packages, error) {

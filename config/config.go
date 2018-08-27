@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"log/syslog"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -29,6 +30,12 @@ import (
 	valid "github.com/asaskevich/govalidator"
 	log "github.com/sirupsen/logrus"
 )
+
+// Version of Vuls
+var Version = "0.5.0"
+
+// Revision of Git
+var Revision string
 
 // Conf has Configuration
 var Conf Config
@@ -90,80 +97,62 @@ const (
 
 //Config is struct of Configuration
 type Config struct {
-	Debug    bool
-	DebugSQL bool
-	Lang     string
+	Debug      bool   `json:"debug"`
+	DebugSQL   bool   `json:"debugSQL"`
+	Lang       string `json:"lang"`
+	HTTPProxy  string `valid:"url" json:"httpProxy"`
+	LogDir     string `json:"logDir"`
+	ResultsDir string `json:"resultsDir"`
+	Pipe       bool   `json:"pipe"`
 
-	EMail    SMTPConf
-	Slack    SlackConf
-	Stride   StrideConf
-	HipChat  HipChatConf
-	ChatWork ChatWorkConf
-	Syslog   SyslogConf
-	Default  ServerInfo
-	Servers  map[string]ServerInfo
+	Default            ServerInfo            `json:"default"`
+	Servers            map[string]ServerInfo `json:"servers"`
+	CvssScoreOver      float64               `json:"cvssScoreOver"`
+	IgnoreUnscoredCves bool                  `json:"ignoreUnscoredCves"`
+	IgnoreUnfixed      bool                  `json:"ignoreUnfixed"`
+	SSHNative          bool                  `json:"sshNative"`
+	SSHConfig          bool                  `json:"sshConfig"`
+	ContainersOnly     bool                  `json:"containersOnly"`
+	SkipBroken         bool                  `json:"skipBroken"`
+	CacheDBPath        string                `json:"cacheDBPath"`
+	Vvv                bool                  `json:"vvv"`
+	UUID               bool                  `json:"uuid"`
 
-	CvssScoreOver      float64
-	IgnoreUnscoredCves bool
-	IgnoreUnfixed      bool
+	CveDict  GoCveDictConf `json:"cveDict"`
+	OvalDict GovalDictConf `json:"ovalDict"`
+	Gost     GostConf      `json:"gost"`
 
-	SSHNative bool
-	SSHConfig bool
+	Slack    SlackConf    `json:"-"`
+	EMail    SMTPConf     `json:"-"`
+	HTTP     HTTPConf     `json:"-"`
+	Syslog   SyslogConf   `json:"-"`
+	AWS      AWS          `json:"-"`
+	Azure    Azure        `json:"-"`
+	Stride   StrideConf   `json:"-"`
+	HipChat  HipChatConf  `json:"-"`
+	ChatWork ChatWorkConf `json:"-"`
+	Saas     SaasConf     `json:"-"`
 
-	ContainersOnly bool
-	Fast           bool
-	Offline        bool
-	Deep           bool
-	SkipBroken     bool
-
-	HTTPProxy  string `valid:"url"`
-	LogDir     string
-	ResultsDir string
-
-	CveDBType string
-	CveDBPath string
-	CveDBURL  string
-
-	OvalDBType string
-	OvalDBPath string
-	OvalDBURL  string
-
-	CacheDBPath string
-
-	RefreshCve bool
-
-	ToSlack     bool
-	ToStride    bool
-	ToHipChat   bool
-	ToChatWork  bool
-	ToEmail     bool
-	ToSyslog    bool
-	ToLocalFile bool
-	ToS3        bool
-	ToAzureBlob bool
-
-	FormatXML         bool
-	FormatJSON        bool
-	FormatOneEMail    bool
-	FormatOneLineText bool
-	FormatShortText   bool
-	FormatFullText    bool
-
-	GZIP bool
-
-	AwsProfile             string
-	AwsRegion              string
-	S3Bucket               string
-	S3ResultsDir           string
-	S3ServerSideEncryption string
-
-	AzureAccount   string
-	AzureKey       string `json:"-"`
-	AzureContainer string
-
-	Pipe bool
-	Vvv  bool
-	Diff bool
+	RefreshCve        bool `json:"refreshCve"`
+	ToSlack           bool `json:"toSlack"`
+	ToStride          bool `json:"toStride"`
+	ToHipChat         bool `json:"toHipChat"`
+	ToChatWork        bool `json:"toChatWork"`
+	ToEmail           bool `json:"toEmail"`
+	ToSyslog          bool `json:"toSyslog"`
+	ToLocalFile       bool `json:"toLocalFile"`
+	ToS3              bool `json:"toS3"`
+	ToAzureBlob       bool `json:"toAzureBlob"`
+	ToSaas            bool `json:"toSaas"`
+	ToHTTP            bool `json:"toHTTP"`
+	FormatXML         bool `json:"formatXML"`
+	FormatJSON        bool `json:"formatJSON"`
+	FormatOneEMail    bool `json:"formatOneEMail"`
+	FormatOneLineText bool `json:"formatOneLineText"`
+	FormatList        bool `json:"formatList"`
+	FormatFullText    bool `json:"formatFullText"`
+	GZIP              bool `json:"gzip"`
+	Diff              bool `json:"diff"`
 }
 
 // ValidateOnConfigtest validates
@@ -184,11 +173,6 @@ func (c Config) ValidateOnConfigtest() bool {
 	}
 
 	return len(errs) == 0
-}
-
-// ValidateOnPrepare validates configuration
-func (c Config) ValidateOnPrepare() bool {
-	return c.ValidateOnConfigtest()
 }
 
 // ValidateOnScan validates configuration
@@ -216,22 +200,37 @@ func (c Config) ValidateOnScan() bool {
 	if len(c.CacheDBPath) != 0 {
 		if ok, _ := valid.IsFilePath(c.CacheDBPath); !ok {
 			errs = append(errs, fmt.Errorf(
-				"Cache DB path must be a *Absolute* file path. -cache-dbpath: %s", c.CacheDBPath))
+				"Cache DB path must be a *Absolute* file path. -cache-dbpath: %s",
+				c.CacheDBPath))
 		}
-	}
-
-	numTrue := 0
-	for _, b := range []bool{c.Fast, c.Offline, c.Deep} {
-		if b {
-			numTrue++
-		}
-	}
-	if numTrue != 1 {
-		errs = append(errs, fmt.Errorf("Specify only one of -fast, -fast-offline, -deep"))
 	}
 
 	_, err := valid.ValidateStruct(c)
 	if err != nil {
+		errs = append(errs, err)
+	}
+
+	for _, err := range errs {
+		log.Error(err)
+	}
+
+	return len(errs) == 0
+}
+
+// ValidateOnReportDB validates configuration
+func (c Config) ValidateOnReportDB() bool {
+	errs := []error{}
+
+	if err := validateDB("cvedb", c.CveDict.Type, c.CveDict.SQLite3Path, c.CveDict.URL); err != nil {
+		errs = append(errs, err)
+	}
+	if c.CveDict.Type == "sqlite3" {
+		if _, err := os.Stat(c.CveDict.SQLite3Path); os.IsNotExist(err) {
+			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDict.SQLite3Path))
+		}
+	}
+
+	if err := validateDB("ovaldb", c.OvalDict.Type, c.OvalDict.SQLite3Path, c.OvalDict.URL); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -251,19 +250,6 @@ func (c Config) ValidateOnReport() bool {
 			errs = append(errs, fmt.Errorf(
 				"JSON base directory must be a *Absolute* file path. -results-dir: %s", c.ResultsDir))
 		}
-	}
-
-	if err := validateDB("cvedb", c.CveDBType, c.CveDBPath, c.CveDBURL); err != nil {
-		errs = append(errs, err)
-	}
-	if c.CveDBType == "sqlite3" {
-		if _, err := os.Stat(c.CveDBPath); os.IsNotExist(err) {
-			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDBPath))
-		}
-	}
-
-	if err := validateDB("ovaldb", c.OvalDBType, c.OvalDBPath, c.OvalDBURL); err != nil {
-		errs = append(errs, err)
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -291,8 +277,16 @@ func (c Config) ValidateOnReport() bool {
 		errs = append(errs, strideerrs...)
 	}
 
+	if saaserrs := c.Saas.Validate(); 0 < len(saaserrs) {
+		errs = append(errs, saaserrs...)
+	}
+
 	if syslogerrs := c.Syslog.Validate(); 0 < len(syslogerrs) {
 		errs = append(errs, syslogerrs...)
+	}
+
+	if httperrs := c.HTTP.Validate(); 0 < len(httperrs) {
+		errs = append(errs, httperrs...)
 	}
 
 	for _, err := range errs {
@@ -313,12 +307,12 @@ func (c Config) ValidateOnTui() bool {
 		}
 	}
 
-	if err := validateDB("cvedb", c.CveDBType, c.CveDBPath, c.CveDBURL); err != nil {
+	if err := validateDB("cvedb", c.CveDict.Type, c.CveDict.SQLite3Path, c.CveDict.URL); err != nil {
 		errs = append(errs, err)
 	}
-	if c.CveDBType == "sqlite3" {
-		if _, err := os.Stat(c.CveDBPath); os.IsNotExist(err) {
-			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDBPath))
+	if c.CveDict.Type == "sqlite3" {
+		if _, err := os.Stat(c.CveDict.SQLite3Path); os.IsNotExist(err) {
+			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDict.SQLite3Path))
 		}
 	}
 
@@ -371,15 +365,14 @@ func validateDB(dictionaryDBName, dbType, dbPath, dbURL string) error {
 
 // SMTPConf is smtp config
 type SMTPConf struct {
-	SMTPAddr string
-	SMTPPort string `valid:"port"`
-
-	User          string
-	Password      string `json:"-"`
-	From          string
-	To            []string
-	Cc            []string
-	SubjectPrefix string
+	SMTPAddr      string   `toml:"smtpAddr,omitempty" json:"-"`
+	SMTPPort      string   `toml:"smtpPort,omitempty" valid:"port" json:"-"`
+	User          string   `toml:"user,omitempty" json:"-"`
+	Password      string   `toml:"password,omitempty" json:"-"`
+	From          string   `toml:"from,omitempty" json:"-"`
+	To            []string `toml:"to,omitempty" json:"-"`
+	Cc            []string `toml:"cc,omitempty" json:"-"`
+	SubjectPrefix string   `toml:"subjectPrefix,omitempty" json:"-"`
 }
 
 func checkEmails(emails []string) (errs []error) {
@@ -399,7 +392,6 @@ func (c *SMTPConf) Validate() (errs []error) {
 	if !Conf.ToEmail {
 		return
 	}
-
 	// Check Emails fromat
 	emails := []string{}
 	emails = append(emails, c.From)
@@ -432,8 +424,8 @@ func (c *SMTPConf) Validate() (errs []error) {
 
 // StrideConf is stride config
 type StrideConf struct {
-	HookURL   string `json:"hook_url"`
-	AuthToken string `json:"AuthToken"`
+	HookURL   string `json:"-"`
+	AuthToken string `json:"-"`
 }
 
 // Validate validates configuration
@@ -459,14 +451,13 @@ func (c *StrideConf) Validate() (errs []error) {
 
 // SlackConf is slack config
 type SlackConf struct {
-	HookURL     string `valid:"url" json:"-"`
-	LegacyToken string `json:"token" toml:"legacyToken,omitempty"`
-	Channel     string `json:"channel"`
-	IconEmoji   string `json:"icon_emoji"`
-	AuthUser    string `json:"username"`
-
-	NotifyUsers []string
-	Text        string `json:"text"`
+	HookURL     string   `valid:"url" json:"-" toml:"hookURL,omitempty"`
+	LegacyToken string   `json:"-" toml:"legacyToken,omitempty"`
+	Channel     string   `json:"-" toml:"channel,omitempty"`
+	IconEmoji   string   `json:"-" toml:"iconEmoji,omitempty"`
+	AuthUser    string   `json:"-" toml:"authUser,omitempty"`
+	NotifyUsers []string `toml:"notifyUsers,omitempty" json:"-"`
+	Text        string   `json:"-"`
 }
 
 // Validate validates configuration
@@ -503,8 +494,8 @@ func (c *SlackConf) Validate() (errs []error) {
 
 // HipChatConf is HipChat config
 type HipChatConf struct {
-	AuthToken string `json:"AuthToken"`
-	Room      string `json:"Room"`
+	AuthToken string `json:"-"`
+	Room      string `json:"-"`
 }
 
 // Validate validates configuration
@@ -529,8 +520,8 @@ func (c *HipChatConf) Validate() (errs []error) {
 
 // ChatWorkConf is ChatWork config
 type ChatWorkConf struct {
-	APIToken string `json:"ApiToken"`
-	Room     string `json:"Room"`
+	APIToken string `json:"-"`
+	Room     string `json:"-"`
 }
 
 // Validate validates configuration
@@ -553,16 +544,47 @@ func (c *ChatWorkConf) Validate() (errs []error) {
 	return
 }
 
+// SaasConf is stride config
+type SaasConf struct {
+	GroupID int    `json:"-"`
+	Token   string `json:"-"`
+	URL     string `json:"-"`
+}
+
+// Validate validates configuration
+func (c *SaasConf) Validate() (errs []error) {
+	if !Conf.ToSaas {
+		return
+	}
+
+	if c.GroupID == 0 {
+		errs = append(errs, fmt.Errorf("saas.GroupID must not be empty"))
+	}
+
+	if len(c.Token) == 0 {
+		errs = append(errs, fmt.Errorf("saas.Token must not be empty"))
+	}
+
+	if len(c.URL) == 0 {
+		errs = append(errs, fmt.Errorf("saas.URL must not be empty"))
+	}
+
+	_, err := valid.ValidateStruct(c)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	return
+}
+
 // SyslogConf is syslog config
 type SyslogConf struct {
-	Protocol string
-	Host     string `valid:"host"`
-	Port     string `valid:"port"`
-	Severity string
-	Facility string
-	Tag      string
-
-	Verbose bool
+	Protocol string `json:"-"`
+	Host     string `valid:"host" json:"-"`
+	Port     string `valid:"port" json:"-"`
+	Severity string `json:"-"`
+	Facility string `json:"-"`
+	Tag      string `json:"-"`
+	Verbose  bool   `json:"-"`
 }
 
 // Validate validates configuration
@@ -674,41 +696,341 @@ func (c *SyslogConf) GetFacility() (syslog.Priority, error) {
 	}
 }
 
-// ServerInfo has SSH Info, additional CPE packages to scan.
-type ServerInfo struct {
-	ServerName  string
-	User        string
-	Host        string
-	Port        string
-	KeyPath     string
-	KeyPassword string `json:"-"`
+// HTTPConf is HTTP config
+type HTTPConf struct {
+	URL string `valid:"url" json:"-"`
+}
 
-	CpeNames               []string
-	DependencyCheckXMLPath string
+// Validate validates configuration
+func (c *HTTPConf) Validate() (errs []error) {
+	if !Conf.ToHTTP {
+		return nil
+	}
 
-	// Container Names or IDs
-	Containers Containers
+	if _, err := valid.ValidateStruct(c); err != nil {
+		errs = append(errs, err)
+	}
+	return errs
+}
 
-	IgnoreCves []string
+const httpKey = "VULS_HTTP_URL"
 
-	// Optional key-value set that will be outputted to JSON
-	Optional [][]interface{}
+// Overwrite set options with the following priority.
+// 1. Command line option
+// 2. Environment variable
+// 3. config.toml
+func (c *HTTPConf) Overwrite(cmdOpt HTTPConf) {
+	if os.Getenv(httpKey) != "" {
+		c.URL = os.Getenv(httpKey)
+	}
+	if cmdOpt.URL != "" {
+		c.URL = cmdOpt.URL
+	}
+}
 
-	// For CentOS, RHEL, Amazon
-	Enablerepo []string
-
-	// "pseudo" or ""
+// GoCveDictConf is go-cve-dictionary config
+type GoCveDictConf struct {
+	// DB type of CVE dictionary (sqlite3, mysql, postgres or redis)
 	Type string
 
-	// used internal
-	LogMsgAnsiColor string // DebugLog Color
-	Container       Container
-	Distro          Distro
+	// http://cve-dictionary.com:1323 or DB connection string
+	URL string `valid:"url" json:"-"`
 
-	// IP addresses
-	IPv4Addrs []string
-	IPv6Addrs []string
+	// /path/to/cve.sqlite3
+	SQLite3Path string `json:"-"`
 }
+
+func (cnf *GoCveDictConf) setDefault() {
+	if cnf.Type == "" {
+		cnf.Type = "sqlite3"
+	}
+	if cnf.URL == "" && cnf.SQLite3Path == "" {
+		wd, _ := os.Getwd()
+		cnf.SQLite3Path = filepath.Join(wd, "cve.sqlite3")
+	}
+}
+
+const cveDBType = "CVEDB_TYPE"
+const cveDBURL = "CVEDB_URL"
+const cveDBPATH = "CVEDB_SQLITE3_PATH"
+
+// Overwrite set options with the following priority.
+// 1. Command line option
+// 2. Environment variable
+// 3. config.toml
+func (cnf *GoCveDictConf) Overwrite(cmdOpt GoCveDictConf) {
+	if os.Getenv(cveDBType) != "" {
+		cnf.Type = os.Getenv(cveDBType)
+	}
+	if os.Getenv(cveDBURL) != "" {
+		cnf.URL = os.Getenv(cveDBURL)
+	}
+	if os.Getenv(cveDBPATH) != "" {
+		cnf.SQLite3Path = os.Getenv(cveDBPATH)
+	}
+
+	if cmdOpt.Type != "" {
+		cnf.Type = cmdOpt.Type
+	}
+	if cmdOpt.URL != "" {
+		cnf.URL = cmdOpt.URL
+	}
+	if cmdOpt.SQLite3Path != "" {
+		cnf.SQLite3Path = cmdOpt.SQLite3Path
+	}
+	cnf.setDefault()
+}
+
+// GovalDictConf is goval-dictionary config
+type GovalDictConf struct {
+
+	// DB type of OVAL dictionary (sqlite3, mysql, postgres or redis)
+	Type string
+
+	// http://goval-dictionary.com:1324 or DB connection string
+	URL string `valid:"url" json:"-"`
+
+	// /path/to/oval.sqlite3
+	SQLite3Path string `json:"-"`
+}
+
+func (cnf *GovalDictConf) setDefault() {
+	if cnf.Type == "" {
+		cnf.Type = "sqlite3"
+	}
+	if cnf.URL == "" && cnf.SQLite3Path == "" {
+		wd, _ := os.Getwd()
+		cnf.SQLite3Path = filepath.Join(wd, "oval.sqlite3")
+	}
+}
+
+const govalType = "OVALDB_TYPE"
+const govalURL = "OVALDB_URL"
+const govalPATH = "OVALDB_SQLITE3_PATH"
+
+// Overwrite set options with the following priority.
+// 1. Command line option
+// 2. Environment variable
+// 3. config.toml
+func (cnf *GovalDictConf) Overwrite(cmdOpt GovalDictConf) {
+	if os.Getenv(govalType) != "" {
+		cnf.Type = os.Getenv(govalType)
+	}
+	if os.Getenv(govalURL) != "" {
+		cnf.URL = os.Getenv(govalURL)
+	}
+	if os.Getenv(govalPATH) != "" {
+		cnf.SQLite3Path = os.Getenv(govalPATH)
+	}
+
+	if cmdOpt.Type != "" {
+		cnf.Type = cmdOpt.Type
+	}
+	if cmdOpt.URL != "" {
+		cnf.URL = cmdOpt.URL
+	}
+	if cmdOpt.SQLite3Path != "" {
+		cnf.SQLite3Path = cmdOpt.SQLite3Path
+	}
+	cnf.setDefault()
+}
+
+// GostConf is gost config
+type GostConf struct {
+	// DB type for gost dictionary (sqlite3, mysql, postgres or redis)
+	Type string
+
+	// http://gost-dictionary.com:1324 or DB connection string
+	URL string `valid:"url" json:"-"`
+
+	// /path/to/gost.sqlite3
+	SQLite3Path string `json:"-"`
+}
+
+func (cnf *GostConf) setDefault() {
+	if cnf.Type == "" {
+		cnf.Type = "sqlite3"
+	}
+	if cnf.URL == "" && cnf.SQLite3Path == "" {
+		wd, _ := os.Getwd()
+		cnf.SQLite3Path = filepath.Join(wd, "gost.sqlite3")
+	}
+}
+
+const gostDBType = "GOSTDB_TYPE"
+const gostDBURL = "GOSTDB_URL"
+const gostDBPATH = "GOSTDB_SQLITE3_PATH"
+
+// Overwrite set options with the following priority.
+// 1. Command line option
+// 2. Environment variable
+// 3. config.toml
+func (cnf *GostConf) Overwrite(cmdOpt GostConf) {
+	if os.Getenv(gostDBType) != "" {
+		cnf.Type = os.Getenv(gostDBType)
+	}
+	if os.Getenv(gostDBURL) != "" {
+		cnf.URL = os.Getenv(gostDBURL)
+	}
+	if os.Getenv(gostDBPATH) != "" {
+		cnf.SQLite3Path = os.Getenv(gostDBPATH)
+	}
+
+	if cmdOpt.Type != "" {
+		cnf.Type = cmdOpt.Type
+	}
+	if cmdOpt.URL != "" {
+		cnf.URL = cmdOpt.URL
+	}
+	if cmdOpt.SQLite3Path != "" {
+		cnf.SQLite3Path = cmdOpt.SQLite3Path
+	}
+	cnf.setDefault()
+}
+
+// AWS is aws config
+type AWS struct {
+	// AWS profile to use
+	Profile string `json:"profile"`
+
+	// AWS region to use
+	Region string `json:"region"`
+
+	// S3 bucket name
+	S3Bucket string `json:"s3Bucket"`
+
+	// /bucket/path/to/results
+	S3ResultsDir string `json:"s3ResultsDir"`
+
+	// The Server-side encryption algorithm used when storing the reports in S3 (e.g., AES256, aws:kms).
+	S3ServerSideEncryption string `json:"s3ServerSideEncryption"`
+}
+
+// Azure is azure config
+type Azure struct {
+	// Azure account name to use. AZURE_STORAGE_ACCOUNT environment variable is used if not specified
+	AccountName string `json:"accountName"`
+
+	// Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified
+	AccountKey string `json:"-"`
+
+	// Azure storage container name
+	ContainerName string `json:"containerName"`
+}
+
+// ServerInfo has SSH Info, additional CPE packages to scan.
+type ServerInfo struct {
+	ServerName             string                      `toml:"-" json:"serverName"`
+	User                   string                      `toml:"user,omitempty" json:"user"`
+	Host                   string                      `toml:"host,omitempty" json:"host"`
+	Port                   string                      `toml:"port,omitempty" json:"port"`
+	KeyPath                string                      `toml:"keyPath,omitempty" json:"keyPath"`
+	KeyPassword            string                      `json:"-" toml:"-"`
+	CpeNames               []string                    `toml:"cpeNames,omitempty" json:"cpeNames,omitempty"`
+	ScanMode               []string                    `toml:"scanMode,omitempty" json:"scanMode,omitempty"`
+	DependencyCheckXMLPath string                      `toml:"dependencyCheckXMLPath,omitempty" json:"-"` // TODO Deprecated remove in near future
+	OwaspDCXMLPath         string                      `toml:"owaspDCXMLPath,omitempty" json:"owaspDCXMLPath"`
+	ContainersIncluded     []string                    `toml:"containersIncluded,omitempty" json:"containersIncluded,omitempty"`
+	ContainersExcluded     []string                    `toml:"containersExcluded,omitempty" json:"containersExcluded,omitempty"`
+	ContainerType          string                      `toml:"containerType,omitempty" json:"containerType,omitempty"`
+	Containers             map[string]ContainerSetting `toml:"containers" json:"containers,omitempty"`
+	IgnoreCves             []string                    `toml:"ignoreCves,omitempty" json:"ignoreCves,omitempty"`
+	IgnorePkgsRegexp       []string                    `toml:"ignorePkgsRegexp,omitempty" json:"ignorePkgsRegexp,omitempty"`
+	UUIDs                  map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
+	Memo                   string                      `toml:"memo,omitempty" json:"memo"`
+	Enablerepo             []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, RHEL, Amazon
+	Optional               map[string]interface{}      `toml:"optional,omitempty" json:"optional,omitempty"`     // Optional key-value set that will be outputted to JSON
+	Type                   string                      `toml:"type,omitempty" json:"type"`                       // "pseudo" or ""
+	IPv4Addrs              []string                    `toml:"-" json:"ipv4Addrs,omitempty"`
+	IPv6Addrs              []string                    `toml:"-" json:"ipv6Addrs,omitempty"`
+
+	// used internal
+	LogMsgAnsiColor string    `toml:"-" json:"-"` // DebugLog Color
+	Container       Container `toml:"-" json:"-"`
+	Distro          Distro    `toml:"-" json:"-"`
+	Mode            ScanMode  `toml:"-" json:"-"`
+}
+
+// ContainerSetting is used for loading container setting in config.toml
+type ContainerSetting struct {
+	Cpes             []string `json:"cpes,omitempty"`
+	OwaspDCXMLPath   string   `json:"owaspDCXMLPath"`
+	IgnorePkgsRegexp []string `json:"ignorePkgsRegexp,omitempty"`
+	IgnoreCves       []string `json:"ignoreCves,omitempty"`
+}
+
+// ScanMode has a type of scan mode. fast, fast-root, deep and offline
+type ScanMode struct {
+	flag byte
+}
+
+// Set mode
+func (s *ScanMode) Set(f byte) {
+	s.flag |= f
+}
+
+// IsFast return whether scan mode is fast
+func (s ScanMode) IsFast() bool {
+	return s.flag&Fast == Fast
+}
+
+// IsFastRoot return whether scan mode is fastroot
+func (s ScanMode) IsFastRoot() bool {
+	return s.flag&FastRoot == FastRoot
+}
+
+// IsDeep return whether scan mode is deep
+func (s ScanMode) IsDeep() bool {
+	return s.flag&Deep == Deep
+}
+
+// IsOffline return whether scan mode is offline
+func (s ScanMode) IsOffline() bool {
+	return s.flag&Offline == Offline
+}
+
+func (s ScanMode) validate() error {
+	numTrue := 0
+	for _, b := range []bool{s.IsFast(), s.IsFastRoot(), s.IsDeep()} {
+		if b {
+			numTrue++
+		}
+	}
+	if numTrue == 0 {
+		s.Set(Fast)
+	} else if s.IsDeep() && s.IsOffline() {
+		return fmt.Errorf("Don't specify both of -deep and offline")
+	} else if numTrue != 1 {
+		return fmt.Errorf("Specify only one of -fast, -fast-root or -deep")
+	}
+	return nil
+}
+
+func (s ScanMode) String() string {
+	ss := ""
+	if s.IsFast() {
+		ss = "fast"
+	} else if s.IsFastRoot() {
+		ss = "fast-root"
+	} else if s.IsDeep() {
+		ss = "deep"
+	}
+	if s.IsOffline() {
+		ss += " offline"
+	}
+	return ss + " mode"
+}
+
+const (
+	// Fast is fast scan mode
+	Fast = byte(1 << iota)
+	// FastRoot is fast-root scan mode
+	FastRoot
+	// Deep is deep scan mode
+	Deep
+	// Offline is offline scan mode
+	Offline
+)
 
 // GetServerName returns ServerName if this serverInfo is about host.
 // If this serverInfo is abount a container, returns containerID@ServerName
@@ -755,13 +1077,6 @@ func (s ServerInfo) IsContainer() bool {
 // SetContainer set container
 func (s *ServerInfo) SetContainer(d Container) {
 	s.Container = d
-}
-
-// Containers has Containers information.
-type Containers struct {
-	Type     string
-	Includes []string
-	Excludes []string
 }
 
 // Container has Container information.

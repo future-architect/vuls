@@ -48,11 +48,15 @@ func newPseudo(c config.ServerInfo) *pseudo {
 	return d
 }
 
+func (o *pseudo) checkScanMode() error {
+	return nil
+}
+
 func (o *pseudo) checkIfSudoNoPasswd() error {
 	return nil
 }
 
-func (o *pseudo) checkDependencies() error {
+func (o *pseudo) checkDeps() error {
 	return nil
 }
 
@@ -66,6 +70,10 @@ func (o *pseudo) postScan() error {
 
 func (o *pseudo) scanPackages() error {
 	return nil
+}
+
+func (o *pseudo) parseInstalledPackages(string) (models.Packages, models.SrcPackages, error) {
+	return nil, nil, nil
 }
 
 func (o *pseudo) detectPlatform() {

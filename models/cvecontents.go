@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package models
 
 import (
-	"strings"
 	"time"
 )
 
@@ -61,12 +60,12 @@ func (v CveContents) Except(exceptCtypes ...CveContentType) (values CveContents)
 // SourceLinks returns link of source
 func (v CveContents) SourceLinks(lang, myFamily, cveID string) (values []CveContentStr) {
 	if lang == "ja" {
-		if cont, found := v[JVN]; found && 0 < len(cont.SourceLink) {
-			values = append(values, CveContentStr{JVN, cont.SourceLink})
+		if cont, found := v[Jvn]; found && 0 < len(cont.SourceLink) {
+			values = append(values, CveContentStr{Jvn, cont.SourceLink})
 		}
 	}
 
-	order := CveContentTypes{NVD, NewCveContentType(myFamily)}
+	order := CveContentTypes{Nvd, NvdXML, NewCveContentType(myFamily)}
 	for _, ctype := range order {
 		if cont, found := v[ctype]; found {
 			values = append(values, CveContentStr{ctype, cont.SourceLink})
@@ -75,7 +74,7 @@ func (v CveContents) SourceLinks(lang, myFamily, cveID string) (values []CveCont
 
 	if len(values) == 0 {
 		return []CveContentStr{{
-			Type:  NVD,
+			Type:  Nvd,
 			Value: "https://nvd.nist.gov/vuln/detail/" + cveID,
 		}}
 	}
@@ -148,11 +147,14 @@ func (v CveContents) References(myFamily string) (values []CveContentRefs) {
 func (v CveContents) CweIDs(myFamily string) (values []CveContentStr) {
 	order := CveContentTypes{NewCveContentType(myFamily)}
 	order = append(order, AllCveContetTypes.Except(append(order)...)...)
-
 	for _, ctype := range order {
-		if cont, found := v[ctype]; found && 0 < len(cont.CweID) {
-			// RedHat's OVAL sometimes contains multiple CWE-IDs separated by spaces
-			for _, cweID := range strings.Fields(cont.CweID) {
+		if cont, found := v[ctype]; found && 0 < len(cont.CweIDs) {
+			for _, cweID := range cont.CweIDs {
+				for _, val := range values {
+					if val.Value == cweID {
+						continue
+					}
+				}
 				values = append(values, CveContentStr{
 					Type:  ctype,
 					Value: cweID,
@@ -163,23 +165,38 @@ func (v CveContents) CweIDs(myFamily string) (values []CveContentStr) {
 	return
 }
 
+// UniqCweIDs returns Uniq CweIDs
+func (v CveContents) UniqCweIDs(myFamily string) (values []CveContentStr) {
+	uniq := map[string]CveContentStr{}
+	for _, cwes := range v.CweIDs(myFamily) {
+		uniq[cwes.Value] = cwes
+	}
+	for _, cwe := range uniq {
+		values = append(values, cwe)
+	}
+	return values
+}
+
 // CveContent has abstraction of various vulnerability information
 type CveContent struct {
-	Type         CveContentType
-	CveID        string
-	Title        string
-	Summary      string
-	Severity     string
-	Cvss2Score   float64
-	Cvss2Vector  string
-	Cvss3Score   float64
-	Cvss3Vector  string
-	SourceLink   string
-	Cpes         []Cpe
-	References   References
-	CweID        string
-	Published    time.Time
-	LastModified time.Time
+	Type          CveContentType    `json:"type"`
+	CveID         string            `json:"cveID"`
+	Title         string            `json:"title"`
+	Summary       string            `json:"summary"`
+	Cvss2Score    float64           `json:"cvss2Score"`
+	Cvss2Vector   string            `json:"cvss2Vector"`
+	Cvss2Severity string            `json:"cvss2Severity"`
+	Cvss3Score    float64           `json:"cvss3Score"`
+	Cvss3Vector   string            `json:"cvss3Vector"`
+	Cvss3Severity string            `json:"cvss3Severity"`
+	SourceLink    string            `json:"sourceLink"`
+	Cpes          []Cpe             `json:"cpes,omitempty"`
+	References    References        `json:"references,omitempty"`
+	CweIDs        []string          `json:"cweIDs,omitempty"`
+	Published     time.Time         `json:"published"`
+	LastModified  time.Time         `json:"lastModified"`
+	Mitigation    string            `json:"mitigation"` // RedHat API
+	Optional      map[string]string `json:"optional,omitempty"`
 }
 
 // Empty checks the content is empty
@@ -193,10 +210,12 @@ type CveContentType string
 // NewCveContentType create CveContentType
 func NewCveContentType(name string) CveContentType {
 	switch name {
+	case "nvdxml":
+		return NvdXML
 	case "nvd":
-		return NVD
+		return Nvd
 	case "jvn":
-		return JVN
+		return Jvn
 	case "redhat", "centos":
 		return RedHat
 	case "oracle":
@@ -205,20 +224,33 @@ func NewCveContentType(name string) CveContentType {
 		return Ubuntu
 	case "debian":
 		return Debian
+	case "redhat_api":
+		return RedHatAPI
+	case "debian_security_tracker":
+		return DebianSecurityTracker
 	default:
 		return Unknown
 	}
 }
 
 const (
-	// NVD is NVD
-	NVD CveContentType = "nvd"
+	// NvdXML is NvdXML
+	NvdXML CveContentType = "nvdxml"
 
-	// JVN is JVN
-	JVN CveContentType = "jvn"
+	// Nvd is Nvd
+	Nvd CveContentType = "nvd"
+
+	// Jvn is Jvn
+	Jvn CveContentType = "jvn"
 
 	// RedHat is RedHat
 	RedHat CveContentType = "redhat"
+
+	// RedHatAPI is RedHat
+	RedHatAPI CveContentType = "redhat_api"
+
+	// DebianSecurityTracker is Debian Secury tracker
+	DebianSecurityTracker CveContentType = "debian_security_tracker"
 
 	// Debian is Debian
 	Debian CveContentType = "debian"
@@ -240,7 +272,16 @@ const (
 type CveContentTypes []CveContentType
 
 // AllCveContetTypes has all of CveContentTypes
-var AllCveContetTypes = CveContentTypes{NVD, JVN, RedHat, Debian, Ubuntu}
+var AllCveContetTypes = CveContentTypes{
+	Nvd,
+	NvdXML,
+	Jvn,
+	RedHat,
+	Debian,
+	Ubuntu,
+	RedHatAPI,
+	DebianSecurityTracker,
+}
 
 // Except returns CveContentTypes except for given args
 func (c CveContentTypes) Except(excepts ...CveContentType) (excepted CveContentTypes) {
@@ -261,7 +302,8 @@ func (c CveContentTypes) Except(excepts ...CveContentType) (excepted CveContentT
 
 // Cpe is Common Platform Enumeration
 type Cpe struct {
-	CpeName string
+	URI             string `json:"uri"`
+	FormattedString string `json:"formattedString"`
 }
 
 // References is a slice of Reference
@@ -269,7 +311,7 @@ type References []Reference
 
 // Reference has a related link of the CVE
 type Reference struct {
-	Source string
-	Link   string
-	RefID  string
+	Source string `json:"source"`
+	Link   string `json:"link"`
+	RefID  string `json:"refID"`
 }

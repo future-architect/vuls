@@ -34,7 +34,7 @@ func GenWorkers(num int) chan<- func() {
 			defer func() {
 				if p := recover(); p != nil {
 					log := NewCustomLogger(config.ServerInfo{})
-					log.Debugf("Panic: %s", p)
+					log.Errorf("run time panic: %v", p)
 				}
 			}()
 			for f := range tasks {
@@ -70,7 +70,7 @@ func URLPathJoin(baseURL string, paths ...string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	url.Path += strings.Join(trimedPaths, "/")
+	url.Path += "/" + strings.Join(trimedPaths, "/")
 	return url.String(), nil
 }
 

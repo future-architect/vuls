@@ -70,7 +70,7 @@ func TestIsRunningKernelSUSE(t *testing.T) {
 }
 
 func TestIsRunningKernelRedHatLikeLinux(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newAmazon(config.ServerInfo{})
 	r.Distro = config.Distro{Family: config.Amazon}
 
 	kernel := models.Kernel{

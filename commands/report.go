@@ -20,73 +20,27 @@ package commands
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"path/filepath"
 
 	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
+	"github.com/k0kubun/pp"
+	cvelog "github.com/kotakanbe/go-cve-dictionary/log"
 )
 
 // ReportCmd is subcommand for reporting
 type ReportCmd struct {
-	lang       string
-	debug      bool
-	debugSQL   bool
 	configPath string
-	resultsDir string
-	logDir     string
-	refreshCve bool
-
-	cvssScoreOver      float64
-	ignoreUnscoredCves bool
-	ignoreUnfixed      bool
-
-	httpProxy string
-
-	cveDBType string
-	cveDBPath string
-	cveDBURL  string
-
-	ovalDBType string
-	ovalDBPath string
-	ovalDBURL  string
-
-	toSlack     bool
-	toStride    bool
-	toHipChat   bool
-	toChatWork  bool
-	toEMail     bool
-	toSyslog    bool
-	toLocalFile bool
-	toS3        bool
-	toAzureBlob bool
-
-	formatJSON        bool
-	formatXML         bool
-	formatOneEMail    bool
-	formatOneLineText bool
-	formatShortText   bool
-	formatFullText    bool
-
-	gzip bool
-
-	awsProfile                string
-	awsRegion                 string
-	awsS3Bucket               string
-	awsS3ResultsDir           string
-	awsS3ServerSideEncryption string
-
-	azureAccount   string
-	azureKey       string
-	azureContainer string
-
-	pipe bool
-	diff bool
+	cvelDict   c.GoCveDictConf
+	ovalDict   c.GovalDictConf
+	gostConf   c.GostConf
+	httpConf   c.HTTPConf
 }
 
 // Name return subcommand name
@@ -104,17 +58,12 @@ func (*ReportCmd) Usage() string {
 		[-results-dir=/path/to/results]
 		[-log-dir=/path/to/log]
 		[-refresh-cve]
-		[-cvedb-type=sqlite3|mysql|postgres]
-		[-cvedb-path=/path/to/cve.sqlite3]
-		[-cvedb-url=http://127.0.0.1:1323 or DB connection string]
-		[-ovaldb-type=sqlite3|mysql]
-		[-ovaldb-path=/path/to/oval.sqlite3]
-		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
 		[-cvss-over=7]
 		[-diff]
 		[-ignore-unscored-cves]
 		[-ignore-unfixed]
 		[-to-email]
+		[-to-http]
 		[-to-slack]
 		[-to-stride]
 		[-to-hipchat]
@@ -122,25 +71,29 @@ func (*ReportCmd) Usage() string {
 		[-to-localfile]
 		[-to-s3]
 		[-to-azure-blob]
+		[-to-saas]
 		[-format-json]
 		[-format-xml]
 		[-format-one-email]
 		[-format-one-line-text]
-		[-format-short-text]
+		[-format-list]
 		[-format-full-text]
 		[-gzip]
-		[-aws-profile=default]
-		[-aws-region=us-west-2]
-		[-aws-s3-bucket=bucket_name]
-		[-aws-s3-results-dir=/bucket/path/to/results]
-		[-aws-s3-server-side-encryption=AES256]
-		[-azure-account=account]
-		[-azure-key=key]
-		[-azure-container=container]
+		[-uuid]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-debug]
 		[-debug-sql]
 		[-pipe]
+		[-cvedb-type=sqlite3|mysql|postgres|redis]
+		[-cvedb-path=/path/to/cve.sqlite3]
+		[-cvedb-url=http://127.0.0.1:1323 or DB connection string]
+		[-ovaldb-type=sqlite3|mysql|redis]
+		[-ovaldb-path=/path/to/oval.sqlite3]
+		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
+		[-gostdb-type=sqlite3|mysql|redis]
+		[-gostdb-path=/path/to/gost.sqlite3]
+		[-gostdb-url=http://127.0.0.1:1325 or DB connection string]
+		[-http="http://vuls-report-server"]
 
 		[RFC3339 datetime format under results dir]
 `
@@ -148,218 +101,110 @@ func (*ReportCmd) Usage() string {
 
 // SetFlags set flag
 func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&p.lang, "lang", "en", "[en|ja]")
-	f.BoolVar(&p.debug, "debug", false, "debug mode")
-	f.BoolVar(&p.debugSQL, "debug-sql", false, "SQL debug mode")
+	f.StringVar(&c.Conf.Lang, "lang", "en", "[en|ja]")
+	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
+	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
 
 	wd, _ := os.Getwd()
-
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
 	defaultResultsDir := filepath.Join(wd, "results")
-	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 
 	defaultLogDir := util.GetDefaultLogDir()
-	f.StringVar(&p.logDir, "log-dir", defaultLogDir, "/path/to/log")
+	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 
-	f.BoolVar(
-		&p.refreshCve,
-		"refresh-cve",
-		false,
+	f.BoolVar(&c.Conf.RefreshCve, "refresh-cve", false,
 		"Refresh CVE information in JSON file under results dir")
 
-	f.StringVar(
-		&p.cveDBType,
-		"cvedb-type",
-		"sqlite3",
-		"DB type for fetching CVE dictionary (sqlite3, mysql or postgres)")
-
-	defaultCveDBPath := filepath.Join(wd, "cve.sqlite3")
-	f.StringVar(
-		&p.cveDBPath,
-		"cvedb-path",
-		defaultCveDBPath,
-		"/path/to/sqlite3 (For get cve detail from cve.sqlite3)")
-
-	f.StringVar(
-		&p.cveDBURL,
-		"cvedb-url",
-		"",
-		"http://cve-dictionary.com:1323 or mysql connection string")
-
-	f.StringVar(
-		&p.ovalDBType,
-		"ovaldb-type",
-		"sqlite3",
-		"DB type for fetching OVAL dictionary (sqlite3 or mysql)")
-
-	defaultOvalDBPath := filepath.Join(wd, "oval.sqlite3")
-	f.StringVar(
-		&p.ovalDBPath,
-		"ovaldb-path",
-		defaultOvalDBPath,
-		"/path/to/sqlite3 (For get oval detail from oval.sqlite3)")
-
-	f.StringVar(
-		&p.ovalDBURL,
-		"ovaldb-url",
-		"",
-		"http://goval-dictionary.com:1324 or mysql connection string")
-
-	f.Float64Var(
-		&p.cvssScoreOver,
-		"cvss-over",
-		0,
+	f.Float64Var(&c.Conf.CvssScoreOver, "cvss-over", 0,
 		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
 
-	f.BoolVar(&p.diff,
-		"diff",
-		false,
-		fmt.Sprintf("Difference between previous result and current result "))
+	f.BoolVar(&c.Conf.Diff, "diff", false,
+		"Difference between previous result and current result ")
 
-	f.BoolVar(
-		&p.ignoreUnscoredCves,
-		"ignore-unscored-cves",
-		false,
+	f.BoolVar(&c.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
 		"Don't report the unscored CVEs")
 
 	f.BoolVar(
-		&p.ignoreUnfixed,
-		"ignore-unfixed",
-		false,
+		&c.Conf.IgnoreUnfixed, "ignore-unfixed", false,
 		"Don't report the unfixed CVEs")
 
 	f.StringVar(
-		&p.httpProxy,
-		"http-proxy",
-		"",
+		&c.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
 
-	f.BoolVar(&p.formatJSON,
-		"format-json",
-		false,
-		fmt.Sprintf("JSON format"))
-
-	f.BoolVar(&p.formatXML,
-		"format-xml",
-		false,
-		fmt.Sprintf("XML format"))
-
-	f.BoolVar(&p.formatOneEMail,
-		"format-one-email",
-		false,
+	f.BoolVar(&c.Conf.FormatJSON, "format-json", false, "JSON format")
+	f.BoolVar(&c.Conf.FormatXML, "format-xml", false, "XML format")
+	f.BoolVar(&c.Conf.FormatOneEMail, "format-one-email", false,
 		"Send all the host report via only one EMail (Specify with -to-email)")
+	f.BoolVar(&c.Conf.FormatOneLineText, "format-one-line-text", false,
+		"One line summary in plain text")
+	f.BoolVar(&c.Conf.FormatList, "format-list", false, "Display as list format")
+	f.BoolVar(&c.Conf.FormatFullText, "format-full-text", false,
+		"Detail report in plain text")
 
-	f.BoolVar(&p.formatOneLineText,
-		"format-one-line-text",
-		false,
-		fmt.Sprintf("One line summary in plain text"))
-
-	f.BoolVar(&p.formatShortText,
-		"format-short-text",
-		false,
-		fmt.Sprintf("Summary in plain text"))
-
-	f.BoolVar(&p.formatFullText,
-		"format-full-text",
-		false,
-		fmt.Sprintf("Detail report in plain text"))
-
-	f.BoolVar(&p.gzip, "gzip", false, "gzip compression")
-
-	f.BoolVar(&p.toSlack, "to-slack", false, "Send report via Slack")
-	f.BoolVar(&p.toStride, "to-stride", false, "Send report via Stride")
-	f.BoolVar(&p.toHipChat, "to-hipchat", false, "Send report via hipchat")
-	f.BoolVar(&p.toChatWork, "to-chatwork", false, "Send report via chatwork")
-	f.BoolVar(&p.toEMail, "to-email", false, "Send report via Email")
-	f.BoolVar(&p.toSyslog, "to-syslog", false, "Send report via Syslog")
-	f.BoolVar(&p.toLocalFile,
-		"to-localfile",
-		false,
-		fmt.Sprintf("Write report to localfile"))
-
-	f.BoolVar(&p.toS3,
-		"to-s3",
-		false,
+	f.BoolVar(&c.Conf.ToSlack, "to-slack", false, "Send report via Slack")
+	f.BoolVar(&c.Conf.ToStride, "to-stride", false, "Send report via Stride")
+	f.BoolVar(&c.Conf.ToHipChat, "to-hipchat", false, "Send report via hipchat")
+	f.BoolVar(&c.Conf.ToChatWork, "to-chatwork", false, "Send report via chatwork")
+	f.BoolVar(&c.Conf.ToEmail, "to-email", false, "Send report via Email")
+	f.BoolVar(&c.Conf.ToSyslog, "to-syslog", false, "Send report via Syslog")
+	f.BoolVar(&c.Conf.ToLocalFile, "to-localfile", false, "Write report to localfile")
+	f.BoolVar(&c.Conf.ToS3, "to-s3", false,
 		"Write report to S3 (bucket/yyyyMMdd_HHmm/servername.json/xml/txt)")
-	f.StringVar(&p.awsProfile, "aws-profile", "default", "AWS profile to use")
-	f.StringVar(&p.awsRegion, "aws-region", "us-east-1", "AWS region to use")
-	f.StringVar(&p.awsS3Bucket, "aws-s3-bucket", "", "S3 bucket name")
-	f.StringVar(&p.awsS3ResultsDir, "aws-s3-results-dir", "", "/bucket/path/to/results")
-	f.StringVar(&p.awsS3ServerSideEncryption, "aws-s3-server-side-encryption", "", "The Server-side encryption algorithm used when storing the reports in S3 (e.g., AES256, aws:kms).")
-
-	f.BoolVar(&p.toAzureBlob,
-		"to-azure-blob",
-		false,
+	f.BoolVar(&c.Conf.ToHTTP, "to-http", false, "Send report via HTTP POST")
+	f.BoolVar(&c.Conf.ToAzureBlob, "to-azure-blob", false,
 		"Write report to Azure Storage blob (container/yyyyMMdd_HHmm/servername.json/xml/txt)")
-	f.StringVar(&p.azureAccount,
-		"azure-account",
-		"",
-		"Azure account name to use. AZURE_STORAGE_ACCOUNT environment variable is used if not specified")
-	f.StringVar(&p.azureKey,
-		"azure-key",
-		"",
-		"Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified")
-	f.StringVar(&p.azureContainer, "azure-container", "", "Azure storage container name")
+	f.BoolVar(&c.Conf.ToSaas, "to-saas", false,
+		"Upload report to Future Vuls(https://vuls.biz/) before report")
 
-	f.BoolVar(
-		&p.pipe,
-		"pipe",
-		false,
-		"Use args passed via PIPE")
+	f.BoolVar(&c.Conf.GZIP, "gzip", false, "gzip compression")
+	f.BoolVar(&c.Conf.UUID, "uuid", false,
+		"Auto generate of scan target servers and then write to config.toml and scan result")
+	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use args passed via PIPE")
+
+	f.StringVar(&p.cvelDict.Type, "cvedb-type", "sqlite3",
+		"DB type of go-cve-dictionary (sqlite3, mysql, postgres or redis)")
+	f.StringVar(&p.cvelDict.SQLite3Path, "cvedb-sqlite3-path", "", "/path/to/sqlite3")
+	f.StringVar(&p.cvelDict.URL, "cvedb-url", "",
+		"http://go-cve-dictionary.com:1323 or DB connection string")
+
+	f.StringVar(&p.ovalDict.Type, "ovaldb-type", "",
+		"DB type of goval-dictionary (sqlite3, mysql, postgres or redis)")
+	f.StringVar(&p.ovalDict.SQLite3Path, "ovaldb-sqlite3-path", "", "/path/to/sqlite3")
+	f.StringVar(&p.ovalDict.URL, "ovaldb-url", "",
+		"http://goval-dictionary.com:1324 or DB connection string")
+
+	f.StringVar(&p.gostConf.Type, "gostdb-type", "",
+		"DB type of gost (sqlite3, mysql, postgres or redis)")
+	f.StringVar(&p.gostConf.SQLite3Path, "gostdb-sqlite3-path", "", "/path/to/sqlite3")
+	f.StringVar(&p.gostConf.URL, "gostdb-url", "",
+		"http://gost.com:1325 or DB connection string")
+
+	f.StringVar(&p.httpConf.URL, "http", "", "-to-http http://vuls-report")
+
 }
 
 // Execute execute
 func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	c.Conf.Debug = p.debug
-	c.Conf.DebugSQL = p.debugSQL
-	c.Conf.LogDir = p.logDir
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
+	cvelog.SetLogger(c.Conf.LogDir, false, c.Conf.Debug, false)
 
 	if err := c.Load(p.configPath, ""); err != nil {
 		util.Log.Errorf("Error loading %s, %s", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
 
-	c.Conf.Lang = p.lang
-	c.Conf.ResultsDir = p.resultsDir
-	c.Conf.RefreshCve = p.refreshCve
-	c.Conf.CveDBType = p.cveDBType
-	c.Conf.CveDBPath = p.cveDBPath
-	c.Conf.CveDBURL = p.cveDBURL
-	c.Conf.OvalDBType = p.ovalDBType
-	c.Conf.OvalDBPath = p.ovalDBPath
-	c.Conf.OvalDBURL = p.ovalDBURL
-	c.Conf.CvssScoreOver = p.cvssScoreOver
-	c.Conf.IgnoreUnscoredCves = p.ignoreUnscoredCves
-	c.Conf.IgnoreUnfixed = p.ignoreUnfixed
-	c.Conf.HTTPProxy = p.httpProxy
-
-	c.Conf.ToSlack = p.toSlack
-	c.Conf.ToStride = p.toStride
-	c.Conf.ToHipChat = p.toHipChat
-	c.Conf.ToChatWork = p.toChatWork
-	c.Conf.ToEmail = p.toEMail
-	c.Conf.ToSyslog = p.toSyslog
-	c.Conf.ToLocalFile = p.toLocalFile
-	c.Conf.ToS3 = p.toS3
-	c.Conf.ToAzureBlob = p.toAzureBlob
-
-	c.Conf.FormatXML = p.formatXML
-	c.Conf.FormatJSON = p.formatJSON
-	c.Conf.FormatOneEMail = p.formatOneEMail
-	c.Conf.FormatOneLineText = p.formatOneLineText
-	c.Conf.FormatShortText = p.formatShortText
-	c.Conf.FormatFullText = p.formatFullText
-
-	c.Conf.GZIP = p.gzip
-	c.Conf.Diff = p.diff
-	c.Conf.Pipe = p.pipe
+	c.Conf.CveDict.Overwrite(p.cvelDict)
+	c.Conf.OvalDict.Overwrite(p.ovalDict)
+	c.Conf.Gost.Overwrite(p.gostConf)
+	c.Conf.HTTP.Overwrite(p.httpConf)
 
 	var dir string
 	var err error
-	if p.diff {
+	if c.Conf.Diff {
 		dir, err = report.JSONDir([]string{})
 	} else {
 		dir, err = report.JSONDir(f.Args())
@@ -374,106 +219,86 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		report.StdoutWriter{},
 	}
 
-	if p.toSlack {
+	if c.Conf.ToSlack {
 		reports = append(reports, report.SlackWriter{})
 	}
 
-	if p.toStride {
+	if c.Conf.ToStride {
 		reports = append(reports, report.StrideWriter{})
 	}
 
-	if p.toHipChat {
+	if c.Conf.ToHipChat {
 		reports = append(reports, report.HipChatWriter{})
 	}
 
-	if p.toChatWork {
+	if c.Conf.ToChatWork {
 		reports = append(reports, report.ChatWorkWriter{})
 	}
 
-	if p.toEMail {
+	if c.Conf.ToEmail {
 		reports = append(reports, report.EMailWriter{})
 	}
 
-	if p.toSyslog {
+	if c.Conf.ToSyslog {
 		reports = append(reports, report.SyslogWriter{})
 	}
 
-	if p.toLocalFile {
+	if c.Conf.ToHTTP {
+		reports = append(reports, report.HTTPRequestWriter{})
+	}
+
+	if c.Conf.ToLocalFile {
 		reports = append(reports, report.LocalFileWriter{
 			CurrentDir: dir,
 		})
 	}
 
-	if p.toS3 {
-		c.Conf.AwsRegion = p.awsRegion
-		c.Conf.AwsProfile = p.awsProfile
-		c.Conf.S3Bucket = p.awsS3Bucket
-		c.Conf.S3ResultsDir = p.awsS3ResultsDir
-		c.Conf.S3ServerSideEncryption = p.awsS3ServerSideEncryption
+	if c.Conf.ToS3 {
 		if err := report.CheckIfBucketExists(); err != nil {
-			util.Log.Errorf("Check if there is a bucket beforehand: %s, err: %s", c.Conf.S3Bucket, err)
+			util.Log.Errorf("Check if there is a bucket beforehand: %s, err: %s",
+				c.Conf.AWS.S3Bucket, err)
 			return subcommands.ExitUsageError
 		}
 		reports = append(reports, report.S3Writer{})
 	}
 
-	if p.toAzureBlob {
-		c.Conf.AzureAccount = p.azureAccount
-		if len(c.Conf.AzureAccount) == 0 {
-			c.Conf.AzureAccount = os.Getenv("AZURE_STORAGE_ACCOUNT")
+	if c.Conf.ToAzureBlob {
+		if len(c.Conf.Azure.AccountName) == 0 {
+			c.Conf.Azure.AccountName = os.Getenv("AZURE_STORAGE_ACCOUNT")
 		}
 
-		c.Conf.AzureKey = p.azureKey
-		if len(c.Conf.AzureKey) == 0 {
-			c.Conf.AzureKey = os.Getenv("AZURE_STORAGE_ACCESS_KEY")
+		if len(c.Conf.Azure.AccountKey) == 0 {
+			c.Conf.Azure.AccountKey = os.Getenv("AZURE_STORAGE_ACCESS_KEY")
 		}
 
-		c.Conf.AzureContainer = p.azureContainer
-		if len(c.Conf.AzureContainer) == 0 {
+		if len(c.Conf.Azure.ContainerName) == 0 {
 			util.Log.Error("Azure storage container name is required with -azure-container option")
 			return subcommands.ExitUsageError
 		}
 		if err := report.CheckIfAzureContainerExists(); err != nil {
-			util.Log.Errorf("Check if there is a container beforehand: %s, err: %s", c.Conf.AzureContainer, err)
+			util.Log.Errorf("Check if there is a container beforehand: %s, err: %s",
+				c.Conf.Azure.ContainerName, err)
 			return subcommands.ExitUsageError
 		}
 		reports = append(reports, report.AzureBlobWriter{})
 	}
 
-	if !(p.formatJSON || p.formatOneLineText ||
-		p.formatShortText || p.formatFullText || p.formatXML) {
-		c.Conf.FormatShortText = true
+	if c.Conf.ToSaas {
+		if !c.Conf.UUID {
+			util.Log.Errorf("If you use the -to-saas option, you need to enable the uuid option")
+			return subcommands.ExitUsageError
+		}
+		reports = append(reports, report.SaasWriter{})
+	}
+
+	if !(c.Conf.FormatJSON || c.Conf.FormatOneLineText ||
+		c.Conf.FormatList || c.Conf.FormatFullText || c.Conf.FormatXML) {
+		c.Conf.FormatList = true
 	}
 
 	util.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnReport() {
 		return subcommands.ExitUsageError
-	}
-	if err := report.CveClient.CheckHealth(); err != nil {
-		util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
-		util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with -cvedb-path option")
-		return subcommands.ExitFailure
-	}
-	if c.Conf.CveDBURL != "" {
-		util.Log.Infof("cve-dictionary: %s", c.Conf.CveDBURL)
-	} else {
-		if c.Conf.CveDBType == "sqlite3" {
-			util.Log.Infof("cve-dictionary: %s", c.Conf.CveDBPath)
-		}
-	}
-
-	if c.Conf.OvalDBURL != "" {
-		util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDBURL)
-		err := oval.Base{}.CheckHTTPHealth()
-		if err != nil {
-			util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
-			util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with -ovaldb-path option")
-			return subcommands.ExitFailure
-		}
-	} else {
-		if c.Conf.OvalDBType == "sqlite3" {
-			util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDBPath)
-		}
 	}
 
 	var loaded models.ScanResults
@@ -493,9 +318,86 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	if res, err = report.FillCveInfos(res, dir); err != nil {
-		util.Log.Error(err)
-		return subcommands.ExitFailure
+	for _, r := range res {
+		util.Log.Debugf("%s: %s",
+			r.ServerInfo(),
+			pp.Sprintf("%s", c.Conf.Servers[r.ServerName]))
+	}
+
+	if c.Conf.UUID {
+		// Ensure UUIDs of scan target servers in config.toml
+		if err := report.EnsureUUIDs(p.configPath, res); err != nil {
+			util.Log.Errorf("Failed to ensure UUIDs: %s", err)
+			return subcommands.ExitFailure
+		}
+	}
+
+	if !c.Conf.ToSaas {
+		util.Log.Info("Validating db config...")
+		if !c.Conf.ValidateOnReportDB() {
+			return subcommands.ExitUsageError
+		}
+
+		if err := report.CveClient.CheckHealth(); err != nil {
+			util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
+			util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with -cvedb-path option instead of -cvedb-url")
+			return subcommands.ExitFailure
+		}
+		if c.Conf.CveDict.URL != "" {
+			util.Log.Infof("cve-dictionary: %s", c.Conf.CveDict.URL)
+		} else {
+			if c.Conf.CveDict.Type == "sqlite3" {
+				util.Log.Infof("cve-dictionary: %s", c.Conf.CveDict.SQLite3Path)
+			}
+		}
+
+		if c.Conf.OvalDict.URL != "" {
+			util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDict.URL)
+			err := oval.Base{}.CheckHTTPHealth()
+			if err != nil {
+				util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
+				util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with -ovaldb-path option instead of -ovaldb-url")
+				return subcommands.ExitFailure
+			}
+		} else {
+			if c.Conf.OvalDict.Type == "sqlite3" {
+				util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDict.SQLite3Path)
+			}
+		}
+
+		if c.Conf.Gost.URL != "" {
+			util.Log.Infof("gost: %s", c.Conf.Gost.URL)
+			err := gost.Base{}.CheckHTTPHealth()
+			if err != nil {
+				util.Log.Errorf("gost HTTP server is not running. err: %s", err)
+				util.Log.Errorf("Run gost as server mode before reporting or run with -gostdb-path option instead of -gostdb-url")
+				return subcommands.ExitFailure
+			}
+		} else {
+			if c.Conf.Gost.Type == "sqlite3" {
+				util.Log.Infof("gost: %s", c.Conf.Gost.SQLite3Path)
+			}
+		}
+		dbclient, locked, err := report.NewDBClient(report.DBClientConf{
+			CveDictCnf:  c.Conf.CveDict,
+			OvalDictCnf: c.Conf.OvalDict,
+			GostCnf:     c.Conf.Gost,
+			DebugSQL:    c.Conf.DebugSQL,
+		})
+		if locked {
+			util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %s", err)
+			return subcommands.ExitFailure
+		}
+		if err != nil {
+			util.Log.Errorf("Failed to init DB Clients: %s", err)
+			return subcommands.ExitFailure
+		}
+		defer dbclient.CloseDB()
+
+		if res, err = report.FillCveInfos(*dbclient, res, dir); err != nil {
+			util.Log.Error(err)
+			return subcommands.ExitFailure
+		}
 	}
 
 	for _, w := range reports {
@@ -504,5 +406,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitFailure
 		}
 	}
+
 	return subcommands.ExitSuccess
 }

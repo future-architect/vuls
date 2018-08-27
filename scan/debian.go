@@ -135,20 +135,47 @@ func trim(str string) string {
 	return strings.TrimSpace(str)
 }
 
+func (o *debian) checkScanMode() error {
+	return nil
+}
+
 func (o *debian) checkIfSudoNoPasswd() error {
-	if config.Conf.Deep || o.Distro.Family == config.Raspbian {
-		cmd := util.PrependProxyEnv("apt-get update")
+	if o.getServerInfo().Mode.IsFast() {
+		o.log.Infof("sudo ... No need")
+		return nil
+	}
+
+	cmds := []string{
+		"checkrestart",
+		"stat /proc/1/exe",
+	}
+
+	if !o.getServerInfo().Mode.IsOffline() {
+		cmds = append(cmds, "apt-get update")
+	}
+
+	for _, cmd := range cmds {
+		cmd = util.PrependProxyEnv(cmd)
 		o.log.Infof("Checking... sudo %s", cmd)
 		r := o.exec(cmd, sudo)
 		if !r.isSuccess() {
 			o.log.Errorf("sudo error on %s", r)
 			return fmt.Errorf("Failed to sudo: %s", r)
 		}
-		o.log.Infof("Sudo... Pass")
-		return nil
 	}
 
-	o.log.Infof("sudo ... No need")
+	initName, err := o.detectInitSystem()
+	if initName == upstart && err == nil {
+		cmd := util.PrependProxyEnv("initctl status --help")
+		o.log.Infof("Checking... sudo %s", cmd)
+		r := o.exec(cmd, sudo)
+		if !r.isSuccess() {
+			o.log.Errorf("sudo error on %s", r)
+			return fmt.Errorf("Failed to sudo: %s", r)
+		}
+	}
+
+	o.log.Infof("Sudo... Pass")
 	return nil
 }
 
@@ -159,43 +186,57 @@ type dep struct {
 	additionalMsg string
 }
 
-func (o *debian) checkDependencies() error {
+func (o *debian) checkDeps() error {
 	deps := []dep{}
+	if o.getServerInfo().Mode.IsDeep() || o.getServerInfo().Mode.IsFastRoot() {
+		// checkrestart
+		deps = append(deps, dep{
+			packName: "debian-goodies",
+			required: true,
+			logFunc:  o.log.Errorf,
+		})
+	}
 
-	switch o.Distro.Family {
-	case config.Ubuntu, config.Raspbian:
-		o.log.Infof("Dependencies... No need")
-		return nil
-
-	case config.Debian:
+	if o.Distro.Family == config.Debian {
 		// https://askubuntu.com/a/742844
 		if !o.ServerInfo.IsContainer() {
 			deps = append(deps, dep{
 				packName:      "reboot-notifier",
 				required:      false,
 				logFunc:       o.log.Warnf,
-				additionalMsg: ". If you want to detect whether not rebooted after kernel update.",
+				additionalMsg: ". Install it if you want to detect whether not rebooted after kernel update. To install `reboot-notifier` on Debian, see https://feeding.cloud.geek.nz/posts/introducing-reboot-notifier/",
 			})
 		}
 
-		if config.Conf.Deep {
+		// Changelogs will be fetched only in deep scan mode
+		if o.getServerInfo().Mode.IsDeep() {
 			// Debian needs aptitude to get changelogs.
-			// Because unable to get changelogs via apt-get changelog on Debian.
+			// Because unable to get changelogs via `apt-get changelog` on Debian.
 			deps = append(deps, dep{
 				packName: "aptitude",
 				required: true,
 				logFunc:  o.log.Errorf,
 			})
 		}
-
-	default:
-		return fmt.Errorf("Not implemented yet: %s", o.Distro)
 	}
 
 	for _, dep := range deps {
-		cmd := "dpkg-query -W " + dep.packName
-		if r := o.exec(cmd, noSudo); !r.isSuccess() {
-			msg := fmt.Sprintf("%s is not installed", dep.packName)
+		cmd := fmt.Sprintf("%s %s", dpkgQuery, dep.packName)
+		msg := fmt.Sprintf("%s is not installed", dep.packName)
+		r := o.exec(cmd, noSudo)
+		if !r.isSuccess() {
+			if dep.additionalMsg != "" {
+				msg += dep.additionalMsg
+			}
+			dep.logFunc(msg)
+			if dep.required {
+				return fmt.Errorf(msg)
+			}
+			continue
+		}
+
+		_, status, _, _, _, _ := o.parseScannedPackagesLine(r.Stdout)
+		if status != "ii" {
 			if dep.additionalMsg != "" {
 				msg += dep.additionalMsg
 			}
@@ -204,12 +245,14 @@ func (o *debian) checkDependencies() error {
 				return fmt.Errorf(msg)
 			}
 		}
+
 	}
 	o.log.Infof("Dependencies... Pass")
 	return nil
 }
 
 func (o *debian) preCure() error {
+	o.log.Infof("Scanning in %s", o.getServerInfo().Mode)
 	if err := o.detectIPAddr(); err != nil {
 		o.log.Debugf("Failed to detect IP addresses: %s", err)
 	}
@@ -218,6 +261,9 @@ func (o *debian) preCure() error {
 }
 
 func (o *debian) postScan() error {
+	if o.getServerInfo().Mode.IsDeep() || o.getServerInfo().Mode.IsFastRoot() {
+		return o.checkrestart()
+	}
 	return nil
 }
 
@@ -252,11 +298,11 @@ func (o *debian) scanPackages() error {
 	o.Packages = installed
 	o.SrcPackages = srcPacks
 
-	if config.Conf.Offline {
+	if o.getServerInfo().Mode.IsOffline() {
 		return nil
 	}
 
-	if config.Conf.Deep || o.Distro.Family == config.Raspbian {
+	if o.getServerInfo().Mode.IsDeep() || o.Distro.Family == config.Raspbian {
 		unsecures, err := o.scanUnsecurePackages(updatable)
 		if err != nil {
 			o.log.Errorf("Failed to scan vulnerable packages: %s", err)
@@ -281,23 +327,63 @@ func (o *debian) rebootRequired() (bool, error) {
 	}
 }
 
+const dpkgQuery = `dpkg-query -W -f="\${binary:Package},\${db:Status-Abbrev},\${Version},\${Source},\${source:Version}\n"`
+
 func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, models.SrcPackages, error) {
-	installed, updatable, srcPacks := models.Packages{}, models.Packages{}, models.SrcPackages{}
-	r := o.exec(`dpkg-query -W -f="\${binary:Package},\${db:Status-Abbrev},\${Version},\${Source},\${source:Version}\n"`, noSudo)
+	updatable := models.Packages{}
+	r := o.exec(dpkgQuery, noSudo)
 	if !r.isSuccess() {
 		return nil, nil, nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
+
+	installed, srcPacks, err := o.parseInstalledPackages(r.Stdout)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	if o.getServerInfo().Mode.IsOffline() || o.getServerInfo().Mode.IsFast() {
+		return installed, updatable, srcPacks, nil
+	}
+
+	if err := o.aptGetUpdate(); err != nil {
+		return nil, nil, nil, err
+	}
+	updatableNames, err := o.getUpdatablePackNames()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	for _, name := range updatableNames {
+		for _, pack := range installed {
+			if pack.Name == name {
+				updatable[name] = pack
+				break
+			}
+		}
+	}
+
+	// Fill the candidate versions of upgradable packages
+	err = o.fillCandidateVersion(updatable)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("Failed to fill candidate versions. err: %s", err)
+	}
+	installed.MergeNewVersion(updatable)
+
+	return installed, updatable, srcPacks, nil
+}
+
+func (o *debian) parseInstalledPackages(stdout string) (models.Packages, models.SrcPackages, error) {
+	installed, srcPacks := models.Packages{}, models.SrcPackages{}
 
 	// e.g.
 	// curl,ii ,7.38.0-4+deb8u2,,7.38.0-4+deb8u2
 	// openssh-server,ii ,1:6.7p1-5+deb8u3,openssh,1:6.7p1-5+deb8u3
 	// tar,ii ,1.27.1-2+b1,tar (1.27.1-2),1.27.1-2
-	lines := strings.Split(r.Stdout, "\n")
+	lines := strings.Split(stdout, "\n")
 	for _, line := range lines {
 		if trimmed := strings.TrimSpace(line); len(trimmed) != 0 {
 			name, status, version, srcName, srcVersion, err := o.parseScannedPackagesLine(trimmed)
-			if err != nil {
-				return nil, nil, nil, fmt.Errorf(
+			if err != nil || len(status) < 2 {
+				return nil, nil, fmt.Errorf(
 					"Debian: Failed to parse package line: %s", line)
 			}
 
@@ -343,35 +429,7 @@ func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, mode
 	for name := range installed {
 		delete(srcPacks, name)
 	}
-
-	if config.Conf.Offline {
-		return installed, updatable, srcPacks, nil
-	}
-
-	if err := o.aptGetUpdate(); err != nil {
-		return nil, nil, nil, err
-	}
-	updatableNames, err := o.getUpdatablePackNames()
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	for _, name := range updatableNames {
-		for _, pack := range installed {
-			if pack.Name == name {
-				updatable[name] = pack
-				break
-			}
-		}
-	}
-
-	// Fill the candidate versions of upgradable packages
-	err = o.fillCandidateVersion(updatable)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("Failed to fill candidate versions. err: %s", err)
-	}
-	installed.MergeNewVersion(updatable)
-
-	return installed, updatable, srcPacks, nil
+	return installed, srcPacks, nil
 }
 
 func (o *debian) parseScannedPackagesLine(line string) (name, status, version, srcName, srcVersion string, err error) {
@@ -382,7 +440,7 @@ func (o *debian) parseScannedPackagesLine(line string) (name, status, version, s
 		if i := strings.IndexRune(name, ':'); i >= 0 {
 			name = name[:i]
 		}
-		status = ss[1]
+		status = strings.TrimSpace(ss[1])
 		version = ss[2]
 		// remove version. ex: tar (1.27.1-2)
 		srcName = strings.Split(ss[3], " ")[0]
@@ -417,7 +475,7 @@ func (o *debian) scanUnsecurePackages(updatable models.Packages) (models.VulnInf
 	}
 
 	// Collect CVE information of upgradable packages
-	vulnInfos, err := o.scanVulnInfos(updatable, meta)
+	vulnInfos, err := o.scanChangelogs(updatable, meta)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to scan unsecure packages. err: %s", err)
 	}
@@ -547,7 +605,7 @@ type DetectedCveID struct {
 	Confidence models.Confidence
 }
 
-func (o *debian) scanVulnInfos(updatablePacks models.Packages, meta *cache.Meta) (models.VulnInfos, error) {
+func (o *debian) scanChangelogs(updatablePacks models.Packages, meta *cache.Meta) (models.VulnInfos, error) {
 	type response struct {
 		pack           *models.Package
 		DetectedCveIDs []DetectedCveID
@@ -583,7 +641,7 @@ func (o *debian) scanVulnInfos(updatablePacks models.Packages, meta *cache.Meta)
 					// if the changelog is not in cache or failed to get from local cache,
 					// get the changelog of the package via internet.
 					// After that, store it in the cache.
-					if cveIDs, pack, err := o.scanPackageCveIDs(p); err != nil {
+					if cveIDs, pack, err := o.fetchParseChangelog(p); err != nil {
 						errChan <- err
 					} else {
 						resChan <- response{pack, cveIDs}
@@ -639,7 +697,7 @@ func (o *debian) scanVulnInfos(updatablePacks models.Packages, meta *cache.Meta)
 
 		vinfos[cveID.CveID] = models.VulnInfo{
 			CveID:            cveID.CveID,
-			Confidence:       cveID.Confidence,
+			Confidences:      models.Confidences{cveID.Confidence},
 			AffectedPackages: affected,
 		}
 	}
@@ -681,7 +739,7 @@ func (o *debian) getChangelogCache(meta *cache.Meta, pack models.Package) string
 	return changelog
 }
 
-func (o *debian) scanPackageCveIDs(pack models.Package) ([]DetectedCveID, *models.Package, error) {
+func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *models.Package, error) {
 	cmd := ""
 	switch o.Distro.Family {
 	case config.Ubuntu, config.Raspbian:
@@ -760,7 +818,7 @@ func (o *debian) getCveIDsFromChangelog(
 
 	// Only logging the error.
 	o.log.Warnf("Failed to find the version in changelog: %s-%s", name, ver)
-	o.log.Debugf("Changelog of : %s-%s-%s", name, ver, changelog)
+	o.log.Debugf("Changelog of %s-%s: %s", name, ver, changelog)
 
 	// If the version is not in changelog, return entire changelog to put into cache
 	pack := o.Packages[name]
@@ -885,4 +943,146 @@ func (o *debian) parseAptCachePolicy(stdout, name string) (packCandidateVer, err
 		}
 	}
 	return ver, fmt.Errorf("Unknown Format: %s", stdout)
+}
+
+func (o *debian) checkrestart() error {
+	initName, err := o.detectInitSystem()
+	if err != nil {
+		o.log.Warn(err)
+		// continue scanning
+	}
+
+	cmd := "LANGUAGE=en_US.UTF-8 checkrestart"
+	r := o.exec(cmd, sudo)
+	if !r.isSuccess() {
+		return fmt.Errorf(
+			"Failed to %s. status: %d, stdout: %s, stderr: %s",
+			cmd, r.ExitStatus, r.Stdout, r.Stderr)
+	}
+	packs, unknownServices := o.parseCheckRestart(r.Stdout)
+	pidService := map[string]string{}
+	if initName == upstart {
+		for _, s := range unknownServices {
+			cmd := "LANGUAGE=en_US.UTF-8 initctl status " + s
+			r := o.exec(cmd, sudo)
+			if !r.isSuccess() {
+				continue
+			}
+			if ss := strings.Fields(r.Stdout); len(ss) == 4 && ss[2] == "process" {
+				pidService[ss[3]] = s
+			}
+		}
+	}
+
+	for i, p := range packs {
+		pack := o.Packages[p.Name]
+		pack.NeedRestartProcs = p.NeedRestartProcs
+		o.Packages[p.Name] = pack
+
+		for j, proc := range p.NeedRestartProcs {
+			if proc.HasInit == false {
+				continue
+			}
+			packs[i].NeedRestartProcs[j].InitSystem = initName
+			if initName == systemd {
+				name, err := o.detectServiceName(proc.PID)
+				if err != nil {
+					o.log.Warn(err)
+					// continue scanning
+				}
+				packs[i].NeedRestartProcs[j].ServiceName = name
+			} else {
+				if proc.ServiceName == "" {
+					if ss := strings.Fields(r.Stdout); len(ss) == 4 && ss[2] == "process" {
+						if name, ok := pidService[ss[3]]; ok {
+							packs[i].NeedRestartProcs[j].ServiceName = name
+						}
+					}
+				}
+			}
+		}
+		o.Packages[p.Name] = p
+	}
+	return nil
+}
+
+func (o *debian) parseCheckRestart(stdout string) (models.Packages, []string) {
+	services := []string{}
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "service") && strings.HasSuffix(line, "restart") {
+			ss := strings.Fields(line)
+			if len(ss) != 3 {
+				continue
+			}
+			services = append(services, ss[1])
+		}
+	}
+
+	packs := models.Packages{}
+	packName := ""
+	hasInit := true
+	scanner = bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasSuffix(line, "do not seem to have an associated init script to restart them:") {
+			hasInit = false
+			continue
+		}
+		if strings.HasSuffix(line, ":") && len(strings.Fields(line)) == 1 {
+			packName = strings.TrimSuffix(line, ":")
+			continue
+		}
+		if strings.HasPrefix(line, "\t") {
+			ss := strings.Fields(line)
+			if len(ss) != 2 {
+				continue
+			}
+
+			serviceName := ""
+			for _, s := range services {
+				if packName == s {
+					serviceName = s
+				}
+			}
+			if p, ok := packs[packName]; ok {
+				p.NeedRestartProcs = append(p.NeedRestartProcs, models.NeedRestartProcess{
+					PID:         ss[0],
+					Path:        ss[1],
+					ServiceName: serviceName,
+					HasInit:     hasInit,
+				})
+				packs[packName] = p
+			} else {
+				packs[packName] = models.Package{
+					Name: packName,
+					NeedRestartProcs: []models.NeedRestartProcess{
+						{
+							PID:         ss[0],
+							Path:        ss[1],
+							ServiceName: serviceName,
+							HasInit:     hasInit,
+						},
+					},
+				}
+			}
+		}
+	}
+
+	unknownServices := []string{}
+	for _, s := range services {
+		found := false
+		for _, p := range packs {
+			for _, proc := range p.NeedRestartProcs {
+				if proc.ServiceName == s {
+					found = true
+				}
+			}
+		}
+		if !found {
+			unknownServices = append(unknownServices, s)
+		}
+	}
+	return packs, unknownServices
 }

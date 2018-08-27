@@ -25,6 +25,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	"github.com/kotakanbe/goval-dictionary/db"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
@@ -34,20 +35,20 @@ type RedHatBase struct {
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o RedHatBase) FillWithOval(r *models.ScanResult) (err error) {
+func (o RedHatBase) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
 	var relatedDefs ovalResult
-	if o.isFetchViaHTTP() {
+	if o.IsFetchViaHTTP() {
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
-			return err
+			return 0, err
 		}
 	} else {
-		if relatedDefs, err = getDefsByPackNameFromOvalDB(r); err != nil {
-			return err
+		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
+			return 0, err
 		}
 	}
 
 	for _, defPacks := range relatedDefs.entries {
-		o.update(r, defPacks)
+		nCVEs += o.update(r, defPacks)
 	}
 
 	for _, vuln := range r.ScannedCves {
@@ -64,7 +65,8 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) (err error) {
 			}
 		}
 	}
-	return nil
+
+	return nCVEs, nil
 }
 
 var kernelRelatedPackNames = map[string]bool{
@@ -98,7 +100,7 @@ var kernelRelatedPackNames = map[string]bool{
 	"python-perf":             true,
 }
 
-func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) {
+func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) {
 	ctype := models.NewCveContentType(o.family)
 	for _, cve := range defPacks.def.Advisory.Cves {
 		ovalContent := *o.convertToModel(cve.CveID, &defPacks.def)
@@ -107,9 +109,10 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) {
 			util.Log.Debugf("%s is newly detected by OVAL", cve.CveID)
 			vinfo = models.VulnInfo{
 				CveID:       cve.CveID,
-				Confidence:  models.OvalMatch,
+				Confidences: models.Confidences{models.OvalMatch},
 				CveContents: models.NewCveContents(ovalContent),
 			}
+			nCVEs++
 		} else {
 			cveContents := vinfo.CveContents
 			if v, ok := vinfo.CveContents[ctype]; ok {
@@ -125,22 +128,24 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) {
 				cveContents = models.CveContents{}
 			}
 
-			if vinfo.Confidence.Score < models.OvalMatch.Score {
-				vinfo.Confidence = models.OvalMatch
-			}
+			vinfo.Confidences.AppendIfMissing(models.OvalMatch)
 			cveContents[ctype] = ovalContent
 			vinfo.CveContents = cveContents
 		}
 
 		// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
 		for _, pack := range vinfo.AffectedPackages {
-			notFixedYet, _ := defPacks.actuallyAffectedPackNames[pack.Name]
-			defPacks.actuallyAffectedPackNames[pack.Name] = notFixedYet
+			if nfy, ok := defPacks.actuallyAffectedPackNames[pack.Name]; !ok {
+				defPacks.actuallyAffectedPackNames[pack.Name] = pack.NotFixedYet
+			} else if nfy {
+				defPacks.actuallyAffectedPackNames[pack.Name] = true
+			}
 		}
 		vinfo.AffectedPackages = defPacks.toPackStatuses()
 		vinfo.AffectedPackages.Sort()
 		r.ScannedCves[cve.CveID] = vinfo
 	}
+	return
 }
 
 func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *models.CveContent {
@@ -165,20 +170,32 @@ func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *mo
 			severity = cve.Impact
 		}
 
+		sev2, sev3 := "", ""
+		if score2 != 0 {
+			sev2 = severity
+		}
+		if score3 != 0 {
+			sev3 = severity
+		}
+
+		// CWE-ID in RedHat OVAL may have multiple cweIDs separated by space
+		cwes := strings.Fields(cve.Cwe)
+
 		return &models.CveContent{
-			Type:         models.NewCveContentType(o.family),
-			CveID:        cve.CveID,
-			Title:        def.Title,
-			Summary:      def.Description,
-			Severity:     severity,
-			Cvss2Score:   score2,
-			Cvss2Vector:  vec2,
-			Cvss3Score:   score3,
-			Cvss3Vector:  vec3,
-			References:   refs,
-			CweID:        cve.Cwe,
-			Published:    def.Advisory.Issued,
-			LastModified: def.Advisory.Updated,
+			Type:          models.NewCveContentType(o.family),
+			CveID:         cve.CveID,
+			Title:         def.Title,
+			Summary:       def.Description,
+			Cvss2Score:    score2,
+			Cvss2Vector:   vec2,
+			Cvss2Severity: sev2,
+			Cvss3Score:    score3,
+			Cvss3Vector:   vec3,
+			Cvss3Severity: sev3,
+			References:    refs,
+			CweIDs:        cwes,
+			Published:     def.Advisory.Issued,
+			LastModified:  def.Advisory.Updated,
 		}
 	}
 	return nil
@@ -207,7 +224,7 @@ func (o RedHatBase) parseCvss3(scoreVector string) (score float64, vector string
 		if score, err = strconv.ParseFloat(ss[0], 64); err != nil {
 			return 0, ""
 		}
-		return score, strings.Join(ss[1:], "/")
+		return score, fmt.Sprintf("CVSS:3.0/%s", ss[1])
 	}
 	return 0, ""
 }

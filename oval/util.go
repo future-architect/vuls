@@ -126,7 +126,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 			select {
 			case req := <-reqChan:
 				url, err := util.URLPathJoin(
-					config.Conf.OvalDBURL,
+					config.Conf.OvalDict.URL,
 					"packs",
 					r.Family,
 					r.Release,
@@ -216,20 +216,7 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 	}
 }
 
-func getDefsByPackNameFromOvalDB(r *models.ScanResult) (relatedDefs ovalResult, err error) {
-	path := config.Conf.OvalDBURL
-	if config.Conf.OvalDBType == "sqlite3" {
-		path = config.Conf.OvalDBPath
-	}
-	util.Log.Debugf("Open oval-dictionary db (%s): %s", config.Conf.OvalDBType, path)
-
-	var ovaldb db.DB
-	if ovaldb, _, err = db.NewDB(r.Family, config.Conf.OvalDBType,
-		path, config.Conf.DebugSQL); err != nil {
-		return
-	}
-	defer ovaldb.CloseDB()
-
+func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDefs ovalResult, err error) {
 	requests := []request{}
 	for _, pack := range r.Packages {
 		requests = append(requests, request{
@@ -249,9 +236,9 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult) (relatedDefs ovalResult, 
 	}
 
 	for _, req := range requests {
-		definitions, err := ovaldb.GetByPackName(r.Release, req.packName)
+		definitions, err := driver.GetByPackName(r.Release, req.packName)
 		if err != nil {
-			return relatedDefs, fmt.Errorf("Failed to get %s OVAL info by package name: %v", r.Family, err)
+			return relatedDefs, fmt.Errorf("Failed to get %s OVAL info by package: %#v, err: %s", r.Family, req, err)
 		}
 		for _, def := range definitions {
 			affected, notFixedYet := isOvalDefAffected(def, req, r.Family, r.RunningKernel)
@@ -316,8 +303,12 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 				// Unable to judge whether fixed or not fixed of src package(Ubuntu, Debian)
 				return true, false
 			}
+
+			// `offline` or `fast` scan mode can't get a updatable version.
+			// In these mode, the blow field was set empty.
+			// Vuls can not judge fixed or unfixed.
 			if req.NewVersionRelease == "" {
-				return true, true
+				return true, false
 			}
 
 			// compare version: newVer vs oval

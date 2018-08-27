@@ -21,6 +21,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	"github.com/kotakanbe/goval-dictionary/db"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
@@ -40,15 +41,15 @@ func NewSUSE() SUSE {
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o SUSE) FillWithOval(r *models.ScanResult) (err error) {
+func (o SUSE) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
 	var relatedDefs ovalResult
-	if o.isFetchViaHTTP() {
+	if o.IsFetchViaHTTP() {
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
-			return err
+			return 0, err
 		}
 	} else {
-		if relatedDefs, err = getDefsByPackNameFromOvalDB(r); err != nil {
-			return err
+		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
+			return 0, err
 		}
 	}
 	for _, defPacks := range relatedDefs.entries {
@@ -61,7 +62,7 @@ func (o SUSE) FillWithOval(r *models.ScanResult) (err error) {
 			vuln.CveContents[models.SUSE] = cont
 		}
 	}
-	return nil
+	return len(relatedDefs.entries), nil
 }
 
 func (o SUSE) update(r *models.ScanResult, defPacks defPacks) {
@@ -72,7 +73,7 @@ func (o SUSE) update(r *models.ScanResult, defPacks defPacks) {
 		util.Log.Debugf("%s is newly detected by OVAL", defPacks.def.Title)
 		vinfo = models.VulnInfo{
 			CveID:       defPacks.def.Title,
-			Confidence:  models.OvalMatch,
+			Confidences: models.Confidences{models.OvalMatch},
 			CveContents: models.NewCveContents(ovalContent),
 		}
 	} else {
@@ -84,17 +85,14 @@ func (o SUSE) update(r *models.ScanResult, defPacks defPacks) {
 			util.Log.Debugf("%s is also detected by OVAL", defPacks.def.Title)
 			cveContents = models.CveContents{}
 		}
-		if vinfo.Confidence.Score < models.OvalMatch.Score {
-			vinfo.Confidence = models.OvalMatch
-		}
+		vinfo.Confidences.AppendIfMissing(models.OvalMatch)
 		cveContents[ctype] = ovalContent
 		vinfo.CveContents = cveContents
 	}
 
 	// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
 	for _, pack := range vinfo.AffectedPackages {
-		notFixedYet, _ := defPacks.actuallyAffectedPackNames[pack.Name]
-		defPacks.actuallyAffectedPackNames[pack.Name] = notFixedYet
+		defPacks.actuallyAffectedPackNames[pack.Name] = pack.NotFixedYet
 	}
 	vinfo.AffectedPackages = defPacks.toPackStatuses()
 	vinfo.AffectedPackages.Sort()

@@ -42,7 +42,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 							CveID: "CVE-2017-0001",
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.NVD,
+									Type:         models.NvdXML,
 									CveID:        "CVE-2017-0001",
 									LastModified: time.Time{},
 								},
@@ -56,7 +56,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 							CveID: "CVE-2017-0001",
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.NVD,
+									Type:         models.NvdXML,
 									CveID:        "CVE-2017-0001",
 									LastModified: time.Time{},
 								},
@@ -77,7 +77,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 							CveID: "CVE-2017-0002",
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.JVN,
+									Type:         models.Jvn,
 									CveID:        "CVE-2017-0002",
 									LastModified: old,
 								},
@@ -91,7 +91,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 							CveID: "CVE-2017-0002",
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.JVN,
+									Type:         models.Jvn,
 									CveID:        "CVE-2017-0002",
 									LastModified: old,
 								},
@@ -113,7 +113,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 							CveID: "CVE-2017-0003",
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.NVD,
+									Type:         models.NvdXML,
 									CveID:        "CVE-2017-0002",
 									LastModified: new,
 								},
@@ -128,7 +128,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 							CveID: "CVE-2017-0003",
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.NVD,
+									Type:         models.NvdXML,
 									CveID:        "CVE-2017-0002",
 									LastModified: old,
 								},
@@ -150,7 +150,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 							CveID: "CVE-2017-0004",
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.NVD,
+									Type:         models.NvdXML,
 									CveID:        "CVE-2017-0002",
 									LastModified: old,
 								},
@@ -194,18 +194,18 @@ func TestDiff(t *testing.T) {
 							CveID:            "CVE-2012-6702",
 							AffectedPackages: models.PackageStatuses{{Name: "libexpat1"}},
 							DistroAdvisories: []models.DistroAdvisory{},
-							CpeNames:         []string{},
+							CpeURIs:          []string{},
 						},
 						"CVE-2014-9761": {
 							CveID:            "CVE-2014-9761",
 							AffectedPackages: models.PackageStatuses{{Name: "libc-bin"}},
 							DistroAdvisories: []models.DistroAdvisory{},
-							CpeNames:         []string{},
+							CpeURIs:          []string{},
 						},
 					},
 					Packages: models.Packages{},
 					Errors:   []string{},
-					Optional: [][]interface{}{},
+					Optional: map[string]interface{}{},
 				},
 			},
 			inPrevious: models.ScanResults{
@@ -219,18 +219,18 @@ func TestDiff(t *testing.T) {
 							CveID:            "CVE-2012-6702",
 							AffectedPackages: models.PackageStatuses{{Name: "libexpat1"}},
 							DistroAdvisories: []models.DistroAdvisory{},
-							CpeNames:         []string{},
+							CpeURIs:          []string{},
 						},
 						"CVE-2014-9761": {
 							CveID:            "CVE-2014-9761",
 							AffectedPackages: models.PackageStatuses{{Name: "libc-bin"}},
 							DistroAdvisories: []models.DistroAdvisory{},
-							CpeNames:         []string{},
+							CpeURIs:          []string{},
 						},
 					},
 					Packages: models.Packages{},
 					Errors:   []string{},
-					Optional: [][]interface{}{},
+					Optional: map[string]interface{}{},
 				},
 			},
 			out: models.ScanResult{
@@ -241,7 +241,7 @@ func TestDiff(t *testing.T) {
 				Packages:    models.Packages{},
 				ScannedCves: models.VulnInfos{},
 				Errors:      []string{},
-				Optional:    [][]interface{}{},
+				Optional:    map[string]interface{}{},
 			},
 		},
 		{
@@ -256,7 +256,7 @@ func TestDiff(t *testing.T) {
 							CveID:            "CVE-2016-6662",
 							AffectedPackages: models.PackageStatuses{{Name: "mysql-libs"}},
 							DistroAdvisories: []models.DistroAdvisory{},
-							CpeNames:         []string{},
+							CpeURIs:          []string{},
 						},
 					},
 					Packages: models.Packages{
@@ -294,7 +294,7 @@ func TestDiff(t *testing.T) {
 						CveID:            "CVE-2016-6662",
 						AffectedPackages: models.PackageStatuses{{Name: "mysql-libs"}},
 						DistroAdvisories: []models.DistroAdvisory{},
-						CpeNames:         []string{},
+						CpeURIs:          []string{},
 					},
 				},
 				Packages: models.Packages{
@@ -356,7 +356,7 @@ func TestIsCveFixed(t *testing.T) {
 					},
 					CveContents: models.NewCveContents(
 						models.CveContent{
-							Type:         models.NVD,
+							Type:         models.NvdXML,
 							CveID:        "CVE-2016-6662",
 							LastModified: time.Time{},
 						},
@@ -374,7 +374,7 @@ func TestIsCveFixed(t *testing.T) {
 							},
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.NVD,
+									Type:         models.NvdXML,
 									CveID:        "CVE-2016-6662",
 									LastModified: time.Time{},
 								},
@@ -397,7 +397,7 @@ func TestIsCveFixed(t *testing.T) {
 					},
 					CveContents: models.NewCveContents(
 						models.CveContent{
-							Type:         models.NVD,
+							Type:         models.NvdXML,
 							CveID:        "CVE-2016-6662",
 							LastModified: time.Time{},
 						},
@@ -415,7 +415,7 @@ func TestIsCveFixed(t *testing.T) {
 							},
 							CveContents: models.NewCveContents(
 								models.CveContent{
-									Type:         models.NVD,
+									Type:         models.NvdXML,
 									CveID:        "CVE-2016-6662",
 									LastModified: time.Time{},
 								},

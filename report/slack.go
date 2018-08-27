@@ -177,18 +177,20 @@ func msgText(r models.ScanResult) string {
 	serverInfo := fmt.Sprintf("*%s*", r.ServerInfo())
 
 	if 0 < len(r.Errors) {
-		return fmt.Sprintf("%s\n%s\n%s\n%s\nError: %s",
+		return fmt.Sprintf("%s\n%s\n%s\n%s\n%s\nError: %s",
 			notifyUsers,
 			serverInfo,
 			r.ScannedCves.FormatCveSummary(),
-			r.Packages.FormatUpdatablePacksSummary(),
+			r.ScannedCves.FormatFixedStatus(r.Packages),
+			r.FormatUpdatablePacksSummary(),
 			r.Errors)
 	}
-	return fmt.Sprintf("%s\n%s\n%s\n%s",
+	return fmt.Sprintf("%s\n%s\n%s\n%s\n%s",
 		notifyUsers,
 		serverInfo,
 		r.ScannedCves.FormatCveSummary(),
-		r.Packages.FormatUpdatablePacksSummary())
+		r.ScannedCves.FormatFixedStatus(r.Packages),
+		r.FormatUpdatablePacksSummary())
 }
 
 func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
@@ -203,7 +205,7 @@ func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 				curent = append(curent, affected.Name)
 			}
 		}
-		for _, n := range vinfo.CpeNames {
+		for _, n := range vinfo.CpeURIs {
 			curent = append(curent, n)
 		}
 
@@ -219,14 +221,14 @@ func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 				new = append(new, "?")
 			}
 		}
-		for range vinfo.CpeNames {
+		for range vinfo.CpeURIs {
 			new = append(new, "?")
 		}
 
 		a := slack.Attachment{
 			Title:      vinfo.CveID,
 			TitleLink:  "https://nvd.nist.gov/vuln/detail/" + vinfo.CveID,
-			Text:       attachmentText(vinfo, r.Family),
+			Text:       attachmentText(vinfo, r.Family, r.CweDict, r.Packages),
 			MarkdownIn: []string{"text", "pretext"},
 			Fields: []slack.AttachmentField{
 				{
@@ -241,7 +243,7 @@ func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 					Short: true,
 				},
 			},
-			Color: color(vinfo.MaxCvssScore().Value.Score),
+			Color: cvssColor(vinfo.MaxCvssScore().Value.Score),
 		}
 		attaches = append(attaches, a)
 	}
@@ -249,7 +251,7 @@ func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 }
 
 // https://api.slack.com/docs/attachments
-func color(cvssScore float64) string {
+func cvssColor(cvssScore float64) string {
 	switch {
 	case 7 <= cvssScore:
 		return "danger"
@@ -262,10 +264,15 @@ func color(cvssScore float64) string {
 	}
 }
 
-func attachmentText(vinfo models.VulnInfo, osFamily string) string {
+func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]models.CweDictEntry, packs models.Packages) string {
 	maxCvss := vinfo.MaxCvssScore()
 	vectors := []string{}
-	for _, cvss := range vinfo.Cvss2Scores() {
+
+	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores(osFamily)...)
+	for _, cvss := range scores {
+		if cvss.Value.Severity == "" {
+			continue
+		}
 		calcURL := ""
 		switch cvss.Value.Type {
 		case models.CVSS2:
@@ -279,9 +286,10 @@ func attachmentText(vinfo models.VulnInfo, osFamily string) string {
 		}
 
 		if cont, ok := vinfo.CveContents[cvss.Type]; ok {
-			v := fmt.Sprintf("<%s|%s> (<%s|%s>)",
+			v := fmt.Sprintf("<%s|%s> %s (<%s|%s>)",
 				calcURL,
-				cvss.Value.Format(),
+				fmt.Sprintf("%3.1f/%s", cvss.Value.Score, cvss.Value.Vector),
+				cvss.Value.Severity,
 				cont.SourceLink,
 				cvss.Type)
 			vectors = append(vectors, v)
@@ -294,9 +302,10 @@ func attachmentText(vinfo models.VulnInfo, osFamily string) string {
 						v, k))
 				}
 
-				v := fmt.Sprintf("<%s|%s> (%s)",
+				v := fmt.Sprintf("<%s|%s> %s (%s)",
 					calcURL,
-					cvss.Value.Format(),
+					fmt.Sprintf("%3.1f/%s", cvss.Value.Score, cvss.Value.Vector),
+					cvss.Value.Severity,
 					strings.Join(links, ", "))
 				vectors = append(vectors, v)
 			}
@@ -308,27 +317,42 @@ func attachmentText(vinfo models.VulnInfo, osFamily string) string {
 		severity = "?"
 	}
 
-	return fmt.Sprintf("*%4.1f (%s)* %s\n%s\n```%s```",
+	nwvec := vinfo.AttackVector()
+	if nwvec == "Network" || nwvec == "remote" {
+		nwvec = fmt.Sprintf("*%s*", nwvec)
+	}
+
+	mitigation := ""
+	if vinfo.Mitigations(osFamily)[0].Type != models.Unknown {
+		mitigation = fmt.Sprintf("\nMitigation:\n```%s```\n",
+			vinfo.Mitigations(osFamily)[0].Value)
+	}
+
+	return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n```\n%s\n```%s\n%s\n",
 		maxCvss.Value.Score,
 		severity,
-		cweIDs(vinfo, osFamily),
+		nwvec,
+		vinfo.PatchStatus(packs),
 		strings.Join(vectors, "\n"),
 		vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
+		mitigation,
+		cweIDs(vinfo, osFamily, cweDict),
 	)
 }
 
-func cweIDs(vinfo models.VulnInfo, osFamily string) string {
+func cweIDs(vinfo models.VulnInfo, osFamily string, cweDict models.CweDict) string {
 	links := []string{}
-	for _, cwe := range vinfo.CveContents.CweIDs(osFamily) {
-		if config.Conf.Lang == "ja" {
-			links = append(links, fmt.Sprintf("<%s|%s>",
-				cweJvnURL(cwe.Value), cwe.Value))
-		} else {
-			links = append(links, fmt.Sprintf("<%s|%s>",
-				cweURL(cwe.Value), cwe.Value))
+	for _, c := range vinfo.CveContents.UniqCweIDs(osFamily) {
+		name, url, top10Rank, top10URL := cweDict.Get(c.Value, osFamily)
+		line := ""
+		if top10Rank != "" {
+			line = fmt.Sprintf("<%s|[OWASP Top %s]>",
+				top10URL, top10Rank)
 		}
+		links = append(links, fmt.Sprintf("%s <%s|%s>: %s",
+			line, url, c.Value, name))
 	}
-	return strings.Join(links, " / ")
+	return strings.Join(links, "\n")
 }
 
 // See testcase

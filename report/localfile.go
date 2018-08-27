@@ -72,7 +72,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 			}
 		}
 
-		if c.Conf.FormatShortText {
+		if c.Conf.FormatList {
 			var p string
 			if c.Conf.Diff {
 				p = path + "_short_diff.txt"
@@ -81,7 +81,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 			}
 
 			if err := writeFile(
-				p, []byte(formatShortPlainText(r)), 0600); err != nil {
+				p, []byte(formatList(r)), 0600); err != nil {
 				return fmt.Errorf(
 					"Failed to write text files. path: %s, err: %s", p, err)
 			}
@@ -131,11 +131,5 @@ func writeFile(path string, data []byte, perm os.FileMode) error {
 		}
 		path = path + ".gz"
 	}
-
-	if err := ioutil.WriteFile(
-		path, []byte(data), perm); err != nil {
-		return err
-	}
-
-	return nil
+	return ioutil.WriteFile(path, []byte(data), perm)
 }

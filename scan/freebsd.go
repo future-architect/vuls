@@ -67,18 +67,26 @@ func detectFreebsd(c config.ServerInfo) (itsMe bool, bsd osTypeInterface) {
 	return false, bsd
 }
 
+func (o *bsd) checkScanMode() error {
+	if o.getServerInfo().Mode.IsOffline() {
+		return fmt.Errorf("Remove offline scan mode, FreeBSD needs internet connection")
+	}
+	return nil
+}
+
 func (o *bsd) checkIfSudoNoPasswd() error {
 	// FreeBSD doesn't need root privilege
 	o.log.Infof("sudo ... No need")
 	return nil
 }
 
-func (o *bsd) checkDependencies() error {
+func (o *bsd) checkDeps() error {
 	o.log.Infof("Dependencies... No need")
 	return nil
 }
 
 func (o *bsd) preCure() error {
+	o.log.Infof("Scanning in %s", o.getServerInfo().Mode)
 	if err := o.detectIPAddr(); err != nil {
 		o.log.Debugf("Failed to detect IP addresses: %s", err)
 	}
@@ -156,6 +164,10 @@ func (o *bsd) scanPackages() error {
 	}
 	o.VulnInfos = unsecures
 	return nil
+}
+
+func (o *bsd) parseInstalledPackages(string) (models.Packages, models.SrcPackages, error) {
+	return nil, nil, nil
 }
 
 func (o *bsd) rebootRequired() (bool, error) {
@@ -245,7 +257,7 @@ func (o *bsd) scanUnsecurePackages() (models.VulnInfos, error) {
 			CveID:            cveID,
 			AffectedPackages: affected,
 			DistroAdvisories: disAdvs,
-			Confidence:       models.PkgAuditMatch,
+			Confidences:      models.Confidences{models.PkgAuditMatch},
 		}
 	}
 	return vinfos, nil

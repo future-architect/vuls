@@ -21,6 +21,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	"github.com/kotakanbe/goval-dictionary/db"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
@@ -37,7 +38,7 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 		util.Log.Debugf("%s is newly detected by OVAL", defPacks.def.Debian.CveID)
 		vinfo = models.VulnInfo{
 			CveID:       defPacks.def.Debian.CveID,
-			Confidence:  models.OvalMatch,
+			Confidences: []models.Confidence{models.OvalMatch},
 			CveContents: models.NewCveContents(ovalContent),
 		}
 	} else {
@@ -51,17 +52,14 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 				defPacks.def.Debian.CveID)
 			cveContents = models.CveContents{}
 		}
-		if vinfo.Confidence.Score < models.OvalMatch.Score {
-			vinfo.Confidence = models.OvalMatch
-		}
+		vinfo.Confidences.AppendIfMissing(models.OvalMatch)
 		cveContents[ctype] = ovalContent
 		vinfo.CveContents = cveContents
 	}
 
 	// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
 	for _, pack := range vinfo.AffectedPackages {
-		notFixedYet, _ := defPacks.actuallyAffectedPackNames[pack.Name]
-		defPacks.actuallyAffectedPackNames[pack.Name] = notFixedYet
+		defPacks.actuallyAffectedPackNames[pack.Name] = pack.NotFixedYet
 	}
 
 	// update notFixedYet of SrcPackage
@@ -91,11 +89,11 @@ func (o DebianBase) convertToModel(def *ovalmodels.Definition) *models.CveConten
 	}
 
 	return &models.CveContent{
-		CveID:      def.Debian.CveID,
-		Title:      def.Title,
-		Summary:    def.Description,
-		Severity:   def.Advisory.Severity,
-		References: refs,
+		CveID:         def.Debian.CveID,
+		Title:         def.Title,
+		Summary:       def.Description,
+		Cvss2Severity: def.Advisory.Severity,
+		References:    refs,
 	}
 }
 
@@ -116,17 +114,17 @@ func NewDebian() Debian {
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o Debian) FillWithOval(r *models.ScanResult) (err error) {
+func (o Debian) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
 
 	//Debian's uname gives both of kernel release(uname -r), version(kernel-image version)
 	linuxImage := "linux-image-" + r.RunningKernel.Release
 
 	// Add linux and set the version of running kernel to search OVAL.
-	newVer := ""
-	if p, ok := r.Packages[linuxImage]; ok {
-		newVer = p.NewVersion
-	}
 	if r.Container.ContainerID == "" {
+		newVer := ""
+		if p, ok := r.Packages[linuxImage]; ok {
+			newVer = p.NewVersion
+		}
 		r.Packages["linux"] = models.Package{
 			Name:       "linux",
 			Version:    r.RunningKernel.Version,
@@ -135,13 +133,13 @@ func (o Debian) FillWithOval(r *models.ScanResult) (err error) {
 	}
 
 	var relatedDefs ovalResult
-	if o.isFetchViaHTTP() {
+	if o.IsFetchViaHTTP() {
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
-			return err
+			return 0, err
 		}
 	} else {
-		if relatedDefs, err = getDefsByPackNameFromOvalDB(r); err != nil {
-			return err
+		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
+			return 0, err
 		}
 	}
 
@@ -170,7 +168,7 @@ func (o Debian) FillWithOval(r *models.ScanResult) (err error) {
 			vuln.CveContents[models.Debian] = cont
 		}
 	}
-	return nil
+	return len(relatedDefs.entries), nil
 }
 
 // Ubuntu is the interface for Debian OVAL
@@ -190,7 +188,7 @@ func NewUbuntu() Ubuntu {
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o Ubuntu) FillWithOval(r *models.ScanResult) (err error) {
+func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
 	ovalKernelImageNames := []string{
 		"linux-aws",
 		"linux-azure",
@@ -245,13 +243,13 @@ func (o Ubuntu) FillWithOval(r *models.ScanResult) (err error) {
 	}
 
 	var relatedDefs ovalResult
-	if o.isFetchViaHTTP() {
+	if o.IsFetchViaHTTP() {
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
-			return err
+			return 0, err
 		}
 	} else {
-		if relatedDefs, err = getDefsByPackNameFromOvalDB(r); err != nil {
-			return err
+		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
+			return 0, err
 		}
 	}
 
@@ -282,5 +280,5 @@ func (o Ubuntu) FillWithOval(r *models.ScanResult) (err error) {
 			vuln.CveContents[models.Ubuntu] = cont
 		}
 	}
-	return nil
+	return len(relatedDefs.entries), nil
 }

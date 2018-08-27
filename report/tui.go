@@ -32,7 +32,6 @@ import (
 	"github.com/google/subcommands"
 	"github.com/gosuri/uitable"
 	"github.com/jroimartin/gocui"
-	log "github.com/sirupsen/logrus"
 )
 
 var scanResults models.ScanResults
@@ -55,7 +54,7 @@ func RunTui(results models.ScanResults) subcommands.ExitStatus {
 	// g, err := gocui.NewGui(gocui.OutputNormal)
 	g := gocui.NewGui()
 	if err := g.Init(); err != nil {
-		log.Errorf("%s", err)
+		util.Log.Errorf("%s", err)
 		return subcommands.ExitFailure
 	}
 	defer g.Close()
@@ -63,7 +62,7 @@ func RunTui(results models.ScanResults) subcommands.ExitStatus {
 	g.SetLayout(layout)
 	// g.SetManagerFunc(layout)
 	if err := keybindings(g); err != nil {
-		log.Errorf("%s", err)
+		util.Log.Errorf("%s", err)
 		return subcommands.ExitFailure
 	}
 	g.SelBgColor = gocui.ColorGreen
@@ -72,7 +71,7 @@ func RunTui(results models.ScanResults) subcommands.ExitStatus {
 
 	if err := g.MainLoop(); err != nil {
 		g.Close()
-		log.Errorf("%s", err)
+		util.Log.Errorf("%s", err)
 		os.Exit(1)
 	}
 	return subcommands.ExitSuccess
@@ -468,10 +467,7 @@ func changeHost(g *gocui.Gui, v *gocui.View) error {
 	if err := setDetailLayout(g); err != nil {
 		return err
 	}
-	if err := setChangelogLayout(g); err != nil {
-		return err
-	}
-	return nil
+	return setChangelogLayout(g)
 }
 
 func redrawDetail(g *gocui.Gui) error {
@@ -479,10 +475,7 @@ func redrawDetail(g *gocui.Gui) error {
 		return err
 	}
 
-	if err := setDetailLayout(g); err != nil {
-		return err
-	}
-	return nil
+	return setDetailLayout(g)
 }
 
 func redrawChangelog(g *gocui.Gui) error {
@@ -490,10 +483,7 @@ func redrawChangelog(g *gocui.Gui) error {
 		return err
 	}
 
-	if err := setChangelogLayout(g); err != nil {
-		return err
-	}
-	return nil
+	return setChangelogLayout(g)
 }
 
 func getLine(g *gocui.Gui, v *gocui.View) error {
@@ -545,10 +535,7 @@ func delMsg(g *gocui.Gui, v *gocui.View) error {
 	if err := g.DeleteView("msg"); err != nil {
 		return err
 	}
-	if err := g.SetCurrentView("summary"); err != nil {
-		return err
-	}
-	return nil
+	return g.SetCurrentView("summary")
 }
 
 func quit(g *gocui.Gui, v *gocui.View) error {
@@ -565,11 +552,7 @@ func layout(g *gocui.Gui) error {
 	if err := setDetailLayout(g); err != nil {
 		return err
 	}
-	if err := setChangelogLayout(g); err != nil {
-		return err
-	}
-
-	return nil
+	return setChangelogLayout(g)
 }
 
 func debug(g *gocui.Gui, str string) error {
@@ -615,7 +598,7 @@ func setSummaryLayout(g *gocui.Gui) error {
 			return err
 		}
 
-		lines := summaryLines()
+		lines := summaryLines(currentScanResult)
 		fmt.Fprintf(v, lines)
 
 		v.Highlight = true
@@ -625,37 +608,42 @@ func setSummaryLayout(g *gocui.Gui) error {
 	return nil
 }
 
-func summaryLines() string {
+func summaryLines(r models.ScanResult) string {
 	stable := uitable.New()
 	stable.MaxColWidth = 1000
 	stable.Wrap = false
 
-	if len(currentScanResult.Errors) != 0 {
+	if len(r.Errors) != 0 {
 		return "Error: Scan with --debug to view the details"
 	}
 
 	indexFormat := ""
-	if len(currentScanResult.ScannedCves) < 10 {
+	if len(r.ScannedCves) < 10 {
 		indexFormat = "[%1d]"
-	} else if len(currentScanResult.ScannedCves) < 100 {
+	} else if len(r.ScannedCves) < 100 {
 		indexFormat = "[%2d]"
 	} else {
 		indexFormat = "[%3d]"
 	}
 
-	for i, vinfo := range vinfos {
-		summary := vinfo.Titles(
-			config.Conf.Lang, currentScanResult.Family)[0].Value
-		cvssScore := fmt.Sprintf("| %4.1f",
-			vinfo.MaxCvssScore().Value.Score)
+	for i, vinfo := range r.ScannedCves.ToSortedSlice() {
+		max := vinfo.MaxCvssScore().Value.Score
+		cvssScore := "|     "
+		if 0 < max {
+			cvssScore = fmt.Sprintf("| %4.1f", max)
+		}
+
+		packname := vinfo.AffectedPackages.FormatTuiSummary()
+		packname += strings.Join(vinfo.CpeURIs, ", ")
 
 		var cols []string
 		cols = []string{
 			fmt.Sprintf(indexFormat, i+1),
 			vinfo.CveID,
-			cvssScore,
-			fmt.Sprintf("| %3d |", vinfo.Confidence.Score),
-			summary,
+			cvssScore + " |",
+			fmt.Sprintf("%8s |", vinfo.AttackVector()),
+			fmt.Sprintf("%7s |", vinfo.PatchStatus(r.Packages)),
+			packname,
 		}
 		icols := make([]interface{}, len(cols))
 		for j := range cols {
@@ -695,16 +683,12 @@ func setDetailLayout(g *gocui.Gui) error {
 }
 
 func setChangelogLayout(g *gocui.Gui) error {
-	maxX, maxY := g.Size()
-
 	summaryView, err := g.View("summary")
 	if err != nil {
 		return err
 	}
-	_, cy := summaryView.Cursor()
-	_, oy := summaryView.Origin()
-	currentVinfo = cy + oy
 
+	maxX, maxY := g.Size()
 	if v, err := g.SetView("changelog", int(float64(maxX)*0.5), int(float64(maxY)*0.2), maxX, maxY); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
@@ -713,17 +697,56 @@ func setChangelogLayout(g *gocui.Gui) error {
 			return nil
 		}
 
-		lines := []string{}
+		lines := []string{
+			"Affected Packages, Processes",
+			"============================",
+		}
+
+		_, cy := summaryView.Cursor()
+		_, oy := summaryView.Origin()
+		currentVinfo = cy + oy
 		vinfo := vinfos[currentVinfo]
+		vinfo.AffectedPackages.Sort()
+		for _, affected := range vinfo.AffectedPackages {
+			// packages detected by OVAL may not be actually installed
+			if pack, ok := currentScanResult.Packages[affected.Name]; ok {
+				lines = append(lines,
+					"* "+pack.FormatVersionFromTo(
+						affected.NotFixedYet, affected.FixState))
+
+				if len(pack.AffectedProcs) != 0 {
+					for _, p := range pack.AffectedProcs {
+						lines = append(lines, fmt.Sprintf("  * PID: %s %s", p.PID, p.Name))
+					}
+				} else {
+					// lines = append(lines, fmt.Sprintf("  * No affected process"))
+				}
+			}
+		}
+		sort.Strings(vinfo.CpeURIs)
+		for _, uri := range vinfo.CpeURIs {
+			lines = append(lines, "* "+uri)
+		}
+
 		for _, adv := range vinfo.DistroAdvisories {
+			lines = append(lines, "\n",
+				"Advisories",
+				"==========",
+			)
 			lines = append(lines, adv.Format())
 		}
 
-		for _, affected := range vinfo.AffectedPackages {
-			pack := currentScanResult.Packages[affected.Name]
-			for _, p := range currentScanResult.Packages {
-				if pack.Name == p.Name {
-					lines = append(lines, p.FormatChangelog(), "\n")
+		if currentScanResult.IsDeepScanMode() {
+			lines = append(lines, "\n",
+				"ChangeLogs",
+				"==========",
+			)
+			for _, affected := range vinfo.AffectedPackages {
+				pack := currentScanResult.Packages[affected.Name]
+				for _, p := range currentScanResult.Packages {
+					if pack.Name == p.Name {
+						lines = append(lines, p.FormatChangelog(), "\n")
+					}
 				}
 			}
 		}
@@ -741,12 +764,13 @@ type dataForTmpl struct {
 	CveID            string
 	Cvsses           string
 	Summary          string
-	Confidence       models.Confidence
-	Cwes             []models.CveContentStr
+	Mitigation       string
+	Confidences      models.Confidences
+	Cwes             []models.CweDictEntry
 	Links            []string
 	References       []models.Reference
 	Packages         []string
-	CpeNames         []string
+	CpeURIs          []string
 	PublishedDate    time.Time
 	LastModifiedDate time.Time
 }
@@ -767,20 +791,6 @@ func detailLines() (string, error) {
 	}
 
 	vinfo := vinfos[currentVinfo]
-
-	packsVer := []string{}
-	vinfo.AffectedPackages.Sort()
-	for _, affected := range vinfo.AffectedPackages {
-		// packages detected by OVAL may not be actually installed
-		if pack, ok := r.Packages[affected.Name]; ok {
-			packsVer = append(packsVer, pack.FormatVersionFromTo(affected.NotFixedYet))
-		}
-	}
-	sort.Strings(vinfo.CpeNames)
-	for _, name := range vinfo.CpeNames {
-		packsVer = append(packsVer, name)
-	}
-
 	links := []string{vinfo.CveContents.SourceLinks(
 		config.Conf.Lang, r.Family, vinfo.CveID)[0].Value,
 		vinfo.Cvss2CalcURL(),
@@ -792,35 +802,57 @@ func detailLines() (string, error) {
 	refs := []models.Reference{}
 	for _, rr := range vinfo.CveContents.References(r.Family) {
 		for _, ref := range rr.Value {
+			if ref.Source == "" {
+				ref.Source = "-"
+			}
 			refs = append(refs, ref)
 		}
 	}
 
 	summary := vinfo.Summaries(r.Lang, r.Family)[0]
+	mitigation := vinfo.Mitigations(r.Family)[0]
 
 	table := uitable.New()
 	table.MaxColWidth = maxColWidth
 	table.Wrap = true
-	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores()...)
+	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores(r.Family)...)
 	var cols []interface{}
 	for _, score := range scores {
+		if score.Value.Score == 0 && score.Value.Severity == "" {
+			continue
+		}
+		scoreStr := "-"
+		if 0 < score.Value.Score {
+			scoreStr = fmt.Sprintf("%3.1f", score.Value.Score)
+		}
+		scoreVec := fmt.Sprintf("%s/%s", scoreStr, score.Value.Vector)
 		cols = []interface{}{
+			scoreVec,
 			score.Value.Severity,
-			score.Value.Format(),
 			score.Type,
 		}
 		table.AddRow(cols...)
 	}
 
+	uniqCweIDs := vinfo.CveContents.UniqCweIDs(r.Family)
+	cwes := []models.CweDictEntry{}
+	for _, cweID := range uniqCweIDs {
+		if strings.HasPrefix(cweID.Value, "CWE-") {
+			if dict, ok := r.CweDict[strings.TrimPrefix(cweID.Value, "CWE-")]; ok {
+				cwes = append(cwes, dict)
+			}
+		}
+	}
+
 	data := dataForTmpl{
-		CveID:      vinfo.CveID,
-		Cvsses:     fmt.Sprintf("%s\n", table),
-		Summary:    fmt.Sprintf("%s (%s)", summary.Value, summary.Type),
-		Confidence: vinfo.Confidence,
-		Cwes:       vinfo.CveContents.CweIDs(r.Family),
-		Links:      util.Distinct(links),
-		Packages:   packsVer,
-		References: refs,
+		CveID:       vinfo.CveID,
+		Cvsses:      fmt.Sprintf("%s\n", table),
+		Summary:     fmt.Sprintf("%s (%s)", summary.Value, summary.Type),
+		Mitigation:  fmt.Sprintf("%s (%s)", mitigation.Value, mitigation.Type),
+		Confidences: vinfo.Confidences,
+		Cwes:        cwes,
+		Links:       util.Distinct(links),
+		References:  refs,
 	}
 
 	buf := bytes.NewBuffer(nil) // create empty buffer
@@ -833,47 +865,41 @@ func detailLines() (string, error) {
 
 const mdTemplate = `
 {{.CveID}}
-==============
+================
 
 CVSS Scores
---------------
+-----------
 {{.Cvsses }}
-
 Summary
---------------
+-----------
  {{.Summary }}
 
+Mitigation
+-----------
+ {{.Mitigation }}
 
 Links
---------------
+-----------
 {{range $link := .Links -}}
 * {{$link}}
 {{end}}
-
 CWE
---------------
+-----------
 {{range .Cwes -}}
-* {{.Value}} ({{.Type}})
+* {{.En.CweID}} [{{.En.Name}}](https://cwe.mitre.org/data/definitions/{{.En.CweID}}.html)
 {{end}}
-
-Package/CPE
---------------
-{{range $pack := .Packages -}}
-* {{$pack}}
-{{end -}}
-{{range $name := .CpeNames -}}
+{{range $name := .CpeURIs -}}
 * {{$name}}
 {{end}}
-
 Confidence
---------------
- {{.Confidence }}
-
-
+-----------
+{{range $confidence := .Confidences -}}
+* {{$confidence.DetectionMethod}}
+{{end}}
 References
---------------
+-----------
 {{range .References -}}
-* [{{.Source}}]( {{.Link}} )
+* [{{.Source}}]({{.Link}})
 {{end}}
 
 `

@@ -18,18 +18,18 @@ SRCS = $(shell git ls-files '*.go')
 PKGS = $(shell go list ./...)
 VERSION := $(shell git describe --tags --abbrev=0)
 REVISION := $(shell git rev-parse --short HEAD)
-LDFLAGS := -X 'main.version=$(VERSION)' \
-	-X 'main.revision=$(REVISION)'
+LDFLAGS := -X 'github.com/future-architect/vuls/config.Version=$(VERSION)' \
+	-X 'github.com/future-architect/vuls/config.Revision=$(REVISION)'
 
-all: dep build test
+all: dep build
 
 dep:
 	go get -u github.com/golang/dep/...
-	dep ensure
+	dep ensure -v
 
 depup:
 	go get -u github.com/golang/dep/...
-	dep ensure -update
+	dep ensure -update -v
 
 build: main.go dep pretest
 	go build -ldflags "$(LDFLAGS)" -o vuls $<
@@ -49,13 +49,15 @@ vet:
 fmt:
 	gofmt -s -w $(SRCS)
 
+mlint:
+	$(foreach file,$(SRCS),gometalinter $(file) || exit;)
+
 fmtcheck:
 	$(foreach file,$(SRCS),gofmt -s -d $(file);)
 
 pretest: lint vet fmtcheck
 
-test: pretest
-	go install
+test: 
 	echo $(PKGS) | xargs go test -cover -v || exit;
 
 unused:

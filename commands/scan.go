@@ -35,22 +35,8 @@ import (
 
 // ScanCmd is Subcommand of host discovery mode
 type ScanCmd struct {
-	debug          bool
 	configPath     string
-	resultsDir     string
-	logDir         string
-	cacheDBPath    string
-	httpProxy      string
 	askKeyPassword bool
-	containersOnly bool
-	fast           bool
-	offline        bool
-	deep           bool
-	skipBroken     bool
-	sshNative      bool
-	sshConfig      bool
-	pipe           bool
-	vvv            bool
 	timeoutSec     int
 	scanTimeoutSec int
 }
@@ -65,9 +51,6 @@ func (*ScanCmd) Synopsis() string { return "Scan vulnerabilities" }
 func (*ScanCmd) Usage() string {
 	return `scan:
 	scan
-		[-fast]
-		[-offline]
-		[-deep]
 		[-config=/path/to/config.toml]
 		[-results-dir=/path/to/results]
 		[-log-dir=/path/to/log]
@@ -90,101 +73,49 @@ func (*ScanCmd) Usage() string {
 
 // SetFlags set flag
 func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
-	f.BoolVar(&p.debug, "debug", false, "debug mode")
+	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
 
 	wd, _ := os.Getwd()
-
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
 	defaultResultsDir := filepath.Join(wd, "results")
-	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 
 	defaultLogDir := util.GetDefaultLogDir()
-	f.StringVar(&p.logDir, "log-dir", defaultLogDir, "/path/to/log")
+	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 
 	defaultCacheDBPath := filepath.Join(wd, "cache.db")
-	f.StringVar(
-		&p.cacheDBPath,
-		"cachedb-path",
-		defaultCacheDBPath,
+	f.StringVar(&c.Conf.CacheDBPath, "cachedb-path", defaultCacheDBPath,
 		"/path/to/cache.db (local cache of changelog for Ubuntu/Debian)")
 
-	f.BoolVar(
-		&p.sshNative,
-		"ssh-native-insecure",
-		false,
+	f.BoolVar(&c.Conf.SSHNative, "ssh-native-insecure", false,
 		"Use Native Go implementation of SSH. Default: Use the external command")
 
-	f.BoolVar(
-		&p.sshConfig,
-		"ssh-config",
-		false,
+	f.BoolVar(&c.Conf.SSHConfig, "ssh-config", false,
 		"Use SSH options specified in ssh_config preferentially")
 
-	f.BoolVar(
-		&p.containersOnly,
-		"containers-only",
-		false,
+	f.BoolVar(&c.Conf.ContainersOnly, "containers-only", false,
 		"Scan containers only. Default: Scan both of hosts and containers")
 
-	f.BoolVar(
-		&p.skipBroken,
-		"skip-broken",
-		false,
+	f.BoolVar(&c.Conf.SkipBroken, "skip-broken", false,
 		"[For CentOS] yum update changelog with --skip-broken option")
 
-	f.StringVar(
-		&p.httpProxy,
-		"http-proxy",
-		"",
-		"http://proxy-url:port (default: empty)",
-	)
+	f.StringVar(&c.Conf.HTTPProxy, "http-proxy", "",
+		"http://proxy-url:port (default: empty)")
 
-	f.BoolVar(
-		&p.askKeyPassword,
-		"ask-key-password",
-		false,
+	f.BoolVar(&p.askKeyPassword, "ask-key-password", false,
 		"Ask ssh privatekey password before scanning",
 	)
 
-	f.BoolVar(
-		&p.fast,
-		"fast",
-		false,
-		"Online fast scan mode.")
+	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use stdin via PIPE")
+	f.BoolVar(&c.Conf.Vvv, "vvv", false, "ssh -vvv")
 
-	f.BoolVar(
-		&p.offline,
-		"offline",
-		false,
-		"Offline scan mode. Unable to get updatable packages information.")
-
-	f.BoolVar(
-		&p.deep,
-		"deep",
-		false,
-		"Deep scan mode. Scan accuracy improves and scanned information becomes richer. Since analysis of changelog, issue commands requiring sudo, but it may be slower and high load on the target server")
-
-	f.BoolVar(
-		&p.pipe,
-		"pipe",
-		false,
-		"Use stdin via PIPE")
-
-	f.BoolVar(&p.vvv, "vvv", false, "ssh -vvv")
-
-	f.IntVar(
-		&p.timeoutSec,
-		"timeout",
-		5*60,
+	f.IntVar(&p.timeoutSec, "timeout", 5*60,
 		"Number of seconds for processing other than scan",
 	)
 
-	f.IntVar(
-		&p.scanTimeoutSec,
-		"timeout-scan",
-		120*60,
+	f.IntVar(&p.scanTimeoutSec, "timeout-scan", 120*60,
 		"Number of seconds for scanning vulnerabilities for all servers",
 	)
 }
@@ -192,8 +123,6 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 // Execute execute
 func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	// Setup Logger
-	c.Conf.Debug = p.debug
-	c.Conf.LogDir = p.logDir
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
 
 	if err := mkdirDotVuls(); err != nil {
@@ -222,8 +151,6 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	util.Log.Info("Start scanning")
 	util.Log.Infof("config: %s", p.configPath)
 
-	c.Conf.Pipe = p.pipe
-	c.Conf.Vvv = p.vvv
 	var servernames []string
 	if 0 < len(f.Args()) {
 		servernames = f.Args()
@@ -259,21 +186,6 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 	util.Log.Debugf("%s", pp.Sprintf("%v", target))
 
-	c.Conf.ResultsDir = p.resultsDir
-	c.Conf.CacheDBPath = p.cacheDBPath
-	c.Conf.SSHNative = p.sshNative
-	c.Conf.SSHConfig = p.sshConfig
-	c.Conf.HTTPProxy = p.httpProxy
-	c.Conf.ContainersOnly = p.containersOnly
-	c.Conf.SkipBroken = p.skipBroken
-
-	c.Conf.Fast = p.fast
-	c.Conf.Offline = p.offline
-	c.Conf.Deep = p.deep
-	if !(c.Conf.Fast || c.Conf.Offline || c.Conf.Deep) {
-		c.Conf.Fast = true
-	}
-
 	util.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnScan() {
 		return subcommands.ExitUsageError
@@ -282,6 +194,12 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	util.Log.Info("Detecting Server/Container OS... ")
 	if err := scan.InitServers(p.timeoutSec); err != nil {
 		util.Log.Errorf("Failed to init servers: %s", err)
+		return subcommands.ExitFailure
+	}
+
+	util.Log.Info("Checking Scan Modes... ")
+	if err := scan.CheckScanModes(); err != nil {
+		util.Log.Errorf("Fix config.toml: %s", err)
 		return subcommands.ExitFailure
 	}
 

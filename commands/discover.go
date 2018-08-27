@@ -90,61 +90,130 @@ func (p *DiscoverCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface
 // Output the template of config.toml
 func printConfigToml(ips []string) (err error) {
 	const tomlTemplate = `
-[slack]
-hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
-#legacyToken  = "xoxp-11111111111-222222222222-3333333333"
-channel      = "#channel-name"
-#channel      = "${servername}"
-iconEmoji    = ":ghost:"
-authUser     = "username"
-notifyUsers  = ["@username"]
 
-[email]
-smtpAddr      = "smtp.example.com"
-smtpPort      = "587"
-user          = "username"
-password      = "password"
-from          = "from@example.com"
-to            = ["to@example.com"]
-cc            = ["cc@example.com"]
-subjectPrefix = "[vuls]"
+# TODO Doc Link
+[cveDict]
+type        = "sqlite3"
+sqlite3Path = "/path/to/cve.sqlite3"
+#url        = ""
 
+# TODO Doc Link
+[ovalDict]
+type        = "sqlite3"
+sqlite3Path = "/path/to/oval.sqlite3"
+#url        = ""
+
+# TODO Doc Link
+[gost]
+type        = "sqlite3"
+sqlite3Path = "/path/to/gost.sqlite3"
+#url        = ""
+
+# https://vuls.io/docs/en/usage-settings.html#slack-section
+#[slack]
+#hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
+##legacyToken = "xoxp-11111111111-222222222222-3333333333"
+#channel      = "#channel-name"
+##channel     = "${servername}"
+#iconEmoji    = ":ghost:"
+#authUser     = "username"
+#notifyUsers  = ["@username"]
+
+# https://vuls.io/docs/en/usage-settings.html#email-section
+#[email]
+#smtpAddr      = "smtp.example.com"
+#smtpPort      = "587"
+#user          = "username"
+#password      = "password"
+#from          = "from@example.com"
+#to            = ["to@example.com"]
+#cc            = ["cc@example.com"]
+#subjectPrefix = "[vuls]"
+
+# https://vuls.io/docs/en/usage-settings.html#http-section
+#[http]
+#url = "http://localhost:11234"
+
+# https://vuls.io/docs/en/usage-settings.html#syslog-section
+#[syslog]
+#protocol    = "tcp"
+#host        = "localhost"
+#port        = "514"
+#tag         = "vuls"
+#facility    = "local0"
+#severity    = "alert"
+#verbose     = false
+
+# https://vuls.io/docs/en/usage-report.html#example-put-results-in-s3-bucket
+#[aws]
+#profile                = "default"
+#region                 = "ap-northeast-1"
+#s3Bucket               = "vuls"
+#s3ResultsDir           = "/path/to/result"
+#s3ServerSideEncryption = "AES256"
+
+# https://vuls.io/docs/en/usage-report.html#example-put-results-in-azure-blob-storage<Paste>
+#[azure]
+#accountName   = "default"
+#accountKey    = "xxxxxxxxxxxxxx"
+#containerName = "vuls"
+
+# https://vuls.io/docs/en/usage-settings.html#stride-section
+#[stride]
+#hookURL   = "xxxxxxxxxxxxxxx"
+#authToken = "xxxxxxxxxxxxxx"
+
+# https://vuls.io/docs/en/usage-settings.html#hipchat-section
+#[hipchat]
+#room      = "vuls"
+#authToken = "xxxxxxxxxxxxxx"
+
+# https://vuls.io/docs/en/usage-settings.html#chatwork-section
+#[chatwork]
+#room     = "xxxxxxxxxxx"
+#apiToken = "xxxxxxxxxxxxxxxxxx"
+
+# https://vuls.io/docs/en/usage-settings.html#default-section
 [default]
-#port        = "22"
-#user        = "username"
-#keyPath     = "/home/username/.ssh/id_rsa"
+#port               = "22"
+#user               = "username"
+#keyPath            = "/home/username/.ssh/id_rsa"
+#scanMode           = ["fast", "fast-root", "deep", "offline"]
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
-#dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"
-#ignoreCves = ["CVE-2014-6271"]
-#optional = [
-#    ["key", "value"],
-#]
-#containers = ["${running}"]
+#owaspDCXMLPath     = "/tmp/dependency-check-report.xml"
+#ignoreCves         = ["CVE-2014-6271"]
+#containerType      = "docker" #or "lxd" or "lxc" default: docker
+#containersIncluded = ["${running}"]
+#containersExcluded = ["container_name_a"]
 
-
+# https://vuls.io/docs/en/usage-settings.html#servers-section
 [servers]
 {{- $names:=  .Names}}
 {{range $i, $ip := .IPs}}
 [servers.{{index $names $i}}]
-host         = "{{$ip}}"
-#port        = "22"
-#user        = "root"
-#keyPath     = "/home/username/.ssh/id_rsa"
-#type 		 = "pseudo"
-#cpeNames = [
-#  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
-#]
-#dependencyCheckXMLPath = "/tmp/dependency-check-report.xml"
-#ignoreCves = ["CVE-2014-0160"]
-#optional = [
-#    ["key", "value"],
-#]
-#[servers.{{index $names $i}}.containers]
-#type = "docker" #or "lxd" default: docker
-#includes = ["${running}"]
-#excludes = ["container_name_a", "4aa37a8b63b9"]
+host                = "{{$ip}}"
+#port               = "22"
+#user               = "root"
+#keyPath            = "/home/username/.ssh/id_rsa"
+#scanMode           = ["fast", "fast-root", "deep", "offline"]
+#type               = "pseudo"
+#memo               = "DB Server"
+#cpeNames           = [ "cpe:/a:rubyonrails:ruby_on_rails:4.2.1" ]
+#owaspDCXMLPath     = "/path/to/dependency-check-report.xml"
+#ignoreCves         = ["CVE-2014-0160"]
+#containerType      = "docker" #or "lxd" or "lxc" default: docker
+#containersIncluded = ["${running}"]
+#containersExcluded = ["container_name_a"]
+
+#[servers.{{index $names $i}}.containers.container_name_a]
+#cpeNames       = [ "cpe:/a:rubyonrails:ruby_on_rails:4.2.1" ]
+#owaspDCXMLPath = "/path/to/dependency-check-report.xml"
+#ignoreCves     = ["CVE-2014-0160"]
+
+#[servers.{{index $names $i}}.optional]
+#key = "value1"
 
 
 {{end}}

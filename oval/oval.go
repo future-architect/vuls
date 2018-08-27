@@ -23,7 +23,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/future-architect/vuls/config"
+	cnf "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/kotakanbe/goval-dictionary/db"
@@ -33,11 +33,12 @@ import (
 // Client is the interface of OVAL client.
 type Client interface {
 	CheckHTTPHealth() error
-	FillWithOval(r *models.ScanResult) error
+	FillWithOval(db.DB, *models.ScanResult) (int, error)
 
 	// CheckIfOvalFetched checks if oval entries are in DB by family, release.
-	CheckIfOvalFetched(string, string) (bool, error)
-	CheckIfOvalFresh(string, string) (bool, error)
+	CheckIfOvalFetched(db.DB, string, string) (bool, error)
+	CheckIfOvalFresh(db.DB, string, string) (bool, error)
+	IsFetchViaHTTP() bool
 }
 
 // Base is a base struct
@@ -47,11 +48,11 @@ type Base struct {
 
 // CheckHTTPHealth do health check
 func (b Base) CheckHTTPHealth() error {
-	if !b.isFetchViaHTTP() {
+	if !b.IsFetchViaHTTP() {
 		return nil
 	}
 
-	url := fmt.Sprintf("%s/health", config.Conf.OvalDBURL)
+	url := fmt.Sprintf("%s/health", cnf.Conf.OvalDict.URL)
 	var errs []error
 	var resp *http.Response
 	resp, _, errs = gorequest.New().Get(url).End()
@@ -65,19 +66,9 @@ func (b Base) CheckHTTPHealth() error {
 }
 
 // CheckIfOvalFetched checks if oval entries are in DB by family, release.
-func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err error) {
-	if !b.isFetchViaHTTP() {
-		var ovaldb db.DB
-		if ovaldb, _, err = db.NewDB(
-			osFamily,
-			config.Conf.OvalDBType,
-			config.Conf.OvalDBPath,
-			config.Conf.DebugSQL,
-		); err != nil {
-			return false, err
-		}
-		defer ovaldb.CloseDB()
-		count, err := ovaldb.CountDefs(osFamily, release)
+func (b Base) CheckIfOvalFetched(driver db.DB, osFamily, release string) (fetched bool, err error) {
+	if !b.IsFetchViaHTTP() {
+		count, err := driver.CountDefs(osFamily, release)
 		if err != nil {
 			return false, fmt.Errorf("Failed to count OVAL defs: %s, %s, %v",
 				osFamily, release, err)
@@ -85,7 +76,7 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err er
 		return 0 < count, nil
 	}
 
-	url, _ := util.URLPathJoin(config.Conf.OvalDBURL, "count", osFamily, release)
+	url, _ := util.URLPathJoin(cnf.Conf.OvalDict.URL, "count", osFamily, release)
 	resp, body, errs := gorequest.New().Get(url).End()
 	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 		return false, fmt.Errorf("HTTP GET error: %v, url: %s, resp: %v",
@@ -100,22 +91,12 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err er
 }
 
 // CheckIfOvalFresh checks if oval entries are fresh enough
-func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
+func (b Base) CheckIfOvalFresh(driver db.DB, osFamily, release string) (ok bool, err error) {
 	var lastModified time.Time
-	if !b.isFetchViaHTTP() {
-		var ovaldb db.DB
-		if ovaldb, _, err = db.NewDB(
-			osFamily,
-			config.Conf.OvalDBType,
-			config.Conf.OvalDBPath,
-			config.Conf.DebugSQL,
-		); err != nil {
-			return false, err
-		}
-		defer ovaldb.CloseDB()
-		lastModified = ovaldb.GetLastModified(osFamily, release)
+	if !b.IsFetchViaHTTP() {
+		lastModified = driver.GetLastModified(osFamily, release)
 	} else {
-		url, _ := util.URLPathJoin(config.Conf.OvalDBURL, "lastmodified", osFamily, release)
+		url, _ := util.URLPathJoin(cnf.Conf.OvalDict.URL, "lastmodified", osFamily, release)
 		resp, body, errs := gorequest.New().Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			return false, fmt.Errorf("HTTP GET error: %v, url: %s, resp: %v",
@@ -139,7 +120,8 @@ func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 	return true, nil
 }
 
-func (b Base) isFetchViaHTTP() bool {
+// IsFetchViaHTTP checks whether fetch via HTTP
+func (b Base) IsFetchViaHTTP() bool {
 	// Default value of OvalDBType is sqlite3
-	return config.Conf.OvalDBURL != "" && config.Conf.OvalDBType == "sqlite3"
+	return cnf.Conf.OvalDict.URL != "" && cnf.Conf.OvalDict.Type == "sqlite3"
 }

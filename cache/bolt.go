@@ -183,9 +183,6 @@ func (b Bolt) PutChangelog(servername, packName, changelog string) error {
 		if bkt == nil {
 			return fmt.Errorf("Failed to get Bucket: %s", servername)
 		}
-		if err := bkt.Put([]byte(packName), []byte(changelog)); err != nil {
-			return err
-		}
-		return nil
+		return bkt.Put([]byte(packName), []byte(changelog))
 	})
 }

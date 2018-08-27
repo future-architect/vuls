@@ -21,8 +21,6 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
-
-	"github.com/future-architect/vuls/config"
 )
 
 // Packages is Map of Package
@@ -40,6 +38,12 @@ func NewPackages(packs ...Package) Packages {
 
 // MergeNewVersion merges candidate version information to the receiver struct
 func (ps Packages) MergeNewVersion(as Packages) {
+	for name, pack := range ps {
+		pack.NewVersion = pack.Version
+		pack.NewRelease = pack.Release
+		ps[name] = pack
+	}
+
 	for _, a := range as {
 		if pack, ok := ps[a.Name]; ok {
 			pack.NewVersion = a.NewVersion
@@ -62,22 +66,7 @@ func (ps Packages) Merge(other Packages) Packages {
 	return merged
 }
 
-// FormatUpdatablePacksSummary returns a summary of updatable packages
-func (ps Packages) FormatUpdatablePacksSummary() string {
-	if config.Conf.Offline {
-		return fmt.Sprintf("%d installed", len(ps))
-	}
-
-	nUpdatable := 0
-	for _, p := range ps {
-		if p.NewVersion != "" {
-			nUpdatable++
-		}
-	}
-	return fmt.Sprintf("%d installed, %d updatable", len(ps), nUpdatable)
-}
-
-// FindOne search a element by name-newver-newrel-arch
+// FindOne search a element
 func (ps Packages) FindOne(f func(Package) bool) (string, Package, bool) {
 	for key, p := range ps {
 		if f(p) {
@@ -87,16 +76,44 @@ func (ps Packages) FindOne(f func(Package) bool) (string, Package, bool) {
 	return "", Package{}, false
 }
 
+// FindByFQPN search a package by Fully-Qualified-Package-Name
+func (ps Packages) FindByFQPN(nameVerRelArc string) (*Package, error) {
+	for _, p := range ps {
+		if nameVerRelArc == p.FQPN() {
+			return &p, nil
+		}
+	}
+	return nil, fmt.Errorf("Failed to find the package: %s", nameVerRelArc)
+}
+
 // Package has installed binary packages.
 type Package struct {
-	Name       string
-	Version    string
-	Release    string
-	NewVersion string
-	NewRelease string
-	Arch       string
-	Repository string
-	Changelog  Changelog
+	Name             string               `json:"name"`
+	Version          string               `json:"version"`
+	Release          string               `json:"release"`
+	NewVersion       string               `json:"newVersion"`
+	NewRelease       string               `json:"newRelease"`
+	Arch             string               `json:"arch"`
+	Repository       string               `json:"repository"`
+	Changelog        Changelog            `json:"changelog"`
+	AffectedProcs    []AffectedProcess    `json:",omitempty"`
+	NeedRestartProcs []NeedRestartProcess `json:",omitempty"`
+}
+
+// FQPN returns Fully-Qualified-Package-Name
+// name-version-release.arch
+func (p Package) FQPN() string {
+	fqpn := p.Name
+	if p.Version != "" {
+		fqpn += fmt.Sprintf("-%s", p.Version)
+	}
+	if p.Release != "" {
+		fqpn += fmt.Sprintf("-%s", p.Release)
+	}
+	if p.Arch != "" {
+		fqpn += fmt.Sprintf(".%s", p.Arch)
+	}
+	return fqpn
 }
 
 // FormatVer returns package version-release
@@ -118,10 +135,14 @@ func (p Package) FormatNewVer() string {
 }
 
 // FormatVersionFromTo formats installed and new package version
-func (p Package) FormatVersionFromTo(notFixedYet bool) string {
+func (p Package) FormatVersionFromTo(notFixedYet bool, status string) string {
 	to := p.FormatNewVer()
 	if notFixedYet {
-		to = "Not Fixed Yet"
+		if status != "" {
+			to = status
+		} else {
+			to = "Not Fixed Yet"
+		}
 	} else if p.NewVersion == "" {
 		to = "Unknown"
 	}
@@ -156,8 +177,23 @@ func (p Package) FormatChangelog() string {
 // Changelog has contents of changelog and how to get it.
 // Method: models.detectionMethodStr
 type Changelog struct {
-	Contents string
-	Method   DetectionMethod
+	Contents string          `json:"contents"`
+	Method   DetectionMethod `json:"method"`
+}
+
+// AffectedProcess keep a processes information affected by software update
+type AffectedProcess struct {
+	PID  string `json:"pid"`
+	Name string `json:"name"`
+}
+
+// NeedRestartProcess keep a processes information affected by software update
+type NeedRestartProcess struct {
+	PID         string `json:"pid"`
+	Path        string `json:"path"`
+	ServiceName string `json:"serviceName"`
+	InitSystem  string `json:"initSystem"`
+	HasInit     bool   `json:"-"`
 }
 
 // SrcPackage has installed source package information.
@@ -166,9 +202,9 @@ type Changelog struct {
 // so it is also needed to capture source version for OVAL version comparison.
 // https://github.com/future-architect/vuls/issues/504
 type SrcPackage struct {
-	Name        string
-	Version     string
-	BinaryNames []string
+	Name        string   `json:"name"`
+	Version     string   `json:"version"`
+	BinaryNames []string `json:"binaryNames"`
 }
 
 // AddBinaryName add the name if not exists

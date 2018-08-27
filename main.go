@@ -25,14 +25,9 @@ import (
 	"context"
 
 	"github.com/future-architect/vuls/commands"
+	"github.com/future-architect/vuls/config"
 	"github.com/google/subcommands"
 )
-
-// Version of Vuls
-var version = "0.4.2"
-
-// Revision of Git
-var revision string
 
 func main() {
 	subcommands.Register(subcommands.HelpCommand(), "")
@@ -44,13 +39,14 @@ func main() {
 	subcommands.Register(&commands.HistoryCmd{}, "history")
 	subcommands.Register(&commands.ReportCmd{}, "report")
 	subcommands.Register(&commands.ConfigtestCmd{}, "configtest")
+	subcommands.Register(&commands.ServerCmd{}, "server")
 
 	var v = flag.Bool("v", false, "Show version")
 
 	flag.Parse()
 
 	if *v {
-		fmt.Printf("vuls %s %s\n", version, revision)
+		fmt.Printf("vuls %s %s\n", config.Version, config.Revision)
 		os.Exit(int(subcommands.ExitSuccess))
 	}
 

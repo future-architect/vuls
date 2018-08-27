@@ -44,9 +44,9 @@ func (w StdoutWriter) Write(rs ...models.ScanResult) error {
 		fmt.Print("\n")
 	}
 
-	if c.Conf.FormatShortText {
+	if c.Conf.FormatList {
 		for _, r := range rs {
-			fmt.Println(formatShortPlainText(r))
+			fmt.Println(formatList(r))
 		}
 	}
 

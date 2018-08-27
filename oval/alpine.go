@@ -21,6 +21,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	"github.com/kotakanbe/goval-dictionary/db"
 )
 
 // Alpine is the struct of Alpine Linux
@@ -38,22 +39,22 @@ func NewAlpine() Alpine {
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o Alpine) FillWithOval(r *models.ScanResult) (err error) {
+func (o Alpine) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
 	var relatedDefs ovalResult
-	if o.isFetchViaHTTP() {
+	if o.IsFetchViaHTTP() {
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
-			return err
+			return 0, err
 		}
 	} else {
-		if relatedDefs, err = getDefsByPackNameFromOvalDB(r); err != nil {
-			return err
+		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
+			return 0, err
 		}
 	}
 	for _, defPacks := range relatedDefs.entries {
 		o.update(r, defPacks)
 	}
 
-	return nil
+	return len(relatedDefs.entries), nil
 }
 
 func (o Alpine) update(r *models.ScanResult, defPacks defPacks) {
@@ -62,8 +63,8 @@ func (o Alpine) update(r *models.ScanResult, defPacks defPacks) {
 	if !ok {
 		util.Log.Debugf("%s is newly detected by OVAL", cveID)
 		vinfo = models.VulnInfo{
-			CveID:      cveID,
-			Confidence: models.OvalMatch,
+			CveID:       cveID,
+			Confidences: []models.Confidence{models.OvalMatch},
 		}
 	}
 

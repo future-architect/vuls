@@ -32,9 +32,90 @@ import (
 //      return t
 //  }
 
-func TestParseScanedPackagesLineRedhat(t *testing.T) {
+func TestParseInstalledPackagesLinesRedhat(t *testing.T) {
+	r := newRHEL(config.ServerInfo{})
+	r.Distro = config.Distro{Family: config.RedHat}
 
-	r := newRedhat(config.ServerInfo{})
+	var packagetests = []struct {
+		in       string
+		kernel   models.Kernel
+		packages models.Packages
+	}{
+		{
+			in: `openssl	0	1.0.1e	30.el6.11 x86_64
+                 Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x84_64
+                 kernel 0 2.6.32 696.20.1.el6 x86_64
+                 kernel 0 2.6.32 696.20.3.el6 x86_64
+				 kernel 0 2.6.32 695.20.3.el6 x86_64`,
+			kernel: models.Kernel{},
+			packages: models.Packages{
+				"openssl": models.Package{
+					Name:    "openssl",
+					Version: "1.0.1e",
+					Release: "30.el6.11",
+				},
+				"Percona-Server-shared-56": models.Package{
+					Name:    "Percona-Server-shared-56",
+					Version: "1:5.6.19",
+					Release: "rel67.0.el6",
+				},
+				"kernel": models.Package{
+					Name:    "kernel",
+					Version: "2.6.32",
+					Release: "696.20.3.el6",
+				},
+			},
+		},
+		{
+			in: `openssl	0	1.0.1e	30.el6.11 x86_64
+                 Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x84_64
+                 kernel 0 2.6.32 696.20.1.el6 x86_64
+                 kernel 0 2.6.32 696.20.3.el6 x86_64
+				 kernel 0 2.6.32 695.20.3.el6 x86_64`,
+			kernel: models.Kernel{Release: "2.6.32-695.20.3.el6.x86_64"},
+			packages: models.Packages{
+				"openssl": models.Package{
+					Name:    "openssl",
+					Version: "1.0.1e",
+					Release: "30.el6.11",
+				},
+				"Percona-Server-shared-56": models.Package{
+					Name:    "Percona-Server-shared-56",
+					Version: "1:5.6.19",
+					Release: "rel67.0.el6",
+				},
+				"kernel": models.Package{
+					Name:    "kernel",
+					Version: "2.6.32",
+					Release: "695.20.3.el6",
+				},
+			},
+		},
+	}
+
+	for _, tt := range packagetests {
+		r.Kernel = tt.kernel
+		packages, _, err := r.parseInstalledPackages(tt.in)
+		if err != nil {
+			t.Errorf("Unexpected error: %s", err)
+		}
+		for name, expectedPack := range tt.packages {
+			pack := packages[name]
+			if pack.Name != expectedPack.Name {
+				t.Errorf("name: expected %s, actual %s", expectedPack.Name, pack.Name)
+			}
+			if pack.Version != expectedPack.Version {
+				t.Errorf("version: expected %s, actual %s", expectedPack.Version, pack.Version)
+			}
+			if pack.Release != expectedPack.Release {
+				t.Errorf("release: expected %s, actual %s", expectedPack.Release, pack.Release)
+			}
+		}
+	}
+
+}
+func TestParseScanedPackagesLineRedhat(t *testing.T) {
+	r := newRHEL(config.ServerInfo{})
 
 	var packagetests = []struct {
 		in   string
@@ -74,7 +155,7 @@ func TestParseScanedPackagesLineRedhat(t *testing.T) {
 }
 
 func TestChangeSectionState(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	var tests = []struct {
 		oldState int
 		newState int
@@ -92,7 +173,7 @@ func TestChangeSectionState(t *testing.T) {
 }
 
 func TestParseYumUpdateinfoLineToGetCveIDs(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	var tests = []struct {
 		in  string
 		out []string
@@ -122,7 +203,7 @@ func TestParseYumUpdateinfoLineToGetCveIDs(t *testing.T) {
 }
 
 func TestParseYumUpdateinfoToGetAdvisoryID(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	var tests = []struct {
 		in    string
 		out   string
@@ -160,7 +241,7 @@ func TestParseYumUpdateinfoLineToGetIssued(t *testing.T) {
 
 	date, _ := time.Parse("2006-01-02", "2015-12-15")
 
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	var tests = []struct {
 		in    string
 		out   time.Time
@@ -195,10 +276,9 @@ func TestParseYumUpdateinfoLineToGetIssued(t *testing.T) {
 }
 
 func TestParseYumUpdateinfoLineToGetUpdated(t *testing.T) {
-
 	date, _ := time.Parse("2006-01-02", "2015-12-15")
 
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	var tests = []struct {
 		in    string
 		out   time.Time
@@ -234,7 +314,7 @@ func TestParseYumUpdateinfoLineToGetUpdated(t *testing.T) {
 }
 
 func TestIsDescriptionLine(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	var tests = []struct {
 		in    string
 		found bool
@@ -262,7 +342,7 @@ func TestIsDescriptionLine(t *testing.T) {
 }
 
 func TestParseYumUpdateinfoToGetSeverity(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	var tests = []struct {
 		in    string
 		out   string
@@ -337,7 +417,7 @@ Description : kernel-uek
 	`
 	issued, _ := time.Parse("2006-01-02", "2017-02-15")
 
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	r.Distro = config.Distro{Family: "oraclelinux"}
 
 	var tests = []struct {
@@ -458,7 +538,7 @@ Description : The sudo packages contain the sudo utility which allows system
 	issued, _ := time.Parse("2006-01-02", "2015-09-03")
 	updated, _ := time.Parse("2006-01-02", "2015-09-04")
 
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	r.Distro = config.Distro{Family: "redhat"}
 
 	var tests = []struct {
@@ -532,8 +612,7 @@ Description : The sudo packages contain the sudo utility which allows system
 }
 
 func TestParseYumUpdateinfoAmazon(t *testing.T) {
-
-	r := newRedhat(config.ServerInfo{})
+	r := newAmazon(config.ServerInfo{})
 	r.Distro = config.Distro{Family: "redhat"}
 
 	issued, _ := time.Parse("2006-01-02", "2015-12-15")
@@ -617,7 +696,7 @@ Description : Package updates are available for Amazon Linux AMI that fix the
 }
 
 func TestParseYumCheckUpdateLine(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newCentOS(config.ServerInfo{})
 	r.Distro = config.Distro{Family: "centos"}
 	var tests = []struct {
 		in  string
@@ -658,7 +737,7 @@ func TestParseYumCheckUpdateLine(t *testing.T) {
 }
 
 func TestParseYumCheckUpdateLines(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newCentOS(config.ServerInfo{})
 	r.Distro = config.Distro{Family: "centos"}
 	stdout := `audit-libs 0 2.3.7 5.el6 base
 bash 0 4.1.2 33.el6_7.1 updates
@@ -739,7 +818,7 @@ pytalloc 0 2.0.7 2.el6 @CentOS 6.5/6.5`
 }
 
 func TestParseYumCheckUpdateLinesAmazon(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newAmazon(config.ServerInfo{})
 	r.Distro = config.Distro{Family: "amazon"}
 	stdout := `bind-libs 32 9.8.2 0.37.rc1.45.amzn1 amzn-main
 java-1.7.0-openjdk  0 1.7.0.95 2.6.4.0.65.amzn1 amzn-main
@@ -795,7 +874,7 @@ if-not-architecture 0 100 200 amzn-main`
 }
 
 func TestParseYumUpdateinfoListAvailable(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	rhelStdout := `RHSA-2015:2315 Moderate/Sec.  NetworkManager-1:1.0.6-27.el7.x86_64
 RHSA-2015:2315 Moderate/Sec.  NetworkManager-config-server-1:1.0.6-27.el7.x86_64
 RHSA-2015:1705 Important/Sec. bind-libs-lite-32:9.9.4-18.el7_1.5.x86_64
@@ -859,7 +938,7 @@ updateinfo list done`
 }
 
 func TestExtractPackNameVerRel(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newAmazon(config.ServerInfo{})
 	var tests = []struct {
 		in  string
 		out []string
@@ -894,7 +973,7 @@ func TestExtractPackNameVerRel(t *testing.T) {
 }
 
 func TestGetDiffChangelog(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newCentOS(config.ServerInfo{})
 	type in struct {
 		pack      models.Package
 		changelog string
@@ -1245,7 +1324,7 @@ func TestGetDiffChangelog(t *testing.T) {
 }
 
 func TestDivideChangelogsIntoEachPackages(t *testing.T) {
-	r := newRedhat(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	type in struct {
 		pack      models.Package
 		changelog string
@@ -1296,4 +1375,390 @@ func TestDivideChangelogsIntoEachPackages(t *testing.T) {
 		}
 	}
 
+}
+
+func TestCheckYumPsInstalled(t *testing.T) {
+	r := newCentOS(config.ServerInfo{})
+	var tests = []struct {
+		in  string
+		out bool
+	}{
+		{
+			in: `Loaded plugins: changelog, fastestmirror, ps, remove-with-leaves, show-leaves
+Loading mirror speeds from cached hostfile
+ * base: ftp.tsukuba.wide.ad.jp
+ * extras: ftp.tsukuba.wide.ad.jp
+ * updates: ftp.tsukuba.wide.ad.jp
+Installed Packages
+Name        : yum
+Arch        : noarch
+Version     : 3.4.3
+Release     : 150.el7.centos
+Size        : 5.5 M
+Repo        : installed
+From repo   : anaconda
+Summary     : RPM package installer/updater/manager
+URL         : http://yum.baseurl.org/
+License     : GPLv2+
+Description : Yum is a utility that can check for and automatically download and
+            : install updated RPM packages. Dependencies are obtained and downloaded
+            : automatically, prompting the user for permission as necessary.
+
+Available Packages
+Name        : yum
+Arch        : noarch
+Version     : 3.4.3
+Release     : 154.el7.centos.1
+Size        : 1.2 M
+Repo        : updates/7/x86_64
+Summary     : RPM package installer/updater/manager
+URL         : http://yum.baseurl.org/
+License     : GPLv2+
+Description : Yum is a utility that can check for and automatically download and
+            : install updated RPM packages. Dependencies are obtained and downloaded
+            : automatically, prompting the user for permission as necessary.`,
+			out: true,
+		},
+		{
+			in: `Failed to set locale, defaulting to C
+Loaded plugins: amazon-id, rhui-lb, search-disabled-repos
+Installed Packages
+Name        : yum
+Arch        : noarch
+Version     : 3.4.3
+Release     : 154.el7
+Size        : 5.5 M
+Repo        : installed
+From repo   : rhui-REGION-rhel-server-releases
+Summary     : RPM package installer/updater/manager
+URL         : http://yum.baseurl.org/
+License     : GPLv2+
+Description : Yum is a utility that can check for and automatically download and
+            : install updated RPM packages. Dependencies are obtained and downloaded
+            : automatically, prompting the user for permission as necessary.`,
+			out: false,
+		},
+	}
+
+	for _, tt := range tests {
+		ok := r.checkYumPsInstalled(tt.in)
+		if ok != tt.out {
+			t.Errorf("expected: %v\nactual: %v", tt.out, ok)
+		}
+	}
+}
+
+func TestParseYumPS(t *testing.T) {
+	r := newCentOS(config.ServerInfo{})
+	r.Distro = config.Distro{Family: "centos"}
+	r.Packages = models.NewPackages(
+		models.Package{
+			Name:    "python",
+			Version: "2.7.5",
+			Release: "34.el7",
+			Arch:    "x86_64",
+		},
+		models.Package{
+			Name:    "util-linux",
+			Version: "2.23.2",
+			Release: "26.el7",
+			Arch:    "x86_64",
+		},
+		models.Package{
+			Name:    "wpa_supplicant",
+			Version: "1:2.0",
+			Release: "17.el7_1",
+			Arch:    "x86_64",
+		},
+		models.Package{
+			Name:    "yum",
+			Version: "3.4.3",
+			Release: "150.el7.centos",
+			Arch:    "noarch",
+		},
+	)
+
+	var tests = []struct {
+		in  string
+		out models.Packages
+	}{
+		{
+			`       pid proc                  CPU      RSS      State uptime
+python-2.7.5-34.el7.x86_64 Upgrade 2.7.5-48.el7.x86_64
+       741 tuned                1:54    16 MB   Sleeping:  14 day(s) 21:52:32
+     38755 yum                  0:00    42 MB    Running:  00:00
+util-linux-2.23.2-26.el7.x86_64 Upgrade 2.23.2-33.el7_3.2.x86_64
+       626 agetty               0:00   848 kB   Sleeping:  14 day(s) 21:52:37
+       628 agetty               0:00   848 kB   Sleeping:  14 day(s) 21:52:37
+1:wpa_supplicant-2.0-17.el7_1.x86_64 Upgrade 1:2.0-21.el7_3.x86_64
+       638 wpa_supplicant       0:00   2.6 MB   Sleeping:  14 day(s) 21:52:37
+yum-3.4.3-150.el7.centos.noarch
+     38755 yum                  0:00    42 MB    Running:  00:00
+ps
+	 `,
+			models.NewPackages(
+				models.Package{
+					Name:    "python",
+					Version: "2.7.5",
+					Release: "34.el7",
+					Arch:    "x86_64",
+					// NewVersion: "2.7.5-",
+					// NewRelease: "48.el7.x86_64",
+					AffectedProcs: []models.AffectedProcess{
+						{
+							PID:  "741",
+							Name: "tuned",
+						},
+						{
+							PID:  "38755",
+							Name: "yum",
+						},
+					},
+				},
+				models.Package{
+					Name:    "util-linux",
+					Version: "2.23.2",
+					Release: "26.el7",
+					Arch:    "x86_64",
+					// NewVersion: "2.7.5",
+					// NewRelease: "48.el7.x86_64",
+					AffectedProcs: []models.AffectedProcess{
+						{
+							PID:  "626",
+							Name: "agetty",
+						},
+						{
+							PID:  "628",
+							Name: "agetty",
+						},
+					},
+				},
+				models.Package{
+					Name:    "wpa_supplicant",
+					Version: "1:2.0",
+					Release: "17.el7_1",
+					Arch:    "x86_64",
+					// NewVersion: "1:2.0",
+					// NewRelease: "21.el7_3.x86_64",
+					AffectedProcs: []models.AffectedProcess{
+						{
+							PID:  "638",
+							Name: "wpa_supplicant",
+						},
+					},
+				},
+			),
+		},
+		{
+			`    pid proc                  CPU      RSS      State uptime
+acpid-2.0.19-6.7.amzn1.x86_64
+      2388 acpid                0:00   1.4 MB   Sleeping:  21:08
+at-3.1.10-48.15.amzn1.x86_64
+      2546 atd                  0:00   164 kB   Sleeping:  21:06
+cronie-anacron-1.4.4-15.8.amzn1.x86_64
+      2637 anacron              0:00   1.5 MB   Sleeping:  13:14
+12:dhclient-4.1.1-51.P1.26.amzn1.x86_64
+      2061 dhclient             0:00   1.4 MB   Sleeping:  21:10
+      2193 dhclient             0:00   2.1 MB   Sleeping:  21:08
+mingetty-1.08-5.9.amzn1.x86_64
+      2572 mingetty             0:00   1.4 MB   Sleeping:  21:06
+      2575 mingetty             0:00   1.4 MB   Sleeping:  21:06
+      2578 mingetty             0:00   1.5 MB   Sleeping:  21:06
+      2580 mingetty             0:00   1.4 MB   Sleeping:  21:06
+      2582 mingetty             0:00   1.4 MB   Sleeping:  21:06
+      2584 mingetty             0:00   1.4 MB   Sleeping:  21:06
+openssh-server-6.6.1p1-33.66.amzn1.x86_64
+      2481 sshd                 0:00   2.6 MB   Sleeping:  21:07
+python27-2.7.12-2.120.amzn1.x86_64
+      2649 yum                  0:00    35 MB    Running:  00:01
+rsyslog-5.8.10-9.26.amzn1.x86_64
+      2261 rsyslogd             0:00   2.6 MB   Sleeping:  21:08
+udev-173-4.13.amzn1.x86_64
+      1528 udevd                0:00   2.5 MB   Sleeping:  21:12
+      1652 udevd                0:00   2.1 MB   Sleeping:  21:12
+      1653 udevd                0:00   2.0 MB   Sleeping:  21:12
+upstart-0.6.5-13.3.13.amzn1.x86_64
+         1 init                 0:00   2.5 MB   Sleeping:  21:13
+util-linux-2.23.2-33.28.amzn1.x86_64
+      2569 agetty               0:00   1.6 MB   Sleeping:  21:06
+yum-3.4.3-150.70.amzn1.noarch
+      2649 yum                  0:00    35 MB    Running:  00:01
+`,
+			models.Packages{},
+		},
+	}
+
+	for _, tt := range tests {
+		packages := r.parseYumPS(tt.in)
+		for name, ePack := range tt.out {
+			if !reflect.DeepEqual(ePack, packages[name]) {
+				e := pp.Sprintf("%v", ePack)
+				a := pp.Sprintf("%v", packages[name])
+				t.Errorf("expected %s, actual %s", e, a)
+			}
+		}
+	}
+}
+
+func TestParseNeedsRestarting(t *testing.T) {
+	r := newCentOS(config.ServerInfo{})
+	r.Distro = config.Distro{Family: "centos"}
+
+	var tests = []struct {
+		in  string
+		out []models.NeedRestartProcess
+	}{
+		{
+			`1 : /usr/lib/systemd/systemd --switched-root --system --deserialize 21
+437 : /usr/sbin/NetworkManager --no-daemon`,
+			[]models.NeedRestartProcess{
+				{
+					PID:     "437",
+					Path:    "/usr/sbin/NetworkManager --no-daemon",
+					HasInit: true,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		procs := r.parseNeedsRestarting(tt.in)
+		if !reflect.DeepEqual(tt.out, procs) {
+			t.Errorf("expected %#v, actual %#v", tt.out, procs)
+		}
+	}
+}
+
+func TestIsExecScanUsingYum(t *testing.T) {
+	r := newRHEL(config.ServerInfo{})
+	var tests = []struct {
+		modes  []byte
+		family string
+		out    bool
+	}{
+		{
+			modes: []byte{config.Offline},
+			out:   false,
+		},
+		{
+			modes:  []byte{},
+			family: config.CentOS,
+			out:    false,
+		},
+		{
+			family: config.Amazon,
+			modes:  []byte{config.FastRoot},
+			out:    true,
+		},
+		{
+			family: config.Amazon,
+			modes:  []byte{config.Deep},
+			out:    true,
+		},
+	}
+
+	for i, tt := range tests {
+		r.Distro.Family = tt.family
+		mode := config.ScanMode{}
+		for _, m := range tt.modes {
+			mode.Set(m)
+		}
+
+		si := r.getServerInfo()
+		si.Mode = mode
+		r.setServerInfo(si)
+
+		out := r.isExecScanUsingYum()
+		if out != tt.out {
+			t.Errorf("[%d] expected %#v, actual %#v", i, tt.out, out)
+		}
+	}
+}
+
+func TestIsExecFillChangelogs(t *testing.T) {
+	r := newRHEL(config.ServerInfo{})
+	var tests = []struct {
+		modes  []byte
+		family string
+		out    bool
+	}{
+		{
+			modes: []byte{config.Offline},
+			out:   false,
+		},
+		{
+			modes:  []byte{config.Deep},
+			family: config.CentOS,
+			out:    true,
+		},
+		{
+			family: config.Amazon,
+			modes:  []byte{config.Deep},
+			out:    false,
+		},
+		{
+			modes:  []byte{config.Deep},
+			family: config.RedHat,
+			out:    true,
+		},
+	}
+
+	for i, tt := range tests {
+		r.Distro.Family = tt.family
+		mode := config.ScanMode{}
+		for _, m := range tt.modes {
+			mode.Set(m)
+		}
+
+		si := r.getServerInfo()
+		si.Mode = mode
+		r.setServerInfo(si)
+		out := r.isExecFillChangelogs()
+		if out != tt.out {
+			t.Errorf("[%d] expected %#v, actual %#v", i, tt.out, out)
+		}
+	}
+}
+
+func TestIsScanChangelogs(t *testing.T) {
+	r := newCentOS(config.ServerInfo{})
+	var tests = []struct {
+		modes  []byte
+		family string
+		out    bool
+	}{
+		{
+			modes: []byte{config.Offline},
+			out:   false,
+		},
+		{
+			modes: []byte{config.Fast},
+			out:   false,
+		},
+		{
+			modes: []byte{config.FastRoot},
+			out:   false,
+		},
+		{
+			modes:  []byte{config.Deep},
+			family: config.RedHat,
+			out:    true,
+		},
+	}
+
+	for i, tt := range tests {
+		r.Distro.Family = tt.family
+		mode := config.ScanMode{}
+		for _, m := range tt.modes {
+			mode.Set(m)
+		}
+
+		si := r.getServerInfo()
+		si.Mode = mode
+		r.setServerInfo(si)
+		out := r.isExecScanChangelogs()
+		if out != tt.out {
+			t.Errorf("[%d] expected %#v, actual %#v", i, tt.out, out)
+		}
+	}
 }

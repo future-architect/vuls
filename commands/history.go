@@ -32,11 +32,7 @@ import (
 )
 
 // HistoryCmd is Subcommand of list scanned results
-type HistoryCmd struct {
-	debug      bool
-	debugSQL   bool
-	resultsDir string
-}
+type HistoryCmd struct{}
 
 // Name return subcommand name
 func (*HistoryCmd) Name() string { return "history" }
@@ -56,18 +52,15 @@ func (*HistoryCmd) Usage() string {
 
 // SetFlags set flag
 func (p *HistoryCmd) SetFlags(f *flag.FlagSet) {
-	f.BoolVar(&p.debugSQL, "debug-sql", false, "SQL debug mode")
+	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
 
 	wd, _ := os.Getwd()
 	defaultResultsDir := filepath.Join(wd, "results")
-	f.StringVar(&p.resultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 }
 
 // Execute execute
 func (p *HistoryCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-
-	c.Conf.DebugSQL = p.debugSQL
-	c.Conf.ResultsDir = p.resultsDir
 
 	dirs, err := report.ListValidJSONDirs()
 	if err != nil {

@@ -13,13 +13,13 @@ import (
 
 // inherit OsTypeInterface
 type suse struct {
-	redhat
+	redhatBase
 }
 
 // NewRedhat is constructor
 func newSUSE(c config.ServerInfo) *suse {
 	r := &suse{
-		redhat: redhat{
+		redhatBase: redhatBase{
 			base: base{
 				osPackages: osPackages{
 					Packages:  models.Packages{},
@@ -98,7 +98,11 @@ func (o *suse) parseOSRelease(content string) (name string, ver string) {
 	return name, result[1]
 }
 
-func (o *suse) checkDependencies() error {
+func (o *suse) checkScanMode() error {
+	return nil
+}
+
+func (o *suse) checkDeps() error {
 	o.log.Infof("Dependencies... No need")
 	return nil
 }
@@ -122,6 +126,10 @@ func (o *suse) scanPackages() error {
 		return err
 	}
 	o.Kernel.RebootRequired = rebootRequired
+	if o.getServerInfo().Mode.IsOffline() {
+		o.Packages = installed
+		return nil
+	}
 
 	updatable, err := o.scanUpdatablePackages()
 	if err != nil {
@@ -135,20 +143,20 @@ func (o *suse) scanPackages() error {
 }
 
 func (o *suse) rebootRequired() (bool, error) {
-	r := o.exec("rpm -q --last kernel-default | head -n1", noSudo)
+	r := o.exec("rpm -q --last kernel-default", noSudo)
 	if !r.isSuccess() {
-		return false, fmt.Errorf("Failed to detect the last installed kernel : %v", r)
+		o.log.Warnf("Failed to detect the last installed kernel : %v", r)
+		// continue scanning
+		return false, nil
 	}
 	stdout := strings.Fields(r.Stdout)[0]
 	return !strings.Contains(stdout, strings.TrimSuffix(o.Kernel.Release, "-default")), nil
 }
 
 func (o *suse) scanUpdatablePackages() (models.Packages, error) {
-	cmd := ""
-	if v, _ := o.Distro.MajorVersion(); v < 12 {
-		cmd = "zypper -q lu"
-	} else {
-		cmd = "zypper --no-color -q lu"
+	cmd := "zypper -q lu"
+	if o.hasZypperColorOption() {
+		cmd = "zypper -q --no-color lu"
 	}
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
@@ -187,4 +195,10 @@ func (o *suse) parseZypperLUOneLine(line string) (*models.Package, error) {
 		NewRelease: available[1],
 		Arch:       fs[10],
 	}, nil
+}
+
+func (o *suse) hasZypperColorOption() bool {
+	cmd := "zypper --help | grep color"
+	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
+	return len(r.Stdout) > 0
 }

@@ -20,9 +20,13 @@ package models
 import (
 	"bytes"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/cwe"
+	"github.com/future-architect/vuls/util"
 )
 
 // ScanResults is a slide of ScanResult
@@ -30,40 +34,83 @@ type ScanResults []ScanResult
 
 // ScanResult has the result of scanned CVE information.
 type ScanResult struct {
-	ScannedAt   time.Time
-	ReportedAt  time.Time
-	JSONVersion int
-	Lang        string
-	ServerUUID  string
-	ServerName  string // TOML Section key
-	Family      string
-	Release     string
-	Container   Container
-	Platform    Platform
-	IPv4Addrs   []string // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
-	IPv6Addrs   []string // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
+	JSONVersion      int                    `json:"jsonVersion"`
+	Lang             string                 `json:"lang"`
+	ServerUUID       string                 `json:"serverUUID"`
+	ServerName       string                 `json:"serverName"` // TOML Section key
+	Family           string                 `json:"family"`
+	Release          string                 `json:"release"`
+	Container        Container              `json:"container"`
+	Platform         Platform               `json:"platform"`
+	IPv4Addrs        []string               `json:"ipv4Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
+	IPv6Addrs        []string               `json:"ipv6Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
+	ScannedAt        time.Time              `json:"scannedAt"`
+	ScannedVersion   string                 `json:"scannedVersion"`
+	ScannedRevision  string                 `json:"scannedRevision"`
+	ScannedBy        string                 `json:"scannedBy"`
+	ReportedAt       time.Time              `json:"reportedAt"`
+	ReportedVersion  string                 `json:"reportedVersion"`
+	ReportedRevision string                 `json:"reportedRevision"`
+	ReportedBy       string                 `json:"reportedBy"`
+	ScannedCves      VulnInfos              `json:"scannedCves"`
+	RunningKernel    Kernel                 `json:"runningKernel"`
+	Packages         Packages               `json:"packages"`
+	CweDict          CweDict                `json:"cweDict"`
+	Optional         map[string]interface{} `json:",omitempty"`
+	SrcPackages      SrcPackages            `json:",omitempty"`
+	Errors           []string               `json:"errors"`
+	Config           struct {
+		Scan   config.Config `json:"scan"`
+		Report config.Config `json:"report"`
+	} `json:"config"`
+}
 
-	// Scanned Vulns by SSH scan + CPE + OVAL
-	ScannedCves VulnInfos
+// CweDict is a dictionary for CWE
+type CweDict map[string]CweDictEntry
 
-	RunningKernel Kernel
-	Packages      Packages
-	SrcPackages   SrcPackages
-
-	Errors   []string
-	Optional [][]interface{}
-
-	Config struct {
-		Scan   config.Config
-		Report config.Config
+// Get the name, url, top10URL for the specified cweID, lang
+func (c CweDict) Get(cweID, lang string) (name, url, top10Rank, top10URL string) {
+	cweNum := strings.TrimPrefix(cweID, "CWE-")
+	switch config.Conf.Lang {
+	case "ja":
+		if dict, ok := c[cweNum]; ok && dict.OwaspTopTen2017 != "" {
+			top10Rank = dict.OwaspTopTen2017
+			top10URL = cwe.OwaspTopTen2017GitHubURLJa[dict.OwaspTopTen2017]
+		}
+		if dict, ok := cwe.CweDictJa[cweNum]; ok {
+			name = dict.Name
+			url = fmt.Sprintf("http://jvndb.jvn.jp/ja/cwe/%s.html", cweID)
+		} else {
+			if dict, ok := cwe.CweDictEn[cweNum]; ok {
+				name = dict.Name
+			}
+			url = fmt.Sprintf("https://cwe.mitre.org/data/definitions/%s.html", cweID)
+		}
+	default:
+		if dict, ok := c[cweNum]; ok && dict.OwaspTopTen2017 != "" {
+			top10Rank = dict.OwaspTopTen2017
+			top10URL = cwe.OwaspTopTen2017GitHubURLEn[dict.OwaspTopTen2017]
+		}
+		url = fmt.Sprintf("https://cwe.mitre.org/data/definitions/%s.html", cweID)
+		if dict, ok := cwe.CweDictEn[cweNum]; ok {
+			name = dict.Name
+		}
 	}
+	return
+}
+
+// CweDictEntry is a entry of CWE
+type CweDictEntry struct {
+	En              *cwe.Cwe `json:"en,omitempty"`
+	Ja              *cwe.Cwe `json:"ja,omitempty"`
+	OwaspTopTen2017 string   `json:"owaspTopTen2017"`
 }
 
 // Kernel has the Release, version and whether need restart
 type Kernel struct {
-	Release        string
-	Version        string
-	RebootRequired bool
+	Release        string `json:"release"`
+	Version        string `json:"version"`
+	RebootRequired bool   `json:"rebootRequired"`
 }
 
 // FilterByCvssOver is filter function.
@@ -85,9 +132,29 @@ func (r ScanResult) FilterByCvssOver(over float64) ScanResult {
 }
 
 // FilterIgnoreCves is filter function.
-func (r ScanResult) FilterIgnoreCves(cveIDs []string) ScanResult {
+func (r ScanResult) FilterIgnoreCves() ScanResult {
+
+	ignoreCves := []string{}
+	if len(r.Container.Name) == 0 {
+		ignoreCves = config.Conf.Servers[r.ServerName].IgnoreCves
+	} else {
+		if s, ok := config.Conf.Servers[r.ServerName]; ok {
+			if con, ok := s.Containers[r.Container.Name]; ok {
+				ignoreCves = con.IgnoreCves
+			} else {
+				util.Log.Errorf("%s is not found in config.toml",
+					r.Container.Name)
+				return r
+			}
+		} else {
+			util.Log.Errorf("%s is not found in config.toml",
+				r.ServerName)
+			return r
+		}
+	}
+
 	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
-		for _, c := range cveIDs {
+		for _, c := range ignoreCves {
 			if v.CveID == c {
 				return false
 			}
@@ -110,6 +177,63 @@ func (r ScanResult) FilterUnfixed() ScanResult {
 		}
 		return !NotFixedAll
 	})
+	r.ScannedCves = filtered
+	return r
+}
+
+// FilterIgnorePkgs is filter function.
+func (r ScanResult) FilterIgnorePkgs() ScanResult {
+	ignorePkgsRegexps := []string{}
+	if len(r.Container.Name) == 0 {
+		ignorePkgsRegexps = config.Conf.Servers[r.ServerName].IgnorePkgsRegexp
+	} else {
+		if s, ok := config.Conf.Servers[r.ServerName]; ok {
+			if con, ok := s.Containers[r.Container.Name]; ok {
+				ignorePkgsRegexps = con.IgnorePkgsRegexp
+			} else {
+				util.Log.Errorf("%s is not found in config.toml",
+					r.Container.Name)
+				return r
+			}
+		} else {
+			util.Log.Errorf("%s is not found in config.toml",
+				r.ServerName)
+			return r
+		}
+	}
+
+	regexps := []*regexp.Regexp{}
+	for _, pkgRegexp := range ignorePkgsRegexps {
+		re, err := regexp.Compile(pkgRegexp)
+		if err != nil {
+			util.Log.Errorf("Faild to parse %s, %s", pkgRegexp, err)
+			continue
+		} else {
+			regexps = append(regexps, re)
+		}
+	}
+	if len(regexps) == 0 {
+		return r
+	}
+
+	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
+		if len(v.AffectedPackages) == 0 {
+			return true
+		}
+		for _, p := range v.AffectedPackages {
+			match := false
+			for _, re := range regexps {
+				if re.MatchString(p.Name) {
+					match = true
+				}
+			}
+			if !match {
+				return true
+			}
+		}
+		return false
+	})
+
 	r.ScannedCves = filtered
 	return r
 }
@@ -180,29 +304,94 @@ func (r ScanResult) FormatServerName() (name string) {
 
 // FormatTextReportHeadedr returns header of text report
 func (r ScanResult) FormatTextReportHeadedr() string {
-	serverInfo := r.ServerInfo()
 	var buf bytes.Buffer
-	for i := 0; i < len(serverInfo); i++ {
+	for i := 0; i < len(r.ServerInfo()); i++ {
 		buf.WriteString("=")
 	}
-	return fmt.Sprintf("%s\n%s\n%s\t%s\n",
+
+	return fmt.Sprintf("%s\n%s\n%s, %s, %s\n",
 		r.ServerInfo(),
 		buf.String(),
 		r.ScannedCves.FormatCveSummary(),
-		r.Packages.FormatUpdatablePacksSummary(),
+		r.ScannedCves.FormatFixedStatus(r.Packages),
+		r.FormatUpdatablePacksSummary(),
 	)
+}
+
+// FormatUpdatablePacksSummary returns a summary of updatable packages
+func (r ScanResult) FormatUpdatablePacksSummary() string {
+	if !r.isDisplayUpdatableNum() {
+		return fmt.Sprintf("%d installed", len(r.Packages))
+	}
+
+	nUpdatable := 0
+	for _, p := range r.Packages {
+		if p.NewVersion == "" {
+			continue
+		}
+		if p.Version != p.NewVersion || p.Release != p.NewRelease {
+			nUpdatable++
+		}
+	}
+	return fmt.Sprintf("%d installed, %d updatable",
+		len(r.Packages),
+		nUpdatable)
+}
+
+func (r ScanResult) isDisplayUpdatableNum() bool {
+	var mode config.ScanMode
+	s, _ := config.Conf.Servers[r.ServerName]
+	mode = s.Mode
+
+	if mode.IsOffline() {
+		return false
+	}
+	if mode.IsFastRoot() || mode.IsDeep() {
+		return true
+	}
+	if mode.IsFast() {
+		switch r.Family {
+		case config.RedHat,
+			config.Oracle,
+			config.Debian,
+			config.Ubuntu,
+			config.Raspbian:
+			return false
+		default:
+			return true
+		}
+	}
+	return false
+}
+
+// IsContainer returns whether this ServerInfo is about container
+func (r ScanResult) IsContainer() bool {
+	return 0 < len(r.Container.ContainerID)
+}
+
+// IsDeepScanMode checks if the scan mode is deep scan mode.
+func (r ScanResult) IsDeepScanMode() bool {
+	for _, s := range r.Config.Scan.Servers {
+		for _, m := range s.ScanMode {
+			if m == "deep" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // Container has Container information
 type Container struct {
-	ContainerID string
-	Name        string
-	Image       string
-	Type        string
+	ContainerID string `json:"containerID"`
+	Name        string `json:"name"`
+	Image       string `json:"image"`
+	Type        string `json:"type"`
+	UUID        string `json:"uuid"`
 }
 
 // Platform has platform information
 type Platform struct {
-	Name       string // aws or azure or gcp or other...
-	InstanceID string
+	Name       string `json:"name"` // aws or azure or gcp or other...
+	InstanceID string `json:"instanceID"`
 }

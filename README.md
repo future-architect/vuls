@@ -63,10 +63,11 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 - Fast scan and Deep scan
     - Fast Scan
         - Scan without root privilege
-        - Scan with No internet access. (RedHat, CentOS, OracleLinux, Ubuntu, Debian)
+        - Scan with No internet access. (RedHat, CentOS, OracleLinux, Ubuntu and Debian)
         - Almost no load on the scan target server
     - Deep Scan
         - Scan with root privilege
+        - Detect processes affected by update using yum-ps (RedHat, CentOS, OracleLinux and Amazon Linux)
         - Parses the Changelog  
             Changelog has a history of version changes. When a security issue is fixed, the relevant CVE ID is listed.
             By parsing the changelog and analysing the updates between the installed version of software on the server and the newest version of that software
