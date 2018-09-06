@@ -734,7 +734,7 @@ type GoCveDictConf struct {
 	Type string
 
 	// http://cve-dictionary.com:1323 or DB connection string
-	URL string `valid:"url" json:"-"`
+	URL string `json:"-"`
 
 	// /path/to/cve.sqlite3
 	SQLite3Path string `json:"-"`
@@ -788,7 +788,7 @@ type GovalDictConf struct {
 	Type string
 
 	// http://goval-dictionary.com:1324 or DB connection string
-	URL string `valid:"url" json:"-"`
+	URL string `json:"-"`
 
 	// /path/to/oval.sqlite3
 	SQLite3Path string `json:"-"`
@@ -841,7 +841,7 @@ type GostConf struct {
 	Type string
 
 	// http://gost-dictionary.com:1324 or DB connection string
-	URL string `valid:"url" json:"-"`
+	URL string `json:"-"`
 
 	// /path/to/gost.sqlite3
 	SQLite3Path string `json:"-"`
