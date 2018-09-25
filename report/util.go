@@ -259,10 +259,6 @@ No CVE-IDs are found in updatable packages.
 			"",
 		})
 		table.SetBorder(true)
-		table.SetHeaderColor(
-			tablewriter.Colors{tablewriter.Normal},
-			tablewriter.Colors{tablewriter.Normal},
-		)
 		table.AppendBulk(data)
 		table.Render()
 		lines += b.String() + "\n"
