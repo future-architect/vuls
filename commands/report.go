@@ -37,7 +37,7 @@ import (
 // ReportCmd is subcommand for reporting
 type ReportCmd struct {
 	configPath string
-	cvelDict   c.GoCveDictConf
+	cveDict    c.GoCveDictConf
 	ovalDict   c.GovalDictConf
 	gostConf   c.GostConf
 	httpConf   c.HTTPConf
@@ -85,13 +85,13 @@ func (*ReportCmd) Usage() string {
 		[-debug-sql]
 		[-pipe]
 		[-cvedb-type=sqlite3|mysql|postgres|redis]
-		[-cvedb-path=/path/to/cve.sqlite3]
+		[-cvedb-sqlite3-path=/path/to/cve.sqlite3]
 		[-cvedb-url=http://127.0.0.1:1323 or DB connection string]
 		[-ovaldb-type=sqlite3|mysql|redis]
-		[-ovaldb-path=/path/to/oval.sqlite3]
+		[-ovaldb-sqlite3-path=/path/to/oval.sqlite3]
 		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
 		[-gostdb-type=sqlite3|mysql|redis]
-		[-gostdb-path=/path/to/gost.sqlite3]
+		[-gostdb-sqlite3-path=/path/to/gost.sqlite3]
 		[-gostdb-url=http://127.0.0.1:1325 or DB connection string]
 		[-http="http://vuls-report-server"]
 
@@ -165,10 +165,10 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"Auto generate of scan target servers and then write to config.toml and scan result")
 	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use args passed via PIPE")
 
-	f.StringVar(&p.cvelDict.Type, "cvedb-type", "sqlite3",
+	f.StringVar(&p.cveDict.Type, "cvedb-type", "",
 		"DB type of go-cve-dictionary (sqlite3, mysql, postgres or redis)")
-	f.StringVar(&p.cvelDict.SQLite3Path, "cvedb-sqlite3-path", "", "/path/to/sqlite3")
-	f.StringVar(&p.cvelDict.URL, "cvedb-url", "",
+	f.StringVar(&p.cveDict.SQLite3Path, "cvedb-sqlite3-path", "", "/path/to/sqlite3")
+	f.StringVar(&p.cveDict.URL, "cvedb-url", "",
 		"http://go-cve-dictionary.com:1323 or DB connection string")
 
 	f.StringVar(&p.ovalDict.Type, "ovaldb-type", "",
@@ -197,7 +197,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitUsageError
 	}
 
-	c.Conf.CveDict.Overwrite(p.cvelDict)
+	c.Conf.CveDict.Overwrite(p.cveDict)
 	c.Conf.OvalDict.Overwrite(p.ovalDict)
 	c.Conf.Gost.Overwrite(p.gostConf)
 	c.Conf.HTTP.Overwrite(p.httpConf)
@@ -340,7 +340,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 		if err := report.CveClient.CheckHealth(); err != nil {
 			util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
-			util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with -cvedb-path option instead of -cvedb-url")
+			util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with -cvedb-sqlite3-path option instead of -cvedb-url")
 			return subcommands.ExitFailure
 		}
 		if c.Conf.CveDict.URL != "" {
@@ -356,7 +356,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			err := oval.Base{}.CheckHTTPHealth()
 			if err != nil {
 				util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
-				util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with -ovaldb-path option instead of -ovaldb-url")
+				util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with -ovaldb-sqlite3-path option instead of -ovaldb-url")
 				return subcommands.ExitFailure
 			}
 		} else {
@@ -370,7 +370,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			err := gost.Base{}.CheckHTTPHealth()
 			if err != nil {
 				util.Log.Errorf("gost HTTP server is not running. err: %s", err)
-				util.Log.Errorf("Run gost as server mode before reporting or run with -gostdb-path option instead of -gostdb-url")
+				util.Log.Errorf("Run gost as server mode before reporting or run with -gostdb-sqlite3-path option instead of -gostdb-url")
 				return subcommands.ExitFailure
 			}
 		} else {
