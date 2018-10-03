@@ -21,6 +21,8 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
+
+	"github.com/future-architect/vuls/config"
 )
 
 // Packages is Map of Package
@@ -172,6 +174,20 @@ func (p Package) FormatChangelog() string {
 	}
 	buf = append(buf, packVer, delim.String(), clog)
 	return strings.Join(buf, "\n")
+}
+
+func (p Package) In3rdPartyRepo(family string) bool {
+	switch family {
+	case config.RedHat, config.CentOS, config.Amazon, config.Oracle:
+		switch p.Repository {
+		case "base", "updates", "extras", "@base", "@updates", "@extras":
+			return false
+		default:
+			return true
+		}
+	default:
+		return false
+	}
 }
 
 // Changelog has contents of changelog and how to get it.
