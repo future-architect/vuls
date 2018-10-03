@@ -20,12 +20,13 @@ package config
 import (
 	"errors"
 	"fmt"
-	"log/syslog"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
+
+	syslog "github.com/RackSec/srslog"
 
 	valid "github.com/asaskevich/govalidator"
 	log "github.com/sirupsen/logrus"
