@@ -228,6 +228,8 @@ func NewCveContentType(name string) CveContentType {
 		return RedHatAPI
 	case "debian_security_tracker":
 		return DebianSecurityTracker
+	case "microsoft":
+		return Microsoft
 	default:
 		return Unknown
 	}
@@ -263,6 +265,9 @@ const (
 
 	// SUSE is SUSE Linux
 	SUSE CveContentType = "suse"
+
+	// Microsoft is Microsoft
+	Microsoft CveContentType = "microsoft"
 
 	// Unknown is Unknown
 	Unknown CveContentType = "unknown"

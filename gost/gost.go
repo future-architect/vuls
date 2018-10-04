@@ -46,6 +46,8 @@ func NewClient(family string) Client {
 		return RedHat{}
 	case cnf.Debian:
 		return Debian{}
+	case cnf.Windows:
+		return Microsoft{}
 	default:
 		return Pseudo{}
 	}
