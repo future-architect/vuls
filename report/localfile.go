@@ -129,7 +129,7 @@ func writeFile(path string, data []byte, perm os.FileMode) error {
 		if data, err = gz(data); err != nil {
 			return err
 		}
-		path = path + ".gz"
+		path += ".gz"
 	}
 	return ioutil.WriteFile(path, []byte(data), perm)
 }
