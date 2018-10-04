@@ -19,8 +19,9 @@ package report
 
 import (
 	"fmt"
-	"log/syslog"
 	"strings"
+
+	syslog "github.com/RackSec/srslog"
 
 	"github.com/pkg/errors"
 

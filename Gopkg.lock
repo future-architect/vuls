@@ -36,6 +36,14 @@
   version = "v0.3.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:bb6c15391e666c4f44bdc604772301b93102233ed687be6df6d1c2abbde4f15c"
+  name = "github.com/RackSec/srslog"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "a4725f04ec91af1a91b380da679d6e0c2f061e59"
+
+[[projects]]
   digest = "1:320e7ead93de9fd2b0e59b50fd92a4d50c1f8ab455d96bc2eb083267453a9709"
   name = "github.com/asaskevich/govalidator"
   packages = ["."]
@@ -762,6 +770,7 @@
   input-imports = [
     "github.com/Azure/azure-sdk-for-go/storage",
     "github.com/BurntSushi/toml",
+    "github.com/RackSec/srslog",
     "github.com/asaskevich/govalidator",
     "github.com/aws/aws-sdk-go/aws",
     "github.com/aws/aws-sdk-go/aws/credentials",

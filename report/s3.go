@@ -144,7 +144,7 @@ func putObject(svc *s3.S3, k string, b []byte) error {
 		if b, err = gz(b); err != nil {
 			return err
 		}
-		k = k + ".gz"
+		k += ".gz"
 	}
 
 	putObjectInput := &s3.PutObjectInput{

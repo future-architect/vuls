@@ -104,7 +104,6 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 				}
 			}
 
-			//  s.KeyPassword = keyPass
 			s.KeyPassword = v.KeyPassword
 			if len(s.KeyPassword) == 0 {
 				s.KeyPassword = d.KeyPassword

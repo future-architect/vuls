@@ -136,7 +136,7 @@ func createBlockBlob(cli storage.BlobStorageClient, k string, b []byte) error {
 		if b, err = gz(b); err != nil {
 			return err
 		}
-		k = k + ".gz"
+		k += ".gz"
 	}
 
 	ref := cli.GetContainerReference(c.Conf.Azure.ContainerName)
