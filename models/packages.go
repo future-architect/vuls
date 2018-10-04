@@ -176,6 +176,7 @@ func (p Package) FormatChangelog() string {
 	return strings.Join(buf, "\n")
 }
 
+// In3rdPartyRepo returns whether the package was installed from 3rd party repository.
 func (p Package) In3rdPartyRepo(family string) bool {
 	switch family {
 	case config.RedHat, config.CentOS, config.Amazon, config.Oracle:
