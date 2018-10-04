@@ -203,8 +203,18 @@ No CVE-IDs are found in updatable packages.
 		vuln.AffectedPackages.Sort()
 		for _, affected := range vuln.AffectedPackages {
 			if pack, ok := r.Packages[affected.Name]; ok {
-				data = append(data, []string{"Affected PKG",
-					pack.FormatVersionFromTo(affected.NotFixedYet, affected.FixState)})
+				var line string
+				if pack.Repository != "" {
+					line = fmt.Sprintf("%s (%s)",
+						pack.FormatVersionFromTo(affected.NotFixedYet, affected.FixState),
+						pack.Repository)
+				} else {
+					line = fmt.Sprintf("%s",
+						pack.FormatVersionFromTo(affected.NotFixedYet, affected.FixState),
+					)
+				}
+				data = append(data, []string{"Affected Pkg", line})
+
 				if len(pack.AffectedProcs) != 0 {
 					for _, p := range pack.AffectedProcs {
 						data = append(data, []string{"",

@@ -709,9 +709,17 @@ func setChangelogLayout(g *gocui.Gui) error {
 		for _, affected := range vinfo.AffectedPackages {
 			// packages detected by OVAL may not be actually installed
 			if pack, ok := currentScanResult.Packages[affected.Name]; ok {
-				lines = append(lines,
-					"* "+pack.FormatVersionFromTo(
-						affected.NotFixedYet, affected.FixState))
+				var line string
+				if pack.Repository != "" {
+					line = fmt.Sprintf("* %s (%s)",
+						pack.FormatVersionFromTo(affected.NotFixedYet, affected.FixState),
+						pack.Repository)
+				} else {
+					line = fmt.Sprintf("* %s",
+						pack.FormatVersionFromTo(affected.NotFixedYet, affected.FixState),
+					)
+				}
+				lines = append(lines, line)
 
 				if len(pack.AffectedProcs) != 0 {
 					for _, p := range pack.AffectedProcs {
