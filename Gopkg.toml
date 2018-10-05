@@ -24,6 +24,10 @@
 #   go-tests = true
 #   unused-packages = true
 
+[[constraint]]
+  name = "github.com/knqyf263/gost"
+  branch = "master"
+
 [prune]
   go-tests = true
   unused-packages = true
