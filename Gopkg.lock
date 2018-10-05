@@ -340,7 +340,7 @@
   revision = "74609b86c936dff800c69ec89fcf4bc52d5f13a4"
 
 [[projects]]
-  branch = "fix_ms"
+  branch = "master"
   digest = "1:784bbde718d6f806578d929df8ad88a24817ca4fea5ce498165f46ff238d0deb"
   name = "github.com/knqyf263/gost"
   packages = [
@@ -350,7 +350,7 @@
     "util",
   ]
   pruneopts = "UT"
-  revision = "8a15eba9bedf723531d9331f245b85a10fed7854"
+  revision = "920046ad61b30ed1d554140c85daaa9e3ed2ca9e"
 
 [[projects]]
   branch = "master"
