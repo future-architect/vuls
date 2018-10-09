@@ -28,6 +28,10 @@
   name = "github.com/knqyf263/gost"
   branch = "master"
 
+[[constraint]]
+  name = "github.com/kotakanbe/go-cve-dictionary"
+  branch = "master"
+
 [prune]
   go-tests = true
   unused-packages = true
