@@ -106,7 +106,8 @@ func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult) (nCVEs int, er
 
 			for _, cve := range cves {
 				cveCont := red.ConvertToModel(&cve)
-				if v, ok := r.ScannedCves[cve.Name]; ok {
+				v, ok := r.ScannedCves[cve.Name]
+				if ok {
 					if _, ok := v.CveContents[models.RedHatAPI]; ok {
 						v.CveContents[models.RedHatAPI] = *cveCont
 					} else {
@@ -143,7 +144,8 @@ func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult) (nCVEs int, er
 			cves = driver.GetUnfixedCvesRedhat(major(r.Release), pack.Name)
 			for _, cve := range cves {
 				cveCont := red.ConvertToModel(&cve)
-				if v, ok := r.ScannedCves[cve.Name]; ok {
+				v, ok := r.ScannedCves[cve.Name]
+				if ok {
 					if _, ok := v.CveContents[models.RedHatAPI]; ok {
 						v.CveContents[models.RedHatAPI] = *cveCont
 					} else {
