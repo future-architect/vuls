@@ -208,18 +208,23 @@ func (red RedHat) mergePackageStates(v models.VulnInfo, ps []gostmodels.RedhatPa
 	return
 }
 
-// ConvertToModel converts gost model to vuls model
-func (red RedHat) ConvertToModel(cve *gostmodels.RedhatCVE) *models.CveContent {
-	cwes := []string{}
-	if cve.Cwe != "" {
-		s := strings.TrimPrefix(cve.Cwe, "(")
-		s = strings.TrimSuffix(s, ")")
-		if strings.Contains(cve.Cwe, "|") {
-			cwes = strings.Split(cve.Cwe, "|")
-		} else {
-			cwes = strings.Split(s, "->")
+func (red RedHat) parseCwe(str string) (cwes []string) {
+	if str != "" {
+		s := strings.Replace(str, "(", "|", -1)
+		s = strings.Replace(s, ")", "|", -1)
+		s = strings.Replace(s, "->", "|", -1)
+		for _, s := range strings.Split(s, "|") {
+			if s != "" {
+				cwes = append(cwes, s)
+			}
 		}
 	}
+	return
+}
+
+// ConvertToModel converts gost model to vuls model
+func (red RedHat) ConvertToModel(cve *gostmodels.RedhatCVE) *models.CveContent {
+	cwes := red.parseCwe(cve.Cwe)
 
 	details := []string{}
 	for _, detail := range cve.Details {
