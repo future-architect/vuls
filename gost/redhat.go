@@ -106,9 +106,16 @@ func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult) (nCVEs int, er
 
 			for _, cve := range cves {
 				cveCont := red.ConvertToModel(&cve)
-				v, ok := r.ScannedCves[cve.Name]
-				if ok {
-					v.CveContents[models.RedHatAPI] = *cveCont
+				if v, ok := r.ScannedCves[cve.Name]; ok {
+					if _, ok := v.CveContents[models.RedHatAPI]; ok {
+						v.CveContents[models.RedHatAPI] = *cveCont
+					} else {
+						v = models.VulnInfo{
+							CveID:       cveCont.CveID,
+							CveContents: models.NewCveContents(*cveCont),
+							Confidences: models.Confidences{models.RedHatAPIMatch},
+						}
+					}
 				} else {
 					v = models.VulnInfo{
 						CveID:       cveCont.CveID,
@@ -136,9 +143,16 @@ func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult) (nCVEs int, er
 			cves = driver.GetUnfixedCvesRedhat(major(r.Release), pack.Name)
 			for _, cve := range cves {
 				cveCont := red.ConvertToModel(&cve)
-				v, ok := r.ScannedCves[cve.Name]
-				if ok {
-					v.CveContents[models.RedHatAPI] = *cveCont
+				if v, ok := r.ScannedCves[cve.Name]; ok {
+					if _, ok := v.CveContents[models.RedHatAPI]; ok {
+						v.CveContents[models.RedHatAPI] = *cveCont
+					} else {
+						v = models.VulnInfo{
+							CveID:       cveCont.CveID,
+							CveContents: models.NewCveContents(*cveCont),
+							Confidences: models.Confidences{models.RedHatAPIMatch},
+						}
+					}
 				} else {
 					v = models.VulnInfo{
 						CveID:       cveCont.CveID,
