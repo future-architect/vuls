@@ -770,6 +770,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 type dataForTmpl struct {
 	CveID            string
 	Cvsses           string
+	Exploits         []models.Exploit
 	Summary          string
 	Mitigation       string
 	Confidences      models.Confidences
@@ -854,6 +855,7 @@ func detailLines() (string, error) {
 	data := dataForTmpl{
 		CveID:       vinfo.CveID,
 		Cvsses:      fmt.Sprintf("%s\n", table),
+		Exploits:    vinfo.Exploits,
 		Summary:     fmt.Sprintf("%s (%s)", summary.Value, summary.Type),
 		Mitigation:  fmt.Sprintf("%s (%s)", mitigation.Value, mitigation.Type),
 		Confidences: vinfo.Confidences,
@@ -877,6 +879,13 @@ const mdTemplate = `
 CVSS Scores
 -----------
 {{.Cvsses }}
+
+Exploit
+-----------
+{{range .Exploits -}}
+* [{{.Description}}]({{.URL}})
+{{end}}
+
 Summary
 -----------
  {{.Summary }}

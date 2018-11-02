@@ -122,6 +122,7 @@ type Config struct {
 	CveDict  GoCveDictConf `json:"cveDict"`
 	OvalDict GovalDictConf `json:"ovalDict"`
 	Gost     GostConf      `json:"gost"`
+	Exploit  ExploitConf   `json:"exploit"`
 
 	Slack    SlackConf    `json:"-"`
 	EMail    SMTPConf     `json:"-"`
@@ -875,6 +876,59 @@ func (cnf *GostConf) Overwrite(cmdOpt GostConf) {
 	}
 	if os.Getenv(gostDBPATH) != "" {
 		cnf.SQLite3Path = os.Getenv(gostDBPATH)
+	}
+
+	if cmdOpt.Type != "" {
+		cnf.Type = cmdOpt.Type
+	}
+	if cmdOpt.URL != "" {
+		cnf.URL = cmdOpt.URL
+	}
+	if cmdOpt.SQLite3Path != "" {
+		cnf.SQLite3Path = cmdOpt.SQLite3Path
+	}
+	cnf.setDefault()
+}
+
+// ExploitConf is exploit config
+type ExploitConf struct {
+	// DB type for exploit dictionary (sqlite3, mysql, postgres or redis)
+	Type string
+
+	// http://exploit-dictionary.com:1324 or DB connection string
+	URL string `json:"-"`
+
+	// /path/to/exploit.sqlite3
+	SQLite3Path string `json:"-"`
+}
+
+func (cnf *ExploitConf) setDefault() {
+	if cnf.Type == "" {
+		cnf.Type = "sqlite3"
+	}
+	if cnf.URL == "" && cnf.SQLite3Path == "" {
+		wd, _ := os.Getwd()
+		cnf.SQLite3Path = filepath.Join(wd, "go-exploitdb.sqlite3")
+	}
+}
+
+const exploitDBType = "EXPLOITDB_TYPE"
+const exploitDBURL = "EXPLOITDB_URL"
+const exploitDBPATH = "EXPLOITDB_SQLITE3_PATH"
+
+// Overwrite set options with the following priority.
+// 1. Command line option
+// 2. Environment variable
+// 3. config.toml
+func (cnf *ExploitConf) Overwrite(cmdOpt ExploitConf) {
+	if os.Getenv(exploitDBType) != "" {
+		cnf.Type = os.Getenv(exploitDBType)
+	}
+	if os.Getenv(exploitDBURL) != "" {
+		cnf.URL = os.Getenv(exploitDBURL)
+	}
+	if os.Getenv(exploitDBPATH) != "" {
+		cnf.SQLite3Path = os.Getenv(exploitDBPATH)
 	}
 
 	if cmdOpt.Type != "" {

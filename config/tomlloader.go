@@ -51,6 +51,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	Conf.CveDict = conf.CveDict
 	Conf.OvalDict = conf.OvalDict
 	Conf.Gost = conf.Gost
+	Conf.Exploit = conf.Exploit
 
 	d := conf.Default
 	Conf.Default = d

@@ -32,6 +32,7 @@ import (
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
 	"github.com/future-architect/vuls/cwe"
+	"github.com/future-architect/vuls/exploit"
 	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/oval"
@@ -40,6 +41,7 @@ import (
 	gostdb "github.com/knqyf263/gost/db"
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
 	ovaldb "github.com/kotakanbe/goval-dictionary/db"
+	exploitdb "github.com/mozqnet/go-exploitdb/db"
 )
 
 const (
@@ -176,6 +178,14 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string) erro
 		return fmt.Errorf("Failed to fill with CVE: %s", err)
 	}
 
+	util.Log.Infof("Fill Exploit information with Exploit-DB")
+	nExploitCve, err := FillWithExploit(dbclient.ExploitDB, r)
+	if err != nil {
+		return fmt.Errorf("Failed to fill with exploit: %s", err)
+	}
+	util.Log.Infof("%s: %d Exploits are detected with exploit",
+		r.FormatServerName(), nExploitCve)
+
 	fillCweDict(r)
 	return nil
 }
@@ -290,6 +300,14 @@ func FillWithGost(driver gostdb.DB, r *models.ScanResult) (nCVEs int, err error)
 	// TODO chekc if fetched
 	// TODO chekc if fresh enough
 	return gostClient.FillWithGost(driver, r)
+}
+
+// FillWithExploit fills Exploits with exploit dataabase
+// https://github.com/mozqnet/go-exploitdb
+func FillWithExploit(driver exploitdb.DB, r *models.ScanResult) (nExploitCve int, err error) {
+	// TODO chekc if fetched
+	// TODO chekc if fresh enough
+	return exploit.FillWithExploit(driver, r)
 }
 
 func fillVulnByCpeURIs(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) (nCVEs int, err error) {
@@ -454,6 +472,7 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 	cveDict := &c.Conf.CveDict
 	ovalDict := &c.Conf.OvalDict
 	gost := &c.Conf.Gost
+	exploit := &c.Conf.Exploit
 	http := &c.Conf.HTTP
 	if http.URL == "" {
 		http = nil
@@ -498,6 +517,7 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 		CveDict  *c.GoCveDictConf `toml:"cveDict"`
 		OvalDict *c.GovalDictConf `toml:"ovalDict"`
 		Gost     *c.GostConf      `toml:"gost"`
+		Exploit  *c.ExploitConf   `toml:"exploit"`
 		Slack    *c.SlackConf     `toml:"slack"`
 		Email    *c.SMTPConf      `toml:"email"`
 		HTTP     *c.HTTPConf      `toml:"http"`
@@ -515,6 +535,7 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 		CveDict:  cveDict,
 		OvalDict: ovalDict,
 		Gost:     gost,
+		Exploit:  exploit,
 		Slack:    slack,
 		Email:    email,
 		HTTP:     http,

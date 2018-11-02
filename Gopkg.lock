@@ -507,6 +507,18 @@
   revision = "9ac6cf4d929b2fa8fd2d2e6dec5bb0feb4f4911d"
 
 [[projects]]
+  branch = "master"
+  digest = "1:c72d41e2be29143a802361f175f9eafe81ecd35119b80b7673bb3e997b086687"
+  name = "github.com/mozqnet/go-exploitdb"
+  packages = [
+    "db",
+    "models",
+    "util",
+  ]
+  pruneopts = "UT"
+  revision = "b359807ea9b24f7ce80d1bfa02ffca5ed428ffb5"
+
+[[projects]]
   digest = "1:95d38d218bf2290987c6b0e885a9f0f2d3d3239235acaddca01c3fe36e5e5566"
   name = "github.com/nlopes/slack"
   packages = [
@@ -820,6 +832,8 @@
     "github.com/kotakanbe/goval-dictionary/models",
     "github.com/kotakanbe/logrus-prefixed-formatter",
     "github.com/mitchellh/go-homedir",
+    "github.com/mozqnet/go-exploitdb/db",
+    "github.com/mozqnet/go-exploitdb/models",
     "github.com/nlopes/slack",
     "github.com/olekukonko/tablewriter",
     "github.com/parnurzeal/gorequest",

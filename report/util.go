@@ -50,6 +50,7 @@ func formatScanSummary(rs ...models.ScanResult) string {
 				r.FormatServerName(),
 				fmt.Sprintf("%s%s", r.Family, r.Release),
 				r.FormatUpdatablePacksSummary(),
+				r.FormatExploitCveSummary(),
 			}
 		} else {
 			cols = []interface{}{
@@ -76,6 +77,7 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 				r.ScannedCves.FormatCveSummary(),
 				r.ScannedCves.FormatFixedStatus(r.Packages),
 				r.FormatUpdatablePacksSummary(),
+				r.FormatExploitCveSummary(),
 			}
 		} else {
 			cols = []interface{}{
@@ -123,6 +125,7 @@ No CVE-IDs are found in updatable packages.
 			fmt.Sprintf("%7s", vinfo.PatchStatus(r.Packages)),
 			// packname,
 			fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", vinfo.CveID),
+			fmt.Sprintf("%t", 0 < len(vinfo.Exploits)),
 		})
 	}
 
@@ -137,6 +140,7 @@ No CVE-IDs are found in updatable packages.
 		"Fixed",
 		// "Pkg",
 		"NVD",
+		"Exploit",
 	})
 	table.SetBorder(true)
 	table.AppendBulk(data)

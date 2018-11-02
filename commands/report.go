@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 
 	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/exploit"
 	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/oval"
@@ -36,11 +37,12 @@ import (
 
 // ReportCmd is subcommand for reporting
 type ReportCmd struct {
-	configPath string
-	cveDict    c.GoCveDictConf
-	ovalDict   c.GovalDictConf
-	gostConf   c.GostConf
-	httpConf   c.HTTPConf
+	configPath  string
+	cveDict     c.GoCveDictConf
+	ovalDict    c.GovalDictConf
+	gostConf    c.GostConf
+	exploitConf c.ExploitConf
+	httpConf    c.HTTPConf
 }
 
 // Name return subcommand name
@@ -93,6 +95,9 @@ func (*ReportCmd) Usage() string {
 		[-gostdb-type=sqlite3|mysql|redis]
 		[-gostdb-sqlite3-path=/path/to/gost.sqlite3]
 		[-gostdb-url=http://127.0.0.1:1325 or DB connection string]
+		[-exploitdb-type=sqlite3|mysql|redis]
+		[-exploitdb-sqlite3-path=/path/to/exploitdb.sqlite3]
+		[-exploitdb-url=http://127.0.0.1:1325 or DB connection string]
 		[-http="http://vuls-report-server"]
 
 		[RFC3339 datetime format under results dir]
@@ -183,6 +188,12 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.gostConf.URL, "gostdb-url", "",
 		"http://gost.com:1325 or DB connection string")
 
+	f.StringVar(&p.exploitConf.Type, "exploitdb-type", "",
+		"DB type of exploit (sqlite3, mysql, postgres or redis)")
+	f.StringVar(&p.exploitConf.SQLite3Path, "exploitdb-sqlite3-path", "", "/path/to/sqlite3")
+	f.StringVar(&p.exploitConf.URL, "exploitdb-url", "",
+		"http://exploit.com:1326 or DB connection string")
+
 	f.StringVar(&p.httpConf.URL, "http", "", "-to-http http://vuls-report")
 
 }
@@ -200,6 +211,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.CveDict.Overwrite(p.cveDict)
 	c.Conf.OvalDict.Overwrite(p.ovalDict)
 	c.Conf.Gost.Overwrite(p.gostConf)
+	c.Conf.Exploit.Overwrite(p.exploitConf)
 	c.Conf.HTTP.Overwrite(p.httpConf)
 
 	var dir string
@@ -378,10 +390,25 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 				util.Log.Infof("gost: %s", c.Conf.Gost.SQLite3Path)
 			}
 		}
+
+		if c.Conf.Exploit.URL != "" {
+			util.Log.Infof("exploit: %s", c.Conf.Exploit.URL)
+			err := exploit.CheckHTTPHealth()
+			if err != nil {
+				util.Log.Errorf("exploit HTTP server is not running. err: %s", err)
+				util.Log.Errorf("Run exploit as server mode before reporting or run with -exploitdb-sqlite3-path option instead of -exploitdb-url")
+				return subcommands.ExitFailure
+			}
+		} else {
+			if c.Conf.Exploit.Type == "sqlite3" {
+				util.Log.Infof("exploit: %s", c.Conf.Exploit.SQLite3Path)
+			}
+		}
 		dbclient, locked, err := report.NewDBClient(report.DBClientConf{
 			CveDictCnf:  c.Conf.CveDict,
 			OvalDictCnf: c.Conf.OvalDict,
 			GostCnf:     c.Conf.Gost,
+			ExploitCnf:  c.Conf.Exploit,
 			DebugSQL:    c.Conf.DebugSQL,
 		})
 		if locked {

@@ -166,6 +166,7 @@ type VulnInfo struct {
 	DistroAdvisories []DistroAdvisory `json:"distroAdvisories,omitempty"` // for Aamazon, RHEL, FreeBSD
 	CpeURIs          []string         `json:"cpeURIs,omitempty"`          // CpeURIs related to this CVE defined in config.toml
 	CveContents      CveContents      `json:"cveContents"`
+	Exploits         []Exploit        `json:"exploits"`
 }
 
 // Titles returns tilte (TUI)
@@ -711,6 +712,26 @@ func (p DistroAdvisory) Format() string {
 	}
 	buf := []string{p.AdvisoryID, delim.String(), p.Description}
 	return strings.Join(buf, "\n")
+}
+
+// ExploitType is exploit type
+type ExploitType string
+
+const (
+	// ExploitDB : https://www.exploit-db.com/
+	ExploitDB ExploitType = "exploitdb"
+)
+
+// Exploit :
+type Exploit struct {
+	ExploitType  ExploitType `json:"exploitType"`
+	ID           string      `json:"id"`
+	URL          string      `json:"url"`
+	Description  string      `json:"description"`
+	DocumentURL  *string     `json:"documentURL,omitempty"`
+	PaperURL     *string     `json:"paperURL,omitempty"`
+	ShellCodeURL *string     `json:"shellCodeURL,omitempty"`
+	BinaryURL    *string     `json:"binaryURL,omitempty"`
 }
 
 // Confidences is a list of Confidence
