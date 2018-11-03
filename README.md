@@ -67,6 +67,7 @@ Vuls uses Multiple vulnerability databases
 - [Debian Security Bug Tracker](https://security-tracker.debian.org/tracker/)
 - Commands(yum, zypper, pkg-audit)
 	- RHSA/ALAS/ELSA/FreeBSD-SA
+- [Exploit Database](https://www.exploit-db.com/)
 - Changelog
 
 ## Fast scan and Deep scan
