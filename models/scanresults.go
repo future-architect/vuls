@@ -309,12 +309,13 @@ func (r ScanResult) FormatTextReportHeadedr() string {
 		buf.WriteString("=")
 	}
 
-	return fmt.Sprintf("%s\n%s\n%s, %s, %s\n",
+	return fmt.Sprintf("%s\n%s\n%s, %s, %s, %s\n",
 		r.ServerInfo(),
 		buf.String(),
 		r.ScannedCves.FormatCveSummary(),
 		r.ScannedCves.FormatFixedStatus(r.Packages),
 		r.FormatUpdatablePacksSummary(),
+		r.FormatExploitCveSummary(),
 	)
 }
 
@@ -336,6 +337,17 @@ func (r ScanResult) FormatUpdatablePacksSummary() string {
 	return fmt.Sprintf("%d installed, %d updatable",
 		len(r.Packages),
 		nUpdatable)
+}
+
+// FormatExploitCveSummary returns a summary of exploit cve
+func (r ScanResult) FormatExploitCveSummary() string {
+	nExploitCve := 0
+	for _, vuln := range r.ScannedCves {
+		if 0 < len(vuln.Exploits) {
+			nExploitCve++
+		}
+	}
+	return fmt.Sprintf("%d cves with exploit", nExploitCve)
 }
 
 func (r ScanResult) isDisplayUpdatableNum() bool {

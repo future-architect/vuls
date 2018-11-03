@@ -9,13 +9,15 @@ import (
 	gostdb "github.com/knqyf263/gost/db"
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
 	ovaldb "github.com/kotakanbe/goval-dictionary/db"
+	exploitdb "github.com/mozqnet/go-exploitdb/db"
 )
 
 // DBClient is a dictionarie's db client for reporting
 type DBClient struct {
-	CveDB  cvedb.DB
-	OvalDB ovaldb.DB
-	GostDB gostdb.DB
+	CveDB     cvedb.DB
+	OvalDB    ovaldb.DB
+	GostDB    gostdb.DB
+	ExploitDB exploitdb.DB
 }
 
 // DBClientConf has a configuration of Vulnerability DBs
@@ -23,6 +25,7 @@ type DBClientConf struct {
 	CveDictCnf  config.GoCveDictConf
 	OvalDictCnf config.GovalDictConf
 	GostCnf     config.GostConf
+	ExploitCnf  config.ExploitConf
 	DebugSQL    bool
 }
 
@@ -36,6 +39,10 @@ func (c DBClientConf) isOvalViaHTTP() bool {
 
 func (c DBClientConf) isGostViaHTTP() bool {
 	return c.GostCnf.URL != "" && c.GostCnf.Type == "sqlite3"
+}
+
+func (c DBClientConf) isExploitViaHTTP() bool {
+	return c.ExploitCnf.URL != "" && c.ExploitCnf.Type == "sqlite3"
 }
 
 // NewDBClient returns db clients
@@ -63,10 +70,20 @@ func NewDBClient(cnf DBClientConf) (dbclient *DBClient, locked bool, err error) 
 			cnf.GostCnf.SQLite3Path, err)
 	}
 
+	exploitdb, locked, err := NewExploitDB(cnf)
+	if locked {
+		return nil, true, fmt.Errorf("exploitDB is locked: %s",
+			cnf.ExploitCnf.SQLite3Path)
+	} else if err != nil {
+		util.Log.Warnf("Unable to use exploitDB: %s, err: %s",
+			cnf.ExploitCnf.SQLite3Path, err)
+	}
+
 	return &DBClient{
-		CveDB:  cveDriver,
-		OvalDB: ovaldb,
-		GostDB: gostdb,
+		CveDB:     cveDriver,
+		OvalDB:    ovaldb,
+		GostDB:    gostdb,
+		ExploitDB: exploitdb,
 	}, false, nil
 }
 
@@ -136,6 +153,32 @@ func NewGostDB(cnf DBClientConf) (driver gostdb.DB, locked bool, err error) {
 	if driver, locked, err = gostdb.NewDB(cnf.GostCnf.Type, path, cnf.DebugSQL); err != nil {
 		if locked {
 			util.Log.Errorf("gostDB is locked: %s", err)
+			return nil, true, err
+		}
+		return nil, false, err
+	}
+	return driver, false, nil
+}
+
+// NewExploitDB returns db client for Exploit
+func NewExploitDB(cnf DBClientConf) (driver exploitdb.DB, locked bool, err error) {
+	if cnf.isExploitViaHTTP() {
+		return nil, false, nil
+	}
+	path := cnf.ExploitCnf.URL
+	if cnf.ExploitCnf.Type == "sqlite3" {
+		path = cnf.ExploitCnf.SQLite3Path
+
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			util.Log.Warnf("--exploitdb-path=%s is not found. It's recommended to use exploit to improve scanning accuracy. To use exploit db database, see https://github.com/mozqnet/go-exploitdb", path)
+			return nil, false, nil
+		}
+	}
+
+	util.Log.Debugf("Open exploit db (%s): %s", cnf.ExploitCnf.Type, path)
+	if driver, locked, err = exploitdb.NewDB(cnf.ExploitCnf.Type, path, cnf.DebugSQL); err != nil {
+		if locked {
+			util.Log.Errorf("exploitDB is locked: %s", err)
 			return nil, true, err
 		}
 		return nil, false, err

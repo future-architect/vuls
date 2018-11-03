@@ -743,6 +743,16 @@ func setChangelogLayout(g *gocui.Gui) error {
 			lines = append(lines, adv.Format())
 		}
 
+		if len(vinfo.Exploits) != 0 {
+			lines = append(lines, "\n",
+				"Exploit Codes",
+				"=============",
+			)
+			for _, exploit := range vinfo.Exploits {
+				lines = append(lines, fmt.Sprintf("* [%s](%s)", exploit.Description, exploit.URL))
+			}
+		}
+
 		if currentScanResult.IsDeepScanMode() {
 			lines = append(lines, "\n",
 				"ChangeLogs",
@@ -770,6 +780,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 type dataForTmpl struct {
 	CveID            string
 	Cvsses           string
+	Exploits         []models.Exploit
 	Summary          string
 	Mitigation       string
 	Confidences      models.Confidences
@@ -877,6 +888,7 @@ const mdTemplate = `
 CVSS Scores
 -----------
 {{.Cvsses }}
+
 Summary
 -----------
  {{.Summary }}
