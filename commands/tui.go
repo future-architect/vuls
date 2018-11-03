@@ -24,7 +24,10 @@ import (
 	"path/filepath"
 
 	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/exploit"
+	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
@@ -33,10 +36,11 @@ import (
 
 // TuiCmd is Subcommand of host discovery mode
 type TuiCmd struct {
-	configPath string
-	cvelDict   c.GoCveDictConf
-	ovalDict   c.GovalDictConf
-	gostConf   c.GostConf
+	configPath  string
+	cvelDict    c.GoCveDictConf
+	ovalDict    c.GovalDictConf
+	gostConf    c.GostConf
+	exploitConf c.ExploitConf
 }
 
 // Name return subcommand name
@@ -124,6 +128,13 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.gostConf.SQLite3Path, "gostdb-path", "", "/path/to/sqlite3")
 	f.StringVar(&p.gostConf.URL, "gostdb-url", "",
 		"http://gost.com:1325 or DB connection string")
+
+	f.StringVar(&p.exploitConf.Type, "exploitdb-type", "",
+		"DB type of exploit (sqlite3, mysql, postgres or redis)")
+	f.StringVar(&p.exploitConf.SQLite3Path, "exploitdb-sqlite3-path", "", "/path/to/sqlite3")
+	f.StringVar(&p.exploitConf.URL, "exploitdb-url", "",
+		"http://exploit.com:1326 or DB connection string")
+
 }
 
 // Execute execute
@@ -142,11 +153,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	c.Conf.CveDict.Overwrite(p.cvelDict)
 	c.Conf.OvalDict.Overwrite(p.ovalDict)
 	c.Conf.Gost.Overwrite(p.gostConf)
-
-	util.Log.Info("Validating config...")
-	if !c.Conf.ValidateOnTui() {
-		return subcommands.ExitUsageError
-	}
+	c.Conf.Exploit.Overwrite(p.exploitConf)
 
 	var dir string
 	var err error
@@ -159,6 +166,12 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		util.Log.Errorf("Failed to read from JSON: %s", err)
 		return subcommands.ExitFailure
 	}
+
+	util.Log.Info("Validating config...")
+	if !c.Conf.ValidateOnTui() {
+		return subcommands.ExitUsageError
+	}
+
 	var res models.ScanResults
 	if res, err = report.LoadScanResults(dir); err != nil {
 		util.Log.Error(err)
@@ -166,10 +179,65 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	}
 	util.Log.Infof("Loaded: %s", dir)
 
+	if err := report.CveClient.CheckHealth(); err != nil {
+		util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
+		util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with -cvedb-sqlite3-path option instead of -cvedb-url")
+		return subcommands.ExitFailure
+	}
+	if c.Conf.CveDict.URL != "" {
+		util.Log.Infof("cve-dictionary: %s", c.Conf.CveDict.URL)
+	} else {
+		if c.Conf.CveDict.Type == "sqlite3" {
+			util.Log.Infof("cve-dictionary: %s", c.Conf.CveDict.SQLite3Path)
+		}
+	}
+
+	if c.Conf.OvalDict.URL != "" {
+		util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDict.URL)
+		err := oval.Base{}.CheckHTTPHealth()
+		if err != nil {
+			util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
+			util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with -ovaldb-sqlite3-path option instead of -ovaldb-url")
+			return subcommands.ExitFailure
+		}
+	} else {
+		if c.Conf.OvalDict.Type == "sqlite3" {
+			util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDict.SQLite3Path)
+		}
+	}
+
+	if c.Conf.Gost.URL != "" {
+		util.Log.Infof("gost: %s", c.Conf.Gost.URL)
+		err := gost.Base{}.CheckHTTPHealth()
+		if err != nil {
+			util.Log.Errorf("gost HTTP server is not running. err: %s", err)
+			util.Log.Errorf("Run gost as server mode before reporting or run with -gostdb-sqlite3-path option instead of -gostdb-url")
+			return subcommands.ExitFailure
+		}
+	} else {
+		if c.Conf.Gost.Type == "sqlite3" {
+			util.Log.Infof("gost: %s", c.Conf.Gost.SQLite3Path)
+		}
+	}
+
+	if c.Conf.Exploit.URL != "" {
+		util.Log.Infof("exploit: %s", c.Conf.Exploit.URL)
+		err := exploit.CheckHTTPHealth()
+		if err != nil {
+			util.Log.Errorf("exploit HTTP server is not running. err: %s", err)
+			util.Log.Errorf("Run exploit as server mode before reporting or run with -exploitdb-sqlite3-path option instead of -exploitdb-url")
+			return subcommands.ExitFailure
+		}
+	} else {
+		if c.Conf.Exploit.Type == "sqlite3" {
+			util.Log.Infof("exploit: %s", c.Conf.Exploit.SQLite3Path)
+		}
+	}
 	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
 		CveDictCnf:  c.Conf.CveDict,
 		OvalDictCnf: c.Conf.OvalDict,
 		GostCnf:     c.Conf.Gost,
+		ExploitCnf:  c.Conf.Exploit,
 		DebugSQL:    c.Conf.DebugSQL,
 	})
 	if locked {
