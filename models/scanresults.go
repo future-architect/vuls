@@ -45,6 +45,7 @@ type ScanResult struct {
 	IPv4Addrs        []string               `json:"ipv4Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
 	IPv6Addrs        []string               `json:"ipv6Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
 	ScannedAt        time.Time              `json:"scannedAt"`
+	ScanMode         string                 `json:"scanMode"`
 	ScannedVersion   string                 `json:"scannedVersion"`
 	ScannedRevision  string                 `json:"scannedRevision"`
 	ScannedBy        string                 `json:"scannedBy"`
