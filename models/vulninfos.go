@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/config"
+	exploitmodels "github.com/mozqnet/go-exploitdb/models"
 )
 
 // VulnInfos has a map of VulnInfo
@@ -714,24 +715,16 @@ func (p DistroAdvisory) Format() string {
 	return strings.Join(buf, "\n")
 }
 
-// ExploitType is exploit type
-type ExploitType string
-
-const (
-	// ExploitDB : https://www.exploit-db.com/
-	ExploitDB ExploitType = "exploitdb"
-)
-
 // Exploit :
 type Exploit struct {
-	ExploitType  ExploitType `json:"exploitType"`
-	ID           string      `json:"id"`
-	URL          string      `json:"url"`
-	Description  string      `json:"description"`
-	DocumentURL  *string     `json:"documentURL,omitempty"`
-	PaperURL     *string     `json:"paperURL,omitempty"`
-	ShellCodeURL *string     `json:"shellCodeURL,omitempty"`
-	BinaryURL    *string     `json:"binaryURL,omitempty"`
+	ExploitType  exploitmodels.ExploitType `json:"exploitType"`
+	ID           string                    `json:"id"`
+	URL          string                    `json:"url"`
+	Description  string                    `json:"description"`
+	DocumentURL  *string                   `json:"documentURL,omitempty"`
+	PaperURL     *string                   `json:"paperURL,omitempty"`
+	ShellCodeURL *string                   `json:"shellCodeURL,omitempty"`
+	BinaryURL    *string                   `json:"binaryURL,omitempty"`
 }
 
 // Confidences is a list of Confidence
