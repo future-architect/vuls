@@ -51,7 +51,7 @@ func (red RedHat) fillFixed(driver db.DB, r *models.ScanResult) error {
 		cveIDs = append(cveIDs, cveID)
 	}
 
-	if red.isFetchViaHTTP() {
+	if config.Conf.Gost.IsFetchViaHTTP() {
 		prefix, _ := util.URLPathJoin(config.Conf.Gost.URL,
 			"redhat", "cves")
 		responses, err := getCvesViaHTTP(cveIDs, prefix)
@@ -114,7 +114,7 @@ func (red RedHat) fillFixed(driver db.DB, r *models.ScanResult) error {
 }
 
 func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
-	if red.isFetchViaHTTP() {
+	if config.Conf.Gost.IsFetchViaHTTP() {
 		prefix, _ := util.URLPathJoin(config.Conf.Gost.URL,
 			"redhat", major(r.Release), "pkgs")
 		responses, err := getAllUnfixedCvesViaHTTP(r, prefix)

@@ -86,16 +86,16 @@ func (*ReportCmd) Usage() string {
 		[-debug]
 		[-debug-sql]
 		[-pipe]
-		[-cvedb-type=sqlite3|mysql|postgres|redis]
+		[-cvedb-type=sqlite3|mysql|postgres|redis|http]
 		[-cvedb-sqlite3-path=/path/to/cve.sqlite3]
 		[-cvedb-url=http://127.0.0.1:1323 or DB connection string]
-		[-ovaldb-type=sqlite3|mysql|redis]
+		[-ovaldb-type=sqlite3|mysql|redis|http]
 		[-ovaldb-sqlite3-path=/path/to/oval.sqlite3]
 		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
-		[-gostdb-type=sqlite3|mysql|redis]
+		[-gostdb-type=sqlite3|mysql|redis|http]
 		[-gostdb-sqlite3-path=/path/to/gost.sqlite3]
 		[-gostdb-url=http://127.0.0.1:1325 or DB connection string]
-		[-exploitdb-type=sqlite3|mysql|redis]
+		[-exploitdb-type=sqlite3|mysql|redis|http]
 		[-exploitdb-sqlite3-path=/path/to/exploitdb.sqlite3]
 		[-exploitdb-url=http://127.0.0.1:1325 or DB connection string]
 		[-http="http://vuls-report-server"]
@@ -171,25 +171,25 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use args passed via PIPE")
 
 	f.StringVar(&p.cveDict.Type, "cvedb-type", "",
-		"DB type of go-cve-dictionary (sqlite3, mysql, postgres or redis)")
+		"DB type of go-cve-dictionary (sqlite3, mysql, postgres, redis or http)")
 	f.StringVar(&p.cveDict.SQLite3Path, "cvedb-sqlite3-path", "", "/path/to/sqlite3")
 	f.StringVar(&p.cveDict.URL, "cvedb-url", "",
 		"http://go-cve-dictionary.com:1323 or DB connection string")
 
 	f.StringVar(&p.ovalDict.Type, "ovaldb-type", "",
-		"DB type of goval-dictionary (sqlite3, mysql, postgres or redis)")
+		"DB type of goval-dictionary (sqlite3, mysql, postgres, redis or http)")
 	f.StringVar(&p.ovalDict.SQLite3Path, "ovaldb-sqlite3-path", "", "/path/to/sqlite3")
 	f.StringVar(&p.ovalDict.URL, "ovaldb-url", "",
 		"http://goval-dictionary.com:1324 or DB connection string")
 
 	f.StringVar(&p.gostConf.Type, "gostdb-type", "",
-		"DB type of gost (sqlite3, mysql, postgres or redis)")
+		"DB type of gost (sqlite3, mysql, postgres, redis or http)")
 	f.StringVar(&p.gostConf.SQLite3Path, "gostdb-sqlite3-path", "", "/path/to/sqlite3")
 	f.StringVar(&p.gostConf.URL, "gostdb-url", "",
 		"http://gost.com:1325 or DB connection string")
 
 	f.StringVar(&p.exploitConf.Type, "exploitdb-type", "",
-		"DB type of exploit (sqlite3, mysql, postgres or redis)")
+		"DB type of exploit (sqlite3, mysql, postgres, redis or http)")
 	f.StringVar(&p.exploitConf.SQLite3Path, "exploitdb-sqlite3-path", "", "/path/to/sqlite3")
 	f.StringVar(&p.exploitConf.URL, "exploitdb-url", "",
 		"http://exploit.com:1326 or DB connection string")
@@ -350,30 +350,20 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitUsageError
 		}
 
-		if err := report.CveClient.CheckHealth(); err != nil {
-			util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
-			util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with -cvedb-sqlite3-path option instead of -cvedb-url")
-			return subcommands.ExitFailure
-		}
 		if c.Conf.CveDict.URL != "" {
-			util.Log.Infof("cve-dictionary: %s", c.Conf.CveDict.URL)
-		} else {
-			if c.Conf.CveDict.Type == "sqlite3" {
-				util.Log.Infof("cve-dictionary: %s", c.Conf.CveDict.SQLite3Path)
+			if err := report.CveClient.CheckHealth(); err != nil {
+				util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
+				util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with `-cvedb-type=sqlite3 -cvedb-sqlite3-path` option instead of -cvedb-url")
+				return subcommands.ExitFailure
 			}
 		}
 
 		if c.Conf.OvalDict.URL != "" {
-			util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDict.URL)
 			err := oval.Base{}.CheckHTTPHealth()
 			if err != nil {
 				util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
-				util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with -ovaldb-sqlite3-path option instead of -ovaldb-url")
+				util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with `-ovaldb-type=sqlite3 -ovaldb-sqlite3-path` option instead of -ovaldb-url")
 				return subcommands.ExitFailure
-			}
-		} else {
-			if c.Conf.OvalDict.Type == "sqlite3" {
-				util.Log.Infof("oval-dictionary: %s", c.Conf.OvalDict.SQLite3Path)
 			}
 		}
 
@@ -382,26 +372,17 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			err := gost.Base{}.CheckHTTPHealth()
 			if err != nil {
 				util.Log.Errorf("gost HTTP server is not running. err: %s", err)
-				util.Log.Errorf("Run gost as server mode before reporting or run with -gostdb-sqlite3-path option instead of -gostdb-url")
+				util.Log.Errorf("Run gost as server mode before reporting or run with `-gostdb-type=sqlite3 -gostdb-sqlite3-path` option instead of -gostdb-url")
 				return subcommands.ExitFailure
-			}
-		} else {
-			if c.Conf.Gost.Type == "sqlite3" {
-				util.Log.Infof("gost: %s", c.Conf.Gost.SQLite3Path)
 			}
 		}
 
 		if c.Conf.Exploit.URL != "" {
-			util.Log.Infof("exploit: %s", c.Conf.Exploit.URL)
 			err := exploit.CheckHTTPHealth()
 			if err != nil {
 				util.Log.Errorf("exploit HTTP server is not running. err: %s", err)
-				util.Log.Errorf("Run exploit as server mode before reporting or run with -exploitdb-sqlite3-path option instead of -exploitdb-url")
+				util.Log.Errorf("Run go-exploitdb as server mode before reporting")
 				return subcommands.ExitFailure
-			}
-		} else {
-			if c.Conf.Exploit.Type == "sqlite3" {
-				util.Log.Infof("exploit: %s", c.Conf.Exploit.SQLite3Path)
 			}
 		}
 		dbclient, locked, err := report.NewDBClient(report.DBClientConf{

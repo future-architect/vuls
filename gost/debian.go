@@ -55,7 +55,7 @@ func (deb Debian) FillWithGost(driver db.DB, r *models.ScanResult) (nCVEs int, e
 	}
 
 	packCvesList := []packCves{}
-	if deb.isFetchViaHTTP() {
+	if config.Conf.Gost.IsFetchViaHTTP() {
 		url, _ := util.URLPathJoin(config.Conf.Gost.URL, "debian", major(r.Release), "pkgs")
 		responses, err := getAllUnfixedCvesViaHTTP(r, url)
 		if err != nil {

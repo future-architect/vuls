@@ -56,6 +56,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 	hostname, _ := os.Hostname()
 	for _, r := range rs {
 		if c.Conf.RefreshCve || needToRefreshCve(r) {
+			r.ScannedCves = models.VulnInfos{}
 			cpeURIs := []string{}
 			if len(r.Container.ContainerID) == 0 {
 				cpeURIs = c.Conf.Servers[r.ServerName].CpeNames
@@ -266,16 +267,16 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 		return 0, fmt.Errorf("OVAL for %s is not implemented yet", r.Family)
 	}
 
-	if !ovalClient.IsFetchViaHTTP() && driver == nil {
-		return 0, nil
+	if !c.Conf.OvalDict.IsFetchViaHTTP() {
+		if driver == nil {
+			return 0, nil
+		}
+		if err = driver.NewOvalDB(ovalFamily); err != nil {
+			return 0, fmt.Errorf("Failed to New Oval DB. err: %s", err)
+		}
 	}
 
-	if err = driver.NewOvalDB(ovalFamily); err != nil {
-		return 0, fmt.Errorf("Failed to New Oval DB. err: %s", err)
-	}
-
-	util.Log.Debugf("Check whether oval fetched: %s %s",
-		ovalFamily, r.Release)
+	util.Log.Debugf("Check whether oval fetched: %s %s", ovalFamily, r.Release)
 	ok, err := ovalClient.CheckIfOvalFetched(driver, ovalFamily, r.Release)
 	if err != nil {
 		return 0, err
