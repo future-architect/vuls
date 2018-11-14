@@ -32,6 +32,10 @@
   name = "github.com/kotakanbe/go-cve-dictionary"
   branch = "master"
 
+[[constraint]]
+  name = "github.com/mozqnet/go-exploitdb"
+  branch = "master"
+
 [prune]
   go-tests = true
   unused-packages = true
