@@ -348,7 +348,7 @@ func (r ScanResult) FormatExploitCveSummary() string {
 			nExploitCve++
 		}
 	}
-	return fmt.Sprintf("%d cves with exploit", nExploitCve)
+	return fmt.Sprintf("%d exploits", nExploitCve)
 }
 
 func (r ScanResult) isDisplayUpdatableNum() bool {
