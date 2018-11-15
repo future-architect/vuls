@@ -115,7 +115,11 @@ func (deb Debian) FillWithGost(driver db.DB, r *models.ScanResult) (nCVEs int, e
 		for _, cve := range p.cves {
 			v, ok := r.ScannedCves[cve.CveID]
 			if ok {
-				v.CveContents[models.DebianSecurityTracker] = cve
+				if v.CveContents == nil {
+					v.CveContents = models.NewCveContents(cve)
+				} else {
+					v.CveContents[models.DebianSecurityTracker] = cve
+				}
 			} else {
 				v = models.VulnInfo{
 					CveID:       cve.CveID,
