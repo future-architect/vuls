@@ -179,12 +179,12 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string) erro
 		return fmt.Errorf("Failed to fill with CVE: %s", err)
 	}
 
-	util.Log.Infof("Fill Exploit information with Exploit-DB")
+	util.Log.Infof("Fill exploit information with Exploit-DB")
 	nExploitCve, err := FillWithExploit(dbclient.ExploitDB, r)
 	if err != nil {
 		return fmt.Errorf("Failed to fill with exploit: %s", err)
 	}
-	util.Log.Infof("%s: %d Exploits are detected with exploit",
+	util.Log.Infof("%s: %d exploits are detected",
 		r.FormatServerName(), nExploitCve)
 
 	fillCweDict(r)
