@@ -45,6 +45,9 @@ func (ms Microsoft) FillWithGost(driver db.DB, r *models.ScanResult) (nCVEs int,
 		}
 		cveCont := ms.ConvertToModel(&msCve)
 		v, _ := r.ScannedCves[cveID]
+		if v.CveContents == nil {
+			v.CveContents = models.CveContents{}
+		}
 		v.CveContents[models.Microsoft] = *cveCont
 		r.ScannedCves[cveID] = v
 	}
