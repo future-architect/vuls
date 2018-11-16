@@ -37,7 +37,7 @@ import (
 // TuiCmd is Subcommand of host discovery mode
 type TuiCmd struct {
 	configPath  string
-	cvelDict    c.GoCveDictConf
+	cveDict     c.GoCveDictConf
 	ovalDict    c.GovalDictConf
 	gostConf    c.GostConf
 	exploitConf c.ExploitConf
@@ -114,10 +114,10 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 
 	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use stdin via PIPE")
 
-	f.StringVar(&p.cvelDict.Type, "cvedb-type", "sqlite3",
+	f.StringVar(&p.cveDict.Type, "cvedb-type", "",
 		"DB type of go-cve-dictionary (sqlite3, mysql, postgres or redis)")
-	f.StringVar(&p.cvelDict.SQLite3Path, "cvedb-path", "", "/path/to/sqlite3")
-	f.StringVar(&p.cvelDict.URL, "cvedb-url", "",
+	f.StringVar(&p.cveDict.SQLite3Path, "cvedb-path", "", "/path/to/sqlite3")
+	f.StringVar(&p.cveDict.URL, "cvedb-url", "",
 		"http://go-cve-dictionary.com:1323 or DB connection string")
 
 	f.StringVar(&p.ovalDict.Type, "ovaldb-type", "",
@@ -153,7 +153,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		return subcommands.ExitUsageError
 	}
 
-	c.Conf.CveDict.Overwrite(p.cvelDict)
+	c.Conf.CveDict.Overwrite(p.cveDict)
 	c.Conf.OvalDict.Overwrite(p.ovalDict)
 	c.Conf.Gost.Overwrite(p.gostConf)
 	c.Conf.Exploit.Overwrite(p.exploitConf)
