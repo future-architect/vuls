@@ -75,7 +75,7 @@ func (*TuiCmd) Usage() string {
 		[-gostdb-url=http://127.0.0.1:1325 or DB connection string]
 		[-exploitdb-type=sqlite3|mysql|redis|http]
 		[-exploitdb-sqlite3-path=/path/to/exploitdb.sqlite3]
-		[-exploitdb-url=http://127.0.0.1:1325 or DB connection string]
+		[-exploitdb-url=http://127.0.0.1:1326 or DB connection string]
 
 `
 }
