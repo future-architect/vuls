@@ -33,7 +33,7 @@ import (
 )
 
 // Version of Vuls
-var Version = "0.5.0"
+var Version = "0.6.1"
 
 // Revision of Git
 var Revision string
@@ -236,6 +236,14 @@ func (c Config) ValidateOnReportDB() bool {
 		errs = append(errs, err)
 	}
 
+	if err := validateDB("gostdb", c.Gost.Type, c.Gost.SQLite3Path, c.Gost.URL); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := validateDB("exploitdb", c.Exploit.Type, c.Exploit.SQLite3Path, c.Exploit.URL); err != nil {
+		errs = append(errs, err)
+	}
+
 	for _, err := range errs {
 		log.Error(err)
 	}
@@ -328,39 +336,42 @@ func (c Config) ValidateOnTui() bool {
 // validateDB validates configuration
 //  dictionaryDB name is 'cvedb' or 'ovaldb'
 func validateDB(dictionaryDBName, dbType, dbPath, dbURL string) error {
+	log.Infof("-%s-type: %s, -%s-url: %s, -%s-path: %s",
+		dictionaryDBName, dbType, dictionaryDBName, dbURL, dictionaryDBName, dbPath)
+
 	switch dbType {
 	case "sqlite3":
+		if dbURL != "" {
+			return fmt.Errorf("To use SQLite3, specify -%s-type=sqlite3 and -%s-path. To use as http server mode, specify -%s-type=http and -%s-url",
+				dictionaryDBName, dictionaryDBName, dictionaryDBName, dictionaryDBName)
+		}
 		if ok, _ := valid.IsFilePath(dbPath); !ok {
-			return fmt.Errorf(
-				"SQLite3 DB path (%s) must be a *Absolute* file path. -%s-path: %s",
-				dictionaryDBName,
-				dictionaryDBName,
-				dbPath)
+			return fmt.Errorf("SQLite3 path must be a *Absolute* file path. -%s-path: %s",
+				dictionaryDBName, dbPath)
 		}
 	case "mysql":
 		if dbURL == "" {
-			return fmt.Errorf(
-				`MySQL connection string is needed. -%s-url="user:pass@tcp(localhost:3306)/dbname"`,
+			return fmt.Errorf(`MySQL connection string is needed. -%s-url="user:pass@tcp(localhost:3306)/dbname"`,
 				dictionaryDBName)
 		}
 	case "postgres":
 		if dbURL == "" {
-			return fmt.Errorf(
-				`PostgreSQL connection string is needed. -%s-url="host=myhost user=user dbname=dbname sslmode=disable password=password"`,
+			return fmt.Errorf(`PostgreSQL connection string is needed. -%s-url="host=myhost user=user dbname=dbname sslmode=disable password=password"`,
 				dictionaryDBName)
 		}
 	case "redis":
 		if dbURL == "" {
-			return fmt.Errorf(
-				`Redis connection string is needed. -%s-url="redis://localhost/0"`,
+			return fmt.Errorf(`Redis connection string is needed. -%s-url="redis://localhost/0"`,
+				dictionaryDBName)
+		}
+	case "http":
+		if dbURL == "" {
+			return fmt.Errorf(`URL is needed. -%s-url="http://localhost:1323"`,
 				dictionaryDBName)
 		}
 	default:
-		return fmt.Errorf(
-			"%s type must be either 'sqlite3', 'mysql', 'postgres' or 'redis'.  -%s-type: %s",
-			dictionaryDBName,
-			dictionaryDBName,
-			dbType)
+		return fmt.Errorf("%s type must be either 'sqlite3', 'mysql', 'postgres', 'redis' or 'http'.  -%s-type: %s",
+			dictionaryDBName, dictionaryDBName, dbType)
 	}
 	return nil
 }
@@ -783,6 +794,11 @@ func (cnf *GoCveDictConf) Overwrite(cmdOpt GoCveDictConf) {
 	cnf.setDefault()
 }
 
+// IsFetchViaHTTP returns wether fetch via http
+func (cnf *GoCveDictConf) IsFetchViaHTTP() bool {
+	return Conf.CveDict.Type == "http"
+}
+
 // GovalDictConf is goval-dictionary config
 type GovalDictConf struct {
 
@@ -835,6 +851,11 @@ func (cnf *GovalDictConf) Overwrite(cmdOpt GovalDictConf) {
 		cnf.SQLite3Path = cmdOpt.SQLite3Path
 	}
 	cnf.setDefault()
+}
+
+// IsFetchViaHTTP returns wether fetch via http
+func (cnf *GovalDictConf) IsFetchViaHTTP() bool {
+	return Conf.OvalDict.Type == "http"
 }
 
 // GostConf is gost config
@@ -890,6 +911,11 @@ func (cnf *GostConf) Overwrite(cmdOpt GostConf) {
 	cnf.setDefault()
 }
 
+// IsFetchViaHTTP returns wether fetch via http
+func (cnf *GostConf) IsFetchViaHTTP() bool {
+	return Conf.Gost.Type == "http"
+}
+
 // ExploitConf is exploit config
 type ExploitConf struct {
 	// DB type for exploit dictionary (sqlite3, mysql, postgres or redis)
@@ -941,6 +967,11 @@ func (cnf *ExploitConf) Overwrite(cmdOpt ExploitConf) {
 		cnf.SQLite3Path = cmdOpt.SQLite3Path
 	}
 	cnf.setDefault()
+}
+
+// IsFetchViaHTTP returns wether fetch via http
+func (cnf *ExploitConf) IsFetchViaHTTP() bool {
+	return Conf.Exploit.Type == "http"
 }
 
 // AWS is aws config

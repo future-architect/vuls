@@ -29,26 +29,13 @@ type DBClientConf struct {
 	DebugSQL    bool
 }
 
-func (c DBClientConf) isCveDBViaHTTP() bool {
-	return c.CveDictCnf.URL != "" && c.CveDictCnf.Type == "sqlite3"
-}
-
-func (c DBClientConf) isOvalViaHTTP() bool {
-	return c.OvalDictCnf.URL != "" && c.OvalDictCnf.Type == "sqlite3"
-}
-
-func (c DBClientConf) isGostViaHTTP() bool {
-	return c.GostCnf.URL != "" && c.GostCnf.Type == "sqlite3"
-}
-
-func (c DBClientConf) isExploitViaHTTP() bool {
-	return c.ExploitCnf.URL != "" && c.ExploitCnf.Type == "sqlite3"
-}
-
 // NewDBClient returns db clients
 func NewDBClient(cnf DBClientConf) (dbclient *DBClient, locked bool, err error) {
 	cveDriver, locked, err := NewCveDB(cnf)
-	if err != nil {
+	if locked {
+		return nil, true, fmt.Errorf("CveDB is locked: %s",
+			cnf.OvalDictCnf.SQLite3Path)
+	} else if err != nil {
 		return nil, locked, err
 	}
 
@@ -89,7 +76,7 @@ func NewDBClient(cnf DBClientConf) (dbclient *DBClient, locked bool, err error) 
 
 // NewCveDB returns cve db client
 func NewCveDB(cnf DBClientConf) (driver cvedb.DB, locked bool, err error) {
-	if cnf.isCveDBViaHTTP() {
+	if config.Conf.CveDict.IsFetchViaHTTP() {
 		return nil, false, nil
 	}
 	util.Log.Debugf("open cve-dictionary db (%s)", cnf.CveDictCnf.Type)
@@ -109,7 +96,7 @@ func NewCveDB(cnf DBClientConf) (driver cvedb.DB, locked bool, err error) {
 
 // NewOvalDB returns oval db client
 func NewOvalDB(cnf DBClientConf) (driver ovaldb.DB, locked bool, err error) {
-	if cnf.isOvalViaHTTP() {
+	if config.Conf.OvalDict.IsFetchViaHTTP() {
 		return nil, false, nil
 	}
 	path := cnf.OvalDictCnf.URL
@@ -136,7 +123,7 @@ func NewOvalDB(cnf DBClientConf) (driver ovaldb.DB, locked bool, err error) {
 
 // NewGostDB returns db client for Gost
 func NewGostDB(cnf DBClientConf) (driver gostdb.DB, locked bool, err error) {
-	if cnf.isGostViaHTTP() {
+	if config.Conf.Gost.IsFetchViaHTTP() {
 		return nil, false, nil
 	}
 	path := cnf.GostCnf.URL
@@ -162,7 +149,7 @@ func NewGostDB(cnf DBClientConf) (driver gostdb.DB, locked bool, err error) {
 
 // NewExploitDB returns db client for Exploit
 func NewExploitDB(cnf DBClientConf) (driver exploitdb.DB, locked bool, err error) {
-	if cnf.isExploitViaHTTP() {
+	if config.Conf.Exploit.IsFetchViaHTTP() {
 		return nil, false, nil
 	}
 	path := cnf.ExploitCnf.URL

@@ -60,7 +60,7 @@ type Base struct {
 
 // CheckHTTPHealth do health check
 func (b Base) CheckHTTPHealth() error {
-	if !b.isFetchViaHTTP() {
+	if !cnf.Conf.Gost.IsFetchViaHTTP() {
 		return nil
 	}
 
@@ -87,11 +87,6 @@ func (b Base) CheckIfGostFetched(driver db.DB, osFamily string) (fetched bool, e
 func (b Base) CheckIfGostFresh(driver db.DB, osFamily string) (ok bool, err error) {
 	//TODO
 	return true, nil
-}
-
-func (b Base) isFetchViaHTTP() bool {
-	// Default value of OvalDBType is sqlite3
-	return cnf.Conf.Gost.URL != "" && cnf.Conf.Gost.Type == "sqlite3"
 }
 
 // Pseudo is Gost client except for RedHat family and Debian

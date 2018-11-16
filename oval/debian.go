@@ -133,7 +133,7 @@ func (o Debian) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 	}
 
 	var relatedDefs ovalResult
-	if o.IsFetchViaHTTP() {
+	if config.Conf.OvalDict.IsFetchViaHTTP() {
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
 			return 0, err
 		}
@@ -243,7 +243,7 @@ func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 	}
 
 	var relatedDefs ovalResult
-	if o.IsFetchViaHTTP() {
+	if config.Conf.OvalDict.IsFetchViaHTTP() {
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
 			return 0, err
 		}

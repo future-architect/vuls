@@ -10,18 +10,18 @@
   version = "v0.2.0"
 
 [[projects]]
-  digest = "1:1679579905ae882f436a532ddec428bb91fecbcd93d683bf12b8689816b093f6"
+  digest = "1:386f6cd33248f04fc465df500e66d21892f0712e26c60d25b7ce3c678abaf2c0"
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
     "storage",
     "version",
   ]
   pruneopts = "UT"
-  revision = "9419692eb7ad7f923cca690cc5a6b2c6d22405e1"
-  version = "v22.1.1"
+  revision = "9699bdefa481d47c5c7638a1cc05d87ce53601fd"
+  version = "v22.2.2"
 
 [[projects]]
-  digest = "1:f3ce3f0a78d88ee5dd7dc024d4d3595538ac4d0ce5cbb6be19fcb15f4b59010a"
+  digest = "1:6b4743cf9d77747c1a772673333f8d6dfbfa93ffac858faae1333ffb7f0dfc4b"
   name = "github.com/Azure/go-autorest"
   packages = [
     "autorest",
@@ -33,8 +33,8 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "4e5fffdf007df29ed0862f9e01fafabf4396e851"
-  version = "v11.2.6"
+  revision = "528b76fd0ebec0682f3e3da7c808cd472b999615"
+  version = "v11.2.7"
 
 [[projects]]
   digest = "1:9f3b30d9f8e0d7040f729b82dcbc8f0dead820a133b3147ce355fc451f32d761"
@@ -61,7 +61,7 @@
   version = "v9"
 
 [[projects]]
-  digest = "1:ad009afc10b82f2de510d000fad8472d13f2888716dc941c942f5cbb3a28cd57"
+  digest = "1:176bfeb168867283ee97848f5e2cf9a0b6c9f395ea8c6d547907dfba845e0249"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -99,8 +99,8 @@
     "service/sts",
   ]
   pruneopts = "UT"
-  revision = "cf00ea20983ce38df17ab0a0814463ab8838459f"
-  version = "v1.15.73"
+  revision = "64fc3d5c40fffc817c1cc1c1d89a6e482bf1120d"
+  version = "v1.15.77"
 
 [[projects]]
   digest = "1:0f98f59e9a2f4070d66f0c9c39561f68fcd1dc837b22a852d28d0003aebd1b1e"
@@ -181,12 +181,12 @@
   version = "v6.14.2"
 
 [[projects]]
-  digest = "1:adea5a94903eb4384abef30f3d878dc9ff6b6b5b0722da25b82e5169216dfb61"
+  digest = "1:ec6f9bf5e274c833c911923c9193867f3f18788c461f76f05f62bb1510e0ae65"
   name = "github.com/go-sql-driver/mysql"
   packages = ["."]
   pruneopts = "UT"
-  revision = "d523deb1b23d913de5bdada721a6071e71283618"
-  version = "v1.4.0"
+  revision = "72cd26f257d44c1114970e19afddcd812016007e"
+  version = "v1.4.1"
 
 [[projects]]
   digest = "1:586ea76dbd0374d6fb649a91d70d652b7fe0ccffb8910a77468e7702e7901f3d"
@@ -393,7 +393,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:336333e5514fc6178cdb4245f64cc34f9c0212daa523a5267e357a7535d5470f"
+  digest = "1:cdd699c1d929e96f96846789e99d5f019c15f714102a1bb108575d36789d577b"
   name = "github.com/kotakanbe/go-cve-dictionary"
   packages = [
     "config",
@@ -402,7 +402,7 @@
     "models",
   ]
   pruneopts = "UT"
-  revision = "abc105b42ac1bd9f588884600ced6e2f3fcce0d7"
+  revision = "9549cd396c408c11f7d5cb6e4286dc8e7d9c6419"
 
 [[projects]]
   digest = "1:54d3c90db1164399906830313a6fce7770917d7e4a12da8f2d8693d18ff5ef27"
@@ -730,7 +730,7 @@
     "ssh/terminal",
   ]
   pruneopts = "UT"
-  revision = "e4dc69e5b2fd71dcaf8bd5d054eb936deb78d1fa"
+  revision = "3d3f9f413869b949e48070b5bc593aa22cc2b8f2"
 
 [[projects]]
   branch = "master"
@@ -747,7 +747,7 @@
     "trace",
   ]
   pruneopts = "UT"
-  revision = "03003ca0c849e57b6ea29a4bab8d3cb6e4d568fe"
+  revision = "adae6a3d119ae4890b46832a2e88a95adc62b8e7"
 
 [[projects]]
   branch = "master"
@@ -797,7 +797,7 @@
   name = "google.golang.org/api"
   packages = ["support/bundler"]
   pruneopts = "UT"
-  revision = "cfbc873f6b93790282bed8e31e7f7df417caee1b"
+  revision = "83a9d304b1e613fc253e1e2710778642fe81af53"
 
 [[projects]]
   digest = "1:c25289f43ac4a68d88b02245742347c94f1e108c534dda442188015ff80669b3"
