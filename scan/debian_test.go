@@ -530,6 +530,7 @@ func TestParseAptCachePolicy(t *testing.T) {
 				Name:      "openssl",
 				Installed: "1.0.2f-2ubuntu1",
 				Candidate: "1.0.2g-1ubuntu2",
+				Repo:      "xenial/main",
 			},
 		},
 		{
@@ -550,6 +551,7 @@ func TestParseAptCachePolicy(t *testing.T) {
 				Name:      "openssl",
 				Installed: "1.0.1f-1ubuntu2.16",
 				Candidate: "1.0.1f-1ubuntu2.17",
+				Repo:      "trusty-updates/main",
 			},
 		},
 		{
@@ -570,6 +572,7 @@ func TestParseAptCachePolicy(t *testing.T) {
 				Name:      "openssl",
 				Installed: "1.0.1-4ubuntu5.33",
 				Candidate: "1.0.1-4ubuntu5.34",
+				Repo:      "precise-updates/main",
 			},
 		},
 	}
