@@ -528,8 +528,8 @@ func (o *debian) fillCandidateVersion(updatables models.Packages) (err error) {
 	if !r.isSuccess() {
 		return fmt.Errorf("Failed to SSH: %s", r)
 	}
-	packChangelog := o.splitAptCachePolicy(r.Stdout)
-	for k, v := range packChangelog {
+	packAptPolicy := o.splitAptCachePolicy(r.Stdout)
+	for k, v := range packAptPolicy {
 		ver, err := o.parseAptCachePolicy(v, k)
 		if err != nil {
 			return fmt.Errorf("Failed to parse %s", err)
@@ -539,6 +539,7 @@ func (o *debian) fillCandidateVersion(updatables models.Packages) (err error) {
 			return fmt.Errorf("Not found: %s", k)
 		}
 		pack.NewVersion = ver.Candidate
+		pack.Repository = ver.Repo
 		updatables[k] = pack
 	}
 	return
@@ -909,27 +910,29 @@ func (o *debian) splitAptCachePolicy(stdout string) map[string]string {
 		lasti = i
 	}
 
-	packChangelog := map[string]string{}
+	packAptPolicy := map[string]string{}
 	for _, r := range splitted {
 		packName := r[:strings.Index(r, ":")]
-		packChangelog[packName] = r
+		packAptPolicy[packName] = r
 	}
-	return packChangelog
+	return packAptPolicy
 }
 
 type packCandidateVer struct {
 	Name      string
 	Installed string
 	Candidate string
+	Repo      string
 }
 
 // parseAptCachePolicy the stdout of parse pat-get cache policy
 func (o *debian) parseAptCachePolicy(stdout, name string) (packCandidateVer, error) {
 	ver := packCandidateVer{Name: name}
 	lines := strings.Split(stdout, "\n")
+	isRepoline := false
 	for _, line := range lines {
 		fields := strings.Fields(line)
-		if len(fields) != 2 {
+		if len(fields) < 2 {
 			continue
 		}
 		switch fields[0] {
@@ -937,10 +940,23 @@ func (o *debian) parseAptCachePolicy(stdout, name string) (packCandidateVer, err
 			ver.Installed = fields[1]
 		case "Candidate:":
 			ver.Candidate = fields[1]
-			return ver, nil
+			goto nextline
 		default:
 			// nop
 		}
+		if ver.Candidate != "" && strings.Contains(line, ver.Candidate) {
+			isRepoline = true
+			goto nextline
+		}
+
+		if isRepoline {
+			ss := strings.Split(strings.TrimSpace(line), " ")
+			if len(ss) == 5 {
+				ver.Repo = ss[2]
+				return ver, nil
+			}
+		}
+	nextline:
 	}
 	return ver, fmt.Errorf("Unknown Format: %s", stdout)
 }
