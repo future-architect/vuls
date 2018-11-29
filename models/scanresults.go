@@ -369,7 +369,7 @@ func (r ScanResult) FormatExploitCveSummary() string {
 	return fmt.Sprintf("%d exploits", nExploitCve)
 }
 
-// FormatAlertsSummary returns a summary of XCERT alerts
+// FormatAlertSummary returns a summary of XCERT alerts
 func (r ScanResult) FormatAlertSummary() string {
 	jaCnt := 0
 	enCnt := 0

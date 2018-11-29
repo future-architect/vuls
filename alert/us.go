@@ -1,6 +1,6 @@
 package alert
 
-// USCERT alerts
+// AlertDictUS has USCERT alerts
 var AlertDictUS = map[string][]Alert{
 	"CVE-1999-0532": {{
 		URL:   "https://www.us-cert.gov/ncas/alerts/TA15-103A",

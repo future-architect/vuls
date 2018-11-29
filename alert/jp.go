@@ -7,7 +7,7 @@ type Alert struct {
 	Team  string
 }
 
-// JPCERT alerts
+// AlertDictJP has JPCERT alerts
 var AlertDictJP = map[string][]Alert{
 	"CVE-2006-0003": {{
 		URL:   "https://www.jpcert.or.jp/at/2007/at070016.html",
