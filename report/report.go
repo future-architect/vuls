@@ -187,6 +187,10 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string) erro
 	util.Log.Infof("%s: %d exploits are detected",
 		r.FormatServerName(), nExploitCve)
 
+	enAlertCnt, jaAlertCnt := fillAlerts(r)
+	util.Log.Infof("%s: en: %d, ja: %d alerts are detected",
+		r.FormatServerName(), enAlertCnt, jaAlertCnt)
+
 	fillCweDict(r)
 	return nil
 }
@@ -382,6 +386,23 @@ func fillCweDict(r *models.ScanResult) {
 	}
 	r.CweDict = dict
 	return
+}
+
+func fillAlerts(r *models.ScanResult) (enCnt int, jaCnt int) {
+	enCnt = 0
+	jaCnt = 0
+	for cveID, vuln := range r.ScannedCves {
+		enAs := models.GetAlertsByCveID(cveID, "en")
+		jaAs := models.GetAlertsByCveID(cveID, "ja")
+		vuln.AlertDict = models.AlertDict{
+			Ja: jaAs,
+			En: enAs,
+		}
+		r.ScannedCves[cveID] = vuln
+		enCnt += len(enAs)
+		jaCnt += len(jaAs)
+	}
+	return enCnt, jaCnt
 }
 
 const reUUID = "[\\da-f]{8}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{12}"

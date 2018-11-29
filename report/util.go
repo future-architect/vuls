@@ -261,6 +261,14 @@ No CVE-IDs are found in updatable packages.
 			data = append(data, []string{"OWASP Top10", url})
 		}
 
+		for _, alert := range vuln.AlertDict.Ja {
+			data = append(data, []string{"JPCERT Alert", alert.URL})
+		}
+
+		for _, alert := range vuln.AlertDict.En {
+			data = append(data, []string{"USCERT Alert", alert.URL})
+		}
+
 		// for _, rr := range vuln.CveContents.References(r.Family) {
 		// for _, ref := range rr.Value {
 		// data = append(data, []string{ref.Source, ref.Link})
