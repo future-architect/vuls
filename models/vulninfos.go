@@ -729,6 +729,7 @@ type Exploit struct {
 	BinaryURL    *string                   `json:"binaryURL,omitempty"`
 }
 
+// AlertDict has target cve's JPCERT and USCERT alert data
 type AlertDict struct {
 	Ja []alert.Alert
 	En []alert.Alert

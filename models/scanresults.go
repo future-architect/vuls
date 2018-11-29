@@ -108,21 +108,20 @@ type CweDictEntry struct {
 	OwaspTopTen2017 string   `json:"owaspTopTen2017"`
 }
 
+// GetAlertsByCveID return alerts fetched by cveID
 func GetAlertsByCveID(cveID string, lang string) (alerts []alert.Alert) {
 	if lang == "ja" {
 		if dict, ok := alert.AlertDictJP[cveID]; ok {
 			return dict
-		} else {
-			return alerts
 		}
+		return alerts
 	}
 
 	// default use english
 	if dict, ok := alert.AlertDictUS[cveID]; ok {
 		return dict
-	} else {
-		return alerts
 	}
+	return alerts
 }
 
 // Kernel has the Release, version and whether need restart
@@ -370,6 +369,7 @@ func (r ScanResult) FormatExploitCveSummary() string {
 	return fmt.Sprintf("%d exploits", nExploitCve)
 }
 
+// FormatAlertsSummary returns a summary of XCERT alerts
 func (r ScanResult) FormatAlertSummary() string {
 	jaCnt := 0
 	enCnt := 0
