@@ -20,12 +20,13 @@ package report
 import (
 	"bytes"
 	"fmt"
-	"github.com/future-architect/vuls/alert"
 	"os"
 	"sort"
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/future-architect/vuls/alert"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -764,13 +765,17 @@ func setChangelogLayout(g *gocui.Gui) error {
 			}
 		}
 
-		if config.Conf.Lang == "ja" && len(vinfo.AlertDict.Ja) > 0 {
+		if len(vinfo.AlertDict.Ja) > 0 {
 			lines = append(lines, "\n",
 				"JPCERT Alert",
 				"=============",
 			)
 			for _, alert := range vinfo.AlertDict.Ja {
-				lines = append(lines, fmt.Sprintf("* [%s](%s)", alert.Title, alert.URL))
+				if config.Conf.Lang == "ja" {
+					lines = append(lines, fmt.Sprintf("* [%s](%s)", alert.Title, alert.URL))
+				} else {
+					lines = append(lines, fmt.Sprintf("* [JPCERT](%s)", alert.URL))
+				}
 			}
 		}
 
@@ -884,17 +889,6 @@ func detailLines() (string, error) {
 		}
 	}
 
-	alerts := []alert.Alert{}
-	for _, alert := range vinfo.AlertDict.En {
-		alerts = append(alerts, alert)
-	}
-	// Only show JPCERT alert to Japanese users
-	if config.Conf.Lang == "ja" {
-		for _, alert := range vinfo.AlertDict.Ja {
-			alerts = append(alerts, alert)
-		}
-	}
-
 	data := dataForTmpl{
 		CveID:       vinfo.CveID,
 		Cvsses:      fmt.Sprintf("%s\n", table),
@@ -902,7 +896,6 @@ func detailLines() (string, error) {
 		Mitigation:  fmt.Sprintf("%s (%s)", mitigation.Value, mitigation.Type),
 		Confidences: vinfo.Confidences,
 		Cwes:        cwes,
-		Alerts:      alerts,
 		Links:       util.Distinct(links),
 		References:  refs,
 	}
@@ -948,11 +941,6 @@ Confidence
 -----------
 {{range $confidence := .Confidences -}}
 * {{$confidence.DetectionMethod}}
-{{end}}
-Alerts
------------
-{{range .Alerts -}}
-* [{{.Title}}]({{.URL}})
 {{end}}
 References
 -----------
