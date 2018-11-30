@@ -20,10 +20,11 @@ package models
 import (
 	"bytes"
 	"fmt"
-	"github.com/future-architect/vuls/alert"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/future-architect/vuls/alert"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/cwe"
@@ -189,6 +190,9 @@ func (r ScanResult) FilterUnfixed() ScanResult {
 		return r
 	}
 	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
+		if len(v.CpeURIs) != 0 {
+			return true
+		}
 		NotFixedAll := true
 		for _, p := range v.AffectedPackages {
 			NotFixedAll = NotFixedAll && p.NotFixedYet
