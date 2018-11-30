@@ -20,6 +20,7 @@ package models
 import (
 	"bytes"
 	"fmt"
+	"github.com/future-architect/vuls/alert"
 	"regexp"
 	"strings"
 	"time"
@@ -105,6 +106,22 @@ type CweDictEntry struct {
 	En              *cwe.Cwe `json:"en,omitempty"`
 	Ja              *cwe.Cwe `json:"ja,omitempty"`
 	OwaspTopTen2017 string   `json:"owaspTopTen2017"`
+}
+
+// GetAlertsByCveID return alerts fetched by cveID
+func GetAlertsByCveID(cveID string, lang string) (alerts []alert.Alert) {
+	if lang == "ja" {
+		if dict, ok := alert.AlertDictJP[cveID]; ok {
+			return dict
+		}
+		return alerts
+	}
+
+	// default use english
+	if dict, ok := alert.AlertDictUS[cveID]; ok {
+		return dict
+	}
+	return alerts
 }
 
 // Kernel has the Release, version and whether need restart
@@ -310,13 +327,14 @@ func (r ScanResult) FormatTextReportHeadedr() string {
 		buf.WriteString("=")
 	}
 
-	return fmt.Sprintf("%s\n%s\n%s, %s, %s, %s\n",
+	return fmt.Sprintf("%s\n%s\n%s, %s, %s, %s, %s\n",
 		r.ServerInfo(),
 		buf.String(),
 		r.ScannedCves.FormatCveSummary(),
 		r.ScannedCves.FormatFixedStatus(r.Packages),
 		r.FormatUpdatablePacksSummary(),
 		r.FormatExploitCveSummary(),
+		r.FormatAlertSummary(),
 	)
 }
 
@@ -349,6 +367,21 @@ func (r ScanResult) FormatExploitCveSummary() string {
 		}
 	}
 	return fmt.Sprintf("%d exploits", nExploitCve)
+}
+
+// FormatAlertSummary returns a summary of XCERT alerts
+func (r ScanResult) FormatAlertSummary() string {
+	jaCnt := 0
+	enCnt := 0
+	for _, vuln := range r.ScannedCves {
+		if len(vuln.AlertDict.En) > 0 {
+			enCnt += len(vuln.AlertDict.En)
+		}
+		if len(vuln.AlertDict.Ja) > 0 {
+			jaCnt += len(vuln.AlertDict.Ja)
+		}
+	}
+	return fmt.Sprintf("en: %d, ja: %d alerts", enCnt, jaCnt)
 }
 
 func (r ScanResult) isDisplayUpdatableNum() bool {

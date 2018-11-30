@@ -20,6 +20,7 @@ package models
 import (
 	"bytes"
 	"fmt"
+	"github.com/future-architect/vuls/alert"
 	"sort"
 	"strings"
 	"time"
@@ -168,6 +169,7 @@ type VulnInfo struct {
 	CpeURIs          []string         `json:"cpeURIs,omitempty"`          // CpeURIs related to this CVE defined in config.toml
 	CveContents      CveContents      `json:"cveContents"`
 	Exploits         []Exploit        `json:"exploits"`
+	AlertDict        AlertDict        `json:"alertDict,omitempty"`
 }
 
 // Titles returns tilte (TUI)
@@ -684,6 +686,12 @@ type Exploit struct {
 	PaperURL     *string                   `json:"paperURL,omitempty"`
 	ShellCodeURL *string                   `json:"shellCodeURL,omitempty"`
 	BinaryURL    *string                   `json:"binaryURL,omitempty"`
+}
+
+// AlertDict has target cve's JPCERT and USCERT alert data
+type AlertDict struct {
+	Ja []alert.Alert
+	En []alert.Alert
 }
 
 // Confidences is a list of Confidence
