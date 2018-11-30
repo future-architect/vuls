@@ -20,10 +20,11 @@ package models
 import (
 	"bytes"
 	"fmt"
-	"github.com/future-architect/vuls/alert"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/future-architect/vuls/alert"
 
 	"github.com/future-architect/vuls/config"
 	exploitmodels "github.com/mozqnet/go-exploitdb/models"
@@ -692,6 +693,11 @@ type Exploit struct {
 type AlertDict struct {
 	Ja []alert.Alert
 	En []alert.Alert
+}
+
+// HasAlert returns whether or not it has En or Ja entries.
+func (a AlertDict) HasAlert() bool {
+	return len(a.En) != 0 || len(a.Ja) != 0
 }
 
 // Confidences is a list of Confidence

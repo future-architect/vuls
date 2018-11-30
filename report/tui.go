@@ -637,10 +637,15 @@ func summaryLines(r models.ScanResult) string {
 		packname := vinfo.AffectedPackages.FormatTuiSummary()
 		packname += strings.Join(vinfo.CpeURIs, ", ")
 
+		alert := "  "
+		if vinfo.AlertDict.HasAlert() {
+			alert = "! "
+		}
+
 		var cols []string
 		cols = []string{
 			fmt.Sprintf(indexFormat, i+1),
-			vinfo.CveID,
+			alert + vinfo.CveID,
 			cvssScore + " |",
 			fmt.Sprintf("%8s |", vinfo.AttackVector()),
 			fmt.Sprintf("%7s |", vinfo.PatchStatus(r.Packages)),
