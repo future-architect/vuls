@@ -60,7 +60,7 @@
   version = "v9"
 
 [[projects]]
-  digest = "1:f05a3d64add4e779f37b5c3752fd1c60405633edcc3929c926b8c6b11564268e"
+  digest = "1:ed0d4d935bf3b0ca5f2369c43cc8473fd604f4439edb76c051422fb4760ca6ed"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -98,8 +98,8 @@
     "service/sts",
   ]
   pruneopts = "UT"
-  revision = "6b08b085a17ae5a6040fdb67971812696569dced"
-  version = "v1.15.89"
+  revision = "ddc06f9fad886ea5daa5f828f3ca094084f8c2a7"
+  version = "v1.15.90"
 
 [[projects]]
   digest = "1:0f98f59e9a2f4070d66f0c9c39561f68fcd1dc837b22a852d28d0003aebd1b1e"
@@ -815,24 +815,29 @@
   revision = "bd91e49a0898e27abb88c339b432fa53d7497ac0"
 
 [[projects]]
-  digest = "1:c3ad9841823db6da420a5625b367913b4ff54bbe60e8e3c98bd20e243e62e2d2"
+  digest = "1:9edd250a3c46675d0679d87540b30c9ed253b19bd1fd1af08f4f5fb3c79fc487"
   name = "google.golang.org/grpc"
   packages = [
     ".",
     "balancer",
     "balancer/base",
     "balancer/roundrobin",
+    "binarylog/grpc_binarylog_v1",
     "codes",
     "connectivity",
     "credentials",
+    "credentials/internal",
     "encoding",
     "encoding/proto",
     "grpclog",
     "internal",
     "internal/backoff",
+    "internal/binarylog",
     "internal/channelz",
     "internal/envconfig",
     "internal/grpcrand",
+    "internal/grpcsync",
+    "internal/syscall",
     "internal/transport",
     "keepalive",
     "metadata",
@@ -846,8 +851,8 @@
     "tap",
   ]
   pruneopts = "UT"
-  revision = "2e463a05d100327ca47ac218281906921038fd95"
-  version = "v1.16.0"
+  revision = "df014850f6dee74ba2fc94874043a9f3f75fbfd8"
+  version = "v1.17.0"
 
 [[projects]]
   digest = "1:e626376fab8608a972d47e91b3c1bbbddaecaf1d42b82be6dcc52d10a7557893"

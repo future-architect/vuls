@@ -111,17 +111,7 @@ type CweDictEntry struct {
 
 // GetAlertsByCveID return alerts fetched by cveID
 func GetAlertsByCveID(cveID string, lang string) (alerts []alert.Alert) {
-	if lang == "ja" {
-		if dict, ok := alert.AlertDictJP[cveID]; ok {
-			return dict
-		}
-		return alerts
-	}
-
-	// default use english
-	if dict, ok := alert.AlertDictUS[cveID]; ok {
-		return dict
-	}
+	alerts = alert.GenerateAlertDict(cveID, lang)
 	return alerts
 }
 
