@@ -170,7 +170,7 @@ type VulnInfo struct {
 	CpeURIs          []string         `json:"cpeURIs,omitempty"`          // CpeURIs related to this CVE defined in config.toml
 	CveContents      CveContents      `json:"cveContents"`
 	Exploits         []Exploit        `json:"exploits"`
-	AlertDict        AlertDict        `json:"alertDict,omitempty"`
+	AlertDict        AlertDict        `json:"alertDict"`
 }
 
 // Titles returns tilte (TUI)
