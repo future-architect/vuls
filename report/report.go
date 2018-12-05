@@ -389,11 +389,8 @@ func fillCweDict(r *models.ScanResult) {
 }
 
 func fillAlerts(r *models.ScanResult) (enCnt int, jaCnt int) {
-	enCnt = 0
-	jaCnt = 0
 	for cveID, vuln := range r.ScannedCves {
-		enAs := models.GetAlertsByCveID(cveID, "en")
-		jaAs := models.GetAlertsByCveID(cveID, "ja")
+		enAs, jaAs := models.GetAlertsByCveID(cveID, "en"), models.GetAlertsByCveID(cveID, "ja")
 		vuln.AlertDict = models.AlertDict{
 			Ja: jaAs,
 			En: enAs,

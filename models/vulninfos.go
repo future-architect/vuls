@@ -691,8 +691,8 @@ type Exploit struct {
 
 // AlertDict has target cve's JPCERT and USCERT alert data
 type AlertDict struct {
-	Ja []alert.Alert
-	En []alert.Alert
+	Ja []alert.Alert `json:"ja"`
+	En []alert.Alert `json:"en"`
 }
 
 // HasAlert returns whether or not it has En or Ja entries.

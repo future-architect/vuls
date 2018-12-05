@@ -2,9 +2,9 @@ package alert
 
 // Alert has XCERT alert information
 type Alert struct {
-	URL   string
-	Title string
-	Team  string
+	URL   string `json:"url"`
+	Title string `json:"title"`
+	Team  string `json:"team"`
 }
 
 // AlertDictJa has JPCERT alerts
