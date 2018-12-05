@@ -170,7 +170,7 @@ type VulnInfo struct {
 	CpeURIs          []string         `json:"cpeURIs,omitempty"`          // CpeURIs related to this CVE defined in config.toml
 	CveContents      CveContents      `json:"cveContents"`
 	Exploits         []Exploit        `json:"exploits"`
-	AlertDict        AlertDict        `json:"alertDict,omitempty"`
+	AlertDict        AlertDict        `json:"alertDict"`
 }
 
 // Titles returns tilte (TUI)
@@ -691,8 +691,8 @@ type Exploit struct {
 
 // AlertDict has target cve's JPCERT and USCERT alert data
 type AlertDict struct {
-	Ja []alert.Alert
-	En []alert.Alert
+	Ja []alert.Alert `json:"ja"`
+	En []alert.Alert `json:"en"`
 }
 
 // HasAlert returns whether or not it has En or Ja entries.
