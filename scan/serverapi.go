@@ -84,6 +84,30 @@ type osPackages struct {
 	Kernel models.Kernel
 }
 
+// Retry as it may stall on the first SSH connection
+// https://github.com/future-architect/vuls/pull/753
+func detectDebianWithRetry(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err error) {
+	type Response struct {
+		itsMe bool
+		deb   osTypeInterface
+		err   error
+	}
+	resChan := make(chan Response, 1)
+	go func(c config.ServerInfo) {
+		itsMe, osType, fatalErr := detectDebian(c)
+		resChan <- Response{itsMe, osType, fatalErr}
+	}(c)
+
+	timeout := time.After(time.Duration(3) * time.Second)
+	select {
+	case res := <-resChan:
+		return res.itsMe, res.deb, res.err
+	case <-timeout:
+		time.Sleep(100 * time.Millisecond)
+		return detectDebian(c)
+	}
+}
+
 func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 	var itsMe bool
 	var fatalErr error
@@ -93,7 +117,7 @@ func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 		return
 	}
 
-	itsMe, osType, fatalErr = detectDebian(c)
+	itsMe, osType, fatalErr = detectDebianWithRetry(c)
 	if fatalErr != nil {
 		osType.setErrs([]error{
 			fmt.Errorf("Failed to detect OS: %s", fatalErr)})
