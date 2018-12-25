@@ -39,12 +39,11 @@ type field struct {
 }
 
 type message struct {
-	Text            string             `json:"text"`
-	Username        string             `json:"username"`
-	IconEmoji       string             `json:"icon_emoji"`
-	Channel         string             `json:"channel"`
-	ThreadTimeStamp string             `json:"thread_ts"`
-	Attachments     []slack.Attachment `json:"attachments"`
+	Text        string             `json:"text"`
+	Username    string             `json:"username"`
+	IconEmoji   string             `json:"icon_emoji"`
+	Channel     string             `json:"channel"`
+	Attachments []slack.Attachment `json:"attachments"`
 }
 
 // SlackWriter send report to slack
