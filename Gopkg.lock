@@ -412,7 +412,7 @@
   version = "v0.1.0"
 
 [[projects]]
-  digest = "1:564a03e039dfed4121709e3d76c05c08a9d4291335ca682b5065ae46285a688a"
+  digest = "1:8fd95e6bab4d09a0f610bd5c02ef6ec7d0d91da5a72b7cfcbfd67254bcb72b75"
   name = "github.com/kotakanbe/goval-dictionary"
   packages = [
     "config",
@@ -421,8 +421,8 @@
     "models",
   ]
   pruneopts = "UT"
-  revision = "818624daf2658cc177ea93100ff20c5caed064b6"
-  version = "v0.1.0"
+  revision = "5070051ecafdf15cbe2490e71ec038de7d25b71e"
+  version = "v0.1.1"
 
 [[projects]]
   branch = "master"
