@@ -684,7 +684,6 @@ type Exploit struct {
 	URL          string                    `json:"url"`
 	Description  string                    `json:"description"`
 	DocumentURL  *string                   `json:"documentURL,omitempty"`
-	PaperURL     *string                   `json:"paperURL,omitempty"`
 	ShellCodeURL *string                   `json:"shellCodeURL,omitempty"`
 	BinaryURL    *string                   `json:"binaryURL,omitempty"`
 }
