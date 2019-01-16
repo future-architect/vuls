@@ -58,7 +58,11 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 					r.ServerInfo(),
 					r.ScannedCves.FormatCveSummary())
 			}
-			message = formatFullPlainText(r)
+			if conf.FormatList {
+				message = formatList(r)
+			} else {
+				message = formatFullPlainText(r)
+			}
 			if err := sender.Send(subject, message); err != nil {
 				return err
 			}
