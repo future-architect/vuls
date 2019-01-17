@@ -11,7 +11,6 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
-// ChatWorkWriter send report to ChatWork
 type TelegramWriter struct{}
 
 func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
@@ -46,14 +45,10 @@ func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 }
 
 func sendMessage(channel, token, message string) error {
-	fmt.Println(message)
-
 	uri := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", token)
-
 	payload := `{"text": "` + message + `", "chat_id": "@` + channel + `", "parse_mode": "Markdown" }`
 
 	req, err := http.NewRequest("POST", uri, bytes.NewBuffer([]byte(payload)))
-
 	req.Header.Add("Content-Type", "application/json")
 
 	if err != nil {
@@ -66,7 +61,6 @@ func sendMessage(channel, token, message string) error {
 		fmt.Println(err)
 		return err
 	}
-	fmt.Println("###########################")
 	defer resp.Body.Close()
 
 	return nil
