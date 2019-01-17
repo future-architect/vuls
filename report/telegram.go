@@ -11,6 +11,7 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
+// TelegramWriter sends report to Telegram
 type TelegramWriter struct{}
 
 func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
