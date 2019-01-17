@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/future-architect/vuks/models"
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/models"
 )
 
 // ChatWorkWriter send report to ChatWork
@@ -19,10 +19,6 @@ func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 
 	for _, r := range rs {
 		serverInfo := fmt.Sprintf("%s", r.ServerInfo())
-		if err = sendMessage(conf.Channel, conf.Token, serverInfo); err != nil {
-			return err
-		}
-
 		for _, vinfo := range r.ScannedCves {
 			maxCvss := vinfo.MaxCvssScore()
 			severity := strings.ToUpper(maxCvss.Value.Severity)
@@ -30,8 +26,11 @@ func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 				severity = "?"
 			}
 
-			message := fmt.Sprintf(`%s[info][title]"https://nvd.nist.gov/vuln/detail/%s" %s %s[/title]%s[/info]`,
+			message := fmt.Sprintf(`*%s*
+[%s](https://nvd.nist.gov/vuln/detail/%s) _%s %s_
+%s`,
 				serverInfo,
+				vinfo.CveID,
 				vinfo.CveID,
 				strconv.FormatFloat(maxCvss.Value.Score, 'f', 1, 64),
 				severity,
@@ -47,9 +46,11 @@ func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 }
 
 func sendMessage(channel, token, message string) error {
+	fmt.Println(message)
+
 	uri := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", token)
 
-	payload := `{"text": "` + message + `", "chat_id": "@` + channel + `" }`
+	payload := `{"text": "` + message + `", "chat_id": "@` + channel + `", "parse_mode": "Markdown" }`
 
 	req, err := http.NewRequest("POST", uri, bytes.NewBuffer([]byte(payload)))
 
@@ -62,8 +63,10 @@ func sendMessage(channel, token, message string) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
+	fmt.Println("###########################")
 	defer resp.Body.Close()
 
 	return nil
