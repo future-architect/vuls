@@ -20,6 +20,7 @@ package scan
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -595,12 +596,19 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 	}, timeoutSec)
 
 	hostname, _ := os.Hostname()
+	ipv4s, ipv6s, err := ip()
+	if err != nil {
+		util.Log.Errorf("Failed to fetch scannedIPs: %s", err)
+	}
+
 	for _, s := range append(servers, errServers...) {
 		r := s.convertToModel()
 		r.ScannedAt = scannedAt
 		r.ScannedVersion = config.Version
 		r.ScannedRevision = config.Revision
 		r.ScannedBy = hostname
+		r.ScannedIPv4Addrs = ipv4s
+		r.ScannedIPv6Addrs = ipv6s
 		r.Config.Scan = config.Conf
 		results = append(results, r)
 	}
@@ -617,6 +625,38 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 
 	report.StdoutWriter{}.WriteScanSummary(results...)
 	return nil
+}
+
+// ip returns scanner network ip addresses
+func ip() (ipv4Addrs []string, ipv6Addrs []string, err error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, i := range ifaces {
+		addrs, _ := i.Addrs()
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+
+			// only global unicast address
+			if !ip.IsGlobalUnicast() {
+				continue
+			}
+
+			if ok := ip.To4(); ok != nil {
+				ipv4Addrs = append(ipv4Addrs, ip.String())
+			} else {
+				ipv6Addrs = append(ipv6Addrs, ip.String())
+			}
+		}
+	}
+	return ipv4Addrs, ipv6Addrs, nil
 }
 
 // EnsureResultDir ensures the directory for scan results
