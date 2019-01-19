@@ -51,6 +51,8 @@ type ScanResult struct {
 	ScannedVersion   string                 `json:"scannedVersion"`
 	ScannedRevision  string                 `json:"scannedRevision"`
 	ScannedBy        string                 `json:"scannedBy"`
+	ScannedIPv4Addrs []string               `json:"scannedIpv4Addrs"`
+	ScannedIPv6Addrs []string               `json:"scannedIpv6Addrs"`
 	ReportedAt       time.Time              `json:"reportedAt"`
 	ReportedVersion  string                 `json:"reportedVersion"`
 	ReportedRevision string                 `json:"reportedRevision"`
