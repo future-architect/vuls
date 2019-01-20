@@ -19,23 +19,31 @@ func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 
 	for _, r := range rs {
 		serverInfo := fmt.Sprintf("%s", r.ServerInfo())
+		counter := 0
+		message := ""
 		for _, vinfo := range r.ScannedCves {
+			counter++
 			maxCvss := vinfo.MaxCvssScore()
 			severity := strings.ToUpper(maxCvss.Value.Severity)
 			if severity == "" {
 				severity = "?"
 			}
 
-			message := fmt.Sprintf(`*%s*
-[%s](https://nvd.nist.gov/vuln/detail/%s) _%s %s_
-%s`,
+			message += fmt.Sprintf(`*%s* \n [%s](https://nvd.nist.gov/vuln/detail/%s) _%s %s_\n %s\n\n`,
 				serverInfo,
 				vinfo.CveID,
 				vinfo.CveID,
 				strconv.FormatFloat(maxCvss.Value.Score, 'f', 1, 64),
 				severity,
 				vinfo.Summaries(config.Conf.Lang, r.Family)[0].Value)
-
+			if counter == 10 {
+				message = ""
+				if err = sendMessage(conf.Channel, conf.Token, message); err != nil {
+					return err
+				}
+			}
+		}
+		if message != "" {
 			if err = sendMessage(conf.Channel, conf.Token, message); err != nil {
 				return err
 			}
@@ -58,11 +66,18 @@ func sendMessage(channel, token, message string) error {
 	client := &http.Client{}
 
 	resp, err := client.Do(req)
-	if err != nil {
+	if checkResponse(resp) != nil && err != nil {
 		fmt.Println(err)
 		return err
 	}
 	defer resp.Body.Close()
 
 	return nil
+}
+
+func checkResponse(r *http.Response) error {
+	if c := r.StatusCode; 200 <= c && c <= 299 {
+		return nil
+	}
+	return fmt.Errorf("API call to %s failed: %s", r.Request.URL.String(), r.Status)
 }

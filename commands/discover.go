@@ -176,6 +176,11 @@ sqlite3Path = "/path/to/go-exploitdb.sqlite3"
 #room     = "xxxxxxxxxxx"
 #apiToken = "xxxxxxxxxxxxxxxxxx"
 
+# https://vuls.io/docs/en/usage-settings.html#telegram-section
+#[telegram]
+#channel     = "xxxxxxxxxxx"
+#token = "xxxxxxxxxxxxxxxxxx"
+
 # https://vuls.io/docs/en/usage-settings.html#default-section
 [default]
 #port               = "22"
