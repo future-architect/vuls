@@ -133,6 +133,7 @@ type Config struct {
 	Stride   StrideConf   `json:"-"`
 	HipChat  HipChatConf  `json:"-"`
 	ChatWork ChatWorkConf `json:"-"`
+	Telegram TelegramConf `json:"-"`
 	Saas     SaasConf     `json:"-"`
 
 	RefreshCve        bool `json:"refreshCve"`
@@ -140,6 +141,7 @@ type Config struct {
 	ToStride          bool `json:"toStride"`
 	ToHipChat         bool `json:"toHipChat"`
 	ToChatWork        bool `json:"toChatWork"`
+	ToTelegram        bool `json:"ToTelegram"`
 	ToEmail           bool `json:"toEmail"`
 	ToSyslog          bool `json:"toSyslog"`
 	ToLocalFile       bool `json:"toLocalFile"`
@@ -285,6 +287,10 @@ func (c Config) ValidateOnReport() bool {
 
 	if strideerrs := c.Stride.Validate(); 0 < len(strideerrs) {
 		errs = append(errs, strideerrs...)
+	}
+
+	if telegramerrs := c.Telegram.Validate(); 0 < len(telegramerrs) {
+		errs = append(errs, telegramerrs...)
 	}
 
 	if saaserrs := c.Saas.Validate(); 0 < len(saaserrs) {
@@ -548,6 +554,32 @@ func (c *ChatWorkConf) Validate() (errs []error) {
 
 	if len(c.APIToken) == 0 {
 		errs = append(errs, fmt.Errorf("chatworkcaht.ApiToken must not be empty"))
+	}
+
+	_, err := valid.ValidateStruct(c)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	return
+}
+
+// TelegramConf is Telegram config
+type TelegramConf struct {
+	Token  string `json:"-"`
+	ChatID string `json:"-"`
+}
+
+// Validate validates configuration
+func (c *TelegramConf) Validate() (errs []error) {
+	if !Conf.ToTelegram {
+		return
+	}
+	if len(c.ChatID) == 0 {
+		errs = append(errs, fmt.Errorf("TelegramConf.ChatID must not be empty"))
+	}
+
+	if len(c.Token) == 0 {
+		errs = append(errs, fmt.Errorf("TelegramConf.Token must not be empty"))
 	}
 
 	_, err := valid.ValidateStruct(c)
