@@ -16,7 +16,6 @@ type TelegramWriter struct{}
 
 func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 	conf := config.Conf.Telegram
-
 	for _, r := range rs {
 		msgs := []string{fmt.Sprintf("*%s*\n%s\n%s\n%s",
 			r.ServerInfo(),
@@ -29,7 +28,6 @@ func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 			if severity == "" {
 				severity = "?"
 			}
-
 			msgs = append(msgs, fmt.Sprintf(`[%s](https://nvd.nist.gov/vuln/detail/%s) _%s %s %s_\n%s`,
 				vinfo.CveID,
 				vinfo.CveID,
@@ -49,7 +47,6 @@ func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 				return err
 			}
 		}
-
 	}
 	return nil
 }
