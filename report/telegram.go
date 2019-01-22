@@ -18,33 +18,34 @@ func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 	conf := config.Conf.Telegram
 
 	for _, r := range rs {
-		serverInfo := fmt.Sprintf("%s", r.ServerInfo())
-		counter := 0
-		message := ""
+		msgs := []string{fmt.Sprintf("*%s*\n%s\n%s\n%s",
+			r.ServerInfo(),
+			r.ScannedCves.FormatCveSummary(),
+			r.ScannedCves.FormatFixedStatus(r.Packages),
+			r.FormatUpdatablePacksSummary())}
 		for _, vinfo := range r.ScannedCves {
-			counter++
 			maxCvss := vinfo.MaxCvssScore()
 			severity := strings.ToUpper(maxCvss.Value.Severity)
 			if severity == "" {
 				severity = "?"
 			}
 
-			message += fmt.Sprintf(`*%s* \n [%s](https://nvd.nist.gov/vuln/detail/%s) _%s %s_\n %s\n\n`,
-				serverInfo,
+			msgs = append(msgs, fmt.Sprintf(`[%s](https://nvd.nist.gov/vuln/detail/%s) _%s %s %s_\n%s`,
 				vinfo.CveID,
 				vinfo.CveID,
 				strconv.FormatFloat(maxCvss.Value.Score, 'f', 1, 64),
 				severity,
-				vinfo.Summaries(config.Conf.Lang, r.Family)[0].Value)
-			if counter == 10 {
-				message = ""
-				if err = sendMessage(conf.ChatID, conf.Token, message); err != nil {
+				maxCvss.Value.Vector,
+				vinfo.Summaries(config.Conf.Lang, r.Family)[0].Value))
+			if len(msgs) == 5 {
+				if err = sendMessage(conf.ChatID, conf.Token, strings.Join(msgs, "\n\n")); err != nil {
 					return err
 				}
+				msgs = []string{}
 			}
 		}
-		if message != "" {
-			if err = sendMessage(conf.ChatID, conf.Token, message); err != nil {
+		if len(msgs) != 0 {
+			if err = sendMessage(conf.ChatID, conf.Token, strings.Join(msgs, "\n\n")); err != nil {
 				return err
 			}
 		}
@@ -55,23 +56,19 @@ func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 
 func sendMessage(chatID, token, message string) error {
 	uri := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", token)
-	payload := `{"text": "` + message + `", "chat_id": "` + chatID + `", "parse_mode": "Markdown" }`
-
+	payload := `{"text": "` + strings.Replace(message, `"`, `\"`, -1) + `", "chat_id": "` + chatID + `", "parse_mode": "Markdown" }`
 	req, err := http.NewRequest("POST", uri, bytes.NewBuffer([]byte(payload)))
 	req.Header.Add("Content-Type", "application/json")
-
 	if err != nil {
 		return err
 	}
 	client := &http.Client{}
-
 	resp, err := client.Do(req)
 	if checkResponse(resp) != nil && err != nil {
 		fmt.Println(err)
 		return err
 	}
 	defer resp.Body.Close()
-
 	return nil
 }
 
