@@ -178,7 +178,7 @@ sqlite3Path = "/path/to/go-exploitdb.sqlite3"
 
 # https://vuls.io/docs/en/usage-settings.html#telegram-section
 #[telegram]
-#channel     = "xxxxxxxxxxx"
+#chatID     = "xxxxxxxxxxx"
 #token = "xxxxxxxxxxxxxxxxxx"
 
 # https://vuls.io/docs/en/usage-settings.html#default-section

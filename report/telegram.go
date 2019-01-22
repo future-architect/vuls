@@ -38,13 +38,13 @@ func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 				vinfo.Summaries(config.Conf.Lang, r.Family)[0].Value)
 			if counter == 10 {
 				message = ""
-				if err = sendMessage(conf.Channel, conf.Token, message); err != nil {
+				if err = sendMessage(conf.ChatID, conf.Token, message); err != nil {
 					return err
 				}
 			}
 		}
 		if message != "" {
-			if err = sendMessage(conf.Channel, conf.Token, message); err != nil {
+			if err = sendMessage(conf.ChatID, conf.Token, message); err != nil {
 				return err
 			}
 		}
@@ -53,9 +53,9 @@ func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 	return nil
 }
 
-func sendMessage(channel, token, message string) error {
+func sendMessage(chatID, token, message string) error {
 	uri := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", token)
-	payload := `{"text": "` + message + `", "chat_id": "@` + channel + `", "parse_mode": "Markdown" }`
+	payload := `{"text": "` + message + `", "chat_id": "` + chatID + `", "parse_mode": "Markdown" }`
 
 	req, err := http.NewRequest("POST", uri, bytes.NewBuffer([]byte(payload)))
 	req.Header.Add("Content-Type", "application/json")

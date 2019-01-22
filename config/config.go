@@ -565,8 +565,8 @@ func (c *ChatWorkConf) Validate() (errs []error) {
 
 // TelegramConf is Telegram config
 type TelegramConf struct {
-	Token   string `json:"-"`
-	Channel string `json:"-"`
+	Token  string `json:"-"`
+	ChatID string `json:"-"`
 }
 
 // Validate validates configuration
@@ -574,8 +574,8 @@ func (c *TelegramConf) Validate() (errs []error) {
 	if !Conf.ToTelegram {
 		return
 	}
-	if len(c.Channel) == 0 {
-		errs = append(errs, fmt.Errorf("TelegramConf.Channel must not be empty"))
+	if len(c.ChatID) == 0 {
+		errs = append(errs, fmt.Errorf("TelegramConf.ChatID must not be empty"))
 	}
 
 	if len(c.Token) == 0 {
