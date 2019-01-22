@@ -42,6 +42,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	Conf.Stride = conf.Stride
 	Conf.HipChat = conf.HipChat
 	Conf.ChatWork = conf.ChatWork
+	Conf.Telegram = conf.Telegram
 	Conf.Saas = conf.Saas
 	Conf.Syslog = conf.Syslog
 	Conf.HTTP = conf.HTTP
