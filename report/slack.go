@@ -405,7 +405,6 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 		mitigation,
 		cweIDs(vinfo, osFamily, cweDict),
 	)
-
 }
 
 func cweIDs(vinfo models.VulnInfo, osFamily string, cweDict models.CweDict) string {
