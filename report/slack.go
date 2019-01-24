@@ -354,26 +354,26 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 				mitigation,
 				cweIDs(vinfo, osFamily, cweDict),
 			)
-		} else {
-
-			var jpalert string
-			for _, i := range vinfo.AlertDict.Ja {
-				jpalert = i.URL
-			}
-
-			return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n<%s|%s>\n```\n%s\n```%s\n%s\n",
-				maxCvss.Value.Score,
-				severity,
-				nwvec,
-				vinfo.PatchStatus(packs),
-				strings.Join(vectors, "\n"),
-				jpalert,
-				"JPCERT",
-				vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
-				mitigation,
-				cweIDs(vinfo, osFamily, cweDict),
-			)
 		}
+
+		var jpalert string
+		for _, i := range vinfo.AlertDict.Ja {
+			jpalert = i.URL
+		}
+
+		return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n<%s|%s>\n```\n%s\n```%s\n%s\n",
+			maxCvss.Value.Score,
+			severity,
+			nwvec,
+			vinfo.PatchStatus(packs),
+			strings.Join(vectors, "\n"),
+			jpalert,
+			"JPCERT",
+			vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
+			mitigation,
+			cweIDs(vinfo, osFamily, cweDict),
+		)
+
 	} else if len(vinfo.AlertDict.En) > 0 {
 
 		var usalert string
