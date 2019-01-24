@@ -327,16 +327,84 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 			vinfo.Mitigations(osFamily)[0].Value)
 	}
 
-	return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n```\n%s\n```%s\n%s\n",
-		maxCvss.Value.Score,
-		severity,
-		nwvec,
-		vinfo.PatchStatus(packs),
-		strings.Join(vectors, "\n"),
-		vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
-		mitigation,
-		cweIDs(vinfo, osFamily, cweDict),
-	)
+	if len(vinfo.AlertDict.Ja) > 0 {
+		if len(vinfo.AlertDict.En) > 0 {
+
+			var jpalert string
+			for _, i := range vinfo.AlertDict.Ja {
+				jpalert = i.URL
+			}
+
+			var usalert string
+			for _, i := range vinfo.AlertDict.Ja {
+				usalert = i.URL
+			}
+
+			return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n<%s|%s>\n<%s|%s>\n```\n%s\n```%s\n%s\n",
+				maxCvss.Value.Score,
+				severity,
+				nwvec,
+				vinfo.PatchStatus(packs),
+				strings.Join(vectors, "\n"),
+				jpalert,
+				"JPCERT",
+				usalert,
+				"USCERT",
+				vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
+				mitigation,
+				cweIDs(vinfo, osFamily, cweDict),
+			)
+		} else {
+
+			var jpalert string
+			for _, i := range vinfo.AlertDict.Ja {
+				jpalert = i.URL
+			}
+
+			return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n<%s|%s>\n```\n%s\n```%s\n%s\n",
+				maxCvss.Value.Score,
+				severity,
+				nwvec,
+				vinfo.PatchStatus(packs),
+				strings.Join(vectors, "\n"),
+				jpalert,
+				"JPCERT",
+				vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
+				mitigation,
+				cweIDs(vinfo, osFamily, cweDict),
+			)
+		}
+	} else if len(vinfo.AlertDict.En) > 0 {
+
+		var usalert string
+		for _, i := range vinfo.AlertDict.Ja {
+			usalert = i.URL
+		}
+
+		return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n<%s|%s>\n```\n%s\n```%s\n%s\n",
+			maxCvss.Value.Score,
+			severity,
+			nwvec,
+			vinfo.PatchStatus(packs),
+			strings.Join(vectors, "\n"),
+			usalert,
+			"USCERT",
+			vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
+			mitigation,
+			cweIDs(vinfo, osFamily, cweDict),
+		)
+	} else {
+		return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n```\n%s\n```%s\n%s\n",
+			maxCvss.Value.Score,
+			severity,
+			nwvec,
+			vinfo.PatchStatus(packs),
+			strings.Join(vectors, "\n"),
+			vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
+			mitigation,
+			cweIDs(vinfo, osFamily, cweDict),
+		)
+	}
 }
 
 func cweIDs(vinfo models.VulnInfo, osFamily string, cweDict models.CweDict) string {
