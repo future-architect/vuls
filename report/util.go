@@ -318,6 +318,16 @@ func formatChangelogs(r models.ScanResult) string {
 	}
 	return strings.Join(buf, "\n")
 }
+func ovalSupported(r *models.ScanResult) bool {
+	switch r.Family {
+	case
+		config.Amazon,
+		config.FreeBSD,
+		config.Raspbian:
+		return false
+	}
+	return true
+}
 
 func needToRefreshCve(r models.ScanResult) bool {
 	if r.Lang != config.Conf.Lang {
