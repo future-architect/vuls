@@ -26,6 +26,39 @@ import (
 	"github.com/future-architect/vuls/util"
 )
 
+func Wpscan() (err error) {
+
+	if err = wpscanVuln(); err != nil {
+		return err
+	}
+	return
+}
+
+func wpscanVuln() (err error) {
+	osTypeChan := make(chan error, len(config.Conf.Servers))
+	defer close(osTypeChan)
+	for _, s := range config.Conf.Wordpress {
+		go func(s config.WpInfo) {
+			defer func() {
+				if p := recover(); p != nil {
+					util.Log.Debugf("Panic: %s on %s", p, s.ServerName)
+				}
+			}()
+			osTypeChan <- detectWp(s)
+		}(s)
+	}
+
+	return
+}
+
+func detectWp(c config.WpInfo) (err error) {
+	/*
+	if r := exec(config.Conf.Wordpress, "wp core version --path=/home/kusanagi/yokota/DocumentRoot/", noSudo); r.isSuccess() {
+	}
+	*/
+	return err
+}
+
 func isRunningKernel(pack models.Package, family string, kernel models.Kernel) (isKernel, running bool) {
 	switch family {
 	case config.SUSEEnterpriseServer:

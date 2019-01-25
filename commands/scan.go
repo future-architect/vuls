@@ -186,9 +186,10 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 	util.Log.Debugf("%s", pp.Sprintf("%v", target))
 
-	util.Log.Info("Validating config...")
-	if !c.Conf.ValidateOnScan() {
-		return subcommands.ExitUsageError
+	util.Log.Info("Scanning wordpress vulnerabilities...")
+	if err := scan.Wpscan(); err != nil {
+		util.Log.Errorf("Failed to scan. err: %s", err)
+		return subcommands.ExitFailure
 	}
 
 	util.Log.Info("Detecting Server/Container OS... ")
