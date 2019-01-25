@@ -30,8 +30,6 @@ import (
 
 	valid "github.com/asaskevich/govalidator"
 	log "github.com/sirupsen/logrus"
-	"google.golang.org/api/plus/v1"
-	"go/token"
 )
 
 // Version of Vuls
@@ -1103,8 +1101,8 @@ type WpInfo struct {
 	Distro          Distro    `toml:"-" json:"-"`
 	Mode            ScanMode  `toml:"-" json:"-"`
 
-	Path		string	`toml:"-" json:"-"`
-	Token 		string  `toml:"-" json:"-"`
+	Path  string `toml:"-" json:"-"`
+	Token string `toml:"-" json:"-"`
 }
 
 // ContainerSetting is used for loading container setting in config.toml
