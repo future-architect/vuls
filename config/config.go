@@ -30,6 +30,8 @@ import (
 
 	valid "github.com/asaskevich/govalidator"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/api/plus/v1"
+	"go/token"
 )
 
 // Version of Vuls
@@ -108,6 +110,7 @@ type Config struct {
 
 	Default            ServerInfo            `json:"default"`
 	Servers            map[string]ServerInfo `json:"servers"`
+	Wordpress          map[string]WpInfo     `json:"wordpress"`
 	CvssScoreOver      float64               `json:"cvssScoreOver"`
 	IgnoreUnscoredCves bool                  `json:"ignoreUnscoredCves"`
 	IgnoreUnfixed      bool                  `json:"ignoreUnfixed"`
@@ -1067,6 +1070,41 @@ type ServerInfo struct {
 	Container       Container `toml:"-" json:"-"`
 	Distro          Distro    `toml:"-" json:"-"`
 	Mode            ScanMode  `toml:"-" json:"-"`
+}
+
+type WpInfo struct {
+	ServerName             string                      `toml:"-" json:"serverName"`
+	User                   string                      `toml:"user,omitempty" json:"user"`
+	Host                   string                      `toml:"host,omitempty" json:"host"`
+	Port                   string                      `toml:"port,omitempty" json:"port"`
+	KeyPath                string                      `toml:"keyPath,omitempty" json:"keyPath"`
+	KeyPassword            string                      `json:"-" toml:"-"`
+	CpeNames               []string                    `toml:"cpeNames,omitempty" json:"cpeNames,omitempty"`
+	ScanMode               []string                    `toml:"scanMode,omitempty" json:"scanMode,omitempty"`
+	DependencyCheckXMLPath string                      `toml:"dependencyCheckXMLPath,omitempty" json:"-"` // TODO Deprecated remove in near future
+	OwaspDCXMLPath         string                      `toml:"owaspDCXMLPath,omitempty" json:"owaspDCXMLPath"`
+	ContainersIncluded     []string                    `toml:"containersIncluded,omitempty" json:"containersIncluded,omitempty"`
+	ContainersExcluded     []string                    `toml:"containersExcluded,omitempty" json:"containersExcluded,omitempty"`
+	ContainerType          string                      `toml:"containerType,omitempty" json:"containerType,omitempty"`
+	Containers             map[string]ContainerSetting `toml:"containers" json:"containers,omitempty"`
+	IgnoreCves             []string                    `toml:"ignoreCves,omitempty" json:"ignoreCves,omitempty"`
+	IgnorePkgsRegexp       []string                    `toml:"ignorePkgsRegexp,omitempty" json:"ignorePkgsRegexp,omitempty"`
+	UUIDs                  map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
+	Memo                   string                      `toml:"memo,omitempty" json:"memo"`
+	Enablerepo             []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, RHEL, Amazon
+	Optional               map[string]interface{}      `toml:"optional,omitempty" json:"optional,omitempty"`     // Optional key-value set that will be outputted to JSON
+	Type                   string                      `toml:"type,omitempty" json:"type"`                       // "pseudo" or ""
+	IPv4Addrs              []string                    `toml:"-" json:"ipv4Addrs,omitempty"`
+	IPv6Addrs              []string                    `toml:"-" json:"ipv6Addrs,omitempty"`
+
+	// used internal
+	LogMsgAnsiColor string    `toml:"-" json:"-"` // DebugLog Color
+	Container       Container `toml:"-" json:"-"`
+	Distro          Distro    `toml:"-" json:"-"`
+	Mode            ScanMode  `toml:"-" json:"-"`
+
+	Path		string	`toml:"-" json:"-"`
+	Token 		string  `toml:"-" json:"-"`
 }
 
 // ContainerSetting is used for loading container setting in config.toml
