@@ -186,11 +186,6 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 	util.Log.Debugf("%s", pp.Sprintf("%v", target))
 
-	util.Log.Info("Scanning wordpress vulnerabilities...")
-	if err := scan.Wpscan(); err != nil {
-		util.Log.Errorf("Failed to scan. err: %s", err)
-		return subcommands.ExitFailure
-	}
 
 	util.Log.Info("Detecting Server/Container OS... ")
 	if err := scan.InitServers(p.timeoutSec); err != nil {
@@ -212,6 +207,13 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		util.Log.Errorf("Failed to scan. err: %s", err)
 		return subcommands.ExitFailure
 	}
+
+			util.Log.Info("Scanning wordpress vulnerabilities...")
+			if err := scan.Wpscan(); err != nil {
+				util.Log.Errorf("Failed to wordpress scan. err: %s", err)
+				return subcommands.ExitFailure
+			}
+
 	fmt.Printf("\n\n\n")
 	fmt.Println("To view the detail, vuls tui is useful.")
 	fmt.Println("To send a report, run vuls report -h.")

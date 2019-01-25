@@ -24,10 +24,11 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	"github.com/k0kubun/pp"
+	"time"
 )
 
 func Wpscan() (err error) {
-
 	if err = wpscanVuln(); err != nil {
 		return err
 	}
@@ -35,27 +36,78 @@ func Wpscan() (err error) {
 }
 
 func wpscanVuln() (err error) {
-	osTypeChan := make(chan error, len(config.Conf.Servers))
-	defer close(osTypeChan)
-	for _, s := range config.Conf.Wordpress {
-		go func(s config.WpInfo) {
+	errChan := make(chan error, len(config.Conf.Servers))
+	defer close(errChan)
+	for _, s := range config.Conf.Servers {
+		go func(s config.ServerInfo) {
 			defer func() {
 				if p := recover(); p != nil {
 					util.Log.Debugf("Panic: %s on %s", p, s.ServerName)
 				}
 			}()
-			osTypeChan <- detectWp(s)
+			errChan <- detectWp(s)
 		}(s)
 	}
+
+	timeout := time.After(time.Duration(10000) * time.Second)
+	for i := 0; i < len(config.Conf.Servers); i++ {
+		select {
+		case _ = <-errChan:
+		/*
+			if 0 < len(res.getErrs()) {
+				errServers = append(errServers, res)
+				util.Log.Errorf("(%d/%d) Failed: %s, err: %s",
+					i+1, len(config.Conf.Servers),
+					res.getServerInfo().ServerName,
+					res.getErrs())
+			} else {
+				servers = append(servers, res)
+				util.Log.Infof("(%d/%d) Detected: %s: %s",
+					i+1, len(config.Conf.Servers),
+					res.getServerInfo().ServerName,
+					res.getDistro())
+			}
+			*/
+		case <-timeout:
+			msg := "Timed out while detecting servers"
+			util.Log.Error(msg)
+			for servername, sInfo := range config.Conf.Servers {
+				found := false
+				for _, o := range append(servers, errServers...) {
+					if servername == o.getServerInfo().ServerName {
+						found = true
+						break
+					}
+				}
+				if !found {
+					u := &unknown{}
+					u.setServerInfo(sInfo)
+					u.setErrs([]error{
+						fmt.Errorf("Timed out"),
+					})
+					errServers = append(errServers, u)
+					util.Log.Errorf("(%d/%d) Timed out: %s",
+						i+1, len(config.Conf.Servers),
+						servername)
+					i++
+				}
+			}
+		}
+	}
+
 
 	return
 }
 
-func detectWp(c config.WpInfo) (err error) {
-	/*
-	if r := exec(config.Conf.Wordpress, "wp core version --path=/home/kusanagi/yokota/DocumentRoot/", noSudo); r.isSuccess() {
+func detectWp(c config.ServerInfo) (err error) {
+	if len(c.WordpressPath) != 0 {
+		pp.Print("1")
 	}
-	*/
+	cmd := fmt.Sprintf("wp core version --path=%s", c.WordpressToken)
+	pp.Print(cmd)
+	if r := exec(c, cmd, noSudo); r.isSuccess() {
+		pp.Print(r.Stdout)
+	}
 	return err
 }
 
