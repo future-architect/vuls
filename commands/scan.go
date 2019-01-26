@@ -208,16 +208,6 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitFailure
 	}
 
-	for _, i := range c.Conf.Servers{
-		if len(i.WpPath) != 0 || len(i.WpToken) != 0 {
-			util.Log.Info("Scanning wordpress vulnerabilities...")
-			if err := scan.Wpscan(); err != nil {
-				util.Log.Errorf("Failed to wordpress scan. err: %s", err)
-				return subcommands.ExitFailure
-			}
-		}
-	}
-
 	fmt.Printf("\n\n\n")
 	fmt.Println("To view the detail, vuls tui is useful.")
 	fmt.Println("To send a report, run vuls report -h.")
