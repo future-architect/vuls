@@ -31,7 +31,6 @@ import (
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
 	"github.com/k0kubun/pp"
-	"github.com/ls/vuls/config"
 )
 
 // ScanCmd is Subcommand of host discovery mode
