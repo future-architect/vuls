@@ -18,9 +18,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package scan
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
-	"encoding/json"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -70,7 +70,7 @@ func wpscanVuln() (err error) {
 			}
 			*/
 		case <-timeout:
-			msg := "Timed out while detecting servers"
+			msg := "Timed out while wordpress scan"
 			util.Log.Error(msg)
 			for servername, sInfo := range config.Conf.Servers {
 				found := false
@@ -95,26 +95,25 @@ func wpscanVuln() (err error) {
 			}
 		}
 	}
-
-
 	return
 }
+
 type Hoge struct {
 	Version Huga `json:"-"`
 }
 
 
 type Huga struct {
-	Release_date string `json:"release_date"`
-	Changelog_url string `json:"changelog_url"`
-	Status string `json:"status"`
+	ReleaseDate 	string `json:"releaseDate"`
+	ChangelogUrl 	string `json:"changelogUrl"`
+	Status 		string `json:"status"`
 	Vulnerabilities []Piyo `json:"vulnerabilities"`
 }
 
 type Piyo struct {
-	Published_date string `json:"-"`
-	Vuln_type string `json:"omit_empty,omitempty"`
-	References int `json:"num,string"`
+	Published_date  string `json:"-"`
+	Vuln_type 	string `json:"omit_empty,omitempty"`
+	References 	int `json:"num,string"`
 }
 
 func detectWp(c config.ServerInfo) (err error) {
