@@ -61,7 +61,6 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	if keyPass != "" {
 		d.KeyPassword = keyPass
 	}
-
 	i := 0
 	for serverName, v := range conf.Servers {
 		if 0 < len(v.KeyPassword) {
@@ -256,6 +255,9 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 
 		s.UUIDs = v.UUIDs
 		s.Type = v.Type
+
+		s.WpPath = v.WpPath
+		s.WpToken = v.WpToken
 
 		s.LogMsgAnsiColor = Colors[i%len(Colors)]
 		i++
