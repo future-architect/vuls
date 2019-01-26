@@ -1067,9 +1067,6 @@ type ServerInfo struct {
 	Container       Container `toml:"-" json:"-"`
 	Distro          Distro    `toml:"-" json:"-"`
 	Mode            ScanMode  `toml:"-" json:"-"`
-
-	WpPath  string `toml:"wpPath" json:"wpPath"`
-	WpToken string `toml:"wpToken" json:"wpToken"`
 }
 
 // ContainerSetting is used for loading container setting in config.toml

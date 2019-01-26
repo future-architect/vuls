@@ -40,6 +40,10 @@ type base struct {
 	errs []error
 }
 
+func (l *base) scanWp() (err error) {
+	return err
+}
+
 func (l *base) exec(cmd string, sudo bool) execResult {
 	return exec(l.ServerInfo, cmd, sudo, l.log)
 }

@@ -44,6 +44,7 @@ var servers, errServers []osTypeInterface
 
 // Base Interface of redhat, debian, freebsd
 type osTypeInterface interface {
+	scanWp() error
 	setServerInfo(config.ServerInfo)
 	getServerInfo() config.ServerInfo
 	setDistro(string, string)
@@ -590,6 +591,9 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 			return err
 		}
 		if err = o.scanPackages(); err != nil {
+			return err
+		}
+		if err = o.scanWp(); err != nil {
 			return err
 		}
 		return o.postScan()
