@@ -20,6 +20,7 @@ package scan
 import (
 	"fmt"
 	"strings"
+	"encoding/json"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -98,17 +99,60 @@ func wpscanVuln() (err error) {
 
 	return
 }
+type Hoge struct {
+	Version Huga `json:"-"`
+}
+
+
+type Huga struct {
+	Release_date string `json:"release_date"`
+	Changelog_url string `json:"changelog_url"`
+	Status string `json:"status"`
+	Vulnerabilities []Piyo `json:"vulnerabilities"`
+}
+
+type Piyo struct {
+	Published_date string `json:"-"`
+	Vuln_type string `json:"omit_empty,omitempty"`
+	References int `json:"num,string"`
+}
 
 func detectWp(c config.ServerInfo) (err error) {
-	if len(c.WordpressPath) != 0 {
+	if len(c.WpPath) != 0 {
 		pp.Print("1")
 	}
-	cmd := fmt.Sprintf("wp core version --path=%s", c.WordpressToken)
+	cmd := fmt.Sprintf("wp core version --path=%s", c.WpPath)
+
 	pp.Print(cmd)
+	var coreVersion string
 	if r := exec(c, cmd, noSudo); r.isSuccess() {
-		pp.Print(r.Stdout)
+		tmp := strings.Split(r.Stdout, ".")
+		coreVersion = strings.Join(tmp, "")
+		coreVersion = strings.TrimRight(coreVersion, "\r\n")
+		pp.Print(coreVersion)
+	}
+	cmd = fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/wordpresses/%s", c.WpToken, coreVersion)
+	if r := exec(c, cmd, noSudo); r.isSuccess() {
+		tmp := strings.Split(r.Stdout, "{")
+		tmp = unset(tmp, 1)
+		tmp1 := strings.Join(tmp, "{")
+
+		animals := Huga{}
+		err := json.Unmarshal([]byte(tmp1), &animals)
+		pp.Print(err)
 	}
 	return err
+	/*
+		cmd = fmt.Sprintf("wp plugin list --path=/var/www/html/wordpress --format=json%s", c.WordpressPath)
+		cmd = fmt.Sprintf("wp theme list --path=/var/www/html/wordpress --format=json%s", c.WordpressPath)
+	*/
+}
+
+func unset(s []string, i int) []string {
+	if i >= len(s) {
+		return s
+	}
+	return append(s[:i], s[i+1:]...)
 }
 
 func isRunningKernel(pack models.Package, family string, kernel models.Kernel) (isKernel, running bool) {
