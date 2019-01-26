@@ -41,7 +41,26 @@ type base struct {
 }
 
 func (l *base) scanWp() (err error) {
+	var unsecures models.VulnInfo
+	if unsecures, err = detectWp(l.ServerInfo); err != nil {
+		l.log.Errorf("Failed to scan wordpress: %s", err)
+		return err
+	}
+	l.VulnInfos["hoge"] = unsecures
+
 	return err
+}
+
+func detectWp(c config.ServerInfo) (rs models.VulnInfo, err error) {
+	cmd := fmt.Sprintf("wp core version --path=%s", c.ServerName)
+
+	var coreVersion string
+	if r := exec(c, cmd, noSudo); r.isSuccess() {
+		tmp := strings.Split(r.Stdout, ".")
+		coreVersion = strings.Join(tmp, "")
+		coreVersion = strings.TrimRight(coreVersion, "\r\n")
+	}
+	return
 }
 
 func (l *base) exec(cmd string, sudo bool) execResult {
