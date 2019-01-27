@@ -186,6 +186,10 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 	util.Log.Debugf("%s", pp.Sprintf("%v", target))
 
+	util.Log.Info("Validating config...")
+	if !c.Conf.ValidateOnScan() {
+		return subcommands.ExitUsageError
+	}
 
 	util.Log.Info("Detecting Server/Container OS... ")
 	if err := scan.InitServers(p.timeoutSec); err != nil {
