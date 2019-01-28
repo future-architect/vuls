@@ -130,22 +130,37 @@ func (e *emailSender) Send(subject, body string) (err error) {
 	message := fmt.Sprintf("%s\r\n%s", header, body)
 
 	smtpServer := net.JoinHostPort(emailConf.SMTPAddr, emailConf.SMTPPort)
-	err = e.send(
-		smtpServer,
-		smtp.PlainAuth(
-			"",
-			emailConf.User,
-			emailConf.Password,
-			emailConf.SMTPAddr,
-		),
-		emailConf.From,
-		mailAddresses,
-		[]byte(message),
-	)
-	if err != nil {
-		return fmt.Errorf("Failed to send emails: %s", err)
+
+	if emailConf.User != "" && emailConf.Password != "" {
+		err = e.send(
+			smtpServer,
+			smtp.PlainAuth(
+				"",
+				emailConf.User,
+				emailConf.Password,
+				emailConf.SMTPAddr,
+			),
+			emailConf.From,
+			mailAddresses,
+			[]byte(message),
+		)
+		if err != nil {
+			return fmt.Errorf("Failed to send emails: %s", err)
+		}
+		return nil
+	} else {
+		err = e.send(
+			smtpServer,
+			nil,
+			emailConf.From,
+			mailAddresses,
+			[]byte(message),
+		)
+		if err != nil {
+			return fmt.Errorf("Failed to send emails: %s", err)
+		}
+		return nil
 	}
-	return nil
 }
 
 // NewEMailSender creates emailSender
