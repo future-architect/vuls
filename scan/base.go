@@ -28,7 +28,6 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
-	"github.com/k0kubun/pp"
 	"github.com/sirupsen/logrus"
 )
 
@@ -59,16 +58,19 @@ func (l *base) scanWp() (err error) {
 	return err
 }
 
-//CveInfos hoge
-type CveInfos struct {
-	ReleaseDate     string    `json:"release_date"`
-	ChangelogURL    string    `json:"changelog_url"`
-	Status          string    `json:"status"`
-	Vulnerabilities []CveInfo `json:"vulnerabilities"`
+//WpCveInfos hoge
+type WpCveInfos struct {
+	ReleaseDate     string      `json:"release_date"`
+	ChangelogURL    string      `json:"changelog_url"`
+	Status          string      `json:"status"`
+	LatestVersion   string      `json:"latest_version"`
+	LastUpdated     string      `json:"last_updated"`
+	Popular         bool        `json:"popular"`
+	Vulnerabilities []WpCveInfo `json:"vulnerabilities"`
 }
 
-//CveInfo hoge
-type CveInfo struct {
+//WpCveInfo hoge
+type WpCveInfo struct {
 	ID            int        `json:"id"`
 	Title         string     `json:"title"`
 	CreatedAt     string     `json:"created_at"`
@@ -81,8 +83,9 @@ type CveInfo struct {
 
 //References hoge
 type References struct {
-	URL []string `json:"url"`
-	Cve []string `json:"cve"`
+	URL     []string `json:"url"`
+	Cve     []string `json:"cve"`
+	Secunia []string `json:"secunia"`
 }
 
 func detectWp(c config.ServerInfo) (rs []models.VulnInfo, err error) {
@@ -127,7 +130,7 @@ func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 	}
 	cmd = fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/wordpresses/%s", c.WpToken, coreVersion)
 	if r := exec(c, cmd, noSudo); r.isSuccess() {
-		data := map[string]CveInfos{}
+		data := map[string]WpCveInfos{}
 		if err = json.Unmarshal([]byte(r.Stdout), &data); err != nil {
 			return
 		}
@@ -181,9 +184,7 @@ func detectWpPlugin(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 
 	for _, i := range plugins {
 		cmd := fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/plugins/%s", c.WpToken, i.Name)
-		pp.Println(cmd)
 		if r := exec(c, cmd, noSudo); r.isSuccess() {
-			pp.Println(r.Stdout)
 		}
 	}
 	return
