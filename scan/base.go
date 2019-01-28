@@ -19,6 +19,7 @@ package scan
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"net"
 	"regexp"
@@ -27,6 +28,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/k0kubun/pp"
 	"github.com/sirupsen/logrus"
 )
 
@@ -41,24 +43,61 @@ type base struct {
 }
 
 func (l *base) scanWp() (err error) {
+	if len(l.ServerInfo.WpPath) == 0 && len(l.ServerInfo.WpToken) == 0 {
+		return nil
+	}
+
 	var unsecures models.VulnInfo
 	if unsecures, err = detectWp(l.ServerInfo); err != nil {
 		l.log.Errorf("Failed to scan wordpress: %s", err)
 		return err
 	}
-	l.VulnInfos["hoge"] = unsecures
+	l.VulnInfos[unsecures.CveID] = unsecures
 
 	return err
 }
 
+//CveInfos hoge
+type CveInfos struct {
+	ReleaseDate     string    `json:"release_date"`
+	ChangelogURL    string    `json:"changelog_url"`
+	Status          string    `json:"status"`
+	Vulnerabilities []CveInfo `json:"vulnerabilities"`
+}
+
+//CveInfo hoge
+type CveInfo struct {
+	ID            int          `json:"id"`
+	Title         string       `json:"title"`
+	CreatedAt     string       `json:"created_at"`
+	UpdatedAt     string       `json:"updated_at"`
+	PublishedDate string       `json:"Published_date"`
+	VulnType      string       `json:"Vuln_type"`
+	References    []References `json:"references"`
+	FixedIn       string       `json:"fixed_in"`
+}
+
+//References hoge
+type References struct {
+	URL string `json:"url"`
+	Cve string `json:"cve"`
+}
+
 func detectWp(c config.ServerInfo) (rs models.VulnInfo, err error) {
-	cmd := fmt.Sprintf("wp core version --path=%s", c.ServerName)
+	cmd := fmt.Sprintf("wp core version --path=%s", c.WpPath)
 
 	var coreVersion string
 	if r := exec(c, cmd, noSudo); r.isSuccess() {
 		tmp := strings.Split(r.Stdout, ".")
 		coreVersion = strings.Join(tmp, "")
 		coreVersion = strings.TrimRight(coreVersion, "\r\n")
+		pp.Print(coreVersion)
+	}
+	cmd = fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/wordpresses/%s", c.WpToken, coreVersion)
+	if r := exec(c, cmd, noSudo); r.isSuccess() {
+		animals := map[string]CveInfos{}
+		err = json.Unmarshal([]byte(r.Stdout), &animals)
+		pp.Print(animals)
 	}
 	return
 }
