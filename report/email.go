@@ -148,19 +148,18 @@ func (e *emailSender) Send(subject, body string) (err error) {
 			return fmt.Errorf("Failed to send emails: %s", err)
 		}
 		return nil
-	} else {
-		err = e.send(
-			smtpServer,
-			nil,
-			emailConf.From,
-			mailAddresses,
-			[]byte(message),
-		)
-		if err != nil {
-			return fmt.Errorf("Failed to send emails: %s", err)
-		}
-		return nil
 	}
+	err = e.send(
+		smtpServer,
+		nil,
+		emailConf.From,
+		mailAddresses,
+		[]byte(message),
+	)
+	if err != nil {
+		return fmt.Errorf("Failed to send emails: %s", err)
+	}
+	return nil
 }
 
 // NewEMailSender creates emailSender
