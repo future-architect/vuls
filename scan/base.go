@@ -136,14 +136,16 @@ func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 		}
 		for _, i := range data {
 			for _, e := range i.Vulnerabilities {
-				var cve string
+				var cveIDs []string
 				for _, k := range e.References.Cve {
-					cve = "CVE-" + k
+					cveIDs = append(cveIDs, "CVE-"+k)
 				}
 
-				rs = append(rs, models.VulnInfo{
-					CveID: cve,
-				})
+				for _, cveID := range cveIDs {
+					rs = append(rs, models.VulnInfo{
+						CveID: cveID,
+					})
+				}
 			}
 		}
 	}
