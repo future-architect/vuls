@@ -47,12 +47,14 @@ func (l *base) scanWp() (err error) {
 		return nil
 	}
 
-	var unsecures models.VulnInfo
+	var unsecures []models.VulnInfo
 	if unsecures, err = detectWp(l.ServerInfo); err != nil {
 		l.log.Errorf("Failed to scan wordpress: %s", err)
 		return err
 	}
-	l.VulnInfos[unsecures.CveID] = unsecures
+	for _, i := range unsecures {
+		l.VulnInfos[i.CveID] = i
+	}
 
 	return err
 }
@@ -67,23 +69,36 @@ type CveInfos struct {
 
 //CveInfo hoge
 type CveInfo struct {
-	ID            int          `json:"id"`
-	Title         string       `json:"title"`
-	CreatedAt     string       `json:"created_at"`
-	UpdatedAt     string       `json:"updated_at"`
-	PublishedDate string       `json:"Published_date"`
-	VulnType      string       `json:"Vuln_type"`
-	References    []References `json:"references"`
-	FixedIn       string       `json:"fixed_in"`
+	ID            int        `json:"id"`
+	Title         string     `json:"title"`
+	CreatedAt     string     `json:"created_at"`
+	UpdatedAt     string     `json:"updated_at"`
+	PublishedDate string     `json:"Published_date"`
+	VulnType      string     `json:"Vuln_type"`
+	References    References `json:"references"`
+	FixedIn       string     `json:"fixed_in"`
 }
 
 //References hoge
 type References struct {
-	URL string `json:"url"`
-	Cve string `json:"cve"`
+	URL []string `json:"url"`
+	Cve []string `json:"cve"`
 }
 
-func detectWp(c config.ServerInfo) (rs models.VulnInfo, err error) {
+func detectWp(c config.ServerInfo) (rs []models.VulnInfo, err error) {
+
+	var coreVuln []models.VulnInfo
+	if coreVuln, err = detectCore(c); err != nil {
+		return
+	}
+
+	for _, i := range coreVuln {
+		rs = append(rs, i)
+	}
+	return
+}
+
+func detectCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 	cmd := fmt.Sprintf("wp core version --path=%s", c.WpPath)
 
 	var coreVersion string
@@ -91,17 +106,33 @@ func detectWp(c config.ServerInfo) (rs models.VulnInfo, err error) {
 		tmp := strings.Split(r.Stdout, ".")
 		coreVersion = strings.Join(tmp, "")
 		coreVersion = strings.TrimRight(coreVersion, "\r\n")
+		if len(coreVersion) == 0 {
+			return
+		}
 		pp.Print(coreVersion)
 	}
 	cmd = fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/wordpresses/%s", c.WpToken, coreVersion)
 	if r := exec(c, cmd, noSudo); r.isSuccess() {
-		animals := map[string]CveInfos{}
-		err = json.Unmarshal([]byte(r.Stdout), &animals)
-		pp.Print(animals)
+		data := map[string]CveInfos{}
+		if err = json.Unmarshal([]byte(r.Stdout), &data); err != nil {
+			return
+		}
+		for _, i := range data {
+			for _, e := range i.Vulnerabilities {
+				for _, k := range e.References.Cve {
+					k = "CVE-" + k
+					pp.Print(k)
+				}
+
+				rs = append(rs, models.VulnInfo{
+					CveID: e.References.Cve[0],
+				})
+			}
+		}
+		pp.Print(data)
 	}
 	return
 }
-
 func (l *base) exec(cmd string, sudo bool) execResult {
 	return exec(l.ServerInfo, cmd, sudo, l.log)
 }

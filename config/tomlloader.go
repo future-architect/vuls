@@ -61,6 +61,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	if keyPass != "" {
 		d.KeyPassword = keyPass
 	}
+
 	i := 0
 	for serverName, v := range conf.Servers {
 		if 0 < len(v.KeyPassword) {
