@@ -88,17 +88,32 @@ type References struct {
 func detectWp(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 
 	var coreVuln []models.VulnInfo
-	if coreVuln, err = detectCore(c); err != nil {
+	if coreVuln, err = detectWpCore(c); err != nil {
 		return
 	}
-
 	for _, i := range coreVuln {
+		rs = append(rs, i)
+	}
+
+	var themeVuln []models.VulnInfo
+	if themeVuln, err = detectWpTheme(c); err != nil {
+		return
+	}
+	for _, i := range themeVuln {
+		rs = append(rs, i)
+	}
+
+	var pluginVuln []models.VulnInfo
+	if pluginVuln, err = detectWpPlugin(c); err != nil {
+		return
+	}
+	for _, i := range pluginVuln {
 		rs = append(rs, i)
 	}
 	return
 }
 
-func detectCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
+func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error){
 	cmd := fmt.Sprintf("wp core version --path=%s", c.WpPath)
 
 	var coreVersion string
@@ -133,6 +148,15 @@ func detectCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 	}
 	return
 }
+
+func detectWpTheme(c config.ServerInfo) (rs []models.VulnInfo, err error) {
+	return
+}
+
+func detectWpPlugin(c config.ServerInfo) (rs []models.VulnInfo, err error) {
+	return
+}
+
 func (l *base) exec(cmd string, sudo bool) execResult {
 	return exec(l.ServerInfo, cmd, sudo, l.log)
 }
