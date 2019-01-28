@@ -133,12 +133,13 @@ func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 		}
 		for _, i := range data {
 			for _, e := range i.Vulnerabilities {
+				var cve string
 				for _, k := range e.References.Cve {
-					k = "CVE-" + k
+					cve = "CVE-" + k
 				}
 
 				rs = append(rs, models.VulnInfo{
-					CveID: e.References.Cve[0],
+					CveID: cve,
 				})
 			}
 		}
@@ -146,7 +147,8 @@ func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 	return
 }
 
-type WpTheme struct {
+//WpStatus is hogehoge...
+type WpStatus struct {
 	Name    string `json:"-"`
 	Status  string `json:"-"`
 	Update  string `json:"-"`
@@ -156,20 +158,38 @@ type WpTheme struct {
 func detectWpTheme(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 	cmd := fmt.Sprintf("wp theme list --path=%s", c.WpPath)
 
-	var themes []WpTheme
+	var themes []WpStatus
 	if r := exec(c, cmd, noSudo); r.isSuccess() {
-		parseTheme(r.Stdout)
+		themes = parseStatus(r.Stdout)
 	}
 
 	for _, i := range themes {
 		cmd := fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/themes/%s", c.WpToken, i.Name)
+		if r := exec(c, cmd, noSudo); r.isSuccess() {
+		}
+	}
+	return
+}
+
+func detectWpPlugin(c config.ServerInfo) (rs []models.VulnInfo, err error) {
+	cmd := fmt.Sprintf("wp plugin list --path=%s", c.WpPath)
+
+	var plugins []WpStatus
+	if r := exec(c, cmd, noSudo); r.isSuccess() {
+		plugins = parseStatus(r.Stdout)
+	}
+
+	for _, i := range plugins {
+		cmd := fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/plugins/%s", c.WpToken, i.Name)
+		pp.Println(cmd)
 		if r := exec(c, cmd, noSudo); r.isSuccess() {
 			pp.Println(r.Stdout)
 		}
 	}
 	return
 }
-func parseTheme(r string) (themes []WpTheme) {
+
+func parseStatus(r string) (themes []WpStatus) {
 	tmp := strings.Split(r, "\r\n")
 	tmp = unset(tmp, 0)
 	tmp = unset(tmp, 0)
@@ -178,7 +198,7 @@ func parseTheme(r string) (themes []WpTheme) {
 	tmp = unset(tmp, len(tmp)-1)
 	for _, k := range tmp {
 		theme := strings.Split(k, "|")
-		themes = append(themes, WpTheme{
+		themes = append(themes, WpStatus{
 			Name:    strings.TrimSpace(theme[1]),
 			Status:  strings.TrimSpace(theme[2]),
 			Update:  strings.TrimSpace(theme[3]),
@@ -193,10 +213,6 @@ func unset(s []string, i int) []string {
 		return s
 	}
 	return append(s[:i], s[i+1:]...)
-}
-
-func detectWpPlugin(c config.ServerInfo) (rs []models.VulnInfo, err error) {
-	return
 }
 
 func (l *base) exec(cmd string, sudo bool) execResult {
