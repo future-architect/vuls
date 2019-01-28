@@ -113,7 +113,7 @@ func detectWp(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 	return
 }
 
-func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error){
+func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 	cmd := fmt.Sprintf("wp core version --path=%s", c.WpPath)
 
 	var coreVersion string
@@ -124,7 +124,6 @@ func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error){
 		if len(coreVersion) == 0 {
 			return
 		}
-		pp.Print(coreVersion)
 	}
 	cmd = fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/wordpresses/%s", c.WpToken, coreVersion)
 	if r := exec(c, cmd, noSudo); r.isSuccess() {
@@ -136,7 +135,6 @@ func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error){
 			for _, e := range i.Vulnerabilities {
 				for _, k := range e.References.Cve {
 					k = "CVE-" + k
-					pp.Print(k)
 				}
 
 				rs = append(rs, models.VulnInfo{
@@ -144,13 +142,57 @@ func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error){
 				})
 			}
 		}
-		pp.Print(data)
 	}
 	return
 }
 
+type WpTheme struct {
+	Name    string `json:"-"`
+	Status  string `json:"-"`
+	Update  string `json:"-"`
+	Version string `json:"-"`
+}
+
 func detectWpTheme(c config.ServerInfo) (rs []models.VulnInfo, err error) {
+	cmd := fmt.Sprintf("wp theme list --path=%s", c.WpPath)
+
+	var themes []WpTheme
+	if r := exec(c, cmd, noSudo); r.isSuccess() {
+		parseTheme(r.Stdout)
+	}
+
+	for _, i := range themes {
+		cmd := fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/themes/%s", c.WpToken, i.Name)
+		if r := exec(c, cmd, noSudo); r.isSuccess() {
+			pp.Println(r.Stdout)
+		}
+	}
 	return
+}
+func parseTheme(r string) (themes []WpTheme) {
+	tmp := strings.Split(r, "\r\n")
+	tmp = unset(tmp, 0)
+	tmp = unset(tmp, 0)
+	tmp = unset(tmp, 0)
+	tmp = unset(tmp, len(tmp)-1)
+	tmp = unset(tmp, len(tmp)-1)
+	for _, k := range tmp {
+		theme := strings.Split(k, "|")
+		themes = append(themes, WpTheme{
+			Name:    strings.TrimSpace(theme[1]),
+			Status:  strings.TrimSpace(theme[2]),
+			Update:  strings.TrimSpace(theme[3]),
+			Version: strings.TrimSpace(theme[4]),
+		})
+	}
+	return
+}
+
+func unset(s []string, i int) []string {
+	if i >= len(s) {
+		return s
+	}
+	return append(s[:i], s[i+1:]...)
 }
 
 func detectWpPlugin(c config.ServerInfo) (rs []models.VulnInfo, err error) {
