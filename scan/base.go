@@ -58,7 +58,7 @@ func (l *base) scanWp() (err error) {
 	return err
 }
 
-//WpCveInfos hoge
+//WpCveInfos is for wpvulndb's json
 type WpCveInfos struct {
 	ReleaseDate     string      `json:"release_date"`
 	ChangelogURL    string      `json:"changelog_url"`
@@ -69,7 +69,7 @@ type WpCveInfos struct {
 	Vulnerabilities []WpCveInfo `json:"vulnerabilities"`
 }
 
-//WpCveInfo hoge
+//WpCveInfo is for wpvulndb's json
 type WpCveInfo struct {
 	ID            int        `json:"id"`
 	Title         string     `json:"title"`
@@ -81,7 +81,7 @@ type WpCveInfo struct {
 	FixedIn       string     `json:"fixed_in"`
 }
 
-//References hoge
+//References is for wpvulndb's json
 type References struct {
 	URL     []string `json:"url"`
 	Cve     []string `json:"cve"`
@@ -152,7 +152,7 @@ func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 	return
 }
 
-//WpStatus is hogehoge...
+//WpStatus is for wp command
 type WpStatus struct {
 	Name    string `json:"-"`
 	Status  string `json:"-"`
