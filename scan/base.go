@@ -28,6 +28,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/hashicorp/go-version"
 	"github.com/sirupsen/logrus"
 )
 
@@ -67,6 +68,7 @@ type WpCveInfos struct {
 	LastUpdated     string      `json:"last_updated"`
 	Popular         bool        `json:"popular"`
 	Vulnerabilities []WpCveInfo `json:"vulnerabilities"`
+	Error           string      `json:"error"`
 }
 
 //WpCveInfo is for wpvulndb's json
@@ -135,6 +137,9 @@ func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 			return
 		}
 		for _, i := range data {
+			if len(i.Vulnerabilities) == 0 {
+				continue
+			}
 			for _, e := range i.Vulnerabilities {
 				var cveIDs []string
 				for _, k := range e.References.Cve {
@@ -168,12 +173,56 @@ func detectWpTheme(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 		themes = parseStatus(r.Stdout)
 	}
 
-	for _, i := range themes {
-		cmd := fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/themes/%s", c.WpToken, i.Name)
+	for _, theme := range themes {
+		cmd := fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/themes/%s", c.WpToken, theme.Name)
 		if r := exec(c, cmd, noSudo); r.isSuccess() {
+			data := map[string]WpCveInfos{}
+			if err = json.Unmarshal([]byte(r.Stdout), &data); err != nil {
+				var jsonError WpError
+				if err = json.Unmarshal([]byte(r.Stdout), &jsonError); err != nil {
+					return
+				}
+				continue
+			}
+			for _, i := range data {
+				if len(i.Vulnerabilities) == 0 {
+					continue
+				}
+				if len(i.Error) != 0 {
+					continue
+				}
+				for _, e := range i.Vulnerabilities {
+					v1, _ := version.NewVersion(theme.Version)
+					v2, _ := version.NewVersion(e.FixedIn)
+					if v1.LessThan(v2) {
+						if len(e.References.Cve) == 0 {
+							continue
+						}
+						var cveIDs []string
+						for _, k := range e.References.Cve {
+							cveIDs = append(cveIDs, "CVE-"+k)
+						}
+
+						for _, cveID := range cveIDs {
+							rs = append(rs, models.VulnInfo{
+								CveID: cveID,
+							})
+						}
+					}
+				}
+			}
+
 		}
 	}
 	return
+}
+
+type Errors struct {
+	Error string `json:"error"`
+}
+
+type WpError struct {
+	Error string `json:"error"`
 }
 
 func detectWpPlugin(c config.ServerInfo) (rs []models.VulnInfo, err error) {
@@ -184,9 +233,45 @@ func detectWpPlugin(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 		plugins = parseStatus(r.Stdout)
 	}
 
-	for _, i := range plugins {
-		cmd := fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/plugins/%s", c.WpToken, i.Name)
+	for _, plugin := range plugins {
+		cmd := fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/plugins/%s", c.WpToken, plugin.Name)
+
 		if r := exec(c, cmd, noSudo); r.isSuccess() {
+			data := map[string]WpCveInfos{}
+			if err = json.Unmarshal([]byte(r.Stdout), &data); err != nil {
+				var jsonError WpError
+				if err = json.Unmarshal([]byte(r.Stdout), &jsonError); err != nil {
+					return
+				}
+				continue
+			}
+			for _, i := range data {
+				if len(i.Vulnerabilities) == 0 {
+					continue
+				}
+				if len(i.Error) != 0 {
+					continue
+				}
+				for _, e := range i.Vulnerabilities {
+					v1, _ := version.NewVersion(plugin.Version)
+					v2, _ := version.NewVersion(e.FixedIn)
+					if v1.LessThan(v2) {
+						if len(e.References.Cve) == 0 {
+							continue
+						}
+						var cveIDs []string
+						for _, k := range e.References.Cve {
+							cveIDs = append(cveIDs, "CVE-"+k)
+						}
+
+						for _, cveID := range cveIDs {
+							rs = append(rs, models.VulnInfo{
+								CveID: cveID,
+							})
+						}
+					}
+				}
+			}
 		}
 	}
 	return
