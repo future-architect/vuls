@@ -30,6 +30,7 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/hashicorp/go-version"
 	"github.com/sirupsen/logrus"
+	"github.com/k0kubun/pp"
 )
 
 type base struct {
@@ -52,6 +53,7 @@ func (l *base) scanWp() (err error) {
 		l.log.Errorf("Failed to scan wordpress: %s", err)
 		return err
 	}
+	l.WpVulnInfos = map[string]models.VulnInfo{}
 	for _, i := range unsecures {
 		l.WpVulnInfos[i.CveID] = i
 	}
