@@ -53,7 +53,7 @@ func (l *base) scanWp() (err error) {
 		return err
 	}
 	for _, i := range unsecures {
-		l.VulnInfos[i.CveID] = i
+		l.WpVulnInfos[i.CveID] = i
 	}
 
 	return
@@ -294,6 +294,10 @@ func unset(s []string, i int) []string {
 		return s
 	}
 	return append(s[:i], s[i+1:]...)
+}
+
+func (l *base) wpConvertToModel() models.VulnInfos {
+	return l.WpVulnInfos
 }
 
 func (l *base) exec(cmd string, sudo bool) execResult {

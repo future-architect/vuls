@@ -58,6 +58,7 @@ type ScanResult struct {
 	ReportedRevision string                 `json:"reportedRevision"`
 	ReportedBy       string                 `json:"reportedBy"`
 	ScannedCves      VulnInfos              `json:"scannedCves"`
+	WpScannedCves    VulnInfos              `json:"wpScannedCves"`
 	RunningKernel    Kernel                 `json:"runningKernel"`
 	Packages         Packages               `json:"packages"`
 	CweDict          CweDict                `json:"cweDict"`
