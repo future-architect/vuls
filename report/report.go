@@ -129,6 +129,12 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 		}
 	}
 
+	for _, i := range filledResults {
+		for _, k := range i.WpScannedCves {
+			i.ScannedCves[k.CveID] = k
+		}
+	}
+
 	filtered := []models.ScanResult{}
 	for _, r := range filledResults {
 		r = r.FilterByCvssOver(c.Conf.CvssScoreOver)
