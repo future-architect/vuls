@@ -47,13 +47,13 @@ func (l *base) scanWp() (err error) {
 		return nil
 	}
 
-	var unsecures []models.VulnInfo
+	var unsecures []models.Package
 	if unsecures, err = detectWp(l.ServerInfo); err != nil {
 		l.log.Errorf("Failed to scan wordpress: %s", err)
 		return err
 	}
 	for _, i := range unsecures {
-		l.VulnInfos[i.CveID] = i
+		l.Packages[i.Name] = i
 	}
 
 	return
@@ -90,39 +90,27 @@ type References struct {
 	Secunia []string `json:"secunia"`
 }
 
-func detectWp(c config.ServerInfo) (rs []models.VulnInfo, err error) {
+func detectWp(c config.ServerInfo) (rs []models.Package, err error) {
 
-	var coreVuln []models.VulnInfo
+	var coreVuln []models.Package
 	if coreVuln, err = detectWpCore(c); err != nil {
 		return
 	}
+
 	for _, i := range coreVuln {
 		rs = append(rs, i)
 	}
 
-	var themeVuln []models.VulnInfo
-	if themeVuln, err = detectWpTheme(c); err != nil {
-		return
-	}
-	for _, i := range themeVuln {
-		rs = append(rs, i)
-	}
-
-	var pluginVuln []models.VulnInfo
-	if pluginVuln, err = detectWpPlugin(c); err != nil {
-		return
-	}
-	for _, i := range pluginVuln {
-		rs = append(rs, i)
-	}
 	return
 }
 
-func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
+func detectWpCore(c config.ServerInfo) (rs []models.Package, err error) {
 	cmd := fmt.Sprintf("wp core version --path=%s", c.WpPath)
 
 	var coreVersion string
+	var version string
 	if r := exec(c, cmd, noSudo); r.isSuccess() {
+		version = strings.TrimRight(r.Stdout, "\r\n")
 		tmp := strings.Split(r.Stdout, ".")
 		coreVersion = strings.Join(tmp, "")
 		coreVersion = strings.TrimRight(coreVersion, "\r\n")
@@ -130,7 +118,7 @@ func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 			return
 		}
 	}
-	cmd = fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/wordpresses/%s", c.WpToken, coreVersion)
+	cmd = fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/wordpresses/%s", c.WpToken, coreVersion)
 	if r := exec(c, cmd, noSudo); r.isSuccess() {
 		data := map[string]WpCveInfos{}
 		if err = json.Unmarshal([]byte(r.Stdout), &data); err != nil {
@@ -140,18 +128,10 @@ func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 			if len(i.Vulnerabilities) == 0 {
 				continue
 			}
-			for _, e := range i.Vulnerabilities {
-				var cveIDs []string
-				for _, k := range e.References.Cve {
-					cveIDs = append(cveIDs, "CVE-"+k)
-				}
-
-				for _, cveID := range cveIDs {
-					rs = append(rs, models.VulnInfo{
-						CveID: cveID,
-					})
-				}
-			}
+			rs = append(rs, models.Package{
+				Name: "wordpress",
+				Version: version,
+			})
 		}
 	}
 	return
