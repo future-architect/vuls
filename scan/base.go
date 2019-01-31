@@ -47,13 +47,13 @@ func (l *base) scanWp() (err error) {
 		return nil
 	}
 
-	var unsecures []models.Package
+	var unsecures []models.VulnInfo
 	if unsecures, err = detectWp(l.ServerInfo); err != nil {
 		l.log.Errorf("Failed to scan wordpress: %s", err)
 		return err
 	}
 	for _, i := range unsecures {
-		l.Packages[i.Name] = i
+		l.VulnInfos[i.CveID] = i
 	}
 
 	return
@@ -90,27 +90,40 @@ type References struct {
 	Secunia []string `json:"secunia"`
 }
 
-func detectWp(c config.ServerInfo) (rs []models.Package, err error) {
+func detectWp(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 
-	var coreVuln []models.Package
+	var coreVuln []models.VulnInfo
 	if coreVuln, err = detectWpCore(c); err != nil {
 		return
 	}
-
 	for _, i := range coreVuln {
+		rs = append(rs, i)
+	}
+
+	var themeVuln []models.VulnInfo
+	if themeVuln, err = detectWpTheme(c); err != nil {
+		return
+	}
+	for _, i := range themeVuln {
+		rs = append(rs, i)
+	}
+
+	var pluginVuln []models.VulnInfo
+	if pluginVuln, err = detectWpPlugin(c); err != nil {
+		return
+	}
+	for _, i := range pluginVuln {
 		rs = append(rs, i)
 	}
 
 	return
 }
 
-func detectWpCore(c config.ServerInfo) (rs []models.Package, err error) {
+func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 	cmd := fmt.Sprintf("wp core version --path=%s", c.WpPath)
 
 	var coreVersion string
-	var version string
 	if r := exec(c, cmd, noSudo); r.isSuccess() {
-		version = strings.TrimRight(r.Stdout, "\r\n")
 		tmp := strings.Split(r.Stdout, ".")
 		coreVersion = strings.Join(tmp, "")
 		coreVersion = strings.TrimRight(coreVersion, "\r\n")
@@ -128,10 +141,18 @@ func detectWpCore(c config.ServerInfo) (rs []models.Package, err error) {
 			if len(i.Vulnerabilities) == 0 {
 				continue
 			}
-			rs = append(rs, models.Package{
-				Name: "wordpress",
-				Version: version,
-			})
+			for _, e := range i.Vulnerabilities {
+				var cveIDs []string
+				for _, k := range e.References.Cve {
+					cveIDs = append(cveIDs, "CVE-"+k)
+				}
+
+				for _, cveID := range cveIDs {
+					rs = append(rs, models.VulnInfo{
+						CveID: cveID,
+					})
+				}
+			}
 		}
 	}
 	return
