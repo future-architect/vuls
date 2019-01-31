@@ -56,7 +56,7 @@ func (l *base) scanWp() (err error) {
 		l.VulnInfos[i.CveID] = i
 	}
 
-	return err
+	return
 }
 
 //WpCveInfos is for wpvulndb's json
@@ -178,7 +178,7 @@ func detectWpTheme(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 		if r := exec(c, cmd, noSudo); r.isSuccess() {
 			data := map[string]WpCveInfos{}
 			if err = json.Unmarshal([]byte(r.Stdout), &data); err != nil {
-				var jsonError WpError
+				var jsonError WpCveInfos
 				if err = json.Unmarshal([]byte(r.Stdout), &jsonError); err != nil {
 					return
 				}
@@ -217,14 +217,6 @@ func detectWpTheme(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 	return
 }
 
-type Errors struct {
-	Error string `json:"error"`
-}
-
-type WpError struct {
-	Error string `json:"error"`
-}
-
 func detectWpPlugin(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 	cmd := fmt.Sprintf("wp plugin list --path=%s", c.WpPath)
 
@@ -239,7 +231,7 @@ func detectWpPlugin(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 		if r := exec(c, cmd, noSudo); r.isSuccess() {
 			data := map[string]WpCveInfos{}
 			if err = json.Unmarshal([]byte(r.Stdout), &data); err != nil {
-				var jsonError WpError
+				var jsonError WpCveInfos
 				if err = json.Unmarshal([]byte(r.Stdout), &jsonError); err != nil {
 					return
 				}
