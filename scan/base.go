@@ -200,8 +200,19 @@ func detectWpTheme(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 					continue
 				}
 				for _, e := range i.Vulnerabilities {
-					v1, _ := version.NewVersion(theme.Version)
-					v2, _ := version.NewVersion(e.FixedIn)
+					if len(e.FixedIn) == 0 {
+						e.FixedIn = "0"
+					}
+					var v1 *version.Version
+					v1, err = version.NewVersion(theme.Version)
+					if err != nil {
+						return
+					}
+					var v2 *version.Version
+					v2, err = version.NewVersion(e.FixedIn)
+					if err != nil {
+						return
+					}
 					if v1.LessThan(v2) {
 						if len(e.References.Cve) == 0 {
 							continue
@@ -259,8 +270,19 @@ func detectWpPlugin(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 					continue
 				}
 				for _, e := range i.Vulnerabilities {
-					v1, _ := version.NewVersion(plugin.Version)
-					v2, _ := version.NewVersion(e.FixedIn)
+					if len(e.FixedIn) == 0 {
+						e.FixedIn = "0"
+					}
+					var v1 *version.Version
+					v1, err = version.NewVersion(plugin.Version)
+					if err != nil {
+						return
+					}
+					var v2 *version.Version
+					v2, err = version.NewVersion(e.FixedIn)
+					if err != nil {
+						return
+					}
 					if v1.LessThan(v2) {
 						if len(e.References.Cve) == 0 {
 							continue
