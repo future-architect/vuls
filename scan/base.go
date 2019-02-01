@@ -216,9 +216,6 @@ func detectWpTheme(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 				if len(i.Vulnerabilities) == 0 {
 					continue
 				}
-				if len(i.Error) != 0 {
-					continue
-				}
 				for _, e := range i.Vulnerabilities {
 					if len(e.References.Cve) == 0 {
 						continue
@@ -293,9 +290,6 @@ func detectWpPlugin(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 			}
 			for _, i := range data {
 				if len(i.Vulnerabilities) == 0 {
-					continue
-				}
-				if len(i.Error) != 0 {
 					continue
 				}
 				for _, e := range i.Vulnerabilities {
