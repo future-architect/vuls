@@ -46,6 +46,14 @@ func (l *base) scanWp() (err error) {
 	if len(l.ServerInfo.WpPath) == 0 && len(l.ServerInfo.WpToken) == 0 {
 		return nil
 	}
+	if len(l.ServerInfo.WpPath) == 0 {
+		err = fmt.Errorf("not found : WpPath")
+		return
+	}
+	if len(l.ServerInfo.WpToken) == 0 {
+		err = fmt.Errorf("not found : WpToken")
+		return
+	}
 
 	var unsecures []models.VulnInfo
 	if unsecures, err = detectWp(l.ServerInfo); err != nil {
