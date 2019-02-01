@@ -143,6 +143,9 @@ func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 				continue
 			}
 			for _, e := range i.Vulnerabilities {
+				if len(e.References.Cve) == 0 {
+					continue
+				}
 				var cveIDs []string
 				for _, k := range e.References.Cve {
 					cveIDs = append(cveIDs, "CVE-"+k)
@@ -200,6 +203,9 @@ func detectWpTheme(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 					continue
 				}
 				for _, e := range i.Vulnerabilities {
+					if len(e.References.Cve) == 0 {
+						continue
+					}
 					if len(e.FixedIn) == 0 {
 						e.FixedIn = "0"
 					}
@@ -214,9 +220,6 @@ func detectWpTheme(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 						return
 					}
 					if v1.LessThan(v2) {
-						if len(e.References.Cve) == 0 {
-							continue
-						}
 						var cveIDs []string
 						for _, k := range e.References.Cve {
 							cveIDs = append(cveIDs, "CVE-"+k)
@@ -270,6 +273,9 @@ func detectWpPlugin(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 					continue
 				}
 				for _, e := range i.Vulnerabilities {
+					if len(e.References.Cve) == 0 {
+						continue
+					}
 					if len(e.FixedIn) == 0 {
 						e.FixedIn = "0"
 					}
