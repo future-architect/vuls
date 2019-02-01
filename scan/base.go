@@ -29,7 +29,6 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/hashicorp/go-version"
-	"github.com/k0kubun/pp"
 	"github.com/sirupsen/logrus"
 )
 
@@ -160,7 +159,6 @@ func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 						),
 					})
 				}
-				pp.Print(rs)
 			}
 		}
 	}
