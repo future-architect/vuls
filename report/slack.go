@@ -27,6 +27,7 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/k0kubun/pp"
 	"github.com/nlopes/slack"
 	"github.com/parnurzeal/gorequest"
 	log "github.com/sirupsen/logrus"
@@ -340,20 +341,48 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 				usalert = i.URL
 			}
 
-			return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n<%s|%s>\n<%s|%s>\n```\n%s\n```%s\n%s\n",
-				maxCvss.Value.Score,
-				severity,
-				nwvec,
-				vinfo.PatchStatus(packs),
-				strings.Join(vectors, "\n"),
-				jpalert,
-				"JPCERT",
-				usalert,
-				"USCERT",
-				vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
-				mitigation,
-				cweIDs(vinfo, osFamily, cweDict),
-			)
+			if len(jpalert) != 0 && len(usalert) == 0 {
+				return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n<%s|%s>\n```\n%s\n```%s\n%s\n",
+					maxCvss.Value.Score,
+					severity,
+					nwvec,
+					vinfo.PatchStatus(packs),
+					strings.Join(vectors, "\n"),
+					jpalert,
+					"JPCERT",
+					vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
+					mitigation,
+					cweIDs(vinfo, osFamily, cweDict),
+				)
+			} else if len(usalert) != 0 && len(jpalert) == 0 {
+				return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n<%s|%s>\n```\n%s\n```%s\n%s\n",
+					maxCvss.Value.Score,
+					severity,
+					nwvec,
+					vinfo.PatchStatus(packs),
+					strings.Join(vectors, "\n"),
+					usalert,
+					"USCERT",
+					vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
+					mitigation,
+					cweIDs(vinfo, osFamily, cweDict),
+				)
+			} else if len(jpalert) != 0 && len(usalert) != 0 {
+				return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n<%s|%s>\n<%s|%s>\n```\n%s\n```%s\n%s\n",
+					maxCvss.Value.Score,
+					severity,
+					nwvec,
+					vinfo.PatchStatus(packs),
+					strings.Join(vectors, "\n"),
+					jpalert,
+					"JPCERT",
+					usalert,
+					"USCERT",
+					vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
+					mitigation,
+					cweIDs(vinfo, osFamily, cweDict),
+				)
+			}
 		}
 
 		var jpalert string
@@ -361,18 +390,20 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 			jpalert = i.URL
 		}
 
-		return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n<%s|%s>\n```\n%s\n```%s\n%s\n",
-			maxCvss.Value.Score,
-			severity,
-			nwvec,
-			vinfo.PatchStatus(packs),
-			strings.Join(vectors, "\n"),
-			jpalert,
-			"JPCERT",
-			vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
-			mitigation,
-			cweIDs(vinfo, osFamily, cweDict),
-		)
+		if len(jpalert) != 0 {
+			return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n<%s|%s>\n```\n%s\n```%s\n%s\n",
+				maxCvss.Value.Score,
+				severity,
+				nwvec,
+				vinfo.PatchStatus(packs),
+				strings.Join(vectors, "\n"),
+				jpalert,
+				"JPCERT",
+				vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
+				mitigation,
+				cweIDs(vinfo, osFamily, cweDict),
+			)
+		}
 
 	} else if len(vinfo.AlertDict.En) > 0 {
 
@@ -381,18 +412,20 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 			usalert = i.URL
 		}
 
-		return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n<%s|%s>\n```\n%s\n```%s\n%s\n",
-			maxCvss.Value.Score,
-			severity,
-			nwvec,
-			vinfo.PatchStatus(packs),
-			strings.Join(vectors, "\n"),
-			usalert,
-			"USCERT",
-			vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
-			mitigation,
-			cweIDs(vinfo, osFamily, cweDict),
-		)
+		if len(usalert) != 0 {
+			return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n<%s|%s>\n```\n%s\n```%s\n%s\n",
+				maxCvss.Value.Score,
+				severity,
+				nwvec,
+				vinfo.PatchStatus(packs),
+				strings.Join(vectors, "\n"),
+				usalert,
+				"USCERT",
+				vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
+				mitigation,
+				cweIDs(vinfo, osFamily, cweDict),
+			)
+		}
 	}
 
 	return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n```\n%s\n```%s\n%s\n",
