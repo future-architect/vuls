@@ -29,8 +29,8 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/hashicorp/go-version"
-	"github.com/sirupsen/logrus"
 	"github.com/k0kubun/pp"
+	"github.com/sirupsen/logrus"
 )
 
 type base struct {
@@ -152,8 +152,15 @@ func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 				for _, cveID := range cveIDs {
 					rs = append(rs, models.VulnInfo{
 						CveID: cveID,
+						CveContents: models.NewCveContents(
+							models.CveContent{
+								CveID: cveID,
+								Title: e.Title,
+							},
+						),
 					})
 				}
+				pp.Print(rs)
 			}
 		}
 	}
@@ -209,6 +216,12 @@ func detectWpTheme(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 						for _, cveID := range cveIDs {
 							rs = append(rs, models.VulnInfo{
 								CveID: cveID,
+								CveContents: models.NewCveContents(
+									models.CveContent{
+										CveID: cveID,
+										Title: e.Title,
+									},
+								),
 							})
 						}
 					}
@@ -262,6 +275,12 @@ func detectWpPlugin(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 						for _, cveID := range cveIDs {
 							rs = append(rs, models.VulnInfo{
 								CveID: cveID,
+								CveContents: models.NewCveContents(
+									models.CveContent{
+										CveID: cveID,
+										Title: e.Title,
+									},
+								),
 							})
 						}
 					}
