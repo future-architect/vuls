@@ -300,9 +300,6 @@ func detectWpPlugin(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 					if len(e.FixedIn) == 0 {
 						NotFixedYet = true
 					}
-					if len(e.References.Cve) == 0 {
-						continue
-					}
 					if len(e.FixedIn) == 0 {
 						e.FixedIn = "0"
 					}
