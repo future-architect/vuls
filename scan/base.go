@@ -220,6 +220,10 @@ func detectWpTheme(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 					continue
 				}
 				for _, e := range i.Vulnerabilities {
+					NotFixedYet := false
+					if len(e.FixedIn) == 0 {
+						NotFixedYet = true
+					}
 					if len(e.References.Cve) == 0 {
 						continue
 					}
@@ -237,10 +241,6 @@ func detectWpTheme(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 						return
 					}
 					if v1.LessThan(v2) {
-						NotFixedYet := false
-						if len(e.FixedIn) == 0 {
-							NotFixedYet = true
-						}
 						var cveIDs []string
 						for _, k := range e.References.Cve {
 							cveIDs = append(cveIDs, "CVE-"+k)
