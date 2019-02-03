@@ -42,6 +42,7 @@ type base struct {
 	errs []error
 }
 
+//Command is for check dep
 type Command struct {
 	Command string
 	Name    string
