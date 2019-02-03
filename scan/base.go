@@ -42,6 +42,11 @@ type base struct {
 	errs []error
 }
 
+type Command struct {
+	Command string
+	Name    string
+}
+
 func (l *base) scanWp() (err error) {
 	if len(l.ServerInfo.WpPath) == 0 && len(l.ServerInfo.WpToken) == 0 {
 		return nil
@@ -55,16 +60,12 @@ func (l *base) scanWp() (err error) {
 		return
 	}
 
-	cmd := fmt.Sprint("wp cli")
-	if r := exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
-		err = fmt.Errorf("wp command not installed")
-		return
-	}
-
-	cmd = fmt.Sprint("curl")
-	if r := exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
-		err = fmt.Errorf("curl command not installed")
-		return
+	cmd := []Command{{Command: "wp cli", Name: "wp"}, {Command: "curl --help", Name: "curl"}}
+	for _, i := range cmd {
+		if r := exec(l.ServerInfo, i.Command, noSudo); !r.isSuccess() {
+			err = fmt.Errorf("%s command not installed", i.Name)
+			return
+		}
 	}
 
 	var unsecures []models.VulnInfo
