@@ -99,14 +99,14 @@ type References struct {
 	Secunia []string `json:"secunia"`
 }
 
-func detectWp(c config.ServerInfo) (rs []models.VulnInfo, err error) {
+func detectWp(c config.ServerInfo) (vinfos []models.VulnInfo, err error) {
 
 	var coreVuln []models.VulnInfo
 	if coreVuln, err = detectWpCore(c); err != nil {
 		return
 	}
 	for _, i := range coreVuln {
-		rs = append(rs, i)
+		vinfos = append(vinfos, i)
 	}
 
 	var themeVuln []models.VulnInfo
@@ -114,7 +114,7 @@ func detectWp(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 		return
 	}
 	for _, i := range themeVuln {
-		rs = append(rs, i)
+		vinfos = append(vinfos, i)
 	}
 
 	var pluginVuln []models.VulnInfo
@@ -122,13 +122,13 @@ func detectWp(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 		return
 	}
 	for _, i := range pluginVuln {
-		rs = append(rs, i)
+		vinfos = append(vinfos, i)
 	}
 
 	return
 }
 
-func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
+func detectWpCore(c config.ServerInfo) (vinfos []models.VulnInfo, err error) {
 	cmd := fmt.Sprintf("wp core version --path=%s", c.WpPath)
 
 	var coreVersion string
@@ -164,7 +164,7 @@ func detectWpCore(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 				}
 
 				for _, cveID := range cveIDs {
-					rs = append(rs, models.VulnInfo{
+					vinfos = append(vinfos, models.VulnInfo{
 						CveID: cveID,
 						CveContents: models.NewCveContents(
 							models.CveContent{
@@ -193,7 +193,7 @@ type WpStatus struct {
 	Version string `json:"-"`
 }
 
-func detectWpTheme(c config.ServerInfo) (rs []models.VulnInfo, err error) {
+func detectWpTheme(c config.ServerInfo) (vinfos []models.VulnInfo, err error) {
 	cmd := fmt.Sprintf("wp theme list --path=%s", c.WpPath)
 
 	var themes []WpStatus
@@ -244,7 +244,7 @@ func detectWpTheme(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 						}
 
 						for _, cveID := range cveIDs {
-							rs = append(rs, models.VulnInfo{
+							vinfos = append(vinfos, models.VulnInfo{
 								CveID: cveID,
 								CveContents: models.NewCveContents(
 									models.CveContent{
@@ -268,7 +268,7 @@ func detectWpTheme(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 	return
 }
 
-func detectWpPlugin(c config.ServerInfo) (rs []models.VulnInfo, err error) {
+func detectWpPlugin(c config.ServerInfo) (vinfos []models.VulnInfo, err error) {
 	cmd := fmt.Sprintf("wp plugin list --path=%s", c.WpPath)
 
 	var plugins []WpStatus
@@ -320,7 +320,7 @@ func detectWpPlugin(c config.ServerInfo) (rs []models.VulnInfo, err error) {
 						}
 
 						for _, cveID := range cveIDs {
-							rs = append(rs, models.VulnInfo{
+							vinfos = append(vinfos, models.VulnInfo{
 								CveID: cveID,
 								CveContents: models.NewCveContents(
 									models.CveContent{
