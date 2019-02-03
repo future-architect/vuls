@@ -61,6 +61,12 @@ func (l *base) scanWp() (err error) {
 		return
 	}
 
+	cmd = fmt.Sprint("curl")
+	if r := exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
+		err = fmt.Errorf("curl command not installed")
+		return
+	}
+
 	var unsecures []models.VulnInfo
 	if unsecures, err = detectWp(l.ServerInfo); err != nil {
 		l.log.Errorf("Failed to scan wordpress: %s", err)
