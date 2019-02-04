@@ -147,12 +147,12 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 	}
 	cmd = fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/wordpresses/%s", c.ServerInfo.WpToken, coreVersion)
 	if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
-		coreConvertVinfo(r.Stdout)
+		coreConvertVinfos(r.Stdout)
 	}
 	return
 }
 
-func coreConvertVinfo(stdout string) (vinfos []models.VulnInfo, err error) {
+func coreConvertVinfos(stdout string) (vinfos []models.VulnInfo, err error) {
 	data := map[string]WpCveInfos{}
 	if err = json.Unmarshal([]byte(stdout), &data); err != nil {
 		return
@@ -217,8 +217,7 @@ func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
 		cmd := fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/themes/%s", c.ServerInfo.WpToken, theme.Name)
 
 		if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
-			pp.Print(r.Stdout)
-			pp.Print(contentConvertVinfo(c, r.Stdout, theme))
+			contentConvertVinfos(c, r.Stdout, theme)
 		}
 	}
 	return
@@ -238,13 +237,13 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 		cmd := fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/plugins/%s", c.ServerInfo.WpToken, plugin.Name)
 
 		if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
-			contentConvertVinfo(c, r.Stdout, plugin)
+			contentConvertVinfos(c, r.Stdout, plugin)
 		}
 	}
 	return
 }
 
-func contentConvertVinfo(c *base, stdout string, content WpStatus) (vinfos []models.VulnInfo, err error) {
+func contentConvertVinfos(c *base, stdout string, content WpStatus) (vinfos []models.VulnInfo, err error) {
 	data := map[string]WpCveInfos{}
 	if err = json.Unmarshal([]byte(stdout), &data); err != nil {
 		var jsonError WpCveInfos
