@@ -21,7 +21,10 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/future-architect/vuls/alert"
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/models"
+	"time"
 )
 
 func TestParseDockerPs(t *testing.T) {
@@ -182,16 +185,83 @@ func TestParseSystemctlStatus(t *testing.T) {
 func TestUnset(t *testing.T) {
 
 	var test = struct {
-		in1        []string
-		in2       int
-		expected   []string
+		in1      []string
+		in2      int
+		expected []string
 	}{
-		in1: []string{"0番目","1番目","2番目","3番目","4番目"},
-		in2: 0,
-		expected: []string{"1番目","2番目","3番目","4番目"},
-
+		in1:      []string{"0", "1", "2", "3", "4"},
+		in2:      0,
+		expected: []string{"1", "2", "3", "4"},
 	}
 	actual := unset(test.in1, test.in2)
+	if !reflect.DeepEqual(test.expected, actual) {
+		t.Errorf("expected %v, actual %v", test.expected, actual)
+	}
+
+}
+
+func TestContentConvertVinfo(t *testing.T) {
+
+	var test = struct {
+		in       string
+		expected []models.VulnInfo
+	}{
+		in: "{\"4.9.4\":{\"release_date\":\"2018-02-06\",\"changelog_url\"" +
+			":\"https://codex.wordpress.org/Version_4.9.4\",\"status\"" +
+			":\"insecure\",\"vulnerabilities\":[{\"id\":9021,\"title\"" +
+			":\"WordPress <= 4.9.4 - Application Denial of Service (Do" +
+			"S) (unpatched)\",\"created_at\":\"2018-02-05T16:50:40.000" +
+			"Z\",\"updated_at\":\"2018-08-29T19:13:04.000Z\",\"publish" +
+			"ed_date\":\"2018-02-05T00:00:00.000Z\",\"vuln_type\":\"DO" +
+			"S\",\"references\":{\"url\":[\"https://baraktawily.blogsp" +
+			"ot.fr/2018/02/how-to-dos-29-of-world-wide-websites.html\"" +
+			",\"https://github.com/quitten/doser.py\",\"https://thehac" +
+			"kernews.com/2018/02/wordpress-dos-exploit.html\"],\"cve\"" +
+			":[\"2018-6389\"]},\"fixed_in\":null}]}}",
+		expected: []models.VulnInfo{
+			{
+				CveID:       "CVE-2018-6389",
+				Confidences: models.Confidences{},
+				AffectedPackages: models.PackageStatuses{
+					models.PackageStatus{
+						Name:        "",
+						NotFixedYet: true,
+						FixState:    "",
+					},
+				},
+				DistroAdvisories: []models.DistroAdvisory{},
+				CpeURIs:          []string{},
+				CveContents: models.NewCveContents(
+					models.CveContent{
+						Type:          "",
+						CveID:         "CVE-2018-6389",
+						Title:         "WordPress <= 4.9.4 - Application Denial of Service (DoS) (unpatched)",
+						Summary:       "",
+						Cvss2Score:    0.000000,
+						Cvss2Vector:   "",
+						Cvss2Severity: "",
+						Cvss3Score:    0.000000,
+						Cvss3Vector:   "",
+						Cvss3Severity: "",
+						SourceLink:    "",
+						Cpes:          []models.Cpe{},
+						References:    models.References{},
+						CweIDs:        []string{},
+						Published:     time.Time{},
+						LastModified:  time.Time{},
+						Mitigation:    "",
+						Optional:      map[string]string{},
+					},
+				),
+				Exploits: []models.Exploit{},
+				AlertDict: models.AlertDict{
+					Ja: []alert.Alert{},
+					En: []alert.Alert{},
+				},
+			},
+		},
+	}
+	actual, _ := coreConvertVinfo(test.in)
 	if !reflect.DeepEqual(test.expected, actual) {
 		t.Errorf("expected %v, actual %v", test.expected, actual)
 	}
