@@ -29,6 +29,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/hashicorp/go-version"
+	"github.com/k0kubun/pp"
 	"github.com/sirupsen/logrus"
 )
 
@@ -206,10 +207,10 @@ func coreConvertVinfo(stdout string) (vinfos []models.VulnInfo, err error) {
 
 //WpStatus is for wp command
 type WpStatus struct {
-	Name    string `json:"-"`
-	Status  string `json:"-"`
-	Update  string `json:"-"`
-	Version string `json:"-"`
+	Name    string `json:"name"`
+	Status  string `json:"status"`
+	Update  string `json:"update"`
+	Version string `json:"version"`
 }
 
 func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
@@ -217,11 +218,14 @@ func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
 
 	var themes []WpStatus
 	if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
-		themes = parseStatus(r.Stdout)
+		if err = json.Unmarshal([]byte(r.Stdout), &themes); err != nil {
+			return
+		}
 	}
 
 	for _, theme := range themes {
 		cmd := fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/themes/%s", c.ServerInfo.WpToken, theme.Name)
+
 		if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
 			contentConvertVinfo(c, r.Stdout, theme)
 		}
@@ -234,7 +238,9 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 
 	var plugins []WpStatus
 	if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
-		plugins = parseStatus(r.Stdout)
+		if err = json.Unmarshal([]byte(r.Stdout), &plugins); err != nil {
+			return
+		}
 	}
 
 	for _, plugin := range plugins {
@@ -307,32 +313,6 @@ func contentConvertVinfo(c *base, stdout string, content WpStatus) (vinfos []mod
 		}
 	}
 	return
-}
-
-func parseStatus(r string) (themes []WpStatus) {
-	tmp := strings.Split(r, "\r\n")
-	tmp = unset(tmp, 0)
-	tmp = unset(tmp, 0)
-	tmp = unset(tmp, 0)
-	tmp = unset(tmp, len(tmp)-1)
-	tmp = unset(tmp, len(tmp)-1)
-	for _, k := range tmp {
-		theme := strings.Split(k, "|")
-		themes = append(themes, WpStatus{
-			Name:    strings.TrimSpace(theme[1]),
-			Status:  strings.TrimSpace(theme[2]),
-			Update:  strings.TrimSpace(theme[3]),
-			Version: strings.TrimSpace(theme[4]),
-		})
-	}
-	return
-}
-
-func unset(s []string, i int) []string {
-	if i >= len(s) {
-		return s
-	}
-	return append(s[:i], s[i+1:]...)
 }
 
 func (l *base) wpConvertToModel() models.VulnInfos {
