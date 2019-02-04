@@ -227,7 +227,8 @@ func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
 		cmd := fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/themes/%s", c.ServerInfo.WpToken, theme.Name)
 
 		if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
-			contentConvertVinfo(c, r.Stdout, theme)
+			pp.Print(r.Stdout)
+			pp.Print(contentConvertVinfo(c, r.Stdout, theme))
 		}
 	}
 	return
@@ -270,9 +271,9 @@ func contentConvertVinfo(c *base, stdout string, content WpStatus) (vinfos []mod
 			if len(e.References.Cve) == 0 {
 				continue
 			}
-			NotFixedYet := false
+			notFixedYet := false
 			if len(e.FixedIn) == 0 {
-				NotFixedYet = true
+				notFixedYet = true
 			}
 			if len(e.FixedIn) == 0 {
 				e.FixedIn = "0"
@@ -304,7 +305,7 @@ func contentConvertVinfo(c *base, stdout string, content WpStatus) (vinfos []mod
 						),
 						AffectedPackages: models.PackageStatuses{
 							{
-								NotFixedYet: NotFixedYet,
+								NotFixedYet: notFixedYet,
 							},
 						},
 					})
