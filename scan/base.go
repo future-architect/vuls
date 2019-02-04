@@ -70,7 +70,7 @@ func (l *base) scanWp() (err error) {
 	}
 
 	var unsecures []models.VulnInfo
-	if unsecures, err = detectWp(l.ServerInfo); err != nil {
+	if unsecures, err = detectWp(l); err != nil {
 		l.log.Errorf("Failed to scan wordpress: %s", err)
 		return err
 	}
@@ -113,7 +113,7 @@ type References struct {
 	Secunia []string `json:"secunia"`
 }
 
-func detectWp(c config.ServerInfo) (vinfos []models.VulnInfo, err error) {
+func detectWp(c *base) (vinfos []models.VulnInfo, err error) {
 
 	var coreVuln []models.VulnInfo
 	if coreVuln, err = detectWpCore(c); err != nil {
@@ -142,11 +142,11 @@ func detectWp(c config.ServerInfo) (vinfos []models.VulnInfo, err error) {
 	return
 }
 
-func detectWpCore(c config.ServerInfo) (vinfos []models.VulnInfo, err error) {
-	cmd := fmt.Sprintf("wp core version --path=%s", c.WpPath)
+func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
+	cmd := fmt.Sprintf("wp core version --path=%s", c.ServerInfo.WpPath)
 
 	var coreVersion string
-	if r := exec(c, cmd, noSudo); r.isSuccess() {
+	if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
 		tmp := strings.Split(r.Stdout, ".")
 		coreVersion = strings.Join(tmp, "")
 		coreVersion = strings.TrimRight(coreVersion, "\r\n")
@@ -154,24 +154,134 @@ func detectWpCore(c config.ServerInfo) (vinfos []models.VulnInfo, err error) {
 			return
 		}
 	}
-	cmd = fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/wordpresses/%s", c.WpToken, coreVersion)
-	if r := exec(c, cmd, noSudo); r.isSuccess() {
-		data := map[string]WpCveInfos{}
-		if err = json.Unmarshal([]byte(r.Stdout), &data); err != nil {
-			return
+	cmd = fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/wordpresses/%s", c.ServerInfo.WpToken, coreVersion)
+	if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
+		huga(r)
+	}
+	return
+}
+
+func huga(r execResult) (vinfos []models.VulnInfo, err error) {
+	data := map[string]WpCveInfos{}
+	if err = json.Unmarshal([]byte(r.Stdout), &data); err != nil {
+		return
+	}
+	for _, i := range data {
+		if len(i.Vulnerabilities) == 0 {
+			continue
 		}
-		for _, i := range data {
-			if len(i.Vulnerabilities) == 0 {
+		for _, e := range i.Vulnerabilities {
+			if len(e.References.Cve) == 0 {
 				continue
 			}
-			for _, e := range i.Vulnerabilities {
-				if len(e.References.Cve) == 0 {
-					continue
-				}
-				NotFixedYet := false
-				if len(e.FixedIn) == 0 {
-					NotFixedYet = true
-				}
+			NotFixedYet := false
+			if len(e.FixedIn) == 0 {
+				NotFixedYet = true
+			}
+			var cveIDs []string
+			for _, k := range e.References.Cve {
+				cveIDs = append(cveIDs, "CVE-"+k)
+			}
+
+			for _, cveID := range cveIDs {
+				vinfos = append(vinfos, models.VulnInfo{
+					CveID: cveID,
+					CveContents: models.NewCveContents(
+						models.CveContent{
+							CveID: cveID,
+							Title: e.Title,
+						},
+					),
+					AffectedPackages: models.PackageStatuses{
+						{
+							NotFixedYet: NotFixedYet,
+						},
+					},
+				})
+			}
+		}
+	}
+	return
+}
+
+//WpStatus is for wp command
+type WpStatus struct {
+	Name    string `json:"-"`
+	Status  string `json:"-"`
+	Update  string `json:"-"`
+	Version string `json:"-"`
+}
+
+func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
+	cmd := fmt.Sprintf("wp theme list --path=%s", c.ServerInfo.WpPath)
+
+	var themes []WpStatus
+	if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
+		themes = parseStatus(r.Stdout)
+	}
+
+	for _, theme := range themes {
+		cmd := fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/themes/%s", c.ServerInfo.WpToken, theme.Name)
+		if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
+			hoge(c, r, theme)
+		}
+	}
+	return
+}
+
+func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
+	cmd := fmt.Sprintf("wp plugin list --path=%s", c.ServerInfo.WpPath)
+
+	var plugins []WpStatus
+	if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
+		plugins = parseStatus(r.Stdout)
+	}
+
+	for _, plugin := range plugins {
+		cmd := fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/plugins/%s", c.ServerInfo.WpToken, plugin.Name)
+
+		if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
+			hoge(c, r, plugin)
+		}
+	}
+	return
+}
+
+func hoge(c *base, r execResult, content WpStatus) (vinfos []models.VulnInfo, err error) {
+	data := map[string]WpCveInfos{}
+	if err = json.Unmarshal([]byte(r.Stdout), &data); err != nil {
+		var jsonError WpCveInfos
+		if err = json.Unmarshal([]byte(r.Stdout), &jsonError); err != nil {
+			return
+		}
+		c.log.Errorf("%s not found", content.Name)
+	}
+	for _, i := range data {
+		if len(i.Vulnerabilities) == 0 {
+			continue
+		}
+		for _, e := range i.Vulnerabilities {
+			if len(e.References.Cve) == 0 {
+				continue
+			}
+			NotFixedYet := false
+			if len(e.FixedIn) == 0 {
+				NotFixedYet = true
+			}
+			if len(e.FixedIn) == 0 {
+				e.FixedIn = "0"
+			}
+			var v1 *version.Version
+			v1, err = version.NewVersion(content.Version)
+			if err != nil {
+				return
+			}
+			var v2 *version.Version
+			v2, err = version.NewVersion(e.FixedIn)
+			if err != nil {
+				return
+			}
+			if v1.LessThan(v2) {
 				var cveIDs []string
 				for _, k := range e.References.Cve {
 					cveIDs = append(cveIDs, "CVE-"+k)
@@ -192,164 +302,6 @@ func detectWpCore(c config.ServerInfo) (vinfos []models.VulnInfo, err error) {
 							},
 						},
 					})
-				}
-			}
-		}
-	}
-	return
-}
-
-//WpStatus is for wp command
-type WpStatus struct {
-	Name    string `json:"-"`
-	Status  string `json:"-"`
-	Update  string `json:"-"`
-	Version string `json:"-"`
-}
-
-func detectWpTheme(c config.ServerInfo) (vinfos []models.VulnInfo, err error) {
-	cmd := fmt.Sprintf("wp theme list --path=%s", c.WpPath)
-
-	var themes []WpStatus
-	if r := exec(c, cmd, noSudo); r.isSuccess() {
-		themes = parseStatus(r.Stdout)
-	}
-
-	for _, theme := range themes {
-		cmd := fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/themes/%s", c.WpToken, theme.Name)
-		if r := exec(c, cmd, noSudo); r.isSuccess() {
-			data := map[string]WpCveInfos{}
-			if err = json.Unmarshal([]byte(r.Stdout), &data); err != nil {
-				var jsonError WpCveInfos
-				if err = json.Unmarshal([]byte(r.Stdout), &jsonError); err != nil {
-					return
-				}
-				continue
-			}
-			for _, i := range data {
-				if len(i.Vulnerabilities) == 0 {
-					continue
-				}
-				for _, e := range i.Vulnerabilities {
-					if len(e.References.Cve) == 0 {
-						continue
-					}
-					NotFixedYet := false
-					if len(e.FixedIn) == 0 {
-						NotFixedYet = true
-					}
-					if len(e.FixedIn) == 0 {
-						e.FixedIn = "0"
-					}
-					var v1 *version.Version
-					v1, err = version.NewVersion(theme.Version)
-					if err != nil {
-						return
-					}
-					var v2 *version.Version
-					v2, err = version.NewVersion(e.FixedIn)
-					if err != nil {
-						return
-					}
-					if v1.LessThan(v2) {
-						var cveIDs []string
-						for _, k := range e.References.Cve {
-							cveIDs = append(cveIDs, "CVE-"+k)
-						}
-
-						for _, cveID := range cveIDs {
-							vinfos = append(vinfos, models.VulnInfo{
-								CveID: cveID,
-								CveContents: models.NewCveContents(
-									models.CveContent{
-										CveID: cveID,
-										Title: e.Title,
-									},
-								),
-								AffectedPackages: models.PackageStatuses{
-									{
-										NotFixedYet: NotFixedYet,
-									},
-								},
-							})
-						}
-					}
-				}
-			}
-
-		}
-	}
-	return
-}
-
-func detectWpPlugin(c config.ServerInfo) (vinfos []models.VulnInfo, err error) {
-	cmd := fmt.Sprintf("wp plugin list --path=%s", c.WpPath)
-
-	var plugins []WpStatus
-	if r := exec(c, cmd, noSudo); r.isSuccess() {
-		plugins = parseStatus(r.Stdout)
-	}
-
-	for _, plugin := range plugins {
-		cmd := fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/plugins/%s", c.WpToken, plugin.Name)
-
-		if r := exec(c, cmd, noSudo); r.isSuccess() {
-			data := map[string]WpCveInfos{}
-			if err = json.Unmarshal([]byte(r.Stdout), &data); err != nil {
-				var jsonError WpCveInfos
-				if err = json.Unmarshal([]byte(r.Stdout), &jsonError); err != nil {
-					return
-				}
-				continue
-			}
-			for _, i := range data {
-				if len(i.Vulnerabilities) == 0 {
-					continue
-				}
-				for _, e := range i.Vulnerabilities {
-					if len(e.References.Cve) == 0 {
-						continue
-					}
-					NotFixedYet := false
-					if len(e.FixedIn) == 0 {
-						NotFixedYet = true
-					}
-					if len(e.FixedIn) == 0 {
-						e.FixedIn = "0"
-					}
-					var v1 *version.Version
-					v1, err = version.NewVersion(plugin.Version)
-					if err != nil {
-						return
-					}
-					var v2 *version.Version
-					v2, err = version.NewVersion(e.FixedIn)
-					if err != nil {
-						return
-					}
-					if v1.LessThan(v2) {
-						var cveIDs []string
-						for _, k := range e.References.Cve {
-							cveIDs = append(cveIDs, "CVE-"+k)
-						}
-
-						for _, cveID := range cveIDs {
-							vinfos = append(vinfos, models.VulnInfo{
-								CveID: cveID,
-								CveContents: models.NewCveContents(
-									models.CveContent{
-										CveID: cveID,
-										Title: e.Title,
-									},
-								),
-								AffectedPackages: models.PackageStatuses{
-									{
-										NotFixedYet: NotFixedYet,
-									},
-								},
-							})
-						}
-					}
 				}
 			}
 		}
