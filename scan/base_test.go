@@ -178,3 +178,65 @@ func TestParseSystemctlStatus(t *testing.T) {
 		}
 	}
 }
+
+func TestUnset(t *testing.T) {
+
+	var test = struct {
+		in1        []string
+		in2       int
+		expected   []string
+	}{
+		in1: []string{"0番目","1番目","2番目","3番目","4番目"},
+		in2: 0,
+		expected: []string{"1番目","2番目","3番目","4番目"},
+
+	}
+	actual := unset(test.in1, test.in2)
+	if !reflect.DeepEqual(test.expected, actual) {
+		t.Errorf("expected %v, actual %v", test.expected, actual)
+	}
+
+}
+
+/*
+func TestParseStatus(t *testing.T) {
+
+	var test = struct {
+		in        string
+		expected []WpStatus
+	}{
+		in: `"+-----------------+----------+-----------+---------+\r\n
+		| name            | status   | update    | version |\r\n+-----
+		------------+----------+-----------+---------+\r\n| twentyfift
+		een   | inactive | available | 1.9     |\r\n| twentyseventeen
+		| active   | available | 1.4     |\r\n| twentysixteen   | inac
+		tive | available | 1.4     |\r\n+-----------------+----------+
+		-----------+---------+\r\n"`,
+		expected: []WpStatus{
+			WpStatus{
+				Name:    "twentyfifteen",
+				Status:  "inactive",
+				Update:  "available",
+				Version: "1.9",
+			},
+			WpStatus{
+				Name:    "twentyseventeen",
+				Status:  "active",
+				Update:  "available",
+				Version: "1.4",
+			},
+			WpStatus{
+				Name:    "twentysixteen",
+				Status:  "inactive",
+				Update:  "available",
+				Version: "1.4",
+			},
+		},
+	}
+	actual := parseStatus(test.in)
+	if !reflect.DeepEqual(test.expected, actual) {
+		t.Errorf("expected %v, actual %v", test.expected, actual)
+	}
+
+}
+*/
