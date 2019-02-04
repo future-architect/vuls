@@ -156,14 +156,14 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 	}
 	cmd = fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/wordpresses/%s", c.ServerInfo.WpToken, coreVersion)
 	if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
-		coreConvertVinfo(r)
+		coreConvertVinfo(r.Stdout)
 	}
 	return
 }
 
-func coreConvertVinfo(r execResult) (vinfos []models.VulnInfo, err error) {
+func coreConvertVinfo(stdout string) (vinfos []models.VulnInfo, err error) {
 	data := map[string]WpCveInfos{}
-	if err = json.Unmarshal([]byte(r.Stdout), &data); err != nil {
+	if err = json.Unmarshal([]byte(stdout), &data); err != nil {
 		return
 	}
 	for _, i := range data {
@@ -223,7 +223,7 @@ func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
 	for _, theme := range themes {
 		cmd := fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/themes/%s", c.ServerInfo.WpToken, theme.Name)
 		if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
-			hoge(c, r, theme)
+			contentConvertVinfo(c, r.Stdout, theme)
 		}
 	}
 	return
@@ -241,17 +241,17 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 		cmd := fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/plugins/%s", c.ServerInfo.WpToken, plugin.Name)
 
 		if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
-			contentConvertVinfo(c, r, plugin)
+			contentConvertVinfo(c, r.Stdout, plugin)
 		}
 	}
 	return
 }
 
-func contentConvertVinfo(c *base, r execResult, content WpStatus) (vinfos []models.VulnInfo, err error) {
+func contentConvertVinfo(c *base, stdout string, content WpStatus) (vinfos []models.VulnInfo, err error) {
 	data := map[string]WpCveInfos{}
-	if err = json.Unmarshal([]byte(r.Stdout), &data); err != nil {
+	if err = json.Unmarshal([]byte(stdout), &data); err != nil {
 		var jsonError WpCveInfos
-		if err = json.Unmarshal([]byte(r.Stdout), &jsonError); err != nil {
+		if err = json.Unmarshal([]byte(stdout), &jsonError); err != nil {
 			return
 		}
 		c.log.Errorf("%s not found", content.Name)
