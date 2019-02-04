@@ -156,12 +156,12 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 	}
 	cmd = fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/wordpresses/%s", c.ServerInfo.WpToken, coreVersion)
 	if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
-		huga(r)
+		coreConvertVinfo(r)
 	}
 	return
 }
 
-func huga(r execResult) (vinfos []models.VulnInfo, err error) {
+func coreConvertVinfo(r execResult) (vinfos []models.VulnInfo, err error) {
 	data := map[string]WpCveInfos{}
 	if err = json.Unmarshal([]byte(r.Stdout), &data); err != nil {
 		return
@@ -241,13 +241,13 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 		cmd := fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/plugins/%s", c.ServerInfo.WpToken, plugin.Name)
 
 		if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
-			hoge(c, r, plugin)
+			contentConvertVinfo(c, r, plugin)
 		}
 	}
 	return
 }
 
-func hoge(c *base, r execResult, content WpStatus) (vinfos []models.VulnInfo, err error) {
+func contentConvertVinfo(c *base, r execResult, content WpStatus) (vinfos []models.VulnInfo, err error) {
 	data := map[string]WpCveInfos{}
 	if err = json.Unmarshal([]byte(r.Stdout), &data); err != nil {
 		var jsonError WpCveInfos
