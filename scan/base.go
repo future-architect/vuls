@@ -221,7 +221,7 @@ func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
 	}
 
 	for _, theme := range themes {
-		cmd := fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/themes/%s", c.ServerInfo.WpToken, theme.Name)
+		cmd := fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/themes/%s", c.ServerInfo.WpToken, theme.Name)
 		if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
 			hoge(c, r, theme)
 		}
@@ -238,7 +238,7 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 	}
 
 	for _, plugin := range plugins {
-		cmd := fmt.Sprintf("curl -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/plugins/%s", c.ServerInfo.WpToken, plugin.Name)
+		cmd := fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/plugins/%s", c.ServerInfo.WpToken, plugin.Name)
 
 		if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
 			hoge(c, r, plugin)
