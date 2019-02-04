@@ -129,10 +129,11 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 		}
 	}
 
-	for _, i := range filledResults {
-		for _, k := range i.WpScannedCves {
-			i.ScannedCves[k.CveID] = k
+	for _, fillResult := range filledResults {
+		for _, wpScannedCve := range fillResult.WpScannedCves {
+			fillResult.ScannedCves[wpScannedCve.CveID] = wpScannedCve
 		}
+		fillResult.WpScannedCves = models.VulnInfos{}
 	}
 
 	filtered := []models.ScanResult{}
