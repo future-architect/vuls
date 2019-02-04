@@ -33,6 +33,7 @@ import (
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
 	"github.com/future-architect/vuls/cwe"
 	"github.com/future-architect/vuls/exploit"
+	"github.com/future-architect/vuls/github"
 	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/oval"
@@ -166,6 +167,12 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string) erro
 	nCVEs, err = fillVulnByCpeURIs(dbclient.CveDB, r, cpeURIs)
 	if err != nil {
 		return fmt.Errorf("Failed to detect vulns of %s: %s", cpeURIs, err)
+	}
+	util.Log.Infof("%s: %d CVEs are detected with CPE", r.FormatServerName(), nCVEs)
+
+	nCVEs, err = fillGitHubSecurityAlerts(r)
+	if err != nil {
+		return fmt.Errorf("Failed to access GitHub Security Alerts: %s", err)
 	}
 	util.Log.Infof("%s: %d CVEs are detected with CPE", r.FormatServerName(), nCVEs)
 
@@ -340,6 +347,21 @@ func fillVulnByCpeURIs(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) 
 				nCVEs++
 			}
 		}
+	}
+	return nCVEs, nil
+}
+
+// https://help.github.com/articles/about-security-alerts-for-vulnerable-dependencies/
+func fillGitHubSecurityAlerts(r *models.ScanResult) (nCVEs int, err error) {
+	repos := c.Conf.Servers[r.ServerName].GitHubRepos
+	for ownerRepo, setting := range repos {
+		ss := strings.Split(ownerRepo, "/")
+		owner, repo := ss[0], ss[1]
+		n, err := github.FillGitHubSecurityAlerts(r, owner, repo, setting.Token)
+		if err != nil {
+			return 0, err
+		}
+		nCVEs += n
 	}
 	return nCVEs, nil
 }

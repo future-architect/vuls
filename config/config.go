@@ -1054,6 +1054,7 @@ type ServerInfo struct {
 	Containers             map[string]ContainerSetting `toml:"containers" json:"containers,omitempty"`
 	IgnoreCves             []string                    `toml:"ignoreCves,omitempty" json:"ignoreCves,omitempty"`
 	IgnorePkgsRegexp       []string                    `toml:"ignorePkgsRegexp,omitempty" json:"ignorePkgsRegexp,omitempty"`
+	GitHubRepos            map[string]GitHubSetting    `toml:"githubs" json:"githubs,omitempty"`
 	UUIDs                  map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
 	Memo                   string                      `toml:"memo,omitempty" json:"memo"`
 	Enablerepo             []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, RHEL, Amazon
@@ -1075,6 +1076,11 @@ type ContainerSetting struct {
 	OwaspDCXMLPath   string   `json:"owaspDCXMLPath"`
 	IgnorePkgsRegexp []string `json:"ignorePkgsRegexp,omitempty"`
 	IgnoreCves       []string `json:"ignoreCves,omitempty"`
+}
+
+// GitHubSetting is used for GitHub integration
+type GitHubSetting struct {
+	Token string `json:"token"`
 }
 
 // ScanMode has a type of scan mode. fast, fast-root, deep and offline

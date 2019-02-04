@@ -254,6 +254,18 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			}
 		}
 
+		for ownerRepo, githubSetting := range s.GitHubRepos {
+			if ss := strings.Split(ownerRepo, "/"); len(ss) != 1 {
+				return fmt.Errorf("Failed to parse GitHub owner/repo: %s in %s",
+					ownerRepo, serverName)
+			}
+			if githubSetting.Token == "" {
+				return fmt.Errorf("GitHub owner/repo: %s in %s token is empty",
+					ownerRepo, serverName)
+			}
+		}
+		s.GitHubRepos = v.GitHubRepos
+
 		s.UUIDs = v.UUIDs
 		s.Type = v.Type
 
