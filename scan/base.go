@@ -213,7 +213,7 @@ type WpStatus struct {
 }
 
 func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
-	cmd := fmt.Sprintf("wp theme list --path=%s", c.ServerInfo.WpPath)
+	cmd := fmt.Sprintf("wp theme list --path=%s --format=json", c.ServerInfo.WpPath)
 
 	var themes []WpStatus
 	if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
@@ -230,7 +230,7 @@ func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
 }
 
 func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
-	cmd := fmt.Sprintf("wp plugin list --path=%s", c.ServerInfo.WpPath)
+	cmd := fmt.Sprintf("wp plugin list --path=%s --format=json", c.ServerInfo.WpPath)
 
 	var plugins []WpStatus
 	if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
