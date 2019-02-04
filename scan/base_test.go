@@ -182,25 +182,82 @@ func TestParseSystemctlStatus(t *testing.T) {
 	}
 }
 
-func TestUnset(t *testing.T) {
+func TestContentConvertVinfo(t *testing.T) {
 
 	var test = struct {
-		in1      []string
-		in2      int
-		expected []string
+		in1      *base
+		in2      string
+		in3      WpStatus
+		expected []models.VulnInfo
 	}{
-		in1:      []string{"0", "1", "2", "3", "4"},
-		in2:      0,
-		expected: []string{"1", "2", "3", "4"},
+		in1: &base{osPackages: osPackages{Packages: models.Packages{}, VulnInfos: models.VulnInfos{}}},
+		in2: "{\"twentyfifteen\":{\"friendly_name\":\"Twenty Fifteen\"" +
+			",\"latest_version\":\"2.3\",\"last_updated\":\"2019-" +
+			"01-09T00:00:00.000Z\",\"popular\":true,\"vulnerabili" +
+			"ties\":[{\"id\":7965,\"title\":\"Twenty Fifteen Them" +
+			"e <= 1.1 - DOM Cross-Site Scripting (XSS)\",\"create" +
+			"d_at\":\"2015-05-06T17:22:10.000Z\",\"updated_at\":\"" +
+			"2015-05-15T13:49:28.000Z\",\"published_date\":\"2015" +
+			"-05-06T00:00:00.000Z\",\"vuln_type\":\"XSS\",\"refer" +
+			"ences\":{\"url\":[\"https://blog.sucuri.net/2015/05/" +
+			"jetpack-and-twentyfifteen-vulnerable-to-dom-based-xs" +
+			"s-millions-of-wordpress-websites-affected-millions-o" +
+			"f-wordpress-websites-affected.html\",\"http://packet" +
+			"stormsecurity.com/files/131802/\",\"http://seclists." +
+			"org/fulldisclosure/2015/May/41\"],\"cve\":[\"2015-34" +
+			"29\"]},\"fixed_in\":\"1.2\"}]}}",
+		in3: WpStatus{Name: "twentyfifteen", Status: "inactive", Update: "available", Version: "1.1"},
+		expected: []models.VulnInfo{
+			{
+				CveID:       "CVE-2015-3429",
+				Confidences: models.Confidences{},
+				AffectedPackages: models.PackageStatuses{
+					models.PackageStatus{
+						Name:        "",
+						NotFixedYet: false,
+						FixState:    "",
+					},
+				},
+				DistroAdvisories: []models.DistroAdvisory{},
+				CpeURIs:          []string{},
+				CveContents: models.NewCveContents(
+					models.CveContent{
+						Type:          "",
+						CveID:         "CVE-2015-3429",
+						Title:         "Twenty Fifteen Theme <= 1.1 - DOM Cross-Site Scripting (XSS)",
+						Summary:       "",
+						Cvss2Score:    0.000000,
+						Cvss2Vector:   "",
+						Cvss2Severity: "",
+						Cvss3Score:    0.000000,
+						Cvss3Vector:   "",
+						Cvss3Severity: "",
+						SourceLink:    "",
+						Cpes:          []models.Cpe{},
+						References:    models.References{},
+						CweIDs:        []string{},
+						Published:     time.Time{},
+						LastModified:  time.Time{},
+						Mitigation:    "",
+						Optional:      map[string]string{},
+					},
+				),
+				Exploits: []models.Exploit{},
+				AlertDict: models.AlertDict{
+					Ja: []alert.Alert{},
+					En: []alert.Alert{},
+				},
+			},
+		},
 	}
-	actual := unset(test.in1, test.in2)
+	actual, _ := contentConvertVinfo(test.in1, test.in2, test.in3)
 	if !reflect.DeepEqual(test.expected, actual) {
 		t.Errorf("expected %v, actual %v", test.expected, actual)
 	}
 
 }
 
-func TestContentConvertVinfo(t *testing.T) {
+func TestCoreConvertVinfo(t *testing.T) {
 
 	var test = struct {
 		in       string
@@ -267,46 +324,3 @@ func TestContentConvertVinfo(t *testing.T) {
 	}
 
 }
-
-/*
-func TestParseStatus(t *testing.T) {
-
-	var test = struct {
-		in        string
-		expected []WpStatus
-	}{
-		in: `"+-----------------+----------+-----------+---------+\r\n
-		| name            | status   | update    | version |\r\n+-----
-		------------+----------+-----------+---------+\r\n| twentyfift
-		een   | inactive | available | 1.9     |\r\n| twentyseventeen
-		| active   | available | 1.4     |\r\n| twentysixteen   | inac
-		tive | available | 1.4     |\r\n+-----------------+----------+
-		-----------+---------+\r\n"`,
-		expected: []WpStatus{
-			WpStatus{
-				Name:    "twentyfifteen",
-				Status:  "inactive",
-				Update:  "available",
-				Version: "1.9",
-			},
-			WpStatus{
-				Name:    "twentyseventeen",
-				Status:  "active",
-				Update:  "available",
-				Version: "1.4",
-			},
-			WpStatus{
-				Name:    "twentysixteen",
-				Status:  "inactive",
-				Update:  "available",
-				Version: "1.4",
-			},
-		},
-	}
-	actual := parseStatus(test.in)
-	if !reflect.DeepEqual(test.expected, actual) {
-		t.Errorf("expected %v, actual %v", test.expected, actual)
-	}
-
-}
-*/
