@@ -43,7 +43,7 @@ type base struct {
 	errs []error
 }
 
-//Command is for check dep
+//Command is for check dependence
 type Command struct {
 	Command string
 	Name    string
@@ -54,29 +54,26 @@ func (l *base) scanWp() (err error) {
 		return nil
 	}
 	if len(l.ServerInfo.WpPath) == 0 {
-		err = fmt.Errorf("not found : WpPath")
-		return
+		return fmt.Errorf("not found : WpPath")
 	}
 	if len(l.ServerInfo.WpToken) == 0 {
-		err = fmt.Errorf("not found : WpToken")
-		return
+		return fmt.Errorf("not found : WpToken")
 	}
 
 	cmd := []Command{{Command: "wp cli", Name: "wp"}, {Command: "curl --help", Name: "curl"}}
 	for _, i := range cmd {
 		if r := exec(l.ServerInfo, i.Command, noSudo); !r.isSuccess() {
-			err = fmt.Errorf("%s command not installed", i.Name)
-			return
+			return fmt.Errorf("%s command not installed", i.Name)
 		}
 	}
 
-	var unsecures []models.VulnInfo
-	if unsecures, err = detectWp(l); err != nil {
+	var vinfos []models.VulnInfo
+	if vinfos, err = detectWp(l); err != nil {
 		l.log.Errorf("Failed to scan wordpress: %s", err)
 		return err
 	}
 	l.WpVulnInfos = map[string]models.VulnInfo{}
-	for _, i := range unsecures {
+	for _, i := range vinfos {
 		l.WpVulnInfos[i.CveID] = i
 	}
 
@@ -101,8 +98,8 @@ type WpCveInfo struct {
 	Title         string     `json:"title"`
 	CreatedAt     string     `json:"created_at"`
 	UpdatedAt     string     `json:"updated_at"`
-	PublishedDate string     `json:"Published_date"`
-	VulnType      string     `json:"Vuln_type"`
+	PublishedDate string     `json:"published_date"`
+	VulnType      string     `json:"vuln_type"`
 	References    References `json:"references"`
 	FixedIn       string     `json:"fixed_in"`
 }
@@ -115,30 +112,23 @@ type References struct {
 }
 
 func detectWp(c *base) (vinfos []models.VulnInfo, err error) {
-
-	var coreVuln []models.VulnInfo
-	if coreVuln, err = detectWpCore(c); err != nil {
+	var coreVulns []models.VulnInfo
+	if coreVulns, err = detectWpCore(c); err != nil {
 		return
 	}
-	for _, i := range coreVuln {
-		vinfos = append(vinfos, i)
-	}
+	vinfos = append(vinfos, coreVulns...)
 
-	var themeVuln []models.VulnInfo
-	if themeVuln, err = detectWpTheme(c); err != nil {
+	var themeVulns []models.VulnInfo
+	if themeVulns, err = detectWpTheme(c); err != nil {
 		return
 	}
-	for _, i := range themeVuln {
-		vinfos = append(vinfos, i)
-	}
+	vinfos = append(vinfos, themeVulns...)
 
-	var pluginVuln []models.VulnInfo
-	if pluginVuln, err = detectWpPlugin(c); err != nil {
+	var pluginVulns []models.VulnInfo
+	if pluginVulns, err = detectWpPlugin(c); err != nil {
 		return
 	}
-	for _, i := range pluginVuln {
-		vinfos = append(vinfos, i)
-	}
+	vinfos = append(vinfos, pluginVulns...)
 
 	return
 }
