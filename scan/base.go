@@ -260,7 +260,7 @@ func contentConvertVinfo(c *base, stdout string, content WpStatus) (vinfos []mod
 		if err = json.Unmarshal([]byte(stdout), &jsonError); err != nil {
 			return
 		}
-		c.log.Errorf("%s not found", content.Name)
+		c.log.Errorf("wordpress: %s not found", content.Name)
 	}
 	for _, i := range data {
 		if len(i.Vulnerabilities) == 0 {
