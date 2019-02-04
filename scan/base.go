@@ -60,10 +60,10 @@ func (l *base) scanWp() (err error) {
 		return fmt.Errorf("not found : WpToken")
 	}
 
-	cmd := []Command{{Command: "wp cli", Name: "wp"}, {Command: "curl --help", Name: "curl"}}
-	for _, i := range cmd {
-		if r := exec(l.ServerInfo, i.Command, noSudo); !r.isSuccess() {
-			return fmt.Errorf("%s command not installed", i.Name)
+	cmds := []Command{{Command: "wp cli", Name: "wp"}, {Command: "curl --help", Name: "curl"}}
+	for _, cmd := range cmds {
+		if r := exec(l.ServerInfo, cmd.Command, noSudo); !r.isSuccess() {
+			return fmt.Errorf("%s command not installed", cmd.Name)
 		}
 	}
 
@@ -73,8 +73,8 @@ func (l *base) scanWp() (err error) {
 		return err
 	}
 	l.WpVulnInfos = map[string]models.VulnInfo{}
-	for _, i := range vinfos {
-		l.WpVulnInfos[i.CveID] = i
+	for _, vinfo := range vinfos {
+		l.WpVulnInfos[vinfo.CveID] = vinfo
 	}
 
 	return
@@ -161,17 +161,17 @@ func coreConvertVinfo(stdout string) (vinfos []models.VulnInfo, err error) {
 		if len(i.Vulnerabilities) == 0 {
 			continue
 		}
-		for _, e := range i.Vulnerabilities {
-			if len(e.References.Cve) == 0 {
+		for _, vulnerability := range i.Vulnerabilities {
+			if len(vulnerability.References.Cve) == 0 {
 				continue
 			}
 			NotFixedYet := false
-			if len(e.FixedIn) == 0 {
+			if len(vulnerability.FixedIn) == 0 {
 				NotFixedYet = true
 			}
 			var cveIDs []string
-			for _, k := range e.References.Cve {
-				cveIDs = append(cveIDs, "CVE-"+k)
+			for _, cveNumber := range vulnerability.References.Cve {
+				cveIDs = append(cveIDs, "CVE-"+cveNumber)
 			}
 
 			for _, cveID := range cveIDs {
@@ -180,7 +180,7 @@ func coreConvertVinfo(stdout string) (vinfos []models.VulnInfo, err error) {
 					CveContents: models.NewCveContents(
 						models.CveContent{
 							CveID: cveID,
-							Title: e.Title,
+							Title: vulnerability.Title,
 						},
 					),
 					AffectedPackages: models.PackageStatuses{
@@ -257,16 +257,16 @@ func contentConvertVinfo(c *base, stdout string, content WpStatus) (vinfos []mod
 		if len(i.Vulnerabilities) == 0 {
 			continue
 		}
-		for _, e := range i.Vulnerabilities {
-			if len(e.References.Cve) == 0 {
+		for _, vulnerability := range i.Vulnerabilities {
+			if len(vulnerability.References.Cve) == 0 {
 				continue
 			}
 			notFixedYet := false
-			if len(e.FixedIn) == 0 {
+			if len(vulnerability.FixedIn) == 0 {
 				notFixedYet = true
 			}
-			if len(e.FixedIn) == 0 {
-				e.FixedIn = "0"
+			if len(vulnerability.FixedIn) == 0 {
+				vulnerability.FixedIn = "0"
 			}
 			var v1 *version.Version
 			v1, err = version.NewVersion(content.Version)
@@ -274,14 +274,14 @@ func contentConvertVinfo(c *base, stdout string, content WpStatus) (vinfos []mod
 				return
 			}
 			var v2 *version.Version
-			v2, err = version.NewVersion(e.FixedIn)
+			v2, err = version.NewVersion(vulnerability.FixedIn)
 			if err != nil {
 				return
 			}
 			if v1.LessThan(v2) {
 				var cveIDs []string
-				for _, k := range e.References.Cve {
-					cveIDs = append(cveIDs, "CVE-"+k)
+				for _, cveNumber := range vulnerability.References.Cve {
+					cveIDs = append(cveIDs, "CVE-"+cveNumber)
 				}
 
 				for _, cveID := range cveIDs {
@@ -290,7 +290,7 @@ func contentConvertVinfo(c *base, stdout string, content WpStatus) (vinfos []mod
 						CveContents: models.NewCveContents(
 							models.CveContent{
 								CveID: cveID,
-								Title: e.Title,
+								Title: vulnerability.Title,
 							},
 						),
 						AffectedPackages: models.PackageStatuses{
