@@ -30,6 +30,8 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/hashicorp/go-version"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
+	"net/http"
 )
 
 type base struct {
@@ -149,10 +151,26 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 		return vinfos, fmt.Errorf("%s", cmd)
 	}
 
-	cmd = fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/wordpresses/%s", c.ServerInfo.WpToken, coreVersion)
-	if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
-		coreConvertVinfos(c, r.Stdout)
+	url := fmt.Sprintf("https://wpvulndb.com/api/v3/wordpresses/%s", coreVersion)
+	token := fmt.Sprintf("Token token=%s", c.ServerInfo.WpToken)
+	var req *http.Request
+	req, err = http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
 	}
+	req.Header.Set("Authorization", token)
+	client := new(http.Client)
+	var resp *http.Response
+	resp, err = client.Do(req)
+	if err != nil {
+		return
+	}
+	if resp.StatusCode != 200 {
+		return vinfos, fmt.Errorf("status: %s", string(resp.StatusCode))
+	}
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	coreConvertVinfos(c, string(body))
 	return
 }
 
@@ -228,11 +246,26 @@ func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
 	}
 
 	for _, theme := range themes {
-		cmd := fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/themes/%s", c.ServerInfo.WpToken, theme.Name)
-
-		if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
-			contentConvertVinfos(c, r.Stdout, theme)
+		url := fmt.Sprintf("https://wpvulndb.com/api/v3/themes/%s", theme.Name)
+		token := fmt.Sprintf("Token token=%s", c.ServerInfo.WpToken)
+		var req *http.Request
+		req, err = http.NewRequest("GET", url, nil)
+		if err != nil {
+			return
 		}
+		req.Header.Set("Authorization", token)
+		client := new(http.Client)
+		var resp *http.Response
+		resp, err = client.Do(req)
+		if err != nil {
+			return
+		}
+		if resp.StatusCode != 200 {
+			return vinfos, fmt.Errorf("status: %s", string(resp.StatusCode))
+		}
+		defer resp.Body.Close()
+		body, _ := ioutil.ReadAll(resp.Body)
+		contentConvertVinfos(c, string(body), theme)
 	}
 	return
 }
@@ -252,11 +285,26 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 	}
 
 	for _, plugin := range plugins {
-		cmd := fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/plugins/%s", c.ServerInfo.WpToken, plugin.Name)
-
-		if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
-			contentConvertVinfos(c, r.Stdout, plugin)
+		url := fmt.Sprintf("https://wpvulndb.com/api/v3/plugins/%s", plugin.Name)
+		token := fmt.Sprintf("Token token=%s", c.ServerInfo.WpToken)
+		var req *http.Request
+		req, err = http.NewRequest("GET", url, nil)
+		if err != nil {
+			return
 		}
+		req.Header.Set("Authorization", token)
+		client := new(http.Client)
+		var resp *http.Response
+		resp, err = client.Do(req)
+		if err != nil {
+			return
+		}
+		if resp.StatusCode != 200 {
+			return vinfos, fmt.Errorf("status: %s", string(resp.StatusCode))
+		}
+		defer resp.Body.Close()
+		body, _ := ioutil.ReadAll(resp.Body)
+		contentConvertVinfos(c, string(body), plugin)
 	}
 	return
 }
