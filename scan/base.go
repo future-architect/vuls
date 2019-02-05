@@ -165,8 +165,8 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 	if err != nil {
 		return
 	}
-	if resp.StatusCode != 200 {
-		return vinfos, fmt.Errorf("status: %s", string(resp.StatusCode))
+	if resp.StatusCode != 200 && resp.StatusCode != 404 {
+		return vinfos, fmt.Errorf("status: %s", resp.Status)
 	}
 	defer resp.Body.Close()
 	body, _ := ioutil.ReadAll(resp.Body)
@@ -260,8 +260,8 @@ func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
 		if err != nil {
 			return
 		}
-		if resp.StatusCode != 200 {
-			return vinfos, fmt.Errorf("status: %s", string(resp.StatusCode))
+		if resp.StatusCode != 200 && resp.StatusCode != 404 {
+			return vinfos, fmt.Errorf("status: %s", resp.Status)
 		}
 		defer resp.Body.Close()
 		body, _ := ioutil.ReadAll(resp.Body)
@@ -299,8 +299,8 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 		if err != nil {
 			return
 		}
-		if resp.StatusCode != 200 {
-			return vinfos, fmt.Errorf("status: %s", string(resp.StatusCode))
+		if resp.StatusCode != 200 && resp.StatusCode != 404 {
+			return vinfos, fmt.Errorf("status: %s", resp.Status)
 		}
 		defer resp.Body.Close()
 		body, _ := ioutil.ReadAll(resp.Body)
