@@ -182,7 +182,7 @@ func TestParseSystemctlStatus(t *testing.T) {
 	}
 }
 
-func TestContentConvertVinfo(t *testing.T) {
+func TestContentConvertVinfos(t *testing.T) {
 
 	var test = struct {
 		in1      *base
@@ -250,14 +250,14 @@ func TestContentConvertVinfo(t *testing.T) {
 			},
 		},
 	}
-	actual, _ := contentConvertVinfo(test.in1, test.in2, test.in3)
+	actual, _ := contentConvertVinfos(test.in1, test.in2, test.in3)
 	if !reflect.DeepEqual(test.expected, actual) {
 		t.Errorf("expected %v, actual %v", test.expected, actual)
 	}
 
 }
 
-func TestCoreConvertVinfo(t *testing.T) {
+func TestCoreConvertVinfos(t *testing.T) {
 
 	var test = struct {
 		in       string
@@ -318,7 +318,7 @@ func TestCoreConvertVinfo(t *testing.T) {
 			},
 		},
 	}
-	actual, _ := coreConvertVinfo(test.in)
+	actual, _ := coreConvertVinfos(test.in)
 	if !reflect.DeepEqual(test.expected, actual) {
 		t.Errorf("expected %v, actual %v", test.expected, actual)
 	}
