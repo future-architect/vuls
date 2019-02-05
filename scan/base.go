@@ -136,7 +136,8 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 	cmd := fmt.Sprintf("wp core version --path=%s", c.ServerInfo.WpPath)
 
 	var coreVersion string
-	if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
+	var r execResult
+	if r = exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
 		tmp := strings.Split(r.Stdout, ".")
 		coreVersion = strings.Join(tmp, "")
 		coreVersion = strings.TrimRight(coreVersion, "\r\n")
@@ -144,17 +145,27 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 			return
 		}
 	}
+	if !r.isSuccess() {
+		return vinfos, fmt.Errorf("%s", cmd)
+	}
+
 	cmd = fmt.Sprintf("curl -k -H 'Authorization: Token token=%s' https://wpvulndb.com/api/v3/wordpresses/%s", c.ServerInfo.WpToken, coreVersion)
 	if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
-		coreConvertVinfos(r.Stdout)
+		coreConvertVinfos(c, r.Stdout)
 	}
 	return
 }
 
-func coreConvertVinfos(stdout string) (vinfos []models.VulnInfo, err error) {
+func coreConvertVinfos(c *base, stdout string) (vinfos []models.VulnInfo, err error) {
 	data := map[string]WpCveInfos{}
 	if err = json.Unmarshal([]byte(stdout), &data); err != nil {
-		return
+		var jsonError WpCveInfos
+		if err = json.Unmarshal([]byte(stdout), &jsonError); err != nil {
+			return
+		}
+		if jsonError.Error == "HTTP Token: Access denied.\n" {
+			c.log.Errorf("wordpress: HTTP Token: Access denied.")
+		}
 	}
 	for _, i := range data {
 		if len(i.Vulnerabilities) == 0 {
@@ -206,10 +217,14 @@ func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
 	cmd := fmt.Sprintf("wp theme list --path=%s --format=json", c.ServerInfo.WpPath)
 
 	var themes []WpStatus
-	if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
+	var r execResult
+	if r = exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
 		if err = json.Unmarshal([]byte(r.Stdout), &themes); err != nil {
 			return
 		}
+	}
+	if !r.isSuccess() {
+		return vinfos, fmt.Errorf("%s", cmd)
 	}
 
 	for _, theme := range themes {
@@ -226,10 +241,14 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 	cmd := fmt.Sprintf("wp plugin list --path=%s --format=json", c.ServerInfo.WpPath)
 
 	var plugins []WpStatus
+	var r execResult
 	if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
 		if err = json.Unmarshal([]byte(r.Stdout), &plugins); err != nil {
 			return
 		}
+	}
+	if !r.isSuccess() {
+		return vinfos, fmt.Errorf("%s", cmd)
 	}
 
 	for _, plugin := range plugins {
@@ -249,8 +268,13 @@ func contentConvertVinfos(c *base, stdout string, content WpStatus) (vinfos []mo
 		if err = json.Unmarshal([]byte(stdout), &jsonError); err != nil {
 			return
 		}
-		c.log.Errorf("wordpress: %s not found", content.Name)
+		if jsonError.Error == "HTTP Token: Access denied.\n" {
+			c.log.Errorf("wordpress: HTTP Token: Access denied.")
+		} else {
+			c.log.Errorf("wordpress: %s not found", content.Name)
+		}
 	}
+
 	for _, i := range data {
 		if len(i.Vulnerabilities) == 0 {
 			continue

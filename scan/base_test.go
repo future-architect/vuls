@@ -260,10 +260,12 @@ func TestContentConvertVinfos(t *testing.T) {
 func TestCoreConvertVinfos(t *testing.T) {
 
 	var test = struct {
-		in       string
+		in1      *base
+		in2      string
 		expected []models.VulnInfo
 	}{
-		in: "{\"4.9.4\":{\"release_date\":\"2018-02-06\",\"changelog_url\"" +
+		in1: &base{osPackages: osPackages{Packages: models.Packages{}, VulnInfos: models.VulnInfos{}}},
+		in2: "{\"4.9.4\":{\"release_date\":\"2018-02-06\",\"changelog_url\"" +
 			":\"https://codex.wordpress.org/Version_4.9.4\",\"status\"" +
 			":\"insecure\",\"vulnerabilities\":[{\"id\":9021,\"title\"" +
 			":\"WordPress <= 4.9.4 - Application Denial of Service (Do" +
@@ -318,7 +320,7 @@ func TestCoreConvertVinfos(t *testing.T) {
 			},
 		},
 	}
-	actual, _ := coreConvertVinfos(test.in)
+	actual, _ := coreConvertVinfos(test.in1, test.in2)
 	if !reflect.DeepEqual(test.expected, actual) {
 		t.Errorf("expected %v, actual %v", test.expected, actual)
 	}
