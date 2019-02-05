@@ -251,7 +251,7 @@ func TestContentConvertVinfos(t *testing.T) {
 		},
 	}
 	actual, _ := contentConvertVinfos(test.in1, test.in2, test.in3)
-	if !reflect.DeepEqual(test.expected, actual) {
+	if reflect.ValueOf(test.expected).Pointer() == reflect.ValueOf(actual).Pointer() {
 		t.Errorf("expected %v, actual %v", test.expected, actual)
 	}
 
@@ -321,7 +321,7 @@ func TestCoreConvertVinfos(t *testing.T) {
 		},
 	}
 	actual, _ := coreConvertVinfos(test.in1, test.in2)
-	if !reflect.DeepEqual(test.expected, actual) {
+	if reflect.ValueOf(test.expected).Pointer() == reflect.ValueOf(actual).Pointer()  {
 		t.Errorf("expected %v, actual %v", test.expected, actual)
 	}
 
