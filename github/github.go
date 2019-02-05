@@ -38,10 +38,12 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 		&oauth2.Token{AccessToken: token},
 	)
 	httpClient := oauth2.NewClient(context.Background(), src)
+
+	// TODO Use `https://github.com/shurcooL/githubv4` if the tool supports vulnerabilityAlerts Endpoint
 	const jsonfmt = `{"query":
 	"query { repository(owner:\"%s\", name:\"%s\") { name, vulnerabilityAlerts(first: %d, %s) { pageInfo{ endCursor, hasNextPage, startCursor}, edges { node { id, externalIdentifier, externalReference, fixedIn, packageName } } } } }"}`
-
 	after := ""
+
 	for {
 		jsonStr := fmt.Sprintf(jsonfmt, owner, repo, 100, after)
 		req, err := http.NewRequest("POST",
@@ -51,12 +53,12 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 		if err != nil {
 			return 0, err
 		}
-		req.Header.Set("Content-Type", "application/json")
 
 		// https://developer.github.com/v4/previews/#repository-vulnerability-alerts
 		// To toggle this preview and access data, need to provide a custom media type in the Accept header:
 		// TODO remove this header if it is no longer preview status in the future.
 		req.Header.Set("Accept", "application/vnd.github.vixen-preview+json")
+		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := httpClient.Do(req)
 		if err != nil {
@@ -72,9 +74,8 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 		if err = json.Unmarshal(bodyBytes, &alerts); err != nil {
 			return 0, err
 		}
-
-		// TODO remove
-		util.Log.Debugf("%s", pp.Sprintf("%s", alerts))
+		// TODO remove before merging to the master
+		util.Log.Debugf("%s", pp.Sprint(alerts))
 
 		// TODO add type field to models.Pakcage.
 		// OS Packages ... osPkg

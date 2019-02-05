@@ -254,8 +254,9 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			}
 		}
 
+		s.GitHubRepos = v.GitHubRepos
 		for ownerRepo, githubSetting := range s.GitHubRepos {
-			if ss := strings.Split(ownerRepo, "/"); len(ss) != 1 {
+			if ss := strings.Split(ownerRepo, "/"); len(ss) != 2 {
 				return fmt.Errorf("Failed to parse GitHub owner/repo: %s in %s",
 					ownerRepo, serverName)
 			}
@@ -264,7 +265,6 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 					ownerRepo, serverName)
 			}
 		}
-		s.GitHubRepos = v.GitHubRepos
 
 		s.UUIDs = v.UUIDs
 		s.Type = v.Type

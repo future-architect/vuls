@@ -1054,7 +1054,7 @@ type ServerInfo struct {
 	Containers             map[string]ContainerSetting `toml:"containers" json:"containers,omitempty"`
 	IgnoreCves             []string                    `toml:"ignoreCves,omitempty" json:"ignoreCves,omitempty"`
 	IgnorePkgsRegexp       []string                    `toml:"ignorePkgsRegexp,omitempty" json:"ignorePkgsRegexp,omitempty"`
-	GitHubRepos            map[string]GitHubSetting    `toml:"githubs" json:"githubs,omitempty"`
+	GitHubRepos            map[string]GitHubToken      `toml:"githubs" json:"githubs,omitempty"`
 	UUIDs                  map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
 	Memo                   string                      `toml:"memo,omitempty" json:"memo"`
 	Enablerepo             []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, RHEL, Amazon
@@ -1078,8 +1078,8 @@ type ContainerSetting struct {
 	IgnoreCves       []string `json:"ignoreCves,omitempty"`
 }
 
-// GitHubSetting is used for GitHub integration
-type GitHubSetting struct {
+// GitHubToken is used for GitHub integration
+type GitHubToken struct {
 	Token string `json:"token"`
 }
 
