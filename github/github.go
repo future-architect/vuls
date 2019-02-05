@@ -37,43 +37,53 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 		&oauth2.Token{AccessToken: token},
 	)
 	httpClient := oauth2.NewClient(context.Background(), src)
+	const jsonfmt = `{"query":
+	"query { repository(owner:\"%s\", name:\"%s\") { name, vulnerabilityAlerts(first: %d, %s) { pageInfo{ endCursor, hasNextPage, startCursor}, edges { node { id, externalIdentifier, externalReference, fixedIn, packageName } } } } }"}`
 
-	//TODO Pagenation, Use GraphQL Library
-	jsonStr := fmt.Sprintf(`{"query":
-	"query FindIssueID { repository(owner:\"%s\", name:\"%s\") { name, vulnerabilityAlerts(first: 100) { edges { node { id, externalIdentifier, externalReference, fixedIn, packageName } } } } }"}`, owner, repo)
-	req, err := http.NewRequest(
-		"POST",
-		"https://api.github.com/graphql",
-		bytes.NewBuffer([]byte(jsonStr)),
-	)
-	if err != nil {
-		return 0, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/vnd.github.vixen-preview+json")
+	after := ""
+	for {
+		jsonStr := fmt.Sprintf(jsonfmt, owner, repo, 100, after)
+		req, err := http.NewRequest("POST",
+			"https://api.github.com/graphql",
+			bytes.NewBuffer([]byte(jsonStr)),
+		)
+		if err != nil {
+			return 0, err
+		}
+		req.Header.Set("Content-Type", "application/json")
 
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return 0, err
-	}
-	defer resp.Body.Close()
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return 0, err
-	}
-	alerts := SecurityAlerts{}
-	if err = json.Unmarshal(bodyBytes, &alerts); err != nil {
-		return
-	}
+		// https://developer.github.com/v4/previews/#repository-vulnerability-alerts
+		// To toggle this preview and access data, need to provide a custom media type in the Accept header:
+		// TODO remove this header if it is no longer preview status in the future.
+		req.Header.Set("Accept", "application/vnd.github.vixen-preview+json")
 
-	// TODO add type field to models.Pakcage.
-	// OS Packages ... osPkg
-	// CPE ... CPE
-	// GitHub ... GitHub
-	// WordPress theme ... wpTheme
-	// WordPress plugin ... wpPlugin
-	// WordPress core ... wpCore
-	pp.Println(alerts)
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			return 0, err
+		}
+		defer resp.Body.Close()
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return 0, err
+		}
+
+		alerts := SecurityAlerts{}
+		if err = json.Unmarshal(bodyBytes, &alerts); err != nil {
+			return 0, err
+		}
+		// TODO add type field to models.Pakcage.
+		// OS Packages ... osPkg
+		// CPE ... CPE
+		// GitHub ... GitHub
+		// WordPress theme ... wpTheme
+		// WordPress plugin ... wpPlugin
+		// WordPress core ... wpCore
+		pp.Println(alerts)
+		if !alerts.Data.Repository.VulnerabilityAlerts.PageInfo.HasNextPage {
+			break
+		}
+		after = fmt.Sprintf(`after: \"%s\"`, alerts.Data.Repository.VulnerabilityAlerts.PageInfo.EndCursor)
+	}
 	return 0, err
 }
 
@@ -82,6 +92,11 @@ type SecurityAlerts struct {
 	Data struct {
 		Repository struct {
 			VulnerabilityAlerts struct {
+				PageInfo struct {
+					EndCursor   string `json:"endCursor"`
+					HasNextPage bool   `json:"hasNextPage"`
+					StartCursor string `json:"startCursor"`
+				} `json:"pageInfo"`
 				Edges []struct {
 					Node struct {
 						ID                 string `json:"id"`
