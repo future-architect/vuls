@@ -61,7 +61,7 @@ func (l *base) scanWp() (err error) {
 		return fmt.Errorf("not found : WpToken")
 	}
 
-	cmds := []Command{{Command: "wp cli", Name: "wp"}, {Command: "curl --help", Name: "curl"}}
+	cmds := []Command{{Command: "wp cli", Name: "wp"}}
 	for _, cmd := range cmds {
 		if r := exec(l.ServerInfo, cmd.Command, noSudo); !r.isSuccess() {
 			return fmt.Errorf("%s command not installed", cmd.Name)
