@@ -174,7 +174,7 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string) erro
 	if err != nil {
 		return fmt.Errorf("Failed to access GitHub Security Alerts: %s", err)
 	}
-	util.Log.Infof("%s: %d CVEs are detected with CPE", r.FormatServerName(), nCVEs)
+	util.Log.Infof("%s: %d CVEs are detected with GitHub Security Alerts", r.FormatServerName(), nCVEs)
 
 	nCVEs, err = FillWithGost(dbclient.GostDB, r)
 	if err != nil {

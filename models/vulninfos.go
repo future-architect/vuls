@@ -774,6 +774,9 @@ const (
 	// ChangelogLenientMatchStr is a String representation of ChangelogLenientMatch
 	ChangelogLenientMatchStr = "ChangelogLenientMatch"
 
+	// GitHubMatchStr is a String representation of GitHubMatch
+	GitHubMatchStr = "GitHubMatch"
+
 	// FailedToGetChangelog is a String representation of FailedToGetChangelog
 	FailedToGetChangelog = "FailedToGetChangelog"
 
@@ -805,4 +808,7 @@ var (
 
 	// ChangelogLenientMatch is a ranking how confident the CVE-ID was deteted correctly
 	ChangelogLenientMatch = Confidence{50, ChangelogLenientMatchStr, 4}
+
+	// GitHubMatch is a ranking how confident the CVE-ID was deteted correctly
+	GitHubMatch = Confidence{97, GitHubMatchStr, 2}
 )

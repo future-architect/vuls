@@ -26,6 +26,7 @@ import (
 	"net/http"
 
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/util"
 	"github.com/k0kubun/pp"
 	"golang.org/x/oauth2"
 )
@@ -71,6 +72,10 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 		if err = json.Unmarshal(bodyBytes, &alerts); err != nil {
 			return 0, err
 		}
+
+		// TODO remove
+		util.Log.Debugf("%s", pp.Sprintf("%s", alerts))
+
 		// TODO add type field to models.Pakcage.
 		// OS Packages ... osPkg
 		// CPE ... CPE
@@ -78,13 +83,33 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 		// WordPress theme ... wpTheme
 		// WordPress plugin ... wpPlugin
 		// WordPress core ... wpCore
-		pp.Println(alerts)
+		for _, v := range alerts.Data.Repository.VulnerabilityAlerts.Edges {
+			cveID := v.Node.ExternalIdentifier
+			affectedPkg := models.PackageStatus{Name: v.Node.PackageName}
+			if val, ok := r.ScannedCves[cveID]; ok {
+				val.AffectedPackages = append(val.AffectedPackages, affectedPkg)
+				r.ScannedCves[cveID] = val
+				// TODO add package information to r.Packages
+				// TODO get current version via github API if possible
+				nCVEs++
+			} else {
+				v := models.VulnInfo{
+					CveID:            cveID,
+					Confidences:      models.Confidences{models.GitHubMatch},
+					AffectedPackages: models.PackageStatuses{affectedPkg},
+				}
+				r.ScannedCves[cveID] = v
+				// TODO add package information to r.Packages
+				// TODO get current version via github API if possible
+				nCVEs++
+			}
+		}
 		if !alerts.Data.Repository.VulnerabilityAlerts.PageInfo.HasNextPage {
 			break
 		}
 		after = fmt.Sprintf(`after: \"%s\"`, alerts.Data.Repository.VulnerabilityAlerts.PageInfo.EndCursor)
 	}
-	return 0, err
+	return nCVEs, err
 }
 
 //SecurityAlerts has detected CVE-IDs, PackageNames, Refs
