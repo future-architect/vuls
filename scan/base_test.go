@@ -209,7 +209,7 @@ func TestContentConvertVinfos(t *testing.T) {
 					AffectedPackages: models.PackageStatuses{
 						models.PackageStatus{
 							Name:        "",
-							NotFixedYet: false,
+							NotFixedYet: true,
 							FixState:    "",
 						},
 					},
