@@ -32,6 +32,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+	"github.com/future-architect/vuls/alert"
+	"reflect"
+	"github.com/k0kubun/pp"
 )
 
 type base struct {
@@ -338,7 +341,138 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 				return vinfos, fmt.Errorf("status: %s", resp.Status)
 			}
 		}
-		contentConvertVinfos(string(body), plugin)
+		hoge := models.VulnInfo{
+			CveID:       "CVE-2018-6389",
+			Confidences: models.Confidences{},
+			AffectedPackages: models.PackageStatuses{
+				models.PackageStatus{
+					Name:        "",
+					NotFixedYet: false,
+					FixState:    "",
+				},
+			},
+			DistroAdvisories: []models.DistroAdvisory{},
+			CpeURIs:          []string{},
+			CveContents: models.NewCveContents(
+				models.CveContent{
+					Type:          "",
+					CveID:         "CVE-2018-6389",
+					Title:         "WordPress <= 4.9.4 - Application Denial of Service (DoS) (unpatched)",
+					Summary:       "",
+					Cvss2Score:    0.000000,
+					Cvss2Vector:   "",
+					Cvss2Severity: "",
+					Cvss3Score:    0.000000,
+					Cvss3Vector:   "",
+					Cvss3Severity: "",
+					SourceLink:    "",
+					Cpes:          []models.Cpe{},
+					References:    models.References{},
+					CweIDs:        []string{},
+					Published:     time.Time{},
+					LastModified:  time.Time{},
+					Mitigation:    "",
+					Optional:      map[string]string{},
+				},
+			),
+			Exploits: []models.Exploit{},
+			AlertDict: models.AlertDict{
+				Ja: []alert.Alert{},
+				En: []alert.Alert{},
+			},
+		}
+		huga, _ := contentConvertVinfos(string(body), plugin)
+		for _,i := range huga {
+			if reflect.ValueOf(hoge.CveID).Type() != reflect.ValueOf(i.CveID).Type() {
+				pp.Print("1111111111111111111")
+			}
+			if reflect.ValueOf(hoge.Confidences).Type() != reflect.ValueOf(i.Confidences).Type() {
+				pp.Print("2222222222222222222")
+			}
+			for _,h := range hoge.AffectedPackages {
+				for _, k := range i.AffectedPackages {
+					if reflect.ValueOf(h.Name).Type() != reflect.ValueOf(k.Name).Type() {
+						pp.Print("22222222222222222222")
+					}
+					if reflect.ValueOf(h.NotFixedYet).Type() != reflect.ValueOf(k.NotFixedYet).Type() {
+						pp.Print("22222222222222222222")
+					}
+					if reflect.ValueOf(h.FixState).Type() != reflect.ValueOf(k.FixState).Type() {
+						pp.Print("22222222222222222222")
+					}
+				}
+			}
+			if reflect.ValueOf(hoge.DistroAdvisories).Type() != reflect.ValueOf(i.DistroAdvisories).Type() {
+				pp.Print("2222222222222222222")
+			}
+			if reflect.ValueOf(hoge.AlertDict.Ja).Type() != reflect.ValueOf(i.AlertDict.Ja).Type() {
+				pp.Print("2222222222222222222")
+			}
+			if reflect.ValueOf(hoge.AlertDict.En).Type() != reflect.ValueOf(i.AlertDict.En).Type() {
+				pp.Print("2222222222222222222")
+			}
+			for _,h := range hoge.CveContents {
+				for _, k := range i.CveContents {
+					if reflect.ValueOf(h.CveID).Type() != reflect.ValueOf(k.CveID).Type() {
+						pp.Print("3333333333333333333")
+					}
+					if reflect.ValueOf(h.Type).Type() != reflect.ValueOf(k.Type).Type() {
+						pp.Print("3333333333333333333")
+					}
+					if reflect.ValueOf(h.Title).Type() != reflect.ValueOf(k.Title).Type() {
+						pp.Print("3333333333333333333")
+					}
+					if reflect.ValueOf(h.Summary).Type() != reflect.ValueOf(k.Summary).Type() {
+						pp.Print("3333333333333333333")
+					}
+					if reflect.ValueOf(h.Cvss2Score).Type() != reflect.ValueOf(k.Cvss2Score).Type() {
+						pp.Print("3333333333333333333")
+					}
+					if reflect.ValueOf(h.Cvss2Vector).Type() != reflect.ValueOf(k.Cvss2Vector).Type() {
+						pp.Print("3333333333333333333")
+					}
+					if reflect.ValueOf(h.Cvss2Severity).Type() != reflect.ValueOf(k.Cvss2Severity).Type() {
+						pp.Print("3333333333333333333")
+					}
+					if reflect.ValueOf(h.Cvss3Score).Type() != reflect.ValueOf(k.Cvss3Score).Type() {
+						pp.Print("3333333333333333333")
+					}
+					if reflect.ValueOf(h.Cvss3Vector).Type() != reflect.ValueOf(k.Cvss3Vector).Type() {
+						pp.Print("3333333333333333333")
+					}
+					if reflect.ValueOf(h.Cvss3Severity).Type() != reflect.ValueOf(k.Cvss3Severity).Type() {
+						pp.Print("3333333333333333333")
+					}
+					if reflect.ValueOf(h.SourceLink).Type() != reflect.ValueOf(k.SourceLink).Type() {
+						pp.Print("3333333333333333333")
+					}
+					if reflect.ValueOf(h.Cpes).Type() != reflect.ValueOf(k.Cpes).Type() {
+						pp.Print("3333333333333333333")
+					}
+					if reflect.ValueOf(h.References).Type() != reflect.ValueOf(k.References).Type() {
+						pp.Print("3333333333333333333")
+					}
+					if reflect.ValueOf(h.CweIDs).Type() != reflect.ValueOf(k.CweIDs).Type() {
+						pp.Print("3333333333333333333")
+					}
+					if reflect.ValueOf(h.Published).Type() != reflect.ValueOf(k.Published).Type() {
+						pp.Print("3333333333333333333")
+					}
+					if reflect.ValueOf(h.LastModified).Type() != reflect.ValueOf(k.LastModified).Type() {
+						pp.Print("3333333333333333333")
+					}
+					if reflect.ValueOf(h.Mitigation).Type() != reflect.ValueOf(k.Mitigation).Type() {
+						pp.Print("3333333333333333333")
+					}
+					if reflect.ValueOf(h.Optional).Type() != reflect.ValueOf(k.Optional).Type() {
+						pp.Print("3333333333333333333")
+					}
+				}
+				if reflect.ValueOf(hoge.Exploits).Type() != reflect.ValueOf(i.Exploits).Type() {
+					pp.Print("2222222222222222222")
+				}
+			}
+		}
 	}
 	return
 }
