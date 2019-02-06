@@ -331,12 +331,28 @@ func contentConvertVinfos(c *base, stdout string, content WpStatus) (vinfos []mo
 			if len(vulnerability.References.Cve) == 0 {
 				continue
 			}
-			notFixedYet := false
 			if len(vulnerability.FixedIn) == 0 {
-				notFixedYet = true
-			}
-			if len(vulnerability.FixedIn) == 0 {
-				vulnerability.FixedIn = "0"
+				var cveIDs []string
+				for _, cveNumber := range vulnerability.References.Cve {
+					cveIDs = append(cveIDs, "CVE-"+cveNumber)
+				}
+
+				for _, cveID := range cveIDs {
+					vinfos = append(vinfos, models.VulnInfo{
+						CveID: cveID,
+						CveContents: models.NewCveContents(
+							models.CveContent{
+								CveID: cveID,
+								Title: vulnerability.Title,
+							},
+						),
+						AffectedPackages: models.PackageStatuses{
+							{
+								NotFixedYet: false,
+							},
+						},
+					})
+				}
 			}
 			var v1 *version.Version
 			v1, err = version.NewVersion(content.Version)
@@ -365,7 +381,7 @@ func contentConvertVinfos(c *base, stdout string, content WpStatus) (vinfos []mo
 						),
 						AffectedPackages: models.PackageStatuses{
 							{
-								NotFixedYet: notFixedYet,
+								NotFixedYet: true,
 							},
 						},
 					})
