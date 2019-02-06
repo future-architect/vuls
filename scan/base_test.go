@@ -185,13 +185,11 @@ func TestParseSystemctlStatus(t *testing.T) {
 func TestContentConvertVinfos(t *testing.T) {
 
 	var test = struct {
-		in1      *base
-		in2      string
-		in3      WpStatus
+		in1      string
+		in2      WpStatus
 		expected []models.VulnInfo
 	}{
-		in1: &base{osPackages: osPackages{Packages: models.Packages{}, VulnInfos: models.VulnInfos{}}},
-		in2: "{\"twentyfifteen\":{\"friendly_name\":\"Twenty Fifteen\"" +
+		in1: "{\"twentyfifteen\":{\"friendly_name\":\"Twenty Fifteen\"" +
 			",\"latest_version\":\"2.3\",\"last_updated\":\"2019-" +
 			"01-09T00:00:00.000Z\",\"popular\":true,\"vulnerabili" +
 			"ties\":[{\"id\":7965,\"title\":\"Twenty Fifteen Them" +
@@ -206,7 +204,7 @@ func TestContentConvertVinfos(t *testing.T) {
 			"stormsecurity.com/files/131802/\",\"http://seclists." +
 			"org/fulldisclosure/2015/May/41\"],\"cve\":[\"2015-34" +
 			"29\"]},\"fixed_in\":\"1.2\"}]}}",
-		in3: WpStatus{Name: "twentyfifteen", Status: "inactive", Update: "available", Version: "1.1"},
+		in2: WpStatus{Name: "twentyfifteen", Status: "inactive", Update: "available", Version: "1.1"},
 		expected: []models.VulnInfo{
 			{
 				CveID:       "CVE-2015-3429",
@@ -250,7 +248,7 @@ func TestContentConvertVinfos(t *testing.T) {
 			},
 		},
 	}
-	actual, _ := contentConvertVinfos(test.in1, test.in2, test.in3)
+	actual, _ := contentConvertVinfos(test.in1, test.in2)
 	if reflect.ValueOf(test.expected).Pointer() == reflect.ValueOf(actual).Pointer() {
 		t.Errorf("expected %v, actual %v", test.expected, actual)
 	}
@@ -260,12 +258,10 @@ func TestContentConvertVinfos(t *testing.T) {
 func TestCoreConvertVinfos(t *testing.T) {
 
 	var test = struct {
-		in1      *base
-		in2      string
+		in1      string
 		expected []models.VulnInfo
 	}{
-		in1: &base{osPackages: osPackages{Packages: models.Packages{}, VulnInfos: models.VulnInfos{}}},
-		in2: "{\"4.9.4\":{\"release_date\":\"2018-02-06\",\"changelog_url\"" +
+		in1: "{\"4.9.4\":{\"release_date\":\"2018-02-06\",\"changelog_url\"" +
 			":\"https://codex.wordpress.org/Version_4.9.4\",\"status\"" +
 			":\"insecure\",\"vulnerabilities\":[{\"id\":9021,\"title\"" +
 			":\"WordPress <= 4.9.4 - Application Denial of Service (Do" +
@@ -320,8 +316,8 @@ func TestCoreConvertVinfos(t *testing.T) {
 			},
 		},
 	}
-	actual, _ := coreConvertVinfos(test.in1, test.in2)
-	if reflect.ValueOf(test.expected).Pointer() == reflect.ValueOf(actual).Pointer()  {
+	actual, _ := coreConvertVinfos(test.in1)
+	if reflect.ValueOf(test.expected).Pointer() == reflect.ValueOf(actual).Pointer() {
 		t.Errorf("expected %v, actual %v", test.expected, actual)
 	}
 
