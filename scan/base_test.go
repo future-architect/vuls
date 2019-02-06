@@ -184,73 +184,144 @@ func TestParseSystemctlStatus(t *testing.T) {
 
 func TestContentConvertVinfos(t *testing.T) {
 
-	var test = struct {
+	var tests = []struct {
 		in1      string
 		in2      WpStatus
 		expected []models.VulnInfo
 	}{
-		in1: "{\"twentyfifteen\":{\"friendly_name\":\"Twenty Fifteen\"" +
-			",\"latest_version\":\"2.3\",\"last_updated\":\"2019-" +
-			"01-09T00:00:00.000Z\",\"popular\":true,\"vulnerabili" +
-			"ties\":[{\"id\":7965,\"title\":\"Twenty Fifteen Them" +
-			"e <= 1.1 - DOM Cross-Site Scripting (XSS)\",\"create" +
-			"d_at\":\"2015-05-06T17:22:10.000Z\",\"updated_at\":\"" +
-			"2015-05-15T13:49:28.000Z\",\"published_date\":\"2015" +
-			"-05-06T00:00:00.000Z\",\"vuln_type\":\"XSS\",\"refer" +
-			"ences\":{\"url\":[\"https://blog.sucuri.net/2015/05/" +
-			"jetpack-and-twentyfifteen-vulnerable-to-dom-based-xs" +
-			"s-millions-of-wordpress-websites-affected-millions-o" +
-			"f-wordpress-websites-affected.html\",\"http://packet" +
-			"stormsecurity.com/files/131802/\",\"http://seclists." +
-			"org/fulldisclosure/2015/May/41\"],\"cve\":[\"2015-34" +
-			"29\"]},\"fixed_in\":\"1.2\"}]}}",
-		in2: WpStatus{Name: "twentyfifteen", Status: "inactive", Update: "available", Version: "1.1"},
-		expected: []models.VulnInfo{
-			{
-				CveID:       "CVE-2015-3429",
-				Confidences: models.Confidences{},
-				AffectedPackages: models.PackageStatuses{
-					models.PackageStatus{
-						Name:        "",
-						NotFixedYet: false,
-						FixState:    "",
+		{
+			in1: `{\"4.9.4\":{\"release_date\":\"2018-02-06\",\"changelog_url\"
+		:\"https://codex.wordpress.org/Version_4.9.4\",\"status\":\"insecur
+		e\",\"vulnerabilities\":[{\"id\":9021,\"title\":\"WordPress <= 4.9.
+		4 - Application Denial of Service (DoS) (unpatched)\",\"created_at\
+		":\"2018-02-05T16:50:40.000Z\",\"updated_at\":\"2018-08-29T19:13:04
+		.000Z\",\"published_date\":\"2018-02-05T00:00:00.000Z\",\"vuln_type
+		\":\"DOS\",\"references\":{\"url\":[\"https://baraktawily.blogspot.
+		fr/2018/02/how-to-dos-29-of-world-wide-websites.html\",\"https://gi
+		thub.com/quitten/doser.py\",\"https://thehackernews.com/2018/02/wor
+		dpress-dos-exploit.html\"],\"cve\":[\"2018-6389\"]},\"fixed_in\":nu
+		ll}]}}`,
+			in2: WpStatus{Name: "twentyfifteen", Status: "inactive", Update: "available", Version: "1.1"},
+			expected: []models.VulnInfo{
+				{
+					CveID:       "CVE-2018-6389",
+					Confidences: models.Confidences{},
+					AffectedPackages: models.PackageStatuses{
+						models.PackageStatus{
+							Name:        "",
+							NotFixedYet: false,
+							FixState:    "",
+						},
+					},
+					DistroAdvisories: []models.DistroAdvisory{},
+					CpeURIs:          []string{},
+					CveContents: models.NewCveContents(
+						models.CveContent{
+							Type:          "",
+							CveID:         "CVE-2018-6389",
+							Title:         "WordPress <= 4.9.4 - Application Denial of Service (DoS) (unpatched)",
+							Summary:       "",
+							Cvss2Score:    0.000000,
+							Cvss2Vector:   "",
+							Cvss2Severity: "",
+							Cvss3Score:    0.000000,
+							Cvss3Vector:   "",
+							Cvss3Severity: "",
+							SourceLink:    "",
+							Cpes:          []models.Cpe{},
+							References:    models.References{},
+							CweIDs:        []string{},
+							Published:     time.Time{},
+							LastModified:  time.Time{},
+							Mitigation:    "",
+							Optional:      map[string]string{},
+						},
+					),
+					Exploits: []models.Exploit{},
+					AlertDict: models.AlertDict{
+						Ja: []alert.Alert{},
+						En: []alert.Alert{},
 					},
 				},
-				DistroAdvisories: []models.DistroAdvisory{},
-				CpeURIs:          []string{},
-				CveContents: models.NewCveContents(
-					models.CveContent{
-						Type:          "",
-						CveID:         "CVE-2015-3429",
-						Title:         "Twenty Fifteen Theme <= 1.1 - DOM Cross-Site Scripting (XSS)",
-						Summary:       "",
-						Cvss2Score:    0.000000,
-						Cvss2Vector:   "",
-						Cvss2Severity: "",
-						Cvss3Score:    0.000000,
-						Cvss3Vector:   "",
-						Cvss3Severity: "",
-						SourceLink:    "",
-						Cpes:          []models.Cpe{},
-						References:    models.References{},
-						CweIDs:        []string{},
-						Published:     time.Time{},
-						LastModified:  time.Time{},
-						Mitigation:    "",
-						Optional:      map[string]string{},
+			},
+		},
+		{
+			in1: `{\"4.9.4\":{\"release_date\":\"2018-02-06\",\"changelog_url\"
+		:\"https://codex.wordpress.org/Version_4.9.4\",\"status\":\"insecur
+		e\",\"vulnerabilities\":[{\"id\":9021,\"title\":\"WordPress <= 4.9.
+		4 - Application Denial of Service (DoS) (unpatched)\",\"created_at\
+		":\"2018-02-05T16:50:40.000Z\",\"updated_at\":\"2018-08-29T19:13:04
+		.000Z\",\"published_date\":\"2018-02-05T00:00:00.000Z\",\"vuln_type
+		\":\"DOS\",\"references\":{\"url\":[\"https://baraktawily.blogspot.
+		fr/2018/02/how-to-dos-29-of-world-wide-websites.html\",\"https://gi
+		thub.com/quitten/doser.py\",\"https://thehackernews.com/2018/02/wor
+		dpress-dos-exploit.html\"],\"cve\":[\"2018-6389\"]},\"fixed_in\": "
+		1.0"}]}}`,
+			in2: WpStatus{Name: "twentyfifteen", Status: "inactive", Update: "available", Version: "1.1"},
+			expected: []models.VulnInfo{},
+		},
+		{
+			in1: `{\"4.9.4\":{\"release_date\":\"2018-02-06\",\"changelog_url\"
+		:\"https://codex.wordpress.org/Version_4.9.4\",\"status\":\"insecur
+		e\",\"vulnerabilities\":[{\"id\":9021,\"title\":\"WordPress <= 4.9.
+		4 - Application Denial of Service (DoS) (unpatched)\",\"created_at\
+		":\"2018-02-05T16:50:40.000Z\",\"updated_at\":\"2018-08-29T19:13:04
+		.000Z\",\"published_date\":\"2018-02-05T00:00:00.000Z\",\"vuln_type
+		\":\"DOS\",\"references\":{\"url\":[\"https://baraktawily.blogspot.
+		fr/2018/02/how-to-dos-29-of-world-wide-websites.html\",\"https://gi
+		thub.com/quitten/doser.py\",\"https://thehackernews.com/2018/02/wor
+		dpress-dos-exploit.html\"],\"cve\":[\"2018-6389\"]},\"fixed_in\": "
+		1.2"}]}}`,
+			in2: WpStatus{Name: "twentyfifteen", Status: "inactive", Update: "available", Version: "1.1"},
+			expected: []models.VulnInfo{
+				{
+					CveID:       "CVE-2018-6389",
+					Confidences: models.Confidences{},
+					AffectedPackages: models.PackageStatuses{
+						models.PackageStatus{
+							Name:        "",
+							NotFixedYet: false,
+							FixState:    "",
+						},
 					},
-				),
-				Exploits: []models.Exploit{},
-				AlertDict: models.AlertDict{
-					Ja: []alert.Alert{},
-					En: []alert.Alert{},
+					DistroAdvisories: []models.DistroAdvisory{},
+					CpeURIs:          []string{},
+					CveContents: models.NewCveContents(
+						models.CveContent{
+							Type:          "",
+							CveID:         "CVE-2018-6389",
+							Title:         "WordPress <= 4.9.4 - Application Denial of Service (DoS) (unpatched)",
+							Summary:       "",
+							Cvss2Score:    0.000000,
+							Cvss2Vector:   "",
+							Cvss2Severity: "",
+							Cvss3Score:    0.000000,
+							Cvss3Vector:   "",
+							Cvss3Severity: "",
+							SourceLink:    "",
+							Cpes:          []models.Cpe{},
+							References:    models.References{},
+							CweIDs:        []string{},
+							Published:     time.Time{},
+							LastModified:  time.Time{},
+							Mitigation:    "",
+							Optional:      map[string]string{},
+						},
+					),
+					Exploits: []models.Exploit{},
+					AlertDict: models.AlertDict{
+						Ja: []alert.Alert{},
+						En: []alert.Alert{},
+					},
 				},
 			},
 		},
 	}
-	actual, _ := contentConvertVinfos(test.in1, test.in2)
-	if reflect.ValueOf(test.expected).Pointer() == reflect.ValueOf(actual).Pointer() {
-		t.Errorf("expected %v, actual %v", test.expected, actual)
+	for _, test := range tests {
+		actual, _ := contentConvertVinfos(test.in1, test.in2)
+		if reflect.ValueOf(test.expected).Pointer() == reflect.ValueOf(actual).Pointer() {
+			t.Errorf("expected %v, actual %v", test.expected, actual)
+		}
 	}
 
 }
@@ -261,18 +332,17 @@ func TestCoreConvertVinfos(t *testing.T) {
 		in1      string
 		expected []models.VulnInfo
 	}{
-		in1: "{\"4.9.4\":{\"release_date\":\"2018-02-06\",\"changelog_url\"" +
-			":\"https://codex.wordpress.org/Version_4.9.4\",\"status\"" +
-			":\"insecure\",\"vulnerabilities\":[{\"id\":9021,\"title\"" +
-			":\"WordPress <= 4.9.4 - Application Denial of Service (Do" +
-			"S) (unpatched)\",\"created_at\":\"2018-02-05T16:50:40.000" +
-			"Z\",\"updated_at\":\"2018-08-29T19:13:04.000Z\",\"publish" +
-			"ed_date\":\"2018-02-05T00:00:00.000Z\",\"vuln_type\":\"DO" +
-			"S\",\"references\":{\"url\":[\"https://baraktawily.blogsp" +
-			"ot.fr/2018/02/how-to-dos-29-of-world-wide-websites.html\"" +
-			",\"https://github.com/quitten/doser.py\",\"https://thehac" +
-			"kernews.com/2018/02/wordpress-dos-exploit.html\"],\"cve\"" +
-			":[\"2018-6389\"]},\"fixed_in\":null}]}}",
+		in1: `{\"4.9.4\":{\"release_date\":\"2018-02-06\",\"changelog_url\"
+		:\"https://codex.wordpress.org/Version_4.9.4\",\"status\":\"insecur
+		e\",\"vulnerabilities\":[{\"id\":9021,\"title\":\"WordPress <= 4.9.
+		4 - Application Denial of Service (DoS) (unpatched)\",\"created_at\
+		":\"2018-02-05T16:50:40.000Z\",\"updated_at\":\"2018-08-29T19:13:04
+		.000Z\",\"published_date\":\"2018-02-05T00:00:00.000Z\",\"vuln_type
+		\":\"DOS\",\"references\":{\"url\":[\"https://baraktawily.blogspot.
+		fr/2018/02/how-to-dos-29-of-world-wide-websites.html\",\"https://gi
+		thub.com/quitten/doser.py\",\"https://thehackernews.com/2018/02/wor
+		dpress-dos-exploit.html\"],\"cve\":[\"2018-6389\"]},\"fixed_in\":nu
+		ll}]}}`,
 		expected: []models.VulnInfo{
 			{
 				CveID:       "CVE-2018-6389",
