@@ -24,7 +24,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/k0kubun/pp"
@@ -41,7 +43,7 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 
 	// TODO Use `https://github.com/shurcooL/githubv4` if the tool supports vulnerabilityAlerts Endpoint
 	const jsonfmt = `{"query":
-	"query { repository(owner:\"%s\", name:\"%s\") { url, vulnerabilityAlerts(first: %d, %s) { pageInfo{ endCursor, hasNextPage, startCursor}, edges { node { id, externalIdentifier, externalReference, fixedIn, packageName } } } } }"}`
+	"query { repository(owner:\"%s\", name:\"%s\") { url, vulnerabilityAlerts(first: %d, %s) { pageInfo{ endCursor, hasNextPage, startCursor}, edges { node { id, externalIdentifier, externalReference, fixedIn, packageName,  dismissReason, dismissedAt } } } } }"}`
 	after := ""
 
 	for {
@@ -79,18 +81,33 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 		util.Log.Debugf("%s", pp.Sprint(alerts))
 
 		for _, v := range alerts.Data.Repository.VulnerabilityAlerts.Edges {
-			cveID := v.Node.ExternalIdentifier
+			if config.Conf.IgnoreGitHubDismissed && v.Node.DismissReason != "" {
+				continue
+			}
+
 			pkgName := fmt.Sprintf("%s %s",
 				alerts.Data.Repository.URL, v.Node.PackageName)
+
+			m := models.GitHubSecurityAlert{
+				PackageName:   pkgName,
+				FixedIn:       v.Node.FixedIn,
+				AffectedRange: v.Node.AffectedRange,
+				Dismissed:     len(v.Node.DismissReason) != 0,
+				DismissedAt:   v.Node.DismissedAt,
+				DismissReason: v.Node.DismissReason,
+			}
+
+			cveID := v.Node.ExternalIdentifier
+
 			if val, ok := r.ScannedCves[cveID]; ok {
-				val.GitHubPackages = util.AppendIfMissing(val.GitHubPackages, pkgName)
+				val.GitHubSecurityAlerts = val.GitHubSecurityAlerts.Add(m)
 				r.ScannedCves[cveID] = val
 				nCVEs++
 			} else {
 				v := models.VulnInfo{
-					CveID:          cveID,
-					Confidences:    models.Confidences{models.GitHubMatch},
-					GitHubPackages: []string{pkgName},
+					CveID:                cveID,
+					Confidences:          models.Confidences{models.GitHubMatch},
+					GitHubSecurityAlerts: models.GitHubSecurityAlerts{m},
 				}
 				r.ScannedCves[cveID] = v
 				nCVEs++
@@ -117,15 +134,14 @@ type SecurityAlerts struct {
 				} `json:"pageInfo,omitempty"`
 				Edges []struct {
 					Node struct {
-						ID                 string `json:"id,omitempty"`
-						ExternalIdentifier string `json:"externalIdentifier,omitempty"`
-						ExternalReference  string `json:"externalReference,omitempty"`
-						FixedIn            string `json:"fixedIn,omitempty"`
-						AffectedRange      string `json:"affectedRange,omitempty"`
-						PackageName        string `json:"packageName,omitempty"`
-						DismissReason      string `json:"dismissReason,omitempty"`
-						DismissedAt        string `json:"dismissedAt,omitempty"`
-						Dismisser          string `json:"dismisser,omitempty"`
+						ID                 string    `json:"id,omitempty"`
+						ExternalIdentifier string    `json:"externalIdentifier,omitempty"`
+						ExternalReference  string    `json:"externalReference,omitempty"`
+						FixedIn            string    `json:"fixedIn,omitempty"`
+						AffectedRange      string    `json:"affectedRange,omitempty"`
+						PackageName        string    `json:"packageName,omitempty"`
+						DismissReason      string    `json:"dismissReason,omitempty"`
+						DismissedAt        time.Time `json:"dismissedAt,omitempty"`
 					} `json:"node,omitempty"`
 				} `json:"edges,omitempty"`
 			} `json:"vulnerabilityAlerts,omitempty"`

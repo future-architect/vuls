@@ -171,8 +171,39 @@ type VulnInfo struct {
 	Exploits         []Exploit        `json:"exploits,omitempty"`
 	AlertDict        AlertDict        `json:"alertDict,omitempty"`
 
-	CpeURIs        []string `json:"cpeURIs,omitempty"` // CpeURIs related to this CVE defined in config.toml
-	GitHubPackages []string `json:"github_packages,omitempty"`
+	CpeURIs              []string             `json:"cpeURIs,omitempty"` // CpeURIs related to this CVE defined in config.toml
+	GitHubSecurityAlerts GitHubSecurityAlerts `json:"gitHubSecurityAlerts,omitempty"`
+}
+
+// GitHubSecurityAlerts is a list of GitHubSecurityAlert
+type GitHubSecurityAlerts []GitHubSecurityAlert
+
+// Add adds given arg to the slice and return the slice (imutable)
+func (g GitHubSecurityAlerts) Add(alert GitHubSecurityAlert) GitHubSecurityAlerts {
+	for _, a := range g {
+		if a.PackageName == alert.PackageName {
+			return g
+		}
+	}
+	return append(g, alert)
+}
+
+func (g GitHubSecurityAlerts) String() string {
+	ss := []string{}
+	for _, a := range g {
+		ss = append(ss, a.PackageName)
+	}
+	return strings.Join(ss, ", ")
+}
+
+// GitHubSecurityAlert has detected CVE-ID, PackageName, Status fetched via GitHub API
+type GitHubSecurityAlert struct {
+	PackageName   string    `json:"packageName"`
+	FixedIn       string    `json:"fixedIn"`
+	AffectedRange string    `json:"affectedRange"`
+	Dismissed     bool      `json:"dismissed"`
+	DismissedAt   time.Time `json:"dismissedAt"`
+	DismissReason string    `json:"dismissReason"`
 }
 
 // Titles returns tilte (TUI)
