@@ -377,7 +377,7 @@ func contentConvertVinfos(stdout string, content WpStatus) (vinfos []models.Vuln
 						),
 						AffectedPackages: models.PackageStatuses{
 							{
-								NotFixedYet: false,
+								NotFixedYet: true,
 							},
 						},
 					})
@@ -410,7 +410,7 @@ func contentConvertVinfos(stdout string, content WpStatus) (vinfos []models.Vuln
 						),
 						AffectedPackages: models.PackageStatuses{
 							{
-								NotFixedYet: true,
+								NotFixedYet: false,
 							},
 						},
 					})
