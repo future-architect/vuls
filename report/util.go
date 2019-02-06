@@ -239,6 +239,10 @@ No CVE-IDs are found in updatable packages.
 			data = append(data, []string{"CPE", name})
 		}
 
+		for _, name := range vuln.GitHubPackages {
+			data = append(data, []string{"GitHub", name})
+		}
+
 		for _, confidence := range vuln.Confidences {
 			data = append(data, []string{"Confidence", confidence.String()})
 		}

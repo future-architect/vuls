@@ -163,14 +163,16 @@ type PackageStatus struct {
 
 // VulnInfo has a vulnerability information and unsecure packages
 type VulnInfo struct {
-	CveID            string           `json:"cveID"`
-	Confidences      Confidences      `json:"confidences"`
-	AffectedPackages PackageStatuses  `json:"affectedPackages"`
+	CveID            string           `json:"cveID,omitempty"`
+	Confidences      Confidences      `json:"confidences,omitempty"`
+	AffectedPackages PackageStatuses  `json:"affectedPackages,omitempty"`
 	DistroAdvisories []DistroAdvisory `json:"distroAdvisories,omitempty"` // for Aamazon, RHEL, FreeBSD
-	CpeURIs          []string         `json:"cpeURIs,omitempty"`          // CpeURIs related to this CVE defined in config.toml
-	CveContents      CveContents      `json:"cveContents"`
-	Exploits         []Exploit        `json:"exploits"`
-	AlertDict        AlertDict        `json:"alertDict"`
+	CveContents      CveContents      `json:"cveContents,omitempty"`
+	Exploits         []Exploit        `json:"exploits,omitempty"`
+	AlertDict        AlertDict        `json:"alertDict,omitempty"`
+
+	CpeURIs        []string `json:"cpeURIs,omitempty"` // CpeURIs related to this CVE defined in config.toml
+	GitHubPackages []string `json:"github_packages,omitempty"`
 }
 
 // Titles returns tilte (TUI)

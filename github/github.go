@@ -41,7 +41,7 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 
 	// TODO Use `https://github.com/shurcooL/githubv4` if the tool supports vulnerabilityAlerts Endpoint
 	const jsonfmt = `{"query":
-	"query { repository(owner:\"%s\", name:\"%s\") { name, vulnerabilityAlerts(first: %d, %s) { pageInfo{ endCursor, hasNextPage, startCursor}, edges { node { id, externalIdentifier, externalReference, fixedIn, packageName } } } } }"}`
+	"query { repository(owner:\"%s\", name:\"%s\") { url, vulnerabilityAlerts(first: %d, %s) { pageInfo{ endCursor, hasNextPage, startCursor}, edges { node { id, externalIdentifier, externalReference, fixedIn, packageName } } } } }"}`
 	after := ""
 
 	for {
@@ -56,6 +56,7 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 
 		// https://developer.github.com/v4/previews/#repository-vulnerability-alerts
 		// To toggle this preview and access data, need to provide a custom media type in the Accept header:
+		// MEMO: I tried to get the affected version via GitHub API. Bit it seems difficult to determin the affected version if there are multiple dependency files such as package.json.
 		// TODO remove this header if it is no longer preview status in the future.
 		req.Header.Set("Accept", "application/vnd.github.vixen-preview+json")
 		req.Header.Set("Content-Type", "application/json")
@@ -74,34 +75,24 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 		if err = json.Unmarshal(bodyBytes, &alerts); err != nil {
 			return 0, err
 		}
-		// TODO remove before merging to the master
+
 		util.Log.Debugf("%s", pp.Sprint(alerts))
 
-		// TODO add type field to models.Pakcage.
-		// OS Packages ... osPkg
-		// CPE ... CPE
-		// GitHub ... GitHub
-		// WordPress theme ... wpTheme
-		// WordPress plugin ... wpPlugin
-		// WordPress core ... wpCore
 		for _, v := range alerts.Data.Repository.VulnerabilityAlerts.Edges {
 			cveID := v.Node.ExternalIdentifier
-			affectedPkg := models.PackageStatus{Name: v.Node.PackageName}
+			pkgName := fmt.Sprintf("%s %s",
+				alerts.Data.Repository.URL, v.Node.PackageName)
 			if val, ok := r.ScannedCves[cveID]; ok {
-				val.AffectedPackages = append(val.AffectedPackages, affectedPkg)
+				val.GitHubPackages = util.AppendIfMissing(val.GitHubPackages, pkgName)
 				r.ScannedCves[cveID] = val
-				// TODO add package information to r.Packages
-				// TODO get current version via github API if possible
 				nCVEs++
 			} else {
 				v := models.VulnInfo{
-					CveID:            cveID,
-					Confidences:      models.Confidences{models.GitHubMatch},
-					AffectedPackages: models.PackageStatuses{affectedPkg},
+					CveID:          cveID,
+					Confidences:    models.Confidences{models.GitHubMatch},
+					GitHubPackages: []string{pkgName},
 				}
 				r.ScannedCves[cveID] = v
-				// TODO add package information to r.Packages
-				// TODO get current version via github API if possible
 				nCVEs++
 			}
 		}
@@ -117,22 +108,27 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 type SecurityAlerts struct {
 	Data struct {
 		Repository struct {
+			URL                 string `json:"url,omitempty"`
 			VulnerabilityAlerts struct {
 				PageInfo struct {
-					EndCursor   string `json:"endCursor"`
-					HasNextPage bool   `json:"hasNextPage"`
-					StartCursor string `json:"startCursor"`
-				} `json:"pageInfo"`
+					EndCursor   string `json:"endCursor,omitempty"`
+					HasNextPage bool   `json:"hasNextPage,omitempty"`
+					StartCursor string `json:"startCursor,omitempty"`
+				} `json:"pageInfo,omitempty"`
 				Edges []struct {
 					Node struct {
-						ID                 string `json:"id"`
-						ExternalIdentifier string `json:"externalIdentifier"`
-						ExternalReference  string `json:"externalReference"`
-						FixedIn            string `json:"fixedIn"`
-						PackageName        string `json:"packageName"`
-					} `json:"node"`
-				} `json:"edges"`
-			} `json:"vulnerabilityAlerts"`
-		} `json:"repository"`
-	} `json:"data"`
+						ID                 string `json:"id,omitempty"`
+						ExternalIdentifier string `json:"externalIdentifier,omitempty"`
+						ExternalReference  string `json:"externalReference,omitempty"`
+						FixedIn            string `json:"fixedIn,omitempty"`
+						AffectedRange      string `json:"affectedRange,omitempty"`
+						PackageName        string `json:"packageName,omitempty"`
+						DismissReason      string `json:"dismissReason,omitempty"`
+						DismissedAt        string `json:"dismissedAt,omitempty"`
+						Dismisser          string `json:"dismisser,omitempty"`
+					} `json:"node,omitempty"`
+				} `json:"edges,omitempty"`
+			} `json:"vulnerabilityAlerts,omitempty"`
+		} `json:"repository,omitempty"`
+	} `json:"data,omitempty"`
 }
