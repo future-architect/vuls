@@ -329,19 +329,19 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 
 	certAlert := ""
 	var jpalert string
-	for _, i := range vinfo.AlertDict.Ja {
-		jpalert = i.URL
+	for _, ja := range vinfo.AlertDict.Ja {
+		jpalert = ja.URL
 	}
 	var usalert string
-	for _, i := range vinfo.AlertDict.Ja {
-		usalert = i.URL
+	for _, en := range vinfo.AlertDict.En {
+		usalert = en.URL
 	}
 	if len(jpalert) != 0 && len(usalert) == 0 {
 		certAlert = fmt.Sprintf("<%s|JPCERT>", jpalert)
 	} else if len(usalert) != 0 && len(jpalert) == 0 {
 		certAlert = fmt.Sprintf("<%s|USCERT", usalert)
 	} else if len(jpalert) != 0 && len(usalert) != 0 {
-		certAlert = fmt.Sprintf("<%s|JPCERT>\n<%s|JPCERT>", jpalert, usalert)
+		certAlert = fmt.Sprintf("<%s|JPCERT>\n<%s|USCERT>", jpalert, usalert)
 	}
 
 	return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n%s\n```\n%s\n```%s\n%s\n",
