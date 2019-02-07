@@ -327,6 +327,7 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 			vinfo.Mitigations(osFamily)[0].Value)
 	}
 
+	certAlert := ""
 	if len(vinfo.AlertDict.Ja) > 0 {
 		if len(vinfo.AlertDict.En) > 0 {
 
@@ -341,46 +342,11 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 			}
 
 			if len(jpalert) != 0 && len(usalert) == 0 {
-				return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n<%s|%s>\n```\n%s\n```%s\n%s\n",
-					maxCvss.Value.Score,
-					severity,
-					nwvec,
-					vinfo.PatchStatus(packs),
-					strings.Join(vectors, "\n"),
-					jpalert,
-					"JPCERT",
-					vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
-					mitigation,
-					cweIDs(vinfo, osFamily, cweDict),
-				)
+				certAlert = fmt.Sprintf("<%s|JPCERT>", jpalert)
 			} else if len(usalert) != 0 && len(jpalert) == 0 {
-				return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n<%s|%s>\n```\n%s\n```%s\n%s\n",
-					maxCvss.Value.Score,
-					severity,
-					nwvec,
-					vinfo.PatchStatus(packs),
-					strings.Join(vectors, "\n"),
-					usalert,
-					"USCERT",
-					vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
-					mitigation,
-					cweIDs(vinfo, osFamily, cweDict),
-				)
+				certAlert = fmt.Sprintf("<%s|USCERT", usalert)
 			} else if len(jpalert) != 0 && len(usalert) != 0 {
-				return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n<%s|%s>\n<%s|%s>\n```\n%s\n```%s\n%s\n",
-					maxCvss.Value.Score,
-					severity,
-					nwvec,
-					vinfo.PatchStatus(packs),
-					strings.Join(vectors, "\n"),
-					jpalert,
-					"JPCERT",
-					usalert,
-					"USCERT",
-					vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
-					mitigation,
-					cweIDs(vinfo, osFamily, cweDict),
-				)
+				certAlert = fmt.Sprintf("<%s|JPCERT>\n<%s|JPCERT>", jpalert, usalert)
 			}
 		}
 
@@ -390,20 +356,7 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 		}
 
 		if len(jpalert) != 0 {
-			if len(jpalert) != 0 {
-				return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n<%s|%s>\n```\n%s\n```%s\n%s\n",
-					maxCvss.Value.Score,
-					severity,
-					nwvec,
-					vinfo.PatchStatus(packs),
-					strings.Join(vectors, "\n"),
-					jpalert,
-					"JPCERT",
-					vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
-					mitigation,
-					cweIDs(vinfo, osFamily, cweDict),
-				)
-			}
+			certAlert = fmt.Sprintf("<%s|JPCERT>", jpalert)
 		}
 
 	} else if len(vinfo.AlertDict.En) > 0 {
@@ -414,27 +367,17 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 		}
 
 		if len(usalert) != 0 {
-			return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n<%s|%s>\n```\n%s\n```%s\n%s\n",
-				maxCvss.Value.Score,
-				severity,
-				nwvec,
-				vinfo.PatchStatus(packs),
-				strings.Join(vectors, "\n"),
-				usalert,
-				"USCERT",
-				vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
-				mitigation,
-				cweIDs(vinfo, osFamily, cweDict),
-			)
+			certAlert = fmt.Sprintf("<%s|USCERT>", usalert)
 		}
 	}
 
-	return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n```\n%s\n```%s\n%s\n",
+	return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n%s\n```\n%s\n```%s\n%s\n",
 		maxCvss.Value.Score,
 		severity,
 		nwvec,
 		vinfo.PatchStatus(packs),
 		strings.Join(vectors, "\n"),
+		certAlert,
 		vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
 		mitigation,
 		cweIDs(vinfo, osFamily, cweDict),
