@@ -328,47 +328,20 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 	}
 
 	certAlert := ""
-	if len(vinfo.AlertDict.Ja) > 0 {
-		if len(vinfo.AlertDict.En) > 0 {
-
-			var jpalert string
-			for _, i := range vinfo.AlertDict.Ja {
-				jpalert = i.URL
-			}
-
-			var usalert string
-			for _, i := range vinfo.AlertDict.Ja {
-				usalert = i.URL
-			}
-
-			if len(jpalert) != 0 && len(usalert) == 0 {
-				certAlert = fmt.Sprintf("<%s|JPCERT>", jpalert)
-			} else if len(usalert) != 0 && len(jpalert) == 0 {
-				certAlert = fmt.Sprintf("<%s|USCERT", usalert)
-			} else if len(jpalert) != 0 && len(usalert) != 0 {
-				certAlert = fmt.Sprintf("<%s|JPCERT>\n<%s|JPCERT>", jpalert, usalert)
-			}
-		}
-
-		var jpalert string
-		for _, i := range vinfo.AlertDict.Ja {
-			jpalert = i.URL
-		}
-
-		if len(jpalert) != 0 {
-			certAlert = fmt.Sprintf("<%s|JPCERT>", jpalert)
-		}
-
-	} else if len(vinfo.AlertDict.En) > 0 {
-
-		var usalert string
-		for _, i := range vinfo.AlertDict.Ja {
-			usalert = i.URL
-		}
-
-		if len(usalert) != 0 {
-			certAlert = fmt.Sprintf("<%s|USCERT>", usalert)
-		}
+	var jpalert string
+	for _, i := range vinfo.AlertDict.Ja {
+		jpalert = i.URL
+	}
+	var usalert string
+	for _, i := range vinfo.AlertDict.Ja {
+		usalert = i.URL
+	}
+	if len(jpalert) != 0 && len(usalert) == 0 {
+		certAlert = fmt.Sprintf("<%s|JPCERT>", jpalert)
+	} else if len(usalert) != 0 && len(jpalert) == 0 {
+		certAlert = fmt.Sprintf("<%s|USCERT", usalert)
+	} else if len(jpalert) != 0 && len(usalert) != 0 {
+		certAlert = fmt.Sprintf("<%s|JPCERT>\n<%s|JPCERT>", jpalert, usalert)
 	}
 
 	return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n%s\n```\n%s\n```%s\n%s\n",
