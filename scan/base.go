@@ -165,12 +165,11 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 	if err != nil {
 		return
 	}
-	if resp.StatusCode != 200 && resp.StatusCode != 404 {
-		return vinfos, fmt.Errorf("status: %s", resp.Status)
-	}
 	body, _ := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
-	if resp.StatusCode == 404 {
+	if resp.StatusCode != 200 && resp.StatusCode != 404 {
+		return vinfos, fmt.Errorf("status: %s", resp.Status)
+	} else if resp.StatusCode == 404 {
 		var jsonError WpCveInfos
 		if err = json.Unmarshal([]byte(string(body)), &jsonError); err != nil {
 			return
@@ -268,12 +267,11 @@ func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
 		if err != nil {
 			return
 		}
-		if resp.StatusCode != 200 && resp.StatusCode != 404 {
-			return vinfos, fmt.Errorf("status: %s", resp.Status)
-		}
 		body, _ := ioutil.ReadAll(resp.Body)
 		defer resp.Body.Close()
-		if resp.StatusCode == 404 {
+		if resp.StatusCode != 200 && resp.StatusCode != 404 {
+			return vinfos, fmt.Errorf("status: %s", resp.Status)
+		} else if resp.StatusCode == 404 {
 			var jsonError WpCveInfos
 			if err = json.Unmarshal([]byte(string(body)), &jsonError); err != nil {
 				return
@@ -320,12 +318,11 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 		if err != nil {
 			return
 		}
-		if resp.StatusCode != 200 && resp.StatusCode != 404 {
-			return vinfos, fmt.Errorf("status: %s", resp.Status)
-		}
 		body, _ := ioutil.ReadAll(resp.Body)
 		defer resp.Body.Close()
-		if resp.StatusCode == 404 {
+		if resp.StatusCode != 200 && resp.StatusCode != 404 {
+			return vinfos, fmt.Errorf("status: %s", resp.Status)
+		} else if resp.StatusCode == 404 {
 			var jsonError WpCveInfos
 			if err = json.Unmarshal([]byte(string(body)), &jsonError); err != nil {
 				return
