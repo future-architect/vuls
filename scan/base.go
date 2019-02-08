@@ -200,9 +200,9 @@ func coreConvertVinfos(stdout string) (vinfos []models.VulnInfo, err error) {
 			if len(vulnerability.References.Cve) == 0 {
 				continue
 			}
-			NotFixedYet := false
+			notFixedYet := false
 			if len(vulnerability.FixedIn) == 0 {
-				NotFixedYet = true
+				notFixedYet = true
 			}
 			var cveIDs []string
 			for _, cveNumber := range vulnerability.References.Cve {
@@ -220,7 +220,7 @@ func coreConvertVinfos(stdout string) (vinfos []models.VulnInfo, err error) {
 					),
 					AffectedPackages: models.PackageStatuses{
 						{
-							NotFixedYet: NotFixedYet,
+							NotFixedYet: notFixedYet,
 						},
 					},
 				})
