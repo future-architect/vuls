@@ -339,7 +339,7 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 	if len(jpalert) != 0 && len(usalert) == 0 {
 		certAlert = fmt.Sprintf("<%s|JPCERT>", jpalert)
 	} else if len(usalert) != 0 && len(jpalert) == 0 {
-		certAlert = fmt.Sprintf("<%s|USCERT", usalert)
+		certAlert = fmt.Sprintf("<%s|USCERT>", usalert)
 	} else if len(jpalert) != 0 && len(usalert) != 0 {
 		certAlert = fmt.Sprintf("<%s|JPCERT>\n<%s|USCERT>", jpalert, usalert)
 	}
