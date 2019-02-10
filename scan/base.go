@@ -52,7 +52,7 @@ type Command struct {
 
 func (l *base) scanWp() (err error) {
 	if len(l.ServerInfo.WpPath) == 0 && len(l.ServerInfo.WpToken) == 0 {
-		return nil
+		return
 	}
 	if len(l.ServerInfo.WpPath) == 0 {
 		return fmt.Errorf("not found : WpPath")
