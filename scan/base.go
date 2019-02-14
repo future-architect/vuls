@@ -190,11 +190,11 @@ func coreConvertVinfos(stdout string) (vinfos []models.VulnInfo, err error) {
 			return
 		}
 	}
-	for _, i := range data {
-		if len(i.Vulnerabilities) == 0 {
+	for _, e := range data {
+		if len(e.Vulnerabilities) == 0 {
 			continue
 		}
-		for _, vulnerability := range i.Vulnerabilities {
+		for _, vulnerability := range e.Vulnerabilities {
 			if len(vulnerability.References.Cve) == 0 {
 				continue
 			}
@@ -347,11 +347,11 @@ func contentConvertVinfos(stdout string, content WpStatus) (vinfos []models.Vuln
 		}
 	}
 
-	for _, i := range data {
-		if len(i.Vulnerabilities) == 0 {
+	for _, e := range data {
+		if len(e.Vulnerabilities) == 0 {
 			continue
 		}
-		for _, vulnerability := range i.Vulnerabilities {
+		for _, vulnerability := range e.Vulnerabilities {
 			if len(vulnerability.References.Cve) == 0 {
 				continue
 			}
