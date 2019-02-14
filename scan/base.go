@@ -355,12 +355,13 @@ func contentConvertVinfos(stdout string, content WpStatus) (vinfos []models.Vuln
 			if len(vulnerability.References.Cve) == 0 {
 				continue
 			}
-			if len(vulnerability.FixedIn) == 0 {
-				var cveIDs []string
-				for _, cveNumber := range vulnerability.References.Cve {
-					cveIDs = append(cveIDs, "CVE-"+cveNumber)
-				}
 
+			var cveIDs []string
+			for _, cveNumber := range vulnerability.References.Cve {
+				cveIDs = append(cveIDs, "CVE-"+cveNumber)
+			}
+
+			if len(vulnerability.FixedIn) == 0 {
 				for _, cveID := range cveIDs {
 					vinfos = append(vinfos, models.VulnInfo{
 						CveID: cveID,
@@ -389,11 +390,6 @@ func contentConvertVinfos(stdout string, content WpStatus) (vinfos []models.Vuln
 				return
 			}
 			if v1.LessThan(v2) {
-				var cveIDs []string
-				for _, cveNumber := range vulnerability.References.Cve {
-					cveIDs = append(cveIDs, "CVE-"+cveNumber)
-				}
-
 				for _, cveID := range cveIDs {
 					vinfos = append(vinfos, models.VulnInfo{
 						CveID: cveID,
