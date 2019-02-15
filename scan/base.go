@@ -173,10 +173,9 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 			return
 		}
 		if jsonError.Error == "HTTP Token: Access denied.\n" {
-			return vinfos, fmt.Errorf("wordpress: HTTP Token: Access denied.")
-		} else {
-			return vinfos, fmt.Errorf("status: %s", resp.Status)
+			return vinfos, fmt.Errorf("wordpress: HTTP Token: Access denied")
 		}
+		return vinfos, fmt.Errorf("status: %s", resp.Status)
 	}
 	coreConvertVinfos(string(body))
 	return
@@ -275,7 +274,7 @@ func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
 				return
 			}
 			if jsonError.Error == "HTTP Token: Access denied.\n" {
-				return vinfos, fmt.Errorf("wordpress: HTTP Token: Access denied.")
+				return vinfos, fmt.Errorf("wordpress: HTTP Token: Access denied")
 			} else if jsonError.Error == "Not found" {
 				c.log.Infof("wordpress: %s not found", theme.Name)
 			} else {
@@ -326,7 +325,7 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 				return
 			}
 			if jsonError.Error == "HTTP Token: Access denied.\n" {
-				return vinfos, fmt.Errorf("wordpress: HTTP Token: Access denied.")
+				return vinfos, fmt.Errorf("wordpress: HTTP Token: Access denied")
 			} else if jsonError.Error == "Not found" {
 				c.log.Infof("wordpress: %s not found", plugin.Name)
 			} else {
