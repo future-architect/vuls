@@ -68,7 +68,10 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 			return 0, err
 		}
 		defer resp.Body.Close()
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
+            alerts := SecurityAlerts{}
+            if json.NewDecoder(resp.Body).Decode(&alerts); err != nil {
+                return 0, err
+            }
 		if err != nil {
 			return 0, err
 		}
