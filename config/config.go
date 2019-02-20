@@ -1081,6 +1081,18 @@ type ContainerSetting struct {
 	IgnoreCves       []string `json:"ignoreCves,omitempty"`
 }
 
+// IntegrationConf is used for integration configuration
+type IntegrationConf struct {
+	GitHubConf map[string]GitHubConf
+}
+
+// New creates IntegrationConf and initialize fields
+func (c IntegrationConf) New() IntegrationConf {
+	return IntegrationConf{
+		GitHubConf: map[string]GitHubConf{},
+	}
+}
+
 // GitHubConf is used for GitHub integration
 type GitHubConf struct {
 	Token string `json:"token"`
