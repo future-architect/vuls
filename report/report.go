@@ -89,7 +89,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 				}
 			}
 
-			if err := FillCveInfo(dbclient, &r, cpeURIs); err != nil {
+			if err := FillCveInfo(dbclient, &r, cpeURIs, map[string]c.GitHubConf{}); err != nil {
 				return nil, err
 			}
 			r.Lang = c.Conf.Lang
@@ -145,7 +145,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 }
 
 // FillCveInfo fill scanResult with cve info.
-func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string) error {
+func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, gitHubRepos map[string]c.GitHubConf) error {
 	util.Log.Debugf("need to refresh")
 
 	nCVEs, err := FillWithOval(dbclient.OvalDB, r)
@@ -170,6 +170,9 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string) erro
 	}
 	util.Log.Infof("%s: %d CVEs are detected with CPE", r.FormatServerName(), nCVEs)
 
+	for k, v := range gitHubRepos {
+		c.Conf.Servers[r.ServerName].GitHubRepos[k] = v
+	}
 	nCVEs, err = fillGitHubSecurityAlerts(r)
 	if err != nil {
 		return fmt.Errorf("Failed to access GitHub Security Alerts: %s", err)
