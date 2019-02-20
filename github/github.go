@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -68,16 +67,8 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 			return 0, err
 		}
 		defer resp.Body.Close()
-            alerts := SecurityAlerts{}
-            if json.NewDecoder(resp.Body).Decode(&alerts); err != nil {
-                return 0, err
-            }
-		if err != nil {
-			return 0, err
-		}
-
 		alerts := SecurityAlerts{}
-		if err = json.Unmarshal(bodyBytes, &alerts); err != nil {
+		if json.NewDecoder(resp.Body).Decode(&alerts); err != nil {
 			return 0, err
 		}
 
