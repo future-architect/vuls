@@ -33,7 +33,7 @@ import (
 )
 
 // Version of Vuls
-var Version = "0.6.2"
+var Version = "0.6.3"
 
 // Revision of Git
 var Revision string
