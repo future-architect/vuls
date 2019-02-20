@@ -163,14 +163,47 @@ type PackageStatus struct {
 
 // VulnInfo has a vulnerability information and unsecure packages
 type VulnInfo struct {
-	CveID            string           `json:"cveID"`
-	Confidences      Confidences      `json:"confidences"`
-	AffectedPackages PackageStatuses  `json:"affectedPackages"`
+	CveID            string           `json:"cveID,omitempty"`
+	Confidences      Confidences      `json:"confidences,omitempty"`
+	AffectedPackages PackageStatuses  `json:"affectedPackages,omitempty"`
 	DistroAdvisories []DistroAdvisory `json:"distroAdvisories,omitempty"` // for Aamazon, RHEL, FreeBSD
-	CpeURIs          []string         `json:"cpeURIs,omitempty"`          // CpeURIs related to this CVE defined in config.toml
-	CveContents      CveContents      `json:"cveContents"`
-	Exploits         []Exploit        `json:"exploits"`
-	AlertDict        AlertDict        `json:"alertDict"`
+	CveContents      CveContents      `json:"cveContents,omitempty"`
+	Exploits         []Exploit        `json:"exploits,omitempty"`
+	AlertDict        AlertDict        `json:"alertDict,omitempty"`
+
+	CpeURIs              []string             `json:"cpeURIs,omitempty"` // CpeURIs related to this CVE defined in config.toml
+	GitHubSecurityAlerts GitHubSecurityAlerts `json:"gitHubSecurityAlerts,omitempty"`
+}
+
+// GitHubSecurityAlerts is a list of GitHubSecurityAlert
+type GitHubSecurityAlerts []GitHubSecurityAlert
+
+// Add adds given arg to the slice and return the slice (imutable)
+func (g GitHubSecurityAlerts) Add(alert GitHubSecurityAlert) GitHubSecurityAlerts {
+	for _, a := range g {
+		if a.PackageName == alert.PackageName {
+			return g
+		}
+	}
+	return append(g, alert)
+}
+
+func (g GitHubSecurityAlerts) String() string {
+	ss := []string{}
+	for _, a := range g {
+		ss = append(ss, a.PackageName)
+	}
+	return strings.Join(ss, ", ")
+}
+
+// GitHubSecurityAlert has detected CVE-ID, PackageName, Status fetched via GitHub API
+type GitHubSecurityAlert struct {
+	PackageName   string    `json:"packageName"`
+	FixedIn       string    `json:"fixedIn"`
+	AffectedRange string    `json:"affectedRange"`
+	Dismissed     bool      `json:"dismissed"`
+	DismissedAt   time.Time `json:"dismissedAt"`
+	DismissReason string    `json:"dismissReason"`
 }
 
 // Titles returns tilte (TUI)
@@ -774,6 +807,9 @@ const (
 	// ChangelogLenientMatchStr is a String representation of ChangelogLenientMatch
 	ChangelogLenientMatchStr = "ChangelogLenientMatch"
 
+	// GitHubMatchStr is a String representation of GitHubMatch
+	GitHubMatchStr = "GitHubMatch"
+
 	// FailedToGetChangelog is a String representation of FailedToGetChangelog
 	FailedToGetChangelog = "FailedToGetChangelog"
 
@@ -805,4 +841,7 @@ var (
 
 	// ChangelogLenientMatch is a ranking how confident the CVE-ID was deteted correctly
 	ChangelogLenientMatch = Confidence{50, ChangelogLenientMatchStr, 4}
+
+	// GitHubMatch is a ranking how confident the CVE-ID was deteted correctly
+	GitHubMatch = Confidence{97, GitHubMatchStr, 2}
 )
