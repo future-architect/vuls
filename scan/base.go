@@ -251,7 +251,11 @@ func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
 
 	for _, theme := range themes {
 		url := fmt.Sprintf("https://wpvulndb.com/api/v3/themes/%s", theme.Name)
-		contentHttpRequest(c, theme, url)
+		var tmpVinfos []models.VulnInfo
+		if tmpVinfos, err = contentHTTPRequest(c, theme, url); err != nil {
+			return
+		}
+		vinfos = append(vinfos, tmpVinfos...)
 	}
 	return
 }
@@ -273,7 +277,7 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 	for _, plugin := range plugins {
 		url := fmt.Sprintf("https://wpvulndb.com/api/v3/plugins/%s", plugin.Name)
 		var tmpVinfos []models.VulnInfo
-		if tmpVinfos, err = contentHttpRequest(c, plugin, url); err != nil {
+		if tmpVinfos, err = contentHTTPRequest(c, plugin, url); err != nil {
 			return
 		}
 		vinfos = append(vinfos, tmpVinfos...)
@@ -281,7 +285,7 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 	return
 }
 
-func contentHttpRequest(c *base, content WpStatus, url string) (vinfos []models.VulnInfo, err error) {
+func contentHTTPRequest(c *base, content WpStatus, url string) (vinfos []models.VulnInfo, err error) {
 	token := fmt.Sprintf("Token token=%s", c.ServerInfo.WpToken)
 	var req *http.Request
 	req, err = http.NewRequest("GET", url, nil)
