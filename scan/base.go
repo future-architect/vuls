@@ -347,7 +347,7 @@ func contentConvertVinfos(stdout string, content WpStatus) (vinfos []models.Vuln
 						},
 					})
 				}
-				return vinfos, nil
+				continue
 			}
 			var v1 *version.Version
 			v1, err = version.NewVersion(content.Version)
