@@ -177,7 +177,9 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 		}
 		return vinfos, fmt.Errorf("status: %s", resp.Status)
 	}
-	coreConvertVinfos(string(body))
+	if vinfos, err = coreConvertVinfos(string(body)); err != nil {
+		return
+	}
 	return
 }
 
