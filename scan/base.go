@@ -138,8 +138,8 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 	var coreVersion string
 	var r execResult
 	if r = exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
-		tmp := strings.Split(r.Stdout, ".")
-		coreVersion = strings.Join(tmp, "")
+		tmpCoreVersion := strings.Split(r.Stdout, ".")
+		coreVersion = strings.Join(tmpCoreVersion, "")
 		coreVersion = strings.TrimRight(coreVersion, "\r\n")
 		if len(coreVersion) == 0 {
 			return
