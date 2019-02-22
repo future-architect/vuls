@@ -150,34 +150,7 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 	}
 
 	url := fmt.Sprintf("https://wpvulndb.com/api/v3/wordpresses/%s", coreVersion)
-	token := fmt.Sprintf("Token token=%s", c.ServerInfo.WpToken)
-	var req *http.Request
-	req, err = http.NewRequest("GET", url, nil)
-	if err != nil {
-		return vinfos, err
-	}
-	req.Header.Set("Authorization", token)
-	client := new(http.Client)
-	var resp *http.Response
-	resp, err = client.Do(req)
-	if err != nil {
-		return vinfos, err
-	}
-	body, _ := ioutil.ReadAll(resp.Body)
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 && resp.StatusCode != 404 {
-		return vinfos, fmt.Errorf("status: %s", resp.Status)
-	} else if resp.StatusCode == 404 {
-		var jsonError WpCveInfos
-		if err = json.Unmarshal(body, &jsonError); err != nil {
-			return vinfos, err
-		}
-		if jsonError.Error == "HTTP Token: Access denied.\n" {
-			return vinfos, fmt.Errorf("wordpress: HTTP Token: Access denied")
-		}
-		return vinfos, fmt.Errorf("status: %s", resp.Status)
-	}
-	if vinfos, err = coreConvertVinfos(string(body)); err != nil {
+	if vinfos, err = contentHTTPRequest(c, WpStatus{}, url); err != nil {
 		return vinfos, err
 	}
 	return vinfos, nil
