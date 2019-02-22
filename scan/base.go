@@ -251,37 +251,7 @@ func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
 
 	for _, theme := range themes {
 		url := fmt.Sprintf("https://wpvulndb.com/api/v3/themes/%s", theme.Name)
-		token := fmt.Sprintf("Token token=%s", c.ServerInfo.WpToken)
-		var req *http.Request
-		req, err = http.NewRequest("GET", url, nil)
-		if err != nil {
-			return
-		}
-		req.Header.Set("Authorization", token)
-		client := new(http.Client)
-		var resp *http.Response
-		resp, err = client.Do(req)
-		if err != nil {
-			return
-		}
-		body, _ := ioutil.ReadAll(resp.Body)
-		defer resp.Body.Close()
-		if resp.StatusCode != 200 && resp.StatusCode != 404 {
-			return vinfos, fmt.Errorf("status: %s", resp.Status)
-		} else if resp.StatusCode == 404 {
-			var jsonError WpCveInfos
-			if err = json.Unmarshal(body, &jsonError); err != nil {
-				return
-			}
-			if jsonError.Error == "HTTP Token: Access denied.\n" {
-				return vinfos, fmt.Errorf("wordpress: HTTP Token: Access denied")
-			} else if jsonError.Error == "Not found" {
-				c.log.Infof("wordpress: %s not found", theme.Name)
-			} else {
-				return vinfos, fmt.Errorf("status: %s", resp.Status)
-			}
-		}
-		contentConvertVinfos(string(body), theme)
+		contentHttpRequest(c, theme, url)
 	}
 	return
 }
@@ -302,37 +272,48 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 
 	for _, plugin := range plugins {
 		url := fmt.Sprintf("https://wpvulndb.com/api/v3/plugins/%s", plugin.Name)
-		token := fmt.Sprintf("Token token=%s", c.ServerInfo.WpToken)
-		var req *http.Request
-		req, err = http.NewRequest("GET", url, nil)
-		if err != nil {
+		var tmpVinfos []models.VulnInfo
+		if tmpVinfos, err = contentHttpRequest(c, plugin, url); err != nil {
 			return
 		}
-		req.Header.Set("Authorization", token)
-		client := new(http.Client)
-		var resp *http.Response
-		resp, err = client.Do(req)
-		if err != nil {
+		vinfos = append(vinfos, tmpVinfos...)
+	}
+	return
+}
+
+func contentHttpRequest(c *base, content WpStatus, url string) (vinfos []models.VulnInfo, err error) {
+	token := fmt.Sprintf("Token token=%s", c.ServerInfo.WpToken)
+	var req *http.Request
+	req, err = http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
+	req.Header.Set("Authorization", token)
+	client := new(http.Client)
+	var resp *http.Response
+	resp, err = client.Do(req)
+	if err != nil {
+		return
+	}
+	body, _ := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 && resp.StatusCode != 404 {
+		return vinfos, fmt.Errorf("status: %s", resp.Status)
+	} else if resp.StatusCode == 404 {
+		var jsonError WpCveInfos
+		if err = json.Unmarshal(body, &jsonError); err != nil {
 			return
 		}
-		body, _ := ioutil.ReadAll(resp.Body)
-		defer resp.Body.Close()
-		if resp.StatusCode != 200 && resp.StatusCode != 404 {
+		if jsonError.Error == "HTTP Token: Access denied.\n" {
+			return vinfos, fmt.Errorf("wordpress: HTTP Token: Access denied")
+		} else if jsonError.Error == "Not found" {
+			c.log.Infof("wordpress: %s not found", content.Name)
+		} else {
 			return vinfos, fmt.Errorf("status: %s", resp.Status)
-		} else if resp.StatusCode == 404 {
-			var jsonError WpCveInfos
-			if err = json.Unmarshal(body, &jsonError); err != nil {
-				return
-			}
-			if jsonError.Error == "HTTP Token: Access denied.\n" {
-				return vinfos, fmt.Errorf("wordpress: HTTP Token: Access denied")
-			} else if jsonError.Error == "Not found" {
-				c.log.Infof("wordpress: %s not found", plugin.Name)
-			} else {
-				return vinfos, fmt.Errorf("status: %s", resp.Status)
-			}
 		}
-		contentConvertVinfos(string(body), plugin)
+	}
+	if vinfos, err = contentConvertVinfos(string(body), content); err != nil {
+		return
 	}
 	return
 }
