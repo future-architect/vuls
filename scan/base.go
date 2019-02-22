@@ -52,7 +52,7 @@ type Command struct {
 
 func (l *base) scanWp() (err error) {
 	if len(l.ServerInfo.WpPath) == 0 && len(l.ServerInfo.WpToken) == 0 {
-		return
+		return nil
 	}
 	if len(l.ServerInfo.WpPath) == 0 {
 		return fmt.Errorf("not found : WpPath")
@@ -76,7 +76,7 @@ func (l *base) scanWp() (err error) {
 		l.WpVulnInfos[vinfo.CveID] = vinfo
 	}
 
-	return
+	return nil
 }
 
 //WpCveInfos is for wpvulndb's json
@@ -113,23 +113,23 @@ type References struct {
 func detectWp(c *base) (vinfos []models.VulnInfo, err error) {
 	var coreVulns []models.VulnInfo
 	if coreVulns, err = detectWpCore(c); err != nil {
-		return
+		return vinfos, err
 	}
 	vinfos = append(vinfos, coreVulns...)
 
 	var themeVulns []models.VulnInfo
 	if themeVulns, err = detectWpTheme(c); err != nil {
-		return
+		return vinfos, err
 	}
 	vinfos = append(vinfos, themeVulns...)
 
 	var pluginVulns []models.VulnInfo
 	if pluginVulns, err = detectWpPlugin(c); err != nil {
-		return
+		return vinfos, err
 	}
 	vinfos = append(vinfos, pluginVulns...)
 
-	return
+	return vinfos, nil
 }
 
 func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
@@ -142,7 +142,7 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 		coreVersion = strings.Join(tmpCoreVersion, "")
 		coreVersion = strings.TrimRight(coreVersion, "\r\n")
 		if len(coreVersion) == 0 {
-			return
+			return vinfos, fmt.Errorf("version empty")
 		}
 	}
 	if !r.isSuccess() {
@@ -154,14 +154,14 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 	var req *http.Request
 	req, err = http.NewRequest("GET", url, nil)
 	if err != nil {
-		return
+		return vinfos, err
 	}
 	req.Header.Set("Authorization", token)
 	client := new(http.Client)
 	var resp *http.Response
 	resp, err = client.Do(req)
 	if err != nil {
-		return
+		return vinfos, err
 	}
 	body, _ := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
@@ -170,7 +170,7 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 	} else if resp.StatusCode == 404 {
 		var jsonError WpCveInfos
 		if err = json.Unmarshal(body, &jsonError); err != nil {
-			return
+			return vinfos, err
 		}
 		if jsonError.Error == "HTTP Token: Access denied.\n" {
 			return vinfos, fmt.Errorf("wordpress: HTTP Token: Access denied")
@@ -178,9 +178,9 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 		return vinfos, fmt.Errorf("status: %s", resp.Status)
 	}
 	if vinfos, err = coreConvertVinfos(string(body)); err != nil {
-		return
+		return vinfos, err
 	}
-	return
+	return vinfos, nil
 }
 
 func coreConvertVinfos(stdout string) (vinfos []models.VulnInfo, err error) {
@@ -188,7 +188,7 @@ func coreConvertVinfos(stdout string) (vinfos []models.VulnInfo, err error) {
 	if err = json.Unmarshal([]byte(stdout), &data); err != nil {
 		var jsonError WpCveInfos
 		if err = json.Unmarshal([]byte(stdout), &jsonError); err != nil {
-			return
+			return vinfos, err
 		}
 	}
 	for _, e := range data {
@@ -226,7 +226,7 @@ func coreConvertVinfos(stdout string) (vinfos []models.VulnInfo, err error) {
 			}
 		}
 	}
-	return
+	return vinfos, err
 }
 
 //WpStatus is for wp command
@@ -244,7 +244,7 @@ func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
 	var r execResult
 	if r = exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
 		if err = json.Unmarshal([]byte(r.Stdout), &themes); err != nil {
-			return
+			return vinfos, err
 		}
 	}
 	if !r.isSuccess() {
@@ -255,11 +255,11 @@ func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
 		url := fmt.Sprintf("https://wpvulndb.com/api/v3/themes/%s", theme.Name)
 		var tmpVinfos []models.VulnInfo
 		if tmpVinfos, err = contentHTTPRequest(c, theme, url); err != nil {
-			return
+			return vinfos, err
 		}
 		vinfos = append(vinfos, tmpVinfos...)
 	}
-	return
+	return vinfos, nil
 }
 
 func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
@@ -269,7 +269,7 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 	var r execResult
 	if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
 		if err = json.Unmarshal([]byte(r.Stdout), &plugins); err != nil {
-			return
+			return vinfos, err
 		}
 	}
 	if !r.isSuccess() {
@@ -280,11 +280,11 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 		url := fmt.Sprintf("https://wpvulndb.com/api/v3/plugins/%s", plugin.Name)
 		var tmpVinfos []models.VulnInfo
 		if tmpVinfos, err = contentHTTPRequest(c, plugin, url); err != nil {
-			return
+			return vinfos, err
 		}
 		vinfos = append(vinfos, tmpVinfos...)
 	}
-	return
+	return vinfos, nil
 }
 
 func contentHTTPRequest(c *base, content WpStatus, url string) (vinfos []models.VulnInfo, err error) {
@@ -292,14 +292,14 @@ func contentHTTPRequest(c *base, content WpStatus, url string) (vinfos []models.
 	var req *http.Request
 	req, err = http.NewRequest("GET", url, nil)
 	if err != nil {
-		return
+		return vinfos, err
 	}
 	req.Header.Set("Authorization", token)
 	client := new(http.Client)
 	var resp *http.Response
 	resp, err = client.Do(req)
 	if err != nil {
-		return
+		return vinfos, err
 	}
 	body, _ := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
@@ -308,7 +308,7 @@ func contentHTTPRequest(c *base, content WpStatus, url string) (vinfos []models.
 	} else if resp.StatusCode == 404 {
 		var jsonError WpCveInfos
 		if err = json.Unmarshal(body, &jsonError); err != nil {
-			return
+			return vinfos, err
 		}
 		if jsonError.Error == "HTTP Token: Access denied.\n" {
 			return vinfos, fmt.Errorf("wordpress: HTTP Token: Access denied")
@@ -319,9 +319,9 @@ func contentHTTPRequest(c *base, content WpStatus, url string) (vinfos []models.
 		}
 	}
 	if vinfos, err = contentConvertVinfos(string(body), content); err != nil {
-		return
+		return vinfos, err
 	}
-	return
+	return vinfos, nil
 }
 
 func contentConvertVinfos(stdout string, content WpStatus) (vinfos []models.VulnInfo, err error) {
@@ -329,7 +329,7 @@ func contentConvertVinfos(stdout string, content WpStatus) (vinfos []models.Vuln
 	if err = json.Unmarshal([]byte(stdout), &data); err != nil {
 		var jsonError WpCveInfos
 		if err = json.Unmarshal([]byte(stdout), &jsonError); err != nil {
-			return
+			return vinfos, err
 		}
 	}
 
@@ -368,12 +368,12 @@ func contentConvertVinfos(stdout string, content WpStatus) (vinfos []models.Vuln
 			var v1 *version.Version
 			v1, err = version.NewVersion(content.Version)
 			if err != nil {
-				return
+				return vinfos, err
 			}
 			var v2 *version.Version
 			v2, err = version.NewVersion(vulnerability.FixedIn)
 			if err != nil {
-				return
+				return vinfos, err
 			}
 			if v1.LessThan(v2) {
 				for _, cveID := range cveIDs {
@@ -395,7 +395,7 @@ func contentConvertVinfos(stdout string, content WpStatus) (vinfos []models.Vuln
 			}
 		}
 	}
-	return
+	return vinfos, nil
 }
 
 func (l *base) wpConvertToModel() models.VulnInfos {
