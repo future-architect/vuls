@@ -169,7 +169,7 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 		return vinfos, fmt.Errorf("status: %s", resp.Status)
 	} else if resp.StatusCode == 404 {
 		var jsonError WpCveInfos
-		if err = json.Unmarshal([]byte(string(body)), &jsonError); err != nil {
+		if err = json.Unmarshal(body, &jsonError); err != nil {
 			return
 		}
 		if jsonError.Error == "HTTP Token: Access denied.\n" {
@@ -270,7 +270,7 @@ func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
 			return vinfos, fmt.Errorf("status: %s", resp.Status)
 		} else if resp.StatusCode == 404 {
 			var jsonError WpCveInfos
-			if err = json.Unmarshal([]byte(string(body)), &jsonError); err != nil {
+			if err = json.Unmarshal(body, &jsonError); err != nil {
 				return
 			}
 			if jsonError.Error == "HTTP Token: Access denied.\n" {
@@ -321,7 +321,7 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 			return vinfos, fmt.Errorf("status: %s", resp.Status)
 		} else if resp.StatusCode == 404 {
 			var jsonError WpCveInfos
-			if err = json.Unmarshal([]byte(string(body)), &jsonError); err != nil {
+			if err = json.Unmarshal(body, &jsonError); err != nil {
 				return
 			}
 			if jsonError.Error == "HTTP Token: Access denied.\n" {
