@@ -148,7 +148,7 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 
 	url := fmt.Sprintf("https://wpvulndb.com/api/v3/wordpresses/%s", coreVersion)
 	var body []byte
-	if body, err = httpRequest(c, WpStatus{}, url); err != nil {
+	if body, err = httpRequest(c, WpStatus{Name: "core"}, url); err != nil {
 		return nil, err
 	}
 	if vinfos, err = coreConvertVinfos(string(body)); err != nil {
@@ -296,6 +296,9 @@ func httpRequest(c *base, content WpStatus, url string) (body []byte, err error)
 		if jsonError.Error == "HTTP Token: Access denied.\n" {
 			return nil, fmt.Errorf("wordpress: HTTP Token: Access denied")
 		} else if jsonError.Error == "Not found" {
+			if content.Name == "core" {
+				return nil, fmt.Errorf("wordpress: core version not found")
+			}
 			c.log.Infof("wordpress: %s not found", content.Name)
 		} else {
 			return nil, fmt.Errorf("status: %s", resp.Status)
