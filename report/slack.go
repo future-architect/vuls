@@ -207,6 +207,9 @@ func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 		for _, n := range vinfo.CpeURIs {
 			curent = append(curent, n)
 		}
+		for _, n := range vinfo.GitHubSecurityAlerts {
+			curent = append(curent, n.PackageName)
+		}
 
 		new := []string{}
 		for _, affected := range vinfo.AffectedPackages {
@@ -221,6 +224,9 @@ func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 			}
 		}
 		for range vinfo.CpeURIs {
+			new = append(new, "?")
+		}
+		for range vinfo.GitHubSecurityAlerts {
 			new = append(new, "?")
 		}
 

@@ -220,9 +220,11 @@ host                = "{{$ip}}"
 #owaspDCXMLPath = "/path/to/dependency-check-report.xml"
 #ignoreCves     = ["CVE-2014-0160"]
 
+#[servers.{{index $names $i}}.githubs."owner/repo"]
+#token   = "yourToken"
+
 #[servers.{{index $names $i}}.optional]
 #key = "value1"
-
 
 {{end}}
 

@@ -636,6 +636,7 @@ func summaryLines(r models.ScanResult) string {
 
 		packname := vinfo.AffectedPackages.FormatTuiSummary()
 		packname += strings.Join(vinfo.CpeURIs, ", ")
+		packname += vinfo.GitHubSecurityAlerts.String()
 
 		alert := "  "
 		if vinfo.AlertDict.HasAlert() {
@@ -740,6 +741,10 @@ func setChangelogLayout(g *gocui.Gui) error {
 		sort.Strings(vinfo.CpeURIs)
 		for _, uri := range vinfo.CpeURIs {
 			lines = append(lines, "* "+uri)
+		}
+
+		for _, alert := range vinfo.GitHubSecurityAlerts {
+			lines = append(lines, "* "+alert.PackageName)
 		}
 
 		for _, adv := range vinfo.DistroAdvisories {

@@ -20,7 +20,7 @@ VERSION := $(shell git describe --tags --abbrev=0)
 REVISION := $(shell git rev-parse --short HEAD)
 BUILDTIME := $(shell date "+%Y%m%d_%H%M%S")
 LDFLAGS := -X 'github.com/future-architect/vuls/config.Version=$(VERSION)' \
-    -X 'github.com/future-architect/vuls/config.Revision=$(BUILDTIME)_$(REVISION)'
+    -X 'github.com/future-architect/vuls/config.Revision=build-$(BUILDTIME)_$(REVISION)'
 
 all: dep build
 

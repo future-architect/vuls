@@ -104,7 +104,7 @@ func formatList(r models.ScanResult) string {
 %s
 No CVE-IDs are found in updatable packages.
 %s
-	 `, header, r.FormatUpdatablePacksSummary())
+`, header, r.FormatUpdatablePacksSummary())
 	}
 
 	data := [][]string{}
@@ -168,7 +168,7 @@ func formatFullPlainText(r models.ScanResult) (lines string) {
 %s
 No CVE-IDs are found in updatable packages.
 %s
-	 `, header, r.FormatUpdatablePacksSummary())
+`, header, r.FormatUpdatablePacksSummary())
 	}
 
 	lines = header + "\n"
@@ -237,6 +237,10 @@ No CVE-IDs are found in updatable packages.
 		sort.Strings(vuln.CpeURIs)
 		for _, name := range vuln.CpeURIs {
 			data = append(data, []string{"CPE", name})
+		}
+
+		for _, alert := range vuln.GitHubSecurityAlerts {
+			data = append(data, []string{"GitHub", alert.PackageName})
 		}
 
 		for _, confidence := range vuln.Confidences {

@@ -33,7 +33,7 @@ import (
 )
 
 // Version of Vuls
-var Version = "0.6.2"
+var Version = "0.6.3"
 
 // Revision of Git
 var Revision string
@@ -98,31 +98,34 @@ const (
 
 //Config is struct of Configuration
 type Config struct {
-	Debug      bool   `json:"debug"`
-	DebugSQL   bool   `json:"debugSQL"`
-	Lang       string `json:"lang"`
-	HTTPProxy  string `valid:"url" json:"httpProxy"`
-	LogDir     string `json:"logDir"`
-	ResultsDir string `json:"resultsDir"`
-	Pipe       bool   `json:"pipe"`
+	Debug      bool   `json:"debug,omitempty"`
+	DebugSQL   bool   `json:"debugSQL,omitempty"`
+	Lang       string `json:"lang,omitempty"`
+	HTTPProxy  string `valid:"url" json:"httpProxy,omitempty"`
+	LogDir     string `json:"logDir,omitempty"`
+	ResultsDir string `json:"resultsDir,omitempty"`
+	Pipe       bool   `json:"pipe,omitempty"`
 
-	Default            ServerInfo            `json:"default"`
-	Servers            map[string]ServerInfo `json:"servers"`
-	CvssScoreOver      float64               `json:"cvssScoreOver"`
-	IgnoreUnscoredCves bool                  `json:"ignoreUnscoredCves"`
-	IgnoreUnfixed      bool                  `json:"ignoreUnfixed"`
-	SSHNative          bool                  `json:"sshNative"`
-	SSHConfig          bool                  `json:"sshConfig"`
-	ContainersOnly     bool                  `json:"containersOnly"`
-	SkipBroken         bool                  `json:"skipBroken"`
-	CacheDBPath        string                `json:"cacheDBPath"`
-	Vvv                bool                  `json:"vvv"`
-	UUID               bool                  `json:"uuid"`
+	Default       ServerInfo            `json:"default,omitempty"`
+	Servers       map[string]ServerInfo `json:"servers,omitempty"`
+	CvssScoreOver float64               `json:"cvssScoreOver,omitempty"`
 
-	CveDict  GoCveDictConf `json:"cveDict"`
-	OvalDict GovalDictConf `json:"ovalDict"`
-	Gost     GostConf      `json:"gost"`
-	Exploit  ExploitConf   `json:"exploit"`
+	IgnoreUnscoredCves    bool `json:"ignoreUnscoredCves,omitempty"`
+	IgnoreUnfixed         bool `json:"ignoreUnfixed,omitempty"`
+	IgnoreGitHubDismissed bool `json:"ignore_git_hub_dismissed,omitempty"`
+
+	SSHNative      bool   `json:"sshNative,omitempty"`
+	SSHConfig      bool   `json:"sshConfig,omitempty"`
+	ContainersOnly bool   `json:"containersOnly,omitempty"`
+	SkipBroken     bool   `json:"skipBroken,omitempty"`
+	CacheDBPath    string `json:"cacheDBPath,omitempty"`
+	Vvv            bool   `json:"vvv,omitempty"`
+	UUID           bool   `json:"uuid,omitempty"`
+
+	CveDict  GoCveDictConf `json:"cveDict,omitempty"`
+	OvalDict GovalDictConf `json:"ovalDict,omitempty"`
+	Gost     GostConf      `json:"gost,omitempty"`
+	Exploit  ExploitConf   `json:"exploit,omitempty"`
 
 	Slack    SlackConf    `json:"-"`
 	EMail    SMTPConf     `json:"-"`
@@ -136,27 +139,27 @@ type Config struct {
 	Telegram TelegramConf `json:"-"`
 	Saas     SaasConf     `json:"-"`
 
-	RefreshCve        bool `json:"refreshCve"`
-	ToSlack           bool `json:"toSlack"`
-	ToStride          bool `json:"toStride"`
-	ToHipChat         bool `json:"toHipChat"`
-	ToChatWork        bool `json:"toChatWork"`
-	ToTelegram        bool `json:"ToTelegram"`
-	ToEmail           bool `json:"toEmail"`
-	ToSyslog          bool `json:"toSyslog"`
-	ToLocalFile       bool `json:"toLocalFile"`
-	ToS3              bool `json:"toS3"`
-	ToAzureBlob       bool `json:"toAzureBlob"`
-	ToSaas            bool `json:"toSaas"`
-	ToHTTP            bool `json:"toHTTP"`
-	FormatXML         bool `json:"formatXML"`
-	FormatJSON        bool `json:"formatJSON"`
-	FormatOneEMail    bool `json:"formatOneEMail"`
-	FormatOneLineText bool `json:"formatOneLineText"`
-	FormatList        bool `json:"formatList"`
-	FormatFullText    bool `json:"formatFullText"`
-	GZIP              bool `json:"gzip"`
-	Diff              bool `json:"diff"`
+	RefreshCve        bool `json:"refreshCve,omitempty"`
+	ToSlack           bool `json:"toSlack,omitempty"`
+	ToStride          bool `json:"toStride,omitempty"`
+	ToHipChat         bool `json:"toHipChat,omitempty"`
+	ToChatWork        bool `json:"toChatWork,omitempty"`
+	ToTelegram        bool `json:"ToTelegram,omitempty"`
+	ToEmail           bool `json:"toEmail,omitempty"`
+	ToSyslog          bool `json:"toSyslog,omitempty"`
+	ToLocalFile       bool `json:"toLocalFile,omitempty"`
+	ToS3              bool `json:"toS3,omitempty"`
+	ToAzureBlob       bool `json:"toAzureBlob,omitempty"`
+	ToSaas            bool `json:"toSaas,omitempty"`
+	ToHTTP            bool `json:"toHTTP,omitempty"`
+	FormatXML         bool `json:"formatXML,omitempty"`
+	FormatJSON        bool `json:"formatJSON,omitempty"`
+	FormatOneEMail    bool `json:"formatOneEMail,omitempty"`
+	FormatOneLineText bool `json:"formatOneLineText,omitempty"`
+	FormatList        bool `json:"formatList,omitempty"`
+	FormatFullText    bool `json:"formatFullText,omitempty"`
+	GZIP              bool `json:"gzip,omitempty"`
+	Diff              bool `json:"diff,omitempty"`
 }
 
 // ValidateOnConfigtest validates
@@ -1054,6 +1057,7 @@ type ServerInfo struct {
 	Containers             map[string]ContainerSetting `toml:"containers" json:"containers,omitempty"`
 	IgnoreCves             []string                    `toml:"ignoreCves,omitempty" json:"ignoreCves,omitempty"`
 	IgnorePkgsRegexp       []string                    `toml:"ignorePkgsRegexp,omitempty" json:"ignorePkgsRegexp,omitempty"`
+	GitHubRepos            map[string]GitHubConf       `toml:"githubs" json:"githubs,omitempty"` // key: owner/repo
 	UUIDs                  map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
 	Memo                   string                      `toml:"memo,omitempty" json:"memo"`
 	Enablerepo             []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, RHEL, Amazon
@@ -1078,6 +1082,23 @@ type ContainerSetting struct {
 	OwaspDCXMLPath   string   `json:"owaspDCXMLPath"`
 	IgnorePkgsRegexp []string `json:"ignorePkgsRegexp,omitempty"`
 	IgnoreCves       []string `json:"ignoreCves,omitempty"`
+}
+
+// IntegrationConf is used for integration configuration
+type IntegrationConf struct {
+	GitHubConf map[string]GitHubConf
+}
+
+// New creates IntegrationConf and initialize fields
+func (c IntegrationConf) New() IntegrationConf {
+	return IntegrationConf{
+		GitHubConf: map[string]GitHubConf{},
+	}
+}
+
+// GitHubConf is used for GitHub integration
+type GitHubConf struct {
+	Token string `json:"token"`
 }
 
 // ScanMode has a type of scan mode. fast, fast-root, deep and offline
