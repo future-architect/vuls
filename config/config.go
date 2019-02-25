@@ -1063,17 +1063,20 @@ type ServerInfo struct {
 	Enablerepo             []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, RHEL, Amazon
 	Optional               map[string]interface{}      `toml:"optional,omitempty" json:"optional,omitempty"`     // Optional key-value set that will be outputted to JSON
 	Type                   string                      `toml:"type,omitempty" json:"type"`                       // "pseudo" or ""
-	IPv4Addrs              []string                    `toml:"-" json:"ipv4Addrs,omitempty"`
-	IPv6Addrs              []string                    `toml:"-" json:"ipv6Addrs,omitempty"`
+
+	WpUser    string `toml:"wpUser" json:"wpUser"`
+	WpDocRoot string `toml:"wpDocRoot" json:"wpDocRoot"`
+	WpCmdPath string `toml:"wpCmdPath" json:"wpCmdPath"`
+	WpToken   string `toml:"wpToken" json:"wpToken"`
 
 	// used internal
+	IPv4Addrs []string `toml:"-" json:"ipv4Addrs,omitempty"`
+	IPv6Addrs []string `toml:"-" json:"ipv6Addrs,omitempty"`
+
 	LogMsgAnsiColor string    `toml:"-" json:"-"` // DebugLog Color
 	Container       Container `toml:"-" json:"-"`
 	Distro          Distro    `toml:"-" json:"-"`
 	Mode            ScanMode  `toml:"-" json:"-"`
-
-	WpPath  string `toml:"wpPath" json:"wpPath"`
-	WpToken string `toml:"wpToken" json:"wpToken"`
 }
 
 // ContainerSetting is used for loading container setting in config.toml

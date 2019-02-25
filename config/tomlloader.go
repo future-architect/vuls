@@ -269,8 +269,10 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		s.UUIDs = v.UUIDs
 		s.Type = v.Type
 
-		s.WpPath = v.WpPath
 		s.WpToken = v.WpToken
+		s.WpCmdPath = v.WpCmdPath
+		s.WpDocRoot = v.WpDocRoot
+		s.WpUser = v.WpUser
 
 		s.LogMsgAnsiColor = Colors[i%len(Colors)]
 		i++

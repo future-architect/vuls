@@ -26,12 +26,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/models"
-	"github.com/hashicorp/go-version"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/wordpress"
+	version "github.com/hashicorp/go-version"
+	"github.com/sirupsen/logrus"
 )
 
 type base struct {
@@ -44,30 +46,41 @@ type base struct {
 	errs []error
 }
 
-//Command is for check dependence
-type Command struct {
-	Command string
-	Name    string
-}
-
-func (l *base) scanWp() (err error) {
-	if len(l.ServerInfo.WpPath) == 0 && len(l.ServerInfo.WpToken) == 0 {
+func (l *base) scanWordPress() (err error) {
+	wpOpts := []string{l.ServerInfo.WpUser,
+		l.ServerInfo.WpDocRoot,
+		l.ServerInfo.WpCmdPath,
+		l.ServerInfo.WpToken,
+	}
+	var isScanWp, hasEmptyOpt bool
+	for _, opt := range wpOpts {
+		if opt != "" {
+			isScanWp = true
+			break
+		} else {
+			hasEmptyOpt = true
+		}
+	}
+	if !isScanWp {
 		return nil
 	}
-	if len(l.ServerInfo.WpPath) == 0 {
-		return fmt.Errorf("not found : WpPath")
-	}
-	if len(l.ServerInfo.WpToken) == 0 {
-		return fmt.Errorf("not found : WpToken")
+
+	if hasEmptyOpt {
+		return fmt.Errorf("%s has empty WordPress opts: %s",
+			l.getServerInfo().GetServerName(),
+			wpOpts,
+		)
 	}
 
-	cmd := Command{Command: "wp cli", Name: "wp"}
-	if r := exec(l.ServerInfo, cmd.Command, noSudo); !r.isSuccess() {
-		return fmt.Errorf("%s command not installed", cmd.Name)
+	cmd := fmt.Sprintf("sudo -u %s -i -- %s cli version",
+		l.ServerInfo.WpUser,
+		l.ServerInfo.WpCmdPath)
+	if r := exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
+		return fmt.Errorf("Failed to exec `%s`", cmd)
 	}
 
 	var vinfos []models.VulnInfo
-	if vinfos, err = detectWp(l); err != nil {
+	if vinfos, err = detectWordPress(l); err != nil {
 		return fmt.Errorf("Failed to scan wordpress: %s", err)
 	}
 	l.WpVulnInfos = map[string]models.VulnInfo{}
@@ -78,38 +91,7 @@ func (l *base) scanWp() (err error) {
 	return nil
 }
 
-//WpCveInfos is for wpvulndb's json
-type WpCveInfos struct {
-	ReleaseDate     string      `json:"release_date"`
-	ChangelogURL    string      `json:"changelog_url"`
-	Status          string      `json:"status"`
-	LatestVersion   string      `json:"latest_version"`
-	LastUpdated     string      `json:"last_updated"`
-	Popular         bool        `json:"popular"`
-	Vulnerabilities []WpCveInfo `json:"vulnerabilities"`
-	Error           string      `json:"error"`
-}
-
-//WpCveInfo is for wpvulndb's json
-type WpCveInfo struct {
-	ID            int        `json:"id"`
-	Title         string     `json:"title"`
-	CreatedAt     string     `json:"created_at"`
-	UpdatedAt     string     `json:"updated_at"`
-	PublishedDate string     `json:"published_date"`
-	VulnType      string     `json:"vuln_type"`
-	References    References `json:"references"`
-	FixedIn       string     `json:"fixed_in"`
-}
-
-//References is for wpvulndb's json
-type References struct {
-	URL     []string `json:"url"`
-	Cve     []string `json:"cve"`
-	Secunia []string `json:"secunia"`
-}
-
-func detectWp(c *base) (vinfos []models.VulnInfo, err error) {
+func detectWordPress(c *base) (vinfos []models.VulnInfo, err error) {
 	var coreVulns []models.VulnInfo
 	if coreVulns, err = detectWpCore(c); err != nil {
 		return nil, err
@@ -131,24 +113,24 @@ func detectWp(c *base) (vinfos []models.VulnInfo, err error) {
 	return vinfos, nil
 }
 
-func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
-	cmd := fmt.Sprintf("wp core version --path=%s", c.ServerInfo.WpPath)
+func detectWpCore(l *base) (vinfos []models.VulnInfo, err error) {
+	cmd := fmt.Sprintf("sudo -u %s -i -- %s core version --path=%s",
+		l.ServerInfo.WpUser,
+		l.ServerInfo.WpCmdPath,
+		l.ServerInfo.WpDocRoot)
 
-	var coreVersion string
 	var r execResult
-	if r = exec(c.ServerInfo, cmd, noSudo); !r.isSuccess() {
+	if r = exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
 		return nil, fmt.Errorf("%s", cmd)
 	}
-	tmpCoreVersion := strings.Split(r.Stdout, ".")
-	coreVersion = strings.Join(tmpCoreVersion, "")
-	coreVersion = strings.TrimRight(coreVersion, "\r\n")
-	if len(coreVersion) == 0 {
-		return nil, fmt.Errorf("version empty")
+	ver := strings.Replace(strings.TrimSpace(r.Stdout), ".", "", -1)
+	if len(ver) == 0 {
+		return nil, fmt.Errorf("Failed to get WordPress core version")
 	}
 
-	url := fmt.Sprintf("https://wpvulndb.com/api/v3/wordpresses/%s", coreVersion)
+	url := fmt.Sprintf("https://wpvulndb.com/api/v3/wordpresses/%s", ver)
 	var body []byte
-	if body, err = httpRequest(c, WpStatus{Name: "core"}, url); err != nil {
+	if body, err = httpRequest(l, models.WpPackage{Name: "core"}, url); err != nil {
 		return nil, err
 	}
 	if vinfos, err = coreConvertVinfos(string(body)); err != nil {
@@ -158,9 +140,9 @@ func detectWpCore(c *base) (vinfos []models.VulnInfo, err error) {
 }
 
 func coreConvertVinfos(stdout string) (vinfos []models.VulnInfo, err error) {
-	data := map[string]WpCveInfos{}
+	data := map[string]wordpress.WpCveInfos{}
 	if err = json.Unmarshal([]byte(stdout), &data); err != nil {
-		var jsonError WpCveInfos
+		var jsonError wordpress.WpCveInfos
 		if err = json.Unmarshal([]byte(stdout), &jsonError); err != nil {
 			return nil, err
 		}
@@ -203,20 +185,15 @@ func coreConvertVinfos(stdout string) (vinfos []models.VulnInfo, err error) {
 	return vinfos, nil
 }
 
-//WpStatus is for wp command
-type WpStatus struct {
-	Name    string `json:"name"`
-	Status  string `json:"status"`
-	Update  string `json:"update"`
-	Version string `json:"version"`
-}
+func detectWpTheme(l *base) (vinfos []models.VulnInfo, err error) {
+	cmd := fmt.Sprintf("sudo -u %s -i -- %s theme list --path=%s --format=json",
+		l.ServerInfo.WpUser,
+		l.ServerInfo.WpCmdPath,
+		l.ServerInfo.WpDocRoot)
 
-func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
-	cmd := fmt.Sprintf("wp theme list --path=%s --format=json", c.ServerInfo.WpPath)
-
-	var themes []WpStatus
+	var themes []models.WpPackage
 	var r execResult
-	if r = exec(c.ServerInfo, cmd, noSudo); !r.isSuccess() {
+	if r = exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
 		return nil, fmt.Errorf("%s", cmd)
 	}
 	if err = json.Unmarshal([]byte(r.Stdout), &themes); err != nil {
@@ -226,7 +203,7 @@ func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
 	for _, theme := range themes {
 		url := fmt.Sprintf("https://wpvulndb.com/api/v3/themes/%s", theme.Name)
 		var body []byte
-		if body, err = httpRequest(c, theme, url); err != nil {
+		if body, err = httpRequest(l, theme, url); err != nil {
 			return nil, err
 		}
 		tmpVinfos, err := contentConvertVinfos(string(body), theme)
@@ -238,12 +215,15 @@ func detectWpTheme(c *base) (vinfos []models.VulnInfo, err error) {
 	return vinfos, nil
 }
 
-func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
-	cmd := fmt.Sprintf("wp plugin list --path=%s --format=json", c.ServerInfo.WpPath)
+func detectWpPlugin(l *base) (vinfos []models.VulnInfo, err error) {
+	cmd := fmt.Sprintf("sudo -u %s -i -- %s plugin list --path=%s --format=json",
+		l.ServerInfo.WpUser,
+		l.ServerInfo.WpCmdPath,
+		l.ServerInfo.WpDocRoot)
 
-	var plugins []WpStatus
-	var r execResult
-	if r := exec(c.ServerInfo, cmd, noSudo); r.isSuccess() {
+	var plugins []models.WpPackage
+	r := exec(l.ServerInfo, cmd, noSudo)
+	if r.isSuccess() {
 		if err = json.Unmarshal([]byte(r.Stdout), &plugins); err != nil {
 			return nil, err
 		}
@@ -255,7 +235,7 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 	for _, plugin := range plugins {
 		url := fmt.Sprintf("https://wpvulndb.com/api/v3/plugins/%s", plugin.Name)
 		var body []byte
-		if body, err = httpRequest(c, plugin, url); err != nil {
+		if body, err = httpRequest(l, plugin, url); err != nil {
 			return nil, err
 		}
 		tmpVinfos, err := contentConvertVinfos(string(body), plugin)
@@ -267,7 +247,7 @@ func detectWpPlugin(c *base) (vinfos []models.VulnInfo, err error) {
 	return vinfos, nil
 }
 
-func httpRequest(c *base, content WpStatus, url string) (body []byte, err error) {
+func httpRequest(c *base, content models.WpPackage, url string) (body []byte, err error) {
 	token := fmt.Sprintf("Token token=%s", c.ServerInfo.WpToken)
 	var req *http.Request
 	req, err = http.NewRequest("GET", url, nil)
@@ -289,7 +269,7 @@ func httpRequest(c *base, content WpStatus, url string) (body []byte, err error)
 	if resp.StatusCode != 200 && resp.StatusCode != 404 {
 		return nil, fmt.Errorf("status: %s", resp.Status)
 	} else if resp.StatusCode == 404 {
-		var jsonError WpCveInfos
+		var jsonError wordpress.WpCveInfos
 		if err = json.Unmarshal(body, &jsonError); err != nil {
 			return nil, err
 		}
@@ -307,10 +287,10 @@ func httpRequest(c *base, content WpStatus, url string) (body []byte, err error)
 	return body, nil
 }
 
-func contentConvertVinfos(stdout string, content WpStatus) (vinfos []models.VulnInfo, err error) {
-	data := map[string]WpCveInfos{}
+func contentConvertVinfos(stdout string, content models.WpPackage) (vinfos []models.VulnInfo, err error) {
+	data := map[string]wordpress.WpCveInfos{}
 	if err = json.Unmarshal([]byte(stdout), &data); err != nil {
-		var jsonError WpCveInfos
+		var jsonError wordpress.WpCveInfos
 		if err = json.Unmarshal([]byte(stdout), &jsonError); err != nil {
 			return nil, err
 		}

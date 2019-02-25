@@ -64,6 +64,7 @@ type ScanResult struct {
 	CweDict          CweDict                `json:"cweDict"`
 	Optional         map[string]interface{} `json:",omitempty"`
 	SrcPackages      SrcPackages            `json:",omitempty"`
+	WordPress        *WordPress             `json:",omitempty"`
 	Errors           []string               `json:"errors"`
 	Config           struct {
 		Scan   config.Config `json:"scan"`
