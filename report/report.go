@@ -92,6 +92,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			}
 
 			githubInts := GithubSecurityAlerts(c.Conf.Servers[r.ServerName].GitHubRepos)
+			//TODO WordPress Ints
 			if err := FillCveInfo(dbclient, &r, cpeURIs, githubInts); err != nil {
 				return nil, err
 			}
@@ -364,6 +365,7 @@ func fillVulnByCpeURIs(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) 
 }
 
 type ints struct {
+	//TODO rename
 	GithubAlertsCveCounts int
 }
 

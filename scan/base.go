@@ -26,13 +26,9 @@ import (
 	"strings"
 	"time"
 
-	"io/ioutil"
-	"net/http"
-
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/wordpress"
-	version "github.com/hashicorp/go-version"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -41,329 +37,10 @@ type base struct {
 	Distro     config.Distro
 	Platform   models.Platform
 	osPackages
+	WordPress *models.WordPress
 
 	log  *logrus.Entry
 	errs []error
-}
-
-func (l *base) scanWordPress() (err error) {
-	wpOpts := []string{l.ServerInfo.WpUser,
-		l.ServerInfo.WpDocRoot,
-		l.ServerInfo.WpCmdPath,
-		l.ServerInfo.WpToken,
-	}
-	var isScanWp, hasEmptyOpt bool
-	for _, opt := range wpOpts {
-		if opt != "" {
-			isScanWp = true
-			break
-		} else {
-			hasEmptyOpt = true
-		}
-	}
-	if !isScanWp {
-		return nil
-	}
-
-	if hasEmptyOpt {
-		return fmt.Errorf("%s has empty WordPress opts: %s",
-			l.getServerInfo().GetServerName(),
-			wpOpts,
-		)
-	}
-
-	cmd := fmt.Sprintf("sudo -u %s -i -- %s cli version",
-		l.ServerInfo.WpUser,
-		l.ServerInfo.WpCmdPath)
-	if r := exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
-		return fmt.Errorf("Failed to exec `%s`", cmd)
-	}
-
-	var vinfos []models.VulnInfo
-	if vinfos, err = detectWordPress(l); err != nil {
-		return fmt.Errorf("Failed to scan wordpress: %s", err)
-	}
-	l.WpVulnInfos = map[string]models.VulnInfo{}
-	for _, vinfo := range vinfos {
-		l.WpVulnInfos[vinfo.CveID] = vinfo
-	}
-
-	return nil
-}
-
-func detectWordPress(c *base) (vinfos []models.VulnInfo, err error) {
-	var coreVulns []models.VulnInfo
-	if coreVulns, err = detectWpCore(c); err != nil {
-		return nil, err
-	}
-	vinfos = append(vinfos, coreVulns...)
-
-	var themeVulns []models.VulnInfo
-	if themeVulns, err = detectWpTheme(c); err != nil {
-		return nil, err
-	}
-	vinfos = append(vinfos, themeVulns...)
-
-	var pluginVulns []models.VulnInfo
-	if pluginVulns, err = detectWpPlugin(c); err != nil {
-		return nil, err
-	}
-	vinfos = append(vinfos, pluginVulns...)
-
-	return vinfos, nil
-}
-
-func detectWpCore(l *base) (vinfos []models.VulnInfo, err error) {
-	cmd := fmt.Sprintf("sudo -u %s -i -- %s core version --path=%s",
-		l.ServerInfo.WpUser,
-		l.ServerInfo.WpCmdPath,
-		l.ServerInfo.WpDocRoot)
-
-	var r execResult
-	if r = exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
-		return nil, fmt.Errorf("%s", cmd)
-	}
-	ver := strings.Replace(strings.TrimSpace(r.Stdout), ".", "", -1)
-	if len(ver) == 0 {
-		return nil, fmt.Errorf("Failed to get WordPress core version")
-	}
-
-	url := fmt.Sprintf("https://wpvulndb.com/api/v3/wordpresses/%s", ver)
-	var body []byte
-	if body, err = httpRequest(l, models.WpPackage{Name: "core"}, url); err != nil {
-		return nil, err
-	}
-	if vinfos, err = coreConvertVinfos(string(body)); err != nil {
-		return nil, err
-	}
-	return vinfos, nil
-}
-
-func coreConvertVinfos(stdout string) (vinfos []models.VulnInfo, err error) {
-	data := map[string]wordpress.WpCveInfos{}
-	if err = json.Unmarshal([]byte(stdout), &data); err != nil {
-		var jsonError wordpress.WpCveInfos
-		if err = json.Unmarshal([]byte(stdout), &jsonError); err != nil {
-			return nil, err
-		}
-	}
-	for _, e := range data {
-		if len(e.Vulnerabilities) == 0 {
-			continue
-		}
-		for _, vulnerability := range e.Vulnerabilities {
-			if len(vulnerability.References.Cve) == 0 {
-				continue
-			}
-			notFixedYet := false
-			if len(vulnerability.FixedIn) == 0 {
-				notFixedYet = true
-			}
-			var cveIDs []string
-			for _, cveNumber := range vulnerability.References.Cve {
-				cveIDs = append(cveIDs, "CVE-"+cveNumber)
-			}
-
-			for _, cveID := range cveIDs {
-				vinfos = append(vinfos, models.VulnInfo{
-					CveID: cveID,
-					CveContents: models.NewCveContents(
-						models.CveContent{
-							CveID: cveID,
-							Title: vulnerability.Title,
-						},
-					),
-					AffectedPackages: models.PackageStatuses{
-						{
-							NotFixedYet: notFixedYet,
-						},
-					},
-				})
-			}
-		}
-	}
-	return vinfos, nil
-}
-
-func detectWpTheme(l *base) (vinfos []models.VulnInfo, err error) {
-	cmd := fmt.Sprintf("sudo -u %s -i -- %s theme list --path=%s --format=json",
-		l.ServerInfo.WpUser,
-		l.ServerInfo.WpCmdPath,
-		l.ServerInfo.WpDocRoot)
-
-	var themes []models.WpPackage
-	var r execResult
-	if r = exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
-		return nil, fmt.Errorf("%s", cmd)
-	}
-	if err = json.Unmarshal([]byte(r.Stdout), &themes); err != nil {
-		return nil, err
-	}
-
-	for _, theme := range themes {
-		url := fmt.Sprintf("https://wpvulndb.com/api/v3/themes/%s", theme.Name)
-		var body []byte
-		if body, err = httpRequest(l, theme, url); err != nil {
-			return nil, err
-		}
-		tmpVinfos, err := contentConvertVinfos(string(body), theme)
-		if err != nil {
-			return nil, err
-		}
-		vinfos = append(vinfos, tmpVinfos...)
-	}
-	return vinfos, nil
-}
-
-func detectWpPlugin(l *base) (vinfos []models.VulnInfo, err error) {
-	cmd := fmt.Sprintf("sudo -u %s -i -- %s plugin list --path=%s --format=json",
-		l.ServerInfo.WpUser,
-		l.ServerInfo.WpCmdPath,
-		l.ServerInfo.WpDocRoot)
-
-	var plugins []models.WpPackage
-	r := exec(l.ServerInfo, cmd, noSudo)
-	if r.isSuccess() {
-		if err = json.Unmarshal([]byte(r.Stdout), &plugins); err != nil {
-			return nil, err
-		}
-	}
-	if !r.isSuccess() {
-		return nil, fmt.Errorf("%s", cmd)
-	}
-
-	for _, plugin := range plugins {
-		url := fmt.Sprintf("https://wpvulndb.com/api/v3/plugins/%s", plugin.Name)
-		var body []byte
-		if body, err = httpRequest(l, plugin, url); err != nil {
-			return nil, err
-		}
-		tmpVinfos, err := contentConvertVinfos(string(body), plugin)
-		if err != nil {
-			return nil, err
-		}
-		vinfos = append(vinfos, tmpVinfos...)
-	}
-	return vinfos, nil
-}
-
-func httpRequest(c *base, content models.WpPackage, url string) (body []byte, err error) {
-	token := fmt.Sprintf("Token token=%s", c.ServerInfo.WpToken)
-	var req *http.Request
-	req, err = http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", token)
-	client := new(http.Client)
-	var resp *http.Response
-	resp, err = client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	body, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 && resp.StatusCode != 404 {
-		return nil, fmt.Errorf("status: %s", resp.Status)
-	} else if resp.StatusCode == 404 {
-		var jsonError wordpress.WpCveInfos
-		if err = json.Unmarshal(body, &jsonError); err != nil {
-			return nil, err
-		}
-		if jsonError.Error == "HTTP Token: Access denied.\n" {
-			return nil, fmt.Errorf("wordpress: HTTP Token: Access denied")
-		} else if jsonError.Error == "Not found" {
-			if content.Name == "core" {
-				return nil, fmt.Errorf("wordpress: core version not found")
-			}
-			c.log.Infof("wordpress: %s not found", content.Name)
-		} else {
-			return nil, fmt.Errorf("status: %s", resp.Status)
-		}
-	}
-	return body, nil
-}
-
-func contentConvertVinfos(stdout string, content models.WpPackage) (vinfos []models.VulnInfo, err error) {
-	data := map[string]wordpress.WpCveInfos{}
-	if err = json.Unmarshal([]byte(stdout), &data); err != nil {
-		var jsonError wordpress.WpCveInfos
-		if err = json.Unmarshal([]byte(stdout), &jsonError); err != nil {
-			return nil, err
-		}
-	}
-
-	for _, e := range data {
-		if len(e.Vulnerabilities) == 0 {
-			continue
-		}
-		for _, vulnerability := range e.Vulnerabilities {
-			if len(vulnerability.References.Cve) == 0 {
-				continue
-			}
-
-			var cveIDs []string
-			for _, cveNumber := range vulnerability.References.Cve {
-				cveIDs = append(cveIDs, "CVE-"+cveNumber)
-			}
-
-			if len(vulnerability.FixedIn) == 0 {
-				for _, cveID := range cveIDs {
-					vinfos = append(vinfos, models.VulnInfo{
-						CveID: cveID,
-						CveContents: models.NewCveContents(
-							models.CveContent{
-								CveID: cveID,
-								Title: vulnerability.Title,
-							},
-						),
-						AffectedPackages: models.PackageStatuses{
-							{
-								NotFixedYet: true,
-							},
-						},
-					})
-				}
-				continue
-			}
-			var v1 *version.Version
-			v1, err = version.NewVersion(content.Version)
-			if err != nil {
-				return nil, err
-			}
-			var v2 *version.Version
-			v2, err = version.NewVersion(vulnerability.FixedIn)
-			if err != nil {
-				return nil, err
-			}
-			if v1.LessThan(v2) {
-				for _, cveID := range cveIDs {
-					vinfos = append(vinfos, models.VulnInfo{
-						CveID: cveID,
-						CveContents: models.NewCveContents(
-							models.CveContent{
-								CveID: cveID,
-								Title: vulnerability.Title,
-							},
-						),
-						AffectedPackages: models.PackageStatuses{
-							{
-								NotFixedYet: false,
-							},
-						},
-					})
-				}
-			}
-		}
-	}
-	return vinfos, nil
-}
-
-func (l *base) wpConvertToModel() models.VulnInfos {
-	return l.WpVulnInfos
 }
 
 func (l *base) exec(cmd string, sudo bool) execResult {
@@ -728,6 +405,7 @@ func (l *base) convertToModel() models.ScanResult {
 		RunningKernel: l.Kernel,
 		Packages:      l.Packages,
 		SrcPackages:   l.SrcPackages,
+		WordPress:     l.WordPress,
 		Optional:      l.ServerInfo.Optional,
 		Errors:        errs,
 	}
@@ -798,4 +476,116 @@ func (l *base) parseSystemctlStatus(stdout string) string {
 		return ""
 	}
 	return ss[1]
+}
+
+func (l *base) scanWordPress() (err error) {
+	wpOpts := []string{l.ServerInfo.WpUser,
+		l.ServerInfo.WpDocRoot,
+		l.ServerInfo.WpCmdPath,
+		l.ServerInfo.WpToken,
+	}
+	var isScanWp, hasEmptyOpt bool
+	for _, opt := range wpOpts {
+		if opt != "" {
+			isScanWp = true
+			break
+		} else {
+			hasEmptyOpt = true
+		}
+	}
+	if !isScanWp {
+		return nil
+	}
+
+	if hasEmptyOpt {
+		return fmt.Errorf("%s has empty WordPress opts: %s",
+			l.getServerInfo().GetServerName(),
+			wpOpts,
+		)
+	}
+
+	cmd := fmt.Sprintf("sudo -u %s -i -- %s cli version",
+		l.ServerInfo.WpUser,
+		l.ServerInfo.WpCmdPath)
+	if r := exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
+		return fmt.Errorf("Failed to exec `%s`", cmd)
+	}
+
+	wp, err := l.detectWordPress()
+	if err != nil {
+		return fmt.Errorf("Failed to scan wordpress: %s", err)
+	}
+	l.WordPress = wp
+	return nil
+}
+
+func (l *base) detectWordPress() (*models.WordPress, error) {
+	ver, err := l.detectWpCore()
+	if err != nil {
+		return nil, err
+	}
+
+	themes, err := l.detectWpThemes()
+	if err != nil {
+		return nil, err
+	}
+
+	plugins, err := l.detectWpPlugins()
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.WordPress{
+		CoreVersion: ver,
+		Plugins:     plugins,
+		Themes:      themes,
+	}, nil
+}
+
+func (l *base) detectWpCore() (string, error) {
+	cmd := fmt.Sprintf("sudo -u %s -i -- %s core version --path=%s",
+		l.ServerInfo.WpUser,
+		l.ServerInfo.WpCmdPath,
+		l.ServerInfo.WpDocRoot)
+
+	r := exec(l.ServerInfo, cmd, noSudo)
+	if !r.isSuccess() {
+		return "", fmt.Errorf("Failed to get wp core version: %s", r)
+	}
+	return strings.TrimSpace(r.Stdout), nil
+}
+
+func (l *base) detectWpThemes() ([]models.WpPackage, error) {
+	cmd := fmt.Sprintf("sudo -u %s -i -- %s theme list --path=%s --format=json",
+		l.ServerInfo.WpUser,
+		l.ServerInfo.WpCmdPath,
+		l.ServerInfo.WpDocRoot)
+
+	var themes []models.WpPackage
+	r := exec(l.ServerInfo, cmd, noSudo)
+	if !r.isSuccess() {
+		return nil, fmt.Errorf("Failed to get a list of WordPress plugins: %s", r)
+	}
+	err := json.Unmarshal([]byte(r.Stdout), &themes)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to unmarshal wp theme list: %s", cmd)
+	}
+	return themes, nil
+}
+
+func (l *base) detectWpPlugins() ([]models.WpPackage, error) {
+	cmd := fmt.Sprintf("sudo -u %s -i -- %s plugin list --path=%s --format=json",
+		l.ServerInfo.WpUser,
+		l.ServerInfo.WpCmdPath,
+		l.ServerInfo.WpDocRoot)
+
+	var plugins []models.WpPackage
+	r := exec(l.ServerInfo, cmd, noSudo)
+	if !r.isSuccess() {
+		return nil, fmt.Errorf("Failed to wp plugin list: %s", r)
+	}
+	if err := json.Unmarshal([]byte(r.Stdout), &plugins); err != nil {
+		return nil, err
+	}
+	return plugins, nil
 }

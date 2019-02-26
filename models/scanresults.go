@@ -61,10 +61,10 @@ type ScanResult struct {
 	WpScannedCves    VulnInfos              `json:"wpScannedCves"`
 	RunningKernel    Kernel                 `json:"runningKernel"`
 	Packages         Packages               `json:"packages"`
-	CweDict          CweDict                `json:"cweDict"`
-	Optional         map[string]interface{} `json:",omitempty"`
 	SrcPackages      SrcPackages            `json:",omitempty"`
 	WordPress        *WordPress             `json:",omitempty"`
+	CweDict          CweDict                `json:"cweDict"`
+	Optional         map[string]interface{} `json:",omitempty"`
 	Errors           []string               `json:"errors"`
 	Config           struct {
 		Scan   config.Config `json:"scan"`

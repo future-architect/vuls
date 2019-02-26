@@ -44,7 +44,6 @@ var servers, errServers []osTypeInterface
 
 // Base Interface of redhat, debian, freebsd
 type osTypeInterface interface {
-	wpConvertToModel() models.VulnInfos
 	setServerInfo(config.ServerInfo)
 	getServerInfo() config.ServerInfo
 	setDistro(string, string)
@@ -82,9 +81,6 @@ type osPackages struct {
 
 	// unsecure packages
 	VulnInfos models.VulnInfos
-
-	//wordpress packages
-	WpVulnInfos models.VulnInfos
 
 	// kernel information
 	Kernel models.Kernel
@@ -611,7 +607,6 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 
 	for _, s := range append(servers, errServers...) {
 		r := s.convertToModel()
-		// r.WpScannedCves = s.wpConvertToModel()
 		r.ScannedAt = scannedAt
 		r.ScannedVersion = config.Version
 		r.ScannedRevision = config.Revision

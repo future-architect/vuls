@@ -173,12 +173,16 @@ type VulnInfo struct {
 
 	CpeURIs              []string             `json:"cpeURIs,omitempty"` // CpeURIs related to this CVE defined in config.toml
 	GitHubSecurityAlerts GitHubSecurityAlerts `json:"gitHubSecurityAlerts,omitempty"`
+
+	//TODO set VulnType
+	VulnType   string
+	WpPackages WpPackages `json:"wpPackages,omitempty"`
 }
 
 // GitHubSecurityAlerts is a list of GitHubSecurityAlert
 type GitHubSecurityAlerts []GitHubSecurityAlert
 
-// Add adds given arg to the slice and return the slice (imutable)
+// Add adds given arg to the slice and return the slice (immutable)
 func (g GitHubSecurityAlerts) Add(alert GitHubSecurityAlert) GitHubSecurityAlerts {
 	for _, a := range g {
 		if a.PackageName == alert.PackageName {
@@ -204,6 +208,19 @@ type GitHubSecurityAlert struct {
 	Dismissed     bool      `json:"dismissed"`
 	DismissedAt   time.Time `json:"dismissedAt"`
 	DismissReason string    `json:"dismissReason"`
+}
+
+// WpPackages has a list of WpPackage
+type WpPackages []WpPackage
+
+// Add adds given arg to the slice and return the slice (immutable)
+func (g WpPackages) Add(pkg WpPackage) WpPackages {
+	for _, a := range g {
+		if a.Name == pkg.Name {
+			return g
+		}
+	}
+	return append(g, pkg)
 }
 
 // Titles returns tilte (TUI)
