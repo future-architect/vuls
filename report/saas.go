@@ -24,7 +24,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -48,8 +50,11 @@ type TempCredential struct {
 }
 
 type payload struct {
-	GroupID int    `json:"GroupID"`
-	Token   string `json:"Token"`
+	GroupID      int    `json:"GroupID"`
+	Token        string `json:"Token"`
+	ScannedBy    string `json:"ScannedBy"`
+	ScannedIPv4s string `json:"ScannedIPv4s"`
+	ScannedIPv6s string `json:"ScannedIPv6s"`
 }
 
 // UploadSaas : UploadSaas
@@ -59,9 +64,18 @@ func (w SaasWriter) Write(rs ...models.ScanResult) (err error) {
 		return nil
 	}
 
+	ipv4s, ipv6s, err := util.IP()
+	if err != nil {
+		util.Log.Errorf("Failed to fetch scannedIPs: %s", err)
+	}
+	hostname, _ := os.Hostname()
+
 	payload := payload{
-		GroupID: c.Conf.Saas.GroupID,
-		Token:   c.Conf.Saas.Token,
+		GroupID:      c.Conf.Saas.GroupID,
+		Token:        c.Conf.Saas.Token,
+		ScannedBy:    hostname,
+		ScannedIPv4s: strings.Join(ipv4s, ", "),
+		ScannedIPv6s: strings.Join(ipv6s, ", "),
 	}
 
 	var body []byte
