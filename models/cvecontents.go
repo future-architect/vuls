@@ -108,7 +108,7 @@ type CveContentCpes struct {
 // Cpes returns affected CPEs of this Vulnerability
 func (v CveContents) Cpes(myFamily string) (values []CveContentCpes) {
 	order := CveContentTypes{NewCveContentType(myFamily)}
-	order = append(order, AllCveContetTypes.Except(append(order)...)...)
+	order = append(order, AllCveContetTypes.Except(order...)...)
 
 	for _, ctype := range order {
 		if cont, found := v[ctype]; found && 0 < len(cont.Cpes) {
@@ -130,7 +130,7 @@ type CveContentRefs struct {
 // References returns References
 func (v CveContents) References(myFamily string) (values []CveContentRefs) {
 	order := CveContentTypes{NewCveContentType(myFamily)}
-	order = append(order, AllCveContetTypes.Except(append(order)...)...)
+	order = append(order, AllCveContetTypes.Except(order...)...)
 
 	for _, ctype := range order {
 		if cont, found := v[ctype]; found && 0 < len(cont.References) {
@@ -146,7 +146,7 @@ func (v CveContents) References(myFamily string) (values []CveContentRefs) {
 // CweIDs returns related CweIDs of the vulnerability
 func (v CveContents) CweIDs(myFamily string) (values []CveContentStr) {
 	order := CveContentTypes{NewCveContentType(myFamily)}
-	order = append(order, AllCveContetTypes.Except(append(order)...)...)
+	order = append(order, AllCveContetTypes.Except(order...)...)
 	for _, ctype := range order {
 		if cont, found := v[ctype]; found && 0 < len(cont.CweIDs) {
 			for _, cweID := range cont.CweIDs {
