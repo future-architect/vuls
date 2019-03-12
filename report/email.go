@@ -41,7 +41,6 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 	for _, r := range rs {
 		if conf.FormatOneEMail {
 			message += formatFullPlainText(r) + "\r\n\r\n"
-
 			mm := r.ScannedCves.CountGroupBySeverity()
 			keys := []string{"High", "Medium", "Low", "Unknown"}
 			for _, k := range keys {
@@ -63,12 +62,14 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 			} else {
 				message = formatFullPlainText(r)
 			}
+			if conf.FormatOneLineText {
+				message = fmt.Sprintf("One Line Summary\r\n================\r\n%s", formatOneLineSummary(r))
+			}
 			if err := sender.Send(subject, message); err != nil {
 				return err
 			}
 		}
 	}
-
 	summary := ""
 	if config.Conf.IgnoreUnscoredCves {
 		summary = fmt.Sprintf("Total: %d (High:%d Medium:%d Low:%d)",
@@ -77,17 +78,12 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 	summary = fmt.Sprintf("Total: %d (High:%d Medium:%d Low:%d ?:%d)",
 		m["High"]+m["Medium"]+m["Low"]+m["Unknown"],
 		m["High"], m["Medium"], m["Low"], m["Unknown"])
-
+	origmessage := message
 	if conf.FormatOneEMail {
-		message = fmt.Sprintf(
-			`
-One Line Summary
-================
-%s
-
-
-%s`,
-			formatOneLineSummary(rs...), message)
+		message = fmt.Sprintf("One Line Summary\r\n================\r\n%s", formatOneLineSummary(rs...))
+		if !conf.FormatOneLineText {
+			message += fmt.Sprintf("\r\n\r\n%s", origmessage)
+		}
 
 		subject := fmt.Sprintf("%s %s",
 			conf.EMail.SubjectPrefix, summary)
@@ -130,14 +126,28 @@ func (e *emailSender) Send(subject, body string) (err error) {
 	message := fmt.Sprintf("%s\r\n%s", header, body)
 
 	smtpServer := net.JoinHostPort(emailConf.SMTPAddr, emailConf.SMTPPort)
+
+	if emailConf.User != "" && emailConf.Password != "" {
+		err = e.send(
+			smtpServer,
+			smtp.PlainAuth(
+				"",
+				emailConf.User,
+				emailConf.Password,
+				emailConf.SMTPAddr,
+			),
+			emailConf.From,
+			mailAddresses,
+			[]byte(message),
+		)
+		if err != nil {
+			return fmt.Errorf("Failed to send emails: %s", err)
+		}
+		return nil
+	}
 	err = e.send(
 		smtpServer,
-		smtp.PlainAuth(
-			"",
-			emailConf.User,
-			emailConf.Password,
-			emailConf.SMTPAddr,
-		),
+		nil,
 		emailConf.From,
 		mailAddresses,
 		[]byte(message),

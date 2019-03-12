@@ -100,7 +100,7 @@ func TestSend(t *testing.T) {
 			t.Errorf("#%d: wrong 'addr' field.\r\nexpected: %s\n got: %s", i, test.out.addr, r.addr)
 		}
 
-		if !reflect.DeepEqual(r.auth, test.out.auth) {
+		if !reflect.DeepEqual(r.auth, test.out.auth) && r.auth != nil {
 			t.Errorf("#%d: wrong 'auth' field.\r\nexpected: %v\n got: %v", i, test.out.auth, r.auth)
 		}
 
