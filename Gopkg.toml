@@ -6,9 +6,7 @@
 # required = ["github.com/user/thing/cmd/thing"]
 # ignored = ["github.com/user/project/pkgX", "bitbucket.org/user/project/pkgA/pkgY"]
 #
-# [[constraint]]
-#   name = "github.com/user/project"
-#   version = "1.0.0"
+# [[constraint]] name = "github.com/user/project" version = "1.0.0"
 #
 # [[constraint]]
 #   name = "github.com/user/project2"
@@ -35,6 +33,16 @@
 [[constraint]]
   name = "github.com/mozqnet/go-exploitdb"
   branch = "master"
+
+[[constraint]]
+  name = "github.com/nlopes/slack"
+  version = "v0.4.0"
+
+# remove in the future
+[[override]]
+  name = "github.com/census-instrumentation/opencensus-proto"
+  revision = "90c3e10b1ac98f9f88d8215f5337c4fbe574ceb0"
+
 
 [prune]
   go-tests = true
