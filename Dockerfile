@@ -25,7 +25,7 @@ RUN apk add --no-cache \
 
 COPY --from=builder /go/bin/vuls /usr/local/bin/
 
-VOLUME [$WORKDIR, $LOGDIR]
+VOLUME ["$WORKDIR", "$LOGDIR"]
 WORKDIR $WORKDIR
 ENV PWD $WORKDIR
 
