@@ -51,19 +51,19 @@ type ScanResult struct {
 	ScannedVersion   string                 `json:"scannedVersion"`
 	ScannedRevision  string                 `json:"scannedRevision"`
 	ScannedBy        string                 `json:"scannedBy"`
-	ScannedIPv4Addrs []string               `json:"scannedIpv4Addrs"`
-	ScannedIPv6Addrs []string               `json:"scannedIpv6Addrs"`
+	ScannedIPv4Addrs []string               `json:"scannedIpv4Addrs,omitempty"`
+	ScannedIPv6Addrs []string               `json:"scannedIpv6Addrs,omitempty"`
 	ReportedAt       time.Time              `json:"reportedAt"`
 	ReportedVersion  string                 `json:"reportedVersion"`
 	ReportedRevision string                 `json:"reportedRevision"`
 	ReportedBy       string                 `json:"reportedBy"`
 	ScannedCves      VulnInfos              `json:"scannedCves"`
-	WpScannedCves    VulnInfos              `json:"wpScannedCves"`
+	WpScannedCves    VulnInfos              `json:"wpScannedCves,omitempty"`
 	RunningKernel    Kernel                 `json:"runningKernel"`
 	Packages         Packages               `json:"packages"`
 	SrcPackages      SrcPackages            `json:",omitempty"`
 	WordPress        *WordPress             `json:",omitempty"`
-	CweDict          CweDict                `json:"cweDict"`
+	CweDict          CweDict                `json:"cweDict,omitempty"`
 	Optional         map[string]interface{} `json:",omitempty"`
 	Errors           []string               `json:"errors"`
 	Config           struct {

@@ -181,7 +181,7 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, inte
 	}
 	util.Log.Infof("%s: %d CVEs are detected with CPE", r.FormatServerName(), nCVEs)
 
-	ints := &ints{}
+	ints := &integrationResults{}
 	for _, o := range integrations {
 		if err = o.apply(r, ints); err != nil {
 			return err
@@ -364,14 +364,13 @@ func fillVulnByCpeURIs(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) 
 	return nCVEs, nil
 }
 
-type ints struct {
-	//TODO rename
+type integrationResults struct {
 	GithubAlertsCveCounts int
 }
 
 // Integration is integration of vuls report
 type Integration interface {
-	apply(*models.ScanResult, *ints) error
+	apply(*models.ScanResult, *integrationResults) error
 }
 
 // GithubSecurityAlerts :
@@ -386,7 +385,8 @@ type GithubSecurityAlertOption struct {
 	GithubConfs map[string]config.GitHubConf
 }
 
-func (g GithubSecurityAlertOption) apply(r *models.ScanResult, ints *ints) (err error) {
+// https://help.github.com/articles/about-security-alerts-for-vulnerable-dependencies/
+func (g GithubSecurityAlertOption) apply(r *models.ScanResult, ints *integrationResults) (err error) {
 	var nCVEs int
 	for ownerRepo, setting := range g.GithubConfs {
 		ss := strings.Split(ownerRepo, "/")
@@ -399,21 +399,6 @@ func (g GithubSecurityAlertOption) apply(r *models.ScanResult, ints *ints) (err 
 	}
 	ints.GithubAlertsCveCounts = nCVEs
 	return nil
-}
-
-// https://help.github.com/articles/about-security-alerts-for-vulnerable-dependencies/
-func fillGitHubSecurityAlerts(r *models.ScanResult) (nCVEs int, err error) {
-	repos := c.Conf.Servers[r.ServerName].GitHubRepos
-	for ownerRepo, setting := range repos {
-		ss := strings.Split(ownerRepo, "/")
-		owner, repo := ss[0], ss[1]
-		n, err := github.FillGitHubSecurityAlerts(r, owner, repo, setting.Token)
-		if err != nil {
-			return 0, err
-		}
-		nCVEs += n
-	}
-	return nCVEs, nil
 }
 
 func fillCweDict(r *models.ScanResult) {
