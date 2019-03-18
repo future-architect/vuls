@@ -59,19 +59,6 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 			channel = fmt.Sprintf("#%s", r.ServerName)
 		}
 
-		if 0 < len(r.Errors) {
-			msg := message{
-				Text:      msgText(r),
-				Username:  conf.AuthUser,
-				IconEmoji: conf.IconEmoji,
-				Channel:   channel,
-			}
-			if err = send(msg); err != nil {
-				return err
-			}
-			continue
-		}
-
 		// A maximum of 100 attachments are allowed on a message.
 		// Split into chunks with 100 elements
 		// https://api.slack.com/methods/chat.postMessage
@@ -95,6 +82,13 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 				IconEmoji: conf.IconEmoji,
 			}
 
+			if config.Conf.FormatOneLineText {
+				if _, _, err = api.PostMessage(channel, formatOneLineSummary(r), ParentMsg); err != nil {
+					return err
+				}
+				continue
+			}
+
 			var ts string
 			if _, ts, err = api.PostMessage(channel, msgText(r), ParentMsg); err != nil {
 				return err
@@ -113,6 +107,19 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 				}
 			}
 		} else {
+			if config.Conf.FormatOneLineText {
+				msg := message{
+					Text:      formatOneLineSummary(r),
+					Username:  conf.AuthUser,
+					IconEmoji: conf.IconEmoji,
+					Channel:   channel,
+				}
+				if err := send(msg); err != nil {
+					return err
+				}
+				continue
+			}
+
 			for i, k := range chunkKeys {
 				txt := ""
 				if i == 0 {
