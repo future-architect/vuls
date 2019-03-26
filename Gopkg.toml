@@ -38,12 +38,6 @@
   name = "github.com/nlopes/slack"
   version = "v0.4.0"
 
-# remove in the future
-[[override]]
-  name = "github.com/census-instrumentation/opencensus-proto"
-  revision = "90c3e10b1ac98f9f88d8215f5337c4fbe574ceb0"
-
-
 [prune]
   go-tests = true
   unused-packages = true
