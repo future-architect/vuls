@@ -10,15 +10,15 @@
   version = "v0.2.0"
 
 [[projects]]
-  digest = "1:12ce42a52d83c363ae141fc76dfb6717f1d37945411b433937148d9ca85848af"
+  digest = "1:831ef1bb94674cce3ada9ab0834cbb2a2931e2c5ba4d57dc9cc95bdd7f3f5eb5"
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
     "storage",
     "version",
   ]
   pruneopts = "UT"
-  revision = "a3234d918217b8d3b843393db4ecdf58e1d9df59"
-  version = "v26.5.0"
+  revision = "3cd86d9cfda8d44225747bb5633234fcdf842b94"
+  version = "v26.6.0"
 
 [[projects]]
   digest = "1:9fbe8a44d79e671e4390acdd7b565740cf64983fb36ab0334234bd6a440047f6"
@@ -60,7 +60,7 @@
   version = "v9"
 
 [[projects]]
-  digest = "1:f51a056f71d46036d81bb5dd35f362bcd51e715709508f94bb43443d9c098e14"
+  digest = "1:27f10eb2e08b7187c21d318d9a587a1aa041f6f912399dd60bc8067748a945ea"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -99,8 +99,8 @@
     "service/sts",
   ]
   pruneopts = "UT"
-  revision = "4a2b0831f1351f3ece1962805a88fcc667cedd3e"
-  version = "v1.19.0"
+  revision = "f778816ebd8f4a83264c207c77e6bcd0a5a76603"
+  version = "v1.19.1"
 
 [[projects]]
   digest = "1:0f98f59e9a2f4070d66f0c9c39561f68fcd1dc837b22a852d28d0003aebd1b1e"
@@ -397,7 +397,7 @@
     "util",
   ]
   pruneopts = "UT"
-  revision = "5afeda5e8e1f8f3561738d3d6fa6549c88feb31e"
+  revision = "c22ba94aecfabedbfadda7aea0a9bbe029a2f33b"
 
 [[projects]]
   digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
@@ -409,7 +409,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:504498b866955e1bd895683b31ec4e52778a04e61ea2e4b39c99605efb0776f9"
+  digest = "1:76823bdcdfa28273aeaef6e4c9f286eec7daba125e50613cd3ca8863590851f5"
   name = "github.com/kotakanbe/go-cve-dictionary"
   packages = [
     "config",
@@ -418,7 +418,7 @@
     "models",
   ]
   pruneopts = "UT"
-  revision = "051e229b865724ab8850154fe1f5d1a0b36563d7"
+  revision = "871d56c4b802cd828380b1ba1c3aadf1e59a86f1"
 
 [[projects]]
   digest = "1:54d3c90db1164399906830313a6fce7770917d7e4a12da8f2d8693d18ff5ef27"
@@ -764,7 +764,7 @@
     "trace",
   ]
   pruneopts = "UT"
-  revision = "1272bf9dcd53ea65c09668fb4c76e65deb740072"
+  revision = "e3b2ff56ed879efa686c9d09ed74f9bfe42f1a1d"
 
 [[projects]]
   branch = "master"
@@ -787,7 +787,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:51e9c8a64ecddbba456f24b2119aade9dc8e062fc6d10b30548f75f483e08b76"
+  digest = "1:78ed3d0c6d5b4996ef2867e280f39ea7b44438558c6331721740ab9061db532c"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
@@ -795,7 +795,7 @@
     "windows",
   ]
   pruneopts = "UT"
-  revision = "f7bb7a8bee54210937e93ec56d007d892c1f0580"
+  revision = "f49334f85ddcf0f08d7fb6dd7363e9e6d6b777eb"
 
 [[projects]]
   digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
