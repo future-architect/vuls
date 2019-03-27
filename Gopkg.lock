@@ -21,7 +21,7 @@
   version = "v26.7.0"
 
 [[projects]]
-  digest = "1:1f71be927d55e3fad766419cbaafaff54bb8e80b455b744cb22f0f65526f6f67"
+  digest = "1:b34c165560597b272b6ccf89dd3175eb7717e6247ce5ece215fa1905a7e19c22"
   name = "github.com/Azure/go-autorest"
   packages = [
     "autorest",
@@ -32,8 +32,8 @@
     "tracing",
   ]
   pruneopts = "UT"
-  revision = "8ac2172594dd318e25270bfa48a224ac5adebe67"
-  version = "v11.6.1"
+  revision = "3b1641ed03046f2ee28d73f7a51e5b884d55b92a"
+  version = "v11.7.0"
 
 [[projects]]
   digest = "1:9f3b30d9f8e0d7040f729b82dcbc8f0dead820a133b3147ce355fc451f32d761"
@@ -60,7 +60,7 @@
   version = "v9"
 
 [[projects]]
-  digest = "1:27f10eb2e08b7187c21d318d9a587a1aa041f6f912399dd60bc8067748a945ea"
+  digest = "1:7f1dc60a57b23f6656f28d46513e13e75d24c52e256864d332ff44ca2e39d751"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -99,8 +99,8 @@
     "service/sts",
   ]
   pruneopts = "UT"
-  revision = "f778816ebd8f4a83264c207c77e6bcd0a5a76603"
-  version = "v1.19.1"
+  revision = "bae168494294b48b3fc9d6722a711246a8543034"
+  version = "v1.19.2"
 
 [[projects]]
   digest = "1:0f98f59e9a2f4070d66f0c9c39561f68fcd1dc837b22a852d28d0003aebd1b1e"
@@ -150,12 +150,12 @@
   version = "v3.2.0"
 
 [[projects]]
-  digest = "1:938a2672d6ebbb7f7bc63eee3e4b9464c16ffcf77ec8913d3edbf32b4e3984dd"
+  digest = "1:865079840386857c809b72ce300be7580cb50d3d3129ce11bf9aa6ca2bc1934a"
   name = "github.com/fatih/color"
   packages = ["."]
   pruneopts = "UT"
-  revision = "570b54cabe6b8eb0bc2dfce68d964677d63b5260"
-  version = "v1.5.0"
+  revision = "5b77d2a35fb0ede96d138fc9a99f5c9b6aef11b4"
+  version = "v1.7.0"
 
 [[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
@@ -408,7 +408,7 @@
     "util",
   ]
   pruneopts = "UT"
-  revision = "c22ba94aecfabedbfadda7aea0a9bbe029a2f33b"
+  revision = "39175c0da9e325ae7260df93ad14b0343d7d5559"
 
 [[projects]]
   digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
@@ -420,7 +420,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:76823bdcdfa28273aeaef6e4c9f286eec7daba125e50613cd3ca8863590851f5"
+  digest = "1:b7132b491fe613cd364226a39cfb0862941c5661a92bab7e66b4c6190f10ee61"
   name = "github.com/kotakanbe/go-cve-dictionary"
   packages = [
     "config",
@@ -429,7 +429,7 @@
     "models",
   ]
   pruneopts = "UT"
-  revision = "871d56c4b802cd828380b1ba1c3aadf1e59a86f1"
+  revision = "5fe52611f0b8dff9f95374d9cd7bdb23cc5fc67a"
 
 [[projects]]
   digest = "1:54d3c90db1164399906830313a6fce7770917d7e4a12da8f2d8693d18ff5ef27"
@@ -500,12 +500,12 @@
   version = "v1.1.0"
 
 [[projects]]
-  digest = "1:2fa7b0155cd54479a755c629de26f888a918e13f8857a2c442205d825368e084"
+  digest = "1:c658e84ad3916da105a761660dcaeb01e63416c8ec7bc62256a9b411a05fcd67"
   name = "github.com/mattn/go-colorable"
   packages = ["."]
   pruneopts = "UT"
-  revision = "3a70a971f94a22f2fa562ffcc7a0eb45f5daf045"
-  version = "v0.1.1"
+  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
+  version = "v0.0.9"
 
 [[projects]]
   digest = "1:e150b5fafbd7607e2d638e4e5cf43aa4100124e5593385147b0a74e2733d8b0d"
@@ -565,7 +565,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:886ac46f91f4affadfb283a55b9d02b1e97e5fd47a52b584d8a548f731ad5b90"
+  digest = "1:800f856349089adbb2987d9581a937e5908d2f0b486e7179e03725e8c354693f"
   name = "github.com/mozqnet/go-exploitdb"
   packages = [
     "db",
@@ -573,7 +573,7 @@
     "util",
   ]
   pruneopts = "UT"
-  revision = "4c7a90df623532efed4f1f987b294db6f1e8b798"
+  revision = "812d09910e5c7cace0807618a6cb99c0f5a9d7d8"
 
 [[projects]]
   digest = "1:95d38d218bf2290987c6b0e885a9f0f2d3d3239235acaddca01c3fe36e5e5566"
@@ -644,22 +644,22 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e4c72127d910a96daf869a44f3dd563b86dbe6931a172863a0e99c5ff04b59e4"
+  digest = "1:35e32faf05a9a694fd831ac0ca6db9bc785db2863cf9352965a06e91e40260b7"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   pruneopts = "UT"
-  revision = "dae0fa8d5b0c810a8ab733fbd5510c7cae84eca4"
+  revision = "1115b87d621f90f39ac3d2bd230797e35c1d478d"
 
 [[projects]]
-  digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
+  digest = "1:bb495ec276ab82d3dd08504bbc0594a65de8c3b22c6f2aaa92d05b73fbf3a82e"
   name = "github.com/spf13/afero"
   packages = [
     ".",
     "mem",
   ]
   pruneopts = "UT"
-  revision = "f4711e4db9e9a1d3887343acb72b2bbfc2f686f5"
-  version = "v1.2.1"
+  revision = "588a75ec4f32903aa5e39a2619ba6a4631e28424"
+  version = "v1.2.2"
 
 [[projects]]
   digest = "1:08d65904057412fc0270fc4812a1c90c594186819243160dc779a402d4b6d0bc"
@@ -762,7 +762,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:179c285ce63bfa2d88c781f61730477c6fd2a3ca214070b1d289bc099c519366"
+  digest = "1:8b5b5fb6f7a8670347ad0c21555752ef43b7e8bc95e7b60de621e88636a3c2a8"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -776,7 +776,7 @@
     "trace",
   ]
   pruneopts = "UT"
-  revision = "e3b2ff56ed879efa686c9d09ed74f9bfe42f1a1d"
+  revision = "710a502c58a2a4b2d7417a4e24ccb96d8dc13fa3"
 
 [[projects]]
   branch = "master"
@@ -837,8 +837,8 @@
   name = "google.golang.org/api"
   packages = ["support/bundler"]
   pruneopts = "UT"
-  revision = "e742f5a8defa1f9f5d723dfa04c962e680dc33f0"
-  version = "v0.2.0"
+  revision = "bce707a4d0ea3488942724b3bcc1c8338f38f991"
+  version = "v0.3.0"
 
 [[projects]]
   digest = "1:7e8b9c5ae49011b12ae8473834ac1a7bb8ac029ba201270c723e4c280c9e4855"
@@ -867,7 +867,7 @@
     "protobuf/field_mask",
   ]
   pruneopts = "UT"
-  revision = "e79c0c59cdb5e117ef82a6f885294df3d74065d5"
+  revision = "d831d65fe17df2e52bcc4316d4a9f7a418701f43"
 
 [[projects]]
   digest = "1:c00eb80d7b152379c3e94c38d82b29deca98b1d0f53e4e20362589b7fcbffa07"
@@ -934,12 +934,12 @@
   version = "v2.0.6"
 
 [[projects]]
-  digest = "1:938a2672d6ebbb7f7bc63eee3e4b9464c16ffcf77ec8913d3edbf32b4e3984dd"
+  digest = "1:865079840386857c809b72ce300be7580cb50d3d3129ce11bf9aa6ca2bc1934a"
   name = "gopkg.in/fatih/color.v1"
   packages = ["."]
   pruneopts = "UT"
-  revision = "570b54cabe6b8eb0bc2dfce68d964677d63b5260"
-  version = "v1.5.0"
+  revision = "5b77d2a35fb0ede96d138fc9a99f5c9b6aef11b4"
+  version = "v1.7.0"
 
 [[projects]]
   digest = "1:c658e84ad3916da105a761660dcaeb01e63416c8ec7bc62256a9b411a05fcd67"
