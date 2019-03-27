@@ -36,37 +36,37 @@ type ScanResults []ScanResult
 
 // ScanResult has the result of scanned CVE information.
 type ScanResult struct {
-	JSONVersion      int                    `json:"jsonVersion"`
-	Lang             string                 `json:"lang"`
-	ServerUUID       string                 `json:"serverUUID"`
-	ServerName       string                 `json:"serverName"` // TOML Section key
-	Family           string                 `json:"family"`
-	Release          string                 `json:"release"`
-	Container        Container              `json:"container"`
-	Platform         Platform               `json:"platform"`
-	IPv4Addrs        []string               `json:"ipv4Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
-	IPv6Addrs        []string               `json:"ipv6Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
-	ScannedAt        time.Time              `json:"scannedAt"`
-	ScanMode         string                 `json:"scanMode"`
-	ScannedVersion   string                 `json:"scannedVersion"`
-	ScannedRevision  string                 `json:"scannedRevision"`
-	ScannedBy        string                 `json:"scannedBy"`
-	ScannedIPv4Addrs []string               `json:"scannedIpv4Addrs,omitempty"`
-	ScannedIPv6Addrs []string               `json:"scannedIpv6Addrs,omitempty"`
-	ReportedAt       time.Time              `json:"reportedAt"`
-	ReportedVersion  string                 `json:"reportedVersion"`
-	ReportedRevision string                 `json:"reportedRevision"`
-	ReportedBy       string                 `json:"reportedBy"`
-	ScannedCves      VulnInfos              `json:"scannedCves"`
-	WpScannedCves    VulnInfos              `json:"wpScannedCves,omitempty"`
-	RunningKernel    Kernel                 `json:"runningKernel"`
-	Packages         Packages               `json:"packages"`
-	SrcPackages      SrcPackages            `json:",omitempty"`
-	WordPress        *WordPress             `json:",omitempty"`
-	CweDict          CweDict                `json:"cweDict,omitempty"`
-	Optional         map[string]interface{} `json:",omitempty"`
-	Errors           []string               `json:"errors"`
-	Config           struct {
+	JSONVersion      int       `json:"jsonVersion"`
+	Lang             string    `json:"lang"`
+	ServerUUID       string    `json:"serverUUID"`
+	ServerName       string    `json:"serverName"` // TOML Section key
+	Family           string    `json:"family"`
+	Release          string    `json:"release"`
+	Container        Container `json:"container"`
+	Platform         Platform  `json:"platform"`
+	IPv4Addrs        []string  `json:"ipv4Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
+	IPv6Addrs        []string  `json:"ipv6Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
+	ScannedAt        time.Time `json:"scannedAt"`
+	ScanMode         string    `json:"scanMode"`
+	ScannedVersion   string    `json:"scannedVersion"`
+	ScannedRevision  string    `json:"scannedRevision"`
+	ScannedBy        string    `json:"scannedBy"`
+	ScannedIPv4Addrs []string  `json:"scannedIpv4Addrs,omitempty"`
+	ScannedIPv6Addrs []string  `json:"scannedIpv6Addrs,omitempty"`
+	ReportedAt       time.Time `json:"reportedAt"`
+	ReportedVersion  string    `json:"reportedVersion"`
+	ReportedRevision string    `json:"reportedRevision"`
+	ReportedBy       string    `json:"reportedBy"`
+	Errors           []string  `json:"errors"`
+
+	ScannedCves       VulnInfos              `json:"scannedCves"`
+	RunningKernel     Kernel                 `json:"runningKernel"`
+	Packages          Packages               `json:"packages"`
+	SrcPackages       SrcPackages            `json:",omitempty"`
+	WordPressPackages *WordPressPackages     `json:",omitempty"`
+	CweDict           CweDict                `json:"cweDict,omitempty"`
+	Optional          map[string]interface{} `json:",omitempty"`
+	Config            struct {
 		Scan   config.Config `json:"scan"`
 		Report config.Config `json:"report"`
 	} `json:"config"`

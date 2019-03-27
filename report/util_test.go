@@ -192,13 +192,13 @@ func TestDiff(t *testing.T) {
 					ScannedCves: models.VulnInfos{
 						"CVE-2012-6702": {
 							CveID:            "CVE-2012-6702",
-							AffectedPackages: models.PackageStatuses{{Name: "libexpat1"}},
+							AffectedPackages: models.PackageFixStatuses{{Name: "libexpat1"}},
 							DistroAdvisories: []models.DistroAdvisory{},
 							CpeURIs:          []string{},
 						},
 						"CVE-2014-9761": {
 							CveID:            "CVE-2014-9761",
-							AffectedPackages: models.PackageStatuses{{Name: "libc-bin"}},
+							AffectedPackages: models.PackageFixStatuses{{Name: "libc-bin"}},
 							DistroAdvisories: []models.DistroAdvisory{},
 							CpeURIs:          []string{},
 						},
@@ -217,13 +217,13 @@ func TestDiff(t *testing.T) {
 					ScannedCves: models.VulnInfos{
 						"CVE-2012-6702": {
 							CveID:            "CVE-2012-6702",
-							AffectedPackages: models.PackageStatuses{{Name: "libexpat1"}},
+							AffectedPackages: models.PackageFixStatuses{{Name: "libexpat1"}},
 							DistroAdvisories: []models.DistroAdvisory{},
 							CpeURIs:          []string{},
 						},
 						"CVE-2014-9761": {
 							CveID:            "CVE-2014-9761",
-							AffectedPackages: models.PackageStatuses{{Name: "libc-bin"}},
+							AffectedPackages: models.PackageFixStatuses{{Name: "libc-bin"}},
 							DistroAdvisories: []models.DistroAdvisory{},
 							CpeURIs:          []string{},
 						},
@@ -254,7 +254,7 @@ func TestDiff(t *testing.T) {
 					ScannedCves: models.VulnInfos{
 						"CVE-2016-6662": {
 							CveID:            "CVE-2016-6662",
-							AffectedPackages: models.PackageStatuses{{Name: "mysql-libs"}},
+							AffectedPackages: models.PackageFixStatuses{{Name: "mysql-libs"}},
 							DistroAdvisories: []models.DistroAdvisory{},
 							CpeURIs:          []string{},
 						},
@@ -292,7 +292,7 @@ func TestDiff(t *testing.T) {
 				ScannedCves: models.VulnInfos{
 					"CVE-2016-6662": {
 						CveID:            "CVE-2016-6662",
-						AffectedPackages: models.PackageStatuses{{Name: "mysql-libs"}},
+						AffectedPackages: models.PackageFixStatuses{{Name: "mysql-libs"}},
 						DistroAdvisories: []models.DistroAdvisory{},
 						CpeURIs:          []string{},
 					},
@@ -348,7 +348,7 @@ func TestIsCveFixed(t *testing.T) {
 			in: In{
 				v: models.VulnInfo{
 					CveID: "CVE-2016-6662",
-					AffectedPackages: models.PackageStatuses{
+					AffectedPackages: models.PackageFixStatuses{
 						{
 							Name:        "mysql-libs",
 							NotFixedYet: false,
@@ -366,7 +366,7 @@ func TestIsCveFixed(t *testing.T) {
 					ScannedCves: models.VulnInfos{
 						"CVE-2016-6662": {
 							CveID: "CVE-2016-6662",
-							AffectedPackages: models.PackageStatuses{
+							AffectedPackages: models.PackageFixStatuses{
 								{
 									Name:        "mysql-libs",
 									NotFixedYet: true,
@@ -389,7 +389,7 @@ func TestIsCveFixed(t *testing.T) {
 			in: In{
 				v: models.VulnInfo{
 					CveID: "CVE-2016-6662",
-					AffectedPackages: models.PackageStatuses{
+					AffectedPackages: models.PackageFixStatuses{
 						{
 							Name:        "mysql-libs",
 							NotFixedYet: true,
@@ -407,7 +407,7 @@ func TestIsCveFixed(t *testing.T) {
 					ScannedCves: models.VulnInfos{
 						"CVE-2016-6662": {
 							CveID: "CVE-2016-6662",
-							AffectedPackages: models.PackageStatuses{
+							AffectedPackages: models.PackageFixStatuses{
 								{
 									Name:        "mysql-libs",
 									NotFixedYet: true,

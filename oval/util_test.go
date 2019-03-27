@@ -110,7 +110,7 @@ func TestDefpacksToPackStatuses(t *testing.T) {
 	}
 	var tests = []struct {
 		in  in
-		out models.PackageStatuses
+		out models.PackageFixStatuses
 	}{
 		// Ubuntu
 		{
@@ -135,7 +135,7 @@ func TestDefpacksToPackStatuses(t *testing.T) {
 					},
 				},
 			},
-			out: models.PackageStatuses{
+			out: models.PackageFixStatuses{
 				{
 					Name:        "a",
 					NotFixedYet: true,

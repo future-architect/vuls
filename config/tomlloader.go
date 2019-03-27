@@ -269,7 +269,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		s.UUIDs = v.UUIDs
 		s.Type = v.Type
 
-		s.WpToken = v.WpToken
+		s.WpVulnDBToken = v.WpVulnDBToken
 		s.WpCmdPath = v.WpCmdPath
 		s.WpDocRoot = v.WpDocRoot
 		s.WpUser = v.WpUser

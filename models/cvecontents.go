@@ -230,6 +230,8 @@ func NewCveContentType(name string) CveContentType {
 		return DebianSecurityTracker
 	case "microsoft":
 		return Microsoft
+	case "wordpress":
+		return WPVulnDB
 	default:
 		return Unknown
 	}
@@ -268,6 +270,9 @@ const (
 
 	// Microsoft is Microsoft
 	Microsoft CveContentType = "microsoft"
+
+	// WPVulnDB is WordPress
+	WPVulnDB CveContentType = "wpvulndb"
 
 	// Unknown is Unknown
 	Unknown CveContentType = "unknown"

@@ -122,11 +122,11 @@ func (v VulnInfos) FormatFixedStatus(packs Packages) string {
 	return fmt.Sprintf("%d/%d Fixed", fixed, total)
 }
 
-// PackageStatuses is a list of PackageStatus
-type PackageStatuses []PackageStatus
+// PackageFixStatuses is a list of PackageStatus
+type PackageFixStatuses []PackageFixStatus
 
 // FormatTuiSummary format packname to show TUI summary
-func (ps PackageStatuses) FormatTuiSummary() string {
+func (ps PackageFixStatuses) FormatTuiSummary() string {
 	names := []string{}
 	for _, p := range ps {
 		names = append(names, p.Name)
@@ -135,7 +135,7 @@ func (ps PackageStatuses) FormatTuiSummary() string {
 }
 
 // Store insert given pkg if missing, update pkg if exists
-func (ps PackageStatuses) Store(pkg PackageStatus) PackageStatuses {
+func (ps PackageFixStatuses) Store(pkg PackageFixStatus) PackageFixStatuses {
 	for i, p := range ps {
 		if p.Name == pkg.Name {
 			ps[i] = pkg
@@ -147,15 +147,15 @@ func (ps PackageStatuses) Store(pkg PackageStatus) PackageStatuses {
 }
 
 // Sort by Name
-func (ps PackageStatuses) Sort() {
+func (ps PackageFixStatuses) Sort() {
 	sort.Slice(ps, func(i, j int) bool {
 		return ps[i].Name < ps[j].Name
 	})
 	return
 }
 
-// PackageStatus has name and other status abount the package
-type PackageStatus struct {
+// PackageFixStatus has name and other status abount the package
+type PackageFixStatus struct {
 	Name        string `json:"name"`
 	NotFixedYet bool   `json:"notFixedYet"`
 	FixState    string `json:"fixState"`
@@ -163,20 +163,18 @@ type PackageStatus struct {
 
 // VulnInfo has a vulnerability information and unsecure packages
 type VulnInfo struct {
-	CveID            string           `json:"cveID,omitempty"`
-	Confidences      Confidences      `json:"confidences,omitempty"`
-	AffectedPackages PackageStatuses  `json:"affectedPackages,omitempty"`
-	DistroAdvisories []DistroAdvisory `json:"distroAdvisories,omitempty"` // for Aamazon, RHEL, FreeBSD
-	CveContents      CveContents      `json:"cveContents,omitempty"`
-	Exploits         []Exploit        `json:"exploits,omitempty"`
-	AlertDict        AlertDict        `json:"alertDict,omitempty"`
-
+	CveID                string               `json:"cveID,omitempty"`
+	Confidences          Confidences          `json:"confidences,omitempty"`
+	AffectedPackages     PackageFixStatuses   `json:"affectedPackages,omitempty"`
+	DistroAdvisories     []DistroAdvisory     `json:"distroAdvisories,omitempty"` // for Aamazon, RHEL, FreeBSD
+	CveContents          CveContents          `json:"cveContents,omitempty"`
+	Exploits             []Exploit            `json:"exploits,omitempty"`
+	AlertDict            AlertDict            `json:"alertDict,omitempty"`
 	CpeURIs              []string             `json:"cpeURIs,omitempty"` // CpeURIs related to this CVE defined in config.toml
 	GitHubSecurityAlerts GitHubSecurityAlerts `json:"gitHubSecurityAlerts,omitempty"`
+	WpPackageFixStats    []WpPackageFixStatus `json:"wpPackageFixStats,omitempty"`
 
-	//TODO set VulnType
-	VulnType   string
-	WpPackages WpPackages `json:"wpPackages,omitempty"`
+	VulnType string `json:"vulnType,omitempty"`
 }
 
 // GitHubSecurityAlerts is a list of GitHubSecurityAlert
@@ -827,6 +825,9 @@ const (
 	// GitHubMatchStr is a String representation of GitHubMatch
 	GitHubMatchStr = "GitHubMatch"
 
+	// WPVulnDBMatchStr is a String representation of WordPress VulnDB scanning
+	WPVulnDBMatchStr = "WPVulnDBMatch"
+
 	// FailedToGetChangelog is a String representation of FailedToGetChangelog
 	FailedToGetChangelog = "FailedToGetChangelog"
 
@@ -861,4 +862,7 @@ var (
 
 	// GitHubMatch is a ranking how confident the CVE-ID was deteted correctly
 	GitHubMatch = Confidence{97, GitHubMatchStr, 2}
+
+	// WPVulnDBMatch is a ranking how confident the CVE-ID was deteted correctly
+	WPVulnDBMatch = Confidence{100, WPVulnDBMatchStr, 0}
 )

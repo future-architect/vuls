@@ -37,7 +37,7 @@ type base struct {
 	Distro     config.Distro
 	Platform   models.Platform
 	osPackages
-	WordPress *models.WordPress
+	WordPress *models.WordPressPackages
 
 	log  *logrus.Entry
 	errs []error
@@ -391,23 +391,23 @@ func (l *base) convertToModel() models.ScanResult {
 	}
 
 	return models.ScanResult{
-		JSONVersion:   models.JSONVersion,
-		ServerName:    l.ServerInfo.ServerName,
-		ScannedAt:     time.Now(),
-		ScanMode:      l.ServerInfo.Mode.String(),
-		Family:        l.Distro.Family,
-		Release:       l.Distro.Release,
-		Container:     container,
-		Platform:      l.Platform,
-		IPv4Addrs:     l.ServerInfo.IPv4Addrs,
-		IPv6Addrs:     l.ServerInfo.IPv6Addrs,
-		ScannedCves:   l.VulnInfos,
-		RunningKernel: l.Kernel,
-		Packages:      l.Packages,
-		SrcPackages:   l.SrcPackages,
-		WordPress:     l.WordPress,
-		Optional:      l.ServerInfo.Optional,
-		Errors:        errs,
+		JSONVersion:       models.JSONVersion,
+		ServerName:        l.ServerInfo.ServerName,
+		ScannedAt:         time.Now(),
+		ScanMode:          l.ServerInfo.Mode.String(),
+		Family:            l.Distro.Family,
+		Release:           l.Distro.Release,
+		Container:         container,
+		Platform:          l.Platform,
+		IPv4Addrs:         l.ServerInfo.IPv4Addrs,
+		IPv6Addrs:         l.ServerInfo.IPv6Addrs,
+		ScannedCves:       l.VulnInfos,
+		RunningKernel:     l.Kernel,
+		Packages:          l.Packages,
+		SrcPackages:       l.SrcPackages,
+		WordPressPackages: l.WordPress,
+		Optional:          l.ServerInfo.Optional,
+		Errors:            errs,
 	}
 }
 
@@ -482,7 +482,7 @@ func (l *base) scanWordPress() (err error) {
 	wpOpts := []string{l.ServerInfo.WpUser,
 		l.ServerInfo.WpDocRoot,
 		l.ServerInfo.WpCmdPath,
-		l.ServerInfo.WpToken,
+		l.ServerInfo.WpVulnDBToken,
 	}
 	var isScanWp, hasEmptyOpt bool
 	for _, opt := range wpOpts {
@@ -519,7 +519,7 @@ func (l *base) scanWordPress() (err error) {
 	return nil
 }
 
-func (l *base) detectWordPress() (*models.WordPress, error) {
+func (l *base) detectWordPress() (*models.WordPressPackages, error) {
 	ver, err := l.detectWpCore()
 	if err != nil {
 		return nil, err
@@ -535,11 +535,16 @@ func (l *base) detectWordPress() (*models.WordPress, error) {
 		return nil, err
 	}
 
-	return &models.WordPress{
-		CoreVersion: ver,
-		Plugins:     plugins,
-		Themes:      themes,
-	}, nil
+	pkgs := models.WordPressPackages{
+		models.WpPackage{
+			Name:    models.WPCore,
+			Version: ver,
+			Type:    models.WPCore,
+		},
+	}
+	pkgs = append(pkgs, themes...)
+	pkgs = append(pkgs, plugins...)
+	return &pkgs, nil
 }
 
 func (l *base) detectWpCore() (string, error) {
@@ -570,6 +575,9 @@ func (l *base) detectWpThemes() ([]models.WpPackage, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to unmarshal wp theme list: %s", cmd)
 	}
+	for i := range themes {
+		themes[i].Type = models.WPTheme
+	}
 	return themes, nil
 }
 
@@ -586,6 +594,9 @@ func (l *base) detectWpPlugins() ([]models.WpPackage, error) {
 	}
 	if err := json.Unmarshal([]byte(r.Stdout), &plugins); err != nil {
 		return nil, err
+	}
+	for i := range plugins {
+		plugins[i].Type = models.WPPlugin
 	}
 	return plugins, nil
 }

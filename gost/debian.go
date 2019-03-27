@@ -147,7 +147,7 @@ func (deb Debian) FillWithGost(driver db.DB, r *models.ScanResult) (nCVEs int, e
 			}
 
 			for _, name := range names {
-				v.AffectedPackages = v.AffectedPackages.Store(models.PackageStatus{
+				v.AffectedPackages = v.AffectedPackages.Store(models.PackageFixStatus{
 					Name:        name,
 					FixState:    "open",
 					NotFixedYet: true,

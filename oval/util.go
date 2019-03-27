@@ -47,9 +47,9 @@ type defPacks struct {
 	actuallyAffectedPackNames map[string]bool
 }
 
-func (e defPacks) toPackStatuses() (ps models.PackageStatuses) {
+func (e defPacks) toPackStatuses() (ps models.PackageFixStatuses) {
 	for name, notFixedYet := range e.actuallyAffectedPackNames {
-		ps = append(ps, models.PackageStatus{
+		ps = append(ps, models.PackageFixStatus{
 			Name:        name,
 			NotFixedYet: notFixedYet,
 		})

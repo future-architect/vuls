@@ -191,7 +191,7 @@ func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult) (nCVEs int, er
 	return nCVEs, nil
 }
 
-func (red RedHat) mergePackageStates(v models.VulnInfo, ps []gostmodels.RedhatPackageState, installed models.Packages, release string) (pkgStats models.PackageStatuses) {
+func (red RedHat) mergePackageStates(v models.VulnInfo, ps []gostmodels.RedhatPackageState, installed models.Packages, release string) (pkgStats models.PackageFixStatuses) {
 	pkgStats = v.AffectedPackages
 	for _, pstate := range ps {
 		if pstate.Cpe !=
@@ -214,7 +214,7 @@ func (red RedHat) mergePackageStates(v models.VulnInfo, ps []gostmodels.RedhatPa
 			notFixedYet = true
 		}
 
-		pkgStats = pkgStats.Store(models.PackageStatus{
+		pkgStats = pkgStats.Store(models.PackageFixStatus{
 			Name:        pstate.PackageName,
 			FixState:    pstate.FixState,
 			NotFixedYet: notFixedYet,

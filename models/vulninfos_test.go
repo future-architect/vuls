@@ -916,15 +916,15 @@ func TestFormatMaxCvssScore(t *testing.T) {
 
 func TestSortPackageStatues(t *testing.T) {
 	var tests = []struct {
-		in  PackageStatuses
-		out PackageStatuses
+		in  PackageFixStatuses
+		out PackageFixStatuses
 	}{
 		{
-			in: PackageStatuses{
+			in: PackageFixStatuses{
 				{Name: "b"},
 				{Name: "a"},
 			},
-			out: PackageStatuses{
+			out: PackageFixStatuses{
 				{Name: "a"},
 				{Name: "b"},
 			},
@@ -940,19 +940,19 @@ func TestSortPackageStatues(t *testing.T) {
 
 func TestStorePackageStatueses(t *testing.T) {
 	var tests = []struct {
-		pkgstats PackageStatuses
-		in       PackageStatus
-		out      PackageStatuses
+		pkgstats PackageFixStatuses
+		in       PackageFixStatus
+		out      PackageFixStatuses
 	}{
 		{
-			pkgstats: PackageStatuses{
+			pkgstats: PackageFixStatuses{
 				{Name: "a"},
 				{Name: "b"},
 			},
-			in: PackageStatus{
+			in: PackageFixStatus{
 				Name: "c",
 			},
-			out: PackageStatuses{
+			out: PackageFixStatuses{
 				{Name: "a"},
 				{Name: "b"},
 				{Name: "c"},

@@ -39,6 +39,7 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/util"
+	"github.com/future-architect/vuls/wordpress"
 	"github.com/hashicorp/uuid"
 	gostdb "github.com/knqyf263/gost/db"
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
@@ -91,9 +92,16 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 				}
 			}
 
+			// Integrations
 			githubInts := GithubSecurityAlerts(c.Conf.Servers[r.ServerName].GitHubRepos)
-			//TODO WordPress Ints
-			if err := FillCveInfo(dbclient, &r, cpeURIs, githubInts); err != nil {
+
+			wpOpt := WordPressOption{c.Conf.Servers[r.ServerName].WpVulnDBToken}
+
+			if err := FillCveInfo(dbclient,
+				&r,
+				cpeURIs,
+				githubInts,
+				wpOpt); err != nil {
 				return nil, err
 			}
 			r.Lang = c.Conf.Lang
@@ -132,13 +140,6 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			}
 			filledResults = append(filledResults, r)
 		}
-	}
-
-	for _, fillResult := range filledResults {
-		for _, wpScannedCve := range fillResult.WpScannedCves {
-			fillResult.ScannedCves[wpScannedCve.CveID] = wpScannedCve
-		}
-		fillResult.WpScannedCves = models.VulnInfos{}
 	}
 
 	filtered := []models.ScanResult{}
@@ -366,6 +367,7 @@ func fillVulnByCpeURIs(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) 
 
 type integrationResults struct {
 	GithubAlertsCveCounts int
+	WordPressCveCounts    int
 }
 
 // Integration is integration of vuls report
@@ -401,6 +403,23 @@ func (g GithubSecurityAlertOption) apply(r *models.ScanResult, ints *integration
 	return nil
 }
 
+// WordPressOption :
+type WordPressOption struct {
+	token string
+}
+
+func (g WordPressOption) apply(r *models.ScanResult, ints *integrationResults) (err error) {
+	if g.token == "" {
+		return nil
+	}
+	n, err := wordpress.FillWordPress(r, g.token)
+	if err != nil {
+		return errors.Wrap(err, "Failed to fetch from WPVulnDB")
+	}
+	ints.WordPressCveCounts = n
+	return nil
+}
+
 func fillCweDict(r *models.ScanResult) {
 	uniqCweIDMap := map[string]bool{}
 	for _, vinfo := range r.ScannedCves {
@@ -413,9 +432,6 @@ func fillCweDict(r *models.ScanResult) {
 			}
 		}
 	}
-
-	// TODO check the format of CWEID, clean CWEID
-	// JVN, NVD XML, JSON, OVALs
 
 	dict := map[string]models.CweDictEntry{}
 	for id := range uniqCweIDMap {

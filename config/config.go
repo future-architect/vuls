@@ -1064,10 +1064,7 @@ type ServerInfo struct {
 	Optional               map[string]interface{}      `toml:"optional,omitempty" json:"optional,omitempty"`     // Optional key-value set that will be outputted to JSON
 	Type                   string                      `toml:"type,omitempty" json:"type"`                       // "pseudo" or ""
 
-	WpUser    string `toml:"wpUser" json:"wpUser"`
-	WpDocRoot string `toml:"wpDocRoot" json:"wpDocRoot"`
-	WpCmdPath string `toml:"wpCmdPath" json:"wpCmdPath"`
-	WpToken   string `toml:"wpToken" json:"wpToken"`
+	WordPressConf
 
 	// used internal
 	IPv4Addrs []string `toml:"-" json:"ipv4Addrs,omitempty"`
@@ -1087,16 +1084,12 @@ type ContainerSetting struct {
 	IgnoreCves       []string `json:"ignoreCves,omitempty"`
 }
 
-// IntegrationConf is used for integration configuration
-type IntegrationConf struct {
-	GitHubConf map[string]GitHubConf
-}
-
-// New creates IntegrationConf and initialize fields
-func (c IntegrationConf) New() IntegrationConf {
-	return IntegrationConf{
-		GitHubConf: map[string]GitHubConf{},
-	}
+// WordPressConf used for WordPress Scanning
+type WordPressConf struct {
+	WpUser        string `toml:"wpUser" json:"wpUser"`
+	WpDocRoot     string `toml:"wpDocRoot" json:"wpDocRoot"`
+	WpCmdPath     string `toml:"wpCmdPath" json:"wpCmdPath"`
+	WpVulnDBToken string `toml:"wpVulnDBToken" json:"wpVulnDBToken"`
 }
 
 // GitHubConf is used for GitHub integration

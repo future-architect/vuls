@@ -17,6 +17,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 package wordpress
 
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
+
+	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/util"
+	version "github.com/hashicorp/go-version"
+	"github.com/pkg/errors"
+)
+
 //WpCveInfos is for wpvulndb's json
 type WpCveInfos struct {
 	ReleaseDate  string `json:"release_date"`
@@ -26,7 +39,7 @@ type WpCveInfos struct {
 	LastUpdated   string `json:"last_updated"`
 	// Popular         bool        `json:"popular"`
 	Vulnerabilities []WpCveInfo `json:"vulnerabilities"`
-	// Error           string      `json:"error"`
+	Error           string      `json:"error"`
 }
 
 //WpCveInfo is for wpvulndb's json
@@ -48,255 +61,205 @@ type References struct {
 	Secunia []string `json:"secunia"`
 }
 
-// func detectWpCore(l *base) (vinfos []models.VulnInfo, err error) {
-// 	cmd := fmt.Sprintf("sudo -u %s -i -- %s core version --path=%s",
-// 		l.ServerInfo.WpUser,
-// 		l.ServerInfo.WpCmdPath,
-// 		l.ServerInfo.WpDocRoot)
+// FillWordPress access to wpvulndb and fetch scurity alerts and then set to the given ScanResult.
+// https://wpvulndb.com/
+func FillWordPress(r *models.ScanResult, token string) (int, error) {
+	// Core
+	ver := strings.Replace(r.WordPressPackages.CoreVersion(), ".", "", -1)
+	if ver == "" {
+		return 0, fmt.Errorf("Failed to get WordPress core version")
+	}
+	url := fmt.Sprintf("https://wpvulndb.com/api/v3/wordpresses/%s", ver)
+	body, err := httpRequest(url, token)
+	if err != nil {
+		return 0, err
+	}
+	wpVinfos, err := convertToVinfos(models.WPCore, string(body))
+	if err != nil {
+		return 0, err
+	}
 
-// 	var r execResult
-// 	if r = exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
-// 		return nil, fmt.Errorf("%s", cmd)
-// 	}
-// 	ver := strings.Replace(strings.TrimSpace(r.Stdout), ".", "", -1)
-// 	if len(ver) == 0 {
-// 		return nil, fmt.Errorf("Failed to get WordPress core version")
-// 	}
+	//TODO add a flag ignore inactive plugin or themes such as -wp-ignore-inactive flag to cmd line option or config.toml
 
-// 	url := fmt.Sprintf("https://wpvulndb.com/api/v3/wordpresses/%s", ver)
-// 	var body []byte
-// 	if body, err = httpRequest(l, models.WpPackage{Name: "core"}, url); err != nil {
-// 		return nil, err
-// 	}
-// 	if vinfos, err = coreConvertVinfos(string(body)); err != nil {
-// 		return nil, err
-// 	}
-// 	return vinfos, nil
-// }
+	// Themes
+	for _, p := range r.WordPressPackages.Themes() {
+		url := fmt.Sprintf("https://wpvulndb.com/api/v3/themes/%s", p.Name)
+		body, err := httpRequest(url, token)
+		if err != nil {
+			return 0, err
+		}
+		if body == "" {
+			continue
+		}
 
-// func coreConvertVinfos(stdout string) (vinfos []models.VulnInfo, err error) {
-// 	data := map[string]wordpress.WpCveInfos{}
-// 	if err = json.Unmarshal([]byte(stdout), &data); err != nil {
-// 		var jsonError wordpress.WpCveInfos
-// 		if err = json.Unmarshal([]byte(stdout), &jsonError); err != nil {
-// 			return nil, err
-// 		}
-// 	}
-// 	for _, e := range data {
-// 		if len(e.Vulnerabilities) == 0 {
-// 			continue
-// 		}
-// 		for _, vulnerability := range e.Vulnerabilities {
-// 			if len(vulnerability.References.Cve) == 0 {
-// 				continue
-// 			}
-// 			notFixedYet := false
-// 			if len(vulnerability.FixedIn) == 0 {
-// 				notFixedYet = true
-// 			}
-// 			var cveIDs []string
-// 			for _, cveNumber := range vulnerability.References.Cve {
-// 				cveIDs = append(cveIDs, "CVE-"+cveNumber)
-// 			}
+		templateVinfos, err := convertToVinfos(p.Name, string(body))
+		if err != nil {
+			return 0, err
+		}
 
-// 			for _, cveID := range cveIDs {
-// 				vinfos = append(vinfos, models.VulnInfo{
-// 					CveID: cveID,
-// 					CveContents: models.NewCveContents(
-// 						models.CveContent{
-// 							CveID: cveID,
-// 							Title: vulnerability.Title,
-// 						},
-// 					),
-// 					AffectedPackages: models.PackageStatuses{
-// 						{
-// 							NotFixedYet: notFixedYet,
-// 						},
-// 					},
-// 				})
-// 			}
-// 		}
-// 	}
-// 	return vinfos, nil
-// }
+		for _, v := range templateVinfos {
+			for _, fixstat := range v.WpPackageFixStats {
+				pkg, ok := r.WordPressPackages.Find(fixstat.Name)
+				if !ok {
+					continue
+				}
+				ok, err := match(pkg.Version, fixstat.FixedIn)
+				if err != nil {
+					return 0, errors.Wrap(err, "Not a semantic versioning")
+				}
+				if ok {
+					wpVinfos = append(wpVinfos, v)
+					util.Log.Infof("[match] %s installed: %s, fixedIn: %s", pkg.Name, pkg.Version, fixstat.FixedIn)
+				} else {
+					//TODO Debugf
+					util.Log.Infof("[miss] %s installed: %s, fixedIn: %s", pkg.Name, pkg.Version, fixstat.FixedIn)
+				}
+			}
+		}
+	}
 
-// func detectWpTheme(l *base) (vinfos []models.VulnInfo, err error) {
-// 	cmd := fmt.Sprintf("sudo -u %s -i -- %s theme list --path=%s --format=json",
-// 		l.ServerInfo.WpUser,
-// 		l.ServerInfo.WpCmdPath,
-// 		l.ServerInfo.WpDocRoot)
+	// Plugins
+	for _, p := range r.WordPressPackages.Plugins() {
+		url := fmt.Sprintf("https://wpvulndb.com/api/v3/plugins/%s", p.Name)
+		body, err := httpRequest(url, token)
+		if err != nil {
+			return 0, err
+		}
+		if body == "" {
+			continue
+		}
 
-// 	var themes []models.WpPackage
-// 	var r execResult
-// 	if r = exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
-// 		return nil, fmt.Errorf("%s", cmd)
-// 	}
-// 	if err = json.Unmarshal([]byte(r.Stdout), &themes); err != nil {
-// 		return nil, err
-// 	}
+		pluginVinfos, err := convertToVinfos(p.Name, string(body))
+		if err != nil {
+			return 0, err
+		}
 
-// 	for _, theme := range themes {
-// 		url := fmt.Sprintf("https://wpvulndb.com/api/v3/themes/%s", theme.Name)
-// 		var body []byte
-// 		if body, err = httpRequest(l, theme, url); err != nil {
-// 			return nil, err
-// 		}
-// 		tmpVinfos, err := contentConvertVinfos(string(body), theme)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		vinfos = append(vinfos, tmpVinfos...)
-// 	}
-// 	return vinfos, nil
-// }
+		for _, v := range pluginVinfos {
+			for _, fixstat := range v.WpPackageFixStats {
+				pkg, ok := r.WordPressPackages.Find(fixstat.Name)
+				if !ok {
+					continue
+				}
+				ok, err := match(pkg.Version, fixstat.FixedIn)
+				if err != nil {
+					return 0, errors.Wrap(err, "Not a semantic versioning")
+				}
+				if ok {
+					wpVinfos = append(wpVinfos, v)
+					//TODO Debugf
+					util.Log.Infof("[match] %s installed: %s, fixedIn: %s", pkg.Name, pkg.Version, fixstat.FixedIn)
+				} else {
+					//TODO Debugf
+					util.Log.Infof("[miss] %s installed: %s, fixedIn: %s", pkg.Name, pkg.Version, fixstat.FixedIn)
+				}
+			}
+		}
+	}
 
-// func detectWpPlugin(l *base) (vinfos []models.VulnInfo, err error) {
-// 	cmd := fmt.Sprintf("sudo -u %s -i -- %s plugin list --path=%s --format=json",
-// 		l.ServerInfo.WpUser,
-// 		l.ServerInfo.WpCmdPath,
-// 		l.ServerInfo.WpDocRoot)
+	for _, wpVinfo := range wpVinfos {
+		if vinfo, ok := r.ScannedCves[wpVinfo.CveID]; ok {
+			vinfo.CveContents[models.WPVulnDB] = wpVinfo.CveContents[models.WPVulnDB]
+			vinfo.VulnType = wpVinfo.VulnType
+			vinfo.Confidences = append(vinfo.Confidences, wpVinfo.Confidences...)
+			vinfo.WpPackageFixStats = append(vinfo.WpPackageFixStats, wpVinfo.WpPackageFixStats...)
+			r.ScannedCves[wpVinfo.CveID] = vinfo
+		} else {
+			r.ScannedCves[wpVinfo.CveID] = wpVinfo
+		}
+	}
+	return len(wpVinfos), nil
+}
 
-// 	var plugins []models.WpPackage
-// 	r := exec(l.ServerInfo, cmd, noSudo)
-// 	if r.isSuccess() {
-// 		if err = json.Unmarshal([]byte(r.Stdout), &plugins); err != nil {
-// 			return nil, err
-// 		}
-// 	}
-// 	if !r.isSuccess() {
-// 		return nil, fmt.Errorf("%s", cmd)
-// 	}
+func match(installedVer, fixedIn string) (bool, error) {
+	v1, err := version.NewVersion(installedVer)
+	if err != nil {
+		return false, err
+	}
+	v2, err := version.NewVersion(fixedIn)
+	if err != nil {
+		return false, err
+	}
+	return v1.LessThan(v2), nil
+}
 
-// 	for _, plugin := range plugins {
-// 		url := fmt.Sprintf("https://wpvulndb.com/api/v3/plugins/%s", plugin.Name)
-// 		var body []byte
-// 		if body, err = httpRequest(l, plugin, url); err != nil {
-// 			return nil, err
-// 		}
-// 		tmpVinfos, err := contentConvertVinfos(string(body), plugin)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		vinfos = append(vinfos, tmpVinfos...)
-// 	}
-// 	return vinfos, nil
-// }
+func convertToVinfos(pkgName, body string) (vinfos []models.VulnInfo, err error) {
+	// "pkgName" : CVE Detailed data
+	pkgnameCves := map[string]WpCveInfos{}
+	if err = json.Unmarshal([]byte(body), &pkgnameCves); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("Failed to unmarshal: %s", body))
+	}
 
-// func httpRequest(c *base, content models.WpPackage, url string) (body []byte, err error) {
-// 	token := fmt.Sprintf("Token token=%s", c.ServerInfo.WpToken)
-// 	var req *http.Request
-// 	req, err = http.NewRequest("GET", url, nil)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	req.Header.Set("Authorization", token)
-// 	client := new(http.Client)
-// 	var resp *http.Response
-// 	resp, err = client.Do(req)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	body, err = ioutil.ReadAll(resp.Body)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer resp.Body.Close()
-// 	if resp.StatusCode != 200 && resp.StatusCode != 404 {
-// 		return nil, fmt.Errorf("status: %s", resp.Status)
-// 	} else if resp.StatusCode == 404 {
-// 		var jsonError wordpress.WpCveInfos
-// 		if err = json.Unmarshal(body, &jsonError); err != nil {
-// 			return nil, err
-// 		}
-// 		if jsonError.Error == "HTTP Token: Access denied.\n" {
-// 			return nil, fmt.Errorf("wordpress: HTTP Token: Access denied")
-// 		} else if jsonError.Error == "Not found" {
-// 			if content.Name == "core" {
-// 				return nil, fmt.Errorf("wordpress: core version not found")
-// 			}
-// 			c.log.Infof("wordpress: %s not found", content.Name)
-// 		} else {
-// 			return nil, fmt.Errorf("status: %s", resp.Status)
-// 		}
-// 	}
-// 	return body, nil
-// }
+	for _, v := range pkgnameCves {
+		vs := extractToVulnInfos(pkgName, v.Vulnerabilities)
+		vinfos = append(vinfos, vs...)
+	}
+	return vinfos, nil
+}
 
-// func contentConvertVinfos(stdout string, content models.WpPackage) (vinfos []models.VulnInfo, err error) {
-// 	data := map[string]wordpress.WpCveInfos{}
-// 	if err = json.Unmarshal([]byte(stdout), &data); err != nil {
-// 		var jsonError wordpress.WpCveInfos
-// 		if err = json.Unmarshal([]byte(stdout), &jsonError); err != nil {
-// 			return nil, err
-// 		}
-// 	}
+func extractToVulnInfos(pkgName string, cves []WpCveInfo) (vinfos []models.VulnInfo) {
+	for _, vulnerability := range cves {
+		if len(vulnerability.References.Cve) == 0 {
+			//TODO ignore no-cve-vulns for now
+			continue
+		}
+		var cveIDs []string
+		for _, cveNumber := range vulnerability.References.Cve {
+			//TODO ignore no-cve-vulns for now
+			cveIDs = append(cveIDs, "CVE-"+cveNumber)
+		}
 
-// 	for _, e := range data {
-// 		if len(e.Vulnerabilities) == 0 {
-// 			continue
-// 		}
-// 		for _, vulnerability := range e.Vulnerabilities {
-// 			if len(vulnerability.References.Cve) == 0 {
-// 				continue
-// 			}
+		var refs []models.Reference
+		for _, url := range vulnerability.References.URL {
+			refs = append(refs, models.Reference{
+				Link: url,
+			})
+		}
 
-// 			var cveIDs []string
-// 			for _, cveNumber := range vulnerability.References.Cve {
-// 				cveIDs = append(cveIDs, "CVE-"+cveNumber)
-// 			}
+		for _, cveID := range cveIDs {
+			vinfos = append(vinfos, models.VulnInfo{
+				CveID: cveID,
+				CveContents: models.NewCveContents(
+					models.CveContent{
+						Type:       models.WPVulnDB,
+						CveID:      cveID,
+						Title:      vulnerability.Title,
+						References: refs,
+					},
+				),
+				VulnType: vulnerability.VulnType,
+				Confidences: []models.Confidence{
+					models.WPVulnDBMatch,
+				},
+				WpPackageFixStats: []models.WpPackageFixStatus{{
+					Name:    pkgName,
+					FixedIn: vulnerability.FixedIn,
+				}},
+			})
+		}
+	}
+	return
+}
 
-// 			if len(vulnerability.FixedIn) == 0 {
-// 				for _, cveID := range cveIDs {
-// 					vinfos = append(vinfos, models.VulnInfo{
-// 						CveID: cveID,
-// 						CveContents: models.NewCveContents(
-// 							models.CveContent{
-// 								CveID: cveID,
-// 								Title: vulnerability.Title,
-// 							},
-// 						),
-// 						AffectedPackages: models.PackageStatuses{
-// 							{
-// 								NotFixedYet: true,
-// 							},
-// 						},
-// 					})
-// 				}
-// 				continue
-// 			}
-// 			var v1 *version.Version
-// 			v1, err = version.NewVersion(content.Version)
-// 			if err != nil {
-// 				return nil, err
-// 			}
-// 			var v2 *version.Version
-// 			v2, err = version.NewVersion(vulnerability.FixedIn)
-// 			if err != nil {
-// 				return nil, err
-// 			}
-// 			if v1.LessThan(v2) {
-// 				for _, cveID := range cveIDs {
-// 					vinfos = append(vinfos, models.VulnInfo{
-// 						CveID: cveID,
-// 						CveContents: models.NewCveContents(
-// 							models.CveContent{
-// 								CveID: cveID,
-// 								Title: vulnerability.Title,
-// 							},
-// 						),
-// 						AffectedPackages: models.PackageStatuses{
-// 							{
-// 								NotFixedYet: false,
-// 							},
-// 						},
-// 					})
-// 				}
-// 			}
-// 		}
-// 	}
-// 	return vinfos, nil
-// }
-
-// func (l *base) wpConvertToModel() models.VulnInfos {
-// 	return l.WpVulnInfos
-// }
+func httpRequest(url, token string) (string, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Token token=%s", token))
+	resp, err := new(http.Client).Do(req)
+	if err != nil {
+		return "", err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 && resp.StatusCode != 404 {
+		return "", fmt.Errorf("status: %s", resp.Status)
+	} else if resp.StatusCode == 404 {
+		// This package is not in WPVulnDB
+		return "", nil
+	}
+	return string(body), nil
+}

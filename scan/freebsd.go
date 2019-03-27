@@ -247,9 +247,9 @@ func (o *bsd) scanUnsecurePackages() (models.VulnInfos, error) {
 			})
 		}
 
-		affected := models.PackageStatuses{}
+		affected := models.PackageFixStatuses{}
 		for name := range packs {
-			affected = append(affected, models.PackageStatus{
+			affected = append(affected, models.PackageFixStatus{
 				Name: name,
 			})
 		}
