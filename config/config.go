@@ -1041,16 +1041,16 @@ type Azure struct {
 
 // ServerInfo has SSH Info, additional CPE packages to scan.
 type ServerInfo struct {
-	ServerName             string                      `toml:"-" json:"serverName"`
-	User                   string                      `toml:"user,omitempty" json:"user"`
-	Host                   string                      `toml:"host,omitempty" json:"host"`
-	Port                   string                      `toml:"port,omitempty" json:"port"`
-	KeyPath                string                      `toml:"keyPath,omitempty" json:"keyPath"`
-	KeyPassword            string                      `json:"-" toml:"-"`
+	ServerName             string                      `toml:"-" json:"serverName,omitempty"`
+	User                   string                      `toml:"user,omitempty" json:"user,omitempty"`
+	Host                   string                      `toml:"host,omitempty" json:"host,omitempty"`
+	Port                   string                      `toml:"port,omitempty" json:"port,omitempty"`
+	KeyPath                string                      `toml:"keyPath,omitempty" json:"keyPath,omitempty"`
+	KeyPassword            string                      `json:"-,omitempty" toml:"-"`
 	CpeNames               []string                    `toml:"cpeNames,omitempty" json:"cpeNames,omitempty"`
 	ScanMode               []string                    `toml:"scanMode,omitempty" json:"scanMode,omitempty"`
 	DependencyCheckXMLPath string                      `toml:"dependencyCheckXMLPath,omitempty" json:"-"` // TODO Deprecated remove in near future
-	OwaspDCXMLPath         string                      `toml:"owaspDCXMLPath,omitempty" json:"owaspDCXMLPath"`
+	OwaspDCXMLPath         string                      `toml:"owaspDCXMLPath,omitempty" json:"owaspDCXMLPath,omitempty"`
 	ContainersIncluded     []string                    `toml:"containersIncluded,omitempty" json:"containersIncluded,omitempty"`
 	ContainersExcluded     []string                    `toml:"containersExcluded,omitempty" json:"containersExcluded,omitempty"`
 	ContainerType          string                      `toml:"containerType,omitempty" json:"containerType,omitempty"`
@@ -1059,12 +1059,13 @@ type ServerInfo struct {
 	IgnorePkgsRegexp       []string                    `toml:"ignorePkgsRegexp,omitempty" json:"ignorePkgsRegexp,omitempty"`
 	GitHubRepos            map[string]GitHubConf       `toml:"githubs" json:"githubs,omitempty"` // key: owner/repo
 	UUIDs                  map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
-	Memo                   string                      `toml:"memo,omitempty" json:"memo"`
+	Memo                   string                      `toml:"memo,omitempty" json:"memo,omitempty"`
 	Enablerepo             []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, RHEL, Amazon
 	Optional               map[string]interface{}      `toml:"optional,omitempty" json:"optional,omitempty"`     // Optional key-value set that will be outputted to JSON
-	Type                   string                      `toml:"type,omitempty" json:"type"`                       // "pseudo" or ""
 
-	WordPressConf
+	Type string `toml:"type,omitempty" json:"type,omitempty"` // "pseudo" or ""
+
+	WordPress WordPressConf `toml:"wordpress,omitempty" json:"wordpress,omitempty"`
 
 	// used internal
 	IPv4Addrs []string `toml:"-" json:"ipv4Addrs,omitempty"`
@@ -1086,15 +1087,16 @@ type ContainerSetting struct {
 
 // WordPressConf used for WordPress Scanning
 type WordPressConf struct {
-	WpUser        string `toml:"wpUser" json:"wpUser"`
-	WpDocRoot     string `toml:"wpDocRoot" json:"wpDocRoot"`
-	WpCmdPath     string `toml:"wpCmdPath" json:"wpCmdPath"`
-	WpVulnDBToken string `toml:"wpVulnDBToken" json:"wpVulnDBToken"`
+	OSUser        string `toml:"osUser" json:"osUser"`
+	DocRoot       string `toml:"docRoot" json:"docRoot"`
+	CmdPath       string `toml:"cmdPath" json:"cmdPath"`
+	WPVulnDBToken string `toml:"wpVulnDBToken" json:"-"`
+	// TODO Add ignore-inactives: bool
 }
 
 // GitHubConf is used for GitHub integration
 type GitHubConf struct {
-	Token string `json:"token"`
+	Token string `json:"-"`
 }
 
 // ScanMode has a type of scan mode. fast, fast-root, deep and offline

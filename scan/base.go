@@ -479,10 +479,10 @@ func (l *base) parseSystemctlStatus(stdout string) string {
 }
 
 func (l *base) scanWordPress() (err error) {
-	wpOpts := []string{l.ServerInfo.WpUser,
-		l.ServerInfo.WpDocRoot,
-		l.ServerInfo.WpCmdPath,
-		l.ServerInfo.WpVulnDBToken,
+	wpOpts := []string{l.ServerInfo.WordPress.OSUser,
+		l.ServerInfo.WordPress.DocRoot,
+		l.ServerInfo.WordPress.CmdPath,
+		l.ServerInfo.WordPress.WPVulnDBToken,
 	}
 	var isScanWp, hasEmptyOpt bool
 	for _, opt := range wpOpts {
@@ -505,8 +505,8 @@ func (l *base) scanWordPress() (err error) {
 	}
 
 	cmd := fmt.Sprintf("sudo -u %s -i -- %s cli version",
-		l.ServerInfo.WpUser,
-		l.ServerInfo.WpCmdPath)
+		l.ServerInfo.WordPress.OSUser,
+		l.ServerInfo.WordPress.CmdPath)
 	if r := exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
 		return fmt.Errorf("Failed to exec `%s`", cmd)
 	}
@@ -549,9 +549,9 @@ func (l *base) detectWordPress() (*models.WordPressPackages, error) {
 
 func (l *base) detectWpCore() (string, error) {
 	cmd := fmt.Sprintf("sudo -u %s -i -- %s core version --path=%s",
-		l.ServerInfo.WpUser,
-		l.ServerInfo.WpCmdPath,
-		l.ServerInfo.WpDocRoot)
+		l.ServerInfo.WordPress.OSUser,
+		l.ServerInfo.WordPress.CmdPath,
+		l.ServerInfo.WordPress.DocRoot)
 
 	r := exec(l.ServerInfo, cmd, noSudo)
 	if !r.isSuccess() {
@@ -562,9 +562,9 @@ func (l *base) detectWpCore() (string, error) {
 
 func (l *base) detectWpThemes() ([]models.WpPackage, error) {
 	cmd := fmt.Sprintf("sudo -u %s -i -- %s theme list --path=%s --format=json",
-		l.ServerInfo.WpUser,
-		l.ServerInfo.WpCmdPath,
-		l.ServerInfo.WpDocRoot)
+		l.ServerInfo.WordPress.OSUser,
+		l.ServerInfo.WordPress.CmdPath,
+		l.ServerInfo.WordPress.DocRoot)
 
 	var themes []models.WpPackage
 	r := exec(l.ServerInfo, cmd, noSudo)
@@ -583,9 +583,9 @@ func (l *base) detectWpThemes() ([]models.WpPackage, error) {
 
 func (l *base) detectWpPlugins() ([]models.WpPackage, error) {
 	cmd := fmt.Sprintf("sudo -u %s -i -- %s plugin list --path=%s --format=json",
-		l.ServerInfo.WpUser,
-		l.ServerInfo.WpCmdPath,
-		l.ServerInfo.WpDocRoot)
+		l.ServerInfo.WordPress.OSUser,
+		l.ServerInfo.WordPress.CmdPath,
+		l.ServerInfo.WordPress.DocRoot)
 
 	var plugins []models.WpPackage
 	r := exec(l.ServerInfo, cmd, noSudo)

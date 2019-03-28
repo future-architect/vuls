@@ -95,7 +95,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			// Integrations
 			githubInts := GithubSecurityAlerts(c.Conf.Servers[r.ServerName].GitHubRepos)
 
-			wpOpt := WordPressOption{c.Conf.Servers[r.ServerName].WpVulnDBToken}
+			wpOpt := WordPressOption{c.Conf.Servers[r.ServerName].WordPress.WPVulnDBToken}
 
 			if err := FillCveInfo(dbclient,
 				&r,

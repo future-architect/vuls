@@ -269,10 +269,10 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		s.UUIDs = v.UUIDs
 		s.Type = v.Type
 
-		s.WpVulnDBToken = v.WpVulnDBToken
-		s.WpCmdPath = v.WpCmdPath
-		s.WpDocRoot = v.WpDocRoot
-		s.WpUser = v.WpUser
+		s.WordPress.WPVulnDBToken = v.WordPress.WPVulnDBToken
+		s.WordPress.CmdPath = v.WordPress.CmdPath
+		s.WordPress.DocRoot = v.WordPress.DocRoot
+		s.WordPress.OSUser = v.WordPress.OSUser
 
 		s.LogMsgAnsiColor = Colors[i%len(Colors)]
 		i++
