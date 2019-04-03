@@ -748,6 +748,22 @@ func setChangelogLayout(g *gocui.Gui) error {
 			lines = append(lines, "* "+alert.PackageName)
 		}
 
+		r := currentScanResult
+		for _, wp := range vinfo.WpPackageFixStats {
+			if p, ok := r.WordPressPackages.Find(wp.Name); ok {
+				if p.Type == models.WPCore {
+					lines = append(lines, fmt.Sprintf("* %s-%s, FixedIn: %s",
+						wp.Name, p.Version, wp.FixedIn))
+				} else {
+					lines = append(lines,
+						fmt.Sprintf("* %s-%s, Update: %s, FixedIn: %s, %s",
+							wp.Name, p.Version, p.Update, wp.FixedIn, p.Status))
+				}
+			} else {
+				lines = append(lines, fmt.Sprintf("* %s", wp.Name))
+			}
+		}
+
 		for _, adv := range vinfo.DistroAdvisories {
 			lines = append(lines, "\n",
 				"Advisories",
