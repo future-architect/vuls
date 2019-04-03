@@ -195,39 +195,44 @@ func msgText(r models.ScanResult) string {
 func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 	vinfos := r.ScannedCves.ToSortedSlice()
 	for _, vinfo := range vinfos {
-		curent := []string{}
+
+		installed, candidate := []string{}, []string{}
 		for _, affected := range vinfo.AffectedPackages {
 			if p, ok := r.Packages[affected.Name]; ok {
-				curent = append(curent,
+				installed = append(installed,
 					fmt.Sprintf("%s-%s", p.Name, p.FormatVer()))
 			} else {
-				curent = append(curent, affected.Name)
+				installed = append(installed, affected.Name)
 			}
-		}
-		for _, n := range vinfo.CpeURIs {
-			curent = append(curent, n)
-		}
-		for _, n := range vinfo.GitHubSecurityAlerts {
-			curent = append(curent, n.PackageName)
-		}
 
-		new := []string{}
-		for _, affected := range vinfo.AffectedPackages {
 			if p, ok := r.Packages[affected.Name]; ok {
 				if affected.NotFixedYet {
-					new = append(new, "Not Fixed Yet")
+					candidate = append(candidate, "Not Fixed Yet")
 				} else {
-					new = append(new, p.FormatNewVer())
+					candidate = append(candidate, p.FormatNewVer())
 				}
 			} else {
-				new = append(new, "?")
+				candidate = append(candidate, "?")
 			}
 		}
-		for range vinfo.CpeURIs {
-			new = append(new, "?")
+
+		for _, n := range vinfo.CpeURIs {
+			installed = append(installed, n)
+			candidate = append(candidate, "?")
 		}
-		for range vinfo.GitHubSecurityAlerts {
-			new = append(new, "?")
+		for _, n := range vinfo.GitHubSecurityAlerts {
+			installed = append(installed, n.PackageName)
+			candidate = append(candidate, "?")
+		}
+
+		for _, wp := range vinfo.WpPackageFixStats {
+			if p, ok := r.WordPressPackages.Find(wp.Name); ok {
+				installed = append(installed, fmt.Sprintf("%s-%s", wp.Name, p.Version))
+				candidate = append(candidate, wp.FixedIn)
+			} else {
+				installed = append(installed, wp.Name)
+				candidate = append(candidate, "?")
+			}
 		}
 
 		a := slack.Attachment{
@@ -239,12 +244,12 @@ func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 				{
 					// Title: "Current Package/CPE",
 					Title: "Installed",
-					Value: strings.Join(curent, "\n"),
+					Value: strings.Join(installed, "\n"),
 					Short: true,
 				},
 				{
 					Title: "Candidate",
-					Value: strings.Join(new, "\n"),
+					Value: strings.Join(candidate, "\n"),
 					Short: true,
 				},
 			},
