@@ -125,13 +125,12 @@ func (v VulnInfos) FormatFixedStatus(packs Packages) string {
 // PackageFixStatuses is a list of PackageStatus
 type PackageFixStatuses []PackageFixStatus
 
-// FormatTuiSummary format packname to show TUI summary
-func (ps PackageFixStatuses) FormatTuiSummary() string {
-	names := []string{}
+// Names return a slice of package names
+func (ps PackageFixStatuses) Names() (names []string) {
 	for _, p := range ps {
 		names = append(names, p.Name)
 	}
-	return strings.Join(names, ", ")
+	return names
 }
 
 // Store insert given pkg if missing, update pkg if exists
@@ -172,7 +171,7 @@ type VulnInfo struct {
 	AlertDict            AlertDict            `json:"alertDict,omitempty"`
 	CpeURIs              []string             `json:"cpeURIs,omitempty"` // CpeURIs related to this CVE defined in config.toml
 	GitHubSecurityAlerts GitHubSecurityAlerts `json:"gitHubSecurityAlerts,omitempty"`
-	WpPackageFixStats    []WpPackageFixStatus `json:"wpPackageFixStats,omitempty"`
+	WpPackageFixStats    WpPackageFixStats    `json:"wpPackageFixStats,omitempty"`
 
 	VulnType string `json:"vulnType,omitempty"`
 }
@@ -190,12 +189,12 @@ func (g GitHubSecurityAlerts) Add(alert GitHubSecurityAlert) GitHubSecurityAlert
 	return append(g, alert)
 }
 
-func (g GitHubSecurityAlerts) String() string {
-	ss := []string{}
+// Names return a slice of lib names
+func (g GitHubSecurityAlerts) Names() (names []string) {
 	for _, a := range g {
-		ss = append(ss, a.PackageName)
+		names = append(names, a.PackageName)
 	}
-	return strings.Join(ss, ", ")
+	return names
 }
 
 // GitHubSecurityAlert has detected CVE-ID, PackageName, Status fetched via GitHub API
@@ -206,6 +205,17 @@ type GitHubSecurityAlert struct {
 	Dismissed     bool      `json:"dismissed"`
 	DismissedAt   time.Time `json:"dismissedAt"`
 	DismissReason string    `json:"dismissReason"`
+}
+
+// WpPackageFixStats is a list of WpPackageFixStatus
+type WpPackageFixStats []WpPackageFixStatus
+
+// Names return a slice of names
+func (ws WpPackageFixStats) Names() (names []string) {
+	for _, w := range ws {
+		names = append(names, w.Name)
+	}
+	return names
 }
 
 // WpPackages has a list of WpPackage

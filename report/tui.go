@@ -634,9 +634,10 @@ func summaryLines(r models.ScanResult) string {
 			cvssScore = fmt.Sprintf("| %4.1f", max)
 		}
 
-		packname := vinfo.AffectedPackages.FormatTuiSummary()
-		packname += strings.Join(vinfo.CpeURIs, ", ")
-		packname += vinfo.GitHubSecurityAlerts.String()
+		pkgNames := vinfo.AffectedPackages.Names()
+		pkgNames = append(pkgNames, vinfo.CpeURIs...)
+		pkgNames = append(pkgNames, vinfo.GitHubSecurityAlerts.Names()...)
+		pkgNames = append(pkgNames, vinfo.WpPackageFixStats.Names()...)
 
 		alert := "  "
 		if vinfo.AlertDict.HasAlert() {
@@ -650,7 +651,7 @@ func summaryLines(r models.ScanResult) string {
 			cvssScore + " |",
 			fmt.Sprintf("%8s |", vinfo.AttackVector()),
 			fmt.Sprintf("%7s |", vinfo.PatchStatus(r.Packages)),
-			packname,
+			strings.Join(pkgNames, ", "),
 		}
 		icols := make([]interface{}, len(cols))
 		for j := range cols {
