@@ -499,9 +499,7 @@ func (l *base) scanWordPress() (err error) {
 
 	if hasEmptyOpt {
 		return fmt.Errorf("%s has empty WordPress opts: %s",
-			l.getServerInfo().GetServerName(),
-			wpOpts,
-		)
+			l.getServerInfo().GetServerName(), wpOpts)
 	}
 
 	cmd := fmt.Sprintf("sudo -u %s -i -- %s cli version",

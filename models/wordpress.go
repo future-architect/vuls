@@ -67,6 +67,9 @@ const (
 	WPPlugin = "plugin"
 	// WPTheme is a type `theme` in WPPackage struct
 	WPTheme = "theme"
+
+	// Inactive is a inactive status in WPPackage struct
+	Inactive = "inactive"
 )
 
 // WpPackage has a details of plugin and theme

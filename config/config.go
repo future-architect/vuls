@@ -1087,11 +1087,11 @@ type ContainerSetting struct {
 
 // WordPressConf used for WordPress Scanning
 type WordPressConf struct {
-	OSUser        string `toml:"osUser" json:"osUser"`
-	DocRoot       string `toml:"docRoot" json:"docRoot"`
-	CmdPath       string `toml:"cmdPath" json:"cmdPath"`
-	WPVulnDBToken string `toml:"wpVulnDBToken" json:"-"`
-	// TODO Add ignore-inactives: bool
+	OSUser         string `toml:"osUser" json:"osUser,omitempty"`
+	DocRoot        string `toml:"docRoot" json:"docRoot,omitempty"`
+	CmdPath        string `toml:"cmdPath" json:"cmdPath,omitempty"`
+	WPVulnDBToken  string `toml:"wpVulnDBToken" json:"-,omitempty"`
+	IgnoreInactive bool   `json:"ignoreInactive,omitempty"`
 }
 
 // GitHubConf is used for GitHub integration

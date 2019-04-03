@@ -148,6 +148,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 		r = r.FilterIgnoreCves()
 		r = r.FilterUnfixed()
 		r = r.FilterIgnorePkgs()
+		r = r.FilterInactiveWordPressLibs()
 		if c.Conf.IgnoreUnscoredCves {
 			r.ScannedCves = r.ScannedCves.FindScoredVulns()
 		}

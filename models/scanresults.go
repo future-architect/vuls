@@ -254,6 +254,30 @@ func (r ScanResult) FilterIgnorePkgs() ScanResult {
 	return r
 }
 
+// FilterInactiveWordPressLibs is filter function.
+func (r ScanResult) FilterInactiveWordPressLibs() ScanResult {
+	if !config.Conf.Servers[r.ServerName].WordPress.IgnoreInactive {
+		return r
+	}
+
+	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
+		if len(v.WpPackageFixStats) == 0 {
+			return true
+		}
+		// Ignore if all libs in this vulnInfo inactive
+		for _, wp := range v.WpPackageFixStats {
+			if p, ok := r.WordPressPackages.Find(wp.Name); ok {
+				if p.Status != Inactive {
+					return true
+				}
+			}
+		}
+		return false
+	})
+	r.ScannedCves = filtered
+	return r
+}
+
 // ReportFileName returns the filename on localhost without extention
 func (r ScanResult) ReportFileName() (name string) {
 	if len(r.Container.ContainerID) == 0 {

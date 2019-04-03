@@ -273,6 +273,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		s.WordPress.CmdPath = v.WordPress.CmdPath
 		s.WordPress.DocRoot = v.WordPress.DocRoot
 		s.WordPress.OSUser = v.WordPress.OSUser
+		s.WordPress.IgnoreInactive = v.WordPress.IgnoreInactive
 
 		s.LogMsgAnsiColor = Colors[i%len(Colors)]
 		i++
