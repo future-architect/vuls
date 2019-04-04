@@ -570,17 +570,17 @@ func (v VulnInfo) PatchStatus(packs Packages) string {
 	}
 	for _, p := range v.AffectedPackages {
 		if p.NotFixedYet {
-			return "Not"
+			return "unfixed"
 		}
 
 		// fast, offline mode doesn't have new version
 		if pack, ok := packs[p.Name]; ok {
 			if pack.NewVersion == "" {
-				return "Unknown"
+				return "unknown"
 			}
 		}
 	}
-	return "Fixed"
+	return "fixed"
 }
 
 // CveContentCvss has CVSS information

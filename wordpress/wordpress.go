@@ -74,7 +74,10 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	wpVinfos, err := convertToVinfos(models.WPCore, string(body))
+	if body == "" {
+		util.Log.Warnf("A result of REST access is empty: %s", url)
+	}
+	wpVinfos, err := convertToVinfos(models.WPCore, body)
 	if err != nil {
 		return 0, err
 	}
@@ -92,7 +95,7 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 			continue
 		}
 
-		templateVinfos, err := convertToVinfos(p.Name, string(body))
+		templateVinfos, err := convertToVinfos(p.Name, body)
 		if err != nil {
 			return 0, err
 		}
@@ -129,7 +132,7 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 			continue
 		}
 
-		pluginVinfos, err := convertToVinfos(p.Name, string(body))
+		pluginVinfos, err := convertToVinfos(p.Name, body)
 		if err != nil {
 			return 0, err
 		}

@@ -130,7 +130,7 @@ No CVE-IDs are found in updatable packages.
 
 		data = append(data, []string{
 			vinfo.CveID,
-			fmt.Sprintf("%5s", vinfo.PatchStatus(r.Packages)),
+			fmt.Sprintf("%7s", vinfo.PatchStatus(r.Packages)),
 			vinfo.AlertDict.FormatSource(),
 			fmt.Sprintf("%4.1f", max),
 			// fmt.Sprintf("%4.1f", v2max),
@@ -315,7 +315,7 @@ No CVE-IDs are found in updatable packages.
 		table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
 		table.SetHeader([]string{
 			vuln.CveID,
-			"",
+			vuln.PatchStatus(r.Packages),
 		})
 		table.SetBorder(true)
 		table.AppendBulk(data)

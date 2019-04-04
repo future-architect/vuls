@@ -274,7 +274,7 @@ func cvssColor(cvssScore float64) string {
 		return "danger"
 	case 4 <= cvssScore && cvssScore < 7:
 		return "warning"
-	case cvssScore < 0:
+	case cvssScore == 0:
 		return "#C0C0C0"
 	default:
 		return "good"
