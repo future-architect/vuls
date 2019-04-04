@@ -19,6 +19,7 @@ package util
 
 import (
 	"fmt"
+	"net"
 	"net/url"
 	"strings"
 
@@ -91,6 +92,38 @@ func URLPathParamJoin(baseURL string, paths []string, params map[string]string) 
 	}
 	u.RawQuery = parameters.Encode()
 	return u.String(), nil
+}
+
+// IP returns scanner network ip addresses
+func IP() (ipv4Addrs []string, ipv6Addrs []string, err error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, i := range ifaces {
+		addrs, _ := i.Addrs()
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+
+			// only global unicast address
+			if !ip.IsGlobalUnicast() {
+				continue
+			}
+
+			if ok := ip.To4(); ok != nil {
+				ipv4Addrs = append(ipv4Addrs, ip.String())
+			} else {
+				ipv6Addrs = append(ipv6Addrs, ip.String())
+			}
+		}
+	}
+	return ipv4Addrs, ipv6Addrs, nil
 }
 
 // ProxyEnv returns shell environment variables to set proxy

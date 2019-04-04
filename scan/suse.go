@@ -184,16 +184,16 @@ func (o *suse) parseZypperLULines(stdout string) (models.Packages, error) {
 }
 
 func (o *suse) parseZypperLUOneLine(line string) (*models.Package, error) {
-	fs := strings.Fields(line)
-	if len(fs) != 11 {
+	ss := strings.Split(line, "|")
+	if len(ss) != 6 {
 		return nil, fmt.Errorf("zypper -q lu Unknown format: %s", line)
 	}
-	available := strings.Split(fs[8], "-")
+	available := strings.Split(strings.TrimSpace(ss[4]), "-")
 	return &models.Package{
-		Name:       fs[4],
+		Name:       strings.TrimSpace(ss[2]),
 		NewVersion: available[0],
 		NewRelease: available[1],
-		Arch:       fs[10],
+		Arch:       strings.TrimSpace(ss[5]),
 	}, nil
 }
 
