@@ -183,6 +183,9 @@ func match(installedVer, fixedIn string) (bool, error) {
 }
 
 func convertToVinfos(pkgName, body string) (vinfos []models.VulnInfo, err error) {
+	if body == "" {
+		return
+	}
 	// "pkgName" : CVE Detailed data
 	pkgnameCves := map[string]WpCveInfos{}
 	if err = json.Unmarshal([]byte(body), &pkgnameCves); err != nil {
@@ -198,13 +201,12 @@ func convertToVinfos(pkgName, body string) (vinfos []models.VulnInfo, err error)
 
 func extractToVulnInfos(pkgName string, cves []WpCveInfo) (vinfos []models.VulnInfo) {
 	for _, vulnerability := range cves {
-		if len(vulnerability.References.Cve) == 0 {
-			//TODO ignore no-cve-vulns for now
-			continue
-		}
 		var cveIDs []string
+
+		if len(vulnerability.References.Cve) == 0 {
+			cveIDs = append(cveIDs, fmt.Sprintf("WPVDBID-%d", vulnerability.ID))
+		}
 		for _, cveNumber := range vulnerability.References.Cve {
-			//TODO ignore no-cve-vulns for now
 			cveIDs = append(cveIDs, "CVE-"+cveNumber)
 		}
 
@@ -241,6 +243,7 @@ func extractToVulnInfos(pkgName string, cves []WpCveInfo) (vinfos []models.VulnI
 }
 
 func httpRequest(url, token string) (string, error) {
+	util.Log.Debugf("%s", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err

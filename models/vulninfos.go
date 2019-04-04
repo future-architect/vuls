@@ -303,6 +303,13 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		})
 	}
 
+	if v, ok := v.CveContents[WPVulnDB]; ok {
+		values = append(values, CveContentStr{
+			Type:  "WPVDB",
+			Value: v.Title,
+		})
+	}
+
 	if len(values) == 0 {
 		return []CveContentStr{{
 			Type:  Unknown,
@@ -536,15 +543,15 @@ func (v VulnInfo) AttackVector() string {
 	for _, cnt := range v.CveContents {
 		if strings.HasPrefix(cnt.Cvss2Vector, "AV:N") ||
 			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:N") {
-			return "Network"
+			return "N"
 		} else if strings.HasPrefix(cnt.Cvss2Vector, "AV:A") ||
 			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:A") {
-			return "Adjacent"
+			return "A"
 		} else if strings.HasPrefix(cnt.Cvss2Vector, "AV:L") ||
 			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:L") {
-			return "Local"
+			return "L"
 		} else if strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:P") {
-			return "Physical"
+			return "P"
 		}
 	}
 	if cont, found := v.CveContents[DebianSecurityTracker]; found {
@@ -563,7 +570,7 @@ func (v VulnInfo) PatchStatus(packs Packages) string {
 	}
 	for _, p := range v.AffectedPackages {
 		if p.NotFixedYet {
-			return "Unfixed"
+			return "Not"
 		}
 
 		// fast, offline mode doesn't have new version
@@ -673,6 +680,12 @@ func (v VulnInfo) Cvss3CalcURL() string {
 // VendorLinks returns links of vendor support's URL
 func (v VulnInfo) VendorLinks(family string) map[string]string {
 	links := map[string]string{}
+	if strings.HasPrefix(v.CveID, "WPVDBID") {
+		links["WPVulnDB"] = fmt.Sprintf("https://wpvulndb.com/vulnerabilities/%s",
+			strings.TrimPrefix(v.CveID, "WPVDBID-"))
+		return links
+	}
+
 	switch family {
 	case config.RedHat, config.CentOS:
 		links["RHEL-CVE"] = "https://access.redhat.com/security/cve/" + v.CveID

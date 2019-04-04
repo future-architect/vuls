@@ -121,17 +121,23 @@ No CVE-IDs are found in updatable packages.
 			exploits = "   Y"
 		}
 
+		link := ""
+		if strings.HasPrefix(vinfo.CveID, "CVE-") {
+			link = fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", vinfo.CveID)
+		} else if strings.HasPrefix(vinfo.CveID, "WPVDBID-") {
+			link = fmt.Sprintf("https://wpvulndb.com/vulnerabilities/%s", strings.TrimPrefix(vinfo.CveID, "WPVDBID-"))
+		}
+
 		data = append(data, []string{
 			vinfo.CveID,
+			fmt.Sprintf("%5s", vinfo.PatchStatus(r.Packages)),
 			vinfo.AlertDict.FormatSource(),
 			fmt.Sprintf("%4.1f", max),
 			// fmt.Sprintf("%4.1f", v2max),
 			// fmt.Sprintf("%4.1f", v3max),
-			fmt.Sprintf("%8s", vinfo.AttackVector()),
-			fmt.Sprintf("%7s", vinfo.PatchStatus(r.Packages)),
-			// packname,
-			fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", vinfo.CveID),
+			fmt.Sprintf("%2s", vinfo.AttackVector()),
 			exploits,
+			link,
 		})
 	}
 
@@ -139,15 +145,14 @@ No CVE-IDs are found in updatable packages.
 	table := tablewriter.NewWriter(&b)
 	table.SetHeader([]string{
 		"CVE-ID",
+		"Fixed",
 		"CERT",
 		"CVSS",
 		// "v3",
 		// "v2",
-		"Attack",
-		"Fixed",
-		// "Pkg",
+		"AV",
+		"PoC",
 		"NVD",
-		"Exploit",
 	})
 	table.SetBorder(true)
 	table.AppendBulk(data)
@@ -263,15 +268,17 @@ No CVE-IDs are found in updatable packages.
 			data = append(data, []string{"Confidence", confidence.String()})
 		}
 
-		links := vuln.CveContents.SourceLinks(
-			config.Conf.Lang, r.Family, vuln.CveID)
-		data = append(data, []string{"Source", links[0].Value})
+		if strings.HasPrefix(vuln.CveID, "CVE-") {
+			links := vuln.CveContents.SourceLinks(
+				config.Conf.Lang, r.Family, vuln.CveID)
+			data = append(data, []string{"Source", links[0].Value})
 
-		if 0 < len(vuln.Cvss2Scores(r.Family)) {
-			data = append(data, []string{"CVSSv2 Calc", vuln.Cvss2CalcURL()})
-		}
-		if 0 < len(vuln.Cvss3Scores()) {
-			data = append(data, []string{"CVSSv3 Calc", vuln.Cvss3CalcURL()})
+			if 0 < len(vuln.Cvss2Scores(r.Family)) {
+				data = append(data, []string{"CVSSv2 Calc", vuln.Cvss2CalcURL()})
+			}
+			if 0 < len(vuln.Cvss3Scores()) {
+				data = append(data, []string{"CVSSv3 Calc", vuln.Cvss3CalcURL()})
+			}
 		}
 
 		vlinks := vuln.VendorLinks(r.Family)

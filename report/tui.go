@@ -649,7 +649,7 @@ func summaryLines(r models.ScanResult) string {
 			fmt.Sprintf(indexFormat, i+1),
 			alert + vinfo.CveID,
 			cvssScore + " |",
-			fmt.Sprintf("%8s |", vinfo.AttackVector()),
+			fmt.Sprintf("%1s |", vinfo.AttackVector()),
 			fmt.Sprintf("%7s |", vinfo.PatchStatus(r.Packages)),
 			strings.Join(pkgNames, ", "),
 		}
@@ -863,10 +863,13 @@ func detailLines() (string, error) {
 	}
 
 	vinfo := vinfos[currentVinfo]
-	links := []string{vinfo.CveContents.SourceLinks(
-		config.Conf.Lang, r.Family, vinfo.CveID)[0].Value,
-		vinfo.Cvss2CalcURL(),
-		vinfo.Cvss3CalcURL()}
+	links := []string{}
+	if strings.HasPrefix(vinfo.CveID, "CVE-") {
+		links = append(links, vinfo.CveContents.SourceLinks(
+			config.Conf.Lang, r.Family, vinfo.CveID)[0].Value,
+			vinfo.Cvss2CalcURL(),
+			vinfo.Cvss3CalcURL())
+	}
 	for _, url := range vinfo.VendorLinks(r.Family) {
 		links = append(links, url)
 	}

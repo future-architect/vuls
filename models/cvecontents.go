@@ -140,6 +140,7 @@ func (v CveContents) References(myFamily string) (values []CveContentRefs) {
 			})
 		}
 	}
+
 	return
 }
 
@@ -291,6 +292,7 @@ var AllCveContetTypes = CveContentTypes{
 	Ubuntu,
 	RedHatAPI,
 	DebianSecurityTracker,
+	WPVulnDB,
 }
 
 // Except returns CveContentTypes except for given args
