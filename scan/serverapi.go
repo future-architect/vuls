@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package scan
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -30,6 +29,7 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -592,7 +592,7 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 			return err
 		}
 		if err = o.scanWordPress(); err != nil {
-			return err
+			return errors.Wrap(err, "Failed to scan WordPress")
 		}
 		return o.postScan()
 	}, timeoutSec)

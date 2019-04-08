@@ -124,7 +124,11 @@ func parallelExec(fn func(osTypeInterface) error, timeoutSec ...int) {
 			if len(s.getErrs()) == 0 {
 				successes = append(successes, s)
 			} else {
-				util.Log.Errorf("Error: %s, err: %s",
+				fmtstr := "Error on %s, err: %s"
+				if conf.Conf.Debug {
+					fmtstr = "Error: %s, err: %+v"
+				}
+				util.Log.Errorf(fmtstr,
 					s.getServerInfo().GetServerName(), s.getErrs())
 				errServers = append(errServers, s)
 			}

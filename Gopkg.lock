@@ -835,6 +835,17 @@
   version = "v0.3.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:363686890941480b8d1a0421b9e538cf55feaf9c7967bf4c809150b36138fe1c"
+  name = "golang.org/x/xerrors"
+  packages = [
+    ".",
+    "internal",
+  ]
+  pruneopts = "UT"
+  revision = "d61658bd2e18010be0e21349cc92b1b706e35146"
+
+[[projects]]
   digest = "1:5f003878aabe31d7f6b842d4de32b41c46c214bb629bb485387dbcce1edf5643"
   name = "google.golang.org/api"
   packages = ["support/bundler"]
@@ -1023,6 +1034,7 @@
     "golang.org/x/crypto/ssh",
     "golang.org/x/crypto/ssh/agent",
     "golang.org/x/oauth2",
+    "golang.org/x/xerrors",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
