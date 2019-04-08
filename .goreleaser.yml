@@ -9,7 +9,9 @@ builds:
   goarch:
   - amd64
   main: .
-  ldflags: -s -w -X main.version={{.Version}} -X main.revision={{.Commit}}
+  flags:
+      - -a
+  ldflags: -s -w -X main.version={{.Version}} -X main.revision={{.Commit}} 
   binary: vuls
 archive:
   format: tar.gz
