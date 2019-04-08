@@ -74,6 +74,7 @@ Vuls uses Multiple vulnerability databases
 - [Exploit Database](https://www.exploit-db.com/)
 - [US-CERT](https://www.us-cert.gov/ncas/alerts)
 - [JPCERT](http://www.jpcert.or.jp/at/2019.html)
+- [WPVulnDB](https://wpvulndb.com/api)
 - Changelog
 
 ## Fast scan and Deep scan
@@ -101,15 +102,22 @@ Vuls uses Multiple vulnerability databases
     it's possible to create a list of all vulnerabilities that need to be fixed.
 - Sometimes load on the scan target server
 
-## [Remote scan and Local scan](https://vuls.io/docs/en/architecture-remote-local.html)
+## [Remote scan, Local scan mode, Server mode](https://vuls.io/docs/en/architecture-remote-local.html)
 
-[Remote Scan](https://vuls.io/docs/en/architecture-remote-scan.html)
+[Remote scan mode](https://vuls.io/docs/en/architecture-remote-scan.html)
 
 - User is required to only setup one machine that is connected to other target servers via SSH
 
-[Local Scan](https://vuls.io/docs/en/architecture-local-scan.html)
+[Local scan mode](https://vuls.io/docs/en/architecture-local-scan.html)
 
 - If you don't want the central Vuls server to connect to each server by SSH, you can use Vuls in the Local Scan mode.
+
+[Server mode](https://vuls.io/docs/en/usage-server.html)
+
+- First, start Vuls in server mode and listen as an HTTP server.
+- Start Vuls in server mode and listen as an HTTP server.
+- Next, issue a command on the scan target server to collect software information. Then send the result to Vuls Server via HTTP. You receive the scan results as JSON format.
+- No SSH needed, No Scanner needed. Only issuing Linux commands directory on the scan tareget server.
 
 ## **Dynamic** Analysis
 
@@ -119,9 +127,14 @@ Vuls uses Multiple vulnerability databases
 ## Scan vulnerabilites of non-OS packages
 
 - [Common Platform Enumeration (CPE) based Scan](https://vuls.io/docs/en/usage-scan-non-os-packages.html#how-to-search-cpe-name-by-software-name)
-  - NW equipment, middleware, programming language libraries and framework for vulnerability
-- Integrate with [GitHub Security Alerts](https://vuls.io/docs/en/usage-scan-non-os-packages.html#usage-integrate-with-github-security-alerts)
-- Integrate with [OWASP Dependency Check](https://vuls.io/docs/en/usage-scan-non-os-packages.html#usage-integrate-with-owasp-dependency-check-to-automatic-update-when-the-libraries-are-updated-experimental)
+	- Scan middleware, programming language libraries and framework for vulnerability
+	- Support software registered in CPE
+
+# Integration
+
+- [GitHub Security Alerts](https://vuls.io/docs/en/usage-scan-non-os-packages.html#usage-integrate-with-github-security-alerts)
+- [OWASP Dependency Check](https://vuls.io/docs/en/usage-scan-non-os-packages.html#usage-integrate-with-owasp-dependency-check-to-automatic-update-when-the-libraries-are-updated-experimental)
+- [WordPress](https://vuls.io/docs/en/usage-scan-wordpress.html)
 
 ## MISC
 
