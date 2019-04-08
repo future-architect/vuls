@@ -22,8 +22,7 @@ import (
 	"strings"
 
 	syslog "github.com/RackSec/srslog"
-
-	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -40,7 +39,7 @@ func (w SyslogWriter) Write(rs ...models.ScanResult) (err error) {
 
 	sysLog, err := syslog.Dial(conf.Protocol, raddr, severity|facility, conf.Tag)
 	if err != nil {
-		return errors.Wrap(err, "Failed to initialize syslog client")
+		return xerrors.Errorf("Failed to initialize syslog client: %w", err)
 	}
 
 	for _, r := range rs {

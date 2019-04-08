@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package gost
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -26,6 +25,7 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/parnurzeal/gorequest"
+	"golang.org/x/xerrors"
 )
 
 type response struct {
@@ -80,11 +80,11 @@ func getCvesViaHTTP(cveIDs []string, urlPrefix string) (
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
-			return nil, fmt.Errorf("Timeout Fetching OVAL")
+			return nil, xerrors.New("Timeout Fetching OVAL")
 		}
 	}
 	if len(errs) != 0 {
-		return nil, fmt.Errorf("Failed to fetch OVAL. err: %v", errs)
+		return nil, xerrors.Errorf("Failed to fetch OVAL. err: %w", errs)
 	}
 	return
 }
@@ -154,11 +154,11 @@ func getAllUnfixedCvesViaHTTP(r *models.ScanResult, urlPrefix string) (
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
-			return nil, fmt.Errorf("Timeout Fetching OVAL")
+			return nil, xerrors.New("Timeout Fetching OVAL")
 		}
 	}
 	if len(errs) != 0 {
-		return nil, fmt.Errorf("Failed to fetch OVAL. err: %v", errs)
+		return nil, xerrors.Errorf("Failed to fetch OVAL. err: %w", errs)
 	}
 	return
 }
@@ -176,8 +176,7 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 			if count == retryMax {
 				return nil
 			}
-			return fmt.Errorf("HTTP GET error: %v, url: %s, resp: %v",
-				errs, url, resp)
+			return xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %w", url, resp, errs)
 		}
 		return nil
 	}
@@ -186,11 +185,11 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {
-		errChan <- fmt.Errorf("HTTP Error %s", err)
+		errChan <- xerrors.Errorf("HTTP Error %w", err)
 		return
 	}
 	if count == retryMax {
-		errChan <- fmt.Errorf("HRetry count exceeded")
+		errChan <- xerrors.New("Retry count exceeded")
 		return
 	}
 

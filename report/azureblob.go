@@ -25,6 +25,7 @@ import (
 	"time"
 
 	storage "github.com/Azure/azure-sdk-for-go/storage"
+	"golang.org/x/xerrors"
 
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -60,7 +61,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 			k := key + ".json"
 			var b []byte
 			if b, err = json.Marshal(r); err != nil {
-				return fmt.Errorf("Failed to Marshal to JSON: %s", err)
+				return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
 			}
 			if err := createBlockBlob(cli, k, b); err != nil {
 				return err
@@ -87,7 +88,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 			k := key + ".xml"
 			var b []byte
 			if b, err = xml.Marshal(r); err != nil {
-				return fmt.Errorf("Failed to Marshal to XML: %s", err)
+				return xerrors.Errorf("Failed to Marshal to XML: %w", err)
 			}
 			allBytes := bytes.Join([][]byte{[]byte(xml.Header + vulsOpenTag), b, []byte(vulsCloseTag)}, []byte{})
 			if err := createBlockBlob(cli, k, allBytes); err != nil {
@@ -117,7 +118,7 @@ func CheckIfAzureContainerExists() error {
 		}
 	}
 	if !found {
-		return fmt.Errorf("Container not found. Container: %s", c.Conf.Azure.ContainerName)
+		return xerrors.Errorf("Container not found. Container: %s", c.Conf.Azure.ContainerName)
 	}
 	return nil
 }
@@ -142,7 +143,7 @@ func createBlockBlob(cli storage.BlobStorageClient, k string, b []byte) error {
 	ref := cli.GetContainerReference(c.Conf.Azure.ContainerName)
 	blob := ref.GetBlobReference(k)
 	if err := blob.CreateBlockBlobFromReader(bytes.NewReader(b), nil); err != nil {
-		return fmt.Errorf("Failed to upload data to %s/%s, %s",
+		return xerrors.Errorf("Failed to upload data to %s/%s, err: %w",
 			c.Conf.Azure.ContainerName, k, err)
 	}
 	return nil

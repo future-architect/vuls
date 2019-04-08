@@ -30,6 +30,7 @@ import (
 	"github.com/nlopes/slack"
 	"github.com/parnurzeal/gorequest"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/xerrors"
 )
 
 type field struct {
@@ -155,9 +156,9 @@ func send(msg message) error {
 			if count == retryMax {
 				return nil
 			}
-			return fmt.Errorf(
-				"HTTP POST error: %v, url: %s, resp: %v, body: %s",
-				errs, conf.HookURL, resp, body)
+			return xerrors.Errorf(
+				"HTTP POST error. url: %s, resp: %v, body: %s, err: %w",
+				conf.HookURL, resp, body, errs)
 		}
 		return nil
 	}
@@ -167,10 +168,10 @@ func send(msg message) error {
 	}
 	boff := backoff.NewExponentialBackOff()
 	if err := backoff.RetryNotify(f, boff, notify); err != nil {
-		return fmt.Errorf("HTTP error: %s", err)
+		return xerrors.Errorf("HTTP error: %w", err)
 	}
 	if count == retryMax {
-		return fmt.Errorf("Retry count exceeded")
+		return xerrors.New("Retry count exceeded")
 	}
 	return nil
 }

@@ -27,7 +27,7 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	version "github.com/hashicorp/go-version"
-	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 )
 
 //WpCveInfos is for wpvulndb's json
@@ -67,7 +67,7 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 	// Core
 	ver := strings.Replace(r.WordPressPackages.CoreVersion(), ".", "", -1)
 	if ver == "" {
-		return 0, fmt.Errorf("Failed to get WordPress core version")
+		return 0, xerrors.New("Failed to get WordPress core version")
 	}
 	url := fmt.Sprintf("https://wpvulndb.com/api/v3/wordpresses/%s", ver)
 	body, err := httpRequest(url, token)
@@ -108,7 +108,7 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 				}
 				ok, err := match(pkg.Version, fixstat.FixedIn)
 				if err != nil {
-					return 0, errors.Wrap(err, "Not a semantic versioning")
+					return 0, xerrors.Errorf("Not a semantic versioning: %w", err)
 				}
 				if ok {
 					wpVinfos = append(wpVinfos, v)
@@ -145,7 +145,7 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 				}
 				ok, err := match(pkg.Version, fixstat.FixedIn)
 				if err != nil {
-					return 0, errors.Wrap(err, "Not a semantic versioning")
+					return 0, xerrors.Errorf("Not a semantic versioning: %w", err)
 				}
 				if ok {
 					wpVinfos = append(wpVinfos, v)
@@ -192,7 +192,7 @@ func convertToVinfos(pkgName, body string) (vinfos []models.VulnInfo, err error)
 	// "pkgName" : CVE Detailed data
 	pkgnameCves := map[string]WpCveInfos{}
 	if err = json.Unmarshal([]byte(body), &pkgnameCves); err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("Failed to unmarshal: %s", body))
+		return nil, xerrors.Errorf("Failed to unmarshal %s. err: %w", body, err)
 	}
 
 	for _, v := range pkgnameCves {
@@ -262,7 +262,7 @@ func httpRequest(url, token string) (string, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 && resp.StatusCode != 404 {
-		return "", fmt.Errorf("status: %s", resp.Status)
+		return "", xerrors.Errorf("status: %s", resp.Status)
 	} else if resp.StatusCode == 404 {
 		// This package is not in WPVulnDB
 		return "", nil

@@ -29,14 +29,14 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
-	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 )
 
 var (
-	errOSFamilyHeader      = errors.New("X-Vuls-OS-Family header is required")
-	errOSReleaseHeader     = errors.New("X-Vuls-OS-Release header is required")
-	errKernelVersionHeader = errors.New("X-Vuls-Kernel-Version header is required")
-	errServerNameHeader    = errors.New("X-Vuls-Server-Name header is required")
+	errOSFamilyHeader      = xerrors.New("X-Vuls-OS-Family header is required")
+	errOSReleaseHeader     = xerrors.New("X-Vuls-OS-Release header is required")
+	errKernelVersionHeader = xerrors.New("X-Vuls-Kernel-Version header is required")
+	errServerNameHeader    = xerrors.New("X-Vuls-Server-Name header is required")
 )
 
 var servers, errServers []osTypeInterface
@@ -121,7 +121,7 @@ func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 	itsMe, osType, fatalErr = detectDebianWithRetry(c)
 	if fatalErr != nil {
 		osType.setErrs([]error{
-			fmt.Errorf("Failed to detect OS: %s", fatalErr)})
+			xerrors.Errorf("Failed to detect OS: %w", fatalErr)})
 		return
 	}
 
@@ -151,7 +151,7 @@ func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 	}
 
 	//TODO darwin https://github.com/mizzy/specinfra/blob/master/lib/specinfra/helper/detect_os/darwin.rb
-	osType.setErrs([]error{fmt.Errorf("Unknown OS Type")})
+	osType.setErrs([]error{xerrors.New("Unknown OS Type")})
 	return
 }
 
@@ -180,7 +180,7 @@ func PrintSSHableServerNames() bool {
 func InitServers(timeoutSec int) error {
 	servers, errServers = detectServerOSes(timeoutSec)
 	if len(servers) == 0 {
-		return fmt.Errorf("No scannable servers")
+		return xerrors.New("No scannable servers")
 	}
 
 	actives, inactives := detectContainerOSes(timeoutSec)
@@ -241,7 +241,7 @@ func detectServerOSes(timeoutSec int) (servers, errServers []osTypeInterface) {
 					u := &unknown{}
 					u.setServerInfo(sInfo)
 					u.setErrs([]error{
-						fmt.Errorf("Timed out"),
+						xerrors.New("Timed out"),
 					})
 					errServers = append(errServers, u)
 					util.Log.Errorf("(%d/%d) Timed out: %s",
@@ -301,7 +301,7 @@ func detectContainerOSes(timeoutSec int) (actives, inactives []osTypeInterface) 
 					u := &unknown{}
 					u.setServerInfo(sInfo)
 					u.setErrs([]error{
-						fmt.Errorf("Timed out"),
+						xerrors.New("Timed out"),
 					})
 					inactives = append(inactives)
 					util.Log.Errorf("Timed out: %s", servername)
@@ -320,8 +320,8 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 
 	running, err := containerHost.runningContainers()
 	if err != nil {
-		containerHost.setErrs([]error{fmt.Errorf(
-			"Failed to get running containers on %s. err: %s",
+		containerHost.setErrs([]error{xerrors.Errorf(
+			"Failed to get running containers on %s. err: %w",
 			containerHost.getServerInfo().ServerName, err)})
 		return append(oses, containerHost)
 	}
@@ -352,8 +352,8 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 
 	exitedContainers, err := containerHost.exitedContainers()
 	if err != nil {
-		containerHost.setErrs([]error{fmt.Errorf(
-			"Failed to get exited containers on %s. err: %s",
+		containerHost.setErrs([]error{xerrors.Errorf(
+			"Failed to get exited containers on %s. err: %w",
 			containerHost.getServerInfo().ServerName, err)})
 		return append(oses, containerHost)
 	}
@@ -387,7 +387,7 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 		}
 	}
 	if 0 < len(exited) || 0 < len(unknown) {
-		containerHost.setErrs([]error{fmt.Errorf(
+		containerHost.setErrs([]error{xerrors.Errorf(
 			"Some containers on %s are exited or unknown. exited: %s, unknown: %s",
 			containerHost.getServerInfo().ServerName, exited, unknown)})
 		return append(oses, containerHost)
@@ -399,7 +399,7 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 func CheckScanModes() error {
 	for _, s := range servers {
 		if err := s.checkScanMode(); err != nil {
-			return fmt.Errorf("servers.%s.scanMode err: %s",
+			return xerrors.Errorf("servers.%s.scanMode err: %w",
 				s.getServerInfo().GetServerName(), err)
 		}
 	}
@@ -457,7 +457,7 @@ func detectPlatforms(timeoutSec int) {
 // Scan scan
 func Scan(timeoutSec int) error {
 	if len(servers) == 0 {
-		return fmt.Errorf("No server defined. Check the configuration")
+		return xerrors.New("No server defined. Check the configuration")
 	}
 
 	if err := setupChangelogCache(); err != nil {
@@ -535,7 +535,7 @@ func ViaHTTP(header http.Header, body string) (models.ScanResult, error) {
 			redhatBase: redhatBase{base: base},
 		}
 	default:
-		return models.ScanResult{}, fmt.Errorf("Server mode for %s is not implemented yet", family)
+		return models.ScanResult{}, xerrors.Errorf("Server mode for %s is not implemented yet", family)
 	}
 
 	installedPackages, srcPackages, err := osType.parseInstalledPackages(body)
@@ -592,7 +592,7 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 			return err
 		}
 		if err = o.scanWordPress(); err != nil {
-			return errors.Wrap(err, "Failed to scan WordPress")
+			return xerrors.Errorf("Failed to scan WordPress: %w", err)
 		}
 		return o.postScan()
 	}, timeoutSec)
@@ -621,7 +621,7 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 	}
 	for _, w := range ws {
 		if err := w.Write(results...); err != nil {
-			return fmt.Errorf("Failed to write summary report: %s", err)
+			return xerrors.Errorf("Failed to write summary report: %s", err)
 		}
 	}
 
@@ -640,20 +640,20 @@ func EnsureResultDir(scannedAt time.Time) (currentDir string, err error) {
 	}
 	jsonDir := filepath.Join(resultsDir, jsonDirName)
 	if err := os.MkdirAll(jsonDir, 0700); err != nil {
-		return "", fmt.Errorf("Failed to create dir: %s", err)
+		return "", xerrors.Errorf("Failed to create dir: %w", err)
 	}
 
 	symlinkPath := filepath.Join(resultsDir, "current")
 	if _, err := os.Lstat(symlinkPath); err == nil {
 		if err := os.Remove(symlinkPath); err != nil {
-			return "", fmt.Errorf(
-				"Failed to remove symlink. path: %s, err: %s", symlinkPath, err)
+			return "", xerrors.Errorf(
+				"Failed to remove symlink. path: %s, err: %w", symlinkPath, err)
 		}
 	}
 
 	if err := os.Symlink(jsonDir, symlinkPath); err != nil {
-		return "", fmt.Errorf(
-			"Failed to create symlink: path: %s, err: %s", symlinkPath, err)
+		return "", xerrors.Errorf(
+			"Failed to create symlink: path: %s, err: %w", symlinkPath, err)
 	}
 	return jsonDir, nil
 }

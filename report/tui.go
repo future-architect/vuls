@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/alert"
+	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -581,7 +582,7 @@ func setSideLayout(g *gocui.Gui) error {
 			fmt.Fprintln(v, result.ServerInfoTui())
 		}
 		if len(scanResults) == 0 {
-			return fmt.Errorf("No scan results")
+			return xerrors.New("No scan results")
 		}
 		currentScanResult = scanResults[0]
 		vinfos = scanResults[0].ScannedCves.ToSortedSlice()

@@ -33,6 +33,7 @@ import (
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
+	"golang.org/x/xerrors"
 
 	"github.com/cenkalti/backoff"
 	conf "github.com/future-architect/vuls/config"
@@ -152,7 +153,7 @@ func parallelExec(fn func(osTypeInterface) error, timeoutSec ...int) {
 				msg := fmt.Sprintf("Timed out: %s",
 					s.getServerInfo().GetServerName())
 				util.Log.Errorf(msg)
-				s.setErrs([]error{fmt.Errorf(msg)})
+				s.setErrs([]error{xerrors.New(msg)})
 				errServers = append(errServers, s)
 			}
 		}
@@ -226,8 +227,8 @@ func sshExecNative(c conf.ServerInfo, cmd string, sudo bool) (result execResult)
 
 	var session *ssh.Session
 	if session, err = client.NewSession(); err != nil {
-		result.Error = fmt.Errorf(
-			"Failed to create a new session. servername: %s, err: %s",
+		result.Error = xerrors.Errorf(
+			"Failed to create a new session. servername: %s, err: %w",
 			c.ServerName, err)
 		result.ExitStatus = 999
 		return
@@ -241,8 +242,8 @@ func sshExecNative(c conf.ServerInfo, cmd string, sudo bool) (result execResult)
 		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
 	}
 	if err = session.RequestPty("xterm", 400, 1000, modes); err != nil {
-		result.Error = fmt.Errorf(
-			"Failed to request for pseudo terminal. servername: %s, err: %s",
+		result.Error = xerrors.Errorf(
+			"Failed to request for pseudo terminal. servername: %s, err: %w",
 			c.ServerName, err)
 		result.ExitStatus = 999
 		return
@@ -466,7 +467,7 @@ func addKeyAuth(auths []ssh.AuthMethod, keypath string, keypassword string) ([]s
 	// get first pem block
 	block, _ := pem.Decode(pemBytes)
 	if block == nil {
-		return auths, fmt.Errorf("no key found in %s", keypath)
+		return auths, xerrors.Errorf("no key found in %s", keypath)
 	}
 
 	// handle plain and encrypted keyfiles
@@ -503,6 +504,6 @@ func parsePemBlock(block *pem.Block) (interface{}, error) {
 	case "DSA PRIVATE KEY":
 		return ssh.ParseDSAPrivateKey(block.Bytes)
 	default:
-		return nil, fmt.Errorf("Unsupported key type %q", block.Type)
+		return nil, xerrors.Errorf("Unsupported key type %q", block.Type)
 	}
 }

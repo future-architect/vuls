@@ -31,6 +31,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"golang.org/x/xerrors"
 
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -75,7 +76,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 			k := key + ".json"
 			var b []byte
 			if b, err = json.Marshal(r); err != nil {
-				return fmt.Errorf("Failed to Marshal to JSON: %s", err)
+				return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
 			}
 			if err := putObject(svc, k, b); err != nil {
 				return err
@@ -102,7 +103,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 			k := key + ".xml"
 			var b []byte
 			if b, err = xml.Marshal(r); err != nil {
-				return fmt.Errorf("Failed to Marshal to XML: %s", err)
+				return xerrors.Errorf("Failed to Marshal to XML: %w", err)
 			}
 			allBytes := bytes.Join([][]byte{[]byte(xml.Header + vulsOpenTag), b, []byte(vulsCloseTag)}, []byte{})
 			if err := putObject(svc, k, allBytes); err != nil {
@@ -118,8 +119,8 @@ func CheckIfBucketExists() error {
 	svc := getS3()
 	result, err := svc.ListBuckets(&s3.ListBucketsInput{})
 	if err != nil {
-		return fmt.Errorf(
-			"Failed to list buckets. err: %s, profile: %s, region: %s",
+		return xerrors.Errorf(
+			"Failed to list buckets. err: %w, profile: %s, region: %s",
 			err, c.Conf.AWS.Profile, c.Conf.AWS.Region)
 	}
 
@@ -131,7 +132,7 @@ func CheckIfBucketExists() error {
 		}
 	}
 	if !found {
-		return fmt.Errorf(
+		return xerrors.Errorf(
 			"Failed to find the buckets. profile: %s, region: %s, bucket: %s",
 			c.Conf.AWS.Profile, c.Conf.AWS.Region, c.Conf.AWS.S3Bucket)
 	}
@@ -158,7 +159,7 @@ func putObject(svc *s3.S3, k string, b []byte) error {
 	}
 
 	if _, err := svc.PutObject(putObjectInput); err != nil {
-		return fmt.Errorf("Failed to upload data to %s/%s, %s",
+		return xerrors.Errorf("Failed to upload data to %s/%s, err: %w",
 			c.Conf.AWS.S3Bucket, k, err)
 	}
 	return nil

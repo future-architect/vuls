@@ -28,6 +28,7 @@ import (
 	"github.com/future-architect/vuls/util"
 	"github.com/kotakanbe/goval-dictionary/db"
 	"github.com/parnurzeal/gorequest"
+	"golang.org/x/xerrors"
 )
 
 // Client is the interface of OVAL client.
@@ -58,7 +59,7 @@ func (b Base) CheckHTTPHealth() error {
 	//  resp, _, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
 	//  resp, _, errs = gorequest.New().Proxy(api.httpProxy).Get(url).End()
 	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-		return fmt.Errorf("Failed to request to OVAL server. url: %s, errs: %v",
+		return xerrors.Errorf("Failed to request to OVAL server. url: %s, errs: %w",
 			url, errs)
 	}
 	return nil
@@ -69,8 +70,7 @@ func (b Base) CheckIfOvalFetched(driver db.DB, osFamily, release string) (fetche
 	if !cnf.Conf.OvalDict.IsFetchViaHTTP() {
 		count, err := driver.CountDefs(osFamily, release)
 		if err != nil {
-			return false, fmt.Errorf("Failed to count OVAL defs: %s, %s, %v",
-				osFamily, release, err)
+			return false, xerrors.Errorf("Failed to count OVAL defs: %s, %s, %w", osFamily, release, err)
 		}
 		return 0 < count, nil
 	}
@@ -78,13 +78,11 @@ func (b Base) CheckIfOvalFetched(driver db.DB, osFamily, release string) (fetche
 	url, _ := util.URLPathJoin(cnf.Conf.OvalDict.URL, "count", osFamily, release)
 	resp, body, errs := gorequest.New().Get(url).End()
 	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-		return false, fmt.Errorf("HTTP GET error: %v, url: %s, resp: %v",
-			errs, url, resp)
+		return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %w", url, resp, errs)
 	}
 	count := 0
 	if err := json.Unmarshal([]byte(body), &count); err != nil {
-		return false, fmt.Errorf("Failed to Unmarshall. body: %s, err: %s",
-			body, err)
+		return false, xerrors.Errorf("Failed to Unmarshall. body: %s, err: %w", body, err)
 	}
 	return 0 < count, nil
 }
@@ -98,13 +96,11 @@ func (b Base) CheckIfOvalFresh(driver db.DB, osFamily, release string) (ok bool,
 		url, _ := util.URLPathJoin(cnf.Conf.OvalDict.URL, "lastmodified", osFamily, release)
 		resp, body, errs := gorequest.New().Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-			return false, fmt.Errorf("HTTP GET error: %v, url: %s, resp: %v",
-				errs, url, resp)
+			return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %w", url, resp, errs)
 		}
 
 		if err := json.Unmarshal([]byte(body), &lastModified); err != nil {
-			return false, fmt.Errorf("Failed to Unmarshall. body: %s, err: %s",
-				body, err)
+			return false, xerrors.Errorf("Failed to Unmarshall. body: %s, err: %w", body, err)
 		}
 	}
 

@@ -19,12 +19,12 @@ package scan
 
 import (
 	"bufio"
-	"fmt"
 	"strings"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	"golang.org/x/xerrors"
 )
 
 // inherit OsTypeInterface
@@ -66,7 +66,7 @@ func detectAlpine(c config.ServerInfo) (itsMe bool, os osTypeInterface) {
 
 func (o *alpine) checkScanMode() error {
 	if o.getServerInfo().Mode.IsOffline() {
-		return fmt.Errorf("Remove offline scan mode, Alpine needs internet connection")
+		return xerrors.New("Remove offline scan mode, Alpine needs internet connection")
 	}
 	return nil
 }
@@ -84,7 +84,7 @@ func (o *alpine) checkIfSudoNoPasswd() error {
 func (o *alpine) apkUpdate() error {
 	r := o.exec("apk update", noSudo)
 	if !r.isSuccess() {
-		return fmt.Errorf("Failed to SSH: %s", r)
+		return xerrors.Errorf("Failed to SSH: %s", r)
 	}
 	return nil
 }
@@ -143,7 +143,7 @@ func (o *alpine) scanInstalledPackages() (models.Packages, error) {
 	cmd := util.PrependProxyEnv("apk info -v")
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return nil, fmt.Errorf("Failed to SSH: %s", r)
+		return nil, xerrors.Errorf("Failed to SSH: %s", r)
 	}
 	return o.parseApkInfo(r.Stdout)
 }
@@ -160,7 +160,7 @@ func (o *alpine) parseApkInfo(stdout string) (models.Packages, error) {
 		line := scanner.Text()
 		ss := strings.Split(line, "-")
 		if len(ss) < 3 {
-			return nil, fmt.Errorf("Failed to parse apk info -v: %s", line)
+			return nil, xerrors.Errorf("Failed to parse apk info -v: %s", line)
 		}
 		name := strings.Join(ss[:len(ss)-2], "-")
 		packs[name] = models.Package{
@@ -175,7 +175,7 @@ func (o *alpine) scanUpdatablePackages() (models.Packages, error) {
 	cmd := util.PrependProxyEnv("apk version")
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return nil, fmt.Errorf("Failed to SSH: %s", r)
+		return nil, xerrors.Errorf("Failed to SSH: %s", r)
 	}
 	return o.parseApkVersion(r.Stdout)
 }

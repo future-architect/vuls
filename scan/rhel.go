@@ -1,11 +1,10 @@
 package scan
 
 import (
-	"fmt"
-
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	"golang.org/x/xerrors"
 )
 
 // inherit OsTypeInterface
@@ -43,7 +42,7 @@ func (o *rhel) checkDeps() error {
 	} else if o.getServerInfo().Mode.IsDeep() {
 		return o.execCheckDeps(o.depsDeep())
 	}
-	return fmt.Errorf("Unknown scan mode")
+	return xerrors.New("Unknown scan mode")
 }
 
 func (o *rhel) depsFast() []string {

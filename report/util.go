@@ -35,6 +35,7 @@ import (
 	"github.com/future-architect/vuls/util"
 	"github.com/gosuri/uitable"
 	"github.com/olekukonko/tablewriter"
+	"golang.org/x/xerrors"
 )
 
 const maxColWidth = 100
@@ -376,7 +377,7 @@ func overwriteJSONFile(dir string, r models.ScanResult) error {
 	config.Conf.Diff = false
 	w := LocalFileWriter{CurrentDir: dir}
 	if err := w.Write(r); err != nil {
-		return fmt.Errorf("Failed to write summary report: %s", err)
+		return xerrors.Errorf("Failed to write summary report: %w", err)
 	}
 	config.Conf.FormatJSON = before
 	config.Conf.Diff = beforeDiff
@@ -544,7 +545,7 @@ var jsonDirPattern = regexp.MustCompile(
 func ListValidJSONDirs() (dirs []string, err error) {
 	var dirInfo []os.FileInfo
 	if dirInfo, err = ioutil.ReadDir(config.Conf.ResultsDir); err != nil {
-		err = fmt.Errorf("Failed to read %s: %s",
+		err = xerrors.Errorf("Failed to read %s: %w",
 			config.Conf.ResultsDir, err)
 		return
 	}
@@ -582,20 +583,20 @@ func JSONDir(args []string) (string, error) {
 			}
 		}
 
-		return "", fmt.Errorf("Invalid path: %s", path)
+		return "", xerrors.Errorf("Invalid path: %s", path)
 	}
 
 	// PIPE
 	if config.Conf.Pipe {
 		bytes, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
-			return "", fmt.Errorf("Failed to read stdin: %s", err)
+			return "", xerrors.Errorf("Failed to read stdin: %w", err)
 		}
 		fields := strings.Fields(string(bytes))
 		if 0 < len(fields) {
 			return filepath.Join(config.Conf.ResultsDir, fields[0]), nil
 		}
-		return "", fmt.Errorf("Stdin is invalid: %s", string(bytes))
+		return "", xerrors.Errorf("Stdin is invalid: %s", string(bytes))
 	}
 
 	// returns latest dir when no args or no PIPE
@@ -603,7 +604,7 @@ func JSONDir(args []string) (string, error) {
 		return "", err
 	}
 	if len(dirs) == 0 {
-		return "", fmt.Errorf("No results under %s",
+		return "", xerrors.Errorf("No results under %s",
 			config.Conf.ResultsDir)
 	}
 	return dirs[0], nil
@@ -613,7 +614,7 @@ func JSONDir(args []string) (string, error) {
 func LoadScanResults(jsonDir string) (results models.ScanResults, err error) {
 	var files []os.FileInfo
 	if files, err = ioutil.ReadDir(jsonDir); err != nil {
-		return nil, fmt.Errorf("Failed to read %s: %s", jsonDir, err)
+		return nil, xerrors.Errorf("Failed to read %s: %w", jsonDir, err)
 	}
 	for _, f := range files {
 		if filepath.Ext(f.Name()) != ".json" || strings.HasSuffix(f.Name(), "_diff.json") {
@@ -628,7 +629,7 @@ func LoadScanResults(jsonDir string) (results models.ScanResults, err error) {
 		results = append(results, *r)
 	}
 	if len(results) == 0 {
-		return nil, fmt.Errorf("There is no json file under %s", jsonDir)
+		return nil, xerrors.Errorf("There is no json file under %s", jsonDir)
 	}
 	return
 }
@@ -640,11 +641,11 @@ func loadOneServerScanResult(jsonFile string) (*models.ScanResult, error) {
 		err  error
 	)
 	if data, err = ioutil.ReadFile(jsonFile); err != nil {
-		return nil, fmt.Errorf("Failed to read %s: %s", jsonFile, err)
+		return nil, xerrors.Errorf("Failed to read %s: %w", jsonFile, err)
 	}
 	result := &models.ScanResult{}
 	if err := json.Unmarshal(data, result); err != nil {
-		return nil, fmt.Errorf("Failed to parse %s: %s", jsonFile, err)
+		return nil, xerrors.Errorf("Failed to parse %s: %w", jsonFile, err)
 	}
 	return result, nil
 }
