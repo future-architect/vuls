@@ -24,6 +24,7 @@ import (
 
 	"github.com/howeyc/gopass"
 	homedir "github.com/mitchellh/go-homedir"
+	"golang.org/x/xerrors"
 )
 
 func getPasswd(prompt string) (string, error) {
@@ -31,7 +32,7 @@ func getPasswd(prompt string) (string, error) {
 		fmt.Print(prompt)
 		pass, err := gopass.GetPasswdMasked()
 		if err != nil {
-			return "", fmt.Errorf("Failed to read password")
+			return "", xerrors.New("Failed to read a password")
 		}
 		if 0 < len(pass) {
 			return string(pass), nil

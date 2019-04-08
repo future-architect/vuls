@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/alert"
+	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -581,7 +582,7 @@ func setSideLayout(g *gocui.Gui) error {
 			fmt.Fprintln(v, result.ServerInfoTui())
 		}
 		if len(scanResults) == 0 {
-			return fmt.Errorf("No scan results")
+			return xerrors.New("No scan results")
 		}
 		currentScanResult = scanResults[0]
 		vinfos = scanResults[0].ScannedCves.ToSortedSlice()
@@ -634,9 +635,10 @@ func summaryLines(r models.ScanResult) string {
 			cvssScore = fmt.Sprintf("| %4.1f", max)
 		}
 
-		packname := vinfo.AffectedPackages.FormatTuiSummary()
-		packname += strings.Join(vinfo.CpeURIs, ", ")
-		packname += vinfo.GitHubSecurityAlerts.String()
+		pkgNames := vinfo.AffectedPackages.Names()
+		pkgNames = append(pkgNames, vinfo.CpeURIs...)
+		pkgNames = append(pkgNames, vinfo.GitHubSecurityAlerts.Names()...)
+		pkgNames = append(pkgNames, vinfo.WpPackageFixStats.Names()...)
 
 		alert := "  "
 		if vinfo.AlertDict.HasAlert() {
@@ -648,9 +650,9 @@ func summaryLines(r models.ScanResult) string {
 			fmt.Sprintf(indexFormat, i+1),
 			alert + vinfo.CveID,
 			cvssScore + " |",
-			fmt.Sprintf("%8s |", vinfo.AttackVector()),
+			fmt.Sprintf("%1s |", vinfo.AttackVector()),
 			fmt.Sprintf("%7s |", vinfo.PatchStatus(r.Packages)),
-			packname,
+			strings.Join(pkgNames, ", "),
 		}
 		icols := make([]interface{}, len(cols))
 		for j := range cols {
@@ -745,6 +747,22 @@ func setChangelogLayout(g *gocui.Gui) error {
 
 		for _, alert := range vinfo.GitHubSecurityAlerts {
 			lines = append(lines, "* "+alert.PackageName)
+		}
+
+		r := currentScanResult
+		for _, wp := range vinfo.WpPackageFixStats {
+			if p, ok := r.WordPressPackages.Find(wp.Name); ok {
+				if p.Type == models.WPCore {
+					lines = append(lines, fmt.Sprintf("* %s-%s, FixedIn: %s",
+						wp.Name, p.Version, wp.FixedIn))
+				} else {
+					lines = append(lines,
+						fmt.Sprintf("* %s-%s, Update: %s, FixedIn: %s, %s",
+							wp.Name, p.Version, p.Update, wp.FixedIn, p.Status))
+				}
+			} else {
+				lines = append(lines, fmt.Sprintf("* %s", wp.Name))
+			}
 		}
 
 		for _, adv := range vinfo.DistroAdvisories {
@@ -846,10 +864,13 @@ func detailLines() (string, error) {
 	}
 
 	vinfo := vinfos[currentVinfo]
-	links := []string{vinfo.CveContents.SourceLinks(
-		config.Conf.Lang, r.Family, vinfo.CveID)[0].Value,
-		vinfo.Cvss2CalcURL(),
-		vinfo.Cvss3CalcURL()}
+	links := []string{}
+	if strings.HasPrefix(vinfo.CveID, "CVE-") {
+		links = append(links, vinfo.CveContents.SourceLinks(
+			config.Conf.Lang, r.Family, vinfo.CveID)[0].Value,
+			vinfo.Cvss2CalcURL(),
+			vinfo.Cvss3CalcURL())
+	}
 	for _, url := range vinfo.VendorLinks(r.Family) {
 		links = append(links, url)
 	}

@@ -14,7 +14,7 @@ func TestSetPackageStates(t *testing.T) {
 		installed models.Packages
 		release   string
 		in        models.VulnInfo
-		out       models.PackageStatuses
+		out       models.PackageFixStatuses
 	}{
 
 		//0 one
@@ -31,7 +31,7 @@ func TestSetPackageStates(t *testing.T) {
 			},
 			release: "7",
 			in:      models.VulnInfo{},
-			out: []models.PackageStatus{
+			out: []models.PackageFixStatus{
 				{
 					Name:        "bouncycastle",
 					FixState:    "Will not fix",
@@ -66,7 +66,7 @@ func TestSetPackageStates(t *testing.T) {
 			},
 			release: "7",
 			in:      models.VulnInfo{},
-			out: []models.PackageStatus{
+			out: []models.PackageFixStatus{
 				{
 					Name:        "bouncycastle",
 					FixState:    "Will not fix",
@@ -94,9 +94,9 @@ func TestSetPackageStates(t *testing.T) {
 			},
 			release: "7",
 			in: models.VulnInfo{
-				AffectedPackages: models.PackageStatuses{},
+				AffectedPackages: models.PackageFixStatuses{},
 			},
-			out: models.PackageStatuses{},
+			out: models.PackageFixStatuses{},
 		},
 
 		//3 look only the same os release.
@@ -113,9 +113,9 @@ func TestSetPackageStates(t *testing.T) {
 			},
 			release: "7",
 			in: models.VulnInfo{
-				AffectedPackages: models.PackageStatuses{},
+				AffectedPackages: models.PackageFixStatuses{},
 			},
-			out: models.PackageStatuses{},
+			out: models.PackageFixStatuses{},
 		},
 	}
 

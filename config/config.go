@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	syslog "github.com/RackSec/srslog"
+	"golang.org/x/xerrors"
 
 	valid "github.com/asaskevich/govalidator"
 	log "github.com/sirupsen/logrus"
@@ -167,7 +168,7 @@ func (c Config) ValidateOnConfigtest() bool {
 	errs := []error{}
 
 	if runtime.GOOS == "windows" && !c.SSHNative {
-		errs = append(errs, fmt.Errorf("-ssh-native-insecure is needed on windows"))
+		errs = append(errs, xerrors.New("-ssh-native-insecure is needed on windows"))
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -188,25 +189,25 @@ func (c Config) ValidateOnScan() bool {
 
 	if len(c.ResultsDir) != 0 {
 		if ok, _ := valid.IsFilePath(c.ResultsDir); !ok {
-			errs = append(errs, fmt.Errorf(
+			errs = append(errs, xerrors.Errorf(
 				"JSON base directory must be a *Absolute* file path. -results-dir: %s", c.ResultsDir))
 		}
 	}
 
 	if runtime.GOOS == "windows" && !c.SSHNative {
-		errs = append(errs, fmt.Errorf("-ssh-native-insecure is needed on windows"))
+		errs = append(errs, xerrors.New("-ssh-native-insecure is needed on windows"))
 	}
 
 	if len(c.ResultsDir) != 0 {
 		if ok, _ := valid.IsFilePath(c.ResultsDir); !ok {
-			errs = append(errs, fmt.Errorf(
+			errs = append(errs, xerrors.Errorf(
 				"JSON base directory must be a *Absolute* file path. -results-dir: %s", c.ResultsDir))
 		}
 	}
 
 	if len(c.CacheDBPath) != 0 {
 		if ok, _ := valid.IsFilePath(c.CacheDBPath); !ok {
-			errs = append(errs, fmt.Errorf(
+			errs = append(errs, xerrors.Errorf(
 				"Cache DB path must be a *Absolute* file path. -cache-dbpath: %s",
 				c.CacheDBPath))
 		}
@@ -233,7 +234,7 @@ func (c Config) ValidateOnReportDB() bool {
 	}
 	if c.CveDict.Type == "sqlite3" {
 		if _, err := os.Stat(c.CveDict.SQLite3Path); os.IsNotExist(err) {
-			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDict.SQLite3Path))
+			errs = append(errs, xerrors.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDict.SQLite3Path))
 		}
 	}
 
@@ -262,7 +263,7 @@ func (c Config) ValidateOnReport() bool {
 
 	if len(c.ResultsDir) != 0 {
 		if ok, _ := valid.IsFilePath(c.ResultsDir); !ok {
-			errs = append(errs, fmt.Errorf(
+			errs = append(errs, xerrors.Errorf(
 				"JSON base directory must be a *Absolute* file path. -results-dir: %s", c.ResultsDir))
 		}
 	}
@@ -321,7 +322,7 @@ func (c Config) ValidateOnTui() bool {
 
 	if len(c.ResultsDir) != 0 {
 		if ok, _ := valid.IsFilePath(c.ResultsDir); !ok {
-			errs = append(errs, fmt.Errorf(
+			errs = append(errs, xerrors.Errorf(
 				"JSON base directory must be a *Absolute* file path. -results-dir: %s", c.ResultsDir))
 		}
 	}
@@ -331,7 +332,7 @@ func (c Config) ValidateOnTui() bool {
 	}
 	if c.CveDict.Type == "sqlite3" {
 		if _, err := os.Stat(c.CveDict.SQLite3Path); os.IsNotExist(err) {
-			errs = append(errs, fmt.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDict.SQLite3Path))
+			errs = append(errs, xerrors.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDict.SQLite3Path))
 		}
 	}
 
@@ -351,35 +352,35 @@ func validateDB(dictionaryDBName, dbType, dbPath, dbURL string) error {
 	switch dbType {
 	case "sqlite3":
 		if dbURL != "" {
-			return fmt.Errorf("To use SQLite3, specify -%s-type=sqlite3 and -%s-path. To use as http server mode, specify -%s-type=http and -%s-url",
+			return xerrors.Errorf("To use SQLite3, specify -%s-type=sqlite3 and -%s-path. To use as http server mode, specify -%s-type=http and -%s-url",
 				dictionaryDBName, dictionaryDBName, dictionaryDBName, dictionaryDBName)
 		}
 		if ok, _ := valid.IsFilePath(dbPath); !ok {
-			return fmt.Errorf("SQLite3 path must be a *Absolute* file path. -%s-path: %s",
+			return xerrors.Errorf("SQLite3 path must be a *Absolute* file path. -%s-path: %s",
 				dictionaryDBName, dbPath)
 		}
 	case "mysql":
 		if dbURL == "" {
-			return fmt.Errorf(`MySQL connection string is needed. -%s-url="user:pass@tcp(localhost:3306)/dbname"`,
+			return xerrors.Errorf(`MySQL connection string is needed. -%s-url="user:pass@tcp(localhost:3306)/dbname"`,
 				dictionaryDBName)
 		}
 	case "postgres":
 		if dbURL == "" {
-			return fmt.Errorf(`PostgreSQL connection string is needed. -%s-url="host=myhost user=user dbname=dbname sslmode=disable password=password"`,
+			return xerrors.Errorf(`PostgreSQL connection string is needed. -%s-url="host=myhost user=user dbname=dbname sslmode=disable password=password"`,
 				dictionaryDBName)
 		}
 	case "redis":
 		if dbURL == "" {
-			return fmt.Errorf(`Redis connection string is needed. -%s-url="redis://localhost/0"`,
+			return xerrors.Errorf(`Redis connection string is needed. -%s-url="redis://localhost/0"`,
 				dictionaryDBName)
 		}
 	case "http":
 		if dbURL == "" {
-			return fmt.Errorf(`URL is needed. -%s-url="http://localhost:1323"`,
+			return xerrors.Errorf(`URL is needed. -%s-url="http://localhost:1323"`,
 				dictionaryDBName)
 		}
 	default:
-		return fmt.Errorf("%s type must be either 'sqlite3', 'mysql', 'postgres', 'redis' or 'http'.  -%s-type: %s",
+		return xerrors.Errorf("%s type must be either 'sqlite3', 'mysql', 'postgres', 'redis' or 'http'.  -%s-type: %s",
 			dictionaryDBName, dictionaryDBName, dbType)
 	}
 	return nil
@@ -403,7 +404,7 @@ func checkEmails(emails []string) (errs []error) {
 			return
 		}
 		if ok := valid.IsEmail(addr); !ok {
-			errs = append(errs, fmt.Errorf("Invalid email address. email: %s", addr))
+			errs = append(errs, xerrors.Errorf("Invalid email address. email: %s", addr))
 		}
 	}
 	return
@@ -425,16 +426,16 @@ func (c *SMTPConf) Validate() (errs []error) {
 	}
 
 	if len(c.SMTPAddr) == 0 {
-		errs = append(errs, fmt.Errorf("email.smtpAddr must not be empty"))
+		errs = append(errs, xerrors.New("email.smtpAddr must not be empty"))
 	}
 	if len(c.SMTPPort) == 0 {
-		errs = append(errs, fmt.Errorf("email.smtpPort must not be empty"))
+		errs = append(errs, xerrors.New("email.smtpPort must not be empty"))
 	}
 	if len(c.To) == 0 {
-		errs = append(errs, fmt.Errorf("email.To required at least one address"))
+		errs = append(errs, xerrors.New("email.To required at least one address"))
 	}
 	if len(c.From) == 0 {
-		errs = append(errs, fmt.Errorf("email.From required at least one address"))
+		errs = append(errs, xerrors.New("email.From required at least one address"))
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -457,11 +458,11 @@ func (c *StrideConf) Validate() (errs []error) {
 	}
 
 	if len(c.HookURL) == 0 {
-		errs = append(errs, fmt.Errorf("stride.HookURL must not be empty"))
+		errs = append(errs, xerrors.New("stride.HookURL must not be empty"))
 	}
 
 	if len(c.AuthToken) == 0 {
-		errs = append(errs, fmt.Errorf("stride.AuthToken must not be empty"))
+		errs = append(errs, xerrors.New("stride.AuthToken must not be empty"))
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -489,21 +490,21 @@ func (c *SlackConf) Validate() (errs []error) {
 	}
 
 	if len(c.HookURL) == 0 && len(c.LegacyToken) == 0 {
-		errs = append(errs, fmt.Errorf("slack.hookURL or slack.LegacyToken must not be empty"))
+		errs = append(errs, xerrors.New("slack.hookURL or slack.LegacyToken must not be empty"))
 	}
 
 	if len(c.Channel) == 0 {
-		errs = append(errs, fmt.Errorf("slack.channel must not be empty"))
+		errs = append(errs, xerrors.New("slack.channel must not be empty"))
 	} else {
 		if !(strings.HasPrefix(c.Channel, "#") ||
 			c.Channel == "${servername}") {
-			errs = append(errs, fmt.Errorf(
+			errs = append(errs, xerrors.Errorf(
 				"channel's prefix must be '#', channel: %s", c.Channel))
 		}
 	}
 
 	if len(c.AuthUser) == 0 {
-		errs = append(errs, fmt.Errorf("slack.authUser must not be empty"))
+		errs = append(errs, xerrors.New("slack.authUser must not be empty"))
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -526,11 +527,11 @@ func (c *HipChatConf) Validate() (errs []error) {
 		return
 	}
 	if len(c.Room) == 0 {
-		errs = append(errs, fmt.Errorf("hipcaht.room must not be empty"))
+		errs = append(errs, xerrors.New("hipcaht.room must not be empty"))
 	}
 
 	if len(c.AuthToken) == 0 {
-		errs = append(errs, fmt.Errorf("hipcaht.AuthToken must not be empty"))
+		errs = append(errs, xerrors.New("hipcaht.AuthToken must not be empty"))
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -552,11 +553,11 @@ func (c *ChatWorkConf) Validate() (errs []error) {
 		return
 	}
 	if len(c.Room) == 0 {
-		errs = append(errs, fmt.Errorf("chatworkcaht.room must not be empty"))
+		errs = append(errs, xerrors.New("chatworkcaht.room must not be empty"))
 	}
 
 	if len(c.APIToken) == 0 {
-		errs = append(errs, fmt.Errorf("chatworkcaht.ApiToken must not be empty"))
+		errs = append(errs, xerrors.New("chatworkcaht.ApiToken must not be empty"))
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -578,11 +579,11 @@ func (c *TelegramConf) Validate() (errs []error) {
 		return
 	}
 	if len(c.ChatID) == 0 {
-		errs = append(errs, fmt.Errorf("TelegramConf.ChatID must not be empty"))
+		errs = append(errs, xerrors.New("TelegramConf.ChatID must not be empty"))
 	}
 
 	if len(c.Token) == 0 {
-		errs = append(errs, fmt.Errorf("TelegramConf.Token must not be empty"))
+		errs = append(errs, xerrors.New("TelegramConf.Token must not be empty"))
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -606,15 +607,15 @@ func (c *SaasConf) Validate() (errs []error) {
 	}
 
 	if c.GroupID == 0 {
-		errs = append(errs, fmt.Errorf("saas.GroupID must not be empty"))
+		errs = append(errs, xerrors.New("saas.GroupID must not be empty"))
 	}
 
 	if len(c.Token) == 0 {
-		errs = append(errs, fmt.Errorf("saas.Token must not be empty"))
+		errs = append(errs, xerrors.New("saas.Token must not be empty"))
 	}
 
 	if len(c.URL) == 0 {
-		errs = append(errs, fmt.Errorf("saas.URL must not be empty"))
+		errs = append(errs, xerrors.New("saas.URL must not be empty"))
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -688,7 +689,7 @@ func (c *SyslogConf) GetSeverity() (syslog.Priority, error) {
 	case "debug":
 		return syslog.LOG_DEBUG, nil
 	default:
-		return -1, fmt.Errorf("Invalid severity: %s", c.Severity)
+		return -1, xerrors.Errorf("Invalid severity: %s", c.Severity)
 	}
 }
 
@@ -740,7 +741,7 @@ func (c *SyslogConf) GetFacility() (syslog.Priority, error) {
 	case "local7":
 		return syslog.LOG_LOCAL7, nil
 	default:
-		return -1, fmt.Errorf("Invalid facility: %s", c.Facility)
+		return -1, xerrors.Errorf("Invalid facility: %s", c.Facility)
 	}
 }
 
@@ -1041,16 +1042,16 @@ type Azure struct {
 
 // ServerInfo has SSH Info, additional CPE packages to scan.
 type ServerInfo struct {
-	ServerName             string                      `toml:"-" json:"serverName"`
-	User                   string                      `toml:"user,omitempty" json:"user"`
-	Host                   string                      `toml:"host,omitempty" json:"host"`
-	Port                   string                      `toml:"port,omitempty" json:"port"`
-	KeyPath                string                      `toml:"keyPath,omitempty" json:"keyPath"`
-	KeyPassword            string                      `json:"-" toml:"-"`
+	ServerName             string                      `toml:"-" json:"serverName,omitempty"`
+	User                   string                      `toml:"user,omitempty" json:"user,omitempty"`
+	Host                   string                      `toml:"host,omitempty" json:"host,omitempty"`
+	Port                   string                      `toml:"port,omitempty" json:"port,omitempty"`
+	KeyPath                string                      `toml:"keyPath,omitempty" json:"keyPath,omitempty"`
+	KeyPassword            string                      `json:"-,omitempty" toml:"-"`
 	CpeNames               []string                    `toml:"cpeNames,omitempty" json:"cpeNames,omitempty"`
 	ScanMode               []string                    `toml:"scanMode,omitempty" json:"scanMode,omitempty"`
 	DependencyCheckXMLPath string                      `toml:"dependencyCheckXMLPath,omitempty" json:"-"` // TODO Deprecated remove in near future
-	OwaspDCXMLPath         string                      `toml:"owaspDCXMLPath,omitempty" json:"owaspDCXMLPath"`
+	OwaspDCXMLPath         string                      `toml:"owaspDCXMLPath,omitempty" json:"owaspDCXMLPath,omitempty"`
 	ContainersIncluded     []string                    `toml:"containersIncluded,omitempty" json:"containersIncluded,omitempty"`
 	ContainersExcluded     []string                    `toml:"containersExcluded,omitempty" json:"containersExcluded,omitempty"`
 	ContainerType          string                      `toml:"containerType,omitempty" json:"containerType,omitempty"`
@@ -1059,14 +1060,18 @@ type ServerInfo struct {
 	IgnorePkgsRegexp       []string                    `toml:"ignorePkgsRegexp,omitempty" json:"ignorePkgsRegexp,omitempty"`
 	GitHubRepos            map[string]GitHubConf       `toml:"githubs" json:"githubs,omitempty"` // key: owner/repo
 	UUIDs                  map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
-	Memo                   string                      `toml:"memo,omitempty" json:"memo"`
+	Memo                   string                      `toml:"memo,omitempty" json:"memo,omitempty"`
 	Enablerepo             []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, RHEL, Amazon
 	Optional               map[string]interface{}      `toml:"optional,omitempty" json:"optional,omitempty"`     // Optional key-value set that will be outputted to JSON
-	Type                   string                      `toml:"type,omitempty" json:"type"`                       // "pseudo" or ""
-	IPv4Addrs              []string                    `toml:"-" json:"ipv4Addrs,omitempty"`
-	IPv6Addrs              []string                    `toml:"-" json:"ipv6Addrs,omitempty"`
+
+	Type string `toml:"type,omitempty" json:"type,omitempty"` // "pseudo" or ""
+
+	WordPress WordPressConf `toml:"wordpress,omitempty" json:"wordpress,omitempty"`
 
 	// used internal
+	IPv4Addrs []string `toml:"-" json:"ipv4Addrs,omitempty"`
+	IPv6Addrs []string `toml:"-" json:"ipv6Addrs,omitempty"`
+
 	LogMsgAnsiColor string    `toml:"-" json:"-"` // DebugLog Color
 	Container       Container `toml:"-" json:"-"`
 	Distro          Distro    `toml:"-" json:"-"`
@@ -1081,21 +1086,18 @@ type ContainerSetting struct {
 	IgnoreCves       []string `json:"ignoreCves,omitempty"`
 }
 
-// IntegrationConf is used for integration configuration
-type IntegrationConf struct {
-	GitHubConf map[string]GitHubConf
-}
-
-// New creates IntegrationConf and initialize fields
-func (c IntegrationConf) New() IntegrationConf {
-	return IntegrationConf{
-		GitHubConf: map[string]GitHubConf{},
-	}
+// WordPressConf used for WordPress Scanning
+type WordPressConf struct {
+	OSUser         string `toml:"osUser" json:"osUser,omitempty"`
+	DocRoot        string `toml:"docRoot" json:"docRoot,omitempty"`
+	CmdPath        string `toml:"cmdPath" json:"cmdPath,omitempty"`
+	WPVulnDBToken  string `toml:"wpVulnDBToken" json:"-,omitempty"`
+	IgnoreInactive bool   `json:"ignoreInactive,omitempty"`
 }
 
 // GitHubConf is used for GitHub integration
 type GitHubConf struct {
-	Token string `json:"token"`
+	Token string `json:"-"`
 }
 
 // ScanMode has a type of scan mode. fast, fast-root, deep and offline
@@ -1138,9 +1140,9 @@ func (s ScanMode) validate() error {
 	if numTrue == 0 {
 		s.Set(Fast)
 	} else if s.IsDeep() && s.IsOffline() {
-		return fmt.Errorf("Don't specify both of -deep and offline")
+		return xerrors.New("Don't specify both of -deep and offline")
 	} else if numTrue != 1 {
-		return fmt.Errorf("Specify only one of -fast, -fast-root or -deep")
+		return xerrors.New("Specify only one of -fast, -fast-root or -deep")
 	}
 	return nil
 }
@@ -1203,7 +1205,7 @@ func (l Distro) MajorVersion() (ver int, err error) {
 	if 0 < len(l.Release) {
 		ver, err = strconv.Atoi(strings.Split(l.Release, ".")[0])
 	} else {
-		err = fmt.Errorf("Release is empty")
+		err = xerrors.New("Release is empty")
 	}
 	return
 }

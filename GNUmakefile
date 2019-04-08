@@ -5,7 +5,7 @@
 	install \
 	all \
 	vendor \
-	lint \
+ 	lint \
 	vet \
 	fmt \
 	fmtcheck \
@@ -33,6 +33,9 @@ depup:
 	dep ensure -update -v
 
 build: main.go dep pretest
+	go build -a -ldflags "$(LDFLAGS)" -o vuls $<
+
+b: 	main.go dep pretest
 	go build -ldflags "$(LDFLAGS)" -o vuls $<
 
 install: main.go dep pretest

@@ -2,12 +2,12 @@ package parser
 
 import (
 	"encoding/xml"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/xerrors"
 )
 
 type analysis struct {
@@ -49,7 +49,7 @@ func Parse(path string) ([]string, error) {
 
 	var anal analysis
 	if err := xml.Unmarshal(b, &anal); err != nil {
-		return nil, fmt.Errorf("Failed to unmarshal: %s", err)
+		return nil, xerrors.Errorf("Failed to unmarshal: %s", err)
 	}
 
 	cpes := []string{}

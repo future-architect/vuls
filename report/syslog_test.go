@@ -22,15 +22,15 @@ func TestSyslogWriterEncodeSyslog(t *testing.T) {
 				IPv4Addrs:  []string{"192.168.0.1", "10.0.2.15"},
 				ScannedCves: models.VulnInfos{
 					"CVE-2017-0001": models.VulnInfo{
-						AffectedPackages: models.PackageStatuses{
-							models.PackageStatus{Name: "pkg1"},
-							models.PackageStatus{Name: "pkg2"},
+						AffectedPackages: models.PackageFixStatuses{
+							models.PackageFixStatus{Name: "pkg1"},
+							models.PackageFixStatus{Name: "pkg2"},
 						},
 					},
 					"CVE-2017-0002": models.VulnInfo{
-						AffectedPackages: models.PackageStatuses{
-							models.PackageStatus{Name: "pkg3"},
-							models.PackageStatus{Name: "pkg4"},
+						AffectedPackages: models.PackageFixStatuses{
+							models.PackageFixStatus{Name: "pkg3"},
+							models.PackageFixStatus{Name: "pkg4"},
 						},
 						CveContents: models.CveContents{
 							models.NvdXML: models.CveContent{
@@ -57,8 +57,8 @@ func TestSyslogWriterEncodeSyslog(t *testing.T) {
 				IPv6Addrs:  []string{"2001:0DB8::1"},
 				ScannedCves: models.VulnInfos{
 					"CVE-2017-0003": models.VulnInfo{
-						AffectedPackages: models.PackageStatuses{
-							models.PackageStatus{Name: "pkg5"},
+						AffectedPackages: models.PackageFixStatuses{
+							models.PackageFixStatus{Name: "pkg5"},
 						},
 						CveContents: models.CveContents{
 							models.RedHat: models.CveContent{

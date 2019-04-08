@@ -9,6 +9,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	"golang.org/x/xerrors"
 )
 
 // inherit OsTypeInterface
@@ -160,7 +161,7 @@ func (o *suse) scanUpdatablePackages() (models.Packages, error) {
 	}
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return nil, fmt.Errorf("Failed to scan updatable packages: %v", r)
+		return nil, xerrors.Errorf("Failed to scan updatable packages: %v", r)
 	}
 	return o.parseZypperLULines(r.Stdout)
 }
@@ -186,7 +187,7 @@ func (o *suse) parseZypperLULines(stdout string) (models.Packages, error) {
 func (o *suse) parseZypperLUOneLine(line string) (*models.Package, error) {
 	ss := strings.Split(line, "|")
 	if len(ss) != 6 {
-		return nil, fmt.Errorf("zypper -q lu Unknown format: %s", line)
+		return nil, xerrors.Errorf("zypper -q lu Unknown format: %s", line)
 	}
 	available := strings.Split(strings.TrimSpace(ss[4]), "-")
 	return &models.Package{

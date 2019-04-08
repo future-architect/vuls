@@ -22,10 +22,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/pkg/errors"
-
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"golang.org/x/xerrors"
 )
 
 // HTTPRequestWriter writes results to HTTP request
@@ -53,7 +52,7 @@ type HTTPResponseWriter struct {
 func (w HTTPResponseWriter) Write(rs ...models.ScanResult) (err error) {
 	res, err := json.Marshal(rs)
 	if err != nil {
-		return errors.Wrap(err, "Failed to marshal scah results")
+		return xerrors.Errorf("Failed to marshal scah results: %w", err)
 	}
 	w.Writer.Header().Set("Content-Type", "application/json")
 	_, err = w.Writer.Write(res)

@@ -21,6 +21,8 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
+
+	"golang.org/x/xerrors"
 )
 
 // Packages is Map of Package
@@ -83,7 +85,7 @@ func (ps Packages) FindByFQPN(nameVerRelArc string) (*Package, error) {
 			return &p, nil
 		}
 	}
-	return nil, fmt.Errorf("Failed to find the package: %s", nameVerRelArc)
+	return nil, xerrors.Errorf("Failed to find the package: %s", nameVerRelArc)
 }
 
 // Package has installed binary packages.

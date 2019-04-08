@@ -19,7 +19,6 @@ package oval
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -34,6 +33,7 @@ import (
 	"github.com/kotakanbe/goval-dictionary/db"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 	"github.com/parnurzeal/gorequest"
+	"golang.org/x/xerrors"
 )
 
 type ovalResult struct {
@@ -47,9 +47,9 @@ type defPacks struct {
 	actuallyAffectedPackNames map[string]bool
 }
 
-func (e defPacks) toPackStatuses() (ps models.PackageStatuses) {
+func (e defPacks) toPackStatuses() (ps models.PackageFixStatuses) {
 	for name, notFixedYet := range e.actuallyAffectedPackNames {
-		ps = append(ps, models.PackageStatus{
+		ps = append(ps, models.PackageFixStatus{
 			Name:        name,
 			NotFixedYet: notFixedYet,
 		})
@@ -164,11 +164,11 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
-			return relatedDefs, fmt.Errorf("Timeout Fetching OVAL")
+			return relatedDefs, xerrors.New("Timeout Fetching OVAL")
 		}
 	}
 	if len(errs) != 0 {
-		return relatedDefs, fmt.Errorf("Failed to fetch OVAL. err: %v", errs)
+		return relatedDefs, xerrors.Errorf("Failed to fetch OVAL. err: %w", errs)
 	}
 	return
 }
@@ -186,8 +186,7 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 			if count == retryMax {
 				return nil
 			}
-			return fmt.Errorf("HTTP GET error: %v, url: %s, resp: %v",
-				errs, url, resp)
+			return xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %w", url, resp, errs)
 		}
 		return nil
 	}
@@ -196,18 +195,17 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {
-		errChan <- fmt.Errorf("HTTP Error %s", err)
+		errChan <- xerrors.Errorf("HTTP Error %w", err)
 		return
 	}
 	if count == retryMax {
-		errChan <- fmt.Errorf("HRetry count exceeded")
+		errChan <- xerrors.New("HRetry count exceeded")
 		return
 	}
 
 	defs := []ovalmodels.Definition{}
 	if err := json.Unmarshal([]byte(body), &defs); err != nil {
-		errChan <- fmt.Errorf("Failed to Unmarshall. body: %s, err: %s",
-			body, err)
+		errChan <- xerrors.Errorf("Failed to Unmarshall. body: %s, err: %w", body, err)
 		return
 	}
 	resChan <- response{
@@ -238,7 +236,7 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 	for _, req := range requests {
 		definitions, err := driver.GetByPackName(r.Release, req.packName)
 		if err != nil {
-			return relatedDefs, fmt.Errorf("Failed to get %s OVAL info by package: %#v, err: %s", r.Family, req, err)
+			return relatedDefs, xerrors.Errorf("Failed to get %s OVAL info by package: %#v, err: %w", r.Family, req, err)
 		}
 		for _, def := range definitions {
 			affected, notFixedYet := isOvalDefAffected(def, req, r.Family, r.RunningKernel)
@@ -349,5 +347,5 @@ func lessThan(family, versionRelease string, packB ovalmodels.Package) (bool, er
 	default:
 		util.Log.Errorf("Not implemented yet: %s", family)
 	}
-	return false, fmt.Errorf("Package version comparison not supported: %s", family)
+	return false, xerrors.Errorf("Package version comparison not supported: %s", family)
 }

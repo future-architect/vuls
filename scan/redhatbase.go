@@ -27,6 +27,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	"golang.org/x/xerrors"
 
 	ver "github.com/knqyf263/go-rpm-version"
 )
@@ -160,7 +161,7 @@ func (o *redhatBase) execCheckIfSudoNoPasswd(cmds []cmd) error {
 		r := o.exec(util.PrependProxyEnv(cmd), sudo)
 		if !r.isSuccess(c.expectedStatusCodes...) {
 			o.log.Errorf("Check sudo or proxy settings: %s", r)
-			return fmt.Errorf("Failed to sudo: %s", r)
+			return xerrors.Errorf("Failed to sudo: %s", r)
 		}
 	}
 	o.log.Infof("Sudo... Pass")
@@ -173,7 +174,7 @@ func (o *redhatBase) execCheckDeps(packNames []string) error {
 		if r := o.exec(cmd, noSudo); !r.isSuccess() {
 			msg := fmt.Sprintf("%s is not installed", name)
 			o.log.Errorf(msg)
-			return fmt.Errorf(msg)
+			return xerrors.New(msg)
 		}
 	}
 	o.log.Infof("Dependencies ... Pass")
@@ -191,12 +192,12 @@ func (o *redhatBase) preCure() error {
 func (o *redhatBase) postScan() error {
 	if o.isExecYumPS() {
 		if err := o.yumPS(); err != nil {
-			return fmt.Errorf("Failed to execute yum-ps: %s", err)
+			return xerrors.Errorf("Failed to execute yum-ps: %w", err)
 		}
 	}
 	if o.isExecNeedsRestarting() {
 		if err := o.needsRestarting(); err != nil {
-			return fmt.Errorf("Failed to execute need-restarting: %s", err)
+			return xerrors.Errorf("Failed to execute need-restarting: %w", err)
 		}
 	}
 	return nil
@@ -258,7 +259,7 @@ func (o *redhatBase) rebootRequired() (bool, error) {
 	r := o.exec("rpm -q --last kernel", noSudo)
 	scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
 	if !r.isSuccess(0, 1) {
-		return false, fmt.Errorf("Failed to detect the last installed kernel : %v", r)
+		return false, xerrors.Errorf("Failed to detect the last installed kernel : %v", r)
 	}
 	if !r.isSuccess() || !scanner.Scan() {
 		return false, nil
@@ -280,7 +281,7 @@ func (o *redhatBase) scanInstalledPackages() (models.Packages, error) {
 
 	r := o.exec(rpmQa(o.Distro), noSudo)
 	if !r.isSuccess() {
-		return nil, fmt.Errorf("Scan packages failed: %s", r)
+		return nil, xerrors.Errorf("Scan packages failed: %s", r)
 	}
 	installed, _, err := o.parseInstalledPackages(r.Stdout)
 	if err != nil {
@@ -332,7 +333,7 @@ func (o *redhatBase) parseInstalledPackagesLine(line string) (models.Package, er
 	fields := strings.Fields(line)
 	if len(fields) != 5 {
 		return models.Package{},
-			fmt.Errorf("Failed to parse package line: %s", line)
+			xerrors.Errorf("Failed to parse package line: %s", line)
 	}
 	ver := ""
 	epoch := fields[1]
@@ -358,7 +359,7 @@ func (o *redhatBase) scanUpdatablePackages() (models.Packages, error) {
 
 	r := o.exec(util.PrependProxyEnv(cmd), o.sudo.repoquery())
 	if !r.isSuccess() {
-		return nil, fmt.Errorf("Failed to SSH: %s", r)
+		return nil, xerrors.Errorf("Failed to SSH: %s", r)
 	}
 
 	// Collect Updateble packages, installed, candidate version and repository.
@@ -393,7 +394,7 @@ func (o *redhatBase) parseUpdatablePacksLines(stdout string) (models.Packages, e
 func (o *redhatBase) parseUpdatablePacksLine(line string) (models.Package, error) {
 	fields := strings.Fields(line)
 	if len(fields) < 5 {
-		return models.Package{}, fmt.Errorf("Unknown format: %s, fields: %s", line, fields)
+		return models.Package{}, xerrors.Errorf("Unknown format: %s, fields: %s", line, fields)
 	}
 
 	ver := ""
@@ -562,7 +563,7 @@ func (o *redhatBase) getAvailableChangelogs(packNames []string) (map[string]stri
 
 	r := o.exec(util.PrependProxyEnv(cmd), o.sudo.yumChangelog())
 	if !r.isSuccess(0, 1) {
-		return nil, fmt.Errorf("Failed to SSH: %s", r)
+		return nil, xerrors.Errorf("Failed to SSH: %s", r)
 	}
 
 	return o.divideChangelogsIntoEachPackages(r.Stdout), nil
@@ -723,7 +724,7 @@ func (o *redhatBase) getDiffChangelog(pack models.Package, availableChangelog st
 
 	if len(diff) == 0 || !found {
 		return availableChangelog,
-			fmt.Errorf("Failed to find the version in changelog: %s-%s-%s",
+			xerrors.Errorf("Failed to find the version in changelog: %s-%s-%s",
 				pack.Name, pack.Version, pack.Release)
 	}
 	return strings.TrimSpace(strings.Join(diff, "\n")), nil
@@ -760,12 +761,12 @@ func (o *redhatBase) scanChangelogs(updatable models.Packages) (models.VulnInfos
 	for name, cveIDs := range packCveIDs {
 		for _, cid := range cveIDs {
 			if v, ok := vinfos[cid]; ok {
-				v.AffectedPackages = append(v.AffectedPackages, models.PackageStatus{Name: name})
+				v.AffectedPackages = append(v.AffectedPackages, models.PackageFixStatus{Name: name})
 				vinfos[cid] = v
 			} else {
 				vinfos[cid] = models.VulnInfo{
 					CveID:            cid,
-					AffectedPackages: models.PackageStatuses{{Name: name}},
+					AffectedPackages: models.PackageFixStatuses{{Name: name}},
 					Confidences:      models.Confidences{models.ChangelogExactMatch},
 				}
 			}
@@ -784,14 +785,14 @@ type distroAdvisoryCveIDs struct {
 func (o *redhatBase) scanUsingYum(updatable models.Packages) (models.VulnInfos, error) {
 	if o.Distro.Family == config.CentOS {
 		// CentOS has no security channel.
-		return nil, fmt.Errorf(
+		return nil, xerrors.New(
 			"yum updateinfo is not suppported on CentOS")
 	}
 
 	// get advisoryID(RHSA, ALAS, ELSA) - package name,version
 	major, err := (o.Distro.MajorVersion())
 	if err != nil {
-		return nil, fmt.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
+		return nil, xerrors.Errorf("Not implemented yet: %s, err: %w", o.Distro, err)
 	}
 
 	var cmd string
@@ -799,7 +800,7 @@ func (o *redhatBase) scanUsingYum(updatable models.Packages) (models.VulnInfos, 
 		cmd = "yum repolist --color=never"
 		r := o.exec(util.PrependProxyEnv(cmd), o.sudo.yumRepolist())
 		if !r.isSuccess() {
-			return nil, fmt.Errorf("Failed to SSH: %s", r)
+			return nil, xerrors.Errorf("Failed to SSH: %s", r)
 		}
 	}
 
@@ -813,7 +814,7 @@ func (o *redhatBase) scanUsingYum(updatable models.Packages) (models.VulnInfos, 
 	}
 	r := o.exec(util.PrependProxyEnv(cmd), o.sudo.yumUpdateInfo())
 	if !r.isSuccess() {
-		return nil, fmt.Errorf("Failed to SSH: %s", r)
+		return nil, xerrors.Errorf("Failed to SSH: %s", r)
 	}
 	advIDPackNamesList, err := o.parseYumUpdateinfoListAvailable(r.Stdout)
 
@@ -823,7 +824,7 @@ func (o *redhatBase) scanUsingYum(updatable models.Packages) (models.VulnInfos, 
 		for _, packName := range advIDPackNames.PackNames {
 			pack, found := updatable[packName]
 			if !found {
-				return nil, fmt.Errorf(
+				return nil, xerrors.Errorf(
 					"Package not found. pack: %#v", packName)
 			}
 			packages[pack.Name] = pack
@@ -843,7 +844,7 @@ func (o *redhatBase) scanUsingYum(updatable models.Packages) (models.VulnInfos, 
 	}
 	r = o.exec(util.PrependProxyEnv(cmd), o.sudo.yumUpdateInfo())
 	if !r.isSuccess() {
-		return nil, fmt.Errorf("Failed to SSH: %s", r)
+		return nil, xerrors.Errorf("Failed to SSH: %s", r)
 	}
 	advisoryCveIDsList, err := o.parseYumUpdateinfo(r.Stdout)
 	if err != nil {
@@ -863,13 +864,13 @@ func (o *redhatBase) scanUsingYum(updatable models.Packages) (models.VulnInfos, 
 				packs := dict[advIDCveIDs.DistroAdvisory.AdvisoryID]
 				for _, pack := range packs {
 					vinfo.AffectedPackages = append(vinfo.AffectedPackages,
-						models.PackageStatus{Name: pack.Name})
+						models.PackageFixStatus{Name: pack.Name})
 				}
 			} else {
 				packs := dict[advIDCveIDs.DistroAdvisory.AdvisoryID]
-				affected := models.PackageStatuses{}
+				affected := models.PackageFixStatuses{}
 				for _, p := range packs {
-					affected = append(affected, models.PackageStatus{Name: p.Name})
+					affected = append(affected, models.PackageFixStatus{Name: p.Name})
 				}
 				vinfo = models.VulnInfo{
 					CveID:            cveID,
@@ -931,7 +932,7 @@ func (o *redhatBase) parseYumUpdateinfo(stdout string) (result []distroAdvisoryC
 			switch o.Distro.Family {
 			case config.CentOS:
 				// CentOS has no security channel.
-				return result, fmt.Errorf(
+				return result, xerrors.New(
 					"yum updateinfo is not suppported on CentOS")
 			case config.RedHat, config.Amazon, config.Oracle:
 				// nop
@@ -1118,7 +1119,7 @@ func (o *redhatBase) parseYumUpdateinfoListAvailable(stdout string) (advisoryIDP
 
 		fields := strings.Fields(line)
 		if len(fields) != 3 {
-			return []advisoryIDPacks{}, fmt.Errorf(
+			return []advisoryIDPacks{}, xerrors.Errorf(
 				"Unknown format. line: %s", line)
 		}
 
@@ -1151,21 +1152,21 @@ func (o *redhatBase) yumPS() error {
 	cmd := "LANGUAGE=en_US.UTF-8 yum info yum"
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess() {
-		return fmt.Errorf("Failed to SSH: %s", r)
+		return xerrors.Errorf("Failed to SSH: %s", r)
 	}
 	if !o.checkYumPsInstalled(r.Stdout) {
 		switch o.Distro.Family {
 		case config.RedHat, config.Oracle:
 			return nil
 		default:
-			return fmt.Errorf("yum-plugin-ps is not installed")
+			return xerrors.New("yum-plugin-ps is not installed")
 		}
 	}
 
 	cmd = "LANGUAGE=en_US.UTF-8 yum -q ps all --color=never"
 	r = o.exec(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
-		return fmt.Errorf("Failed to SSH: %s", r)
+		return xerrors.Errorf("Failed to SSH: %s", r)
 	}
 	packs := o.parseYumPS(r.Stdout)
 	for name, pack := range packs {
@@ -1260,7 +1261,7 @@ func (o *redhatBase) needsRestarting() error {
 	cmd := "LANGUAGE=en_US.UTF-8 needs-restarting"
 	r := o.exec(cmd, sudo)
 	if !r.isSuccess() {
-		return fmt.Errorf("Failed to SSH: %s", r)
+		return xerrors.Errorf("Failed to SSH: %s", r)
 	}
 	procs := o.parseNeedsRestarting(r.Stdout)
 	for _, proc := range procs {
@@ -1335,7 +1336,7 @@ func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
 	cmd := `LANGUAGE=en_US.UTF-8 rpm -qf --queryformat "%{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}.%{ARCH}\n" ` + path
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return "", fmt.Errorf("Failed to SSH: %s", r)
+		return "", xerrors.Errorf("Failed to SSH: %s", r)
 	}
 	fqpn := strings.TrimSpace(r.Stdout)
 	return strings.Replace(fqpn, "-(none):", "-", -1), nil

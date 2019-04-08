@@ -35,6 +35,7 @@ import (
 	"github.com/future-architect/vuls/util"
 	"github.com/gosuri/uitable"
 	"github.com/olekukonko/tablewriter"
+	"golang.org/x/xerrors"
 )
 
 const maxColWidth = 100
@@ -121,17 +122,23 @@ No CVE-IDs are found in updatable packages.
 			exploits = "   Y"
 		}
 
+		link := ""
+		if strings.HasPrefix(vinfo.CveID, "CVE-") {
+			link = fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", vinfo.CveID)
+		} else if strings.HasPrefix(vinfo.CveID, "WPVDBID-") {
+			link = fmt.Sprintf("https://wpvulndb.com/vulnerabilities/%s", strings.TrimPrefix(vinfo.CveID, "WPVDBID-"))
+		}
+
 		data = append(data, []string{
 			vinfo.CveID,
+			fmt.Sprintf("%7s", vinfo.PatchStatus(r.Packages)),
 			vinfo.AlertDict.FormatSource(),
 			fmt.Sprintf("%4.1f", max),
 			// fmt.Sprintf("%4.1f", v2max),
 			// fmt.Sprintf("%4.1f", v3max),
-			fmt.Sprintf("%8s", vinfo.AttackVector()),
-			fmt.Sprintf("%7s", vinfo.PatchStatus(r.Packages)),
-			// packname,
-			fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", vinfo.CveID),
+			fmt.Sprintf("%2s", vinfo.AttackVector()),
 			exploits,
+			link,
 		})
 	}
 
@@ -139,15 +146,14 @@ No CVE-IDs are found in updatable packages.
 	table := tablewriter.NewWriter(&b)
 	table.SetHeader([]string{
 		"CVE-ID",
+		"Fixed",
 		"CERT",
 		"CVSS",
 		// "v3",
 		// "v2",
-		"Attack",
-		"Fixed",
-		// "Pkg",
+		"AV",
+		"PoC",
 		"NVD",
-		"Exploit",
 	})
 	table.SetBorder(true)
 	table.AppendBulk(data)
@@ -243,19 +249,37 @@ No CVE-IDs are found in updatable packages.
 			data = append(data, []string{"GitHub", alert.PackageName})
 		}
 
+		for _, wp := range vuln.WpPackageFixStats {
+			if p, ok := r.WordPressPackages.Find(wp.Name); ok {
+				if p.Type == models.WPCore {
+					data = append(data, []string{"WordPress",
+						fmt.Sprintf("%s-%s, FixedIn: %s", wp.Name, p.Version, wp.FixedIn)})
+				} else {
+					data = append(data, []string{"WordPress",
+						fmt.Sprintf("%s-%s, Update: %s, FixedIn: %s, %s",
+							wp.Name, p.Version, p.Update, wp.FixedIn, p.Status)})
+				}
+			} else {
+				data = append(data, []string{"WordPress",
+					fmt.Sprintf("%s", wp.Name)})
+			}
+		}
+
 		for _, confidence := range vuln.Confidences {
 			data = append(data, []string{"Confidence", confidence.String()})
 		}
 
-		links := vuln.CveContents.SourceLinks(
-			config.Conf.Lang, r.Family, vuln.CveID)
-		data = append(data, []string{"Source", links[0].Value})
+		if strings.HasPrefix(vuln.CveID, "CVE-") {
+			links := vuln.CveContents.SourceLinks(
+				config.Conf.Lang, r.Family, vuln.CveID)
+			data = append(data, []string{"Source", links[0].Value})
 
-		if 0 < len(vuln.Cvss2Scores(r.Family)) {
-			data = append(data, []string{"CVSSv2 Calc", vuln.Cvss2CalcURL()})
-		}
-		if 0 < len(vuln.Cvss3Scores()) {
-			data = append(data, []string{"CVSSv3 Calc", vuln.Cvss3CalcURL()})
+			if 0 < len(vuln.Cvss2Scores(r.Family)) {
+				data = append(data, []string{"CVSSv2 Calc", vuln.Cvss2CalcURL()})
+			}
+			if 0 < len(vuln.Cvss3Scores()) {
+				data = append(data, []string{"CVSSv3 Calc", vuln.Cvss3CalcURL()})
+			}
 		}
 
 		vlinks := vuln.VendorLinks(r.Family)
@@ -292,7 +316,7 @@ No CVE-IDs are found in updatable packages.
 		table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
 		table.SetHeader([]string{
 			vuln.CveID,
-			"",
+			vuln.PatchStatus(r.Packages),
 		})
 		table.SetBorder(true)
 		table.AppendBulk(data)
@@ -353,7 +377,7 @@ func overwriteJSONFile(dir string, r models.ScanResult) error {
 	config.Conf.Diff = false
 	w := LocalFileWriter{CurrentDir: dir}
 	if err := w.Write(r); err != nil {
-		return fmt.Errorf("Failed to write summary report: %s", err)
+		return xerrors.Errorf("Failed to write summary report: %w", err)
 	}
 	config.Conf.FormatJSON = before
 	config.Conf.Diff = beforeDiff
@@ -521,7 +545,7 @@ var jsonDirPattern = regexp.MustCompile(
 func ListValidJSONDirs() (dirs []string, err error) {
 	var dirInfo []os.FileInfo
 	if dirInfo, err = ioutil.ReadDir(config.Conf.ResultsDir); err != nil {
-		err = fmt.Errorf("Failed to read %s: %s",
+		err = xerrors.Errorf("Failed to read %s: %w",
 			config.Conf.ResultsDir, err)
 		return
 	}
@@ -559,20 +583,20 @@ func JSONDir(args []string) (string, error) {
 			}
 		}
 
-		return "", fmt.Errorf("Invalid path: %s", path)
+		return "", xerrors.Errorf("Invalid path: %s", path)
 	}
 
 	// PIPE
 	if config.Conf.Pipe {
 		bytes, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
-			return "", fmt.Errorf("Failed to read stdin: %s", err)
+			return "", xerrors.Errorf("Failed to read stdin: %w", err)
 		}
 		fields := strings.Fields(string(bytes))
 		if 0 < len(fields) {
 			return filepath.Join(config.Conf.ResultsDir, fields[0]), nil
 		}
-		return "", fmt.Errorf("Stdin is invalid: %s", string(bytes))
+		return "", xerrors.Errorf("Stdin is invalid: %s", string(bytes))
 	}
 
 	// returns latest dir when no args or no PIPE
@@ -580,7 +604,7 @@ func JSONDir(args []string) (string, error) {
 		return "", err
 	}
 	if len(dirs) == 0 {
-		return "", fmt.Errorf("No results under %s",
+		return "", xerrors.Errorf("No results under %s",
 			config.Conf.ResultsDir)
 	}
 	return dirs[0], nil
@@ -590,7 +614,7 @@ func JSONDir(args []string) (string, error) {
 func LoadScanResults(jsonDir string) (results models.ScanResults, err error) {
 	var files []os.FileInfo
 	if files, err = ioutil.ReadDir(jsonDir); err != nil {
-		return nil, fmt.Errorf("Failed to read %s: %s", jsonDir, err)
+		return nil, xerrors.Errorf("Failed to read %s: %w", jsonDir, err)
 	}
 	for _, f := range files {
 		if filepath.Ext(f.Name()) != ".json" || strings.HasSuffix(f.Name(), "_diff.json") {
@@ -605,7 +629,7 @@ func LoadScanResults(jsonDir string) (results models.ScanResults, err error) {
 		results = append(results, *r)
 	}
 	if len(results) == 0 {
-		return nil, fmt.Errorf("There is no json file under %s", jsonDir)
+		return nil, xerrors.Errorf("There is no json file under %s", jsonDir)
 	}
 	return
 }
@@ -617,11 +641,11 @@ func loadOneServerScanResult(jsonFile string) (*models.ScanResult, error) {
 		err  error
 	)
 	if data, err = ioutil.ReadFile(jsonFile); err != nil {
-		return nil, fmt.Errorf("Failed to read %s: %s", jsonFile, err)
+		return nil, xerrors.Errorf("Failed to read %s: %w", jsonFile, err)
 	}
 	result := &models.ScanResult{}
 	if err := json.Unmarshal(data, result); err != nil {
-		return nil, fmt.Errorf("Failed to parse %s: %s", jsonFile, err)
+		return nil, xerrors.Errorf("Failed to parse %s: %w", jsonFile, err)
 	}
 	return result, nil
 }

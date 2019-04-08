@@ -19,6 +19,7 @@ package scan
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"net"
 	"regexp"
@@ -28,6 +29,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/xerrors"
 )
 
 type base struct {
@@ -35,6 +37,7 @@ type base struct {
 	Distro     config.Distro
 	Platform   models.Platform
 	osPackages
+	WordPress *models.WordPressPackages
 
 	log  *logrus.Entry
 	errs []error
@@ -79,7 +82,7 @@ func (l *base) getPlatform() models.Platform {
 func (l *base) runningKernel() (release, version string, err error) {
 	r := l.exec("uname -r", noSudo)
 	if !r.isSuccess() {
-		return "", "", fmt.Errorf("Failed to SSH: %s", r)
+		return "", "", xerrors.Errorf("Failed to SSH: %s", r)
 	}
 	release = strings.TrimSpace(r.Stdout)
 
@@ -87,7 +90,7 @@ func (l *base) runningKernel() (release, version string, err error) {
 	case config.Debian:
 		r := l.exec("uname -a", noSudo)
 		if !r.isSuccess() {
-			return "", "", fmt.Errorf("Failed to SSH: %s", r)
+			return "", "", xerrors.Errorf("Failed to SSH: %s", r)
 		}
 		ss := strings.Fields(r.Stdout)
 		if 6 < len(ss) {
@@ -118,7 +121,7 @@ func (l *base) allContainers() (containers []config.Container, err error) {
 		}
 		return l.parseLxcPs(stdout)
 	default:
-		return containers, fmt.Errorf(
+		return containers, xerrors.Errorf(
 			"Not supported yet: %s", l.ServerInfo.ContainerType)
 	}
 }
@@ -144,7 +147,7 @@ func (l *base) runningContainers() (containers []config.Container, err error) {
 		}
 		return l.parseLxcPs(stdout)
 	default:
-		return containers, fmt.Errorf(
+		return containers, xerrors.Errorf(
 			"Not supported yet: %s", l.ServerInfo.ContainerType)
 	}
 }
@@ -170,7 +173,7 @@ func (l *base) exitedContainers() (containers []config.Container, err error) {
 		}
 		return l.parseLxcPs(stdout)
 	default:
-		return containers, fmt.Errorf(
+		return containers, xerrors.Errorf(
 			"Not supported yet: %s", l.ServerInfo.ContainerType)
 	}
 }
@@ -179,7 +182,7 @@ func (l *base) dockerPs(option string) (string, error) {
 	cmd := fmt.Sprintf("docker ps %s", option)
 	r := l.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return "", fmt.Errorf("Failed to SSH: %s", r)
+		return "", xerrors.Errorf("Failed to SSH: %s", r)
 	}
 	return r.Stdout, nil
 }
@@ -188,7 +191,7 @@ func (l *base) lxdPs(option string) (string, error) {
 	cmd := fmt.Sprintf("lxc list %s", option)
 	r := l.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return "", fmt.Errorf("failed to SSH: %s", r)
+		return "", xerrors.Errorf("failed to SSH: %s", r)
 	}
 	return r.Stdout, nil
 }
@@ -197,7 +200,7 @@ func (l *base) lxcPs(option string) (string, error) {
 	cmd := fmt.Sprintf("lxc-ls %s 2>/dev/null", option)
 	r := l.exec(cmd, sudo)
 	if !r.isSuccess() {
-		return "", fmt.Errorf("failed to SSH: %s", r)
+		return "", xerrors.Errorf("failed to SSH: %s", r)
 	}
 	return r.Stdout, nil
 }
@@ -210,7 +213,7 @@ func (l *base) parseDockerPs(stdout string) (containers []config.Container, err 
 			break
 		}
 		if len(fields) != 3 {
-			return containers, fmt.Errorf("Unknown format: %s", line)
+			return containers, xerrors.Errorf("Unknown format: %s", line)
 		}
 		containers = append(containers, config.Container{
 			ContainerID: fields[0],
@@ -232,7 +235,7 @@ func (l *base) parseLxdPs(stdout string) (containers []config.Container, err err
 			break
 		}
 		if len(fields) != 1 {
-			return containers, fmt.Errorf("Unknown format: %s", line)
+			return containers, xerrors.Errorf("Unknown format: %s", line)
 		}
 		containers = append(containers, config.Container{
 			ContainerID: fields[0],
@@ -265,7 +268,7 @@ func (l *base) ip() ([]string, []string, error) {
 	// 2: eth0    inet6 fe80::5054:ff:fe2a:864c/64 scope link \       valid_lft forever preferred_lft forever
 	r := l.exec("/sbin/ip -o addr", noSudo)
 	if !r.isSuccess() {
-		return nil, nil, fmt.Errorf("Failed to detect IP address: %v", r)
+		return nil, nil, xerrors.Errorf("Failed to detect IP address: %v", r)
 	}
 	ipv4Addrs, ipv6Addrs := l.parseIP(r.Stdout)
 	return ipv4Addrs, ipv6Addrs, nil
@@ -358,7 +361,7 @@ func (l *base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 			return false, "", nil
 		}
 	}
-	return false, "", fmt.Errorf(
+	return false, "", xerrors.Errorf(
 		"Failed to curl or wget to AWS instance metadata on %s. container: %s",
 		l.ServerInfo.ServerName, l.ServerInfo.Container.Name)
 }
@@ -388,22 +391,23 @@ func (l *base) convertToModel() models.ScanResult {
 	}
 
 	return models.ScanResult{
-		JSONVersion:   models.JSONVersion,
-		ServerName:    l.ServerInfo.ServerName,
-		ScannedAt:     time.Now(),
-		ScanMode:      l.ServerInfo.Mode.String(),
-		Family:        l.Distro.Family,
-		Release:       l.Distro.Release,
-		Container:     container,
-		Platform:      l.Platform,
-		IPv4Addrs:     l.ServerInfo.IPv4Addrs,
-		IPv6Addrs:     l.ServerInfo.IPv6Addrs,
-		ScannedCves:   l.VulnInfos,
-		RunningKernel: l.Kernel,
-		Packages:      l.Packages,
-		SrcPackages:   l.SrcPackages,
-		Optional:      l.ServerInfo.Optional,
-		Errors:        errs,
+		JSONVersion:       models.JSONVersion,
+		ServerName:        l.ServerInfo.ServerName,
+		ScannedAt:         time.Now(),
+		ScanMode:          l.ServerInfo.Mode.String(),
+		Family:            l.Distro.Family,
+		Release:           l.Distro.Release,
+		Container:         container,
+		Platform:          l.Platform,
+		IPv4Addrs:         l.ServerInfo.IPv4Addrs,
+		IPv6Addrs:         l.ServerInfo.IPv6Addrs,
+		ScannedCves:       l.VulnInfos,
+		RunningKernel:     l.Kernel,
+		Packages:          l.Packages,
+		SrcPackages:       l.SrcPackages,
+		WordPressPackages: l.WordPress,
+		Optional:          l.ServerInfo.Optional,
+		Errors:            errs,
 	}
 }
 
@@ -427,7 +431,7 @@ func (l *base) detectInitSystem() (string, error) {
 	f = func(cmd string) (string, error) {
 		r := l.exec(cmd, sudo)
 		if !r.isSuccess() {
-			return "", fmt.Errorf("Failed to stat %s: %s", cmd, r)
+			return "", xerrors.Errorf("Failed to stat %s: %s", cmd, r)
 		}
 		scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
 		scanner.Scan()
@@ -449,7 +453,7 @@ func (l *base) detectInitSystem() (string, error) {
 			}
 			return sysVinit, nil
 		}
-		return "", fmt.Errorf("Failed to detect a init system: %s", line)
+		return "", xerrors.Errorf("Failed to detect a init system: %s", line)
 	}
 	return f("stat /proc/1/exe")
 }
@@ -458,7 +462,7 @@ func (l *base) detectServiceName(pid string) (string, error) {
 	cmd := fmt.Sprintf("systemctl status --quiet --no-pager %s", pid)
 	r := l.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return "", fmt.Errorf("Failed to stat %s: %s", cmd, r)
+		return "", xerrors.Errorf("Failed to stat %s: %s", cmd, r)
 	}
 	return l.parseSystemctlStatus(r.Stdout), nil
 }
@@ -472,4 +476,126 @@ func (l *base) parseSystemctlStatus(stdout string) string {
 		return ""
 	}
 	return ss[1]
+}
+
+func (l *base) scanWordPress() (err error) {
+	wpOpts := []string{l.ServerInfo.WordPress.OSUser,
+		l.ServerInfo.WordPress.DocRoot,
+		l.ServerInfo.WordPress.CmdPath,
+		l.ServerInfo.WordPress.WPVulnDBToken,
+	}
+	var isScanWp, hasEmptyOpt bool
+	for _, opt := range wpOpts {
+		if opt != "" {
+			isScanWp = true
+			break
+		} else {
+			hasEmptyOpt = true
+		}
+	}
+	if !isScanWp {
+		return nil
+	}
+
+	if hasEmptyOpt {
+		return xerrors.Errorf("%s has empty WordPress opts: %s",
+			l.getServerInfo().GetServerName(), wpOpts)
+	}
+
+	cmd := fmt.Sprintf("sudo -u %s -i -- %s cli version",
+		l.ServerInfo.WordPress.OSUser,
+		l.ServerInfo.WordPress.CmdPath)
+	if r := exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
+		l.ServerInfo.WordPress.WPVulnDBToken = "secret"
+		return xerrors.Errorf("Failed to exec `%s`. Check the OS user, command path of wp-cli, DocRoot and permission: %#v", cmd, l.ServerInfo.WordPress)
+	}
+
+	wp, err := l.detectWordPress()
+	if err != nil {
+		return xerrors.Errorf("Failed to scan wordpress: %w", err)
+	}
+	l.WordPress = wp
+	return nil
+}
+
+func (l *base) detectWordPress() (*models.WordPressPackages, error) {
+	ver, err := l.detectWpCore()
+	if err != nil {
+		return nil, err
+	}
+
+	themes, err := l.detectWpThemes()
+	if err != nil {
+		return nil, err
+	}
+
+	plugins, err := l.detectWpPlugins()
+	if err != nil {
+		return nil, err
+	}
+
+	pkgs := models.WordPressPackages{
+		models.WpPackage{
+			Name:    models.WPCore,
+			Version: ver,
+			Type:    models.WPCore,
+		},
+	}
+	pkgs = append(pkgs, themes...)
+	pkgs = append(pkgs, plugins...)
+	return &pkgs, nil
+}
+
+func (l *base) detectWpCore() (string, error) {
+	cmd := fmt.Sprintf("sudo -u %s -i -- %s core version --path=%s",
+		l.ServerInfo.WordPress.OSUser,
+		l.ServerInfo.WordPress.CmdPath,
+		l.ServerInfo.WordPress.DocRoot)
+
+	r := exec(l.ServerInfo, cmd, noSudo)
+	if !r.isSuccess() {
+		return "", xerrors.Errorf("Failed to get wp core version: %s", r)
+	}
+	return strings.TrimSpace(r.Stdout), nil
+}
+
+func (l *base) detectWpThemes() ([]models.WpPackage, error) {
+	cmd := fmt.Sprintf("sudo -u %s -i -- %s theme list --path=%s --format=json",
+		l.ServerInfo.WordPress.OSUser,
+		l.ServerInfo.WordPress.CmdPath,
+		l.ServerInfo.WordPress.DocRoot)
+
+	var themes []models.WpPackage
+	r := exec(l.ServerInfo, cmd, noSudo)
+	if !r.isSuccess() {
+		return nil, xerrors.Errorf("Failed to get a list of WordPress plugins: %s", r)
+	}
+	err := json.Unmarshal([]byte(r.Stdout), &themes)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to unmarshal wp theme list: %w", cmd, err)
+	}
+	for i := range themes {
+		themes[i].Type = models.WPTheme
+	}
+	return themes, nil
+}
+
+func (l *base) detectWpPlugins() ([]models.WpPackage, error) {
+	cmd := fmt.Sprintf("sudo -u %s -i -- %s plugin list --path=%s --format=json",
+		l.ServerInfo.WordPress.OSUser,
+		l.ServerInfo.WordPress.CmdPath,
+		l.ServerInfo.WordPress.DocRoot)
+
+	var plugins []models.WpPackage
+	r := exec(l.ServerInfo, cmd, noSudo)
+	if !r.isSuccess() {
+		return nil, xerrors.Errorf("Failed to wp plugin list: %s", r)
+	}
+	if err := json.Unmarshal([]byte(r.Stdout), &plugins); err != nil {
+		return nil, err
+	}
+	for i := range plugins {
+		plugins[i].Type = models.WPPlugin
+	}
+	return plugins, nil
 }

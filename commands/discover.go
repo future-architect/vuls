@@ -223,6 +223,13 @@ host                = "{{$ip}}"
 #[servers.{{index $names $i}}.githubs."owner/repo"]
 #token   = "yourToken"
 
+#[servers.{{index $names $i}}.wordpress]
+#cmdPath = "/usr/local/bin/wp"
+#osUser = "wordpress"
+#docRoot = "/path/to/DocumentRoot/"
+#wpVulnDBToken = "xxxxTokenxxxx"
+#ignoreInactive = true
+
 #[servers.{{index $names $i}}.optional]
 #key = "value1"
 

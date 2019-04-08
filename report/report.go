@@ -39,12 +39,13 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/util"
+	"github.com/future-architect/vuls/wordpress"
 	"github.com/hashicorp/uuid"
 	gostdb "github.com/knqyf263/gost/db"
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
 	ovaldb "github.com/kotakanbe/goval-dictionary/db"
 	exploitdb "github.com/mozqnet/go-exploitdb/db"
-	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 )
 
 const (
@@ -69,7 +70,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 				if owaspDCXMLPath != "" {
 					cpes, err := parser.Parse(owaspDCXMLPath)
 					if err != nil {
-						return nil, fmt.Errorf("Failed to read OWASP Dependency Check XML: %s, %s, %s",
+						return nil, xerrors.Errorf("Failed to read OWASP Dependency Check XML on %s, `%s`, err: %w",
 							r.ServerName, owaspDCXMLPath, err)
 					}
 					cpeURIs = append(cpeURIs, cpes...)
@@ -82,7 +83,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 						if owaspDCXMLPath != "" {
 							cpes, err := parser.Parse(owaspDCXMLPath)
 							if err != nil {
-								return nil, fmt.Errorf("Failed to read OWASP Dependency Check XML: %s, %s, %s",
+								return nil, xerrors.Errorf("Failed to read OWASP Dependency Check XML on %s, `%s`, err: %w",
 									r.ServerInfo(), owaspDCXMLPath, err)
 							}
 							cpeURIs = append(cpeURIs, cpes...)
@@ -91,8 +92,16 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 				}
 			}
 
+			// Integrations
 			githubInts := GithubSecurityAlerts(c.Conf.Servers[r.ServerName].GitHubRepos)
-			if err := FillCveInfo(dbclient, &r, cpeURIs, githubInts); err != nil {
+
+			wpOpt := WordPressOption{c.Conf.Servers[r.ServerName].WordPress.WPVulnDBToken}
+
+			if err := FillCveInfo(dbclient,
+				&r,
+				cpeURIs,
+				githubInts,
+				wpOpt); err != nil {
 				return nil, err
 			}
 			r.Lang = c.Conf.Lang
@@ -105,7 +114,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 				r.ServerName: c.Conf.Servers[r.ServerName],
 			}
 			if err := overwriteJSONFile(dir, r); err != nil {
-				return nil, fmt.Errorf("Failed to write JSON: %s", err)
+				return nil, xerrors.Errorf("Failed to write JSON: %w", err)
 			}
 			filledResults = append(filledResults, r)
 		} else {
@@ -139,6 +148,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 		r = r.FilterIgnoreCves()
 		r = r.FilterUnfixed()
 		r = r.FilterIgnorePkgs()
+		r = r.FilterInactiveWordPressLibs()
 		if c.Conf.IgnoreUnscoredCves {
 			r.ScannedCves = r.ScannedCves.FindScoredVulns()
 		}
@@ -153,7 +163,7 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, inte
 
 	nCVEs, err := FillWithOval(dbclient.OvalDB, r)
 	if err != nil {
-		return fmt.Errorf("Failed to fill with OVAL: %s", err)
+		return xerrors.Errorf("Failed to fill with OVAL: %w", err)
 	}
 	util.Log.Infof("%s: %d CVEs are detected with OVAL",
 		r.FormatServerName(), nCVEs)
@@ -169,11 +179,11 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, inte
 
 	nCVEs, err = fillVulnByCpeURIs(dbclient.CveDB, r, cpeURIs)
 	if err != nil {
-		return fmt.Errorf("Failed to detect vulns of %s: %s", cpeURIs, err)
+		return xerrors.Errorf("Failed to detect vulns of `%s`: %w", cpeURIs, err)
 	}
 	util.Log.Infof("%s: %d CVEs are detected with CPE", r.FormatServerName(), nCVEs)
 
-	ints := &ints{}
+	ints := &integrationResults{}
 	for _, o := range integrations {
 		if err = o.apply(r, ints); err != nil {
 			return err
@@ -183,20 +193,20 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, inte
 
 	nCVEs, err = FillWithGost(dbclient.GostDB, r)
 	if err != nil {
-		return fmt.Errorf("Failed to fill with gost: %s", err)
+		return xerrors.Errorf("Failed to fill with gost: %w", err)
 	}
 	util.Log.Infof("%s: %d unfixed CVEs are detected with gost",
 		r.FormatServerName(), nCVEs)
 
 	util.Log.Infof("Fill CVE detailed information with CVE-DB")
 	if err := fillCveDetail(dbclient.CveDB, r); err != nil {
-		return fmt.Errorf("Failed to fill with CVE: %s", err)
+		return xerrors.Errorf("Failed to fill with CVE: %w", err)
 	}
 
 	util.Log.Infof("Fill exploit information with Exploit-DB")
 	nExploitCve, err := FillWithExploit(dbclient.ExploitDB, r)
 	if err != nil {
-		return fmt.Errorf("Failed to fill with exploit: %s", err)
+		return xerrors.Errorf("Failed to fill with exploit: %w", err)
 	}
 	util.Log.Infof("%s: %d exploits are detected",
 		r.FormatServerName(), nExploitCve)
@@ -280,9 +290,9 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 		return 0, nil
 	default:
 		if r.Family == "" {
-			return 0, fmt.Errorf("Probably an error occurred during scanning. Check the error message")
+			return 0, xerrors.New("Probably an error occurred during scanning. Check the error message")
 		}
-		return 0, fmt.Errorf("OVAL for %s is not implemented yet", r.Family)
+		return 0, xerrors.Errorf("OVAL for %s is not implemented yet", r.Family)
 	}
 
 	if !c.Conf.OvalDict.IsFetchViaHTTP() {
@@ -290,7 +300,7 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 			return 0, nil
 		}
 		if err = driver.NewOvalDB(ovalFamily); err != nil {
-			return 0, fmt.Errorf("Failed to New Oval DB. err: %s", err)
+			return 0, xerrors.Errorf("Failed to New Oval DB. err: %w", err)
 		}
 	}
 
@@ -356,13 +366,14 @@ func fillVulnByCpeURIs(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) 
 	return nCVEs, nil
 }
 
-type ints struct {
+type integrationResults struct {
 	GithubAlertsCveCounts int
+	WordPressCveCounts    int
 }
 
 // Integration is integration of vuls report
 type Integration interface {
-	apply(*models.ScanResult, *ints) error
+	apply(*models.ScanResult, *integrationResults) error
 }
 
 // GithubSecurityAlerts :
@@ -377,14 +388,15 @@ type GithubSecurityAlertOption struct {
 	GithubConfs map[string]config.GitHubConf
 }
 
-func (g GithubSecurityAlertOption) apply(r *models.ScanResult, ints *ints) (err error) {
+// https://help.github.com/articles/about-security-alerts-for-vulnerable-dependencies/
+func (g GithubSecurityAlertOption) apply(r *models.ScanResult, ints *integrationResults) (err error) {
 	var nCVEs int
 	for ownerRepo, setting := range g.GithubConfs {
 		ss := strings.Split(ownerRepo, "/")
 		owner, repo := ss[0], ss[1]
 		n, err := github.FillGitHubSecurityAlerts(r, owner, repo, setting.Token)
 		if err != nil {
-			return errors.Wrap(err, "Failed to access GitHub Security Alerts")
+			return xerrors.Errorf("Failed to access GitHub Security Alerts: %w", err)
 		}
 		nCVEs += n
 	}
@@ -392,19 +404,21 @@ func (g GithubSecurityAlertOption) apply(r *models.ScanResult, ints *ints) (err 
 	return nil
 }
 
-// https://help.github.com/articles/about-security-alerts-for-vulnerable-dependencies/
-func fillGitHubSecurityAlerts(r *models.ScanResult) (nCVEs int, err error) {
-	repos := c.Conf.Servers[r.ServerName].GitHubRepos
-	for ownerRepo, setting := range repos {
-		ss := strings.Split(ownerRepo, "/")
-		owner, repo := ss[0], ss[1]
-		n, err := github.FillGitHubSecurityAlerts(r, owner, repo, setting.Token)
-		if err != nil {
-			return 0, err
-		}
-		nCVEs += n
+// WordPressOption :
+type WordPressOption struct {
+	token string
+}
+
+func (g WordPressOption) apply(r *models.ScanResult, ints *integrationResults) (err error) {
+	if g.token == "" {
+		return nil
 	}
-	return nCVEs, nil
+	n, err := wordpress.FillWordPress(r, g.token)
+	if err != nil {
+		return xerrors.Errorf("Failed to fetch from WPVulnDB. Check the WPVulnDBToken in config.toml. err: %w", err)
+	}
+	ints.WordPressCveCounts = n
+	return nil
 }
 
 func fillCweDict(r *models.ScanResult) {
@@ -419,9 +433,6 @@ func fillCweDict(r *models.ScanResult) {
 			}
 		}
 	}
-
-	// TODO check the format of CWEID, clean CWEID
-	// JVN, NVD XML, JSON, OVALs
 
 	dict := map[string]models.CweDictEntry{}
 	for id := range uniqCweIDMap {
@@ -638,21 +649,21 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 	// rename the current config.toml to config.toml.bak
 	info, err := os.Lstat(configPath)
 	if err != nil {
-		return fmt.Errorf("Failed to lstat %s: %s", configPath, err)
+		return xerrors.Errorf("Failed to lstat %s: %w", configPath, err)
 	}
 	realPath := configPath
 	if info.Mode()&os.ModeSymlink == os.ModeSymlink {
 		if realPath, err = os.Readlink(configPath); err != nil {
-			return fmt.Errorf("Failed to Read link %s: %s", configPath, err)
+			return xerrors.Errorf("Failed to Read link %s: %w", configPath, err)
 		}
 	}
 	if err := os.Rename(realPath, realPath+".bak"); err != nil {
-		return fmt.Errorf("Failed to rename %s: %s", configPath, err)
+		return xerrors.Errorf("Failed to rename %s: %w", configPath, err)
 	}
 
 	var buf bytes.Buffer
 	if err := toml.NewEncoder(&buf).Encode(c); err != nil {
-		return fmt.Errorf("Failed to encode to toml: %s", err)
+		return xerrors.Errorf("Failed to encode to toml: %w", err)
 	}
 	str := strings.Replace(buf.String(), "\n  [", "\n\n  [", -1)
 	str = fmt.Sprintf("%s\n\n%s",

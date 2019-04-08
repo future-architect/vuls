@@ -102,7 +102,7 @@ func TestPackNamesOfUpdate(t *testing.T) {
 			in: models.ScanResult{
 				ScannedCves: models.VulnInfos{
 					"CVE-2000-1000": models.VulnInfo{
-						AffectedPackages: models.PackageStatuses{
+						AffectedPackages: models.PackageFixStatuses{
 							{Name: "packA"},
 							{Name: "packB", NotFixedYet: false},
 						},
@@ -126,7 +126,7 @@ func TestPackNamesOfUpdate(t *testing.T) {
 			out: models.ScanResult{
 				ScannedCves: models.VulnInfos{
 					"CVE-2000-1000": models.VulnInfo{
-						AffectedPackages: models.PackageStatuses{
+						AffectedPackages: models.PackageFixStatuses{
 							{Name: "packA"},
 							{Name: "packB", NotFixedYet: true},
 						},

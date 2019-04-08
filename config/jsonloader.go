@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 package config
 
-import "fmt"
+import "golang.org/x/xerrors"
 
 // JSONLoader loads configuration
 type JSONLoader struct {
@@ -25,5 +25,5 @@ type JSONLoader struct {
 
 // Load load the configuration JSON file specified by path arg.
 func (c JSONLoader) Load(path, sudoPass, keyPass string) (err error) {
-	return fmt.Errorf("Not implement yet")
+	return xerrors.New("Not implement yet")
 }

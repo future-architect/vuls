@@ -37,6 +37,7 @@ import (
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	"golang.org/x/xerrors"
 )
 
 // SaasWriter writes results to SaaS
@@ -80,7 +81,7 @@ func (w SaasWriter) Write(rs ...models.ScanResult) (err error) {
 
 	var body []byte
 	if body, err = json.Marshal(payload); err != nil {
-		return fmt.Errorf("Failed to Marshal to JSON: %s", err)
+		return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
 	}
 
 	var req *http.Request
@@ -109,7 +110,7 @@ func (w SaasWriter) Write(rs ...models.ScanResult) (err error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("Failed to get Credential. Request JSON : %s,", string(body))
+		return xerrors.Errorf("Failed to get Credential. Request JSON : %s,", string(body))
 	}
 
 	var t []byte
@@ -119,7 +120,7 @@ func (w SaasWriter) Write(rs ...models.ScanResult) (err error) {
 
 	var tempCredential TempCredential
 	if err = json.Unmarshal(t, &tempCredential); err != nil {
-		return fmt.Errorf("Failed to unmarshal saas credential file. err : %s", err)
+		return xerrors.Errorf("Failed to unmarshal saas credential file. err : %s", err)
 	}
 
 	credential := credentials.NewStaticCredentialsFromCreds(credentials.Value{
@@ -133,7 +134,7 @@ func (w SaasWriter) Write(rs ...models.ScanResult) (err error) {
 		Credentials: credential,
 		Region:      aws.String("ap-northeast-1"),
 	}); err != nil {
-		return fmt.Errorf("Failed to new aws session. err : %s", err)
+		return xerrors.Errorf("Failed to new aws session. err: %w", err)
 	}
 
 	svc := s3.New(sess)
@@ -141,7 +142,7 @@ func (w SaasWriter) Write(rs ...models.ScanResult) (err error) {
 		s3Key := renameKeyNameUTC(r.ScannedAt, r.ServerUUID, r.Container)
 		var b []byte
 		if b, err = json.Marshal(r); err != nil {
-			return fmt.Errorf("Failed to Marshal to JSON: %s", err)
+			return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
 		}
 		util.Log.Infof("Uploading...: ServerName: %s, ", r.ServerName)
 		putObjectInput := &s3.PutObjectInput{
@@ -151,7 +152,7 @@ func (w SaasWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 
 		if _, err := svc.PutObject(putObjectInput); err != nil {
-			return fmt.Errorf("Failed to upload data to %s/%s, %s",
+			return xerrors.Errorf("Failed to upload data to %s/%s, err: %w",
 				tempCredential.S3Bucket, s3Key, err)
 		}
 	}

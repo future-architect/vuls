@@ -26,6 +26,7 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/knqyf263/gost/db"
 	"github.com/parnurzeal/gorequest"
+	"golang.org/x/xerrors"
 )
 
 // Client is the interface of OVAL client.
@@ -71,8 +72,7 @@ func (b Base) CheckHTTPHealth() error {
 	//  resp, _, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
 	//  resp, _, errs = gorequest.New().Proxy(api.httpProxy).Get(url).End()
 	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-		return fmt.Errorf("Failed to connect to gost server. url: %s, errs: %v",
-			url, errs)
+		return xerrors.Errorf("Failed to connect to gost server. url: %s, errs: %w", url, errs)
 	}
 	return nil
 }
