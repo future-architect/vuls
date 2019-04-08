@@ -23,7 +23,20 @@ Twitter: [@vuls_en](https://twitter.com/vuls_en)
 
 ----
 
-# Abstract
+## NEWS
+
+| Version     | Main Feature |  Date |
+|:------------|:---------------------------------|:--------------------|
+| [v0.7.0](https://github.com/future-architect/vuls/releases/tag/v0.7.0) | WordPress Vulnerability Scan | 2019/Apr/8 |
+| [v0.6.3](https://github.com/future-architect/vuls/releases/tag/v0.6.3) | GitHub Integration | 2019/Feb/20 |
+| [v0.6.2](https://github.com/future-architect/vuls/releases/tag/v0.6.2) | Add US-CERT/JPCERT Alerts as VulnSrc | 2019/Jan/23 |
+| [v0.6.1](https://github.com/future-architect/vuls/releases/tag/v0.6.1) | BugFix | 2018/Nov/16 |
+| [v0.6.0](https://github.com/future-architect/vuls/releases/tag/v0.6.0) | Add ExploitDB as VulnSrc | 2018/Nov/3 |
+| [v0.5.0](https://github.com/future-architect/vuls/releases/tag/v0.5.0) | Scan accuracy improvement | 2018/Aug/27 |
+
+----
+
+## Abstract
 
 For a system administrator, having to perform security vulnerability analysis and software update on a daily basis can be a burden.
 To avoid downtime in a production environment, it is common for a system administrator to choose not to use the automatic update option provided by the package manager and to perform update manually.
@@ -44,9 +57,9 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 
 ----
 
-# Main Features
+## Main Features
 
-## Scan for any vulnerabilities in Linux/FreeBSD Server
+### Scan for any vulnerabilities in Linux/FreeBSD Server
 
 [Supports major Linux/FreeBSD](https://vuls.io/docs/en/supported-os.html)
 
@@ -54,7 +67,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 - FreeBSD
 - Cloud, on-premise, and Docker
 
-## High-quality scan
+### High-quality scan
 
 Vuls uses multiple vulnerability databases
 
@@ -78,7 +91,7 @@ Vuls uses multiple vulnerability databases
 - [WPVulnDB](https://wpvulndb.com/api)
 - Changelog
 
-## Fast scan and Deep scan
+### Fast scan and Deep scan
 
 [Fast Scan](https://vuls.io/docs/en/architecture-fast-scan.html)
 
@@ -103,7 +116,7 @@ Vuls uses multiple vulnerability databases
     it's possible to create a list of all vulnerabilities that need to be fixed.
 - Sometimes load on the scan target server
 
-## [Remote scan, Local scan mode, Server mode](https://vuls.io/docs/en/architecture-remote-local.html)
+### [Remote scan, Local scan mode, Server mode](https://vuls.io/docs/en/architecture-remote-local.html)
 
 [Remote scan mode](https://vuls.io/docs/en/architecture-remote-scan.html)
 
@@ -120,18 +133,18 @@ Vuls uses multiple vulnerability databases
 - Next, issue a command on the scan target server to collect software information. Then send the result to Vuls Server via HTTP. You receive the scan results as JSON format.
 - No SSH needed, No Scanner needed. Only issuing Linux commands directory on the scan tareget server.
 
-## **Dynamic** Analysis
+### **Dynamic** Analysis
 
 - It is possible to acquire the state of the server by connecting via SSH and executing the command.
 - Vuls warns when the scan target server was updated the kernel etc. but not restarting it.
 
-## Scan vulnerabilities of non-OS packages
+### Scan vulnerabilities of non-OS packages
 
 - [Common Platform Enumeration (CPE) based Scan](https://vuls.io/docs/en/usage-scan-non-os-packages.html#how-to-search-cpe-name-by-software-name)
-	- Scan middleware, programming language libraries and framework for vulnerability
-	- Support software registered in CPE
+  - Scan middleware, programming language libraries and framework for vulnerability
+  - Support software registered in CPE
 
-# Integration
+## Integration
 
 - [GitHub Security Alerts](https://vuls.io/docs/en/usage-scan-non-os-packages.html#usage-integrate-with-github-security-alerts)
 - [OWASP Dependency Check](https://vuls.io/docs/en/usage-scan-non-os-packages.html#usage-integrate-with-owasp-dependency-check-to-automatic-update-when-the-libraries-are-updated-experimental)
@@ -149,37 +162,37 @@ Vuls uses multiple vulnerability databases
 
 ----
 
-# What Vuls Doesn't Do
+## What Vuls Doesn't Do
 
 - Vuls doesn't update the vulnerable packages.
 
 ----
 
-# Document
+## Document
 
 For more information such as Installation, Tutorial, Usage, visit [vuls.io](https://vuls.io/)
 [日本語翻訳ドキュメント](https://vuls.io/ja/)
 
 ----
 
-# Authors
+## Authors
 
 kotakanbe ([@kotakanbe](https://twitter.com/kotakanbe)) created vuls and [these fine people](https://github.com/future-architect/vuls/graphs/contributors) have contributed.
 
 ----
 
-# Change Log
+## Change Log
 
 Please see [CHANGELOG](https://github.com/future-architect/vuls/blob/master/CHANGELOG.md).
 
 ----
 
-# Stargazers over time
+## Stargazers over time
 
 [![Stargazers over time](https://starcharts.herokuapp.com/future-architect/vuls.svg)](https://starcharts.herokuapp.com/future-architect/vuls)
 
 -----;
 
-# License
+## License
 
 Please see [LICENSE](https://github.com/future-architect/vuls/blob/master/LICENSE).
