@@ -125,11 +125,7 @@ func parallelExec(fn func(osTypeInterface) error, timeoutSec ...int) {
 			if len(s.getErrs()) == 0 {
 				successes = append(successes, s)
 			} else {
-				fmtstr := "Error on %s, err: %s"
-				if conf.Conf.Debug {
-					fmtstr = "Error: %s, err: %+v"
-				}
-				util.Log.Errorf(fmtstr,
+				util.Log.Errorf("Error on %s, err: %+v",
 					s.getServerInfo().GetServerName(), s.getErrs())
 				errServers = append(errServers, s)
 			}
@@ -150,10 +146,10 @@ func parallelExec(fn func(osTypeInterface) error, timeoutSec ...int) {
 				}
 			}
 			if !found {
-				msg := fmt.Sprintf("Timed out: %s",
+				err := xerrors.Errorf("Timed out: %s",
 					s.getServerInfo().GetServerName())
-				util.Log.Errorf(msg)
-				s.setErrs([]error{xerrors.New(msg)})
+				util.Log.Errorf("%+v", err)
+				s.setErrs([]error{err})
 				errServers = append(errServers, s)
 			}
 		}

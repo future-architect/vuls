@@ -139,7 +139,7 @@ func NewGostDB(cnf DBClientConf) (driver gostdb.DB, locked bool, err error) {
 	util.Log.Debugf("Open gost db (%s): %s", cnf.GostCnf.Type, path)
 	if driver, locked, err = gostdb.NewDB(cnf.GostCnf.Type, path, cnf.DebugSQL); err != nil {
 		if locked {
-			util.Log.Errorf("gostDB is locked: %s", err)
+			util.Log.Errorf("gostDB is locked. err: %+v", err)
 			return nil, true, err
 		}
 		return nil, false, err
@@ -165,7 +165,7 @@ func NewExploitDB(cnf DBClientConf) (driver exploitdb.DB, locked bool, err error
 	util.Log.Debugf("Open exploit db (%s): %s", cnf.ExploitCnf.Type, path)
 	if driver, locked, err = exploitdb.NewDB(cnf.ExploitCnf.Type, path, cnf.DebugSQL); err != nil {
 		if locked {
-			util.Log.Errorf("exploitDB is locked: %s", err)
+			util.Log.Errorf("exploitDB is locked. err: %+v", err)
 			return nil, true, err
 		}
 		return nil, false, err
@@ -177,12 +177,12 @@ func NewExploitDB(cnf DBClientConf) (driver exploitdb.DB, locked bool, err error
 func (d DBClient) CloseDB() {
 	if d.CveDB != nil {
 		if err := d.CveDB.CloseDB(); err != nil {
-			util.Log.Errorf("Failed to close DB: %s", err)
+			util.Log.Errorf("Failed to close DB. err: %+v", err)
 		}
 	}
 	if d.OvalDB != nil {
 		if err := d.OvalDB.CloseDB(); err != nil {
-			util.Log.Errorf("Failed to close DB: %s", err)
+			util.Log.Errorf("Failed to close DB. err: %+v", err)
 		}
 	}
 }

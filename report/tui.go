@@ -56,14 +56,14 @@ func RunTui(results models.ScanResults) subcommands.ExitStatus {
 
 	g, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
-		util.Log.Errorf("%s", err)
+		util.Log.Errorf("%+v", err)
 		return subcommands.ExitFailure
 	}
 	defer g.Close()
 
 	g.SetManagerFunc(layout)
 	if err := keybindings(g); err != nil {
-		util.Log.Errorf("%s", err)
+		util.Log.Errorf("%+v", err)
 		return subcommands.ExitFailure
 	}
 	g.SelBgColor = gocui.ColorGreen
@@ -72,7 +72,7 @@ func RunTui(results models.ScanResults) subcommands.ExitStatus {
 
 	if err := g.MainLoop(); err != nil {
 		g.Close()
-		util.Log.Errorf("%s", err)
+		util.Log.Errorf("%+v", err)
 		os.Exit(1)
 	}
 	return subcommands.ExitSuccess

@@ -186,7 +186,7 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, inte
 	ints := &integrationResults{}
 	for _, o := range integrations {
 		if err = o.apply(r, ints); err != nil {
-			return err
+			return xerrors.Errorf("Failed to fill with integration: %w", err)
 		}
 	}
 	util.Log.Infof("%s: %d CVEs are detected with GitHub Security Alerts", r.FormatServerName(), ints.GithubAlertsCveCounts)

@@ -87,7 +87,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		dir, err := scan.EnsureResultDir(scannedAt)
 		if err != nil {
-			util.Log.Errorf("Failed to ensure the result directory: %s", err)
+			util.Log.Errorf("Failed to ensure the result directory: %+v", err)
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
 		}
@@ -99,7 +99,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	for _, w := range reports {
 		if err := w.Write(result); err != nil {
-			util.Log.Errorf("Failed to report: %s", err)
+			util.Log.Errorf("Failed to report. err: %+v", err)
 			return
 		}
 	}

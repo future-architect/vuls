@@ -67,7 +67,7 @@ func (w SaasWriter) Write(rs ...models.ScanResult) (err error) {
 
 	ipv4s, ipv6s, err := util.IP()
 	if err != nil {
-		util.Log.Errorf("Failed to fetch scannedIPs: %s", err)
+		util.Log.Errorf("Failed to fetch scannedIPs. err: %+v", err)
 	}
 	hostname, _ := os.Hostname()
 
