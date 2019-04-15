@@ -215,7 +215,7 @@ func detectServerOSes(timeoutSec int) (servers, errServers []osTypeInterface) {
 		case res := <-osTypeChan:
 			if 0 < len(res.getErrs()) {
 				errServers = append(errServers, res)
-				util.Log.Errorf("(%d/%d) Failed: %s, err: %s",
+				util.Log.Errorf("(%d/%d) Failed: %s, err: %+v",
 					i+1, len(config.Conf.Servers),
 					res.getServerInfo().ServerName,
 					res.getErrs())
@@ -279,7 +279,7 @@ func detectContainerOSes(timeoutSec int) (actives, inactives []osTypeInterface) 
 				sinfo := osi.getServerInfo()
 				if 0 < len(osi.getErrs()) {
 					inactives = append(inactives, osi)
-					util.Log.Errorf("Failed: %s err: %s", sinfo.ServerName, osi.getErrs())
+					util.Log.Errorf("Failed: %s err: %+v", sinfo.ServerName, osi.getErrs())
 					continue
 				}
 				actives = append(actives, osi)
@@ -600,7 +600,7 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 	hostname, _ := os.Hostname()
 	ipv4s, ipv6s, err := util.IP()
 	if err != nil {
-		util.Log.Errorf("Failed to fetch scannedIPs: %s", err)
+		util.Log.Errorf("Failed to fetch scannedIPs. err: %+v", err)
 	}
 
 	for _, s := range append(servers, errServers...) {

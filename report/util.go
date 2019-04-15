@@ -399,7 +399,7 @@ func loadPrevious(currs models.ScanResults) (prevs models.ScanResults, err error
 			path := filepath.Join(dir, filename)
 			r, err := loadOneServerScanResult(path)
 			if err != nil {
-				util.Log.Errorf("%s", err)
+				util.Log.Errorf("%+v", err)
 				continue
 			}
 			if r.Family == result.Family && r.Release == result.Release {

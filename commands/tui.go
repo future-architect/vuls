@@ -149,7 +149,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	cvelog.SetLogger(c.Conf.LogDir, false, c.Conf.Debug, false)
 
 	if err := c.Load(p.configPath, ""); err != nil {
-		util.Log.Errorf("Error loading %s, %s", p.configPath, err)
+		util.Log.Errorf("Error loading %s, err: %+v", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
 
@@ -166,7 +166,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		dir, err = report.JSONDir(f.Args())
 	}
 	if err != nil {
-		util.Log.Errorf("Failed to read from JSON: %s", err)
+		util.Log.Errorf("Failed to read from JSON. err: %+v", err)
 		return subcommands.ExitFailure
 	}
 
@@ -189,7 +189,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 
 	if c.Conf.CveDict.URL != "" {
 		if err := report.CveClient.CheckHealth(); err != nil {
-			util.Log.Errorf("CVE HTTP server is not running. err: %s", err)
+			util.Log.Errorf("CVE HTTP server is not running. err: %+v", err)
 			util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with `-cvedb-type=sqlite3 -cvedb-sqlite3-path` option instead of -cvedb-url")
 			return subcommands.ExitFailure
 		}
@@ -198,7 +198,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	if c.Conf.OvalDict.URL != "" {
 		err := oval.Base{}.CheckHTTPHealth()
 		if err != nil {
-			util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
+			util.Log.Errorf("OVAL HTTP server is not running. err: %+v", err)
 			util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with `-ovaldb-type=sqlite3 -ovaldb-sqlite3-path` option instead of -ovaldb-url")
 			return subcommands.ExitFailure
 		}
@@ -208,7 +208,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		util.Log.Infof("gost: %s", c.Conf.Gost.URL)
 		err := gost.Base{}.CheckHTTPHealth()
 		if err != nil {
-			util.Log.Errorf("gost HTTP server is not running. err: %s", err)
+			util.Log.Errorf("gost HTTP server is not running. err: %+v", err)
 			util.Log.Errorf("Run gost as server mode before reporting or run with `-gostdb-type=sqlite3 -gostdb-sqlite3-path` option instead of -gostdb-url")
 			return subcommands.ExitFailure
 		}
@@ -217,7 +217,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	if c.Conf.Exploit.URL != "" {
 		err := exploit.CheckHTTPHealth()
 		if err != nil {
-			util.Log.Errorf("exploit HTTP server is not running. err: %s", err)
+			util.Log.Errorf("exploit HTTP server is not running. err: %+v", err)
 			util.Log.Errorf("Run go-exploitdb as server mode before reporting")
 			return subcommands.ExitFailure
 		}
@@ -230,12 +230,12 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		DebugSQL:    c.Conf.DebugSQL,
 	})
 	if locked {
-		util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %s", err)
+		util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %+v", err)
 		return subcommands.ExitFailure
 	}
 
 	if err != nil {
-		util.Log.Errorf("Failed to init DB Clients: %s", err)
+		util.Log.Errorf("Failed to init DB Clients. err: %+v", err)
 		return subcommands.ExitFailure
 	}
 

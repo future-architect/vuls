@@ -30,6 +30,7 @@ import (
 	"github.com/future-architect/vuls/util"
 	"github.com/k0kubun/pp"
 	"golang.org/x/oauth2"
+	"golang.org/x/xerrors"
 )
 
 // FillGitHubSecurityAlerts access to owner/repo on GitHub and fetch scurity alerts of the repository via GitHub API v4 GraphQL and then set to the given ScanResult.
@@ -73,6 +74,9 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 		}
 
 		util.Log.Debugf("%s", pp.Sprint(alerts))
+		if alerts.Data.Repository.URL == "" {
+			return 0, xerrors.Errorf("Failed to access to GitHub API. Response: %#v", alerts)
+		}
 
 		for _, v := range alerts.Data.Repository.VulnerabilityAlerts.Edges {
 			if config.Conf.IgnoreGitHubDismissed && v.Node.DismissReason != "" {

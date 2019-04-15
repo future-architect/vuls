@@ -20,8 +20,10 @@ package commands
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/subcommands"
 
@@ -98,7 +100,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
 
 	if err := mkdirDotVuls(); err != nil {
-		util.Log.Errorf("Failed to create .vuls: %s", err)
+		util.Log.Errorf("Failed to create .vuls. err: %+v", err)
 		return subcommands.ExitUsageError
 	}
 
@@ -114,9 +116,12 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 
 	err = c.Load(p.configPath, keyPass)
 	if err != nil {
-		util.Log.Errorf("Error loading %s, %s", p.configPath, err)
-		util.Log.Errorf("If you update Vuls and get this error, there may be incompatible changes in config.toml")
-		util.Log.Errorf("Please check README: https://github.com/future-architect/vuls#configuration")
+		msg := []string{
+			fmt.Sprintf("Error loading %s", p.configPath),
+			"If you update Vuls and get this error, there may be incompatible changes in config.toml",
+			"Please check README: https://github.com/future-architect/vuls#configuration",
+		}
+		util.Log.Errorf("%s\n%+v", strings.Join(msg, "\n"), err)
 		return subcommands.ExitUsageError
 	}
 
@@ -151,13 +156,13 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 
 	util.Log.Info("Detecting Server/Container OS... ")
 	if err := scan.InitServers(p.timeoutSec); err != nil {
-		util.Log.Errorf("Failed to init servers: %s", err)
+		util.Log.Errorf("Failed to init servers. err: %+v", err)
 		return subcommands.ExitFailure
 	}
 
 	util.Log.Info("Checking Scan Modes...")
 	if err := scan.CheckScanModes(); err != nil {
-		util.Log.Errorf("Fix config.toml: %s", err)
+		util.Log.Errorf("Fix config.toml. err: %+v", err)
 		return subcommands.ExitFailure
 	}
 
