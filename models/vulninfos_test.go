@@ -921,12 +921,12 @@ func TestSortPackageStatues(t *testing.T) {
 	}{
 		{
 			in: PackageFixStatuses{
-				{Name: "b"},
-				{Name: "a"},
+				{BinName: "b"},
+				{BinName: "a"},
 			},
 			out: PackageFixStatuses{
-				{Name: "a"},
-				{Name: "b"},
+				{BinName: "a"},
+				{BinName: "b"},
 			},
 		},
 	}
@@ -946,16 +946,16 @@ func TestStorePackageStatueses(t *testing.T) {
 	}{
 		{
 			pkgstats: PackageFixStatuses{
-				{Name: "a"},
-				{Name: "b"},
+				{BinName: "a"},
+				{BinName: "b"},
 			},
 			in: PackageFixStatus{
-				Name: "c",
+				BinName: "c",
 			},
 			out: PackageFixStatuses{
-				{Name: "a"},
-				{Name: "b"},
-				{Name: "c"},
+				{BinName: "a"},
+				{BinName: "b"},
+				{BinName: "c"},
 			},
 		},
 	}

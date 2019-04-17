@@ -37,8 +37,8 @@ func TestPackNamesOfUpdateDebian(t *testing.T) {
 				ScannedCves: models.VulnInfos{
 					"CVE-2000-1000": models.VulnInfo{
 						AffectedPackages: models.PackageFixStatuses{
-							{Name: "packA"},
-							{Name: "packC"},
+							{BinName: "packA"},
+							{BinName: "packC"},
 						},
 					},
 				},
@@ -57,9 +57,9 @@ func TestPackNamesOfUpdateDebian(t *testing.T) {
 				ScannedCves: models.VulnInfos{
 					"CVE-2000-1000": models.VulnInfo{
 						AffectedPackages: models.PackageFixStatuses{
-							{Name: "packA"},
-							{Name: "packB", NotFixedYet: true},
-							{Name: "packC"},
+							{BinName: "packA"},
+							{BinName: "packB", NotFixedYet: true},
+							{BinName: "packC"},
 						},
 					},
 				},

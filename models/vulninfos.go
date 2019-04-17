@@ -128,7 +128,7 @@ type PackageFixStatuses []PackageFixStatus
 // Names return a slice of package names
 func (ps PackageFixStatuses) Names() (names []string) {
 	for _, p := range ps {
-		names = append(names, p.Name)
+		names = append(names, p.BinName)
 	}
 	return names
 }
@@ -136,7 +136,7 @@ func (ps PackageFixStatuses) Names() (names []string) {
 // Store insert given pkg if missing, update pkg if exists
 func (ps PackageFixStatuses) Store(pkg PackageFixStatus) PackageFixStatuses {
 	for i, p := range ps {
-		if p.Name == pkg.Name {
+		if p.BinName == pkg.BinName {
 			ps[i] = pkg
 			return ps
 		}
@@ -148,14 +148,14 @@ func (ps PackageFixStatuses) Store(pkg PackageFixStatus) PackageFixStatuses {
 // Sort by Name
 func (ps PackageFixStatuses) Sort() {
 	sort.Slice(ps, func(i, j int) bool {
-		return ps[i].Name < ps[j].Name
+		return ps[i].BinName < ps[j].BinName
 	})
 	return
 }
 
 // PackageFixStatus has name and other status abount the package
 type PackageFixStatus struct {
-	Name        string `json:"name"`
+	BinName     string `json:"binName"`
 	NotFixedYet bool   `json:"notFixedYet"`
 	FixState    string `json:"fixState"`
 }
@@ -574,7 +574,7 @@ func (v VulnInfo) PatchStatus(packs Packages) string {
 		}
 
 		// fast, offline mode doesn't have new version
-		if pack, ok := packs[p.Name]; ok {
+		if pack, ok := packs[p.BinName]; ok {
 			if pack.NewVersion == "" {
 				return "unknown"
 			}

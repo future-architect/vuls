@@ -215,7 +215,7 @@ func (red RedHat) mergePackageStates(v models.VulnInfo, ps []gostmodels.RedhatPa
 		}
 
 		pkgStats = pkgStats.Store(models.PackageFixStatus{
-			Name:        pstate.PackageName,
+			BinName:     pstate.PackageName,
 			FixState:    pstate.FixState,
 			NotFixedYet: notFixedYet,
 		})

@@ -137,15 +137,15 @@ func TestDefpacksToPackStatuses(t *testing.T) {
 			},
 			out: models.PackageFixStatuses{
 				{
-					Name:        "a",
+					BinName:     "a",
 					NotFixedYet: true,
 				},
 				{
-					Name:        "b",
+					BinName:     "b",
 					NotFixedYet: true,
 				},
 				{
-					Name:        "c",
+					BinName:     "c",
 					NotFixedYet: true,
 				},
 			},
@@ -154,7 +154,7 @@ func TestDefpacksToPackStatuses(t *testing.T) {
 	for i, tt := range tests {
 		actual := tt.in.dp.toPackStatuses()
 		sort.Slice(actual, func(i, j int) bool {
-			return actual[i].Name < actual[j].Name
+			return actual[i].BinName < actual[j].BinName
 		})
 		if !reflect.DeepEqual(actual, tt.out) {
 			t.Errorf("[%d]\nexpected: %v\n  actual: %v\n", i, tt.out, actual)

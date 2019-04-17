@@ -761,12 +761,12 @@ func (o *redhatBase) scanChangelogs(updatable models.Packages) (models.VulnInfos
 	for name, cveIDs := range packCveIDs {
 		for _, cid := range cveIDs {
 			if v, ok := vinfos[cid]; ok {
-				v.AffectedPackages = append(v.AffectedPackages, models.PackageFixStatus{Name: name})
+				v.AffectedPackages = append(v.AffectedPackages, models.PackageFixStatus{BinName: name})
 				vinfos[cid] = v
 			} else {
 				vinfos[cid] = models.VulnInfo{
 					CveID:            cid,
-					AffectedPackages: models.PackageFixStatuses{{Name: name}},
+					AffectedPackages: models.PackageFixStatuses{{BinName: name}},
 					Confidences:      models.Confidences{models.ChangelogExactMatch},
 				}
 			}
@@ -864,13 +864,13 @@ func (o *redhatBase) scanUsingYum(updatable models.Packages) (models.VulnInfos, 
 				packs := dict[advIDCveIDs.DistroAdvisory.AdvisoryID]
 				for _, pack := range packs {
 					vinfo.AffectedPackages = append(vinfo.AffectedPackages,
-						models.PackageFixStatus{Name: pack.Name})
+						models.PackageFixStatus{BinName: pack.Name})
 				}
 			} else {
 				packs := dict[advIDCveIDs.DistroAdvisory.AdvisoryID]
 				affected := models.PackageFixStatuses{}
 				for _, p := range packs {
-					affected = append(affected, models.PackageFixStatus{Name: p.Name})
+					affected = append(affected, models.PackageFixStatus{BinName: p.Name})
 				}
 				vinfo = models.VulnInfo{
 					CveID:            cveID,

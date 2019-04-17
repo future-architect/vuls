@@ -50,7 +50,7 @@ type defPacks struct {
 func (e defPacks) toPackStatuses() (ps models.PackageFixStatuses) {
 	for name, notFixedYet := range e.actuallyAffectedPackNames {
 		ps = append(ps, models.PackageFixStatus{
-			Name:        name,
+			BinName:     name,
 			NotFixedYet: notFixedYet,
 		})
 	}

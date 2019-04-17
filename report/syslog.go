@@ -70,7 +70,7 @@ func (w SyslogWriter) encodeSyslog(result models.ScanResult) (messages []string)
 
 		var pkgNames []string
 		for _, pkg := range vinfo.AffectedPackages {
-			pkgNames = append(pkgNames, pkg.Name)
+			pkgNames = append(pkgNames, pkg.BinName)
 		}
 		pkgs := strings.Join(pkgNames, ",")
 		kvPairs = append(kvPairs, fmt.Sprintf(`packages="%s"`, pkgs))

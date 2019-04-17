@@ -33,7 +33,7 @@ func TestSetPackageStates(t *testing.T) {
 			in:      models.VulnInfo{},
 			out: []models.PackageFixStatus{
 				{
-					Name:        "bouncycastle",
+					BinName:     "bouncycastle",
 					FixState:    "Will not fix",
 					NotFixedYet: true,
 				},
@@ -68,12 +68,12 @@ func TestSetPackageStates(t *testing.T) {
 			in:      models.VulnInfo{},
 			out: []models.PackageFixStatus{
 				{
-					Name:        "bouncycastle",
+					BinName:     "bouncycastle",
 					FixState:    "Will not fix",
 					NotFixedYet: true,
 				},
 				{
-					Name:        "pack_a",
+					BinName:     "pack_a",
 					FixState:    "Fix deferred",
 					NotFixedYet: true,
 				},
