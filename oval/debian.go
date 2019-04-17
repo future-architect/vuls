@@ -57,17 +57,28 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 		vinfo.CveContents = cveContents
 	}
 
-	// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
+	// uniq(vinfo.PackNames + defPacks.binpkgStat)
 	for _, pack := range vinfo.AffectedPackages {
-		defPacks.binpkgFixstat[pack.BinName] = pack.NotFixedYet
+		defPacks.binpkgFixstat[pack.BinName] = fixStat{
+			notFixedYet: pack.NotFixedYet,
+			fixedIn:     pack.FixedIn,
+			isSrcPack:   false,
+		}
 	}
 
-	// update notFixedYet of SrcPackage
+	// Update package status of source packages.
+	// In the case of Debian based Linux, sometimes source package name is difined as affected package in OVAL.
+	// To display binary package name showed in apt-get, need to convert source name to binary name.
 	for binName := range defPacks.binpkgFixstat {
 		if srcPack, ok := r.SrcPackages.FindByBinName(binName); ok {
 			for _, p := range defPacks.def.AffectedPacks {
 				if p.Name == srcPack.Name {
-					defPacks.binpkgFixstat[binName] = p.NotFixedYet
+					defPacks.binpkgFixstat[binName] = fixStat{
+						notFixedYet: p.NotFixedYet,
+						fixedIn:     p.Version,
+						isSrcPack:   true,
+						srcPackName: srcPack.Name,
+					}
 				}
 			}
 		}
@@ -258,10 +269,13 @@ func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 	}
 
 	for _, defPacks := range relatedDefs.entries {
-		// Remove "linux" added above to search for oval
+		// Remove "linux" added above for searching oval
 		// "linux" is not a real package name (key of affected packages in OVAL)
-		if _, ok := defPacks.binpkgFixstat["linux"]; !found && ok {
-			defPacks.binpkgFixstat[linuxImage] = true
+		if stat, ok := defPacks.binpkgFixstat["linux"]; !found && ok {
+			defPacks.binpkgFixstat[linuxImage] = fixStat{
+				notFixedYet: stat.notFixedYet,
+				fixedIn:     stat.fixedIn,
+			}
 			delete(defPacks.binpkgFixstat, "linux")
 			for i, p := range defPacks.def.AffectedPacks {
 				if p.Name == "linux" {

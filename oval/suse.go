@@ -92,7 +92,10 @@ func (o SUSE) update(r *models.ScanResult, defPacks defPacks) {
 
 	// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
 	for _, pack := range vinfo.AffectedPackages {
-		defPacks.binpkgFixstat[pack.BinName] = pack.NotFixedYet
+		defPacks.binpkgFixstat[pack.BinName] = fixStat{
+			notFixedYet: pack.NotFixedYet,
+			fixedIn:     pack.FixedIn,
+		}
 	}
 	vinfo.AffectedPackages = defPacks.toPackStatuses()
 	vinfo.AffectedPackages.Sort()

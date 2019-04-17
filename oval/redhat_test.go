@@ -119,8 +119,11 @@ func TestPackNamesOfUpdate(t *testing.T) {
 						},
 					},
 				},
-				binpkgFixstat: map[string]bool{
-					"packB": true,
+				binpkgFixstat: map[string]fixStat{
+					"packB": fixStat{
+						notFixedYet: true,
+						fixedIn:     "1.0.0",
+					},
 				},
 			},
 			out: models.ScanResult{

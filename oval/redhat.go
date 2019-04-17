@@ -133,12 +133,18 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 			vinfo.CveContents = cveContents
 		}
 
-		// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
+		// uniq(vinfo.PackNames + defPacks.binpkgStat)
 		for _, pack := range vinfo.AffectedPackages {
-			if nfy, ok := defPacks.binpkgFixstat[pack.BinName]; !ok {
-				defPacks.binpkgFixstat[pack.BinName] = pack.NotFixedYet
-			} else if nfy {
-				defPacks.binpkgFixstat[pack.BinName] = true
+			if stat, ok := defPacks.binpkgFixstat[pack.BinName]; !ok {
+				defPacks.binpkgFixstat[pack.BinName] = fixStat{
+					notFixedYet: pack.NotFixedYet,
+					fixedIn:     pack.FixedIn,
+				}
+			} else if stat.notFixedYet {
+				defPacks.binpkgFixstat[pack.BinName] = fixStat{
+					notFixedYet: true,
+					fixedIn:     pack.FixedIn,
+				}
 			}
 		}
 		vinfo.AffectedPackages = defPacks.toPackStatuses()

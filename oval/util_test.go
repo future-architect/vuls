@@ -12,12 +12,12 @@ import (
 
 func TestUpsert(t *testing.T) {
 	var tests = []struct {
-		res         ovalResult
-		def         ovalmodels.Definition
-		packName    string
-		notFixedYet bool
-		upserted    bool
-		out         ovalResult
+		res      ovalResult
+		def      ovalmodels.Definition
+		packName string
+		fixStat  fixStat
+		upserted bool
+		out      ovalResult
 	}{
 		//insert
 		{
@@ -25,17 +25,23 @@ func TestUpsert(t *testing.T) {
 			def: ovalmodels.Definition{
 				DefinitionID: "1111",
 			},
-			packName:    "pack1",
-			notFixedYet: true,
-			upserted:    false,
+			packName: "pack1",
+			fixStat: fixStat{
+				notFixedYet: true,
+				fixedIn:     "1.0.0",
+			},
+			upserted: false,
 			out: ovalResult{
 				[]defPacks{
 					{
 						def: ovalmodels.Definition{
 							DefinitionID: "1111",
 						},
-						binpkgFixstat: map[string]bool{
-							"pack1": true,
+						binpkgFixstat: map[string]fixStat{
+							"pack1": fixStat{
+								notFixedYet: true,
+								fixedIn:     "1.0.0",
+							},
 						},
 					},
 				},
@@ -49,16 +55,22 @@ func TestUpsert(t *testing.T) {
 						def: ovalmodels.Definition{
 							DefinitionID: "1111",
 						},
-						binpkgFixstat: map[string]bool{
-							"pack1": true,
+						binpkgFixstat: map[string]fixStat{
+							"pack1": fixStat{
+								notFixedYet: true,
+								fixedIn:     "1.0.0",
+							},
 						},
 					},
 					{
 						def: ovalmodels.Definition{
 							DefinitionID: "2222",
 						},
-						binpkgFixstat: map[string]bool{
-							"pack3": true,
+						binpkgFixstat: map[string]fixStat{
+							"pack3": fixStat{
+								notFixedYet: true,
+								fixedIn:     "2.0.0",
+							},
 						},
 					},
 				},
@@ -66,26 +78,38 @@ func TestUpsert(t *testing.T) {
 			def: ovalmodels.Definition{
 				DefinitionID: "1111",
 			},
-			packName:    "pack2",
-			notFixedYet: false,
-			upserted:    true,
+			packName: "pack2",
+			fixStat: fixStat{
+				notFixedYet: false,
+				fixedIn:     "3.0.0",
+			},
+			upserted: true,
 			out: ovalResult{
 				[]defPacks{
 					{
 						def: ovalmodels.Definition{
 							DefinitionID: "1111",
 						},
-						binpkgFixstat: map[string]bool{
-							"pack1": true,
-							"pack2": false,
+						binpkgFixstat: map[string]fixStat{
+							"pack1": fixStat{
+								notFixedYet: true,
+								fixedIn:     "1.0.0",
+							},
+							"pack2": fixStat{
+								notFixedYet: false,
+								fixedIn:     "3.0.0",
+							},
 						},
 					},
 					{
 						def: ovalmodels.Definition{
 							DefinitionID: "2222",
 						},
-						binpkgFixstat: map[string]bool{
-							"pack3": true,
+						binpkgFixstat: map[string]fixStat{
+							"pack3": fixStat{
+								notFixedYet: true,
+								fixedIn:     "2.0.0",
+							},
 						},
 					},
 				},
@@ -93,7 +117,7 @@ func TestUpsert(t *testing.T) {
 		},
 	}
 	for i, tt := range tests {
-		upserted := tt.res.upsert(tt.def, tt.packName, tt.notFixedYet)
+		upserted := tt.res.upsert(tt.def, tt.packName, tt.fixStat)
 		if tt.upserted != upserted {
 			t.Errorf("[%d]\nexpected: %t\n  actual: %t\n", i, tt.upserted, upserted)
 		}
@@ -121,17 +145,27 @@ func TestDefpacksToPackStatuses(t *testing.T) {
 							{
 								Name:        "a",
 								NotFixedYet: true,
+								Version:     "1.0.0",
 							},
 							{
 								Name:        "b",
 								NotFixedYet: false,
+								Version:     "2.0.0",
 							},
 						},
 					},
-					binpkgFixstat: map[string]bool{
-						"a": true,
-						"b": true,
-						"c": true,
+					binpkgFixstat: map[string]fixStat{
+						"a": fixStat{
+							notFixedYet: true,
+							fixedIn:     "1.0.0",
+							isSrcPack:   false,
+						},
+						"b": fixStat{
+							notFixedYet: true,
+							fixedIn:     "1.0.0",
+							isSrcPack:   true,
+							srcPackName: "lib-b",
+						},
 					},
 				},
 			},
@@ -139,14 +173,15 @@ func TestDefpacksToPackStatuses(t *testing.T) {
 				{
 					BinName:     "a",
 					NotFixedYet: true,
+					FixedIn:     "1.0.0",
+					IsSrcPack:   false,
 				},
 				{
 					BinName:     "b",
 					NotFixedYet: true,
-				},
-				{
-					BinName:     "c",
-					NotFixedYet: true,
+					FixedIn:     "1.0.0",
+					IsSrcPack:   true,
+					SrcName:     "lib-b",
 				},
 			},
 		},
@@ -173,6 +208,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 		in          in
 		affected    bool
 		notFixedYet bool
+		fixedIn     string
 	}{
 		// 0. Ubuntu ovalpack.NotFixedYet == true
 		{
@@ -187,6 +223,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 						{
 							Name:        "b",
 							NotFixedYet: true,
+							Version:     "1.0.0",
 						},
 					},
 				},
@@ -196,6 +233,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected:    true,
 			notFixedYet: true,
+			fixedIn:     "1.0.0",
 		},
 		// 1. Ubuntu
 		//   ovalpack.NotFixedYet == false
@@ -226,6 +264,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected:    true,
 			notFixedYet: false,
+			fixedIn:     "1.0.0-1",
 		},
 		// 2. Ubuntu
 		//   ovalpack.NotFixedYet == false
@@ -286,6 +325,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected:    true,
 			notFixedYet: true,
+			fixedIn:     "1.0.0-3",
 		},
 		// 4. Ubuntu
 		//   ovalpack.NotFixedYet == false
@@ -318,6 +358,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected:    true,
 			notFixedYet: false,
+			fixedIn:     "1.0.0-2",
 		},
 		// 5 RedHat
 		{
@@ -345,6 +386,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected:    true,
 			notFixedYet: false,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
 		},
 		// 6 RedHat
 		{
@@ -372,6 +414,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected:    true,
 			notFixedYet: true,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
 		},
 		// 7 RedHat
 		{
@@ -451,6 +494,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected:    true,
 			notFixedYet: true,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
 		},
 		// 10 RedHat
 		{
@@ -478,6 +522,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected:    true,
 			notFixedYet: false,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
 		},
 		// 11 RedHat
 		{
@@ -504,6 +549,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected:    true,
 			notFixedYet: false,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
 		},
 		// 12 RedHat
 		{
@@ -583,6 +629,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected:    true,
 			notFixedYet: false,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
 		},
 		// 15
 		{
@@ -662,6 +709,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected:    true,
 			notFixedYet: true,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
 		},
 		// 18
 		{
@@ -689,6 +737,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected:    true,
 			notFixedYet: false,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
 		},
 		// 19
 		{
@@ -716,6 +765,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected:    true,
 			notFixedYet: false,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
 		},
 		// 20
 		{
@@ -794,6 +844,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected:    true,
 			notFixedYet: false,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
 		},
 		{
 			in: in{
@@ -870,6 +921,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected:    true,
 			notFixedYet: true,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
 		},
 		{
 			in: in{
@@ -896,6 +948,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected:    true,
 			notFixedYet: false,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
 		},
 		{
 			in: in{
@@ -922,6 +975,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected:    true,
 			notFixedYet: false,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
 		},
 		{
 			in: in{
@@ -1021,15 +1075,19 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected:    true,
 			notFixedYet: false,
+			fixedIn:     "3.1.0",
 		},
 	}
 	for i, tt := range tests {
-		affected, notFixedYet := isOvalDefAffected(tt.in.def, tt.in.req, tt.in.family, tt.in.kernel)
+		affected, notFixedYet, fixedIn := isOvalDefAffected(tt.in.def, tt.in.req, tt.in.family, tt.in.kernel)
 		if tt.affected != affected {
 			t.Errorf("[%d] affected\nexpected: %v\n  actual: %v\n", i, tt.affected, affected)
 		}
 		if tt.notFixedYet != notFixedYet {
 			t.Errorf("[%d] notfixedyet\nexpected: %v\n  actual: %v\n", i, tt.notFixedYet, notFixedYet)
+		}
+		if tt.fixedIn != fixedIn {
+			t.Errorf("[%d] fixedIn\nexpected: %v\n  actual: %v\n", i, tt.fixedIn, fixedIn)
 		}
 	}
 }

@@ -49,8 +49,11 @@ func TestPackNamesOfUpdateDebian(t *testing.T) {
 						CveID: "CVE-2000-1000",
 					},
 				},
-				binpkgFixstat: map[string]bool{
-					"packB": true,
+				binpkgFixstat: map[string]fixStat{
+					"packB": fixStat{
+						notFixedYet: true,
+						fixedIn:     "1.0.0",
+					},
 				},
 			},
 			out: models.ScanResult{
@@ -58,7 +61,7 @@ func TestPackNamesOfUpdateDebian(t *testing.T) {
 					"CVE-2000-1000": models.VulnInfo{
 						AffectedPackages: models.PackageFixStatuses{
 							{BinName: "packA"},
-							{BinName: "packB", NotFixedYet: true},
+							{BinName: "packB", NotFixedYet: true, FixedIn: "1.0.0"},
 							{BinName: "packC"},
 						},
 					},
@@ -73,7 +76,7 @@ func TestPackNamesOfUpdateDebian(t *testing.T) {
 		e := tt.out.ScannedCves["CVE-2000-1000"].AffectedPackages
 		a := tt.in.ScannedCves["CVE-2000-1000"].AffectedPackages
 		if !reflect.DeepEqual(a, e) {
-			t.Errorf("[%d] expected: %v\n  actual: %v\n", i, e, a)
+			t.Errorf("[%d] expected: %#v\n  actual: %#v\n", i, e, a)
 		}
 	}
 }

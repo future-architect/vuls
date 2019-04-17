@@ -44,32 +44,44 @@ type defPacks struct {
 	def ovalmodels.Definition
 
 	// BinaryPackageName : NotFixedYet
-	binpkgFixstat map[string]bool
+	binpkgFixstat map[string]fixStat
+}
+
+type fixStat struct {
+	notFixedYet bool
+	fixedIn     string
+	isSrcPack   bool
+	srcPackName string
 }
 
 func (e defPacks) toPackStatuses() (ps models.PackageFixStatuses) {
-	for name, notFixedYet := range e.binpkgFixstat {
+	for name, stat := range e.binpkgFixstat {
 		ps = append(ps, models.PackageFixStatus{
 			BinName:     name,
-			NotFixedYet: notFixedYet,
+			NotFixedYet: stat.notFixedYet,
+			IsSrcPack:   stat.isSrcPack,
+			SrcName:     stat.srcPackName,
+			FixedIn:     stat.fixedIn,
 		})
 	}
 	return
 }
 
-func (e *ovalResult) upsert(def ovalmodels.Definition, packName string, notFixedYet bool) (upserted bool) {
+func (e *ovalResult) upsert(def ovalmodels.Definition, packName string, fstat fixStat) (upserted bool) {
 	// alpine's entry is empty since Alpine secdb is not OVAL format
 	if def.DefinitionID != "" {
 		for i, entry := range e.entries {
 			if entry.def.DefinitionID == def.DefinitionID {
-				e.entries[i].binpkgFixstat[packName] = notFixedYet
+				e.entries[i].binpkgFixstat[packName] = fstat
 				return true
 			}
 		}
 	}
 	e.entries = append(e.entries, defPacks{
-		def:           def,
-		binpkgFixstat: map[string]bool{packName: notFixedYet},
+		def: def,
+		binpkgFixstat: map[string]fixStat{
+			packName: fstat,
+		},
 	})
 
 	return false
@@ -148,17 +160,28 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 		select {
 		case res := <-resChan:
 			for _, def := range res.defs {
-				affected, notFixedYet := isOvalDefAffected(def, res.request, r.Family, r.RunningKernel)
+				affected, notFixedYet, fixedIn := isOvalDefAffected(def, res.request, r.Family, r.RunningKernel)
 				if !affected {
 					continue
 				}
 
 				if res.request.isSrcPack {
 					for _, n := range res.request.binaryPackNames {
-						relatedDefs.upsert(def, n, false)
+						fs := fixStat{
+							srcPackName: res.request.packName,
+							isSrcPack:   true,
+							// !!!!!!!!!!TODO!!!!!!!!!!!!!! use notfixedyet instead of false??
+							notFixedYet: notFixedYet,
+							fixedIn:     fixedIn,
+						}
+						relatedDefs.upsert(def, n, fs)
 					}
 				} else {
-					relatedDefs.upsert(def, res.request.packName, notFixedYet)
+					fs := fixStat{
+						notFixedYet: notFixedYet,
+						fixedIn:     fixedIn,
+					}
+					relatedDefs.upsert(def, res.request.packName, fs)
 				}
 			}
 		case err := <-errChan:
@@ -239,17 +262,27 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 			return relatedDefs, xerrors.Errorf("Failed to get %s OVAL info by package: %#v, err: %w", r.Family, req, err)
 		}
 		for _, def := range definitions {
-			affected, notFixedYet := isOvalDefAffected(def, req, r.Family, r.RunningKernel)
+			affected, notFixedYet, fixedIn := isOvalDefAffected(def, req, r.Family, r.RunningKernel)
 			if !affected {
 				continue
 			}
 
 			if req.isSrcPack {
-				for _, n := range req.binaryPackNames {
-					relatedDefs.upsert(def, n, false)
+				for _, binName := range req.binaryPackNames {
+					fs := fixStat{
+						notFixedYet: false,
+						isSrcPack:   true,
+						fixedIn:     fixedIn,
+						srcPackName: req.packName,
+					}
+					relatedDefs.upsert(def, binName, fs)
 				}
 			} else {
-				relatedDefs.upsert(def, req.packName, notFixedYet)
+				fs := fixStat{
+					notFixedYet: notFixedYet,
+					fixedIn:     fixedIn,
+				}
+				relatedDefs.upsert(def, req.packName, fs)
 			}
 		}
 	}
@@ -267,7 +300,7 @@ func major(version string) string {
 	return ver[0:strings.Index(ver, ".")]
 }
 
-func isOvalDefAffected(def ovalmodels.Definition, req request, family string, running models.Kernel) (affected, notFixedYet bool) {
+func isOvalDefAffected(def ovalmodels.Definition, req request, family string, running models.Kernel) (affected, notFixedYet bool, fixedIn string) {
 	for _, ovalPack := range def.AffectedPacks {
 		if req.packName != ovalPack.Name {
 			continue
@@ -286,27 +319,28 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 		}
 
 		if ovalPack.NotFixedYet {
-			return true, true
+			return true, true, ovalPack.Version
 		}
 
 		less, err := lessThan(family, req.versionRelease, ovalPack)
 		if err != nil {
 			util.Log.Debugf("Failed to parse versions: %s, Ver: %#v, OVAL: %#v, DefID: %s",
 				err, req.versionRelease, ovalPack, def.DefinitionID)
-			return false, false
+			return false, false, ovalPack.Version
 		}
 
 		if less {
 			if req.isSrcPack {
-				// Unable to judge whether fixed or not fixed of src package(Ubuntu, Debian)
-				return true, false
+				// Unable to judge whether fixed or not-fixed of src package(Ubuntu, Debian)
+				return true, false, ovalPack.Version
+
 			}
 
 			// `offline` or `fast` scan mode can't get a updatable version.
 			// In these mode, the blow field was set empty.
 			// Vuls can not judge fixed or unfixed.
 			if req.NewVersionRelease == "" {
-				return true, false
+				return true, false, ovalPack.Version
 			}
 
 			// compare version: newVer vs oval
@@ -314,12 +348,12 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 			if err != nil {
 				util.Log.Debugf("Failed to parse versions: %s, NewVer: %#v, OVAL: %#v, DefID: %s",
 					err, req.NewVersionRelease, ovalPack, def.DefinitionID)
-				return false, false
+				return false, false, ovalPack.Version
 			}
-			return true, less
+			return true, less, ovalPack.Version
 		}
 	}
-	return false, false
+	return false, false, ""
 }
 
 func lessThan(family, versionRelease string, packB ovalmodels.Package) (bool, error) {
