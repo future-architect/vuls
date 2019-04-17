@@ -59,15 +59,15 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 
 	// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
 	for _, pack := range vinfo.AffectedPackages {
-		defPacks.actuallyAffectedPackNames[pack.BinName] = pack.NotFixedYet
+		defPacks.binpkgFixstat[pack.BinName] = pack.NotFixedYet
 	}
 
 	// update notFixedYet of SrcPackage
-	for binName := range defPacks.actuallyAffectedPackNames {
+	for binName := range defPacks.binpkgFixstat {
 		if srcPack, ok := r.SrcPackages.FindByBinName(binName); ok {
 			for _, p := range defPacks.def.AffectedPacks {
 				if p.Name == srcPack.Name {
-					defPacks.actuallyAffectedPackNames[binName] = p.NotFixedYet
+					defPacks.binpkgFixstat[binName] = p.NotFixedYet
 				}
 			}
 		}
@@ -148,9 +148,9 @@ func (o Debian) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 	for _, defPacks := range relatedDefs.entries {
 		// Remove "linux" added above for oval search
 		// linux is not a real package name (key of affected packages in OVAL)
-		if notFixedYet, ok := defPacks.actuallyAffectedPackNames["linux"]; ok {
-			defPacks.actuallyAffectedPackNames[linuxImage] = notFixedYet
-			delete(defPacks.actuallyAffectedPackNames, "linux")
+		if notFixedYet, ok := defPacks.binpkgFixstat["linux"]; ok {
+			defPacks.binpkgFixstat[linuxImage] = notFixedYet
+			delete(defPacks.binpkgFixstat, "linux")
 			for i, p := range defPacks.def.AffectedPacks {
 				if p.Name == "linux" {
 					p.Name = linuxImage
@@ -260,9 +260,9 @@ func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 	for _, defPacks := range relatedDefs.entries {
 		// Remove "linux" added above to search for oval
 		// "linux" is not a real package name (key of affected packages in OVAL)
-		if _, ok := defPacks.actuallyAffectedPackNames["linux"]; !found && ok {
-			defPacks.actuallyAffectedPackNames[linuxImage] = true
-			delete(defPacks.actuallyAffectedPackNames, "linux")
+		if _, ok := defPacks.binpkgFixstat["linux"]; !found && ok {
+			defPacks.binpkgFixstat[linuxImage] = true
+			delete(defPacks.binpkgFixstat, "linux")
 			for i, p := range defPacks.def.AffectedPacks {
 				if p.Name == "linux" {
 					p.Name = linuxImage

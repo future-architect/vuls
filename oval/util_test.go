@@ -34,7 +34,7 @@ func TestUpsert(t *testing.T) {
 						def: ovalmodels.Definition{
 							DefinitionID: "1111",
 						},
-						actuallyAffectedPackNames: map[string]bool{
+						binpkgFixstat: map[string]bool{
 							"pack1": true,
 						},
 					},
@@ -49,7 +49,7 @@ func TestUpsert(t *testing.T) {
 						def: ovalmodels.Definition{
 							DefinitionID: "1111",
 						},
-						actuallyAffectedPackNames: map[string]bool{
+						binpkgFixstat: map[string]bool{
 							"pack1": true,
 						},
 					},
@@ -57,7 +57,7 @@ func TestUpsert(t *testing.T) {
 						def: ovalmodels.Definition{
 							DefinitionID: "2222",
 						},
-						actuallyAffectedPackNames: map[string]bool{
+						binpkgFixstat: map[string]bool{
 							"pack3": true,
 						},
 					},
@@ -75,7 +75,7 @@ func TestUpsert(t *testing.T) {
 						def: ovalmodels.Definition{
 							DefinitionID: "1111",
 						},
-						actuallyAffectedPackNames: map[string]bool{
+						binpkgFixstat: map[string]bool{
 							"pack1": true,
 							"pack2": false,
 						},
@@ -84,7 +84,7 @@ func TestUpsert(t *testing.T) {
 						def: ovalmodels.Definition{
 							DefinitionID: "2222",
 						},
-						actuallyAffectedPackNames: map[string]bool{
+						binpkgFixstat: map[string]bool{
 							"pack3": true,
 						},
 					},
@@ -128,7 +128,7 @@ func TestDefpacksToPackStatuses(t *testing.T) {
 							},
 						},
 					},
-					actuallyAffectedPackNames: map[string]bool{
+					binpkgFixstat: map[string]bool{
 						"a": true,
 						"b": true,
 						"c": true,

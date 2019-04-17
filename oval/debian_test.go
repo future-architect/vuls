@@ -49,7 +49,7 @@ func TestPackNamesOfUpdateDebian(t *testing.T) {
 						CveID: "CVE-2000-1000",
 					},
 				},
-				actuallyAffectedPackNames: map[string]bool{
+				binpkgFixstat: map[string]bool{
 					"packB": true,
 				},
 			},

@@ -119,7 +119,7 @@ func TestPackNamesOfUpdate(t *testing.T) {
 						},
 					},
 				},
-				actuallyAffectedPackNames: map[string]bool{
+				binpkgFixstat: map[string]bool{
 					"packB": true,
 				},
 			},

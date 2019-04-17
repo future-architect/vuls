@@ -44,11 +44,11 @@ type defPacks struct {
 	def ovalmodels.Definition
 
 	// BinaryPackageName : NotFixedYet
-	actuallyAffectedPackNames map[string]bool
+	binpkgFixstat map[string]bool
 }
 
 func (e defPacks) toPackStatuses() (ps models.PackageFixStatuses) {
-	for name, notFixedYet := range e.actuallyAffectedPackNames {
+	for name, notFixedYet := range e.binpkgFixstat {
 		ps = append(ps, models.PackageFixStatus{
 			BinName:     name,
 			NotFixedYet: notFixedYet,
@@ -62,14 +62,14 @@ func (e *ovalResult) upsert(def ovalmodels.Definition, packName string, notFixed
 	if def.DefinitionID != "" {
 		for i, entry := range e.entries {
 			if entry.def.DefinitionID == def.DefinitionID {
-				e.entries[i].actuallyAffectedPackNames[packName] = notFixedYet
+				e.entries[i].binpkgFixstat[packName] = notFixedYet
 				return true
 			}
 		}
 	}
 	e.entries = append(e.entries, defPacks{
-		def:                       def,
-		actuallyAffectedPackNames: map[string]bool{packName: notFixedYet},
+		def:           def,
+		binpkgFixstat: map[string]bool{packName: notFixedYet},
 	})
 
 	return false
