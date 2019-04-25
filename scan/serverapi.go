@@ -613,6 +613,11 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 		r.ScannedIPv6Addrs = ipv6s
 		r.Config.Scan = config.Conf
 		results = append(results, r)
+
+		if 0 < len(r.Warnings) {
+			util.Log.Warnf("Some warnings occurred during scanning on %s. Please fix the warnings to get a useful information. Execute configtest subcommand before scanning to know the cause of the warnings. warnings: %v",
+				r.ServerName, r.Warnings)
+		}
 	}
 
 	config.Conf.FormatJSON = true
@@ -626,6 +631,17 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 	}
 
 	report.StdoutWriter{}.WriteScanSummary(results...)
+
+	errServerNames := []string{}
+	for _, r := range results {
+		if 0 < len(r.Errors) {
+			errServerNames = append(errServerNames, r.ServerName)
+		}
+	}
+	if 0 < len(errServerNames) {
+		return fmt.Errorf("An error occurred on %s", errServerNames)
+	}
+
 	return nil
 }
 

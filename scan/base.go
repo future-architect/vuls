@@ -39,8 +39,9 @@ type base struct {
 	osPackages
 	WordPress *models.WordPressPackages
 
-	log  *logrus.Entry
-	errs []error
+	log   *logrus.Entry
+	errs  []error
+	warns []error
 }
 
 func (l *base) exec(cmd string, sudo bool) execResult {
@@ -385,9 +386,12 @@ func (l *base) convertToModel() models.ScanResult {
 		Type:        ctype,
 	}
 
-	errs := []string{}
+	errs, warns := []string{}, []string{}
 	for _, e := range l.errs {
-		errs = append(errs, fmt.Sprintf("%s", e))
+		errs = append(errs, fmt.Sprintf("%+v", e))
+	}
+	for _, w := range l.warns {
+		warns = append(warns, fmt.Sprintf("%+v", w))
 	}
 
 	return models.ScanResult{
@@ -408,6 +412,7 @@ func (l *base) convertToModel() models.ScanResult {
 		WordPressPackages: l.WordPress,
 		Optional:          l.ServerInfo.Optional,
 		Errors:            errs,
+		Warnings:          warns,
 	}
 }
 

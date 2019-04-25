@@ -183,7 +183,8 @@ func (o *redhatBase) execCheckDeps(packNames []string) error {
 
 func (o *redhatBase) preCure() error {
 	if err := o.detectIPAddr(); err != nil {
-		o.log.Debugf("Failed to detect IP addresses: %s", err)
+		o.log.Warnf("Failed to detect IP addresses: %s", err)
+		o.warns = append(o.warns, err)
 	}
 	// Ignore this error as it just failed to detect the IP addresses
 	return nil
@@ -192,12 +193,19 @@ func (o *redhatBase) preCure() error {
 func (o *redhatBase) postScan() error {
 	if o.isExecYumPS() {
 		if err := o.yumPS(); err != nil {
-			return xerrors.Errorf("Failed to execute yum-ps: %w", err)
+			err = xerrors.Errorf("Failed to execute yum-ps: %w", err)
+			o.log.Warnf("err: %+v", err)
+			o.warns = append(o.warns, err)
+			// Only warning this error
 		}
 	}
+
 	if o.isExecNeedsRestarting() {
 		if err := o.needsRestarting(); err != nil {
-			return xerrors.Errorf("Failed to execute need-restarting: %w", err)
+			err = xerrors.Errorf("Failed to execute need-restarting: %w", err)
+			o.log.Warnf("err: %+v", err)
+			o.warns = append(o.warns, err)
+			// Only warning this error
 		}
 	}
 	return nil
@@ -215,36 +223,41 @@ func (o *redhatBase) scanPackages() error {
 		o.log.Errorf("Failed to scan installed packages: %s", err)
 		return err
 	}
+	o.Packages = installed
 
 	rebootRequired, err := o.rebootRequired()
 	if err != nil {
-		o.log.Errorf("Failed to detect the kernel reboot required: %s", err)
-		return err
+		err = xerrors.Errorf("Failed to detect the kernel reboot required: %w", err)
+		o.log.Warnf("err: %+v", err)
+		o.warns = append(o.warns, err)
+		// Only warning this error
+	} else {
+		o.Kernel.RebootRequired = rebootRequired
 	}
-	o.Kernel.RebootRequired = rebootRequired
 
 	if o.getServerInfo().Mode.IsOffline() {
 		switch o.Distro.Family {
 		case config.Amazon:
 			// nop
 		default:
-			o.Packages = installed
 			return nil
 		}
 	} else if o.Distro.Family == config.RedHat {
 		if o.getServerInfo().Mode.IsFast() {
-			o.Packages = installed
 			return nil
 		}
 	}
 
 	updatable, err := o.scanUpdatablePackages()
 	if err != nil {
-		o.log.Errorf("Failed to scan installed packages: %s", err)
-		return err
+		err = xerrors.Errorf("Failed to scan updatable packages: %w", err)
+		o.log.Warnf("err: %+v", err)
+		o.warns = append(o.warns, err)
+		// Only warning this error
+	} else {
+		installed.MergeNewVersion(updatable)
+		o.Packages = installed
 	}
-	installed.MergeNewVersion(updatable)
-	o.Packages = installed
 
 	var unsecures models.VulnInfos
 	if unsecures, err = o.scanUnsecurePackages(updatable); err != nil {
@@ -502,7 +515,10 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 func (o *redhatBase) scanUnsecurePackages(updatable models.Packages) (models.VulnInfos, error) {
 	if o.isExecFillChangelogs() {
 		if err := o.fillChangelogs(updatable); err != nil {
-			return nil, err
+			err = xerrors.Errorf("Failed to fetch changelogs: %w", err)
+			o.log.Warnf("err: %+v", err)
+			o.warns = append(o.warns, err)
+			// Only warning this error
 		}
 	}
 
@@ -1261,7 +1277,7 @@ func (o *redhatBase) needsRestarting() error {
 	cmd := "LANGUAGE=en_US.UTF-8 needs-restarting"
 	r := o.exec(cmd, sudo)
 	if !r.isSuccess() {
-		return xerrors.Errorf("Failed to SSH: %s", r)
+		return xerrors.Errorf("Failed to SSH: %w", r)
 	}
 	procs := o.parseNeedsRestarting(r.Stdout)
 	for _, proc := range procs {

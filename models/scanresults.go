@@ -58,6 +58,7 @@ type ScanResult struct {
 	ReportedRevision string    `json:"reportedRevision"`
 	ReportedBy       string    `json:"reportedBy"`
 	Errors           []string  `json:"errors"`
+	Warnings         []string  `json:"warnings"`
 
 	ScannedCves       VulnInfos              `json:"scannedCves"`
 	RunningKernel     Kernel                 `json:"runningKernel"`
