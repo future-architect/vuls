@@ -330,13 +330,19 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	util.Log.Infof("Loaded: %s", dir)
 
 	var res models.ScanResults
+	hasError := false
 	for _, r := range loaded {
 		if len(r.Errors) == 0 {
 			res = append(res, r)
 		} else {
-			util.Log.Warnf("Ignored since errors occurred during scanning: %s",
-				r.ServerName)
+			util.Log.Errorf("Ignored since errors occurred during scanning: %s, err: %v",
+				r.ServerName, r.Errors)
+			hasError = true
 		}
+	}
+
+	if len(res) == 0 {
+		return subcommands.ExitFailure
 	}
 
 	for _, r := range res {
@@ -422,6 +428,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			util.Log.Errorf("Failed to report. err: %+v", err)
 			return subcommands.ExitFailure
 		}
+	}
+
+	if hasError {
+		return subcommands.ExitFailure
 	}
 
 	return subcommands.ExitSuccess
