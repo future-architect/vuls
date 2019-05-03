@@ -22,6 +22,7 @@
 #   go-tests = true
 #   unused-packages = true
 
+required = ["github.com/genuinetools/reg"]
 [[constraint]]
   name = "github.com/knqyf263/gost"
   branch = "master"
@@ -37,6 +38,11 @@
 [[constraint]]
   name = "github.com/nlopes/slack"
   version = "v0.4.0"
+
+[[constraint]]
+  name = "github.com/genuinetools/reg"
+  version = "v0.16.1"
+  source = "github.com/tomoyamachi/reg"
 
 [prune]
   go-tests = true
