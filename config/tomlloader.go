@@ -69,7 +69,15 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		}
 
 		s := ServerInfo{ServerName: serverName}
-		if v.Type != ServerTypePseudo {
+
+		if v.Type == ServerTypeStaticContainer {
+			if err := IsValidStaticContainerConf(v.StaticContainer); err != nil {
+				return err
+			}
+			s.StaticContainer = v.StaticContainer
+		}
+
+		if v.Type != ServerTypePseudo && v.Type != ServerTypeStaticContainer {
 			s.Host = v.Host
 			if len(s.Host) == 0 {
 				return xerrors.Errorf("%s is invalid. host is empty", serverName)
@@ -299,4 +307,15 @@ func toCpeURI(cpename string) (string, error) {
 		return naming.BindToURI(wfn), nil
 	}
 	return "", xerrors.Errorf("Unknow CPE format: %s", cpename)
+}
+
+// IsValidStaticContainerConf checks a container configuration
+func IsValidStaticContainerConf(c StaticContainerConf) error {
+	if c.Name == "" {
+		return xerrors.New("Invalid arguments : set staticContainer name")
+	}
+	if c.Tag == "" {
+		return xerrors.New("Invalid arguments : set staticContainer tag")
+	}
+	return nil
 }

@@ -95,6 +95,8 @@ const (
 const (
 	// ServerTypePseudo is used for ServerInfo.Type
 	ServerTypePseudo = "pseudo"
+	// ServerTypeStaticContainer is used for ServerInfo.Type
+	ServerTypeStaticContainer = "container"
 )
 
 //Config is struct of Configuration
@@ -1058,7 +1060,8 @@ type ServerInfo struct {
 	Containers             map[string]ContainerSetting `toml:"containers" json:"containers,omitempty"`
 	IgnoreCves             []string                    `toml:"ignoreCves,omitempty" json:"ignoreCves,omitempty"`
 	IgnorePkgsRegexp       []string                    `toml:"ignorePkgsRegexp,omitempty" json:"ignorePkgsRegexp,omitempty"`
-	GitHubRepos            map[string]GitHubConf       `toml:"githubs" json:"githubs,omitempty"` // key: owner/repo
+	GitHubRepos            map[string]GitHubConf       `toml:"githubs" json:"githubs,omitempty"`                 // key: owner/repo
+	StaticContainer        StaticContainerConf         `toml:"staticContainer" json:"staticContainer,omitempty"` // only 1 container on 1 server
 	UUIDs                  map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
 	Memo                   string                      `toml:"memo,omitempty" json:"memo,omitempty"`
 	Enablerepo             []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, RHEL, Amazon
@@ -1093,6 +1096,13 @@ type WordPressConf struct {
 	CmdPath        string `toml:"cmdPath" json:"cmdPath,omitempty"`
 	WPVulnDBToken  string `toml:"wpVulnDBToken" json:"-,omitempty"`
 	IgnoreInactive bool   `json:"ignoreInactive,omitempty"`
+}
+
+// StaticContainerConf is a scan container image info
+type StaticContainerConf struct {
+	Name       string `json:"name"`
+	Tag        string `json:"tag"`
+	Credential string `json:"cedential,omitempty"`
 }
 
 // GitHubConf is used for GitHub integration
