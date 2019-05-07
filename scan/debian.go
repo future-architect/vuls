@@ -263,7 +263,12 @@ func (o *debian) preCure() error {
 
 func (o *debian) postScan() error {
 	if o.getServerInfo().Mode.IsDeep() || o.getServerInfo().Mode.IsFastRoot() {
-		return o.checkrestart()
+		if err := o.checkrestart(); err != nil {
+			err = xerrors.Errorf("Failed to scan need-restarting processes: %w", err)
+			o.log.Warnf("err: %+v", err)
+			o.warns = append(o.warns, err)
+			// Only warning this error
+		}
 	}
 	return nil
 }
@@ -282,8 +287,9 @@ func (o *debian) scanPackages() error {
 	}
 	rebootRequired, err := o.rebootRequired()
 	if err != nil {
-		o.log.Errorf("Failed to detect the kernel reboot required: %s", err)
-		return err
+		o.log.Warnf("Failed to detect the kernel reboot required: %s", err)
+		o.warns = append(o.warns, err)
+		// Only warning this error
 	}
 	o.Kernel = models.Kernel{
 		Version:        version,
