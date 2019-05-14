@@ -74,58 +74,60 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 		sort.Ints(chunkKeys)
 
+		summary := fmt.Sprintf("%s\n%s",
+			getNotifyUsers(config.Conf.Slack.NotifyUsers),
+			formatOneLineSummary(r))
+
 		// Send slack by API
 		if 0 < len(token) {
 			api := slack.New(token)
-			ParentMsg := slack.PostMessageParameters{
-				//			Text:      msgText(r),
+			msgPrms := slack.PostMessageParameters{
 				Username:  conf.AuthUser,
 				IconEmoji: conf.IconEmoji,
 			}
 
-			if config.Conf.FormatOneLineText {
-				if _, _, err = api.PostMessage(channel, formatOneLineSummary(r), ParentMsg); err != nil {
-					return err
-				}
-				continue
+			var ts string
+			if _, ts, err = api.PostMessage(channel,
+				summary, msgPrms); err != nil {
+				return err
 			}
 
-			var ts string
-			if _, ts, err = api.PostMessage(channel, msgText(r), ParentMsg); err != nil {
-				return err
+			if config.Conf.FormatOneLineText || 0 < len(r.Errors) {
+				continue
 			}
 
 			for _, k := range chunkKeys {
 				params := slack.PostMessageParameters{
-					//		Text:            msgText(r),
 					Username:        conf.AuthUser,
 					IconEmoji:       conf.IconEmoji,
 					Attachments:     m[k],
 					ThreadTimestamp: ts,
 				}
-				if _, _, err = api.PostMessage(channel, msgText(r), params); err != nil {
+				if _, _, err = api.PostMessage(channel, "", params); err != nil {
 					return err
 				}
 			}
 		} else {
-			if config.Conf.FormatOneLineText {
-				msg := message{
-					Text:      formatOneLineSummary(r),
-					Username:  conf.AuthUser,
-					IconEmoji: conf.IconEmoji,
-					Channel:   channel,
-				}
-				if err := send(msg); err != nil {
-					return err
-				}
+			msg := message{
+				Text:      summary,
+				Username:  conf.AuthUser,
+				IconEmoji: conf.IconEmoji,
+				Channel:   channel,
+			}
+			if err := send(msg); err != nil {
+				return err
+			}
+
+			if config.Conf.FormatOneLineText || 0 < len(r.Errors) {
 				continue
 			}
 
-			for i, k := range chunkKeys {
-				txt := ""
-				if i == 0 {
-					txt = msgText(r)
-				}
+			for _, k := range chunkKeys {
+				txt := fmt.Sprintf("%d/%d for %s",
+					k+1,
+					len(chunkKeys),
+					r.FormatServerName())
+
 				msg := message{
 					Text:        txt,
 					Username:    conf.AuthUser,
@@ -174,30 +176,6 @@ func send(msg message) error {
 		return xerrors.New("Retry count exceeded")
 	}
 	return nil
-}
-
-func msgText(r models.ScanResult) string {
-	notifyUsers := ""
-	if 0 < len(r.ScannedCves) {
-		notifyUsers = getNotifyUsers(config.Conf.Slack.NotifyUsers)
-	}
-	serverInfo := fmt.Sprintf("*%s*", r.ServerInfo())
-
-	if 0 < len(r.Errors) {
-		return fmt.Sprintf("%s\n%s\n%s\n%s\n%s\nError: %s",
-			notifyUsers,
-			serverInfo,
-			r.ScannedCves.FormatCveSummary(),
-			r.ScannedCves.FormatFixedStatus(r.Packages),
-			r.FormatUpdatablePacksSummary(),
-			r.Errors)
-	}
-	return fmt.Sprintf("%s\n%s\n%s\n%s\n%s",
-		notifyUsers,
-		serverInfo,
-		r.ScannedCves.FormatCveSummary(),
-		r.ScannedCves.FormatFixedStatus(r.Packages),
-		r.FormatUpdatablePacksSummary())
 }
 
 func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
