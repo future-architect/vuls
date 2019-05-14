@@ -316,6 +316,9 @@ func (r ScanResult) ServerInfoTui() string {
 	if len(r.Container.ContainerID) == 0 {
 		line := fmt.Sprintf("%s (%s%s)",
 			r.ServerName, r.Family, r.Release)
+		if len(r.Warnings) != 0 {
+			line = "[Warn] " + line
+		}
 		if r.RunningKernel.RebootRequired {
 			return "[Reboot] " + line
 		}
