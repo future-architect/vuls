@@ -32,15 +32,17 @@ import (
 	"golang.org/x/xerrors"
 )
 
+const (
+	scannedViaRemote = "remote"
+	scannedViaLocal  = "local"
+	scannedViaPseudo = "pseudo"
+)
+
 var (
 	errOSFamilyHeader      = xerrors.New("X-Vuls-OS-Family header is required")
 	errOSReleaseHeader     = xerrors.New("X-Vuls-OS-Release header is required")
 	errKernelVersionHeader = xerrors.New("X-Vuls-Kernel-Version header is required")
 	errServerNameHeader    = xerrors.New("X-Vuls-Server-Name header is required")
-
-	scannedViaRemote = "remote"
-	scannedViaLocal  = "local"
-	scannedViaPseudo = "pseudo"
 )
 
 var servers, errServers []osTypeInterface

@@ -393,7 +393,7 @@ func (l *base) convertToModel() models.ScanResult {
 	scannedVia := scannedViaRemote
 	if isLocalExec(l.ServerInfo.Port, l.ServerInfo.Host) {
 		scannedVia = scannedViaLocal
-	} else if l.ServerInfo.Type == scannedViaPseudo {
+	} else if l.ServerInfo.Type == config.ServerTypePseudo {
 		scannedVia = scannedViaPseudo
 	}
 
