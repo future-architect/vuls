@@ -37,6 +37,10 @@ var (
 	errOSReleaseHeader     = xerrors.New("X-Vuls-OS-Release header is required")
 	errKernelVersionHeader = xerrors.New("X-Vuls-Kernel-Version header is required")
 	errServerNameHeader    = xerrors.New("X-Vuls-Server-Name header is required")
+
+	scannedViaRemote = "remote"
+	scannedViaLocal  = "local"
+	scannedViaPseudo = "pseudo"
 )
 
 var servers, errServers []osTypeInterface

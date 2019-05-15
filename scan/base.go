@@ -390,6 +390,13 @@ func (l *base) convertToModel() models.ScanResult {
 		errs = append(errs, fmt.Sprintf("%s", e))
 	}
 
+	scannedVia := scannedViaRemote
+	if isLocalExec(l.ServerInfo.Port, l.ServerInfo.Host) {
+		scannedVia = scannedViaLocal
+	} else if l.ServerInfo.Type == scannedViaPseudo {
+		scannedVia = scannedViaPseudo
+	}
+
 	return models.ScanResult{
 		JSONVersion:       models.JSONVersion,
 		ServerName:        l.ServerInfo.ServerName,
@@ -402,6 +409,7 @@ func (l *base) convertToModel() models.ScanResult {
 		IPv4Addrs:         l.ServerInfo.IPv4Addrs,
 		IPv6Addrs:         l.ServerInfo.IPv6Addrs,
 		ScannedCves:       l.VulnInfos,
+		ScannedVia:        scannedVia,
 		RunningKernel:     l.Kernel,
 		Packages:          l.Packages,
 		SrcPackages:       l.SrcPackages,
