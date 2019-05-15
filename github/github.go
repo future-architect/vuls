@@ -77,7 +77,7 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 		if alerts.Data.Repository.URL == "" {
 			return 0, errof.New(
 				errof.ErrFailedToAccessGithubAPI,
-				fmt.Sprintf("Failed to access to GitHub API. Response: %#v : %v", alerts),
+				fmt.Sprintf("Failed to access to GitHub API. Response: %#v", alerts),
 			)
 		}
 
