@@ -18,8 +18,8 @@ var (
 	ErrFailedToAccessGithubAPI ErrorCode = "ErrFailedToAccessGithubAPI"
 )
 
-// NewError :
-func NewError(code ErrorCode, msg string) Error {
+// New :
+func New(code ErrorCode, msg string) Error {
 	return Error{
 		Code:    code,
 		Message: msg,
