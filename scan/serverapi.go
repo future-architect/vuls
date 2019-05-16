@@ -480,7 +480,7 @@ func detectStaticContainerOSesOnServer(containerHost osTypeInterface) (oses []os
 		return
 	}
 
-	// TODO : Currenty only support docker image
+	// TODO : Currently only support docker image
 	for idx, containerConf := range containerHostInfo.StaticContainers {
 		copied := containerHostInfo
 		// change servername for original
