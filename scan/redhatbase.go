@@ -529,9 +529,9 @@ func (o *redhatBase) fillChangelogs(updatables models.Packages) error {
 	}
 
 	emptyChangelogPackNames := []string{}
-	for _, pack := range o.Packages {
-		if pack.NewVersion != "" && pack.Changelog.Contents == "" {
-			emptyChangelogPackNames = append(emptyChangelogPackNames, pack.Name)
+	for _, name := range names {
+		if o.Packages[name].Changelog.Contents == "" {
+			emptyChangelogPackNames = append(emptyChangelogPackNames, name)
 		}
 	}
 
