@@ -196,6 +196,10 @@ func PrintSSHableServerNames() bool {
 // InitServers detect the kind of OS distribution of target servers
 func InitServers(timeoutSec int) error {
 	servers, errServers = detectServerOSes(timeoutSec)
+	containerServers, containerErrServers := detectStaticContainerOSes(timeoutSec)
+	servers = append(servers, containerServers...)
+	errServers = append(errServers, containerErrServers...)
+
 	if len(servers) == 0 {
 		return xerrors.New("No scannable servers")
 	}
@@ -408,6 +412,81 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 			"Some containers on %s are exited or unknown. exited: %s, unknown: %s",
 			containerHost.getServerInfo().ServerName, exited, unknown)})
 		return append(oses, containerHost)
+	}
+	return oses
+}
+
+func detectStaticContainerOSes(timeoutSec int) (actives, inactives []osTypeInterface) {
+	util.Log.Info("Detecting OS of static containers... ")
+	osTypesChan := make(chan []osTypeInterface, len(servers))
+	defer close(osTypesChan)
+	for _, s := range servers {
+		go func(s osTypeInterface) {
+			defer func() {
+				if p := recover(); p != nil {
+					util.Log.Debugf("Panic: %s on %s",
+						p, s.getServerInfo().GetServerName())
+				}
+			}()
+			osTypesChan <- detectStaticContainerOSesOnServer(s)
+		}(s)
+	}
+
+	timeout := time.After(time.Duration(timeoutSec) * time.Minute)
+	for i := 0; i < len(servers); i++ {
+		select {
+		case res := <-osTypesChan:
+			for _, osi := range res {
+				sinfo := osi.getServerInfo()
+				if 0 < len(osi.getErrs()) {
+					inactives = append(inactives, osi)
+					util.Log.Errorf("Failed: %s err: %+v", sinfo.ServerName, osi.getErrs())
+					continue
+				}
+				actives = append(actives, osi)
+				util.Log.Infof("Detected: %s@%s: %s",
+					sinfo.StaticContainer.Name, sinfo.ServerName, osi.getDistro())
+			}
+		case <-timeout:
+			msg := "Timed out while detecting static containers"
+			util.Log.Error(msg)
+			for servername, sInfo := range config.Conf.Servers {
+				found := false
+				for _, o := range append(actives, inactives...) {
+					if servername == o.getServerInfo().ServerName {
+						found = true
+						break
+					}
+				}
+				if !found {
+					u := &unknown{}
+					u.setServerInfo(sInfo)
+					u.setErrs([]error{
+						xerrors.New("Timed out"),
+					})
+					inactives = append(inactives)
+					util.Log.Errorf("Timed out: %s", servername)
+				}
+			}
+		}
+	}
+	return
+}
+
+func detectStaticContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeInterface) {
+	containerHostInfo := containerHost.getServerInfo()
+	if len(containerHostInfo.StaticContainers) == 0 {
+		return
+	}
+
+	// TODO : Currenty only support docker image
+	for _, containerConf := range containerHostInfo.StaticContainers {
+		copied := containerHostInfo
+		copied.StaticContainer = containerConf
+		copied.Type = ""
+		os := detectOS(copied)
+		fmt.Printf(" +++++ %v \n", os)
+		oses = append(oses, os)
 	}
 	return oses
 }

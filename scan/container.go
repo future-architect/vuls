@@ -20,9 +20,8 @@ package scan
 import (
 	"context"
 
-	"golang.org/x/xerrors"
-
 	"github.com/knqyf263/fanal/analyzer"
+	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -31,10 +30,9 @@ import (
 	// Register os and package analyzers
 	_ "github.com/knqyf263/fanal/analyzer/os/alpine"
 	_ "github.com/knqyf263/fanal/analyzer/os/amazonlinux"
-	_ "github.com/knqyf263/fanal/analyzer/os/debian"
+	_ "github.com/knqyf263/fanal/analyzer/os/debianbase"
 	_ "github.com/knqyf263/fanal/analyzer/os/opensuse"
 	_ "github.com/knqyf263/fanal/analyzer/os/redhatbase"
-	_ "github.com/knqyf263/fanal/analyzer/os/ubuntu"
 	_ "github.com/knqyf263/fanal/analyzer/pkg/apk"
 	_ "github.com/knqyf263/fanal/analyzer/pkg/dpkg"
 	_ "github.com/knqyf263/fanal/analyzer/pkg/rpm"
@@ -46,10 +44,6 @@ type staticContainer struct {
 }
 
 func detectContainerImage(c config.ServerInfo) (itsMe bool, containerImage osTypeInterface, err error) {
-	if c.Type != config.ServerTypeStaticContainer {
-		return false, containerImage, nil
-	}
-
 	os, pkgs, err := scanImage(c)
 	if err != nil {
 		return false, containerImage, err
@@ -67,7 +61,11 @@ func scanImage(c config.ServerInfo) (os *analyzer.OS, pkgs []analyzer.Package, e
 
 	ctx := context.Background()
 	domain := c.StaticContainer.Name + ":" + c.StaticContainer.Tag
+	util.Log.Info("Start fetch container... ", domain)
+
 	files, err := analyzer.Analyze(ctx, domain)
+	util.Log.Info("Finish fetch container... ", domain)
+
 	if err != nil {
 		return nil, nil, xerrors.Errorf("Failed scan files %q, %w", domain, err)
 	}

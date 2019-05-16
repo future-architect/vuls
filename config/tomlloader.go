@@ -69,15 +69,17 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		}
 
 		s := ServerInfo{ServerName: serverName}
+		s.StaticContainers = make(map[string]StaticContainerConf)
 
-		if v.Type == ServerTypeStaticContainer {
-			if err := IsValidStaticContainerConf(v.StaticContainer); err != nil {
+		// staticContainers are able to set any server type
+		for name, staticContainer := range v.StaticContainers {
+			if err := IsValidStaticContainerConf(staticContainer); err != nil {
 				return err
 			}
-			s.StaticContainer = v.StaticContainer
+			s.StaticContainers[name] = staticContainer
 		}
 
-		if v.Type != ServerTypePseudo && v.Type != ServerTypeStaticContainer {
+		if v.Type != ServerTypePseudo {
 			s.Host = v.Host
 			if len(s.Host) == 0 {
 				return xerrors.Errorf("%s is invalid. host is empty", serverName)

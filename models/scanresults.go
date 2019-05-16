@@ -36,29 +36,30 @@ type ScanResults []ScanResult
 
 // ScanResult has the result of scanned CVE information.
 type ScanResult struct {
-	JSONVersion      int       `json:"jsonVersion"`
-	Lang             string    `json:"lang"`
-	ServerUUID       string    `json:"serverUUID"`
-	ServerName       string    `json:"serverName"` // TOML Section key
-	Family           string    `json:"family"`
-	Release          string    `json:"release"`
-	Container        Container `json:"container"`
-	Platform         Platform  `json:"platform"`
-	IPv4Addrs        []string  `json:"ipv4Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
-	IPv6Addrs        []string  `json:"ipv6Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
-	ScannedAt        time.Time `json:"scannedAt"`
-	ScanMode         string    `json:"scanMode"`
-	ScannedVersion   string    `json:"scannedVersion"`
-	ScannedRevision  string    `json:"scannedRevision"`
-	ScannedBy        string    `json:"scannedBy"`
-	ScannedVia       string    `json:"scannedVia"`
-	ScannedIPv4Addrs []string  `json:"scannedIpv4Addrs,omitempty"`
-	ScannedIPv6Addrs []string  `json:"scannedIpv6Addrs,omitempty"`
-	ReportedAt       time.Time `json:"reportedAt"`
-	ReportedVersion  string    `json:"reportedVersion"`
-	ReportedRevision string    `json:"reportedRevision"`
-	ReportedBy       string    `json:"reportedBy"`
-	Errors           []string  `json:"errors"`
+	JSONVersion      int             `json:"jsonVersion"`
+	Lang             string          `json:"lang"`
+	ServerUUID       string          `json:"serverUUID"`
+	ServerName       string          `json:"serverName"` // TOML Section key
+	Family           string          `json:"family"`
+	Release          string          `json:"release"`
+	Container        Container       `json:"container"`
+	StaticContainer  StaticContainer `json:"staticContainer"`
+	Platform         Platform        `json:"platform"`
+	IPv4Addrs        []string        `json:"ipv4Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
+	IPv6Addrs        []string        `json:"ipv6Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
+	ScannedAt        time.Time       `json:"scannedAt"`
+	ScanMode         string          `json:"scanMode"`
+	ScannedVersion   string          `json:"scannedVersion"`
+	ScannedRevision  string          `json:"scannedRevision"`
+	ScannedBy        string          `json:"scannedBy"`
+	ScannedVia       string          `json:"scannedVia"`
+	ScannedIPv4Addrs []string        `json:"scannedIpv4Addrs,omitempty"`
+	ScannedIPv6Addrs []string        `json:"scannedIpv6Addrs,omitempty"`
+	ReportedAt       time.Time       `json:"reportedAt"`
+	ReportedVersion  string          `json:"reportedVersion"`
+	ReportedRevision string          `json:"reportedRevision"`
+	ReportedBy       string          `json:"reportedBy"`
+	Errors           []string        `json:"errors"`
 
 	ScannedCves       VulnInfos              `json:"scannedCves"`
 	RunningKernel     Kernel                 `json:"runningKernel"`
@@ -439,6 +440,11 @@ func (r ScanResult) IsContainer() bool {
 	return 0 < len(r.Container.ContainerID)
 }
 
+// IsStaticContainer returns whether this ServerInfo is about container
+func (r ScanResult) IsStaticContainer() bool {
+	return 0 < len(r.StaticContainer.Name)
+}
+
 // IsDeepScanMode checks if the scan mode is deep scan mode.
 func (r ScanResult) IsDeepScanMode() bool {
 	for _, s := range r.Config.Scan.Servers {
@@ -458,6 +464,12 @@ type Container struct {
 	Image       string `json:"image"`
 	Type        string `json:"type"`
 	UUID        string `json:"uuid"`
+}
+
+// StaticContainer has Container information
+type StaticContainer struct {
+	Name string `json:"name"`
+	Tag  string `json:"tag"`
 }
 
 // Platform has platform information
