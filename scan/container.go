@@ -47,6 +47,8 @@ type staticContainer struct {
 func detectContainerImage(c config.ServerInfo) (itsMe bool, containerImage osTypeInterface, err error) {
 	os, pkgs, err := scanImage(c)
 	if err != nil {
+		// use Alpine for setErrs
+		containerImage = newAlpine(c)
 		return false, containerImage, err
 	}
 	p := newContainerImage(c, pkgs)
@@ -92,6 +94,7 @@ func newContainerImage(c config.ServerInfo, pkgs []analyzer.Package) *staticCont
 			Name:    pkg.Name,
 			Release: pkg.Release,
 			Version: version,
+			// TODO : Divide to SrcPkgs
 			//SrcName    string
 			//SrcVersion string
 			//SrcRelease string
