@@ -127,7 +127,7 @@ func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 	itsMe, osType, fatalErr = detectContainerImage(c)
 	if fatalErr != nil {
 		osType.setErrs([]error{
-			fmt.Errorf("Failed to detect container OS: %s", fatalErr)})
+			xerrors.Errorf("Failed to detect OS: %w", fatalErr)})
 		return
 	}
 	if itsMe {
@@ -432,12 +432,13 @@ func detectStaticContainerOSes(timeoutSec int) (actives, inactives []osTypeInter
 		}(s)
 	}
 
-	timeout := time.After(time.Duration(timeoutSec) * time.Minute)
+	timeout := time.After(time.Duration(timeoutSec) * time.Second)
 	for i := 0; i < len(servers); i++ {
 		select {
 		case res := <-osTypesChan:
 			for _, osi := range res {
 				sinfo := osi.getServerInfo()
+
 				if 0 < len(osi.getErrs()) {
 					inactives = append(inactives, osi)
 					util.Log.Errorf("Failed: %s err: %+v", sinfo.ServerName, osi.getErrs())
@@ -480,12 +481,13 @@ func detectStaticContainerOSesOnServer(containerHost osTypeInterface) (oses []os
 	}
 
 	// TODO : Currenty only support docker image
-	for _, containerConf := range containerHostInfo.StaticContainers {
+	for idx, containerConf := range containerHostInfo.StaticContainers {
 		copied := containerHostInfo
+		// change servername for original
+		copied.ServerName = fmt.Sprintf("%s:%s@%s", idx, containerConf.Tag, containerHostInfo.ServerName)
 		copied.StaticContainer = containerConf
 		copied.Type = ""
 		os := detectOS(copied)
-		fmt.Printf(" +++++ %v \n", os)
 		oses = append(oses, os)
 	}
 	return oses
