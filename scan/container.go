@@ -19,6 +19,7 @@ package scan
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/knqyf263/fanal/analyzer"
 	"golang.org/x/xerrors"
@@ -62,13 +63,12 @@ func scanImage(c config.ServerInfo) (os *analyzer.OS, pkgs []analyzer.Package, e
 	ctx := context.Background()
 	domain := c.StaticContainer.Name + ":" + c.StaticContainer.Tag
 	util.Log.Info("Start fetch container... ", domain)
-
 	files, err := analyzer.Analyze(ctx, domain)
-	util.Log.Info("Finish fetch container... ", domain)
 
 	if err != nil {
 		return nil, nil, xerrors.Errorf("Failed scan files %q, %w", domain, err)
 	}
+
 	pkgs, err = analyzer.GetPackages(files)
 	if err != nil {
 		return nil, nil, xerrors.Errorf("Failed scan pkgs %q, %w", domain, err)
@@ -84,11 +84,18 @@ func scanImage(c config.ServerInfo) (os *analyzer.OS, pkgs []analyzer.Package, e
 func newContainerImage(c config.ServerInfo, pkgs []analyzer.Package) *staticContainer {
 	modelPkgs := map[string]models.Package{}
 	for _, pkg := range pkgs {
+		version := pkg.Version
+		if pkg.Epoch != 0 {
+			version = fmt.Sprintf("%d:%s", pkg.Epoch, pkg.Version)
+		}
 		modelPkgs[pkg.Name] = models.Package{
-			Name:       pkg.Name,
-			Release:    pkg.Release,
-			Version:    pkg.Version,
-			Repository: pkg.Type,
+			Name:    pkg.Name,
+			Release: pkg.Release,
+			Version: version,
+			//SrcName    string
+			//SrcVersion string
+			//SrcRelease string
+			//SrcEpoch   int
 		}
 	}
 	d := &staticContainer{
