@@ -64,6 +64,9 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 				r.ScannedCves = models.VulnInfos{}
 			}
 			cpeURIs := []string{}
+
+			// TODO: staticContainersがあればCPE URLをマージする
+			// runningContainer
 			if len(r.Container.ContainerID) == 0 {
 				cpeURIs = c.Conf.Servers[r.ServerName].CpeNames
 				owaspDCXMLPath := c.Conf.Servers[r.ServerName].OwaspDCXMLPath
@@ -504,6 +507,23 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 			// Scanning with the -containers-only flag at scan time, the UUID of Container Host may not be generated,
 			// so check it. Otherwise create a UUID of the Container Host and set it.
 			serverUUID := ""
+			if id, ok := server.UUIDs[r.ServerName]; !ok {
+				serverUUID = uuid.GenerateUUID()
+			} else {
+				matched, err := regexp.MatchString(reUUID, id)
+				if !matched || err != nil {
+					serverUUID = uuid.GenerateUUID()
+				}
+			}
+			if serverUUID != "" {
+				server.UUIDs[r.ServerName] = serverUUID
+			}
+		} else if r.IsStaticContainer() {
+			name = fmt.Sprintf("%s:%s@%s", r.StaticContainer.Name, r.StaticContainer.Tag, r.ServerName)
+			// Scanning with the -containers-only flag at scan time, the UUID of Container Host may not be generated,
+			// so check it. Otherwise create a UUID of the Container Host and set it.
+			serverUUID := ""
+			fmt.Println(r.ServerName, server.UUIDs)
 			if id, ok := server.UUIDs[r.ServerName]; !ok {
 				serverUUID = uuid.GenerateUUID()
 			} else {
