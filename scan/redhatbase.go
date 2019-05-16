@@ -352,7 +352,12 @@ func (o *redhatBase) parseInstalledPackagesLine(line string) (models.Package, er
 }
 
 func (o *redhatBase) scanUpdatablePackages() (models.Packages, error) {
-	cmd := `repoquery --all --pkgnarrow=updates --qf="%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPO}"`
+	isDnf := o.exec(util.PrependProxyEnv(`repoquery --version| grep dnf`), o.sudo.repoquery()).isSuccess()
+	cmd := `repoquery --all --pkgnarrow=updates --qf='%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPO}'`
+	if isDnf {
+		cmd = `repoquery --upgrades --qf='%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPONAME}' -q`
+	}
+
 	for _, repo := range o.getServerInfo().Enablerepo {
 		cmd += " --enablerepo=" + repo
 	}
