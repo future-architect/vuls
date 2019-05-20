@@ -114,8 +114,7 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 					wpVinfos = append(wpVinfos, v)
 					util.Log.Infof("[match] %s installed: %s, fixedIn: %s", pkg.Name, pkg.Version, fixstat.FixedIn)
 				} else {
-					//TODO Debugf
-					util.Log.Infof("[miss] %s installed: %s, fixedIn: %s", pkg.Name, pkg.Version, fixstat.FixedIn)
+					util.Log.Debugf("[miss] %s installed: %s, fixedIn: %s", pkg.Name, pkg.Version, fixstat.FixedIn)
 				}
 			}
 		}

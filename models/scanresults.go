@@ -185,6 +185,7 @@ func (r ScanResult) FilterUnfixed() ScanResult {
 		return r
 	}
 	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
+		// Report cves detected by CPE because Vuls can't know 'fixed' or 'unfixed'
 		if len(v.CpeURIs) != 0 {
 			return true
 		}
