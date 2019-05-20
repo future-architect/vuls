@@ -115,7 +115,7 @@ func (v VulnInfos) FormatFixedStatus(packs Packages) string {
 			continue
 		}
 		total++
-		if vInfo.PatchStatus(packs) == "Fixed" {
+		if vInfo.PatchStatus(packs) == "fixed" {
 			fixed++
 		}
 	}
