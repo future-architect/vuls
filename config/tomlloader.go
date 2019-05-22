@@ -69,14 +69,14 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		}
 
 		s := ServerInfo{ServerName: serverName}
-		s.StaticContainers = make(map[string]StaticContainerConf)
+		s.Images = make(map[string]Image)
 
 		// staticContainers are able to set any server type
-		for name, staticContainer := range v.StaticContainers {
+		for name, staticContainer := range v.Images {
 			if err := IsValidStaticContainerConf(staticContainer); err != nil {
 				return err
 			}
-			s.StaticContainers[name] = staticContainer
+			s.Images[name] = staticContainer
 		}
 
 		if v.Type != ServerTypePseudo {
@@ -312,7 +312,7 @@ func toCpeURI(cpename string) (string, error) {
 }
 
 // IsValidStaticContainerConf checks a container configuration
-func IsValidStaticContainerConf(c StaticContainerConf) error {
+func IsValidStaticContainerConf(c Image) error {
 	if c.Name == "" {
 		return xerrors.New("Invalid arguments : set staticContainer name")
 	}

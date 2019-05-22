@@ -519,7 +519,7 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 				server.UUIDs[r.ServerName] = serverUUID
 			}
 		} else if r.IsStaticContainer() {
-			name = fmt.Sprintf("%s:%s@%s", r.StaticContainer.Name, r.StaticContainer.Tag, r.ServerName)
+			name = fmt.Sprintf("%s:%s@%s", r.Image.Name, r.Image.Tag, r.ServerName)
 			// Scanning with the -containers-only flag at scan time, the UUID of Container Host may not be generated,
 			// so check it. Otherwise create a UUID of the Container Host and set it.
 			serverUUID := ""
