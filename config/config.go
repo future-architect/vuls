@@ -26,13 +26,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/knqyf263/fanal/types"
-
 	syslog "github.com/RackSec/srslog"
-	"golang.org/x/xerrors"
-
 	valid "github.com/asaskevich/govalidator"
+	"github.com/knqyf263/fanal/types"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/xerrors"
 )
 
 // Version of Vuls

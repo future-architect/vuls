@@ -19,6 +19,9 @@ REVISION := $(shell git rev-parse --short HEAD)
 BUILDTIME := $(shell date "+%Y%m%d_%H%M%S")
 LDFLAGS := -X 'github.com/future-architect/vuls/config.Version=$(VERSION)' \
     -X 'github.com/future-architect/vuls/config.Revision=build-$(BUILDTIME)_$(REVISION)'
+GO := GO111MODULE=on go
+GO_OFF := GO111MODULE=off go
+
 
 all: build
 
@@ -33,12 +36,11 @@ install: main.go dep pretest
 
 
 lint:
-	@ go get -v golang.org/x/lint/golint
+	$(GO_OFF) get -u golang.org/x/lint/golint
 	golint $(PKGS)
 
 vet:
-	#  @-go get -v golang.org/x/tools/cmd/vet
-	go vet ./... || exit;
+	echo $(PKGS) | xargs env $(GO) vet || exit;
 
 fmt:
 	gofmt -s -w $(SRCS)
@@ -63,5 +65,6 @@ cov:
 	gocov test | gocov report
 
 clean:
+	echo $(PKGS) | xargs go clean || exit;
 	echo $(PKGS) | xargs go clean || exit;
 
