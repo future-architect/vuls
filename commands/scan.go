@@ -96,7 +96,10 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		"Use SSH options specified in ssh_config preferentially")
 
 	f.BoolVar(&c.Conf.ContainersOnly, "containers-only", false,
-		"Scan containers only. Default: Scan both of hosts and containers")
+		"Scan running containers only. Default: Scan both of hosts and running containers")
+
+	f.BoolVar(&c.Conf.ImagesOnly, "images-only", false,
+		"Scan container images only. Default: Scan both of hosts and images")
 
 	f.BoolVar(&c.Conf.SkipBroken, "skip-broken", false,
 		"[For CentOS] yum update changelog with --skip-broken option")

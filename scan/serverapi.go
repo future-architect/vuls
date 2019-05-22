@@ -126,8 +126,9 @@ func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 
 	itsMe, osType, fatalErr = detectContainerImage(c)
 	if fatalErr != nil {
-		osType.setErrs([]error{
-			xerrors.Errorf("Failed to detect OS: %w", fatalErr)})
+		osType.setErrs(
+			[]error{xerrors.Errorf("Failed to detect OS: %w", fatalErr)},
+		)
 		return
 	}
 	if itsMe {
@@ -193,24 +194,56 @@ func PrintSSHableServerNames() bool {
 	return true
 }
 
+func needScans() (needBaseServer, scanContainer, scanImage bool) {
+	scanContainer = true
+	scanImage = true
+	if !config.Conf.ContainersOnly && !config.Conf.ImagesOnly {
+		needBaseServer = true
+	}
+
+	if config.Conf.ImagesOnly && !config.Conf.ContainersOnly {
+		scanContainer = false
+	}
+
+	if config.Conf.ContainersOnly && !config.Conf.ImagesOnly {
+		scanImage = false
+	}
+	return needBaseServer, scanContainer, scanImage
+}
+
 // InitServers detect the kind of OS distribution of target servers
 func InitServers(timeoutSec int) error {
+	needBaseServers, scanContainer, scanImage := needScans()
+
+	// use global servers, errServers when scan containers and images
 	servers, errServers = detectServerOSes(timeoutSec)
-	containerServers, containerErrServers := detectStaticContainerOSes(timeoutSec)
-	servers = append(servers, containerServers...)
-	errServers = append(errServers, containerErrServers...)
+	if len(servers) == 0 {
+		return xerrors.New("No scannable base servers")
+	}
+
+	// scan additional servers
+	var actives, inactives []osTypeInterface
+	if scanImage {
+		oks, errs := detectStaticContainerOSes(timeoutSec)
+		actives = append(actives, oks...)
+		inactives = append(inactives, errs...)
+	}
+	if scanContainer {
+		oks, errs := detectContainerOSes(timeoutSec)
+		actives = append(actives, oks...)
+		inactives = append(inactives, errs...)
+	}
+
+	if needBaseServers {
+		servers = append(servers, actives...)
+		errServers = append(errServers, inactives...)
+	} else {
+		servers = actives
+		errServers = inactives
+	}
 
 	if len(servers) == 0 {
 		return xerrors.New("No scannable servers")
-	}
-
-	actives, inactives := detectContainerOSes(timeoutSec)
-	if config.Conf.ContainersOnly {
-		servers = actives
-		errServers = inactives
-	} else {
-		servers = append(servers, actives...)
-		errServers = append(errServers, inactives...)
 	}
 	return nil
 }
@@ -438,7 +471,6 @@ func detectStaticContainerOSes(timeoutSec int) (actives, inactives []osTypeInter
 		case res := <-osTypesChan:
 			for _, osi := range res {
 				sinfo := osi.getServerInfo()
-
 				if 0 < len(osi.getErrs()) {
 					inactives = append(inactives, osi)
 					util.Log.Errorf("Failed: %s err: %+v", sinfo.ServerName, osi.getErrs())
@@ -446,7 +478,7 @@ func detectStaticContainerOSes(timeoutSec int) (actives, inactives []osTypeInter
 				}
 				actives = append(actives, osi)
 				util.Log.Infof("Detected: %s@%s: %s",
-					sinfo.StaticContainer.Name, sinfo.ServerName, osi.getDistro())
+					sinfo.Image.Name, sinfo.ServerName, osi.getDistro())
 			}
 		case <-timeout:
 			msg := "Timed out while detecting static containers"
@@ -476,16 +508,16 @@ func detectStaticContainerOSes(timeoutSec int) (actives, inactives []osTypeInter
 
 func detectStaticContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeInterface) {
 	containerHostInfo := containerHost.getServerInfo()
-	if len(containerHostInfo.StaticContainers) == 0 {
+	if len(containerHostInfo.Images) == 0 {
 		return
 	}
 
 	// TODO : Currently only support docker image
-	for idx, containerConf := range containerHostInfo.StaticContainers {
+	for idx, containerConf := range containerHostInfo.Images {
 		copied := containerHostInfo
 		// change servername for original
 		copied.ServerName = fmt.Sprintf("%s:%s@%s", idx, containerConf.Tag, containerHostInfo.ServerName)
-		copied.StaticContainer = containerConf
+		copied.Image = containerConf
 		copied.Type = ""
 		os := detectOS(copied)
 		oses = append(oses, os)
