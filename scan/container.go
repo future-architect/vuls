@@ -58,12 +58,12 @@ func detectContainerImage(c config.ServerInfo) (itsMe bool, containerImage osTyp
 
 // scanImage returns os, packages on image layers
 func scanImage(c config.ServerInfo) (os *analyzer.OS, pkgs []analyzer.Package, err error) {
-	if err = config.IsValidStaticContainerConf(c.StaticContainer); err != nil {
+	if err = config.IsValidStaticContainerConf(c.Image); err != nil {
 		return nil, nil, err
 	}
 
 	ctx := context.Background()
-	domain := c.StaticContainer.Name + ":" + c.StaticContainer.Tag
+	domain := c.Image.Name + ":" + c.Image.Tag
 	util.Log.Info("Start fetch container... ", domain)
 	files, err := analyzer.Analyze(ctx, domain)
 

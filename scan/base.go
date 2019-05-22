@@ -385,9 +385,9 @@ func (l *base) convertToModel() models.ScanResult {
 		Type:        ctype,
 	}
 
-	staticContainer := models.StaticContainer{
-		Name: l.ServerInfo.StaticContainer.Name,
-		Tag:  l.ServerInfo.StaticContainer.Tag,
+	staticContainer := models.Image{
+		Name: l.ServerInfo.Image.Name,
+		Tag:  l.ServerInfo.Image.Tag,
 	}
 
 	errs := []string{}
@@ -410,7 +410,7 @@ func (l *base) convertToModel() models.ScanResult {
 		Family:            l.Distro.Family,
 		Release:           l.Distro.Release,
 		Container:         container,
-		StaticContainer:   staticContainer,
+		Image:             staticContainer,
 		Platform:          l.Platform,
 		IPv4Addrs:         l.ServerInfo.IPv4Addrs,
 		IPv6Addrs:         l.ServerInfo.IPv6Addrs,

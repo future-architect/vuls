@@ -1,6 +1,4 @@
 .PHONY: \
-	dep \
-	depup \
 	build \
 	install \
 	all \
@@ -22,15 +20,7 @@ BUILDTIME := $(shell date "+%Y%m%d_%H%M%S")
 LDFLAGS := -X 'github.com/future-architect/vuls/config.Version=$(VERSION)' \
     -X 'github.com/future-architect/vuls/config.Revision=build-$(BUILDTIME)_$(REVISION)'
 
-all: dep build
-
-dep:
-	go get -u github.com/golang/dep/...
-	dep ensure -v
-
-depup:
-	go get -u github.com/golang/dep/...
-	dep ensure -update -v
+all: build
 
 build: main.go dep pretest
 	go build -a -ldflags "$(LDFLAGS)" -o vuls $<

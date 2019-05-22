@@ -120,6 +120,7 @@ type Config struct {
 	SSHNative      bool   `json:"sshNative,omitempty"`
 	SSHConfig      bool   `json:"sshConfig,omitempty"`
 	ContainersOnly bool   `json:"containersOnly,omitempty"`
+	ImagesOnly     bool   `json:"imagesOnly,omitempty"`
 	SkipBroken     bool   `json:"skipBroken,omitempty"`
 	CacheDBPath    string `json:"cacheDBPath,omitempty"`
 	Vvv            bool   `json:"vvv,omitempty"`
@@ -1044,28 +1045,28 @@ type Azure struct {
 
 // ServerInfo has SSH Info, additional CPE packages to scan.
 type ServerInfo struct {
-	ServerName             string                         `toml:"-" json:"serverName,omitempty"`
-	User                   string                         `toml:"user,omitempty" json:"user,omitempty"`
-	Host                   string                         `toml:"host,omitempty" json:"host,omitempty"`
-	Port                   string                         `toml:"port,omitempty" json:"port,omitempty"`
-	KeyPath                string                         `toml:"keyPath,omitempty" json:"keyPath,omitempty"`
-	KeyPassword            string                         `json:"-,omitempty" toml:"-"`
-	CpeNames               []string                       `toml:"cpeNames,omitempty" json:"cpeNames,omitempty"`
-	ScanMode               []string                       `toml:"scanMode,omitempty" json:"scanMode,omitempty"`
-	DependencyCheckXMLPath string                         `toml:"dependencyCheckXMLPath,omitempty" json:"-"` // TODO Deprecated remove in near future
-	OwaspDCXMLPath         string                         `toml:"owaspDCXMLPath,omitempty" json:"owaspDCXMLPath,omitempty"`
-	ContainersIncluded     []string                       `toml:"containersIncluded,omitempty" json:"containersIncluded,omitempty"`
-	ContainersExcluded     []string                       `toml:"containersExcluded,omitempty" json:"containersExcluded,omitempty"`
-	ContainerType          string                         `toml:"containerType,omitempty" json:"containerType,omitempty"`
-	Containers             map[string]ContainerSetting    `toml:"containers" json:"containers,omitempty"`
-	IgnoreCves             []string                       `toml:"ignoreCves,omitempty" json:"ignoreCves,omitempty"`
-	IgnorePkgsRegexp       []string                       `toml:"ignorePkgsRegexp,omitempty" json:"ignorePkgsRegexp,omitempty"`
-	GitHubRepos            map[string]GitHubConf          `toml:"githubs" json:"githubs,omitempty"` // key: owner/repo
-	StaticContainers       map[string]StaticContainerConf `toml:"staticContainers" json:"staticContainers,omitempty"`
-	UUIDs                  map[string]string              `toml:"uuids,omitempty" json:"uuids,omitempty"`
-	Memo                   string                         `toml:"memo,omitempty" json:"memo,omitempty"`
-	Enablerepo             []string                       `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, RHEL, Amazon
-	Optional               map[string]interface{}         `toml:"optional,omitempty" json:"optional,omitempty"`     // Optional key-value set that will be outputted to JSON
+	ServerName             string                      `toml:"-" json:"serverName,omitempty"`
+	User                   string                      `toml:"user,omitempty" json:"user,omitempty"`
+	Host                   string                      `toml:"host,omitempty" json:"host,omitempty"`
+	Port                   string                      `toml:"port,omitempty" json:"port,omitempty"`
+	KeyPath                string                      `toml:"keyPath,omitempty" json:"keyPath,omitempty"`
+	KeyPassword            string                      `json:"-,omitempty" toml:"-"`
+	CpeNames               []string                    `toml:"cpeNames,omitempty" json:"cpeNames,omitempty"`
+	ScanMode               []string                    `toml:"scanMode,omitempty" json:"scanMode,omitempty"`
+	DependencyCheckXMLPath string                      `toml:"dependencyCheckXMLPath,omitempty" json:"-"` // TODO Deprecated remove in near future
+	OwaspDCXMLPath         string                      `toml:"owaspDCXMLPath,omitempty" json:"owaspDCXMLPath,omitempty"`
+	ContainersIncluded     []string                    `toml:"containersIncluded,omitempty" json:"containersIncluded,omitempty"`
+	ContainersExcluded     []string                    `toml:"containersExcluded,omitempty" json:"containersExcluded,omitempty"`
+	ContainerType          string                      `toml:"containerType,omitempty" json:"containerType,omitempty"`
+	Containers             map[string]ContainerSetting `toml:"containers" json:"containers,omitempty"`
+	IgnoreCves             []string                    `toml:"ignoreCves,omitempty" json:"ignoreCves,omitempty"`
+	IgnorePkgsRegexp       []string                    `toml:"ignorePkgsRegexp,omitempty" json:"ignorePkgsRegexp,omitempty"`
+	GitHubRepos            map[string]GitHubConf       `toml:"githubs" json:"githubs,omitempty"` // key: owner/repo
+	Images                 map[string]Image            `toml:"images" json:"images,omitempty"`
+	UUIDs                  map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
+	Memo                   string                      `toml:"memo,omitempty" json:"memo,omitempty"`
+	Enablerepo             []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, RHEL, Amazon
+	Optional               map[string]interface{}      `toml:"optional,omitempty" json:"optional,omitempty"`     // Optional key-value set that will be outputted to JSON
 
 	Type string `toml:"type,omitempty" json:"type,omitempty"` // "pseudo" or ""
 
@@ -1075,11 +1076,11 @@ type ServerInfo struct {
 	IPv4Addrs []string `toml:"-" json:"ipv4Addrs,omitempty"`
 	IPv6Addrs []string `toml:"-" json:"ipv6Addrs,omitempty"`
 
-	LogMsgAnsiColor string              `toml:"-" json:"-"` // DebugLog Color
-	Container       Container           `toml:"-" json:"-"`
-	StaticContainer StaticContainerConf `toml:"-" json:"-"`
-	Distro          Distro              `toml:"-" json:"-"`
-	Mode            ScanMode            `toml:"-" json:"-"`
+	LogMsgAnsiColor string    `toml:"-" json:"-"` // DebugLog Color
+	Container       Container `toml:"-" json:"-"`
+	Image           Image     `toml:"-" json:"-"`
+	Distro          Distro    `toml:"-" json:"-"`
+	Mode            ScanMode  `toml:"-" json:"-"`
 }
 
 // ContainerSetting is used for loading container setting in config.toml
@@ -1099,8 +1100,8 @@ type WordPressConf struct {
 	IgnoreInactive bool   `json:"ignoreInactive,omitempty"`
 }
 
-// StaticContainerConf is a scan container image info
-type StaticContainerConf struct {
+// Image is a scan container image info
+type Image struct {
 	Name             string             `json:"name"`
 	Tag              string             `json:"tag"`
 	DockerOption     types.DockerOption `json:"dockerOption,omitempty"`
