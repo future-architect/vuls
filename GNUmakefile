@@ -25,15 +25,14 @@ GO_OFF := GO111MODULE=off go
 
 all: build
 
-build: main.go dep pretest
-	go build -a -ldflags "$(LDFLAGS)" -o vuls $<
+build: main.go pretest
+	$(GO) build -a -ldflags "$(LDFLAGS)" -o vuls $<
 
-b: 	main.go dep pretest
-	go build -ldflags "$(LDFLAGS)" -o vuls $<
+b: 	main.go pretest
+	$(GO) build -ldflags "$(LDFLAGS)" -o vuls $<
 
-install: main.go dep pretest
-	go install -ldflags "$(LDFLAGS)"
-
+install: main.go pretest
+	$(GO) install -ldflags "$(LDFLAGS)"
 
 lint:
 	$(GO_OFF) get -u golang.org/x/lint/golint
@@ -54,7 +53,7 @@ fmtcheck:
 pretest: lint vet fmtcheck
 
 test: 
-	echo $(PKGS) | xargs go test -cover -v || exit;
+	$(GO) test -cover -v ./... || exit;
 
 unused:
 	$(foreach pkg,$(PKGS),unused $(pkg);)
