@@ -1,7 +1,5 @@
 build:
   nodes:
-    my-first-test:
-      - command 'pwd'
   root_path: './'
   resources:
     cpus: 1
