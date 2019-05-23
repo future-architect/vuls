@@ -1,10 +1,12 @@
 build:
   nodes:
-  root_path: './'
+    first-test-step:
+      commands:
+        - pwd
   resources:
     cpus: 1
   environment:
     timezone:             UTC
     variables:
       GO111MODULE: on
-    go:                       "go1.11.4"
+    go: go1.11.4
