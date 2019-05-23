@@ -143,6 +143,5 @@ func (o *staticContainer) parseInstalledPackages(string) (models.Packages, model
 }
 
 func (o *staticContainer) detectPlatform() {
-	o.setPlatform(models.Platform{Name: "staticContainer"})
-	return
+	o.setPlatform(models.Platform{Name: "image"})
 }

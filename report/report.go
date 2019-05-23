@@ -483,6 +483,20 @@ func fillAlerts(r *models.ScanResult) (enCnt int, jaCnt int) {
 
 const reUUID = "[\\da-f]{8}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{12}"
 
+// Scanning with the -containers-only, -images-only flag at scan time, the UUID of Container Host may not be generated,
+// so check it. Otherwise create a UUID of the Container Host and set it.
+func getOrCreateServerUUID(r models.ScanResult, server c.ServerInfo) (serverUUID string) {
+	if id, ok := server.UUIDs[r.ServerName]; !ok {
+		serverUUID = uuid.GenerateUUID()
+	} else {
+		matched, err := regexp.MatchString(reUUID, id)
+		if !matched || err != nil {
+			serverUUID = uuid.GenerateUUID()
+		}
+	}
+	return serverUUID
+}
+
 // EnsureUUIDs generate a new UUID of the scan target server if UUID is not assigned yet.
 // And then set the generated UUID to config.toml and scan results.
 func EnsureUUIDs(configPath string, results models.ScanResults) error {
@@ -503,37 +517,13 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 		name := ""
 		if r.IsContainer() {
 			name = fmt.Sprintf("%s@%s", r.Container.Name, r.ServerName)
-
-			// Scanning with the -containers-only flag at scan time, the UUID of Container Host may not be generated,
-			// so check it. Otherwise create a UUID of the Container Host and set it.
-			serverUUID := ""
-			if id, ok := server.UUIDs[r.ServerName]; !ok {
-				serverUUID = uuid.GenerateUUID()
-			} else {
-				matched, err := regexp.MatchString(reUUID, id)
-				if !matched || err != nil {
-					serverUUID = uuid.GenerateUUID()
-				}
+			if uuid := getOrCreateServerUUID(r, server); uuid != "" {
+				server.UUIDs[r.ServerName] = uuid
 			}
-			if serverUUID != "" {
-				server.UUIDs[r.ServerName] = serverUUID
-			}
-		} else if r.IsStaticContainer() {
+		} else if r.IsImage() {
 			name = fmt.Sprintf("%s:%s@%s", r.Image.Name, r.Image.Tag, r.ServerName)
-			// Scanning with the -containers-only flag at scan time, the UUID of Container Host may not be generated,
-			// so check it. Otherwise create a UUID of the Container Host and set it.
-			serverUUID := ""
-			fmt.Println(r.ServerName, server.UUIDs)
-			if id, ok := server.UUIDs[r.ServerName]; !ok {
-				serverUUID = uuid.GenerateUUID()
-			} else {
-				matched, err := regexp.MatchString(reUUID, id)
-				if !matched || err != nil {
-					serverUUID = uuid.GenerateUUID()
-				}
-			}
-			if serverUUID != "" {
-				server.UUIDs[r.ServerName] = serverUUID
+			if uuid := getOrCreateServerUUID(r, server); uuid != "" {
+				server.UUIDs[r.ServerName] = uuid
 			}
 		} else {
 			name = r.ServerName
