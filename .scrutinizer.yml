@@ -1,5 +1,12 @@
 build:
+  nodes:
+    my-first-test:
+      - command 'pwd'
+  root_path: './'
+  resources:
+    cpus: 1
   environment:
-    go: go1.11.4
+    timezone:             UTC
     variables:
-      GO111MODULE: 'on'
+      GO111MODULE: on
+    go:                       "go1.11.4"
