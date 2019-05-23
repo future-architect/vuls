@@ -285,7 +285,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 				},
 			},
 			affected:    true,
-			notFixedYet: true,
+			notFixedYet: false,
 		},
 		// 4. Ubuntu
 		//   ovalpack.NotFixedYet == false
@@ -371,7 +371,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 				},
 			},
 			affected:    true,
-			notFixedYet: true,
+			notFixedYet: false,
 		},
 		// 7 RedHat
 		{
@@ -450,7 +450,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 				},
 			},
 			affected:    true,
-			notFixedYet: true,
+			notFixedYet: false,
 		},
 		// 10 RedHat
 		{

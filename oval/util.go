@@ -289,18 +289,28 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 			return true, true
 		}
 
+		// Compare between the installed version vs the version in OVAL
 		less, err := lessThan(family, req.versionRelease, ovalPack)
 		if err != nil {
 			util.Log.Debugf("Failed to parse versions: %s, Ver: %#v, OVAL: %#v, DefID: %s",
 				err, req.versionRelease, ovalPack, def.DefinitionID)
 			return false, false
 		}
-
 		if less {
-			if req.isSrcPack {
-				// Unable to judge whether fixed or not fixed of src package(Ubuntu, Debian)
+			// If the version of installed is less than in OVAL
+			switch family {
+			case config.RedHat,
+				config.Amazon,
+				config.SUSEEnterpriseServer,
+				config.Debian,
+				config.Ubuntu:
+				// Use fixed state in OVAL for these distros.
 				return true, false
 			}
+
+			// But CentOS can't judge whether fixed or unfixed.
+			// Because fixed state in RHEL's OVAL is different.
+			// So, it have to be judged version comparison.
 
 			// `offline` or `fast` scan mode can't get a updatable version.
 			// In these mode, the blow field was set empty.
