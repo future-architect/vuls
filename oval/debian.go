@@ -192,64 +192,117 @@ func NewUbuntu() Ubuntu {
 // FillWithOval returns scan result after updating CVE info by OVAL
 func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
 	switch major(r.Release) {
-	case "14", "16":
-		return o.ubuntu1416(driver, r)
+	case "14":
+		kernelNamesInOval := []string{
+			"linux",
+			"linux-aws",
+			"linux-azure",
+			"linux-firmware",
+			"linux-lts-utopic",
+			"linux-lts-vivid",
+			"linux-lts-wily",
+			"linux-lts-xenial",
+		}
+		return o.fillWithOval(driver, r, kernelNamesInOval)
+	case "16":
+		kernelNamesInOval := []string{
+			"linux-image-aws",
+			"linux-image-aws-hwe",
+			"linux-image-azure",
+			"linux-image-extra-virtual",
+			"linux-image-extra-virtual-lts-utopic",
+			"linux-image-extra-virtual-lts-vivid",
+			"linux-image-extra-virtual-lts-wily",
+			"linux-image-extra-virtual-lts-xenial",
+			"linux-image-gcp",
+			"linux-image-generic-lpae",
+			"linux-image-generic-lpae-hwe-16.04",
+			"linux-image-generic-lpae-lts-utopic",
+			"linux-image-generic-lpae-lts-vivid",
+			"linux-image-generic-lpae-lts-wily",
+			"linux-image-generic-lpae-lts-xenial",
+			"linux-image-generic-lts-utopic",
+			"linux-image-generic-lts-vivid",
+			"linux-image-generic-lts-wily",
+			"linux-image-generic-lts-xenial",
+			"linux-image-gke",
+			"linux-image-hwe-generic-trusty",
+			"linux-image-hwe-virtual-trusty",
+			"linux-image-kvm",
+			"linux-image-lowlatency",
+			"linux-image-lowlatency-lts-utopic",
+			"linux-image-lowlatency-lts-vivid",
+			"linux-image-lowlatency-lts-wily",
+		}
+		return o.fillWithOval(driver, r, kernelNamesInOval)
 	case "18":
-		return o.ubuntu18(driver, r)
+		kernelNamesInOval := []string{
+			"linux-image-aws",
+			"linux-image-azure",
+			"linux-image-extra-virtual",
+			"linux-image-gcp",
+			"linux-image-generic-lpae",
+			"linux-image-kvm",
+			"linux-image-lowlatency",
+			"linux-image-oem",
+			"linux-image-oracle",
+			"linux-image-raspi2",
+			"linux-image-snapdragon",
+			"linux-image-virtual",
+		}
+		return o.fillWithOval(driver, r, kernelNamesInOval)
 	}
 	return 0, fmt.Errorf("Ubuntu %s is not support for now", r.Release)
 }
 
-func (o Ubuntu) ubuntu1416(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
-	ovalKernelImageNames := []string{
-		"linux-aws",
-		"linux-azure",
-		"linux-flo",
-		"linux-gcp",
-		"linux-gke",
-		"linux-goldfish",
-		"linux-hwe",
-		"linux-hwe-edge",
-		"linux-kvm",
-		"linux-mako",
-		"linux-raspi2",
-		"linux-snapdragon",
-	}
+func (o Ubuntu) fillWithOval(driver db.DB, r *models.ScanResult, kernelNamesInOval []string) (nCVEs int, err error) {
+	// kernel names in OVAL except for linux-image-generic
 	linuxImage := "linux-image-" + r.RunningKernel.Release
+	runningKernelVersion := ""
+	kernelPkgInOVAL := ""
+	isOVALKernelPkgAdded := true
+	unusedKernels := []models.Package{}
 
-	found := false
 	if r.Container.ContainerID == "" {
-		for _, n := range ovalKernelImageNames {
-			if _, ok := r.Packages[n]; ok {
-				v, ok := r.Packages[linuxImage]
-				if ok {
-					// Set running kernel version
-					p := r.Packages[n]
-					p.Version = v.Version
-					p.NewVersion = v.NewVersion
-					r.Packages[n] = p
-				} else {
-					util.Log.Warnf("Running kernel image %s is not found: %s",
-						linuxImage, r.RunningKernel.Version)
-				}
-				found = true
+		if v, ok := r.Packages[linuxImage]; ok {
+			runningKernelVersion = v.Version
+		}
+		util.Log.Warnf("Unable to detect vulns of running kernel because the version of the runnning kernel is unknown. server: %s",
+			r.ServerName)
+
+		// if runningKernelVersion is "", can't detect the vulns of running Kernel
+
+		for _, n := range kernelNamesInOval {
+			if p, ok := r.Packages[n]; ok {
+				kernelPkgInOVAL = p.Name
 				break
 			}
 		}
 
-		if !found {
-			// linux-generic is described as "linux" in Ubuntu's oval.
-			// Add "linux" and set the version of running kernel to search OVAL.
-			v, ok := r.Packages[linuxImage]
-			if ok {
-				r.Packages["linux"] = models.Package{
-					Name:       "linux",
-					Version:    v.Version,
-					NewVersion: v.NewVersion,
-				}
+		// remove unused kernels from packages to prevent detecting vulns of unused kernel
+		for _, n := range kernelNamesInOval {
+			if v, ok := r.Packages[n]; ok {
+				unusedKernels = append(unusedKernels, v)
+				delete(r.Packages, n)
+			}
+		}
+
+		if kernelPkgInOVAL == "" {
+			if r.Release == "14" {
+				kernelPkgInOVAL = "linux"
+			} else if _, ok := r.Packages["linux-image-generic"]; !ok {
+				util.Log.Warnf("The OVAL name of the running kernel image %s is not found. So vulns of linux-image-generic wll be detected. server: %s",
+					r.RunningKernel.Version, r.ServerName)
+				kernelPkgInOVAL = "linux-image-generic"
 			} else {
-				util.Log.Warnf("%s is not found. Running: %s",
-					linuxImage, r.RunningKernel.Release)
+				isOVALKernelPkgAdded = false
+			}
+		}
+
+		if runningKernelVersion != "" {
+			r.Packages[kernelPkgInOVAL] = models.Package{
+				Name:    kernelPkgInOVAL,
+				Version: runningKernelVersion,
 			}
 		}
 	}
@@ -265,104 +318,21 @@ func (o Ubuntu) ubuntu1416(driver db.DB, r *models.ScanResult) (nCVEs int, err e
 		}
 	}
 
-	if !found {
-		delete(r.Packages, "linux")
+	if isOVALKernelPkgAdded {
+		delete(r.Packages, kernelPkgInOVAL)
+	}
+	for _, p := range unusedKernels {
+		r.Packages[p.Name] = p
 	}
 
 	for _, defPacks := range relatedDefs.entries {
 		// Remove "linux" added above to search for oval
 		// "linux" is not a real package name (key of affected packages in OVAL)
-		if _, ok := defPacks.actuallyAffectedPackNames["linux"]; !found && ok {
-			defPacks.actuallyAffectedPackNames[linuxImage] = true
-			delete(defPacks.actuallyAffectedPackNames, "linux")
+		if nfy, ok := defPacks.actuallyAffectedPackNames[kernelPkgInOVAL]; isOVALKernelPkgAdded && ok {
+			defPacks.actuallyAffectedPackNames[linuxImage] = nfy
+			delete(defPacks.actuallyAffectedPackNames, kernelPkgInOVAL)
 			for i, p := range defPacks.def.AffectedPacks {
-				if p.Name == "linux" {
-					p.Name = linuxImage
-					defPacks.def.AffectedPacks[i] = p
-				}
-			}
-		}
-
-		o.update(r, defPacks)
-	}
-
-	for _, vuln := range r.ScannedCves {
-		if cont, ok := vuln.CveContents[models.Ubuntu]; ok {
-			cont.SourceLink = "http://people.ubuntu.com/~ubuntu-security/cve/" + cont.CveID
-			vuln.CveContents[models.Ubuntu] = cont
-		}
-	}
-	return len(relatedDefs.entries), nil
-}
-
-func (o Ubuntu) ubuntu18(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
-	// kernel names in OVAL except for linux-image-generic
-	ovalKernelImageNames := []string{
-		"linux-image-aws",
-		"linux-image-azure",
-		"linux-image-extra-virtual",
-		"linux-image-gcp",
-		"linux-image-generic-lpae",
-		"linux-image-kvm",
-		"linux-image-lowlatency",
-		"linux-image-oem",
-		"linux-image-oracle",
-		"linux-image-raspi2",
-		"linux-image-snapdragon",
-		"linux-image-virtual",
-	}
-	linuxImage := "linux-image-" + r.RunningKernel.Release
-
-	const linuxImageGeneric = "linux-image-generic"
-	unusedKernels := []models.Package{}
-	found := false
-	if r.Container.ContainerID == "" {
-		if v, ok := r.Packages[linuxImage]; ok {
-			r.Packages[linuxImageGeneric] = models.Package{
-				Name:       linuxImageGeneric,
-				Version:    v.Version,
-				NewVersion: v.NewVersion,
-			}
-			// remove unused kernels from packages
-			for _, n := range ovalKernelImageNames {
-				if v, ok := r.Packages[n]; ok {
-					unusedKernels = append(unusedKernels, v)
-					delete(r.Packages, n)
-				}
-			}
-			found = true
-		} else {
-			util.Log.Warnf("Running kernel image %s is not found in installed Packages. So all vulns for installed kernel wll be detected",
-				r.RunningKernel.Version)
-		}
-	}
-
-	var relatedDefs ovalResult
-	if config.Conf.OvalDict.IsFetchViaHTTP() {
-		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
-			return 0, err
-		}
-	} else {
-		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
-			return 0, err
-		}
-	}
-
-	if found {
-		delete(r.Packages, linuxImageGeneric)
-		for _, p := range unusedKernels {
-			r.Packages[p.Name] = p
-		}
-	}
-
-	for _, defPacks := range relatedDefs.entries {
-		// Remove "linux" added above to search for oval
-		// "linux" is not a real package name (key of affected packages in OVAL)
-		if _, ok := defPacks.actuallyAffectedPackNames[linuxImageGeneric]; !found && ok {
-			defPacks.actuallyAffectedPackNames[linuxImage] = true
-			delete(defPacks.actuallyAffectedPackNames, linuxImageGeneric)
-			for i, p := range defPacks.def.AffectedPacks {
-				if p.Name == linuxImageGeneric {
+				if p.Name == kernelPkgInOVAL {
 					p.Name = linuxImage
 					defPacks.def.AffectedPacks[i] = p
 				}
