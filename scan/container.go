@@ -29,6 +29,7 @@ import (
 	"github.com/future-architect/vuls/util"
 
 	// Register os and package analyzers
+	fanalos "github.com/knqyf263/fanal/analyzer/os"
 	_ "github.com/knqyf263/fanal/analyzer/os/alpine"
 	_ "github.com/knqyf263/fanal/analyzer/os/amazonlinux"
 	_ "github.com/knqyf263/fanal/analyzer/os/debianbase"
@@ -51,6 +52,12 @@ func detectContainerImage(c config.ServerInfo) (itsMe bool, containerImage osTyp
 		containerImage = newAlpine(c)
 		return false, containerImage, err
 	}
+	switch os.Family {
+	case fanalos.OpenSUSELeap, fanalos.OpenSUSETumbleweed, fanalos.OpenSUSE:
+		containerImage = newAlpine(c)
+		return false, containerImage, xerrors.Errorf("Unsupported OS : %s", os.Family)
+	}
+
 	p := newContainerImage(c, pkgs)
 	p.setDistro(os.Family, os.Name)
 	return true, p, nil
@@ -85,6 +92,7 @@ func scanImage(c config.ServerInfo) (os *analyzer.OS, pkgs []analyzer.Package, e
 
 func newContainerImage(c config.ServerInfo, pkgs []analyzer.Package) *staticContainer {
 	modelPkgs := map[string]models.Package{}
+	modelSrcPkgs := map[string]models.SrcPackage{}
 	for _, pkg := range pkgs {
 		version := pkg.Version
 		if pkg.Epoch != 0 {
@@ -94,18 +102,29 @@ func newContainerImage(c config.ServerInfo, pkgs []analyzer.Package) *staticCont
 			Name:    pkg.Name,
 			Release: pkg.Release,
 			Version: version,
-			// TODO : Divide to SrcPkgs
-			//SrcName    string
-			//SrcVersion string
-			//SrcRelease string
-			//SrcEpoch   int
+			Arch:    pkg.Arch,
+		}
+
+		// add SrcPacks
+		if pkg.Name != pkg.SrcName {
+			if pack, ok := modelSrcPkgs[pkg.SrcName]; ok {
+				pack.AddBinaryName(pkg.Name)
+				modelSrcPkgs[pkg.SrcName] = pack
+			} else {
+				modelSrcPkgs[pkg.SrcName] = models.SrcPackage{
+					Name:        pkg.SrcName,
+					Version:     pkg.SrcVersion,
+					BinaryNames: []string{pkg.Name},
+				}
+			}
 		}
 	}
 	d := &staticContainer{
 		base: base{
 			osPackages: osPackages{
-				Packages:  modelPkgs,
-				VulnInfos: models.VulnInfos{},
+				Packages:    modelPkgs,
+				SrcPackages: modelSrcPkgs,
+				VulnInfos:   models.VulnInfos{},
 			},
 		},
 	}

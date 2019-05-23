@@ -18,7 +18,6 @@ require (
 	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/cheggaaa/pb v2.0.6+incompatible // indirect
 	github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc // indirect
-	github.com/coreos/clair v0.0.0-20190430132445-d0bd4c7ab8b1 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/docker/cli v0.0.0-20190124132759-af2647d55b1d // indirect
@@ -48,9 +47,9 @@ require (
 	github.com/jroimartin/gocui v0.4.0
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/k0kubun/pp v3.0.1+incompatible
-	github.com/knqyf263/fanal v0.0.0-20190516002914-a1530cdb9a80
+	github.com/knqyf263/fanal v0.0.0-20190523002721-87ef54b8b37b
 	github.com/knqyf263/go-cpe v0.0.0-20180327054844-659663f6eca2
-	github.com/knqyf263/go-deb-version v0.0.0-20170509080151-9865fe14d09b
+	github.com/knqyf263/go-deb-version v0.0.0-20190517075300-09fca494f03d
 	github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936
 	github.com/knqyf263/gost v0.0.0-20190326022014-39175c0da9e3
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
