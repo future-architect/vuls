@@ -18,6 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package oval
 
 import (
+	"fmt"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -189,6 +191,16 @@ func NewUbuntu() Ubuntu {
 
 // FillWithOval returns scan result after updating CVE info by OVAL
 func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
+	switch major(r.Release) {
+	case "14", "16":
+		return o.ubuntu1416(driver, r)
+	case "18":
+		return o.ubuntu18(driver, r)
+	}
+	return 0, fmt.Errorf("Ubuntu %s is not support for now", r.Release)
+}
+
+func (o Ubuntu) ubuntu1416(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
 	ovalKernelImageNames := []string{
 		"linux-aws",
 		"linux-azure",
@@ -271,6 +283,91 @@ func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 			}
 		}
 
+		o.update(r, defPacks)
+	}
+
+	for _, vuln := range r.ScannedCves {
+		if cont, ok := vuln.CveContents[models.Ubuntu]; ok {
+			cont.SourceLink = "http://people.ubuntu.com/~ubuntu-security/cve/" + cont.CveID
+			vuln.CveContents[models.Ubuntu] = cont
+		}
+	}
+	return len(relatedDefs.entries), nil
+}
+
+func (o Ubuntu) ubuntu18(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
+	// kernel names in OVAL except for linux-image-generic
+	ovalKernelImageNames := []string{
+		"linux-image-aws",
+		"linux-image-azure",
+		"linux-image-extra-virtual",
+		"linux-image-gcp",
+		"linux-image-generic-lpae",
+		"linux-image-kvm",
+		"linux-image-lowlatency",
+		"linux-image-oem",
+		"linux-image-oracle",
+		"linux-image-raspi2",
+		"linux-image-snapdragon",
+		"linux-image-virtual",
+	}
+	linuxImage := "linux-image-" + r.RunningKernel.Release
+
+	const linuxImageGeneric = "linux-image-generic"
+	unusedKernels := []models.Package{}
+	found := false
+	if r.Container.ContainerID == "" {
+		if v, ok := r.Packages[linuxImage]; ok {
+			r.Packages[linuxImageGeneric] = models.Package{
+				Name:       linuxImageGeneric,
+				Version:    v.Version,
+				NewVersion: v.NewVersion,
+			}
+			// remove unused kernels from packages
+			for _, n := range ovalKernelImageNames {
+				if v, ok := r.Packages[n]; ok {
+					unusedKernels = append(unusedKernels, v)
+					delete(r.Packages, n)
+				}
+			}
+			found = true
+		} else {
+			util.Log.Warnf("Running kernel image %s is not found in installed Packages. So all vulns for installed kernel wll be detected",
+				r.RunningKernel.Version)
+		}
+	}
+
+	var relatedDefs ovalResult
+	if config.Conf.OvalDict.IsFetchViaHTTP() {
+		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
+			return 0, err
+		}
+	} else {
+		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
+			return 0, err
+		}
+	}
+
+	if found {
+		delete(r.Packages, linuxImageGeneric)
+		for _, p := range unusedKernels {
+			r.Packages[p.Name] = p
+		}
+	}
+
+	for _, defPacks := range relatedDefs.entries {
+		// Remove "linux" added above to search for oval
+		// "linux" is not a real package name (key of affected packages in OVAL)
+		if _, ok := defPacks.actuallyAffectedPackNames[linuxImageGeneric]; !found && ok {
+			defPacks.actuallyAffectedPackNames[linuxImage] = true
+			delete(defPacks.actuallyAffectedPackNames, linuxImageGeneric)
+			for i, p := range defPacks.def.AffectedPacks {
+				if p.Name == linuxImageGeneric {
+					p.Name = linuxImage
+					defPacks.def.AffectedPacks[i] = p
+				}
+			}
+		}
 		o.update(r, defPacks)
 	}
 

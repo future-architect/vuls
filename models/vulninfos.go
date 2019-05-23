@@ -562,7 +562,7 @@ func (v VulnInfo) AttackVector() string {
 	return ""
 }
 
-// PatchStatus returns attack vector string
+// PatchStatus returns fixed or unfixed string
 func (v VulnInfo) PatchStatus(packs Packages) string {
 	// Vuls don't know patch status of the CPE
 	if len(v.CpeURIs) != 0 {
