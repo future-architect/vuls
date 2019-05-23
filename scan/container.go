@@ -36,7 +36,7 @@ import (
 	_ "github.com/knqyf263/fanal/analyzer/os/redhatbase"
 	_ "github.com/knqyf263/fanal/analyzer/pkg/apk"
 	_ "github.com/knqyf263/fanal/analyzer/pkg/dpkg"
-	_ "github.com/knqyf263/fanal/analyzer/pkg/rpm"
+	_ "github.com/knqyf263/fanal/analyzer/pkg/rpmcmd"
 )
 
 // inherit OsTypeInterface
