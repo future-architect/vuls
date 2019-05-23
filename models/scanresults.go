@@ -440,8 +440,8 @@ func (r ScanResult) IsContainer() bool {
 	return 0 < len(r.Container.ContainerID)
 }
 
-// IsStaticContainer returns whether this ServerInfo is about container
-func (r ScanResult) IsStaticContainer() bool {
+// IsImage returns whether this ServerInfo is about container
+func (r ScanResult) IsImage() bool {
 	return 0 < len(r.Image.Name)
 }
 
