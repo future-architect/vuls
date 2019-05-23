@@ -1,0 +1,3 @@
+build:
+  environment:
+    go: go1.12.5
