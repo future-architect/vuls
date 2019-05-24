@@ -266,11 +266,10 @@ func (o Ubuntu) fillWithOval(driver db.DB, r *models.ScanResult, kernelNamesInOv
 	if r.Container.ContainerID == "" {
 		if v, ok := r.Packages[linuxImage]; ok {
 			runningKernelVersion = v.Version
+		} else {
+			util.Log.Warnf("Unable to detect vulns of running kernel because the version of the runnning kernel is unknown. server: %s",
+				r.ServerName)
 		}
-		util.Log.Warnf("Unable to detect vulns of running kernel because the version of the runnning kernel is unknown. server: %s",
-			r.ServerName)
-
-		// if runningKernelVersion is "", can't detect the vulns of running Kernel
 
 		for _, n := range kernelNamesInOval {
 			if p, ok := r.Packages[n]; ok {
