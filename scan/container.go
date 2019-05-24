@@ -27,9 +27,9 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	fanalos "github.com/knqyf263/fanal/analyzer/os"
 
 	// Register os and package analyzers
-	fanalos "github.com/knqyf263/fanal/analyzer/os"
 	_ "github.com/knqyf263/fanal/analyzer/os/alpine"
 	_ "github.com/knqyf263/fanal/analyzer/os/amazonlinux"
 	_ "github.com/knqyf263/fanal/analyzer/os/debianbase"
