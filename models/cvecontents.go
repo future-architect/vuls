@@ -233,6 +233,8 @@ func NewCveContentType(name string) CveContentType {
 		return Microsoft
 	case "wordpress":
 		return WPVulnDB
+	case "amazon":
+		return Amazon
 	default:
 		return Unknown
 	}
@@ -271,6 +273,9 @@ const (
 
 	// Microsoft is Microsoft
 	Microsoft CveContentType = "microsoft"
+
+	// Amazon is Amazon Linux
+	Amazon CveContentType = "amazon"
 
 	// WPVulnDB is WordPress
 	WPVulnDB CveContentType = "wpvulndb"

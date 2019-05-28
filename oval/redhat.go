@@ -171,10 +171,10 @@ func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *mo
 		}
 
 		sev2, sev3 := "", ""
-		if score2 != 0 {
+		if score2 == 0 {
 			sev2 = severity
 		}
-		if score3 != 0 {
+		if score3 == 0 {
 			sev3 = severity
 		}
 
@@ -272,6 +272,23 @@ func NewOracle() Oracle {
 		RedHatBase{
 			Base{
 				family: config.Oracle,
+			},
+		},
+	}
+}
+
+// Amazon is the interface for RedhatBase OVAL
+type Amazon struct {
+	// Base
+	RedHatBase
+}
+
+// NewAmazon creates OVAL client for Amazon Linux
+func NewAmazon() Amazon {
+	return Amazon{
+		RedHatBase{
+			Base{
+				family: config.Amazon,
 			},
 		},
 	}

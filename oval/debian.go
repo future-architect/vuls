@@ -95,6 +95,7 @@ func (o DebianBase) convertToModel(def *ovalmodels.Definition) *models.CveConten
 		Title:         def.Title,
 		Summary:       def.Description,
 		Cvss2Severity: def.Advisory.Severity,
+		Cvss3Severity: def.Advisory.Severity,
 		References:    refs,
 	}
 }

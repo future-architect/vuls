@@ -284,7 +284,10 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 	case c.Alpine:
 		ovalClient = oval.NewAlpine()
 		ovalFamily = c.Alpine
-	case c.Amazon, c.Raspbian, c.FreeBSD, c.Windows:
+	case c.Amazon:
+		ovalClient = oval.NewAmazon()
+		ovalFamily = c.Amazon
+	case c.Raspbian, c.FreeBSD, c.Windows:
 		return 0, nil
 	case c.ServerTypePseudo:
 		return 0, nil
