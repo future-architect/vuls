@@ -71,12 +71,12 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		s := ServerInfo{ServerName: serverName}
 		s.Images = make(map[string]Image)
 
-		// staticContainers are able to set any server type
-		for name, staticContainer := range v.Images {
-			if err := IsValidStaticContainerConf(staticContainer); err != nil {
+		// image are able to set any server type
+		for name, image := range v.Images {
+			if err := IsValidImage(image); err != nil {
 				return err
 			}
-			s.Images[name] = staticContainer
+			s.Images[name] = image
 		}
 
 		if v.Type != ServerTypePseudo {
@@ -311,13 +311,13 @@ func toCpeURI(cpename string) (string, error) {
 	return "", xerrors.Errorf("Unknow CPE format: %s", cpename)
 }
 
-// IsValidStaticContainerConf checks a container configuration
-func IsValidStaticContainerConf(c Image) error {
+// IsValidImage checks a container configuration
+func IsValidImage(c Image) error {
 	if c.Name == "" {
-		return xerrors.New("Invalid arguments : set staticContainer name")
+		return xerrors.New("Invalid arguments : no image name")
 	}
 	if c.Tag == "" {
-		return xerrors.New("Invalid arguments : set staticContainer tag")
+		return xerrors.New("Invalid arguments : no image tag")
 	}
 	return nil
 }

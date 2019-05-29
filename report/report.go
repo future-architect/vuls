@@ -65,7 +65,6 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			}
 			cpeURIs := []string{}
 
-			// TODO: staticContainersがあればCPE URLをマージする
 			// runningContainer
 			if len(r.Container.ContainerID) == 0 {
 				cpeURIs = c.Conf.Servers[r.ServerName].CpeNames

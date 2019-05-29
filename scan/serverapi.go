@@ -224,7 +224,7 @@ func InitServers(timeoutSec int) error {
 	// scan additional servers
 	var actives, inactives []osTypeInterface
 	if scanImage {
-		oks, errs := detectStaticContainerOSes(timeoutSec)
+		oks, errs := detectImageOSes(timeoutSec)
 		actives = append(actives, oks...)
 		inactives = append(inactives, errs...)
 	}
@@ -449,7 +449,7 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 	return oses
 }
 
-func detectStaticContainerOSes(timeoutSec int) (actives, inactives []osTypeInterface) {
+func detectImageOSes(timeoutSec int) (actives, inactives []osTypeInterface) {
 	util.Log.Info("Detecting OS of static containers... ")
 	osTypesChan := make(chan []osTypeInterface, len(servers))
 	defer close(osTypesChan)
@@ -461,7 +461,7 @@ func detectStaticContainerOSes(timeoutSec int) (actives, inactives []osTypeInter
 						p, s.getServerInfo().GetServerName())
 				}
 			}()
-			osTypesChan <- detectStaticContainerOSesOnServer(s)
+			osTypesChan <- detectImageOSesOnServer(s)
 		}(s)
 	}
 
@@ -506,7 +506,7 @@ func detectStaticContainerOSes(timeoutSec int) (actives, inactives []osTypeInter
 	return
 }
 
-func detectStaticContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeInterface) {
+func detectImageOSesOnServer(containerHost osTypeInterface) (oses []osTypeInterface) {
 	containerHostInfo := containerHost.getServerInfo()
 	if len(containerHostInfo.Images) == 0 {
 		return
