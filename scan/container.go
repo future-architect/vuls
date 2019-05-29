@@ -20,6 +20,7 @@ package scan
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/knqyf263/fanal/analyzer"
 	"golang.org/x/xerrors"
@@ -41,7 +42,7 @@ import (
 )
 
 // inherit OsTypeInterface
-type staticContainer struct {
+type containerImage struct {
 	base
 }
 
@@ -65,14 +66,20 @@ func detectContainerImage(c config.ServerInfo) (itsMe bool, containerImage osTyp
 
 // scanImage returns os, packages on image layers
 func scanImage(c config.ServerInfo) (os *analyzer.OS, pkgs []analyzer.Package, err error) {
-	if err = config.IsValidStaticContainerConf(c.Image); err != nil {
+	if err = config.IsValidImage(c.Image); err != nil {
 		return nil, nil, err
 	}
 
 	ctx := context.Background()
 	domain := c.Image.Name + ":" + c.Image.Tag
 	util.Log.Info("Start fetch container... ", domain)
-	files, err := analyzer.Analyze(ctx, domain)
+
+	// Configure dockerOption
+	dockerOption := c.Image.DockerOption
+	if dockerOption.Timeout == 0 {
+		dockerOption.Timeout = 600 * time.Second
+	}
+	files, err := analyzer.Analyze(ctx, domain, dockerOption)
 
 	if err != nil {
 		return nil, nil, xerrors.Errorf("Failed scan files %q, %w", domain, err)
@@ -90,7 +97,7 @@ func scanImage(c config.ServerInfo) (os *analyzer.OS, pkgs []analyzer.Package, e
 	return &containerOs, pkgs, nil
 }
 
-func newContainerImage(c config.ServerInfo, pkgs []analyzer.Package) *staticContainer {
+func newContainerImage(c config.ServerInfo, pkgs []analyzer.Package) *containerImage {
 	modelPkgs := map[string]models.Package{}
 	modelSrcPkgs := map[string]models.SrcPackage{}
 	for _, pkg := range pkgs {
@@ -119,7 +126,7 @@ func newContainerImage(c config.ServerInfo, pkgs []analyzer.Package) *staticCont
 			}
 		}
 	}
-	d := &staticContainer{
+	d := &containerImage{
 		base: base{
 			osPackages: osPackages{
 				Packages:    modelPkgs,
@@ -133,34 +140,34 @@ func newContainerImage(c config.ServerInfo, pkgs []analyzer.Package) *staticCont
 	return d
 }
 
-func (o *staticContainer) checkScanMode() error {
+func (o *containerImage) checkScanMode() error {
 	return nil
 }
 
-func (o *staticContainer) checkIfSudoNoPasswd() error {
+func (o *containerImage) checkIfSudoNoPasswd() error {
 	return nil
 }
 
-func (o *staticContainer) checkDeps() error {
+func (o *containerImage) checkDeps() error {
 	return nil
 }
 
-func (o *staticContainer) preCure() error {
+func (o *containerImage) preCure() error {
 	return nil
 }
 
-func (o *staticContainer) postScan() error {
+func (o *containerImage) postScan() error {
 	return nil
 }
 
-func (o *staticContainer) scanPackages() error {
+func (o *containerImage) scanPackages() error {
 	return nil
 }
 
-func (o *staticContainer) parseInstalledPackages(string) (models.Packages, models.SrcPackages, error) {
+func (o *containerImage) parseInstalledPackages(string) (models.Packages, models.SrcPackages, error) {
 	return nil, nil, nil
 }
 
-func (o *staticContainer) detectPlatform() {
+func (o *containerImage) detectPlatform() {
 	o.setPlatform(models.Platform{Name: "image"})
 }
