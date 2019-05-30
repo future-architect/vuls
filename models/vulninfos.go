@@ -171,7 +171,7 @@ type VulnInfo struct {
 	AlertDict            AlertDict            `json:"alertDict,omitempty"`
 	CpeURIs              []string             `json:"cpeURIs,omitempty"` // CpeURIs related to this CVE defined in config.toml
 	GitHubSecurityAlerts GitHubSecurityAlerts `json:"gitHubSecurityAlerts,omitempty"`
-	WpPackageFixStats    WpPackageFixStats    `json:"wpPackageFixStats,omitempty"`
+	PackageFixedIns      PackageFixedIns      `json:"packageFixedIns,omitempty"`
 
 	VulnType string `json:"vulnType,omitempty"`
 }
@@ -207,11 +207,11 @@ type GitHubSecurityAlert struct {
 	DismissReason string    `json:"dismissReason"`
 }
 
-// WpPackageFixStats is a list of WpPackageFixStatus
-type WpPackageFixStats []WpPackageFixStatus
+// PackageFixedIns is a list of PackageFixedIn
+type PackageFixedIns []PackageFixedIn
 
 // Names return a slice of names
-func (ws WpPackageFixStats) Names() (names []string) {
+func (ws PackageFixedIns) Names() (names []string) {
 	for _, w := range ws {
 		names = append(names, w.Name)
 	}

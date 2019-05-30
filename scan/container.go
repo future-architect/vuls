@@ -29,6 +29,7 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	fanalos "github.com/knqyf263/fanal/analyzer/os"
+	godeptypes "github.com/knqyf263/go-dep-parser/pkg/types"
 
 	// Register os and package analyzers
 	_ "github.com/knqyf263/fanal/analyzer/os/alpine"
@@ -36,22 +37,30 @@ import (
 	_ "github.com/knqyf263/fanal/analyzer/os/debianbase"
 	_ "github.com/knqyf263/fanal/analyzer/os/opensuse"
 	_ "github.com/knqyf263/fanal/analyzer/os/redhatbase"
+
 	_ "github.com/knqyf263/fanal/analyzer/pkg/apk"
 	_ "github.com/knqyf263/fanal/analyzer/pkg/dpkg"
 	_ "github.com/knqyf263/fanal/analyzer/pkg/rpmcmd"
+
+	_ "github.com/knqyf263/fanal/analyzer/library/bundler"
+	_ "github.com/knqyf263/fanal/analyzer/library/cargo"
+	_ "github.com/knqyf263/fanal/analyzer/library/composer"
+	_ "github.com/knqyf263/fanal/analyzer/library/npm"
+	_ "github.com/knqyf263/fanal/analyzer/library/pipenv"
+	_ "github.com/knqyf263/fanal/analyzer/library/poetry"
+	_ "github.com/knqyf263/fanal/analyzer/library/yarn"
 )
 
 // inherit OsTypeInterface
-type containerImage struct {
+type image struct {
 	base
 }
 
 func detectContainerImage(c config.ServerInfo) (itsMe bool, containerImage osTypeInterface, err error) {
-	os, pkgs, err := scanImage(c)
+	os, pkgs, libs, err := scanImage(c)
 	if err != nil {
 		// use Alpine for setErrs
-		containerImage = newAlpine(c)
-		return false, containerImage, err
+		return false, newAlpine(c), err
 	}
 	switch os.Family {
 	case fanalos.OpenSUSELeap, fanalos.OpenSUSETumbleweed, fanalos.OpenSUSE:
@@ -59,15 +68,29 @@ func detectContainerImage(c config.ServerInfo) (itsMe bool, containerImage osTyp
 		return false, containerImage, xerrors.Errorf("Unsupported OS : %s", os.Family)
 	}
 
-	p := newContainerImage(c, pkgs)
+	libScanners, err := convertLibWithScanner(libs)
+	if err != nil {
+		return false, newAlpine(c), err
+	}
+
+	p := newContainerImage(c, pkgs, libScanners)
 	p.setDistro(os.Family, os.Name)
+	fmt.Println(p)
 	return true, p, nil
 }
 
+func convertLibWithScanner(libs map[analyzer.FilePath][]godeptypes.Library) ([]models.LibraryScanner, error) {
+	scanners := []models.LibraryScanner{}
+	for path, pkgs := range libs {
+		scanners = append(scanners, models.LibraryScanner{Path: string(path), Libs: pkgs})
+	}
+	return scanners, nil
+}
+
 // scanImage returns os, packages on image layers
-func scanImage(c config.ServerInfo) (os *analyzer.OS, pkgs []analyzer.Package, err error) {
+func scanImage(c config.ServerInfo) (os *analyzer.OS, pkgs []analyzer.Package, libs map[analyzer.FilePath][]godeptypes.Library, err error) {
 	if err = config.IsValidImage(c.Image); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	ctx := context.Background()
@@ -82,22 +105,26 @@ func scanImage(c config.ServerInfo) (os *analyzer.OS, pkgs []analyzer.Package, e
 	files, err := analyzer.Analyze(ctx, domain, dockerOption)
 
 	if err != nil {
-		return nil, nil, xerrors.Errorf("Failed scan files %q, %w", domain, err)
-	}
-
-	pkgs, err = analyzer.GetPackages(files)
-	if err != nil {
-		return nil, nil, xerrors.Errorf("Failed scan pkgs %q, %w", domain, err)
+		return nil, nil, nil, xerrors.Errorf("Failed scan files %q, %w", domain, err)
 	}
 
 	containerOs, err := analyzer.GetOS(files)
 	if err != nil {
-		return nil, nil, xerrors.Errorf("Failed scan os %q, %w", domain, err)
+		return nil, nil, nil, xerrors.Errorf("Failed scan os %q, %w", domain, err)
 	}
-	return &containerOs, pkgs, nil
+
+	pkgs, err = analyzer.GetPackages(files)
+	if err != nil {
+		return nil, nil, nil, xerrors.Errorf("Failed scan pkgs %q, %w", domain, err)
+	}
+	libs, err = analyzer.GetLibraries(files)
+	if err != nil {
+		return nil, nil, nil, xerrors.Errorf("Failed scan libs %q, %w", domain, err)
+	}
+	return &containerOs, pkgs, libs, nil
 }
 
-func newContainerImage(c config.ServerInfo, pkgs []analyzer.Package) *containerImage {
+func convertFanalToVulsPkg(pkgs []analyzer.Package) (map[string]models.Package, map[string]models.SrcPackage) {
 	modelPkgs := map[string]models.Package{}
 	modelSrcPkgs := map[string]models.SrcPackage{}
 	for _, pkg := range pkgs {
@@ -126,13 +153,19 @@ func newContainerImage(c config.ServerInfo, pkgs []analyzer.Package) *containerI
 			}
 		}
 	}
-	d := &containerImage{
+	return modelPkgs, modelSrcPkgs
+}
+
+func newContainerImage(c config.ServerInfo, pkgs []analyzer.Package, libs []models.LibraryScanner) *image {
+	modelPkgs, modelSrcPkgs := convertFanalToVulsPkg(pkgs)
+	d := &image{
 		base: base{
 			osPackages: osPackages{
 				Packages:    modelPkgs,
 				SrcPackages: modelSrcPkgs,
 				VulnInfos:   models.VulnInfos{},
 			},
+			LibraryScanners: libs,
 		},
 	}
 	d.log = util.NewCustomLogger(c)
@@ -140,34 +173,34 @@ func newContainerImage(c config.ServerInfo, pkgs []analyzer.Package) *containerI
 	return d
 }
 
-func (o *containerImage) checkScanMode() error {
+func (o *image) checkScanMode() error {
 	return nil
 }
 
-func (o *containerImage) checkIfSudoNoPasswd() error {
+func (o *image) checkIfSudoNoPasswd() error {
 	return nil
 }
 
-func (o *containerImage) checkDeps() error {
+func (o *image) checkDeps() error {
 	return nil
 }
 
-func (o *containerImage) preCure() error {
+func (o *image) preCure() error {
 	return nil
 }
 
-func (o *containerImage) postScan() error {
+func (o *image) postScan() error {
 	return nil
 }
 
-func (o *containerImage) scanPackages() error {
+func (o *image) scanPackages() error {
 	return nil
 }
 
-func (o *containerImage) parseInstalledPackages(string) (models.Packages, models.SrcPackages, error) {
+func (o *image) parseInstalledPackages(string) (models.Packages, models.SrcPackages, error) {
 	return nil, nil, nil
 }
 
-func (o *containerImage) detectPlatform() {
+func (o *image) detectPlatform() {
 	o.setPlatform(models.Platform{Name: "image"})
 }

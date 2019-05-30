@@ -233,7 +233,7 @@ func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 			candidate = append(candidate, "?")
 		}
 
-		for _, wp := range vinfo.WpPackageFixStats {
+		for _, wp := range vinfo.PackageFixedIns {
 			if p, ok := r.WordPressPackages.Find(wp.Name); ok {
 				installed = append(installed, fmt.Sprintf("%s-%s", wp.Name, p.Version))
 				candidate = append(candidate, wp.FixedIn)

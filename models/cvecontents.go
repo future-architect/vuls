@@ -19,6 +19,8 @@ package models
 
 import (
 	"time"
+
+	"github.com/knqyf263/trivy/pkg/vulnsrc/vulnerability"
 )
 
 // CveContents has CveContent
@@ -226,7 +228,7 @@ func NewCveContentType(name string) CveContentType {
 		return Oracle
 	case "ubuntu":
 		return Ubuntu
-	case "debian":
+	case "debian", vulnerability.DebianOVAL:
 		return Debian
 	case "redhat_api":
 		return RedHatAPI
@@ -238,6 +240,16 @@ func NewCveContentType(name string) CveContentType {
 		return WPVulnDB
 	case "amazon":
 		return Amazon
+	case vulnerability.NodejsSecurityWg:
+		return NodeSec
+	case vulnerability.PythonSafetyDB:
+		return PythonSec
+	case vulnerability.RustSec:
+		return RustSec
+	case vulnerability.PhpSecurityAdvisories:
+		return PhpSec
+	case vulnerability.RubySec:
+		return RubySec
 	default:
 		return Unknown
 	}
@@ -283,6 +295,21 @@ const (
 	// WPVulnDB is WordPress
 	WPVulnDB CveContentType = "wpvulndb"
 
+	// NodeSec : for JS
+	NodeSec CveContentType = "node"
+
+	// PythonSec : for PHP
+	PythonSec CveContentType = "python"
+
+	// PhpSec : for PHP
+	PhpSec CveContentType = "php"
+
+	// RubySec : for Ruby
+	RubySec CveContentType = "ruby"
+
+	// RustSec : for Rust
+	RustSec CveContentType = "rust"
+
 	// Unknown is Unknown
 	Unknown CveContentType = "unknown"
 )
@@ -303,6 +330,11 @@ var AllCveContetTypes = CveContentTypes{
 	SUSE,
 	DebianSecurityTracker,
 	WPVulnDB,
+	NodeSec,
+	PythonSec,
+	PhpSec,
+	RubySec,
+	RustSec,
 }
 
 // Except returns CveContentTypes except for given args

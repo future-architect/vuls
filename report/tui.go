@@ -638,7 +638,7 @@ func summaryLines(r models.ScanResult) string {
 		pkgNames := vinfo.AffectedPackages.Names()
 		pkgNames = append(pkgNames, vinfo.CpeURIs...)
 		pkgNames = append(pkgNames, vinfo.GitHubSecurityAlerts.Names()...)
-		pkgNames = append(pkgNames, vinfo.WpPackageFixStats.Names()...)
+		pkgNames = append(pkgNames, vinfo.PackageFixedIns.Names()...)
 
 		alert := "  "
 		if vinfo.AlertDict.HasAlert() {
@@ -750,7 +750,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 		}
 
 		r := currentScanResult
-		for _, wp := range vinfo.WpPackageFixStats {
+		for _, wp := range vinfo.PackageFixedIns {
 			if p, ok := r.WordPressPackages.Find(wp.Name); ok {
 				if p.Type == models.WPCore {
 					lines = append(lines, fmt.Sprintf("* %s-%s, FixedIn: %s",

@@ -1063,8 +1063,9 @@ type ServerInfo struct {
 	Images                 map[string]Image            `toml:"images" json:"images,omitempty"`
 	UUIDs                  map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
 	Memo                   string                      `toml:"memo,omitempty" json:"memo,omitempty"`
-	Enablerepo             []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, RHEL, Amazon
-	Optional               map[string]interface{}      `toml:"optional,omitempty" json:"optional,omitempty"`     // Optional key-value set that will be outputted to JSON
+	Enablerepo             []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"`         // For CentOS, RHEL, Amazon
+	Optional               map[string]interface{}      `toml:"optional,omitempty" json:"optional,omitempty"`             // Optional key-value set that will be outputted to JSON
+	LibManagerPath         []string                    `toml:"libManagerPath,omitempty" json:"libManagerPath,omitempty"` // ie) path/to/package-lock.json
 
 	Type string `toml:"type,omitempty" json:"type,omitempty"` // "pseudo" or ""
 

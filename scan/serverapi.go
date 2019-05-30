@@ -63,6 +63,7 @@ type osTypeInterface interface {
 	preCure() error
 	postScan() error
 	scanWordPress() error
+	scanLibraries() error
 	scanPackages() error
 	convertToModel() models.ScanResult
 
@@ -723,6 +724,9 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 		}
 		if err = o.scanWordPress(); err != nil {
 			return xerrors.Errorf("Failed to scan WordPress: %w", err)
+		}
+		if err = o.scanLibraries(); err != nil {
+			return xerrors.Errorf("Failed to scan Library: %w", err)
 		}
 		return o.postScan()
 	}, timeoutSec)

@@ -28,6 +28,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/future-architect/vuls/libManager"
+
 	"github.com/BurntSushi/toml"
 	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
@@ -163,7 +165,15 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, integrations ...Integration) error {
 	util.Log.Debugf("need to refresh")
 
-	nCVEs, err := FillWithOval(dbclient.OvalDB, r)
+	nCVEs, err := libManager.FillLibrary(r)
+	if err != nil {
+		return xerrors.Errorf("Failed to fill with Library dependency: %w", err)
+	}
+	util.Log.Infof("%s: %d CVEs are detected with Library",
+		r.FormatServerName(), nCVEs)
+
+	nCVEs, err = FillWithOval(dbclient.OvalDB, r)
+
 	if err != nil {
 		return xerrors.Errorf("Failed to fill with OVAL: %w", err)
 	}
