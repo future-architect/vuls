@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -245,12 +246,14 @@ func extractToVulnInfos(pkgName string, cves []WpCveInfo) (vinfos []models.VulnI
 }
 
 func httpRequest(url, token string) (string, error) {
+	retry := 1
 	util.Log.Debugf("%s", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Token token=%s", token))
+loop:
 	resp, err := new(http.Client).Do(req)
 	if err != nil {
 		return "", err
@@ -260,11 +263,17 @@ func httpRequest(url, token string) (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 && resp.StatusCode != 404 {
+	if resp.StatusCode != 200 && resp.StatusCode != 404 && resp.StatusCode != 429 && (resp.StatusCode == 429 && retry > 3) {
 		return "", xerrors.Errorf("status: %s", resp.Status)
 	} else if resp.StatusCode == 404 {
 		// This package is not in WPVulnDB
 		return "", nil
+	} else if resp.StatusCode == 429 {
+		// 429 Too Many Requests
+		util.Log.Debugf("sleep %d min(s): %s", retry, resp.Status)
+		time.Sleep(time.Duration(retry) * time.Minute)
+		retry++
+		goto loop
 	}
 	return string(body), nil
 }
