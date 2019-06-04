@@ -200,7 +200,8 @@ func (red RedHat) mergePackageStates(v models.VulnInfo, ps []gostmodels.RedhatPa
 		}
 
 		if !(pstate.FixState == "Will not fix" ||
-			pstate.FixState == "Fix deferred") {
+			pstate.FixState == "Fix deferred" ||
+			pstate.FixState == "Affected") {
 			return
 		}
 
@@ -210,7 +211,7 @@ func (red RedHat) mergePackageStates(v models.VulnInfo, ps []gostmodels.RedhatPa
 
 		notFixedYet := false
 		switch pstate.FixState {
-		case "Will not fix", "Fix deferred":
+		case "Will not fix", "Fix deferred", "Affected":
 			notFixedYet = true
 		}
 
