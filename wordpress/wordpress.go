@@ -263,17 +263,17 @@ loop:
 		return "", err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 && resp.StatusCode != 404 && resp.StatusCode != 429 && (resp.StatusCode == 429 && retry > 3) {
-		return "", xerrors.Errorf("status: %s", resp.Status)
+	if resp.StatusCode == 200 {
+		return string(body), nil
 	} else if resp.StatusCode == 404 {
 		// This package is not in WPVulnDB
 		return "", nil
-	} else if resp.StatusCode == 429 {
+	} else if resp.StatusCode == 429 && retry <= 3 {
 		// 429 Too Many Requests
 		util.Log.Debugf("sleep %d min(s): %s", retry, resp.Status)
 		time.Sleep(time.Duration(retry) * time.Minute)
 		retry++
 		goto loop
 	}
-	return string(body), nil
+	return "", err
 }
