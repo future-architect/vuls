@@ -388,7 +388,6 @@ func (l *base) isAwsInstanceID(str string) bool {
 
 func (l *base) convertToModel() models.ScanResult {
 	ctype := l.ServerInfo.ContainerType
-	fmt.Println("convertToModel", l)
 	if l.ServerInfo.Container.ContainerID != "" && ctype == "" {
 		ctype = "docker"
 	}
@@ -508,13 +507,18 @@ func (l *base) parseSystemctlStatus(stdout string) string {
 }
 
 func (l *base) scanLibraries() (err error) {
-
+	// image already detected libraries
 	if len(l.LibraryScanners) != 0 {
 		return nil
 	}
 
+	// library scan for servers need lockfiles
+	if len(l.ServerInfo.Lockfiles) == 0 {
+		return nil
+	}
+
 	libFilemap := extractor.FileMap{}
-	for _, path := range l.ServerInfo.LibManagerPath {
+	for _, path := range l.ServerInfo.Lockfiles {
 		cmd := fmt.Sprintf("cat %s", path)
 		r := exec(l.ServerInfo, cmd, noSudo)
 		if !r.isSuccess() {

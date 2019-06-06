@@ -57,6 +57,10 @@ type image struct {
 }
 
 func detectContainerImage(c config.ServerInfo) (itsMe bool, containerImage osTypeInterface, err error) {
+	if err = config.IsValidImage(c.Image); err != nil {
+		return false, nil, nil
+	}
+
 	os, pkgs, libs, err := scanImage(c)
 	if err != nil {
 		// use Alpine for setErrs
@@ -89,9 +93,6 @@ func convertLibWithScanner(libs map[analyzer.FilePath][]godeptypes.Library) ([]m
 
 // scanImage returns os, packages on image layers
 func scanImage(c config.ServerInfo) (os *analyzer.OS, pkgs []analyzer.Package, libs map[analyzer.FilePath][]godeptypes.Library, err error) {
-	if err = config.IsValidImage(c.Image); err != nil {
-		return nil, nil, nil, err
-	}
 
 	ctx := context.Background()
 	domain := c.Image.Name + ":" + c.Image.Tag
