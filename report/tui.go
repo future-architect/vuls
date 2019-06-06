@@ -750,18 +750,34 @@ func setChangelogLayout(g *gocui.Gui) error {
 		}
 
 		r := currentScanResult
-		for _, wp := range vinfo.PackageFixedIns {
-			if p, ok := r.WordPressPackages.Find(wp.Name); ok {
-				if p.Type == models.WPCore {
-					lines = append(lines, fmt.Sprintf("* %s-%s, FixedIn: %s",
-						wp.Name, p.Version, wp.FixedIn))
+		// check wordpress fixedin
+		if r.WordPressPackages != nil {
+			for _, wp := range vinfo.PackageFixedIns {
+				if p, ok := r.WordPressPackages.Find(wp.Name); ok {
+					if p.Type == models.WPCore {
+						lines = append(lines, fmt.Sprintf("* %s-%s, FixedIn: %s",
+							wp.Name, p.Version, wp.FixedIn))
+					} else {
+						lines = append(lines,
+							fmt.Sprintf("* %s-%s, Update: %s, FixedIn: %s, %s",
+								wp.Name, p.Version, p.Update, wp.FixedIn, p.Status))
+					}
 				} else {
-					lines = append(lines,
-						fmt.Sprintf("* %s-%s, Update: %s, FixedIn: %s, %s",
-							wp.Name, p.Version, p.Update, wp.FixedIn, p.Status))
+					lines = append(lines, fmt.Sprintf("* %s", wp.Name))
 				}
-			} else {
-				lines = append(lines, fmt.Sprintf("* %s", wp.Name))
+			}
+		}
+
+		// check library fixedin
+		for _, scanner := range r.LibraryScanners {
+			for _, fixedin := range vinfo.PackageFixedIns {
+				for _, lib := range scanner.Libs {
+					if lib.Name == fixedin.Name {
+						lines = append(lines, fmt.Sprintf("* %s-%s, FixedIn: %s",
+							lib.Name, lib.Version, fixedin.FixedIn))
+						continue
+					}
+				}
 			}
 		}
 
