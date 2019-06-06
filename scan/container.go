@@ -31,17 +31,7 @@ import (
 	fanalos "github.com/knqyf263/fanal/analyzer/os"
 	godeptypes "github.com/knqyf263/go-dep-parser/pkg/types"
 
-	// Register os and package analyzers
-	_ "github.com/knqyf263/fanal/analyzer/os/alpine"
-	_ "github.com/knqyf263/fanal/analyzer/os/amazonlinux"
-	_ "github.com/knqyf263/fanal/analyzer/os/debianbase"
-	_ "github.com/knqyf263/fanal/analyzer/os/opensuse"
-	_ "github.com/knqyf263/fanal/analyzer/os/redhatbase"
-
-	_ "github.com/knqyf263/fanal/analyzer/pkg/apk"
-	_ "github.com/knqyf263/fanal/analyzer/pkg/dpkg"
-	_ "github.com/knqyf263/fanal/analyzer/pkg/rpmcmd"
-
+	// Register library analyzers
 	_ "github.com/knqyf263/fanal/analyzer/library/bundler"
 	_ "github.com/knqyf263/fanal/analyzer/library/cargo"
 	_ "github.com/knqyf263/fanal/analyzer/library/composer"
@@ -49,6 +39,18 @@ import (
 	_ "github.com/knqyf263/fanal/analyzer/library/pipenv"
 	_ "github.com/knqyf263/fanal/analyzer/library/poetry"
 	_ "github.com/knqyf263/fanal/analyzer/library/yarn"
+
+	// Register os analyzers
+	_ "github.com/knqyf263/fanal/analyzer/os/alpine"
+	_ "github.com/knqyf263/fanal/analyzer/os/amazonlinux"
+	_ "github.com/knqyf263/fanal/analyzer/os/debianbase"
+	_ "github.com/knqyf263/fanal/analyzer/os/opensuse"
+	_ "github.com/knqyf263/fanal/analyzer/os/redhatbase"
+
+	// Register package analyzers
+	_ "github.com/knqyf263/fanal/analyzer/pkg/apk"
+	_ "github.com/knqyf263/fanal/analyzer/pkg/dpkg"
+	_ "github.com/knqyf263/fanal/analyzer/pkg/rpmcmd"
 )
 
 // inherit OsTypeInterface
@@ -79,7 +81,6 @@ func detectContainerImage(c config.ServerInfo) (itsMe bool, containerImage osTyp
 
 	p := newContainerImage(c, pkgs, libScanners)
 	p.setDistro(os.Family, os.Name)
-	fmt.Println(p)
 	return true, p, nil
 }
 

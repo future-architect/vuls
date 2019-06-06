@@ -3,26 +3,30 @@ package libManager
 import (
 	"path/filepath"
 
+	"github.com/knqyf263/trivy/pkg/db"
+	"github.com/knqyf263/trivy/pkg/log"
+
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	godeptypes "github.com/knqyf263/go-dep-parser/pkg/types"
 	"github.com/knqyf263/go-version"
-	"github.com/knqyf263/trivy/pkg/db"
-	"github.com/knqyf263/trivy/pkg/log"
 	"github.com/knqyf263/trivy/pkg/scanner/library"
 	"github.com/knqyf263/trivy/pkg/vulnsrc/vulnerability"
 
 	"golang.org/x/xerrors"
 )
 
-func init() {
-	log.InitLogger(false)
-	if err := db.Init(); err != nil {
-		util.Log.Debugf("library db cant initialized")
-	}
-}
-
+// FillLibrary fills LibraryScanner informations
 func FillLibrary(r *models.ScanResult) (totalCnt int, err error) {
+
+	// initialize trivy's logger and db
+	err = log.InitLogger(false)
+	if err != nil {
+		return 0, err
+	}
+	if err := db.Init(); err != nil {
+		return 0, err
+	}
 
 	for _, lib := range r.LibraryScanners {
 		vinfos, err := scan(lib.Path, lib.Libs)
@@ -101,8 +105,8 @@ func getCveContents(details map[string]vulnerability.Vulnerability) (contents ma
 	contents = map[models.CveContentType]models.CveContent{}
 	for source, detail := range details {
 		refs := []models.Reference{}
-		for _, refUrl := range detail.References {
-			refs = append(refs, models.Reference{Source: refUrl})
+		for _, refURL := range detail.References {
+			refs = append(refs, models.Reference{Source: refURL, Link: refURL})
 		}
 
 		content := models.CveContent{
@@ -114,13 +118,13 @@ func getCveContents(details map[string]vulnerability.Vulnerability) (contents ma
 			Cvss3Severity: string(detail.SeverityV3),
 			Cvss2Score:    detail.CvssScore,
 			Cvss2Severity: string(detail.Severity),
+			References:    refs,
 
 			//SourceLink    string            `json:"sourceLink"`
 			//Cvss2Vector   string            `json:"cvss2Vector"`
 			//Cvss3Vector   string            `json:"cvss3Vector"`
 			//Cvss3Severity string            `json:"cvss3Severity"`
 			//Cpes          []Cpe             `json:"cpes,omitempty"`
-			//References    References        `json:"references,omitempty"`
 			//CweIDs        []string          `json:"cweIDs,omitempty"`
 			//Published     time.Time         `json:"published"`
 			//LastModified  time.Time         `json:"lastModified"`

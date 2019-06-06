@@ -31,7 +31,7 @@ func TestScan(t *testing.T) {
 	for _, v := range tests {
 		actual, err := scan(v.path, v.pkgs)
 		if err != nil {
-			t.Errorf("error occured")
+			t.Errorf("error occurred")
 		}
 		if !reflect.DeepEqual(v.expect, actual) {
 			t.Errorf("\nexpected: %v\n  actual: %v\n", v.expect, actual)
