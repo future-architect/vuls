@@ -133,6 +133,9 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 			vinfo.CveContents = cveContents
 		}
 
+		vinfo.DistroAdvisories.AppendIfMissing(
+			o.convertToDistroAdvisory(&defPacks.def))
+
 		// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
 		for _, pack := range vinfo.AffectedPackages {
 			if nfy, ok := defPacks.actuallyAffectedPackNames[pack.Name]; !ok {
@@ -146,6 +149,21 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 		r.ScannedCves[cve.CveID] = vinfo
 	}
 	return
+}
+
+func (o RedHatBase) convertToDistroAdvisory(def *ovalmodels.Definition) *models.DistroAdvisory {
+	advisoryID := def.Title
+	if o.family == config.RedHat || o.family == config.CentOS {
+		ss := strings.Fields(def.Title)
+		advisoryID = strings.TrimSuffix(ss[0], ":")
+	}
+	return &models.DistroAdvisory{
+		AdvisoryID:  advisoryID,
+		Severity:    def.Advisory.Severity,
+		Issued:      def.Advisory.Issued,
+		Updated:     def.Advisory.Updated,
+		Description: def.Description,
+	}
 }
 
 func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *models.CveContent {

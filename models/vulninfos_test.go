@@ -1034,3 +1034,112 @@ func TestSortByConfiden(t *testing.T) {
 		}
 	}
 }
+
+func TestDistroAdvisories_AppendIfMissing(t *testing.T) {
+	type args struct {
+		adv *DistroAdvisory
+	}
+	tests := []struct {
+		name  string
+		advs  DistroAdvisories
+		args  args
+		want  bool
+		after DistroAdvisories
+	}{
+		{
+			name: "duplicate no append",
+			advs: DistroAdvisories{
+				DistroAdvisory{
+					AdvisoryID: "ALASs-2019-1214",
+				}},
+			args: args{
+				adv: &DistroAdvisory{
+					AdvisoryID: "ALASs-2019-1214",
+				},
+			},
+			want: false,
+			after: DistroAdvisories{
+				DistroAdvisory{
+					AdvisoryID: "ALASs-2019-1214",
+				}},
+		},
+		{
+			name: "append",
+			advs: DistroAdvisories{
+				DistroAdvisory{
+					AdvisoryID: "ALASs-2019-1214",
+				}},
+			args: args{
+				adv: &DistroAdvisory{
+					AdvisoryID: "ALASs-2019-1215",
+				},
+			},
+			want: true,
+			after: DistroAdvisories{
+				{
+					AdvisoryID: "ALASs-2019-1214",
+				},
+				{
+					AdvisoryID: "ALASs-2019-1215",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.advs.AppendIfMissing(tt.args.adv); got != tt.want {
+				t.Errorf("DistroAdvisories.AppendIfMissing() = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(tt.advs, tt.after) {
+				t.Errorf("\nexpected: %v\n  actual: %v\n", tt.after, tt.advs)
+			}
+		})
+	}
+}
+
+func TestVulnInfo_VendorLinks(t *testing.T) {
+	type fields struct {
+		CveID                string
+		Confidences          Confidences
+		AffectedPackages     PackageFixStatuses
+		DistroAdvisories     DistroAdvisories
+		CveContents          CveContents
+		Exploits             []Exploit
+		AlertDict            AlertDict
+		CpeURIs              []string
+		GitHubSecurityAlerts GitHubSecurityAlerts
+		WpPackageFixStats    WpPackageFixStats
+		VulnType             string
+	}
+	type args struct {
+		family string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   map[string]string
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := VulnInfo{
+				CveID:                tt.fields.CveID,
+				Confidences:          tt.fields.Confidences,
+				AffectedPackages:     tt.fields.AffectedPackages,
+				DistroAdvisories:     tt.fields.DistroAdvisories,
+				CveContents:          tt.fields.CveContents,
+				Exploits:             tt.fields.Exploits,
+				AlertDict:            tt.fields.AlertDict,
+				CpeURIs:              tt.fields.CpeURIs,
+				GitHubSecurityAlerts: tt.fields.GitHubSecurityAlerts,
+				WpPackageFixStats:    tt.fields.WpPackageFixStats,
+				VulnType:             tt.fields.VulnType,
+			}
+			if got := v.VendorLinks(tt.args.family); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("VulnInfo.VendorLinks() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

@@ -10,15 +10,15 @@
   version = "v0.4.12"
 
 [[projects]]
-  digest = "1:9f957886552b6e43a479813209d8b834a62ab49724ace6d7dcf2464e01a9beeb"
+  digest = "1:5d25df7e7ad3abe59af9d38e6a7c28c268e22cefdf453d68bfe8fc5920004a76"
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
     "storage",
     "version",
   ]
   pruneopts = "UT"
-  revision = "77258e94d84ea36012a72c0e0a1e2faa409c6396"
-  version = "v29.0.0"
+  revision = "5cd3deb00b42ed3b9199524cd8f70b8dd8bec2f0"
+  version = "v30.0.0"
 
 [[projects]]
   digest = "1:b88fe174accff6609eee9dc7e4ec9f828cbda83e3646111538dbcc7f762f1a56"
@@ -60,7 +60,7 @@
   version = "v9"
 
 [[projects]]
-  digest = "1:ddcc6132b6b7f6d992b175a3b2631933ce3c870518758c888d1140582211c1e1"
+  digest = "1:14155313f18932280b025613b2c8f40038757a57482e04a5e1bee7ac5700d4b9"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -100,8 +100,8 @@
     "service/sts",
   ]
   pruneopts = "UT"
-  revision = "8943f83bb1e98c94710f767576fe17cc29adb4dd"
-  version = "v1.19.38"
+  revision = "36f1478b1b241bd8ba1e21424b85eeb1f74f2bb4"
+  version = "v1.19.46"
 
 [[projects]]
   digest = "1:0f98f59e9a2f4070d66f0c9c39561f68fcd1dc837b22a852d28d0003aebd1b1e"
@@ -151,12 +151,12 @@
   version = "v3.2.0"
 
 [[projects]]
-  digest = "1:938a2672d6ebbb7f7bc63eee3e4b9464c16ffcf77ec8913d3edbf32b4e3984dd"
+  digest = "1:865079840386857c809b72ce300be7580cb50d3d3129ce11bf9aa6ca2bc1934a"
   name = "github.com/fatih/color"
   packages = ["."]
   pruneopts = "UT"
-  revision = "570b54cabe6b8eb0bc2dfce68d964677d63b5260"
-  version = "v1.5.0"
+  revision = "5b77d2a35fb0ede96d138fc9a99f5c9b6aef11b4"
+  version = "v1.7.0"
 
 [[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
@@ -349,11 +349,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:fd97437fbb6b7dce04132cf06775bd258cce305c44add58eb55ca86c6c325160"
+  digest = "1:01ed62f8f4f574d8aff1d88caee113700a2b44c42351943fa73cc1808f736a50"
   name = "github.com/jinzhu/inflection"
   packages = ["."]
   pruneopts = "UT"
-  revision = "04140366298a54a039076d798123ffa108fff46c"
+  revision = "f5c5f50e6090ae76a29240b61ae2a90dd810112e"
 
 [[projects]]
   digest = "1:bb81097a5b62634f3e9fec1014657855610c82d19b9a40c17612e32651e35dca"
@@ -450,7 +450,7 @@
 
 [[projects]]
   branch = "amazon-oval"
-  digest = "1:7bce3a4793f89669fa72141572425f05ba4783b051a5f1b6dfeec1e7659793cb"
+  digest = "1:e697c2a4895a12a29ee465df48d2996ef952ee5334bc388296faed2ecd6d9b10"
   name = "github.com/kotakanbe/goval-dictionary"
   packages = [
     "config",
@@ -461,7 +461,7 @@
     "util",
   ]
   pruneopts = "UT"
-  revision = "69c1eb91ef1fade704861a03bad1760b0c9e0f98"
+  revision = "1bf9b96bdab2d5c10513ba644597427673d713da"
 
 [[projects]]
   branch = "master"
@@ -504,12 +504,12 @@
   version = "v1.8.1"
 
 [[projects]]
-  digest = "1:7c084e0e780596dd2a7e20d25803909a9a43689c153de953520dfbc0b0e51166"
+  digest = "1:c658e84ad3916da105a761660dcaeb01e63416c8ec7bc62256a9b411a05fcd67"
   name = "github.com/mattn/go-colorable"
   packages = ["."]
   pruneopts = "UT"
-  revision = "8029fb3788e5a4a9c00e415f586a6d033f5d38b3"
-  version = "v0.1.2"
+  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
+  version = "v0.0.9"
 
 [[projects]]
   digest = "1:9b90c7639a41697f3d4ad12d7d67dfacc9a7a4a6e0bbfae4fc72d0da57c28871"
@@ -750,7 +750,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2c6548bce7a4986c697700d747208f41122d6626216e11c38364d29a313aa220"
+  digest = "1:616f478cc557408da913c3b2d87b5c8d21ba353262a1bb19ebc51fcf519f020a"
   name = "golang.org/x/crypto"
   packages = [
     "curve25519",
@@ -764,11 +764,11 @@
     "ssh/terminal",
   ]
   pruneopts = "UT"
-  revision = "22d7a77e9e5f409e934ed268692e56707cd169e5"
+  revision = "f99c8df09eb5bff426315721bfa5f16a99cad32c"
 
 [[projects]]
   branch = "master"
-  digest = "1:95f34339208666d9d0c806c50902ff1b0948c0507f92e19d1b7c380483507784"
+  digest = "1:2e99dfa3436481d6b77b598aeef796b04d090a572b8150c1927af2a9b1ebb334"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -782,7 +782,7 @@
     "trace",
   ]
   pruneopts = "UT"
-  revision = "f3200d17e092c607f615320ecaad13d87ad9a2b3"
+  revision = "461777fb6f67e8cb9d70cda16573678d085a74cf"
 
 [[projects]]
   branch = "master"
@@ -793,7 +793,7 @@
     "internal",
   ]
   pruneopts = "UT"
-  revision = "aaccbc9213b0974828f81aaac109d194880e3014"
+  revision = "0f29369cfe4552d0e4bcddc57cc75f4d7e672a33"
 
 [[projects]]
   branch = "master"
@@ -805,7 +805,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:26f657d5013d13137b239dbb71fd77a52afbf7b92671385ab9a3967ce6694bb4"
+  digest = "1:77cb5c6f7f9a645ebd9cb28853266fffc4c1a9cf39de1e64ddfe28acf1601cc2"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
@@ -813,7 +813,7 @@
     "windows",
   ]
   pruneopts = "UT"
-  revision = "adf421d2caf4ffcf74142ff5fb9ee323b21a819e"
+  revision = "301114b31cced3624480dfb114ca1b495ec69aa5"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -856,8 +856,8 @@
   name = "google.golang.org/api"
   packages = ["support/bundler"]
   pruneopts = "UT"
-  revision = "721295fe20d585ce7e948146f82188429d14da33"
-  version = "v0.5.0"
+  revision = "aac82e61c0c8fe133c297b4b59316b9f481e1f0a"
+  version = "v0.6.0"
 
 [[projects]]
   digest = "1:7e8b9c5ae49011b12ae8473834ac1a7bb8ac029ba201270c723e4c280c9e4855"
@@ -873,8 +873,8 @@
     "urlfetch",
   ]
   pruneopts = "UT"
-  revision = "4c25cacc810c02874000e4f7071286a8e96b2515"
-  version = "v1.6.0"
+  revision = "b2f4a3cf3c67576a2ee09e1fe62656a5086ce880"
+  version = "v1.6.1"
 
 [[projects]]
   branch = "master"
@@ -886,10 +886,10 @@
     "protobuf/field_mask",
   ]
   pruneopts = "UT"
-  revision = "c2c4e71fbf6989c3e46a18d65cb88c288f8a3a55"
+  revision = "eb0b1bdb6ae60fcfc41b8d907b50dfb346112301"
 
 [[projects]]
-  digest = "1:c69a4c19c4f241e6b75ad65c5e7a1c4eec5705ae504624df4eb6fb659c2df46c"
+  digest = "1:e8800ddadd6bce3bc0c5ffd7bc55dbdddc6e750956c10cc10271cade542fccbe"
   name = "google.golang.org/grpc"
   packages = [
     ".",
@@ -926,8 +926,8 @@
     "tap",
   ]
   pruneopts = "UT"
-  revision = "869adfc8d5a43efc0d05780ad109106f457f51e4"
-  version = "v1.21.0"
+  revision = "501c41df7f472c740d0674ff27122f3f48c80ce7"
+  version = "v1.21.1"
 
 [[projects]]
   digest = "1:e626376fab8608a972d47e91b3c1bbbddaecaf1d42b82be6dcc52d10a7557893"
@@ -954,12 +954,12 @@
   version = "v2.0.6"
 
 [[projects]]
-  digest = "1:938a2672d6ebbb7f7bc63eee3e4b9464c16ffcf77ec8913d3edbf32b4e3984dd"
+  digest = "1:865079840386857c809b72ce300be7580cb50d3d3129ce11bf9aa6ca2bc1934a"
   name = "gopkg.in/fatih/color.v1"
   packages = ["."]
   pruneopts = "UT"
-  revision = "570b54cabe6b8eb0bc2dfce68d964677d63b5260"
-  version = "v1.5.0"
+  revision = "5b77d2a35fb0ede96d138fc9a99f5c9b6aef11b4"
+  version = "v1.7.0"
 
 [[projects]]
   digest = "1:c658e84ad3916da105a761660dcaeb01e63416c8ec7bc62256a9b411a05fcd67"
