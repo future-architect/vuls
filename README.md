@@ -129,9 +129,8 @@ Vuls uses multiple vulnerability databases
 [Server mode](https://vuls.io/docs/en/usage-server.html)
 
 - First, start Vuls in server mode and listen as an HTTP server.
-- Start Vuls in server mode and listen as an HTTP server.
 - Next, issue a command on the scan target server to collect software information. Then send the result to Vuls Server via HTTP. You receive the scan results as JSON format.
-- No SSH needed, No Scanner needed. Only issuing Linux commands directory on the scan tareget server.
+- No SSH needed, No Scanner needed. Only issuing Linux commands directory on the scan target server.
 
 ### **Dynamic** Analysis
 
