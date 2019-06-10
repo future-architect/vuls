@@ -68,6 +68,9 @@ func (v CveContents) SourceLinks(lang, myFamily, cveID string) (values []CveCont
 	order := CveContentTypes{Nvd, NvdXML, NewCveContentType(myFamily)}
 	for _, ctype := range order {
 		if cont, found := v[ctype]; found {
+			if cont.SourceLink == "" {
+				continue
+			}
 			values = append(values, CveContentStr{ctype, cont.SourceLink})
 		}
 	}
@@ -233,6 +236,8 @@ func NewCveContentType(name string) CveContentType {
 		return Microsoft
 	case "wordpress":
 		return WPVulnDB
+	case "amazon":
+		return Amazon
 	default:
 		return Unknown
 	}
@@ -266,6 +271,9 @@ const (
 	// Oracle is Oracle Linux
 	Oracle CveContentType = "oracle"
 
+	// Amazon is Amazon Linux
+	Amazon CveContentType = "amazon"
+
 	// SUSE is SUSE Linux
 	SUSE CveContentType = "suse"
 
@@ -288,9 +296,11 @@ var AllCveContetTypes = CveContentTypes{
 	NvdXML,
 	Jvn,
 	RedHat,
+	RedHatAPI,
 	Debian,
 	Ubuntu,
-	RedHatAPI,
+	Amazon,
+	SUSE,
 	DebianSecurityTracker,
 	WPVulnDB,
 }

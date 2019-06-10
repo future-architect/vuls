@@ -165,7 +165,7 @@ type VulnInfo struct {
 	CveID                string               `json:"cveID,omitempty"`
 	Confidences          Confidences          `json:"confidences,omitempty"`
 	AffectedPackages     PackageFixStatuses   `json:"affectedPackages,omitempty"`
-	DistroAdvisories     []DistroAdvisory     `json:"distroAdvisories,omitempty"` // for Aamazon, RHEL, FreeBSD
+	DistroAdvisories     DistroAdvisories     `json:"distroAdvisories,omitempty"` // for Aamazon, RHEL, FreeBSD
 	CveContents          CveContents          `json:"cveContents,omitempty"`
 	Exploits             []Exploit            `json:"exploits,omitempty"`
 	AlertDict            AlertDict            `json:"alertDict,omitempty"`
@@ -349,7 +349,7 @@ func (v VulnInfo) Cvss2Scores(myFamily string) (values []CveContentCvss) {
 	}
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found {
-			if cont.Cvss2Score == 0 && cont.Cvss2Severity == "" {
+			if cont.Cvss2Score == 0 || cont.Cvss2Severity == "" {
 				continue
 			}
 			// https://nvd.nist.gov/vuln-metrics/cvss
@@ -704,8 +704,14 @@ func (v VulnInfo) VendorLinks(family string) map[string]string {
 	case config.Amazon:
 		links["RHEL-CVE"] = "https://access.redhat.com/security/cve/" + v.CveID
 		for _, advisory := range v.DistroAdvisories {
-			links[advisory.AdvisoryID] =
-				fmt.Sprintf("https://alas.aws.amazon.com/%s.html", advisory.AdvisoryID)
+			if strings.HasPrefix(advisory.AdvisoryID, "ALAS2") {
+				links[advisory.AdvisoryID] =
+					fmt.Sprintf("https://alas.aws.amazon.com/AL2/%s.html",
+						strings.Replace(advisory.AdvisoryID, "ALAS2", "ALAS", -1))
+			} else {
+				links[advisory.AdvisoryID] =
+					fmt.Sprintf("https://alas.aws.amazon.com/%s.html", advisory.AdvisoryID)
+			}
 		}
 		return links
 	case config.Ubuntu:
@@ -723,6 +729,20 @@ func (v VulnInfo) VendorLinks(family string) map[string]string {
 		return links
 	}
 	return links
+}
+
+// DistroAdvisories is a list of DistroAdvisory
+type DistroAdvisories []DistroAdvisory
+
+// AppendIfMissing appends if missing
+func (advs *DistroAdvisories) AppendIfMissing(adv *DistroAdvisory) bool {
+	for _, a := range *advs {
+		if a.AdvisoryID == adv.AdvisoryID {
+			return false
+		}
+	}
+	*advs = append(*advs, *adv)
+	return true
 }
 
 // DistroAdvisory has Amazon Linux, RHEL, FreeBSD Security Advisory information.

@@ -1034,3 +1034,65 @@ func TestSortByConfiden(t *testing.T) {
 		}
 	}
 }
+
+func TestDistroAdvisories_AppendIfMissing(t *testing.T) {
+	type args struct {
+		adv *DistroAdvisory
+	}
+	tests := []struct {
+		name  string
+		advs  DistroAdvisories
+		args  args
+		want  bool
+		after DistroAdvisories
+	}{
+		{
+			name: "duplicate no append",
+			advs: DistroAdvisories{
+				DistroAdvisory{
+					AdvisoryID: "ALASs-2019-1214",
+				}},
+			args: args{
+				adv: &DistroAdvisory{
+					AdvisoryID: "ALASs-2019-1214",
+				},
+			},
+			want: false,
+			after: DistroAdvisories{
+				DistroAdvisory{
+					AdvisoryID: "ALASs-2019-1214",
+				}},
+		},
+		{
+			name: "append",
+			advs: DistroAdvisories{
+				DistroAdvisory{
+					AdvisoryID: "ALASs-2019-1214",
+				}},
+			args: args{
+				adv: &DistroAdvisory{
+					AdvisoryID: "ALASs-2019-1215",
+				},
+			},
+			want: true,
+			after: DistroAdvisories{
+				{
+					AdvisoryID: "ALASs-2019-1214",
+				},
+				{
+					AdvisoryID: "ALASs-2019-1215",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.advs.AppendIfMissing(tt.args.adv); got != tt.want {
+				t.Errorf("DistroAdvisories.AppendIfMissing() = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(tt.advs, tt.after) {
+				t.Errorf("\nexpected: %v\n  actual: %v\n", tt.after, tt.advs)
+			}
+		})
+	}
+}
