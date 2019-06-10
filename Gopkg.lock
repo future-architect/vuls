@@ -449,8 +449,7 @@
   version = "v0.1.0"
 
 [[projects]]
-  branch = "amazon-oval"
-  digest = "1:e697c2a4895a12a29ee465df48d2996ef952ee5334bc388296faed2ecd6d9b10"
+  digest = "1:e5d1256691817d7f99ed824229c60d89a50301c82a1520625049c83492e88ab0"
   name = "github.com/kotakanbe/goval-dictionary"
   packages = [
     "config",
@@ -461,7 +460,8 @@
     "util",
   ]
   pruneopts = "UT"
-  revision = "1bf9b96bdab2d5c10513ba644597427673d713da"
+  revision = "199e1232155a76746cc702947e5667547e5f725d"
+  version = "v0.1.2"
 
 [[projects]]
   branch = "master"
@@ -472,15 +472,15 @@
   revision = "928f7356cb964637e2489a6ef37eee55181676c5"
 
 [[projects]]
-  digest = "1:01eb0269028d3c2e21b5b6cd9b1ba81bc4170ab293fcffa84e3aa3a6138a92e8"
+  digest = "1:9bc108827ac1d8783dea294f1ef07732fa4ca7d6e20518c04888a85828eba4ce"
   name = "github.com/labstack/gommon"
   packages = [
     "color",
     "log",
   ]
   pruneopts = "UT"
-  revision = "7fd9f68ece0bcb1a905fac8f1549f0083f71c51b"
-  version = "v0.2.8"
+  revision = "ab0bfd9a5eba33a8c364bf3390d809ed23c31f97"
+  version = "v0.2.9"
 
 [[projects]]
   digest = "1:0e06e487551e2f9e0d6967a15c42223354e37c2e9869b301b14a42e4b51ea3e0"
@@ -805,7 +805,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:77cb5c6f7f9a645ebd9cb28853266fffc4c1a9cf39de1e64ddfe28acf1601cc2"
+  digest = "1:8fb335850bdc86a194ee285848bb372c39ec2f3ad2b914e7448122085657dbd8"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
@@ -813,7 +813,7 @@
     "windows",
   ]
   pruneopts = "UT"
-  revision = "301114b31cced3624480dfb114ca1b495ec69aa5"
+  revision = "1e42afee0f762ed3d76e6dd942e4181855fd1849"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"

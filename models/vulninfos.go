@@ -349,7 +349,7 @@ func (v VulnInfo) Cvss2Scores(myFamily string) (values []CveContentCvss) {
 	}
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found {
-			if cont.Cvss2Score == 0 && cont.Cvss2Severity == "" {
+			if cont.Cvss2Score == 0 || cont.Cvss2Severity == "" {
 				continue
 			}
 			// https://nvd.nist.gov/vuln-metrics/cvss
@@ -712,7 +712,6 @@ func (v VulnInfo) VendorLinks(family string) map[string]string {
 				links[advisory.AdvisoryID] =
 					fmt.Sprintf("https://alas.aws.amazon.com/%s.html", advisory.AdvisoryID)
 			}
-
 		}
 		return links
 	case config.Ubuntu:

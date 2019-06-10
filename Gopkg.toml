@@ -46,7 +46,4 @@
   branch = "master"
   name = "golang.org/x/xerrors"
 
-[[constraint]]
-  name = "github.com/kotakanbe/goval-dictionary"
-  branch = "amazon-oval"
 
