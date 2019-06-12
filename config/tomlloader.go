@@ -157,6 +157,8 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			s.Lockfiles = d.Lockfiles
 		}
 
+		s.FindLock = v.FindLock
+
 		for i, n := range s.CpeNames {
 			uri, err := toCpeURI(n)
 			if err != nil {

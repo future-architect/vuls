@@ -116,12 +116,13 @@ func getCveContents(details map[string]vulnerability.Vulnerability) (contents ma
 	return contents
 }
 
-var libraryMap = map[string]string{
+// LibraryMap is filename and library type
+var LibraryMap = map[string]string{
 	"package-lock.json": "node",
 	"yarn.lock":         "node",
 	"Gemfile.lock":      "ruby",
 	"Cargo.lock":        "rust",
-	"composer.lock":     "php",
+	"composer.json":     "php",
 	"Pipfile.lock":      "python",
 	"poetry.lock":       "python",
 }
@@ -129,7 +130,7 @@ var libraryMap = map[string]string{
 // GetLibraryKey returns target library key
 func (s LibraryScanner) GetLibraryKey() string {
 	fileName := filepath.Base(s.Path)
-	return libraryMap[fileName]
+	return LibraryMap[fileName]
 }
 
 // LibraryFixedIn has library fixed information

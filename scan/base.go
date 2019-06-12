@@ -513,12 +513,39 @@ func (l *base) scanLibraries() (err error) {
 	}
 
 	// library scan for servers need lockfiles
-	if len(l.ServerInfo.Lockfiles) == 0 {
+	if len(l.ServerInfo.Lockfiles) == 0 && !l.ServerInfo.FindLock {
 		return nil
 	}
 
 	libFilemap := extractor.FileMap{}
-	for _, path := range l.ServerInfo.Lockfiles {
+
+	detectFiles := l.ServerInfo.Lockfiles
+
+	// auto detect lockfile
+	if l.ServerInfo.FindLock {
+		findopt := ""
+		for filename := range models.LibraryMap {
+			findopt += fmt.Sprintf("-name %q -o ", "*"+filename)
+		}
+
+		// delete last "-o "
+		// find / -name "*package-lock.json" -o -name "*yarn.lock" ... 2>&1 | grep -v "Permission denied"
+		cmd := fmt.Sprintf(`find / ` + findopt[:len(findopt)-3] + ` 2>&1 | grep -v "Permission denied"`)
+		r := exec(l.ServerInfo, cmd, noSudo)
+		if !r.isSuccess() {
+			return xerrors.Errorf("Failed to find lock files")
+		}
+		detectFiles = append(detectFiles, strings.Split(r.Stdout, "\n")...)
+	}
+
+	for _, path := range detectFiles {
+		if path == "" {
+			continue
+		}
+		// skip already exist
+		if _, ok := libFilemap[path]; ok {
+			continue
+		}
 		cmd := fmt.Sprintf("cat %s", path)
 		r := exec(l.ServerInfo, cmd, noSudo)
 		if !r.isSuccess() {
@@ -526,6 +553,7 @@ func (l *base) scanLibraries() (err error) {
 		}
 		libFilemap[path] = []byte(r.Stdout)
 	}
+
 	results, err := analyzer.GetLibraries(libFilemap)
 	if err != nil {
 		return xerrors.Errorf("Failed to get libs: %w", err)

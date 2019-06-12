@@ -1066,8 +1066,8 @@ type ServerInfo struct {
 	Enablerepo             []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, RHEL, Amazon
 	Optional               map[string]interface{}      `toml:"optional,omitempty" json:"optional,omitempty"`     // Optional key-value set that will be outputted to JSON
 	Lockfiles              []string                    `toml:"lockfiles,omitempty" json:"lockfiles,omitempty"`   // ie) path/to/package-lock.json
-
-	Type string `toml:"type,omitempty" json:"type,omitempty"` // "pseudo" or ""
+	FindLock               bool                        `toml:"findLock,omitempty" json:"findLock,omitempty"`
+	Type                   string                      `toml:"type,omitempty" json:"type,omitempty"` // "pseudo" or ""
 
 	WordPress WordPressConf `toml:"wordpress,omitempty" json:"wordpress,omitempty"`
 
