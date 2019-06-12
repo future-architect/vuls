@@ -145,6 +145,7 @@ type rootPriv interface {
 	yumRepolist() bool
 	yumUpdateInfo() bool
 	yumChangelog() bool
+	yumMakeCache() bool
 }
 
 type cmd struct {
@@ -192,7 +193,7 @@ func (o *redhatBase) preCure() error {
 func (o *redhatBase) postScan() error {
 	if o.isExecYumPS() {
 		if err := o.yumPS(); err != nil {
-			return xerrors.Errorf("Failed to execute yum-ps: %w", err)
+			return xerrors.Errorf("Failed to execute yum-ps. err: %w", err)
 		}
 	}
 	if o.isExecNeedsRestarting() {
@@ -351,7 +352,20 @@ func (o *redhatBase) parseInstalledPackagesLine(line string) (models.Package, er
 	}, nil
 }
 
+func (o *redhatBase) yumMakeCache() error {
+	cmd := `yum makecache`
+	r := o.exec(util.PrependProxyEnv(cmd), o.sudo.yumMakeCache())
+	if !r.isSuccess() {
+		return xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	return nil
+}
+
 func (o *redhatBase) scanUpdatablePackages() (models.Packages, error) {
+	if err := o.yumMakeCache(); err != nil {
+		return nil, xerrors.Errorf("Failed to `yum makecache`: %w", err)
+	}
+
 	cmd := `repoquery --all --pkgnarrow=updates --qf="%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPO}"`
 	for _, repo := range o.getServerInfo().Enablerepo {
 		cmd += " --enablerepo=" + repo
@@ -510,7 +524,7 @@ func (o *redhatBase) scanUnsecurePackages(updatable models.Packages) (models.Vul
 		return o.scanUsingYum(updatable)
 	}
 
-	// Parse chnagelog because CentOS does not have security channel...
+	// Parse changelog because CentOS does not have security channel...
 	if o.isExecScanChangelogs() {
 		return o.scanChangelogs(updatable)
 	}
