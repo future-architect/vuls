@@ -9,7 +9,6 @@ require (
 	github.com/Azure/go-autorest v12.0.0+incompatible // indirect
 	github.com/BurntSushi/toml v0.3.1
 	github.com/Microsoft/go-winio v0.4.12 // indirect
-	github.com/Microsoft/hcsshim v0.8.6 // indirect
 	github.com/RackSec/srslog v0.0.0-20180709174129-a4725f04ec91
 	github.com/asaskevich/govalidator v0.0.0-20180315120708-ccb8e960c48f
 	github.com/aws/aws-sdk-go v1.19.24
@@ -20,13 +19,6 @@ require (
 	github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
-	github.com/docker/cli v0.0.0-20190124132759-af2647d55b1d // indirect
-	github.com/docker/distribution v2.7.1+incompatible // indirect
-	github.com/docker/docker v0.0.0-20190503020752-619df5a8f60f // indirect
-	github.com/docker/docker-ce v0.0.0-20190410234739-e8ff056dbcfa // indirect
-	github.com/docker/docker-credential-helpers v0.6.2 // indirect
-	github.com/docker/go-metrics v0.0.0-20181218153428-b84716841b82 // indirect
-	github.com/docker/go-units v0.4.0 // indirect
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/genuinetools/reg v0.16.1 // indirect
@@ -66,7 +58,6 @@ require (
 	github.com/mattn/go-isatty v0.0.7 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/morikuni/aec v0.0.0-20170113033406-39771216ff4c // indirect
 	github.com/moul/http2curl v1.0.0 // indirect
 	github.com/mozqnet/go-exploitdb v0.0.0-20190426034301-a055cc2c195d
 	github.com/nlopes/slack v0.4.0
