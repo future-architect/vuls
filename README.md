@@ -65,7 +65,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 
 - Alpine, Amazon Linux, CentOS, Debian, Oracle Linux, Raspbian, RHEL, SUSE Enterprise Linux, and Ubuntu
 - FreeBSD
-- Cloud, on-premise, and Docker
+- Cloud, on-premise, Docker Container and Docker Image
 
 ### High-quality scan
 
@@ -89,6 +89,11 @@ Vuls uses multiple vulnerability databases
 - [US-CERT](https://www.us-cert.gov/ncas/alerts)
 - [JPCERT](http://www.jpcert.or.jp/at/2019.html)
 - [WPVulnDB](https://wpvulndb.com/api)
+- [Node.js Security Working Group](https://github.com/nodejs/security-wg)
+- [Ruby Advisory Database](https://github.com/rubysec/ruby-advisory-db)
+- [Safety DB(Python)](https://github.com/pyupio/safety-db)
+- [PHP Security Advisories Database](https://github.com/FriendsOfPHP/security-advisories)
+- [RustSec Advisory Database](https://github.com/RustSec/advisory-db)
 - Changelog
 
 ### Fast scan and Deep scan
