@@ -41,6 +41,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/hashicorp/uuid v0.0.0-20160311170451-ebb0a03e909c
 	github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c
+	github.com/htcat/htcat v1.0.2 // indirect
 	github.com/inconshreveable/log15 v0.0.0-20180818164646-67afb5ed74ec // indirect
 	github.com/jinzhu/gorm v1.9.5 // indirect
 	github.com/jroimartin/gocui v0.4.0
@@ -57,7 +58,7 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kotakanbe/go-cve-dictionary v0.0.0-20190327053454-5fe52611f0b8
 	github.com/kotakanbe/go-pingscanner v0.1.0
-	github.com/kotakanbe/goval-dictionary v0.1.1
+	github.com/kotakanbe/goval-dictionary v0.1.2
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
 	github.com/labstack/gommon v0.2.8 // indirect
 	github.com/lusis/go-slackbot v0.0.0-20180109053408-401027ccfef5 // indirect

@@ -180,6 +180,8 @@ github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c h1:kQWxfPIHVLbgLzphq
 github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c/go.mod h1:lADxMC39cJJqL93Duh1xhAs4I2Zs8mKS89XWXFGp9cs=
 github.com/hpcloud/tail v1.0.0 h1:nfCOvKYfkgYP8hkirhJocXT2+zOD8yUNjXaWfTlyFKI=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
+github.com/htcat/htcat v1.0.2 h1:zro95dGwkKDeZOgq9ei+9szd5qurGxBGfHY8hRehA7k=
+github.com/htcat/htcat v1.0.2/go.mod h1:i8ViQbjSi2+lJzM6Lx20FIxHENCz6mzJglK3HH06W3s=
 github.com/inconshreveable/log15 v0.0.0-20180818164646-67afb5ed74ec h1:CGkYB1Q7DSsH/ku+to+foV4agt2F2miquaLUgF6L178=
 github.com/inconshreveable/log15 v0.0.0-20180818164646-67afb5ed74ec/go.mod h1:cOaXtrgN4ScfRrD9Bre7U1thNq5RtJ8ZoP4iXVGRj6o=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 h1:BQSFePA1RWJOlocH6Fxy8MmwDt+yVQYULKfN0RoTN8A=
@@ -237,8 +239,8 @@ github.com/kotakanbe/go-cve-dictionary v0.0.0-20190327053454-5fe52611f0b8 h1:0zo
 github.com/kotakanbe/go-cve-dictionary v0.0.0-20190327053454-5fe52611f0b8/go.mod h1:CNVaCVSeqjxCFQm93uCWPT8mR+a0514XHiiBJx9yrkQ=
 github.com/kotakanbe/go-pingscanner v0.1.0 h1:VG4/9l0i8WeToXclj7bIGoAZAu7a07Z3qmQiIfU0gT0=
 github.com/kotakanbe/go-pingscanner v0.1.0/go.mod h1:/761QZzuZFcfN8h/1QuawUA+pKukp3qcNj5mxJCOiAk=
-github.com/kotakanbe/goval-dictionary v0.1.1 h1:WLMcdqChFchd26bWwychjneMUNJSpo4VSkWfKNnvhbc=
-github.com/kotakanbe/goval-dictionary v0.1.1/go.mod h1:lzsw634rJIxLteds6RAACIKZCoXKT06o/xHsTWf6v5o=
+github.com/kotakanbe/goval-dictionary v0.1.2 h1:XnninBr9KJcP3557PcR8qkUq9zlQbCukVIkU7AHWxd4=
+github.com/kotakanbe/goval-dictionary v0.1.2/go.mod h1:lzsw634rJIxLteds6RAACIKZCoXKT06o/xHsTWf6v5o=
 github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96 h1:xNVK0mQJdQjw+QYeaMM4G6fvucWr8rTGGIhlPakx1wU=
 github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96/go.mod h1:ljq48H1V+0Vh0u7ucA3LjR4AfkAeCpxrf7LaaCk8Vmo=
 github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515/go.mod h1:+0opPa2QZZtGFBFZlji/RkVcI2GknAs/DXo4wKdlNEc=
