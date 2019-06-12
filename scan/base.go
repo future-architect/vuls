@@ -26,10 +26,23 @@ import (
 	"strings"
 	"time"
 
+	"github.com/knqyf263/fanal/analyzer"
+
+	"github.com/knqyf263/fanal/extractor"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
+
+	// Import library scanner
+	_ "github.com/knqyf263/fanal/analyzer/library/bundler"
+	_ "github.com/knqyf263/fanal/analyzer/library/cargo"
+	_ "github.com/knqyf263/fanal/analyzer/library/composer"
+	_ "github.com/knqyf263/fanal/analyzer/library/npm"
+	_ "github.com/knqyf263/fanal/analyzer/library/pipenv"
+	_ "github.com/knqyf263/fanal/analyzer/library/poetry"
+	_ "github.com/knqyf263/fanal/analyzer/library/yarn"
 )
 
 type base struct {
@@ -37,10 +50,10 @@ type base struct {
 	Distro     config.Distro
 	Platform   models.Platform
 	osPackages
-	WordPress *models.WordPressPackages
-
-	log  *logrus.Entry
-	errs []error
+	LibraryScanners []models.LibraryScanner
+	WordPress       *models.WordPressPackages
+	log             *logrus.Entry
+	errs            []error
 }
 
 func (l *base) exec(cmd string, sudo bool) execResult {
@@ -385,6 +398,11 @@ func (l *base) convertToModel() models.ScanResult {
 		Type:        ctype,
 	}
 
+	image := models.Image{
+		Name: l.ServerInfo.Image.Name,
+		Tag:  l.ServerInfo.Image.Tag,
+	}
+
 	errs := []string{}
 	for _, e := range l.errs {
 		errs = append(errs, fmt.Sprintf("%s", e))
@@ -405,6 +423,7 @@ func (l *base) convertToModel() models.ScanResult {
 		Family:            l.Distro.Family,
 		Release:           l.Distro.Release,
 		Container:         container,
+		Image:             image,
 		Platform:          l.Platform,
 		IPv4Addrs:         l.ServerInfo.IPv4Addrs,
 		IPv6Addrs:         l.ServerInfo.IPv6Addrs,
@@ -414,6 +433,7 @@ func (l *base) convertToModel() models.ScanResult {
 		Packages:          l.Packages,
 		SrcPackages:       l.SrcPackages,
 		WordPressPackages: l.WordPress,
+		LibraryScanners:   l.LibraryScanners,
 		Optional:          l.ServerInfo.Optional,
 		Errors:            errs,
 	}
@@ -484,6 +504,65 @@ func (l *base) parseSystemctlStatus(stdout string) string {
 		return ""
 	}
 	return ss[1]
+}
+
+func (l *base) scanLibraries() (err error) {
+	// image already detected libraries
+	if len(l.LibraryScanners) != 0 {
+		return nil
+	}
+
+	// library scan for servers need lockfiles
+	if len(l.ServerInfo.Lockfiles) == 0 && !l.ServerInfo.FindLock {
+		return nil
+	}
+
+	libFilemap := extractor.FileMap{}
+
+	detectFiles := l.ServerInfo.Lockfiles
+
+	// auto detect lockfile
+	if l.ServerInfo.FindLock {
+		findopt := ""
+		for filename := range models.LibraryMap {
+			findopt += fmt.Sprintf("-name %q -o ", "*"+filename)
+		}
+
+		// delete last "-o "
+		// find / -name "*package-lock.json" -o -name "*yarn.lock" ... 2>&1 | grep -v "Permission denied"
+		cmd := fmt.Sprintf(`find / ` + findopt[:len(findopt)-3] + ` 2>&1 | grep -v "Permission denied"`)
+		r := exec(l.ServerInfo, cmd, noSudo)
+		if !r.isSuccess() {
+			return xerrors.Errorf("Failed to find lock files")
+		}
+		detectFiles = append(detectFiles, strings.Split(r.Stdout, "\n")...)
+	}
+
+	for _, path := range detectFiles {
+		if path == "" {
+			continue
+		}
+		// skip already exist
+		if _, ok := libFilemap[path]; ok {
+			continue
+		}
+		cmd := fmt.Sprintf("cat %s", path)
+		r := exec(l.ServerInfo, cmd, noSudo)
+		if !r.isSuccess() {
+			return xerrors.Errorf("Failed to get target file: %s, filepath: %s", r, path)
+		}
+		libFilemap[path] = []byte(r.Stdout)
+	}
+
+	results, err := analyzer.GetLibraries(libFilemap)
+	if err != nil {
+		return xerrors.Errorf("Failed to get libs: %w", err)
+	}
+	l.LibraryScanners, err = convertLibWithScanner(results)
+	if err != nil {
+		return xerrors.Errorf("Failed to scan libraries: %w", err)
+	}
+	return nil
 }
 
 func (l *base) scanWordPress() (err error) {

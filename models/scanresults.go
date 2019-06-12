@@ -43,6 +43,7 @@ type ScanResult struct {
 	Family           string    `json:"family"`
 	Release          string    `json:"release"`
 	Container        Container `json:"container"`
+	Image            Image     `json:"image"`
 	Platform         Platform  `json:"platform"`
 	IPv4Addrs        []string  `json:"ipv4Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
 	IPv6Addrs        []string  `json:"ipv6Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
@@ -65,6 +66,7 @@ type ScanResult struct {
 	Packages          Packages               `json:"packages"`
 	SrcPackages       SrcPackages            `json:",omitempty"`
 	WordPressPackages *WordPressPackages     `json:",omitempty"`
+	LibraryScanners   []LibraryScanner       `json:"libScanners"`
 	CweDict           CweDict                `json:"cweDict,omitempty"`
 	Optional          map[string]interface{} `json:",omitempty"`
 	Config            struct {
@@ -439,6 +441,11 @@ func (r ScanResult) IsContainer() bool {
 	return 0 < len(r.Container.ContainerID)
 }
 
+// IsImage returns whether this ServerInfo is about container
+func (r ScanResult) IsImage() bool {
+	return 0 < len(r.Image.Name)
+}
+
 // IsDeepScanMode checks if the scan mode is deep scan mode.
 func (r ScanResult) IsDeepScanMode() bool {
 	for _, s := range r.Config.Scan.Servers {
@@ -458,6 +465,12 @@ type Container struct {
 	Image       string `json:"image"`
 	Type        string `json:"type"`
 	UUID        string `json:"uuid"`
+}
+
+// Image has Container information
+type Image struct {
+	Name string `json:"name"`
+	Tag  string `json:"tag"`
 }
 
 // Platform has platform information

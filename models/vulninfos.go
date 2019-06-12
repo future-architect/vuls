@@ -172,6 +172,7 @@ type VulnInfo struct {
 	CpeURIs              []string             `json:"cpeURIs,omitempty"` // CpeURIs related to this CVE defined in config.toml
 	GitHubSecurityAlerts GitHubSecurityAlerts `json:"gitHubSecurityAlerts,omitempty"`
 	WpPackageFixStats    WpPackageFixStats    `json:"wpPackageFixStats,omitempty"`
+	LibraryFixedIns      LibraryFixedIns      `json:"libraryFixedIns,omitempty"`
 
 	VulnType string `json:"vulnType,omitempty"`
 }
@@ -206,6 +207,9 @@ type GitHubSecurityAlert struct {
 	DismissedAt   time.Time `json:"dismissedAt"`
 	DismissReason string    `json:"dismissReason"`
 }
+
+// LibraryFixedIns is a list of Library's FixedIn
+type LibraryFixedIns []LibraryFixedIn
 
 // WpPackageFixStats is a list of WpPackageFixStatus
 type WpPackageFixStats []WpPackageFixStatus
