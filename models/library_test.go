@@ -27,8 +27,14 @@ func TestScan(t *testing.T) {
 			},
 		},
 	}
-	log.InitLogger(false)
-	db.Init()
+
+	if err := log.InitLogger(false); err != nil {
+		t.Errorf("trivy logger failed")
+	}
+
+	if err := db.Init(); err != nil {
+		t.Errorf("trivy db.Init failed")
+	}
 	for _, v := range tests {
 		lib := LibraryScanner{
 			Path: v.path,
