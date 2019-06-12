@@ -32,6 +32,12 @@ import (
 	"golang.org/x/xerrors"
 )
 
+const (
+	scannedViaRemote = "remote"
+	scannedViaLocal  = "local"
+	scannedViaPseudo = "pseudo"
+)
+
 var (
 	errOSFamilyHeader      = xerrors.New("X-Vuls-OS-Family header is required")
 	errOSReleaseHeader     = xerrors.New("X-Vuls-OS-Release header is required")
@@ -57,6 +63,7 @@ type osTypeInterface interface {
 	preCure() error
 	postScan() error
 	scanWordPress() error
+	scanLibraries() error
 	scanPackages() error
 	convertToModel() models.ScanResult
 
@@ -118,6 +125,18 @@ func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 		return
 	}
 
+	itsMe, osType, fatalErr = detectContainerImage(c)
+	if fatalErr != nil {
+		osType.setErrs(
+			[]error{xerrors.Errorf("Failed to detect OS: %w", fatalErr)},
+		)
+		return
+	}
+	if itsMe {
+		util.Log.Debugf("Container")
+		return
+	}
+
 	itsMe, osType, fatalErr = detectDebianWithRetry(c)
 	if fatalErr != nil {
 		osType.setErrs([]error{
@@ -176,20 +195,56 @@ func PrintSSHableServerNames() bool {
 	return true
 }
 
-// InitServers detect the kind of OS distribution of target servers
-func InitServers(timeoutSec int) error {
-	servers, errServers = detectServerOSes(timeoutSec)
-	if len(servers) == 0 {
-		return xerrors.New("No scannable servers")
+func needScans() (needBaseServer, scanContainer, scanImage bool) {
+	scanContainer = true
+	scanImage = true
+	if !config.Conf.ContainersOnly && !config.Conf.ImagesOnly {
+		needBaseServer = true
 	}
 
-	actives, inactives := detectContainerOSes(timeoutSec)
-	if config.Conf.ContainersOnly {
-		servers = actives
-		errServers = inactives
-	} else {
+	if config.Conf.ImagesOnly && !config.Conf.ContainersOnly {
+		scanContainer = false
+	}
+
+	if config.Conf.ContainersOnly && !config.Conf.ImagesOnly {
+		scanImage = false
+	}
+	return needBaseServer, scanContainer, scanImage
+}
+
+// InitServers detect the kind of OS distribution of target servers
+func InitServers(timeoutSec int) error {
+	needBaseServers, scanContainer, scanImage := needScans()
+
+	// use global servers, errServers when scan containers and images
+	servers, errServers = detectServerOSes(timeoutSec)
+	if len(servers) == 0 {
+		return xerrors.New("No scannable base servers")
+	}
+
+	// scan additional servers
+	var actives, inactives []osTypeInterface
+	if scanImage {
+		oks, errs := detectImageOSes(timeoutSec)
+		actives = append(actives, oks...)
+		inactives = append(inactives, errs...)
+	}
+	if scanContainer {
+		oks, errs := detectContainerOSes(timeoutSec)
+		actives = append(actives, oks...)
+		inactives = append(inactives, errs...)
+	}
+
+	if needBaseServers {
 		servers = append(servers, actives...)
 		errServers = append(errServers, inactives...)
+	} else {
+		servers = actives
+		errServers = inactives
+	}
+
+	if len(servers) == 0 {
+		return xerrors.New("No scannable servers")
 	}
 	return nil
 }
@@ -395,6 +450,81 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 	return oses
 }
 
+func detectImageOSes(timeoutSec int) (actives, inactives []osTypeInterface) {
+	util.Log.Info("Detecting OS of static containers... ")
+	osTypesChan := make(chan []osTypeInterface, len(servers))
+	defer close(osTypesChan)
+	for _, s := range servers {
+		go func(s osTypeInterface) {
+			defer func() {
+				if p := recover(); p != nil {
+					util.Log.Debugf("Panic: %s on %s",
+						p, s.getServerInfo().GetServerName())
+				}
+			}()
+			osTypesChan <- detectImageOSesOnServer(s)
+		}(s)
+	}
+
+	timeout := time.After(time.Duration(timeoutSec) * time.Second)
+	for i := 0; i < len(servers); i++ {
+		select {
+		case res := <-osTypesChan:
+			for _, osi := range res {
+				sinfo := osi.getServerInfo()
+				if 0 < len(osi.getErrs()) {
+					inactives = append(inactives, osi)
+					util.Log.Errorf("Failed: %s err: %+v", sinfo.ServerName, osi.getErrs())
+					continue
+				}
+				actives = append(actives, osi)
+				util.Log.Infof("Detected: %s@%s: %s",
+					sinfo.Image.Name, sinfo.ServerName, osi.getDistro())
+			}
+		case <-timeout:
+			msg := "Timed out while detecting static containers"
+			util.Log.Error(msg)
+			for servername, sInfo := range config.Conf.Servers {
+				found := false
+				for _, o := range append(actives, inactives...) {
+					if servername == o.getServerInfo().ServerName {
+						found = true
+						break
+					}
+				}
+				if !found {
+					u := &unknown{}
+					u.setServerInfo(sInfo)
+					u.setErrs([]error{
+						xerrors.New("Timed out"),
+					})
+					inactives = append(inactives)
+					util.Log.Errorf("Timed out: %s", servername)
+				}
+			}
+		}
+	}
+	return
+}
+
+func detectImageOSesOnServer(containerHost osTypeInterface) (oses []osTypeInterface) {
+	containerHostInfo := containerHost.getServerInfo()
+	if len(containerHostInfo.Images) == 0 {
+		return
+	}
+
+	for idx, containerConf := range containerHostInfo.Images {
+		copied := containerHostInfo
+		// change servername for original
+		copied.ServerName = fmt.Sprintf("%s:%s@%s", idx, containerConf.Tag, containerHostInfo.ServerName)
+		copied.Image = containerConf
+		copied.Type = ""
+		os := detectOS(copied)
+		oses = append(oses, os)
+	}
+	return oses
+}
+
 // CheckScanModes checks scan mode
 func CheckScanModes() error {
 	for _, s := range servers {
@@ -593,6 +723,9 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 		}
 		if err = o.scanWordPress(); err != nil {
 			return xerrors.Errorf("Failed to scan WordPress: %w", err)
+		}
+		if err = o.scanLibraries(); err != nil {
+			return xerrors.Errorf("Failed to scan Library: %w", err)
 		}
 		return o.postScan()
 	}, timeoutSec)

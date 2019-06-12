@@ -162,8 +162,7 @@ func exec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (resul
 	logger := getSSHLogger(log...)
 	logger.Debugf("Executing... %s", strings.Replace(cmd, "\n", "", -1))
 
-	if c.Port == "local" &&
-		(c.Host == "127.0.0.1" || c.Host == "localhost") {
+	if isLocalExec(c.Port, c.Host) {
 		result = localExec(c, cmd, sudo)
 	} else if conf.Conf.SSHNative {
 		result = sshExecNative(c, cmd, sudo)
@@ -173,6 +172,10 @@ func exec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (resul
 
 	logger.Debug(result)
 	return
+}
+
+func isLocalExec(port, host string) bool {
+	return port == "local" && (host == "127.0.0.1" || host == "localhost")
 }
 
 func localExec(c conf.ServerInfo, cmdstr string, sudo bool) (result execResult) {

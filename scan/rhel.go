@@ -156,3 +156,7 @@ func (o rootPrivRHEL) yumUpdateInfo() bool {
 func (o rootPrivRHEL) yumChangelog() bool {
 	return true
 }
+
+func (o rootPrivRHEL) yumMakeCache() bool {
+	return true
+}

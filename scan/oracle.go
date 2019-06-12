@@ -165,3 +165,7 @@ func (o rootPrivOracle) yumUpdateInfo() bool {
 func (o rootPrivOracle) yumChangelog() bool {
 	return false
 }
+
+func (o rootPrivOracle) yumMakeCache() bool {
+	return true
+}

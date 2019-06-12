@@ -84,6 +84,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		scannedAt := result.ScannedAt
 		if scannedAt.IsZero() {
 			scannedAt = time.Now().Truncate(1 * time.Hour)
+			result.ScannedAt = scannedAt
 		}
 		dir, err := scan.EnsureResultDir(scannedAt)
 		if err != nil {

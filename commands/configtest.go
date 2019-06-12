@@ -119,7 +119,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		msg := []string{
 			fmt.Sprintf("Error loading %s", p.configPath),
 			"If you update Vuls and get this error, there may be incompatible changes in config.toml",
-			"Please check README: https://github.com/future-architect/vuls#configuration",
+			"Please check config.toml template : https://vuls.io/docs/en/usage-settings.html",
 		}
 		util.Log.Errorf("%s\n%+v", strings.Join(msg, "\n"), err)
 		return subcommands.ExitUsageError
