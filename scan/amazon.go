@@ -111,3 +111,7 @@ func (o rootPrivAmazon) yumUpdateInfo() bool {
 func (o rootPrivAmazon) yumChangelog() bool {
 	return false
 }
+
+func (o rootPrivAmazon) yumMakeCache() bool {
+	return false
+}

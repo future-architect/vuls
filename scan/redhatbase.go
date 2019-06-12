@@ -145,6 +145,7 @@ type rootPriv interface {
 	yumRepolist() bool
 	yumUpdateInfo() bool
 	yumChangelog() bool
+	yumMakeCache() bool
 }
 
 type cmd struct {
@@ -353,8 +354,7 @@ func (o *redhatBase) parseInstalledPackagesLine(line string) (models.Package, er
 
 func (o *redhatBase) yumMakeCache() error {
 	cmd := `yum makecache`
-	//TODO check yum makecache without root priv on RHEL
-	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
+	r := o.exec(util.PrependProxyEnv(cmd), o.sudo.yumMakeCache())
 	if !r.isSuccess() {
 		return xerrors.Errorf("Failed to SSH: %s", r)
 	}

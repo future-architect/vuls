@@ -118,3 +118,7 @@ func (o rootPrivCentos) yumUpdateInfo() bool {
 func (o rootPrivCentos) yumChangelog() bool {
 	return false
 }
+
+func (o rootPrivCentos) yumMakeCache() bool {
+	return false
+}
