@@ -51,7 +51,7 @@ type base struct {
 	Platform   models.Platform
 	osPackages
 	LibraryScanners []models.LibraryScanner
-	WordPress *models.WordPressPackages
+	WordPress       *models.WordPressPackages
 
 	log   *logrus.Entry
 	errs  []error
