@@ -44,6 +44,8 @@ func formatScanSummary(rs ...models.ScanResult) string {
 	table := uitable.New()
 	table.MaxColWidth = maxColWidth
 	table.Wrap = true
+
+	warnMsgs := []string{}
 	for _, r := range rs {
 		var cols []interface{}
 		if len(r.Errors) == 0 {
@@ -57,18 +59,26 @@ func formatScanSummary(rs ...models.ScanResult) string {
 				r.FormatServerName(),
 				"Error",
 				"",
-				"Run with --debug to view the details",
+				"Use configtest subcommand or scan with --debug to view the details",
 			}
 		}
 		table.AddRow(cols...)
+
+		if len(r.Warnings) != 0 {
+			warnMsgs = append(warnMsgs, fmt.Sprintf("Warning for %s: %s",
+				r.FormatServerName(), r.Warnings))
+		}
 	}
-	return fmt.Sprintf("%s\n", table)
+	return fmt.Sprintf("%s\n\n%s", table, strings.Join(
+		warnMsgs, "\n\n"))
 }
 
 func formatOneLineSummary(rs ...models.ScanResult) string {
 	table := uitable.New()
 	table.MaxColWidth = maxColWidth
 	table.Wrap = true
+
+	warnMsgs := []string{}
 	for _, r := range rs {
 		var cols []interface{}
 		if len(r.Errors) == 0 {
@@ -83,21 +93,32 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 		} else {
 			cols = []interface{}{
 				r.FormatServerName(),
-				"Error: Scan with --debug to view the details",
+				"Use configtest subcommand or scan with --debug to view the details",
 				"",
 			}
 		}
 		table.AddRow(cols...)
+
+		if len(r.Warnings) != 0 {
+			warnMsgs = append(warnMsgs, fmt.Sprintf("Warning for %s: %s",
+				r.FormatServerName(), r.Warnings))
+		}
 	}
-	return fmt.Sprintf("%s\n", table)
+	return fmt.Sprintf("%s\n\n%s", table, strings.Join(
+		warnMsgs, "\n\n"))
 }
 
 func formatList(r models.ScanResult) string {
 	header := r.FormatTextReportHeadedr()
 	if len(r.Errors) != 0 {
 		return fmt.Sprintf(
-			"%s\nError: Scan with --debug to view the details\n%s\n\n",
+			"%s\nError: Use configtest subcommand or scan with --debug to view the details\n%s\n\n",
 			header, r.Errors)
+	}
+	if len(r.Warnings) != 0 {
+		header += fmt.Sprintf(
+			"\nWarning: Some warnings occurred.\n%s\n\n",
+			r.Warnings)
 	}
 
 	if len(r.ScannedCves) == 0 {
@@ -165,8 +186,14 @@ func formatFullPlainText(r models.ScanResult) (lines string) {
 	header := r.FormatTextReportHeadedr()
 	if len(r.Errors) != 0 {
 		return fmt.Sprintf(
-			"%s\nError: Scan with --debug to view the details\n%s\n\n",
+			"%s\nError: Use configtest subcommand or scan with --debug to view the details\n%s\n\n",
 			header, r.Errors)
+	}
+
+	if len(r.Warnings) != 0 {
+		header += fmt.Sprintf(
+			"\nWarning: Some warnings occurred.\n%s\n\n",
+			r.Warnings)
 	}
 
 	if len(r.ScannedCves) == 0 {

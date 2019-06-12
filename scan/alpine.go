@@ -130,11 +130,14 @@ func (o *alpine) scanPackages() error {
 
 	updatable, err := o.scanUpdatablePackages()
 	if err != nil {
-		o.log.Errorf("Failed to scan installed packages: %s", err)
-		return err
+		err = xerrors.Errorf("Failed to scan updatable packages: %w", err)
+		o.log.Warnf("err: %+v", err)
+		o.warns = append(o.warns, err)
+		// Only warning this error
+	} else {
+		installed.MergeNewVersion(updatable)
 	}
 
-	installed.MergeNewVersion(updatable)
 	o.Packages = installed
 	return nil
 }

@@ -52,8 +52,10 @@ type base struct {
 	osPackages
 	LibraryScanners []models.LibraryScanner
 	WordPress       *models.WordPressPackages
-	log             *logrus.Entry
-	errs            []error
+
+	log   *logrus.Entry
+	errs  []error
+	warns []error
 }
 
 func (l *base) exec(cmd string, sudo bool) execResult {
@@ -403,9 +405,12 @@ func (l *base) convertToModel() models.ScanResult {
 		Tag:  l.ServerInfo.Image.Tag,
 	}
 
-	errs := []string{}
+	errs, warns := []string{}, []string{}
 	for _, e := range l.errs {
-		errs = append(errs, fmt.Sprintf("%s", e))
+		errs = append(errs, fmt.Sprintf("%+v", e))
+	}
+	for _, w := range l.warns {
+		warns = append(warns, fmt.Sprintf("%+v", w))
 	}
 
 	scannedVia := scannedViaRemote
@@ -436,6 +441,7 @@ func (l *base) convertToModel() models.ScanResult {
 		LibraryScanners:   l.LibraryScanners,
 		Optional:          l.ServerInfo.Optional,
 		Errors:            errs,
+		Warnings:          warns,
 	}
 }
 
