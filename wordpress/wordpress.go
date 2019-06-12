@@ -102,7 +102,7 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 		}
 
 		for _, v := range templateVinfos {
-			for _, fixstat := range v.PackageFixedIns {
+			for _, fixstat := range v.WpPackageFixStats {
 				pkg, ok := r.WordPressPackages.Find(fixstat.Name)
 				if !ok {
 					continue
@@ -138,7 +138,7 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 		}
 
 		for _, v := range pluginVinfos {
-			for _, fixstat := range v.PackageFixedIns {
+			for _, fixstat := range v.WpPackageFixStats {
 				pkg, ok := r.WordPressPackages.Find(fixstat.Name)
 				if !ok {
 					continue
@@ -164,7 +164,7 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 			vinfo.CveContents[models.WPVulnDB] = wpVinfo.CveContents[models.WPVulnDB]
 			vinfo.VulnType = wpVinfo.VulnType
 			vinfo.Confidences = append(vinfo.Confidences, wpVinfo.Confidences...)
-			vinfo.PackageFixedIns = append(vinfo.PackageFixedIns, wpVinfo.PackageFixedIns...)
+			vinfo.WpPackageFixStats = append(vinfo.WpPackageFixStats, wpVinfo.WpPackageFixStats...)
 			r.ScannedCves[wpVinfo.CveID] = vinfo
 		} else {
 			r.ScannedCves[wpVinfo.CveID] = wpVinfo
@@ -235,7 +235,7 @@ func extractToVulnInfos(pkgName string, cves []WpCveInfo) (vinfos []models.VulnI
 				Confidences: []models.Confidence{
 					models.WPVulnDBMatch,
 				},
-				PackageFixedIns: []models.PackageFixedIn{{
+				WpPackageFixStats: []models.WpPackageFixStatus{{
 					Name:    pkgName,
 					FixedIn: vulnerability.FixedIn,
 				}},

@@ -638,7 +638,7 @@ func summaryLines(r models.ScanResult) string {
 		pkgNames := vinfo.AffectedPackages.Names()
 		pkgNames = append(pkgNames, vinfo.CpeURIs...)
 		pkgNames = append(pkgNames, vinfo.GitHubSecurityAlerts.Names()...)
-		pkgNames = append(pkgNames, vinfo.PackageFixedIns.Names()...)
+		pkgNames = append(pkgNames, vinfo.WpPackageFixStats.Names()...)
 
 		alert := "  "
 		if vinfo.AlertDict.HasAlert() {
@@ -752,7 +752,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 		r := currentScanResult
 		// check wordpress fixedin
 		if r.WordPressPackages != nil {
-			for _, wp := range vinfo.PackageFixedIns {
+			for _, wp := range vinfo.WpPackageFixStats {
 				if p, ok := r.WordPressPackages.Find(wp.Name); ok {
 					if p.Type == models.WPCore {
 						lines = append(lines, fmt.Sprintf("* %s-%s, FixedIn: %s",
@@ -770,9 +770,10 @@ func setChangelogLayout(g *gocui.Gui) error {
 
 		// check library fixedin
 		for _, scanner := range r.LibraryScanners {
-			for _, fixedin := range vinfo.PackageFixedIns {
+			key := scanner.GetLibraryKey()
+			for _, fixedin := range vinfo.LibraryFixedIns {
 				for _, lib := range scanner.Libs {
-					if lib.Name == fixedin.Name {
+					if fixedin.Key == key && lib.Name == fixedin.Name {
 						lines = append(lines, fmt.Sprintf("* %s-%s, FixedIn: %s",
 							lib.Name, lib.Version, fixedin.FixedIn))
 						continue

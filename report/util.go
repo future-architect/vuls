@@ -249,7 +249,7 @@ No CVE-IDs are found in updatable packages.
 			data = append(data, []string{"GitHub", alert.PackageName})
 		}
 
-		for _, wp := range vuln.PackageFixedIns {
+		for _, wp := range vuln.WpPackageFixStats {
 			if p, ok := r.WordPressPackages.Find(wp.Name); ok {
 				if p.Type == models.WPCore {
 					data = append(data, []string{"WordPress",

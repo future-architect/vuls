@@ -46,7 +46,7 @@ require (
 	github.com/jroimartin/gocui v0.4.0
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/k0kubun/pp v3.0.1+incompatible
-	github.com/knqyf263/fanal v0.0.0-20190523002721-87ef54b8b37b
+	github.com/knqyf263/fanal v0.0.0-20190528042547-07e27879b658
 	github.com/knqyf263/go-cpe v0.0.0-20180327054844-659663f6eca2
 	github.com/knqyf263/go-deb-version v0.0.0-20190517075300-09fca494f03d
 	github.com/knqyf263/go-dep-parser v0.0.0-20190521150559-1ef8521d17a0

@@ -265,11 +265,11 @@ func (r ScanResult) FilterInactiveWordPressLibs() ScanResult {
 	}
 
 	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
-		if len(v.PackageFixedIns) == 0 {
+		if len(v.WpPackageFixStats) == 0 {
 			return true
 		}
 		// Ignore if all libs in this vulnInfo inactive
-		for _, wp := range v.PackageFixedIns {
+		for _, wp := range v.WpPackageFixStats {
 			if p, ok := r.WordPressPackages.Find(wp.Name); ok {
 				if p.Status != Inactive {
 					return true

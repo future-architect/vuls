@@ -81,8 +81,8 @@ type WpPackage struct {
 	Type    string `json:"type,omitempty"` // core, plugin, theme
 }
 
-// PackageFixedIn is used in Vulninfo.WordPress
-type PackageFixedIn struct {
+// WpPackageFixStatus is used in Vulninfo.WordPress
+type WpPackageFixStatus struct {
 	Name    string `json:"name,omitempty"`
 	FixedIn string `json:"fixedIn,omitempty"`
 }

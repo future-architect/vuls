@@ -102,7 +102,7 @@ func scanImage(c config.ServerInfo) (os *analyzer.OS, pkgs []analyzer.Package, l
 	// Configure dockerOption
 	dockerOption := c.Image.DockerOption
 	if dockerOption.Timeout == 0 {
-		dockerOption.Timeout = 600 * time.Second
+		dockerOption.Timeout = 60 * time.Second
 	}
 	files, err := analyzer.Analyze(ctx, domain, dockerOption)
 
