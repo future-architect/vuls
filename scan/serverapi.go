@@ -513,7 +513,6 @@ func detectImageOSesOnServer(containerHost osTypeInterface) (oses []osTypeInterf
 		return
 	}
 
-	// TODO : Currently only support docker image
 	for idx, containerConf := range containerHostInfo.Images {
 		copied := containerHostInfo
 		// change servername for original

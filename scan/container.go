@@ -58,6 +58,21 @@ type image struct {
 	base
 }
 
+// newDummyOS is constructor
+func newDummyOS(c config.ServerInfo) *image {
+	d := &image{
+		base: base{
+			osPackages: osPackages{
+				Packages:  models.Packages{},
+				VulnInfos: models.VulnInfos{},
+			},
+		},
+	}
+	d.log = util.NewCustomLogger(c)
+	d.setServerInfo(c)
+	return d
+}
+
 func detectContainerImage(c config.ServerInfo) (itsMe bool, containerImage osTypeInterface, err error) {
 	if err = config.IsValidImage(c.Image); err != nil {
 		return false, nil, nil
@@ -66,17 +81,16 @@ func detectContainerImage(c config.ServerInfo) (itsMe bool, containerImage osTyp
 	os, pkgs, libs, err := scanImage(c)
 	if err != nil {
 		// use Alpine for setErrs
-		return false, newAlpine(c), err
+		return false, newDummyOS(c), err
 	}
 	switch os.Family {
 	case fanalos.OpenSUSELeap, fanalos.OpenSUSETumbleweed, fanalos.OpenSUSE:
-		containerImage = newAlpine(c)
-		return false, containerImage, xerrors.Errorf("Unsupported OS : %s", os.Family)
+		return false, newDummyOS(c), xerrors.Errorf("Unsupported OS : %s", os.Family)
 	}
 
 	libScanners, err := convertLibWithScanner(libs)
 	if err != nil {
-		return false, newAlpine(c), err
+		return false, newDummyOS(c), err
 	}
 
 	p := newContainerImage(c, pkgs, libScanners)
