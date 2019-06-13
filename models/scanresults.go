@@ -159,8 +159,6 @@ func (r ScanResult) FilterIgnoreCves() ScanResult {
 			if con, ok := s.Containers[r.Container.Name]; ok {
 				ignoreCves = con.IgnoreCves
 			} else {
-				util.Log.Errorf("%s is not found in config.toml",
-					r.Container.Name)
 				return r
 			}
 		} else {
@@ -212,8 +210,6 @@ func (r ScanResult) FilterIgnorePkgs() ScanResult {
 			if con, ok := s.Containers[r.Container.Name]; ok {
 				ignorePkgsRegexps = con.IgnorePkgsRegexp
 			} else {
-				util.Log.Errorf("%s is not found in config.toml",
-					r.Container.Name)
 				return r
 			}
 		} else {
