@@ -59,11 +59,7 @@ func (o *centos) depsFastRoot() []string {
 }
 
 func (o *centos) depsDeep() []string {
-	return []string{
-		"yum-utils",
-		"yum-plugin-ps",
-		"yum-plugin-changelog",
-	}
+	return o.depsFastRoot()
 }
 
 func (o *centos) checkIfSudoNoPasswd() error {
@@ -104,18 +100,6 @@ func (o *centos) sudoNoPasswdCmdsDeep() []cmd {
 type rootPrivCentos struct{}
 
 func (o rootPrivCentos) repoquery() bool {
-	return false
-}
-
-func (o rootPrivCentos) yumRepolist() bool {
-	return false
-}
-
-func (o rootPrivCentos) yumUpdateInfo() bool {
-	return false
-}
-
-func (o rootPrivCentos) yumChangelog() bool {
 	return false
 }
 

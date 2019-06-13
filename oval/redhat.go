@@ -119,7 +119,6 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 				if v.LastModified.After(ovalContent.LastModified) {
 					util.Log.Debugf("%s, OvalID: %d ignroed: ",
 						cve.CveID, defPacks.def.ID)
-					continue
 				} else {
 					util.Log.Debugf("%s OVAL will be overwritten", cve.CveID)
 				}
