@@ -100,18 +100,6 @@ func (o rootPrivAmazon) repoquery() bool {
 	return false
 }
 
-func (o rootPrivAmazon) yumRepolist() bool {
-	return false
-}
-
-func (o rootPrivAmazon) yumUpdateInfo() bool {
-	return false
-}
-
-func (o rootPrivAmazon) yumChangelog() bool {
-	return false
-}
-
 func (o rootPrivAmazon) yumMakeCache() bool {
 	return false
 }

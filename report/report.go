@@ -67,7 +67,6 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			}
 			cpeURIs := []string{}
 
-			// runningContainer
 			if len(r.Container.ContainerID) == 0 {
 				cpeURIs = c.Conf.Servers[r.ServerName].CpeNames
 				owaspDCXMLPath := c.Conf.Servers[r.ServerName].OwaspDCXMLPath
@@ -80,6 +79,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 					cpeURIs = append(cpeURIs, cpes...)
 				}
 			} else {
+				// runningContainer
 				if s, ok := c.Conf.Servers[r.ServerName]; ok {
 					if con, ok := s.Containers[r.Container.Name]; ok {
 						cpeURIs = con.Cpes
@@ -325,8 +325,7 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 		return 0, err
 	}
 	if !ok {
-		util.Log.Warnf("OVAL entries of %s %s are not found. It's recommended to use OVAL to improve scanning accuracy. For details, see https://github.com/kotakanbe/goval-dictionary#usage , Then report with --ovaldb-path or --ovaldb-url flag", ovalFamily, r.Release)
-		return 0, nil
+		return 0, xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see https://github.com/kotakanbe/goval-dictionary#usage", ovalFamily, r.Release)
 	}
 
 	_, err = ovalClient.CheckIfOvalFresh(driver, ovalFamily, r.Release)
