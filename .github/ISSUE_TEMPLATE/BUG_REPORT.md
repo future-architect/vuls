@@ -1,3 +1,8 @@
+---
+name: Bug Report
+labels: bug
+about: If something isn't working as expected.
+---
 
 # What did you do? (required. The issue will be **closed** when not provided.)
 
