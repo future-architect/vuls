@@ -143,12 +143,13 @@ func (o *bsd) scanPackages() error {
 		Version: version,
 	}
 
-	rebootRequired, err := o.rebootRequired()
+	o.Kernel.RebootRequired, err = o.rebootRequired()
 	if err != nil {
-		o.log.Errorf("Failed to detect the kernel reboot required: %s", err)
-		return err
+		err = xerrors.Errorf("Failed to detect the kernel reboot required: %w", err)
+		o.log.Warnf("err: %+v", err)
+		o.warns = append(o.warns, err)
+		// Only warning this error
 	}
-	o.Kernel.RebootRequired = rebootRequired
 
 	packs, err := o.scanInstalledPackages()
 	if err != nil {

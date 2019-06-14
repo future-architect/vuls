@@ -245,5 +245,13 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}
+
+	for _, r := range res {
+		if len(r.Warnings) != 0 {
+			util.Log.Warnf("Warning: Some warnings occurred while scanning on %s: %s",
+				r.FormatServerName(), r.Warnings)
+		}
+	}
+
 	return report.RunTui(res)
 }

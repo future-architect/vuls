@@ -78,7 +78,8 @@ func (e *ovalResult) upsert(def ovalmodels.Definition, packName string, notFixed
 type request struct {
 	packName          string
 	versionRelease    string
-	NewVersionRelease string
+	newVersionRelease string
+	arch              string
 	binaryPackNames   []string
 	isSrcPack         bool
 }
@@ -105,8 +106,9 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 			reqChan <- request{
 				packName:          pack.Name,
 				versionRelease:    pack.FormatVer(),
-				NewVersionRelease: pack.FormatVer(),
+				newVersionRelease: pack.FormatVer(),
 				isSrcPack:         false,
+				arch:              pack.Arch,
 			}
 		}
 		for _, pack := range r.SrcPackages {
@@ -115,6 +117,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 				binaryPackNames: pack.BinaryNames,
 				versionRelease:  pack.Version,
 				isSrcPack:       true,
+				// arch:            pack.Arch,
 			}
 		}
 	}()
@@ -220,7 +223,8 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 		requests = append(requests, request{
 			packName:          pack.Name,
 			versionRelease:    pack.FormatVer(),
-			NewVersionRelease: pack.FormatNewVer(),
+			newVersionRelease: pack.FormatNewVer(),
+			arch:              pack.Arch,
 			isSrcPack:         false,
 		})
 	}
@@ -234,7 +238,7 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 	}
 
 	for _, req := range requests {
-		definitions, err := driver.GetByPackName(r.Release, req.packName)
+		definitions, err := driver.GetByPackName(r.Release, req.packName, req.arch)
 		if err != nil {
 			return relatedDefs, xerrors.Errorf("Failed to get %s OVAL info by package: %#v, err: %w", r.Family, req, err)
 		}
@@ -289,31 +293,41 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 			return true, true
 		}
 
+		// Compare between the installed version vs the version in OVAL
 		less, err := lessThan(family, req.versionRelease, ovalPack)
 		if err != nil {
 			util.Log.Debugf("Failed to parse versions: %s, Ver: %#v, OVAL: %#v, DefID: %s",
 				err, req.versionRelease, ovalPack, def.DefinitionID)
 			return false, false
 		}
-
 		if less {
-			if req.isSrcPack {
-				// Unable to judge whether fixed or not fixed of src package(Ubuntu, Debian)
+			// If the version of installed is less than in OVAL
+			switch family {
+			case config.RedHat,
+				config.Amazon,
+				config.SUSEEnterpriseServer,
+				config.Debian,
+				config.Ubuntu:
+				// Use fixed state in OVAL for these distros.
 				return true, false
 			}
+
+			// But CentOS can't judge whether fixed or unfixed.
+			// Because fixed state in RHEL's OVAL is different.
+			// So, it have to be judged version comparison.
 
 			// `offline` or `fast` scan mode can't get a updatable version.
 			// In these mode, the blow field was set empty.
 			// Vuls can not judge fixed or unfixed.
-			if req.NewVersionRelease == "" {
+			if req.newVersionRelease == "" {
 				return true, false
 			}
 
 			// compare version: newVer vs oval
-			less, err := lessThan(family, req.NewVersionRelease, ovalPack)
+			less, err := lessThan(family, req.newVersionRelease, ovalPack)
 			if err != nil {
 				util.Log.Debugf("Failed to parse versions: %s, NewVer: %#v, OVAL: %#v, DefID: %s",
-					err, req.NewVersionRelease, ovalPack, def.DefinitionID)
+					err, req.newVersionRelease, ovalPack, def.DefinitionID)
 				return false, false
 			}
 			return true, less
@@ -322,9 +336,13 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 	return false, false
 }
 
+var centosVerPattern = regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.centos)?`)
+var esVerPattern = regexp.MustCompile(`\.el(\d+)(?:_\d+)?`)
+
 func lessThan(family, versionRelease string, packB ovalmodels.Package) (bool, error) {
 	switch family {
-	case config.Debian, config.Ubuntu:
+	case config.Debian,
+		config.Ubuntu:
 		vera, err := debver.NewVersion(versionRelease)
 		if err != nil {
 			return false, err
@@ -334,16 +352,21 @@ func lessThan(family, versionRelease string, packB ovalmodels.Package) (bool, er
 			return false, err
 		}
 		return vera.LessThan(verb), nil
-	case config.Oracle, config.SUSEEnterpriseServer, config.Alpine:
+
+	case config.Oracle,
+		config.SUSEEnterpriseServer,
+		config.Alpine,
+		config.Amazon:
 		vera := rpmver.NewVersion(versionRelease)
 		verb := rpmver.NewVersion(packB.Version)
 		return vera.LessThan(verb), nil
-	case config.RedHat, config.CentOS: // TODO: Suport config.Scientific
-		rea := regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.centos)?`)
-		reb := regexp.MustCompile(`\.el(\d+)(?:_\d+)?`)
-		vera := rpmver.NewVersion(rea.ReplaceAllString(versionRelease, ".el$1"))
-		verb := rpmver.NewVersion(reb.ReplaceAllString(packB.Version, ".el$1"))
+
+	case config.RedHat,
+		config.CentOS:
+		vera := rpmver.NewVersion(centosVerPattern.ReplaceAllString(versionRelease, ".el$1"))
+		verb := rpmver.NewVersion(esVerPattern.ReplaceAllString(packB.Version, ".el$1"))
 		return vera.LessThan(verb), nil
+
 	default:
 		util.Log.Errorf("Not implemented yet: %s", family)
 	}

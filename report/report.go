@@ -28,6 +28,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/future-architect/vuls/libmanager"
+
 	"github.com/BurntSushi/toml"
 	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
@@ -64,6 +66,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 				r.ScannedCves = models.VulnInfos{}
 			}
 			cpeURIs := []string{}
+
 			if len(r.Container.ContainerID) == 0 {
 				cpeURIs = c.Conf.Servers[r.ServerName].CpeNames
 				owaspDCXMLPath := c.Conf.Servers[r.ServerName].OwaspDCXMLPath
@@ -76,6 +79,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 					cpeURIs = append(cpeURIs, cpes...)
 				}
 			} else {
+				// runningContainer
 				if s, ok := c.Conf.Servers[r.ServerName]; ok {
 					if con, ok := s.Containers[r.Container.Name]; ok {
 						cpeURIs = con.Cpes
@@ -161,7 +165,15 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, integrations ...Integration) error {
 	util.Log.Debugf("need to refresh")
 
-	nCVEs, err := FillWithOval(dbclient.OvalDB, r)
+	nCVEs, err := libmanager.FillLibrary(r)
+	if err != nil {
+		return xerrors.Errorf("Failed to fill with Library dependency: %w", err)
+	}
+	util.Log.Infof("%s: %d CVEs are detected with Library",
+		r.FormatServerName(), nCVEs)
+
+	nCVEs, err = FillWithOval(dbclient.OvalDB, r)
+
 	if err != nil {
 		return xerrors.Errorf("Failed to fill with OVAL: %w", err)
 	}
@@ -284,7 +296,10 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 	case c.Alpine:
 		ovalClient = oval.NewAlpine()
 		ovalFamily = c.Alpine
-	case c.Amazon, c.Raspbian, c.FreeBSD, c.Windows:
+	case c.Amazon:
+		ovalClient = oval.NewAmazon()
+		ovalFamily = c.Amazon
+	case c.Raspbian, c.FreeBSD, c.Windows:
 		return 0, nil
 	case c.ServerTypePseudo:
 		return 0, nil
@@ -310,8 +325,7 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 		return 0, err
 	}
 	if !ok {
-		util.Log.Warnf("OVAL entries of %s %s are not found. It's recommended to use OVAL to improve scanning accuracy. For details, see https://github.com/kotakanbe/goval-dictionary#usage , Then report with --ovaldb-path or --ovaldb-url flag", ovalFamily, r.Release)
-		return 0, nil
+		return 0, xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see https://github.com/kotakanbe/goval-dictionary#usage", ovalFamily, r.Release)
 	}
 
 	_, err = ovalClient.CheckIfOvalFresh(driver, ovalFamily, r.Release)
@@ -480,6 +494,20 @@ func fillAlerts(r *models.ScanResult) (enCnt int, jaCnt int) {
 
 const reUUID = "[\\da-f]{8}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{12}"
 
+// Scanning with the -containers-only, -images-only flag at scan time, the UUID of Container Host may not be generated,
+// so check it. Otherwise create a UUID of the Container Host and set it.
+func getOrCreateServerUUID(r models.ScanResult, server c.ServerInfo) (serverUUID string) {
+	if id, ok := server.UUIDs[r.ServerName]; !ok {
+		serverUUID = uuid.GenerateUUID()
+	} else {
+		matched, err := regexp.MatchString(reUUID, id)
+		if !matched || err != nil {
+			serverUUID = uuid.GenerateUUID()
+		}
+	}
+	return serverUUID
+}
+
 // EnsureUUIDs generate a new UUID of the scan target server if UUID is not assigned yet.
 // And then set the generated UUID to config.toml and scan results.
 func EnsureUUIDs(configPath string, results models.ScanResults) error {
@@ -500,20 +528,13 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 		name := ""
 		if r.IsContainer() {
 			name = fmt.Sprintf("%s@%s", r.Container.Name, r.ServerName)
-
-			// Scanning with the -containers-only flag at scan time, the UUID of Container Host may not be generated,
-			// so check it. Otherwise create a UUID of the Container Host and set it.
-			serverUUID := ""
-			if id, ok := server.UUIDs[r.ServerName]; !ok {
-				serverUUID = uuid.GenerateUUID()
-			} else {
-				matched, err := regexp.MatchString(reUUID, id)
-				if !matched || err != nil {
-					serverUUID = uuid.GenerateUUID()
-				}
+			if uuid := getOrCreateServerUUID(r, server); uuid != "" {
+				server.UUIDs[r.ServerName] = uuid
 			}
-			if serverUUID != "" {
-				server.UUIDs[r.ServerName] = serverUUID
+		} else if r.IsImage() {
+			name = fmt.Sprintf("%s:%s@%s", r.Image.Name, r.Image.Tag, r.ServerName)
+			if uuid := getOrCreateServerUUID(r, server); uuid != "" {
+				server.UUIDs[r.ServerName] = uuid
 			}
 		} else {
 			name = r.ServerName

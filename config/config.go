@@ -27,10 +27,10 @@ import (
 	"strings"
 
 	syslog "github.com/RackSec/srslog"
-	"golang.org/x/xerrors"
-
 	valid "github.com/asaskevich/govalidator"
+	"github.com/knqyf263/fanal/types"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/xerrors"
 )
 
 // Version of Vuls
@@ -118,6 +118,7 @@ type Config struct {
 	SSHNative      bool   `json:"sshNative,omitempty"`
 	SSHConfig      bool   `json:"sshConfig,omitempty"`
 	ContainersOnly bool   `json:"containersOnly,omitempty"`
+	ImagesOnly     bool   `json:"imagesOnly,omitempty"`
 	SkipBroken     bool   `json:"skipBroken,omitempty"`
 	CacheDBPath    string `json:"cacheDBPath,omitempty"`
 	Vvv            bool   `json:"vvv,omitempty"`
@@ -1059,12 +1060,14 @@ type ServerInfo struct {
 	IgnoreCves             []string                    `toml:"ignoreCves,omitempty" json:"ignoreCves,omitempty"`
 	IgnorePkgsRegexp       []string                    `toml:"ignorePkgsRegexp,omitempty" json:"ignorePkgsRegexp,omitempty"`
 	GitHubRepos            map[string]GitHubConf       `toml:"githubs" json:"githubs,omitempty"` // key: owner/repo
+	Images                 map[string]Image            `toml:"images" json:"images,omitempty"`
 	UUIDs                  map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
 	Memo                   string                      `toml:"memo,omitempty" json:"memo,omitempty"`
 	Enablerepo             []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, RHEL, Amazon
 	Optional               map[string]interface{}      `toml:"optional,omitempty" json:"optional,omitempty"`     // Optional key-value set that will be outputted to JSON
-
-	Type string `toml:"type,omitempty" json:"type,omitempty"` // "pseudo" or ""
+	Lockfiles              []string                    `toml:"lockfiles,omitempty" json:"lockfiles,omitempty"`   // ie) path/to/package-lock.json
+	FindLock               bool                        `toml:"findLock,omitempty" json:"findLock,omitempty"`
+	Type                   string                      `toml:"type,omitempty" json:"type,omitempty"` // "pseudo" or ""
 
 	WordPress WordPressConf `toml:"wordpress,omitempty" json:"wordpress,omitempty"`
 
@@ -1074,6 +1077,7 @@ type ServerInfo struct {
 
 	LogMsgAnsiColor string    `toml:"-" json:"-"` // DebugLog Color
 	Container       Container `toml:"-" json:"-"`
+	Image           Image     `toml:"-" json:"-"`
 	Distro          Distro    `toml:"-" json:"-"`
 	Mode            ScanMode  `toml:"-" json:"-"`
 }
@@ -1093,6 +1097,17 @@ type WordPressConf struct {
 	CmdPath        string `toml:"cmdPath" json:"cmdPath,omitempty"`
 	WPVulnDBToken  string `toml:"wpVulnDBToken" json:"-,omitempty"`
 	IgnoreInactive bool   `json:"ignoreInactive,omitempty"`
+}
+
+// Image is a scan container image info
+type Image struct {
+	Name             string             `json:"name"`
+	Tag              string             `json:"tag"`
+	DockerOption     types.DockerOption `json:"dockerOption,omitempty"`
+	Cpes             []string           `json:"cpes,omitempty"`
+	OwaspDCXMLPath   string             `json:"owaspDCXMLPath"`
+	IgnorePkgsRegexp []string           `json:"ignorePkgsRegexp,omitempty"`
+	IgnoreCves       []string           `json:"ignoreCves,omitempty"`
 }
 
 // GitHubConf is used for GitHub integration

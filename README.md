@@ -65,7 +65,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 
 - Alpine, Amazon Linux, CentOS, Debian, Oracle Linux, Raspbian, RHEL, SUSE Enterprise Linux, and Ubuntu
 - FreeBSD
-- Cloud, on-premise, and Docker
+- Cloud, on-premise, Docker Container and Docker Image
 
 ### High-quality scan
 
@@ -89,6 +89,11 @@ Vuls uses multiple vulnerability databases
 - [US-CERT](https://www.us-cert.gov/ncas/alerts)
 - [JPCERT](http://www.jpcert.or.jp/at/2019.html)
 - [WPVulnDB](https://wpvulndb.com/api)
+- [Node.js Security Working Group](https://github.com/nodejs/security-wg)
+- [Ruby Advisory Database](https://github.com/rubysec/ruby-advisory-db)
+- [Safety DB(Python)](https://github.com/pyupio/safety-db)
+- [PHP Security Advisories Database](https://github.com/FriendsOfPHP/security-advisories)
+- [RustSec Advisory Database](https://github.com/RustSec/advisory-db)
 - Changelog
 
 ### Fast scan and Deep scan
@@ -109,12 +114,7 @@ Vuls uses multiple vulnerability databases
 
 [Deep Scan](https://vuls.io/docs/en/architecture-deep-scan.html)
 
-- Scan with root privilege
-- Parses the Changelog
-    Changelog has a history of version changes. When a security issue is fixed, the relevant CVE ID is listed.
-    By parsing the changelog and analysing the updates between the installed version of software on the server and the newest version of that software
-    it's possible to create a list of all vulnerabilities that need to be fixed.
-- Sometimes load on the scan target server
+- Same as fast root scan for now
 
 ### [Remote scan, Local scan mode, Server mode](https://vuls.io/docs/en/architecture-remote-local.html)
 
@@ -129,9 +129,8 @@ Vuls uses multiple vulnerability databases
 [Server mode](https://vuls.io/docs/en/usage-server.html)
 
 - First, start Vuls in server mode and listen as an HTTP server.
-- Start Vuls in server mode and listen as an HTTP server.
 - Next, issue a command on the scan target server to collect software information. Then send the result to Vuls Server via HTTP. You receive the scan results as JSON format.
-- No SSH needed, No Scanner needed. Only issuing Linux commands directory on the scan tareget server.
+- No SSH needed, No Scanner needed. Only issuing Linux commands directory on the scan target server.
 
 ### **Dynamic** Analysis
 

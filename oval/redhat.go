@@ -119,7 +119,6 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 				if v.LastModified.After(ovalContent.LastModified) {
 					util.Log.Debugf("%s, OvalID: %d ignroed: ",
 						cve.CveID, defPacks.def.ID)
-					continue
 				} else {
 					util.Log.Debugf("%s OVAL will be overwritten", cve.CveID)
 				}
@@ -132,6 +131,9 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 			cveContents[ctype] = ovalContent
 			vinfo.CveContents = cveContents
 		}
+
+		vinfo.DistroAdvisories.AppendIfMissing(
+			o.convertToDistroAdvisory(&defPacks.def))
 
 		// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
 		for _, pack := range vinfo.AffectedPackages {
@@ -146,6 +148,21 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 		r.ScannedCves[cve.CveID] = vinfo
 	}
 	return
+}
+
+func (o RedHatBase) convertToDistroAdvisory(def *ovalmodels.Definition) *models.DistroAdvisory {
+	advisoryID := def.Title
+	if o.family == config.RedHat || o.family == config.CentOS {
+		ss := strings.Fields(def.Title)
+		advisoryID = strings.TrimSuffix(ss[0], ":")
+	}
+	return &models.DistroAdvisory{
+		AdvisoryID:  advisoryID,
+		Severity:    def.Advisory.Severity,
+		Issued:      def.Advisory.Issued,
+		Updated:     def.Advisory.Updated,
+		Description: def.Description,
+	}
 }
 
 func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *models.CveContent {
@@ -171,10 +188,10 @@ func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *mo
 		}
 
 		sev2, sev3 := "", ""
-		if score2 != 0 {
+		if score2 == 0 {
 			sev2 = severity
 		}
-		if score3 != 0 {
+		if score3 == 0 {
 			sev3 = severity
 		}
 
@@ -272,6 +289,23 @@ func NewOracle() Oracle {
 		RedHatBase{
 			Base{
 				family: config.Oracle,
+			},
+		},
+	}
+}
+
+// Amazon is the interface for RedhatBase OVAL
+type Amazon struct {
+	// Base
+	RedHatBase
+}
+
+// NewAmazon creates OVAL client for Amazon Linux
+func NewAmazon() Amazon {
+	return Amazon{
+		RedHatBase{
+			Base{
+				family: config.Amazon,
 			},
 		},
 	}
