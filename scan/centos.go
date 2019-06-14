@@ -47,15 +47,26 @@ func (o *centos) depsFast() []string {
 	if o.getServerInfo().Mode.IsOffline() {
 		return []string{}
 	}
+
 	// repoquery
-	return []string{"yum-utils"}
+	majorVersion, _ := o.Distro.MajorVersion()
+	if majorVersion < 8 {
+		return []string{"yum-utils"}
+	}
+	return []string{"dnf-utils"}
 }
 
 func (o *centos) depsFastRoot() []string {
-	return []string{
-		"yum-utils",
-		"yum-plugin-ps",
+	if o.getServerInfo().Mode.IsOffline() {
+		return []string{}
 	}
+
+	// repoquery
+	majorVersion, _ := o.Distro.MajorVersion()
+	if majorVersion < 8 {
+		return []string{"yum-utils"}
+	}
+	return []string{"dnf-utils"}
 }
 
 func (o *centos) depsDeep() []string {

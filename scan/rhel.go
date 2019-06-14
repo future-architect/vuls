@@ -53,7 +53,13 @@ func (o *rhel) depsFastRoot() []string {
 	if o.getServerInfo().Mode.IsOffline() {
 		return []string{}
 	}
-	return []string{"yum-utils"}
+
+	// repoquery
+	majorVersion, _ := o.Distro.MajorVersion()
+	if majorVersion < 8 {
+		return []string{"yum-utils"}
+	}
+	return []string{"dnf-utils"}
 }
 
 func (o *rhel) depsDeep() []string {
