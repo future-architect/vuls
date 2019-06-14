@@ -27,6 +27,7 @@ Twitter: [@vuls_en](https://twitter.com/vuls_en)
 
 | Version     | Main Feature |  Date |
 |:------------|:---------------------------------|:--------------------|
+| [v0.8.0](https://github.com/future-architect/vuls/releases/tag/v0.8.0) | secret | Coming sooln |
 | [v0.7.0](https://github.com/future-architect/vuls/releases/tag/v0.7.0) | WordPress Vulnerability Scan | 2019/Apr/8 |
 | [v0.6.3](https://github.com/future-architect/vuls/releases/tag/v0.6.3) | GitHub Integration | 2019/Feb/20 |
 | [v0.6.2](https://github.com/future-architect/vuls/releases/tag/v0.6.2) | Add US-CERT/JPCERT Alerts as VulnSrc | 2019/Jan/23 |
@@ -96,7 +97,7 @@ Vuls uses multiple vulnerability databases
 - [RustSec Advisory Database](https://github.com/RustSec/advisory-db)
 - Changelog
 
-### Fast scan and Deep scan
+### Scan mode
 
 [Fast Scan](https://vuls.io/docs/en/architecture-fast-scan.html)
 
@@ -112,11 +113,7 @@ Vuls uses multiple vulnerability databases
 - Detect processes which updated before but not restarting yet using checkrestart of debian-goodies (Debian and Ubuntu)
 - Offline mode scan with no internet access. (CentOS, Debian, Oracle Linux, Red Hat, and Ubuntu)
 
-[Deep Scan](https://vuls.io/docs/en/architecture-deep-scan.html)
-
-- Same as fast root scan for now
-
-### [Remote scan, Local scan mode, Server mode](https://vuls.io/docs/en/architecture-remote-local.html)
+### [Remote, Local scan mode, Server mode](https://vuls.io/docs/en/architecture-remote-local.html)
 
 [Remote scan mode](https://vuls.io/docs/en/architecture-remote-scan.html)
 
@@ -137,17 +134,33 @@ Vuls uses multiple vulnerability databases
 - It is possible to acquire the state of the server by connecting via SSH and executing the command.
 - Vuls warns when the scan target server was updated the kernel etc. but not restarting it.
 
-### Scan vulnerabilities of non-OS packages
+### **Static** Analysis
 
-- [Common Platform Enumeration (CPE) based Scan](https://vuls.io/docs/en/usage-scan-non-os-packages.html#how-to-search-cpe-name-by-software-name)
-  - Scan middleware, programming language libraries and framework for vulnerability
-  - Support software registered in CPE
+Vuls v0.8.0 can scan Docker images using [knqyf263/trivy](https://github.com/knqyf263/trivy).
+Following Registry supported.
 
-## Integration
+- ECR
+- GCR
+- Local Image
 
-- [GitHub Security Alerts](https://vuls.io/docs/en/usage-scan-non-os-packages.html#usage-integrate-with-github-security-alerts)
-- [OWASP Dependency Check](https://vuls.io/docs/en/usage-scan-non-os-packages.html#usage-integrate-with-owasp-dependency-check-to-automatic-update-when-the-libraries-are-updated-experimental)
-- [WordPress](https://vuls.io/docs/en/usage-scan-wordpress.html)
+For details, see [Scan docker image](https://vuls.io/docs/en/tutorial-scan-docker-image.html)
+
+### Scan vulnerabilities of non-OS-packages
+
+- Libraries of programming language
+- Self-compiled software
+- Network Devices
+
+Vuls has some options to detect the vulnerabilities
+
+- [Lockfile based Scan](https://vuls.io/docs/en/usage-scan-non-os-packages.html#library-vulns-scan)
+- [GitHub Integration](https://vuls.io/docs/en/usage-scan-non-os-packages.html#usage-integrate-with-github-security-alerts)
+- [Common Platform Enumeration (CPE) based Scan](https://vuls.io/docs/en/usage-scan-non-os-packages.html#cpe-scan)
+- [OWASP Dependency Check Integration](https://vuls.io/docs/en/usage-scan-non-os-packages.html#usage-integrate-with-owasp-dependency-check-to-automatic-update-when-the-libraries-are-updated-experimental)
+
+## Scan WordPress core, themes, plugins
+
+- [Scan WordPress](https://vuls.io/docs/en/usage-scan-wordpress.html)
 
 ## MISC
 
