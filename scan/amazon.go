@@ -31,9 +31,6 @@ func newAmazon(c config.ServerInfo) *amazon {
 }
 
 func (o *amazon) checkScanMode() error {
-	if o.getServerInfo().Mode.IsOffline() {
-		return xerrors.New("Remove offline scan mode, Amazon needs internet connection")
-	}
 	return nil
 }
 
