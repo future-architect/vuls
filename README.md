@@ -157,7 +157,7 @@ Vuls uses multiple vulnerability databases
 - Auto-generation of configuration file template
   - Auto-detection of servers set using CIDR, generate configuration file template
 - Email and Slack notification is possible (supports Japanese language)
-- Scan result is viewable on accessory software, TUI Viewer in a terminal or Web UI ([VulsRepo](https://github.com/usiusi360/vulsrepo)).
+- Scan result is viewable on accessory software, TUI Viewer in a terminal or Web UI ([VulsRepo](https://github.com/future-architect/vulsrepo)).
 
 ----
 
