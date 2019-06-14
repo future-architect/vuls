@@ -264,6 +264,8 @@ github.com/kotakanbe/goval-dictionary v0.1.3-0.20190612145907-3fbb67115698 h1:5/
 github.com/kotakanbe/goval-dictionary v0.1.3-0.20190612145907-3fbb67115698/go.mod h1:D0FzzGCYCJCgPy5+wGgEOvWTb8fxUxqdxkWM2JDwguA=
 github.com/kotakanbe/goval-dictionary v0.1.3-0.20190613041505-2362c088a437 h1:gnwqfC+G78bmvVHETLvZOUKopUD/ljQAdwcvHiLKMKA=
 github.com/kotakanbe/goval-dictionary v0.1.3-0.20190613041505-2362c088a437/go.mod h1:VupP39J8370MdBkmvQQVmuYf98VrcQzhiGo+UiNW4rs=
+github.com/kotakanbe/goval-dictionary v0.1.3-0.20190613053258-078b163b76ec h1:gMji7JMOrnUYUorYUTM7TRlvy8D613WkQhayEQhBsFI=
+github.com/kotakanbe/goval-dictionary v0.1.3-0.20190613053258-078b163b76ec/go.mod h1:VupP39J8370MdBkmvQQVmuYf98VrcQzhiGo+UiNW4rs=
 github.com/kotakanbe/goval-dictionary v0.1.3-0.20190613053258-8b98657de17d h1:S2hGRg/3mxi8eR7DROKT9kqTEjGLgm4dDHm72/DIJrQ=
 github.com/kotakanbe/goval-dictionary v0.1.3-0.20190613053258-8b98657de17d/go.mod h1:VupP39J8370MdBkmvQQVmuYf98VrcQzhiGo+UiNW4rs=
 github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96 h1:xNVK0mQJdQjw+QYeaMM4G6fvucWr8rTGGIhlPakx1wU=
