@@ -27,7 +27,7 @@ Twitter: [@vuls_en](https://twitter.com/vuls_en)
 
 | Version     | Main Feature |  Date |
 |:------------|:---------------------------------|:--------------------|
-| [v0.8.0](https://github.com/future-architect/vuls/releases/tag/v0.8.0) | secret | Coming sooln |
+| [v0.8.0](https://github.com/future-architect/vuls/releases/tag/v0.8.0) | secret | Coming soon |
 | [v0.7.0](https://github.com/future-architect/vuls/releases/tag/v0.7.0) | WordPress Vulnerability Scan | 2019/Apr/8 |
 | [v0.6.3](https://github.com/future-architect/vuls/releases/tag/v0.6.3) | GitHub Integration | 2019/Feb/20 |
 | [v0.6.2](https://github.com/future-architect/vuls/releases/tag/v0.6.2) | Add US-CERT/JPCERT Alerts as VulnSrc | 2019/Jan/23 |
