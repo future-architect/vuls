@@ -1,4 +1,6 @@
 project_name: vuls
+env:
+  - GO111MODULE=on
 release:
   github:
     owner: future-architect
