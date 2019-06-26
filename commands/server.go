@@ -94,8 +94,7 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
 
 	wd, _ := os.Getwd()
-	defaultConfPath := filepath.Join(wd, "config.toml")
-	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
+	f.StringVar(&p.configPath, "config", "", "/path/to/toml")
 
 	defaultResultsDir := filepath.Join(wd, "results")
 	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
@@ -151,9 +150,11 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
 	cvelog.SetLogger(c.Conf.LogDir, false, c.Conf.Debug, false)
 
-	if err := c.Load(p.configPath, ""); err != nil {
-		util.Log.Errorf("Error loading %s. err: %+v", p.configPath, err)
-		return subcommands.ExitUsageError
+	if p.configPath != "" {
+		if err := c.Load(p.configPath, ""); err != nil {
+			util.Log.Errorf("Error loading %s. err: %+v", p.configPath, err)
+			return subcommands.ExitUsageError
+		}
 	}
 
 	c.Conf.CveDict.Overwrite(p.cveDict)
