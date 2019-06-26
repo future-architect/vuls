@@ -353,14 +353,14 @@ func (l *base) detectDeepSecurity() (fingerprint string, err error) {
 }
 
 func (l *base) detectIPSs() {
-	ips := map[string]string{}
+	ips := map[config.IPS]string{}
 
 	fingerprint, err := l.detectDeepSecurity()
 	if err != nil {
 		return
 	}
 	ips[config.DeepSecurity] = fingerprint
-	l.ServerInfo.IPSIdentifier = ips
+	l.ServerInfo.IPSIdentifiers = ips
 }
 
 func (l *base) detectRunningOnAws() (ok bool, instanceID string, err error) {
@@ -459,7 +459,7 @@ func (l *base) convertToModel() models.ScanResult {
 		Platform:          l.Platform,
 		IPv4Addrs:         l.ServerInfo.IPv4Addrs,
 		IPv6Addrs:         l.ServerInfo.IPv6Addrs,
-		IPSIdentifier:     l.ServerInfo.IPSIdentifier,
+		IPSIdentifiers:    l.ServerInfo.IPSIdentifiers,
 		ScannedCves:       l.VulnInfos,
 		ScannedVia:        scannedVia,
 		RunningKernel:     l.Kernel,

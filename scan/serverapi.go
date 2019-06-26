@@ -594,7 +594,7 @@ func DetectIPSs(timeoutSec int) {
 			util.Log.Infof("(%d/%d) %s is running on %v",
 				i+1, len(servers),
 				s.getServerInfo().ServerName,
-				s.getServerInfo().IPSIdentifier,
+				s.getServerInfo().IPSIdentifiers,
 			)
 		}
 	}
