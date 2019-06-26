@@ -336,16 +336,16 @@ func (l *base) detectPlatform() {
 	return
 }
 
-var dsHash = "AgentStatus.agentCertHash: "
+var dsFingerPrintPrefix = "AgentStatus.agentCertHash: "
 
 func (l *base) detectDeepSecurity() (fingerprint string, err error) {
 	if r := l.exec("test -f /opt/ds_agent/dsa_query", sudo); r.isSuccess() {
-		cmd := fmt.Sprintf(`/opt/ds_agent/dsa_query -c "GetAgentStatus" | grep %q`, dsHash)
+		cmd := fmt.Sprintf(`/opt/ds_agent/dsa_query -c "GetAgentStatus" | grep %q`, dsFingerPrintPrefix)
 		r := l.exec(cmd, sudo)
 		if r.isSuccess() {
 			line := strings.TrimSpace(r.Stdout)
 
-			return line[len(dsHash):], nil
+			return line[len(dsFingerPrintPrefix):], nil
 		}
 	}
 

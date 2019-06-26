@@ -589,7 +589,6 @@ func detectPlatforms(timeoutSec int) {
 func DetectIPSs(timeoutSec int) {
 	detectIPSs(timeoutSec)
 	for i, s := range servers {
-		util.Log.Debugln("detect ips")
 		if !s.getServerInfo().IsContainer() {
 			util.Log.Infof("(%d/%d) %s is running on %v",
 				i+1, len(servers),
