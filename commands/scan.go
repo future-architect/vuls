@@ -211,7 +211,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	util.Log.Info("Detecting Platforms... ")
 	scan.DetectPlatforms(p.timeoutSec)
-	util.Log.Info("Detecting DeepSecurity... ")
+	util.Log.Info("Detecting IPS identifiers... ")
 	scan.DetectIPSs(p.timeoutSec)
 
 	util.Log.Info("Scanning vulnerabilities... ")
