@@ -54,6 +54,7 @@ type osTypeInterface interface {
 	setDistro(string, string)
 	getDistro() config.Distro
 	detectPlatform()
+	detectIPSs()
 	getPlatform() models.Platform
 
 	checkScanMode() error
@@ -579,6 +580,31 @@ func detectPlatforms(timeoutSec int) {
 	parallelExec(func(o osTypeInterface) error {
 		o.detectPlatform()
 		// Logging only if platform can not be specified
+		return nil
+	}, timeoutSec)
+	return
+}
+
+// DetectIPSs detects the IPS of each servers.
+func DetectIPSs(timeoutSec int) {
+	detectIPSs(timeoutSec)
+	for i, s := range servers {
+		util.Log.Debugln("detect ips")
+		if !s.getServerInfo().IsContainer() {
+			util.Log.Infof("(%d/%d) %s is running on %v",
+				i+1, len(servers),
+				s.getServerInfo().ServerName,
+				s.getServerInfo().IPSIdentifier,
+			)
+		}
+	}
+	return
+}
+
+func detectIPSs(timeoutSec int) {
+	parallelExec(func(o osTypeInterface) error {
+		o.detectIPSs()
+		// Logging only if IPS can not be specified
 		return nil
 	}, timeoutSec)
 	return

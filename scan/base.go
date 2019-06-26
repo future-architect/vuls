@@ -336,6 +336,34 @@ func (l *base) detectPlatform() {
 	return
 }
 
+var dsHash = "AgentStatus.agentCertHash: "
+
+func (l *base) detectDeepSecurity() (fingerprint string, err error) {
+	if r := l.exec("test -f /opt/ds_agent/dsa_query", sudo); r.isSuccess() {
+		cmd := fmt.Sprintf(`/opt/ds_agent/dsa_query -c "GetAgentStatus" | grep %q`, dsHash)
+		r := l.exec(cmd, sudo)
+		if r.isSuccess() {
+			line := strings.TrimSpace(r.Stdout)
+
+			return line[len(dsHash):], nil
+		}
+	}
+
+	return "", xerrors.Errorf("Failed to detect deepsecurity %s", l.ServerInfo.ServerName)
+}
+
+func (l *base) detectIPSs() {
+	ips := map[string]string{}
+
+	fingerprint, err := l.detectDeepSecurity()
+	if err != nil {
+		return
+	}
+	ips[config.DeepSecurity] = fingerprint
+	l.ServerInfo.IPSIdentifier = ips
+	return
+}
+
 func (l *base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 	if r := l.exec("type curl", noSudo); r.isSuccess() {
 		cmd := "curl --max-time 1 --noproxy 169.254.169.254 http://169.254.169.254/latest/meta-data/instance-id"
@@ -432,6 +460,7 @@ func (l *base) convertToModel() models.ScanResult {
 		Platform:          l.Platform,
 		IPv4Addrs:         l.ServerInfo.IPv4Addrs,
 		IPv6Addrs:         l.ServerInfo.IPv6Addrs,
+		IPSIdentifier:     l.ServerInfo.IPSIdentifier,
 		ScannedCves:       l.VulnInfos,
 		ScannedVia:        scannedVia,
 		RunningKernel:     l.Kernel,
