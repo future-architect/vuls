@@ -1,6 +1,6 @@
 package config
 
 const (
-	// DeepSecuritySaaS is
+	// DeepSecurity is
 	DeepSecurity = "deepsecurity"
 )

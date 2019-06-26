@@ -598,7 +598,6 @@ func DetectIPSs(timeoutSec int) {
 			)
 		}
 	}
-	return
 }
 
 func detectIPSs(timeoutSec int) {
@@ -607,7 +606,6 @@ func detectIPSs(timeoutSec int) {
 		// Logging only if IPS can not be specified
 		return nil
 	}, timeoutSec)
-	return
 }
 
 // Scan scan

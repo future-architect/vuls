@@ -361,7 +361,6 @@ func (l *base) detectIPSs() {
 	}
 	ips[config.DeepSecurity] = fingerprint
 	l.ServerInfo.IPSIdentifier = ips
-	return
 }
 
 func (l *base) detectRunningOnAws() (ok bool, instanceID string, err error) {
