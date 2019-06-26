@@ -117,3 +117,7 @@ func (o rootPrivCentos) repoquery() bool {
 func (o rootPrivCentos) yumMakeCache() bool {
 	return false
 }
+
+func (o rootPrivCentos) yumPS() bool {
+	return false
+}

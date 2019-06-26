@@ -94,3 +94,7 @@ func (o rootPrivOracle) repoquery() bool {
 func (o rootPrivOracle) yumMakeCache() bool {
 	return true
 }
+
+func (o rootPrivOracle) yumPS() bool {
+	return true
+}

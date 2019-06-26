@@ -100,3 +100,7 @@ func (o rootPrivAmazon) repoquery() bool {
 func (o rootPrivAmazon) yumMakeCache() bool {
 	return false
 }
+
+func (o rootPrivAmazon) yumPS() bool {
+	return false
+}

@@ -142,6 +142,7 @@ type redhatBase struct {
 type rootPriv interface {
 	repoquery() bool
 	yumMakeCache() bool
+	yumPS() bool
 }
 
 type cmd struct {
@@ -431,30 +432,22 @@ func (o *redhatBase) parseUpdatablePacksLine(line string) (models.Package, error
 	return p, nil
 }
 
-func (o *redhatBase) isExecScanUsingYum() bool {
-	if o.getServerInfo().Mode.IsOffline() {
-		return false
-	}
-	if o.Distro.Family == config.CentOS {
-		// CentOS doesn't have security channel
-		return false
-	}
-	if o.getServerInfo().Mode.IsFastRoot() || o.getServerInfo().Mode.IsDeep() {
-		return true
-	}
-	return true
-}
-
 func (o *redhatBase) isExecYumPS() bool {
-	// RedHat has no yum-ps
 	switch o.Distro.Family {
-	case config.RedHat,
+	case
 		config.OpenSUSE,
 		config.OpenSUSELeap,
 		config.SUSEEnterpriseServer,
 		config.SUSEEnterpriseDesktop,
 		config.SUSEOpenstackCloud:
 		return false
+	case config.RedHat:
+		// RHEL8 dnf doesn't have yum-pulgin-ps
+		majorVersion, err := o.Distro.MajorVersion()
+		if err != nil || 8 < majorVersion {
+			o.log.Errorf("yum ps Not implemented yet: %s, err: %s", o.Distro, err)
+			return false
+		}
 	}
 
 	// yum ps needs internet connection
@@ -496,15 +489,19 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 	return true
 }
 
+// How to install yum-plugin-ps on RHEL
+// # yum-config-manager --enable rhui-REGION-rhel-server-optional
+// # yum install yum-plugin-ps
+// # yum-config-manager --disable rhui-REGION-rhel-server-optional
 func (o *redhatBase) yumPS() error {
 	cmd := "LANGUAGE=en_US.UTF-8 yum info yum"
-	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
+	r := o.exec(util.PrependProxyEnv(cmd), o.sudo.yumPS())
 	if !r.isSuccess() {
 		return xerrors.Errorf("Failed to SSH: %s", r)
 	}
 	if !o.checkYumPsInstalled(r.Stdout) {
 		switch o.Distro.Family {
-		case config.RedHat, config.Oracle:
+		case config.Oracle:
 			return nil
 		default:
 			return xerrors.New("yum-plugin-ps is not installed")
