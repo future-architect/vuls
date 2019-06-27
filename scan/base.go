@@ -339,16 +339,18 @@ func (l *base) detectPlatform() {
 var dsFingerPrintPrefix = "AgentStatus.agentCertHash: "
 
 func (l *base) detectDeepSecurity() (fingerprint string, err error) {
-	if r := l.exec("test -f /opt/ds_agent/dsa_query", sudo); r.isSuccess() {
-		cmd := fmt.Sprintf(`/opt/ds_agent/dsa_query -c "GetAgentStatus" | grep %q`, dsFingerPrintPrefix)
-		r := l.exec(cmd, sudo)
-		if r.isSuccess() {
-			line := strings.TrimSpace(r.Stdout)
-
-			return line[len(dsFingerPrintPrefix):], nil
+	// only work root user
+	if l.getServerInfo().Mode.IsFastRoot() {
+		if r := l.exec("test -f /opt/ds_agent/dsa_query", sudo); r.isSuccess() {
+			cmd := fmt.Sprintf(`/opt/ds_agent/dsa_query -c "GetAgentStatus" | grep %q`, dsFingerPrintPrefix)
+			r := l.exec(cmd, sudo)
+			if r.isSuccess() {
+				line := strings.TrimSpace(r.Stdout)
+				return line[len(dsFingerPrintPrefix):], nil
+			}
+			l.warns = append(l.warns, xerrors.New("Fail to retrieve deepsecurity fingerprint"))
 		}
 	}
-
 	return "", xerrors.Errorf("Failed to detect deepsecurity %s", l.ServerInfo.ServerName)
 }
 

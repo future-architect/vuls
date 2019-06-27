@@ -590,10 +590,10 @@ func DetectIPSs(timeoutSec int) {
 	detectIPSs(timeoutSec)
 	for i, s := range servers {
 		if !s.getServerInfo().IsContainer() {
-			util.Log.Infof("(%d/%d) %s is running on %v",
+			util.Log.Infof("(%d/%d) %s has %d IPS integration",
 				i+1, len(servers),
 				s.getServerInfo().ServerName,
-				s.getServerInfo().IPSIdentifiers,
+				len(s.getServerInfo().IPSIdentifiers),
 			)
 		}
 	}
