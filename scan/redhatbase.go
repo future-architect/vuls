@@ -471,85 +471,69 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 	return true
 }
 
-type loadedFile struct {
-	pid      string
-	procName string
-	path     string
-}
-
 func (o *redhatBase) yumPs() error {
 	stdout, err := o.ps()
 	if err != nil {
 		return xerrors.Errorf("Failed to yum ps ushida: %w", err)
 	}
 	pidNames := o.parsePs(stdout)
-	loadedFiles := []loadedFile{}
-	pkgLoadedFiles := map[string][]loadedFile{}
-
-	for pid, name := range pidNames {
+	pidLoadedFiles := map[string][]string{}
+	// for pid, name := range pidNames {
+	for pid := range pidNames {
 		stdout := ""
 		stdout, err = o.lsProcExe(pid)
 		if err != nil {
-			o.log.Debug("Failed to exec /proc/%d/exe: %s", pid, err)
+			o.log.Debugf("Failed to exec /proc/%s/exe err: %s", pid, err)
 			continue
 		}
 		s, err := o.parseLsProcExe(stdout)
 		if err != nil {
-			o.log.Debug("Failed to parse /proc/%d/exe: %s", pid, err)
+			o.log.Debugf("Failed to parse /proc/%s/exe: %s", pid, err)
 			continue
 		}
-		loadedFiles = append(loadedFiles, loadedFile{
-			pid:      pid,
-			procName: name,
-			path:     s,
-		})
+		pidLoadedFiles[pid] = append(pidLoadedFiles[pid], s)
 
 		stdout, err = o.grepProcMap(pid)
 		if err != nil {
-			o.log.Debug("Failed to exec /proc/%d/maps: %s", pid, err)
+			o.log.Debugf("Failed to exec /proc/%s/maps: %s", pid, err)
 			continue
 		}
 		ss := o.parseGrepProcMap(stdout)
 		for _, s := range ss {
-			loadedFiles = append(loadedFiles, loadedFile{
-				pid:      pid,
-				procName: name,
-				path:     s,
-			})
+			pidLoadedFiles[pid] = append(pidLoadedFiles[pid], s)
 		}
 	}
 
-	for _, loaded := range loadedFiles {
-		name, ok, err := o.getPkgName(loaded.path)
+	for pid, loadedFiles := range pidLoadedFiles {
+		o.log.Debugf("rpm -qf: %#v", loadedFiles)
+		pkgNames, err := o.getPkgName(loadedFiles)
 		if err != nil {
-			o.log.Debug("Failed to get package name by file path: %s", name, err)
+			o.log.Debugf("Failed to get package name by file path: %s, err: %s", pkgNames, err)
 			continue
 		}
-		if !ok {
-			continue
-		}
-		pkgLoadedFiles[name] = append(pkgLoadedFiles[name], loaded)
-	}
 
-	for fqpn, loadedFiles := range pkgLoadedFiles {
-		uniq := map[string]loadedFile{}
-		for _, loaded := range loadedFiles {
-			uniq[loaded.pid] = loaded
+		uniq := map[string]struct{}{}
+		for _, name := range pkgNames {
+			uniq[name] = struct{}{}
 		}
 
-		procs := []models.AffectedProcess{}
-		for _, loaded := range uniq {
-			procs = append(procs, models.AffectedProcess{
-				PID:  loaded.pid,
-				Name: loaded.procName,
-			})
+		procName := ""
+		if _, ok := pidNames[pid]; ok {
+			procName = pidNames[pid]
 		}
-		p, err := o.Packages.FindByFQPN(fqpn)
-		if err != nil {
-			return err
+		proc := models.AffectedProcess{
+			PID:  pid,
+			Name: procName,
 		}
-		p.AffectedProcs = procs
-		o.Packages[p.Name] = *p
+
+		for fqpn := range uniq {
+			p, err := o.Packages.FindByFQPN(fqpn)
+			if err != nil {
+				return err
+			}
+			p.AffectedProcs = append(p.AffectedProcs, proc)
+			o.Packages[p.Name] = *p
+		}
 	}
 	return nil
 }
@@ -645,19 +629,22 @@ func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
 	return strings.Replace(fqpn, "-(none):", "-", -1), nil
 }
 
-func (o *redhatBase) getPkgName(path string) (pkgName string, found bool, err error) {
-	cmd := rpmQf(o.Distro) + path
+func (o *redhatBase) getPkgName(paths []string) (pkgNames []string, err error) {
+	cmd := rpmQf(o.Distro) + strings.Join(paths, " ")
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess() {
-		return "", false, xerrors.Errorf("Failed to SSH: %s", r)
+		return nil, xerrors.Errorf("Failed to SSH: %s", r)
 	}
 
-	if trimed := strings.TrimSpace(r.Stdout); len(trimed) != 0 {
-		pack, err := o.parseInstalledPackagesLine(trimed)
+	scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
+	for scanner.Scan() {
+		line := scanner.Text()
+		pack, err := o.parseInstalledPackagesLine(line)
 		if err != nil {
-			return "", false, nil
+			o.log.Debugf("Failed to parse rpm -qf line: %s, r: %s. continue", line, r)
+			continue
 		}
-		return pack.FQPN(), true, nil
+		pkgNames = append(pkgNames, pack.FQPN())
 	}
-	return "", false, nil
+	return pkgNames, nil
 }

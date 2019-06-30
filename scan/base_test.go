@@ -22,6 +22,13 @@ import (
 	"testing"
 
 	"github.com/future-architect/vuls/config"
+	_ "github.com/knqyf263/fanal/analyzer/library/bundler"
+	_ "github.com/knqyf263/fanal/analyzer/library/cargo"
+	_ "github.com/knqyf263/fanal/analyzer/library/composer"
+	_ "github.com/knqyf263/fanal/analyzer/library/npm"
+	_ "github.com/knqyf263/fanal/analyzer/library/pipenv"
+	_ "github.com/knqyf263/fanal/analyzer/library/poetry"
+	_ "github.com/knqyf263/fanal/analyzer/library/yarn"
 )
 
 func TestParseDockerPs(t *testing.T) {
@@ -176,5 +183,72 @@ func TestParseSystemctlStatus(t *testing.T) {
 		if tt.out != actual {
 			t.Errorf("expected %v, actual %v", tt.out, actual)
 		}
+	}
+}
+
+func Test_base_parseLsProcExe(t *testing.T) {
+	type args struct {
+		stdout string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "systemd",
+			args: args{
+				stdout: "lrwxrwxrwx 1 root root 0 Jun 29 17:13 /proc/1/exe -> /lib/systemd/systemd",
+			},
+			want:    "/lib/systemd/systemd",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &base{}
+			got, err := l.parseLsProcExe(tt.args.stdout)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("base.parseLsProcExe() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("base.parseLsProcExe() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_base_parseGrepProcMap(t *testing.T) {
+	type args struct {
+		stdout string
+	}
+	tests := []struct {
+		name        string
+		args        args
+		wantSoPaths []string
+	}{
+		{
+			name: "systemd",
+			args: args{
+				`/etc/selinux/targeted/contexts/files/file_contexts.bin
+/etc/selinux/targeted/contexts/files/file_contexts.homedirs.bin
+/usr/lib64/libdl-2.28.so`,
+			},
+			wantSoPaths: []string{
+				"/etc/selinux/targeted/contexts/files/file_contexts.bin",
+				"/etc/selinux/targeted/contexts/files/file_contexts.homedirs.bin",
+				"/usr/lib64/libdl-2.28.so",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &base{}
+			if gotSoPaths := l.parseGrepProcMap(tt.args.stdout); !reflect.DeepEqual(gotSoPaths, tt.wantSoPaths) {
+				t.Errorf("base.parseGrepProcMap() = %v, want %v", gotSoPaths, tt.wantSoPaths)
+			}
+		})
 	}
 }

@@ -80,10 +80,11 @@ func (o *amazon) sudoNoPasswdCmdsFast() []cmd {
 
 func (o *amazon) sudoNoPasswdCmdsFastRoot() []cmd {
 	return []cmd{
-		{"yum -q ps all --color=never", exitStatusZero},
-		{"stat /proc/1/exe", exitStatusZero},
 		{"needs-restarting", exitStatusZero},
 		{"which which", exitStatusZero},
+		{"stat /proc/1/exe", exitStatusZero},
+		{"ls -l /proc/1/exe", exitStatusZero},
+		{"cat /proc/1/maps", exitStatusZero},
 	}
 }
 

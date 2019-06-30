@@ -69,8 +69,8 @@ func rpmQa(distro config.Distro) string {
 }
 
 func rpmQf(distro config.Distro) string {
-	const old = `rpm -qf --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}" `
-	const new = `rpm -qf --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}" `
+	const old = `rpm -qf --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n" `
+	const new = `rpm -qf --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n" `
 	switch distro.Family {
 	case config.SUSEEnterpriseServer:
 		if v, _ := distro.MajorVersion(); v < 12 {
