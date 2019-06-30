@@ -433,10 +433,16 @@ func (o *redhatBase) parseUpdatablePacksLine(line string) (models.Package, error
 }
 
 func (o *redhatBase) isExecYumPS() bool {
-	if o.getServerInfo().Mode.IsFast() {
+	switch o.Distro.Family {
+	case config.Oracle,
+		config.OpenSUSE,
+		config.OpenSUSELeap,
+		config.SUSEEnterpriseServer,
+		config.SUSEEnterpriseDesktop,
+		config.SUSEOpenstackCloud:
 		return false
 	}
-	return true
+	return !o.getServerInfo().Mode.IsFast()
 }
 
 func (o *redhatBase) isExecNeedsRestarting() bool {
@@ -474,7 +480,7 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 func (o *redhatBase) yumPs() error {
 	stdout, err := o.ps()
 	if err != nil {
-		return xerrors.Errorf("Failed to yum ps ushida: %w", err)
+		return xerrors.Errorf("Failed to yum ps: %w", err)
 	}
 	pidNames := o.parsePs(stdout)
 	pidLoadedFiles := map[string][]string{}
@@ -499,9 +505,7 @@ func (o *redhatBase) yumPs() error {
 			continue
 		}
 		ss := o.parseGrepProcMap(stdout)
-		for _, s := range ss {
-			pidLoadedFiles[pid] = append(pidLoadedFiles[pid], s)
-		}
+		pidLoadedFiles[pid] = append(pidLoadedFiles[pid], ss...)
 	}
 
 	for pid, loadedFiles := range pidLoadedFiles {
