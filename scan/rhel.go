@@ -57,10 +57,7 @@ func (o *rhel) depsFastRoot() []string {
 	// repoquery
 	majorVersion, _ := o.Distro.MajorVersion()
 	if majorVersion < 8 {
-		return []string{
-			"yum-utils",
-			"yum-plugin-ps",
-		}
+		return []string{"yum-utils"}
 	}
 	return []string{"dnf-utils"}
 }
@@ -93,18 +90,12 @@ func (o *rhel) sudoNoPasswdCmdsFastRoot() []cmd {
 		return []cmd{
 			{"repoquery -h", exitStatusZero},
 		}
-	} else if majorVersion == 7 {
-		return []cmd{
-			{"yum info yum", exitStatusZero},
-			{"yum -q ps all --color=never", exitStatusZero},
-			{"repoquery -h", exitStatusZero},
-			{"needs-restarting", exitStatusZero},
-		}
 	}
-	// RHEL8 dnf doesn't have yum-ps
 	return []cmd{
 		{"repoquery -h", exitStatusZero},
 		{"needs-restarting", exitStatusZero},
+		{"/bin/ls -l /proc/*/exe", exitStatusZero},
+		{"/bin/grep /proc/*/maps", exitStatusZero},
 	}
 }
 

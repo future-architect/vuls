@@ -189,11 +189,8 @@ func (o *redhatBase) preCure() error {
 }
 
 func (o *redhatBase) postScan() error {
-	//TODO
-	o.yumPsUshida()
-
 	if o.isExecYumPS() {
-		if err := o.yumPS(); err != nil {
+		if err := o.yumPs(); err != nil {
 			err = xerrors.Errorf("Failed to execute yum-ps: %w", err)
 			o.log.Warnf("err: %+v", err)
 			o.warns = append(o.warns, err)
@@ -436,25 +433,7 @@ func (o *redhatBase) parseUpdatablePacksLine(line string) (models.Package, error
 }
 
 func (o *redhatBase) isExecYumPS() bool {
-	switch o.Distro.Family {
-	case
-		config.OpenSUSE,
-		config.OpenSUSELeap,
-		config.SUSEEnterpriseServer,
-		config.SUSEEnterpriseDesktop,
-		config.SUSEOpenstackCloud:
-		return false
-	case config.RedHat:
-		// RHEL8 dnf doesn't have yum-pulgin-ps
-		majorVersion, err := o.Distro.MajorVersion()
-		if err != nil || 8 < majorVersion {
-			o.log.Errorf("yum ps Not implemented yet: %s, err: %s", o.Distro, err)
-			return false
-		}
-	}
-
-	// yum ps needs internet connection
-	if o.getServerInfo().Mode.IsOffline() || o.getServerInfo().Mode.IsFast() {
+	if o.getServerInfo().Mode.IsFast() {
 		return false
 	}
 	return true
@@ -496,29 +475,28 @@ type loadedFile struct {
 	pid      string
 	procName string
 	path     string
-	pkgName  string
 }
 
-func (o *redhatBase) yumPsUshida() error {
+func (o *redhatBase) yumPs() error {
 	stdout, err := o.ps()
 	if err != nil {
-		// TODO wrap
-		return err
+		return xerrors.Errorf("Failed to yum ps ushida: %w", err)
 	}
 	pidNames := o.parsePs(stdout)
-
 	loadedFiles := []loadedFile{}
+	pkgLoadedFiles := map[string][]loadedFile{}
+
 	for pid, name := range pidNames {
 		stdout := ""
-		stdout, err = o.procExe(pid)
+		stdout, err = o.lsProcExe(pid)
 		if err != nil {
-			// TODO wrap
-			return err
+			o.log.Debug("Failed to exec /proc/%d/exe: %s", pid, err)
+			continue
 		}
-		s, err := o.parseProcExe(stdout)
+		s, err := o.parseLsProcExe(stdout)
 		if err != nil {
-			// TODO wrap or only logging
-			return err
+			o.log.Debug("Failed to parse /proc/%d/exe: %s", pid, err)
+			continue
 		}
 		loadedFiles = append(loadedFiles, loadedFile{
 			pid:      pid,
@@ -526,12 +504,12 @@ func (o *redhatBase) yumPsUshida() error {
 			path:     s,
 		})
 
-		stdout, err = o.procMap(pid)
+		stdout, err = o.grepProcMap(pid)
 		if err != nil {
-			// TODO wrap
-			return err
+			o.log.Debug("Failed to exec /proc/%d/maps: %s", pid, err)
+			continue
 		}
-		ss := o.parseProcMap(stdout)
+		ss := o.parseGrepProcMap(stdout)
 		for _, s := range ss {
 			loadedFiles = append(loadedFiles, loadedFile{
 				pid:      pid,
@@ -541,128 +519,39 @@ func (o *redhatBase) yumPsUshida() error {
 		}
 	}
 
-	for i, loaded := range loadedFiles {
+	for _, loaded := range loadedFiles {
 		name, ok, err := o.getPkgName(loaded.path)
 		if err != nil {
-			// TODO wrap
-			return err
+			o.log.Debug("Failed to get package name by file path: %s", name, err)
+			continue
 		}
 		if !ok {
 			continue
 		}
-		loaded.pkgName = name
-		loadedFiles[i] = loaded
+		pkgLoadedFiles[name] = append(pkgLoadedFiles[name], loaded)
 	}
 
-	fmt.Println(loadedFiles)
-	return nil
-}
-
-// How to install yum-plugin-ps on RHEL7
-// # yum-config-manager --enable rhui-REGION-rhel-server-optional
-// # yum install yum-plugin-ps
-// # yum-config-manager --disable rhui-REGION-rhel-server-optional
-func (o *redhatBase) yumPS() error {
-	cmd := "LANGUAGE=en_US.UTF-8 yum info yum"
-	r := o.exec(util.PrependProxyEnv(cmd), o.sudo.yumPS())
-	if !r.isSuccess() {
-		return xerrors.Errorf("Failed to SSH: %s", r)
-	}
-	if !o.checkYumPsInstalled(r.Stdout) {
-		switch o.Distro.Family {
-		case config.Oracle:
-			return nil
-		default:
-			return xerrors.New("yum-plugin-ps is not installed")
+	for fqpn, loadedFiles := range pkgLoadedFiles {
+		uniq := map[string]loadedFile{}
+		for _, loaded := range loadedFiles {
+			uniq[loaded.pid] = loaded
 		}
-	}
 
-	cmd = "LANGUAGE=en_US.UTF-8 yum -q ps all --color=never"
-	r = o.exec(util.PrependProxyEnv(cmd), sudo)
-	if !r.isSuccess() {
-		return xerrors.Errorf("Failed to SSH: %s", r)
-	}
-	packs := o.parseYumPS(r.Stdout)
-	for name, pack := range packs {
-		p := o.Packages[name]
-		p.AffectedProcs = pack.AffectedProcs
-		o.Packages[name] = p
+		procs := []models.AffectedProcess{}
+		for _, loaded := range uniq {
+			procs = append(procs, models.AffectedProcess{
+				PID:  loaded.pid,
+				Name: loaded.procName,
+			})
+		}
+		p, err := o.Packages.FindByFQPN(fqpn)
+		if err != nil {
+			return err
+		}
+		p.AffectedProcs = procs
+		o.Packages[p.Name] = *p
 	}
 	return nil
-}
-
-func (o *redhatBase) checkYumPsInstalled(stdout string) bool {
-	scanner := bufio.NewScanner(strings.NewReader(stdout))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, "Loaded plugins: ") {
-			if strings.Contains(line, " ps,") || strings.HasSuffix(line, " ps") {
-				return true
-			}
-			return false
-		}
-	}
-	return false
-}
-
-func (o *redhatBase) parseYumPS(stdout string) models.Packages {
-	packs := models.Packages{}
-	scanner := bufio.NewScanner(strings.NewReader(stdout))
-	isPackageLine, needToParseProcline := false, false
-	currentPackName := ""
-	for scanner.Scan() {
-		line := scanner.Text()
-		fields := strings.Fields(line)
-		if len(fields) == 0 ||
-			len(fields) == 1 && fields[0] == "ps" ||
-			len(fields) == 6 && fields[0] == "pid" {
-			continue
-		}
-
-		isPackageLine = !strings.HasPrefix(line, " ")
-		if isPackageLine {
-			if 1 < len(fields) && fields[1] == "Upgrade" {
-				needToParseProcline = true
-
-				// Search o.Packages to divide into name, version, release
-				name, pack, found := o.Packages.FindOne(func(p models.Package) bool {
-					var epochNameVerRel string
-					if index := strings.Index(p.Version, ":"); 0 < index {
-						epoch := p.Version[0:index]
-						ver := p.Version[index+1 : len(p.Version)]
-						epochNameVerRel = fmt.Sprintf("%s:%s-%s-%s.%s",
-							epoch, p.Name, ver, p.Release, p.Arch)
-					} else {
-						epochNameVerRel = fmt.Sprintf("%s-%s-%s.%s",
-							p.Name, p.Version, p.Release, p.Arch)
-					}
-					return strings.HasPrefix(fields[0], epochNameVerRel)
-				})
-				if !found {
-					o.log.Errorf("`yum ps` package is not found: %s", line)
-					continue
-				}
-				packs[name] = pack
-				currentPackName = name
-			} else {
-				needToParseProcline = false
-			}
-		} else if needToParseProcline {
-			if 6 < len(fields) {
-				proc := models.AffectedProcess{
-					PID:  fields[0],
-					Name: fields[1],
-				}
-				pack := packs[currentPackName]
-				pack.AffectedProcs = append(pack.AffectedProcs, proc)
-				packs[currentPackName] = pack
-			} else {
-				o.log.Errorf("`yum ps` Unknown Format: %s", line)
-				continue
-			}
-		}
-	}
-	return packs
 }
 
 func (o *redhatBase) needsRestarting() error {
@@ -756,77 +645,19 @@ func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
 	return strings.Replace(fqpn, "-(none):", "-", -1), nil
 }
 
-func (o *redhatBase) hasYumColorOption() bool {
-	cmd := "yum --help | grep color"
-	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
-	return len(r.Stdout) > 0
-}
-
-func (o *redhatBase) ps() (stdout string, err error) {
-	cmd := `ps  --no-headers --ppid 2 -p 2 --deselect -o pid,comm | awk '{print $1,$2}'`
-	// TODO sudo
-	r := o.exec(util.PrependProxyEnv(cmd), o.sudo.yumPS())
-	if !r.isSuccess() {
-		return "", xerrors.Errorf("Failed to SSH: %s", r)
-	}
-	return r.Stdout, nil
-}
-
-func (o *redhatBase) parsePs(stdout string) map[string]string {
-	pidNames := map[string]string{}
-	scanner := bufio.NewScanner(strings.NewReader(stdout))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		ss := strings.Fields(line)
-		if len(ss) < 2 {
-			continue
-		}
-		pidNames[ss[0]] = ss[1]
-	}
-	return pidNames
-}
-
-func (o *redhatBase) procExe(pid string) (stdout string, err error) {
-	cmd := fmt.Sprintf("ls -l /proc/%s/exe", pid)
-	r := o.exec(util.PrependProxyEnv(cmd), sudo)
-	if !r.isSuccess() {
-		return "", xerrors.Errorf("Failed to SSH: %s", r)
-	}
-	return r.Stdout, nil
-}
-
-func (o *redhatBase) parseProcExe(stdout string) (string, error) {
-	ss := strings.Fields(stdout)
-	if len(ss) < 11 {
-		return "", xerrors.Errorf("Unknown format: %s", stdout)
-	}
-	return ss[10], nil
-}
-
-func (o *redhatBase) procMap(pid string) (stdout string, err error) {
-	cmd := fmt.Sprintf(`cat /proc/%s/maps 2>/dev/null | grep -v " 00:00 " | awk '{print $6}' | sort -n | uniq`, pid)
-	r := o.exec(util.PrependProxyEnv(cmd), sudo)
-	if !r.isSuccess() {
-		return "", xerrors.Errorf("Failed to SSH: %s", r)
-	}
-	return r.Stdout, nil
-}
-
-func (o *redhatBase) parseProcMap(stdout string) (soPaths []string) {
-	scanner := bufio.NewScanner(strings.NewReader(stdout))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		soPaths = append(soPaths, line)
-	}
-	return soPaths
-}
-
 func (o *redhatBase) getPkgName(path string) (pkgName string, found bool, err error) {
-	cmd := fmt.Sprintf(`rpm -qf %s`, path)
+	cmd := rpmQf(o.Distro) + path
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess() {
 		return "", false, xerrors.Errorf("Failed to SSH: %s", r)
 	}
-	s := strings.TrimSpace(r.Stdout)
-	return s, s != "", nil
+
+	if trimed := strings.TrimSpace(r.Stdout); len(trimed) != 0 {
+		pack, err := o.parseInstalledPackagesLine(trimed)
+		if err != nil {
+			return "", false, nil
+		}
+		return pack.FQPN(), true, nil
+	}
+	return "", false, nil
 }
