@@ -208,26 +208,7 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
-		CveDictCnf:  c.Conf.CveDict,
-		OvalDictCnf: c.Conf.OvalDict,
-		GostCnf:     c.Conf.Gost,
-		ExploitCnf:  c.Conf.Exploit,
-		DebugSQL:    c.Conf.DebugSQL,
-	})
-	if locked {
-		util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %+v", err)
-		return subcommands.ExitFailure
-	}
-
-	if err != nil {
-		util.Log.Errorf("Failed to init DB Clients. err: %+v", err)
-		return subcommands.ExitFailure
-	}
-
-	defer dbclient.CloseDB()
-
-	http.Handle("/vuls", server.VulsHandler{DBclient: *dbclient})
+	http.Handle("/vuls", server.VulsHandler{})
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "ok")
 	})

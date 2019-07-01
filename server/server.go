@@ -35,7 +35,6 @@ import (
 
 // VulsHandler is used for vuls server mode
 type VulsHandler struct {
-	DBclient report.DBClient
 }
 
 func (h VulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +69,26 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := report.FillCveInfo(h.DBclient, &result, []string{}); err != nil {
+	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
+		CveDictCnf:  c.Conf.CveDict,
+		OvalDictCnf: c.Conf.OvalDict,
+		GostCnf:     c.Conf.Gost,
+		ExploitCnf:  c.Conf.Exploit,
+		DebugSQL:    c.Conf.DebugSQL,
+	})
+	if locked {
+		util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %+v", err)
+		return
+	}
+
+	if err != nil {
+		util.Log.Errorf("Failed to init DB Clients. err: %+v", err)
+		return
+	}
+
+	defer dbclient.CloseDB()
+
+	if err := report.FillCveInfo(*dbclient, &result, []string{}); err != nil {
 		util.Log.Error(err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
