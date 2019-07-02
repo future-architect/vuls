@@ -1072,8 +1072,9 @@ type ServerInfo struct {
 	WordPress WordPressConf `toml:"wordpress,omitempty" json:"wordpress,omitempty"`
 
 	// used internal
-	IPv4Addrs []string `toml:"-" json:"ipv4Addrs,omitempty"`
-	IPv6Addrs []string `toml:"-" json:"ipv6Addrs,omitempty"`
+	IPv4Addrs      []string       `toml:"-" json:"ipv4Addrs,omitempty"`
+	IPv6Addrs      []string       `toml:"-" json:"ipv6Addrs,omitempty"`
+	IPSIdentifiers map[IPS]string `toml:"-" json:"ipsIdentifiers,omitempty"`
 
 	LogMsgAnsiColor string    `toml:"-" json:"-"` // DebugLog Color
 	Container       Container `toml:"-" json:"-"`
