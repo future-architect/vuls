@@ -142,6 +142,7 @@ type redhatBase struct {
 type rootPriv interface {
 	repoquery() bool
 	yumMakeCache() bool
+	yumPS() bool
 }
 
 type cmd struct {
@@ -189,7 +190,7 @@ func (o *redhatBase) preCure() error {
 
 func (o *redhatBase) postScan() error {
 	if o.isExecYumPS() {
-		if err := o.yumPS(); err != nil {
+		if err := o.yumPs(); err != nil {
 			err = xerrors.Errorf("Failed to execute yum-ps: %w", err)
 			o.log.Warnf("err: %+v", err)
 			o.warns = append(o.warns, err)
@@ -431,24 +432,9 @@ func (o *redhatBase) parseUpdatablePacksLine(line string) (models.Package, error
 	return p, nil
 }
 
-func (o *redhatBase) isExecScanUsingYum() bool {
-	if o.getServerInfo().Mode.IsOffline() {
-		return false
-	}
-	if o.Distro.Family == config.CentOS {
-		// CentOS doesn't have security channel
-		return false
-	}
-	if o.getServerInfo().Mode.IsFastRoot() || o.getServerInfo().Mode.IsDeep() {
-		return true
-	}
-	return true
-}
-
 func (o *redhatBase) isExecYumPS() bool {
-	// RedHat has no yum-ps
 	switch o.Distro.Family {
-	case config.RedHat,
+	case config.Oracle,
 		config.OpenSUSE,
 		config.OpenSUSELeap,
 		config.SUSEEnterpriseServer,
@@ -456,12 +442,7 @@ func (o *redhatBase) isExecYumPS() bool {
 		config.SUSEOpenstackCloud:
 		return false
 	}
-
-	// yum ps needs internet connection
-	if o.getServerInfo().Mode.IsOffline() || o.getServerInfo().Mode.IsFast() {
-		return false
-	}
-	return true
+	return !o.getServerInfo().Mode.IsFast()
 }
 
 func (o *redhatBase) isExecNeedsRestarting() bool {
@@ -496,107 +477,69 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 	return true
 }
 
-func (o *redhatBase) yumPS() error {
-	cmd := "LANGUAGE=en_US.UTF-8 yum info yum"
-	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
-	if !r.isSuccess() {
-		return xerrors.Errorf("Failed to SSH: %s", r)
+func (o *redhatBase) yumPs() error {
+	stdout, err := o.ps()
+	if err != nil {
+		return xerrors.Errorf("Failed to yum ps: %w", err)
 	}
-	if !o.checkYumPsInstalled(r.Stdout) {
-		switch o.Distro.Family {
-		case config.RedHat, config.Oracle:
-			return nil
-		default:
-			return xerrors.New("yum-plugin-ps is not installed")
+	pidNames := o.parsePs(stdout)
+	pidLoadedFiles := map[string][]string{}
+	// for pid, name := range pidNames {
+	for pid := range pidNames {
+		stdout := ""
+		stdout, err = o.lsProcExe(pid)
+		if err != nil {
+			o.log.Debugf("Failed to exec /proc/%s/exe err: %s", pid, err)
+			continue
 		}
-	}
-
-	cmd = "LANGUAGE=en_US.UTF-8 yum -q ps all --color=never"
-	r = o.exec(util.PrependProxyEnv(cmd), sudo)
-	if !r.isSuccess() {
-		return xerrors.Errorf("Failed to SSH: %s", r)
-	}
-	packs := o.parseYumPS(r.Stdout)
-	for name, pack := range packs {
-		p := o.Packages[name]
-		p.AffectedProcs = pack.AffectedProcs
-		o.Packages[name] = p
-	}
-	return nil
-}
-
-func (o *redhatBase) checkYumPsInstalled(stdout string) bool {
-	scanner := bufio.NewScanner(strings.NewReader(stdout))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, "Loaded plugins: ") {
-			if strings.Contains(line, " ps,") || strings.HasSuffix(line, " ps") {
-				return true
-			}
-			return false
+		s, err := o.parseLsProcExe(stdout)
+		if err != nil {
+			o.log.Debugf("Failed to parse /proc/%s/exe: %s", pid, err)
+			continue
 		}
-	}
-	return false
-}
+		pidLoadedFiles[pid] = append(pidLoadedFiles[pid], s)
 
-func (o *redhatBase) parseYumPS(stdout string) models.Packages {
-	packs := models.Packages{}
-	scanner := bufio.NewScanner(strings.NewReader(stdout))
-	isPackageLine, needToParseProcline := false, false
-	currentPackName := ""
-	for scanner.Scan() {
-		line := scanner.Text()
-		fields := strings.Fields(line)
-		if len(fields) == 0 ||
-			len(fields) == 1 && fields[0] == "ps" ||
-			len(fields) == 6 && fields[0] == "pid" {
+		stdout, err = o.grepProcMap(pid)
+		if err != nil {
+			o.log.Debugf("Failed to exec /proc/%s/maps: %s", pid, err)
+			continue
+		}
+		ss := o.parseGrepProcMap(stdout)
+		pidLoadedFiles[pid] = append(pidLoadedFiles[pid], ss...)
+	}
+
+	for pid, loadedFiles := range pidLoadedFiles {
+		o.log.Debugf("rpm -qf: %#v", loadedFiles)
+		pkgNames, err := o.getPkgName(loadedFiles)
+		if err != nil {
+			o.log.Debugf("Failed to get package name by file path: %s, err: %s", pkgNames, err)
 			continue
 		}
 
-		isPackageLine = !strings.HasPrefix(line, " ")
-		if isPackageLine {
-			if 1 < len(fields) && fields[1] == "Upgrade" {
-				needToParseProcline = true
+		uniq := map[string]struct{}{}
+		for _, name := range pkgNames {
+			uniq[name] = struct{}{}
+		}
 
-				// Search o.Packages to divide into name, version, release
-				name, pack, found := o.Packages.FindOne(func(p models.Package) bool {
-					var epochNameVerRel string
-					if index := strings.Index(p.Version, ":"); 0 < index {
-						epoch := p.Version[0:index]
-						ver := p.Version[index+1 : len(p.Version)]
-						epochNameVerRel = fmt.Sprintf("%s:%s-%s-%s.%s",
-							epoch, p.Name, ver, p.Release, p.Arch)
-					} else {
-						epochNameVerRel = fmt.Sprintf("%s-%s-%s.%s",
-							p.Name, p.Version, p.Release, p.Arch)
-					}
-					return strings.HasPrefix(fields[0], epochNameVerRel)
-				})
-				if !found {
-					o.log.Errorf("`yum ps` package is not found: %s", line)
-					continue
-				}
-				packs[name] = pack
-				currentPackName = name
-			} else {
-				needToParseProcline = false
+		procName := ""
+		if _, ok := pidNames[pid]; ok {
+			procName = pidNames[pid]
+		}
+		proc := models.AffectedProcess{
+			PID:  pid,
+			Name: procName,
+		}
+
+		for fqpn := range uniq {
+			p, err := o.Packages.FindByFQPN(fqpn)
+			if err != nil {
+				return err
 			}
-		} else if needToParseProcline {
-			if 6 < len(fields) {
-				proc := models.AffectedProcess{
-					PID:  fields[0],
-					Name: fields[1],
-				}
-				pack := packs[currentPackName]
-				pack.AffectedProcs = append(pack.AffectedProcs, proc)
-				packs[currentPackName] = pack
-			} else {
-				o.log.Errorf("`yum ps` Unknown Format: %s", line)
-				continue
-			}
+			p.AffectedProcs = append(p.AffectedProcs, proc)
+			o.Packages[p.Name] = *p
 		}
 	}
-	return packs
+	return nil
 }
 
 func (o *redhatBase) needsRestarting() error {
@@ -690,8 +633,22 @@ func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
 	return strings.Replace(fqpn, "-(none):", "-", -1), nil
 }
 
-func (o *redhatBase) hasYumColorOption() bool {
-	cmd := "yum --help | grep color"
+func (o *redhatBase) getPkgName(paths []string) (pkgNames []string, err error) {
+	cmd := rpmQf(o.Distro) + strings.Join(paths, " ")
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
-	return len(r.Stdout) > 0
+	if !r.isSuccess() {
+		return nil, xerrors.Errorf("Failed to SSH: %s", r)
+	}
+
+	scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
+	for scanner.Scan() {
+		line := scanner.Text()
+		pack, err := o.parseInstalledPackagesLine(line)
+		if err != nil {
+			o.log.Debugf("Failed to parse rpm -qf line: %s, r: %s. continue", line, r)
+			continue
+		}
+		pkgNames = append(pkgNames, pack.FQPN())
+	}
+	return pkgNames, nil
 }

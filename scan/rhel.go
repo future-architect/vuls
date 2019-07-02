@@ -81,14 +81,14 @@ func (o *rhel) sudoNoPasswdCmdsFast() []cmd {
 }
 
 func (o *rhel) sudoNoPasswdCmdsFastRoot() []cmd {
-	if o.getServerInfo().Mode.IsOffline() {
-		return []cmd{}
-	}
-
-	majorVersion, _ := o.Distro.MajorVersion()
-	if majorVersion < 6 {
+	if !o.ServerInfo.IsContainer() {
 		return []cmd{
 			{"repoquery -h", exitStatusZero},
+			{"needs-restarting", exitStatusZero},
+			{"which which", exitStatusZero},
+			{"stat /proc/1/exe", exitStatusZero},
+			{"ls -l /proc/1/exe", exitStatusZero},
+			{"cat /proc/1/maps", exitStatusZero},
 		}
 	}
 	return []cmd{
@@ -108,5 +108,9 @@ func (o rootPrivRHEL) repoquery() bool {
 }
 
 func (o rootPrivRHEL) yumMakeCache() bool {
+	return true
+}
+
+func (o rootPrivRHEL) yumPS() bool {
 	return true
 }

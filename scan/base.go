@@ -32,6 +32,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/util"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 
@@ -721,4 +722,62 @@ func (l *base) detectWpPlugins() ([]models.WpPackage, error) {
 		plugins[i].Type = models.WPPlugin
 	}
 	return plugins, nil
+}
+
+func (l *base) ps() (stdout string, err error) {
+	cmd := `LANGUAGE=en_US.UTF-8 ps --no-headers --ppid 2 -p 2 --deselect -o pid,comm | awk '{print $1,$2}'`
+	r := l.exec(util.PrependProxyEnv(cmd), noSudo)
+	if !r.isSuccess() {
+		return "", xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	return r.Stdout, nil
+}
+
+func (l *base) parsePs(stdout string) map[string]string {
+	pidNames := map[string]string{}
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		ss := strings.Fields(line)
+		if len(ss) < 2 {
+			continue
+		}
+		pidNames[ss[0]] = ss[1]
+	}
+	return pidNames
+}
+
+func (l *base) lsProcExe(pid string) (stdout string, err error) {
+	cmd := fmt.Sprintf("ls -l /proc/%s/exe", pid)
+	r := l.exec(util.PrependProxyEnv(cmd), sudo)
+	if !r.isSuccess() {
+		return "", xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	return r.Stdout, nil
+}
+
+func (l *base) parseLsProcExe(stdout string) (string, error) {
+	ss := strings.Fields(stdout)
+	if len(ss) < 11 {
+		return "", xerrors.Errorf("Unknown format: %s", stdout)
+	}
+	return ss[10], nil
+}
+
+func (l *base) grepProcMap(pid string) (stdout string, err error) {
+	cmd := fmt.Sprintf(`cat /proc/%s/maps 2>/dev/null | grep -v " 00:00 " | awk '{print $6}' | sort -n | uniq`, pid)
+	r := l.exec(util.PrependProxyEnv(cmd), sudo)
+	if !r.isSuccess() {
+		return "", xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	return r.Stdout, nil
+}
+
+func (l *base) parseGrepProcMap(stdout string) (soPaths []string) {
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		soPaths = append(soPaths, line)
+	}
+	return soPaths
 }

@@ -74,11 +74,20 @@ func (o *oracle) sudoNoPasswdCmdsFast() []cmd {
 }
 
 func (o *oracle) sudoNoPasswdCmdsFastRoot() []cmd {
-	cmds := []cmd{{"needs-restarting", exitStatusZero}}
-	if o.getServerInfo().Mode.IsOffline() {
-		return cmds
+	if !o.ServerInfo.IsContainer() {
+		return []cmd{
+			{"repoquery -h", exitStatusZero},
+			{"needs-restarting", exitStatusZero},
+			{"which which", exitStatusZero},
+			{"stat /proc/1/exe", exitStatusZero},
+			{"ls -l /proc/1/exe", exitStatusZero},
+			{"cat /proc/1/maps", exitStatusZero},
+		}
 	}
-	return append(cmds, cmd{"repoquery -h", exitStatusZero})
+	return []cmd{
+		{"repoquery -h", exitStatusZero},
+		{"needs-restarting", exitStatusZero},
+	}
 }
 
 func (o *oracle) sudoNoPasswdCmdsDeep() []cmd {
@@ -92,5 +101,9 @@ func (o rootPrivOracle) repoquery() bool {
 }
 
 func (o rootPrivOracle) yumMakeCache() bool {
+	return true
+}
+
+func (o rootPrivOracle) yumPS() bool {
 	return true
 }

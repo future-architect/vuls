@@ -88,19 +88,19 @@ func (o *centos) sudoNoPasswdCmdsFast() []cmd {
 }
 
 func (o *centos) sudoNoPasswdCmdsFastRoot() []cmd {
-	if o.getServerInfo().Mode.IsOffline() {
-		// yum ps needs internet connection
+	if !o.ServerInfo.IsContainer() {
 		return []cmd{
-			{"stat /proc/1/exe", exitStatusZero},
+			{"repoquery -h", exitStatusZero},
 			{"needs-restarting", exitStatusZero},
 			{"which which", exitStatusZero},
+			{"stat /proc/1/exe", exitStatusZero},
+			{"ls -l /proc/1/exe", exitStatusZero},
+			{"cat /proc/1/maps", exitStatusZero},
 		}
 	}
 	return []cmd{
-		{"yum -q ps all --color=never", exitStatusZero},
-		{"stat /proc/1/exe", exitStatusZero},
+		{"repoquery -h", exitStatusZero},
 		{"needs-restarting", exitStatusZero},
-		{"which which", exitStatusZero},
 	}
 }
 
@@ -115,5 +115,9 @@ func (o rootPrivCentos) repoquery() bool {
 }
 
 func (o rootPrivCentos) yumMakeCache() bool {
+	return false
+}
+
+func (o rootPrivCentos) yumPS() bool {
 	return false
 }
