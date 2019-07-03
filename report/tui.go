@@ -733,7 +733,8 @@ func setChangelogLayout(g *gocui.Gui) error {
 
 				if len(pack.AffectedProcs) != 0 {
 					for _, p := range pack.AffectedProcs {
-						lines = append(lines, fmt.Sprintf("  * PID: %s %s", p.PID, p.Name))
+						lines = append(lines, fmt.Sprintf("  * PID: %s %s Port: %s",
+							p.PID, p.Name, p.ListenPorts))
 					}
 				} else {
 					// lines = append(lines, fmt.Sprintf("  * No affected process"))

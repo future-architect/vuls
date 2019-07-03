@@ -781,3 +781,30 @@ func (l *base) parseGrepProcMap(stdout string) (soPaths []string) {
 	}
 	return soPaths
 }
+
+func (l *base) lsOfListen() (stdout string, err error) {
+	cmd := `lsof -i -P | grep LISTEN`
+	r := l.exec(util.PrependProxyEnv(cmd), sudo)
+	if !r.isSuccess() {
+		return "", xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	return r.Stdout, nil
+}
+
+func (l *base) parseLsOf(stdout string) map[string]string {
+	portPid := map[string]string{}
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		ss := strings.Fields(scanner.Text())
+		if len(ss) < 10 {
+			continue
+		}
+		pid, ipPort := ss[1], ss[8]
+		sss := strings.Split(ipPort, ":")
+		if len(sss) != 2 {
+			continue
+		}
+		portPid[sss[1]] = pid
+	}
+	return portPid
+}

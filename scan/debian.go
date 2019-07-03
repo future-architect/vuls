@@ -151,6 +151,7 @@ func (o *debian) checkIfSudoNoPasswd() error {
 		"stat /proc/1/exe",
 		"ls -l /proc/1/exe",
 		"cat /proc/1/maps",
+		"lsof -i -P",
 	}
 
 	if !o.getServerInfo().Mode.IsOffline() {
@@ -1152,6 +1153,16 @@ func (o *debian) dpkgPs() error {
 		pidLoadedFiles[pid] = append(pidLoadedFiles[pid], ss...)
 	}
 
+	pidListenPorts := map[string][]string{}
+	stdout, err = o.lsOfListen()
+	if err != nil {
+		return xerrors.Errorf("Failed to ls of: %w", err)
+	}
+	portPid := o.parseLsOf(stdout)
+	for port, pid := range portPid {
+		pidListenPorts[pid] = append(pidListenPorts[pid], port)
+	}
+
 	for pid, loadedFiles := range pidLoadedFiles {
 		o.log.Debugf("dpkg -S %#v", loadedFiles)
 		pkgNames, err := o.getPkgName(loadedFiles)
@@ -1165,8 +1176,9 @@ func (o *debian) dpkgPs() error {
 			procName = pidNames[pid]
 		}
 		proc := models.AffectedProcess{
-			PID:  pid,
-			Name: procName,
+			PID:         pid,
+			Name:        procName,
+			ListenPorts: pidListenPorts[pid],
 		}
 
 		for _, n := range pkgNames {

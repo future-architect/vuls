@@ -185,8 +185,9 @@ type Changelog struct {
 
 // AffectedProcess keep a processes information affected by software update
 type AffectedProcess struct {
-	PID  string `json:"pid"`
-	Name string `json:"name"`
+	PID         string   `json:"pid,omitempty"`
+	Name        string   `json:"name,omitempty"`
+	ListenPorts []string `json:"listenPorts,omitempty"`
 }
 
 // NeedRestartProcess keep a processes information affected by software update

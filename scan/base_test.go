@@ -252,3 +252,43 @@ func Test_base_parseGrepProcMap(t *testing.T) {
 		})
 	}
 }
+
+func Test_base_parseLsOf(t *testing.T) {
+	type args struct {
+		stdout string
+	}
+	tests := []struct {
+		name        string
+		args        args
+		wantPortPid map[string]string
+	}{
+		{
+			name: "lsof",
+			args: args{
+				stdout: `systemd-r   474 systemd-resolve   13u  IPv4  11904      0t0  TCP localhost:53 (LISTEN)
+sshd        644            root    3u  IPv4  16714      0t0  TCP *:22 (LISTEN)
+sshd        644            root    4u  IPv6  16716      0t0  TCP *:22 (LISTEN)
+squid       959           proxy   11u  IPv6  16351      0t0  TCP *:3128 (LISTEN)
+node       1498          ubuntu   21u  IPv6  20132      0t0  TCP *:35401 (LISTEN)
+node       1498          ubuntu   22u  IPv6  20133      0t0  TCP *:44801 (LISTEN)
+docker-pr  9135            root    4u  IPv6 297133      0t0  TCP *:6379 (LISTEN)`,
+			},
+			wantPortPid: map[string]string{
+				"53":    "474",
+				"22":    "644",
+				"3128":  "959",
+				"35401": "1498",
+				"44801": "1498",
+				"6379":  "9135",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &base{}
+			if gotPortPid := l.parseLsOf(tt.args.stdout); !reflect.DeepEqual(gotPortPid, tt.wantPortPid) {
+				t.Errorf("base.parseLsOf() = %v, want %v", gotPortPid, tt.wantPortPid)
+			}
+		})
+	}
+}

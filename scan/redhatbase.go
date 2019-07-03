@@ -278,7 +278,7 @@ func (o *redhatBase) scanInstalledPackages() (models.Packages, error) {
 		Version: version,
 	}
 
-	r := o.exec(rpmQa(o.Distro), noSudo)
+	r := o.exec(o.rpmQa(o.Distro), noSudo)
 	if !r.isSuccess() {
 		return nil, xerrors.Errorf("Scan packages failed: %s", r)
 	}
@@ -482,9 +482,9 @@ func (o *redhatBase) yumPs() error {
 	if err != nil {
 		return xerrors.Errorf("Failed to yum ps: %w", err)
 	}
+
 	pidNames := o.parsePs(stdout)
 	pidLoadedFiles := map[string][]string{}
-	// for pid, name := range pidNames {
 	for pid := range pidNames {
 		stdout := ""
 		stdout, err = o.lsProcExe(pid)
@@ -508,6 +508,16 @@ func (o *redhatBase) yumPs() error {
 		pidLoadedFiles[pid] = append(pidLoadedFiles[pid], ss...)
 	}
 
+	pidListenPorts := map[string][]string{}
+	stdout, err = o.lsOfListen()
+	if err != nil {
+		return xerrors.Errorf("Failed to ls of: %w", err)
+	}
+	portPid := o.parseLsOf(stdout)
+	for port, pid := range portPid {
+		pidListenPorts[pid] = append(pidListenPorts[pid], port)
+	}
+
 	for pid, loadedFiles := range pidLoadedFiles {
 		o.log.Debugf("rpm -qf: %#v", loadedFiles)
 		pkgNames, err := o.getPkgName(loadedFiles)
@@ -526,8 +536,9 @@ func (o *redhatBase) yumPs() error {
 			procName = pidNames[pid]
 		}
 		proc := models.AffectedProcess{
-			PID:  pid,
-			Name: procName,
+			PID:         pid,
+			Name:        procName,
+			ListenPorts: pidListenPorts[pid],
 		}
 
 		for fqpn := range uniq {
@@ -634,7 +645,7 @@ func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
 }
 
 func (o *redhatBase) getPkgName(paths []string) (pkgNames []string, err error) {
-	cmd := rpmQf(o.Distro) + strings.Join(paths, " ")
+	cmd := o.rpmQf(o.Distro) + strings.Join(paths, " ")
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess() {
 		return nil, xerrors.Errorf("Failed to SSH: %s", r)
@@ -651,4 +662,38 @@ func (o *redhatBase) getPkgName(paths []string) (pkgNames []string, err error) {
 		pkgNames = append(pkgNames, pack.FQPN())
 	}
 	return pkgNames, nil
+}
+
+func (o *redhatBase) rpmQa(distro config.Distro) string {
+	const old = `rpm -qa --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n"`
+	const new = `rpm -qa --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n"`
+	switch distro.Family {
+	case config.SUSEEnterpriseServer:
+		if v, _ := distro.MajorVersion(); v < 12 {
+			return old
+		}
+		return new
+	default:
+		if v, _ := distro.MajorVersion(); v < 6 {
+			return old
+		}
+		return new
+	}
+}
+
+func (o *redhatBase) rpmQf(distro config.Distro) string {
+	const old = `rpm -qf --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n" `
+	const new = `rpm -qf --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n" `
+	switch distro.Family {
+	case config.SUSEEnterpriseServer:
+		if v, _ := distro.MajorVersion(); v < 12 {
+			return old
+		}
+		return new
+	default:
+		if v, _ := distro.MajorVersion(); v < 6 {
+			return old
+		}
+		return new
+	}
 }
