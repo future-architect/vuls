@@ -35,8 +35,8 @@ type RedHat struct {
 }
 
 // FillWithGost fills cve information that has in Gost
-func (red RedHat) FillWithGost(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
-	if nCVEs, err = red.fillUnfixed(driver, r); err != nil {
+func (red RedHat) FillWithGost(driver db.DB, r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
+	if nCVEs, err = red.fillUnfixed(driver, r, ignoreWillNotFix); err != nil {
 		return 0, err
 	}
 	return nCVEs, red.fillFixed(driver, r)
@@ -113,7 +113,7 @@ func (red RedHat) fillFixed(driver db.DB, r *models.ScanResult) error {
 	return nil
 }
 
-func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
+func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
 	if config.Conf.Gost.IsFetchViaHTTP() {
 		prefix, _ := util.URLPathJoin(config.Conf.Gost.URL,
 			"redhat", major(r.Release), "pkgs")
@@ -160,7 +160,7 @@ func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult) (nCVEs int, er
 		for _, pack := range r.Packages {
 			// CVE-ID: RedhatCVE
 			cves := map[string]gostmodels.RedhatCVE{}
-			cves = driver.GetUnfixedCvesRedhat(major(r.Release), pack.Name)
+			cves = driver.GetUnfixedCvesRedhat(major(r.Release), pack.Name, ignoreWillNotFix)
 			for _, cve := range cves {
 				cveCont := red.ConvertToModel(&cve)
 				v, ok := r.ScannedCves[cve.Name]

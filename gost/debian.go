@@ -39,7 +39,7 @@ type packCves struct {
 }
 
 // FillWithGost fills cve information that has in Gost
-func (deb Debian) FillWithGost(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
+func (deb Debian) FillWithGost(driver db.DB, r *models.ScanResult, _ bool) (nCVEs int, err error) {
 	linuxImage := "linux-image-" + r.RunningKernel.Release
 	// Add linux and set the version of running kernel to search OVAL.
 	if r.Container.ContainerID == "" {
