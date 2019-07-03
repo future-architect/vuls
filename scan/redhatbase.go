@@ -482,9 +482,9 @@ func (o *redhatBase) yumPs() error {
 	if err != nil {
 		return xerrors.Errorf("Failed to yum ps: %w", err)
 	}
+
 	pidNames := o.parsePs(stdout)
 	pidLoadedFiles := map[string][]string{}
-	// for pid, name := range pidNames {
 	for pid := range pidNames {
 		stdout := ""
 		stdout, err = o.lsProcExe(pid)
@@ -508,6 +508,16 @@ func (o *redhatBase) yumPs() error {
 		pidLoadedFiles[pid] = append(pidLoadedFiles[pid], ss...)
 	}
 
+	pidListenPorts := map[string][]string{}
+	stdout, err = o.lsOfListen()
+	if err != nil {
+		return xerrors.Errorf("Failed to ls of: %w", err)
+	}
+	portPid := o.parseLsOf(stdout)
+	for port, pid := range portPid {
+		pidListenPorts[pid] = append(pidListenPorts[pid], port)
+	}
+
 	for pid, loadedFiles := range pidLoadedFiles {
 		o.log.Debugf("rpm -qf: %#v", loadedFiles)
 		pkgNames, err := o.getPkgName(loadedFiles)
@@ -526,8 +536,9 @@ func (o *redhatBase) yumPs() error {
 			procName = pidNames[pid]
 		}
 		proc := models.AffectedProcess{
-			PID:  pid,
-			Name: procName,
+			PID:         pid,
+			Name:        procName,
+			ListenPorts: pidListenPorts[pid],
 		}
 
 		for fqpn := range uniq {
@@ -653,7 +664,7 @@ func (o *redhatBase) getPkgName(paths []string) (pkgNames []string, err error) {
 	return pkgNames, nil
 }
 
-func (o *redhatBase)rpmQa(distro config.Distro) string {
+func (o *redhatBase) rpmQa(distro config.Distro) string {
 	const old = `rpm -qa --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n"`
 	const new = `rpm -qa --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n"`
 	switch distro.Family {
@@ -670,7 +681,7 @@ func (o *redhatBase)rpmQa(distro config.Distro) string {
 	}
 }
 
-func (o *redhatBase)rpmQf(distro config.Distro) string {
+func (o *redhatBase) rpmQf(distro config.Distro) string {
 	const old = `rpm -qf --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n" `
 	const new = `rpm -qf --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n" `
 	switch distro.Family {

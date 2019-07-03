@@ -25,7 +25,7 @@ GO_OFF := GO111MODULE=off go
 
 all: build
 
-build: main.go pretest
+build: main.go pretest fmt
 	$(GO) build -a -ldflags "$(LDFLAGS)" -o vuls $<
 
 b: 	main.go pretest
