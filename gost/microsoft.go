@@ -31,7 +31,7 @@ type Microsoft struct {
 }
 
 // FillWithGost fills cve information that has in Gost
-func (ms Microsoft) FillWithGost(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
+func (ms Microsoft) FillWithGost(driver db.DB, r *models.ScanResult, _ bool) (nCVEs int, err error) {
 	if driver == nil {
 		return 0, nil
 	}

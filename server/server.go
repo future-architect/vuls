@@ -88,7 +88,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	defer dbclient.CloseDB()
 
-	if err := report.FillCveInfo(*dbclient, &result, []string{}); err != nil {
+	if err := report.FillCveInfo(*dbclient, &result, []string{}, true); err != nil {
 		util.Log.Error(err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return

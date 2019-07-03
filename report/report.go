@@ -104,6 +104,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			if err := FillCveInfo(dbclient,
 				&r,
 				cpeURIs,
+				true,
 				githubInts,
 				wpOpt); err != nil {
 				return nil, err
@@ -162,7 +163,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 }
 
 // FillCveInfo fill scanResult with cve info.
-func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, integrations ...Integration) error {
+func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, ignoreWillNotFix bool, integrations ...Integration) error {
 	util.Log.Debugf("need to refresh")
 
 	nCVEs, err := libmanager.FillLibrary(r)
@@ -203,7 +204,7 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, inte
 	}
 	util.Log.Infof("%s: %d CVEs are detected with GitHub Security Alerts", r.FormatServerName(), ints.GithubAlertsCveCounts)
 
-	nCVEs, err = FillWithGost(dbclient.GostDB, r)
+	nCVEs, err = FillWithGost(dbclient.GostDB, r, ignoreWillNotFix)
 	if err != nil {
 		return xerrors.Errorf("Failed to fill with gost: %w", err)
 	}
@@ -338,11 +339,11 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 
 // FillWithGost fills CVEs with gost dataabase
 // https://github.com/knqyf263/gost
-func FillWithGost(driver gostdb.DB, r *models.ScanResult) (nCVEs int, err error) {
+func FillWithGost(driver gostdb.DB, r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
 	gostClient := gost.NewClient(r.Family)
 	// TODO chekc if fetched
 	// TODO chekc if fresh enough
-	return gostClient.FillWithGost(driver, r)
+	return gostClient.FillWithGost(driver, r, ignoreWillNotFix)
 }
 
 // FillWithExploit fills Exploits with exploit dataabase
