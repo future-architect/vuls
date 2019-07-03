@@ -278,7 +278,7 @@ func (o *redhatBase) scanInstalledPackages() (models.Packages, error) {
 		Version: version,
 	}
 
-	r := o.exec(rpmQa(o.Distro), noSudo)
+	r := o.exec(o.rpmQa(o.Distro), noSudo)
 	if !r.isSuccess() {
 		return nil, xerrors.Errorf("Scan packages failed: %s", r)
 	}
@@ -634,7 +634,7 @@ func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
 }
 
 func (o *redhatBase) getPkgName(paths []string) (pkgNames []string, err error) {
-	cmd := rpmQf(o.Distro) + strings.Join(paths, " ")
+	cmd := o.rpmQf(o.Distro) + strings.Join(paths, " ")
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess() {
 		return nil, xerrors.Errorf("Failed to SSH: %s", r)
@@ -651,4 +651,38 @@ func (o *redhatBase) getPkgName(paths []string) (pkgNames []string, err error) {
 		pkgNames = append(pkgNames, pack.FQPN())
 	}
 	return pkgNames, nil
+}
+
+func (o *redhatBase)rpmQa(distro config.Distro) string {
+	const old = `rpm -qa --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n"`
+	const new = `rpm -qa --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n"`
+	switch distro.Family {
+	case config.SUSEEnterpriseServer:
+		if v, _ := distro.MajorVersion(); v < 12 {
+			return old
+		}
+		return new
+	default:
+		if v, _ := distro.MajorVersion(); v < 6 {
+			return old
+		}
+		return new
+	}
+}
+
+func (o *redhatBase)rpmQf(distro config.Distro) string {
+	const old = `rpm -qf --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n" `
+	const new = `rpm -qf --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n" `
+	switch distro.Family {
+	case config.SUSEEnterpriseServer:
+		if v, _ := distro.MajorVersion(); v < 12 {
+			return old
+		}
+		return new
+	default:
+		if v, _ := distro.MajorVersion(); v < 6 {
+			return old
+		}
+		return new
+	}
 }
