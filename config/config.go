@@ -123,6 +123,7 @@ type Config struct {
 	CacheDBPath    string `json:"cacheDBPath,omitempty"`
 	Vvv            bool   `json:"vvv,omitempty"`
 	UUID           bool   `json:"uuid,omitempty"`
+	DetectIPS      bool   `json:"detectIps,omitempty"`
 
 	CveDict  GoCveDictConf `json:"cveDict,omitempty"`
 	OvalDict GovalDictConf `json:"ovalDict,omitempty"`

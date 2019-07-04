@@ -66,6 +66,8 @@ func (*ScanCmd) Usage() string {
 		[-debug]
 		[-pipe]
 		[-vvv]
+		[-detect-ips]
+
 
 		[SERVER]...
 `
@@ -112,6 +114,8 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	)
 
 	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use stdin via PIPE")
+
+	f.BoolVar(&c.Conf.DetectIPS, "ips", false, "retrieve IPS information")
 	f.BoolVar(&c.Conf.Vvv, "vvv", false, "ssh -vvv")
 
 	f.IntVar(&p.timeoutSec, "timeout", 5*60,
