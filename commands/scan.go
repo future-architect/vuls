@@ -66,7 +66,7 @@ func (*ScanCmd) Usage() string {
 		[-debug]
 		[-pipe]
 		[-vvv]
-		[-detect-ips]
+		[-ips]
 
 
 		[SERVER]...
