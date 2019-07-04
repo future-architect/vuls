@@ -342,7 +342,7 @@ var dsFingerPrintPrefix = "AgentStatus.agentCertHash: "
 func (l *base) detectDeepSecurity() (fingerprint string, err error) {
 	// only work root user
 	if l.getServerInfo().Mode.IsFastRoot() {
-		if r := l.exec("test -f /opt/ds_agent/dsa_query", sudo); r.isSuccess() {
+		if r := l.exec("/opt/ds_agent/dsa_query", sudo); r.isSuccess() {
 			cmd := fmt.Sprintf(`/opt/ds_agent/dsa_query -c "GetAgentStatus" | grep %q`, dsFingerPrintPrefix)
 			r := l.exec(cmd, sudo)
 			if r.isSuccess() {
