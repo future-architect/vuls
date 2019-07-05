@@ -156,6 +156,7 @@ func (w SaasWriter) Write(rs ...models.ScanResult) (err error) {
 				tempCredential.S3Bucket, s3Key, err)
 		}
 	}
+	util.Log.Infof("done")
 	return nil
 }
 
