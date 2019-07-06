@@ -787,7 +787,7 @@ func (l *base) parseGrepProcMap(stdout string) (soPaths []string) {
 }
 
 func (l *base) lsOfListen() (stdout string, err error) {
-	cmd := `lsof -i -P | grep LISTEN`
+	cmd := `lsof -i -P -n | grep LISTEN`
 	r := l.exec(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
 		return "", xerrors.Errorf("Failed to SSH: %s", r)
@@ -804,11 +804,7 @@ func (l *base) parseLsOf(stdout string) map[string]string {
 			continue
 		}
 		pid, ipPort := ss[1], ss[8]
-		sss := strings.Split(ipPort, ":")
-		if len(sss) != 2 {
-			continue
-		}
-		portPid[sss[1]] = pid
+		portPid[ipPort] = pid
 	}
 	return portPid
 }
