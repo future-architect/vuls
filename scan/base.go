@@ -789,7 +789,7 @@ func (l *base) parseGrepProcMap(stdout string) (soPaths []string) {
 func (l *base) lsOfListen() (stdout string, err error) {
 	cmd := `lsof -i -P -n | grep LISTEN`
 	r := l.exec(util.PrependProxyEnv(cmd), sudo)
-	if !r.isSuccess() {
+	if !r.isSuccess(0, 1) {
 		return "", xerrors.Errorf("Failed to SSH: %s", r)
 	}
 	return r.Stdout, nil
