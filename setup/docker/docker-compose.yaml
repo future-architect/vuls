@@ -1,0 +1,41 @@
+version: '3'
+services:
+  vuls:
+    image: vuls/vuls
+    volumes:
+      - ~/.ssh:/root/.ssh:ro
+      - ./vuls:/vuls
+      - ./vuls-log:/var/log/vuls
+
+  cve:
+    image: vuls/go-cve-dictionary
+    volumes:
+      - ./vuls:/vuls
+      - ./vuls-log:/var/log/vuls
+
+  oval:
+    image: vuls/goval-dictionary
+    volumes:
+      - ./vuls:/vuls
+      - ./vuls-log:/var/log/vuls
+
+  gost:
+    image: vuls/gost
+    volumes:
+      - ./vuls:/vuls
+      - ./vuls-log:/var/log/vuls
+
+  go-exploitdb:
+    image: princechrismc/go-exploitdb
+    volumes:
+      - ./vuls:/vuls
+      - ./vuls-log:/var/log/vuls
+
+  vulsrepo:
+    image: vuls/vulsrepo
+    volumes:
+      - ./results:/vuls/results/
+      - ./vuls:/vuls
+      - ./vuls-log:/var/log/vuls
+    ports:
+      - "5111:5111"
