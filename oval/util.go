@@ -238,7 +238,7 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 	}
 
 	for _, req := range requests {
-		definitions, err := driver.GetByPackName(r.Release, req.packName, req.arch)
+		definitions, err := driver.GetByPackName(r.Family, r.Release, req.packName, req.arch)
 		if err != nil {
 			return relatedDefs, xerrors.Errorf("Failed to get %s OVAL info by package: %#v, err: %w", r.Family, req, err)
 		}

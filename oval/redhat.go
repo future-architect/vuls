@@ -152,7 +152,7 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 
 func (o RedHatBase) convertToDistroAdvisory(def *ovalmodels.Definition) *models.DistroAdvisory {
 	advisoryID := def.Title
-	if o.family == config.RedHat || o.family == config.CentOS {
+	if (o.family == config.RedHat || o.family == config.CentOS) && len(advisoryID) > 0 {
 		ss := strings.Fields(def.Title)
 		advisoryID = strings.TrimSuffix(ss[0], ":")
 	}
