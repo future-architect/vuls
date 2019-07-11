@@ -56,7 +56,6 @@ func (o *amazon) depsFast() []string {
 func (o *amazon) depsFastRoot() []string {
 	return []string{
 		"yum-utils",
-		"yum-plugin-ps",
 	}
 }
 
