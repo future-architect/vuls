@@ -261,8 +261,6 @@ github.com/kotakanbe/go-cve-dictionary v0.0.0-20190327053454-5fe52611f0b8 h1:0zo
 github.com/kotakanbe/go-cve-dictionary v0.0.0-20190327053454-5fe52611f0b8/go.mod h1:CNVaCVSeqjxCFQm93uCWPT8mR+a0514XHiiBJx9yrkQ=
 github.com/kotakanbe/go-pingscanner v0.1.0 h1:VG4/9l0i8WeToXclj7bIGoAZAu7a07Z3qmQiIfU0gT0=
 github.com/kotakanbe/go-pingscanner v0.1.0/go.mod h1:/761QZzuZFcfN8h/1QuawUA+pKukp3qcNj5mxJCOiAk=
-github.com/kotakanbe/goval-dictionary v0.1.4 h1:X0B9fCb9ogaVvHfJCvJwyOLNWiAHdkDD9tQA3GtuLGw=
-github.com/kotakanbe/goval-dictionary v0.1.4/go.mod h1:VupP39J8370MdBkmvQQVmuYf98VrcQzhiGo+UiNW4rs=
 github.com/kotakanbe/goval-dictionary v0.2.0 h1:Yq2F4ee+oLUWRGOzuptV1v5mIq43mahYPbVENocBlyI=
 github.com/kotakanbe/goval-dictionary v0.2.0/go.mod h1:VupP39J8370MdBkmvQQVmuYf98VrcQzhiGo+UiNW4rs=
 github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96 h1:xNVK0mQJdQjw+QYeaMM4G6fvucWr8rTGGIhlPakx1wU=
