@@ -351,9 +351,9 @@ func (o *redhatBase) parseInstalledPackagesLine(line string) (models.Package, er
 }
 
 func (o *redhatBase) yumMakeCache() error {
-	cmd := `yum makecache`
+	cmd := `yum makecache --assumeyes`
 	r := o.exec(util.PrependProxyEnv(cmd), o.sudo.yumMakeCache())
-	if !r.isSuccess() {
+	if !r.isSuccess(0, 1) {
 		return xerrors.Errorf("Failed to SSH: %s", r)
 	}
 	return nil
