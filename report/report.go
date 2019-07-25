@@ -174,7 +174,6 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, igno
 		r.FormatServerName(), nCVEs)
 
 	nCVEs, err = FillWithOval(dbclient.OvalDB, r)
-
 	if err != nil {
 		return xerrors.Errorf("Failed to fill with OVAL: %w", err)
 	}

@@ -37,7 +37,7 @@ require (
 	github.com/knqyf263/trivy v0.1.4
 	github.com/kotakanbe/go-cve-dictionary v0.0.0-20190327053454-5fe52611f0b8
 	github.com/kotakanbe/go-pingscanner v0.1.0
-	github.com/kotakanbe/goval-dictionary v0.2.0
+	github.com/kotakanbe/goval-dictionary v0.2.1
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
 	github.com/lusis/go-slackbot v0.0.0-20180109053408-401027ccfef5 // indirect
 	github.com/lusis/slack-test v0.0.0-20190426140909-c40012f20018 // indirect
@@ -48,6 +48,8 @@ require (
 	github.com/nlopes/slack v0.4.0
 	github.com/nsf/termbox-go v0.0.0-20190325093121-288510b9734e // indirect
 	github.com/olekukonko/tablewriter v0.0.2-0.20190607075207-195002e6e56a
+	github.com/onsi/ginkgo v1.8.0 // indirect
+	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/parnurzeal/gorequest v0.2.15
 	github.com/pelletier/go-toml v1.4.0 // indirect
