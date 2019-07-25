@@ -48,6 +48,8 @@ require (
 	github.com/nlopes/slack v0.4.0
 	github.com/nsf/termbox-go v0.0.0-20190325093121-288510b9734e // indirect
 	github.com/olekukonko/tablewriter v0.0.2-0.20190607075207-195002e6e56a
+	github.com/onsi/ginkgo v1.8.0 // indirect
+	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/parnurzeal/gorequest v0.2.15
 	github.com/pelletier/go-toml v1.4.0 // indirect
