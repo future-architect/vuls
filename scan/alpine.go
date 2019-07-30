@@ -65,9 +65,6 @@ func detectAlpine(c config.ServerInfo) (itsMe bool, os osTypeInterface) {
 }
 
 func (o *alpine) checkScanMode() error {
-	if o.getServerInfo().Mode.IsOffline() {
-		return xerrors.New("Remove offline scan mode, Alpine needs internet connection")
-	}
 	return nil
 }
 
@@ -82,6 +79,9 @@ func (o *alpine) checkIfSudoNoPasswd() error {
 }
 
 func (o *alpine) apkUpdate() error {
+	if o.getServerInfo().Mode.IsOffline() {
+		return nil
+	}
 	r := o.exec("apk update", noSudo)
 	if !r.isSuccess() {
 		return xerrors.Errorf("Failed to SSH: %s", r)
