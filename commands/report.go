@@ -87,6 +87,7 @@ func (*ReportCmd) Usage() string {
 		[-http-proxy=http://192.168.0.1:8080]
 		[-debug]
 		[-debug-sql]
+		[-quiet]
 		[-pipe]
 		[-cvedb-type=sqlite3|mysql|postgres|redis|http]
 		[-cvedb-sqlite3-path=/path/to/cve.sqlite3]
@@ -111,6 +112,8 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&c.Conf.Lang, "lang", "en", "[en|ja]")
 	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
 	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
+
+	f.BoolVar(&c.Conf.Quiet, "quiet", false, "Log only to file")
 
 	wd, _ := os.Getwd()
 	defaultConfPath := filepath.Join(wd, "config.toml")

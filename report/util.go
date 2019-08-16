@@ -69,8 +69,14 @@ func formatScanSummary(rs ...models.ScanResult) string {
 				r.FormatServerName(), r.Warnings))
 		}
 	}
-	return fmt.Sprintf("%s\n\n%s", table, strings.Join(
+
+	// We don't want warning message to the summary file
+	if config.Conf.Quiet {
+		return fmt.Sprintf("%s\n", table)
+	} else {
+		return fmt.Sprintf("%s\n\n%s", table, strings.Join(
 		warnMsgs, "\n\n"))
+	}
 }
 
 func formatOneLineSummary(rs ...models.ScanResult) string {
