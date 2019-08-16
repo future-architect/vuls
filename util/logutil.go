@@ -63,7 +63,7 @@ func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
 
 	// Only log to a file if quiet mode enabled
 	if config.Conf.Quiet {
-		logFile := logDir+"/vuls.log"
+		logFile := logDir + "/vuls.log"
 		if file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
 			log.Out = file
 		} else {

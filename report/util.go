@@ -75,7 +75,7 @@ func formatScanSummary(rs ...models.ScanResult) string {
 		return fmt.Sprintf("%s\n", table)
 	} else {
 		return fmt.Sprintf("%s\n\n%s", table, strings.Join(
-		warnMsgs, "\n\n"))
+			warnMsgs, "\n\n"))
 	}
 }
 
