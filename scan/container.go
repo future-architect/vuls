@@ -22,35 +22,35 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/knqyf263/fanal/analyzer"
+	"github.com/aquasecurity/fanal/analyzer"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	fanalos "github.com/knqyf263/fanal/analyzer/os"
-	godeptypes "github.com/knqyf263/go-dep-parser/pkg/types"
+	fanalos "github.com/aquasecurity/fanal/analyzer/os"
+	godeptypes "github.com/aquasecurity/go-dep-parser/pkg/types"
 
 	// Register library analyzers
-	_ "github.com/knqyf263/fanal/analyzer/library/bundler"
-	_ "github.com/knqyf263/fanal/analyzer/library/cargo"
-	_ "github.com/knqyf263/fanal/analyzer/library/composer"
-	_ "github.com/knqyf263/fanal/analyzer/library/npm"
-	_ "github.com/knqyf263/fanal/analyzer/library/pipenv"
-	_ "github.com/knqyf263/fanal/analyzer/library/poetry"
-	_ "github.com/knqyf263/fanal/analyzer/library/yarn"
+	_ "github.com/aquasecurity/fanal/analyzer/library/bundler"
+	_ "github.com/aquasecurity/fanal/analyzer/library/cargo"
+	_ "github.com/aquasecurity/fanal/analyzer/library/composer"
+	_ "github.com/aquasecurity/fanal/analyzer/library/npm"
+	_ "github.com/aquasecurity/fanal/analyzer/library/pipenv"
+	_ "github.com/aquasecurity/fanal/analyzer/library/poetry"
+	_ "github.com/aquasecurity/fanal/analyzer/library/yarn"
 
 	// Register os analyzers
-	_ "github.com/knqyf263/fanal/analyzer/os/alpine"
-	_ "github.com/knqyf263/fanal/analyzer/os/amazonlinux"
-	_ "github.com/knqyf263/fanal/analyzer/os/debianbase"
-	_ "github.com/knqyf263/fanal/analyzer/os/opensuse"
-	_ "github.com/knqyf263/fanal/analyzer/os/redhatbase"
+	_ "github.com/aquasecurity/fanal/analyzer/os/alpine"
+	_ "github.com/aquasecurity/fanal/analyzer/os/amazonlinux"
+	_ "github.com/aquasecurity/fanal/analyzer/os/debianbase"
+	_ "github.com/aquasecurity/fanal/analyzer/os/opensuse"
+	_ "github.com/aquasecurity/fanal/analyzer/os/redhatbase"
 
 	// Register package analyzers
-	_ "github.com/knqyf263/fanal/analyzer/pkg/apk"
-	_ "github.com/knqyf263/fanal/analyzer/pkg/dpkg"
-	_ "github.com/knqyf263/fanal/analyzer/pkg/rpmcmd"
+	_ "github.com/aquasecurity/fanal/analyzer/pkg/apk"
+	_ "github.com/aquasecurity/fanal/analyzer/pkg/dpkg"
+	_ "github.com/aquasecurity/fanal/analyzer/pkg/rpmcmd"
 )
 
 // inherit OsTypeInterface

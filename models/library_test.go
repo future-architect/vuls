@@ -3,9 +3,9 @@ package models
 import (
 	"testing"
 
-	godeptypes "github.com/knqyf263/go-dep-parser/pkg/types"
-	"github.com/knqyf263/trivy/pkg/db"
-	"github.com/knqyf263/trivy/pkg/log"
+	godeptypes "github.com/aquasecurity/go-dep-parser/pkg/types"
+	"github.com/aquasecurity/trivy/pkg/db"
+	"github.com/aquasecurity/trivy/pkg/log"
 )
 
 func TestScan(t *testing.T) {
@@ -28,7 +28,7 @@ func TestScan(t *testing.T) {
 		},
 	}
 
-	if err := log.InitLogger(false); err != nil {
+	if err := log.InitLogger(false, false); err != nil {
 		t.Errorf("trivy logger failed")
 	}
 

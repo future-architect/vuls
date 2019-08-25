@@ -26,9 +26,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/knqyf263/fanal/analyzer"
-
-	"github.com/knqyf263/fanal/extractor"
+	"github.com/aquasecurity/fanal/analyzer"
+	"github.com/aquasecurity/fanal/extractor"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -37,13 +36,13 @@ import (
 	"golang.org/x/xerrors"
 
 	// Import library scanner
-	_ "github.com/knqyf263/fanal/analyzer/library/bundler"
-	_ "github.com/knqyf263/fanal/analyzer/library/cargo"
-	_ "github.com/knqyf263/fanal/analyzer/library/composer"
-	_ "github.com/knqyf263/fanal/analyzer/library/npm"
-	_ "github.com/knqyf263/fanal/analyzer/library/pipenv"
-	_ "github.com/knqyf263/fanal/analyzer/library/poetry"
-	_ "github.com/knqyf263/fanal/analyzer/library/yarn"
+	_ "github.com/aquasecurity/fanal/analyzer/library/bundler"
+	_ "github.com/aquasecurity/fanal/analyzer/library/cargo"
+	_ "github.com/aquasecurity/fanal/analyzer/library/composer"
+	_ "github.com/aquasecurity/fanal/analyzer/library/npm"
+	_ "github.com/aquasecurity/fanal/analyzer/library/pipenv"
+	_ "github.com/aquasecurity/fanal/analyzer/library/poetry"
+	_ "github.com/aquasecurity/fanal/analyzer/library/yarn"
 )
 
 type base struct {
