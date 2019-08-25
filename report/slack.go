@@ -87,8 +87,11 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 			}
 
 			var ts string
-			if _, ts, err = api.PostMessage(channel,
-				summary, msgPrms); err != nil {
+			if _, ts, err = api.PostMessage(
+				channel,
+				slack.MsgOptionText(summary, true),
+				slack.MsgOptionPostMessageParameters(msgPrms),
+			); err != nil {
 				return err
 			}
 
@@ -100,10 +103,14 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 				params := slack.PostMessageParameters{
 					Username:        conf.AuthUser,
 					IconEmoji:       conf.IconEmoji,
-					Attachments:     m[k],
 					ThreadTimestamp: ts,
 				}
-				if _, _, err = api.PostMessage(channel, "", params); err != nil {
+				if _, _, err = api.PostMessage(
+					channel, 
+					slack.MsgOptionText("", false), 
+					slack.MsgOptionPostMessageParameters(params),
+					slack.MsgOptionAttachments(m[k]...),
+				); err != nil {
 					return err
 				}
 			}

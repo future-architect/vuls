@@ -20,7 +20,7 @@ package models
 import (
 	"time"
 
-	"github.com/knqyf263/trivy/pkg/vulnsrc/vulnerability"
+	"github.com/aquasecurity/trivy/pkg/vulnsrc/vulnerability"
 )
 
 // CveContents has CveContent
