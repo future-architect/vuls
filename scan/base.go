@@ -729,7 +729,7 @@ func (l *base) detectWpPlugins() ([]models.WpPackage, error) {
 }
 
 func (l *base) ps() (stdout string, err error) {
-	cmd := `LANGUAGE=en_US.UTF-8 ps --no-headers --ppid 2 -p 2 --deselect -o pid,comm | awk '{print $1,$2}'`
+	cmd := `LANGUAGE=en_US.UTF-8 ps --no-headers --ppid 2 -p 2 --deselect -o pid,comm`
 	r := l.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess() {
 		return "", xerrors.Errorf("Failed to SSH: %s", r)
