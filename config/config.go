@@ -106,6 +106,7 @@ type Config struct {
 	LogDir     string `json:"logDir,omitempty"`
 	ResultsDir string `json:"resultsDir,omitempty"`
 	Pipe       bool   `json:"pipe,omitempty"`
+	Quiet      bool   `json:"quiet,omitempty"`
 
 	Default       ServerInfo            `json:"default,omitempty"`
 	Servers       map[string]ServerInfo `json:"servers,omitempty"`
