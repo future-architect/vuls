@@ -27,8 +27,8 @@ import (
 	"strings"
 
 	syslog "github.com/RackSec/srslog"
-	valid "github.com/asaskevich/govalidator"
 	"github.com/aquasecurity/fanal/types"
+	valid "github.com/asaskevich/govalidator"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 )
