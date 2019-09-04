@@ -628,7 +628,13 @@ func Scan(timeoutSec int) error {
 	if err != nil {
 		return err
 	}
-	return scanVulns(dir, scannedAt, timeoutSec)
+
+	results, err := GetScanResults(scannedAt, timeoutSec)
+	if err != nil {
+		return err
+	}
+
+	return writeScanResults(dir, results)
 }
 
 // ViaHTTP scans servers by HTTP header and body
@@ -739,8 +745,8 @@ func setupChangelogCache() error {
 	return nil
 }
 
-func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
-	var results models.ScanResults
+// GetScanResults returns ScanResults from
+func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanResults, err error) {
 	parallelExec(func(o osTypeInterface) (err error) {
 		if err = o.preCure(); err != nil {
 			return err
@@ -762,7 +768,6 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 	if err != nil {
 		util.Log.Errorf("Failed to fetch scannedIPs. err: %+v", err)
 	}
-
 	for _, s := range append(servers, errServers...) {
 		r := s.convertToModel()
 		r.ScannedAt = scannedAt
@@ -779,7 +784,10 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 				r.ServerName, r.Warnings)
 		}
 	}
+	return results, nil
+}
 
+func writeScanResults(jsonDir string, results models.ScanResults) error {
 	config.Conf.FormatJSON = true
 	ws := []report.ResultWriter{
 		report.LocalFileWriter{CurrentDir: jsonDir},
@@ -801,7 +809,6 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 	if 0 < len(errServerNames) {
 		return fmt.Errorf("An error occurred on %s", errServerNames)
 	}
-
 	return nil
 }
 
