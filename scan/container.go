@@ -173,6 +173,7 @@ func convertFanalToVulsPkg(pkgs []analyzer.Package) (map[string]models.Package, 
 				modelSrcPkgs[pkg.SrcName] = models.SrcPackage{
 					Name:        pkg.SrcName,
 					Version:     pkg.SrcVersion,
+					Arch:        pkg.Arch,
 					BinaryNames: []string{pkg.Name},
 				}
 			}
