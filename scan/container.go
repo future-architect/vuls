@@ -25,11 +25,11 @@ import (
 	"github.com/aquasecurity/fanal/analyzer"
 	"golang.org/x/xerrors"
 
+	fanalos "github.com/aquasecurity/fanal/analyzer/os"
+	godeptypes "github.com/aquasecurity/go-dep-parser/pkg/types"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	fanalos "github.com/aquasecurity/fanal/analyzer/os"
-	godeptypes "github.com/aquasecurity/go-dep-parser/pkg/types"
 
 	// Register library analyzers
 	_ "github.com/aquasecurity/fanal/analyzer/library/bundler"

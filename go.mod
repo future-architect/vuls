@@ -20,6 +20,7 @@ require (
 	github.com/hashicorp/uuid v0.0.0-20160311170451-ebb0a03e909c
 	github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c
 	github.com/jroimartin/gocui v0.4.0
+	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/knqyf263/go-cpe v0.0.0-20180327054844-659663f6eca2
 	github.com/knqyf263/go-deb-version v0.0.0-20190517075300-09fca494f03d

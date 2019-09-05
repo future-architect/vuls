@@ -27,8 +27,8 @@ import (
 	"strings"
 
 	syslog "github.com/RackSec/srslog"
-	valid "github.com/asaskevich/govalidator"
 	"github.com/aquasecurity/fanal/types"
+	valid "github.com/asaskevich/govalidator"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 )
@@ -116,15 +116,19 @@ type Config struct {
 	IgnoreUnfixed         bool `json:"ignoreUnfixed,omitempty"`
 	IgnoreGitHubDismissed bool `json:"ignore_git_hub_dismissed,omitempty"`
 
-	SSHNative      bool   `json:"sshNative,omitempty"`
-	SSHConfig      bool   `json:"sshConfig,omitempty"`
-	ContainersOnly bool   `json:"containersOnly,omitempty"`
-	ImagesOnly     bool   `json:"imagesOnly,omitempty"`
-	SkipBroken     bool   `json:"skipBroken,omitempty"`
-	CacheDBPath    string `json:"cacheDBPath,omitempty"`
-	Vvv            bool   `json:"vvv,omitempty"`
-	UUID           bool   `json:"uuid,omitempty"`
-	DetectIPS      bool   `json:"detectIps,omitempty"`
+	SSHNative bool `json:"sshNative,omitempty"`
+	SSHConfig bool `json:"sshConfig,omitempty"`
+
+	ContainersOnly bool `json:"containersOnly,omitempty"`
+	ImagesOnly     bool `json:"imagesOnly,omitempty"`
+	LibsOnly       bool `json:"libsOnly,omitempty"`
+	WordPressOnly  bool `json:"wordpressOnly,omitempty"`
+
+	SkipBroken  bool   `json:"skipBroken,omitempty"`
+	CacheDBPath string `json:"cacheDBPath,omitempty"`
+	Vvv         bool   `json:"vvv,omitempty"`
+	UUID        bool   `json:"uuid,omitempty"`
+	DetectIPS   bool   `json:"detectIps,omitempty"`
 
 	CveDict  GoCveDictConf `json:"cveDict,omitempty"`
 	OvalDict GovalDictConf `json:"ovalDict,omitempty"`

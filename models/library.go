@@ -3,9 +3,9 @@ package models
 import (
 	"path/filepath"
 
-	"github.com/future-architect/vuls/util"
 	"github.com/aquasecurity/trivy/pkg/scanner/library"
 	"github.com/aquasecurity/trivy/pkg/vulnsrc/vulnerability"
+	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
 
 	"github.com/aquasecurity/go-dep-parser/pkg/types"
