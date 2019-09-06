@@ -45,10 +45,10 @@ import (
 	"github.com/hashicorp/uuid"
 	gostdb "github.com/knqyf263/gost/db"
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
+	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
 	ovaldb "github.com/kotakanbe/goval-dictionary/db"
 	exploitdb "github.com/mozqnet/go-exploitdb/db"
 	"golang.org/x/xerrors"
-	cve "github.com/kotakanbe/go-cve-dictionary/models"
 )
 
 const (
@@ -266,22 +266,22 @@ func fillCveDetail(driver cvedb.DB, r *models.ScanResult) error {
 	return nil
 }
 
-func fillCertAlerts(cvedetail *cve.CveDetail) (dict models.AlertDict){
+func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 	if cvedetail.NvdJSON != nil {
 		for _, cert := range cvedetail.NvdJSON.Certs {
 			dict.En = append(dict.En, models.Alert{
-				URL: cert.Link,
+				URL:   cert.Link,
 				Title: cert.Title,
-				Team: "us",
+				Team:  "us",
 			})
 		}
 	}
 	if cvedetail.Jvn != nil {
 		for _, cert := range cvedetail.Jvn.Certs {
-			dict.Ja= append(dict.Ja, models.Alert{
-				URL: cert.Link,
+			dict.Ja = append(dict.Ja, models.Alert{
+				URL:   cert.Link,
 				Title: cert.Title,
-				Team: "ja",
+				Team:  "ja",
 			})
 		}
 	}
