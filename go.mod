@@ -46,8 +46,8 @@ require (
 	golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7
 )
 
-replace github.com/genuinetools/reg => github.com/tomoyamachi/reg v0.16.1-0.20190706172545-2a2250fd7c00
-
-replace gopkg.in/mattn/go-colorable.v0 => github.com/mattn/go-colorable v0.1.0
-
-replace gopkg.in/mattn/go-isatty.v0 => github.com/mattn/go-isatty v0.0.6
+replace (
+	github.com/genuinetools/reg => github.com/tomoyamachi/reg v0.16.1-0.20190706172545-2a2250fd7c00
+	gopkg.in/mattn/go-colorable.v0 => github.com/mattn/go-colorable v0.1.0
+	gopkg.in/mattn/go-isatty.v0 => github.com/mattn/go-isatty v0.0.6
+)
