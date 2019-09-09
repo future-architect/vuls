@@ -26,7 +26,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/future-architect/vuls/alert"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
@@ -640,18 +639,14 @@ func summaryLines(r models.ScanResult) string {
 		pkgNames = append(pkgNames, vinfo.GitHubSecurityAlerts.Names()...)
 		pkgNames = append(pkgNames, vinfo.WpPackageFixStats.Names()...)
 
-		alert := "  "
-		if vinfo.AlertDict.HasAlert() {
-			alert = "! "
-		}
-
 		var cols []string
 		cols = []string{
 			fmt.Sprintf(indexFormat, i+1),
-			alert + vinfo.CveID,
+			vinfo.CveID,
 			cvssScore + " |",
 			fmt.Sprintf("%1s |", vinfo.AttackVector()),
 			fmt.Sprintf("%7s |", vinfo.PatchStatus(r.Packages)),
+			fmt.Sprintf("%6s |", vinfo.AlertDict.FormatSource()),
 			strings.Join(pkgNames, ", "),
 		}
 		icols := make([]interface{}, len(cols))
@@ -857,7 +852,7 @@ type dataForTmpl struct {
 	Mitigation       string
 	Confidences      models.Confidences
 	Cwes             []models.CweDictEntry
-	Alerts           []alert.Alert
+	Alerts           []models.Alert
 	Links            []string
 	References       []models.Reference
 	Packages         []string

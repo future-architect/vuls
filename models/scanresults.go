@@ -24,8 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/future-architect/vuls/alert"
-
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/cwe"
 	"github.com/future-architect/vuls/util"
@@ -116,12 +114,6 @@ type CweDictEntry struct {
 	En              *cwe.Cwe `json:"en,omitempty"`
 	Ja              *cwe.Cwe `json:"ja,omitempty"`
 	OwaspTopTen2017 string   `json:"owaspTopTen2017"`
-}
-
-// GetAlertsByCveID return alerts fetched by cveID
-func GetAlertsByCveID(cveID string, lang string) (alerts []alert.Alert) {
-	alerts = alert.GenerateAlertDict(cveID, lang)
-	return alerts
 }
 
 // Kernel has the Release, version and whether need restart

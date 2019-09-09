@@ -30,7 +30,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/util"
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
-	cve "github.com/kotakanbe/go-cve-dictionary/models"
+	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
 )
 
 // CveClient is api client of CVE disctionary service.
@@ -66,10 +66,10 @@ func (api cvedictClient) CheckHealth() error {
 
 type response struct {
 	Key       string
-	CveDetail cve.CveDetail
+	CveDetail cvemodels.CveDetail
 }
 
-func (api cvedictClient) FetchCveDetails(driver cvedb.DB, cveIDs []string) (cveDetails []cve.CveDetail, err error) {
+func (api cvedictClient) FetchCveDetails(driver cvedb.DB, cveIDs []string) (cveDetails []cvemodels.CveDetail, err error) {
 	if !config.Conf.CveDict.IsFetchViaHTTP() {
 		if driver == nil {
 			return
@@ -80,7 +80,7 @@ func (api cvedictClient) FetchCveDetails(driver cvedb.DB, cveIDs []string) (cveD
 				return nil, xerrors.Errorf("Failed to fetch CVE. err: %w", err)
 			}
 			if len(cveDetail.CveID) == 0 {
-				cveDetails = append(cveDetails, cve.CveDetail{
+				cveDetails = append(cveDetails, cvemodels.CveDetail{
 					CveID: cveID,
 				})
 			} else {
@@ -127,7 +127,7 @@ func (api cvedictClient) FetchCveDetails(driver cvedb.DB, cveIDs []string) (cveD
 		select {
 		case res := <-resChan:
 			if len(res.CveDetail.CveID) == 0 {
-				cveDetails = append(cveDetails, cve.CveDetail{
+				cveDetails = append(cveDetails, cvemodels.CveDetail{
 					CveID: res.Key,
 				})
 			} else {
@@ -168,7 +168,7 @@ func (api cvedictClient) httpGet(key, url string, resChan chan<- response, errCh
 		errChan <- xerrors.Errorf("HTTP Error: %w", err)
 		return
 	}
-	cveDetail := cve.CveDetail{}
+	cveDetail := cvemodels.CveDetail{}
 	if err := json.Unmarshal([]byte(body), &cveDetail); err != nil {
 		errChan <- xerrors.Errorf("Failed to Unmarshall. body: %s, err: %w", body, err)
 		return
@@ -179,7 +179,7 @@ func (api cvedictClient) httpGet(key, url string, resChan chan<- response, errCh
 	}
 }
 
-func (api cvedictClient) FetchCveDetailsByCpeName(driver cvedb.DB, cpeName string) ([]cve.CveDetail, error) {
+func (api cvedictClient) FetchCveDetailsByCpeName(driver cvedb.DB, cpeName string) ([]cvemodels.CveDetail, error) {
 	if config.Conf.CveDict.IsFetchViaHTTP() {
 		api.baseURL = config.Conf.CveDict.URL
 		url, err := util.URLPathJoin(api.baseURL, "cpes")
@@ -194,7 +194,7 @@ func (api cvedictClient) FetchCveDetailsByCpeName(driver cvedb.DB, cpeName strin
 	return driver.GetByCpeURI(cpeName)
 }
 
-func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]cve.CveDetail, error) {
+func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]cvemodels.CveDetail, error) {
 	var body string
 	var errs []error
 	var resp *http.Response
@@ -218,7 +218,7 @@ func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]c
 		return nil, xerrors.Errorf("HTTP Error: %w", err)
 	}
 
-	cveDetails := []cve.CveDetail{}
+	cveDetails := []cvemodels.CveDetail{}
 	if err := json.Unmarshal([]byte(body), &cveDetails); err != nil {
 		return nil,
 			xerrors.Errorf("Failed to Unmarshall. body: %s, err: %w", body, err)

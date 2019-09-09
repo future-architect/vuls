@@ -28,7 +28,7 @@ all: build
 build: main.go pretest fmt
 	$(GO) build -a -ldflags "$(LDFLAGS)" -o vuls $<
 
-b: 	main.go pretest
+b: 	main.go pretest fmt
 	$(GO) build -ldflags "$(LDFLAGS)" -o vuls $<
 
 install: main.go pretest
@@ -64,6 +64,5 @@ cov:
 	gocov test | gocov report
 
 clean:
-	echo $(PKGS) | xargs go clean || exit;
 	echo $(PKGS) | xargs go clean || exit;
 

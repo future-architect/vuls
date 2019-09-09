@@ -24,8 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/future-architect/vuls/alert"
-
 	"github.com/future-architect/vuls/config"
 	exploitmodels "github.com/mozqnet/go-exploitdb/models"
 )
@@ -175,6 +173,13 @@ type VulnInfo struct {
 	LibraryFixedIns      LibraryFixedIns      `json:"libraryFixedIns,omitempty"`
 
 	VulnType string `json:"vulnType,omitempty"`
+}
+
+// Alert has XCERT alert information
+type Alert struct {
+	URL   string `json:"url,omitempty"`
+	Title string `json:"title,omitempty"`
+	Team  string `json:"team,omitempty"`
 }
 
 // GitHubSecurityAlerts is a list of GitHubSecurityAlert
@@ -785,13 +790,8 @@ type Exploit struct {
 
 // AlertDict has target cve's JPCERT and USCERT alert data
 type AlertDict struct {
-	Ja []alert.Alert `json:"ja"`
-	En []alert.Alert `json:"en"`
-}
-
-// HasAlert returns whether or not it has En or Ja entries.
-func (a AlertDict) HasAlert() bool {
-	return len(a.En) != 0 || len(a.Ja) != 0
+	Ja []Alert `json:"ja"`
+	En []Alert `json:"en"`
 }
 
 // FormatSource returns which source has this alert
