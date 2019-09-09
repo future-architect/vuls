@@ -3,16 +3,17 @@ package scan
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aquasecurity/fanal/analyzer"
 	"golang.org/x/xerrors"
 
+	fanalos "github.com/aquasecurity/fanal/analyzer/os"
+	godeptypes "github.com/aquasecurity/go-dep-parser/pkg/types"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	fanalos "github.com/aquasecurity/fanal/analyzer/os"
-	godeptypes "github.com/aquasecurity/go-dep-parser/pkg/types"
 
 	// Register library analyzers
 	_ "github.com/aquasecurity/fanal/analyzer/library/bundler"
@@ -76,8 +77,16 @@ func detectContainerImage(c config.ServerInfo) (itsMe bool, containerImage osTyp
 		return false, newDummyOS(c), err
 	}
 
+	osName := os.Name
+	switch os.Family {
+	case fanalos.Amazon:
+		osName = "1"
+		if strings.HasPrefix(os.Family, "2") {
+			osName = "2"
+		}
+	}
 	p := newContainerImage(c, pkgs, libScanners)
-	p.setDistro(os.Family, os.Name)
+	p.setDistro(os.Family, osName)
 	return true, p, nil
 }
 
@@ -147,6 +156,7 @@ func convertFanalToVulsPkg(pkgs []analyzer.Package) (map[string]models.Package, 
 				modelSrcPkgs[pkg.SrcName] = models.SrcPackage{
 					Name:        pkg.SrcName,
 					Version:     pkg.SrcVersion,
+					Arch:        pkg.Arch,
 					BinaryNames: []string{pkg.Name},
 				}
 			}

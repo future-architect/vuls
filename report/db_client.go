@@ -83,6 +83,10 @@ func NewCveDB(cnf DBClientConf) (driver cvedb.DB, locked bool, err error) {
 	path := cnf.CveDictCnf.URL
 	if cnf.CveDictCnf.Type == "sqlite3" {
 		path = cnf.CveDictCnf.SQLite3Path
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			util.Log.Warnf("--cvedb-path=%s file not found. [CPE-scan](https://vuls.io/docs/en/usage-scan-non-os-packages.html#cpe-scan) needs cve-dictionary. if you specify cpe in config.toml, fetch cve-dictionary before reporting. For details, see `https://github.com/kotakanbe/go-cve-dictionary#deploy-go-cve-dictionary`", path)
+			return nil, false, nil
+		}
 	}
 
 	util.Log.Debugf("Open cve-dictionary db (%s): %s", cnf.CveDictCnf.Type, path)
@@ -104,7 +108,7 @@ func NewOvalDB(cnf DBClientConf) (driver ovaldb.DB, locked bool, err error) {
 		path = cnf.OvalDictCnf.SQLite3Path
 
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			util.Log.Warnf("--ovaldb-path=%s is not found. It's recommended to use OVAL to improve scanning accuracy. For details, see https://github.com/kotakanbe/goval-dictionary#usage", path)
+			util.Log.Warnf("--ovaldb-path=%s file not found", path)
 			return nil, false, nil
 		}
 	}
@@ -131,7 +135,7 @@ func NewGostDB(cnf DBClientConf) (driver gostdb.DB, locked bool, err error) {
 		path = cnf.GostCnf.SQLite3Path
 
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			util.Log.Warnf("--gostdb-path=%s is not found. If the scan target server is Debian, RHEL or CentOS, it's recommended to use gost to improve scanning accuracy. To use gost database, see https://github.com/knqyf263/gost#fetch-redhat", path)
+			util.Log.Warnf("--gostdb-path=%s file not found. Vuls can detect `patch-not-released-CVE-ID` using gost if the scan target server is Debian, RHEL or CentOS, For details, see `https://github.com/knqyf263/gost#fetch-redhat`", path)
 			return nil, false, nil
 		}
 	}
@@ -157,7 +161,7 @@ func NewExploitDB(cnf DBClientConf) (driver exploitdb.DB, locked bool, err error
 		path = cnf.ExploitCnf.SQLite3Path
 
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			util.Log.Warnf("--exploitdb-path=%s is not found. It's recommended to use exploit to improve scanning accuracy. To use exploit db database, see https://github.com/mozqnet/go-exploitdb", path)
+			util.Log.Warnf("--exploitdb-path=%s file not found. Fetch go-exploit-db before reporting if you want to display exploit codes of detected CVE-IDs. For details, see `https://github.com/mozqnet/go-exploitdb`", path)
 			return nil, false, nil
 		}
 	}

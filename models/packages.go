@@ -190,6 +190,7 @@ type NeedRestartProcess struct {
 type SrcPackage struct {
 	Name        string   `json:"name"`
 	Version     string   `json:"version"`
+	Arch        string   `json:"arch"`
 	BinaryNames []string `json:"binaryNames"`
 }
 

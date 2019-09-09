@@ -216,6 +216,7 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 			packName:        pack.Name,
 			binaryPackNames: pack.BinaryNames,
 			versionRelease:  pack.Version,
+			arch:            pack.Arch,
 			isSrcPack:       true,
 		})
 	}

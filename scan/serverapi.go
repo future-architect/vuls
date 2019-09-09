@@ -731,11 +731,16 @@ func setupChangelogCache() error {
 // GetScanResults returns ScanResults from
 func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanResults, err error) {
 	parallelExec(func(o osTypeInterface) (err error) {
-		if err = o.preCure(); err != nil {
-			return err
-		}
-		if err = o.scanPackages(); err != nil {
-			return err
+		if !(config.Conf.LibsOnly || config.Conf.WordPressOnly) {
+			if err = o.preCure(); err != nil {
+				return err
+			}
+			if err = o.scanPackages(); err != nil {
+				return err
+			}
+			if err = o.postScan(); err != nil {
+				return err
+			}
 		}
 		if err = o.scanWordPress(); err != nil {
 			return xerrors.Errorf("Failed to scan WordPress: %w", err)
@@ -743,7 +748,7 @@ func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanRes
 		if err = o.scanLibraries(); err != nil {
 			return xerrors.Errorf("Failed to scan Library: %w", err)
 		}
-		return o.postScan()
+		return nil
 	}, timeoutSec)
 
 	hostname, _ := os.Hostname()

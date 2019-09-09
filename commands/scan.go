@@ -41,6 +41,9 @@ func (*ScanCmd) Usage() string {
 		[-ssh-native-insecure]
 		[-ssh-config]
 		[-containers-only]
+		[-images-only]
+		[-libs-only]
+		[-wordpress-only]
 		[-skip-broken]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-ask-key-password]
@@ -85,6 +88,12 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 	f.BoolVar(&c.Conf.ImagesOnly, "images-only", false,
 		"Scan container images only. Default: Scan both of hosts and images")
+
+	f.BoolVar(&c.Conf.LibsOnly, "libs-only", false,
+		"Scan libraries (lock files) specified in config.toml only.")
+
+	f.BoolVar(&c.Conf.WordPressOnly, "wordpress-only", false,
+		"Scan WordPress only.")
 
 	f.BoolVar(&c.Conf.SkipBroken, "skip-broken", false,
 		"[For CentOS] yum update changelog with --skip-broken option")

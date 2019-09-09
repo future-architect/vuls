@@ -89,8 +89,8 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 					ThreadTimestamp: ts,
 				}
 				if _, _, err = api.PostMessage(
-					channel, 
-					slack.MsgOptionText("", false), 
+					channel,
+					slack.MsgOptionText("", false),
 					slack.MsgOptionPostMessageParameters(params),
 					slack.MsgOptionAttachments(m[k]...),
 				); err != nil {
