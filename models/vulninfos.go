@@ -794,11 +794,6 @@ type AlertDict struct {
 	En []Alert `json:"en"`
 }
 
-// HasAlert returns whether or not it has En or Ja entries.
-func (a AlertDict) HasAlert() bool {
-	return len(a.En) != 0 || len(a.Ja) != 0
-}
-
 // FormatSource returns which source has this alert
 func (a AlertDict) FormatSource() string {
 	s := []string{}
