@@ -72,7 +72,7 @@ type response struct {
 func (api cvedictClient) FetchCveDetails(driver cvedb.DB, cveIDs []string) (cveDetails []cve.CveDetail, err error) {
 	if !config.Conf.CveDict.IsFetchViaHTTP() {
 		if driver == nil {
-			return 
+			return
 		}
 		for _, cveID := range cveIDs {
 			cveDetail, err := driver.Get(cveID)

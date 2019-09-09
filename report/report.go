@@ -312,7 +312,7 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 
 	if !c.Conf.OvalDict.IsFetchViaHTTP() {
 		if driver == nil {
-			return 0, nil
+			return 0, xerrors.Errorf("You have to fetch OVAL data for %s before reporting. For details, see `https://github.com/kotakanbe/goval-dictionary#usage`", r.Family)
 		}
 		if err = driver.NewOvalDB(ovalFamily); err != nil {
 			return 0, xerrors.Errorf("Failed to New Oval DB. err: %w", err)
@@ -325,7 +325,7 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 		return 0, err
 	}
 	if !ok {
-		return 0, xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see https://github.com/kotakanbe/goval-dictionary#usage", ovalFamily, r.Release)
+		return 0, xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see `https://github.com/kotakanbe/goval-dictionary#usage`", ovalFamily, r.Release)
 	}
 
 	_, err = ovalClient.CheckIfOvalFresh(driver, ovalFamily, r.Release)
@@ -354,9 +354,9 @@ func FillWithExploit(driver exploitdb.DB, r *models.ScanResult) (nExploitCve int
 }
 
 func fillVulnByCpeURIs(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) (nCVEs int, err error) {
-	if len(cpeURIs) != 0 && driver == nil &&!config.Conf.CveDict.IsFetchViaHTTP() { 
-		return 0, xerrors.Errorf("cpeURIs %s specified, but cve-dictionary not found. Fetch cve-dictionary beofre reporting. For details, see https://github.com/kotakanbe/go-cve-dictionary#deploy-go-cve-dictionary", 
-		cpeURIs)
+	if len(cpeURIs) != 0 && driver == nil && !config.Conf.CveDict.IsFetchViaHTTP() {
+		return 0, xerrors.Errorf("cpeURIs %s specified, but cve-dictionary not found. Fetch cve-dictionary beofre reporting. For details, see `https://github.com/kotakanbe/go-cve-dictionary#deploy-go-cve-dictionary`",
+			cpeURIs)
 	}
 
 	for _, name := range cpeURIs {
