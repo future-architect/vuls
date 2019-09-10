@@ -139,13 +139,13 @@ No CVE-IDs are found in updatable packages.
 
 		data = append(data, []string{
 			vinfo.CveID,
-			fmt.Sprintf("%7s", vinfo.PatchStatus(r.Packages)),
-			vinfo.AlertDict.FormatSource(),
 			fmt.Sprintf("%4.1f", max),
+			fmt.Sprintf("%5s", vinfo.AttackVector()),
 			// fmt.Sprintf("%4.1f", v2max),
 			// fmt.Sprintf("%4.1f", v3max),
-			fmt.Sprintf("%2s", vinfo.AttackVector()),
 			exploits,
+			vinfo.AlertDict.FormatSource(),
+			fmt.Sprintf("%7s", vinfo.PatchStatus(r.Packages)),
 			link,
 		})
 	}
@@ -154,13 +154,13 @@ No CVE-IDs are found in updatable packages.
 	table := tablewriter.NewWriter(&b)
 	table.SetHeader([]string{
 		"CVE-ID",
-		"Fixed",
-		"CERT",
 		"CVSS",
+		"Attack",
 		// "v3",
 		// "v2",
-		"AV",
 		"PoC",
+		"CERT",
+		"Fixed",
 		"NVD",
 	})
 	table.SetBorder(true)
