@@ -144,12 +144,12 @@ func TestSummaries(t *testing.T) {
 					Value: "Title JVN\nSummary JVN",
 				},
 				{
-					Type:  NvdXML,
-					Value: "Summary NVD",
-				},
-				{
 					Type:  RedHat,
 					Value: "Summary RedHat",
+				},
+				{
+					Type:  NvdXML,
+					Value: "Summary NVD",
 				},
 			},
 		},
@@ -178,12 +178,12 @@ func TestSummaries(t *testing.T) {
 			},
 			out: []CveContentStr{
 				{
-					Type:  NvdXML,
-					Value: "Summary NVD",
-				},
-				{
 					Type:  RedHat,
 					Value: "Summary RedHat",
+				},
+				{
+					Type:  NvdXML,
+					Value: "Summary NVD",
 				},
 			},
 		},

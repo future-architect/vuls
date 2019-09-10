@@ -622,14 +622,20 @@ func summaryLines(r models.ScanResult) string {
 		pkgNames = append(pkgNames, vinfo.GitHubSecurityAlerts.Names()...)
 		pkgNames = append(pkgNames, vinfo.WpPackageFixStats.Names()...)
 
+		exploits := ""
+		if 0 < len(vinfo.Exploits) {
+			exploits = " POC"
+		}
+
 		var cols []string
 		cols = []string{
 			fmt.Sprintf(indexFormat, i+1),
 			vinfo.CveID,
 			cvssScore + " |",
-			fmt.Sprintf("%1s |", vinfo.AttackVector()),
-			fmt.Sprintf("%7s |", vinfo.PatchStatus(r.Packages)),
+			fmt.Sprintf("%4s |", vinfo.AttackVector()),
+			fmt.Sprintf("%3s |", exploits),
 			fmt.Sprintf("%6s |", vinfo.AlertDict.FormatSource()),
+			fmt.Sprintf("%7s |", vinfo.PatchStatus(r.Packages)),
 			strings.Join(pkgNames, ", "),
 		}
 		icols := make([]interface{}, len(cols))

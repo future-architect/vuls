@@ -276,7 +276,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := CveContentTypes{Nvd, NvdXML, NewCveContentType(myFamily)}
+	order := CveContentTypes{NewCveContentType(myFamily), Nvd, NvdXML}
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Summary) {
@@ -535,15 +535,15 @@ func (v VulnInfo) AttackVector() string {
 	for _, cnt := range v.CveContents {
 		if strings.HasPrefix(cnt.Cvss2Vector, "AV:N") ||
 			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:N") {
-			return "N"
+			return "AV:N"
 		} else if strings.HasPrefix(cnt.Cvss2Vector, "AV:A") ||
 			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:A") {
-			return "A"
+			return "AV:A"
 		} else if strings.HasPrefix(cnt.Cvss2Vector, "AV:L") ||
 			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:L") {
-			return "L"
+			return "AV:L"
 		} else if strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:P") {
-			return "P"
+			return "AV:P"
 		}
 	}
 	if cont, found := v.CveContents[DebianSecurityTracker]; found {
