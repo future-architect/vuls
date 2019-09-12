@@ -315,11 +315,6 @@ func (c Config) ValidateOnTui() bool {
 	if err := validateDB("cvedb", c.CveDict.Type, c.CveDict.SQLite3Path, c.CveDict.URL); err != nil {
 		errs = append(errs, err)
 	}
-	if c.CveDict.Type == "sqlite3" {
-		if _, err := os.Stat(c.CveDict.SQLite3Path); os.IsNotExist(err) {
-			errs = append(errs, xerrors.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDict.SQLite3Path))
-		}
-	}
 
 	for _, err := range errs {
 		log.Error(err)
