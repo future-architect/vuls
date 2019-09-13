@@ -624,7 +624,7 @@ func summaryLines(r models.ScanResult) string {
 
 		exploits := ""
 		if 0 < len(vinfo.Exploits) {
-			exploits = " POC"
+			exploits = "POC"
 		}
 
 		var cols []string
