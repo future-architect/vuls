@@ -1,8 +1,8 @@
 package libmanager
 
 import (
-	"github.com/knqyf263/trivy/pkg/db"
-	"github.com/knqyf263/trivy/pkg/log"
+	"github.com/aquasecurity/trivy/pkg/db"
+	"github.com/aquasecurity/trivy/pkg/log"
 
 	"github.com/future-architect/vuls/models"
 )
@@ -10,7 +10,7 @@ import (
 // FillLibrary fills LibraryScanner informations
 func FillLibrary(r *models.ScanResult) (totalCnt int, err error) {
 	// initialize trivy's logger and db
-	err = log.InitLogger(false)
+	err = log.InitLogger(false, false)
 	if err != nil {
 		return 0, err
 	}

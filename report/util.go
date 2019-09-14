@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package report
 
 import (
@@ -104,6 +87,10 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 				r.FormatServerName(), r.Warnings))
 		}
 	}
+	// We don't want warning message to the summary file
+	if config.Conf.Quiet {
+		return fmt.Sprintf("%s\n", table)
+	}
 	return fmt.Sprintf("%s\n\n%s", table, strings.Join(
 		warnMsgs, "\n\n"))
 }
@@ -152,13 +139,13 @@ No CVE-IDs are found in updatable packages.
 
 		data = append(data, []string{
 			vinfo.CveID,
-			fmt.Sprintf("%7s", vinfo.PatchStatus(r.Packages)),
-			vinfo.AlertDict.FormatSource(),
 			fmt.Sprintf("%4.1f", max),
+			fmt.Sprintf("%5s", vinfo.AttackVector()),
 			// fmt.Sprintf("%4.1f", v2max),
 			// fmt.Sprintf("%4.1f", v3max),
-			fmt.Sprintf("%2s", vinfo.AttackVector()),
 			exploits,
+			vinfo.AlertDict.FormatSource(),
+			fmt.Sprintf("%7s", vinfo.PatchStatus(r.Packages)),
 			link,
 		})
 	}
@@ -167,13 +154,13 @@ No CVE-IDs are found in updatable packages.
 	table := tablewriter.NewWriter(&b)
 	table.SetHeader([]string{
 		"CVE-ID",
-		"Fixed",
-		"CERT",
 		"CVSS",
+		"Attack",
 		// "v3",
 		// "v2",
-		"AV",
 		"PoC",
+		"CERT",
+		"Fixed",
 		"NVD",
 	})
 	table.SetBorder(true)

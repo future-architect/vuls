@@ -21,6 +21,7 @@ ENV WORKDIR /vuls
 RUN apk add --no-cache \
         openssh-client \
         ca-certificates \
+        git \
     && mkdir -p $WORKDIR $LOGDIR
 
 COPY --from=builder /go/bin/vuls /usr/local/bin/

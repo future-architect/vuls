@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package models
 
 import (
@@ -23,8 +6,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/future-architect/vuls/alert"
 
 	"github.com/future-architect/vuls/config"
 	exploitmodels "github.com/mozqnet/go-exploitdb/models"
@@ -177,6 +158,13 @@ type VulnInfo struct {
 	VulnType string `json:"vulnType,omitempty"`
 }
 
+// Alert has XCERT alert information
+type Alert struct {
+	URL   string `json:"url,omitempty"`
+	Title string `json:"title,omitempty"`
+	Team  string `json:"team,omitempty"`
+}
+
 // GitHubSecurityAlerts is a list of GitHubSecurityAlert
 type GitHubSecurityAlerts []GitHubSecurityAlert
 
@@ -288,7 +276,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := CveContentTypes{Nvd, NvdXML, NewCveContentType(myFamily)}
+	order := CveContentTypes{NewCveContentType(myFamily), Nvd, NvdXML}
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Summary) {
@@ -547,15 +535,15 @@ func (v VulnInfo) AttackVector() string {
 	for _, cnt := range v.CveContents {
 		if strings.HasPrefix(cnt.Cvss2Vector, "AV:N") ||
 			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:N") {
-			return "N"
+			return "AV:N"
 		} else if strings.HasPrefix(cnt.Cvss2Vector, "AV:A") ||
 			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:A") {
-			return "A"
+			return "AV:A"
 		} else if strings.HasPrefix(cnt.Cvss2Vector, "AV:L") ||
 			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:L") {
-			return "L"
+			return "AV:L"
 		} else if strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:P") {
-			return "P"
+			return "AV:P"
 		}
 	}
 	if cont, found := v.CveContents[DebianSecurityTracker]; found {
@@ -785,13 +773,8 @@ type Exploit struct {
 
 // AlertDict has target cve's JPCERT and USCERT alert data
 type AlertDict struct {
-	Ja []alert.Alert `json:"ja"`
-	En []alert.Alert `json:"en"`
-}
-
-// HasAlert returns whether or not it has En or Ja entries.
-func (a AlertDict) HasAlert() bool {
-	return len(a.En) != 0 || len(a.Ja) != 0
+	Ja []Alert `json:"ja"`
+	En []Alert `json:"en"`
 }
 
 // FormatSource returns which source has this alert

@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package report
 
 import (
@@ -26,7 +9,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/future-architect/vuls/alert"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
@@ -640,17 +622,19 @@ func summaryLines(r models.ScanResult) string {
 		pkgNames = append(pkgNames, vinfo.GitHubSecurityAlerts.Names()...)
 		pkgNames = append(pkgNames, vinfo.WpPackageFixStats.Names()...)
 
-		alert := "  "
-		if vinfo.AlertDict.HasAlert() {
-			alert = "! "
+		exploits := ""
+		if 0 < len(vinfo.Exploits) {
+			exploits = "POC"
 		}
 
 		var cols []string
 		cols = []string{
 			fmt.Sprintf(indexFormat, i+1),
-			alert + vinfo.CveID,
+			vinfo.CveID,
 			cvssScore + " |",
-			fmt.Sprintf("%1s |", vinfo.AttackVector()),
+			fmt.Sprintf("%4s |", vinfo.AttackVector()),
+			fmt.Sprintf("%3s |", exploits),
+			fmt.Sprintf("%6s |", vinfo.AlertDict.FormatSource()),
 			fmt.Sprintf("%7s |", vinfo.PatchStatus(r.Packages)),
 			strings.Join(pkgNames, ", "),
 		}
@@ -857,7 +841,7 @@ type dataForTmpl struct {
 	Mitigation       string
 	Confidences      models.Confidences
 	Cwes             []models.CweDictEntry
-	Alerts           []alert.Alert
+	Alerts           []models.Alert
 	Links            []string
 	References       []models.Reference
 	Packages         []string

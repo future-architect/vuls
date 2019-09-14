@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package models
 
 import (
@@ -23,8 +6,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
-	"github.com/future-architect/vuls/alert"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/cwe"
@@ -116,12 +97,6 @@ type CweDictEntry struct {
 	En              *cwe.Cwe `json:"en,omitempty"`
 	Ja              *cwe.Cwe `json:"ja,omitempty"`
 	OwaspTopTen2017 string   `json:"owaspTopTen2017"`
-}
-
-// GetAlertsByCveID return alerts fetched by cveID
-func GetAlertsByCveID(cveID string, lang string) (alerts []alert.Alert) {
-	alerts = alert.GenerateAlertDict(cveID, lang)
-	return alerts
 }
 
 // Kernel has the Release, version and whether need restart

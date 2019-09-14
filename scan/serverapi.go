@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package scan
 
 import (
@@ -628,7 +611,13 @@ func Scan(timeoutSec int) error {
 	if err != nil {
 		return err
 	}
-	return scanVulns(dir, scannedAt, timeoutSec)
+
+	results, err := GetScanResults(scannedAt, timeoutSec)
+	if err != nil {
+		return err
+	}
+
+	return writeScanResults(dir, results)
 }
 
 // ViaHTTP scans servers by HTTP header and body
@@ -739,14 +728,19 @@ func setupChangelogCache() error {
 	return nil
 }
 
-func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
-	var results models.ScanResults
+// GetScanResults returns ScanResults from
+func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanResults, err error) {
 	parallelExec(func(o osTypeInterface) (err error) {
-		if err = o.preCure(); err != nil {
-			return err
-		}
-		if err = o.scanPackages(); err != nil {
-			return err
+		if !(config.Conf.LibsOnly || config.Conf.WordPressOnly) {
+			if err = o.preCure(); err != nil {
+				return err
+			}
+			if err = o.scanPackages(); err != nil {
+				return err
+			}
+			if err = o.postScan(); err != nil {
+				return err
+			}
 		}
 		if err = o.scanWordPress(); err != nil {
 			return xerrors.Errorf("Failed to scan WordPress: %w", err)
@@ -754,7 +748,7 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 		if err = o.scanLibraries(); err != nil {
 			return xerrors.Errorf("Failed to scan Library: %w", err)
 		}
-		return o.postScan()
+		return nil
 	}, timeoutSec)
 
 	hostname, _ := os.Hostname()
@@ -762,7 +756,6 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 	if err != nil {
 		util.Log.Errorf("Failed to fetch scannedIPs. err: %+v", err)
 	}
-
 	for _, s := range append(servers, errServers...) {
 		r := s.convertToModel()
 		r.ScannedAt = scannedAt
@@ -779,7 +772,10 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 				r.ServerName, r.Warnings)
 		}
 	}
+	return results, nil
+}
 
+func writeScanResults(jsonDir string, results models.ScanResults) error {
 	config.Conf.FormatJSON = true
 	ws := []report.ResultWriter{
 		report.LocalFileWriter{CurrentDir: jsonDir},
@@ -801,7 +797,6 @@ func scanVulns(jsonDir string, scannedAt time.Time, timeoutSec int) error {
 	if 0 < len(errServerNames) {
 		return fmt.Errorf("An error occurred on %s", errServerNames)
 	}
-
 	return nil
 }
 

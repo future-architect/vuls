@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package commands
 
 import (
@@ -58,6 +41,9 @@ func (*ScanCmd) Usage() string {
 		[-ssh-native-insecure]
 		[-ssh-config]
 		[-containers-only]
+		[-images-only]
+		[-libs-only]
+		[-wordpress-only]
 		[-skip-broken]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-ask-key-password]
@@ -102,6 +88,12 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 	f.BoolVar(&c.Conf.ImagesOnly, "images-only", false,
 		"Scan container images only. Default: Scan both of hosts and images")
+
+	f.BoolVar(&c.Conf.LibsOnly, "libs-only", false,
+		"Scan libraries (lock files) specified in config.toml only.")
+
+	f.BoolVar(&c.Conf.WordPressOnly, "wordpress-only", false,
+		"Scan WordPress only.")
 
 	f.BoolVar(&c.Conf.SkipBroken, "skip-broken", false,
 		"[For CentOS] yum update changelog with --skip-broken option")

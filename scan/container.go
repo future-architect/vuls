@@ -1,56 +1,40 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package scan
 
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
-	"github.com/knqyf263/fanal/analyzer"
+	"github.com/aquasecurity/fanal/analyzer"
 	"golang.org/x/xerrors"
 
+	fanalos "github.com/aquasecurity/fanal/analyzer/os"
+	godeptypes "github.com/aquasecurity/go-dep-parser/pkg/types"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	fanalos "github.com/knqyf263/fanal/analyzer/os"
-	godeptypes "github.com/knqyf263/go-dep-parser/pkg/types"
 
 	// Register library analyzers
-	_ "github.com/knqyf263/fanal/analyzer/library/bundler"
-	_ "github.com/knqyf263/fanal/analyzer/library/cargo"
-	_ "github.com/knqyf263/fanal/analyzer/library/composer"
-	_ "github.com/knqyf263/fanal/analyzer/library/npm"
-	_ "github.com/knqyf263/fanal/analyzer/library/pipenv"
-	_ "github.com/knqyf263/fanal/analyzer/library/poetry"
-	_ "github.com/knqyf263/fanal/analyzer/library/yarn"
+	_ "github.com/aquasecurity/fanal/analyzer/library/bundler"
+	_ "github.com/aquasecurity/fanal/analyzer/library/cargo"
+	_ "github.com/aquasecurity/fanal/analyzer/library/composer"
+	_ "github.com/aquasecurity/fanal/analyzer/library/npm"
+	_ "github.com/aquasecurity/fanal/analyzer/library/pipenv"
+	_ "github.com/aquasecurity/fanal/analyzer/library/poetry"
+	_ "github.com/aquasecurity/fanal/analyzer/library/yarn"
 
 	// Register os analyzers
-	_ "github.com/knqyf263/fanal/analyzer/os/alpine"
-	_ "github.com/knqyf263/fanal/analyzer/os/amazonlinux"
-	_ "github.com/knqyf263/fanal/analyzer/os/debianbase"
-	_ "github.com/knqyf263/fanal/analyzer/os/opensuse"
-	_ "github.com/knqyf263/fanal/analyzer/os/redhatbase"
+	_ "github.com/aquasecurity/fanal/analyzer/os/alpine"
+	_ "github.com/aquasecurity/fanal/analyzer/os/amazonlinux"
+	_ "github.com/aquasecurity/fanal/analyzer/os/debianbase"
+	_ "github.com/aquasecurity/fanal/analyzer/os/opensuse"
+	_ "github.com/aquasecurity/fanal/analyzer/os/redhatbase"
 
 	// Register package analyzers
-	_ "github.com/knqyf263/fanal/analyzer/pkg/apk"
-	_ "github.com/knqyf263/fanal/analyzer/pkg/dpkg"
-	_ "github.com/knqyf263/fanal/analyzer/pkg/rpmcmd"
+	_ "github.com/aquasecurity/fanal/analyzer/pkg/apk"
+	_ "github.com/aquasecurity/fanal/analyzer/pkg/dpkg"
+	_ "github.com/aquasecurity/fanal/analyzer/pkg/rpmcmd"
 )
 
 // inherit OsTypeInterface
@@ -93,8 +77,16 @@ func detectContainerImage(c config.ServerInfo) (itsMe bool, containerImage osTyp
 		return false, newDummyOS(c), err
 	}
 
+	osName := os.Name
+	switch os.Family {
+	case fanalos.Amazon:
+		osName = "1"
+		if strings.HasPrefix(os.Family, "2") {
+			osName = "2"
+		}
+	}
 	p := newContainerImage(c, pkgs, libScanners)
-	p.setDistro(os.Family, os.Name)
+	p.setDistro(os.Family, osName)
 	return true, p, nil
 }
 
@@ -164,6 +156,7 @@ func convertFanalToVulsPkg(pkgs []analyzer.Package) (map[string]models.Package, 
 				modelSrcPkgs[pkg.SrcName] = models.SrcPackage{
 					Name:        pkg.SrcName,
 					Version:     pkg.SrcVersion,
+					Arch:        pkg.Arch,
 					BinaryNames: []string{pkg.Name},
 				}
 			}

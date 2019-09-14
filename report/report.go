@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package report
 
 import (
@@ -45,6 +28,7 @@ import (
 	"github.com/hashicorp/uuid"
 	gostdb "github.com/knqyf263/gost/db"
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
+	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
 	ovaldb "github.com/kotakanbe/goval-dictionary/db"
 	exploitdb "github.com/mozqnet/go-exploitdb/db"
 	"golang.org/x/xerrors"
@@ -223,10 +207,6 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, igno
 	util.Log.Infof("%s: %d exploits are detected",
 		r.FormatServerName(), nExploitCve)
 
-	enAlertCnt, jaAlertCnt := fillAlerts(r)
-	util.Log.Infof("%s: en: %d, ja: %d alerts are detected",
-		r.FormatServerName(), enAlertCnt, jaAlertCnt)
-
 	fillCweDict(r)
 	return nil
 }
@@ -249,6 +229,7 @@ func fillCveDetail(driver cvedb.DB, r *models.ScanResult) error {
 		}
 		jvn := models.ConvertJvnToModel(d.CveID, d.Jvn)
 
+		alerts := fillCertAlerts(&d)
 		for cveID, vinfo := range r.ScannedCves {
 			if vinfo.CveID == d.CveID {
 				if vinfo.CveContents == nil {
@@ -259,12 +240,35 @@ func fillCveDetail(driver cvedb.DB, r *models.ScanResult) error {
 						vinfo.CveContents[con.Type] = *con
 					}
 				}
+				vinfo.AlertDict = alerts
 				r.ScannedCves[cveID] = vinfo
 				break
 			}
 		}
 	}
 	return nil
+}
+
+func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
+	if cvedetail.NvdJSON != nil {
+		for _, cert := range cvedetail.NvdJSON.Certs {
+			dict.En = append(dict.En, models.Alert{
+				URL:   cert.Link,
+				Title: cert.Title,
+				Team:  "us",
+			})
+		}
+	}
+	if cvedetail.Jvn != nil {
+		for _, cert := range cvedetail.Jvn.Certs {
+			dict.Ja = append(dict.Ja, models.Alert{
+				URL:   cert.Link,
+				Title: cert.Title,
+				Team:  "ja",
+			})
+		}
+	}
+	return dict
 }
 
 // FillWithOval fetches OVAL database
@@ -312,7 +316,7 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 
 	if !c.Conf.OvalDict.IsFetchViaHTTP() {
 		if driver == nil {
-			return 0, nil
+			return 0, xerrors.Errorf("You have to fetch OVAL data for %s before reporting. For details, see `https://github.com/kotakanbe/goval-dictionary#usage`", r.Family)
 		}
 		if err = driver.NewOvalDB(ovalFamily); err != nil {
 			return 0, xerrors.Errorf("Failed to New Oval DB. err: %w", err)
@@ -325,7 +329,7 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 		return 0, err
 	}
 	if !ok {
-		return 0, xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see https://github.com/kotakanbe/goval-dictionary#usage", ovalFamily, r.Release)
+		return 0, xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see `https://github.com/kotakanbe/goval-dictionary#usage`", ovalFamily, r.Release)
 	}
 
 	_, err = ovalClient.CheckIfOvalFresh(driver, ovalFamily, r.Release)
@@ -354,6 +358,11 @@ func FillWithExploit(driver exploitdb.DB, r *models.ScanResult) (nExploitCve int
 }
 
 func fillVulnByCpeURIs(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) (nCVEs int, err error) {
+	if len(cpeURIs) != 0 && driver == nil && !config.Conf.CveDict.IsFetchViaHTTP() {
+		return 0, xerrors.Errorf("cpeURIs %s specified, but cve-dictionary DB not found. Fetch cve-dictionary beofre reporting. For details, see `https://github.com/kotakanbe/go-cve-dictionary#deploy-go-cve-dictionary`",
+			cpeURIs)
+	}
+
 	for _, name := range cpeURIs {
 		details, err := CveClient.FetchCveDetailsByCpeName(driver, name)
 		if err != nil {
@@ -476,20 +485,6 @@ func fillCweDict(r *models.ScanResult) {
 	}
 	r.CweDict = dict
 	return
-}
-
-func fillAlerts(r *models.ScanResult) (enCnt int, jaCnt int) {
-	for cveID, vuln := range r.ScannedCves {
-		enAs, jaAs := models.GetAlertsByCveID(cveID, "en"), models.GetAlertsByCveID(cveID, "ja")
-		vuln.AlertDict = models.AlertDict{
-			Ja: jaAs,
-			En: enAs,
-		}
-		r.ScannedCves[cveID] = vuln
-		enCnt += len(enAs)
-		jaCnt += len(jaAs)
-	}
-	return enCnt, jaCnt
 }
 
 const reUUID = "[\\da-f]{8}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{12}"

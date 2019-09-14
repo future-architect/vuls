@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package scan
 
 import (
@@ -26,9 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/knqyf263/fanal/analyzer"
-
-	"github.com/knqyf263/fanal/extractor"
+	"github.com/aquasecurity/fanal/analyzer"
+	"github.com/aquasecurity/fanal/extractor"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -37,13 +19,13 @@ import (
 	"golang.org/x/xerrors"
 
 	// Import library scanner
-	_ "github.com/knqyf263/fanal/analyzer/library/bundler"
-	_ "github.com/knqyf263/fanal/analyzer/library/cargo"
-	_ "github.com/knqyf263/fanal/analyzer/library/composer"
-	_ "github.com/knqyf263/fanal/analyzer/library/npm"
-	_ "github.com/knqyf263/fanal/analyzer/library/pipenv"
-	_ "github.com/knqyf263/fanal/analyzer/library/poetry"
-	_ "github.com/knqyf263/fanal/analyzer/library/yarn"
+	_ "github.com/aquasecurity/fanal/analyzer/library/bundler"
+	_ "github.com/aquasecurity/fanal/analyzer/library/cargo"
+	_ "github.com/aquasecurity/fanal/analyzer/library/composer"
+	_ "github.com/aquasecurity/fanal/analyzer/library/npm"
+	_ "github.com/aquasecurity/fanal/analyzer/library/pipenv"
+	_ "github.com/aquasecurity/fanal/analyzer/library/poetry"
+	_ "github.com/aquasecurity/fanal/analyzer/library/yarn"
 )
 
 type base struct {
@@ -729,7 +711,7 @@ func (l *base) detectWpPlugins() ([]models.WpPackage, error) {
 }
 
 func (l *base) ps() (stdout string, err error) {
-	cmd := `LANGUAGE=en_US.UTF-8 ps --no-headers --ppid 2 -p 2 --deselect -o pid,comm | awk '{print $1,$2}'`
+	cmd := `LANGUAGE=en_US.UTF-8 ps --no-headers --ppid 2 -p 2 --deselect -o pid,comm`
 	r := l.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess() {
 		return "", xerrors.Errorf("Failed to SSH: %s", r)

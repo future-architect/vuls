@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package commands
 
 import (
@@ -87,6 +70,7 @@ func (*ReportCmd) Usage() string {
 		[-http-proxy=http://192.168.0.1:8080]
 		[-debug]
 		[-debug-sql]
+		[-quiet]
 		[-pipe]
 		[-cvedb-type=sqlite3|mysql|postgres|redis|http]
 		[-cvedb-sqlite3-path=/path/to/cve.sqlite3]
@@ -111,6 +95,8 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&c.Conf.Lang, "lang", "en", "[en|ja]")
 	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
 	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
+
+	f.BoolVar(&c.Conf.Quiet, "quiet", false, "Quiet mode. No output on stdout")
 
 	wd, _ := os.Getwd()
 	defaultConfPath := filepath.Join(wd, "config.toml")
