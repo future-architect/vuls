@@ -155,7 +155,7 @@ type Config struct {
 
 // ValidateOnConfigtest validates
 func (c Config) ValidateOnConfigtest() bool {
-	errs := []error{}
+	errs := c.checkSSHKeyExist()
 
 	if runtime.GOOS == "windows" && !c.SSHNative {
 		errs = append(errs, xerrors.New("-ssh-native-insecure is needed on windows"))
@@ -175,7 +175,7 @@ func (c Config) ValidateOnConfigtest() bool {
 
 // ValidateOnScan validates configuration
 func (c Config) ValidateOnScan() bool {
-	errs := []error{}
+	errs := c.checkSSHKeyExist()
 
 	if len(c.ResultsDir) != 0 {
 		if ok, _ := valid.IsFilePath(c.ResultsDir); !ok {
@@ -213,6 +213,21 @@ func (c Config) ValidateOnScan() bool {
 	}
 
 	return len(errs) == 0
+}
+
+func (c Config) checkSSHKeyExist() (errs []error) {
+	for serverName, v := range c.Servers {
+		if v.Type == ServerTypePseudo {
+			continue
+		}
+		if v.KeyPath != "" {
+			if _, err := os.Stat(v.KeyPath); err != nil {
+				errs = append(errs, xerrors.Errorf(
+					"%s is invalid. keypath: %s not exists", serverName, v.KeyPath))
+			}
+		}
+	}
+	return errs
 }
 
 // ValidateOnReportDB validates configuration
