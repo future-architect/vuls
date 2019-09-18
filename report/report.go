@@ -264,7 +264,7 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 			dict.Ja = append(dict.Ja, models.Alert{
 				URL:   cert.Link,
 				Title: cert.Title,
-				Team:  "ja",
+				Team:  "jp",
 			})
 		}
 	}
