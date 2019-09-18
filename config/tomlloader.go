@@ -1,7 +1,6 @@
 package config
 
 import (
-	"os"
 	"regexp"
 	"strings"
 
@@ -92,13 +91,6 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			if len(s.KeyPath) == 0 {
 				s.KeyPath = d.KeyPath
 			}
-			if s.KeyPath != "" {
-				if _, err := os.Stat(s.KeyPath); err != nil {
-					return xerrors.Errorf(
-						"%s is invalid. keypath: %s not exists", serverName, s.KeyPath)
-				}
-			}
-
 			s.KeyPassword = v.KeyPassword
 			if len(s.KeyPassword) == 0 {
 				s.KeyPassword = d.KeyPassword
