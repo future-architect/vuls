@@ -17,7 +17,7 @@ import (
 )
 
 // Version of Vuls
-var Version = "0.7.0"
+var Version = "0.9.0"
 
 // Revision of Git
 var Revision string
