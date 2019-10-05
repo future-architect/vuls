@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"regexp"
 	"strings"
