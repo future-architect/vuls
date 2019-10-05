@@ -127,7 +127,7 @@ No CVE-IDs are found in updatable packages.
 
 		exploits := ""
 		if 0 < len(vinfo.Exploits) {
-			exploits = "   Y"
+			exploits = "POC"
 		}
 
 		link := ""

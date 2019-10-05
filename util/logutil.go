@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -62,7 +63,7 @@ func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
 	}
 
 	if _, err := os.Stat(logDir); err == nil {
-		path := filepath.Join(logDir, whereami)
+		path := filepath.Join(logDir, fmt.Sprintf("%s.log", whereami))
 		log.Hooks.Add(lfshook.NewHook(lfshook.PathMap{
 			logrus.DebugLevel: path,
 			logrus.InfoLevel:  path,
