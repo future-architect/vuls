@@ -569,12 +569,11 @@ func (l *base) scanLibraries() (err error) {
 		if _, ok := libFilemap[path]; ok {
 			continue
 		}
-		cmd := fmt.Sprintf("cat %s", path)
-		r := exec(l.ServerInfo, cmd, noSudo)
-		if !r.isSuccess() {
-			return xerrors.Errorf("Failed to get target file: %s, filepath: %s", r, path)
+		content, err := ioutil.ReadFile(path)
+		if err != nil {
+			return xerrors.Errorf("Failed to get target file: %v, filepath: %s", err, path)
 		}
-		libFilemap[path] = []byte(r.Stdout)
+		libFilemap[path] = content
 	}
 
 	results, err := analyzer.GetLibraries(libFilemap)
