@@ -8,7 +8,8 @@ import (
 
 // Client is the interface of OVAL client.
 type Client interface {
-	FillWithGost(db.DB, *models.ScanResult, bool) (int, error)
+	DetectUnfixed(db.DB, *models.ScanResult, bool) (int, error)
+	FillCVEsWithRedHat(db.DB, *models.ScanResult) error
 
 	//TODO implement
 	// CheckHTTPHealth() error

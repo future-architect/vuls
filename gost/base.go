@@ -1,18 +1,23 @@
 package gost
 
 import (
-	"golang.org/x/xerrors"
-	"github.com/parnurzeal/gorequest"
-	"net/http"
 	"fmt"
 	cnf "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/models"
 	"github.com/knqyf263/gost/db"
+	"github.com/parnurzeal/gorequest"
+	"golang.org/x/xerrors"
+	"net/http"
 )
-
 
 // Base is a base struct
 type Base struct {
 	family string
+}
+
+// FillCVEsWithRedHat fills cve information that has in Gost
+func (b Base) FillCVEsWithRedHat(driver db.DB, r *models.ScanResult) error {
+	return RedHat{}.fillFixed(driver, r)
 }
 
 // CheckHTTPHealth do health check
