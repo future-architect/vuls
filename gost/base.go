@@ -12,7 +12,6 @@ import (
 
 // Base is a base struct
 type Base struct {
-	family string
 }
 
 // FillCVEsWithRedHat fills cve information that has in Gost
