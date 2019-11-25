@@ -68,7 +68,7 @@ func (red RedHat) fillFixed(driver db.DB, r *models.ScanResult) error {
 			return nil
 		}
 		for cveID, redCve := range driver.GetRedhatMulti(cveIDs) {
-			if redCve.ID == 0 {
+			if len(redCve.Name) == 0 {
 				continue
 			}
 			cveCont := red.ConvertToModel(&redCve)

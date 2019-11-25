@@ -2,12 +2,13 @@ package gost
 
 import (
 	"fmt"
+	"net/http"
+
 	cnf "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/knqyf263/gost/db"
 	"github.com/parnurzeal/gorequest"
 	"golang.org/x/xerrors"
-	"net/http"
 )
 
 // Base is a base struct
