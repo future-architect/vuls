@@ -13,8 +13,8 @@ type Microsoft struct {
 	Base
 }
 
-// FillWithGost fills cve information that has in Gost
-func (ms Microsoft) FillWithGost(driver db.DB, r *models.ScanResult, _ bool) (nCVEs int, err error) {
+// DetectUnfixed fills cve information that has in Gost
+func (ms Microsoft) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCVEs int, err error) {
 	if driver == nil {
 		return 0, nil
 	}
