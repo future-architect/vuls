@@ -1,6 +1,7 @@
 package scan
 
 import (
+	"sort"
 	"os"
 	"reflect"
 	"testing"
@@ -729,8 +730,8 @@ dpkg-query: no path found matching pattern /lib/udev/hwdb.bin
 libuuid1:amd64: /lib/x86_64-linux-gnu/libuuid.so.1.3.0`,
 			},
 			wantPkgNames: []string{
-				"udev",
 				"libuuid1",
+				"udev",
 			},
 		},
 	}
@@ -738,6 +739,7 @@ libuuid1:amd64: /lib/x86_64-linux-gnu/libuuid.so.1.3.0`,
 		t.Run(tt.name, func(t *testing.T) {
 			o := &debian{}
 			gotPkgNames := o.parseGetPkgName(tt.args.stdout)
+			sort.Strings(gotPkgNames)
 			if !reflect.DeepEqual(gotPkgNames, tt.wantPkgNames) {
 				t.Errorf("debian.parseGetPkgName() = %v, want %v", gotPkgNames, tt.wantPkgNames)
 			}
