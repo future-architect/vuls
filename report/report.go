@@ -464,6 +464,12 @@ func fillCweDict(r *models.ScanResult) {
 			if rank, ok := cwe.OwaspTopTen2017[id]; ok {
 				entry.OwaspTopTen2017 = rank
 			}
+			if rank, ok := cwe.CweTopTwentyfive2019[id]; ok {
+				entry.CweTopTwentyfive2019 = rank
+			}
+			if rank, ok := cwe.SansTopTwentyfive[id]; ok {
+				entry.SansTopTwentyfive = rank
+			}
 			entry.En = &e
 		} else {
 			util.Log.Debugf("CWE-ID %s is not found in English CWE Dict", id)
@@ -474,6 +480,12 @@ func fillCweDict(r *models.ScanResult) {
 			if e, ok := cwe.CweDictJa[id]; ok {
 				if rank, ok := cwe.OwaspTopTen2017[id]; ok {
 					entry.OwaspTopTen2017 = rank
+				}
+				if rank, ok := cwe.CweTopTwentyfive2019[id]; ok {
+					entry.CweTopTwentyfive2019 = rank
+				}
+				if rank, ok := cwe.SansTopTwentyfive[id]; ok {
+					entry.SansTopTwentyfive = rank
 				}
 				entry.Ja = &e
 			} else {
