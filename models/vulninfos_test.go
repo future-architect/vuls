@@ -1080,3 +1080,86 @@ func TestDistroAdvisories_AppendIfMissing(t *testing.T) {
 		})
 	}
 }
+
+func TestVulnInfo_AttackVector(t *testing.T) {
+	type fields struct {
+		CveContents CveContents
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			name: "2.0:N",
+			fields: fields{
+				CveContents: NewCveContents(
+					CveContent{
+						Type:        "foo",
+						Cvss2Vector: "AV:N/AC:L/Au:N/C:C/I:C/A:C",
+					},
+				),
+			},
+			want: "AV:N",
+		},
+		{
+			name: "2.0:A",
+			fields: fields{
+				CveContents: NewCveContents(
+					CveContent{
+						Type:        "foo",
+						Cvss2Vector: "AV:A/AC:L/Au:N/C:C/I:C/A:C",
+					},
+				),
+			},
+			want: "AV:A",
+		},
+		{
+			name: "2.0:L",
+			fields: fields{
+				CveContents: NewCveContents(
+					CveContent{
+						Type:        "foo",
+						Cvss2Vector: "AV:L/AC:L/Au:N/C:C/I:C/A:C",
+					},
+				),
+			},
+			want: "AV:L",
+		},
+
+		{
+			name: "3.0:N",
+			fields: fields{
+				CveContents: NewCveContents(
+					CveContent{
+						Type:        "foo",
+						Cvss3Vector: "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+					},
+				),
+			},
+			want: "AV:N",
+		},
+		{
+			name: "3.1:N",
+			fields: fields{
+				CveContents: NewCveContents(
+					CveContent{
+						Type:        "foo",
+						Cvss3Vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+					},
+				),
+			},
+			want: "AV:N",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := VulnInfo{
+				CveContents: tt.fields.CveContents,
+			}
+			if got := v.AttackVector(); got != tt.want {
+				t.Errorf("VulnInfo.AttackVector() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
