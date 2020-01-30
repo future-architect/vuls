@@ -534,15 +534,16 @@ func (v VulnInfo) MaxCvss2Score() CveContentCvss {
 func (v VulnInfo) AttackVector() string {
 	for _, cnt := range v.CveContents {
 		if strings.HasPrefix(cnt.Cvss2Vector, "AV:N") ||
-			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:N") {
+			strings.Contains(cnt.Cvss3Vector, "AV:N") {
 			return "AV:N"
 		} else if strings.HasPrefix(cnt.Cvss2Vector, "AV:A") ||
-			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:A") {
+			strings.Contains(cnt.Cvss3Vector, "AV:A") {
 			return "AV:A"
 		} else if strings.HasPrefix(cnt.Cvss2Vector, "AV:L") ||
-			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:L") {
+			strings.Contains(cnt.Cvss3Vector, "AV:L") {
 			return "AV:L"
-		} else if strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:P") {
+		} else if strings.Contains(cnt.Cvss3Vector, "AV:P") {
+			// no AV:P in CVSS v2
 			return "AV:P"
 		}
 	}

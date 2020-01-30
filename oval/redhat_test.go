@@ -60,6 +60,13 @@ func TestParseCvss3(t *testing.T) {
 			},
 		},
 		{
+			in: "6.1/CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
+			out: out{
+				score:  6.1,
+				vector: "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
+			},
+		},
+		{
 			in: "",
 			out: out{
 				score:  0,

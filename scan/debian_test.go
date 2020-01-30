@@ -1,9 +1,9 @@
 package scan
 
 import (
-	"sort"
 	"os"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/future-architect/vuls/cache"
