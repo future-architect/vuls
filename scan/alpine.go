@@ -75,7 +75,8 @@ func (o *alpine) apkUpdate() error {
 func (o *alpine) preCure() error {
 	o.log.Infof("Scanning in %s", o.getServerInfo().Mode)
 	if err := o.detectIPAddr(); err != nil {
-		o.log.Debugf("Failed to detect IP addresses: %s", err)
+		o.log.Warnf("Failed to detect IP addresses: %s", err)
+		o.warns = append(o.warns, err)
 	}
 	// Ignore this error as it just failed to detect the IP addresses
 	return nil

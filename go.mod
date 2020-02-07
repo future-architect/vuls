@@ -14,11 +14,11 @@ require (
 	github.com/Azure/go-autorest/autorest/to v0.3.0 // indirect
 	github.com/BurntSushi/toml v0.3.1
 	github.com/RackSec/srslog v0.0.0-20180709174129-a4725f04ec91
-	github.com/aquasecurity/fanal v0.0.0-20190819081512-f04452b627c6
+	github.com/aquasecurity/fanal v0.0.0-20200124194549-91468b8e0460
 	github.com/aquasecurity/go-dep-parser v0.0.0-20190819075924-ea223f0ef24b
 	github.com/aquasecurity/trivy v0.1.6
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
-	github.com/aws/aws-sdk-go v1.24.0
+	github.com/aws/aws-sdk-go v1.25.31
 	github.com/boltdb/bolt v1.3.1
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/dnaeon/go-vcr v1.0.1 // indirect

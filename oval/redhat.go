@@ -219,12 +219,17 @@ func (o RedHatBase) parseCvss2(scoreVector string) (score float64, vector string
 // 5.6/CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L
 func (o RedHatBase) parseCvss3(scoreVector string) (score float64, vector string) {
 	var err error
-	ss := strings.Split(scoreVector, "/CVSS:3.0/")
-	if 1 < len(ss) {
-		if score, err = strconv.ParseFloat(ss[0], 64); err != nil {
-			return 0, ""
+	for _, s := range []string{
+		"/CVSS:3.0/",
+		"/CVSS:3.1/",
+	} {
+		ss := strings.Split(scoreVector, s)
+		if 1 < len(ss) {
+			if score, err = strconv.ParseFloat(ss[0], 64); err != nil {
+				return 0, ""
+			}
+			return score, strings.TrimPrefix(s, "/") + ss[1]
 		}
-		return score, fmt.Sprintf("CVSS:3.0/%s", ss[1])
 	}
 	return 0, ""
 }

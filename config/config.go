@@ -17,7 +17,7 @@ import (
 )
 
 // Version of Vuls
-var Version = "0.9.0"
+var Version = "0.9.1"
 
 // Revision of Git
 var Revision string
@@ -176,13 +176,6 @@ func (c Config) ValidateOnConfigtest() bool {
 // ValidateOnScan validates configuration
 func (c Config) ValidateOnScan() bool {
 	errs := c.checkSSHKeyExist()
-
-	if len(c.ResultsDir) != 0 {
-		if ok, _ := valid.IsFilePath(c.ResultsDir); !ok {
-			errs = append(errs, xerrors.Errorf(
-				"JSON base directory must be a *Absolute* file path. -results-dir: %s", c.ResultsDir))
-		}
-	}
 
 	if runtime.GOOS == "windows" && !c.SSHNative {
 		errs = append(errs, xerrors.New("-ssh-native-insecure is needed on windows"))
