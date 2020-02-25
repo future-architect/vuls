@@ -700,6 +700,7 @@ func ViaHTTP(header http.Header, body string) (models.ScanResult, error) {
 		Packages:    installedPackages,
 		SrcPackages: srcPackages,
 		ScannedCves: models.VulnInfos{},
+		ReportedAt: time.Now(),
 	}
 
 	return result, nil
