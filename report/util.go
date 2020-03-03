@@ -219,27 +219,26 @@ No CVE-IDs are found in updatable packages.
 		cweURLs, top10URLs := []string{}, []string{}
 		cweTop25URLs, sansTop25URLs := []string{}, []string{}
 		for _, v := range vuln.CveContents.UniqCweIDs(r.Family) {
-			name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rnak, sansTop25URL := r.CweDict.Get(v.Value, r.Lang)
-			if top10Rank != "" || cweTop25Rank != "" || sansTop25Rnak != "" {
-				if top10Rank != "" {
-					data = append(data, []string{"CWE",
-						fmt.Sprintf("[OWASP Top%s] %s: %s (%s)",
-							top10Rank, v.Value, name, v.Type)})
-					top10URLs = append(top10URLs, top10URL)
-				}
-				if cweTop25Rank != "" {
-					data = append(data, []string{"CWE",
-						fmt.Sprintf("[CWE Top%s] %s: %s (%s)",
-							cweTop25Rank, v.Value, name, v.Type)})
-					cweTop25URLs = append(cweTop25URLs, cweTop25URL)
-				}
-				if sansTop25Rnak != "" {
-					data = append(data, []string{"CWE",
-						fmt.Sprintf("[CWE/SANS Top%s]  %s: %s (%s)",
-							sansTop25Rnak, v.Value, name, v.Type)})
-					sansTop25URLs = append(sansTop25URLs, sansTop25URL)
-				}
-			} else {
+			name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL := r.CweDict.Get(v.Value, r.Lang)
+			if top10Rank != "" {
+				data = append(data, []string{"CWE",
+					fmt.Sprintf("[OWASP Top%s] %s: %s (%s)",
+						top10Rank, v.Value, name, v.Type)})
+				top10URLs = append(top10URLs, top10URL)
+			}
+			if cweTop25Rank != "" {
+				data = append(data, []string{"CWE",
+					fmt.Sprintf("[CWE Top%s] %s: %s (%s)",
+						cweTop25Rank, v.Value, name, v.Type)})
+				cweTop25URLs = append(cweTop25URLs, cweTop25URL)
+			}
+			if sansTop25Rank != "" {
+				data = append(data, []string{"CWE",
+					fmt.Sprintf("[CWE/SANS Top%s]  %s: %s (%s)",
+						sansTop25Rank, v.Value, name, v.Type)})
+				sansTop25URLs = append(sansTop25URLs, sansTop25URL)
+			}
+			if top10Rank == "" && cweTop25Rank == "" && sansTop25Rank == "" {
 				data = append(data, []string{"CWE", fmt.Sprintf("%s: %s (%s)",
 					v.Value, name, v.Type)})
 			}
