@@ -28,3 +28,6 @@ var SansTopTwentyfive = map[string]string{
 	"190": "24",
 	"759": "25",
 }
+
+// SansTopTwentyfiveURL
+var SansTopTwentyfiveURL = "https://www.sans.org/top25-software-errors/"
