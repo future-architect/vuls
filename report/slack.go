@@ -329,14 +329,24 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 func cweIDs(vinfo models.VulnInfo, osFamily string, cweDict models.CweDict) string {
 	links := []string{}
 	for _, c := range vinfo.CveContents.UniqCweIDs(osFamily) {
-		name, url, top10Rank, top10URL := cweDict.Get(c.Value, osFamily)
+		name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL := cweDict.Get(c.Value, osFamily)
 		line := ""
 		if top10Rank != "" {
 			line = fmt.Sprintf("<%s|[OWASP Top %s]>",
 				top10URL, top10Rank)
 		}
-		links = append(links, fmt.Sprintf("%s <%s|%s>: %s",
-			line, url, c.Value, name))
+		if cweTop25Rank != "" {
+			line = fmt.Sprintf("<%s|[CWE Top %s]>",
+				cweTop25URL, cweTop25Rank)
+		}
+		if sansTop25Rank != "" {
+			line = fmt.Sprintf("<%s|[CWE/SANS Top %s]>",
+				sansTop25URL, sansTop25Rank)
+		}
+		if top10Rank == "" && cweTop25Rank == "" && sansTop25Rank == "" {
+			links = append(links, fmt.Sprintf("%s <%s|%s>: %s",
+				line, url, c.Value, name))
+		}
 	}
 	return strings.Join(links, "\n")
 }

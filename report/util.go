@@ -217,14 +217,28 @@ No CVE-IDs are found in updatable packages.
 		}
 
 		cweURLs, top10URLs := []string{}, []string{}
+		cweTop25URLs, sansTop25URLs := []string{}, []string{}
 		for _, v := range vuln.CveContents.UniqCweIDs(r.Family) {
-			name, url, top10Rank, top10URL := r.CweDict.Get(v.Value, r.Lang)
+			name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL := r.CweDict.Get(v.Value, r.Lang)
 			if top10Rank != "" {
 				data = append(data, []string{"CWE",
 					fmt.Sprintf("[OWASP Top%s] %s: %s (%s)",
 						top10Rank, v.Value, name, v.Type)})
 				top10URLs = append(top10URLs, top10URL)
-			} else {
+			}
+			if cweTop25Rank != "" {
+				data = append(data, []string{"CWE",
+					fmt.Sprintf("[CWE Top%s] %s: %s (%s)",
+						cweTop25Rank, v.Value, name, v.Type)})
+				cweTop25URLs = append(cweTop25URLs, cweTop25URL)
+			}
+			if sansTop25Rank != "" {
+				data = append(data, []string{"CWE",
+					fmt.Sprintf("[CWE/SANS Top%s]  %s: %s (%s)",
+						sansTop25Rank, v.Value, name, v.Type)})
+				sansTop25URLs = append(sansTop25URLs, sansTop25URL)
+			}
+			if top10Rank == "" && cweTop25Rank == "" && sansTop25Rank == "" {
 				data = append(data, []string{"CWE", fmt.Sprintf("%s: %s (%s)",
 					v.Value, name, v.Type)})
 			}
@@ -308,6 +322,12 @@ No CVE-IDs are found in updatable packages.
 		}
 		for _, url := range top10URLs {
 			data = append(data, []string{"OWASP Top10", url})
+		}
+		if len(cweTop25URLs) != 0 {
+			data = append(data, []string{"CWE Top25", cweTop25URLs[0]})
+		}
+		if len(sansTop25URLs) != 0 {
+			data = append(data, []string{"SANS/CWE Top25", sansTop25URLs[0]})
 		}
 
 		for _, alert := range vuln.AlertDict.Ja {

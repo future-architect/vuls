@@ -62,13 +62,21 @@ type ScanResult struct {
 type CweDict map[string]CweDictEntry
 
 // Get the name, url, top10URL for the specified cweID, lang
-func (c CweDict) Get(cweID, lang string) (name, url, top10Rank, top10URL string) {
+func (c CweDict) Get(cweID, lang string) (name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL string) {
 	cweNum := strings.TrimPrefix(cweID, "CWE-")
 	switch config.Conf.Lang {
 	case "ja":
 		if dict, ok := c[cweNum]; ok && dict.OwaspTopTen2017 != "" {
 			top10Rank = dict.OwaspTopTen2017
 			top10URL = cwe.OwaspTopTen2017GitHubURLJa[dict.OwaspTopTen2017]
+		}
+		if dict, ok := c[cweNum]; ok && dict.CweTopTwentyfive2019 != "" {
+			cweTop25Rank = dict.CweTopTwentyfive2019
+			cweTop25URL = cwe.CweTopTwentyfive2019URL
+		}
+		if dict, ok := c[cweNum]; ok && dict.SansTopTwentyfive != "" {
+			sansTop25Rank = dict.SansTopTwentyfive
+			sansTop25URL = cwe.SansTopTwentyfiveURL
 		}
 		if dict, ok := cwe.CweDictJa[cweNum]; ok {
 			name = dict.Name
@@ -84,6 +92,14 @@ func (c CweDict) Get(cweID, lang string) (name, url, top10Rank, top10URL string)
 			top10Rank = dict.OwaspTopTen2017
 			top10URL = cwe.OwaspTopTen2017GitHubURLEn[dict.OwaspTopTen2017]
 		}
+		if dict, ok := c[cweNum]; ok && dict.CweTopTwentyfive2019 != "" {
+			cweTop25Rank = dict.CweTopTwentyfive2019
+			cweTop25URL = cwe.CweTopTwentyfive2019URL
+		}
+		if dict, ok := c[cweNum]; ok && dict.SansTopTwentyfive != "" {
+			sansTop25Rank = dict.SansTopTwentyfive
+			sansTop25URL = cwe.SansTopTwentyfiveURL
+		}
 		url = fmt.Sprintf("https://cwe.mitre.org/data/definitions/%s.html", cweID)
 		if dict, ok := cwe.CweDictEn[cweNum]; ok {
 			name = dict.Name
@@ -94,9 +110,11 @@ func (c CweDict) Get(cweID, lang string) (name, url, top10Rank, top10URL string)
 
 // CweDictEntry is a entry of CWE
 type CweDictEntry struct {
-	En              *cwe.Cwe `json:"en,omitempty"`
-	Ja              *cwe.Cwe `json:"ja,omitempty"`
-	OwaspTopTen2017 string   `json:"owaspTopTen2017"`
+	En                   *cwe.Cwe `json:"en,omitempty"`
+	Ja                   *cwe.Cwe `json:"ja,omitempty"`
+	OwaspTopTen2017      string   `json:"owaspTopTen2017"`
+	CweTopTwentyfive2019 string   `json:"cweTopTwentyfive2019"`
+	SansTopTwentyfive    string   `json:"sansTopTwentyfive"`
 }
 
 // Kernel has the Release, version and whether need restart
