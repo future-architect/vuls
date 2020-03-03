@@ -62,7 +62,7 @@ type ScanResult struct {
 type CweDict map[string]CweDictEntry
 
 // Get the name, url, top10URL for the specified cweID, lang
-func (c CweDict) Get(cweID, lang string) (name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rnak, sansTop25URL string) {
+func (c CweDict) Get(cweID, lang string) (name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL string) {
 	cweNum := strings.TrimPrefix(cweID, "CWE-")
 	switch config.Conf.Lang {
 	case "ja":
@@ -75,7 +75,7 @@ func (c CweDict) Get(cweID, lang string) (name, url, top10Rank, top10URL, cweTop
 			cweTop25URL = cwe.CweTopTwentyfive2019URL
 		}
 		if dict, ok := c[cweNum]; ok && dict.SansTopTwentyfive != "" {
-			sansTop25Rnak = dict.SansTopTwentyfive
+			sansTop25Rank = dict.SansTopTwentyfive
 			sansTop25URL = cwe.SansTopTwentyfiveURL
 		}
 		if dict, ok := cwe.CweDictJa[cweNum]; ok {
@@ -97,7 +97,7 @@ func (c CweDict) Get(cweID, lang string) (name, url, top10Rank, top10URL, cweTop
 			cweTop25URL = cwe.CweTopTwentyfive2019URL
 		}
 		if dict, ok := c[cweNum]; ok && dict.SansTopTwentyfive != "" {
-			sansTop25Rnak = dict.SansTopTwentyfive
+			sansTop25Rank = dict.SansTopTwentyfive
 			sansTop25URL = cwe.SansTopTwentyfiveURL
 		}
 		url = fmt.Sprintf("https://cwe.mitre.org/data/definitions/%s.html", cweID)
