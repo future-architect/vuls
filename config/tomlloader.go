@@ -298,8 +298,11 @@ func IsValidImage(c Image) error {
 	if c.Name == "" {
 		return xerrors.New("Invalid arguments : no image name")
 	}
-	if c.Tag == "" {
-		return xerrors.New("Invalid arguments : no image tag")
+	if c.Tag == "" && c.Digest == "" {
+		return xerrors.New("Invalid arguments : no image tag and digest")
+	}
+	if c.Tag != "" && c.Digest != "" {
+		return xerrors.New("Invalid arguments : you can either set image tag or digest")
 	}
 	return nil
 }

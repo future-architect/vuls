@@ -445,8 +445,9 @@ type Container struct {
 
 // Image has Container information
 type Image struct {
-	Name string `json:"name"`
-	Tag  string `json:"tag"`
+	Name   string `json:"name"`
+	Tag    string `json:"tag"`
+	Digest string `json:"digest"`
 }
 
 // Platform has platform information

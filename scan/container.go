@@ -105,7 +105,7 @@ func convertLibWithScanner(libs map[analyzer.FilePath][]godeptypes.Library) ([]m
 func scanImage(c config.ServerInfo) (os *analyzer.OS, pkgs []analyzer.Package, libs map[analyzer.FilePath][]godeptypes.Library, err error) {
 
 	ctx := context.Background()
-	domain := c.Image.Name + ":" + c.Image.Tag
+	domain := c.Image.GetFullName()
 	util.Log.Info("Start fetch container... ", domain)
 
 	fanalCache := cache.Initialize(utils.CacheDir())

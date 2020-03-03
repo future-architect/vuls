@@ -497,11 +497,11 @@ func detectImageOSesOnServer(containerHost osTypeInterface) (oses []osTypeInterf
 		return
 	}
 
-	for idx, containerConf := range containerHostInfo.Images {
+	for idx, img := range containerHostInfo.Images {
 		copied := containerHostInfo
 		// change servername for original
-		copied.ServerName = fmt.Sprintf("%s:%s@%s", idx, containerConf.Tag, containerHostInfo.ServerName)
-		copied.Image = containerConf
+		copied.ServerName = fmt.Sprintf("%s@%s", idx, containerHostInfo.ServerName)
+		copied.Image = img
 		copied.Type = ""
 		os := detectOS(copied)
 		oses = append(oses, os)

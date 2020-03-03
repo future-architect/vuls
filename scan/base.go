@@ -417,8 +417,9 @@ func (l *base) convertToModel() models.ScanResult {
 	}
 
 	image := models.Image{
-		Name: l.ServerInfo.Image.Name,
-		Tag:  l.ServerInfo.Image.Tag,
+		Name:   l.ServerInfo.Image.Name,
+		Tag:    l.ServerInfo.Image.Tag,
+		Digest: l.ServerInfo.Image.Digest,
 	}
 
 	errs, warns := []string{}, []string{}
