@@ -50,7 +50,7 @@ func (o *centos) depsFast() []string {
 
 	// repoquery
 	majorVersion, _ := o.Distro.MajorVersion()
-	if majorVersion < 8 {
+	if majorVersion <= 8 {
 		return []string{"yum-utils"}
 	}
 	return []string{"dnf-utils"}
@@ -63,7 +63,7 @@ func (o *centos) depsFastRoot() []string {
 
 	// repoquery
 	majorVersion, _ := o.Distro.MajorVersion()
-	if majorVersion < 8 {
+	if majorVersion <= 8 {
 		return []string{"yum-utils"}
 	}
 	return []string{"dnf-utils"}
