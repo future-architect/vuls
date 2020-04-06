@@ -55,11 +55,8 @@ func (o *rhel) depsFastRoot() []string {
 	}
 
 	// repoquery
-	majorVersion, _ := o.Distro.MajorVersion()
-	if majorVersion < 8 {
-		return []string{"yum-utils"}
-	}
-	return []string{"dnf-utils"}
+	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8
+	return []string{"yum-utils"}
 }
 
 func (o *rhel) depsDeep() []string {

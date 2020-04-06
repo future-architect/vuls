@@ -49,11 +49,8 @@ func (o *centos) depsFast() []string {
 	}
 
 	// repoquery
-	majorVersion, _ := o.Distro.MajorVersion()
-	if majorVersion <= 8 {
-		return []string{"yum-utils"}
-	}
-	return []string{"dnf-utils"}
+	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8
+	return []string{"yum-utils"}
 }
 
 func (o *centos) depsFastRoot() []string {
@@ -62,11 +59,8 @@ func (o *centos) depsFastRoot() []string {
 	}
 
 	// repoquery
-	majorVersion, _ := o.Distro.MajorVersion()
-	if majorVersion <= 8 {
-		return []string{"yum-utils"}
-	}
-	return []string{"dnf-utils"}
+	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8
+	return []string{"yum-utils"}
 }
 
 func (o *centos) depsDeep() []string {
