@@ -54,46 +54,13 @@ func (o *rhel) depsFastRoot() []string {
 		return []string{}
 	}
 
-	majorVersion, _ := o.Distro.MajorVersion()
-	switch majorVersion {
-	case 5:
-		return []string{
-			"yum-utils",
-			"yum-security",
-		}
-	case 6:
-		return []string{
-			"yum-utils",
-			"yum-plugin-security",
-		}
-	default:
-		return []string{
-			"yum-utils",
-		}
-	}
+	// repoquery
+	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8
+	return []string{"yum-utils"}
 }
 
 func (o *rhel) depsDeep() []string {
-	majorVersion, _ := o.Distro.MajorVersion()
-	switch majorVersion {
-	case 5:
-		return []string{
-			"yum-utils",
-			"yum-security",
-			"yum-changelog",
-		}
-	case 6:
-		return []string{
-			"yum-utils",
-			"yum-plugin-security",
-			"yum-plugin-changelog",
-		}
-	default:
-		return []string{
-			"yum-utils",
-			"yum-plugin-changelog",
-		}
-	}
+	return o.depsFastRoot()
 }
 
 func (o *rhel) checkIfSudoNoPasswd() error {
@@ -111,32 +78,25 @@ func (o *rhel) sudoNoPasswdCmdsFast() []cmd {
 }
 
 func (o *rhel) sudoNoPasswdCmdsFastRoot() []cmd {
-	if o.getServerInfo().Mode.IsOffline() {
-		return []cmd{}
-	}
-
-	majorVersion, _ := o.Distro.MajorVersion()
-	if majorVersion < 6 {
+	if !o.ServerInfo.IsContainer() {
 		return []cmd{
-			// {"needs-restarting", exitStatusZero},
-			{"yum repolist --color=never", exitStatusZero},
-			{"yum list-security --security --color=never", exitStatusZero},
-			{"yum info-security --color=never", exitStatusZero},
 			{"repoquery -h", exitStatusZero},
+			{"needs-restarting", exitStatusZero},
+			{"which which", exitStatusZero},
+			{"stat /proc/1/exe", exitStatusZero},
+			{"ls -l /proc/1/exe", exitStatusZero},
+			{"cat /proc/1/maps", exitStatusZero},
+			{"lsof -i -P", exitStatusZero},
 		}
 	}
 	return []cmd{
-		{"yum repolist --color=never", exitStatusZero},
-		{"yum updateinfo list updates --security --color=never", exitStatusZero},
-		{"yum updateinfo updates --security --color=never ", exitStatusZero},
 		{"repoquery -h", exitStatusZero},
 		{"needs-restarting", exitStatusZero},
 	}
 }
 
 func (o *rhel) sudoNoPasswdCmdsDeep() []cmd {
-	return append(o.sudoNoPasswdCmdsFastRoot(),
-		cmd{"yum changelog all updates --color=never", exitStatusZero})
+	return o.sudoNoPasswdCmdsFastRoot()
 }
 
 type rootPrivRHEL struct{}
@@ -145,14 +105,10 @@ func (o rootPrivRHEL) repoquery() bool {
 	return true
 }
 
-func (o rootPrivRHEL) yumRepolist() bool {
+func (o rootPrivRHEL) yumMakeCache() bool {
 	return true
 }
 
-func (o rootPrivRHEL) yumUpdateInfo() bool {
-	return true
-}
-
-func (o rootPrivRHEL) yumChangelog() bool {
+func (o rootPrivRHEL) yumPS() bool {
 	return true
 }

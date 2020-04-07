@@ -1,24 +1,9 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package models
 
 import (
 	"time"
+
+	"github.com/aquasecurity/trivy/pkg/vulnsrc/vulnerability"
 )
 
 // CveContents has CveContent
@@ -68,6 +53,9 @@ func (v CveContents) SourceLinks(lang, myFamily, cveID string) (values []CveCont
 	order := CveContentTypes{Nvd, NvdXML, NewCveContentType(myFamily)}
 	for _, ctype := range order {
 		if cont, found := v[ctype]; found {
+			if cont.SourceLink == "" {
+				continue
+			}
 			values = append(values, CveContentStr{ctype, cont.SourceLink})
 		}
 	}
@@ -223,7 +211,7 @@ func NewCveContentType(name string) CveContentType {
 		return Oracle
 	case "ubuntu":
 		return Ubuntu
-	case "debian":
+	case "debian", vulnerability.DebianOVAL:
 		return Debian
 	case "redhat_api":
 		return RedHatAPI
@@ -233,6 +221,18 @@ func NewCveContentType(name string) CveContentType {
 		return Microsoft
 	case "wordpress":
 		return WPVulnDB
+	case "amazon":
+		return Amazon
+	case vulnerability.NodejsSecurityWg:
+		return NodeSec
+	case vulnerability.PythonSafetyDB:
+		return PythonSec
+	case vulnerability.RustSec:
+		return RustSec
+	case vulnerability.PhpSecurityAdvisories:
+		return PhpSec
+	case vulnerability.RubySec:
+		return RubySec
 	default:
 		return Unknown
 	}
@@ -266,6 +266,9 @@ const (
 	// Oracle is Oracle Linux
 	Oracle CveContentType = "oracle"
 
+	// Amazon is Amazon Linux
+	Amazon CveContentType = "amazon"
+
 	// SUSE is SUSE Linux
 	SUSE CveContentType = "suse"
 
@@ -274,6 +277,21 @@ const (
 
 	// WPVulnDB is WordPress
 	WPVulnDB CveContentType = "wpvulndb"
+
+	// NodeSec : for JS
+	NodeSec CveContentType = "node"
+
+	// PythonSec : for PHP
+	PythonSec CveContentType = "python"
+
+	// PhpSec : for PHP
+	PhpSec CveContentType = "php"
+
+	// RubySec : for Ruby
+	RubySec CveContentType = "ruby"
+
+	// RustSec : for Rust
+	RustSec CveContentType = "rust"
 
 	// Unknown is Unknown
 	Unknown CveContentType = "unknown"
@@ -288,11 +306,18 @@ var AllCveContetTypes = CveContentTypes{
 	NvdXML,
 	Jvn,
 	RedHat,
+	RedHatAPI,
 	Debian,
 	Ubuntu,
-	RedHatAPI,
+	Amazon,
+	SUSE,
 	DebianSecurityTracker,
 	WPVulnDB,
+	NodeSec,
+	PythonSec,
+	PhpSec,
+	RubySec,
+	RustSec,
 }
 
 // Except returns CveContentTypes except for given args

@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package config
 
 import (
@@ -27,14 +10,14 @@ import (
 	"strings"
 
 	syslog "github.com/RackSec/srslog"
-	"golang.org/x/xerrors"
-
+	"github.com/aquasecurity/fanal/types"
 	valid "github.com/asaskevich/govalidator"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/xerrors"
 )
 
 // Version of Vuls
-var Version = "0.7.0"
+var Version = "0.9.1"
 
 // Revision of Git
 var Revision string
@@ -106,6 +89,7 @@ type Config struct {
 	LogDir     string `json:"logDir,omitempty"`
 	ResultsDir string `json:"resultsDir,omitempty"`
 	Pipe       bool   `json:"pipe,omitempty"`
+	Quiet      bool   `json:"quiet,omitempty"`
 
 	Default       ServerInfo            `json:"default,omitempty"`
 	Servers       map[string]ServerInfo `json:"servers,omitempty"`
@@ -115,13 +99,19 @@ type Config struct {
 	IgnoreUnfixed         bool `json:"ignoreUnfixed,omitempty"`
 	IgnoreGitHubDismissed bool `json:"ignore_git_hub_dismissed,omitempty"`
 
-	SSHNative      bool   `json:"sshNative,omitempty"`
-	SSHConfig      bool   `json:"sshConfig,omitempty"`
-	ContainersOnly bool   `json:"containersOnly,omitempty"`
-	SkipBroken     bool   `json:"skipBroken,omitempty"`
-	CacheDBPath    string `json:"cacheDBPath,omitempty"`
-	Vvv            bool   `json:"vvv,omitempty"`
-	UUID           bool   `json:"uuid,omitempty"`
+	SSHNative bool `json:"sshNative,omitempty"`
+	SSHConfig bool `json:"sshConfig,omitempty"`
+
+	ContainersOnly bool `json:"containersOnly,omitempty"`
+	ImagesOnly     bool `json:"imagesOnly,omitempty"`
+	LibsOnly       bool `json:"libsOnly,omitempty"`
+	WordPressOnly  bool `json:"wordpressOnly,omitempty"`
+
+	SkipBroken  bool   `json:"skipBroken,omitempty"`
+	CacheDBPath string `json:"cacheDBPath,omitempty"`
+	Vvv         bool   `json:"vvv,omitempty"`
+	UUID        bool   `json:"uuid,omitempty"`
+	DetectIPS   bool   `json:"detectIps,omitempty"`
 
 	CveDict  GoCveDictConf `json:"cveDict,omitempty"`
 	OvalDict GovalDictConf `json:"ovalDict,omitempty"`
@@ -165,7 +155,7 @@ type Config struct {
 
 // ValidateOnConfigtest validates
 func (c Config) ValidateOnConfigtest() bool {
-	errs := []error{}
+	errs := c.checkSSHKeyExist()
 
 	if runtime.GOOS == "windows" && !c.SSHNative {
 		errs = append(errs, xerrors.New("-ssh-native-insecure is needed on windows"))
@@ -185,14 +175,7 @@ func (c Config) ValidateOnConfigtest() bool {
 
 // ValidateOnScan validates configuration
 func (c Config) ValidateOnScan() bool {
-	errs := []error{}
-
-	if len(c.ResultsDir) != 0 {
-		if ok, _ := valid.IsFilePath(c.ResultsDir); !ok {
-			errs = append(errs, xerrors.Errorf(
-				"JSON base directory must be a *Absolute* file path. -results-dir: %s", c.ResultsDir))
-		}
-	}
+	errs := c.checkSSHKeyExist()
 
 	if runtime.GOOS == "windows" && !c.SSHNative {
 		errs = append(errs, xerrors.New("-ssh-native-insecure is needed on windows"))
@@ -225,17 +208,27 @@ func (c Config) ValidateOnScan() bool {
 	return len(errs) == 0
 }
 
+func (c Config) checkSSHKeyExist() (errs []error) {
+	for serverName, v := range c.Servers {
+		if v.Type == ServerTypePseudo {
+			continue
+		}
+		if v.KeyPath != "" {
+			if _, err := os.Stat(v.KeyPath); err != nil {
+				errs = append(errs, xerrors.Errorf(
+					"%s is invalid. keypath: %s not exists", serverName, v.KeyPath))
+			}
+		}
+	}
+	return errs
+}
+
 // ValidateOnReportDB validates configuration
 func (c Config) ValidateOnReportDB() bool {
 	errs := []error{}
 
 	if err := validateDB("cvedb", c.CveDict.Type, c.CveDict.SQLite3Path, c.CveDict.URL); err != nil {
 		errs = append(errs, err)
-	}
-	if c.CveDict.Type == "sqlite3" {
-		if _, err := os.Stat(c.CveDict.SQLite3Path); os.IsNotExist(err) {
-			errs = append(errs, xerrors.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDict.SQLite3Path))
-		}
 	}
 
 	if err := validateDB("ovaldb", c.OvalDict.Type, c.OvalDict.SQLite3Path, c.OvalDict.URL); err != nil {
@@ -329,11 +322,6 @@ func (c Config) ValidateOnTui() bool {
 
 	if err := validateDB("cvedb", c.CveDict.Type, c.CveDict.SQLite3Path, c.CveDict.URL); err != nil {
 		errs = append(errs, err)
-	}
-	if c.CveDict.Type == "sqlite3" {
-		if _, err := os.Stat(c.CveDict.SQLite3Path); os.IsNotExist(err) {
-			errs = append(errs, xerrors.Errorf("SQLite3 DB path (%s) is not exist: %s", "cvedb", c.CveDict.SQLite3Path))
-		}
 	}
 
 	for _, err := range errs {
@@ -1059,21 +1047,25 @@ type ServerInfo struct {
 	IgnoreCves             []string                    `toml:"ignoreCves,omitempty" json:"ignoreCves,omitempty"`
 	IgnorePkgsRegexp       []string                    `toml:"ignorePkgsRegexp,omitempty" json:"ignorePkgsRegexp,omitempty"`
 	GitHubRepos            map[string]GitHubConf       `toml:"githubs" json:"githubs,omitempty"` // key: owner/repo
+	Images                 map[string]Image            `toml:"images" json:"images,omitempty"`
 	UUIDs                  map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
 	Memo                   string                      `toml:"memo,omitempty" json:"memo,omitempty"`
 	Enablerepo             []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, RHEL, Amazon
 	Optional               map[string]interface{}      `toml:"optional,omitempty" json:"optional,omitempty"`     // Optional key-value set that will be outputted to JSON
-
-	Type string `toml:"type,omitempty" json:"type,omitempty"` // "pseudo" or ""
+	Lockfiles              []string                    `toml:"lockfiles,omitempty" json:"lockfiles,omitempty"`   // ie) path/to/package-lock.json
+	FindLock               bool                        `toml:"findLock,omitempty" json:"findLock,omitempty"`
+	Type                   string                      `toml:"type,omitempty" json:"type,omitempty"` // "pseudo" or ""
 
 	WordPress WordPressConf `toml:"wordpress,omitempty" json:"wordpress,omitempty"`
 
 	// used internal
-	IPv4Addrs []string `toml:"-" json:"ipv4Addrs,omitempty"`
-	IPv6Addrs []string `toml:"-" json:"ipv6Addrs,omitempty"`
+	IPv4Addrs      []string       `toml:"-" json:"ipv4Addrs,omitempty"`
+	IPv6Addrs      []string       `toml:"-" json:"ipv6Addrs,omitempty"`
+	IPSIdentifiers map[IPS]string `toml:"-" json:"ipsIdentifiers,omitempty"`
 
 	LogMsgAnsiColor string    `toml:"-" json:"-"` // DebugLog Color
 	Container       Container `toml:"-" json:"-"`
+	Image           Image     `toml:"-" json:"-"`
 	Distro          Distro    `toml:"-" json:"-"`
 	Mode            ScanMode  `toml:"-" json:"-"`
 }
@@ -1093,6 +1085,25 @@ type WordPressConf struct {
 	CmdPath        string `toml:"cmdPath" json:"cmdPath,omitempty"`
 	WPVulnDBToken  string `toml:"wpVulnDBToken" json:"-,omitempty"`
 	IgnoreInactive bool   `json:"ignoreInactive,omitempty"`
+}
+
+// Image is a scan container image info
+type Image struct {
+	Name             string             `json:"name"`
+	Tag              string             `json:"tag"`
+	Digest           string             `json:"digest"`
+	DockerOption     types.DockerOption `json:"dockerOption,omitempty"`
+	Cpes             []string           `json:"cpes,omitempty"`
+	OwaspDCXMLPath   string             `json:"owaspDCXMLPath"`
+	IgnorePkgsRegexp []string           `json:"ignorePkgsRegexp,omitempty"`
+	IgnoreCves       []string           `json:"ignoreCves,omitempty"`
+}
+
+func (i *Image) GetFullName() string {
+	if i.Digest != "" {
+		return i.Name + "@" + i.Digest
+	}
+	return i.Name + ":" + i.Tag
 }
 
 // GitHubConf is used for GitHub integration

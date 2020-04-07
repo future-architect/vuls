@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package report
 
 import (
@@ -26,7 +9,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/future-architect/vuls/alert"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
@@ -640,17 +622,19 @@ func summaryLines(r models.ScanResult) string {
 		pkgNames = append(pkgNames, vinfo.GitHubSecurityAlerts.Names()...)
 		pkgNames = append(pkgNames, vinfo.WpPackageFixStats.Names()...)
 
-		alert := "  "
-		if vinfo.AlertDict.HasAlert() {
-			alert = "! "
+		exploits := ""
+		if 0 < len(vinfo.Exploits) {
+			exploits = "POC"
 		}
 
 		var cols []string
 		cols = []string{
 			fmt.Sprintf(indexFormat, i+1),
-			alert + vinfo.CveID,
+			vinfo.CveID,
 			cvssScore + " |",
-			fmt.Sprintf("%1s |", vinfo.AttackVector()),
+			fmt.Sprintf("%4s |", vinfo.AttackVector()),
+			fmt.Sprintf("%3s |", exploits),
+			fmt.Sprintf("%6s |", vinfo.AlertDict.FormatSource()),
 			fmt.Sprintf("%7s |", vinfo.PatchStatus(r.Packages)),
 			strings.Join(pkgNames, ", "),
 		}
@@ -733,7 +717,8 @@ func setChangelogLayout(g *gocui.Gui) error {
 
 				if len(pack.AffectedProcs) != 0 {
 					for _, p := range pack.AffectedProcs {
-						lines = append(lines, fmt.Sprintf("  * PID: %s %s", p.PID, p.Name))
+						lines = append(lines, fmt.Sprintf("  * PID: %s %s Port: %s",
+							p.PID, p.Name, p.ListenPorts))
 					}
 				} else {
 					// lines = append(lines, fmt.Sprintf("  * No affected process"))
@@ -750,18 +735,35 @@ func setChangelogLayout(g *gocui.Gui) error {
 		}
 
 		r := currentScanResult
-		for _, wp := range vinfo.WpPackageFixStats {
-			if p, ok := r.WordPressPackages.Find(wp.Name); ok {
-				if p.Type == models.WPCore {
-					lines = append(lines, fmt.Sprintf("* %s-%s, FixedIn: %s",
-						wp.Name, p.Version, wp.FixedIn))
+		// check wordpress fixedin
+		if r.WordPressPackages != nil {
+			for _, wp := range vinfo.WpPackageFixStats {
+				if p, ok := r.WordPressPackages.Find(wp.Name); ok {
+					if p.Type == models.WPCore {
+						lines = append(lines, fmt.Sprintf("* %s-%s, FixedIn: %s",
+							wp.Name, p.Version, wp.FixedIn))
+					} else {
+						lines = append(lines,
+							fmt.Sprintf("* %s-%s, Update: %s, FixedIn: %s, %s",
+								wp.Name, p.Version, p.Update, wp.FixedIn, p.Status))
+					}
 				} else {
-					lines = append(lines,
-						fmt.Sprintf("* %s-%s, Update: %s, FixedIn: %s, %s",
-							wp.Name, p.Version, p.Update, wp.FixedIn, p.Status))
+					lines = append(lines, fmt.Sprintf("* %s", wp.Name))
 				}
-			} else {
-				lines = append(lines, fmt.Sprintf("* %s", wp.Name))
+			}
+		}
+
+		// check library fixedin
+		for _, scanner := range r.LibraryScanners {
+			key := scanner.GetLibraryKey()
+			for _, fixedin := range vinfo.LibraryFixedIns {
+				for _, lib := range scanner.Libs {
+					if fixedin.Key == key && lib.Name == fixedin.Name {
+						lines = append(lines, fmt.Sprintf("* %s-%s, FixedIn: %s",
+							lib.Name, lib.Version, fixedin.FixedIn))
+						continue
+					}
+				}
 			}
 		}
 
@@ -839,7 +841,7 @@ type dataForTmpl struct {
 	Mitigation       string
 	Confidences      models.Confidences
 	Cwes             []models.CweDictEntry
-	Alerts           []alert.Alert
+	Alerts           []models.Alert
 	Links            []string
 	References       []models.Reference
 	Packages         []string

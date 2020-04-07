@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package scan
 
 import (
@@ -49,21 +32,4 @@ func isRunningKernel(pack models.Package, family string, kernel models.Kernel) (
 		util.Log.Warnf("Reboot required is not implemented yet: %s, %v", family, kernel)
 	}
 	return false, false
-}
-
-func rpmQa(distro config.Distro) string {
-	const old = "rpm -qa --queryformat \"%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n\""
-	const new = "rpm -qa --queryformat \"%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n\""
-	switch distro.Family {
-	case config.SUSEEnterpriseServer:
-		if v, _ := distro.MajorVersion(); v < 12 {
-			return old
-		}
-		return new
-	default:
-		if v, _ := distro.MajorVersion(); v < 6 {
-			return old
-		}
-		return new
-	}
 }

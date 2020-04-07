@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package report
 
 import (
@@ -44,6 +27,8 @@ func formatScanSummary(rs ...models.ScanResult) string {
 	table := uitable.New()
 	table.MaxColWidth = maxColWidth
 	table.Wrap = true
+
+	warnMsgs := []string{}
 	for _, r := range rs {
 		var cols []interface{}
 		if len(r.Errors) == 0 {
@@ -57,18 +42,26 @@ func formatScanSummary(rs ...models.ScanResult) string {
 				r.FormatServerName(),
 				"Error",
 				"",
-				"Run with --debug to view the details",
+				"Use configtest subcommand or scan with --debug to view the details",
 			}
 		}
 		table.AddRow(cols...)
+
+		if len(r.Warnings) != 0 {
+			warnMsgs = append(warnMsgs, fmt.Sprintf("Warning for %s: %s",
+				r.FormatServerName(), r.Warnings))
+		}
 	}
-	return fmt.Sprintf("%s\n", table)
+	return fmt.Sprintf("%s\n\n%s", table, strings.Join(
+		warnMsgs, "\n\n"))
 }
 
 func formatOneLineSummary(rs ...models.ScanResult) string {
 	table := uitable.New()
 	table.MaxColWidth = maxColWidth
 	table.Wrap = true
+
+	warnMsgs := []string{}
 	for _, r := range rs {
 		var cols []interface{}
 		if len(r.Errors) == 0 {
@@ -83,21 +76,36 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 		} else {
 			cols = []interface{}{
 				r.FormatServerName(),
-				"Error: Scan with --debug to view the details",
+				"Use configtest subcommand or scan with --debug to view the details",
 				"",
 			}
 		}
 		table.AddRow(cols...)
+
+		if len(r.Warnings) != 0 {
+			warnMsgs = append(warnMsgs, fmt.Sprintf("Warning for %s: %s",
+				r.FormatServerName(), r.Warnings))
+		}
 	}
-	return fmt.Sprintf("%s\n", table)
+	// We don't want warning message to the summary file
+	if config.Conf.Quiet {
+		return fmt.Sprintf("%s\n", table)
+	}
+	return fmt.Sprintf("%s\n\n%s", table, strings.Join(
+		warnMsgs, "\n\n"))
 }
 
 func formatList(r models.ScanResult) string {
 	header := r.FormatTextReportHeadedr()
 	if len(r.Errors) != 0 {
 		return fmt.Sprintf(
-			"%s\nError: Scan with --debug to view the details\n%s\n\n",
+			"%s\nError: Use configtest subcommand or scan with --debug to view the details\n%s\n\n",
 			header, r.Errors)
+	}
+	if len(r.Warnings) != 0 {
+		header += fmt.Sprintf(
+			"\nWarning: Some warnings occurred.\n%s\n\n",
+			r.Warnings)
 	}
 
 	if len(r.ScannedCves) == 0 {
@@ -119,7 +127,7 @@ No CVE-IDs are found in updatable packages.
 
 		exploits := ""
 		if 0 < len(vinfo.Exploits) {
-			exploits = "   Y"
+			exploits = "POC"
 		}
 
 		link := ""
@@ -131,13 +139,13 @@ No CVE-IDs are found in updatable packages.
 
 		data = append(data, []string{
 			vinfo.CveID,
-			fmt.Sprintf("%7s", vinfo.PatchStatus(r.Packages)),
-			vinfo.AlertDict.FormatSource(),
 			fmt.Sprintf("%4.1f", max),
+			fmt.Sprintf("%5s", vinfo.AttackVector()),
 			// fmt.Sprintf("%4.1f", v2max),
 			// fmt.Sprintf("%4.1f", v3max),
-			fmt.Sprintf("%2s", vinfo.AttackVector()),
 			exploits,
+			vinfo.AlertDict.FormatSource(),
+			fmt.Sprintf("%7s", vinfo.PatchStatus(r.Packages)),
 			link,
 		})
 	}
@@ -146,13 +154,13 @@ No CVE-IDs are found in updatable packages.
 	table := tablewriter.NewWriter(&b)
 	table.SetHeader([]string{
 		"CVE-ID",
-		"Fixed",
-		"CERT",
 		"CVSS",
+		"Attack",
 		// "v3",
 		// "v2",
-		"AV",
 		"PoC",
+		"CERT",
+		"Fixed",
 		"NVD",
 	})
 	table.SetBorder(true)
@@ -165,8 +173,14 @@ func formatFullPlainText(r models.ScanResult) (lines string) {
 	header := r.FormatTextReportHeadedr()
 	if len(r.Errors) != 0 {
 		return fmt.Sprintf(
-			"%s\nError: Scan with --debug to view the details\n%s\n\n",
+			"%s\nError: Use configtest subcommand or scan with --debug to view the details\n%s\n\n",
 			header, r.Errors)
+	}
+
+	if len(r.Warnings) != 0 {
+		header += fmt.Sprintf(
+			"\nWarning: Some warnings occurred.\n%s\n\n",
+			r.Warnings)
 	}
 
 	if len(r.ScannedCves) == 0 {
@@ -203,14 +217,28 @@ No CVE-IDs are found in updatable packages.
 		}
 
 		cweURLs, top10URLs := []string{}, []string{}
+		cweTop25URLs, sansTop25URLs := []string{}, []string{}
 		for _, v := range vuln.CveContents.UniqCweIDs(r.Family) {
-			name, url, top10Rank, top10URL := r.CweDict.Get(v.Value, r.Lang)
+			name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL := r.CweDict.Get(v.Value, r.Lang)
 			if top10Rank != "" {
 				data = append(data, []string{"CWE",
 					fmt.Sprintf("[OWASP Top%s] %s: %s (%s)",
 						top10Rank, v.Value, name, v.Type)})
 				top10URLs = append(top10URLs, top10URL)
-			} else {
+			}
+			if cweTop25Rank != "" {
+				data = append(data, []string{"CWE",
+					fmt.Sprintf("[CWE Top%s] %s: %s (%s)",
+						cweTop25Rank, v.Value, name, v.Type)})
+				cweTop25URLs = append(cweTop25URLs, cweTop25URL)
+			}
+			if sansTop25Rank != "" {
+				data = append(data, []string{"CWE",
+					fmt.Sprintf("[CWE/SANS Top%s]  %s: %s (%s)",
+						sansTop25Rank, v.Value, name, v.Type)})
+				sansTop25URLs = append(sansTop25URLs, sansTop25URL)
+			}
+			if top10Rank == "" && cweTop25Rank == "" && sansTop25Rank == "" {
 				data = append(data, []string{"CWE", fmt.Sprintf("%s: %s (%s)",
 					v.Value, name, v.Type)})
 			}
@@ -235,7 +263,7 @@ No CVE-IDs are found in updatable packages.
 				if len(pack.AffectedProcs) != 0 {
 					for _, p := range pack.AffectedProcs {
 						data = append(data, []string{"",
-							fmt.Sprintf("  - PID: %s %s", p.PID, p.Name)})
+							fmt.Sprintf("  - PID: %s %s, Port: %s", p.PID, p.Name, p.ListenPorts)})
 					}
 				}
 			}
@@ -294,6 +322,12 @@ No CVE-IDs are found in updatable packages.
 		}
 		for _, url := range top10URLs {
 			data = append(data, []string{"OWASP Top10", url})
+		}
+		if len(cweTop25URLs) != 0 {
+			data = append(data, []string{"CWE Top25", cweTop25URLs[0]})
+		}
+		if len(sansTop25URLs) != 0 {
+			data = append(data, []string{"SANS/CWE Top25", sansTop25URLs[0]})
 		}
 
 		for _, alert := range vuln.AlertDict.Ja {

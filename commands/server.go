@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Architect, Inc. Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package commands
 
 import (
@@ -94,8 +77,7 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
 
 	wd, _ := os.Getwd()
-	defaultConfPath := filepath.Join(wd, "config.toml")
-	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
+	f.StringVar(&p.configPath, "config", "", "/path/to/toml")
 
 	defaultResultsDir := filepath.Join(wd, "results")
 	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
@@ -151,9 +133,11 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
 	cvelog.SetLogger(c.Conf.LogDir, false, c.Conf.Debug, false)
 
-	if err := c.Load(p.configPath, ""); err != nil {
-		util.Log.Errorf("Error loading %s. err: %+v", p.configPath, err)
-		return subcommands.ExitUsageError
+	if p.configPath != "" {
+		if err := c.Load(p.configPath, ""); err != nil {
+			util.Log.Errorf("Error loading %s. err: %+v", p.configPath, err)
+			return subcommands.ExitUsageError
+		}
 	}
 
 	c.Conf.CveDict.Overwrite(p.cveDict)

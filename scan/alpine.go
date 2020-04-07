@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package scan
 
 import (
@@ -65,9 +48,6 @@ func detectAlpine(c config.ServerInfo) (itsMe bool, os osTypeInterface) {
 }
 
 func (o *alpine) checkScanMode() error {
-	if o.getServerInfo().Mode.IsOffline() {
-		return xerrors.New("Remove offline scan mode, Alpine needs internet connection")
-	}
 	return nil
 }
 
@@ -82,6 +62,9 @@ func (o *alpine) checkIfSudoNoPasswd() error {
 }
 
 func (o *alpine) apkUpdate() error {
+	if o.getServerInfo().Mode.IsOffline() {
+		return nil
+	}
 	r := o.exec("apk update", noSudo)
 	if !r.isSuccess() {
 		return xerrors.Errorf("Failed to SSH: %s", r)
@@ -92,7 +75,8 @@ func (o *alpine) apkUpdate() error {
 func (o *alpine) preCure() error {
 	o.log.Infof("Scanning in %s", o.getServerInfo().Mode)
 	if err := o.detectIPAddr(); err != nil {
-		o.log.Debugf("Failed to detect IP addresses: %s", err)
+		o.log.Warnf("Failed to detect IP addresses: %s", err)
+		o.warns = append(o.warns, err)
 	}
 	// Ignore this error as it just failed to detect the IP addresses
 	return nil
@@ -130,11 +114,14 @@ func (o *alpine) scanPackages() error {
 
 	updatable, err := o.scanUpdatablePackages()
 	if err != nil {
-		o.log.Errorf("Failed to scan installed packages: %s", err)
-		return err
+		err = xerrors.Errorf("Failed to scan updatable packages: %w", err)
+		o.log.Warnf("err: %+v", err)
+		o.warns = append(o.warns, err)
+		// Only warning this error
+	} else {
+		installed.MergeNewVersion(updatable)
 	}
 
-	installed.MergeNewVersion(updatable)
 	o.Packages = installed
 	return nil
 }

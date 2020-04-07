@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package scan
 
 import (
@@ -149,6 +132,9 @@ func (o *debian) checkIfSudoNoPasswd() error {
 	cmds := []string{
 		"checkrestart",
 		"stat /proc/1/exe",
+		"ls -l /proc/1/exe",
+		"cat /proc/1/maps",
+		"lsof -i -P",
 	}
 
 	if !o.getServerInfo().Mode.IsOffline() {
@@ -255,7 +241,8 @@ func (o *debian) checkDeps() error {
 func (o *debian) preCure() error {
 	o.log.Infof("Scanning in %s", o.getServerInfo().Mode)
 	if err := o.detectIPAddr(); err != nil {
-		o.log.Debugf("Failed to detect IP addresses: %s", err)
+		o.log.Warnf("Failed to detect IP addresses: %s", err)
+		o.warns = append(o.warns, err)
 	}
 	// Ignore this error as it just failed to detect the IP addresses
 	return nil
@@ -263,7 +250,21 @@ func (o *debian) preCure() error {
 
 func (o *debian) postScan() error {
 	if o.getServerInfo().Mode.IsDeep() || o.getServerInfo().Mode.IsFastRoot() {
-		return o.checkrestart()
+		if err := o.dpkgPs(); err != nil {
+			err = xerrors.Errorf("Failed to dpkg-ps: %w", err)
+			o.log.Warnf("err: %+v", err)
+			o.warns = append(o.warns, err)
+			// Only warning this error
+		}
+	}
+
+	if o.getServerInfo().Mode.IsDeep() || o.getServerInfo().Mode.IsFastRoot() {
+		if err := o.checkrestart(); err != nil {
+			err = xerrors.Errorf("Failed to scan need-restarting processes: %w", err)
+			o.log.Warnf("err: %+v", err)
+			o.warns = append(o.warns, err)
+			// Only warning this error
+		}
 	}
 	return nil
 }
@@ -282,8 +283,9 @@ func (o *debian) scanPackages() error {
 	}
 	rebootRequired, err := o.rebootRequired()
 	if err != nil {
-		o.log.Errorf("Failed to detect the kernel reboot required: %s", err)
-		return err
+		o.log.Warnf("Failed to detect the kernel reboot required: %s", err)
+		o.warns = append(o.warns, err)
+		// Only warning this error
 	}
 	o.Kernel = models.Kernel{
 		Version:        version,
@@ -1102,4 +1104,102 @@ func (o *debian) parseCheckRestart(stdout string) (models.Packages, []string) {
 		}
 	}
 	return packs, unknownServices
+}
+
+func (o *debian) dpkgPs() error {
+	stdout, err := o.ps()
+	if err != nil {
+		return xerrors.Errorf("Failed to ps: %w", err)
+	}
+	pidNames := o.parsePs(stdout)
+	pidLoadedFiles := map[string][]string{}
+	// for pid, name := range pidNames {
+	for pid := range pidNames {
+		stdout := ""
+		stdout, err = o.lsProcExe(pid)
+		if err != nil {
+			o.log.Debugf("Failed to exec /proc/%s/exe err: %s", pid, err)
+			continue
+		}
+		s, err := o.parseLsProcExe(stdout)
+		if err != nil {
+			o.log.Debugf("Failed to parse /proc/%s/exe: %s", pid, err)
+			continue
+		}
+		pidLoadedFiles[pid] = append(pidLoadedFiles[pid], s)
+
+		stdout, err = o.grepProcMap(pid)
+		if err != nil {
+			o.log.Debugf("Failed to exec /proc/%s/maps: %s", pid, err)
+			continue
+		}
+		ss := o.parseGrepProcMap(stdout)
+		pidLoadedFiles[pid] = append(pidLoadedFiles[pid], ss...)
+	}
+
+	pidListenPorts := map[string][]string{}
+	stdout, err = o.lsOfListen()
+	if err != nil {
+		return xerrors.Errorf("Failed to ls of: %w", err)
+	}
+	portPid := o.parseLsOf(stdout)
+	for port, pid := range portPid {
+		pidListenPorts[pid] = append(pidListenPorts[pid], port)
+	}
+
+	for pid, loadedFiles := range pidLoadedFiles {
+		o.log.Debugf("dpkg -S %#v", loadedFiles)
+		pkgNames, err := o.getPkgName(loadedFiles)
+		if err != nil {
+			o.log.Debugf("Failed to get package name by file path: %s, err: %s", pkgNames, err)
+			continue
+		}
+
+		procName := ""
+		if _, ok := pidNames[pid]; ok {
+			procName = pidNames[pid]
+		}
+		proc := models.AffectedProcess{
+			PID:         pid,
+			Name:        procName,
+			ListenPorts: pidListenPorts[pid],
+		}
+
+		for _, n := range pkgNames {
+			p, ok := o.Packages[n]
+			if !ok {
+				return xerrors.Errorf("pkg not found %s", n)
+			}
+			p.AffectedProcs = append(p.AffectedProcs, proc)
+			o.Packages[p.Name] = p
+		}
+	}
+	return nil
+}
+
+func (o *debian) getPkgName(paths []string) (pkgNames []string, err error) {
+	cmd := "dpkg -S " + strings.Join(paths, " ")
+	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
+	if !r.isSuccess(0, 1) {
+		return nil, xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	return o.parseGetPkgName(r.Stdout), nil
+}
+
+func (o *debian) parseGetPkgName(stdout string) (pkgNames []string) {
+	uniq := map[string]struct{}{}
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := scanner.Text()
+		ss := strings.Fields(line)
+		if len(ss) < 2 || ss[1] == "no" {
+			continue
+		}
+		s := strings.Split(ss[0], ":")[0]
+		uniq[s] = struct{}{}
+	}
+	for n := range uniq {
+		pkgNames = append(pkgNames, n)
+	}
+	return pkgNames
 }

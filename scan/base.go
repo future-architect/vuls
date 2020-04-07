@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package scan
 
 import (
@@ -26,10 +9,23 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aquasecurity/fanal/analyzer"
+	"github.com/aquasecurity/fanal/extractor"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/util"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
+
+	// Import library scanner
+	_ "github.com/aquasecurity/fanal/analyzer/library/bundler"
+	_ "github.com/aquasecurity/fanal/analyzer/library/cargo"
+	_ "github.com/aquasecurity/fanal/analyzer/library/composer"
+	_ "github.com/aquasecurity/fanal/analyzer/library/npm"
+	_ "github.com/aquasecurity/fanal/analyzer/library/pipenv"
+	_ "github.com/aquasecurity/fanal/analyzer/library/poetry"
+	_ "github.com/aquasecurity/fanal/analyzer/library/yarn"
 )
 
 type base struct {
@@ -37,10 +33,12 @@ type base struct {
 	Distro     config.Distro
 	Platform   models.Platform
 	osPackages
-	WordPress *models.WordPressPackages
+	LibraryScanners []models.LibraryScanner
+	WordPress       *models.WordPressPackages
 
-	log  *logrus.Entry
-	errs []error
+	log   *logrus.Entry
+	errs  []error
+	warns []error
 }
 
 func (l *base) exec(cmd string, sudo bool) execResult {
@@ -321,6 +319,39 @@ func (l *base) detectPlatform() {
 	return
 }
 
+var dsFingerPrintPrefix = "AgentStatus.agentCertHash: "
+
+func (l *base) detectDeepSecurity() (fingerprint string, err error) {
+	// only work root user
+	if l.getServerInfo().Mode.IsFastRoot() {
+		if r := l.exec("test -f /opt/ds_agent/dsa_query", sudo); r.isSuccess() {
+			cmd := fmt.Sprintf(`/opt/ds_agent/dsa_query -c "GetAgentStatus" | grep %q`, dsFingerPrintPrefix)
+			r := l.exec(cmd, sudo)
+			if r.isSuccess() {
+				line := strings.TrimSpace(r.Stdout)
+				return line[len(dsFingerPrintPrefix):], nil
+			}
+			l.warns = append(l.warns, xerrors.New("Fail to retrieve deepsecurity fingerprint"))
+		}
+	}
+	return "", xerrors.Errorf("Failed to detect deepsecurity %s", l.ServerInfo.ServerName)
+}
+
+func (l *base) detectIPSs() {
+	if !config.Conf.DetectIPS {
+		return
+	}
+
+	ips := map[config.IPS]string{}
+
+	fingerprint, err := l.detectDeepSecurity()
+	if err != nil {
+		return
+	}
+	ips[config.DeepSecurity] = fingerprint
+	l.ServerInfo.IPSIdentifiers = ips
+}
+
 func (l *base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 	if r := l.exec("type curl", noSudo); r.isSuccess() {
 		cmd := "curl --max-time 1 --noproxy 169.254.169.254 http://169.254.169.254/latest/meta-data/instance-id"
@@ -385,9 +416,25 @@ func (l *base) convertToModel() models.ScanResult {
 		Type:        ctype,
 	}
 
-	errs := []string{}
+	image := models.Image{
+		Name:   l.ServerInfo.Image.Name,
+		Tag:    l.ServerInfo.Image.Tag,
+		Digest: l.ServerInfo.Image.Digest,
+	}
+
+	errs, warns := []string{}, []string{}
 	for _, e := range l.errs {
-		errs = append(errs, fmt.Sprintf("%s", e))
+		errs = append(errs, fmt.Sprintf("%+v", e))
+	}
+	for _, w := range l.warns {
+		warns = append(warns, fmt.Sprintf("%+v", w))
+	}
+
+	scannedVia := scannedViaRemote
+	if isLocalExec(l.ServerInfo.Port, l.ServerInfo.Host) {
+		scannedVia = scannedViaLocal
+	} else if l.ServerInfo.Type == config.ServerTypePseudo {
+		scannedVia = scannedViaPseudo
 	}
 
 	return models.ScanResult{
@@ -398,16 +445,21 @@ func (l *base) convertToModel() models.ScanResult {
 		Family:            l.Distro.Family,
 		Release:           l.Distro.Release,
 		Container:         container,
+		Image:             image,
 		Platform:          l.Platform,
 		IPv4Addrs:         l.ServerInfo.IPv4Addrs,
 		IPv6Addrs:         l.ServerInfo.IPv6Addrs,
+		IPSIdentifiers:    l.ServerInfo.IPSIdentifiers,
 		ScannedCves:       l.VulnInfos,
+		ScannedVia:        scannedVia,
 		RunningKernel:     l.Kernel,
 		Packages:          l.Packages,
 		SrcPackages:       l.SrcPackages,
 		WordPressPackages: l.WordPress,
+		LibraryScanners:   l.LibraryScanners,
 		Optional:          l.ServerInfo.Optional,
 		Errors:            errs,
+		Warnings:          warns,
 	}
 }
 
@@ -478,6 +530,65 @@ func (l *base) parseSystemctlStatus(stdout string) string {
 	return ss[1]
 }
 
+func (l *base) scanLibraries() (err error) {
+	// image already detected libraries
+	if len(l.LibraryScanners) != 0 {
+		return nil
+	}
+
+	// library scan for servers need lockfiles
+	if len(l.ServerInfo.Lockfiles) == 0 && !l.ServerInfo.FindLock {
+		return nil
+	}
+
+	libFilemap := extractor.FileMap{}
+
+	detectFiles := l.ServerInfo.Lockfiles
+
+	// auto detect lockfile
+	if l.ServerInfo.FindLock {
+		findopt := ""
+		for filename := range models.LibraryMap {
+			findopt += fmt.Sprintf("-name %q -o ", "*"+filename)
+		}
+
+		// delete last "-o "
+		// find / -name "*package-lock.json" -o -name "*yarn.lock" ... 2>&1 | grep -v "Permission denied"
+		cmd := fmt.Sprintf(`find / ` + findopt[:len(findopt)-3] + ` 2>&1 | grep -v "Permission denied"`)
+		r := exec(l.ServerInfo, cmd, noSudo)
+		if r.ExitStatus != 0 && r.ExitStatus != 1 {
+			return xerrors.Errorf("Failed to find lock files")
+		}
+		detectFiles = append(detectFiles, strings.Split(r.Stdout, "\n")...)
+	}
+
+	for _, path := range detectFiles {
+		if path == "" {
+			continue
+		}
+		// skip already exist
+		if _, ok := libFilemap[path]; ok {
+			continue
+		}
+		cmd := fmt.Sprintf("cat %s", path)
+		r := exec(l.ServerInfo, cmd, noSudo)
+		if !r.isSuccess() {
+			return xerrors.Errorf("Failed to get target file: %s, filepath: %s", r, path)
+		}
+		libFilemap[path] = []byte(r.Stdout)
+	}
+
+	results, err := analyzer.GetLibraries(libFilemap)
+	if err != nil {
+		return xerrors.Errorf("Failed to get libs: %w", err)
+	}
+	l.LibraryScanners, err = convertLibWithScanner(results)
+	if err != nil {
+		return xerrors.Errorf("Failed to scan libraries: %w", err)
+	}
+	return nil
+}
+
 func (l *base) scanWordPress() (err error) {
 	wpOpts := []string{l.ServerInfo.WordPress.OSUser,
 		l.ServerInfo.WordPress.DocRoot,
@@ -502,7 +613,7 @@ func (l *base) scanWordPress() (err error) {
 			l.getServerInfo().GetServerName(), wpOpts)
 	}
 
-	cmd := fmt.Sprintf("sudo -u %s -i -- %s cli version",
+	cmd := fmt.Sprintf("sudo -u %s -i -- %s cli version --allow-root",
 		l.ServerInfo.WordPress.OSUser,
 		l.ServerInfo.WordPress.CmdPath)
 	if r := exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
@@ -547,7 +658,7 @@ func (l *base) detectWordPress() (*models.WordPressPackages, error) {
 }
 
 func (l *base) detectWpCore() (string, error) {
-	cmd := fmt.Sprintf("sudo -u %s -i -- %s core version --path=%s",
+	cmd := fmt.Sprintf("sudo -u %s -i -- %s core version --path=%s --allow-root",
 		l.ServerInfo.WordPress.OSUser,
 		l.ServerInfo.WordPress.CmdPath,
 		l.ServerInfo.WordPress.DocRoot)
@@ -560,7 +671,7 @@ func (l *base) detectWpCore() (string, error) {
 }
 
 func (l *base) detectWpThemes() ([]models.WpPackage, error) {
-	cmd := fmt.Sprintf("sudo -u %s -i -- %s theme list --path=%s --format=json",
+	cmd := fmt.Sprintf("sudo -u %s -i -- %s theme list --path=%s --format=json --allow-root 2>/dev/null",
 		l.ServerInfo.WordPress.OSUser,
 		l.ServerInfo.WordPress.CmdPath,
 		l.ServerInfo.WordPress.DocRoot)
@@ -581,7 +692,7 @@ func (l *base) detectWpThemes() ([]models.WpPackage, error) {
 }
 
 func (l *base) detectWpPlugins() ([]models.WpPackage, error) {
-	cmd := fmt.Sprintf("sudo -u %s -i -- %s plugin list --path=%s --format=json",
+	cmd := fmt.Sprintf("sudo -u %s -i -- %s plugin list --path=%s --format=json --allow-root 2>/dev/null",
 		l.ServerInfo.WordPress.OSUser,
 		l.ServerInfo.WordPress.CmdPath,
 		l.ServerInfo.WordPress.DocRoot)
@@ -598,4 +709,85 @@ func (l *base) detectWpPlugins() ([]models.WpPackage, error) {
 		plugins[i].Type = models.WPPlugin
 	}
 	return plugins, nil
+}
+
+func (l *base) ps() (stdout string, err error) {
+	cmd := `LANGUAGE=en_US.UTF-8 ps --no-headers --ppid 2 -p 2 --deselect -o pid,comm`
+	r := l.exec(util.PrependProxyEnv(cmd), noSudo)
+	if !r.isSuccess() {
+		return "", xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	return r.Stdout, nil
+}
+
+func (l *base) parsePs(stdout string) map[string]string {
+	pidNames := map[string]string{}
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		ss := strings.Fields(line)
+		if len(ss) < 2 {
+			continue
+		}
+		pidNames[ss[0]] = ss[1]
+	}
+	return pidNames
+}
+
+func (l *base) lsProcExe(pid string) (stdout string, err error) {
+	cmd := fmt.Sprintf("ls -l /proc/%s/exe", pid)
+	r := l.exec(util.PrependProxyEnv(cmd), sudo)
+	if !r.isSuccess() {
+		return "", xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	return r.Stdout, nil
+}
+
+func (l *base) parseLsProcExe(stdout string) (string, error) {
+	ss := strings.Fields(stdout)
+	if len(ss) < 11 {
+		return "", xerrors.Errorf("Unknown format: %s", stdout)
+	}
+	return ss[10], nil
+}
+
+func (l *base) grepProcMap(pid string) (stdout string, err error) {
+	cmd := fmt.Sprintf(`cat /proc/%s/maps 2>/dev/null | grep -v " 00:00 " | awk '{print $6}' | sort -n | uniq`, pid)
+	r := l.exec(util.PrependProxyEnv(cmd), sudo)
+	if !r.isSuccess() {
+		return "", xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	return r.Stdout, nil
+}
+
+func (l *base) parseGrepProcMap(stdout string) (soPaths []string) {
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		soPaths = append(soPaths, line)
+	}
+	return soPaths
+}
+
+func (l *base) lsOfListen() (stdout string, err error) {
+	cmd := `lsof -i -P -n | grep LISTEN`
+	r := l.exec(util.PrependProxyEnv(cmd), sudo)
+	if !r.isSuccess(0, 1) {
+		return "", xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	return r.Stdout, nil
+}
+
+func (l *base) parseLsOf(stdout string) map[string]string {
+	portPid := map[string]string{}
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		ss := strings.Fields(scanner.Text())
+		if len(ss) < 10 {
+			continue
+		}
+		pid, ipPort := ss[1], ss[8]
+		portPid[ipPort] = pid
+	}
+	return portPid
 }

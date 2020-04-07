@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package commands
 
 import (
@@ -119,7 +102,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		msg := []string{
 			fmt.Sprintf("Error loading %s", p.configPath),
 			"If you update Vuls and get this error, there may be incompatible changes in config.toml",
-			"Please check README: https://github.com/future-architect/vuls#configuration",
+			"Please check config.toml template : https://vuls.io/docs/en/usage-settings.html",
 		}
 		util.Log.Errorf("%s\n%+v", strings.Join(msg, "\n"), err)
 		return subcommands.ExitUsageError

@@ -1,25 +1,9 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package scan
 
 import (
 	"os"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/future-architect/vuls/cache"
@@ -724,5 +708,41 @@ util-linux:
 		if !reflect.DeepEqual(tt.unknownServices, services) {
 			t.Errorf("expected %s, actual %s", tt.unknownServices, services)
 		}
+	}
+}
+
+func Test_debian_parseGetPkgName(t *testing.T) {
+	type args struct {
+		stdout string
+	}
+	tests := []struct {
+		name         string
+		args         args
+		wantPkgNames []string
+	}{
+		{
+			name: "success",
+			args: args{
+				stdout: `udev: /lib/systemd/systemd-udevd
+dpkg-query: no path found matching pattern /lib/modules/3.16.0-6-amd64/modules.alias.bin
+udev: /lib/systemd/systemd-udevd
+dpkg-query: no path found matching pattern /lib/udev/hwdb.bin
+libuuid1:amd64: /lib/x86_64-linux-gnu/libuuid.so.1.3.0`,
+			},
+			wantPkgNames: []string{
+				"libuuid1",
+				"udev",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := &debian{}
+			gotPkgNames := o.parseGetPkgName(tt.args.stdout)
+			sort.Strings(gotPkgNames)
+			if !reflect.DeepEqual(gotPkgNames, tt.wantPkgNames) {
+				t.Errorf("debian.parseGetPkgName() = %v, want %v", gotPkgNames, tt.wantPkgNames)
+			}
+		})
 	}
 }

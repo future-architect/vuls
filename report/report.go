@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package report
 
 import (
@@ -27,6 +10,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/future-architect/vuls/libmanager"
 
 	"github.com/BurntSushi/toml"
 	"github.com/future-architect/vuls/config"
@@ -43,6 +28,7 @@ import (
 	"github.com/hashicorp/uuid"
 	gostdb "github.com/knqyf263/gost/db"
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
+	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
 	ovaldb "github.com/kotakanbe/goval-dictionary/db"
 	exploitdb "github.com/mozqnet/go-exploitdb/db"
 	"golang.org/x/xerrors"
@@ -64,6 +50,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 				r.ScannedCves = models.VulnInfos{}
 			}
 			cpeURIs := []string{}
+
 			if len(r.Container.ContainerID) == 0 {
 				cpeURIs = c.Conf.Servers[r.ServerName].CpeNames
 				owaspDCXMLPath := c.Conf.Servers[r.ServerName].OwaspDCXMLPath
@@ -76,6 +63,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 					cpeURIs = append(cpeURIs, cpes...)
 				}
 			} else {
+				// runningContainer
 				if s, ok := c.Conf.Servers[r.ServerName]; ok {
 					if con, ok := s.Containers[r.Container.Name]; ok {
 						cpeURIs = con.Cpes
@@ -100,6 +88,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			if err := FillCveInfo(dbclient,
 				&r,
 				cpeURIs,
+				true,
 				githubInts,
 				wpOpt); err != nil {
 				return nil, err
@@ -158,10 +147,17 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 }
 
 // FillCveInfo fill scanResult with cve info.
-func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, integrations ...Integration) error {
+func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, ignoreWillNotFix bool, integrations ...Integration) error {
 	util.Log.Debugf("need to refresh")
 
-	nCVEs, err := FillWithOval(dbclient.OvalDB, r)
+	nCVEs, err := libmanager.FillLibrary(r)
+	if err != nil {
+		return xerrors.Errorf("Failed to fill with Library dependency: %w", err)
+	}
+	util.Log.Infof("%s: %d CVEs are detected with Library",
+		r.FormatServerName(), nCVEs)
+
+	nCVEs, err = FillWithOval(dbclient.OvalDB, r)
 	if err != nil {
 		return xerrors.Errorf("Failed to fill with OVAL: %w", err)
 	}
@@ -191,7 +187,7 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, inte
 	}
 	util.Log.Infof("%s: %d CVEs are detected with GitHub Security Alerts", r.FormatServerName(), ints.GithubAlertsCveCounts)
 
-	nCVEs, err = FillWithGost(dbclient.GostDB, r)
+	nCVEs, err = FillWithGost(dbclient.GostDB, r, ignoreWillNotFix)
 	if err != nil {
 		return xerrors.Errorf("Failed to fill with gost: %w", err)
 	}
@@ -210,10 +206,6 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, inte
 	}
 	util.Log.Infof("%s: %d exploits are detected",
 		r.FormatServerName(), nExploitCve)
-
-	enAlertCnt, jaAlertCnt := fillAlerts(r)
-	util.Log.Infof("%s: en: %d, ja: %d alerts are detected",
-		r.FormatServerName(), enAlertCnt, jaAlertCnt)
 
 	fillCweDict(r)
 	return nil
@@ -237,6 +229,7 @@ func fillCveDetail(driver cvedb.DB, r *models.ScanResult) error {
 		}
 		jvn := models.ConvertJvnToModel(d.CveID, d.Jvn)
 
+		alerts := fillCertAlerts(&d)
 		for cveID, vinfo := range r.ScannedCves {
 			if vinfo.CveID == d.CveID {
 				if vinfo.CveContents == nil {
@@ -247,12 +240,35 @@ func fillCveDetail(driver cvedb.DB, r *models.ScanResult) error {
 						vinfo.CveContents[con.Type] = *con
 					}
 				}
+				vinfo.AlertDict = alerts
 				r.ScannedCves[cveID] = vinfo
 				break
 			}
 		}
 	}
 	return nil
+}
+
+func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
+	if cvedetail.NvdJSON != nil {
+		for _, cert := range cvedetail.NvdJSON.Certs {
+			dict.En = append(dict.En, models.Alert{
+				URL:   cert.Link,
+				Title: cert.Title,
+				Team:  "us",
+			})
+		}
+	}
+	if cvedetail.Jvn != nil {
+		for _, cert := range cvedetail.Jvn.Certs {
+			dict.Ja = append(dict.Ja, models.Alert{
+				URL:   cert.Link,
+				Title: cert.Title,
+				Team:  "jp",
+			})
+		}
+	}
+	return dict
 }
 
 // FillWithOval fetches OVAL database
@@ -284,7 +300,10 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 	case c.Alpine:
 		ovalClient = oval.NewAlpine()
 		ovalFamily = c.Alpine
-	case c.Amazon, c.Raspbian, c.FreeBSD, c.Windows:
+	case c.Amazon:
+		ovalClient = oval.NewAmazon()
+		ovalFamily = c.Amazon
+	case c.Raspbian, c.FreeBSD, c.Windows:
 		return 0, nil
 	case c.ServerTypePseudo:
 		return 0, nil
@@ -297,7 +316,7 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 
 	if !c.Conf.OvalDict.IsFetchViaHTTP() {
 		if driver == nil {
-			return 0, nil
+			return 0, xerrors.Errorf("You have to fetch OVAL data for %s before reporting. For details, see `https://github.com/kotakanbe/goval-dictionary#usage`", r.Family)
 		}
 		if err = driver.NewOvalDB(ovalFamily); err != nil {
 			return 0, xerrors.Errorf("Failed to New Oval DB. err: %w", err)
@@ -310,8 +329,7 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 		return 0, err
 	}
 	if !ok {
-		util.Log.Warnf("OVAL entries of %s %s are not found. It's recommended to use OVAL to improve scanning accuracy. For details, see https://github.com/kotakanbe/goval-dictionary#usage , Then report with --ovaldb-path or --ovaldb-url flag", ovalFamily, r.Release)
-		return 0, nil
+		return 0, xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see `https://github.com/kotakanbe/goval-dictionary#usage`", ovalFamily, r.Release)
 	}
 
 	_, err = ovalClient.CheckIfOvalFresh(driver, ovalFamily, r.Release)
@@ -324,11 +342,14 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 
 // FillWithGost fills CVEs with gost dataabase
 // https://github.com/knqyf263/gost
-func FillWithGost(driver gostdb.DB, r *models.ScanResult) (nCVEs int, err error) {
+func FillWithGost(driver gostdb.DB, r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
 	gostClient := gost.NewClient(r.Family)
 	// TODO chekc if fetched
 	// TODO chekc if fresh enough
-	return gostClient.FillWithGost(driver, r)
+	if nCVEs, err = gostClient.DetectUnfixed(driver, r, ignoreWillNotFix); err != nil {
+		return
+	}
+	return nCVEs, gostClient.FillCVEsWithRedHat(driver, r)
 }
 
 // FillWithExploit fills Exploits with exploit dataabase
@@ -340,6 +361,11 @@ func FillWithExploit(driver exploitdb.DB, r *models.ScanResult) (nExploitCve int
 }
 
 func fillVulnByCpeURIs(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) (nCVEs int, err error) {
+	if len(cpeURIs) != 0 && driver == nil && !config.Conf.CveDict.IsFetchViaHTTP() {
+		return 0, xerrors.Errorf("cpeURIs %s specified, but cve-dictionary DB not found. Fetch cve-dictionary beofre reporting. For details, see `https://github.com/kotakanbe/go-cve-dictionary#deploy-go-cve-dictionary`",
+			cpeURIs)
+	}
+
 	for _, name := range cpeURIs {
 		details, err := CveClient.FetchCveDetailsByCpeName(driver, name)
 		if err != nil {
@@ -441,6 +467,12 @@ func fillCweDict(r *models.ScanResult) {
 			if rank, ok := cwe.OwaspTopTen2017[id]; ok {
 				entry.OwaspTopTen2017 = rank
 			}
+			if rank, ok := cwe.CweTopTwentyfive2019[id]; ok {
+				entry.CweTopTwentyfive2019 = rank
+			}
+			if rank, ok := cwe.SansTopTwentyfive[id]; ok {
+				entry.SansTopTwentyfive = rank
+			}
 			entry.En = &e
 		} else {
 			util.Log.Debugf("CWE-ID %s is not found in English CWE Dict", id)
@@ -451,6 +483,12 @@ func fillCweDict(r *models.ScanResult) {
 			if e, ok := cwe.CweDictJa[id]; ok {
 				if rank, ok := cwe.OwaspTopTen2017[id]; ok {
 					entry.OwaspTopTen2017 = rank
+				}
+				if rank, ok := cwe.CweTopTwentyfive2019[id]; ok {
+					entry.CweTopTwentyfive2019 = rank
+				}
+				if rank, ok := cwe.SansTopTwentyfive[id]; ok {
+					entry.SansTopTwentyfive = rank
 				}
 				entry.Ja = &e
 			} else {
@@ -464,21 +502,21 @@ func fillCweDict(r *models.ScanResult) {
 	return
 }
 
-func fillAlerts(r *models.ScanResult) (enCnt int, jaCnt int) {
-	for cveID, vuln := range r.ScannedCves {
-		enAs, jaAs := models.GetAlertsByCveID(cveID, "en"), models.GetAlertsByCveID(cveID, "ja")
-		vuln.AlertDict = models.AlertDict{
-			Ja: jaAs,
-			En: enAs,
-		}
-		r.ScannedCves[cveID] = vuln
-		enCnt += len(enAs)
-		jaCnt += len(jaAs)
-	}
-	return enCnt, jaCnt
-}
-
 const reUUID = "[\\da-f]{8}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{12}"
+
+// Scanning with the -containers-only, -images-only flag at scan time, the UUID of Container Host may not be generated,
+// so check it. Otherwise create a UUID of the Container Host and set it.
+func getOrCreateServerUUID(r models.ScanResult, server c.ServerInfo) (serverUUID string) {
+	if id, ok := server.UUIDs[r.ServerName]; !ok {
+		serverUUID = uuid.GenerateUUID()
+	} else {
+		matched, err := regexp.MatchString(reUUID, id)
+		if !matched || err != nil {
+			serverUUID = uuid.GenerateUUID()
+		}
+	}
+	return serverUUID
+}
 
 // EnsureUUIDs generate a new UUID of the scan target server if UUID is not assigned yet.
 // And then set the generated UUID to config.toml and scan results.
@@ -500,20 +538,13 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 		name := ""
 		if r.IsContainer() {
 			name = fmt.Sprintf("%s@%s", r.Container.Name, r.ServerName)
-
-			// Scanning with the -containers-only flag at scan time, the UUID of Container Host may not be generated,
-			// so check it. Otherwise create a UUID of the Container Host and set it.
-			serverUUID := ""
-			if id, ok := server.UUIDs[r.ServerName]; !ok {
-				serverUUID = uuid.GenerateUUID()
-			} else {
-				matched, err := regexp.MatchString(reUUID, id)
-				if !matched || err != nil {
-					serverUUID = uuid.GenerateUUID()
-				}
+			if uuid := getOrCreateServerUUID(r, server); uuid != "" {
+				server.UUIDs[r.ServerName] = uuid
 			}
-			if serverUUID != "" {
-				server.UUIDs[r.ServerName] = serverUUID
+		} else if r.IsImage() {
+			name = fmt.Sprintf("%s%s@%s", r.Image.Tag, r.Image.Digest, r.ServerName)
+			if uuid := getOrCreateServerUUID(r, server); uuid != "" {
+				server.UUIDs[r.ServerName] = uuid
 			}
 		} else {
 			name = r.ServerName

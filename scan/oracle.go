@@ -52,59 +52,11 @@ func (o *oracle) depsFast() []string {
 }
 
 func (o *oracle) depsFastRoot() []string {
-	if o.getServerInfo().Mode.IsOffline() {
-		//TODO
-		// return []string{"yum-plugin-ps"}
-	}
-
-	majorVersion, _ := o.Distro.MajorVersion()
-	switch majorVersion {
-	case 5:
-		return []string{
-			"yum-utils",
-			"yum-security",
-		}
-	case 6:
-		return []string{
-			"yum-utils",
-			"yum-plugin-security",
-			//TODO
-			// return []string{"yum-plugin-ps"}
-		}
-	default:
-		return []string{
-			"yum-utils",
-			//TODO
-			// return []string{"yum-plugin-ps"}
-		}
-	}
+	return []string{"yum-utils"}
 }
 
 func (o *oracle) depsDeep() []string {
-	majorVersion, _ := o.Distro.MajorVersion()
-	switch majorVersion {
-	case 5:
-		return []string{
-			"yum-utils",
-			"yum-security",
-			"yum-changelog",
-		}
-	case 6:
-		return []string{
-			"yum-utils",
-			"yum-plugin-security",
-			"yum-plugin-changelog",
-			//TODO
-			// return []string{"yum-plugin-ps"}
-		}
-	default:
-		return []string{
-			"yum-utils",
-			"yum-plugin-changelog",
-			//TODO
-			// return []string{"yum-plugin-ps"}
-		}
-	}
+	return o.depsFastRoot()
 }
 
 func (o *oracle) checkIfSudoNoPasswd() error {
@@ -122,25 +74,20 @@ func (o *oracle) sudoNoPasswdCmdsFast() []cmd {
 }
 
 func (o *oracle) sudoNoPasswdCmdsFastRoot() []cmd {
-	cmds := []cmd{{"needs-restarting", exitStatusZero}}
-	if o.getServerInfo().Mode.IsOffline() {
-		return cmds
-	}
-
-	majorVersion, _ := o.Distro.MajorVersion()
-	if majorVersion < 6 {
+	if !o.ServerInfo.IsContainer() {
 		return []cmd{
-			{"yum repolist --color=never", exitStatusZero},
-			{"yum list-security --security --color=never", exitStatusZero},
-			{"yum info-security --color=never", exitStatusZero},
 			{"repoquery -h", exitStatusZero},
+			{"needs-restarting", exitStatusZero},
+			{"which which", exitStatusZero},
+			{"stat /proc/1/exe", exitStatusZero},
+			{"ls -l /proc/1/exe", exitStatusZero},
+			{"cat /proc/1/maps", exitStatusZero},
 		}
 	}
-	return append(cmds,
-		cmd{"yum repolist --color=never", exitStatusZero},
-		cmd{"yum updateinfo list updates --security --color=never", exitStatusZero},
-		cmd{"yum updateinfo updates --security --color=never", exitStatusZero},
-		cmd{"repoquery -h", exitStatusZero})
+	return []cmd{
+		{"repoquery -h", exitStatusZero},
+		{"needs-restarting", exitStatusZero},
+	}
 }
 
 func (o *oracle) sudoNoPasswdCmdsDeep() []cmd {
@@ -153,15 +100,10 @@ func (o rootPrivOracle) repoquery() bool {
 	return true
 }
 
-func (o rootPrivOracle) yumRepolist() bool {
+func (o rootPrivOracle) yumMakeCache() bool {
 	return true
 }
 
-func (o rootPrivOracle) yumUpdateInfo() bool {
+func (o rootPrivOracle) yumPS() bool {
 	return true
-}
-
-// root privilege isn't needed
-func (o rootPrivOracle) yumChangelog() bool {
-	return false
 }

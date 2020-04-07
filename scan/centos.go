@@ -47,23 +47,24 @@ func (o *centos) depsFast() []string {
 	if o.getServerInfo().Mode.IsOffline() {
 		return []string{}
 	}
+
 	// repoquery
+	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8
 	return []string{"yum-utils"}
 }
 
 func (o *centos) depsFastRoot() []string {
-	return []string{
-		"yum-utils",
-		"yum-plugin-ps",
+	if o.getServerInfo().Mode.IsOffline() {
+		return []string{}
 	}
+
+	// repoquery
+	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8
+	return []string{"yum-utils"}
 }
 
 func (o *centos) depsDeep() []string {
-	return []string{
-		"yum-utils",
-		"yum-plugin-ps",
-		"yum-plugin-changelog",
-	}
+	return o.depsFastRoot()
 }
 
 func (o *centos) checkIfSudoNoPasswd() error {
@@ -81,19 +82,20 @@ func (o *centos) sudoNoPasswdCmdsFast() []cmd {
 }
 
 func (o *centos) sudoNoPasswdCmdsFastRoot() []cmd {
-	if o.getServerInfo().Mode.IsOffline() {
-		// yum ps needs internet connection
+	if !o.ServerInfo.IsContainer() {
 		return []cmd{
-			{"stat /proc/1/exe", exitStatusZero},
+			{"repoquery -h", exitStatusZero},
 			{"needs-restarting", exitStatusZero},
 			{"which which", exitStatusZero},
+			{"stat /proc/1/exe", exitStatusZero},
+			{"ls -l /proc/1/exe", exitStatusZero},
+			{"cat /proc/1/maps", exitStatusZero},
+			{"lsof -i -P", exitStatusZero},
 		}
 	}
 	return []cmd{
-		{"yum -q ps all --color=never", exitStatusZero},
-		{"stat /proc/1/exe", exitStatusZero},
+		{"repoquery -h", exitStatusZero},
 		{"needs-restarting", exitStatusZero},
-		{"which which", exitStatusZero},
 	}
 }
 
@@ -107,14 +109,10 @@ func (o rootPrivCentos) repoquery() bool {
 	return false
 }
 
-func (o rootPrivCentos) yumRepolist() bool {
+func (o rootPrivCentos) yumMakeCache() bool {
 	return false
 }
 
-func (o rootPrivCentos) yumUpdateInfo() bool {
-	return false
-}
-
-func (o rootPrivCentos) yumChangelog() bool {
+func (o rootPrivCentos) yumPS() bool {
 	return false
 }

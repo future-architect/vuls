@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package github
 
 import (
@@ -26,11 +9,11 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/errof"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/k0kubun/pp"
 	"golang.org/x/oauth2"
-	"golang.org/x/xerrors"
 )
 
 // FillGitHubSecurityAlerts access to owner/repo on GitHub and fetch scurity alerts of the repository via GitHub API v4 GraphQL and then set to the given ScanResult.
@@ -75,7 +58,10 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 
 		util.Log.Debugf("%s", pp.Sprint(alerts))
 		if alerts.Data.Repository.URL == "" {
-			return 0, xerrors.Errorf("Failed to access to GitHub API. Response: %#v", alerts)
+			return 0, errof.New(
+				errof.ErrFailedToAccessGithubAPI,
+				fmt.Sprintf("Failed to access to GitHub API. Response: %#v", alerts),
+			)
 		}
 
 		for _, v := range alerts.Data.Repository.VulnerabilityAlerts.Edges {

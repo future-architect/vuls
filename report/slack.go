@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package report
 
 import (
@@ -74,58 +57,67 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 		sort.Ints(chunkKeys)
 
+		summary := fmt.Sprintf("%s\n%s",
+			getNotifyUsers(config.Conf.Slack.NotifyUsers),
+			formatOneLineSummary(r))
+
 		// Send slack by API
 		if 0 < len(token) {
 			api := slack.New(token)
-			ParentMsg := slack.PostMessageParameters{
-				//			Text:      msgText(r),
+			msgPrms := slack.PostMessageParameters{
 				Username:  conf.AuthUser,
 				IconEmoji: conf.IconEmoji,
 			}
 
-			if config.Conf.FormatOneLineText {
-				if _, _, err = api.PostMessage(channel, formatOneLineSummary(r), ParentMsg); err != nil {
-					return err
-				}
-				continue
+			var ts string
+			if _, ts, err = api.PostMessage(
+				channel,
+				slack.MsgOptionText(summary, true),
+				slack.MsgOptionPostMessageParameters(msgPrms),
+			); err != nil {
+				return err
 			}
 
-			var ts string
-			if _, ts, err = api.PostMessage(channel, msgText(r), ParentMsg); err != nil {
-				return err
+			if config.Conf.FormatOneLineText || 0 < len(r.Errors) {
+				continue
 			}
 
 			for _, k := range chunkKeys {
 				params := slack.PostMessageParameters{
-					//		Text:            msgText(r),
 					Username:        conf.AuthUser,
 					IconEmoji:       conf.IconEmoji,
-					Attachments:     m[k],
 					ThreadTimestamp: ts,
 				}
-				if _, _, err = api.PostMessage(channel, msgText(r), params); err != nil {
+				if _, _, err = api.PostMessage(
+					channel,
+					slack.MsgOptionText("", false),
+					slack.MsgOptionPostMessageParameters(params),
+					slack.MsgOptionAttachments(m[k]...),
+				); err != nil {
 					return err
 				}
 			}
 		} else {
-			if config.Conf.FormatOneLineText {
-				msg := message{
-					Text:      formatOneLineSummary(r),
-					Username:  conf.AuthUser,
-					IconEmoji: conf.IconEmoji,
-					Channel:   channel,
-				}
-				if err := send(msg); err != nil {
-					return err
-				}
+			msg := message{
+				Text:      summary,
+				Username:  conf.AuthUser,
+				IconEmoji: conf.IconEmoji,
+				Channel:   channel,
+			}
+			if err := send(msg); err != nil {
+				return err
+			}
+
+			if config.Conf.FormatOneLineText || 0 < len(r.Errors) {
 				continue
 			}
 
-			for i, k := range chunkKeys {
-				txt := ""
-				if i == 0 {
-					txt = msgText(r)
-				}
+			for _, k := range chunkKeys {
+				txt := fmt.Sprintf("%d/%d for %s",
+					k+1,
+					len(chunkKeys),
+					r.FormatServerName())
+
 				msg := message{
 					Text:        txt,
 					Username:    conf.AuthUser,
@@ -174,30 +166,6 @@ func send(msg message) error {
 		return xerrors.New("Retry count exceeded")
 	}
 	return nil
-}
-
-func msgText(r models.ScanResult) string {
-	notifyUsers := ""
-	if 0 < len(r.ScannedCves) {
-		notifyUsers = getNotifyUsers(config.Conf.Slack.NotifyUsers)
-	}
-	serverInfo := fmt.Sprintf("*%s*", r.ServerInfo())
-
-	if 0 < len(r.Errors) {
-		return fmt.Sprintf("%s\n%s\n%s\n%s\n%s\nError: %s",
-			notifyUsers,
-			serverInfo,
-			r.ScannedCves.FormatCveSummary(),
-			r.ScannedCves.FormatFixedStatus(r.Packages),
-			r.FormatUpdatablePacksSummary(),
-			r.Errors)
-	}
-	return fmt.Sprintf("%s\n%s\n%s\n%s\n%s",
-		notifyUsers,
-		serverInfo,
-		r.ScannedCves.FormatCveSummary(),
-		r.ScannedCves.FormatFixedStatus(r.Packages),
-		r.FormatUpdatablePacksSummary())
 }
 
 func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
@@ -361,14 +329,24 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 func cweIDs(vinfo models.VulnInfo, osFamily string, cweDict models.CweDict) string {
 	links := []string{}
 	for _, c := range vinfo.CveContents.UniqCweIDs(osFamily) {
-		name, url, top10Rank, top10URL := cweDict.Get(c.Value, osFamily)
+		name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL := cweDict.Get(c.Value, osFamily)
 		line := ""
 		if top10Rank != "" {
 			line = fmt.Sprintf("<%s|[OWASP Top %s]>",
 				top10URL, top10Rank)
 		}
-		links = append(links, fmt.Sprintf("%s <%s|%s>: %s",
-			line, url, c.Value, name))
+		if cweTop25Rank != "" {
+			line = fmt.Sprintf("<%s|[CWE Top %s]>",
+				cweTop25URL, cweTop25Rank)
+		}
+		if sansTop25Rank != "" {
+			line = fmt.Sprintf("<%s|[CWE/SANS Top %s]>",
+				sansTop25URL, sansTop25Rank)
+		}
+		if top10Rank == "" && cweTop25Rank == "" && sansTop25Rank == "" {
+			links = append(links, fmt.Sprintf("%s <%s|%s>: %s",
+				line, url, c.Value, name))
+		}
 	}
 	return strings.Join(links, "\n")
 }

@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package wordpress
 
 import (
@@ -23,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -114,8 +98,7 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 					wpVinfos = append(wpVinfos, v)
 					util.Log.Infof("[match] %s installed: %s, fixedIn: %s", pkg.Name, pkg.Version, fixstat.FixedIn)
 				} else {
-					//TODO Debugf
-					util.Log.Infof("[miss] %s installed: %s, fixedIn: %s", pkg.Name, pkg.Version, fixstat.FixedIn)
+					util.Log.Debugf("[miss] %s installed: %s, fixedIn: %s", pkg.Name, pkg.Version, fixstat.FixedIn)
 				}
 			}
 		}
@@ -246,12 +229,14 @@ func extractToVulnInfos(pkgName string, cves []WpCveInfo) (vinfos []models.VulnI
 }
 
 func httpRequest(url, token string) (string, error) {
+	retry := 1
 	util.Log.Debugf("%s", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Token token=%s", token))
+loop:
 	resp, err := new(http.Client).Do(req)
 	if err != nil {
 		return "", err
@@ -261,11 +246,17 @@ func httpRequest(url, token string) (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 && resp.StatusCode != 404 {
-		return "", xerrors.Errorf("status: %s", resp.Status)
+	if resp.StatusCode == 200 {
+		return string(body), nil
 	} else if resp.StatusCode == 404 {
 		// This package is not in WPVulnDB
 		return "", nil
+	} else if resp.StatusCode == 429 && retry <= 3 {
+		// 429 Too Many Requests
+		util.Log.Debugf("sleep %d min(s): %s", retry, resp.Status)
+		time.Sleep(time.Duration(retry) * time.Minute)
+		retry++
+		goto loop
 	}
-	return string(body), nil
+	return "", err
 }

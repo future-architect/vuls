@@ -31,9 +31,6 @@ func newAmazon(c config.ServerInfo) *amazon {
 }
 
 func (o *amazon) checkScanMode() error {
-	if o.getServerInfo().Mode.IsOffline() {
-		return xerrors.New("Remove offline scan mode, Amazon needs internet connection")
-	}
 	return nil
 }
 
@@ -59,7 +56,6 @@ func (o *amazon) depsFast() []string {
 func (o *amazon) depsFastRoot() []string {
 	return []string{
 		"yum-utils",
-		"yum-plugin-ps",
 	}
 }
 
@@ -83,10 +79,12 @@ func (o *amazon) sudoNoPasswdCmdsFast() []cmd {
 
 func (o *amazon) sudoNoPasswdCmdsFastRoot() []cmd {
 	return []cmd{
-		{"yum -q ps all --color=never", exitStatusZero},
-		{"stat /proc/1/exe", exitStatusZero},
 		{"needs-restarting", exitStatusZero},
 		{"which which", exitStatusZero},
+		{"stat /proc/1/exe", exitStatusZero},
+		{"ls -l /proc/1/exe", exitStatusZero},
+		{"cat /proc/1/maps", exitStatusZero},
+		{"lsof -i -P", exitStatusZero},
 	}
 }
 
@@ -100,14 +98,10 @@ func (o rootPrivAmazon) repoquery() bool {
 	return false
 }
 
-func (o rootPrivAmazon) yumRepolist() bool {
+func (o rootPrivAmazon) yumMakeCache() bool {
 	return false
 }
 
-func (o rootPrivAmazon) yumUpdateInfo() bool {
-	return false
-}
-
-func (o rootPrivAmazon) yumChangelog() bool {
+func (o rootPrivAmazon) yumPS() bool {
 	return false
 }

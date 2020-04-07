@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package models
 
 import (
@@ -23,8 +6,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/future-architect/vuls/alert"
 
 	"github.com/future-architect/vuls/config"
 	exploitmodels "github.com/mozqnet/go-exploitdb/models"
@@ -115,7 +96,7 @@ func (v VulnInfos) FormatFixedStatus(packs Packages) string {
 			continue
 		}
 		total++
-		if vInfo.PatchStatus(packs) == "Fixed" {
+		if vInfo.PatchStatus(packs) == "fixed" {
 			fixed++
 		}
 	}
@@ -168,15 +149,23 @@ type VulnInfo struct {
 	CveID                string               `json:"cveID,omitempty"`
 	Confidences          Confidences          `json:"confidences,omitempty"`
 	AffectedPackages     PackageFixStatuses   `json:"affectedPackages,omitempty"`
-	DistroAdvisories     []DistroAdvisory     `json:"distroAdvisories,omitempty"` // for Aamazon, RHEL, FreeBSD
+	DistroAdvisories     DistroAdvisories     `json:"distroAdvisories,omitempty"` // for Aamazon, RHEL, FreeBSD
 	CveContents          CveContents          `json:"cveContents,omitempty"`
 	Exploits             []Exploit            `json:"exploits,omitempty"`
 	AlertDict            AlertDict            `json:"alertDict,omitempty"`
 	CpeURIs              []string             `json:"cpeURIs,omitempty"` // CpeURIs related to this CVE defined in config.toml
 	GitHubSecurityAlerts GitHubSecurityAlerts `json:"gitHubSecurityAlerts,omitempty"`
 	WpPackageFixStats    WpPackageFixStats    `json:"wpPackageFixStats,omitempty"`
+	LibraryFixedIns      LibraryFixedIns      `json:"libraryFixedIns,omitempty"`
 
 	VulnType string `json:"vulnType,omitempty"`
+}
+
+// Alert has XCERT alert information
+type Alert struct {
+	URL   string `json:"url,omitempty"`
+	Title string `json:"title,omitempty"`
+	Team  string `json:"team,omitempty"`
 }
 
 // GitHubSecurityAlerts is a list of GitHubSecurityAlert
@@ -209,6 +198,9 @@ type GitHubSecurityAlert struct {
 	DismissedAt   time.Time `json:"dismissedAt"`
 	DismissReason string    `json:"dismissReason"`
 }
+
+// LibraryFixedIns is a list of Library's FixedIn
+type LibraryFixedIns []LibraryFixedIn
 
 // WpPackageFixStats is a list of WpPackageFixStatus
 type WpPackageFixStats []WpPackageFixStatus
@@ -287,7 +279,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := CveContentTypes{Nvd, NvdXML, NewCveContentType(myFamily)}
+	order := CveContentTypes{NewCveContentType(myFamily), Nvd, NvdXML}
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Summary) {
@@ -352,7 +344,7 @@ func (v VulnInfo) Cvss2Scores(myFamily string) (values []CveContentCvss) {
 	}
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found {
-			if cont.Cvss2Score == 0 && cont.Cvss2Severity == "" {
+			if cont.Cvss2Score == 0 || cont.Cvss2Severity == "" {
 				continue
 			}
 			// https://nvd.nist.gov/vuln-metrics/cvss
@@ -545,16 +537,17 @@ func (v VulnInfo) MaxCvss2Score() CveContentCvss {
 func (v VulnInfo) AttackVector() string {
 	for _, cnt := range v.CveContents {
 		if strings.HasPrefix(cnt.Cvss2Vector, "AV:N") ||
-			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:N") {
-			return "N"
+			strings.Contains(cnt.Cvss3Vector, "AV:N") {
+			return "AV:N"
 		} else if strings.HasPrefix(cnt.Cvss2Vector, "AV:A") ||
-			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:A") {
-			return "A"
+			strings.Contains(cnt.Cvss3Vector, "AV:A") {
+			return "AV:A"
 		} else if strings.HasPrefix(cnt.Cvss2Vector, "AV:L") ||
-			strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:L") {
-			return "L"
-		} else if strings.HasPrefix(cnt.Cvss3Vector, "CVSS:3.0/AV:P") {
-			return "P"
+			strings.Contains(cnt.Cvss3Vector, "AV:L") {
+			return "AV:L"
+		} else if strings.Contains(cnt.Cvss3Vector, "AV:P") {
+			// no AV:P in CVSS v2
+			return "AV:P"
 		}
 	}
 	if cont, found := v.CveContents[DebianSecurityTracker]; found {
@@ -565,7 +558,7 @@ func (v VulnInfo) AttackVector() string {
 	return ""
 }
 
-// PatchStatus returns attack vector string
+// PatchStatus returns fixed or unfixed string
 func (v VulnInfo) PatchStatus(packs Packages) string {
 	// Vuls don't know patch status of the CPE
 	if len(v.CpeURIs) != 0 {
@@ -707,8 +700,14 @@ func (v VulnInfo) VendorLinks(family string) map[string]string {
 	case config.Amazon:
 		links["RHEL-CVE"] = "https://access.redhat.com/security/cve/" + v.CveID
 		for _, advisory := range v.DistroAdvisories {
-			links[advisory.AdvisoryID] =
-				fmt.Sprintf("https://alas.aws.amazon.com/%s.html", advisory.AdvisoryID)
+			if strings.HasPrefix(advisory.AdvisoryID, "ALAS2") {
+				links[advisory.AdvisoryID] =
+					fmt.Sprintf("https://alas.aws.amazon.com/AL2/%s.html",
+						strings.Replace(advisory.AdvisoryID, "ALAS2", "ALAS", -1))
+			} else {
+				links[advisory.AdvisoryID] =
+					fmt.Sprintf("https://alas.aws.amazon.com/%s.html", advisory.AdvisoryID)
+			}
 		}
 		return links
 	case config.Ubuntu:
@@ -726,6 +725,20 @@ func (v VulnInfo) VendorLinks(family string) map[string]string {
 		return links
 	}
 	return links
+}
+
+// DistroAdvisories is a list of DistroAdvisory
+type DistroAdvisories []DistroAdvisory
+
+// AppendIfMissing appends if missing
+func (advs *DistroAdvisories) AppendIfMissing(adv *DistroAdvisory) bool {
+	for _, a := range *advs {
+		if a.AdvisoryID == adv.AdvisoryID {
+			return false
+		}
+	}
+	*advs = append(*advs, *adv)
+	return true
 }
 
 // DistroAdvisory has Amazon Linux, RHEL, FreeBSD Security Advisory information.
@@ -764,13 +777,8 @@ type Exploit struct {
 
 // AlertDict has target cve's JPCERT and USCERT alert data
 type AlertDict struct {
-	Ja []alert.Alert `json:"ja"`
-	En []alert.Alert `json:"en"`
-}
-
-// HasAlert returns whether or not it has En or Ja entries.
-func (a AlertDict) HasAlert() bool {
-	return len(a.En) != 0 || len(a.Ja) != 0
+	Ja []Alert `json:"ja"`
+	En []Alert `json:"en"`
 }
 
 // FormatSource returns which source has this alert

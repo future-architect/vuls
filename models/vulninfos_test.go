@@ -1,19 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
 package models
 
 import (
@@ -160,12 +144,12 @@ func TestSummaries(t *testing.T) {
 					Value: "Title JVN\nSummary JVN",
 				},
 				{
-					Type:  NvdXML,
-					Value: "Summary NVD",
-				},
-				{
 					Type:  RedHat,
 					Value: "Summary RedHat",
+				},
+				{
+					Type:  NvdXML,
+					Value: "Summary NVD",
 				},
 			},
 		},
@@ -194,12 +178,12 @@ func TestSummaries(t *testing.T) {
 			},
 			out: []CveContentStr{
 				{
-					Type:  NvdXML,
-					Value: "Summary NVD",
-				},
-				{
 					Type:  RedHat,
 					Value: "Summary RedHat",
+				},
+				{
+					Type:  NvdXML,
+					Value: "Summary NVD",
 				},
 			},
 		},
@@ -1032,5 +1016,150 @@ func TestSortByConfiden(t *testing.T) {
 		if !reflect.DeepEqual(tt.out, act) {
 			t.Errorf("\nexpected: %v\n  actual: %v\n", tt.out, act)
 		}
+	}
+}
+
+func TestDistroAdvisories_AppendIfMissing(t *testing.T) {
+	type args struct {
+		adv *DistroAdvisory
+	}
+	tests := []struct {
+		name  string
+		advs  DistroAdvisories
+		args  args
+		want  bool
+		after DistroAdvisories
+	}{
+		{
+			name: "duplicate no append",
+			advs: DistroAdvisories{
+				DistroAdvisory{
+					AdvisoryID: "ALASs-2019-1214",
+				}},
+			args: args{
+				adv: &DistroAdvisory{
+					AdvisoryID: "ALASs-2019-1214",
+				},
+			},
+			want: false,
+			after: DistroAdvisories{
+				DistroAdvisory{
+					AdvisoryID: "ALASs-2019-1214",
+				}},
+		},
+		{
+			name: "append",
+			advs: DistroAdvisories{
+				DistroAdvisory{
+					AdvisoryID: "ALASs-2019-1214",
+				}},
+			args: args{
+				adv: &DistroAdvisory{
+					AdvisoryID: "ALASs-2019-1215",
+				},
+			},
+			want: true,
+			after: DistroAdvisories{
+				{
+					AdvisoryID: "ALASs-2019-1214",
+				},
+				{
+					AdvisoryID: "ALASs-2019-1215",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.advs.AppendIfMissing(tt.args.adv); got != tt.want {
+				t.Errorf("DistroAdvisories.AppendIfMissing() = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(tt.advs, tt.after) {
+				t.Errorf("\nexpected: %v\n  actual: %v\n", tt.after, tt.advs)
+			}
+		})
+	}
+}
+
+func TestVulnInfo_AttackVector(t *testing.T) {
+	type fields struct {
+		CveContents CveContents
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			name: "2.0:N",
+			fields: fields{
+				CveContents: NewCveContents(
+					CveContent{
+						Type:        "foo",
+						Cvss2Vector: "AV:N/AC:L/Au:N/C:C/I:C/A:C",
+					},
+				),
+			},
+			want: "AV:N",
+		},
+		{
+			name: "2.0:A",
+			fields: fields{
+				CveContents: NewCveContents(
+					CveContent{
+						Type:        "foo",
+						Cvss2Vector: "AV:A/AC:L/Au:N/C:C/I:C/A:C",
+					},
+				),
+			},
+			want: "AV:A",
+		},
+		{
+			name: "2.0:L",
+			fields: fields{
+				CveContents: NewCveContents(
+					CveContent{
+						Type:        "foo",
+						Cvss2Vector: "AV:L/AC:L/Au:N/C:C/I:C/A:C",
+					},
+				),
+			},
+			want: "AV:L",
+		},
+
+		{
+			name: "3.0:N",
+			fields: fields{
+				CveContents: NewCveContents(
+					CveContent{
+						Type:        "foo",
+						Cvss3Vector: "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+					},
+				),
+			},
+			want: "AV:N",
+		},
+		{
+			name: "3.1:N",
+			fields: fields{
+				CveContents: NewCveContents(
+					CveContent{
+						Type:        "foo",
+						Cvss3Vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+					},
+				),
+			},
+			want: "AV:N",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := VulnInfo{
+				CveContents: tt.fields.CveContents,
+			}
+			if got := v.AttackVector(); got != tt.want {
+				t.Errorf("VulnInfo.AttackVector() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

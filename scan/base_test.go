@@ -1,26 +1,16 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package scan
 
 import (
 	"reflect"
 	"testing"
 
+	_ "github.com/aquasecurity/fanal/analyzer/library/bundler"
+	_ "github.com/aquasecurity/fanal/analyzer/library/cargo"
+	_ "github.com/aquasecurity/fanal/analyzer/library/composer"
+	_ "github.com/aquasecurity/fanal/analyzer/library/npm"
+	_ "github.com/aquasecurity/fanal/analyzer/library/pipenv"
+	_ "github.com/aquasecurity/fanal/analyzer/library/poetry"
+	_ "github.com/aquasecurity/fanal/analyzer/library/yarn"
 	"github.com/future-architect/vuls/config"
 )
 
@@ -176,5 +166,112 @@ func TestParseSystemctlStatus(t *testing.T) {
 		if tt.out != actual {
 			t.Errorf("expected %v, actual %v", tt.out, actual)
 		}
+	}
+}
+
+func Test_base_parseLsProcExe(t *testing.T) {
+	type args struct {
+		stdout string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "systemd",
+			args: args{
+				stdout: "lrwxrwxrwx 1 root root 0 Jun 29 17:13 /proc/1/exe -> /lib/systemd/systemd",
+			},
+			want:    "/lib/systemd/systemd",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &base{}
+			got, err := l.parseLsProcExe(tt.args.stdout)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("base.parseLsProcExe() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("base.parseLsProcExe() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_base_parseGrepProcMap(t *testing.T) {
+	type args struct {
+		stdout string
+	}
+	tests := []struct {
+		name        string
+		args        args
+		wantSoPaths []string
+	}{
+		{
+			name: "systemd",
+			args: args{
+				`/etc/selinux/targeted/contexts/files/file_contexts.bin
+/etc/selinux/targeted/contexts/files/file_contexts.homedirs.bin
+/usr/lib64/libdl-2.28.so`,
+			},
+			wantSoPaths: []string{
+				"/etc/selinux/targeted/contexts/files/file_contexts.bin",
+				"/etc/selinux/targeted/contexts/files/file_contexts.homedirs.bin",
+				"/usr/lib64/libdl-2.28.so",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &base{}
+			if gotSoPaths := l.parseGrepProcMap(tt.args.stdout); !reflect.DeepEqual(gotSoPaths, tt.wantSoPaths) {
+				t.Errorf("base.parseGrepProcMap() = %v, want %v", gotSoPaths, tt.wantSoPaths)
+			}
+		})
+	}
+}
+
+func Test_base_parseLsOf(t *testing.T) {
+	type args struct {
+		stdout string
+	}
+	tests := []struct {
+		name        string
+		args        args
+		wantPortPid map[string]string
+	}{
+		{
+			name: "lsof",
+			args: args{
+				stdout: `systemd-r   474 systemd-resolve   13u  IPv4  11904      0t0  TCP localhost:53 (LISTEN)
+sshd        644            root    3u  IPv4  16714      0t0  TCP *:22 (LISTEN)
+sshd        644            root    4u  IPv6  16716      0t0  TCP *:22 (LISTEN)
+squid       959           proxy   11u  IPv6  16351      0t0  TCP *:3128 (LISTEN)
+node       1498          ubuntu   21u  IPv6  20132      0t0  TCP *:35401 (LISTEN)
+node       1498          ubuntu   22u  IPv6  20133      0t0  TCP *:44801 (LISTEN)
+docker-pr  9135            root    4u  IPv6 297133      0t0  TCP *:6379 (LISTEN)`,
+			},
+			wantPortPid: map[string]string{
+				"localhost:53": "474",
+				"*:22":         "644",
+				"*:3128":       "959",
+				"*:35401":      "1498",
+				"*:44801":      "1498",
+				"*:6379":       "9135",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &base{}
+			if gotPortPid := l.parseLsOf(tt.args.stdout); !reflect.DeepEqual(gotPortPid, tt.wantPortPid) {
+				t.Errorf("base.parseLsOf() = %v, want %v", gotPortPid, tt.wantPortPid)
+			}
+		})
 	}
 }

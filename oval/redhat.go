@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package oval
 
 import (
@@ -119,7 +102,6 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 				if v.LastModified.After(ovalContent.LastModified) {
 					util.Log.Debugf("%s, OvalID: %d ignroed: ",
 						cve.CveID, defPacks.def.ID)
-					continue
 				} else {
 					util.Log.Debugf("%s OVAL will be overwritten", cve.CveID)
 				}
@@ -133,7 +115,10 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 			vinfo.CveContents = cveContents
 		}
 
-		// uniq(vinfo.PackNames + defPacks.binpkgStat)
+		vinfo.DistroAdvisories.AppendIfMissing(
+			o.convertToDistroAdvisory(&defPacks.def))
+
+		// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
 		for _, pack := range vinfo.AffectedPackages {
 			if stat, ok := defPacks.binpkgFixstat[pack.BinName]; !ok {
 				defPacks.binpkgFixstat[pack.BinName] = fixStat{
@@ -152,6 +137,21 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 		r.ScannedCves[cve.CveID] = vinfo
 	}
 	return
+}
+
+func (o RedHatBase) convertToDistroAdvisory(def *ovalmodels.Definition) *models.DistroAdvisory {
+	advisoryID := def.Title
+	if (o.family == config.RedHat || o.family == config.CentOS) && len(advisoryID) > 0 {
+		ss := strings.Fields(def.Title)
+		advisoryID = strings.TrimSuffix(ss[0], ":")
+	}
+	return &models.DistroAdvisory{
+		AdvisoryID:  advisoryID,
+		Severity:    def.Advisory.Severity,
+		Issued:      def.Advisory.Issued,
+		Updated:     def.Advisory.Updated,
+		Description: def.Description,
+	}
 }
 
 func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *models.CveContent {
@@ -177,10 +177,10 @@ func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *mo
 		}
 
 		sev2, sev3 := "", ""
-		if score2 != 0 {
+		if score2 == 0 {
 			sev2 = severity
 		}
-		if score3 != 0 {
+		if score3 == 0 {
 			sev3 = severity
 		}
 
@@ -225,12 +225,17 @@ func (o RedHatBase) parseCvss2(scoreVector string) (score float64, vector string
 // 5.6/CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L
 func (o RedHatBase) parseCvss3(scoreVector string) (score float64, vector string) {
 	var err error
-	ss := strings.Split(scoreVector, "/CVSS:3.0/")
-	if 1 < len(ss) {
-		if score, err = strconv.ParseFloat(ss[0], 64); err != nil {
-			return 0, ""
+	for _, s := range []string{
+		"/CVSS:3.0/",
+		"/CVSS:3.1/",
+	} {
+		ss := strings.Split(scoreVector, s)
+		if 1 < len(ss) {
+			if score, err = strconv.ParseFloat(ss[0], 64); err != nil {
+				return 0, ""
+			}
+			return score, strings.TrimPrefix(s, "/") + ss[1]
 		}
-		return score, fmt.Sprintf("CVSS:3.0/%s", ss[1])
 	}
 	return 0, ""
 }
@@ -278,6 +283,23 @@ func NewOracle() Oracle {
 		RedHatBase{
 			Base{
 				family: config.Oracle,
+			},
+		},
+	}
+}
+
+// Amazon is the interface for RedhatBase OVAL
+type Amazon struct {
+	// Base
+	RedHatBase
+}
+
+// NewAmazon creates OVAL client for Amazon Linux
+func NewAmazon() Amazon {
+	return Amazon{
+		RedHatBase{
+			Base{
+				family: config.Amazon,
 			},
 		},
 	}

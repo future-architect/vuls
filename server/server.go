@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Architect, Inc. Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package server
 
 import (
@@ -70,7 +53,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := report.FillCveInfo(h.DBclient, &result, []string{}); err != nil {
+	if err := report.FillCveInfo(h.DBclient, &result, []string{}, true); err != nil {
 		util.Log.Error(err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
@@ -84,6 +67,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		scannedAt := result.ScannedAt
 		if scannedAt.IsZero() {
 			scannedAt = time.Now().Truncate(1 * time.Hour)
+			result.ScannedAt = scannedAt
 		}
 		dir, err := scan.EnsureResultDir(scannedAt)
 		if err != nil {

@@ -1,24 +1,6 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Corporation , Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package config
 
 import (
-	"os"
 	"regexp"
 	"strings"
 
@@ -69,6 +51,16 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		}
 
 		s := ServerInfo{ServerName: serverName}
+		s.Images = make(map[string]Image)
+
+		// image are able to set any server type
+		for name, image := range v.Images {
+			if err := IsValidImage(image); err != nil {
+				return err
+			}
+			s.Images[name] = image
+		}
+
 		if v.Type != ServerTypePseudo {
 			s.Host = v.Host
 			if len(s.Host) == 0 {
@@ -99,13 +91,6 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			if len(s.KeyPath) == 0 {
 				s.KeyPath = d.KeyPath
 			}
-			if s.KeyPath != "" {
-				if _, err := os.Stat(s.KeyPath); err != nil {
-					return xerrors.Errorf(
-						"%s is invalid. keypath: %s not exists", serverName, s.KeyPath)
-				}
-			}
-
 			s.KeyPassword = v.KeyPassword
 			if len(s.KeyPassword) == 0 {
 				s.KeyPassword = d.KeyPassword
@@ -141,6 +126,13 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		if len(s.CpeNames) == 0 {
 			s.CpeNames = d.CpeNames
 		}
+
+		s.Lockfiles = v.Lockfiles
+		if len(s.Lockfiles) == 0 {
+			s.Lockfiles = d.Lockfiles
+		}
+
+		s.FindLock = v.FindLock
 
 		for i, n := range s.CpeNames {
 			uri, err := toCpeURI(n)
@@ -299,4 +291,18 @@ func toCpeURI(cpename string) (string, error) {
 		return naming.BindToURI(wfn), nil
 	}
 	return "", xerrors.Errorf("Unknow CPE format: %s", cpename)
+}
+
+// IsValidImage checks a container configuration
+func IsValidImage(c Image) error {
+	if c.Name == "" {
+		return xerrors.New("Invalid arguments : no image name")
+	}
+	if c.Tag == "" && c.Digest == "" {
+		return xerrors.New("Invalid arguments : no image tag and digest")
+	}
+	if c.Tag != "" && c.Digest != "" {
+		return xerrors.New("Invalid arguments : you can either set image tag or digest")
+	}
+	return nil
 }

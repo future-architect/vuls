@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/knqyf263/go-cpe/naming"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 )
@@ -15,12 +16,11 @@ type analysis struct {
 }
 
 type dependency struct {
-	Identifiers []identifier `xml:"identifiers>identifier"`
+	Identifiers []vulnerabilityId `xml:"identifiers>vulnerabilityIds"`
 }
 
-type identifier struct {
-	Name string `xml:"name"`
-	Type string `xml:"type,attr"`
+type vulnerabilityId struct {
+	Id string `xml:"id"`
 }
 
 func appendIfMissing(slice []string, str string) []string {
@@ -55,11 +55,16 @@ func Parse(path string) ([]string, error) {
 	cpes := []string{}
 	for _, d := range anal.Dependencies {
 		for _, ident := range d.Identifiers {
-			if ident.Type == "cpe" {
-				name := strings.TrimPrefix(ident.Name, "(")
-				name = strings.TrimSuffix(name, ")")
-				cpes = appendIfMissing(cpes, name)
+			id := ident.Id // Start with cpe:2.3:
+			// Convert from CPE 2.3 to CPE 2.2
+			if strings.HasPrefix(id, "cpe:2.3:") {
+				wfn, err := naming.UnbindFS(id)
+				if err != nil {
+					return []string{}, err
+				}
+				id = naming.BindToURI(wfn)
 			}
+			cpes = appendIfMissing(cpes, id)
 		}
 	}
 	return cpes, nil
