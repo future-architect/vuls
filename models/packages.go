@@ -131,7 +131,12 @@ func (p Package) FormatVersionFromTo(stat PackageFixStatus) string {
 	} else if p.NewVersion == "" {
 		to = "Unknown"
 	}
-	return fmt.Sprintf("%s-%s -> %s", p.Name, p.FormatVer(), to)
+	var fixedIn string
+	if stat.FixedIn != "" {
+		fixedIn = fmt.Sprintf(" (FixedIn: %s)", stat.FixedIn)
+	}
+	return fmt.Sprintf("%s-%s -> %s%s",
+		p.Name, p.FormatVer(), to, fixedIn)
 }
 
 // FormatChangelog formats the changelog
