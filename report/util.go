@@ -251,12 +251,10 @@ No CVE-IDs are found in updatable packages.
 				var line string
 				if pack.Repository != "" {
 					line = fmt.Sprintf("%s (%s)",
-						pack.FormatVersionFromTo(affected.NotFixedYet, affected.FixState),
+						pack.FormatVersionFromTo(affected),
 						pack.Repository)
 				} else {
-					line = fmt.Sprintf("%s",
-						pack.FormatVersionFromTo(affected.NotFixedYet, affected.FixState),
-					)
+					line = pack.FormatVersionFromTo(affected)
 				}
 				data = append(data, []string{"Affected Pkg", line})
 

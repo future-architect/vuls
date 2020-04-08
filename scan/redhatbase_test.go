@@ -315,7 +315,7 @@ if-not-architecture 0 100 200 amzn-main`
 }
 
 func TestParseNeedsRestarting(t *testing.T) {
-	r := newCentOS(config.ServerInfo{})
+	r := newRHEL(config.ServerInfo{})
 	r.Distro = config.Distro{Family: "centos"}
 
 	var tests = []struct {
@@ -323,7 +323,7 @@ func TestParseNeedsRestarting(t *testing.T) {
 		out []models.NeedRestartProcess
 	}{
 		{
-			`1 : /usr/lib/systemd/systemd --switched-root --system --deserialize 21
+			`1 : /usr/lib/systemd/systemd --switched-root --system --deserialize 21kk
 437 : /usr/sbin/NetworkManager --no-daemon`,
 			[]models.NeedRestartProcess{
 				{

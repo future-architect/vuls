@@ -136,9 +136,10 @@ func (ps PackageFixStatuses) Sort() {
 
 // PackageFixStatus has name and other status abount the package
 type PackageFixStatus struct {
-	Name        string `json:"name"`
-	NotFixedYet bool   `json:"notFixedYet"`
-	FixState    string `json:"fixState"`
+	Name        string `json:"name,omitempty"`
+	NotFixedYet bool   `json:"notFixedYet,omitempty"`
+	FixState    string `json:"fixState,omitempty"`
+	FixedIn     string `json:"fixedIn,omitempty"`
 }
 
 // VulnInfo has a vulnerability information and unsecure packages

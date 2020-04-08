@@ -120,10 +120,16 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 
 		// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
 		for _, pack := range vinfo.AffectedPackages {
-			if nfy, ok := defPacks.actuallyAffectedPackNames[pack.Name]; !ok {
-				defPacks.actuallyAffectedPackNames[pack.Name] = pack.NotFixedYet
-			} else if nfy {
-				defPacks.actuallyAffectedPackNames[pack.Name] = true
+			if stat, ok := defPacks.binpkgFixstat[pack.Name]; !ok {
+				defPacks.binpkgFixstat[pack.Name] = fixStat{
+					notFixedYet: pack.NotFixedYet,
+					fixedIn:     pack.FixedIn,
+				}
+			} else if stat.notFixedYet {
+				defPacks.binpkgFixstat[pack.Name] = fixStat{
+					notFixedYet: true,
+					fixedIn:     pack.FixedIn,
+				}
 			}
 		}
 		vinfo.AffectedPackages = defPacks.toPackStatuses()

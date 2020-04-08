@@ -42,17 +42,28 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 		vinfo.CveContents = cveContents
 	}
 
-	// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
+	// uniq(vinfo.PackNames + defPacks.binpkgStat)
 	for _, pack := range vinfo.AffectedPackages {
-		defPacks.actuallyAffectedPackNames[pack.Name] = pack.NotFixedYet
+		defPacks.binpkgFixstat[pack.Name] = fixStat{
+			notFixedYet: pack.NotFixedYet,
+			fixedIn:     pack.FixedIn,
+			isSrcPack:   false,
+		}
 	}
 
-	// update notFixedYet of SrcPackage
-	for binName := range defPacks.actuallyAffectedPackNames {
+	// Update package status of source packages.
+	// In the case of Debian based Linux, sometimes source package name is difined as affected package in OVAL.
+	// To display binary package name showed in apt-get, need to convert source name to binary name.
+	for binName := range defPacks.binpkgFixstat {
 		if srcPack, ok := r.SrcPackages.FindByBinName(binName); ok {
 			for _, p := range defPacks.def.AffectedPacks {
 				if p.Name == srcPack.Name {
-					defPacks.actuallyAffectedPackNames[binName] = p.NotFixedYet
+					defPacks.binpkgFixstat[binName] = fixStat{
+						notFixedYet: p.NotFixedYet,
+						fixedIn:     p.Version,
+						isSrcPack:   true,
+						srcPackName: srcPack.Name,
+					}
 				}
 			}
 		}
@@ -134,9 +145,9 @@ func (o Debian) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 	for _, defPacks := range relatedDefs.entries {
 		// Remove "linux" added above for oval search
 		// linux is not a real package name (key of affected packages in OVAL)
-		if notFixedYet, ok := defPacks.actuallyAffectedPackNames["linux"]; ok {
-			defPacks.actuallyAffectedPackNames[linuxImage] = notFixedYet
-			delete(defPacks.actuallyAffectedPackNames, "linux")
+		if notFixedYet, ok := defPacks.binpkgFixstat["linux"]; ok {
+			defPacks.binpkgFixstat[linuxImage] = notFixedYet
+			delete(defPacks.binpkgFixstat, "linux")
 			for i, p := range defPacks.def.AffectedPacks {
 				if p.Name == "linux" {
 					p.Name = linuxImage
@@ -309,11 +320,11 @@ func (o Ubuntu) fillWithOval(driver db.DB, r *models.ScanResult, kernelNamesInOv
 	}
 
 	for _, defPacks := range relatedDefs.entries {
-		// Remove "linux" added above to search for oval
+		// Remove "linux" added above for searching oval
 		// "linux" is not a real package name (key of affected packages in OVAL)
-		if nfy, ok := defPacks.actuallyAffectedPackNames[kernelPkgInOVAL]; isOVALKernelPkgAdded && ok {
-			defPacks.actuallyAffectedPackNames[linuxImage] = nfy
-			delete(defPacks.actuallyAffectedPackNames, kernelPkgInOVAL)
+		if nfy, ok := defPacks.binpkgFixstat[kernelPkgInOVAL]; isOVALKernelPkgAdded && ok {
+			defPacks.binpkgFixstat[linuxImage] = nfy
+			delete(defPacks.binpkgFixstat, kernelPkgInOVAL)
 			for i, p := range defPacks.def.AffectedPacks {
 				if p.Name == kernelPkgInOVAL {
 					p.Name = linuxImage

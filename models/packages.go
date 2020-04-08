@@ -120,18 +120,23 @@ func (p Package) FormatNewVer() string {
 }
 
 // FormatVersionFromTo formats installed and new package version
-func (p Package) FormatVersionFromTo(notFixedYet bool, status string) string {
+func (p Package) FormatVersionFromTo(stat PackageFixStatus) string {
 	to := p.FormatNewVer()
-	if notFixedYet {
-		if status != "" {
-			to = status
+	if stat.NotFixedYet {
+		if stat.FixState != "" {
+			to = stat.FixState
 		} else {
 			to = "Not Fixed Yet"
 		}
 	} else if p.NewVersion == "" {
 		to = "Unknown"
 	}
-	return fmt.Sprintf("%s-%s -> %s", p.Name, p.FormatVer(), to)
+	var fixedIn string
+	if stat.FixedIn != "" {
+		fixedIn = fmt.Sprintf(" (FixedIn: %s)", stat.FixedIn)
+	}
+	return fmt.Sprintf("%s-%s -> %s%s",
+		p.Name, p.FormatVer(), to, fixedIn)
 }
 
 // FormatChangelog formats the changelog
