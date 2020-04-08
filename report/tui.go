@@ -706,12 +706,10 @@ func setChangelogLayout(g *gocui.Gui) error {
 				var line string
 				if pack.Repository != "" {
 					line = fmt.Sprintf("* %s (%s)",
-						pack.FormatVersionFromTo(affected.NotFixedYet, affected.FixState),
+						pack.FormatVersionFromTo(affected),
 						pack.Repository)
 				} else {
-					line = fmt.Sprintf("* %s",
-						pack.FormatVersionFromTo(affected.NotFixedYet, affected.FixState),
-					)
+					line = fmt.Sprintf("* %s", pack.FormatVersionFromTo(affected))
 				}
 				lines = append(lines, line)
 
