@@ -702,7 +702,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 		vinfo.AffectedPackages.Sort()
 		for _, affected := range vinfo.AffectedPackages {
 			// packages detected by OVAL may not be actually installed
-			if pack, ok := currentScanResult.Packages[affected.BinName]; ok {
+			if pack, ok := currentScanResult.Packages[affected.Name]; ok {
 				var line string
 				if pack.Repository != "" {
 					line = fmt.Sprintf("* %s (%s)",
@@ -813,7 +813,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 				"==========",
 			)
 			for _, affected := range vinfo.AffectedPackages {
-				pack := currentScanResult.Packages[affected.BinName]
+				pack := currentScanResult.Packages[affected.Name]
 				for _, p := range currentScanResult.Packages {
 					if pack.Name == p.Name {
 						lines = append(lines, p.FormatChangelog(), "\n")

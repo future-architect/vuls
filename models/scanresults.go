@@ -234,7 +234,7 @@ func (r ScanResult) FilterIgnorePkgs() ScanResult {
 		for _, p := range v.AffectedPackages {
 			match := false
 			for _, re := range regexps {
-				if re.MatchString(p.BinName) {
+				if re.MatchString(p.Name) {
 					match = true
 				}
 			}

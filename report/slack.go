@@ -174,14 +174,14 @@ func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 
 		installed, candidate := []string{}, []string{}
 		for _, affected := range vinfo.AffectedPackages {
-			if p, ok := r.Packages[affected.BinName]; ok {
+			if p, ok := r.Packages[affected.Name]; ok {
 				installed = append(installed,
 					fmt.Sprintf("%s-%s", p.Name, p.FormatVer()))
 			} else {
-				installed = append(installed, affected.BinName)
+				installed = append(installed, affected.Name)
 			}
 
-			if p, ok := r.Packages[affected.BinName]; ok {
+			if p, ok := r.Packages[affected.Name]; ok {
 				if affected.NotFixedYet {
 					candidate = append(candidate, "Not Fixed Yet")
 				} else {

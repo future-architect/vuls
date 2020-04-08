@@ -40,7 +40,7 @@ type fixStat struct {
 func (e defPacks) toPackStatuses() (ps models.PackageFixStatuses) {
 	for name, stat := range e.binpkgFixstat {
 		ps = append(ps, models.PackageFixStatus{
-			BinName:     name,
+			Name:        name,
 			NotFixedYet: stat.notFixedYet,
 			IsSrcPack:   stat.isSrcPack,
 			SrcName:     stat.srcPackName,

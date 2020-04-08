@@ -696,7 +696,7 @@ func (o *debian) scanChangelogs(updatablePacks models.Packages, meta *cache.Meta
 	for cveID, names := range cvePackages {
 		affected := models.PackageFixStatuses{}
 		for _, n := range names {
-			affected = append(affected, models.PackageFixStatus{BinName: n})
+			affected = append(affected, models.PackageFixStatus{Name: n})
 		}
 
 		vinfos[cveID.CveID] = models.VulnInfo{

@@ -131,7 +131,7 @@ func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCV
 
 			for _, name := range names {
 				v.AffectedPackages = v.AffectedPackages.Store(models.PackageFixStatus{
-					BinName:     name,
+					Name:        name,
 					FixState:    "open",
 					NotFixedYet: true,
 				})

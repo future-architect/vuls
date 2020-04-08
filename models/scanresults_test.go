@@ -334,7 +334,7 @@ func TestFilterUnfixed(t *testing.T) {
 						CveID: "CVE-2017-0001",
 						AffectedPackages: PackageFixStatuses{
 							{
-								BinName:     "a",
+								Name:        "a",
 								NotFixedYet: true,
 							},
 						},
@@ -343,7 +343,7 @@ func TestFilterUnfixed(t *testing.T) {
 						CveID: "CVE-2017-0002",
 						AffectedPackages: PackageFixStatuses{
 							{
-								BinName:     "b",
+								Name:        "b",
 								NotFixedYet: false,
 							},
 						},
@@ -352,11 +352,11 @@ func TestFilterUnfixed(t *testing.T) {
 						CveID: "CVE-2017-0003",
 						AffectedPackages: PackageFixStatuses{
 							{
-								BinName:     "c",
+								Name:        "c",
 								NotFixedYet: true,
 							},
 							{
-								BinName:     "d",
+								Name:        "d",
 								NotFixedYet: false,
 							},
 						},
@@ -369,7 +369,7 @@ func TestFilterUnfixed(t *testing.T) {
 						CveID: "CVE-2017-0002",
 						AffectedPackages: PackageFixStatuses{
 							{
-								BinName:     "b",
+								Name:        "b",
 								NotFixedYet: false,
 							},
 						},
@@ -378,11 +378,11 @@ func TestFilterUnfixed(t *testing.T) {
 						CveID: "CVE-2017-0003",
 						AffectedPackages: PackageFixStatuses{
 							{
-								BinName:     "c",
+								Name:        "c",
 								NotFixedYet: true,
 							},
 							{
-								BinName:     "d",
+								Name:        "d",
 								NotFixedYet: false,
 							},
 						},
@@ -420,7 +420,7 @@ func TestFilterIgnorePkgs(t *testing.T) {
 						"CVE-2017-0001": {
 							CveID: "CVE-2017-0001",
 							AffectedPackages: PackageFixStatuses{
-								{BinName: "kernel"},
+								{Name: "kernel"},
 							},
 						},
 						"CVE-2017-0002": {
@@ -447,8 +447,8 @@ func TestFilterIgnorePkgs(t *testing.T) {
 						"CVE-2017-0001": {
 							CveID: "CVE-2017-0001",
 							AffectedPackages: PackageFixStatuses{
-								{BinName: "kernel"},
-								{BinName: "vim"},
+								{Name: "kernel"},
+								{Name: "vim"},
 							},
 						},
 					},
@@ -460,8 +460,8 @@ func TestFilterIgnorePkgs(t *testing.T) {
 					"CVE-2017-0001": {
 						CveID: "CVE-2017-0001",
 						AffectedPackages: PackageFixStatuses{
-							{BinName: "kernel"},
-							{BinName: "vim"},
+							{Name: "kernel"},
+							{Name: "vim"},
 						},
 					},
 				},
@@ -476,8 +476,8 @@ func TestFilterIgnorePkgs(t *testing.T) {
 						"CVE-2017-0001": {
 							CveID: "CVE-2017-0001",
 							AffectedPackages: PackageFixStatuses{
-								{BinName: "kernel"},
-								{BinName: "vim"},
+								{Name: "kernel"},
+								{Name: "vim"},
 							},
 						},
 					},
@@ -530,7 +530,7 @@ func TestFilterIgnorePkgsContainer(t *testing.T) {
 						"CVE-2017-0001": {
 							CveID: "CVE-2017-0001",
 							AffectedPackages: PackageFixStatuses{
-								{BinName: "kernel"},
+								{Name: "kernel"},
 							},
 						},
 						"CVE-2017-0002": {
@@ -559,8 +559,8 @@ func TestFilterIgnorePkgsContainer(t *testing.T) {
 						"CVE-2017-0001": {
 							CveID: "CVE-2017-0001",
 							AffectedPackages: PackageFixStatuses{
-								{BinName: "kernel"},
-								{BinName: "vim"},
+								{Name: "kernel"},
+								{Name: "vim"},
 							},
 						},
 					},
@@ -573,8 +573,8 @@ func TestFilterIgnorePkgsContainer(t *testing.T) {
 					"CVE-2017-0001": {
 						CveID: "CVE-2017-0001",
 						AffectedPackages: PackageFixStatuses{
-							{BinName: "kernel"},
-							{BinName: "vim"},
+							{Name: "kernel"},
+							{Name: "vim"},
 						},
 					},
 				},
@@ -590,8 +590,8 @@ func TestFilterIgnorePkgsContainer(t *testing.T) {
 						"CVE-2017-0001": {
 							CveID: "CVE-2017-0001",
 							AffectedPackages: PackageFixStatuses{
-								{BinName: "kernel"},
-								{BinName: "vim"},
+								{Name: "kernel"},
+								{Name: "vim"},
 							},
 						},
 					},

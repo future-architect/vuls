@@ -23,14 +23,14 @@ func TestSyslogWriterEncodeSyslog(t *testing.T) {
 				ScannedCves: models.VulnInfos{
 					"CVE-2017-0001": models.VulnInfo{
 						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{BinName: "pkg1"},
-							models.PackageFixStatus{BinName: "pkg2"},
+							models.PackageFixStatus{Name: "pkg1"},
+							models.PackageFixStatus{Name: "pkg2"},
 						},
 					},
 					"CVE-2017-0002": models.VulnInfo{
 						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{BinName: "pkg3"},
-							models.PackageFixStatus{BinName: "pkg4"},
+							models.PackageFixStatus{Name: "pkg3"},
+							models.PackageFixStatus{Name: "pkg4"},
 						},
 						CveContents: models.CveContents{
 							models.NvdXML: models.CveContent{
@@ -58,7 +58,7 @@ func TestSyslogWriterEncodeSyslog(t *testing.T) {
 				ScannedCves: models.VulnInfos{
 					"CVE-2017-0003": models.VulnInfo{
 						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{BinName: "pkg5"},
+							models.PackageFixStatus{Name: "pkg5"},
 						},
 						CveContents: models.CveContents{
 							models.RedHat: models.CveContent{

@@ -247,7 +247,7 @@ No CVE-IDs are found in updatable packages.
 
 		vuln.AffectedPackages.Sort()
 		for _, affected := range vuln.AffectedPackages {
-			if pack, ok := r.Packages[affected.BinName]; ok {
+			if pack, ok := r.Packages[affected.Name]; ok {
 				var line string
 				if pack.Repository != "" {
 					line = fmt.Sprintf("%s (%s)",
@@ -464,8 +464,8 @@ func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults,
 			packages := models.Packages{}
 			for _, s := range current.ScannedCves {
 				for _, affected := range s.AffectedPackages {
-					p := current.Packages[affected.BinName]
-					packages[affected.BinName] = p
+					p := current.Packages[affected.Name]
+					packages[affected.Name] = p
 				}
 			}
 			current.Packages = packages
@@ -516,12 +516,12 @@ func isCveFixed(current models.VulnInfo, previous models.ScanResult) bool {
 	preVinfo, _ := previous.ScannedCves[current.CveID]
 	pre := map[string]bool{}
 	for _, h := range preVinfo.AffectedPackages {
-		pre[h.BinName] = h.NotFixedYet
+		pre[h.Name] = h.NotFixedYet
 	}
 
 	cur := map[string]bool{}
 	for _, h := range current.AffectedPackages {
-		cur[h.BinName] = h.NotFixedYet
+		cur[h.Name] = h.NotFixedYet
 	}
 
 	return !reflect.DeepEqual(pre, cur)
