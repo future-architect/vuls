@@ -42,8 +42,6 @@ func (e defPacks) toPackStatuses() (ps models.PackageFixStatuses) {
 		ps = append(ps, models.PackageFixStatus{
 			Name:        name,
 			NotFixedYet: stat.notFixedYet,
-			IsSrcPack:   stat.isSrcPack,
-			SrcName:     stat.srcPackName,
 			FixedIn:     stat.fixedIn,
 		})
 	}
@@ -156,7 +154,6 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 						fs := fixStat{
 							srcPackName: res.request.packName,
 							isSrcPack:   true,
-							// !!!!!!!!!!TODO!!!!!!!!!!!!!! use notfixedyet instead of false??
 							notFixedYet: notFixedYet,
 							fixedIn:     fixedIn,
 						}

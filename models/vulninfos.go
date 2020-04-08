@@ -140,8 +140,6 @@ type PackageFixStatus struct {
 	NotFixedYet bool   `json:"notFixedYet,omitempty"`
 	FixState    string `json:"fixState,omitempty"`
 	FixedIn     string `json:"fixedIn,omitempty"`
-	IsSrcPack   bool   `json:"isSrcPack,omitempty"`
-	SrcName     string `json:"srcName,omitempty"`
 }
 
 // VulnInfo has a vulnerability information and unsecure packages
