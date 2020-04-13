@@ -567,6 +567,13 @@ func (v VulnInfo) PatchStatus(packs Packages) string {
 			return "unfixed"
 		}
 
+		// Fast and offline mode can not get the candidate version.
+		// Vuls can be considered as 'fixed' if not-fixed-yet==true and
+		// the fixed-in-version (information in the oval) is not an empty.
+		if p.FixedIn != "" {
+			continue
+		}
+
 		// fast, offline mode doesn't have new version
 		if pack, ok := packs[p.Name]; ok {
 			if pack.NewVersion == "" {
