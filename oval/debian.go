@@ -189,61 +189,107 @@ func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 	switch major(r.Release) {
 	case "14":
 		kernelNamesInOval := []string{
-			"linux",
 			"linux-aws",
 			"linux-azure",
-			"linux-firmware",
-			"linux-lts-utopic",
-			"linux-lts-vivid",
-			"linux-lts-wily",
 			"linux-lts-xenial",
+			"linux-meta",
+			"linux-meta-aws",
+			"linux-meta-azure",
+			"linux-meta-lts-xenial",
+			"linux-signed",
+			"linux-signed-azure",
+			"linux-signed-lts-xenial",
+			"linux",
 		}
 		return o.fillWithOval(driver, r, kernelNamesInOval)
 	case "16":
 		kernelNamesInOval := []string{
-			"linux-image-aws",
-			"linux-image-aws-hwe",
-			"linux-image-azure",
-			"linux-image-extra-virtual",
-			"linux-image-extra-virtual-lts-utopic",
-			"linux-image-extra-virtual-lts-vivid",
-			"linux-image-extra-virtual-lts-wily",
-			"linux-image-extra-virtual-lts-xenial",
-			"linux-image-gcp",
-			"linux-image-generic-lpae",
-			"linux-image-generic-lpae-hwe-16.04",
-			"linux-image-generic-lpae-lts-utopic",
-			"linux-image-generic-lpae-lts-vivid",
-			"linux-image-generic-lpae-lts-wily",
-			"linux-image-generic-lpae-lts-xenial",
-			"linux-image-generic-lts-utopic",
-			"linux-image-generic-lts-vivid",
-			"linux-image-generic-lts-wily",
-			"linux-image-generic-lts-xenial",
-			"linux-image-gke",
-			"linux-image-hwe-generic-trusty",
-			"linux-image-hwe-virtual-trusty",
-			"linux-image-kvm",
-			"linux-image-lowlatency",
-			"linux-image-lowlatency-lts-utopic",
-			"linux-image-lowlatency-lts-vivid",
-			"linux-image-lowlatency-lts-wily",
+			"linux-aws",
+			"linux-aws-hwe",
+			"linux-azure",
+			"linux-euclid",
+			"linux-flo",
+			"linux-gcp",
+			"linux-gke",
+			"linux-goldfish",
+			"linux-hwe",
+			"linux-kvm",
+			"linux-mako",
+			"linux-meta",
+			"linux-meta-aws",
+			"linux-meta-aws-hwe",
+			"linux-meta-azure",
+			"linux-meta-gcp",
+			"linux-meta-hwe",
+			"linux-meta-kvm",
+			"linux-meta-oracle",
+			"linux-meta-raspi2",
+			"linux-meta-snapdragon",
+			"linux-oem",
+			"linux-oracle",
+			"linux-raspi2",
+			"linux-signed",
+			"linux-signed-azure",
+			"linux-signed-gcp",
+			"linux-signed-hwe",
+			"linux-signed-oracle",
+			"linux-snapdragon",
+			"linux",
 		}
 		return o.fillWithOval(driver, r, kernelNamesInOval)
 	case "18":
 		kernelNamesInOval := []string{
-			"linux-image-aws",
-			"linux-image-azure",
-			"linux-image-extra-virtual",
-			"linux-image-gcp",
-			"linux-image-generic-lpae",
-			"linux-image-kvm",
-			"linux-image-lowlatency",
-			"linux-image-oem",
-			"linux-image-oracle",
-			"linux-image-raspi2",
-			"linux-image-snapdragon",
-			"linux-image-virtual",
+			"linux-aws",
+			"linux-aws-5.0",
+			"linux-azure",
+			"linux-gcp",
+			"linux-gcp-5.3",
+			"linux-gke-4.15",
+			"linux-gke-5.0",
+			"linux-gke-5.3",
+			"linux-hwe",
+			"linux-kvm",
+			"linux-meta",
+			"linux-meta-aws",
+			"linux-meta-aws-5.0",
+			"linux-meta-azure",
+			"linux-meta-gcp",
+			"linux-meta-gcp-5.3",
+			"linux-meta-gke-4.15",
+			"linux-meta-gke-5.0",
+			"linux-meta-gke-5.3",
+			"linux-meta-hwe",
+			"linux-meta-kvm",
+			"linux-meta-oem",
+			"linux-meta-oem-osp1",
+			"linux-meta-oracle",
+			"linux-meta-oracle-5.0",
+			"linux-meta-oracle-5.3",
+			"linux-meta-raspi2",
+			"linux-meta-raspi2-5.3",
+			"linux-meta-snapdragon",
+			"linux-oem",
+			"linux-oem-osp1",
+			"linux-oracle",
+			"linux-oracle-5.0",
+			"linux-oracle-5.3",
+			"linux-raspi2",
+			"linux-raspi2-5.3",
+			"linux-signed",
+			"linux-signed-azure",
+			"linux-signed-gcp",
+			"linux-signed-gcp-5.3",
+			"linux-signed-gke-4.15",
+			"linux-signed-gke-5.0",
+			"linux-signed-gke-5.3",
+			"linux-signed-hwe",
+			"linux-signed-oem",
+			"linux-signed-oem-osp1",
+			"linux-signed-oracle",
+			"linux-signed-oracle-5.0",
+			"linux-signed-oracle-5.3",
+			"linux-snapdragon",
+			"linux",
 		}
 		return o.fillWithOval(driver, r, kernelNamesInOval)
 	}
@@ -255,7 +301,7 @@ func (o Ubuntu) fillWithOval(driver db.DB, r *models.ScanResult, kernelNamesInOv
 	linuxImage := "linux-image-" + r.RunningKernel.Release
 	runningKernelVersion := ""
 	kernelPkgInOVAL := ""
-	isOVALKernelPkgAdded := true
+	isOVALKernelPkgAdded := false
 	unusedKernels := []models.Package{}
 
 	if r.Container.ContainerID == "" {
@@ -282,15 +328,10 @@ func (o Ubuntu) fillWithOval(driver db.DB, r *models.ScanResult, kernelNamesInOv
 		}
 
 		if kernelPkgInOVAL == "" {
-			if r.Release == "14" {
-				kernelPkgInOVAL = "linux"
-			} else if _, ok := r.Packages["linux-image-generic"]; !ok {
-				util.Log.Warnf("The OVAL name of the running kernel image %s is not found. So vulns of linux-image-generic wll be detected. server: %s",
-					r.RunningKernel.Version, r.ServerName)
-				kernelPkgInOVAL = "linux-image-generic"
-			} else {
-				isOVALKernelPkgAdded = false
-			}
+			util.Log.Warnf("The OVAL name of the running kernel image %+v is not found. So vulns of `linux` wll be detected. server: %s",
+				r.RunningKernel, r.ServerName)
+			kernelPkgInOVAL = "linux"
+			isOVALKernelPkgAdded = true
 		}
 
 		if runningKernelVersion != "" {
