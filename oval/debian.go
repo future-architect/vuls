@@ -2,6 +2,7 @@ package oval
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -297,12 +298,12 @@ func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 }
 
 func (o Ubuntu) fillWithOval(driver db.DB, r *models.ScanResult, kernelNamesInOval []string) (nCVEs int, err error) {
-	// kernel names in OVAL except for linux-image-generic
 	linuxImage := "linux-image-" + r.RunningKernel.Release
 	runningKernelVersion := ""
 	kernelPkgInOVAL := ""
 	isOVALKernelPkgAdded := false
 	unusedKernels := []models.Package{}
+	copiedSourcePkgs := models.SrcPackages{}
 
 	if r.Container.ContainerID == "" {
 		if v, ok := r.Packages[linuxImage]; ok {
@@ -325,6 +326,25 @@ func (o Ubuntu) fillWithOval(driver db.DB, r *models.ScanResult, kernelNamesInOv
 				unusedKernels = append(unusedKernels, v)
 				delete(r.Packages, n)
 			}
+		}
+
+		// Remove linux-* in order to detect only vulnerabilities in the running kernel.
+		for n := range r.Packages {
+			if n != kernelPkgInOVAL && strings.HasPrefix(n, "linux-") {
+				unusedKernels = append(unusedKernels, r.Packages[n])
+				delete(r.Packages, n)
+			}
+		}
+		for srcPackName, srcPack := range r.SrcPackages {
+			copiedSourcePkgs[srcPackName] = srcPack
+			targetBianryNames := []string{}
+			for _, n := range srcPack.BinaryNames {
+				if n == kernelPkgInOVAL || !strings.HasPrefix(n, "linux-") {
+					targetBianryNames = append(targetBianryNames, n)
+				}
+			}
+			srcPack.BinaryNames = targetBianryNames
+			r.SrcPackages[srcPackName] = srcPack
 		}
 
 		if kernelPkgInOVAL == "" {
@@ -359,6 +379,7 @@ func (o Ubuntu) fillWithOval(driver db.DB, r *models.ScanResult, kernelNamesInOv
 	for _, p := range unusedKernels {
 		r.Packages[p.Name] = p
 	}
+	r.SrcPackages = copiedSourcePkgs
 
 	for _, defPacks := range relatedDefs.entries {
 		// Remove "linux" added above for searching oval
