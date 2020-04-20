@@ -38,7 +38,7 @@ func TestUpsert(t *testing.T) {
 							DefinitionID: "1111",
 						},
 						binpkgFixstat: map[string]fixStat{
-							"pack1": fixStat{
+							"pack1": {
 								notFixedYet: true,
 								fixedIn:     "1.0.0",
 							},
@@ -56,7 +56,7 @@ func TestUpsert(t *testing.T) {
 							DefinitionID: "1111",
 						},
 						binpkgFixstat: map[string]fixStat{
-							"pack1": fixStat{
+							"pack1": {
 								notFixedYet: true,
 								fixedIn:     "1.0.0",
 							},
@@ -67,7 +67,7 @@ func TestUpsert(t *testing.T) {
 							DefinitionID: "2222",
 						},
 						binpkgFixstat: map[string]fixStat{
-							"pack3": fixStat{
+							"pack3": {
 								notFixedYet: true,
 								fixedIn:     "2.0.0",
 							},
@@ -91,11 +91,11 @@ func TestUpsert(t *testing.T) {
 							DefinitionID: "1111",
 						},
 						binpkgFixstat: map[string]fixStat{
-							"pack1": fixStat{
+							"pack1": {
 								notFixedYet: true,
 								fixedIn:     "1.0.0",
 							},
-							"pack2": fixStat{
+							"pack2": {
 								notFixedYet: false,
 								fixedIn:     "3.0.0",
 							},
@@ -106,7 +106,7 @@ func TestUpsert(t *testing.T) {
 							DefinitionID: "2222",
 						},
 						binpkgFixstat: map[string]fixStat{
-							"pack3": fixStat{
+							"pack3": {
 								notFixedYet: true,
 								fixedIn:     "2.0.0",
 							},
@@ -155,12 +155,12 @@ func TestDefpacksToPackStatuses(t *testing.T) {
 						},
 					},
 					binpkgFixstat: map[string]fixStat{
-						"a": fixStat{
+						"a": {
 							notFixedYet: true,
 							fixedIn:     "1.0.0",
 							isSrcPack:   false,
 						},
-						"b": fixStat{
+						"b": {
 							notFixedYet: true,
 							fixedIn:     "1.0.0",
 							isSrcPack:   true,
