@@ -34,7 +34,7 @@ func TestPackNamesOfUpdateDebian(t *testing.T) {
 					},
 				},
 				binpkgFixstat: map[string]fixStat{
-					"packB": fixStat{
+					"packB": {
 						notFixedYet: true,
 						fixedIn:     "1.0.0",
 					},
