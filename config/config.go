@@ -331,6 +331,11 @@ func (c Config) ValidateOnTui() bool {
 	return len(errs) == 0
 }
 
+// ValidateOnCui validates configuration
+func (c Config) ValidateOnCui() bool {
+	return c.ValidateOnTui()
+}
+
 // validateDB validates configuration
 //  dictionaryDB name is 'cvedb' or 'ovaldb'
 func validateDB(dictionaryDBName, dbType, dbPath, dbURL string) error {

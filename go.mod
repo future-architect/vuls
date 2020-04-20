@@ -44,6 +44,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/parnurzeal/gorequest v0.2.16
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
+	github.com/rivo/tview v0.0.0-20200414130344-8e06c826b3a5
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.5.0
 	golang.org/x/crypto v0.0.0-20200414173820-0848c9571904
