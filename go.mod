@@ -32,7 +32,7 @@ require (
 	github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936
 	github.com/knqyf263/go-version v1.1.1
 	github.com/knqyf263/gost v0.1.3
-	github.com/kotakanbe/go-cve-dictionary v0.4.1
+	github.com/kotakanbe/go-cve-dictionary v0.4.2
 	github.com/kotakanbe/go-pingscanner v0.1.0
 	github.com/kotakanbe/goval-dictionary v0.2.5
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
