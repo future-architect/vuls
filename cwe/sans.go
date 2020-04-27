@@ -29,5 +29,5 @@ var SansTopTwentyfive = map[string]string{
 	"759": "25",
 }
 
-// SansTopTwentyfiveURL
+// SansTopTwentyfiveURL is a URL of sans 25
 var SansTopTwentyfiveURL = "https://www.sans.org/top25-software-errors/"

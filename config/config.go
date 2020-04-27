@@ -1099,6 +1099,7 @@ type Image struct {
 	IgnoreCves       []string           `json:"ignoreCves,omitempty"`
 }
 
+// GetFullName returns a full name of the image
 func (i *Image) GetFullName() string {
 	if i.Digest != "" {
 		return i.Name + "@" + i.Digest

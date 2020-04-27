@@ -16,11 +16,11 @@ type analysis struct {
 }
 
 type dependency struct {
-	Identifiers []vulnerabilityId `xml:"identifiers>vulnerabilityIds"`
+	Identifiers []vulnerabilityID `xml:"identifiers>vulnerabilityIds"`
 }
 
-type vulnerabilityId struct {
-	Id string `xml:"id"`
+type vulnerabilityID struct {
+	ID string `xml:"id"`
 }
 
 func appendIfMissing(slice []string, str string) []string {
@@ -55,7 +55,7 @@ func Parse(path string) ([]string, error) {
 	cpes := []string{}
 	for _, d := range anal.Dependencies {
 		for _, ident := range d.Identifiers {
-			id := ident.Id // Start with cpe:2.3:
+			id := ident.ID // Start with cpe:2.3:
 			// Convert from CPE 2.3 to CPE 2.2
 			if strings.HasPrefix(id, "cpe:2.3:") {
 				wfn, err := naming.UnbindFS(id)
