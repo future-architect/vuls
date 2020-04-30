@@ -122,7 +122,7 @@ var LibraryMap = map[string]string{
 	"yarn.lock":         "node",
 	"Gemfile.lock":      "ruby",
 	"Cargo.lock":        "rust",
-	"composer.json":     "php",
+	"composer.lock":     "php",
 	"Pipfile.lock":      "python",
 	"poetry.lock":       "python",
 }
