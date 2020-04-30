@@ -504,7 +504,7 @@ func fillCweDict(r *models.ScanResult) {
 
 const reUUID = "[\\da-f]{8}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{12}"
 
-// Scanning with the -containers-only, -images-only flag at scan time, the UUID of Container Host may not be generated,
+// Scanning with the -containers-only flag at scan time, the UUID of Container Host may not be generated,
 // so check it. Otherwise create a UUID of the Container Host and set it.
 func getOrCreateServerUUID(r models.ScanResult, server c.ServerInfo) (serverUUID string, err error) {
 	if id, ok := server.UUIDs[r.ServerName]; !ok {
@@ -542,15 +542,6 @@ func EnsureUUIDs(configPath string, results models.ScanResults) (err error) {
 		name := ""
 		if r.IsContainer() {
 			name = fmt.Sprintf("%s@%s", r.Container.Name, r.ServerName)
-			serverUUID, err := getOrCreateServerUUID(r, server)
-			if err != nil {
-				return err
-			}
-			if serverUUID != "" {
-				server.UUIDs[r.ServerName] = serverUUID
-			}
-		} else if r.IsImage() {
-			name = fmt.Sprintf("%s%s@%s", r.Image.Tag, r.Image.Digest, r.ServerName)
 			serverUUID, err := getOrCreateServerUUID(r, server)
 			if err != nil {
 				return err

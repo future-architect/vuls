@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/aquasecurity/trivy/pkg/utils"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/exploit"
 	"github.com/future-architect/vuls/gost"
@@ -85,6 +86,7 @@ func (*ReportCmd) Usage() string {
 		[-exploitdb-sqlite3-path=/path/to/exploitdb.sqlite3]
 		[-exploitdb-url=http://127.0.0.1:1326 or DB connection string]
 		[-http="http://vuls-report-server"]
+		[-trivy-cachedb-dir=/path/to/dir]
 
 		[RFC3339 datetime format under results dir]
 `
@@ -95,7 +97,6 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&c.Conf.Lang, "lang", "en", "[en|ja]")
 	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
 	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
-
 	f.BoolVar(&c.Conf.Quiet, "quiet", false, "Quiet mode. No output on stdout")
 
 	wd, _ := os.Getwd()
@@ -187,6 +188,8 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 
 	f.StringVar(&p.httpConf.URL, "http", "", "-to-http http://vuls-report")
 
+	f.StringVar(&c.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
+		utils.DefaultCacheDir(), "/path/to/dir")
 }
 
 // Execute execute

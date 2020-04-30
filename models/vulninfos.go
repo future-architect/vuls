@@ -200,6 +200,14 @@ type GitHubSecurityAlert struct {
 // LibraryFixedIns is a list of Library's FixedIn
 type LibraryFixedIns []LibraryFixedIn
 
+// Names return a slice of names
+func (lfs LibraryFixedIns) Names() (names []string) {
+	for _, lf := range lfs {
+		names = append(names, lf.Name)
+	}
+	return names
+}
+
 // WpPackageFixStats is a list of WpPackageFixStatus
 type WpPackageFixStats []WpPackageFixStatus
 

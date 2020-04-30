@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	syslog "github.com/RackSec/srslog"
-	"github.com/aquasecurity/fanal/types"
 	valid "github.com/asaskevich/govalidator"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
@@ -103,15 +102,16 @@ type Config struct {
 	SSHConfig bool `json:"sshConfig,omitempty"`
 
 	ContainersOnly bool `json:"containersOnly,omitempty"`
-	ImagesOnly     bool `json:"imagesOnly,omitempty"`
 	LibsOnly       bool `json:"libsOnly,omitempty"`
 	WordPressOnly  bool `json:"wordpressOnly,omitempty"`
 
-	SkipBroken  bool   `json:"skipBroken,omitempty"`
-	CacheDBPath string `json:"cacheDBPath,omitempty"`
-	Vvv         bool   `json:"vvv,omitempty"`
-	UUID        bool   `json:"uuid,omitempty"`
-	DetectIPS   bool   `json:"detectIps,omitempty"`
+	CacheDBPath     string `json:"cacheDBPath,omitempty"`
+	TrivyCacheDBDir string `json:"trivyCacheDBDir,omitempty"`
+
+	SkipBroken bool `json:"skipBroken,omitempty"`
+	Vvv        bool `json:"vvv,omitempty"`
+	UUID       bool `json:"uuid,omitempty"`
+	DetectIPS  bool `json:"detectIps,omitempty"`
 
 	CveDict  GoCveDictConf `json:"cveDict,omitempty"`
 	OvalDict GovalDictConf `json:"ovalDict,omitempty"`
@@ -1047,7 +1047,6 @@ type ServerInfo struct {
 	IgnoreCves             []string                    `toml:"ignoreCves,omitempty" json:"ignoreCves,omitempty"`
 	IgnorePkgsRegexp       []string                    `toml:"ignorePkgsRegexp,omitempty" json:"ignorePkgsRegexp,omitempty"`
 	GitHubRepos            map[string]GitHubConf       `toml:"githubs" json:"githubs,omitempty"` // key: owner/repo
-	Images                 map[string]Image            `toml:"images" json:"images,omitempty"`
 	UUIDs                  map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
 	Memo                   string                      `toml:"memo,omitempty" json:"memo,omitempty"`
 	Enablerepo             []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, RHEL, Amazon
@@ -1065,7 +1064,6 @@ type ServerInfo struct {
 
 	LogMsgAnsiColor string    `toml:"-" json:"-"` // DebugLog Color
 	Container       Container `toml:"-" json:"-"`
-	Image           Image     `toml:"-" json:"-"`
 	Distro          Distro    `toml:"-" json:"-"`
 	Mode            ScanMode  `toml:"-" json:"-"`
 }
@@ -1085,26 +1083,6 @@ type WordPressConf struct {
 	CmdPath        string `toml:"cmdPath" json:"cmdPath,omitempty"`
 	WPVulnDBToken  string `toml:"wpVulnDBToken" json:"-,omitempty"`
 	IgnoreInactive bool   `json:"ignoreInactive,omitempty"`
-}
-
-// Image is a scan container image info
-type Image struct {
-	Name             string             `json:"name"`
-	Tag              string             `json:"tag"`
-	Digest           string             `json:"digest"`
-	DockerOption     types.DockerOption `json:"dockerOption,omitempty"`
-	Cpes             []string           `json:"cpes,omitempty"`
-	OwaspDCXMLPath   string             `json:"owaspDCXMLPath"`
-	IgnorePkgsRegexp []string           `json:"ignorePkgsRegexp,omitempty"`
-	IgnoreCves       []string           `json:"ignoreCves,omitempty"`
-}
-
-// GetFullName returns a full name of the image
-func (i *Image) GetFullName() string {
-	if i.Digest != "" {
-		return i.Name + "@" + i.Digest
-	}
-	return i.Name + ":" + i.Tag
 }
 
 // GitHubConf is used for GitHub integration
