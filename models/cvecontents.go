@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/aquasecurity/trivy/pkg/vulnsrc/vulnerability"
+	"github.com/aquasecurity/trivy-db/pkg/vulnsrc/vulnerability"
 )
 
 // CveContents has CveContent
@@ -223,16 +223,18 @@ func NewCveContentType(name string) CveContentType {
 		return WPVulnDB
 	case "amazon":
 		return Amazon
-	case vulnerability.NodejsSecurityWg:
-		return NodeSec
-	case vulnerability.PythonSafetyDB:
-		return PythonSec
-	case vulnerability.RustSec:
-		return RustSec
-	case vulnerability.PhpSecurityAdvisories:
-		return PhpSec
-	case vulnerability.RubySec:
-		return RubySec
+	case "trivy":
+		return Trivy
+	// case vulnerability.NodejsSecurityWg:
+	// 	return NodeSec
+	// case vulnerability.PythonSafetyDB:
+	// 	return PythonSec
+	// case vulnerability.RustSec:
+	// 	return RustSec
+	// case vulnerability.PhpSecurityAdvisories:
+	// 	return PhpSec
+	// case vulnerability.RubySec:
+	// 	return RubySec
 	default:
 		return Unknown
 	}
@@ -278,20 +280,23 @@ const (
 	// WPVulnDB is WordPress
 	WPVulnDB CveContentType = "wpvulndb"
 
+	// Trivy is Trivy
+	Trivy CveContentType = "trivy"
+
 	// NodeSec : for JS
-	NodeSec CveContentType = "node"
+	// NodeSec CveContentType = "node"
 
-	// PythonSec : for PHP
-	PythonSec CveContentType = "python"
+	// // PythonSec : for PHP
+	// PythonSec CveContentType = "python"
 
-	// PhpSec : for PHP
-	PhpSec CveContentType = "php"
+	// // PhpSec : for PHP
+	// PhpSec CveContentType = "php"
 
-	// RubySec : for Ruby
-	RubySec CveContentType = "ruby"
+	// // RubySec : for Ruby
+	// RubySec CveContentType = "ruby"
 
-	// RustSec : for Rust
-	RustSec CveContentType = "rust"
+	// // RustSec : for Rust
+	// RustSec CveContentType = "rust"
 
 	// Unknown is Unknown
 	Unknown CveContentType = "unknown"
@@ -313,11 +318,11 @@ var AllCveContetTypes = CveContentTypes{
 	SUSE,
 	DebianSecurityTracker,
 	WPVulnDB,
-	NodeSec,
-	PythonSec,
-	PhpSec,
-	RubySec,
-	RustSec,
+	// NodeSec,
+	// PythonSec,
+	// PhpSec,
+	// RubySec,
+	// RustSec,
 }
 
 // Except returns CveContentTypes except for given args

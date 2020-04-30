@@ -622,6 +622,7 @@ func summaryLines(r models.ScanResult) string {
 		pkgNames = append(pkgNames, vinfo.CpeURIs...)
 		pkgNames = append(pkgNames, vinfo.GitHubSecurityAlerts.Names()...)
 		pkgNames = append(pkgNames, vinfo.WpPackageFixStats.Names()...)
+		pkgNames = append(pkgNames, vinfo.LibraryFixedIns.Names()...)
 
 		exploits := ""
 		if 0 < len(vinfo.Exploits) {
@@ -752,17 +753,11 @@ func setChangelogLayout(g *gocui.Gui) error {
 			}
 		}
 
-		// check library fixedin
-		for _, scanner := range r.LibraryScanners {
-			key := scanner.GetLibraryKey()
-			for _, fixedin := range vinfo.LibraryFixedIns {
-				for _, lib := range scanner.Libs {
-					if fixedin.Key == key && lib.Name == fixedin.Name {
-						lines = append(lines, fmt.Sprintf("* %s-%s, FixedIn: %s",
-							lib.Name, lib.Version, fixedin.FixedIn))
-						continue
-					}
-				}
+		for _, l := range vinfo.LibraryFixedIns {
+			libs := r.LibraryScanners.Find(l.Name)
+			for path, lib := range libs {
+				lines = append(lines, fmt.Sprintf("%s-%s, FixedIn: %s (%s)",
+					lib.Name, lib.Version, l.FixedIn, path))
 			}
 		}
 
