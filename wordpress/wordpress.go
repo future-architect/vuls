@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	version "github.com/hashicorp/go-version"
@@ -66,10 +67,16 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 		return 0, err
 	}
 
-	//TODO add a flag ignore inactive plugin or themes such as -wp-ignore-inactive flag to cmd line option or config.toml
+	themes := r.WordPressPackages.Themes()
+	plugins := r.WordPressPackages.Plugins()
+
+	if c.Conf.IgnoreInactive {
+		themes = fillInactives(themes)
+		plugins = fillInactives(plugins)
+	}
 
 	// Themes
-	for _, p := range r.WordPressPackages.Themes() {
+	for _, p := range themes {
 		url := fmt.Sprintf("https://wpvulndb.com/api/v3/themes/%s", p.Name)
 		body, err := httpRequest(url, token)
 		if err != nil {
@@ -105,7 +112,7 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 	}
 
 	// Plugins
-	for _, p := range r.WordPressPackages.Plugins() {
+	for _, p := range plugins {
 		url := fmt.Sprintf("https://wpvulndb.com/api/v3/plugins/%s", p.Name)
 		body, err := httpRequest(url, token)
 		if err != nil {
@@ -259,4 +266,17 @@ loop:
 		goto loop
 	}
 	return "", err
+}
+
+func fillInactives(elements models.WordPressPackages) models.WordPressPackages {
+	var inactives []int
+	for i, y := range elements {
+		if y.Status == "inactive" {
+			inactives = append(inactives, i)
+		}
+	}
+	for _, h := range inactives {
+		elements = append(elements[:h], elements[h+1:]...)
+	}
+	return elements
 }
