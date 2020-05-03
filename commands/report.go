@@ -45,6 +45,7 @@ func (*ReportCmd) Usage() string {
 		[-refresh-cve]
 		[-cvss-over=7]
 		[-diff]
+		[-ignore-inactive]
 		[-ignore-unscored-cves]
 		[-ignore-unfixed]
 		[-ignore-github-dismissed]
@@ -116,6 +117,9 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 
 	f.BoolVar(&c.Conf.Diff, "diff", false,
 		"Difference between previous result and current result ")
+
+	f.BoolVar(&c.Conf.IgnoreInactive, "ignore-inactive", false,
+		"ignore inactive on wordpress' plugin and thema")
 
 	f.BoolVar(&c.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
 		"Don't report the unscored CVEs")
