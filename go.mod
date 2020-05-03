@@ -47,6 +47,8 @@ require (
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.5.0
 	golang.org/x/crypto v0.0.0-20200414173820-0848c9571904
+	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+	golang.org/x/tools v0.0.0-20200501065659-ab2804fb9c9d // indirect
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
 )
