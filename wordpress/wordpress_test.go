@@ -1,33 +1,30 @@
 package wordpress
 
 import (
-	"testing"
 	"reflect"
+	"testing"
 
 	"github.com/future-architect/vuls/models"
 )
 
 func TestFillInactive(t *testing.T) {
 	var tests = []struct {
-		in           models.WordPressPackages
-		expected         models.WordPressPackages
+		in       models.WordPressPackages
+		expected models.WordPressPackages
 	}{
 		{
 			in: models.WordPressPackages{
-			    {
-			        Name : "akismet",
-                   	Status : "inactive",
-                   	Update: "",
-                   	Version: "",
-                   	Type : "",
-			    },
+				{
+					Name:    "akismet",
+					Status:  "inactive",
+					Update:  "",
+					Version: "",
+					Type:    "",
+				},
 			},
-			expected: models.WordPressPackages{
-			},
-
+			expected: models.WordPressPackages{},
 		},
 	}
-
 
 	for i, tt := range tests {
 		actual := fillInactives(tt.in)
