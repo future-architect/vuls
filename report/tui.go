@@ -881,6 +881,10 @@ func detailLines() (string, error) {
 		}
 	}
 
+	if cont, found := vinfo.CveContents[models.Trivy]; found {
+		refs = append(refs, cont.References...)
+	}
+
 	summary := vinfo.Summaries(r.Lang, r.Family)[0]
 	mitigation := vinfo.Mitigations(r.Family)[0]
 

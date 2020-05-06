@@ -104,7 +104,7 @@ func getCveContents(cveID string, vul trivyDBTypes.Vulnerability) (contents map[
 	contents = map[CveContentType]CveContent{}
 	refs := []Reference{}
 	for _, refURL := range vul.References {
-		refs = append(refs, Reference{Source: refURL, Link: refURL})
+		refs = append(refs, Reference{Source: "trivy", Link: refURL})
 	}
 
 	content := CveContent{

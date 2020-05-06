@@ -318,6 +318,7 @@ var AllCveContetTypes = CveContentTypes{
 	SUSE,
 	DebianSecurityTracker,
 	WPVulnDB,
+	Trivy,
 	// NodeSec,
 	// PythonSec,
 	// PhpSec,
