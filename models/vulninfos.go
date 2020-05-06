@@ -875,6 +875,9 @@ const (
 	// DebianSecurityTrackerMatchStr is a String representation of DebianSecurityTrackerMatch
 	DebianSecurityTrackerMatchStr = "DebianSecurityTrackerMatch"
 
+	// TrivyMatchStr is a String representation of Trivy
+	TrivyMatchStr = "TrivyMatch"
+
 	// ChangelogExactMatchStr is a String representation of ChangelogExactMatch
 	ChangelogExactMatchStr = "ChangelogExactMatch"
 
@@ -912,6 +915,9 @@ var (
 
 	// DebianSecurityTrackerMatch ranking how confident the CVE-ID was deteted correctly
 	DebianSecurityTrackerMatch = Confidence{100, DebianSecurityTrackerMatchStr, 0}
+
+	// TrivyMatch ranking how confident the CVE-ID was deteted correctly
+	TrivyMatch = Confidence{100, TrivyMatchStr, 0}
 
 	// ChangelogExactMatch is a ranking how confident the CVE-ID was deteted correctly
 	ChangelogExactMatch = Confidence{95, ChangelogExactMatchStr, 3}
