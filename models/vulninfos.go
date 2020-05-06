@@ -245,7 +245,7 @@ func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 		values = append(values, CveContentStr{RedHatAPI, cont.Title})
 	}
 
-	order := CveContentTypes{Nvd, NvdXML, NewCveContentType(myFamily)}
+	order := CveContentTypes{Trivy, Nvd, NvdXML, NewCveContentType(myFamily)}
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		// Only JVN has meaningful title. so return first 100 char of summary
@@ -285,7 +285,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := CveContentTypes{NewCveContentType(myFamily), Nvd, NvdXML}
+	order := CveContentTypes{Trivy, NewCveContentType(myFamily), Nvd, NvdXML}
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Summary) {
@@ -423,6 +423,18 @@ func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 			})
 		}
 	}
+
+	if cont, found := v.CveContents[Trivy]; found && cont.Cvss3Severity != "" {
+		values = append(values, CveContentCvss{
+			Type: Trivy,
+			Value: Cvss{
+				Type:     CVSS3,
+				Score:    severityToV2ScoreRoughly(cont.Cvss3Severity),
+				Severity: strings.ToUpper(cont.Cvss3Severity),
+			},
+		})
+	}
+
 	return
 }
 

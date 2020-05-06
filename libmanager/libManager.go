@@ -26,7 +26,7 @@ func FillLibrary(r *models.ScanResult) (totalCnt int, err error) {
 	}
 
 	util.Log.Info("Updating library db...")
-	if err := downloadDB(config.Version, config.Conf.TrivyCacheDBDir, config.Conf.NoProgress, true, false); err != nil {
+	if err := downloadDB(config.Version, config.Conf.TrivyCacheDBDir, config.Conf.NoProgress, false, false); err != nil {
 		return 0, err
 	}
 
