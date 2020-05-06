@@ -15,7 +15,7 @@ import (
 	"github.com/knqyf263/go-version"
 )
 
-// LibraryScanners is a array of LibraryScanner
+// LibraryScanners is an array of LibraryScanner
 type LibraryScanners []LibraryScanner
 
 // Find : find by name
