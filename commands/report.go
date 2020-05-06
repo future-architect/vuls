@@ -72,6 +72,7 @@ func (*ReportCmd) Usage() string {
 		[-debug]
 		[-debug-sql]
 		[-quiet]
+		[-no-progress]
 		[-pipe]
 		[-cvedb-type=sqlite3|mysql|postgres|redis|http]
 		[-cvedb-sqlite3-path=/path/to/cve.sqlite3]
@@ -98,6 +99,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
 	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
 	f.BoolVar(&c.Conf.Quiet, "quiet", false, "Quiet mode. No output on stdout")
+	f.BoolVar(&c.Conf.NoProgress, "no-progress", false, "Suppress progress bar")
 
 	wd, _ := os.Getwd()
 	defaultConfPath := filepath.Join(wd, "config.toml")

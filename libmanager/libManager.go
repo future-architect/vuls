@@ -26,7 +26,7 @@ func FillLibrary(r *models.ScanResult) (totalCnt int, err error) {
 	}
 
 	util.Log.Info("Updating library db...")
-	if err := downloadDB(config.Version, config.Conf.TrivyCacheDBDir, config.Conf.Quiet, true, false); err != nil {
+	if err := downloadDB(config.Version, config.Conf.TrivyCacheDBDir, config.Conf.NoProgress, true, false); err != nil {
 		return 0, err
 	}
 
@@ -58,8 +58,8 @@ func downloadDB(appVersion, cacheDir string, quiet, light, skipUpdate bool) erro
 	}
 
 	if needsUpdate {
-		log.Logger.Info("Need to update DB")
-		log.Logger.Info("Downloading DB...")
+		util.Log.Info("Need to update DB")
+		util.Log.Info("Downloading DB...")
 		if err := client.Download(ctx, cacheDir, light); err != nil {
 			return xerrors.Errorf("failed to download vulnerability DB: %w", err)
 		}
@@ -92,7 +92,7 @@ func showDBInfo(cacheDir string) error {
 	if err != nil {
 		return xerrors.Errorf("something wrong with DB: %w", err)
 	}
-	log.Logger.Debugf("DB Schema: %d, Type: %d, UpdatedAt: %s, NextUpdate: %s",
+	util.Log.Debugf("DB Schema: %d, Type: %d, UpdatedAt: %s, NextUpdate: %s",
 		metadata.Version, metadata.Type, metadata.UpdatedAt, metadata.NextUpdate)
 	return nil
 }

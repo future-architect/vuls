@@ -89,6 +89,7 @@ type Config struct {
 	ResultsDir string `json:"resultsDir,omitempty"`
 	Pipe       bool   `json:"pipe,omitempty"`
 	Quiet      bool   `json:"quiet,omitempty"`
+	NoProgress bool   `json:"noProgress,omitempty"`
 
 	Default       ServerInfo            `json:"default,omitempty"`
 	Servers       map[string]ServerInfo `json:"servers,omitempty"`
