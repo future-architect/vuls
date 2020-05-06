@@ -25,7 +25,7 @@ import (
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/util"
 	"github.com/future-architect/vuls/wordpress"
-	"github.com/hashicorp/uuid"
+	"github.com/hashicorp/go-uuid"
 	gostdb "github.com/knqyf263/gost/db"
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
 	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
@@ -506,21 +506,25 @@ const reUUID = "[\\da-f]{8}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{12}"
 
 // Scanning with the -containers-only, -images-only flag at scan time, the UUID of Container Host may not be generated,
 // so check it. Otherwise create a UUID of the Container Host and set it.
-func getOrCreateServerUUID(r models.ScanResult, server c.ServerInfo) (serverUUID string) {
+func getOrCreateServerUUID(r models.ScanResult, server c.ServerInfo) (serverUUID string, err error) {
 	if id, ok := server.UUIDs[r.ServerName]; !ok {
-		serverUUID = uuid.GenerateUUID()
+		if serverUUID, err = uuid.GenerateUUID(); err != nil {
+			return "", xerrors.Errorf("Failed to generate UUID: %w", err)
+		}
 	} else {
 		matched, err := regexp.MatchString(reUUID, id)
 		if !matched || err != nil {
-			serverUUID = uuid.GenerateUUID()
+			if serverUUID, err = uuid.GenerateUUID(); err != nil {
+				return "", xerrors.Errorf("Failed to generate UUID: %w", err)
+			}
 		}
 	}
-	return serverUUID
+	return serverUUID, nil
 }
 
 // EnsureUUIDs generate a new UUID of the scan target server if UUID is not assigned yet.
 // And then set the generated UUID to config.toml and scan results.
-func EnsureUUIDs(configPath string, results models.ScanResults) error {
+func EnsureUUIDs(configPath string, results models.ScanResults) (err error) {
 	// Sort Host->Container
 	sort.Slice(results, func(i, j int) bool {
 		if results[i].ServerName == results[j].ServerName {
@@ -538,13 +542,21 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 		name := ""
 		if r.IsContainer() {
 			name = fmt.Sprintf("%s@%s", r.Container.Name, r.ServerName)
-			if uuid := getOrCreateServerUUID(r, server); uuid != "" {
-				server.UUIDs[r.ServerName] = uuid
+			serverUUID, err := getOrCreateServerUUID(r, server)
+			if err != nil {
+				return err
+			}
+			if serverUUID != "" {
+				server.UUIDs[r.ServerName] = serverUUID
 			}
 		} else if r.IsImage() {
 			name = fmt.Sprintf("%s%s@%s", r.Image.Tag, r.Image.Digest, r.ServerName)
-			if uuid := getOrCreateServerUUID(r, server); uuid != "" {
-				server.UUIDs[r.ServerName] = uuid
+			serverUUID, err := getOrCreateServerUUID(r, server)
+			if err != nil {
+				return err
+			}
+			if serverUUID != "" {
+				server.UUIDs[r.ServerName] = serverUUID
 			}
 		} else {
 			name = r.ServerName
@@ -567,16 +579,19 @@ func EnsureUUIDs(configPath string, results models.ScanResults) error {
 		}
 
 		// Generate a new UUID and set to config and scan result
-		id := uuid.GenerateUUID()
-		server.UUIDs[name] = id
+		serverUUID, err := uuid.GenerateUUID()
+		if err != nil {
+			return err
+		}
+		server.UUIDs[name] = serverUUID
 		server = cleanForTOMLEncoding(server, c.Conf.Default)
 		c.Conf.Servers[r.ServerName] = server
 
 		if r.IsContainer() {
-			results[i].Container.UUID = id
+			results[i].Container.UUID = serverUUID
 			results[i].ServerUUID = server.UUIDs[r.ServerName]
 		} else {
-			results[i].ServerUUID = id
+			results[i].ServerUUID = serverUUID
 		}
 	}
 
