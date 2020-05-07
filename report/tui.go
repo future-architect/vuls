@@ -871,18 +871,23 @@ func detailLines() (string, error) {
 		links = append(links, url)
 	}
 
-	refs := []models.Reference{}
+	refsMap := map[string]models.Reference{}
 	for _, rr := range vinfo.CveContents.References(r.Family) {
 		for _, ref := range rr.Value {
 			if ref.Source == "" {
 				ref.Source = "-"
 			}
-			refs = append(refs, ref)
+			refsMap[ref.Link] = ref
 		}
 	}
-
 	if cont, found := vinfo.CveContents[models.Trivy]; found {
-		refs = append(refs, cont.References...)
+		for _, ref := range cont.References {
+			refsMap[ref.Link] = ref
+		}
+	}
+	refs := []models.Reference{}
+	for _, v := range refsMap {
+		refs = append(refs, v)
 	}
 
 	summary := vinfo.Summaries(r.Lang, r.Family)[0]
