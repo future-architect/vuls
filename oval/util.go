@@ -11,6 +11,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	apkver "github.com/knqyf263/go-apk-version"
 	debver "github.com/knqyf263/go-deb-version"
 	rpmver "github.com/knqyf263/go-rpm-version"
 	"github.com/kotakanbe/goval-dictionary/db"
@@ -373,11 +374,11 @@ func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error
 		return vera.LessThan(verb), nil
 
 	case config.Alpine:
-		vera, err := debver.NewVersion(newVer)
+		vera, err := apkver.NewVersion(newVer)
 		if err != nil {
 			return false, err
 		}
-		verb, err := debver.NewVersion(strings.Replace(packInOVAL.Version, "_rc", "~rc", 1))
+		verb, err := apkver.NewVersion(packInOVAL.Version)
 		if err != nil {
 			return false, err
 		}
