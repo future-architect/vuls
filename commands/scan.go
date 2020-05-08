@@ -41,7 +41,6 @@ func (*ScanCmd) Usage() string {
 		[-ssh-native-insecure]
 		[-ssh-config]
 		[-containers-only]
-		[-images-only]
 		[-libs-only]
 		[-wordpress-only]
 		[-skip-broken]
@@ -85,9 +84,6 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 	f.BoolVar(&c.Conf.ContainersOnly, "containers-only", false,
 		"Scan running containers only. Default: Scan both of hosts and running containers")
-
-	f.BoolVar(&c.Conf.ImagesOnly, "images-only", false,
-		"Scan container images only. Default: Scan both of hosts and images")
 
 	f.BoolVar(&c.Conf.LibsOnly, "libs-only", false,
 		"Scan libraries (lock files) specified in config.toml only.")

@@ -136,14 +136,16 @@ Vuls uses multiple vulnerability databases
 
 ### **Static** Analysis
 
-Vuls v0.8.0 can scan Docker images using [knqyf263/trivy](https://github.com/knqyf263/trivy).
-Following Registry supported.
+**Image scan function is no longer supported from Vuls v0.9.5. Use Trivy directry**
 
-- ECR
-- GCR
-- Local Image
+~~Vuls v0.8.0 can scan Docker images using [knqyf263/trivy](https://github.com/knqyf263/trivy).
+Following Registry supported.~~
 
-For details, see [Scan docker image](https://vuls.io/docs/en/tutorial-scan-docker-image.html)
+- ~~ECR~~
+- ~~GCR~~
+- ~~Local Image~~
+
+~~For details, see [Scan docker image](https://vuls.io/docs/en/tutorial-scan-docker-image.html)~~  
 
 ### Scan vulnerabilities of non-OS-packages
 

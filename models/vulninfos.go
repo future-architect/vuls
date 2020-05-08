@@ -200,6 +200,14 @@ type GitHubSecurityAlert struct {
 // LibraryFixedIns is a list of Library's FixedIn
 type LibraryFixedIns []LibraryFixedIn
 
+// Names return a slice of names
+func (lfs LibraryFixedIns) Names() (names []string) {
+	for _, lf := range lfs {
+		names = append(names, lf.Name)
+	}
+	return names
+}
+
 // WpPackageFixStats is a list of WpPackageFixStatus
 type WpPackageFixStats []WpPackageFixStatus
 
@@ -237,7 +245,7 @@ func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 		values = append(values, CveContentStr{RedHatAPI, cont.Title})
 	}
 
-	order := CveContentTypes{Nvd, NvdXML, NewCveContentType(myFamily)}
+	order := CveContentTypes{Trivy, Nvd, NvdXML, NewCveContentType(myFamily)}
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		// Only JVN has meaningful title. so return first 100 char of summary
@@ -277,7 +285,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := CveContentTypes{NewCveContentType(myFamily), Nvd, NvdXML}
+	order := CveContentTypes{Trivy, NewCveContentType(myFamily), Nvd, NvdXML}
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Summary) {
@@ -415,6 +423,18 @@ func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 			})
 		}
 	}
+
+	if cont, found := v.CveContents[Trivy]; found && cont.Cvss3Severity != "" {
+		values = append(values, CveContentCvss{
+			Type: Trivy,
+			Value: Cvss{
+				Type:     CVSS3,
+				Score:    severityToV2ScoreRoughly(cont.Cvss3Severity),
+				Severity: strings.ToUpper(cont.Cvss3Severity),
+			},
+		})
+	}
+
 	return
 }
 
@@ -855,6 +875,9 @@ const (
 	// DebianSecurityTrackerMatchStr is a String representation of DebianSecurityTrackerMatch
 	DebianSecurityTrackerMatchStr = "DebianSecurityTrackerMatch"
 
+	// TrivyMatchStr is a String representation of Trivy
+	TrivyMatchStr = "TrivyMatch"
+
 	// ChangelogExactMatchStr is a String representation of ChangelogExactMatch
 	ChangelogExactMatchStr = "ChangelogExactMatch"
 
@@ -892,6 +915,9 @@ var (
 
 	// DebianSecurityTrackerMatch ranking how confident the CVE-ID was deteted correctly
 	DebianSecurityTrackerMatch = Confidence{100, DebianSecurityTrackerMatchStr, 0}
+
+	// TrivyMatch ranking how confident the CVE-ID was deteted correctly
+	TrivyMatch = Confidence{100, TrivyMatchStr, 0}
 
 	// ChangelogExactMatch is a ranking how confident the CVE-ID was deteted correctly
 	ChangelogExactMatch = Confidence{95, ChangelogExactMatchStr, 3}
