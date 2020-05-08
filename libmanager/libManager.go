@@ -19,6 +19,10 @@ import (
 
 // FillLibrary fills LibraryScanner informations
 func FillLibrary(r *models.ScanResult) (totalCnt int, err error) {
+	if len(r.LibraryScanners) == 0 {
+		return
+	}
+
 	// initialize trivy's logger and db
 	err = log.InitLogger(false, false)
 	if err != nil {
