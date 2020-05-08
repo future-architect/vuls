@@ -11,6 +11,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	apkver "github.com/knqyf263/go-apk-version"
 	debver "github.com/knqyf263/go-deb-version"
 	rpmver "github.com/knqyf263/go-rpm-version"
 	"github.com/kotakanbe/goval-dictionary/db"
@@ -358,15 +359,26 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 var centosVerPattern = regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.centos)?`)
 var esVerPattern = regexp.MustCompile(`\.el(\d+)(?:_\d+)?`)
 
-func lessThan(family, versionRelease string, packB ovalmodels.Package) (bool, error) {
+func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error) {
 	switch family {
 	case config.Debian,
 		config.Ubuntu:
-		vera, err := debver.NewVersion(versionRelease)
+		vera, err := debver.NewVersion(newVer)
 		if err != nil {
 			return false, err
 		}
-		verb, err := debver.NewVersion(packB.Version)
+		verb, err := debver.NewVersion(packInOVAL.Version)
+		if err != nil {
+			return false, err
+		}
+		return vera.LessThan(verb), nil
+
+	case config.Alpine:
+		vera, err := apkver.NewVersion(newVer)
+		if err != nil {
+			return false, err
+		}
+		verb, err := apkver.NewVersion(packInOVAL.Version)
 		if err != nil {
 			return false, err
 		}
@@ -374,16 +386,15 @@ func lessThan(family, versionRelease string, packB ovalmodels.Package) (bool, er
 
 	case config.Oracle,
 		config.SUSEEnterpriseServer,
-		config.Alpine,
 		config.Amazon:
-		vera := rpmver.NewVersion(versionRelease)
-		verb := rpmver.NewVersion(packB.Version)
+		vera := rpmver.NewVersion(newVer)
+		verb := rpmver.NewVersion(packInOVAL.Version)
 		return vera.LessThan(verb), nil
 
 	case config.RedHat,
 		config.CentOS:
-		vera := rpmver.NewVersion(centosVerPattern.ReplaceAllString(versionRelease, ".el$1"))
-		verb := rpmver.NewVersion(esVerPattern.ReplaceAllString(packB.Version, ".el$1"))
+		vera := rpmver.NewVersion(centosVerPattern.ReplaceAllString(newVer, ".el$1"))
+		verb := rpmver.NewVersion(esVerPattern.ReplaceAllString(packInOVAL.Version, ".el$1"))
 		return vera.LessThan(verb), nil
 
 	default:
