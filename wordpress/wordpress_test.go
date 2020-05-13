@@ -60,7 +60,7 @@ func TestRemoveAt(t *testing.T) {
 		}
 	}
 
-	var boundrytests = []struct {
+	var boundryTests = []struct {
 		in       models.WordPressPackages
 		expected models.WordPressPackages
 	}{
@@ -86,14 +86,14 @@ func TestRemoveAt(t *testing.T) {
 		},
 	}
 
-	for i, tt := range boundrytests {
+	for i, tt := range boundryTests {
 		actual := removeAt(tt.in, 1)
 		if !reflect.DeepEqual(actual, tt.expected) {
-			t.Errorf("[%d] boundrytests WordPressPackages error ", i)
+			t.Errorf("[%d] boundryTests WordPressPackages error ", i)
 		}
 	}
 
-	var emptytests = []struct {
+	var emptyTests = []struct {
 		in       models.WordPressPackages
 		expected models.WordPressPackages
 	}{
@@ -103,10 +103,10 @@ func TestRemoveAt(t *testing.T) {
 		},
 	}
 
-	for i, tt := range emptytests {
+	for i, tt := range emptyTests {
 		actual := removeAt(tt.in, 1)
 		if !reflect.DeepEqual(actual, tt.expected) {
-			t.Errorf("[%d] emptytests WordPressPackages error ", i)
+			t.Errorf("[%d] emptyTests WordPressPackages error ", i)
 		}
 	}
 }
