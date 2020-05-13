@@ -7,7 +7,7 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
-func TestFillInactive(t *testing.T) {
+func TestRemoveInactive(t *testing.T) {
 	var tests = []struct {
 		in       models.WordPressPackages
 		expected models.WordPressPackages
@@ -27,14 +27,14 @@ func TestFillInactive(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		actual := fillInactives(tt.in)
+		actual := removeInactives(tt.in)
 		if !reflect.DeepEqual(actual, tt.expected) {
 			t.Errorf("[%d] WordPressPackages error ", i)
 		}
 	}
 }
 
-func TestUnset(t *testing.T) {
+func TestRemoveAt(t *testing.T) {
 	var tests = []struct {
 		in       models.WordPressPackages
 		expected models.WordPressPackages
@@ -54,7 +54,7 @@ func TestUnset(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		actual := unset(tt.in, 0)
+		actual := removeAt(tt.in, 0)
 		if !reflect.DeepEqual(actual, tt.expected) {
 			t.Errorf("[%d] WordPressPackages error ", i)
 		}

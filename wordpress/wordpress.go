@@ -71,8 +71,8 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 	plugins := r.WordPressPackages.Plugins()
 
 	if c.Conf.WpIgnoreInactive {
-		themes = fillInactives(themes)
-		plugins = fillInactives(plugins)
+		themes = removeInactives(themes)
+		plugins = removeInactives(plugins)
 	}
 
 	// Themes
@@ -268,7 +268,7 @@ loop:
 	return "", err
 }
 
-func fillInactives(elements models.WordPressPackages) models.WordPressPackages {
+func removeInactives(elements models.WordPressPackages) models.WordPressPackages {
 	var inactives []int
 	for i, y := range elements {
 		if y.Status == "inactive" {
@@ -276,12 +276,12 @@ func fillInactives(elements models.WordPressPackages) models.WordPressPackages {
 		}
 	}
 	for _, h := range inactives {
-		elements = unset(elements, h)
+		elements = removeAt(elements, h)
 	}
 	return elements
 }
 
-func unset(s models.WordPressPackages, i int) models.WordPressPackages {
+func removeAt(s models.WordPressPackages, i int) models.WordPressPackages {
 	if i >= len(s) {
 		return s
 	}
