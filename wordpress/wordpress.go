@@ -268,22 +268,13 @@ loop:
 	return "", err
 }
 
-func removeInactives(elements models.WordPressPackages) models.WordPressPackages {
-	var inactives []int
-	for i, y := range elements {
-		if y.Status == "inactive" {
-			inactives = append(inactives, i)
+func removeInactives(pkgs models.WordPressPackages) models.WordPressPackages {
+	var removed []models.WpPackage
+	for _, p := range pkgs {
+		if p.Status == "inactive" {
+			continue
 		}
+		removed = append(removed, p)
 	}
-	for _, h := range inactives {
-		elements = removeAt(elements, h)
-	}
-	return elements
-}
-
-func removeAt(s models.WordPressPackages, i int) models.WordPressPackages {
-	if i >= len(s) {
-		return s
-	}
-	return append(s[:i], s[i+1:]...)
+	return removed
 }

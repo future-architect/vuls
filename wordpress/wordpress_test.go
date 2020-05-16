@@ -1,6 +1,7 @@
 package wordpress
 
 import (
+	"github.com/k0kubun/pp"
 	"reflect"
 	"testing"
 
@@ -22,23 +23,8 @@ func TestRemoveInactive(t *testing.T) {
 					Type:    "",
 				},
 			},
-			expected: models.WordPressPackages{},
+			expected: nil,
 		},
-	}
-
-	for i, tt := range tests {
-		actual := removeInactives(tt.in)
-		if !reflect.DeepEqual(actual, tt.expected) {
-			t.Errorf("[%d] WordPressPackages error ", i)
-		}
-	}
-}
-
-func TestRemoveAt(t *testing.T) {
-	var tests = []struct {
-		in       models.WordPressPackages
-		expected models.WordPressPackages
-	}{
 		{
 			in: models.WordPressPackages{
 				{
@@ -48,26 +34,27 @@ func TestRemoveAt(t *testing.T) {
 					Version: "",
 					Type:    "",
 				},
+				{
+					Name:    "BackWPup",
+					Status:  "inactive",
+					Update:  "",
+					Version: "",
+					Type:    "",
+				},
 			},
-			expected: models.WordPressPackages{},
+			expected: nil,
 		},
-	}
-
-	for i, tt := range tests {
-		actual := removeAt(tt.in, 0)
-		if !reflect.DeepEqual(actual, tt.expected) {
-			t.Errorf("[%d] WordPressPackages error ", i)
-		}
-	}
-
-	var boundryTests = []struct {
-		in       models.WordPressPackages
-		expected models.WordPressPackages
-	}{
 		{
 			in: models.WordPressPackages{
 				{
 					Name:    "akismet",
+					Status:  "active",
+					Update:  "",
+					Version: "",
+					Type:    "",
+				},
+				{
+					Name:    "BackWPup",
 					Status:  "inactive",
 					Update:  "",
 					Version: "",
@@ -77,7 +64,7 @@ func TestRemoveAt(t *testing.T) {
 			expected: models.WordPressPackages{
 				{
 					Name:    "akismet",
-					Status:  "inactive",
+					Status:  "active",
 					Update:  "",
 					Version: "",
 					Type:    "",
@@ -86,27 +73,12 @@ func TestRemoveAt(t *testing.T) {
 		},
 	}
 
-	for i, tt := range boundryTests {
-		actual := removeAt(tt.in, 1)
+	for i, tt := range tests {
+		actual := removeInactives(tt.in)
 		if !reflect.DeepEqual(actual, tt.expected) {
-			t.Errorf("[%d] boundryTests WordPressPackages error ", i)
-		}
-	}
-
-	var emptyTests = []struct {
-		in       models.WordPressPackages
-		expected models.WordPressPackages
-	}{
-		{
-			in:       models.WordPressPackages{},
-			expected: models.WordPressPackages{},
-		},
-	}
-
-	for i, tt := range emptyTests {
-		actual := removeAt(tt.in, 1)
-		if !reflect.DeepEqual(actual, tt.expected) {
-			t.Errorf("[%d] emptyTests WordPressPackages error ", i)
+			pp.Print(tt.expected)
+			pp.Print(actual)
+			t.Errorf("[%d] WordPressPackages error ", i)
 		}
 	}
 }
