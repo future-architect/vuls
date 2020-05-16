@@ -1,7 +1,6 @@
 package wordpress
 
 import (
-	"github.com/k0kubun/pp"
 	"reflect"
 	"testing"
 
@@ -76,8 +75,6 @@ func TestRemoveInactive(t *testing.T) {
 	for i, tt := range tests {
 		actual := removeInactives(tt.in)
 		if !reflect.DeepEqual(actual, tt.expected) {
-			pp.Print(tt.expected)
-			pp.Print(actual)
 			t.Errorf("[%d] WordPressPackages error ", i)
 		}
 	}
