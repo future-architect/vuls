@@ -342,7 +342,6 @@ func detectContainerOSes(timeoutSec int) (actives, inactives []osTypeInterface) 
 					u.setErrs([]error{
 						xerrors.New("Timed out"),
 					})
-					inactives = append(inactives)
 					util.Log.Errorf("Timed out: %s", servername)
 				}
 			}
