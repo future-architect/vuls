@@ -100,8 +100,8 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.Conf.FormatJSON, "format-json", false, "JSON format")
 
 	f.BoolVar(&c.Conf.ToLocalFile, "to-localfile", false, "Write report to localfile")
-	f.StringVar(&p.listen, "listen", "localhost:5515",
-		"host:port (default: localhost:5515)")
+	f.StringVar(&p.listen, "listen", "0.0.0.0:5515",
+		"host:port (default: 0.0.0.0:5515)")
 
 	f.StringVar(&p.cveDict.Type, "cvedb-type", "",
 		"DB type of go-cve-dictionary (sqlite3, mysql, postgres, redis or http)")
