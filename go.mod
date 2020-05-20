@@ -11,14 +11,15 @@ require (
 	github.com/Azure/azure-sdk-for-go v42.0.0+incompatible
 	github.com/BurntSushi/toml v0.3.1
 	github.com/RackSec/srslog v0.0.0-20180709174129-a4725f04ec91
-	github.com/aquasecurity/fanal v0.0.0-20200427221647-c3528846e21c
+	github.com/aquasecurity/fanal v0.0.0-20200504143803-30a561989059
 	github.com/aquasecurity/go-dep-parser v0.0.0-20200123140603-4dc0125084da // indirect
-	github.com/aquasecurity/trivy v0.6.0
-	github.com/aquasecurity/trivy-db v0.0.0-20200427221211-19fb3b7a88b5
+	github.com/aquasecurity/trivy v0.7.0
+	github.com/aquasecurity/trivy-db v0.0.0-20200430091154-7c0a6e1ad398
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 	github.com/aws/aws-sdk-go v1.30.16
 	github.com/boltdb/bolt v1.3.1
 	github.com/cenkalti/backoff v2.2.1+incompatible
+	github.com/d4l3k/messagediff v1.2.2-0.20190829033028-7e0a312ae40b
 	github.com/google/subcommands v1.2.0
 	github.com/gosuri/uitable v0.0.4
 	github.com/hashicorp/go-uuid v1.0.2
