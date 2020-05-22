@@ -293,6 +293,34 @@ func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 			"linux",
 		}
 		return o.fillWithOval(driver, r, kernelNamesInOval)
+	case "20":
+		kernelNamesInOval := []string{
+			"linux-aws",
+			"linux-azure",
+			"linux-gcp",
+			"linux-kvm",
+			"linux-meta",
+			"linux-meta-aws",
+			"linux-meta-azure",
+			"linux-meta-gcp",
+			"linux-meta-kvm",
+			"linux-meta-oem-5.6",
+			"linux-meta-oracle",
+			"linux-meta-raspi",
+			"linux-meta-riscv",
+			"linux-oem-5.6",
+			"linux-oracle",
+			"linux-raspi",
+			"linux-raspi2",
+			"linux-riscv",
+			"linux-signed",
+			"linux-signed-azure",
+			"linux-signed-gcp",
+			"linux-signed-oem-5.6",
+			"linux-signed-oracle",
+			"linux",
+		}
+		return o.fillWithOval(driver, r, kernelNamesInOval)
 	}
 	return 0, fmt.Errorf("Ubuntu %s is not support for now", r.Release)
 }
