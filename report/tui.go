@@ -101,7 +101,6 @@ func keybindings(g *gocui.Gui) (err error) {
 	errs = append(errs, g.SetKeybinding("summary", gocui.KeySpace, gocui.ModNone, cursorPageDown))
 	errs = append(errs, g.SetKeybinding("summary", gocui.KeyBackspace, gocui.ModNone, cursorPageUp))
 	errs = append(errs, g.SetKeybinding("summary", gocui.KeyBackspace2, gocui.ModNone, cursorPageUp))
-	//  errs = append(errs, g.SetKeybinding("summary", gocui.KeyCtrlM, gocui.ModNone, cursorMoveMiddle))
 	errs = append(errs, g.SetKeybinding("summary", gocui.KeyEnter, gocui.ModNone, nextView))
 	errs = append(errs, g.SetKeybinding("summary", gocui.KeyCtrlN, gocui.ModNone, nextSummary))
 	errs = append(errs, g.SetKeybinding("summary", gocui.KeyCtrlP, gocui.ModNone, previousSummary))
@@ -169,7 +168,7 @@ func nextView(g *gocui.Gui, v *gocui.View) error {
 	var err error
 
 	if v == nil {
-		err = g.SetCurrentView("side")
+		return g.SetCurrentView("side")
 	}
 	switch v.Name() {
 	case "side":
@@ -190,7 +189,7 @@ func previousView(g *gocui.Gui, v *gocui.View) error {
 	var err error
 
 	if v == nil {
-		err = g.SetCurrentView("side")
+		return g.SetCurrentView("side")
 	}
 	switch v.Name() {
 	case "side":
@@ -283,31 +282,15 @@ func cursorDown(g *gocui.Gui, v *gocui.View) error {
 				return err
 			}
 		}
-		onMovingCursorRedrawView(g, v)
+		err := onMovingCursorRedrawView(g, v)
+		if err != nil {
+			return err
+		}
 	}
 
 	cx, cy := v.Cursor()
 	ox, oy := v.Origin()
-	debug(g, fmt.Sprintf("%v, %v, %v, %v", cx, cy, ox, oy))
-	return nil
-}
-
-func cursorMoveTop(g *gocui.Gui, v *gocui.View) error {
-	if v != nil {
-		cx, _ := v.Cursor()
-		v.SetCursor(cx, 0)
-	}
-	onMovingCursorRedrawView(g, v)
-	return nil
-}
-
-func cursorMoveBottom(g *gocui.Gui, v *gocui.View) error {
-	if v != nil {
-		_, maxY := v.Size()
-		cx, _ := v.Cursor()
-		v.SetCursor(cx, maxY-1)
-	}
-	onMovingCursorRedrawView(g, v)
+	_ = debug(g, fmt.Sprintf("%v, %v, %v, %v", cx, cy, ox, oy))
 	return nil
 }
 
@@ -315,9 +298,13 @@ func cursorMoveMiddle(g *gocui.Gui, v *gocui.View) error {
 	if v != nil {
 		_, maxY := v.Size()
 		cx, _ := v.Cursor()
-		v.SetCursor(cx, maxY/2)
+		if err := v.SetCursor(cx, maxY/2); err != nil {
+			return err
+		}
 	}
-	onMovingCursorRedrawView(g, v)
+	if err := onMovingCursorRedrawView(g, v); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -332,23 +319,25 @@ func cursorPageDown(g *gocui.Gui, v *gocui.View) error {
 
 		if !ok {
 			if yLimit < maxY {
-				v.SetCursor(cx, yLimit)
+				_ = v.SetCursor(cx, yLimit)
 			} else {
-				v.SetCursor(cx, maxY-1)
-				v.SetOrigin(ox, yLimit-maxY+1)
+				_ = v.SetCursor(cx, maxY-1)
+				_ = v.SetOrigin(ox, yLimit-maxY+1)
 			}
 		} else if yLimit < oy+jump+maxY {
 			if yLimit < maxY {
-				v.SetCursor(cx, yLimit)
+				_ = v.SetCursor(cx, yLimit)
 			} else {
-				v.SetOrigin(ox, yLimit-maxY+1)
-				v.SetCursor(cx, maxY-1)
+				_ = v.SetOrigin(ox, yLimit-maxY+1)
+				_ = v.SetCursor(cx, maxY-1)
 			}
 		} else {
-			v.SetCursor(cx, cy)
-			v.SetOrigin(ox, oy+jump)
+			_ = v.SetCursor(cx, cy)
+			if err := v.SetOrigin(ox, oy+jump); err != nil {
+				return err
+			}
 		}
-		onMovingCursorRedrawView(g, v)
+		_ = onMovingCursorRedrawView(g, v)
 	}
 	return nil
 }
@@ -363,7 +352,7 @@ func cursorUp(g *gocui.Gui, v *gocui.View) error {
 			}
 		}
 	}
-	onMovingCursorRedrawView(g, v)
+	_ = onMovingCursorRedrawView(g, v)
 	return nil
 }
 
@@ -373,11 +362,13 @@ func cursorPageUp(g *gocui.Gui, v *gocui.View) error {
 		cx, _ := v.Cursor()
 		ox, oy := v.Origin()
 		if err := v.SetOrigin(ox, oy-jump); err != nil {
-			v.SetOrigin(ox, 0)
-			v.SetCursor(cx, 0)
+			if err := v.SetOrigin(ox, 0); err != nil {
+				return err
+			}
+			_ = v.SetCursor(cx, 0)
 
 		}
-		onMovingCursorRedrawView(g, v)
+		_ = onMovingCursorRedrawView(g, v)
 	}
 	return nil
 }
@@ -544,10 +535,12 @@ func debug(g *gocui.Gui, str string) error {
 	if config.Conf.Debug {
 		maxX, maxY := g.Size()
 		if _, err := g.View("debug"); err != gocui.ErrUnknownView {
-			g.DeleteView("debug")
+			if err := g.DeleteView("debug"); err != nil {
+				return err
+			}
 		}
 		if v, err := g.SetView("debug", maxX/2-7, maxY/2, maxX/2+7, maxY/2+2); err != nil {
-			fmt.Fprintf(v, str)
+			fmt.Fprint(v, str)
 		}
 	}
 	return nil
@@ -584,7 +577,7 @@ func setSummaryLayout(g *gocui.Gui) error {
 		}
 
 		lines := summaryLines(currentScanResult)
-		fmt.Fprintf(v, lines)
+		fmt.Fprint(v, lines)
 
 		v.Highlight = true
 		v.Editable = false
@@ -622,6 +615,7 @@ func summaryLines(r models.ScanResult) string {
 		pkgNames = append(pkgNames, vinfo.CpeURIs...)
 		pkgNames = append(pkgNames, vinfo.GitHubSecurityAlerts.Names()...)
 		pkgNames = append(pkgNames, vinfo.WpPackageFixStats.Names()...)
+		pkgNames = append(pkgNames, vinfo.LibraryFixedIns.Names()...)
 
 		exploits := ""
 		if 0 < len(vinfo.Exploits) {
@@ -719,8 +713,6 @@ func setChangelogLayout(g *gocui.Gui) error {
 						lines = append(lines, fmt.Sprintf("  * PID: %s %s Port: %s",
 							p.PID, p.Name, p.ListenPorts))
 					}
-				} else {
-					// lines = append(lines, fmt.Sprintf("  * No affected process"))
 				}
 			}
 		}
@@ -752,17 +744,11 @@ func setChangelogLayout(g *gocui.Gui) error {
 			}
 		}
 
-		// check library fixedin
-		for _, scanner := range r.LibraryScanners {
-			key := scanner.GetLibraryKey()
-			for _, fixedin := range vinfo.LibraryFixedIns {
-				for _, lib := range scanner.Libs {
-					if fixedin.Key == key && lib.Name == fixedin.Name {
-						lines = append(lines, fmt.Sprintf("* %s-%s, FixedIn: %s",
-							lib.Name, lib.Version, fixedin.FixedIn))
-						continue
-					}
-				}
+		for _, l := range vinfo.LibraryFixedIns {
+			libs := r.LibraryScanners.Find(l.Name)
+			for path, lib := range libs {
+				lines = append(lines, fmt.Sprintf("%s-%s, FixedIn: %s (%s)",
+					lib.Name, lib.Version, l.FixedIn, path))
 			}
 		}
 
@@ -876,14 +862,23 @@ func detailLines() (string, error) {
 		links = append(links, url)
 	}
 
-	refs := []models.Reference{}
+	refsMap := map[string]models.Reference{}
 	for _, rr := range vinfo.CveContents.References(r.Family) {
 		for _, ref := range rr.Value {
 			if ref.Source == "" {
 				ref.Source = "-"
 			}
-			refs = append(refs, ref)
+			refsMap[ref.Link] = ref
 		}
+	}
+	if cont, found := vinfo.CveContents[models.Trivy]; found {
+		for _, ref := range cont.References {
+			refsMap[ref.Link] = ref
+		}
+	}
+	refs := []models.Reference{}
+	for _, v := range refsMap {
+		refs = append(refs, v)
 	}
 
 	summary := vinfo.Summaries(r.Lang, r.Family)[0]

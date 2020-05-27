@@ -291,6 +291,15 @@ No CVE-IDs are found in updatable packages.
 			}
 		}
 
+		for _, l := range vuln.LibraryFixedIns {
+			libs := r.LibraryScanners.Find(l.Name)
+			for path, lib := range libs {
+				data = append(data, []string{l.Key,
+					fmt.Sprintf("%s-%s, FixedIn: %s (%s)",
+						lib.Name, lib.Version, l.FixedIn, path)})
+			}
+		}
+
 		for _, confidence := range vuln.Confidences {
 			data = append(data, []string{"Confidence", confidence.String()})
 		}
@@ -599,7 +608,7 @@ func ListValidJSONDirs() (dirs []string, err error) {
 // Otherwise, returns the path of the latest directory
 func JSONDir(args []string) (string, error) {
 	var err error
-	dirs := []string{}
+	var dirs []string
 
 	if 0 < len(args) {
 		if dirs, err = ListValidJSONDirs(); err != nil {

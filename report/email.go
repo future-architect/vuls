@@ -54,14 +54,15 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 			}
 		}
 	}
-	summary := ""
+	var summary string
 	if config.Conf.IgnoreUnscoredCves {
 		summary = fmt.Sprintf("Total: %d (High:%d Medium:%d Low:%d)",
 			m["High"]+m["Medium"]+m["Low"], m["High"], m["Medium"], m["Low"])
+	} else {
+		summary = fmt.Sprintf("Total: %d (High:%d Medium:%d Low:%d ?:%d)",
+			m["High"]+m["Medium"]+m["Low"]+m["Unknown"],
+			m["High"], m["Medium"], m["Low"], m["Unknown"])
 	}
-	summary = fmt.Sprintf("Total: %d (High:%d Medium:%d Low:%d ?:%d)",
-		m["High"]+m["Medium"]+m["Low"]+m["Unknown"],
-		m["High"], m["Medium"], m["Low"], m["Unknown"])
 	origmessage := message
 	if conf.FormatOneEMail {
 		message = fmt.Sprintf("One Line Summary\r\n================\r\n%s", formatOneLineSummary(rs...))

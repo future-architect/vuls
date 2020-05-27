@@ -6,60 +6,18 @@ import (
 	cvedict "github.com/kotakanbe/go-cve-dictionary/models"
 )
 
-// ConvertNvdXMLToModel convert NVD to CveContent
-func ConvertNvdXMLToModel(cveID string, nvd *cvedict.NvdXML) *CveContent {
-	if nvd == nil {
-		return nil
-	}
-	var cpes []Cpe
-	for _, c := range nvd.Cpes {
-		cpes = append(cpes, Cpe{
-			FormattedString: c.FormattedString,
-			URI:             c.URI,
-		})
-	}
-
-	var refs []Reference
-	for _, r := range nvd.References {
-		refs = append(refs, Reference{
-			Link:   r.Link,
-			Source: r.Source,
-		})
-	}
-
-	cweIDs := []string{}
-	for _, cid := range nvd.Cwes {
-		cweIDs = append(cweIDs, cid.CweID)
-	}
-
-	return &CveContent{
-		Type:          Nvd,
-		CveID:         cveID,
-		Summary:       nvd.Summary,
-		Cvss2Score:    nvd.Cvss2.BaseScore,
-		Cvss2Vector:   nvd.Cvss2.VectorString,
-		Cvss2Severity: nvd.Cvss2.Severity,
-		SourceLink:    "https://nvd.nist.gov/vuln/detail/" + cveID,
-		// Cpes:          cpes,
-		CweIDs:       cweIDs,
-		References:   refs,
-		Published:    nvd.PublishedDate,
-		LastModified: nvd.LastModifiedDate,
-	}
-}
-
 // ConvertJvnToModel convert JVN to CveContent
 func ConvertJvnToModel(cveID string, jvn *cvedict.Jvn) *CveContent {
 	if jvn == nil {
 		return nil
 	}
-	var cpes []Cpe
-	for _, c := range jvn.Cpes {
-		cpes = append(cpes, Cpe{
-			FormattedString: c.FormattedString,
-			URI:             c.URI,
-		})
-	}
+	// var cpes = []Cpe{}
+	// for _, c := range jvn.Cpes {
+	// 	cpes = append(cpes, Cpe{
+	// 		FormattedString: c.FormattedString,
+	// 		URI:             c.URI,
+	// 	})
+	// }
 
 	refs := []Reference{}
 	for _, r := range jvn.References {
@@ -93,15 +51,15 @@ func ConvertNvdJSONToModel(cveID string, nvd *cvedict.NvdJSON) *CveContent {
 	if nvd == nil {
 		return nil
 	}
-	var cpes []Cpe
-	for _, c := range nvd.Cpes {
-		cpes = append(cpes, Cpe{
-			FormattedString: c.FormattedString,
-			URI:             c.URI,
-		})
-	}
+	// var cpes = []Cpe{}
+	// for _, c := range nvd.Cpes {
+	// 	cpes = append(cpes, Cpe{
+	// 		FormattedString: c.FormattedString,
+	// 		URI:             c.URI,
+	// 	})
+	// }
 
-	var refs []Reference
+	var refs = []Reference{}
 	for _, r := range nvd.References {
 		refs = append(refs, Reference{
 			Link:   r.Link,

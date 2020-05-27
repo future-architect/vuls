@@ -1,0 +1,22 @@
+name: go-mod-tidy-pr
+
+on:
+  schedule:
+    - cron: "0 0 * * 1" # Weekly build
+
+jobs:
+  go-mod-tidy-pr:
+    name: go-mod-tidy-pr
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Run go-mod-tidy-pr
+        uses: sue445/go-mod-tidy-pr@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          git_user_name: kotakanbe
+          git_user_email: kotakanbe@gmail.com
+          go_version: 1.14.x

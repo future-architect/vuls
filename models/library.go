@@ -3,14 +3,34 @@ package models
 import (
 	"path/filepath"
 
-	"github.com/aquasecurity/trivy/pkg/scanner/library"
-	"github.com/aquasecurity/trivy/pkg/vulnsrc/vulnerability"
+	"github.com/aquasecurity/trivy-db/pkg/db"
+	trivyDBTypes "github.com/aquasecurity/trivy-db/pkg/types"
+	"github.com/aquasecurity/trivy/pkg/detector/library"
+
+	"github.com/aquasecurity/trivy/pkg/types"
 	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
 
-	"github.com/aquasecurity/go-dep-parser/pkg/types"
+	// "github.com/aquasecurity/go-dep-parser/pkg/types"
 	"github.com/knqyf263/go-version"
 )
+
+// LibraryScanners is an array of LibraryScanner
+type LibraryScanners []LibraryScanner
+
+// Find : find by name
+func (lss LibraryScanners) Find(name string) map[string]types.Library {
+	filtered := map[string]types.Library{}
+	for _, ls := range lss {
+		for _, lib := range ls.Libs {
+			if lib.Name == name {
+				filtered[ls.Path] = lib
+				break
+			}
+		}
+	}
+	return filtered
+}
 
 // LibraryScanner has libraries information
 type LibraryScanner struct {
@@ -20,18 +40,12 @@ type LibraryScanner struct {
 
 // Scan : scan target library
 func (s LibraryScanner) Scan() ([]VulnInfo, error) {
-	scanner := library.NewScanner(filepath.Base(string(s.Path)))
+	scanner := library.DriverFactory{}.NewDriver(filepath.Base(string(s.Path)))
 	if scanner == nil {
 		return nil, xerrors.New("unknown file type")
 	}
 
-	util.Log.Info("Updating library db...")
-	err := scanner.UpdateDB()
-	if err != nil {
-		return nil, xerrors.Errorf("failed to update %s advisories: %w", scanner.Type(), err)
-	}
-
-	var vulnerabilities []VulnInfo
+	var vulnerabilities = []VulnInfo{}
 	for _, pkg := range s.Libs {
 		v, err := version.NewVersion(pkg.Version)
 		if err != nil {
@@ -43,6 +57,9 @@ func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 		if err != nil {
 			return nil, xerrors.Errorf("failed to detect %s vulnerabilities: %w", scanner.Type(), err)
 		}
+		if len(tvulns) == 0 {
+			continue
+		}
 
 		vulns := s.convertFanalToVuln(tvulns)
 		vulnerabilities = append(vulnerabilities, vulns...)
@@ -51,25 +68,27 @@ func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 	return vulnerabilities, nil
 }
 
-func (s LibraryScanner) convertFanalToVuln(tvulns []vulnerability.DetectedVulnerability) (vulns []VulnInfo) {
+func (s LibraryScanner) convertFanalToVuln(tvulns []types.DetectedVulnerability) (vulns []VulnInfo) {
 	for _, tvuln := range tvulns {
-		vinfo, _ := s.getVulnDetail(tvuln)
+		vinfo, err := s.getVulnDetail(tvuln)
+		if err != nil {
+			util.Log.Debugf("failed to getVulnDetail. err: %s, tvun: %#v", err, tvuln)
+			continue
+		}
 		vulns = append(vulns, vinfo)
 	}
 	return vulns
 }
 
-func (s LibraryScanner) getVulnDetail(tvuln vulnerability.DetectedVulnerability) (vinfo VulnInfo, err error) {
-	details, err := vulnerability.Get(tvuln.VulnerabilityID)
+func (s LibraryScanner) getVulnDetail(tvuln types.DetectedVulnerability) (vinfo VulnInfo, err error) {
+	vul, err := db.Config{}.GetVulnerability(tvuln.VulnerabilityID)
 	if err != nil {
 		return vinfo, err
-	} else if len(details) == 0 {
-		return vinfo, xerrors.Errorf("Unknown vulnID : %s", tvuln.VulnerabilityID)
 	}
-	vinfo.CveID = tvuln.VulnerabilityID
-	vinfo.CveContents = getCveContents(details)
-	if tvuln.FixedVersion != "" {
 
+	vinfo.CveID = tvuln.VulnerabilityID
+	vinfo.CveContents = getCveContents(tvuln.VulnerabilityID, vul)
+	if tvuln.FixedVersion != "" {
 		vinfo.LibraryFixedIns = []LibraryFixedIn{
 			{
 				Key:     s.GetLibraryKey(),
@@ -81,38 +100,22 @@ func (s LibraryScanner) getVulnDetail(tvuln vulnerability.DetectedVulnerability)
 	return vinfo, nil
 }
 
-func getCveContents(details map[string]vulnerability.Vulnerability) (contents map[CveContentType]CveContent) {
+func getCveContents(cveID string, vul trivyDBTypes.Vulnerability) (contents map[CveContentType]CveContent) {
 	contents = map[CveContentType]CveContent{}
-	for source, detail := range details {
-		refs := []Reference{}
-		for _, refURL := range detail.References {
-			refs = append(refs, Reference{Source: refURL, Link: refURL})
-		}
-
-		content := CveContent{
-			Type:          NewCveContentType(source),
-			CveID:         detail.ID,
-			Title:         detail.Title,
-			Summary:       detail.Description,
-			Cvss3Score:    detail.CvssScoreV3,
-			Cvss3Severity: string(detail.SeverityV3),
-			Cvss2Score:    detail.CvssScore,
-			Cvss2Severity: string(detail.Severity),
-			References:    refs,
-
-			//SourceLink    string            `json:"sourceLink"`
-			//Cvss2Vector   string            `json:"cvss2Vector"`
-			//Cvss3Vector   string            `json:"cvss3Vector"`
-			//Cvss3Severity string            `json:"cvss3Severity"`
-			//Cpes          []Cpe             `json:"cpes,omitempty"`
-			//CweIDs        []string          `json:"cweIDs,omitempty"`
-			//Published     time.Time         `json:"published"`
-			//LastModified  time.Time         `json:"lastModified"`
-			//Mitigation    string            `json:"mitigation"` // RedHat API
-			//Optional      map[string]string `json:"optional,omitempty"`
-		}
-		contents[NewCveContentType(source)] = content
+	refs := []Reference{}
+	for _, refURL := range vul.References {
+		refs = append(refs, Reference{Source: "trivy", Link: refURL})
 	}
+
+	content := CveContent{
+		Type:          Trivy,
+		CveID:         cveID,
+		Title:         vul.Title,
+		Summary:       vul.Description,
+		Cvss3Severity: string(vul.Severity),
+		References:    refs,
+	}
+	contents[Trivy] = content
 	return contents
 }
 

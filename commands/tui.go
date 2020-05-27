@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/aquasecurity/trivy/pkg/utils"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/exploit"
 	"github.com/future-architect/vuls/gost"
@@ -46,6 +47,8 @@ func (*TuiCmd) Usage() string {
 		[-log-dir=/path/to/log]
 		[-debug]
 		[-debug-sql]
+		[-quiet]
+		[-no-progress]
 		[-pipe]
 		[-cvedb-type=sqlite3|mysql|postgres|redis|http]
 		[-cvedb-sqlite3-path=/path/to/cve.sqlite3]
@@ -59,6 +62,7 @@ func (*TuiCmd) Usage() string {
 		[-exploitdb-type=sqlite3|mysql|redis|http]
 		[-exploitdb-sqlite3-path=/path/to/exploitdb.sqlite3]
 		[-exploitdb-url=http://127.0.0.1:1326 or DB connection string]
+		[-trivy-cachedb-dir=/path/to/dir]
 
 `
 }
@@ -68,6 +72,8 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	//  f.StringVar(&p.lang, "lang", "en", "[en|ja]")
 	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "debug SQL")
 	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
+	f.BoolVar(&c.Conf.Quiet, "quiet", false, "Quiet mode. No output on stdout")
+	f.BoolVar(&c.Conf.NoProgress, "no-progress", false, "Suppress progress bar")
 
 	defaultLogDir := util.GetDefaultLogDir()
 	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
@@ -121,6 +127,8 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.exploitConf.URL, "exploitdb-url", "",
 		"http://exploit.com:1326 or DB connection string")
 
+	f.StringVar(&c.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
+		utils.DefaultCacheDir(), "/path/to/dir")
 }
 
 // Execute execute

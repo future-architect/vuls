@@ -28,7 +28,7 @@ func (w SyslogWriter) Write(rs ...models.ScanResult) (err error) {
 	for _, r := range rs {
 		messages := w.encodeSyslog(r)
 		for _, m := range messages {
-			if _, err = fmt.Fprintf(sysLog, m); err != nil {
+			if _, err = fmt.Fprint(sysLog, m); err != nil {
 				return err
 			}
 		}

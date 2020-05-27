@@ -41,7 +41,10 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	} else if mediatype == "text/plain" {
 		buf := new(bytes.Buffer)
-		io.Copy(buf, r.Body)
+		if _, err := io.Copy(buf, r.Body); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		if result, err = scan.ViaHTTP(r.Header, buf.String()); err != nil {
 			util.Log.Error(err)
 			http.Error(w, err.Error(), http.StatusBadRequest)

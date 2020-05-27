@@ -51,16 +51,6 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		}
 
 		s := ServerInfo{ServerName: serverName}
-		s.Images = make(map[string]Image)
-
-		// image are able to set any server type
-		for name, image := range v.Images {
-			if err := IsValidImage(image); err != nil {
-				return err
-			}
-			s.Images[name] = image
-		}
-
 		if v.Type != ServerTypePseudo {
 			s.Host = v.Host
 			if len(s.Host) == 0 {
@@ -291,18 +281,4 @@ func toCpeURI(cpename string) (string, error) {
 		return naming.BindToURI(wfn), nil
 	}
 	return "", xerrors.Errorf("Unknow CPE format: %s", cpename)
-}
-
-// IsValidImage checks a container configuration
-func IsValidImage(c Image) error {
-	if c.Name == "" {
-		return xerrors.New("Invalid arguments : no image name")
-	}
-	if c.Tag == "" && c.Digest == "" {
-		return xerrors.New("Invalid arguments : no image tag and digest")
-	}
-	if c.Tag != "" && c.Digest != "" {
-		return xerrors.New("Invalid arguments : you can either set image tag or digest")
-	}
-	return nil
 }

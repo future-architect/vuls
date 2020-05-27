@@ -42,7 +42,10 @@ func TestGetOrCreateServerUUID(t *testing.T) {
 	}
 
 	for testcase, v := range cases {
-		uuid := getOrCreateServerUUID(v.scanResult, v.server)
+		uuid, err := getOrCreateServerUUID(v.scanResult, v.server)
+		if err != nil {
+			t.Errorf("%s", err)
+		}
 		if (uuid == defaultUUID) != v.isDefault {
 			t.Errorf("%s : expected isDefault %t got %s", testcase, v.isDefault, uuid)
 		}

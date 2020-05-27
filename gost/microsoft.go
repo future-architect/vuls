@@ -18,7 +18,7 @@ func (ms Microsoft) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (n
 	if driver == nil {
 		return 0, nil
 	}
-	var cveIDs []string
+	cveIDs := []string{}
 	for cveID := range r.ScannedCves {
 		cveIDs = append(cveIDs, cveID)
 	}
@@ -72,7 +72,7 @@ func (ms Microsoft) ConvertToModel(cve *gostmodels.MicrosoftCVE) *models.CveCont
 	if 0 < len(cve.Workaround) {
 		option["workaround"] = cve.Workaround
 	}
-	var kbids []string
+	kbids := []string{}
 	for _, kbid := range cve.KBIDs {
 		kbids = append(kbids, kbid.KBID)
 	}

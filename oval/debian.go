@@ -76,7 +76,7 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 }
 
 func (o DebianBase) convertToModel(def *ovalmodels.Definition) *models.CveContent {
-	var refs []models.Reference
+	refs := []models.Reference{}
 	for _, r := range def.References {
 		refs = append(refs, models.Reference{
 			Link:   r.RefURL,
@@ -290,6 +290,34 @@ func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 			"linux-signed-oracle-5.0",
 			"linux-signed-oracle-5.3",
 			"linux-snapdragon",
+			"linux",
+		}
+		return o.fillWithOval(driver, r, kernelNamesInOval)
+	case "20":
+		kernelNamesInOval := []string{
+			"linux-aws",
+			"linux-azure",
+			"linux-gcp",
+			"linux-kvm",
+			"linux-meta",
+			"linux-meta-aws",
+			"linux-meta-azure",
+			"linux-meta-gcp",
+			"linux-meta-kvm",
+			"linux-meta-oem-5.6",
+			"linux-meta-oracle",
+			"linux-meta-raspi",
+			"linux-meta-riscv",
+			"linux-oem-5.6",
+			"linux-oracle",
+			"linux-raspi",
+			"linux-raspi2",
+			"linux-riscv",
+			"linux-signed",
+			"linux-signed-azure",
+			"linux-signed-gcp",
+			"linux-signed-oem-5.6",
+			"linux-signed-oracle",
 			"linux",
 		}
 		return o.fillWithOval(driver, r, kernelNamesInOval)

@@ -389,8 +389,8 @@ Calculating upgrade... Done
 		}
 		if len(tt.expected) != len(actual) {
 			t.Errorf("Result length is not as same as expected. expected: %d, actual: %d", len(tt.expected), len(actual))
-			pp.Println(tt.expected)
-			pp.Println(actual)
+			_, _ = pp.Println(tt.expected)
+			_, _ = pp.Println(actual)
 			return
 		}
 		for i := range tt.expected {

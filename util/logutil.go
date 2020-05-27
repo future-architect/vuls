@@ -1,6 +1,7 @@
 package util
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -39,14 +40,14 @@ func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
 		logDir = config.Conf.LogDir
 	}
 
-	if _, err := os.Stat(logDir); os.IsNotExist(err) {
-		if err := os.Mkdir(logDir, 0700); err != nil {
-			log.Errorf("Failed to create log directory. path: %s, err: %s", logDir, err)
-		}
-	}
-
 	// Only log to a file if quiet mode enabled
-	if config.Conf.Quiet {
+	if config.Conf.Quiet && flag.Lookup("test.v") == nil {
+		if _, err := os.Stat(logDir); os.IsNotExist(err) {
+			if err := os.Mkdir(logDir, 0700); err != nil {
+				log.Errorf("Failed to create log directory. path: %s, err: %s", logDir, err)
+			}
+		}
+
 		logFile := logDir + "/vuls.log"
 		if file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
 			log.Out = file

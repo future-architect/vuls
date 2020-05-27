@@ -189,7 +189,7 @@ func (o *bsd) scanUnsecurePackages() (models.VulnInfos, error) {
 		return nil, nil
 	}
 
-	var packAdtRslt []pkgAuditResult
+	packAdtRslt := []pkgAuditResult{}
 	blocks := o.splitIntoBlocks(r.Stdout)
 	for _, b := range blocks {
 		name, cveIDs, vulnID := o.parseBlock(b)
