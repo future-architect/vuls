@@ -268,8 +268,7 @@ loop:
 	return "", err
 }
 
-func removeInactives(pkgs models.WordPressPackages) models.WordPressPackages {
-	var removed []models.WpPackage
+func removeInactives(pkgs models.WordPressPackages) (removed models.WordPressPackages) {
 	for _, p := range pkgs {
 		if p.Status == "inactive" {
 			continue
