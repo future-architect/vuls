@@ -19,10 +19,3 @@ jobs:
 
     - name: Test
       run: make test
-
-    - name: Run golangci-lint
-      uses: actions-contrib/golangci-lint@v1
-      env:
-        GOROOT: ""
-      with:
-        args: "run ./..."
