@@ -34,7 +34,7 @@ type TempCredential struct {
 }
 
 type payload struct {
-	GroupID      int    `json:"GroupID"`
+	GroupID      int64  `json:"GroupID"`
 	Token        string `json:"Token"`
 	ScannedBy    string `json:"ScannedBy"`
 	ScannedIPv4s string `json:"ScannedIPv4s"`
