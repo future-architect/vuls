@@ -77,7 +77,6 @@ func TestParse(t *testing.T) {
 						Confidences: models.Confidences{
 							models.Confidence{Score: 100,
 								DetectionMethod: "TrivyMatch",
-								SortOrder:       0,
 							},
 						},
 						AffectedPackages: models.PackageFixStatuses{
@@ -89,6 +88,8 @@ func TestParse(t *testing.T) {
 							}},
 						CveContents: models.CveContents{
 							"trivy": {
+								Title:         "openssl: Segmentation fault in SSL_check_chain causes denial of service",
+								Summary:       "Server or client applications that call the SSL_check_chain() function during or after a TLS 1.3 handshake may crash due to a NULL pointer dereference as a result of incorrect handling of the \"signature_algorithms_cert\" TLS extension. The crash occurs if an invalid or unrecognised signature algorithm is received from the peer. This could be exploited by a malicious peer in a Denial of Service attack. OpenSSL version 1.1.1d, 1.1.1e, and 1.1.1f are affected by this issue. This issue did not affect OpenSSL versions prior to 1.1.1d. Fixed in OpenSSL 1.1.1g (Affected 1.1.1d-1.1.1f).",
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://packetstormsecurity.com/files/157527/OpenSSL-signature_algorithms_cert-Denial-Of-Service.html"},
@@ -162,6 +163,8 @@ func TestParse(t *testing.T) {
 						},
 						CveContents: models.CveContents{
 							"trivy": {
+								Title:         "PHP: sets environmental variable based on user supplied Proxy request header",
+								Summary:       "PHP through 7.0.8 does not attempt to address RFC 3875 section 4.1.18 namespace conflicts and therefore does not protect applications from the presence of untrusted client data in the HTTP_PROXY environment variable, which might allow remote attackers to redirect an application's outbound HTTP traffic to an arbitrary proxy server via a crafted Proxy header in an HTTP request, as demonstrated by (1) an application that makes a getenv('HTTP_PROXY') call or (2) a CGI configuration of PHP, aka an \"httpoxy\" issue.",
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2016-5385.html"},
@@ -2727,7 +2730,6 @@ func TestParse(t *testing.T) {
 							{
 								Score:           100,
 								DetectionMethod: "TrivyMatch",
-								SortOrder:       0,
 							},
 						},
 						AffectedPackages: models.PackageFixStatuses{
@@ -2769,7 +2771,6 @@ func TestParse(t *testing.T) {
 							{
 								Score:           100,
 								DetectionMethod: "TrivyMatch",
-								SortOrder:       0,
 							},
 						},
 						AffectedPackages: models.PackageFixStatuses{
@@ -2809,7 +2810,6 @@ func TestParse(t *testing.T) {
 							{
 								Score:           100,
 								DetectionMethod: "TrivyMatch",
-								SortOrder:       0,
 							},
 						},
 						AffectedPackages: models.PackageFixStatuses{
@@ -2850,7 +2850,6 @@ func TestParse(t *testing.T) {
 							{
 								Score:           100,
 								DetectionMethod: "TrivyMatch",
-								SortOrder:       0,
 							},
 						},
 						AffectedPackages: models.PackageFixStatuses{
@@ -2886,7 +2885,6 @@ func TestParse(t *testing.T) {
 							{
 								Score:           100,
 								DetectionMethod: "TrivyMatch",
-								SortOrder:       0,
 							},
 						},
 						AffectedPackages: models.PackageFixStatuses{
@@ -2922,7 +2920,6 @@ func TestParse(t *testing.T) {
 							{
 								Score:           100,
 								DetectionMethod: "TrivyMatch",
-								SortOrder:       0,
 							},
 						},
 						AffectedPackages: models.PackageFixStatuses{
@@ -3324,9 +3321,6 @@ func TestParse(t *testing.T) {
 						Path: "node-app/package-lock.json",
 						Libs: []types.Library{
 							types.Library{Name: "jquery", Version: "3.3.9"},
-							types.Library{Name: "jquery", Version: "3.3.9"},
-							types.Library{Name: "lodash", Version: "4.17.4"},
-							types.Library{Name: "lodash", Version: "4.17.4"},
 							types.Library{Name: "lodash", Version: "4.17.4"},
 						},
 					},
@@ -3342,24 +3336,18 @@ func TestParse(t *testing.T) {
 							types.Library{Name: "django-cors-headers", Version: "2.5.2"},
 							types.Library{Name: "pyyaml", Version: "5.1.0"},
 							types.Library{Name: "urllib3", Version: "1.24.1"},
-							types.Library{Name: "urllib3", Version: "1.24.1"},
 						},
 					},
 					{
 						Path: "ruby-app/Gemfile.lock",
 						Libs: []types.Library{
 							types.Library{Name: "actionpack", Version: "5.2.3"},
-							types.Library{Name: "actionpack", Version: "5.2.3"},
-							types.Library{Name: "actionview", Version: "5.2.3"},
 							types.Library{Name: "actionview", Version: "5.2.3"},
 							types.Library{Name: "activestorage", Version: "5.2.3"},
 							types.Library{Name: "activesupport", Version: "5.2.3"},
 							types.Library{Name: "json", Version: "2.2.0"},
 							types.Library{Name: "loofah", Version: "2.2.3"},
 							types.Library{Name: "nokogiri", Version: "1.10.3"},
-							types.Library{Name: "nokogiri", Version: "1.10.3"},
-							types.Library{Name: "nokogiri", Version: "1.10.3"},
-							types.Library{Name: "rack", Version: "2.0.7"},
 							types.Library{Name: "rack", Version: "2.0.7"},
 							types.Library{Name: "rails-html-sanitizer", Version: "1.0.3"},
 							types.Library{Name: "rake", Version: "12.3.2"},
@@ -3370,9 +3358,6 @@ func TestParse(t *testing.T) {
 						Libs: []types.Library{
 							types.Library{Name: "ammonia", Version: "1.9.0"},
 							types.Library{Name: "openssl", Version: "0.8.3"},
-							types.Library{Name: "openssl", Version: "0.8.3"},
-							types.Library{Name: "smallvec", Version: "0.6.9"},
-							types.Library{Name: "smallvec", Version: "0.6.9"},
 							types.Library{Name: "smallvec", Version: "0.6.9"},
 							types.Library{Name: "tempdir", Version: "0.3.7"},
 						},
@@ -3393,6 +3378,8 @@ func TestParse(t *testing.T) {
 			v.expected,
 			actual,
 			messagediff.IgnoreStructField("ScannedAt"),
+			messagediff.IgnoreStructField("Title"),
+			messagediff.IgnoreStructField("Summary"),
 		)
 		if !equal {
 			t.Errorf("test: %s, diff %s", testcase, diff)

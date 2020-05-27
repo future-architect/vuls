@@ -21,6 +21,7 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 	pkgs := models.Packages{}
 	vulnInfos := models.VulnInfos{}
 	uniqueLibraryScanners := map[string]models.LibraryScanner{}
+	uniqueLibraryScannersLibNames := map[string]string{}
 	for _, trivyResult := range trivyResults {
 		for _, vuln := range trivyResult.Vulnerabilities {
 			if _, ok := vulnInfos[vuln.VulnerabilityID]; !ok {
@@ -70,6 +71,8 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 				models.Trivy: models.CveContent{
 					Cvss3Severity: vuln.Severity,
 					References:    references,
+					Title:         vuln.Title,
+					Summary:       vuln.Description,
 				},
 			}
 			// imageのVulnの時のみ処理
@@ -103,16 +106,23 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 							},
 						},
 					}
+					uniqueLibraryScannersLibNames[trivyResult.Target] = vuln.PkgName + vuln.InstalledVersion
 				} else {
 					libScanner := uniqueLibraryScanners[trivyResult.Target]
-					libScanner.Libs = append(libScanner.Libs, types.Library{
-						Name:    vuln.PkgName,
-						Version: vuln.InstalledVersion,
-					})
-					sort.Slice(libScanner.Libs, func(i, j int) bool {
-						return libScanner.Libs[i].Name < libScanner.Libs[j].Name
-					})
-					uniqueLibraryScanners[trivyResult.Target] = libScanner
+					var IsDuplicatelibName bool
+					if libName, ok := uniqueLibraryScannersLibNames[trivyResult.Target]; ok {
+						if libName == vuln.PkgName+vuln.InstalledVersion {
+							IsDuplicatelibName = true
+						}
+					}
+					if !IsDuplicatelibName {
+						uniqueLibraryScannersLibNames[trivyResult.Target] = vuln.PkgName + vuln.InstalledVersion
+						libScanner.Libs = append(libScanner.Libs, types.Library{
+							Name:    vuln.PkgName,
+							Version: vuln.InstalledVersion,
+						})
+						uniqueLibraryScanners[trivyResult.Target] = libScanner
+					}
 				}
 			}
 			vulnInfos[vuln.VulnerabilityID] = vulnInfo
@@ -120,6 +130,9 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 	}
 	var libraryScanners []models.LibraryScanner
 	for _, v := range uniqueLibraryScanners {
+		sort.Slice(v.Libs, func(i, j int) bool {
+			return v.Libs[i].Name < v.Libs[j].Name
+		})
 		libraryScanners = append(libraryScanners, v)
 	}
 	sort.Slice(libraryScanners, func(i, j int) bool {
