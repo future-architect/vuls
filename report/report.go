@@ -213,7 +213,7 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, igno
 
 // fillCveDetail fetches NVD, JVN from CVE Database
 func fillCveDetail(driver cvedb.DB, r *models.ScanResult) error {
-	var cveIDs []string
+	cveIDs := []string{}
 	for _, v := range r.ScannedCves {
 		cveIDs = append(cveIDs, v.CveID)
 	}
@@ -224,9 +224,6 @@ func fillCveDetail(driver cvedb.DB, r *models.ScanResult) error {
 	}
 	for _, d := range ds {
 		nvd := models.ConvertNvdJSONToModel(d.CveID, d.NvdJSON)
-		if nvd == nil {
-			nvd = models.ConvertNvdXMLToModel(d.CveID, d.NvdXML)
-		}
 		jvn := models.ConvertJvnToModel(d.CveID, d.Jvn)
 
 		alerts := fillCertAlerts(&d)
@@ -533,6 +530,7 @@ func EnsureUUIDs(configPath string, results models.ScanResults) (err error) {
 		return results[i].ServerName < results[j].ServerName
 	})
 
+	re := regexp.MustCompile(reUUID)
 	for i, r := range results {
 		server := c.Conf.Servers[r.ServerName]
 		if server.UUIDs == nil {
@@ -554,8 +552,8 @@ func EnsureUUIDs(configPath string, results models.ScanResults) (err error) {
 		}
 
 		if id, ok := server.UUIDs[name]; ok {
-			matched, err := regexp.MatchString(reUUID, id)
-			if !matched || err != nil {
+			ok := re.MatchString(id)
+			if !ok || err != nil {
 				util.Log.Warnf("UUID is invalid. Re-generate UUID %s: %s", id, err)
 			} else {
 				if r.IsContainer() {

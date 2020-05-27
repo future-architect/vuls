@@ -687,7 +687,7 @@ func (o *debian) scanChangelogs(updatablePacks models.Packages, meta *cache.Meta
 		return nil, xerrors.Errorf("errs: %w", errs)
 	}
 
-	var cveIDs []DetectedCveID
+	cveIDs := []DetectedCveID{}
 	for k := range cvePackages {
 		cveIDs = append(cveIDs, k)
 	}

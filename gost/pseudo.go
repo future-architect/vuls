@@ -1,9 +1,10 @@
 package gost
 
 import (
+	"strings"
+
 	"github.com/future-architect/vuls/models"
 	"github.com/knqyf263/gost/db"
-	"strings"
 )
 
 // Pseudo is Gost client except for RedHat family and Debian

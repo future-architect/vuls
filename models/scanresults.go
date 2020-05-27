@@ -195,7 +195,7 @@ func (r ScanResult) FilterUnfixed() ScanResult {
 
 // FilterIgnorePkgs is filter function.
 func (r ScanResult) FilterIgnorePkgs() ScanResult {
-	ignorePkgsRegexps := []string{}
+	var ignorePkgsRegexps []string
 	if len(r.Container.Name) == 0 {
 		ignorePkgsRegexps = config.Conf.Servers[r.ServerName].IgnorePkgsRegexp
 	} else {

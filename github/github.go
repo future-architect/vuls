@@ -58,7 +58,7 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 		}
 
 		alerts := SecurityAlerts{}
-		if json.Unmarshal(body, &alerts); err != nil {
+		if err := json.Unmarshal(body, &alerts); err != nil {
 			return 0, err
 		}
 

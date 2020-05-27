@@ -45,7 +45,7 @@ func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 		return nil, xerrors.New("unknown file type")
 	}
 
-	var vulnerabilities []VulnInfo
+	var vulnerabilities = []VulnInfo{}
 	for _, pkg := range s.Libs {
 		v, err := version.NewVersion(pkg.Version)
 		if err != nil {
