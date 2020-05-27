@@ -15,10 +15,9 @@ builds:
       - -a
   ldflags: -s -w -X main.version={{.Version}} -X main.revision={{.Commit}} 
   binary: vuls
-archive:
+archives:
+- name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
   format: tar.gz
-  name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{
-    .Arm }}{{ end }}'
   files:
   - LICENSE
   - NOTICE

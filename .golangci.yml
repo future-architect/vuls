@@ -1,3 +1,5 @@
+name: golang-ci
+
 linters-settings:
   errcheck:
     #exclude: /path/to/file.txt
