@@ -86,7 +86,7 @@ func (o SUSE) update(r *models.ScanResult, defPacks defPacks) {
 }
 
 func (o SUSE) convertToModel(def *ovalmodels.Definition) *models.CveContent {
-	var refs []models.Reference
+	refs := []models.Reference{}
 	for _, r := range def.References {
 		refs = append(refs, models.Reference{
 			Link:   r.RefURL,

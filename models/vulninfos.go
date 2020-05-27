@@ -644,15 +644,6 @@ func (c Cvss) Format() string {
 	return ""
 }
 
-func cvss2ScoreToSeverity(score float64) string {
-	if 7.0 <= score {
-		return "HIGH"
-	} else if 4.0 <= score {
-		return "MEDIUM"
-	}
-	return "LOW"
-}
-
 // Amazon Linux Security Advisory
 // Critical, Important, Medium, Low
 // https://alas.aws.amazon.com/

@@ -17,7 +17,9 @@ type HTTPRequestWriter struct{}
 func (w HTTPRequestWriter) Write(rs ...models.ScanResult) (err error) {
 	for _, r := range rs {
 		b := new(bytes.Buffer)
-		json.NewEncoder(b).Encode(r)
+		if err := json.NewEncoder(b).Encode(r); err != nil {
+			return err
+		}
 		_, err = http.Post(c.Conf.HTTP.URL, "application/json; charset=utf-8", b)
 		if err != nil {
 			return err

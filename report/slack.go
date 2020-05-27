@@ -16,12 +16,6 @@ import (
 	"golang.org/x/xerrors"
 )
 
-type field struct {
-	Title string `json:"title"`
-	Value string `json:"value"`
-	Short bool   `json:"short"`
-}
-
 type message struct {
 	Text        string             `json:"text"`
 	Username    string             `json:"username"`

@@ -608,7 +608,7 @@ func ListValidJSONDirs() (dirs []string, err error) {
 // Otherwise, returns the path of the latest directory
 func JSONDir(args []string) (string, error) {
 	var err error
-	dirs := []string{}
+	var dirs []string
 
 	if 0 < len(args) {
 		if dirs, err = ListValidJSONDirs(); err != nil {

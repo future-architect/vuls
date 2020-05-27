@@ -23,7 +23,7 @@ func (red RedHat) DetectUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNo
 }
 
 func (red RedHat) fillFixed(driver db.DB, r *models.ScanResult) error {
-	var cveIDs []string
+	cveIDs := []string{}
 	for cveID, vuln := range r.ScannedCves {
 		if _, ok := vuln.CveContents[models.RedHatAPI]; ok {
 			continue
@@ -139,8 +139,7 @@ func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNotF
 		}
 		for _, pack := range r.Packages {
 			// CVE-ID: RedhatCVE
-			cves := map[string]gostmodels.RedhatCVE{}
-			cves = driver.GetUnfixedCvesRedhat(major(r.Release), pack.Name, ignoreWillNotFix)
+			cves := driver.GetUnfixedCvesRedhat(major(r.Release), pack.Name, ignoreWillNotFix)
 			for _, cve := range cves {
 				cveCont := red.ConvertToModel(&cve)
 				v, ok := r.ScannedCves[cve.Name]
@@ -245,7 +244,7 @@ func (red RedHat) ConvertToModel(cve *gostmodels.RedhatCVE) *models.CveContent {
 		v3severity = cve.ThreatSeverity
 	}
 
-	var refs []models.Reference
+	refs := []models.Reference{}
 	for _, r := range cve.References {
 		refs = append(refs, models.Reference{Link: r.Reference})
 	}

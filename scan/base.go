@@ -676,7 +676,7 @@ func (l *base) detectWpThemes() ([]models.WpPackage, error) {
 	}
 	err := json.Unmarshal([]byte(r.Stdout), &themes)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to unmarshal wp theme list: %w", cmd, err)
+		return nil, xerrors.Errorf("Failed to unmarshal wp theme list: %w", err)
 	}
 	for i := range themes {
 		themes[i].Type = models.WPTheme

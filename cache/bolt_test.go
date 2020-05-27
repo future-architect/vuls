@@ -46,7 +46,7 @@ func TestSetupBolt(t *testing.T) {
 		t.Errorf("Failed to open bolt: %s", err)
 	}
 
-	db.View(func(tx *bolt.Tx) error {
+	_ = db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket([]byte(metabucket))
 		if bkt == nil {
 			t.Errorf("Meta bucket nof found")
@@ -87,7 +87,7 @@ func TestEnsureBuckets(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to open bolt: %s", err)
 	}
-	db.View(func(tx *bolt.Tx) error {
+	_ = db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket([]byte(servername))
 		if bkt == nil {
 			t.Errorf("Meta bucket nof found")

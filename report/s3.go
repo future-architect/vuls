@@ -23,16 +23,24 @@ import (
 // S3Writer writes results to S3
 type S3Writer struct{}
 
-func getS3() *s3.S3 {
-	Config := &aws.Config{
+func getS3() (*s3.S3, error) {
+	ses, err := session.NewSession()
+	if err != nil {
+		return nil, err
+	}
+	config := &aws.Config{
 		Region: aws.String(c.Conf.AWS.Region),
 		Credentials: credentials.NewChainCredentials([]credentials.Provider{
 			&credentials.EnvProvider{},
 			&credentials.SharedCredentialsProvider{Filename: "", Profile: c.Conf.AWS.Profile},
-			&ec2rolecreds.EC2RoleProvider{Client: ec2metadata.New(session.New())},
+			&ec2rolecreds.EC2RoleProvider{Client: ec2metadata.New(ses)},
 		}),
 	}
-	return s3.New(session.New(Config))
+	s, err := session.NewSession(config)
+	if err != nil {
+		return nil, err
+	}
+	return s3.New(s), nil
 }
 
 // Write results to S3
@@ -42,7 +50,10 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 		return nil
 	}
 
-	svc := getS3()
+	svc, err := getS3()
+	if err != nil {
+		return err
+	}
 
 	if c.Conf.FormatOneLineText {
 		timestr := rs[0].ScannedAt.Format(time.RFC3339)
@@ -99,7 +110,11 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 
 // CheckIfBucketExists check the existence of S3 bucket
 func CheckIfBucketExists() error {
-	svc := getS3()
+	svc, err := getS3()
+	if err != nil {
+		return err
+	}
+
 	result, err := svc.ListBuckets(&s3.ListBucketsInput{})
 	if err != nil {
 		return xerrors.Errorf(
