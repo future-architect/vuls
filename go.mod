@@ -48,6 +48,7 @@ require (
 	github.com/sirupsen/logrus v1.5.0
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
+	github.com/spf13/viper v1.4.0
 	golang.org/x/crypto v0.0.0-20200427165652-729f1e841bcc
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543

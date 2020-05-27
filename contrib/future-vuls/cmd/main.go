@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -14,20 +15,37 @@ import (
 )
 
 var (
-	stdIn   bool
-	jsonDir string
-	groupID int64
-	token   string
-	url     string
+	configFile string
+	stdIn      bool
+	jsonDir    string
+	groupID    int64
+	token      string
+	url        string
 )
 
 func main() {
 	var err error
-	var cmdTrivyToVuls = &cobra.Command{
+	var cmdFvulsUploader = &cobra.Command{
 		Use:   "upload",
 		Short: "Upload to FutureVuls",
 		Long:  `Upload to FutureVuls`,
 		Run: func(cmd *cobra.Command, args []string) {
+			envGroupID := os.Getenv("VULS_GROUP_ID")
+			if 0 < len(envGroupID) {
+				if groupID, err = strconv.ParseInt(envGroupID, 10, 64); err != nil {
+					fmt.Printf("Invalid GroupID: %s\n", envGroupID)
+					return
+				}
+			}
+			envURL := os.Getenv("VULS_URL")
+			if 0 < len(envURL) {
+				url = envURL
+			}
+			envToken := os.Getenv("VULS_TOKEN")
+			if 0 < len(envToken) {
+				token = envToken
+			}
+
 			var scanResultJSON []byte
 			if stdIn {
 				reader := bufio.NewReader(os.Stdin)
@@ -55,18 +73,16 @@ func main() {
 			return
 		},
 	}
-	cmdTrivyToVuls.Flags().BoolVarP(&stdIn, "stdin", "s", false, "input from stdin")
+	cmdFvulsUploader.PersistentFlags().StringVar(&configFile, "config", "", "config file (default is $HOME/.cobra.yaml)")
+	cmdFvulsUploader.PersistentFlags().BoolVarP(&stdIn, "stdin", "s", false, "input from stdin. ENV: VULS_STDIN")
 	// TODO Read JSON file from directory
-	//	cmdTrivyToVuls.Flags().StringVarP(&jsonDir, "results-dir", "d", "./", "vuls scan results json dir")
-	cmdTrivyToVuls.Flags().Int64VarP(&groupID, "group-id", "g", 0, "future vuls group id")
-	cmdTrivyToVuls.MarkFlagRequired("group-id")
-	cmdTrivyToVuls.Flags().StringVarP(&token, "token", "t", "", "future vuls token")
-	cmdTrivyToVuls.MarkFlagRequired("token")
-	cmdTrivyToVuls.Flags().StringVarP(&url, "url", "u", "", "future vuls upload url")
-	cmdTrivyToVuls.MarkFlagRequired("url")
+	//	cmdFvulsUploader.Flags().StringVarP(&jsonDir, "results-dir", "d", "./", "vuls scan results json dir")
+	cmdFvulsUploader.PersistentFlags().Int64VarP(&groupID, "group-id", "g", 0, "future vuls group id, ENV: VULS_GROUP_ID")
+	cmdFvulsUploader.PersistentFlags().StringVarP(&token, "token", "t", "", "future vuls token")
+	cmdFvulsUploader.PersistentFlags().StringVarP(&url, "url", "u", "", "future vuls upload url")
 
 	var rootCmd = &cobra.Command{Use: "future-vuls"}
-	rootCmd.AddCommand(cmdTrivyToVuls)
+	rootCmd.AddCommand(cmdFvulsUploader)
 	if err = rootCmd.Execute(); err != nil {
 		fmt.Println("Failed to execute command", err)
 	}
