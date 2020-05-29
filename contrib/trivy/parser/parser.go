@@ -128,7 +128,7 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 			vulnInfos[vuln.VulnerabilityID] = vulnInfo
 		}
 	}
-	var libraryScanners []models.LibraryScanner
+	libraryScanners := make([]models.LibraryScanner, 0, len(uniqueLibraryScanners))
 	for _, v := range uniqueLibraryScanners {
 		sort.Slice(v.Libs, func(i, j int) bool {
 			return v.Libs[i].Name < v.Libs[j].Name
