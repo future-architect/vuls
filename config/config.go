@@ -152,6 +152,7 @@ type Config struct {
 	FormatFullText    bool `json:"formatFullText,omitempty"`
 	GZIP              bool `json:"gzip,omitempty"`
 	Diff              bool `json:"diff,omitempty"`
+	WpIgnoreInactive  bool `json:"wpIgnoreInactive,omitempty"`
 }
 
 // ValidateOnConfigtest validates
