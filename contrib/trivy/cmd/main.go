@@ -33,7 +33,9 @@ func main() {
 			if stdIn {
 				reader := bufio.NewReader(os.Stdin)
 				buf := new(bytes.Buffer)
-				buf.ReadFrom(reader)
+				if _, err = buf.ReadFrom(reader); err != nil {
+					return
+				}
 				trivyJSON = buf.Bytes()
 			} else {
 				if trivyJSON, err = ioutil.ReadFile(jsonFilePath); err != nil {
@@ -61,7 +63,10 @@ func main() {
 		},
 	}
 	cmdTrivyToVuls.Flags().StringVarP(&serverUUID, "uuid", "u", "", "server uuid")
-	cmdTrivyToVuls.MarkFlagRequired("uuid")
+	if err = cmdTrivyToVuls.MarkFlagRequired("uuid"); err != nil {
+		fmt.Println("Failed to create command", err)
+		return
+	}
 	cmdTrivyToVuls.Flags().BoolVarP(&stdIn, "stdin", "s", false, "input from stdin")
 	cmdTrivyToVuls.Flags().StringVarP(&jsonDir, "trivy-json-dir", "d", "./", "trivy json dir")
 	cmdTrivyToVuls.Flags().StringVarP(&jsonFileName, "trivy-json-file-name", "f", "results.json", "trivy json file name")
