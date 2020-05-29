@@ -31,10 +31,29 @@ builds:
   main: ./contrib/future-vuls/cmd/main.go
   binary: future-vuls
 archives:
-- name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+- id: vuls
+  name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
   builds:
   - vuls
+  format: tar.gz
+  files:
+  - LICENSE
+  - NOTICE
+  - README*
+  - CHANGELOG.md
+- id: trivy-to-vuls
+  name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+  builds:
   - trivy-to-vuls
+  format: tar.gz
+  files:
+  - LICENSE
+  - NOTICE
+  - README*
+  - CHANGELOG.md
+- id: future-vuls
+  name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+  builds:
   - future-vuls
   format: tar.gz
   files:
