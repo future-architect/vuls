@@ -15,6 +15,18 @@ builds:
       - -a
   ldflags: -s -w -X main.version={{.Version}} -X main.revision={{.Commit}} 
   binary: vuls
+- goos:
+  - linux
+  goarch:
+  - amd64
+  main: ./contrib/trivy/cmd/main.go
+  binary: trivy-to-vuls
+- goos:
+  - linux
+  goarch:
+  - amd64
+  main: ./contrib/future-vuls/cmd/main.go
+  binary: future-vuls
 archives:
 - name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
   format: tar.gz
