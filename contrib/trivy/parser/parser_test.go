@@ -118,6 +118,7 @@ func TestParse(t *testing.T) {
 						LibraryFixedIns: models.LibraryFixedIns{},
 					},
 				},
+				LibraryScanners: models.LibraryScanners{},
 				Packages: models.Packages{
 					"openssl": models.Package{
 						Name:    "openssl",
