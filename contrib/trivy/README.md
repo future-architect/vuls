@@ -32,5 +32,5 @@ Use "trivy-to-vuls [command] --help" for more information about a command.
 - use trivy output
 
 ```
- trivy -q image -f=json python:3.4-alpine | trivy-to-vuls parse --stdin --uuid xxxxxx
+ trivy -q image -f=json python:3.4-alpine | trivy-to-vuls parse --stdin
 ```

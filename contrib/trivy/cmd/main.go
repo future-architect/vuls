@@ -63,10 +63,6 @@ func main() {
 		},
 	}
 	cmdTrivyToVuls.Flags().StringVarP(&serverUUID, "uuid", "u", "", "server uuid")
-	if err = cmdTrivyToVuls.MarkFlagRequired("uuid"); err != nil {
-		fmt.Println("Failed to create command", err)
-		return
-	}
 	cmdTrivyToVuls.Flags().BoolVarP(&stdIn, "stdin", "s", false, "input from stdin")
 	cmdTrivyToVuls.Flags().StringVarP(&jsonDir, "trivy-json-dir", "d", "./", "trivy json dir")
 	cmdTrivyToVuls.Flags().StringVarP(&jsonFileName, "trivy-json-file-name", "f", "results.json", "trivy json file name")
