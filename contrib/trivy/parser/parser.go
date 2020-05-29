@@ -20,8 +20,7 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 
 	pkgs := models.Packages{}
 	vulnInfos := models.VulnInfos{}
-	uniqueLibraryScanners := map[string]models.LibraryScanner{}
-	uniqueLibraryScannersLibNames := map[string]string{}
+	uniqueLibraryScannerPaths := map[string]models.LibraryScanner{}
 	for _, trivyResult := range trivyResults {
 		for _, vuln := range trivyResult.Vulnerabilities {
 			if _, ok := vulnInfos[vuln.VulnerabilityID]; !ok {
@@ -40,20 +39,18 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 				}
 			}
 			vulnInfo := vulnInfos[vuln.VulnerabilityID]
-			packageFixStatuses := vulnInfo.AffectedPackages
 			var notFixedYet bool
 			fixState := ""
 			if len(vuln.FixedVersion) == 0 {
 				notFixedYet = true
 				fixState = "Affected"
 			}
-			packageFixStatuses = append(packageFixStatuses, models.PackageFixStatus{
+			vulnInfo.AffectedPackages = append(vulnInfo.AffectedPackages, models.PackageFixStatus{
 				Name:        vuln.PkgName,
 				NotFixedYet: notFixedYet,
 				FixState:    fixState,
 				FixedIn:     vuln.FixedVersion,
 			})
-			vulnInfo.AffectedPackages = packageFixStatuses
 
 			var references models.References
 			for _, reference := range vuln.References {
@@ -75,12 +72,13 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 					Summary:       vuln.Description,
 				},
 			}
-			// imageのVulnの時のみ処理
+			// do only if image type is Vuln
 			if IsTrivySupportedOS(trivyResult.Type) {
 				pkgs[vuln.PkgName] = models.Package{
 					Name:    vuln.PkgName,
 					Version: vuln.InstalledVersion,
 				}
+				// overwrite every time if os package
 				scanResult.Family = trivyResult.Type
 				scanResult.ServerName = trivyResult.Target
 				scanResult.Optional = map[string]interface{}{
@@ -96,44 +94,38 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 					Name:    vuln.PkgName,
 					FixedIn: vuln.FixedVersion,
 				})
-				if _, ok := uniqueLibraryScanners[trivyResult.Target]; !ok {
-					uniqueLibraryScanners[trivyResult.Target] = models.LibraryScanner{
-						Path: trivyResult.Target,
-						Libs: []types.Library{
-							{
-								Name:    vuln.PkgName,
-								Version: vuln.InstalledVersion,
-							},
-						},
-					}
-					uniqueLibraryScannersLibNames[trivyResult.Target] = vuln.PkgName + vuln.InstalledVersion
-				} else {
-					libScanner := uniqueLibraryScanners[trivyResult.Target]
-					var IsDuplicatelibName bool
-					if libName, ok := uniqueLibraryScannersLibNames[trivyResult.Target]; ok {
-						if libName == vuln.PkgName+vuln.InstalledVersion {
-							IsDuplicatelibName = true
-						}
-					}
-					if !IsDuplicatelibName {
-						uniqueLibraryScannersLibNames[trivyResult.Target] = vuln.PkgName + vuln.InstalledVersion
-						libScanner.Libs = append(libScanner.Libs, types.Library{
-							Name:    vuln.PkgName,
-							Version: vuln.InstalledVersion,
-						})
-						uniqueLibraryScanners[trivyResult.Target] = libScanner
-					}
-				}
+				libScanner := uniqueLibraryScannerPaths[trivyResult.Target]
+				libScanner.Libs = append(libScanner.Libs, types.Library{
+					Name:    vuln.PkgName,
+					Version: vuln.InstalledVersion,
+				})
+				uniqueLibraryScannerPaths[trivyResult.Target] = libScanner
 			}
 			vulnInfos[vuln.VulnerabilityID] = vulnInfo
 		}
 	}
-	libraryScanners := make([]models.LibraryScanner, 0, len(uniqueLibraryScanners))
-	for _, v := range uniqueLibraryScanners {
-		sort.Slice(v.Libs, func(i, j int) bool {
-			return v.Libs[i].Name < v.Libs[j].Name
+	// flatten and unique libraries
+	libraryScanners := make([]models.LibraryScanner, 0, len(uniqueLibraryScannerPaths))
+	for path, v := range uniqueLibraryScannerPaths {
+		uniqueLibrary := map[string]types.Library{}
+		for _, lib := range v.Libs {
+			uniqueLibrary[lib.Name+lib.Version] = lib
+		}
+
+		var libraries []types.Library
+		for _, library := range uniqueLibrary {
+			libraries = append(libraries, library)
+		}
+
+		sort.Slice(libraries, func(i, j int) bool {
+			return libraries[i].Name < libraries[j].Name
 		})
-		libraryScanners = append(libraryScanners, v)
+
+		libscanner := models.LibraryScanner{
+			Path: path,
+			Libs: libraries,
+		}
+		libraryScanners = append(libraryScanners, libscanner)
 	}
 	sort.Slice(libraryScanners, func(i, j int) bool {
 		return libraryScanners[i].Path < libraryScanners[j].Path
