@@ -48,8 +48,10 @@ require (
 	github.com/sirupsen/logrus v1.5.0
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
-	golang.org/x/crypto v0.0.0-20200427165652-729f1e841bcc
+	golang.org/x/crypto v0.0.0-20200414173820-0848c9571904
+	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+	golang.org/x/tools v0.0.0-20200501065659-ab2804fb9c9d // indirect
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
 	k8s.io/utils v0.0.0-20191114184206-e782cd3c129f
 )
