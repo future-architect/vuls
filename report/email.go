@@ -1,6 +1,7 @@
 package report
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/mail"
@@ -84,6 +85,64 @@ type EMailSender interface {
 type emailSender struct {
 	conf config.SMTPConf
 	send func(string, smtp.Auth, string, []string, []byte) error
+}
+
+func smtps(emailConf config.SMTPConf, message string) (err error) {
+	auth := smtp.PlainAuth("", 
+		emailConf.User,
+		emailConf.Password,
+		emailConf.SMTPAddr,
+	)
+
+	//TLS Config
+	tlsConfig := &tls.Config{
+		ServerName: emailConf.SMTPAddr,
+	}
+
+	smtpServer := net.JoinHostPort(emailConf.SMTPAddr, emailConf.SMTPPort)
+	//New TLS connection
+	con, err := tls.Dial("tcp", smtpServer, tlsConfig)
+	if err != nil {
+		return xerrors.Errorf("Can't create TLS connection: %w", err)
+	}
+
+	c, err := smtp.NewClient(con, emailConf.SMTPAddr)
+	if err != nil {
+		return xerrors.Errorf("Can't create new client: %w", err)
+	}
+	if err = c.Auth(auth); err != nil {
+		return xerrors.Errorf("Auth error: %w", err)
+	}
+	if err = c.Mail(emailConf.From); err != nil {
+		return xerrors.Errorf("Mail command error: %w", err)
+	}
+	//ここはあとで複数人に送れるようにする
+	if err = c.Rcpt(emailConf.To[0]); err != nil {
+		return xerrors.Errorf("Rcpt command error: %w", err)
+	}
+
+	w, err := c.Data()
+	if err != nil {
+		return xerrors.Errorf("Data command error: %w", err)
+	}
+
+	//Write mail text
+	_, err = w.Write([]byte(message))
+	if err != nil {
+		return xerrors.Errorf("Can't write EMail message: %w", err)
+	}
+
+	err = w.Close()
+	if err != nil {
+		return xerrors.Errorf("Writer Close error: %w", err)
+	}
+
+	err = c.Quit()
+	if err != nil {
+		return xerrors.Errorf("Connection close error: %w", err)
+	}
+
+	return nil
 }
 
 func (e *emailSender) Send(subject, body string) (err error) {
