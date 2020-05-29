@@ -11,10 +11,10 @@ require (
 	github.com/Azure/azure-sdk-for-go v42.0.0+incompatible
 	github.com/BurntSushi/toml v0.3.1
 	github.com/RackSec/srslog v0.0.0-20180709174129-a4725f04ec91
-	github.com/aquasecurity/fanal v0.0.0-20200504143803-30a561989059
+	github.com/aquasecurity/fanal v0.0.0-20200505074551-9239a362deca
 	github.com/aquasecurity/go-dep-parser v0.0.0-20200123140603-4dc0125084da // indirect
-	github.com/aquasecurity/trivy v0.7.0
-	github.com/aquasecurity/trivy-db v0.0.0-20200430091154-7c0a6e1ad398
+	github.com/aquasecurity/trivy v0.8.0
+	github.com/aquasecurity/trivy-db v0.0.0-20200514134639-7e57e3e02470
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 	github.com/aws/aws-sdk-go v1.30.16
 	github.com/boltdb/bolt v1.3.1
@@ -48,7 +48,6 @@ require (
 	github.com/sirupsen/logrus v1.5.0
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
-	github.com/spf13/viper v1.4.0
 	golang.org/x/crypto v0.0.0-20200427165652-729f1e841bcc
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
