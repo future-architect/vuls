@@ -66,3 +66,10 @@ cov:
 clean:
 	echo $(PKGS) | xargs go clean || exit;
 
+# trivy-to-vuls
+build-trivy-to-vuls: pretest fmt
+	$(GO) build -o trivy-to-vuls contrib/trivy/cmd/*.go
+
+# future-vuls
+build-future-vuls: pretest fmt
+	$(GO) build -o future-vuls contrib/future-vuls/cmd/*.go

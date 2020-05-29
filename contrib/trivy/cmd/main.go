@@ -25,8 +25,8 @@ func main() {
 	var err error
 	var cmdTrivyToVuls = &cobra.Command{
 		Use:   "parse",
-		Short: "Parse Trivy JSON to vuls results",
-		Long:  `Parse Trivy JSON to vuls results`,
+		Short: "Parse trivy json to vuls results",
+		Long:  `Parse trivy json to vuls results`,
 		Run: func(cmd *cobra.Command, args []string) {
 			jsonFilePath := filepath.Join(jsonDir, jsonFileName)
 			var trivyJSON []byte
