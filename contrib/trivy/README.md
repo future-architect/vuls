@@ -14,17 +14,16 @@ make build-trivy-to-vuls
 ## Command Reference
 
 ```
-Usage:
-  trivy-to-vuls [command]
+Parse trivy json to vuls results
 
-Available Commands:
-  help        Help about any command
-  parse       Parse trivy json to vuls results
+Usage:
+  trivy-to-vuls parse [flags]
 
 Flags:
-  -h, --help   help for trivy-to-vuls
-
-Use "trivy-to-vuls [command] --help" for more information about a command.
+  -h, --help                          help for parse
+  -s, --stdin                         input from stdin
+  -d, --trivy-json-dir string         trivy json dir (default "./")
+  -f, --trivy-json-file-name string   trivy json file name (default "results.json")
 ```
 
 ## Usage

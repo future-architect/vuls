@@ -46,7 +46,6 @@ func main() {
 
 			scanResult := &models.ScanResult{
 				JSONVersion: models.JSONVersion,
-				ServerUUID:  serverUUID,
 				ScannedCves: models.VulnInfos{},
 			}
 			if scanResult, err = parser.Parse(trivyJSON, scanResult); err != nil {
@@ -62,7 +61,6 @@ func main() {
 			return
 		},
 	}
-	cmdTrivyToVuls.Flags().StringVarP(&serverUUID, "uuid", "u", "", "server uuid")
 	cmdTrivyToVuls.Flags().BoolVarP(&stdIn, "stdin", "s", false, "input from stdin")
 	cmdTrivyToVuls.Flags().StringVarP(&jsonDir, "trivy-json-dir", "d", "./", "trivy json dir")
 	cmdTrivyToVuls.Flags().StringVarP(&jsonFileName, "trivy-json-file-name", "f", "results.json", "trivy json file name")

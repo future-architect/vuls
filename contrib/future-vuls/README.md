@@ -14,17 +14,19 @@ make build-future-vuls
 ## Command Reference
 
 ```
-Usage:
-  future-vuls [command]
+Upload to FutureVuls
 
-Available Commands:
-  help        Help about any command
-  upload      Upload to FutureVuls
+Usage:
+  future-vuls upload [flags]
 
 Flags:
-  -h, --help   help for future-vuls
-
-Use "future-vuls [command] --help" for more information about a command.
+      --config string   config file (default is $HOME/.cobra.yaml)
+  -g, --group-id int    future vuls group id, ENV: VULS_GROUP_ID
+  -h, --help            help for upload
+  -s, --stdin           input from stdin. ENV: VULS_STDIN
+  -t, --token string    future vuls token
+      --url string      future vuls upload url
+      --uuid string     server uuid. ENV: VULS_SERVER_UUID
 ```
 
 ## Usage
@@ -32,5 +34,5 @@ Use "future-vuls [command] --help" for more information about a command.
 - update results json
 
 ```
- cat results.json | future-vuls upload --stdin --token xxxx --url https://xxxx --group-id 1
+ cat results.json | future-vuls upload --stdin --token xxxx --url https://xxxx --group-id 1 --uuid xxxx
 ```

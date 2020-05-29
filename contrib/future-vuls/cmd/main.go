@@ -18,6 +18,7 @@ var (
 	configFile string
 	stdIn      bool
 	jsonDir    string
+	serverUUID string
 	groupID    int64
 	token      string
 	url        string
@@ -30,20 +31,21 @@ func main() {
 		Short: "Upload to FutureVuls",
 		Long:  `Upload to FutureVuls`,
 		Run: func(cmd *cobra.Command, args []string) {
-			envGroupID := os.Getenv("VULS_GROUP_ID")
-			if 0 < len(envGroupID) {
+			if len(serverUUID) == 0 {
+				serverUUID = os.Getenv("VULS_SERVER_UUID")
+			}
+			if groupID == 0 {
+				envGroupID := os.Getenv("VULS_GROUP_ID")
 				if groupID, err = strconv.ParseInt(envGroupID, 10, 64); err != nil {
 					fmt.Printf("Invalid GroupID: %s\n", envGroupID)
 					return
 				}
 			}
-			envURL := os.Getenv("VULS_URL")
-			if 0 < len(envURL) {
-				url = envURL
+			if len(url) == 0 {
+				url = os.Getenv("VULS_URL")
 			}
-			envToken := os.Getenv("VULS_TOKEN")
-			if 0 < len(envToken) {
-				token = envToken
+			if len(token) == 0 {
+				token = os.Getenv("VULS_TOKEN")
 			}
 
 			var scanResultJSON []byte
@@ -64,6 +66,7 @@ func main() {
 				fmt.Println("Failed to parse json", err)
 				return
 			}
+			scanResult.ServerUUID = serverUUID
 
 			config.Conf.Saas.GroupID = groupID
 			config.Conf.Saas.Token = token
@@ -75,13 +78,14 @@ func main() {
 			return
 		},
 	}
+	cmdFvulsUploader.PersistentFlags().StringVar(&serverUUID, "uuid", "", "server uuid. ENV: VULS_SERVER_UUID")
 	cmdFvulsUploader.PersistentFlags().StringVar(&configFile, "config", "", "config file (default is $HOME/.cobra.yaml)")
 	cmdFvulsUploader.PersistentFlags().BoolVarP(&stdIn, "stdin", "s", false, "input from stdin. ENV: VULS_STDIN")
 	// TODO Read JSON file from directory
 	//	cmdFvulsUploader.Flags().StringVarP(&jsonDir, "results-dir", "d", "./", "vuls scan results json dir")
 	cmdFvulsUploader.PersistentFlags().Int64VarP(&groupID, "group-id", "g", 0, "future vuls group id, ENV: VULS_GROUP_ID")
 	cmdFvulsUploader.PersistentFlags().StringVarP(&token, "token", "t", "", "future vuls token")
-	cmdFvulsUploader.PersistentFlags().StringVarP(&url, "url", "u", "", "future vuls upload url")
+	cmdFvulsUploader.PersistentFlags().StringVar(&url, "url", "", "future vuls upload url")
 
 	var rootCmd = &cobra.Command{Use: "future-vuls"}
 	rootCmd.AddCommand(cmdFvulsUploader)
