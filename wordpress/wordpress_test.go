@@ -99,8 +99,8 @@ func TestSearchCache(t *testing.T) {
 		{
 			name: "akismet",
 			wpVulnCache: map[string]string{
-				"BackWPup" : "body",
-				"akismet": "body",
+				"BackWPup": "body",
+				"akismet":  "body",
 			},
 			value: "body",
 			ok:    true,
@@ -108,16 +108,16 @@ func TestSearchCache(t *testing.T) {
 		{
 			name: "akismet",
 			wpVulnCache: map[string]string{
-				"BackWPup" : "body",
+				"BackWPup": "body",
 			},
 			value: "",
 			ok:    false,
 		},
 		{
-			name: "akismet",
+			name:        "akismet",
 			wpVulnCache: nil,
-			value: "",
-			ok:    false,
+			value:       "",
+			ok:          false,
 		},
 	}
 
