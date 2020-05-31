@@ -44,6 +44,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 	var filledResults []models.ScanResult
 	reportedAt := time.Now()
 	hostname, _ := os.Hostname()
+	wpVulnCaches := map[string]string{}
 	for _, r := range rs {
 		if c.Conf.RefreshCve || needToRefreshCve(r) {
 			if ovalSupported(&r) {
@@ -89,6 +90,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 				&r,
 				cpeURIs,
 				true,
+				&wpVulnCaches,
 				githubInts,
 				wpOpt); err != nil {
 				return nil, err
@@ -147,7 +149,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 }
 
 // FillCveInfo fill scanResult with cve info.
-func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, ignoreWillNotFix bool, integrations ...Integration) error {
+func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, ignoreWillNotFix bool, wpVulnCaches *map[string]string, integrations ...Integration) error {
 	util.Log.Debugf("need to refresh")
 
 	nCVEs, err := libmanager.FillLibrary(r)
@@ -181,7 +183,7 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, igno
 
 	ints := &integrationResults{}
 	for _, o := range integrations {
-		if err = o.apply(r, ints); err != nil {
+		if err = o.apply(r, ints, wpVulnCaches); err != nil {
 			return xerrors.Errorf("Failed to fill with integration: %w", err)
 		}
 	}
@@ -396,7 +398,7 @@ type integrationResults struct {
 
 // Integration is integration of vuls report
 type Integration interface {
-	apply(*models.ScanResult, *integrationResults) error
+	apply(*models.ScanResult, *integrationResults, *map[string]string) error
 }
 
 // GithubSecurityAlerts :
@@ -412,7 +414,7 @@ type GithubSecurityAlertOption struct {
 }
 
 // https://help.github.com/articles/about-security-alerts-for-vulnerable-dependencies/
-func (g GithubSecurityAlertOption) apply(r *models.ScanResult, ints *integrationResults) (err error) {
+func (g GithubSecurityAlertOption) apply(r *models.ScanResult, ints *integrationResults, _ *map[string]string) (err error) {
 	var nCVEs int
 	for ownerRepo, setting := range g.GithubConfs {
 		ss := strings.Split(ownerRepo, "/")
@@ -432,11 +434,11 @@ type WordPressOption struct {
 	token string
 }
 
-func (g WordPressOption) apply(r *models.ScanResult, ints *integrationResults) (err error) {
+func (g WordPressOption) apply(r *models.ScanResult, ints *integrationResults, wpVulnCaches *map[string]string) (err error) {
 	if g.token == "" {
 		return nil
 	}
-	n, err := wordpress.FillWordPress(r, g.token)
+	n, err := wordpress.FillWordPress(r, g.token, wpVulnCaches)
 	if err != nil {
 		return xerrors.Errorf("Failed to fetch from WPVulnDB. Check the WPVulnDBToken in config.toml. err: %w", err)
 	}

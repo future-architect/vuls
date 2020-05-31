@@ -48,20 +48,27 @@ type References struct {
 
 // FillWordPress access to wpvulndb and fetch scurity alerts and then set to the given ScanResult.
 // https://wpvulndb.com/
-func FillWordPress(r *models.ScanResult, token string) (int, error) {
+func FillWordPress(r *models.ScanResult, token string, wpVulnCaches *map[string]string) (int, error) {
 	// Core
 	ver := strings.Replace(r.WordPressPackages.CoreVersion(), ".", "", -1)
 	if ver == "" {
 		return 0, xerrors.New("Failed to get WordPress core version")
 	}
-	url := fmt.Sprintf("https://wpvulndb.com/api/v3/wordpresses/%s", ver)
-	body, err := httpRequest(url, token)
-	if err != nil {
-		return 0, err
+
+	body, ok := searchCache(ver, wpVulnCaches)
+	if !ok {
+		url := fmt.Sprintf("https://wpvulndb.com/api/v3/wordpresses/%s", ver)
+		body, err := httpRequest(url, token)
+		if err != nil {
+			return 0, err
+		}
+		if body == "" {
+			util.Log.Warnf("A result of REST access is empty: %s", url)
+		}
+
+		(*wpVulnCaches)[ver] = body
 	}
-	if body == "" {
-		util.Log.Warnf("A result of REST access is empty: %s", url)
-	}
+
 	wpVinfos, err := convertToVinfos(models.WPCore, body)
 	if err != nil {
 		return 0, err
@@ -77,13 +84,17 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 
 	// Themes
 	for _, p := range themes {
-		url := fmt.Sprintf("https://wpvulndb.com/api/v3/themes/%s", p.Name)
-		body, err := httpRequest(url, token)
-		if err != nil {
-			return 0, err
-		}
-		if body == "" {
-			continue
+		body, ok := searchCache(p.Name, wpVulnCaches)
+		if !ok {
+			url := fmt.Sprintf("https://wpvulndb.com/api/v3/themes/%s", p.Name)
+			body, err := httpRequest(url, token)
+			if err != nil {
+				return 0, err
+			}
+			(*wpVulnCaches)[p.Name] = body
+			if body == "" {
+				continue
+			}
 		}
 
 		templateVinfos, err := convertToVinfos(p.Name, body)
@@ -113,13 +124,17 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 
 	// Plugins
 	for _, p := range plugins {
-		url := fmt.Sprintf("https://wpvulndb.com/api/v3/plugins/%s", p.Name)
-		body, err := httpRequest(url, token)
-		if err != nil {
-			return 0, err
-		}
-		if body == "" {
-			continue
+		body, ok := searchCache(p.Name, wpVulnCaches)
+		if !ok {
+			url := fmt.Sprintf("https://wpvulndb.com/api/v3/plugins/%s", p.Name)
+			body, err := httpRequest(url, token)
+			if err != nil {
+				return 0, err
+			}
+			(*wpVulnCaches)[p.Name] = body
+			if body == "" {
+				continue
+			}
 		}
 
 		pluginVinfos, err := convertToVinfos(p.Name, body)
@@ -276,4 +291,12 @@ func removeInactives(pkgs models.WordPressPackages) (removed models.WordPressPac
 		removed = append(removed, p)
 	}
 	return removed
+}
+
+func searchCache(name string, wpVulnCaches *map[string]string) (string, bool) {
+	value, ok := (*wpVulnCaches)[name]
+	if ok {
+		return value, true
+	}
+	return "", false
 }
