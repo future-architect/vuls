@@ -123,7 +123,7 @@ func TestSearchCache(t *testing.T) {
 
 	for i, tt := range tests {
 		value, ok := searchCache(tt.name, &tt.wpVulnCache)
-		if value != tt.value || ok != ok {
+		if value != tt.value || ok != tt.ok {
 			t.Errorf("[%d] searchCache error ", i)
 		}
 	}
