@@ -58,7 +58,8 @@ func FillWordPress(r *models.ScanResult, token string, wpVulnCaches *map[string]
 	body, ok := searchCache(ver, wpVulnCaches)
 	if !ok {
 		url := fmt.Sprintf("https://wpvulndb.com/api/v3/wordpresses/%s", ver)
-		body, err := httpRequest(url, token)
+		var err error
+		body, err = httpRequest(url, token)
 		if err != nil {
 			return 0, err
 		}
@@ -87,7 +88,8 @@ func FillWordPress(r *models.ScanResult, token string, wpVulnCaches *map[string]
 		body, ok := searchCache(p.Name, wpVulnCaches)
 		if !ok {
 			url := fmt.Sprintf("https://wpvulndb.com/api/v3/themes/%s", p.Name)
-			body, err := httpRequest(url, token)
+			var err error
+			body, err = httpRequest(url, token)
 			if err != nil {
 				return 0, err
 			}
@@ -127,7 +129,8 @@ func FillWordPress(r *models.ScanResult, token string, wpVulnCaches *map[string]
 		body, ok := searchCache(p.Name, wpVulnCaches)
 		if !ok {
 			url := fmt.Sprintf("https://wpvulndb.com/api/v3/plugins/%s", p.Name)
-			body, err := httpRequest(url, token)
+			var err error
+			body, err = httpRequest(url, token)
 			if err != nil {
 				return 0, err
 			}
