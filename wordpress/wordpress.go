@@ -94,9 +94,10 @@ func FillWordPress(r *models.ScanResult, token string, wpVulnCaches *map[string]
 				return 0, err
 			}
 			(*wpVulnCaches)[p.Name] = body
-			if body == "" {
-				continue
-			}
+		}
+
+		if body == "" {
+			continue
 		}
 
 		templateVinfos, err := convertToVinfos(p.Name, body)
@@ -135,9 +136,10 @@ func FillWordPress(r *models.ScanResult, token string, wpVulnCaches *map[string]
 				return 0, err
 			}
 			(*wpVulnCaches)[p.Name] = body
-			if body == "" {
-				continue
-			}
+		}
+
+		if body == "" {
+			continue
 		}
 
 		pluginVinfos, err := convertToVinfos(p.Name, body)
