@@ -103,41 +103,41 @@ func smtps(emailConf config.SMTPConf, message string) (err error) {
 	//New TLS connection
 	con, err := tls.Dial("tcp", smtpServer, tlsConfig)
 	if err != nil {
-		return xerrors.Errorf("Can't create TLS connection: %w", err)
+		return xerrors.Errorf("Failed to create TLS connection: %w", err)
 	}
 	defer con.Close()
 
 	c, err := smtp.NewClient(con, emailConf.SMTPAddr)
 	if err != nil {
-		return xerrors.Errorf("Can't create new client: %w", err)
+		return xerrors.Errorf("Failed to create new client: %w", err)
 	}
 	if err = c.Auth(auth); err != nil {
-		return xerrors.Errorf("Auth error: %w", err)
+		return xerrors.Errorf("Failed to authenticate: %w", err)
 	}
 	if err = c.Mail(emailConf.From); err != nil {
-		return xerrors.Errorf("Mail command error: %w", err)
+		return xerrors.Errorf("Failed to send Mail command: %w", err)
 	}
 	for _, to := range emailConf.To {
 		if err = c.Rcpt(to); err != nil {
-			return xerrors.Errorf("Rcpt command error: %w", err)
+			return xerrors.Errorf("Failed to send Rcpt command: %w", err)
 		}
 	}
-	
+
 	w, err := c.Data()
 	if err != nil {
-		return xerrors.Errorf("Data command error: %w", err)
+		return xerrors.Errorf("Failed to send Data command: %w", err)
 	}
 	_, err = w.Write([]byte(message))
 	if err != nil {
-		return xerrors.Errorf("Can't write EMail message: %w", err)
+		return xerrors.Errorf("Failed to write EMail message: %w", err)
 	}
 	err = w.Close()
 	if err != nil {
-		return xerrors.Errorf("Writer Close error: %w", err)
+		return xerrors.Errorf("Failed to close Writer: %w", err)
 	}
 	err = c.Quit()
 	if err != nil {
-		return xerrors.Errorf("Connection close error: %w", err)
+		return xerrors.Errorf("Failed to close connection: %w", err)
 	}
 	return nil
 }
