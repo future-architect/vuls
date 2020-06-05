@@ -88,7 +88,7 @@ type emailSender struct {
 }
 
 func smtps(emailConf config.SMTPConf, message string) (err error) {
-	auth := smtp.PlainAuth("", 
+	auth := smtp.PlainAuth("",
 		emailConf.User,
 		emailConf.Password,
 		emailConf.SMTPAddr,
@@ -105,6 +105,7 @@ func smtps(emailConf config.SMTPConf, message string) (err error) {
 	if err != nil {
 		return xerrors.Errorf("Can't create TLS connection: %w", err)
 	}
+	defer con.Close()
 
 	c, err := smtp.NewClient(con, emailConf.SMTPAddr)
 	if err != nil {
@@ -116,32 +117,28 @@ func smtps(emailConf config.SMTPConf, message string) (err error) {
 	if err = c.Mail(emailConf.From); err != nil {
 		return xerrors.Errorf("Mail command error: %w", err)
 	}
-	//ここはあとで複数人に送れるようにする
-	if err = c.Rcpt(emailConf.To[0]); err != nil {
-		return xerrors.Errorf("Rcpt command error: %w", err)
+	for _, to := range emailConf.To {
+		if err = c.Rcpt(to); err != nil {
+			return xerrors.Errorf("Rcpt command error: %w", err)
+		}
 	}
-
+	
 	w, err := c.Data()
 	if err != nil {
 		return xerrors.Errorf("Data command error: %w", err)
 	}
-
-	//Write mail text
 	_, err = w.Write([]byte(message))
 	if err != nil {
 		return xerrors.Errorf("Can't write EMail message: %w", err)
 	}
-
 	err = w.Close()
 	if err != nil {
 		return xerrors.Errorf("Writer Close error: %w", err)
 	}
-
 	err = c.Quit()
 	if err != nil {
 		return xerrors.Errorf("Connection close error: %w", err)
 	}
-
 	return nil
 }
 
@@ -171,20 +168,28 @@ func (e *emailSender) Send(subject, body string) (err error) {
 	smtpServer := net.JoinHostPort(emailConf.SMTPAddr, emailConf.SMTPPort)
 
 	if emailConf.User != "" && emailConf.Password != "" {
-		err = e.send(
-			smtpServer,
-			smtp.PlainAuth(
-				"",
-				emailConf.User,
-				emailConf.Password,
-				emailConf.SMTPAddr,
-			),
-			emailConf.From,
-			mailAddresses,
-			[]byte(message),
-		)
-		if err != nil {
-			return xerrors.Errorf("Failed to send emails: %w", err)
+		switch emailConf.SMTPPort {
+		case "465":
+			err := smtps(emailConf, message)
+			if err != nil {
+				return xerrors.Errorf("Failed to send emails: %w", err)
+			}
+		default:
+			err = e.send(
+				smtpServer,
+				smtp.PlainAuth(
+					"",
+					emailConf.User,
+					emailConf.Password,
+					emailConf.SMTPAddr,
+				),
+				emailConf.From,
+				mailAddresses,
+				[]byte(message),
+			)
+			if err != nil {
+				return xerrors.Errorf("Failed to send emails: %w", err)
+			}
 		}
 		return nil
 	}
