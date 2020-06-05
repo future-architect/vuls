@@ -11,11 +11,13 @@ builds:
   - linux
   goarch:
   - amd64
+  - 386
   main: .
   flags:
       - -a
   ldflags: -s -w -X main.version={{.Version}} -X main.revision={{.Commit}} 
   binary: vuls
+
 - id: trivy-to-vuls
   goos:
   - linux
@@ -23,6 +25,7 @@ builds:
   - amd64
   main: ./contrib/trivy/cmd/main.go
   binary: trivy-to-vuls
+
 - id: future-vuls
   goos:
   - linux
@@ -31,6 +34,7 @@ builds:
   main: ./contrib/future-vuls/cmd/main.go
   binary: future-vuls
 archives:
+
 - id: vuls
   name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
   builds:
@@ -41,6 +45,7 @@ archives:
   - NOTICE
   - README*
   - CHANGELOG.md
+
 - id: trivy-to-vuls
   name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
   builds:
@@ -54,6 +59,7 @@ archives:
 - id: future-vuls
   name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
   builds:
+
   - future-vuls
   format: tar.gz
   files:

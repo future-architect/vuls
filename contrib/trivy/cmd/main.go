@@ -34,12 +34,14 @@ func main() {
 				reader := bufio.NewReader(os.Stdin)
 				buf := new(bytes.Buffer)
 				if _, err = buf.ReadFrom(reader); err != nil {
+					os.Exit(1)
 					return
 				}
 				trivyJSON = buf.Bytes()
 			} else {
 				if trivyJSON, err = ioutil.ReadFile(jsonFilePath); err != nil {
 					fmt.Println("Failed to read file", err)
+					os.Exit(1)
 					return
 				}
 			}
@@ -50,11 +52,13 @@ func main() {
 			}
 			if scanResult, err = parser.Parse(trivyJSON, scanResult); err != nil {
 				fmt.Println("Failed to execute command", err)
+				os.Exit(1)
 				return
 			}
 			var resultJSON []byte
 			if resultJSON, err = json.MarshalIndent(scanResult, "", "   "); err != nil {
 				fmt.Println("Failed to create json", err)
+				os.Exit(1)
 				return
 			}
 			fmt.Println(string(resultJSON))
@@ -68,6 +72,7 @@ func main() {
 	var rootCmd = &cobra.Command{Use: "trivy-to-vuls"}
 	rootCmd.AddCommand(cmdTrivyToVuls)
 	if err = rootCmd.Execute(); err != nil {
+		os.Exit(1)
 		fmt.Println("Failed to execute command", err)
 	}
 }

@@ -58,12 +58,14 @@ func main() {
 				scanResultJSON = buf.Bytes()
 			} else {
 				fmt.Println("use --stdin option")
+				os.Exit(1)
 				return
 			}
 
 			var scanResult models.ScanResult
 			if err = json.Unmarshal(scanResultJSON, &scanResult); err != nil {
 				fmt.Println("Failed to parse json", err)
+				os.Exit(1)
 				return
 			}
 			scanResult.ServerUUID = serverUUID
@@ -72,7 +74,8 @@ func main() {
 			config.Conf.Saas.Token = token
 			config.Conf.Saas.URL = url
 			if err = (report.SaasWriter{}).Write(scanResult); err != nil {
-				fmt.Println("Failed to create json", err)
+				fmt.Println(err)
+				os.Exit(1)
 				return
 			}
 			return
