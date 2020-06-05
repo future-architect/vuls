@@ -1,6 +1,7 @@
 package report
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/mail"
@@ -87,6 +88,61 @@ type emailSender struct {
 	send func(string, smtp.Auth, string, []string, []byte) error
 }
 
+func smtps(emailConf config.SMTPConf, message string) (err error) {
+	auth := smtp.PlainAuth("",
+		emailConf.User,
+		emailConf.Password,
+		emailConf.SMTPAddr,
+	)
+
+	//TLS Config
+	tlsConfig := &tls.Config{
+		ServerName: emailConf.SMTPAddr,
+	}
+
+	smtpServer := net.JoinHostPort(emailConf.SMTPAddr, emailConf.SMTPPort)
+	//New TLS connection
+	con, err := tls.Dial("tcp", smtpServer, tlsConfig)
+	if err != nil {
+		return xerrors.Errorf("Failed to create TLS connection: %w", err)
+	}
+	defer con.Close()
+
+	c, err := smtp.NewClient(con, emailConf.SMTPAddr)
+	if err != nil {
+		return xerrors.Errorf("Failed to create new client: %w", err)
+	}
+	if err = c.Auth(auth); err != nil {
+		return xerrors.Errorf("Failed to authenticate: %w", err)
+	}
+	if err = c.Mail(emailConf.From); err != nil {
+		return xerrors.Errorf("Failed to send Mail command: %w", err)
+	}
+	for _, to := range emailConf.To {
+		if err = c.Rcpt(to); err != nil {
+			return xerrors.Errorf("Failed to send Rcpt command: %w", err)
+		}
+	}
+
+	w, err := c.Data()
+	if err != nil {
+		return xerrors.Errorf("Failed to send Data command: %w", err)
+	}
+	_, err = w.Write([]byte(message))
+	if err != nil {
+		return xerrors.Errorf("Failed to write EMail message: %w", err)
+	}
+	err = w.Close()
+	if err != nil {
+		return xerrors.Errorf("Failed to close Writer: %w", err)
+	}
+	err = c.Quit()
+	if err != nil {
+		return xerrors.Errorf("Failed to close connection: %w", err)
+	}
+	return nil
+}
+
 func (e *emailSender) Send(subject, body string) (err error) {
 	emailConf := e.conf
 	to := strings.Join(emailConf.To[:], ", ")
@@ -113,20 +169,28 @@ func (e *emailSender) Send(subject, body string) (err error) {
 	smtpServer := net.JoinHostPort(emailConf.SMTPAddr, emailConf.SMTPPort)
 
 	if emailConf.User != "" && emailConf.Password != "" {
-		err = e.send(
-			smtpServer,
-			smtp.PlainAuth(
-				"",
-				emailConf.User,
-				emailConf.Password,
-				emailConf.SMTPAddr,
-			),
-			emailConf.From,
-			mailAddresses,
-			[]byte(message),
-		)
-		if err != nil {
-			return xerrors.Errorf("Failed to send emails: %w", err)
+		switch emailConf.SMTPPort {
+		case "465":
+			err := smtps(emailConf, message)
+			if err != nil {
+				return xerrors.Errorf("Failed to send emails: %w", err)
+			}
+		default:
+			err = e.send(
+				smtpServer,
+				smtp.PlainAuth(
+					"",
+					emailConf.User,
+					emailConf.Password,
+					emailConf.SMTPAddr,
+				),
+				emailConf.From,
+				mailAddresses,
+				[]byte(message),
+			)
+			if err != nil {
+				return xerrors.Errorf("Failed to send emails: %w", err)
+			}
 		}
 		return nil
 	}
