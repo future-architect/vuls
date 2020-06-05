@@ -72,7 +72,7 @@ func main() {
 	var rootCmd = &cobra.Command{Use: "trivy-to-vuls"}
 	rootCmd.AddCommand(cmdTrivyToVuls)
 	if err = rootCmd.Execute(); err != nil {
-		os.Exit(1)
 		fmt.Println("Failed to execute command", err)
+		os.Exit(1)
 	}
 }
