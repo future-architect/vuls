@@ -44,6 +44,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 	var filledResults []models.ScanResult
 	reportedAt := time.Now()
 	hostname, _ := os.Hostname()
+	wpVulnCaches := map[string]string{}
 	for _, r := range rs {
 		if c.Conf.RefreshCve || needToRefreshCve(r) {
 			if ovalSupported(&r) {
@@ -83,7 +84,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			// Integrations
 			githubInts := GithubSecurityAlerts(c.Conf.Servers[r.ServerName].GitHubRepos)
 
-			wpOpt := WordPressOption{c.Conf.Servers[r.ServerName].WordPress.WPVulnDBToken}
+			wpOpt := WordPressOption{c.Conf.Servers[r.ServerName].WordPress.WPVulnDBToken, &wpVulnCaches}
 
 			if err := FillCveInfo(dbclient,
 				&r,
@@ -429,14 +430,15 @@ func (g GithubSecurityAlertOption) apply(r *models.ScanResult, ints *integration
 
 // WordPressOption :
 type WordPressOption struct {
-	token string
+	token        string
+	wpVulnCaches *map[string]string
 }
 
 func (g WordPressOption) apply(r *models.ScanResult, ints *integrationResults) (err error) {
 	if g.token == "" {
 		return nil
 	}
-	n, err := wordpress.FillWordPress(r, g.token)
+	n, err := wordpress.FillWordPress(r, g.token, g.wpVulnCaches)
 	if err != nil {
 		return xerrors.Errorf("Failed to fetch from WPVulnDB. Check the WPVulnDBToken in config.toml. err: %w", err)
 	}
