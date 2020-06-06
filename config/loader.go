@@ -10,9 +10,9 @@ import (
 
 // Load loads configuration
 func Load(path, keyPass string) error {
-	extention := filepath.Ext(path)
+	extension := filepath.Ext(path)
 	var loader Loader
-	if extention == ".json" {
+	if extension == ".json" {
 		loader = JSONLoader{}
 	} else {
 		loader = TOMLLoader{}
