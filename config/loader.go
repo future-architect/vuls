@@ -25,7 +25,7 @@ type Loader interface {
 	Load(string, string) error
 }
 
-func ToConf(conf Config, keyPass string) error {
+func toConf(conf Config, keyPass string) error {
 	Conf.EMail = conf.EMail
 	Conf.Slack = conf.Slack
 	Conf.Stride = conf.Stride

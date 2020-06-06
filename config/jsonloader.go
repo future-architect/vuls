@@ -17,7 +17,7 @@ func (c JSONLoader) Load(path, keyPass string) (err error) {
 	if err := decoder.Decode(&conf); err != nil {
 		return err
 	}
-	if err := ToConf(conf, keyPass); err != nil {
+	if err := toConf(conf, keyPass); err != nil {
 		return err
 	}
 	return nil

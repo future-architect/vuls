@@ -18,7 +18,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	if _, err := toml.DecodeFile(pathToToml, &conf); err != nil {
 		return err
 	}
-	if err := ToConf(conf, keyPass); err != nil {
+	if err := toConf(conf, keyPass); err != nil {
 		return err
 	}
 
