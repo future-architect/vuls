@@ -1,13 +1,274 @@
 package config
 
+import (
+	"path/filepath"
+	"regexp"
+	"strings"
+
+	"golang.org/x/xerrors"
+)
+
 // Load loads configuration
 func Load(path, keyPass string) error {
+	extention := filepath.Ext(path)
 	var loader Loader
-	loader = TOMLLoader{}
+	if extention == ".json" {
+		loader = JSONLoader{}
+	} else {
+		loader = TOMLLoader{}
+	}
 	return loader.Load(path, keyPass)
 }
 
 // Loader is interface of concrete loader
 type Loader interface {
 	Load(string, string) error
+}
+
+func ToConf(conf Config, keyPass string) error {
+	Conf.EMail = conf.EMail
+	Conf.Slack = conf.Slack
+	Conf.Stride = conf.Stride
+	Conf.HipChat = conf.HipChat
+	Conf.ChatWork = conf.ChatWork
+	Conf.Telegram = conf.Telegram
+	Conf.Saas = conf.Saas
+	Conf.Syslog = conf.Syslog
+	Conf.HTTP = conf.HTTP
+	Conf.AWS = conf.AWS
+	Conf.Azure = conf.Azure
+
+	Conf.CveDict = conf.CveDict
+	Conf.OvalDict = conf.OvalDict
+	Conf.Gost = conf.Gost
+	Conf.Exploit = conf.Exploit
+
+	d := conf.Default
+	Conf.Default = d
+	servers := make(map[string]ServerInfo)
+
+	if keyPass != "" {
+		d.KeyPassword = keyPass
+	}
+
+	i := 0
+	for serverName, v := range conf.Servers {
+		if 0 < len(v.KeyPassword) {
+			return xerrors.Errorf("[Deprecated] KEYPASSWORD IN CONFIG FILE ARE UNSECURE. REMOVE THEM IMMEDIATELY FOR A SECURITY REASONS. THEY WILL BE REMOVED IN A FUTURE RELEASE: %s", serverName)
+		}
+
+		s := ServerInfo{ServerName: serverName}
+		if v.Type != ServerTypePseudo {
+			s.Host = v.Host
+			if len(s.Host) == 0 {
+				return xerrors.Errorf("%s is invalid. host is empty", serverName)
+			}
+
+			switch {
+			case v.Port != "":
+				s.Port = v.Port
+			case d.Port != "":
+				s.Port = d.Port
+			default:
+				s.Port = "22"
+			}
+
+			switch {
+			case v.User != "":
+				s.User = v.User
+			case d.User != "":
+				s.User = d.User
+			default:
+				if s.Port != "local" {
+					return xerrors.Errorf("%s is invalid. User is empty", serverName)
+				}
+			}
+
+			s.KeyPath = v.KeyPath
+			if len(s.KeyPath) == 0 {
+				s.KeyPath = d.KeyPath
+			}
+			s.KeyPassword = v.KeyPassword
+			if len(s.KeyPassword) == 0 {
+				s.KeyPassword = d.KeyPassword
+			}
+		}
+
+		s.ScanMode = v.ScanMode
+		if len(s.ScanMode) == 0 {
+			s.ScanMode = d.ScanMode
+			if len(s.ScanMode) == 0 {
+				s.ScanMode = []string{"fast"}
+			}
+		}
+		for _, m := range s.ScanMode {
+			switch m {
+			case "fast":
+				s.Mode.Set(Fast)
+			case "fast-root":
+				s.Mode.Set(FastRoot)
+			case "deep":
+				s.Mode.Set(Deep)
+			case "offline":
+				s.Mode.Set(Offline)
+			default:
+				return xerrors.Errorf("scanMode: %s of %s is invalie. Specify -fast, -fast-root, -deep or offline", m, serverName)
+			}
+		}
+		if err := s.Mode.validate(); err != nil {
+			return xerrors.Errorf("%s in %s", err, serverName)
+		}
+
+		s.CpeNames = v.CpeNames
+		if len(s.CpeNames) == 0 {
+			s.CpeNames = d.CpeNames
+		}
+
+		s.Lockfiles = v.Lockfiles
+		if len(s.Lockfiles) == 0 {
+			s.Lockfiles = d.Lockfiles
+		}
+
+		s.FindLock = v.FindLock
+
+		for i, n := range s.CpeNames {
+			uri, err := toCpeURI(n)
+			if err != nil {
+				return xerrors.Errorf("Failed to parse CPENames %s in %s, err: %w", n, serverName, err)
+			}
+			s.CpeNames[i] = uri
+		}
+
+		s.ContainersIncluded = v.ContainersIncluded
+		if len(s.ContainersIncluded) == 0 {
+			s.ContainersIncluded = d.ContainersIncluded
+		}
+
+		s.ContainersExcluded = v.ContainersExcluded
+		if len(s.ContainersExcluded) == 0 {
+			s.ContainersExcluded = d.ContainersExcluded
+		}
+
+		s.ContainerType = v.ContainerType
+		if len(s.ContainerType) == 0 {
+			s.ContainerType = d.ContainerType
+		}
+
+		s.Containers = v.Containers
+		for contName, cont := range s.Containers {
+			cont.IgnoreCves = append(cont.IgnoreCves, d.IgnoreCves...)
+			s.Containers[contName] = cont
+		}
+
+		if len(v.DependencyCheckXMLPath) != 0 || len(d.DependencyCheckXMLPath) != 0 {
+			return xerrors.Errorf("[DEPRECATED] dependencyCheckXMLPath IS DEPRECATED. USE owaspDCXMLPath INSTEAD: %s", serverName)
+		}
+
+		s.OwaspDCXMLPath = v.OwaspDCXMLPath
+		if len(s.OwaspDCXMLPath) == 0 {
+			s.OwaspDCXMLPath = d.OwaspDCXMLPath
+		}
+
+		s.Memo = v.Memo
+		if s.Memo == "" {
+			s.Memo = d.Memo
+		}
+
+		s.IgnoreCves = v.IgnoreCves
+		for _, cve := range d.IgnoreCves {
+			found := false
+			for _, c := range s.IgnoreCves {
+				if cve == c {
+					found = true
+					break
+				}
+			}
+			if !found {
+				s.IgnoreCves = append(s.IgnoreCves, cve)
+			}
+		}
+
+		s.IgnorePkgsRegexp = v.IgnorePkgsRegexp
+		for _, pkg := range d.IgnorePkgsRegexp {
+			found := false
+			for _, p := range s.IgnorePkgsRegexp {
+				if pkg == p {
+					found = true
+					break
+				}
+			}
+			if !found {
+				s.IgnorePkgsRegexp = append(s.IgnorePkgsRegexp, pkg)
+			}
+		}
+		for _, reg := range s.IgnorePkgsRegexp {
+			_, err := regexp.Compile(reg)
+			if err != nil {
+				return xerrors.Errorf("Faild to parse %s in %s. err: %w", reg, serverName, err)
+			}
+		}
+		for contName, cont := range s.Containers {
+			for _, reg := range cont.IgnorePkgsRegexp {
+				_, err := regexp.Compile(reg)
+				if err != nil {
+					return xerrors.Errorf("Faild to parse %s in %s@%s. err: %w",
+						reg, contName, serverName, err)
+				}
+			}
+		}
+
+		opt := map[string]interface{}{}
+		for k, v := range d.Optional {
+			opt[k] = v
+		}
+		for k, v := range v.Optional {
+			opt[k] = v
+		}
+		s.Optional = opt
+
+		s.Enablerepo = v.Enablerepo
+		if len(s.Enablerepo) == 0 {
+			s.Enablerepo = d.Enablerepo
+		}
+		if len(s.Enablerepo) != 0 {
+			for _, repo := range s.Enablerepo {
+				switch repo {
+				case "base", "updates":
+					// nop
+				default:
+					return xerrors.Errorf(
+						"For now, enablerepo have to be base or updates: %s, servername: %s",
+						s.Enablerepo, serverName)
+				}
+			}
+		}
+
+		s.GitHubRepos = v.GitHubRepos
+		for ownerRepo, githubSetting := range s.GitHubRepos {
+			if ss := strings.Split(ownerRepo, "/"); len(ss) != 2 {
+				return xerrors.Errorf("Failed to parse GitHub owner/repo: %s in %s",
+					ownerRepo, serverName)
+			}
+			if githubSetting.Token == "" {
+				return xerrors.Errorf("GitHub owner/repo: %s in %s token is empty",
+					ownerRepo, serverName)
+			}
+		}
+
+		s.UUIDs = v.UUIDs
+		s.Type = v.Type
+
+		s.WordPress.WPVulnDBToken = v.WordPress.WPVulnDBToken
+		s.WordPress.CmdPath = v.WordPress.CmdPath
+		s.WordPress.DocRoot = v.WordPress.DocRoot
+		s.WordPress.OSUser = v.WordPress.OSUser
+		s.WordPress.IgnoreInactive = v.WordPress.IgnoreInactive
+
+		s.LogMsgAnsiColor = Colors[i%len(Colors)]
+		i++
+
+		servers[serverName] = s
+	}
+	Conf.Servers = servers
+	return nil
 }
