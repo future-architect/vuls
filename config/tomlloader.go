@@ -21,7 +21,6 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	if err := toConf(conf, keyPass); err != nil {
 		return err
 	}
-
 	return nil
 }
 
