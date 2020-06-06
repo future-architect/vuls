@@ -10,11 +10,11 @@ type JSONLoader struct {
 }
 
 // Load load the configuration JSON file specified by path arg.
-func (c JSONLoader) Load(path, keyPass string) (err error) {
+func (c JSONLoader) Load(pathToJSON, keyPass string) (err error) {
 	var conf Config
-	configFile, err := os.Open(path)
+	configFile, err := os.Open(pathToJSON)
 	if err != nil {
-		return "", err
+		return err
 	}
 	decoder := json.NewDecoder(configFile)
 	if err := decoder.Decode(&conf); err != nil {

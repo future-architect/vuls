@@ -64,7 +64,10 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 	wd, _ := os.Getwd()
 	defaultConfPath := filepath.Join(wd, "config.toml")
-	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
+	if _, err := os.Stat(defaultConfPath); err != nil {
+		defaultConfPath = filepath.Join(wd, "config.json")
+	}
+	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/config")
 
 	defaultResultsDir := filepath.Join(wd, "results")
 	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")

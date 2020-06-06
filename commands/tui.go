@@ -83,7 +83,10 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 
 	defaultConfPath := filepath.Join(wd, "config.toml")
-	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
+	if _, err := os.Stat(defaultConfPath); err != nil {
+		defaultConfPath = filepath.Join(wd, "config.json")
+	}
+	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/config")
 
 	f.BoolVar(&c.Conf.RefreshCve, "refresh-cve", false,
 		"Refresh CVE information in JSON file under results dir")
