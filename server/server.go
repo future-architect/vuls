@@ -62,6 +62,12 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// set ReportedAt to current time when it's set to the epoch, ensures that ReportedAt will be set
+	// properly for scans sent to vuls when running in server mode
+	if result.ReportedAt.IsZero() {
+		result.ReportedAt = time.Now()
+	}
+
 	// report
 	reports := []report.ResultWriter{
 		report.HTTPResponseWriter{Writer: w},
