@@ -285,6 +285,10 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 		defaultSSHArgs = append(defaultSSHArgs, "-vvv")
 	}
 
+	if len(c.JumpServer) != 0 { 
+		defaultSSHArgs = append(defaultSSHArgs, "-J", strings.Join(c.JumpServer, ","))
+	}
+
 	args := append(defaultSSHArgs, fmt.Sprintf("%s@%s", c.User, c.Host))
 	args = append(args, "-p", c.Port)
 	if 0 < len(c.KeyPath) {
