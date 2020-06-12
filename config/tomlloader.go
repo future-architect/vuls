@@ -56,7 +56,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			if len(s.Host) == 0 {
 				return xerrors.Errorf("%s is invalid. host is empty", serverName)
 			}
-			
+
 			s.JumpServer = v.JumpServer
 			if len(s.JumpServer) == 0 {
 				s.JumpServer = d.JumpServer
