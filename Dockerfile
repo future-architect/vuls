@@ -11,7 +11,7 @@ COPY . $GOPATH/src/$REPOSITORY
 RUN cd $GOPATH/src/$REPOSITORY && make install
 
 
-FROM alpine:3.7
+FROM alpine:3.11
 
 MAINTAINER hikachan sadayuki-matsuno
 
