@@ -77,6 +77,11 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 				}
 			}
 
+			s.SSHConfigPath = v.SSHConfigPath
+			if len(s.SSHConfigPath) == 0 {
+				s.SSHConfigPath = d.SSHConfigPath
+			}
+
 			s.KeyPath = v.KeyPath
 			if len(s.KeyPath) == 0 {
 				s.KeyPath = d.KeyPath
