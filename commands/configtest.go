@@ -36,7 +36,7 @@ func (*ConfigtestCmd) Usage() string {
 			[-log-dir=/path/to/log]
 			[-ask-key-password]
 			[-timeout=300]
-			[-ssh-external]
+			[-ssh-config]
 			[-containers-only]
 			[-http-proxy=http://192.168.0.1:8080]
 			[-debug]
