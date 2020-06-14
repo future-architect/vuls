@@ -80,7 +80,7 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 		"Use Native Go implementation of SSH. Default: Use the external command")
 
 	f.BoolVar(&c.Conf.SSHConfig, "ssh-config", false,
-		"Use SSH options specified in ssh_config preferentially")
+		"[Deprecated] Use SSH options specified in ssh_config preferentially")
 
 	f.BoolVar(&c.Conf.ContainersOnly, "containers-only", false,
 		"Scan running containers only. Default: Scan both of hosts and running containers")
@@ -143,6 +143,16 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 			"Please check config.toml template : https://vuls.io/docs/en/usage-settings.html",
 		}
 		util.Log.Errorf("%s\n%+v", strings.Join(msg, "\n"), err)
+		return subcommands.ExitUsageError
+	}
+
+	if c.Conf.SSHConfig {
+		msg := []string{
+			"-ssh-config is deprecated",
+			"If you update Vuls and get this error, there may be incompatible changes in config.toml",
+			"Please check config.toml template : https://vuls.io/docs/en/usage-settings.html",
+		}
+		util.Log.Errorf("%s", strings.Join(msg, "\n"))
 		return subcommands.ExitUsageError
 	}
 
