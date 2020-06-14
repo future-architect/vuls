@@ -292,6 +292,8 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 		args = append(args, "-o", "PasswordAuthentication=no")
 	}
 
+	args = append(args, "-F", "/home/mainek00n/.ssh/config")
+
 	cmd = decorateCmd(c, cmd, sudo)
 	cmd = fmt.Sprintf("stty cols 1000; %s", cmd)
 
