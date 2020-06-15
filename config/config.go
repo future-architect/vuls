@@ -1036,6 +1036,7 @@ type ServerInfo struct {
 	User                   string                      `toml:"user,omitempty" json:"user,omitempty"`
 	Host                   string                      `toml:"host,omitempty" json:"host,omitempty"`
 	Port                   string                      `toml:"port,omitempty" json:"port,omitempty"`
+	SSHConfigPath          string                      `toml:"sshConfigPath,omitempty" json:"sshConfigPath,omitempty"`
 	KeyPath                string                      `toml:"keyPath,omitempty" json:"keyPath,omitempty"`
 	KeyPassword            string                      `json:"-,omitempty" toml:"-"`
 	CpeNames               []string                    `toml:"cpeNames,omitempty" json:"cpeNames,omitempty"`

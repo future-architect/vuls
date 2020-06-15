@@ -187,6 +187,7 @@ sqlite3Path = "/path/to/go-exploitdb.sqlite3"
 host                = "{{$ip}}"
 #port               = "22"
 #user               = "root"
+#sshConfigPath		= "/home/username/.ssh/config"
 #keyPath            = "/home/username/.ssh/id_rsa"
 #scanMode           = ["fast", "fast-root", "deep", "offline"]
 #type               = "pseudo"

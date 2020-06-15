@@ -260,7 +260,9 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 
 	defaultSSHArgs := []string{"-tt"}
 
-	if !conf.Conf.SSHConfig {
+	if 0 < len(c.SSHConfigPath) {
+		defaultSSHArgs = append(defaultSSHArgs, "-F", c.SSHConfigPath)
+	} else {
 		home, err := homedir.Dir()
 		if err != nil {
 			msg := fmt.Sprintf("Failed to get HOME directory: %s", err)
