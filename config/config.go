@@ -1035,6 +1035,7 @@ type ServerInfo struct {
 	ServerName             string                      `toml:"-" json:"serverName,omitempty"`
 	User                   string                      `toml:"user,omitempty" json:"user,omitempty"`
 	Host                   string                      `toml:"host,omitempty" json:"host,omitempty"`
+	JumpServer             []string                    `toml:"jumpServer,omitempty" json:"jumpServer,omitempty"`
 	Port                   string                      `toml:"port,omitempty" json:"port,omitempty"`
 	SSHConfigPath          string                      `toml:"sshConfigPath,omitempty" json:"sshConfigPath,omitempty"`
 	KeyPath                string                      `toml:"keyPath,omitempty" json:"keyPath,omitempty"`
