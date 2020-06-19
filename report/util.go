@@ -515,6 +515,10 @@ func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
 		}
 	}
 
+	if len(updated) == 0 {
+		util.Log.Infof("%s: There are %d vulnerabilities, but no difference between current result and previous one.", current.FormatServerName(), len(current.ScannedCves))
+	}
+
 	for cveID, vuln := range new {
 		updated[cveID] = vuln
 	}
