@@ -71,6 +71,7 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 				r.ScannedCves.FormatFixedStatus(r.Packages),
 				r.FormatUpdatablePacksSummary(),
 				r.FormatExploitCveSummary(),
+				r.FormatMetasploitCveSummary(),
 				r.FormatAlertSummary(),
 			}
 		} else {
@@ -126,7 +127,7 @@ No CVE-IDs are found in updatable packages.
 		// packname += strings.Join(vinfo.CpeURIs, ", ")
 
 		exploits := ""
-		if 0 < len(vinfo.Exploits) {
+		if 0 < len(vinfo.Exploits) || 0 < len(vinfo.Metasploits) {
 			exploits = "POC"
 		}
 
@@ -326,6 +327,9 @@ No CVE-IDs are found in updatable packages.
 		}
 		for _, exploit := range vuln.Exploits {
 			data = append(data, []string{string(exploit.ExploitType), exploit.URL})
+		}
+		for _, module := range vuln.Metasploits {
+			data = append(data, []string{module.Name, module.Title})
 		}
 		for _, url := range top10URLs {
 			data = append(data, []string{"OWASP Top10", url})

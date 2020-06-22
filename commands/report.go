@@ -11,6 +11,7 @@ import (
 	"github.com/future-architect/vuls/exploit"
 	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/msf"
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
@@ -21,12 +22,13 @@ import (
 
 // ReportCmd is subcommand for reporting
 type ReportCmd struct {
-	configPath  string
-	cveDict     c.GoCveDictConf
-	ovalDict    c.GovalDictConf
-	gostConf    c.GostConf
-	exploitConf c.ExploitConf
-	httpConf    c.HTTPConf
+	configPath     string
+	cveDict        c.GoCveDictConf
+	ovalDict       c.GovalDictConf
+	gostConf       c.GostConf
+	exploitConf    c.ExploitConf
+	metasploitConf c.MetasploitConf
+	httpConf       c.HTTPConf
 }
 
 // Name return subcommand name
@@ -87,6 +89,9 @@ func (*ReportCmd) Usage() string {
 		[-exploitdb-type=sqlite3|mysql|redis|http]
 		[-exploitdb-sqlite3-path=/path/to/exploitdb.sqlite3]
 		[-exploitdb-url=http://127.0.0.1:1326 or DB connection string]
+		[-msfdb-type=sqlite3|mysql|redis|http]
+		[-msfdb-sqlite3-path=/path/to/msfdb.sqlite3]
+		[-msfdb-url=http://127.0.0.1:1326 or DB connection string]
 		[-http="http://vuls-report-server"]
 		[-trivy-cachedb-dir=/path/to/dir]
 
@@ -192,6 +197,12 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.exploitConf.URL, "exploitdb-url", "",
 		"http://exploit.com:1326 or DB connection string")
 
+	f.StringVar(&p.metasploitConf.Type, "msfdb-type", "",
+		"DB type of msf (sqlite3, mysql, postgres, redis or http)")
+	f.StringVar(&p.metasploitConf.SQLite3Path, "msfdb-sqlite3-path", "", "/path/to/sqlite3")
+	f.StringVar(&p.metasploitConf.URL, "msfdb-url", "",
+		"http://exploit.com:1326 or DB connection string")
+
 	f.StringVar(&p.httpConf.URL, "http", "", "-to-http http://vuls-report")
 
 	f.StringVar(&c.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
@@ -212,6 +223,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.OvalDict.Overwrite(p.ovalDict)
 	c.Conf.Gost.Overwrite(p.gostConf)
 	c.Conf.Exploit.Overwrite(p.exploitConf)
+	c.Conf.Metasploit.Overwrite(p.metasploitConf)
 	c.Conf.HTTP.Overwrite(p.httpConf)
 
 	var dir string
@@ -395,12 +407,22 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 				return subcommands.ExitFailure
 			}
 		}
+
+		if c.Conf.Metasploit.URL != "" {
+			err := msf.CheckHTTPHealth()
+			if err != nil {
+				util.Log.Errorf("metasploit HTTP server is not running. err: %+v", err)
+				util.Log.Errorf("Run go-msfdb as server mode before reporting")
+				return subcommands.ExitFailure
+			}
+		}
 		dbclient, locked, err := report.NewDBClient(report.DBClientConf{
-			CveDictCnf:  c.Conf.CveDict,
-			OvalDictCnf: c.Conf.OvalDict,
-			GostCnf:     c.Conf.Gost,
-			ExploitCnf:  c.Conf.Exploit,
-			DebugSQL:    c.Conf.DebugSQL,
+			CveDictCnf:    c.Conf.CveDict,
+			OvalDictCnf:   c.Conf.OvalDict,
+			GostCnf:       c.Conf.Gost,
+			ExploitCnf:    c.Conf.Exploit,
+			MetasploitCnf: c.Conf.Metasploit,
+			DebugSQL:      c.Conf.DebugSQL,
 		})
 		if locked {
 			util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again. err: %+v", err)

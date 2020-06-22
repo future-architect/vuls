@@ -35,6 +35,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	Conf.OvalDict = conf.OvalDict
 	Conf.Gost = conf.Gost
 	Conf.Exploit = conf.Exploit
+	Conf.Metasploit = conf.Metasploit
 
 	d := conf.Default
 	Conf.Default = d
