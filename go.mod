@@ -15,7 +15,7 @@ require (
 	github.com/aquasecurity/go-dep-parser v0.0.0-20200123140603-4dc0125084da // indirect
 	github.com/aquasecurity/trivy v0.8.0
 	github.com/aquasecurity/trivy-db v0.0.0-20200514134639-7e57e3e02470
-	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535
+	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 	github.com/aws/aws-sdk-go v1.30.16
 	github.com/boltdb/bolt v1.3.1
 	github.com/cenkalti/backoff v2.2.1+incompatible
@@ -48,7 +48,7 @@ require (
 	github.com/sirupsen/logrus v1.5.0
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v1.0.0
-	github.com/takuzoo3868/go-msfdb v0.0.0-20200619153215-0119798eb02d
+	github.com/takuzoo3868/go-msfdb v0.0.0-20200623073702-5ca6ba9db833
 	golang.org/x/crypto v0.0.0-20200414173820-0848c9571904
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
