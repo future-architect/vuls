@@ -776,7 +776,12 @@ func setChangelogLayout(g *gocui.Gui) error {
 				"==================",
 			)
 			for _, module := range vinfo.Metasploits {
-				lines = append(lines, fmt.Sprintf("* [%s]", module.Title))
+				lines = append(lines, fmt.Sprintf("* %s: %s", module.Name, module.Description))
+				if 0 < len(module.URLs) {
+					for _, u := range module.URLs {
+						lines = append(lines, fmt.Sprintf(" - %s", u))
+					}
+				}
 			}
 		}
 

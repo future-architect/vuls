@@ -794,9 +794,10 @@ type Exploit struct {
 
 // Metasploit :
 type Metasploit struct {
-	Name        string
-	Title       string
-	Description string
+	Name        string   `json:"name"`
+	Title       string   `json:"title"`
+	Description string   `json:"description,omitempty"`
+	URLs        []string `json:",omitempty"`
 }
 
 // AlertDict has target cve's JPCERT and USCERT alert data

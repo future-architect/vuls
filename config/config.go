@@ -1056,7 +1056,7 @@ func (cnf *MetasploitConf) Overwrite(cmdOpt MetasploitConf) {
 
 // IsFetchViaHTTP returns wether fetch via http
 func (cnf *MetasploitConf) IsFetchViaHTTP() bool {
-	return Conf.Exploit.Type == "http"
+	return Conf.Metasploit.Type == "http"
 }
 
 // AWS is aws config

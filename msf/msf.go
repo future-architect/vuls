@@ -6,9 +6,9 @@ import (
 
 	cnf "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/parnurzeal/gorequest"
 	"github.com/takuzoo3868/go-msfdb/db"
 	metasploitmodels "github.com/takuzoo3868/go-msfdb/models"
-	"github.com/parnurzeal/gorequest"
 	"golang.org/x/xerrors"
 )
 
@@ -37,10 +37,17 @@ func FillWithMetasploit(driver db.DB, r *models.ScanResult) (nMetasploitCve int,
 // ConvertToModels converts gost model to vuls model
 func ConvertToModels(ms []*metasploitmodels.Metasploit) (modules []models.Metasploit) {
 	for _, m := range ms {
+		var links []string
+		if 0 < len(m.References) {
+			for _, u := range m.References {
+				links = append(links, u.Link)
+			}
+		}
 		module := models.Metasploit{
-			Name: m.Name,
-			Title: m.Title,
+			Name:        m.Name,
+			Title:       m.Title,
 			Description: m.Description,
+			URLs:        links,
 		}
 		modules = append(modules, module)
 	}

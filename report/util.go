@@ -329,7 +329,7 @@ No CVE-IDs are found in updatable packages.
 			data = append(data, []string{string(exploit.ExploitType), exploit.URL})
 		}
 		for _, module := range vuln.Metasploits {
-			data = append(data, []string{module.Name, module.Title})
+			data = append(data, []string{module.Name, module.Description})
 		}
 		for _, url := range top10URLs {
 			data = append(data, []string{"OWASP Top10", url})

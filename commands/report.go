@@ -201,7 +201,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"DB type of msf (sqlite3, mysql, postgres, redis or http)")
 	f.StringVar(&p.metasploitConf.SQLite3Path, "msfdb-sqlite3-path", "", "/path/to/sqlite3")
 	f.StringVar(&p.metasploitConf.URL, "msfdb-url", "",
-		"http://exploit.com:1326 or DB connection string")
+		"http://metasploit.com:1326 or DB connection string")
 
 	f.StringVar(&p.httpConf.URL, "http", "", "-to-http http://vuls-report")
 
