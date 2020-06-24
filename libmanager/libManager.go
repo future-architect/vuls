@@ -46,7 +46,12 @@ func FillLibrary(r *models.ScanResult) (totalCnt int, err error) {
 		}
 		for _, vinfo := range vinfos {
 			vinfo.Confidences.AppendIfMissing(models.TrivyMatch)
-			r.ScannedCves[vinfo.CveID] = vinfo
+			if v, ok := r.ScannedCves[vinfo.CveID]; !ok {
+				r.ScannedCves[vinfo.CveID] = vinfo
+			} else {
+				v.LibraryFixedIns = append(v.LibraryFixedIns, vinfo.LibraryFixedIns...)
+				r.ScannedCves[vinfo.CveID] = v
+			}
 		}
 		totalCnt += len(vinfos)
 	}
