@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/aquasecurity/fanal/analyzer"
-	"github.com/aquasecurity/fanal/extractor"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -534,8 +534,7 @@ func (l *base) scanLibraries() (err error) {
 		return nil
 	}
 
-	libFilemap := extractor.FileMap{}
-
+	libFilemap := map[string][]byte{}
 	detectFiles := l.ServerInfo.Lockfiles
 
 	// auto detect lockfile
@@ -571,16 +570,30 @@ func (l *base) scanLibraries() (err error) {
 		libFilemap[path] = []byte(r.Stdout)
 	}
 
-	results, err := analyzer.GetLibraries(libFilemap)
-	if err != nil {
-		return xerrors.Errorf("Failed to get libs: %w", err)
-	}
-	l.LibraryScanners, err = convertLibWithScanner(results)
-	if err != nil {
-		return xerrors.Errorf("Failed to scan libraries: %w", err)
+	for path, b := range libFilemap {
+		res, err := analyzer.AnalyzeFile(path, &DummyFileInfo{}, func() ([]byte, error) {
+			return b, nil
+		})
+		if err != nil {
+			return xerrors.Errorf("Failed to get libs: %w", err)
+		}
+		libscan, err := convertLibWithScanner(res.Applications)
+		if err != nil {
+			return xerrors.Errorf("Failed to scan libraries: %w", err)
+		}
+		l.LibraryScanners = append(l.LibraryScanners, libscan...)
 	}
 	return nil
 }
+
+type DummyFileInfo struct{}
+
+func (d *DummyFileInfo) Name() string       { return "dummy" }
+func (d *DummyFileInfo) Size() int64        { return 0 }
+func (d *DummyFileInfo) Mode() os.FileMode  { return 0 }
+func (d *DummyFileInfo) ModTime() time.Time { return time.Now() }
+func (d *DummyFileInfo) IsDir() bool        { return false }
+func (d *DummyFileInfo) Sys() interface{}   { return nil }
 
 func (l *base) scanWordPress() (err error) {
 	wpOpts := []string{l.ServerInfo.WordPress.OSUser,

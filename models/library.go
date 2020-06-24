@@ -19,11 +19,11 @@ import (
 type LibraryScanners []LibraryScanner
 
 // Find : find by name
-func (lss LibraryScanners) Find(name string) map[string]types.Library {
+func (lss LibraryScanners) Find(path, name string) map[string]types.Library {
 	filtered := map[string]types.Library{}
 	for _, ls := range lss {
 		for _, lib := range ls.Libs {
-			if lib.Name == name {
+			if ls.Path == path && lib.Name == name {
 				filtered[ls.Path] = lib
 				break
 			}
@@ -40,11 +40,10 @@ type LibraryScanner struct {
 
 // Scan : scan target library
 func (s LibraryScanner) Scan() ([]VulnInfo, error) {
-	scanner := library.DriverFactory{}.NewDriver(filepath.Base(string(s.Path)))
-	if scanner == nil {
-		return nil, xerrors.New("unknown file type")
+	scanner, err := library.DriverFactory{}.NewDriver(filepath.Base(string(s.Path)))
+	if err != nil {
+		return nil, xerrors.Errorf("Faild to new a library driver: %w", err)
 	}
-
 	var vulnerabilities = []VulnInfo{}
 	for _, pkg := range s.Libs {
 		v, err := version.NewVersion(pkg.Version)
@@ -94,6 +93,7 @@ func (s LibraryScanner) getVulnDetail(tvuln types.DetectedVulnerability) (vinfo 
 				Key:     s.GetLibraryKey(),
 				Name:    tvuln.PkgName,
 				FixedIn: tvuln.FixedVersion,
+				Path:    s.Path,
 			},
 		}
 	}
@@ -141,4 +141,5 @@ type LibraryFixedIn struct {
 	Key     string `json:"key,omitempty"`
 	Name    string `json:"name,omitempty"`
 	FixedIn string `json:"fixedIn,omitempty"`
+	Path    string `json:"path,omitempty"`
 }
