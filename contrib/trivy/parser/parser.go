@@ -92,6 +92,7 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 				vulnInfo.LibraryFixedIns = append(vulnInfo.LibraryFixedIns, models.LibraryFixedIn{
 					Key:     trivyResult.Type,
 					Name:    vuln.PkgName,
+					Path:    trivyResult.Target,
 					FixedIn: vuln.FixedVersion,
 				})
 				libScanner := uniqueLibraryScannerPaths[trivyResult.Target]
