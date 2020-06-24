@@ -202,6 +202,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "php-app/composer.lock",
 								Key:     "composer",
 								Name:    "guzzlehttp/guzzle",
 								FixedIn: "4.2.4, 5.3.1, 6.2.1",
@@ -240,6 +241,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "node-app/package-lock.json",
 								Key:     "npm",
 								Name:    "lodash",
 								FixedIn: ">=4.17.5",
@@ -277,6 +279,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "rails-html-sanitizer",
 								FixedIn: ">= 1.0.4",
@@ -520,6 +523,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "node-app/package-lock.json",
 								Key:     "npm",
 								Name:    "lodash",
 								FixedIn: ">=4.17.11",
@@ -1857,6 +1861,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "node-app/package-lock.json",
 								Key:     "npm",
 								Name:    "jquery",
 								FixedIn: ">=3.4.0",
@@ -1900,6 +1905,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "nokogiri",
 								FixedIn: ">= 1.10.4",
@@ -2160,6 +2166,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "python-app/Pipfile.lock",
 								Key:     "pipenv",
 								Name:    "urllib3",
 								FixedIn: "",
@@ -2206,6 +2213,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "python-app/Pipfile.lock",
 								Key:     "pipenv",
 								Name:    "urllib3",
 								FixedIn: "1.24.2",
@@ -2305,6 +2313,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "node-app/package-lock.json",
 								Key:     "npm",
 								Name:    "jquery",
 								FixedIn: ">=3.4.0",
@@ -2399,6 +2408,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "nokogiri",
 								FixedIn: ">= 1.10.5",
@@ -2552,6 +2562,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "loofah",
 								FixedIn: ">= 2.3.1",
@@ -2681,6 +2692,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "rack",
 								FixedIn: "~> 1.6.12, >= 2.0.8",
@@ -2719,6 +2731,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "python-app/Pipfile.lock",
 								Key:     "pipenv",
 								Name:    "pyyaml",
 								FixedIn: "5.3.1",
@@ -2760,6 +2773,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "actionview",
 								FixedIn: "~> 5.2.4, >= 5.2.4.2, >= 6.0.2.2",
@@ -2799,6 +2813,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							models.LibraryFixedIn{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "nokogiri",
 								FixedIn: ">= 1.10.8",
@@ -2839,6 +2854,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							models.LibraryFixedIn{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "rake",
 								FixedIn: ">= 12.3.3",
@@ -2874,6 +2890,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							models.LibraryFixedIn{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "rack",
 								FixedIn: "~> 2.1.3, >= 2.2.0",
@@ -2909,6 +2926,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							models.LibraryFixedIn{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "activestorage",
 								FixedIn: "~> 5.2.4.3, >= 6.0.3.1",
@@ -2947,6 +2965,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							models.LibraryFixedIn{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "json",
 								FixedIn: ">= 2.3.0",
@@ -2979,6 +2998,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "actionpack",
 								FixedIn: "~> 5.2.4.3, >= 6.0.3.1",
@@ -3011,6 +3031,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "activesupport",
 								FixedIn: "~> 5.2.4.3, >= 6.0.3.1",
@@ -3043,6 +3064,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "actionpack",
 								FixedIn: "~> 5.2.4.3, >= 6.0.3.1",
@@ -3075,6 +3097,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "actionview",
 								FixedIn: "~> 5.2.4.3, >= 6.0.3.1",
@@ -3107,6 +3130,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "node-app/package-lock.json",
 								Key:     "npm",
 								Name:    "lodash",
 								FixedIn: "",
@@ -3137,6 +3161,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "python-app/Pipfile.lock",
 								Key:     "pipenv",
 								Name:    "django-cors-headers",
 								FixedIn: "3.0.0",
@@ -3163,7 +3188,12 @@ func TestParse(t *testing.T) {
 							},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
-							{Key: "cargo", Name: "openssl", FixedIn: ""},
+							{
+								Path:    "rust-app/Cargo.lock",
+								Key:     "cargo",
+								Name:    "openssl",
+								FixedIn: "",
+							},
 						},
 					},
 					"RUSTSEC-2018-0003": {
@@ -3186,7 +3216,12 @@ func TestParse(t *testing.T) {
 							},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
-							{Key: "cargo", Name: "smallvec", FixedIn: ""},
+							{
+								Path:    "rust-app/Cargo.lock",
+								Key:     "cargo",
+								Name:    "smallvec",
+								FixedIn: "",
+							},
 						},
 					},
 					"RUSTSEC-2018-0010": {
@@ -3209,7 +3244,12 @@ func TestParse(t *testing.T) {
 							},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
-							{Key: "cargo", Name: "openssl", FixedIn: ""},
+							{
+								Path:    "rust-app/Cargo.lock",
+								Key:     "cargo",
+								Name:    "openssl",
+								FixedIn: "",
+							},
 						},
 					},
 					"RUSTSEC-2018-0017": {
@@ -3231,7 +3271,12 @@ func TestParse(t *testing.T) {
 							},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
-							{Key: "cargo", Name: "tempdir", FixedIn: ""},
+							{
+								Path:    "rust-app/Cargo.lock",
+								Key:     "cargo",
+								Name:    "tempdir",
+								FixedIn: "",
+							},
 						},
 					},
 					"RUSTSEC-2019-0001": {
@@ -3254,7 +3299,12 @@ func TestParse(t *testing.T) {
 							},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
-							{Key: "cargo", Name: "ammonia", FixedIn: ""},
+							{
+								Path:    "rust-app/Cargo.lock",
+								Key:     "cargo",
+								Name:    "ammonia",
+								FixedIn: "",
+							},
 						},
 					},
 					"RUSTSEC-2019-0009": {CveID: "RUSTSEC-2019-0009",
@@ -3275,7 +3325,12 @@ func TestParse(t *testing.T) {
 							},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
-							{Key: "cargo", Name: "smallvec", FixedIn: ""},
+							{
+								Path:    "rust-app/Cargo.lock",
+								Key:     "cargo",
+								Name:    "smallvec",
+								FixedIn: "",
+							},
 						},
 					},
 					"RUSTSEC-2019-0012": {
@@ -3298,7 +3353,12 @@ func TestParse(t *testing.T) {
 							},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
-							{Key: "cargo", Name: "smallvec", FixedIn: ""},
+							{
+								Path:    "rust-app/Cargo.lock",
+								Key:     "cargo",
+								Name:    "smallvec",
+								FixedIn: "",
+							},
 						},
 					},
 				},
