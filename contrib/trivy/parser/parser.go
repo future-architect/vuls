@@ -45,13 +45,6 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 				notFixedYet = true
 				fixState = "Affected"
 			}
-			vulnInfo.AffectedPackages = append(vulnInfo.AffectedPackages, models.PackageFixStatus{
-				Name:        vuln.PkgName,
-				NotFixedYet: notFixedYet,
-				FixState:    fixState,
-				FixedIn:     vuln.FixedVersion,
-			})
-
 			var references models.References
 			for _, reference := range vuln.References {
 				references = append(references, models.Reference{
@@ -78,6 +71,13 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 					Name:    vuln.PkgName,
 					Version: vuln.InstalledVersion,
 				}
+				vulnInfo.AffectedPackages = append(vulnInfo.AffectedPackages, models.PackageFixStatus{
+					Name:        vuln.PkgName,
+					NotFixedYet: notFixedYet,
+					FixState:    fixState,
+					FixedIn:     vuln.FixedVersion,
+				})
+
 				// overwrite every time if os package
 				scanResult.Family = trivyResult.Type
 				scanResult.ServerName = trivyResult.Target
