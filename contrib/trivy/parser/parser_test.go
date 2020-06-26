@@ -154,14 +154,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "guzzlehttp/guzzle",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     "4.2.4, 5.3.1, 6.2.1",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Title:         "PHP: sets environmental variable based on user supplied Proxy request header",
@@ -202,6 +195,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "php-app/composer.lock",
 								Key:     "composer",
 								Name:    "guzzlehttp/guzzle",
 								FixedIn: "4.2.4, 5.3.1, 6.2.1",
@@ -217,14 +211,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "lodash",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     ">=4.17.5",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "LOW",
@@ -240,6 +227,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "node-app/package-lock.json",
 								Key:     "npm",
 								Name:    "lodash",
 								FixedIn: ">=4.17.5",
@@ -255,14 +243,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "rails-html-sanitizer",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     ">= 1.0.4",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "MEDIUM",
@@ -277,6 +258,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "rails-html-sanitizer",
 								FixedIn: ">= 1.0.4",
@@ -497,14 +479,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "lodash",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     ">=4.17.11",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "HIGH",
@@ -520,6 +495,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "node-app/package-lock.json",
 								Key:     "npm",
 								Name:    "lodash",
 								FixedIn: ">=4.17.11",
@@ -1837,14 +1813,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "jquery",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     ">=3.4.0",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "MEDIUM",
@@ -1857,6 +1826,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "node-app/package-lock.json",
 								Key:     "npm",
 								Name:    "jquery",
 								FixedIn: ">=3.4.0",
@@ -1872,14 +1842,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "nokogiri",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     ">= 1.10.4",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "HIGH",
@@ -1900,6 +1863,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "nokogiri",
 								FixedIn: ">= 1.10.4",
@@ -2127,14 +2091,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "urllib3",
-								NotFixedYet: true,
-								FixState:    "Affected",
-								FixedIn:     "",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "MEDIUM",
@@ -2160,6 +2117,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "python-app/Pipfile.lock",
 								Key:     "pipenv",
 								Name:    "urllib3",
 								FixedIn: "",
@@ -2175,14 +2133,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "urllib3",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     "1.24.2",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "MEDIUM",
@@ -2206,6 +2157,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "python-app/Pipfile.lock",
 								Key:     "pipenv",
 								Name:    "urllib3",
 								FixedIn: "1.24.2",
@@ -2221,14 +2173,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "jquery",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     ">=3.4.0",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "MEDIUM",
@@ -2305,6 +2250,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "node-app/package-lock.json",
 								Key:     "npm",
 								Name:    "jquery",
 								FixedIn: ">=3.4.0",
@@ -2367,14 +2313,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "nokogiri",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     ">= 1.10.5",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "MEDIUM",
@@ -2399,6 +2338,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "nokogiri",
 								FixedIn: ">= 1.10.5",
@@ -2526,14 +2466,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "loofah",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     ">= 2.3.1",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "MEDIUM",
@@ -2552,6 +2485,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "loofah",
 								FixedIn: ">= 2.3.1",
@@ -2653,14 +2587,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							{
-								Name:        "rack",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     "~> 1.6.12, >= 2.0.8",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "MEDIUM",
@@ -2681,6 +2608,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "rack",
 								FixedIn: "~> 1.6.12, >= 2.0.8",
@@ -2695,14 +2623,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							{
-								Name:        "pyyaml",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     "5.3.1",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "HIGH",
@@ -2719,6 +2640,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "python-app/Pipfile.lock",
 								Key:     "pipenv",
 								Name:    "pyyaml",
 								FixedIn: "5.3.1",
@@ -2733,14 +2655,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "actionview",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     "~> 5.2.4, >= 5.2.4.2, >= 6.0.2.2",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "LOW",
@@ -2760,6 +2675,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "actionview",
 								FixedIn: "~> 5.2.4, >= 5.2.4.2, >= 6.0.2.2",
@@ -2774,14 +2690,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "nokogiri",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     ">= 1.10.8",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": models.CveContent{
 								Cvss3Severity: "MEDIUM",
@@ -2799,6 +2708,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							models.LibraryFixedIn{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "nokogiri",
 								FixedIn: ">= 1.10.8",
@@ -2813,14 +2723,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "rake",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     ">= 12.3.3",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": models.CveContent{
 								Cvss3Severity: "CRITICAL",
@@ -2839,6 +2742,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							models.LibraryFixedIn{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "rake",
 								FixedIn: ">= 12.3.3",
@@ -2853,14 +2757,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "rack",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     "~> 2.1.3, >= 2.2.0",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": models.CveContent{
 								Cvss3Severity: "MEDIUM",
@@ -2874,6 +2771,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							models.LibraryFixedIn{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "rack",
 								FixedIn: "~> 2.1.3, >= 2.2.0",
@@ -2888,14 +2786,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "activestorage",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     "~> 5.2.4.3, >= 6.0.3.1",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": models.CveContent{
 								Cvss3Severity: "UNKNOWN",
@@ -2909,6 +2800,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							models.LibraryFixedIn{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "activestorage",
 								FixedIn: "~> 5.2.4.3, >= 6.0.3.1",
@@ -2923,14 +2815,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "json",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     ">= 2.3.0",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": models.CveContent{
 								Cvss3Severity: "MEDIUM",
@@ -2947,6 +2832,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							models.LibraryFixedIn{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "json",
 								FixedIn: ">= 2.3.0",
@@ -2961,14 +2847,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "actionpack",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     "~> 5.2.4.3, >= 6.0.3.1",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": models.CveContent{
 								Cvss3Severity: "UNKNOWN",
@@ -2979,6 +2858,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "actionpack",
 								FixedIn: "~> 5.2.4.3, >= 6.0.3.1",
@@ -2993,14 +2873,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "activesupport",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     "~> 5.2.4.3, >= 6.0.3.1",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": models.CveContent{
 								Cvss3Severity: "UNKNOWN",
@@ -3011,6 +2884,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "activesupport",
 								FixedIn: "~> 5.2.4.3, >= 6.0.3.1",
@@ -3025,14 +2899,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "actionpack",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     "~> 5.2.4.3, >= 6.0.3.1",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": models.CveContent{
 								Cvss3Severity: "UNKNOWN",
@@ -3043,6 +2910,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "actionpack",
 								FixedIn: "~> 5.2.4.3, >= 6.0.3.1",
@@ -3057,14 +2925,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "actionview",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     "~> 5.2.4.3, >= 6.0.3.1",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": models.CveContent{
 								Cvss3Severity: "UNKNOWN",
@@ -3075,6 +2936,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "ruby-app/Gemfile.lock",
 								Key:     "bundler",
 								Name:    "actionview",
 								FixedIn: "~> 5.2.4.3, >= 6.0.3.1",
@@ -3089,14 +2951,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "lodash",
-								NotFixedYet: true,
-								FixState:    "Affected",
-								FixedIn:     "",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": models.CveContent{
 								Cvss3Severity: "HIGH",
@@ -3107,6 +2962,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "node-app/package-lock.json",
 								Key:     "npm",
 								Name:    "lodash",
 								FixedIn: "",
@@ -3121,14 +2977,7 @@ func TestParse(t *testing.T) {
 								DetectionMethod: "TrivyMatch",
 							},
 						},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "django-cors-headers",
-								NotFixedYet: false,
-								FixState:    "",
-								FixedIn:     "3.0.0",
-							},
-						},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": models.CveContent{
 								Cvss3Severity: "UNKNOWN",
@@ -3137,6 +2986,7 @@ func TestParse(t *testing.T) {
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
+								Path:    "python-app/Pipfile.lock",
 								Key:     "pipenv",
 								Name:    "django-cors-headers",
 								FixedIn: "3.0.0",
@@ -3144,16 +2994,9 @@ func TestParse(t *testing.T) {
 						},
 					},
 					"RUSTSEC-2016-0001": {
-						CveID:       "RUSTSEC-2016-0001",
-						Confidences: models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
-						AffectedPackages: models.PackageFixStatuses{
-							{
-								Name:        "openssl",
-								NotFixedYet: true,
-								FixState:    "Affected",
-								FixedIn:     "",
-							},
-						},
+						CveID:            "RUSTSEC-2016-0001",
+						Confidences:      models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "UNKNOWN",
@@ -3163,20 +3006,18 @@ func TestParse(t *testing.T) {
 							},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
-							{Key: "cargo", Name: "openssl", FixedIn: ""},
+							{
+								Path:    "rust-app/Cargo.lock",
+								Key:     "cargo",
+								Name:    "openssl",
+								FixedIn: "",
+							},
 						},
 					},
 					"RUSTSEC-2018-0003": {
-						CveID:       "RUSTSEC-2018-0003",
-						Confidences: models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
-						AffectedPackages: models.PackageFixStatuses{
-							{
-								Name:        "smallvec",
-								NotFixedYet: true,
-								FixState:    "Affected",
-								FixedIn:     "",
-							},
-						},
+						CveID:            "RUSTSEC-2018-0003",
+						Confidences:      models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "UNKNOWN",
@@ -3186,20 +3027,18 @@ func TestParse(t *testing.T) {
 							},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
-							{Key: "cargo", Name: "smallvec", FixedIn: ""},
+							{
+								Path:    "rust-app/Cargo.lock",
+								Key:     "cargo",
+								Name:    "smallvec",
+								FixedIn: "",
+							},
 						},
 					},
 					"RUSTSEC-2018-0010": {
-						CveID:       "RUSTSEC-2018-0010",
-						Confidences: models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
-						AffectedPackages: models.PackageFixStatuses{
-							models.PackageFixStatus{
-								Name:        "openssl",
-								NotFixedYet: true,
-								FixState:    "Affected",
-								FixedIn:     "",
-							},
-						},
+						CveID:            "RUSTSEC-2018-0010",
+						Confidences:      models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "UNKNOWN",
@@ -3209,19 +3048,18 @@ func TestParse(t *testing.T) {
 							},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
-							{Key: "cargo", Name: "openssl", FixedIn: ""},
+							{
+								Path:    "rust-app/Cargo.lock",
+								Key:     "cargo",
+								Name:    "openssl",
+								FixedIn: "",
+							},
 						},
 					},
 					"RUSTSEC-2018-0017": {
-						CveID:       "RUSTSEC-2018-0017",
-						Confidences: models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
-						AffectedPackages: models.PackageFixStatuses{
-							{
-								Name:        "tempdir",
-								NotFixedYet: true,
-								FixState:    "Affected",
-							},
-						},
+						CveID:            "RUSTSEC-2018-0017",
+						Confidences:      models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "UNKNOWN",
@@ -3231,20 +3069,18 @@ func TestParse(t *testing.T) {
 							},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
-							{Key: "cargo", Name: "tempdir", FixedIn: ""},
+							{
+								Path:    "rust-app/Cargo.lock",
+								Key:     "cargo",
+								Name:    "tempdir",
+								FixedIn: "",
+							},
 						},
 					},
 					"RUSTSEC-2019-0001": {
-						CveID:       "RUSTSEC-2019-0001",
-						Confidences: models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
-						AffectedPackages: models.PackageFixStatuses{
-							{
-								Name:        "ammonia",
-								NotFixedYet: true,
-								FixState:    "Affected",
-								FixedIn:     "",
-							},
-						},
+						CveID:            "RUSTSEC-2019-0001",
+						Confidences:      models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "UNKNOWN",
@@ -3254,18 +3090,17 @@ func TestParse(t *testing.T) {
 							},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
-							{Key: "cargo", Name: "ammonia", FixedIn: ""},
+							{
+								Path:    "rust-app/Cargo.lock",
+								Key:     "cargo",
+								Name:    "ammonia",
+								FixedIn: "",
+							},
 						},
 					},
 					"RUSTSEC-2019-0009": {CveID: "RUSTSEC-2019-0009",
-						Confidences: models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
-						AffectedPackages: models.PackageFixStatuses{
-							{
-								Name:        "smallvec",
-								NotFixedYet: true,
-								FixState:    "Affected",
-							},
-						},
+						Confidences:      models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "UNKNOWN",
@@ -3275,20 +3110,18 @@ func TestParse(t *testing.T) {
 							},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
-							{Key: "cargo", Name: "smallvec", FixedIn: ""},
+							{
+								Path:    "rust-app/Cargo.lock",
+								Key:     "cargo",
+								Name:    "smallvec",
+								FixedIn: "",
+							},
 						},
 					},
 					"RUSTSEC-2019-0012": {
-						CveID:       "RUSTSEC-2019-0012",
-						Confidences: models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
-						AffectedPackages: models.PackageFixStatuses{
-							{
-								Name:        "smallvec",
-								NotFixedYet: true,
-								FixState:    "Affected",
-								FixedIn:     "",
-							},
-						},
+						CveID:            "RUSTSEC-2019-0012",
+						Confidences:      models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
+						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
 							"trivy": {
 								Cvss3Severity: "UNKNOWN",
@@ -3298,7 +3131,12 @@ func TestParse(t *testing.T) {
 							},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
-							{Key: "cargo", Name: "smallvec", FixedIn: ""},
+							{
+								Path:    "rust-app/Cargo.lock",
+								Key:     "cargo",
+								Name:    "smallvec",
+								FixedIn: "",
+							},
 						},
 					},
 				},

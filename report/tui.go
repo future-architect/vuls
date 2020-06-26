@@ -745,7 +745,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 		}
 
 		for _, l := range vinfo.LibraryFixedIns {
-			libs := r.LibraryScanners.Find(l.Name)
+			libs := r.LibraryScanners.Find(l.Path, l.Name)
 			for path, lib := range libs {
 				lines = append(lines, fmt.Sprintf("%s-%s, FixedIn: %s (%s)",
 					lib.Name, lib.Version, l.FixedIn, path))

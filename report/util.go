@@ -293,7 +293,7 @@ No CVE-IDs are found in updatable packages.
 		}
 
 		for _, l := range vuln.LibraryFixedIns {
-			libs := r.LibraryScanners.Find(l.Name)
+			libs := r.LibraryScanners.Find(l.Path, l.Name)
 			for path, lib := range libs {
 				data = append(data, []string{l.Key,
 					fmt.Sprintf("%s-%s, FixedIn: %s (%s)",
