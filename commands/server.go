@@ -69,7 +69,7 @@ func (*ServerCmd) Usage() string {
 		[-exploitdb-url=http://127.0.0.1:1326 or DB connection string]
 		[-msfdb-type=sqlite3|mysql|redis|http]
 		[-msfdb-sqlite3-path=/path/to/msfdb.sqlite3]
-		[-msfdb-url=http://127.0.0.1:1326 or DB connection string]
+		[-msfdb-url=http://127.0.0.1:1327 or DB connection string]
 
 		[RFC3339 datetime format under results dir]
 `
@@ -136,7 +136,7 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 		"DB type of msf (sqlite3, mysql, postgres, redis or http)")
 	f.StringVar(&p.metasploitConf.SQLite3Path, "msfdb-sqlite3-path", "", "/path/to/sqlite3")
 	f.StringVar(&p.metasploitConf.URL, "msfdb-url", "",
-		"http://metasploit.com:1326 or DB connection string")
+		"http://metasploit.com:1327 or DB connection string")
 }
 
 // Execute execute
