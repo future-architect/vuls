@@ -246,6 +246,10 @@ func (c Config) ValidateOnReportDB() bool {
 		errs = append(errs, err)
 	}
 
+	if err := validateDB("msfdb", c.Metasploit.Type, c.Metasploit.SQLite3Path, c.Metasploit.URL); err != nil {
+		errs = append(errs, err)
+	}
+
 	for _, err := range errs {
 		log.Error(err)
 	}
