@@ -47,6 +47,22 @@ func FillLibrary(r *models.ScanResult) (totalCnt int, err error) {
 		for _, vinfo := range vinfos {
 			vinfo.Confidences.AppendIfMissing(models.TrivyMatch)
 			if v, ok := r.ScannedCves[vinfo.CveID]; !ok {
+				lfs := vinfo.LibraryFixedIns
+				for _, l := range lfs {
+					var ps models.PackageFixStatuses
+					var notFixed bool
+					if l.FixedIn == "" {
+						notFixed = true
+					} else {
+						notFixed = false
+					}
+					ps = ps.Store(models.PackageFixStatus{
+						Name:        l.Name,
+						NotFixedYet: notFixed,
+						FixedIn:     l.FixedIn,
+					})
+					vinfo.AffectedPackages = ps
+				}
 				r.ScannedCves[vinfo.CveID] = vinfo
 			} else {
 				v.LibraryFixedIns = append(v.LibraryFixedIns, vinfo.LibraryFixedIns...)
