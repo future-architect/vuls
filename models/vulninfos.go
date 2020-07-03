@@ -150,6 +150,7 @@ type VulnInfo struct {
 	DistroAdvisories     DistroAdvisories     `json:"distroAdvisories,omitempty"` // for Aamazon, RHEL, FreeBSD
 	CveContents          CveContents          `json:"cveContents,omitempty"`
 	Exploits             []Exploit            `json:"exploits,omitempty"`
+	Metasploits          []Metasploit         `json:"metasploits,omitempty"`
 	AlertDict            AlertDict            `json:"alertDict,omitempty"`
 	CpeURIs              []string             `json:"cpeURIs,omitempty"` // CpeURIs related to this CVE defined in config.toml
 	GitHubSecurityAlerts GitHubSecurityAlerts `json:"gitHubSecurityAlerts,omitempty"`
@@ -789,6 +790,14 @@ type Exploit struct {
 	DocumentURL  *string                   `json:"documentURL,omitempty"`
 	ShellCodeURL *string                   `json:"shellCodeURL,omitempty"`
 	BinaryURL    *string                   `json:"binaryURL,omitempty"`
+}
+
+// Metasploit :
+type Metasploit struct {
+	Name        string   `json:"name"`
+	Title       string   `json:"title"`
+	Description string   `json:"description,omitempty"`
+	URLs        []string `json:",omitempty"`
 }
 
 // AlertDict has target cve's JPCERT and USCERT alert data

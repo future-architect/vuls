@@ -95,6 +95,11 @@ type        = "sqlite3"
 sqlite3Path = "/path/to/go-exploitdb.sqlite3"
 #url        = ""
 
+[metasploit]
+type        = "sqlite3"
+sqlite3Path = "/path/to/go-msfdb.sqlite3"
+#url        = ""
+
 # https://vuls.io/docs/en/usage-settings.html#slack-section
 #[slack]
 #hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"

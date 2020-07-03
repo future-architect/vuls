@@ -9,24 +9,27 @@ import (
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
 	ovaldb "github.com/kotakanbe/goval-dictionary/db"
 	exploitdb "github.com/mozqnet/go-exploitdb/db"
+	metasploitdb "github.com/takuzoo3868/go-msfdb/db"
 	"golang.org/x/xerrors"
 )
 
 // DBClient is a dictionarie's db client for reporting
 type DBClient struct {
-	CveDB     cvedb.DB
-	OvalDB    ovaldb.DB
-	GostDB    gostdb.DB
-	ExploitDB exploitdb.DB
+	CveDB        cvedb.DB
+	OvalDB       ovaldb.DB
+	GostDB       gostdb.DB
+	ExploitDB    exploitdb.DB
+	MetasploitDB metasploitdb.DB
 }
 
 // DBClientConf has a configuration of Vulnerability DBs
 type DBClientConf struct {
-	CveDictCnf  config.GoCveDictConf
-	OvalDictCnf config.GovalDictConf
-	GostCnf     config.GostConf
-	ExploitCnf  config.ExploitConf
-	DebugSQL    bool
+	CveDictCnf    config.GoCveDictConf
+	OvalDictCnf   config.GovalDictConf
+	GostCnf       config.GostConf
+	ExploitCnf    config.ExploitConf
+	MetasploitCnf config.MetasploitConf
+	DebugSQL      bool
 }
 
 // NewDBClient returns db clients
@@ -66,11 +69,21 @@ func NewDBClient(cnf DBClientConf) (dbclient *DBClient, locked bool, err error) 
 			cnf.ExploitCnf.SQLite3Path, err)
 	}
 
+	metasploitdb, locked, err := NewMetasploitDB(cnf)
+	if locked {
+		return nil, true, xerrors.Errorf("metasploitDB is locked: %s",
+			cnf.MetasploitCnf.SQLite3Path)
+	} else if err != nil {
+		util.Log.Warnf("Unable to use metasploitDB: %s, err: %s",
+			cnf.MetasploitCnf.SQLite3Path, err)
+	}
+
 	return &DBClient{
-		CveDB:     cveDriver,
-		OvalDB:    ovaldb,
-		GostDB:    gostdb,
-		ExploitDB: exploitdb,
+		CveDB:        cveDriver,
+		OvalDB:       ovaldb,
+		GostDB:       gostdb,
+		ExploitDB:    exploitdb,
+		MetasploitDB: metasploitdb,
 	}, false, nil
 }
 
@@ -170,6 +183,32 @@ func NewExploitDB(cnf DBClientConf) (driver exploitdb.DB, locked bool, err error
 	if driver, locked, err = exploitdb.NewDB(cnf.ExploitCnf.Type, path, cnf.DebugSQL); err != nil {
 		if locked {
 			util.Log.Errorf("exploitDB is locked. err: %+v", err)
+			return nil, true, err
+		}
+		return nil, false, err
+	}
+	return driver, false, nil
+}
+
+// NewMetasploitDB returns db client for Metasploit
+func NewMetasploitDB(cnf DBClientConf) (driver metasploitdb.DB, locked bool, err error) {
+	if config.Conf.Metasploit.IsFetchViaHTTP() {
+		return nil, false, nil
+	}
+	path := cnf.MetasploitCnf.URL
+	if cnf.MetasploitCnf.Type == "sqlite3" {
+		path = cnf.MetasploitCnf.SQLite3Path
+
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			util.Log.Warnf("--msfdb-path=%s file not found. Fetch go-msfdb before reporting if you want to display metasploit modules of detected CVE-IDs. For details, see `https://github.com/takuzoo3868/go-msfdb`", path)
+			return nil, false, nil
+		}
+	}
+
+	util.Log.Debugf("Open metasploit db (%s): %s", cnf.MetasploitCnf.Type, path)
+	if driver, locked, err = metasploitdb.NewDB(cnf.MetasploitCnf.Type, path, cnf.DebugSQL, false); err != nil {
+		if locked {
+			util.Log.Errorf("metasploitDB is locked. err: %+v", err)
 			return nil, true, err
 		}
 		return nil, false, err
