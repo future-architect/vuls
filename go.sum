@@ -669,8 +669,8 @@ github.com/stretchr/testify v1.5.1 h1:nOGnQDM7FYENwehXlg/kFVnos3rEvtKTjRvOWSzb6H
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
 github.com/subosito/gotenv v1.2.0 h1:Slr1R9HxAlEKefgq5jn9U+DnETlIUa6HfgEzj0g5d7s=
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
-github.com/takuzoo3868/go-msfdb v0.0.0-20200701094448-83319c1e6efb h1:gyK6/Pp8cYCHOBFaCduc5aI1Jg95Rt203/jmd1eF9KY=
-github.com/takuzoo3868/go-msfdb v0.0.0-20200701094448-83319c1e6efb/go.mod h1:QnJq9bY6PHQN5DUT793Sr9HxL5WnHkHw6GI+qpI2dPM=
+github.com/takuzoo3868/go-msfdb v0.1.0 h1:v1pdFGuBXQ0yWPk1vfL4Ln2JwGfKE8FwaPCz1wIy4uY=
+github.com/takuzoo3868/go-msfdb v0.1.0/go.mod h1:QnJq9bY6PHQN5DUT793Sr9HxL5WnHkHw6GI+qpI2dPM=
 github.com/tealeg/xlsx v1.0.3/go.mod h1:uxu5UY2ovkuRPWKQ8Q7JG0JbSivrISjdPzZQKeo74mA=
 github.com/testcontainers/testcontainers-go v0.3.1/go.mod h1:br7bkzIukhPSIjy07Ma3OuXjjFvl2jm7CDU0LQNsqLw=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
