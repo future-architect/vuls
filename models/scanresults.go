@@ -346,13 +346,14 @@ func (r ScanResult) FormatTextReportHeadedr() string {
 		buf.WriteString("=")
 	}
 
-	return fmt.Sprintf("%s\n%s\n%s, %s, %s, %s, %s\n",
+	return fmt.Sprintf("%s\n%s\n%s, %s, %s, %s, %s, %s\n",
 		r.ServerInfo(),
 		buf.String(),
 		r.ScannedCves.FormatCveSummary(),
 		r.ScannedCves.FormatFixedStatus(r.Packages),
 		r.FormatUpdatablePacksSummary(),
 		r.FormatExploitCveSummary(),
+		r.FormatMetasploitCveSummary(),
 		r.FormatAlertSummary(),
 	)
 }
@@ -386,6 +387,17 @@ func (r ScanResult) FormatExploitCveSummary() string {
 		}
 	}
 	return fmt.Sprintf("%d exploits", nExploitCve)
+}
+
+// FormatMetasploitCveSummary returns a summary of exploit cve
+func (r ScanResult) FormatMetasploitCveSummary() string {
+	nMetasploitCve := 0
+	for _, vuln := range r.ScannedCves {
+		if 0 < len(vuln.Metasploits) {
+			nMetasploitCve++
+		}
+	}
+	return fmt.Sprintf("%d modules", nMetasploitCve)
 }
 
 // FormatAlertSummary returns a summary of XCERT alerts

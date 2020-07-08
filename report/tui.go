@@ -618,7 +618,7 @@ func summaryLines(r models.ScanResult) string {
 		pkgNames = append(pkgNames, vinfo.LibraryFixedIns.Names()...)
 
 		exploits := ""
-		if 0 < len(vinfo.Exploits) {
+		if 0 < len(vinfo.Exploits) || 0 < len(vinfo.Metasploits) {
 			exploits = "POC"
 		}
 
@@ -770,6 +770,21 @@ func setChangelogLayout(g *gocui.Gui) error {
 			}
 		}
 
+		if len(vinfo.Metasploits) != 0 {
+			lines = append(lines, "\n",
+				"Metasploit Modules",
+				"==================",
+			)
+			for _, module := range vinfo.Metasploits {
+				lines = append(lines, fmt.Sprintf("* %s: %s", module.Name, module.Description))
+				if 0 < len(module.URLs) {
+					for _, u := range module.URLs {
+						lines = append(lines, fmt.Sprintf(" - %s", u))
+					}
+				}
+			}
+		}
+
 		if len(vinfo.AlertDict.En) > 0 {
 			lines = append(lines, "\n",
 				"USCERT Alert",
@@ -822,6 +837,7 @@ type dataForTmpl struct {
 	CveID            string
 	Cvsses           string
 	Exploits         []models.Exploit
+	Metasploits      []models.Metasploit
 	Summary          string
 	Mitigation       string
 	Confidences      models.Confidences

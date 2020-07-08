@@ -114,10 +114,11 @@ type Config struct {
 	UUID       bool `json:"uuid,omitempty"`
 	DetectIPS  bool `json:"detectIps,omitempty"`
 
-	CveDict  GoCveDictConf `json:"cveDict,omitempty"`
-	OvalDict GovalDictConf `json:"ovalDict,omitempty"`
-	Gost     GostConf      `json:"gost,omitempty"`
-	Exploit  ExploitConf   `json:"exploit,omitempty"`
+	CveDict    GoCveDictConf  `json:"cveDict,omitempty"`
+	OvalDict   GovalDictConf  `json:"ovalDict,omitempty"`
+	Gost       GostConf       `json:"gost,omitempty"`
+	Exploit    ExploitConf    `json:"exploit,omitempty"`
+	Metasploit MetasploitConf `json:"metasploit,omitempty"`
 
 	Slack    SlackConf    `json:"-"`
 	EMail    SMTPConf     `json:"-"`
@@ -242,6 +243,10 @@ func (c Config) ValidateOnReportDB() bool {
 	}
 
 	if err := validateDB("exploitdb", c.Exploit.Type, c.Exploit.SQLite3Path, c.Exploit.URL); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := validateDB("msfdb", c.Metasploit.Type, c.Metasploit.SQLite3Path, c.Metasploit.URL); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -998,6 +1003,64 @@ func (cnf *ExploitConf) Overwrite(cmdOpt ExploitConf) {
 // IsFetchViaHTTP returns wether fetch via http
 func (cnf *ExploitConf) IsFetchViaHTTP() bool {
 	return Conf.Exploit.Type == "http"
+}
+
+// MetasploitConf is metasploit config
+type MetasploitConf struct {
+	// DB type for metasploit dictionary (sqlite3, mysql, postgres or redis)
+	Type string
+
+	// http://metasploit-dictionary.com:1324 or DB connection string
+	URL string `json:"-"`
+
+	// /path/to/metasploit.sqlite3
+	SQLite3Path string `json:"-"`
+}
+
+func (cnf *MetasploitConf) setDefault() {
+	if cnf.Type == "" {
+		cnf.Type = "sqlite3"
+	}
+	if cnf.URL == "" && cnf.SQLite3Path == "" {
+		wd, _ := os.Getwd()
+		cnf.SQLite3Path = filepath.Join(wd, "go-msfdb.sqlite3")
+	}
+}
+
+const metasploitDBType = "METASPLOITDB_TYPE"
+const metasploitDBURL = "METASPLOITDB_URL"
+const metasploitDBPATH = "METASPLOITDB_SQLITE3_PATH"
+
+// Overwrite set options with the following priority.
+// 1. Command line option
+// 2. Environment variable
+// 3. config.toml
+func (cnf *MetasploitConf) Overwrite(cmdOpt MetasploitConf) {
+	if os.Getenv(metasploitDBType) != "" {
+		cnf.Type = os.Getenv(metasploitDBType)
+	}
+	if os.Getenv(metasploitDBURL) != "" {
+		cnf.URL = os.Getenv(metasploitDBURL)
+	}
+	if os.Getenv(metasploitDBPATH) != "" {
+		cnf.SQLite3Path = os.Getenv(metasploitDBPATH)
+	}
+
+	if cmdOpt.Type != "" {
+		cnf.Type = cmdOpt.Type
+	}
+	if cmdOpt.URL != "" {
+		cnf.URL = cmdOpt.URL
+	}
+	if cmdOpt.SQLite3Path != "" {
+		cnf.SQLite3Path = cmdOpt.SQLite3Path
+	}
+	cnf.setDefault()
+}
+
+// IsFetchViaHTTP returns wether fetch via http
+func (cnf *MetasploitConf) IsFetchViaHTTP() bool {
+	return Conf.Metasploit.Type == "http"
 }
 
 // AWS is aws config

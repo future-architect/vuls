@@ -46,8 +46,10 @@ require (
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/afero v1.3.0
-	github.com/spf13/cobra v0.0.5
+	github.com/spf13/cobra v1.0.0
+	github.com/takuzoo3868/go-msfdb v0.1.0
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
+	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
 	k8s.io/utils v0.0.0-20200619165400-6e3d28b6ed19

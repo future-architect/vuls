@@ -22,6 +22,7 @@ import (
 	"github.com/future-architect/vuls/github"
 	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/msf"
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/util"
 	"github.com/future-architect/vuls/wordpress"
@@ -31,6 +32,7 @@ import (
 	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
 	ovaldb "github.com/kotakanbe/goval-dictionary/db"
 	exploitdb "github.com/mozqnet/go-exploitdb/db"
+	metasploitdb "github.com/takuzoo3868/go-msfdb/db"
 	"golang.org/x/xerrors"
 )
 
@@ -208,6 +210,14 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, igno
 	util.Log.Infof("%s: %d exploits are detected",
 		r.FormatServerName(), nExploitCve)
 
+	util.Log.Infof("Fill metasploit module information with Metasploit-DB")
+	nMetasploitCve, err := FillWithMetasploit(dbclient.MetasploitDB, r)
+	if err != nil {
+		return xerrors.Errorf("Failed to fill with metasploit: %w", err)
+	}
+	util.Log.Infof("%s: %d modules are detected",
+		r.FormatServerName(), nMetasploitCve)
+
 	fillCweDict(r)
 	return nil
 }
@@ -356,6 +366,12 @@ func FillWithExploit(driver exploitdb.DB, r *models.ScanResult) (nExploitCve int
 	// TODO chekc if fetched
 	// TODO chekc if fresh enough
 	return exploit.FillWithExploit(driver, r)
+}
+
+// FillWithMetasploit fills metasploit modules with metasploit database
+// https://github.com/takuzoo3868/go-msfdb
+func FillWithMetasploit(driver metasploitdb.DB, r *models.ScanResult) (nMetasploitCve int, err error) {
+	return msf.FillWithMetasploit(driver, r)
 }
 
 func fillVulnByCpeURIs(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) (nCVEs int, err error) {
@@ -605,6 +621,7 @@ func EnsureUUIDs(configPath string, results models.ScanResults) (err error) {
 	ovalDict := &c.Conf.OvalDict
 	gost := &c.Conf.Gost
 	exploit := &c.Conf.Exploit
+	metasploit := &c.Conf.Metasploit
 	http := &c.Conf.HTTP
 	if http.URL == "" {
 		http = nil
@@ -646,38 +663,40 @@ func EnsureUUIDs(configPath string, results models.ScanResults) (err error) {
 	}
 
 	c := struct {
-		CveDict  *c.GoCveDictConf `toml:"cveDict"`
-		OvalDict *c.GovalDictConf `toml:"ovalDict"`
-		Gost     *c.GostConf      `toml:"gost"`
-		Exploit  *c.ExploitConf   `toml:"exploit"`
-		Slack    *c.SlackConf     `toml:"slack"`
-		Email    *c.SMTPConf      `toml:"email"`
-		HTTP     *c.HTTPConf      `toml:"http"`
-		Syslog   *c.SyslogConf    `toml:"syslog"`
-		AWS      *c.AWS           `toml:"aws"`
-		Azure    *c.Azure         `toml:"azure"`
-		Stride   *c.StrideConf    `toml:"stride"`
-		HipChat  *c.HipChatConf   `toml:"hipChat"`
-		ChatWork *c.ChatWorkConf  `toml:"chatWork"`
-		Saas     *c.SaasConf      `toml:"saas"`
+		CveDict    *c.GoCveDictConf  `toml:"cveDict"`
+		OvalDict   *c.GovalDictConf  `toml:"ovalDict"`
+		Gost       *c.GostConf       `toml:"gost"`
+		Exploit    *c.ExploitConf    `toml:"exploit"`
+		Metasploit *c.MetasploitConf `toml:"metasploit"`
+		Slack      *c.SlackConf      `toml:"slack"`
+		Email      *c.SMTPConf       `toml:"email"`
+		HTTP       *c.HTTPConf       `toml:"http"`
+		Syslog     *c.SyslogConf     `toml:"syslog"`
+		AWS        *c.AWS            `toml:"aws"`
+		Azure      *c.Azure          `toml:"azure"`
+		Stride     *c.StrideConf     `toml:"stride"`
+		HipChat    *c.HipChatConf    `toml:"hipChat"`
+		ChatWork   *c.ChatWorkConf   `toml:"chatWork"`
+		Saas       *c.SaasConf       `toml:"saas"`
 
 		Default c.ServerInfo            `toml:"default"`
 		Servers map[string]c.ServerInfo `toml:"servers"`
 	}{
-		CveDict:  cveDict,
-		OvalDict: ovalDict,
-		Gost:     gost,
-		Exploit:  exploit,
-		Slack:    slack,
-		Email:    email,
-		HTTP:     http,
-		Syslog:   syslog,
-		AWS:      aws,
-		Azure:    azure,
-		Stride:   stride,
-		HipChat:  hipChat,
-		ChatWork: chatWork,
-		Saas:     saas,
+		CveDict:    cveDict,
+		OvalDict:   ovalDict,
+		Gost:       gost,
+		Exploit:    exploit,
+		Metasploit: metasploit,
+		Slack:      slack,
+		Email:      email,
+		HTTP:       http,
+		Syslog:     syslog,
+		AWS:        aws,
+		Azure:      azure,
+		Stride:     stride,
+		HipChat:    hipChat,
+		ChatWork:   chatWork,
+		Saas:       saas,
 
 		Default: c.Conf.Default,
 		Servers: c.Conf.Servers,
