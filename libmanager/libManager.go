@@ -40,6 +40,12 @@ func FillLibrary(r *models.ScanResult) (totalCnt int, err error) {
 	defer db2.Close()
 
 	for _, lib := range r.LibraryScanners {
+		for _, l := range lib.Libs {
+			r.Packages[l.Name] = models.Package{
+				Name:    l.Name,
+				Version: l.Version,
+			}
+		}
 		vinfos, err := lib.Scan()
 		if err != nil {
 			return 0, err
