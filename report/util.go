@@ -392,8 +392,7 @@ func ovalSupported(r *models.ScanResult) bool {
 	switch r.Family {
 	case
 		config.Amazon,
-		config.FreeBSD,
-		config.Raspbian:
+		config.FreeBSD:
 		return false
 	}
 	return true

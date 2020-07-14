@@ -242,6 +242,10 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 		})
 	}
 
+	if r.Family == "raspbian" {
+		r.Family = "debian"
+	}
+
 	for _, req := range requests {
 		definitions, err := driver.GetByPackName(r.Family, r.Release, req.packName, req.arch)
 		if err != nil {
