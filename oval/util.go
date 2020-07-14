@@ -243,8 +243,8 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 	}
 
 	var family string = r.Family
-	if r.Family == "raspbian" {
-		family = "debian"
+	if r.Family == config.Raspbian {
+		family = config.Debian
 	}
 
 	for _, req := range requests {
