@@ -242,17 +242,18 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 		})
 	}
 
+	var family string = r.Family
 	if r.Family == "raspbian" {
-		r.Family = "debian"
+		family = "debian"
 	}
 
 	for _, req := range requests {
-		definitions, err := driver.GetByPackName(r.Family, r.Release, req.packName, req.arch)
+		definitions, err := driver.GetByPackName(family, r.Release, req.packName, req.arch)
 		if err != nil {
-			return relatedDefs, xerrors.Errorf("Failed to get %s OVAL info by package: %#v, err: %w", r.Family, req, err)
+			return relatedDefs, xerrors.Errorf("Failed to get %s OVAL info by package on scanOS:%s: %#v, err: %w", family, r.Family, req, err)
 		}
 		for _, def := range definitions {
-			affected, notFixedYet, fixedIn := isOvalDefAffected(def, req, r.Family, r.RunningKernel)
+			affected, notFixedYet, fixedIn := isOvalDefAffected(def, req, family, r.RunningKernel)
 			if !affected {
 				continue
 			}
