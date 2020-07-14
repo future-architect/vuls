@@ -305,7 +305,7 @@ func (o *debian) scanPackages() error {
 		return nil
 	}
 
-	if o.getServerInfo().Mode.IsDeep() || o.Distro.Family == config.Raspbian {
+	if o.getServerInfo().Mode.IsDeep() {
 		unsecures, err := o.scanUnsecurePackages(updatable)
 		if err != nil {
 			o.log.Errorf("Failed to scan vulnerable packages: %s", err)
