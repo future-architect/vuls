@@ -351,11 +351,7 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 // FillWithGost fills CVEs with gost dataabase
 // https://github.com/knqyf263/gost
 func FillWithGost(driver gostdb.DB, r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
-	var family string = r.Family
-	if r.Family == config.Raspbian {
-		family = config.Debian
-	}
-	gostClient := gost.NewClient(family)
+	gostClient := gost.NewClient(r.Family)
 	// TODO chekc if fetched
 	// TODO chekc if fresh enough
 	if nCVEs, err = gostClient.DetectUnfixed(driver, r, ignoreWillNotFix); err != nil {

@@ -23,7 +23,7 @@ func NewClient(family string) Client {
 	switch family {
 	case cnf.RedHat, cnf.CentOS:
 		return RedHat{}
-	case cnf.Debian:
+	case cnf.Debian, cnf.Raspbian:
 		return Debian{}
 	case cnf.Windows:
 		return Microsoft{}

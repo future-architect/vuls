@@ -242,18 +242,13 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 		})
 	}
 
-	var family string = r.Family
-	if r.Family == config.Raspbian {
-		family = config.Debian
-	}
-
 	for _, req := range requests {
-		definitions, err := driver.GetByPackName(family, r.Release, req.packName, req.arch)
+		definitions, err := driver.GetByPackName(r.Family, r.Release, req.packName, req.arch)
 		if err != nil {
-			return relatedDefs, xerrors.Errorf("Failed to get %s OVAL info by package on scanOS:%s: %#v, err: %w", family, r.Family, req, err)
+			return relatedDefs, xerrors.Errorf("Failed to get %s OVAL info by package: %#v, err: %w", r.Family, req, err)
 		}
 		for _, def := range definitions {
-			affected, notFixedYet, fixedIn := isOvalDefAffected(def, req, family, r.RunningKernel)
+			affected, notFixedYet, fixedIn := isOvalDefAffected(def, req, r.Family, r.RunningKernel)
 			if !affected {
 				continue
 			}
@@ -332,7 +327,8 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 				config.Amazon,
 				config.SUSEEnterpriseServer,
 				config.Debian,
-				config.Ubuntu:
+				config.Ubuntu,
+				config.Raspbian:
 				// Use fixed state in OVAL for these distros.
 				return true, false, ovalPack.Version
 			}
@@ -367,7 +363,8 @@ var esVerPattern = regexp.MustCompile(`\.el(\d+)(?:_\d+)?`)
 func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error) {
 	switch family {
 	case config.Debian,
-		config.Ubuntu:
+		config.Ubuntu,
+		config.Raspbian:
 		vera, err := debver.NewVersion(newVer)
 		if err != nil {
 			return false, err
