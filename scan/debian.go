@@ -314,6 +314,9 @@ func (o *debian) scanPackages() error {
 		o.VulnInfos = unsecures
 		return nil
 	}
+
+	//TODO: c.Raspbianのとき，installed, srcPacksから+rptのパッケージを取得し，scanUnsecurePackagesを実行する．
+
 	return nil
 }
 
