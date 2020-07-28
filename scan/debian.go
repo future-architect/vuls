@@ -305,6 +305,24 @@ func (o *debian) scanPackages() error {
 		return nil
 	}
 
+	//TODO: c.Raspbianのとき，+rp(i|t)のパッケージを取得し，scanUnsecurePackagesを実行する．
+	// fast-root->updatable/ deep-> updatable(full)をchangelogへ
+	if o.Distro.Family == config.Raspbian {
+		raspbianPacks, err := o.grepRaspbianPackages(updatable)
+		if err != nil {
+			o.log.Errorf("Failed to grep raspbian packages: %s", err)
+			return err
+		}
+		//TODO: raspbianPacksのpackageのchangelogを取得する
+		unsecures, err := o.scanUnsecurePackages(raspbianPacks)
+		if err != nil {
+			o.log.Errorf("Failed to scan vulnerable packages: %s", err)
+			return err
+		}
+		o.VulnInfos = unsecures
+		return nil
+	}
+
 	if o.getServerInfo().Mode.IsDeep() {
 		unsecures, err := o.scanUnsecurePackages(updatable)
 		if err != nil {
@@ -314,8 +332,6 @@ func (o *debian) scanPackages() error {
 		o.VulnInfos = unsecures
 		return nil
 	}
-
-	//TODO: c.Raspbianのとき，installed, srcPacksから+rptのパッケージを取得し，scanUnsecurePackagesを実行する．
 
 	return nil
 }
@@ -749,7 +765,7 @@ func (o *debian) getChangelogCache(meta *cache.Meta, pack models.Package) string
 func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *models.Package, error) {
 	cmd := ""
 	switch o.Distro.Family {
-	case config.Ubuntu, config.Raspbian:
+	case config.Ubuntu:
 		cmd = fmt.Sprintf(`PAGER=cat apt-get -q=2 changelog %s`, pack.Name)
 	case config.Debian:
 		cmd = fmt.Sprintf(`PAGER=cat aptitude -q=2 changelog %s`, pack.Name)
@@ -762,6 +778,8 @@ func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *mod
 		// Ignore this Error.
 		return nil, nil, nil
 	}
+
+	// TODO: o.Distro.Family==config.Raspbianのとき，changelogをダウンロード(apt download, dpkg-deb, ar, gzip)
 
 	stdout := strings.Replace(r.Stdout, "\r", "", -1)
 	cveIDs, clogFilledPack := o.getCveIDsFromChangelog(stdout, pack.Name, pack.Version)
