@@ -778,7 +778,7 @@ func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *mod
 	case config.Raspbian:
 		changelogPath, err := o.getChangelogPath(pack)
 		if err != nil {
-			o.log.Warnf("Failed to get Path to Changelog for Package: %s", pack.Name)
+			o.log.Warnf("Failed to get Path to Changelog for Package: %s, err: %s", pack.Name, err)
 			return nil, nil, nil
 		}
 		cmd = fmt.Sprintf(`gzip -cd %s | cat`, changelogPath)
@@ -815,7 +815,7 @@ func (o *debian) getChangelogPath(pack models.Package) (string, error) {
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
 		o.log.Warnf("Failed to Create Directory: %s", r)
-		return "", nil
+		return "", r.Error
 	}
 
 	cmd = fmt.Sprintf(`cd /tmp/vuls && apt download %s`, pack.Name)
@@ -823,7 +823,7 @@ func (o *debian) getChangelogPath(pack models.Package) (string, error) {
 	r = o.exec(cmd, noSudo)
 	if !r.isSuccess() {
 		o.log.Warnf("Failed to Fetch deb package: %s", r)
-		return "", nil
+		return "", r.Error
 	}
 
 	// TODO: Consider the possibility that tmp_armhf.deb and tmp_arm64.deb exist when searching with find
@@ -834,7 +834,7 @@ func (o *debian) getChangelogPath(pack models.Package) (string, error) {
 	r = o.exec(cmd, noSudo)
 	if !r.isSuccess() || r.Stdout == "" {
 		o.log.Warnf("Failed to find deb package: %s", r)
-		return "", nil
+		return "", r.Error
 	}
 
 	// e.g. /tmp/vuls/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf.deb\n => /tmp/vuls/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf
@@ -844,7 +844,7 @@ func (o *debian) getChangelogPath(pack models.Package) (string, error) {
 	r = o.exec(cmd, noSudo)
 	if !r.isSuccess() {
 		o.log.Warnf("Failed to dpkg-deb: %s", r)
-		return "", nil
+		return "", r.Error
 	}
 
 	packChangelogPath := fmt.Sprintf("%s/usr/share/doc/%s/changelog.Debian.gz", packChangelogDir, pack.Name)
