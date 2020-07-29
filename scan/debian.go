@@ -770,11 +770,56 @@ func (o *debian) getChangelogCache(meta *cache.Meta, pack models.Package) string
 
 func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *models.Package, error) {
 	cmd := ""
+
+	packChangelogDir := ""
+	if o.Distro.Family == config.Raspbian {
+		cmd = fmt.Sprintf(`mkdir -p /tmp/vuls`)
+		cmd = util.PrependProxyEnv(cmd)
+		r := o.exec(cmd, noSudo)
+		if !r.isSuccess() {
+			o.log.Warnf("Failed to Create Directory: %s", r)
+			return nil, nil, nil
+		}
+
+		cmd = fmt.Sprintf(`cd /tmp/vuls && apt download %s`, pack.Name)
+		cmd = util.PrependProxyEnv(cmd)
+		r = o.exec(cmd, noSudo)
+		if !r.isSuccess() {
+			o.log.Warnf("Failed to Fetch deb package: %s", r)
+			return nil, nil, nil
+		}
+
+		// e.g. 7:4.1.6-1~deb10u1+rpt1b\n => 7%3a4.1.6-1~deb10u1+rpt1
+		debPackNewVersion := strings.Replace(pack.NewVersion, ":", "%3a", -1)
+		cmd = fmt.Sprintf(`find /tmp/vuls -name "%s_%s*.deb"`, pack.Name, debPackNewVersion)
+		cmd = util.PrependProxyEnv(cmd)
+		r = o.exec(cmd, noSudo)
+		if !r.isSuccess() || r.Stdout == "" {
+			o.log.Warnf("Failed to find deb package: %s", r)
+			return nil, nil, nil
+		}
+
+		// e.g. /tmp/vuls/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf.deb\n => /tmp/vuls/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf
+		packChangelogDir = strings.TrimRight(r.Stdout, ".deb\n")
+		o.log.Debugf(`packChangelogDir:%s`, packChangelogDir)
+		cmd = fmt.Sprintf(`dpkg-deb -x %s.deb %s`, packChangelogDir, packChangelogDir)
+		cmd = util.PrependProxyEnv(cmd)
+		r = o.exec(cmd, noSudo)
+		if !r.isSuccess() {
+			o.log.Warnf("Failed to dpkg-deb: %s", r)
+			return nil, nil, nil
+		}
+
+		return nil, nil, nil
+	}
+
 	switch o.Distro.Family {
 	case config.Ubuntu:
 		cmd = fmt.Sprintf(`PAGER=cat apt-get -q=2 changelog %s`, pack.Name)
 	case config.Debian:
 		cmd = fmt.Sprintf(`PAGER=cat aptitude -q=2 changelog %s`, pack.Name)
+	case config.Raspbian:
+		cmd = fmt.Sprintf(`gzip -cd %s/usr/share/doc/%s/changelog.Debian.gz | cat`, packChangelogDir, pack.Name)
 	}
 	cmd = util.PrependProxyEnv(cmd)
 
@@ -784,8 +829,6 @@ func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *mod
 		// Ignore this Error.
 		return nil, nil, nil
 	}
-
-	// TODO: o.Distro.Family==config.Raspbianのとき，changelogをダウンロード(apt download, dpkg-deb, ar, gzip)
 
 	stdout := strings.Replace(r.Stdout, "\r", "", -1)
 	cveIDs, clogFilledPack := o.getCveIDsFromChangelog(stdout, pack.Name, pack.Version)
