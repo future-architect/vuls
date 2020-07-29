@@ -317,7 +317,6 @@ func (o *debian) scanPackages() error {
 
 	if o.Distro.Family == config.Raspbian {
 		raspbianPacks := o.grepRaspbianPackages(updatable)
-		//TODO: raspbianPacksのpackageのchangelogを取得する
 		unsecures, err := o.scanUnsecurePackages(raspbianPacks)
 		if err != nil {
 			o.log.Errorf("Failed to scan vulnerable packages: %s", err)
@@ -773,6 +772,7 @@ func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *mod
 
 	packChangelogDir := ""
 	if o.Distro.Family == config.Raspbian {
+		// TODO: Don't make it every time (only once at the beginning)
 		cmd = fmt.Sprintf(`mkdir -p /tmp/vuls`)
 		cmd = util.PrependProxyEnv(cmd)
 		r := o.exec(cmd, noSudo)
@@ -789,6 +789,7 @@ func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *mod
 			return nil, nil, nil
 		}
 
+		// TODO: Consider the possibility that tmp_armhf.deb and tmp_arm64.deb exist when searching with find
 		// e.g. 7:4.1.6-1~deb10u1+rpt1b\n => 7%3a4.1.6-1~deb10u1+rpt1
 		debPackNewVersion := strings.Replace(pack.NewVersion, ":", "%3a", -1)
 		cmd = fmt.Sprintf(`find /tmp/vuls -name "%s_%s*.deb"`, pack.Name, debPackNewVersion)
@@ -801,7 +802,6 @@ func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *mod
 
 		// e.g. /tmp/vuls/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf.deb\n => /tmp/vuls/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf
 		packChangelogDir = strings.TrimRight(r.Stdout, ".deb\n")
-		o.log.Debugf(`packChangelogDir:%s`, packChangelogDir)
 		cmd = fmt.Sprintf(`dpkg-deb -x %s.deb %s`, packChangelogDir, packChangelogDir)
 		cmd = util.PrependProxyEnv(cmd)
 		r = o.exec(cmd, noSudo)
