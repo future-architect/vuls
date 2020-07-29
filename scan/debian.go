@@ -770,56 +770,18 @@ func (o *debian) getChangelogCache(meta *cache.Meta, pack models.Package) string
 func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *models.Package, error) {
 	cmd := ""
 
-	packChangelogDir := ""
-	if o.Distro.Family == config.Raspbian {
-		// TODO: Don't make it every time (only once at the beginning)
-		cmd = fmt.Sprintf(`mkdir -p /tmp/vuls`)
-		cmd = util.PrependProxyEnv(cmd)
-		r := o.exec(cmd, noSudo)
-		if !r.isSuccess() {
-			o.log.Warnf("Failed to Create Directory: %s", r)
-			return nil, nil, nil
-		}
-
-		cmd = fmt.Sprintf(`cd /tmp/vuls && apt download %s`, pack.Name)
-		cmd = util.PrependProxyEnv(cmd)
-		r = o.exec(cmd, noSudo)
-		if !r.isSuccess() {
-			o.log.Warnf("Failed to Fetch deb package: %s", r)
-			return nil, nil, nil
-		}
-
-		// TODO: Consider the possibility that tmp_armhf.deb and tmp_arm64.deb exist when searching with find
-		// e.g. 7:4.1.6-1~deb10u1+rpt1b\n => 7%3a4.1.6-1~deb10u1+rpt1
-		debPackNewVersion := strings.Replace(pack.NewVersion, ":", "%3a", -1)
-		cmd = fmt.Sprintf(`find /tmp/vuls -name "%s_%s*.deb"`, pack.Name, debPackNewVersion)
-		cmd = util.PrependProxyEnv(cmd)
-		r = o.exec(cmd, noSudo)
-		if !r.isSuccess() || r.Stdout == "" {
-			o.log.Warnf("Failed to find deb package: %s", r)
-			return nil, nil, nil
-		}
-
-		// e.g. /tmp/vuls/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf.deb\n => /tmp/vuls/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf
-		packChangelogDir = strings.TrimRight(r.Stdout, ".deb\n")
-		cmd = fmt.Sprintf(`dpkg-deb -x %s.deb %s`, packChangelogDir, packChangelogDir)
-		cmd = util.PrependProxyEnv(cmd)
-		r = o.exec(cmd, noSudo)
-		if !r.isSuccess() {
-			o.log.Warnf("Failed to dpkg-deb: %s", r)
-			return nil, nil, nil
-		}
-
-		return nil, nil, nil
-	}
-
 	switch o.Distro.Family {
 	case config.Ubuntu:
 		cmd = fmt.Sprintf(`PAGER=cat apt-get -q=2 changelog %s`, pack.Name)
 	case config.Debian:
 		cmd = fmt.Sprintf(`PAGER=cat aptitude -q=2 changelog %s`, pack.Name)
 	case config.Raspbian:
-		cmd = fmt.Sprintf(`gzip -cd %s/usr/share/doc/%s/changelog.Debian.gz | cat`, packChangelogDir, pack.Name)
+		changelogPath, err := o.getChangelogPath(pack)
+		if err != nil {
+			o.log.Warnf("Failed to get Path to Changelog for Package: %s", pack.Name)
+			return nil, nil, nil
+		}
+		cmd = fmt.Sprintf(`gzip -cd %s | cat`, changelogPath)
 	}
 	cmd = util.PrependProxyEnv(cmd)
 
@@ -843,6 +805,51 @@ func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *mod
 
 	// No error will be returned. Only logging.
 	return cveIDs, clogFilledPack, nil
+}
+
+func (o *debian) getChangelogPath(pack models.Package) (string, error) {
+	cmd := ""
+	// TODO: Don't make it every time (only once at the beginning)
+	cmd = fmt.Sprintf(`mkdir -p /tmp/vuls`)
+	cmd = util.PrependProxyEnv(cmd)
+	r := o.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		o.log.Warnf("Failed to Create Directory: %s", r)
+		return "", nil
+	}
+
+	cmd = fmt.Sprintf(`cd /tmp/vuls && apt download %s`, pack.Name)
+	cmd = util.PrependProxyEnv(cmd)
+	r = o.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		o.log.Warnf("Failed to Fetch deb package: %s", r)
+		return "", nil
+	}
+
+	// TODO: Consider the possibility that tmp_armhf.deb and tmp_arm64.deb exist when searching with find
+	// e.g. 7:4.1.6-1~deb10u1+rpt1b\n => 7%3a4.1.6-1~deb10u1+rpt1
+	debPackNewVersion := strings.Replace(pack.NewVersion, ":", "%3a", -1)
+	cmd = fmt.Sprintf(`find /tmp/vuls -name "%s_%s*.deb"`, pack.Name, debPackNewVersion)
+	cmd = util.PrependProxyEnv(cmd)
+	r = o.exec(cmd, noSudo)
+	if !r.isSuccess() || r.Stdout == "" {
+		o.log.Warnf("Failed to find deb package: %s", r)
+		return "", nil
+	}
+
+	// e.g. /tmp/vuls/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf.deb\n => /tmp/vuls/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf
+	packChangelogDir := strings.Split(r.Stdout, ".deb")[0]
+	cmd = fmt.Sprintf(`dpkg-deb -x %s.deb %s`, packChangelogDir, packChangelogDir)
+	cmd = util.PrependProxyEnv(cmd)
+	r = o.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		o.log.Warnf("Failed to dpkg-deb: %s", r)
+		return "", nil
+	}
+
+	packChangelogPath := fmt.Sprintf("%s/usr/share/doc/%s/changelog.Debian.gz", packChangelogDir, pack.Name)
+
+	return packChangelogPath, nil
 }
 
 func (o *debian) getCveIDsFromChangelog(
