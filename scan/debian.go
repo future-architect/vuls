@@ -305,16 +305,8 @@ func (o *debian) scanPackages() error {
 		return nil
 	}
 
-	//TODO: c.Raspbianのとき，+rp(i|t)のパッケージを取得し，scanUnsecurePackagesを実行する．
-	// fast-root->updatable/ deep-> updatable(full)をchangelogへ
-	if o.Distro.Family == config.Raspbian {
-		raspbianPacks, err := o.grepRaspbianPackages(updatable)
-		if err != nil {
-			o.log.Errorf("Failed to grep raspbian packages: %s", err)
-			return err
-		}
-		//TODO: raspbianPacksのpackageのchangelogを取得する
-		unsecures, err := o.scanUnsecurePackages(raspbianPacks)
+	if o.getServerInfo().Mode.IsDeep() {
+		unsecures, err := o.scanUnsecurePackages(updatable)
 		if err != nil {
 			o.log.Errorf("Failed to scan vulnerable packages: %s", err)
 			return err
@@ -323,8 +315,10 @@ func (o *debian) scanPackages() error {
 		return nil
 	}
 
-	if o.getServerInfo().Mode.IsDeep() {
-		unsecures, err := o.scanUnsecurePackages(updatable)
+	if o.Distro.Family == config.Raspbian {
+		raspbianPacks := o.grepRaspbianPackages(updatable)
+		//TODO: raspbianPacksのpackageのchangelogを取得する
+		unsecures, err := o.scanUnsecurePackages(raspbianPacks)
 		if err != nil {
 			o.log.Errorf("Failed to scan vulnerable packages: %s", err)
 			return err
@@ -480,6 +474,18 @@ func (o *debian) aptGetUpdate() error {
 		return xerrors.Errorf("Failed to apt-get update: %s", r)
 	}
 	return nil
+}
+
+func (o *debian) grepRaspbianPackages(updatables models.Packages) models.Packages {
+	raspbianPacks := models.Packages{}
+	// e.g. ffmpeg 7:4.1.4-1+rpt7~deb10u1, vlc 3.0.10-0+deb10u1+rpt2
+	r := regexp.MustCompile(`.+\+rp(t|i)\d+`)
+	for name, pack := range updatables {
+		if r.MatchString(pack.Version) {
+			raspbianPacks[name] = pack
+		}
+	}
+	return raspbianPacks
 }
 
 func (o *debian) scanUnsecurePackages(updatable models.Packages) (models.VulnInfos, error) {
