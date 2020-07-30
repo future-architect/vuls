@@ -818,6 +818,7 @@ func (o *debian) getChangelogPath(pack models.Package) (string, error) {
 		return "", r.Error
 	}
 
+	// `apt download` downloads deb package to current directory
 	cmd = fmt.Sprintf(`cd /tmp/vuls && apt download %s`, pack.Name)
 	cmd = util.PrependProxyEnv(cmd)
 	r = o.exec(cmd, noSudo)
@@ -826,7 +827,6 @@ func (o *debian) getChangelogPath(pack models.Package) (string, error) {
 		return "", r.Error
 	}
 
-	// TODO: Consider the possibility that tmp_armhf.deb and tmp_arm64.deb exist when searching with find
 	// e.g. 7:4.1.6-1~deb10u1+rpt1b\n => 7%3a4.1.6-1~deb10u1+rpt1
 	debPackNewVersion := strings.Replace(pack.NewVersion, ":", "%3a", -1)
 	cmd = fmt.Sprintf(`find /tmp/vuls -name "%s_%s*.deb"`, pack.Name, debPackNewVersion)
