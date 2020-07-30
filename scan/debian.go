@@ -501,6 +501,7 @@ func (o *debian) scanUnsecurePackages(updatable models.Packages) (models.VulnInf
 		return nil, err
 	}
 
+	// Make a directory for saving changelog to get changelog in Raspbian
 	if o.Distro.Family == config.Raspbian {
 		err := o.makeSaveChangelogDir()
 		if err != nil {
