@@ -501,6 +501,13 @@ func (o *debian) scanUnsecurePackages(updatable models.Packages) (models.VulnInf
 		return nil, err
 	}
 
+	if o.Distro.Family == config.Raspbian {
+		err := o.makeSaveChangelogDir()
+		if err != nil {
+			return nil, xerrors.Errorf("Failed to make directory to save changelog for Raspbian. err: %s", err)
+		}
+	}
+
 	// Collect CVE information of upgradable packages
 	vulnInfos, err := o.scanChangelogs(updatable, meta)
 	if err != nil {
@@ -581,6 +588,17 @@ func (o *debian) getUpdatablePackNames() (packNames []string, err error) {
 	return packNames, xerrors.Errorf(
 		"Failed to %s. status: %d, stdout: %s, stderr: %s",
 		cmd, r.ExitStatus, r.Stdout, r.Stderr)
+}
+
+func (o *debian) makeSaveChangelogDir() (err error) {
+	cmd := fmt.Sprintf(`mkdir -p /tmp/vuls`)
+	cmd = util.PrependProxyEnv(cmd)
+	r := o.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		o.log.Warnf("Failed to Create Directory: %s", r)
+		return r.Error
+	}
+	return
 }
 
 func (o *debian) parseAptGetUpgrade(stdout string) (updatableNames []string, err error) {
@@ -808,20 +826,10 @@ func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *mod
 }
 
 func (o *debian) getChangelogPath(pack models.Package) (string, error) {
-	cmd := ""
-	// TODO: Don't make it every time (only once at the beginning)
-	cmd = fmt.Sprintf(`mkdir -p /tmp/vuls`)
+	// `apt download` downloads deb package to current directory
+	cmd := fmt.Sprintf(`cd /tmp/vuls && apt download %s`, pack.Name)
 	cmd = util.PrependProxyEnv(cmd)
 	r := o.exec(cmd, noSudo)
-	if !r.isSuccess() {
-		o.log.Warnf("Failed to Create Directory: %s", r)
-		return "", r.Error
-	}
-
-	// `apt download` downloads deb package to current directory
-	cmd = fmt.Sprintf(`cd /tmp/vuls && apt download %s`, pack.Name)
-	cmd = util.PrependProxyEnv(cmd)
-	r = o.exec(cmd, noSudo)
 	if !r.isSuccess() {
 		o.log.Warnf("Failed to Fetch deb package: %s", r)
 		return "", r.Error
