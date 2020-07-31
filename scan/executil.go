@@ -333,7 +333,7 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 
 func getSSHLogger(log ...*logrus.Entry) *logrus.Entry {
 	if len(log) == 0 {
-		return util.NewCustomLogger(conf.ServerInfo{})
+		return util.Log
 	}
 	return log[0]
 }

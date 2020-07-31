@@ -79,7 +79,6 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	// Setup Logger
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
 
 	if err := mkdirDotVuls(); err != nil {

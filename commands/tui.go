@@ -16,7 +16,6 @@ import (
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
-	cvelog "github.com/kotakanbe/go-cve-dictionary/log"
 )
 
 // TuiCmd is Subcommand of host discovery mode
@@ -144,17 +143,13 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	c.Conf.Lang = "en"
-
-	// Setup Logger
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
-	cvelog.SetLogger(c.Conf.LogDir, false, c.Conf.Debug, false)
-
 	if err := c.Load(p.configPath, ""); err != nil {
 		util.Log.Errorf("Error loading %s, err: %+v", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
 
+	c.Conf.Lang = "en"
 	c.Conf.CveDict.Overwrite(p.cveDict)
 	c.Conf.OvalDict.Overwrite(p.ovalDict)
 	c.Conf.Gost.Overwrite(p.gostConf)

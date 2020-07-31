@@ -49,6 +49,7 @@ func (*ScanCmd) Usage() string {
 		[-timeout=300]
 		[-timeout-scan=7200]
 		[-debug]
+		[-quiet]
 		[-pipe]
 		[-vvv]
 		[-ips]
@@ -61,6 +62,7 @@ func (*ScanCmd) Usage() string {
 // SetFlags set flag
 func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
+	f.BoolVar(&c.Conf.Quiet, "quiet", false, "Quiet mode. No output on stdout")
 
 	wd, _ := os.Getwd()
 	defaultConfPath := filepath.Join(wd, "config.toml")
