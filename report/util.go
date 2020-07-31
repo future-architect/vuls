@@ -391,7 +391,6 @@ func formatChangelogs(r models.ScanResult) string {
 func ovalSupported(r *models.ScanResult) bool {
 	switch r.Family {
 	case
-		config.Amazon,
 		config.FreeBSD:
 		return false
 	}
