@@ -388,13 +388,14 @@ func formatChangelogs(r models.ScanResult) string {
 	}
 	return strings.Join(buf, "\n")
 }
-func ovalSupported(r *models.ScanResult) bool {
+func useScannedCves(r *models.ScanResult) bool {
 	switch r.Family {
 	case
-		config.FreeBSD:
-		return false
+		config.FreeBSD,
+		config.Raspbian:
+		return true
 	}
-	return true
+	return false
 }
 
 func needToRefreshCve(r models.ScanResult) bool {

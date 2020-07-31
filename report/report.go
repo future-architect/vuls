@@ -49,7 +49,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 	wpVulnCaches := map[string]string{}
 	for _, r := range rs {
 		if c.Conf.RefreshCve || needToRefreshCve(r) {
-			if ovalSupported(&r) {
+			if !useScannedCves(&r) {
 				r.ScannedCves = models.VulnInfos{}
 			}
 			cpeURIs := []string{}
