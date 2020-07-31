@@ -38,7 +38,13 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 				defPacks.def.Debian.CveID)
 			cveContents = models.CveContents{}
 		}
-		vinfo.Confidences.AppendIfMissing(models.OvalMatch)
+		if r.Family != config.Raspbian {
+			vinfo.Confidences.AppendIfMissing(models.OvalMatch)
+		} else {
+			if len(vinfo.Confidences) == 0 {
+				vinfo.Confidences.AppendIfMissing(models.OvalMatch)
+			}
+		}
 		cveContents[ctype] = ovalContent
 		vinfo.CveContents = cveContents
 	}
