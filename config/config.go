@@ -1250,21 +1250,18 @@ func (l Distro) String() string {
 }
 
 // MajorVersion returns Major version
-func (l Distro) MajorVersion() (ver int, err error) {
+func (l Distro) MajorVersion() (int, error) {
 	if l.Family == Amazon {
 		ss := strings.Fields(l.Release)
 		if len(ss) == 1 {
 			return 1, nil
 		}
-		ver, err = strconv.Atoi(ss[0])
-		return
+		return strconv.Atoi(ss[0])
 	}
 	if 0 < len(l.Release) {
-		ver, err = strconv.Atoi(strings.Split(l.Release, ".")[0])
-	} else {
-		err = xerrors.New("Release is empty")
+		return strconv.Atoi(strings.Split(l.Release, ".")[0])
 	}
-	return
+	return 0, xerrors.New("Release is empty")
 }
 
 // IsContainer returns whether this ServerInfo is about container

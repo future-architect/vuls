@@ -63,7 +63,7 @@ func TestSyslogConfValidate(t *testing.T) {
 	}
 }
 
-func TestMajorVersion(t *testing.T) {
+func TestDistro_MajorVersion(t *testing.T) {
 	var tests = []struct {
 		in  Distro
 		out int
