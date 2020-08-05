@@ -1089,7 +1089,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 	}
 }
 
-func TestMajor(t *testing.T) {
+func Test_major(t *testing.T) {
 	var tests = []struct {
 		in       string
 		expected string
