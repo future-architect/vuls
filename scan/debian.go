@@ -833,7 +833,7 @@ func (o *debian) getChangelogPath(pack models.Package) (string, error) {
 	cmd = util.PrependProxyEnv(cmd)
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return "", xerrors.Errorf("Failed to Fetch deb package. cmd: %s, status: %s, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
+		return "", xerrors.Errorf("Failed to Fetch deb package. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
 
 	// e.g. 7:4.1.6-1~deb10u1+rpt1b\n => 7%3a4.1.6-1~deb10u1+rpt1
@@ -842,7 +842,7 @@ func (o *debian) getChangelogPath(pack models.Package) (string, error) {
 	cmd = util.PrependProxyEnv(cmd)
 	r = o.exec(cmd, noSudo)
 	if !r.isSuccess() || r.Stdout == "" {
-		return "", xerrors.Errorf("Failed to find deb package. cmd: %s, status: %s, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
+		return "", xerrors.Errorf("Failed to find deb package. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
 
 	// e.g. /tmp/vuls/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf.deb\n => /tmp/vuls/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf
@@ -851,7 +851,7 @@ func (o *debian) getChangelogPath(pack models.Package) (string, error) {
 	cmd = util.PrependProxyEnv(cmd)
 	r = o.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return "", xerrors.Errorf("Failed to dpkg-deb. cmd: %s, status: %s, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
+		return "", xerrors.Errorf("Failed to dpkg-deb. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
 
 	packChangelogPath := fmt.Sprintf("%s/usr/share/doc/%s/changelog.Debian.gz", packChangelogDir, pack.Name)
@@ -860,7 +860,7 @@ func (o *debian) getChangelogPath(pack models.Package) (string, error) {
 	r = o.exec(cmd, noSudo)
 	if !r.isSuccess() {
 		// Perhaps the Changelog for this package is combined with other packages, and this package only has Symbolic Link.
-		return "", xerrors.Errorf("Failed to get changelog(%s). cmd: %s, status: %s, stdout: %s, stderr: %s", packChangelogPath, cmd, r.ExitStatus, r.Stdout, r.Stderr)
+		return "", xerrors.Errorf("Failed to get changelog(%s). cmd: %s, status: %d, stdout: %s, stderr: %s", packChangelogPath, cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
 
 	return packChangelogPath, nil
