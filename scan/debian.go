@@ -846,23 +846,15 @@ func (o *debian) getChangelogPath(pack models.Package) (string, error) {
 	}
 
 	// e.g. /tmp/vuls/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf.deb\n => /tmp/vuls/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf
-	packDirPath := strings.Split(r.Stdout, ".deb")[0]
-	cmd = fmt.Sprintf(`dpkg-deb -x %s.deb %s`, packDirPath, packDirPath)
+	packChangelogDir := strings.Split(r.Stdout, ".deb")[0]
+	cmd = fmt.Sprintf(`dpkg-deb -x %s.deb %s`, packChangelogDir, packChangelogDir)
 	cmd = util.PrependProxyEnv(cmd)
 	r = o.exec(cmd, noSudo)
 	if !r.isSuccess() {
 		return "", xerrors.Errorf("Failed to dpkg-deb. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
 
-	packChangelogDirPath := fmt.Sprintf("%s/usr/share/doc/%s", packDirPath, pack.Name)
-	cmd = fmt.Sprintf(`find %s -type f \( -name "changelog.Debian.gz" -or -name "changelog.gz" \)`, packChangelogDirPath)
-	cmd = util.PrependProxyEnv(cmd)
-	r = o.exec(cmd, noSudo)
-	if !r.isSuccess() {
-		return "", xerrors.Errorf("Failed to find changelog. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
-	}
-
-	packChangelogPath := fmt.Sprintf("%s", strings.Split(r.Stdout, "\n")[0])
+	packChangelogPath := fmt.Sprintf("%s/usr/share/doc/%s/changelog.Debian.gz", packChangelogDir, pack.Name)
 	cmd = fmt.Sprintf(`test -e %s`, packChangelogPath)
 	cmd = util.PrependProxyEnv(cmd)
 	r = o.exec(cmd, noSudo)
