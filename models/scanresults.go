@@ -480,17 +480,20 @@ func (r ScanResult) ExtractDebianPackFromResult() ScanResult {
 	}
 
 	result := r
-	regexpRaspbianVersion := regexp.MustCompile(`.+\+rp(t|i)\d+`)
+	// e.g. libraspberrypi-dev
+	packNamePattern := regexp.MustCompile(`*raspberry*`)
+	// e.g. ffmpeg 7:4.1.4-1+rpt7~deb10u1, vlc 3.0.10-0+deb10u1+rpt2
+	packVersionPattern := regexp.MustCompile(`.+\+rp(t|i)\d+`)
 	packs := make(Packages)
-	for _, pack := range r.Packages {
-		if regexpRaspbianVersion.MatchString(pack.FormatVer()) {
+	for name, pack := range r.Packages {
+		if packNamePattern.MatchString(name) || packVersionPattern.MatchString(pack.FormatVer()) {
 			continue
 		}
 		packs[pack.Name] = pack
 	}
 	srcPacks := make(SrcPackages)
-	for _, pack := range r.SrcPackages {
-		if regexpRaspbianVersion.MatchString(pack.Version) {
+	for name, pack := range r.SrcPackages {
+		if packNamePattern.MatchString(name) || packVersionPattern.MatchString(pack.Version) {
 			continue
 		}
 		srcPacks[pack.Name] = pack
