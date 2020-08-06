@@ -797,7 +797,8 @@ func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *mod
 	case config.Raspbian:
 		changelogPath, err := o.getChangelogPath(pack)
 		if err != nil {
-			o.log.Warnf("Failed to get Path to Changelog for Package: %s, err: %s", pack.Name, err)
+			// Ignore this Error.
+			o.log.Warnf("Failed to get Path to Changelog for Package: %s, err: %s\n", pack.Name, err)
 			return nil, nil, nil
 		}
 		cmd = fmt.Sprintf(`gzip -cd %s | cat`, changelogPath)
@@ -832,8 +833,7 @@ func (o *debian) getChangelogPath(pack models.Package) (string, error) {
 	cmd = util.PrependProxyEnv(cmd)
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		o.log.Warnf("Failed to Fetch deb package: %s", r)
-		return "", r.Error
+		return "", xerrors.Errorf("Failed to Fetch deb package. cmd: %s, status: %s, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
 
 	// e.g. 7:4.1.6-1~deb10u1+rpt1b\n => 7%3a4.1.6-1~deb10u1+rpt1
@@ -842,8 +842,7 @@ func (o *debian) getChangelogPath(pack models.Package) (string, error) {
 	cmd = util.PrependProxyEnv(cmd)
 	r = o.exec(cmd, noSudo)
 	if !r.isSuccess() || r.Stdout == "" {
-		o.log.Warnf("Failed to find deb package: %s", r)
-		return "", r.Error
+		return "", xerrors.Errorf("Failed to find deb package. cmd: %s, status: %s, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
 
 	// e.g. /tmp/vuls/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf.deb\n => /tmp/vuls/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf
@@ -852,11 +851,17 @@ func (o *debian) getChangelogPath(pack models.Package) (string, error) {
 	cmd = util.PrependProxyEnv(cmd)
 	r = o.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		o.log.Warnf("Failed to dpkg-deb: %s", r)
-		return "", r.Error
+		return "", xerrors.Errorf("Failed to dpkg-deb. cmd: %s, status: %s, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
 
 	packChangelogPath := fmt.Sprintf("%s/usr/share/doc/%s/changelog.Debian.gz", packChangelogDir, pack.Name)
+	cmd = fmt.Sprintf(`test -e %s`, packChangelogPath)
+	cmd = util.PrependProxyEnv(cmd)
+	r = o.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		// Perhaps the Changelog for this package is combined with other packages, and this package only has Symbolic Link.
+		return "", xerrors.Errorf("Failed to get changelog(%s). cmd: %s, status: %s, stdout: %s, stderr: %s", packChangelogPath, cmd, r.ExitStatus, r.Stdout, r.Stderr)
+	}
 
 	return packChangelogPath, nil
 }
