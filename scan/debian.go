@@ -798,7 +798,7 @@ func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *mod
 		changelogPath, err := o.getChangelogPath(pack)
 		if err != nil {
 			// Ignore this Error.
-			o.log.Warnf("Failed to get Path to Changelog for Package: %s, err: %s\n", pack.Name, err)
+			o.log.Warnf("Failed to get Path to Changelog for Package: %s, err: %s", pack.Name, err)
 			return nil, nil, nil
 		}
 		cmd = fmt.Sprintf(`gzip -cd %s | cat`, changelogPath)
