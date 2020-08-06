@@ -472,3 +472,32 @@ type Platform struct {
 	Name       string `json:"name"` // aws or azure or gcp or other...
 	InstanceID string `json:"instanceID"`
 }
+
+// ExtractDebianPackFromResult is for Raspbian and extracts Debian packages from ScanResult.
+func (r ScanResult) ExtractDebianPackFromResult() ScanResult {
+	if r.Family != config.Raspbian {
+		return r
+	}
+
+	result := r
+	regexpRaspbianVersion := regexp.MustCompile(`.+\+rp(t|i)\d+`)
+	packs := make(Packages)
+	for _, pack := range r.Packages {
+		if regexpRaspbianVersion.MatchString(pack.FormatVer()) {
+			continue
+		}
+		packs[pack.Name] = pack
+	}
+	srcPacks := make(SrcPackages)
+	for _, pack := range r.SrcPackages {
+		if regexpRaspbianVersion.MatchString(pack.Version) {
+			continue
+		}
+		srcPacks[pack.Name] = pack
+	}
+
+	result.Packages = packs
+	result.SrcPackages = srcPacks
+
+	return result
+}

@@ -223,15 +223,7 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 
 func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDefs ovalResult, err error) {
 	requests := []request{}
-	regexpRaspbianVersion := regexp.MustCompile(`.+\+rp(t|i)\d+`)
 	for _, pack := range r.Packages {
-		// OVAL DB does not support Package for Raspbian (version has `+rp(t|i)`), so skip it.
-		if r.Family == config.Raspbian {
-			if regexpRaspbianVersion.MatchString(pack.FormatVer()) {
-				continue
-			}
-		}
-
 		requests = append(requests, request{
 			packName:          pack.Name,
 			versionRelease:    pack.FormatVer(),
@@ -241,12 +233,6 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 		})
 	}
 	for _, pack := range r.SrcPackages {
-		if r.Family == config.Raspbian {
-			if regexpRaspbianVersion.MatchString(pack.Version) {
-				continue
-			}
-		}
-
 		requests = append(requests, request{
 			packName:        pack.Name,
 			binaryPackNames: pack.BinaryNames,
