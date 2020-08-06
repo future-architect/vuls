@@ -478,7 +478,7 @@ func (o *debian) aptGetUpdate() error {
 func (o *debian) grepRaspbianPackages(updatables models.Packages) models.Packages {
 	raspbianPacks := models.Packages{}
 	// e.g. libraspberrypi-dev
-	packNamePattern := regexp.MustCompile(`*raspberry*`)
+	packNamePattern := regexp.MustCompile(`.*raspberry.*`)
 	// e.g. ffmpeg 7:4.1.4-1+rpt7~deb10u1, vlc 3.0.10-0+deb10u1+rpt2
 	packVersionPattern := regexp.MustCompile(`.+\+rp(t|i)\d+`)
 	for name, pack := range updatables {
