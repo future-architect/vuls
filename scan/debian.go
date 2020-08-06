@@ -854,16 +854,28 @@ func (o *debian) getChangelogPath(pack models.Package) (string, error) {
 		return "", xerrors.Errorf("Failed to dpkg-deb. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
 
+	var results = make(map[string]execResult, 2)
 	packChangelogPath := fmt.Sprintf("%s/usr/share/doc/%s/changelog.Debian.gz", packChangelogDir, pack.Name)
 	cmd = fmt.Sprintf(`test -e %s`, packChangelogPath)
 	cmd = util.PrependProxyEnv(cmd)
 	r = o.exec(cmd, noSudo)
-	if !r.isSuccess() {
-		// Perhaps the Changelog for this package is combined with other packages, and this package only has Symbolic Link.
-		return "", xerrors.Errorf("Failed to get changelog(%s). cmd: %s, status: %d, stdout: %s, stderr: %s", packChangelogPath, cmd, r.ExitStatus, r.Stdout, r.Stderr)
+	if r.isSuccess() {
+		return packChangelogPath, nil
 	}
+	results["changelog.Debian.gz"] = r
 
-	return packChangelogPath, nil
+	packChangelogPath = fmt.Sprintf("%s/usr/share/doc/%s/changelog.gz", packChangelogDir, pack.Name)
+	cmd = fmt.Sprintf(`test -e %s`, packChangelogPath)
+	cmd = util.PrependProxyEnv(cmd)
+	r = o.exec(cmd, noSudo)
+	if r.isSuccess() {
+		return packChangelogPath, nil
+	}
+	results["changelog.gz"] = r
+
+	return "", xerrors.Errorf(
+		"Failed to get changelog(%s).\nresult(changelog.Debian.gz):%v\nresult(changelog.Debian.gz):%v",
+		packChangelogPath, results["changelog.Debian.gz"], results["changelog.gz"])
 }
 
 func (o *debian) getCveIDsFromChangelog(
