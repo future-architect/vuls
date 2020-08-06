@@ -876,8 +876,8 @@ func (o *debian) getChangelogPath(pack models.Package) (string, error) {
 	results["changelog.gz"] = r
 
 	return "", xerrors.Errorf(
-		"Failed to get changelog(%s).\nresult(changelog.Debian.gz):%v\nresult(changelog.Debian.gz):%v",
-		packChangelogPath, results["changelog.Debian.gz"], results["changelog.gz"])
+		"Failed to get changelog.\nresult(changelog.Debian.gz):%v\nresult(changelog.Debian.gz):%v",
+		results["changelog.Debian.gz"], results["changelog.gz"])
 }
 
 func (o *debian) getCveIDsFromChangelog(
