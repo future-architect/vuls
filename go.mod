@@ -47,7 +47,7 @@ require (
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/afero v1.3.0
 	github.com/spf13/cobra v1.0.0
-	github.com/takuzoo3868/go-msfdb v0.1.0
+	github.com/takuzoo3868/go-msfdb v0.1.1
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
