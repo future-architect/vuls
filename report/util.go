@@ -2,6 +2,7 @@ package report
 
 import (
 	"bytes"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -366,6 +367,51 @@ No CVE-IDs are found in updatable packages.
 		lines += b.String() + "\n"
 	}
 	return
+}
+
+func formatCsvList(r models.ScanResult, path string) string {
+	data := [][]string{{"CVE-ID", "CVSS", "Attack", "PoC", "CERT", "Fixed", "NVD"}}
+
+	for _, vinfo := range r.ScannedCves.ToSortedSlice() {
+		max := vinfo.MaxCvssScore().Value.Score
+
+		exploits := ""
+		if 0 < len(vinfo.Exploits) || 0 < len(vinfo.Metasploits) {
+			exploits = "POC"
+		}
+
+		link := ""
+		if strings.HasPrefix(vinfo.CveID, "CVE-") {
+			link = fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", vinfo.CveID)
+		} else if strings.HasPrefix(vinfo.CveID, "WPVDBID-") {
+			link = fmt.Sprintf("https://wpvulndb.com/vulnerabilities/%s", strings.TrimPrefix(vinfo.CveID, "WPVDBID-"))
+		}
+
+		data = append(data, []string{
+			vinfo.CveID,
+			fmt.Sprintf("%4.1f", max),
+			fmt.Sprintf("%s", vinfo.AttackVector()),
+			exploits,
+			vinfo.AlertDict.FormatSource(),
+			fmt.Sprintf("%s", vinfo.PatchStatus(r.Packages)),
+			link,
+		})
+
+	}
+	file, err := os.Create(path)
+	if err != nil {
+		return fmt.Sprintf("Unable to create file: %s", err)
+	}
+
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	err = writer.WriteAll(data)
+
+	if err != nil {
+		return fmt.Sprintf("Cannot write to file: %s", err)
+	}
+	return fmt.Sprintf("%s", data)
 }
 
 func cweURL(cweID string) string {

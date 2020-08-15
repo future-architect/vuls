@@ -102,6 +102,22 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 				return xerrors.Errorf("Failed to write XML. path: %s, err: %w", p, err)
 			}
 		}
+
+		if c.Conf.FormatCsvList {
+			var p string
+			if c.Conf.Diff {
+				p = path + "_short_diff.csv"
+			} else {
+				p = path + "_short.csv"
+			}
+
+			err := formatCsvList(r, p)
+
+			if err == "" {
+				return xerrors.Errorf("Failed to write CSV. path: %s", p)
+			}
+		}
+
 	}
 	return nil
 }

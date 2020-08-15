@@ -151,6 +151,7 @@ type Config struct {
 	FormatOneLineText bool `json:"formatOneLineText,omitempty"`
 	FormatList        bool `json:"formatList,omitempty"`
 	FormatFullText    bool `json:"formatFullText,omitempty"`
+	FormatCsvList     bool `json:"formatCsvList,omitempty"`
 	GZIP              bool `json:"gzip,omitempty"`
 	Diff              bool `json:"diff,omitempty"`
 	WpIgnoreInactive  bool `json:"wpIgnoreInactive,omitempty"`
