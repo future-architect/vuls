@@ -819,7 +819,7 @@ func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *mod
 
 	if clogFilledPack.Changelog.Method != models.FailedToGetChangelog {
 		err := cache.DB.PutChangelog(
-			o.getServerInfo().GetServerName(), pack.Name, pack.Changelog.Contents)
+			o.getServerInfo().GetServerName(), pack.Name, stdout)
 		if err != nil {
 			return nil, nil, xerrors.New("Failed to put changelog into cache")
 		}
