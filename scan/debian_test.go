@@ -758,12 +758,12 @@ func TestParseChangelog(t *testing.T) {
 		pack   models.Package
 	}
 	tests := []struct {
-		result string
-		args   args
-		expect expect
+		packName string
+		args     args
+		expect   expect
 	}{
 		{
-			result: "success",
+			packName: "vlc",
 			args: args{
 				changelog: `vlc (3.0.11-0+deb10u1+rpt2) buster; urgency=medium
 
@@ -823,36 +823,41 @@ vlc (3.0.11-0+deb10u1) buster-security; urgency=high
 			},
 		},
 		{
-			result: "success",
+			packName: "realvnc-vnc-server",
 			args: args{
 				changelog: `realvnc-vnc (6.7.2.42622) stable; urgency=low
 
-				* Debian package for VNC Server
-			 
-			  -- RealVNC <noreply@realvnc.com>  Wed, 13 May 2020 19:51:40 +0100
-			 `,
+  * Debian package for VNC Server
+
+ -- RealVNC <noreply@realvnc.com>  Wed, 13 May 2020 19:51:40 +0100
+`,
 				name: "realvnc-vnc-server",
 				ver:  "6.7.1.42348",
 			},
 			expect: expect{
-				cveIDs: nil,
+				cveIDs: []DetectedCveID{},
 				pack: models.Package{Changelog: models.Changelog{
-					Contents: ``,
-					Method:   models.ChangelogExactMatchStr,
+					Contents: `realvnc-vnc (6.7.2.42622) stable; urgency=low
+
+  * Debian package for VNC Server
+
+ -- RealVNC <noreply@realvnc.com>  Wed, 13 May 2020 19:51:40 +0100`,
+					Method: models.ChangelogLenientMatchStr,
 				}},
 			},
 		},
 	}
-	for i, tt := range tests {
-		t.Run(tt.result, func(t *testing.T) {
-			o := &debian{}
+
+	o := newDebian(config.ServerInfo{})
+	o.Distro = config.Distro{Family: config.Raspbian}
+	for _, tt := range tests {
+		t.Run(tt.packName, func(t *testing.T) {
 			cveIDs, pack, _ := o.parseChangelog(tt.args.changelog, tt.args.name, tt.args.ver, models.ChangelogExactMatch)
 			if !reflect.DeepEqual(cveIDs, tt.expect.cveIDs) {
-				t.Errorf("[%d]->cveIDs: expected: %s, actual: %s", i, tt.expect.cveIDs, cveIDs)
+				t.Errorf("[%s]->cveIDs: expected: %s, actual: %s", tt.packName, tt.expect.cveIDs, cveIDs)
 			}
-			if pack.Changelog.Contents != tt.expect.pack.Changelog.Contents {
-				// if !reflect.DeepEqual(pack.FormatChangelog(), tt.expect.pack.FormatChangelog()) {
-				t.Errorf("[%d]->changelog.Contents: expected: %s, actual: %s", i, tt.expect.pack.Changelog.Contents, pack.Changelog.Contents)
+			if !reflect.DeepEqual(pack.Changelog.Contents, tt.expect.pack.Changelog.Contents) {
+				t.Errorf("[%s]->changelog.Contents: expected: %s, actual: %s", tt.packName, tt.expect.pack.Changelog.Contents, pack.Changelog.Contents)
 			}
 		})
 	}

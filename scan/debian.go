@@ -979,6 +979,21 @@ func (o *debian) parseChangelog(changelog, name, ver string, confidence models.C
 	}
 
 	if !found {
+		if o.Distro.Family == config.Raspbian {
+			pack := o.Packages[name]
+			pack.Changelog = models.Changelog{
+				Contents: strings.Join(buf, "\n"),
+				Method:   models.ChangelogLenientMatchStr,
+			}
+
+			cves := []DetectedCveID{}
+			for _, id := range cveIDs {
+				cves = append(cves, DetectedCveID{id, confidence})
+			}
+
+			return cves, &pack, nil
+		}
+
 		pack := o.Packages[name]
 		pack.Changelog = models.Changelog{
 			Contents: "",
