@@ -141,7 +141,7 @@ func (b Bolt) PrettyPrint(meta Meta) error {
 	})
 }
 
-// GetChangelog get the changelgo of specified packName from the Bucket
+// GetChangelog get the changelog of specified packName from the Bucket
 func (b Bolt) GetChangelog(servername, packName string) (changelog string, err error) {
 	err = b.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket([]byte(servername))
