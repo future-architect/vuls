@@ -473,8 +473,8 @@ type Platform struct {
 	InstanceID string `json:"instanceID"`
 }
 
-// ExtractDebianPackFromResult is for Raspbian and extracts Debian packages from ScanResult.
-func (r ScanResult) ExtractDebianPackFromResult() ScanResult {
+// RemoveRaspbianPackFromResult is for Raspberry Pi and removes the Raspberry Pi dedicated package from ScanResult.
+func (r ScanResult) RemoveRaspbianPackFromResult() ScanResult {
 	if r.Family != config.Raspbian {
 		return r
 	}
