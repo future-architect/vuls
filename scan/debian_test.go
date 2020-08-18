@@ -830,6 +830,7 @@ vlc (3.0.11-0+deb10u1) buster-security; urgency=high
   * Debian package for VNC Server
 
  -- RealVNC <noreply@realvnc.com>  Wed, 13 May 2020 19:51:40 +0100
+
 `,
 				name: "realvnc-vnc-server",
 				ver:  "6.7.1.42348",
@@ -841,7 +842,8 @@ vlc (3.0.11-0+deb10u1) buster-security; urgency=high
 
   * Debian package for VNC Server
 
- -- RealVNC <noreply@realvnc.com>  Wed, 13 May 2020 19:51:40 +0100`,
+ -- RealVNC <noreply@realvnc.com>  Wed, 13 May 2020 19:51:40 +0100
+`,
 					Method: models.ChangelogLenientMatchStr,
 				}},
 			},
