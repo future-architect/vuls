@@ -479,13 +479,22 @@ func (o *debian) aptGetUpdate() error {
 
 func (o *debian) grepRaspbianPackages(updatables models.Packages) models.Packages {
 	raspbianPacks := models.Packages{}
-	// e.g. libraspberrypi-dev
-	packNamePattern := regexp.MustCompile(`.*raspberry.*`)
+	// e.g. libraspberrypi-dev, rpi-eeprom, pi-bluetooth
+	packNamePattern := regexp.MustCompile(`(.*raspberry.*|^rpi.*|^pi-.*)`)
+	// Identify package name for Raspberry Pi
+	packNameList := []string{"piclone", "pipanel", "pishutdown", "piwiz", "pixflat-icons"}
 	// e.g. ffmpeg 7:4.1.4-1+rpt7~deb10u1, vlc 3.0.10-0+deb10u1+rpt2
 	packVersionPattern := regexp.MustCompile(`.+\+rp(t|i)\d+`)
+
 	for name, pack := range updatables {
 		if packNamePattern.MatchString(name) || packVersionPattern.MatchString(pack.Version) {
 			raspbianPacks[name] = pack
+		}
+		for _, n := range packNameList {
+			if n == name {
+				raspbianPacks[name] = pack
+				break
+			}
 		}
 	}
 	return raspbianPacks

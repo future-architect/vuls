@@ -37,7 +37,7 @@ func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCV
 		}
 	}
 
-	// Debian Security Tracker does not support Package for Raspbian (version has `+rp(t|i)`, or pack name has `raspberrypi`), so skip it.
+	// Debian Security Tracker does not support Package for Raspbian, so skip it.
 	var scanResult models.ScanResult
 	if r.Family != config.Raspbian {
 		scanResult = *r
