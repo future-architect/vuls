@@ -656,7 +656,11 @@ func (o *debian) parseAptGetUpgrade(stdout string) (updatableNames []string, err
 }
 
 func (o *debian) makeTempChangelogDir() (string, error) {
-	path := "/tmp/vuls-" + generateSuffix()
+	suffix, err := generateSuffix()
+	if err != nil {
+		return "", err
+	}
+	path := "/tmp/vuls-" + suffix
 	cmd := fmt.Sprintf(`mkdir -p %s`, path)
 	cmd = util.PrependProxyEnv(cmd)
 	r := o.exec(cmd, noSudo)
@@ -666,10 +670,12 @@ func (o *debian) makeTempChangelogDir() (string, error) {
 	return path, nil
 }
 
-func generateSuffix() string {
+func generateSuffix() (string, error) {
 	var n uint64
-	binary.Read(rand.Reader, binary.LittleEndian, &n)
-	return strconv.FormatUint(n, 36)
+	if err := binary.Read(rand.Reader, binary.LittleEndian, &n); err != nil {
+		return "", xerrors.Errorf("Failed to generate Suffix. err: %s", err)
+	}
+	return strconv.FormatUint(n, 36), nil
 }
 
 func (o *debian) deleteTempChangelogDir(tmpClogPath string) error {
