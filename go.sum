@@ -44,8 +44,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/GoogleCloudPlatform/docker-credential-gcr v1.5.0/go.mod h1:BB1eHdMLYEFuFdBlRMb0N7YGVdM5s6Pt0njxgvfbGGs=
 github.com/GoogleCloudPlatform/k8s-cloud-provider v0.0.0-20190822182118-27a4ced34534/go.mod h1:iroGtC8B3tQiqtds1l+mgk/BBOrxbqjH+eUfFQYRc14=
-github.com/MaineK00n/goval-dictionary v0.2.9-0.20200727160552-8afbb01782b1 h1:Kok42JHfKSUUV49dBgRgAGWvbBhYm64P3xzzizzKk8Q=
-github.com/MaineK00n/goval-dictionary v0.2.9-0.20200727160552-8afbb01782b1/go.mod h1:OozI5ZbKWHIPcjYgOITYHRy+Vo6ZbksY1FU8aCwojK4=
+github.com/MaineK00n/goval-dictionary v0.2.9-0.20200806062530-0e2d1f8fa02a h1:MUJOZLecnFq5zxQxg7n8+kgDxuS7moDMCPpohCaEX0M=
+github.com/MaineK00n/goval-dictionary v0.2.9-0.20200806062530-0e2d1f8fa02a/go.mod h1:OozI5ZbKWHIPcjYgOITYHRy+Vo6ZbksY1FU8aCwojK4=
 github.com/Microsoft/go-winio v0.4.11/go.mod h1:VhR8bwka0BXejwEJY73c50VrPtXAaKcyvVC4A4RozmA=
 github.com/Microsoft/go-winio v0.4.14/go.mod h1:qXqCSQ3Xa7+6tgxaGTIe4Kpcdsi+P8jBhyzoq1bpyYA=
 github.com/Microsoft/go-winio v0.4.15-0.20190919025122-fc70bd9a86b5/go.mod h1:tTuCMEN+UleMWgg9dVx4Hu52b1bJo+59jBh3ajtinzw=

@@ -3,7 +3,7 @@ module github.com/future-architect/vuls
 go 1.14
 
 replace (
-	github.com/kotakanbe/goval-dictionary => github.com/MaineK00n/goval-dictionary v0.2.9-0.20200727160552-8afbb01782b1
+	github.com/kotakanbe/goval-dictionary => github.com/MaineK00n/goval-dictionary v0.2.9-0.20200806062530-0e2d1f8fa02a
 	gopkg.in/mattn/go-colorable.v0 => github.com/mattn/go-colorable v0.1.0
 	gopkg.in/mattn/go-isatty.v0 => github.com/mattn/go-isatty v0.0.6
 )
