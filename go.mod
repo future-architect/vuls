@@ -3,7 +3,6 @@ module github.com/future-architect/vuls
 go 1.14
 
 replace (
-	github.com/kotakanbe/goval-dictionary => github.com/MaineK00n/goval-dictionary v0.2.9-0.20200806062530-0e2d1f8fa02a
 	gopkg.in/mattn/go-colorable.v0 => github.com/mattn/go-colorable v0.1.0
 	gopkg.in/mattn/go-isatty.v0 => github.com/mattn/go-isatty v0.0.6
 )
@@ -35,7 +34,7 @@ require (
 	github.com/knqyf263/gost v0.1.3
 	github.com/kotakanbe/go-cve-dictionary v0.5.0
 	github.com/kotakanbe/go-pingscanner v0.1.0
-	github.com/kotakanbe/goval-dictionary v0.2.8
+	github.com/kotakanbe/goval-dictionary v0.2.9
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/mitchellh/go-homedir v1.1.0
