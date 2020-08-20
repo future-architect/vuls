@@ -47,9 +47,9 @@
           <y:Geometry height="90.44247787610618" width="268.0" x="309.6849206349206" y="86.0"/>
           <y:Fill color="#E8EEF7" color2="#B7C9E3" transparent="false"/>
           <y:BorderStyle color="#000000" type="line" width="1.0"/>
-          <y:NodeLabel alignment="right" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="92.20703125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="156.71875" x="55.64062500000006" xml:space="preserve" y="-0.8822766869469092">Get installed packages
+          <y:NodeLabel alignment="right" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="92.20703125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="204.794921875" x="31.602539062500057" xml:space="preserve" y="-0.8822766869469092">Get installed packages
 Alpine: apk
-Debian/Ubuntu: dpkg-query
+Debian/Ubuntu/Raspbian: dpkg-query
 Amazon/RHEL/CentOS: rpm
 SUSE: zypper
 FreeBSD: pkg<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="2.220446049250313E-16" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
