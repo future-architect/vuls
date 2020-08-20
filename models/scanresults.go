@@ -480,35 +480,18 @@ func (r ScanResult) RemoveRaspbianPackFromResult() ScanResult {
 	}
 
 	result := r
-	// e.g. libraspberrypi-dev, rpi-eeprom, pi-bluetooth
-	packNamePattern := regexp.MustCompile(`(.*raspberry.*|^rpi.*|^pi-.*)`)
-	// Identify package name for Raspberry Pi
-	packNameList := []string{"piclone", "pipanel", "pishutdown", "piwiz", "pixflat-icons"}
-	// e.g. ffmpeg 7:4.1.4-1+rpt7~deb10u1, vlc 3.0.10-0+deb10u1+rpt2
-	packVersionPattern := regexp.MustCompile(`.+\+rp(t|i)\d+`)
 	packs := make(Packages)
-	for name, pack := range r.Packages {
-		if packNamePattern.MatchString(name) || packVersionPattern.MatchString(pack.FormatVer()) {
-			continue
+	for _, pack := range r.Packages {
+		if !IsRaspbianPackage(pack.Name, pack.Version) {
+			packs[pack.Name] = pack
 		}
-		for _, n := range packNameList {
-			if n == name {
-				break
-			}
-		}
-		packs[pack.Name] = pack
 	}
 	srcPacks := make(SrcPackages)
-	for name, pack := range r.SrcPackages {
-		if packNamePattern.MatchString(name) || packVersionPattern.MatchString(pack.Version) {
-			continue
+	for _, pack := range r.SrcPackages {
+		if !IsRaspbianPackage(pack.Name, pack.Version) {
+			srcPacks[pack.Name] = pack
+
 		}
-		for _, n := range packNameList {
-			if n == name {
-				break
-			}
-		}
-		srcPacks[pack.Name] = pack
 	}
 
 	result.Packages = packs
