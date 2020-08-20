@@ -307,8 +307,9 @@ func (o *debian) scanPackages() error {
 		return nil
 	}
 
-	if o.getServerInfo().Mode.IsDeep() {
-		unsecures, err := o.scanUnsecurePackages(updatable)
+	if !o.getServerInfo().Mode.IsDeep() && o.Distro.Family == config.Raspbian {
+		raspbianPacks := o.grepRaspbianPackages(updatable)
+		unsecures, err := o.scanUnsecurePackages(raspbianPacks)
 		if err != nil {
 			o.log.Errorf("Failed to scan vulnerable packages: %s", err)
 			return err
@@ -317,9 +318,8 @@ func (o *debian) scanPackages() error {
 		return nil
 	}
 
-	if o.Distro.Family == config.Raspbian {
-		raspbianPacks := o.grepRaspbianPackages(updatable)
-		unsecures, err := o.scanUnsecurePackages(raspbianPacks)
+	if o.getServerInfo().Mode.IsDeep() {
+		unsecures, err := o.scanUnsecurePackages(updatable)
 		if err != nil {
 			o.log.Errorf("Failed to scan vulnerable packages: %s", err)
 			return err
