@@ -31,14 +31,14 @@ require (
 	github.com/knqyf263/go-deb-version v0.0.0-20190517075300-09fca494f03d
 	github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936
 	github.com/knqyf263/go-version v1.1.1
-	github.com/knqyf263/gost v0.1.3
+	github.com/knqyf263/gost v0.1.4
 	github.com/kotakanbe/go-cve-dictionary v0.5.0
 	github.com/kotakanbe/go-pingscanner v0.1.0
-	github.com/kotakanbe/goval-dictionary v0.2.8
+	github.com/kotakanbe/goval-dictionary v0.2.10
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/mozqnet/go-exploitdb v0.0.0-20200612044106-ea30f49f0902
+	github.com/mozqnet/go-exploitdb v0.1.0
 	github.com/nlopes/slack v0.6.0
 	github.com/nsf/termbox-go v0.0.0-20200418040025-38ba6e5628f1 // indirect
 	github.com/olekukonko/tablewriter v0.0.4

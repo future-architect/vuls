@@ -42,11 +42,11 @@ func AppendIfMissing(slice []string, s string) []string {
 // URLPathJoin make URL
 func URLPathJoin(baseURL string, paths ...string) (string, error) {
 	baseURL = strings.TrimSuffix(baseURL, "/")
-	trimedPaths := []string{}
+	trimmedPaths := []string{}
 	for _, path := range paths {
-		trimed := strings.Trim(path, " /")
-		if len(trimed) != 0 {
-			trimedPaths = append(trimedPaths, trimed)
+		trimmed := strings.Trim(path, " /")
+		if len(trimmed) != 0 {
+			trimmedPaths = append(trimmedPaths, trimmed)
 		}
 	}
 	var url *url.URL
@@ -54,7 +54,7 @@ func URLPathJoin(baseURL string, paths ...string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	url.Path += "/" + strings.Join(trimedPaths, "/")
+	url.Path += "/" + strings.Join(trimmedPaths, "/")
 	return url.String(), nil
 }
 

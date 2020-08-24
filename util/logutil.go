@@ -15,7 +15,7 @@ import (
 	formatter "github.com/kotakanbe/logrus-prefixed-formatter"
 )
 
-// Log for localhsot
+// Log for localhost
 var Log *logrus.Entry
 
 func init() {
