@@ -21,8 +21,23 @@ type packCves struct {
 	cves      []models.CveContent
 }
 
+func (deb Debian) Supported(major string) bool {
+	_, ok := map[string]string{
+		"8":  "jessie",
+		"9":  "stretch",
+		"10": "buster",
+	}[major]
+	return ok
+}
+
 // DetectUnfixed fills cve information that has in Gost
 func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCVEs int, err error) {
+	if !deb.Supported(major(r.Release)) {
+		// only logging
+		util.Log.Warnf("Debian %s is not supported yet", r.Release)
+		return 0, nil
+	}
+
 	linuxImage := "linux-image-" + r.RunningKernel.Release
 	// Add linux and set the version of running kernel to search OVAL.
 	if r.Container.ContainerID == "" {
