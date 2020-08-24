@@ -230,8 +230,8 @@ func (s SrcPackages) FindByBinName(name string) (*SrcPackage, bool) {
 }
 
 // raspiPackNamePattern is a regular expression pattern to detect the Raspberry Pi specific package from the package name.
-// e.g. libraspberrypi-dev, rpi-eeprom, pi-bluetooth
-var raspiPackNamePattern = regexp.MustCompile(`(.*raspberry.*|^rpi.*|^pi-.*)`)
+// e.g. libraspberrypi-dev, rpi-eeprom, python3-rpi.gpio, pi-bluetooth
+var raspiPackNamePattern = regexp.MustCompile(`(.*raspberry.*|^rpi.*|.*-rpi.*|^pi-.*)`)
 
 // raspiPackNamePattern is a regular expression pattern to detect the Raspberry Pi specific package from the version.
 // e.g. ffmpeg 7:4.1.4-1+rpt7~deb10u1, vlc 3.0.10-0+deb10u1+rpt2
