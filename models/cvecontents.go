@@ -256,7 +256,7 @@ const (
 	// RedHatAPI is RedHat
 	RedHatAPI CveContentType = "redhat_api"
 
-	// DebianSecurityTracker is Debian Secury tracker
+	// DebianSecurityTracker is Debian Security tracker
 	DebianSecurityTracker CveContentType = "debian_security_tracker"
 
 	// Debian is Debian

@@ -326,7 +326,7 @@ func (o *debian) rebootRequired() (bool, error) {
 	case 1:
 		return false, nil
 	default:
-		return false, xerrors.Errorf("Failed to check reboot reauired: %s", r)
+		return false, xerrors.Errorf("Failed to check reboot required: %s", r)
 	}
 }
 
@@ -505,7 +505,7 @@ func (o *debian) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
 
 	if current.Distro.Family != cached.Distro.Family ||
 		current.Distro.Release != cached.Distro.Release {
-		o.log.Debugf("Need to refesh meta: %s", current.Name)
+		o.log.Debugf("Need to refresh meta: %s", current.Name)
 		err = cache.DB.EnsureBuckets(current)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to ensure buckets. err: %s", err)

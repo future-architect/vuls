@@ -116,7 +116,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			case "offline":
 				s.Mode.Set(Offline)
 			default:
-				return xerrors.Errorf("scanMode: %s of %s is invalie. Specify -fast, -fast-root, -deep or offline", m, serverName)
+				return xerrors.Errorf("scanMode: %s of %s is invalid. Specify -fast, -fast-root, -deep or offline", m, serverName)
 			}
 		}
 		if err := s.Mode.validate(); err != nil {
@@ -208,14 +208,14 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		for _, reg := range s.IgnorePkgsRegexp {
 			_, err := regexp.Compile(reg)
 			if err != nil {
-				return xerrors.Errorf("Faild to parse %s in %s. err: %w", reg, serverName, err)
+				return xerrors.Errorf("Failed to parse %s in %s. err: %w", reg, serverName, err)
 			}
 		}
 		for contName, cont := range s.Containers {
 			for _, reg := range cont.IgnorePkgsRegexp {
 				_, err := regexp.Compile(reg)
 				if err != nil {
-					return xerrors.Errorf("Faild to parse %s in %s@%s. err: %w",
+					return xerrors.Errorf("Failed to parse %s in %s@%s. err: %w",
 						reg, contName, serverName, err)
 				}
 			}
@@ -291,5 +291,5 @@ func toCpeURI(cpename string) (string, error) {
 		}
 		return naming.BindToURI(wfn), nil
 	}
-	return "", xerrors.Errorf("Unknow CPE format: %s", cpename)
+	return "", xerrors.Errorf("Unknown CPE format: %s", cpename)
 }

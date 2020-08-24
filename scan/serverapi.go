@@ -599,7 +599,7 @@ func setupChangelogCache() error {
 			needToSetupCache = true
 			break
 		case config.Ubuntu, config.Debian:
-			//TODO changelopg cache for RedHat, Oracle, Amazon, CentOS is not implemented yet.
+			//TODO changelog cache for RedHat, Oracle, Amazon, CentOS is not implemented yet.
 			if s.getServerInfo().Mode.IsDeep() {
 				needToSetupCache = true
 			}
