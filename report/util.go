@@ -97,7 +97,7 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 }
 
 func formatList(r models.ScanResult) string {
-	header := r.FormatTextReportHeadedr()
+	header := r.FormatTextReportHeader()
 	if len(r.Errors) != 0 {
 		return fmt.Sprintf(
 			"%s\nError: Use configtest subcommand or scan with --debug to view the details\n%s\n\n",
@@ -171,7 +171,7 @@ No CVE-IDs are found in updatable packages.
 }
 
 func formatFullPlainText(r models.ScanResult) (lines string) {
-	header := r.FormatTextReportHeadedr()
+	header := r.FormatTextReportHeader()
 	if len(r.Errors) != 0 {
 		return fmt.Sprintf(
 			"%s\nError: Use configtest subcommand or scan with --debug to view the details\n%s\n\n",
@@ -499,9 +499,9 @@ func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
 				updated[v.CveID] = v
 				util.Log.Debugf("updated: %s", v.CveID)
 
-				// TODO commented out beause  a bug of diff logic when multiple oval defs found for a certain CVE-ID and same updated_at
+				// TODO commented out because  a bug of diff logic when multiple oval defs found for a certain CVE-ID and same updated_at
 				// if these OVAL defs have different affected packages, this logic detects as updated.
-				// This logic will be uncommented after integration with ghost https://github.com/knqyf263/gost
+				// This logic will be uncomented after integration with ghost https://github.com/knqyf263/gost
 				// } else if isCveFixed(v, previous) {
 				// updated[v.CveID] = v
 				// util.Log.Debugf("fixed: %s", v.CveID)
