@@ -746,3 +746,121 @@ libuuid1:amd64: /lib/x86_64-linux-gnu/libuuid.so.1.3.0`,
 		})
 	}
 }
+
+func TestParseChangelog(t *testing.T) {
+	type args struct {
+		changelog string
+		name      string
+		ver       string
+	}
+	type expect struct {
+		cveIDs []DetectedCveID
+		pack   models.Package
+	}
+	tests := []struct {
+		packName string
+		args     args
+		expect   expect
+	}{
+		{
+			packName: "vlc",
+			args: args{
+				changelog: `vlc (3.0.11-0+deb10u1+rpt2) buster; urgency=medium
+
+  * Add MMAL patch 19
+
+ -- Serge Schneider <serge@raspberrypi.com>  Wed, 29 Jul 2020 14:28:28 +0100
+
+vlc (3.0.11-0+deb10u1+rpt1) buster; urgency=high
+
+  * Add MMAL patch 18
+  * Add libxrandr-dev dependency
+  * Add libdrm-dev dependency
+  * Disable vdpau, libva, aom
+  * Enable dav1d
+
+ -- Serge Schneider <serge@raspberrypi.com>  Wed, 17 Jun 2020 10:30:58 +0100
+
+vlc (3.0.11-0+deb10u1) buster-security; urgency=high
+
+  * New upstream release
+    - Fix heap-based buffer overflow in hxxx_nall (CVE-2020-13428)
+
+ -- Sebastian Ramacher <sramacher@debian.org>  Mon, 15 Jun 2020 23:08:37 +0200
+
+vlc (3.0.10-0+deb10u1) buster-security; urgency=medium`,
+				name: "vlc",
+				ver:  "3.0.10-0+deb10u1+rpt2",
+			},
+			expect: expect{
+				cveIDs: []DetectedCveID{{"CVE-2020-13428", models.ChangelogExactMatch}},
+				pack: models.Package{Changelog: models.Changelog{
+					Contents: `vlc (3.0.11-0+deb10u1+rpt2) buster; urgency=medium
+
+  * Add MMAL patch 19
+
+ -- Serge Schneider <serge@raspberrypi.com>  Wed, 29 Jul 2020 14:28:28 +0100
+
+vlc (3.0.11-0+deb10u1+rpt1) buster; urgency=high
+
+  * Add MMAL patch 18
+  * Add libxrandr-dev dependency
+  * Add libdrm-dev dependency
+  * Disable vdpau, libva, aom
+  * Enable dav1d
+
+ -- Serge Schneider <serge@raspberrypi.com>  Wed, 17 Jun 2020 10:30:58 +0100
+
+vlc (3.0.11-0+deb10u1) buster-security; urgency=high
+
+  * New upstream release
+    - Fix heap-based buffer overflow in hxxx_nall (CVE-2020-13428)
+
+ -- Sebastian Ramacher <sramacher@debian.org>  Mon, 15 Jun 2020 23:08:37 +0200
+`,
+					Method: models.ChangelogExactMatchStr,
+				}},
+			},
+		},
+		{
+			packName: "realvnc-vnc-server",
+			args: args{
+				changelog: `realvnc-vnc (6.7.2.42622) stable; urgency=low
+
+  * Debian package for VNC Server
+
+ -- RealVNC <noreply@realvnc.com>  Wed, 13 May 2020 19:51:40 +0100
+
+`,
+				name: "realvnc-vnc-server",
+				ver:  "6.7.1.42348",
+			},
+			expect: expect{
+				cveIDs: []DetectedCveID{},
+				pack: models.Package{Changelog: models.Changelog{
+					Contents: `realvnc-vnc (6.7.2.42622) stable; urgency=low
+
+  * Debian package for VNC Server
+
+ -- RealVNC <noreply@realvnc.com>  Wed, 13 May 2020 19:51:40 +0100
+`,
+					Method: models.ChangelogLenientMatchStr,
+				}},
+			},
+		},
+	}
+
+	o := newDebian(config.ServerInfo{})
+	o.Distro = config.Distro{Family: config.Raspbian}
+	for _, tt := range tests {
+		t.Run(tt.packName, func(t *testing.T) {
+			cveIDs, pack, _ := o.parseChangelog(tt.args.changelog, tt.args.name, tt.args.ver, models.ChangelogExactMatch)
+			if !reflect.DeepEqual(cveIDs, tt.expect.cveIDs) {
+				t.Errorf("[%s]->cveIDs: expected: %s, actual: %s", tt.packName, tt.expect.cveIDs, cveIDs)
+			}
+			if !reflect.DeepEqual(pack.Changelog.Contents, tt.expect.pack.Changelog.Contents) {
+				t.Errorf("[%s]->changelog.Contents: expected: %s, actual: %s", tt.packName, tt.expect.pack.Changelog.Contents, pack.Changelog.Contents)
+			}
+		})
+	}
+}

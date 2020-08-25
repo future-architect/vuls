@@ -472,3 +472,30 @@ type Platform struct {
 	Name       string `json:"name"` // aws or azure or gcp or other...
 	InstanceID string `json:"instanceID"`
 }
+
+// RemoveRaspbianPackFromResult is for Raspberry Pi and removes the Raspberry Pi dedicated package from ScanResult.
+func (r ScanResult) RemoveRaspbianPackFromResult() ScanResult {
+	if r.Family != config.Raspbian {
+		return r
+	}
+
+	result := r
+	packs := make(Packages)
+	for _, pack := range r.Packages {
+		if !IsRaspbianPackage(pack.Name, pack.Version) {
+			packs[pack.Name] = pack
+		}
+	}
+	srcPacks := make(SrcPackages)
+	for _, pack := range r.SrcPackages {
+		if !IsRaspbianPackage(pack.Name, pack.Version) {
+			srcPacks[pack.Name] = pack
+
+		}
+	}
+
+	result.Packages = packs
+	result.SrcPackages = srcPacks
+
+	return result
+}

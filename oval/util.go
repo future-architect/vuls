@@ -327,7 +327,8 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 				config.Amazon,
 				config.SUSEEnterpriseServer,
 				config.Debian,
-				config.Ubuntu:
+				config.Ubuntu,
+				config.Raspbian:
 				// Use fixed state in OVAL for these distros.
 				return true, false, ovalPack.Version
 			}
@@ -362,7 +363,8 @@ var esVerPattern = regexp.MustCompile(`\.el(\d+)(?:_\d+)?`)
 func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error) {
 	switch family {
 	case config.Debian,
-		config.Ubuntu:
+		config.Ubuntu,
+		config.Raspbian:
 		vera, err := debver.NewVersion(newVer)
 		if err != nil {
 			return false, err

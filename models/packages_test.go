@@ -297,3 +297,87 @@ func TestPackage_FormatVersionFromTo(t *testing.T) {
 		})
 	}
 }
+
+func Test_IsRaspbianPackage(t *testing.T) {
+	type args struct {
+		name string
+		ver  string
+	}
+	tests := []struct {
+		name   string
+		in     []args
+		expect []bool
+	}{
+		{
+			name: "nameRegExp",
+			in: []args{
+				{
+					name: "libraspberrypi-dev",
+					ver:  "1.20200811-1",
+				},
+				{
+					name: "rpi-eeprom",
+					ver:  "7.10-1",
+				},
+				{
+					name: "python3-rpi.gpio",
+					ver:  "0.7.0-0.1~bpo10+1",
+				},
+				{
+					name: "arping",
+					ver:  "2.19-6",
+				},
+				{
+					name: "pi-bluetooth",
+					ver:  "0.1.14",
+				},
+			},
+			expect: []bool{true, true, true, false, true, false},
+		},
+		{
+			name: "verRegExp",
+			in: []args{
+				{
+					name: "ffmpeg",
+					ver:  "7:4.1.6-1~deb10u1+rpt1",
+				},
+				{
+					name: "gcc",
+					ver:  "4:8.3.0-1+rpi2",
+				},
+			},
+			expect: []bool{true, true},
+		},
+		{
+			name: "nameList",
+			in: []args{
+				{
+					name: "piclone",
+					ver:  "0.16",
+				},
+			},
+			expect: []bool{true},
+		},
+		{
+			name: "debianPackage",
+			in: []args{
+				{
+					name: "apt",
+					ver:  "1.8.2.1",
+				},
+			},
+			expect: []bool{false},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for i, p := range tt.in {
+				ret := IsRaspbianPackage(p.name, p.ver)
+				if !reflect.DeepEqual(ret, tt.expect[i]) {
+					t.Errorf("[%s->%s] expected: %t, actual: %t, in: %#v", tt.name, tt.in[i].name, tt.expect[i], ret, tt.in[i])
+				}
+			}
+		})
+	}
+}

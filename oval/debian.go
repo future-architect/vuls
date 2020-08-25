@@ -38,7 +38,13 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 				defPacks.def.Debian.CveID)
 			cveContents = models.CveContents{}
 		}
-		vinfo.Confidences.AppendIfMissing(models.OvalMatch)
+		if r.Family != config.Raspbian {
+			vinfo.Confidences.AppendIfMissing(models.OvalMatch)
+		} else {
+			if len(vinfo.Confidences) == 0 {
+				vinfo.Confidences.AppendIfMissing(models.OvalMatch)
+			}
+		}
 		cveContents[ctype] = ovalContent
 		vinfo.CveContents = cveContents
 	}
@@ -132,12 +138,28 @@ func (o Debian) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 
 	var relatedDefs ovalResult
 	if config.Conf.OvalDict.IsFetchViaHTTP() {
-		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
-			return 0, err
+		if r.Family != config.Raspbian {
+			if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
+				return 0, err
+			}
+		} else {
+			// OVAL does not support Package for Raspbian, so skip it.
+			result := r.RemoveRaspbianPackFromResult()
+			if relatedDefs, err = getDefsByPackNameViaHTTP(&result); err != nil {
+				return 0, err
+			}
 		}
 	} else {
-		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
-			return 0, err
+		if r.Family != config.Raspbian {
+			if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
+				return 0, err
+			}
+		} else {
+			// OVAL does not support Package for Raspbian, so skip it.
+			result := r.RemoveRaspbianPackFromResult()
+			if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, &result); err != nil {
+				return 0, err
+			}
 		}
 	}
 
