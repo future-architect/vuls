@@ -42,7 +42,7 @@ type LibraryScanner struct {
 func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 	scanner, err := library.DriverFactory{}.NewDriver(filepath.Base(string(s.Path)))
 	if err != nil {
-		return nil, xerrors.Errorf("Faild to new a library driver: %w", err)
+		return nil, xerrors.Errorf("Failed to new a library driver: %w", err)
 	}
 	var vulnerabilities = []VulnInfo{}
 	for _, pkg := range s.Libs {
@@ -71,7 +71,7 @@ func (s LibraryScanner) convertFanalToVuln(tvulns []types.DetectedVulnerability)
 	for _, tvuln := range tvulns {
 		vinfo, err := s.getVulnDetail(tvuln)
 		if err != nil {
-			util.Log.Debugf("failed to getVulnDetail. err: %s, tvun: %#v", err, tvuln)
+			util.Log.Debugf("failed to getVulnDetail. err: %s, tvuln: %#v", err, tvuln)
 			continue
 		}
 		vulns = append(vulns, vinfo)

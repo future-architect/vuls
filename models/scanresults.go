@@ -216,7 +216,7 @@ func (r ScanResult) FilterIgnorePkgs() ScanResult {
 	for _, pkgRegexp := range ignorePkgsRegexps {
 		re, err := regexp.Compile(pkgRegexp)
 		if err != nil {
-			util.Log.Errorf("Faild to parse %s. err: %+v", pkgRegexp, err)
+			util.Log.Errorf("Failed to parse %s. err: %+v", pkgRegexp, err)
 			continue
 		} else {
 			regexps = append(regexps, re)
@@ -339,8 +339,8 @@ func (r ScanResult) FormatServerName() (name string) {
 	return
 }
 
-// FormatTextReportHeadedr returns header of text report
-func (r ScanResult) FormatTextReportHeadedr() string {
+// FormatTextReportHeader returns header of text report
+func (r ScanResult) FormatTextReportHeader() string {
 	var buf bytes.Buffer
 	for i := 0; i < len(r.ServerInfo()); i++ {
 		buf.WriteString("=")
@@ -400,7 +400,7 @@ func (r ScanResult) FormatMetasploitCveSummary() string {
 	return fmt.Sprintf("%d modules", nMetasploitCve)
 }
 
-// FormatAlertSummary returns a summary of XCERT alerts
+// FormatAlertSummary returns a summary of CERT alerts
 func (r ScanResult) FormatAlertSummary() string {
 	jaCnt := 0
 	enCnt := 0
@@ -471,4 +471,31 @@ type Container struct {
 type Platform struct {
 	Name       string `json:"name"` // aws or azure or gcp or other...
 	InstanceID string `json:"instanceID"`
+}
+
+// RemoveRaspbianPackFromResult is for Raspberry Pi and removes the Raspberry Pi dedicated package from ScanResult.
+func (r ScanResult) RemoveRaspbianPackFromResult() ScanResult {
+	if r.Family != config.Raspbian {
+		return r
+	}
+
+	result := r
+	packs := make(Packages)
+	for _, pack := range r.Packages {
+		if !IsRaspbianPackage(pack.Name, pack.Version) {
+			packs[pack.Name] = pack
+		}
+	}
+	srcPacks := make(SrcPackages)
+	for _, pack := range r.SrcPackages {
+		if !IsRaspbianPackage(pack.Name, pack.Version) {
+			srcPacks[pack.Name] = pack
+
+		}
+	}
+
+	result.Packages = packs
+	result.SrcPackages = srcPacks
+
+	return result
 }

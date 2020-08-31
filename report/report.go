@@ -49,7 +49,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 	wpVulnCaches := map[string]string{}
 	for _, r := range rs {
 		if c.Conf.RefreshCve || needToRefreshCve(r) {
-			if ovalSupported(&r) {
+			if !useScannedCves(&r) {
 				r.ScannedCves = models.VulnInfos{}
 			}
 			cpeURIs := []string{}
@@ -285,7 +285,7 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 	var ovalFamily string
 
 	switch r.Family {
-	case c.Debian:
+	case c.Debian, c.Raspbian:
 		ovalClient = oval.NewDebian()
 		ovalFamily = c.Debian
 	case c.Ubuntu:
@@ -311,7 +311,7 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 	case c.Amazon:
 		ovalClient = oval.NewAmazon()
 		ovalFamily = c.Amazon
-	case c.Raspbian, c.FreeBSD, c.Windows:
+	case c.FreeBSD, c.Windows:
 		return 0, nil
 	case c.ServerTypePseudo:
 		return 0, nil

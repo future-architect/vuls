@@ -522,11 +522,11 @@ func (c *HipChatConf) Validate() (errs []error) {
 		return
 	}
 	if len(c.Room) == 0 {
-		errs = append(errs, xerrors.New("hipcaht.room must not be empty"))
+		errs = append(errs, xerrors.New("hipchat.room must not be empty"))
 	}
 
 	if len(c.AuthToken) == 0 {
-		errs = append(errs, xerrors.New("hipcaht.AuthToken must not be empty"))
+		errs = append(errs, xerrors.New("hipchat.AuthToken must not be empty"))
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -548,11 +548,11 @@ func (c *ChatWorkConf) Validate() (errs []error) {
 		return
 	}
 	if len(c.Room) == 0 {
-		errs = append(errs, xerrors.New("chatworkcaht.room must not be empty"))
+		errs = append(errs, xerrors.New("chatWorkConf.room must not be empty"))
 	}
 
 	if len(c.APIToken) == 0 {
-		errs = append(errs, xerrors.New("chatworkcaht.ApiToken must not be empty"))
+		errs = append(errs, xerrors.New("chatWorkConf.ApiToken must not be empty"))
 	}
 
 	_, err := valid.ValidateStruct(c)
@@ -1231,7 +1231,7 @@ const (
 )
 
 // GetServerName returns ServerName if this serverInfo is about host.
-// If this serverInfo is abount a container, returns containerID@ServerName
+// If this serverInfo is about a container, returns containerID@ServerName
 func (s ServerInfo) GetServerName() string {
 	if len(s.Container.ContainerID) == 0 {
 		return s.ServerName
@@ -1250,21 +1250,18 @@ func (l Distro) String() string {
 }
 
 // MajorVersion returns Major version
-func (l Distro) MajorVersion() (ver int, err error) {
+func (l Distro) MajorVersion() (int, error) {
 	if l.Family == Amazon {
 		ss := strings.Fields(l.Release)
 		if len(ss) == 1 {
 			return 1, nil
 		}
-		ver, err = strconv.Atoi(ss[0])
-		return
+		return strconv.Atoi(ss[0])
 	}
 	if 0 < len(l.Release) {
-		ver, err = strconv.Atoi(strings.Split(l.Release, ".")[0])
-	} else {
-		err = xerrors.New("Release is empty")
+		return strconv.Atoi(strings.Split(l.Release, ".")[0])
 	}
-	return
+	return 0, xerrors.New("Release is empty")
 }
 
 // IsContainer returns whether this ServerInfo is about container

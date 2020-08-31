@@ -21,8 +21,23 @@ type packCves struct {
 	cves      []models.CveContent
 }
 
+func (deb Debian) Supported(major string) bool {
+	_, ok := map[string]string{
+		"8":  "jessie",
+		"9":  "stretch",
+		"10": "buster",
+	}[major]
+	return ok
+}
+
 // DetectUnfixed fills cve information that has in Gost
 func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCVEs int, err error) {
+	if !deb.Supported(major(r.Release)) {
+		// only logging
+		util.Log.Warnf("Debian %s is not supported yet", r.Release)
+		return 0, nil
+	}
+
 	linuxImage := "linux-image-" + r.RunningKernel.Release
 	// Add linux and set the version of running kernel to search OVAL.
 	if r.Container.ContainerID == "" {
@@ -37,9 +52,17 @@ func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCV
 		}
 	}
 
+	// Debian Security Tracker does not support Package for Raspbian, so skip it.
+	var scanResult models.ScanResult
+	if r.Family != config.Raspbian {
+		scanResult = *r
+	} else {
+		scanResult = r.RemoveRaspbianPackFromResult()
+	}
+
 	packCvesList := []packCves{}
 	if config.Conf.Gost.IsFetchViaHTTP() {
-		url, _ := util.URLPathJoin(config.Conf.Gost.URL, "debian", major(r.Release), "pkgs")
+		url, _ := util.URLPathJoin(config.Conf.Gost.URL, "debian", major(scanResult.Release), "pkgs")
 		responses, err := getAllUnfixedCvesViaHTTP(r, url)
 		if err != nil {
 			return 0, err
@@ -64,8 +87,8 @@ func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCV
 		if driver == nil {
 			return 0, nil
 		}
-		for _, pack := range r.Packages {
-			cveDebs := driver.GetUnfixedCvesDebian(major(r.Release), pack.Name)
+		for _, pack := range scanResult.Packages {
+			cveDebs := driver.GetUnfixedCvesDebian(major(scanResult.Release), pack.Name)
 			cves := []models.CveContent{}
 			for _, cveDeb := range cveDebs {
 				cves = append(cves, *deb.ConvertToModel(&cveDeb))
@@ -78,8 +101,8 @@ func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCV
 		}
 
 		// SrcPack
-		for _, pack := range r.SrcPackages {
-			cveDebs := driver.GetUnfixedCvesDebian(major(r.Release), pack.Name)
+		for _, pack := range scanResult.SrcPackages {
+			cveDebs := driver.GetUnfixedCvesDebian(major(scanResult.Release), pack.Name)
 			cves := []models.CveContent{}
 			for _, cveDeb := range cveDebs {
 				cves = append(cves, *deb.ConvertToModel(&cveDeb))

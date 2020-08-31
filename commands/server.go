@@ -19,7 +19,6 @@ import (
 	"github.com/future-architect/vuls/server"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
-	cvelog "github.com/kotakanbe/go-cve-dictionary/log"
 )
 
 // ServerCmd is subcommand for server
@@ -142,8 +141,6 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 // Execute execute
 func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
-	cvelog.SetLogger(c.Conf.LogDir, false, c.Conf.Debug, false)
-
 	if p.configPath != "" {
 		if err := c.Load(p.configPath, ""); err != nil {
 			util.Log.Errorf("Error loading %s. err: %+v", p.configPath, err)

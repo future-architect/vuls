@@ -15,7 +15,7 @@ import (
 	formatter "github.com/kotakanbe/logrus-prefixed-formatter"
 )
 
-// Log for localhsot
+// Log for localhost
 var Log *logrus.Entry
 
 func init() {
@@ -32,6 +32,10 @@ func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
 	log.Level = logrus.InfoLevel
 	if config.Conf.Debug {
 		log.Level = logrus.DebugLevel
+	}
+
+	if flag.Lookup("test.v") != nil {
+		return logrus.NewEntry(log)
 	}
 
 	// File output
@@ -52,6 +56,7 @@ func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
 		if file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
 			log.Out = file
 		} else {
+			log.Out = os.Stderr
 			log.Errorf("Failed to create log file. path: %s, err: %s", logFile, err)
 		}
 	} else {
@@ -65,14 +70,18 @@ func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
 
 	if _, err := os.Stat(logDir); err == nil {
 		path := filepath.Join(logDir, fmt.Sprintf("%s.log", whereami))
-		log.Hooks.Add(lfshook.NewHook(lfshook.PathMap{
-			logrus.DebugLevel: path,
-			logrus.InfoLevel:  path,
-			logrus.WarnLevel:  path,
-			logrus.ErrorLevel: path,
-			logrus.FatalLevel: path,
-			logrus.PanicLevel: path,
-		}, nil))
+		if _, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
+			log.Hooks.Add(lfshook.NewHook(lfshook.PathMap{
+				logrus.DebugLevel: path,
+				logrus.InfoLevel:  path,
+				logrus.WarnLevel:  path,
+				logrus.ErrorLevel: path,
+				logrus.FatalLevel: path,
+				logrus.PanicLevel: path,
+			}, nil))
+		} else {
+			log.Errorf("Failed to create log file. path: %s, err: %s", path, err)
+		}
 	}
 
 	fields := logrus.Fields{"prefix": whereami}

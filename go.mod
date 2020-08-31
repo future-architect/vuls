@@ -15,7 +15,7 @@ require (
 	github.com/aquasecurity/trivy v0.9.1
 	github.com/aquasecurity/trivy-db v0.0.0-20200616161554-cd5b3da29bc8
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
-	github.com/aws/aws-sdk-go v1.32.6
+	github.com/aws/aws-sdk-go v1.33.21
 	github.com/boltdb/bolt v1.3.1
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/d4l3k/messagediff v1.2.2-0.20190829033028-7e0a312ae40b
@@ -31,14 +31,14 @@ require (
 	github.com/knqyf263/go-deb-version v0.0.0-20190517075300-09fca494f03d
 	github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936
 	github.com/knqyf263/go-version v1.1.1
-	github.com/knqyf263/gost v0.1.3
+	github.com/knqyf263/gost v0.1.4
 	github.com/kotakanbe/go-cve-dictionary v0.5.0
 	github.com/kotakanbe/go-pingscanner v0.1.0
-	github.com/kotakanbe/goval-dictionary v0.2.8
+	github.com/kotakanbe/goval-dictionary v0.2.10
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/mozqnet/go-exploitdb v0.0.0-20200612044106-ea30f49f0902
+	github.com/mozqnet/go-exploitdb v0.1.0
 	github.com/nlopes/slack v0.6.0
 	github.com/nsf/termbox-go v0.0.0-20200418040025-38ba6e5628f1 // indirect
 	github.com/olekukonko/tablewriter v0.0.4
@@ -47,7 +47,7 @@ require (
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/afero v1.3.0
 	github.com/spf13/cobra v1.0.0
-	github.com/takuzoo3868/go-msfdb v0.1.0
+	github.com/takuzoo3868/go-msfdb v0.1.1
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d

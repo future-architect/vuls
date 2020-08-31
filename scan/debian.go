@@ -2,6 +2,8 @@ package scan
 
 import (
 	"bufio"
+	"crypto/rand"
+	"encoding/binary"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -305,7 +307,18 @@ func (o *debian) scanPackages() error {
 		return nil
 	}
 
-	if o.getServerInfo().Mode.IsDeep() || o.Distro.Family == config.Raspbian {
+	if !o.getServerInfo().Mode.IsDeep() && o.Distro.Family == config.Raspbian {
+		raspbianPacks := o.grepRaspbianPackages(updatable)
+		unsecures, err := o.scanUnsecurePackages(raspbianPacks)
+		if err != nil {
+			o.log.Errorf("Failed to scan vulnerable packages: %s", err)
+			return err
+		}
+		o.VulnInfos = unsecures
+		return nil
+	}
+
+	if o.getServerInfo().Mode.IsDeep() {
 		unsecures, err := o.scanUnsecurePackages(updatable)
 		if err != nil {
 			o.log.Errorf("Failed to scan vulnerable packages: %s", err)
@@ -314,6 +327,7 @@ func (o *debian) scanPackages() error {
 		o.VulnInfos = unsecures
 		return nil
 	}
+
 	return nil
 }
 
@@ -326,7 +340,7 @@ func (o *debian) rebootRequired() (bool, error) {
 	case 1:
 		return false, nil
 	default:
-		return false, xerrors.Errorf("Failed to check reboot reauired: %s", r)
+		return false, xerrors.Errorf("Failed to check reboot required: %s", r)
 	}
 }
 
@@ -463,6 +477,17 @@ func (o *debian) aptGetUpdate() error {
 	return nil
 }
 
+func (o *debian) grepRaspbianPackages(updatables models.Packages) models.Packages {
+	raspbianPacks := models.Packages{}
+
+	for _, pack := range updatables {
+		if models.IsRaspbianPackage(pack.Name, pack.Version) {
+			raspbianPacks[pack.Name] = pack
+		}
+	}
+	return raspbianPacks
+}
+
 func (o *debian) scanUnsecurePackages(updatable models.Packages) (models.VulnInfos, error) {
 	// Setup changelog cache
 	current := cache.Meta{
@@ -477,10 +502,27 @@ func (o *debian) scanUnsecurePackages(updatable models.Packages) (models.VulnInf
 		return nil, err
 	}
 
+	// Make a directory for saving changelog to get changelog in Raspbian
+	tmpClogPath := ""
+	if o.Distro.Family == config.Raspbian {
+		tmpClogPath, err = o.makeTempChangelogDir()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Collect CVE information of upgradable packages
-	vulnInfos, err := o.scanChangelogs(updatable, meta)
+	vulnInfos, err := o.scanChangelogs(updatable, meta, tmpClogPath)
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to scan unsecure packages. err: %s", err)
+	}
+
+	// Delete a directory for saving changelog to get changelog in Raspbian
+	if o.Distro.Family == config.Raspbian {
+		err := o.deleteTempChangelogDir(tmpClogPath)
+		if err != nil {
+			return nil, xerrors.Errorf("Failed to delete directory to save changelog for Raspbian. err: %s", err)
+		}
 	}
 
 	return vulnInfos, nil
@@ -505,7 +547,7 @@ func (o *debian) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
 
 	if current.Distro.Family != cached.Distro.Family ||
 		current.Distro.Release != cached.Distro.Release {
-		o.log.Debugf("Need to refesh meta: %s", current.Name)
+		o.log.Debugf("Need to refresh meta: %s", current.Name)
 		err = cache.DB.EnsureBuckets(current)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to ensure buckets. err: %s", err)
@@ -601,6 +643,39 @@ func (o *debian) parseAptGetUpgrade(stdout string) (updatableNames []string, err
 	return
 }
 
+func (o *debian) makeTempChangelogDir() (string, error) {
+	suffix, err := generateSuffix()
+	if err != nil {
+		return "", err
+	}
+	path := "/tmp/vuls-" + suffix
+	cmd := fmt.Sprintf(`mkdir -p %s`, path)
+	cmd = util.PrependProxyEnv(cmd)
+	r := o.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		return "", xerrors.Errorf("Failed to create directory to save changelog for Raspbian. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
+	}
+	return path, nil
+}
+
+func generateSuffix() (string, error) {
+	var n uint64
+	if err := binary.Read(rand.Reader, binary.LittleEndian, &n); err != nil {
+		return "", xerrors.Errorf("Failed to generate Suffix. err: %s", err)
+	}
+	return strconv.FormatUint(n, 36), nil
+}
+
+func (o *debian) deleteTempChangelogDir(tmpClogPath string) error {
+	cmd := fmt.Sprintf(`rm -rf %s`, tmpClogPath)
+	cmd = util.PrependProxyEnv(cmd)
+	r := o.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		return xerrors.Errorf("Failed to delete directory to save changelog for Raspbian. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
+	}
+	return nil
+}
+
 // DetectedCveID has CveID, Confidence and DetectionMethod fields
 // LenientMatching will be true if this vulnerability is not detected by accurate version matching.
 // see https://github.com/future-architect/vuls/pull/328
@@ -609,7 +684,7 @@ type DetectedCveID struct {
 	Confidence models.Confidence
 }
 
-func (o *debian) scanChangelogs(updatablePacks models.Packages, meta *cache.Meta) (models.VulnInfos, error) {
+func (o *debian) scanChangelogs(updatablePacks models.Packages, meta *cache.Meta, tmpClogPath string) (models.VulnInfos, error) {
 	type response struct {
 		pack           *models.Package
 		DetectedCveIDs []DetectedCveID
@@ -645,7 +720,7 @@ func (o *debian) scanChangelogs(updatablePacks models.Packages, meta *cache.Meta
 					// if the changelog is not in cache or failed to get from local cache,
 					// get the changelog of the package via internet.
 					// After that, store it in the cache.
-					if cveIDs, pack, err := o.fetchParseChangelog(p); err != nil {
+					if cveIDs, pack, err := o.fetchParseChangelog(p, tmpClogPath); err != nil {
 						errChan <- err
 					} else {
 						resChan <- response{pack, cveIDs}
@@ -743,13 +818,22 @@ func (o *debian) getChangelogCache(meta *cache.Meta, pack models.Package) string
 	return changelog
 }
 
-func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *models.Package, error) {
+func (o *debian) fetchParseChangelog(pack models.Package, tmpClogPath string) ([]DetectedCveID, *models.Package, error) {
 	cmd := ""
+
 	switch o.Distro.Family {
-	case config.Ubuntu, config.Raspbian:
+	case config.Ubuntu:
 		cmd = fmt.Sprintf(`PAGER=cat apt-get -q=2 changelog %s`, pack.Name)
 	case config.Debian:
 		cmd = fmt.Sprintf(`PAGER=cat aptitude -q=2 changelog %s`, pack.Name)
+	case config.Raspbian:
+		changelogPath, err := o.getChangelogPath(pack.Name, tmpClogPath)
+		if err != nil {
+			// Ignore this Error.
+			o.log.Warnf("Failed to get Path to Changelog for Package: %s, err: %s", pack.Name, err)
+			return nil, nil, nil
+		}
+		cmd = fmt.Sprintf(`gzip -cd %s | cat`, changelogPath)
 	}
 	cmd = util.PrependProxyEnv(cmd)
 
@@ -765,7 +849,7 @@ func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *mod
 
 	if clogFilledPack.Changelog.Method != models.FailedToGetChangelog {
 		err := cache.DB.PutChangelog(
-			o.getServerInfo().GetServerName(), pack.Name, pack.Changelog.Contents)
+			o.getServerInfo().GetServerName(), pack.Name, stdout)
 		if err != nil {
 			return nil, nil, xerrors.New("Failed to put changelog into cache")
 		}
@@ -773,6 +857,64 @@ func (o *debian) fetchParseChangelog(pack models.Package) ([]DetectedCveID, *mod
 
 	// No error will be returned. Only logging.
 	return cveIDs, clogFilledPack, nil
+}
+
+func (o *debian) getChangelogPath(packName, tmpClogPath string) (string, error) {
+	// `apt download` downloads deb package to current directory
+	cmd := fmt.Sprintf(`cd %s && apt download %s`, tmpClogPath, packName)
+	cmd = util.PrependProxyEnv(cmd)
+	r := o.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		return "", xerrors.Errorf("Failed to Fetch deb package. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
+	}
+
+	cmd = fmt.Sprintf(`find %s -name "%s_*.deb"`, tmpClogPath, packName)
+	cmd = util.PrependProxyEnv(cmd)
+	r = o.exec(cmd, noSudo)
+	if !r.isSuccess() || r.Stdout == "" {
+		return "", xerrors.Errorf("Failed to find deb package. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
+	}
+
+	// e.g. <tmpPath>/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf.deb\n => <tmpPath>/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf
+	packChangelogDir := strings.Split(r.Stdout, ".deb")[0]
+	cmd = fmt.Sprintf(`dpkg-deb -x %s.deb %s`, packChangelogDir, packChangelogDir)
+	cmd = util.PrependProxyEnv(cmd)
+	r = o.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		return "", xerrors.Errorf("Failed to dpkg-deb. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
+	}
+
+	// recurse if doc/packName is symbolic link
+	changelogDocDir := fmt.Sprintf("%s/usr/share/doc/%s", packChangelogDir, packName)
+	cmd = fmt.Sprintf(`test -L %s && readlink --no-newline %s`, changelogDocDir, changelogDocDir)
+	cmd = util.PrependProxyEnv(cmd)
+	r = o.exec(cmd, noSudo)
+	if r.isSuccess() {
+		return o.getChangelogPath(r.Stdout, tmpClogPath)
+	}
+
+	var results = make(map[string]execResult, 2)
+	packChangelogPath := fmt.Sprintf("%s/changelog.Debian.gz", changelogDocDir)
+	cmd = fmt.Sprintf(`test -e %s`, packChangelogPath)
+	cmd = util.PrependProxyEnv(cmd)
+	r = o.exec(cmd, noSudo)
+	if r.isSuccess() {
+		return packChangelogPath, nil
+	}
+	results["changelog.Debian.gz"] = r
+
+	packChangelogPath = fmt.Sprintf("%s/changelog.gz", changelogDocDir)
+	cmd = fmt.Sprintf(`test -e %s`, packChangelogPath)
+	cmd = util.PrependProxyEnv(cmd)
+	r = o.exec(cmd, noSudo)
+	if r.isSuccess() {
+		return packChangelogPath, nil
+	}
+	results["changelog.gz"] = r
+
+	return "", xerrors.Errorf(
+		"Failed to get changelog.\nresult(changelog.Debian.gz):%v\nresult(changelog.Debian.gz):%v",
+		results["changelog.Debian.gz"], results["changelog.gz"])
 }
 
 func (o *debian) getCveIDsFromChangelog(
@@ -874,6 +1016,21 @@ func (o *debian) parseChangelog(changelog, name, ver string, confidence models.C
 	}
 
 	if !found {
+		if o.Distro.Family == config.Raspbian {
+			pack := o.Packages[name]
+			pack.Changelog = models.Changelog{
+				Contents: strings.Join(buf, "\n"),
+				Method:   models.ChangelogLenientMatchStr,
+			}
+
+			cves := []DetectedCveID{}
+			for _, id := range cveIDs {
+				cves = append(cves, DetectedCveID{id, confidence})
+			}
+
+			return cves, &pack, nil
+		}
+
 		pack := o.Packages[name]
 		pack.Changelog = models.Changelog{
 			Contents: "",

@@ -3,6 +3,7 @@ package models
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"golang.org/x/xerrors"
@@ -226,4 +227,29 @@ func (s SrcPackages) FindByBinName(name string) (*SrcPackage, bool) {
 		}
 	}
 	return nil, false
+}
+
+// raspiPackNamePattern is a regular expression pattern to detect the Raspberry Pi specific package from the package name.
+// e.g. libraspberrypi-dev, rpi-eeprom, python3-rpi.gpio, pi-bluetooth
+var raspiPackNamePattern = regexp.MustCompile(`(.*raspberry.*|^rpi.*|.*-rpi.*|^pi-.*)`)
+
+// raspiPackNamePattern is a regular expression pattern to detect the Raspberry Pi specific package from the version.
+// e.g. ffmpeg 7:4.1.4-1+rpt7~deb10u1, vlc 3.0.10-0+deb10u1+rpt2
+var raspiPackVersionPattern = regexp.MustCompile(`.+\+rp(t|i)\d+`)
+
+// raspiPackNameList is a package name array of Raspberry Pi specific packages that are difficult to detect with regular expressions.
+var raspiPackNameList = []string{"piclone", "pipanel", "pishutdown", "piwiz", "pixflat-icons"}
+
+// IsRaspbianPackage judges whether it is a package related to Raspberry Pi from the package name and version
+func IsRaspbianPackage(name, version string) bool {
+	if raspiPackNamePattern.MatchString(name) || raspiPackVersionPattern.MatchString(version) {
+		return true
+	}
+	for _, n := range raspiPackNameList {
+		if n == name {
+			return true
+		}
+	}
+
+	return false
 }
