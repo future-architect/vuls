@@ -279,13 +279,13 @@ func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, mod
 	// openssl 0 1.0.1e	30.el6.11 x86_64
 	lines := strings.Split(stdout, "\n")
 	for _, line := range lines {
-		if trimed := strings.TrimSpace(line); len(trimed) != 0 {
+		if trimmed := strings.TrimSpace(line); len(trimmed) != 0 {
 			pack, err := o.parseInstalledPackagesLine(line)
 			if err != nil {
 				return nil, nil, err
 			}
 
-			// Kernel package may be isntalled multiple versions.
+			// `Kernel` and `kernel-devel` package may be installed multiple versions.
 			// From the viewpoint of vulnerability detection,
 			// pay attention only to the running kernel
 			isKernel, running := isRunningKernel(pack, o.Distro.Family, o.Kernel)

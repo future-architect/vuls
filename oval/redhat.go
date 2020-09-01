@@ -100,7 +100,7 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 			cveContents := vinfo.CveContents
 			if v, ok := vinfo.CveContents[ctype]; ok {
 				if v.LastModified.After(ovalContent.LastModified) {
-					util.Log.Debugf("%s, OvalID: %d ignroed: ",
+					util.Log.Debugf("%s, OvalID: %d ignored: ",
 						cve.CveID, defPacks.def.ID)
 				} else {
 					util.Log.Debugf("%s OVAL will be overwritten", cve.CveID)
