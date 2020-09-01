@@ -22,7 +22,8 @@ func isRunningKernel(pack models.Package, family string, kernel models.Kernel) (
 		return false, false
 
 	case config.RedHat, config.Oracle, config.CentOS, config.Amazon:
-		if pack.Name == "kernel" {
+		switch pack.Name {
+		case "kernel", "kernel-devel":
 			ver := fmt.Sprintf("%s-%s.%s", pack.Version, pack.Release, pack.Arch)
 			return true, kernel.Release == ver
 		}
