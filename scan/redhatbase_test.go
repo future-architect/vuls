@@ -25,10 +25,10 @@ func TestParseInstalledPackagesLinesRedhat(t *testing.T) {
 	}{
 		{
 			in: `openssl	0	1.0.1e	30.el6.11 x86_64
-                 Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x84_64
-                 kernel 0 2.6.32 696.20.1.el6 x86_64
-                 kernel 0 2.6.32 696.20.3.el6 x86_64
-				 kernel 0 2.6.32 695.20.3.el6 x86_64`,
+Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x84_64
+kernel 0 2.6.32 696.20.1.el6 x86_64
+kernel 0 2.6.32 696.20.3.el6 x86_64
+kernel 0 2.6.32 695.20.3.el6 x86_64`,
 			kernel: models.Kernel{},
 			packages: models.Packages{
 				"openssl": models.Package{
@@ -50,10 +50,46 @@ func TestParseInstalledPackagesLinesRedhat(t *testing.T) {
 		},
 		{
 			in: `openssl	0	1.0.1e	30.el6.11 x86_64
-                 Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x84_64
-                 kernel 0 2.6.32 696.20.1.el6 x86_64
-                 kernel 0 2.6.32 696.20.3.el6 x86_64
-				 kernel 0 2.6.32 695.20.3.el6 x86_64`,
+Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x84_64
+kernel 0 2.6.32 696.20.1.el6 x86_64
+kernel 0 2.6.32 696.20.3.el6 x86_64
+kernel 0 2.6.32 695.20.3.el6 x86_64
+kernel-devel 0 2.6.32 696.20.1.el6 x86_64
+kernel-devel 0 2.6.32 696.20.3.el6 x86_64
+kernel-devel 0 2.6.32 695.20.3.el6 x86_64`,
+			kernel: models.Kernel{Release: "2.6.32-696.20.3.el6.x86_64"},
+			packages: models.Packages{
+				"openssl": models.Package{
+					Name:    "openssl",
+					Version: "1.0.1e",
+					Release: "30.el6.11",
+				},
+				"Percona-Server-shared-56": models.Package{
+					Name:    "Percona-Server-shared-56",
+					Version: "1:5.6.19",
+					Release: "rel67.0.el6",
+				},
+				"kernel": models.Package{
+					Name:    "kernel",
+					Version: "2.6.32",
+					Release: "696.20.3.el6",
+				},
+				"kernel-devel": models.Package{
+					Name:    "kernel-devel",
+					Version: "2.6.32",
+					Release: "696.20.3.el6",
+				},
+			},
+		},
+		{
+			in: `openssl	0	1.0.1e	30.el6.11 x86_64
+Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x84_64
+kernel 0 2.6.32 696.20.1.el6 x86_64
+kernel 0 2.6.32 696.20.3.el6 x86_64
+kernel 0 2.6.32 695.20.3.el6 x86_64
+kernel-devel 0 2.6.32 696.20.1.el6 x86_64
+kernel-devel 0 2.6.32 696.20.3.el6 x86_64
+kernel-devel 0 2.6.32 695.20.3.el6 x86_64`,
 			kernel: models.Kernel{Release: "2.6.32-695.20.3.el6.x86_64"},
 			packages: models.Packages{
 				"openssl": models.Package{
@@ -68,6 +104,11 @@ func TestParseInstalledPackagesLinesRedhat(t *testing.T) {
 				},
 				"kernel": models.Package{
 					Name:    "kernel",
+					Version: "2.6.32",
+					Release: "695.20.3.el6",
+				},
+				"kernel-devel": models.Package{
+					Name:    "kernel-devel",
 					Version: "2.6.32",
 					Release: "695.20.3.el6",
 				},
