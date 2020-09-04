@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"net"
 	"net/mail"
-	"net/smtp"
 	"strings"
 	"time"
 
+	sasl "github.com/emersion/go-sasl"
+	smtp "github.com/emersion/go-smtp"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"golang.org/x/xerrors"
@@ -21,7 +22,6 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 	conf := config.Conf
 	var message string
 	sender := NewEMailSender()
-
 	m := map[string]int{}
 	for _, r := range rs {
 		if conf.FormatOneEMail {
@@ -85,37 +85,50 @@ type EMailSender interface {
 
 type emailSender struct {
 	conf config.SMTPConf
-	send func(string, smtp.Auth, string, []string, []byte) error
 }
 
-func smtps(emailConf config.SMTPConf, message string) (err error) {
-	auth := smtp.PlainAuth("",
-		emailConf.User,
-		emailConf.Password,
-		emailConf.SMTPAddr,
-	)
-
+func (e *emailSender) sendMail(smtpServerAddr, message string) (err error) {
+	var c *smtp.Client
+	var auth sasl.Client
+	emailConf := e.conf
 	//TLS Config
 	tlsConfig := &tls.Config{
 		ServerName: emailConf.SMTPAddr,
 	}
-
-	smtpServer := net.JoinHostPort(emailConf.SMTPAddr, emailConf.SMTPPort)
-	//New TLS connection
-	con, err := tls.Dial("tcp", smtpServer, tlsConfig)
-	if err != nil {
-		return xerrors.Errorf("Failed to create TLS connection: %w", err)
+	switch emailConf.SMTPPort {
+	case "465":
+		//New TLS connection
+		c, err = smtp.DialTLS(smtpServerAddr, tlsConfig)
+		if err != nil {
+			return xerrors.Errorf("Failed to create TLS connection to SMTP server: %w", err)
+		}
+	default:
+		c, err = smtp.Dial(smtpServerAddr)
+		if err != nil {
+			return xerrors.Errorf("Failed to create connection to SMTP server: %w", err)
+		}
 	}
-	defer con.Close()
+	defer c.Close()
 
-	c, err := smtp.NewClient(con, emailConf.SMTPAddr)
-	if err != nil {
-		return xerrors.Errorf("Failed to create new client: %w", err)
+	if err = c.Hello("localhost"); err != nil {
+		return xerrors.Errorf("Failed to send Hello command: %w", err)
 	}
+
+	if ok, _ := c.Extension("STARTTLS"); ok {
+		if err := c.StartTLS(tlsConfig); err != nil {
+			return xerrors.Errorf("Failed to STARTTLS: %w", err)
+		}
+	}
+
+	if ok, param := c.Extension("AUTH"); ok {
+		authList := strings.Split(param, " ")
+		auth = e.newSaslClient(authList)
+	}
+
 	if err = c.Auth(auth); err != nil {
 		return xerrors.Errorf("Failed to authenticate: %w", err)
 	}
-	if err = c.Mail(emailConf.From); err != nil {
+	if err = c.Mail(emailConf.From, nil); err != nil {
 		return xerrors.Errorf("Failed to send Mail command: %w", err)
 	}
 	for _, to := range emailConf.To {
@@ -169,38 +182,13 @@ func (e *emailSender) Send(subject, body string) (err error) {
 	smtpServer := net.JoinHostPort(emailConf.SMTPAddr, emailConf.SMTPPort)
 
 	if emailConf.User != "" && emailConf.Password != "" {
-		switch emailConf.SMTPPort {
-		case "465":
-			err := smtps(emailConf, message)
-			if err != nil {
-				return xerrors.Errorf("Failed to send emails: %w", err)
-			}
-		default:
-			err = e.send(
-				smtpServer,
-				smtp.PlainAuth(
-					"",
-					emailConf.User,
-					emailConf.Password,
-					emailConf.SMTPAddr,
-				),
-				emailConf.From,
-				mailAddresses,
-				[]byte(message),
-			)
-			if err != nil {
-				return xerrors.Errorf("Failed to send emails: %w", err)
-			}
+		err = e.sendMail(smtpServer, message)
+		if err != nil {
+			return xerrors.Errorf("Failed to send emails: %w", err)
 		}
 		return nil
 	}
-	err = e.send(
-		smtpServer,
-		nil,
-		emailConf.From,
-		mailAddresses,
-		[]byte(message),
-	)
+	err = e.sendMail(smtpServer, message)
 	if err != nil {
 		return xerrors.Errorf("Failed to send emails: %w", err)
 	}
@@ -209,5 +197,19 @@ func (e *emailSender) Send(subject, body string) (err error) {
 
 // NewEMailSender creates emailSender
 func NewEMailSender() EMailSender {
-	return &emailSender{config.Conf.EMail, smtp.SendMail}
+	return &emailSender{config.Conf.EMail}
+}
+
+func (e *emailSender) newSaslClient(authList []string) sasl.Client {
+	for _, v := range authList {
+		switch v {
+		case "PLAIN":
+			auth := sasl.NewPlainClient("", e.conf.User, e.conf.Password)
+			return auth
+		case "LOGIN":
+			auth := sasl.NewLoginClient(e.conf.User, e.conf.Password)
+			return auth
+		}
+	}
+	return nil
 }
