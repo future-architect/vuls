@@ -9,7 +9,7 @@
 
 ![Vuls-logo](img/vuls_logo.png)
 
-Vulnerability scanner for Linux/FreeBSD, agentless, written in golang.
+Vulnerability scanner for Linux/FreeBSD, agent-less, written in Go.
 We have a slack team. [Join slack team](http://goo.gl/forms/xm5KFo35tu)
 Twitter: [@vuls_en](https://twitter.com/vuls_en)
 
@@ -20,20 +20,6 @@ Twitter: [@vuls_en](https://twitter.com/vuls_en)
 [![asciicast](https://asciinema.org/a/3y9zrf950agiko7klg8abvyck.png)](https://asciinema.org/a/3y9zrf950agiko7klg8abvyck)
 
 ![Vuls-slack](img/vuls-slack-en.png)
-
-----
-
-## NEWS
-
-| Version     | Main Feature |  Date |
-|:------------|:---------------------------------|:--------------------|
-| [v0.8.0](https://github.com/future-architect/vuls/releases/tag/v0.8.0) | secret | Coming soon |
-| [v0.7.0](https://github.com/future-architect/vuls/releases/tag/v0.7.0) | WordPress Vulnerability Scan | 2019/Apr/8 |
-| [v0.6.3](https://github.com/future-architect/vuls/releases/tag/v0.6.3) | GitHub Integration | 2019/Feb/20 |
-| [v0.6.2](https://github.com/future-architect/vuls/releases/tag/v0.6.2) | Add US-CERT/JPCERT Alerts as VulnSrc | 2019/Jan/23 |
-| [v0.6.1](https://github.com/future-architect/vuls/releases/tag/v0.6.1) | BugFix | 2018/Nov/16 |
-| [v0.6.0](https://github.com/future-architect/vuls/releases/tag/v0.6.0) | Add ExploitDB as VulnSrc | 2018/Nov/3 |
-| [v0.5.0](https://github.com/future-architect/vuls/releases/tag/v0.5.0) | Scan accuracy improvement | 2018/Aug/27 |
 
 ----
 
@@ -66,36 +52,47 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 
 - Alpine, Amazon Linux, CentOS, Debian, Oracle Linux, Raspbian, RHEL, SUSE Enterprise Linux, and Ubuntu
 - FreeBSD
-- Cloud, on-premise, Docker Container and Docker Image
+- Cloud, on-premise, Running Docker Container
 
 ### High-quality scan
 
-Vuls uses multiple vulnerability databases
+- Vulnerability Database
+  - [NVD](https://nvd.nist.gov/)
+  - [JVN(Japanese)](http://jvndb.jvn.jp/apis/myjvn/)
 
-- [NVD](https://nvd.nist.gov/)
-- [JVN(Japanese)](http://jvndb.jvn.jp/apis/myjvn/)
 - OVAL
+  - [Red Hat](https://www.redhat.com/security/data/oval/)
   - [Debian](https://www.debian.org/security/oval/)
-  - [Oracle Linux](https://linux.oracle.com/security/oval/)
-  - [RedHat](https://www.redhat.com/security/data/oval/)
-  - [SUSE](http://ftp.suse.com/pub/projects/security/oval/)
   - [Ubuntu](https://people.canonical.com/~ubuntu-security/oval/)
+  - [SUSE](http://ftp.suse.com/pub/projects/security/oval/)
+  - [Oracle Linux](https://linux.oracle.com/security/oval/)
 
-- [Alpine-secdb](https://git.alpinelinux.org/cgit/alpine-secdb/)
-- [Debian Security Bug Tracker](https://security-tracker.debian.org/tracker/)
-- [Red Hat Security Advisories](https://access.redhat.com/security/security-updates/)
-- Commands (yum, zypper, and pkg-audit)
-  - RHSA/ALAS/ELSA/FreeBSD-SA
-- [Exploit Database](https://www.exploit-db.com/)
-- [US-CERT](https://www.us-cert.gov/ncas/alerts)
-- [JPCERT](http://www.jpcert.or.jp/at/2019.html)
-- [WPVulnDB](https://wpvulndb.com/api)
-- [Node.js Security Working Group](https://github.com/nodejs/security-wg)
-- [Ruby Advisory Database](https://github.com/rubysec/ruby-advisory-db)
-- [Safety DB(Python)](https://github.com/pyupio/safety-db)
-- [PHP Security Advisories Database](https://github.com/FriendsOfPHP/security-advisories)
-- [RustSec Advisory Database](https://github.com/RustSec/advisory-db)
-- Changelog
+- Security Advisory
+  - [Alpine-secdb](https://git.alpinelinux.org/cgit/alpine-secdb/)
+  - [Red Hat Security Advisories](https://access.redhat.com/security/security-updates/)
+  - [Debian Security Bug Tracker](https://security-tracker.debian.org/tracker/)
+
+- Commands(yum, zypper, pkg-audit)
+  - RHSA / ALAS / ELSA / FreeBSD-SA
+  - Changelog
+
+- PoC, Exploit
+  - [Exploit Database](https://www.exploit-db.com/)
+  - [Metasploit-Framework modules](https://www.rapid7.com/db/?q=&type=metasploit)
+
+- CERT
+  - [US-CERT](https://www.us-cert.gov/ncas/alerts)
+  - [JPCERT](http://www.jpcert.or.jp/at/2019.html)
+
+- Libraries
+  - [Node.js Security Working Group](https://github.com/nodejs/security-wg)
+  - [Ruby Advisory Database](https://github.com/rubysec/ruby-advisory-db)
+  - [Safety DB(Python)](https://github.com/pyupio/safety-db)
+  - [PHP Security Advisories Database](https://github.com/FriendsOfPHP/security-advisories)
+  - [RustSec Advisory Database](https://github.com/RustSec/advisory-db)
+
+- WordPress
+  - [WPVulnDB](https://wpvulndb.com/api)
 
 ### Scan mode
 
@@ -134,19 +131,6 @@ Vuls uses multiple vulnerability databases
 - It is possible to acquire the state of the server by connecting via SSH and executing the command.
 - Vuls warns when the scan target server was updated the kernel etc. but not restarting it.
 
-### **Static** Analysis
-
-**Image scan function is no longer supported from Vuls v0.9.5. Use Trivy directry**
-
-~~Vuls v0.8.0 can scan Docker images using [knqyf263/trivy](https://github.com/knqyf263/trivy).
-Following Registry supported.~~
-
-- ~~ECR~~
-- ~~GCR~~
-- ~~Local Image~~
-
-~~For details, see [Scan docker image](https://vuls.io/docs/en/tutorial-scan-docker-image.html)~~  
-
 ### Scan vulnerabilities of non-OS-packages
 
 - Libraries of programming language
@@ -184,7 +168,7 @@ Vuls has some options to detect the vulnerabilities
 
 ## Document
 
-For more information such as Installation, Tutorial, Usage, visit [vuls.io](https://vuls.io/)
+For more information such as Installation, Tutorial, Usage, visit [vuls.io](https://vuls.io/)  
 [日本語翻訳ドキュメント](https://vuls.io/ja/)
 
 ----
@@ -192,12 +176,6 @@ For more information such as Installation, Tutorial, Usage, visit [vuls.io](http
 ## Authors
 
 kotakanbe ([@kotakanbe](https://twitter.com/kotakanbe)) created vuls and [these fine people](https://github.com/future-architect/vuls/graphs/contributors) have contributed.
-
-----
-
-## Change Log
-
-Please see [CHANGELOG](https://github.com/future-architect/vuls/blob/master/CHANGELOG.md).
 
 ----
 
