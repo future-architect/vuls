@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
 	"regexp"
@@ -562,12 +563,23 @@ func (l *base) scanLibraries() (err error) {
 		if _, ok := libFilemap[path]; ok {
 			continue
 		}
-		cmd := fmt.Sprintf("cat %s", path)
-		r := exec(l.ServerInfo, cmd, noSudo)
-		if !r.isSuccess() {
-			return xerrors.Errorf("Failed to get target file: %s, filepath: %s", r, path)
+
+		var bytes []byte
+		switch l.Distro.Family {
+		case config.ServerTypePseudo:
+			bytes, err = ioutil.ReadFile(path)
+			if err != nil {
+				return xerrors.Errorf("Failed to get target file: %s, filepath: %s", err, path)
+			}
+		default:
+			cmd := fmt.Sprintf("cat %s", path)
+			r := exec(l.ServerInfo, cmd, noSudo)
+			if !r.isSuccess() {
+				return xerrors.Errorf("Failed to get target file: %s, filepath: %s", r, path)
+			}
+			bytes = []byte(r.Stdout)
 		}
-		libFilemap[path] = []byte(r.Stdout)
+		libFilemap[path] = bytes
 	}
 
 	for path, b := range libFilemap {
