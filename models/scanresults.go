@@ -416,6 +416,10 @@ func (r ScanResult) FormatAlertSummary() string {
 }
 
 func (r ScanResult) isDisplayUpdatableNum() bool {
+	if r.Family == config.FreeBSD {
+		return false
+	}
+
 	var mode config.ScanMode
 	s, _ := config.Conf.Servers[r.ServerName]
 	mode = s.Mode
