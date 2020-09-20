@@ -147,6 +147,9 @@ func (o *alpine) parseApkInfo(stdout string) (models.Packages, error) {
 		line := scanner.Text()
 		ss := strings.Split(line, "-")
 		if len(ss) < 3 {
+			if strings.Contains(ss[0], "WARNING") {
+				continue
+			}
 			return nil, xerrors.Errorf("Failed to parse apk info -v: %s", line)
 		}
 		name := strings.Join(ss[:len(ss)-2], "-")
