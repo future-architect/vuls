@@ -182,13 +182,11 @@ func getAllCvesViaHTTP(r *models.ScanResult, url string) ([]response, error) {
 }
 
 func (deb Debian) getCvesDebian(driver db.DB, release, pkgName string) (cves []models.CveContent) {
-	unfixedCves := driver.GetUnfixedCvesDebian(release, pkgName)
-	for _, cve := range unfixedCves {
+	for _, cve := range driver.GetUnfixedCvesDebian(release, pkgName) {
 		cves = append(cves, *deb.ConvertToModel(&cve))
 	}
 
-	fixedCves := driver.GetFixedCvesDebian(release, pkgName)
-	for _, cve := range fixedCves {
+	for _, cve := range driver.GetFixedCvesDebian(release, pkgName) {
 		cves = append(cves, *deb.ConvertToModel(&cve))
 	}
 
