@@ -5,6 +5,7 @@ go 1.14
 replace (
 	gopkg.in/mattn/go-colorable.v0 => github.com/mattn/go-colorable v0.1.0
 	gopkg.in/mattn/go-isatty.v0 => github.com/mattn/go-isatty v0.0.6
+	github.com/knqyf263/gost v0.1.4 => github.com/MaineK00n/gost v0.1.5-0.20200923162501-f0f35c1cce43
 )
 
 require (
