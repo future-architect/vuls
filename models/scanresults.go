@@ -478,12 +478,11 @@ type Platform struct {
 }
 
 // RemoveRaspbianPackFromResult is for Raspberry Pi and removes the Raspberry Pi dedicated package from ScanResult.
-func (r ScanResult) RemoveRaspbianPackFromResult() ScanResult {
+func (r ScanResult) RemoveRaspbianPackFromResult() *ScanResult {
 	if r.Family != config.Raspbian {
-		return r
+		return &r
 	}
 
-	result := r
 	packs := make(Packages)
 	for _, pack := range r.Packages {
 		if !IsRaspbianPackage(pack.Name, pack.Version) {
@@ -498,8 +497,8 @@ func (r ScanResult) RemoveRaspbianPackFromResult() ScanResult {
 		}
 	}
 
-	result.Packages = packs
-	result.SrcPackages = srcPacks
+	r.Packages = packs
+	r.SrcPackages = srcPacks
 
-	return result
+	return &r
 }

@@ -136,30 +136,19 @@ func (o Debian) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 		}
 	}
 
+	// OVAL does not support Package for Raspbian, so skip it.
+	if r.Family == config.Raspbian {
+		r = r.RemoveRaspbianPackFromResult()
+	}
+
 	var relatedDefs ovalResult
 	if config.Conf.OvalDict.IsFetchViaHTTP() {
-		if r.Family != config.Raspbian {
-			if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
-				return 0, err
-			}
-		} else {
-			// OVAL does not support Package for Raspbian, so skip it.
-			result := r.RemoveRaspbianPackFromResult()
-			if relatedDefs, err = getDefsByPackNameViaHTTP(&result); err != nil {
-				return 0, err
-			}
+		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
+			return 0, err
 		}
 	} else {
-		if r.Family != config.Raspbian {
-			if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
-				return 0, err
-			}
-		} else {
-			// OVAL does not support Package for Raspbian, so skip it.
-			result := r.RemoveRaspbianPackFromResult()
-			if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, &result); err != nil {
-				return 0, err
-			}
+		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
+			return 0, err
 		}
 	}
 

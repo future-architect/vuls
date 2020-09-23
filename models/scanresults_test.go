@@ -720,3 +720,52 @@ func TestIsDisplayUpdatableNum(t *testing.T) {
 		}
 	}
 }
+
+func TestRemoveRaspbianPackFromResult(t *testing.T) {
+	var tests = []struct {
+		in  ScanResult
+		out ScanResult
+	}{
+		{
+			in: ScanResult{
+				Family: config.Raspbian,
+				Packages: Packages{
+					"apt":                Package{Name: "apt", Version: "1.8.2.1"},
+					"libraspberrypi-dev": Package{Name: "libraspberrypi-dev", Version: "1.20200811-1"},
+				},
+				SrcPackages: SrcPackages{},
+			},
+			out: ScanResult{
+				Family: config.Raspbian,
+				Packages: Packages{
+					"apt": Package{Name: "apt", Version: "1.8.2.1"},
+				},
+				SrcPackages: SrcPackages{},
+			},
+		},
+		{
+			in: ScanResult{
+				Family: config.Debian,
+				Packages: Packages{
+					"apt": Package{Name: "apt", Version: "1.8.2.1"},
+				},
+				SrcPackages: SrcPackages{},
+			},
+			out: ScanResult{
+				Family: config.Debian,
+				Packages: Packages{
+					"apt": Package{Name: "apt", Version: "1.8.2.1"},
+				},
+				SrcPackages: SrcPackages{},
+			},
+		},
+	}
+
+	for i, tt := range tests {
+		r := tt.in
+		r = *r.RemoveRaspbianPackFromResult()
+		if !reflect.DeepEqual(r, tt.out) {
+			t.Errorf("[%d] expected %+v, actual %+v", i, tt.out.Packages, r.Packages)
+		}
+	}
+}
