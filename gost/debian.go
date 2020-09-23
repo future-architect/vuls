@@ -123,8 +123,10 @@ func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCV
 			if ok {
 				if v.CveContents == nil {
 					v.CveContents = models.NewCveContents(cve)
+					v.Confidences = models.Confidences{models.DebianSecurityTrackerMatch}
 				} else {
 					v.CveContents[models.DebianSecurityTracker] = cve
+					v.Confidences = models.Confidences{models.DebianSecurityTrackerMatch}
 				}
 			} else {
 				v = models.VulnInfo{
