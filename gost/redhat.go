@@ -17,8 +17,8 @@ type RedHat struct {
 	Base
 }
 
-// DetectUnfixed fills cve information that has in Gost
-func (red RedHat) DetectUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
+// DetectCVEs fills cve information that has in Gost
+func (red RedHat) DetectCVEs(driver db.DB, r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
 	return red.fillUnfixed(driver, r, ignoreWillNotFix)
 }
 

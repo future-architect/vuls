@@ -354,7 +354,7 @@ func FillWithGost(driver gostdb.DB, r *models.ScanResult, ignoreWillNotFix bool)
 	gostClient := gost.NewClient(r.Family)
 	// TODO chekc if fetched
 	// TODO chekc if fresh enough
-	if nCVEs, err = gostClient.DetectUnfixed(driver, r, ignoreWillNotFix); err != nil {
+	if nCVEs, err = gostClient.DetectCVEs(driver, r, ignoreWillNotFix); err != nil {
 		return
 	}
 	return nCVEs, gostClient.FillCVEsWithRedHat(driver, r)

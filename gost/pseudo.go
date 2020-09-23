@@ -12,8 +12,8 @@ type Pseudo struct {
 	Base
 }
 
-// DetectUnfixed fills cve information that has in Gost
-func (pse Pseudo) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (int, error) {
+// DetectCVEs fills cve information that has in Gost
+func (pse Pseudo) DetectCVEs(driver db.DB, r *models.ScanResult, _ bool) (int, error) {
 	return 0, nil
 }
 
