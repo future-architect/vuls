@@ -63,7 +63,7 @@ func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCV
 	packCvesList := []packCves{}
 	if config.Conf.Gost.IsFetchViaHTTP() {
 		url, _ := util.URLPathJoin(config.Conf.Gost.URL, "debian", major(scanResult.Release), "pkgs")
-		responses, err := getAllUnfixedCvesViaHTTP(r, url)
+		responses, err := getAllCvesViaHTTP(&scanResult, url)
 		if err != nil {
 			return 0, err
 		}
@@ -88,11 +88,7 @@ func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCV
 			return 0, nil
 		}
 		for _, pack := range scanResult.Packages {
-			cveDebs := driver.GetUnfixedCvesDebian(major(scanResult.Release), pack.Name)
-			cves := []models.CveContent{}
-			for _, cveDeb := range cveDebs {
-				cves = append(cves, *deb.ConvertToModel(&cveDeb))
-			}
+			cves := deb.getCvesDebian(driver, major(scanResult.Release), pack.Name)
 			packCvesList = append(packCvesList, packCves{
 				packName:  pack.Name,
 				isSrcPack: false,
@@ -102,11 +98,7 @@ func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCV
 
 		// SrcPack
 		for _, pack := range scanResult.SrcPackages {
-			cveDebs := driver.GetUnfixedCvesDebian(major(scanResult.Release), pack.Name)
-			cves := []models.CveContent{}
-			for _, cveDeb := range cveDebs {
-				cves = append(cves, *deb.ConvertToModel(&cveDeb))
-			}
+			cves := deb.getCvesDebian(driver, major(scanResult.Release), pack.Name)
 			packCvesList = append(packCvesList, packCves{
 				packName:  pack.Name,
 				isSrcPack: true,
@@ -165,6 +157,42 @@ func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCV
 		}
 	}
 	return nCVEs, nil
+}
+
+func getAllFixedCvesViaHTTP(r *models.ScanResult, urlPrefix string) ([]response, error) {
+	return getCvesWithFixStateViaHTTP(r, urlPrefix, "fixed-cves")
+}
+
+func getAllCvesViaHTTP(r *models.ScanResult, url string) ([]response, error) {
+	var responses []response
+
+	res, err := getAllUnfixedCvesViaHTTP(r, url)
+	if err != nil {
+		return []response{}, err
+	}
+	responses = append(responses, res...)
+
+	res, err = getAllFixedCvesViaHTTP(r, url)
+	if err != nil {
+		return []response{}, err
+	}
+	responses = append(responses, res...)
+
+	return responses, nil
+}
+
+func (deb Debian) getCvesDebian(driver db.DB, release, pkgName string) (cves []models.CveContent) {
+	unfixedCves := driver.GetUnfixedCvesDebian(release, pkgName)
+	for _, cve := range unfixedCves {
+		cves = append(cves, *deb.ConvertToModel(&cve))
+	}
+
+	fixedCves := driver.GetFixedCvesDebian(release, pkgName)
+	for _, cve := range fixedCves {
+		cves = append(cves, *deb.ConvertToModel(&cve))
+	}
+
+	return
 }
 
 // ConvertToModel converts gost model to vuls model
