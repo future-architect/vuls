@@ -546,8 +546,8 @@ func (l *base) scanLibraries() (err error) {
 		}
 
 		// delete last "-o "
-		// find / -name "*package-lock.json" -o -name "*yarn.lock" ... 2>&1 | grep -v "Permission denied"
-		cmd := fmt.Sprintf(`find / ` + findopt[:len(findopt)-3] + ` 2>&1 | grep -v "Permission denied"`)
+		// find / -name "*package-lock.json" -o -name "*yarn.lock" ... 2>&1 | grep -v "find: "
+		cmd := fmt.Sprintf(`find / ` + findopt[:len(findopt)-3] + ` 2>&1 | grep -v "find: "`)
 		r := exec(l.ServerInfo, cmd, noSudo)
 		if r.ExitStatus != 0 && r.ExitStatus != 1 {
 			return xerrors.Errorf("Failed to find lock files")
