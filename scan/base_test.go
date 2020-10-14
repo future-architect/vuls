@@ -363,6 +363,33 @@ func Test_detectScanDest(t *testing.T) {
 	}
 }
 
+func Test_matchListenPorts(t *testing.T) {
+	type args struct {
+		open []string
+		port models.ListenPorts
+	}
+	tests := []struct {
+		name   string
+		args   args
+		expect []string
+	}{
+		{name: "open_empty", args: args{open: []string{}, port: models.ListenPorts{Address: "127.0.0.1", Port: "22"}}, expect: []string{}},
+		{name: "port_empty", args: args{open: []string{"127.0.0.1:22"}, port: models.ListenPorts{}}, expect: []string{}},
+		{name: "single_match", args: args{open: []string{"127.0.0.1:22"}, port: models.ListenPorts{Address: "127.0.0.1", Port: "22"}}, expect: []string{"127.0.0.1"}},
+		{name: "no_match_address", args: args{open: []string{"127.0.0.1:22"}, port: models.ListenPorts{Address: "192.168.1.1", Port: "22"}}, expect: []string{}},
+		{name: "no_match_port", args: args{open: []string{"127.0.0.1:22"}, port: models.ListenPorts{Address: "127.0.0.1", Port: "80"}}, expect: []string{}},
+		{name: "asterisk_match", args: args{open: []string{"127.0.0.1:22", "127.0.0.1:80", "192.168.1.1:22"}, port: models.ListenPorts{Address: "*", Port: "22"}}, expect: []string{"127.0.0.1", "192.168.1.1"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if match := matchListenPorts(tt.args.open, tt.args.port); !reflect.DeepEqual(match, tt.expect) {
+				t.Errorf("matchListenPorts() = %v, want %v", match, tt.expect)
+			}
+		})
+	}
+}
+
 func Test_base_parseListenPorts(t *testing.T) {
 	tests := []struct {
 		name   string
