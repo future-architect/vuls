@@ -12,6 +12,7 @@ import (
 	_ "github.com/aquasecurity/fanal/analyzer/library/poetry"
 	_ "github.com/aquasecurity/fanal/analyzer/library/yarn"
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/models"
 )
 
 func TestParseDockerPs(t *testing.T) {
@@ -271,6 +272,50 @@ docker-pr  9135            root    4u  IPv6 297133      0t0  TCP *:6379 (LISTEN)
 			l := &base{}
 			if gotPortPid := l.parseLsOf(tt.args.stdout); !reflect.DeepEqual(gotPortPid, tt.wantPortPid) {
 				t.Errorf("base.parseLsOf() = %v, want %v", gotPortPid, tt.wantPortPid)
+			}
+		})
+	}
+}
+
+func Test_base_parseListenPorts(t *testing.T) {
+	tests := []struct {
+		name   string
+		args   string
+		expect models.ListenPorts
+	}{{
+		name: "empty",
+		args: "",
+		expect: models.ListenPorts{
+			Address: "",
+			Port:    "",
+		},
+	}, {
+		name: "normal",
+		args: "127.0.0.1:22",
+		expect: models.ListenPorts{
+			Address: "127.0.0.1",
+			Port:    "22",
+		},
+	}, {
+		name: "asterisk",
+		args: "*:22",
+		expect: models.ListenPorts{
+			Address: "*",
+			Port:    "22",
+		},
+	}, {
+		name: "ipv6_loopback",
+		args: "[::1]:22",
+		expect: models.ListenPorts{
+			Address: "[::1]",
+			Port:    "22",
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &base{}
+			if listenPort := l.parseListenPorts(tt.args); !reflect.DeepEqual(listenPort, tt.expect) {
+				t.Errorf("base.parseListenPorts() = %v, want %v", listenPort, tt.expect)
 			}
 		})
 	}

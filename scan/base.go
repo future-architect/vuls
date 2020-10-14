@@ -809,3 +809,11 @@ func (l *base) parseLsOf(stdout string) map[string]string {
 	}
 	return portPid
 }
+
+func (l *base) parseListenPorts(port string) models.ListenPorts {
+	sep := strings.LastIndex(port, ":")
+	if sep == -1 {
+		return models.ListenPorts{}
+	}
+	return models.ListenPorts{Address: port[:sep], Port: port[sep+1:]}
+}
