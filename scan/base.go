@@ -731,7 +731,12 @@ func (l *base) detectWpPlugins() ([]models.WpPackage, error) {
 
 func (l *base) scanPorts() (err error) {
 	dest := l.detectScanDest()
-	fmt.Printf("%s\n", dest)
+	open, err := l.execPortsScan(dest)
+	if err != nil {
+		return err
+	}
+	l.updatePortStatus(open)
+
 	return nil
 }
 
@@ -778,6 +783,58 @@ func (l *base) detectScanDest() []string {
 	}
 
 	return dest
+}
+
+func (l *base) execPortsScan(dest []string) ([]string, error) {
+	open := []string{}
+
+	for _, d := range dest {
+		conn, err := net.DialTimeout("tcp", d, time.Duration(1)*time.Second)
+		if err != nil {
+			// if !strings.Contains(err.Error(), "refused") {
+			// 	return nil, xerrors.Errorf("Failed to execPortScan: %+v", err)
+			// }
+			continue
+		}
+		conn.Close()
+		open = append(open, d)
+	}
+
+	return open, nil
+}
+
+func (l *base) updatePortStatus(open []string) {
+	for _, p := range l.osPackages.Packages {
+		if p.AffectedProcs == nil {
+			continue
+		}
+		for _, proc := range p.AffectedProcs {
+			if proc.ListenPorts == nil {
+				continue
+			}
+			for _, port := range proc.ListenPorts {
+				port.OpenStatus = matchListenPorts(open, port)
+			}
+		}
+	}
+}
+
+func matchListenPorts(open []string, port models.ListenPorts) bool {
+	l := base{}
+	for _, ip := range open {
+		i := l.parseListenPorts(ip)
+		if port.Address == "*" {
+			if port.Port == i.Port {
+				return true
+			}
+		} else {
+			if port.Address == i.Address && port.Port == i.Port {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func (l *base) ps() (stdout string, err error) {
