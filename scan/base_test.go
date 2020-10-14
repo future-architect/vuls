@@ -277,6 +277,92 @@ docker-pr  9135            root    4u  IPv6 297133      0t0  TCP *:6379 (LISTEN)
 	}
 }
 
+func Test_detectScanDest(t *testing.T) {
+	tests := []struct {
+		name   string
+		args   base
+		expect []string
+	}{
+		{
+			name: "empty",
+			args: base{osPackages: osPackages{
+				Packages: models.Packages{"curl": models.Package{
+					Name:       "curl",
+					Version:    "7.64.0-4+deb10u1",
+					NewVersion: "7.64.0-4+deb10u1",
+				}},
+			}},
+			expect: []string{},
+		},
+		{
+			name: "single-addr",
+			args: base{osPackages: osPackages{
+				Packages: models.Packages{"libaudit1": models.Package{
+					Name:       "libaudit1",
+					Version:    "1:2.8.4-3",
+					NewVersion: "1:2.8.4-3",
+					AffectedProcs: []models.AffectedProcess{
+						{PID: "21", Name: "sshd", ListenPorts: []models.ListenPorts{{Address: "127.0.0.1", Port: "22"}}}, {PID: "10876", Name: "sshd"}},
+				},
+				}},
+			},
+			expect: []string{"127.0.0.1:22"},
+		},
+		{
+			name: "dup-addr",
+			args: base{osPackages: osPackages{
+				Packages: models.Packages{"libaudit1": models.Package{
+					Name:       "libaudit1",
+					Version:    "1:2.8.4-3",
+					NewVersion: "1:2.8.4-3",
+					AffectedProcs: []models.AffectedProcess{
+						{PID: "21", Name: "sshd", ListenPorts: []models.ListenPorts{{Address: "127.0.0.1", Port: "22"}}}, {PID: "21", Name: "sshd", ListenPorts: []models.ListenPorts{{Address: "127.0.0.1", Port: "22"}}}},
+				},
+				}},
+			},
+			expect: []string{"127.0.0.1:22"},
+		},
+		{
+			name: "multi-addr",
+			args: base{osPackages: osPackages{
+				Packages: models.Packages{"libaudit1": models.Package{
+					Name:       "libaudit1",
+					Version:    "1:2.8.4-3",
+					NewVersion: "1:2.8.4-3",
+					AffectedProcs: []models.AffectedProcess{
+						{PID: "21", Name: "sshd", ListenPorts: []models.ListenPorts{{Address: "127.0.0.1", Port: "22"}}}, {PID: "21", Name: "sshd", ListenPorts: []models.ListenPorts{{Address: "192.168.1.1", Port: "22"}}}},
+				},
+				}},
+			},
+			expect: []string{"127.0.0.1:22", "192.168.1.1:22"},
+		},
+		{
+			name: "asterisk",
+			args: base{
+				osPackages: osPackages{
+					Packages: models.Packages{"libaudit1": models.Package{
+						Name:       "libaudit1",
+						Version:    "1:2.8.4-3",
+						NewVersion: "1:2.8.4-3",
+						AffectedProcs: []models.AffectedProcess{
+							{PID: "21", Name: "sshd", ListenPorts: []models.ListenPorts{{Address: "*", Port: "22"}}}},
+					},
+					}},
+				ServerInfo: config.ServerInfo{
+					IPv4Addrs: []string{"127.0.0.1", "192.168.1.1"},
+				},
+			},
+			expect: []string{"127.0.0.1:22", "192.168.1.1:22"},
+		}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if dest := tt.args.detectScanDest(); !reflect.DeepEqual(dest, tt.expect) {
+				t.Errorf("base.detectScanDest() = %v, want %v", dest, tt.expect)
+			}
+		})
+	}
+}
+
 func Test_base_parseListenPorts(t *testing.T) {
 	tests := []struct {
 		name   string
