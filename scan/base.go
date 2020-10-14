@@ -729,6 +729,57 @@ func (l *base) detectWpPlugins() ([]models.WpPackage, error) {
 	return plugins, nil
 }
 
+func (l *base) scanPorts() (err error) {
+	dest := l.detectScanDest()
+	fmt.Printf("%s\n", dest)
+	return nil
+}
+
+func (l *base) detectScanDest() []string {
+	portsMap := map[string][]string{}
+
+	for _, p := range l.osPackages.Packages {
+		if p.AffectedProcs == nil {
+			continue
+		}
+		for _, proc := range p.AffectedProcs {
+			if proc.ListenPorts == nil {
+				continue
+			}
+			for _, port := range proc.ListenPorts {
+				portsMap[port.Address] = append(portsMap[port.Address], port.Port)
+
+			}
+		}
+	}
+
+	d := []string{}
+	for i, ports := range portsMap {
+		if i == "*" {
+			for _, addr := range l.ServerInfo.IPv4Addrs {
+				for _, port := range ports {
+					d = append(d, addr+":"+port)
+				}
+			}
+		} else {
+			for _, port := range ports {
+				d = append(d, i+":"+port)
+			}
+		}
+	}
+
+	m := map[string]bool{}
+	dest := []string{}
+	for _, e := range d {
+		if !m[e] {
+			m[e] = true
+			dest = append(dest, e)
+		}
+	}
+
+	return dest
+}
+
 func (l *base) ps() (stdout string, err error) {
 	cmd := `LANGUAGE=en_US.UTF-8 ps --no-headers --ppid 2 -p 2 --deselect -o pid,comm`
 	r := l.exec(util.PrependProxyEnv(cmd), noSudo)

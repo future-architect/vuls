@@ -48,6 +48,7 @@ type osTypeInterface interface {
 	postScan() error
 	scanWordPress() error
 	scanLibraries() error
+	scanPorts() error
 	scanPackages() error
 	convertToModel() models.ScanResult
 
@@ -637,11 +638,18 @@ func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanRes
 		return nil
 	}, timeoutSec)
 
+	for _, s := range servers {
+		if err = s.scanPorts(); err != nil {
+			util.Log.Errorf("Failed to scan Ports: %+v", err)
+		}
+	}
+
 	hostname, _ := os.Hostname()
 	ipv4s, ipv6s, err := util.IP()
 	if err != nil {
 		util.Log.Errorf("Failed to fetch scannedIPs. err: %+v", err)
 	}
+
 	for _, s := range append(servers, errServers...) {
 		r := s.convertToModel()
 		r.ScannedAt = scannedAt
