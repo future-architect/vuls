@@ -181,9 +181,9 @@ type AffectedProcess struct {
 
 // ListenPorts has the result of parsing the port information to the address and port.
 type ListenPorts struct {
-	Address    string `json:"address"`
-	Port       string `json:"port"`
-	OpenStatus bool   `json:"openStatus"`
+	Address           string   `json:"address"`
+	Port              string   `json:"port"`
+	PortScanSuccessOn []string `json:"portScanSuccessOn"`
 }
 
 // NeedRestartProcess keep a processes information affected by software update

@@ -804,37 +804,39 @@ func (l *base) execPortsScan(dest []string) ([]string, error) {
 }
 
 func (l *base) updatePortStatus(open []string) {
-	for _, p := range l.osPackages.Packages {
+	for name, p := range l.osPackages.Packages {
 		if p.AffectedProcs == nil {
 			continue
 		}
-		for _, proc := range p.AffectedProcs {
+		for proci, proc := range p.AffectedProcs {
 			if proc.ListenPorts == nil {
 				continue
 			}
-			for _, port := range proc.ListenPorts {
-				port.OpenStatus = matchListenPorts(open, port)
+			for porti, port := range proc.ListenPorts {
+				l.osPackages.Packages[name].AffectedProcs[proci].ListenPorts[porti].PortScanSuccessOn = matchListenPorts(open, port)
 			}
 		}
 	}
 }
 
-func matchListenPorts(open []string, port models.ListenPorts) bool {
+func matchListenPorts(open []string, port models.ListenPorts) []string {
+	match := []string{}
+
 	l := base{}
 	for _, ip := range open {
 		i := l.parseListenPorts(ip)
 		if port.Address == "*" {
 			if port.Port == i.Port {
-				return true
+				match = append(match, i.Address)
 			}
 		} else {
 			if port.Address == i.Address && port.Port == i.Port {
-				return true
+				match = append(match, i.Address)
 			}
 		}
 	}
 
-	return false
+	return match
 }
 
 func (l *base) ps() (stdout string, err error) {
