@@ -711,7 +711,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 				if len(pack.AffectedProcs) != 0 {
 					for _, p := range pack.AffectedProcs {
 						if len(p.ListenPorts) == 0 {
-							lines = append(lines, fmt.Sprintf("  * PID: %s %s Port: ",
+							lines = append(lines, fmt.Sprintf("  * PID: %s %s Port: []",
 								p.PID, p.Name))
 						}
 
