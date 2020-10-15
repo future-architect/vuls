@@ -735,7 +735,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 
 						var ports []string
 						for _, pp := range p.ListenPorts {
-							ports = append(ports, fmt.Sprintf("%s:%s(Scannable%s:%s)", pp.Address, pp.Port, scanEmoji, pp.PortScanSuccessOn))
+							ports = append(ports, fmt.Sprintf("%s:%s(%sScannable: %s)", pp.Address, pp.Port, scanEmoji, pp.PortScanSuccessOn))
 						}
 
 						lines = append(lines, fmt.Sprintf("  * PID: %s %s Port: %s",
