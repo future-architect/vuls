@@ -730,6 +730,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 						if len(p.ListenPorts) == 0 {
 							lines = append(lines, fmt.Sprintf("  * PID: %s %s Port: []",
 								p.PID, p.Name))
+							continue
 						}
 
 						var ports []string

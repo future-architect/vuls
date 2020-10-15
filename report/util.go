@@ -17,6 +17,7 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/gosuri/uitable"
+	"github.com/kyokomi/emoji"
 	"github.com/olekukonko/tablewriter"
 	"golang.org/x/xerrors"
 )
@@ -247,6 +248,7 @@ No CVE-IDs are found in updatable packages.
 		}
 
 		vuln.AffectedPackages.Sort()
+		scanEmoji := emoji.Sprint(":eye:")
 		for _, affected := range vuln.AffectedPackages {
 			if pack, ok := r.Packages[affected.Name]; ok {
 				var line string
@@ -264,11 +266,12 @@ No CVE-IDs are found in updatable packages.
 						if len(p.ListenPorts) == 0 {
 							data = append(data, []string{"",
 								fmt.Sprintf("  - PID: %s %s, Port: []", p.PID, p.Name)})
+							continue
 						}
 
 						var ports []string
 						for _, pp := range p.ListenPorts {
-							ports = append(ports, fmt.Sprintf("%s:%s", pp.Address, pp.Port))
+							ports = append(ports, fmt.Sprintf("%s:%s(Scannable%s:%s)", pp.Address, pp.Port, scanEmoji, pp.PortScanSuccessOn))
 						}
 
 						data = append(data, []string{"",
