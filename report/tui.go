@@ -17,6 +17,7 @@ import (
 	"github.com/google/subcommands"
 	"github.com/gosuri/uitable"
 	"github.com/jesseduffield/gocui"
+	"github.com/kyokomi/emoji"
 )
 
 var scanResults models.ScanResults
@@ -590,6 +591,7 @@ func summaryLines(r models.ScanResult) string {
 	stable := uitable.New()
 	stable.MaxColWidth = 1000
 	stable.Wrap = false
+	eyeEmoji := emoji.Sprint(":eye:")
 
 	if len(r.Errors) != 0 {
 		return "Error: Scan with --debug to view the details"
@@ -617,6 +619,19 @@ func summaryLines(r models.ScanResult) string {
 		pkgNames = append(pkgNames, vinfo.WpPackageFixStats.Names()...)
 		pkgNames = append(pkgNames, vinfo.LibraryFixedIns.Names()...)
 
+		av := vinfo.AttackVector()
+	loop:
+		for _, pname := range vinfo.AffectedPackages.Names() {
+			for _, ap := range r.Packages[pname].AffectedProcs {
+				for _, lp := range ap.ListenPorts {
+					if len(lp.PortScanSuccessOn) > 0 {
+						av = fmt.Sprintf("%s %s", av, eyeEmoji)
+						break loop
+					}
+				}
+			}
+		}
+
 		exploits := ""
 		if 0 < len(vinfo.Exploits) || 0 < len(vinfo.Metasploits) {
 			exploits = "POC"
@@ -627,7 +642,7 @@ func summaryLines(r models.ScanResult) string {
 			fmt.Sprintf(indexFormat, i+1),
 			vinfo.CveID,
 			cvssScore + " |",
-			fmt.Sprintf("%4s |", vinfo.AttackVector()),
+			fmt.Sprintf("%-8s|", av),
 			fmt.Sprintf("%3s |", exploits),
 			fmt.Sprintf("%6s |", vinfo.AlertDict.FormatSource()),
 			fmt.Sprintf("%7s |", vinfo.PatchStatus(r.Packages)),
@@ -639,6 +654,7 @@ func summaryLines(r models.ScanResult) string {
 		}
 		stable.AddRow(icols...)
 	}
+
 	return fmt.Sprintf("%s", stable)
 }
 
@@ -695,6 +711,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 		currentVinfo = cy + oy
 		vinfo := vinfos[currentVinfo]
 		vinfo.AffectedPackages.Sort()
+		scanEmoji := emoji.Sprint(":eye:")
 		for _, affected := range vinfo.AffectedPackages {
 			// packages detected by OVAL may not be actually installed
 			if pack, ok := currentScanResult.Packages[affected.Name]; ok {
@@ -717,7 +734,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 
 						var ports []string
 						for _, pp := range p.ListenPorts {
-							ports = append(ports, fmt.Sprintf("%s:%s", pp.Address, pp.Port))
+							ports = append(ports, fmt.Sprintf("%s:%s(Scannable%s:%s)", pp.Address, pp.Port, scanEmoji, pp.PortScanSuccessOn))
 						}
 
 						lines = append(lines, fmt.Sprintf("  * PID: %s %s Port: %s",
