@@ -791,9 +791,6 @@ func (l *base) execPortsScan(dest []string) ([]string, error) {
 	for _, d := range dest {
 		conn, err := net.DialTimeout("tcp", d, time.Duration(1)*time.Second)
 		if err != nil {
-			// if !strings.Contains(err.Error(), "refused") {
-			// 	return nil, xerrors.Errorf("Failed to execPortScan: %+v", err)
-			// }
 			continue
 		}
 		conn.Close()
