@@ -271,7 +271,7 @@ No CVE-IDs are found in updatable packages.
 							if len(pp.PortScanSuccessOn) == 0 {
 								ports = append(ports, fmt.Sprintf("%s:%s", pp.Address, pp.Port))
 							} else {
-								ports = append(ports, fmt.Sprintf("%s:%s(◔ Scannable: %s)", pp.Address, pp.Port, pp.PortScanSuccessOn))
+								ports = append(ports, fmt.Sprintf("%s:%s(◉ Scannable: %s)", pp.Address, pp.Port, pp.PortScanSuccessOn))
 							}
 						}
 
