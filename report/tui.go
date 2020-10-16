@@ -17,7 +17,6 @@ import (
 	"github.com/google/subcommands"
 	"github.com/gosuri/uitable"
 	"github.com/jesseduffield/gocui"
-	"github.com/kyokomi/emoji"
 )
 
 var scanResults models.ScanResults
@@ -591,7 +590,6 @@ func summaryLines(r models.ScanResult) string {
 	stable := uitable.New()
 	stable.MaxColWidth = 1000
 	stable.Wrap = false
-	eyeEmoji := emoji.Sprint(":eye:")
 
 	if len(r.Errors) != 0 {
 		return "Error: Scan with --debug to view the details"
@@ -622,7 +620,7 @@ func summaryLines(r models.ScanResult) string {
 		av := vinfo.AttackVector()
 		for _, pname := range vinfo.AffectedPackages.Names() {
 			if r.Packages[pname].HasPortScanSuccessOn() {
-				av = fmt.Sprintf("%s %2s", av, eyeEmoji)
+				av = fmt.Sprintf("%s ◔", av)
 				break
 			}
 		}
@@ -637,7 +635,7 @@ func summaryLines(r models.ScanResult) string {
 			fmt.Sprintf(indexFormat, i+1),
 			vinfo.CveID,
 			cvssScore + " |",
-			fmt.Sprintf("%-8s|", av),
+			fmt.Sprintf("%-6s |", av),
 			fmt.Sprintf("%3s |", exploits),
 			fmt.Sprintf("%6s |", vinfo.AlertDict.FormatSource()),
 			fmt.Sprintf("%7s |", vinfo.PatchStatus(r.Packages)),
@@ -706,7 +704,6 @@ func setChangelogLayout(g *gocui.Gui) error {
 		currentVinfo = cy + oy
 		vinfo := vinfos[currentVinfo]
 		vinfo.AffectedPackages.Sort()
-		scanEmoji := emoji.Sprint(":eye:")
 		for _, affected := range vinfo.AffectedPackages {
 			// packages detected by OVAL may not be actually installed
 			if pack, ok := currentScanResult.Packages[affected.Name]; ok {
@@ -733,7 +730,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 							if len(pp.PortScanSuccessOn) == 0 {
 								ports = append(ports, fmt.Sprintf("%s:%s", pp.Address, pp.Port))
 							} else {
-								ports = append(ports, fmt.Sprintf("%s:%s(%2sScannable: %s)", pp.Address, pp.Port, scanEmoji, pp.PortScanSuccessOn))
+								ports = append(ports, fmt.Sprintf("%s:%s(◔ Scannable: %s)", pp.Address, pp.Port, pp.PortScanSuccessOn))
 							}
 						}
 
