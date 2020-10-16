@@ -623,6 +623,7 @@ func summaryLines(r models.ScanResult) string {
 		for _, pname := range vinfo.AffectedPackages.Names() {
 			if r.Packages[pname].HasPortScanSuccessOn() {
 				av = fmt.Sprintf("%s %s", av, eyeEmoji)
+				break
 			}
 		}
 
@@ -729,7 +730,11 @@ func setChangelogLayout(g *gocui.Gui) error {
 
 						var ports []string
 						for _, pp := range p.ListenPorts {
-							ports = append(ports, fmt.Sprintf("%s:%s(%sScannable: %s)", pp.Address, pp.Port, scanEmoji, pp.PortScanSuccessOn))
+							if len(pp.PortScanSuccessOn) == 0 {
+								ports = append(ports, fmt.Sprintf("%s:%s", pp.Address, pp.Port))
+							} else {
+								ports = append(ports, fmt.Sprintf("%s:%s(%sScannable: %s)", pp.Address, pp.Port, scanEmoji, pp.PortScanSuccessOn))
+							}
 						}
 
 						lines = append(lines, fmt.Sprintf("  * PID: %s %s Port: %s",

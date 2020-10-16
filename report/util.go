@@ -268,7 +268,11 @@ No CVE-IDs are found in updatable packages.
 
 						var ports []string
 						for _, pp := range p.ListenPorts {
-							ports = append(ports, fmt.Sprintf("%s:%s(Scannable: %s)", pp.Address, pp.Port, pp.PortScanSuccessOn))
+							if len(pp.PortScanSuccessOn) == 0 {
+								ports = append(ports, fmt.Sprintf("%s:%s", pp.Address, pp.Port))
+							} else {
+								ports = append(ports, fmt.Sprintf("%s:%s(Scannable: %s)", pp.Address, pp.Port, pp.PortScanSuccessOn))
+							}
 						}
 
 						data = append(data, []string{"",
