@@ -818,14 +818,14 @@ func (l *base) updatePortStatus(listenIPPorts []string) {
 func (l *base) findPortScanSuccessOn(listenIPPorts []string, searchListenPort models.ListenPort) []string {
 	addrs := []string{}
 
-	for _, IPPort := range listenIPPorts {
-		IPPort := l.parseListenPorts(IPPort)
+	for _, ipPort := range listenIPPorts {
+		ipPort := l.parseListenPorts(ipPort)
 		if searchListenPort.Address == "*" {
-			if searchListenPort.Port == IPPort.Port {
-				addrs = append(addrs, IPPort.Address)
+			if searchListenPort.Port == ipPort.Port {
+				addrs = append(addrs, ipPort.Address)
 			}
-		} else if searchListenPort.Address == IPPort.Address && searchListenPort.Port == IPPort.Port {
-			addrs = append(addrs, IPPort.Address)
+		} else if searchListenPort.Address == ipPort.Address && searchListenPort.Port == ipPort.Port {
+			addrs = append(addrs, ipPort.Address)
 		}
 	}
 
