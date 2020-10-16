@@ -620,15 +620,9 @@ func summaryLines(r models.ScanResult) string {
 		pkgNames = append(pkgNames, vinfo.LibraryFixedIns.Names()...)
 
 		av := vinfo.AttackVector()
-	loop:
 		for _, pname := range vinfo.AffectedPackages.Names() {
-			for _, ap := range r.Packages[pname].AffectedProcs {
-				for _, lp := range ap.ListenPorts {
-					if len(lp.PortScanSuccessOn) > 0 {
-						av = fmt.Sprintf("%s %s", av, eyeEmoji)
-						break loop
-					}
-				}
+			if r.Packages[pname].HasPortScanSuccessOn() {
+				av = fmt.Sprintf("%s %s", av, eyeEmoji)
 			}
 		}
 

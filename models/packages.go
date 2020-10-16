@@ -186,6 +186,19 @@ type ListenPorts struct {
 	PortScanSuccessOn []string `json:"portScanSuccessOn"`
 }
 
+// HasPortScanSuccessOn checks if Package.AffectedProcs has PortScanSuccessOn
+func (p Package) HasPortScanSuccessOn() bool {
+	for _, ap := range p.AffectedProcs {
+		for _, lp := range ap.ListenPorts {
+			if len(lp.PortScanSuccessOn) > 0 {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 // NeedRestartProcess keep a processes information affected by software update
 type NeedRestartProcess struct {
 	PID         string `json:"pid"`
