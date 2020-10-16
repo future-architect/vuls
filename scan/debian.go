@@ -1294,7 +1294,7 @@ func (o *debian) dpkgPs() error {
 		pidLoadedFiles[pid] = append(pidLoadedFiles[pid], ss...)
 	}
 
-	pidListenPorts := map[string][]models.ListenPorts{}
+	pidListenPorts := map[string][]models.ListenPort{}
 	stdout, err = o.lsOfListen()
 	if err != nil {
 		return xerrors.Errorf("Failed to ls of: %w", err)

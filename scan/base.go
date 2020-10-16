@@ -741,7 +741,7 @@ func (l *base) scanPorts() (err error) {
 }
 
 func (l *base) detectScanDest() []string {
-	portsMap := map[string][]string{}
+	scanIPPortsMap := map[string][]string{}
 
 	for _, p := range l.osPackages.Packages {
 		if p.AffectedProcs == nil {
@@ -752,88 +752,84 @@ func (l *base) detectScanDest() []string {
 				continue
 			}
 			for _, port := range proc.ListenPorts {
-				portsMap[port.Address] = append(portsMap[port.Address], port.Port)
-
+				scanIPPortsMap[port.Address] = append(scanIPPortsMap[port.Address], port.Port)
 			}
 		}
 	}
 
-	d := []string{}
-	for i, ports := range portsMap {
-		if i == "*" {
+	scanDestIPPorts := []string{}
+	for addr, ports := range scanIPPortsMap {
+		if addr == "*" {
 			for _, addr := range l.ServerInfo.IPv4Addrs {
 				for _, port := range ports {
-					d = append(d, addr+":"+port)
+					scanDestIPPorts = append(scanDestIPPorts, addr+":"+port)
 				}
 			}
 		} else {
 			for _, port := range ports {
-				d = append(d, i+":"+port)
+				scanDestIPPorts = append(scanDestIPPorts, addr+":"+port)
 			}
 		}
 	}
 
-	m := map[string]bool{}
-	dest := []string{}
-	for _, e := range d {
-		if !m[e] {
-			m[e] = true
-			dest = append(dest, e)
+	checkScanDestIPPorts := map[string]bool{}
+	uniqScanDestIPPorts := []string{}
+	for _, e := range scanDestIPPorts {
+		if !checkScanDestIPPorts[e] {
+			checkScanDestIPPorts[e] = true
+			uniqScanDestIPPorts = append(uniqScanDestIPPorts, e)
 		}
 	}
 
-	return dest
+	return uniqScanDestIPPorts
 }
 
-func (l *base) execPortsScan(dest []string) ([]string, error) {
-	open := []string{}
+func (l *base) execPortsScan(scanDestIPPorts []string) ([]string, error) {
+	listenIPPorts := []string{}
 
-	for _, d := range dest {
-		conn, err := net.DialTimeout("tcp", d, time.Duration(1)*time.Second)
+	for _, ipPort := range scanDestIPPorts {
+		conn, err := net.DialTimeout("tcp", ipPort, time.Duration(1)*time.Second)
 		if err != nil {
 			continue
 		}
 		conn.Close()
-		open = append(open, d)
+		listenIPPorts = append(listenIPPorts, ipPort)
 	}
 
-	return open, nil
+	return listenIPPorts, nil
 }
 
-func (l *base) updatePortStatus(open []string) {
+func (l *base) updatePortStatus(listenIPPorts []string) {
 	for name, p := range l.osPackages.Packages {
 		if p.AffectedProcs == nil {
 			continue
 		}
-		for proci, proc := range p.AffectedProcs {
+		for i, proc := range p.AffectedProcs {
 			if proc.ListenPorts == nil {
 				continue
 			}
-			for porti, port := range proc.ListenPorts {
-				l.osPackages.Packages[name].AffectedProcs[proci].ListenPorts[porti].PortScanSuccessOn = matchListenPorts(open, port)
+			for j, port := range proc.ListenPorts {
+				l.osPackages.Packages[name].AffectedProcs[i].ListenPorts[j].PortScanSuccessOn = l.findPortScanSuccessOn(listenIPPorts, port)
 			}
 		}
 	}
 }
 
-func matchListenPorts(open []string, port models.ListenPorts) []string {
-	match := []string{}
+func (l *base) findPortScanSuccessOn(listenIPPorts []string, searchListenPort models.ListenPort) []string {
+	addrs := []string{}
 
-	l := base{}
-	for _, ip := range open {
-		i := l.parseListenPorts(ip)
-		if port.Address == "*" {
-			if port.Port == i.Port {
-				match = append(match, i.Address)
+	for _, IPPort := range listenIPPorts {
+		IPPort := l.parseListenPorts(IPPort)
+		if searchListenPort.Address == "*" {
+			if searchListenPort.Port == IPPort.Port {
+				addrs = append(addrs, IPPort.Address)
 			}
-		} else {
-			if port.Address == i.Address && port.Port == i.Port {
-				match = append(match, i.Address)
-			}
+		} else if searchListenPort.Address == IPPort.Address && searchListenPort.Port == IPPort.Port {
+			addrs = append(addrs, IPPort.Address)
 		}
 	}
 
-	return match
+	return addrs
 }
 
 func (l *base) ps() (stdout string, err error) {
@@ -917,10 +913,10 @@ func (l *base) parseLsOf(stdout string) map[string]string {
 	return portPid
 }
 
-func (l *base) parseListenPorts(port string) models.ListenPorts {
+func (l *base) parseListenPorts(port string) models.ListenPort {
 	sep := strings.LastIndex(port, ":")
 	if sep == -1 {
-		return models.ListenPorts{}
+		return models.ListenPort{}
 	}
-	return models.ListenPorts{Address: port[:sep], Port: port[sep+1:]}
+	return models.ListenPort{Address: port[:sep], Port: port[sep+1:]}
 }
