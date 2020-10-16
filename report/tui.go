@@ -622,7 +622,7 @@ func summaryLines(r models.ScanResult) string {
 		av := vinfo.AttackVector()
 		for _, pname := range vinfo.AffectedPackages.Names() {
 			if r.Packages[pname].HasPortScanSuccessOn() {
-				av = fmt.Sprintf("%s %s", av, eyeEmoji)
+				av = fmt.Sprintf("%s %2s", av, eyeEmoji)
 				break
 			}
 		}
@@ -733,7 +733,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 							if len(pp.PortScanSuccessOn) == 0 {
 								ports = append(ports, fmt.Sprintf("%s:%s", pp.Address, pp.Port))
 							} else {
-								ports = append(ports, fmt.Sprintf("%s:%s(%sScannable: %s)", pp.Address, pp.Port, scanEmoji, pp.PortScanSuccessOn))
+								ports = append(ports, fmt.Sprintf("%s:%s(%2sScannable: %s)", pp.Address, pp.Port, scanEmoji, pp.PortScanSuccessOn))
 							}
 						}
 
