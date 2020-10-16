@@ -772,11 +772,11 @@ func (l *base) detectScanDest() []string {
 		}
 	}
 
-	checkScanDestIPPorts := map[string]bool{}
+	m := map[string]bool{}
 	uniqScanDestIPPorts := []string{}
 	for _, e := range scanDestIPPorts {
-		if !checkScanDestIPPorts[e] {
-			checkScanDestIPPorts[e] = true
+		if !m[e] {
+			m[e] = true
 			uniqScanDestIPPorts = append(uniqScanDestIPPorts, e)
 		}
 	}
