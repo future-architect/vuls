@@ -729,6 +729,109 @@ func (l *base) detectWpPlugins() ([]models.WpPackage, error) {
 	return plugins, nil
 }
 
+func (l *base) scanPorts() (err error) {
+	dest := l.detectScanDest()
+	open, err := l.execPortsScan(dest)
+	if err != nil {
+		return err
+	}
+	l.updatePortStatus(open)
+
+	return nil
+}
+
+func (l *base) detectScanDest() []string {
+	scanIPPortsMap := map[string][]string{}
+
+	for _, p := range l.osPackages.Packages {
+		if p.AffectedProcs == nil {
+			continue
+		}
+		for _, proc := range p.AffectedProcs {
+			if proc.ListenPorts == nil {
+				continue
+			}
+			for _, port := range proc.ListenPorts {
+				scanIPPortsMap[port.Address] = append(scanIPPortsMap[port.Address], port.Port)
+			}
+		}
+	}
+
+	scanDestIPPorts := []string{}
+	for addr, ports := range scanIPPortsMap {
+		if addr == "*" {
+			for _, addr := range l.ServerInfo.IPv4Addrs {
+				for _, port := range ports {
+					scanDestIPPorts = append(scanDestIPPorts, addr+":"+port)
+				}
+			}
+		} else {
+			for _, port := range ports {
+				scanDestIPPorts = append(scanDestIPPorts, addr+":"+port)
+			}
+		}
+	}
+
+	m := map[string]bool{}
+	uniqScanDestIPPorts := []string{}
+	for _, e := range scanDestIPPorts {
+		if !m[e] {
+			m[e] = true
+			uniqScanDestIPPorts = append(uniqScanDestIPPorts, e)
+		}
+	}
+
+	return uniqScanDestIPPorts
+}
+
+func (l *base) execPortsScan(scanDestIPPorts []string) ([]string, error) {
+	listenIPPorts := []string{}
+
+	for _, ipPort := range scanDestIPPorts {
+		conn, err := net.DialTimeout("tcp", ipPort, time.Duration(1)*time.Second)
+		if err != nil {
+			continue
+		}
+		conn.Close()
+		listenIPPorts = append(listenIPPorts, ipPort)
+	}
+
+	return listenIPPorts, nil
+}
+
+func (l *base) updatePortStatus(listenIPPorts []string) {
+	for name, p := range l.osPackages.Packages {
+		if p.AffectedProcs == nil {
+			continue
+		}
+		for i, proc := range p.AffectedProcs {
+			if proc.ListenPorts == nil {
+				continue
+			}
+			for j, port := range proc.ListenPorts {
+				l.osPackages.Packages[name].AffectedProcs[i].ListenPorts[j].PortScanSuccessOn = l.findPortScanSuccessOn(listenIPPorts, port)
+			}
+		}
+	}
+}
+
+func (l *base) findPortScanSuccessOn(listenIPPorts []string, searchListenPort models.ListenPort) []string {
+	addrs := []string{}
+
+	for _, ipPort := range listenIPPorts {
+		ipPort := l.parseListenPorts(ipPort)
+		if searchListenPort.Address == "*" {
+			if searchListenPort.Port == ipPort.Port {
+				addrs = append(addrs, ipPort.Address)
+			}
+		} else if searchListenPort.Address == ipPort.Address && searchListenPort.Port == ipPort.Port {
+			addrs = append(addrs, ipPort.Address)
+		}
+	}
+
+	return addrs
+}
+
 func (l *base) ps() (stdout string, err error) {
 	cmd := `LANGUAGE=en_US.UTF-8 ps --no-headers --ppid 2 -p 2 --deselect -o pid,comm`
 	r := l.exec(util.PrependProxyEnv(cmd), noSudo)
@@ -808,4 +911,12 @@ func (l *base) parseLsOf(stdout string) map[string]string {
 		portPid[ipPort] = pid
 	}
 	return portPid
+}
+
+func (l *base) parseListenPorts(port string) models.ListenPort {
+	sep := strings.LastIndex(port, ":")
+	if sep == -1 {
+		return models.ListenPort{}
+	}
+	return models.ListenPort{Address: port[:sep], Port: port[sep+1:]}
 }
