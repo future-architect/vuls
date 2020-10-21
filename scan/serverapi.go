@@ -635,14 +635,11 @@ func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanRes
 		if err = o.scanLibraries(); err != nil {
 			return xerrors.Errorf("Failed to scan Library: %w", err)
 		}
+		if err = o.scanPorts(); err != nil {
+			return xerrors.Errorf("Failed to scan Ports: %w", err)
+		}
 		return nil
 	}, timeoutSec)
-
-	for _, s := range servers {
-		if err = s.scanPorts(); err != nil {
-			util.Log.Errorf("Failed to scan Ports: %+v", err)
-		}
-	}
 
 	hostname, _ := os.Hostname()
 	ipv4s, ipv6s, err := util.IP()
