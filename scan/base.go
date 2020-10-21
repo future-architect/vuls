@@ -761,14 +761,10 @@ func (l *base) detectScanDest() map[string][]string {
 	for addr, ports := range scanIPPortsMap {
 		if addr == "*" {
 			for _, addr := range l.ServerInfo.IPv4Addrs {
-				for _, port := range ports {
-					scanDestIPPorts[addr] = append(scanDestIPPorts[addr], port)
-				}
+				scanDestIPPorts[addr] = append(scanDestIPPorts[addr], ports...)
 			}
 		} else {
-			for _, port := range ports {
-				scanDestIPPorts[addr] = append(scanDestIPPorts[addr], port)
-			}
+			scanDestIPPorts[addr] = append(scanDestIPPorts[addr], ports...)
 		}
 	}
 
