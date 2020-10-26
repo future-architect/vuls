@@ -16,7 +16,7 @@ import (
 )
 
 // Version of Vuls
-var Version = "0.9.9"
+var Version = "`make build` or `make install` will show the version"
 
 // Revision of Git
 var Revision string

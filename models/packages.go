@@ -174,9 +174,29 @@ type Changelog struct {
 
 // AffectedProcess keep a processes information affected by software update
 type AffectedProcess struct {
-	PID         string   `json:"pid,omitempty"`
-	Name        string   `json:"name,omitempty"`
-	ListenPorts []string `json:"listenPorts,omitempty"`
+	PID         string       `json:"pid,omitempty"`
+	Name        string       `json:"name,omitempty"`
+	ListenPorts []ListenPort `json:"listenPorts,omitempty"`
+}
+
+// ListenPort has the result of parsing the port information to the address and port.
+type ListenPort struct {
+	Address           string   `json:"address"`
+	Port              string   `json:"port"`
+	PortScanSuccessOn []string `json:"portScanSuccessOn"`
+}
+
+// HasPortScanSuccessOn checks if Package.AffectedProcs has PortScanSuccessOn
+func (p Package) HasPortScanSuccessOn() bool {
+	for _, ap := range p.AffectedProcs {
+		for _, lp := range ap.ListenPorts {
+			if len(lp.PortScanSuccessOn) > 0 {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // NeedRestartProcess keep a processes information affected by software update
