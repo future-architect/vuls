@@ -656,11 +656,12 @@ func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanRes
 		r.ScannedIPv4Addrs = ipv4s
 		r.ScannedIPv6Addrs = ipv6s
 		r.Config.Scan = config.Conf
-		results = append(results, r)
 
 		if 0 < len(r.Warnings) {
 			util.Log.Warnf("Some warnings occurred during scanning on %s. Please fix the warnings to get a useful information. Execute configtest subcommand before scanning to know the cause of the warnings. warnings: %v",
 				r.ServerName, r.Warnings)
+		} else {
+			results = append(results, r)
 		}
 	}
 	return results, nil
