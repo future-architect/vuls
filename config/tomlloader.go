@@ -37,6 +37,8 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	Conf.Exploit = conf.Exploit
 	Conf.Metasploit = conf.Metasploit
 
+	Conf.PortScan = conf.PortScan
+
 	d := conf.Default
 	Conf.Default = d
 	servers := make(map[string]ServerInfo)

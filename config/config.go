@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -120,6 +121,8 @@ type Config struct {
 	Exploit    ExploitConf    `json:"exploit,omitempty"`
 	Metasploit MetasploitConf `json:"metasploit,omitempty"`
 
+	PortScan PortScanConf `json:"portScan,omitempty"`
+
 	Slack    SlackConf    `json:"-"`
 	EMail    SMTPConf     `json:"-"`
 	HTTP     HTTPConf     `json:"-"`
@@ -169,6 +172,10 @@ func (c Config) ValidateOnConfigtest() bool {
 		errs = append(errs, err)
 	}
 
+	if portscanerrs := c.PortScan.Validate(); 0 < len(portscanerrs) {
+		errs = append(errs, portscanerrs...)
+	}
+
 	for _, err := range errs {
 		log.Error(err)
 	}
@@ -202,6 +209,10 @@ func (c Config) ValidateOnScan() bool {
 	_, err := valid.ValidateStruct(c)
 	if err != nil {
 		errs = append(errs, err)
+	}
+
+	if portscanerrs := c.PortScan.Validate(); 0 < len(portscanerrs) {
+		errs = append(errs, portscanerrs...)
 	}
 
 	for _, err := range errs {
@@ -1061,6 +1072,66 @@ func (cnf *MetasploitConf) Overwrite(cmdOpt MetasploitConf) {
 // IsFetchViaHTTP returns wether fetch via http
 func (cnf *MetasploitConf) IsFetchViaHTTP() bool {
 	return Conf.Metasploit.Type == "http"
+}
+
+// PortScanConf is external scanner config
+type PortScanConf struct {
+	// Path to external scanner
+	ScannerBinPath string
+
+	// set user has privileged (default: false)
+	HasPrivileged bool
+
+	// set the ScanTechnique for ScannerBinPath
+	ScanTechnique string
+}
+
+// Validate validates configuration
+func (c *PortScanConf) Validate() (errs []error) {
+	if c.ScannerBinPath == "" {
+		if c.ScanTechnique == "" {
+			return
+		}
+		errs = append(errs, xerrors.New("When setting ScanTechnique, it is also necessary to set ScannerBinPath."))
+	}
+
+	if _, err := exec.LookPath(c.ScannerBinPath); err != nil {
+		errs = append(errs, xerrors.Errorf("%s cannot be executed.", c.ScannerBinPath))
+	}
+
+	notSupportedTechniques := []string{"sU", "scanflags", "sI", "sY", "sZ", "sO", "b"}
+	for _, technique := range notSupportedTechniques {
+		if strings.Contains(c.ScanTechnique, technique) {
+			errs = append(errs, xerrors.Errorf("portScanConf.ScanTechnique do not support the technique: %s.", technique))
+		}
+	}
+
+	privilegedScanTechniques := []string{"sS", "sA", "sW", "sM", "sN", "sF", "sX"}
+	if !c.HasPrivileged {
+		for _, technique := range privilegedScanTechniques {
+			if strings.Contains(c.ScanTechnique, technique) {
+				errs = append(errs, xerrors.Errorf("This scanTechnique:%s is not available to users without privileges.", technique))
+			}
+		}
+	}
+
+	supportedScanTechniques := []string{"sS", "sT", "sN", "sF", "sX", "sA", "sW", "sM"}
+	scanTechniqueCount := 0
+	for _, technique := range supportedScanTechniques {
+		if strings.Contains(c.ScanTechnique, technique) {
+			scanTechniqueCount++
+		}
+		if scanTechniqueCount > 1 {
+			errs = append(errs, xerrors.New("Only one ScanTechnique can be set."))
+			break
+		}
+	}
+
+	if _, err := valid.ValidateStruct(c); err != nil {
+		errs = append(errs, err)
+	}
+
+	return
 }
 
 // AWS is aws config
