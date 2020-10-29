@@ -164,7 +164,7 @@ func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]stri
 			}
 
 			for _, port := range host.Ports {
-				if port.Status() == nmap.Open {
+				if strings.Contains(string(port.Status()), string(nmap.Open)) {
 					scanDest := fmt.Sprintf("%s:%d", ip, port.ID)
 					listenIPPorts = append(listenIPPorts, scanDest)
 				}
