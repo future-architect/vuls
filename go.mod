@@ -11,6 +11,7 @@ require (
 	github.com/Azure/azure-sdk-for-go v43.3.0+incompatible
 	github.com/BurntSushi/toml v0.3.1
 	github.com/RackSec/srslog v0.0.0-20180709174129-a4725f04ec91
+	github.com/Ullaakut/nmap/v2 v2.0.2
 	github.com/aquasecurity/fanal v0.0.0-20200615091807-df25cfa5f9af
 	github.com/aquasecurity/trivy v0.9.1
 	github.com/aquasecurity/trivy-db v0.0.0-20200616161554-cd5b3da29bc8
