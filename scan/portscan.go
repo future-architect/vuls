@@ -85,14 +85,12 @@ func (l *base) execPortsScan(scanDestIPPorts map[string][]string) ([]string, err
 		return listenIPPorts, nil
 	}
 
-	listenIPPorts, err := l.execNativePortScan(scanDestIPPorts)
-	if err != nil {
-		return []string{}, err
-	}
+	listenIPPorts := l.execNativePortScan(scanDestIPPorts)
+
 	return listenIPPorts, nil
 }
 
-func (l *base) execNativePortScan(scanDestIPPorts map[string][]string) ([]string, error) {
+func (l *base) execNativePortScan(scanDestIPPorts map[string][]string) []string {
 	listenIPPorts := []string{}
 
 	for ip, ports := range scanDestIPPorts {
@@ -103,7 +101,6 @@ func (l *base) execNativePortScan(scanDestIPPorts map[string][]string) ([]string
 		for _, port := range ports {
 			scanDest := ip + ":" + port
 			conn, err := net.DialTimeout("tcp", scanDest, time.Duration(1)*time.Second)
-			// TODO: error categorize
 			if err != nil {
 				continue
 			}
@@ -112,7 +109,7 @@ func (l *base) execNativePortScan(scanDestIPPorts map[string][]string) ([]string
 		}
 	}
 
-	return listenIPPorts, nil
+	return listenIPPorts
 }
 
 func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]string, error) {
