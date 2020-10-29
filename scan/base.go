@@ -729,17 +729,6 @@ func (l *base) detectWpPlugins() ([]models.WpPackage, error) {
 	return plugins, nil
 }
 
-func (l *base) scanPorts() (err error) {
-	dest := l.detectScanDest()
-	open, err := l.execPortsScan(dest)
-	if err != nil {
-		return err
-	}
-	l.updatePortStatus(open)
-
-	return nil
-}
-
 func (l *base) ps() (stdout string, err error) {
 	cmd := `LANGUAGE=en_US.UTF-8 ps --no-headers --ppid 2 -p 2 --deselect -o pid,comm`
 	r := l.exec(util.PrependProxyEnv(cmd), noSudo)

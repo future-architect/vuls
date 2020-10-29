@@ -16,6 +16,17 @@ func (l *base) parseListenPorts(port string) models.ListenPort {
 	return models.ListenPort{Address: port[:sep], Port: port[sep+1:]}
 }
 
+func (l *base) scanPorts() (err error) {
+	dest := l.detectScanDest()
+	open, err := l.execPortsScan(dest)
+	if err != nil {
+		return err
+	}
+	l.updatePortStatus(open)
+
+	return nil
+}
+
 func (l *base) detectScanDest() map[string][]string {
 	scanIPPortsMap := map[string][]string{}
 
