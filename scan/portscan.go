@@ -85,13 +85,19 @@ func (l *base) execPortsScan(scanDestIPPorts map[string][]string) ([]string, err
 		return listenIPPorts, nil
 	}
 
-	listenIPPorts := l.execNativePortScan(scanDestIPPorts)
+	listenIPPorts, err := l.execNativePortScan(scanDestIPPorts)
+	if err != nil {
+		return []string{}, err
+	}
 
 	return listenIPPorts, nil
 }
 
-func (l *base) execNativePortScan(scanDestIPPorts map[string][]string) []string {
+func (l *base) execNativePortScan(scanDestIPPorts map[string][]string) ([]string, error) {
 	listenIPPorts := []string{}
+
+	_, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
 	for ip, ports := range scanDestIPPorts {
 		if !isLocalExec(l.ServerInfo.Port, l.ServerInfo.Host) && net.ParseIP(ip).IsLoopback() {
@@ -100,16 +106,35 @@ func (l *base) execNativePortScan(scanDestIPPorts map[string][]string) []string 
 
 		for _, port := range ports {
 			scanDest := ip + ":" + port
-			conn, err := net.DialTimeout("tcp", scanDest, time.Duration(1)*time.Second)
+			isOpen, err := nativeScanPort(scanDest)
 			if err != nil {
-				continue
+				return []string{}, err
 			}
-			conn.Close()
-			listenIPPorts = append(listenIPPorts, scanDest)
+
+			if isOpen {
+				listenIPPorts = append(listenIPPorts, scanDest)
+			}
 		}
 	}
 
-	return listenIPPorts
+	return listenIPPorts, nil
+}
+
+func nativeScanPort(scanDest string) (bool, error) {
+	conn, err := net.DialTimeout("tcp", scanDest, time.Duration(1)*time.Second)
+	if err != nil {
+		if strings.Contains(err.Error(), "i/o timeout") || strings.Contains(err.Error(), "connection refused") {
+			return false, nil
+		}
+		if strings.Contains(err.Error(), "too many open files") {
+			time.Sleep(time.Duration(1) * time.Second)
+			return nativeScanPort(scanDest)
+		}
+		return false, err
+	}
+	conn.Close()
+
+	return true, nil
 }
 
 func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]string, error) {
