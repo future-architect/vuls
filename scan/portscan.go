@@ -143,7 +143,12 @@ func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]stri
 			scanner.AddOptions(nmap.WithUnprivileged())
 		}
 
-		scanner.AddOptions(nmap.WithTargets(ip), nmap.WithPorts(ports...))
+		if strings.Contains(ip, ":") {
+			scanner.AddOptions(nmap.WithTargets(ip[1:len(ip)-1]), nmap.WithPorts(ports...), nmap.WithIPv6Scanning())
+		} else {
+			scanner.AddOptions(nmap.WithTargets(ip), nmap.WithPorts(ports...))
+		}
+
 		result, warnings, err := scanner.Run()
 		if err != nil {
 			return []string{}, xerrors.Errorf("unable to run nmap sacn: %v", err)
