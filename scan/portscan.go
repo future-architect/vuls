@@ -96,9 +96,6 @@ func (l *base) execPortsScan(scanDestIPPorts map[string][]string) ([]string, err
 func (l *base) execNativePortScan(scanDestIPPorts map[string][]string) ([]string, error) {
 	listenIPPorts := []string{}
 
-	_, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
 	for ip, ports := range scanDestIPPorts {
 		if !isLocalExec(l.ServerInfo.Port, l.ServerInfo.Host) && net.ParseIP(ip).IsLoopback() {
 			continue
