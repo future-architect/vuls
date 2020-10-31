@@ -361,7 +361,7 @@ func (o *redhatBase) scanUpdatablePackages() (models.Packages, error) {
 		return nil, xerrors.Errorf("Failed to SSH: %s", r)
 	}
 
-	// Collect Updateble packages, installed, candidate version and repository.
+	// Collect Updatable packages, installed, candidate version and repository.
 	return o.parseUpdatablePacksLines(r.Stdout)
 }
 
@@ -496,9 +496,11 @@ func (o *redhatBase) yumPs() error {
 	if err != nil {
 		return xerrors.Errorf("Failed to ls of: %w", err)
 	}
-	portPid := o.parseLsOf(stdout)
-	for port, pid := range portPid {
-		pidListenPorts[pid] = append(pidListenPorts[pid], o.parseListenPorts(port))
+	portPids := o.parseLsOf(stdout)
+	for port, pids := range portPids {
+		for _, pid := range pids {
+			pidListenPorts[pid] = append(pidListenPorts[pid], o.parseListenPorts(port))
+		}
 	}
 
 	for pid, loadedFiles := range pidLoadedFiles {
@@ -630,8 +632,8 @@ func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
 func (o *redhatBase) getPkgName(paths []string) (pkgNames []string, err error) {
 	cmd := o.rpmQf(o.Distro) + strings.Join(paths, " ")
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
-	if !r.isSuccess() {
-		return nil, xerrors.Errorf("Failed to SSH: %s", r)
+	if !r.isSuccess(0, 2, 4, 8) {
+		return nil, xerrors.Errorf("Failed to rpm -qf: %s, cmd: %s", r, cmd)
 	}
 
 	scanner := bufio.NewScanner(strings.NewReader(r.Stdout))

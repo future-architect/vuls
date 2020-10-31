@@ -244,7 +244,7 @@ func Test_base_parseLsOf(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        args
-		wantPortPid map[string]string
+		wantPortPid map[string][]string
 	}{
 		{
 			name: "lsof",
@@ -257,13 +257,34 @@ node       1498          ubuntu   21u  IPv6  20132      0t0  TCP *:35401 (LISTEN
 node       1498          ubuntu   22u  IPv6  20133      0t0  TCP *:44801 (LISTEN)
 docker-pr  9135            root    4u  IPv6 297133      0t0  TCP *:6379 (LISTEN)`,
 			},
-			wantPortPid: map[string]string{
-				"localhost:53": "474",
-				"*:22":         "644",
-				"*:3128":       "959",
-				"*:35401":      "1498",
-				"*:44801":      "1498",
-				"*:6379":       "9135",
+			wantPortPid: map[string][]string{
+				"localhost:53": {"474"},
+				"*:22":         {"644"},
+				"*:3128":       {"959"},
+				"*:35401":      {"1498"},
+				"*:44801":      {"1498"},
+				"*:6379":       {"9135"},
+			},
+		},
+		{
+			name: "lsof-duplicate-port",
+			args: args{
+				stdout: `sshd      832   root    3u  IPv4  15731      0t0  TCP *:22 (LISTEN)
+sshd      832   root    4u  IPv6  15740      0t0  TCP *:22 (LISTEN)
+master   1099   root   13u  IPv4  16657      0t0  TCP 127.0.0.1:25 (LISTEN)
+master   1099   root   14u  IPv6  16658      0t0  TCP [::1]:25 (LISTEN)
+httpd   32250   root    4u  IPv6 334982      0t0  TCP *:80 (LISTEN)
+httpd   32251 apache    4u  IPv6 334982      0t0  TCP *:80 (LISTEN)
+httpd   32252 apache    4u  IPv6 334982      0t0  TCP *:80 (LISTEN)
+httpd   32253 apache    4u  IPv6 334982      0t0  TCP *:80 (LISTEN)
+httpd   32254 apache    4u  IPv6 334982      0t0  TCP *:80 (LISTEN)
+httpd   32255 apache    4u  IPv6 334982      0t0  TCP *:80 (LISTEN)`,
+			},
+			wantPortPid: map[string][]string{
+				"*:22":         {"832"},
+				"127.0.0.1:25": {"1099"},
+				"[::1]:25":     {"1099"},
+				"*:80":         {"32250", "32251", "32252", "32253", "32254", "32255"},
 			},
 		},
 	}
