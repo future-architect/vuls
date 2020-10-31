@@ -898,13 +898,13 @@ func (l *base) lsOfListen() (stdout string, err error) {
 	cmd := `lsof -i -P -n | grep LISTEN`
 	r := l.exec(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess(0, 1) {
-		return "", xerrors.Errorf("Failed to SSH: %s", r)
+		return "", xerrors.Errorf("Failed to lsof: %s", r)
 	}
 	return r.Stdout, nil
 }
 
-func (l *base) parseLsOf(stdout string) map[string]string {
-	portPid := map[string]string{}
+func (l *base) parseLsOf(stdout string) map[string][]string {
+	portPids := map[string][]string{}
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
 		ss := strings.Fields(scanner.Text())
@@ -912,9 +912,9 @@ func (l *base) parseLsOf(stdout string) map[string]string {
 			continue
 		}
 		pid, ipPort := ss[1], ss[8]
-		portPid[ipPort] = pid
+		portPids[ipPort] = util.AppendIfMissing(portPids[ipPort], pid)
 	}
-	return portPid
+	return portPids
 }
 
 func (l *base) parseListenPorts(port string) models.ListenPort {
