@@ -98,17 +98,12 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 
 		if c.Conf.FormatCsvList {
-			var p string
+			p := path + "_short.csv"
 			if c.Conf.Diff {
 				p = path + "_short_diff.csv"
-			} else {
-				p = path + "_short.csv"
 			}
-
-			err := formatCsvList(r, p)
-
-			if err == "" {
-				return xerrors.Errorf("Failed to write CSV. path: %s", p)
+			if err := formatCsvList(r, p); err != nil {
+				return xerrors.Errorf("Failed to write CSV: %s, %w", p, err)
 			}
 		}
 

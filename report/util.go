@@ -383,9 +383,8 @@ No CVE-IDs are found in updatable packages.
 	return
 }
 
-func formatCsvList(r models.ScanResult, path string) string {
+func formatCsvList(r models.ScanResult, path string) error {
 	data := [][]string{{"CVE-ID", "CVSS", "Attack", "PoC", "CERT", "Fixed", "NVD"}}
-
 	for _, vinfo := range r.ScannedCves.ToSortedSlice() {
 		max := vinfo.MaxCvssScore().Value.Score
 
@@ -404,28 +403,23 @@ func formatCsvList(r models.ScanResult, path string) string {
 		data = append(data, []string{
 			vinfo.CveID,
 			fmt.Sprintf("%4.1f", max),
-			fmt.Sprintf("%s", vinfo.AttackVector()),
+			vinfo.AttackVector(),
 			exploits,
 			vinfo.AlertDict.FormatSource(),
-			fmt.Sprintf("%s", vinfo.PatchStatus(r.Packages)),
+			vinfo.PatchStatus(r.Packages),
 			link,
 		})
-
 	}
+
 	file, err := os.Create(path)
 	if err != nil {
-		return fmt.Sprintf("Unable to create file: %s", err)
+		return xerrors.Errorf("Failed to create a file: %s, err: %w", path, err)
 	}
-
 	defer file.Close()
-
-	writer := csv.NewWriter(file)
-	err = writer.WriteAll(data)
-
-	if err != nil {
-		return fmt.Sprintf("Cannot write to file: %s", err)
+	if err := csv.NewWriter(file).WriteAll(data); err != nil {
+		return xerrors.Errorf("Failed to write to file: %s, err: %w", path, err)
 	}
-	return fmt.Sprintf("%s", data)
+	return nil
 }
 
 func cweURL(cweID string) string {
