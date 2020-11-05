@@ -27,7 +27,7 @@ func (w StdoutWriter) Write(rs ...models.ScanResult) error {
 		fmt.Print("\n")
 	}
 
-	if c.Conf.FormatList {
+	if c.Conf.FormatList || c.Conf.FormatCsvList {
 		for _, r := range rs {
 			fmt.Println(formatList(r))
 		}
