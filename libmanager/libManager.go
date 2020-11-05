@@ -17,8 +17,8 @@ import (
 	"github.com/future-architect/vuls/util"
 )
 
-// FillLibrary fills LibraryScanner information
-func FillLibrary(r *models.ScanResult) (totalCnt int, err error) {
+// DetectLibsCves fills LibraryScanner information
+func DetectLibsCves(r *models.ScanResult) (totalCnt int, err error) {
 	if len(r.LibraryScanners) == 0 {
 		return
 	}

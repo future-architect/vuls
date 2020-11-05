@@ -10,6 +10,7 @@ import (
 	"time"
 
 	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/libmanager"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/scan"
@@ -55,6 +56,14 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Invalid Content-Type: %s", contentType), http.StatusUnsupportedMediaType)
 		return
 	}
+
+	nCVEs, err := libmanager.DetectLibsCves(&result)
+	if err != nil {
+		util.Log.Error("Failed to fill with Library dependency: %w", err)
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+	}
+	util.Log.Infof("%s: %d CVEs are detected with Library",
+		result.FormatServerName(), nCVEs)
 
 	if err := report.FillCveInfo(h.DBclient, &result, []string{}, true); err != nil {
 		util.Log.Error(err)

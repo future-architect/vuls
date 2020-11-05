@@ -3,6 +3,7 @@ package models
 import (
 	"path/filepath"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/aquasecurity/trivy-db/pkg/db"
 	trivyDBTypes "github.com/aquasecurity/trivy-db/pkg/types"
 	"github.com/aquasecurity/trivy/pkg/detector/library"
@@ -10,9 +11,7 @@ import (
 	"github.com/aquasecurity/trivy/pkg/types"
 	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
-
 	// "github.com/aquasecurity/go-dep-parser/pkg/types"
-	"github.com/knqyf263/go-version"
 )
 
 // LibraryScanners is an array of LibraryScanner
@@ -46,7 +45,7 @@ func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 	}
 	var vulnerabilities = []VulnInfo{}
 	for _, pkg := range s.Libs {
-		v, err := version.NewVersion(pkg.Version)
+		v, err := semver.StrictNewVersion(pkg.Version)
 		if err != nil {
 			util.Log.Debugf("new version cant detected %s@%s", pkg.Name, pkg.Version)
 			continue
