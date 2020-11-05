@@ -41,14 +41,8 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 			}
 
 			var b []byte
-			if c.Conf.Debug {
-				if b, err = json.MarshalIndent(r, "", "    "); err != nil {
-					return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
-				}
-			} else {
-				if b, err = json.Marshal(r); err != nil {
-					return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
-				}
+			if b, err = json.MarshalIndent(r, "", "    "); err != nil {
+				return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
 			}
 			if err := writeFile(p, b, 0600); err != nil {
 				return xerrors.Errorf("Failed to write JSON. path: %s, err: %w", p, err)
