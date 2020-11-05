@@ -83,9 +83,15 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 				}
 			}
 
+			nCVEs, err := libmanager.DetectLibsCves(&r)
+			if err != nil {
+				return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
+			}
+			util.Log.Infof("%s: %d CVEs are detected with Library",
+				r.FormatServerName(), nCVEs)
+
 			// Integrations
 			githubInts := GithubSecurityAlerts(c.Conf.Servers[r.ServerName].GitHubRepos)
-
 			wpOpt := WordPressOption{c.Conf.Servers[r.ServerName].WordPress.WPVulnDBToken, &wpVulnCaches}
 
 			if err := FillCveInfo(dbclient,
@@ -127,7 +133,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 		}
 		filledResults = []models.ScanResult{}
 		for _, r := range diff {
-			if err := fillCveDetail(dbclient.CveDB, &r); err != nil {
+			if err := fillCvesWithNvdJvn(dbclient.CveDB, &r); err != nil {
 				return nil, err
 			}
 			filledResults = append(filledResults, r)
@@ -152,15 +158,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 // FillCveInfo fill scanResult with cve info.
 func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, ignoreWillNotFix bool, integrations ...Integration) error {
 	util.Log.Debugf("need to refresh")
-
-	nCVEs, err := libmanager.FillLibrary(r)
-	if err != nil {
-		return xerrors.Errorf("Failed to fill with Library dependency: %w", err)
-	}
-	util.Log.Infof("%s: %d CVEs are detected with Library",
-		r.FormatServerName(), nCVEs)
-
-	nCVEs, err = FillWithOval(dbclient.OvalDB, r)
+	nCVEs, err := DetectPkgsCvesWithOval(dbclient.OvalDB, r)
 	if err != nil {
 		return xerrors.Errorf("Failed to fill with OVAL: %w", err)
 	}
@@ -176,7 +174,7 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, igno
 		}
 	}
 
-	nCVEs, err = fillVulnByCpeURIs(dbclient.CveDB, r, cpeURIs)
+	nCVEs, err = DetectCpeURIsCves(dbclient.CveDB, r, cpeURIs)
 	if err != nil {
 		return xerrors.Errorf("Failed to detect vulns of `%s`: %w", cpeURIs, err)
 	}
@@ -190,7 +188,7 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, igno
 	}
 	util.Log.Infof("%s: %d CVEs are detected with GitHub Security Alerts", r.FormatServerName(), ints.GithubAlertsCveCounts)
 
-	nCVEs, err = FillWithGost(dbclient.GostDB, r, ignoreWillNotFix)
+	nCVEs, err = DetectPkgsCvesWithGost(dbclient.GostDB, r, ignoreWillNotFix)
 	if err != nil {
 		return xerrors.Errorf("Failed to fill with gost: %w", err)
 	}
@@ -198,12 +196,12 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, igno
 		r.FormatServerName(), nCVEs)
 
 	util.Log.Infof("Fill CVE detailed information with CVE-DB")
-	if err := fillCveDetail(dbclient.CveDB, r); err != nil {
+	if err := fillCvesWithNvdJvn(dbclient.CveDB, r); err != nil {
 		return xerrors.Errorf("Failed to fill with CVE: %w", err)
 	}
 
 	util.Log.Infof("Fill exploit information with Exploit-DB")
-	nExploitCve, err := FillWithExploit(dbclient.ExploitDB, r)
+	nExploitCve, err := FillWithExploitDB(dbclient.ExploitDB, r)
 	if err != nil {
 		return xerrors.Errorf("Failed to fill with exploit: %w", err)
 	}
@@ -222,8 +220,8 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, igno
 	return nil
 }
 
-// fillCveDetail fetches NVD, JVN from CVE Database
-func fillCveDetail(driver cvedb.DB, r *models.ScanResult) error {
+// fillCvesWithNvdJvn fetches NVD, JVN from CVE Database
+func fillCvesWithNvdJvn(driver cvedb.DB, r *models.ScanResult) error {
 	cveIDs := []string{}
 	for _, v := range r.ScannedCves {
 		cveIDs = append(cveIDs, v.CveID)
@@ -279,8 +277,8 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 	return dict
 }
 
-// FillWithOval fetches OVAL database
-func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error) {
+// DetectPkgsCvesWithOval fetches OVAL database
+func DetectPkgsCvesWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error) {
 	var ovalClient oval.Client
 	var ovalFamily string
 
@@ -348,23 +346,23 @@ func FillWithOval(driver ovaldb.DB, r *models.ScanResult) (nCVEs int, err error)
 	return ovalClient.FillWithOval(driver, r)
 }
 
-// FillWithGost fills CVEs with gost dataabase
+// DetectPkgsCvesWithGost fills CVEs with gost dataabase
 // https://github.com/knqyf263/gost
-func FillWithGost(driver gostdb.DB, r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
+func DetectPkgsCvesWithGost(driver gostdb.DB, r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
 	gostClient := gost.NewClient(r.Family)
-	// TODO chekc if fetched
-	// TODO chekc if fresh enough
+	// TODO check if fetched
+	// TODO check if fresh enough
 	if nCVEs, err = gostClient.DetectUnfixed(driver, r, ignoreWillNotFix); err != nil {
 		return
 	}
 	return nCVEs, gostClient.FillCVEsWithRedHat(driver, r)
 }
 
-// FillWithExploit fills Exploits with exploit dataabase
+// FillWithExploitDB fills Exploits with exploit dataabase
 // https://github.com/mozqnet/go-exploitdb
-func FillWithExploit(driver exploitdb.DB, r *models.ScanResult) (nExploitCve int, err error) {
-	// TODO chekc if fetched
-	// TODO chekc if fresh enough
+func FillWithExploitDB(driver exploitdb.DB, r *models.ScanResult) (nExploitCve int, err error) {
+	// TODO check if fetched
+	// TODO check if fresh enough
 	return exploit.FillWithExploit(driver, r)
 }
 
@@ -374,9 +372,9 @@ func FillWithMetasploit(driver metasploitdb.DB, r *models.ScanResult) (nMetasplo
 	return msf.FillWithMetasploit(driver, r)
 }
 
-func fillVulnByCpeURIs(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) (nCVEs int, err error) {
+func DetectCpeURIsCves(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) (nCVEs int, err error) {
 	if len(cpeURIs) != 0 && driver == nil && !config.Conf.CveDict.IsFetchViaHTTP() {
-		return 0, xerrors.Errorf("cpeURIs %s specified, but cve-dictionary DB not found. Fetch cve-dictionary beofre reporting. For details, see `https://github.com/kotakanbe/go-cve-dictionary#deploy-go-cve-dictionary`",
+		return 0, xerrors.Errorf("cpeURIs %s specified, but cve-dictionary DB not found. Fetch cve-dictionary before reporting. For details, see `https://github.com/kotakanbe/go-cve-dictionary#deploy-go-cve-dictionary`",
 			cpeURIs)
 	}
 
@@ -723,7 +721,7 @@ func EnsureUUIDs(configPath string, results models.ScanResults) (err error) {
 	}
 	str := strings.Replace(buf.String(), "\n  [", "\n\n  [", -1)
 	str = fmt.Sprintf("%s\n\n%s",
-		"# See REAME for details: https://vuls.io/docs/en/usage-settings.html",
+		"# See README for details: https://vuls.io/docs/en/usage-settings.html",
 		str)
 
 	return ioutil.WriteFile(realPath, []byte(str), 0600)

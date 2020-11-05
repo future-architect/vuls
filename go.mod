@@ -10,10 +10,11 @@ replace (
 require (
 	github.com/Azure/azure-sdk-for-go v43.3.0+incompatible
 	github.com/BurntSushi/toml v0.3.1
+	github.com/Masterminds/semver/v3 v3.1.0
 	github.com/RackSec/srslog v0.0.0-20180709174129-a4725f04ec91
-	github.com/aquasecurity/fanal v0.0.0-20200615091807-df25cfa5f9af
-	github.com/aquasecurity/trivy v0.9.1
-	github.com/aquasecurity/trivy-db v0.0.0-20200616161554-cd5b3da29bc8
+	github.com/aquasecurity/fanal v0.0.0-20200820074632-6de62ef86882
+	github.com/aquasecurity/trivy v0.12.0
+	github.com/aquasecurity/trivy-db v0.0.0-20200826140828-6da6467703aa
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 	github.com/aws/aws-sdk-go v1.33.21
 	github.com/boltdb/bolt v1.3.1
@@ -32,7 +33,6 @@ require (
 	github.com/knqyf263/go-cpe v0.0.0-20180327054844-659663f6eca2
 	github.com/knqyf263/go-deb-version v0.0.0-20190517075300-09fca494f03d
 	github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936
-	github.com/knqyf263/go-version v1.1.1
 	github.com/knqyf263/gost v0.1.4
 	github.com/kotakanbe/go-cve-dictionary v0.5.0
 	github.com/kotakanbe/go-pingscanner v0.1.0
@@ -50,9 +50,9 @@ require (
 	github.com/spf13/afero v1.3.0
 	github.com/spf13/cobra v1.0.0
 	github.com/takuzoo3868/go-msfdb v0.1.1
-	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
+	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	k8s.io/utils v0.0.0-20200619165400-6e3d28b6ed19
 )
