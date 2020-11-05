@@ -3,6 +3,7 @@ package models
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -502,4 +503,24 @@ func (r ScanResult) RemoveRaspbianPackFromResult() ScanResult {
 	result.SrcPackages = srcPacks
 
 	return result
+}
+
+func (r ScanResult) ClearFields(targetTagNames []string) ScanResult {
+	if len(targetTagNames) == 0 {
+		return r
+	}
+	target := map[string]bool{}
+	for _, n := range targetTagNames {
+		target[strings.ToLower(n)] = true
+	}
+	t := reflect.ValueOf(r).Type()
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		jsonValue := strings.Split(f.Tag.Get("json"), ",")[0]
+		if ok := target[strings.ToLower(jsonValue)]; ok {
+			vv := reflect.New(f.Type).Elem().Interface()
+			reflect.ValueOf(&r).Elem().FieldByName(f.Name).Set(reflect.ValueOf(vv))
+		}
+	}
+	return r
 }

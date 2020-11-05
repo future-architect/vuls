@@ -235,95 +235,14 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitFailure
 	}
 
-	// report
-	reports := []report.ResultWriter{
-		report.StdoutWriter{},
-	}
-
-	if c.Conf.ToSlack {
-		reports = append(reports, report.SlackWriter{})
-	}
-
-	if c.Conf.ToStride {
-		reports = append(reports, report.StrideWriter{})
-	}
-
-	if c.Conf.ToHipChat {
-		reports = append(reports, report.HipChatWriter{})
-	}
-
-	if c.Conf.ToChatWork {
-		reports = append(reports, report.ChatWorkWriter{})
-	}
-
-	if c.Conf.ToTelegram {
-		reports = append(reports, report.TelegramWriter{})
-	}
-
-	if c.Conf.ToEmail {
-		reports = append(reports, report.EMailWriter{})
-	}
-
-	if c.Conf.ToSyslog {
-		reports = append(reports, report.SyslogWriter{})
-	}
-
-	if c.Conf.ToHTTP {
-		reports = append(reports, report.HTTPRequestWriter{})
-	}
-
-	if c.Conf.ToLocalFile {
-		reports = append(reports, report.LocalFileWriter{
-			CurrentDir: dir,
-		})
-	}
-
-	if c.Conf.ToS3 {
-		if err := report.CheckIfBucketExists(); err != nil {
-			util.Log.Errorf("Check if there is a bucket beforehand: %s, err: %+v",
-				c.Conf.AWS.S3Bucket, err)
-			return subcommands.ExitUsageError
-		}
-		reports = append(reports, report.S3Writer{})
-	}
-
-	if c.Conf.ToAzureBlob {
-		if len(c.Conf.Azure.AccountName) == 0 {
-			c.Conf.Azure.AccountName = os.Getenv("AZURE_STORAGE_ACCOUNT")
-		}
-
-		if len(c.Conf.Azure.AccountKey) == 0 {
-			c.Conf.Azure.AccountKey = os.Getenv("AZURE_STORAGE_ACCESS_KEY")
-		}
-
-		if len(c.Conf.Azure.ContainerName) == 0 {
-			util.Log.Error("Azure storage container name is required with -azure-container option")
-			return subcommands.ExitUsageError
-		}
-		if err := report.CheckIfAzureContainerExists(); err != nil {
-			util.Log.Errorf("Check if there is a container beforehand: %s, err: %+v",
-				c.Conf.Azure.ContainerName, err)
-			return subcommands.ExitUsageError
-		}
-		reports = append(reports, report.AzureBlobWriter{})
-	}
-
-	if c.Conf.ToSaas {
-		if !c.Conf.UUID {
-			util.Log.Errorf("If you use the -to-saas option, you need to enable the uuid option")
-			return subcommands.ExitUsageError
-		}
-		reports = append(reports, report.SaasWriter{})
+	util.Log.Info("Validating config...")
+	if !c.Conf.ValidateOnReport() {
+		return subcommands.ExitUsageError
 	}
 
 	if !(c.Conf.FormatJSON || c.Conf.FormatOneLineText ||
 		c.Conf.FormatList || c.Conf.FormatFullText || c.Conf.FormatXML) {
 		c.Conf.FormatList = true
-	}
-
-	util.Log.Info("Validating config...")
-	if !c.Conf.ValidateOnReport() {
-		return subcommands.ExitUsageError
 	}
 
 	var loaded models.ScanResults
@@ -435,6 +354,87 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			util.Log.Errorf("%+v", err)
 			return subcommands.ExitFailure
 		}
+	}
+
+	// report
+	reports := []report.ResultWriter{
+		report.StdoutWriter{},
+	}
+
+	if c.Conf.ToSlack {
+		reports = append(reports, report.SlackWriter{})
+	}
+
+	if c.Conf.ToStride {
+		reports = append(reports, report.StrideWriter{})
+	}
+
+	if c.Conf.ToHipChat {
+		reports = append(reports, report.HipChatWriter{})
+	}
+
+	if c.Conf.ToChatWork {
+		reports = append(reports, report.ChatWorkWriter{})
+	}
+
+	if c.Conf.ToTelegram {
+		reports = append(reports, report.TelegramWriter{})
+	}
+
+	if c.Conf.ToEmail {
+		reports = append(reports, report.EMailWriter{})
+	}
+
+	if c.Conf.ToSyslog {
+		reports = append(reports, report.SyslogWriter{})
+	}
+
+	if c.Conf.ToHTTP {
+		reports = append(reports, report.HTTPRequestWriter{})
+	}
+
+	if c.Conf.ToLocalFile {
+		reports = append(reports, report.LocalFileWriter{
+			CurrentDir: dir,
+		})
+	}
+
+	if c.Conf.ToS3 {
+		if err := report.CheckIfBucketExists(); err != nil {
+			util.Log.Errorf("Check if there is a bucket beforehand: %s, err: %+v",
+				c.Conf.AWS.S3Bucket, err)
+			return subcommands.ExitUsageError
+		}
+		reports = append(reports, report.S3Writer{})
+	}
+
+	if c.Conf.ToAzureBlob {
+		if len(c.Conf.Azure.AccountName) == 0 {
+			c.Conf.Azure.AccountName = os.Getenv("AZURE_STORAGE_ACCOUNT")
+		}
+
+		if len(c.Conf.Azure.AccountKey) == 0 {
+			c.Conf.Azure.AccountKey = os.Getenv("AZURE_STORAGE_ACCESS_KEY")
+		}
+
+		if len(c.Conf.Azure.ContainerName) == 0 {
+			util.Log.Error("Azure storage container name is required with -azure-container option")
+			return subcommands.ExitUsageError
+		}
+		if err := report.CheckIfAzureContainerExists(); err != nil {
+			util.Log.Errorf("Check if there is a container beforehand: %s, err: %+v",
+				c.Conf.Azure.ContainerName, err)
+			return subcommands.ExitUsageError
+		}
+		reports = append(reports, report.AzureBlobWriter{})
+	}
+
+	if c.Conf.ToSaas {
+		if !c.Conf.UUID {
+			util.Log.Errorf("If you use the -to-saas option, you need to enable the uuid option")
+			return subcommands.ExitUsageError
+		}
+		reports = append(reports, report.SaasWriter{})
 	}
 
 	for _, w := range reports {
