@@ -45,7 +45,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		d.KeyPassword = keyPass
 	}
 
-	i := 0
+	index := 0
 	for serverName, v := range conf.Servers {
 		if 0 < len(v.KeyPassword) {
 			return xerrors.Errorf("[Deprecated] KEYPASSWORD IN CONFIG FILE ARE UNSECURE. REMOVE THEM IMMEDIATELY FOR A SECURITY REASONS. THEY WILL BE REMOVED IN A FUTURE RELEASE: %s", serverName)
@@ -268,8 +268,13 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		s.WordPress.OSUser = v.WordPress.OSUser
 		s.WordPress.IgnoreInactive = v.WordPress.IgnoreInactive
 
-		s.LogMsgAnsiColor = Colors[i%len(Colors)]
-		i++
+		s.IgnoredJSONKeys = v.IgnoredJSONKeys
+		if len(s.IgnoredJSONKeys) == 0 {
+			s.IgnoredJSONKeys = d.IgnoredJSONKeys
+		}
+
+		s.LogMsgAnsiColor = Colors[index%len(Colors)]
+		index++
 
 		servers[serverName] = s
 	}

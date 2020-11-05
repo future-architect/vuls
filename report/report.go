@@ -43,105 +43,112 @@ const (
 
 // FillCveInfos fills CVE Detailed Information
 func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
-	var filledResults []models.ScanResult
+
+	// Use the same reportedAt for all rs
 	reportedAt := time.Now()
-	hostname, _ := os.Hostname()
-	wpVulnCaches := map[string]string{}
-	for _, r := range rs {
-		if c.Conf.RefreshCve || needToRefreshCve(r) {
-			if !useScannedCves(&r) {
-				r.ScannedCves = models.VulnInfos{}
-			}
-			cpeURIs := []string{}
+	for i, r := range rs {
+		if !c.Conf.RefreshCve && !needToRefreshCve(r) {
+			util.Log.Info("No need to refresh")
+			continue
+		}
 
-			if len(r.Container.ContainerID) == 0 {
-				cpeURIs = c.Conf.Servers[r.ServerName].CpeNames
-				owaspDCXMLPath := c.Conf.Servers[r.ServerName].OwaspDCXMLPath
-				if owaspDCXMLPath != "" {
-					cpes, err := parser.Parse(owaspDCXMLPath)
-					if err != nil {
-						return nil, xerrors.Errorf("Failed to read OWASP Dependency Check XML on %s, `%s`, err: %w",
-							r.ServerName, owaspDCXMLPath, err)
-					}
-					cpeURIs = append(cpeURIs, cpes...)
+		if !useScannedCves(&r) {
+			r.ScannedCves = models.VulnInfos{}
+		}
+
+		cpeURIs := []string{}
+		if len(r.Container.ContainerID) == 0 {
+			cpeURIs = c.Conf.Servers[r.ServerName].CpeNames
+			owaspDCXMLPath := c.Conf.Servers[r.ServerName].OwaspDCXMLPath
+			if owaspDCXMLPath != "" {
+				cpes, err := parser.Parse(owaspDCXMLPath)
+				if err != nil {
+					return nil, xerrors.Errorf("Failed to read OWASP Dependency Check XML on %s, `%s`, err: %w",
+						r.ServerName, owaspDCXMLPath, err)
 				}
-			} else {
-				// runningContainer
-				if s, ok := c.Conf.Servers[r.ServerName]; ok {
-					if con, ok := s.Containers[r.Container.Name]; ok {
-						cpeURIs = con.Cpes
-						owaspDCXMLPath := con.OwaspDCXMLPath
-						if owaspDCXMLPath != "" {
-							cpes, err := parser.Parse(owaspDCXMLPath)
-							if err != nil {
-								return nil, xerrors.Errorf("Failed to read OWASP Dependency Check XML on %s, `%s`, err: %w",
-									r.ServerInfo(), owaspDCXMLPath, err)
-							}
-							cpeURIs = append(cpeURIs, cpes...)
-						}
-					}
-				}
+				cpeURIs = append(cpeURIs, cpes...)
 			}
-
-			nCVEs, err := libmanager.DetectLibsCves(&r)
-			if err != nil {
-				return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
-			}
-			util.Log.Infof("%s: %d CVEs are detected with Library",
-				r.FormatServerName(), nCVEs)
-
-			// Integrations
-			githubInts := GithubSecurityAlerts(c.Conf.Servers[r.ServerName].GitHubRepos)
-			wpOpt := WordPressOption{c.Conf.Servers[r.ServerName].WordPress.WPVulnDBToken, &wpVulnCaches}
-
-			if err := FillCveInfo(dbclient,
-				&r,
-				cpeURIs,
-				true,
-				githubInts,
-				wpOpt); err != nil {
-				return nil, err
-			}
-			r.Lang = c.Conf.Lang
-			r.ReportedAt = reportedAt
-			r.ReportedVersion = c.Version
-			r.ReportedRevision = c.Revision
-			r.ReportedBy = hostname
-			r.Config.Report = c.Conf
-			r.Config.Report.Servers = map[string]c.ServerInfo{
-				r.ServerName: c.Conf.Servers[r.ServerName],
-			}
-			if err := overwriteJSONFile(dir, r); err != nil {
-				return nil, xerrors.Errorf("Failed to write JSON: %w", err)
-			}
-			filledResults = append(filledResults, r)
 		} else {
-			util.Log.Debugf("No need to refresh")
-			filledResults = append(filledResults, r)
+			// runningContainer
+			if s, ok := c.Conf.Servers[r.ServerName]; ok {
+				if con, ok := s.Containers[r.Container.Name]; ok {
+					cpeURIs = con.Cpes
+					owaspDCXMLPath := con.OwaspDCXMLPath
+					if owaspDCXMLPath != "" {
+						cpes, err := parser.Parse(owaspDCXMLPath)
+						if err != nil {
+							return nil, xerrors.Errorf("Failed to read OWASP Dependency Check XML on %s, `%s`, err: %w",
+								r.ServerInfo(), owaspDCXMLPath, err)
+						}
+						cpeURIs = append(cpeURIs, cpes...)
+					}
+				}
+			}
+		}
+
+		nCVEs, err := libmanager.DetectLibsCves(&r)
+		if err != nil {
+			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
+		}
+		util.Log.Infof("%s: %d CVEs are detected with Library",
+			r.FormatServerName(), nCVEs)
+
+		// Integrations
+		githubInts := GithubSecurityAlerts(c.Conf.Servers[r.ServerName].GitHubRepos)
+
+		wpVulnCaches := map[string]string{}
+		wpOpt := WordPressOption{c.Conf.Servers[r.ServerName].WordPress.WPVulnDBToken, &wpVulnCaches}
+
+		if err := FillCveInfo(dbclient,
+			&r,
+			cpeURIs,
+			true,
+			githubInts,
+			wpOpt); err != nil {
+			return nil, err
+		}
+
+		r.ReportedBy, _ = os.Hostname()
+		r.Lang = c.Conf.Lang
+		r.ReportedAt = reportedAt
+		r.ReportedVersion = c.Version
+		r.ReportedRevision = c.Revision
+		r.Config.Report = c.Conf
+		r.Config.Report.Servers = map[string]c.ServerInfo{
+			r.ServerName: c.Conf.Servers[r.ServerName],
+		}
+		rs[i] = r
+	}
+
+	// Overwrite the json file every time to clear the fields specified in config.IgnoredJSONKeys
+	for _, r := range rs {
+		if s, ok := c.Conf.Servers[r.ServerName]; ok {
+			r = r.ClearFields(s.IgnoredJSONKeys)
+		}
+		if err := overwriteJSONFile(dir, r); err != nil {
+			return nil, xerrors.Errorf("Failed to write JSON: %w", err)
 		}
 	}
 
 	if c.Conf.Diff {
-		prevs, err := loadPrevious(filledResults)
+		prevs, err := loadPrevious(rs)
 		if err != nil {
 			return nil, err
 		}
 
-		diff, err := diff(filledResults, prevs)
+		diff, err := diff(rs, prevs)
 		if err != nil {
 			return nil, err
 		}
-		filledResults = []models.ScanResult{}
-		for _, r := range diff {
+		for i, r := range diff {
 			if err := fillCvesWithNvdJvn(dbclient.CveDB, &r); err != nil {
 				return nil, err
 			}
-			filledResults = append(filledResults, r)
+			rs[i] = r
 		}
 	}
 
-	filtered := []models.ScanResult{}
-	for _, r := range filledResults {
+	for i, r := range rs {
 		r = r.FilterByCvssOver(c.Conf.CvssScoreOver)
 		r = r.FilterIgnoreCves()
 		r = r.FilterUnfixed()
@@ -150,9 +157,9 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 		if c.Conf.IgnoreUnscoredCves {
 			r.ScannedCves = r.ScannedCves.FindScoredVulns()
 		}
-		filtered = append(filtered, r)
+		rs[i] = r
 	}
-	return filtered, nil
+	return rs, nil
 }
 
 // FillCveInfo fill scanResult with cve info.

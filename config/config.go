@@ -1121,18 +1121,17 @@ type ServerInfo struct {
 	Lockfiles              []string                    `toml:"lockfiles,omitempty" json:"lockfiles,omitempty"`   // ie) path/to/package-lock.json
 	FindLock               bool                        `toml:"findLock,omitempty" json:"findLock,omitempty"`
 	Type                   string                      `toml:"type,omitempty" json:"type,omitempty"` // "pseudo" or ""
+	WordPress              WordPressConf               `toml:"wordpress,omitempty" json:"wordpress,omitempty"`
+	IgnoredJSONKeys        []string                    `toml:"ignoredJSONKeys,omitempty" json:"ignoredJSONKeys,omitempty"`
 
-	WordPress WordPressConf `toml:"wordpress,omitempty" json:"wordpress,omitempty"`
-
-	// used internal
-	IPv4Addrs      []string       `toml:"-" json:"ipv4Addrs,omitempty"`
-	IPv6Addrs      []string       `toml:"-" json:"ipv6Addrs,omitempty"`
-	IPSIdentifiers map[IPS]string `toml:"-" json:"ipsIdentifiers,omitempty"`
-
-	LogMsgAnsiColor string    `toml:"-" json:"-"` // DebugLog Color
-	Container       Container `toml:"-" json:"-"`
-	Distro          Distro    `toml:"-" json:"-"`
-	Mode            ScanMode  `toml:"-" json:"-"`
+	// internal use
+	IPv4Addrs       []string       `toml:"-" json:"ipv4Addrs,omitempty"`
+	IPv6Addrs       []string       `toml:"-" json:"ipv6Addrs,omitempty"`
+	IPSIdentifiers  map[IPS]string `toml:"-" json:"ipsIdentifiers,omitempty"`
+	LogMsgAnsiColor string         `toml:"-" json:"-"` // DebugLog Color
+	Container       Container      `toml:"-" json:"-"`
+	Distro          Distro         `toml:"-" json:"-"`
+	Mode            ScanMode       `toml:"-" json:"-"`
 }
 
 // ContainerSetting is used for loading container setting in config.toml
