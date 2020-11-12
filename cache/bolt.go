@@ -1,30 +1,13 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Architect, Inc. Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package cache
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
 	"github.com/future-architect/vuls/util"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/xerrors"
 )
 
 // Bolt holds a pointer of bolt.DB
@@ -69,7 +52,7 @@ func (b *Bolt) createBucketIfNotExists(name string) error {
 	return b.db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(name))
 		if err != nil {
-			return fmt.Errorf("Failed to create bucket: %s", err)
+			return xerrors.Errorf("Failed to create bucket: %w", err)
 		}
 		return nil
 	})
@@ -98,7 +81,7 @@ func (b Bolt) RefreshMeta(meta Meta) error {
 	meta.CreatedAt = time.Now()
 	jsonBytes, err := json.Marshal(meta)
 	if err != nil {
-		return fmt.Errorf("Failed to marshal to JSON: %s", err)
+		return xerrors.Errorf("Failed to marshal to JSON: %w", err)
 	}
 	return b.db.Update(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket([]byte(metabucket))
@@ -114,7 +97,7 @@ func (b Bolt) RefreshMeta(meta Meta) error {
 func (b Bolt) EnsureBuckets(meta Meta) error {
 	jsonBytes, err := json.Marshal(meta)
 	if err != nil {
-		return fmt.Errorf("Failed to marshal to JSON: %s", err)
+		return xerrors.Errorf("Failed to marshal to JSON: %w", err)
 	}
 	return b.db.Update(func(tx *bolt.Tx) error {
 		b.Log.Debugf("Put to meta: %s", meta.Name)
@@ -158,12 +141,12 @@ func (b Bolt) PrettyPrint(meta Meta) error {
 	})
 }
 
-// GetChangelog get the changelgo of specified packName from the Bucket
+// GetChangelog get the changelog of specified packName from the Bucket
 func (b Bolt) GetChangelog(servername, packName string) (changelog string, err error) {
 	err = b.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket([]byte(servername))
 		if bkt == nil {
-			return fmt.Errorf("Faild to get Bucket: %s", servername)
+			return xerrors.Errorf("Failed to get Bucket: %s", servername)
 		}
 		v := bkt.Get([]byte(packName))
 		if v == nil {
@@ -181,11 +164,8 @@ func (b Bolt) PutChangelog(servername, packName, changelog string) error {
 	return b.db.Update(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket([]byte(servername))
 		if bkt == nil {
-			return fmt.Errorf("Faild to get Bucket: %s", servername)
+			return xerrors.Errorf("Failed to get Bucket: %s", servername)
 		}
-		if err := bkt.Put([]byte(packName), []byte(changelog)); err != nil {
-			return err
-		}
-		return nil
+		return bkt.Put([]byte(packName), []byte(changelog))
 	})
 }

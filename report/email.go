@@ -1,32 +1,18 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Architect, Inc. Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package report
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/mail"
-	"net/smtp"
 	"strings"
 	"time"
 
+	sasl "github.com/emersion/go-sasl"
+	smtp "github.com/emersion/go-smtp"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"golang.org/x/xerrors"
 )
 
 // EMailWriter send mail
@@ -34,50 +20,195 @@ type EMailWriter struct{}
 
 func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 	conf := config.Conf
-	to := strings.Join(conf.EMail.To[:], ", ")
-	cc := strings.Join(conf.EMail.Cc[:], ", ")
-	mailAddresses := append(conf.EMail.To, conf.EMail.Cc...)
-	if _, err := mail.ParseAddressList(strings.Join(mailAddresses[:], ", ")); err != nil {
-		return fmt.Errorf("Failed to parse email addresses: %s", err)
+	var message string
+	sender := NewEMailSender()
+	m := map[string]int{}
+	for _, r := range rs {
+		if conf.FormatOneEMail {
+			message += formatFullPlainText(r) + "\r\n\r\n"
+			mm := r.ScannedCves.CountGroupBySeverity()
+			keys := []string{"High", "Medium", "Low", "Unknown"}
+			for _, k := range keys {
+				m[k] += mm[k]
+			}
+		} else {
+			var subject string
+			if len(r.Errors) != 0 {
+				subject = fmt.Sprintf("%s%s An error occurred while scanning",
+					conf.EMail.SubjectPrefix, r.ServerInfo())
+			} else {
+				subject = fmt.Sprintf("%s%s %s",
+					conf.EMail.SubjectPrefix,
+					r.ServerInfo(),
+					r.ScannedCves.FormatCveSummary())
+			}
+			if conf.FormatList {
+				message = formatList(r)
+			} else {
+				message = formatFullPlainText(r)
+			}
+			if conf.FormatOneLineText {
+				message = fmt.Sprintf("One Line Summary\r\n================\r\n%s", formatOneLineSummary(r))
+			}
+			if err := sender.Send(subject, message); err != nil {
+				return err
+			}
+		}
+	}
+	var summary string
+	if config.Conf.IgnoreUnscoredCves {
+		summary = fmt.Sprintf("Total: %d (High:%d Medium:%d Low:%d)",
+			m["High"]+m["Medium"]+m["Low"], m["High"], m["Medium"], m["Low"])
+	} else {
+		summary = fmt.Sprintf("Total: %d (High:%d Medium:%d Low:%d ?:%d)",
+			m["High"]+m["Medium"]+m["Low"]+m["Unknown"],
+			m["High"], m["Medium"], m["Low"], m["Unknown"])
+	}
+	origmessage := message
+	if conf.FormatOneEMail {
+		message = fmt.Sprintf("One Line Summary\r\n================\r\n%s", formatOneLineSummary(rs...))
+		if !conf.FormatOneLineText {
+			message += fmt.Sprintf("\r\n\r\n%s", origmessage)
+		}
+
+		subject := fmt.Sprintf("%s %s",
+			conf.EMail.SubjectPrefix, summary)
+		return sender.Send(subject, message)
+	}
+	return nil
+}
+
+// EMailSender is interface of sending e-mail
+type EMailSender interface {
+	Send(subject, body string) error
+}
+
+type emailSender struct {
+	conf config.SMTPConf
+}
+
+func (e *emailSender) sendMail(smtpServerAddr, message string) (err error) {
+	var c *smtp.Client
+	var auth sasl.Client
+	emailConf := e.conf
+	//TLS Config
+	tlsConfig := &tls.Config{
+		ServerName: emailConf.SMTPAddr,
+	}
+	switch emailConf.SMTPPort {
+	case "465":
+		//New TLS connection
+		c, err = smtp.DialTLS(smtpServerAddr, tlsConfig)
+		if err != nil {
+			return xerrors.Errorf("Failed to create TLS connection to SMTP server: %w", err)
+		}
+	default:
+		c, err = smtp.Dial(smtpServerAddr)
+		if err != nil {
+			return xerrors.Errorf("Failed to create connection to SMTP server: %w", err)
+		}
+	}
+	defer c.Close()
+
+	if err = c.Hello("localhost"); err != nil {
+		return xerrors.Errorf("Failed to send Hello command: %w", err)
 	}
 
-	for _, r := range rs {
-		subject := fmt.Sprintf("%s%s %s",
-			conf.EMail.SubjectPrefix,
-			r.ServerInfo(),
-			r.CveSummary(),
-		)
-
-		headers := make(map[string]string)
-		headers["From"] = conf.EMail.From
-		headers["To"] = to
-		headers["Cc"] = cc
-		headers["Subject"] = subject
-		headers["Date"] = time.Now().Format(time.RFC1123Z)
-		headers["Content-Type"] = "text/plain; charset=utf-8"
-
-		var message string
-		for k, v := range headers {
-			message += fmt.Sprintf("%s: %s\r\n", k, v)
+	if ok, _ := c.Extension("STARTTLS"); ok {
+		if err := c.StartTLS(tlsConfig); err != nil {
+			return xerrors.Errorf("Failed to STARTTLS: %w", err)
 		}
-		message += "\r\n" + toFullPlainText(r)
+	}
 
-		smtpServer := net.JoinHostPort(conf.EMail.SMTPAddr, conf.EMail.SMTPPort)
-		err = smtp.SendMail(
-			smtpServer,
-			smtp.PlainAuth(
-				"",
-				conf.EMail.User,
-				conf.EMail.Password,
-				conf.EMail.SMTPAddr,
-			),
-			conf.EMail.From,
-			conf.EMail.To,
-			[]byte(message),
-		)
+	if ok, param := c.Extension("AUTH"); ok {
+		authList := strings.Split(param, " ")
+		auth = e.newSaslClient(authList)
+	}
 
+	if err = c.Auth(auth); err != nil {
+		return xerrors.Errorf("Failed to authenticate: %w", err)
+	}
+	if err = c.Mail(emailConf.From, nil); err != nil {
+		return xerrors.Errorf("Failed to send Mail command: %w", err)
+	}
+	for _, to := range emailConf.To {
+		if err = c.Rcpt(to); err != nil {
+			return xerrors.Errorf("Failed to send Rcpt command: %w", err)
+		}
+	}
+
+	w, err := c.Data()
+	if err != nil {
+		return xerrors.Errorf("Failed to send Data command: %w", err)
+	}
+	_, err = w.Write([]byte(message))
+	if err != nil {
+		return xerrors.Errorf("Failed to write EMail message: %w", err)
+	}
+	err = w.Close()
+	if err != nil {
+		return xerrors.Errorf("Failed to close Writer: %w", err)
+	}
+	err = c.Quit()
+	if err != nil {
+		return xerrors.Errorf("Failed to close connection: %w", err)
+	}
+	return nil
+}
+
+func (e *emailSender) Send(subject, body string) (err error) {
+	emailConf := e.conf
+	to := strings.Join(emailConf.To[:], ", ")
+	cc := strings.Join(emailConf.Cc[:], ", ")
+	mailAddresses := append(emailConf.To, emailConf.Cc...)
+	if _, err := mail.ParseAddressList(strings.Join(mailAddresses[:], ", ")); err != nil {
+		return xerrors.Errorf("Failed to parse email addresses: %w", err)
+	}
+
+	headers := make(map[string]string)
+	headers["From"] = emailConf.From
+	headers["To"] = to
+	headers["Cc"] = cc
+	headers["Subject"] = subject
+	headers["Date"] = time.Now().Format(time.RFC1123Z)
+	headers["Content-Type"] = "text/plain; charset=utf-8"
+
+	var header string
+	for k, v := range headers {
+		header += fmt.Sprintf("%s: %s\r\n", k, v)
+	}
+	message := fmt.Sprintf("%s\r\n%s", header, body)
+
+	smtpServer := net.JoinHostPort(emailConf.SMTPAddr, emailConf.SMTPPort)
+
+	if emailConf.User != "" && emailConf.Password != "" {
+		err = e.sendMail(smtpServer, message)
 		if err != nil {
-			return fmt.Errorf("Failed to send emails: %s", err)
+			return xerrors.Errorf("Failed to send emails: %w", err)
+		}
+		return nil
+	}
+	err = e.sendMail(smtpServer, message)
+	if err != nil {
+		return xerrors.Errorf("Failed to send emails: %w", err)
+	}
+	return nil
+}
+
+// NewEMailSender creates emailSender
+func NewEMailSender() EMailSender {
+	return &emailSender{config.Conf.EMail}
+}
+
+func (e *emailSender) newSaslClient(authList []string) sasl.Client {
+	for _, v := range authList {
+		switch v {
+		case "PLAIN":
+			auth := sasl.NewPlainClient("", e.conf.User, e.conf.Password)
+			return auth
+		case "LOGIN":
+			auth := sasl.NewLoginClient(e.conf.User, e.conf.Password)
+			return auth
 		}
 	}
 	return nil

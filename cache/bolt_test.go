@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Architect, Inc. Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package cache
 
 import (
@@ -22,10 +5,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/sirupsen/logrus"
 )
 
 const path = "/tmp/vuls-test-cache-11111111.db"
@@ -37,8 +20,8 @@ var meta = Meta{
 		Family:  "ubuntu",
 		Release: "16.04",
 	},
-	Packs: []models.PackageInfo{
-		{
+	Packs: models.Packages{
+		"apt": {
 			Name:    "apt",
 			Version: "1",
 		},
@@ -63,7 +46,7 @@ func TestSetupBolt(t *testing.T) {
 		t.Errorf("Failed to open bolt: %s", err)
 	}
 
-	db.View(func(tx *bolt.Tx) error {
+	_ = db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket([]byte(metabucket))
 		if bkt == nil {
 			t.Errorf("Meta bucket nof found")
@@ -104,7 +87,7 @@ func TestEnsureBuckets(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to open bolt: %s", err)
 	}
-	db.View(func(tx *bolt.Tx) error {
+	_ = db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket([]byte(servername))
 		if bkt == nil {
 			t.Errorf("Meta bucket nof found")

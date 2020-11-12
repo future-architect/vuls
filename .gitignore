@@ -13,3 +13,6 @@ log/
 results/
 *config.toml
 !setup/docker/*
+.DS_Store
+dist/
+.idea

@@ -1,29 +1,13 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Architect, Inc. Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package scan
 
 import (
-	"fmt"
+	"net"
 	"strings"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	"golang.org/x/xerrors"
 )
 
 // inherit OsTypeInterface
@@ -33,7 +17,14 @@ type bsd struct {
 
 // NewBSD constructor
 func newBsd(c config.ServerInfo) *bsd {
-	d := &bsd{}
+	d := &bsd{
+		base: base{
+			osPackages: osPackages{
+				Packages:  models.Packages{},
+				VulnInfos: models.VulnInfos{},
+			},
+		},
+	}
 	d.log = util.NewCustomLogger(c)
 	d.setServerInfo(c)
 	return d
@@ -44,94 +35,182 @@ func detectFreebsd(c config.ServerInfo) (itsMe bool, bsd osTypeInterface) {
 	bsd = newBsd(c)
 
 	// Prevent from adding `set -o pipefail` option
-	c.Distro = config.Distro{Family: "FreeBSD"}
+	c.Distro = config.Distro{Family: config.FreeBSD}
 
 	if r := exec(c, "uname", noSudo); r.isSuccess() {
-		if strings.Contains(r.Stdout, "FreeBSD") == true {
-			if b := exec(c, "uname -r", noSudo); b.isSuccess() {
+		if strings.Contains(strings.ToLower(r.Stdout), config.FreeBSD) == true {
+			if b := exec(c, "freebsd-version", noSudo); b.isSuccess() {
 				rel := strings.TrimSpace(b.Stdout)
-				bsd.setDistro("FreeBSD", rel)
+				bsd.setDistro(config.FreeBSD, rel)
 				return true, bsd
 			}
 		}
 	}
-	Log.Debugf("Not FreeBSD. servernam: %s", c.ServerName)
+	util.Log.Debugf("Not FreeBSD. servernam: %s", c.ServerName)
 	return false, bsd
+}
+
+func (o *bsd) checkScanMode() error {
+	if o.getServerInfo().Mode.IsOffline() {
+		return xerrors.New("Remove offline scan mode, FreeBSD needs internet connection")
+	}
+	return nil
 }
 
 func (o *bsd) checkIfSudoNoPasswd() error {
 	// FreeBSD doesn't need root privilege
-	o.log.Infof("sudo ... OK")
+	o.log.Infof("sudo ... No need")
 	return nil
 }
 
-func (o *bsd) checkDependencies() error {
+func (o *bsd) checkDeps() error {
+	o.log.Infof("Dependencies... No need")
 	return nil
 }
 
-func (o *bsd) install() error {
+func (o *bsd) preCure() error {
+	o.log.Infof("Scanning in %s", o.getServerInfo().Mode)
+	if err := o.detectIPAddr(); err != nil {
+		o.log.Debugf("Failed to detect IP addresses: %s", err)
+	}
+	// Ignore this error as it just failed to detect the IP addresses
 	return nil
 }
 
-func (o *bsd) checkRequiredPackagesInstalled() error {
+func (o *bsd) postScan() error {
 	return nil
+}
+
+func (o *bsd) detectIPAddr() (err error) {
+	r := o.exec("/sbin/ifconfig", noSudo)
+	if !r.isSuccess() {
+		return xerrors.Errorf("Failed to detect IP address: %v", r)
+	}
+	o.ServerInfo.IPv4Addrs, o.ServerInfo.IPv6Addrs = o.parseIfconfig(r.Stdout)
+	return nil
+}
+
+func (l *base) parseIfconfig(stdout string) (ipv4Addrs []string, ipv6Addrs []string) {
+	lines := strings.Split(stdout, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		fields := strings.Fields(line)
+		if len(fields) < 4 || !strings.HasPrefix(fields[0], "inet") {
+			continue
+		}
+		ip := net.ParseIP(fields[1])
+		if ip == nil {
+			continue
+		}
+		if !ip.IsGlobalUnicast() {
+			continue
+		}
+		if ipv4 := ip.To4(); ipv4 != nil {
+			ipv4Addrs = append(ipv4Addrs, ipv4.String())
+		} else {
+			ipv6Addrs = append(ipv6Addrs, ip.String())
+		}
+	}
+	return
 }
 
 func (o *bsd) scanPackages() error {
-	var err error
-	var packs []models.PackageInfo
-	if packs, err = o.scanInstalledPackages(); err != nil {
-		o.log.Errorf("Failed to scan installed packages")
+	// collect the running kernel information
+	release, version, err := o.runningKernel()
+	if err != nil {
+		o.log.Errorf("Failed to scan the running kernel version: %s", err)
 		return err
 	}
-	o.setPackages(packs)
+	o.Kernel = models.Kernel{
+		Release: release,
+		Version: version,
+	}
 
-	var vinfos []models.VulnInfo
-	if vinfos, err = o.scanUnsecurePackages(); err != nil {
-		o.log.Errorf("Failed to scan vulnerable packages")
+	o.Kernel.RebootRequired, err = o.rebootRequired()
+	if err != nil {
+		err = xerrors.Errorf("Failed to detect the kernel reboot required: %w", err)
+		o.log.Warnf("err: %+v", err)
+		o.warns = append(o.warns, err)
+		// Only warning this error
+	}
+
+	packs, err := o.scanInstalledPackages()
+	if err != nil {
+		o.log.Errorf("Failed to scan installed packages: %s", err)
 		return err
 	}
-	o.setVulnInfos(vinfos)
+	o.Packages = packs
+
+	unsecures, err := o.scanUnsecurePackages()
+	if err != nil {
+		o.log.Errorf("Failed to scan vulnerable packages: %s", err)
+		return err
+	}
+	o.VulnInfos = unsecures
 	return nil
 }
 
-func (o *bsd) scanInstalledPackages() ([]models.PackageInfo, error) {
-	cmd := util.PrependProxyEnv("pkg version -v")
-	r := o.exec(cmd, noSudo)
-	if !r.isSuccess() {
-		return nil, fmt.Errorf("Failed to SSH: %s", r)
-	}
-	return o.parsePkgVersion(r.Stdout), nil
+func (o *bsd) parseInstalledPackages(string) (models.Packages, models.SrcPackages, error) {
+	return nil, nil, nil
 }
 
-func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
+func (o *bsd) rebootRequired() (bool, error) {
+	r := o.exec("freebsd-version -k", noSudo)
+	if !r.isSuccess() {
+		return false, xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	return o.Kernel.Release != strings.TrimSpace(r.Stdout), nil
+}
+
+func (o *bsd) scanInstalledPackages() (models.Packages, error) {
+	// https://github.com/future-architect/vuls/issues/1042
+	cmd := util.PrependProxyEnv("pkg info")
+	r := o.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		return nil, xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	pkgs := o.parsePkgInfo(r.Stdout)
+
+	cmd = util.PrependProxyEnv("pkg version -v")
+	r = o.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		return nil, xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	// `pkg-audit` has a new version, overwrite it.
+	for name, p := range o.parsePkgVersion(r.Stdout) {
+		pkgs[name] = p
+	}
+	return pkgs, nil
+}
+
+func (o *bsd) scanUnsecurePackages() (models.VulnInfos, error) {
 	const vulndbPath = "/tmp/vuln.db"
 	cmd := "rm -f " + vulndbPath
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess(0) {
-		return nil, fmt.Errorf("Failed to SSH: %s", r)
+		return nil, xerrors.Errorf("Failed to SSH: %s", r)
 	}
 
 	cmd = util.PrependProxyEnv("pkg audit -F -r -f " + vulndbPath)
 	r = o.exec(cmd, noSudo)
 	if !r.isSuccess(0, 1) {
-		return nil, fmt.Errorf("Failed to SSH: %s", r)
+		return nil, xerrors.Errorf("Failed to SSH: %s", r)
 	}
 	if r.ExitStatus == 0 {
 		// no vulnerabilities
-		return []models.VulnInfo{}, nil
+		return nil, nil
 	}
 
-	var packAdtRslt []pkgAuditResult
+	packAdtRslt := []pkgAuditResult{}
 	blocks := o.splitIntoBlocks(r.Stdout)
 	for _, b := range blocks {
 		name, cveIDs, vulnID := o.parseBlock(b)
 		if len(cveIDs) == 0 {
 			continue
 		}
-		pack, found := o.Packages.FindByName(name)
+		pack, found := o.Packages[name]
 		if !found {
-			return nil, fmt.Errorf("Vulnerable package: %s is not found", name)
+			return nil, xerrors.Errorf("Vulnerable package: %s is not found", name)
 		}
 		packAdtRslt = append(packAdtRslt, pkgAuditResult{
 			pack: pack,
@@ -150,29 +229,59 @@ func (o *bsd) scanUnsecurePackages() (vulnInfos []models.VulnInfo, err error) {
 		}
 	}
 
-	for k := range cveIDAdtMap {
-		packs := []models.PackageInfo{}
-		for _, r := range cveIDAdtMap[k] {
-			packs = append(packs, r.pack)
+	vinfos := models.VulnInfos{}
+	for cveID := range cveIDAdtMap {
+		packs := models.Packages{}
+		for _, r := range cveIDAdtMap[cveID] {
+			packs[r.pack.Name] = r.pack
 		}
 
 		disAdvs := []models.DistroAdvisory{}
-		for _, r := range cveIDAdtMap[k] {
+		for _, r := range cveIDAdtMap[cveID] {
 			disAdvs = append(disAdvs, models.DistroAdvisory{
 				AdvisoryID: r.vulnIDCveIDs.vulnID,
 			})
 		}
 
-		vulnInfos = append(vulnInfos, models.VulnInfo{
-			CveID:            k,
-			Packages:         packs,
+		affected := models.PackageFixStatuses{}
+		for name := range packs {
+			affected = append(affected, models.PackageFixStatus{
+				Name: name,
+			})
+		}
+		vinfos[cveID] = models.VulnInfo{
+			CveID:            cveID,
+			AffectedPackages: affected,
 			DistroAdvisories: disAdvs,
-		})
+			Confidences:      models.Confidences{models.PkgAuditMatch},
+		}
 	}
-	return
+	return vinfos, nil
 }
 
-func (o *bsd) parsePkgVersion(stdout string) (packs []models.PackageInfo) {
+func (o *bsd) parsePkgInfo(stdout string) models.Packages {
+	packs := models.Packages{}
+	lines := strings.Split(stdout, "\n")
+	for _, l := range lines {
+		fields := strings.Fields(l)
+		if len(fields) < 2 {
+			continue
+		}
+
+		packVer := fields[0]
+		splitted := strings.Split(packVer, "-")
+		ver := splitted[len(splitted)-1]
+		name := strings.Join(splitted[:len(splitted)-1], "-")
+		packs[name] = models.Package{
+			Name:    name,
+			Version: ver,
+		}
+	}
+	return packs
+}
+
+func (o *bsd) parsePkgVersion(stdout string) models.Packages {
+	packs := models.Packages{}
 	lines := strings.Split(stdout, "\n")
 	for _, l := range lines {
 		fields := strings.Fields(l)
@@ -187,20 +296,26 @@ func (o *bsd) parsePkgVersion(stdout string) (packs []models.PackageInfo) {
 
 		switch fields[1] {
 		case "?", "=":
-			packs = append(packs, models.PackageInfo{
+			packs[name] = models.Package{
 				Name:    name,
 				Version: ver,
-			})
+			}
 		case "<":
 			candidate := strings.TrimSuffix(fields[6], ")")
-			packs = append(packs, models.PackageInfo{
+			packs[name] = models.Package{
 				Name:       name,
 				Version:    ver,
 				NewVersion: candidate,
-			})
+			}
+		case ">":
+			o.log.Warnf("The installed version of the %s is newer than the current version. *This situation can arise with an out of date index file, or when testing new ports.*", name)
+			packs[name] = models.Package{
+				Name:    name,
+				Version: ver,
+			}
 		}
 	}
-	return
+	return packs
 }
 
 type vulnIDCveIDs struct {
@@ -209,7 +324,7 @@ type vulnIDCveIDs struct {
 }
 
 type pkgAuditResult struct {
-	pack         models.PackageInfo
+	pack         models.Package
 	vulnIDCveIDs vulnIDCveIDs
 }
 

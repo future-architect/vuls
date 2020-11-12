@@ -1,0 +1,70 @@
+project_name: vuls
+env:
+  - GO111MODULE=on
+release:
+  github:
+    owner: future-architect
+    name: vuls
+builds:
+- id: vuls
+  goos:
+  - linux
+  goarch:
+  - amd64
+  main: .
+  flags:
+      - -a
+  ldflags: -s -w -X main.version={{.Version}} -X main.revision={{.Commit}} 
+  binary: vuls
+
+- id: trivy-to-vuls
+  goos:
+  - linux
+  goarch:
+  - amd64
+  main: ./contrib/trivy/cmd/main.go
+  binary: trivy-to-vuls
+
+- id: future-vuls
+  goos:
+  - linux
+  goarch:
+  - amd64
+  main: ./contrib/future-vuls/cmd/main.go
+  binary: future-vuls
+archives:
+
+- id: vuls
+  name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+  builds:
+  - vuls
+  format: tar.gz
+  files:
+  - LICENSE
+  - NOTICE
+  - README*
+  - CHANGELOG.md
+
+- id: trivy-to-vuls
+  name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+  builds:
+  - trivy-to-vuls
+  format: tar.gz
+  files:
+  - LICENSE
+  - NOTICE
+  - README*
+  - CHANGELOG.md
+- id: future-vuls
+  name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+  builds:
+
+  - future-vuls
+  format: tar.gz
+  files:
+  - LICENSE
+  - NOTICE
+  - README*
+  - CHANGELOG.md
+snapshot:
+  name_template: SNAPSHOT-{{ .Commit }}

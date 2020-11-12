@@ -1,20 +1,3 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Architect, Inc. Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package util
 
 import (
@@ -105,14 +88,14 @@ func TestPrependHTTPProxyEnv(t *testing.T) {
 				"http://proxy.co.jp:8080",
 				"yum check-update",
 			},
-			`env http_proxy="http://proxy.co.jp:8080" https_proxy="http://proxy.co.jp:8080" HTTP_PROXY="http://proxy.co.jp:8080" HTTPS_PROXY="http://proxy.co.jp:8080" yum check-update`,
+			` http_proxy="http://proxy.co.jp:8080" https_proxy="http://proxy.co.jp:8080" HTTP_PROXY="http://proxy.co.jp:8080" HTTPS_PROXY="http://proxy.co.jp:8080" yum check-update`,
 		},
 		{
 			[]string{
 				"http://proxy.co.jp:8080",
 				"",
 			},
-			`env http_proxy="http://proxy.co.jp:8080" https_proxy="http://proxy.co.jp:8080" HTTP_PROXY="http://proxy.co.jp:8080" HTTPS_PROXY="http://proxy.co.jp:8080" `,
+			` http_proxy="http://proxy.co.jp:8080" https_proxy="http://proxy.co.jp:8080" HTTP_PROXY="http://proxy.co.jp:8080" HTTPS_PROXY="http://proxy.co.jp:8080" `,
 		},
 		{
 			[]string{

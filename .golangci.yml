@@ -1,0 +1,17 @@
+name: golang-ci
+
+linters-settings:
+  errcheck:
+    #exclude: /path/to/file.txt
+
+linters:
+  disable-all: true
+  enable:
+    - goimports
+    - golint
+    - govet
+    - misspell
+    - errcheck
+    - staticcheck
+    - prealloc
+    - ineffassign

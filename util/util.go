@@ -1,24 +1,8 @@
-/* Vuls - Vulnerability Scanner
-Copyright (C) 2016  Future Architect, Inc. Japan.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package util
 
 import (
 	"fmt"
+	"net"
 	"net/url"
 	"strings"
 
@@ -34,7 +18,7 @@ func GenWorkers(num int) chan<- func() {
 			defer func() {
 				if p := recover(); p != nil {
 					log := NewCustomLogger(config.ServerInfo{})
-					log.Debugf("Panic: %s")
+					log.Errorf("run time panic: %v", p)
 				}
 			}()
 			for f := range tasks {
@@ -58,11 +42,11 @@ func AppendIfMissing(slice []string, s string) []string {
 // URLPathJoin make URL
 func URLPathJoin(baseURL string, paths ...string) (string, error) {
 	baseURL = strings.TrimSuffix(baseURL, "/")
-	trimedPaths := []string{}
+	trimmedPaths := []string{}
 	for _, path := range paths {
-		trimed := strings.Trim(path, " /")
-		if len(trimed) != 0 {
-			trimedPaths = append(trimedPaths, trimed)
+		trimmed := strings.Trim(path, " /")
+		if len(trimmed) != 0 {
+			trimmedPaths = append(trimmedPaths, trimmed)
 		}
 	}
 	var url *url.URL
@@ -70,7 +54,7 @@ func URLPathJoin(baseURL string, paths ...string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	url.Path += strings.Join(trimedPaths, "/")
+	url.Path += "/" + strings.Join(trimmedPaths, "/")
 	return url.String(), nil
 }
 
@@ -93,9 +77,41 @@ func URLPathParamJoin(baseURL string, paths []string, params map[string]string) 
 	return u.String(), nil
 }
 
+// IP returns scanner network ip addresses
+func IP() (ipv4Addrs []string, ipv6Addrs []string, err error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, i := range ifaces {
+		addrs, _ := i.Addrs()
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+
+			// only global unicast address
+			if !ip.IsGlobalUnicast() {
+				continue
+			}
+
+			if ok := ip.To4(); ok != nil {
+				ipv4Addrs = append(ipv4Addrs, ip.String())
+			} else {
+				ipv6Addrs = append(ipv6Addrs, ip.String())
+			}
+		}
+	}
+	return ipv4Addrs, ipv6Addrs, nil
+}
+
 // ProxyEnv returns shell environment variables to set proxy
 func ProxyEnv() string {
-	httpProxyEnv := "env"
+	httpProxyEnv := ""
 	keys := []string{
 		"http_proxy",
 		"https_proxy",
@@ -109,7 +125,7 @@ func ProxyEnv() string {
 	return httpProxyEnv
 }
 
-// PrependProxyEnv prepends proxy enviroment variable
+// PrependProxyEnv prepends proxy environment variable
 func PrependProxyEnv(cmd string) string {
 	if len(config.Conf.HTTPProxy) == 0 {
 		return cmd
@@ -134,4 +150,16 @@ func Truncate(str string, length int) string {
 		return str[:length]
 	}
 	return str
+}
+
+// Distinct a slice
+func Distinct(ss []string) (distincted []string) {
+	m := map[string]bool{}
+	for _, s := range ss {
+		if _, found := m[s]; !found {
+			m[s] = true
+			distincted = append(distincted, s)
+		}
+	}
+	return
 }
