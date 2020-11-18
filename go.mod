@@ -15,19 +15,22 @@ require (
 	github.com/aquasecurity/fanal v0.0.0-20200820074632-6de62ef86882
 	github.com/aquasecurity/trivy v0.12.0
 	github.com/aquasecurity/trivy-db v0.0.0-20200826140828-6da6467703aa
-	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
+	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef
 	github.com/aws/aws-sdk-go v1.33.21
 	github.com/boltdb/bolt v1.3.1
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/d4l3k/messagediff v1.2.2-0.20190829033028-7e0a312ae40b
 	github.com/emersion/go-sasl v0.0.0-20200509203442-7bfe0ed36a21
 	github.com/emersion/go-smtp v0.13.0
+	github.com/go-redis/redis v6.15.9+incompatible // indirect
 	github.com/google/subcommands v1.2.0
 	github.com/gosuri/uitable v0.0.4
 	github.com/hashicorp/go-uuid v1.0.2
 	github.com/hashicorp/go-version v1.2.1
 	github.com/howeyc/gopass v0.0.0-20190910152052-7cb4b85ec19c
+	github.com/inconshreveable/log15 v0.0.0-20201112154412-8562bdadbbac // indirect
 	github.com/jesseduffield/gocui v0.3.0
+	github.com/jinzhu/gorm v1.9.16 // indirect
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/knqyf263/go-apk-version v0.0.0-20200609155635-041fdbb8563f
 	github.com/knqyf263/go-cpe v0.0.0-20180327054844-659663f6eca2
@@ -36,8 +39,10 @@ require (
 	github.com/knqyf263/gost v0.1.4
 	github.com/kotakanbe/go-cve-dictionary v0.5.0
 	github.com/kotakanbe/go-pingscanner v0.1.0
-	github.com/kotakanbe/goval-dictionary v0.2.10
+	github.com/kotakanbe/goval-dictionary v0.2.14
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
+	github.com/lib/pq v1.8.0 // indirect
+	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mozqnet/go-exploitdb v0.1.0
@@ -50,9 +55,13 @@ require (
 	github.com/spf13/afero v1.3.0
 	github.com/spf13/cobra v1.0.0
 	github.com/takuzoo3868/go-msfdb v0.1.1
-	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
+	github.com/valyala/fasttemplate v1.2.1 // indirect
+	golang.org/x/crypto v0.0.0-20201117144127-c1f2f97bffc9
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
+	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+	golang.org/x/sys v0.0.0-20201117222635-ba5294a509c7 // indirect
+	golang.org/x/text v0.3.4 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	k8s.io/utils v0.0.0-20200619165400-6e3d28b6ed19
 )
