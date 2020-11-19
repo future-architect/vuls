@@ -181,6 +181,21 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, igno
 		}
 	}
 
+	// To keep backward compatibility
+	for i, pkg := range r.Packages {
+		for j, proc := range pkg.AffectedProcs {
+			for _, ipPort := range proc.ListenPorts {
+				ps, err := models.NewPortStat(ipPort)
+				if err != nil {
+					util.Log.Warnf("Failed to parse ip:port: %s, err:%+v", ipPort, err)
+					continue
+				}
+				r.Packages[i].AffectedProcs[j].ListenPortStats = append(
+					r.Packages[i].AffectedProcs[j].ListenPortStats, *ps)
+			}
+		}
+	}
+
 	nCVEs, err = DetectCpeURIsCves(dbclient.CveDB, r, cpeURIs)
 	if err != nil {
 		return xerrors.Errorf("Failed to detect vulns of `%s`: %w", cpeURIs, err)
