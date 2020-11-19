@@ -262,17 +262,17 @@ No CVE-IDs are found in updatable packages.
 
 				if len(pack.AffectedProcs) != 0 {
 					for _, p := range pack.AffectedProcs {
-						if len(p.ListenPorts) == 0 {
+						if len(p.ListenPortStats) == 0 {
 							data = append(data, []string{"",
 								fmt.Sprintf("  - PID: %s %s, Port: []", p.PID, p.Name)})
 						}
 
 						var ports []string
-						for _, pp := range p.ListenPorts {
-							if len(pp.PortScanSuccessOn) == 0 {
-								ports = append(ports, fmt.Sprintf("%s:%s", pp.Address, pp.Port))
+						for _, pp := range p.ListenPortStats {
+							if len(pp.PortReachableTo) == 0 {
+								ports = append(ports, fmt.Sprintf("%s:%s", pp.BindAddress, pp.Port))
 							} else {
-								ports = append(ports, fmt.Sprintf("%s:%s(◉ Scannable: %s)", pp.Address, pp.Port, pp.PortScanSuccessOn))
+								ports = append(ports, fmt.Sprintf("%s:%s(◉ Scannable: %s)", pp.BindAddress, pp.Port, pp.PortReachableTo))
 							}
 						}
 

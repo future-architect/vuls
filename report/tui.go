@@ -619,7 +619,7 @@ func summaryLines(r models.ScanResult) string {
 
 		av := vinfo.AttackVector()
 		for _, pname := range vinfo.AffectedPackages.Names() {
-			if r.Packages[pname].HasPortScanSuccessOn() {
+			if r.Packages[pname].HasReachablePort() {
 				av = fmt.Sprintf("%s ◉", av)
 				break
 			}
@@ -719,18 +719,18 @@ func setChangelogLayout(g *gocui.Gui) error {
 
 				if len(pack.AffectedProcs) != 0 {
 					for _, p := range pack.AffectedProcs {
-						if len(p.ListenPorts) == 0 {
+						if len(p.ListenPortStats) == 0 {
 							lines = append(lines, fmt.Sprintf("  * PID: %s %s Port: []",
 								p.PID, p.Name))
 							continue
 						}
 
 						var ports []string
-						for _, pp := range p.ListenPorts {
-							if len(pp.PortScanSuccessOn) == 0 {
-								ports = append(ports, fmt.Sprintf("%s:%s", pp.Address, pp.Port))
+						for _, pp := range p.ListenPortStats {
+							if len(pp.PortReachableTo) == 0 {
+								ports = append(ports, fmt.Sprintf("%s:%s", pp.BindAddress, pp.Port))
 							} else {
-								ports = append(ports, fmt.Sprintf("%s:%s(◉ Scannable: %s)", pp.Address, pp.Port, pp.PortScanSuccessOn))
+								ports = append(ports, fmt.Sprintf("%s:%s(◉ Scannable: %s)", pp.BindAddress, pp.Port, pp.PortReachableTo))
 							}
 						}
 

@@ -381,3 +381,50 @@ func Test_IsRaspbianPackage(t *testing.T) {
 		})
 	}
 }
+
+func Test_parseListenPorts(t *testing.T) {
+	tests := []struct {
+		name   string
+		args   string
+		expect PortStat
+	}{{
+		name: "empty",
+		args: "",
+		expect: PortStat{
+			BindAddress: "",
+			Port:        "",
+		},
+	}, {
+		name: "normal",
+		args: "127.0.0.1:22",
+		expect: PortStat{
+			BindAddress: "127.0.0.1",
+			Port:        "22",
+		},
+	}, {
+		name: "asterisk",
+		args: "*:22",
+		expect: PortStat{
+			BindAddress: "*",
+			Port:        "22",
+		},
+	}, {
+		name: "ipv6_loopback",
+		args: "[::1]:22",
+		expect: PortStat{
+			BindAddress: "[::1]",
+			Port:        "22",
+		},
+	}}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			listenPort, err := NewPortStat(tt.args)
+			if err != nil {
+				t.Errorf("unexpected error occurred: %s", err)
+			} else if !reflect.DeepEqual(*listenPort, tt.expect) {
+				t.Errorf("base.parseListenPorts() = %v, want %v", *listenPort, tt.expect)
+			}
+		})
+	}
+}
