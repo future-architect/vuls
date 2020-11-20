@@ -504,6 +504,12 @@ func Scan(timeoutSec int) error {
 		return err
 	}
 
+	for i, r := range results {
+		if s, ok := config.Conf.Servers[r.ServerName]; ok {
+			results[i] = r.ClearFields(s.IgnoredJSONKeys)
+		}
+	}
+
 	return writeScanResults(dir, results)
 }
 
