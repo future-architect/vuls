@@ -1,4 +1,4 @@
-package commands
+package subcmds
 
 import (
 	"fmt"

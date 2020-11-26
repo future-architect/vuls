@@ -1,4 +1,6 @@
-package commands
+// +build !scanner
+
+package subcmds
 
 import (
 	"context"

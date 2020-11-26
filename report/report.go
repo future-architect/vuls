@@ -1,3 +1,5 @@
+// +build !scanner
+
 package report
 
 import (
@@ -34,11 +36,6 @@ import (
 	exploitdb "github.com/mozqnet/go-exploitdb/db"
 	metasploitdb "github.com/takuzoo3868/go-msfdb/db"
 	"golang.org/x/xerrors"
-)
-
-const (
-	vulsOpenTag  = "<vulsreport>"
-	vulsCloseTag = "</vulsreport>"
 )
 
 // FillCveInfos fills CVE Detailed Information

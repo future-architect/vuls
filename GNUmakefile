@@ -20,19 +20,23 @@ BUILDTIME := $(shell date "+%Y%m%d_%H%M%S")
 LDFLAGS := -X 'github.com/future-architect/vuls/config.Version=$(VERSION)' \
     -X 'github.com/future-architect/vuls/config.Revision=build-$(BUILDTIME)_$(REVISION)'
 GO := GO111MODULE=on go
+CGO_UNABLED := CGO_ENABLED=0 go
 GO_OFF := GO111MODULE=off go
 
 
 all: build
 
-build: main.go pretest fmt
-	$(GO) build -a -ldflags "$(LDFLAGS)" -o vuls $<
+build: ./cmd/vuls/main.go pretest fmt
+	$(GO) build -a -ldflags "$(LDFLAGS)" -o vuls ./cmd/vuls
 
-b: 	main.go pretest fmt
-	$(GO) build -ldflags "$(LDFLAGS)" -o vuls $<
+install: ./cmd/vuls/main.go pretest fmt
+	$(GO) install -ldflags "$(LDFLAGS)" ./cmd/vuls
 
-install: main.go pretest
-	$(GO) install -ldflags "$(LDFLAGS)"
+build-scanner: ./cmd/scanner/main.go pretest fmt
+	$(CGO_UNABLED) build -tags=scanner -a -ldflags "$(LDFLAGS)" -o vuls ./cmd/scanner
+
+install-scanner: ./cmd/scanner/main.go pretest fmt
+	$(CGO_UNABLED) install -tags=scanner -ldflags "$(LDFLAGS)" ./cmd/scanner
 
 lint:
 	$(GO_OFF) get -u golang.org/x/lint/golint
