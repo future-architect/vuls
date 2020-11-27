@@ -11,9 +11,9 @@ builds:
   - linux
   goarch:
   - amd64
-  main: .
+  main: ./cmd/vuls/main.go
   flags:
-      - -a
+  - -a
   ldflags: -s -w -X main.version={{.Version}} -X main.revision={{.Commit}} 
   binary: vuls
 
