@@ -2,6 +2,7 @@ package gost
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff"
@@ -180,4 +181,8 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 		request: req,
 		json:    body,
 	}
+}
+
+func major(osVer string) (majorVersion string) {
+	return strings.Split(osVer, ".")[0]
 }

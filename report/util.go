@@ -22,7 +22,11 @@ import (
 	"golang.org/x/xerrors"
 )
 
-const maxColWidth = 100
+const (
+	vulsOpenTag  = "<vulsreport>"
+	vulsCloseTag = "</vulsreport>"
+	maxColWidth  = 100
+)
 
 func formatScanSummary(rs ...models.ScanResult) string {
 	table := uitable.New()
@@ -555,7 +559,7 @@ func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
 
 				// TODO commented out because  a bug of diff logic when multiple oval defs found for a certain CVE-ID and same updated_at
 				// if these OVAL defs have different affected packages, this logic detects as updated.
-				// This logic will be uncomented after integration with ghost https://github.com/knqyf263/gost
+				// This logic will be uncomented after integration with gost https://github.com/knqyf263/gost
 				// } else if isCveFixed(v, previous) {
 				// updated[v.CveID] = v
 				// util.Log.Debugf("fixed: %s", v.CveID)

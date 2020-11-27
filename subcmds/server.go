@@ -1,26 +1,32 @@
-package commands
+// +build !scanner
+
+package subcmds
 
 import (
 	"context"
 	"flag"
+	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 
-	"github.com/aquasecurity/trivy/pkg/utils"
+	// "github.com/future-architect/vuls/Server"
+
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/exploit"
 	"github.com/future-architect/vuls/gost"
-	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/msf"
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/report"
+	"github.com/future-architect/vuls/server"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
 )
 
-// TuiCmd is Subcommand of host discovery mode
-type TuiCmd struct {
+// ServerCmd is subcommand for server
+type ServerCmd struct {
 	configPath     string
+	listen         string
 	cveDict        c.GoCveDictConf
 	ovalDict       c.GovalDictConf
 	gostConf       c.GostConf
@@ -29,28 +35,27 @@ type TuiCmd struct {
 }
 
 // Name return subcommand name
-func (*TuiCmd) Name() string { return "tui" }
+func (*ServerCmd) Name() string { return "server" }
 
 // Synopsis return synopsis
-func (*TuiCmd) Synopsis() string { return "Run Tui view to analyze vulnerabilities" }
+func (*ServerCmd) Synopsis() string { return "Server" }
 
 // Usage return usage
-func (*TuiCmd) Usage() string {
-	return `tui:
-	tui
-		[-refresh-cve]
+func (*ServerCmd) Usage() string {
+	return `Server:
+	Server
+		[-lang=en|ja]
 		[-config=/path/to/config.toml]
+		[-log-dir=/path/to/log]
 		[-cvss-over=7]
-		[-diff]
 		[-ignore-unscored-cves]
 		[-ignore-unfixed]
-		[-results-dir=/path/to/results]
-		[-log-dir=/path/to/log]
+		[-to-localfile]
+		[-format-json]
+		[-http-proxy=http://192.168.0.1:8080]
 		[-debug]
 		[-debug-sql]
-		[-quiet]
-		[-no-progress]
-		[-pipe]
+		[-listen=localhost:5515]
 		[-cvedb-type=sqlite3|mysql|postgres|redis|http]
 		[-cvedb-sqlite3-path=/path/to/cve.sqlite3]
 		[-cvedb-url=http://127.0.0.1:1323 or DB connection string]
@@ -66,62 +71,59 @@ func (*TuiCmd) Usage() string {
 		[-msfdb-type=sqlite3|mysql|redis|http]
 		[-msfdb-sqlite3-path=/path/to/msfdb.sqlite3]
 		[-msfdb-url=http://127.0.0.1:1327 or DB connection string]
-		[-trivy-cachedb-dir=/path/to/dir]
 
+		[RFC3339 datetime format under results dir]
 `
 }
 
 // SetFlags set flag
-func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
-	//  f.StringVar(&p.lang, "lang", "en", "[en|ja]")
-	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "debug SQL")
+func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
+	f.StringVar(&c.Conf.Lang, "lang", "en", "[en|ja]")
 	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
-	f.BoolVar(&c.Conf.Quiet, "quiet", false, "Quiet mode. No output on stdout")
-	f.BoolVar(&c.Conf.NoProgress, "no-progress", false, "Suppress progress bar")
+	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
+
+	wd, _ := os.Getwd()
+	f.StringVar(&p.configPath, "config", "", "/path/to/toml")
+
+	defaultResultsDir := filepath.Join(wd, "results")
+	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 
 	defaultLogDir := util.GetDefaultLogDir()
 	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 
-	wd, _ := os.Getwd()
-	defaultResultsDir := filepath.Join(wd, "results")
-	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
-
-	defaultConfPath := filepath.Join(wd, "config.toml")
-	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
-
-	f.BoolVar(&c.Conf.RefreshCve, "refresh-cve", false,
-		"Refresh CVE information in JSON file under results dir")
-
 	f.Float64Var(&c.Conf.CvssScoreOver, "cvss-over", 0,
-		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
+		"-cvss-over=6.5 means Servering CVSS Score 6.5 and over (default: 0 (means Server all))")
 
-	f.BoolVar(&c.Conf.Diff, "diff", false,
-		"Difference between previous result and current result ")
-
-	f.BoolVar(
-		&c.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
-		"Don't report the unscored CVEs")
+	f.BoolVar(&c.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
+		"Don't Server the unscored CVEs")
 
 	f.BoolVar(&c.Conf.IgnoreUnfixed, "ignore-unfixed", false,
-		"Don't report the unfixed CVEs")
+		"Don't Server the unfixed CVEs")
 
-	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use stdin via PIPE")
+	f.StringVar(&c.Conf.HTTPProxy, "http-proxy", "",
+		"http://proxy-url:port (default: empty)")
+
+	f.BoolVar(&c.Conf.FormatJSON, "format-json", false, "JSON format")
+
+	f.BoolVar(&c.Conf.ToLocalFile, "to-localfile", false, "Write report to localfile")
+	f.StringVar(&p.listen, "listen", "localhost:5515",
+		"host:port (default: localhost:5515)")
 
 	f.StringVar(&p.cveDict.Type, "cvedb-type", "",
-		"DB type of go-cve-dictionary (sqlite3, mysql, postgres or redis)")
-	f.StringVar(&p.cveDict.SQLite3Path, "cvedb-path", "", "/path/to/sqlite3")
+		"DB type of go-cve-dictionary (sqlite3, mysql, postgres, redis or http)")
+	f.StringVar(&p.cveDict.SQLite3Path, "cvedb-sqlite3-path", "", "/path/to/sqlite3")
 	f.StringVar(&p.cveDict.URL, "cvedb-url", "",
 		"http://go-cve-dictionary.com:1323 or DB connection string")
 
 	f.StringVar(&p.ovalDict.Type, "ovaldb-type", "",
-		"DB type of goval-dictionary (sqlite3, mysql, postgres or redis)")
-	f.StringVar(&p.ovalDict.SQLite3Path, "ovaldb-path", "", "/path/to/sqlite3")
+		"DB type of goval-dictionary (sqlite3, mysql, postgres, redis or http)")
+	f.StringVar(&p.ovalDict.SQLite3Path, "ovaldb-sqlite3-path", "", "/path/to/sqlite3")
 	f.StringVar(&p.ovalDict.URL, "ovaldb-url", "",
 		"http://goval-dictionary.com:1324 or DB connection string")
 
 	f.StringVar(&p.gostConf.Type, "gostdb-type", "",
-		"DB type of gost (sqlite3, mysql, postgres or redis)")
-	f.StringVar(&p.gostConf.SQLite3Path, "gostdb-path", "", "/path/to/sqlite3")
+		"DB type of gost (sqlite3, mysql, postgres, redis or http)")
+	f.StringVar(&p.gostConf.SQLite3Path, "gostdb-sqlite3-path", "", "/path/to/sqlite3")
 	f.StringVar(&p.gostConf.URL, "gostdb-url", "",
 		"http://gost.com:1325 or DB connection string")
 
@@ -136,49 +138,28 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.metasploitConf.SQLite3Path, "msfdb-sqlite3-path", "", "/path/to/sqlite3")
 	f.StringVar(&p.metasploitConf.URL, "msfdb-url", "",
 		"http://metasploit.com:1327 or DB connection string")
-
-	f.StringVar(&c.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
-		utils.DefaultCacheDir(), "/path/to/dir")
 }
 
 // Execute execute
-func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
-	if err := c.Load(p.configPath, ""); err != nil {
-		util.Log.Errorf("Error loading %s, err: %+v", p.configPath, err)
-		return subcommands.ExitUsageError
+	if p.configPath != "" {
+		if err := c.Load(p.configPath, ""); err != nil {
+			util.Log.Errorf("Error loading %s. err: %+v", p.configPath, err)
+			return subcommands.ExitUsageError
+		}
 	}
 
-	c.Conf.Lang = "en"
 	c.Conf.CveDict.Overwrite(p.cveDict)
 	c.Conf.OvalDict.Overwrite(p.ovalDict)
 	c.Conf.Gost.Overwrite(p.gostConf)
 	c.Conf.Exploit.Overwrite(p.exploitConf)
 	c.Conf.Metasploit.Overwrite(p.metasploitConf)
 
-	var dir string
-	var err error
-	if c.Conf.Diff {
-		dir, err = report.JSONDir([]string{})
-	} else {
-		dir, err = report.JSONDir(f.Args())
-	}
-	if err != nil {
-		util.Log.Errorf("Failed to read from JSON. err: %+v", err)
-		return subcommands.ExitFailure
-	}
-
 	util.Log.Info("Validating config...")
-	if !c.Conf.ValidateOnTui() {
+	if !c.Conf.ValidateOnReport() {
 		return subcommands.ExitUsageError
 	}
-
-	var res models.ScanResults
-	if res, err = report.LoadScanResults(dir); err != nil {
-		util.Log.Error(err)
-		return subcommands.ExitFailure
-	}
-	util.Log.Infof("Loaded: %s", dir)
 
 	util.Log.Info("Validating db config...")
 	if !c.Conf.ValidateOnReportDB() {
@@ -196,7 +177,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	if c.Conf.OvalDict.URL != "" {
 		err := oval.Base{}.CheckHTTPHealth()
 		if err != nil {
-			util.Log.Errorf("OVAL HTTP server is not running. err: %+v", err)
+			util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
 			util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with `-ovaldb-type=sqlite3 -ovaldb-sqlite3-path` option instead of -ovaldb-url")
 			return subcommands.ExitFailure
 		}
@@ -249,17 +230,14 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 
 	defer dbclient.CloseDB()
 
-	if res, err = report.FillCveInfos(*dbclient, res, dir); err != nil {
-		util.Log.Error(err)
+	http.Handle("/vuls", server.VulsHandler{DBclient: *dbclient})
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "ok")
+	})
+	util.Log.Infof("Listening on %s", p.listen)
+	if err := http.ListenAndServe(p.listen, nil); err != nil {
+		util.Log.Errorf("Failed to start server. err: %+v", err)
 		return subcommands.ExitFailure
 	}
-
-	for _, r := range res {
-		if len(r.Warnings) != 0 {
-			util.Log.Warnf("Warning: Some warnings occurred while scanning on %s: %s",
-				r.FormatServerName(), r.Warnings)
-		}
-	}
-
-	return report.RunTui(res)
+	return subcommands.ExitSuccess
 }
