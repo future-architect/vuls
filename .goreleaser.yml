@@ -14,22 +14,54 @@ builds:
   main: ./cmd/vuls/main.go
   flags:
   - -a
-  ldflags: -s -w -X main.version={{.Version}} -X main.revision={{.Commit}} 
+  ldflags: 
+  - -s -w -X github.com/future-architect/vuls/config.Version={{.Version}} -X github.com/future-architect/vuls/config.Revision={{.Commit}}-{{ .CommitDate }}
   binary: vuls
 
-- id: trivy-to-vuls
+- id: vuls-scanner
+  env:
+  - CGO_ENABLED=0
   goos:
   - linux
   goarch:
+  - 386
   - amd64
+  - arm
+  - arm64
+  main: ./cmd/scanner/main.go
+  flags:
+  - -a
+  - -tags=scanner
+  ldflags: 
+  - -s -w -X github.com/future-architect/vuls/config.Version={{.Version}} -X github.com/future-architect/vuls/config.Revision={{.Commit}}-{{ .CommitDate }}
+  binary: vuls-scanner
+
+- id: trivy-to-vuls
+  env:
+  - CGO_ENABLED=0
+  goos:
+  - linux
+  goarch:
+  - 386
+  - amd64
+  - arm
+  - arm64
   main: ./contrib/trivy/cmd/main.go
   binary: trivy-to-vuls
 
 - id: future-vuls
+  env:
+  - CGO_ENABLED=0
   goos:
   - linux
   goarch:
+  - 386
   - amd64
+  - arm
+  - arm64
+  flags:
+  - -a
+  - -tags=scanner
   main: ./contrib/future-vuls/cmd/main.go
   binary: future-vuls
 archives:
@@ -55,10 +87,10 @@ archives:
   - NOTICE
   - README*
   - CHANGELOG.md
+
 - id: future-vuls
   name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
   builds:
-
   - future-vuls
   format: tar.gz
   files:
