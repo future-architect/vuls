@@ -23,7 +23,7 @@ type packCves struct {
 	cves      []models.CveContent
 }
 
-func (deb Debian) Supported(major string) bool {
+func (deb Debian) supported(major string) bool {
 	_, ok := map[string]string{
 		"8":  "jessie",
 		"9":  "stretch",
@@ -34,7 +34,7 @@ func (deb Debian) Supported(major string) bool {
 
 // DetectUnfixed fills cve information that has in Gost
 func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCVEs int, err error) {
-	if !deb.Supported(major(r.Release)) {
+	if !deb.supported(major(r.Release)) {
 		// only logging
 		util.Log.Warnf("Debian %s is not supported yet", r.Release)
 		return 0, nil

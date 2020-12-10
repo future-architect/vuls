@@ -391,6 +391,7 @@ func FillWithMetasploit(driver metasploitdb.DB, r *models.ScanResult) (nMetasplo
 	return msf.FillWithMetasploit(driver, r)
 }
 
+// DetectCpeURIsCves detects CVEs of given CPE-URIs
 func DetectCpeURIsCves(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) (nCVEs int, err error) {
 	if len(cpeURIs) != 0 && driver == nil && !config.Conf.CveDict.IsFetchViaHTTP() {
 		return 0, xerrors.Errorf("cpeURIs %s specified, but cve-dictionary DB not found. Fetch cve-dictionary before reporting. For details, see `https://github.com/kotakanbe/go-cve-dictionary#deploy-go-cve-dictionary`",

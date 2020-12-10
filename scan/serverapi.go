@@ -569,6 +569,10 @@ func ViaHTTP(header http.Header, body string) (models.ScanResult, error) {
 		osType = &centos{
 			redhatBase: redhatBase{base: base},
 		}
+	case config.Oracle:
+		osType = &oracle{
+			redhatBase: redhatBase{base: base},
+		}
 	case config.Amazon:
 		osType = &amazon{
 			redhatBase: redhatBase{base: base},

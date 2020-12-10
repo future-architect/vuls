@@ -187,6 +187,7 @@ type PortStat struct {
 	PortReachableTo []string `json:"portReachableTo"`
 }
 
+// NewPortStat create a PortStat from ipPort str
 func NewPortStat(ipPort string) (*PortStat, error) {
 	if ipPort == "" {
 		return &PortStat{}, nil

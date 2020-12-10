@@ -505,6 +505,7 @@ func (r ScanResult) RemoveRaspbianPackFromResult() ScanResult {
 	return result
 }
 
+// ClearFields clears a given fields of ScanResult
 func (r ScanResult) ClearFields(targetTagNames []string) ScanResult {
 	if len(targetTagNames) == 0 {
 		return r
