@@ -694,7 +694,7 @@ func (v VulnInfo) Cvss3CalcURL() string {
 func (v VulnInfo) VendorLinks(family string) map[string]string {
 	links := map[string]string{}
 	if strings.HasPrefix(v.CveID, "WPVDBID") {
-		links["WPVulnDB"] = fmt.Sprintf("https://wpvulndb.com/vulnerabilities/%s",
+		links["WPVulnDB"] = fmt.Sprintf("https://wpscan.com/vulnerabilities/%s",
 			strings.TrimPrefix(v.CveID, "WPVDBID-"))
 		return links
 	}
