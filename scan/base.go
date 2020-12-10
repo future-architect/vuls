@@ -598,14 +598,26 @@ func (l *base) scanLibraries() (err error) {
 	return nil
 }
 
+// DummyFileInfo is a dummy struct for libscan
 type DummyFileInfo struct{}
 
-func (d *DummyFileInfo) Name() string       { return "dummy" }
-func (d *DummyFileInfo) Size() int64        { return 0 }
-func (d *DummyFileInfo) Mode() os.FileMode  { return 0 }
+// Name is
+func (d *DummyFileInfo) Name() string { return "dummy" }
+
+// Size is
+func (d *DummyFileInfo) Size() int64 { return 0 }
+
+// Mode is
+func (d *DummyFileInfo) Mode() os.FileMode { return 0 }
+
+//ModTime is
 func (d *DummyFileInfo) ModTime() time.Time { return time.Now() }
-func (d *DummyFileInfo) IsDir() bool        { return false }
-func (d *DummyFileInfo) Sys() interface{}   { return nil }
+
+// IsDir is
+func (d *DummyFileInfo) IsDir() bool { return false }
+
+//Sys is
+func (d *DummyFileInfo) Sys() interface{} { return nil }
 
 func (l *base) scanWordPress() (err error) {
 	wpOpts := []string{l.ServerInfo.WordPress.OSUser,
