@@ -140,7 +140,7 @@ No CVE-IDs are found in updatable packages.
 		if strings.HasPrefix(vinfo.CveID, "CVE-") {
 			link = fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", vinfo.CveID)
 		} else if strings.HasPrefix(vinfo.CveID, "WPVDBID-") {
-			link = fmt.Sprintf("https://wpvulndb.com/vulnerabilities/%s", strings.TrimPrefix(vinfo.CveID, "WPVDBID-"))
+			link = fmt.Sprintf("https://wpscan.com/vulnerabilities/%s", strings.TrimPrefix(vinfo.CveID, "WPVDBID-"))
 		}
 
 		data = append(data, []string{
@@ -401,7 +401,7 @@ func formatCsvList(r models.ScanResult, path string) error {
 		if strings.HasPrefix(vinfo.CveID, "CVE-") {
 			link = fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", vinfo.CveID)
 		} else if strings.HasPrefix(vinfo.CveID, "WPVDBID-") {
-			link = fmt.Sprintf("https://wpvulndb.com/vulnerabilities/%s", strings.TrimPrefix(vinfo.CveID, "WPVDBID-"))
+			link = fmt.Sprintf("https://wpscan.com/vulnerabilities/%s", strings.TrimPrefix(vinfo.CveID, "WPVDBID-"))
 		}
 
 		data = append(data, []string{

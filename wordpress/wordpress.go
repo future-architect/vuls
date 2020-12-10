@@ -47,7 +47,7 @@ type References struct {
 }
 
 // FillWordPress access to wpvulndb and fetch scurity alerts and then set to the given ScanResult.
-// https://wpvulndb.com/
+// https://wpscan.com/
 func FillWordPress(r *models.ScanResult, token string, wpVulnCaches *map[string]string) (int, error) {
 	// Core
 	ver := strings.Replace(r.WordPressPackages.CoreVersion(), ".", "", -1)
@@ -57,7 +57,7 @@ func FillWordPress(r *models.ScanResult, token string, wpVulnCaches *map[string]
 
 	body, ok := searchCache(ver, wpVulnCaches)
 	if !ok {
-		url := fmt.Sprintf("https://wpvulndb.com/api/v3/wordpresses/%s", ver)
+		url := fmt.Sprintf("https://wpscan.com/api/v3/wordpresses/%s", ver)
 		var err error
 		body, err = httpRequest(url, token)
 		if err != nil {
@@ -87,7 +87,7 @@ func FillWordPress(r *models.ScanResult, token string, wpVulnCaches *map[string]
 	for _, p := range themes {
 		body, ok := searchCache(p.Name, wpVulnCaches)
 		if !ok {
-			url := fmt.Sprintf("https://wpvulndb.com/api/v3/themes/%s", p.Name)
+			url := fmt.Sprintf("https://wpscan.com/api/v3/themes/%s", p.Name)
 			var err error
 			body, err = httpRequest(url, token)
 			if err != nil {
@@ -113,7 +113,8 @@ func FillWordPress(r *models.ScanResult, token string, wpVulnCaches *map[string]
 				}
 				ok, err := match(pkg.Version, fixstat.FixedIn)
 				if err != nil {
-					return 0, xerrors.Errorf("Not a semantic versioning: %w", err)
+					util.Log.Infof("[poor] %s installed: %s, fixedIn: %s", pkg.Name, pkg.Version, fixstat.FixedIn)
+					continue
 				}
 				if ok {
 					wpVinfos = append(wpVinfos, v)
@@ -129,7 +130,7 @@ func FillWordPress(r *models.ScanResult, token string, wpVulnCaches *map[string]
 	for _, p := range plugins {
 		body, ok := searchCache(p.Name, wpVulnCaches)
 		if !ok {
-			url := fmt.Sprintf("https://wpvulndb.com/api/v3/plugins/%s", p.Name)
+			url := fmt.Sprintf("https://wpscan.com/api/v3/plugins/%s", p.Name)
 			var err error
 			body, err = httpRequest(url, token)
 			if err != nil {
@@ -155,7 +156,8 @@ func FillWordPress(r *models.ScanResult, token string, wpVulnCaches *map[string]
 				}
 				ok, err := match(pkg.Version, fixstat.FixedIn)
 				if err != nil {
-					return 0, xerrors.Errorf("Not a semantic versioning: %w", err)
+					util.Log.Infof("[poor] %s installed: %s, fixedIn: %s", pkg.Name, pkg.Version, fixstat.FixedIn)
+					continue
 				}
 				if ok {
 					wpVinfos = append(wpVinfos, v)
