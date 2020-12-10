@@ -29,6 +29,9 @@ all: build
 build: ./cmd/vuls/main.go pretest fmt
 	$(GO) build -a -ldflags "$(LDFLAGS)" -o vuls ./cmd/vuls
 
+b: ./cmd/vuls/main.go 
+	$(GO) build -a -ldflags "$(LDFLAGS)" -o vuls ./cmd/vuls
+
 install: ./cmd/vuls/main.go pretest fmt
 	$(GO) install -ldflags "$(LDFLAGS)" ./cmd/vuls
 
