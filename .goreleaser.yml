@@ -64,12 +64,24 @@ builds:
   - -tags=scanner
   main: ./contrib/future-vuls/cmd/main.go
   binary: future-vuls
+
 archives:
 
 - id: vuls
   name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
   builds:
   - vuls
+  format: tar.gz
+  files:
+  - LICENSE
+  - NOTICE
+  - README*
+  - CHANGELOG.md
+
+- id: vuls-scanner
+  name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+  builds:
+  - vuls-scanner
   format: tar.gz
   files:
   - LICENSE
