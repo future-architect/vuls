@@ -20,6 +20,7 @@ func main() {
 	subcommands.Register(&commands.ScanCmd{}, "scan")
 	subcommands.Register(&commands.HistoryCmd{}, "history")
 	subcommands.Register(&commands.ConfigtestCmd{}, "configtest")
+	subcommands.Register(&commands.SaaSCmd{}, "saas")
 
 	var v = flag.Bool("v", false, "Show version")
 
