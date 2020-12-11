@@ -1,10 +1,9 @@
-package report
+package saas
 
 import (
 	"testing"
 
 	"github.com/future-architect/vuls/config"
-
 	"github.com/future-architect/vuls/models"
 )
 

@@ -63,7 +63,6 @@ func (*ReportCmd) Usage() string {
 		[-to-localfile]
 		[-to-s3]
 		[-to-azure-blob]
-		[-to-saas]
 		[-format-json]
 		[-format-xml]
 		[-format-one-email]
@@ -167,12 +166,8 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.Conf.ToHTTP, "to-http", false, "Send report via HTTP POST")
 	f.BoolVar(&c.Conf.ToAzureBlob, "to-azure-blob", false,
 		"Write report to Azure Storage blob (container/yyyyMMdd_HHmm/servername.json/xml/txt)")
-	f.BoolVar(&c.Conf.ToSaas, "to-saas", false,
-		"Upload report to Future Vuls(https://vuls.biz/) before report")
 
 	f.BoolVar(&c.Conf.GZIP, "gzip", false, "gzip compression")
-	f.BoolVar(&c.Conf.UUID, "uuid", false,
-		"Auto generate of scan target servers and then write to config.toml and scan result")
 	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use args passed via PIPE")
 
 	f.StringVar(&p.cveDict.Type, "cvedb-type", "",
@@ -277,86 +272,76 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			pp.Sprintf("%s", c.Conf.Servers[r.ServerName]))
 	}
 
-	if c.Conf.UUID {
-		// Ensure UUIDs of scan target servers in config.toml
-		if err := report.EnsureUUIDs(p.configPath, res); err != nil {
-			util.Log.Errorf("Failed to ensure UUIDs. err: %+v", err)
+	util.Log.Info("Validating db config...")
+	if !c.Conf.ValidateOnReportDB() {
+		return subcommands.ExitUsageError
+	}
+
+	if c.Conf.CveDict.URL != "" {
+		if err := report.CveClient.CheckHealth(); err != nil {
+			util.Log.Errorf("CVE HTTP server is not running. err: %+v", err)
+			util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with `-cvedb-type=sqlite3 -cvedb-sqlite3-path` option instead of -cvedb-url")
 			return subcommands.ExitFailure
 		}
 	}
 
-	if !c.Conf.ToSaas {
-		util.Log.Info("Validating db config...")
-		if !c.Conf.ValidateOnReportDB() {
-			return subcommands.ExitUsageError
-		}
-
-		if c.Conf.CveDict.URL != "" {
-			if err := report.CveClient.CheckHealth(); err != nil {
-				util.Log.Errorf("CVE HTTP server is not running. err: %+v", err)
-				util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with `-cvedb-type=sqlite3 -cvedb-sqlite3-path` option instead of -cvedb-url")
-				return subcommands.ExitFailure
-			}
-		}
-
-		if c.Conf.OvalDict.URL != "" {
-			err := oval.Base{}.CheckHTTPHealth()
-			if err != nil {
-				util.Log.Errorf("OVAL HTTP server is not running. err: %+v", err)
-				util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with `-ovaldb-type=sqlite3 -ovaldb-sqlite3-path` option instead of -ovaldb-url")
-				return subcommands.ExitFailure
-			}
-		}
-
-		if c.Conf.Gost.URL != "" {
-			util.Log.Infof("gost: %s", c.Conf.Gost.URL)
-			err := gost.Base{}.CheckHTTPHealth()
-			if err != nil {
-				util.Log.Errorf("gost HTTP server is not running. err: %+v", err)
-				util.Log.Errorf("Run gost as server mode before reporting or run with `-gostdb-type=sqlite3 -gostdb-sqlite3-path` option instead of -gostdb-url")
-				return subcommands.ExitFailure
-			}
-		}
-
-		if c.Conf.Exploit.URL != "" {
-			err := exploit.CheckHTTPHealth()
-			if err != nil {
-				util.Log.Errorf("exploit HTTP server is not running. err: %+v", err)
-				util.Log.Errorf("Run go-exploitdb as server mode before reporting")
-				return subcommands.ExitFailure
-			}
-		}
-
-		if c.Conf.Metasploit.URL != "" {
-			err := msf.CheckHTTPHealth()
-			if err != nil {
-				util.Log.Errorf("metasploit HTTP server is not running. err: %+v", err)
-				util.Log.Errorf("Run go-msfdb as server mode before reporting")
-				return subcommands.ExitFailure
-			}
-		}
-		dbclient, locked, err := report.NewDBClient(report.DBClientConf{
-			CveDictCnf:    c.Conf.CveDict,
-			OvalDictCnf:   c.Conf.OvalDict,
-			GostCnf:       c.Conf.Gost,
-			ExploitCnf:    c.Conf.Exploit,
-			MetasploitCnf: c.Conf.Metasploit,
-			DebugSQL:      c.Conf.DebugSQL,
-		})
-		if locked {
-			util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again. err: %+v", err)
-			return subcommands.ExitFailure
-		}
+	if c.Conf.OvalDict.URL != "" {
+		err := oval.Base{}.CheckHTTPHealth()
 		if err != nil {
-			util.Log.Errorf("Failed to init DB Clients. err: %+v", err)
+			util.Log.Errorf("OVAL HTTP server is not running. err: %+v", err)
+			util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with `-ovaldb-type=sqlite3 -ovaldb-sqlite3-path` option instead of -ovaldb-url")
 			return subcommands.ExitFailure
 		}
-		defer dbclient.CloseDB()
+	}
 
-		if res, err = report.FillCveInfos(*dbclient, res, dir); err != nil {
-			util.Log.Errorf("%+v", err)
+	if c.Conf.Gost.URL != "" {
+		util.Log.Infof("gost: %s", c.Conf.Gost.URL)
+		err := gost.Base{}.CheckHTTPHealth()
+		if err != nil {
+			util.Log.Errorf("gost HTTP server is not running. err: %+v", err)
+			util.Log.Errorf("Run gost as server mode before reporting or run with `-gostdb-type=sqlite3 -gostdb-sqlite3-path` option instead of -gostdb-url")
 			return subcommands.ExitFailure
 		}
+	}
+
+	if c.Conf.Exploit.URL != "" {
+		err := exploit.CheckHTTPHealth()
+		if err != nil {
+			util.Log.Errorf("exploit HTTP server is not running. err: %+v", err)
+			util.Log.Errorf("Run go-exploitdb as server mode before reporting")
+			return subcommands.ExitFailure
+		}
+	}
+
+	if c.Conf.Metasploit.URL != "" {
+		err := msf.CheckHTTPHealth()
+		if err != nil {
+			util.Log.Errorf("metasploit HTTP server is not running. err: %+v", err)
+			util.Log.Errorf("Run go-msfdb as server mode before reporting")
+			return subcommands.ExitFailure
+		}
+	}
+	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
+		CveDictCnf:    c.Conf.CveDict,
+		OvalDictCnf:   c.Conf.OvalDict,
+		GostCnf:       c.Conf.Gost,
+		ExploitCnf:    c.Conf.Exploit,
+		MetasploitCnf: c.Conf.Metasploit,
+		DebugSQL:      c.Conf.DebugSQL,
+	})
+	if locked {
+		util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again. err: %+v", err)
+		return subcommands.ExitFailure
+	}
+	if err != nil {
+		util.Log.Errorf("Failed to init DB Clients. err: %+v", err)
+		return subcommands.ExitFailure
+	}
+	defer dbclient.CloseDB()
+
+	if res, err = report.FillCveInfos(*dbclient, res, dir); err != nil {
+		util.Log.Errorf("%+v", err)
+		return subcommands.ExitFailure
 	}
 
 	// report
@@ -430,14 +415,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitUsageError
 		}
 		reports = append(reports, report.AzureBlobWriter{})
-	}
-
-	if c.Conf.ToSaas {
-		if !c.Conf.UUID {
-			util.Log.Errorf("If you use the -to-saas option, you need to enable the uuid option")
-			return subcommands.ExitUsageError
-		}
-		reports = append(reports, report.SaasWriter{})
 	}
 
 	for _, w := range reports {

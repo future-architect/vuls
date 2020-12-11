@@ -10,7 +10,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/report"
+	"github.com/future-architect/vuls/saas"
 	"github.com/spf13/cobra"
 )
 
@@ -73,7 +73,7 @@ func main() {
 			config.Conf.Saas.GroupID = groupID
 			config.Conf.Saas.Token = token
 			config.Conf.Saas.URL = url
-			if err = (report.SaasWriter{}).Write(scanResult); err != nil {
+			if err = (saas.Writer{}).Write(scanResult); err != nil {
 				fmt.Println(err)
 				os.Exit(1)
 				return
