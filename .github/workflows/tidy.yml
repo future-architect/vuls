@@ -19,4 +19,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           git_user_name: kotakanbe
           git_user_email: kotakanbe@gmail.com
-          go_version: 1.14.x
+          go_version: 1.15.6
