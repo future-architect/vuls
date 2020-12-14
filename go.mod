@@ -1,6 +1,6 @@
 module github.com/future-architect/vuls
 
-go 1.14
+go 1.15
 
 replace (
 	gopkg.in/mattn/go-colorable.v0 => github.com/mattn/go-colorable v0.1.0
