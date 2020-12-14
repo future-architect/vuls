@@ -3,7 +3,6 @@ package models
 import (
 	"path/filepath"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/aquasecurity/trivy-db/pkg/db"
 	trivyDBTypes "github.com/aquasecurity/trivy-db/pkg/types"
 	"github.com/aquasecurity/trivy/pkg/detector/library"
@@ -45,13 +44,7 @@ func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 	}
 	var vulnerabilities = []VulnInfo{}
 	for _, pkg := range s.Libs {
-		v, err := semver.StrictNewVersion(pkg.Version)
-		if err != nil {
-			util.Log.Debugf("new version cant detected %s@%s", pkg.Name, pkg.Version)
-			continue
-		}
-
-		tvulns, err := scanner.Detect(pkg.Name, v)
+		tvulns, err := scanner.Detect(pkg.Name, pkg.Version)
 		if err != nil {
 			return nil, xerrors.Errorf("failed to detect %s vulnerabilities: %w", scanner.Type(), err)
 		}
