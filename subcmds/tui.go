@@ -22,12 +22,7 @@ import (
 
 // TuiCmd is Subcommand of host discovery mode
 type TuiCmd struct {
-	configPath     string
-	cveDict        c.GoCveDictConf
-	ovalDict       c.GovalDictConf
-	gostConf       c.GostConf
-	exploitConf    c.ExploitConf
-	metasploitConf c.MetasploitConf
+	configPath string
 }
 
 // Name return subcommand name
@@ -53,21 +48,6 @@ func (*TuiCmd) Usage() string {
 		[-quiet]
 		[-no-progress]
 		[-pipe]
-		[-cvedb-type=sqlite3|mysql|postgres|redis|http]
-		[-cvedb-sqlite3-path=/path/to/cve.sqlite3]
-		[-cvedb-url=http://127.0.0.1:1323 or DB connection string]
-		[-ovaldb-type=sqlite3|mysql|redis|http]
-		[-ovaldb-sqlite3-path=/path/to/oval.sqlite3]
-		[-ovaldb-url=http://127.0.0.1:1324 or DB connection string]
-		[-gostdb-type=sqlite3|mysql|redis|http]
-		[-gostdb-sqlite3-path=/path/to/gost.sqlite3]
-		[-gostdb-url=http://127.0.0.1:1325 or DB connection string]
-		[-exploitdb-type=sqlite3|mysql|redis|http]
-		[-exploitdb-sqlite3-path=/path/to/exploitdb.sqlite3]
-		[-exploitdb-url=http://127.0.0.1:1326 or DB connection string]
-		[-msfdb-type=sqlite3|mysql|redis|http]
-		[-msfdb-sqlite3-path=/path/to/msfdb.sqlite3]
-		[-msfdb-url=http://127.0.0.1:1327 or DB connection string]
 		[-trivy-cachedb-dir=/path/to/dir]
 
 `
@@ -109,36 +89,6 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 
 	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use stdin via PIPE")
 
-	f.StringVar(&p.cveDict.Type, "cvedb-type", "",
-		"DB type of go-cve-dictionary (sqlite3, mysql, postgres or redis)")
-	f.StringVar(&p.cveDict.SQLite3Path, "cvedb-path", "", "/path/to/sqlite3")
-	f.StringVar(&p.cveDict.URL, "cvedb-url", "",
-		"http://go-cve-dictionary.com:1323 or DB connection string")
-
-	f.StringVar(&p.ovalDict.Type, "ovaldb-type", "",
-		"DB type of goval-dictionary (sqlite3, mysql, postgres or redis)")
-	f.StringVar(&p.ovalDict.SQLite3Path, "ovaldb-path", "", "/path/to/sqlite3")
-	f.StringVar(&p.ovalDict.URL, "ovaldb-url", "",
-		"http://goval-dictionary.com:1324 or DB connection string")
-
-	f.StringVar(&p.gostConf.Type, "gostdb-type", "",
-		"DB type of gost (sqlite3, mysql, postgres or redis)")
-	f.StringVar(&p.gostConf.SQLite3Path, "gostdb-path", "", "/path/to/sqlite3")
-	f.StringVar(&p.gostConf.URL, "gostdb-url", "",
-		"http://gost.com:1325 or DB connection string")
-
-	f.StringVar(&p.exploitConf.Type, "exploitdb-type", "",
-		"DB type of exploit (sqlite3, mysql, postgres, redis or http)")
-	f.StringVar(&p.exploitConf.SQLite3Path, "exploitdb-sqlite3-path", "", "/path/to/sqlite3")
-	f.StringVar(&p.exploitConf.URL, "exploitdb-url", "",
-		"http://exploit.com:1326 or DB connection string")
-
-	f.StringVar(&p.metasploitConf.Type, "msfdb-type", "",
-		"DB type of msf (sqlite3, mysql, postgres, redis or http)")
-	f.StringVar(&p.metasploitConf.SQLite3Path, "msfdb-sqlite3-path", "", "/path/to/sqlite3")
-	f.StringVar(&p.metasploitConf.URL, "msfdb-url", "",
-		"http://metasploit.com:1327 or DB connection string")
-
 	f.StringVar(&c.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
 		utils.DefaultCacheDir(), "/path/to/dir")
 }
@@ -152,11 +102,6 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	}
 
 	c.Conf.Lang = "en"
-	c.Conf.CveDict.Overwrite(p.cveDict)
-	c.Conf.OvalDict.Overwrite(p.ovalDict)
-	c.Conf.Gost.Overwrite(p.gostConf)
-	c.Conf.Exploit.Overwrite(p.exploitConf)
-	c.Conf.Metasploit.Overwrite(p.metasploitConf)
 
 	var dir string
 	var err error
