@@ -15,7 +15,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// DBClient is a dictionarie's db client for reporting
+// DBClient is DB client for reporting
 type DBClient struct {
 	CveDB        cvedb.DB
 	OvalDB       ovaldb.DB

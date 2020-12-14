@@ -61,7 +61,7 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 	}
 
 	// Update package status of source packages.
-	// In the case of Debian based Linux, sometimes source package name is difined as affected package in OVAL.
+	// In the case of Debian based Linux, sometimes source package name is defined as affected package in OVAL.
 	// To display binary package name showed in apt-get, need to convert source name to binary name.
 	for binName := range defPacks.binpkgFixstat {
 		if srcPack, ok := r.SrcPackages.FindByBinName(binName); ok {
@@ -361,7 +361,7 @@ func (o Ubuntu) fillWithOval(driver db.DB, r *models.ScanResult, kernelNamesInOv
 		if v, ok := r.Packages[linuxImage]; ok {
 			runningKernelVersion = v.Version
 		} else {
-			util.Log.Warnf("Unable to detect vulns of running kernel because the version of the runnning kernel is unknown. server: %s",
+			util.Log.Warnf("Unable to detect vulns of running kernel because the version of the running kernel is unknown. server: %s",
 				r.ServerName)
 		}
 
@@ -389,13 +389,13 @@ func (o Ubuntu) fillWithOval(driver db.DB, r *models.ScanResult, kernelNamesInOv
 		}
 		for srcPackName, srcPack := range r.SrcPackages {
 			copiedSourcePkgs[srcPackName] = srcPack
-			targetBianryNames := []string{}
+			targetBinaryNames := []string{}
 			for _, n := range srcPack.BinaryNames {
 				if n == kernelPkgInOVAL || !strings.HasPrefix(n, "linux-") {
-					targetBianryNames = append(targetBianryNames, n)
+					targetBinaryNames = append(targetBinaryNames, n)
 				}
 			}
-			srcPack.BinaryNames = targetBianryNames
+			srcPack.BinaryNames = targetBinaryNames
 			r.SrcPackages[srcPackName] = srcPack
 		}
 

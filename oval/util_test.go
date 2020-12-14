@@ -1097,6 +1097,10 @@ func Test_major(t *testing.T) {
 		expected string
 	}{
 		{
+			in:       "",
+			expected: "",
+		},
+		{
 			in:       "4.1",
 			expected: "4",
 		},

@@ -67,7 +67,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	util.Log.Infof("%s: %d CVEs are detected with Library",
 		result.FormatServerName(), nCVEs)
 
-	if err := report.FillCveInfo(h.DBclient, &result, []string{}, true); err != nil {
+	if err := report.FillCveInfo(h.DBclient, &result, []string{}); err != nil {
 		util.Log.Error(err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
