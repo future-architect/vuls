@@ -75,7 +75,7 @@ const (
 )
 
 const (
-	// ServerTypePseudo is used for ServerInfo.Type
+	// ServerTypePseudo is used for ServerInfo.Type, r.Family
 	ServerTypePseudo = "pseudo"
 )
 

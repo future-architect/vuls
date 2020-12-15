@@ -214,7 +214,7 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 
 	defs := []ovalmodels.Definition{}
 	if err := json.Unmarshal([]byte(body), &defs); err != nil {
-		errChan <- xerrors.Errorf("Failed to Unmarshall. body: %s, err: %w", body, err)
+		errChan <- xerrors.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
 		return
 	}
 	resChan <- response{
@@ -278,6 +278,9 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 }
 
 func major(version string) string {
+	if version == "" {
+		return ""
+	}
 	ss := strings.SplitN(version, ":", 2)
 	ver := ""
 	if len(ss) == 1 {
@@ -336,7 +339,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 			}
 
 			// But CentOS can't judge whether fixed or unfixed.
-			// Because fixed state in RHEL's OVAL is different.
+			// Because fixed state in RHEL OVAL is different.
 			// So, it have to be judged version comparison.
 
 			// `offline` or `fast` scan mode can't get a updatable version.

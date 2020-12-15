@@ -18,7 +18,8 @@ import (
 )
 
 // DetectLibsCves fills LibraryScanner information
-func DetectLibsCves(r *models.ScanResult) (totalCnt int, err error) {
+func DetectLibsCves(r *models.ScanResult) (err error) {
+	totalCnt := 0
 	if len(r.LibraryScanners) == 0 {
 		return
 	}
@@ -26,23 +27,23 @@ func DetectLibsCves(r *models.ScanResult) (totalCnt int, err error) {
 	// initialize trivy's logger and db
 	err = log.InitLogger(false, false)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	util.Log.Info("Updating library db...")
 	if err := downloadDB(config.Version, config.Conf.TrivyCacheDBDir, config.Conf.NoProgress, false, false); err != nil {
-		return 0, err
+		return err
 	}
 
 	if err := db2.Init(config.Conf.TrivyCacheDBDir); err != nil {
-		return 0, err
+		return err
 	}
 	defer db2.Close()
 
 	for _, lib := range r.LibraryScanners {
 		vinfos, err := lib.Scan()
 		if err != nil {
-			return 0, err
+			return err
 		}
 		for _, vinfo := range vinfos {
 			vinfo.Confidences.AppendIfMissing(models.TrivyMatch)
@@ -56,7 +57,10 @@ func DetectLibsCves(r *models.ScanResult) (totalCnt int, err error) {
 		totalCnt += len(vinfos)
 	}
 
-	return totalCnt, nil
+	util.Log.Infof("%s: %d CVEs are detected with Library",
+		r.FormatServerName(), totalCnt)
+
+	return nil
 }
 
 func downloadDB(appVersion, cacheDir string, quiet, light, skipUpdate bool) error {
