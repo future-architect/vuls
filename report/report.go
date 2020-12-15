@@ -75,24 +75,27 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			}
 		}
 
-		nCVEs, err := libmanager.DetectLibsCves(&r)
-		if err != nil {
+		if err := libmanager.DetectLibsCves(&r); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
 		}
-		util.Log.Infof("%s: %d CVEs are detected with Library",
-			r.FormatServerName(), nCVEs)
 
-		// Integrations
-		githubInts := GithubSecurityAlerts(c.Conf.Servers[r.ServerName].GitHubRepos)
+		if err := DetectPkgCves(dbclient, &r); err != nil {
+			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
+		}
 
-		wpVulnCaches := map[string]string{}
-		wpOpt := WordPressOption{c.Conf.Servers[r.ServerName].WordPress.WPVulnDBToken, &wpVulnCaches}
+		if err := DetectCpeURIsCves(dbclient.CveDB, &r, cpeURIs); err != nil {
+			return nil, xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
+		}
 
-		if err := FillCveInfo(dbclient,
-			&r,
-			cpeURIs,
-			githubInts,
-			wpOpt); err != nil {
+		if err := DetectGitHubCves(&r); err != nil {
+			return nil, xerrors.Errorf("Failed to detect GitHub Cves: %w", err)
+		}
+
+		if err := DetectWordPressCves(&r); err != nil {
+			return nil, xerrors.Errorf("Failed to detect WordPress Cves: %w", err)
+		}
+
+		if err := FillCveInfo(dbclient, &r); err != nil {
 			return nil, err
 		}
 
@@ -150,8 +153,9 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 	return rs, nil
 }
 
-// FillCveInfo fill scanResult with cve info.
-func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, integrations ...Integration) error {
+// DetectPkgCVEs detects OS pkg cves
+func DetectPkgCves(dbclient DBClient, r *models.ScanResult) error {
+	// Pkg Scan
 	if r.Release != "" {
 		// OVAL
 		if err := detectPkgsCvesWithOval(dbclient.OvalDB, r); err != nil {
@@ -170,19 +174,77 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, inte
 		return xerrors.Errorf("Failed to fill CVEs. r.Release is empty")
 	}
 
-	// CPE
-	if err := detectCpeURIsCves(dbclient.CveDB, r, cpeURIs); err != nil {
-		return xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
+	for i, v := range r.ScannedCves {
+		for j, p := range v.AffectedPackages {
+			if p.NotFixedYet && p.FixState == "" {
+				p.FixState = "Not fixed yet"
+				r.ScannedCves[i].AffectedPackages[j] = p
+			}
+		}
 	}
 
-	// Integrations
+	// To keep backward compatibility
+	for i, pkg := range r.Packages {
+		for j, proc := range pkg.AffectedProcs {
+			for _, ipPort := range proc.ListenPorts {
+				ps, err := models.NewPortStat(ipPort)
+				if err != nil {
+					util.Log.Warnf("Failed to parse ip:port: %s, err:%+v", ipPort, err)
+					continue
+				}
+				r.Packages[i].AffectedProcs[j].ListenPortStats = append(
+					r.Packages[i].AffectedProcs[j].ListenPortStats, *ps)
+			}
+		}
+	}
+
+	return nil
+}
+
+// DetectGitHubCves fetches CVEs from GitHub Security Alerts
+func DetectGitHubCves(r *models.ScanResult) error {
+	repos := c.Conf.Servers[r.ServerName].GitHubRepos
+	if len(repos) == 0 {
+		return nil
+	}
+	githubInts := GithubSecurityAlerts(repos)
+
 	ints := &integrationResults{}
-	for _, o := range integrations {
+	for _, o := range []Integration{githubInts} {
 		if err := o.apply(r, ints); err != nil {
 			return xerrors.Errorf("Failed to detect CVE with integration: %w", err)
 		}
 	}
-	util.Log.Infof("%s: %d CVEs are detected with GitHub Security Alerts", r.FormatServerName(), ints.GithubAlertsCveCounts)
+	util.Log.Infof("%s: %d CVEs are detected with GitHub Security Alerts",
+		r.FormatServerName(), ints.GithubAlertsCveCounts)
+	return nil
+}
+
+// DetectWordPressCves detects CVEs of WordPress
+func DetectWordPressCves(r *models.ScanResult) error {
+	token := c.Conf.Servers[r.ServerName].WordPress.WPVulnDBToken
+	if token == "" {
+		return nil
+	}
+	wpVulnCaches := map[string]string{}
+	wpOpt := WordPressOption{
+		token,
+		&wpVulnCaches,
+	}
+
+	ints := &integrationResults{}
+	for _, o := range []Integration{wpOpt} {
+		if err := o.apply(r, ints); err != nil {
+			return xerrors.Errorf("Failed to detect CVE with integration: %w", err)
+		}
+	}
+	util.Log.Infof("%s: %d CVEs are detected with wpscan API",
+		r.FormatServerName(), ints.WordPressCveCounts)
+	return nil
+}
+
+// FillCveInfo fill scanResult with cve info.
+func FillCveInfo(dbclient DBClient, r *models.ScanResult) error {
 
 	// Fill CVE information
 	util.Log.Infof("Fill CVE detailed with gost")
@@ -214,29 +276,6 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult, cpeURIs []string, inte
 	util.Log.Infof("Fill CWE with NVD")
 	fillCweDict(r)
 
-	for i, v := range r.ScannedCves {
-		for j, p := range v.AffectedPackages {
-			if p.NotFixedYet && p.FixState == "" {
-				p.FixState = "Not fixed yet"
-				r.ScannedCves[i].AffectedPackages[j] = p
-			}
-		}
-	}
-
-	// To keep backward compatibility
-	for i, pkg := range r.Packages {
-		for j, proc := range pkg.AffectedProcs {
-			for _, ipPort := range proc.ListenPorts {
-				ps, err := models.NewPortStat(ipPort)
-				if err != nil {
-					util.Log.Warnf("Failed to parse ip:port: %s, err:%+v", ipPort, err)
-					continue
-				}
-				r.Packages[i].AffectedProcs[j].ListenPortStats = append(
-					r.Packages[i].AffectedProcs[j].ListenPortStats, *ps)
-			}
-		}
-	}
 	return nil
 }
 
@@ -392,8 +431,8 @@ func fillWithMetasploit(driver metasploitdb.DB, r *models.ScanResult) (nMetasplo
 	return msf.FillWithMetasploit(driver, r)
 }
 
-// detectCpeURIsCves detects CVEs of given CPE-URIs
-func detectCpeURIsCves(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) error {
+// DetectCpeURIsCves detects CVEs of given CPE-URIs
+func DetectCpeURIsCves(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) error {
 	nCVEs := 0
 	if len(cpeURIs) != 0 && driver == nil && !config.Conf.CveDict.IsFetchViaHTTP() {
 		return xerrors.Errorf("cpeURIs %s specified, but cve-dictionary DB not found. Fetch cve-dictionary before reporting. For details, see `https://github.com/kotakanbe/go-cve-dictionary#deploy-go-cve-dictionary`",

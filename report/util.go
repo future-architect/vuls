@@ -446,6 +446,7 @@ func formatChangelogs(r models.ScanResult) string {
 	}
 	return strings.Join(buf, "\n")
 }
+
 func reuseScannedCves(r *models.ScanResult) bool {
 	switch r.Family {
 	case
@@ -453,10 +454,15 @@ func reuseScannedCves(r *models.ScanResult) bool {
 		config.Raspbian:
 		return true
 	}
-	if _, ok := r.Optional["trivy-target"]; ok {
+	if isTrivyResult(r) {
 		return true
 	}
 	return false
+}
+
+func isTrivyResult(r *models.ScanResult) bool {
+	_, ok := r.Optional["trivy-target"]
+	return ok
 }
 
 func needToRefreshCve(r models.ScanResult) bool {

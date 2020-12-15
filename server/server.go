@@ -12,7 +12,6 @@ import (
 	"time"
 
 	c "github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/libmanager"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/scan"
@@ -24,11 +23,12 @@ type VulsHandler struct {
 	DBclient report.DBClient
 }
 
-func (h VulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// ServeHTTP is http handler
+func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var err error
 	result := models.ScanResult{ScannedCves: models.VulnInfos{}}
 
-	contentType := r.Header.Get("Content-Type")
+	contentType := req.Header.Get("Content-Type")
 	mediatype, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
 		util.Log.Error(err)
@@ -37,18 +37,18 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if mediatype == "application/json" {
-		if err = json.NewDecoder(r.Body).Decode(&result); err != nil {
+		if err = json.NewDecoder(req.Body).Decode(&result); err != nil {
 			util.Log.Error(err)
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
 	} else if mediatype == "text/plain" {
 		buf := new(bytes.Buffer)
-		if _, err := io.Copy(buf, r.Body); err != nil {
+		if _, err := io.Copy(buf, req.Body); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if result, err = scan.ViaHTTP(r.Header, buf.String()); err != nil {
+		if result, err = scan.ViaHTTP(req.Header, buf.String()); err != nil {
 			util.Log.Error(err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -59,16 +59,14 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nCVEs, err := libmanager.DetectLibsCves(&result)
-	if err != nil {
-		util.Log.Error("Failed to fill with Library dependency: %w", err)
+	if err := report.DetectPkgCves(h.DBclient, &result); err != nil {
+		util.Log.Errorf("Failed to detect Pkg CVE: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
 	}
-	util.Log.Infof("%s: %d CVEs are detected with Library",
-		result.FormatServerName(), nCVEs)
 
-	if err := report.FillCveInfo(h.DBclient, &result, []string{}); err != nil {
-		util.Log.Error(err)
+	if err := report.FillCveInfo(h.DBclient, &result); err != nil {
+		util.Log.Errorf("Failed to fill CVE detailed info: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
