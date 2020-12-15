@@ -225,16 +225,6 @@ func NewCveContentType(name string) CveContentType {
 		return Amazon
 	case "trivy":
 		return Trivy
-	// case vulnerability.NodejsSecurityWg:
-	// 	return NodeSec
-	// case vulnerability.PythonSafetyDB:
-	// 	return PythonSec
-	// case vulnerability.RustSec:
-	// 	return RustSec
-	// case vulnerability.PhpSecurityAdvisories:
-	// 	return PhpSec
-	// case vulnerability.RubySec:
-	// 	return RubySec
 	default:
 		return Unknown
 	}
@@ -283,21 +273,6 @@ const (
 	// Trivy is Trivy
 	Trivy CveContentType = "trivy"
 
-	// NodeSec : for JS
-	// NodeSec CveContentType = "node"
-
-	// // PythonSec : for PHP
-	// PythonSec CveContentType = "python"
-
-	// // PhpSec : for PHP
-	// PhpSec CveContentType = "php"
-
-	// // RubySec : for Ruby
-	// RubySec CveContentType = "ruby"
-
-	// // RustSec : for Rust
-	// RustSec CveContentType = "rust"
-
 	// Unknown is Unknown
 	Unknown CveContentType = "unknown"
 )
@@ -319,11 +294,6 @@ var AllCveContetTypes = CveContentTypes{
 	DebianSecurityTracker,
 	WPVulnDB,
 	Trivy,
-	// NodeSec,
-	// PythonSec,
-	// PhpSec,
-	// RubySec,
-	// RustSec,
 }
 
 // Except returns CveContentTypes except for given args

@@ -134,7 +134,7 @@ func (ps PackageFixStatuses) Sort() {
 	return
 }
 
-// PackageFixStatus has name and other status abount the package
+// PackageFixStatus has name and other status about the package
 type PackageFixStatus struct {
 	Name        string `json:"name,omitempty"`
 	NotFixedYet bool   `json:"notFixedYet,omitempty"`
@@ -147,7 +147,7 @@ type VulnInfo struct {
 	CveID                string               `json:"cveID,omitempty"`
 	Confidences          Confidences          `json:"confidences,omitempty"`
 	AffectedPackages     PackageFixStatuses   `json:"affectedPackages,omitempty"`
-	DistroAdvisories     DistroAdvisories     `json:"distroAdvisories,omitempty"` // for Aamazon, RHEL, FreeBSD
+	DistroAdvisories     DistroAdvisories     `json:"distroAdvisories,omitempty"` // for Amazon, RHEL, FreeBSD
 	CveContents          CveContents          `json:"cveContents,omitempty"`
 	Exploits             []Exploit            `json:"exploits,omitempty"`
 	Metasploits          []Metasploit         `json:"metasploits,omitempty"`
@@ -160,7 +160,7 @@ type VulnInfo struct {
 	VulnType string `json:"vulnType,omitempty"`
 }
 
-// Alert has XCERT alert information
+// Alert has CERT alert information
 type Alert struct {
 	URL   string `json:"url,omitempty"`
 	Title string `json:"title,omitempty"`
@@ -233,7 +233,7 @@ func (g WpPackages) Add(pkg WpPackage) WpPackages {
 	return append(g, pkg)
 }
 
-// Titles returns tilte (TUI)
+// Titles returns title (TUI)
 func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 	if lang == "ja" {
 		if cont, found := v.CveContents[Jvn]; found && 0 < len(cont.Title) {
@@ -509,7 +509,7 @@ func (v VulnInfo) MaxCvss2Score() CveContentCvss {
 	}
 
 	// If CVSS score isn't on NVD, RedHat and JVN, use OVAL and advisory Severity.
-	// Convert severity to cvss srore roughly, then returns max severity.
+	// Convert severity to cvss score roughly, then returns max severity.
 	// Only Ubuntu, RedHat and Oracle have severity data in OVAL.
 	order = []CveContentType{Ubuntu, RedHat, Oracle}
 	for _, ctype := range order {
@@ -615,10 +615,10 @@ type CveContentCvss struct {
 type CvssType string
 
 const (
-	// CVSS2 means CVSS vesion2
+	// CVSS2 means CVSS version2
 	CVSS2 CvssType = "2"
 
-	// CVSS3 means CVSS vesion3
+	// CVSS3 means CVSS version3
 	CVSS3 CvssType = "3"
 )
 
@@ -800,7 +800,7 @@ type Metasploit struct {
 	URLs        []string `json:",omitempty"`
 }
 
-// AlertDict has target cve's JPCERT and USCERT alert data
+// AlertDict has target cve JPCERT and USCERT alert data
 type AlertDict struct {
 	Ja []Alert `json:"ja"`
 	En []Alert `json:"en"`
@@ -821,7 +821,7 @@ func (a AlertDict) FormatSource() string {
 // Confidences is a list of Confidence
 type Confidences []Confidence
 
-// AppendIfMissing appends confidence to the list if missiong
+// AppendIfMissing appends confidence to the list if missing
 func (cs *Confidences) AppendIfMissing(confidence Confidence) {
 	for _, c := range *cs {
 		if c.DetectionMethod == confidence.DetectionMethod {
@@ -839,7 +839,7 @@ func (cs Confidences) SortByConfident() Confidences {
 	return cs
 }
 
-// Confidence is a ranking how confident the CVE-ID was deteted correctly
+// Confidence is a ranking how confident the CVE-ID was detected correctly
 // Score: 0 - 100
 type Confidence struct {
 	Score           int             `json:"score"`
@@ -898,36 +898,36 @@ const (
 )
 
 var (
-	// CpeNameMatch is a ranking how confident the CVE-ID was deteted correctly
+	// CpeNameMatch is a ranking how confident the CVE-ID was detected correctly
 	CpeNameMatch = Confidence{100, CpeNameMatchStr, 1}
 
-	// YumUpdateSecurityMatch is a ranking how confident the CVE-ID was deteted correctly
+	// YumUpdateSecurityMatch is a ranking how confident the CVE-ID was detected correctly
 	YumUpdateSecurityMatch = Confidence{100, YumUpdateSecurityMatchStr, 2}
 
-	// PkgAuditMatch is a ranking how confident the CVE-ID was deteted correctly
+	// PkgAuditMatch is a ranking how confident the CVE-ID was detected correctly
 	PkgAuditMatch = Confidence{100, PkgAuditMatchStr, 2}
 
-	// OvalMatch is a ranking how confident the CVE-ID was deteted correctly
+	// OvalMatch is a ranking how confident the CVE-ID was detected correctly
 	OvalMatch = Confidence{100, OvalMatchStr, 0}
 
-	// RedHatAPIMatch ranking how confident the CVE-ID was deteted correctly
+	// RedHatAPIMatch ranking how confident the CVE-ID was detected correctly
 	RedHatAPIMatch = Confidence{100, RedHatAPIStr, 0}
 
-	// DebianSecurityTrackerMatch ranking how confident the CVE-ID was deteted correctly
+	// DebianSecurityTrackerMatch ranking how confident the CVE-ID was detected correctly
 	DebianSecurityTrackerMatch = Confidence{100, DebianSecurityTrackerMatchStr, 0}
 
-	// TrivyMatch ranking how confident the CVE-ID was deteted correctly
+	// TrivyMatch ranking how confident the CVE-ID was detected correctly
 	TrivyMatch = Confidence{100, TrivyMatchStr, 0}
 
-	// ChangelogExactMatch is a ranking how confident the CVE-ID was deteted correctly
+	// ChangelogExactMatch is a ranking how confident the CVE-ID was detected correctly
 	ChangelogExactMatch = Confidence{95, ChangelogExactMatchStr, 3}
 
-	// ChangelogLenientMatch is a ranking how confident the CVE-ID was deteted correctly
+	// ChangelogLenientMatch is a ranking how confident the CVE-ID was detected correctly
 	ChangelogLenientMatch = Confidence{50, ChangelogLenientMatchStr, 4}
 
-	// GitHubMatch is a ranking how confident the CVE-ID was deteted correctly
+	// GitHubMatch is a ranking how confident the CVE-ID was detected correctly
 	GitHubMatch = Confidence{97, GitHubMatchStr, 2}
 
-	// WPVulnDBMatch is a ranking how confident the CVE-ID was deteted correctly
+	// WPVulnDBMatch is a ranking how confident the CVE-ID was detected correctly
 	WPVulnDBMatch = Confidence{100, WPVulnDBMatchStr, 0}
 )

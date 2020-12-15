@@ -626,7 +626,9 @@ func summaryLines(r models.ScanResult) string {
 		}
 
 		exploits := ""
-		if 0 < len(vinfo.Exploits) || 0 < len(vinfo.Metasploits) {
+		if 0 < len(vinfo.Metasploits) {
+			exploits = "EXP"
+		} else if 0 < len(vinfo.Exploits) {
 			exploits = "POC"
 		}
 

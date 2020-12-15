@@ -49,9 +49,9 @@ func ConvertJvnToModel(cveID string, jvn *cvedict.Jvn) *CveContent {
 }
 
 // ConvertNvdJSONToModel convert NVD to CveContent
-func ConvertNvdJSONToModel(cveID string, nvd *cvedict.NvdJSON) *CveContent {
+func ConvertNvdJSONToModel(cveID string, nvd *cvedict.NvdJSON) (*CveContent, []Exploit) {
 	if nvd == nil {
-		return nil
+		return nil, nil
 	}
 	// var cpes = []Cpe{}
 	// for _, c := range nvd.Cpes {
@@ -61,12 +61,19 @@ func ConvertNvdJSONToModel(cveID string, nvd *cvedict.NvdJSON) *CveContent {
 	// 	})
 	// }
 
-	var refs = []Reference{}
+	refs := []Reference{}
+	exploits := []Exploit{}
 	for _, r := range nvd.References {
 		refs = append(refs, Reference{
 			Link:   r.Link,
 			Source: r.Source,
 		})
+		if strings.Contains(r.Tags, "Exploit") {
+			exploits = append(exploits, Exploit{
+				ExploitType: "NVD",
+				URL:         r.Link,
+			})
+		}
 	}
 
 	cweIDs := []string{}
@@ -95,5 +102,5 @@ func ConvertNvdJSONToModel(cveID string, nvd *cvedict.NvdJSON) *CveContent {
 		References:   refs,
 		Published:    nvd.PublishedDate,
 		LastModified: nvd.LastModifiedDate,
-	}
+	}, exploits
 }
