@@ -245,8 +245,6 @@ func DetectWordPressCves(r *models.ScanResult) error {
 
 // FillCveInfo fill scanResult with cve info.
 func FillCveInfo(dbclient DBClient, r *models.ScanResult) error {
-
-	// Fill CVE information
 	util.Log.Infof("Fill CVE detailed with gost")
 	if err := gost.NewClient(r.Family).FillCVEsWithRedHat(dbclient.GostDB, r); err != nil {
 		return xerrors.Errorf("Failed to fill with gost: %w", err)
@@ -291,7 +289,7 @@ func fillCvesWithNvdJvn(driver cvedb.DB, r *models.ScanResult) error {
 		return err
 	}
 	for _, d := range ds {
-		nvd := models.ConvertNvdJSONToModel(d.CveID, d.NvdJSON)
+		nvd, exploits := models.ConvertNvdJSONToModel(d.CveID, d.NvdJSON)
 		jvn := models.ConvertJvnToModel(d.CveID, d.Jvn)
 
 		alerts := fillCertAlerts(&d)
@@ -306,6 +304,7 @@ func fillCvesWithNvdJvn(driver cvedb.DB, r *models.ScanResult) error {
 					}
 				}
 				vinfo.AlertDict = alerts
+				vinfo.Exploits = append(vinfo.Exploits, exploits...)
 				r.ScannedCves[cveID] = vinfo
 				break
 			}
