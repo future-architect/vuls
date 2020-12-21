@@ -42,11 +42,19 @@ func (v CveContents) Except(exceptCtypes ...CveContentType) (values CveContents)
 	return
 }
 
-// SourceLinks returns link of source
-func (v CveContents) SourceLinks(lang, myFamily, cveID string) (values []CveContentStr) {
-	if lang == "ja" {
-		if cont, found := v[Jvn]; found && 0 < len(cont.SourceLink) {
-			values = append(values, CveContentStr{Jvn, cont.SourceLink})
+// PrimarySrcURLs returns link of source
+func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string) (values []CveContentStr) {
+	if cveID == "" {
+		return
+	}
+
+	if cont, found := v[Nvd]; found {
+		for _, r := range cont.References {
+			for _, t := range r.Tags {
+				if t == "Vendor Advisory" {
+					values = append(values, CveContentStr{Nvd, r.Link})
+				}
+			}
 		}
 	}
 
@@ -57,6 +65,12 @@ func (v CveContents) SourceLinks(lang, myFamily, cveID string) (values []CveCont
 				continue
 			}
 			values = append(values, CveContentStr{ctype, cont.SourceLink})
+		}
+	}
+
+	if lang == "ja" {
+		if cont, found := v[Jvn]; found && 0 < len(cont.SourceLink) {
+			values = append(values, CveContentStr{Jvn, cont.SourceLink})
 		}
 	}
 
@@ -233,7 +247,7 @@ const (
 	// NvdXML is NvdXML
 	NvdXML CveContentType = "nvdxml"
 
-	// Nvd is Nvd
+	// Nvd is Nvd JSON
 	Nvd CveContentType = "nvd"
 
 	// Jvn is Jvn

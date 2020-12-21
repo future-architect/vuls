@@ -894,14 +894,8 @@ func detailLines() (string, error) {
 
 	vinfo := vinfos[currentVinfo]
 	links := []string{}
-	if strings.HasPrefix(vinfo.CveID, "CVE-") {
-		links = append(links, vinfo.CveContents.SourceLinks(
-			config.Conf.Lang, r.Family, vinfo.CveID)[0].Value,
-			vinfo.Cvss2CalcURL(),
-			vinfo.Cvss3CalcURL())
-	}
-	for _, url := range vinfo.VendorLinks(r.Family) {
-		links = append(links, url)
+	for _, r := range vinfo.CveContents.PrimarySrcURLs(config.Conf.Lang, r.Family, vinfo.CveID) {
+		links = append(links, r.Value)
 	}
 
 	refsMap := map[string]models.Reference{}
@@ -1006,7 +1000,7 @@ Mitigation
 -----------
 {{.Mitigation }}
 
-Links
+Primary Src
 -----------
 {{range $link := .Links -}}
 * {{$link}}
