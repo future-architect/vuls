@@ -151,6 +151,7 @@ type VulnInfo struct {
 	CveContents          CveContents          `json:"cveContents,omitempty"`
 	Exploits             []Exploit            `json:"exploits,omitempty"`
 	Metasploits          []Metasploit         `json:"metasploits,omitempty"`
+	Mitigations          []Mitigation         `json:"mitigations,omitempty"`
 	AlertDict            AlertDict            `json:"alertDict,omitempty"`
 	CpeURIs              []string             `json:"cpeURIs,omitempty"` // CpeURIs related to this CVE defined in config.toml
 	GitHubSecurityAlerts GitHubSecurityAlerts `json:"gitHubSecurityAlerts,omitempty"`
@@ -319,27 +320,6 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		}}
 	}
 
-	return
-}
-
-// Mitigations returns mitigations
-func (v VulnInfo) Mitigations(myFamily string) (values []CveContentStr) {
-	order := CveContentTypes{RedHatAPI}
-	for _, ctype := range order {
-		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Mitigation) {
-			values = append(values, CveContentStr{
-				Type:  ctype,
-				Value: cont.Mitigation,
-			})
-		}
-	}
-
-	if len(values) == 0 {
-		return []CveContentStr{{
-			Type:  Unknown,
-			Value: "-",
-		}}
-	}
 	return
 }
 
@@ -798,6 +778,13 @@ type Metasploit struct {
 	Title       string   `json:"title"`
 	Description string   `json:"description,omitempty"`
 	URLs        []string `json:",omitempty"`
+}
+
+// Mitigation has a link and content
+type Mitigation struct {
+	CveContentType CveContentType `json:"cveContentType,omitempty"`
+	Mitigation     string         `json:"mitigation,omitempty"`
+	URL            string         `json:"url,omitempty"`
 }
 
 // AlertDict has target cve JPCERT and USCERT alert data

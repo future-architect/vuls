@@ -924,7 +924,20 @@ func detailLines() (string, error) {
 	}
 
 	summary := vinfo.Summaries(r.Lang, r.Family)[0]
-	mitigation := vinfo.Mitigations(r.Family)[0]
+
+	mitigations := []string{}
+	for _, m := range vinfo.Mitigations {
+		switch m.CveContentType {
+		case models.RedHatAPI, models.Microsoft:
+			mitigations = append(mitigations,
+				fmt.Sprintf("%s (%s)", m.Mitigation, m.CveContentType))
+		case models.Nvd:
+			mitigations = append(mitigations,
+				fmt.Sprintf("* %s (%s)", m.URL, m.CveContentType))
+		default:
+			util.Log.Errorf("Unknown CveContentType: %s", m)
+		}
+	}
 
 	table := uitable.New()
 	table.MaxColWidth = maxColWidth
@@ -962,7 +975,7 @@ func detailLines() (string, error) {
 		CveID:       vinfo.CveID,
 		Cvsses:      fmt.Sprintf("%s\n", table),
 		Summary:     fmt.Sprintf("%s (%s)", summary.Value, summary.Type),
-		Mitigation:  fmt.Sprintf("%s (%s)", mitigation.Value, mitigation.Type),
+		Mitigation:  strings.Join(mitigations, "\n"),
 		Confidences: vinfo.Confidences,
 		Cwes:        cwes,
 		Links:       util.Distinct(links),
@@ -991,7 +1004,7 @@ Summary
 
 Mitigation
 -----------
- {{.Mitigation }}
+{{.Mitigation }}
 
 Links
 -----------

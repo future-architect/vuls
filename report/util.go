@@ -217,9 +217,8 @@ No CVE-IDs are found in updatable packages.
 		data = append(data, []string{"Summary", vuln.Summaries(
 			config.Conf.Lang, r.Family)[0].Value})
 
-		mitigation := vuln.Mitigations(r.Family)[0]
-		if mitigation.Type != models.Unknown {
-			data = append(data, []string{"Mitigation", mitigation.Value})
+		for _, m := range vuln.Mitigations {
+			data = append(data, []string{"Mitigation", m.URL})
 		}
 
 		cweURLs, top10URLs := []string{}, []string{}

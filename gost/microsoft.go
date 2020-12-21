@@ -28,19 +28,20 @@ func (ms Microsoft) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (n
 		if _, ok := r.ScannedCves[cveID]; !ok {
 			continue
 		}
-		cveCont := ms.ConvertToModel(&msCve)
+		cveCont, mitigations := ms.ConvertToModel(&msCve)
 		v, _ := r.ScannedCves[cveID]
 		if v.CveContents == nil {
 			v.CveContents = models.CveContents{}
 		}
 		v.CveContents[models.Microsoft] = *cveCont
+		v.Mitigations = append(v.Mitigations, mitigations...)
 		r.ScannedCves[cveID] = v
 	}
 	return len(cveIDs), nil
 }
 
 // ConvertToModel converts gost model to vuls model
-func (ms Microsoft) ConvertToModel(cve *gostmodels.MicrosoftCVE) *models.CveContent {
+func (ms Microsoft) ConvertToModel(cve *gostmodels.MicrosoftCVE) (*models.CveContent, []models.Mitigation) {
 	v3score := 0.0
 	var v3Vector string
 	for _, scoreSet := range cve.ScoreSets {
@@ -82,6 +83,18 @@ func (ms Microsoft) ConvertToModel(cve *gostmodels.MicrosoftCVE) *models.CveCont
 		option["kbids"] = strings.Join(kbids, ",")
 	}
 
+	vendorURL := "https://msrc.microsoft.com/update-guide/vulnerability/" + cve.CveID
+	mitigations := []models.Mitigation{}
+	if cve.Mitigation != "" {
+		mitigations = []models.Mitigation{
+			{
+				CveContentType: models.Microsoft,
+				Mitigation:     cve.Mitigation,
+				URL:            vendorURL,
+			},
+		}
+	}
+
 	return &models.CveContent{
 		Type:          models.Microsoft,
 		CveID:         cve.CveID,
@@ -92,10 +105,9 @@ func (ms Microsoft) ConvertToModel(cve *gostmodels.MicrosoftCVE) *models.CveCont
 		Cvss3Severity: v3Severity,
 		References:    refs,
 		CweIDs:        cwe,
-		Mitigation:    cve.Mitigation,
 		Published:     cve.PublishDate,
 		LastModified:  cve.LastUpdateDate,
-		SourceLink:    "https://portal.msrc.microsoft.com/ja-jp/security-guidance/advisory/" + cve.CveID,
+		SourceLink:    vendorURL,
 		Optional:      option,
-	}
+	}, mitigations
 }

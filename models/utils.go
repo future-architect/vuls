@@ -49,9 +49,9 @@ func ConvertJvnToModel(cveID string, jvn *cvedict.Jvn) *CveContent {
 }
 
 // ConvertNvdJSONToModel convert NVD to CveContent
-func ConvertNvdJSONToModel(cveID string, nvd *cvedict.NvdJSON) (*CveContent, []Exploit) {
+func ConvertNvdJSONToModel(cveID string, nvd *cvedict.NvdJSON) (*CveContent, []Exploit, []Mitigation) {
 	if nvd == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 	// var cpes = []Cpe{}
 	// for _, c := range nvd.Cpes {
@@ -63,15 +63,25 @@ func ConvertNvdJSONToModel(cveID string, nvd *cvedict.NvdJSON) (*CveContent, []E
 
 	refs := []Reference{}
 	exploits := []Exploit{}
+	mitigations := []Mitigation{}
 	for _, r := range nvd.References {
 		refs = append(refs, Reference{
 			Link:   r.Link,
 			Source: r.Source,
+			Tags:   strings.Split(r.Tags, ","),
 		})
 		if strings.Contains(r.Tags, "Exploit") {
 			exploits = append(exploits, Exploit{
-				ExploitType: "NVD",
+				//TODO Add const to here
+				// https://github.com/vulsio/go-exploitdb/blob/master/models/exploit.go#L13-L18
+				ExploitType: "nvd",
 				URL:         r.Link,
+			})
+		}
+		if strings.Contains(r.Tags, "Mitigation") {
+			mitigations = append(mitigations, Mitigation{
+				CveContentType: Nvd,
+				URL:            r.Link,
 			})
 		}
 	}
@@ -102,5 +112,5 @@ func ConvertNvdJSONToModel(cveID string, nvd *cvedict.NvdJSON) (*CveContent, []E
 		References:   refs,
 		Published:    nvd.PublishedDate,
 		LastModified: nvd.LastModifiedDate,
-	}, exploits
+	}, exploits, mitigations
 }

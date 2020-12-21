@@ -184,7 +184,6 @@ type CveContent struct {
 	CweIDs        []string          `json:"cweIDs,omitempty"`
 	Published     time.Time         `json:"published"`
 	LastModified  time.Time         `json:"lastModified"`
-	Mitigation    string            `json:"mitigation"` // RedHat API
 	Optional      map[string]string `json:"optional,omitempty"`
 }
 
@@ -324,7 +323,8 @@ type References []Reference
 
 // Reference has a related link of the CVE
 type Reference struct {
-	Source string `json:"source"`
-	Link   string `json:"link"`
-	RefID  string `json:"refID"`
+	Link   string   `json:"link,omitempty"`
+	Source string   `json:"source,omitempty"`
+	RefID  string   `json:"refID,omitempty"`
+	Tags   []string `json:"tags,omitempty"`
 }

@@ -303,9 +303,8 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 	}
 
 	mitigation := ""
-	if vinfo.Mitigations(osFamily)[0].Type != models.Unknown {
-		mitigation = fmt.Sprintf("\nMitigation:\n```%s```\n",
-			vinfo.Mitigations(osFamily)[0].Value)
+	for _, m := range vinfo.Mitigations {
+		mitigation = fmt.Sprintf("\nMitigation:\n<%s|%s>", m.URL, m.CveContentType)
 	}
 
 	return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n```\n%s\n```%s\n%s\n",
