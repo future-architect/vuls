@@ -83,6 +83,22 @@ func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string) (values []CveC
 	return values
 }
 
+// PrimarySrcURLs returns link of source
+func (v CveContents) PatchURLs() (urls []string) {
+	cont, found := v[Nvd]
+	if !found {
+		return
+	}
+	for _, r := range cont.References {
+		for _, t := range r.Tags {
+			if t == "Patch" {
+				urls = append(urls, r.Link)
+			}
+		}
+	}
+	return
+}
+
 /*
 // Severities returns Severities
 func (v CveContents) Severities(myFamily string) (values []CveContentStr) {

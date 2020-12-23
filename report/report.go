@@ -280,7 +280,7 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult) error {
 	return nil
 }
 
-// fillCvesWithNvdJvn fetches NVD, JVN from CVE Database
+// fillCvesWithNvdJvn fills CVE detail with NVD, JVN
 func fillCvesWithNvdJvn(driver cvedb.DB, r *models.ScanResult) error {
 	cveIDs := []string{}
 	for _, v := range r.ScannedCves {

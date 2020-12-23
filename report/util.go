@@ -227,6 +227,10 @@ No CVE-IDs are found in updatable packages.
 			data = append(data, []string{"Primary Src", link.Value})
 		}
 
+		for _, url := range vuln.CveContents.PatchURLs() {
+			data = append(data, []string{"Patch", url})
+		}
+
 		vuln.AffectedPackages.Sort()
 		for _, affected := range vuln.AffectedPackages {
 			if pack, ok := r.Packages[affected.Name]; ok {

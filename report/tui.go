@@ -866,6 +866,7 @@ type dataForTmpl struct {
 	Metasploits      []models.Metasploit
 	Summary          string
 	Mitigation       string
+	PatchURLs        []string
 	Confidences      models.Confidences
 	Cwes             []models.CweDictEntry
 	Alerts           []models.Alert
@@ -970,6 +971,7 @@ func detailLines() (string, error) {
 		Cvsses:      fmt.Sprintf("%s\n", table),
 		Summary:     fmt.Sprintf("%s (%s)", summary.Value, summary.Type),
 		Mitigation:  strings.Join(mitigations, "\n"),
+		PatchURLs:   vinfo.CveContents.PatchURLs(),
 		Confidences: vinfo.Confidences,
 		Cwes:        cwes,
 		Links:       util.Distinct(links),
@@ -1004,6 +1006,11 @@ Primary Src
 -----------
 {{range $link := .Links -}}
 * {{$link}}
+{{end}}
+Patch
+-----------
+{{range $url := .PatchURLs -}}
+* {{$url}}
 {{end}}
 CWE
 -----------
