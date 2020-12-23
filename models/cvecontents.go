@@ -42,11 +42,19 @@ func (v CveContents) Except(exceptCtypes ...CveContentType) (values CveContents)
 	return
 }
 
-// SourceLinks returns link of source
-func (v CveContents) SourceLinks(lang, myFamily, cveID string) (values []CveContentStr) {
-	if lang == "ja" {
-		if cont, found := v[Jvn]; found && 0 < len(cont.SourceLink) {
-			values = append(values, CveContentStr{Jvn, cont.SourceLink})
+// PrimarySrcURLs returns link of source
+func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string) (values []CveContentStr) {
+	if cveID == "" {
+		return
+	}
+
+	if cont, found := v[Nvd]; found {
+		for _, r := range cont.References {
+			for _, t := range r.Tags {
+				if t == "Vendor Advisory" {
+					values = append(values, CveContentStr{Nvd, r.Link})
+				}
+			}
 		}
 	}
 
@@ -60,6 +68,12 @@ func (v CveContents) SourceLinks(lang, myFamily, cveID string) (values []CveCont
 		}
 	}
 
+	if lang == "ja" {
+		if cont, found := v[Jvn]; found && 0 < len(cont.SourceLink) {
+			values = append(values, CveContentStr{Jvn, cont.SourceLink})
+		}
+	}
+
 	if len(values) == 0 {
 		return []CveContentStr{{
 			Type:  Nvd,
@@ -67,6 +81,22 @@ func (v CveContents) SourceLinks(lang, myFamily, cveID string) (values []CveCont
 		}}
 	}
 	return values
+}
+
+// PrimarySrcURLs returns link of source
+func (v CveContents) PatchURLs() (urls []string) {
+	cont, found := v[Nvd]
+	if !found {
+		return
+	}
+	for _, r := range cont.References {
+		for _, t := range r.Tags {
+			if t == "Patch" {
+				urls = append(urls, r.Link)
+			}
+		}
+	}
+	return
 }
 
 /*
@@ -184,7 +214,6 @@ type CveContent struct {
 	CweIDs        []string          `json:"cweIDs,omitempty"`
 	Published     time.Time         `json:"published"`
 	LastModified  time.Time         `json:"lastModified"`
-	Mitigation    string            `json:"mitigation"` // RedHat API
 	Optional      map[string]string `json:"optional,omitempty"`
 }
 
@@ -234,7 +263,7 @@ const (
 	// NvdXML is NvdXML
 	NvdXML CveContentType = "nvdxml"
 
-	// Nvd is Nvd
+	// Nvd is Nvd JSON
 	Nvd CveContentType = "nvd"
 
 	// Jvn is Jvn
@@ -324,7 +353,8 @@ type References []Reference
 
 // Reference has a related link of the CVE
 type Reference struct {
-	Source string `json:"source"`
-	Link   string `json:"link"`
-	RefID  string `json:"refID"`
+	Link   string   `json:"link,omitempty"`
+	Source string   `json:"source,omitempty"`
+	RefID  string   `json:"refID,omitempty"`
+	Tags   []string `json:"tags,omitempty"`
 }

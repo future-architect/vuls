@@ -184,6 +184,9 @@ func DetectPkgCves(dbclient DBClient, r *models.ScanResult) error {
 	}
 
 	// To keep backward compatibility
+	// Newer versions use ListenPortStats,
+	// but older versions of Vuls are set to ListenPorts.
+	// Set ListenPorts to ListenPortStats to allow newer Vuls to report old results.
 	for i, pkg := range r.Packages {
 		for j, proc := range pkg.AffectedProcs {
 			for _, ipPort := range proc.ListenPorts {
@@ -277,7 +280,7 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult) error {
 	return nil
 }
 
-// fillCvesWithNvdJvn fetches NVD, JVN from CVE Database
+// fillCvesWithNvdJvn fills CVE detail with NVD, JVN
 func fillCvesWithNvdJvn(driver cvedb.DB, r *models.ScanResult) error {
 	cveIDs := []string{}
 	for _, v := range r.ScannedCves {
@@ -289,7 +292,7 @@ func fillCvesWithNvdJvn(driver cvedb.DB, r *models.ScanResult) error {
 		return err
 	}
 	for _, d := range ds {
-		nvd, exploits := models.ConvertNvdJSONToModel(d.CveID, d.NvdJSON)
+		nvd, exploits, mitigations := models.ConvertNvdJSONToModel(d.CveID, d.NvdJSON)
 		jvn := models.ConvertJvnToModel(d.CveID, d.Jvn)
 
 		alerts := fillCertAlerts(&d)
@@ -305,6 +308,7 @@ func fillCvesWithNvdJvn(driver cvedb.DB, r *models.ScanResult) error {
 				}
 				vinfo.AlertDict = alerts
 				vinfo.Exploits = append(vinfo.Exploits, exploits...)
+				vinfo.Mitigations = append(vinfo.Mitigations, mitigations...)
 				r.ScannedCves[cveID] = vinfo
 				break
 			}

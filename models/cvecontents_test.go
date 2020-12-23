@@ -56,12 +56,34 @@ func TestSourceLinks(t *testing.T) {
 						Type:       NvdXML,
 						SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
 					},
+					Nvd: {
+						Type: Nvd,
+						References: []Reference{
+							{
+								Link:   "https://lists.apache.org/thread.html/765be3606d865de513f6df9288842c3cf58b09a987c617a535f2b99d@%3Cusers.tapestry.apache.org%3E",
+								Source: "",
+								RefID:  "",
+								Tags:   []string{"Vendor Advisory"},
+							},
+							{
+								Link:   "http://yahoo.com",
+								Source: "",
+								RefID:  "",
+								Tags:   []string{"Vendor"},
+							},
+						},
+						SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
+					},
 				},
 			},
 			out: []CveContentStr{
 				{
-					Type:  Jvn,
-					Value: "https://jvn.jp/vu/JVNVU93610402/",
+					Type:  Nvd,
+					Value: "https://lists.apache.org/thread.html/765be3606d865de513f6df9288842c3cf58b09a987c617a535f2b99d@%3Cusers.tapestry.apache.org%3E",
+				},
+				{
+					Type:  Nvd,
+					Value: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
 				},
 				{
 					Type:  NvdXML,
@@ -70,6 +92,10 @@ func TestSourceLinks(t *testing.T) {
 				{
 					Type:  RedHat,
 					Value: "https://access.redhat.com/security/cve/CVE-2017-6074",
+				},
+				{
+					Type:  Jvn,
+					Value: "https://jvn.jp/vu/JVNVU93610402/",
 				},
 			},
 		},
@@ -120,71 +146,9 @@ func TestSourceLinks(t *testing.T) {
 		},
 	}
 	for i, tt := range tests {
-		actual := tt.in.cont.SourceLinks(tt.in.lang, "redhat", tt.in.cveID)
+		actual := tt.in.cont.PrimarySrcURLs(tt.in.lang, "redhat", tt.in.cveID)
 		if !reflect.DeepEqual(tt.out, actual) {
 			t.Errorf("\n[%d] expected: %v\n  actual: %v\n", i, tt.out, actual)
-		}
-	}
-}
-
-func TestVendorLink(t *testing.T) {
-	type in struct {
-		family string
-		vinfo  VulnInfo
-	}
-	var tests = []struct {
-		in  in
-		out map[string]string
-	}{
-		{
-			in: in{
-				family: "redhat",
-				vinfo: VulnInfo{
-					CveID: "CVE-2017-6074",
-					CveContents: CveContents{
-						Jvn: {
-							Type:       Jvn,
-							SourceLink: "https://jvn.jp/vu/JVNVU93610402/",
-						},
-						RedHat: {
-							Type:       RedHat,
-							SourceLink: "https://access.redhat.com/security/cve/CVE-2017-6074",
-						},
-						NvdXML: {
-							Type:       NvdXML,
-							SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
-						},
-					},
-				},
-			},
-			out: map[string]string{
-				"RHEL-CVE": "https://access.redhat.com/security/cve/CVE-2017-6074",
-			},
-		},
-		{
-			in: in{
-				family: "ubuntu",
-				vinfo: VulnInfo{
-					CveID: "CVE-2017-6074",
-					CveContents: CveContents{
-						RedHat: {
-							Type:       Ubuntu,
-							SourceLink: "https://access.redhat.com/security/cve/CVE-2017-6074",
-						},
-					},
-				},
-			},
-			out: map[string]string{
-				"Ubuntu-CVE": "http://people.ubuntu.com/~ubuntu-security/cve/CVE-2017-6074",
-			},
-		},
-	}
-	for _, tt := range tests {
-		actual := tt.in.vinfo.VendorLinks(tt.in.family)
-		for k := range tt.out {
-			if tt.out[k] != actual[k] {
-				t.Errorf("\nexpected: %s\n  actual: %s\n", tt.out[k], actual[k])
-			}
 		}
 	}
 }

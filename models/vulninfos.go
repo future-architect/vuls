@@ -151,6 +151,7 @@ type VulnInfo struct {
 	CveContents          CveContents          `json:"cveContents,omitempty"`
 	Exploits             []Exploit            `json:"exploits,omitempty"`
 	Metasploits          []Metasploit         `json:"metasploits,omitempty"`
+	Mitigations          []Mitigation         `json:"mitigations,omitempty"`
 	AlertDict            AlertDict            `json:"alertDict,omitempty"`
 	CpeURIs              []string             `json:"cpeURIs,omitempty"` // CpeURIs related to this CVE defined in config.toml
 	GitHubSecurityAlerts GitHubSecurityAlerts `json:"gitHubSecurityAlerts,omitempty"`
@@ -319,27 +320,6 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		}}
 	}
 
-	return
-}
-
-// Mitigations returns mitigations
-func (v VulnInfo) Mitigations(myFamily string) (values []CveContentStr) {
-	order := CveContentTypes{RedHatAPI}
-	for _, ctype := range order {
-		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Mitigation) {
-			values = append(values, CveContentStr{
-				Type:  ctype,
-				Value: cont.Mitigation,
-			})
-		}
-	}
-
-	if len(values) == 0 {
-		return []CveContentStr{{
-			Type:  Unknown,
-			Value: "-",
-		}}
-	}
 	return
 }
 
@@ -680,70 +660,6 @@ func (v VulnInfo) FormatMaxCvssScore() string {
 		max.Type)
 }
 
-// Cvss2CalcURL returns CVSS v2 caluclator's URL
-func (v VulnInfo) Cvss2CalcURL() string {
-	return "https://nvd.nist.gov/vuln-metrics/cvss/v2-calculator?name=" + v.CveID
-}
-
-// Cvss3CalcURL returns CVSS v3 caluclator's URL
-func (v VulnInfo) Cvss3CalcURL() string {
-	return "https://nvd.nist.gov/vuln-metrics/cvss/v3-calculator?name=" + v.CveID
-}
-
-// VendorLinks returns links of vendor support's URL
-func (v VulnInfo) VendorLinks(family string) map[string]string {
-	links := map[string]string{}
-	if strings.HasPrefix(v.CveID, "WPVDBID") {
-		links["WPVulnDB"] = fmt.Sprintf("https://wpscan.com/vulnerabilities/%s",
-			strings.TrimPrefix(v.CveID, "WPVDBID-"))
-		return links
-	}
-
-	switch family {
-	case config.RedHat, config.CentOS:
-		links["RHEL-CVE"] = "https://access.redhat.com/security/cve/" + v.CveID
-		for _, advisory := range v.DistroAdvisories {
-			aidURL := strings.Replace(advisory.AdvisoryID, ":", "-", -1)
-			links[advisory.AdvisoryID] = fmt.Sprintf("https://rhn.redhat.com/errata/%s.html", aidURL)
-		}
-		return links
-	case config.Oracle:
-		links["Oracle-CVE"] = fmt.Sprintf("https://linux.oracle.com/cve/%s.html", v.CveID)
-		for _, advisory := range v.DistroAdvisories {
-			links[advisory.AdvisoryID] =
-				fmt.Sprintf("https://linux.oracle.com/errata/%s.html", advisory.AdvisoryID)
-		}
-		return links
-	case config.Amazon:
-		links["RHEL-CVE"] = "https://access.redhat.com/security/cve/" + v.CveID
-		for _, advisory := range v.DistroAdvisories {
-			if strings.HasPrefix(advisory.AdvisoryID, "ALAS2") {
-				links[advisory.AdvisoryID] =
-					fmt.Sprintf("https://alas.aws.amazon.com/AL2/%s.html",
-						strings.Replace(advisory.AdvisoryID, "ALAS2", "ALAS", -1))
-			} else {
-				links[advisory.AdvisoryID] =
-					fmt.Sprintf("https://alas.aws.amazon.com/%s.html", advisory.AdvisoryID)
-			}
-		}
-		return links
-	case config.Ubuntu:
-		links["Ubuntu-CVE"] = "http://people.ubuntu.com/~ubuntu-security/cve/" + v.CveID
-		return links
-	case config.Debian:
-		links["Debian-CVE"] = "https://security-tracker.debian.org/tracker/" + v.CveID
-	case config.SUSEEnterpriseServer:
-		links["SUSE-CVE"] = "https://www.suse.com/security/cve/" + v.CveID
-	case config.FreeBSD:
-		for _, advisory := range v.DistroAdvisories {
-			links["FreeBSD-VuXML"] = fmt.Sprintf("https://vuxml.freebsd.org/freebsd/%s.html", advisory.AdvisoryID)
-
-		}
-		return links
-	}
-	return links
-}
-
 // DistroAdvisories is a list of DistroAdvisory
 type DistroAdvisories []DistroAdvisory
 
@@ -798,6 +714,13 @@ type Metasploit struct {
 	Title       string   `json:"title"`
 	Description string   `json:"description,omitempty"`
 	URLs        []string `json:",omitempty"`
+}
+
+// Mitigation has a link and content
+type Mitigation struct {
+	CveContentType CveContentType `json:"cveContentType,omitempty"`
+	Mitigation     string         `json:"mitigation,omitempty"`
+	URL            string         `json:"url,omitempty"`
 }
 
 // AlertDict has target cve JPCERT and USCERT alert data

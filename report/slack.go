@@ -277,9 +277,8 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 		} else {
 			if 0 < len(vinfo.DistroAdvisories) {
 				links := []string{}
-				for k, v := range vinfo.VendorLinks(osFamily) {
-					links = append(links, fmt.Sprintf("<%s|%s>",
-						v, k))
+				for _, v := range vinfo.CveContents.PrimarySrcURLs(config.Conf.Lang, osFamily, vinfo.CveID) {
+					links = append(links, fmt.Sprintf("<%s|%s>", v.Value, v.Type))
 				}
 
 				v := fmt.Sprintf("<%s|%s> %s (%s)",
@@ -303,9 +302,8 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 	}
 
 	mitigation := ""
-	if vinfo.Mitigations(osFamily)[0].Type != models.Unknown {
-		mitigation = fmt.Sprintf("\nMitigation:\n```%s```\n",
-			vinfo.Mitigations(osFamily)[0].Value)
+	for _, m := range vinfo.Mitigations {
+		mitigation = fmt.Sprintf("\nMitigation:\n<%s|%s>", m.URL, m.CveContentType)
 	}
 
 	return fmt.Sprintf("*%4.1f (%s)* %s %s\n%s\n```\n%s\n```%s\n%s\n",

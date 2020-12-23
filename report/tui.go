@@ -866,6 +866,7 @@ type dataForTmpl struct {
 	Metasploits      []models.Metasploit
 	Summary          string
 	Mitigation       string
+	PatchURLs        []string
 	Confidences      models.Confidences
 	Cwes             []models.CweDictEntry
 	Alerts           []models.Alert
@@ -894,14 +895,8 @@ func detailLines() (string, error) {
 
 	vinfo := vinfos[currentVinfo]
 	links := []string{}
-	if strings.HasPrefix(vinfo.CveID, "CVE-") {
-		links = append(links, vinfo.CveContents.SourceLinks(
-			config.Conf.Lang, r.Family, vinfo.CveID)[0].Value,
-			vinfo.Cvss2CalcURL(),
-			vinfo.Cvss3CalcURL())
-	}
-	for _, url := range vinfo.VendorLinks(r.Family) {
-		links = append(links, url)
+	for _, r := range vinfo.CveContents.PrimarySrcURLs(config.Conf.Lang, r.Family, vinfo.CveID) {
+		links = append(links, r.Value)
 	}
 
 	refsMap := map[string]models.Reference{}
@@ -924,7 +919,20 @@ func detailLines() (string, error) {
 	}
 
 	summary := vinfo.Summaries(r.Lang, r.Family)[0]
-	mitigation := vinfo.Mitigations(r.Family)[0]
+
+	mitigations := []string{}
+	for _, m := range vinfo.Mitigations {
+		switch m.CveContentType {
+		case models.RedHatAPI, models.Microsoft:
+			mitigations = append(mitigations,
+				fmt.Sprintf("%s (%s)", m.Mitigation, m.CveContentType))
+		case models.Nvd:
+			mitigations = append(mitigations,
+				fmt.Sprintf("* %s (%s)", m.URL, m.CveContentType))
+		default:
+			util.Log.Errorf("Unknown CveContentType: %s", m)
+		}
+	}
 
 	table := uitable.New()
 	table.MaxColWidth = maxColWidth
@@ -962,7 +970,8 @@ func detailLines() (string, error) {
 		CveID:       vinfo.CveID,
 		Cvsses:      fmt.Sprintf("%s\n", table),
 		Summary:     fmt.Sprintf("%s (%s)", summary.Value, summary.Type),
-		Mitigation:  fmt.Sprintf("%s (%s)", mitigation.Value, mitigation.Type),
+		Mitigation:  strings.Join(mitigations, "\n"),
+		PatchURLs:   vinfo.CveContents.PatchURLs(),
 		Confidences: vinfo.Confidences,
 		Cwes:        cwes,
 		Links:       util.Distinct(links),
@@ -991,12 +1000,17 @@ Summary
 
 Mitigation
 -----------
- {{.Mitigation }}
+{{.Mitigation }}
 
-Links
+Primary Src
 -----------
 {{range $link := .Links -}}
 * {{$link}}
+{{end}}
+Patch
+-----------
+{{range $url := .PatchURLs -}}
+* {{$url}}
 {{end}}
 CWE
 -----------

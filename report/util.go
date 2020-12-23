@@ -217,38 +217,18 @@ No CVE-IDs are found in updatable packages.
 		data = append(data, []string{"Summary", vuln.Summaries(
 			config.Conf.Lang, r.Family)[0].Value})
 
-		mitigation := vuln.Mitigations(r.Family)[0]
-		if mitigation.Type != models.Unknown {
-			data = append(data, []string{"Mitigation", mitigation.Value})
+		for _, m := range vuln.Mitigations {
+			data = append(data, []string{"Mitigation", m.URL})
 		}
 
-		cweURLs, top10URLs := []string{}, []string{}
-		cweTop25URLs, sansTop25URLs := []string{}, []string{}
-		for _, v := range vuln.CveContents.UniqCweIDs(r.Family) {
-			name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL := r.CweDict.Get(v.Value, r.Lang)
-			if top10Rank != "" {
-				data = append(data, []string{"CWE",
-					fmt.Sprintf("[OWASP Top%s] %s: %s (%s)",
-						top10Rank, v.Value, name, v.Type)})
-				top10URLs = append(top10URLs, top10URL)
-			}
-			if cweTop25Rank != "" {
-				data = append(data, []string{"CWE",
-					fmt.Sprintf("[CWE Top%s] %s: %s (%s)",
-						cweTop25Rank, v.Value, name, v.Type)})
-				cweTop25URLs = append(cweTop25URLs, cweTop25URL)
-			}
-			if sansTop25Rank != "" {
-				data = append(data, []string{"CWE",
-					fmt.Sprintf("[CWE/SANS Top%s]  %s: %s (%s)",
-						sansTop25Rank, v.Value, name, v.Type)})
-				sansTop25URLs = append(sansTop25URLs, sansTop25URL)
-			}
-			if top10Rank == "" && cweTop25Rank == "" && sansTop25Rank == "" {
-				data = append(data, []string{"CWE", fmt.Sprintf("%s: %s (%s)",
-					v.Value, name, v.Type)})
-			}
-			cweURLs = append(cweURLs, url)
+		links := vuln.CveContents.PrimarySrcURLs(
+			config.Conf.Lang, r.Family, vuln.CveID)
+		for _, link := range links {
+			data = append(data, []string{"Primary Src", link.Value})
+		}
+
+		for _, url := range vuln.CveContents.PatchURLs() {
+			data = append(data, []string{"Patch", url})
 		}
 
 		vuln.AffectedPackages.Sort()
@@ -324,23 +304,35 @@ No CVE-IDs are found in updatable packages.
 			data = append(data, []string{"Confidence", confidence.String()})
 		}
 
-		if strings.HasPrefix(vuln.CveID, "CVE-") {
-			links := vuln.CveContents.SourceLinks(
-				config.Conf.Lang, r.Family, vuln.CveID)
-			data = append(data, []string{"Source", links[0].Value})
-
-			if 0 < len(vuln.Cvss2Scores(r.Family)) {
-				data = append(data, []string{"CVSSv2 Calc", vuln.Cvss2CalcURL()})
+		cweURLs, top10URLs := []string{}, []string{}
+		cweTop25URLs, sansTop25URLs := []string{}, []string{}
+		for _, v := range vuln.CveContents.UniqCweIDs(r.Family) {
+			name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL := r.CweDict.Get(v.Value, r.Lang)
+			if top10Rank != "" {
+				data = append(data, []string{"CWE",
+					fmt.Sprintf("[OWASP Top%s] %s: %s (%s)",
+						top10Rank, v.Value, name, v.Type)})
+				top10URLs = append(top10URLs, top10URL)
 			}
-			if 0 < len(vuln.Cvss3Scores()) {
-				data = append(data, []string{"CVSSv3 Calc", vuln.Cvss3CalcURL()})
+			if cweTop25Rank != "" {
+				data = append(data, []string{"CWE",
+					fmt.Sprintf("[CWE Top%s] %s: %s (%s)",
+						cweTop25Rank, v.Value, name, v.Type)})
+				cweTop25URLs = append(cweTop25URLs, cweTop25URL)
 			}
+			if sansTop25Rank != "" {
+				data = append(data, []string{"CWE",
+					fmt.Sprintf("[CWE/SANS Top%s]  %s: %s (%s)",
+						sansTop25Rank, v.Value, name, v.Type)})
+				sansTop25URLs = append(sansTop25URLs, sansTop25URL)
+			}
+			if top10Rank == "" && cweTop25Rank == "" && sansTop25Rank == "" {
+				data = append(data, []string{"CWE", fmt.Sprintf("%s: %s (%s)",
+					v.Value, name, v.Type)})
+			}
+			cweURLs = append(cweURLs, url)
 		}
 
-		vlinks := vuln.VendorLinks(r.Family)
-		for name, url := range vlinks {
-			data = append(data, []string{name, url})
-		}
 		for _, url := range cweURLs {
 			data = append(data, []string{"CWE", url})
 		}
