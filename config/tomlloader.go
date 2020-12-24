@@ -164,10 +164,6 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			s.Containers[contName] = cont
 		}
 
-		if len(v.DependencyCheckXMLPath) != 0 || len(d.DependencyCheckXMLPath) != 0 {
-			return xerrors.Errorf("[DEPRECATED] dependencyCheckXMLPath IS DEPRECATED. USE owaspDCXMLPath INSTEAD: %s", serverName)
-		}
-
 		s.OwaspDCXMLPath = v.OwaspDCXMLPath
 		if len(s.OwaspDCXMLPath) == 0 {
 			s.OwaspDCXMLPath = d.OwaspDCXMLPath
