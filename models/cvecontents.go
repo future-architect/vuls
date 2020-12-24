@@ -58,7 +58,7 @@ func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string) (values []CveC
 		}
 	}
 
-	order := CveContentTypes{Nvd, NvdXML, NewCveContentType(myFamily)}
+	order := CveContentTypes{Nvd, NewCveContentType(myFamily)}
 	for _, ctype := range order {
 		if cont, found := v[ctype]; found {
 			if cont.SourceLink == "" {
@@ -228,8 +228,6 @@ type CveContentType string
 // NewCveContentType create CveContentType
 func NewCveContentType(name string) CveContentType {
 	switch name {
-	case "nvdxml":
-		return NvdXML
 	case "nvd":
 		return Nvd
 	case "jvn":
@@ -260,9 +258,6 @@ func NewCveContentType(name string) CveContentType {
 }
 
 const (
-	// NvdXML is NvdXML
-	NvdXML CveContentType = "nvdxml"
-
 	// Nvd is Nvd JSON
 	Nvd CveContentType = "nvd"
 
@@ -312,7 +307,6 @@ type CveContentTypes []CveContentType
 // AllCveContetTypes has all of CveContentTypes
 var AllCveContetTypes = CveContentTypes{
 	Nvd,
-	NvdXML,
 	Jvn,
 	RedHat,
 	RedHatAPI,

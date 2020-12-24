@@ -247,7 +247,7 @@ func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 		values = append(values, CveContentStr{RedHatAPI, cont.Title})
 	}
 
-	order := CveContentTypes{Trivy, Nvd, NvdXML, NewCveContentType(myFamily)}
+	order := CveContentTypes{Trivy, Nvd, NewCveContentType(myFamily)}
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		// Only JVN has meaningful title. so return first 100 char of summary
@@ -287,7 +287,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := CveContentTypes{Trivy, NewCveContentType(myFamily), Nvd, NvdXML}
+	order := CveContentTypes{Trivy, NewCveContentType(myFamily), Nvd}
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Summary) {
@@ -325,7 +325,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 
 // Cvss2Scores returns CVSS V2 Scores
 func (v VulnInfo) Cvss2Scores(myFamily string) (values []CveContentCvss) {
-	order := []CveContentType{Nvd, NvdXML, RedHatAPI, RedHat, Jvn}
+	order := []CveContentType{Nvd, RedHatAPI, RedHat, Jvn}
 	if myFamily != config.RedHat && myFamily != config.CentOS {
 		order = append(order, NewCveContentType(myFamily))
 	}
@@ -463,7 +463,7 @@ func (v VulnInfo) MaxCvssScore() CveContentCvss {
 
 // MaxCvss2Score returns Max CVSS V2 Score
 func (v VulnInfo) MaxCvss2Score() CveContentCvss {
-	order := []CveContentType{Nvd, NvdXML, RedHat, RedHatAPI, Jvn}
+	order := []CveContentType{Nvd, RedHat, RedHatAPI, Jvn}
 	max := 0.0
 	value := CveContentCvss{
 		Type:  Unknown,

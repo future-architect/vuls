@@ -52,10 +52,6 @@ func TestSourceLinks(t *testing.T) {
 						Type:       RedHat,
 						SourceLink: "https://access.redhat.com/security/cve/CVE-2017-6074",
 					},
-					NvdXML: {
-						Type:       NvdXML,
-						SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
-					},
 					Nvd: {
 						Type: Nvd,
 						References: []Reference{
@@ -86,10 +82,6 @@ func TestSourceLinks(t *testing.T) {
 					Value: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
 				},
 				{
-					Type:  NvdXML,
-					Value: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
-				},
-				{
 					Type:  RedHat,
 					Value: "https://access.redhat.com/security/cve/CVE-2017-6074",
 				},
@@ -113,17 +105,9 @@ func TestSourceLinks(t *testing.T) {
 						Type:       RedHat,
 						SourceLink: "https://access.redhat.com/security/cve/CVE-2017-6074",
 					},
-					NvdXML: {
-						Type:       NvdXML,
-						SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
-					},
 				},
 			},
 			out: []CveContentStr{
-				{
-					Type:  NvdXML,
-					Value: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
-				},
 				{
 					Type:  RedHat,
 					Value: "https://access.redhat.com/security/cve/CVE-2017-6074",
