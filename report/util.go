@@ -601,7 +601,7 @@ func isCveFixed(current models.VulnInfo, previous models.ScanResult) bool {
 
 func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
 	cTypes := []models.CveContentType{
-		models.NvdXML,
+		models.Nvd,
 		models.Jvn,
 		models.NewCveContentType(current.Family),
 	}

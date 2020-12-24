@@ -27,7 +27,7 @@ func TestFilterByCvssOver(t *testing.T) {
 							CveID: "CVE-2017-0001",
 							CveContents: NewCveContents(
 								CveContent{
-									Type:         NvdXML,
+									Type:         Nvd,
 									CveID:        "CVE-2017-0001",
 									Cvss2Score:   7.1,
 									LastModified: time.Time{},
@@ -38,7 +38,7 @@ func TestFilterByCvssOver(t *testing.T) {
 							CveID: "CVE-2017-0002",
 							CveContents: NewCveContents(
 								CveContent{
-									Type:         NvdXML,
+									Type:         Nvd,
 									CveID:        "CVE-2017-0002",
 									Cvss2Score:   6.9,
 									LastModified: time.Time{},
@@ -49,7 +49,7 @@ func TestFilterByCvssOver(t *testing.T) {
 							CveID: "CVE-2017-0003",
 							CveContents: NewCveContents(
 								CveContent{
-									Type:         NvdXML,
+									Type:         Nvd,
 									CveID:        "CVE-2017-0003",
 									Cvss2Score:   6.9,
 									LastModified: time.Time{},
@@ -71,7 +71,7 @@ func TestFilterByCvssOver(t *testing.T) {
 						CveID: "CVE-2017-0001",
 						CveContents: NewCveContents(
 							CveContent{
-								Type:         NvdXML,
+								Type:         Nvd,
 								CveID:        "CVE-2017-0001",
 								Cvss2Score:   7.1,
 								LastModified: time.Time{},
@@ -82,7 +82,7 @@ func TestFilterByCvssOver(t *testing.T) {
 						CveID: "CVE-2017-0003",
 						CveContents: NewCveContents(
 							CveContent{
-								Type:         NvdXML,
+								Type:         Nvd,
 								CveID:        "CVE-2017-0003",
 								Cvss2Score:   6.9,
 								LastModified: time.Time{},
