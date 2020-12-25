@@ -225,7 +225,7 @@ systemd (228-5) unstable; urgency=medium`,
 	for i, tt := range tests {
 		aCveIDs, aPack := d.getCveIDsFromChangelog(tt.in[2], tt.in[0], tt.in[1])
 		if len(aCveIDs) != len(tt.cveIDs) {
-			t.Errorf("[%d] Len of return array are'nt same. expected %#v, actual %#v", i, tt.cveIDs, aCveIDs)
+			t.Errorf("[%d] Len of return array aren't same. expected %#v, actual %#v", i, tt.cveIDs, aCveIDs)
 			t.Errorf(pp.Sprintf("%s", tt.in))
 			continue
 		}
@@ -433,7 +433,7 @@ func TestGetChangelogCache(t *testing.T) {
 	d := newDebian(config.ServerInfo{})
 	actual := d.getChangelogCache(&meta, pack)
 	if actual != "" {
-		t.Errorf("Failed to get empty stirng from cache:")
+		t.Errorf("Failed to get empty string from cache:")
 	}
 
 	clog := "changelog-text"
