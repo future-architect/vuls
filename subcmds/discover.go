@@ -149,16 +149,6 @@ sqlite3Path = "/path/to/go-msfdb.sqlite3"
 #accountKey    = "xxxxxxxxxxxxxx"
 #containerName = "vuls"
 
-# https://vuls.io/docs/en/usage-settings.html#stride-section
-#[stride]
-#hookURL   = "xxxxxxxxxxxxxxx"
-#authToken = "xxxxxxxxxxxxxx"
-
-# https://vuls.io/docs/en/usage-settings.html#hipchat-section
-#[hipchat]
-#room      = "vuls"
-#authToken = "xxxxxxxxxxxxxx"
-
 # https://vuls.io/docs/en/usage-settings.html#chatwork-section
 #[chatwork]
 #room     = "xxxxxxxxxxx"

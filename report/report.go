@@ -153,7 +153,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 	return rs, nil
 }
 
-// DetectPkgCVEs detects OS pkg cves
+// DetectPkgCves detects OS pkg cves
 func DetectPkgCves(dbclient DBClient, r *models.ScanResult) error {
 	// Pkg Scan
 	if r.Release != "" {
