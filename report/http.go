@@ -37,7 +37,7 @@ type HTTPResponseWriter struct {
 func (w HTTPResponseWriter) Write(rs ...models.ScanResult) (err error) {
 	res, err := json.Marshal(rs)
 	if err != nil {
-		return xerrors.Errorf("Failed to marshal scah results: %w", err)
+		return xerrors.Errorf("Failed to marshal scan results: %w", err)
 	}
 	w.Writer.Header().Set("Content-Type", "application/json")
 	_, err = w.Writer.Write(res)

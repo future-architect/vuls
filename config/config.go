@@ -760,16 +760,15 @@ func (c *HTTPConf) Validate() (errs []error) {
 
 const httpKey = "VULS_HTTP_URL"
 
-// Overwrite set options with the following priority.
-// 1. Command line option
-// 2. Environment variable
-// 3. config.toml
-func (c *HTTPConf) Overwrite(cmdOpt HTTPConf) {
+// Init set options with the following priority.
+// 1. Environment variable
+// 2. config.toml
+func (c *HTTPConf) Init(toml HTTPConf) {
 	if os.Getenv(httpKey) != "" {
 		c.URL = os.Getenv(httpKey)
 	}
-	if cmdOpt.URL != "" {
-		c.URL = cmdOpt.URL
+	if toml.URL != "" {
+		c.URL = toml.URL
 	}
 }
 
@@ -799,11 +798,10 @@ const cveDBType = "CVEDB_TYPE"
 const cveDBURL = "CVEDB_URL"
 const cveDBPATH = "CVEDB_SQLITE3_PATH"
 
-// Overwrite set options with the following priority.
-// 1. Command line option
-// 2. Environment variable
-// 3. config.toml
-func (cnf *GoCveDictConf) Overwrite(cmdOpt GoCveDictConf) {
+// Init set options with the following priority.
+// 1. Environment variable
+// 2. config.toml
+func (cnf *GoCveDictConf) Init() {
 	if os.Getenv(cveDBType) != "" {
 		cnf.Type = os.Getenv(cveDBType)
 	}
@@ -812,16 +810,6 @@ func (cnf *GoCveDictConf) Overwrite(cmdOpt GoCveDictConf) {
 	}
 	if os.Getenv(cveDBPATH) != "" {
 		cnf.SQLite3Path = os.Getenv(cveDBPATH)
-	}
-
-	if cmdOpt.Type != "" {
-		cnf.Type = cmdOpt.Type
-	}
-	if cmdOpt.URL != "" {
-		cnf.URL = cmdOpt.URL
-	}
-	if cmdOpt.SQLite3Path != "" {
-		cnf.SQLite3Path = cmdOpt.SQLite3Path
 	}
 	cnf.setDefault()
 }
@@ -858,11 +846,10 @@ const govalType = "OVALDB_TYPE"
 const govalURL = "OVALDB_URL"
 const govalPATH = "OVALDB_SQLITE3_PATH"
 
-// Overwrite set options with the following priority.
-// 1. Command line option
-// 2. Environment variable
-// 3. config.toml
-func (cnf *GovalDictConf) Overwrite(cmdOpt GovalDictConf) {
+// Init set options with the following priority.
+// 1. Environment variable
+// 2. config.toml
+func (cnf *GovalDictConf) Init() {
 	if os.Getenv(govalType) != "" {
 		cnf.Type = os.Getenv(govalType)
 	}
@@ -871,16 +858,6 @@ func (cnf *GovalDictConf) Overwrite(cmdOpt GovalDictConf) {
 	}
 	if os.Getenv(govalPATH) != "" {
 		cnf.SQLite3Path = os.Getenv(govalPATH)
-	}
-
-	if cmdOpt.Type != "" {
-		cnf.Type = cmdOpt.Type
-	}
-	if cmdOpt.URL != "" {
-		cnf.URL = cmdOpt.URL
-	}
-	if cmdOpt.SQLite3Path != "" {
-		cnf.SQLite3Path = cmdOpt.SQLite3Path
 	}
 	cnf.setDefault()
 }
@@ -916,11 +893,10 @@ const gostDBType = "GOSTDB_TYPE"
 const gostDBURL = "GOSTDB_URL"
 const gostDBPATH = "GOSTDB_SQLITE3_PATH"
 
-// Overwrite set options with the following priority.
-// 1. Command line option
-// 2. Environment variable
-// 3. config.toml
-func (cnf *GostConf) Overwrite(cmdOpt GostConf) {
+// Init set options with the following priority.
+// 1. Environment variable
+// 2. config.toml
+func (cnf *GostConf) Init() {
 	if os.Getenv(gostDBType) != "" {
 		cnf.Type = os.Getenv(gostDBType)
 	}
@@ -929,16 +905,6 @@ func (cnf *GostConf) Overwrite(cmdOpt GostConf) {
 	}
 	if os.Getenv(gostDBPATH) != "" {
 		cnf.SQLite3Path = os.Getenv(gostDBPATH)
-	}
-
-	if cmdOpt.Type != "" {
-		cnf.Type = cmdOpt.Type
-	}
-	if cmdOpt.URL != "" {
-		cnf.URL = cmdOpt.URL
-	}
-	if cmdOpt.SQLite3Path != "" {
-		cnf.SQLite3Path = cmdOpt.SQLite3Path
 	}
 	cnf.setDefault()
 }
@@ -974,11 +940,10 @@ const exploitDBType = "EXPLOITDB_TYPE"
 const exploitDBURL = "EXPLOITDB_URL"
 const exploitDBPATH = "EXPLOITDB_SQLITE3_PATH"
 
-// Overwrite set options with the following priority.
-// 1. Command line option
-// 2. Environment variable
-// 3. config.toml
-func (cnf *ExploitConf) Overwrite(cmdOpt ExploitConf) {
+// Init set options with the following priority.
+// 1. Environment variable
+// 2. config.toml
+func (cnf *ExploitConf) Init() {
 	if os.Getenv(exploitDBType) != "" {
 		cnf.Type = os.Getenv(exploitDBType)
 	}
@@ -987,16 +952,6 @@ func (cnf *ExploitConf) Overwrite(cmdOpt ExploitConf) {
 	}
 	if os.Getenv(exploitDBPATH) != "" {
 		cnf.SQLite3Path = os.Getenv(exploitDBPATH)
-	}
-
-	if cmdOpt.Type != "" {
-		cnf.Type = cmdOpt.Type
-	}
-	if cmdOpt.URL != "" {
-		cnf.URL = cmdOpt.URL
-	}
-	if cmdOpt.SQLite3Path != "" {
-		cnf.SQLite3Path = cmdOpt.SQLite3Path
 	}
 	cnf.setDefault()
 }
@@ -1032,11 +987,10 @@ const metasploitDBType = "METASPLOITDB_TYPE"
 const metasploitDBURL = "METASPLOITDB_URL"
 const metasploitDBPATH = "METASPLOITDB_SQLITE3_PATH"
 
-// Overwrite set options with the following priority.
-// 1. Command line option
-// 2. Environment variable
-// 3. config.toml
-func (cnf *MetasploitConf) Overwrite(cmdOpt MetasploitConf) {
+// Init set options with the following priority.
+// 1. Environment variable
+// 2. config.toml
+func (cnf *MetasploitConf) Init() {
 	if os.Getenv(metasploitDBType) != "" {
 		cnf.Type = os.Getenv(metasploitDBType)
 	}
@@ -1045,16 +999,6 @@ func (cnf *MetasploitConf) Overwrite(cmdOpt MetasploitConf) {
 	}
 	if os.Getenv(metasploitDBPATH) != "" {
 		cnf.SQLite3Path = os.Getenv(metasploitDBPATH)
-	}
-
-	if cmdOpt.Type != "" {
-		cnf.Type = cmdOpt.Type
-	}
-	if cmdOpt.URL != "" {
-		cnf.URL = cmdOpt.URL
-	}
-	if cmdOpt.SQLite3Path != "" {
-		cnf.SQLite3Path = cmdOpt.SQLite3Path
 	}
 	cnf.setDefault()
 }

@@ -275,6 +275,12 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		servers[serverName] = s
 	}
 	Conf.Servers = servers
+
+	Conf.CveDict.Init()
+	Conf.OvalDict.Init()
+	Conf.Gost.Init()
+	Conf.Exploit.Init()
+	Conf.Metasploit.Init()
 	return nil
 }
 
