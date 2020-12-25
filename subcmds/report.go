@@ -163,7 +163,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		util.Log.Errorf("Error loading %s, %+v", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
-	c.Conf.HTTP.Overwrite(p.httpConf)
+	c.Conf.HTTP.Init(p.httpConf)
 
 	var dir string
 	var err error
