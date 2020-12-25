@@ -126,16 +126,12 @@ type Config struct {
 	Syslog   SyslogConf   `json:"-"`
 	AWS      AWS          `json:"-"`
 	Azure    Azure        `json:"-"`
-	Stride   StrideConf   `json:"-"`
-	HipChat  HipChatConf  `json:"-"`
 	ChatWork ChatWorkConf `json:"-"`
 	Telegram TelegramConf `json:"-"`
 	Saas     SaasConf     `json:"-"`
 
 	RefreshCve        bool `json:"refreshCve,omitempty"`
 	ToSlack           bool `json:"toSlack,omitempty"`
-	ToStride          bool `json:"toStride,omitempty"`
-	ToHipChat         bool `json:"toHipChat,omitempty"`
 	ToChatWork        bool `json:"toChatWork,omitempty"`
 	ToTelegram        bool `json:"ToTelegram,omitempty"`
 	ToEmail           bool `json:"toEmail,omitempty"`
@@ -282,16 +278,8 @@ func (c Config) ValidateOnReport() bool {
 		errs = append(errs, slackerrs...)
 	}
 
-	if hipchaterrs := c.HipChat.Validate(); 0 < len(hipchaterrs) {
-		errs = append(errs, hipchaterrs...)
-	}
-
 	if chatworkerrs := c.ChatWork.Validate(); 0 < len(chatworkerrs) {
 		errs = append(errs, chatworkerrs...)
-	}
-
-	if strideerrs := c.Stride.Validate(); 0 < len(strideerrs) {
-		errs = append(errs, strideerrs...)
 	}
 
 	if telegramerrs := c.Telegram.Validate(); 0 < len(telegramerrs) {
@@ -441,33 +429,6 @@ func (c *SMTPConf) Validate() (errs []error) {
 	return
 }
 
-// StrideConf is stride config
-type StrideConf struct {
-	HookURL   string `json:"-"`
-	AuthToken string `json:"-"`
-}
-
-// Validate validates configuration
-func (c *StrideConf) Validate() (errs []error) {
-	if !Conf.ToStride {
-		return
-	}
-
-	if len(c.HookURL) == 0 {
-		errs = append(errs, xerrors.New("stride.HookURL must not be empty"))
-	}
-
-	if len(c.AuthToken) == 0 {
-		errs = append(errs, xerrors.New("stride.AuthToken must not be empty"))
-	}
-
-	_, err := valid.ValidateStruct(c)
-	if err != nil {
-		errs = append(errs, err)
-	}
-	return
-}
-
 // SlackConf is slack config
 type SlackConf struct {
 	HookURL     string   `valid:"url" json:"-" toml:"hookURL,omitempty"`
@@ -508,32 +469,6 @@ func (c *SlackConf) Validate() (errs []error) {
 		errs = append(errs, err)
 	}
 
-	return
-}
-
-// HipChatConf is HipChat config
-type HipChatConf struct {
-	AuthToken string `json:"-"`
-	Room      string `json:"-"`
-}
-
-// Validate validates configuration
-func (c *HipChatConf) Validate() (errs []error) {
-	if !Conf.ToHipChat {
-		return
-	}
-	if len(c.Room) == 0 {
-		errs = append(errs, xerrors.New("hipchat.room must not be empty"))
-	}
-
-	if len(c.AuthToken) == 0 {
-		errs = append(errs, xerrors.New("hipchat.AuthToken must not be empty"))
-	}
-
-	_, err := valid.ValidateStruct(c)
-	if err != nil {
-		errs = append(errs, err)
-	}
 	return
 }
 
@@ -589,7 +524,7 @@ func (c *TelegramConf) Validate() (errs []error) {
 	return
 }
 
-// SaasConf is stride config
+// SaasConf is FutureVuls config
 type SaasConf struct {
 	GroupID int64  `json:"-"`
 	Token   string `json:"-"`

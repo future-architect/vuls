@@ -51,8 +51,6 @@ func (*ReportCmd) Usage() string {
 		[-to-email]
 		[-to-http]
 		[-to-slack]
-		[-to-stride]
-		[-to-hipchat]
 		[-to-chatwork]
 		[-to-telegram]
 		[-to-localfile]
@@ -134,8 +132,6 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"Detail report in plain text")
 
 	f.BoolVar(&c.Conf.ToSlack, "to-slack", false, "Send report via Slack")
-	f.BoolVar(&c.Conf.ToStride, "to-stride", false, "Send report via Stride")
-	f.BoolVar(&c.Conf.ToHipChat, "to-hipchat", false, "Send report via hipchat")
 	f.BoolVar(&c.Conf.ToChatWork, "to-chatwork", false, "Send report via chatwork")
 	f.BoolVar(&c.Conf.ToTelegram, "to-telegram", false, "Send report via Telegram")
 	f.BoolVar(&c.Conf.ToEmail, "to-email", false, "Send report via Email")
@@ -295,14 +291,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if c.Conf.ToSlack {
 		reports = append(reports, report.SlackWriter{})
-	}
-
-	if c.Conf.ToStride {
-		reports = append(reports, report.StrideWriter{})
-	}
-
-	if c.Conf.ToHipChat {
-		reports = append(reports, report.HipChatWriter{})
 	}
 
 	if c.Conf.ToChatWork {

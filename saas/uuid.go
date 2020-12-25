@@ -152,16 +152,6 @@ func EnsureUUIDs(configPath string, results models.ScanResults) (err error) {
 		azure = nil
 	}
 
-	stride := &c.Conf.Stride
-	if stride.HookURL == "" {
-		stride = nil
-	}
-
-	hipChat := &c.Conf.HipChat
-	if hipChat.AuthToken == "" {
-		hipChat = nil
-	}
-
 	chatWork := &c.Conf.ChatWork
 	if chatWork.APIToken == "" {
 		chatWork = nil
@@ -184,8 +174,6 @@ func EnsureUUIDs(configPath string, results models.ScanResults) (err error) {
 		Syslog     *c.SyslogConf     `toml:"syslog"`
 		AWS        *c.AWS            `toml:"aws"`
 		Azure      *c.Azure          `toml:"azure"`
-		Stride     *c.StrideConf     `toml:"stride"`
-		HipChat    *c.HipChatConf    `toml:"hipChat"`
 		ChatWork   *c.ChatWorkConf   `toml:"chatWork"`
 		Saas       *c.SaasConf       `toml:"saas"`
 
@@ -203,8 +191,6 @@ func EnsureUUIDs(configPath string, results models.ScanResults) (err error) {
 		Syslog:     syslog,
 		AWS:        aws,
 		Azure:      azure,
-		Stride:     stride,
-		HipChat:    hipChat,
 		ChatWork:   chatWork,
 		Saas:       saas,
 

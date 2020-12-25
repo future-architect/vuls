@@ -83,7 +83,7 @@ func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string) (values []CveC
 	return values
 }
 
-// PrimarySrcURLs returns link of source
+// PatchURLs returns link of patch
 func (v CveContents) PatchURLs() (urls []string) {
 	cont, found := v[Nvd]
 	if !found {
