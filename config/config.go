@@ -320,18 +320,14 @@ func (c Config) ValidateOnTui() bool {
 }
 
 func (c Config) ValidateOnSaaS() bool {
-	errs := []error{}
-	if saaserrs := c.Saas.Validate(); 0 < len(saaserrs) {
-		errs = append(errs, saaserrs...)
+	saaserrs := c.Saas.Validate()
+	for _, err := range saaserrs {
+		log.Error("Failed to validate SaaS conf: %+w", err)
 	}
-	for _, err := range errs {
-		log.Error(err)
-	}
-	return len(errs) == 0
+	return len(saaserrs) == 0
 }
 
 // validateDB validates configuration
-//  dictionaryDB name is 'cvedb' or 'ovaldb'
 func validateDB(dictionaryDBName, dbType, dbPath, dbURL string) error {
 	log.Infof("-%s-type: %s, -%s-url: %s, -%s-path: %s",
 		dictionaryDBName, dbType, dictionaryDBName, dbURL, dictionaryDBName, dbPath)
@@ -1029,7 +1025,7 @@ type WordPressConf struct {
 	IgnoreInactive bool   `json:"ignoreInactive,omitempty"`
 }
 
-// GitHubConf is used for GitHub integration
+// GitHubConf is used for GitHub Security Alerts
 type GitHubConf struct {
 	Token string `json:"-"`
 }

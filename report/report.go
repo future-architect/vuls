@@ -217,6 +217,9 @@ func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]config.GitHub
 	}
 	for ownerRepo, setting := range githubConfs {
 		ss := strings.Split(ownerRepo, "/")
+		if len(ss) != 2 {
+			return xerrors.Errorf("Failed to parse GitHub owner/repo: %s", ownerRepo)
+		}
 		owner, repo := ss[0], ss[1]
 		n, err := github.FillGitHubSecurityAlerts(r, owner, repo, setting.Token)
 		if err != nil {
@@ -235,9 +238,9 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf *config.WordPressConf, wpCa
 	}
 	n, err := wordpress.FillWordPress(r, wpCnf.WPVulnDBToken, wpCache)
 	if err != nil {
-		return xerrors.Errorf("Failed to detect CVE with integration: %w", err)
+		return xerrors.Errorf("Failed to detect CVE with wpscan.com: %w", err)
 	}
-	util.Log.Infof("%s: %d CVEs detected with wpscan", r.FormatServerName(), n)
+	util.Log.Infof("%s: %d CVEs detected with wpscan.com", r.FormatServerName(), n)
 	return nil
 }
 
