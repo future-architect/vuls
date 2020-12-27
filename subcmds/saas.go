@@ -79,7 +79,7 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	util.Log.Info("Validating config...")
-	if !c.Conf.ValidateOnReport() {
+	if !c.Conf.ValidateOnSaaS() {
 		return subcommands.ExitUsageError
 	}
 

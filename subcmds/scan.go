@@ -39,11 +39,9 @@ func (*ScanCmd) Usage() string {
 		[-log-dir=/path/to/log]
 		[-cachedb-path=/path/to/cache.db]
 		[-ssh-native-insecure]
-		[-ssh-config]
 		[-containers-only]
 		[-libs-only]
 		[-wordpress-only]
-		[-skip-broken]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-ask-key-password]
 		[-timeout=300]
@@ -81,9 +79,6 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.Conf.SSHNative, "ssh-native-insecure", false,
 		"Use Native Go implementation of SSH. Default: Use the external command")
 
-	f.BoolVar(&c.Conf.SSHConfig, "ssh-config", false,
-		"[Deprecated] Use SSH options specified in ssh_config preferentially")
-
 	f.BoolVar(&c.Conf.ContainersOnly, "containers-only", false,
 		"Scan running containers only. Default: Scan both of hosts and running containers")
 
@@ -92,9 +87,6 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 	f.BoolVar(&c.Conf.WordPressOnly, "wordpress-only", false,
 		"Scan WordPress only.")
-
-	f.BoolVar(&c.Conf.SkipBroken, "skip-broken", false,
-		"[For CentOS] yum update changelog with --skip-broken option")
 
 	f.StringVar(&c.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
@@ -145,16 +137,6 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 			"Please check config.toml template : https://vuls.io/docs/en/usage-settings.html",
 		}
 		util.Log.Errorf("%s\n%+v", strings.Join(msg, "\n"), err)
-		return subcommands.ExitUsageError
-	}
-
-	if c.Conf.SSHConfig {
-		msg := []string{
-			"-ssh-config is deprecated",
-			"If you update Vuls and get this error, there may be incompatible changes in config.toml",
-			"Please check config.toml template : https://vuls.io/docs/en/usage-settings.html",
-		}
-		util.Log.Errorf("%s", strings.Join(msg, "\n"))
 		return subcommands.ExitUsageError
 	}
 

@@ -48,14 +48,14 @@ type References struct {
 
 // FillWordPress access to wpvulndb and fetch scurity alerts and then set to the given ScanResult.
 // https://wpscan.com/
-func FillWordPress(r *models.ScanResult, token string, wpVulnCaches *map[string]string) (int, error) {
+func FillWordPress(r *models.ScanResult, token string, wpCache map[string]string) (int, error) {
 	// Core
 	ver := strings.Replace(r.WordPressPackages.CoreVersion(), ".", "", -1)
 	if ver == "" {
 		return 0, xerrors.New("Failed to get WordPress core version")
 	}
 
-	body, ok := searchCache(ver, wpVulnCaches)
+	body, ok := searchCache(ver, wpCache)
 	if !ok {
 		url := fmt.Sprintf("https://wpscan.com/api/v3/wordpresses/%s", ver)
 		var err error
@@ -67,7 +67,7 @@ func FillWordPress(r *models.ScanResult, token string, wpVulnCaches *map[string]
 			util.Log.Warnf("A result of REST access is empty: %s", url)
 		}
 
-		(*wpVulnCaches)[ver] = body
+		wpCache[ver] = body
 	}
 
 	wpVinfos, err := convertToVinfos(models.WPCore, body)
@@ -85,7 +85,7 @@ func FillWordPress(r *models.ScanResult, token string, wpVulnCaches *map[string]
 
 	// Themes
 	for _, p := range themes {
-		body, ok := searchCache(p.Name, wpVulnCaches)
+		body, ok := searchCache(p.Name, wpCache)
 		if !ok {
 			url := fmt.Sprintf("https://wpscan.com/api/v3/themes/%s", p.Name)
 			var err error
@@ -93,7 +93,7 @@ func FillWordPress(r *models.ScanResult, token string, wpVulnCaches *map[string]
 			if err != nil {
 				return 0, err
 			}
-			(*wpVulnCaches)[p.Name] = body
+			wpCache[p.Name] = body
 		}
 
 		if body == "" {
@@ -128,7 +128,7 @@ func FillWordPress(r *models.ScanResult, token string, wpVulnCaches *map[string]
 
 	// Plugins
 	for _, p := range plugins {
-		body, ok := searchCache(p.Name, wpVulnCaches)
+		body, ok := searchCache(p.Name, wpCache)
 		if !ok {
 			url := fmt.Sprintf("https://wpscan.com/api/v3/plugins/%s", p.Name)
 			var err error
@@ -136,7 +136,7 @@ func FillWordPress(r *models.ScanResult, token string, wpVulnCaches *map[string]
 			if err != nil {
 				return 0, err
 			}
-			(*wpVulnCaches)[p.Name] = body
+			wpCache[p.Name] = body
 		}
 
 		if body == "" {
@@ -300,8 +300,8 @@ func removeInactives(pkgs models.WordPressPackages) (removed models.WordPressPac
 	return removed
 }
 
-func searchCache(name string, wpVulnCaches *map[string]string) (string, bool) {
-	value, ok := (*wpVulnCaches)[name]
+func searchCache(name string, wpVulnCaches map[string]string) (string, bool) {
+	value, ok := wpVulnCaches[name]
 	if ok {
 		return value, true
 	}

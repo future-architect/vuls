@@ -90,6 +90,8 @@ type Config struct {
 	Pipe       bool   `json:"pipe,omitempty"`
 	Quiet      bool   `json:"quiet,omitempty"`
 	NoProgress bool   `json:"noProgress,omitempty"`
+	SSHNative  bool   `json:"sshNative,omitempty"`
+	Vvv        bool   `json:"vvv,omitempty"`
 
 	Default       ServerInfo            `json:"default,omitempty"`
 	Servers       map[string]ServerInfo `json:"servers,omitempty"`
@@ -99,20 +101,12 @@ type Config struct {
 	IgnoreUnfixed         bool `json:"ignoreUnfixed,omitempty"`
 	IgnoreGitHubDismissed bool `json:"ignore_git_hub_dismissed,omitempty"`
 
-	SSHNative bool `json:"sshNative,omitempty"`
-	SSHConfig bool `json:"sshConfig,omitempty"`
-
 	ContainersOnly bool `json:"containersOnly,omitempty"`
 	LibsOnly       bool `json:"libsOnly,omitempty"`
 	WordPressOnly  bool `json:"wordpressOnly,omitempty"`
 
 	CacheDBPath     string `json:"cacheDBPath,omitempty"`
 	TrivyCacheDBDir string `json:"trivyCacheDBDir,omitempty"`
-
-	SkipBroken bool `json:"skipBroken,omitempty"`
-	Vvv        bool `json:"vvv,omitempty"`
-	UUID       bool `json:"uuid,omitempty"`
-	DetectIPS  bool `json:"detectIps,omitempty"`
 
 	CveDict    GoCveDictConf  `json:"cveDict,omitempty"`
 	OvalDict   GovalDictConf  `json:"ovalDict,omitempty"`
@@ -128,7 +122,10 @@ type Config struct {
 	Azure    Azure        `json:"-"`
 	ChatWork ChatWorkConf `json:"-"`
 	Telegram TelegramConf `json:"-"`
-	Saas     SaasConf     `json:"-"`
+
+	Saas      SaasConf `json:"-"`
+	UUID      bool     `json:"uuid,omitempty"`
+	DetectIPS bool     `json:"detectIps,omitempty"`
 
 	RefreshCve        bool `json:"refreshCve,omitempty"`
 	ToSlack           bool `json:"toSlack,omitempty"`
@@ -139,7 +136,6 @@ type Config struct {
 	ToLocalFile       bool `json:"toLocalFile,omitempty"`
 	ToS3              bool `json:"toS3,omitempty"`
 	ToAzureBlob       bool `json:"toAzureBlob,omitempty"`
-	ToSaas            bool `json:"toSaas,omitempty"`
 	ToHTTP            bool `json:"toHTTP,omitempty"`
 	FormatXML         bool `json:"formatXML,omitempty"`
 	FormatJSON        bool `json:"formatJSON,omitempty"`
@@ -286,10 +282,6 @@ func (c Config) ValidateOnReport() bool {
 		errs = append(errs, telegramerrs...)
 	}
 
-	if saaserrs := c.Saas.Validate(); 0 < len(saaserrs) {
-		errs = append(errs, saaserrs...)
-	}
-
 	if syslogerrs := c.Syslog.Validate(); 0 < len(syslogerrs) {
 		errs = append(errs, syslogerrs...)
 	}
@@ -324,6 +316,17 @@ func (c Config) ValidateOnTui() bool {
 		log.Error(err)
 	}
 
+	return len(errs) == 0
+}
+
+func (c Config) ValidateOnSaaS() bool {
+	errs := []error{}
+	if saaserrs := c.Saas.Validate(); 0 < len(saaserrs) {
+		errs = append(errs, saaserrs...)
+	}
+	for _, err := range errs {
+		log.Error(err)
+	}
 	return len(errs) == 0
 }
 
@@ -533,20 +536,16 @@ type SaasConf struct {
 
 // Validate validates configuration
 func (c *SaasConf) Validate() (errs []error) {
-	if !Conf.ToSaas {
-		return
-	}
-
 	if c.GroupID == 0 {
-		errs = append(errs, xerrors.New("saas.GroupID must not be empty"))
+		errs = append(errs, xerrors.New("GroupID must not be empty"))
 	}
 
 	if len(c.Token) == 0 {
-		errs = append(errs, xerrors.New("saas.Token must not be empty"))
+		errs = append(errs, xerrors.New("Token must not be empty"))
 	}
 
 	if len(c.URL) == 0 {
-		errs = append(errs, xerrors.New("saas.URL must not be empty"))
+		errs = append(errs, xerrors.New("URL must not be empty"))
 	}
 
 	_, err := valid.ValidateStruct(c)
