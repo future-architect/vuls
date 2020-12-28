@@ -104,22 +104,37 @@ func FillWordPress(r *models.ScanResult, token string, wpCache map[string]string
 	return len(wpVinfos), nil
 }
 
+func wpscan(url, name, token string, wpCache map[string]string) (vinfos []models.VulnInfo, err error) {
+	if body, ok := searchCache(name, wpCache); ok {
+		return convertToVinfos(name, body)
+	}
+	body, err := httpRequest(url, token)
+	if err != nil {
+		return nil, err
+	}
+	if body == "" {
+		util.Log.Debugf("wpscan.com response body is empty. URL: %s", url)
+	}
+	wpCache[name] = body
+	return convertToVinfos(name, body)
+}
+
 func detect(installed models.WpPackage, candidates []models.VulnInfo) (vulns []models.VulnInfo) {
 	for _, v := range candidates {
 		for _, fixstat := range v.WpPackageFixStats {
 			ok, err := match(installed.Version, fixstat.FixedIn)
 			if err != nil {
-				util.Log.Errorf("Failed to compare versions %s installed: %s, fixedIn: %s, v: %s",
+				util.Log.Errorf("Failed to compare versions %s installed: %s, fixedIn: %s, v: %+v",
 					installed.Name, installed.Version, fixstat.FixedIn, v)
 				// continue scanning
 				continue
 			}
 			if ok {
 				vulns = append(vulns, v)
-				util.Log.Debugf("Affected %s: %s installed: %s, fixedIn: %s",
+				util.Log.Debugf("Affected: %s installed: %s, fixedIn: %s",
 					installed.Name, installed.Version, fixstat.FixedIn)
 			} else {
-				util.Log.Debugf("Not affected %s: %s : %s, fixedIn: %s",
+				util.Log.Debugf("Not affected: %s : %s, fixedIn: %s",
 					installed.Name, installed.Version, fixstat.FixedIn)
 			}
 		}
@@ -137,25 +152,6 @@ func match(installedVer, fixedIn string) (bool, error) {
 		return false, err
 	}
 	return v1.LessThan(v2), nil
-}
-
-func wpscan(url, name, token string, wpCache map[string]string) (vinfos []models.VulnInfo, err error) {
-	if body, ok := searchCache(name, wpCache); ok {
-		return convertToVinfos(name, body)
-	}
-	body, err := httpRequest(url, token)
-	if err != nil {
-		return nil, err
-	}
-	if body == "" {
-		util.Log.Debugf("wpscan.com response body is empty. URL: %s", url)
-	}
-
-	//TODO
-	fmt.Printf("%s", body)
-
-	wpCache[name] = body
-	return convertToVinfos(name, body)
 }
 
 func convertToVinfos(pkgName, body string) (vinfos []models.VulnInfo, err error) {

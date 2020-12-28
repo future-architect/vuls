@@ -319,6 +319,7 @@ func (c Config) ValidateOnTui() bool {
 	return len(errs) == 0
 }
 
+// ValidateOnSaaS validates configuration
 func (c Config) ValidateOnSaaS() bool {
 	saaserrs := c.Saas.Validate()
 	for _, err := range saaserrs {
