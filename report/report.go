@@ -35,6 +35,10 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 
 	// Use the same reportedAt for all rs
 	reportedAt := time.Now()
+
+	// For reducing wpscan.com API calls
+	wpCache := map[string]string{}
+
 	for i, r := range rs {
 		if !c.Conf.RefreshCve && !needToRefreshCve(r) {
 			util.Log.Info("No need to refresh")
@@ -87,11 +91,13 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			return nil, xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
 		}
 
-		if err := DetectGitHubCves(&r); err != nil {
+		repos := c.Conf.Servers[r.ServerName].GitHubRepos
+		if err := DetectGitHubCves(&r, repos); err != nil {
 			return nil, xerrors.Errorf("Failed to detect GitHub Cves: %w", err)
 		}
 
-		if err := DetectWordPressCves(&r); err != nil {
+		wpConf := c.Conf.Servers[r.ServerName].WordPress
+		if err := DetectWordPressCves(&r, &wpConf, wpCache); err != nil {
 			return nil, xerrors.Errorf("Failed to detect WordPress Cves: %w", err)
 		}
 
@@ -205,44 +211,36 @@ func DetectPkgCves(dbclient DBClient, r *models.ScanResult) error {
 }
 
 // DetectGitHubCves fetches CVEs from GitHub Security Alerts
-func DetectGitHubCves(r *models.ScanResult) error {
-	repos := c.Conf.Servers[r.ServerName].GitHubRepos
-	if len(repos) == 0 {
+func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]config.GitHubConf) error {
+	if len(githubConfs) == 0 {
 		return nil
 	}
-	githubInts := GithubSecurityAlerts(repos)
-
-	ints := &integrationResults{}
-	for _, o := range []Integration{githubInts} {
-		if err := o.apply(r, ints); err != nil {
-			return xerrors.Errorf("Failed to detect CVE with integration: %w", err)
+	for ownerRepo, setting := range githubConfs {
+		ss := strings.Split(ownerRepo, "/")
+		if len(ss) != 2 {
+			return xerrors.Errorf("Failed to parse GitHub owner/repo: %s", ownerRepo)
 		}
+		owner, repo := ss[0], ss[1]
+		n, err := github.FillGitHubSecurityAlerts(r, owner, repo, setting.Token)
+		if err != nil {
+			return xerrors.Errorf("Failed to access GitHub Security Alerts: %w", err)
+		}
+		util.Log.Infof("%s: %d CVEs detected with GHSA %s/%s",
+			r.FormatServerName(), n, owner, repo)
 	}
-	util.Log.Infof("%s: %d CVEs are detected with GitHub Security Alerts",
-		r.FormatServerName(), ints.GithubAlertsCveCounts)
 	return nil
 }
 
 // DetectWordPressCves detects CVEs of WordPress
-func DetectWordPressCves(r *models.ScanResult) error {
-	token := c.Conf.Servers[r.ServerName].WordPress.WPVulnDBToken
-	if token == "" {
+func DetectWordPressCves(r *models.ScanResult, wpCnf *config.WordPressConf, wpCache map[string]string) error {
+	if wpCnf.WPVulnDBToken == "" {
 		return nil
 	}
-	wpVulnCaches := map[string]string{}
-	wpOpt := WordPressOption{
-		token,
-		&wpVulnCaches,
+	n, err := wordpress.FillWordPress(r, wpCnf.WPVulnDBToken, wpCache)
+	if err != nil {
+		return xerrors.Errorf("Failed to detect CVE with wpscan.com: %w", err)
 	}
-
-	ints := &integrationResults{}
-	for _, o := range []Integration{wpOpt} {
-		if err := o.apply(r, ints); err != nil {
-			return xerrors.Errorf("Failed to detect CVE with integration: %w", err)
-		}
-	}
-	util.Log.Infof("%s: %d CVEs are detected with wpscan API",
-		r.FormatServerName(), ints.WordPressCveCounts)
+	util.Log.Infof("%s: %d CVEs detected with wpscan.com", r.FormatServerName(), n)
 	return nil
 }
 
@@ -466,62 +464,6 @@ func DetectCpeURIsCves(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) 
 		}
 	}
 	util.Log.Infof("%s: %d CVEs are detected with CPE", r.FormatServerName(), nCVEs)
-	return nil
-}
-
-type integrationResults struct {
-	GithubAlertsCveCounts int
-	WordPressCveCounts    int
-}
-
-// Integration is integration of vuls report
-type Integration interface {
-	apply(*models.ScanResult, *integrationResults) error
-}
-
-// GithubSecurityAlerts :
-func GithubSecurityAlerts(githubConfs map[string]config.GitHubConf) Integration {
-	return GithubSecurityAlertOption{
-		GithubConfs: githubConfs,
-	}
-}
-
-// GithubSecurityAlertOption :
-type GithubSecurityAlertOption struct {
-	GithubConfs map[string]config.GitHubConf
-}
-
-// https://help.github.com/articles/about-security-alerts-for-vulnerable-dependencies/
-func (g GithubSecurityAlertOption) apply(r *models.ScanResult, ints *integrationResults) (err error) {
-	var nCVEs int
-	for ownerRepo, setting := range g.GithubConfs {
-		ss := strings.Split(ownerRepo, "/")
-		owner, repo := ss[0], ss[1]
-		n, err := github.FillGitHubSecurityAlerts(r, owner, repo, setting.Token)
-		if err != nil {
-			return xerrors.Errorf("Failed to access GitHub Security Alerts: %w", err)
-		}
-		nCVEs += n
-	}
-	ints.GithubAlertsCveCounts = nCVEs
-	return nil
-}
-
-// WordPressOption :
-type WordPressOption struct {
-	token        string
-	wpVulnCaches *map[string]string
-}
-
-func (g WordPressOption) apply(r *models.ScanResult, ints *integrationResults) (err error) {
-	if g.token == "" {
-		return nil
-	}
-	n, err := wordpress.FillWordPress(r, g.token, g.wpVulnCaches)
-	if err != nil {
-		return xerrors.Errorf("Failed to fetch from WPVulnDB. Check the WPVulnDBToken in config.toml. err: %w", err)
-	}
-	ints.WordPressCveCounts = n
 	return nil
 }
 
