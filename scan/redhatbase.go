@@ -494,7 +494,7 @@ func (o *redhatBase) yumPs() error {
 	pidListenPorts := map[string][]models.PortStat{}
 	stdout, err = o.lsOfListen()
 	if err != nil {
-		return xerrors.Errorf("Failed to ls of: %w", err)
+		return xerrors.Errorf("Failed to lsof: %w", err)
 	}
 	portPids := o.parseLsOf(stdout)
 	for ipPort, pids := range portPids {

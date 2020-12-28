@@ -29,7 +29,7 @@ type WpCveInfos struct {
 
 //WpCveInfo is for wpvulndb's json
 type WpCveInfo struct {
-	ID        int    `json:"id"`
+	ID        string `json:"id"`
 	Title     string `json:"title"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
@@ -54,121 +54,40 @@ func FillWordPress(r *models.ScanResult, token string, wpCache map[string]string
 	if ver == "" {
 		return 0, xerrors.New("Failed to get WordPress core version")
 	}
-
-	body, ok := searchCache(ver, wpCache)
-	if !ok {
-		url := fmt.Sprintf("https://wpscan.com/api/v3/wordpresses/%s", ver)
-		var err error
-		body, err = httpRequest(url, token)
-		if err != nil {
-			return 0, err
-		}
-		if body == "" {
-			util.Log.Warnf("A result of REST access is empty: %s", url)
-		}
-
-		wpCache[ver] = body
-	}
-
-	wpVinfos, err := convertToVinfos(models.WPCore, body)
+	url := fmt.Sprintf("https://wpscan.com/api/v3/wordpresses/%s", ver)
+	wpVinfos, err := wpscan(url, ver, token, wpCache)
 	if err != nil {
 		return 0, err
 	}
 
+	// Themes
 	themes := r.WordPressPackages.Themes()
-	plugins := r.WordPressPackages.Plugins()
-
 	if c.Conf.WpIgnoreInactive {
 		themes = removeInactives(themes)
-		plugins = removeInactives(plugins)
 	}
-
-	// Themes
 	for _, p := range themes {
-		body, ok := searchCache(p.Name, wpCache)
-		if !ok {
-			url := fmt.Sprintf("https://wpscan.com/api/v3/themes/%s", p.Name)
-			var err error
-			body, err = httpRequest(url, token)
-			if err != nil {
-				return 0, err
-			}
-			wpCache[p.Name] = body
-		}
-
-		if body == "" {
-			continue
-		}
-
-		templateVinfos, err := convertToVinfos(p.Name, body)
+		url := fmt.Sprintf("https://wpscan.com/api/v3/themes/%s", p.Name)
+		candidates, err := wpscan(url, p.Name, token, wpCache)
 		if err != nil {
 			return 0, err
 		}
-
-		for _, v := range templateVinfos {
-			for _, fixstat := range v.WpPackageFixStats {
-				pkg, ok := r.WordPressPackages.Find(fixstat.Name)
-				if !ok {
-					continue
-				}
-				ok, err := match(pkg.Version, fixstat.FixedIn)
-				if err != nil {
-					util.Log.Infof("[poor] %s installed: %s, fixedIn: %s", pkg.Name, pkg.Version, fixstat.FixedIn)
-					continue
-				}
-				if ok {
-					wpVinfos = append(wpVinfos, v)
-					util.Log.Infof("[match] %s installed: %s, fixedIn: %s", pkg.Name, pkg.Version, fixstat.FixedIn)
-				} else {
-					util.Log.Debugf("[miss] %s installed: %s, fixedIn: %s", pkg.Name, pkg.Version, fixstat.FixedIn)
-				}
-			}
-		}
+		vulns := detect(p, candidates)
+		wpVinfos = append(wpVinfos, vulns...)
 	}
 
 	// Plugins
+	plugins := r.WordPressPackages.Plugins()
+	if c.Conf.WpIgnoreInactive {
+		plugins = removeInactives(plugins)
+	}
 	for _, p := range plugins {
-		body, ok := searchCache(p.Name, wpCache)
-		if !ok {
-			url := fmt.Sprintf("https://wpscan.com/api/v3/plugins/%s", p.Name)
-			var err error
-			body, err = httpRequest(url, token)
-			if err != nil {
-				return 0, err
-			}
-			wpCache[p.Name] = body
-		}
-
-		if body == "" {
-			continue
-		}
-
-		pluginVinfos, err := convertToVinfos(p.Name, body)
+		url := fmt.Sprintf("https://wpscan.com/api/v3/plugins/%s", p.Name)
+		candidates, err := wpscan(url, p.Name, token, wpCache)
 		if err != nil {
 			return 0, err
 		}
-
-		for _, v := range pluginVinfos {
-			for _, fixstat := range v.WpPackageFixStats {
-				pkg, ok := r.WordPressPackages.Find(fixstat.Name)
-				if !ok {
-					continue
-				}
-				ok, err := match(pkg.Version, fixstat.FixedIn)
-				if err != nil {
-					util.Log.Infof("[poor] %s installed: %s, fixedIn: %s", pkg.Name, pkg.Version, fixstat.FixedIn)
-					continue
-				}
-				if ok {
-					wpVinfos = append(wpVinfos, v)
-					//TODO Debugf
-					util.Log.Infof("[match] %s installed: %s, fixedIn: %s", pkg.Name, pkg.Version, fixstat.FixedIn)
-				} else {
-					//TODO Debugf
-					util.Log.Infof("[miss] %s installed: %s, fixedIn: %s", pkg.Name, pkg.Version, fixstat.FixedIn)
-				}
-			}
-		}
+		vulns := detect(p, candidates)
+		wpVinfos = append(wpVinfos, vulns...)
 	}
 
 	for _, wpVinfo := range wpVinfos {
@@ -183,6 +102,44 @@ func FillWordPress(r *models.ScanResult, token string, wpCache map[string]string
 		}
 	}
 	return len(wpVinfos), nil
+}
+
+func wpscan(url, name, token string, wpCache map[string]string) (vinfos []models.VulnInfo, err error) {
+	if body, ok := searchCache(name, wpCache); ok {
+		return convertToVinfos(name, body)
+	}
+	body, err := httpRequest(url, token)
+	if err != nil {
+		return nil, err
+	}
+	if body == "" {
+		util.Log.Debugf("wpscan.com response body is empty. URL: %s", url)
+	}
+	wpCache[name] = body
+	return convertToVinfos(name, body)
+}
+
+func detect(installed models.WpPackage, candidates []models.VulnInfo) (vulns []models.VulnInfo) {
+	for _, v := range candidates {
+		for _, fixstat := range v.WpPackageFixStats {
+			ok, err := match(installed.Version, fixstat.FixedIn)
+			if err != nil {
+				util.Log.Errorf("Failed to compare versions %s installed: %s, fixedIn: %s, v: %+v",
+					installed.Name, installed.Version, fixstat.FixedIn, v)
+				// continue scanning
+				continue
+			}
+			if ok {
+				vulns = append(vulns, v)
+				util.Log.Debugf("Affected: %s installed: %s, fixedIn: %s",
+					installed.Name, installed.Version, fixstat.FixedIn)
+			} else {
+				util.Log.Debugf("Not affected: %s : %s, fixedIn: %s",
+					installed.Name, installed.Version, fixstat.FixedIn)
+			}
+		}
+	}
+	return
 }
 
 func match(installedVer, fixedIn string) (bool, error) {
@@ -219,7 +176,7 @@ func extractToVulnInfos(pkgName string, cves []WpCveInfo) (vinfos []models.VulnI
 		var cveIDs []string
 
 		if len(vulnerability.References.Cve) == 0 {
-			cveIDs = append(cveIDs, fmt.Sprintf("WPVDBID-%d", vulnerability.ID))
+			cveIDs = append(cveIDs, fmt.Sprintf("WPVDBID-%s", vulnerability.ID))
 		}
 		for _, cveNumber := range vulnerability.References.Cve {
 			cveIDs = append(cveIDs, "CVE-"+cveNumber)
