@@ -48,14 +48,14 @@ type References struct {
 
 // FillWordPress access to wpvulndb and fetch scurity alerts and then set to the given ScanResult.
 // https://wpscan.com/
-func FillWordPress(r *models.ScanResult, token string, wpCache map[string]string) (int, error) {
+func FillWordPress(r *models.ScanResult, token string) (int, error) {
 	// Core
 	ver := strings.Replace(r.WordPressPackages.CoreVersion(), ".", "", -1)
 	if ver == "" {
 		return 0, xerrors.New("Failed to get WordPress core version")
 	}
 	url := fmt.Sprintf("https://wpscan.com/api/v3/wordpresses/%s", ver)
-	wpVinfos, err := wpscan(url, ver, token, wpCache)
+	wpVinfos, err := wpscan(url, ver, token)
 	if err != nil {
 		return 0, err
 	}
@@ -67,7 +67,7 @@ func FillWordPress(r *models.ScanResult, token string, wpCache map[string]string
 	}
 	for _, p := range themes {
 		url := fmt.Sprintf("https://wpscan.com/api/v3/themes/%s", p.Name)
-		candidates, err := wpscan(url, p.Name, token, wpCache)
+		candidates, err := wpscan(url, p.Name, token)
 		if err != nil {
 			return 0, err
 		}
@@ -82,7 +82,7 @@ func FillWordPress(r *models.ScanResult, token string, wpCache map[string]string
 	}
 	for _, p := range plugins {
 		url := fmt.Sprintf("https://wpscan.com/api/v3/plugins/%s", p.Name)
-		candidates, err := wpscan(url, p.Name, token, wpCache)
+		candidates, err := wpscan(url, p.Name, token)
 		if err != nil {
 			return 0, err
 		}
@@ -104,10 +104,7 @@ func FillWordPress(r *models.ScanResult, token string, wpCache map[string]string
 	return len(wpVinfos), nil
 }
 
-func wpscan(url, name, token string, wpCache map[string]string) (vinfos []models.VulnInfo, err error) {
-	if body, ok := searchCache(name, wpCache); ok {
-		return convertToVinfos(name, body)
-	}
+func wpscan(url, name, token string) (vinfos []models.VulnInfo, err error) {
 	body, err := httpRequest(url, token)
 	if err != nil {
 		return nil, err
@@ -115,7 +112,6 @@ func wpscan(url, name, token string, wpCache map[string]string) (vinfos []models
 	if body == "" {
 		util.Log.Debugf("wpscan.com response body is empty. URL: %s", url)
 	}
-	wpCache[name] = body
 	return convertToVinfos(name, body)
 }
 
@@ -255,12 +251,4 @@ func removeInactives(pkgs models.WordPressPackages) (removed models.WordPressPac
 		removed = append(removed, p)
 	}
 	return removed
-}
-
-func searchCache(name string, wpVulnCaches map[string]string) (string, bool) {
-	value, ok := wpVulnCaches[name]
-	if ok {
-		return value, true
-	}
-	return "", false
 }

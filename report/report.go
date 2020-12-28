@@ -35,10 +35,6 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 
 	// Use the same reportedAt for all rs
 	reportedAt := time.Now()
-
-	// For reducing wpscan.com API calls
-	wpCache := map[string]string{}
-
 	for i, r := range rs {
 		if !c.Conf.RefreshCve && !needToRefreshCve(r) {
 			util.Log.Info("No need to refresh")
@@ -97,7 +93,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 		}
 
 		wpConf := c.Conf.Servers[r.ServerName].WordPress
-		if err := DetectWordPressCves(&r, &wpConf, wpCache); err != nil {
+		if err := DetectWordPressCves(&r, &wpConf); err != nil {
 			return nil, xerrors.Errorf("Failed to detect WordPress Cves: %w", err)
 		}
 
@@ -232,11 +228,11 @@ func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]config.GitHub
 }
 
 // DetectWordPressCves detects CVEs of WordPress
-func DetectWordPressCves(r *models.ScanResult, wpCnf *config.WordPressConf, wpCache map[string]string) error {
+func DetectWordPressCves(r *models.ScanResult, wpCnf *config.WordPressConf) error {
 	if wpCnf.WPVulnDBToken == "" {
 		return nil
 	}
-	n, err := wordpress.FillWordPress(r, wpCnf.WPVulnDBToken, wpCache)
+	n, err := wordpress.FillWordPress(r, wpCnf.WPVulnDBToken)
 	if err != nil {
 		return xerrors.Errorf("Failed to detect CVE with wpscan.com: %w", err)
 	}
