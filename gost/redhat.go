@@ -24,6 +24,43 @@ func (red RedHat) DetectUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNo
 	return red.detectUnfixed(driver, r, ignoreWillNotFix)
 }
 
+func (red RedHat) detectUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
+	if config.Conf.Gost.IsFetchViaHTTP() {
+		prefix, _ := util.URLPathJoin(config.Conf.Gost.URL,
+			"redhat", major(r.Release), "pkgs")
+		responses, err := getAllUnfixedCvesViaHTTP(r, prefix)
+		if err != nil {
+			return 0, err
+		}
+		for _, res := range responses {
+			// CVE-ID: RedhatCVE
+			cves := map[string]gostmodels.RedhatCVE{}
+			if err := json.Unmarshal([]byte(res.json), &cves); err != nil {
+				return 0, err
+			}
+			for _, cve := range cves {
+				if newly := red.setUnfixedCveToScanResult(&cve, r); newly {
+					nCVEs++
+				}
+			}
+		}
+	} else {
+		if driver == nil {
+			return 0, nil
+		}
+		for _, pack := range r.Packages {
+			// CVE-ID: RedhatCVE
+			cves := driver.GetUnfixedCvesRedhat(major(r.Release), pack.Name, ignoreWillNotFix)
+			for _, cve := range cves {
+				if newly := red.setUnfixedCveToScanResult(&cve, r); newly {
+					nCVEs++
+				}
+			}
+		}
+	}
+	return nCVEs, nil
+}
+
 func (red RedHat) fillCvesWithRedHatAPI(driver db.DB, r *models.ScanResult) error {
 	cveIDs := []string{}
 	for cveID, vuln := range r.ScannedCves {
@@ -85,44 +122,7 @@ func (red RedHat) setFixedCveToScanResult(cve *gostmodels.RedhatCVE, r *models.S
 	r.ScannedCves[cveCont.CveID] = v
 }
 
-func (red RedHat) detectUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
-	if config.Conf.Gost.IsFetchViaHTTP() {
-		prefix, _ := util.URLPathJoin(config.Conf.Gost.URL,
-			"redhat", major(r.Release), "pkgs")
-		responses, err := getAllUnfixedCvesViaHTTP(r, prefix)
-		if err != nil {
-			return 0, err
-		}
-		for _, res := range responses {
-			// CVE-ID: RedhatCVE
-			cves := map[string]gostmodels.RedhatCVE{}
-			if err := json.Unmarshal([]byte(res.json), &cves); err != nil {
-				return 0, err
-			}
-			for _, cve := range cves {
-				if newly := red.setCveToScanResult(&cve, r); newly {
-					nCVEs++
-				}
-			}
-		}
-	} else {
-		if driver == nil {
-			return 0, nil
-		}
-		for _, pack := range r.Packages {
-			// CVE-ID: RedhatCVE
-			cves := driver.GetUnfixedCvesRedhat(major(r.Release), pack.Name, ignoreWillNotFix)
-			for _, cve := range cves {
-				if newly := red.setCveToScanResult(&cve, r); newly {
-					nCVEs++
-				}
-			}
-		}
-	}
-	return nCVEs, nil
-}
-
-func (red RedHat) setCveToScanResult(cve *gostmodels.RedhatCVE, r *models.ScanResult) (newly bool) {
+func (red RedHat) setUnfixedCveToScanResult(cve *gostmodels.RedhatCVE, r *models.ScanResult) (newly bool) {
 	cveCont, mitigations := red.ConvertToModel(cve)
 	v, ok := r.ScannedCves[cve.Name]
 	if ok {
