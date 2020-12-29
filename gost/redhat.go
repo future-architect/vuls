@@ -21,10 +21,10 @@ type RedHat struct {
 
 // DetectUnfixed fills cve information that has in Gost
 func (red RedHat) DetectUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
-	return red.fillUnfixed(driver, r, ignoreWillNotFix)
+	return red.detectUnfixed(driver, r, ignoreWillNotFix)
 }
 
-func (red RedHat) fillFixed(driver db.DB, r *models.ScanResult) error {
+func (red RedHat) fillCvesWithRedHatAPI(driver db.DB, r *models.ScanResult) error {
 	cveIDs := []string{}
 	for cveID, vuln := range r.ScannedCves {
 		if _, ok := vuln.CveContents[models.RedHatAPI]; ok {
@@ -48,56 +48,44 @@ func (red RedHat) fillFixed(driver db.DB, r *models.ScanResult) error {
 			if redCve.ID == 0 {
 				continue
 			}
-			cveCont, mitigations := red.ConvertToModel(&redCve)
-			v, ok := r.ScannedCves[res.request.cveID]
-			if ok {
-				if v.CveContents == nil {
-					v.CveContents = models.NewCveContents(*cveCont)
-				} else {
-					v.CveContents[models.RedHatAPI] = *cveCont
-				}
-			} else {
-				v = models.VulnInfo{
-					CveID:       cveCont.CveID,
-					CveContents: models.NewCveContents(*cveCont),
-					Confidences: models.Confidences{models.RedHatAPIMatch},
-				}
-			}
-			v.Mitigations = append(v.Mitigations, mitigations...)
-			r.ScannedCves[res.request.cveID] = v
+			red.setFixedCveToScanResult(&redCve, r)
 		}
 	} else {
 		if driver == nil {
 			return nil
 		}
-		for cveID, redCve := range driver.GetRedhatMulti(cveIDs) {
+		for _, redCve := range driver.GetRedhatMulti(cveIDs) {
 			if len(redCve.Name) == 0 {
 				continue
 			}
-			cveCont, mitigations := red.ConvertToModel(&redCve)
-			v, ok := r.ScannedCves[cveID]
-			if ok {
-				if v.CveContents == nil {
-					v.CveContents = models.NewCveContents(*cveCont)
-				} else {
-					v.CveContents[models.RedHatAPI] = *cveCont
-				}
-			} else {
-				v = models.VulnInfo{
-					CveID:       cveCont.CveID,
-					CveContents: models.NewCveContents(*cveCont),
-					Confidences: models.Confidences{models.RedHatAPIMatch},
-				}
-			}
-			v.Mitigations = append(v.Mitigations, mitigations...)
-			r.ScannedCves[cveID] = v
+			red.setFixedCveToScanResult(&redCve, r)
 		}
 	}
 
 	return nil
 }
 
-func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
+func (red RedHat) setFixedCveToScanResult(cve *gostmodels.RedhatCVE, r *models.ScanResult) {
+	cveCont, mitigations := red.ConvertToModel(cve)
+	v, ok := r.ScannedCves[cveCont.CveID]
+	if ok {
+		if v.CveContents == nil {
+			v.CveContents = models.NewCveContents(*cveCont)
+		} else {
+			v.CveContents[models.RedHatAPI] = *cveCont
+		}
+	} else {
+		v = models.VulnInfo{
+			CveID:       cveCont.CveID,
+			CveContents: models.NewCveContents(*cveCont),
+			Confidences: models.Confidences{models.RedHatAPIMatch},
+		}
+	}
+	v.Mitigations = append(v.Mitigations, mitigations...)
+	r.ScannedCves[cveCont.CveID] = v
+}
+
+func (red RedHat) detectUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
 	if config.Conf.Gost.IsFetchViaHTTP() {
 		prefix, _ := util.URLPathJoin(config.Conf.Gost.URL,
 			"redhat", major(r.Release), "pkgs")
@@ -111,30 +99,9 @@ func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNotF
 			if err := json.Unmarshal([]byte(res.json), &cves); err != nil {
 				return 0, err
 			}
-
 			for _, cve := range cves {
-				cveCont, mitigations := red.ConvertToModel(&cve)
-				v, ok := r.ScannedCves[cve.Name]
-				if ok {
-					if v.CveContents == nil {
-						v.CveContents = models.NewCveContents(*cveCont)
-					} else {
-						v.CveContents[models.RedHatAPI] = *cveCont
-					}
-				} else {
-					v = models.VulnInfo{
-						CveID:       cveCont.CveID,
-						CveContents: models.NewCveContents(*cveCont),
-						Confidences: models.Confidences{models.RedHatAPIMatch},
-					}
+				if newly := red.setCveToScanResult(&cve, r); newly {
 					nCVEs++
-				}
-				v.Mitigations = append(v.Mitigations, mitigations...)
-				pkgStats := red.mergePackageStates(v,
-					cve.PackageState, r.Packages, r.Release)
-				if 0 < len(pkgStats) {
-					v.AffectedPackages = pkgStats
-					r.ScannedCves[cve.Name] = v
 				}
 			}
 		}
@@ -146,33 +113,40 @@ func (red RedHat) fillUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNotF
 			// CVE-ID: RedhatCVE
 			cves := driver.GetUnfixedCvesRedhat(major(r.Release), pack.Name, ignoreWillNotFix)
 			for _, cve := range cves {
-				cveCont, mitigations := red.ConvertToModel(&cve)
-				v, ok := r.ScannedCves[cve.Name]
-				if ok {
-					if v.CveContents == nil {
-						v.CveContents = models.NewCveContents(*cveCont)
-					} else {
-						v.CveContents[models.RedHatAPI] = *cveCont
-					}
-				} else {
-					v = models.VulnInfo{
-						CveID:       cveCont.CveID,
-						CveContents: models.NewCveContents(*cveCont),
-						Confidences: models.Confidences{models.RedHatAPIMatch},
-					}
+				if newly := red.setCveToScanResult(&cve, r); newly {
 					nCVEs++
-				}
-				v.Mitigations = append(v.Mitigations, mitigations...)
-				pkgStats := red.mergePackageStates(v,
-					cve.PackageState, r.Packages, r.Release)
-				if 0 < len(pkgStats) {
-					v.AffectedPackages = pkgStats
-					r.ScannedCves[cve.Name] = v
 				}
 			}
 		}
 	}
 	return nCVEs, nil
+}
+
+func (red RedHat) setCveToScanResult(cve *gostmodels.RedhatCVE, r *models.ScanResult) (newly bool) {
+	cveCont, mitigations := red.ConvertToModel(cve)
+	v, ok := r.ScannedCves[cve.Name]
+	if ok {
+		if v.CveContents == nil {
+			v.CveContents = models.NewCveContents(*cveCont)
+		} else {
+			v.CveContents[models.RedHatAPI] = *cveCont
+		}
+	} else {
+		v = models.VulnInfo{
+			CveID:       cveCont.CveID,
+			CveContents: models.NewCveContents(*cveCont),
+			Confidences: models.Confidences{models.RedHatAPIMatch},
+		}
+		newly = true
+	}
+	v.Mitigations = append(v.Mitigations, mitigations...)
+	pkgStats := red.mergePackageStates(v,
+		cve.PackageState, r.Packages, r.Release)
+	if 0 < len(pkgStats) {
+		v.AffectedPackages = pkgStats
+		r.ScannedCves[cve.Name] = v
+	}
+	return
 }
 
 func (red RedHat) mergePackageStates(v models.VulnInfo, ps []gostmodels.RedhatPackageState, installed models.Packages, release string) (pkgStats models.PackageFixStatuses) {
