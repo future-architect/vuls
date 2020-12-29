@@ -19,7 +19,7 @@ type Base struct {
 
 // FillCVEsWithRedHat fills cve information that has in Gost
 func (b Base) FillCVEsWithRedHat(driver db.DB, r *models.ScanResult) error {
-	return RedHat{}.fillFixed(driver, r)
+	return RedHat{}.fillCvesWithRedHatAPI(driver, r)
 }
 
 // CheckHTTPHealth do health check
