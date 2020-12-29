@@ -137,12 +137,13 @@ kernel-devel 0 2.6.32 695.20.3.el6 x86_64`,
 	}
 
 }
-func TestParseScanedPackagesLineRedhat(t *testing.T) {
+func TestParseInstalledPackagesLine(t *testing.T) {
 	r := newRHEL(config.ServerInfo{})
 
 	var packagetests = []struct {
 		in   string
 		pack models.Package
+		err  bool
 	}{
 		{
 			"openssl	0	1.0.1e	30.el6.11 x86_64",
@@ -151,6 +152,7 @@ func TestParseScanedPackagesLineRedhat(t *testing.T) {
 				Version: "1.0.1e",
 				Release: "30.el6.11",
 			},
+			false,
 		},
 		{
 			"Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x84_64",
@@ -159,11 +161,23 @@ func TestParseScanedPackagesLineRedhat(t *testing.T) {
 				Version: "1:5.6.19",
 				Release: "rel67.0.el6",
 			},
+			false,
+		},
+		{
+			"error: file /run/log/journal/346a500b7fb944199748954baca56086/system.journal: Permission denied",
+			models.Package{},
+			true,
 		},
 	}
 
-	for _, tt := range packagetests {
-		p, _ := r.parseInstalledPackagesLine(tt.in)
+	for i, tt := range packagetests {
+		p, err := r.parseInstalledPackagesLine(tt.in)
+		if err == nil && tt.err {
+			t.Errorf("Expected err not occurred: %d", i)
+		}
+		if err != nil && !tt.err {
+			t.Errorf("UnExpected err not occurred: %d", i)
+		}
 		if p.Name != tt.pack.Name {
 			t.Errorf("name: expected %s, actual %s", tt.pack.Name, p.Name)
 		}

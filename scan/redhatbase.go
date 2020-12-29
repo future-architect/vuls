@@ -317,6 +317,11 @@ func (o *redhatBase) parseInstalledPackagesLine(line string) (models.Package, er
 		return models.Package{},
 			xerrors.Errorf("Failed to parse package line: %s", line)
 	}
+	if strings.HasSuffix(line, "Permission denied") {
+		return models.Package{},
+			xerrors.Errorf("Failed to parse package line: %s", line)
+	}
+
 	ver := ""
 	epoch := fields[1]
 	if epoch == "0" || epoch == "(none)" {
