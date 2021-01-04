@@ -707,7 +707,7 @@ func (o *redhatBase) detectInstalledDnfModules() ([]string, error) {
 		return nil, nil
 	}
 
-	cmd := `dnf --cacheonly --color=never --quiet module list --installed `
+	cmd := `dnf --cacheonly --color=never --quiet module list --enabled`
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess() {
 		return nil, xerrors.Errorf("Failed to dnf module list: %s, cmd: %s", r, cmd)
