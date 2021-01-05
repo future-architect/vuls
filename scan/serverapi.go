@@ -71,7 +71,7 @@ type osPackages struct {
 	SrcPackages models.SrcPackages
 
 	// installed dnf modules or packages
-	InstalledDnfModules []string
+	EnabledDnfModules []string
 
 	// unsecure packages
 	VulnInfos models.VulnInfos

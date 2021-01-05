@@ -205,7 +205,7 @@ func (o *redhatBase) scanPackages() error {
 	}
 	o.Packages = installed
 
-	if o.InstalledDnfModules, err = o.detectInstalledDnfModules(); err != nil {
+	if o.EnabledDnfModules, err = o.detectEnabledDnfModules(); err != nil {
 		return xerrors.Errorf("Failed to detect installed dnf modules: %w", err)
 	}
 
@@ -696,7 +696,7 @@ func (o *redhatBase) rpmQf() string {
 	}
 }
 
-func (o *redhatBase) detectInstalledDnfModules() ([]string, error) {
+func (o *redhatBase) detectEnabledDnfModules() ([]string, error) {
 	switch o.Distro.Family {
 	case config.RedHat, config.CentOS:
 		//TODO OracleLinux
