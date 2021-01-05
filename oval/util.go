@@ -78,6 +78,7 @@ type request struct {
 	arch              string
 	binaryPackNames   []string
 	isSrcPack         bool
+	modularityLabel   string // RHEL 8 or later only
 }
 
 type response struct {
@@ -147,7 +148,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 		select {
 		case res := <-resChan:
 			for _, def := range res.defs {
-				affected, notFixedYet, fixedIn := isOvalDefAffected(def, res.request, r.Family, r.RunningKernel)
+				affected, notFixedYet, fixedIn := isOvalDefAffected(def, res.request, r.Family, r.RunningKernel, r.EnabledDnfModules)
 				if !affected {
 					continue
 				}
@@ -250,7 +251,7 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 			return relatedDefs, xerrors.Errorf("Failed to get %s OVAL info by package: %#v, err: %w", r.Family, req, err)
 		}
 		for _, def := range definitions {
-			affected, notFixedYet, fixedIn := isOvalDefAffected(def, req, r.Family, r.RunningKernel)
+			affected, notFixedYet, fixedIn := isOvalDefAffected(def, req, r.Family, r.RunningKernel, r.EnabledDnfModules)
 			if !affected {
 				continue
 			}
@@ -291,9 +292,24 @@ func major(version string) string {
 	return ver[0:strings.Index(ver, ".")]
 }
 
-func isOvalDefAffected(def ovalmodels.Definition, req request, family string, running models.Kernel) (affected, notFixedYet bool, fixedIn string) {
+func isOvalDefAffected(def ovalmodels.Definition, req request, family string, running models.Kernel, enabledMods []string) (affected, notFixedYet bool, fixedIn string) {
 	for _, ovalPack := range def.AffectedPacks {
 		if req.packName != ovalPack.Name {
+			continue
+		}
+
+		isModularityLabelEmptyOrSame := false
+		if ovalPack.ModularityLabel != "" {
+			for _, mod := range enabledMods {
+				if mod == ovalPack.ModularityLabel {
+					isModularityLabelEmptyOrSame = true
+					break
+				}
+			}
+		} else {
+			isModularityLabelEmptyOrSame = true
+		}
+		if !isModularityLabelEmptyOrSame {
 			continue
 		}
 

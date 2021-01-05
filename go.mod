@@ -43,7 +43,7 @@ require (
 	github.com/knqyf263/gost v0.1.7
 	github.com/kotakanbe/go-cve-dictionary v0.5.6
 	github.com/kotakanbe/go-pingscanner v0.1.0
-	github.com/kotakanbe/goval-dictionary v0.2.16
+	github.com/kotakanbe/goval-dictionary v0.2.17-0.20210105083220-4f66385bed7f
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
@@ -65,10 +65,11 @@ require (
 	github.com/takuzoo3868/go-msfdb v0.1.3
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0 // indirect
-	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620
+	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
+	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
 	golang.org/x/oauth2 v0.0.0-20201208152858-08078c50e5b5
-	golang.org/x/sys v0.0.0-20201218084310-7d0127a74742 // indirect
+	golang.org/x/sys v0.0.0-20210104204734-6f8348627aad // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/tools v0.0.0-20201211185031-d93e913c1a58 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1

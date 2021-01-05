@@ -44,16 +44,16 @@ type ScanResult struct {
 	Errors           []string              `json:"errors"`
 	Warnings         []string              `json:"warnings"`
 
-	ScannedCves         VulnInfos              `json:"scannedCves"`
-	RunningKernel       Kernel                 `json:"runningKernel"`
-	Packages            Packages               `json:"packages"`
-	SrcPackages         SrcPackages            `json:",omitempty"`
-	InstalledDnfModules []string               `json:"installedDnfModules,omitempty"` // for dnf modules
-	WordPressPackages   *WordPressPackages     `json:",omitempty"`
-	LibraryScanners     LibraryScanners        `json:"libraries,omitempty"`
-	CweDict             CweDict                `json:"cweDict,omitempty"`
-	Optional            map[string]interface{} `json:",omitempty"`
-	Config              struct {
+	ScannedCves       VulnInfos              `json:"scannedCves"`
+	RunningKernel     Kernel                 `json:"runningKernel"`
+	Packages          Packages               `json:"packages"`
+	SrcPackages       SrcPackages            `json:",omitempty"`
+	EnabledDnfModules []string               `json:"enabledDnfModules,omitempty"` // for dnf modules
+	WordPressPackages *WordPressPackages     `json:",omitempty"`
+	LibraryScanners   LibraryScanners        `json:"libraries,omitempty"`
+	CweDict           CweDict                `json:"cweDict,omitempty"`
+	Optional          map[string]interface{} `json:",omitempty"`
+	Config            struct {
 		Scan   config.Config `json:"scan"`
 		Report config.Config `json:"report"`
 	} `json:"config"`
