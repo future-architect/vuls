@@ -8,18 +8,17 @@ replace (
 )
 
 require (
-	github.com/Azure/azure-sdk-for-go v49.1.0+incompatible
+	github.com/Azure/azure-sdk-for-go v49.2.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.15 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.10 // indirect
 	github.com/BurntSushi/toml v0.3.1
 	github.com/RackSec/srslog v0.0.0-20180709174129-a4725f04ec91
-	github.com/aquasecurity/fanal v0.0.0-20201218050947-981a0510f9cb
-	github.com/aquasecurity/trivy v0.14.0
-	github.com/aquasecurity/trivy-db v0.0.0-20201220084758-2d91316c83fa
+	github.com/aquasecurity/fanal v0.0.0-20210106083348-3f85e04a8048
+	github.com/aquasecurity/trivy v0.15.0
+	github.com/aquasecurity/trivy-db v0.0.0-20210106051232-62e6657ad501
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef
-	github.com/aws/aws-sdk-go v1.36.12
+	github.com/aws/aws-sdk-go v1.36.22
 	github.com/boltdb/bolt v1.3.1
-	github.com/briandowns/spinner v1.12.0 // indirect
 	github.com/caarlos0/env/v6 v6.4.0 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/d4l3k/messagediff v1.2.2-0.20190829033028-7e0a312ae40b
@@ -30,7 +29,7 @@ require (
 	github.com/google/subcommands v1.2.0
 	github.com/google/wire v0.4.0 // indirect
 	github.com/gosuri/uitable v0.0.4
-	github.com/grokify/html-strip-tags-go v0.0.0-20200923094847-079d207a09f1 // indirect
+	github.com/grokify/html-strip-tags-go v0.0.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.2
 	github.com/hashicorp/go-version v1.2.1
 	github.com/howeyc/gopass v0.0.0-20190910152052-7cb4b85ec19c
@@ -75,7 +74,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20210106172901-c476de37821d // indirect
 	honnef.co/go/tools v0.1.0 // indirect
 	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
 )
