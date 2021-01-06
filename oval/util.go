@@ -378,9 +378,6 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 	return false, false, ""
 }
 
-var centosVerPattern = regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.centos)?`)
-var esVerPattern = regexp.MustCompile(`\.el(\d+)(?:_\d+)?`)
-
 func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error) {
 	switch family {
 	case config.Debian,
@@ -416,12 +413,18 @@ func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error
 
 	case config.RedHat,
 		config.CentOS:
-		vera := rpmver.NewVersion(centosVerPattern.ReplaceAllString(newVer, ".el$1"))
-		verb := rpmver.NewVersion(esVerPattern.ReplaceAllString(packInOVAL.Version, ".el$1"))
+		vera := rpmver.NewVersion(centOSVersionToRHEL(newVer))
+		verb := rpmver.NewVersion(packInOVAL.Version)
 		return vera.LessThan(verb), nil
 
 	default:
 		util.Log.Errorf("Not implemented yet: %s", family)
 	}
 	return false, xerrors.Errorf("Package version comparison not supported: %s", family)
+}
+
+var centosVerPattern = regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.centos)?`)
+
+func centOSVersionToRHEL(ver string) string {
+	return centosVerPattern.ReplaceAllString(ver, ".el$1")
 }

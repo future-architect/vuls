@@ -1193,3 +1193,36 @@ func Test_major(t *testing.T) {
 		}
 	}
 }
+
+func Test_centOSVersionToRHEL(t *testing.T) {
+	type args struct {
+		ver string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "remove centos.",
+			args: args{
+				ver: "grub2-tools-2.02-0.80.el7.centos.x86_64",
+			},
+			want: "grub2-tools-2.02-0.80.el7.x86_64",
+		},
+		{
+			name: "noop",
+			args: args{
+				ver: "grub2-tools-2.02-0.80.el7.x86_64",
+			},
+			want: "grub2-tools-2.02-0.80.el7.x86_64",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := centOSVersionToRHEL(tt.args.ver); got != tt.want {
+				t.Errorf("centOSVersionToRHEL() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
