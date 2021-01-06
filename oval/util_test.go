@@ -202,6 +202,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 		req    request
 		family string
 		kernel models.Kernel
+		mods   []string
 	}
 	var tests = []struct {
 		in          in
@@ -1076,9 +1077,85 @@ func TestIsOvalDefAffected(t *testing.T) {
 			notFixedYet: false,
 			fixedIn:     "3.1.0",
 		},
+		// dnf module
+		{
+			in: in{
+				family: config.RedHat,
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:            "nginx",
+							Version:         "1.16.1-1.module+el8.3.0+8844+e5e7039f.1",
+							NotFixedYet:     false,
+							ModularityLabel: "nginx:1.16",
+						},
+					},
+				},
+				req: request{
+					packName:       "nginx",
+					versionRelease: "1.16.0-1.module+el8.3.0+8844+e5e7039f.1",
+				},
+				mods: []string{
+					"nginx:1.16",
+				},
+			},
+			affected:    true,
+			notFixedYet: false,
+			fixedIn:     "1.16.1-1.module+el8.3.0+8844+e5e7039f.1",
+		},
+		// dnf module 2
+		{
+			in: in{
+				family: config.RedHat,
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:            "nginx",
+							Version:         "1.16.1-1.module+el8.3.0+8844+e5e7039f.1",
+							NotFixedYet:     false,
+							ModularityLabel: "nginx:1.16",
+						},
+					},
+				},
+				req: request{
+					packName:       "nginx",
+					versionRelease: "1.16.2-1.module+el8.3.0+8844+e5e7039f.1",
+				},
+				mods: []string{
+					"nginx:1.16",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		// dnf module 3
+		{
+			in: in{
+				family: config.RedHat,
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:            "nginx",
+							Version:         "1.16.1-1.module+el8.3.0+8844+e5e7039f.1",
+							NotFixedYet:     false,
+							ModularityLabel: "nginx:1.16",
+						},
+					},
+				},
+				req: request{
+					packName:       "nginx",
+					versionRelease: "1.16.0-1.module+el8.3.0+8844+e5e7039f.1",
+				},
+				mods: []string{
+					"nginx:1.14",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
 	}
 	for i, tt := range tests {
-		affected, notFixedYet, fixedIn := isOvalDefAffected(tt.in.def, tt.in.req, tt.in.family, tt.in.kernel)
+		affected, notFixedYet, fixedIn := isOvalDefAffected(tt.in.def, tt.in.req, tt.in.family, tt.in.kernel, tt.in.mods)
 		if tt.affected != affected {
 			t.Errorf("[%d] affected\nexpected: %v\n  actual: %v\n", i, tt.affected, affected)
 		}

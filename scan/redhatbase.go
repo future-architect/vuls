@@ -201,10 +201,13 @@ func (o *redhatBase) detectIPAddr() (err error) {
 func (o *redhatBase) scanPackages() error {
 	installed, err := o.scanInstalledPackages()
 	if err != nil {
-		o.log.Errorf("Failed to scan installed packages: %s", err)
-		return err
+		return xerrors.Errorf("Failed to scan installed packages: %w", err)
 	}
 	o.Packages = installed
+
+	if o.EnabledDnfModules, err = o.detectEnabledDnfModules(); err != nil {
+		return xerrors.Errorf("Failed to detect installed dnf modules: %w", err)
+	}
 
 	rebootRequired, err := o.rebootRequired()
 	if err != nil {
@@ -261,7 +264,7 @@ func (o *redhatBase) scanInstalledPackages() (models.Packages, error) {
 		Version: version,
 	}
 
-	r := o.exec(o.rpmQa(o.Distro), noSudo)
+	r := o.exec(o.rpmQa(), noSudo)
 	if !r.isSuccess() {
 		return nil, xerrors.Errorf("Scan packages failed: %s", r)
 	}
@@ -640,7 +643,7 @@ func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
 }
 
 func (o *redhatBase) getPkgName(paths []string) (pkgNames []string, err error) {
-	cmd := o.rpmQf(o.Distro) + strings.Join(paths, " ")
+	cmd := o.rpmQf() + strings.Join(paths, " ")
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess(0, 2, 4, 8) {
 		return nil, xerrors.Errorf("Failed to rpm -qf: %s, cmd: %s", r, cmd)
@@ -659,36 +662,71 @@ func (o *redhatBase) getPkgName(paths []string) (pkgNames []string, err error) {
 	return pkgNames, nil
 }
 
-func (o *redhatBase) rpmQa(distro config.Distro) string {
+func (o *redhatBase) rpmQa() string {
 	const old = `rpm -qa --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n"`
 	const new = `rpm -qa --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n"`
-	switch distro.Family {
+	switch o.Distro.Family {
 	case config.SUSEEnterpriseServer:
-		if v, _ := distro.MajorVersion(); v < 12 {
+		if v, _ := o.Distro.MajorVersion(); v < 12 {
 			return old
 		}
 		return new
 	default:
-		if v, _ := distro.MajorVersion(); v < 6 {
+		if v, _ := o.Distro.MajorVersion(); v < 6 {
 			return old
 		}
 		return new
 	}
 }
 
-func (o *redhatBase) rpmQf(distro config.Distro) string {
+func (o *redhatBase) rpmQf() string {
 	const old = `rpm -qf --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n" `
 	const new = `rpm -qf --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n" `
-	switch distro.Family {
+	switch o.Distro.Family {
 	case config.SUSEEnterpriseServer:
-		if v, _ := distro.MajorVersion(); v < 12 {
+		if v, _ := o.Distro.MajorVersion(); v < 12 {
 			return old
 		}
 		return new
 	default:
-		if v, _ := distro.MajorVersion(); v < 6 {
+		if v, _ := o.Distro.MajorVersion(); v < 6 {
 			return old
 		}
 		return new
 	}
+}
+
+func (o *redhatBase) detectEnabledDnfModules() ([]string, error) {
+	switch o.Distro.Family {
+	case config.RedHat, config.CentOS:
+		//TODO OracleLinux
+	default:
+		return nil, nil
+	}
+	if v, _ := o.Distro.MajorVersion(); v < 8 {
+		return nil, nil
+	}
+
+	cmd := `dnf --cacheonly --color=never --quiet module list --enabled`
+	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
+	if !r.isSuccess() {
+		return nil, xerrors.Errorf("Failed to dnf module list: %s, cmd: %s", r, cmd)
+	}
+	return o.parseDnfModuleList(r.Stdout)
+}
+
+func (o *redhatBase) parseDnfModuleList(stdout string) (labels []string, err error) {
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "Hint:") || !strings.Contains(line, "[i]") {
+			continue
+		}
+		ss := strings.Fields(line)
+		if len(ss) < 2 {
+			continue
+		}
+		labels = append(labels, fmt.Sprintf("%s:%s", ss[0], ss[1]))
+	}
+	return
 }

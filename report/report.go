@@ -7,21 +7,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/future-architect/vuls/libmanager"
-	gostdb "github.com/knqyf263/gost/db"
-
-	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
 	"github.com/future-architect/vuls/cwe"
 	"github.com/future-architect/vuls/exploit"
 	"github.com/future-architect/vuls/github"
 	"github.com/future-architect/vuls/gost"
+	"github.com/future-architect/vuls/libmanager"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/msf"
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/util"
 	"github.com/future-architect/vuls/wordpress"
+	gostdb "github.com/knqyf263/gost/db"
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
 	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
 	ovaldb "github.com/kotakanbe/goval-dictionary/db"
@@ -170,7 +168,7 @@ func DetectPkgCves(dbclient DBClient, r *models.ScanResult) error {
 		}
 	} else if reuseScannedCves(r) {
 		util.Log.Infof("r.Release is empty. Use CVEs as it as.")
-	} else if r.Family == config.ServerTypePseudo {
+	} else if r.Family == c.ServerTypePseudo {
 		util.Log.Infof("pseudo type. Skip OVAL and gost detection")
 	} else {
 		return xerrors.Errorf("Failed to fill CVEs. r.Release is empty")
@@ -207,7 +205,7 @@ func DetectPkgCves(dbclient DBClient, r *models.ScanResult) error {
 }
 
 // DetectGitHubCves fetches CVEs from GitHub Security Alerts
-func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]config.GitHubConf) error {
+func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]c.GitHubConf) error {
 	if len(githubConfs) == 0 {
 		return nil
 	}
@@ -228,7 +226,7 @@ func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]config.GitHub
 }
 
 // DetectWordPressCves detects CVEs of WordPress
-func DetectWordPressCves(r *models.ScanResult, wpCnf *config.WordPressConf) error {
+func DetectWordPressCves(r *models.ScanResult, wpCnf *c.WordPressConf) error {
 	if wpCnf.WPVulnDBToken == "" {
 		return nil
 	}
@@ -431,7 +429,7 @@ func fillWithMetasploit(driver metasploitdb.DB, r *models.ScanResult) (nMetasplo
 // DetectCpeURIsCves detects CVEs of given CPE-URIs
 func DetectCpeURIsCves(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) error {
 	nCVEs := 0
-	if len(cpeURIs) != 0 && driver == nil && !config.Conf.CveDict.IsFetchViaHTTP() {
+	if len(cpeURIs) != 0 && driver == nil && !c.Conf.CveDict.IsFetchViaHTTP() {
 		return xerrors.Errorf("cpeURIs %s specified, but cve-dictionary DB not found. Fetch cve-dictionary before reporting. For details, see `https://github.com/kotakanbe/go-cve-dictionary#deploy-go-cve-dictionary`",
 			cpeURIs)
 	}

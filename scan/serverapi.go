@@ -70,6 +70,9 @@ type osPackages struct {
 	// installed source packages (Debian based only)
 	SrcPackages models.SrcPackages
 
+	// enabled dnf modules or packages
+	EnabledDnfModules []string
+
 	// unsecure packages
 	VulnInfos models.VulnInfos
 

@@ -449,6 +449,7 @@ func (l *base) convertToModel() models.ScanResult {
 		RunningKernel:     l.Kernel,
 		Packages:          l.Packages,
 		SrcPackages:       l.SrcPackages,
+		EnabledDnfModules: l.EnabledDnfModules,
 		WordPressPackages: l.WordPress,
 		LibraryScanners:   l.LibraryScanners,
 		Optional:          l.ServerInfo.Optional,
