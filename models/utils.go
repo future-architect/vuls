@@ -65,10 +65,14 @@ func ConvertNvdJSONToModel(cveID string, nvd *cvedict.NvdJSON) (*CveContent, []E
 	exploits := []Exploit{}
 	mitigations := []Mitigation{}
 	for _, r := range nvd.References {
+		var tags []string
+		if 0 < len(r.Tags) {
+			tags = strings.Split(r.Tags, ",")
+		}
 		refs = append(refs, Reference{
 			Link:   r.Link,
 			Source: r.Source,
-			Tags:   strings.Split(r.Tags, ","),
+			Tags:   tags,
 		})
 		if strings.Contains(r.Tags, "Exploit") {
 			exploits = append(exploits, Exploit{
