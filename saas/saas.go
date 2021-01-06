@@ -3,6 +3,7 @@ package saas
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -120,7 +121,7 @@ func (w Writer) Write(rs ...models.ScanResult) (err error) {
 
 	svc := s3.New(sess)
 	for _, r := range rs {
-		s3Key := renameKeyNameUTC(r.ScannedAt, r.ServerUUID, r.Container)
+		s3Key := renameKeyName(r.ServerUUID, r.Container)
 		var b []byte
 		if b, err = json.Marshal(r); err != nil {
 			return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
@@ -139,4 +140,11 @@ func (w Writer) Write(rs ...models.ScanResult) (err error) {
 	}
 	util.Log.Infof("done")
 	return nil
+}
+
+func renameKeyName(uuid string, container models.Container) string {
+	if len(container.ContainerID) == 0 {
+		return fmt.Sprintf("%s.json", uuid)
+	}
+	return fmt.Sprintf("%s@%s.json", container.UUID, uuid)
 }

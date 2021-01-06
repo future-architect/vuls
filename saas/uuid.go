@@ -9,7 +9,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/BurntSushi/toml"
 	c "github.com/future-architect/vuls/config"
@@ -18,14 +17,6 @@ import (
 	"github.com/hashicorp/go-uuid"
 	"golang.org/x/xerrors"
 )
-
-func renameKeyNameUTC(scannedAt time.Time, uuid string, container models.Container) string {
-	timestr := scannedAt.UTC().Format(time.RFC3339)
-	if len(container.ContainerID) == 0 {
-		return fmt.Sprintf("%s/%s.json", timestr, uuid)
-	}
-	return fmt.Sprintf("%s/%s@%s.json", timestr, container.UUID, uuid)
-}
 
 const reUUID = "[\\da-f]{8}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{12}"
 
