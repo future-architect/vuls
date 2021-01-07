@@ -35,7 +35,7 @@ type base struct {
 	Platform   models.Platform
 	osPackages
 	LibraryScanners []models.LibraryScanner
-	WordPress       *models.WordPressPackages
+	WordPress       models.WordPressPackages
 
 	log   *logrus.Entry
 	errs  []error
@@ -656,7 +656,7 @@ func (l *base) scanWordPress() (err error) {
 	if err != nil {
 		return xerrors.Errorf("Failed to scan wordpress: %w", err)
 	}
-	l.WordPress = wp
+	l.WordPress = *wp
 	return nil
 }
 

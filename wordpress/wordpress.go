@@ -9,6 +9,7 @@ import (
 	"time"
 
 	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/errof"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	version "github.com/hashicorp/go-version"
@@ -107,7 +108,8 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 func wpscan(url, name, token string) (vinfos []models.VulnInfo, err error) {
 	body, err := httpRequest(url, token)
 	if err != nil {
-		return nil, err
+		return nil, errof.New(errof.ErrFailedToAccessWpScan,
+			fmt.Sprintf("Failed to access to wpscan.comm. body: %s, err: %s", string(body), err))
 	}
 	if body == "" {
 		util.Log.Debugf("wpscan.com response body is empty. URL: %s", url)
