@@ -65,10 +65,8 @@ func FillGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (
 		// util.Log.Debugf("%s", pp.Sprint(alerts))
 		// util.Log.Debugf("%s", string(body))
 		if alerts.Data.Repository.URL == "" {
-			return 0, errof.New(
-				errof.ErrFailedToAccessGithubAPI,
-				fmt.Sprintf("Failed to access to GitHub API. Response: %s", string(body)),
-			)
+			return 0, errof.New(errof.ErrFailedToAccessGithubAPI,
+				fmt.Sprintf("Failed to access to GitHub API. Response: %s", string(body)))
 		}
 
 		for _, v := range alerts.Data.Repository.VulnerabilityAlerts.Edges {
