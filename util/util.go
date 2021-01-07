@@ -163,3 +163,17 @@ func Distinct(ss []string) (distincted []string) {
 	}
 	return
 }
+
+func Major(version string) string {
+	if version == "" {
+		return ""
+	}
+	ss := strings.SplitN(version, ":", 2)
+	ver := ""
+	if len(ss) == 1 {
+		ver = ss[0]
+	} else {
+		ver = ss[1]
+	}
+	return ver[0:strings.Index(ver, ".")]
+}

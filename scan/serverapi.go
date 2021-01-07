@@ -686,7 +686,7 @@ func writeScanResults(jsonDir string, results models.ScanResults) error {
 	}
 	for _, w := range ws {
 		if err := w.Write(results...); err != nil {
-			return xerrors.Errorf("Failed to write summary report: %s", err)
+			return xerrors.Errorf("Failed to write summary: %s", err)
 		}
 	}
 

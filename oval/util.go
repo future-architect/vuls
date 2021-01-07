@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff"
@@ -278,20 +277,6 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 	return
 }
 
-func major(version string) string {
-	if version == "" {
-		return ""
-	}
-	ss := strings.SplitN(version, ":", 2)
-	ver := ""
-	if len(ss) == 1 {
-		ver = ss[0]
-	} else {
-		ver = ss[1]
-	}
-	return ver[0:strings.Index(ver, ".")]
-}
-
 func isOvalDefAffected(def ovalmodels.Definition, req request, family string, running models.Kernel, enabledMods []string) (affected, notFixedYet bool, fixedIn string) {
 	for _, ovalPack := range def.AffectedPacks {
 		if req.packName != ovalPack.Name {
@@ -318,7 +303,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 			case config.RedHat, config.CentOS:
 				// For kernel related packages, ignore OVAL information with different major versions
 				if _, ok := kernelRelatedPackNames[ovalPack.Name]; ok {
-					if major(ovalPack.Version) != major(running.Release) {
+					if util.Major(ovalPack.Version) != util.Major(running.Release) {
 						continue
 					}
 				}
