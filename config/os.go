@@ -71,18 +71,28 @@ func (e EOL) IsStandardSupportEnded(now time.Time) bool {
 }
 
 func (e EOL) IsExtendedSuppportEnded(now time.Time) bool {
-	return e.Ended ||
-		!e.ExtendedSupportUntil.IsZero() && now.After(e.ExtendedSupportUntil)
+	if e.Ended {
+		return true
+	}
+	if e.StandardSupportUntil.IsZero() && e.ExtendedSupportUntil.IsZero() {
+		return false
+	}
+	return !e.ExtendedSupportUntil.IsZero() && now.After(e.ExtendedSupportUntil) ||
+		e.ExtendedSupportUntil.IsZero() && now.After(e.StandardSupportUntil)
 }
 
 // https://github.com/aquasecurity/trivy/blob/master/pkg/detector/ospkg/redhat/redhat.go#L20
 func GetEOL(family, release string) (eol EOL, found bool) {
 	switch family {
 	case Amazon:
-		//TODO
+		rel := "2"
+		if isAmazonLinux1(release) {
+			rel = "1"
+		}
 		eol, found = map[string]EOL{
 			"1": {StandardSupportUntil: time.Date(2023, 6, 30, 23, 59, 59, 0, time.UTC)},
-		}[release]
+			"2": {},
+		}[rel]
 	case RedHat:
 		// https://access.redhat.com/support/policy/updates/errata
 		eol, found = map[string]EOL{
@@ -139,6 +149,9 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"9":  {StandardSupportUntil: time.Date(2022, 6, 30, 23, 59, 59, 0, time.UTC)},
 			"10": {StandardSupportUntil: time.Date(2024, 6, 30, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
+	case Raspbian:
+		// Not found
+		eol, found = map[string]EOL{}[major(release)]
 	case Ubuntu:
 		// https://wiki.ubuntu.com/Releases
 		eol, found = map[string]EOL{
@@ -175,6 +188,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 		//TODO
 	case Alpine:
 		// https://github.com/aquasecurity/trivy/blob/master/pkg/detector/ospkg/alpine/alpine.go#L19
+		// https://wiki.alpinelinux.org/wiki/Alpine_Linux:Releases
 		eol, found = map[string]EOL{
 			"2.0":  {Ended: true},
 			"2.1":  {Ended: true},
@@ -198,10 +212,24 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"3.11": {StandardSupportUntil: time.Date(2021, 11, 1, 23, 59, 59, 0, time.UTC)},
 			"3.12": {StandardSupportUntil: time.Date(2022, 5, 1, 23, 59, 59, 0, time.UTC)},
 		}[release]
+	case FreeBSD:
+		// https://www.freebsd.org/security/
+		eol, found = map[string]EOL{
+			"7":  {Ended: true},
+			"8":  {Ended: true},
+			"9":  {Ended: true},
+			"10": {Ended: true},
+			"11": {StandardSupportUntil: time.Date(2021, 9, 30, 23, 59, 59, 0, time.UTC)},
+			"12": {StandardSupportUntil: time.Date(2024, 6, 30, 23, 59, 59, 0, time.UTC)},
+		}[major(release)]
 	}
 	return
 }
 
 func major(osVer string) (majorVersion string) {
 	return strings.Split(osVer, ".")[0]
+}
+
+func isAmazonLinux1(osRelease string) bool {
+	return len(strings.Fields(osRelease)) == 1
 }

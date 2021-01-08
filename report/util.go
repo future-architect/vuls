@@ -50,38 +50,10 @@ func formatScanSummary(rs ...models.ScanResult) string {
 				"Use configtest subcommand or scan with --debug to view the details",
 			}
 		}
-
 		table.AddRow(cols...)
 
 		if len(r.Warnings) != 0 {
 			warnMsgs = append(warnMsgs, fmt.Sprintf("Warning: %s", r.Warnings))
-		}
-
-		eol, found := config.GetEOL(r.Family, r.Release)
-		if found {
-			now := time.Now()
-			// now := time.Date(2025, 3, 6, 23, 59, 59, 0, time.UTC)
-			if eol.IsStandardSupportEnded(now) {
-				warnMsgs = append(warnMsgs, "Standard OS support is EOL(End-of-Life).")
-				if eol.ExtendedSupportUntil.IsZero() {
-					continue
-				}
-				if !eol.IsExtendedSuppportEnded(now) {
-					warnMsgs = append(warnMsgs,
-						fmt.Sprintf("Extended support available until %s. Check the vendor site.",
-							eol.ExtendedSupportUntil.Format("2006-01-02")))
-				} else {
-					warnMsgs = append(warnMsgs,
-						"Extended support is also EOL. Detected CVE will be insufficient.")
-				}
-			} else {
-				if !eol.StandardSupportUntil.IsZero() &&
-					now.AddDate(0, 3, 0).After(eol.StandardSupportUntil) {
-					warnMsgs = append(warnMsgs,
-						fmt.Sprintf("Standard OS support will be end in 3 months. EOL date: %s",
-							eol.StandardSupportUntil.Format("2006-01-02")))
-				}
-			}
 		}
 	}
 	return fmt.Sprintf("%s\n\n%s", table, strings.Join(

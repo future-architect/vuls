@@ -923,7 +923,7 @@ type ServerInfo struct {
 	Port               string                      `toml:"port,omitempty" json:"port,omitempty"`
 	SSHConfigPath      string                      `toml:"sshConfigPath,omitempty" json:"sshConfigPath,omitempty"`
 	KeyPath            string                      `toml:"keyPath,omitempty" json:"keyPath,omitempty"`
-	KeyPassword        string                      `json:"-,omitempty" toml:"-"`
+	KeyPassword        string                      `json:"-" toml:"-"`
 	CpeNames           []string                    `toml:"cpeNames,omitempty" json:"cpeNames,omitempty"`
 	ScanMode           []string                    `toml:"scanMode,omitempty" json:"scanMode,omitempty"`
 	OwaspDCXMLPath     string                      `toml:"owaspDCXMLPath,omitempty" json:"owaspDCXMLPath,omitempty"`
@@ -967,7 +967,7 @@ type WordPressConf struct {
 	OSUser         string `toml:"osUser" json:"osUser,omitempty"`
 	DocRoot        string `toml:"docRoot" json:"docRoot,omitempty"`
 	CmdPath        string `toml:"cmdPath" json:"cmdPath,omitempty"`
-	WPVulnDBToken  string `toml:"wpVulnDBToken" json:"-,omitempty"`
+	WPVulnDBToken  string `toml:"wpVulnDBToken" json:"-"`
 	IgnoreInactive bool   `json:"ignoreInactive,omitempty"`
 }
 
@@ -1071,11 +1071,10 @@ func (l Distro) String() string {
 // MajorVersion returns Major version
 func (l Distro) MajorVersion() (int, error) {
 	if l.Family == Amazon {
-		ss := strings.Fields(l.Release)
-		if len(ss) == 1 {
+		if isAmazonLinux1(l.Release) {
 			return 1, nil
 		}
-		return strconv.Atoi(ss[0])
+		return 2, nil
 	}
 	if 0 < len(l.Release) {
 		return strconv.Atoi(strings.Split(l.Release, ".")[0])
