@@ -211,7 +211,7 @@ func NewUbuntu() Ubuntu {
 
 // FillWithOval returns scan result after updating CVE info by OVAL
 func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
-	switch major(r.Release) {
+	switch util.Major(r.Release) {
 	case "14":
 		kernelNamesInOval := []string{
 			"linux-aws",
