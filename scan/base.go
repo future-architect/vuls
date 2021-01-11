@@ -621,34 +621,13 @@ func (d *DummyFileInfo) IsDir() bool { return false }
 func (d *DummyFileInfo) Sys() interface{} { return nil }
 
 func (l *base) scanWordPress() (err error) {
-	wpOpts := []string{l.ServerInfo.WordPress.OSUser,
-		l.ServerInfo.WordPress.DocRoot,
-		l.ServerInfo.WordPress.CmdPath,
-		l.ServerInfo.WordPress.WPVulnDBToken,
-	}
-	var isScanWp, hasEmptyOpt bool
-	for _, opt := range wpOpts {
-		if opt != "" {
-			isScanWp = true
-			break
-		} else {
-			hasEmptyOpt = true
-		}
-	}
-	if !isScanWp {
+	if l.ServerInfo.WordPress.IsZero() {
 		return nil
 	}
-
-	if hasEmptyOpt {
-		return xerrors.Errorf("%s has empty WordPress opts: %s",
-			l.getServerInfo().GetServerName(), wpOpts)
-	}
-
 	cmd := fmt.Sprintf("sudo -u %s -i -- %s cli version --allow-root",
 		l.ServerInfo.WordPress.OSUser,
 		l.ServerInfo.WordPress.CmdPath)
 	if r := exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
-		l.ServerInfo.WordPress.WPVulnDBToken = "secret"
 		return xerrors.Errorf("Failed to exec `%s`. Check the OS user, command path of wp-cli, DocRoot and permission: %#v", cmd, l.ServerInfo.WordPress)
 	}
 

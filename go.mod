@@ -12,7 +12,6 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.15 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.10 // indirect
 	github.com/BurntSushi/toml v0.3.1
-	github.com/RackSec/srslog v0.0.0-20180709174129-a4725f04ec91
 	github.com/aquasecurity/fanal v0.0.0-20210106083348-3f85e04a8048
 	github.com/aquasecurity/trivy v0.15.0
 	github.com/aquasecurity/trivy-db v0.0.0-20210106051232-62e6657ad501

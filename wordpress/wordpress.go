@@ -16,7 +16,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
-//WpCveInfos is for wpvulndb's json
+//WpCveInfos is for wpscan json
 type WpCveInfos struct {
 	ReleaseDate  string `json:"release_date"`
 	ChangelogURL string `json:"changelog_url"`
@@ -28,7 +28,7 @@ type WpCveInfos struct {
 	Error           string      `json:"error"`
 }
 
-//WpCveInfo is for wpvulndb's json
+//WpCveInfo is for wpscan json
 type WpCveInfo struct {
 	ID        string `json:"id"`
 	Title     string `json:"title"`
@@ -40,35 +40,39 @@ type WpCveInfo struct {
 	FixedIn    string     `json:"fixed_in"`
 }
 
-//References is for wpvulndb's json
+//References is for wpscan json
 type References struct {
 	URL     []string `json:"url"`
 	Cve     []string `json:"cve"`
 	Secunia []string `json:"secunia"`
 }
 
-// FillWordPress access to wpvulndb and fetch scurity alerts and then set to the given ScanResult.
+// DetectWordPressCves access to wpscan and fetch scurity alerts and then set to the given ScanResult.
 // https://wpscan.com/
-func FillWordPress(r *models.ScanResult, token string) (int, error) {
+// TODO move to report
+func DetectWordPressCves(r *models.ScanResult, cnf *c.WpScanConf) (int, error) {
+	if len(r.WordPressPackages) == 0 {
+		return 0, nil
+	}
 	// Core
 	ver := strings.Replace(r.WordPressPackages.CoreVersion(), ".", "", -1)
 	if ver == "" {
 		return 0, xerrors.New("Failed to get WordPress core version")
 	}
 	url := fmt.Sprintf("https://wpscan.com/api/v3/wordpresses/%s", ver)
-	wpVinfos, err := wpscan(url, ver, token)
+	wpVinfos, err := wpscan(url, ver, cnf.Token)
 	if err != nil {
 		return 0, err
 	}
 
 	// Themes
 	themes := r.WordPressPackages.Themes()
-	if c.Conf.WpIgnoreInactive {
+	if cnf.DetectInactive {
 		themes = removeInactives(themes)
 	}
 	for _, p := range themes {
 		url := fmt.Sprintf("https://wpscan.com/api/v3/themes/%s", p.Name)
-		candidates, err := wpscan(url, p.Name, token)
+		candidates, err := wpscan(url, p.Name, cnf.Token)
 		if err != nil {
 			return 0, err
 		}
@@ -78,12 +82,12 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 
 	// Plugins
 	plugins := r.WordPressPackages.Plugins()
-	if c.Conf.WpIgnoreInactive {
+	if cnf.DetectInactive {
 		plugins = removeInactives(plugins)
 	}
 	for _, p := range plugins {
 		url := fmt.Sprintf("https://wpscan.com/api/v3/plugins/%s", p.Name)
-		candidates, err := wpscan(url, p.Name, token)
+		candidates, err := wpscan(url, p.Name, cnf.Token)
 		if err != nil {
 			return 0, err
 		}
@@ -93,7 +97,7 @@ func FillWordPress(r *models.ScanResult, token string) (int, error) {
 
 	for _, wpVinfo := range wpVinfos {
 		if vinfo, ok := r.ScannedCves[wpVinfo.CveID]; ok {
-			vinfo.CveContents[models.WPVulnDB] = wpVinfo.CveContents[models.WPVulnDB]
+			vinfo.CveContents[models.WpScan] = wpVinfo.CveContents[models.WpScan]
 			vinfo.VulnType = wpVinfo.VulnType
 			vinfo.Confidences = append(vinfo.Confidences, wpVinfo.Confidences...)
 			vinfo.WpPackageFixStats = append(vinfo.WpPackageFixStats, wpVinfo.WpPackageFixStats...)
@@ -192,7 +196,7 @@ func extractToVulnInfos(pkgName string, cves []WpCveInfo) (vinfos []models.VulnI
 				CveID: cveID,
 				CveContents: models.NewCveContents(
 					models.CveContent{
-						Type:       models.WPVulnDB,
+						Type:       models.WpScan,
 						CveID:      cveID,
 						Title:      vulnerability.Title,
 						References: refs,
@@ -200,7 +204,7 @@ func extractToVulnInfos(pkgName string, cves []WpCveInfo) (vinfos []models.VulnI
 				),
 				VulnType: vulnerability.VulnType,
 				Confidences: []models.Confidence{
-					models.WPVulnDBMatch,
+					models.WpScanMatch,
 				},
 				WpPackageFixStats: []models.WpPackageFixStatus{{
 					Name:    pkgName,
@@ -233,7 +237,7 @@ loop:
 	if resp.StatusCode == 200 {
 		return string(body), nil
 	} else if resp.StatusCode == 404 {
-		// This package is not in WPVulnDB
+		// This package is not in wpscan
 		return "", nil
 	} else if resp.StatusCode == 429 && retry <= 3 {
 		// 429 Too Many Requests

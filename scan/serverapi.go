@@ -631,7 +631,9 @@ func setupChangelogCache() error {
 // GetScanResults returns ScanResults from
 func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanResults, err error) {
 	parallelExec(func(o osTypeInterface) (err error) {
-		if !(config.Conf.LibsOnly || config.Conf.WordPressOnly) {
+		// if !(config.Conf.LibsOnly || config.Conf.WordPressOnly) {
+		// TODO wordpress
+		if !(config.Conf.LibsOnly) {
 			if err = o.preCure(); err != nil {
 				return err
 			}
@@ -641,15 +643,15 @@ func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanRes
 			if err = o.postScan(); err != nil {
 				return err
 			}
+			if err = o.scanPorts(); err != nil {
+				return xerrors.Errorf("Failed to scan Ports: %w", err)
+			}
 		}
 		if err = o.scanWordPress(); err != nil {
 			return xerrors.Errorf("Failed to scan WordPress: %w", err)
 		}
 		if err = o.scanLibraries(); err != nil {
 			return xerrors.Errorf("Failed to scan Library: %w", err)
-		}
-		if err = o.scanPorts(); err != nil {
-			return xerrors.Errorf("Failed to scan Ports: %w", err)
 		}
 		return nil
 	}, timeoutSec)
@@ -662,6 +664,7 @@ func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanRes
 
 	for _, s := range append(servers, errServers...) {
 		r := s.convertToModel()
+		checkEOL(&r)
 		r.ScannedAt = scannedAt
 		r.ScannedVersion = config.Version
 		r.ScannedRevision = config.Revision
@@ -669,7 +672,6 @@ func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanRes
 		r.ScannedIPv4Addrs = ipv4s
 		r.ScannedIPv6Addrs = ipv6s
 		r.Config.Scan = config.Conf
-		checkEOL(&r)
 		results = append(results, r)
 
 		if 0 < len(r.Warnings) {

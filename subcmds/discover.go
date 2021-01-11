@@ -159,6 +159,10 @@ sqlite3Path = "/path/to/go-msfdb.sqlite3"
 #chatID     = "xxxxxxxxxxx"
 #token = "xxxxxxxxxxxxxxxxxx"
 
+#[wpscan]
+#token = "xxxxxxxxxxx"
+#detectInactive = false
+
 # https://vuls.io/docs/en/usage-settings.html#default-section
 [default]
 #port               = "22"
@@ -206,8 +210,6 @@ host                = "{{$ip}}"
 #cmdPath = "/usr/local/bin/wp"
 #osUser = "wordpress"
 #docRoot = "/path/to/DocumentRoot/"
-#wpVulnDBToken = "xxxxTokenxxxx"
-#ignoreInactive = true
 
 #[servers.{{index $names $i}}.optional]
 #key = "value1"

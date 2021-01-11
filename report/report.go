@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
 	"github.com/future-architect/vuls/cwe"
@@ -90,8 +91,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			return nil, xerrors.Errorf("Failed to detect GitHub Cves: %w", err)
 		}
 
-		wpConf := c.Conf.Servers[r.ServerName].WordPress
-		if err := DetectWordPressCves(&r, &wpConf); err != nil {
+		if err := DetectWordPressCves(&r, &config.Conf.WpScan); err != nil {
 			return nil, xerrors.Errorf("Failed to detect WordPress Cves: %w", err)
 		}
 
@@ -142,9 +142,9 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 	for i, r := range rs {
 		r = r.FilterByCvssOver(c.Conf.CvssScoreOver)
 		r = r.FilterIgnoreCves()
-		r = r.FilterUnfixed()
+		r = r.FilterUnfixed(c.Conf.IgnoreUnfixed)
 		r = r.FilterIgnorePkgs()
-		r = r.FilterInactiveWordPressLibs()
+		r = r.FilterInactiveWordPressLibs(c.Conf.WpScan.DetectInactive)
 		if c.Conf.IgnoreUnscoredCves {
 			r.ScannedCves = r.ScannedCves.FindScoredVulns()
 		}
@@ -215,7 +215,7 @@ func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]c.GitHubConf)
 			return xerrors.Errorf("Failed to parse GitHub owner/repo: %s", ownerRepo)
 		}
 		owner, repo := ss[0], ss[1]
-		n, err := github.FillGitHubSecurityAlerts(r, owner, repo, setting.Token)
+		n, err := github.DetectGitHubSecurityAlerts(r, owner, repo, setting.Token)
 		if err != nil {
 			return xerrors.Errorf("Failed to access GitHub Security Alerts: %w", err)
 		}
@@ -226,15 +226,16 @@ func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]c.GitHubConf)
 }
 
 // DetectWordPressCves detects CVEs of WordPress
-func DetectWordPressCves(r *models.ScanResult, wpCnf *c.WordPressConf) error {
-	if wpCnf.WPVulnDBToken == "" {
+func DetectWordPressCves(r *models.ScanResult, wpCnf *c.WpScanConf) error {
+	if len(r.Packages) == 0 {
 		return nil
 	}
-	n, err := wordpress.FillWordPress(r, wpCnf.WPVulnDBToken)
+	util.Log.Infof("Detect WordPress CVE. pkgs: %d ", len(r.WordPressPackages))
+	n, err := wordpress.DetectWordPressCves(r, wpCnf)
 	if err != nil {
-		return xerrors.Errorf("Failed to detect CVE with wpscan.com: %w", err)
+		return xerrors.Errorf("Failed to detect WordPress CVE: %w", err)
 	}
-	util.Log.Infof("%s: %d CVEs detected with wpscan.com", r.FormatServerName(), n)
+	util.Log.Infof("%s: found %d WordPress CVEs", r.FormatServerName(), n)
 	return nil
 }
 

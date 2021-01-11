@@ -148,8 +148,10 @@ func (r ScanResult) FilterIgnoreCves() ScanResult {
 
 	ignoreCves := []string{}
 	if len(r.Container.Name) == 0 {
+		//TODO pass by args
 		ignoreCves = config.Conf.Servers[r.ServerName].IgnoreCves
 	} else {
+		//TODO pass by args
 		if s, ok := config.Conf.Servers[r.ServerName]; ok {
 			if con, ok := s.Containers[r.Container.Name]; ok {
 				ignoreCves = con.IgnoreCves
@@ -176,8 +178,8 @@ func (r ScanResult) FilterIgnoreCves() ScanResult {
 }
 
 // FilterUnfixed is filter function.
-func (r ScanResult) FilterUnfixed() ScanResult {
-	if !config.Conf.IgnoreUnfixed {
+func (r ScanResult) FilterUnfixed(ignoreUnfixed bool) ScanResult {
+	if !ignoreUnfixed {
 		return r
 	}
 	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
@@ -199,6 +201,7 @@ func (r ScanResult) FilterUnfixed() ScanResult {
 func (r ScanResult) FilterIgnorePkgs() ScanResult {
 	var ignorePkgsRegexps []string
 	if len(r.Container.Name) == 0 {
+		//TODO pass by args
 		ignorePkgsRegexps = config.Conf.Servers[r.ServerName].IgnorePkgsRegexp
 	} else {
 		if s, ok := config.Conf.Servers[r.ServerName]; ok {
@@ -251,8 +254,8 @@ func (r ScanResult) FilterIgnorePkgs() ScanResult {
 }
 
 // FilterInactiveWordPressLibs is filter function.
-func (r ScanResult) FilterInactiveWordPressLibs() ScanResult {
-	if !config.Conf.Servers[r.ServerName].WordPress.IgnoreInactive {
+func (r ScanResult) FilterInactiveWordPressLibs(detectInactive bool) ScanResult {
+	if detectInactive {
 		return r
 	}
 
@@ -423,6 +426,7 @@ func (r ScanResult) isDisplayUpdatableNum() bool {
 	}
 
 	var mode config.ScanMode
+	//TODO pass by args
 	s, _ := config.Conf.Servers[r.ServerName]
 	mode = s.Mode
 
@@ -454,6 +458,7 @@ func (r ScanResult) IsContainer() bool {
 
 // IsDeepScanMode checks if the scan mode is deep scan mode.
 func (r ScanResult) IsDeepScanMode() bool {
+	//TODO pass by args
 	for _, s := range r.Config.Scan.Servers {
 		for _, m := range s.ScanMode {
 			if m == "deep" {

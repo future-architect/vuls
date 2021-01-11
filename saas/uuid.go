@@ -172,8 +172,8 @@ func EnsureUUIDs(configPath string, results models.ScanResults) (err error) {
 		Email      *c.SMTPConf       `toml:"email"`
 		HTTP       *c.HTTPConf       `toml:"http"`
 		Syslog     *c.SyslogConf     `toml:"syslog"`
-		AWS        *c.AWS            `toml:"aws"`
-		Azure      *c.Azure          `toml:"azure"`
+		AWS        *c.AWSConf        `toml:"aws"`
+		Azure      *c.AzureConf      `toml:"azure"`
 		ChatWork   *c.ChatWorkConf   `toml:"chatWork"`
 		Saas       *c.SaasConf       `toml:"saas"`
 
