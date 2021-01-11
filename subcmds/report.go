@@ -63,7 +63,6 @@ func (*ReportCmd) Usage() string {
 		[-format-list]
 		[-format-full-text]
 		[-gzip]
-		[-uuid]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-debug]
 		[-debug-sql]

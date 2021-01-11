@@ -145,7 +145,6 @@ func (r ScanResult) FilterByCvssOver(over float64) ScanResult {
 
 // FilterIgnoreCves is filter function.
 func (r ScanResult) FilterIgnoreCves() ScanResult {
-
 	ignoreCves := []string{}
 	if len(r.Container.Name) == 0 {
 		//TODO pass by args
@@ -458,7 +457,6 @@ func (r ScanResult) IsContainer() bool {
 
 // IsDeepScanMode checks if the scan mode is deep scan mode.
 func (r ScanResult) IsDeepScanMode() bool {
-	//TODO pass by args
 	for _, s := range r.Config.Scan.Servers {
 		for _, m := range s.ScanMode {
 			if m == "deep" {

@@ -101,7 +101,6 @@ func EnsureUUIDs(configPath string, results models.ScanResults) (err error) {
 			return err
 		}
 		server.UUIDs[name] = serverUUID
-		server = cleanForTOMLEncoding(server, c.Conf.Default)
 		c.Conf.Servers[r.ServerName] = server
 
 		if r.IsContainer() {
@@ -116,84 +115,16 @@ func EnsureUUIDs(configPath string, results models.ScanResults) (err error) {
 		server = cleanForTOMLEncoding(server, c.Conf.Default)
 		c.Conf.Servers[name] = server
 	}
-
-	email := &c.Conf.EMail
-	if email.SMTPAddr == "" {
-		email = nil
-	}
-
-	slack := &c.Conf.Slack
-	if slack.HookURL == "" {
-		slack = nil
-	}
-
-	cveDict := &c.Conf.CveDict
-	ovalDict := &c.Conf.OvalDict
-	gost := &c.Conf.Gost
-	exploit := &c.Conf.Exploit
-	metasploit := &c.Conf.Metasploit
-	http := &c.Conf.HTTP
-	if http.URL == "" {
-		http = nil
-	}
-
-	syslog := &c.Conf.Syslog
-	if syslog.Host == "" {
-		syslog = nil
-	}
-
-	aws := &c.Conf.AWS
-	if aws.S3Bucket == "" {
-		aws = nil
-	}
-
-	azure := &c.Conf.Azure
-	if azure.AccountName == "" {
-		azure = nil
-	}
-
-	chatWork := &c.Conf.ChatWork
-	if chatWork.APIToken == "" {
-		chatWork = nil
-	}
-
-	saas := &c.Conf.Saas
-	if saas.GroupID == 0 {
-		saas = nil
+	if c.Conf.Default.WordPress != nil && c.Conf.Default.WordPress.IsZero() {
+		c.Conf.Default.WordPress = nil
 	}
 
 	c := struct {
-		CveDict    *c.GoCveDictConf  `toml:"cveDict"`
-		OvalDict   *c.GovalDictConf  `toml:"ovalDict"`
-		Gost       *c.GostConf       `toml:"gost"`
-		Exploit    *c.ExploitConf    `toml:"exploit"`
-		Metasploit *c.MetasploitConf `toml:"metasploit"`
-		Slack      *c.SlackConf      `toml:"slack"`
-		Email      *c.SMTPConf       `toml:"email"`
-		HTTP       *c.HTTPConf       `toml:"http"`
-		Syslog     *c.SyslogConf     `toml:"syslog"`
-		AWS        *c.AWSConf        `toml:"aws"`
-		Azure      *c.AzureConf      `toml:"azure"`
-		ChatWork   *c.ChatWorkConf   `toml:"chatWork"`
-		Saas       *c.SaasConf       `toml:"saas"`
-
+		Saas    *c.SaasConf             `toml:"saas"`
 		Default c.ServerInfo            `toml:"default"`
 		Servers map[string]c.ServerInfo `toml:"servers"`
 	}{
-		CveDict:    cveDict,
-		OvalDict:   ovalDict,
-		Gost:       gost,
-		Exploit:    exploit,
-		Metasploit: metasploit,
-		Slack:      slack,
-		Email:      email,
-		HTTP:       http,
-		Syslog:     syslog,
-		AWS:        aws,
-		Azure:      azure,
-		ChatWork:   chatWork,
-		Saas:       saas,
-
+		Saas:    &c.Conf.Saas,
 		Default: c.Conf.Default,
 		Servers: c.Conf.Servers,
 	}
@@ -273,6 +204,12 @@ func cleanForTOMLEncoding(server c.ServerInfo, def c.ServerInfo) c.ServerInfo {
 	for k, v := range def.Optional {
 		if vv, ok := server.Optional[k]; ok && v == vv {
 			delete(server.Optional, k)
+		}
+	}
+
+	if server.WordPress != nil {
+		if server.WordPress.IsZero() || reflect.DeepEqual(server.WordPress, def.WordPress) {
+			server.WordPress = nil
 		}
 	}
 

@@ -69,7 +69,6 @@ type Config struct {
 	WpScan WpScanConf `json:"WpScan,omitempty"`
 
 	Saas      SaasConf `json:"-"`
-	UUID      bool     `json:"uuid,omitempty"`
 	DetectIPS bool     `json:"detectIps,omitempty"`
 
 	RefreshCve        bool `json:"refreshCve,omitempty"`

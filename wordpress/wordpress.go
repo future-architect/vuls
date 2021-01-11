@@ -67,7 +67,7 @@ func DetectWordPressCves(r *models.ScanResult, cnf *c.WpScanConf) (int, error) {
 
 	// Themes
 	themes := r.WordPressPackages.Themes()
-	if cnf.DetectInactive {
+	if !cnf.DetectInactive {
 		themes = removeInactives(themes)
 	}
 	for _, p := range themes {
@@ -82,7 +82,7 @@ func DetectWordPressCves(r *models.ScanResult, cnf *c.WpScanConf) (int, error) {
 
 	// Plugins
 	plugins := r.WordPressPackages.Plugins()
-	if cnf.DetectInactive {
+	if !cnf.DetectInactive {
 		plugins = removeInactives(plugins)
 	}
 	for _, p := range plugins {
