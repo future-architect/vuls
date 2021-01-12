@@ -92,7 +92,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
   - [RustSec Advisory Database](https://github.com/RustSec/advisory-db)
 
 - WordPress
-  - [WPVulnDB](https://wpvulndb.com/api)
+  - [wpscan](https://wpscan.com/api)
 
 ### Scan mode
 

@@ -392,8 +392,7 @@ func TestFilterUnfixed(t *testing.T) {
 		},
 	}
 	for i, tt := range tests {
-		config.Conf.IgnoreUnfixed = true
-		actual := tt.in.FilterUnfixed()
+		actual := tt.in.FilterUnfixed(true)
 		if !reflect.DeepEqual(tt.out.ScannedCves, actual.ScannedCves) {
 			o := pp.Sprintf("%v", tt.out.ScannedCves)
 			a := pp.Sprintf("%v", actual.ScannedCves)

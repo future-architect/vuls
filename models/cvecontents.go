@@ -247,7 +247,7 @@ func NewCveContentType(name string) CveContentType {
 	case "microsoft":
 		return Microsoft
 	case "wordpress":
-		return WPVulnDB
+		return WpScan
 	case "amazon":
 		return Amazon
 	case "trivy":
@@ -291,8 +291,8 @@ const (
 	// Microsoft is Microsoft
 	Microsoft CveContentType = "microsoft"
 
-	// WPVulnDB is WordPress
-	WPVulnDB CveContentType = "wpvulndb"
+	// WpScan is WordPress
+	WpScan CveContentType = "wpscan"
 
 	// Trivy is Trivy
 	Trivy CveContentType = "trivy"
@@ -315,7 +315,7 @@ var AllCveContetTypes = CveContentTypes{
 	Amazon,
 	SUSE,
 	DebianSecurityTracker,
-	WPVulnDB,
+	WpScan,
 	Trivy,
 }
 

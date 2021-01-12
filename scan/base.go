@@ -526,7 +526,6 @@ func (l *base) parseSystemctlStatus(stdout string) string {
 }
 
 func (l *base) scanLibraries() (err error) {
-	// image already detected libraries
 	if len(l.LibraryScanners) != 0 {
 		return nil
 	}
@@ -535,6 +534,8 @@ func (l *base) scanLibraries() (err error) {
 	if len(l.ServerInfo.Lockfiles) == 0 && !l.ServerInfo.FindLock {
 		return nil
 	}
+
+	l.log.Info("Scanning Lockfile...")
 
 	libFilemap := map[string][]byte{}
 	detectFiles := l.ServerInfo.Lockfiles
@@ -621,34 +622,14 @@ func (d *DummyFileInfo) IsDir() bool { return false }
 func (d *DummyFileInfo) Sys() interface{} { return nil }
 
 func (l *base) scanWordPress() (err error) {
-	wpOpts := []string{l.ServerInfo.WordPress.OSUser,
-		l.ServerInfo.WordPress.DocRoot,
-		l.ServerInfo.WordPress.CmdPath,
-		l.ServerInfo.WordPress.WPVulnDBToken,
-	}
-	var isScanWp, hasEmptyOpt bool
-	for _, opt := range wpOpts {
-		if opt != "" {
-			isScanWp = true
-			break
-		} else {
-			hasEmptyOpt = true
-		}
-	}
-	if !isScanWp {
+	if l.ServerInfo.WordPress.IsZero() {
 		return nil
 	}
-
-	if hasEmptyOpt {
-		return xerrors.Errorf("%s has empty WordPress opts: %s",
-			l.getServerInfo().GetServerName(), wpOpts)
-	}
-
+	l.log.Info("Scanning WordPress...")
 	cmd := fmt.Sprintf("sudo -u %s -i -- %s cli version --allow-root",
 		l.ServerInfo.WordPress.OSUser,
 		l.ServerInfo.WordPress.CmdPath)
 	if r := exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
-		l.ServerInfo.WordPress.WPVulnDBToken = "secret"
 		return xerrors.Errorf("Failed to exec `%s`. Check the OS user, command path of wp-cli, DocRoot and permission: %#v", cmd, l.ServerInfo.WordPress)
 	}
 
@@ -743,6 +724,7 @@ func (l *base) detectWpPlugins() ([]models.WpPackage, error) {
 }
 
 func (l *base) scanPorts() (err error) {
+	l.log.Info("Scanning listen port...")
 	dest := l.detectScanDest()
 	open, err := l.execPortsScan(dest)
 	if err != nil {
@@ -838,7 +820,7 @@ func (l *base) findPortTestSuccessOn(listenIPPorts []string, searchListenPort mo
 	for _, ipPort := range listenIPPorts {
 		ipPort, err := models.NewPortStat(ipPort)
 		if err != nil {
-			util.Log.Warnf("Failed to find: %+v", err)
+			l.log.Warnf("Failed to find: %+v", err)
 			continue
 		}
 		if searchListenPort.BindAddress == "*" {

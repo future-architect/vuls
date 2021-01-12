@@ -15,270 +15,213 @@ type TOMLLoader struct {
 
 // Load load the configuration TOML file specified by path arg.
 func (c TOMLLoader) Load(pathToToml, keyPass string) error {
-	var conf Config
-	if _, err := toml.DecodeFile(pathToToml, &conf); err != nil {
+	if _, err := toml.DecodeFile(pathToToml, &Conf); err != nil {
 		return err
 	}
-	Conf.EMail = conf.EMail
-	Conf.Slack = conf.Slack
-	Conf.ChatWork = conf.ChatWork
-	Conf.Telegram = conf.Telegram
-	Conf.Saas = conf.Saas
-	Conf.Syslog = conf.Syslog
-	Conf.HTTP = conf.HTTP
-	Conf.AWS = conf.AWS
-	Conf.Azure = conf.Azure
-
-	Conf.CveDict = conf.CveDict
-	Conf.OvalDict = conf.OvalDict
-	Conf.Gost = conf.Gost
-	Conf.Exploit = conf.Exploit
-	Conf.Metasploit = conf.Metasploit
-
-	d := conf.Default
-	Conf.Default = d
-	servers := make(map[string]ServerInfo)
-
 	if keyPass != "" {
-		d.KeyPassword = keyPass
+		Conf.Default.KeyPassword = keyPass
 	}
-
-	index := 0
-	for serverName, v := range conf.Servers {
-		if 0 < len(v.KeyPassword) {
-			return xerrors.Errorf("[Deprecated] KEYPASSWORD IN CONFIG FILE ARE UNSECURE. REMOVE THEM IMMEDIATELY FOR A SECURITY REASONS. THEY WILL BE REMOVED IN A FUTURE RELEASE: %s", serverName)
-		}
-
-		s := ServerInfo{ServerName: serverName}
-		if v.Type != ServerTypePseudo {
-			s.Host = v.Host
-			if len(s.Host) == 0 {
-				return xerrors.Errorf("%s is invalid. host is empty", serverName)
-			}
-
-			s.JumpServer = v.JumpServer
-			if len(s.JumpServer) == 0 {
-				s.JumpServer = d.JumpServer
-			}
-
-			switch {
-			case v.Port != "":
-				s.Port = v.Port
-			case d.Port != "":
-				s.Port = d.Port
-			default:
-				s.Port = "22"
-			}
-
-			switch {
-			case v.User != "":
-				s.User = v.User
-			case d.User != "":
-				s.User = d.User
-			default:
-				if s.Port != "local" {
-					return xerrors.Errorf("%s is invalid. User is empty", serverName)
-				}
-			}
-
-			s.SSHConfigPath = v.SSHConfigPath
-			if len(s.SSHConfigPath) == 0 {
-				s.SSHConfigPath = d.SSHConfigPath
-			}
-
-			s.KeyPath = v.KeyPath
-			if len(s.KeyPath) == 0 {
-				s.KeyPath = d.KeyPath
-			}
-			s.KeyPassword = v.KeyPassword
-			if len(s.KeyPassword) == 0 {
-				s.KeyPassword = d.KeyPassword
-			}
-		}
-
-		s.ScanMode = v.ScanMode
-		if len(s.ScanMode) == 0 {
-			s.ScanMode = d.ScanMode
-			if len(s.ScanMode) == 0 {
-				s.ScanMode = []string{"fast"}
-			}
-		}
-		for _, m := range s.ScanMode {
-			switch m {
-			case "fast":
-				s.Mode.Set(Fast)
-			case "fast-root":
-				s.Mode.Set(FastRoot)
-			case "deep":
-				s.Mode.Set(Deep)
-			case "offline":
-				s.Mode.Set(Offline)
-			default:
-				return xerrors.Errorf("scanMode: %s of %s is invalid. Specify -fast, -fast-root, -deep or offline", m, serverName)
-			}
-		}
-		if err := s.Mode.validate(); err != nil {
-			return xerrors.Errorf("%s in %s", err, serverName)
-		}
-
-		s.CpeNames = v.CpeNames
-		if len(s.CpeNames) == 0 {
-			s.CpeNames = d.CpeNames
-		}
-
-		s.Lockfiles = v.Lockfiles
-		if len(s.Lockfiles) == 0 {
-			s.Lockfiles = d.Lockfiles
-		}
-
-		s.FindLock = v.FindLock
-
-		for i, n := range s.CpeNames {
-			uri, err := toCpeURI(n)
-			if err != nil {
-				return xerrors.Errorf("Failed to parse CPENames %s in %s, err: %w", n, serverName, err)
-			}
-			s.CpeNames[i] = uri
-		}
-
-		s.ContainersIncluded = v.ContainersIncluded
-		if len(s.ContainersIncluded) == 0 {
-			s.ContainersIncluded = d.ContainersIncluded
-		}
-
-		s.ContainersExcluded = v.ContainersExcluded
-		if len(s.ContainersExcluded) == 0 {
-			s.ContainersExcluded = d.ContainersExcluded
-		}
-
-		s.ContainerType = v.ContainerType
-		if len(s.ContainerType) == 0 {
-			s.ContainerType = d.ContainerType
-		}
-
-		s.Containers = v.Containers
-		for contName, cont := range s.Containers {
-			cont.IgnoreCves = append(cont.IgnoreCves, d.IgnoreCves...)
-			s.Containers[contName] = cont
-		}
-
-		s.OwaspDCXMLPath = v.OwaspDCXMLPath
-		if len(s.OwaspDCXMLPath) == 0 {
-			s.OwaspDCXMLPath = d.OwaspDCXMLPath
-		}
-
-		s.Memo = v.Memo
-		if s.Memo == "" {
-			s.Memo = d.Memo
-		}
-
-		s.IgnoreCves = v.IgnoreCves
-		for _, cve := range d.IgnoreCves {
-			found := false
-			for _, c := range s.IgnoreCves {
-				if cve == c {
-					found = true
-					break
-				}
-			}
-			if !found {
-				s.IgnoreCves = append(s.IgnoreCves, cve)
-			}
-		}
-
-		s.IgnorePkgsRegexp = v.IgnorePkgsRegexp
-		for _, pkg := range d.IgnorePkgsRegexp {
-			found := false
-			for _, p := range s.IgnorePkgsRegexp {
-				if pkg == p {
-					found = true
-					break
-				}
-			}
-			if !found {
-				s.IgnorePkgsRegexp = append(s.IgnorePkgsRegexp, pkg)
-			}
-		}
-		for _, reg := range s.IgnorePkgsRegexp {
-			_, err := regexp.Compile(reg)
-			if err != nil {
-				return xerrors.Errorf("Failed to parse %s in %s. err: %w", reg, serverName, err)
-			}
-		}
-		for contName, cont := range s.Containers {
-			for _, reg := range cont.IgnorePkgsRegexp {
-				_, err := regexp.Compile(reg)
-				if err != nil {
-					return xerrors.Errorf("Failed to parse %s in %s@%s. err: %w",
-						reg, contName, serverName, err)
-				}
-			}
-		}
-
-		opt := map[string]interface{}{}
-		for k, v := range d.Optional {
-			opt[k] = v
-		}
-		for k, v := range v.Optional {
-			opt[k] = v
-		}
-		s.Optional = opt
-
-		s.Enablerepo = v.Enablerepo
-		if len(s.Enablerepo) == 0 {
-			s.Enablerepo = d.Enablerepo
-		}
-		if len(s.Enablerepo) != 0 {
-			for _, repo := range s.Enablerepo {
-				switch repo {
-				case "base", "updates":
-					// nop
-				default:
-					return xerrors.Errorf(
-						"For now, enablerepo have to be base or updates: %s, servername: %s",
-						s.Enablerepo, serverName)
-				}
-			}
-		}
-
-		s.GitHubRepos = v.GitHubRepos
-		for ownerRepo, githubSetting := range s.GitHubRepos {
-			if ss := strings.Split(ownerRepo, "/"); len(ss) != 2 {
-				return xerrors.Errorf("Failed to parse GitHub owner/repo: %s in %s",
-					ownerRepo, serverName)
-			}
-			if githubSetting.Token == "" {
-				return xerrors.Errorf("GitHub owner/repo: %s in %s token is empty",
-					ownerRepo, serverName)
-			}
-		}
-
-		s.UUIDs = v.UUIDs
-		s.Type = v.Type
-
-		s.WordPress.WPVulnDBToken = v.WordPress.WPVulnDBToken
-		s.WordPress.CmdPath = v.WordPress.CmdPath
-		s.WordPress.DocRoot = v.WordPress.DocRoot
-		s.WordPress.OSUser = v.WordPress.OSUser
-		s.WordPress.IgnoreInactive = v.WordPress.IgnoreInactive
-
-		s.IgnoredJSONKeys = v.IgnoredJSONKeys
-		if len(s.IgnoredJSONKeys) == 0 {
-			s.IgnoredJSONKeys = d.IgnoredJSONKeys
-		}
-
-		s.LogMsgAnsiColor = Colors[index%len(Colors)]
-		index++
-
-		servers[serverName] = s
-	}
-	Conf.Servers = servers
 
 	Conf.CveDict.Init()
 	Conf.OvalDict.Init()
 	Conf.Gost.Init()
 	Conf.Exploit.Init()
 	Conf.Metasploit.Init()
+
+	index := 0
+	for name, server := range Conf.Servers {
+		server.ServerName = name
+		if 0 < len(server.KeyPassword) {
+			return xerrors.Errorf("[Deprecated] KEYPASSWORD IN CONFIG FILE ARE UNSECURE. REMOVE THEM IMMEDIATELY FOR A SECURITY REASONS. THEY WILL BE REMOVED IN A FUTURE RELEASE: %s", name)
+		}
+
+		if err := setDefaultIfEmpty(&server, Conf.Default); err != nil {
+			return xerrors.Errorf("Failed to set default value to config. server: %s, err: %w", name, err)
+		}
+
+		if err := setScanMode(&server, Conf.Default); err != nil {
+			return xerrors.Errorf("Failed to set ScanMode: %w", err)
+		}
+
+		if err := setScanModules(&server, Conf.Default); err != nil {
+			return xerrors.Errorf("Failed to set ScanModule: %w", err)
+		}
+
+		if len(server.CpeNames) == 0 {
+			server.CpeNames = Conf.Default.CpeNames
+		}
+		for i, n := range server.CpeNames {
+			uri, err := toCpeURI(n)
+			if err != nil {
+				return xerrors.Errorf("Failed to parse CPENames %s in %s, err: %w", n, name, err)
+			}
+			server.CpeNames[i] = uri
+		}
+
+		for _, cve := range Conf.Default.IgnoreCves {
+			found := false
+			for _, c := range server.IgnoreCves {
+				if cve == c {
+					found = true
+					break
+				}
+			}
+			if !found {
+				server.IgnoreCves = append(server.IgnoreCves, cve)
+			}
+		}
+
+		for _, pkg := range Conf.Default.IgnorePkgsRegexp {
+			found := false
+			for _, p := range server.IgnorePkgsRegexp {
+				if pkg == p {
+					found = true
+					break
+				}
+			}
+			if !found {
+				server.IgnorePkgsRegexp = append(server.IgnorePkgsRegexp, pkg)
+			}
+		}
+		for _, reg := range server.IgnorePkgsRegexp {
+			_, err := regexp.Compile(reg)
+			if err != nil {
+				return xerrors.Errorf("Failed to parse %s in %s. err: %w", reg, name, err)
+			}
+		}
+		for contName, cont := range server.Containers {
+			for _, reg := range cont.IgnorePkgsRegexp {
+				_, err := regexp.Compile(reg)
+				if err != nil {
+					return xerrors.Errorf("Failed to parse %s in %s@%s. err: %w",
+						reg, contName, name, err)
+				}
+			}
+		}
+
+		for ownerRepo, githubSetting := range server.GitHubRepos {
+			if ss := strings.Split(ownerRepo, "/"); len(ss) != 2 {
+				return xerrors.Errorf("Failed to parse GitHub owner/repo: %s in %s",
+					ownerRepo, name)
+			}
+			if githubSetting.Token == "" {
+				return xerrors.Errorf("GitHub owner/repo: %s in %s token is empty",
+					ownerRepo, name)
+			}
+		}
+
+		if len(server.Enablerepo) == 0 {
+			server.Enablerepo = Conf.Default.Enablerepo
+		}
+		if len(server.Enablerepo) != 0 {
+			for _, repo := range server.Enablerepo {
+				switch repo {
+				case "base", "updates":
+					// nop
+				default:
+					return xerrors.Errorf(
+						"For now, enablerepo have to be base or updates: %s",
+						server.Enablerepo)
+				}
+			}
+		}
+
+		server.LogMsgAnsiColor = Colors[index%len(Colors)]
+		index++
+
+		Conf.Servers[name] = server
+	}
+	return nil
+}
+
+func setDefaultIfEmpty(server *ServerInfo, d ServerInfo) error {
+	if server.Type != ServerTypePseudo {
+		if len(server.Host) == 0 {
+			return xerrors.Errorf("server.host is empty")
+		}
+
+		if len(server.JumpServer) == 0 {
+			server.JumpServer = Conf.Default.JumpServer
+		}
+
+		if server.Port == "" {
+			if Conf.Default.Port != "" {
+				server.Port = Conf.Default.Port
+			} else {
+				server.Port = "22"
+			}
+		}
+
+		if server.User == "" {
+			if Conf.Default.User != "" {
+				server.User = Conf.Default.User
+			}
+			if server.Port != "local" {
+				return xerrors.Errorf("server.user is empty")
+			}
+		}
+
+		if server.SSHConfigPath == "" {
+			server.SSHConfigPath = Conf.Default.SSHConfigPath
+		}
+
+		if server.KeyPath == "" {
+			server.KeyPath = Conf.Default.KeyPath
+		}
+
+		if server.KeyPassword == "" {
+			server.KeyPassword = Conf.Default.KeyPassword
+		}
+	}
+
+	if len(server.Lockfiles) == 0 {
+		server.Lockfiles = Conf.Default.Lockfiles
+	}
+
+	if len(server.ContainersIncluded) == 0 {
+		server.ContainersIncluded = Conf.Default.ContainersIncluded
+	}
+
+	if len(server.ContainersExcluded) == 0 {
+		server.ContainersExcluded = Conf.Default.ContainersExcluded
+	}
+
+	if server.ContainerType == "" {
+		server.ContainerType = Conf.Default.ContainerType
+	}
+
+	for contName, cont := range server.Containers {
+		cont.IgnoreCves = append(cont.IgnoreCves, Conf.Default.IgnoreCves...)
+		server.Containers[contName] = cont
+	}
+
+	if server.OwaspDCXMLPath == "" {
+		server.OwaspDCXMLPath = Conf.Default.OwaspDCXMLPath
+	}
+
+	if server.Memo == "" {
+		server.Memo = Conf.Default.Memo
+	}
+
+	// TODO set default WordPress
+	if server.WordPress == nil {
+		server.WordPress = &WordPressConf{}
+	}
+	//TODO set nil in config re-generate in saas subcmd
+
+	if len(server.IgnoredJSONKeys) == 0 {
+		server.IgnoredJSONKeys = Conf.Default.IgnoredJSONKeys
+	}
+
+	opt := map[string]interface{}{}
+	for k, v := range Conf.Default.Optional {
+		opt[k] = v
+	}
+	for k, v := range server.Optional {
+		opt[k] = v
+	}
+	server.Optional = opt
+
 	return nil
 }
 

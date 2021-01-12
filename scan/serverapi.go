@@ -173,25 +173,20 @@ func PrintSSHableServerNames() bool {
 
 // InitServers detect the kind of OS distribution of target servers
 func InitServers(timeoutSec int) error {
-	// use global servers, errServers when scan containers
-	servers, errServers = detectServerOSes(timeoutSec)
-	if len(servers) == 0 {
-		return xerrors.New("No scannable base servers")
+	hosts, errHosts := detectServerOSes(timeoutSec)
+	if len(hosts) == 0 {
+		return xerrors.New("No scannable host OS")
 	}
+	containers, errContainers := detectContainerOSes(hosts, timeoutSec)
 
-	// scan additional servers
-	var actives, inactives []osTypeInterface
-	oks, errs := detectContainerOSes(timeoutSec)
-	actives = append(actives, oks...)
-	inactives = append(inactives, errs...)
-
-	if config.Conf.ContainersOnly {
-		servers = actives
-		errServers = inactives
-	} else {
-		servers = append(servers, actives...)
-		errServers = append(errServers, inactives...)
+	// set to pkg global variable
+	for _, host := range hosts {
+		if !host.getServerInfo().ContainersOnly {
+			servers = append(servers, host)
+		}
 	}
+	servers = append(servers, containers...)
+	errServers = append(errHosts, errContainers...)
 
 	if len(servers) == 0 {
 		return xerrors.New("No scannable servers")
@@ -260,11 +255,11 @@ func detectServerOSes(timeoutSec int) (servers, errServers []osTypeInterface) {
 	return
 }
 
-func detectContainerOSes(timeoutSec int) (actives, inactives []osTypeInterface) {
+func detectContainerOSes(hosts []osTypeInterface, timeoutSec int) (actives, inactives []osTypeInterface) {
 	util.Log.Info("Detecting OS of containers... ")
-	osTypesChan := make(chan []osTypeInterface, len(servers))
+	osTypesChan := make(chan []osTypeInterface, len(hosts))
 	defer close(osTypesChan)
-	for _, s := range servers {
+	for _, s := range hosts {
 		go func(s osTypeInterface) {
 			defer func() {
 				if p := recover(); p != nil {
@@ -277,7 +272,7 @@ func detectContainerOSes(timeoutSec int) (actives, inactives []osTypeInterface) 
 	}
 
 	timeout := time.After(time.Duration(timeoutSec) * time.Second)
-	for i := 0; i < len(servers); i++ {
+	for i := 0; i < len(hosts); i++ {
 		select {
 		case res := <-osTypesChan:
 			for _, osi := range res {
@@ -495,7 +490,6 @@ func Scan(timeoutSec int) error {
 		}
 	}()
 
-	util.Log.Info("Scanning OS packages...")
 	scannedAt := time.Now()
 	dir, err := EnsureResultDir(scannedAt)
 	if err != nil {
@@ -631,7 +625,7 @@ func setupChangelogCache() error {
 // GetScanResults returns ScanResults from
 func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanResults, err error) {
 	parallelExec(func(o osTypeInterface) (err error) {
-		if !(config.Conf.LibsOnly || config.Conf.WordPressOnly) {
+		if o.getServerInfo().Module.IsScanOSPkg() {
 			if err = o.preCure(); err != nil {
 				return err
 			}
@@ -642,14 +636,20 @@ func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanRes
 				return err
 			}
 		}
-		if err = o.scanWordPress(); err != nil {
-			return xerrors.Errorf("Failed to scan WordPress: %w", err)
+		if o.getServerInfo().Module.IsScanPort() {
+			if err = o.scanPorts(); err != nil {
+				return xerrors.Errorf("Failed to scan Ports: %w", err)
+			}
 		}
-		if err = o.scanLibraries(); err != nil {
-			return xerrors.Errorf("Failed to scan Library: %w", err)
+		if o.getServerInfo().Module.IsScanWordPress() {
+			if err = o.scanWordPress(); err != nil {
+				return xerrors.Errorf("Failed to scan WordPress: %w", err)
+			}
 		}
-		if err = o.scanPorts(); err != nil {
-			return xerrors.Errorf("Failed to scan Ports: %w", err)
+		if o.getServerInfo().Module.IsScanLockFile() {
+			if err = o.scanLibraries(); err != nil {
+				return xerrors.Errorf("Failed to scan Library: %w", err)
+			}
 		}
 		return nil
 	}, timeoutSec)
@@ -662,6 +662,7 @@ func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanRes
 
 	for _, s := range append(servers, errServers...) {
 		r := s.convertToModel()
+		checkEOL(&r)
 		r.ScannedAt = scannedAt
 		r.ScannedVersion = config.Version
 		r.ScannedRevision = config.Revision
@@ -669,7 +670,6 @@ func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanRes
 		r.ScannedIPv4Addrs = ipv4s
 		r.ScannedIPv6Addrs = ipv6s
 		r.Config.Scan = config.Conf
-		checkEOL(&r)
 		results = append(results, r)
 
 		if 0 < len(r.Warnings) {

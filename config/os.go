@@ -59,18 +59,21 @@ const (
 	ServerTypePseudo = "pseudo"
 )
 
+// EOL has End-of-Life information
 type EOL struct {
 	StandardSupportUntil time.Time
 	ExtendedSupportUntil time.Time
 	Ended                bool
 }
 
+// IsStandardSupportEnded checks now is under standard support
 func (e EOL) IsStandardSupportEnded(now time.Time) bool {
 	return e.Ended ||
 		!e.ExtendedSupportUntil.IsZero() && e.StandardSupportUntil.IsZero() ||
 		!e.StandardSupportUntil.IsZero() && now.After(e.StandardSupportUntil)
 }
 
+// IsExtendedSuppportEnded checks now is under extended support
 func (e EOL) IsExtendedSuppportEnded(now time.Time) bool {
 	if e.Ended {
 		return true
@@ -82,6 +85,7 @@ func (e EOL) IsExtendedSuppportEnded(now time.Time) bool {
 		e.ExtendedSupportUntil.IsZero() && now.After(e.StandardSupportUntil)
 }
 
+// GetEOL return EOL information for the OS-release passed by args
 // https://github.com/aquasecurity/trivy/blob/master/pkg/detector/ospkg/redhat/redhat.go#L20
 func GetEOL(family, release string) (eol EOL, found bool) {
 	switch family {

@@ -306,7 +306,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		})
 	}
 
-	if v, ok := v.CveContents[WPVulnDB]; ok {
+	if v, ok := v.CveContents[WpScan]; ok {
 		values = append(values, CveContentStr{
 			Type:  "WPVDB",
 			Value: v.Title,
@@ -810,8 +810,8 @@ const (
 	// GitHubMatchStr is a String representation of GitHubMatch
 	GitHubMatchStr = "GitHubMatch"
 
-	// WPVulnDBMatchStr is a String representation of WordPress VulnDB scanning
-	WPVulnDBMatchStr = "WPVulnDBMatch"
+	// WpScanMatchStr is a String representation of WordPress VulnDB scanning
+	WpScanMatchStr = "WpScanMatch"
 
 	// FailedToGetChangelog is a String representation of FailedToGetChangelog
 	FailedToGetChangelog = "FailedToGetChangelog"
@@ -851,6 +851,6 @@ var (
 	// GitHubMatch is a ranking how confident the CVE-ID was detected correctly
 	GitHubMatch = Confidence{97, GitHubMatchStr, 2}
 
-	// WPVulnDBMatch is a ranking how confident the CVE-ID was detected correctly
-	WPVulnDBMatch = Confidence{100, WPVulnDBMatchStr, 0}
+	// WpScanMatch is a ranking how confident the CVE-ID was detected correctly
+	WpScanMatch = Confidence{100, WpScanMatchStr, 0}
 )

@@ -145,11 +145,12 @@ func (r ScanResult) FilterByCvssOver(over float64) ScanResult {
 
 // FilterIgnoreCves is filter function.
 func (r ScanResult) FilterIgnoreCves() ScanResult {
-
 	ignoreCves := []string{}
 	if len(r.Container.Name) == 0 {
+		//TODO pass by args
 		ignoreCves = config.Conf.Servers[r.ServerName].IgnoreCves
 	} else {
+		//TODO pass by args
 		if s, ok := config.Conf.Servers[r.ServerName]; ok {
 			if con, ok := s.Containers[r.Container.Name]; ok {
 				ignoreCves = con.IgnoreCves
@@ -176,8 +177,8 @@ func (r ScanResult) FilterIgnoreCves() ScanResult {
 }
 
 // FilterUnfixed is filter function.
-func (r ScanResult) FilterUnfixed() ScanResult {
-	if !config.Conf.IgnoreUnfixed {
+func (r ScanResult) FilterUnfixed(ignoreUnfixed bool) ScanResult {
+	if !ignoreUnfixed {
 		return r
 	}
 	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
@@ -199,6 +200,7 @@ func (r ScanResult) FilterUnfixed() ScanResult {
 func (r ScanResult) FilterIgnorePkgs() ScanResult {
 	var ignorePkgsRegexps []string
 	if len(r.Container.Name) == 0 {
+		//TODO pass by args
 		ignorePkgsRegexps = config.Conf.Servers[r.ServerName].IgnorePkgsRegexp
 	} else {
 		if s, ok := config.Conf.Servers[r.ServerName]; ok {
@@ -251,8 +253,8 @@ func (r ScanResult) FilterIgnorePkgs() ScanResult {
 }
 
 // FilterInactiveWordPressLibs is filter function.
-func (r ScanResult) FilterInactiveWordPressLibs() ScanResult {
-	if !config.Conf.Servers[r.ServerName].WordPress.IgnoreInactive {
+func (r ScanResult) FilterInactiveWordPressLibs(detectInactive bool) ScanResult {
+	if detectInactive {
 		return r
 	}
 
@@ -348,16 +350,23 @@ func (r ScanResult) FormatTextReportHeader() string {
 		buf.WriteString("=")
 	}
 
-	return fmt.Sprintf("%s\n%s\n%s, %s, %s, %s, %s, %s\n",
+	pkgs := r.FormatUpdatablePacksSummary()
+	if 0 < len(r.WordPressPackages) {
+		pkgs = fmt.Sprintf("%s, %d WordPress pkgs", pkgs, len(r.WordPressPackages))
+	}
+	if 0 < len(r.LibraryScanners) {
+		pkgs = fmt.Sprintf("%s, %d libs", pkgs, r.LibraryScanners.Total())
+	}
+
+	return fmt.Sprintf("%s\n%s\n%s, %s, %s, %s, %s\n%s\n",
 		r.ServerInfo(),
 		buf.String(),
 		r.ScannedCves.FormatCveSummary(),
 		r.ScannedCves.FormatFixedStatus(r.Packages),
-		r.FormatUpdatablePacksSummary(),
 		r.FormatExploitCveSummary(),
 		r.FormatMetasploitCveSummary(),
 		r.FormatAlertSummary(),
-	)
+		pkgs)
 }
 
 // FormatUpdatablePacksSummary returns a summary of updatable packages
@@ -388,7 +397,7 @@ func (r ScanResult) FormatExploitCveSummary() string {
 			nExploitCve++
 		}
 	}
-	return fmt.Sprintf("%d exploits", nExploitCve)
+	return fmt.Sprintf("%d poc", nExploitCve)
 }
 
 // FormatMetasploitCveSummary returns a summary of exploit cve
@@ -399,7 +408,7 @@ func (r ScanResult) FormatMetasploitCveSummary() string {
 			nMetasploitCve++
 		}
 	}
-	return fmt.Sprintf("%d modules", nMetasploitCve)
+	return fmt.Sprintf("%d exploits", nMetasploitCve)
 }
 
 // FormatAlertSummary returns a summary of CERT alerts
@@ -423,6 +432,7 @@ func (r ScanResult) isDisplayUpdatableNum() bool {
 	}
 
 	var mode config.ScanMode
+	//TODO pass by args
 	s, _ := config.Conf.Servers[r.ServerName]
 	mode = s.Mode
 
@@ -455,10 +465,8 @@ func (r ScanResult) IsContainer() bool {
 // IsDeepScanMode checks if the scan mode is deep scan mode.
 func (r ScanResult) IsDeepScanMode() bool {
 	for _, s := range r.Config.Scan.Servers {
-		for _, m := range s.ScanMode {
-			if m == "deep" {
-				return true
-			}
+		if ok := s.Mode.IsDeep(); ok {
+			return true
 		}
 	}
 	return false

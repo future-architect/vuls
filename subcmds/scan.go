@@ -39,9 +39,6 @@ func (*ScanCmd) Usage() string {
 		[-log-dir=/path/to/log]
 		[-cachedb-path=/path/to/cache.db]
 		[-ssh-native-insecure]
-		[-containers-only]
-		[-libs-only]
-		[-wordpress-only]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-ask-key-password]
 		[-timeout=300]
@@ -78,15 +75,6 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 	f.BoolVar(&c.Conf.SSHNative, "ssh-native-insecure", false,
 		"Use Native Go implementation of SSH. Default: Use the external command")
-
-	f.BoolVar(&c.Conf.ContainersOnly, "containers-only", false,
-		"Scan running containers only. Default: Scan both of hosts and running containers")
-
-	f.BoolVar(&c.Conf.LibsOnly, "libs-only", false,
-		"Scan libraries (lock files) specified in config.toml only.")
-
-	f.BoolVar(&c.Conf.WordPressOnly, "wordpress-only", false,
-		"Scan WordPress only.")
 
 	f.StringVar(&c.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
@@ -200,7 +188,6 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	util.Log.Info("Detecting IPS identifiers... ")
 	scan.DetectIPSs(p.timeoutSec)
 
-	util.Log.Info("Scanning... ")
 	if err := scan.Scan(p.scanTimeoutSec); err != nil {
 		util.Log.Errorf("Failed to scan. err: %+v", err)
 		return subcommands.ExitFailure

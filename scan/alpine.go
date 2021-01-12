@@ -73,7 +73,6 @@ func (o *alpine) apkUpdate() error {
 }
 
 func (o *alpine) preCure() error {
-	o.log.Infof("Scanning in %s", o.getServerInfo().Mode)
 	if err := o.detectIPAddr(); err != nil {
 		o.log.Warnf("Failed to detect IP addresses: %s", err)
 		o.warns = append(o.warns, err)
@@ -92,6 +91,7 @@ func (o *alpine) detectIPAddr() (err error) {
 }
 
 func (o *alpine) scanPackages() error {
+	o.log.Infof("Scanning OS pkg in %s", o.getServerInfo().Mode)
 	if err := o.apkUpdate(); err != nil {
 		return err
 	}

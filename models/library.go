@@ -30,6 +30,13 @@ func (lss LibraryScanners) Find(path, name string) map[string]types.Library {
 	return filtered
 }
 
+func (lss LibraryScanners) Total() (total int) {
+	for _, lib := range lss {
+		total += len(lib.Libs)
+	}
+	return
+}
+
 // LibraryScanner has libraries information
 type LibraryScanner struct {
 	Path string

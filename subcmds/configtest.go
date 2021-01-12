@@ -67,9 +67,6 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.Conf.SSHNative, "ssh-native-insecure", false,
 		"Use Native Go implementation of SSH. Default: Use the external command")
 
-	f.BoolVar(&c.Conf.ContainersOnly, "containers-only", false,
-		"Containers only. Default: Test both of hosts and containers")
-
 	f.BoolVar(&c.Conf.Vvv, "vvv", false, "ssh -vvv")
 }
 

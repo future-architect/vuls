@@ -2,9 +2,9 @@ package report
 
 import (
 	"fmt"
+	"log/syslog"
 	"strings"
 
-	syslog "github.com/RackSec/srslog"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
