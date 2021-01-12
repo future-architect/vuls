@@ -324,3 +324,50 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 		})
 	}
 }
+
+func Test_majorDotMinor(t *testing.T) {
+	type args struct {
+		osVer string
+	}
+	tests := []struct {
+		name              string
+		args              args
+		wantMajorDotMinor string
+	}{
+		{
+			name: "empty",
+			args: args{
+				osVer: "",
+			},
+			wantMajorDotMinor: "",
+		},
+		{
+			name: "major",
+			args: args{
+				osVer: "3",
+			},
+			wantMajorDotMinor: "3",
+		},
+		{
+			name: "major dot minor",
+			args: args{
+				osVer: "3.1",
+			},
+			wantMajorDotMinor: "3.1",
+		},
+		{
+			name: "major dot minor dot release",
+			args: args{
+				osVer: "3.1.4",
+			},
+			wantMajorDotMinor: "3.1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotMajorDotMinor := majorDotMinor(tt.args.osVer); gotMajorDotMinor != tt.wantMajorDotMinor {
+				t.Errorf("majorDotMinor() = %v, want %v", gotMajorDotMinor, tt.wantMajorDotMinor)
+			}
+		})
+	}
+}

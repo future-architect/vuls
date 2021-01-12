@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"strings"
 	"time"
 )
@@ -211,7 +212,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"3.10": {StandardSupportUntil: time.Date(2021, 5, 1, 23, 59, 59, 0, time.UTC)},
 			"3.11": {StandardSupportUntil: time.Date(2021, 11, 1, 23, 59, 59, 0, time.UTC)},
 			"3.12": {StandardSupportUntil: time.Date(2022, 5, 1, 23, 59, 59, 0, time.UTC)},
-		}[release]
+		}[majorDotMinor(release)]
 	case FreeBSD:
 		// https://www.freebsd.org/security/
 		eol, found = map[string]EOL{
@@ -228,6 +229,14 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 
 func major(osVer string) (majorVersion string) {
 	return strings.Split(osVer, ".")[0]
+}
+
+func majorDotMinor(osVer string) (majorDotMinor string) {
+	ss := strings.SplitN(osVer, ".", 3)
+	if len(ss) == 1 {
+		return osVer
+	}
+	return fmt.Sprintf("%s.%s", ss[0], ss[1])
 }
 
 func isAmazonLinux1(osRelease string) bool {
