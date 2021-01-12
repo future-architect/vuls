@@ -458,10 +458,8 @@ func (r ScanResult) IsContainer() bool {
 // IsDeepScanMode checks if the scan mode is deep scan mode.
 func (r ScanResult) IsDeepScanMode() bool {
 	for _, s := range r.Config.Scan.Servers {
-		for _, m := range s.ScanMode {
-			if m == "deep" {
-				return true
-			}
+		if ok := s.Mode.IsDeep(); ok {
+			return true
 		}
 	}
 	return false

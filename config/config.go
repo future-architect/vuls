@@ -45,8 +45,6 @@ type Config struct {
 
 	//TODO remove
 	ContainersOnly bool `json:"containersOnly,omitempty"`
-	LibsOnly       bool `json:"libsOnly,omitempty"`
-	// WordPressOnly  bool `json:"wordpressOnly,omitempty"`
 
 	CacheDBPath     string `json:"cacheDBPath,omitempty"`
 	TrivyCacheDBDir string `json:"trivyCacheDBDir,omitempty"`
@@ -90,8 +88,6 @@ type Config struct {
 	FormatCsvList     bool `json:"formatCsvList,omitempty"`
 	GZIP              bool `json:"gzip,omitempty"`
 	Diff              bool `json:"diff,omitempty"`
-	//TODO
-	// WpIgnoreInactive  bool `json:"wpIgnoreInactive,omitempty"`
 }
 
 // ValidateOnConfigtest validates
@@ -345,7 +341,7 @@ type AzureConf struct {
 	ContainerName string `json:"containerName"`
 }
 
-// wpscan is wpscan.com config
+// WpScanConf is wpscan.com config
 type WpScanConf struct {
 	Token          string `toml:"Token,omitempty" json:"-"`
 	DetectInactive bool   `toml:"detectInactive,omitempty" json:"detectInactive,omitempty"`
@@ -363,6 +359,7 @@ type ServerInfo struct {
 	KeyPassword        string                      `json:"-" toml:"-"`
 	CpeNames           []string                    `toml:"cpeNames,omitempty" json:"cpeNames,omitempty"`
 	ScanMode           []string                    `toml:"scanMode,omitempty" json:"scanMode,omitempty"`
+	ScanModules        []string                    `toml:"scanModules,omitempty" json:"scanModules,omitempty"`
 	OwaspDCXMLPath     string                      `toml:"owaspDCXMLPath,omitempty" json:"owaspDCXMLPath,omitempty"`
 	ContainersIncluded []string                    `toml:"containersIncluded,omitempty" json:"containersIncluded,omitempty"`
 	ContainersExcluded []string                    `toml:"containersExcluded,omitempty" json:"containersExcluded,omitempty"`
@@ -378,21 +375,18 @@ type ServerInfo struct {
 	Lockfiles          []string                    `toml:"lockfiles,omitempty" json:"lockfiles,omitempty"`   // ie) path/to/package-lock.json
 	FindLock           bool                        `toml:"findLock,omitempty" json:"findLock,omitempty"`
 	Type               string                      `toml:"type,omitempty" json:"type,omitempty"` // "pseudo" or ""
-
-	//TODO remove!? also libsonly, containers only, host only
-	WordPress     *WordPressConf `toml:"wordpress,omitempty" json:"wordpress,omitempty"`
-	WordPressOnly bool           `toml:"wordPressOnly,omitempty" json:"wordPressOnly,omitempty"`
-
-	IgnoredJSONKeys []string `toml:"ignoredJSONKeys,omitempty" json:"ignoredJSONKeys,omitempty"`
+	IgnoredJSONKeys    []string                    `toml:"ignoredJSONKeys,omitempty" json:"ignoredJSONKeys,omitempty"`
+	IPv4Addrs          []string                    `toml:"-" json:"ipv4Addrs,omitempty"`
+	IPv6Addrs          []string                    `toml:"-" json:"ipv6Addrs,omitempty"`
+	IPSIdentifiers     map[IPS]string              `toml:"-" json:"ipsIdentifiers,omitempty"`
+	WordPress          *WordPressConf              `toml:"wordpress,omitempty" json:"wordpress,omitempty"`
 
 	// internal use
-	IPv4Addrs       []string       `toml:"-" json:"ipv4Addrs,omitempty"`
-	IPv6Addrs       []string       `toml:"-" json:"ipv6Addrs,omitempty"`
-	IPSIdentifiers  map[IPS]string `toml:"-" json:"ipsIdentifiers,omitempty"`
-	LogMsgAnsiColor string         `toml:"-" json:"-"` // DebugLog Color
-	Container       Container      `toml:"-" json:"-"`
-	Distro          Distro         `toml:"-" json:"-"`
-	Mode            ScanMode       `toml:"-" json:"-"`
+	LogMsgAnsiColor string     `toml:"-" json:"-"` // DebugLog Color
+	Container       Container  `toml:"-" json:"-"`
+	Distro          Distro     `toml:"-" json:"-"`
+	Mode            ScanMode   `toml:"-" json:"-"`
+	Module          ScanModule `toml:"-" json:"-"`
 }
 
 // ContainerSetting is used for loading container setting in config.toml
@@ -410,6 +404,7 @@ type WordPressConf struct {
 	CmdPath string `toml:"cmdPath,omitempty" json:"cmdPath,omitempty"`
 }
 
+// IsZero return  whether this struct is not specified in config.toml
 func (cnf WordPressConf) IsZero() bool {
 	return cnf.OSUser == "" && cnf.DocRoot == "" && cnf.CmdPath == ""
 }

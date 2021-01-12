@@ -44,7 +44,6 @@ func (*ReportCmd) Usage() string {
 		[-refresh-cve]
 		[-cvss-over=7]
 		[-diff]
-		[-wp-ignore-inactive]
 		[-ignore-unscored-cves]
 		[-ignore-unfixed]
 		[-ignore-github-dismissed]

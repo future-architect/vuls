@@ -58,6 +58,7 @@ const (
 	ServerTypePseudo = "pseudo"
 )
 
+// EOL has End-of-Life information
 type EOL struct {
 	StandardSupportUntil time.Time
 	ExtendedSupportUntil time.Time

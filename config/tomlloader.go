@@ -39,28 +39,12 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			return xerrors.Errorf("Failed to set default value to config. server: %s, err: %w", name, err)
 		}
 
-		if len(server.ScanMode) == 0 {
-			server.ScanMode = Conf.Default.ScanMode
-			if len(server.ScanMode) == 0 {
-				server.ScanMode = []string{"fast"}
-			}
+		if err := setScanMode(&server, Conf.Default); err != nil {
+			return xerrors.Errorf("Failed to set ScanMode: %w", err)
 		}
-		for _, m := range server.ScanMode {
-			switch m {
-			case "fast":
-				server.Mode.Set(Fast)
-			case "fast-root":
-				server.Mode.Set(FastRoot)
-			case "deep":
-				server.Mode.Set(Deep)
-			case "offline":
-				server.Mode.Set(Offline)
-			default:
-				return xerrors.Errorf("scanMode: %s of %s is invalid. Specify -fast, -fast-root, -deep or offline", m, name)
-			}
-		}
-		if err := server.Mode.validate(); err != nil {
-			return xerrors.Errorf("%s in %s", err, name)
+
+		if err := setScanModules(&server, Conf.Default); err != nil {
+			return xerrors.Errorf("Failed to set ScanModule: %w", err)
 		}
 
 		if len(server.CpeNames) == 0 {

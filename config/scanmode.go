@@ -1,6 +1,10 @@
 package config
 
-import "golang.org/x/xerrors"
+import (
+	"strings"
+
+	"golang.org/x/xerrors"
+)
 
 // ScanMode has a type of scan mode. fast, fast-root, deep and offline
 type ScanMode struct {
@@ -10,12 +14,17 @@ type ScanMode struct {
 const (
 	// Fast is fast scan mode
 	Fast = byte(1 << iota)
-	// FastRoot is fast-root scan mode
+	// FastRoot is scanmode
 	FastRoot
-	// Deep is deep scan mode
+	// Deep is scanmode
 	Deep
-	// Offline is offline scan mode
+	// Offline is scanmode
 	Offline
+
+	fastStr     = "fast"
+	fastRootStr = "fast-root"
+	deepStr     = "deep"
+	offlineStr  = "offline"
 )
 
 // Set mode
@@ -43,7 +52,7 @@ func (s ScanMode) IsOffline() bool {
 	return s.flag&Offline == Offline
 }
 
-func (s ScanMode) validate() error {
+func (s *ScanMode) ensure() error {
 	numTrue := 0
 	for _, b := range []bool{s.IsFast(), s.IsFastRoot(), s.IsDeep()} {
 		if b {
@@ -63,14 +72,39 @@ func (s ScanMode) validate() error {
 func (s ScanMode) String() string {
 	ss := ""
 	if s.IsFast() {
-		ss = "fast"
+		ss = fastStr
 	} else if s.IsFastRoot() {
-		ss = "fast-root"
+		ss = fastRootStr
 	} else if s.IsDeep() {
-		ss = "deep"
+		ss = deepStr
 	}
 	if s.IsOffline() {
-		ss += " offline"
+		ss += " " + offlineStr
 	}
 	return ss + " mode"
+}
+
+func setScanMode(server *ServerInfo, d ServerInfo) error {
+	if len(server.ScanMode) == 0 {
+		server.ScanMode = Conf.Default.ScanMode
+	}
+	for _, m := range server.ScanMode {
+		switch strings.ToLower(m) {
+		case fastStr:
+			server.Mode.Set(Fast)
+		case fastRootStr:
+			server.Mode.Set(FastRoot)
+		case deepStr:
+			server.Mode.Set(Deep)
+		case offlineStr:
+			server.Mode.Set(Offline)
+		default:
+			return xerrors.Errorf("scanMode: %s of %s is invalid. Specify -fast, -fast-root, -deep or offline",
+				m, server.ServerName)
+		}
+	}
+	if err := server.Mode.ensure(); err != nil {
+		return xerrors.Errorf("%s in %s", err, server.ServerName)
+	}
+	return nil
 }

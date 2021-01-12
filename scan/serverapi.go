@@ -631,9 +631,7 @@ func setupChangelogCache() error {
 // GetScanResults returns ScanResults from
 func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanResults, err error) {
 	parallelExec(func(o osTypeInterface) (err error) {
-		// if !(config.Conf.LibsOnly || config.Conf.WordPressOnly) {
-		// TODO wordpress
-		if !(config.Conf.LibsOnly) {
+		if o.getServerInfo().Module.IsScanOSPkg() {
 			if err = o.preCure(); err != nil {
 				return err
 			}
@@ -643,15 +641,21 @@ func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanRes
 			if err = o.postScan(); err != nil {
 				return err
 			}
+		}
+		if o.getServerInfo().Module.IsScanPort() {
 			if err = o.scanPorts(); err != nil {
 				return xerrors.Errorf("Failed to scan Ports: %w", err)
 			}
 		}
-		if err = o.scanWordPress(); err != nil {
-			return xerrors.Errorf("Failed to scan WordPress: %w", err)
+		if o.getServerInfo().Module.IsScanWordPress() {
+			if err = o.scanWordPress(); err != nil {
+				return xerrors.Errorf("Failed to scan WordPress: %w", err)
+			}
 		}
-		if err = o.scanLibraries(); err != nil {
-			return xerrors.Errorf("Failed to scan Library: %w", err)
+		if o.getServerInfo().Module.IsScanLockFile() {
+			if err = o.scanLibraries(); err != nil {
+				return xerrors.Errorf("Failed to scan Library: %w", err)
+			}
 		}
 		return nil
 	}, timeoutSec)

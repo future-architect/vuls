@@ -164,6 +164,7 @@ func Distinct(ss []string) (distincted []string) {
 	return
 }
 
+// Major return the major version of the given semantic version
 func Major(version string) string {
 	if version == "" {
 		return ""
