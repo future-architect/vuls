@@ -169,11 +169,13 @@ sqlite3Path = "/path/to/go-msfdb.sqlite3"
 #user               = "username"
 #keyPath            = "/home/username/.ssh/id_rsa"
 #scanMode           = ["fast", "fast-root", "deep", "offline"]
+#scanModules        = ["ospkg", "wordpress", "lockfile", "port"]
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
 #owaspDCXMLPath     = "/tmp/dependency-check-report.xml"
 #ignoreCves         = ["CVE-2014-6271"]
+#containersOnly     = false
 #containerType      = "docker" #or "lxd" or "lxc" default: docker
 #containersIncluded = ["${running}"]
 #containersExcluded = ["container_name_a"]
@@ -189,11 +191,13 @@ host                = "{{$ip}}"
 #sshConfigPath		= "/home/username/.ssh/config"
 #keyPath            = "/home/username/.ssh/id_rsa"
 #scanMode           = ["fast", "fast-root", "deep", "offline"]
+#scanModules        = ["ospkg", "wordpress", "lockfile", "port"]
 #type               = "pseudo"
 #memo               = "DB Server"
 #cpeNames           = [ "cpe:/a:rubyonrails:ruby_on_rails:4.2.1" ]
 #owaspDCXMLPath     = "/path/to/dependency-check-report.xml"
 #ignoreCves         = ["CVE-2014-0160"]
+#containersOnly     = false
 #containerType      = "docker" #or "lxd" or "lxc" default: docker
 #containersIncluded = ["${running}"]
 #containersExcluded = ["container_name_a"]
