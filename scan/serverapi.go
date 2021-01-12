@@ -173,25 +173,20 @@ func PrintSSHableServerNames() bool {
 
 // InitServers detect the kind of OS distribution of target servers
 func InitServers(timeoutSec int) error {
-	// use global servers, errServers when scan containers
-	servers, errServers = detectServerOSes(timeoutSec)
-	if len(servers) == 0 {
-		return xerrors.New("No scannable base servers")
+	hosts, errHosts := detectServerOSes(timeoutSec)
+	if len(hosts) == 0 {
+		return xerrors.New("No scannable host OS")
 	}
+	containers, errContainers := detectContainerOSes(hosts, timeoutSec)
 
-	// scan additional servers
-	var actives, inactives []osTypeInterface
-	oks, errs := detectContainerOSes(timeoutSec)
-	actives = append(actives, oks...)
-	inactives = append(inactives, errs...)
-
-	if config.Conf.ContainersOnly {
-		servers = actives
-		errServers = inactives
-	} else {
-		servers = append(servers, actives...)
-		errServers = append(errServers, inactives...)
+	// set to pkg global variable
+	for _, host := range hosts {
+		if !host.getServerInfo().ContainersOnly {
+			servers = append(servers, host)
+		}
 	}
+	servers = append(servers, containers...)
+	errServers = append(errHosts, errContainers...)
 
 	if len(servers) == 0 {
 		return xerrors.New("No scannable servers")
@@ -260,11 +255,11 @@ func detectServerOSes(timeoutSec int) (servers, errServers []osTypeInterface) {
 	return
 }
 
-func detectContainerOSes(timeoutSec int) (actives, inactives []osTypeInterface) {
+func detectContainerOSes(hosts []osTypeInterface, timeoutSec int) (actives, inactives []osTypeInterface) {
 	util.Log.Info("Detecting OS of containers... ")
-	osTypesChan := make(chan []osTypeInterface, len(servers))
+	osTypesChan := make(chan []osTypeInterface, len(hosts))
 	defer close(osTypesChan)
-	for _, s := range servers {
+	for _, s := range hosts {
 		go func(s osTypeInterface) {
 			defer func() {
 				if p := recover(); p != nil {
@@ -277,7 +272,7 @@ func detectContainerOSes(timeoutSec int) (actives, inactives []osTypeInterface) 
 	}
 
 	timeout := time.After(time.Duration(timeoutSec) * time.Second)
-	for i := 0; i < len(servers); i++ {
+	for i := 0; i < len(hosts); i++ {
 		select {
 		case res := <-osTypesChan:
 			for _, osi := range res {

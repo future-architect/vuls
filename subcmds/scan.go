@@ -39,8 +39,6 @@ func (*ScanCmd) Usage() string {
 		[-log-dir=/path/to/log]
 		[-cachedb-path=/path/to/cache.db]
 		[-ssh-native-insecure]
-		//TODO remove
-		[-containers-only]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-ask-key-password]
 		[-timeout=300]
@@ -77,10 +75,6 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 	f.BoolVar(&c.Conf.SSHNative, "ssh-native-insecure", false,
 		"Use Native Go implementation of SSH. Default: Use the external command")
-
-	//TODO remove
-	f.BoolVar(&c.Conf.ContainersOnly, "containers-only", false,
-		"Scan running containers only. Default: Scan both of hosts and running containers")
 
 	f.StringVar(&c.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")

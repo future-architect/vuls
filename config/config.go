@@ -43,9 +43,6 @@ type Config struct {
 	IgnoreUnfixed         bool `json:"ignoreUnfixed,omitempty"`
 	IgnoreGitHubDismissed bool `json:"ignore_git_hub_dismissed,omitempty"`
 
-	//TODO remove
-	ContainersOnly bool `json:"containersOnly,omitempty"`
-
 	CacheDBPath     string `json:"cacheDBPath,omitempty"`
 	TrivyCacheDBDir string `json:"trivyCacheDBDir,omitempty"`
 
@@ -361,6 +358,7 @@ type ServerInfo struct {
 	ScanMode           []string                    `toml:"scanMode,omitempty" json:"scanMode,omitempty"`
 	ScanModules        []string                    `toml:"scanModules,omitempty" json:"scanModules,omitempty"`
 	OwaspDCXMLPath     string                      `toml:"owaspDCXMLPath,omitempty" json:"owaspDCXMLPath,omitempty"`
+	ContainersOnly     bool                        `toml:"containersOnly,omitempty" json:"containersOnly,omitempty"`
 	ContainersIncluded []string                    `toml:"containersIncluded,omitempty" json:"containersIncluded,omitempty"`
 	ContainersExcluded []string                    `toml:"containersExcluded,omitempty" json:"containersExcluded,omitempty"`
 	ContainerType      string                      `toml:"containerType,omitempty" json:"containerType,omitempty"`
