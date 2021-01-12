@@ -490,7 +490,6 @@ func Scan(timeoutSec int) error {
 		}
 	}()
 
-	util.Log.Info("Scanning OS packages...")
 	scannedAt := time.Now()
 	dir, err := EnsureResultDir(scannedAt)
 	if err != nil {

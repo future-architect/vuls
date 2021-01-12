@@ -188,7 +188,6 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	util.Log.Info("Detecting IPS identifiers... ")
 	scan.DetectIPSs(p.timeoutSec)
 
-	util.Log.Info("Scanning... ")
 	if err := scan.Scan(p.scanTimeoutSec); err != nil {
 		util.Log.Errorf("Failed to scan. err: %+v", err)
 		return subcommands.ExitFailure

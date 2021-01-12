@@ -193,12 +193,12 @@ func (o *redhatBase) postScan() error {
 }
 
 func (o *redhatBase) detectIPAddr() (err error) {
-	o.log.Infof("Scanning in %s", o.getServerInfo().Mode)
 	o.ServerInfo.IPv4Addrs, o.ServerInfo.IPv6Addrs, err = o.ip()
 	return err
 }
 
 func (o *redhatBase) scanPackages() error {
+	o.log.Infof("Scanning OS pkg in %s", o.getServerInfo().Mode)
 	installed, err := o.scanInstalledPackages()
 	if err != nil {
 		return xerrors.Errorf("Failed to scan installed packages: %w", err)

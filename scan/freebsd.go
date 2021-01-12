@@ -69,7 +69,6 @@ func (o *bsd) checkDeps() error {
 }
 
 func (o *bsd) preCure() error {
-	o.log.Infof("Scanning in %s", o.getServerInfo().Mode)
 	if err := o.detectIPAddr(); err != nil {
 		o.log.Debugf("Failed to detect IP addresses: %s", err)
 	}
@@ -115,6 +114,7 @@ func (l *base) parseIfconfig(stdout string) (ipv4Addrs []string, ipv6Addrs []str
 }
 
 func (o *bsd) scanPackages() error {
+	o.log.Infof("Scanning OS pkg in %s", o.getServerInfo().Mode)
 	// collect the running kernel information
 	release, version, err := o.runningKernel()
 	if err != nil {

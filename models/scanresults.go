@@ -350,16 +350,23 @@ func (r ScanResult) FormatTextReportHeader() string {
 		buf.WriteString("=")
 	}
 
-	return fmt.Sprintf("%s\n%s\n%s, %s, %s, %s, %s, %s\n",
+	pkgs := r.FormatUpdatablePacksSummary()
+	if 0 < len(r.WordPressPackages) {
+		pkgs = fmt.Sprintf("%s, %d WordPress pkgs", pkgs, len(r.WordPressPackages))
+	}
+	if 0 < len(r.LibraryScanners) {
+		pkgs = fmt.Sprintf("%s, %d libs", pkgs, r.LibraryScanners.Total())
+	}
+
+	return fmt.Sprintf("%s\n%s\n%s, %s, %s, %s, %s\n%s\n",
 		r.ServerInfo(),
 		buf.String(),
 		r.ScannedCves.FormatCveSummary(),
 		r.ScannedCves.FormatFixedStatus(r.Packages),
-		r.FormatUpdatablePacksSummary(),
 		r.FormatExploitCveSummary(),
 		r.FormatMetasploitCveSummary(),
 		r.FormatAlertSummary(),
-	)
+		pkgs)
 }
 
 // FormatUpdatablePacksSummary returns a summary of updatable packages
@@ -390,7 +397,7 @@ func (r ScanResult) FormatExploitCveSummary() string {
 			nExploitCve++
 		}
 	}
-	return fmt.Sprintf("%d exploits", nExploitCve)
+	return fmt.Sprintf("%d poc", nExploitCve)
 }
 
 // FormatMetasploitCveSummary returns a summary of exploit cve
@@ -401,7 +408,7 @@ func (r ScanResult) FormatMetasploitCveSummary() string {
 			nMetasploitCve++
 		}
 	}
-	return fmt.Sprintf("%d modules", nMetasploitCve)
+	return fmt.Sprintf("%d exploits", nMetasploitCve)
 }
 
 // FormatAlertSummary returns a summary of CERT alerts

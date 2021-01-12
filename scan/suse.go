@@ -115,6 +115,7 @@ func (o *suse) checkIfSudoNoPasswd() error {
 }
 
 func (o *suse) scanPackages() error {
+	o.log.Infof("Scanning OS pkg in %s", o.getServerInfo().Mode)
 	installed, err := o.scanInstalledPackages()
 	if err != nil {
 		o.log.Errorf("Failed to scan installed packages: %s", err)
