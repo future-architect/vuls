@@ -710,7 +710,10 @@ func (o *redhatBase) detectEnabledDnfModules() ([]string, error) {
 	cmd := `dnf --cacheonly --color=never --quiet module list --enabled`
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess() {
-		return nil, xerrors.Errorf("Failed to dnf module list: %s, cmd: %s", r, cmd)
+		if strings.Contains(r.Stdout, "Cache-only enabled but no cache") {
+			return nil, xerrors.Errorf("sudo yum check-update to make local cache before scanning: %s", r)
+		}
+		return nil, xerrors.Errorf("Failed to dnf module list: %s", r)
 	}
 	return o.parseDnfModuleList(r.Stdout)
 }
