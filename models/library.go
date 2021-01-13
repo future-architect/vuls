@@ -30,6 +30,7 @@ func (lss LibraryScanners) Find(path, name string) map[string]types.Library {
 	return filtered
 }
 
+// Total returns total count of pkgs
 func (lss LibraryScanners) Total() (total int) {
 	for _, lib := range lss {
 		total += len(lib.Libs)
