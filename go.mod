@@ -13,11 +13,11 @@ require (
 	github.com/Azure/go-autorest/autorest/adal v0.9.10 // indirect
 	github.com/BurntSushi/toml v0.3.1
 	github.com/aquasecurity/fanal v0.0.0-20210111044704-9cb28297c870
-	github.com/aquasecurity/go-dep-parser v0.0.0-20210110062711-bd24476c042d // indirect
+	github.com/aquasecurity/go-dep-parser v0.0.0-20210113052454-251388ce94e5 // indirect
 	github.com/aquasecurity/trivy v0.15.0
 	github.com/aquasecurity/trivy-db v0.0.0-20210111152553-7d4d1aa5f0d4
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef
-	github.com/aws/aws-sdk-go v1.36.25
+	github.com/aws/aws-sdk-go v1.36.26
 	github.com/boltdb/bolt v1.3.1
 	github.com/caarlos0/env/v6 v6.4.0 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
@@ -64,14 +64,15 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.7.1 // indirect
+	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/takuzoo3868/go-msfdb v0.1.3
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0 // indirect
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
-	golang.org/x/oauth2 v0.0.0-20210112200429-01de73cf58bd
-	golang.org/x/sys v0.0.0-20210113000019-eaf3bda374d2 // indirect
+	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3
+	golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/text v0.3.5 // indirect
 	golang.org/x/tools v0.0.0-20201211185031-d93e913c1a58 // indirect
