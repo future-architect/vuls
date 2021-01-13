@@ -155,8 +155,7 @@ func setDefaultIfEmpty(server *ServerInfo, d ServerInfo) error {
 		if server.User == "" {
 			if Conf.Default.User != "" {
 				server.User = Conf.Default.User
-			}
-			if server.Port != "local" {
+			} else {
 				return xerrors.Errorf("server.user is empty")
 			}
 		}
