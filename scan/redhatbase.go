@@ -707,7 +707,7 @@ func (o *redhatBase) detectEnabledDnfModules() ([]string, error) {
 		return nil, nil
 	}
 
-	cmd := `dnf --cacheonly --color=never --quiet module list --enabled`
+	cmd := `dnf --assumeyes --cacheonly --color=never --quiet module list --enabled`
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess() {
 		if strings.Contains(r.Stdout, "Cache-only enabled but no cache") {
