@@ -74,33 +74,33 @@ func (p *DiscoverCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface
 func printConfigToml(ips []string) (err error) {
 	const tomlTemplate = `
 
-# https://vuls.io/docs/en/usage-settings.html
+# https://vuls.io/docs/en/config.toml.html#database-section
 [cveDict]
-type        = "sqlite3"
-sqlite3Path = "/path/to/cve.sqlite3"
+#type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
+#sqlite3Path = "/path/to/cve.sqlite3"
 #url        = ""
 
 [ovalDict]
-type        = "sqlite3"
-sqlite3Path = "/path/to/oval.sqlite3"
+#type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
+#sqlite3Path = "/path/to/oval.sqlite3"
 #url        = ""
 
 [gost]
-type        = "sqlite3"
-sqlite3Path = "/path/to/gost.sqlite3"
+#type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
+#sqlite3Path = "/path/to/gost.sqlite3"
 #url        = ""
 
 [exploit]
-type        = "sqlite3"
-sqlite3Path = "/path/to/go-exploitdb.sqlite3"
+#type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
+#sqlite3Path = "/path/to/go-exploitdb.sqlite3"
 #url        = ""
 
 [metasploit]
-type        = "sqlite3"
-sqlite3Path = "/path/to/go-msfdb.sqlite3"
+#type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
+#sqlite3Path = "/path/to/go-msfdb.sqlite3"
 #url        = ""
 
-# https://vuls.io/docs/en/usage-settings.html#slack-section
+# https://vuls.io/docs/en/config.toml.html#slack-section
 #[slack]
 #hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
 ##legacyToken = "xoxp-11111111111-222222222222-3333333333"
@@ -110,7 +110,7 @@ sqlite3Path = "/path/to/go-msfdb.sqlite3"
 #authUser     = "username"
 #notifyUsers  = ["@username"]
 
-# https://vuls.io/docs/en/usage-settings.html#email-section
+# https://vuls.io/docs/en/config.toml.html#email-section
 #[email]
 #smtpAddr      = "smtp.example.com"
 #smtpPort      = "587"
@@ -121,11 +121,11 @@ sqlite3Path = "/path/to/go-msfdb.sqlite3"
 #cc            = ["cc@example.com"]
 #subjectPrefix = "[vuls]"
 
-# https://vuls.io/docs/en/usage-settings.html#http-section
+# https://vuls.io/docs/en/config.toml.html#http-section
 #[http]
 #url = "http://localhost:11234"
 
-# https://vuls.io/docs/en/usage-settings.html#syslog-section
+# https://vuls.io/docs/en/config.toml.html#syslog-section
 #[syslog]
 #protocol    = "tcp"
 #host        = "localhost"
@@ -149,12 +149,12 @@ sqlite3Path = "/path/to/go-msfdb.sqlite3"
 #accountKey    = "xxxxxxxxxxxxxx"
 #containerName = "vuls"
 
-# https://vuls.io/docs/en/usage-settings.html#chatwork-section
+# https://vuls.io/docs/en/config.toml.html#chatwork-section
 #[chatwork]
 #room     = "xxxxxxxxxxx"
 #apiToken = "xxxxxxxxxxxxxxxxxx"
 
-# https://vuls.io/docs/en/usage-settings.html#telegram-section
+# https://vuls.io/docs/en/config.toml.html#telegram-section
 #[telegram]
 #chatID     = "xxxxxxxxxxx"
 #token = "xxxxxxxxxxxxxxxxxx"
@@ -163,7 +163,7 @@ sqlite3Path = "/path/to/go-msfdb.sqlite3"
 #token = "xxxxxxxxxxx"
 #detectInactive = false
 
-# https://vuls.io/docs/en/usage-settings.html#default-section
+# https://vuls.io/docs/en/config.toml.html#default-section
 [default]
 #port               = "22"
 #user               = "username"
@@ -180,7 +180,7 @@ sqlite3Path = "/path/to/go-msfdb.sqlite3"
 #containersIncluded = ["${running}"]
 #containersExcluded = ["container_name_a"]
 
-# https://vuls.io/docs/en/usage-settings.html#servers-section
+# https://vuls.io/docs/en/config.toml.html#servers-section
 [servers]
 {{- $names:=  .Names}}
 {{range $i, $ip := .IPs}}
