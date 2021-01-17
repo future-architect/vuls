@@ -123,11 +123,11 @@ func (e *emailSender) sendMail(smtpServerAddr, message string) (err error) {
 	if ok, param := c.Extension("AUTH"); ok {
 		authList := strings.Split(param, " ")
 		auth = e.newSaslClient(authList)
+		if err = c.Auth(auth); err != nil {
+			return xerrors.Errorf("Failed to authenticate: %w", err)
+		}
 	}
 
-	if err = c.Auth(auth); err != nil {
-		return xerrors.Errorf("Failed to authenticate: %w", err)
-	}
 	if err = c.Mail(emailConf.From, nil); err != nil {
 		return xerrors.Errorf("Failed to send Mail command: %w", err)
 	}
