@@ -1,9 +1,7 @@
 package report
 
 import (
-	"bytes"
 	"encoding/json"
-	"encoding/xml"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -76,24 +74,6 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 				p, []byte(formatFullPlainText(r)), 0600); err != nil {
 				return xerrors.Errorf(
 					"Failed to write text files. path: %s, err: %w", p, err)
-			}
-		}
-
-		if c.Conf.FormatXML {
-			var p string
-			if c.Conf.Diff {
-				p = path + "_diff.xml"
-			} else {
-				p = path + ".xml"
-			}
-
-			var b []byte
-			if b, err = xml.Marshal(r); err != nil {
-				return xerrors.Errorf("Failed to Marshal to XML: %w", err)
-			}
-			allBytes := bytes.Join([][]byte{[]byte(xml.Header + vulsOpenTag), b, []byte(vulsCloseTag)}, []byte{})
-			if err := writeFile(p, allBytes, 0600); err != nil {
-				return xerrors.Errorf("Failed to write XML. path: %s, err: %w", p, err)
 			}
 		}
 

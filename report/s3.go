@@ -3,7 +3,6 @@ package report
 import (
 	"bytes"
 	"encoding/json"
-	"encoding/xml"
 	"fmt"
 	"path"
 	"time"
@@ -89,18 +88,6 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 			k := key + "_full.txt"
 			text := formatFullPlainText(r)
 			if err := putObject(svc, k, []byte(text)); err != nil {
-				return err
-			}
-		}
-
-		if c.Conf.FormatXML {
-			k := key + ".xml"
-			var b []byte
-			if b, err = xml.Marshal(r); err != nil {
-				return xerrors.Errorf("Failed to Marshal to XML: %w", err)
-			}
-			allBytes := bytes.Join([][]byte{[]byte(xml.Header + vulsOpenTag), b, []byte(vulsCloseTag)}, []byte{})
-			if err := putObject(svc, k, allBytes); err != nil {
 				return err
 			}
 		}

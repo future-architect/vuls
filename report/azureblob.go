@@ -3,7 +3,6 @@ package report
 import (
 	"bytes"
 	"encoding/json"
-	"encoding/xml"
 	"fmt"
 	"time"
 
@@ -63,18 +62,6 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 			k := key + "_full.txt"
 			b := []byte(formatFullPlainText(r))
 			if err := createBlockBlob(cli, k, b); err != nil {
-				return err
-			}
-		}
-
-		if c.Conf.FormatXML {
-			k := key + ".xml"
-			var b []byte
-			if b, err = xml.Marshal(r); err != nil {
-				return xerrors.Errorf("Failed to Marshal to XML: %w", err)
-			}
-			allBytes := bytes.Join([][]byte{[]byte(xml.Header + vulsOpenTag), b, []byte(vulsCloseTag)}, []byte{})
-			if err := createBlockBlob(cli, k, allBytes); err != nil {
 				return err
 			}
 		}
