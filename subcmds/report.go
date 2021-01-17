@@ -56,7 +56,6 @@ func (*ReportCmd) Usage() string {
 		[-to-s3]
 		[-to-azure-blob]
 		[-format-json]
-		[-format-xml]
 		[-format-one-email]
 		[-format-one-line-text]
 		[-format-list]
@@ -116,7 +115,6 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"http://proxy-url:port (default: empty)")
 
 	f.BoolVar(&c.Conf.FormatJSON, "format-json", false, "JSON format")
-	f.BoolVar(&c.Conf.FormatXML, "format-xml", false, "XML format")
 	f.BoolVar(&c.Conf.FormatCsvList, "format-csv", false, "CSV format")
 	f.BoolVar(&c.Conf.FormatOneEMail, "format-one-email", false,
 		"Send all the host report via only one EMail (Specify with -to-email)")
@@ -133,10 +131,10 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.Conf.ToSyslog, "to-syslog", false, "Send report via Syslog")
 	f.BoolVar(&c.Conf.ToLocalFile, "to-localfile", false, "Write report to localfile")
 	f.BoolVar(&c.Conf.ToS3, "to-s3", false,
-		"Write report to S3 (bucket/yyyyMMdd_HHmm/servername.json/xml/txt)")
+		"Write report to S3 (bucket/yyyyMMdd_HHmm/servername.json/txt)")
 	f.BoolVar(&c.Conf.ToHTTP, "to-http", false, "Send report via HTTP POST")
 	f.BoolVar(&c.Conf.ToAzureBlob, "to-azure-blob", false,
-		"Write report to Azure Storage blob (container/yyyyMMdd_HHmm/servername.json/xml/txt)")
+		"Write report to Azure Storage blob (container/yyyyMMdd_HHmm/servername.json/txt)")
 
 	f.BoolVar(&c.Conf.GZIP, "gzip", false, "gzip compression")
 	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use args passed via PIPE")
@@ -174,7 +172,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if !(c.Conf.FormatJSON || c.Conf.FormatOneLineText ||
-		c.Conf.FormatList || c.Conf.FormatFullText || c.Conf.FormatXML || c.Conf.FormatCsvList) {
+		c.Conf.FormatList || c.Conf.FormatFullText || c.Conf.FormatCsvList) {
 		c.Conf.FormatList = true
 	}
 

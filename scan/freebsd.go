@@ -70,7 +70,8 @@ func (o *bsd) checkDeps() error {
 
 func (o *bsd) preCure() error {
 	if err := o.detectIPAddr(); err != nil {
-		o.log.Debugf("Failed to detect IP addresses: %s", err)
+		o.log.Warnf("Failed to detect IP addresses: %s", err)
+		o.warns = append(o.warns, err)
 	}
 	// Ignore this error as it just failed to detect the IP addresses
 	return nil

@@ -76,7 +76,6 @@ type Config struct {
 	ToS3              bool `json:"toS3,omitempty"`
 	ToAzureBlob       bool `json:"toAzureBlob,omitempty"`
 	ToHTTP            bool `json:"toHTTP,omitempty"`
-	FormatXML         bool `json:"formatXML,omitempty"`
 	FormatJSON        bool `json:"formatJSON,omitempty"`
 	FormatOneEMail    bool `json:"formatOneEMail,omitempty"`
 	FormatOneLineText bool `json:"formatOneLineText,omitempty"`
