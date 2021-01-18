@@ -81,7 +81,7 @@ type Package struct {
 	NewRelease       string               `json:"newRelease"`
 	Arch             string               `json:"arch"`
 	Repository       string               `json:"repository"`
-	Changelog        Changelog            `json:"changelog"`
+	Changelog        *Changelog           `json:"changelog,omitempty"`
 	AffectedProcs    []AffectedProcess    `json:",omitempty"`
 	NeedRestartProcs []NeedRestartProcess `json:",omitempty"`
 }

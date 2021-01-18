@@ -267,7 +267,7 @@ func TestDiff(t *testing.T) {
 							NewVersion: "5.1.73",
 							NewRelease: "8.el6_8",
 							Repository: "",
-							Changelog: models.Changelog{
+							Changelog: &models.Changelog{
 								Contents: "",
 								Method:   "",
 							},
@@ -305,7 +305,7 @@ func TestDiff(t *testing.T) {
 						NewVersion: "5.1.73",
 						NewRelease: "8.el6_8",
 						Repository: "",
-						Changelog: models.Changelog{
+						Changelog: &models.Changelog{
 							Contents: "",
 							Method:   "",
 						},

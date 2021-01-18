@@ -287,7 +287,7 @@ func TestPackage_FormatVersionFromTo(t *testing.T) {
 				NewRelease:       tt.fields.NewRelease,
 				Arch:             tt.fields.Arch,
 				Repository:       tt.fields.Repository,
-				Changelog:        tt.fields.Changelog,
+				Changelog:        &tt.fields.Changelog,
 				AffectedProcs:    tt.fields.AffectedProcs,
 				NeedRestartProcs: tt.fields.NeedRestartProcs,
 			}
