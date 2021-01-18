@@ -197,26 +197,23 @@ func (o *redhatBase) detectIPAddr() (err error) {
 	return err
 }
 
-func (o *redhatBase) scanPackages() error {
+func (o *redhatBase) scanPackages() (err error) {
 	o.log.Infof("Scanning OS pkg in %s", o.getServerInfo().Mode)
-	installed, err := o.scanInstalledPackages()
+	o.Packages, err = o.scanInstalledPackages()
 	if err != nil {
 		return xerrors.Errorf("Failed to scan installed packages: %w", err)
 	}
-	o.Packages = installed
 
 	if o.EnabledDnfModules, err = o.detectEnabledDnfModules(); err != nil {
 		return xerrors.Errorf("Failed to detect installed dnf modules: %w", err)
 	}
 
-	rebootRequired, err := o.rebootRequired()
+	o.Kernel.RebootRequired, err = o.rebootRequired()
 	if err != nil {
 		err = xerrors.Errorf("Failed to detect the kernel reboot required: %w", err)
 		o.log.Warnf("err: %+v", err)
 		o.warns = append(o.warns, err)
 		// Only warning this error
-	} else {
-		o.Kernel.RebootRequired = rebootRequired
 	}
 
 	if o.getServerInfo().Mode.IsOffline() {
@@ -234,8 +231,7 @@ func (o *redhatBase) scanPackages() error {
 		o.warns = append(o.warns, err)
 		// Only warning this error
 	} else {
-		installed.MergeNewVersion(updatable)
-		o.Packages = installed
+		o.Packages.MergeNewVersion(updatable)
 	}
 	return nil
 }
@@ -707,7 +703,7 @@ func (o *redhatBase) detectEnabledDnfModules() ([]string, error) {
 		return nil, nil
 	}
 
-	cmd := `dnf --assumeyes --cacheonly --color=never --quiet module list --enabled`
+	cmd := `dnf --nogpgcheck --cacheonly --color=never --quiet module list --enabled`
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess() {
 		if strings.Contains(r.Stdout, "Cache-only enabled but no cache") {
