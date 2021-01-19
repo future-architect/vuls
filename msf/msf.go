@@ -3,15 +3,9 @@
 package msf
 
 import (
-	"fmt"
-	"net/http"
-
-	cnf "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
-	"github.com/parnurzeal/gorequest"
 	"github.com/takuzoo3868/go-msfdb/db"
 	metasploitmodels "github.com/takuzoo3868/go-msfdb/models"
-	"golang.org/x/xerrors"
 )
 
 // FillWithMetasploit fills metasploit module information that has in module
@@ -54,22 +48,4 @@ func ConvertToModels(ms []*metasploitmodels.Metasploit) (modules []models.Metasp
 		modules = append(modules, module)
 	}
 	return modules
-}
-
-// CheckHTTPHealth do health check
-func CheckHTTPHealth() error {
-	if !cnf.Conf.Metasploit.IsFetchViaHTTP() {
-		return nil
-	}
-
-	url := fmt.Sprintf("%s/health", cnf.Conf.Metasploit.URL)
-	var errs []error
-	var resp *http.Response
-	resp, _, errs = gorequest.New().Get(url).End()
-	//  resp, _, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
-	//  resp, _, errs = gorequest.New().Proxy(api.httpProxy).Get(url).End()
-	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-		return xerrors.Errorf("Failed to connect to metasploit server. url: %s, errs: %w", url, errs)
-	}
-	return nil
 }

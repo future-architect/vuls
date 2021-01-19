@@ -26,10 +26,11 @@ func init() {
 }
 
 // NewCustomLogger creates logrus
-func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
+func NewCustomLogger(server config.ServerInfo) *logrus.Entry {
 	log := logrus.New()
-	log.Formatter = &formatter.TextFormatter{MsgAnsiColor: c.LogMsgAnsiColor}
+	log.Formatter = &formatter.TextFormatter{MsgAnsiColor: server.LogMsgAnsiColor}
 	log.Level = logrus.InfoLevel
+	//TODO passed by arg
 	if config.Conf.Debug {
 		log.Level = logrus.DebugLevel
 	}
@@ -64,8 +65,8 @@ func NewCustomLogger(c config.ServerInfo) *logrus.Entry {
 	}
 
 	whereami := "localhost"
-	if 0 < len(c.ServerName) {
-		whereami = c.GetServerName()
+	if 0 < len(server.ServerName) {
+		whereami = server.GetServerName()
 	}
 
 	if _, err := os.Stat(logDir); err == nil {

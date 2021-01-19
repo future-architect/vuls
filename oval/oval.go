@@ -4,8 +4,6 @@ package oval
 
 import (
 	"encoding/json"
-	"fmt"
-	"net/http"
 	"time"
 
 	cnf "github.com/future-architect/vuls/config"
@@ -18,7 +16,6 @@ import (
 
 // Client is the interface of OVAL client.
 type Client interface {
-	CheckHTTPHealth() error
 	FillWithOval(db.DB, *models.ScanResult) (int, error)
 
 	// CheckIfOvalFetched checks if oval entries are in DB by family, release.
@@ -29,25 +26,6 @@ type Client interface {
 // Base is a base struct
 type Base struct {
 	family string
-}
-
-// CheckHTTPHealth do health check
-func (b Base) CheckHTTPHealth() error {
-	if !cnf.Conf.OvalDict.IsFetchViaHTTP() {
-		return nil
-	}
-
-	url := fmt.Sprintf("%s/health", cnf.Conf.OvalDict.URL)
-	var errs []error
-	var resp *http.Response
-	resp, _, errs = gorequest.New().Get(url).End()
-	//  resp, _, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
-	//  resp, _, errs = gorequest.New().Proxy(api.httpProxy).Get(url).End()
-	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-		return xerrors.Errorf("Failed to request to OVAL server. url: %s, errs: %w",
-			url, errs)
-	}
-	return nil
 }
 
 // CheckIfOvalFetched checks if oval entries are in DB by family, release.
@@ -63,7 +41,7 @@ func (b Base) CheckIfOvalFetched(driver db.DB, osFamily, release string) (fetche
 	url, _ := util.URLPathJoin(cnf.Conf.OvalDict.URL, "count", osFamily, release)
 	resp, body, errs := gorequest.New().Get(url).End()
 	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-		return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %w", url, resp, errs)
+		return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %s", url, resp, errs)
 	}
 	count := 0
 	if err := json.Unmarshal([]byte(body), &count); err != nil {
@@ -81,7 +59,7 @@ func (b Base) CheckIfOvalFresh(driver db.DB, osFamily, release string) (ok bool,
 		url, _ := util.URLPathJoin(cnf.Conf.OvalDict.URL, "lastmodified", osFamily, release)
 		resp, body, errs := gorequest.New().Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-			return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %w", url, resp, errs)
+			return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %s", url, resp, errs)
 		}
 
 		if err := json.Unmarshal([]byte(body), &lastModified); err != nil {

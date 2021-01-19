@@ -460,3 +460,8 @@ type Container struct {
 	Name        string
 	Image       string
 }
+
+// VulnSrcConf is an interface of vulnsrc
+type VulnSrcConf interface {
+	CheckHTTPHealth() error
+}

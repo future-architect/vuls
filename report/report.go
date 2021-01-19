@@ -418,7 +418,7 @@ func detectPkgsCvesWithGost(driver gostdb.DB, r *models.ScanResult) error {
 // fillWithExploitDB fills Exploits with exploit dataabase
 // https://github.com/mozqnet/go-exploitdb
 func fillWithExploitDB(driver exploitdb.DB, r *models.ScanResult) (nExploitCve int, err error) {
-	return exploit.FillWithExploit(driver, r)
+	return exploit.FillWithExploit(driver, r, &config.Conf.Exploit)
 }
 
 // fillWithMetasploit fills metasploit modules with metasploit database

@@ -143,7 +143,7 @@ func send(msg message) error {
 				return nil
 			}
 			return xerrors.Errorf(
-				"HTTP POST error. url: %s, resp: %v, body: %s, err: %w",
+				"HTTP POST error. url: %s, resp: %v, body: %s, err: %s",
 				conf.HookURL, resp, body, errs)
 		}
 		return nil

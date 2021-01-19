@@ -12,11 +12,8 @@ import (
 
 	// "github.com/future-architect/vuls/Server"
 
+	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/exploit"
-	"github.com/future-architect/vuls/gost"
-	"github.com/future-architect/vuls/msf"
-	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/server"
 	"github.com/future-architect/vuls/util"
@@ -109,50 +106,19 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitUsageError
 	}
 
-	if c.Conf.CveDict.URL != "" {
-		if err := report.CveClient.CheckHealth(); err != nil {
-			util.Log.Errorf("CVE HTTP server is not running. err: %+v", err)
-			util.Log.Errorf("Run go-cve-dictionary as server mode before reporting or run with `-cvedb-type=sqlite3 -cvedb-sqlite3-path` option instead of -cvedb-url")
+	for _, cnf := range []config.VulnSrcConf{
+		&c.Conf.CveDict,
+		&c.Conf.OvalDict,
+		&c.Conf.Gost,
+		&c.Conf.Exploit,
+		&c.Conf.Metasploit,
+	} {
+		if err := cnf.CheckHTTPHealth(); err != nil {
+			util.Log.Errorf("Run as server mode before reporting: %+v", err)
 			return subcommands.ExitFailure
 		}
 	}
 
-	if c.Conf.OvalDict.URL != "" {
-		err := oval.Base{}.CheckHTTPHealth()
-		if err != nil {
-			util.Log.Errorf("OVAL HTTP server is not running. err: %s", err)
-			util.Log.Errorf("Run goval-dictionary as server mode before reporting or run with `-ovaldb-type=sqlite3 -ovaldb-sqlite3-path` option instead of -ovaldb-url")
-			return subcommands.ExitFailure
-		}
-	}
-
-	if c.Conf.Gost.URL != "" {
-		util.Log.Infof("gost: %s", c.Conf.Gost.URL)
-		err := gost.Base{}.CheckHTTPHealth()
-		if err != nil {
-			util.Log.Errorf("gost HTTP server is not running. err: %+v", err)
-			util.Log.Errorf("Run gost as server mode before reporting or run with `-gostdb-type=sqlite3 -gostdb-sqlite3-path` option instead of -gostdb-url")
-			return subcommands.ExitFailure
-		}
-	}
-
-	if c.Conf.Exploit.URL != "" {
-		err := exploit.CheckHTTPHealth()
-		if err != nil {
-			util.Log.Errorf("exploit HTTP server is not running. err: %+v", err)
-			util.Log.Errorf("Run go-exploitdb as server mode before reporting")
-			return subcommands.ExitFailure
-		}
-	}
-
-	if c.Conf.Metasploit.URL != "" {
-		err := msf.CheckHTTPHealth()
-		if err != nil {
-			util.Log.Errorf("metasploit HTTP server is not running. err: %+v", err)
-			util.Log.Errorf("Run go-msfdb as server mode before reporting")
-			return subcommands.ExitFailure
-		}
-	}
 	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
 		CveDictCnf:    c.Conf.CveDict,
 		OvalDictCnf:   c.Conf.OvalDict,
