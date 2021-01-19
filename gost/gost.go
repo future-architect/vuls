@@ -12,12 +12,6 @@ import (
 type Client interface {
 	DetectUnfixed(db.DB, *models.ScanResult, bool) (int, error)
 	FillCVEsWithRedHat(db.DB, *models.ScanResult) error
-
-	//TODO implement
-	// CheckHTTPHealth() error
-	// CheckIfGostFetched checks if Gost entries are fetched
-	// CheckIfGostFetched(db.DB, string, string) (bool, error)
-	// CheckIfGostFresh(db.DB, string, string) (bool, error)
 }
 
 // NewClient make Client by family

@@ -1,8 +1,12 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/parnurzeal/gorequest"
+	"golang.org/x/xerrors"
 )
 
 // GostConf is gost config
@@ -50,4 +54,20 @@ func (cnf *GostConf) Init() {
 // IsFetchViaHTTP returns wether fetch via http
 func (cnf *GostConf) IsFetchViaHTTP() bool {
 	return Conf.Gost.Type == "http"
+}
+
+// CheckHTTPHealth do health check
+func (cnf *GostConf) CheckHTTPHealth() error {
+	if !cnf.IsFetchViaHTTP() {
+		return nil
+	}
+
+	url := fmt.Sprintf("%s/health", cnf.URL)
+	resp, _, errs := gorequest.New().Get(url).End()
+	//  resp, _, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
+	//  resp, _, errs = gorequest.New().Proxy(api.httpProxy).Get(url).End()
+	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
+		return xerrors.Errorf("Failed to connect to gost server. url: %s, errs: %s", url, errs)
+	}
+	return nil
 }

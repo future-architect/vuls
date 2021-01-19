@@ -18,35 +18,12 @@ import (
 	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
 )
 
-// CveClient is api client of CVE disctionary service.
+// CveClient is api client of CVE dictionary service.
 var CveClient cvedictClient
 
 type cvedictClient struct {
 	//  httpProxy string
 	baseURL string
-}
-
-func (api *cvedictClient) initialize() {
-	api.baseURL = config.Conf.CveDict.URL
-}
-
-func (api cvedictClient) CheckHealth() error {
-	if !config.Conf.CveDict.IsFetchViaHTTP() {
-		util.Log.Debugf("get cve-dictionary from %s", config.Conf.CveDict.Type)
-		return nil
-	}
-
-	api.initialize()
-	url := fmt.Sprintf("%s/health", api.baseURL)
-	var errs []error
-	var resp *http.Response
-	resp, _, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
-	//  resp, _, errs = gorequest.New().Proxy(api.httpProxy).Get(url).End()
-	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-		return xerrors.Errorf("Failed to request to CVE server. url: %s, errs: %w",
-			url, errs)
-	}
-	return nil
 }
 
 type response struct {
@@ -139,7 +116,7 @@ func (api cvedictClient) httpGet(key, url string, resChan chan<- response, errCh
 		//  resp, body, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
 		resp, body, errs = gorequest.New().Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-			return xerrors.Errorf("HTTP GET Error, url: %s, resp: %v, err: %w",
+			return xerrors.Errorf("HTTP GET Error, url: %s, resp: %v, err: %s",
 				url, resp, errs)
 		}
 		return nil
@@ -155,7 +132,7 @@ func (api cvedictClient) httpGet(key, url string, resChan chan<- response, errCh
 	}
 	cveDetail := cvemodels.CveDetail{}
 	if err := json.Unmarshal([]byte(body), &cveDetail); err != nil {
-		errChan <- xerrors.Errorf("Failed to Unmarshall. body: %s, err: %w", body, err)
+		errChan <- xerrors.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
 		return
 	}
 	resChan <- response{
@@ -191,7 +168,7 @@ func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]c
 		}
 		resp, body, errs = req.End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-			return xerrors.Errorf("HTTP POST error. url: %s, resp: %v, err: %w", url, resp, errs)
+			return xerrors.Errorf("HTTP POST error. url: %s, resp: %v, err: %s", url, resp, errs)
 		}
 		return nil
 	}
@@ -206,7 +183,7 @@ func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]c
 	cveDetails := []cvemodels.CveDetail{}
 	if err := json.Unmarshal([]byte(body), &cveDetails); err != nil {
 		return nil,
-			xerrors.Errorf("Failed to Unmarshall. body: %s, err: %w", body, err)
+			xerrors.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
 	}
 	return cveDetails, nil
 }
