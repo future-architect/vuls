@@ -794,7 +794,7 @@ vlc (3.0.10-0+deb10u1) buster-security; urgency=medium`,
 			},
 			expect: expect{
 				cveIDs: []DetectedCveID{{"CVE-2020-13428", models.ChangelogExactMatch}},
-				pack: models.Package{Changelog: models.Changelog{
+				pack: models.Package{Changelog: &models.Changelog{
 					Contents: `vlc (3.0.11-0+deb10u1+rpt2) buster; urgency=medium
 
   * Add MMAL patch 19
@@ -837,7 +837,7 @@ vlc (3.0.11-0+deb10u1) buster-security; urgency=high
 			},
 			expect: expect{
 				cveIDs: []DetectedCveID{},
-				pack: models.Package{Changelog: models.Changelog{
+				pack: models.Package{Changelog: &models.Changelog{
 					Contents: `realvnc-vnc (6.7.2.42622) stable; urgency=low
 
   * Debian package for VNC Server

@@ -968,7 +968,7 @@ func (o *debian) getCveIDsFromChangelog(
 
 	// If the version is not in changelog, return entire changelog to put into cache
 	pack := o.Packages[name]
-	pack.Changelog = models.Changelog{
+	pack.Changelog = &models.Changelog{
 		Contents: changelog,
 		Method:   models.FailedToFindVersionInChangelog,
 	}
@@ -1018,7 +1018,7 @@ func (o *debian) parseChangelog(changelog, name, ver string, confidence models.C
 	if !found {
 		if o.Distro.Family == config.Raspbian {
 			pack := o.Packages[name]
-			pack.Changelog = models.Changelog{
+			pack.Changelog = &models.Changelog{
 				Contents: strings.Join(buf, "\n"),
 				Method:   models.ChangelogLenientMatchStr,
 			}
@@ -1032,7 +1032,7 @@ func (o *debian) parseChangelog(changelog, name, ver string, confidence models.C
 		}
 
 		pack := o.Packages[name]
-		pack.Changelog = models.Changelog{
+		pack.Changelog = &models.Changelog{
 			Contents: "",
 			Method:   models.FailedToFindVersionInChangelog,
 		}
@@ -1046,7 +1046,7 @@ func (o *debian) parseChangelog(changelog, name, ver string, confidence models.C
 		Method:   confidence.DetectionMethod,
 	}
 	pack := o.Packages[name]
-	pack.Changelog = clog
+	pack.Changelog = &clog
 
 	cves := []DetectedCveID{}
 	for _, id := range cveIDs {
