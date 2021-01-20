@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/k0kubun/pp"
 	"github.com/rifflock/lfshook"
 	"github.com/sirupsen/logrus"
 
@@ -30,9 +31,9 @@ func NewCustomLogger(server config.ServerInfo) *logrus.Entry {
 	log := logrus.New()
 	log.Formatter = &formatter.TextFormatter{MsgAnsiColor: server.LogMsgAnsiColor}
 	log.Level = logrus.InfoLevel
-	//TODO passed by arg
 	if config.Conf.Debug {
 		log.Level = logrus.DebugLevel
+		pp.ColoringEnabled = false
 	}
 
 	if flag.Lookup("test.v") != nil {
