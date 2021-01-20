@@ -622,7 +622,7 @@ func (d *DummyFileInfo) IsDir() bool { return false }
 func (d *DummyFileInfo) Sys() interface{} { return nil }
 
 func (l *base) scanWordPress() (err error) {
-	if l.ServerInfo.WordPress.IsZero() {
+	if l.ServerInfo.WordPress.IsZero() || l.ServerInfo.Type == config.ServerTypePseudo {
 		return nil
 	}
 	l.log.Info("Scanning WordPress...")
