@@ -201,11 +201,12 @@ func setDefaultIfEmpty(server *ServerInfo, d ServerInfo) error {
 		server.Memo = Conf.Default.Memo
 	}
 
-	// TODO set default WordPress
 	if server.WordPress == nil {
-		server.WordPress = &WordPressConf{}
+		server.WordPress = Conf.Default.WordPress
+		if server.WordPress == nil {
+			server.WordPress = &WordPressConf{}
+		}
 	}
-	//TODO set nil in config re-generate in saas subcmd
 
 	if len(server.IgnoredJSONKeys) == 0 {
 		server.IgnoredJSONKeys = Conf.Default.IgnoredJSONKeys

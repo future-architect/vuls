@@ -8,23 +8,23 @@ replace (
 )
 
 require (
-	github.com/Azure/azure-sdk-for-go v50.0.0+incompatible
-	github.com/Azure/go-autorest/autorest v0.11.16 // indirect
+	github.com/Azure/azure-sdk-for-go v50.1.0+incompatible
+	github.com/Azure/go-autorest/autorest v0.11.17 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.10 // indirect
 	github.com/BurntSushi/toml v0.3.1
-	github.com/aquasecurity/fanal v0.0.0-20210111044704-9cb28297c870
+	github.com/aquasecurity/fanal v0.0.0-20210119051230-28c249da7cfd
 	github.com/aquasecurity/go-dep-parser v0.0.0-20210113052454-251388ce94e5 // indirect
 	github.com/aquasecurity/trivy v0.15.0
 	github.com/aquasecurity/trivy-db v0.0.0-20210111152553-7d4d1aa5f0d4
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef
-	github.com/aws/aws-sdk-go v1.36.26
+	github.com/aws/aws-sdk-go v1.36.29
 	github.com/boltdb/bolt v1.3.1
 	github.com/caarlos0/env/v6 v6.4.0 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/d4l3k/messagediff v1.2.2-0.20190829033028-7e0a312ae40b
 	github.com/emersion/go-sasl v0.0.0-20200509203442-7bfe0ed36a21
 	github.com/emersion/go-smtp v0.14.0
-	github.com/go-redis/redis/v8 v8.4.8 // indirect
+	github.com/go-redis/redis/v8 v8.4.9 // indirect
 	github.com/goccy/go-yaml v1.8.4 // indirect
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/google/subcommands v1.2.0
@@ -41,9 +41,9 @@ require (
 	github.com/knqyf263/go-deb-version v0.0.0-20190517075300-09fca494f03d
 	github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936
 	github.com/knqyf263/gost v0.1.7
-	github.com/kotakanbe/go-cve-dictionary v0.5.6
+	github.com/kotakanbe/go-cve-dictionary v0.5.7
 	github.com/kotakanbe/go-pingscanner v0.1.0
-	github.com/kotakanbe/goval-dictionary v0.3.0
+	github.com/kotakanbe/goval-dictionary v0.3.1
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mattn/go-runewidth v0.0.10 // indirect
@@ -52,7 +52,7 @@ require (
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/mozqnet/go-exploitdb v0.1.2
 	github.com/nlopes/slack v0.6.0
-	github.com/nsf/termbox-go v0.0.0-20201124104050-ed494de23a00 // indirect
+	github.com/nsf/termbox-go v0.0.0-20210114135735-d04385b850e8 // indirect
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/parnurzeal/gorequest v0.2.16
 	github.com/pelletier/go-toml v1.8.1 // indirect
@@ -70,11 +70,10 @@ require (
 	go.uber.org/zap v1.16.0 // indirect
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
-	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
+	golang.org/x/net v0.0.0-20210119194325-5f4716e94777 // indirect
 	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3
-	golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78 // indirect
+	golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
-	golang.org/x/text v0.3.5 // indirect
 	golang.org/x/tools v0.0.0-20201211185031-d93e913c1a58 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	google.golang.org/appengine v1.6.7 // indirect
