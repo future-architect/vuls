@@ -1,6 +1,7 @@
 package models
 
 import (
+	"strings"
 	"time"
 
 	"github.com/aquasecurity/trivy-db/pkg/vulnsrc/vulnerability"
@@ -58,7 +59,7 @@ func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string) (values []CveC
 		}
 	}
 
-	order := CveContentTypes{Nvd, NewCveContentType(myFamily)}
+	order := CveContentTypes{Nvd, NewCveContentType(myFamily), GitHub}
 	for _, ctype := range order {
 		if cont, found := v[ctype]; found {
 			if cont.SourceLink == "" {
@@ -74,7 +75,7 @@ func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string) (values []CveC
 		}
 	}
 
-	if len(values) == 0 {
+	if len(values) == 0 && strings.HasPrefix(cveID, "CVE") {
 		return []CveContentStr{{
 			Type:  Nvd,
 			Value: "https://nvd.nist.gov/vuln/detail/" + cveID,
@@ -252,6 +253,8 @@ func NewCveContentType(name string) CveContentType {
 		return Amazon
 	case "trivy":
 		return Trivy
+	case "GitHub":
+		return Trivy
 	default:
 		return Unknown
 	}
@@ -297,6 +300,9 @@ const (
 	// Trivy is Trivy
 	Trivy CveContentType = "trivy"
 
+	// GitHub is GitHub Security Alerts
+	GitHub CveContentType = "github"
+
 	// Unknown is Unknown
 	Unknown CveContentType = "unknown"
 )
@@ -317,6 +323,7 @@ var AllCveContetTypes = CveContentTypes{
 	DebianSecurityTracker,
 	WpScan,
 	Trivy,
+	GitHub,
 }
 
 // Except returns CveContentTypes except for given args
