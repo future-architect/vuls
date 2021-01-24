@@ -101,20 +101,39 @@ func DetectGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string)
 				cveIDs = other
 			}
 
+			refs := []models.Reference{}
+			for _, r := range v.Node.SecurityAdvisory.References {
+				refs = append(refs, models.Reference{Link: r.URL})
+			}
+
 			for _, cveID := range cveIDs {
+				cveContent := models.CveContent{
+					Type:          models.GitHub,
+					CveID:         cveID,
+					Title:         v.Node.SecurityAdvisory.Summary,
+					Summary:       v.Node.SecurityAdvisory.Description,
+					Cvss2Severity: v.Node.SecurityVulnerability.Severity,
+					Cvss3Severity: v.Node.SecurityVulnerability.Severity,
+					SourceLink:    v.Node.SecurityAdvisory.Permalink,
+					References:    refs,
+					Published:     v.Node.SecurityAdvisory.PublishedAt,
+					LastModified:  v.Node.SecurityAdvisory.UpdatedAt,
+				}
+
 				if val, ok := r.ScannedCves[cveID]; ok {
 					val.GitHubSecurityAlerts = val.GitHubSecurityAlerts.Add(m)
+					val.CveContents[models.GitHub] = cveContent
 					r.ScannedCves[cveID] = val
-					nCVEs++
 				} else {
 					v := models.VulnInfo{
 						CveID:                cveID,
 						Confidences:          models.Confidences{models.GitHubMatch},
 						GitHubSecurityAlerts: models.GitHubSecurityAlerts{m},
+						CveContents:          models.NewCveContents(cveContent),
 					}
 					r.ScannedCves[cveID] = v
-					nCVEs++
 				}
+				nCVEs++
 			}
 		}
 		if !alerts.Data.Repository.VulnerabilityAlerts.PageInfo.HasNextPage {

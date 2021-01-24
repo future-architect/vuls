@@ -237,21 +237,25 @@ func (g WpPackages) Add(pkg WpPackage) WpPackages {
 // Titles returns title (TUI)
 func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 	if lang == "ja" {
-		if cont, found := v.CveContents[Jvn]; found && 0 < len(cont.Title) {
+		if cont, found := v.CveContents[Jvn]; found && cont.Title != "" {
 			values = append(values, CveContentStr{Jvn, cont.Title})
 		}
 	}
 
 	// RedHat API has one line title.
-	if cont, found := v.CveContents[RedHatAPI]; found && 0 < len(cont.Title) {
+	if cont, found := v.CveContents[RedHatAPI]; found && cont.Title != "" {
 		values = append(values, CveContentStr{RedHatAPI, cont.Title})
+	}
+
+	// GitHub security alerts has a title.
+	if cont, found := v.CveContents[GitHub]; found && cont.Title != "" {
+		values = append(values, CveContentStr{GitHub, cont.Title})
 	}
 
 	order := CveContentTypes{Trivy, Nvd, NewCveContentType(myFamily)}
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
-		// Only JVN has meaningful title. so return first 100 char of summary
-		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Summary) {
+		if cont, found := v.CveContents[ctype]; found && cont.Summary != "" {
 			summary := strings.Replace(cont.Summary, "\n", " ", -1)
 			values = append(values, CveContentStr{
 				Type:  ctype,
@@ -279,7 +283,7 @@ func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 // Summaries returns summaries
 func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 	if lang == "ja" {
-		if cont, found := v.CveContents[Jvn]; found && 0 < len(cont.Summary) {
+		if cont, found := v.CveContents[Jvn]; found && cont.Summary != "" {
 			summary := cont.Title
 			summary += "\n" + strings.Replace(
 				strings.Replace(cont.Summary, "\n", " ", -1), "\r", " ", -1)
@@ -287,10 +291,10 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := CveContentTypes{Trivy, NewCveContentType(myFamily), Nvd}
+	order := CveContentTypes{Trivy, NewCveContentType(myFamily), Nvd, GitHub}
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
-		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Summary) {
+		if cont, found := v.CveContents[ctype]; found && cont.Summary != "" {
 			summary := strings.Replace(cont.Summary, "\n", " ", -1)
 			values = append(values, CveContentStr{
 				Type:  ctype,
@@ -308,7 +312,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 
 	if v, ok := v.CveContents[WpScan]; ok {
 		values = append(values, CveContentStr{
-			Type:  "WPVDB",
+			Type:  WpScan,
 			Value: v.Title,
 		})
 	}
@@ -491,7 +495,8 @@ func (v VulnInfo) MaxCvss2Score() CveContentCvss {
 	// If CVSS score isn't on NVD, RedHat and JVN, use OVAL and advisory Severity.
 	// Convert severity to cvss score roughly, then returns max severity.
 	// Only Ubuntu, RedHat and Oracle have severity data in OVAL.
-	order = []CveContentType{Ubuntu, RedHat, Oracle}
+	// GitHub Security Alerts also has Severity. It is mainly used to calculate score for non-CVE-ID.
+	order = []CveContentType{Ubuntu, RedHat, Oracle, GitHub}
 	for _, ctype := range order {
 		if cont, found := v.CveContents[ctype]; found && 0 < len(cont.Cvss2Severity) {
 			score := severityToV2ScoreRoughly(cont.Cvss2Severity)

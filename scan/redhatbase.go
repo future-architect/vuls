@@ -374,12 +374,6 @@ func (o *redhatBase) parseUpdatablePacksLines(stdout string) (models.Packages, e
 	updatable := models.Packages{}
 	lines := strings.Split(stdout, "\n")
 	for _, line := range lines {
-		// TODO remove
-		// if strings.HasPrefix(line, "Obsoleting") ||
-		// strings.HasPrefix(line, "Security:") {
-		// // see https://github.com/future-architect/vuls/issues/165
-		// continue
-		// }
 		if len(strings.TrimSpace(line)) == 0 {
 			continue
 		} else if strings.HasPrefix(line, "Loading") {
