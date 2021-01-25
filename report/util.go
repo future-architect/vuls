@@ -213,7 +213,7 @@ No CVE-IDs are found in updatable packages.
 			}
 		}
 
-		for _, cvss := range vuln.Cvss2Scores(r.Family) {
+		for _, cvss := range vuln.Cvss2Scores() {
 			if cvssstr := cvss.Value.Format(); cvssstr != "" {
 				data = append(data, []string{string(cvss.Type), cvssstr})
 			}

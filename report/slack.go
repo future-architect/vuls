@@ -248,7 +248,7 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 	maxCvss := vinfo.MaxCvssScore()
 	vectors := []string{}
 
-	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores(osFamily)...)
+	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores()...)
 	for _, cvss := range scores {
 		if cvss.Value.Severity == "" {
 			continue

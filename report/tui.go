@@ -935,20 +935,11 @@ func detailLines() (string, error) {
 	table := uitable.New()
 	table.MaxColWidth = maxColWidth
 	table.Wrap = true
-	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores(r.Family)...)
+	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores()...)
 	var cols []interface{}
 	for _, score := range scores {
-		if score.Value.Score == 0 && score.Value.Severity == "" {
-			continue
-		}
-		scoreStr := "-"
-		if 0 < score.Value.Score {
-			scoreStr = fmt.Sprintf("%3.1f", score.Value.Score)
-		}
-		scoreVec := fmt.Sprintf("%s/%s", scoreStr, score.Value.Vector)
 		cols = []interface{}{
-			scoreVec,
-			score.Value.Severity,
+			score.Value.Format(),
 			score.Type,
 		}
 		table.AddRow(cols...)
