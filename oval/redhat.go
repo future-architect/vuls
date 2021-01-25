@@ -173,17 +173,15 @@ func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *mo
 		score2, vec2 := o.parseCvss2(cve.Cvss2)
 		score3, vec3 := o.parseCvss3(cve.Cvss3)
 
-		severity := def.Advisory.Severity
+		sev2, sev3, severity := "", "", def.Advisory.Severity
 		if cve.Impact != "" {
 			severity = cve.Impact
 		}
-
-		sev2, sev3 := "", ""
-		if score2 == 0 {
-			sev2 = severity
-		}
-		if score3 == 0 {
+		if severity != "None" {
 			sev3 = severity
+			if score2 != 0 {
+				sev2 = severity
+			}
 		}
 
 		// CWE-ID in RedHat OVAL may have multiple cweIDs separated by space
