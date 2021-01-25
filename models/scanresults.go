@@ -128,13 +128,7 @@ type Kernel struct {
 // FilterByCvssOver is filter function.
 func (r ScanResult) FilterByCvssOver(over float64) ScanResult {
 	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
-		v2Max := v.MaxCvss2Score()
-		v3Max := v.MaxCvss3Score()
-		max := v2Max.Value.Score
-		if max < v3Max.Value.Score {
-			max = v3Max.Value.Score
-		}
-		if over <= max {
+		if over <= v.MaxCvssScore().Value.Score {
 			return true
 		}
 		return false
