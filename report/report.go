@@ -24,8 +24,8 @@ import (
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
 	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
 	ovaldb "github.com/kotakanbe/goval-dictionary/db"
-	exploitdb "github.com/mozqnet/go-exploitdb/db"
 	metasploitdb "github.com/takuzoo3868/go-msfdb/db"
+	exploitdb "github.com/vulsio/go-exploitdb/db"
 	"golang.org/x/xerrors"
 )
 
@@ -416,7 +416,7 @@ func detectPkgsCvesWithGost(driver gostdb.DB, r *models.ScanResult) error {
 }
 
 // fillWithExploitDB fills Exploits with exploit dataabase
-// https://github.com/mozqnet/go-exploitdb
+// https://github.com/vulsio/go-exploitdb
 func fillWithExploitDB(driver exploitdb.DB, r *models.ScanResult) (nExploitCve int, err error) {
 	return exploit.FillWithExploit(driver, r, &config.Conf.Exploit)
 }

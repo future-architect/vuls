@@ -10,8 +10,8 @@ import (
 	gostdb "github.com/knqyf263/gost/db"
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
 	ovaldb "github.com/kotakanbe/goval-dictionary/db"
-	exploitdb "github.com/mozqnet/go-exploitdb/db"
 	metasploitdb "github.com/takuzoo3868/go-msfdb/db"
+	exploitdb "github.com/vulsio/go-exploitdb/db"
 	"golang.org/x/xerrors"
 )
 
@@ -176,7 +176,7 @@ func NewExploitDB(cnf DBClientConf) (driver exploitdb.DB, locked bool, err error
 		path = cnf.ExploitCnf.SQLite3Path
 
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			util.Log.Warnf("--exploitdb-path=%s file not found. Fetch go-exploit-db before reporting if you want to display exploit codes of detected CVE-IDs. For details, see `https://github.com/mozqnet/go-exploitdb`", path)
+			util.Log.Warnf("--exploitdb-path=%s file not found. Fetch go-exploit-db before reporting if you want to display exploit codes of detected CVE-IDs. For details, see `https://github.com/vulsio/go-exploitdb`", path)
 			return nil, false, nil
 		}
 	}
