@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/config"
-	exploitmodels "github.com/mozqnet/go-exploitdb/models"
+	exploitmodels "github.com/vulsio/go-exploitdb/models"
 )
 
 // VulnInfos has a map of VulnInfo
