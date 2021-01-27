@@ -339,7 +339,7 @@ type AzureConf struct {
 
 // WpScanConf is wpscan.com config
 type WpScanConf struct {
-	Token          string `toml:"Token,omitempty" json:"-"`
+	Token          string `toml:"token,omitempty" json:"-"`
 	DetectInactive bool   `toml:"detectInactive,omitempty" json:"detectInactive,omitempty"`
 }
 
