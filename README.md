@@ -177,6 +177,10 @@ For more information such as Installation, Tutorial, Usage, visit [vuls.io](http
 
 kotakanbe ([@kotakanbe](https://twitter.com/kotakanbe)) created vuls and [these fine people](https://github.com/future-architect/vuls/graphs/contributors) have contributed.
 
+## Contribute
+
+see [vulsdoc](https://vuls.io/docs/en/how-to-contribute.html)
+
 ----
 
 ## Stargazers over time

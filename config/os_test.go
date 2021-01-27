@@ -258,7 +258,7 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			found:    true,
 		},
 		{
-			name:     "Debian 3.9 eol",
+			name:     "Alpine 3.9 eol",
 			fields:   fields{family: Alpine, release: "3.9"},
 			now:      time.Date(2021, 1, 6, 23, 59, 59, 0, time.UTC),
 			stdEnded: true,
@@ -266,8 +266,8 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			found:    true,
 		},
 		{
-			name:     "Debian 3.13 not found",
-			fields:   fields{family: Alpine, release: "3.13"},
+			name:     "Alpine 3.14 not found",
+			fields:   fields{family: Alpine, release: "3.14"},
 			now:      time.Date(2021, 1, 6, 23, 59, 59, 0, time.UTC),
 			stdEnded: false,
 			extEnded: false,
