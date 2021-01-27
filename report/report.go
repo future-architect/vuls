@@ -227,7 +227,7 @@ func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]c.GitHubConf)
 
 // DetectWordPressCves detects CVEs of WordPress
 func DetectWordPressCves(r *models.ScanResult, wpCnf *c.WpScanConf) error {
-	if len(r.Packages) == 0 {
+	if len(r.WordPressPackages) == 0 {
 		return nil
 	}
 	util.Log.Infof("Detect WordPress CVE. pkgs: %d ", len(r.WordPressPackages))
