@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"time"
 
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/errof"
@@ -217,14 +216,11 @@ func extractToVulnInfos(pkgName string, cves []WpCveInfo) (vinfos []models.VulnI
 }
 
 func httpRequest(url, token string) (string, error) {
-	retry := 1
-	util.Log.Debugf("%s", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Token token=%s", token))
-loop:
 	resp, err := new(http.Client).Do(req)
 	if err != nil {
 		return "", err
@@ -239,14 +235,12 @@ loop:
 	} else if resp.StatusCode == 404 {
 		// This package is not in wpscan
 		return "", nil
-	} else if resp.StatusCode == 429 && retry <= 3 {
-		// 429 Too Many Requests
-		util.Log.Debugf("sleep %d min(s): %s", retry, resp.Status)
-		time.Sleep(time.Duration(retry) * time.Minute)
-		retry++
-		goto loop
+	} else if resp.StatusCode == 429 {
+		return "", xerrors.Errorf("wpscan.com API limit exceeded: %+v", resp.Status)
+	} else {
+		util.Log.Warnf("wpscan.com unknown status code: %+v", resp.Status)
+		return "", nil
 	}
-	return "", err
 }
 
 func removeInactives(pkgs models.WordPressPackages) (removed models.WordPressPackages) {
