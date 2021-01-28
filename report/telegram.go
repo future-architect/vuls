@@ -2,13 +2,16 @@ package report
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
 )
 
@@ -55,15 +58,17 @@ func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 func sendMessage(chatID, token, message string) error {
 	uri := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", token)
 	payload := `{"text": "` + strings.Replace(message, `"`, `\"`, -1) + `", "chat_id": "` + chatID + `", "parse_mode": "Markdown" }`
-	req, err := http.NewRequest("POST", uri, bytes.NewBuffer([]byte(payload)))
-	req.Header.Add("Content-Type", "application/json")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uri, bytes.NewBuffer([]byte(payload)))
+	defer cancel()
 	if err != nil {
 		return err
 	}
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := util.GetHTTPClient(config.Conf.HTTPProxy).Do(req)
 	if checkResponse(resp) != nil && err != nil {
-		fmt.Println(err)
 		return err
 	}
 	defer resp.Body.Close()
