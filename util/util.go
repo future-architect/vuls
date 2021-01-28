@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -177,4 +178,17 @@ func Major(version string) string {
 		ver = ss[1]
 	}
 	return ver[0:strings.Index(ver, ".")]
+}
+
+// GetHttpClient return http.Client
+func GetHTTPClient(proxy string) *http.Client {
+	if proxy != "" {
+		proxyURL, _ := url.Parse(proxy)
+		return &http.Client{
+			Transport: &http.Transport{
+				Proxy: http.ProxyURL(proxyURL),
+			},
+		}
+	}
+	return &http.Client{}
 }

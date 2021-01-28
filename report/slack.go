@@ -136,7 +136,7 @@ func send(msg message) error {
 	jsonBody := string(bytes)
 
 	f := func() (err error) {
-		resp, body, errs := gorequest.New().Proxy(config.Conf.HTTPProxy).Post(conf.HookURL).Send(string(jsonBody)).End()
+		resp, body, errs := gorequest.New().Timeout(10 * time.Second).Proxy(config.Conf.HTTPProxy).Post(conf.HookURL).Send(string(jsonBody)).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			count++
 			if count == retryMax {

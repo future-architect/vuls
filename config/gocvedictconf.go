@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/parnurzeal/gorequest"
 	"golang.org/x/xerrors"
@@ -63,7 +64,7 @@ func (cnf *GoCveDictConf) CheckHTTPHealth() error {
 	}
 
 	url := fmt.Sprintf("%s/health", cnf.URL)
-	resp, _, errs := gorequest.New().SetDebug(Conf.Debug).Get(url).End()
+	resp, _, errs := gorequest.New().Timeout(10 * time.Second).SetDebug(Conf.Debug).Get(url).End()
 	//  resp, _, errs = gorequest.New().Proxy(api.httpProxy).Get(url).End()
 	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 		return xerrors.Errorf("Failed to request to CVE server. url: %s, errs: %s",
