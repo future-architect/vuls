@@ -226,7 +226,11 @@ func httpRequest(url, token string) (string, error) {
 		return "", err
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Token token=%s", token))
-	resp, err := util.GetHTTPClient(config.Conf.HTTPProxy).Do(req)
+	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
+	if err != nil {
+		return "", err
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
 	}

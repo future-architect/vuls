@@ -181,14 +181,17 @@ func Major(version string) string {
 }
 
 // GetHttpClient return http.Client
-func GetHTTPClient(proxy string) *http.Client {
+func GetHTTPClient(proxy string) (*http.Client, error) {
 	if proxy != "" {
-		proxyURL, _ := url.Parse(proxy)
+		proxyURL, err := url.Parse(proxy)
+		if err != nil {
+			return nil, err
+		}
 		return &http.Client{
 			Transport: &http.Transport{
 				Proxy: http.ProxyURL(proxyURL),
 			},
-		}
+		}, nil
 	}
-	return &http.Client{}
+	return &http.Client{}, nil
 }

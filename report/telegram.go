@@ -67,7 +67,11 @@ func sendMessage(chatID, token, message string) error {
 	}
 	req.Header.Add("Content-Type", "application/json")
 
-	resp, err := util.GetHTTPClient(config.Conf.HTTPProxy).Do(req)
+	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(req)
 	if checkResponse(resp) != nil && err != nil {
 		return err
 	}

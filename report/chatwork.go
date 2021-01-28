@@ -62,7 +62,11 @@ func chatWorkpostMessage(room, token, message string) error {
 	req.Header.Add("X-ChatWorkToken", token)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := util.GetHTTPClient(config.Conf.HTTPProxy).Do(req)
+	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
