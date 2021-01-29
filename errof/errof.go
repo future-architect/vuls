@@ -19,6 +19,8 @@ var (
 
 	// ErrFailedToAccessWpScan is error of wpscan.com api access
 	ErrFailedToAccessWpScan ErrorCode = "ErrFailedToAccessWpScan"
+	// ErrWpScanLimitExceeded is error of wpscan.com api limit exceeded
+	ErrWpScanLimitExceeded ErrorCode = "ErrWpScanLimitExceeded"
 )
 
 // New :
