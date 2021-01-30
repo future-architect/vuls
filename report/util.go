@@ -569,13 +569,13 @@ func minusDiff(curResults, preResults models.ScanResults) (diffed models.ScanRes
 			packages := models.Packages{}
 			for _, s := range current.ScannedCves {
 				for _, affected := range s.AffectedPackages {
-					p := current.Packages[affected.Name]
+					p := previous.Packages[affected.Name]
 					packages[affected.Name] = p
 				}
 			}
 			current.Packages = packages
 		} else {
-			break
+			continue
 		}
 
 		diffed = append(diffed, current)
