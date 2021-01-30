@@ -477,15 +477,18 @@ func needToRefreshCve(r models.ScanResult) bool {
 
 func overwriteJSONFile(dir string, r models.ScanResult) error {
 	before := config.Conf.FormatJSON
-	beforeDiff := config.Conf.Diff
+	beforePlusDiff := config.Conf.PlusDiff
+	beforeMinusDiff := config.Conf.MinusDiff
 	config.Conf.FormatJSON = true
-	config.Conf.Diff = false
+	config.Conf.PlusDiff = false
+	config.Conf.MinusDiff = false
 	w := LocalFileWriter{CurrentDir: dir}
 	if err := w.Write(r); err != nil {
 		return xerrors.Errorf("Failed to write summary report: %w", err)
 	}
 	config.Conf.FormatJSON = before
-	config.Conf.Diff = beforeDiff
+	config.Conf.PlusDiff = beforePlusDiff
+	config.Conf.MinusDiff = beforeMinusDiff
 	return nil
 }
 
@@ -520,7 +523,7 @@ func loadPrevious(currs models.ScanResults) (prevs models.ScanResults, err error
 	return prevs, nil
 }
 
-func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults, err error) {
+func plusDiff(curResults, preResults models.ScanResults) (diffed models.ScanResults, err error) {
 	for _, current := range curResults {
 		found := false
 		var previous models.ScanResult
@@ -533,7 +536,7 @@ func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults,
 		}
 
 		if found {
-			current.ScannedCves = getDiffCves(previous, current)
+			current.ScannedCves = getPlusDiffCves(previous, current)
 			packages := models.Packages{}
 			for _, s := range current.ScannedCves {
 				for _, affected := range s.AffectedPackages {
@@ -549,7 +552,38 @@ func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults,
 	return diffed, err
 }
 
-func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
+func minusDiff(curResults, preResults models.ScanResults) (diffed models.ScanResults, err error) {
+	for _, current := range curResults {
+		found := false
+		var previous models.ScanResult
+		for _, r := range preResults {
+			if current.ServerName == r.ServerName && current.Container.Name == r.Container.Name {
+				found = true
+				previous = r
+				break
+			}
+		}
+
+		if found {
+			current.ScannedCves = getMinusDiffCves(previous, current)
+			packages := models.Packages{}
+			for _, s := range current.ScannedCves {
+				for _, affected := range s.AffectedPackages {
+					p := current.Packages[affected.Name]
+					packages[affected.Name] = p
+				}
+			}
+			current.Packages = packages
+		} else {
+			break
+		}
+
+		diffed = append(diffed, current)
+	}
+	return diffed, err
+}
+
+func getPlusDiffCves(previous, current models.ScanResult) models.VulnInfos {
 	previousCveIDsSet := map[string]bool{}
 	for _, previousVulnInfo := range previous.ScannedCves {
 		previousCveIDsSet[previousVulnInfo.CveID] = true
@@ -587,6 +621,27 @@ func getDiffCves(previous, current models.ScanResult) models.VulnInfos {
 		updated[cveID] = vuln
 	}
 	return updated
+}
+
+func getMinusDiffCves(previous, current models.ScanResult) models.VulnInfos {
+	currentCveIDsSet := map[string]bool{}
+	for _, currentVulnInfo := range current.ScannedCves {
+		currentCveIDsSet[currentVulnInfo.CveID] = true
+	}
+
+	clear := models.VulnInfos{}
+	for _, v := range previous.ScannedCves {
+		if !currentCveIDsSet[v.CveID] {
+			clear[v.CveID] = v
+			util.Log.Debugf("clear: %s", v.CveID)
+		}
+	}
+
+	if len(clear) == 0 {
+		util.Log.Infof("%s: There are %d vulnerabilities, but no difference between current result and previous one.", current.FormatServerName(), len(current.ScannedCves))
+	}
+
+	return clear
 }
 
 func isCveFixed(current models.VulnInfo, previous models.ScanResult) bool {

@@ -74,8 +74,11 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	f.Float64Var(&c.Conf.CvssScoreOver, "cvss-over", 0,
 		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
 
-	f.BoolVar(&c.Conf.Diff, "diff", false,
-		"Difference between previous result and current result ")
+	f.BoolVar(&c.Conf.PlusDiff, "plus-diff", false,
+		"Plus Difference between previous result and current result ")
+
+	f.BoolVar(&c.Conf.MinusDiff, "minux-diff", false,
+		"Minus Difference between previous result and current result ")
 
 	f.BoolVar(
 		&c.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
@@ -102,7 +105,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 
 	var dir string
 	var err error
-	if c.Conf.Diff {
+	if c.Conf.PlusDiff || c.Conf.MinusDiff {
 		dir, err = report.JSONDir([]string{})
 	} else {
 		dir, err = report.JSONDir(f.Args())

@@ -83,7 +83,8 @@ type Config struct {
 	FormatFullText    bool `json:"formatFullText,omitempty"`
 	FormatCsvList     bool `json:"formatCsvList,omitempty"`
 	GZIP              bool `json:"gzip,omitempty"`
-	Diff              bool `json:"diff,omitempty"`
+	PlusDiff          bool `json:"plusDiff,omitempty"`
+	MinusDiff         bool `json:"minusDiff,omitempty"`
 }
 
 // ValidateOnConfigtest validates
