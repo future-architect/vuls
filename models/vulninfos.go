@@ -530,6 +530,7 @@ func (c Cvss) Format() string {
 	return fmt.Sprintf("%3.1f/%s %s", c.Score, c.Vector, c.Severity)
 }
 
+// SeverityToCvssScoreRange returns CVSS score range
 func (c Cvss) SeverityToCvssScoreRange() string {
 	return severityToCvssScoreRange(c.Severity)
 }

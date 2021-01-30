@@ -1,14 +1,17 @@
 package report
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/util"
 )
 
 // ChatWorkWriter send report to ChatWork
@@ -48,26 +51,25 @@ func (w ChatWorkWriter) Write(rs ...models.ScanResult) (err error) {
 
 func chatWorkpostMessage(room, token, message string) error {
 	uri := fmt.Sprintf("https://api.chatwork.com/v2/rooms/%s/messages=%s", room, token)
+	payload := url.Values{"body": {message}}
 
-	payload := url.Values{
-		"body": {message},
-	}
-
-	reqs, err := http.NewRequest("POST", uri, strings.NewReader(payload.Encode()))
-
-	reqs.Header.Add("X-ChatWorkToken", token)
-	reqs.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uri, strings.NewReader(payload.Encode()))
+	defer cancel()
 	if err != nil {
 		return err
 	}
-	client := &http.Client{}
+	req.Header.Add("X-ChatWorkToken", token)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := client.Do(reqs)
+	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-
 	return nil
 }

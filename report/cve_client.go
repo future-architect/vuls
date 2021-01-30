@@ -114,7 +114,7 @@ func (api cvedictClient) httpGet(key, url string, resChan chan<- response, errCh
 	var resp *http.Response
 	f := func() (err error) {
 		//  resp, body, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
-		resp, body, errs = gorequest.New().Get(url).End()
+		resp, body, errs = gorequest.New().Timeout(10 * time.Second).Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			return xerrors.Errorf("HTTP GET Error, url: %s, resp: %v, err: %s",
 				url, resp, errs)
@@ -162,7 +162,7 @@ func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]c
 	var resp *http.Response
 	f := func() (err error) {
 		//  req := gorequest.New().SetDebug(config.Conf.Debug).Post(url)
-		req := gorequest.New().Post(url)
+		req := gorequest.New().Timeout(10 * time.Second).Post(url)
 		for key := range query {
 			req = req.Send(fmt.Sprintf("%s=%s", key, query[key])).Type("json")
 		}

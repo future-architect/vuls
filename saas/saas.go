@@ -2,20 +2,22 @@ package saas
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -41,8 +43,7 @@ type payload struct {
 }
 
 // UploadSaas : UploadSaas
-func (w Writer) Write(rs ...models.ScanResult) (err error) {
-	// dir string, configPath string, config *c.Config
+func (w Writer) Write(rs ...models.ScanResult) error {
 	if len(rs) == 0 {
 		return nil
 	}
@@ -60,34 +61,25 @@ func (w Writer) Write(rs ...models.ScanResult) (err error) {
 		ScannedIPv4s: strings.Join(ipv4s, ", "),
 		ScannedIPv6s: strings.Join(ipv6s, ", "),
 	}
-
-	var body []byte
-	if body, err = json.Marshal(payload); err != nil {
+	body, err := json.Marshal(payload)
+	if err != nil {
 		return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
 	}
 
-	var req *http.Request
-	if req, err = http.NewRequest("POST", c.Conf.Saas.URL, bytes.NewBuffer(body)); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.Conf.Saas.URL, bytes.NewBuffer(body))
+	defer cancel()
+	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-
-	proxy := c.Conf.HTTPProxy
-	var client http.Client
-	if proxy != "" {
-		proxyURL, _ := url.Parse(proxy)
-		client = http.Client{
-			Transport: &http.Transport{
-				Proxy: http.ProxyURL(proxyURL),
-			},
-		}
-	} else {
-		client = http.Client{}
+	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
+	if err != nil {
+		return err
 	}
-
-	var resp *http.Response
-	if resp, err = client.Do(req); err != nil {
+	resp, err := client.Do(req)
+	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
@@ -95,44 +87,40 @@ func (w Writer) Write(rs ...models.ScanResult) (err error) {
 		return xerrors.Errorf("Failed to get Credential. Request JSON : %s,", string(body))
 	}
 
-	var t []byte
-	if t, err = ioutil.ReadAll(resp.Body); err != nil {
+	t, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
 		return err
 	}
-
 	var tempCredential TempCredential
-	if err = json.Unmarshal(t, &tempCredential); err != nil {
+	if err := json.Unmarshal(t, &tempCredential); err != nil {
 		return xerrors.Errorf("Failed to unmarshal saas credential file. err : %s", err)
 	}
 
-	credential := credentials.NewStaticCredentialsFromCreds(credentials.Value{
-		AccessKeyID:     *tempCredential.Credential.AccessKeyId,
-		SecretAccessKey: *tempCredential.Credential.SecretAccessKey,
-		SessionToken:    *tempCredential.Credential.SessionToken,
+	sess, err := session.NewSession(&aws.Config{
+		Credentials: credentials.NewStaticCredentialsFromCreds(credentials.Value{
+			AccessKeyID:     *tempCredential.Credential.AccessKeyId,
+			SecretAccessKey: *tempCredential.Credential.SecretAccessKey,
+			SessionToken:    *tempCredential.Credential.SessionToken,
+		}),
+		Region: aws.String("ap-northeast-1"),
 	})
-
-	var sess *session.Session
-	if sess, err = session.NewSession(&aws.Config{
-		Credentials: credential,
-		Region:      aws.String("ap-northeast-1"),
-	}); err != nil {
+	if err != nil {
 		return xerrors.Errorf("Failed to new aws session. err: %w", err)
 	}
 
 	svc := s3.New(sess)
 	for _, r := range rs {
-		s3Key := renameKeyName(r.ServerUUID, r.Container)
-		var b []byte
-		if b, err = json.Marshal(r); err != nil {
+		b, err := json.Marshal(r)
+		if err != nil {
 			return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
 		}
 		util.Log.Infof("Uploading...: ServerName: %s, ", r.ServerName)
+		s3Key := renameKeyName(r.ServerUUID, r.Container)
 		putObjectInput := &s3.PutObjectInput{
 			Bucket: aws.String(tempCredential.S3Bucket),
 			Key:    aws.String(path.Join(tempCredential.S3ResultsDir, s3Key)),
 			Body:   bytes.NewReader(b),
 		}
-
 		if _, err := svc.PutObject(putObjectInput); err != nil {
 			return xerrors.Errorf("Failed to upload data to %s/%s, err: %w",
 				tempCredential.S3Bucket, s3Key, err)

@@ -39,7 +39,7 @@ func (b Base) CheckIfOvalFetched(driver db.DB, osFamily, release string) (fetche
 	}
 
 	url, _ := util.URLPathJoin(cnf.Conf.OvalDict.URL, "count", osFamily, release)
-	resp, body, errs := gorequest.New().Get(url).End()
+	resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
 	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 		return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %s", url, resp, errs)
 	}
@@ -57,7 +57,7 @@ func (b Base) CheckIfOvalFresh(driver db.DB, osFamily, release string) (ok bool,
 		lastModified = driver.GetLastModified(osFamily, release)
 	} else {
 		url, _ := util.URLPathJoin(cnf.Conf.OvalDict.URL, "lastmodified", osFamily, release)
-		resp, body, errs := gorequest.New().Get(url).End()
+		resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %s", url, resp, errs)
 		}

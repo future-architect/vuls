@@ -22,6 +22,7 @@ func DetectGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string)
 	src := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
+	//TODO Proxy
 	httpClient := oauth2.NewClient(context.Background(), src)
 
 	// TODO Use `https://github.com/shurcooL/githubv4` if the tool supports vulnerabilityAlerts Endpoint
@@ -32,10 +33,12 @@ func DetectGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string)
 
 	for {
 		jsonStr := fmt.Sprintf(jsonfmt, owner, repo, 100, after)
-		req, err := http.NewRequest("POST",
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost,
 			"https://api.github.com/graphql",
 			bytes.NewBuffer([]byte(jsonStr)),
 		)
+		defer cancel()
 		if err != nil {
 			return 0, err
 		}

@@ -1,12 +1,15 @@
 package wordpress
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/errof"
 	"github.com/future-architect/vuls/models"
@@ -216,12 +219,18 @@ func extractToVulnInfos(pkgName string, cves []WpCveInfo) (vinfos []models.VulnI
 }
 
 func httpRequest(url, token string) (string, error) {
-	req, err := http.NewRequest("GET", url, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	defer cancel()
 	if err != nil {
 		return "", err
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Token token=%s", token))
-	resp, err := new(http.Client).Do(req)
+	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
+	if err != nil {
+		return "", err
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
 	}
