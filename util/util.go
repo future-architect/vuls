@@ -180,7 +180,7 @@ func Major(version string) string {
 	return ver[0:strings.Index(ver, ".")]
 }
 
-// GetHttpClient return http.Client
+// GetHTTPClient return http.Client
 func GetHTTPClient(proxy string) (*http.Client, error) {
 	if proxy != "" {
 		proxyURL, err := url.Parse(proxy)
