@@ -59,7 +59,8 @@ func DetectWordPressCves(r *models.ScanResult, cnf *c.WpScanConf) (int, error) {
 	// Core
 	ver := strings.Replace(r.WordPressPackages.CoreVersion(), ".", "", -1)
 	if ver == "" {
-		return 0, xerrors.New("Failed to get WordPress core version")
+		return 0, errof.New(errof.ErrFailedToAccessWpScan,
+			fmt.Sprintf("Failed to get WordPress core version."))
 	}
 	url := fmt.Sprintf("https://wpscan.com/api/v3/wordpresses/%s", ver)
 	wpVinfos, err := wpscan(url, ver, cnf.Token)
@@ -114,8 +115,7 @@ func DetectWordPressCves(r *models.ScanResult, cnf *c.WpScanConf) (int, error) {
 func wpscan(url, name, token string) (vinfos []models.VulnInfo, err error) {
 	body, err := httpRequest(url, token)
 	if err != nil {
-		return nil, errof.New(errof.ErrFailedToAccessWpScan,
-			fmt.Sprintf("Failed to access to wpscan.comm. body: %s, err: %s", string(body), err))
+		return nil, err
 	}
 	if body == "" {
 		util.Log.Debugf("wpscan.com response body is empty. URL: %s", url)
@@ -223,7 +223,8 @@ func httpRequest(url, token string) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	defer cancel()
 	if err != nil {
-		return "", err
+		return "", errof.New(errof.ErrFailedToAccessWpScan,
+			fmt.Sprintf("Failed to access to wpscan.com. err: %s", err))
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Token token=%s", token))
 	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
@@ -232,11 +233,13 @@ func httpRequest(url, token string) (string, error) {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return "", errof.New(errof.ErrFailedToAccessWpScan,
+			fmt.Sprintf("Failed to access to wpscan.com. err: %s", err))
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return "", errof.New(errof.ErrFailedToAccessWpScan,
+			fmt.Sprintf("Failed to access to wpscan.com. err: %s", err))
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == 200 {
@@ -245,7 +248,8 @@ func httpRequest(url, token string) (string, error) {
 		// This package is not in wpscan
 		return "", nil
 	} else if resp.StatusCode == 429 {
-		return "", xerrors.Errorf("wpscan.com API limit exceeded: %+v", resp.Status)
+		return "", errof.New(errof.ErrWpScanAPILimitExceeded,
+			fmt.Sprintf("wpscan.com API limit exceeded: %+v", resp.Status))
 	} else {
 		util.Log.Warnf("wpscan.com unknown status code: %+v", resp.Status)
 		return "", nil
