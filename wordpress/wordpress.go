@@ -219,18 +219,18 @@ func httpRequest(url, token string) (string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", errof.New(errof.ErrFailedToAccessWpScan,
-			fmt.Sprintf("Failed to access to wpscan.comm. err: %s", err))
+			fmt.Sprintf("Failed to access to wpscan.com. err: %s", err))
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Token token=%s", token))
 	resp, err := new(http.Client).Do(req)
 	if err != nil {
 		return "", errof.New(errof.ErrFailedToAccessWpScan,
-			fmt.Sprintf("Failed to access to wpscan.comm. err: %s", err))
+			fmt.Sprintf("Failed to access to wpscan.com. err: %s", err))
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", errof.New(errof.ErrFailedToAccessWpScan,
-			fmt.Sprintf("Failed to access to wpscan.comm. err: %s", err))
+			fmt.Sprintf("Failed to access to wpscan.com. err: %s", err))
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == 200 {
@@ -239,7 +239,7 @@ func httpRequest(url, token string) (string, error) {
 		// This package is not in wpscan
 		return "", nil
 	} else if resp.StatusCode == 429 {
-		return "", errof.New(errof.ErrWpScanLimitExceeded,
+		return "", errof.New(errof.ErrWpScanAPILimitExceeded,
 			fmt.Sprintf("wpscan.com API limit exceeded: %+v", resp.Status))
 	} else {
 		util.Log.Warnf("wpscan.com unknown status code: %+v", resp.Status)
