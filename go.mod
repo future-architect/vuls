@@ -38,6 +38,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/parnurzeal/gorequest v0.2.16
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
+	github.com/rivo/tview v0.0.0-20210125085121-dbc1f32bb1d0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/afero v1.5.1
 	github.com/spf13/cobra v1.1.1
