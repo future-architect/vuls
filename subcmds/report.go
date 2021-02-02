@@ -96,7 +96,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
 
 	f.BoolVar(&c.Conf.Diff, "diff", false,
-		"Difference between previous result and current result ")
+		"Difference between previous result and current result")
 
 	f.BoolVar(&c.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
 		"Don't report the unscored CVEs")
