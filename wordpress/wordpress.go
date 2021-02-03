@@ -32,11 +32,10 @@ type WpCveInfos struct {
 
 //WpCveInfo is for wpscan json
 type WpCveInfo struct {
-	ID        string `json:"id"`
-	Title     string `json:"title"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-	// PublishedDate string     `json:"published_date"`
+	ID         string     `json:"id"`
+	Title      string     `json:"title"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
 	VulnType   string     `json:"vuln_type"`
 	References References `json:"references"`
 	FixedIn    string     `json:"fixed_in"`
@@ -198,10 +197,12 @@ func extractToVulnInfos(pkgName string, cves []WpCveInfo) (vinfos []models.VulnI
 				CveID: cveID,
 				CveContents: models.NewCveContents(
 					models.CveContent{
-						Type:       models.WpScan,
-						CveID:      cveID,
-						Title:      vulnerability.Title,
-						References: refs,
+						Type:         models.WpScan,
+						CveID:        cveID,
+						Title:        vulnerability.Title,
+						References:   refs,
+						Published:    vulnerability.CreatedAt,
+						LastModified: vulnerability.UpdatedAt,
 					},
 				),
 				VulnType: vulnerability.VulnType,
