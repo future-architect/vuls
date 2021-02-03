@@ -57,12 +57,24 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 				return references[i].Link < references[j].Link
 			})
 
+			var published time.Time
+			if vuln.PublishedDate != nil {
+				published = *vuln.PublishedDate
+			}
+
+			var lastModified time.Time
+			if vuln.LastModifiedDate != nil {
+				lastModified = *vuln.LastModifiedDate
+			}
+
 			vulnInfo.CveContents = models.CveContents{
 				models.Trivy: models.CveContent{
 					Cvss3Severity: vuln.Severity,
 					References:    references,
 					Title:         vuln.Title,
 					Summary:       vuln.Description,
+					Published:     published,
+					LastModified:  lastModified,
 				},
 			}
 			// do only if image type is Vuln
