@@ -40,18 +40,16 @@ func newDebian(c config.ServerInfo) *debian {
 
 // Ubuntu, Debian, Raspbian
 // https://github.com/serverspec/specinfra/blob/master/lib/specinfra/helper/detect_os/debian.rb
-func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err error) {
-	deb = newDebian(c)
-
+func detectDebian(c config.ServerInfo) (bool, osTypeInterface, error) {
 	if r := exec(c, "ls /etc/debian_version", noSudo); !r.isSuccess() {
 		if r.Error != nil {
-			return false, deb, nil
+			return false, nil, nil
 		}
 		if r.ExitStatus == 255 {
-			return false, deb, xerrors.Errorf("Unable to connect via SSH. Scan with -vvv option to print SSH debugging messages and check SSH settings. If you have never SSH to the host to be scanned, SSH to the host before scanning in order to add the HostKey. %s@%s port: %s\n%s", c.User, c.Host, c.Port, r)
+			return false, nil, xerrors.Errorf("Unable to connect via SSH. Scan with -vvv option to print SSH debugging messages and check SSH settings. If you have never SSH to the host to be scanned, SSH to the host before scanning in order to add the HostKey. %s@%s port: %s\n%s", c.User, c.Host, c.Port, r)
 		}
 		util.Log.Debugf("Not Debian like Linux. %s", r)
-		return false, deb, nil
+		return false, nil, nil
 	}
 
 	// Raspbian
@@ -62,8 +60,8 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err err
 		//  Raspbian GNU/Linux 7 \n \l
 		result := strings.Fields(r.Stdout)
 		if len(result) > 2 && result[0] == config.Raspbian {
-			distro := strings.ToLower(trim(result[0]))
-			deb.setDistro(distro, trim(result[2]))
+			deb := newDebian(c)
+			deb.setDistro(strings.ToLower(trim(result[0])), trim(result[2]))
 			return true, deb, nil
 		}
 	}
@@ -76,10 +74,10 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err err
 		re := regexp.MustCompile(`(?s)^Distributor ID:\s*(.+?)\n*Release:\s*(.+?)$`)
 		result := re.FindStringSubmatch(trim(r.Stdout))
 
+		deb := newDebian(c)
 		if len(result) == 0 {
 			deb.setDistro("debian/ubuntu", "unknown")
-			util.Log.Warnf(
-				"Unknown Debian/Ubuntu version. lsb_release -ir: %s", r)
+			util.Log.Warnf("Unknown Debian/Ubuntu version. lsb_release -ir: %s", r)
 		} else {
 			distro := strings.ToLower(trim(result[1]))
 			deb.setDistro(distro, trim(result[2]))
@@ -95,6 +93,7 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err err
 		//  DISTRIB_DESCRIPTION="Ubuntu 14.04.2 LTS"
 		re := regexp.MustCompile(`(?s)^DISTRIB_ID=(.+?)\n*DISTRIB_RELEASE=(.+?)\n.*$`)
 		result := re.FindStringSubmatch(trim(r.Stdout))
+		deb := newDebian(c)
 		if len(result) == 0 {
 			util.Log.Warnf(
 				"Unknown Debian/Ubuntu. cat /etc/lsb-release: %s", r)
@@ -109,12 +108,13 @@ func detectDebian(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err err
 	// Debian
 	cmd := "cat /etc/debian_version"
 	if r := exec(c, cmd, noSudo); r.isSuccess() {
+		deb := newDebian(c)
 		deb.setDistro(config.Debian, trim(r.Stdout))
 		return true, deb, nil
 	}
 
 	util.Log.Debugf("Not Debian like Linux: %s", c.ServerName)
-	return false, deb, nil
+	return false, nil, nil
 }
 
 func trim(str string) string {

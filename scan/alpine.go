@@ -32,19 +32,16 @@ func newAlpine(c config.ServerInfo) *alpine {
 
 // Alpine
 // https://github.com/mizzy/specinfra/blob/master/lib/specinfra/helper/detect_os/alpine.rb
-func detectAlpine(c config.ServerInfo) (itsMe bool, os osTypeInterface) {
-	os = newAlpine(c)
-
+func detectAlpine(c config.ServerInfo) (bool, osTypeInterface) {
 	if r := exec(c, "ls /etc/alpine-release", noSudo); !r.isSuccess() {
-		return false, os
+		return false, nil
 	}
-
 	if r := exec(c, "cat /etc/alpine-release", noSudo); r.isSuccess() {
+		os := newAlpine(c)
 		os.setDistro(config.Alpine, strings.TrimSpace(r.Stdout))
 		return true, os
 	}
-
-	return false, os
+	return false, nil
 }
 
 func (o *alpine) checkScanMode() error {

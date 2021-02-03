@@ -29,7 +29,7 @@ func main() {
 	flag.Parse()
 
 	if *v {
-		fmt.Printf("vuls %s %s\n", config.Version, config.Revision)
+		fmt.Printf("vuls-%s-%s\n", config.Version, config.Revision)
 		os.Exit(int(subcommands.ExitSuccess))
 	}
 

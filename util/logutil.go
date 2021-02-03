@@ -86,8 +86,9 @@ func NewCustomLogger(server config.ServerInfo) *logrus.Entry {
 		}
 	}
 
-	fields := logrus.Fields{"prefix": whereami}
-	return log.WithFields(fields)
+	entry := log.WithFields(logrus.Fields{"prefix": whereami})
+	entry.Infof("vuls-%s-%s", config.Version, config.Revision)
+	return entry
 }
 
 // GetDefaultLogDir returns default log directory

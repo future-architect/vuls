@@ -36,10 +36,10 @@ func newSUSE(c config.ServerInfo) *suse {
 
 // https://github.com/mizzy/specinfra/blob/master/lib/specinfra/helper/detect_os/suse.rb
 func detectSUSE(c config.ServerInfo) (bool, osTypeInterface) {
-	s := newSUSE(c)
 	if r := exec(c, "ls /etc/os-release", noSudo); r.isSuccess() {
 		if r := exec(c, "zypper -V", noSudo); r.isSuccess() {
 			if r := exec(c, "cat /etc/os-release", noSudo); r.isSuccess() {
+				s := newSUSE(c)
 				name, ver := s.parseOSRelease(r.Stdout)
 				s.setDistro(name, ver)
 				return true, s
@@ -52,6 +52,7 @@ func detectSUSE(c config.ServerInfo) (bool, osTypeInterface) {
 				result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 				if len(result) == 2 {
 					//TODO check opensuse or opensuse.leap
+					s := newSUSE(c)
 					s.setDistro(config.OpenSUSE, result[1])
 					return true, s
 				}
@@ -63,18 +64,19 @@ func detectSUSE(c config.ServerInfo) (bool, osTypeInterface) {
 					re = regexp.MustCompile(`PATCHLEVEL = (\d+)`)
 					result = re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 					if len(result) == 2 {
+						s := newSUSE(c)
 						s.setDistro(config.SUSEEnterpriseServer,
 							fmt.Sprintf("%s.%s", version, result[1]))
 						return true, s
 					}
 				}
 				util.Log.Warnf("Failed to parse SUSE Linux version: %s", r)
-				return true, s
+				return true, newSUSE(c)
 			}
 		}
 	}
 	util.Log.Debugf("Not SUSE Linux. servername: %s", c.ServerName)
-	return false, s
+	return false, nil
 }
 
 func (o *suse) parseOSRelease(content string) (name string, ver string) {

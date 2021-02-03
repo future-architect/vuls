@@ -12,9 +12,12 @@ type pseudo struct {
 }
 
 func detectPseudo(c config.ServerInfo) (itsMe bool, pseudo osTypeInterface, err error) {
-	p := newPseudo(c)
-	p.setDistro(config.ServerTypePseudo, "")
-	return c.Type == config.ServerTypePseudo, p, nil
+	if c.Type == config.ServerTypePseudo {
+		p := newPseudo(c)
+		p.setDistro(config.ServerTypePseudo, "")
+		return true, p, nil
+	}
+	return false, nil, nil
 }
 
 func newPseudo(c config.ServerInfo) *pseudo {
