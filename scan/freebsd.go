@@ -31,15 +31,14 @@ func newBsd(c config.ServerInfo) *bsd {
 }
 
 //https://github.com/mizzy/specinfra/blob/master/lib/specinfra/helper/detect_os/freebsd.rb
-func detectFreebsd(c config.ServerInfo) (itsMe bool, bsd osTypeInterface) {
-	bsd = newBsd(c)
-
+func detectFreebsd(c config.ServerInfo) (bool, osTypeInterface) {
 	// Prevent from adding `set -o pipefail` option
 	c.Distro = config.Distro{Family: config.FreeBSD}
 
 	if r := exec(c, "uname", noSudo); r.isSuccess() {
 		if strings.Contains(strings.ToLower(r.Stdout), config.FreeBSD) == true {
 			if b := exec(c, "freebsd-version", noSudo); b.isSuccess() {
+				bsd := newBsd(c)
 				rel := strings.TrimSpace(b.Stdout)
 				bsd.setDistro(config.FreeBSD, rel)
 				return true, bsd
@@ -47,7 +46,7 @@ func detectFreebsd(c config.ServerInfo) (itsMe bool, bsd osTypeInterface) {
 		}
 	}
 	util.Log.Debugf("Not FreeBSD. servernam: %s", c.ServerName)
-	return false, bsd
+	return false, nil
 }
 
 func (o *bsd) checkScanMode() error {
