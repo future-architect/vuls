@@ -77,7 +77,7 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.Conf.PlusDiff, "plus-diff", false,
 		"Plus Difference between previous result and current result")
 
-	f.BoolVar(&c.Conf.MinusDiff, "minux-diff", false,
+	f.BoolVar(&c.Conf.MinusDiff, "minus-diff", false,
 		"Minus Difference between previous result and current result")
 
 	f.BoolVar(
