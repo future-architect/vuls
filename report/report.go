@@ -127,7 +127,6 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			return nil, err
 		}
 
-		var rs models.ScanResults
 		if c.Conf.PlusDiff {
 			rs, err = plusDiff(rs, prevs)
 			if err != nil {
@@ -139,7 +138,6 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 				return nil, err
 			}
 		}
-
 	}
 
 	for i, r := range rs {
