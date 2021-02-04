@@ -75,10 +75,10 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
 
 	f.BoolVar(&c.Conf.PlusDiff, "plus-diff", false,
-		"Plus Difference between previous result and current result ")
+		"Plus Difference between previous result and current result")
 
 	f.BoolVar(&c.Conf.MinusDiff, "minux-diff", false,
-		"Minus Difference between previous result and current result ")
+		"Minus Difference between previous result and current result")
 
 	f.BoolVar(
 		&c.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
