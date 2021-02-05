@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/config"
+	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/gosuri/uitable"
@@ -523,7 +524,7 @@ func loadPrevious(currs models.ScanResults) (prevs models.ScanResults, err error
 	return prevs, nil
 }
 
-func plusDiff(curResults, preResults models.ScanResults) (diffed models.ScanResults, err error) {
+func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults, err error) {
 	for _, current := range curResults {
 		found := false
 		var previous models.ScanResult
@@ -536,45 +537,26 @@ func plusDiff(curResults, preResults models.ScanResults) (diffed models.ScanResu
 		}
 
 		if found {
-			current.ScannedCves = getPlusDiffCves(previous, current)
 			packages := models.Packages{}
-			for _, s := range current.ScannedCves {
-				for _, affected := range s.AffectedPackages {
-					p := current.Packages[affected.Name]
-					packages[affected.Name] = p
+			if c.Conf.PlusDiff {
+				current.ScannedCves = getPlusDiffCves(previous, current)
+				for _, s := range current.ScannedCves {
+					for _, affected := range s.AffectedPackages {
+						p := current.Packages[affected.Name]
+						packages[affected.Name] = p
+					}
+				}
+			} else {
+				current.ScannedCves = getMinusDiffCves(previous, current)
+				for _, s := range current.ScannedCves {
+					for _, affected := range s.AffectedPackages {
+						p := previous.Packages[affected.Name]
+						packages[affected.Name] = p
+					}
 				}
 			}
 			current.Packages = packages
-		}
-
-		diffed = append(diffed, current)
-	}
-	return diffed, err
-}
-
-func minusDiff(curResults, preResults models.ScanResults) (diffed models.ScanResults, err error) {
-	for _, current := range curResults {
-		found := false
-		var previous models.ScanResult
-		for _, r := range preResults {
-			if current.ServerName == r.ServerName && current.Container.Name == r.Container.Name {
-				found = true
-				previous = r
-				break
-			}
-		}
-
-		if found {
-			current.ScannedCves = getMinusDiffCves(previous, current)
-			packages := models.Packages{}
-			for _, s := range current.ScannedCves {
-				for _, affected := range s.AffectedPackages {
-					p := previous.Packages[affected.Name]
-					packages[affected.Name] = p
-				}
-			}
-			current.Packages = packages
-		} else {
+		} else if c.Conf.MinusDiff {
 			continue
 		}
 

@@ -316,7 +316,7 @@ func TestPlusDiff(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		diff, _ := plusDiff(tt.inCurrent, tt.inPrevious)
+		diff, _ := diff(tt.inCurrent, tt.inPrevious)
 		for _, actual := range diff {
 			if !reflect.DeepEqual(actual.ScannedCves, tt.out.ScannedCves) {
 				h := pp.Sprint(actual.ScannedCves)
@@ -399,7 +399,7 @@ func TestMinusDiff(t *testing.T) {
 				ServerName:  "u16",
 				Family:      "ubuntu",
 				Release:     "16.04",
-				Packages:    models.Packages{},
+				Packages:    nil,
 				ScannedCves: models.VulnInfos{},
 				Errors:      []string{},
 				Optional:    map[string]interface{}{},
@@ -477,7 +477,7 @@ func TestMinusDiff(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		diff, _ := minusDiff(tt.inCurrent, tt.inPrevious)
+		diff, _ := diff(tt.inCurrent, tt.inPrevious)
 		for _, actual := range diff {
 			if !reflect.DeepEqual(actual.ScannedCves, tt.out.ScannedCves) {
 				h := pp.Sprint(actual.ScannedCves)

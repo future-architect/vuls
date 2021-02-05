@@ -40,8 +40,8 @@ func (*ReportCmd) Usage() string {
 		[-log-dir=/path/to/log]
 		[-refresh-cve]
 		[-cvss-over=7]
-		[-minus-diff]
-		[-plus-diff]
+		[-diff-minus]
+		[-diff-plus]
 		[-ignore-unscored-cves]
 		[-ignore-unfixed]
 		[-ignore-github-dismissed]
@@ -96,10 +96,10 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.Float64Var(&c.Conf.CvssScoreOver, "cvss-over", 0,
 		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
 
-	f.BoolVar(&c.Conf.MinusDiff, "minus-diff", false,
+	f.BoolVar(&c.Conf.MinusDiff, "diff-minus", false,
 		"Minus Difference between previous result and current result")
 
-	f.BoolVar(&c.Conf.PlusDiff, "plus-diff", false,
+	f.BoolVar(&c.Conf.PlusDiff, "diff-plus", false,
 		"Plus Difference between previous result and current result")
 
 	f.BoolVar(&c.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
