@@ -523,7 +523,7 @@ func loadPrevious(currs models.ScanResults) (prevs models.ScanResults, err error
 	return prevs, nil
 }
 
-func diff(curResults, preResults models.ScanResults, isPlus bool) (diffed models.ScanResults, err error) {
+func diff(curResults, preResults models.ScanResults, isPlusDiff bool) (diffed models.ScanResults, err error) {
 	for _, current := range curResults {
 		found := false
 		var previous models.ScanResult
@@ -535,7 +535,7 @@ func diff(curResults, preResults models.ScanResults, isPlus bool) (diffed models
 			}
 		}
 
-		if found && isPlus {
+		if found && isPlusDiff {
 			packages := models.Packages{}
 			current.ScannedCves = getPlusDiffCves(previous, current)
 			for _, s := range current.ScannedCves {
@@ -547,7 +547,7 @@ func diff(curResults, preResults models.ScanResults, isPlus bool) (diffed models
 			current.Packages = packages
 		}
 
-		if found && !isPlus {
+		if found && !isPlusDiff {
 			packages := models.Packages{}
 			current.ScannedCves = getMinusDiffCves(previous, current)
 			for _, s := range current.ScannedCves {
@@ -557,7 +557,7 @@ func diff(curResults, preResults models.ScanResults, isPlus bool) (diffed models
 				}
 			}
 			current.Packages = packages
-		} else if !isPlus {
+		} else if !isPlusDiff {
 			continue
 		}
 
