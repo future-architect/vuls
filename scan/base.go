@@ -888,6 +888,7 @@ func (l *base) parseGrepProcMap(stdout string) (soPaths []string) {
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
+		line = strings.Split(line, ";")[0]
 		soPaths = append(soPaths, line)
 	}
 	return soPaths
