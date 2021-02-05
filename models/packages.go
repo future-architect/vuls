@@ -63,13 +63,13 @@ func (ps Packages) FindOne(f func(Package) bool) (string, Package, bool) {
 }
 
 // FindByFQPN search a package by Fully-Qualified-Package-Name
-func (ps Packages) FindByFQPN(nameVerRelArc string) (*Package, error) {
+func (ps Packages) FindByFQPN(nameVerRel string) (*Package, error) {
 	for _, p := range ps {
-		if nameVerRelArc == p.FQPN() {
+		if nameVerRel == p.FQPN() {
 			return &p, nil
 		}
 	}
-	return nil, xerrors.Errorf("Failed to find the package: %s", nameVerRelArc)
+	return nil, xerrors.Errorf("Failed to find the package: %s", nameVerRel)
 }
 
 // Package has installed binary packages.
@@ -95,9 +95,6 @@ func (p Package) FQPN() string {
 	}
 	if p.Release != "" {
 		fqpn += fmt.Sprintf("-%s", p.Release)
-	}
-	if p.Arch != "" {
-		fqpn += fmt.Sprintf(".%s", p.Arch)
 	}
 	return fqpn
 }

@@ -508,14 +508,14 @@ func (o *redhatBase) yumPs() error {
 
 	for pid, loadedFiles := range pidLoadedFiles {
 		o.log.Debugf("rpm -qf: %#v", loadedFiles)
-		pkgNames, err := o.getPkgName(loadedFiles)
+		pkgNameVerRels, err := o.getPkgNameVerRels(loadedFiles)
 		if err != nil {
-			o.log.Debugf("Failed to get package name by file path: %s, err: %s", pkgNames, err)
+			o.log.Debugf("Failed to get package name by file path: %s, err: %s", pkgNameVerRels, err)
 			continue
 		}
 
 		uniq := map[string]struct{}{}
-		for _, name := range pkgNames {
+		for _, name := range pkgNameVerRels {
 			uniq[name] = struct{}{}
 		}
 
@@ -529,8 +529,8 @@ func (o *redhatBase) yumPs() error {
 			ListenPortStats: pidListenPorts[pid],
 		}
 
-		for fqpn := range uniq {
-			p, err := o.Packages.FindByFQPN(fqpn)
+		for pkgNameVerRel := range uniq {
+			p, err := o.Packages.FindByFQPN(pkgNameVerRel)
 			if err != nil {
 				return err
 			}
@@ -623,7 +623,7 @@ func (o *redhatBase) parseNeedsRestarting(stdout string) (procs []models.NeedRes
 func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
 	execCommand = strings.Replace(execCommand, "\x00", " ", -1) // for CentOS6.9
 	path := strings.Fields(execCommand)[0]
-	cmd := `LANGUAGE=en_US.UTF-8 rpm -qf --queryformat "%{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}.%{ARCH}\n" ` + path
+	cmd := `LANGUAGE=en_US.UTF-8 rpm -qf --queryformat "%{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}\n" ` + path
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
 		return "", xerrors.Errorf("Failed to SSH: %s", r)
@@ -632,7 +632,7 @@ func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
 	return strings.Replace(fqpn, "-(none):", "-", -1), nil
 }
 
-func (o *redhatBase) getPkgName(paths []string) (pkgNames []string, err error) {
+func (o *redhatBase) getPkgNameVerRels(paths []string) (pkgNameVerRels []string, err error) {
 	cmd := o.rpmQf() + strings.Join(paths, " ")
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess(0, 2, 4, 8) {
@@ -647,9 +647,9 @@ func (o *redhatBase) getPkgName(paths []string) (pkgNames []string, err error) {
 			o.log.Debugf("Failed to parse rpm -qf line: %s, r: %s. continue", line, r)
 			continue
 		}
-		pkgNames = append(pkgNames, pack.FQPN())
+		pkgNameVerRels = append(pkgNameVerRels, pack.FQPN())
 	}
-	return pkgNames, nil
+	return pkgNameVerRels, nil
 }
 
 func (o *redhatBase) rpmQa() string {
