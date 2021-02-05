@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/config"
-	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/gosuri/uitable"
@@ -524,7 +523,7 @@ func loadPrevious(currs models.ScanResults) (prevs models.ScanResults, err error
 	return prevs, nil
 }
 
-func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults, err error) {
+func diff(curResults, preResults models.ScanResults, isPlus bool) (diffed models.ScanResults, err error) {
 	for _, current := range curResults {
 		found := false
 		var previous models.ScanResult
@@ -536,27 +535,29 @@ func diff(curResults, preResults models.ScanResults) (diffed models.ScanResults,
 			}
 		}
 
-		if found {
+		if found && isPlus {
 			packages := models.Packages{}
-			if c.Conf.PlusDiff {
-				current.ScannedCves = getPlusDiffCves(previous, current)
-				for _, s := range current.ScannedCves {
-					for _, affected := range s.AffectedPackages {
-						p := current.Packages[affected.Name]
-						packages[affected.Name] = p
-					}
-				}
-			} else {
-				current.ScannedCves = getMinusDiffCves(previous, current)
-				for _, s := range current.ScannedCves {
-					for _, affected := range s.AffectedPackages {
-						p := previous.Packages[affected.Name]
-						packages[affected.Name] = p
-					}
+			current.ScannedCves = getPlusDiffCves(previous, current)
+			for _, s := range current.ScannedCves {
+				for _, affected := range s.AffectedPackages {
+					p := current.Packages[affected.Name]
+					packages[affected.Name] = p
 				}
 			}
 			current.Packages = packages
-		} else if c.Conf.MinusDiff {
+		}
+
+		if found && !isPlus {
+			packages := models.Packages{}
+			current.ScannedCves = getMinusDiffCves(previous, current)
+			for _, s := range current.ScannedCves {
+				for _, affected := range s.AffectedPackages {
+					p := previous.Packages[affected.Name]
+					packages[affected.Name] = p
+				}
+			}
+			current.Packages = packages
+		} else if !isPlus {
 			continue
 		}
 

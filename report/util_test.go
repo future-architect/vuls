@@ -316,7 +316,7 @@ func TestPlusDiff(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		diff, _ := diff(tt.inCurrent, tt.inPrevious)
+		diff, _ := diff(tt.inCurrent, tt.inPrevious, true)
 		for _, actual := range diff {
 			if !reflect.DeepEqual(actual.ScannedCves, tt.out.ScannedCves) {
 				h := pp.Sprint(actual.ScannedCves)
@@ -477,7 +477,7 @@ func TestMinusDiff(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		diff, _ := diff(tt.inCurrent, tt.inPrevious)
+		diff, _ := diff(tt.inCurrent, tt.inPrevious, false)
 		for _, actual := range diff {
 			if !reflect.DeepEqual(actual.ScannedCves, tt.out.ScannedCves) {
 				h := pp.Sprint(actual.ScannedCves)
