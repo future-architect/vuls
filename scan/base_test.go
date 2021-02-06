@@ -218,12 +218,14 @@ func Test_base_parseGrepProcMap(t *testing.T) {
 			args: args{
 				`/etc/selinux/targeted/contexts/files/file_contexts.bin
 /etc/selinux/targeted/contexts/files/file_contexts.homedirs.bin
-/usr/lib64/libdl-2.28.so`,
+/usr/lib64/libdl-2.28.so
+				/usr/lib64/libnss_files-2.17.so;601ccbf3`,
 			},
 			wantSoPaths: []string{
 				"/etc/selinux/targeted/contexts/files/file_contexts.bin",
 				"/etc/selinux/targeted/contexts/files/file_contexts.homedirs.bin",
 				"/usr/lib64/libdl-2.28.so",
+				`/usr/lib64/libnss_files-2.17.so`,
 			},
 		},
 	}
