@@ -492,7 +492,8 @@ func (o *redhatBase) yumPs() error {
 	pidListenPorts := map[string][]models.PortStat{}
 	stdout, err = o.lsOfListen()
 	if err != nil {
-		return xerrors.Errorf("Failed to lsof: %w", err)
+		// warning only, continue scanning
+		o.log.Warnf("Failed to lsof: %+v", err)
 	}
 	portPids := o.parseLsOf(stdout)
 	for ipPort, pids := range portPids {
@@ -532,7 +533,8 @@ func (o *redhatBase) yumPs() error {
 		for pkgNameVerRel := range uniq {
 			p, err := o.Packages.FindByFQPN(pkgNameVerRel)
 			if err != nil {
-				return err
+				o.log.Warnf("Failed to FindByFQPN: %+v", err)
+				continue
 			}
 			p.AffectedProcs = append(p.AffectedProcs, proc)
 			o.Packages[p.Name] = *p
@@ -604,7 +606,7 @@ func (o *redhatBase) parseNeedsRestarting(stdout string) (procs []models.NeedRes
 			cmd := fmt.Sprintf("LANGUAGE=en_US.UTF-8 which %s", path)
 			r := o.exec(cmd, sudo)
 			if !r.isSuccess() {
-				o.log.Warnf("Failed to exec which %s: %s", path, r)
+				o.log.Debugf("Failed to exec which %s: %s", path, r)
 				continue
 			}
 			path = strings.TrimSpace(r.Stdout)

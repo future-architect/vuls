@@ -255,6 +255,7 @@ sshd        644            root    4u  IPv6  16716      0t0  TCP *:22 (LISTEN)
 squid       959           proxy   11u  IPv6  16351      0t0  TCP *:3128 (LISTEN)
 node       1498          ubuntu   21u  IPv6  20132      0t0  TCP *:35401 (LISTEN)
 node       1498          ubuntu   22u  IPv6  20133      0t0  TCP *:44801 (LISTEN)
+rpcbind   568    rpc    7u  IPv6  15149      0t0  UDP *:111
 docker-pr  9135            root    4u  IPv6 297133      0t0  TCP *:6379 (LISTEN)`,
 			},
 			wantPortPid: map[string][]string{

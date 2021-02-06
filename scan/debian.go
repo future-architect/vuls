@@ -1297,7 +1297,8 @@ func (o *debian) dpkgPs() error {
 	pidListenPorts := map[string][]models.PortStat{}
 	stdout, err = o.lsOfListen()
 	if err != nil {
-		return xerrors.Errorf("Failed to ls of: %w", err)
+		// warning only, continue scanning
+		o.log.Warnf("Failed to lsof: %+v", err)
 	}
 	portPids := o.parseLsOf(stdout)
 	for ipPort, pids := range portPids {
@@ -1332,7 +1333,8 @@ func (o *debian) dpkgPs() error {
 		for _, n := range pkgNames {
 			p, ok := o.Packages[n]
 			if !ok {
-				return xerrors.Errorf("pkg not found %s", n)
+				o.log.Warnf("Failed to FindByFQPN: %+v", err)
+				continue
 			}
 			p.AffectedProcs = append(p.AffectedProcs, proc)
 			o.Packages[p.Name] = p
