@@ -503,7 +503,9 @@ func loadPrevious(currs models.ScanResults) (prevs models.ScanResults, err error
 		if result.Container.Name != "" {
 			filename = fmt.Sprintf("%s@%s.json", result.Container.Name, result.ServerName)
 		}
+		fmt.Printf("dir : %v\n", dirs)
 		for _, dir := range dirs[1:] {
+
 			path := filepath.Join(dir, filename)
 			r, err := loadOneServerScanResult(path)
 			if err != nil {
@@ -545,9 +547,7 @@ func diff(curResults, preResults models.ScanResults, isPlusDiff bool) (diffed mo
 				}
 			}
 			current.Packages = packages
-		}
-
-		if found && !isPlusDiff {
+		} else if found && !isPlusDiff {
 			packages := models.Packages{}
 			current.ScannedCves = getMinusDiffCves(previous, current)
 			for _, s := range current.ScannedCves {
