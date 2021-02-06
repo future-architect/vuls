@@ -322,7 +322,7 @@ func (l *base) detectPlatform() {
 
 var dsFingerPrintPrefix = "AgentStatus.agentCertHash: "
 
-func (l *base) detectDeepSecurity() (fingerprint string, err error) {
+func (l *base) detectDeepSecurity() (string, error) {
 	// only work root user
 	if l.getServerInfo().Mode.IsFastRoot() {
 		if r := l.exec("test -f /opt/ds_agent/dsa_query", sudo); r.isSuccess() {
@@ -621,7 +621,7 @@ func (d *DummyFileInfo) IsDir() bool { return false }
 //Sys is
 func (d *DummyFileInfo) Sys() interface{} { return nil }
 
-func (l *base) scanWordPress() (err error) {
+func (l *base) scanWordPress() error {
 	if l.ServerInfo.WordPress.IsZero() || l.ServerInfo.Type == config.ServerTypePseudo {
 		return nil
 	}
@@ -835,7 +835,7 @@ func (l *base) findPortTestSuccessOn(listenIPPorts []string, searchListenPort mo
 	return addrs
 }
 
-func (l *base) ps() (stdout string, err error) {
+func (l *base) ps() (string, error) {
 	cmd := `LANGUAGE=en_US.UTF-8 ps --no-headers --ppid 2 -p 2 --deselect -o pid,comm`
 	r := l.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess() {
@@ -858,7 +858,7 @@ func (l *base) parsePs(stdout string) map[string]string {
 	return pidNames
 }
 
-func (l *base) lsProcExe(pid string) (stdout string, err error) {
+func (l *base) lsProcExe(pid string) (string, error) {
 	cmd := fmt.Sprintf("ls -l /proc/%s/exe", pid)
 	r := l.exec(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
@@ -875,7 +875,7 @@ func (l *base) parseLsProcExe(stdout string) (string, error) {
 	return ss[10], nil
 }
 
-func (l *base) grepProcMap(pid string) (stdout string, err error) {
+func (l *base) grepProcMap(pid string) (string, error) {
 	cmd := fmt.Sprintf(`cat /proc/%s/maps 2>/dev/null | grep -v " 00:00 " | awk '{print $6}' | sort -n | uniq`, pid)
 	r := l.exec(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
@@ -894,10 +894,10 @@ func (l *base) parseGrepProcMap(stdout string) (soPaths []string) {
 	return soPaths
 }
 
-func (l *base) lsOfListen() (stdout string, err error) {
-	cmd := `lsof -i -P -n | grep LISTEN`
+func (l *base) lsOfListen() (string, error) {
+	cmd := `lsof -i -P -n`
 	r := l.exec(util.PrependProxyEnv(cmd), sudo)
-	if !r.isSuccess(0, 1) {
+	if !r.isSuccess() {
 		return "", xerrors.Errorf("Failed to lsof: %s", r)
 	}
 	return r.Stdout, nil
@@ -907,7 +907,11 @@ func (l *base) parseLsOf(stdout string) map[string][]string {
 	portPids := map[string][]string{}
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
-		ss := strings.Fields(scanner.Text())
+		line := scanner.Text()
+		if !strings.Contains(line, "LISTEN") {
+			continue
+		}
+		ss := strings.Fields(line)
 		if len(ss) < 10 {
 			continue
 		}
