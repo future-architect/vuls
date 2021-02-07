@@ -523,7 +523,7 @@ func loadPrevious(currs models.ScanResults) (prevs models.ScanResults, err error
 	return prevs, nil
 }
 
-func diff(curResults, preResults models.ScanResults, isPlusDiff bool) (diffed models.ScanResults, err error) {
+func diff(curResults, preResults models.ScanResults, isPlus, isMinus bool) (diffed models.ScanResults) {
 	for _, current := range curResults {
 		found := false
 		var previous models.ScanResult
@@ -535,33 +535,38 @@ func diff(curResults, preResults models.ScanResults, isPlusDiff bool) (diffed mo
 			}
 		}
 
-		if found && isPlusDiff {
-			packages := models.Packages{}
-			current.ScannedCves = getPlusDiffCves(previous, current)
-			for _, s := range current.ScannedCves {
-				for _, affected := range s.AffectedPackages {
-					p := current.Packages[affected.Name]
-					packages[affected.Name] = p
-				}
-			}
-			current.Packages = packages
-		} else if found && !isPlusDiff {
-			packages := models.Packages{}
-			current.ScannedCves = getMinusDiffCves(previous, current)
-			for _, s := range current.ScannedCves {
-				for _, affected := range s.AffectedPackages {
-					p := previous.Packages[affected.Name]
-					packages[affected.Name] = p
-				}
-			}
-			current.Packages = packages
-		} else if !isPlusDiff {
+		if !found {
+			diffed = append(diffed, current)
 			continue
 		}
 
+		cves := models.VulnInfos{}
+		if isPlus {
+			cves = getPlusDiffCves(previous, current)
+		}
+		if isMinus {
+			minus := getMinusDiffCves(previous, current)
+			if len(cves) == 0 {
+				cves = minus
+			} else {
+				for k, v := range minus {
+					cves[k] = v
+				}
+			}
+		}
+
+		packages := models.Packages{}
+		for _, s := range cves {
+			for _, affected := range s.AffectedPackages {
+				p := current.Packages[affected.Name]
+				packages[affected.Name] = p
+			}
+		}
+		current.ScannedCves = cves
+		current.Packages = packages
 		diffed = append(diffed, current)
 	}
-	return diffed, err
+	return
 }
 
 func getPlusDiffCves(previous, current models.ScanResult) models.VulnInfos {

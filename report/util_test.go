@@ -193,19 +193,12 @@ func TestPlusDiff(t *testing.T) {
 						"CVE-2012-6702": {
 							CveID:            "CVE-2012-6702",
 							AffectedPackages: models.PackageFixStatuses{{Name: "libexpat1"}},
-							DistroAdvisories: []models.DistroAdvisory{},
-							CpeURIs:          []string{},
 						},
 						"CVE-2014-9761": {
 							CveID:            "CVE-2014-9761",
 							AffectedPackages: models.PackageFixStatuses{{Name: "libc-bin"}},
-							DistroAdvisories: []models.DistroAdvisory{},
-							CpeURIs:          []string{},
 						},
 					},
-					Packages: models.Packages{},
-					Errors:   []string{},
-					Optional: map[string]interface{}{},
 				},
 			},
 			inPrevious: models.ScanResults{
@@ -218,19 +211,12 @@ func TestPlusDiff(t *testing.T) {
 						"CVE-2012-6702": {
 							CveID:            "CVE-2012-6702",
 							AffectedPackages: models.PackageFixStatuses{{Name: "libexpat1"}},
-							DistroAdvisories: []models.DistroAdvisory{},
-							CpeURIs:          []string{},
 						},
 						"CVE-2014-9761": {
 							CveID:            "CVE-2014-9761",
 							AffectedPackages: models.PackageFixStatuses{{Name: "libc-bin"}},
-							DistroAdvisories: []models.DistroAdvisory{},
-							CpeURIs:          []string{},
 						},
 					},
-					Packages: models.Packages{},
-					Errors:   []string{},
-					Optional: map[string]interface{}{},
 				},
 			},
 			out: models.ScanResult{
@@ -238,10 +224,7 @@ func TestPlusDiff(t *testing.T) {
 				ServerName:  "u16",
 				Family:      "ubuntu",
 				Release:     "16.04",
-				Packages:    models.Packages{},
 				ScannedCves: models.VulnInfos{},
-				Errors:      []string{},
-				Optional:    map[string]interface{}{},
 			},
 		},
 		{
@@ -255,8 +238,6 @@ func TestPlusDiff(t *testing.T) {
 						"CVE-2016-6662": {
 							CveID:            "CVE-2016-6662",
 							AffectedPackages: models.PackageFixStatuses{{Name: "mysql-libs"}},
-							DistroAdvisories: []models.DistroAdvisory{},
-							CpeURIs:          []string{},
 						},
 					},
 					Packages: models.Packages{
@@ -267,21 +248,26 @@ func TestPlusDiff(t *testing.T) {
 							NewVersion: "5.1.73",
 							NewRelease: "8.el6_8",
 							Repository: "",
-							Changelog: &models.Changelog{
-								Contents: "",
-								Method:   "",
-							},
 						},
 					},
 				},
 			},
 			inPrevious: models.ScanResults{
 				{
-					ScannedAt:   atPrevious,
-					ServerName:  "u16",
-					Family:      "ubuntu",
-					Release:     "16.04",
-					ScannedCves: models.VulnInfos{},
+					ScannedAt:  atPrevious,
+					ServerName: "u16",
+					Family:     "ubuntu",
+					Release:    "16.04",
+					Packages: models.Packages{
+						"mysql-libs": {
+							Name:       "mysql-libs",
+							Version:    "0.1.73",
+							Release:    "7.el6",
+							NewVersion: "5.1.73",
+							NewRelease: "8.el6_8",
+							Repository: "",
+						},
+					},
 				},
 			},
 			out: models.ScanResult{
@@ -293,8 +279,6 @@ func TestPlusDiff(t *testing.T) {
 					"CVE-2016-6662": {
 						CveID:            "CVE-2016-6662",
 						AffectedPackages: models.PackageFixStatuses{{Name: "mysql-libs"}},
-						DistroAdvisories: []models.DistroAdvisory{},
-						CpeURIs:          []string{},
 					},
 				},
 				Packages: models.Packages{
@@ -305,10 +289,6 @@ func TestPlusDiff(t *testing.T) {
 						NewVersion: "5.1.73",
 						NewRelease: "8.el6_8",
 						Repository: "",
-						Changelog: &models.Changelog{
-							Contents: "",
-							Method:   "",
-						},
 					},
 				},
 			},
@@ -316,7 +296,7 @@ func TestPlusDiff(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		diff, _ := diff(tt.inCurrent, tt.inPrevious, true)
+		diff := diff(tt.inCurrent, tt.inPrevious, true, false)
 		for _, actual := range diff {
 			if !reflect.DeepEqual(actual.ScannedCves, tt.out.ScannedCves) {
 				h := pp.Sprint(actual.ScannedCves)
@@ -354,19 +334,12 @@ func TestMinusDiff(t *testing.T) {
 						"CVE-2012-6702": {
 							CveID:            "CVE-2012-6702",
 							AffectedPackages: models.PackageFixStatuses{{Name: "libexpat1"}},
-							DistroAdvisories: []models.DistroAdvisory{},
-							CpeURIs:          []string{},
 						},
 						"CVE-2014-9761": {
 							CveID:            "CVE-2014-9761",
 							AffectedPackages: models.PackageFixStatuses{{Name: "libc-bin"}},
-							DistroAdvisories: []models.DistroAdvisory{},
-							CpeURIs:          []string{},
 						},
 					},
-					Packages: models.Packages{},
-					Errors:   []string{},
-					Optional: map[string]interface{}{},
 				},
 			},
 			inPrevious: models.ScanResults{
@@ -379,19 +352,12 @@ func TestMinusDiff(t *testing.T) {
 						"CVE-2012-6702": {
 							CveID:            "CVE-2012-6702",
 							AffectedPackages: models.PackageFixStatuses{{Name: "libexpat1"}},
-							DistroAdvisories: []models.DistroAdvisory{},
-							CpeURIs:          []string{},
 						},
 						"CVE-2014-9761": {
 							CveID:            "CVE-2014-9761",
 							AffectedPackages: models.PackageFixStatuses{{Name: "libc-bin"}},
-							DistroAdvisories: []models.DistroAdvisory{},
-							CpeURIs:          []string{},
 						},
 					},
-					Packages: models.Packages{},
-					Errors:   []string{},
-					Optional: map[string]interface{}{},
 				},
 			},
 			out: models.ScanResult{
@@ -399,20 +365,26 @@ func TestMinusDiff(t *testing.T) {
 				ServerName:  "u16",
 				Family:      "ubuntu",
 				Release:     "16.04",
-				Packages:    nil,
 				ScannedCves: models.VulnInfos{},
-				Errors:      []string{},
-				Optional:    map[string]interface{}{},
 			},
 		},
 		{
 			inCurrent: models.ScanResults{
 				{
-					ScannedAt:   atPrevious,
-					ServerName:  "u16",
-					Family:      "ubuntu",
-					Release:     "16.04",
-					ScannedCves: models.VulnInfos{},
+					ScannedAt:  atPrevious,
+					ServerName: "u16",
+					Family:     "ubuntu",
+					Release:    "16.04",
+					Packages: models.Packages{
+						"mysql-libs": {
+							Name:       "mysql-libs",
+							Version:    "5.1.73",
+							Release:    "7.el6",
+							NewVersion: "5.1.73",
+							NewRelease: "8.el6_8",
+							Repository: "",
+						},
+					},
 				},
 			},
 			inPrevious: models.ScanResults{
@@ -425,22 +397,16 @@ func TestMinusDiff(t *testing.T) {
 						"CVE-2016-6662": {
 							CveID:            "CVE-2016-6662",
 							AffectedPackages: models.PackageFixStatuses{{Name: "mysql-libs"}},
-							DistroAdvisories: []models.DistroAdvisory{},
-							CpeURIs:          []string{},
 						},
 					},
 					Packages: models.Packages{
 						"mysql-libs": {
 							Name:       "mysql-libs",
-							Version:    "5.1.73",
+							Version:    "5.1.72",
 							Release:    "7.el6",
 							NewVersion: "5.1.73",
 							NewRelease: "8.el6_8",
 							Repository: "",
-							Changelog: &models.Changelog{
-								Contents: "",
-								Method:   "",
-							},
 						},
 					},
 				},
@@ -454,8 +420,6 @@ func TestMinusDiff(t *testing.T) {
 					"CVE-2016-6662": {
 						CveID:            "CVE-2016-6662",
 						AffectedPackages: models.PackageFixStatuses{{Name: "mysql-libs"}},
-						DistroAdvisories: []models.DistroAdvisory{},
-						CpeURIs:          []string{},
 					},
 				},
 				Packages: models.Packages{
@@ -466,10 +430,6 @@ func TestMinusDiff(t *testing.T) {
 						NewVersion: "5.1.73",
 						NewRelease: "8.el6_8",
 						Repository: "",
-						Changelog: &models.Changelog{
-							Contents: "",
-							Method:   "",
-						},
 					},
 				},
 			},
@@ -477,7 +437,7 @@ func TestMinusDiff(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		diff, _ := diff(tt.inCurrent, tt.inPrevious, false)
+		diff := diff(tt.inCurrent, tt.inPrevious, false, true)
 		for _, actual := range diff {
 			if !reflect.DeepEqual(actual.ScannedCves, tt.out.ScannedCves) {
 				h := pp.Sprint(actual.ScannedCves)
