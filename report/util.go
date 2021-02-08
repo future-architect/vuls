@@ -560,7 +560,12 @@ func diff(curResults, preResults models.ScanResults, isPlus, isMinus bool) (diff
 		packages := models.Packages{}
 		for _, s := range cves {
 			for _, affected := range s.AffectedPackages {
-				p := current.Packages[affected.Name]
+				var p models.Package
+				if s.StatusDiff == "+" {
+					p = current.Packages[affected.Name]
+				} else {
+					p = previous.Packages[affected.Name]
+				}
 				packages[affected.Name] = p
 			}
 		}
