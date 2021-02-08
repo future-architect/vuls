@@ -83,8 +83,8 @@ type Config struct {
 	FormatFullText    bool `json:"formatFullText,omitempty"`
 	FormatCsvList     bool `json:"formatCsvList,omitempty"`
 	GZIP              bool `json:"gzip,omitempty"`
-	PlusDiff          bool `json:"plusDiff,omitempty"`
-	MinusDiff         bool `json:"minusDiff,omitempty"`
+	DiffPlus          bool `json:"diffPlus,omitempty"`
+	DiffMinus         bool `json:"diffMinus,omitempty"`
 	Diff              bool `json:"diff,omitempty"`
 }
 

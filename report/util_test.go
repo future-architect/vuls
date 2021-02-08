@@ -285,12 +285,12 @@ func TestPlusMinusDiff(t *testing.T) {
 					"CVE-2016-6662": {
 						CveID:            "CVE-2016-6662",
 						AffectedPackages: models.PackageFixStatuses{{Name: "mysql-libs"}},
-						StatusDiff:       "+",
+						DiffStatus:       "+",
 					},
 					"CVE-2020-6662": {
 						CveID:            "CVE-2020-6662",
 						AffectedPackages: models.PackageFixStatuses{{Name: "bind"}},
-						StatusDiff:       "-",
+						DiffStatus:       "-",
 					},
 				},
 				Packages: models.Packages{
@@ -440,7 +440,7 @@ func TestPlusDiff(t *testing.T) {
 					"CVE-2016-6662": {
 						CveID:            "CVE-2016-6662",
 						AffectedPackages: models.PackageFixStatuses{{Name: "mysql-libs"}},
-						StatusDiff:       "+",
+						DiffStatus:       "+",
 					},
 				},
 				Packages: models.Packages{
@@ -582,7 +582,7 @@ func TestMinusDiff(t *testing.T) {
 					"CVE-2016-6662": {
 						CveID:            "CVE-2016-6662",
 						AffectedPackages: models.PackageFixStatuses{{Name: "mysql-libs"}},
-						StatusDiff:       "-",
+						DiffStatus:       "-",
 					},
 				},
 				Packages: models.Packages{

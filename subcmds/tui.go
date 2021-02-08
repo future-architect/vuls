@@ -79,10 +79,10 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.Conf.Diff, "diff", false,
 		"Plus Difference between previous result and current result")
 
-	f.BoolVar(&c.Conf.PlusDiff, "diff-plus", false,
+	f.BoolVar(&c.Conf.DiffPlus, "diff-plus", false,
 		"Plus Difference between previous result and current result")
 
-	f.BoolVar(&c.Conf.MinusDiff, "diff-minus", false,
+	f.BoolVar(&c.Conf.DiffMinus, "diff-minus", false,
 		"Minus Difference between previous result and current result")
 
 	f.BoolVar(
@@ -109,12 +109,12 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	c.Conf.Lang = "en"
 
 	if c.Conf.Diff {
-		c.Conf.PlusDiff = true
-		c.Conf.MinusDiff = true
+		c.Conf.DiffPlus = true
+		c.Conf.DiffMinus = true
 	}
 	var dir string
 	var err error
-	if c.Conf.PlusDiff || c.Conf.MinusDiff {
+	if c.Conf.DiffPlus || c.Conf.DiffMinus {
 		dir, err = report.JSONDir([]string{})
 	} else {
 		dir, err = report.JSONDir(f.Args())

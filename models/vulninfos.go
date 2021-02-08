@@ -78,16 +78,22 @@ func (v VulnInfos) CountGroupBySeverity() map[string]int {
 }
 
 // FormatCveSummary summarize the number of CVEs group by CVSSv2 Severity
-func (v VulnInfos) FormatCveSummary() string {
+func (v VulnInfos) FormatCveSummary() (line string) {
 	m := v.CountGroupBySeverity()
-
 	if config.Conf.IgnoreUnscoredCves {
-		return fmt.Sprintf("Total: %d (Critical:%d High:%d Medium:%d Low:%d)",
+		line = fmt.Sprintf("Total: %d (Critical:%d High:%d Medium:%d Low:%d)",
 			m["High"]+m["Medium"]+m["Low"], m["Critical"], m["High"], m["Medium"], m["Low"])
+	} else {
+		line = fmt.Sprintf("Total: %d (Critical:%d High:%d Medium:%d Low:%d ?:%d)",
+			m["High"]+m["Medium"]+m["Low"]+m["Unknown"],
+			m["Critical"], m["High"], m["Medium"], m["Low"], m["Unknown"])
 	}
-	return fmt.Sprintf("Total: %d (Critical:%d High:%d Medium:%d Low:%d ?:%d)",
-		m["High"]+m["Medium"]+m["Low"]+m["Unknown"],
-		m["Critical"], m["High"], m["Medium"], m["Low"], m["Unknown"])
+
+	if config.Conf.DiffMinus || config.Conf.DiffPlus {
+		nPlus, nMinus := v.CountDiff()
+		line = fmt.Sprintf("%s +%d -%d", line, nPlus, nMinus)
+	}
+	return line
 }
 
 // FormatFixedStatus summarize the number of cves are fixed.
@@ -103,6 +109,18 @@ func (v VulnInfos) FormatFixedStatus(packs Packages) string {
 		}
 	}
 	return fmt.Sprintf("%d/%d Fixed", fixed, total)
+}
+
+// CountDiff counts the number of added/removed CVE-ID
+func (v VulnInfos) CountDiff() (nPlus int, nMinus int) {
+	for _, vInfo := range v {
+		if vInfo.DiffStatus == DiffPlus {
+			nPlus++
+		} else if vInfo.DiffStatus == DiffMinus {
+			nMinus++
+		}
+	}
+	return
 }
 
 // PackageFixStatuses is a list of PackageStatus
@@ -159,18 +177,9 @@ type VulnInfo struct {
 	GitHubSecurityAlerts GitHubSecurityAlerts `json:"gitHubSecurityAlerts,omitempty"`
 	WpPackageFixStats    WpPackageFixStats    `json:"wpPackageFixStats,omitempty"`
 	LibraryFixedIns      LibraryFixedIns      `json:"libraryFixedIns,omitempty"`
-
-	VulnType   string     `json:"vulnType,omitempty"`
-	StatusDiff StatusDiff `json:"statusDiff,omitempty"`
+	VulnType             string               `json:"vulnType,omitempty"`
+	DiffStatus           DiffStatus           `json:"diffStatus,omitempty"`
 }
-
-type StatusDiff string
-
-const (
-	Plus  = StatusDiff("+")
-	Minus = StatusDiff("-")
-	None  = StatusDiff(" ")
-)
 
 // Alert has CERT alert information
 type Alert struct {
@@ -243,6 +252,25 @@ func (g WpPackages) Add(pkg WpPackage) WpPackages {
 		}
 	}
 	return append(g, pkg)
+}
+
+// DiffStatus keeps a comparison with the previous detection results for this CVE
+type DiffStatus string
+
+const (
+	// DiffPlus is newly detected CVE
+	DiffPlus = DiffStatus("+")
+
+	// DiffMinus is resolved CVE
+	DiffMinus = DiffStatus("-")
+)
+
+// CveIDDiffFormat format CVE-ID for diff mode
+func (v VulnInfo) CveIDDiffFormat(isDiffMode bool) string {
+	if isDiffMode {
+		return fmt.Sprintf("%s %s", v.DiffStatus, v.CveID)
+	}
+	return fmt.Sprintf("%s", v.CveID)
 }
 
 // Titles returns title (TUI)

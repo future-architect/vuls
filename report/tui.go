@@ -633,7 +633,7 @@ func summaryLines(r models.ScanResult) string {
 		var cols []string
 		cols = []string{
 			fmt.Sprintf(indexFormat, i+1),
-			string(vinfo.StatusDiff),
+			string(vinfo.DiffStatus),
 			vinfo.CveID,
 			cvssScore + " |",
 			fmt.Sprintf("%-6s |", av),

@@ -32,7 +32,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 
 		if c.Conf.FormatJSON {
 			p := path + ".json"
-			if c.Conf.PlusDiff || c.Conf.MinusDiff {
+			if c.Conf.DiffPlus || c.Conf.DiffMinus {
 				p = path + "_diff.json"
 			}
 			var b []byte
@@ -46,7 +46,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 
 		if c.Conf.FormatList {
 			p := path + "_short.txt"
-			if c.Conf.PlusDiff || c.Conf.MinusDiff {
+			if c.Conf.DiffPlus || c.Conf.DiffMinus {
 				p = path + "_short_diff.txt"
 			}
 			if err := writeFile(
@@ -58,7 +58,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 
 		if c.Conf.FormatFullText {
 			p := path + "_full.txt"
-			if c.Conf.PlusDiff || c.Conf.MinusDiff {
+			if c.Conf.DiffPlus || c.Conf.DiffMinus {
 				p = path + "_full_diff.txt"
 			}
 
@@ -71,7 +71,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 
 		if c.Conf.FormatCsvList {
 			p := path + ".csv"
-			if c.Conf.PlusDiff || c.Conf.MinusDiff {
+			if c.Conf.DiffPlus || c.Conf.DiffMinus {
 				p = path + "_diff.csv"
 			}
 			if err := formatCsvList(r, p); err != nil {

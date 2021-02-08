@@ -352,7 +352,7 @@ func (r ScanResult) FormatTextReportHeader() string {
 		pkgs = fmt.Sprintf("%s, %d libs", pkgs, r.LibraryScanners.Total())
 	}
 
-	return fmt.Sprintf("%s\n%s\n%s, %s, %s, %s, %s\n%s\n",
+	return fmt.Sprintf("%s\n%s\n%s\n%s, %s, %s, %s\n%s\n",
 		r.ServerInfo(),
 		buf.String(),
 		r.ScannedCves.FormatCveSummary(),
