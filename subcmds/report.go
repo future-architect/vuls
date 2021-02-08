@@ -102,6 +102,9 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.Conf.PlusDiff, "diff-plus", false,
 		"Plus Difference between previous result and current result")
 
+	f.BoolVar(&c.Conf.Diff, "diff", false,
+		"Plus & Minus Difference between previous result and current result")
+
 	f.BoolVar(&c.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
 		"Don't report the unscored CVEs")
 
@@ -154,6 +157,11 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitUsageError
 	}
 	c.Conf.HTTP.Init(p.httpConf)
+
+	if c.Conf.Diff {
+		c.Conf.PlusDiff = true
+		c.Conf.MinusDiff = true
+	}
 
 	var dir string
 	var err error

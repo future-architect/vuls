@@ -85,6 +85,7 @@ type Config struct {
 	GZIP              bool `json:"gzip,omitempty"`
 	PlusDiff          bool `json:"plusDiff,omitempty"`
 	MinusDiff         bool `json:"minusDiff,omitempty"`
+	Diff              bool `json:"diff,omitempty"`
 }
 
 // ValidateOnConfigtest validates
