@@ -598,7 +598,7 @@ func getPlusDiffCves(previous, current models.ScanResult) models.VulnInfos {
 			}
 		} else {
 			util.Log.Debugf("new: %s", v.CveID)
-			v.StatusDiff = models.Plus 
+			v.StatusDiff = models.Plus
 			new[v.CveID] = v
 		}
 	}
