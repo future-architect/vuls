@@ -632,7 +632,6 @@ func getMinusDiffCves(previous, current models.ScanResult) models.VulnInfos {
 			util.Log.Debugf("clear: %s", v.CveID)
 		}
 	}
-
 	if len(clear) == 0 {
 		util.Log.Infof("%s: There are %d vulnerabilities, but no difference between current result and previous one.", current.FormatServerName(), len(current.ScannedCves))
 	}

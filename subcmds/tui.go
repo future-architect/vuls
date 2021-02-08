@@ -36,6 +36,8 @@ func (*TuiCmd) Usage() string {
 		[-config=/path/to/config.toml]
 		[-cvss-over=7]
 		[-diff]
+		[-diff-minus]
+		[-diff-plus]
 		[-ignore-unscored-cves]
 		[-ignore-unfixed]
 		[-results-dir=/path/to/results]
@@ -74,6 +76,9 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	f.Float64Var(&c.Conf.CvssScoreOver, "cvss-over", 0,
 		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
 
+	f.BoolVar(&c.Conf.Diff, "diff", false,
+		"Plus Difference between previous result and current result")
+
 	f.BoolVar(&c.Conf.PlusDiff, "diff-plus", false,
 		"Plus Difference between previous result and current result")
 
@@ -103,6 +108,10 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 
 	c.Conf.Lang = "en"
 
+	if c.Conf.Diff {
+		c.Conf.PlusDiff = true
+		c.Conf.MinusDiff = true
+	}
 	var dir string
 	var err error
 	if c.Conf.PlusDiff || c.Conf.MinusDiff {
