@@ -767,7 +767,7 @@ func LoadScanResults(jsonDir string) (results models.ScanResults, err error) {
 		return nil, xerrors.Errorf("Failed to read %s: %w", jsonDir, err)
 	}
 	for _, f := range files {
-		if filepath.Ext(f.Name()) != ".json" || strings.HasSuffix(f.Name(), "_plus_diff.json") || strings.HasSuffix(f.Name(), "_minus_diff.json") {
+		if filepath.Ext(f.Name()) != ".json" || strings.HasSuffix(f.Name(), "_diff.json") {
 			continue
 		}
 

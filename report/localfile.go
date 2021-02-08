@@ -31,15 +31,10 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		path := filepath.Join(w.CurrentDir, r.ReportFileName())
 
 		if c.Conf.FormatJSON {
-			var p string
-			if c.Conf.PlusDiff {
-				p = path + "_plus_diff.json"
-			} else if c.Conf.MinusDiff {
-				p = path + "_minus_diff.json"
-			} else {
-				p = path + ".json"
+			p := path + ".json"
+			if c.Conf.PlusDiff || c.Conf.MinusDiff {
+				p = path + "_diff.json"
 			}
-
 			var b []byte
 			if b, err = json.MarshalIndent(r, "", "    "); err != nil {
 				return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
@@ -50,15 +45,10 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 
 		if c.Conf.FormatList {
-			var p string
-			if c.Conf.PlusDiff {
-				p = path + "_short_plus_diff.txt"
-			} else if c.Conf.MinusDiff {
-				p = path + "_short_minus_diff.txt"
-			} else {
-				p = path + "_short.txt"
+			p := path + "_short.txt"
+			if c.Conf.PlusDiff || c.Conf.MinusDiff {
+				p = path + "_short_diff.txt"
 			}
-
 			if err := writeFile(
 				p, []byte(formatList(r)), 0600); err != nil {
 				return xerrors.Errorf(
@@ -67,13 +57,9 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 
 		if c.Conf.FormatFullText {
-			var p string
-			if c.Conf.PlusDiff {
-				p = path + "_full_plus_diff.txt"
-			} else if c.Conf.MinusDiff {
-				p = path + "_full_minus_diff.txt"
-			} else {
-				p = path + "_full.txt"
+			p := path + "_full.txt"
+			if c.Conf.PlusDiff || c.Conf.MinusDiff {
+				p = path + "_full_diff.txt"
 			}
 
 			if err := writeFile(
@@ -84,11 +70,9 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 
 		if c.Conf.FormatCsvList {
-			p := path + "_short.csv"
-			if c.Conf.PlusDiff {
-				p = path + "_short_plus_diff.csv"
-			} else if c.Conf.MinusDiff {
-				p = path + "_short_minus_diff.csv"
+			p := path + ".csv"
+			if c.Conf.PlusDiff || c.Conf.MinusDiff {
+				p = path + "_diff.csv"
 			}
 			if err := formatCsvList(r, p); err != nil {
 				return xerrors.Errorf("Failed to write CSV: %s, %w", p, err)
