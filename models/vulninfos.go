@@ -160,8 +160,17 @@ type VulnInfo struct {
 	WpPackageFixStats    WpPackageFixStats    `json:"wpPackageFixStats,omitempty"`
 	LibraryFixedIns      LibraryFixedIns      `json:"libraryFixedIns,omitempty"`
 
-	VulnType string `json:"vulnType,omitempty"`
+	VulnType   string     `json:"vulnType,omitempty"`
+	StatusDiff StatusDiff `json:"statusDiff,omitempty"`
 }
+
+type StatusDiff string
+
+const (
+	Plus  = StatusDiff("+")
+	Minus = StatusDiff("-")
+	None  = StatusDiff(" ")
+)
 
 // Alert has CERT alert information
 type Alert struct {
