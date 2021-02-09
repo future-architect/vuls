@@ -14,6 +14,7 @@ import (
 
 func TestMain(m *testing.M) {
 	util.Log = util.NewCustomLogger(config.ServerInfo{})
+	pp.ColoringEnabled = false
 	code := m.Run()
 	os.Exit(code)
 }
@@ -182,13 +183,12 @@ func TestPlusMinusDiff(t *testing.T) {
 		inPrevious models.ScanResults
 		out        models.ScanResult
 	}{
+		//same
 		{
 			inCurrent: models.ScanResults{
 				{
 					ScannedAt:  atCurrent,
 					ServerName: "u16",
-					Family:     "ubuntu",
-					Release:    "16.04",
 					ScannedCves: models.VulnInfos{
 						"CVE-2012-6702": {
 							CveID:            "CVE-2012-6702",
@@ -205,8 +205,6 @@ func TestPlusMinusDiff(t *testing.T) {
 				{
 					ScannedAt:  atPrevious,
 					ServerName: "u16",
-					Family:     "ubuntu",
-					Release:    "16.04",
 					ScannedCves: models.VulnInfos{
 						"CVE-2012-6702": {
 							CveID:            "CVE-2012-6702",
@@ -222,18 +220,15 @@ func TestPlusMinusDiff(t *testing.T) {
 			out: models.ScanResult{
 				ScannedAt:   atCurrent,
 				ServerName:  "u16",
-				Family:      "ubuntu",
-				Release:     "16.04",
 				ScannedCves: models.VulnInfos{},
 			},
 		},
+		//plus, minus
 		{
 			inCurrent: models.ScanResults{
 				{
 					ScannedAt:  atCurrent,
 					ServerName: "u16",
-					Family:     "ubuntu",
-					Release:    "16.04",
 					ScannedCves: models.VulnInfos{
 						"CVE-2016-6662": {
 							CveID:            "CVE-2016-6662",
@@ -256,8 +251,6 @@ func TestPlusMinusDiff(t *testing.T) {
 				{
 					ScannedAt:  atPrevious,
 					ServerName: "u16",
-					Family:     "ubuntu",
-					Release:    "16.04",
 					ScannedCves: models.VulnInfos{
 						"CVE-2020-6662": {
 							CveID:            "CVE-2020-6662",
@@ -279,8 +272,6 @@ func TestPlusMinusDiff(t *testing.T) {
 			out: models.ScanResult{
 				ScannedAt:  atCurrent,
 				ServerName: "u16",
-				Family:     "ubuntu",
-				Release:    "16.04",
 				ScannedCves: models.VulnInfos{
 					"CVE-2016-6662": {
 						CveID:            "CVE-2016-6662",
@@ -344,12 +335,11 @@ func TestPlusDiff(t *testing.T) {
 		out        models.ScanResult
 	}{
 		{
+			// same
 			inCurrent: models.ScanResults{
 				{
 					ScannedAt:  atCurrent,
 					ServerName: "u16",
-					Family:     "ubuntu",
-					Release:    "16.04",
 					ScannedCves: models.VulnInfos{
 						"CVE-2012-6702": {
 							CveID:            "CVE-2012-6702",
@@ -366,8 +356,6 @@ func TestPlusDiff(t *testing.T) {
 				{
 					ScannedAt:  atPrevious,
 					ServerName: "u16",
-					Family:     "ubuntu",
-					Release:    "16.04",
 					ScannedCves: models.VulnInfos{
 						"CVE-2012-6702": {
 							CveID:            "CVE-2012-6702",
@@ -383,18 +371,15 @@ func TestPlusDiff(t *testing.T) {
 			out: models.ScanResult{
 				ScannedAt:   atCurrent,
 				ServerName:  "u16",
-				Family:      "ubuntu",
-				Release:     "16.04",
 				ScannedCves: models.VulnInfos{},
 			},
 		},
+		// plus
 		{
 			inCurrent: models.ScanResults{
 				{
 					ScannedAt:  atCurrent,
 					ServerName: "u16",
-					Family:     "ubuntu",
-					Release:    "16.04",
 					ScannedCves: models.VulnInfos{
 						"CVE-2016-6662": {
 							CveID:            "CVE-2016-6662",
@@ -417,25 +402,11 @@ func TestPlusDiff(t *testing.T) {
 				{
 					ScannedAt:  atPrevious,
 					ServerName: "u16",
-					Family:     "ubuntu",
-					Release:    "16.04",
-					Packages: models.Packages{
-						"mysql-libs": {
-							Name:       "mysql-libs",
-							Version:    "5.1.73",
-							Release:    "7.el6",
-							NewVersion: "5.1.73",
-							NewRelease: "8.el6_8",
-							Repository: "",
-						},
-					},
 				},
 			},
 			out: models.ScanResult{
 				ScannedAt:  atCurrent,
 				ServerName: "u16",
-				Family:     "ubuntu",
-				Release:    "16.04",
 				ScannedCves: models.VulnInfos{
 					"CVE-2016-6662": {
 						CveID:            "CVE-2016-6662",
@@ -453,6 +424,39 @@ func TestPlusDiff(t *testing.T) {
 						Repository: "",
 					},
 				},
+			},
+		},
+		// minus
+		{
+			inCurrent: models.ScanResults{
+				{
+					ScannedAt:  atCurrent,
+					ServerName: "u16",
+					ScannedCves: models.VulnInfos{
+						"CVE-2012-6702": {
+							CveID: "CVE-2012-6702",
+						},
+					},
+				},
+			},
+			inPrevious: models.ScanResults{
+				{
+					ScannedAt:  atPrevious,
+					ServerName: "u16",
+					ScannedCves: models.VulnInfos{
+						"CVE-2012-6702": {
+							CveID: "CVE-2012-6702",
+						},
+						"CVE-2014-9761": {
+							CveID: "CVE-2014-9761",
+						},
+					},
+				},
+			},
+			out: models.ScanResult{
+				ScannedAt:   atCurrent,
+				ServerName:  "u16",
+				ScannedCves: models.VulnInfos{},
 			},
 		},
 	}
@@ -485,13 +489,12 @@ func TestMinusDiff(t *testing.T) {
 		inPrevious models.ScanResults
 		out        models.ScanResult
 	}{
+		// same
 		{
 			inCurrent: models.ScanResults{
 				{
 					ScannedAt:  atCurrent,
 					ServerName: "u16",
-					Family:     "ubuntu",
-					Release:    "16.04",
 					ScannedCves: models.VulnInfos{
 						"CVE-2012-6702": {
 							CveID:            "CVE-2012-6702",
@@ -508,8 +511,6 @@ func TestMinusDiff(t *testing.T) {
 				{
 					ScannedAt:  atPrevious,
 					ServerName: "u16",
-					Family:     "ubuntu",
-					Release:    "16.04",
 					ScannedCves: models.VulnInfos{
 						"CVE-2012-6702": {
 							CveID:            "CVE-2012-6702",
@@ -525,36 +526,22 @@ func TestMinusDiff(t *testing.T) {
 			out: models.ScanResult{
 				ScannedAt:   atCurrent,
 				ServerName:  "u16",
-				Family:      "ubuntu",
-				Release:     "16.04",
 				ScannedCves: models.VulnInfos{},
 			},
 		},
+		// minus
 		{
 			inCurrent: models.ScanResults{
 				{
 					ScannedAt:  atPrevious,
 					ServerName: "u16",
-					Family:     "ubuntu",
-					Release:    "16.04",
-					Packages: models.Packages{
-						"mysql-libs": {
-							Name:       "mysql-libs",
-							Version:    "5.1.73",
-							Release:    "7.el6",
-							NewVersion: "5.1.73",
-							NewRelease: "8.el6_8",
-							Repository: "",
-						},
-					},
+					Packages:   models.Packages{},
 				},
 			},
 			inPrevious: models.ScanResults{
 				{
 					ScannedAt:  atCurrent,
 					ServerName: "u16",
-					Family:     "ubuntu",
-					Release:    "16.04",
 					ScannedCves: models.VulnInfos{
 						"CVE-2016-6662": {
 							CveID:            "CVE-2016-6662",
@@ -576,8 +563,6 @@ func TestMinusDiff(t *testing.T) {
 			out: models.ScanResult{
 				ScannedAt:  atCurrent,
 				ServerName: "u16",
-				Family:     "ubuntu",
-				Release:    "16.04",
 				ScannedCves: models.VulnInfos{
 					"CVE-2016-6662": {
 						CveID:            "CVE-2016-6662",
@@ -595,6 +580,33 @@ func TestMinusDiff(t *testing.T) {
 						Repository: "",
 					},
 				},
+			},
+		},
+		// plus
+		{
+			inCurrent: models.ScanResults{
+				{
+					ScannedAt:  atPrevious,
+					ServerName: "u16",
+					ScannedCves: models.VulnInfos{
+						"CVE-2016-6662": {
+							CveID:            "CVE-2016-6662",
+							AffectedPackages: models.PackageFixStatuses{{Name: "mysql-libs"}},
+						},
+					},
+				},
+			},
+			inPrevious: models.ScanResults{
+				{
+					ScannedAt:   atCurrent,
+					ServerName:  "u16",
+					ScannedCves: models.VulnInfos{},
+				},
+			},
+			out: models.ScanResult{
+				ScannedAt:   atCurrent,
+				ServerName:  "u16",
+				ScannedCves: models.VulnInfos{},
 			},
 		},
 	}
