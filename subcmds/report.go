@@ -40,6 +40,7 @@ func (*ReportCmd) Usage() string {
 		[-log-dir=/path/to/log]
 		[-refresh-cve]
 		[-cvss-over=7]
+		[-diff]
 		[-diff-minus]
 		[-diff-plus]
 		[-ignore-unscored-cves]
