@@ -311,12 +311,18 @@ func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, mod
 }
 
 func (o *redhatBase) parseInstalledPackagesLine(line string) (models.Package, error) {
+	for _, suffix := range []string{
+		"Permission denied",
+		"is not owned by any package",
+		"No such file or directory",
+	} {
+		if strings.HasSuffix(line, suffix) {
+			return models.Package{},
+				xerrors.Errorf("Failed to parse package line: %s", line)
+		}
+	}
 	fields := strings.Fields(line)
 	if len(fields) != 5 {
-		return models.Package{},
-			xerrors.Errorf("Failed to parse package line: %s", line)
-	}
-	if strings.HasSuffix(line, "Permission denied") {
 		return models.Package{},
 			xerrors.Errorf("Failed to parse package line: %s", line)
 	}
@@ -508,7 +514,6 @@ func (o *redhatBase) yumPs() error {
 	}
 
 	for pid, loadedFiles := range pidLoadedFiles {
-		o.log.Debugf("rpm -qf: %#v", loadedFiles)
 		pkgNameVerRels, err := o.getPkgNameVerRels(loadedFiles)
 		if err != nil {
 			o.log.Debugf("Failed to get package name by file path: %s, err: %s", pkgNameVerRels, err)
@@ -637,16 +642,21 @@ func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
 func (o *redhatBase) getPkgNameVerRels(paths []string) (pkgNameVerRels []string, err error) {
 	cmd := o.rpmQf() + strings.Join(paths, " ")
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
-	if !r.isSuccess(0, 2, 4, 8) {
-		return nil, xerrors.Errorf("Failed to rpm -qf: %s, cmd: %s", r, cmd)
-	}
+	// rpm exit code means `the number` of errors.
+	// https://listman.redhat.com/archives/rpm-list/2005-July/msg00071.html
+	// If we treat non-zero exit codes of `rpm` as errors,
+	// we will be missing a partial package list we can get.
 
 	scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
 	for scanner.Scan() {
 		line := scanner.Text()
 		pack, err := o.parseInstalledPackagesLine(line)
 		if err != nil {
-			o.log.Debugf("Failed to parse rpm -qf line: %s, r: %s. continue", line, r)
+			o.log.Debugf("Failed to parse rpm -qf line: %s, r: %s", line, r)
+			continue
+		}
+		if _, ok := o.Packages[pack.Name]; !ok {
+			o.log.Debugf("Failed to rpm -qf. pkg: %+v not found, r: %s, line: %s", pack, r, line)
 			continue
 		}
 		pkgNameVerRels = append(pkgNameVerRels, pack.FQPN())
