@@ -41,6 +41,8 @@ func (*ReportCmd) Usage() string {
 		[-refresh-cve]
 		[-cvss-over=7]
 		[-diff]
+		[-diff-minus]
+		[-diff-plus]
 		[-ignore-unscored-cves]
 		[-ignore-unfixed]
 		[-ignore-github-dismissed]
@@ -95,8 +97,14 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.Float64Var(&c.Conf.CvssScoreOver, "cvss-over", 0,
 		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
 
+	f.BoolVar(&c.Conf.DiffMinus, "diff-minus", false,
+		"Minus Difference between previous result and current result")
+
+	f.BoolVar(&c.Conf.DiffPlus, "diff-plus", false,
+		"Plus Difference between previous result and current result")
+
 	f.BoolVar(&c.Conf.Diff, "diff", false,
-		"Difference between previous result and current result")
+		"Plus & Minus Difference between previous result and current result")
 
 	f.BoolVar(&c.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
 		"Don't report the unscored CVEs")
@@ -151,9 +159,14 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 	c.Conf.HTTP.Init(p.httpConf)
 
+	if c.Conf.Diff {
+		c.Conf.DiffPlus = true
+		c.Conf.DiffMinus = true
+	}
+
 	var dir string
 	var err error
-	if c.Conf.Diff {
+	if c.Conf.DiffPlus || c.Conf.DiffMinus {
 		dir, err = report.JSONDir([]string{})
 	} else {
 		dir, err = report.JSONDir(f.Args())

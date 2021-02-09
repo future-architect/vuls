@@ -31,13 +31,10 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		path := filepath.Join(w.CurrentDir, r.ReportFileName())
 
 		if c.Conf.FormatJSON {
-			var p string
-			if c.Conf.Diff {
+			p := path + ".json"
+			if c.Conf.DiffPlus || c.Conf.DiffMinus {
 				p = path + "_diff.json"
-			} else {
-				p = path + ".json"
 			}
-
 			var b []byte
 			if b, err = json.MarshalIndent(r, "", "    "); err != nil {
 				return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
@@ -48,13 +45,10 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 
 		if c.Conf.FormatList {
-			var p string
-			if c.Conf.Diff {
+			p := path + "_short.txt"
+			if c.Conf.DiffPlus || c.Conf.DiffMinus {
 				p = path + "_short_diff.txt"
-			} else {
-				p = path + "_short.txt"
 			}
-
 			if err := writeFile(
 				p, []byte(formatList(r)), 0600); err != nil {
 				return xerrors.Errorf(
@@ -63,11 +57,9 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 
 		if c.Conf.FormatFullText {
-			var p string
-			if c.Conf.Diff {
+			p := path + "_full.txt"
+			if c.Conf.DiffPlus || c.Conf.DiffMinus {
 				p = path + "_full_diff.txt"
-			} else {
-				p = path + "_full.txt"
 			}
 
 			if err := writeFile(
@@ -78,9 +70,9 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 
 		if c.Conf.FormatCsvList {
-			p := path + "_short.csv"
-			if c.Conf.Diff {
-				p = path + "_short_diff.csv"
+			p := path + ".csv"
+			if c.Conf.DiffPlus || c.Conf.DiffMinus {
+				p = path + "_diff.csv"
 			}
 			if err := formatCsvList(r, p); err != nil {
 				return xerrors.Errorf("Failed to write CSV: %s, %w", p, err)

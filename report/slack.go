@@ -206,7 +206,7 @@ func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 		}
 
 		a := slack.Attachment{
-			Title:      vinfo.CveID,
+			Title:      vinfo.CveIDDiffFormat(config.Conf.DiffMinus || config.Conf.DiffPlus),
 			TitleLink:  "https://nvd.nist.gov/vuln/detail/" + vinfo.CveID,
 			Text:       attachmentText(vinfo, r.Family, r.CweDict, r.Packages),
 			MarkdownIn: []string{"text", "pretext"},
