@@ -172,7 +172,6 @@ type VulnInfo struct {
 	Exploits             []Exploit            `json:"exploits,omitempty"`
 	Metasploits          []Metasploit         `json:"metasploits,omitempty"`
 	Mitigations          []Mitigation         `json:"mitigations,omitempty"`
-	Wordaround           []Wordaround         `json:"workaround,omitempty"`
 	AlertDict            AlertDict            `json:"alertDict,omitempty"`
 	CpeURIs              []string             `json:"cpeURIs,omitempty"` // CpeURIs related to this CVE defined in config.toml
 	GitHubSecurityAlerts GitHubSecurityAlerts `json:"gitHubSecurityAlerts,omitempty"`
@@ -682,13 +681,6 @@ type Metasploit struct {
 type Mitigation struct {
 	CveContentType CveContentType `json:"cveContentType,omitempty"`
 	Mitigation     string         `json:"mitigation,omitempty"`
-	URL            string         `json:"url,omitempty"`
-}
-
-// Workaround :
-type Wordaround struct {
-	CveContentType CveContentType `json:"cveContentType,omitempty"`
-	Workaround     string         `json:"workaround,omitempty"`
 	URL            string         `json:"url,omitempty"`
 }
 
