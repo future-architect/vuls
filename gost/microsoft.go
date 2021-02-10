@@ -70,10 +70,9 @@ func (ms Microsoft) ConvertToModel(cve *gostmodels.MicrosoftCVE) (*models.CveCon
 
 	option := map[string]string{}
 	if 0 < len(cve.ExploitStatus) {
+		// TODO: CVE-2020-0739
+		// "exploit_status": "Publicly Disclosed:No;Exploited:No;Latest Software Release:Exploitation Less Likely;Older Software Release:Exploitation Less Likely;DOS:N/A",
 		option["exploit"] = cve.ExploitStatus
-	}
-	if 0 < len(cve.Workaround) {
-		option["workaround"] = cve.Workaround
 	}
 	kbids := []string{}
 	for _, kbid := range cve.KBIDs {
@@ -86,13 +85,18 @@ func (ms Microsoft) ConvertToModel(cve *gostmodels.MicrosoftCVE) (*models.CveCon
 	vendorURL := "https://msrc.microsoft.com/update-guide/vulnerability/" + cve.CveID
 	mitigations := []models.Mitigation{}
 	if cve.Mitigation != "" {
-		mitigations = []models.Mitigation{
-			{
-				CveContentType: models.Microsoft,
-				Mitigation:     cve.Mitigation,
-				URL:            vendorURL,
-			},
-		}
+		mitigations = append(mitigations, models.Mitigation{
+			CveContentType: models.Microsoft,
+			Mitigation:     cve.Mitigation,
+			URL:            vendorURL,
+		})
+	}
+	if cve.Workaround != "" {
+		mitigations = append(mitigations, models.Mitigation{
+			CveContentType: models.Microsoft,
+			Mitigation:     cve.Workaround,
+			URL:            vendorURL,
+		})
 	}
 
 	return &models.CveContent{
