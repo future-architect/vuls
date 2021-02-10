@@ -476,7 +476,7 @@ func (o *redhatBase) yumPs() error {
 		stdout := ""
 		stdout, err = o.lsProcExe(pid)
 		if err != nil {
-			o.log.Debugf("Failed to exec /proc/%s/exe err: %s", pid, err)
+			o.log.Debugf("Failed to exec ls -l /proc/%s/exe err: %s", pid, err)
 			continue
 		}
 		s, err := o.parseLsProcExe(stdout)
@@ -652,11 +652,11 @@ func (o *redhatBase) getPkgNameVerRels(paths []string) (pkgNameVerRels []string,
 		line := scanner.Text()
 		pack, err := o.parseInstalledPackagesLine(line)
 		if err != nil {
-			o.log.Debugf("Failed to parse rpm -qf line: %s, r: %s", line, r)
+			o.log.Debugf("Failed to parse rpm -qf line: %s", line)
 			continue
 		}
 		if _, ok := o.Packages[pack.Name]; !ok {
-			o.log.Debugf("Failed to rpm -qf. pkg: %+v not found, r: %s, line: %s", pack, r, line)
+			o.log.Debugf("Failed to rpm -qf. pkg: %+v not found, line: %s", pack, line)
 			continue
 		}
 		pkgNameVerRels = append(pkgNameVerRels, pack.FQPN())
