@@ -519,9 +519,9 @@ func (o *redhatBase) yumPs() error {
 	}
 
 	for pid, loadedFiles := range pidLoadedFiles {
-		pkgNameVerRels := o.getOwnerPkgs(loadedFiles)
+		pkgNames := o.getOwnerPkgs(loadedFiles)
 		uniq := map[string]struct{}{}
-		for _, name := range pkgNameVerRels {
+		for _, name := range pkgNames {
 			uniq[name] = struct{}{}
 		}
 
@@ -535,14 +535,14 @@ func (o *redhatBase) yumPs() error {
 			ListenPortStats: pidListenPorts[pid],
 		}
 
-		for pkgNameVerRel := range uniq {
-			p, err := o.Packages.FindByFQPN(pkgNameVerRel)
-			if err != nil {
-				o.log.Warnf("Failed to FindByFQPN: %+v", err)
+		for name := range uniq {
+			p, ok := o.Packages[name]
+			if !ok {
+				o.log.Debugf("Failed to FindByFQPN: %+v", err)
 				continue
 			}
 			p.AffectedProcs = append(p.AffectedProcs, proc)
-			o.Packages[p.Name] = *p
+			o.Packages[p.Name] = p
 		}
 	}
 	return nil
@@ -639,7 +639,7 @@ func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
 	return strings.Replace(fqpn, "-(none):", "-", -1), nil
 }
 
-func (o *redhatBase) getOwnerPkgs(paths []string) (pkgNameVerRels []string) {
+func (o *redhatBase) getOwnerPkgs(paths []string) (names []string) {
 	cmd := o.rpmQf() + strings.Join(paths, " ")
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	// rpm exit code means `the number` of errors.
@@ -662,9 +662,9 @@ func (o *redhatBase) getOwnerPkgs(paths []string) (pkgNameVerRels []string) {
 			o.log.Debugf("Failed to rpm -qf. pkg: %+v not found, line: %s", pack, line)
 			continue
 		}
-		pkgNameVerRels = append(pkgNameVerRels, pack.FQPN())
+		names = append(names, pack.Name)
 	}
-	return pkgNameVerRels
+	return
 }
 
 func (o *redhatBase) rpmQa() string {
