@@ -278,52 +278,43 @@ func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, mod
 	// openssl 0 1.0.1e	30.el6.11 x86_64
 	lines := strings.Split(stdout, "\n")
 	for _, line := range lines {
-		if trimmed := strings.TrimSpace(line); len(trimmed) != 0 {
-			pack, err := o.parseInstalledPackagesLine(line)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			// `Kernel` and `kernel-devel` package may be installed multiple versions.
-			// From the viewpoint of vulnerability detection,
-			// pay attention only to the running kernel
-			isKernel, running := isRunningKernel(pack, o.Distro.Family, o.Kernel)
-			if isKernel {
-				if o.Kernel.Release == "" {
-					// When the running kernel release is unknown,
-					// use the latest release among the installed release
-					kernelRelease := ver.NewVersion(fmt.Sprintf("%s-%s", pack.Version, pack.Release))
-					if kernelRelease.LessThan(latestKernelRelease) {
-						continue
-					}
-					latestKernelRelease = kernelRelease
-				} else if !running {
-					o.log.Debugf("Not a running kernel. pack: %#v, kernel: %#v", pack, o.Kernel)
-					continue
-				} else {
-					o.log.Debugf("Found a running kernel. pack: %#v, kernel: %#v", pack, o.Kernel)
-				}
-			}
-			installed[pack.Name] = pack
+		if trimmed := strings.TrimSpace(line); trimmed == "" {
+			continue
 		}
+		pack, err := o.parseInstalledPackagesLine(line)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		// `Kernel` and `kernel-devel` package may be installed multiple versions.
+		// From the viewpoint of vulnerability detection,
+		// pay attention only to the running kernel
+		isKernel, running := isRunningKernel(*pack, o.Distro.Family, o.Kernel)
+		if isKernel {
+			if o.Kernel.Release == "" {
+				// When the running kernel release is unknown,
+				// use the latest release among the installed release
+				kernelRelease := ver.NewVersion(fmt.Sprintf("%s-%s", pack.Version, pack.Release))
+				if kernelRelease.LessThan(latestKernelRelease) {
+					continue
+				}
+				latestKernelRelease = kernelRelease
+			} else if !running {
+				o.log.Debugf("Not a running kernel. pack: %#v, kernel: %#v", pack, o.Kernel)
+				continue
+			} else {
+				o.log.Debugf("Found a running kernel. pack: %#v, kernel: %#v", pack, o.Kernel)
+			}
+		}
+		installed[pack.Name] = *pack
 	}
 	return installed, nil, nil
 }
 
-func (o *redhatBase) parseInstalledPackagesLine(line string) (models.Package, error) {
-	for _, suffix := range []string{
-		"Permission denied",
-		"is not owned by any package",
-		"No such file or directory",
-	} {
-		if strings.HasSuffix(line, suffix) {
-			return models.Package{},
-				xerrors.Errorf("Failed to parse package line: %s", line)
-		}
-	}
+func (o *redhatBase) parseInstalledPackagesLine(line string) (*models.Package, error) {
 	fields := strings.Fields(line)
 	if len(fields) != 5 {
-		return models.Package{},
+		return nil,
 			xerrors.Errorf("Failed to parse package line: %s", line)
 	}
 
@@ -335,12 +326,26 @@ func (o *redhatBase) parseInstalledPackagesLine(line string) (models.Package, er
 		ver = fmt.Sprintf("%s:%s", epoch, fields[2])
 	}
 
-	return models.Package{
+	return &models.Package{
 		Name:    fields[0],
 		Version: ver,
 		Release: fields[3],
 		Arch:    fields[4],
 	}, nil
+}
+
+func (o *redhatBase) parseRpmQfLine(line string) (pkg *models.Package, ignored bool, err error) {
+	for _, suffix := range []string{
+		"Permission denied",
+		"is not owned by any package",
+		"No such file or directory",
+	} {
+		if strings.HasSuffix(line, suffix) {
+			return nil, true, nil
+		}
+	}
+	pkg, err = o.parseInstalledPackagesLine(line)
+	return pkg, false, err
 }
 
 func (o *redhatBase) yumMakeCache() error {
@@ -514,12 +519,7 @@ func (o *redhatBase) yumPs() error {
 	}
 
 	for pid, loadedFiles := range pidLoadedFiles {
-		pkgNameVerRels, err := o.getPkgNameVerRels(loadedFiles)
-		if err != nil {
-			o.log.Debugf("Failed to get package name by file path: %s, err: %s", pkgNameVerRels, err)
-			continue
-		}
-
+		pkgNameVerRels := o.getOwnerPkgs(loadedFiles)
 		uniq := map[string]struct{}{}
 		for _, name := range pkgNameVerRels {
 			uniq[name] = struct{}{}
@@ -639,7 +639,7 @@ func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
 	return strings.Replace(fqpn, "-(none):", "-", -1), nil
 }
 
-func (o *redhatBase) getPkgNameVerRels(paths []string) (pkgNameVerRels []string, err error) {
+func (o *redhatBase) getOwnerPkgs(paths []string) (pkgNameVerRels []string) {
 	cmd := o.rpmQf() + strings.Join(paths, " ")
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	// rpm exit code means `the number` of errors.
@@ -650,9 +650,12 @@ func (o *redhatBase) getPkgNameVerRels(paths []string) (pkgNameVerRels []string,
 	scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
 	for scanner.Scan() {
 		line := scanner.Text()
-		pack, err := o.parseInstalledPackagesLine(line)
+		pack, ignored, err := o.parseRpmQfLine(line)
+		if ignored {
+			continue
+		}
 		if err != nil {
-			o.log.Debugf("Failed to parse rpm -qf line: %s", line)
+			o.log.Debugf("Failed to parse rpm -qf line: %s, err: %+v", line, err)
 			continue
 		}
 		if _, ok := o.Packages[pack.Name]; !ok {
@@ -661,7 +664,7 @@ func (o *redhatBase) getPkgNameVerRels(paths []string) (pkgNameVerRels []string,
 		}
 		pkgNameVerRels = append(pkgNameVerRels, pack.FQPN())
 	}
-	return pkgNameVerRels, nil
+	return pkgNameVerRels
 }
 
 func (o *redhatBase) rpmQa() string {
