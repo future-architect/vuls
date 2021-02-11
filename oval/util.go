@@ -399,7 +399,7 @@ func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error
 	case config.RedHat,
 		config.CentOS:
 		vera := rpmver.NewVersion(centOSVersionToRHEL(newVer))
-		verb := rpmver.NewVersion(packInOVAL.Version)
+		verb := rpmver.NewVersion(centOSVersionToRHEL(packInOVAL.Version))
 		return vera.LessThan(verb), nil
 
 	default:
