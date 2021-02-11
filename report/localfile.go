@@ -2,7 +2,6 @@ package report
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -33,7 +32,6 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		if (c.Conf.DiffPlus || c.Conf.DiffMinus) && c.Conf.Date != "" {
 			// path format is path/to/results/servername_date
 			path = filepath.Join(filepath.Join(c.Conf.ResultsDir, c.Conf.AfterDate), r.ReportFileName()+"_"+c.Conf.BeforeDate)
-			fmt.Printf("path : %s \n", path)
 		} else {
 			path = filepath.Join(w.CurrentDir, r.ReportFileName())
 		}
