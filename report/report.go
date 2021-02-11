@@ -4,6 +4,7 @@ package report
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -122,7 +123,13 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 	}
 
 	if c.Conf.DiffPlus || c.Conf.DiffMinus {
-		prevs, err := loadPrevious(rs)
+		var prevs []models.ScanResult
+		var err error
+		if c.Conf.Date == "" {
+			prevs, err = loadPrevious(rs)
+		} else {
+			prevs, err = LoadScanResults(filepath.Join(c.Conf.ResultsDir, c.Conf.AfterDate))
+		}
 		if err != nil {
 			return nil, err
 		}

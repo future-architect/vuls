@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/config"
+	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/gosuri/uitable"
@@ -607,7 +608,7 @@ func getPlusDiffCves(previous, current models.ScanResult) models.VulnInfos {
 	}
 
 	if len(updated) == 0 && len(new) == 0 {
-		util.Log.Infof("%s: There are %d vulnerabilities, but no difference between current result and previous one.", current.FormatServerName(), len(current.ScannedCves))
+		util.Log.Infof("%s: There are %d vulnerabilities, but no plus difference between before result and after one.", current.FormatServerName(), len(current.ScannedCves))
 	}
 
 	for cveID, vuln := range new {
@@ -631,7 +632,7 @@ func getMinusDiffCves(previous, current models.ScanResult) models.VulnInfos {
 		}
 	}
 	if len(clear) == 0 {
-		util.Log.Infof("%s: There are %d vulnerabilities, but no difference between current result and previous one.", current.FormatServerName(), len(current.ScannedCves))
+		util.Log.Infof("%s: There are %d vulnerabilities, but no minus difference between before result and after one.", current.FormatServerName(), len(current.ScannedCves))
 	}
 
 	return clear
@@ -764,7 +765,18 @@ func JSONDir(args []string) (string, error) {
 		return "", xerrors.Errorf("No results under %s",
 			config.Conf.ResultsDir)
 	}
-	return dirs[0], nil
+
+	if c.Conf.Date == "" {
+		return dirs[0], nil
+	}
+
+	for _, s := range dirs {
+		if s == filepath.Join(c.Conf.ResultsDir, c.Conf.BeforeDate) {
+			return s, nil
+		}
+	}
+	return "", xerrors.Errorf("No results under %s",
+		c.Conf.Date)
 }
 
 // LoadScanResults read JSON data
