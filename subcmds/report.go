@@ -41,6 +41,7 @@ func (*ReportCmd) Usage() string {
 		[-log-dir=/path/to/log]
 		[-refresh-cve]
 		[-cvss-over=7]
+		[-date]
 		[-diff]
 		[-diff-minus]
 		[-diff-plus]
@@ -99,7 +100,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
 
 	f.StringVar(&c.Conf.Date, "date", "",
-		"Date for -diff, -diff-plus and -diff-minus")
+		"Date for -diff, -diff-plus and -diff-minus option")
 
 	f.BoolVar(&c.Conf.DiffMinus, "diff-minus", false,
 		"Minus Difference between previous result and current result")
@@ -169,7 +170,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if c.Conf.Date != "" {
-		dates := strings.Split(c.Conf.Date, ",")
+		dates := strings.Split(c.Conf.Date, " ")
 		c.Conf.BeforeDate = dates[0]
 		c.Conf.AfterDate = dates[1]
 	}
