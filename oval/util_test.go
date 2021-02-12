@@ -1191,6 +1191,13 @@ func Test_centOSVersionToRHEL(t *testing.T) {
 			},
 			want: "grub2-tools-2.02-0.80.el7.x86_64",
 		},
+		{
+			name: "remove minor",
+			args: args{
+				ver: "sudo-1.8.23-10.el7_9.1",
+			},
+			want: "sudo-1.8.23-10.el7.1",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
