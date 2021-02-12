@@ -170,7 +170,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if c.Conf.Date != "" {
-		dates := strings.Split(c.Conf.Date, " ")
+		dates := strings.Split(c.Conf.Date, ",")
 		c.Conf.BeforeDate = dates[0]
 		c.Conf.AfterDate = dates[1]
 	}
