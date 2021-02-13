@@ -1207,3 +1207,77 @@ func Test_centOSVersionToRHEL(t *testing.T) {
 		})
 	}
 }
+
+func Test_lessThan(t *testing.T) {
+	type args struct {
+		family        string
+		newVer        string
+		AffectedPacks ovalmodels.Package
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "newVer and ovalmodels.Package both have underscoreMinorversion.",
+			args: args{
+				family: "centos",
+				newVer: "1.8.23-10.el7_9.1",
+				AffectedPacks: ovalmodels.Package{
+					Name:        "sudo",
+					Version:     "1.8.23-10.el7_9.1",
+					NotFixedYet: false,
+				},
+			},
+			want: false,
+		},
+		{
+			name: "only newVer has underscoreMinorversion.",
+			args: args{
+				family: "centos",
+				newVer: "1.8.23-10.el7_9.1",
+				AffectedPacks: ovalmodels.Package{
+					Name:        "sudo",
+					Version:     "1.8.23-10.el7.1",
+					NotFixedYet: false,
+				},
+			},
+			want: false,
+		},
+		{
+			name: "only ovalmodels.Package has underscoreMinorversion.",
+			args: args{
+				family: "centos",
+				newVer: "1.8.23-10.el7.1",
+				AffectedPacks: ovalmodels.Package{
+					Name:        "sudo",
+					Version:     "1.8.23-10.el7_9.1",
+					NotFixedYet: false,
+				},
+			},
+			want: false,
+		},
+		{
+			name: "neither newVer nor ovalmodels.Package have underscoreMinorversion.",
+			args: args{
+				family: "centos",
+				newVer: "1.8.23-10.el7.1",
+				AffectedPacks: ovalmodels.Package{
+					Name:        "sudo",
+					Version:     "1.8.23-10.el7.1",
+					NotFixedYet: false,
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, _ := lessThan(tt.args.family, tt.args.newVer, tt.args.AffectedPacks)
+			if got != tt.want {
+				t.Errorf("lessThan() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
