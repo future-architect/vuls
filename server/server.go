@@ -94,9 +94,8 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		reports = append(reports, report.LocalFileWriter{
-			CurrentDir: dir,
-		})
+		// sever subcmd doesn't have diff option
+		reports = append(reports, report.LocalFileWriter{CurrentDir: dir})
 	}
 
 	for _, w := range reports {

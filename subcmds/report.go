@@ -288,6 +288,8 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	if c.Conf.ToLocalFile {
 		reports = append(reports, report.LocalFileWriter{
 			CurrentDir: dir,
+			DiffPlus:   c.Conf.DiffPlus,
+			DiffMinus:  c.Conf.DiffMinus,
 		})
 	}
 

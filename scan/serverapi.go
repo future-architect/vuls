@@ -718,9 +718,7 @@ func checkEOL(r *models.ScanResult) {
 
 func writeScanResults(jsonDir string, results models.ScanResults) error {
 	config.Conf.FormatJSON = true
-	ws := []report.ResultWriter{
-		report.LocalFileWriter{CurrentDir: jsonDir},
-	}
+	ws := []report.ResultWriter{report.LocalFileWriter{CurrentDir: jsonDir}}
 	for _, w := range ws {
 		if err := w.Write(results...); err != nil {
 			return xerrors.Errorf("Failed to write summary: %s", err)
