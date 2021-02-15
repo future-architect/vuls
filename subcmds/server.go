@@ -43,7 +43,6 @@ func (*ServerCmd) Usage() string {
 		[-ignore-unscored-cves]
 		[-ignore-unfixed]
 		[-to-localfile]
-		[-format-json]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-debug]
 		[-debug-sql]
@@ -80,8 +79,6 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 
 	f.StringVar(&c.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
-
-	f.BoolVar(&c.Conf.FormatJSON, "format-json", false, "JSON format")
 
 	f.BoolVar(&c.Conf.ToLocalFile, "to-localfile", false, "Write report to localfile")
 	f.StringVar(&p.listen, "listen", "localhost:5515",

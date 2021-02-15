@@ -22,6 +22,7 @@ import (
 type ReportCmd struct {
 	configPath string
 	httpConf   c.HTTPConf
+	formatJSON bool
 }
 
 // Name return subcommand name
@@ -119,7 +120,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		&c.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
 
-	f.BoolVar(&c.Conf.FormatJSON, "format-json", false, "JSON format")
+	f.BoolVar(&p.formatJSON, "format-json", false, "JSON format")
 	f.BoolVar(&c.Conf.FormatCsvList, "format-csv", false, "CSV format")
 	f.BoolVar(&c.Conf.FormatOneEMail, "format-one-email", false,
 		"Send all the host report via only one EMail (Specify with -to-email)")
@@ -181,7 +182,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitUsageError
 	}
 
-	if !(c.Conf.FormatJSON || c.Conf.FormatOneLineText ||
+	if !(p.formatJSON || c.Conf.FormatOneLineText ||
 		c.Conf.FormatList || c.Conf.FormatFullText || c.Conf.FormatCsvList) {
 		c.Conf.FormatList = true
 	}
@@ -290,6 +291,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			CurrentDir: dir,
 			DiffPlus:   c.Conf.DiffPlus,
 			DiffMinus:  c.Conf.DiffMinus,
+			FormatJSON: p.formatJSON,
 		})
 	}
 
@@ -299,7 +301,9 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 				c.Conf.AWS.S3Bucket, err)
 			return subcommands.ExitUsageError
 		}
-		reports = append(reports, report.S3Writer{})
+		reports = append(reports, report.S3Writer{
+			FormatJSON: p.formatJSON,
+		})
 	}
 
 	if c.Conf.ToAzureBlob {
@@ -320,7 +324,9 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 				c.Conf.Azure.ContainerName, err)
 			return subcommands.ExitUsageError
 		}
-		reports = append(reports, report.AzureBlobWriter{})
+		reports = append(reports, report.AzureBlobWriter{
+			FormatJSON: p.formatJSON,
+		})
 	}
 
 	for _, w := range reports {

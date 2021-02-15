@@ -476,14 +476,13 @@ func needToRefreshCve(r models.ScanResult) bool {
 }
 
 func overwriteJSONFile(dir string, r models.ScanResult) error {
-	//TODO
-	before := config.Conf.FormatJSON
-	config.Conf.FormatJSON = true
-	w := LocalFileWriter{CurrentDir: dir}
+	w := LocalFileWriter{
+		CurrentDir: dir,
+		FormatJSON: true,
+	}
 	if err := w.Write(r); err != nil {
 		return xerrors.Errorf("Failed to write summary report: %w", err)
 	}
-	config.Conf.FormatJSON = before
 	return nil
 }
 

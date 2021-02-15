@@ -23,28 +23,21 @@ var Conf Config
 
 //Config is struct of Configuration
 type Config struct {
-	Debug      bool   `json:"debug,omitempty"`
-	DebugSQL   bool   `json:"debugSQL,omitempty"`
-	Lang       string `json:"lang,omitempty"`
-	HTTPProxy  string `valid:"url" json:"httpProxy,omitempty"`
-	LogDir     string `json:"logDir,omitempty"`
-	ResultsDir string `json:"resultsDir,omitempty"`
-	Pipe       bool   `json:"pipe,omitempty"`
-	Quiet      bool   `json:"quiet,omitempty"`
-	NoProgress bool   `json:"noProgress,omitempty"`
-	SSHNative  bool   `json:"sshNative,omitempty"`
-	Vvv        bool   `json:"vvv,omitempty"`
+	//TODO move under scan subcmd
+	Debug       bool   `json:"debug,omitempty"`
+	DebugSQL    bool   `json:"debugSQL,omitempty"`
+	HTTPProxy   string `valid:"url" json:"httpProxy,omitempty"`
+	LogDir      string `json:"logDir,omitempty"`
+	ResultsDir  string `json:"resultsDir,omitempty"`
+	Pipe        bool   `json:"pipe,omitempty"`
+	Quiet       bool   `json:"quiet,omitempty"`
+	SSHNative   bool   `json:"sshNative,omitempty"`
+	Vvv         bool   `json:"vvv,omitempty"`
+	DetectIPS   bool   `json:"detectIps,omitempty"`
+	CacheDBPath string `json:"cacheDBPath,omitempty"`
 
-	Default       ServerInfo            `json:"default,omitempty"`
-	Servers       map[string]ServerInfo `json:"servers,omitempty"`
-	CvssScoreOver float64               `json:"cvssScoreOver,omitempty"`
-
-	IgnoreUnscoredCves    bool `json:"ignoreUnscoredCves,omitempty"`
-	IgnoreUnfixed         bool `json:"ignoreUnfixed,omitempty"`
-	IgnoreGitHubDismissed bool `json:"ignore_git_hub_dismissed,omitempty"`
-
-	CacheDBPath     string `json:"cacheDBPath,omitempty"`
-	TrivyCacheDBDir string `json:"trivyCacheDBDir,omitempty"`
+	Default ServerInfo            `json:"default,omitempty"`
+	Servers map[string]ServerInfo `json:"servers,omitempty"`
 
 	CveDict    GoCveDictConf  `json:"cveDict,omitempty"`
 	OvalDict   GovalDictConf  `json:"ovalDict,omitempty"`
@@ -60,23 +53,33 @@ type Config struct {
 	Azure    AzureConf    `json:"-"`
 	ChatWork ChatWorkConf `json:"-"`
 	Telegram TelegramConf `json:"-"`
+	WpScan   WpScanConf   `json:"-"`
+	Saas     SaasConf     `json:"-"`
 
-	WpScan WpScanConf `json:"WpScan,omitempty"`
+	ToSlack     bool `json:"toSlack,omitempty"`
+	ToChatWork  bool `json:"toChatWork,omitempty"`
+	ToTelegram  bool `json:"ToTelegram,omitempty"`
+	ToEmail     bool `json:"toEmail,omitempty"`
+	ToSyslog    bool `json:"toSyslog,omitempty"`
+	ToLocalFile bool `json:"toLocalFile,omitempty"`
+	ToS3        bool `json:"toS3,omitempty"`
+	ToAzureBlob bool `json:"toAzureBlob,omitempty"`
+	ToHTTP      bool `json:"toHTTP,omitempty"`
 
-	Saas      SaasConf `json:"-"`
-	DetectIPS bool     `json:"detectIps,omitempty"`
+	Lang                  string  `json:"lang,omitempty"`
+	NoProgress            bool    `json:"noProgress,omitempty"`
+	CvssScoreOver         float64 `json:"cvssScoreOver,omitempty"`
+	TrivyCacheDBDir       string  `json:"trivyCacheDBDir,omitempty"`
+	RefreshCve            bool    `json:"refreshCve,omitempty"`
+	IgnoreUnscoredCves    bool    `json:"ignoreUnscoredCves,omitempty"`
+	IgnoreUnfixed         bool    `json:"ignoreUnfixed,omitempty"`
+	IgnoreGitHubDismissed bool    `json:"ignore_git_hub_dismissed,omitempty"`
 
-	RefreshCve        bool `json:"refreshCve,omitempty"`
-	ToSlack           bool `json:"toSlack,omitempty"`
-	ToChatWork        bool `json:"toChatWork,omitempty"`
-	ToTelegram        bool `json:"ToTelegram,omitempty"`
-	ToEmail           bool `json:"toEmail,omitempty"`
-	ToSyslog          bool `json:"toSyslog,omitempty"`
-	ToLocalFile       bool `json:"toLocalFile,omitempty"`
-	ToS3              bool `json:"toS3,omitempty"`
-	ToAzureBlob       bool `json:"toAzureBlob,omitempty"`
-	ToHTTP            bool `json:"toHTTP,omitempty"`
-	FormatJSON        bool `json:"formatJSON,omitempty"`
+	ReportConf
+}
+
+// ReportConf is struct of Configuration for report subcmd
+type ReportConf struct {
 	FormatOneEMail    bool `json:"formatOneEMail,omitempty"`
 	FormatOneLineText bool `json:"formatOneLineText,omitempty"`
 	FormatList        bool `json:"formatList,omitempty"`

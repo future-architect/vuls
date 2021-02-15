@@ -20,7 +20,9 @@ import (
 )
 
 // S3Writer writes results to S3
-type S3Writer struct{}
+type S3Writer struct {
+	FormatJSON bool
+}
 
 func getS3() (*s3.S3, error) {
 	ses, err := session.NewSession()
@@ -65,7 +67,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 
 	for _, r := range rs {
 		key := r.ReportKeyName()
-		if c.Conf.FormatJSON {
+		if w.FormatJSON {
 			k := key + ".json"
 			var b []byte
 			if b, err = json.Marshal(r); err != nil {

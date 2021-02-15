@@ -14,7 +14,9 @@ import (
 )
 
 // AzureBlobWriter writes results to AzureBlob
-type AzureBlobWriter struct{}
+type AzureBlobWriter struct {
+	FormatJSON bool
+}
 
 // Write results to Azure Blob storage
 func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
@@ -39,7 +41,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 
 	for _, r := range rs {
 		key := r.ReportKeyName()
-		if c.Conf.FormatJSON {
+		if w.FormatJSON {
 			k := key + ".json"
 			var b []byte
 			if b, err = json.Marshal(r); err != nil {

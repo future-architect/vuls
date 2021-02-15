@@ -16,6 +16,7 @@ type LocalFileWriter struct {
 	CurrentDir string
 	DiffPlus   bool
 	DiffMinus  bool
+	FormatJSON bool
 }
 
 func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
@@ -32,7 +33,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 	for _, r := range rs {
 		path := filepath.Join(w.CurrentDir, r.ReportFileName())
 
-		if c.Conf.FormatJSON {
+		if w.FormatJSON {
 			p := path + ".json"
 			if w.DiffPlus || w.DiffMinus {
 				p = path + "_diff.json"
