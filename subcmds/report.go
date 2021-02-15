@@ -20,9 +20,10 @@ import (
 
 // ReportCmd is subcommand for reporting
 type ReportCmd struct {
-	configPath string
-	httpConf   c.HTTPConf
-	formatJSON bool
+	configPath     string
+	httpConf       c.HTTPConf
+	formatJSON     bool
+	formatOneEMail bool
 }
 
 // Name return subcommand name
@@ -122,7 +123,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 
 	f.BoolVar(&p.formatJSON, "format-json", false, "JSON format")
 	f.BoolVar(&c.Conf.FormatCsvList, "format-csv", false, "CSV format")
-	f.BoolVar(&c.Conf.FormatOneEMail, "format-one-email", false,
+	f.BoolVar(&p.formatOneEMail, "format-one-email", false,
 		"Send all the host report via only one EMail (Specify with -to-email)")
 	f.BoolVar(&c.Conf.FormatOneLineText, "format-one-line-text", false,
 		"One line summary in plain text")
@@ -275,7 +276,9 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if c.Conf.ToEmail {
-		reports = append(reports, report.EMailWriter{})
+		reports = append(reports, report.EMailWriter{
+			FormatOneEMail: p.formatOneEMail,
+		})
 	}
 
 	if c.Conf.ToSyslog {

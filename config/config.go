@@ -80,7 +80,6 @@ type Config struct {
 
 // ReportConf is struct of Configuration for report subcmd
 type ReportConf struct {
-	FormatOneEMail    bool `json:"formatOneEMail,omitempty"`
 	FormatOneLineText bool `json:"formatOneLineText,omitempty"`
 	FormatList        bool `json:"formatList,omitempty"`
 	FormatFullText    bool `json:"formatFullText,omitempty"`

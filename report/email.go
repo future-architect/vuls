@@ -16,7 +16,9 @@ import (
 )
 
 // EMailWriter send mail
-type EMailWriter struct{}
+type EMailWriter struct {
+	FormatOneEMail bool
+}
 
 func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 	conf := config.Conf
@@ -24,7 +26,7 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 	sender := NewEMailSender()
 	m := map[string]int{}
 	for _, r := range rs {
-		if conf.FormatOneEMail {
+		if w.FormatOneEMail {
 			message += formatFullPlainText(r) + "\r\n\r\n"
 			mm := r.ScannedCves.CountGroupBySeverity()
 			keys := []string{"High", "Medium", "Low", "Unknown"}
@@ -65,7 +67,7 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 			m["High"], m["Medium"], m["Low"], m["Unknown"])
 	}
 	origmessage := message
-	if conf.FormatOneEMail {
+	if w.FormatOneEMail {
 		message = fmt.Sprintf("One Line Summary\r\n================\r\n%s", formatOneLineSummary(rs...))
 		if !conf.FormatOneLineText {
 			message += fmt.Sprintf("\r\n\r\n%s", origmessage)
