@@ -74,16 +74,13 @@ type Config struct {
 	IgnoreUnscoredCves    bool    `json:"ignoreUnscoredCves,omitempty"`
 	IgnoreUnfixed         bool    `json:"ignoreUnfixed,omitempty"`
 	IgnoreGitHubDismissed bool    `json:"ignore_git_hub_dismissed,omitempty"`
-
-	ReportConf
+	DiffPlus              bool    `json:"diffPlus,omitempty"`
+	DiffMinus             bool    `json:"diffMinus,omitempty"`
+	Diff                  bool    `json:"diff,omitempty"`
 }
 
 // ReportConf is struct of Configuration for report subcmd
 type ReportConf struct {
-	FormatList bool `json:"formatList,omitempty"`
-	DiffPlus   bool `json:"diffPlus,omitempty"`
-	DiffMinus  bool `json:"diffMinus,omitempty"`
-	Diff       bool `json:"diff,omitempty"`
 }
 
 // ValidateOnConfigtest validates

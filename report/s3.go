@@ -24,6 +24,7 @@ type S3Writer struct {
 	FormatJSON        bool
 	FormatFullText    bool
 	FormatOneLineText bool
+	FormatList        bool
 	Gzip              bool
 }
 
@@ -81,7 +82,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 			}
 		}
 
-		if c.Conf.FormatList {
+		if w.FormatList {
 			k := key + "_short.txt"
 			text := formatList(r)
 			if err := putObject(svc, k, []byte(text), w.Gzip); err != nil {

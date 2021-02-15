@@ -19,6 +19,7 @@ import (
 type EMailWriter struct {
 	FormatOneEMail    bool
 	FormatOneLineText bool
+	FormatList        bool
 }
 
 func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
@@ -45,7 +46,7 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 					r.ServerInfo(),
 					r.ScannedCves.FormatCveSummary())
 			}
-			if conf.FormatList {
+			if w.FormatList {
 				message = formatList(r)
 			} else {
 				message = formatFullPlainText(r)

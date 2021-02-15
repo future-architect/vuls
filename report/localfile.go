@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"golang.org/x/xerrors"
 )
@@ -20,6 +19,7 @@ type LocalFileWriter struct {
 	FormatCsv         bool
 	FormatFullText    bool
 	FormatOneLineText bool
+	FormatList        bool
 	Gzip              bool
 }
 
@@ -51,7 +51,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 			}
 		}
 
-		if c.Conf.FormatList {
+		if w.FormatList {
 			p := path + "_short.txt"
 			if w.DiffPlus || w.DiffMinus {
 				p = path + "_short_diff.txt"

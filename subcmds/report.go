@@ -28,6 +28,7 @@ type ReportCmd struct {
 	formatCsv         bool
 	formatFullText    bool
 	formatOneLineText bool
+	formatList        bool
 	gzip              bool
 }
 
@@ -132,7 +133,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"Send all the host report via only one EMail (Specify with -to-email)")
 	f.BoolVar(&p.formatOneLineText, "format-one-line-text", false,
 		"One line summary in plain text")
-	f.BoolVar(&c.Conf.FormatList, "format-list", false, "Display as list format")
+	f.BoolVar(&p.formatList, "format-list", false, "Display as list format")
 	f.BoolVar(&p.formatFullText, "format-full-text", false,
 		"Detail report in plain text")
 
@@ -189,8 +190,8 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if !(p.formatJSON || p.formatOneLineText ||
-		c.Conf.FormatList || p.formatFullText || p.formatCsv) {
-		c.Conf.FormatList = true
+		p.formatList || p.formatFullText || p.formatCsv) {
+		p.formatList = true
 	}
 
 	var loaded models.ScanResults
@@ -269,6 +270,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			FormatCsv:         p.formatCsv,
 			FormatFullText:    p.formatFullText,
 			FormatOneLineText: p.formatOneLineText,
+			FormatList:        p.formatList,
 		},
 	}
 
@@ -290,6 +292,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		reports = append(reports, report.EMailWriter{
 			FormatOneEMail:    p.formatOneEMail,
 			FormatOneLineText: p.formatOneLineText,
+			FormatList:        p.formatList,
 		})
 	}
 
@@ -310,6 +313,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			FormatCsv:         p.formatCsv,
 			FormatFullText:    p.formatFullText,
 			FormatOneLineText: p.formatOneLineText,
+			FormatList:        p.formatList,
 			Gzip:              p.gzip,
 		})
 	}
@@ -324,6 +328,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			FormatJSON:        p.formatJSON,
 			FormatFullText:    p.formatFullText,
 			FormatOneLineText: p.formatOneLineText,
+			FormatList:        p.formatList,
 			Gzip:              p.gzip,
 		})
 	}
@@ -351,6 +356,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			FormatJSON:        p.formatJSON,
 			FormatFullText:    p.formatFullText,
 			FormatOneLineText: p.formatOneLineText,
+			FormatList:        p.formatList,
 			Gzip:              p.gzip,
 		})
 	}

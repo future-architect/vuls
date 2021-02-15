@@ -18,6 +18,7 @@ type AzureBlobWriter struct {
 	FormatJSON        bool
 	FormatFullText    bool
 	FormatOneLineText bool
+	FormatList        bool
 	Gzip              bool
 }
 
@@ -55,7 +56,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 			}
 		}
 
-		if c.Conf.FormatList {
+		if w.FormatList {
 			k := key + "_short.txt"
 			b := []byte(formatList(r))
 			if err := createBlockBlob(cli, k, b, w.Gzip); err != nil {

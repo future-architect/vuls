@@ -3,7 +3,6 @@ package report
 import (
 	"fmt"
 
-	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 )
 
@@ -12,6 +11,7 @@ type StdoutWriter struct {
 	FormatCsv         bool
 	FormatFullText    bool
 	FormatOneLineText bool
+	FormatList        bool
 }
 
 //TODO support -format-jSON
@@ -33,7 +33,7 @@ func (w StdoutWriter) Write(rs ...models.ScanResult) error {
 		fmt.Print("\n")
 	}
 
-	if c.Conf.FormatList || w.FormatCsv {
+	if w.FormatList || w.FormatCsv {
 		for _, r := range rs {
 			fmt.Println(formatList(r))
 		}
