@@ -13,12 +13,13 @@ import (
 
 // LocalFileWriter writes results to a local file.
 type LocalFileWriter struct {
-	CurrentDir string
-	DiffPlus   bool
-	DiffMinus  bool
-	FormatJSON bool
-	FormatCsv  bool
-	Gzip       bool
+	CurrentDir     string
+	DiffPlus       bool
+	DiffMinus      bool
+	FormatJSON     bool
+	FormatCsv      bool
+	FormatFullText bool
+	Gzip           bool
 }
 
 func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
@@ -61,7 +62,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 			}
 		}
 
-		if c.Conf.FormatFullText {
+		if w.FormatFullText {
 			p := path + "_full.txt"
 			if w.DiffPlus || w.DiffMinus {
 				p = path + "_full_diff.txt"

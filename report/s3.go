@@ -21,8 +21,9 @@ import (
 
 // S3Writer writes results to S3
 type S3Writer struct {
-	FormatJSON bool
-	Gzip       bool
+	FormatJSON     bool
+	FormatFullText bool
+	Gzip           bool
 }
 
 func getS3() (*s3.S3, error) {
@@ -87,7 +88,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 			}
 		}
 
-		if c.Conf.FormatFullText {
+		if w.FormatFullText {
 			k := key + "_full.txt"
 			text := formatFullPlainText(r)
 			if err := putObject(svc, k, []byte(text), w.Gzip); err != nil {

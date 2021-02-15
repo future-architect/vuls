@@ -15,8 +15,9 @@ import (
 
 // AzureBlobWriter writes results to AzureBlob
 type AzureBlobWriter struct {
-	FormatJSON bool
-	Gzip       bool
+	FormatJSON     bool
+	FormatFullText bool
+	Gzip           bool
 }
 
 // Write results to Azure Blob storage
@@ -61,7 +62,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 			}
 		}
 
-		if c.Conf.FormatFullText {
+		if w.FormatFullText {
 			k := key + "_full.txt"
 			b := []byte(formatFullPlainText(r))
 			if err := createBlockBlob(cli, k, b, w.Gzip); err != nil {
