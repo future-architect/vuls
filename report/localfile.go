@@ -17,6 +17,7 @@ type LocalFileWriter struct {
 	DiffPlus   bool
 	DiffMinus  bool
 	FormatJSON bool
+	FormatCsv  bool
 }
 
 func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
@@ -72,7 +73,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 			}
 		}
 
-		if c.Conf.FormatCsvList {
+		if w.FormatCsv {
 			p := path + ".csv"
 			if w.DiffPlus || w.DiffMinus {
 				p = path + "_diff.csv"

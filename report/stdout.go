@@ -8,7 +8,9 @@ import (
 )
 
 // StdoutWriter write to stdout
-type StdoutWriter struct{}
+type StdoutWriter struct {
+	FormatCsv bool
+}
 
 // WriteScanSummary prints Scan summary at the end of scan
 func (w StdoutWriter) WriteScanSummary(rs ...models.ScanResult) {
@@ -27,7 +29,7 @@ func (w StdoutWriter) Write(rs ...models.ScanResult) error {
 		fmt.Print("\n")
 	}
 
-	if c.Conf.FormatList || c.Conf.FormatCsvList {
+	if c.Conf.FormatList || w.FormatCsv {
 		for _, r := range rs {
 			fmt.Println(formatList(r))
 		}

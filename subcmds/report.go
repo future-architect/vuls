@@ -24,6 +24,7 @@ type ReportCmd struct {
 	httpConf       c.HTTPConf
 	formatJSON     bool
 	formatOneEMail bool
+	formatCsv      bool
 }
 
 // Name return subcommand name
@@ -122,7 +123,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"http://proxy-url:port (default: empty)")
 
 	f.BoolVar(&p.formatJSON, "format-json", false, "JSON format")
-	f.BoolVar(&c.Conf.FormatCsvList, "format-csv", false, "CSV format")
+	f.BoolVar(&p.formatCsv, "format-csv", false, "CSV format")
 	f.BoolVar(&p.formatOneEMail, "format-one-email", false,
 		"Send all the host report via only one EMail (Specify with -to-email)")
 	f.BoolVar(&c.Conf.FormatOneLineText, "format-one-line-text", false,
@@ -184,7 +185,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if !(p.formatJSON || c.Conf.FormatOneLineText ||
-		c.Conf.FormatList || c.Conf.FormatFullText || c.Conf.FormatCsvList) {
+		c.Conf.FormatList || c.Conf.FormatFullText || p.formatCsv) {
 		c.Conf.FormatList = true
 	}
 
@@ -260,7 +261,9 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	// report
 	reports := []report.ResultWriter{
-		report.StdoutWriter{},
+		report.StdoutWriter{
+			FormatCsv: p.formatCsv,
+		},
 	}
 
 	if c.Conf.ToSlack {
@@ -295,6 +298,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			DiffPlus:   c.Conf.DiffPlus,
 			DiffMinus:  c.Conf.DiffMinus,
 			FormatJSON: p.formatJSON,
+			FormatCsv:  p.formatCsv,
 		})
 	}
 
