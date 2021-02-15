@@ -18,13 +18,14 @@ type LocalFileWriter struct {
 	DiffMinus  bool
 	FormatJSON bool
 	FormatCsv  bool
+	Gzip       bool
 }
 
 func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 	if c.Conf.FormatOneLineText {
 		path := filepath.Join(w.CurrentDir, "summary.txt")
 		text := formatOneLineSummary(rs...)
-		if err := writeFile(path, []byte(text), 0600); err != nil {
+		if err := w.writeFile(path, []byte(text), 0600); err != nil {
 			return xerrors.Errorf(
 				"Failed to write to file. path: %s, err: %w",
 				path, err)
@@ -43,7 +44,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 			if b, err = json.MarshalIndent(r, "", "    "); err != nil {
 				return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
 			}
-			if err := writeFile(p, b, 0600); err != nil {
+			if err := w.writeFile(p, b, 0600); err != nil {
 				return xerrors.Errorf("Failed to write JSON. path: %s, err: %w", p, err)
 			}
 		}
@@ -53,7 +54,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 			if w.DiffPlus || w.DiffMinus {
 				p = path + "_short_diff.txt"
 			}
-			if err := writeFile(
+			if err := w.writeFile(
 				p, []byte(formatList(r)), 0600); err != nil {
 				return xerrors.Errorf(
 					"Failed to write text files. path: %s, err: %w", p, err)
@@ -66,7 +67,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 				p = path + "_full_diff.txt"
 			}
 
-			if err := writeFile(
+			if err := w.writeFile(
 				p, []byte(formatFullPlainText(r)), 0600); err != nil {
 				return xerrors.Errorf(
 					"Failed to write text files. path: %s, err: %w", p, err)
@@ -87,10 +88,10 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 	return nil
 }
 
-func writeFile(path string, data []byte, perm os.FileMode) error {
-	var err error
-	if c.Conf.GZIP {
-		if data, err = gz(data); err != nil {
+func (w LocalFileWriter) writeFile(path string, data []byte, perm os.FileMode) (err error) {
+	if w.Gzip {
+		data, err = gz(data)
+		if err != nil {
 			return err
 		}
 		path += ".gz"

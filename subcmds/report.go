@@ -25,6 +25,8 @@ type ReportCmd struct {
 	formatJSON     bool
 	formatOneEMail bool
 	formatCsv      bool
+
+	gzip bool
 }
 
 // Name return subcommand name
@@ -144,7 +146,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.Conf.ToAzureBlob, "to-azure-blob", false,
 		"Write report to Azure Storage blob (container/yyyyMMdd_HHmm/servername.json/txt)")
 
-	f.BoolVar(&c.Conf.GZIP, "gzip", false, "gzip compression")
+	f.BoolVar(&p.gzip, "gzip", false, "gzip compression")
 	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use args passed via PIPE")
 
 	f.StringVar(&p.httpConf.URL, "http", "", "-to-http http://vuls-report")
@@ -299,6 +301,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			DiffMinus:  c.Conf.DiffMinus,
 			FormatJSON: p.formatJSON,
 			FormatCsv:  p.formatCsv,
+			Gzip:       p.gzip,
 		})
 	}
 
@@ -310,19 +313,21 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 		reports = append(reports, report.S3Writer{
 			FormatJSON: p.formatJSON,
+			Gzip:       p.gzip,
 		})
 	}
 
 	if c.Conf.ToAzureBlob {
-		if len(c.Conf.Azure.AccountName) == 0 {
+		// TODO refactor
+		if c.Conf.Azure.AccountName == "" {
 			c.Conf.Azure.AccountName = os.Getenv("AZURE_STORAGE_ACCOUNT")
 		}
 
-		if len(c.Conf.Azure.AccountKey) == 0 {
+		if c.Conf.Azure.AccountKey == "" {
 			c.Conf.Azure.AccountKey = os.Getenv("AZURE_STORAGE_ACCESS_KEY")
 		}
 
-		if len(c.Conf.Azure.ContainerName) == 0 {
+		if c.Conf.Azure.ContainerName == "" {
 			util.Log.Error("Azure storage container name is required with -azure-container option")
 			return subcommands.ExitUsageError
 		}
@@ -333,6 +338,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 		reports = append(reports, report.AzureBlobWriter{
 			FormatJSON: p.formatJSON,
+			Gzip:       p.gzip,
 		})
 	}
 

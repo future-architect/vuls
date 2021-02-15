@@ -83,7 +83,6 @@ type ReportConf struct {
 	FormatOneLineText bool `json:"formatOneLineText,omitempty"`
 	FormatList        bool `json:"formatList,omitempty"`
 	FormatFullText    bool `json:"formatFullText,omitempty"`
-	GZIP              bool `json:"gzip,omitempty"`
 	DiffPlus          bool `json:"diffPlus,omitempty"`
 	DiffMinus         bool `json:"diffMinus,omitempty"`
 	Diff              bool `json:"diff,omitempty"`

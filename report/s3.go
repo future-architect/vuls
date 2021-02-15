@@ -22,6 +22,7 @@ import (
 // S3Writer writes results to S3
 type S3Writer struct {
 	FormatJSON bool
+	Gzip       bool
 }
 
 func getS3() (*s3.S3, error) {
@@ -60,7 +61,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 		timestr := rs[0].ScannedAt.Format(time.RFC3339)
 		k := fmt.Sprintf(timestr + "/summary.txt")
 		text := formatOneLineSummary(rs...)
-		if err := putObject(svc, k, []byte(text)); err != nil {
+		if err := putObject(svc, k, []byte(text), w.Gzip); err != nil {
 			return err
 		}
 	}
@@ -73,7 +74,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 			if b, err = json.Marshal(r); err != nil {
 				return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
 			}
-			if err := putObject(svc, k, b); err != nil {
+			if err := putObject(svc, k, b, w.Gzip); err != nil {
 				return err
 			}
 		}
@@ -81,7 +82,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 		if c.Conf.FormatList {
 			k := key + "_short.txt"
 			text := formatList(r)
-			if err := putObject(svc, k, []byte(text)); err != nil {
+			if err := putObject(svc, k, []byte(text), w.Gzip); err != nil {
 				return err
 			}
 		}
@@ -89,7 +90,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 		if c.Conf.FormatFullText {
 			k := key + "_full.txt"
 			text := formatFullPlainText(r)
-			if err := putObject(svc, k, []byte(text)); err != nil {
+			if err := putObject(svc, k, []byte(text), w.Gzip); err != nil {
 				return err
 			}
 		}
@@ -126,9 +127,9 @@ func CheckIfBucketExists() error {
 	return nil
 }
 
-func putObject(svc *s3.S3, k string, b []byte) error {
+func putObject(svc *s3.S3, k string, b []byte, gzip bool) error {
 	var err error
-	if c.Conf.GZIP {
+	if gzip {
 		if b, err = gz(b); err != nil {
 			return err
 		}

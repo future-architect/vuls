@@ -16,6 +16,7 @@ import (
 // AzureBlobWriter writes results to AzureBlob
 type AzureBlobWriter struct {
 	FormatJSON bool
+	Gzip       bool
 }
 
 // Write results to Azure Blob storage
@@ -34,7 +35,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 		k := fmt.Sprintf(timestr + "/summary.txt")
 		text := formatOneLineSummary(rs...)
 		b := []byte(text)
-		if err := createBlockBlob(cli, k, b); err != nil {
+		if err := createBlockBlob(cli, k, b, w.Gzip); err != nil {
 			return err
 		}
 	}
@@ -47,7 +48,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 			if b, err = json.Marshal(r); err != nil {
 				return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
 			}
-			if err := createBlockBlob(cli, k, b); err != nil {
+			if err := createBlockBlob(cli, k, b, w.Gzip); err != nil {
 				return err
 			}
 		}
@@ -55,7 +56,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 		if c.Conf.FormatList {
 			k := key + "_short.txt"
 			b := []byte(formatList(r))
-			if err := createBlockBlob(cli, k, b); err != nil {
+			if err := createBlockBlob(cli, k, b, w.Gzip); err != nil {
 				return err
 			}
 		}
@@ -63,7 +64,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 		if c.Conf.FormatFullText {
 			k := key + "_full.txt"
 			b := []byte(formatFullPlainText(r))
-			if err := createBlockBlob(cli, k, b); err != nil {
+			if err := createBlockBlob(cli, k, b, w.Gzip); err != nil {
 				return err
 			}
 		}
@@ -103,9 +104,9 @@ func getBlobClient() (storage.BlobStorageClient, error) {
 	return api.GetBlobService(), nil
 }
 
-func createBlockBlob(cli storage.BlobStorageClient, k string, b []byte) error {
+func createBlockBlob(cli storage.BlobStorageClient, k string, b []byte, gzip bool) error {
 	var err error
-	if c.Conf.GZIP {
+	if gzip {
 		if b, err = gz(b); err != nil {
 			return err
 		}
