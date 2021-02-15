@@ -80,11 +80,10 @@ type Config struct {
 
 // ReportConf is struct of Configuration for report subcmd
 type ReportConf struct {
-	FormatOneLineText bool `json:"formatOneLineText,omitempty"`
-	FormatList        bool `json:"formatList,omitempty"`
-	DiffPlus          bool `json:"diffPlus,omitempty"`
-	DiffMinus         bool `json:"diffMinus,omitempty"`
-	Diff              bool `json:"diff,omitempty"`
+	FormatList bool `json:"formatList,omitempty"`
+	DiffPlus   bool `json:"diffPlus,omitempty"`
+	DiffMinus  bool `json:"diffMinus,omitempty"`
+	Diff       bool `json:"diff,omitempty"`
 }
 
 // ValidateOnConfigtest validates

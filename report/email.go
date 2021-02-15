@@ -17,7 +17,8 @@ import (
 
 // EMailWriter send mail
 type EMailWriter struct {
-	FormatOneEMail bool
+	FormatOneEMail    bool
+	FormatOneLineText bool
 }
 
 func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
@@ -49,7 +50,7 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 			} else {
 				message = formatFullPlainText(r)
 			}
-			if conf.FormatOneLineText {
+			if w.FormatOneLineText {
 				message = fmt.Sprintf("One Line Summary\r\n================\r\n%s", formatOneLineSummary(r))
 			}
 			if err := sender.Send(subject, message); err != nil {
@@ -69,7 +70,7 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 	origmessage := message
 	if w.FormatOneEMail {
 		message = fmt.Sprintf("One Line Summary\r\n================\r\n%s", formatOneLineSummary(rs...))
-		if !conf.FormatOneLineText {
+		if !w.FormatOneLineText {
 			message += fmt.Sprintf("\r\n\r\n%s", origmessage)
 		}
 

@@ -15,9 +15,10 @@ import (
 
 // AzureBlobWriter writes results to AzureBlob
 type AzureBlobWriter struct {
-	FormatJSON     bool
-	FormatFullText bool
-	Gzip           bool
+	FormatJSON        bool
+	FormatFullText    bool
+	FormatOneLineText bool
+	Gzip              bool
 }
 
 // Write results to Azure Blob storage
@@ -31,7 +32,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 		return err
 	}
 
-	if c.Conf.FormatOneLineText {
+	if w.FormatOneLineText {
 		timestr := rs[0].ScannedAt.Format(time.RFC3339)
 		k := fmt.Sprintf(timestr + "/summary.txt")
 		text := formatOneLineSummary(rs...)

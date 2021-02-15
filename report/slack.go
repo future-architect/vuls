@@ -16,6 +16,11 @@ import (
 	"golang.org/x/xerrors"
 )
 
+// SlackWriter send report to slack
+type SlackWriter struct {
+	FormatOneLineText bool
+}
+
 type message struct {
 	Text        string             `json:"text"`
 	Username    string             `json:"username"`
@@ -23,9 +28,6 @@ type message struct {
 	Channel     string             `json:"channel"`
 	Attachments []slack.Attachment `json:"attachments"`
 }
-
-// SlackWriter send report to slack
-type SlackWriter struct{}
 
 func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 	conf := config.Conf.Slack
@@ -72,7 +74,7 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 				return err
 			}
 
-			if config.Conf.FormatOneLineText || 0 < len(r.Errors) {
+			if w.FormatOneLineText || 0 < len(r.Errors) {
 				continue
 			}
 
@@ -102,7 +104,7 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 				return err
 			}
 
-			if config.Conf.FormatOneLineText || 0 < len(r.Errors) {
+			if w.FormatOneLineText || 0 < len(r.Errors) {
 				continue
 			}
 

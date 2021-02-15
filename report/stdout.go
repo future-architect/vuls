@@ -9,8 +9,9 @@ import (
 
 // StdoutWriter write to stdout
 type StdoutWriter struct {
-	FormatCsv      bool
-	FormatFullText bool
+	FormatCsv         bool
+	FormatFullText    bool
+	FormatOneLineText bool
 }
 
 //TODO support -format-jSON
@@ -24,7 +25,7 @@ func (w StdoutWriter) WriteScanSummary(rs ...models.ScanResult) {
 }
 
 func (w StdoutWriter) Write(rs ...models.ScanResult) error {
-	if c.Conf.FormatOneLineText {
+	if w.FormatOneLineText {
 		fmt.Print("\n\n")
 		fmt.Println("One Line Summary")
 		fmt.Println("================")

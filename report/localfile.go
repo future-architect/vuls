@@ -13,17 +13,18 @@ import (
 
 // LocalFileWriter writes results to a local file.
 type LocalFileWriter struct {
-	CurrentDir     string
-	DiffPlus       bool
-	DiffMinus      bool
-	FormatJSON     bool
-	FormatCsv      bool
-	FormatFullText bool
-	Gzip           bool
+	CurrentDir        string
+	DiffPlus          bool
+	DiffMinus         bool
+	FormatJSON        bool
+	FormatCsv         bool
+	FormatFullText    bool
+	FormatOneLineText bool
+	Gzip              bool
 }
 
 func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
-	if c.Conf.FormatOneLineText {
+	if w.FormatOneLineText {
 		path := filepath.Join(w.CurrentDir, "summary.txt")
 		text := formatOneLineSummary(rs...)
 		if err := w.writeFile(path, []byte(text), 0600); err != nil {

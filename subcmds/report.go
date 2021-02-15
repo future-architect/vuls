@@ -23,11 +23,12 @@ type ReportCmd struct {
 	configPath string
 	httpConf   c.HTTPConf
 
-	formatJSON     bool
-	formatOneEMail bool
-	formatCsv      bool
-	formatFullText bool
-	gzip           bool
+	formatJSON        bool
+	formatOneEMail    bool
+	formatCsv         bool
+	formatFullText    bool
+	formatOneLineText bool
+	gzip              bool
 }
 
 // Name return subcommand name
@@ -129,7 +130,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.formatCsv, "format-csv", false, "CSV format")
 	f.BoolVar(&p.formatOneEMail, "format-one-email", false,
 		"Send all the host report via only one EMail (Specify with -to-email)")
-	f.BoolVar(&c.Conf.FormatOneLineText, "format-one-line-text", false,
+	f.BoolVar(&p.formatOneLineText, "format-one-line-text", false,
 		"One line summary in plain text")
 	f.BoolVar(&c.Conf.FormatList, "format-list", false, "Display as list format")
 	f.BoolVar(&p.formatFullText, "format-full-text", false,
@@ -187,7 +188,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitUsageError
 	}
 
-	if !(p.formatJSON || c.Conf.FormatOneLineText ||
+	if !(p.formatJSON || p.formatOneLineText ||
 		c.Conf.FormatList || p.formatFullText || p.formatCsv) {
 		c.Conf.FormatList = true
 	}
@@ -265,13 +266,16 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	// report
 	reports := []report.ResultWriter{
 		report.StdoutWriter{
-			FormatCsv:      p.formatCsv,
-			FormatFullText: p.formatFullText,
+			FormatCsv:         p.formatCsv,
+			FormatFullText:    p.formatFullText,
+			FormatOneLineText: p.formatOneLineText,
 		},
 	}
 
 	if c.Conf.ToSlack {
-		reports = append(reports, report.SlackWriter{})
+		reports = append(reports, report.SlackWriter{
+			FormatOneLineText: p.formatOneLineText,
+		})
 	}
 
 	if c.Conf.ToChatWork {
@@ -284,7 +288,8 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if c.Conf.ToEmail {
 		reports = append(reports, report.EMailWriter{
-			FormatOneEMail: p.formatOneEMail,
+			FormatOneEMail:    p.formatOneEMail,
+			FormatOneLineText: p.formatOneLineText,
 		})
 	}
 
@@ -298,13 +303,14 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if c.Conf.ToLocalFile {
 		reports = append(reports, report.LocalFileWriter{
-			CurrentDir:     dir,
-			DiffPlus:       c.Conf.DiffPlus,
-			DiffMinus:      c.Conf.DiffMinus,
-			FormatJSON:     p.formatJSON,
-			FormatCsv:      p.formatCsv,
-			FormatFullText: p.formatFullText,
-			Gzip:           p.gzip,
+			CurrentDir:        dir,
+			DiffPlus:          c.Conf.DiffPlus,
+			DiffMinus:         c.Conf.DiffMinus,
+			FormatJSON:        p.formatJSON,
+			FormatCsv:         p.formatCsv,
+			FormatFullText:    p.formatFullText,
+			FormatOneLineText: p.formatOneLineText,
+			Gzip:              p.gzip,
 		})
 	}
 
@@ -315,9 +321,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitUsageError
 		}
 		reports = append(reports, report.S3Writer{
-			FormatJSON:     p.formatJSON,
-			FormatFullText: p.formatFullText,
-			Gzip:           p.gzip,
+			FormatJSON:        p.formatJSON,
+			FormatFullText:    p.formatFullText,
+			FormatOneLineText: p.formatOneLineText,
+			Gzip:              p.gzip,
 		})
 	}
 
@@ -341,9 +348,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitUsageError
 		}
 		reports = append(reports, report.AzureBlobWriter{
-			FormatJSON:     p.formatJSON,
-			FormatFullText: p.formatFullText,
-			Gzip:           p.gzip,
+			FormatJSON:        p.formatJSON,
+			FormatFullText:    p.formatFullText,
+			FormatOneLineText: p.formatOneLineText,
+			Gzip:              p.gzip,
 		})
 	}
 

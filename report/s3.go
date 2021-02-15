@@ -21,9 +21,10 @@ import (
 
 // S3Writer writes results to S3
 type S3Writer struct {
-	FormatJSON     bool
-	FormatFullText bool
-	Gzip           bool
+	FormatJSON        bool
+	FormatFullText    bool
+	FormatOneLineText bool
+	Gzip              bool
 }
 
 func getS3() (*s3.S3, error) {
@@ -58,7 +59,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 		return err
 	}
 
-	if c.Conf.FormatOneLineText {
+	if w.FormatOneLineText {
 		timestr := rs[0].ScannedAt.Format(time.RFC3339)
 		k := fmt.Sprintf(timestr + "/summary.txt")
 		text := formatOneLineSummary(rs...)
