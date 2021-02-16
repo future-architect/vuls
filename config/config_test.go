@@ -55,7 +55,7 @@ func TestSyslogConfValidate(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		Conf.ToSyslog = true
+		tt.conf.Enabled = true
 		errs := tt.conf.Validate()
 		if len(errs) != tt.expectedErrLength {
 			t.Errorf("test: %d, expected %d, actual %d", i, tt.expectedErrLength, len(errs))

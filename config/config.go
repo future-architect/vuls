@@ -56,16 +56,6 @@ type Config struct {
 	WpScan   WpScanConf   `json:"-"`
 	Saas     SaasConf     `json:"-"`
 
-	ToSlack     bool `json:"toSlack,omitempty"`
-	ToChatWork  bool `json:"toChatWork,omitempty"`
-	ToTelegram  bool `json:"ToTelegram,omitempty"`
-	ToEmail     bool `json:"toEmail,omitempty"`
-	ToSyslog    bool `json:"toSyslog,omitempty"`
-	ToLocalFile bool `json:"toLocalFile,omitempty"`
-	ToS3        bool `json:"toS3,omitempty"`
-	ToAzureBlob bool `json:"toAzureBlob,omitempty"`
-	ToHTTP      bool `json:"toHTTP,omitempty"`
-
 	Lang                  string  `json:"lang,omitempty"`
 	NoProgress            bool    `json:"noProgress,omitempty"`
 	CvssScoreOver         float64 `json:"cvssScoreOver,omitempty"`
@@ -200,28 +190,37 @@ func (c Config) ValidateOnReport() bool {
 		errs = append(errs, err)
 	}
 
-	if mailerrs := c.EMail.Validate(); 0 < len(mailerrs) {
-		errs = append(errs, mailerrs...)
+	//TODO refactor interface
+	if es := c.EMail.Validate(); 0 < len(es) {
+		errs = append(errs, es...)
 	}
 
-	if slackerrs := c.Slack.Validate(); 0 < len(slackerrs) {
-		errs = append(errs, slackerrs...)
+	if es := c.Slack.Validate(); 0 < len(es) {
+		errs = append(errs, es...)
 	}
 
-	if chatworkerrs := c.ChatWork.Validate(); 0 < len(chatworkerrs) {
-		errs = append(errs, chatworkerrs...)
+	if es := c.ChatWork.Validate(); 0 < len(es) {
+		errs = append(errs, es...)
 	}
 
-	if telegramerrs := c.Telegram.Validate(); 0 < len(telegramerrs) {
-		errs = append(errs, telegramerrs...)
+	if es := c.Telegram.Validate(); 0 < len(es) {
+		errs = append(errs, es...)
 	}
 
-	if syslogerrs := c.Syslog.Validate(); 0 < len(syslogerrs) {
-		errs = append(errs, syslogerrs...)
+	if es := c.Syslog.Validate(); 0 < len(es) {
+		errs = append(errs, es...)
 	}
 
-	if httperrs := c.HTTP.Validate(); 0 < len(httperrs) {
-		errs = append(errs, httperrs...)
+	if es := c.HTTP.Validate(); 0 < len(es) {
+		errs = append(errs, es...)
+	}
+
+	if es := c.AWS.Validate(); 0 < len(es) {
+		errs = append(errs, es...)
+	}
+
+	if es := c.Azure.Validate(); 0 < len(es) {
+		errs = append(errs, es...)
 	}
 
 	for _, err := range errs {
@@ -302,36 +301,6 @@ func validateDB(dictionaryDBName, dbType, dbPath, dbURL string) error {
 			dictionaryDBName, dictionaryDBName, dbType)
 	}
 	return nil
-}
-
-// AWSConf is aws config
-type AWSConf struct {
-	// AWS profile to use
-	Profile string `json:"profile"`
-
-	// AWS region to use
-	Region string `json:"region"`
-
-	// S3 bucket name
-	S3Bucket string `json:"s3Bucket"`
-
-	// /bucket/path/to/results
-	S3ResultsDir string `json:"s3ResultsDir"`
-
-	// The Server-side encryption algorithm used when storing the reports in S3 (e.g., AES256, aws:kms).
-	S3ServerSideEncryption string `json:"s3ServerSideEncryption"`
-}
-
-// AzureConf is azure config
-type AzureConf struct {
-	// Azure account name to use. AZURE_STORAGE_ACCOUNT environment variable is used if not specified
-	AccountName string `json:"accountName"`
-
-	// Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified
-	AccountKey string `json:"-"`
-
-	// Azure storage container name
-	ContainerName string `json:"containerName"`
 }
 
 // WpScanConf is wpscan.com config

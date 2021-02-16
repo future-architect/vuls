@@ -7,13 +7,14 @@ import (
 
 // TelegramConf is Telegram config
 type TelegramConf struct {
-	Token  string `json:"-"`
-	ChatID string `json:"-"`
+	Token   string `json:"-"`
+	ChatID  string `json:"-"`
+	Enabled bool   `toml:"-" json:"-"`
 }
 
 // Validate validates configuration
 func (c *TelegramConf) Validate() (errs []error) {
-	if !Conf.ToTelegram {
+	if !c.Enabled {
 		return
 	}
 	if len(c.ChatID) == 0 {

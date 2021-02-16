@@ -102,7 +102,7 @@ func TestViaHTTP(t *testing.T) {
 			header.Set(k, v)
 		}
 
-		result, err := ViaHTTP(header, tt.body)
+		result, err := ViaHTTP(header, tt.body, false)
 		if err != tt.wantErr {
 			t.Errorf("error: expected %s, actual: %s", tt.wantErr, err)
 		}

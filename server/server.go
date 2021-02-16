@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"time"
 
-	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/scan"
@@ -20,7 +19,8 @@ import (
 
 // VulsHandler is used for vuls server mode
 type VulsHandler struct {
-	DBclient report.DBClient
+	DBclient    report.DBClient
+	ToLocalFile bool
 }
 
 // ServeHTTP is http handler
@@ -48,7 +48,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if result, err = scan.ViaHTTP(req.Header, buf.String()); err != nil {
+		if result, err = scan.ViaHTTP(req.Header, buf.String(), h.ToLocalFile); err != nil {
 			util.Log.Error(err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -81,7 +81,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	reports := []report.ResultWriter{
 		report.HTTPResponseWriter{Writer: w},
 	}
-	if c.Conf.ToLocalFile {
+	if h.ToLocalFile {
 		scannedAt := result.ScannedAt
 		if scannedAt.IsZero() {
 			scannedAt = time.Now().Truncate(1 * time.Hour)

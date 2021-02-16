@@ -511,7 +511,7 @@ func Scan(timeoutSec int) error {
 }
 
 // ViaHTTP scans servers by HTTP header and body
-func ViaHTTP(header http.Header, body string) (models.ScanResult, error) {
+func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResult, error) {
 	family := header.Get("X-Vuls-OS-Family")
 	if family == "" {
 		return models.ScanResult{}, errOSFamilyHeader
@@ -533,7 +533,7 @@ func ViaHTTP(header http.Header, body string) (models.ScanResult, error) {
 	}
 
 	serverName := header.Get("X-Vuls-Server-Name")
-	if config.Conf.ToLocalFile && serverName == "" {
+	if toLocalFile && serverName == "" {
 		return models.ScanResult{}, errServerNameHeader
 	}
 

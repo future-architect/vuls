@@ -8,12 +8,13 @@ import (
 
 // HTTPConf is HTTP config
 type HTTPConf struct {
-	URL string `valid:"url" json:"-"`
+	URL     string `valid:"url" json:"-"`
+	Enabled bool   `toml:"-" json:"-"`
 }
 
 // Validate validates configuration
 func (c *HTTPConf) Validate() (errs []error) {
-	if !Conf.ToHTTP {
+	if !c.Enabled {
 		return nil
 	}
 
@@ -28,11 +29,11 @@ const httpKey = "VULS_HTTP_URL"
 // Init set options with the following priority.
 // 1. Environment variable
 // 2. config.toml
-func (c *HTTPConf) Init(toml HTTPConf) {
+func (c *HTTPConf) Init(url string) {
 	if os.Getenv(httpKey) != "" {
 		c.URL = os.Getenv(httpKey)
 	}
-	if toml.URL != "" {
-		c.URL = toml.URL
+	if url != "" {
+		c.URL = url
 	}
 }

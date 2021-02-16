@@ -21,7 +21,6 @@ import (
 // ReportCmd is subcommand for reporting
 type ReportCmd struct {
 	configPath string
-	httpConf   c.HTTPConf
 
 	formatJSON        bool
 	formatOneEMail    bool
@@ -30,6 +29,18 @@ type ReportCmd struct {
 	formatOneLineText bool
 	formatList        bool
 	gzip              bool
+
+	toSlack     bool
+	toChatWork  bool
+	toTelegram  bool
+	toEmail     bool
+	toSyslog    bool
+	toLocalFile bool
+	toS3        bool
+	toAzureBlob bool
+	toHTTP      bool
+
+	toHTTPURL string
 }
 
 // Name return subcommand name
@@ -137,22 +148,21 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.formatFullText, "format-full-text", false,
 		"Detail report in plain text")
 
-	f.BoolVar(&c.Conf.ToSlack, "to-slack", false, "Send report via Slack")
-	f.BoolVar(&c.Conf.ToChatWork, "to-chatwork", false, "Send report via chatwork")
-	f.BoolVar(&c.Conf.ToTelegram, "to-telegram", false, "Send report via Telegram")
-	f.BoolVar(&c.Conf.ToEmail, "to-email", false, "Send report via Email")
-	f.BoolVar(&c.Conf.ToSyslog, "to-syslog", false, "Send report via Syslog")
-	f.BoolVar(&c.Conf.ToLocalFile, "to-localfile", false, "Write report to localfile")
-	f.BoolVar(&c.Conf.ToS3, "to-s3", false,
-		"Write report to S3 (bucket/yyyyMMdd_HHmm/servername.json/txt)")
-	f.BoolVar(&c.Conf.ToHTTP, "to-http", false, "Send report via HTTP POST")
-	f.BoolVar(&c.Conf.ToAzureBlob, "to-azure-blob", false,
+	f.BoolVar(&p.toSlack, "to-slack", false, "Send report via Slack")
+	f.BoolVar(&p.toChatWork, "to-chatwork", false, "Send report via chatwork")
+	f.BoolVar(&p.toTelegram, "to-telegram", false, "Send report via Telegram")
+	f.BoolVar(&p.toEmail, "to-email", false, "Send report via Email")
+	f.BoolVar(&p.toSyslog, "to-syslog", false, "Send report via Syslog")
+	f.BoolVar(&p.toLocalFile, "to-localfile", false, "Write report to localfile")
+	f.BoolVar(&p.toS3, "to-s3", false, "Write report to S3 (bucket/yyyyMMdd_HHmm/servername.json/txt)")
+	f.BoolVar(&p.toHTTP, "to-http", false, "Send report via HTTP POST")
+	f.BoolVar(&p.toAzureBlob, "to-azure-blob", false,
 		"Write report to Azure Storage blob (container/yyyyMMdd_HHmm/servername.json/txt)")
 
 	f.BoolVar(&p.gzip, "gzip", false, "gzip compression")
 	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use args passed via PIPE")
 
-	f.StringVar(&p.httpConf.URL, "http", "", "-to-http http://vuls-report")
+	f.StringVar(&p.toHTTPURL, "http", "", "-to-http http://vuls-report")
 
 	f.StringVar(&c.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
 		utils.DefaultCacheDir(), "/path/to/dir")
@@ -161,15 +171,25 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 // Execute execute
 func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
+
 	if err := c.Load(p.configPath, ""); err != nil {
 		util.Log.Errorf("Error loading %s, %+v", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
-	c.Conf.HTTP.Init(p.httpConf)
+	c.Conf.Slack.Enabled = p.toSlack
+	c.Conf.ChatWork.Enabled = p.toChatWork
+	c.Conf.Telegram.Enabled = p.toTelegram
+	c.Conf.EMail.Enabled = p.toEmail
+	c.Conf.Syslog.Enabled = p.toSyslog
+	c.Conf.AWS.Enabled = p.toS3
+	c.Conf.Azure.Enabled = p.toAzureBlob
+	c.Conf.HTTP.Enabled = p.toHTTP
+
+	//TODO refactor
+	c.Conf.HTTP.Init(p.toHTTPURL)
 
 	if c.Conf.Diff {
-		c.Conf.DiffPlus = true
-		c.Conf.DiffMinus = true
+		c.Conf.DiffPlus, c.Conf.DiffMinus = true, true
 	}
 
 	var dir string
@@ -274,21 +294,21 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		},
 	}
 
-	if c.Conf.ToSlack {
+	if p.toSlack {
 		reports = append(reports, report.SlackWriter{
 			FormatOneLineText: p.formatOneLineText,
 		})
 	}
 
-	if c.Conf.ToChatWork {
+	if p.toChatWork {
 		reports = append(reports, report.ChatWorkWriter{})
 	}
 
-	if c.Conf.ToTelegram {
+	if p.toTelegram {
 		reports = append(reports, report.TelegramWriter{})
 	}
 
-	if c.Conf.ToEmail {
+	if p.toEmail {
 		reports = append(reports, report.EMailWriter{
 			FormatOneEMail:    p.formatOneEMail,
 			FormatOneLineText: p.formatOneLineText,
@@ -296,15 +316,15 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		})
 	}
 
-	if c.Conf.ToSyslog {
+	if p.toSyslog {
 		reports = append(reports, report.SyslogWriter{})
 	}
 
-	if c.Conf.ToHTTP {
+	if p.toHTTP {
 		reports = append(reports, report.HTTPRequestWriter{})
 	}
 
-	if c.Conf.ToLocalFile {
+	if p.toLocalFile {
 		reports = append(reports, report.LocalFileWriter{
 			CurrentDir:        dir,
 			DiffPlus:          c.Conf.DiffPlus,
@@ -318,7 +338,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		})
 	}
 
-	if c.Conf.ToS3 {
+	if p.toS3 {
 		if err := report.CheckIfBucketExists(); err != nil {
 			util.Log.Errorf("Check if there is a bucket beforehand: %s, err: %+v",
 				c.Conf.AWS.S3Bucket, err)
@@ -333,7 +353,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		})
 	}
 
-	if c.Conf.ToAzureBlob {
+	if p.toAzureBlob {
 		// TODO refactor
 		if c.Conf.Azure.AccountName == "" {
 			c.Conf.Azure.AccountName = os.Getenv("AZURE_STORAGE_ACCOUNT")

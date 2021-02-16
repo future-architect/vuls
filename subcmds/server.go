@@ -22,8 +22,9 @@ import (
 
 // ServerCmd is subcommand for server
 type ServerCmd struct {
-	configPath string
-	listen     string
+	configPath  string
+	listen      string
+	toLocalFile bool
 }
 
 // Name return subcommand name
@@ -80,7 +81,7 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&c.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
 
-	f.BoolVar(&c.Conf.ToLocalFile, "to-localfile", false, "Write report to localfile")
+	f.BoolVar(&p.toLocalFile, "to-localfile", false, "Write report to localfile")
 	f.StringVar(&p.listen, "listen", "localhost:5515",
 		"host:port (default: localhost:5515)")
 }
@@ -136,7 +137,10 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	defer dbclient.CloseDB()
 
-	http.Handle("/vuls", server.VulsHandler{DBclient: *dbclient})
+	http.Handle("/vuls", server.VulsHandler{
+		DBclient:    *dbclient,
+		ToLocalFile: p.toLocalFile,
+	})
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "ok")
 	})
