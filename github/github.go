@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/errof"
 	"github.com/future-architect/vuls/models"
 	"golang.org/x/oauth2"
@@ -18,7 +17,7 @@ import (
 // DetectGitHubSecurityAlerts access to owner/repo on GitHub and fetch security alerts of the repository via GitHub API v4 GraphQL and then set to the given ScanResult.
 // https://help.github.com/articles/about-security-alerts-for-vulnerable-dependencies/
 //TODO move to report
-func DetectGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string) (nCVEs int, err error) {
+func DetectGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string, ignoreDismissed bool) (nCVEs int, err error) {
 	src := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
@@ -74,7 +73,7 @@ func DetectGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string)
 		}
 
 		for _, v := range alerts.Data.Repository.VulnerabilityAlerts.Edges {
-			if config.Conf.IgnoreGitHubDismissed && v.Node.DismissReason != "" {
+			if ignoreDismissed && v.Node.DismissReason != "" {
 				continue
 			}
 

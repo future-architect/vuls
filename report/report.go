@@ -74,7 +74,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			}
 		}
 
-		if err := libmanager.DetectLibsCves(&r); err != nil {
+		if err := libmanager.DetectLibsCves(&r, c.Conf.ReportOpts); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
 		}
 
@@ -87,7 +87,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 		}
 
 		repos := c.Conf.Servers[r.ServerName].GitHubRepos
-		if err := DetectGitHubCves(&r, repos); err != nil {
+		if err := DetectGitHubCves(&r, repos, c.Conf.IgnoreGitHubDismissed); err != nil {
 			return nil, xerrors.Errorf("Failed to detect GitHub Cves: %w", err)
 		}
 
@@ -195,7 +195,7 @@ func DetectPkgCves(dbclient DBClient, r *models.ScanResult) error {
 }
 
 // DetectGitHubCves fetches CVEs from GitHub Security Alerts
-func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]c.GitHubConf) error {
+func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]c.GitHubConf, ignoreDismissed bool) error {
 	if len(githubConfs) == 0 {
 		return nil
 	}
@@ -205,7 +205,7 @@ func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]c.GitHubConf)
 			return xerrors.Errorf("Failed to parse GitHub owner/repo: %s", ownerRepo)
 		}
 		owner, repo := ss[0], ss[1]
-		n, err := github.DetectGitHubSecurityAlerts(r, owner, repo, setting.Token)
+		n, err := github.DetectGitHubSecurityAlerts(r, owner, repo, setting.Token, ignoreDismissed)
 		if err != nil {
 			return xerrors.Errorf("Failed to access GitHub Security Alerts: %w", err)
 		}

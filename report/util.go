@@ -312,7 +312,7 @@ No CVE-IDs are found in updatable packages.
 		cweURLs, top10URLs := []string{}, []string{}
 		cweTop25URLs, sansTop25URLs := []string{}, []string{}
 		for _, v := range vuln.CveContents.UniqCweIDs(r.Family) {
-			name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL := r.CweDict.Get(v.Value, r.Lang)
+			name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL := r.CweDict.Get(v.Value)
 			if top10Rank != "" {
 				data = append(data, []string{"CWE",
 					fmt.Sprintf("[OWASP Top%s] %s: %s (%s)",

@@ -18,7 +18,7 @@ import (
 )
 
 // DetectLibsCves fills LibraryScanner information
-func DetectLibsCves(r *models.ScanResult) (err error) {
+func DetectLibsCves(r *models.ScanResult, rConf config.ReportOpts) (err error) {
 	totalCnt := 0
 	if len(r.LibraryScanners) == 0 {
 		return
@@ -31,7 +31,7 @@ func DetectLibsCves(r *models.ScanResult) (err error) {
 	}
 
 	util.Log.Info("Updating library db...")
-	if err := downloadDB(config.Version, config.Conf.TrivyCacheDBDir, config.Conf.NoProgress, false, false); err != nil {
+	if err := downloadDB(config.Version, config.Conf.TrivyCacheDBDir, rConf.NoProgress, false, false); err != nil {
 		return err
 	}
 

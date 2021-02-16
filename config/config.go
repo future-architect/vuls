@@ -23,22 +23,21 @@ var Conf Config
 
 //Config is struct of Configuration
 type Config struct {
-	//TODO move under scan subcmd
-	Debug       bool   `json:"debug,omitempty"`
-	DebugSQL    bool   `json:"debugSQL,omitempty"`
-	HTTPProxy   string `valid:"url" json:"httpProxy,omitempty"`
-	LogDir      string `json:"logDir,omitempty"`
-	ResultsDir  string `json:"resultsDir,omitempty"`
-	Pipe        bool   `json:"pipe,omitempty"`
-	Quiet       bool   `json:"quiet,omitempty"`
-	SSHNative   bool   `json:"sshNative,omitempty"`
-	Vvv         bool   `json:"vvv,omitempty"`
-	DetectIPS   bool   `json:"detectIps,omitempty"`
-	CacheDBPath string `json:"cacheDBPath,omitempty"`
+	// scan, report
+	Debug      bool   `json:"debug,omitempty"`
+	DebugSQL   bool   `json:"debugSQL,omitempty"`
+	HTTPProxy  string `valid:"url" json:"httpProxy,omitempty"`
+	LogDir     string `json:"logDir,omitempty"`
+	ResultsDir string `json:"resultsDir,omitempty"`
+	Pipe       bool   `json:"pipe,omitempty"`
+	Quiet      bool   `json:"quiet,omitempty"`
 
 	Default ServerInfo            `json:"default,omitempty"`
 	Servers map[string]ServerInfo `json:"servers,omitempty"`
 
+	ScanOpts
+
+	// report
 	CveDict    GoCveDictConf  `json:"cveDict,omitempty"`
 	OvalDict   GovalDictConf  `json:"ovalDict,omitempty"`
 	Gost       GostConf       `json:"gost,omitempty"`
@@ -56,21 +55,28 @@ type Config struct {
 	WpScan   WpScanConf   `json:"-"`
 	Saas     SaasConf     `json:"-"`
 
-	Lang                  string  `json:"lang,omitempty"`
-	NoProgress            bool    `json:"noProgress,omitempty"`
-	CvssScoreOver         float64 `json:"cvssScoreOver,omitempty"`
-	TrivyCacheDBDir       string  `json:"trivyCacheDBDir,omitempty"`
-	RefreshCve            bool    `json:"refreshCve,omitempty"`
-	IgnoreUnscoredCves    bool    `json:"ignoreUnscoredCves,omitempty"`
-	IgnoreUnfixed         bool    `json:"ignoreUnfixed,omitempty"`
-	IgnoreGitHubDismissed bool    `json:"ignore_git_hub_dismissed,omitempty"`
-	DiffPlus              bool    `json:"diffPlus,omitempty"`
-	DiffMinus             bool    `json:"diffMinus,omitempty"`
-	Diff                  bool    `json:"diff,omitempty"`
+	ReportOpts
 }
 
-// ReportConf is struct of Configuration for report subcmd
-type ReportConf struct {
+type ScanOpts struct {
+	SSHNative   bool   `json:"sshNative,omitempty"`
+	Vvv         bool   `json:"vvv,omitempty"`
+	DetectIPS   bool   `json:"detectIps,omitempty"`
+	CacheDBPath string `json:"cacheDBPath,omitempty"`
+}
+
+// ReportOpts is struct of Configuration for reporting
+type ReportOpts struct {
+	CvssScoreOver      float64 `json:"cvssScoreOver,omitempty"`
+	Lang               string  `json:"lang,omitempty"`
+	TrivyCacheDBDir    string  `json:"trivyCacheDBDir,omitempty"`
+	NoProgress         bool    `json:"noProgress,omitempty"`
+	RefreshCve         bool    `json:"refreshCve,omitempty"`
+	IgnoreUnscoredCves bool    `json:"ignoreUnscoredCves,omitempty"`
+	IgnoreUnfixed      bool    `json:"ignoreUnfixed,omitempty"`
+	DiffPlus           bool    `json:"diffPlus,omitempty"`
+	DiffMinus          bool    `json:"diffMinus,omitempty"`
+	Diff               bool    `json:"diff,omitempty"`
 }
 
 // ValidateOnConfigtest validates

@@ -35,19 +35,14 @@ func (*SaaSCmd) Usage() string {
 		[-log-dir=/path/to/log]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-debug]
-		[-debug-sql]
 		[-quiet]
-		[-no-progress]
 `
 }
 
 // SetFlags set flag
 func (p *SaaSCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&c.Conf.Lang, "lang", "en", "[en|ja]")
 	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
-	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
 	f.BoolVar(&c.Conf.Quiet, "quiet", false, "Quiet mode. No output on stdout")
-	f.BoolVar(&c.Conf.NoProgress, "no-progress", false, "Suppress progress bar")
 
 	wd, _ := os.Getwd()
 	defaultConfPath := filepath.Join(wd, "config.toml")
@@ -108,8 +103,7 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	for _, r := range res {
 		util.Log.Debugf("%s: %s",
-			r.ServerInfo(),
-			pp.Sprintf("%s", c.Conf.Servers[r.ServerName]))
+			r.ServerInfo(), pp.Sprintf("%s", c.Conf.Servers[r.ServerName]))
 	}
 
 	// Ensure UUIDs of scan target servers in config.toml
