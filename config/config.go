@@ -77,6 +77,9 @@ type ReportOpts struct {
 	DiffPlus           bool    `json:"diffPlus,omitempty"`
 	DiffMinus          bool    `json:"diffMinus,omitempty"`
 	Diff               bool    `json:"diff,omitempty"`
+
+	//TODO move to GitHubConf
+	IgnoreGitHubDismissed bool `json:"ignore_git_hub_dismissed,omitempty"`
 }
 
 // ValidateOnConfigtest validates

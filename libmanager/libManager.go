@@ -12,13 +12,12 @@ import (
 	"golang.org/x/xerrors"
 	"k8s.io/utils/clock"
 
-	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 )
 
 // DetectLibsCves fills LibraryScanner information
-func DetectLibsCves(r *models.ScanResult, rConf config.ReportOpts) (err error) {
+func DetectLibsCves(r *models.ScanResult, cacheDir string, noProgress bool) (err error) {
 	totalCnt := 0
 	if len(r.LibraryScanners) == 0 {
 		return
@@ -31,11 +30,11 @@ func DetectLibsCves(r *models.ScanResult, rConf config.ReportOpts) (err error) {
 	}
 
 	util.Log.Info("Updating library db...")
-	if err := downloadDB(config.Version, config.Conf.TrivyCacheDBDir, rConf.NoProgress, false, false); err != nil {
+	if err := downloadDB("", cacheDir, noProgress, false, false); err != nil {
 		return err
 	}
 
-	if err := db2.Init(config.Conf.TrivyCacheDBDir); err != nil {
+	if err := db2.Init(cacheDir); err != nil {
 		return err
 	}
 	defer db2.Close()

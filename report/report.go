@@ -74,7 +74,7 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 			}
 		}
 
-		if err := libmanager.DetectLibsCves(&r, c.Conf.ReportOpts); err != nil {
+		if err := libmanager.DetectLibsCves(&r, c.Conf.TrivyCacheDBDir, c.Conf.NoProgress); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
 		}
 
