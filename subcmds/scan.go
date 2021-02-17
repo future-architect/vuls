@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/asaskevich/govalidator"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/scan"
 	"github.com/future-architect/vuls/util"
@@ -22,6 +23,7 @@ type ScanCmd struct {
 	askKeyPassword bool
 	timeoutSec     int
 	scanTimeoutSec int
+	cacheDBPath    string
 }
 
 // Name return subcommand name
@@ -70,7 +72,7 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 
 	defaultCacheDBPath := filepath.Join(wd, "cache.db")
-	f.StringVar(&c.Conf.CacheDBPath, "cachedb-path", defaultCacheDBPath,
+	f.StringVar(&p.cacheDBPath, "cachedb-path", defaultCacheDBPath,
 		"/path/to/cache.db (local cache of changelog for Ubuntu/Debian)")
 
 	f.BoolVar(&c.Conf.SSHNative, "ssh-native-insecure", false,
@@ -103,8 +105,16 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
 
 	if err := mkdirDotVuls(); err != nil {
-		util.Log.Errorf("Failed to create .vuls. err: %+v", err)
+		util.Log.Errorf("Failed to create $HOME/.vuls err: %+v", err)
 		return subcommands.ExitUsageError
+	}
+
+	if len(p.cacheDBPath) != 0 {
+		if ok, _ := govalidator.IsFilePath(p.cacheDBPath); !ok {
+			util.Log.Errorf("Cache DB path must be a *Absolute* file path. -cache-dbpath: %s",
+				p.cacheDBPath)
+			return subcommands.ExitUsageError
+		}
 	}
 
 	var keyPass string
@@ -188,7 +198,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	util.Log.Info("Detecting IPS identifiers... ")
 	scan.DetectIPSs(p.timeoutSec)
 
-	if err := scan.Scan(p.scanTimeoutSec); err != nil {
+	if err := scan.Scan(p.cacheDBPath, p.scanTimeoutSec); err != nil {
 		util.Log.Errorf("Failed to scan. err: %+v", err)
 		return subcommands.ExitFailure
 	}

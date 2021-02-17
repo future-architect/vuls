@@ -59,10 +59,9 @@ type Config struct {
 }
 
 type ScanOpts struct {
-	SSHNative   bool   `json:"sshNative,omitempty"`
-	Vvv         bool   `json:"vvv,omitempty"`
-	DetectIPS   bool   `json:"detectIps,omitempty"`
-	CacheDBPath string `json:"cacheDBPath,omitempty"`
+	SSHNative bool `json:"sshNative,omitempty"`
+	Vvv       bool `json:"vvv,omitempty"`
+	DetectIPS bool `json:"detectIps,omitempty"`
 }
 
 // ReportOpts is struct of Configuration for reporting
@@ -115,14 +114,6 @@ func (c Config) ValidateOnScan() bool {
 		if ok, _ := govalidator.IsFilePath(c.ResultsDir); !ok {
 			errs = append(errs, xerrors.Errorf(
 				"JSON base directory must be a *Absolute* file path. -results-dir: %s", c.ResultsDir))
-		}
-	}
-
-	if len(c.CacheDBPath) != 0 {
-		if ok, _ := govalidator.IsFilePath(c.CacheDBPath); !ok {
-			errs = append(errs, xerrors.Errorf(
-				"Cache DB path must be a *Absolute* file path. -cache-dbpath: %s",
-				c.CacheDBPath))
 		}
 	}
 

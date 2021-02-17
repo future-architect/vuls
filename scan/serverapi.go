@@ -476,12 +476,12 @@ func detectIPSs(timeoutSec int) {
 }
 
 // Scan scan
-func Scan(timeoutSec int) error {
+func Scan(cacheDBPath string, timeoutSec int) error {
 	if len(servers) == 0 {
 		return xerrors.New("No server defined. Check the configuration")
 	}
 
-	if err := setupChangelogCache(); err != nil {
+	if err := setupChangelogCache(cacheDBPath); err != nil {
 		return err
 	}
 	defer func() {
@@ -599,7 +599,7 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 	return result, nil
 }
 
-func setupChangelogCache() error {
+func setupChangelogCache(path string) error {
 	needToSetupCache := false
 	for _, s := range servers {
 		switch s.getDistro().Family {
@@ -615,7 +615,7 @@ func setupChangelogCache() error {
 		}
 	}
 	if needToSetupCache {
-		if err := cache.SetupBolt(config.Conf.CacheDBPath, util.Log); err != nil {
+		if err := cache.SetupBolt(path, util.Log); err != nil {
 			return err
 		}
 	}
