@@ -74,12 +74,12 @@ type ReportOpts struct {
 	RefreshCve         bool    `json:"refreshCve,omitempty"`
 	IgnoreUnfixed      bool    `json:"ignoreUnfixed,omitempty"`
 	IgnoreUnscoredCves bool    `json:"ignoreUnscoredCves,omitempty"`
+	DiffPlus           bool    `json:"diffPlus,omitempty"`
+	DiffMinus          bool    `json:"diffMinus,omitempty"`
+	Diff               bool    `json:"diff,omitempty"`
 
 	// not yet
-	Lang      string `json:"lang,omitempty"`
-	DiffPlus  bool   `json:"diffPlus,omitempty"`
-	DiffMinus bool   `json:"diffMinus,omitempty"`
-	Diff      bool   `json:"diff,omitempty"`
+	Lang string `json:"lang,omitempty"`
 
 	//TODO move to GitHubConf
 	IgnoreGitHubDismissed bool `json:"ignore_git_hub_dismissed,omitempty"`
