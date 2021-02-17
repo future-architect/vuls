@@ -484,7 +484,7 @@ func fillCweDict(r *models.ScanResult) {
 			entry.En = &cwe.Cwe{CweID: id}
 		}
 
-		if c.Conf.Lang == "ja" {
+		if r.Lang == "ja" {
 			if e, ok := cwe.CweDictJa[id]; ok {
 				if rank, ok := cwe.OwaspTopTen2017[id]; ok {
 					entry.OwaspTopTen2017 = rank

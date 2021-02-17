@@ -38,7 +38,7 @@ func (w ChatWorkWriter) Write(rs ...models.ScanResult) (err error) {
 				vinfo.CveID,
 				strconv.FormatFloat(maxCvss.Value.Score, 'f', 1, 64),
 				severity,
-				vinfo.Summaries(config.Conf.Lang, r.Family)[0].Value)
+				vinfo.Summaries(r.Lang, r.Family)[0].Value)
 
 			if err = chatWorkpostMessage(conf.Room, conf.APIToken, message); err != nil {
 				return err

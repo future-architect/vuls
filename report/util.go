@@ -220,14 +220,13 @@ No CVE-IDs are found in updatable packages.
 		}
 
 		data = append(data, []string{"Summary", vuln.Summaries(
-			config.Conf.Lang, r.Family)[0].Value})
+			r.Lang, r.Family)[0].Value})
 
 		for _, m := range vuln.Mitigations {
 			data = append(data, []string{"Mitigation", m.URL})
 		}
 
-		links := vuln.CveContents.PrimarySrcURLs(
-			config.Conf.Lang, r.Family, vuln.CveID)
+		links := vuln.CveContents.PrimarySrcURLs(r.Lang, r.Family, vuln.CveID)
 		for _, link := range links {
 			data = append(data, []string{"Primary Src", link.Value})
 		}
@@ -312,7 +311,7 @@ No CVE-IDs are found in updatable packages.
 		cweURLs, top10URLs := []string{}, []string{}
 		cweTop25URLs, sansTop25URLs := []string{}, []string{}
 		for _, v := range vuln.CveContents.UniqCweIDs(r.Family) {
-			name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL := r.CweDict.Get(v.Value)
+			name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL := r.CweDict.Get(v.Value, r.Lang)
 			if top10Rank != "" {
 				data = append(data, []string{"CWE",
 					fmt.Sprintf("[OWASP Top%s] %s: %s (%s)",
@@ -463,10 +462,6 @@ func isTrivyResult(r *models.ScanResult) bool {
 }
 
 func needToRefreshCve(r models.ScanResult) bool {
-	if r.Lang != config.Conf.Lang {
-		return true
-	}
-
 	for _, cve := range r.ScannedCves {
 		if 0 < len(cve.CveContents) {
 			return false

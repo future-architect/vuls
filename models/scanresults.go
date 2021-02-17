@@ -63,9 +63,9 @@ type ScanResult struct {
 type CweDict map[string]CweDictEntry
 
 // Get the name, url, top10URL for the specified cweID, lang
-func (c CweDict) Get(cweID string) (name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL string) {
+func (c CweDict) Get(cweID, lang string) (name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL string) {
 	cweNum := strings.TrimPrefix(cweID, "CWE-")
-	switch config.Conf.Lang {
+	switch lang {
 	case "ja":
 		if dict, ok := c[cweNum]; ok && dict.OwaspTopTen2017 != "" {
 			top10Rank = dict.OwaspTopTen2017

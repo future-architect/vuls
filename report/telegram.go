@@ -38,7 +38,7 @@ func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 				strconv.FormatFloat(maxCvss.Value.Score, 'f', 1, 64),
 				severity,
 				maxCvss.Value.Vector,
-				vinfo.Summaries(config.Conf.Lang, r.Family)[0].Value))
+				vinfo.Summaries(r.Lang, r.Family)[0].Value))
 			if len(msgs) == 5 {
 				if err = sendMessage(conf.ChatID, conf.Token, strings.Join(msgs, "\n\n")); err != nil {
 					return err

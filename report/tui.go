@@ -826,7 +826,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 				"=============",
 			)
 			for _, alert := range vinfo.AlertDict.Ja {
-				if config.Conf.Lang == "ja" {
+				if r.Lang == "ja" {
 					lines = append(lines, fmt.Sprintf("* [%s](%s)", alert.Title, alert.URL))
 				} else {
 					lines = append(lines, fmt.Sprintf("* [JPCERT](%s)", alert.URL))
@@ -894,7 +894,7 @@ func detailLines() (string, error) {
 
 	vinfo := vinfos[currentVinfo]
 	links := []string{}
-	for _, r := range vinfo.CveContents.PrimarySrcURLs(config.Conf.Lang, r.Family, vinfo.CveID) {
+	for _, r := range vinfo.CveContents.PrimarySrcURLs(r.Lang, r.Family, vinfo.CveID) {
 		links = append(links, r.Value)
 	}
 

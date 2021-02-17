@@ -19,6 +19,8 @@ import (
 // SlackWriter send report to slack
 type SlackWriter struct {
 	FormatOneLineText bool
+	lang              string
+	osFamily          string
 }
 
 type message struct {
@@ -35,6 +37,7 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 	token := conf.LegacyToken
 
 	for _, r := range rs {
+		w.lang, w.osFamily = r.Lang, r.Family
 		if channel == "${servername}" {
 			channel = fmt.Sprintf("#%s", r.ServerName)
 		}
@@ -44,7 +47,7 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 		// https://api.slack.com/methods/chat.postMessage
 		maxAttachments := 100
 		m := map[int][]slack.Attachment{}
-		for i, a := range toSlackAttachments(r) {
+		for i, a := range w.toSlackAttachments(r) {
 			m[i/maxAttachments] = append(m[i/maxAttachments], a)
 		}
 		chunkKeys := []int{}
@@ -54,7 +57,7 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 		sort.Ints(chunkKeys)
 
 		summary := fmt.Sprintf("%s\n%s",
-			getNotifyUsers(config.Conf.Slack.NotifyUsers),
+			w.getNotifyUsers(config.Conf.Slack.NotifyUsers),
 			formatOneLineSummary(r))
 
 		// Send slack by API
@@ -100,7 +103,7 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 				IconEmoji: conf.IconEmoji,
 				Channel:   channel,
 			}
-			if err := send(msg); err != nil {
+			if err := w.send(msg); err != nil {
 				return err
 			}
 
@@ -121,7 +124,7 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 					Channel:     channel,
 					Attachments: m[k],
 				}
-				if err = send(msg); err != nil {
+				if err = w.send(msg); err != nil {
 					return err
 				}
 			}
@@ -130,7 +133,7 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 	return nil
 }
 
-func send(msg message) error {
+func (w SlackWriter) send(msg message) error {
 	conf := config.Conf.Slack
 	count, retryMax := 0, 10
 
@@ -164,7 +167,7 @@ func send(msg message) error {
 	return nil
 }
 
-func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
+func (w SlackWriter) toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 	vinfos := r.ScannedCves.ToSortedSlice()
 	for _, vinfo := range vinfos {
 
@@ -210,7 +213,7 @@ func toSlackAttachments(r models.ScanResult) (attaches []slack.Attachment) {
 		a := slack.Attachment{
 			Title:      vinfo.CveIDDiffFormat(),
 			TitleLink:  "https://nvd.nist.gov/vuln/detail/" + vinfo.CveID,
-			Text:       attachmentText(vinfo, r.Family, r.CweDict, r.Packages),
+			Text:       w.attachmentText(vinfo, r.CweDict, r.Packages),
 			MarkdownIn: []string{"text", "pretext"},
 			Fields: []slack.AttachmentField{
 				{
@@ -246,7 +249,7 @@ func cvssColor(cvssScore float64) string {
 	}
 }
 
-func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]models.CweDictEntry, packs models.Packages) string {
+func (w SlackWriter) attachmentText(vinfo models.VulnInfo, cweDict map[string]models.CweDictEntry, packs models.Packages) string {
 	maxCvss := vinfo.MaxCvssScore()
 	vectors := []string{}
 
@@ -279,7 +282,7 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 		} else {
 			if 0 < len(vinfo.DistroAdvisories) {
 				links := []string{}
-				for _, v := range vinfo.CveContents.PrimarySrcURLs(config.Conf.Lang, osFamily, vinfo.CveID) {
+				for _, v := range vinfo.CveContents.PrimarySrcURLs(w.lang, w.osFamily, vinfo.CveID) {
 					links = append(links, fmt.Sprintf("<%s|%s>", v.Value, v.Type))
 				}
 
@@ -314,16 +317,16 @@ func attachmentText(vinfo models.VulnInfo, osFamily string, cweDict map[string]m
 		nwvec,
 		vinfo.PatchStatus(packs),
 		strings.Join(vectors, "\n"),
-		vinfo.Summaries(config.Conf.Lang, osFamily)[0].Value,
+		vinfo.Summaries(w.lang, w.osFamily)[0].Value,
 		mitigation,
-		cweIDs(vinfo, osFamily, cweDict),
+		w.cweIDs(vinfo, w.osFamily, cweDict),
 	)
 }
 
-func cweIDs(vinfo models.VulnInfo, osFamily string, cweDict models.CweDict) string {
+func (w SlackWriter) cweIDs(vinfo models.VulnInfo, osFamily string, cweDict models.CweDict) string {
 	links := []string{}
 	for _, c := range vinfo.CveContents.UniqCweIDs(osFamily) {
-		name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL := cweDict.Get(c.Value)
+		name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL := cweDict.Get(c.Value, w.lang)
 		line := ""
 		if top10Rank != "" {
 			line = fmt.Sprintf("<%s|[OWASP Top %s]>",
@@ -346,7 +349,7 @@ func cweIDs(vinfo models.VulnInfo, osFamily string, cweDict models.CweDict) stri
 }
 
 // See testcase
-func getNotifyUsers(notifyUsers []string) string {
+func (w SlackWriter) getNotifyUsers(notifyUsers []string) string {
 	slackStyleTexts := []string{}
 	for _, username := range notifyUsers {
 		slackStyleTexts = append(slackStyleTexts, fmt.Sprintf("<%s>", username))

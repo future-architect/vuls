@@ -77,9 +77,7 @@ type ReportOpts struct {
 	DiffPlus           bool    `json:"diffPlus,omitempty"`
 	DiffMinus          bool    `json:"diffMinus,omitempty"`
 	Diff               bool    `json:"diff,omitempty"`
-
-	// not yet
-	Lang string `json:"lang,omitempty"`
+	Lang               string  `json:"lang,omitempty"`
 
 	//TODO move to GitHubConf
 	IgnoreGitHubDismissed bool `json:"ignore_git_hub_dismissed,omitempty"`

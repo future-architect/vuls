@@ -14,7 +14,7 @@ func TestGetNotifyUsers(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		actual := getNotifyUsers(tt.in)
+		actual := SlackWriter{}.getNotifyUsers(tt.in)
 		if tt.expected != actual {
 			t.Errorf("expected %s, actual %s", tt.expected, actual)
 		}
