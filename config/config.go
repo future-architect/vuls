@@ -67,16 +67,19 @@ type ScanOpts struct {
 
 // ReportOpts is struct of Configuration for reporting
 type ReportOpts struct {
+	// refactored
 	CvssScoreOver      float64 `json:"cvssScoreOver,omitempty"`
-	Lang               string  `json:"lang,omitempty"`
 	TrivyCacheDBDir    string  `json:"trivyCacheDBDir,omitempty"`
 	NoProgress         bool    `json:"noProgress,omitempty"`
 	RefreshCve         bool    `json:"refreshCve,omitempty"`
-	IgnoreUnscoredCves bool    `json:"ignoreUnscoredCves,omitempty"`
 	IgnoreUnfixed      bool    `json:"ignoreUnfixed,omitempty"`
-	DiffPlus           bool    `json:"diffPlus,omitempty"`
-	DiffMinus          bool    `json:"diffMinus,omitempty"`
-	Diff               bool    `json:"diff,omitempty"`
+	IgnoreUnscoredCves bool    `json:"ignoreUnscoredCves,omitempty"`
+
+	// not yet
+	Lang      string `json:"lang,omitempty"`
+	DiffPlus  bool   `json:"diffPlus,omitempty"`
+	DiffMinus bool   `json:"diffMinus,omitempty"`
+	Diff      bool   `json:"diff,omitempty"`
 
 	//TODO move to GitHubConf
 	IgnoreGitHubDismissed bool `json:"ignore_git_hub_dismissed,omitempty"`

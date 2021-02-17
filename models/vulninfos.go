@@ -78,16 +78,11 @@ func (v VulnInfos) CountGroupBySeverity() map[string]int {
 }
 
 // FormatCveSummary summarize the number of CVEs group by CVSSv2 Severity
-func (v VulnInfos) FormatCveSummary() (line string) {
+func (v VulnInfos) FormatCveSummary() string {
 	m := v.CountGroupBySeverity()
-	if config.Conf.IgnoreUnscoredCves {
-		line = fmt.Sprintf("Total: %d (Critical:%d High:%d Medium:%d Low:%d)",
-			m["High"]+m["Medium"]+m["Low"], m["Critical"], m["High"], m["Medium"], m["Low"])
-	} else {
-		line = fmt.Sprintf("Total: %d (Critical:%d High:%d Medium:%d Low:%d ?:%d)",
-			m["High"]+m["Medium"]+m["Low"]+m["Unknown"],
-			m["Critical"], m["High"], m["Medium"], m["Low"], m["Unknown"])
-	}
+	line := fmt.Sprintf("Total: %d (Critical:%d High:%d Medium:%d Low:%d ?:%d)",
+		m["High"]+m["Medium"]+m["Low"]+m["Unknown"],
+		m["Critical"], m["High"], m["Medium"], m["Low"], m["Unknown"])
 
 	if config.Conf.DiffMinus || config.Conf.DiffPlus {
 		nPlus, nMinus := v.CountDiff()
