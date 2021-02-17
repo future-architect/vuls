@@ -55,7 +55,7 @@ func (cnf *GovalDictConf) Init() {
 
 // IsFetchViaHTTP returns wether fetch via http
 func (cnf *GovalDictConf) IsFetchViaHTTP() bool {
-	return Conf.OvalDict.Type == "http"
+	return cnf.Type == "http"
 }
 
 // CheckHTTPHealth do health check

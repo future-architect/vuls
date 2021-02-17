@@ -239,8 +239,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	for _, r := range res {
 		util.Log.Debugf("%s: %s",
-			r.ServerInfo(),
-			pp.Sprintf("%s", c.Conf.Servers[r.ServerName]))
+			r.ServerInfo(), pp.Sprintf("%s", c.Conf.Servers[r.ServerName]))
 	}
 
 	util.Log.Info("Validating db config...")
@@ -261,6 +260,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
+	// TODO move into fillcveInfos
 	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
 		CveDictCnf:    c.Conf.CveDict,
 		OvalDictCnf:   c.Conf.OvalDict,
@@ -279,6 +279,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 	defer dbclient.CloseDB()
 
+	// TODO pass dbclientconf by arg
 	if res, err = report.FillCveInfos(*dbclient, res, dir); err != nil {
 		util.Log.Errorf("%+v", err)
 		return subcommands.ExitFailure

@@ -53,7 +53,7 @@ func (cnf *MetasploitConf) Init() {
 
 // IsFetchViaHTTP returns wether fetch via http
 func (cnf *MetasploitConf) IsFetchViaHTTP() bool {
-	return Conf.Metasploit.Type == "http"
+	return cnf.Type == "http"
 }
 
 // CheckHTTPHealth do health check
