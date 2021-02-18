@@ -176,7 +176,7 @@ func Test_ensure(t *testing.T) {
 					"host-a": {
 						ServerName: "host-a",
 						UUIDs: map[string]string{
-							"host-a": "xxxxxxxx-e4cb-536a-a8f8-ef217bd2624d",
+							"host-a": "bbbbbbbb-e4cb-536a-a8f8-ef217bd2624d",
 						},
 					},
 				},
@@ -199,7 +199,7 @@ func Test_ensure(t *testing.T) {
 					"host-a": {
 						ServerName: "host-a",
 						UUIDs: map[string]string{
-							"host-a":       "xxxxxxxx-e4cb-536a-a8f8-ef217bd2624d",
+							"host-a":       "bbbbbbbb-e4cb-536a-a8f8-ef217bd2624d",
 							"cname@host-a": "b5d63a00-e4cb-536a-a8f8-ef217bd2624d",
 						},
 					},
@@ -207,7 +207,7 @@ func Test_ensure(t *testing.T) {
 				scanResults: models.ScanResults{
 					models.ScanResult{
 						ServerName: "host-a",
-						ServerUUID: "xxxxxxxx-e4cb-536a-a8f8-ef217bd2624d",
+						ServerUUID: "bbbbbbbb-e4cb-536a-a8f8-ef217bd2624d",
 						Container: models.Container{
 							ContainerID: "111111",
 							Name:        "cname",
@@ -227,7 +227,7 @@ func Test_ensure(t *testing.T) {
 					"host-a": {
 						ServerName: "host-a",
 						UUIDs: map[string]string{
-							"host-a":       "xxxxxxxx-e4cb-536a-a8f8-ef217bd2624d",
+							"host-a":       "bbbbbbbb-e4cb-536a-a8f8-ef217bd2624d",
 							"cname@host-a": "aaaaaaaa-e4cb-536a-a8f8-ef217bd2624d",
 						},
 					},
@@ -251,7 +251,7 @@ func Test_ensure(t *testing.T) {
 					"host-a": {
 						ServerName: "host-a",
 						UUIDs: map[string]string{
-							"host-a":       "xxxxxxxx-e4cb-536a-a8f8-ef217bd2624d",
+							"host-a":       "bbbbbbbb-e4cb-536a-a8f8-ef217bd2624d",
 							"cname@host-a": "aaaaaaaa-e4cb-536a-a8f8-ef217bd2624d",
 						},
 					},
@@ -259,7 +259,7 @@ func Test_ensure(t *testing.T) {
 				scanResults: models.ScanResults{
 					models.ScanResult{
 						ServerName: "host-a",
-						ServerUUID: "xxxxxxxx-e4cb-536a-a8f8-ef217bd2624d",
+						ServerUUID: "bbbbbbbb-e4cb-536a-a8f8-ef217bd2624d",
 						Container: models.Container{
 							ContainerID: "111111",
 							Name:        "cname",
@@ -315,6 +315,58 @@ func Test_ensure(t *testing.T) {
 							ContainerID: "111111",
 							Name:        "cname",
 							UUID:        "aaaaaaaa-e4cb-536a-a8f8-ef217bd2624d",
+						},
+					},
+				},
+			},
+			wantNeedsOverwrite: true,
+			wantErr:            false,
+		},
+		//6
+		{
+			name: "host invalid, container invalid",
+			args: args{
+				servers: map[string]c.ServerInfo{
+					"host-a": {
+						ServerName: "host-a",
+						UUIDs: map[string]string{
+							"host-a":       "invalid-uuid",
+							"cname@host-a": "invalid-uuid",
+						},
+					},
+				},
+				path: "",
+				scanResults: models.ScanResults{
+					models.ScanResult{
+						ServerName: "host-a",
+						ServerUUID: "",
+						Container: models.Container{
+							ContainerID: "111111",
+							Name:        "cname",
+							UUID:        "",
+						},
+					},
+				},
+				generateFunc: mockGenerateFunc,
+			},
+			want: results{
+				servers: map[string]c.ServerInfo{
+					"host-a": {
+						ServerName: "host-a",
+						UUIDs: map[string]string{
+							"host-a":       "b5d63a00-e4cb-536a-a8f8-ef217bd2624d",
+							"cname@host-a": "b5d63a00-e4cb-536a-a8f8-ef217bd2624d",
+						},
+					},
+				},
+				scanResults: models.ScanResults{
+					models.ScanResult{
+						ServerName: "host-a",
+						ServerUUID: "b5d63a00-e4cb-536a-a8f8-ef217bd2624d",
+						Container: models.Container{
+							ContainerID: "111111",
+							Name:        "cname",
+							UUID:        "b5d63a00-e4cb-536a-a8f8-ef217bd2624d",
 						},
 					},
 				},

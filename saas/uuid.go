@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
-	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -17,8 +15,6 @@ import (
 	"github.com/hashicorp/go-uuid"
 	"golang.org/x/xerrors"
 )
-
-const reUUID = "[\\da-f]{8}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{4}-[\\da-f]{12}"
 
 // EnsureUUIDs generate a new UUID of the scan target server if UUID is not assigned yet.
 // And then set the generated UUID to config.toml and scan results.
@@ -35,15 +31,6 @@ func EnsureUUIDs(servers map[string]c.ServerInfo, path string, scanResults model
 }
 
 func ensure(servers map[string]c.ServerInfo, path string, scanResults models.ScanResults, generateFunc func() (string, error)) (needsOverwrite bool, err error) {
-	// Sort Host->Container
-	sort.Slice(scanResults, func(i, j int) bool {
-		if scanResults[i].ServerName == scanResults[j].ServerName {
-			return scanResults[i].Container.ContainerID < scanResults[j].Container.ContainerID
-		}
-		return scanResults[i].ServerName < scanResults[j].ServerName
-	})
-
-	re := regexp.MustCompile(reUUID)
 	for i, r := range scanResults {
 		serverInfo := servers[r.ServerName]
 		if serverInfo.UUIDs == nil {
@@ -51,14 +38,21 @@ func ensure(servers map[string]c.ServerInfo, path string, scanResults models.Sca
 		}
 
 		if r.IsContainer() {
-			if _, ok := serverInfo.UUIDs[r.ServerName]; !ok {
+			if id, found := serverInfo.UUIDs[r.ServerName]; !found {
 				// Scanning with the -containers-only flag, the UUID of Host may not be generated,
-				// so check it. if not, create a UUID of the Host and set it.
-				hostUUID, err := generateFunc()
+				// so check it. If not, create a UUID of the Host and set it.
+				serverInfo.UUIDs[r.ServerName], err = generateFunc()
 				if err != nil {
 					return false, err
 				}
-				serverInfo.UUIDs[r.ServerName] = hostUUID
+				needsOverwrite = true
+			} else if _, err := uuid.ParseUUID(id); err != nil {
+				// if the UUID of the host is invalid, re-generate it
+				util.Log.Warnf("UUID `%s` is invalid. Re-generate and overwrite", id)
+				serverInfo.UUIDs[r.ServerName], err = generateFunc()
+				if err != nil {
+					return false, err
+				}
 				needsOverwrite = true
 			}
 		}
@@ -69,7 +63,7 @@ func ensure(servers map[string]c.ServerInfo, path string, scanResults models.Sca
 		}
 
 		if id, ok := serverInfo.UUIDs[name]; ok {
-			if ok := re.MatchString(id); ok {
+			if _, err := uuid.ParseUUID(id); err == nil {
 				if r.IsContainer() {
 					scanResults[i].Container.UUID = id
 					scanResults[i].ServerUUID = serverInfo.UUIDs[r.ServerName]
