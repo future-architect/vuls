@@ -114,7 +114,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 		if err != nil {
 			return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
 		}
-		util.Log.Infof("Uploading...: ServerName: %s, ", r.ServerName)
+		util.Log.Infof("Uploading... %s", r.FormatServerName())
 		s3Key := renameKeyName(r.ServerUUID, r.Container)
 		putObjectInput := &s3.PutObjectInput{
 			Bucket: aws.String(tempCredential.S3Bucket),

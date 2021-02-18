@@ -107,7 +107,7 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	// Ensure UUIDs of scan target servers in config.toml
-	if err := saas.EnsureUUIDs(p.configPath, res); err != nil {
+	if err := saas.EnsureUUIDs(c.Conf.Servers, p.configPath, res); err != nil {
 		util.Log.Errorf("Failed to ensure UUIDs. err: %+v", err)
 		return subcommands.ExitFailure
 	}
