@@ -25,7 +25,7 @@ func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 			r.ServerInfo(),
 			r.ScannedCves.FormatCveSummary(),
 			r.ScannedCves.FormatFixedStatus(r.Packages),
-			r.FormatUpdatablePacksSummary())}
+			r.FormatUpdatablePkgsSummary())}
 		for _, vinfo := range r.ScannedCves {
 			maxCvss := vinfo.MaxCvssScore()
 			severity := strings.ToUpper(maxCvss.Value.Severity)

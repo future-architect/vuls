@@ -18,31 +18,31 @@ type ScanResults []ScanResult
 
 // ScanResult has the result of scanned CVE information.
 type ScanResult struct {
-	JSONVersion      int                   `json:"jsonVersion"`
-	Lang             string                `json:"lang"`
-	ServerUUID       string                `json:"serverUUID"`
-	ServerName       string                `json:"serverName"` // TOML Section key
-	Family           string                `json:"family"`
-	Release          string                `json:"release"`
-	Container        Container             `json:"container"`
-	Platform         Platform              `json:"platform"`
-	IPv4Addrs        []string              `json:"ipv4Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
-	IPv6Addrs        []string              `json:"ipv6Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
-	IPSIdentifiers   map[config.IPS]string `json:"ipsIdentifiers,omitempty"`
-	ScannedAt        time.Time             `json:"scannedAt"`
-	ScanMode         string                `json:"scanMode"`
-	ScannedVersion   string                `json:"scannedVersion"`
-	ScannedRevision  string                `json:"scannedRevision"`
-	ScannedBy        string                `json:"scannedBy"`
-	ScannedVia       string                `json:"scannedVia"`
-	ScannedIPv4Addrs []string              `json:"scannedIpv4Addrs,omitempty"`
-	ScannedIPv6Addrs []string              `json:"scannedIpv6Addrs,omitempty"`
-	ReportedAt       time.Time             `json:"reportedAt"`
-	ReportedVersion  string                `json:"reportedVersion"`
-	ReportedRevision string                `json:"reportedRevision"`
-	ReportedBy       string                `json:"reportedBy"`
-	Errors           []string              `json:"errors"`
-	Warnings         []string              `json:"warnings"`
+	JSONVersion      int               `json:"jsonVersion"`
+	Lang             string            `json:"lang"`
+	ServerUUID       string            `json:"serverUUID"`
+	ServerName       string            `json:"serverName"` // TOML Section key
+	Family           string            `json:"family"`
+	Release          string            `json:"release"`
+	Container        Container         `json:"container"`
+	Platform         Platform          `json:"platform"`
+	IPv4Addrs        []string          `json:"ipv4Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
+	IPv6Addrs        []string          `json:"ipv6Addrs,omitempty"` // only global unicast address (https://golang.org/pkg/net/#IP.IsGlobalUnicast)
+	IPSIdentifiers   map[string]string `json:"ipsIdentifiers,omitempty"`
+	ScannedAt        time.Time         `json:"scannedAt"`
+	ScanMode         string            `json:"scanMode"`
+	ScannedVersion   string            `json:"scannedVersion"`
+	ScannedRevision  string            `json:"scannedRevision"`
+	ScannedBy        string            `json:"scannedBy"`
+	ScannedVia       string            `json:"scannedVia"`
+	ScannedIPv4Addrs []string          `json:"scannedIpv4Addrs,omitempty"`
+	ScannedIPv6Addrs []string          `json:"scannedIpv6Addrs,omitempty"`
+	ReportedAt       time.Time         `json:"reportedAt"`
+	ReportedVersion  string            `json:"reportedVersion"`
+	ReportedRevision string            `json:"reportedRevision"`
+	ReportedBy       string            `json:"reportedBy"`
+	Errors           []string          `json:"errors"`
+	Warnings         []string          `json:"warnings"`
 
 	ScannedCves       VulnInfos              `json:"scannedCves"`
 	RunningKernel     Kernel                 `json:"runningKernel"`
@@ -138,26 +138,7 @@ func (r ScanResult) FilterByCvssOver(over float64) ScanResult {
 }
 
 // FilterIgnoreCves is filter function.
-func (r ScanResult) FilterIgnoreCves() ScanResult {
-	ignoreCves := []string{}
-	if len(r.Container.Name) == 0 {
-		//TODO pass by args
-		ignoreCves = config.Conf.Servers[r.ServerName].IgnoreCves
-	} else {
-		//TODO pass by args
-		if s, ok := config.Conf.Servers[r.ServerName]; ok {
-			if con, ok := s.Containers[r.Container.Name]; ok {
-				ignoreCves = con.IgnoreCves
-			} else {
-				return r
-			}
-		} else {
-			util.Log.Errorf("%s is not found in config.toml",
-				r.ServerName)
-			return r
-		}
-	}
-
+func (r ScanResult) FilterIgnoreCves(ignoreCves []string) ScanResult {
 	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
 		for _, c := range ignoreCves {
 			if v.CveID == c {
@@ -191,25 +172,7 @@ func (r ScanResult) FilterUnfixed(ignoreUnfixed bool) ScanResult {
 }
 
 // FilterIgnorePkgs is filter function.
-func (r ScanResult) FilterIgnorePkgs() ScanResult {
-	var ignorePkgsRegexps []string
-	if len(r.Container.Name) == 0 {
-		//TODO pass by args
-		ignorePkgsRegexps = config.Conf.Servers[r.ServerName].IgnorePkgsRegexp
-	} else {
-		if s, ok := config.Conf.Servers[r.ServerName]; ok {
-			if con, ok := s.Containers[r.Container.Name]; ok {
-				ignorePkgsRegexps = con.IgnorePkgsRegexp
-			} else {
-				return r
-			}
-		} else {
-			util.Log.Errorf("%s is not found in config.toml",
-				r.ServerName)
-			return r
-		}
-	}
-
+func (r ScanResult) FilterIgnorePkgs(ignorePkgsRegexps []string) ScanResult {
 	regexps := []*regexp.Regexp{}
 	for _, pkgRegexp := range ignorePkgsRegexps {
 		re, err := regexp.Compile(pkgRegexp)
@@ -344,7 +307,7 @@ func (r ScanResult) FormatTextReportHeader() string {
 		buf.WriteString("=")
 	}
 
-	pkgs := r.FormatUpdatablePacksSummary()
+	pkgs := r.FormatUpdatablePkgsSummary()
 	if 0 < len(r.WordPressPackages) {
 		pkgs = fmt.Sprintf("%s, %d WordPress pkgs", pkgs, len(r.WordPressPackages))
 	}
@@ -363,9 +326,10 @@ func (r ScanResult) FormatTextReportHeader() string {
 		pkgs)
 }
 
-// FormatUpdatablePacksSummary returns a summary of updatable packages
-func (r ScanResult) FormatUpdatablePacksSummary() string {
-	if !r.isDisplayUpdatableNum() {
+// FormatUpdatablePkgsSummary returns a summary of updatable packages
+func (r ScanResult) FormatUpdatablePkgsSummary() string {
+	mode := r.Config.Scan.Servers[r.ServerName].Mode
+	if !r.isDisplayUpdatableNum(mode) {
 		return fmt.Sprintf("%d installed", len(r.Packages))
 	}
 
@@ -420,15 +384,10 @@ func (r ScanResult) FormatAlertSummary() string {
 	return fmt.Sprintf("en: %d, ja: %d alerts", enCnt, jaCnt)
 }
 
-func (r ScanResult) isDisplayUpdatableNum() bool {
+func (r ScanResult) isDisplayUpdatableNum(mode config.ScanMode) bool {
 	if r.Family == config.FreeBSD {
 		return false
 	}
-
-	var mode config.ScanMode
-	//TODO pass by args
-	s, _ := config.Conf.Servers[r.ServerName]
-	mode = s.Mode
 
 	if mode.IsOffline() {
 		return false
@@ -454,16 +413,6 @@ func (r ScanResult) isDisplayUpdatableNum() bool {
 // IsContainer returns whether this ServerInfo is about container
 func (r ScanResult) IsContainer() bool {
 	return 0 < len(r.Container.ContainerID)
-}
-
-// IsDeepScanMode checks if the scan mode is deep scan mode.
-func (r ScanResult) IsDeepScanMode() bool {
-	for _, s := range r.Config.Scan.Servers {
-		if ok := s.Mode.IsDeep(); ok {
-			return true
-		}
-	}
-	return false
 }
 
 // Container has Container information

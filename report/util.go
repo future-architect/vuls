@@ -40,7 +40,7 @@ func formatScanSummary(rs ...models.ScanResult) string {
 			cols = []interface{}{
 				r.FormatServerName(),
 				fmt.Sprintf("%s%s", r.Family, r.Release),
-				r.FormatUpdatablePacksSummary(),
+				r.FormatUpdatablePkgsSummary(),
 			}
 			if 0 < len(r.WordPressPackages) {
 				cols = append(cols, fmt.Sprintf("%d WordPress pkgs", len(r.WordPressPackages)))
@@ -79,7 +79,7 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 				r.FormatServerName(),
 				r.ScannedCves.FormatCveSummary(),
 				r.ScannedCves.FormatFixedStatus(r.Packages),
-				r.FormatUpdatablePacksSummary(),
+				r.FormatUpdatablePkgsSummary(),
 				r.FormatExploitCveSummary(),
 				r.FormatMetasploitCveSummary(),
 				r.FormatAlertSummary(),
@@ -124,7 +124,7 @@ func formatList(r models.ScanResult) string {
 %s
 No CVE-IDs are found in updatable packages.
 %s
-`, header, r.FormatUpdatablePacksSummary())
+`, header, r.FormatUpdatablePkgsSummary())
 	}
 
 	data := [][]string{}
@@ -199,7 +199,7 @@ func formatFullPlainText(r models.ScanResult) (lines string) {
 %s
 No CVE-IDs are found in updatable packages.
 %s
-`, header, r.FormatUpdatablePacksSummary())
+`, header, r.FormatUpdatablePkgsSummary())
 	}
 
 	lines = header + "\n"

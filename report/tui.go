@@ -834,7 +834,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 			}
 		}
 
-		if currentScanResult.IsDeepScanMode() {
+		if currentScanResult.Config.Scan.Servers[currentScanResult.ServerName].Mode.IsDeep() {
 			lines = append(lines, "\n",
 				"ChangeLogs",
 				"==========",

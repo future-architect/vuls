@@ -343,7 +343,7 @@ func (l *base) detectIPSs() {
 		return
 	}
 
-	ips := map[config.IPS]string{}
+	ips := map[string]string{}
 	fingerprint, err := l.detectDeepSecurity()
 	if err != nil {
 		return

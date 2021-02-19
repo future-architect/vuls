@@ -131,13 +131,32 @@ func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]mode
 
 	for i, r := range rs {
 		r = r.FilterByCvssOver(c.Conf.CvssScoreOver)
-		r = r.FilterIgnoreCves()
 		r = r.FilterUnfixed(c.Conf.IgnoreUnfixed)
-		r = r.FilterIgnorePkgs()
 		r = r.FilterInactiveWordPressLibs(c.Conf.WpScan.DetectInactive)
+
+		// IgnoreCves
+		ignoreCves := []string{}
+		if r.Container.Name == "" {
+			ignoreCves = c.Conf.Servers[r.ServerName].IgnoreCves
+		} else if con, ok := c.Conf.Servers[r.ServerName].Containers[r.Container.Name]; ok {
+			ignoreCves = con.IgnoreCves
+		}
+		r = r.FilterIgnoreCves(ignoreCves)
+
+		// ignorePkgs
+		ignorePkgsRegexps := []string{}
+		if r.Container.Name == "" {
+			ignorePkgsRegexps = config.Conf.Servers[r.ServerName].IgnorePkgsRegexp
+		} else if s, ok := config.Conf.Servers[r.ServerName].Containers[r.Container.Name]; ok {
+			ignorePkgsRegexps = s.IgnorePkgsRegexp
+		}
+		r = r.FilterIgnorePkgs(ignorePkgsRegexps)
+
+		// IgnoreUnscored
 		if c.Conf.IgnoreUnscoredCves {
 			r.ScannedCves = r.ScannedCves.FindScoredVulns()
 		}
+
 		rs[i] = r
 	}
 	return rs, nil

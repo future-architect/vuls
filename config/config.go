@@ -342,7 +342,7 @@ type ServerInfo struct {
 	IgnoredJSONKeys    []string                    `toml:"ignoredJSONKeys,omitempty" json:"ignoredJSONKeys,omitempty"`
 	IPv4Addrs          []string                    `toml:"-" json:"ipv4Addrs,omitempty"`
 	IPv6Addrs          []string                    `toml:"-" json:"ipv6Addrs,omitempty"`
-	IPSIdentifiers     map[IPS]string              `toml:"-" json:"ipsIdentifiers,omitempty"`
+	IPSIdentifiers     map[string]string           `toml:"-" json:"ipsIdentifiers,omitempty"`
 	WordPress          *WordPressConf              `toml:"wordpress,omitempty" json:"wordpress,omitempty"`
 
 	// internal use
