@@ -174,7 +174,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 
 	defer dbclient.CloseDB()
 
-	if res, err = report.FillCveInfos(*dbclient, res, dir); err != nil {
+	if res, err = report.Detect(*dbclient, res, dir); err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}

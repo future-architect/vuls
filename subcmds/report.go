@@ -279,8 +279,8 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 	defer dbclient.CloseDB()
 
-	// TODO pass dbclientconf by arg
-	if res, err = report.FillCveInfos(*dbclient, res, dir); err != nil {
+	// TODO pass conf by arg
+	if res, err = report.Detect(*dbclient, res, dir); err != nil {
 		util.Log.Errorf("%+v", err)
 		return subcommands.ExitFailure
 	}

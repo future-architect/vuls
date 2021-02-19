@@ -181,27 +181,18 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitUsageError
 	}
 
-	util.Log.Info("Detecting Server/Container OS... ")
-	if err := scan.InitServers(p.timeoutSec); err != nil {
-		util.Log.Errorf("Failed to init servers: %+v", err)
+	scanner := scan.Scanner{
+		TimeoutSec:     p.timeoutSec,
+		ScanTimeoutSec: p.scanTimeoutSec,
+		CacheDBPath:    p.cacheDBPath,
+		Targets:        target,
+	}
+
+	if err := scanner.Scan(); err != nil {
+		util.Log.Errorf("Failed to scan: %+v", err)
 		return subcommands.ExitFailure
 	}
 
-	util.Log.Info("Checking Scan Modes... ")
-	if err := scan.CheckScanModes(); err != nil {
-		util.Log.Errorf("Fix config.toml. err: %+v", err)
-		return subcommands.ExitFailure
-	}
-
-	util.Log.Info("Detecting Platforms... ")
-	scan.DetectPlatforms(p.timeoutSec)
-	util.Log.Info("Detecting IPS identifiers... ")
-	scan.DetectIPSs(p.timeoutSec)
-
-	if err := scan.Scan(p.cacheDBPath, p.scanTimeoutSec); err != nil {
-		util.Log.Errorf("Failed to scan. err: %+v", err)
-		return subcommands.ExitFailure
-	}
 	fmt.Printf("\n\n\n")
 	fmt.Println("To view the detail, vuls tui is useful.")
 	fmt.Println("To send a report, run vuls report -h.")

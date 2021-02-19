@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/future-architect/vuls/cache"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
 )
@@ -31,14 +29,14 @@ var (
 
 var servers, errServers []osTypeInterface
 
-// Base Interface of redhat, debian, freebsd
+// Base Interface
 type osTypeInterface interface {
 	setServerInfo(config.ServerInfo)
 	getServerInfo() config.ServerInfo
 	setDistro(string, string)
 	getDistro() config.Distro
 	detectPlatform()
-	detectIPSs()
+	detectIPS()
 	getPlatform() models.Platform
 
 	checkScanMode() error
@@ -63,22 +61,55 @@ type osTypeInterface interface {
 	setErrs([]error)
 }
 
-// osPackages is included by base struct
-type osPackages struct {
-	// installed packages
-	Packages models.Packages
+type Scanner struct {
+	TimeoutSec     int
+	ScanTimeoutSec int
+	CacheDBPath    string
 
-	// installed source packages (Debian based only)
-	SrcPackages models.SrcPackages
+	Targets map[string]config.ServerInfo
+}
 
-	// enabled dnf modules or packages
-	EnabledDnfModules []string
+func (s Scanner) Scan() error {
+	util.Log.Info("Detecting Server/Container OS... ")
+	if err := initServers(s.Targets, s.TimeoutSec); err != nil {
+		return xerrors.Errorf("Failed to init servers. err: %w", err)
+	}
 
-	// unsecure packages
-	VulnInfos models.VulnInfos
+	util.Log.Info("Checking Scan Modes... ")
+	if err := checkScanModes(); err != nil {
+		return xerrors.Errorf("Fix config.toml. err: %w", err)
+	}
 
-	// kernel information
-	Kernel models.Kernel
+	util.Log.Info("Detecting Platforms... ")
+	detectPlatform(s.TimeoutSec)
+
+	util.Log.Info("Detecting IPS identifiers... ")
+	detectIPS(s.TimeoutSec)
+
+	if err := execScan(s.CacheDBPath, s.ScanTimeoutSec); err != nil {
+		return xerrors.Errorf("Failed to scan. err: %w", err)
+	}
+	return nil
+}
+
+func (s Scanner) Configtest() error {
+	util.Log.Info("Detecting Server/Container OS... ")
+	if err := initServers(s.Targets, s.TimeoutSec); err != nil {
+		return xerrors.Errorf("Failed to init servers. err: %w", err)
+	}
+
+	util.Log.Info("Checking Scan Modes...")
+	if err := checkScanModes(); err != nil {
+		return xerrors.Errorf("Fix config.toml. err: %w", err)
+	}
+
+	util.Log.Info("Checking dependencies...")
+	checkDependencies(s.TimeoutSec)
+
+	util.Log.Info("Checking sudo settings...")
+	checkIfSudoNoPasswd(s.TimeoutSec)
+
+	return nil
 }
 
 // Retry as it may stall on the first SSH connection
@@ -172,9 +203,9 @@ func PrintSSHableServerNames() bool {
 	return true
 }
 
-// InitServers detect the kind of OS distribution of target servers
-func InitServers(timeoutSec int) error {
-	hosts, errHosts := detectServerOSes(timeoutSec)
+// initServers detect the kind of OS distribution of target servers
+func initServers(targets map[string]config.ServerInfo, timeoutSec int) error {
+	hosts, errHosts := detectServerOSes(targets, timeoutSec)
 	if len(hosts) == 0 {
 		return xerrors.New("No scannable host OS")
 	}
@@ -195,11 +226,11 @@ func InitServers(timeoutSec int) error {
 	return nil
 }
 
-func detectServerOSes(timeoutSec int) (servers, errServers []osTypeInterface) {
+func detectServerOSes(targets map[string]config.ServerInfo, timeoutSec int) (servers, errServers []osTypeInterface) {
 	util.Log.Info("Detecting OS of servers... ")
-	osTypeChan := make(chan osTypeInterface, len(config.Conf.Servers))
+	osTypeChan := make(chan osTypeInterface, len(targets))
 	defer close(osTypeChan)
-	for _, s := range config.Conf.Servers {
+	for _, s := range targets {
 		go func(s config.ServerInfo) {
 			defer func() {
 				if p := recover(); p != nil {
@@ -211,26 +242,26 @@ func detectServerOSes(timeoutSec int) (servers, errServers []osTypeInterface) {
 	}
 
 	timeout := time.After(time.Duration(timeoutSec) * time.Second)
-	for i := 0; i < len(config.Conf.Servers); i++ {
+	for i := 0; i < len(targets); i++ {
 		select {
 		case res := <-osTypeChan:
 			if 0 < len(res.getErrs()) {
 				errServers = append(errServers, res)
 				util.Log.Errorf("(%d/%d) Failed: %s, err: %+v",
-					i+1, len(config.Conf.Servers),
+					i+1, len(targets),
 					res.getServerInfo().ServerName,
 					res.getErrs())
 			} else {
 				servers = append(servers, res)
 				util.Log.Infof("(%d/%d) Detected: %s: %s",
-					i+1, len(config.Conf.Servers),
+					i+1, len(targets),
 					res.getServerInfo().ServerName,
 					res.getDistro())
 			}
 		case <-timeout:
 			msg := "Timed out while detecting servers"
 			util.Log.Error(msg)
-			for servername, sInfo := range config.Conf.Servers {
+			for servername, sInfo := range targets {
 				found := false
 				for _, o := range append(servers, errServers...) {
 					if servername == o.getServerInfo().ServerName {
@@ -241,14 +272,9 @@ func detectServerOSes(timeoutSec int) (servers, errServers []osTypeInterface) {
 				if !found {
 					u := &unknown{}
 					u.setServerInfo(sInfo)
-					u.setErrs([]error{
-						xerrors.New("Timed out"),
-					})
+					u.setErrs([]error{xerrors.New("Timed out")})
 					errServers = append(errServers, u)
-					util.Log.Errorf("(%d/%d) Timed out: %s",
-						i+1, len(config.Conf.Servers),
-						servername)
-					i++
+					util.Log.Errorf("(%d/%d) Timed out: %s", i+1, len(targets), servername)
 				}
 			}
 		}
@@ -288,25 +314,7 @@ func detectContainerOSes(hosts []osTypeInterface, timeoutSec int) (actives, inac
 					sinfo.Container.Name, sinfo.ServerName, osi.getDistro())
 			}
 		case <-timeout:
-			msg := "Timed out while detecting containers"
-			util.Log.Error(msg)
-			for servername, sInfo := range config.Conf.Servers {
-				found := false
-				for _, o := range append(actives, inactives...) {
-					if servername == o.getServerInfo().ServerName {
-						found = true
-						break
-					}
-				}
-				if !found {
-					u := &unknown{}
-					u.setServerInfo(sInfo)
-					u.setErrs([]error{
-						xerrors.New("Timed out"),
-					})
-					util.Log.Errorf("Timed out: %s", servername)
-				}
-			}
+			util.Log.Error("Some containers timed out")
 		}
 	}
 	return
@@ -395,8 +403,8 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 	return oses
 }
 
-// CheckScanModes checks scan mode
-func CheckScanModes() error {
+// checkScanModes checks scan mode
+func checkScanModes() error {
 	for _, s := range servers {
 		if err := s.checkScanMode(); err != nil {
 			return xerrors.Errorf("servers.%s.scanMode err: %w",
@@ -406,25 +414,25 @@ func CheckScanModes() error {
 	return nil
 }
 
-// CheckDependencies checks dependencies are installed on target servers.
-func CheckDependencies(timeoutSec int) {
+// checkDependencies checks dependencies are installed on target servers.
+func checkDependencies(timeoutSec int) {
 	parallelExec(func(o osTypeInterface) error {
 		return o.checkDeps()
 	}, timeoutSec)
 	return
 }
 
-// CheckIfSudoNoPasswd checks whether vuls can sudo with nopassword via SSH
-func CheckIfSudoNoPasswd(timeoutSec int) {
+// checkIfSudoNoPasswd checks whether vuls can sudo with nopassword via SSH
+func checkIfSudoNoPasswd(timeoutSec int) {
 	parallelExec(func(o osTypeInterface) error {
 		return o.checkIfSudoNoPasswd()
 	}, timeoutSec)
 	return
 }
 
-// DetectPlatforms detects the platform of each servers.
-func DetectPlatforms(timeoutSec int) {
-	detectPlatforms(timeoutSec)
+// detectPlatform detects the platform of each servers.
+func detectPlatform(timeoutSec int) {
+	execDetectPlatform(timeoutSec)
 	for i, s := range servers {
 		if s.getServerInfo().IsContainer() {
 			util.Log.Infof("(%d/%d) %s on %s is running on %s",
@@ -445,7 +453,7 @@ func DetectPlatforms(timeoutSec int) {
 	return
 }
 
-func detectPlatforms(timeoutSec int) {
+func execDetectPlatform(timeoutSec int) {
 	parallelExec(func(o osTypeInterface) error {
 		o.detectPlatform()
 		// Logging only if platform can not be specified
@@ -454,9 +462,9 @@ func detectPlatforms(timeoutSec int) {
 	return
 }
 
-// DetectIPSs detects the IPS of each servers.
-func DetectIPSs(timeoutSec int) {
-	detectIPSs(timeoutSec)
+// detectIPS detects the IPS of each servers.
+func detectIPS(timeoutSec int) {
+	execDetectIPS(timeoutSec)
 	for i, s := range servers {
 		if !s.getServerInfo().IsContainer() {
 			util.Log.Infof("(%d/%d) %s has %d IPS integration",
@@ -468,16 +476,16 @@ func DetectIPSs(timeoutSec int) {
 	}
 }
 
-func detectIPSs(timeoutSec int) {
+func execDetectIPS(timeoutSec int) {
 	parallelExec(func(o osTypeInterface) error {
-		o.detectIPSs()
+		o.detectIPS()
 		// Logging only if IPS can not be specified
 		return nil
 	}, timeoutSec)
 }
 
-// Scan scan
-func Scan(cacheDBPath string, timeoutSec int) error {
+// execScan scan
+func execScan(cacheDBPath string, timeoutSec int) error {
 	if len(servers) == 0 {
 		return xerrors.New("No server defined. Check the configuration")
 	}
@@ -715,58 +723,4 @@ func checkEOL(r *models.ScanResult) {
 			fmt.Sprintf("Standard OS support will be end in 3 months. EOL date: %s",
 				eol.StandardSupportUntil.Format("2006-01-02")))
 	}
-}
-
-func writeScanResults(jsonDir string, results models.ScanResults) error {
-	ws := []report.ResultWriter{report.LocalFileWriter{
-		CurrentDir: jsonDir,
-		FormatJSON: true,
-	}}
-	for _, w := range ws {
-		if err := w.Write(results...); err != nil {
-			return xerrors.Errorf("Failed to write summary: %s", err)
-		}
-	}
-
-	report.StdoutWriter{}.WriteScanSummary(results...)
-
-	errServerNames := []string{}
-	for _, r := range results {
-		if 0 < len(r.Errors) {
-			errServerNames = append(errServerNames, r.ServerName)
-		}
-	}
-	if 0 < len(errServerNames) {
-		return fmt.Errorf("An error occurred on %s", errServerNames)
-	}
-	return nil
-}
-
-// EnsureResultDir ensures the directory for scan results
-func EnsureResultDir(scannedAt time.Time) (currentDir string, err error) {
-	jsonDirName := scannedAt.Format(time.RFC3339)
-
-	resultsDir := config.Conf.ResultsDir
-	if len(resultsDir) == 0 {
-		wd, _ := os.Getwd()
-		resultsDir = filepath.Join(wd, "results")
-	}
-	jsonDir := filepath.Join(resultsDir, jsonDirName)
-	if err := os.MkdirAll(jsonDir, 0700); err != nil {
-		return "", xerrors.Errorf("Failed to create dir: %w", err)
-	}
-
-	symlinkPath := filepath.Join(resultsDir, "current")
-	if _, err := os.Lstat(symlinkPath); err == nil {
-		if err := os.Remove(symlinkPath); err != nil {
-			return "", xerrors.Errorf(
-				"Failed to remove symlink. path: %s, err: %w", symlinkPath, err)
-		}
-	}
-
-	if err := os.Symlink(jsonDir, symlinkPath); err != nil {
-		return "", xerrors.Errorf(
-			"Failed to create symlink: path: %s, err: %w", symlinkPath, err)
-	}
-	return jsonDir, nil
 }

@@ -43,6 +43,24 @@ type base struct {
 	warns []error
 }
 
+// osPackages is included by base struct
+type osPackages struct {
+	// installed packages
+	Packages models.Packages
+
+	// installed source packages (Debian based only)
+	SrcPackages models.SrcPackages
+
+	// enabled dnf modules or packages
+	EnabledDnfModules []string
+
+	// unsecure packages
+	VulnInfos models.VulnInfos
+
+	// kernel information
+	Kernel models.Kernel
+}
+
 func (l *base) exec(cmd string, sudo bool) execResult {
 	return exec(l.ServerInfo, cmd, sudo, l.log)
 }
@@ -339,7 +357,7 @@ func (l *base) detectDeepSecurity() (string, error) {
 	return "", xerrors.Errorf("Failed to detect deepsecurity %s", l.ServerInfo.ServerName)
 }
 
-func (l *base) detectIPSs() {
+func (l *base) detectIPS() {
 	if !config.Conf.DetectIPS {
 		return
 	}

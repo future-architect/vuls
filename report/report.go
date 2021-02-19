@@ -30,8 +30,8 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// FillCveInfos fills CVE Detailed Information
-func FillCveInfos(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
+// Detect vulns and fill CVE detailed information
+func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 
 	// Use the same reportedAt for all rs
 	reportedAt := time.Now()
