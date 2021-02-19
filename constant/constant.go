@@ -1,5 +1,9 @@
 package constant
 
+// Global constant
+// Pkg local constants should not be defined here.
+// Define them in the each package.
+
 const (
 	// RedHat is
 	RedHat = "redhat"
