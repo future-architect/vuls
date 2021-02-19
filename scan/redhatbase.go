@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
@@ -34,7 +35,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 
 			ora := newOracle(c)
 			release := result[2]
-			ora.setDistro(config.Oracle, release)
+			ora.setDistro(constant.Oracle, release)
 			return true, ora
 		}
 	}
@@ -54,7 +55,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 			switch strings.ToLower(result[1]) {
 			case "centos", "centos linux", "centos stream":
 				cent := newCentOS(c)
-				cent.setDistro(config.CentOS, release)
+				cent.setDistro(constant.CentOS, release)
 				return true, cent
 			default:
 				util.Log.Warnf("Failed to parse CentOS: %s", r)
@@ -79,19 +80,19 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 			switch strings.ToLower(result[1]) {
 			case "centos", "centos linux":
 				cent := newCentOS(c)
-				cent.setDistro(config.CentOS, release)
+				cent.setDistro(constant.CentOS, release)
 				return true, cent
 			default:
 				// RHEL
 				rhel := newRHEL(c)
-				rhel.setDistro(config.RedHat, release)
+				rhel.setDistro(constant.RedHat, release)
 				return true, rhel
 			}
 		}
 	}
 
 	if r := exec(c, "ls /etc/system-release", noSudo); r.isSuccess() {
-		family := config.Amazon
+		family := constant.Amazon
 		release := "unknown"
 		if r := exec(c, "cat /etc/system-release", noSudo); r.isSuccess() {
 			if strings.HasPrefix(r.Stdout, "Amazon Linux release 2") {
@@ -218,7 +219,7 @@ func (o *redhatBase) scanPackages() (err error) {
 
 	if o.getServerInfo().Mode.IsOffline() {
 		return nil
-	} else if o.Distro.Family == config.RedHat {
+	} else if o.Distro.Family == constant.RedHat {
 		if o.getServerInfo().Mode.IsFast() {
 			return nil
 		}
@@ -426,12 +427,12 @@ func (o *redhatBase) parseUpdatablePacksLine(line string) (models.Package, error
 
 func (o *redhatBase) isExecYumPS() bool {
 	switch o.Distro.Family {
-	case config.Oracle,
-		config.OpenSUSE,
-		config.OpenSUSELeap,
-		config.SUSEEnterpriseServer,
-		config.SUSEEnterpriseDesktop,
-		config.SUSEOpenstackCloud:
+	case constant.Oracle,
+		constant.OpenSUSE,
+		constant.OpenSUSELeap,
+		constant.SUSEEnterpriseServer,
+		constant.SUSEEnterpriseDesktop,
+		constant.SUSEOpenstackCloud:
 		return false
 	}
 	return !o.getServerInfo().Mode.IsFast()
@@ -439,15 +440,15 @@ func (o *redhatBase) isExecYumPS() bool {
 
 func (o *redhatBase) isExecNeedsRestarting() bool {
 	switch o.Distro.Family {
-	case config.OpenSUSE,
-		config.OpenSUSELeap,
-		config.SUSEEnterpriseServer,
-		config.SUSEEnterpriseDesktop,
-		config.SUSEOpenstackCloud:
+	case constant.OpenSUSE,
+		constant.OpenSUSELeap,
+		constant.SUSEEnterpriseServer,
+		constant.SUSEEnterpriseDesktop,
+		constant.SUSEOpenstackCloud:
 		// TODO zypper ps
 		// https://github.com/future-architect/vuls/issues/696
 		return false
-	case config.RedHat, config.CentOS, config.Oracle:
+	case constant.RedHat, constant.CentOS, constant.Oracle:
 		majorVersion, err := o.Distro.MajorVersion()
 		if err != nil || majorVersion < 6 {
 			o.log.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
@@ -594,7 +595,7 @@ func (o *redhatBase) rpmQa() string {
 	const old = `rpm -qa --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n"`
 	const new = `rpm -qa --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n"`
 	switch o.Distro.Family {
-	case config.SUSEEnterpriseServer:
+	case constant.SUSEEnterpriseServer:
 		if v, _ := o.Distro.MajorVersion(); v < 12 {
 			return old
 		}
@@ -611,7 +612,7 @@ func (o *redhatBase) rpmQf() string {
 	const old = `rpm -qf --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n" `
 	const new = `rpm -qf --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n" `
 	switch o.Distro.Family {
-	case config.SUSEEnterpriseServer:
+	case constant.SUSEEnterpriseServer:
 		if v, _ := o.Distro.MajorVersion(); v < 12 {
 			return old
 		}
@@ -626,7 +627,7 @@ func (o *redhatBase) rpmQf() string {
 
 func (o *redhatBase) detectEnabledDnfModules() ([]string, error) {
 	switch o.Distro.Family {
-	case config.RedHat, config.CentOS:
+	case constant.RedHat, constant.CentOS:
 		//TODO OracleLinux
 	default:
 		return nil, nil

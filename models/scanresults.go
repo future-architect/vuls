@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/cwe"
 	"github.com/future-architect/vuls/util"
 )
@@ -56,7 +57,7 @@ type ScanResult struct {
 	Config            struct {
 		Scan   config.Config `json:"scan"`
 		Report config.Config `json:"report"`
-	} `json:"config"`
+	} `json:"constant"`
 }
 
 // CweDict is a dictionary for CWE
@@ -385,7 +386,7 @@ func (r ScanResult) FormatAlertSummary() string {
 }
 
 func (r ScanResult) isDisplayUpdatableNum(mode config.ScanMode) bool {
-	if r.Family == config.FreeBSD {
+	if r.Family == constant.FreeBSD {
 		return false
 	}
 
@@ -397,11 +398,11 @@ func (r ScanResult) isDisplayUpdatableNum(mode config.ScanMode) bool {
 	}
 	if mode.IsFast() {
 		switch r.Family {
-		case config.RedHat,
-			config.Oracle,
-			config.Debian,
-			config.Ubuntu,
-			config.Raspbian:
+		case constant.RedHat,
+			constant.Oracle,
+			constant.Debian,
+			constant.Ubuntu,
+			constant.Raspbian:
 			return false
 		default:
 			return true
@@ -432,7 +433,7 @@ type Platform struct {
 
 // RemoveRaspbianPackFromResult is for Raspberry Pi and removes the Raspberry Pi dedicated package from ScanResult.
 func (r ScanResult) RemoveRaspbianPackFromResult() ScanResult {
-	if r.Family != config.Raspbian {
+	if r.Family != constant.Raspbian {
 		return r
 	}
 

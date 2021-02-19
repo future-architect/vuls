@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 )
 
 func TestIsRunningKernelSUSE(t *testing.T) {
 	r := newSUSE(config.ServerInfo{})
-	r.Distro = config.Distro{Family: config.SUSEEnterpriseServer}
+	r.Distro = config.Distro{Family: constant.SUSEEnterpriseServer}
 
 	kernel := models.Kernel{
 		Release: "4.4.74-92.35-default",
@@ -29,7 +30,7 @@ func TestIsRunningKernelSUSE(t *testing.T) {
 				Release: "92.35.1",
 				Arch:    "x86_64",
 			},
-			family:   config.SUSEEnterpriseServer,
+			family:   constant.SUSEEnterpriseServer,
 			kernel:   kernel,
 			expected: true,
 		},
@@ -40,7 +41,7 @@ func TestIsRunningKernelSUSE(t *testing.T) {
 				Release: "92.20.2",
 				Arch:    "x86_64",
 			},
-			family:   config.SUSEEnterpriseServer,
+			family:   constant.SUSEEnterpriseServer,
 			kernel:   kernel,
 			expected: false,
 		},
@@ -56,7 +57,7 @@ func TestIsRunningKernelSUSE(t *testing.T) {
 
 func TestIsRunningKernelRedHatLikeLinux(t *testing.T) {
 	r := newAmazon(config.ServerInfo{})
-	r.Distro = config.Distro{Family: config.Amazon}
+	r.Distro = config.Distro{Family: constant.Amazon}
 
 	kernel := models.Kernel{
 		Release: "4.9.43-17.38.amzn1.x86_64",
@@ -76,7 +77,7 @@ func TestIsRunningKernelRedHatLikeLinux(t *testing.T) {
 				Release: "17.38.amzn1",
 				Arch:    "x86_64",
 			},
-			family:   config.Amazon,
+			family:   constant.Amazon,
 			kernel:   kernel,
 			expected: true,
 		},
@@ -87,7 +88,7 @@ func TestIsRunningKernelRedHatLikeLinux(t *testing.T) {
 				Release: "16.35.amzn1",
 				Arch:    "x86_64",
 			},
-			family:   config.Amazon,
+			family:   constant.Amazon,
 			kernel:   kernel,
 			expected: false,
 		},

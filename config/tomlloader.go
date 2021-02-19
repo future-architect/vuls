@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/future-architect/vuls/constant"
 	"github.com/knqyf263/go-cpe/naming"
 	"golang.org/x/xerrors"
 )
@@ -135,7 +136,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 }
 
 func setDefaultIfEmpty(server *ServerInfo, d ServerInfo) error {
-	if server.Type != ServerTypePseudo {
+	if server.Type != constant.ServerTypePseudo {
 		if len(server.Host) == 0 {
 			return xerrors.Errorf("server.host is empty")
 		}

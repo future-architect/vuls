@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/asaskevich/govalidator"
+	"github.com/future-architect/vuls/constant"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 )
@@ -58,13 +59,14 @@ type Config struct {
 	ReportOpts
 }
 
+// ScanOpts is options for scan
 type ScanOpts struct {
 	SSHNative bool `json:"sshNative,omitempty"`
 	Vvv       bool `json:"vvv,omitempty"`
 	DetectIPS bool `json:"detectIps,omitempty"`
 }
 
-// ReportOpts is struct of Configuration for reporting
+// ReportOpts is options for report
 type ReportOpts struct {
 	// refactored
 	CvssScoreOver      float64 `json:"cvssScoreOver,omitempty"`
@@ -131,7 +133,7 @@ func (c Config) ValidateOnScan() bool {
 
 func (c Config) checkSSHKeyExist() (errs []error) {
 	for serverName, v := range c.Servers {
-		if v.Type == ServerTypePseudo {
+		if v.Type == constant.ServerTypePseudo {
 			continue
 		}
 		if v.KeyPath != "" {
@@ -399,7 +401,7 @@ func (l Distro) String() string {
 
 // MajorVersion returns Major version
 func (l Distro) MajorVersion() (int, error) {
-	if l.Family == Amazon {
+	if l.Family == constant.Amazon {
 		if isAmazonLinux1(l.Release) {
 			return 1, nil
 		}

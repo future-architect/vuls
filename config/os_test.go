@@ -3,6 +3,8 @@ package config
 import (
 	"testing"
 	"time"
+
+	. "github.com/future-architect/vuls/constant"
 )
 
 func TestEOL_IsStandardSupportEnded(t *testing.T) {

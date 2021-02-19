@@ -4,59 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
-)
 
-const (
-	// RedHat is
-	RedHat = "redhat"
-
-	// Debian is
-	Debian = "debian"
-
-	// Ubuntu is
-	Ubuntu = "ubuntu"
-
-	// CentOS is
-	CentOS = "centos"
-
-	// Fedora is
-	// Fedora = "fedora"
-
-	// Amazon is
-	Amazon = "amazon"
-
-	// Oracle is
-	Oracle = "oracle"
-
-	// FreeBSD is
-	FreeBSD = "freebsd"
-
-	// Raspbian is
-	Raspbian = "raspbian"
-
-	// Windows is
-	Windows = "windows"
-
-	// OpenSUSE is
-	OpenSUSE = "opensuse"
-
-	// OpenSUSELeap is
-	OpenSUSELeap = "opensuse.leap"
-
-	// SUSEEnterpriseServer is
-	SUSEEnterpriseServer = "suse.linux.enterprise.server"
-
-	// SUSEEnterpriseDesktop is
-	SUSEEnterpriseDesktop = "suse.linux.enterprise.desktop"
-
-	// SUSEOpenstackCloud is
-	SUSEOpenstackCloud = "suse.openstack.cloud"
-
-	// Alpine is
-	Alpine = "alpine"
-
-	// ServerTypePseudo is used for ServerInfo.Type, r.Family
-	ServerTypePseudo = "pseudo"
+	"github.com/future-architect/vuls/constant"
 )
 
 // EOL has End-of-Life information
@@ -89,7 +38,7 @@ func (e EOL) IsExtendedSuppportEnded(now time.Time) bool {
 // https://github.com/aquasecurity/trivy/blob/master/pkg/detector/ospkg/redhat/redhat.go#L20
 func GetEOL(family, release string) (eol EOL, found bool) {
 	switch family {
-	case Amazon:
+	case constant.Amazon:
 		rel := "2"
 		if isAmazonLinux1(release) {
 			rel = "1"
@@ -98,7 +47,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"1": {StandardSupportUntil: time.Date(2023, 6, 30, 23, 59, 59, 0, time.UTC)},
 			"2": {},
 		}[rel]
-	case RedHat:
+	case constant.RedHat:
 		// https://access.redhat.com/support/policy/updates/errata
 		eol, found = map[string]EOL{
 			"3": {Ended: true},
@@ -115,7 +64,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 				StandardSupportUntil: time.Date(2029, 5, 31, 23, 59, 59, 0, time.UTC),
 			},
 		}[major(release)]
-	case CentOS:
+	case constant.CentOS:
 		// https://en.wikipedia.org/wiki/CentOS#End-of-support_schedule
 		// TODO Stream
 		eol, found = map[string]EOL{
@@ -126,7 +75,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"7": {StandardSupportUntil: time.Date(2024, 6, 30, 23, 59, 59, 0, time.UTC)},
 			"8": {StandardSupportUntil: time.Date(2021, 12, 31, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
-	case Oracle:
+	case constant.Oracle:
 		eol, found = map[string]EOL{
 			// Source:
 			// https://www.oracle.com/a/ocom/docs/elsp-lifetime-069338.pdf
@@ -145,7 +94,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 				StandardSupportUntil: time.Date(2029, 7, 1, 23, 59, 59, 0, time.UTC),
 			},
 		}[major(release)]
-	case Debian:
+	case constant.Debian:
 		eol, found = map[string]EOL{
 			// https://wiki.debian.org/LTS
 			"6":  {Ended: true},
@@ -154,10 +103,10 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"9":  {StandardSupportUntil: time.Date(2022, 6, 30, 23, 59, 59, 0, time.UTC)},
 			"10": {StandardSupportUntil: time.Date(2024, 6, 30, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
-	case Raspbian:
+	case constant.Raspbian:
 		// Not found
 		eol, found = map[string]EOL{}[major(release)]
-	case Ubuntu:
+	case constant.Ubuntu:
 		// https://wiki.ubuntu.com/Releases
 		eol, found = map[string]EOL{
 			"14.10": {Ended: true},
@@ -189,9 +138,9 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 				StandardSupportUntil: time.Date(2022, 7, 1, 23, 59, 59, 0, time.UTC),
 			},
 		}[release]
-	case SUSEEnterpriseServer:
+	case constant.SUSEEnterpriseServer:
 		//TODO
-	case Alpine:
+	case constant.Alpine:
 		// https://github.com/aquasecurity/trivy/blob/master/pkg/detector/ospkg/alpine/alpine.go#L19
 		// https://wiki.alpinelinux.org/wiki/Alpine_Linux:Releases
 		eol, found = map[string]EOL{
@@ -218,7 +167,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"3.12": {StandardSupportUntil: time.Date(2022, 5, 1, 23, 59, 59, 0, time.UTC)},
 			"3.13": {StandardSupportUntil: time.Date(2022, 11, 1, 23, 59, 59, 0, time.UTC)},
 		}[majorDotMinor(release)]
-	case FreeBSD:
+	case constant.FreeBSD:
 		// https://www.freebsd.org/security/
 		eol, found = map[string]EOL{
 			"7":  {Ended: true},

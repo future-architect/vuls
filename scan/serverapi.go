@@ -9,6 +9,7 @@ import (
 
 	"github.com/future-architect/vuls/cache"
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/report"
 	"github.com/future-architect/vuls/util"
@@ -528,7 +529,7 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 	}
 
 	kernelVersion := header.Get("X-Vuls-Kernel-Version")
-	if family == config.Debian && kernelVersion == "" {
+	if family == constant.Debian && kernelVersion == "" {
 		return models.ScanResult{}, errKernelVersionHeader
 	}
 
@@ -556,21 +557,21 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 
 	var osType osTypeInterface
 	switch family {
-	case config.Debian, config.Ubuntu:
+	case constant.Debian, constant.Ubuntu:
 		osType = &debian{base: base}
-	case config.RedHat:
+	case constant.RedHat:
 		osType = &rhel{
 			redhatBase: redhatBase{base: base},
 		}
-	case config.CentOS:
+	case constant.CentOS:
 		osType = &centos{
 			redhatBase: redhatBase{base: base},
 		}
-	case config.Oracle:
+	case constant.Oracle:
 		osType = &oracle{
 			redhatBase: redhatBase{base: base},
 		}
-	case config.Amazon:
+	case constant.Amazon:
 		osType = &amazon{
 			redhatBase: redhatBase{base: base},
 		}
@@ -603,10 +604,10 @@ func setupChangelogCache(path string) error {
 	needToSetupCache := false
 	for _, s := range servers {
 		switch s.getDistro().Family {
-		case config.Raspbian:
+		case constant.Raspbian:
 			needToSetupCache = true
 			break
-		case config.Ubuntu, config.Debian:
+		case constant.Ubuntu, constant.Debian:
 			//TODO changelog cache for RedHat, Oracle, Amazon, CentOS is not implemented yet.
 			if s.getServerInfo().Mode.IsDeep() {
 				needToSetupCache = true
@@ -682,7 +683,7 @@ func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanRes
 
 func checkEOL(r *models.ScanResult) {
 	switch r.Family {
-	case config.ServerTypePseudo, config.Raspbian:
+	case constant.ServerTypePseudo, constant.Raspbian:
 		return
 	}
 

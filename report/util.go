@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/gosuri/uitable"
@@ -445,9 +446,7 @@ func formatChangelogs(r models.ScanResult) string {
 
 func reuseScannedCves(r *models.ScanResult) bool {
 	switch r.Family {
-	case
-		config.FreeBSD,
-		config.Raspbian:
+	case constant.FreeBSD, constant.Raspbian:
 		return true
 	}
 	if isTrivyResult(r) {

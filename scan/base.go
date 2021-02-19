@@ -14,6 +14,7 @@ import (
 	"github.com/aquasecurity/fanal/analyzer"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/sirupsen/logrus"
@@ -86,7 +87,7 @@ func (l *base) runningKernel() (release, version string, err error) {
 	release = strings.TrimSpace(r.Stdout)
 
 	switch l.Distro.Family {
-	case config.Debian:
+	case constant.Debian:
 		r := l.exec("uname -a", noSudo)
 		if !r.isSuccess() {
 			return "", "", xerrors.Errorf("Failed to SSH: %s", r)
@@ -427,7 +428,7 @@ func (l *base) convertToModel() models.ScanResult {
 	scannedVia := scannedViaRemote
 	if isLocalExec(l.ServerInfo.Port, l.ServerInfo.Host) {
 		scannedVia = scannedViaLocal
-	} else if l.ServerInfo.Type == config.ServerTypePseudo {
+	} else if l.ServerInfo.Type == constant.ServerTypePseudo {
 		scannedVia = scannedViaPseudo
 	}
 
@@ -567,7 +568,7 @@ func (l *base) scanLibraries() (err error) {
 
 		var bytes []byte
 		switch l.Distro.Family {
-		case config.ServerTypePseudo:
+		case constant.ServerTypePseudo:
 			bytes, err = ioutil.ReadFile(path)
 			if err != nil {
 				return xerrors.Errorf("Failed to get target file: %s, filepath: %s", err, path)
@@ -621,7 +622,7 @@ func (d *DummyFileInfo) IsDir() bool { return false }
 func (d *DummyFileInfo) Sys() interface{} { return nil }
 
 func (l *base) scanWordPress() error {
-	if l.ServerInfo.WordPress.IsZero() || l.ServerInfo.Type == config.ServerTypePseudo {
+	if l.ServerInfo.WordPress.IsZero() || l.ServerInfo.Type == constant.ServerTypePseudo {
 		return nil
 	}
 	l.log.Info("Scanning WordPress...")

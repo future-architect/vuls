@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
@@ -33,14 +34,14 @@ func newBsd(c config.ServerInfo) *bsd {
 //https://github.com/mizzy/specinfra/blob/master/lib/specinfra/helper/detect_os/freebsd.rb
 func detectFreebsd(c config.ServerInfo) (bool, osTypeInterface) {
 	// Prevent from adding `set -o pipefail` option
-	c.Distro = config.Distro{Family: config.FreeBSD}
+	c.Distro = config.Distro{Family: constant.FreeBSD}
 
 	if r := exec(c, "uname", noSudo); r.isSuccess() {
-		if strings.Contains(strings.ToLower(r.Stdout), config.FreeBSD) == true {
+		if strings.Contains(strings.ToLower(r.Stdout), constant.FreeBSD) == true {
 			if b := exec(c, "freebsd-version", noSudo); b.isSuccess() {
 				bsd := newBsd(c)
 				rel := strings.TrimSpace(b.Stdout)
-				bsd.setDistro(config.FreeBSD, rel)
+				bsd.setDistro(constant.FreeBSD, rel)
 				return true, bsd
 			}
 		}

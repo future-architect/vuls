@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/knqyf263/gost/db"
@@ -56,7 +57,7 @@ func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCV
 
 	// Debian Security Tracker does not support Package for Raspbian, so skip it.
 	var scanResult models.ScanResult
-	if r.Family != config.Raspbian {
+	if r.Family != constant.Raspbian {
 		scanResult = *r
 	} else {
 		scanResult = r.RemoveRaspbianPackFromResult()

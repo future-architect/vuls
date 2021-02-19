@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 )
 
 func isRunningKernel(pack models.Package, family string, kernel models.Kernel) (isKernel, running bool) {
 	switch family {
-	case config.SUSEEnterpriseServer:
+	case constant.SUSEEnterpriseServer:
 		if pack.Name == "kernel-default" {
 			// Remove the last period and later because uname don't show that.
 			ss := strings.Split(pack.Release, ".")
@@ -21,7 +21,7 @@ func isRunningKernel(pack models.Package, family string, kernel models.Kernel) (
 		}
 		return false, false
 
-	case config.RedHat, config.Oracle, config.CentOS, config.Amazon:
+	case constant.RedHat, constant.Oracle, constant.CentOS, constant.Amazon:
 		switch pack.Name {
 		case "kernel", "kernel-devel":
 			ver := fmt.Sprintf("%s-%s.%s", pack.Version, pack.Release, pack.Arch)

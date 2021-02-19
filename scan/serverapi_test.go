@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 )
 
 func TestViaHTTP(t *testing.T) {
 	r := newRHEL(config.ServerInfo{})
-	r.Distro = config.Distro{Family: config.RedHat}
+	r.Distro = config.Distro{Family: constant.RedHat}
 
 	var tests = []struct {
 		header         map[string]string

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/k0kubun/pp"
 )
 
@@ -459,52 +460,52 @@ func TestIsDisplayUpdatableNum(t *testing.T) {
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.RedHat,
+			family:   constant.RedHat,
 			expected: false,
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.Oracle,
+			family:   constant.Oracle,
 			expected: false,
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.Debian,
+			family:   constant.Debian,
 			expected: false,
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.Ubuntu,
+			family:   constant.Ubuntu,
 			expected: false,
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.Raspbian,
+			family:   constant.Raspbian,
 			expected: false,
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.CentOS,
+			family:   constant.CentOS,
 			expected: true,
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.Amazon,
+			family:   constant.Amazon,
 			expected: true,
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.FreeBSD,
+			family:   constant.FreeBSD,
 			expected: false,
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.OpenSUSE,
+			family:   constant.OpenSUSE,
 			expected: true,
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.Alpine,
+			family:   constant.Alpine,
 			expected: true,
 		},
 	}

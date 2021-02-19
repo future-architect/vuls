@@ -10,6 +10,7 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	apkver "github.com/knqyf263/go-apk-version"
@@ -300,7 +301,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 
 		if running.Release != "" {
 			switch family {
-			case config.RedHat, config.CentOS:
+			case constant.RedHat, constant.CentOS:
 				// For kernel related packages, ignore OVAL information with different major versions
 				if _, ok := kernelRelatedPackNames[ovalPack.Name]; ok {
 					if util.Major(ovalPack.Version) != util.Major(running.Release) {
@@ -329,12 +330,12 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 
 			// If the version of installed is less than in OVAL
 			switch family {
-			case config.RedHat,
-				config.Amazon,
-				config.SUSEEnterpriseServer,
-				config.Debian,
-				config.Ubuntu,
-				config.Raspbian:
+			case constant.RedHat,
+				constant.Amazon,
+				constant.SUSEEnterpriseServer,
+				constant.Debian,
+				constant.Ubuntu,
+				constant.Raspbian:
 				// Use fixed state in OVAL for these distros.
 				return true, false, ovalPack.Version
 			}
@@ -365,9 +366,9 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 
 func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error) {
 	switch family {
-	case config.Debian,
-		config.Ubuntu,
-		config.Raspbian:
+	case constant.Debian,
+		constant.Ubuntu,
+		constant.Raspbian:
 		vera, err := debver.NewVersion(newVer)
 		if err != nil {
 			return false, err
@@ -378,7 +379,7 @@ func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error
 		}
 		return vera.LessThan(verb), nil
 
-	case config.Alpine:
+	case constant.Alpine:
 		vera, err := apkver.NewVersion(newVer)
 		if err != nil {
 			return false, err
@@ -389,15 +390,15 @@ func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error
 		}
 		return vera.LessThan(verb), nil
 
-	case config.Oracle,
-		config.SUSEEnterpriseServer,
-		config.Amazon:
+	case constant.Oracle,
+		constant.SUSEEnterpriseServer,
+		constant.Amazon:
 		vera := rpmver.NewVersion(newVer)
 		verb := rpmver.NewVersion(packInOVAL.Version)
 		return vera.LessThan(verb), nil
 
-	case config.RedHat,
-		config.CentOS:
+	case constant.RedHat,
+		constant.CentOS:
 		vera := rpmver.NewVersion(centOSVersionToRHEL(newVer))
 		verb := rpmver.NewVersion(centOSVersionToRHEL(packInOVAL.Version))
 		return vera.LessThan(verb), nil

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/k0kubun/pp"
 )
@@ -107,7 +108,7 @@ func TestParseOSRelease(t *testing.T) {
 			in: `NAME="openSUSE Leap"
 ID=opensuse
 VERSION_ID="42.3.4"`,
-			name: config.OpenSUSE,
+			name: constant.OpenSUSE,
 			ver:  "42.3.4",
 		},
 		{
@@ -115,7 +116,7 @@ VERSION_ID="42.3.4"`,
 VERSION="12-SP1"
 VERSION_ID="12.1"
 ID="sles"`,
-			name: config.SUSEEnterpriseServer,
+			name: constant.SUSEEnterpriseServer,
 			ver:  "12.1",
 		},
 		{
@@ -123,7 +124,7 @@ ID="sles"`,
 VERSION="12-SP1"
 VERSION_ID="12.1.0.1"
 ID="sles"`,
-			name: config.SUSEEnterpriseServer,
+			name: constant.SUSEEnterpriseServer,
 			ver:  "12.1.0.1",
 		},
 	}

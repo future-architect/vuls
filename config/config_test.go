@@ -2,6 +2,8 @@ package config
 
 import (
 	"testing"
+
+	. "github.com/future-architect/vuls/constant"
 )
 
 func TestSyslogConfValidate(t *testing.T) {

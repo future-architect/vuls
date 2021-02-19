@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
@@ -38,7 +39,7 @@ func detectAlpine(c config.ServerInfo) (bool, osTypeInterface) {
 	}
 	if r := exec(c, "cat /etc/alpine-release", noSudo); r.isSuccess() {
 		os := newAlpine(c)
-		os.setDistro(config.Alpine, strings.TrimSpace(r.Stdout))
+		os.setDistro(constant.Alpine, strings.TrimSpace(r.Stdout))
 		return true, os
 	}
 	return false, nil

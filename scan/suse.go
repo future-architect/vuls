@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
@@ -53,7 +54,7 @@ func detectSUSE(c config.ServerInfo) (bool, osTypeInterface) {
 				if len(result) == 2 {
 					//TODO check opensuse or opensuse.leap
 					s := newSUSE(c)
-					s.setDistro(config.OpenSUSE, result[1])
+					s.setDistro(constant.OpenSUSE, result[1])
 					return true, s
 				}
 
@@ -65,7 +66,7 @@ func detectSUSE(c config.ServerInfo) (bool, osTypeInterface) {
 					result = re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 					if len(result) == 2 {
 						s := newSUSE(c)
-						s.setDistro(config.SUSEEnterpriseServer,
+						s.setDistro(constant.SUSEEnterpriseServer,
 							fmt.Sprintf("%s.%s", version, result[1]))
 						return true, s
 					}
@@ -82,11 +83,11 @@ func detectSUSE(c config.ServerInfo) (bool, osTypeInterface) {
 func (o *suse) parseOSRelease(content string) (name string, ver string) {
 	if strings.Contains(content, "ID=opensuse") {
 		//TODO check opensuse or opensuse.leap
-		name = config.OpenSUSE
+		name = constant.OpenSUSE
 	} else if strings.Contains(content, `NAME="SLES"`) {
-		name = config.SUSEEnterpriseServer
+		name = constant.SUSEEnterpriseServer
 	} else if strings.Contains(content, `NAME="SLES_SAP"`) {
-		name = config.SUSEEnterpriseServer
+		name = constant.SUSEEnterpriseServer
 	} else {
 		util.Log.Warnf("Failed to parse SUSE edition: %s", content)
 		return "unknown", "unknown"

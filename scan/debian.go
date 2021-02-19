@@ -12,6 +12,7 @@ import (
 
 	"github.com/future-architect/vuls/cache"
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	version "github.com/knqyf263/go-deb-version"
@@ -59,7 +60,7 @@ func detectDebian(c config.ServerInfo) (bool, osTypeInterface, error) {
 		//  e.g.
 		//  Raspbian GNU/Linux 7 \n \l
 		result := strings.Fields(r.Stdout)
-		if len(result) > 2 && result[0] == config.Raspbian {
+		if len(result) > 2 && result[0] == constant.Raspbian {
 			deb := newDebian(c)
 			deb.setDistro(strings.ToLower(trim(result[0])), trim(result[2]))
 			return true, deb, nil
@@ -109,7 +110,7 @@ func detectDebian(c config.ServerInfo) (bool, osTypeInterface, error) {
 	cmd := "cat /etc/debian_version"
 	if r := exec(c, cmd, noSudo); r.isSuccess() {
 		deb := newDebian(c)
-		deb.setDistro(config.Debian, trim(r.Stdout))
+		deb.setDistro(constant.Debian, trim(r.Stdout))
 		return true, deb, nil
 	}
 
@@ -186,7 +187,7 @@ func (o *debian) checkDeps() error {
 		})
 	}
 
-	if o.Distro.Family == config.Debian {
+	if o.Distro.Family == constant.Debian {
 		// https://askubuntu.com/a/742844
 		if !o.ServerInfo.IsContainer() {
 			deps = append(deps, dep{
@@ -305,7 +306,7 @@ func (o *debian) scanPackages() error {
 		return nil
 	}
 
-	if !o.getServerInfo().Mode.IsDeep() && o.Distro.Family == config.Raspbian {
+	if !o.getServerInfo().Mode.IsDeep() && o.Distro.Family == constant.Raspbian {
 		raspbianPacks := o.grepRaspbianPackages(updatable)
 		unsecures, err := o.scanUnsecurePackages(raspbianPacks)
 		if err != nil {
@@ -502,7 +503,7 @@ func (o *debian) scanUnsecurePackages(updatable models.Packages) (models.VulnInf
 
 	// Make a directory for saving changelog to get changelog in Raspbian
 	tmpClogPath := ""
-	if o.Distro.Family == config.Raspbian {
+	if o.Distro.Family == constant.Raspbian {
 		tmpClogPath, err = o.makeTempChangelogDir()
 		if err != nil {
 			return nil, err
@@ -516,7 +517,7 @@ func (o *debian) scanUnsecurePackages(updatable models.Packages) (models.VulnInf
 	}
 
 	// Delete a directory for saving changelog to get changelog in Raspbian
-	if o.Distro.Family == config.Raspbian {
+	if o.Distro.Family == constant.Raspbian {
 		err := o.deleteTempChangelogDir(tmpClogPath)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to delete directory to save changelog for Raspbian. err: %s", err)
@@ -820,11 +821,11 @@ func (o *debian) fetchParseChangelog(pack models.Package, tmpClogPath string) ([
 	cmd := ""
 
 	switch o.Distro.Family {
-	case config.Ubuntu:
+	case constant.Ubuntu:
 		cmd = fmt.Sprintf(`PAGER=cat apt-get -q=2 changelog %s`, pack.Name)
-	case config.Debian:
+	case constant.Debian:
 		cmd = fmt.Sprintf(`PAGER=cat aptitude -q=2 changelog %s`, pack.Name)
-	case config.Raspbian:
+	case constant.Raspbian:
 		changelogPath, err := o.getChangelogPath(pack.Name, tmpClogPath)
 		if err != nil {
 			// Ignore this Error.
@@ -936,10 +937,10 @@ func (o *debian) getCveIDsFromChangelog(
 
 	delim := []string{"+", "~", "build"}
 	switch o.Distro.Family {
-	case config.Ubuntu:
-		delim = append(delim, config.Ubuntu)
-	case config.Debian:
-	case config.Raspbian:
+	case constant.Ubuntu:
+		delim = append(delim, constant.Ubuntu)
+	case constant.Debian:
+	case constant.Raspbian:
 	}
 
 	for _, d := range delim {
@@ -1014,7 +1015,7 @@ func (o *debian) parseChangelog(changelog, name, ver string, confidence models.C
 	}
 
 	if !found {
-		if o.Distro.Family == config.Raspbian {
+		if o.Distro.Family == constant.Raspbian {
 			pack := o.Packages[name]
 			pack.Changelog = &models.Changelog{
 				Contents: strings.Join(buf, "\n"),

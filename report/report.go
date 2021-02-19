@@ -9,6 +9,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
 	"github.com/future-architect/vuls/cwe"
 	"github.com/future-architect/vuls/exploit"
@@ -177,7 +178,7 @@ func DetectPkgCves(dbclient DBClient, r *models.ScanResult) error {
 		}
 	} else if reuseScannedCves(r) {
 		util.Log.Infof("r.Release is empty. Use CVEs as it as.")
-	} else if r.Family == c.ServerTypePseudo {
+	} else if r.Family == constant.ServerTypePseudo {
 		util.Log.Infof("pseudo type. Skip OVAL and gost detection")
 	} else {
 		return xerrors.Errorf("Failed to fill CVEs. r.Release is empty")
@@ -347,35 +348,35 @@ func detectPkgsCvesWithOval(driver ovaldb.DB, r *models.ScanResult) error {
 	var ovalFamily string
 
 	switch r.Family {
-	case c.Debian, c.Raspbian:
+	case constant.Debian, constant.Raspbian:
 		ovalClient = oval.NewDebian()
-		ovalFamily = c.Debian
-	case c.Ubuntu:
+		ovalFamily = constant.Debian
+	case constant.Ubuntu:
 		ovalClient = oval.NewUbuntu()
-		ovalFamily = c.Ubuntu
-	case c.RedHat:
+		ovalFamily = constant.Ubuntu
+	case constant.RedHat:
 		ovalClient = oval.NewRedhat()
-		ovalFamily = c.RedHat
-	case c.CentOS:
+		ovalFamily = constant.RedHat
+	case constant.CentOS:
 		ovalClient = oval.NewCentOS()
 		//use RedHat's OVAL
-		ovalFamily = c.RedHat
-	case c.Oracle:
+		ovalFamily = constant.RedHat
+	case constant.Oracle:
 		ovalClient = oval.NewOracle()
-		ovalFamily = c.Oracle
-	case c.SUSEEnterpriseServer:
+		ovalFamily = constant.Oracle
+	case constant.SUSEEnterpriseServer:
 		// TODO other suse family
 		ovalClient = oval.NewSUSE()
-		ovalFamily = c.SUSEEnterpriseServer
-	case c.Alpine:
+		ovalFamily = constant.SUSEEnterpriseServer
+	case constant.Alpine:
 		ovalClient = oval.NewAlpine()
-		ovalFamily = c.Alpine
-	case c.Amazon:
+		ovalFamily = constant.Alpine
+	case constant.Amazon:
 		ovalClient = oval.NewAmazon()
-		ovalFamily = c.Amazon
-	case c.FreeBSD, c.Windows:
+		ovalFamily = constant.Amazon
+	case constant.FreeBSD, constant.Windows:
 		return nil
-	case c.ServerTypePseudo:
+	case constant.ServerTypePseudo:
 		return nil
 	default:
 		if r.Family == "" {

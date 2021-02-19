@@ -8,6 +8,7 @@ import (
 
 	"github.com/future-architect/vuls/cache"
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/k0kubun/pp"
 	"github.com/sirupsen/logrus"
@@ -851,7 +852,7 @@ vlc (3.0.11-0+deb10u1) buster-security; urgency=high
 	}
 
 	o := newDebian(config.ServerInfo{})
-	o.Distro = config.Distro{Family: config.Raspbian}
+	o.Distro = config.Distro{Family: constant.Raspbian}
 	for _, tt := range tests {
 		t.Run(tt.packName, func(t *testing.T) {
 			cveIDs, pack, _ := o.parseChangelog(tt.args.changelog, tt.args.name, tt.args.ver, models.ChangelogExactMatch)

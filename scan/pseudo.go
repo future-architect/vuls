@@ -2,6 +2,7 @@ package scan
 
 import (
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 )
@@ -12,9 +13,9 @@ type pseudo struct {
 }
 
 func detectPseudo(c config.ServerInfo) (itsMe bool, pseudo osTypeInterface, err error) {
-	if c.Type == config.ServerTypePseudo {
+	if c.Type == constant.ServerTypePseudo {
 		p := newPseudo(c)
-		p.setDistro(config.ServerTypePseudo, "")
+		p.setDistro(constant.ServerTypePseudo, "")
 		return true, p, nil
 	}
 	return false, nil, nil
