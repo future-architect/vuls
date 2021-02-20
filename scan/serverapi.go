@@ -61,6 +61,7 @@ type osTypeInterface interface {
 	setErrs([]error)
 }
 
+// Scanner has functions for scan
 type Scanner struct {
 	TimeoutSec     int
 	ScanTimeoutSec int
@@ -69,6 +70,7 @@ type Scanner struct {
 	Targets map[string]config.ServerInfo
 }
 
+// Scan execute scan
 func (s Scanner) Scan() error {
 	util.Log.Info("Detecting Server/Container OS... ")
 	if err := s.initServers(); err != nil {
@@ -84,14 +86,15 @@ func (s Scanner) Scan() error {
 	s.detectPlatform()
 
 	util.Log.Info("Detecting IPS identifiers... ")
-	s.DetectIPS()
+	s.detectIPS()
 
-	if err := execScan(s.CacheDBPath, s.ScanTimeoutSec); err != nil {
+	if err := s.execScan(); err != nil {
 		return xerrors.Errorf("Failed to scan. err: %w", err)
 	}
 	return nil
 }
 
+// Configtest checks if the server is scannable.
 func (s Scanner) Configtest() error {
 	util.Log.Info("Detecting Server/Container OS... ")
 	if err := s.initServers(); err != nil {
@@ -109,85 +112,12 @@ func (s Scanner) Configtest() error {
 	util.Log.Info("Checking sudo settings...")
 	s.checkIfSudoNoPasswd()
 
-	return nil
-}
+	util.Log.Info("It can be scanned with fast scan mode even if warn or err messages are displayed due to lack of dependent packages or sudo settings in fast-root or deep scan mode")
 
-// Retry as it may stall on the first SSH connection
-// https://github.com/future-architect/vuls/pull/753
-func detectDebianWithRetry(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err error) {
-	type Response struct {
-		itsMe bool
-		deb   osTypeInterface
-		err   error
-	}
-	resChan := make(chan Response, 1)
-	go func(c config.ServerInfo) {
-		itsMe, osType, fatalErr := detectDebian(c)
-		resChan <- Response{itsMe, osType, fatalErr}
-	}(c)
-
-	timeout := time.After(time.Duration(3) * time.Second)
-	select {
-	case res := <-resChan:
-		return res.itsMe, res.deb, res.err
-	case <-timeout:
-		time.Sleep(100 * time.Millisecond)
-		return detectDebian(c)
-	}
-}
-
-func detectOS(c config.ServerInfo) (osType osTypeInterface) {
-	var itsMe bool
-	var fatalErr error
-
-	if itsMe, osType, _ = detectPseudo(c); itsMe {
-		util.Log.Debugf("Pseudo")
-		return
-	}
-
-	itsMe, osType, fatalErr = detectDebianWithRetry(c)
-	if fatalErr != nil {
-		osType.setErrs([]error{
-			xerrors.Errorf("Failed to detect OS: %w", fatalErr)})
-		return
-	}
-
-	if itsMe {
-		util.Log.Debugf("Debian like Linux. Host: %s:%s", c.Host, c.Port)
-		return
-	}
-
-	if itsMe, osType = detectRedhat(c); itsMe {
-		util.Log.Debugf("Redhat like Linux. Host: %s:%s", c.Host, c.Port)
-		return
-	}
-
-	if itsMe, osType = detectSUSE(c); itsMe {
-		util.Log.Debugf("SUSE Linux. Host: %s:%s", c.Host, c.Port)
-		return
-	}
-
-	if itsMe, osType = detectFreebsd(c); itsMe {
-		util.Log.Debugf("FreeBSD. Host: %s:%s", c.Host, c.Port)
-		return
-	}
-
-	if itsMe, osType = detectAlpine(c); itsMe {
-		util.Log.Debugf("Alpine. Host: %s:%s", c.Host, c.Port)
-		return
-	}
-
-	//TODO darwin https://github.com/mizzy/specinfra/blob/master/lib/specinfra/helper/detect_os/darwin.rb
-	osType.setErrs([]error{xerrors.New("Unknown OS Type")})
-	return
-}
-
-// PrintSSHableServerNames print SSH-able servernames
-func PrintSSHableServerNames() bool {
 	if len(servers) == 0 {
-		util.Log.Error("No scannable servers")
-		return false
+		return xerrors.Errorf("No scannable servers")
 	}
+
 	util.Log.Info("Scannable servers are below...")
 	for _, s := range servers {
 		if s.getServerInfo().IsContainer() {
@@ -200,7 +130,96 @@ func PrintSSHableServerNames() bool {
 		}
 	}
 	fmt.Printf("\n")
-	return true
+	return nil
+}
+
+// ViaHTTP scans servers by HTTP header and body
+func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResult, error) {
+	family := header.Get("X-Vuls-OS-Family")
+	if family == "" {
+		return models.ScanResult{}, errOSFamilyHeader
+	}
+
+	release := header.Get("X-Vuls-OS-Release")
+	if release == "" {
+		return models.ScanResult{}, errOSReleaseHeader
+	}
+
+	kernelRelease := header.Get("X-Vuls-Kernel-Release")
+	if kernelRelease == "" {
+		util.Log.Warn("If X-Vuls-Kernel-Release is not specified, there is a possibility of false detection")
+	}
+
+	kernelVersion := header.Get("X-Vuls-Kernel-Version")
+	if family == constant.Debian && kernelVersion == "" {
+		return models.ScanResult{}, errKernelVersionHeader
+	}
+
+	serverName := header.Get("X-Vuls-Server-Name")
+	if toLocalFile && serverName == "" {
+		return models.ScanResult{}, errServerNameHeader
+	}
+
+	distro := config.Distro{
+		Family:  family,
+		Release: release,
+	}
+
+	kernel := models.Kernel{
+		Release: kernelRelease,
+		Version: kernelVersion,
+	}
+	base := base{
+		Distro: distro,
+		osPackages: osPackages{
+			Kernel: kernel,
+		},
+		log: util.Log,
+	}
+
+	var osType osTypeInterface
+	switch family {
+	case constant.Debian, constant.Ubuntu:
+		osType = &debian{base: base}
+	case constant.RedHat:
+		osType = &rhel{
+			redhatBase: redhatBase{base: base},
+		}
+	case constant.CentOS:
+		osType = &centos{
+			redhatBase: redhatBase{base: base},
+		}
+	case constant.Oracle:
+		osType = &oracle{
+			redhatBase: redhatBase{base: base},
+		}
+	case constant.Amazon:
+		osType = &amazon{
+			redhatBase: redhatBase{base: base},
+		}
+	default:
+		return models.ScanResult{}, xerrors.Errorf("Server mode for %s is not implemented yet", family)
+	}
+
+	installedPackages, srcPackages, err := osType.parseInstalledPackages(body)
+	if err != nil {
+		return models.ScanResult{}, err
+	}
+
+	result := models.ScanResult{
+		ServerName: serverName,
+		Family:     family,
+		Release:    release,
+		RunningKernel: models.Kernel{
+			Release: kernelRelease,
+			Version: kernelVersion,
+		},
+		Packages:    installedPackages,
+		SrcPackages: srcPackages,
+		ScannedCves: models.VulnInfos{},
+	}
+
+	return result, nil
 }
 
 // initServers detect the kind of OS distribution of target servers
@@ -403,6 +422,76 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 	return oses
 }
 
+func detectOS(c config.ServerInfo) (osType osTypeInterface) {
+	var itsMe bool
+	var fatalErr error
+
+	if itsMe, osType, _ = detectPseudo(c); itsMe {
+		util.Log.Debugf("Pseudo")
+		return
+	}
+
+	itsMe, osType, fatalErr = detectDebianWithRetry(c)
+	if fatalErr != nil {
+		osType.setErrs([]error{
+			xerrors.Errorf("Failed to detect OS: %w", fatalErr)})
+		return
+	}
+
+	if itsMe {
+		util.Log.Debugf("Debian like Linux. Host: %s:%s", c.Host, c.Port)
+		return
+	}
+
+	if itsMe, osType = detectRedhat(c); itsMe {
+		util.Log.Debugf("Redhat like Linux. Host: %s:%s", c.Host, c.Port)
+		return
+	}
+
+	if itsMe, osType = detectSUSE(c); itsMe {
+		util.Log.Debugf("SUSE Linux. Host: %s:%s", c.Host, c.Port)
+		return
+	}
+
+	if itsMe, osType = detectFreebsd(c); itsMe {
+		util.Log.Debugf("FreeBSD. Host: %s:%s", c.Host, c.Port)
+		return
+	}
+
+	if itsMe, osType = detectAlpine(c); itsMe {
+		util.Log.Debugf("Alpine. Host: %s:%s", c.Host, c.Port)
+		return
+	}
+
+	//TODO darwin https://github.com/mizzy/specinfra/blob/master/lib/specinfra/helper/detect_os/darwin.rb
+	osType.setErrs([]error{xerrors.New("Unknown OS Type")})
+	return
+}
+
+// Retry as it may stall on the first SSH connection
+// https://github.com/future-architect/vuls/pull/753
+func detectDebianWithRetry(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err error) {
+	type Response struct {
+		itsMe bool
+		deb   osTypeInterface
+		err   error
+	}
+	resChan := make(chan Response, 1)
+	go func(c config.ServerInfo) {
+		itsMe, osType, fatalErr := detectDebian(c)
+		resChan <- Response{itsMe, osType, fatalErr}
+	}(c)
+
+	timeout := time.After(time.Duration(3) * time.Second)
+	select {
+	case res := <-resChan:
+		return res.itsMe, res.deb, res.err
+	case <-timeout:
+		time.Sleep(100 * time.Millisecond)
+		return detectDebian(c)
+	}
+}
+
 // checkScanModes checks scan mode
 func (s Scanner) checkScanModes() error {
 	for _, s := range servers {
@@ -432,7 +521,12 @@ func (s Scanner) checkIfSudoNoPasswd() {
 
 // detectPlatform detects the platform of each servers.
 func (s Scanner) detectPlatform() {
-	execDetectPlatform(s.TimeoutSec)
+	parallelExec(func(o osTypeInterface) error {
+		o.detectPlatform()
+		// Logging only if platform can not be specified
+		return nil
+	}, s.TimeoutSec)
+
 	for i, s := range servers {
 		if s.getServerInfo().IsContainer() {
 			util.Log.Infof("(%d/%d) %s on %s is running on %s",
@@ -453,18 +547,14 @@ func (s Scanner) detectPlatform() {
 	return
 }
 
-func execDetectPlatform(timeoutSec int) {
+// detectIPS detects the IPS of each servers.
+func (s Scanner) detectIPS() {
 	parallelExec(func(o osTypeInterface) error {
-		o.detectPlatform()
-		// Logging only if platform can not be specified
+		o.detectIPS()
+		// Logging only if IPS can not be specified
 		return nil
-	}, timeoutSec)
-	return
-}
+	}, s.TimeoutSec)
 
-// DetectIPS detects the IPS of each servers.
-func (s Scanner) DetectIPS() {
-	execDetectIPS(s.TimeoutSec)
 	for i, s := range servers {
 		if !s.getServerInfo().IsContainer() {
 			util.Log.Infof("(%d/%d) %s has %d IPS integration",
@@ -476,21 +566,13 @@ func (s Scanner) DetectIPS() {
 	}
 }
 
-func execDetectIPS(timeoutSec int) {
-	parallelExec(func(o osTypeInterface) error {
-		o.detectIPS()
-		// Logging only if IPS can not be specified
-		return nil
-	}, timeoutSec)
-}
-
 // execScan scan
-func execScan(cacheDBPath string, timeoutSec int) error {
+func (s Scanner) execScan() error {
 	if len(servers) == 0 {
 		return xerrors.New("No server defined. Check the configuration")
 	}
 
-	if err := setupChangelogCache(cacheDBPath); err != nil {
+	if err := s.setupChangelogCache(); err != nil {
 		return err
 	}
 	defer func() {
@@ -505,7 +587,7 @@ func execScan(cacheDBPath string, timeoutSec int) error {
 		return err
 	}
 
-	results, err := GetScanResults(scannedAt, timeoutSec)
+	results, err := s.getScanResults(scannedAt)
 	if err != nil {
 		return err
 	}
@@ -519,96 +601,7 @@ func execScan(cacheDBPath string, timeoutSec int) error {
 	return writeScanResults(dir, results)
 }
 
-// ViaHTTP scans servers by HTTP header and body
-func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResult, error) {
-	family := header.Get("X-Vuls-OS-Family")
-	if family == "" {
-		return models.ScanResult{}, errOSFamilyHeader
-	}
-
-	release := header.Get("X-Vuls-OS-Release")
-	if release == "" {
-		return models.ScanResult{}, errOSReleaseHeader
-	}
-
-	kernelRelease := header.Get("X-Vuls-Kernel-Release")
-	if kernelRelease == "" {
-		util.Log.Warn("If X-Vuls-Kernel-Release is not specified, there is a possibility of false detection")
-	}
-
-	kernelVersion := header.Get("X-Vuls-Kernel-Version")
-	if family == constant.Debian && kernelVersion == "" {
-		return models.ScanResult{}, errKernelVersionHeader
-	}
-
-	serverName := header.Get("X-Vuls-Server-Name")
-	if toLocalFile && serverName == "" {
-		return models.ScanResult{}, errServerNameHeader
-	}
-
-	distro := config.Distro{
-		Family:  family,
-		Release: release,
-	}
-
-	kernel := models.Kernel{
-		Release: kernelRelease,
-		Version: kernelVersion,
-	}
-	base := base{
-		Distro: distro,
-		osPackages: osPackages{
-			Kernel: kernel,
-		},
-		log: util.Log,
-	}
-
-	var osType osTypeInterface
-	switch family {
-	case constant.Debian, constant.Ubuntu:
-		osType = &debian{base: base}
-	case constant.RedHat:
-		osType = &rhel{
-			redhatBase: redhatBase{base: base},
-		}
-	case constant.CentOS:
-		osType = &centos{
-			redhatBase: redhatBase{base: base},
-		}
-	case constant.Oracle:
-		osType = &oracle{
-			redhatBase: redhatBase{base: base},
-		}
-	case constant.Amazon:
-		osType = &amazon{
-			redhatBase: redhatBase{base: base},
-		}
-	default:
-		return models.ScanResult{}, xerrors.Errorf("Server mode for %s is not implemented yet", family)
-	}
-
-	installedPackages, srcPackages, err := osType.parseInstalledPackages(body)
-	if err != nil {
-		return models.ScanResult{}, err
-	}
-
-	result := models.ScanResult{
-		ServerName: serverName,
-		Family:     family,
-		Release:    release,
-		RunningKernel: models.Kernel{
-			Release: kernelRelease,
-			Version: kernelVersion,
-		},
-		Packages:    installedPackages,
-		SrcPackages: srcPackages,
-		ScannedCves: models.VulnInfos{},
-	}
-
-	return result, nil
-}
-
-func setupChangelogCache(path string) error {
+func (s Scanner) setupChangelogCache() error {
 	needToSetupCache := false
 	for _, s := range servers {
 		switch s.getDistro().Family {
@@ -624,15 +617,15 @@ func setupChangelogCache(path string) error {
 		}
 	}
 	if needToSetupCache {
-		if err := cache.SetupBolt(path, util.Log); err != nil {
+		if err := cache.SetupBolt(s.CacheDBPath, util.Log); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// GetScanResults returns ScanResults from
-func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanResults, err error) {
+// getScanResults returns ScanResults
+func (s Scanner) getScanResults(scannedAt time.Time) (results models.ScanResults, err error) {
 	parallelExec(func(o osTypeInterface) (err error) {
 		if o.getServerInfo().Module.IsScanOSPkg() {
 			if err = o.preCure(); err != nil {
@@ -661,7 +654,7 @@ func GetScanResults(scannedAt time.Time, timeoutSec int) (results models.ScanRes
 			}
 		}
 		return nil
-	}, timeoutSec)
+	}, s.ScanTimeoutSec)
 
 	hostname, _ := os.Hostname()
 	ipv4s, ipv6s, err := util.IP()
