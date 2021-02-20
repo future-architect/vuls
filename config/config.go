@@ -66,26 +66,29 @@ type Config struct {
 	Saas      SaasConf `json:"-"`
 	DetectIPS bool     `json:"detectIps,omitempty"`
 
-	RefreshCve        bool `json:"refreshCve,omitempty"`
-	ToSlack           bool `json:"toSlack,omitempty"`
-	ToChatWork        bool `json:"toChatWork,omitempty"`
-	ToTelegram        bool `json:"ToTelegram,omitempty"`
-	ToEmail           bool `json:"toEmail,omitempty"`
-	ToSyslog          bool `json:"toSyslog,omitempty"`
-	ToLocalFile       bool `json:"toLocalFile,omitempty"`
-	ToS3              bool `json:"toS3,omitempty"`
-	ToAzureBlob       bool `json:"toAzureBlob,omitempty"`
-	ToHTTP            bool `json:"toHTTP,omitempty"`
-	FormatJSON        bool `json:"formatJSON,omitempty"`
-	FormatOneEMail    bool `json:"formatOneEMail,omitempty"`
-	FormatOneLineText bool `json:"formatOneLineText,omitempty"`
-	FormatList        bool `json:"formatList,omitempty"`
-	FormatFullText    bool `json:"formatFullText,omitempty"`
-	FormatCsvList     bool `json:"formatCsvList,omitempty"`
-	GZIP              bool `json:"gzip,omitempty"`
-	DiffPlus          bool `json:"diffPlus,omitempty"`
-	DiffMinus         bool `json:"diffMinus,omitempty"`
-	Diff              bool `json:"diff,omitempty"`
+	RefreshCve        bool   `json:"refreshCve,omitempty"`
+	ToSlack           bool   `json:"toSlack,omitempty"`
+	ToChatWork        bool   `json:"toChatWork,omitempty"`
+	ToTelegram        bool   `json:"ToTelegram,omitempty"`
+	ToEmail           bool   `json:"toEmail,omitempty"`
+	ToSyslog          bool   `json:"toSyslog,omitempty"`
+	ToLocalFile       bool   `json:"toLocalFile,omitempty"`
+	ToS3              bool   `json:"toS3,omitempty"`
+	ToAzureBlob       bool   `json:"toAzureBlob,omitempty"`
+	ToHTTP            bool   `json:"toHTTP,omitempty"`
+	FormatJSON        bool   `json:"formatJSON,omitempty"`
+	FormatOneEMail    bool   `json:"formatOneEMail,omitempty"`
+	FormatOneLineText bool   `json:"formatOneLineText,omitempty"`
+	FormatList        bool   `json:"formatList,omitempty"`
+	FormatFullText    bool   `json:"formatFullText,omitempty"`
+	FormatCsvList     bool   `json:"formatCsvList,omitempty"`
+	GZIP              bool   `json:"gzip,omitempty"`
+	DiffPlus          bool   `json:"diffPlus,omitempty"`
+	DiffMinus         bool   `json:"diffMinus,omitempty"`
+	Diff              bool   `json:"diff,omitempty"`
+	Date              string `json:"date,omitempty"`
+	BeforeDate        string `json:"before,omitempty"`
+	AfterDate         string `json:"after,omitempty"`
 }
 
 // ValidateOnConfigtest validates

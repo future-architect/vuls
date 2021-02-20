@@ -28,7 +28,13 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 	}
 
 	for _, r := range rs {
-		path := filepath.Join(w.CurrentDir, r.ReportFileName())
+		var path string
+		if (c.Conf.DiffPlus || c.Conf.DiffMinus) && c.Conf.Date != "" {
+			// path format is path/to/results/servername_date
+			path = filepath.Join(filepath.Join(c.Conf.ResultsDir, c.Conf.AfterDate), r.ReportFileName()+"_"+c.Conf.BeforeDate)
+		} else {
+			path = filepath.Join(w.CurrentDir, r.ReportFileName())
+		}
 
 		if c.Conf.FormatJSON {
 			p := path + ".json"
