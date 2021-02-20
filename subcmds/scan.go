@@ -171,6 +171,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 			return subcommands.ExitUsageError
 		}
 	}
+	// if scan target servers are specified by args, set to the config
 	if 0 < len(servernames) {
 		c.Conf.Servers = target
 	}

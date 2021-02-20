@@ -593,8 +593,8 @@ func (s Scanner) execScan() error {
 	}
 
 	for i, r := range results {
-		if s, ok := config.Conf.Servers[r.ServerName]; ok {
-			results[i] = r.ClearFields(s.IgnoredJSONKeys)
+		if server, ok := s.Targets[r.ServerName]; ok {
+			results[i] = r.ClearFields(server.IgnoredJSONKeys)
 		}
 	}
 
