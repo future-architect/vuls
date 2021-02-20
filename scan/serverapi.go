@@ -71,20 +71,20 @@ type Scanner struct {
 
 func (s Scanner) Scan() error {
 	util.Log.Info("Detecting Server/Container OS... ")
-	if err := initServers(s.Targets, s.TimeoutSec); err != nil {
+	if err := s.initServers(); err != nil {
 		return xerrors.Errorf("Failed to init servers. err: %w", err)
 	}
 
 	util.Log.Info("Checking Scan Modes... ")
-	if err := checkScanModes(); err != nil {
+	if err := s.checkScanModes(); err != nil {
 		return xerrors.Errorf("Fix config.toml. err: %w", err)
 	}
 
 	util.Log.Info("Detecting Platforms... ")
-	detectPlatform(s.TimeoutSec)
+	s.detectPlatform()
 
 	util.Log.Info("Detecting IPS identifiers... ")
-	detectIPS(s.TimeoutSec)
+	s.DetectIPS()
 
 	if err := execScan(s.CacheDBPath, s.ScanTimeoutSec); err != nil {
 		return xerrors.Errorf("Failed to scan. err: %w", err)
@@ -94,20 +94,20 @@ func (s Scanner) Scan() error {
 
 func (s Scanner) Configtest() error {
 	util.Log.Info("Detecting Server/Container OS... ")
-	if err := initServers(s.Targets, s.TimeoutSec); err != nil {
+	if err := s.initServers(); err != nil {
 		return xerrors.Errorf("Failed to init servers. err: %w", err)
 	}
 
 	util.Log.Info("Checking Scan Modes...")
-	if err := checkScanModes(); err != nil {
+	if err := s.checkScanModes(); err != nil {
 		return xerrors.Errorf("Fix config.toml. err: %w", err)
 	}
 
 	util.Log.Info("Checking dependencies...")
-	checkDependencies(s.TimeoutSec)
+	s.checkDependencies()
 
 	util.Log.Info("Checking sudo settings...")
-	checkIfSudoNoPasswd(s.TimeoutSec)
+	s.checkIfSudoNoPasswd()
 
 	return nil
 }
@@ -204,12 +204,12 @@ func PrintSSHableServerNames() bool {
 }
 
 // initServers detect the kind of OS distribution of target servers
-func initServers(targets map[string]config.ServerInfo, timeoutSec int) error {
-	hosts, errHosts := detectServerOSes(targets, timeoutSec)
+func (s Scanner) initServers() error {
+	hosts, errHosts := detectServerOSes(s.Targets, s.TimeoutSec)
 	if len(hosts) == 0 {
 		return xerrors.New("No scannable host OS")
 	}
-	containers, errContainers := detectContainerOSes(hosts, timeoutSec)
+	containers, errContainers := detectContainerOSes(hosts, s.TimeoutSec)
 
 	// set to pkg global variable
 	for _, host := range hosts {
@@ -404,7 +404,7 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 }
 
 // checkScanModes checks scan mode
-func checkScanModes() error {
+func (s Scanner) checkScanModes() error {
 	for _, s := range servers {
 		if err := s.checkScanMode(); err != nil {
 			return xerrors.Errorf("servers.%s.scanMode err: %w",
@@ -415,24 +415,24 @@ func checkScanModes() error {
 }
 
 // checkDependencies checks dependencies are installed on target servers.
-func checkDependencies(timeoutSec int) {
+func (s Scanner) checkDependencies() {
 	parallelExec(func(o osTypeInterface) error {
 		return o.checkDeps()
-	}, timeoutSec)
+	}, s.TimeoutSec)
 	return
 }
 
 // checkIfSudoNoPasswd checks whether vuls can sudo with nopassword via SSH
-func checkIfSudoNoPasswd(timeoutSec int) {
+func (s Scanner) checkIfSudoNoPasswd() {
 	parallelExec(func(o osTypeInterface) error {
 		return o.checkIfSudoNoPasswd()
-	}, timeoutSec)
+	}, s.TimeoutSec)
 	return
 }
 
 // detectPlatform detects the platform of each servers.
-func detectPlatform(timeoutSec int) {
-	execDetectPlatform(timeoutSec)
+func (s Scanner) detectPlatform() {
+	execDetectPlatform(s.TimeoutSec)
 	for i, s := range servers {
 		if s.getServerInfo().IsContainer() {
 			util.Log.Infof("(%d/%d) %s on %s is running on %s",
@@ -462,9 +462,9 @@ func execDetectPlatform(timeoutSec int) {
 	return
 }
 
-// detectIPS detects the IPS of each servers.
-func detectIPS(timeoutSec int) {
-	execDetectIPS(timeoutSec)
+// DetectIPS detects the IPS of each servers.
+func (s Scanner) DetectIPS() {
+	execDetectIPS(s.TimeoutSec)
 	for i, s := range servers {
 		if !s.getServerInfo().IsContainer() {
 			util.Log.Infof("(%d/%d) %s has %d IPS integration",
