@@ -11,8 +11,9 @@ import (
 	"github.com/aquasecurity/trivy/pkg/utils"
 	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/detector"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/report"
+	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
 	"github.com/k0kubun/pp"
@@ -195,9 +196,9 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	var dir string
 	var err error
 	if c.Conf.DiffPlus || c.Conf.DiffMinus {
-		dir, err = report.JSONDir([]string{})
+		dir, err = reporter.JSONDir([]string{})
 	} else {
-		dir, err = report.JSONDir(f.Args())
+		dir, err = reporter.JSONDir(f.Args())
 	}
 	if err != nil {
 		util.Log.Errorf("Failed to read from JSON: %+v", err)
@@ -215,7 +216,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	var loaded models.ScanResults
-	if loaded, err = report.LoadScanResults(dir); err != nil {
+	if loaded, err = reporter.LoadScanResults(dir); err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}
@@ -261,7 +262,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	// TODO move into fillcveInfos
-	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
+	dbclient, locked, err := detector.NewDBClient(detector.DBClientConf{
 		CveDictCnf:    c.Conf.CveDict,
 		OvalDictCnf:   c.Conf.OvalDict,
 		GostCnf:       c.Conf.Gost,
@@ -280,14 +281,14 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	defer dbclient.CloseDB()
 
 	// TODO pass conf by arg
-	if res, err = report.Detect(*dbclient, res, dir); err != nil {
+	if res, err = detector.Detect(*dbclient, res, dir); err != nil {
 		util.Log.Errorf("%+v", err)
 		return subcommands.ExitFailure
 	}
 
 	// report
-	reports := []report.ResultWriter{
-		report.StdoutWriter{
+	reports := []reporter.ResultWriter{
+		reporter.StdoutWriter{
 			FormatCsv:         p.formatCsv,
 			FormatFullText:    p.formatFullText,
 			FormatOneLineText: p.formatOneLineText,
@@ -296,21 +297,21 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if p.toSlack {
-		reports = append(reports, report.SlackWriter{
+		reports = append(reports, reporter.SlackWriter{
 			FormatOneLineText: p.formatOneLineText,
 		})
 	}
 
 	if p.toChatWork {
-		reports = append(reports, report.ChatWorkWriter{})
+		reports = append(reports, reporter.ChatWorkWriter{})
 	}
 
 	if p.toTelegram {
-		reports = append(reports, report.TelegramWriter{})
+		reports = append(reports, reporter.TelegramWriter{})
 	}
 
 	if p.toEmail {
-		reports = append(reports, report.EMailWriter{
+		reports = append(reports, reporter.EMailWriter{
 			FormatOneEMail:    p.formatOneEMail,
 			FormatOneLineText: p.formatOneLineText,
 			FormatList:        p.formatList,
@@ -318,15 +319,15 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if p.toSyslog {
-		reports = append(reports, report.SyslogWriter{})
+		reports = append(reports, reporter.SyslogWriter{})
 	}
 
 	if p.toHTTP {
-		reports = append(reports, report.HTTPRequestWriter{})
+		reports = append(reports, reporter.HTTPRequestWriter{})
 	}
 
 	if p.toLocalFile {
-		reports = append(reports, report.LocalFileWriter{
+		reports = append(reports, reporter.LocalFileWriter{
 			CurrentDir:        dir,
 			DiffPlus:          c.Conf.DiffPlus,
 			DiffMinus:         c.Conf.DiffMinus,
@@ -340,12 +341,12 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if p.toS3 {
-		if err := report.CheckIfBucketExists(); err != nil {
+		if err := reporter.CheckIfBucketExists(); err != nil {
 			util.Log.Errorf("Check if there is a bucket beforehand: %s, err: %+v",
 				c.Conf.AWS.S3Bucket, err)
 			return subcommands.ExitUsageError
 		}
-		reports = append(reports, report.S3Writer{
+		reports = append(reports, reporter.S3Writer{
 			FormatJSON:        p.formatJSON,
 			FormatFullText:    p.formatFullText,
 			FormatOneLineText: p.formatOneLineText,
@@ -368,12 +369,12 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			util.Log.Error("Azure storage container name is required with -azure-container option")
 			return subcommands.ExitUsageError
 		}
-		if err := report.CheckIfAzureContainerExists(); err != nil {
+		if err := reporter.CheckIfAzureContainerExists(); err != nil {
 			util.Log.Errorf("Check if there is a container beforehand: %s, err: %+v",
 				c.Conf.Azure.ContainerName, err)
 			return subcommands.ExitUsageError
 		}
-		reports = append(reports, report.AzureBlobWriter{
+		reports = append(reports, reporter.AzureBlobWriter{
 			FormatJSON:        p.formatJSON,
 			FormatFullText:    p.formatFullText,
 			FormatOneLineText: p.formatOneLineText,

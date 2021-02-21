@@ -8,7 +8,7 @@ import (
 
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/report"
+	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/saas"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
@@ -67,7 +67,7 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitUsageError
 	}
 
-	dir, err := report.JSONDir(f.Args())
+	dir, err := reporter.JSONDir(f.Args())
 	if err != nil {
 		util.Log.Errorf("Failed to read from JSON: %+v", err)
 		return subcommands.ExitFailure
@@ -79,7 +79,7 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	var loaded models.ScanResults
-	if loaded, err = report.LoadScanResults(dir); err != nil {
+	if loaded, err = reporter.LoadScanResults(dir); err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}
@@ -112,7 +112,7 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitFailure
 	}
 
-	var w report.ResultWriter = saas.Writer{}
+	var w reporter.ResultWriter = saas.Writer{}
 	if err := w.Write(res...); err != nil {
 		util.Log.Errorf("Failed to upload. err: %+v", err)
 		return subcommands.ExitFailure

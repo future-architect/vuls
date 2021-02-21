@@ -11,8 +11,10 @@ import (
 	"github.com/aquasecurity/trivy/pkg/utils"
 	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/detector"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/report"
+	"github.com/future-architect/vuls/reporter"
+	"github.com/future-architect/vuls/tui"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
 )
@@ -115,9 +117,9 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	var dir string
 	var err error
 	if c.Conf.DiffPlus || c.Conf.DiffMinus {
-		dir, err = report.JSONDir([]string{})
+		dir, err = reporter.JSONDir([]string{})
 	} else {
-		dir, err = report.JSONDir(f.Args())
+		dir, err = reporter.JSONDir(f.Args())
 	}
 	if err != nil {
 		util.Log.Errorf("Failed to read from JSON. err: %+v", err)
@@ -130,7 +132,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	}
 
 	var res models.ScanResults
-	if res, err = report.LoadScanResults(dir); err != nil {
+	if res, err = reporter.LoadScanResults(dir); err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}
@@ -154,7 +156,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		}
 	}
 
-	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
+	dbclient, locked, err := detector.NewDBClient(detector.DBClientConf{
 		CveDictCnf:    c.Conf.CveDict,
 		OvalDictCnf:   c.Conf.OvalDict,
 		GostCnf:       c.Conf.Gost,
@@ -174,7 +176,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 
 	defer dbclient.CloseDB()
 
-	if res, err = report.Detect(*dbclient, res, dir); err != nil {
+	if res, err = detector.Detect(*dbclient, res, dir); err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}
@@ -186,5 +188,5 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		}
 	}
 
-	return report.RunTui(res)
+	return tui.RunTui(res)
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/google/subcommands"
 
 	c "github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/scan"
+	"github.com/future-architect/vuls/scanner"
 	"github.com/future-architect/vuls/util"
 )
 
@@ -129,12 +129,12 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		return subcommands.ExitUsageError
 	}
 
-	scanner := scan.Scanner{
+	s := scanner.Scanner{
 		TimeoutSec: p.timeoutSec,
 		Targets:    targets,
 	}
 
-	if err := scanner.Configtest(); err != nil {
+	if err := s.Configtest(); err != nil {
 		util.Log.Errorf("Failed to configtest: %+v", err)
 		return subcommands.ExitFailure
 	}

@@ -11,7 +11,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	c "github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/scan"
+	"github.com/future-architect/vuls/scanner"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
 	"github.com/k0kubun/pp"
@@ -182,14 +182,14 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitUsageError
 	}
 
-	scanner := scan.Scanner{
+	s := scanner.Scanner{
 		TimeoutSec:     p.timeoutSec,
 		ScanTimeoutSec: p.scanTimeoutSec,
 		CacheDBPath:    p.cacheDBPath,
 		Targets:        target,
 	}
 
-	if err := scanner.Scan(); err != nil {
+	if err := s.Scan(); err != nil {
 		util.Log.Errorf("Failed to scan: %+v", err)
 		return subcommands.ExitFailure
 	}

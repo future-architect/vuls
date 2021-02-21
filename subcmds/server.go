@@ -14,7 +14,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/report"
+	"github.com/future-architect/vuls/detector"
 	"github.com/future-architect/vuls/server"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
@@ -117,7 +117,7 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
+	dbclient, locked, err := detector.NewDBClient(detector.DBClientConf{
 		CveDictCnf:    c.Conf.CveDict,
 		OvalDictCnf:   c.Conf.OvalDict,
 		GostCnf:       c.Conf.Gost,

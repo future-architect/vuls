@@ -11,15 +11,16 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/future-architect/vuls/detector"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/report"
-	"github.com/future-architect/vuls/scan"
+	"github.com/future-architect/vuls/reporter"
+	"github.com/future-architect/vuls/scanner"
 	"github.com/future-architect/vuls/util"
 )
 
 // VulsHandler is used for vuls server mode
 type VulsHandler struct {
-	DBclient    report.DBClient
+	DBclient    detector.DBClient
 	ToLocalFile bool
 }
 
@@ -48,7 +49,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if result, err = scan.ViaHTTP(req.Header, buf.String(), h.ToLocalFile); err != nil {
+		if result, err = scanner.ViaHTTP(req.Header, buf.String(), h.ToLocalFile); err != nil {
 			util.Log.Error(err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -59,13 +60,13 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := report.DetectPkgCves(h.DBclient, &result); err != nil {
+	if err := detector.DetectPkgCves(h.DBclient, &result); err != nil {
 		util.Log.Errorf("Failed to detect Pkg CVE: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
 
-	if err := report.FillCveInfo(h.DBclient, &result); err != nil {
+	if err := detector.FillCveInfo(h.DBclient, &result); err != nil {
 		util.Log.Errorf("Failed to fill CVE detailed info: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
@@ -78,8 +79,8 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// report
-	reports := []report.ResultWriter{
-		report.HTTPResponseWriter{Writer: w},
+	reports := []reporter.ResultWriter{
+		reporter.HTTPResponseWriter{Writer: w},
 	}
 	if h.ToLocalFile {
 		scannedAt := result.ScannedAt
@@ -87,7 +88,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			scannedAt = time.Now().Truncate(1 * time.Hour)
 			result.ScannedAt = scannedAt
 		}
-		dir, err := scan.EnsureResultDir(scannedAt)
+		dir, err := scanner.EnsureResultDir(scannedAt)
 		if err != nil {
 			util.Log.Errorf("Failed to ensure the result directory: %+v", err)
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -95,7 +96,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 
 		// sever subcmd doesn't have diff option
-		reports = append(reports, report.LocalFileWriter{
+		reports = append(reports, reporter.LocalFileWriter{
 			CurrentDir: dir,
 			FormatJSON: true,
 		})
