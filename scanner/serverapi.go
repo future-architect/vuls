@@ -224,11 +224,11 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 
 // initServers detect the kind of OS distribution of target servers
 func (s Scanner) initServers() error {
-	hosts, errHosts := detectServerOSes(s.Targets, s.TimeoutSec)
+	hosts, errHosts := s.detectServerOSes()
 	if len(hosts) == 0 {
 		return xerrors.New("No scannable host OS")
 	}
-	containers, errContainers := detectContainerOSes(hosts, s.TimeoutSec)
+	containers, errContainers := s.detectContainerOSes(hosts)
 
 	// set to pkg global variable
 	for _, host := range hosts {
@@ -245,42 +245,38 @@ func (s Scanner) initServers() error {
 	return nil
 }
 
-func detectServerOSes(targets map[string]config.ServerInfo, timeoutSec int) (servers, errServers []osTypeInterface) {
+func (s Scanner) detectServerOSes() (servers, errServers []osTypeInterface) {
 	util.Log.Info("Detecting OS of servers... ")
-	osTypeChan := make(chan osTypeInterface, len(targets))
+	osTypeChan := make(chan osTypeInterface, len(s.Targets))
 	defer close(osTypeChan)
-	for _, s := range targets {
-		go func(s config.ServerInfo) {
+	for _, target := range s.Targets {
+		go func(srv config.ServerInfo) {
 			defer func() {
 				if p := recover(); p != nil {
-					util.Log.Debugf("Panic: %s on %s", p, s.ServerName)
+					util.Log.Debugf("Panic: %s on %s", p, srv.ServerName)
 				}
 			}()
-			osTypeChan <- detectOS(s)
-		}(s)
+			osTypeChan <- s.detectOS(srv)
+		}(target)
 	}
 
-	timeout := time.After(time.Duration(timeoutSec) * time.Second)
-	for i := 0; i < len(targets); i++ {
+	timeout := time.After(time.Duration(s.TimeoutSec) * time.Second)
+	for i := 0; i < len(s.Targets); i++ {
 		select {
 		case res := <-osTypeChan:
 			if 0 < len(res.getErrs()) {
 				errServers = append(errServers, res)
 				util.Log.Errorf("(%d/%d) Failed: %s, err: %+v",
-					i+1, len(targets),
-					res.getServerInfo().ServerName,
-					res.getErrs())
+					i+1, len(s.Targets), res.getServerInfo().ServerName, res.getErrs())
 			} else {
 				servers = append(servers, res)
 				util.Log.Infof("(%d/%d) Detected: %s: %s",
-					i+1, len(targets),
-					res.getServerInfo().ServerName,
-					res.getDistro())
+					i+1, len(s.Targets), res.getServerInfo().ServerName, res.getDistro())
 			}
 		case <-timeout:
 			msg := "Timed out while detecting servers"
 			util.Log.Error(msg)
-			for servername, sInfo := range targets {
+			for servername, sInfo := range s.Targets {
 				found := false
 				for _, o := range append(servers, errServers...) {
 					if servername == o.getServerInfo().ServerName {
@@ -293,7 +289,7 @@ func detectServerOSes(targets map[string]config.ServerInfo, timeoutSec int) (ser
 					u.setServerInfo(sInfo)
 					u.setErrs([]error{xerrors.New("Timed out")})
 					errServers = append(errServers, u)
-					util.Log.Errorf("(%d/%d) Timed out: %s", i+1, len(targets), servername)
+					util.Log.Errorf("(%d/%d) Timed out: %s", i+1, len(s.Targets), servername)
 				}
 			}
 		}
@@ -301,23 +297,23 @@ func detectServerOSes(targets map[string]config.ServerInfo, timeoutSec int) (ser
 	return
 }
 
-func detectContainerOSes(hosts []osTypeInterface, timeoutSec int) (actives, inactives []osTypeInterface) {
+func (s Scanner) detectContainerOSes(hosts []osTypeInterface) (actives, inactives []osTypeInterface) {
 	util.Log.Info("Detecting OS of containers... ")
 	osTypesChan := make(chan []osTypeInterface, len(hosts))
 	defer close(osTypesChan)
-	for _, s := range hosts {
-		go func(s osTypeInterface) {
+	for _, host := range hosts {
+		go func(h osTypeInterface) {
 			defer func() {
 				if p := recover(); p != nil {
 					util.Log.Debugf("Panic: %s on %s",
-						p, s.getServerInfo().GetServerName())
+						p, h.getServerInfo().GetServerName())
 				}
 			}()
-			osTypesChan <- detectContainerOSesOnServer(s)
-		}(s)
+			osTypesChan <- s.detectContainerOSesOnServer(h)
+		}(host)
 	}
 
-	timeout := time.After(time.Duration(timeoutSec) * time.Second)
+	timeout := time.After(time.Duration(s.TimeoutSec) * time.Second)
 	for i := 0; i < len(hosts); i++ {
 		select {
 		case res := <-osTypesChan:
@@ -339,7 +335,7 @@ func detectContainerOSes(hosts []osTypeInterface, timeoutSec int) (actives, inac
 	return
 }
 
-func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeInterface) {
+func (s Scanner) detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeInterface) {
 	containerHostInfo := containerHost.getServerInfo()
 	if len(containerHostInfo.ContainersIncluded) == 0 {
 		return
@@ -371,7 +367,7 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 				Name:        containerInfo.Name,
 				Image:       containerInfo.Image,
 			})
-			os := detectOS(copied)
+			os := s.detectOS(copied)
 			oses = append(oses, os)
 		}
 		return oses
@@ -392,7 +388,7 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 			if c.ContainerID == container || c.Name == container {
 				copied := containerHostInfo
 				copied.SetContainer(c)
-				os := detectOS(copied)
+				os := s.detectOS(copied)
 				oses = append(oses, os)
 				found = true
 				break
@@ -422,16 +418,15 @@ func detectContainerOSesOnServer(containerHost osTypeInterface) (oses []osTypeIn
 	return oses
 }
 
-func detectOS(c config.ServerInfo) (osType osTypeInterface) {
+func (s Scanner) detectOS(c config.ServerInfo) (osType osTypeInterface) {
 	var itsMe bool
 	var fatalErr error
 
 	if itsMe, osType, _ = detectPseudo(c); itsMe {
-		util.Log.Debugf("Pseudo")
 		return
 	}
 
-	itsMe, osType, fatalErr = detectDebianWithRetry(c)
+	itsMe, osType, fatalErr = s.detectDebianWithRetry(c)
 	if fatalErr != nil {
 		osType.setErrs([]error{
 			xerrors.Errorf("Failed to detect OS: %w", fatalErr)})
@@ -470,7 +465,7 @@ func detectOS(c config.ServerInfo) (osType osTypeInterface) {
 
 // Retry as it may stall on the first SSH connection
 // https://github.com/future-architect/vuls/pull/753
-func detectDebianWithRetry(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err error) {
+func (s Scanner) detectDebianWithRetry(c config.ServerInfo) (itsMe bool, deb osTypeInterface, err error) {
 	type Response struct {
 		itsMe bool
 		deb   osTypeInterface
@@ -664,7 +659,7 @@ func (s Scanner) getScanResults(scannedAt time.Time) (results models.ScanResults
 
 	for _, s := range append(servers, errServers...) {
 		r := s.convertToModel()
-		checkEOL(&r)
+		r.CheckEOL()
 		r.ScannedAt = scannedAt
 		r.ScannedVersion = config.Version
 		r.ScannedRevision = config.Revision
@@ -680,40 +675,4 @@ func (s Scanner) getScanResults(scannedAt time.Time) (results models.ScanResults
 		}
 	}
 	return results, nil
-}
-
-func checkEOL(r *models.ScanResult) {
-	switch r.Family {
-	case constant.ServerTypePseudo, constant.Raspbian:
-		return
-	}
-
-	eol, found := config.GetEOL(r.Family, r.Release)
-	if !found {
-		r.Warnings = append(r.Warnings,
-			fmt.Sprintf("Failed to check EOL. Register the issue to https://github.com/future-architect/vuls/issues with the information in `Family: %s Release: %s`",
-				r.Family, r.Release))
-		return
-	}
-
-	now := time.Now()
-	if eol.IsStandardSupportEnded(now) {
-		r.Warnings = append(r.Warnings, "Standard OS support is EOL(End-of-Life). Purchase extended support if available or Upgrading your OS is strongly recommended.")
-		if eol.ExtendedSupportUntil.IsZero() {
-			return
-		}
-		if !eol.IsExtendedSuppportEnded(now) {
-			r.Warnings = append(r.Warnings,
-				fmt.Sprintf("Extended support available until %s. Check the vendor site.",
-					eol.ExtendedSupportUntil.Format("2006-01-02")))
-		} else {
-			r.Warnings = append(r.Warnings,
-				"Extended support is also EOL. There are many Vulnerabilities that are not detected, Upgrading your OS strongly recommended.")
-		}
-	} else if !eol.StandardSupportUntil.IsZero() &&
-		now.AddDate(0, 3, 0).After(eol.StandardSupportUntil) {
-		r.Warnings = append(r.Warnings,
-			fmt.Sprintf("Standard OS support will be end in 3 months. EOL date: %s",
-				eol.StandardSupportUntil.Format("2006-01-02")))
-	}
 }

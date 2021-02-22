@@ -60,63 +60,19 @@ type ScanResult struct {
 	} `json:"constant"`
 }
 
-// CweDict is a dictionary for CWE
-type CweDict map[string]CweDictEntry
-
-// Get the name, url, top10URL for the specified cweID, lang
-func (c CweDict) Get(cweID, lang string) (name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL string) {
-	cweNum := strings.TrimPrefix(cweID, "CWE-")
-	switch lang {
-	case "ja":
-		if dict, ok := c[cweNum]; ok && dict.OwaspTopTen2017 != "" {
-			top10Rank = dict.OwaspTopTen2017
-			top10URL = cwe.OwaspTopTen2017GitHubURLJa[dict.OwaspTopTen2017]
-		}
-		if dict, ok := c[cweNum]; ok && dict.CweTopTwentyfive2019 != "" {
-			cweTop25Rank = dict.CweTopTwentyfive2019
-			cweTop25URL = cwe.CweTopTwentyfive2019URL
-		}
-		if dict, ok := c[cweNum]; ok && dict.SansTopTwentyfive != "" {
-			sansTop25Rank = dict.SansTopTwentyfive
-			sansTop25URL = cwe.SansTopTwentyfiveURL
-		}
-		if dict, ok := cwe.CweDictJa[cweNum]; ok {
-			name = dict.Name
-			url = fmt.Sprintf("http://jvndb.jvn.jp/ja/cwe/%s.html", cweID)
-		} else {
-			if dict, ok := cwe.CweDictEn[cweNum]; ok {
-				name = dict.Name
-			}
-			url = fmt.Sprintf("https://cwe.mitre.org/data/definitions/%s.html", cweID)
-		}
-	default:
-		if dict, ok := c[cweNum]; ok && dict.OwaspTopTen2017 != "" {
-			top10Rank = dict.OwaspTopTen2017
-			top10URL = cwe.OwaspTopTen2017GitHubURLEn[dict.OwaspTopTen2017]
-		}
-		if dict, ok := c[cweNum]; ok && dict.CweTopTwentyfive2019 != "" {
-			cweTop25Rank = dict.CweTopTwentyfive2019
-			cweTop25URL = cwe.CweTopTwentyfive2019URL
-		}
-		if dict, ok := c[cweNum]; ok && dict.SansTopTwentyfive != "" {
-			sansTop25Rank = dict.SansTopTwentyfive
-			sansTop25URL = cwe.SansTopTwentyfiveURL
-		}
-		url = fmt.Sprintf("https://cwe.mitre.org/data/definitions/%s.html", cweID)
-		if dict, ok := cwe.CweDictEn[cweNum]; ok {
-			name = dict.Name
-		}
-	}
-	return
+// Container has Container information
+type Container struct {
+	ContainerID string `json:"containerID"`
+	Name        string `json:"name"`
+	Image       string `json:"image"`
+	Type        string `json:"type"`
+	UUID        string `json:"uuid"`
 }
 
-// CweDictEntry is a entry of CWE
-type CweDictEntry struct {
-	En                   *cwe.Cwe `json:"en,omitempty"`
-	Ja                   *cwe.Cwe `json:"ja,omitempty"`
-	OwaspTopTen2017      string   `json:"owaspTopTen2017"`
-	CweTopTwentyfive2019 string   `json:"cweTopTwentyfive2019"`
-	SansTopTwentyfive    string   `json:"sansTopTwentyfive"`
+// Platform has platform information
+type Platform struct {
+	Name       string `json:"name"` // aws or azure or gcp or other...
+	InstanceID string `json:"instanceID"`
 }
 
 // Kernel has the Release, version and whether need restart
@@ -416,21 +372,6 @@ func (r ScanResult) IsContainer() bool {
 	return 0 < len(r.Container.ContainerID)
 }
 
-// Container has Container information
-type Container struct {
-	ContainerID string `json:"containerID"`
-	Name        string `json:"name"`
-	Image       string `json:"image"`
-	Type        string `json:"type"`
-	UUID        string `json:"uuid"`
-}
-
-// Platform has platform information
-type Platform struct {
-	Name       string `json:"name"` // aws or azure or gcp or other...
-	InstanceID string `json:"instanceID"`
-}
-
 // RemoveRaspbianPackFromResult is for Raspberry Pi and removes the Raspberry Pi dedicated package from ScanResult.
 func (r ScanResult) RemoveRaspbianPackFromResult() ScanResult {
 	if r.Family != constant.Raspbian {
@@ -477,4 +418,100 @@ func (r ScanResult) ClearFields(targetTagNames []string) ScanResult {
 		}
 	}
 	return r
+}
+
+// CheckEOL checks the EndOfLife of the OS
+func (r *ScanResult) CheckEOL() {
+	switch r.Family {
+	case constant.ServerTypePseudo, constant.Raspbian:
+		return
+	}
+
+	eol, found := config.GetEOL(r.Family, r.Release)
+	if !found {
+		r.Warnings = append(r.Warnings,
+			fmt.Sprintf("Failed to check EOL. Register the issue to https://github.com/future-architect/vuls/issues with the information in `Family: %s Release: %s`",
+				r.Family, r.Release))
+		return
+	}
+
+	now := time.Now()
+	if eol.IsStandardSupportEnded(now) {
+		r.Warnings = append(r.Warnings, "Standard OS support is EOL(End-of-Life). Purchase extended support if available or Upgrading your OS is strongly recommended.")
+		if eol.ExtendedSupportUntil.IsZero() {
+			return
+		}
+		if !eol.IsExtendedSuppportEnded(now) {
+			r.Warnings = append(r.Warnings,
+				fmt.Sprintf("Extended support available until %s. Check the vendor site.",
+					eol.ExtendedSupportUntil.Format("2006-01-02")))
+		} else {
+			r.Warnings = append(r.Warnings,
+				"Extended support is also EOL. There are many Vulnerabilities that are not detected, Upgrading your OS strongly recommended.")
+		}
+	} else if !eol.StandardSupportUntil.IsZero() &&
+		now.AddDate(0, 3, 0).After(eol.StandardSupportUntil) {
+		r.Warnings = append(r.Warnings,
+			fmt.Sprintf("Standard OS support will be end in 3 months. EOL date: %s",
+				eol.StandardSupportUntil.Format("2006-01-02")))
+	}
+}
+
+// CweDict is a dictionary for CWE
+type CweDict map[string]CweDictEntry
+
+// Get the name, url, top10URL for the specified cweID, lang
+func (c CweDict) Get(cweID, lang string) (name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL string) {
+	cweNum := strings.TrimPrefix(cweID, "CWE-")
+	switch lang {
+	case "ja":
+		if dict, ok := c[cweNum]; ok && dict.OwaspTopTen2017 != "" {
+			top10Rank = dict.OwaspTopTen2017
+			top10URL = cwe.OwaspTopTen2017GitHubURLJa[dict.OwaspTopTen2017]
+		}
+		if dict, ok := c[cweNum]; ok && dict.CweTopTwentyfive2019 != "" {
+			cweTop25Rank = dict.CweTopTwentyfive2019
+			cweTop25URL = cwe.CweTopTwentyfive2019URL
+		}
+		if dict, ok := c[cweNum]; ok && dict.SansTopTwentyfive != "" {
+			sansTop25Rank = dict.SansTopTwentyfive
+			sansTop25URL = cwe.SansTopTwentyfiveURL
+		}
+		if dict, ok := cwe.CweDictJa[cweNum]; ok {
+			name = dict.Name
+			url = fmt.Sprintf("http://jvndb.jvn.jp/ja/cwe/%s.html", cweID)
+		} else {
+			if dict, ok := cwe.CweDictEn[cweNum]; ok {
+				name = dict.Name
+			}
+			url = fmt.Sprintf("https://cwe.mitre.org/data/definitions/%s.html", cweID)
+		}
+	default:
+		if dict, ok := c[cweNum]; ok && dict.OwaspTopTen2017 != "" {
+			top10Rank = dict.OwaspTopTen2017
+			top10URL = cwe.OwaspTopTen2017GitHubURLEn[dict.OwaspTopTen2017]
+		}
+		if dict, ok := c[cweNum]; ok && dict.CweTopTwentyfive2019 != "" {
+			cweTop25Rank = dict.CweTopTwentyfive2019
+			cweTop25URL = cwe.CweTopTwentyfive2019URL
+		}
+		if dict, ok := c[cweNum]; ok && dict.SansTopTwentyfive != "" {
+			sansTop25Rank = dict.SansTopTwentyfive
+			sansTop25URL = cwe.SansTopTwentyfiveURL
+		}
+		url = fmt.Sprintf("https://cwe.mitre.org/data/definitions/%s.html", cweID)
+		if dict, ok := cwe.CweDictEn[cweNum]; ok {
+			name = dict.Name
+		}
+	}
+	return
+}
+
+// CweDictEntry is a entry of CWE
+type CweDictEntry struct {
+	En                   *cwe.Cwe `json:"en,omitempty"`
+	Ja                   *cwe.Cwe `json:"ja,omitempty"`
+	OwaspTopTen2017      string   `json:"owaspTopTen2017"`
+	CweTopTwentyfive2019 string   `json:"cweTopTwentyfive2019"`
+	SansTopTwentyfive    string   `json:"sansTopTwentyfive"`
 }
