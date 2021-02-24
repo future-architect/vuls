@@ -64,9 +64,6 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&c.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
 
-	f.BoolVar(&c.Conf.SSHNative, "ssh-native-insecure", false,
-		"Use Native Go implementation of SSH. Default: Use the external command")
-
 	f.BoolVar(&c.Conf.Vvv, "vvv", false, "ssh -vvv")
 }
 

@@ -2,23 +2,15 @@ package scanner
 
 import (
 	"bytes"
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
-	"io/ioutil"
-	"net"
-	"os"
 	ex "os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
 
-	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/agent"
 	"golang.org/x/xerrors"
 
-	"github.com/cenkalti/backoff"
 	conf "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/util"
 	homedir "github.com/mitchellh/go-homedir"
@@ -147,8 +139,6 @@ func exec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (resul
 
 	if isLocalExec(c.Port, c.Host) {
 		result = localExec(c, cmd, sudo)
-	} else if conf.Conf.SSHNative {
-		result = sshExecNative(c, cmd, sudo)
 	} else {
 		result = sshExecExternal(c, cmd, sudo)
 	}
@@ -192,70 +182,10 @@ func localExec(c conf.ServerInfo, cmdstr string, sudo bool) (result execResult) 
 	return
 }
 
-func sshExecNative(c conf.ServerInfo, cmd string, sudo bool) (result execResult) {
-	result.Servername = c.ServerName
-	result.Container = c.Container
-	result.Host = c.Host
-	result.Port = c.Port
-
-	var client *ssh.Client
-	var err error
-	if client, err = sshConnect(c); err != nil {
-		result.Error = err
-		result.ExitStatus = 999
-		return
-	}
-	defer client.Close()
-
-	var session *ssh.Session
-	if session, err = client.NewSession(); err != nil {
-		result.Error = xerrors.Errorf(
-			"Failed to create a new session. servername: %s, err: %w",
-			c.ServerName, err)
-		result.ExitStatus = 999
-		return
-	}
-	defer session.Close()
-
-	// http://blog.ralch.com/tutorial/golang-ssh-connection/
-	modes := ssh.TerminalModes{
-		ssh.ECHO:          0,     // disable echoing
-		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
-		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
-	}
-	if err = session.RequestPty("xterm", 400, 1000, modes); err != nil {
-		result.Error = xerrors.Errorf(
-			"Failed to request for pseudo terminal. servername: %s, err: %w",
-			c.ServerName, err)
-		result.ExitStatus = 999
-		return
-	}
-
-	var stdoutBuf, stderrBuf bytes.Buffer
-	session.Stdout = &stdoutBuf
-	session.Stderr = &stderrBuf
-
-	cmd = decorateCmd(c, cmd, sudo)
-	if err := session.Run(cmd); err != nil {
-		if exitErr, ok := err.(*ssh.ExitError); ok {
-			result.ExitStatus = exitErr.ExitStatus()
-		} else {
-			result.ExitStatus = 999
-		}
-	} else {
-		result.ExitStatus = 0
-	}
-
-	result.Stdout = stdoutBuf.String()
-	result.Stderr = stderrBuf.String()
-	result.Cmd = strings.Replace(cmd, "\n", "", -1)
-	return
-}
-
 func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResult) {
 	sshBinaryPath, err := ex.LookPath("ssh")
 	if err != nil {
-		return sshExecNative(c, cmd, sudo)
+		return execResult{Error: err}
 	}
 
 	defaultSSHArgs := []string{"-tt"}
@@ -382,116 +312,4 @@ func decorateCmd(c conf.ServerInfo, cmd string, sudo bool) string {
 	}
 	//  cmd = fmt.Sprintf("set -x; %s", cmd)
 	return cmd
-}
-
-func getAgentAuth() (auth ssh.AuthMethod, ok bool) {
-	if sock := os.Getenv("SSH_AUTH_SOCK"); 0 < len(sock) {
-		if agconn, err := net.Dial("unix", sock); err == nil {
-			ag := agent.NewClient(agconn)
-			auth = ssh.PublicKeysCallback(ag.Signers)
-			ok = true
-		}
-	}
-	return
-}
-
-func tryAgentConnect(c conf.ServerInfo) *ssh.Client {
-	if auth, ok := getAgentAuth(); ok {
-		config := &ssh.ClientConfig{
-			User:            c.User,
-			Auth:            []ssh.AuthMethod{auth},
-			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		}
-		client, _ := ssh.Dial("tcp", c.Host+":"+c.Port, config)
-		return client
-	}
-	return nil
-}
-
-func sshConnect(c conf.ServerInfo) (client *ssh.Client, err error) {
-	if client = tryAgentConnect(c); client != nil {
-		return client, nil
-	}
-
-	var auths = []ssh.AuthMethod{}
-	if auths, err = addKeyAuth(auths, c.KeyPath, c.KeyPassword); err != nil {
-		return nil, err
-	}
-
-	// http://blog.ralch.com/tutorial/golang-ssh-connection/
-	config := &ssh.ClientConfig{
-		User:            c.User,
-		Auth:            auths,
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	}
-
-	notifyFunc := func(e error, t time.Duration) {
-		logger := getSSHLogger()
-		logger.Debugf("Failed to Dial to %s, err: %s, Retrying in %s...",
-			c.ServerName, e, t)
-	}
-	err = backoff.RetryNotify(func() error {
-		if client, err = ssh.Dial("tcp", c.Host+":"+c.Port, config); err != nil {
-			return err
-		}
-		return nil
-	}, backoff.NewExponentialBackOff(), notifyFunc)
-
-	return
-}
-
-// https://github.com/rapidloop/rtop/blob/ba5b35e964135d50e0babedf0bd69b2fcb5dbcb4/src/sshhelper.go#L100
-func addKeyAuth(auths []ssh.AuthMethod, keypath string, keypassword string) ([]ssh.AuthMethod, error) {
-	if len(keypath) == 0 {
-		return auths, nil
-	}
-
-	// read the file
-	pemBytes, err := ioutil.ReadFile(keypath)
-	if err != nil {
-		return auths, err
-	}
-
-	// get first pem block
-	block, _ := pem.Decode(pemBytes)
-	if block == nil {
-		return auths, xerrors.Errorf("no key found in %s", keypath)
-	}
-
-	// handle plain and encrypted keyfiles
-	if x509.IsEncryptedPEMBlock(block) {
-		block.Bytes, err = x509.DecryptPEMBlock(block, []byte(keypassword))
-		if err != nil {
-			return auths, err
-		}
-		key, err := parsePemBlock(block)
-		if err != nil {
-			return auths, err
-		}
-		signer, err := ssh.NewSignerFromKey(key)
-		if err != nil {
-			return auths, err
-		}
-		return append(auths, ssh.PublicKeys(signer)), nil
-	}
-
-	signer, err := ssh.ParsePrivateKey(pemBytes)
-	if err != nil {
-		return auths, err
-	}
-	return append(auths, ssh.PublicKeys(signer)), nil
-}
-
-// ref golang.org/x/crypto/ssh/keys.go#ParseRawPrivateKey.
-func parsePemBlock(block *pem.Block) (interface{}, error) {
-	switch block.Type {
-	case "RSA PRIVATE KEY":
-		return x509.ParsePKCS1PrivateKey(block.Bytes)
-	case "EC PRIVATE KEY":
-		return x509.ParseECPrivateKey(block.Bytes)
-	case "DSA PRIVATE KEY":
-		return ssh.ParseDSAPrivateKey(block.Bytes)
-	default:
-		return nil, xerrors.Errorf("Unsupported key type %q", block.Type)
-	}
 }

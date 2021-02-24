@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -61,7 +60,6 @@ type Config struct {
 
 // ScanOpts is options for scan
 type ScanOpts struct {
-	SSHNative bool `json:"sshNative,omitempty"`
 	Vvv       bool `json:"vvv,omitempty"`
 	DetectIPS bool `json:"detectIps,omitempty"`
 }
@@ -87,31 +85,18 @@ type ReportOpts struct {
 // ValidateOnConfigtest validates
 func (c Config) ValidateOnConfigtest() bool {
 	errs := c.checkSSHKeyExist()
-
-	if runtime.GOOS == "windows" && !c.SSHNative {
-		errs = append(errs, xerrors.New("-ssh-native-insecure is needed on windows"))
-	}
-
-	_, err := govalidator.ValidateStruct(c)
-	if err != nil {
+	if _, err := govalidator.ValidateStruct(c); err != nil {
 		errs = append(errs, err)
 	}
-
 	for _, err := range errs {
 		log.Error(err)
 	}
-
 	return len(errs) == 0
 }
 
 // ValidateOnScan validates configuration
 func (c Config) ValidateOnScan() bool {
 	errs := c.checkSSHKeyExist()
-
-	if runtime.GOOS == "windows" && !c.SSHNative {
-		errs = append(errs, xerrors.New("-ssh-native-insecure is needed on windows"))
-	}
-
 	if len(c.ResultsDir) != 0 {
 		if ok, _ := govalidator.IsFilePath(c.ResultsDir); !ok {
 			errs = append(errs, xerrors.Errorf(
@@ -119,15 +104,12 @@ func (c Config) ValidateOnScan() bool {
 		}
 	}
 
-	_, err := govalidator.ValidateStruct(c)
-	if err != nil {
+	if _, err := govalidator.ValidateStruct(c); err != nil {
 		errs = append(errs, err)
 	}
-
 	for _, err := range errs {
 		log.Error(err)
 	}
-
 	return len(errs) == 0
 }
 

@@ -43,7 +43,6 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/takuzoo3868/go-msfdb v0.1.3
 	github.com/vulsio/go-exploitdb v0.1.4
-	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	golang.org/x/oauth2 v0.0.0-20210125201302-af13f521f196
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009

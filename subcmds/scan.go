@@ -40,7 +40,6 @@ func (*ScanCmd) Usage() string {
 		[-results-dir=/path/to/results]
 		[-log-dir=/path/to/log]
 		[-cachedb-path=/path/to/cache.db]
-		[-ssh-native-insecure]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-ask-key-password]
 		[-timeout=300]
@@ -74,9 +73,6 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	defaultCacheDBPath := filepath.Join(wd, "cache.db")
 	f.StringVar(&p.cacheDBPath, "cachedb-path", defaultCacheDBPath,
 		"/path/to/cache.db (local cache of changelog for Ubuntu/Debian)")
-
-	f.BoolVar(&c.Conf.SSHNative, "ssh-native-insecure", false,
-		"Use Native Go implementation of SSH. Default: Use the external command")
 
 	f.StringVar(&c.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
