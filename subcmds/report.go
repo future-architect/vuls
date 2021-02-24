@@ -11,8 +11,9 @@ import (
 	"github.com/aquasecurity/trivy/pkg/utils"
 	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/detector"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/report"
+	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
 	"github.com/k0kubun/pp"
@@ -21,7 +22,26 @@ import (
 // ReportCmd is subcommand for reporting
 type ReportCmd struct {
 	configPath string
-	httpConf   c.HTTPConf
+
+	formatJSON        bool
+	formatOneEMail    bool
+	formatCsv         bool
+	formatFullText    bool
+	formatOneLineText bool
+	formatList        bool
+	gzip              bool
+
+	toSlack     bool
+	toChatWork  bool
+	toTelegram  bool
+	toEmail     bool
+	toSyslog    bool
+	toLocalFile bool
+	toS3        bool
+	toAzureBlob bool
+	toHTTP      bool
+
+	toHTTPURL string
 }
 
 // Name return subcommand name
@@ -119,32 +139,31 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		&c.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
 
-	f.BoolVar(&c.Conf.FormatJSON, "format-json", false, "JSON format")
-	f.BoolVar(&c.Conf.FormatCsvList, "format-csv", false, "CSV format")
-	f.BoolVar(&c.Conf.FormatOneEMail, "format-one-email", false,
+	f.BoolVar(&p.formatJSON, "format-json", false, "JSON format")
+	f.BoolVar(&p.formatCsv, "format-csv", false, "CSV format")
+	f.BoolVar(&p.formatOneEMail, "format-one-email", false,
 		"Send all the host report via only one EMail (Specify with -to-email)")
-	f.BoolVar(&c.Conf.FormatOneLineText, "format-one-line-text", false,
+	f.BoolVar(&p.formatOneLineText, "format-one-line-text", false,
 		"One line summary in plain text")
-	f.BoolVar(&c.Conf.FormatList, "format-list", false, "Display as list format")
-	f.BoolVar(&c.Conf.FormatFullText, "format-full-text", false,
+	f.BoolVar(&p.formatList, "format-list", false, "Display as list format")
+	f.BoolVar(&p.formatFullText, "format-full-text", false,
 		"Detail report in plain text")
 
-	f.BoolVar(&c.Conf.ToSlack, "to-slack", false, "Send report via Slack")
-	f.BoolVar(&c.Conf.ToChatWork, "to-chatwork", false, "Send report via chatwork")
-	f.BoolVar(&c.Conf.ToTelegram, "to-telegram", false, "Send report via Telegram")
-	f.BoolVar(&c.Conf.ToEmail, "to-email", false, "Send report via Email")
-	f.BoolVar(&c.Conf.ToSyslog, "to-syslog", false, "Send report via Syslog")
-	f.BoolVar(&c.Conf.ToLocalFile, "to-localfile", false, "Write report to localfile")
-	f.BoolVar(&c.Conf.ToS3, "to-s3", false,
-		"Write report to S3 (bucket/yyyyMMdd_HHmm/servername.json/txt)")
-	f.BoolVar(&c.Conf.ToHTTP, "to-http", false, "Send report via HTTP POST")
-	f.BoolVar(&c.Conf.ToAzureBlob, "to-azure-blob", false,
+	f.BoolVar(&p.toSlack, "to-slack", false, "Send report via Slack")
+	f.BoolVar(&p.toChatWork, "to-chatwork", false, "Send report via chatwork")
+	f.BoolVar(&p.toTelegram, "to-telegram", false, "Send report via Telegram")
+	f.BoolVar(&p.toEmail, "to-email", false, "Send report via Email")
+	f.BoolVar(&p.toSyslog, "to-syslog", false, "Send report via Syslog")
+	f.BoolVar(&p.toLocalFile, "to-localfile", false, "Write report to localfile")
+	f.BoolVar(&p.toS3, "to-s3", false, "Write report to S3 (bucket/yyyyMMdd_HHmm/servername.json/txt)")
+	f.BoolVar(&p.toHTTP, "to-http", false, "Send report via HTTP POST")
+	f.BoolVar(&p.toAzureBlob, "to-azure-blob", false,
 		"Write report to Azure Storage blob (container/yyyyMMdd_HHmm/servername.json/txt)")
 
-	f.BoolVar(&c.Conf.GZIP, "gzip", false, "gzip compression")
+	f.BoolVar(&p.gzip, "gzip", false, "gzip compression")
 	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use args passed via PIPE")
 
-	f.StringVar(&p.httpConf.URL, "http", "", "-to-http http://vuls-report")
+	f.StringVar(&p.toHTTPURL, "http", "", "-to-http http://vuls-report")
 
 	f.StringVar(&c.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
 		utils.DefaultCacheDir(), "/path/to/dir")
@@ -153,23 +172,33 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 // Execute execute
 func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
+
 	if err := c.Load(p.configPath, ""); err != nil {
 		util.Log.Errorf("Error loading %s, %+v", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
-	c.Conf.HTTP.Init(p.httpConf)
+	c.Conf.Slack.Enabled = p.toSlack
+	c.Conf.ChatWork.Enabled = p.toChatWork
+	c.Conf.Telegram.Enabled = p.toTelegram
+	c.Conf.EMail.Enabled = p.toEmail
+	c.Conf.Syslog.Enabled = p.toSyslog
+	c.Conf.AWS.Enabled = p.toS3
+	c.Conf.Azure.Enabled = p.toAzureBlob
+	c.Conf.HTTP.Enabled = p.toHTTP
+
+	//TODO refactor
+	c.Conf.HTTP.Init(p.toHTTPURL)
 
 	if c.Conf.Diff {
-		c.Conf.DiffPlus = true
-		c.Conf.DiffMinus = true
+		c.Conf.DiffPlus, c.Conf.DiffMinus = true, true
 	}
 
 	var dir string
 	var err error
 	if c.Conf.DiffPlus || c.Conf.DiffMinus {
-		dir, err = report.JSONDir([]string{})
+		dir, err = reporter.JSONDir([]string{})
 	} else {
-		dir, err = report.JSONDir(f.Args())
+		dir, err = reporter.JSONDir(f.Args())
 	}
 	if err != nil {
 		util.Log.Errorf("Failed to read from JSON: %+v", err)
@@ -181,13 +210,13 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitUsageError
 	}
 
-	if !(c.Conf.FormatJSON || c.Conf.FormatOneLineText ||
-		c.Conf.FormatList || c.Conf.FormatFullText || c.Conf.FormatCsvList) {
-		c.Conf.FormatList = true
+	if !(p.formatJSON || p.formatOneLineText ||
+		p.formatList || p.formatFullText || p.formatCsv) {
+		p.formatList = true
 	}
 
 	var loaded models.ScanResults
-	if loaded, err = report.LoadScanResults(dir); err != nil {
+	if loaded, err = reporter.LoadScanResults(dir); err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}
@@ -211,8 +240,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	for _, r := range res {
 		util.Log.Debugf("%s: %s",
-			r.ServerInfo(),
-			pp.Sprintf("%s", c.Conf.Servers[r.ServerName]))
+			r.ServerInfo(), pp.Sprintf("%s", c.Conf.Servers[r.ServerName]))
 	}
 
 	util.Log.Info("Validating db config...")
@@ -233,7 +261,8 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
+	// TODO move into fillcveInfos
+	dbclient, locked, err := detector.NewDBClient(detector.DBClientConf{
 		CveDictCnf:    c.Conf.CveDict,
 		OvalDictCnf:   c.Conf.OvalDict,
 		GostCnf:       c.Conf.Gost,
@@ -251,74 +280,107 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 	defer dbclient.CloseDB()
 
-	if res, err = report.FillCveInfos(*dbclient, res, dir); err != nil {
+	// TODO pass conf by arg
+	if res, err = detector.Detect(*dbclient, res, dir); err != nil {
 		util.Log.Errorf("%+v", err)
 		return subcommands.ExitFailure
 	}
 
 	// report
-	reports := []report.ResultWriter{
-		report.StdoutWriter{},
+	reports := []reporter.ResultWriter{
+		reporter.StdoutWriter{
+			FormatCsv:         p.formatCsv,
+			FormatFullText:    p.formatFullText,
+			FormatOneLineText: p.formatOneLineText,
+			FormatList:        p.formatList,
+		},
 	}
 
-	if c.Conf.ToSlack {
-		reports = append(reports, report.SlackWriter{})
-	}
-
-	if c.Conf.ToChatWork {
-		reports = append(reports, report.ChatWorkWriter{})
-	}
-
-	if c.Conf.ToTelegram {
-		reports = append(reports, report.TelegramWriter{})
-	}
-
-	if c.Conf.ToEmail {
-		reports = append(reports, report.EMailWriter{})
-	}
-
-	if c.Conf.ToSyslog {
-		reports = append(reports, report.SyslogWriter{})
-	}
-
-	if c.Conf.ToHTTP {
-		reports = append(reports, report.HTTPRequestWriter{})
-	}
-
-	if c.Conf.ToLocalFile {
-		reports = append(reports, report.LocalFileWriter{
-			CurrentDir: dir,
+	if p.toSlack {
+		reports = append(reports, reporter.SlackWriter{
+			FormatOneLineText: p.formatOneLineText,
 		})
 	}
 
-	if c.Conf.ToS3 {
-		if err := report.CheckIfBucketExists(); err != nil {
+	if p.toChatWork {
+		reports = append(reports, reporter.ChatWorkWriter{})
+	}
+
+	if p.toTelegram {
+		reports = append(reports, reporter.TelegramWriter{})
+	}
+
+	if p.toEmail {
+		reports = append(reports, reporter.EMailWriter{
+			FormatOneEMail:    p.formatOneEMail,
+			FormatOneLineText: p.formatOneLineText,
+			FormatList:        p.formatList,
+		})
+	}
+
+	if p.toSyslog {
+		reports = append(reports, reporter.SyslogWriter{})
+	}
+
+	if p.toHTTP {
+		reports = append(reports, reporter.HTTPRequestWriter{})
+	}
+
+	if p.toLocalFile {
+		reports = append(reports, reporter.LocalFileWriter{
+			CurrentDir:        dir,
+			DiffPlus:          c.Conf.DiffPlus,
+			DiffMinus:         c.Conf.DiffMinus,
+			FormatJSON:        p.formatJSON,
+			FormatCsv:         p.formatCsv,
+			FormatFullText:    p.formatFullText,
+			FormatOneLineText: p.formatOneLineText,
+			FormatList:        p.formatList,
+			Gzip:              p.gzip,
+		})
+	}
+
+	if p.toS3 {
+		if err := reporter.CheckIfBucketExists(); err != nil {
 			util.Log.Errorf("Check if there is a bucket beforehand: %s, err: %+v",
 				c.Conf.AWS.S3Bucket, err)
 			return subcommands.ExitUsageError
 		}
-		reports = append(reports, report.S3Writer{})
+		reports = append(reports, reporter.S3Writer{
+			FormatJSON:        p.formatJSON,
+			FormatFullText:    p.formatFullText,
+			FormatOneLineText: p.formatOneLineText,
+			FormatList:        p.formatList,
+			Gzip:              p.gzip,
+		})
 	}
 
-	if c.Conf.ToAzureBlob {
-		if len(c.Conf.Azure.AccountName) == 0 {
+	if p.toAzureBlob {
+		// TODO refactor
+		if c.Conf.Azure.AccountName == "" {
 			c.Conf.Azure.AccountName = os.Getenv("AZURE_STORAGE_ACCOUNT")
 		}
 
-		if len(c.Conf.Azure.AccountKey) == 0 {
+		if c.Conf.Azure.AccountKey == "" {
 			c.Conf.Azure.AccountKey = os.Getenv("AZURE_STORAGE_ACCESS_KEY")
 		}
 
-		if len(c.Conf.Azure.ContainerName) == 0 {
+		if c.Conf.Azure.ContainerName == "" {
 			util.Log.Error("Azure storage container name is required with -azure-container option")
 			return subcommands.ExitUsageError
 		}
-		if err := report.CheckIfAzureContainerExists(); err != nil {
+		if err := reporter.CheckIfAzureContainerExists(); err != nil {
 			util.Log.Errorf("Check if there is a container beforehand: %s, err: %+v",
 				c.Conf.Azure.ContainerName, err)
 			return subcommands.ExitUsageError
 		}
-		reports = append(reports, report.AzureBlobWriter{})
+		reports = append(reports, reporter.AzureBlobWriter{
+			FormatJSON:        p.formatJSON,
+			FormatFullText:    p.formatFullText,
+			FormatOneLineText: p.formatOneLineText,
+			FormatList:        p.formatList,
+			Gzip:              p.gzip,
+		})
 	}
 
 	for _, w := range reports {

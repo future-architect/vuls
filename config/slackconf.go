@@ -16,11 +16,12 @@ type SlackConf struct {
 	AuthUser    string   `json:"-" toml:"authUser,omitempty"`
 	NotifyUsers []string `toml:"notifyUsers,omitempty" json:"-"`
 	Text        string   `json:"-"`
+	Enabled     bool     `toml:"-" json:"-"`
 }
 
 // Validate validates configuration
 func (c *SlackConf) Validate() (errs []error) {
-	if !Conf.ToSlack {
+	if !c.Enabled {
 		return
 	}
 

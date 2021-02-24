@@ -54,7 +54,7 @@ func (cnf *GoCveDictConf) Init() {
 
 // IsFetchViaHTTP returns wether fetch via http
 func (cnf *GoCveDictConf) IsFetchViaHTTP() bool {
-	return Conf.CveDict.Type == "http"
+	return cnf.Type == "http"
 }
 
 // CheckHTTPHealth checks http server status

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
@@ -1030,7 +1030,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 		// For kernel related packages, ignore OVAL with different major versions
 		{
 			in: in{
-				family: config.CentOS,
+				family: constant.CentOS,
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
@@ -1054,7 +1054,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 		},
 		{
 			in: in{
-				family: config.CentOS,
+				family: constant.CentOS,
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
@@ -1080,7 +1080,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 		// dnf module
 		{
 			in: in{
-				family: config.RedHat,
+				family: constant.RedHat,
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
@@ -1106,7 +1106,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 		// dnf module 2
 		{
 			in: in{
-				family: config.RedHat,
+				family: constant.RedHat,
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
@@ -1131,7 +1131,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 		// dnf module 3
 		{
 			in: in{
-				family: config.RedHat,
+				family: constant.RedHat,
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{

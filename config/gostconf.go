@@ -54,7 +54,7 @@ func (cnf *GostConf) Init() {
 
 // IsFetchViaHTTP returns wether fetch via http
 func (cnf *GostConf) IsFetchViaHTTP() bool {
-	return Conf.Gost.Type == "http"
+	return cnf.Type == "http"
 }
 
 // CheckHTTPHealth do health check

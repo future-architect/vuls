@@ -8,7 +8,7 @@ import (
 
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/report"
+	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/saas"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
@@ -35,19 +35,14 @@ func (*SaaSCmd) Usage() string {
 		[-log-dir=/path/to/log]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-debug]
-		[-debug-sql]
 		[-quiet]
-		[-no-progress]
 `
 }
 
 // SetFlags set flag
 func (p *SaaSCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&c.Conf.Lang, "lang", "en", "[en|ja]")
 	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
-	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
 	f.BoolVar(&c.Conf.Quiet, "quiet", false, "Quiet mode. No output on stdout")
-	f.BoolVar(&c.Conf.NoProgress, "no-progress", false, "Suppress progress bar")
 
 	wd, _ := os.Getwd()
 	defaultConfPath := filepath.Join(wd, "config.toml")
@@ -72,7 +67,7 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitUsageError
 	}
 
-	dir, err := report.JSONDir(f.Args())
+	dir, err := reporter.JSONDir(f.Args())
 	if err != nil {
 		util.Log.Errorf("Failed to read from JSON: %+v", err)
 		return subcommands.ExitFailure
@@ -84,7 +79,7 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	var loaded models.ScanResults
-	if loaded, err = report.LoadScanResults(dir); err != nil {
+	if loaded, err = reporter.LoadScanResults(dir); err != nil {
 		util.Log.Error(err)
 		return subcommands.ExitFailure
 	}
@@ -108,8 +103,7 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	for _, r := range res {
 		util.Log.Debugf("%s: %s",
-			r.ServerInfo(),
-			pp.Sprintf("%s", c.Conf.Servers[r.ServerName]))
+			r.ServerInfo(), pp.Sprintf("%s", c.Conf.Servers[r.ServerName]))
 	}
 
 	// Ensure UUIDs of scan target servers in config.toml
@@ -118,7 +112,7 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitFailure
 	}
 
-	var w report.ResultWriter = saas.Writer{}
+	var w reporter.ResultWriter = saas.Writer{}
 	if err := w.Write(res...); err != nil {
 		util.Log.Errorf("Failed to upload. err: %+v", err)
 		return subcommands.ExitFailure

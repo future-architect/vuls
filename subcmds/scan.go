@@ -9,8 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/asaskevich/govalidator"
 	c "github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/scan"
+	"github.com/future-architect/vuls/scanner"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
 	"github.com/k0kubun/pp"
@@ -22,6 +23,7 @@ type ScanCmd struct {
 	askKeyPassword bool
 	timeoutSec     int
 	scanTimeoutSec int
+	cacheDBPath    string
 }
 
 // Name return subcommand name
@@ -38,7 +40,6 @@ func (*ScanCmd) Usage() string {
 		[-results-dir=/path/to/results]
 		[-log-dir=/path/to/log]
 		[-cachedb-path=/path/to/cache.db]
-		[-ssh-native-insecure]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-ask-key-password]
 		[-timeout=300]
@@ -70,11 +71,8 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 
 	defaultCacheDBPath := filepath.Join(wd, "cache.db")
-	f.StringVar(&c.Conf.CacheDBPath, "cachedb-path", defaultCacheDBPath,
+	f.StringVar(&p.cacheDBPath, "cachedb-path", defaultCacheDBPath,
 		"/path/to/cache.db (local cache of changelog for Ubuntu/Debian)")
-
-	f.BoolVar(&c.Conf.SSHNative, "ssh-native-insecure", false,
-		"Use Native Go implementation of SSH. Default: Use the external command")
 
 	f.StringVar(&c.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
@@ -103,8 +101,16 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	util.Log = util.NewCustomLogger(c.ServerInfo{})
 
 	if err := mkdirDotVuls(); err != nil {
-		util.Log.Errorf("Failed to create .vuls. err: %+v", err)
+		util.Log.Errorf("Failed to create $HOME/.vuls err: %+v", err)
 		return subcommands.ExitUsageError
+	}
+
+	if len(p.cacheDBPath) != 0 {
+		if ok, _ := govalidator.IsFilePath(p.cacheDBPath); !ok {
+			util.Log.Errorf("Cache DB path must be a *Absolute* file path. -cache-dbpath: %s",
+				p.cacheDBPath)
+			return subcommands.ExitUsageError
+		}
 	}
 
 	var keyPass string
@@ -161,6 +167,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 			return subcommands.ExitUsageError
 		}
 	}
+	// if scan target servers are specified by args, set to the config
 	if 0 < len(servernames) {
 		c.Conf.Servers = target
 	}
@@ -171,27 +178,18 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitUsageError
 	}
 
-	util.Log.Info("Detecting Server/Container OS... ")
-	if err := scan.InitServers(p.timeoutSec); err != nil {
-		util.Log.Errorf("Failed to init servers: %+v", err)
+	s := scanner.Scanner{
+		TimeoutSec:     p.timeoutSec,
+		ScanTimeoutSec: p.scanTimeoutSec,
+		CacheDBPath:    p.cacheDBPath,
+		Targets:        target,
+	}
+
+	if err := s.Scan(); err != nil {
+		util.Log.Errorf("Failed to scan: %+v", err)
 		return subcommands.ExitFailure
 	}
 
-	util.Log.Info("Checking Scan Modes... ")
-	if err := scan.CheckScanModes(); err != nil {
-		util.Log.Errorf("Fix config.toml. err: %+v", err)
-		return subcommands.ExitFailure
-	}
-
-	util.Log.Info("Detecting Platforms... ")
-	scan.DetectPlatforms(p.timeoutSec)
-	util.Log.Info("Detecting IPS identifiers... ")
-	scan.DetectIPSs(p.timeoutSec)
-
-	if err := scan.Scan(p.scanTimeoutSec); err != nil {
-		util.Log.Errorf("Failed to scan. err: %+v", err)
-		return subcommands.ExitFailure
-	}
 	fmt.Printf("\n\n\n")
 	fmt.Println("To view the detail, vuls tui is useful.")
 	fmt.Println("To send a report, run vuls report -h.")

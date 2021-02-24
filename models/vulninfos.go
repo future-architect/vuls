@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/future-architect/vuls/config"
 	exploitmodels "github.com/vulsio/go-exploitdb/models"
 )
 
@@ -78,19 +77,14 @@ func (v VulnInfos) CountGroupBySeverity() map[string]int {
 }
 
 // FormatCveSummary summarize the number of CVEs group by CVSSv2 Severity
-func (v VulnInfos) FormatCveSummary() (line string) {
+func (v VulnInfos) FormatCveSummary() string {
 	m := v.CountGroupBySeverity()
-	if config.Conf.IgnoreUnscoredCves {
-		line = fmt.Sprintf("Total: %d (Critical:%d High:%d Medium:%d Low:%d)",
-			m["High"]+m["Medium"]+m["Low"], m["Critical"], m["High"], m["Medium"], m["Low"])
-	} else {
-		line = fmt.Sprintf("Total: %d (Critical:%d High:%d Medium:%d Low:%d ?:%d)",
-			m["High"]+m["Medium"]+m["Low"]+m["Unknown"],
-			m["Critical"], m["High"], m["Medium"], m["Low"], m["Unknown"])
-	}
+	line := fmt.Sprintf("Total: %d (Critical:%d High:%d Medium:%d Low:%d ?:%d)",
+		m["High"]+m["Medium"]+m["Low"]+m["Unknown"],
+		m["Critical"], m["High"], m["Medium"], m["Low"], m["Unknown"])
 
-	if config.Conf.DiffMinus || config.Conf.DiffPlus {
-		nPlus, nMinus := v.CountDiff()
+	nPlus, nMinus := v.CountDiff()
+	if 0 < nPlus || 0 < nMinus {
 		line = fmt.Sprintf("%s +%d -%d", line, nPlus, nMinus)
 	}
 	return line
@@ -266,8 +260,8 @@ const (
 )
 
 // CveIDDiffFormat format CVE-ID for diff mode
-func (v VulnInfo) CveIDDiffFormat(isDiffMode bool) string {
-	if isDiffMode {
+func (v VulnInfo) CveIDDiffFormat() string {
+	if v.DiffStatus != "" {
 		return fmt.Sprintf("%s %s", v.DiffStatus, v.CveID)
 	}
 	return fmt.Sprintf("%s", v.CveID)

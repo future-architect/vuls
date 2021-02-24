@@ -17,11 +17,12 @@ type SyslogConf struct {
 	Facility string `json:"-"`
 	Tag      string `json:"-"`
 	Verbose  bool   `json:"-"`
+	Enabled  bool   `toml:"-" json:"-"`
 }
 
 // Validate validates configuration
 func (c *SyslogConf) Validate() (errs []error) {
-	if !Conf.ToSyslog {
+	if !c.Enabled {
 		return nil
 	}
 	//  If protocol is empty, it will connect to the local syslog server.

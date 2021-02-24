@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/k0kubun/pp"
 )
 
@@ -233,80 +234,10 @@ func TestFilterIgnoreCveIDs(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		config.Conf.Servers = map[string]config.ServerInfo{
-			"name": {IgnoreCves: tt.in.cves},
-		}
-		actual := tt.in.rs.FilterIgnoreCves()
-		for k := range tt.out.ScannedCves {
-			if !reflect.DeepEqual(tt.out.ScannedCves[k], actual.ScannedCves[k]) {
-				o := pp.Sprintf("%v", tt.out.ScannedCves[k])
-				a := pp.Sprintf("%v", actual.ScannedCves[k])
-				t.Errorf("[%s] expected: %v\n  actual: %v\n", k, o, a)
-			}
-		}
-		for k := range actual.ScannedCves {
-			if !reflect.DeepEqual(tt.out.ScannedCves[k], actual.ScannedCves[k]) {
-				o := pp.Sprintf("%v", tt.out.ScannedCves[k])
-				a := pp.Sprintf("%v", actual.ScannedCves[k])
-				t.Errorf("[%s] expected: %v\n  actual: %v\n", k, o, a)
-			}
-		}
-	}
-}
-
-func TestFilterIgnoreCveIDsContainer(t *testing.T) {
-	type in struct {
-		cves []string
-		rs   ScanResult
-	}
-	var tests = []struct {
-		in  in
-		out ScanResult
-	}{
-		{
-			in: in{
-				cves: []string{"CVE-2017-0002"},
-				rs: ScanResult{
-					ServerName: "name",
-					Container:  Container{Name: "dockerA"},
-					ScannedCves: VulnInfos{
-						"CVE-2017-0001": {
-							CveID: "CVE-2017-0001",
-						},
-						"CVE-2017-0002": {
-							CveID: "CVE-2017-0002",
-						},
-						"CVE-2017-0003": {
-							CveID: "CVE-2017-0003",
-						},
-					},
-				},
-			},
-			out: ScanResult{
-				ServerName: "name",
-				Container:  Container{Name: "dockerA"},
-				ScannedCves: VulnInfos{
-					"CVE-2017-0001": {
-						CveID: "CVE-2017-0001",
-					},
-					"CVE-2017-0003": {
-						CveID: "CVE-2017-0003",
-					},
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		config.Conf.Servers = map[string]config.ServerInfo{
-			"name": {
-				Containers: map[string]config.ContainerSetting{
-					"dockerA": {
-						IgnoreCves: tt.in.cves,
-					},
-				},
-			},
-		}
-		actual := tt.in.rs.FilterIgnoreCves()
+		// config.Conf.Servers = map[string]config.ServerInfo{
+		// 	"name": {IgnoreCves: tt.in.cves},
+		// }
+		actual := tt.in.rs.FilterIgnoreCves(tt.in.cves)
 		for k := range tt.out.ScannedCves {
 			if !reflect.DeepEqual(tt.out.ScannedCves[k], actual.ScannedCves[k]) {
 				o := pp.Sprintf("%v", tt.out.ScannedCves[k])
@@ -491,131 +422,7 @@ func TestFilterIgnorePkgs(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		config.Conf.Servers = map[string]config.ServerInfo{
-			"name": {IgnorePkgsRegexp: tt.in.ignorePkgsRegexp},
-		}
-		actual := tt.in.rs.FilterIgnorePkgs()
-		for k := range tt.out.ScannedCves {
-			if !reflect.DeepEqual(tt.out.ScannedCves[k], actual.ScannedCves[k]) {
-				o := pp.Sprintf("%v", tt.out.ScannedCves[k])
-				a := pp.Sprintf("%v", actual.ScannedCves[k])
-				t.Errorf("[%s] expected: %v\n  actual: %v\n", k, o, a)
-			}
-		}
-		for k := range actual.ScannedCves {
-			if !reflect.DeepEqual(tt.out.ScannedCves[k], actual.ScannedCves[k]) {
-				o := pp.Sprintf("%v", tt.out.ScannedCves[k])
-				a := pp.Sprintf("%v", actual.ScannedCves[k])
-				t.Errorf("[%s] expected: %v\n  actual: %v\n", k, o, a)
-			}
-		}
-	}
-}
-
-func TestFilterIgnorePkgsContainer(t *testing.T) {
-	type in struct {
-		ignorePkgsRegexp []string
-		rs               ScanResult
-	}
-	var tests = []struct {
-		in  in
-		out ScanResult
-	}{
-		{
-			in: in{
-				ignorePkgsRegexp: []string{"^kernel"},
-				rs: ScanResult{
-					ServerName: "name",
-					Container:  Container{Name: "dockerA"},
-					ScannedCves: VulnInfos{
-						"CVE-2017-0001": {
-							CveID: "CVE-2017-0001",
-							AffectedPackages: PackageFixStatuses{
-								{Name: "kernel"},
-							},
-						},
-						"CVE-2017-0002": {
-							CveID: "CVE-2017-0002",
-						},
-					},
-				},
-			},
-			out: ScanResult{
-				ServerName: "name",
-				Container:  Container{Name: "dockerA"},
-				ScannedCves: VulnInfos{
-					"CVE-2017-0002": {
-						CveID: "CVE-2017-0002",
-					},
-				},
-			},
-		},
-		{
-			in: in{
-				ignorePkgsRegexp: []string{"^kernel"},
-				rs: ScanResult{
-					ServerName: "name",
-					Container:  Container{Name: "dockerA"},
-					ScannedCves: VulnInfos{
-						"CVE-2017-0001": {
-							CveID: "CVE-2017-0001",
-							AffectedPackages: PackageFixStatuses{
-								{Name: "kernel"},
-								{Name: "vim"},
-							},
-						},
-					},
-				},
-			},
-			out: ScanResult{
-				ServerName: "name",
-				Container:  Container{Name: "dockerA"},
-				ScannedCves: VulnInfos{
-					"CVE-2017-0001": {
-						CveID: "CVE-2017-0001",
-						AffectedPackages: PackageFixStatuses{
-							{Name: "kernel"},
-							{Name: "vim"},
-						},
-					},
-				},
-			},
-		},
-		{
-			in: in{
-				ignorePkgsRegexp: []string{"^kernel", "^vim", "^bind"},
-				rs: ScanResult{
-					ServerName: "name",
-					Container:  Container{Name: "dockerA"},
-					ScannedCves: VulnInfos{
-						"CVE-2017-0001": {
-							CveID: "CVE-2017-0001",
-							AffectedPackages: PackageFixStatuses{
-								{Name: "kernel"},
-								{Name: "vim"},
-							},
-						},
-					},
-				},
-			},
-			out: ScanResult{
-				ServerName:  "name",
-				Container:   Container{Name: "dockerA"},
-				ScannedCves: VulnInfos{},
-			},
-		},
-	}
-	for _, tt := range tests {
-		config.Conf.Servers = map[string]config.ServerInfo{
-			"name": {
-				Containers: map[string]config.ContainerSetting{
-					"dockerA": {
-						IgnorePkgsRegexp: tt.in.ignorePkgsRegexp,
-					},
-				},
-			},
-		}
-		actual := tt.in.rs.FilterIgnorePkgs()
+		actual := tt.in.rs.FilterIgnorePkgs(tt.in.ignorePkgsRegexp)
 		for k := range tt.out.ScannedCves {
 			if !reflect.DeepEqual(tt.out.ScannedCves[k], actual.ScannedCves[k]) {
 				o := pp.Sprintf("%v", tt.out.ScannedCves[k])
@@ -653,52 +460,52 @@ func TestIsDisplayUpdatableNum(t *testing.T) {
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.RedHat,
+			family:   constant.RedHat,
 			expected: false,
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.Oracle,
+			family:   constant.Oracle,
 			expected: false,
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.Debian,
+			family:   constant.Debian,
 			expected: false,
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.Ubuntu,
+			family:   constant.Ubuntu,
 			expected: false,
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.Raspbian,
+			family:   constant.Raspbian,
 			expected: false,
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.CentOS,
+			family:   constant.CentOS,
 			expected: true,
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.Amazon,
+			family:   constant.Amazon,
 			expected: true,
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.FreeBSD,
+			family:   constant.FreeBSD,
 			expected: false,
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.OpenSUSE,
+			family:   constant.OpenSUSE,
 			expected: true,
 		},
 		{
 			mode:     []byte{config.Fast},
-			family:   config.Alpine,
+			family:   constant.Alpine,
 			expected: true,
 		},
 	}
@@ -708,14 +515,11 @@ func TestIsDisplayUpdatableNum(t *testing.T) {
 		for _, m := range tt.mode {
 			mode.Set(m)
 		}
-		config.Conf.Servers = map[string]config.ServerInfo{
-			"name": {Mode: mode},
-		}
 		r := ScanResult{
 			ServerName: "name",
 			Family:     tt.family,
 		}
-		act := r.isDisplayUpdatableNum()
+		act := r.isDisplayUpdatableNum(mode)
 		if tt.expected != act {
 			t.Errorf("[%d] expected %#v, actual %#v", i, tt.expected, act)
 		}

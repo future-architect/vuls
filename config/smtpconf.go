@@ -15,6 +15,7 @@ type SMTPConf struct {
 	To            []string `toml:"to,omitempty" json:"-"`
 	Cc            []string `toml:"cc,omitempty" json:"-"`
 	SubjectPrefix string   `toml:"subjectPrefix,omitempty" json:"-"`
+	Enabled       bool     `toml:"-" json:"-"`
 }
 
 func checkEmails(emails []string) (errs []error) {
@@ -31,10 +32,9 @@ func checkEmails(emails []string) (errs []error) {
 
 // Validate SMTP configuration
 func (c *SMTPConf) Validate() (errs []error) {
-	if !Conf.ToEmail {
+	if !c.Enabled {
 		return
 	}
-	// Check Emails fromat
 	emails := []string{}
 	emails = append(emails, c.From)
 	emails = append(emails, c.To...)
@@ -44,10 +44,10 @@ func (c *SMTPConf) Validate() (errs []error) {
 		errs = append(errs, emailErrs...)
 	}
 
-	if len(c.SMTPAddr) == 0 {
+	if c.SMTPAddr == "" {
 		errs = append(errs, xerrors.New("email.smtpAddr must not be empty"))
 	}
-	if len(c.SMTPPort) == 0 {
+	if c.SMTPPort == "" {
 		errs = append(errs, xerrors.New("email.smtpPort must not be empty"))
 	}
 	if len(c.To) == 0 {

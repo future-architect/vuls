@@ -4,6 +4,7 @@ package oval
 
 import (
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/kotakanbe/goval-dictionary/db"
@@ -18,7 +19,7 @@ type Alpine struct {
 func NewAlpine() Alpine {
 	return Alpine{
 		Base{
-			family: config.Alpine,
+			family: constant.Alpine,
 		},
 	}
 }

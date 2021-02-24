@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/kotakanbe/goval-dictionary/db"
@@ -143,7 +144,7 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 
 func (o RedHatBase) convertToDistroAdvisory(def *ovalmodels.Definition) *models.DistroAdvisory {
 	advisoryID := def.Title
-	if (o.family == config.RedHat || o.family == config.CentOS) && len(advisoryID) > 0 {
+	if (o.family == constant.RedHat || o.family == constant.CentOS) && len(advisoryID) > 0 {
 		ss := strings.Fields(def.Title)
 		advisoryID = strings.TrimSuffix(ss[0], ":")
 	}
@@ -250,7 +251,7 @@ func NewRedhat() RedHat {
 	return RedHat{
 		RedHatBase{
 			Base{
-				family: config.RedHat,
+				family: constant.RedHat,
 			},
 		},
 	}
@@ -266,7 +267,7 @@ func NewCentOS() CentOS {
 	return CentOS{
 		RedHatBase{
 			Base{
-				family: config.CentOS,
+				family: constant.CentOS,
 			},
 		},
 	}
@@ -282,7 +283,7 @@ func NewOracle() Oracle {
 	return Oracle{
 		RedHatBase{
 			Base{
-				family: config.Oracle,
+				family: constant.Oracle,
 			},
 		},
 	}
@@ -299,7 +300,7 @@ func NewAmazon() Amazon {
 	return Amazon{
 		RedHatBase{
 			Base{
-				family: config.Amazon,
+				family: constant.Amazon,
 			},
 		},
 	}

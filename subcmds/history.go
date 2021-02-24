@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	c "github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/report"
+	"github.com/future-architect/vuls/reporter"
 	"github.com/google/subcommands"
 )
 
@@ -45,7 +45,7 @@ func (p *HistoryCmd) SetFlags(f *flag.FlagSet) {
 // Execute execute
 func (p *HistoryCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
-	dirs, err := report.ListValidJSONDirs()
+	dirs, err := reporter.ListValidJSONDirs()
 	if err != nil {
 		return subcommands.ExitFailure
 	}

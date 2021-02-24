@@ -11,7 +11,7 @@ import (
 	"github.com/google/subcommands"
 
 	c "github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/scan"
+	"github.com/future-architect/vuls/scanner"
 	"github.com/future-architect/vuls/util"
 )
 
@@ -64,9 +64,6 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&c.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
 
-	f.BoolVar(&c.Conf.SSHNative, "ssh-native-insecure", false,
-		"Use Native Go implementation of SSH. Default: Use the external command")
-
 	f.BoolVar(&c.Conf.Vvv, "vvv", false, "ssh -vvv")
 }
 
@@ -105,12 +102,12 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		servernames = f.Args()
 	}
 
-	target := make(map[string]c.ServerInfo)
+	targets := make(map[string]c.ServerInfo)
 	for _, arg := range servernames {
 		found := false
 		for servername, info := range c.Conf.Servers {
 			if servername == arg {
-				target[servername] = info
+				targets[servername] = info
 				found = true
 				break
 			}
@@ -121,7 +118,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		}
 	}
 	if 0 < len(servernames) {
-		c.Conf.Servers = target
+		c.Conf.Servers = targets
 	}
 
 	util.Log.Info("Validating config...")
@@ -129,28 +126,15 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		return subcommands.ExitUsageError
 	}
 
-	util.Log.Info("Detecting Server/Container OS... ")
-	if err := scan.InitServers(p.timeoutSec); err != nil {
-		util.Log.Errorf("Failed to init servers. err: %+v", err)
+	s := scanner.Scanner{
+		TimeoutSec: p.timeoutSec,
+		Targets:    targets,
+	}
+
+	if err := s.Configtest(); err != nil {
+		util.Log.Errorf("Failed to configtest: %+v", err)
 		return subcommands.ExitFailure
 	}
 
-	util.Log.Info("Checking Scan Modes...")
-	if err := scan.CheckScanModes(); err != nil {
-		util.Log.Errorf("Fix config.toml. err: %+v", err)
-		return subcommands.ExitFailure
-	}
-
-	util.Log.Info("Checking dependencies...")
-	scan.CheckDependencies(p.timeoutSec)
-
-	util.Log.Info("Checking sudo settings...")
-	scan.CheckIfSudoNoPasswd(p.timeoutSec)
-
-	util.Log.Info("It can be scanned with fast scan mode even if warn or err messages are displayed due to lack of dependent packages or sudo settings in fast-root or deep scan mode")
-
-	if scan.PrintSSHableServerNames() {
-		return subcommands.ExitSuccess
-	}
-	return subcommands.ExitFailure
+	return subcommands.ExitSuccess
 }

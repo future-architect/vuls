@@ -4,6 +4,7 @@ package oval
 
 import (
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/kotakanbe/goval-dictionary/db"
@@ -20,7 +21,7 @@ func NewSUSE() SUSE {
 	// TODO implement other family
 	return SUSE{
 		Base{
-			family: config.SUSEEnterpriseServer,
+			family: constant.SUSEEnterpriseServer,
 		},
 	}
 }

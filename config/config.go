@@ -3,11 +3,11 @@ package config
 import (
 	"fmt"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
+	"github.com/future-architect/vuls/constant"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 )
@@ -23,29 +23,21 @@ var Conf Config
 
 //Config is struct of Configuration
 type Config struct {
+	// scan, report
 	Debug      bool   `json:"debug,omitempty"`
 	DebugSQL   bool   `json:"debugSQL,omitempty"`
-	Lang       string `json:"lang,omitempty"`
 	HTTPProxy  string `valid:"url" json:"httpProxy,omitempty"`
 	LogDir     string `json:"logDir,omitempty"`
 	ResultsDir string `json:"resultsDir,omitempty"`
 	Pipe       bool   `json:"pipe,omitempty"`
 	Quiet      bool   `json:"quiet,omitempty"`
-	NoProgress bool   `json:"noProgress,omitempty"`
-	SSHNative  bool   `json:"sshNative,omitempty"`
-	Vvv        bool   `json:"vvv,omitempty"`
 
-	Default       ServerInfo            `json:"default,omitempty"`
-	Servers       map[string]ServerInfo `json:"servers,omitempty"`
-	CvssScoreOver float64               `json:"cvssScoreOver,omitempty"`
+	Default ServerInfo            `json:"default,omitempty"`
+	Servers map[string]ServerInfo `json:"servers,omitempty"`
 
-	IgnoreUnscoredCves    bool `json:"ignoreUnscoredCves,omitempty"`
-	IgnoreUnfixed         bool `json:"ignoreUnfixed,omitempty"`
-	IgnoreGitHubDismissed bool `json:"ignore_git_hub_dismissed,omitempty"`
+	ScanOpts
 
-	CacheDBPath     string `json:"cacheDBPath,omitempty"`
-	TrivyCacheDBDir string `json:"trivyCacheDBDir,omitempty"`
-
+	// report
 	CveDict    GoCveDictConf  `json:"cveDict,omitempty"`
 	OvalDict   GovalDictConf  `json:"ovalDict,omitempty"`
 	Gost       GostConf       `json:"gost,omitempty"`
@@ -60,62 +52,51 @@ type Config struct {
 	Azure    AzureConf    `json:"-"`
 	ChatWork ChatWorkConf `json:"-"`
 	Telegram TelegramConf `json:"-"`
+	WpScan   WpScanConf   `json:"-"`
+	Saas     SaasConf     `json:"-"`
 
-	WpScan WpScanConf `json:"WpScan,omitempty"`
+	ReportOpts
+}
 
-	Saas      SaasConf `json:"-"`
-	DetectIPS bool     `json:"detectIps,omitempty"`
+// ScanOpts is options for scan
+type ScanOpts struct {
+	Vvv       bool `json:"vvv,omitempty"`
+	DetectIPS bool `json:"detectIps,omitempty"`
+}
 
-	RefreshCve        bool `json:"refreshCve,omitempty"`
-	ToSlack           bool `json:"toSlack,omitempty"`
-	ToChatWork        bool `json:"toChatWork,omitempty"`
-	ToTelegram        bool `json:"ToTelegram,omitempty"`
-	ToEmail           bool `json:"toEmail,omitempty"`
-	ToSyslog          bool `json:"toSyslog,omitempty"`
-	ToLocalFile       bool `json:"toLocalFile,omitempty"`
-	ToS3              bool `json:"toS3,omitempty"`
-	ToAzureBlob       bool `json:"toAzureBlob,omitempty"`
-	ToHTTP            bool `json:"toHTTP,omitempty"`
-	FormatJSON        bool `json:"formatJSON,omitempty"`
-	FormatOneEMail    bool `json:"formatOneEMail,omitempty"`
-	FormatOneLineText bool `json:"formatOneLineText,omitempty"`
-	FormatList        bool `json:"formatList,omitempty"`
-	FormatFullText    bool `json:"formatFullText,omitempty"`
-	FormatCsvList     bool `json:"formatCsvList,omitempty"`
-	GZIP              bool `json:"gzip,omitempty"`
-	DiffPlus          bool `json:"diffPlus,omitempty"`
-	DiffMinus         bool `json:"diffMinus,omitempty"`
-	Diff              bool `json:"diff,omitempty"`
+// ReportOpts is options for report
+type ReportOpts struct {
+	// refactored
+	CvssScoreOver      float64 `json:"cvssScoreOver,omitempty"`
+	TrivyCacheDBDir    string  `json:"trivyCacheDBDir,omitempty"`
+	NoProgress         bool    `json:"noProgress,omitempty"`
+	RefreshCve         bool    `json:"refreshCve,omitempty"`
+	IgnoreUnfixed      bool    `json:"ignoreUnfixed,omitempty"`
+	IgnoreUnscoredCves bool    `json:"ignoreUnscoredCves,omitempty"`
+	DiffPlus           bool    `json:"diffPlus,omitempty"`
+	DiffMinus          bool    `json:"diffMinus,omitempty"`
+	Diff               bool    `json:"diff,omitempty"`
+	Lang               string  `json:"lang,omitempty"`
+
+	//TODO move to GitHubConf
+	IgnoreGitHubDismissed bool `json:"ignore_git_hub_dismissed,omitempty"`
 }
 
 // ValidateOnConfigtest validates
 func (c Config) ValidateOnConfigtest() bool {
 	errs := c.checkSSHKeyExist()
-
-	if runtime.GOOS == "windows" && !c.SSHNative {
-		errs = append(errs, xerrors.New("-ssh-native-insecure is needed on windows"))
-	}
-
-	_, err := govalidator.ValidateStruct(c)
-	if err != nil {
+	if _, err := govalidator.ValidateStruct(c); err != nil {
 		errs = append(errs, err)
 	}
-
 	for _, err := range errs {
 		log.Error(err)
 	}
-
 	return len(errs) == 0
 }
 
 // ValidateOnScan validates configuration
 func (c Config) ValidateOnScan() bool {
 	errs := c.checkSSHKeyExist()
-
-	if runtime.GOOS == "windows" && !c.SSHNative {
-		errs = append(errs, xerrors.New("-ssh-native-insecure is needed on windows"))
-	}
-
 	if len(c.ResultsDir) != 0 {
 		if ok, _ := govalidator.IsFilePath(c.ResultsDir); !ok {
 			errs = append(errs, xerrors.Errorf(
@@ -123,29 +104,18 @@ func (c Config) ValidateOnScan() bool {
 		}
 	}
 
-	if len(c.CacheDBPath) != 0 {
-		if ok, _ := govalidator.IsFilePath(c.CacheDBPath); !ok {
-			errs = append(errs, xerrors.Errorf(
-				"Cache DB path must be a *Absolute* file path. -cache-dbpath: %s",
-				c.CacheDBPath))
-		}
-	}
-
-	_, err := govalidator.ValidateStruct(c)
-	if err != nil {
+	if _, err := govalidator.ValidateStruct(c); err != nil {
 		errs = append(errs, err)
 	}
-
 	for _, err := range errs {
 		log.Error(err)
 	}
-
 	return len(errs) == 0
 }
 
 func (c Config) checkSSHKeyExist() (errs []error) {
 	for serverName, v := range c.Servers {
-		if v.Type == ServerTypePseudo {
+		if v.Type == constant.ServerTypePseudo {
 			continue
 		}
 		if v.KeyPath != "" {
@@ -205,28 +175,37 @@ func (c Config) ValidateOnReport() bool {
 		errs = append(errs, err)
 	}
 
-	if mailerrs := c.EMail.Validate(); 0 < len(mailerrs) {
-		errs = append(errs, mailerrs...)
+	//TODO refactor interface
+	if es := c.EMail.Validate(); 0 < len(es) {
+		errs = append(errs, es...)
 	}
 
-	if slackerrs := c.Slack.Validate(); 0 < len(slackerrs) {
-		errs = append(errs, slackerrs...)
+	if es := c.Slack.Validate(); 0 < len(es) {
+		errs = append(errs, es...)
 	}
 
-	if chatworkerrs := c.ChatWork.Validate(); 0 < len(chatworkerrs) {
-		errs = append(errs, chatworkerrs...)
+	if es := c.ChatWork.Validate(); 0 < len(es) {
+		errs = append(errs, es...)
 	}
 
-	if telegramerrs := c.Telegram.Validate(); 0 < len(telegramerrs) {
-		errs = append(errs, telegramerrs...)
+	if es := c.Telegram.Validate(); 0 < len(es) {
+		errs = append(errs, es...)
 	}
 
-	if syslogerrs := c.Syslog.Validate(); 0 < len(syslogerrs) {
-		errs = append(errs, syslogerrs...)
+	if es := c.Syslog.Validate(); 0 < len(es) {
+		errs = append(errs, es...)
 	}
 
-	if httperrs := c.HTTP.Validate(); 0 < len(httperrs) {
-		errs = append(errs, httperrs...)
+	if es := c.HTTP.Validate(); 0 < len(es) {
+		errs = append(errs, es...)
+	}
+
+	if es := c.AWS.Validate(); 0 < len(es) {
+		errs = append(errs, es...)
+	}
+
+	if es := c.Azure.Validate(); 0 < len(es) {
+		errs = append(errs, es...)
 	}
 
 	for _, err := range errs {
@@ -309,36 +288,6 @@ func validateDB(dictionaryDBName, dbType, dbPath, dbURL string) error {
 	return nil
 }
 
-// AWSConf is aws config
-type AWSConf struct {
-	// AWS profile to use
-	Profile string `json:"profile"`
-
-	// AWS region to use
-	Region string `json:"region"`
-
-	// S3 bucket name
-	S3Bucket string `json:"s3Bucket"`
-
-	// /bucket/path/to/results
-	S3ResultsDir string `json:"s3ResultsDir"`
-
-	// The Server-side encryption algorithm used when storing the reports in S3 (e.g., AES256, aws:kms).
-	S3ServerSideEncryption string `json:"s3ServerSideEncryption"`
-}
-
-// AzureConf is azure config
-type AzureConf struct {
-	// Azure account name to use. AZURE_STORAGE_ACCOUNT environment variable is used if not specified
-	AccountName string `json:"accountName"`
-
-	// Azure account key to use. AZURE_STORAGE_ACCESS_KEY environment variable is used if not specified
-	AccountKey string `json:"-"`
-
-	// Azure storage container name
-	ContainerName string `json:"containerName"`
-}
-
 // WpScanConf is wpscan.com config
 type WpScanConf struct {
 	Token          string `toml:"token,omitempty" json:"-"`
@@ -354,7 +303,6 @@ type ServerInfo struct {
 	Port               string                      `toml:"port,omitempty" json:"port,omitempty"`
 	SSHConfigPath      string                      `toml:"sshConfigPath,omitempty" json:"sshConfigPath,omitempty"`
 	KeyPath            string                      `toml:"keyPath,omitempty" json:"keyPath,omitempty"`
-	KeyPassword        string                      `json:"-" toml:"-"`
 	CpeNames           []string                    `toml:"cpeNames,omitempty" json:"cpeNames,omitempty"`
 	ScanMode           []string                    `toml:"scanMode,omitempty" json:"scanMode,omitempty"`
 	ScanModules        []string                    `toml:"scanModules,omitempty" json:"scanModules,omitempty"`
@@ -377,7 +325,7 @@ type ServerInfo struct {
 	IgnoredJSONKeys    []string                    `toml:"ignoredJSONKeys,omitempty" json:"ignoredJSONKeys,omitempty"`
 	IPv4Addrs          []string                    `toml:"-" json:"ipv4Addrs,omitempty"`
 	IPv6Addrs          []string                    `toml:"-" json:"ipv6Addrs,omitempty"`
-	IPSIdentifiers     map[IPS]string              `toml:"-" json:"ipsIdentifiers,omitempty"`
+	IPSIdentifiers     map[string]string           `toml:"-" json:"ipsIdentifiers,omitempty"`
 	WordPress          *WordPressConf              `toml:"wordpress,omitempty" json:"wordpress,omitempty"`
 
 	// internal use
@@ -434,7 +382,7 @@ func (l Distro) String() string {
 
 // MajorVersion returns Major version
 func (l Distro) MajorVersion() (int, error) {
-	if l.Family == Amazon {
+	if l.Family == constant.Amazon {
 		if isAmazonLinux1(l.Release) {
 			return 1, nil
 		}

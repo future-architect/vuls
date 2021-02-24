@@ -9,11 +9,12 @@ import (
 type ChatWorkConf struct {
 	APIToken string `json:"-"`
 	Room     string `json:"-"`
+	Enabled  bool   `toml:"-" json:"-"`
 }
 
 // Validate validates configuration
 func (c *ChatWorkConf) Validate() (errs []error) {
-	if !Conf.ToChatWork {
+	if !c.Enabled {
 		return
 	}
 	if len(c.Room) == 0 {

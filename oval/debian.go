@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/kotakanbe/goval-dictionary/db"
@@ -40,7 +41,7 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 				defPacks.def.Debian.CveID)
 			cveContents = models.CveContents{}
 		}
-		if r.Family != config.Raspbian {
+		if r.Family != constant.Raspbian {
 			vinfo.Confidences.AppendIfMissing(models.OvalMatch)
 		} else {
 			if len(vinfo.Confidences) == 0 {
@@ -113,7 +114,7 @@ func NewDebian() Debian {
 	return Debian{
 		DebianBase{
 			Base{
-				family: config.Debian,
+				family: constant.Debian,
 			},
 		},
 	}
@@ -140,7 +141,7 @@ func (o Debian) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 
 	var relatedDefs ovalResult
 	if config.Conf.OvalDict.IsFetchViaHTTP() {
-		if r.Family != config.Raspbian {
+		if r.Family != constant.Raspbian {
 			if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
 				return 0, err
 			}
@@ -152,7 +153,7 @@ func (o Debian) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 			}
 		}
 	} else {
-		if r.Family != config.Raspbian {
+		if r.Family != constant.Raspbian {
 			if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
 				return 0, err
 			}
@@ -203,7 +204,7 @@ func NewUbuntu() Ubuntu {
 	return Ubuntu{
 		DebianBase{
 			Base{
-				family: config.Ubuntu,
+				family: constant.Ubuntu,
 			},
 		},
 	}

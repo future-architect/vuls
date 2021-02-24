@@ -14,7 +14,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/report"
+	"github.com/future-architect/vuls/detector"
 	"github.com/future-architect/vuls/server"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
@@ -22,8 +22,9 @@ import (
 
 // ServerCmd is subcommand for server
 type ServerCmd struct {
-	configPath string
-	listen     string
+	configPath  string
+	listen      string
+	toLocalFile bool
 }
 
 // Name return subcommand name
@@ -43,7 +44,6 @@ func (*ServerCmd) Usage() string {
 		[-ignore-unscored-cves]
 		[-ignore-unfixed]
 		[-to-localfile]
-		[-format-json]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-debug]
 		[-debug-sql]
@@ -81,9 +81,7 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&c.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
 
-	f.BoolVar(&c.Conf.FormatJSON, "format-json", false, "JSON format")
-
-	f.BoolVar(&c.Conf.ToLocalFile, "to-localfile", false, "Write report to localfile")
+	f.BoolVar(&p.toLocalFile, "to-localfile", false, "Write report to localfile")
 	f.StringVar(&p.listen, "listen", "localhost:5515",
 		"host:port (default: localhost:5515)")
 }
@@ -119,7 +117,7 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	dbclient, locked, err := report.NewDBClient(report.DBClientConf{
+	dbclient, locked, err := detector.NewDBClient(detector.DBClientConf{
 		CveDictCnf:    c.Conf.CveDict,
 		OvalDictCnf:   c.Conf.OvalDict,
 		GostCnf:       c.Conf.Gost,
@@ -139,7 +137,10 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	defer dbclient.CloseDB()
 
-	http.Handle("/vuls", server.VulsHandler{DBclient: *dbclient})
+	http.Handle("/vuls", server.VulsHandler{
+		DBclient:    *dbclient,
+		ToLocalFile: p.toLocalFile,
+	})
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "ok")
 	})

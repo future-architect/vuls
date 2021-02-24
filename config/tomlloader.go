@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/future-architect/vuls/constant"
 	"github.com/knqyf263/go-cpe/naming"
 	"golang.org/x/xerrors"
 )
@@ -18,10 +19,6 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	if _, err := toml.DecodeFile(pathToToml, &Conf); err != nil {
 		return err
 	}
-	if keyPass != "" {
-		Conf.Default.KeyPassword = keyPass
-	}
-
 	Conf.CveDict.Init()
 	Conf.OvalDict.Init()
 	Conf.Gost.Init()
@@ -31,10 +28,6 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	index := 0
 	for name, server := range Conf.Servers {
 		server.ServerName = name
-		if 0 < len(server.KeyPassword) {
-			return xerrors.Errorf("[Deprecated] KEYPASSWORD IN CONFIG FILE ARE UNSECURE. REMOVE THEM IMMEDIATELY FOR A SECURITY REASONS. THEY WILL BE REMOVED IN A FUTURE RELEASE: %s", name)
-		}
-
 		if err := setDefaultIfEmpty(&server, Conf.Default); err != nil {
 			return xerrors.Errorf("Failed to set default value to config. server: %s, err: %w", name, err)
 		}
@@ -135,7 +128,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 }
 
 func setDefaultIfEmpty(server *ServerInfo, d ServerInfo) error {
-	if server.Type != ServerTypePseudo {
+	if server.Type != constant.ServerTypePseudo {
 		if len(server.Host) == 0 {
 			return xerrors.Errorf("server.host is empty")
 		}
@@ -165,10 +158,6 @@ func setDefaultIfEmpty(server *ServerInfo, d ServerInfo) error {
 
 		if server.KeyPath == "" {
 			server.KeyPath = Conf.Default.KeyPath
-		}
-
-		if server.KeyPassword == "" {
-			server.KeyPassword = Conf.Default.KeyPassword
 		}
 	}
 
