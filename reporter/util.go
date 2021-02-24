@@ -25,6 +25,134 @@ const (
 	maxColWidth = 100
 )
 
+// OverwriteJSONFile overwrites scanresults JSON in the dir
+func OverwriteJSONFile(dir string, r models.ScanResult) error {
+	w := LocalFileWriter{
+		CurrentDir: dir,
+		FormatJSON: true,
+	}
+	if err := w.Write(r); err != nil {
+		return xerrors.Errorf("Failed to write summary report: %w", err)
+	}
+	return nil
+}
+
+// LoadScanResults read JSON data
+func LoadScanResults(jsonDir string) (results models.ScanResults, err error) {
+	var files []os.FileInfo
+	if files, err = ioutil.ReadDir(jsonDir); err != nil {
+		return nil, xerrors.Errorf("Failed to read %s: %w", jsonDir, err)
+	}
+	for _, f := range files {
+		if filepath.Ext(f.Name()) != ".json" || strings.HasSuffix(f.Name(), "_diff.json") {
+			continue
+		}
+
+		var r *models.ScanResult
+		path := filepath.Join(jsonDir, f.Name())
+		if r, err = loadOneServerScanResult(path); err != nil {
+			return nil, err
+		}
+		results = append(results, *r)
+	}
+	if len(results) == 0 {
+		return nil, xerrors.Errorf("There is no json file under %s", jsonDir)
+	}
+	return
+}
+
+// loadOneServerScanResult read JSON data of one server
+func loadOneServerScanResult(jsonFile string) (*models.ScanResult, error) {
+	var (
+		data []byte
+		err  error
+	)
+	if data, err = ioutil.ReadFile(jsonFile); err != nil {
+		return nil, xerrors.Errorf("Failed to read %s: %w", jsonFile, err)
+	}
+	result := &models.ScanResult{}
+	if err := json.Unmarshal(data, result); err != nil {
+		return nil, xerrors.Errorf("Failed to parse %s: %w", jsonFile, err)
+	}
+	return result, nil
+}
+
+// jsonDirPattern is file name pattern of JSON directory
+// 2016-11-16T10:43:28+09:00
+// 2016-11-16T10:43:28Z
+var jsonDirPattern = regexp.MustCompile(
+	`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$`)
+
+// ListValidJSONDirs returns valid json directory as array
+// Returned array is sorted so that recent directories are at the head
+func ListValidJSONDirs() (dirs []string, err error) {
+	var dirInfo []os.FileInfo
+	if dirInfo, err = ioutil.ReadDir(config.Conf.ResultsDir); err != nil {
+		err = xerrors.Errorf("Failed to read %s: %w",
+			config.Conf.ResultsDir, err)
+		return
+	}
+	for _, d := range dirInfo {
+		if d.IsDir() && jsonDirPattern.MatchString(d.Name()) {
+			jsonDir := filepath.Join(config.Conf.ResultsDir, d.Name())
+			dirs = append(dirs, jsonDir)
+		}
+	}
+	sort.Slice(dirs, func(i, j int) bool {
+		return dirs[j] < dirs[i]
+	})
+	return
+}
+
+// JSONDir returns
+// If there is an arg, check if it is a valid format and return the corresponding path under results.
+// If arg passed via PIPE (such as history subcommand), return that path.
+// Otherwise, returns the path of the latest directory
+func JSONDir(args []string) (string, error) {
+	var err error
+	var dirs []string
+
+	if 0 < len(args) {
+		if dirs, err = ListValidJSONDirs(); err != nil {
+			return "", err
+		}
+
+		path := filepath.Join(config.Conf.ResultsDir, args[0])
+		for _, d := range dirs {
+			ss := strings.Split(d, string(os.PathSeparator))
+			timedir := ss[len(ss)-1]
+			if timedir == args[0] {
+				return path, nil
+			}
+		}
+
+		return "", xerrors.Errorf("Invalid path: %s", path)
+	}
+
+	// PIPE
+	if config.Conf.Pipe {
+		bytes, err := ioutil.ReadAll(os.Stdin)
+		if err != nil {
+			return "", xerrors.Errorf("Failed to read stdin: %w", err)
+		}
+		fields := strings.Fields(string(bytes))
+		if 0 < len(fields) {
+			return filepath.Join(config.Conf.ResultsDir, fields[0]), nil
+		}
+		return "", xerrors.Errorf("Stdin is invalid: %s", string(bytes))
+	}
+
+	// returns latest dir when no args or no PIPE
+	if dirs, err = ListValidJSONDirs(); err != nil {
+		return "", err
+	}
+	if len(dirs) == 0 {
+		return "", xerrors.Errorf("No results under %s",
+			config.Conf.ResultsDir)
+	}
+	return dirs[0], nil
+}
+
 func formatScanSummary(rs ...models.ScanResult) string {
 	table := uitable.New()
 	table.MaxColWidth = maxColWidth
@@ -428,17 +556,6 @@ func cweJvnURL(cweID string) string {
 	return fmt.Sprintf("http://jvndb.jvn.jp/ja/cwe/%s.html", cweID)
 }
 
-func OverwriteJSONFile(dir string, r models.ScanResult) error {
-	w := LocalFileWriter{
-		CurrentDir: dir,
-		FormatJSON: true,
-	}
-	if err := w.Write(r); err != nil {
-		return xerrors.Errorf("Failed to write summary report: %w", err)
-	}
-	return nil
-}
-
 func diff(curResults, preResults models.ScanResults, isPlus, isMinus bool) (diffed models.ScanResults) {
 	for _, current := range curResults {
 		found := false
@@ -590,120 +707,4 @@ func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
 		}
 	}
 	return false
-}
-
-// jsonDirPattern is file name pattern of JSON directory
-// 2016-11-16T10:43:28+09:00
-// 2016-11-16T10:43:28Z
-var jsonDirPattern = regexp.MustCompile(
-	`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$`)
-
-// ListValidJSONDirs returns valid json directory as array
-// Returned array is sorted so that recent directories are at the head
-func ListValidJSONDirs() (dirs []string, err error) {
-	var dirInfo []os.FileInfo
-	if dirInfo, err = ioutil.ReadDir(config.Conf.ResultsDir); err != nil {
-		err = xerrors.Errorf("Failed to read %s: %w",
-			config.Conf.ResultsDir, err)
-		return
-	}
-	for _, d := range dirInfo {
-		if d.IsDir() && jsonDirPattern.MatchString(d.Name()) {
-			jsonDir := filepath.Join(config.Conf.ResultsDir, d.Name())
-			dirs = append(dirs, jsonDir)
-		}
-	}
-	sort.Slice(dirs, func(i, j int) bool {
-		return dirs[j] < dirs[i]
-	})
-	return
-}
-
-// JSONDir returns
-// If there is an arg, check if it is a valid format and return the corresponding path under results.
-// If arg passed via PIPE (such as history subcommand), return that path.
-// Otherwise, returns the path of the latest directory
-func JSONDir(args []string) (string, error) {
-	var err error
-	var dirs []string
-
-	if 0 < len(args) {
-		if dirs, err = ListValidJSONDirs(); err != nil {
-			return "", err
-		}
-
-		path := filepath.Join(config.Conf.ResultsDir, args[0])
-		for _, d := range dirs {
-			ss := strings.Split(d, string(os.PathSeparator))
-			timedir := ss[len(ss)-1]
-			if timedir == args[0] {
-				return path, nil
-			}
-		}
-
-		return "", xerrors.Errorf("Invalid path: %s", path)
-	}
-
-	// PIPE
-	if config.Conf.Pipe {
-		bytes, err := ioutil.ReadAll(os.Stdin)
-		if err != nil {
-			return "", xerrors.Errorf("Failed to read stdin: %w", err)
-		}
-		fields := strings.Fields(string(bytes))
-		if 0 < len(fields) {
-			return filepath.Join(config.Conf.ResultsDir, fields[0]), nil
-		}
-		return "", xerrors.Errorf("Stdin is invalid: %s", string(bytes))
-	}
-
-	// returns latest dir when no args or no PIPE
-	if dirs, err = ListValidJSONDirs(); err != nil {
-		return "", err
-	}
-	if len(dirs) == 0 {
-		return "", xerrors.Errorf("No results under %s",
-			config.Conf.ResultsDir)
-	}
-	return dirs[0], nil
-}
-
-// LoadScanResults read JSON data
-func LoadScanResults(jsonDir string) (results models.ScanResults, err error) {
-	var files []os.FileInfo
-	if files, err = ioutil.ReadDir(jsonDir); err != nil {
-		return nil, xerrors.Errorf("Failed to read %s: %w", jsonDir, err)
-	}
-	for _, f := range files {
-		if filepath.Ext(f.Name()) != ".json" || strings.HasSuffix(f.Name(), "_diff.json") {
-			continue
-		}
-
-		var r *models.ScanResult
-		path := filepath.Join(jsonDir, f.Name())
-		if r, err = loadOneServerScanResult(path); err != nil {
-			return nil, err
-		}
-		results = append(results, *r)
-	}
-	if len(results) == 0 {
-		return nil, xerrors.Errorf("There is no json file under %s", jsonDir)
-	}
-	return
-}
-
-// loadOneServerScanResult read JSON data of one server
-func loadOneServerScanResult(jsonFile string) (*models.ScanResult, error) {
-	var (
-		data []byte
-		err  error
-	)
-	if data, err = ioutil.ReadFile(jsonFile); err != nil {
-		return nil, xerrors.Errorf("Failed to read %s: %w", jsonFile, err)
-	}
-	result := &models.ScanResult{}
-	if err := json.Unmarshal(data, result); err != nil {
-		return nil, xerrors.Errorf("Failed to parse %s: %w", jsonFile, err)
-	}
-	return result, nil
 }
