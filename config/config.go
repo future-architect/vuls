@@ -58,6 +58,11 @@ type Config struct {
 	ReportOpts
 }
 
+// ReportConf is an interface to Validate Report Config
+type ReportConf interface {
+	Validate() []error
+}
+
 // ScanOpts is options for scan
 type ScanOpts struct {
 	Vvv       bool `json:"vvv,omitempty"`
@@ -175,37 +180,19 @@ func (c Config) ValidateOnReport() bool {
 		errs = append(errs, err)
 	}
 
-	//TODO refactor interface
-	if es := c.EMail.Validate(); 0 < len(es) {
-		errs = append(errs, es...)
-	}
-
-	if es := c.Slack.Validate(); 0 < len(es) {
-		errs = append(errs, es...)
-	}
-
-	if es := c.ChatWork.Validate(); 0 < len(es) {
-		errs = append(errs, es...)
-	}
-
-	if es := c.Telegram.Validate(); 0 < len(es) {
-		errs = append(errs, es...)
-	}
-
-	if es := c.Syslog.Validate(); 0 < len(es) {
-		errs = append(errs, es...)
-	}
-
-	if es := c.HTTP.Validate(); 0 < len(es) {
-		errs = append(errs, es...)
-	}
-
-	if es := c.AWS.Validate(); 0 < len(es) {
-		errs = append(errs, es...)
-	}
-
-	if es := c.Azure.Validate(); 0 < len(es) {
-		errs = append(errs, es...)
+	for _, rc := range []ReportConf{
+		&c.EMail,
+		&c.Slack,
+		&c.ChatWork,
+		&c.Telegram,
+		&c.Syslog,
+		&c.HTTP,
+		&c.AWS,
+		&c.Azure,
+	} {
+		if es := rc.Validate(); 0 < len(es) {
+			errs = append(errs, es...)
+		}
 	}
 
 	for _, err := range errs {
