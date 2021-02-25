@@ -73,7 +73,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	logging.Log.Infof("vuls-%s-%s", c.Version, c.Revision)
 
 	if err := mkdirDotVuls(); err != nil {
-		logging.Log.Errorf("Failed to create .vuls. err: %+v", err)
+		logging.Log.Errorf("Failed to create $HOME/.vuls: %+v", err)
 		return subcommands.ExitUsageError
 	}
 

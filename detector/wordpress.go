@@ -126,7 +126,7 @@ func detect(installed models.WpPackage, candidates []models.VulnInfo) (vulns []m
 		for _, fixstat := range v.WpPackageFixStats {
 			ok, err := match(installed.Version, fixstat.FixedIn)
 			if err != nil {
-				logging.Log.Errorf("Failed to compare versions %s installed: %s, fixedIn: %s, v: %+v",
+				logging.Log.Warnf("Failed to compare versions %s installed: %s, fixedIn: %s, v: %+v",
 					installed.Name, installed.Version, fixstat.FixedIn, v)
 				// continue scanning
 				continue

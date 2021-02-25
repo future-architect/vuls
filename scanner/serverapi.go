@@ -670,7 +670,7 @@ func (s Scanner) getScanResults(scannedAt time.Time) (results models.ScanResults
 	hostname, _ := os.Hostname()
 	ipv4s, ipv6s, err := util.IP()
 	if err != nil {
-		logging.Log.Errorf("Failed to fetch scannedIPs. err: %+v", err)
+		logging.Log.Warnf("Failed to get scannedIPs. err: %+v", err)
 	}
 
 	for _, s := range append(servers, errServers...) {

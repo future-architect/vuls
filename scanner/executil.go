@@ -120,8 +120,7 @@ func parallelExec(fn func(osTypeInterface) error, timeoutSec ...int) {
 				}
 			}
 			if !found {
-				err := xerrors.Errorf("Timed out: %s",
-					s.getServerInfo().GetServerName())
+				err := xerrors.Errorf("Timed out: %s", s.getServerInfo().GetServerName())
 				logging.Log.Errorf("%+v", err)
 				s.setErrs([]error{err})
 				errServers = append(errServers, s)

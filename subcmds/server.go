@@ -129,13 +129,15 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		logging.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %+v", err)
 		return subcommands.ExitFailure
 	}
-
 	if err != nil {
 		logging.Log.Errorf("Failed to init DB Clients. err: %+v", err)
 		return subcommands.ExitFailure
 	}
-
-	defer dbclient.CloseDB()
+	defer func() {
+		for _, err := range dbclient.CloseDB() {
+			logging.Log.Errorf("Failed to CloseDB. err: %+v", err)
+		}
+	}()
 
 	http.Handle("/vuls", server.VulsHandler{
 		DBclient:    *dbclient,

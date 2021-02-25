@@ -134,7 +134,7 @@ func (r ScanResult) FilterIgnorePkgs(ignorePkgsRegexps []string) ScanResult {
 	for _, pkgRegexp := range ignorePkgsRegexps {
 		re, err := regexp.Compile(pkgRegexp)
 		if err != nil {
-			logging.Log.Errorf("Failed to parse %s. err: %+v", pkgRegexp, err)
+			logging.Log.Warnf("Failed to parse %s. err: %+v", pkgRegexp, err)
 			continue
 		} else {
 			regexps = append(regexps, re)

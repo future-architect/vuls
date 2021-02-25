@@ -405,9 +405,8 @@ func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error
 		return vera.LessThan(verb), nil
 
 	default:
-		logging.Log.Errorf("Not implemented yet: %s", family)
+		return false, xerrors.Errorf("Not implemented yet: %s", family)
 	}
-	return false, xerrors.Errorf("Package version comparison not supported: %s", family)
 }
 
 var centosVerPattern = regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.centos)?`)

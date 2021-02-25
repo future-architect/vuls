@@ -278,7 +278,11 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		logging.Log.Errorf("Failed to init DB Clients. err: %+v", err)
 		return subcommands.ExitFailure
 	}
-	defer dbclient.CloseDB()
+	defer func() {
+		for _, err := range dbclient.CloseDB() {
+			logging.Log.Errorf("Failed to CloseDB. err: %+v", err)
+		}
+	}()
 
 	// TODO pass conf by arg
 	if res, err = detector.Detect(*dbclient, res, dir); err != nil {

@@ -51,7 +51,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 
 	ipv4s, ipv6s, err := util.IP()
 	if err != nil {
-		logging.Log.Errorf("Failed to fetch scannedIPs. err: %+v", err)
+		logging.Log.Warnf("Failed to get scannedIPs. err: %+v", err)
 	}
 	hostname, _ := os.Hostname()
 

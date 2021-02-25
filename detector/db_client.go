@@ -49,7 +49,7 @@ func NewDBClient(cnf DBClientConf) (dbclient *DBClient, locked bool, err error) 
 		return nil, true, xerrors.Errorf("OvalDB is locked: %s",
 			cnf.OvalDictCnf.SQLite3Path)
 	} else if err != nil {
-		logging.Log.Warnf("Unable to use OvalDB: %s, err: %s",
+		logging.Log.Warnf("Unable to use OvalDB: %s, err: %+v",
 			cnf.OvalDictCnf.SQLite3Path, err)
 	}
 
@@ -58,7 +58,7 @@ func NewDBClient(cnf DBClientConf) (dbclient *DBClient, locked bool, err error) 
 		return nil, true, xerrors.Errorf("gostDB is locked: %s",
 			cnf.GostCnf.SQLite3Path)
 	} else if err != nil {
-		logging.Log.Warnf("Unable to use gostDB: %s, err: %s",
+		logging.Log.Warnf("Unable to use gostDB: %s, err: %+v",
 			cnf.GostCnf.SQLite3Path, err)
 	}
 
@@ -67,7 +67,7 @@ func NewDBClient(cnf DBClientConf) (dbclient *DBClient, locked bool, err error) 
 		return nil, true, xerrors.Errorf("exploitDB is locked: %s",
 			cnf.ExploitCnf.SQLite3Path)
 	} else if err != nil {
-		logging.Log.Warnf("Unable to use exploitDB: %s, err: %s",
+		logging.Log.Warnf("Unable to use exploitDB: %s, err: %+v",
 			cnf.ExploitCnf.SQLite3Path, err)
 	}
 
@@ -158,8 +158,7 @@ func NewGostDB(cnf DBClientConf) (driver gostdb.DB, locked bool, err error) {
 	logging.Log.Debugf("Open gost db (%s): %s", cnf.GostCnf.Type, path)
 	if driver, locked, err = gostdb.NewDB(cnf.GostCnf.Type, path, cnf.DebugSQL); err != nil {
 		if locked {
-			logging.Log.Errorf("gostDB is locked. err: %+v", err)
-			return nil, true, err
+			return nil, true, xerrors.Errorf("gostDB is locked. err: %w", err)
 		}
 		return nil, false, err
 	}
@@ -184,8 +183,7 @@ func NewExploitDB(cnf DBClientConf) (driver exploitdb.DB, locked bool, err error
 	logging.Log.Debugf("Open exploit db (%s): %s", cnf.ExploitCnf.Type, path)
 	if driver, locked, err = exploitdb.NewDB(cnf.ExploitCnf.Type, path, cnf.DebugSQL); err != nil {
 		if locked {
-			logging.Log.Errorf("exploitDB is locked. err: %+v", err)
-			return nil, true, err
+			return nil, true, xerrors.Errorf("exploitDB is locked. err: %w", err)
 		}
 		return nil, false, err
 	}
@@ -210,8 +208,7 @@ func NewMetasploitDB(cnf DBClientConf) (driver metasploitdb.DB, locked bool, err
 	logging.Log.Debugf("Open metasploit db (%s): %s", cnf.MetasploitCnf.Type, path)
 	if driver, locked, err = metasploitdb.NewDB(cnf.MetasploitCnf.Type, path, cnf.DebugSQL, false); err != nil {
 		if locked {
-			logging.Log.Errorf("metasploitDB is locked. err: %+v", err)
-			return nil, true, err
+			return nil, true, xerrors.Errorf("metasploitDB is locked. err: %w", err)
 		}
 		return nil, false, err
 	}
@@ -219,15 +216,17 @@ func NewMetasploitDB(cnf DBClientConf) (driver metasploitdb.DB, locked bool, err
 }
 
 // CloseDB close dbs
-func (d DBClient) CloseDB() {
+func (d DBClient) CloseDB() (errs []error) {
 	if d.CveDB != nil {
 		if err := d.CveDB.CloseDB(); err != nil {
-			logging.Log.Errorf("Failed to close DB. err: %+v", err)
+			errs = append(errs, xerrors.Errorf("Failed to close cveDB. err: %+v", err))
 		}
 	}
 	if d.OvalDB != nil {
 		if err := d.OvalDB.CloseDB(); err != nil {
-			logging.Log.Errorf("Failed to close DB. err: %+v", err)
+			errs = append(errs, xerrors.Errorf("Failed to close ovalDB. err: %+v", err))
 		}
 	}
+	//TODO CloseDB gost, exploitdb, metasploit
+	return errs
 }
