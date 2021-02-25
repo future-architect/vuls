@@ -243,18 +243,18 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			r.ServerInfo(), pp.Sprintf("%s", c.Conf.Servers[r.ServerName]))
 	}
 
-	util.Log.Info("Validating db config...")
-	if !c.Conf.ValidateOnReportDB() {
-		return subcommands.ExitUsageError
-	}
-
-	for _, cnf := range []config.VulnSrcConf{
+	for _, cnf := range []config.VulnDictInterface{
 		&c.Conf.CveDict,
 		&c.Conf.OvalDict,
 		&c.Conf.Gost,
 		&c.Conf.Exploit,
 		&c.Conf.Metasploit,
 	} {
+		if err := cnf.Validate(); err != nil {
+			util.Log.Errorf("Failed to validate VulnDict: %+v", err)
+			return subcommands.ExitFailure
+		}
+
 		if err := cnf.CheckHTTPHealth(); err != nil {
 			util.Log.Errorf("Run as server mode before reporting: %+v", err)
 			return subcommands.ExitFailure

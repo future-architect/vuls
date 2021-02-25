@@ -133,37 +133,6 @@ func (c Config) checkSSHKeyExist() (errs []error) {
 	return errs
 }
 
-// ValidateOnReportDB validates configuration
-func (c Config) ValidateOnReportDB() bool {
-	errs := []error{}
-
-	if err := validateDB("cvedb", c.CveDict.Type, c.CveDict.SQLite3Path, c.CveDict.URL); err != nil {
-		errs = append(errs, err)
-	}
-
-	if err := validateDB("ovaldb", c.OvalDict.Type, c.OvalDict.SQLite3Path, c.OvalDict.URL); err != nil {
-		errs = append(errs, err)
-	}
-
-	if err := validateDB("gostdb", c.Gost.Type, c.Gost.SQLite3Path, c.Gost.URL); err != nil {
-		errs = append(errs, err)
-	}
-
-	if err := validateDB("exploitdb", c.Exploit.Type, c.Exploit.SQLite3Path, c.Exploit.URL); err != nil {
-		errs = append(errs, err)
-	}
-
-	if err := validateDB("msfdb", c.Metasploit.Type, c.Metasploit.SQLite3Path, c.Metasploit.URL); err != nil {
-		errs = append(errs, err)
-	}
-
-	for _, err := range errs {
-		log.Error(err)
-	}
-
-	return len(errs) == 0
-}
-
 // ValidateOnReport validates configuration
 func (c Config) ValidateOnReport() bool {
 	errs := []error{}
@@ -205,22 +174,15 @@ func (c Config) ValidateOnReport() bool {
 // ValidateOnTui validates configuration
 func (c Config) ValidateOnTui() bool {
 	errs := []error{}
-
 	if len(c.ResultsDir) != 0 {
 		if ok, _ := govalidator.IsFilePath(c.ResultsDir); !ok {
 			errs = append(errs, xerrors.Errorf(
 				"JSON base directory must be a *Absolute* file path. -results-dir: %s", c.ResultsDir))
 		}
 	}
-
-	if err := validateDB("cvedb", c.CveDict.Type, c.CveDict.SQLite3Path, c.CveDict.URL); err != nil {
-		errs = append(errs, err)
-	}
-
 	for _, err := range errs {
 		log.Error(err)
 	}
-
 	return len(errs) == 0
 }
 
@@ -231,48 +193,6 @@ func (c Config) ValidateOnSaaS() bool {
 		log.Error("Failed to validate SaaS conf: %+w", err)
 	}
 	return len(saaserrs) == 0
-}
-
-// validateDB validates configuration
-func validateDB(dictionaryDBName, dbType, dbPath, dbURL string) error {
-	log.Infof("-%s-type: %s, -%s-url: %s, -%s-path: %s",
-		dictionaryDBName, dbType, dictionaryDBName, dbURL, dictionaryDBName, dbPath)
-
-	switch dbType {
-	case "sqlite3":
-		if dbURL != "" {
-			return xerrors.Errorf("To use SQLite3, specify -%s-type=sqlite3 and -%s-path. To use as http server mode, specify -%s-type=http and -%s-url",
-				dictionaryDBName, dictionaryDBName, dictionaryDBName, dictionaryDBName)
-		}
-		if ok, _ := govalidator.IsFilePath(dbPath); !ok {
-			return xerrors.Errorf("SQLite3 path must be a *Absolute* file path. -%s-path: %s",
-				dictionaryDBName, dbPath)
-		}
-	case "mysql":
-		if dbURL == "" {
-			return xerrors.Errorf(`MySQL connection string is needed. -%s-url="user:pass@tcp(localhost:3306)/dbname"`,
-				dictionaryDBName)
-		}
-	case "postgres":
-		if dbURL == "" {
-			return xerrors.Errorf(`PostgreSQL connection string is needed. -%s-url="host=myhost user=user dbname=dbname sslmode=disable password=password"`,
-				dictionaryDBName)
-		}
-	case "redis":
-		if dbURL == "" {
-			return xerrors.Errorf(`Redis connection string is needed. -%s-url="redis://localhost/0"`,
-				dictionaryDBName)
-		}
-	case "http":
-		if dbURL == "" {
-			return xerrors.Errorf(`URL is needed. -%s-url="http://localhost:1323"`,
-				dictionaryDBName)
-		}
-	default:
-		return xerrors.Errorf("%s type must be either 'sqlite3', 'mysql', 'postgres', 'redis' or 'http'.  -%s-type: %s",
-			dictionaryDBName, dictionaryDBName, dbType)
-	}
-	return nil
 }
 
 // WpScanConf is wpscan.com config
@@ -396,9 +316,4 @@ type Container struct {
 	ContainerID string
 	Name        string
 	Image       string
-}
-
-// VulnSrcConf is an interface of vulnsrc
-type VulnSrcConf interface {
-	CheckHTTPHealth() error
 }

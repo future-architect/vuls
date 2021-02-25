@@ -16,14 +16,20 @@ type TOMLLoader struct {
 
 // Load load the configuration TOML file specified by path arg.
 func (c TOMLLoader) Load(pathToToml, keyPass string) error {
+	// util.Log.Infof("Loading config: %s", pathToToml)
 	if _, err := toml.DecodeFile(pathToToml, &Conf); err != nil {
 		return err
 	}
-	Conf.CveDict.Init()
-	Conf.OvalDict.Init()
-	Conf.Gost.Init()
-	Conf.Exploit.Init()
-	Conf.Metasploit.Init()
+
+	for _, cnf := range []VulnDictInterface{
+		&Conf.CveDict,
+		&Conf.OvalDict,
+		&Conf.Gost,
+		&Conf.Exploit,
+		&Conf.Metasploit,
+	} {
+		cnf.Init()
+	}
 
 	index := 0
 	for name, server := range Conf.Servers {
