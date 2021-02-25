@@ -9,8 +9,8 @@ import (
 	"github.com/future-architect/vuls/cache"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/util"
 	"github.com/k0kubun/pp"
 )
 
@@ -421,7 +421,7 @@ func TestGetChangelogCache(t *testing.T) {
 	}
 
 	const path = "/tmp/vuls-test-cache-11111111.db"
-	log := util.NewEmptyLogger()
+	log := logging.NewEmptyLogger()
 	if err := cache.SetupBolt(path, log); err != nil {
 		t.Errorf("Failed to setup bolt: %s", err)
 	}

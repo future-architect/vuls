@@ -6,9 +6,9 @@ import (
 	"github.com/aquasecurity/trivy-db/pkg/db"
 	trivyDBTypes "github.com/aquasecurity/trivy-db/pkg/types"
 	"github.com/aquasecurity/trivy/pkg/detector/library"
+	"github.com/future-architect/vuls/logging"
 
 	"github.com/aquasecurity/trivy/pkg/types"
-	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
 	// "github.com/aquasecurity/go-dep-parser/pkg/types"
 )
@@ -71,7 +71,7 @@ func (s LibraryScanner) convertFanalToVuln(tvulns []types.DetectedVulnerability)
 	for _, tvuln := range tvulns {
 		vinfo, err := s.getVulnDetail(tvuln)
 		if err != nil {
-			util.Log.Debugf("failed to getVulnDetail. err: %s, tvuln: %#v", err, tvuln)
+			logging.Log.Debugf("failed to getVulnDetail. err: %s, tvuln: %#v", err, tvuln)
 			continue
 		}
 		vulns = append(vulns, vinfo)

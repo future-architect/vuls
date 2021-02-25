@@ -19,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
@@ -50,7 +51,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 
 	ipv4s, ipv6s, err := util.IP()
 	if err != nil {
-		util.Log.Errorf("Failed to fetch scannedIPs. err: %+v", err)
+		logging.Log.Errorf("Failed to fetch scannedIPs. err: %+v", err)
 	}
 	hostname, _ := os.Hostname()
 
@@ -114,7 +115,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 		if err != nil {
 			return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
 		}
-		util.Log.Infof("Uploading... %s", r.FormatServerName())
+		logging.Log.Infof("Uploading... %s", r.FormatServerName())
 		s3Key := renameKeyName(r.ServerUUID, r.Container)
 		putObjectInput := &s3.PutObjectInput{
 			Bucket: aws.String(tempCredential.S3Bucket),
@@ -126,7 +127,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 				tempCredential.S3Bucket, s3Key, err)
 		}
 	}
-	util.Log.Infof("done")
+	logging.Log.Infof("done")
 	return nil
 }
 

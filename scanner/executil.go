@@ -12,7 +12,7 @@ import (
 	"golang.org/x/xerrors"
 
 	conf "github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/util"
+	"github.com/future-architect/vuls/logging"
 	homedir "github.com/mitchellh/go-homedir"
 )
 
@@ -71,7 +71,7 @@ func parallelExec(fn func(osTypeInterface) error, timeoutSec ...int) {
 		go func(s osTypeInterface) {
 			defer func() {
 				if p := recover(); p != nil {
-					util.Log.Debugf("Panic: %s on %s",
+					logging.Log.Debugf("Panic: %s on %s",
 						p, s.getServerInfo().GetServerName())
 				}
 			}()
@@ -99,7 +99,7 @@ func parallelExec(fn func(osTypeInterface) error, timeoutSec ...int) {
 			if len(s.getErrs()) == 0 {
 				successes = append(successes, s)
 			} else {
-				util.Log.Errorf("Error on %s, err: %+v",
+				logging.Log.Errorf("Error on %s, err: %+v",
 					s.getServerInfo().GetServerName(), s.getErrs())
 				errServers = append(errServers, s)
 			}
@@ -122,7 +122,7 @@ func parallelExec(fn func(osTypeInterface) error, timeoutSec ...int) {
 			if !found {
 				err := xerrors.Errorf("Timed out: %s",
 					s.getServerInfo().GetServerName())
-				util.Log.Errorf("%+v", err)
+				logging.Log.Errorf("%+v", err)
 				s.setErrs([]error{err})
 				errServers = append(errServers, s)
 			}
@@ -132,7 +132,7 @@ func parallelExec(fn func(osTypeInterface) error, timeoutSec ...int) {
 	return
 }
 
-func exec(c conf.ServerInfo, cmd string, sudo bool, log ...util.Logger) (result execResult) {
+func exec(c conf.ServerInfo, cmd string, sudo bool, log ...logging.Logger) (result execResult) {
 	logger := getSSHLogger(log...)
 	logger.Debugf("Executing... %s", strings.Replace(cmd, "\n", "", -1))
 
@@ -260,9 +260,9 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 	return
 }
 
-func getSSHLogger(log ...util.Logger) util.Logger {
+func getSSHLogger(log ...logging.Logger) logging.Logger {
 	if len(log) == 0 {
-		return util.Log
+		return logging.Log
 	}
 	return log[0]
 }

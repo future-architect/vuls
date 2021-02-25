@@ -7,6 +7,7 @@ import (
 	"time"
 
 	cnf "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/kotakanbe/goval-dictionary/db"
@@ -70,10 +71,10 @@ func (b Base) CheckIfOvalFresh(driver db.DB, osFamily, release string) (ok bool,
 	since := time.Now()
 	since = since.AddDate(0, 0, -3)
 	if lastModified.Before(since) {
-		util.Log.Warnf("OVAL for %s %s is old, last modified is %s. It's recommended to update OVAL to improve scanning accuracy. How to update OVAL database, see https://github.com/kotakanbe/goval-dictionary#usage",
+		logging.Log.Warnf("OVAL for %s %s is old, last modified is %s. It's recommended to update OVAL to improve scanning accuracy. How to update OVAL database, see https://github.com/kotakanbe/goval-dictionary#usage",
 			osFamily, release, lastModified)
 		return false, nil
 	}
-	util.Log.Infof("OVAL is fresh: %s %s ", osFamily, release)
+	logging.Log.Infof("OVAL is fresh: %s %s ", osFamily, release)
 	return true, nil
 }

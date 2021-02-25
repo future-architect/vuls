@@ -11,6 +11,7 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	apkver "github.com/knqyf263/go-apk-version"
@@ -135,7 +136,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 				if err != nil {
 					errChan <- err
 				} else {
-					util.Log.Debugf("HTTP Request to %s", url)
+					logging.Log.Debugf("HTTP Request to %s", url)
 					httpGet(url, req, resChan, errChan)
 				}
 			}
@@ -201,7 +202,7 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 		return nil
 	}
 	notify := func(err error, t time.Duration) {
-		util.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %s", t, err)
+		logging.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %s", t, err)
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {
@@ -318,7 +319,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 		// Compare between the installed version vs the version in OVAL
 		less, err := lessThan(family, req.versionRelease, ovalPack)
 		if err != nil {
-			util.Log.Debugf("Failed to parse versions: %s, Ver: %#v, OVAL: %#v, DefID: %s",
+			logging.Log.Debugf("Failed to parse versions: %s, Ver: %#v, OVAL: %#v, DefID: %s",
 				err, req.versionRelease, ovalPack, def.DefinitionID)
 			return false, false, ovalPack.Version
 		}
@@ -354,7 +355,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 			// compare version: newVer vs oval
 			less, err := lessThan(family, req.newVersionRelease, ovalPack)
 			if err != nil {
-				util.Log.Debugf("Failed to parse versions: %s, NewVer: %#v, OVAL: %#v, DefID: %s",
+				logging.Log.Debugf("Failed to parse versions: %s, NewVer: %#v, OVAL: %#v, DefID: %s",
 					err, req.newVersionRelease, ovalPack, def.DefinitionID)
 				return false, false, ovalPack.Version
 			}
@@ -404,7 +405,7 @@ func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error
 		return vera.LessThan(verb), nil
 
 	default:
-		util.Log.Errorf("Not implemented yet: %s", family)
+		logging.Log.Errorf("Not implemented yet: %s", family)
 	}
 	return false, xerrors.Errorf("Package version comparison not supported: %s", family)
 }

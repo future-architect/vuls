@@ -12,11 +12,10 @@ import (
 
 	// "github.com/future-architect/vuls/Server"
 
-	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/server"
-	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
 )
 
@@ -66,7 +65,7 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 	defaultResultsDir := filepath.Join(wd, "results")
 	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 
-	defaultLogDir := util.GetDefaultLogDir()
+	defaultLogDir := logging.GetDefaultLogDir()
 	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 
 	f.Float64Var(&c.Conf.CvssScoreOver, "cvss-over", 0,
@@ -88,19 +87,19 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	util.Log = util.NewCustomLogger(c.Conf.Debug, c.Conf.Quiet, c.Conf.LogDir, "", "")
-	util.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
+	logging.Log = logging.NewCustomLogger(c.Conf.Debug, c.Conf.Quiet, c.Conf.LogDir, "", "")
+	logging.Log.Infof("vuls-%s-%s", c.Version, c.Revision)
 	if err := c.Load(p.configPath, ""); err != nil {
-		util.Log.Errorf("Error loading %s. err: %+v", p.configPath, err)
+		logging.Log.Errorf("Error loading %s. err: %+v", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
 
-	util.Log.Info("Validating config...")
+	logging.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnReport() {
 		return subcommands.ExitUsageError
 	}
 
-	for _, cnf := range []config.VulnDictInterface{
+	for _, cnf := range []c.VulnDictInterface{
 		&c.Conf.CveDict,
 		&c.Conf.OvalDict,
 		&c.Conf.Gost,
@@ -108,12 +107,12 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		&c.Conf.Metasploit,
 	} {
 		if err := cnf.Validate(); err != nil {
-			util.Log.Errorf("Failed to validate VulnDict: %+v", err)
+			logging.Log.Errorf("Failed to validate VulnDict: %+v", err)
 			return subcommands.ExitFailure
 		}
 
 		if err := cnf.CheckHTTPHealth(); err != nil {
-			util.Log.Errorf("Run as server mode before reporting: %+v", err)
+			logging.Log.Errorf("Run as server mode before reporting: %+v", err)
 			return subcommands.ExitFailure
 		}
 	}
@@ -127,12 +126,12 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		DebugSQL:      c.Conf.DebugSQL,
 	})
 	if locked {
-		util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %+v", err)
+		logging.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %+v", err)
 		return subcommands.ExitFailure
 	}
 
 	if err != nil {
-		util.Log.Errorf("Failed to init DB Clients. err: %+v", err)
+		logging.Log.Errorf("Failed to init DB Clients. err: %+v", err)
 		return subcommands.ExitFailure
 	}
 
@@ -145,9 +144,9 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "ok")
 	})
-	util.Log.Infof("Listening on %s", p.listen)
+	logging.Log.Infof("Listening on %s", p.listen)
 	if err := http.ListenAndServe(p.listen, nil); err != nil {
-		util.Log.Errorf("Failed to start server. err: %+v", err)
+		logging.Log.Errorf("Failed to start server. err: %+v", err)
 		return subcommands.ExitFailure
 	}
 	return subcommands.ExitSuccess

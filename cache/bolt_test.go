@@ -7,8 +7,8 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/util"
 	"github.com/sirupsen/logrus"
 )
 
@@ -30,7 +30,7 @@ var meta = Meta{
 }
 
 func TestSetupBolt(t *testing.T) {
-	log := util.Logger{Entry: *logrus.NewEntry(&logrus.Logger{})}
+	log := logging.Logger{Entry: *logrus.NewEntry(&logrus.Logger{})}
 
 	err := SetupBolt(path, log)
 	if err != nil {
@@ -59,7 +59,7 @@ func TestSetupBolt(t *testing.T) {
 }
 
 func TestEnsureBuckets(t *testing.T) {
-	log := util.Logger{Entry: *logrus.NewEntry(&logrus.Logger{})}
+	log := logging.Logger{Entry: *logrus.NewEntry(&logrus.Logger{})}
 	if err := SetupBolt(path, log); err != nil {
 		t.Errorf("Failed to setup bolt: %s", err)
 	}
@@ -100,7 +100,7 @@ func TestEnsureBuckets(t *testing.T) {
 
 func TestPutGetChangelog(t *testing.T) {
 	clog := "changelog-text"
-	log := util.Logger{Entry: *logrus.NewEntry(&logrus.Logger{})}
+	log := logging.Logger{Entry: *logrus.NewEntry(&logrus.Logger{})}
 	if err := SetupBolt(path, log); err != nil {
 		t.Errorf("Failed to setup bolt: %s", err)
 	}

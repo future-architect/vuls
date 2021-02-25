@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/parnurzeal/gorequest"
@@ -48,7 +49,7 @@ func getCvesViaHTTP(cveIDs []string, urlPrefix string) (
 				if err != nil {
 					errChan <- err
 				} else {
-					util.Log.Debugf("HTTP Request to %s", url)
+					logging.Log.Debugf("HTTP Request to %s", url)
 					httpGet(url, req, resChan, errChan)
 				}
 			}
@@ -122,7 +123,7 @@ func getAllUnfixedCvesViaHTTP(r *models.ScanResult, urlPrefix string) (
 				if err != nil {
 					errChan <- err
 				} else {
-					util.Log.Debugf("HTTP Request to %s", url)
+					logging.Log.Debugf("HTTP Request to %s", url)
 					httpGet(url, req, resChan, errChan)
 				}
 			}
@@ -165,7 +166,7 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 		return nil
 	}
 	notify := func(err error, t time.Duration) {
-		util.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %s", t, err)
+		logging.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %s", t, err)
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {

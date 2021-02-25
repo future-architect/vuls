@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/asaskevich/govalidator"
+	"github.com/future-architect/vuls/logging"
 	"github.com/parnurzeal/gorequest"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 )
 
@@ -35,7 +35,7 @@ type VulnDict struct {
 
 // Validate settings
 func (cnf *VulnDict) Validate() error {
-	log.Infof("%s.type=%s, %s.url=%s, %s.SQLite3Path=%s",
+	logging.Log.Infof("%s.type=%s, %s.url=%s, %s.SQLite3Path=%s",
 		cnf.Name, cnf.Type, cnf.Name, cnf.URL, cnf.Name, cnf.SQLite3Path)
 
 	switch cnf.Type {

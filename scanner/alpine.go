@@ -6,6 +6,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
@@ -26,7 +27,7 @@ func newAlpine(c config.ServerInfo) *alpine {
 			},
 		},
 	}
-	d.log = util.NewEmptyLogger()
+	d.log = logging.NewEmptyLogger()
 	d.setServerInfo(c)
 	return d
 }

@@ -12,6 +12,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
@@ -39,14 +40,14 @@ func RunTui(results models.ScanResults) subcommands.ExitStatus {
 	g := gocui.NewGui()
 	err := g.Init()
 	if err != nil {
-		util.Log.Errorf("%+v", err)
+		logging.Log.Errorf("%+v", err)
 		return subcommands.ExitFailure
 	}
 	defer g.Close()
 
 	g.SetLayout(layout)
 	if err := keybindings(g); err != nil {
-		util.Log.Errorf("%+v", err)
+		logging.Log.Errorf("%+v", err)
 		return subcommands.ExitFailure
 	}
 	g.SelBgColor = gocui.ColorGreen
@@ -55,7 +56,7 @@ func RunTui(results models.ScanResults) subcommands.ExitStatus {
 
 	if err := g.MainLoop(); err != nil {
 		g.Close()
-		util.Log.Errorf("%+v", err)
+		logging.Log.Errorf("%+v", err)
 		os.Exit(1)
 	}
 	return subcommands.ExitSuccess
@@ -929,7 +930,7 @@ func detailLines() (string, error) {
 			mitigations = append(mitigations,
 				fmt.Sprintf("* %s (%s)", m.URL, m.CveContentType))
 		default:
-			util.Log.Errorf("Unknown CveContentType: %s", m)
+			logging.Log.Errorf("Unknown CveContentType: %s", m)
 		}
 	}
 

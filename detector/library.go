@@ -12,8 +12,8 @@ import (
 	"golang.org/x/xerrors"
 	"k8s.io/utils/clock"
 
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/util"
 )
 
 // DetectLibsCves fills LibraryScanner information
@@ -29,7 +29,7 @@ func DetectLibsCves(r *models.ScanResult, cacheDir string, noProgress bool) (err
 		return err
 	}
 
-	util.Log.Info("Updating library db...")
+	logging.Log.Info("Updating library db...")
 	if err := downloadDB("", cacheDir, noProgress, false, false); err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func DetectLibsCves(r *models.ScanResult, cacheDir string, noProgress bool) (err
 		totalCnt += len(vinfos)
 	}
 
-	util.Log.Infof("%s: %d CVEs are detected with Library",
+	logging.Log.Infof("%s: %d CVEs are detected with Library",
 		r.FormatServerName(), totalCnt)
 
 	return nil
@@ -71,8 +71,8 @@ func downloadDB(appVersion, cacheDir string, quiet, light, skipUpdate bool) erro
 	}
 
 	if needsUpdate {
-		util.Log.Info("Need to update DB")
-		util.Log.Info("Downloading DB...")
+		logging.Log.Info("Need to update DB")
+		logging.Log.Info("Downloading DB...")
 		if err := client.Download(ctx, cacheDir, light); err != nil {
 			return xerrors.Errorf("failed to download vulnerability DB: %w", err)
 		}
@@ -105,7 +105,7 @@ func showDBInfo(cacheDir string) error {
 	if err != nil {
 		return xerrors.Errorf("something wrong with DB: %w", err)
 	}
-	util.Log.Debugf("DB Schema: %d, Type: %d, UpdatedAt: %s, NextUpdate: %s",
+	logging.Log.Debugf("DB Schema: %d, Type: %d, UpdatedAt: %s, NextUpdate: %s",
 		metadata.Version, metadata.Type, metadata.UpdatedAt, metadata.NextUpdate)
 	return nil
 }

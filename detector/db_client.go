@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/util"
+	"github.com/future-architect/vuls/logging"
 	gostdb "github.com/knqyf263/gost/db"
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
 	ovaldb "github.com/kotakanbe/goval-dictionary/db"
@@ -49,7 +49,7 @@ func NewDBClient(cnf DBClientConf) (dbclient *DBClient, locked bool, err error) 
 		return nil, true, xerrors.Errorf("OvalDB is locked: %s",
 			cnf.OvalDictCnf.SQLite3Path)
 	} else if err != nil {
-		util.Log.Warnf("Unable to use OvalDB: %s, err: %s",
+		logging.Log.Warnf("Unable to use OvalDB: %s, err: %s",
 			cnf.OvalDictCnf.SQLite3Path, err)
 	}
 
@@ -58,7 +58,7 @@ func NewDBClient(cnf DBClientConf) (dbclient *DBClient, locked bool, err error) 
 		return nil, true, xerrors.Errorf("gostDB is locked: %s",
 			cnf.GostCnf.SQLite3Path)
 	} else if err != nil {
-		util.Log.Warnf("Unable to use gostDB: %s, err: %s",
+		logging.Log.Warnf("Unable to use gostDB: %s, err: %s",
 			cnf.GostCnf.SQLite3Path, err)
 	}
 
@@ -67,7 +67,7 @@ func NewDBClient(cnf DBClientConf) (dbclient *DBClient, locked bool, err error) 
 		return nil, true, xerrors.Errorf("exploitDB is locked: %s",
 			cnf.ExploitCnf.SQLite3Path)
 	} else if err != nil {
-		util.Log.Warnf("Unable to use exploitDB: %s, err: %s",
+		logging.Log.Warnf("Unable to use exploitDB: %s, err: %s",
 			cnf.ExploitCnf.SQLite3Path, err)
 	}
 
@@ -76,7 +76,7 @@ func NewDBClient(cnf DBClientConf) (dbclient *DBClient, locked bool, err error) 
 		return nil, true, xerrors.Errorf("metasploitDB is locked: %s",
 			cnf.MetasploitCnf.SQLite3Path)
 	} else if err != nil {
-		util.Log.Warnf("Unable to use metasploitDB: %s, err: %s",
+		logging.Log.Warnf("Unable to use metasploitDB: %s, err: %s",
 			cnf.MetasploitCnf.SQLite3Path, err)
 	}
 
@@ -94,17 +94,17 @@ func NewCveDB(cnf DBClientConf) (driver cvedb.DB, locked bool, err error) {
 	if cnf.CveDictCnf.IsFetchViaHTTP() {
 		return nil, false, nil
 	}
-	util.Log.Debugf("open cve-dictionary db (%s)", cnf.CveDictCnf.Type)
+	logging.Log.Debugf("open cve-dictionary db (%s)", cnf.CveDictCnf.Type)
 	path := cnf.CveDictCnf.URL
 	if cnf.CveDictCnf.Type == "sqlite3" {
 		path = cnf.CveDictCnf.SQLite3Path
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			util.Log.Warnf("--cvedb-path=%s file not found. [CPE-scan](https://vuls.io/docs/en/usage-scan-non-os-packages.html#cpe-scan) needs cve-dictionary. if you specify cpe in config.toml, fetch cve-dictionary before reporting. For details, see `https://github.com/kotakanbe/go-cve-dictionary#deploy-go-cve-dictionary`", path)
+			logging.Log.Warnf("--cvedb-path=%s file not found. [CPE-scan](https://vuls.io/docs/en/usage-scan-non-os-packages.html#cpe-scan) needs cve-dictionary. if you specify cpe in config.toml, fetch cve-dictionary before reporting. For details, see `https://github.com/kotakanbe/go-cve-dictionary#deploy-go-cve-dictionary`", path)
 			return nil, false, nil
 		}
 	}
 
-	util.Log.Debugf("Open cve-dictionary db (%s): %s", cnf.CveDictCnf.Type, path)
+	logging.Log.Debugf("Open cve-dictionary db (%s): %s", cnf.CveDictCnf.Type, path)
 	driver, locked, err = cvedb.NewDB(cnf.CveDictCnf.Type, path, cnf.DebugSQL)
 	if err != nil {
 		err = xerrors.Errorf("Failed to init CVE DB. err: %w, path: %s", err, path)
@@ -123,12 +123,12 @@ func NewOvalDB(cnf DBClientConf) (driver ovaldb.DB, locked bool, err error) {
 		path = cnf.OvalDictCnf.SQLite3Path
 
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			util.Log.Warnf("--ovaldb-path=%s file not found", path)
+			logging.Log.Warnf("--ovaldb-path=%s file not found", path)
 			return nil, false, nil
 		}
 	}
 
-	util.Log.Debugf("Open oval-dictionary db (%s): %s", cnf.OvalDictCnf.Type, path)
+	logging.Log.Debugf("Open oval-dictionary db (%s): %s", cnf.OvalDictCnf.Type, path)
 	driver, locked, err = ovaldb.NewDB("", cnf.OvalDictCnf.Type, path, cnf.DebugSQL)
 	if err != nil {
 		err = xerrors.Errorf("Failed to new OVAL DB. err: %w", err)
@@ -150,15 +150,15 @@ func NewGostDB(cnf DBClientConf) (driver gostdb.DB, locked bool, err error) {
 		path = cnf.GostCnf.SQLite3Path
 
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			util.Log.Warnf("--gostdb-path=%s file not found. Vuls can detect `patch-not-released-CVE-ID` using gost if the scan target server is Debian, RHEL or CentOS, For details, see `https://github.com/knqyf263/gost#fetch-redhat`", path)
+			logging.Log.Warnf("--gostdb-path=%s file not found. Vuls can detect `patch-not-released-CVE-ID` using gost if the scan target server is Debian, RHEL or CentOS, For details, see `https://github.com/knqyf263/gost#fetch-redhat`", path)
 			return nil, false, nil
 		}
 	}
 
-	util.Log.Debugf("Open gost db (%s): %s", cnf.GostCnf.Type, path)
+	logging.Log.Debugf("Open gost db (%s): %s", cnf.GostCnf.Type, path)
 	if driver, locked, err = gostdb.NewDB(cnf.GostCnf.Type, path, cnf.DebugSQL); err != nil {
 		if locked {
-			util.Log.Errorf("gostDB is locked. err: %+v", err)
+			logging.Log.Errorf("gostDB is locked. err: %+v", err)
 			return nil, true, err
 		}
 		return nil, false, err
@@ -176,15 +176,15 @@ func NewExploitDB(cnf DBClientConf) (driver exploitdb.DB, locked bool, err error
 		path = cnf.ExploitCnf.SQLite3Path
 
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			util.Log.Warnf("--exploitdb-path=%s file not found. Fetch go-exploit-db before reporting if you want to display exploit codes of detected CVE-IDs. For details, see `https://github.com/vulsio/go-exploitdb`", path)
+			logging.Log.Warnf("--exploitdb-path=%s file not found. Fetch go-exploit-db before reporting if you want to display exploit codes of detected CVE-IDs. For details, see `https://github.com/vulsio/go-exploitdb`", path)
 			return nil, false, nil
 		}
 	}
 
-	util.Log.Debugf("Open exploit db (%s): %s", cnf.ExploitCnf.Type, path)
+	logging.Log.Debugf("Open exploit db (%s): %s", cnf.ExploitCnf.Type, path)
 	if driver, locked, err = exploitdb.NewDB(cnf.ExploitCnf.Type, path, cnf.DebugSQL); err != nil {
 		if locked {
-			util.Log.Errorf("exploitDB is locked. err: %+v", err)
+			logging.Log.Errorf("exploitDB is locked. err: %+v", err)
 			return nil, true, err
 		}
 		return nil, false, err
@@ -202,15 +202,15 @@ func NewMetasploitDB(cnf DBClientConf) (driver metasploitdb.DB, locked bool, err
 		path = cnf.MetasploitCnf.SQLite3Path
 
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			util.Log.Warnf("--msfdb-path=%s file not found. Fetch go-msfdb before reporting if you want to display metasploit modules of detected CVE-IDs. For details, see `https://github.com/takuzoo3868/go-msfdb`", path)
+			logging.Log.Warnf("--msfdb-path=%s file not found. Fetch go-msfdb before reporting if you want to display metasploit modules of detected CVE-IDs. For details, see `https://github.com/takuzoo3868/go-msfdb`", path)
 			return nil, false, nil
 		}
 	}
 
-	util.Log.Debugf("Open metasploit db (%s): %s", cnf.MetasploitCnf.Type, path)
+	logging.Log.Debugf("Open metasploit db (%s): %s", cnf.MetasploitCnf.Type, path)
 	if driver, locked, err = metasploitdb.NewDB(cnf.MetasploitCnf.Type, path, cnf.DebugSQL, false); err != nil {
 		if locked {
-			util.Log.Errorf("metasploitDB is locked. err: %+v", err)
+			logging.Log.Errorf("metasploitDB is locked. err: %+v", err)
 			return nil, true, err
 		}
 		return nil, false, err
@@ -222,12 +222,12 @@ func NewMetasploitDB(cnf DBClientConf) (driver metasploitdb.DB, locked bool, err
 func (d DBClient) CloseDB() {
 	if d.CveDB != nil {
 		if err := d.CveDB.CloseDB(); err != nil {
-			util.Log.Errorf("Failed to close DB. err: %+v", err)
+			logging.Log.Errorf("Failed to close DB. err: %+v", err)
 		}
 	}
 	if d.OvalDB != nil {
 		if err := d.OvalDB.CloseDB(); err != nil {
-			util.Log.Errorf("Failed to close DB. err: %+v", err)
+			logging.Log.Errorf("Failed to close DB. err: %+v", err)
 		}
 	}
 }

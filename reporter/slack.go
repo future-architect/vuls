@@ -9,10 +9,10 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/nlopes/slack"
 	"github.com/parnurzeal/gorequest"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 )
 
@@ -154,8 +154,8 @@ func (w SlackWriter) send(msg message) error {
 		return nil
 	}
 	notify := func(err error, t time.Duration) {
-		log.Warnf("Error %s", err)
-		log.Warn("Retrying in ", t)
+		logging.Log.Warnf("Error %s", err)
+		logging.Log.Warn("Retrying in ", t)
 	}
 	boff := backoff.NewExponentialBackOff()
 	if err := backoff.RetryNotify(f, boff, notify); err != nil {

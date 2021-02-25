@@ -9,12 +9,11 @@ import (
 	"path/filepath"
 
 	"github.com/aquasecurity/trivy/pkg/utils"
-	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/reporter"
-	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
 	"github.com/k0kubun/pp"
 )
@@ -108,7 +107,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	defaultResultsDir := filepath.Join(wd, "results")
 	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 
-	defaultLogDir := util.GetDefaultLogDir()
+	defaultLogDir := logging.GetDefaultLogDir()
 	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 
 	f.BoolVar(&c.Conf.RefreshCve, "refresh-cve", false,
@@ -171,11 +170,11 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	util.Log = util.NewCustomLogger(c.Conf.Debug, c.Conf.Quiet, c.Conf.LogDir, "", "")
-	util.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
+	logging.Log = logging.NewCustomLogger(c.Conf.Debug, c.Conf.Quiet, c.Conf.LogDir, "", "")
+	logging.Log.Infof("vuls-%s-%s", c.Version, c.Revision)
 
 	if err := c.Load(p.configPath, ""); err != nil {
-		util.Log.Errorf("Error loading %s, %+v", p.configPath, err)
+		logging.Log.Errorf("Error loading %s, %+v", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
 	c.Conf.Slack.Enabled = p.toSlack
@@ -202,11 +201,11 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		dir, err = reporter.JSONDir(f.Args())
 	}
 	if err != nil {
-		util.Log.Errorf("Failed to read from JSON: %+v", err)
+		logging.Log.Errorf("Failed to read from JSON: %+v", err)
 		return subcommands.ExitFailure
 	}
 
-	util.Log.Info("Validating config...")
+	logging.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnReport() {
 		return subcommands.ExitUsageError
 	}
@@ -218,10 +217,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	var loaded models.ScanResults
 	if loaded, err = reporter.LoadScanResults(dir); err != nil {
-		util.Log.Error(err)
+		logging.Log.Error(err)
 		return subcommands.ExitFailure
 	}
-	util.Log.Infof("Loaded: %s", dir)
+	logging.Log.Infof("Loaded: %s", dir)
 
 	var res models.ScanResults
 	hasError := false
@@ -229,7 +228,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		if len(r.Errors) == 0 {
 			res = append(res, r)
 		} else {
-			util.Log.Errorf("Ignored since errors occurred during scanning: %s, err: %v",
+			logging.Log.Errorf("Ignored since errors occurred during scanning: %s, err: %v",
 				r.ServerName, r.Errors)
 			hasError = true
 		}
@@ -240,11 +239,11 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	for _, r := range res {
-		util.Log.Debugf("%s: %s",
+		logging.Log.Debugf("%s: %s",
 			r.ServerInfo(), pp.Sprintf("%s", c.Conf.Servers[r.ServerName]))
 	}
 
-	for _, cnf := range []config.VulnDictInterface{
+	for _, cnf := range []c.VulnDictInterface{
 		&c.Conf.CveDict,
 		&c.Conf.OvalDict,
 		&c.Conf.Gost,
@@ -252,12 +251,12 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		&c.Conf.Metasploit,
 	} {
 		if err := cnf.Validate(); err != nil {
-			util.Log.Errorf("Failed to validate VulnDict: %+v", err)
+			logging.Log.Errorf("Failed to validate VulnDict: %+v", err)
 			return subcommands.ExitFailure
 		}
 
 		if err := cnf.CheckHTTPHealth(); err != nil {
-			util.Log.Errorf("Run as server mode before reporting: %+v", err)
+			logging.Log.Errorf("Run as server mode before reporting: %+v", err)
 			return subcommands.ExitFailure
 		}
 	}
@@ -272,18 +271,18 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		DebugSQL:      c.Conf.DebugSQL,
 	})
 	if locked {
-		util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again. err: %+v", err)
+		logging.Log.Errorf("SQLite3 is locked. Close other DB connections and try again. err: %+v", err)
 		return subcommands.ExitFailure
 	}
 	if err != nil {
-		util.Log.Errorf("Failed to init DB Clients. err: %+v", err)
+		logging.Log.Errorf("Failed to init DB Clients. err: %+v", err)
 		return subcommands.ExitFailure
 	}
 	defer dbclient.CloseDB()
 
 	// TODO pass conf by arg
 	if res, err = detector.Detect(*dbclient, res, dir); err != nil {
-		util.Log.Errorf("%+v", err)
+		logging.Log.Errorf("%+v", err)
 		return subcommands.ExitFailure
 	}
 
@@ -343,7 +342,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if p.toS3 {
 		if err := reporter.CheckIfBucketExists(); err != nil {
-			util.Log.Errorf("Check if there is a bucket beforehand: %s, err: %+v",
+			logging.Log.Errorf("Check if there is a bucket beforehand: %s, err: %+v",
 				c.Conf.AWS.S3Bucket, err)
 			return subcommands.ExitUsageError
 		}
@@ -367,11 +366,11 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 
 		if c.Conf.Azure.ContainerName == "" {
-			util.Log.Error("Azure storage container name is required with -azure-container option")
+			logging.Log.Error("Azure storage container name is required with -azure-container option")
 			return subcommands.ExitUsageError
 		}
 		if err := reporter.CheckIfAzureContainerExists(); err != nil {
-			util.Log.Errorf("Check if there is a container beforehand: %s, err: %+v",
+			logging.Log.Errorf("Check if there is a container beforehand: %s, err: %+v",
 				c.Conf.Azure.ContainerName, err)
 			return subcommands.ExitUsageError
 		}
@@ -386,7 +385,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	for _, w := range reports {
 		if err := w.Write(res...); err != nil {
-			util.Log.Errorf("Failed to report. err: %+v", err)
+			logging.Log.Errorf("Failed to report. err: %+v", err)
 			return subcommands.ExitFailure
 		}
 	}

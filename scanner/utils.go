@@ -9,9 +9,9 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/reporter"
-	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
 )
 
@@ -36,7 +36,7 @@ func isRunningKernel(pack models.Package, family string, kernel models.Kernel) (
 		return false, false
 
 	default:
-		util.Log.Warnf("Reboot required is not implemented yet: %s, %v", family, kernel)
+		logging.Log.Warnf("Reboot required is not implemented yet: %s, %v", family, kernel)
 	}
 	return false, false
 }

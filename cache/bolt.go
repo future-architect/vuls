@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
 )
@@ -13,12 +14,12 @@ import (
 // boltdb is used to store a cache of Changelogs of Ubuntu/Debian
 type Bolt struct {
 	Path string
-	Log  util.Logger
+	Log  logging.Logger
 	db   *bolt.DB
 }
 
 // SetupBolt opens a boltdb and creates a meta bucket if not exists.
-func SetupBolt(path string, l util.Logger) error {
+func SetupBolt(path string, l logging.Logger) error {
 	l.Infof("Open boltDB: %s", path)
 	db, err := bolt.Open(path, 0600, nil)
 	if err != nil {

@@ -13,6 +13,7 @@ import (
 	"github.com/future-architect/vuls/cache"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	version "github.com/knqyf263/go-deb-version"
@@ -34,7 +35,7 @@ func newDebian(c config.ServerInfo) *debian {
 			},
 		},
 	}
-	d.log = util.NewEmptyLogger()
+	d.log = logging.NewEmptyLogger()
 	d.setServerInfo(c)
 	return d
 }
@@ -49,7 +50,7 @@ func detectDebian(c config.ServerInfo) (bool, osTypeInterface, error) {
 		if r.ExitStatus == 255 {
 			return false, nil, xerrors.Errorf("Unable to connect via SSH. Scan with -vvv option to print SSH debugging messages and check SSH settings. If you have never SSH to the host to be scanned, SSH to the host before scanning in order to add the HostKey. %s@%s port: %s\n%s", c.User, c.Host, c.Port, r)
 		}
-		util.Log.Debugf("Not Debian like Linux. %s", r)
+		logging.Log.Debugf("Not Debian like Linux. %s", r)
 		return false, nil, nil
 	}
 
@@ -78,7 +79,7 @@ func detectDebian(c config.ServerInfo) (bool, osTypeInterface, error) {
 		deb := newDebian(c)
 		if len(result) == 0 {
 			deb.setDistro("debian/ubuntu", "unknown")
-			util.Log.Warnf("Unknown Debian/Ubuntu version. lsb_release -ir: %s", r)
+			logging.Log.Warnf("Unknown Debian/Ubuntu version. lsb_release -ir: %s", r)
 		} else {
 			distro := strings.ToLower(trim(result[1]))
 			deb.setDistro(distro, trim(result[2]))
@@ -96,7 +97,7 @@ func detectDebian(c config.ServerInfo) (bool, osTypeInterface, error) {
 		result := re.FindStringSubmatch(trim(r.Stdout))
 		deb := newDebian(c)
 		if len(result) == 0 {
-			util.Log.Warnf(
+			logging.Log.Warnf(
 				"Unknown Debian/Ubuntu. cat /etc/lsb-release: %s", r)
 			deb.setDistro("debian/ubuntu", "unknown")
 		} else {
@@ -114,7 +115,7 @@ func detectDebian(c config.ServerInfo) (bool, osTypeInterface, error) {
 		return true, deb, nil
 	}
 
-	util.Log.Debugf("Not Debian like Linux: %s", c.ServerName)
+	logging.Log.Debugf("Not Debian like Linux: %s", c.ServerName)
 	return false, nil, nil
 }
 

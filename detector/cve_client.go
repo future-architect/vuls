@@ -13,6 +13,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/util"
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
 	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
@@ -76,7 +77,7 @@ func (api cvedictClient) FetchCveDetails(driver cvedb.DB, cveIDs []string) (cveD
 				if err != nil {
 					errChan <- err
 				} else {
-					util.Log.Debugf("HTTP Request to %s", url)
+					logging.Log.Debugf("HTTP Request to %s", url)
 					api.httpGet(cveID, url, resChan, errChan)
 				}
 			}
@@ -122,7 +123,7 @@ func (api cvedictClient) httpGet(key, url string, resChan chan<- response, errCh
 		return nil
 	}
 	notify := func(err error, t time.Duration) {
-		util.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %s",
+		logging.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %s",
 			t, err)
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
@@ -150,7 +151,7 @@ func (api cvedictClient) FetchCveDetailsByCpeName(driver cvedb.DB, cpeName strin
 		}
 
 		query := map[string]string{"name": cpeName}
-		util.Log.Debugf("HTTP Request to %s, query: %#v", url, query)
+		logging.Log.Debugf("HTTP Request to %s, query: %#v", url, query)
 		return api.httpPost(cpeName, url, query)
 	}
 	return driver.GetByCpeURI(cpeName)
@@ -173,7 +174,7 @@ func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]c
 		return nil
 	}
 	notify := func(err error, t time.Duration) {
-		util.Log.Warnf("Failed to HTTP POST. retrying in %s seconds. err: %s", t, err)
+		logging.Log.Warnf("Failed to HTTP POST. retrying in %s seconds. err: %s", t, err)
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {

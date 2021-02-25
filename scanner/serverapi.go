@@ -10,6 +10,7 @@ import (
 	"github.com/future-architect/vuls/cache"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
@@ -58,7 +59,7 @@ type osTypeInterface interface {
 	exitedContainers() ([]config.Container, error)
 	allContainers() ([]config.Container, error)
 
-	setLogger(util.Logger)
+	setLogger(logging.Logger)
 	getErrs() []error
 	setErrs([]error)
 }
@@ -77,20 +78,20 @@ type Scanner struct {
 
 // Scan execute scan
 func (s Scanner) Scan() error {
-	util.Log.Info("Detecting Server/Container OS... ")
+	logging.Log.Info("Detecting Server/Container OS... ")
 	if err := s.initServers(); err != nil {
 		return xerrors.Errorf("Failed to init servers. err: %w", err)
 	}
 
-	util.Log.Info("Checking Scan Modes... ")
+	logging.Log.Info("Checking Scan Modes... ")
 	if err := s.checkScanModes(); err != nil {
 		return xerrors.Errorf("Fix config.toml. err: %w", err)
 	}
 
-	util.Log.Info("Detecting Platforms... ")
+	logging.Log.Info("Detecting Platforms... ")
 	s.detectPlatform()
 
-	util.Log.Info("Detecting IPS identifiers... ")
+	logging.Log.Info("Detecting IPS identifiers... ")
 	s.detectIPS()
 
 	if err := s.execScan(); err != nil {
@@ -101,29 +102,29 @@ func (s Scanner) Scan() error {
 
 // Configtest checks if the server is scannable.
 func (s Scanner) Configtest() error {
-	util.Log.Info("Detecting Server/Container OS... ")
+	logging.Log.Info("Detecting Server/Container OS... ")
 	if err := s.initServers(); err != nil {
 		return xerrors.Errorf("Failed to init servers. err: %w", err)
 	}
 
-	util.Log.Info("Checking Scan Modes...")
+	logging.Log.Info("Checking Scan Modes...")
 	if err := s.checkScanModes(); err != nil {
 		return xerrors.Errorf("Fix config.toml. err: %w", err)
 	}
 
-	util.Log.Info("Checking dependencies...")
+	logging.Log.Info("Checking dependencies...")
 	s.checkDependencies()
 
-	util.Log.Info("Checking sudo settings...")
+	logging.Log.Info("Checking sudo settings...")
 	s.checkIfSudoNoPasswd()
 
-	util.Log.Info("It can be scanned with fast scan mode even if warn or err messages are displayed due to lack of dependent packages or sudo settings in fast-root or deep scan mode")
+	logging.Log.Info("It can be scanned with fast scan mode even if warn or err messages are displayed due to lack of dependent packages or sudo settings in fast-root or deep scan mode")
 
 	if len(servers) == 0 {
 		return xerrors.Errorf("No scannable servers")
 	}
 
-	util.Log.Info("Scannable servers are below...")
+	logging.Log.Info("Scannable servers are below...")
 	for _, s := range servers {
 		if s.getServerInfo().IsContainer() {
 			fmt.Printf("%s@%s ",
@@ -152,7 +153,7 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 
 	kernelRelease := header.Get("X-Vuls-Kernel-Release")
 	if kernelRelease == "" {
-		util.Log.Warn("If X-Vuls-Kernel-Release is not specified, there is a possibility of false detection")
+		logging.Log.Warn("If X-Vuls-Kernel-Release is not specified, there is a possibility of false detection")
 	}
 
 	kernelVersion := header.Get("X-Vuls-Kernel-Version")
@@ -179,7 +180,7 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 		osPackages: osPackages{
 			Kernel: kernel,
 		},
-		log: util.Log,
+		log: logging.Log,
 	}
 
 	var osType osTypeInterface
@@ -237,12 +238,12 @@ func (s Scanner) initServers() error {
 	// to generate random color for logging
 	rand.Seed(time.Now().UnixNano())
 	for _, srv := range hosts {
-		srv.setLogger(util.NewCustomLogger(s.Debug, s.Quiet, s.LogDir, config.Colors[rand.Intn(len(config.Colors))], srv.getServerInfo().GetServerName()))
+		srv.setLogger(logging.NewCustomLogger(s.Debug, s.Quiet, s.LogDir, config.Colors[rand.Intn(len(config.Colors))], srv.getServerInfo().GetServerName()))
 	}
 
 	containers, errContainers := s.detectContainerOSes(hosts)
 	for _, srv := range containers {
-		srv.setLogger(util.NewCustomLogger(s.Debug, s.Quiet, s.LogDir, config.Colors[rand.Intn(len(config.Colors))], srv.getServerInfo().GetServerName()))
+		srv.setLogger(logging.NewCustomLogger(s.Debug, s.Quiet, s.LogDir, config.Colors[rand.Intn(len(config.Colors))], srv.getServerInfo().GetServerName()))
 	}
 
 	// set to pkg global variable
@@ -261,14 +262,14 @@ func (s Scanner) initServers() error {
 }
 
 func (s Scanner) detectServerOSes() (servers, errServers []osTypeInterface) {
-	util.Log.Info("Detecting OS of servers... ")
+	logging.Log.Info("Detecting OS of servers... ")
 	osTypeChan := make(chan osTypeInterface, len(s.Targets))
 	defer close(osTypeChan)
 	for _, target := range s.Targets {
 		go func(srv config.ServerInfo) {
 			defer func() {
 				if p := recover(); p != nil {
-					util.Log.Debugf("Panic: %s on %s", p, srv.ServerName)
+					logging.Log.Debugf("Panic: %s on %s", p, srv.ServerName)
 				}
 			}()
 			osTypeChan <- s.detectOS(srv)
@@ -281,16 +282,16 @@ func (s Scanner) detectServerOSes() (servers, errServers []osTypeInterface) {
 		case res := <-osTypeChan:
 			if 0 < len(res.getErrs()) {
 				errServers = append(errServers, res)
-				util.Log.Errorf("(%d/%d) Failed: %s, err: %+v",
+				logging.Log.Errorf("(%d/%d) Failed: %s, err: %+v",
 					i+1, len(s.Targets), res.getServerInfo().ServerName, res.getErrs())
 			} else {
 				servers = append(servers, res)
-				util.Log.Infof("(%d/%d) Detected: %s: %s",
+				logging.Log.Infof("(%d/%d) Detected: %s: %s",
 					i+1, len(s.Targets), res.getServerInfo().ServerName, res.getDistro())
 			}
 		case <-timeout:
 			msg := "Timed out while detecting servers"
-			util.Log.Error(msg)
+			logging.Log.Error(msg)
 			for servername, sInfo := range s.Targets {
 				found := false
 				for _, o := range append(servers, errServers...) {
@@ -304,7 +305,7 @@ func (s Scanner) detectServerOSes() (servers, errServers []osTypeInterface) {
 					u.setServerInfo(sInfo)
 					u.setErrs([]error{xerrors.New("Timed out")})
 					errServers = append(errServers, u)
-					util.Log.Errorf("(%d/%d) Timed out: %s", i+1, len(s.Targets), servername)
+					logging.Log.Errorf("(%d/%d) Timed out: %s", i+1, len(s.Targets), servername)
 				}
 			}
 		}
@@ -313,14 +314,14 @@ func (s Scanner) detectServerOSes() (servers, errServers []osTypeInterface) {
 }
 
 func (s Scanner) detectContainerOSes(hosts []osTypeInterface) (actives, inactives []osTypeInterface) {
-	util.Log.Info("Detecting OS of containers... ")
+	logging.Log.Info("Detecting OS of containers... ")
 	osTypesChan := make(chan []osTypeInterface, len(hosts))
 	defer close(osTypesChan)
 	for _, host := range hosts {
 		go func(h osTypeInterface) {
 			defer func() {
 				if p := recover(); p != nil {
-					util.Log.Debugf("Panic: %s on %s",
+					logging.Log.Debugf("Panic: %s on %s",
 						p, h.getServerInfo().GetServerName())
 				}
 			}()
@@ -336,15 +337,15 @@ func (s Scanner) detectContainerOSes(hosts []osTypeInterface) (actives, inactive
 				sinfo := osi.getServerInfo()
 				if 0 < len(osi.getErrs()) {
 					inactives = append(inactives, osi)
-					util.Log.Errorf("Failed: %s err: %+v", sinfo.ServerName, osi.getErrs())
+					logging.Log.Errorf("Failed: %s err: %+v", sinfo.ServerName, osi.getErrs())
 					continue
 				}
 				actives = append(actives, osi)
-				util.Log.Infof("Detected: %s@%s: %s",
+				logging.Log.Infof("Detected: %s@%s: %s",
 					sinfo.Container.Name, sinfo.ServerName, osi.getDistro())
 			}
 		case <-timeout:
-			util.Log.Error("Some containers timed out")
+			logging.Log.Error("Some containers timed out")
 		}
 	}
 	return
@@ -449,27 +450,27 @@ func (s Scanner) detectOS(c config.ServerInfo) (osType osTypeInterface) {
 	}
 
 	if itsMe {
-		util.Log.Debugf("Debian like Linux. Host: %s:%s", c.Host, c.Port)
+		logging.Log.Debugf("Debian like Linux. Host: %s:%s", c.Host, c.Port)
 		return
 	}
 
 	if itsMe, osType = detectRedhat(c); itsMe {
-		util.Log.Debugf("Redhat like Linux. Host: %s:%s", c.Host, c.Port)
+		logging.Log.Debugf("Redhat like Linux. Host: %s:%s", c.Host, c.Port)
 		return
 	}
 
 	if itsMe, osType = detectSUSE(c); itsMe {
-		util.Log.Debugf("SUSE Linux. Host: %s:%s", c.Host, c.Port)
+		logging.Log.Debugf("SUSE Linux. Host: %s:%s", c.Host, c.Port)
 		return
 	}
 
 	if itsMe, osType = detectFreebsd(c); itsMe {
-		util.Log.Debugf("FreeBSD. Host: %s:%s", c.Host, c.Port)
+		logging.Log.Debugf("FreeBSD. Host: %s:%s", c.Host, c.Port)
 		return
 	}
 
 	if itsMe, osType = detectAlpine(c); itsMe {
-		util.Log.Debugf("Alpine. Host: %s:%s", c.Host, c.Port)
+		logging.Log.Debugf("Alpine. Host: %s:%s", c.Host, c.Port)
 		return
 	}
 
@@ -539,7 +540,7 @@ func (s Scanner) detectPlatform() {
 
 	for i, s := range servers {
 		if s.getServerInfo().IsContainer() {
-			util.Log.Infof("(%d/%d) %s on %s is running on %s",
+			logging.Log.Infof("(%d/%d) %s on %s is running on %s",
 				i+1, len(servers),
 				s.getServerInfo().Container.Name,
 				s.getServerInfo().ServerName,
@@ -547,7 +548,7 @@ func (s Scanner) detectPlatform() {
 			)
 
 		} else {
-			util.Log.Infof("(%d/%d) %s is running on %s",
+			logging.Log.Infof("(%d/%d) %s is running on %s",
 				i+1, len(servers),
 				s.getServerInfo().ServerName,
 				s.getPlatform().Name,
@@ -567,7 +568,7 @@ func (s Scanner) detectIPS() {
 
 	for i, s := range servers {
 		if !s.getServerInfo().IsContainer() {
-			util.Log.Infof("(%d/%d) %s has %d IPS integration",
+			logging.Log.Infof("(%d/%d) %s has %d IPS integration",
 				i+1, len(servers),
 				s.getServerInfo().ServerName,
 				len(s.getServerInfo().IPSIdentifiers),
@@ -627,7 +628,7 @@ func (s Scanner) setupChangelogCache() error {
 		}
 	}
 	if needToSetupCache {
-		if err := cache.SetupBolt(s.CacheDBPath, util.Log); err != nil {
+		if err := cache.SetupBolt(s.CacheDBPath, logging.Log); err != nil {
 			return err
 		}
 	}
@@ -669,7 +670,7 @@ func (s Scanner) getScanResults(scannedAt time.Time) (results models.ScanResults
 	hostname, _ := os.Hostname()
 	ipv4s, ipv6s, err := util.IP()
 	if err != nil {
-		util.Log.Errorf("Failed to fetch scannedIPs. err: %+v", err)
+		logging.Log.Errorf("Failed to fetch scannedIPs. err: %+v", err)
 	}
 
 	for _, s := range append(servers, errServers...) {
@@ -685,7 +686,7 @@ func (s Scanner) getScanResults(scannedAt time.Time) (results models.ScanResults
 		results = append(results, r)
 
 		if 0 < len(r.Warnings) {
-			util.Log.Warnf("Some warnings occurred during scanning on %s. Please fix the warnings to get a useful information. Execute configtest subcommand before scanning to know the cause of the warnings. warnings: %v",
+			logging.Log.Warnf("Some warnings occurred during scanning on %s. Please fix the warnings to get a useful information. Execute configtest subcommand before scanning to know the cause of the warnings. warnings: %v",
 				r.ServerName, r.Warnings)
 		}
 	}

@@ -9,13 +9,12 @@ import (
 	"path/filepath"
 
 	"github.com/aquasecurity/trivy/pkg/utils"
-	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/tui"
-	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
 )
 
@@ -62,7 +61,7 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.Conf.Quiet, "quiet", false, "Quiet mode. No output on stdout")
 	f.BoolVar(&c.Conf.NoProgress, "no-progress", false, "Suppress progress bar")
 
-	defaultLogDir := util.GetDefaultLogDir()
+	defaultLogDir := logging.GetDefaultLogDir()
 	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 
 	wd, _ := os.Getwd()
@@ -102,10 +101,10 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	util.Log = util.NewCustomLogger(c.Conf.Debug, c.Conf.Quiet, c.Conf.LogDir, "", "")
-	util.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
+	logging.Log = logging.NewCustomLogger(c.Conf.Debug, c.Conf.Quiet, c.Conf.LogDir, "", "")
+	logging.Log.Infof("vuls-%s-%s", c.Version, c.Revision)
 	if err := c.Load(p.configPath, ""); err != nil {
-		util.Log.Errorf("Error loading %s, err: %+v", p.configPath, err)
+		logging.Log.Errorf("Error loading %s, err: %+v", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
 
@@ -123,23 +122,23 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		dir, err = reporter.JSONDir(f.Args())
 	}
 	if err != nil {
-		util.Log.Errorf("Failed to read from JSON. err: %+v", err)
+		logging.Log.Errorf("Failed to read from JSON. err: %+v", err)
 		return subcommands.ExitFailure
 	}
 
-	util.Log.Info("Validating config...")
+	logging.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnTui() {
 		return subcommands.ExitUsageError
 	}
 
 	var res models.ScanResults
 	if res, err = reporter.LoadScanResults(dir); err != nil {
-		util.Log.Error(err)
+		logging.Log.Error(err)
 		return subcommands.ExitFailure
 	}
-	util.Log.Infof("Loaded: %s", dir)
+	logging.Log.Infof("Loaded: %s", dir)
 
-	for _, cnf := range []config.VulnDictInterface{
+	for _, cnf := range []c.VulnDictInterface{
 		&c.Conf.CveDict,
 		&c.Conf.OvalDict,
 		&c.Conf.Gost,
@@ -147,12 +146,12 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		&c.Conf.Metasploit,
 	} {
 		if err := cnf.Validate(); err != nil {
-			util.Log.Errorf("Failed to validate VulnDict: %+v", err)
+			logging.Log.Errorf("Failed to validate VulnDict: %+v", err)
 			return subcommands.ExitFailure
 		}
 
 		if err := cnf.CheckHTTPHealth(); err != nil {
-			util.Log.Errorf("Run as server mode before reporting: %+v", err)
+			logging.Log.Errorf("Run as server mode before reporting: %+v", err)
 			return subcommands.ExitFailure
 		}
 	}
@@ -166,25 +165,25 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		DebugSQL:      c.Conf.DebugSQL,
 	})
 	if locked {
-		util.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %+v", err)
+		logging.Log.Errorf("SQLite3 is locked. Close other DB connections and try again: %+v", err)
 		return subcommands.ExitFailure
 	}
 
 	if err != nil {
-		util.Log.Errorf("Failed to init DB Clients. err: %+v", err)
+		logging.Log.Errorf("Failed to init DB Clients. err: %+v", err)
 		return subcommands.ExitFailure
 	}
 
 	defer dbclient.CloseDB()
 
 	if res, err = detector.Detect(*dbclient, res, dir); err != nil {
-		util.Log.Error(err)
+		logging.Log.Error(err)
 		return subcommands.ExitFailure
 	}
 
 	for _, r := range res {
 		if len(r.Warnings) != 0 {
-			util.Log.Warnf("Warning: Some warnings occurred while scanning on %s: %s",
+			logging.Log.Warnf("Warning: Some warnings occurred while scanning on %s: %s",
 				r.FormatServerName(), r.Warnings)
 		}
 	}

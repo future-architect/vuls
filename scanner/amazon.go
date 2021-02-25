@@ -2,8 +2,8 @@ package scanner
 
 import (
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
 )
 
@@ -25,7 +25,7 @@ func newAmazon(c config.ServerInfo) *amazon {
 			sudo: rootPrivAmazon{},
 		},
 	}
-	r.log = util.NewEmptyLogger()
+	r.log = logging.NewEmptyLogger()
 	r.setServerInfo(c)
 	return r
 }

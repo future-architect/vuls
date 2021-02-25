@@ -8,6 +8,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/kotakanbe/goval-dictionary/db"
@@ -24,7 +25,7 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 	ovalContent.Type = models.NewCveContentType(o.family)
 	vinfo, ok := r.ScannedCves[defPacks.def.Debian.CveID]
 	if !ok {
-		util.Log.Debugf("%s is newly detected by OVAL", defPacks.def.Debian.CveID)
+		logging.Log.Debugf("%s is newly detected by OVAL", defPacks.def.Debian.CveID)
 		vinfo = models.VulnInfo{
 			CveID:       defPacks.def.Debian.CveID,
 			Confidences: []models.Confidence{models.OvalMatch},
@@ -34,10 +35,10 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 		cveContents := vinfo.CveContents
 		ctype := models.NewCveContentType(o.family)
 		if _, ok := vinfo.CveContents[ctype]; ok {
-			util.Log.Debugf("%s OVAL will be overwritten",
+			logging.Log.Debugf("%s OVAL will be overwritten",
 				defPacks.def.Debian.CveID)
 		} else {
-			util.Log.Debugf("%s is also detected by OVAL",
+			logging.Log.Debugf("%s is also detected by OVAL",
 				defPacks.def.Debian.CveID)
 			cveContents = models.CveContents{}
 		}
@@ -362,7 +363,7 @@ func (o Ubuntu) fillWithOval(driver db.DB, r *models.ScanResult, kernelNamesInOv
 		if v, ok := r.Packages[linuxImage]; ok {
 			runningKernelVersion = v.Version
 		} else {
-			util.Log.Warnf("Unable to detect vulns of running kernel because the version of the running kernel is unknown. server: %s",
+			logging.Log.Warnf("Unable to detect vulns of running kernel because the version of the running kernel is unknown. server: %s",
 				r.ServerName)
 		}
 
@@ -401,7 +402,7 @@ func (o Ubuntu) fillWithOval(driver db.DB, r *models.ScanResult, kernelNamesInOv
 		}
 
 		if kernelPkgInOVAL == "" {
-			util.Log.Warnf("The OVAL name of the running kernel image %+v is not found. So vulns of `linux` wll be detected. server: %s",
+			logging.Log.Warnf("The OVAL name of the running kernel image %+v is not found. So vulns of `linux` wll be detected. server: %s",
 				r.RunningKernel, r.ServerName)
 			kernelPkgInOVAL = "linux"
 			isOVALKernelPkgAdded = true

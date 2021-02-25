@@ -11,7 +11,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/cwe"
-	"github.com/future-architect/vuls/util"
+	"github.com/future-architect/vuls/logging"
 )
 
 // ScanResults is a slide of ScanResult
@@ -134,7 +134,7 @@ func (r ScanResult) FilterIgnorePkgs(ignorePkgsRegexps []string) ScanResult {
 	for _, pkgRegexp := range ignorePkgsRegexps {
 		re, err := regexp.Compile(pkgRegexp)
 		if err != nil {
-			util.Log.Errorf("Failed to parse %s. err: %+v", pkgRegexp, err)
+			logging.Log.Errorf("Failed to parse %s. err: %+v", pkgRegexp, err)
 			continue
 		} else {
 			regexps = append(regexps, re)

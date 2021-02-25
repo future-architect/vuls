@@ -12,8 +12,8 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
 )
 
@@ -57,15 +57,15 @@ func loadPrevious(currs models.ScanResults) (prevs models.ScanResults, err error
 			path := filepath.Join(dir, filename)
 			r, err := loadOneServerScanResult(path)
 			if err != nil {
-				util.Log.Debugf("%+v", err)
+				logging.Log.Debugf("%+v", err)
 				continue
 			}
 			if r.Family == result.Family && r.Release == result.Release {
 				prevs = append(prevs, *r)
-				util.Log.Infof("Previous json found: %s", path)
+				logging.Log.Infof("Previous json found: %s", path)
 				break
 			} else {
-				util.Log.Infof("Previous json is different family.Release: %s, pre: %s.%s cur: %s.%s",
+				logging.Log.Infof("Previous json is different family.Release: %s, pre: %s.%s cur: %s.%s",
 					path, r.Family, r.Release, result.Family, result.Release)
 			}
 		}
@@ -137,27 +137,27 @@ func getPlusDiffCves(previous, current models.ScanResult) models.VulnInfos {
 			if isCveInfoUpdated(v.CveID, previous, current) {
 				v.DiffStatus = models.DiffPlus
 				updated[v.CveID] = v
-				util.Log.Debugf("updated: %s", v.CveID)
+				logging.Log.Debugf("updated: %s", v.CveID)
 
 				// TODO commented out because  a bug of diff logic when multiple oval defs found for a certain CVE-ID and same updated_at
 				// if these OVAL defs have different affected packages, this logic detects as updated.
 				// This logic will be uncomented after integration with gost https://github.com/knqyf263/gost
 				// } else if isCveFixed(v, previous) {
 				// updated[v.CveID] = v
-				// util.Log.Debugf("fixed: %s", v.CveID)
+				// logging.Log.Debugf("fixed: %s", v.CveID)
 
 			} else {
-				util.Log.Debugf("same: %s", v.CveID)
+				logging.Log.Debugf("same: %s", v.CveID)
 			}
 		} else {
-			util.Log.Debugf("new: %s", v.CveID)
+			logging.Log.Debugf("new: %s", v.CveID)
 			v.DiffStatus = models.DiffPlus
 			new[v.CveID] = v
 		}
 	}
 
 	if len(updated) == 0 && len(new) == 0 {
-		util.Log.Infof("%s: There are %d vulnerabilities, but no difference between current result and previous one.", current.FormatServerName(), len(current.ScannedCves))
+		logging.Log.Infof("%s: There are %d vulnerabilities, but no difference between current result and previous one.", current.FormatServerName(), len(current.ScannedCves))
 	}
 
 	for cveID, vuln := range new {
@@ -177,11 +177,11 @@ func getMinusDiffCves(previous, current models.ScanResult) models.VulnInfos {
 		if !currentCveIDsSet[v.CveID] {
 			v.DiffStatus = models.DiffMinus
 			clear[v.CveID] = v
-			util.Log.Debugf("clear: %s", v.CveID)
+			logging.Log.Debugf("clear: %s", v.CveID)
 		}
 	}
 	if len(clear) == 0 {
-		util.Log.Infof("%s: There are %d vulnerabilities, but no difference between current result and previous one.", current.FormatServerName(), len(current.ScannedCves))
+		logging.Log.Infof("%s: There are %d vulnerabilities, but no difference between current result and previous one.", current.FormatServerName(), len(current.ScannedCves))
 	}
 
 	return clear
@@ -218,7 +218,7 @@ func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
 
 	for _, t := range cTypes {
 		if !curLastModified[t].Equal(prevLastModified[t]) {
-			util.Log.Debugf("%s LastModified not equal: \n%s\n%s",
+			logging.Log.Debugf("%s LastModified not equal: \n%s\n%s",
 				cveID, curLastModified[t], prevLastModified[t])
 			return true
 		}

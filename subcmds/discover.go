@@ -8,10 +8,11 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/logging"
 	"github.com/google/subcommands"
 
 	ps "github.com/kotakanbe/go-pingscanner"
-	"github.com/sirupsen/logrus"
 )
 
 // DiscoverCmd is Subcommand of host discovery mode
@@ -38,9 +39,11 @@ func (p *DiscoverCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *DiscoverCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogDir, "", "")
+	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 	// validate
 	if len(f.Args()) == 0 {
-		logrus.Errorf("Usage: " + p.Usage())
+		logging.Log.Errorf("Usage: " + p.Usage())
 		return subcommands.ExitUsageError
 	}
 
@@ -55,15 +58,15 @@ func (p *DiscoverCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface
 		hosts, err := scanner.Scan()
 
 		if err != nil {
-			logrus.Errorf("Host Discovery failed. err: %s", err)
+			logging.Log.Errorf("Host Discovery failed. err: %s", err)
 			return subcommands.ExitFailure
 		}
 
 		if len(hosts) < 1 {
-			logrus.Errorf("Active hosts not found in %s", cidr)
+			logging.Log.Errorf("Active hosts not found in %s", cidr)
 			return subcommands.ExitSuccess
 		} else if err := printConfigToml(hosts); err != nil {
-			logrus.Errorf("Failed to parse template. err: %s", err)
+			logging.Log.Errorf("Failed to parse template. err: %s", err)
 			return subcommands.ExitFailure
 		}
 	}

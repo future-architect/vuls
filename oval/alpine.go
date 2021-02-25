@@ -5,8 +5,8 @@ package oval
 import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/util"
 	"github.com/kotakanbe/goval-dictionary/db"
 )
 
@@ -47,7 +47,7 @@ func (o Alpine) update(r *models.ScanResult, defPacks defPacks) {
 	cveID := defPacks.def.Advisory.Cves[0].CveID
 	vinfo, ok := r.ScannedCves[cveID]
 	if !ok {
-		util.Log.Debugf("%s is newly detected by OVAL", cveID)
+		logging.Log.Debugf("%s is newly detected by OVAL", cveID)
 		vinfo = models.VulnInfo{
 			CveID:       cveID,
 			Confidences: []models.Confidence{models.OvalMatch},
