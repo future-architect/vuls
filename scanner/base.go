@@ -17,7 +17,6 @@ import (
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 
 	// Import library scanner
@@ -38,7 +37,7 @@ type base struct {
 	LibraryScanners []models.LibraryScanner
 	WordPress       models.WordPressPackages
 
-	log   *logrus.Entry
+	log   util.Logger
 	errs  []error
 	warns []error
 }
@@ -482,6 +481,10 @@ func (l *base) setErrs(errs []error) {
 
 func (l *base) getErrs() []error {
 	return l.errs
+}
+
+func (l *base) setLogger(logger util.Logger) {
+	l.log = logger
 }
 
 const (

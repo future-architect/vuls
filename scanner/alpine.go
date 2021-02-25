@@ -26,7 +26,7 @@ func newAlpine(c config.ServerInfo) *alpine {
 			},
 		},
 	}
-	d.log = util.NewCustomLogger(c)
+	d.log = util.NewEmptyLogger()
 	d.setServerInfo(c)
 	return d
 }

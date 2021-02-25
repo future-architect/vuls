@@ -12,49 +12,57 @@ import (
 	"github.com/rifflock/lfshook"
 	"github.com/sirupsen/logrus"
 
-	"github.com/future-architect/vuls/config"
 	formatter "github.com/kotakanbe/logrus-prefixed-formatter"
 )
 
 // Log for localhost
-var Log *logrus.Entry
+var Log Logger
+
+// Logger has logrus entry
+type Logger struct {
+	logrus.Entry
+}
 
 func init() {
 	log := logrus.New()
 	log.Out = ioutil.Discard
 	fields := logrus.Fields{"prefix": ""}
-	Log = log.WithFields(fields)
+	Log = Logger{Entry: *log.WithFields(fields)}
+}
+
+func NewEmptyLogger() Logger {
+	return Logger{Entry: logrus.Entry{Logger: logrus.New()}}
 }
 
 // NewCustomLogger creates logrus
-func NewCustomLogger(server config.ServerInfo) *logrus.Entry {
+func NewCustomLogger(debug, quiet bool, logDir, logMsgAnsiColor, serverName string) Logger {
 	log := logrus.New()
-	log.Formatter = &formatter.TextFormatter{MsgAnsiColor: server.LogMsgAnsiColor}
+	log.Formatter = &formatter.TextFormatter{MsgAnsiColor: logMsgAnsiColor}
 	log.Level = logrus.InfoLevel
-	if config.Conf.Debug {
+	if debug {
 		log.Level = logrus.DebugLevel
 		pp.ColoringEnabled = false
 	}
 
 	if flag.Lookup("test.v") != nil {
-		return logrus.NewEntry(log)
+		return Logger{Entry: *logrus.NewEntry(log)}
 	}
 
 	// File output
-	logDir := GetDefaultLogDir()
-	if 0 < len(config.Conf.LogDir) {
-		logDir = config.Conf.LogDir
+	dir := GetDefaultLogDir()
+	if logDir != "" {
+		dir = logDir
 	}
 
 	// Only log to a file if quiet mode enabled
-	if config.Conf.Quiet && flag.Lookup("test.v") == nil {
-		if _, err := os.Stat(logDir); os.IsNotExist(err) {
-			if err := os.Mkdir(logDir, 0700); err != nil {
-				log.Errorf("Failed to create log directory. path: %s, err: %s", logDir, err)
+	if quiet && flag.Lookup("test.v") == nil {
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			if err := os.Mkdir(dir, 0700); err != nil {
+				log.Errorf("Failed to create log directory. path: %s, err: %s", dir, err)
 			}
 		}
 
-		logFile := logDir + "/vuls.log"
+		logFile := dir + "/vuls.log"
 		if file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
 			log.Out = file
 		} else {
@@ -66,12 +74,12 @@ func NewCustomLogger(server config.ServerInfo) *logrus.Entry {
 	}
 
 	whereami := "localhost"
-	if 0 < len(server.ServerName) {
-		whereami = server.GetServerName()
+	if 0 < len(serverName) {
+		whereami = serverName
 	}
 
-	if _, err := os.Stat(logDir); err == nil {
-		path := filepath.Join(logDir, fmt.Sprintf("%s.log", whereami))
+	if _, err := os.Stat(dir); err == nil {
+		path := filepath.Join(dir, fmt.Sprintf("%s.log", whereami))
 		if _, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
 			log.Hooks.Add(lfshook.NewHook(lfshook.PathMap{
 				logrus.DebugLevel: path,
@@ -87,8 +95,7 @@ func NewCustomLogger(server config.ServerInfo) *logrus.Entry {
 	}
 
 	entry := log.WithFields(logrus.Fields{"prefix": whereami})
-	entry.Infof("vuls-%s-%s", config.Version, config.Revision)
-	return entry
+	return Logger{Entry: *entry}
 }
 
 // GetDefaultLogDir returns default log directory

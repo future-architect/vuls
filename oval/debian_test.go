@@ -6,9 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/util"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
@@ -56,7 +54,7 @@ func TestPackNamesOfUpdateDebian(t *testing.T) {
 		},
 	}
 
-	util.Log = util.NewCustomLogger(config.ServerInfo{})
+	// util.Log = util.NewCustomLogger()
 	for i, tt := range tests {
 		Debian{}.update(&tt.in, tt.defPacks)
 		e := tt.out.ScannedCves["CVE-2000-1000"].AffectedPackages

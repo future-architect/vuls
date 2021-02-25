@@ -24,7 +24,7 @@ func newOracle(c config.ServerInfo) *oracle {
 			sudo: rootPrivOracle{},
 		},
 	}
-	r.log = util.NewCustomLogger(c)
+	r.log = util.NewEmptyLogger()
 	r.setServerInfo(c)
 	return r
 }

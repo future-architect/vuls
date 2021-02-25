@@ -34,7 +34,7 @@ func newDebian(c config.ServerInfo) *debian {
 			},
 		},
 	}
-	d.log = util.NewCustomLogger(c)
+	d.log = util.NewEmptyLogger()
 	d.setServerInfo(c)
 	return d
 }
@@ -626,7 +626,6 @@ func (o *debian) parseAptGetUpgrade(stdout string) (updatableNames []string, err
 					result[1], len(updatableNames))
 			}
 			stopLineFound = true
-			o.log.Debugf("Found the stop line. line: %s", line)
 			break
 		}
 		updatableNames = append(updatableNames, strings.Fields(line)...)

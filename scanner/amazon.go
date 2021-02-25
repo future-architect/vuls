@@ -25,7 +25,7 @@ func newAmazon(c config.ServerInfo) *amazon {
 			sudo: rootPrivAmazon{},
 		},
 	}
-	r.log = util.NewCustomLogger(c)
+	r.log = util.NewEmptyLogger()
 	r.setServerInfo(c)
 	return r
 }

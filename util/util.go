@@ -18,8 +18,7 @@ func GenWorkers(num int) chan<- func() {
 		go func() {
 			defer func() {
 				if p := recover(); p != nil {
-					log := NewCustomLogger(config.ServerInfo{})
-					log.Errorf("run time panic: %v", p)
+					Log.Errorf("run time panic: %v", p)
 				}
 			}()
 			for f := range tasks {

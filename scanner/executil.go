@@ -14,7 +14,6 @@ import (
 	conf "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/util"
 	homedir "github.com/mitchellh/go-homedir"
-	"github.com/sirupsen/logrus"
 )
 
 type execResult struct {
@@ -133,7 +132,7 @@ func parallelExec(fn func(osTypeInterface) error, timeoutSec ...int) {
 	return
 }
 
-func exec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (result execResult) {
+func exec(c conf.ServerInfo, cmd string, sudo bool, log ...util.Logger) (result execResult) {
 	logger := getSSHLogger(log...)
 	logger.Debugf("Executing... %s", strings.Replace(cmd, "\n", "", -1))
 
@@ -143,7 +142,7 @@ func exec(c conf.ServerInfo, cmd string, sudo bool, log ...*logrus.Entry) (resul
 		result = sshExecExternal(c, cmd, sudo)
 	}
 
-	logger.Debug(result)
+	logger.Debugf("%+v", result)
 	return
 }
 
@@ -261,7 +260,7 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 	return
 }
 
-func getSSHLogger(log ...*logrus.Entry) *logrus.Entry {
+func getSSHLogger(log ...util.Logger) util.Logger {
 	if len(log) == 0 {
 		return util.Log
 	}

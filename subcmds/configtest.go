@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/subcommands"
 
+	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/scanner"
 	"github.com/future-architect/vuls/util"
@@ -69,7 +70,8 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	util.Log = util.NewCustomLogger(c.ServerInfo{})
+	util.Log = util.NewCustomLogger(c.Conf.Debug, c.Conf.Quiet, c.Conf.LogDir, "", "")
+	util.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 
 	if err := mkdirDotVuls(); err != nil {
 		util.Log.Errorf("Failed to create .vuls. err: %+v", err)

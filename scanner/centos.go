@@ -24,7 +24,7 @@ func newCentOS(c config.ServerInfo) *centos {
 			sudo: rootPrivCentos{},
 		},
 	}
-	r.log = util.NewCustomLogger(c)
+	r.log = util.NewEmptyLogger()
 	r.setServerInfo(c)
 	return r
 }

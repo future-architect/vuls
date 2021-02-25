@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/asaskevich/govalidator"
+	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/scanner"
 	"github.com/future-architect/vuls/util"
@@ -97,8 +98,8 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	// Setup Logger
-	util.Log = util.NewCustomLogger(c.ServerInfo{})
+	util.Log = util.NewCustomLogger(c.Conf.Debug, c.Conf.Quiet, c.Conf.LogDir, "", "")
+	util.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 
 	if err := mkdirDotVuls(); err != nil {
 		util.Log.Errorf("Failed to create $HOME/.vuls err: %+v", err)
@@ -183,6 +184,9 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		ScanTimeoutSec: p.scanTimeoutSec,
 		CacheDBPath:    p.cacheDBPath,
 		Targets:        target,
+		Debug:          c.Conf.Debug,
+		Quiet:          c.Conf.Quiet,
+		LogDir:         c.Conf.LogDir,
 	}
 
 	if err := s.Scan(); err != nil {

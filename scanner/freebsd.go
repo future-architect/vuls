@@ -26,7 +26,7 @@ func newBsd(c config.ServerInfo) *bsd {
 			},
 		},
 	}
-	d.log = util.NewCustomLogger(c)
+	d.log = util.NewEmptyLogger()
 	d.setServerInfo(c)
 	return d
 }

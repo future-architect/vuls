@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
 	"time"
@@ -57,6 +58,7 @@ type osTypeInterface interface {
 	exitedContainers() ([]config.Container, error)
 	allContainers() ([]config.Container, error)
 
+	setLogger(util.Logger)
 	getErrs() []error
 	setErrs([]error)
 }
@@ -66,6 +68,9 @@ type Scanner struct {
 	TimeoutSec     int
 	ScanTimeoutSec int
 	CacheDBPath    string
+	Debug          bool
+	LogDir         string
+	Quiet          bool
 
 	Targets map[string]config.ServerInfo
 }
@@ -228,7 +233,17 @@ func (s Scanner) initServers() error {
 	if len(hosts) == 0 {
 		return xerrors.New("No scannable host OS")
 	}
+
+	// to generate random color for logging
+	rand.Seed(time.Now().UnixNano())
+	for _, srv := range hosts {
+		srv.setLogger(util.NewCustomLogger(s.Debug, s.Quiet, s.LogDir, config.Colors[rand.Intn(len(config.Colors))], srv.getServerInfo().GetServerName()))
+	}
+
 	containers, errContainers := s.detectContainerOSes(hosts)
+	for _, srv := range containers {
+		srv.setLogger(util.NewCustomLogger(s.Debug, s.Quiet, s.LogDir, config.Colors[rand.Intn(len(config.Colors))], srv.getServerInfo().GetServerName()))
+	}
 
 	// set to pkg global variable
 	for _, host := range hosts {
