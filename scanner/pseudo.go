@@ -30,7 +30,7 @@ func newPseudo(c config.ServerInfo) *pseudo {
 			},
 		},
 	}
-	d.log = logging.NewEmptyLogger()
+	d.log = logging.NewNormalLogger()
 	d.setServerInfo(c)
 	return d
 }

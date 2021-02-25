@@ -25,7 +25,7 @@ func newRHEL(c config.ServerInfo) *rhel {
 			sudo: rootPrivRHEL{},
 		},
 	}
-	r.log = logging.NewEmptyLogger()
+	r.log = logging.NewNormalLogger()
 	r.setServerInfo(c)
 	return r
 }

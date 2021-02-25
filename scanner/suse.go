@@ -31,7 +31,7 @@ func newSUSE(c config.ServerInfo) *suse {
 			},
 		},
 	}
-	r.log = logging.NewEmptyLogger()
+	r.log = logging.NewNormalLogger()
 	r.setServerInfo(c)
 	return r
 }

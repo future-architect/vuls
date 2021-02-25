@@ -421,7 +421,7 @@ func TestGetChangelogCache(t *testing.T) {
 	}
 
 	const path = "/tmp/vuls-test-cache-11111111.db"
-	log := logging.NewEmptyLogger()
+	log := logging.NewNormalLogger()
 	if err := cache.SetupBolt(path, log); err != nil {
 		t.Errorf("Failed to setup bolt: %s", err)
 	}

@@ -30,7 +30,8 @@ func init() {
 	Log = Logger{Entry: *log.WithFields(fields)}
 }
 
-func NewEmptyLogger() Logger {
+// NewNormalLogger creates normal logger
+func NewNormalLogger() Logger {
 	return Logger{Entry: logrus.Entry{Logger: logrus.New()}}
 }
 
