@@ -58,7 +58,7 @@ func (p *DiscoverCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface
 		hosts, err := scanner.Scan()
 
 		if err != nil {
-			logging.Log.Errorf("Host Discovery failed. err: %s", err)
+			logging.Log.Errorf("Host Discovery failed. err: %+v", err)
 			return subcommands.ExitFailure
 		}
 
@@ -66,7 +66,7 @@ func (p *DiscoverCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface
 			logging.Log.Errorf("Active hosts not found in %s", cidr)
 			return subcommands.ExitSuccess
 		} else if err := printConfigToml(hosts); err != nil {
-			logging.Log.Errorf("Failed to parse template. err: %s", err)
+			logging.Log.Errorf("Failed to parse template. err: %+v", err)
 			return subcommands.ExitFailure
 		}
 	}

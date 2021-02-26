@@ -148,7 +148,7 @@ func (w SlackWriter) send(msg message) error {
 				return nil
 			}
 			return xerrors.Errorf(
-				"HTTP POST error. url: %s, resp: %v, body: %s, err: %s",
+				"HTTP POST error. url: %s, resp: %v, body: %s, err: %+v",
 				conf.HookURL, resp, body, errs)
 		}
 		return nil

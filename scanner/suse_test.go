@@ -51,7 +51,7 @@ v | Clone of SLES11-SP3-Updates for x86_64 | ConsoleKit | 0.2.10-64.65.1 | 0.2.1
 	for _, tt := range tests {
 		packages, err := r.parseZypperLULines(tt.in)
 		if err != nil {
-			t.Errorf("Error has occurred, err: %s\ntt.in: %v", err, tt.in)
+			t.Errorf("Error has occurred, err: %+v\ntt.in: %v", err, tt.in)
 			return
 		}
 		for name, ePack := range tt.out {
@@ -87,7 +87,7 @@ func TestScanUpdatablePackage(t *testing.T) {
 	for _, tt := range tests {
 		pack, err := r.parseZypperLUOneLine(tt.in)
 		if err != nil {
-			t.Errorf("Error has occurred, err: %s\ntt.in: %v", err, tt.in)
+			t.Errorf("Error has occurred, err: %+v\ntt.in: %v", err, tt.in)
 			return
 		}
 		if !reflect.DeepEqual(*pack, tt.out) {

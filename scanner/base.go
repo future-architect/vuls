@@ -954,19 +954,19 @@ func (l *base) pkgPs(getOwnerPkgs func([]string) ([]string, error)) error {
 		stdout := ""
 		stdout, err = l.lsProcExe(pid)
 		if err != nil {
-			l.log.Debugf("Failed to exec ls -l /proc/%s/exe err: %s", pid, err)
+			l.log.Debugf("Failed to exec ls -l /proc/%s/exe err: %+v", pid, err)
 			continue
 		}
 		s, err := l.parseLsProcExe(stdout)
 		if err != nil {
-			l.log.Debugf("Failed to parse /proc/%s/exe: %s", pid, err)
+			l.log.Debugf("Failed to parse /proc/%s/exe: %+v", pid, err)
 			continue
 		}
 		pidLoadedFiles[pid] = append(pidLoadedFiles[pid], s)
 
 		stdout, err = l.grepProcMap(pid)
 		if err != nil {
-			l.log.Debugf("Failed to exec /proc/%s/maps: %s", pid, err)
+			l.log.Debugf("Failed to exec /proc/%s/maps: %+v", pid, err)
 			continue
 		}
 		ss := l.parseGrepProcMap(stdout)

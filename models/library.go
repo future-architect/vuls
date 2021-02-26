@@ -71,7 +71,7 @@ func (s LibraryScanner) convertFanalToVuln(tvulns []types.DetectedVulnerability)
 	for _, tvuln := range tvulns {
 		vinfo, err := s.getVulnDetail(tvuln)
 		if err != nil {
-			logging.Log.Debugf("failed to getVulnDetail. err: %s, tvuln: %#v", err, tvuln)
+			logging.Log.Debugf("failed to getVulnDetail. err: %+v, tvuln: %#v", err, tvuln)
 			continue
 		}
 		vulns = append(vulns, vinfo)

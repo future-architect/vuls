@@ -42,7 +42,7 @@ func (b Base) CheckIfOvalFetched(driver db.DB, osFamily, release string) (fetche
 	url, _ := util.URLPathJoin(cnf.Conf.OvalDict.URL, "count", osFamily, release)
 	resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
 	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-		return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %s", url, resp, errs)
+		return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
 	}
 	count := 0
 	if err := json.Unmarshal([]byte(body), &count); err != nil {
@@ -60,7 +60,7 @@ func (b Base) CheckIfOvalFresh(driver db.DB, osFamily, release string) (ok bool,
 		url, _ := util.URLPathJoin(cnf.Conf.OvalDict.URL, "lastmodified", osFamily, release)
 		resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-			return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %s", url, resp, errs)
+			return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
 		}
 
 		if err := json.Unmarshal([]byte(body), &lastModified); err != nil {

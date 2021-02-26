@@ -452,7 +452,7 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 	case constant.RedHat, constant.CentOS, constant.Oracle:
 		majorVersion, err := o.Distro.MajorVersion()
 		if err != nil || majorVersion < 6 {
-			o.log.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
+			o.log.Errorf("Not implemented yet: %s, err: %+v", o.Distro, err)
 			return false
 		}
 

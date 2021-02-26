@@ -117,13 +117,13 @@ func (api cvedictClient) httpGet(key, url string, resChan chan<- response, errCh
 		//  resp, body, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
 		resp, body, errs = gorequest.New().Timeout(10 * time.Second).Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-			return xerrors.Errorf("HTTP GET Error, url: %s, resp: %v, err: %s",
+			return xerrors.Errorf("HTTP GET Error, url: %s, resp: %v, err: %+v",
 				url, resp, errs)
 		}
 		return nil
 	}
 	notify := func(err error, t time.Duration) {
-		logging.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %s",
+		logging.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %+v",
 			t, err)
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
@@ -169,12 +169,12 @@ func (api cvedictClient) httpPost(key, url string, query map[string]string) ([]c
 		}
 		resp, body, errs = req.End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-			return xerrors.Errorf("HTTP POST error. url: %s, resp: %v, err: %s", url, resp, errs)
+			return xerrors.Errorf("HTTP POST error. url: %s, resp: %v, err: %+v", url, resp, errs)
 		}
 		return nil
 	}
 	notify := func(err error, t time.Duration) {
-		logging.Log.Warnf("Failed to HTTP POST. retrying in %s seconds. err: %s", t, err)
+		logging.Log.Warnf("Failed to HTTP POST. retrying in %s seconds. err: %+v", t, err)
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {

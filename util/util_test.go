@@ -69,7 +69,7 @@ func TestUrlJoin(t *testing.T) {
 		paths := tt.in[1:]
 		actual, err := URLPathJoin(baseurl, paths...)
 		if err != nil {
-			t.Errorf("\nunexpected error occurred, err: %s,\ninput:%#v\nexpected: %s\n  actual: %s", err, tt.in, tt.out, actual)
+			t.Errorf("\nunexpected error occurred, err: %+v,\ninput:%#v\nexpected: %s\n  actual: %s", err, tt.in, tt.out, actual)
 		}
 		if actual != tt.out {
 			t.Errorf("\ninput:%#v\nexpected: %s\n  actual: %s", tt.in, tt.out, actual)

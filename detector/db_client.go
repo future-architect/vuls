@@ -76,7 +76,7 @@ func NewDBClient(cnf DBClientConf) (dbclient *DBClient, locked bool, err error) 
 		return nil, true, xerrors.Errorf("metasploitDB is locked: %s",
 			cnf.MetasploitCnf.SQLite3Path)
 	} else if err != nil {
-		logging.Log.Warnf("Unable to use metasploitDB: %s, err: %s",
+		logging.Log.Warnf("Unable to use metasploitDB: %s, err: %+v",
 			cnf.MetasploitCnf.SQLite3Path, err)
 	}
 

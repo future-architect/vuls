@@ -197,12 +197,12 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 			if count == retryMax {
 				return nil
 			}
-			return xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %s", url, resp, errs)
+			return xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
 		}
 		return nil
 	}
 	notify := func(err error, t time.Duration) {
-		logging.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %s", t, err)
+		logging.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %+v", t, err)
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {

@@ -59,7 +59,7 @@ func NewCustomLogger(debug, quiet bool, logDir, logMsgAnsiColor, serverName stri
 	if quiet && flag.Lookup("test.v") == nil {
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
 			if err := os.Mkdir(dir, 0700); err != nil {
-				log.Errorf("Failed to create log directory. path: %s, err: %s", dir, err)
+				log.Errorf("Failed to create log directory. path: %s, err: %+v", dir, err)
 			}
 		}
 
@@ -68,7 +68,7 @@ func NewCustomLogger(debug, quiet bool, logDir, logMsgAnsiColor, serverName stri
 			log.Out = file
 		} else {
 			log.Out = os.Stderr
-			log.Errorf("Failed to create log file. path: %s, err: %s", logFile, err)
+			log.Errorf("Failed to create log file. path: %s, err: %+v", logFile, err)
 		}
 	} else {
 		log.Out = os.Stderr
@@ -91,7 +91,7 @@ func NewCustomLogger(debug, quiet bool, logDir, logMsgAnsiColor, serverName stri
 				logrus.PanicLevel: path,
 			}, nil))
 		} else {
-			log.Errorf("Failed to create log file. path: %s, err: %s", path, err)
+			log.Errorf("Failed to create log file. path: %s, err: %+v", path, err)
 		}
 	}
 
