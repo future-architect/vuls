@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
 	"github.com/future-architect/vuls/cwe"
 	"github.com/future-architect/vuls/exploit"
 	"github.com/future-architect/vuls/gost"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/msf"
 	"github.com/future-architect/vuls/oval"
@@ -29,7 +29,7 @@ import (
 )
 
 // type Detector struct {
-// 	Targets map[string]config.ServerInfo
+// 	Targets map[string]c.ServerInfo
 // }
 
 // Detect vulns and fill CVE detailed information
@@ -39,7 +39,7 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 	reportedAt := time.Now()
 	for i, r := range rs {
 		if !c.Conf.RefreshCve && !needToRefreshCve(r) {
-			util.Log.Info("No need to refresh")
+			logging.Log.Info("No need to refresh")
 			continue
 		}
 
@@ -94,7 +94,7 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 			return nil, xerrors.Errorf("Failed to detect GitHub Cves: %w", err)
 		}
 
-		if err := DetectWordPressCves(&r, &config.Conf.WpScan); err != nil {
+		if err := DetectWordPressCves(&r, &c.Conf.WpScan); err != nil {
 			return nil, xerrors.Errorf("Failed to detect WordPress Cves: %w", err)
 		}
 
@@ -150,8 +150,8 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 		// ignorePkgs
 		ignorePkgsRegexps := []string{}
 		if r.Container.Name == "" {
-			ignorePkgsRegexps = config.Conf.Servers[r.ServerName].IgnorePkgsRegexp
-		} else if s, ok := config.Conf.Servers[r.ServerName].Containers[r.Container.Name]; ok {
+			ignorePkgsRegexps = c.Conf.Servers[r.ServerName].IgnorePkgsRegexp
+		} else if s, ok := c.Conf.Servers[r.ServerName].Containers[r.Container.Name]; ok {
 			ignorePkgsRegexps = s.IgnorePkgsRegexp
 		}
 		r = r.FilterIgnorePkgs(ignorePkgsRegexps)
@@ -180,9 +180,9 @@ func DetectPkgCves(dbclient DBClient, r *models.ScanResult) error {
 			return xerrors.Errorf("Failed to detect CVE with gost: %w", err)
 		}
 	} else if reuseScannedCves(r) {
-		util.Log.Infof("r.Release is empty. Use CVEs as it as.")
+		logging.Log.Infof("r.Release is empty. Use CVEs as it as.")
 	} else if r.Family == constant.ServerTypePseudo {
-		util.Log.Infof("pseudo type. Skip OVAL and gost detection")
+		logging.Log.Infof("pseudo type. Skip OVAL and gost detection")
 	} else {
 		return xerrors.Errorf("Failed to fill CVEs. r.Release is empty")
 	}
@@ -205,7 +205,7 @@ func DetectPkgCves(dbclient DBClient, r *models.ScanResult) error {
 			for _, ipPort := range proc.ListenPorts {
 				ps, err := models.NewPortStat(ipPort)
 				if err != nil {
-					util.Log.Warnf("Failed to parse ip:port: %s, err:%+v", ipPort, err)
+					logging.Log.Warnf("Failed to parse ip:port: %s, err:%+v", ipPort, err)
 					continue
 				}
 				r.Packages[i].AffectedProcs[j].ListenPortStats = append(
@@ -232,7 +232,7 @@ func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]c.GitHubConf,
 		if err != nil {
 			return xerrors.Errorf("Failed to access GitHub Security Alerts: %w", err)
 		}
-		util.Log.Infof("%s: %d CVEs detected with GHSA %s/%s",
+		logging.Log.Infof("%s: %d CVEs detected with GHSA %s/%s",
 			r.FormatServerName(), n, owner, repo)
 	}
 	return nil
@@ -243,44 +243,44 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf *c.WpScanConf) error {
 	if len(r.WordPressPackages) == 0 {
 		return nil
 	}
-	util.Log.Infof("Detect WordPress CVE. pkgs: %d ", len(r.WordPressPackages))
+	logging.Log.Infof("Detect WordPress CVE. pkgs: %d ", len(r.WordPressPackages))
 	n, err := detectWordPressCves(r, wpCnf)
 	if err != nil {
 		return xerrors.Errorf("Failed to detect WordPress CVE: %w", err)
 	}
-	util.Log.Infof("%s: found %d WordPress CVEs", r.FormatServerName(), n)
+	logging.Log.Infof("%s: found %d WordPress CVEs", r.FormatServerName(), n)
 	return nil
 }
 
 // FillCveInfo fill scanResult with cve info.
 func FillCveInfo(dbclient DBClient, r *models.ScanResult) error {
-	util.Log.Infof("Fill CVE detailed with gost")
+	logging.Log.Infof("Fill CVE detailed with gost")
 	if err := gost.NewClient(r.Family).FillCVEsWithRedHat(dbclient.GostDB, r); err != nil {
 		return xerrors.Errorf("Failed to fill with gost: %w", err)
 	}
 
-	util.Log.Infof("Fill CVE detailed with CVE-DB")
+	logging.Log.Infof("Fill CVE detailed with CVE-DB")
 	if err := fillCvesWithNvdJvn(dbclient.CveDB, r); err != nil {
 		return xerrors.Errorf("Failed to fill with CVE: %w", err)
 	}
 
-	util.Log.Infof("Fill exploit with Exploit-DB")
+	logging.Log.Infof("Fill exploit with Exploit-DB")
 	nExploitCve, err := fillWithExploitDB(dbclient.ExploitDB, r)
 	if err != nil {
 		return xerrors.Errorf("Failed to fill with exploit: %w", err)
 	}
-	util.Log.Infof("%s: %d exploits are detected",
+	logging.Log.Infof("%s: %d exploits are detected",
 		r.FormatServerName(), nExploitCve)
 
-	util.Log.Infof("Fill metasploit module with Metasploit-DB")
+	logging.Log.Infof("Fill metasploit module with Metasploit-DB")
 	nMetasploitCve, err := fillWithMetasploit(dbclient.MetasploitDB, r)
 	if err != nil {
 		return xerrors.Errorf("Failed to fill with metasploit: %w", err)
 	}
-	util.Log.Infof("%s: %d modules are detected",
+	logging.Log.Infof("%s: %d modules are detected",
 		r.FormatServerName(), nMetasploitCve)
 
-	util.Log.Infof("Fill CWE with NVD")
+	logging.Log.Infof("Fill CWE with NVD")
 	fillCweDict(r)
 
 	return nil
@@ -397,7 +397,7 @@ func detectPkgsCvesWithOval(driver ovaldb.DB, r *models.ScanResult) error {
 		}
 	}
 
-	util.Log.Debugf("Check whether oval fetched: %s %s", ovalFamily, r.Release)
+	logging.Log.Debugf("Check whether oval fetched: %s %s", ovalFamily, r.Release)
 	ok, err := ovalClient.CheckIfOvalFetched(driver, ovalFamily, r.Release)
 	if err != nil {
 		return err
@@ -416,14 +416,14 @@ func detectPkgsCvesWithOval(driver ovaldb.DB, r *models.ScanResult) error {
 		return err
 	}
 
-	util.Log.Infof("%s: %d CVEs are detected with OVAL", r.FormatServerName(), nCVEs)
+	logging.Log.Infof("%s: %d CVEs are detected with OVAL", r.FormatServerName(), nCVEs)
 	return nil
 }
 
 func detectPkgsCvesWithGost(driver gostdb.DB, r *models.ScanResult) error {
 	nCVEs, err := gost.NewClient(r.Family).DetectUnfixed(driver, r, true)
 
-	util.Log.Infof("%s: %d unfixed CVEs are detected with gost",
+	logging.Log.Infof("%s: %d unfixed CVEs are detected with gost",
 		r.FormatServerName(), nCVEs)
 	return err
 }
@@ -431,7 +431,7 @@ func detectPkgsCvesWithGost(driver gostdb.DB, r *models.ScanResult) error {
 // fillWithExploitDB fills Exploits with exploit dataabase
 // https://github.com/vulsio/go-exploitdb
 func fillWithExploitDB(driver exploitdb.DB, r *models.ScanResult) (nExploitCve int, err error) {
-	return exploit.FillWithExploit(driver, r, &config.Conf.Exploit)
+	return exploit.FillWithExploit(driver, r, &c.Conf.Exploit)
 }
 
 // fillWithMetasploit fills metasploit modules with metasploit database
@@ -471,7 +471,7 @@ func DetectCpeURIsCves(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) 
 			}
 		}
 	}
-	util.Log.Infof("%s: %d CVEs are detected with CPE", r.FormatServerName(), nCVEs)
+	logging.Log.Infof("%s: %d CVEs are detected with CPE", r.FormatServerName(), nCVEs)
 	return nil
 }
 
@@ -503,7 +503,7 @@ func fillCweDict(r *models.ScanResult) {
 			}
 			entry.En = &e
 		} else {
-			util.Log.Debugf("CWE-ID %s is not found in English CWE Dict", id)
+			logging.Log.Debugf("CWE-ID %s is not found in English CWE Dict", id)
 			entry.En = &cwe.Cwe{CweID: id}
 		}
 
@@ -520,7 +520,7 @@ func fillCweDict(r *models.ScanResult) {
 				}
 				entry.Ja = &e
 			} else {
-				util.Log.Debugf("CWE-ID %s is not found in Japanese CWE Dict", id)
+				logging.Log.Debugf("CWE-ID %s is not found in Japanese CWE Dict", id)
 				entry.Ja = &cwe.Cwe{CweID: id}
 			}
 		}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
@@ -18,7 +19,7 @@ import (
 // https://github.com/serverspec/specinfra/blob/master/lib/specinfra/helper/detect_os/redhat.rb
 func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 	if r := exec(c, "ls /etc/fedora-release", noSudo); r.isSuccess() {
-		util.Log.Warnf("Fedora not tested yet: %s", r)
+		logging.Log.Warnf("Fedora not tested yet: %s", r)
 		return true, &unknown{}
 	}
 
@@ -29,7 +30,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
 			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
-				util.Log.Warnf("Failed to parse Oracle Linux version: %s", r)
+				logging.Log.Warnf("Failed to parse Oracle Linux version: %s", r)
 				return true, newOracle(c)
 			}
 
@@ -47,7 +48,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
 			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
-				util.Log.Warnf("Failed to parse CentOS version: %s", r)
+				logging.Log.Warnf("Failed to parse CentOS version: %s", r)
 				return true, newCentOS(c)
 			}
 
@@ -58,7 +59,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 				cent.setDistro(constant.CentOS, release)
 				return true, cent
 			default:
-				util.Log.Warnf("Failed to parse CentOS: %s", r)
+				logging.Log.Warnf("Failed to parse CentOS: %s", r)
 			}
 		}
 	}
@@ -72,7 +73,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
 			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
-				util.Log.Warnf("Failed to parse RedHat/CentOS version: %s", r)
+				logging.Log.Warnf("Failed to parse RedHat/CentOS version: %s", r)
 				return true, newCentOS(c)
 			}
 
@@ -113,7 +114,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 		return true, amazon
 	}
 
-	util.Log.Debugf("Not RedHat like Linux. servername: %s", c.ServerName)
+	logging.Log.Debugf("Not RedHat like Linux. servername: %s", c.ServerName)
 	return false, &unknown{}
 }
 
@@ -451,7 +452,7 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 	case constant.RedHat, constant.CentOS, constant.Oracle:
 		majorVersion, err := o.Distro.MajorVersion()
 		if err != nil || majorVersion < 6 {
-			o.log.Errorf("Not implemented yet: %s, err: %s", o.Distro, err)
+			o.log.Errorf("Not implemented yet: %s, err: %+v", o.Distro, err)
 			return false
 		}
 

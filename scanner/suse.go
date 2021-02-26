@@ -8,6 +8,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
@@ -30,7 +31,7 @@ func newSUSE(c config.ServerInfo) *suse {
 			},
 		},
 	}
-	r.log = util.NewCustomLogger(c)
+	r.log = logging.NewNormalLogger()
 	r.setServerInfo(c)
 	return r
 }
@@ -71,12 +72,12 @@ func detectSUSE(c config.ServerInfo) (bool, osTypeInterface) {
 						return true, s
 					}
 				}
-				util.Log.Warnf("Failed to parse SUSE Linux version: %s", r)
+				logging.Log.Warnf("Failed to parse SUSE Linux version: %s", r)
 				return true, newSUSE(c)
 			}
 		}
 	}
-	util.Log.Debugf("Not SUSE Linux. servername: %s", c.ServerName)
+	logging.Log.Debugf("Not SUSE Linux. servername: %s", c.ServerName)
 	return false, nil
 }
 
@@ -89,14 +90,14 @@ func (o *suse) parseOSRelease(content string) (name string, ver string) {
 	} else if strings.Contains(content, `NAME="SLES_SAP"`) {
 		name = constant.SUSEEnterpriseServer
 	} else {
-		util.Log.Warnf("Failed to parse SUSE edition: %s", content)
+		logging.Log.Warnf("Failed to parse SUSE edition: %s", content)
 		return "unknown", "unknown"
 	}
 
 	re := regexp.MustCompile(`VERSION_ID=\"(.+)\"`)
 	result := re.FindStringSubmatch(strings.TrimSpace(content))
 	if len(result) != 2 {
-		util.Log.Warnf("Failed to parse SUSE Linux version: %s", content)
+		logging.Log.Warnf("Failed to parse SUSE Linux version: %s", content)
 		return "unknown", "unknown"
 	}
 	return name, result[1]

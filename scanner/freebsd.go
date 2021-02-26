@@ -6,6 +6,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"golang.org/x/xerrors"
@@ -26,7 +27,7 @@ func newBsd(c config.ServerInfo) *bsd {
 			},
 		},
 	}
-	d.log = util.NewCustomLogger(c)
+	d.log = logging.NewNormalLogger()
 	d.setServerInfo(c)
 	return d
 }
@@ -46,7 +47,7 @@ func detectFreebsd(c config.ServerInfo) (bool, osTypeInterface) {
 			}
 		}
 	}
-	util.Log.Debugf("Not FreeBSD. servernam: %s", c.ServerName)
+	logging.Log.Debugf("Not FreeBSD. servernam: %s", c.ServerName)
 	return false, nil
 }
 

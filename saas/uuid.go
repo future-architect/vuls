@@ -10,8 +10,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/util"
 	"github.com/hashicorp/go-uuid"
 	"golang.org/x/xerrors"
 )
@@ -48,7 +48,7 @@ func ensure(servers map[string]c.ServerInfo, path string, scanResults models.Sca
 				needsOverwrite = true
 			} else if _, err := uuid.ParseUUID(id); err != nil {
 				// if the UUID of the host is invalid, re-generate it
-				util.Log.Warnf("UUID `%s` is invalid. Re-generate and overwrite", id)
+				logging.Log.Warnf("UUID `%s` is invalid. Re-generate and overwrite", id)
 				serverInfo.UUIDs[r.ServerName], err = generateFunc()
 				if err != nil {
 					return false, err
@@ -74,7 +74,7 @@ func ensure(servers map[string]c.ServerInfo, path string, scanResults models.Sca
 				continue
 			}
 			// re-generate
-			util.Log.Warnf("UUID `%s` is invalid. Re-generate and overwrite", id)
+			logging.Log.Warnf("UUID `%s` is invalid. Re-generate and overwrite", id)
 		}
 
 		// Generate a new UUID and set to config and scanResult

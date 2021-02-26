@@ -7,6 +7,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/knqyf263/gost/db"
@@ -37,7 +38,7 @@ func (deb Debian) supported(major string) bool {
 func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCVEs int, err error) {
 	if !deb.supported(major(r.Release)) {
 		// only logging
-		util.Log.Warnf("Debian %s is not supported yet", r.Release)
+		logging.Log.Warnf("Debian %s is not supported yet", r.Release)
 		return 0, nil
 	}
 

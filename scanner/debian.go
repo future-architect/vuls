@@ -13,6 +13,7 @@ import (
 	"github.com/future-architect/vuls/cache"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	version "github.com/knqyf263/go-deb-version"
@@ -34,7 +35,7 @@ func newDebian(c config.ServerInfo) *debian {
 			},
 		},
 	}
-	d.log = util.NewCustomLogger(c)
+	d.log = logging.NewNormalLogger()
 	d.setServerInfo(c)
 	return d
 }
@@ -49,7 +50,7 @@ func detectDebian(c config.ServerInfo) (bool, osTypeInterface, error) {
 		if r.ExitStatus == 255 {
 			return false, nil, xerrors.Errorf("Unable to connect via SSH. Scan with -vvv option to print SSH debugging messages and check SSH settings. If you have never SSH to the host to be scanned, SSH to the host before scanning in order to add the HostKey. %s@%s port: %s\n%s", c.User, c.Host, c.Port, r)
 		}
-		util.Log.Debugf("Not Debian like Linux. %s", r)
+		logging.Log.Debugf("Not Debian like Linux. %s", r)
 		return false, nil, nil
 	}
 
@@ -78,7 +79,7 @@ func detectDebian(c config.ServerInfo) (bool, osTypeInterface, error) {
 		deb := newDebian(c)
 		if len(result) == 0 {
 			deb.setDistro("debian/ubuntu", "unknown")
-			util.Log.Warnf("Unknown Debian/Ubuntu version. lsb_release -ir: %s", r)
+			logging.Log.Warnf("Unknown Debian/Ubuntu version. lsb_release -ir: %s", r)
 		} else {
 			distro := strings.ToLower(trim(result[1]))
 			deb.setDistro(distro, trim(result[2]))
@@ -96,7 +97,7 @@ func detectDebian(c config.ServerInfo) (bool, osTypeInterface, error) {
 		result := re.FindStringSubmatch(trim(r.Stdout))
 		deb := newDebian(c)
 		if len(result) == 0 {
-			util.Log.Warnf(
+			logging.Log.Warnf(
 				"Unknown Debian/Ubuntu. cat /etc/lsb-release: %s", r)
 			deb.setDistro("debian/ubuntu", "unknown")
 		} else {
@@ -114,7 +115,7 @@ func detectDebian(c config.ServerInfo) (bool, osTypeInterface, error) {
 		return true, deb, nil
 	}
 
-	util.Log.Debugf("Not Debian like Linux: %s", c.ServerName)
+	logging.Log.Debugf("Not Debian like Linux: %s", c.ServerName)
 	return false, nil, nil
 }
 
@@ -380,7 +381,7 @@ func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, mode
 	// Fill the candidate versions of upgradable packages
 	err = o.fillCandidateVersion(updatable)
 	if err != nil {
-		return nil, nil, nil, xerrors.Errorf("Failed to fill candidate versions. err: %s", err)
+		return nil, nil, nil, xerrors.Errorf("Failed to fill candidate versions. err: %w", err)
 	}
 	installed.MergeNewVersion(updatable)
 
@@ -513,14 +514,14 @@ func (o *debian) scanUnsecurePackages(updatable models.Packages) (models.VulnInf
 	// Collect CVE information of upgradable packages
 	vulnInfos, err := o.scanChangelogs(updatable, meta, tmpClogPath)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to scan unsecure packages. err: %s", err)
+		return nil, xerrors.Errorf("Failed to scan unsecure packages. err: %w", err)
 	}
 
 	// Delete a directory for saving changelog to get changelog in Raspbian
 	if o.Distro.Family == constant.Raspbian {
 		err := o.deleteTempChangelogDir(tmpClogPath)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to delete directory to save changelog for Raspbian. err: %s", err)
+			return nil, xerrors.Errorf("Failed to delete directory to save changelog for Raspbian. err: %w", err)
 		}
 	}
 
@@ -532,14 +533,14 @@ func (o *debian) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
 	cached, found, err := cache.DB.GetMeta(current.Name)
 	if err != nil {
 		return nil, xerrors.Errorf(
-			"Failed to get meta. Please remove cache.db and then try again. err: %s", err)
+			"Failed to get meta. Please remove cache.db and then try again. err: %w", err)
 	}
 
 	if !found {
 		o.log.Debugf("Not found in meta: %s", current.Name)
 		err = cache.DB.EnsureBuckets(current)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to ensure buckets. err: %s", err)
+			return nil, xerrors.Errorf("Failed to ensure buckets. err: %w", err)
 		}
 		return &current, nil
 	}
@@ -549,7 +550,7 @@ func (o *debian) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
 		o.log.Debugf("Need to refresh meta: %s", current.Name)
 		err = cache.DB.EnsureBuckets(current)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to ensure buckets. err: %s", err)
+			return nil, xerrors.Errorf("Failed to ensure buckets. err: %w", err)
 		}
 		return &current, nil
 
@@ -626,7 +627,6 @@ func (o *debian) parseAptGetUpgrade(stdout string) (updatableNames []string, err
 					result[1], len(updatableNames))
 			}
 			stopLineFound = true
-			o.log.Debugf("Found the stop line. line: %s", line)
 			break
 		}
 		updatableNames = append(updatableNames, strings.Fields(line)...)
@@ -660,7 +660,7 @@ func (o *debian) makeTempChangelogDir() (string, error) {
 func generateSuffix() (string, error) {
 	var n uint64
 	if err := binary.Read(rand.Reader, binary.LittleEndian, &n); err != nil {
-		return "", xerrors.Errorf("Failed to generate Suffix. err: %s", err)
+		return "", xerrors.Errorf("Failed to generate Suffix. err: %w", err)
 	}
 	return strconv.FormatUint(n, 36), nil
 }
@@ -803,7 +803,7 @@ func (o *debian) getChangelogCache(meta *cache.Meta, pack models.Package) string
 	}
 	changelog, err := cache.DB.GetChangelog(meta.Name, pack.Name)
 	if err != nil {
-		o.log.Warnf("Failed to get changelog. bucket: %s, key:%s, err: %s",
+		o.log.Warnf("Failed to get changelog. bucket: %s, key:%s, err: %+v",
 			meta.Name, pack.Name, err)
 		return ""
 	}
@@ -829,7 +829,7 @@ func (o *debian) fetchParseChangelog(pack models.Package, tmpClogPath string) ([
 		changelogPath, err := o.getChangelogPath(pack.Name, tmpClogPath)
 		if err != nil {
 			// Ignore this Error.
-			o.log.Warnf("Failed to get Path to Changelog for Package: %s, err: %s", pack.Name, err)
+			o.log.Warnf("Failed to get Path to Changelog for Package: %s, err: %+v", pack.Name, err)
 			return nil, nil, nil
 		}
 		cmd = fmt.Sprintf(`gzip -cd %s | cat`, changelogPath)

@@ -5,8 +5,8 @@ package oval
 import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/util"
 	"github.com/kotakanbe/goval-dictionary/db"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
@@ -56,7 +56,7 @@ func (o SUSE) update(r *models.ScanResult, defPacks defPacks) {
 	ovalContent.Type = models.NewCveContentType(o.family)
 	vinfo, ok := r.ScannedCves[defPacks.def.Title]
 	if !ok {
-		util.Log.Debugf("%s is newly detected by OVAL", defPacks.def.Title)
+		logging.Log.Debugf("%s is newly detected by OVAL", defPacks.def.Title)
 		vinfo = models.VulnInfo{
 			CveID:       defPacks.def.Title,
 			Confidences: models.Confidences{models.OvalMatch},
@@ -66,9 +66,9 @@ func (o SUSE) update(r *models.ScanResult, defPacks defPacks) {
 		cveContents := vinfo.CveContents
 		ctype := models.NewCveContentType(o.family)
 		if _, ok := vinfo.CveContents[ctype]; ok {
-			util.Log.Debugf("%s OVAL will be overwritten", defPacks.def.Title)
+			logging.Log.Debugf("%s OVAL will be overwritten", defPacks.def.Title)
 		} else {
-			util.Log.Debugf("%s is also detected by OVAL", defPacks.def.Title)
+			logging.Log.Debugf("%s is also detected by OVAL", defPacks.def.Title)
 			cveContents = models.CveContents{}
 		}
 		vinfo.Confidences.AppendIfMissing(models.OvalMatch)

@@ -217,7 +217,7 @@ func TestParseYumCheckUpdateLine(t *testing.T) {
 	for _, tt := range tests {
 		aPack, err := r.parseUpdatablePacksLine(tt.in)
 		if err != nil {
-			t.Errorf("Error has occurred, err: %s\ntt.in: %v", err, tt.in)
+			t.Errorf("Error has occurred, err: %+v\ntt.in: %v", err, tt.in)
 			return
 		}
 		if !reflect.DeepEqual(tt.out, aPack) {
@@ -296,7 +296,7 @@ pytalloc 0 2.0.7 2.el6 @CentOS 6.5/6.5`
 	for _, tt := range tests {
 		packages, err := r.parseUpdatablePacksLines(tt.in)
 		if err != nil {
-			t.Errorf("Error has occurred, err: %s\ntt.in: %v", err, tt.in)
+			t.Errorf("Error has occurred, err: %+v\ntt.in: %v", err, tt.in)
 			return
 		}
 		for name, ePack := range tt.out {
@@ -352,7 +352,7 @@ if-not-architecture 0 100 200 amzn-main`
 	for _, tt := range tests {
 		packages, err := r.parseUpdatablePacksLines(tt.in)
 		if err != nil {
-			t.Errorf("Error has occurred, err: %s\ntt.in: %v", err, tt.in)
+			t.Errorf("Error has occurred, err: %+v\ntt.in: %v", err, tt.in)
 			return
 		}
 		for name, ePack := range tt.out {

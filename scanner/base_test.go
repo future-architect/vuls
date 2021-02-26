@@ -39,7 +39,7 @@ f570ae647edc agitated_lovelace centos:latest`,
 	r := newRHEL(config.ServerInfo{})
 	actual, err := r.parseDockerPs(test.in)
 	if err != nil {
-		t.Errorf("Error occurred. in: %s, err: %s", test.in, err)
+		t.Errorf("Error occurred. in: %s, err: %+v", test.in, err)
 		return
 	}
 	for i, e := range test.expected {
@@ -76,7 +76,7 @@ func TestParseLxdPs(t *testing.T) {
 	r := newRHEL(config.ServerInfo{})
 	actual, err := r.parseLxdPs(test.in)
 	if err != nil {
-		t.Errorf("Error occurred. in: %s, err: %s", test.in, err)
+		t.Errorf("Error occurred. in: %s, err: %+v", test.in, err)
 		return
 	}
 	for i, e := range test.expected {

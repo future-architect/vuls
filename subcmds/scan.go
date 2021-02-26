@@ -11,8 +11,8 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/scanner"
-	"github.com/future-architect/vuls/util"
 	"github.com/google/subcommands"
 	"github.com/k0kubun/pp"
 )
@@ -67,7 +67,7 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	defaultResultsDir := filepath.Join(wd, "results")
 	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 
-	defaultLogDir := util.GetDefaultLogDir()
+	defaultLogDir := logging.GetDefaultLogDir()
 	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 
 	defaultCacheDBPath := filepath.Join(wd, "cache.db")
@@ -97,17 +97,17 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	// Setup Logger
-	util.Log = util.NewCustomLogger(c.ServerInfo{})
+	logging.Log = logging.NewCustomLogger(c.Conf.Debug, c.Conf.Quiet, c.Conf.LogDir, "", "")
+	logging.Log.Infof("vuls-%s-%s", c.Version, c.Revision)
 
 	if err := mkdirDotVuls(); err != nil {
-		util.Log.Errorf("Failed to create $HOME/.vuls err: %+v", err)
+		logging.Log.Errorf("Failed to create $HOME/.vuls err: %+v", err)
 		return subcommands.ExitUsageError
 	}
 
 	if len(p.cacheDBPath) != 0 {
 		if ok, _ := govalidator.IsFilePath(p.cacheDBPath); !ok {
-			util.Log.Errorf("Cache DB path must be a *Absolute* file path. -cache-dbpath: %s",
+			logging.Log.Errorf("Cache DB path must be a *Absolute* file path. -cache-dbpath: %s",
 				p.cacheDBPath)
 			return subcommands.ExitUsageError
 		}
@@ -118,7 +118,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	if p.askKeyPassword {
 		prompt := "SSH key password: "
 		if keyPass, err = getPasswd(prompt); err != nil {
-			util.Log.Error(err)
+			logging.Log.Error(err)
 			return subcommands.ExitFailure
 		}
 	}
@@ -130,12 +130,12 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 			"If you update Vuls and get this error, there may be incompatible changes in config.toml",
 			"Please check config.toml template : https://vuls.io/docs/en/usage-settings.html",
 		}
-		util.Log.Errorf("%s\n%+v", strings.Join(msg, "\n"), err)
+		logging.Log.Errorf("%s\n%+v", strings.Join(msg, "\n"), err)
 		return subcommands.ExitUsageError
 	}
 
-	util.Log.Info("Start scanning")
-	util.Log.Infof("config: %s", p.configPath)
+	logging.Log.Info("Start scanning")
+	logging.Log.Infof("config: %s", p.configPath)
 
 	var servernames []string
 	if 0 < len(f.Args()) {
@@ -143,7 +143,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	} else if c.Conf.Pipe {
 		bytes, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
-			util.Log.Errorf("Failed to read stdin. err: %+v", err)
+			logging.Log.Errorf("Failed to read stdin. err: %+v", err)
 			return subcommands.ExitFailure
 		}
 		fields := strings.Fields(string(bytes))
@@ -163,7 +163,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 			}
 		}
 		if !found {
-			util.Log.Errorf("%s is not in config", arg)
+			logging.Log.Errorf("%s is not in config", arg)
 			return subcommands.ExitUsageError
 		}
 	}
@@ -171,9 +171,9 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	if 0 < len(servernames) {
 		c.Conf.Servers = target
 	}
-	util.Log.Debugf("%s", pp.Sprintf("%v", target))
+	logging.Log.Debugf("%s", pp.Sprintf("%v", target))
 
-	util.Log.Info("Validating config...")
+	logging.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnScan() {
 		return subcommands.ExitUsageError
 	}
@@ -183,10 +183,13 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		ScanTimeoutSec: p.scanTimeoutSec,
 		CacheDBPath:    p.cacheDBPath,
 		Targets:        target,
+		Debug:          c.Conf.Debug,
+		Quiet:          c.Conf.Quiet,
+		LogDir:         c.Conf.LogDir,
 	}
 
 	if err := s.Scan(); err != nil {
-		util.Log.Errorf("Failed to scan: %+v", err)
+		logging.Log.Errorf("Failed to scan: %+v", err)
 		return subcommands.ExitFailure
 	}
 

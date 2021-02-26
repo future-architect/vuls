@@ -11,8 +11,8 @@ import (
 	"github.com/google/subcommands"
 
 	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/scanner"
-	"github.com/future-architect/vuls/util"
 )
 
 // ConfigtestCmd is Subcommand
@@ -51,7 +51,7 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
-	defaultLogDir := util.GetDefaultLogDir()
+	defaultLogDir := logging.GetDefaultLogDir()
 	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
 
@@ -69,10 +69,11 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	util.Log = util.NewCustomLogger(c.ServerInfo{})
+	logging.Log = logging.NewCustomLogger(c.Conf.Debug, c.Conf.Quiet, c.Conf.LogDir, "", "")
+	logging.Log.Infof("vuls-%s-%s", c.Version, c.Revision)
 
 	if err := mkdirDotVuls(); err != nil {
-		util.Log.Errorf("Failed to create .vuls. err: %+v", err)
+		logging.Log.Errorf("Failed to create $HOME/.vuls: %+v", err)
 		return subcommands.ExitUsageError
 	}
 
@@ -81,7 +82,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	if p.askKeyPassword {
 		prompt := "SSH key password: "
 		if keyPass, err = getPasswd(prompt); err != nil {
-			util.Log.Error(err)
+			logging.Log.Error(err)
 			return subcommands.ExitFailure
 		}
 	}
@@ -93,7 +94,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 			"If you update Vuls and get this error, there may be incompatible changes in config.toml",
 			"Please check config.toml template : https://vuls.io/docs/en/usage-settings.html",
 		}
-		util.Log.Errorf("%s\n%+v", strings.Join(msg, "\n"), err)
+		logging.Log.Errorf("%s\n%+v", strings.Join(msg, "\n"), err)
 		return subcommands.ExitUsageError
 	}
 
@@ -113,7 +114,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 			}
 		}
 		if !found {
-			util.Log.Errorf("%s is not in config", arg)
+			logging.Log.Errorf("%s is not in config", arg)
 			return subcommands.ExitUsageError
 		}
 	}
@@ -121,7 +122,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		c.Conf.Servers = targets
 	}
 
-	util.Log.Info("Validating config...")
+	logging.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnConfigtest() {
 		return subcommands.ExitUsageError
 	}
@@ -132,7 +133,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 	}
 
 	if err := s.Configtest(); err != nil {
-		util.Log.Errorf("Failed to configtest: %+v", err)
+		logging.Log.Errorf("Failed to configtest: %+v", err)
 		return subcommands.ExitFailure
 	}
 

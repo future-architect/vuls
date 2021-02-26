@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/util"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 )
 
@@ -14,12 +14,12 @@ import (
 // boltdb is used to store a cache of Changelogs of Ubuntu/Debian
 type Bolt struct {
 	Path string
-	Log  *logrus.Entry
+	Log  logging.Logger
 	db   *bolt.DB
 }
 
 // SetupBolt opens a boltdb and creates a meta bucket if not exists.
-func SetupBolt(path string, l *logrus.Entry) error {
+func SetupBolt(path string, l logging.Logger) error {
 	l.Infof("Open boltDB: %s", path)
 	db, err := bolt.Open(path, 0600, nil)
 	if err != nil {
@@ -47,7 +47,7 @@ func (b Bolt) Close() error {
 	return b.db.Close()
 }
 
-//  CreateBucketIfNotExists creates a buket that is specified by arg.
+//  CreateBucketIfNotExists creates a bucket that is specified by arg.
 func (b *Bolt) createBucketIfNotExists(name string) error {
 	return b.db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(name))
@@ -93,7 +93,7 @@ func (b Bolt) RefreshMeta(meta Meta) error {
 	})
 }
 
-// EnsureBuckets puts a Meta information and create a buket that holds changelogs.
+// EnsureBuckets puts a Meta information and create a bucket that holds changelogs.
 func (b Bolt) EnsureBuckets(meta Meta) error {
 	jsonBytes, err := json.Marshal(meta)
 	if err != nil {
@@ -159,7 +159,7 @@ func (b Bolt) GetChangelog(servername, packName string) (changelog string, err e
 	return
 }
 
-// PutChangelog put the changelgo of specified packName into the Bucket
+// PutChangelog put the changelog of specified packName into the Bucket
 func (b Bolt) PutChangelog(servername, packName, changelog string) error {
 	return b.db.Update(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket([]byte(servername))

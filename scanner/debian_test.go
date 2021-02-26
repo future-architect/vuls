@@ -9,9 +9,9 @@ import (
 	"github.com/future-architect/vuls/cache"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/k0kubun/pp"
-	"github.com/sirupsen/logrus"
 )
 
 func TestGetCveIDsFromChangelog(t *testing.T) {
@@ -421,7 +421,7 @@ func TestGetChangelogCache(t *testing.T) {
 	}
 
 	const path = "/tmp/vuls-test-cache-11111111.db"
-	log := logrus.NewEntry(&logrus.Logger{})
+	log := logging.NewNormalLogger()
 	if err := cache.SetupBolt(path, log); err != nil {
 		t.Errorf("Failed to setup bolt: %s", err)
 	}

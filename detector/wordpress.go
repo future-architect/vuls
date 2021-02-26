@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/errof"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	version "github.com/hashicorp/go-version"
@@ -116,7 +116,7 @@ func wpscan(url, name, token string) (vinfos []models.VulnInfo, err error) {
 		return nil, err
 	}
 	if body == "" {
-		util.Log.Debugf("wpscan.com response body is empty. URL: %s", url)
+		logging.Log.Debugf("wpscan.com response body is empty. URL: %s", url)
 	}
 	return convertToVinfos(name, body)
 }
@@ -126,17 +126,17 @@ func detect(installed models.WpPackage, candidates []models.VulnInfo) (vulns []m
 		for _, fixstat := range v.WpPackageFixStats {
 			ok, err := match(installed.Version, fixstat.FixedIn)
 			if err != nil {
-				util.Log.Errorf("Failed to compare versions %s installed: %s, fixedIn: %s, v: %+v",
+				logging.Log.Warnf("Failed to compare versions %s installed: %s, fixedIn: %s, v: %+v",
 					installed.Name, installed.Version, fixstat.FixedIn, v)
 				// continue scanning
 				continue
 			}
 			if ok {
 				vulns = append(vulns, v)
-				util.Log.Debugf("Affected: %s installed: %s, fixedIn: %s",
+				logging.Log.Debugf("Affected: %s installed: %s, fixedIn: %s",
 					installed.Name, installed.Version, fixstat.FixedIn)
 			} else {
-				util.Log.Debugf("Not affected: %s : %s, fixedIn: %s",
+				logging.Log.Debugf("Not affected: %s : %s, fixedIn: %s",
 					installed.Name, installed.Version, fixstat.FixedIn)
 			}
 		}
@@ -227,7 +227,7 @@ func httpRequest(url, token string) (string, error) {
 			fmt.Sprintf("Failed to access to wpscan.com. err: %s", err))
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Token token=%s", token))
-	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
+	client, err := util.GetHTTPClient(c.Conf.HTTPProxy)
 	if err != nil {
 		return "", err
 	}
@@ -251,7 +251,7 @@ func httpRequest(url, token string) (string, error) {
 		return "", errof.New(errof.ErrWpScanAPILimitExceeded,
 			fmt.Sprintf("wpscan.com API limit exceeded: %+v", resp.Status))
 	} else {
-		util.Log.Warnf("wpscan.com unknown status code: %+v", resp.Status)
+		logging.Log.Warnf("wpscan.com unknown status code: %+v", resp.Status)
 		return "", nil
 	}
 }

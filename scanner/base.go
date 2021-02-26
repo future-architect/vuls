@@ -15,9 +15,9 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 
 	// Import library scanner
@@ -38,7 +38,7 @@ type base struct {
 	LibraryScanners []models.LibraryScanner
 	WordPress       models.WordPressPackages
 
-	log   *logrus.Entry
+	log   logging.Logger
 	errs  []error
 	warns []error
 }
@@ -482,6 +482,10 @@ func (l *base) setErrs(errs []error) {
 
 func (l *base) getErrs() []error {
 	return l.errs
+}
+
+func (l *base) setLogger(logger logging.Logger) {
+	l.log = logger
 }
 
 const (
@@ -950,19 +954,19 @@ func (l *base) pkgPs(getOwnerPkgs func([]string) ([]string, error)) error {
 		stdout := ""
 		stdout, err = l.lsProcExe(pid)
 		if err != nil {
-			l.log.Debugf("Failed to exec ls -l /proc/%s/exe err: %s", pid, err)
+			l.log.Debugf("Failed to exec ls -l /proc/%s/exe err: %+v", pid, err)
 			continue
 		}
 		s, err := l.parseLsProcExe(stdout)
 		if err != nil {
-			l.log.Debugf("Failed to parse /proc/%s/exe: %s", pid, err)
+			l.log.Debugf("Failed to parse /proc/%s/exe: %+v", pid, err)
 			continue
 		}
 		pidLoadedFiles[pid] = append(pidLoadedFiles[pid], s)
 
 		stdout, err = l.grepProcMap(pid)
 		if err != nil {
-			l.log.Debugf("Failed to exec /proc/%s/maps: %s", pid, err)
+			l.log.Debugf("Failed to exec /proc/%s/maps: %+v", pid, err)
 			continue
 		}
 		ss := l.parseGrepProcMap(stdout)

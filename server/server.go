@@ -12,10 +12,10 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/detector"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/scanner"
-	"github.com/future-architect/vuls/util"
 )
 
 // VulsHandler is used for vuls server mode
@@ -32,14 +32,14 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	contentType := req.Header.Get("Content-Type")
 	mediatype, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
-		util.Log.Error(err)
+		logging.Log.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if mediatype == "application/json" {
 		if err = json.NewDecoder(req.Body).Decode(&result); err != nil {
-			util.Log.Error(err)
+			logging.Log.Error(err)
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
@@ -50,24 +50,24 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		if result, err = scanner.ViaHTTP(req.Header, buf.String(), h.ToLocalFile); err != nil {
-			util.Log.Error(err)
+			logging.Log.Error(err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 	} else {
-		util.Log.Error(mediatype)
+		logging.Log.Error(mediatype)
 		http.Error(w, fmt.Sprintf("Invalid Content-Type: %s", contentType), http.StatusUnsupportedMediaType)
 		return
 	}
 
 	if err := detector.DetectPkgCves(h.DBclient, &result); err != nil {
-		util.Log.Errorf("Failed to detect Pkg CVE: %+v", err)
+		logging.Log.Errorf("Failed to detect Pkg CVE: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
 
 	if err := detector.FillCveInfo(h.DBclient, &result); err != nil {
-		util.Log.Errorf("Failed to fill CVE detailed info: %+v", err)
+		logging.Log.Errorf("Failed to fill CVE detailed info: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
@@ -90,7 +90,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 		dir, err := scanner.EnsureResultDir(scannedAt)
 		if err != nil {
-			util.Log.Errorf("Failed to ensure the result directory: %+v", err)
+			logging.Log.Errorf("Failed to ensure the result directory: %+v", err)
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
 		}
@@ -104,7 +104,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	for _, w := range reports {
 		if err := w.Write(result); err != nil {
-			util.Log.Errorf("Failed to report. err: %+v", err)
+			logging.Log.Errorf("Failed to report. err: %+v", err)
 			return
 		}
 	}

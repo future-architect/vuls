@@ -8,7 +8,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/future-architect/vuls/constant"
-	log "github.com/sirupsen/logrus"
+	"github.com/future-architect/vuls/logging"
 	"golang.org/x/xerrors"
 )
 
@@ -26,11 +26,11 @@ type Config struct {
 	// scan, report
 	Debug      bool   `json:"debug,omitempty"`
 	DebugSQL   bool   `json:"debugSQL,omitempty"`
-	HTTPProxy  string `valid:"url" json:"httpProxy,omitempty"`
 	LogDir     string `json:"logDir,omitempty"`
+	Quiet      bool   `json:"quiet,omitempty"`
+	HTTPProxy  string `valid:"url" json:"httpProxy,omitempty"`
 	ResultsDir string `json:"resultsDir,omitempty"`
 	Pipe       bool   `json:"pipe,omitempty"`
-	Quiet      bool   `json:"quiet,omitempty"`
 
 	Default ServerInfo            `json:"default,omitempty"`
 	Servers map[string]ServerInfo `json:"servers,omitempty"`
@@ -94,7 +94,7 @@ func (c Config) ValidateOnConfigtest() bool {
 		errs = append(errs, err)
 	}
 	for _, err := range errs {
-		log.Error(err)
+		logging.Log.Error(err)
 	}
 	return len(errs) == 0
 }
@@ -113,7 +113,7 @@ func (c Config) ValidateOnScan() bool {
 		errs = append(errs, err)
 	}
 	for _, err := range errs {
-		log.Error(err)
+		logging.Log.Error(err)
 	}
 	return len(errs) == 0
 }
@@ -165,7 +165,7 @@ func (c Config) ValidateOnReport() bool {
 	}
 
 	for _, err := range errs {
-		log.Error(err)
+		logging.Log.Error(err)
 	}
 
 	return len(errs) == 0
@@ -181,7 +181,7 @@ func (c Config) ValidateOnTui() bool {
 		}
 	}
 	for _, err := range errs {
-		log.Error(err)
+		logging.Log.Error(err)
 	}
 	return len(errs) == 0
 }
@@ -190,7 +190,7 @@ func (c Config) ValidateOnTui() bool {
 func (c Config) ValidateOnSaaS() bool {
 	saaserrs := c.Saas.Validate()
 	for _, err := range saaserrs {
-		log.Error("Failed to validate SaaS conf: %+w", err)
+		logging.Log.Error("Failed to validate SaaS conf: %+w", err)
 	}
 	return len(saaserrs) == 0
 }
