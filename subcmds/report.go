@@ -243,37 +243,14 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			r.ServerInfo(), pp.Sprintf("%s", c.Conf.Servers[r.ServerName]))
 	}
 
-	for _, cnf := range []c.VulnDictInterface{
+	dbclient, err := detector.NewDBClient(
 		&c.Conf.CveDict,
 		&c.Conf.OvalDict,
 		&c.Conf.Gost,
 		&c.Conf.Exploit,
 		&c.Conf.Metasploit,
-	} {
-		if err := cnf.Validate(); err != nil {
-			logging.Log.Errorf("Failed to validate VulnDict: %+v", err)
-			return subcommands.ExitFailure
-		}
-
-		if err := cnf.CheckHTTPHealth(); err != nil {
-			logging.Log.Errorf("Run as server mode before reporting: %+v", err)
-			return subcommands.ExitFailure
-		}
-	}
-
-	// TODO move into fillcveInfos
-	dbclient, locked, err := detector.NewDBClient(detector.DBClientConf{
-		CveDictCnf:    c.Conf.CveDict,
-		OvalDictCnf:   c.Conf.OvalDict,
-		GostCnf:       c.Conf.Gost,
-		ExploitCnf:    c.Conf.Exploit,
-		MetasploitCnf: c.Conf.Metasploit,
-		DebugSQL:      c.Conf.DebugSQL,
-	})
-	if locked {
-		logging.Log.Errorf("SQLite3 is locked. Close other DB connections and try again. err: %+v", err)
-		return subcommands.ExitFailure
-	}
+		c.Conf.DebugSQL,
+	)
 	if err != nil {
 		logging.Log.Errorf("Failed to init DB Clients. err: %+v", err)
 		return subcommands.ExitFailure
@@ -284,7 +261,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}()
 
-	// TODO pass conf by arg
 	if res, err = detector.Detect(*dbclient, res, dir); err != nil {
 		logging.Log.Errorf("%+v", err)
 		return subcommands.ExitFailure
