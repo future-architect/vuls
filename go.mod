@@ -29,7 +29,7 @@ require (
 	github.com/knqyf263/gost v0.1.7
 	github.com/kotakanbe/go-cve-dictionary v0.5.7
 	github.com/kotakanbe/go-pingscanner v0.1.0
-	github.com/kotakanbe/goval-dictionary v0.3.1
+	github.com/kotakanbe/goval-dictionary v0.3.2
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/mitchellh/go-homedir v1.1.0
@@ -43,7 +43,10 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/takuzoo3868/go-msfdb v0.1.3
 	github.com/vulsio/go-exploitdb v0.1.4
+	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
+	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
 	golang.org/x/oauth2 v0.0.0-20210125201302-af13f521f196
+	golang.org/x/sys v0.0.0-20210301091718-77cc2087c03b // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009
 )
