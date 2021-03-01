@@ -14,9 +14,14 @@ import (
 
 // VulnDictInterface is an interface of vulnsrc
 type VulnDictInterface interface {
-	CheckHTTPHealth() error
 	Init()
 	Validate() error
+	IsFetchViaHTTP() bool
+	CheckHTTPHealth() error
+	GetName() string
+	GetType() string
+	GetURL() string
+	GetSQLite3Path() string
 }
 
 // VulnDict is a base struct of vuln dicts
@@ -33,6 +38,26 @@ type VulnDict struct {
 	SQLite3Path string `json:"-"`
 }
 
+// GetType returns type
+func (cnf *VulnDict) GetType() string {
+	return cnf.Type
+}
+
+// GetName returns name
+func (cnf *VulnDict) GetName() string {
+	return cnf.Name
+}
+
+// GetURL returns url
+func (cnf *VulnDict) GetURL() string {
+	return cnf.URL
+}
+
+// GetSQLite3Path return the path of SQLite3
+func (cnf *VulnDict) GetSQLite3Path() string {
+	return cnf.SQLite3Path
+}
+
 // Validate settings
 func (cnf *VulnDict) Validate() error {
 	logging.Log.Infof("%s.type=%s, %s.url=%s, %s.SQLite3Path=%s",
@@ -47,6 +72,9 @@ func (cnf *VulnDict) Validate() error {
 		if ok, _ := govalidator.IsFilePath(cnf.SQLite3Path); !ok {
 			return xerrors.Errorf("SQLite3 path must be a *Absolute* file path. %s.SQLite3Path: %s",
 				cnf.Name, cnf.SQLite3Path)
+		}
+		if _, err := os.Stat(cnf.SQLite3Path); os.IsNotExist(err) {
+			logging.Log.Warnf("%s.SQLite3Path=%s file not found", cnf.Name, cnf.SQLite3Path)
 		}
 	case "mysql":
 		if cnf.URL == "" {
@@ -69,6 +97,9 @@ func (cnf *VulnDict) Validate() error {
 	}
 	return nil
 }
+
+// Init the struct
+func (cnf *VulnDict) Init() {}
 
 func (cnf *VulnDict) setDefault(sqlite3Name string) {
 	if cnf.Type == "" {
