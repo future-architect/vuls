@@ -26,18 +26,20 @@ type S3Writer struct {
 	FormatOneLineText bool
 	FormatList        bool
 	Gzip              bool
+
+	c.AWSConf
 }
 
-func getS3() (*s3.S3, error) {
+func (w S3Writer) getS3() (*s3.S3, error) {
 	ses, err := session.NewSession()
 	if err != nil {
 		return nil, err
 	}
 	config := &aws.Config{
-		Region: aws.String(c.Conf.AWS.Region),
+		Region: aws.String(w.Region),
 		Credentials: credentials.NewChainCredentials([]credentials.Provider{
 			&credentials.EnvProvider{},
-			&credentials.SharedCredentialsProvider{Filename: "", Profile: c.Conf.AWS.Profile},
+			&credentials.SharedCredentialsProvider{Filename: "", Profile: w.Profile},
 			&ec2rolecreds.EC2RoleProvider{Client: ec2metadata.New(ses)},
 		}),
 	}
@@ -55,7 +57,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 		return nil
 	}
 
-	svc, err := getS3()
+	svc, err := w.getS3()
 	if err != nil {
 		return err
 	}
@@ -64,7 +66,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 		timestr := rs[0].ScannedAt.Format(time.RFC3339)
 		k := fmt.Sprintf(timestr + "/summary.txt")
 		text := formatOneLineSummary(rs...)
-		if err := putObject(svc, k, []byte(text), w.Gzip); err != nil {
+		if err := w.putObject(svc, k, []byte(text), w.Gzip); err != nil {
 			return err
 		}
 	}
@@ -77,7 +79,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 			if b, err = json.Marshal(r); err != nil {
 				return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
 			}
-			if err := putObject(svc, k, b, w.Gzip); err != nil {
+			if err := w.putObject(svc, k, b, w.Gzip); err != nil {
 				return err
 			}
 		}
@@ -85,7 +87,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 		if w.FormatList {
 			k := key + "_short.txt"
 			text := formatList(r)
-			if err := putObject(svc, k, []byte(text), w.Gzip); err != nil {
+			if err := w.putObject(svc, k, []byte(text), w.Gzip); err != nil {
 				return err
 			}
 		}
@@ -93,7 +95,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 		if w.FormatFullText {
 			k := key + "_full.txt"
 			text := formatFullPlainText(r)
-			if err := putObject(svc, k, []byte(text), w.Gzip); err != nil {
+			if err := w.putObject(svc, k, []byte(text), w.Gzip); err != nil {
 				return err
 			}
 		}
@@ -101,36 +103,34 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 	return nil
 }
 
-// CheckIfBucketExists check the existence of S3 bucket
-func CheckIfBucketExists() error {
-	svc, err := getS3()
+// Validate check the existence of S3 bucket
+func (w S3Writer) Validate() error {
+	svc, err := w.getS3()
 	if err != nil {
 		return err
 	}
 
 	result, err := svc.ListBuckets(&s3.ListBucketsInput{})
 	if err != nil {
-		return xerrors.Errorf(
-			"Failed to list buckets. err: %w, profile: %s, region: %s",
-			err, c.Conf.AWS.Profile, c.Conf.AWS.Region)
+		return xerrors.Errorf("Failed to list buckets. err: %w, profile: %s, region: %s",
+			err, w.Profile, w.Region)
 	}
 
 	found := false
 	for _, bucket := range result.Buckets {
-		if *bucket.Name == c.Conf.AWS.S3Bucket {
+		if *bucket.Name == w.S3Bucket {
 			found = true
 			break
 		}
 	}
 	if !found {
-		return xerrors.Errorf(
-			"Failed to find the buckets. profile: %s, region: %s, bucket: %s",
-			c.Conf.AWS.Profile, c.Conf.AWS.Region, c.Conf.AWS.S3Bucket)
+		return xerrors.Errorf("Failed to find the buckets. profile: %s, region: %s, bucket: %s",
+			w.Profile, w.Region, w.S3Bucket)
 	}
 	return nil
 }
 
-func putObject(svc *s3.S3, k string, b []byte, gzip bool) error {
+func (w S3Writer) putObject(svc *s3.S3, k string, b []byte, gzip bool) error {
 	var err error
 	if gzip {
 		if b, err = gz(b); err != nil {
@@ -140,18 +140,18 @@ func putObject(svc *s3.S3, k string, b []byte, gzip bool) error {
 	}
 
 	putObjectInput := &s3.PutObjectInput{
-		Bucket: aws.String(c.Conf.AWS.S3Bucket),
-		Key:    aws.String(path.Join(c.Conf.AWS.S3ResultsDir, k)),
+		Bucket: aws.String(w.S3Bucket),
+		Key:    aws.String(path.Join(w.S3ResultsDir, k)),
 		Body:   bytes.NewReader(b),
 	}
 
-	if c.Conf.AWS.S3ServerSideEncryption != "" {
-		putObjectInput.ServerSideEncryption = aws.String(c.Conf.AWS.S3ServerSideEncryption)
+	if w.S3ServerSideEncryption != "" {
+		putObjectInput.ServerSideEncryption = aws.String(w.S3ServerSideEncryption)
 	}
 
 	if _, err := svc.PutObject(putObjectInput); err != nil {
 		return xerrors.Errorf("Failed to upload data to %s/%s, err: %w",
-			c.Conf.AWS.S3Bucket, k, err)
+			w.S3Bucket, k, err)
 	}
 	return nil
 }

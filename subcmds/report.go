@@ -321,46 +321,35 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if p.toS3 {
-		if err := reporter.CheckIfBucketExists(); err != nil {
-			logging.Log.Errorf("Check if there is a bucket beforehand: %s, err: %+v",
-				c.Conf.AWS.S3Bucket, err)
-			return subcommands.ExitUsageError
-		}
-		reports = append(reports, reporter.S3Writer{
+		w := reporter.S3Writer{
 			FormatJSON:        p.formatJSON,
 			FormatFullText:    p.formatFullText,
 			FormatOneLineText: p.formatOneLineText,
 			FormatList:        p.formatList,
 			Gzip:              p.gzip,
-		})
+			AWSConf:           c.Conf.AWS,
+		}
+		if err := w.Validate(); err != nil {
+			logging.Log.Errorf("Check if there is a bucket beforehand: %s, err: %+v", c.Conf.AWS.S3Bucket, err)
+			return subcommands.ExitUsageError
+		}
+		reports = append(reports, w)
 	}
 
 	if p.toAzureBlob {
-		// TODO refactor
-		if c.Conf.Azure.AccountName == "" {
-			c.Conf.Azure.AccountName = os.Getenv("AZURE_STORAGE_ACCOUNT")
-		}
-
-		if c.Conf.Azure.AccountKey == "" {
-			c.Conf.Azure.AccountKey = os.Getenv("AZURE_STORAGE_ACCESS_KEY")
-		}
-
-		if c.Conf.Azure.ContainerName == "" {
-			logging.Log.Error("Azure storage container name is required with -azure-container option")
-			return subcommands.ExitUsageError
-		}
-		if err := reporter.CheckIfAzureContainerExists(); err != nil {
-			logging.Log.Errorf("Check if there is a container beforehand: %s, err: %+v",
-				c.Conf.Azure.ContainerName, err)
-			return subcommands.ExitUsageError
-		}
-		reports = append(reports, reporter.AzureBlobWriter{
+		w := reporter.AzureBlobWriter{
 			FormatJSON:        p.formatJSON,
 			FormatFullText:    p.formatFullText,
 			FormatOneLineText: p.formatOneLineText,
 			FormatList:        p.formatList,
 			Gzip:              p.gzip,
-		})
+			AzureConf:         c.Conf.Azure,
+		}
+		if err := w.Validate(); err != nil {
+			logging.Log.Errorf("Check if there is a container beforehand: %s, err: %+v", c.Conf.Azure.ContainerName, err)
+			return subcommands.ExitUsageError
+		}
+		reports = append(reports, w)
 	}
 
 	for _, w := range reports {
