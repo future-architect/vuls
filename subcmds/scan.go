@@ -152,12 +152,12 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		}
 	}
 
-	target := make(map[string]c.ServerInfo)
+	targets := make(map[string]c.ServerInfo)
 	for _, arg := range servernames {
 		found := false
 		for servername, info := range c.Conf.Servers {
 			if servername == arg {
-				target[servername] = info
+				targets[servername] = info
 				found = true
 				break
 			}
@@ -169,12 +169,12 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 	if 0 < len(servernames) {
 		// if scan target servers are specified by args, set to the config
-		c.Conf.Servers = target
+		c.Conf.Servers = targets
 	} else {
 		// if not specified by args, scan all servers in the config
-		target = c.Conf.Servers
+		targets = c.Conf.Servers
 	}
-	logging.Log.Debugf("%s", pp.Sprintf("%v", target))
+	logging.Log.Debugf("%s", pp.Sprintf("%v", targets))
 
 	logging.Log.Info("Validating config...")
 	if !c.Conf.ValidateOnScan() {
@@ -185,7 +185,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		TimeoutSec:     p.timeoutSec,
 		ScanTimeoutSec: p.scanTimeoutSec,
 		CacheDBPath:    p.cacheDBPath,
-		Targets:        target,
+		Targets:        targets,
 		Debug:          c.Conf.Debug,
 		Quiet:          c.Conf.Quiet,
 		LogDir:         c.Conf.LogDir,
