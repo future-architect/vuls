@@ -167,9 +167,12 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 			return subcommands.ExitUsageError
 		}
 	}
-	// if scan target servers are specified by args, set to the config
 	if 0 < len(servernames) {
+		// if scan target servers are specified by args, set to the config
 		c.Conf.Servers = target
+	} else {
+		// if not specified by args, scan all servers in the config
+		target = c.Conf.Servers
 	}
 	logging.Log.Debugf("%s", pp.Sprintf("%v", target))
 
