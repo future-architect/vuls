@@ -20,6 +20,8 @@ type AzureBlobWriter struct {
 	FormatOneLineText bool
 	FormatList        bool
 	Gzip              bool
+
+	c.AzureConf
 }
 
 // Write results to Azure Blob storage
@@ -28,7 +30,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 		return nil
 	}
 
-	cli, err := getBlobClient()
+	cli, err := w.getBlobClient()
 	if err != nil {
 		return err
 	}
@@ -38,7 +40,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 		k := fmt.Sprintf(timestr + "/summary.txt")
 		text := formatOneLineSummary(rs...)
 		b := []byte(text)
-		if err := createBlockBlob(cli, k, b, w.Gzip); err != nil {
+		if err := w.createBlockBlob(cli, k, b, w.Gzip); err != nil {
 			return err
 		}
 	}
@@ -51,7 +53,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 			if b, err = json.Marshal(r); err != nil {
 				return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
 			}
-			if err := createBlockBlob(cli, k, b, w.Gzip); err != nil {
+			if err := w.createBlockBlob(cli, k, b, w.Gzip); err != nil {
 				return err
 			}
 		}
@@ -59,7 +61,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 		if w.FormatList {
 			k := key + "_short.txt"
 			b := []byte(formatList(r))
-			if err := createBlockBlob(cli, k, b, w.Gzip); err != nil {
+			if err := w.createBlockBlob(cli, k, b, w.Gzip); err != nil {
 				return err
 			}
 		}
@@ -67,7 +69,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 		if w.FormatFullText {
 			k := key + "_full.txt"
 			b := []byte(formatFullPlainText(r))
-			if err := createBlockBlob(cli, k, b, w.Gzip); err != nil {
+			if err := w.createBlockBlob(cli, k, b, w.Gzip); err != nil {
 				return err
 			}
 		}
@@ -75,9 +77,9 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 	return
 }
 
-// CheckIfAzureContainerExists check the existence of Azure storage container
-func CheckIfAzureContainerExists() error {
-	cli, err := getBlobClient()
+// Validate check the existence of Azure storage container
+func (w AzureBlobWriter) Validate() error {
+	cli, err := w.getBlobClient()
 	if err != nil {
 		return err
 	}
@@ -88,26 +90,26 @@ func CheckIfAzureContainerExists() error {
 
 	found := false
 	for _, con := range r.Containers {
-		if con.Name == c.Conf.Azure.ContainerName {
+		if con.Name == w.ContainerName {
 			found = true
 			break
 		}
 	}
 	if !found {
-		return xerrors.Errorf("Container not found. Container: %s", c.Conf.Azure.ContainerName)
+		return xerrors.Errorf("Container not found. Container: %s", w.ContainerName)
 	}
 	return nil
 }
 
-func getBlobClient() (storage.BlobStorageClient, error) {
-	api, err := storage.NewBasicClient(c.Conf.Azure.AccountName, c.Conf.Azure.AccountKey)
+func (w AzureBlobWriter) getBlobClient() (storage.BlobStorageClient, error) {
+	api, err := storage.NewBasicClient(w.AccountName, w.AccountKey)
 	if err != nil {
 		return storage.BlobStorageClient{}, err
 	}
 	return api.GetBlobService(), nil
 }
 
-func createBlockBlob(cli storage.BlobStorageClient, k string, b []byte, gzip bool) error {
+func (w AzureBlobWriter) createBlockBlob(cli storage.BlobStorageClient, k string, b []byte, gzip bool) error {
 	var err error
 	if gzip {
 		if b, err = gz(b); err != nil {
@@ -116,11 +118,11 @@ func createBlockBlob(cli storage.BlobStorageClient, k string, b []byte, gzip boo
 		k += ".gz"
 	}
 
-	ref := cli.GetContainerReference(c.Conf.Azure.ContainerName)
+	ref := cli.GetContainerReference(w.ContainerName)
 	blob := ref.GetBlobReference(k)
 	if err := blob.CreateBlockBlobFromReader(bytes.NewReader(b), nil); err != nil {
 		return xerrors.Errorf("Failed to upload data to %s/%s, err: %w",
-			c.Conf.Azure.ContainerName, k, err)
+			w.ContainerName, k, err)
 	}
 	return nil
 }
