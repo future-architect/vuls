@@ -119,7 +119,11 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		}
 	}
 	if 0 < len(servernames) {
+		// if scan target servers are specified by args, set to the config
 		c.Conf.Servers = targets
+	} else {
+		// if not specified by args, scan all servers in the config
+		targets = c.Conf.Servers
 	}
 
 	logging.Log.Info("Validating config...")
