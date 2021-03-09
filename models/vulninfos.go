@@ -3,10 +3,12 @@ package models
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/future-architect/vuls/logging"
 	exploitmodels "github.com/vulsio/go-exploitdb/models"
 )
 
@@ -23,6 +25,81 @@ func (v VulnInfos) Find(f func(VulnInfo) bool) VulnInfos {
 		}
 	}
 	return filtered
+}
+
+// FilterByCvssOver return scored vulnerabilities
+func (v VulnInfos) FilterByCvssOver(over float64) VulnInfos {
+	return v.Find(func(v VulnInfo) bool {
+		if over <= v.MaxCvssScore().Value.Score {
+			return true
+		}
+		return false
+	})
+}
+
+// FilterIgnoreCves filter function.
+func (v VulnInfos) FilterIgnoreCves(ignoreCveIDs []string) VulnInfos {
+	return v.Find(func(v VulnInfo) bool {
+		for _, c := range ignoreCveIDs {
+			if v.CveID == c {
+				return false
+			}
+		}
+		return true
+	})
+}
+
+// FilterUnfixed filter unfixed CVE-IDs
+func (v VulnInfos) FilterUnfixed(ignoreUnfixed bool) VulnInfos {
+	if !ignoreUnfixed {
+		return v
+	}
+	return v.Find(func(v VulnInfo) bool {
+		// Report cves detected by CPE because Vuls can't know 'fixed' or 'unfixed'
+		if len(v.CpeURIs) != 0 {
+			return true
+		}
+		NotFixedAll := true
+		for _, p := range v.AffectedPackages {
+			NotFixedAll = NotFixedAll && p.NotFixedYet
+		}
+		return !NotFixedAll
+	})
+}
+
+// FilterIgnorePkgs is filter function.
+func (v VulnInfos) FilterIgnorePkgs(ignorePkgsRegexps []string) VulnInfos {
+	regexps := []*regexp.Regexp{}
+	for _, pkgRegexp := range ignorePkgsRegexps {
+		re, err := regexp.Compile(pkgRegexp)
+		if err != nil {
+			logging.Log.Warnf("Failed to parse %s. err: %+v", pkgRegexp, err)
+			continue
+		} else {
+			regexps = append(regexps, re)
+		}
+	}
+	if len(regexps) == 0 {
+		return v
+	}
+
+	return v.Find(func(v VulnInfo) bool {
+		if len(v.AffectedPackages) == 0 {
+			return true
+		}
+		for _, p := range v.AffectedPackages {
+			match := false
+			for _, re := range regexps {
+				if re.MatchString(p.Name) {
+					match = true
+				}
+			}
+			if !match {
+				return true
+			}
+		}
+		return false
+	})
 }
 
 // FindScoredVulns return scored vulnerabilities
