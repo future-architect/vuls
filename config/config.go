@@ -134,7 +134,7 @@ func (c Config) checkSSHKeyExist() (errs []error) {
 }
 
 // ValidateOnReport validates configuration
-func (c Config) ValidateOnReport() bool {
+func (c *Config) ValidateOnReport() bool {
 	errs := []error{}
 
 	if len(c.ResultsDir) != 0 {

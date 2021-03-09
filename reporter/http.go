@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"golang.org/x/xerrors"
 )
@@ -20,7 +20,7 @@ func (w HTTPRequestWriter) Write(rs ...models.ScanResult) (err error) {
 		if err := json.NewEncoder(b).Encode(r); err != nil {
 			return err
 		}
-		_, err = http.Post(c.Conf.HTTP.URL, "application/json; charset=utf-8", b)
+		_, err = http.Post(config.Conf.HTTP.URL, "application/json; charset=utf-8", b)
 		if err != nil {
 			return err
 		}

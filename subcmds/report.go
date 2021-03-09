@@ -39,8 +39,6 @@ type ReportCmd struct {
 	toS3        bool
 	toAzureBlob bool
 	toHTTP      bool
-
-	toHTTPURL string
 }
 
 // Name return subcommand name
@@ -162,8 +160,6 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.gzip, "gzip", false, "gzip compression")
 	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use args passed via PIPE")
 
-	f.StringVar(&p.toHTTPURL, "http", "", "-to-http http://vuls-report")
-
 	f.StringVar(&c.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
 		utils.DefaultCacheDir(), "/path/to/dir")
 }
@@ -185,9 +181,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	c.Conf.AWS.Enabled = p.toS3
 	c.Conf.Azure.Enabled = p.toAzureBlob
 	c.Conf.HTTP.Enabled = p.toHTTP
-
-	//TODO refactor
-	c.Conf.HTTP.Init(p.toHTTPURL)
 
 	if c.Conf.Diff {
 		c.Conf.DiffPlus, c.Conf.DiffMinus = true, true
