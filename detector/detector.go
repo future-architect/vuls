@@ -134,9 +134,8 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 	}
 
 	for i, r := range rs {
-		r = r.FilterByCvssOver(c.Conf.CvssScoreOver)
-		r = r.FilterUnfixed(c.Conf.IgnoreUnfixed)
-		r = r.FilterInactiveWordPressLibs(c.Conf.WpScan.DetectInactive)
+		r.ScannedCves = r.ScannedCves.FilterByCvssOver(c.Conf.CvssScoreOver)
+		r.ScannedCves = r.ScannedCves.FilterUnfixed(c.Conf.IgnoreUnfixed)
 
 		// IgnoreCves
 		ignoreCves := []string{}
@@ -145,7 +144,7 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 		} else if con, ok := c.Conf.Servers[r.ServerName].Containers[r.Container.Name]; ok {
 			ignoreCves = con.IgnoreCves
 		}
-		r = r.FilterIgnoreCves(ignoreCves)
+		r.ScannedCves = r.ScannedCves.FilterIgnoreCves(ignoreCves)
 
 		// ignorePkgs
 		ignorePkgsRegexps := []string{}
@@ -154,13 +153,14 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 		} else if s, ok := c.Conf.Servers[r.ServerName].Containers[r.Container.Name]; ok {
 			ignorePkgsRegexps = s.IgnorePkgsRegexp
 		}
-		r = r.FilterIgnorePkgs(ignorePkgsRegexps)
+		r.ScannedCves = r.ScannedCves.FilterIgnorePkgs(ignorePkgsRegexps)
 
 		// IgnoreUnscored
 		if c.Conf.IgnoreUnscoredCves {
 			r.ScannedCves = r.ScannedCves.FindScoredVulns()
 		}
 
+		r.FilterInactiveWordPressLibs(c.Conf.WpScan.DetectInactive)
 		rs[i] = r
 	}
 	return rs, nil

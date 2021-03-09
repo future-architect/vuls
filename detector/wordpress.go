@@ -61,7 +61,7 @@ func detectWordPressCves(r *models.ScanResult, cnf *c.WpScanConf) (int, error) {
 			fmt.Sprintf("Failed to get WordPress core version."))
 	}
 	url := fmt.Sprintf("https://wpscan.com/api/v3/wordpresses/%s", ver)
-	wpVinfos, err := wpscan(url, ver, cnf.Token)
+	wpVinfos, err := wpscan(url, ver, cnf.Token, true)
 	if err != nil {
 		return 0, err
 	}
@@ -73,7 +73,7 @@ func detectWordPressCves(r *models.ScanResult, cnf *c.WpScanConf) (int, error) {
 	}
 	for _, p := range themes {
 		url := fmt.Sprintf("https://wpscan.com/api/v3/themes/%s", p.Name)
-		candidates, err := wpscan(url, p.Name, cnf.Token)
+		candidates, err := wpscan(url, p.Name, cnf.Token, false)
 		if err != nil {
 			return 0, err
 		}
@@ -88,7 +88,7 @@ func detectWordPressCves(r *models.ScanResult, cnf *c.WpScanConf) (int, error) {
 	}
 	for _, p := range plugins {
 		url := fmt.Sprintf("https://wpscan.com/api/v3/plugins/%s", p.Name)
-		candidates, err := wpscan(url, p.Name, cnf.Token)
+		candidates, err := wpscan(url, p.Name, cnf.Token, false)
 		if err != nil {
 			return 0, err
 		}
@@ -110,13 +110,16 @@ func detectWordPressCves(r *models.ScanResult, cnf *c.WpScanConf) (int, error) {
 	return len(wpVinfos), nil
 }
 
-func wpscan(url, name, token string) (vinfos []models.VulnInfo, err error) {
+func wpscan(url, name, token string, isCore bool) (vinfos []models.VulnInfo, err error) {
 	body, err := httpRequest(url, token)
 	if err != nil {
 		return nil, err
 	}
 	if body == "" {
 		logging.Log.Debugf("wpscan.com response body is empty. URL: %s", url)
+	}
+	if isCore {
+		name = "core"
 	}
 	return convertToVinfos(name, body)
 }

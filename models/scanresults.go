@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
-	"regexp"
 	"strings"
 	"time"
 
@@ -82,94 +81,10 @@ type Kernel struct {
 	RebootRequired bool   `json:"rebootRequired"`
 }
 
-// FilterByCvssOver is filter function.
-func (r ScanResult) FilterByCvssOver(over float64) ScanResult {
-	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
-		if over <= v.MaxCvssScore().Value.Score {
-			return true
-		}
-		return false
-	})
-	r.ScannedCves = filtered
-	return r
-}
-
-// FilterIgnoreCves is filter function.
-func (r ScanResult) FilterIgnoreCves(ignoreCves []string) ScanResult {
-	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
-		for _, c := range ignoreCves {
-			if v.CveID == c {
-				return false
-			}
-		}
-		return true
-	})
-	r.ScannedCves = filtered
-	return r
-}
-
-// FilterUnfixed is filter function.
-func (r ScanResult) FilterUnfixed(ignoreUnfixed bool) ScanResult {
-	if !ignoreUnfixed {
-		return r
-	}
-	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
-		// Report cves detected by CPE because Vuls can't know 'fixed' or 'unfixed'
-		if len(v.CpeURIs) != 0 {
-			return true
-		}
-		NotFixedAll := true
-		for _, p := range v.AffectedPackages {
-			NotFixedAll = NotFixedAll && p.NotFixedYet
-		}
-		return !NotFixedAll
-	})
-	r.ScannedCves = filtered
-	return r
-}
-
-// FilterIgnorePkgs is filter function.
-func (r ScanResult) FilterIgnorePkgs(ignorePkgsRegexps []string) ScanResult {
-	regexps := []*regexp.Regexp{}
-	for _, pkgRegexp := range ignorePkgsRegexps {
-		re, err := regexp.Compile(pkgRegexp)
-		if err != nil {
-			logging.Log.Warnf("Failed to parse %s. err: %+v", pkgRegexp, err)
-			continue
-		} else {
-			regexps = append(regexps, re)
-		}
-	}
-	if len(regexps) == 0 {
-		return r
-	}
-
-	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
-		if len(v.AffectedPackages) == 0 {
-			return true
-		}
-		for _, p := range v.AffectedPackages {
-			match := false
-			for _, re := range regexps {
-				if re.MatchString(p.Name) {
-					match = true
-				}
-			}
-			if !match {
-				return true
-			}
-		}
-		return false
-	})
-
-	r.ScannedCves = filtered
-	return r
-}
-
 // FilterInactiveWordPressLibs is filter function.
-func (r ScanResult) FilterInactiveWordPressLibs(detectInactive bool) ScanResult {
+func (r *ScanResult) FilterInactiveWordPressLibs(detectInactive bool) {
 	if detectInactive {
-		return r
+		return
 	}
 
 	filtered := r.ScannedCves.Find(func(v VulnInfo) bool {
@@ -182,12 +97,14 @@ func (r ScanResult) FilterInactiveWordPressLibs(detectInactive bool) ScanResult 
 				if p.Status != Inactive {
 					return true
 				}
+			} else {
+				logging.Log.Warnf("Failed to find the WordPress pkg: %+s", wp.Name)
 			}
 		}
 		return false
 	})
 	r.ScannedCves = filtered
-	return r
+	return
 }
 
 // ReportFileName returns the filename on localhost without extension
