@@ -20,18 +20,25 @@ type AzureConf struct {
 	Enabled bool `toml:"-" json:"-"`
 }
 
+const (
+	azureAccount = "AZURE_STORAGE_ACCOUNT"
+	azureKey     = "AZURE_STORAGE_ACCESS_KEY"
+)
+
 // Validate configuration
 func (c *AzureConf) Validate() (errs []error) {
 	if !c.Enabled {
 		return
 	}
-	if c.AccountName == "" {
-		c.AccountName = os.Getenv("AZURE_STORAGE_ACCOUNT")
+
+	// overwrite if env var is not empty
+	if os.Getenv(azureAccount) != "" {
+		c.AccountName = os.Getenv(azureAccount)
+	}
+	if os.Getenv(azureKey) != "" {
+		c.AccountKey = os.Getenv(azureKey)
 	}
 
-	if c.AccountKey == "" {
-		c.AccountKey = os.Getenv("AZURE_STORAGE_ACCESS_KEY")
-	}
 	if c.ContainerName == "" {
 		errs = append(errs, xerrors.Errorf("Azure storage container name is required"))
 	}
