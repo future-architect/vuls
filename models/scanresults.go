@@ -109,7 +109,7 @@ func (r *ScanResult) FilterInactiveWordPressLibs(detectInactive bool) {
 
 // ReportFileName returns the filename on localhost without extension
 func (r ScanResult) ReportFileName() (name string) {
-	if len(r.Container.ContainerID) == 0 {
+	if r.Container.ContainerID == "" {
 		return fmt.Sprintf("%s", r.ServerName)
 	}
 	return fmt.Sprintf("%s@%s", r.Container.Name, r.ServerName)
@@ -118,7 +118,7 @@ func (r ScanResult) ReportFileName() (name string) {
 // ReportKeyName returns the name of key on S3, Azure-Blob without extension
 func (r ScanResult) ReportKeyName() (name string) {
 	timestr := r.ScannedAt.Format(time.RFC3339)
-	if len(r.Container.ContainerID) == 0 {
+	if r.Container.ContainerID == "" {
 		return fmt.Sprintf("%s/%s", timestr, r.ServerName)
 	}
 	return fmt.Sprintf("%s/%s@%s", timestr, r.Container.Name, r.ServerName)
@@ -126,7 +126,7 @@ func (r ScanResult) ReportKeyName() (name string) {
 
 // ServerInfo returns server name one line
 func (r ScanResult) ServerInfo() string {
-	if len(r.Container.ContainerID) == 0 {
+	if r.Container.ContainerID == "" {
 		return fmt.Sprintf("%s (%s%s)",
 			r.FormatServerName(), r.Family, r.Release)
 	}
@@ -141,7 +141,7 @@ func (r ScanResult) ServerInfo() string {
 
 // ServerInfoTui returns server information for TUI sidebar
 func (r ScanResult) ServerInfoTui() string {
-	if len(r.Container.ContainerID) == 0 {
+	if r.Container.ContainerID == "" {
 		line := fmt.Sprintf("%s (%s%s)",
 			r.ServerName, r.Family, r.Release)
 		if len(r.Warnings) != 0 {
@@ -162,7 +162,7 @@ func (r ScanResult) ServerInfoTui() string {
 
 // FormatServerName returns server and container name
 func (r ScanResult) FormatServerName() (name string) {
-	if len(r.Container.ContainerID) == 0 {
+	if r.Container.ContainerID == "" {
 		name = r.ServerName
 	} else {
 		name = fmt.Sprintf("%s@%s",

@@ -47,34 +47,25 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 			r.ScannedCves = models.VulnInfos{}
 		}
 
-		cpeURIs := []string{}
+		cpeURIs, owaspDCXMLPath := []string{}, ""
 		if len(r.Container.ContainerID) == 0 {
 			cpeURIs = c.Conf.Servers[r.ServerName].CpeNames
-			owaspDCXMLPath := c.Conf.Servers[r.ServerName].OwaspDCXMLPath
-			if owaspDCXMLPath != "" {
-				cpes, err := parser.Parse(owaspDCXMLPath)
-				if err != nil {
-					return nil, xerrors.Errorf("Failed to read OWASP Dependency Check XML on %s, `%s`, err: %w",
-						r.ServerName, owaspDCXMLPath, err)
-				}
-				cpeURIs = append(cpeURIs, cpes...)
-			}
+			owaspDCXMLPath = c.Conf.Servers[r.ServerName].OwaspDCXMLPath
 		} else {
-			// runningContainer
 			if s, ok := c.Conf.Servers[r.ServerName]; ok {
 				if con, ok := s.Containers[r.Container.Name]; ok {
 					cpeURIs = con.Cpes
-					owaspDCXMLPath := con.OwaspDCXMLPath
-					if owaspDCXMLPath != "" {
-						cpes, err := parser.Parse(owaspDCXMLPath)
-						if err != nil {
-							return nil, xerrors.Errorf("Failed to read OWASP Dependency Check XML on %s, `%s`, err: %w",
-								r.ServerInfo(), owaspDCXMLPath, err)
-						}
-						cpeURIs = append(cpeURIs, cpes...)
-					}
+					owaspDCXMLPath = con.OwaspDCXMLPath
 				}
 			}
+		}
+		if owaspDCXMLPath != "" {
+			cpes, err := parser.Parse(owaspDCXMLPath)
+			if err != nil {
+				return nil, xerrors.Errorf("Failed to read OWASP Dependency Check XML on %s, `%s`, err: %w",
+					r.ServerInfo(), owaspDCXMLPath, err)
+			}
+			cpeURIs = append(cpeURIs, cpes...)
 		}
 
 		if err := DetectLibsCves(&r, c.Conf.TrivyCacheDBDir, c.Conf.NoProgress); err != nil {
