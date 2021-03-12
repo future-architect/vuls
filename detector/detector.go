@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/future-architect/vuls/config"
 	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
@@ -23,8 +24,6 @@ import (
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
 	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
 	ovaldb "github.com/kotakanbe/goval-dictionary/db"
-	metasploitdb "github.com/takuzoo3868/go-msfdb/db"
-	exploitdb "github.com/vulsio/go-exploitdb/db"
 	"golang.org/x/xerrors"
 )
 
@@ -38,7 +37,7 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 	// Use the same reportedAt for all rs
 	reportedAt := time.Now()
 	for i, r := range rs {
-		if !c.Conf.RefreshCve && !needToRefreshCve(r) {
+		if !config.Conf.RefreshCve && !needToRefreshCve(r) {
 			logging.Log.Info("No need to refresh")
 			continue
 		}
@@ -49,10 +48,10 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 
 		cpeURIs, owaspDCXMLPath := []string{}, ""
 		if len(r.Container.ContainerID) == 0 {
-			cpeURIs = c.Conf.Servers[r.ServerName].CpeNames
-			owaspDCXMLPath = c.Conf.Servers[r.ServerName].OwaspDCXMLPath
+			cpeURIs = config.Conf.Servers[r.ServerName].CpeNames
+			owaspDCXMLPath = config.Conf.Servers[r.ServerName].OwaspDCXMLPath
 		} else {
-			if s, ok := c.Conf.Servers[r.ServerName]; ok {
+			if s, ok := config.Conf.Servers[r.ServerName]; ok {
 				if con, ok := s.Containers[r.Container.Name]; ok {
 					cpeURIs = con.Cpes
 					owaspDCXMLPath = con.OwaspDCXMLPath
@@ -68,7 +67,7 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 			cpeURIs = append(cpeURIs, cpes...)
 		}
 
-		if err := DetectLibsCves(&r, c.Conf.TrivyCacheDBDir, c.Conf.NoProgress); err != nil {
+		if err := DetectLibsCves(&r, config.Conf.TrivyCacheDBDir, config.Conf.NoProgress); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
 		}
 
@@ -76,16 +75,16 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
 		}
 
-		if err := DetectCpeURIsCves(dbclient.CveDB, &r, cpeURIs); err != nil {
+		if err := DetectCpeURIsCves(dbclient.CveDB, &r, cpeURIs, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
 			return nil, xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
 		}
 
-		repos := c.Conf.Servers[r.ServerName].GitHubRepos
-		if err := DetectGitHubCves(&r, repos, c.Conf.IgnoreGitHubDismissed); err != nil {
+		repos := config.Conf.Servers[r.ServerName].GitHubRepos
+		if err := DetectGitHubCves(&r, repos, config.Conf.IgnoreGitHubDismissed); err != nil {
 			return nil, xerrors.Errorf("Failed to detect GitHub Cves: %w", err)
 		}
 
-		if err := DetectWordPressCves(&r, &c.Conf.WpScan); err != nil {
+		if err := DetectWordPressCves(&r, &config.Conf.WpScan); err != nil {
 			return nil, xerrors.Errorf("Failed to detect WordPress Cves: %w", err)
 		}
 
@@ -94,20 +93,20 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 		}
 
 		r.ReportedBy, _ = os.Hostname()
-		r.Lang = c.Conf.Lang
+		r.Lang = config.Conf.Lang
 		r.ReportedAt = reportedAt
-		r.ReportedVersion = c.Version
-		r.ReportedRevision = c.Revision
-		r.Config.Report = c.Conf
-		r.Config.Report.Servers = map[string]c.ServerInfo{
-			r.ServerName: c.Conf.Servers[r.ServerName],
+		r.ReportedVersion = config.Version
+		r.ReportedRevision = config.Revision
+		r.Config.Report = config.Conf
+		r.Config.Report.Servers = map[string]config.ServerInfo{
+			r.ServerName: config.Conf.Servers[r.ServerName],
 		}
 		rs[i] = r
 	}
 
 	// Overwrite the json file every time to clear the fields specified in config.IgnoredJSONKeys
 	for _, r := range rs {
-		if s, ok := c.Conf.Servers[r.ServerName]; ok {
+		if s, ok := config.Conf.Servers[r.ServerName]; ok {
 			r = r.ClearFields(s.IgnoredJSONKeys)
 		}
 		//TODO don't call here
@@ -116,23 +115,23 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 		}
 	}
 
-	if c.Conf.DiffPlus || c.Conf.DiffMinus {
+	if config.Conf.DiffPlus || config.Conf.DiffMinus {
 		prevs, err := loadPrevious(rs)
 		if err != nil {
 			return nil, err
 		}
-		rs = diff(rs, prevs, c.Conf.DiffPlus, c.Conf.DiffMinus)
+		rs = diff(rs, prevs, config.Conf.DiffPlus, config.Conf.DiffMinus)
 	}
 
 	for i, r := range rs {
-		r.ScannedCves = r.ScannedCves.FilterByCvssOver(c.Conf.CvssScoreOver)
-		r.ScannedCves = r.ScannedCves.FilterUnfixed(c.Conf.IgnoreUnfixed)
+		r.ScannedCves = r.ScannedCves.FilterByCvssOver(config.Conf.CvssScoreOver)
+		r.ScannedCves = r.ScannedCves.FilterUnfixed(config.Conf.IgnoreUnfixed)
 
 		// IgnoreCves
 		ignoreCves := []string{}
 		if r.Container.Name == "" {
-			ignoreCves = c.Conf.Servers[r.ServerName].IgnoreCves
-		} else if con, ok := c.Conf.Servers[r.ServerName].Containers[r.Container.Name]; ok {
+			ignoreCves = config.Conf.Servers[r.ServerName].IgnoreCves
+		} else if con, ok := config.Conf.Servers[r.ServerName].Containers[r.Container.Name]; ok {
 			ignoreCves = con.IgnoreCves
 		}
 		r.ScannedCves = r.ScannedCves.FilterIgnoreCves(ignoreCves)
@@ -140,18 +139,18 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 		// ignorePkgs
 		ignorePkgsRegexps := []string{}
 		if r.Container.Name == "" {
-			ignorePkgsRegexps = c.Conf.Servers[r.ServerName].IgnorePkgsRegexp
-		} else if s, ok := c.Conf.Servers[r.ServerName].Containers[r.Container.Name]; ok {
+			ignorePkgsRegexps = config.Conf.Servers[r.ServerName].IgnorePkgsRegexp
+		} else if s, ok := config.Conf.Servers[r.ServerName].Containers[r.Container.Name]; ok {
 			ignorePkgsRegexps = s.IgnorePkgsRegexp
 		}
 		r.ScannedCves = r.ScannedCves.FilterIgnorePkgs(ignorePkgsRegexps)
 
 		// IgnoreUnscored
-		if c.Conf.IgnoreUnscoredCves {
+		if config.Conf.IgnoreUnscoredCves {
 			r.ScannedCves = r.ScannedCves.FindScoredVulns()
 		}
 
-		r.FilterInactiveWordPressLibs(c.Conf.WpScan.DetectInactive)
+		r.FilterInactiveWordPressLibs(config.Conf.WpScan.DetectInactive)
 		rs[i] = r
 	}
 	return rs, nil
@@ -209,7 +208,7 @@ func DetectPkgCves(dbclient DBClient, r *models.ScanResult) error {
 }
 
 // DetectGitHubCves fetches CVEs from GitHub Security Alerts
-func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]c.GitHubConf, ignoreDismissed bool) error {
+func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]config.GitHubConf, ignoreDismissed bool) error {
 	if len(githubConfs) == 0 {
 		return nil
 	}
@@ -251,12 +250,13 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult) error {
 	}
 
 	logging.Log.Infof("Fill CVE detailed with CVE-DB")
-	if err := fillCvesWithNvdJvn(dbclient.CveDB, r); err != nil {
+	if err := fillCvesWithNvdJvn(dbclient.CveDB, r, config.Conf.LogOpts); err != nil {
 		return xerrors.Errorf("Failed to fill with CVE: %w", err)
 	}
 
 	logging.Log.Infof("Fill exploit with Exploit-DB")
-	nExploitCve, err := fillWithExploitDB(dbclient.ExploitDB, r)
+	nExploitCve, err := exploit.FillWithExploit(dbclient.ExploitDB, r, &c.Conf.Exploit)
+
 	if err != nil {
 		return xerrors.Errorf("Failed to fill with exploit: %w", err)
 	}
@@ -264,7 +264,7 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult) error {
 		r.FormatServerName(), nExploitCve)
 
 	logging.Log.Infof("Fill metasploit module with Metasploit-DB")
-	nMetasploitCve, err := fillWithMetasploit(dbclient.MetasploitDB, r)
+	nMetasploitCve, err := msf.FillWithMetasploit(dbclient.MetasploitDB, r)
 	if err != nil {
 		return xerrors.Errorf("Failed to fill with metasploit: %w", err)
 	}
@@ -278,16 +278,23 @@ func FillCveInfo(dbclient DBClient, r *models.ScanResult) error {
 }
 
 // fillCvesWithNvdJvn fills CVE detail with NVD, JVN
-func fillCvesWithNvdJvn(driver cvedb.DB, r *models.ScanResult) error {
+func fillCvesWithNvdJvn(driver cvedb.DB, r *models.ScanResult, logOpts logging.LogOpts) (err error) {
 	cveIDs := []string{}
 	for _, v := range r.ScannedCves {
 		cveIDs = append(cveIDs, v.CveID)
 	}
 
-	ds, err := CveClient.FetchCveDetails(driver, cveIDs)
+	client := newGoCveDictClient(config.Conf.CveDict, logOpts)
+	var ds []cvemodels.CveDetail
+	if config.Conf.CveDict.IsFetchViaHTTP() {
+		ds, err = client.fetchCveDetailsViaHTTP(cveIDs)
+	} else {
+		ds, err = client.fetchCveDetails(driver, cveIDs)
+	}
 	if err != nil {
 		return err
 	}
+
 	for _, d := range ds {
 		nvd, exploits, mitigations := models.ConvertNvdJSONToModel(d.CveID, d.NvdJSON)
 		jvn := models.ConvertJvnToModel(d.CveID, d.Jvn)
@@ -419,28 +426,17 @@ func detectPkgsCvesWithGost(driver gostdb.DB, r *models.ScanResult) error {
 	return err
 }
 
-// fillWithExploitDB fills Exploits with exploit dataabase
-// https://github.com/vulsio/go-exploitdb
-func fillWithExploitDB(driver exploitdb.DB, r *models.ScanResult) (nExploitCve int, err error) {
-	return exploit.FillWithExploit(driver, r, &c.Conf.Exploit)
-}
-
-// fillWithMetasploit fills metasploit modules with metasploit database
-// https://github.com/takuzoo3868/go-msfdb
-func fillWithMetasploit(driver metasploitdb.DB, r *models.ScanResult) (nMetasploitCve int, err error) {
-	return msf.FillWithMetasploit(driver, r)
-}
-
 // DetectCpeURIsCves detects CVEs of given CPE-URIs
-func DetectCpeURIsCves(driver cvedb.DB, r *models.ScanResult, cpeURIs []string) error {
+func DetectCpeURIsCves(driver cvedb.DB, r *models.ScanResult, cpeURIs []string, cveCnf config.GoCveDictConf, logOpts logging.LogOpts) error {
 	nCVEs := 0
-	if len(cpeURIs) != 0 && driver == nil && !c.Conf.CveDict.IsFetchViaHTTP() {
+	if len(cpeURIs) != 0 && driver == nil && !cveCnf.IsFetchViaHTTP() {
 		return xerrors.Errorf("cpeURIs %s specified, but cve-dictionary DB not found. Fetch cve-dictionary before reporting. For details, see `https://github.com/kotakanbe/go-cve-dictionary#deploy-go-cve-dictionary`",
 			cpeURIs)
 	}
 
+	client := newGoCveDictClient(cveCnf, logOpts)
 	for _, name := range cpeURIs {
-		details, err := CveClient.FetchCveDetailsByCpeName(driver, name)
+		details, err := client.fetchCveDetailsByCpeName(driver, name)
 		if err != nil {
 			return err
 		}

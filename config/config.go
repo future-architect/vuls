@@ -23,11 +23,9 @@ var Conf Config
 
 //Config is struct of Configuration
 type Config struct {
+	logging.LogOpts
+
 	// scan, report
-	Debug      bool   `json:"debug,omitempty"`
-	DebugSQL   bool   `json:"debugSQL,omitempty"`
-	LogDir     string `json:"logDir,omitempty"`
-	Quiet      bool   `json:"quiet,omitempty"`
 	HTTPProxy  string `valid:"url" json:"httpProxy,omitempty"`
 	ResultsDir string `json:"resultsDir,omitempty"`
 	Pipe       bool   `json:"pipe,omitempty"`
