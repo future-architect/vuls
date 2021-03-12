@@ -1,12 +1,12 @@
 module github.com/future-architect/vuls
 
-go 1.15
+go 1.16
 
 require (
 	github.com/Azure/azure-sdk-for-go v50.2.0+incompatible
 	github.com/BurntSushi/toml v0.3.1
 	github.com/aquasecurity/fanal v0.0.0-20210119051230-28c249da7cfd
-	github.com/aquasecurity/trivy v0.15.0
+	github.com/aquasecurity/trivy v0.16.0
 	github.com/aquasecurity/trivy-db v0.0.0-20210121143430-2a5c54036a86
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef
 	github.com/aws/aws-sdk-go v1.36.31
