@@ -11,9 +11,13 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector"
+	"github.com/future-architect/vuls/exploit"
+	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/msf"
 	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/scanner"
 )
@@ -27,7 +31,7 @@ type VulsHandler struct {
 // ServeHTTP is http handler
 func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var err error
-	result := models.ScanResult{ScannedCves: models.VulnInfos{}}
+	r := models.ScanResult{ScannedCves: models.VulnInfos{}}
 
 	contentType := req.Header.Get("Content-Type")
 	mediatype, _, err := mime.ParseMediaType(contentType)
@@ -38,7 +42,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if mediatype == "application/json" {
-		if err = json.NewDecoder(req.Body).Decode(&result); err != nil {
+		if err = json.NewDecoder(req.Body).Decode(&r); err != nil {
 			logging.Log.Error(err)
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
@@ -49,7 +53,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if result, err = scanner.ViaHTTP(req.Header, buf.String(), h.ToLocalFile); err != nil {
+		if r, err = scanner.ViaHTTP(req.Header, buf.String(), h.ToLocalFile); err != nil {
 			logging.Log.Error(err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -60,22 +64,44 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := detector.DetectPkgCves(h.DBclient, &result); err != nil {
+	if err := detector.DetectPkgCves(h.DBclient, &r); err != nil {
 		logging.Log.Errorf("Failed to detect Pkg CVE: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
 
-	if err := detector.FillCveInfo(h.DBclient, &result); err != nil {
-		logging.Log.Errorf("Failed to fill CVE detailed info: %+v", err)
+	logging.Log.Infof("Fill CVE detailed with gost")
+	if err := gost.NewClient(r.Family).FillCVEsWithRedHat(h.DBclient.GostDB, &r); err != nil {
+		logging.Log.Errorf("Failed to fill with gost: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-		return
 	}
+
+	logging.Log.Infof("Fill CVE detailed with CVE-DB")
+	if err := detector.FillCvesWithNvdJvn(h.DBclient.CveDB, &r, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
+		logging.Log.Errorf("Failed to fill with CVE: %+v", err)
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+	}
+
+	nExploitCve, err := exploit.FillWithExploit(h.DBclient.ExploitDB, &r, config.Conf.Exploit)
+	if err != nil {
+		logging.Log.Errorf("Failed to fill with exploit: %+v", err)
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+	}
+	logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nExploitCve)
+
+	nMetasploitCve, err := msf.FillWithMetasploit(h.DBclient.MetasploitDB, &r)
+	if err != nil {
+		logging.Log.Errorf("Failed to fill with metasploit: %+v", err)
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+	}
+	logging.Log.Infof("%s: %d modules are detected", r.FormatServerName(), nMetasploitCve)
+
+	detector.FillCweDict(&r)
 
 	// set ReportedAt to current time when it's set to the epoch, ensures that ReportedAt will be set
 	// properly for scans sent to vuls when running in server mode
-	if result.ReportedAt.IsZero() {
-		result.ReportedAt = time.Now()
+	if r.ReportedAt.IsZero() {
+		r.ReportedAt = time.Now()
 	}
 
 	// report
@@ -83,10 +109,10 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		reporter.HTTPResponseWriter{Writer: w},
 	}
 	if h.ToLocalFile {
-		scannedAt := result.ScannedAt
+		scannedAt := r.ScannedAt
 		if scannedAt.IsZero() {
 			scannedAt = time.Now().Truncate(1 * time.Hour)
-			result.ScannedAt = scannedAt
+			r.ScannedAt = scannedAt
 		}
 		dir, err := scanner.EnsureResultDir(scannedAt)
 		if err != nil {
@@ -103,7 +129,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	for _, w := range reports {
-		if err := w.Write(result); err != nil {
+		if err := w.Write(r); err != nil {
 			logging.Log.Errorf("Failed to report. err: %+v", err)
 			return
 		}

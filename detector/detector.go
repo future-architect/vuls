@@ -27,10 +27,6 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// type Detector struct {
-// 	Targets map[string]c.ServerInfo
-// }
-
 // Detect vulns and fill CVE detailed information
 func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 
@@ -84,13 +80,33 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 			return nil, xerrors.Errorf("Failed to detect GitHub Cves: %w", err)
 		}
 
-		if err := DetectWordPressCves(&r, &config.Conf.WpScan); err != nil {
+		if err := DetectWordPressCves(&r, config.Conf.WpScan); err != nil {
 			return nil, xerrors.Errorf("Failed to detect WordPress Cves: %w", err)
 		}
 
-		if err := FillCveInfo(dbclient, &r); err != nil {
-			return nil, err
+		logging.Log.Infof("Fill CVE detailed with gost")
+		if err := gost.NewClient(r.Family).FillCVEsWithRedHat(dbclient.GostDB, &r); err != nil {
+			return nil, xerrors.Errorf("Failed to fill with gost: %w", err)
 		}
+
+		logging.Log.Infof("Fill CVE detailed with CVE-DB")
+		if err := FillCvesWithNvdJvn(dbclient.CveDB, &r, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
+			return nil, xerrors.Errorf("Failed to fill with CVE: %w", err)
+		}
+
+		nExploitCve, err := exploit.FillWithExploit(dbclient.ExploitDB, &r, c.Conf.Exploit)
+		if err != nil {
+			return nil, xerrors.Errorf("Failed to fill with exploit: %w", err)
+		}
+		logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nExploitCve)
+
+		nMetasploitCve, err := msf.FillWithMetasploit(dbclient.MetasploitDB, &r)
+		if err != nil {
+			return nil, xerrors.Errorf("Failed to fill with metasploit: %w", err)
+		}
+		logging.Log.Infof("%s: %d modules are detected", r.FormatServerName(), nMetasploitCve)
+
+		FillCweDict(&r)
 
 		r.ReportedBy, _ = os.Hostname()
 		r.Lang = config.Conf.Lang
@@ -229,7 +245,7 @@ func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]config.GitHub
 }
 
 // DetectWordPressCves detects CVEs of WordPress
-func DetectWordPressCves(r *models.ScanResult, wpCnf *c.WpScanConf) error {
+func DetectWordPressCves(r *models.ScanResult, wpCnf c.WpScanConf) error {
 	if len(r.WordPressPackages) == 0 {
 		return nil
 	}
@@ -242,51 +258,16 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf *c.WpScanConf) error {
 	return nil
 }
 
-// FillCveInfo fill scanResult with cve info.
-func FillCveInfo(dbclient DBClient, r *models.ScanResult) error {
-	logging.Log.Infof("Fill CVE detailed with gost")
-	if err := gost.NewClient(r.Family).FillCVEsWithRedHat(dbclient.GostDB, r); err != nil {
-		return xerrors.Errorf("Failed to fill with gost: %w", err)
-	}
-
-	logging.Log.Infof("Fill CVE detailed with CVE-DB")
-	if err := fillCvesWithNvdJvn(dbclient.CveDB, r, config.Conf.LogOpts); err != nil {
-		return xerrors.Errorf("Failed to fill with CVE: %w", err)
-	}
-
-	logging.Log.Infof("Fill exploit with Exploit-DB")
-	nExploitCve, err := exploit.FillWithExploit(dbclient.ExploitDB, r, &c.Conf.Exploit)
-
-	if err != nil {
-		return xerrors.Errorf("Failed to fill with exploit: %w", err)
-	}
-	logging.Log.Infof("%s: %d exploits are detected",
-		r.FormatServerName(), nExploitCve)
-
-	logging.Log.Infof("Fill metasploit module with Metasploit-DB")
-	nMetasploitCve, err := msf.FillWithMetasploit(dbclient.MetasploitDB, r)
-	if err != nil {
-		return xerrors.Errorf("Failed to fill with metasploit: %w", err)
-	}
-	logging.Log.Infof("%s: %d modules are detected",
-		r.FormatServerName(), nMetasploitCve)
-
-	logging.Log.Infof("Fill CWE with NVD")
-	fillCweDict(r)
-
-	return nil
-}
-
-// fillCvesWithNvdJvn fills CVE detail with NVD, JVN
-func fillCvesWithNvdJvn(driver cvedb.DB, r *models.ScanResult, logOpts logging.LogOpts) (err error) {
+// FillCvesWithNvdJvn fills CVE detail with NVD, JVN
+func FillCvesWithNvdJvn(driver cvedb.DB, r *models.ScanResult, cveCnf config.GoCveDictConf, logOpts logging.LogOpts) (err error) {
 	cveIDs := []string{}
 	for _, v := range r.ScannedCves {
 		cveIDs = append(cveIDs, v.CveID)
 	}
 
-	client := newGoCveDictClient(config.Conf.CveDict, logOpts)
+	client := newGoCveDictClient(cveCnf, logOpts)
 	var ds []cvemodels.CveDetail
-	if config.Conf.CveDict.IsFetchViaHTTP() {
+	if cveCnf.IsFetchViaHTTP() {
 		ds, err = client.fetchCveDetailsViaHTTP(cveIDs)
 	} else {
 		ds, err = client.fetchCveDetails(driver, cveIDs)
@@ -462,7 +443,8 @@ func DetectCpeURIsCves(driver cvedb.DB, r *models.ScanResult, cpeURIs []string, 
 	return nil
 }
 
-func fillCweDict(r *models.ScanResult) {
+// FillCweDict fills CWE
+func FillCweDict(r *models.ScanResult) {
 	uniqCweIDMap := map[string]bool{}
 	for _, vinfo := range r.ScannedCves {
 		for _, cont := range vinfo.CveContents {

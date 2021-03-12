@@ -50,7 +50,7 @@ type References struct {
 
 // DetectWordPressCves access to wpscan and fetch scurity alerts and then set to the given ScanResult.
 // https://wpscan.com/
-func detectWordPressCves(r *models.ScanResult, cnf *c.WpScanConf) (int, error) {
+func detectWordPressCves(r *models.ScanResult, cnf c.WpScanConf) (int, error) {
 	if len(r.WordPressPackages) == 0 {
 		return 0, nil
 	}
