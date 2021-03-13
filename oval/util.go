@@ -127,6 +127,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 			select {
 			case req := <-reqChan:
 				url, err := util.URLPathJoin(
+					// TODO Don't use global variable
 					config.Conf.OvalDict.URL,
 					"packs",
 					r.Family,
@@ -190,7 +191,6 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 	var resp *http.Response
 	count, retryMax := 0, 3
 	f := func() (err error) {
-		//  resp, body, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
 		resp, body, errs = gorequest.New().Timeout(10 * time.Second).Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			count++

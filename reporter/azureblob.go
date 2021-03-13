@@ -9,7 +9,7 @@ import (
 	storage "github.com/Azure/azure-sdk-for-go/storage"
 	"golang.org/x/xerrors"
 
-	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 )
 
@@ -21,7 +21,7 @@ type AzureBlobWriter struct {
 	FormatList        bool
 	Gzip              bool
 
-	c.AzureConf
+	config.AzureConf
 }
 
 // Write results to Azure Blob storage

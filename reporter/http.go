@@ -20,6 +20,7 @@ func (w HTTPRequestWriter) Write(rs ...models.ScanResult) (err error) {
 		if err := json.NewEncoder(b).Encode(r); err != nil {
 			return err
 		}
+		// TODO Don't use global variable
 		_, err = http.Post(config.Conf.HTTP.URL, "application/json; charset=utf-8", b)
 		if err != nil {
 			return err

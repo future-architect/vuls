@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"time"
 
-	cnf "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -31,7 +31,7 @@ type Base struct {
 
 // CheckIfOvalFetched checks if oval entries are in DB by family, release.
 func (b Base) CheckIfOvalFetched(driver db.DB, osFamily, release string) (fetched bool, err error) {
-	if !cnf.Conf.OvalDict.IsFetchViaHTTP() {
+	if !config.Conf.OvalDict.IsFetchViaHTTP() {
 		count, err := driver.CountDefs(osFamily, release)
 		if err != nil {
 			return false, xerrors.Errorf("Failed to count OVAL defs: %s, %s, %w", osFamily, release, err)
@@ -39,7 +39,7 @@ func (b Base) CheckIfOvalFetched(driver db.DB, osFamily, release string) (fetche
 		return 0 < count, nil
 	}
 
-	url, _ := util.URLPathJoin(cnf.Conf.OvalDict.URL, "count", osFamily, release)
+	url, _ := util.URLPathJoin(config.Conf.OvalDict.URL, "count", osFamily, release)
 	resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
 	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 		return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
@@ -54,10 +54,10 @@ func (b Base) CheckIfOvalFetched(driver db.DB, osFamily, release string) (fetche
 // CheckIfOvalFresh checks if oval entries are fresh enough
 func (b Base) CheckIfOvalFresh(driver db.DB, osFamily, release string) (ok bool, err error) {
 	var lastModified time.Time
-	if !cnf.Conf.OvalDict.IsFetchViaHTTP() {
+	if !config.Conf.OvalDict.IsFetchViaHTTP() {
 		lastModified = driver.GetLastModified(osFamily, release)
 	} else {
-		url, _ := util.URLPathJoin(cnf.Conf.OvalDict.URL, "lastmodified", osFamily, release)
+		url, _ := util.URLPathJoin(config.Conf.OvalDict.URL, "lastmodified", osFamily, release)
 		resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)

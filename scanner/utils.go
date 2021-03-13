@@ -45,6 +45,7 @@ func isRunningKernel(pack models.Package, family string, kernel models.Kernel) (
 func EnsureResultDir(scannedAt time.Time) (currentDir string, err error) {
 	jsonDirName := scannedAt.Format(time.RFC3339)
 
+	// TODO Don't use global variable
 	resultsDir := config.Conf.ResultsDir
 	if len(resultsDir) == 0 {
 		wd, _ := os.Getwd()

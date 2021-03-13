@@ -25,7 +25,10 @@ func (red RedHat) DetectUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNo
 }
 
 func (red RedHat) detectUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
+
+	// TODO Don't use global variable
 	if config.Conf.Gost.IsFetchViaHTTP() {
+		// TODO Don't use global variable
 		prefix, _ := util.URLPathJoin(config.Conf.Gost.URL,
 			"redhat", major(r.Release), "pkgs")
 		responses, err := getAllUnfixedCvesViaHTTP(r, prefix)
@@ -70,6 +73,7 @@ func (red RedHat) fillCvesWithRedHatAPI(driver db.DB, r *models.ScanResult) erro
 		cveIDs = append(cveIDs, cveID)
 	}
 
+	// TODO Don't use global variable
 	if config.Conf.Gost.IsFetchViaHTTP() {
 		prefix, _ := util.URLPathJoin(config.Conf.Gost.URL,
 			"redhat", "cves")

@@ -10,9 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
-	// "github.com/future-architect/vuls/Server"
-
-	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/server"
@@ -54,30 +52,30 @@ func (*ServerCmd) Usage() string {
 
 // SetFlags set flag
 func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&c.Conf.Lang, "lang", "en", "[en|ja]")
-	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
-	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
+	f.StringVar(&config.Conf.Lang, "lang", "en", "[en|ja]")
+	f.BoolVar(&config.Conf.Debug, "debug", false, "debug mode")
+	f.BoolVar(&config.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
 
 	wd, _ := os.Getwd()
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
 	defaultResultsDir := filepath.Join(wd, "results")
-	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+	f.StringVar(&config.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 
 	defaultLogDir := logging.GetDefaultLogDir()
-	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
+	f.StringVar(&config.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 
-	f.Float64Var(&c.Conf.CvssScoreOver, "cvss-over", 0,
+	f.Float64Var(&config.Conf.CvssScoreOver, "cvss-over", 0,
 		"-cvss-over=6.5 means Servering CVSS Score 6.5 and over (default: 0 (means Server all))")
 
-	f.BoolVar(&c.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
+	f.BoolVar(&config.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
 		"Don't Server the unscored CVEs")
 
-	f.BoolVar(&c.Conf.IgnoreUnfixed, "ignore-unfixed", false,
+	f.BoolVar(&config.Conf.IgnoreUnfixed, "ignore-unfixed", false,
 		"Don't show the unfixed CVEs")
 
-	f.StringVar(&c.Conf.HTTPProxy, "http-proxy", "",
+	f.StringVar(&config.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
 
 	f.BoolVar(&p.toLocalFile, "to-localfile", false, "Write report to localfile")
@@ -87,25 +85,25 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	logging.Log = logging.NewCustomLogger(c.Conf.Debug, c.Conf.Quiet, c.Conf.LogDir, "", "")
-	logging.Log.Infof("vuls-%s-%s", c.Version, c.Revision)
-	if err := c.Load(p.configPath, ""); err != nil {
+	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogDir, "", "")
+	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
+	if err := config.Load(p.configPath, ""); err != nil {
 		logging.Log.Errorf("Error loading %s. err: %+v", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
 
 	logging.Log.Info("Validating config...")
-	if !c.Conf.ValidateOnReport() {
+	if !config.Conf.ValidateOnReport() {
 		return subcommands.ExitUsageError
 	}
 
 	dbclient, err := detector.NewDBClient(
-		&c.Conf.CveDict,
-		&c.Conf.OvalDict,
-		&c.Conf.Gost,
-		&c.Conf.Exploit,
-		&c.Conf.Metasploit,
-		c.Conf.DebugSQL,
+		&config.Conf.CveDict,
+		&config.Conf.OvalDict,
+		&config.Conf.Gost,
+		&config.Conf.Exploit,
+		&config.Conf.Metasploit,
+		config.Conf.DebugSQL,
 	)
 	if err != nil {
 		logging.Log.Errorf("Failed to init DB Clients. err: %+v", err)

@@ -15,6 +15,7 @@ import (
 type SyslogWriter struct{}
 
 func (w SyslogWriter) Write(rs ...models.ScanResult) (err error) {
+	// TODO Don't use global variable
 	conf := config.Conf.Syslog
 	facility, _ := conf.GetFacility()
 	severity, _ := conf.GetSeverity()
@@ -72,6 +73,7 @@ func (w SyslogWriter) encodeSyslog(result models.ScanResult) (messages []string)
 		if content, ok := vinfo.CveContents[models.Nvd]; ok {
 			cwes := strings.Join(content.CweIDs, ",")
 			kvPairs = append(kvPairs, fmt.Sprintf(`cwe_ids="%s"`, cwes))
+			// TODO Don't use global variable
 			if config.Conf.Syslog.Verbose {
 				kvPairs = append(kvPairs, fmt.Sprintf(`source_link="%s"`, content.SourceLink))
 				kvPairs = append(kvPairs, fmt.Sprintf(`summary="%s"`, content.Summary))

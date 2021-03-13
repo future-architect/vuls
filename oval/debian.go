@@ -141,6 +141,7 @@ func (o Debian) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 	}
 
 	var relatedDefs ovalResult
+	// TODO Don't use global variable
 	if config.Conf.OvalDict.IsFetchViaHTTP() {
 		if r.Family != constant.Raspbian {
 			if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
@@ -417,6 +418,7 @@ func (o Ubuntu) fillWithOval(driver db.DB, r *models.ScanResult, kernelNamesInOv
 	}
 
 	var relatedDefs ovalResult
+	// TODO Don't use global variable
 	if config.Conf.OvalDict.IsFetchViaHTTP() {
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
 			return 0, err

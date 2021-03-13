@@ -29,6 +29,7 @@ func NewSUSE() SUSE {
 // FillWithOval returns scan result after updating CVE info by OVAL
 func (o SUSE) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
 	var relatedDefs ovalResult
+	// TODO Don't use global variable
 	if config.Conf.OvalDict.IsFetchViaHTTP() {
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
 			return 0, err

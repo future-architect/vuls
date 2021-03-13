@@ -19,6 +19,7 @@ import (
 type TelegramWriter struct{}
 
 func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
+	// TODO Don't use global variable
 	conf := config.Conf.Telegram
 	for _, r := range rs {
 		msgs := []string{fmt.Sprintf("*%s*\n%s\n%s\n%s",
@@ -67,6 +68,7 @@ func sendMessage(chatID, token, message string) error {
 	}
 	req.Header.Add("Content-Type", "application/json")
 
+	// TODO Don't use global variable
 	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
 	if err != nil {
 		return err

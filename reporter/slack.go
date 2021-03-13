@@ -32,6 +32,7 @@ type message struct {
 }
 
 func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
+	// TODO Don't use global variable
 	conf := config.Conf.Slack
 	channel := conf.Channel
 	token := conf.LegacyToken
@@ -57,6 +58,7 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 		sort.Ints(chunkKeys)
 
 		summary := fmt.Sprintf("%s\n%s",
+			// TODO Don't use global variable
 			w.getNotifyUsers(config.Conf.Slack.NotifyUsers),
 			formatOneLineSummary(r))
 
@@ -134,6 +136,7 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 }
 
 func (w SlackWriter) send(msg message) error {
+	// TODO Don't use global variable
 	conf := config.Conf.Slack
 	count, retryMax := 0, 10
 
@@ -141,6 +144,7 @@ func (w SlackWriter) send(msg message) error {
 	jsonBody := string(bytes)
 
 	f := func() (err error) {
+		// TODO Don't use global variable
 		resp, body, errs := gorequest.New().Timeout(10 * time.Second).Proxy(config.Conf.HTTPProxy).Post(conf.HookURL).Send(string(jsonBody)).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			count++

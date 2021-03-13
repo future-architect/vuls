@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/config"
-	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
 	"github.com/future-architect/vuls/cwe"
@@ -94,7 +93,7 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 			return nil, xerrors.Errorf("Failed to fill with CVE: %w", err)
 		}
 
-		nExploitCve, err := exploit.FillWithExploit(dbclient.ExploitDB, &r, c.Conf.Exploit)
+		nExploitCve, err := exploit.FillWithExploit(dbclient.ExploitDB, &r, config.Conf.Exploit)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to fill with exploit: %w", err)
 		}
@@ -245,7 +244,7 @@ func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]config.GitHub
 }
 
 // DetectWordPressCves detects CVEs of WordPress
-func DetectWordPressCves(r *models.ScanResult, wpCnf c.WpScanConf) error {
+func DetectWordPressCves(r *models.ScanResult, wpCnf config.WpScanConf) error {
 	if len(r.WordPressPackages) == 0 {
 		return nil
 	}
@@ -367,7 +366,7 @@ func detectPkgsCvesWithOval(driver ovaldb.DB, r *models.ScanResult) error {
 		return xerrors.Errorf("OVAL for %s is not implemented yet", r.Family)
 	}
 
-	if !c.Conf.OvalDict.IsFetchViaHTTP() {
+	if !config.Conf.OvalDict.IsFetchViaHTTP() {
 		if driver == nil {
 			return xerrors.Errorf("You have to fetch OVAL data for %s before reporting. For details, see `https://github.com/kotakanbe/goval-dictionary#usage`", r.Family)
 		}

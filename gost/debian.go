@@ -65,7 +65,9 @@ func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCV
 	}
 
 	packCvesList := []packCves{}
+	//TODO don't use global variable
 	if config.Conf.Gost.IsFetchViaHTTP() {
+		// TODO Don't use global variable
 		url, _ := util.URLPathJoin(config.Conf.Gost.URL, "debian", major(scanResult.Release), "pkgs")
 		responses, err := getAllUnfixedCvesViaHTTP(r, url)
 		if err != nil {

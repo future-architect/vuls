@@ -120,6 +120,7 @@ func ProxyEnv() string {
 		"HTTPS_PROXY",
 	}
 	for _, key := range keys {
+		// TODO Don't use global variable
 		httpProxyEnv += fmt.Sprintf(
 			` %s="%s"`, key, config.Conf.HTTPProxy)
 	}
@@ -128,6 +129,7 @@ func ProxyEnv() string {
 
 // PrependProxyEnv prepends proxy environment variable
 func PrependProxyEnv(cmd string) string {
+	// TODO Don't use global variable
 	if config.Conf.HTTPProxy == "" {
 		return cmd
 	}

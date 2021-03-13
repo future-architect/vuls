@@ -358,6 +358,7 @@ func (l *base) detectDeepSecurity() (string, error) {
 }
 
 func (l *base) detectIPS() {
+	// TODO Don't use global variable
 	if !config.Conf.DetectIPS {
 		return
 	}
@@ -367,6 +368,7 @@ func (l *base) detectIPS() {
 	if err != nil {
 		return
 	}
+	// TODO Don't use global variable
 	ips[config.DeepSecurity] = fingerprint
 	l.ServerInfo.IPSIdentifiers = ips
 }

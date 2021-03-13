@@ -87,13 +87,16 @@ var jsonDirPattern = regexp.MustCompile(
 // Returned array is sorted so that recent directories are at the head
 func ListValidJSONDirs() (dirs []string, err error) {
 	var dirInfo []os.FileInfo
+	// TODO Don't use global variable
 	if dirInfo, err = ioutil.ReadDir(config.Conf.ResultsDir); err != nil {
 		err = xerrors.Errorf("Failed to read %s: %w",
+			// TODO Don't use global variable
 			config.Conf.ResultsDir, err)
 		return
 	}
 	for _, d := range dirInfo {
 		if d.IsDir() && jsonDirPattern.MatchString(d.Name()) {
+			// TODO Don't use global variable
 			jsonDir := filepath.Join(config.Conf.ResultsDir, d.Name())
 			dirs = append(dirs, jsonDir)
 		}
@@ -117,6 +120,7 @@ func JSONDir(args []string) (string, error) {
 			return "", err
 		}
 
+		// TODO Don't use global variable
 		path := filepath.Join(config.Conf.ResultsDir, args[0])
 		for _, d := range dirs {
 			ss := strings.Split(d, string(os.PathSeparator))
@@ -130,6 +134,7 @@ func JSONDir(args []string) (string, error) {
 	}
 
 	// PIPE
+	// TODO Don't use global variable
 	if config.Conf.Pipe {
 		bytes, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
@@ -137,6 +142,7 @@ func JSONDir(args []string) (string, error) {
 		}
 		fields := strings.Fields(string(bytes))
 		if 0 < len(fields) {
+			// TODO Don't use global variable
 			return filepath.Join(config.Conf.ResultsDir, fields[0]), nil
 		}
 		return "", xerrors.Errorf("Stdin is invalid: %s", string(bytes))
@@ -148,6 +154,7 @@ func JSONDir(args []string) (string, error) {
 	}
 	if len(dirs) == 0 {
 		return "", xerrors.Errorf("No results under %s",
+			// TODO Don't use global variable
 			config.Conf.ResultsDir)
 	}
 	return dirs[0], nil
@@ -224,6 +231,7 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 		}
 	}
 	// We don't want warning message to the summary file
+	// TODO Don't use global variable
 	if config.Conf.Quiet {
 		return fmt.Sprintf("%s\n", table)
 	}

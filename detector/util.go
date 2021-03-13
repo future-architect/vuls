@@ -236,6 +236,7 @@ var jsonDirPattern = regexp.MustCompile(
 // Returned array is sorted so that recent directories are at the head
 func ListValidJSONDirs() (dirs []string, err error) {
 	var dirInfo []os.FileInfo
+	// TODO Don't use global variable
 	if dirInfo, err = ioutil.ReadDir(config.Conf.ResultsDir); err != nil {
 		err = xerrors.Errorf("Failed to read %s: %w",
 			config.Conf.ResultsDir, err)

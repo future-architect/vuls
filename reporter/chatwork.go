@@ -62,6 +62,7 @@ func chatWorkpostMessage(room, token, message string) error {
 	req.Header.Add("X-ChatWorkToken", token)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
+	// TODO Don't use global variable
 	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
 	if err != nil {
 		return err

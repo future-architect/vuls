@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/aquasecurity/trivy/pkg/utils"
-	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
@@ -92,48 +92,48 @@ func (*ReportCmd) Usage() string {
 
 // SetFlags set flag
 func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&c.Conf.Lang, "lang", "en", "[en|ja]")
-	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
-	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
-	f.BoolVar(&c.Conf.Quiet, "quiet", false, "Quiet mode. No output on stdout")
-	f.BoolVar(&c.Conf.NoProgress, "no-progress", false, "Suppress progress bar")
+	f.StringVar(&config.Conf.Lang, "lang", "en", "[en|ja]")
+	f.BoolVar(&config.Conf.Debug, "debug", false, "debug mode")
+	f.BoolVar(&config.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
+	f.BoolVar(&config.Conf.Quiet, "quiet", false, "Quiet mode. No output on stdout")
+	f.BoolVar(&config.Conf.NoProgress, "no-progress", false, "Suppress progress bar")
 
 	wd, _ := os.Getwd()
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
 	defaultResultsDir := filepath.Join(wd, "results")
-	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+	f.StringVar(&config.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 
 	defaultLogDir := logging.GetDefaultLogDir()
-	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
+	f.StringVar(&config.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 
-	f.BoolVar(&c.Conf.RefreshCve, "refresh-cve", false,
+	f.BoolVar(&config.Conf.RefreshCve, "refresh-cve", false,
 		"Refresh CVE information in JSON file under results dir")
 
-	f.Float64Var(&c.Conf.CvssScoreOver, "cvss-over", 0,
+	f.Float64Var(&config.Conf.CvssScoreOver, "cvss-over", 0,
 		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
 
-	f.BoolVar(&c.Conf.DiffMinus, "diff-minus", false,
+	f.BoolVar(&config.Conf.DiffMinus, "diff-minus", false,
 		"Minus Difference between previous result and current result")
 
-	f.BoolVar(&c.Conf.DiffPlus, "diff-plus", false,
+	f.BoolVar(&config.Conf.DiffPlus, "diff-plus", false,
 		"Plus Difference between previous result and current result")
 
-	f.BoolVar(&c.Conf.Diff, "diff", false,
+	f.BoolVar(&config.Conf.Diff, "diff", false,
 		"Plus & Minus Difference between previous result and current result")
 
-	f.BoolVar(&c.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
+	f.BoolVar(&config.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
 		"Don't report the unscored CVEs")
 
-	f.BoolVar(&c.Conf.IgnoreUnfixed, "ignore-unfixed", false,
+	f.BoolVar(&config.Conf.IgnoreUnfixed, "ignore-unfixed", false,
 		"Don't report the unfixed CVEs")
 
-	f.BoolVar(&c.Conf.IgnoreGitHubDismissed, "ignore-github-dismissed", false,
+	f.BoolVar(&config.Conf.IgnoreGitHubDismissed, "ignore-github-dismissed", false,
 		"Don't report the dismissed CVEs on GitHub Security Alerts")
 
 	f.StringVar(
-		&c.Conf.HTTPProxy, "http-proxy", "",
+		&config.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
 
 	f.BoolVar(&p.formatJSON, "format-json", false, "JSON format")
@@ -158,37 +158,37 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"Write report to Azure Storage blob (container/yyyyMMdd_HHmm/servername.json/txt)")
 
 	f.BoolVar(&p.gzip, "gzip", false, "gzip compression")
-	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use args passed via PIPE")
+	f.BoolVar(&config.Conf.Pipe, "pipe", false, "Use args passed via PIPE")
 
-	f.StringVar(&c.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
+	f.StringVar(&config.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
 		utils.DefaultCacheDir(), "/path/to/dir")
 }
 
 // Execute execute
 func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	logging.Log = logging.NewCustomLogger(c.Conf.Debug, c.Conf.Quiet, c.Conf.LogDir, "", "")
-	logging.Log.Infof("vuls-%s-%s", c.Version, c.Revision)
+	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogDir, "", "")
+	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 
-	if err := c.Load(p.configPath, ""); err != nil {
+	if err := config.Load(p.configPath, ""); err != nil {
 		logging.Log.Errorf("Error loading %s, %+v", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
-	c.Conf.Slack.Enabled = p.toSlack
-	c.Conf.ChatWork.Enabled = p.toChatWork
-	c.Conf.Telegram.Enabled = p.toTelegram
-	c.Conf.EMail.Enabled = p.toEmail
-	c.Conf.Syslog.Enabled = p.toSyslog
-	c.Conf.AWS.Enabled = p.toS3
-	c.Conf.Azure.Enabled = p.toAzureBlob
-	c.Conf.HTTP.Enabled = p.toHTTP
+	config.Conf.Slack.Enabled = p.toSlack
+	config.Conf.ChatWork.Enabled = p.toChatWork
+	config.Conf.Telegram.Enabled = p.toTelegram
+	config.Conf.EMail.Enabled = p.toEmail
+	config.Conf.Syslog.Enabled = p.toSyslog
+	config.Conf.AWS.Enabled = p.toS3
+	config.Conf.Azure.Enabled = p.toAzureBlob
+	config.Conf.HTTP.Enabled = p.toHTTP
 
-	if c.Conf.Diff {
-		c.Conf.DiffPlus, c.Conf.DiffMinus = true, true
+	if config.Conf.Diff {
+		config.Conf.DiffPlus, config.Conf.DiffMinus = true, true
 	}
 
 	var dir string
 	var err error
-	if c.Conf.DiffPlus || c.Conf.DiffMinus {
+	if config.Conf.DiffPlus || config.Conf.DiffMinus {
 		dir, err = reporter.JSONDir([]string{})
 	} else {
 		dir, err = reporter.JSONDir(f.Args())
@@ -199,7 +199,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	logging.Log.Info("Validating config...")
-	if !c.Conf.ValidateOnReport() {
+	if !config.Conf.ValidateOnReport() {
 		return subcommands.ExitUsageError
 	}
 
@@ -233,16 +233,16 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	for _, r := range res {
 		logging.Log.Debugf("%s: %s",
-			r.ServerInfo(), pp.Sprintf("%s", c.Conf.Servers[r.ServerName]))
+			r.ServerInfo(), pp.Sprintf("%s", config.Conf.Servers[r.ServerName]))
 	}
 
 	dbclient, err := detector.NewDBClient(
-		&c.Conf.CveDict,
-		&c.Conf.OvalDict,
-		&c.Conf.Gost,
-		&c.Conf.Exploit,
-		&c.Conf.Metasploit,
-		c.Conf.DebugSQL,
+		&config.Conf.CveDict,
+		&config.Conf.OvalDict,
+		&config.Conf.Gost,
+		&config.Conf.Exploit,
+		&config.Conf.Metasploit,
+		config.Conf.DebugSQL,
 	)
 	if err != nil {
 		logging.Log.Errorf("Failed to init DB Clients. err: %+v", err)
@@ -302,8 +302,8 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	if p.toLocalFile {
 		reports = append(reports, reporter.LocalFileWriter{
 			CurrentDir:        dir,
-			DiffPlus:          c.Conf.DiffPlus,
-			DiffMinus:         c.Conf.DiffMinus,
+			DiffPlus:          config.Conf.DiffPlus,
+			DiffMinus:         config.Conf.DiffMinus,
 			FormatJSON:        p.formatJSON,
 			FormatCsv:         p.formatCsv,
 			FormatFullText:    p.formatFullText,
@@ -320,10 +320,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			FormatOneLineText: p.formatOneLineText,
 			FormatList:        p.formatList,
 			Gzip:              p.gzip,
-			AWSConf:           c.Conf.AWS,
+			AWSConf:           config.Conf.AWS,
 		}
 		if err := w.Validate(); err != nil {
-			logging.Log.Errorf("Check if there is a bucket beforehand: %s, err: %+v", c.Conf.AWS.S3Bucket, err)
+			logging.Log.Errorf("Check if there is a bucket beforehand: %s, err: %+v", config.Conf.AWS.S3Bucket, err)
 			return subcommands.ExitUsageError
 		}
 		reports = append(reports, w)
@@ -336,10 +336,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			FormatOneLineText: p.formatOneLineText,
 			FormatList:        p.formatList,
 			Gzip:              p.gzip,
-			AzureConf:         c.Conf.Azure,
+			AzureConf:         config.Conf.Azure,
 		}
 		if err := w.Validate(); err != nil {
-			logging.Log.Errorf("Check if there is a container beforehand: %s, err: %+v", c.Conf.Azure.ContainerName, err)
+			logging.Log.Errorf("Check if there is a container beforehand: %s, err: %+v", config.Conf.Azure.ContainerName, err)
 			return subcommands.ExitUsageError
 		}
 		reports = append(reports, w)

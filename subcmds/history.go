@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/reporter"
 	"github.com/google/subcommands"
 )
@@ -35,11 +35,11 @@ func (*HistoryCmd) Usage() string {
 
 // SetFlags set flag
 func (p *HistoryCmd) SetFlags(f *flag.FlagSet) {
-	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
+	f.BoolVar(&config.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
 
 	wd, _ := os.Getwd()
 	defaultResultsDir := filepath.Join(wd, "results")
-	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+	f.StringVar(&config.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 }
 
 // Execute execute
