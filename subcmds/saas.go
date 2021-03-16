@@ -68,7 +68,7 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitUsageError
 	}
 
-	dir, err := reporter.JSONDir(f.Args())
+	dir, err := reporter.JSONDir(config.Conf.ResultsDir, f.Args())
 	if err != nil {
 		logging.Log.Errorf("Failed to read from JSON: %+v", err)
 		return subcommands.ExitFailure

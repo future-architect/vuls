@@ -117,9 +117,9 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	var dir string
 	var err error
 	if config.Conf.DiffPlus || config.Conf.DiffMinus {
-		dir, err = reporter.JSONDir([]string{})
+		dir, err = reporter.JSONDir(config.Conf.ResultsDir, []string{})
 	} else {
-		dir, err = reporter.JSONDir(f.Args())
+		dir, err = reporter.JSONDir(config.Conf.ResultsDir, f.Args())
 	}
 	if err != nil {
 		logging.Log.Errorf("Failed to read from JSON. err: %+v", err)

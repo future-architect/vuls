@@ -30,7 +30,7 @@ func FillWithMetasploit(driver db.DB, r *models.ScanResult) (nMetasploitCve int,
 	return nMetasploitCve, nil
 }
 
-// ConvertToModels converts gost model to vuls model
+// ConvertToModelsMsf converts gost model to vuls model
 func ConvertToModelsMsf(ms []*metasploitmodels.Metasploit) (modules []models.Metasploit) {
 	for _, m := range ms {
 		var links []string

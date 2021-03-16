@@ -44,8 +44,7 @@ func (p *HistoryCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *HistoryCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-
-	dirs, err := reporter.ListValidJSONDirs()
+	dirs, err := reporter.ListValidJSONDirs(config.Conf.ResultsDir)
 	if err != nil {
 		return subcommands.ExitFailure
 	}

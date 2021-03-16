@@ -85,19 +85,15 @@ var jsonDirPattern = regexp.MustCompile(
 
 // ListValidJSONDirs returns valid json directory as array
 // Returned array is sorted so that recent directories are at the head
-func ListValidJSONDirs() (dirs []string, err error) {
+func ListValidJSONDirs(resultsDir string) (dirs []string, err error) {
 	var dirInfo []os.FileInfo
-	// TODO Don't use global variable
-	if dirInfo, err = ioutil.ReadDir(config.Conf.ResultsDir); err != nil {
-		err = xerrors.Errorf("Failed to read %s: %w",
-			// TODO Don't use global variable
-			config.Conf.ResultsDir, err)
+	if dirInfo, err = ioutil.ReadDir(resultsDir); err != nil {
+		err = xerrors.Errorf("Failed to read %s: %w", resultsDir, err)
 		return
 	}
 	for _, d := range dirInfo {
 		if d.IsDir() && jsonDirPattern.MatchString(d.Name()) {
-			// TODO Don't use global variable
-			jsonDir := filepath.Join(config.Conf.ResultsDir, d.Name())
+			jsonDir := filepath.Join(resultsDir, d.Name())
 			dirs = append(dirs, jsonDir)
 		}
 	}
@@ -108,20 +104,17 @@ func ListValidJSONDirs() (dirs []string, err error) {
 }
 
 // JSONDir returns
-// If there is an arg, check if it is a valid format and return the corresponding path under results.
+// If there is args, check if it is a valid format and return the corresponding path under results.
 // If arg passed via PIPE (such as history subcommand), return that path.
 // Otherwise, returns the path of the latest directory
-func JSONDir(args []string) (string, error) {
-	var err error
+func JSONDir(resultsDir string, args []string) (path string, err error) {
 	var dirs []string
 
 	if 0 < len(args) {
-		if dirs, err = ListValidJSONDirs(); err != nil {
+		if dirs, err = ListValidJSONDirs(resultsDir); err != nil {
 			return "", err
 		}
-
-		// TODO Don't use global variable
-		path := filepath.Join(config.Conf.ResultsDir, args[0])
+		path = filepath.Join(resultsDir, args[0])
 		for _, d := range dirs {
 			ss := strings.Split(d, string(os.PathSeparator))
 			timedir := ss[len(ss)-1]
@@ -129,12 +122,10 @@ func JSONDir(args []string) (string, error) {
 				return path, nil
 			}
 		}
-
 		return "", xerrors.Errorf("Invalid path: %s", path)
 	}
 
-	// PIPE
-	// TODO Don't use global variable
+	// TODO remove Pipe flag
 	if config.Conf.Pipe {
 		bytes, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
@@ -142,20 +133,17 @@ func JSONDir(args []string) (string, error) {
 		}
 		fields := strings.Fields(string(bytes))
 		if 0 < len(fields) {
-			// TODO Don't use global variable
-			return filepath.Join(config.Conf.ResultsDir, fields[0]), nil
+			return filepath.Join(resultsDir, fields[0]), nil
 		}
 		return "", xerrors.Errorf("Stdin is invalid: %s", string(bytes))
 	}
 
 	// returns latest dir when no args or no PIPE
-	if dirs, err = ListValidJSONDirs(); err != nil {
+	if dirs, err = ListValidJSONDirs(resultsDir); err != nil {
 		return "", err
 	}
 	if len(dirs) == 0 {
-		return "", xerrors.Errorf("No results under %s",
-			// TODO Don't use global variable
-			config.Conf.ResultsDir)
+		return "", xerrors.Errorf("No results under %s", resultsDir)
 	}
 	return dirs[0], nil
 }
