@@ -362,7 +362,7 @@ func detectPkgsCvesWithOval(driver OvalDB, r *models.ScanResult) error {
 		return xerrors.Errorf("OVAL for %s is not implemented yet", r.Family)
 	}
 
-	if !config.Conf.OvalDict.IsFetchViaHTTP() {
+	if !driver.Cnf.IsFetchViaHTTP() {
 		if driver.DB == nil {
 			return xerrors.Errorf("You have to fetch OVAL data for %s before reporting. For details, see `https://github.com/kotakanbe/goval-dictionary#usage`", r.Family)
 		}
