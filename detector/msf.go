@@ -1,6 +1,6 @@
 // +build !scanner
 
-package msf
+package detector
 
 import (
 	"github.com/future-architect/vuls/models"
@@ -21,7 +21,7 @@ func FillWithMetasploit(driver db.DB, r *models.ScanResult) (nMetasploitCve int,
 		if len(ms) == 0 {
 			continue
 		}
-		modules := ConvertToModels(ms)
+		modules := ConvertToModelsMsf(ms)
 		vuln.Metasploits = modules
 		r.ScannedCves[cveID] = vuln
 		nMetasploitCve++
@@ -31,7 +31,7 @@ func FillWithMetasploit(driver db.DB, r *models.ScanResult) (nMetasploitCve int,
 }
 
 // ConvertToModels converts gost model to vuls model
-func ConvertToModels(ms []*metasploitmodels.Metasploit) (modules []models.Metasploit) {
+func ConvertToModelsMsf(ms []*metasploitmodels.Metasploit) (modules []models.Metasploit) {
 	for _, m := range ms {
 		var links []string
 		if 0 < len(m.References) {

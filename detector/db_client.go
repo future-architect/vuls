@@ -14,11 +14,41 @@ import (
 
 // DBClient is DB client for reporting
 type DBClient struct {
-	CveDB        cvedb.DB
-	OvalDB       ovaldb.DB
-	GostDB       gostdb.DB
-	ExploitDB    exploitdb.DB
-	MetasploitDB metasploitdb.DB
+	CveDB        CveDB
+	OvalDB       OvalDB
+	GostDB       GostDB
+	ExploitDB    ExploitDB
+	MetasploitDB MetasploitDB
+}
+
+// CveDB is a DB client
+type CveDB struct {
+	DB  cvedb.DB
+	Cnf config.VulnDictInterface
+}
+
+// OvalDB is a DB Client
+type OvalDB struct {
+	DB  ovaldb.DB
+	Cnf config.VulnDictInterface
+}
+
+// GostDB is a DB Client
+type GostDB struct {
+	DB  gostdb.DB
+	Cnf config.VulnDictInterface
+}
+
+// ExploitDB is a DB Client
+type ExploitDB struct {
+	DB  exploitdb.DB
+	Cnf config.VulnDictInterface
+}
+
+// Metasploitdb a DB Client
+type MetasploitDB struct {
+	DB  metasploitdb.DB
+	Cnf config.VulnDictInterface
 }
 
 // NewDBClient returns db clients
@@ -32,7 +62,7 @@ func NewDBClient(cveDict, ovalDict, gost, exploit, metasploit config.VulnDictInt
 		}
 	}
 
-	cveDriver, locked, err := NewCveDB(cveDict, debugSQL)
+	cveDB, locked, err := NewCveDB(cveDict, debugSQL)
 	if locked {
 		return nil, xerrors.Errorf("SQLite3 is locked: %s", cveDict.GetSQLite3Path())
 	} else if err != nil {
@@ -68,11 +98,11 @@ func NewDBClient(cveDict, ovalDict, gost, exploit, metasploit config.VulnDictInt
 	}
 
 	return &DBClient{
-		CveDB:        cveDriver,
-		OvalDB:       ovaldb,
-		GostDB:       gostdb,
-		ExploitDB:    exploitdb,
-		MetasploitDB: metasploitdb,
+		CveDB:        CveDB{DB: cveDB, Cnf: cveDict},
+		OvalDB:       OvalDB{DB: ovaldb, Cnf: ovalDict},
+		GostDB:       GostDB{DB: gostdb, Cnf: gost},
+		ExploitDB:    ExploitDB{DB: exploitdb, Cnf: exploit},
+		MetasploitDB: MetasploitDB{DB: metasploitdb, Cnf: metasploit},
 	}, nil
 }
 
@@ -169,13 +199,13 @@ func NewMetasploitDB(cnf config.VulnDictInterface, debugSQL bool) (driver metasp
 
 // CloseDB close dbs
 func (d DBClient) CloseDB() (errs []error) {
-	if d.CveDB != nil {
-		if err := d.CveDB.CloseDB(); err != nil {
+	if d.CveDB.DB != nil {
+		if err := d.CveDB.DB.CloseDB(); err != nil {
 			errs = append(errs, xerrors.Errorf("Failed to close cveDB. err: %+v", err))
 		}
 	}
-	if d.OvalDB != nil {
-		if err := d.OvalDB.CloseDB(); err != nil {
+	if d.OvalDB.DB != nil {
+		if err := d.OvalDB.DB.CloseDB(); err != nil {
 			errs = append(errs, xerrors.Errorf("Failed to close ovalDB. err: %+v", err))
 		}
 	}

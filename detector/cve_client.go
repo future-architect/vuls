@@ -21,10 +21,10 @@ import (
 )
 
 type goCveDictClient struct {
-	cnf config.GoCveDictConf
+	cnf config.VulnDictInterface
 }
 
-func newGoCveDictClient(cnf config.GoCveDictConf, o logging.LogOpts) goCveDictClient {
+func newGoCveDictClient(cnf config.VulnDictInterface, o logging.LogOpts) goCveDictClient {
 	cvelog.SetLogger(o.LogDir, o.Quiet, o.Debug, false)
 	return goCveDictClient{cnf: cnf}
 }
@@ -72,7 +72,7 @@ func (api goCveDictClient) fetchCveDetailsViaHTTP(cveIDs []string) (cveDetails [
 		tasks <- func() {
 			select {
 			case cveID := <-reqChan:
-				url, err := util.URLPathJoin(api.cnf.URL, "cves", cveID)
+				url, err := util.URLPathJoin(api.cnf.GetURL(), "cves", cveID)
 				if err != nil {
 					errChan <- err
 				} else {
@@ -142,7 +142,7 @@ func (api goCveDictClient) httpGet(key, url string, resChan chan<- response, err
 
 func (api goCveDictClient) fetchCveDetailsByCpeName(driver cvedb.DB, cpeName string) ([]cvemodels.CveDetail, error) {
 	if api.cnf.IsFetchViaHTTP() {
-		url, err := util.URLPathJoin(api.cnf.URL, "cpes")
+		url, err := util.URLPathJoin(api.cnf.GetURL(), "cpes")
 		if err != nil {
 			return nil, err
 		}

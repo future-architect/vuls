@@ -25,7 +25,6 @@ func (red RedHat) DetectUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNo
 }
 
 func (red RedHat) detectUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
-
 	// TODO Don't use global variable
 	if config.Conf.Gost.IsFetchViaHTTP() {
 		// TODO Don't use global variable

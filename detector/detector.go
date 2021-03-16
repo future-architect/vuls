@@ -11,18 +11,14 @@ import (
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
 	"github.com/future-architect/vuls/cwe"
-	"github.com/future-architect/vuls/exploit"
 	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/msf"
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/util"
 	gostdb "github.com/knqyf263/gost/db"
-	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
 	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
-	ovaldb "github.com/kotakanbe/goval-dictionary/db"
 	"golang.org/x/xerrors"
 )
 
@@ -70,7 +66,7 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
 		}
 
-		if err := DetectCpeURIsCves(dbclient.CveDB, &r, cpeURIs, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
+		if err := DetectCpeURIsCves(dbclient.CveDB, &r, cpeURIs, config.Conf.LogOpts); err != nil {
 			return nil, xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
 		}
 
@@ -84,7 +80,7 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 		}
 
 		logging.Log.Infof("Fill CVE detailed with gost")
-		if err := gost.NewClient(r.Family).FillCVEsWithRedHat(dbclient.GostDB, &r); err != nil {
+		if err := gost.NewClient(r.Family).FillCVEsWithRedHat(dbclient.GostDB.DB, &r); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with gost: %w", err)
 		}
 
@@ -93,13 +89,13 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 			return nil, xerrors.Errorf("Failed to fill with CVE: %w", err)
 		}
 
-		nExploitCve, err := exploit.FillWithExploit(dbclient.ExploitDB, &r, config.Conf.Exploit)
+		nExploitCve, err := FillWithExploit(dbclient.ExploitDB, &r)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to fill with exploit: %w", err)
 		}
 		logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nExploitCve)
 
-		nMetasploitCve, err := msf.FillWithMetasploit(dbclient.MetasploitDB, &r)
+		nMetasploitCve, err := FillWithMetasploit(dbclient.MetasploitDB.DB, &r)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to fill with metasploit: %w", err)
 		}
@@ -181,7 +177,7 @@ func DetectPkgCves(dbclient DBClient, r *models.ScanResult) error {
 		}
 
 		// gost
-		if err := detectPkgsCvesWithGost(dbclient.GostDB, r); err != nil {
+		if err := detectPkgsCvesWithGost(dbclient.GostDB.DB, r); err != nil {
 			return xerrors.Errorf("Failed to detect CVE with gost: %w", err)
 		}
 	} else if reuseScannedCves(r) {
@@ -258,18 +254,18 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf config.WpScanConf) error {
 }
 
 // FillCvesWithNvdJvn fills CVE detail with NVD, JVN
-func FillCvesWithNvdJvn(driver cvedb.DB, r *models.ScanResult, cveCnf config.GoCveDictConf, logOpts logging.LogOpts) (err error) {
+func FillCvesWithNvdJvn(driver CveDB, r *models.ScanResult, cveCnf config.GoCveDictConf, logOpts logging.LogOpts) (err error) {
 	cveIDs := []string{}
 	for _, v := range r.ScannedCves {
 		cveIDs = append(cveIDs, v.CveID)
 	}
 
-	client := newGoCveDictClient(cveCnf, logOpts)
+	client := newGoCveDictClient(driver.Cnf, logOpts)
 	var ds []cvemodels.CveDetail
 	if cveCnf.IsFetchViaHTTP() {
 		ds, err = client.fetchCveDetailsViaHTTP(cveIDs)
 	} else {
-		ds, err = client.fetchCveDetails(driver, cveIDs)
+		ds, err = client.fetchCveDetails(driver.DB, cveIDs)
 	}
 	if err != nil {
 		return err
@@ -324,7 +320,7 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 }
 
 // detectPkgsCvesWithOval fetches OVAL database
-func detectPkgsCvesWithOval(driver ovaldb.DB, r *models.ScanResult) error {
+func detectPkgsCvesWithOval(driver OvalDB, r *models.ScanResult) error {
 	var ovalClient oval.Client
 	var ovalFamily string
 
@@ -367,16 +363,16 @@ func detectPkgsCvesWithOval(driver ovaldb.DB, r *models.ScanResult) error {
 	}
 
 	if !config.Conf.OvalDict.IsFetchViaHTTP() {
-		if driver == nil {
+		if driver.DB == nil {
 			return xerrors.Errorf("You have to fetch OVAL data for %s before reporting. For details, see `https://github.com/kotakanbe/goval-dictionary#usage`", r.Family)
 		}
-		if err := driver.NewOvalDB(ovalFamily); err != nil {
+		if err := driver.DB.NewOvalDB(ovalFamily); err != nil {
 			return xerrors.Errorf("Failed to New Oval DB. err: %w", err)
 		}
 	}
 
 	logging.Log.Debugf("Check whether oval fetched: %s %s", ovalFamily, r.Release)
-	ok, err := ovalClient.CheckIfOvalFetched(driver, ovalFamily, r.Release)
+	ok, err := ovalClient.CheckIfOvalFetched(driver.DB, ovalFamily, r.Release)
 	if err != nil {
 		return err
 	}
@@ -384,12 +380,12 @@ func detectPkgsCvesWithOval(driver ovaldb.DB, r *models.ScanResult) error {
 		return xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see `https://github.com/kotakanbe/goval-dictionary#usage`", ovalFamily, r.Release)
 	}
 
-	_, err = ovalClient.CheckIfOvalFresh(driver, ovalFamily, r.Release)
+	_, err = ovalClient.CheckIfOvalFresh(driver.DB, ovalFamily, r.Release)
 	if err != nil {
 		return err
 	}
 
-	nCVEs, err := ovalClient.FillWithOval(driver, r)
+	nCVEs, err := ovalClient.FillWithOval(driver.DB, r)
 	if err != nil {
 		return err
 	}
@@ -407,16 +403,16 @@ func detectPkgsCvesWithGost(driver gostdb.DB, r *models.ScanResult) error {
 }
 
 // DetectCpeURIsCves detects CVEs of given CPE-URIs
-func DetectCpeURIsCves(driver cvedb.DB, r *models.ScanResult, cpeURIs []string, cveCnf config.GoCveDictConf, logOpts logging.LogOpts) error {
+func DetectCpeURIsCves(driver CveDB, r *models.ScanResult, cpeURIs []string, logOpts logging.LogOpts) error {
 	nCVEs := 0
-	if len(cpeURIs) != 0 && driver == nil && !cveCnf.IsFetchViaHTTP() {
+	if len(cpeURIs) != 0 && driver.DB == nil && !driver.Cnf.IsFetchViaHTTP() {
 		return xerrors.Errorf("cpeURIs %s specified, but cve-dictionary DB not found. Fetch cve-dictionary before reporting. For details, see `https://github.com/kotakanbe/go-cve-dictionary#deploy-go-cve-dictionary`",
 			cpeURIs)
 	}
 
-	client := newGoCveDictClient(cveCnf, logOpts)
+	client := newGoCveDictClient(driver.Cnf, logOpts)
 	for _, name := range cpeURIs {
-		details, err := client.fetchCveDetailsByCpeName(driver, name)
+		details, err := client.fetchCveDetailsByCpeName(driver.DB, name)
 		if err != nil {
 			return err
 		}
