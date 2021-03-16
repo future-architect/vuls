@@ -127,7 +127,7 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 	}
 
 	if config.Conf.DiffPlus || config.Conf.DiffMinus {
-		prevs, err := loadPrevious(rs)
+		prevs, err := loadPrevious(rs, config.Conf.ResultsDir)
 		if err != nil {
 			return nil, err
 		}
