@@ -17,7 +17,6 @@ import (
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/util"
-	gostdb "github.com/knqyf263/gost/db"
 	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
 	"golang.org/x/xerrors"
 )
@@ -80,7 +79,7 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 		}
 
 		logging.Log.Infof("Fill CVE detailed with gost")
-		if err := gost.NewClient(r.Family).FillCVEsWithRedHat(dbclient.GostDB.DB, &r); err != nil {
+		if err := gost.FillCVEsWithRedHat(&config.Conf.Gost, config.Conf.DebugSQL, &r); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with gost: %w", err)
 		}
 
@@ -177,7 +176,8 @@ func DetectPkgCves(dbclient DBClient, r *models.ScanResult) error {
 		}
 
 		// gost
-		if err := detectPkgsCvesWithGost(dbclient.GostDB.DB, r); err != nil {
+		//TODO avoid global variable
+		if err := detectPkgsCvesWithGost(&config.Conf.Gost, r); err != nil {
 			return xerrors.Errorf("Failed to detect CVE with gost: %w", err)
 		}
 	} else if reuseScannedCves(r) {
@@ -394,12 +394,19 @@ func detectPkgsCvesWithOval(driver OvalDB, r *models.ScanResult) error {
 	return nil
 }
 
-func detectPkgsCvesWithGost(driver gostdb.DB, r *models.ScanResult) error {
-	nCVEs, err := gost.NewClient(r.Family).DetectUnfixed(driver, r, true)
+func detectPkgsCvesWithGost(cnf config.VulnDictInterface, r *models.ScanResult) error {
+	client, err := gost.NewClient(cnf, config.Conf.DebugSQL, r.Family)
+	if err != nil {
+		return xerrors.Errorf("Failed to new a gost client: %w", err)
+	}
 
-	logging.Log.Infof("%s: %d unfixed CVEs are detected with gost",
-		r.FormatServerName(), nCVEs)
-	return err
+	nCVEs, err := client.DetectUnfixed(r, true)
+	if err != nil {
+		return xerrors.Errorf("Failed to detect unfixed CVEs with gost: %w", err)
+	}
+
+	logging.Log.Infof("%s: %d unfixed CVEs are detected with gost", r.FormatServerName(), nCVEs)
+	return nil
 }
 
 // DetectCpeURIsCves detects CVEs of given CPE-URIs

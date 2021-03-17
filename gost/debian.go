@@ -10,7 +10,6 @@ import (
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	"github.com/knqyf263/gost/db"
 	gostmodels "github.com/knqyf263/gost/models"
 )
 
@@ -35,7 +34,7 @@ func (deb Debian) supported(major string) bool {
 }
 
 // DetectUnfixed fills cve information that has in Gost
-func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCVEs int, err error) {
+func (deb Debian) DetectUnfixed(r *models.ScanResult, _ bool) (nCVEs int, err error) {
 	if !deb.supported(major(r.Release)) {
 		// only logging
 		logging.Log.Warnf("Debian %s is not supported yet", r.Release)
@@ -90,11 +89,11 @@ func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCV
 			})
 		}
 	} else {
-		if driver == nil {
+		if deb.DBDriver.DB == nil {
 			return 0, nil
 		}
 		for _, pack := range scanResult.Packages {
-			cveDebs := driver.GetUnfixedCvesDebian(major(scanResult.Release), pack.Name)
+			cveDebs := deb.DBDriver.DB.GetUnfixedCvesDebian(major(scanResult.Release), pack.Name)
 			cves := []models.CveContent{}
 			for _, cveDeb := range cveDebs {
 				cves = append(cves, *deb.ConvertToModel(&cveDeb))
@@ -108,7 +107,7 @@ func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCV
 
 		// SrcPack
 		for _, pack := range scanResult.SrcPackages {
-			cveDebs := driver.GetUnfixedCvesDebian(major(scanResult.Release), pack.Name)
+			cveDebs := deb.DBDriver.DB.GetUnfixedCvesDebian(major(scanResult.Release), pack.Name)
 			cves := []models.CveContent{}
 			for _, cveDeb := range cveDebs {
 				cves = append(cves, *deb.ConvertToModel(&cveDeb))

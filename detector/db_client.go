@@ -4,7 +4,6 @@ package detector
 
 import (
 	"github.com/future-architect/vuls/config"
-	gostdb "github.com/knqyf263/gost/db"
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
 	ovaldb "github.com/kotakanbe/goval-dictionary/db"
 	metasploitdb "github.com/takuzoo3868/go-msfdb/db"
@@ -16,7 +15,6 @@ import (
 type DBClient struct {
 	CveDB        CveDB
 	OvalDB       OvalDB
-	GostDB       GostDB
 	ExploitDB    ExploitDB
 	MetasploitDB MetasploitDB
 }
@@ -34,10 +32,6 @@ type OvalDB struct {
 }
 
 // GostDB is a DB Client
-type GostDB struct {
-	DB  gostdb.DB
-	Cnf config.VulnDictInterface
-}
 
 // ExploitDB is a DB Client
 type ExploitDB struct {
@@ -45,7 +39,7 @@ type ExploitDB struct {
 	Cnf config.VulnDictInterface
 }
 
-// Metasploitdb a DB Client
+// MetasploitDB a DB Client
 type MetasploitDB struct {
 	DB  metasploitdb.DB
 	Cnf config.VulnDictInterface
@@ -76,13 +70,6 @@ func NewDBClient(cveDict, ovalDict, gost, exploit, metasploit config.VulnDictInt
 		return nil, err
 	}
 
-	gostdb, locked, err := NewGostDB(gost, debugSQL)
-	if locked {
-		return nil, xerrors.Errorf("SQLite3 is locked: %s", gost.GetSQLite3Path())
-	} else if err != nil {
-		return nil, err
-	}
-
 	exploitdb, locked, err := NewExploitDB(exploit, debugSQL)
 	if locked {
 		return nil, xerrors.Errorf("SQLite3 is locked: %s", exploit.GetSQLite3Path())
@@ -100,7 +87,6 @@ func NewDBClient(cveDict, ovalDict, gost, exploit, metasploit config.VulnDictInt
 	return &DBClient{
 		CveDB:        CveDB{DB: cveDB, Cnf: cveDict},
 		OvalDB:       OvalDB{DB: ovaldb, Cnf: ovalDict},
-		GostDB:       GostDB{DB: gostdb, Cnf: gost},
 		ExploitDB:    ExploitDB{DB: exploitdb, Cnf: exploit},
 		MetasploitDB: MetasploitDB{DB: metasploitdb, Cnf: metasploit},
 	}, nil
@@ -137,24 +123,6 @@ func NewOvalDB(cnf config.VulnDictInterface, debugSQL bool) (driver ovaldb.DB, l
 		err = xerrors.Errorf("Failed to new OVAL DB. err: %w", err)
 		if locked {
 			return nil, true, err
-		}
-		return nil, false, err
-	}
-	return driver, false, nil
-}
-
-// NewGostDB returns db client for Gost
-func NewGostDB(cnf config.VulnDictInterface, debugSQL bool) (driver gostdb.DB, locked bool, err error) {
-	if cnf.IsFetchViaHTTP() {
-		return nil, false, nil
-	}
-	path := cnf.GetURL()
-	if cnf.GetType() == "sqlite3" {
-		path = cnf.GetSQLite3Path()
-	}
-	if driver, locked, err = gostdb.NewDB(cnf.GetType(), path, debugSQL); err != nil {
-		if locked {
-			return nil, true, xerrors.Errorf("gostDB is locked. err: %w", err)
 		}
 		return nil, false, err
 	}

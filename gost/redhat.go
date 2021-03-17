@@ -10,7 +10,6 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	"github.com/knqyf263/gost/db"
 	gostmodels "github.com/knqyf263/gost/models"
 )
 
@@ -20,16 +19,9 @@ type RedHat struct {
 }
 
 // DetectUnfixed fills cve information that has in Gost
-func (red RedHat) DetectUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
-	return red.detectUnfixed(driver, r, ignoreWillNotFix)
-}
-
-func (red RedHat) detectUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
-	// TODO Don't use global variable
-	if config.Conf.Gost.IsFetchViaHTTP() {
-		// TODO Don't use global variable
-		prefix, _ := util.URLPathJoin(config.Conf.Gost.URL,
-			"redhat", major(r.Release), "pkgs")
+func (red RedHat) DetectUnfixed(r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
+	if red.DBDriver.Cnf.IsFetchViaHTTP() {
+		prefix, _ := util.URLPathJoin(red.DBDriver.Cnf.GetURL(), "redhat", major(r.Release), "pkgs")
 		responses, err := getAllUnfixedCvesViaHTTP(r, prefix)
 		if err != nil {
 			return 0, err
@@ -47,12 +39,12 @@ func (red RedHat) detectUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNo
 			}
 		}
 	} else {
-		if driver == nil {
+		if red.DBDriver.DB == nil {
 			return 0, nil
 		}
 		for _, pack := range r.Packages {
 			// CVE-ID: RedhatCVE
-			cves := driver.GetUnfixedCvesRedhat(major(r.Release), pack.Name, ignoreWillNotFix)
+			cves := red.DBDriver.DB.GetUnfixedCvesRedhat(major(r.Release), pack.Name, ignoreWillNotFix)
 			for _, cve := range cves {
 				if newly := red.setUnfixedCveToScanResult(&cve, r); newly {
 					nCVEs++
@@ -63,7 +55,7 @@ func (red RedHat) detectUnfixed(driver db.DB, r *models.ScanResult, ignoreWillNo
 	return nCVEs, nil
 }
 
-func (red RedHat) fillCvesWithRedHatAPI(driver db.DB, r *models.ScanResult) error {
+func (red RedHat) fillCvesWithRedHatAPI(r *models.ScanResult) error {
 	cveIDs := []string{}
 	for cveID, vuln := range r.ScannedCves {
 		if _, ok := vuln.CveContents[models.RedHatAPI]; ok {
@@ -72,10 +64,8 @@ func (red RedHat) fillCvesWithRedHatAPI(driver db.DB, r *models.ScanResult) erro
 		cveIDs = append(cveIDs, cveID)
 	}
 
-	// TODO Don't use global variable
-	if config.Conf.Gost.IsFetchViaHTTP() {
-		prefix, _ := util.URLPathJoin(config.Conf.Gost.URL,
-			"redhat", "cves")
+	if red.DBDriver.Cnf.IsFetchViaHTTP() {
+		prefix, _ := util.URLPathJoin(config.Conf.Gost.URL, "redhat", "cves")
 		responses, err := getCvesViaHTTP(cveIDs, prefix)
 		if err != nil {
 			return err
@@ -91,10 +81,10 @@ func (red RedHat) fillCvesWithRedHatAPI(driver db.DB, r *models.ScanResult) erro
 			red.setFixedCveToScanResult(&redCve, r)
 		}
 	} else {
-		if driver == nil {
+		if red.DBDriver.DB == nil {
 			return nil
 		}
-		for _, redCve := range driver.GetRedhatMulti(cveIDs) {
+		for _, redCve := range red.DBDriver.DB.GetRedhatMulti(cveIDs) {
 			if len(redCve.Name) == 0 {
 				continue
 			}

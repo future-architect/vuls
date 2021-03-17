@@ -69,7 +69,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	logging.Log.Infof("Fill CVE detailed with gost")
-	if err := gost.NewClient(r.Family).FillCVEsWithRedHat(h.DBclient.GostDB.DB, &r); err != nil {
+	if err := gost.FillCVEsWithRedHat(&config.Conf.Gost, config.Conf.DebugSQL, &r); err != nil {
 		logging.Log.Errorf("Failed to fill with gost: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
