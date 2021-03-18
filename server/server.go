@@ -75,7 +75,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	logging.Log.Infof("Fill CVE detailed with CVE-DB")
-	if err := detector.FillCvesWithNvdJvn(&r, h.DBclient.CveDB, config.Conf.LogOpts); err != nil {
+	if err := detector.FillCvesWithNvdJvn(&r, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
 		logging.Log.Errorf("Failed to fill with CVE: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}

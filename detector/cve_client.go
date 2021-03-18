@@ -21,25 +21,34 @@ import (
 )
 
 type goCveDictClient struct {
-	cnf config.VulnDictInterface
+	cnf    config.VulnDictInterface
+	driver cvedb.DB
 }
 
-func newGoCveDictClient(cnf config.VulnDictInterface, o logging.LogOpts) goCveDictClient {
+func newGoCveDictClient(cnf config.VulnDictInterface, o logging.LogOpts) (*goCveDictClient, error) {
 	cvelog.SetLogger(o.LogDir, o.Quiet, o.Debug, false)
-	return goCveDictClient{cnf: cnf}
+
+	driver, locked, err := newCveDB(cnf)
+	if locked {
+		return nil, xerrors.Errorf("SQLite3 is locked: %s", cnf.GetSQLite3Path())
+	} else if err != nil {
+		return nil, err
+	}
+	return &goCveDictClient{cnf: cnf, driver: driver}, nil
 }
 
-type response struct {
-	Key       string
-	CveDetail cvemodels.CveDetail
-}
-
-func (api goCveDictClient) fetchCveDetails(driver cvedb.DB, cveIDs []string) (cveDetails []cvemodels.CveDetail, err error) {
-	if driver == nil {
+func (api goCveDictClient) closeDB() {
+	if api.driver == nil {
 		return
 	}
+	if err := api.driver.CloseDB(); err != nil {
+		logging.Log.Errorf("Failed to close DB: %+v", err)
+	}
+}
+
+func (api goCveDictClient) fetchCveDetails(cveIDs []string) (cveDetails []cvemodels.CveDetail, err error) {
 	for _, cveID := range cveIDs {
-		cveDetail, err := driver.Get(cveID)
+		cveDetail, err := api.driver.Get(cveID)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to fetch CVE. err: %w", err)
 		}
@@ -50,6 +59,11 @@ func (api goCveDictClient) fetchCveDetails(driver cvedb.DB, cveIDs []string) (cv
 		}
 	}
 	return
+}
+
+type response struct {
+	Key       string
+	CveDetail cvemodels.CveDetail
 }
 
 func (api goCveDictClient) fetchCveDetailsViaHTTP(cveIDs []string) (cveDetails []cvemodels.CveDetail, err error) {
@@ -140,7 +154,7 @@ func (api goCveDictClient) httpGet(key, url string, resChan chan<- response, err
 	}
 }
 
-func (api goCveDictClient) fetchCveDetailsByCpeName(driver cvedb.DB, cpeName string) ([]cvemodels.CveDetail, error) {
+func (api goCveDictClient) fetchCveDetailsByCpeName(cpeName string) ([]cvemodels.CveDetail, error) {
 	if api.cnf.IsFetchViaHTTP() {
 		url, err := util.URLPathJoin(api.cnf.GetURL(), "cpes")
 		if err != nil {
@@ -151,7 +165,7 @@ func (api goCveDictClient) fetchCveDetailsByCpeName(driver cvedb.DB, cpeName str
 		logging.Log.Debugf("HTTP Request to %s, query: %#v", url, query)
 		return api.httpPost(cpeName, url, query)
 	}
-	return driver.GetByCpeURI(cpeName)
+	return api.driver.GetByCpeURI(cpeName)
 }
 
 func (api goCveDictClient) httpPost(key, url string, query map[string]string) ([]cvemodels.CveDetail, error) {
@@ -183,4 +197,20 @@ func (api goCveDictClient) httpPost(key, url string, query map[string]string) ([
 			xerrors.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
 	}
 	return cveDetails, nil
+}
+
+func newCveDB(cnf config.VulnDictInterface) (driver cvedb.DB, locked bool, err error) {
+	if cnf.IsFetchViaHTTP() {
+		return nil, false, nil
+	}
+	path := cnf.GetURL()
+	if cnf.GetType() == "sqlite3" {
+		path = cnf.GetSQLite3Path()
+	}
+	driver, locked, err = cvedb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL())
+	if err != nil {
+		err = xerrors.Errorf("Failed to init CVE DB. err: %w, path: %s", err, path)
+		return nil, locked, err
+	}
+	return driver, false, nil
 }

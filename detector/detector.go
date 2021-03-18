@@ -65,7 +65,7 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
 		}
 
-		if err := DetectCpeURIsCves(&r, dbclient.CveDB, cpeURIs, config.Conf.LogOpts); err != nil {
+		if err := DetectCpeURIsCves(&r, cpeURIs, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
 			return nil, xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
 		}
 
@@ -83,8 +83,8 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 			return nil, xerrors.Errorf("Failed to fill with gost: %w", err)
 		}
 
-		logging.Log.Infof("Fill CVE detailed with CVE-DB")
-		if err := FillCvesWithNvdJvn(&r, dbclient.CveDB, config.Conf.LogOpts); err != nil {
+		logging.Log.Infof("Fill CVE detailed with go-cve-dictionary")
+		if err := FillCvesWithNvdJvn(&r, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with CVE: %w", err)
 		}
 
@@ -254,18 +254,23 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf config.WpScanConf) error {
 }
 
 // FillCvesWithNvdJvn fills CVE detail with NVD, JVN
-func FillCvesWithNvdJvn(r *models.ScanResult, driver CveDB, logOpts logging.LogOpts) (err error) {
+func FillCvesWithNvdJvn(r *models.ScanResult, cnf config.GoCveDictConf, logOpts logging.LogOpts) (err error) {
 	cveIDs := []string{}
 	for _, v := range r.ScannedCves {
 		cveIDs = append(cveIDs, v.CveID)
 	}
 
-	client := newGoCveDictClient(driver.Cnf, logOpts)
+	client, err := newGoCveDictClient(&cnf, logOpts)
+	if err != nil {
+		return err
+	}
+	defer client.closeDB()
+
 	var ds []cvemodels.CveDetail
-	if driver.Cnf.IsFetchViaHTTP() {
+	if cnf.IsFetchViaHTTP() {
 		ds, err = client.fetchCveDetailsViaHTTP(cveIDs)
 	} else {
-		ds, err = client.fetchCveDetails(driver.DB, cveIDs)
+		ds, err = client.fetchCveDetails(cveIDs)
 	}
 	if err != nil {
 		return err
@@ -367,16 +372,16 @@ func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult) error {
 }
 
 // DetectCpeURIsCves detects CVEs of given CPE-URIs
-func DetectCpeURIsCves(r *models.ScanResult, driver CveDB, cpeURIs []string, logOpts logging.LogOpts) error {
-	nCVEs := 0
-	if len(cpeURIs) != 0 && driver.DB == nil && !driver.Cnf.IsFetchViaHTTP() {
-		return xerrors.Errorf("cpeURIs %s specified, but cve-dictionary DB not found. Fetch cve-dictionary before reporting. For details, see `https://github.com/kotakanbe/go-cve-dictionary#deploy-go-cve-dictionary`",
-			cpeURIs)
+func DetectCpeURIsCves(r *models.ScanResult, cpeURIs []string, cnf config.GoCveDictConf, logOpts logging.LogOpts) error {
+	client, err := newGoCveDictClient(&cnf, logOpts)
+	if err != nil {
+		return err
 	}
+	defer client.closeDB()
 
-	client := newGoCveDictClient(driver.Cnf, logOpts)
+	nCVEs := 0
 	for _, name := range cpeURIs {
-		details, err := client.fetchCveDetailsByCpeName(driver.DB, name)
+		details, err := client.fetchCveDetailsByCpeName(name)
 		if err != nil {
 			return err
 		}

@@ -38,6 +38,7 @@ type MetasploitDB struct {
 // NewDBClient returns db clients
 //TODO remove oval, gost
 //TODO remove this func
+//TODO Only Validation
 func NewDBClient(cveDict, ovalDict, gost, exploit, metasploit config.VulnDictInterface, debugSQL bool) (dbclient *DBClient, err error) {
 	for _, cnf := range []config.VulnDictInterface{cveDict, ovalDict, gost, exploit, metasploit} {
 		if err := cnf.Validate(); err != nil {
@@ -48,12 +49,12 @@ func NewDBClient(cveDict, ovalDict, gost, exploit, metasploit config.VulnDictInt
 		}
 	}
 
-	cveDB, locked, err := NewCveDB(cveDict, debugSQL)
-	if locked {
-		return nil, xerrors.Errorf("SQLite3 is locked: %s", cveDict.GetSQLite3Path())
-	} else if err != nil {
-		return nil, err
-	}
+	// cveDB, locked, err := NewCveDB(cveDict, debugSQL)
+	// if locked {
+	// 	return nil, xerrors.Errorf("SQLite3 is locked: %s", cveDict.GetSQLite3Path())
+	// } else if err != nil {
+	// 	return nil, err
+	// }
 
 	exploitdb, locked, err := NewExploitDB(exploit, debugSQL)
 	if locked {
@@ -70,28 +71,11 @@ func NewDBClient(cveDict, ovalDict, gost, exploit, metasploit config.VulnDictInt
 	}
 
 	return &DBClient{
-		CveDB: CveDB{DB: cveDB, Cnf: cveDict},
+		// CveDB: CveDB{DB: cveDB, Cnf: cveDict},
 		// OvalDB:       OvalDB{DB: ovaldb, Cnf: ovalDict},
 		ExploitDB:    ExploitDB{DB: exploitdb, Cnf: exploit},
 		MetasploitDB: MetasploitDB{DB: metasploitdb, Cnf: metasploit},
 	}, nil
-}
-
-// NewCveDB returns cve db client
-func NewCveDB(cnf config.VulnDictInterface, debugSQL bool) (driver cvedb.DB, locked bool, err error) {
-	if cnf.IsFetchViaHTTP() {
-		return nil, false, nil
-	}
-	path := cnf.GetURL()
-	if cnf.GetType() == "sqlite3" {
-		path = cnf.GetSQLite3Path()
-	}
-	driver, locked, err = cvedb.NewDB(cnf.GetType(), path, debugSQL)
-	if err != nil {
-		err = xerrors.Errorf("Failed to init CVE DB. err: %w, path: %s", err, path)
-		return nil, locked, err
-	}
-	return driver, false, nil
 }
 
 // NewExploitDB returns db client for Exploit
@@ -132,11 +116,11 @@ func NewMetasploitDB(cnf config.VulnDictInterface, debugSQL bool) (driver metasp
 
 // CloseDB close dbs
 func (d DBClient) CloseDB() (errs []error) {
-	if d.CveDB.DB != nil {
-		if err := d.CveDB.DB.CloseDB(); err != nil {
-			errs = append(errs, xerrors.Errorf("Failed to close cveDB. err: %+v", err))
-		}
-	}
+	// if d.CveDB.DB != nil {
+	// 	if err := d.CveDB.DB.CloseDB(); err != nil {
+	// 		errs = append(errs, xerrors.Errorf("Failed to close cveDB. err: %+v", err))
+	// 	}
+	// }
 	//TODO CloseDB gost, exploitdb, metasploit
 	return errs
 }
