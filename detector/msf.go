@@ -9,7 +9,7 @@ import (
 )
 
 // FillWithMetasploit fills metasploit module information that has in module
-func FillWithMetasploit(driver db.DB, r *models.ScanResult) (nMetasploitCve int, err error) {
+func FillWithMetasploit(r *models.ScanResult, driver db.DB) (nMetasploitCve int, err error) {
 	if driver == nil {
 		return 0, nil
 	}

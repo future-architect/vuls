@@ -62,32 +62,32 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := detector.DetectPkgCves(h.DBclient, &r); err != nil {
+	if err := detector.DetectPkgCves(&r, config.Conf.OvalDict, config.Conf.Gost); err != nil {
 		logging.Log.Errorf("Failed to detect Pkg CVE: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
 
 	logging.Log.Infof("Fill CVE detailed with gost")
-	if err := gost.FillCVEsWithRedHat(&config.Conf.Gost, config.Conf.DebugSQL, &r); err != nil {
+	if err := gost.FillCVEsWithRedHat(&r, config.Conf.Gost); err != nil {
 		logging.Log.Errorf("Failed to fill with gost: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
 
 	logging.Log.Infof("Fill CVE detailed with CVE-DB")
-	if err := detector.FillCvesWithNvdJvn(h.DBclient.CveDB, &r, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
+	if err := detector.FillCvesWithNvdJvn(&r, h.DBclient.CveDB, config.Conf.LogOpts); err != nil {
 		logging.Log.Errorf("Failed to fill with CVE: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
 
-	nExploitCve, err := detector.FillWithExploit(h.DBclient.ExploitDB, &r)
+	nExploitCve, err := detector.FillWithExploit(&r, h.DBclient.ExploitDB)
 	if err != nil {
 		logging.Log.Errorf("Failed to fill with exploit: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
 	logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nExploitCve)
 
-	nMetasploitCve, err := detector.FillWithMetasploit(h.DBclient.MetasploitDB.DB, &r)
+	nMetasploitCve, err := detector.FillWithMetasploit(&r, h.DBclient.MetasploitDB.DB)
 	if err != nil {
 		logging.Log.Errorf("Failed to fill with metasploit: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)

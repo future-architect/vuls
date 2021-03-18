@@ -7,7 +7,6 @@ import (
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"github.com/kotakanbe/goval-dictionary/db"
 )
 
 // Alpine is the struct of Alpine Linux
@@ -16,23 +15,29 @@ type Alpine struct {
 }
 
 // NewAlpine creates OVAL client for SUSE
-func NewAlpine() Alpine {
+func NewAlpine(cnf config.VulnDictInterface) Alpine {
 	return Alpine{
 		Base{
 			family: constant.Alpine,
+			Cnf:    cnf,
 		},
 	}
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o Alpine) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
+func (o Alpine) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 	var relatedDefs ovalResult
-	// TODO Don't use global variable
-	if config.Conf.OvalDict.IsFetchViaHTTP() {
-		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
+	if o.Cnf.IsFetchViaHTTP() {
+		if relatedDefs, err = getDefsByPackNameViaHTTP(r, o.Cnf.GetURL()); err != nil {
 			return 0, err
 		}
 	} else {
+		driver, err := newOvalDB(o.Cnf, r.Family)
+		if err != nil {
+			return 0, err
+		}
+		defer func() { _ = driver.CloseDB() }()
+
 		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
 			return 0, err
 		}

@@ -5,7 +5,6 @@ package detector
 import (
 	"github.com/future-architect/vuls/config"
 	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
-	ovaldb "github.com/kotakanbe/goval-dictionary/db"
 	metasploitdb "github.com/takuzoo3868/go-msfdb/db"
 	exploitdb "github.com/vulsio/go-exploitdb/db"
 	"golang.org/x/xerrors"
@@ -14,7 +13,6 @@ import (
 // DBClient is DB client for reporting
 type DBClient struct {
 	CveDB        CveDB
-	OvalDB       OvalDB
 	ExploitDB    ExploitDB
 	MetasploitDB MetasploitDB
 }
@@ -24,14 +22,6 @@ type CveDB struct {
 	DB  cvedb.DB
 	Cnf config.VulnDictInterface
 }
-
-// OvalDB is a DB Client
-type OvalDB struct {
-	DB  ovaldb.DB
-	Cnf config.VulnDictInterface
-}
-
-// GostDB is a DB Client
 
 // ExploitDB is a DB Client
 type ExploitDB struct {
@@ -46,6 +36,8 @@ type MetasploitDB struct {
 }
 
 // NewDBClient returns db clients
+//TODO remove oval, gost
+//TODO remove this func
 func NewDBClient(cveDict, ovalDict, gost, exploit, metasploit config.VulnDictInterface, debugSQL bool) (dbclient *DBClient, err error) {
 	for _, cnf := range []config.VulnDictInterface{cveDict, ovalDict, gost, exploit, metasploit} {
 		if err := cnf.Validate(); err != nil {
@@ -59,13 +51,6 @@ func NewDBClient(cveDict, ovalDict, gost, exploit, metasploit config.VulnDictInt
 	cveDB, locked, err := NewCveDB(cveDict, debugSQL)
 	if locked {
 		return nil, xerrors.Errorf("SQLite3 is locked: %s", cveDict.GetSQLite3Path())
-	} else if err != nil {
-		return nil, err
-	}
-
-	ovaldb, locked, err := NewOvalDB(ovalDict, debugSQL)
-	if locked {
-		return nil, xerrors.Errorf("SQLite3 is locked: %s", ovalDict.GetSQLite3Path())
 	} else if err != nil {
 		return nil, err
 	}
@@ -85,8 +70,8 @@ func NewDBClient(cveDict, ovalDict, gost, exploit, metasploit config.VulnDictInt
 	}
 
 	return &DBClient{
-		CveDB:        CveDB{DB: cveDB, Cnf: cveDict},
-		OvalDB:       OvalDB{DB: ovaldb, Cnf: ovalDict},
+		CveDB: CveDB{DB: cveDB, Cnf: cveDict},
+		// OvalDB:       OvalDB{DB: ovaldb, Cnf: ovalDict},
 		ExploitDB:    ExploitDB{DB: exploitdb, Cnf: exploit},
 		MetasploitDB: MetasploitDB{DB: metasploitdb, Cnf: metasploit},
 	}, nil
@@ -105,26 +90,6 @@ func NewCveDB(cnf config.VulnDictInterface, debugSQL bool) (driver cvedb.DB, loc
 	if err != nil {
 		err = xerrors.Errorf("Failed to init CVE DB. err: %w, path: %s", err, path)
 		return nil, locked, err
-	}
-	return driver, false, nil
-}
-
-// NewOvalDB returns oval db client
-func NewOvalDB(cnf config.VulnDictInterface, debugSQL bool) (driver ovaldb.DB, locked bool, err error) {
-	if cnf.IsFetchViaHTTP() {
-		return nil, false, nil
-	}
-	path := cnf.GetURL()
-	if cnf.GetType() == "sqlite3" {
-		path = cnf.GetSQLite3Path()
-	}
-	driver, locked, err = ovaldb.NewDB("", cnf.GetType(), path, debugSQL)
-	if err != nil {
-		err = xerrors.Errorf("Failed to new OVAL DB. err: %w", err)
-		if locked {
-			return nil, true, err
-		}
-		return nil, false, err
 	}
 	return driver, false, nil
 }
@@ -170,11 +135,6 @@ func (d DBClient) CloseDB() (errs []error) {
 	if d.CveDB.DB != nil {
 		if err := d.CveDB.DB.CloseDB(); err != nil {
 			errs = append(errs, xerrors.Errorf("Failed to close cveDB. err: %+v", err))
-		}
-	}
-	if d.OvalDB.DB != nil {
-		if err := d.OvalDB.DB.CloseDB(); err != nil {
-			errs = append(errs, xerrors.Errorf("Failed to close ovalDB. err: %+v", err))
 		}
 	}
 	//TODO CloseDB gost, exploitdb, metasploit

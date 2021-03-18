@@ -11,7 +11,6 @@ import (
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	"github.com/kotakanbe/goval-dictionary/db"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
@@ -111,18 +110,19 @@ type Debian struct {
 }
 
 // NewDebian creates OVAL client for Debian
-func NewDebian() Debian {
+func NewDebian(cnf config.VulnDictInterface) Debian {
 	return Debian{
 		DebianBase{
 			Base{
 				family: constant.Debian,
+				Cnf:    cnf,
 			},
 		},
 	}
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o Debian) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
+func (o Debian) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 
 	//Debian's uname gives both of kernel release(uname -r), version(kernel-image version)
 	linuxImage := "linux-image-" + r.RunningKernel.Release
@@ -141,20 +141,25 @@ func (o Debian) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 	}
 
 	var relatedDefs ovalResult
-	// TODO Don't use global variable
-	if config.Conf.OvalDict.IsFetchViaHTTP() {
+	if o.Cnf.IsFetchViaHTTP() {
 		if r.Family != constant.Raspbian {
-			if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
+			if relatedDefs, err = getDefsByPackNameViaHTTP(r, o.Cnf.GetURL()); err != nil {
 				return 0, err
 			}
 		} else {
 			// OVAL does not support Package for Raspbian, so skip it.
 			result := r.RemoveRaspbianPackFromResult()
-			if relatedDefs, err = getDefsByPackNameViaHTTP(&result); err != nil {
+			if relatedDefs, err = getDefsByPackNameViaHTTP(&result, o.Cnf.GetURL()); err != nil {
 				return 0, err
 			}
 		}
 	} else {
+		driver, err := newOvalDB(o.Cnf, r.Family)
+		if err != nil {
+			return 0, err
+		}
+		defer func() { _ = driver.CloseDB() }()
+
 		if r.Family != constant.Raspbian {
 			if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
 				return 0, err
@@ -202,18 +207,19 @@ type Ubuntu struct {
 }
 
 // NewUbuntu creates OVAL client for Debian
-func NewUbuntu() Ubuntu {
+func NewUbuntu(cnf config.VulnDictInterface) Ubuntu {
 	return Ubuntu{
 		DebianBase{
 			Base{
 				family: constant.Ubuntu,
+				Cnf:    cnf,
 			},
 		},
 	}
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
+func (o Ubuntu) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 	switch util.Major(r.Release) {
 	case "14":
 		kernelNamesInOval := []string{
@@ -229,7 +235,7 @@ func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 			"linux-signed-lts-xenial",
 			"linux",
 		}
-		return o.fillWithOval(driver, r, kernelNamesInOval)
+		return o.fillWithOval(r, kernelNamesInOval)
 	case "16":
 		kernelNamesInOval := []string{
 			"linux-aws",
@@ -264,7 +270,7 @@ func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 			"linux-snapdragon",
 			"linux",
 		}
-		return o.fillWithOval(driver, r, kernelNamesInOval)
+		return o.fillWithOval(r, kernelNamesInOval)
 	case "18":
 		kernelNamesInOval := []string{
 			"linux-aws",
@@ -319,7 +325,7 @@ func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 			"linux-snapdragon",
 			"linux",
 		}
-		return o.fillWithOval(driver, r, kernelNamesInOval)
+		return o.fillWithOval(r, kernelNamesInOval)
 	case "20":
 		kernelNamesInOval := []string{
 			"linux-aws",
@@ -347,12 +353,12 @@ func (o Ubuntu) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 			"linux-signed-oracle",
 			"linux",
 		}
-		return o.fillWithOval(driver, r, kernelNamesInOval)
+		return o.fillWithOval(r, kernelNamesInOval)
 	}
 	return 0, fmt.Errorf("Ubuntu %s is not support for now", r.Release)
 }
 
-func (o Ubuntu) fillWithOval(driver db.DB, r *models.ScanResult, kernelNamesInOval []string) (nCVEs int, err error) {
+func (o Ubuntu) fillWithOval(r *models.ScanResult, kernelNamesInOval []string) (nCVEs int, err error) {
 	linuxImage := "linux-image-" + r.RunningKernel.Release
 	runningKernelVersion := ""
 	kernelPkgInOVAL := ""
@@ -418,12 +424,17 @@ func (o Ubuntu) fillWithOval(driver db.DB, r *models.ScanResult, kernelNamesInOv
 	}
 
 	var relatedDefs ovalResult
-	// TODO Don't use global variable
-	if config.Conf.OvalDict.IsFetchViaHTTP() {
-		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
+	if o.Cnf.IsFetchViaHTTP() {
+		if relatedDefs, err = getDefsByPackNameViaHTTP(r, o.Cnf.GetURL()); err != nil {
 			return 0, err
 		}
 	} else {
+		driver, err := newOvalDB(o.Cnf, r.Family)
+		if err != nil {
+			return 0, err
+		}
+		defer func() { _ = driver.CloseDB() }()
+
 		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
 			return 0, err
 		}

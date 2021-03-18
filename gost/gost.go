@@ -27,28 +27,28 @@ type Base struct {
 	DBDriver DBDriver
 }
 
-func FillCVEsWithRedHat(cnf config.VulnDictInterface, debugSQL bool, r *models.ScanResult) error {
-	db, locked, err := newGostDB(cnf, debugSQL)
+func FillCVEsWithRedHat(r *models.ScanResult, cnf config.GostConf) error {
+	db, locked, err := newGostDB(cnf)
 	if locked {
 		return xerrors.Errorf("SQLite3 is locked: %s", cnf.GetSQLite3Path())
 	} else if err != nil {
 		return err
 	}
 	//TODO closeDB
-	return RedHat{Base{DBDriver{DB: db, Cnf: cnf}}}.fillCvesWithRedHatAPI(r)
+	return RedHat{Base{DBDriver{DB: db, Cnf: &cnf}}}.fillCvesWithRedHatAPI(r)
 }
 
 // NewClient make Client by family
 //TODO move debugSQL to VulnDictInterface
-func NewClient(cnf config.VulnDictInterface, debugSQL bool, family string) (Client, error) {
-	db, locked, err := newGostDB(cnf, debugSQL)
+func NewClient(cnf config.GostConf, family string) (Client, error) {
+	db, locked, err := newGostDB(cnf)
 	if locked {
 		return nil, xerrors.Errorf("SQLite3 is locked: %s", cnf.GetSQLite3Path())
 	} else if err != nil {
 		return nil, err
 	}
 
-	driver := DBDriver{DB: db, Cnf: cnf}
+	driver := DBDriver{DB: db, Cnf: &cnf}
 
 	switch family {
 	case constant.RedHat, constant.CentOS:
@@ -63,7 +63,7 @@ func NewClient(cnf config.VulnDictInterface, debugSQL bool, family string) (Clie
 }
 
 // NewGostDB returns db client for Gost
-func newGostDB(cnf config.VulnDictInterface, debugSQL bool) (driver db.DB, locked bool, err error) {
+func newGostDB(cnf config.GostConf) (driver db.DB, locked bool, err error) {
 	if cnf.IsFetchViaHTTP() {
 		return nil, false, nil
 	}
@@ -71,7 +71,7 @@ func newGostDB(cnf config.VulnDictInterface, debugSQL bool) (driver db.DB, locke
 	if cnf.GetType() == "sqlite3" {
 		path = cnf.GetSQLite3Path()
 	}
-	if driver, locked, err = db.NewDB(cnf.GetType(), path, debugSQL); err != nil {
+	if driver, locked, err = db.NewDB(cnf.GetType(), path, cnf.GetDebugSQL()); err != nil {
 		if locked {
 			return nil, true, xerrors.Errorf("gostDB is locked. err: %w", err)
 		}

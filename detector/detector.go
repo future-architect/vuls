@@ -61,11 +61,11 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
 		}
 
-		if err := DetectPkgCves(dbclient, &r); err != nil {
+		if err := DetectPkgCves(&r, config.Conf.OvalDict, config.Conf.Gost); err != nil {
 			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
 		}
 
-		if err := DetectCpeURIsCves(dbclient.CveDB, &r, cpeURIs, config.Conf.LogOpts); err != nil {
+		if err := DetectCpeURIsCves(&r, dbclient.CveDB, cpeURIs, config.Conf.LogOpts); err != nil {
 			return nil, xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
 		}
 
@@ -79,22 +79,22 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 		}
 
 		logging.Log.Infof("Fill CVE detailed with gost")
-		if err := gost.FillCVEsWithRedHat(&config.Conf.Gost, config.Conf.DebugSQL, &r); err != nil {
+		if err := gost.FillCVEsWithRedHat(&r, config.Conf.Gost); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with gost: %w", err)
 		}
 
 		logging.Log.Infof("Fill CVE detailed with CVE-DB")
-		if err := FillCvesWithNvdJvn(dbclient.CveDB, &r, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
+		if err := FillCvesWithNvdJvn(&r, dbclient.CveDB, config.Conf.LogOpts); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with CVE: %w", err)
 		}
 
-		nExploitCve, err := FillWithExploit(dbclient.ExploitDB, &r)
+		nExploitCve, err := FillWithExploit(&r, dbclient.ExploitDB)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to fill with exploit: %w", err)
 		}
 		logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nExploitCve)
 
-		nMetasploitCve, err := FillWithMetasploit(dbclient.MetasploitDB.DB, &r)
+		nMetasploitCve, err := FillWithMetasploit(&r, dbclient.MetasploitDB.DB)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to fill with metasploit: %w", err)
 		}
@@ -167,17 +167,17 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 }
 
 // DetectPkgCves detects OS pkg cves
-func DetectPkgCves(dbclient DBClient, r *models.ScanResult) error {
+// pass 2 configs
+func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf config.GostConf) error {
 	// Pkg Scan
 	if r.Release != "" {
 		// OVAL
-		if err := detectPkgsCvesWithOval(dbclient.OvalDB, r); err != nil {
+		if err := detectPkgsCvesWithOval(ovalCnf, r); err != nil {
 			return xerrors.Errorf("Failed to detect CVE with OVAL: %w", err)
 		}
 
 		// gost
-		//TODO avoid global variable
-		if err := detectPkgsCvesWithGost(&config.Conf.Gost, r); err != nil {
+		if err := detectPkgsCvesWithGost(gostCnf, r); err != nil {
 			return xerrors.Errorf("Failed to detect CVE with gost: %w", err)
 		}
 	} else if reuseScannedCves(r) {
@@ -254,7 +254,7 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf config.WpScanConf) error {
 }
 
 // FillCvesWithNvdJvn fills CVE detail with NVD, JVN
-func FillCvesWithNvdJvn(driver CveDB, r *models.ScanResult, cveCnf config.GoCveDictConf, logOpts logging.LogOpts) (err error) {
+func FillCvesWithNvdJvn(r *models.ScanResult, driver CveDB, logOpts logging.LogOpts) (err error) {
 	cveIDs := []string{}
 	for _, v := range r.ScannedCves {
 		cveIDs = append(cveIDs, v.CveID)
@@ -262,7 +262,7 @@ func FillCvesWithNvdJvn(driver CveDB, r *models.ScanResult, cveCnf config.GoCveD
 
 	client := newGoCveDictClient(driver.Cnf, logOpts)
 	var ds []cvemodels.CveDetail
-	if cveCnf.IsFetchViaHTTP() {
+	if driver.Cnf.IsFetchViaHTTP() {
 		ds, err = client.fetchCveDetailsViaHTTP(cveIDs)
 	} else {
 		ds, err = client.fetchCveDetails(driver.DB, cveIDs)
@@ -320,72 +320,29 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 }
 
 // detectPkgsCvesWithOval fetches OVAL database
-func detectPkgsCvesWithOval(driver OvalDB, r *models.ScanResult) error {
-	var ovalClient oval.Client
-	var ovalFamily string
-
-	switch r.Family {
-	case constant.Debian, constant.Raspbian:
-		ovalClient = oval.NewDebian()
-		ovalFamily = constant.Debian
-	case constant.Ubuntu:
-		ovalClient = oval.NewUbuntu()
-		ovalFamily = constant.Ubuntu
-	case constant.RedHat:
-		ovalClient = oval.NewRedhat()
-		ovalFamily = constant.RedHat
-	case constant.CentOS:
-		ovalClient = oval.NewCentOS()
-		//use RedHat's OVAL
-		ovalFamily = constant.RedHat
-	case constant.Oracle:
-		ovalClient = oval.NewOracle()
-		ovalFamily = constant.Oracle
-	case constant.SUSEEnterpriseServer:
-		// TODO other suse family
-		ovalClient = oval.NewSUSE()
-		ovalFamily = constant.SUSEEnterpriseServer
-	case constant.Alpine:
-		ovalClient = oval.NewAlpine()
-		ovalFamily = constant.Alpine
-	case constant.Amazon:
-		ovalClient = oval.NewAmazon()
-		ovalFamily = constant.Amazon
-	case constant.FreeBSD, constant.Windows:
-		return nil
-	case constant.ServerTypePseudo:
-		return nil
-	default:
-		if r.Family == "" {
-			return xerrors.New("Probably an error occurred during scanning. Check the error message")
-		}
-		return xerrors.Errorf("OVAL for %s is not implemented yet", r.Family)
+func detectPkgsCvesWithOval(cnf config.GovalDictConf, r *models.ScanResult) error {
+	ovalClient, err := oval.NewOVALClient(r.Family, cnf)
+	if err != nil {
+		return err
 	}
 
-	if !driver.Cnf.IsFetchViaHTTP() {
-		if driver.DB == nil {
-			return xerrors.Errorf("You have to fetch OVAL data for %s before reporting. For details, see `https://github.com/kotakanbe/goval-dictionary#usage`", r.Family)
-		}
-		if err := driver.DB.NewOvalDB(ovalFamily); err != nil {
-			return xerrors.Errorf("Failed to New Oval DB. err: %w", err)
-		}
-	}
-
-	logging.Log.Debugf("Check whether oval fetched: %s %s", ovalFamily, r.Release)
-	ok, err := ovalClient.CheckIfOvalFetched(driver.DB, ovalFamily, r.Release)
+	logging.Log.Debugf("Check if oval fetched: %s %s", r.Family, r.Release)
+	ok, err := ovalClient.CheckIfOvalFetched(r.Family, r.Release)
 	if err != nil {
 		return err
 	}
 	if !ok {
-		return xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see `https://github.com/kotakanbe/goval-dictionary#usage`", ovalFamily, r.Release)
+		return xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see `https://github.com/kotakanbe/goval-dictionary#usage`", r.Family, r.Release)
 	}
 
-	_, err = ovalClient.CheckIfOvalFresh(driver.DB, ovalFamily, r.Release)
+	logging.Log.Debugf("Check if oval fresh: %s %s", r.Family, r.Release)
+	_, err = ovalClient.CheckIfOvalFresh(r.Family, r.Release)
 	if err != nil {
 		return err
 	}
 
-	nCVEs, err := ovalClient.FillWithOval(driver.DB, r)
+	logging.Log.Debugf("Fill with oval: %s %s", r.Family, r.Release)
+	nCVEs, err := ovalClient.FillWithOval(r)
 	if err != nil {
 		return err
 	}
@@ -394,8 +351,8 @@ func detectPkgsCvesWithOval(driver OvalDB, r *models.ScanResult) error {
 	return nil
 }
 
-func detectPkgsCvesWithGost(cnf config.VulnDictInterface, r *models.ScanResult) error {
-	client, err := gost.NewClient(cnf, config.Conf.DebugSQL, r.Family)
+func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult) error {
+	client, err := gost.NewClient(cnf, r.Family)
 	if err != nil {
 		return xerrors.Errorf("Failed to new a gost client: %w", err)
 	}
@@ -410,7 +367,7 @@ func detectPkgsCvesWithGost(cnf config.VulnDictInterface, r *models.ScanResult) 
 }
 
 // DetectCpeURIsCves detects CVEs of given CPE-URIs
-func DetectCpeURIsCves(driver CveDB, r *models.ScanResult, cpeURIs []string, logOpts logging.LogOpts) error {
+func DetectCpeURIsCves(r *models.ScanResult, driver CveDB, cpeURIs []string, logOpts logging.LogOpts) error {
 	nCVEs := 0
 	if len(cpeURIs) != 0 && driver.DB == nil && !driver.Cnf.IsFetchViaHTTP() {
 		return xerrors.Errorf("cpeURIs %s specified, but cve-dictionary DB not found. Fetch cve-dictionary before reporting. For details, see `https://github.com/kotakanbe/go-cve-dictionary#deploy-go-cve-dictionary`",

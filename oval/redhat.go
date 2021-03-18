@@ -11,7 +11,6 @@ import (
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"github.com/kotakanbe/goval-dictionary/db"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
@@ -21,14 +20,19 @@ type RedHatBase struct {
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o RedHatBase) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
+func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 	var relatedDefs ovalResult
-	// TODO Don't use global variable
-	if config.Conf.OvalDict.IsFetchViaHTTP() {
-		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
+	if o.Cnf.IsFetchViaHTTP() {
+		if relatedDefs, err = getDefsByPackNameViaHTTP(r, o.Cnf.GetURL()); err != nil {
 			return 0, err
 		}
 	} else {
+		driver, err := newOvalDB(o.Cnf, r.Family)
+		if err != nil {
+			return 0, err
+		}
+		defer func() { _ = driver.CloseDB() }()
+
 		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
 			return 0, err
 		}
@@ -248,11 +252,12 @@ type RedHat struct {
 }
 
 // NewRedhat creates OVAL client for Redhat
-func NewRedhat() RedHat {
+func NewRedhat(cnf config.VulnDictInterface) RedHat {
 	return RedHat{
 		RedHatBase{
 			Base{
 				family: constant.RedHat,
+				Cnf:    cnf,
 			},
 		},
 	}
@@ -264,11 +269,12 @@ type CentOS struct {
 }
 
 // NewCentOS creates OVAL client for CentOS
-func NewCentOS() CentOS {
+func NewCentOS(cnf config.VulnDictInterface) CentOS {
 	return CentOS{
 		RedHatBase{
 			Base{
 				family: constant.CentOS,
+				Cnf:    cnf,
 			},
 		},
 	}
@@ -280,11 +286,12 @@ type Oracle struct {
 }
 
 // NewOracle creates OVAL client for Oracle
-func NewOracle() Oracle {
+func NewOracle(cnf config.VulnDictInterface) Oracle {
 	return Oracle{
 		RedHatBase{
 			Base{
 				family: constant.Oracle,
+				Cnf:    cnf,
 			},
 		},
 	}
@@ -297,11 +304,12 @@ type Amazon struct {
 }
 
 // NewAmazon creates OVAL client for Amazon Linux
-func NewAmazon() Amazon {
+func NewAmazon(cnf config.VulnDictInterface) Amazon {
 	return Amazon{
 		RedHatBase{
 			Base{
 				family: constant.Amazon,
+				Cnf:    cnf,
 			},
 		},
 	}

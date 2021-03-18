@@ -17,29 +17,38 @@ import (
 
 // Client is the interface of OVAL client.
 type Client interface {
-	FillWithOval(db.DB, *models.ScanResult) (int, error)
-
-	// CheckIfOvalFetched checks if oval entries are in DB by family, release.
-	CheckIfOvalFetched(db.DB, string, string) (bool, error)
-	CheckIfOvalFresh(db.DB, string, string) (bool, error)
+	FillWithOval(*models.ScanResult) (int, error)
+	CheckIfOvalFetched(string, string) (bool, error)
+	CheckIfOvalFresh(string, string) (bool, error)
 }
 
 // Base is a base struct
 type Base struct {
 	family string
+	Cnf    config.VulnDictInterface
 }
 
 // CheckIfOvalFetched checks if oval entries are in DB by family, release.
-func (b Base) CheckIfOvalFetched(driver db.DB, osFamily, release string) (fetched bool, err error) {
-	if !config.Conf.OvalDict.IsFetchViaHTTP() {
-		count, err := driver.CountDefs(osFamily, release)
+func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err error) {
+	ovalFamily, err := GetFamilyInOval(osFamily)
+	if err != nil {
+		return false, err
+	}
+	if !b.Cnf.IsFetchViaHTTP() {
+		driver, err := newOvalDB(b.Cnf, ovalFamily)
 		if err != nil {
-			return false, xerrors.Errorf("Failed to count OVAL defs: %s, %s, %w", osFamily, release, err)
+			return false, err
+		}
+		defer func() { _ = driver.CloseDB() }()
+
+		count, err := driver.CountDefs(ovalFamily, release)
+		if err != nil {
+			return false, xerrors.Errorf("Failed to count OVAL defs: %s, %s, %w", ovalFamily, release, err)
 		}
 		return 0 < count, nil
 	}
 
-	url, _ := util.URLPathJoin(config.Conf.OvalDict.URL, "count", osFamily, release)
+	url, _ := util.URLPathJoin(config.Conf.OvalDict.URL, "count", ovalFamily, release)
 	resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
 	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 		return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
@@ -52,12 +61,21 @@ func (b Base) CheckIfOvalFetched(driver db.DB, osFamily, release string) (fetche
 }
 
 // CheckIfOvalFresh checks if oval entries are fresh enough
-func (b Base) CheckIfOvalFresh(driver db.DB, osFamily, release string) (ok bool, err error) {
+func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
+	ovalFamily, err := GetFamilyInOval(osFamily)
+	if err != nil {
+		return false, err
+	}
 	var lastModified time.Time
-	if !config.Conf.OvalDict.IsFetchViaHTTP() {
-		lastModified = driver.GetLastModified(osFamily, release)
+	if !b.Cnf.IsFetchViaHTTP() {
+		driver, err := newOvalDB(b.Cnf, ovalFamily)
+		if err != nil {
+			return false, err
+		}
+		defer func() { _ = driver.CloseDB() }()
+		lastModified = driver.GetLastModified(ovalFamily, release)
 	} else {
-		url, _ := util.URLPathJoin(config.Conf.OvalDict.URL, "lastmodified", osFamily, release)
+		url, _ := util.URLPathJoin(config.Conf.OvalDict.URL, "lastmodified", ovalFamily, release)
 		resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
@@ -77,4 +95,31 @@ func (b Base) CheckIfOvalFresh(driver db.DB, osFamily, release string) (ok bool,
 	}
 	logging.Log.Infof("OVAL is fresh: %s %s ", osFamily, release)
 	return true, nil
+}
+
+// NewOvalDB returns oval db client
+func newOvalDB(cnf config.VulnDictInterface, familyInScanResult string) (driver db.DB, err error) {
+	if cnf.IsFetchViaHTTP() {
+		return nil, nil
+	}
+
+	path := cnf.GetURL()
+	if cnf.GetType() == "sqlite3" {
+		path = cnf.GetSQLite3Path()
+	}
+
+	ovalFamily, err := GetFamilyInOval(familyInScanResult)
+	if err != nil {
+		return nil, err
+	}
+
+	driver, locked, err := db.NewDB(ovalFamily, cnf.GetType(), path, cnf.GetDebugSQL())
+	if err != nil {
+		if locked {
+			err = xerrors.Errorf("SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
+		}
+		err = xerrors.Errorf("Failed to new OVAL DB. err: %w", err)
+		return nil, err
+	}
+	return driver, nil
 }
