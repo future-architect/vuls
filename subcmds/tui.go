@@ -127,7 +127,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	}
 
 	logging.Log.Info("Validating config...")
-	if !config.Conf.ValidateOnTui() {
+	if !config.Conf.ValidateOnReport() {
 		return subcommands.ExitUsageError
 	}
 
@@ -138,6 +138,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	}
 	logging.Log.Infof("Loaded: %s", dir)
 
+	// TODO remove
 	dbclient, err := detector.NewDBClient(
 		&config.Conf.CveDict,
 		&config.Conf.OvalDict,

@@ -236,6 +236,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			r.ServerInfo(), pp.Sprintf("%s", config.Conf.Servers[r.ServerName]))
 	}
 
+	//TODO remove
 	dbclient, err := detector.NewDBClient(
 		&config.Conf.CveDict,
 		&config.Conf.OvalDict,

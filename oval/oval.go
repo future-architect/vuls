@@ -45,6 +45,7 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err er
 		if err != nil {
 			return false, xerrors.Errorf("Failed to count OVAL defs: %s, %s, %w", ovalFamily, release, err)
 		}
+		logging.Log.Infof("OVAL %s %s is fresh. defs: %d", osFamily, release, count)
 		return 0 < count, nil
 	}
 
@@ -57,6 +58,7 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err er
 	if err := json.Unmarshal([]byte(body), &count); err != nil {
 		return false, xerrors.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
 	}
+	logging.Log.Infof("OVAL %s %s is fresh. defs: %d", osFamily, release, count)
 	return 0 < count, nil
 }
 
@@ -93,7 +95,7 @@ func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 			osFamily, release, lastModified)
 		return false, nil
 	}
-	logging.Log.Infof("OVAL is fresh: %s %s ", osFamily, release)
+	logging.Log.Infof("OVAL %s %s is fresh. lastModified: %s", osFamily, release, lastModified.Format(time.RFC3339))
 	return true, nil
 }
 

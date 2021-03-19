@@ -97,6 +97,7 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitUsageError
 	}
 
+	// TODO remove
 	dbclient, err := detector.NewDBClient(
 		&config.Conf.CveDict,
 		&config.Conf.OvalDict,

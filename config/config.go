@@ -162,25 +162,25 @@ func (c *Config) ValidateOnReport() bool {
 		}
 	}
 
-	for _, err := range errs {
-		logging.Log.Error(err)
-	}
-
-	return len(errs) == 0
-}
-
-// ValidateOnTui validates configuration
-func (c Config) ValidateOnTui() bool {
-	errs := []error{}
-	if len(c.ResultsDir) != 0 {
-		if ok, _ := govalidator.IsFilePath(c.ResultsDir); !ok {
-			errs = append(errs, xerrors.Errorf(
-				"JSON base directory must be a *Absolute* file path. -results-dir: %s", c.ResultsDir))
+	for _, cnf := range []VulnDictInterface{
+		&Conf.CveDict,
+		&Conf.OvalDict,
+		&Conf.Gost,
+		&Conf.Exploit,
+		&Conf.Metasploit,
+	} {
+		if err := cnf.Validate(); err != nil {
+			errs = append(errs, xerrors.Errorf("Failed to validate %s: %+v", cnf.GetName(), err))
+		}
+		if err := cnf.CheckHTTPHealth(); err != nil {
+			errs = append(errs, xerrors.Errorf("Run %s as server mode before reporting: %+v", cnf.GetName(), err))
 		}
 	}
+
 	for _, err := range errs {
 		logging.Log.Error(err)
 	}
+
 	return len(errs) == 0
 }
 

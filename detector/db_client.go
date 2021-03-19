@@ -4,7 +4,6 @@ package detector
 
 import (
 	"github.com/future-architect/vuls/config"
-	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
 	metasploitdb "github.com/takuzoo3868/go-msfdb/db"
 	exploitdb "github.com/vulsio/go-exploitdb/db"
 	"golang.org/x/xerrors"
@@ -12,15 +11,8 @@ import (
 
 // DBClient is DB client for reporting
 type DBClient struct {
-	CveDB        CveDB
 	ExploitDB    ExploitDB
 	MetasploitDB MetasploitDB
-}
-
-// CveDB is a DB client
-type CveDB struct {
-	DB  cvedb.DB
-	Cnf config.VulnDictInterface
 }
 
 // ExploitDB is a DB Client
@@ -40,22 +32,6 @@ type MetasploitDB struct {
 //TODO remove this func
 //TODO Only Validation
 func NewDBClient(cveDict, ovalDict, gost, exploit, metasploit config.VulnDictInterface, debugSQL bool) (dbclient *DBClient, err error) {
-	for _, cnf := range []config.VulnDictInterface{cveDict, ovalDict, gost, exploit, metasploit} {
-		if err := cnf.Validate(); err != nil {
-			return nil, xerrors.Errorf("Failed to validate %s: %+v", cnf.GetName(), err)
-		}
-		if err := cnf.CheckHTTPHealth(); err != nil {
-			return nil, xerrors.Errorf("Run %s as server mode before reporting: %+v", cnf.GetName(), err)
-		}
-	}
-
-	// cveDB, locked, err := NewCveDB(cveDict, debugSQL)
-	// if locked {
-	// 	return nil, xerrors.Errorf("SQLite3 is locked: %s", cveDict.GetSQLite3Path())
-	// } else if err != nil {
-	// 	return nil, err
-	// }
-
 	exploitdb, locked, err := NewExploitDB(exploit, debugSQL)
 	if locked {
 		return nil, xerrors.Errorf("SQLite3 is locked: %s", exploit.GetSQLite3Path())
@@ -71,8 +47,6 @@ func NewDBClient(cveDict, ovalDict, gost, exploit, metasploit config.VulnDictInt
 	}
 
 	return &DBClient{
-		// CveDB: CveDB{DB: cveDB, Cnf: cveDict},
-		// OvalDB:       OvalDB{DB: ovaldb, Cnf: ovalDict},
 		ExploitDB:    ExploitDB{DB: exploitdb, Cnf: exploit},
 		MetasploitDB: MetasploitDB{DB: metasploitdb, Cnf: metasploit},
 	}, nil
@@ -116,11 +90,5 @@ func NewMetasploitDB(cnf config.VulnDictInterface, debugSQL bool) (driver metasp
 
 // CloseDB close dbs
 func (d DBClient) CloseDB() (errs []error) {
-	// if d.CveDB.DB != nil {
-	// 	if err := d.CveDB.DB.CloseDB(); err != nil {
-	// 		errs = append(errs, xerrors.Errorf("Failed to close cveDB. err: %+v", err))
-	// 	}
-	// }
-	//TODO CloseDB gost, exploitdb, metasploit
 	return errs
 }
