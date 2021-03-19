@@ -80,7 +80,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
 
-	nExploitCve, err := detector.FillWithExploit(&r, h.DBclient.ExploitDB)
+	nExploitCve, err := detector.FillWithExploit(&r, config.Conf.Exploit)
 	if err != nil {
 		logging.Log.Errorf("Failed to fill with exploit: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)

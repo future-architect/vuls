@@ -88,7 +88,7 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 			return nil, xerrors.Errorf("Failed to fill with CVE: %w", err)
 		}
 
-		nExploitCve, err := FillWithExploit(&r, dbclient.ExploitDB)
+		nExploitCve, err := FillWithExploit(&r, config.Conf.Exploit)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to fill with exploit: %w", err)
 		}
