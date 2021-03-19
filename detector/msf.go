@@ -3,16 +3,24 @@
 package detector
 
 import (
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
-	"github.com/takuzoo3868/go-msfdb/db"
+	metasploitdb "github.com/takuzoo3868/go-msfdb/db"
 	metasploitmodels "github.com/takuzoo3868/go-msfdb/models"
+	"golang.org/x/xerrors"
 )
 
 // FillWithMetasploit fills metasploit module information that has in module
-func FillWithMetasploit(r *models.ScanResult, driver db.DB) (nMetasploitCve int, err error) {
-	if driver == nil {
-		return 0, nil
+func FillWithMetasploit(r *models.ScanResult, cnf config.MetasploitConf) (nMetasploitCve int, err error) {
+
+	driver, locked, err := newMetasploitDB(&cnf)
+	if locked {
+		return 0, xerrors.Errorf("SQLite3 is locked: %s", cnf.GetSQLite3Path())
+	} else if err != nil {
+		return 0, err
 	}
+	//TODO defer driver.Close()
+
 	for cveID, vuln := range r.ScannedCves {
 		if cveID == "" {
 			continue
@@ -48,4 +56,21 @@ func ConvertToModelsMsf(ms []*metasploitmodels.Metasploit) (modules []models.Met
 		modules = append(modules, module)
 	}
 	return modules
+}
+
+func newMetasploitDB(cnf config.VulnDictInterface) (driver metasploitdb.DB, locked bool, err error) {
+	if cnf.IsFetchViaHTTP() {
+		return nil, false, nil
+	}
+	path := cnf.GetURL()
+	if cnf.GetType() == "sqlite3" {
+		path = cnf.GetSQLite3Path()
+	}
+	if driver, locked, err = metasploitdb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), false); err != nil {
+		if locked {
+			return nil, true, xerrors.Errorf("metasploitDB is locked. err: %w", err)
+		}
+		return nil, false, err
+	}
+	return driver, false, nil
 }

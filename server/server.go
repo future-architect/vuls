@@ -22,7 +22,6 @@ import (
 
 // VulsHandler is used for vuls server mode
 type VulsHandler struct {
-	DBclient    detector.DBClient
 	ToLocalFile bool
 }
 
@@ -87,7 +86,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nExploitCve)
 
-	nMetasploitCve, err := detector.FillWithMetasploit(&r, h.DBclient.MetasploitDB.DB)
+	nMetasploitCve, err := detector.FillWithMetasploit(&r, config.Conf.Metasploit)
 	if err != nil {
 		logging.Log.Errorf("Failed to fill with metasploit: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)

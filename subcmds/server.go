@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/detector"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/server"
 	"github.com/google/subcommands"
@@ -97,27 +96,7 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitUsageError
 	}
 
-	// TODO remove
-	dbclient, err := detector.NewDBClient(
-		&config.Conf.CveDict,
-		&config.Conf.OvalDict,
-		&config.Conf.Gost,
-		&config.Conf.Exploit,
-		&config.Conf.Metasploit,
-		config.Conf.DebugSQL,
-	)
-	if err != nil {
-		logging.Log.Errorf("Failed to init DB Clients. err: %+v", err)
-		return subcommands.ExitFailure
-	}
-	defer func() {
-		for _, err := range dbclient.CloseDB() {
-			logging.Log.Errorf("Failed to CloseDB. err: %+v", err)
-		}
-	}()
-
 	http.Handle("/vuls", server.VulsHandler{
-		DBclient:    *dbclient,
 		ToLocalFile: p.toLocalFile,
 	})
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

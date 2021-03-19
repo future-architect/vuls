@@ -236,26 +236,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			r.ServerInfo(), pp.Sprintf("%s", config.Conf.Servers[r.ServerName]))
 	}
 
-	//TODO remove
-	dbclient, err := detector.NewDBClient(
-		&config.Conf.CveDict,
-		&config.Conf.OvalDict,
-		&config.Conf.Gost,
-		&config.Conf.Exploit,
-		&config.Conf.Metasploit,
-		config.Conf.DebugSQL,
-	)
-	if err != nil {
-		logging.Log.Errorf("Failed to init DB Clients. err: %+v", err)
-		return subcommands.ExitFailure
-	}
-	defer func() {
-		for _, err := range dbclient.CloseDB() {
-			logging.Log.Errorf("Failed to CloseDB. err: %+v", err)
-		}
-	}()
-
-	if res, err = detector.Detect(*dbclient, res, dir); err != nil {
+	if res, err = detector.Detect(res, dir); err != nil {
 		logging.Log.Errorf("%+v", err)
 		return subcommands.ExitFailure
 	}

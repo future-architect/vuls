@@ -22,7 +22,7 @@ import (
 )
 
 // Detect vulns and fill CVE detailed information
-func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
+func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 
 	// Use the same reportedAt for all rs
 	reportedAt := time.Now()
@@ -94,7 +94,7 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 		}
 		logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nExploitCve)
 
-		nMetasploitCve, err := FillWithMetasploit(&r, dbclient.MetasploitDB.DB)
+		nMetasploitCve, err := FillWithMetasploit(&r, config.Conf.Metasploit)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to fill with metasploit: %w", err)
 		}
