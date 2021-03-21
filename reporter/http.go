@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"golang.org/x/xerrors"
 )
 
 // HTTPRequestWriter writes results to HTTP request
-type HTTPRequestWriter struct{}
+type HTTPRequestWriter struct {
+	Proxy string
+}
 
 // Write sends results as HTTP response
 func (w HTTPRequestWriter) Write(rs ...models.ScanResult) (err error) {
@@ -20,8 +21,7 @@ func (w HTTPRequestWriter) Write(rs ...models.ScanResult) (err error) {
 		if err := json.NewEncoder(b).Encode(r); err != nil {
 			return err
 		}
-		// TODO Don't use global variable
-		_, err = http.Post(config.Conf.HTTP.URL, "application/json; charset=utf-8", b)
+		_, err = http.Post(w.Proxy, "application/json; charset=utf-8", b)
 		if err != nil {
 			return err
 		}

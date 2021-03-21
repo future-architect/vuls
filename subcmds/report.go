@@ -254,15 +254,17 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	if p.toSlack {
 		reports = append(reports, reporter.SlackWriter{
 			FormatOneLineText: p.formatOneLineText,
+			Cnf:               config.Conf.Slack,
+			Proxy:             config.Conf.HTTPProxy,
 		})
 	}
 
 	if p.toChatWork {
-		reports = append(reports, reporter.ChatWorkWriter{})
+		reports = append(reports, reporter.ChatWorkWriter{Cnf: config.Conf.ChatWork, Proxy: config.Conf.HTTPProxy})
 	}
 
 	if p.toTelegram {
-		reports = append(reports, reporter.TelegramWriter{})
+		reports = append(reports, reporter.TelegramWriter{Cnf: config.Conf.Telegram})
 	}
 
 	if p.toEmail {
@@ -270,6 +272,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			FormatOneEMail:    p.formatOneEMail,
 			FormatOneLineText: p.formatOneLineText,
 			FormatList:        p.formatList,
+			Cnf:               config.Conf.EMail,
 		})
 	}
 
@@ -278,7 +281,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if p.toHTTP {
-		reports = append(reports, reporter.HTTPRequestWriter{})
+		reports = append(reports, reporter.HTTPRequestWriter{Proxy: config.Conf.HTTPProxy})
 	}
 
 	if p.toLocalFile {
