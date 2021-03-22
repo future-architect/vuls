@@ -22,6 +22,9 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 	vulnInfos := models.VulnInfos{}
 	uniqueLibraryScannerPaths := map[string]models.LibraryScanner{}
 	for _, trivyResult := range trivyResults {
+		if IsTrivySupportedOS(trivyResult.Type) {
+			overrideServerData(scanResult, &trivyResult)
+		}
 		for _, vuln := range trivyResult.Vulnerabilities {
 			if _, ok := vulnInfos[vuln.VulnerabilityID]; !ok {
 				vulnInfos[vuln.VulnerabilityID] = models.VulnInfo{
@@ -89,16 +92,6 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 					FixState:    fixState,
 					FixedIn:     vuln.FixedVersion,
 				})
-
-				// overwrite every time if os package
-				scanResult.Family = trivyResult.Type
-				scanResult.ServerName = trivyResult.Target
-				scanResult.Optional = map[string]interface{}{
-					"trivy-target": trivyResult.Target,
-				}
-				scanResult.ScannedAt = time.Now()
-				scanResult.ScannedBy = "trivy"
-				scanResult.ScannedVia = "trivy"
 			} else {
 				// LibraryScanの結果
 				vulnInfo.LibraryFixedIns = append(vulnInfo.LibraryFixedIns, models.LibraryFixedIn{
@@ -173,4 +166,15 @@ func IsTrivySupportedOS(family string) bool {
 		}
 	}
 	return false
+}
+
+func overrideServerData(scanResult *models.ScanResult, trivyResult *report.Result) {
+	scanResult.Family = trivyResult.Type
+	scanResult.ServerName = trivyResult.Target
+	scanResult.Optional = map[string]interface{}{
+		"trivy-target": trivyResult.Target,
+	}
+	scanResult.ScannedAt = time.Now()
+	scanResult.ScannedBy = "trivy"
+	scanResult.ScannedVia = "trivy"
 }

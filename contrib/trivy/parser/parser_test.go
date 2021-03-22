@@ -5,6 +5,7 @@ import (
 
 	"github.com/aquasecurity/trivy/pkg/types"
 	"github.com/d4l3k/messagediff"
+
 	"github.com/future-architect/vuls/models"
 )
 
@@ -3203,6 +3204,33 @@ func TestParse(t *testing.T) {
 					},
 				},
 				Optional: map[string]interface{}{"trivy-target": "knqyf263/vuln-image:1.2.3 (alpine 3.7.1)"},
+			},
+		},
+		"found-no-vulns": {
+			vulnJSON: []byte(`[
+  {
+    "Target": "no-vuln-image:v1 (debian 9.13)",
+    "Type": "debian",
+    "Vulnerabilities": null
+  }
+]
+`),
+			scanResult: &models.ScanResult{
+				JSONVersion: 1,
+				ServerUUID:  "uuid",
+				ScannedCves: models.VulnInfos{},
+			},
+			expected: &models.ScanResult{
+				JSONVersion:     1,
+				ServerUUID:      "uuid",
+				ServerName:      "no-vuln-image:v1 (debian 9.13)",
+				Family:          "debian",
+				ScannedBy:       "trivy",
+				ScannedVia:      "trivy",
+				ScannedCves:     models.VulnInfos{},
+				Packages:        models.Packages{},
+				LibraryScanners: models.LibraryScanners{},
+				Optional:        map[string]interface{}{"trivy-target": "no-vuln-image:v1 (debian 9.13)"},
 			},
 		},
 	}
