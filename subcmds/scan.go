@@ -183,6 +183,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	s := scanner.Scanner{
+		ResultsDir:     config.Conf.ResultsDir,
 		TimeoutSec:     p.timeoutSec,
 		ScanTimeoutSec: p.scanTimeoutSec,
 		CacheDBPath:    p.cacheDBPath,

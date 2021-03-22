@@ -66,6 +66,7 @@ type osTypeInterface interface {
 
 // Scanner has functions for scan
 type Scanner struct {
+	ResultsDir     string
 	TimeoutSec     int
 	ScanTimeoutSec int
 	CacheDBPath    string
@@ -596,7 +597,7 @@ func (s Scanner) execScan() error {
 	}()
 
 	scannedAt := time.Now()
-	dir, err := EnsureResultDir(scannedAt)
+	dir, err := EnsureResultDir(s.ResultsDir, scannedAt)
 	if err != nil {
 		return err
 	}

@@ -111,7 +111,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			scannedAt = time.Now().Truncate(1 * time.Hour)
 			r.ScannedAt = scannedAt
 		}
-		dir, err := scanner.EnsureResultDir(scannedAt)
+		dir, err := scanner.EnsureResultDir(config.Conf.ResultsDir, scannedAt)
 		if err != nil {
 			logging.Log.Errorf("Failed to ensure the result directory: %+v", err)
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
