@@ -277,7 +277,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if p.toSyslog {
-		reports = append(reports, reporter.SyslogWriter{})
+		reports = append(reports, reporter.SyslogWriter{Cnf: config.Conf.Syslog})
 	}
 
 	if p.toHTTP {
