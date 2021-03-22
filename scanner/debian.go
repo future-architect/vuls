@@ -557,7 +557,6 @@ func (o *debian) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
 	}
 
 	o.log.Debugf("Reuse meta: %s", current.Name)
-	// TODO Don't use global variable
 	if config.Conf.Debug {
 		cache.DB.PrettyPrint(current)
 	}

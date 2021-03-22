@@ -418,6 +418,7 @@ func centOSVersionToRHEL(ver string) string {
 	return centosVerPattern.ReplaceAllString(ver, ".el$1")
 }
 
+// NewOVALClient returns a client for OVAL database
 func NewOVALClient(family string, cnf config.GovalDictConf) (Client, error) {
 	switch family {
 	case constant.Debian, constant.Raspbian:
@@ -450,6 +451,8 @@ func NewOVALClient(family string, cnf config.GovalDictConf) (Client, error) {
 	}
 }
 
+// GetFamilyInOval returns the OS family name in OVAL
+// For example, CentOS uses Red Hat's OVAL, so return 'redhat'
 func GetFamilyInOval(familyInScanResult string) (string, error) {
 	switch familyInScanResult {
 	case constant.Debian, constant.Raspbian:

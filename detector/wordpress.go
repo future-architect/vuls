@@ -230,7 +230,6 @@ func httpRequest(url, token string) (string, error) {
 			fmt.Sprintf("Failed to access to wpscan.com. err: %s", err))
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Token token=%s", token))
-	// TODO don't use global var
 	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
 	if err != nil {
 		return "", err

@@ -11,7 +11,7 @@ import (
 	"github.com/future-architect/vuls/constant"
 )
 
-// DB is a DB Client
+// DBDriver is a DB Driver
 type DBDriver struct {
 	DB  db.DB
 	Cnf config.VulnDictInterface
@@ -27,6 +27,7 @@ type Base struct {
 	DBDriver DBDriver
 }
 
+// FillCVEsWithRedHat fills CVE detailed with Red Hat Security
 func FillCVEsWithRedHat(r *models.ScanResult, cnf config.GostConf) error {
 	db, locked, err := newGostDB(cnf)
 	if locked {
@@ -39,7 +40,6 @@ func FillCVEsWithRedHat(r *models.ScanResult, cnf config.GostConf) error {
 }
 
 // NewClient make Client by family
-//TODO move debugSQL to VulnDictInterface
 func NewClient(cnf config.GostConf, family string) (Client, error) {
 	db, locked, err := newGostDB(cnf)
 	if locked {

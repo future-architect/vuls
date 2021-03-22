@@ -5,7 +5,6 @@ package gost
 import (
 	"encoding/json"
 
-	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
@@ -64,10 +63,8 @@ func (deb Debian) DetectUnfixed(r *models.ScanResult, _ bool) (nCVEs int, err er
 	}
 
 	packCvesList := []packCves{}
-	//TODO don't use global variable
-	if config.Conf.Gost.IsFetchViaHTTP() {
-		// TODO Don't use global variable
-		url, _ := util.URLPathJoin(config.Conf.Gost.URL, "debian", major(scanResult.Release), "pkgs")
+	if deb.DBDriver.Cnf.IsFetchViaHTTP() {
+		url, _ := util.URLPathJoin(deb.DBDriver.Cnf.GetURL(), "debian", major(scanResult.Release), "pkgs")
 		responses, err := getAllUnfixedCvesViaHTTP(r, url)
 		if err != nil {
 			return 0, err
