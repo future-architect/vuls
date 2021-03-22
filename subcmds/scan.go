@@ -24,6 +24,7 @@ type ScanCmd struct {
 	timeoutSec     int
 	scanTimeoutSec int
 	cacheDBPath    string
+	detectIPS      bool
 }
 
 // Name return subcommand name
@@ -83,7 +84,7 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 	f.BoolVar(&config.Conf.Pipe, "pipe", false, "Use stdin via PIPE")
 
-	f.BoolVar(&config.Conf.DetectIPS, "ips", false, "retrieve IPS information")
+	f.BoolVar(&p.detectIPS, "ips", false, "retrieve IPS information")
 	f.BoolVar(&config.Conf.Vvv, "vvv", false, "ssh -vvv")
 
 	f.IntVar(&p.timeoutSec, "timeout", 5*60,
@@ -189,6 +190,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		Debug:          config.Conf.Debug,
 		Quiet:          config.Conf.Quiet,
 		LogDir:         config.Conf.LogDir,
+		DetectIPS:      p.detectIPS,
 	}
 
 	if err := s.Scan(); err != nil {

@@ -72,6 +72,7 @@ type Scanner struct {
 	Debug          bool
 	LogDir         string
 	Quiet          bool
+	DetectIPS      bool
 
 	Targets map[string]config.ServerInfo
 }
@@ -91,8 +92,10 @@ func (s Scanner) Scan() error {
 	logging.Log.Info("Detecting Platforms... ")
 	s.detectPlatform()
 
-	logging.Log.Info("Detecting IPS identifiers... ")
-	s.detectIPS()
+	if s.DetectIPS {
+		logging.Log.Info("Detecting IPS identifiers... ")
+		s.detectIPS()
+	}
 
 	if err := s.execScan(); err != nil {
 		return xerrors.Errorf("Failed to scan. err: %w", err)

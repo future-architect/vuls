@@ -63,8 +63,7 @@ type ReportConf interface {
 
 // ScanOpts is options for scan
 type ScanOpts struct {
-	Vvv       bool `json:"vvv,omitempty"`
-	DetectIPS bool `json:"detectIps,omitempty"`
+	Vvv bool `json:"vvv,omitempty"`
 }
 
 // ReportOpts is options for report
