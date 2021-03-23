@@ -264,7 +264,11 @@ func FillCvesWithNvdJvn(r *models.ScanResult, cnf config.GoCveDictConf, logOpts 
 	if err != nil {
 		return err
 	}
-	defer client.closeDB()
+	defer func() {
+		if err := client.closeDB(); err != nil {
+			logging.Log.Errorf("Failed to close DB. err: %+v")
+		}
+	}()
 
 	var ds []cvemodels.CveDetail
 	if cnf.IsFetchViaHTTP() {
@@ -377,7 +381,11 @@ func DetectCpeURIsCves(r *models.ScanResult, cpeURIs []string, cnf config.GoCveD
 	if err != nil {
 		return err
 	}
-	defer client.closeDB()
+	defer func() {
+		if err := client.closeDB(); err != nil {
+			logging.Log.Errorf("Failed to close DB. err: %+v")
+		}
+	}()
 
 	nCVEs := 0
 	for _, name := range cpeURIs {

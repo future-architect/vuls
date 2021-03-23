@@ -36,7 +36,11 @@ func (o Alpine) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 		if err != nil {
 			return 0, err
 		}
-		defer func() { _ = driver.CloseDB() }()
+		defer func() {
+			if err := driver.CloseDB(); err != nil {
+				logging.Log.Errorf("Failed to close DB. err: %+v")
+			}
+		}()
 
 		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
 			return 0, err

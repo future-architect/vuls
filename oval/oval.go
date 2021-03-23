@@ -39,7 +39,11 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err er
 		if err != nil {
 			return false, err
 		}
-		defer func() { _ = driver.CloseDB() }()
+		defer func() {
+			if err := driver.CloseDB(); err != nil {
+				logging.Log.Errorf("Failed to close DB. err: %+v")
+			}
+		}()
 
 		count, err := driver.CountDefs(ovalFamily, release)
 		if err != nil {
@@ -74,7 +78,11 @@ func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 		if err != nil {
 			return false, err
 		}
-		defer func() { _ = driver.CloseDB() }()
+		defer func() {
+			if err := driver.CloseDB(); err != nil {
+				logging.Log.Errorf("Failed to close DB. err: %+v")
+			}
+		}()
 		lastModified = driver.GetLastModified(ovalFamily, release)
 	} else {
 		url, _ := util.URLPathJoin(config.Conf.OvalDict.URL, "lastmodified", ovalFamily, release)

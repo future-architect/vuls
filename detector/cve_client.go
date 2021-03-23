@@ -37,13 +37,14 @@ func newGoCveDictClient(cnf config.VulnDictInterface, o logging.LogOpts) (*goCve
 	return &goCveDictClient{cnf: cnf, driver: driver}, nil
 }
 
-func (api goCveDictClient) closeDB() {
+func (api goCveDictClient) closeDB() error {
 	if api.driver == nil {
-		return
+		return nil
 	}
 	if err := api.driver.CloseDB(); err != nil {
-		logging.Log.Errorf("Failed to close DB: %+v", err)
+		return xerrors.Errorf("Failed to close DB: %+v", err)
 	}
+	return nil
 }
 
 func (api goCveDictClient) fetchCveDetails(cveIDs []string) (cveDetails []cvemodels.CveDetail, err error) {

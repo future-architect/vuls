@@ -4,6 +4,7 @@ package detector
 
 import (
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	metasploitdb "github.com/takuzoo3868/go-msfdb/db"
 	metasploitmodels "github.com/takuzoo3868/go-msfdb/models"
@@ -19,7 +20,11 @@ func FillWithMetasploit(r *models.ScanResult, cnf config.MetasploitConf) (nMetas
 	} else if err != nil {
 		return 0, err
 	}
-	//TODO defer driver.Close()
+	defer func() {
+		if err := driver.CloseDB(); err != nil {
+			logging.Log.Errorf("Failed to close DB. err: %+v")
+		}
+	}()
 
 	for cveID, vuln := range r.ScannedCves {
 		if cveID == "" {

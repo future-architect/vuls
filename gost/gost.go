@@ -4,6 +4,7 @@ package gost
 
 import (
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/knqyf263/gost/db"
 	"golang.org/x/xerrors"
@@ -35,7 +36,11 @@ func FillCVEsWithRedHat(r *models.ScanResult, cnf config.GostConf) error {
 	} else if err != nil {
 		return err
 	}
-	//TODO closeDB
+	defer func() {
+		if err := db.CloseDB(); err != nil {
+			logging.Log.Errorf("Failed to close DB. err: %+v")
+		}
+	}()
 	return RedHat{Base{DBDriver{DB: db, Cnf: &cnf}}}.fillCvesWithRedHatAPI(r)
 }
 
