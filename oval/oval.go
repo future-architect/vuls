@@ -49,7 +49,7 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err er
 		if err != nil {
 			return false, xerrors.Errorf("Failed to count OVAL defs: %s, %s, %w", ovalFamily, release, err)
 		}
-		logging.Log.Infof("OVAL %s %s is fresh. defs: %d", osFamily, release, count)
+		logging.Log.Infof("OVAL %s %s found. defs: %d", osFamily, release, count)
 		return 0 < count, nil
 	}
 

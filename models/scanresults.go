@@ -56,7 +56,7 @@ type ScanResult struct {
 	Config            struct {
 		Scan   config.Config `json:"scan"`
 		Report config.Config `json:"report"`
-	} `json:"constant"`
+	} `json:"config"`
 }
 
 // Container has Container information

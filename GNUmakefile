@@ -80,3 +80,33 @@ build-trivy-to-vuls: pretest fmt
 # future-vuls
 build-future-vuls: pretest fmt
 	$(GO) build -o future-vuls contrib/future-vuls/cmd/*.go
+
+
+BASE_DIR := '${PWD}/integration/results'
+NOW=$(shell date --iso-8601=seconds)
+NOW_JSON_DIR := '${BASE_DIR}/$(NOW)'
+ONE_SEC=$(shell date -d '+1 second' --iso-8601=seconds)
+ONE_SEC_JSON_DIR := '${BASE_DIR}/$(ONE_SEC)'
+
+int:
+	#cd /home/ubuntu/vulsctl/docker; ./update-all.sh
+	mkdir -p ${NOW_JSON_DIR}
+	cp integration/data/*.json ${NOW_JSON_DIR}
+	./vuls.old report --quiet --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml 
+	mkdir -p ${ONE_SEC_JSON_DIR}
+	cp integration/data/*.json ${ONE_SEC_JSON_DIR}
+	./vuls report --quiet --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml 
+	diff ${NOW_JSON_DIR} ${ONE_SEC_JSON_DIR}
+
+
+int-redis:
+	#export DOCKER_NETWORK=redis-nw
+	#cd /home/ubuntu/vulsctl/docker; ./update-all.sh --dbtype redis --dbpath "redis://redis/0"
+	#unset DOCKER_NETWORK
+	mkdir -p ${NOW_JSON_DIR}
+	cp integration/data/*.json ${NOW_JSON_DIR}
+	./vuls.old report --quiet --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
+	mkdir -p ${ONE_SEC_JSON_DIR}
+	cp integration/data/*.json ${ONE_SEC_JSON_DIR}
+	./vuls report --quiet --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
+	diff ${NOW_JSON_DIR} ${ONE_SEC_JSON_DIR}
