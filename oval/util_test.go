@@ -1281,3 +1281,58 @@ func Test_lessThan(t *testing.T) {
 		})
 	}
 }
+
+func Test_ovalResult_Sort(t *testing.T) {
+	type fields struct {
+		entries []defPacks
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   fields
+	}{
+		{
+			name: "already sorted",
+			fields: fields{
+				entries: []defPacks{
+					{def: ovalmodels.Definition{ID: 0}},
+					{def: ovalmodels.Definition{ID: 1}},
+				},
+			},
+			want: fields{
+				entries: []defPacks{
+					{def: ovalmodels.Definition{ID: 0}},
+					{def: ovalmodels.Definition{ID: 1}},
+				},
+			},
+		},
+		{
+			name: "sort",
+			fields: fields{
+				entries: []defPacks{
+					{def: ovalmodels.Definition{ID: 1}},
+					{def: ovalmodels.Definition{ID: 0}},
+				},
+			},
+			want: fields{
+				entries: []defPacks{
+					{def: ovalmodels.Definition{ID: 0}},
+					{def: ovalmodels.Definition{ID: 1}},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := &ovalResult{
+				entries: tt.fields.entries,
+			}
+			o.Sort()
+
+			if !reflect.DeepEqual(o.entries, tt.want.entries) {
+				t.Errorf("act %+v, want %+v", o.entries, tt.want.entries)
+			}
+
+		})
+	}
+}

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"regexp"
+	"sort"
 	"time"
 
 	"github.com/cenkalti/backoff"
@@ -70,6 +71,12 @@ func (e *ovalResult) upsert(def ovalmodels.Definition, packName string, fstat fi
 	})
 
 	return false
+}
+
+func (e *ovalResult) Sort() {
+	sort.SliceStable(e.entries, func(i, j int) bool {
+		return e.entries[i].def.DefinitionID < e.entries[j].def.DefinitionID
+	})
 }
 
 type request struct {

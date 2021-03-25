@@ -126,6 +126,10 @@ func TestScanResult_Sort(t *testing.T) {
 							PackageFixStatus{Name: "pkgA"},
 							PackageFixStatus{Name: "pkgB"},
 						},
+						DistroAdvisories: []DistroAdvisory{
+							{AdvisoryID: "adv-1"},
+							{AdvisoryID: "adv-2"},
+						},
 					},
 				},
 			},
@@ -148,6 +152,10 @@ func TestScanResult_Sort(t *testing.T) {
 						AffectedPackages: PackageFixStatuses{
 							PackageFixStatus{Name: "pkgA"},
 							PackageFixStatus{Name: "pkgB"},
+						},
+						DistroAdvisories: []DistroAdvisory{
+							{AdvisoryID: "adv-1"},
+							{AdvisoryID: "adv-2"},
 						},
 					},
 				},
@@ -175,6 +183,10 @@ func TestScanResult_Sort(t *testing.T) {
 							PackageFixStatus{Name: "pkgB"},
 							PackageFixStatus{Name: "pkgA"},
 						},
+						DistroAdvisories: []DistroAdvisory{
+							{AdvisoryID: "adv-2"},
+							{AdvisoryID: "adv-1"},
+						},
 					},
 				},
 			},
@@ -197,6 +209,10 @@ func TestScanResult_Sort(t *testing.T) {
 						AffectedPackages: PackageFixStatuses{
 							PackageFixStatus{Name: "pkgA"},
 							PackageFixStatus{Name: "pkgB"},
+						},
+						DistroAdvisories: []DistroAdvisory{
+							{AdvisoryID: "adv-1"},
+							{AdvisoryID: "adv-2"},
 						},
 					},
 				},

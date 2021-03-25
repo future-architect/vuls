@@ -42,6 +42,7 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 		}
 	}
 
+	relatedDefs.Sort()
 	for _, defPacks := range relatedDefs.entries {
 		nCVEs += o.update(r, defPacks)
 	}
@@ -101,7 +102,7 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 		ovalContent := *o.convertToModel(cve.CveID, &defPacks.def)
 		vinfo, ok := r.ScannedCves[cve.CveID]
 		if !ok {
-			logging.Log.Debugf("%s is newly detected by OVAL", cve.CveID)
+			logging.Log.Debugf("%s is newly detected by OVAL: DefID: %s", cve.CveID, defPacks.def.DefinitionID)
 			vinfo = models.VulnInfo{
 				CveID:       cve.CveID,
 				Confidences: models.Confidences{models.OvalMatch},
@@ -112,13 +113,12 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 			cveContents := vinfo.CveContents
 			if v, ok := vinfo.CveContents[ctype]; ok {
 				if v.LastModified.After(ovalContent.LastModified) {
-					logging.Log.Debugf("%s, OvalID: %d ignored: ",
-						cve.CveID, defPacks.def.ID)
+					logging.Log.Debugf("%s ignored. DefID: %s ", cve.CveID, defPacks.def.DefinitionID)
 				} else {
-					logging.Log.Debugf("%s OVAL will be overwritten", cve.CveID)
+					logging.Log.Debugf("%s OVAL will be overwritten. DefID: %s", cve.CveID, defPacks.def.DefinitionID)
 				}
 			} else {
-				logging.Log.Debugf("%s also detected by OVAL", cve.CveID)
+				logging.Log.Debugf("%s also detected by OVAL. DefID: %s", cve.CveID, defPacks.def.DefinitionID)
 				cveContents = models.CveContents{}
 			}
 
