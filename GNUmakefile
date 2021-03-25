@@ -95,7 +95,7 @@ int:
 	./vuls.old report --quiet --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml 
 	mkdir -p ${ONE_SEC_JSON_DIR}
 	cp integration/data/*.json ${ONE_SEC_JSON_DIR}
-	./vuls report --quiet --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml 
+	./vuls.new report --quiet --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml 
 	diff ${NOW_JSON_DIR} ${ONE_SEC_JSON_DIR}
 
 
@@ -108,5 +108,5 @@ int-redis:
 	./vuls.old report --quiet --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
 	mkdir -p ${ONE_SEC_JSON_DIR}
 	cp integration/data/*.json ${ONE_SEC_JSON_DIR}
-	./vuls report --quiet --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
+	./vuls.new report --quiet --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
 	diff ${NOW_JSON_DIR} ${ONE_SEC_JSON_DIR}

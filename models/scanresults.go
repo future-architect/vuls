@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -371,6 +372,25 @@ func (r *ScanResult) CheckEOL() {
 		r.Warnings = append(r.Warnings,
 			fmt.Sprintf("Standard OS support will be end in 3 months. EOL date: %s",
 				eol.StandardSupportUntil.Format("2006-01-02")))
+	}
+}
+
+func (r *ScanResult) SortForJSONOutput() {
+	for k, v := range r.Packages {
+		sort.SliceStable(v.AffectedProcs, func(i, j int) bool {
+			return v.AffectedProcs[i].PID < v.AffectedProcs[j].PID
+		})
+		sort.SliceStable(v.NeedRestartProcs, func(i, j int) bool {
+			return v.NeedRestartProcs[i].PID < v.NeedRestartProcs[j].PID
+		})
+		r.Packages[k] = v
+	}
+
+	for k, v := range r.ScannedCves {
+		sort.SliceStable(v.AffectedPackages, func(i, j int) bool {
+			return v.AffectedPackages[i].Name < v.AffectedPackages[j].Name
+		})
+		r.ScannedCves[k] = v
 	}
 }
 

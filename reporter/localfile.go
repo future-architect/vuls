@@ -35,8 +35,9 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 	}
 
 	for _, r := range rs {
-		path := filepath.Join(w.CurrentDir, r.ReportFileName())
+		r.SortForJSONOutput()
 
+		path := filepath.Join(w.CurrentDir, r.ReportFileName())
 		if w.FormatJSON {
 			p := path + ".json"
 			if w.DiffPlus || w.DiffMinus {
