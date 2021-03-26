@@ -102,10 +102,10 @@ int:
 	#cd /home/ubuntu/vulsctl/docker; ./update-all.sh
 	mkdir -p ${NOW_JSON_DIR}
 	cp integration/data/*.json ${NOW_JSON_DIR}
-	./vuls.old report --quiet --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml 
+	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml 
 	mkdir -p ${ONE_SEC_JSON_DIR}
 	cp integration/data/*.json ${ONE_SEC_JSON_DIR}
-	./vuls.new report --quiet --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml 
+	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml 
 	diff ${NOW_JSON_DIR} ${ONE_SEC_JSON_DIR}
 
 
@@ -115,12 +115,20 @@ int-redis:
 	#unset DOCKER_NETWORK
 	mkdir -p ${NOW_JSON_DIR}
 	cp integration/data/*.json ${NOW_JSON_DIR}
-	./vuls.old report --quiet --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
+	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
 	mkdir -p ${ONE_SEC_JSON_DIR}
 	cp integration/data/*.json ${ONE_SEC_JSON_DIR}
-	./vuls.new report --quiet --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
+	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
 	diff ${NOW_JSON_DIR} ${ONE_SEC_JSON_DIR}
 
+int-rdb-redis:
+	mkdir -p ${NOW_JSON_DIR}
+	cp integration/data/*.json ${NOW_JSON_DIR}
+	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml 
+	mkdir -p ${ONE_SEC_JSON_DIR}
+	cp integration/data/*.json ${ONE_SEC_JSON_DIR}
+	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
+	diff ${NOW_JSON_DIR} ${ONE_SEC_JSON_DIR}
 
 head= $(shell git rev-parse HEAD)
 prev= $(shell git rev-parse HEAD^)
@@ -141,11 +149,14 @@ build-int:
 	git checkout ${branch}
 	git stash apply stash@\{0\}
 
-	# buld working tree
+	# working tree
 	make build
 
-	# for integration testing, 
+	# for integration testing, vuls.new and vuls.old needed.
+	# ex)
 	# $ ln -s ./vuls ./vuls.new
+	# $ ln -s ./vuls.${head} ./vuls.old
+	# or 
 	# $ ln -s ./vuls.${prev} ./vuls.old
 	# $ make int 
 	# $ make int-redis
