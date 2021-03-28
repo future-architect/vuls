@@ -1,22 +1,22 @@
-[cveDict]
-  Type = "redis"
-  Url = "redis://127.0.0.1/0"
-
 [ovalDict]
   Type = "redis"
-  Url = "redis://127.0.0.1/0"
+  Url = "redis://127.0.0.1/1"
 
 [gost]
   Type = "redis"
-  Url = "redis://127.0.0.1/0"
+  Url = "redis://127.0.0.1/2"
+
+[cveDict]
+  Type = "redis"
+  Url = "redis://127.0.0.1/3"
 
 [exploit]
   Type = "redis"
-  Url = "redis://127.0.0.1/0"
+  Url = "redis://127.0.0.1/4"
 
 [metasploit]
   Type = "redis"
-  Url = "redis://127.0.0.1/0"
+  Url = "redis://127.0.0.1/5"
 
 [default]
 

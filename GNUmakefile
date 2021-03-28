@@ -83,15 +83,6 @@ build-future-vuls: pretest fmt
 
 
 # integration-test
-# $ git clone git@github.com:vulsio/vulsctl.git
-# $ cd vulsctl/docker
-# $ ./update-all.sh
-# $ cd /path/to/vuls
-# $ vim integration/config.toml
-# $ ln -s vuls vuls.new
-# $ ln -s oldvuls vuls.old
-# $ make int
-# $ make int-redis
 BASE_DIR := '${PWD}/integration/results'
 NOW=$(shell date --iso-8601=seconds)
 NOW_JSON_DIR := '${BASE_DIR}/$(NOW)'
@@ -99,26 +90,44 @@ ONE_SEC=$(shell date -d '+1 second' --iso-8601=seconds)
 ONE_SEC_JSON_DIR := '${BASE_DIR}/$(ONE_SEC)'
 
 int:
-	#cd /home/ubuntu/vulsctl/docker; ./update-all.sh
+	# git clone git@github.com:vulsio/vulsctl.git
+	# cd vulsctl/docker
+	# ./update-all.sh
+	# cd /path/to/vuls
+	# vim integration/int-config.toml
+	# ln -s vuls vuls.new
+	# ln -s oldvuls vuls.old
+	# make int
+    # (ex. test 10 times: for i in `seq 10`; do make int ARGS=-quiet ; done)
 	mkdir -p ${NOW_JSON_DIR}
 	cp integration/data/*.json ${NOW_JSON_DIR}
-	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml 
+	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml $(ARGS)
 	mkdir -p ${ONE_SEC_JSON_DIR}
 	cp integration/data/*.json ${ONE_SEC_JSON_DIR}
-	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml 
+	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml  $(ARGS)
+	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
+	find ${ONE_SEC_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
 	diff ${NOW_JSON_DIR} ${ONE_SEC_JSON_DIR}
 
-
 int-redis:
-	#export DOCKER_NETWORK=redis-nw
-	#cd /home/ubuntu/vulsctl/docker; ./update-all.sh --dbtype redis --dbpath "redis://redis/0"
-	#unset DOCKER_NETWORK
+	# docker network create redis-nw
+    # docker run --name redis -d --network redis-nw -p 127.0.0.1:6379:6379 redis
+	# git clone git@github.com:vulsio/vulsctl.git
+	# cd vulsctl/docker
+	# ./update-all-redis.sh
+	# (or export DOCKER_NETWORK=redis-nw; cd /home/ubuntu/vulsctl/docker; ./update-all.sh --dbtype redis --dbpath "redis://redis/0")
+	# vim integration/int-redis-config.toml
+	# ln -s vuls vuls.new
+	# ln -s oldvuls vuls.old
+	# make int-redis
 	mkdir -p ${NOW_JSON_DIR}
 	cp integration/data/*.json ${NOW_JSON_DIR}
 	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
 	mkdir -p ${ONE_SEC_JSON_DIR}
 	cp integration/data/*.json ${ONE_SEC_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
+	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
+	find ${ONE_SEC_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
 	diff ${NOW_JSON_DIR} ${ONE_SEC_JSON_DIR}
 
 int-rdb-redis:
@@ -128,6 +137,8 @@ int-rdb-redis:
 	mkdir -p ${ONE_SEC_JSON_DIR}
 	cp integration/data/*.json ${ONE_SEC_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
+	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
+	find ${ONE_SEC_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
 	diff ${NOW_JSON_DIR} ${ONE_SEC_JSON_DIR}
 
 head= $(shell git rev-parse HEAD)

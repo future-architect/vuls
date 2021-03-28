@@ -1295,14 +1295,14 @@ func Test_ovalResult_Sort(t *testing.T) {
 			name: "already sorted",
 			fields: fields{
 				entries: []defPacks{
-					{def: ovalmodels.Definition{ID: 0}},
-					{def: ovalmodels.Definition{ID: 1}},
+					{def: ovalmodels.Definition{DefinitionID: "0"}},
+					{def: ovalmodels.Definition{DefinitionID: "1"}},
 				},
 			},
 			want: fields{
 				entries: []defPacks{
-					{def: ovalmodels.Definition{ID: 0}},
-					{def: ovalmodels.Definition{ID: 1}},
+					{def: ovalmodels.Definition{DefinitionID: "0"}},
+					{def: ovalmodels.Definition{DefinitionID: "1"}},
 				},
 			},
 		},
@@ -1310,14 +1310,14 @@ func Test_ovalResult_Sort(t *testing.T) {
 			name: "sort",
 			fields: fields{
 				entries: []defPacks{
-					{def: ovalmodels.Definition{ID: 1}},
-					{def: ovalmodels.Definition{ID: 0}},
+					{def: ovalmodels.Definition{DefinitionID: "1"}},
+					{def: ovalmodels.Definition{DefinitionID: "0"}},
 				},
 			},
 			want: fields{
 				entries: []defPacks{
-					{def: ovalmodels.Definition{ID: 0}},
-					{def: ovalmodels.Definition{ID: 1}},
+					{def: ovalmodels.Definition{DefinitionID: "0"}},
+					{def: ovalmodels.Definition{DefinitionID: "1"}},
 				},
 			},
 		},
@@ -1330,9 +1330,8 @@ func Test_ovalResult_Sort(t *testing.T) {
 			o.Sort()
 
 			if !reflect.DeepEqual(o.entries, tt.want.entries) {
-				t.Errorf("act %+v, want %+v", o.entries, tt.want.entries)
+				t.Errorf("act %#v, want %#v", o.entries, tt.want.entries)
 			}
-
 		})
 	}
 }
