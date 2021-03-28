@@ -57,16 +57,13 @@ func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCV
 	}
 
 	// Debian Security Tracker does not support Package for Raspbian, so skip it.
-	var scanResult models.ScanResult
-	if r.Family != constant.Raspbian {
-		scanResult = *r
-	} else {
-		scanResult = r.RemoveRaspbianPackFromResult()
+	if r.Family == constant.Raspbian {
+		r = r.RemoveRaspbianPackFromResult()
 	}
 
 	packCvesList := []packCves{}
 	if config.Conf.Gost.IsFetchViaHTTP() {
-		url, _ := util.URLPathJoin(config.Conf.Gost.URL, "debian", major(scanResult.Release), "pkgs")
+		url, _ := util.URLPathJoin(config.Conf.Gost.URL, "debian", major(r.Release), "pkgs")
 		responses, err := getAllUnfixedCvesViaHTTP(r, url)
 		if err != nil {
 			return 0, err
@@ -91,8 +88,8 @@ func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCV
 		if driver == nil {
 			return 0, nil
 		}
-		for _, pack := range scanResult.Packages {
-			cveDebs := driver.GetUnfixedCvesDebian(major(scanResult.Release), pack.Name)
+		for _, pack := range r.Packages {
+			cveDebs := driver.GetUnfixedCvesDebian(major(r.Release), pack.Name)
 			cves := []models.CveContent{}
 			for _, cveDeb := range cveDebs {
 				cves = append(cves, *deb.ConvertToModel(&cveDeb))
@@ -105,8 +102,8 @@ func (deb Debian) DetectUnfixed(driver db.DB, r *models.ScanResult, _ bool) (nCV
 		}
 
 		// SrcPack
-		for _, pack := range scanResult.SrcPackages {
-			cveDebs := driver.GetUnfixedCvesDebian(major(scanResult.Release), pack.Name)
+		for _, pack := range r.SrcPackages {
+			cveDebs := driver.GetUnfixedCvesDebian(major(r.Release), pack.Name)
 			cves := []models.CveContent{}
 			for _, cveDeb := range cveDebs {
 				cves = append(cves, *deb.ConvertToModel(&cveDeb))
