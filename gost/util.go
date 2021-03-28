@@ -83,7 +83,10 @@ type request struct {
 
 func getAllUnfixedCvesViaHTTP(r *models.ScanResult, urlPrefix string) (
 	responses []response, err error) {
+	return getCvesWithFixStateViaHTTP(r, urlPrefix, "unfixed-cves")
+}
 
+func getCvesWithFixStateViaHTTP(r *models.ScanResult, urlPrefix, fixState string) (responses []response, err error) {
 	nReq := len(r.Packages) + len(r.SrcPackages)
 	reqChan := make(chan request, nReq)
 	resChan := make(chan response, nReq)
@@ -118,7 +121,7 @@ func getAllUnfixedCvesViaHTTP(r *models.ScanResult, urlPrefix string) (
 				url, err := util.URLPathJoin(
 					urlPrefix,
 					req.packName,
-					"unfixed-cves",
+					fixState,
 				)
 				if err != nil {
 					errChan <- err
