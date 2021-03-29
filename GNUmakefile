@@ -86,8 +86,8 @@ build-future-vuls: pretest fmt
 BASE_DIR := '${PWD}/integration/results'
 NOW=$(shell date --iso-8601=seconds)
 NOW_JSON_DIR := '${BASE_DIR}/$(NOW)'
-ONE_SEC=$(shell date -d '+1 second' --iso-8601=seconds)
-ONE_SEC_JSON_DIR := '${BASE_DIR}/$(ONE_SEC)'
+ONE_SEC_AFTER=$(shell date -d '+1 second' --iso-8601=seconds)
+ONE_SEC_AFTER_JSON_DIR := '${BASE_DIR}/$(ONE_SEC_AFTER)'
 
 int:
 	# git clone git@github.com:vulsio/vulsctl.git
@@ -102,12 +102,13 @@ int:
 	mkdir -p ${NOW_JSON_DIR}
 	cp integration/data/*.json ${NOW_JSON_DIR}
 	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml $(ARGS)
-	mkdir -p ${ONE_SEC_JSON_DIR}
-	cp integration/data/*.json ${ONE_SEC_JSON_DIR}
+	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
+	cp integration/data/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml  $(ARGS)
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
-	find ${ONE_SEC_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
-	diff ${NOW_JSON_DIR} ${ONE_SEC_JSON_DIR}
+	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
+	diff ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
+	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
 
 int-redis:
 	# docker network create redis-nw
@@ -123,23 +124,25 @@ int-redis:
 	mkdir -p ${NOW_JSON_DIR}
 	cp integration/data/*.json ${NOW_JSON_DIR}
 	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
-	mkdir -p ${ONE_SEC_JSON_DIR}
-	cp integration/data/*.json ${ONE_SEC_JSON_DIR}
+	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
+	cp integration/data/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
-	find ${ONE_SEC_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
-	diff ${NOW_JSON_DIR} ${ONE_SEC_JSON_DIR}
+	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
+	diff ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
+	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
 
 int-rdb-redis:
 	mkdir -p ${NOW_JSON_DIR}
 	cp integration/data/*.json ${NOW_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml 
-	mkdir -p ${ONE_SEC_JSON_DIR}
-	cp integration/data/*.json ${ONE_SEC_JSON_DIR}
+	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
+	cp integration/data/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
-	find ${ONE_SEC_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
-	diff ${NOW_JSON_DIR} ${ONE_SEC_JSON_DIR}
+	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
+	diff ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
+	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
 
 head= $(shell git rev-parse HEAD)
 prev= $(shell git rev-parse HEAD^)
