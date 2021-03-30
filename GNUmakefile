@@ -108,7 +108,7 @@ diff:
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml  $(ARGS)
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
-	diff ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
+	diff -c ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
 	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
 
 diff-redis:
@@ -131,7 +131,7 @@ diff-redis:
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
-	diff ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
+	diff -c ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
 	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
 
 diff-rdb-redis:
@@ -151,7 +151,7 @@ diff-rdb-redis:
 	# remove "SQLite3Path": line
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/"SQLite3Path":/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/"SQLite3Path":/d' {} \;
-	diff ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
+	diff -c ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
 	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
 	for jsonfile in ${NOW_JSON_DIR}/*.json ;  do \
 		echo $$jsonfile; cat $$jsonfile | jq ".scannedCves | length" ; \
