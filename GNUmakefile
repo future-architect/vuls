@@ -99,6 +99,7 @@ int:
 	# ln -s oldvuls vuls.old
 	# make int
     # (ex. test 10 times: for i in `seq 10`; do make int ARGS=-quiet ; done)
+	mv ${BASE_DIR}/* /tmp
 	mkdir -p ${NOW_JSON_DIR}
 	cp integration/data/*.json ${NOW_JSON_DIR}
 	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml $(ARGS)
@@ -121,6 +122,7 @@ int-redis:
 	# ln -s vuls vuls.new
 	# ln -s oldvuls vuls.old
 	# make int-redis
+	mv ${BASE_DIR}/* /tmp
 	mkdir -p ${NOW_JSON_DIR}
 	cp integration/data/*.json ${NOW_JSON_DIR}
 	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
@@ -133,16 +135,31 @@ int-redis:
 	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
 
 int-rdb-redis:
+	mv ${BASE_DIR}/* /tmp
 	mkdir -p ${NOW_JSON_DIR}
 	cp integration/data/*.json ${NOW_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml 
 	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
 	cp integration/data/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
+	# remove reportedAt line
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
+	# remove "Type": line
+	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/"Type":/d' {} \;
+	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/"Type":/d' {} \;
+	# remove "SQLite3Path": line
+	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/"SQLite3Path":/d' {} \;
+	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/"SQLite3Path":/d' {} \;
 	diff ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
 	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
+	for jsonfile in ${NOW_JSON_DIR}/*.json ;  do \
+		echo $$jsonfile; cat $$jsonfile | jq ".scannedCves | length" ; \
+	done
+	for jsonfile in ${ONE_SEC_AFTER_JSON_DIR}/*.json ;  do \
+		echo $$jsonfile; cat $$jsonfile | jq ".scannedCves | length" ; \
+	done
+
 
 head= $(shell git rev-parse HEAD)
 prev= $(shell git rev-parse HEAD^)
