@@ -89,7 +89,7 @@ NOW_JSON_DIR := '${BASE_DIR}/$(NOW)'
 ONE_SEC_AFTER=$(shell date -d '+1 second' --iso-8601=seconds)
 ONE_SEC_AFTER_JSON_DIR := '${BASE_DIR}/$(ONE_SEC_AFTER)'
 
-int:
+diff:
 	# git clone git@github.com:vulsio/vulsctl.git
 	# cd vulsctl/docker
 	# ./update-all.sh
@@ -111,7 +111,7 @@ int:
 	diff ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
 	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
 
-int-redis:
+diff-redis:
 	# docker network create redis-nw
     # docker run --name redis -d --network redis-nw -p 127.0.0.1:6379:6379 redis
 	# git clone git@github.com:vulsio/vulsctl.git
@@ -134,7 +134,7 @@ int-redis:
 	diff ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
 	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
 
-int-rdb-redis:
+diff-rdb-redis:
 	mv ${BASE_DIR}/* /tmp
 	mkdir -p ${NOW_JSON_DIR}
 	cp integration/data/*.json ${NOW_JSON_DIR}
