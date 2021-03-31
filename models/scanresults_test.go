@@ -130,6 +130,10 @@ func TestScanResult_Sort(t *testing.T) {
 							{AdvisoryID: "adv-1"},
 							{AdvisoryID: "adv-2"},
 						},
+						Exploits: []Exploit{
+							{ID: "a"},
+							{ID: "b"},
+						},
 					},
 				},
 			},
@@ -156,6 +160,10 @@ func TestScanResult_Sort(t *testing.T) {
 						DistroAdvisories: []DistroAdvisory{
 							{AdvisoryID: "adv-1"},
 							{AdvisoryID: "adv-2"},
+						},
+						Exploits: []Exploit{
+							{ID: "a"},
+							{ID: "b"},
 						},
 					},
 				},
@@ -187,6 +195,10 @@ func TestScanResult_Sort(t *testing.T) {
 							{AdvisoryID: "adv-2"},
 							{AdvisoryID: "adv-1"},
 						},
+						Exploits: []Exploit{
+							{ID: "b"},
+							{ID: "a"},
+						},
 					},
 				},
 			},
@@ -213,6 +225,10 @@ func TestScanResult_Sort(t *testing.T) {
 						DistroAdvisories: []DistroAdvisory{
 							{AdvisoryID: "adv-1"},
 							{AdvisoryID: "adv-2"},
+						},
+						Exploits: []Exploit{
+							{ID: "a"},
+							{ID: "b"},
 						},
 					},
 				},

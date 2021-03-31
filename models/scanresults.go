@@ -393,6 +393,9 @@ func (r *ScanResult) SortForJSONOutput() {
 		sort.SliceStable(v.DistroAdvisories, func(i, j int) bool {
 			return v.DistroAdvisories[i].AdvisoryID < v.DistroAdvisories[j].AdvisoryID
 		})
+		sort.SliceStable(v.Exploits, func(i, j int) bool {
+			return v.Exploits[i].ID < v.Exploits[j].ID
+		})
 		r.ScannedCves[k] = v
 	}
 }
