@@ -175,10 +175,26 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 		Release: kernelRelease,
 		Version: kernelVersion,
 	}
-	return GetScanResultFromPkgList(serverName, distro, kernel, body)
+	installedPackages, srcPackages, err := ParseInstalledPkgs(distro, kernel, body)
+	if err != nil {
+		return models.ScanResult{}, err
+	}
+
+	return models.ScanResult{
+		ServerName: serverName,
+		Family:     family,
+		Release:    release,
+		RunningKernel: models.Kernel{
+			Release: kernelRelease,
+			Version: kernelVersion,
+		},
+		Packages:    installedPackages,
+		SrcPackages: srcPackages,
+		ScannedCves: models.VulnInfos{},
+	}, nil
 }
 
-func GetScanResultFromPkgList(serverName string, distro config.Distro, kernel models.Kernel, pkgList string) (result models.ScanResult, err error) {
+func ParseInstalledPkgs(distro config.Distro, kernel models.Kernel, pkgList string) (models.Packages, models.SrcPackages, error) {
 	base := base{
 		Distro: distro,
 		osPackages: osPackages{
@@ -208,26 +224,10 @@ func GetScanResultFromPkgList(serverName string, distro config.Distro, kernel mo
 			redhatBase: redhatBase{base: base},
 		}
 	default:
-		return models.ScanResult{}, xerrors.Errorf("Server mode for %s is not implemented yet", base.Distro.Family)
+		return models.Packages{}, models.SrcPackages{}, xerrors.Errorf("Server mode for %s is not implemented yet", base.Distro.Family)
 	}
 
-	installedPackages, srcPackages, err := osType.parseInstalledPackages(pkgList)
-	if err != nil {
-		return models.ScanResult{}, err
-	}
-
-	return models.ScanResult{
-		ServerName: serverName,
-		Family:     distro.Family,
-		Release:    distro.Release,
-		RunningKernel: models.Kernel{
-			Release: kernel.Release,
-			Version: kernel.Version,
-		},
-		Packages:    installedPackages,
-		SrcPackages: srcPackages,
-		ScannedCves: models.VulnInfos{},
-	}, nil
+	return osType.parseInstalledPackages(pkgList)
 }
 
 // initServers detect the kind of OS distribution of target servers
