@@ -479,7 +479,7 @@ No CVE-IDs are found in updatable packages.
 		}
 
 		for _, alert := range vuln.AlertDict.En {
-			data = append(data, []string{"USCERT Alert", alert.URL})
+			data = append(data, []string{"US-CERT Alert", alert.URL})
 		}
 
 		// for _, rr := range vuln.CveContents.References(r.Family) {

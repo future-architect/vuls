@@ -396,6 +396,23 @@ func (r *ScanResult) SortForJSONOutput() {
 		sort.SliceStable(v.Exploits, func(i, j int) bool {
 			return v.Exploits[i].ID < v.Exploits[j].ID
 		})
+		sort.SliceStable(v.Metasploits, func(i, j int) bool {
+			return v.Metasploits[i].Name < v.Metasploits[j].Name
+		})
+		for kk, vv := range v.CveContents {
+			sort.SliceStable(vv.References, func(i, j int) bool {
+				return vv.References[i].Link < vv.References[j].Link
+			})
+			v.CveContents[kk] = vv
+		}
+
+		sort.SliceStable(v.AlertDict.En, func(i, j int) bool {
+			return v.AlertDict.En[i].Title < v.AlertDict.En[j].Title
+		})
+		sort.SliceStable(v.AlertDict.Ja, func(i, j int) bool {
+			return v.AlertDict.Ja[i].Title < v.AlertDict.Ja[j].Title
+		})
+
 		r.ScannedCves[k] = v
 	}
 }

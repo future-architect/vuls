@@ -134,6 +134,34 @@ func TestScanResult_Sort(t *testing.T) {
 							{ID: "a"},
 							{ID: "b"},
 						},
+						Metasploits: []Metasploit{
+							{Name: "a"},
+							{Name: "b"},
+						},
+						CveContents: CveContents{
+							"nvd": CveContent{
+								References: References{
+									Reference{Link: "a"},
+									Reference{Link: "b"},
+								},
+							},
+							"jvn": CveContent{
+								References: References{
+									Reference{Link: "a"},
+									Reference{Link: "b"},
+								},
+							},
+						},
+						AlertDict: AlertDict{
+							En: []Alert{
+								{Title: "a"},
+								{Title: "b"},
+							},
+							Ja: []Alert{
+								{Title: "a"},
+								{Title: "b"},
+							},
+						},
 					},
 				},
 			},
@@ -164,6 +192,34 @@ func TestScanResult_Sort(t *testing.T) {
 						Exploits: []Exploit{
 							{ID: "a"},
 							{ID: "b"},
+						},
+						Metasploits: []Metasploit{
+							{Name: "a"},
+							{Name: "b"},
+						},
+						CveContents: CveContents{
+							"nvd": CveContent{
+								References: References{
+									Reference{Link: "a"},
+									Reference{Link: "b"},
+								},
+							},
+							"jvn": CveContent{
+								References: References{
+									Reference{Link: "a"},
+									Reference{Link: "b"},
+								},
+							},
+						},
+						AlertDict: AlertDict{
+							En: []Alert{
+								{Title: "a"},
+								{Title: "b"},
+							},
+							Ja: []Alert{
+								{Title: "a"},
+								{Title: "b"},
+							},
 						},
 					},
 				},
@@ -199,6 +255,34 @@ func TestScanResult_Sort(t *testing.T) {
 							{ID: "b"},
 							{ID: "a"},
 						},
+						Metasploits: []Metasploit{
+							{Name: "b"},
+							{Name: "a"},
+						},
+						CveContents: CveContents{
+							"nvd": CveContent{
+								References: References{
+									Reference{Link: "b"},
+									Reference{Link: "a"},
+								},
+							},
+							"jvn": CveContent{
+								References: References{
+									Reference{Link: "b"},
+									Reference{Link: "a"},
+								},
+							},
+						},
+						AlertDict: AlertDict{
+							En: []Alert{
+								{Title: "b"},
+								{Title: "a"},
+							},
+							Ja: []Alert{
+								{Title: "b"},
+								{Title: "a"},
+							},
+						},
 					},
 				},
 			},
@@ -229,6 +313,34 @@ func TestScanResult_Sort(t *testing.T) {
 						Exploits: []Exploit{
 							{ID: "a"},
 							{ID: "b"},
+						},
+						Metasploits: []Metasploit{
+							{Name: "a"},
+							{Name: "b"},
+						},
+						CveContents: CveContents{
+							"nvd": CveContent{
+								References: References{
+									Reference{Link: "a"},
+									Reference{Link: "b"},
+								},
+							},
+							"jvn": CveContent{
+								References: References{
+									Reference{Link: "a"},
+									Reference{Link: "b"},
+								},
+							},
+						},
+						AlertDict: AlertDict{
+							En: []Alert{
+								{Title: "a"},
+								{Title: "b"},
+							},
+							Ja: []Alert{
+								{Title: "a"},
+								{Title: "b"},
+							},
 						},
 					},
 				},

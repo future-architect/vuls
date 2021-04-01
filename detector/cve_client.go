@@ -136,8 +136,7 @@ func (api goCveDictClient) httpGet(key, url string, resChan chan<- response, err
 		return nil
 	}
 	notify := func(err error, t time.Duration) {
-		logging.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %+v",
-			t, err)
+		logging.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %+v", t, err)
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {

@@ -1,3 +1,7 @@
+[cveDict]
+Type = "redis"
+Url = "redis://127.0.0.1/3"
+
 [ovalDict]
   Type = "redis"
   Url = "redis://127.0.0.1/1"
@@ -5,10 +9,6 @@
 [gost]
   Type = "redis"
   Url = "redis://127.0.0.1/2"
-
-[cveDict]
-  Type = "redis"
-  Url = "redis://127.0.0.1/3"
 
 [exploit]
   Type = "redis"
@@ -21,3 +21,7 @@
 [default]
 
 [servers]
+
+[servers.rails]
+type = "pseudo"
+cpeNames       = [ "cpe:/a:rubyonrails:ruby_on_rails:3.0.1" ]

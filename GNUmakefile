@@ -164,7 +164,7 @@ diff-rdb-redis:
 head= $(shell git rev-parse HEAD)
 prev= $(shell git rev-parse HEAD^)
 branch=$(shell git rev-parse --abbrev-ref HEAD)
-build-int:
+build-integration:
 	git stash
 
 	# buld HEAD

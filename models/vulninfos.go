@@ -763,14 +763,10 @@ type AlertDict struct {
 
 // FormatSource returns which source has this alert
 func (a AlertDict) FormatSource() string {
-	s := []string{}
-	if len(a.En) != 0 {
-		s = append(s, "USCERT")
+	if len(a.En) != 0 || len(a.Ja) != 0 {
+		return "CERT"
 	}
-	if len(a.Ja) != 0 {
-		s = append(s, "JPCERT")
-	}
-	return strings.Join(s, "/")
+	return ""
 }
 
 // Confidences is a list of Confidence
