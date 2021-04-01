@@ -183,10 +183,14 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 		log: logging.Log,
 	}
 
+	return GetScanResultFromPkgList(serverName, base, body)
+}
+
+func GetScanResultFromPkgList(serverName string, base base, pkgList string) (result models.ScanResult, err error) {
 	var osType osTypeInterface
-	switch family {
+	switch base.Distro.Family {
 	case constant.Debian, constant.Ubuntu:
-		osType = &debian{base: base}
+		osType = &debian{base}
 	case constant.RedHat:
 		osType = &rhel{
 			redhatBase: redhatBase{base: base},
@@ -204,28 +208,26 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 			redhatBase: redhatBase{base: base},
 		}
 	default:
-		return models.ScanResult{}, xerrors.Errorf("Server mode for %s is not implemented yet", family)
+		return models.ScanResult{}, xerrors.Errorf("Server mode for %s is not implemented yet", base.Distro.Family)
 	}
 
-	installedPackages, srcPackages, err := osType.parseInstalledPackages(body)
+	installedPackages, srcPackages, err := osType.parseInstalledPackages(pkgList)
 	if err != nil {
 		return models.ScanResult{}, err
 	}
 
-	result := models.ScanResult{
+	return models.ScanResult{
 		ServerName: serverName,
-		Family:     family,
-		Release:    release,
+		Family:     base.Distro.Family,
+		Release:    base.Distro.Release,
 		RunningKernel: models.Kernel{
-			Release: kernelRelease,
-			Version: kernelVersion,
+			Release: base.Kernel.Release,
+			Version: base.Kernel.Version,
 		},
 		Packages:    installedPackages,
 		SrcPackages: srcPackages,
 		ScannedCves: models.VulnInfos{},
-	}
-
-	return result, nil
+	}, nil
 }
 
 // initServers detect the kind of OS distribution of target servers
