@@ -15,14 +15,16 @@ import (
 )
 
 // ChatWorkWriter send report to ChatWork
-type ChatWorkWriter struct{}
+type ChatWorkWriter struct {
+	Cnf   config.ChatWorkConf
+	Proxy string
+}
 
 func (w ChatWorkWriter) Write(rs ...models.ScanResult) (err error) {
-	conf := config.Conf.ChatWork
 
 	for _, r := range rs {
 		serverInfo := fmt.Sprintf("%s", r.ServerInfo())
-		if err = chatWorkpostMessage(conf.Room, conf.APIToken, serverInfo); err != nil {
+		if err = w.chatWorkpostMessage(serverInfo); err != nil {
 			return err
 		}
 
@@ -40,7 +42,7 @@ func (w ChatWorkWriter) Write(rs ...models.ScanResult) (err error) {
 				severity,
 				vinfo.Summaries(r.Lang, r.Family)[0].Value)
 
-			if err = chatWorkpostMessage(conf.Room, conf.APIToken, message); err != nil {
+			if err = w.chatWorkpostMessage(message); err != nil {
 				return err
 			}
 		}
@@ -49,8 +51,8 @@ func (w ChatWorkWriter) Write(rs ...models.ScanResult) (err error) {
 	return nil
 }
 
-func chatWorkpostMessage(room, token, message string) error {
-	uri := fmt.Sprintf("https://api.chatwork.com/v2/rooms/%s/messages=%s", room, token)
+func (w ChatWorkWriter) chatWorkpostMessage(message string) error {
+	uri := fmt.Sprintf("https://api.chatwork.com/v2/rooms/%s/messages=%s", w.Cnf.Room, w.Cnf.APIToken)
 	payload := url.Values{"body": {message}}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -59,10 +61,9 @@ func chatWorkpostMessage(room, token, message string) error {
 	if err != nil {
 		return err
 	}
-	req.Header.Add("X-ChatWorkToken", token)
+	req.Header.Add("X-ChatWorkToken", w.Cnf.APIToken)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
+	client, err := util.GetHTTPClient(w.Proxy)
 	if err != nil {
 		return err
 	}

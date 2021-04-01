@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
@@ -42,11 +41,9 @@ func isRunningKernel(pack models.Package, family string, kernel models.Kernel) (
 }
 
 // EnsureResultDir ensures the directory for scan results
-func EnsureResultDir(scannedAt time.Time) (currentDir string, err error) {
+func EnsureResultDir(resultsDir string, scannedAt time.Time) (currentDir string, err error) {
 	jsonDirName := scannedAt.Format(time.RFC3339)
-
-	resultsDir := config.Conf.ResultsDir
-	if len(resultsDir) == 0 {
+	if resultsDir == "" {
 		wd, _ := os.Getwd()
 		resultsDir = filepath.Join(wd, "results")
 	}

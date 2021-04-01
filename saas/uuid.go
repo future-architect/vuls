@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/hashicorp/go-uuid"
@@ -18,7 +18,7 @@ import (
 
 // EnsureUUIDs generate a new UUID of the scan target server if UUID is not assigned yet.
 // And then set the generated UUID to config.toml and scan results.
-func EnsureUUIDs(servers map[string]c.ServerInfo, path string, scanResults models.ScanResults) (err error) {
+func EnsureUUIDs(servers map[string]config.ServerInfo, path string, scanResults models.ScanResults) (err error) {
 	needsOverwrite, err := ensure(servers, path, scanResults, uuid.GenerateUUID)
 	if err != nil {
 		return xerrors.Errorf("Failed to ensure UUIDs. err: %w", err)
@@ -27,10 +27,10 @@ func EnsureUUIDs(servers map[string]c.ServerInfo, path string, scanResults model
 	if !needsOverwrite {
 		return
 	}
-	return writeToFile(c.Conf, path)
+	return writeToFile(config.Conf, path)
 }
 
-func ensure(servers map[string]c.ServerInfo, path string, scanResults models.ScanResults, generateFunc func() (string, error)) (needsOverwrite bool, err error) {
+func ensure(servers map[string]config.ServerInfo, path string, scanResults models.ScanResults, generateFunc func() (string, error)) (needsOverwrite bool, err error) {
 	for i, r := range scanResults {
 		serverInfo := servers[r.ServerName]
 		if serverInfo.UUIDs == nil {
@@ -96,7 +96,7 @@ func ensure(servers map[string]c.ServerInfo, path string, scanResults models.Sca
 	return needsOverwrite, nil
 }
 
-func writeToFile(cnf c.Config, path string) error {
+func writeToFile(cnf config.Config, path string) error {
 	for name, server := range cnf.Servers {
 		server = cleanForTOMLEncoding(server, cnf.Default)
 		cnf.Servers[name] = server
@@ -106,9 +106,9 @@ func writeToFile(cnf c.Config, path string) error {
 	}
 
 	c := struct {
-		Saas    *c.SaasConf             `toml:"saas"`
-		Default c.ServerInfo            `toml:"default"`
-		Servers map[string]c.ServerInfo `toml:"servers"`
+		Saas    *config.SaasConf             `toml:"saas"`
+		Default config.ServerInfo            `toml:"default"`
+		Servers map[string]config.ServerInfo `toml:"servers"`
 	}{
 		Saas:    &cnf.Saas,
 		Default: cnf.Default,
@@ -142,7 +142,7 @@ func writeToFile(cnf c.Config, path string) error {
 	return ioutil.WriteFile(realPath, []byte(str), 0600)
 }
 
-func cleanForTOMLEncoding(server c.ServerInfo, def c.ServerInfo) c.ServerInfo {
+func cleanForTOMLEncoding(server config.ServerInfo, def config.ServerInfo) config.ServerInfo {
 	if reflect.DeepEqual(server.Optional, def.Optional) {
 		server.Optional = nil
 	}

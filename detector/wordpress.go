@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/errof"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
@@ -50,7 +50,7 @@ type References struct {
 
 // DetectWordPressCves access to wpscan and fetch scurity alerts and then set to the given ScanResult.
 // https://wpscan.com/
-func detectWordPressCves(r *models.ScanResult, cnf *c.WpScanConf) (int, error) {
+func detectWordPressCves(r *models.ScanResult, cnf config.WpScanConf) (int, error) {
 	if len(r.WordPressPackages) == 0 {
 		return 0, nil
 	}
@@ -230,7 +230,7 @@ func httpRequest(url, token string) (string, error) {
 			fmt.Sprintf("Failed to access to wpscan.com. err: %s", err))
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Token token=%s", token))
-	client, err := util.GetHTTPClient(c.Conf.HTTPProxy)
+	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
 	if err != nil {
 		return "", err
 	}

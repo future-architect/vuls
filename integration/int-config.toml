@@ -1,0 +1,27 @@
+[cveDict]
+  Type = "sqlite3"
+  SQLite3Path = "/home/ubuntu/vulsctl/docker/cve.sqlite3"
+
+[ovalDict]
+  Type = "sqlite3"
+  SQLite3Path = "/home/ubuntu/vulsctl/docker/oval.sqlite3"
+
+[gost]
+  Type = "sqlite3"
+  SQLite3Path = "/home/ubuntu/vulsctl/docker/gost.sqlite3"
+
+[exploit]
+  Type = "sqlite3"
+  SQLite3Path = "/home/ubuntu/vulsctl/docker/go-exploitdb.sqlite3"
+
+[metasploit]
+  type = "sqlite3"
+  SQLite3Path = "/home/ubuntu/vulsctl/docker/go-msfdb.sqlite3"
+
+[default]
+
+[servers]
+
+[servers.rails]
+type = "pseudo"
+cpeNames       = [ "cpe:/a:rubyonrails:ruby_on_rails:3.0.1" ]

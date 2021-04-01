@@ -1,6 +1,7 @@
 package models
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/future-architect/vuls/config"
@@ -90,5 +91,276 @@ func TestIsDisplayUpdatableNum(t *testing.T) {
 		if tt.expected != act {
 			t.Errorf("[%d] expected %#v, actual %#v", i, tt.expected, act)
 		}
+	}
+}
+
+func TestScanResult_Sort(t *testing.T) {
+	type fields struct {
+		Packages    Packages
+		ScannedCves VulnInfos
+	}
+	tests := []struct {
+		name     string
+		fields   fields
+		expected fields
+	}{
+		{
+			name: "already asc",
+			fields: fields{
+				Packages: map[string]Package{
+					"pkgA": {
+						Name: "pkgA",
+						AffectedProcs: []AffectedProcess{
+							{PID: "1", Name: "procB"},
+							{PID: "2", Name: "procA"},
+						},
+						NeedRestartProcs: []NeedRestartProcess{
+							{PID: "1"},
+							{PID: "2"},
+						},
+					},
+				},
+				ScannedCves: VulnInfos{
+					"CVE-2014-3591": VulnInfo{
+						AffectedPackages: PackageFixStatuses{
+							PackageFixStatus{Name: "pkgA"},
+							PackageFixStatus{Name: "pkgB"},
+						},
+						DistroAdvisories: []DistroAdvisory{
+							{AdvisoryID: "adv-1"},
+							{AdvisoryID: "adv-2"},
+						},
+						Exploits: []Exploit{
+							{ID: "a"},
+							{ID: "b"},
+						},
+						Metasploits: []Metasploit{
+							{Name: "a"},
+							{Name: "b"},
+						},
+						CveContents: CveContents{
+							"nvd": CveContent{
+								References: References{
+									Reference{Link: "a"},
+									Reference{Link: "b"},
+								},
+							},
+							"jvn": CveContent{
+								References: References{
+									Reference{Link: "a"},
+									Reference{Link: "b"},
+								},
+							},
+						},
+						AlertDict: AlertDict{
+							En: []Alert{
+								{Title: "a"},
+								{Title: "b"},
+							},
+							Ja: []Alert{
+								{Title: "a"},
+								{Title: "b"},
+							},
+						},
+					},
+				},
+			},
+			expected: fields{
+				Packages: map[string]Package{
+					"pkgA": {
+						Name: "pkgA",
+						AffectedProcs: []AffectedProcess{
+							{PID: "1", Name: "procB"},
+							{PID: "2", Name: "procA"},
+						},
+						NeedRestartProcs: []NeedRestartProcess{
+							{PID: "1"},
+							{PID: "2"},
+						},
+					},
+				},
+				ScannedCves: VulnInfos{
+					"CVE-2014-3591": VulnInfo{
+						AffectedPackages: PackageFixStatuses{
+							PackageFixStatus{Name: "pkgA"},
+							PackageFixStatus{Name: "pkgB"},
+						},
+						DistroAdvisories: []DistroAdvisory{
+							{AdvisoryID: "adv-1"},
+							{AdvisoryID: "adv-2"},
+						},
+						Exploits: []Exploit{
+							{ID: "a"},
+							{ID: "b"},
+						},
+						Metasploits: []Metasploit{
+							{Name: "a"},
+							{Name: "b"},
+						},
+						CveContents: CveContents{
+							"nvd": CveContent{
+								References: References{
+									Reference{Link: "a"},
+									Reference{Link: "b"},
+								},
+							},
+							"jvn": CveContent{
+								References: References{
+									Reference{Link: "a"},
+									Reference{Link: "b"},
+								},
+							},
+						},
+						AlertDict: AlertDict{
+							En: []Alert{
+								{Title: "a"},
+								{Title: "b"},
+							},
+							Ja: []Alert{
+								{Title: "a"},
+								{Title: "b"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "sort",
+			fields: fields{
+				Packages: map[string]Package{
+					"pkgA": {
+						Name: "pkgA",
+						AffectedProcs: []AffectedProcess{
+							{PID: "2", Name: "procA"},
+							{PID: "1", Name: "procB"},
+						},
+						NeedRestartProcs: []NeedRestartProcess{
+							{PID: "91"},
+							{PID: "90"},
+						},
+					},
+				},
+				ScannedCves: VulnInfos{
+					"CVE-2014-3591": VulnInfo{
+						AffectedPackages: PackageFixStatuses{
+							PackageFixStatus{Name: "pkgB"},
+							PackageFixStatus{Name: "pkgA"},
+						},
+						DistroAdvisories: []DistroAdvisory{
+							{AdvisoryID: "adv-2"},
+							{AdvisoryID: "adv-1"},
+						},
+						Exploits: []Exploit{
+							{ID: "b"},
+							{ID: "a"},
+						},
+						Metasploits: []Metasploit{
+							{Name: "b"},
+							{Name: "a"},
+						},
+						CveContents: CveContents{
+							"nvd": CveContent{
+								References: References{
+									Reference{Link: "b"},
+									Reference{Link: "a"},
+								},
+							},
+							"jvn": CveContent{
+								References: References{
+									Reference{Link: "b"},
+									Reference{Link: "a"},
+								},
+							},
+						},
+						AlertDict: AlertDict{
+							En: []Alert{
+								{Title: "b"},
+								{Title: "a"},
+							},
+							Ja: []Alert{
+								{Title: "b"},
+								{Title: "a"},
+							},
+						},
+					},
+				},
+			},
+			expected: fields{
+				Packages: map[string]Package{
+					"pkgA": {
+						Name: "pkgA",
+						AffectedProcs: []AffectedProcess{
+							{PID: "1", Name: "procB"},
+							{PID: "2", Name: "procA"},
+						},
+						NeedRestartProcs: []NeedRestartProcess{
+							{PID: "90"},
+							{PID: "91"},
+						},
+					},
+				},
+				ScannedCves: VulnInfos{
+					"CVE-2014-3591": VulnInfo{
+						AffectedPackages: PackageFixStatuses{
+							PackageFixStatus{Name: "pkgA"},
+							PackageFixStatus{Name: "pkgB"},
+						},
+						DistroAdvisories: []DistroAdvisory{
+							{AdvisoryID: "adv-1"},
+							{AdvisoryID: "adv-2"},
+						},
+						Exploits: []Exploit{
+							{ID: "a"},
+							{ID: "b"},
+						},
+						Metasploits: []Metasploit{
+							{Name: "a"},
+							{Name: "b"},
+						},
+						CveContents: CveContents{
+							"nvd": CveContent{
+								References: References{
+									Reference{Link: "a"},
+									Reference{Link: "b"},
+								},
+							},
+							"jvn": CveContent{
+								References: References{
+									Reference{Link: "a"},
+									Reference{Link: "b"},
+								},
+							},
+						},
+						AlertDict: AlertDict{
+							En: []Alert{
+								{Title: "a"},
+								{Title: "b"},
+							},
+							Ja: []Alert{
+								{Title: "a"},
+								{Title: "b"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &ScanResult{
+				Packages:    tt.fields.Packages,
+				ScannedCves: tt.fields.ScannedCves,
+			}
+			r.SortForJSONOutput()
+			if !reflect.DeepEqual(r.Packages, tt.expected.Packages) {
+				t.Errorf("act %+v, want %+v", r.Packages, tt.expected.Packages)
+			}
+
+			if !reflect.DeepEqual(r.ScannedCves, tt.expected.ScannedCves) {
+				t.Errorf("act %+v, want %+v", r.ScannedCves, tt.expected.ScannedCves)
+			}
+		})
 	}
 }

@@ -15,7 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"golang.org/x/xerrors"
 
-	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 )
 
@@ -27,7 +27,7 @@ type S3Writer struct {
 	FormatList        bool
 	Gzip              bool
 
-	c.AWSConf
+	config.AWSConf
 }
 
 func (w S3Writer) getS3() (*s3.S3, error) {

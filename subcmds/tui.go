@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/aquasecurity/trivy/pkg/utils"
-	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
@@ -56,70 +56,70 @@ func (*TuiCmd) Usage() string {
 // SetFlags set flag
 func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	//  f.StringVar(&p.lang, "lang", "en", "[en|ja]")
-	f.BoolVar(&c.Conf.DebugSQL, "debug-sql", false, "debug SQL")
-	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
-	f.BoolVar(&c.Conf.Quiet, "quiet", false, "Quiet mode. No output on stdout")
-	f.BoolVar(&c.Conf.NoProgress, "no-progress", false, "Suppress progress bar")
+	f.BoolVar(&config.Conf.DebugSQL, "debug-sql", false, "debug SQL")
+	f.BoolVar(&config.Conf.Debug, "debug", false, "debug mode")
+	f.BoolVar(&config.Conf.Quiet, "quiet", false, "Quiet mode. No output on stdout")
+	f.BoolVar(&config.Conf.NoProgress, "no-progress", false, "Suppress progress bar")
 
 	defaultLogDir := logging.GetDefaultLogDir()
-	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
+	f.StringVar(&config.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 
 	wd, _ := os.Getwd()
 	defaultResultsDir := filepath.Join(wd, "results")
-	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+	f.StringVar(&config.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
-	f.BoolVar(&c.Conf.RefreshCve, "refresh-cve", false,
+	f.BoolVar(&config.Conf.RefreshCve, "refresh-cve", false,
 		"Refresh CVE information in JSON file under results dir")
 
-	f.Float64Var(&c.Conf.CvssScoreOver, "cvss-over", 0,
+	f.Float64Var(&config.Conf.CvssScoreOver, "cvss-over", 0,
 		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
 
-	f.BoolVar(&c.Conf.Diff, "diff", false,
+	f.BoolVar(&config.Conf.Diff, "diff", false,
 		"Plus Difference between previous result and current result")
 
-	f.BoolVar(&c.Conf.DiffPlus, "diff-plus", false,
+	f.BoolVar(&config.Conf.DiffPlus, "diff-plus", false,
 		"Plus Difference between previous result and current result")
 
-	f.BoolVar(&c.Conf.DiffMinus, "diff-minus", false,
+	f.BoolVar(&config.Conf.DiffMinus, "diff-minus", false,
 		"Minus Difference between previous result and current result")
 
 	f.BoolVar(
-		&c.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
+		&config.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
 		"Don't report the unscored CVEs")
 
-	f.BoolVar(&c.Conf.IgnoreUnfixed, "ignore-unfixed", false,
+	f.BoolVar(&config.Conf.IgnoreUnfixed, "ignore-unfixed", false,
 		"Don't report the unfixed CVEs")
 
-	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use stdin via PIPE")
+	f.BoolVar(&config.Conf.Pipe, "pipe", false, "Use stdin via PIPE")
 
-	f.StringVar(&c.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
+	f.StringVar(&config.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
 		utils.DefaultCacheDir(), "/path/to/dir")
 }
 
 // Execute execute
 func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	logging.Log = logging.NewCustomLogger(c.Conf.Debug, c.Conf.Quiet, c.Conf.LogDir, "", "")
-	logging.Log.Infof("vuls-%s-%s", c.Version, c.Revision)
-	if err := c.Load(p.configPath, ""); err != nil {
+	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogDir, "", "")
+	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
+	if err := config.Load(p.configPath, ""); err != nil {
 		logging.Log.Errorf("Error loading %s, err: %+v", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
 
-	c.Conf.Lang = "en"
+	config.Conf.Lang = "en"
 
-	if c.Conf.Diff {
-		c.Conf.DiffPlus = true
-		c.Conf.DiffMinus = true
+	if config.Conf.Diff {
+		config.Conf.DiffPlus = true
+		config.Conf.DiffMinus = true
 	}
 	var dir string
 	var err error
-	if c.Conf.DiffPlus || c.Conf.DiffMinus {
-		dir, err = reporter.JSONDir([]string{})
+	if config.Conf.DiffPlus || config.Conf.DiffMinus {
+		dir, err = reporter.JSONDir(config.Conf.ResultsDir, []string{})
 	} else {
-		dir, err = reporter.JSONDir(f.Args())
+		dir, err = reporter.JSONDir(config.Conf.ResultsDir, f.Args())
 	}
 	if err != nil {
 		logging.Log.Errorf("Failed to read from JSON. err: %+v", err)
@@ -127,7 +127,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	}
 
 	logging.Log.Info("Validating config...")
-	if !c.Conf.ValidateOnTui() {
+	if !config.Conf.ValidateOnReport() {
 		return subcommands.ExitUsageError
 	}
 
@@ -138,25 +138,7 @@ func (p *TuiCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	}
 	logging.Log.Infof("Loaded: %s", dir)
 
-	dbclient, err := detector.NewDBClient(
-		&c.Conf.CveDict,
-		&c.Conf.OvalDict,
-		&c.Conf.Gost,
-		&c.Conf.Exploit,
-		&c.Conf.Metasploit,
-		c.Conf.DebugSQL,
-	)
-	if err != nil {
-		logging.Log.Errorf("Failed to init DB Clients. err: %+v", err)
-		return subcommands.ExitFailure
-	}
-	defer func() {
-		for _, err := range dbclient.CloseDB() {
-			logging.Log.Errorf("Failed to CloseDB. err: %+v", err)
-		}
-	}()
-
-	if res, err = detector.Detect(*dbclient, res, dir); err != nil {
+	if res, err = detector.Detect(res, dir); err != nil {
 		logging.Log.Error(err)
 		return subcommands.ExitFailure
 	}

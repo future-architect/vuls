@@ -42,8 +42,8 @@ func needToRefreshCve(r models.ScanResult) bool {
 	return true
 }
 
-func loadPrevious(currs models.ScanResults) (prevs models.ScanResults, err error) {
-	dirs, err := ListValidJSONDirs()
+func loadPrevious(currs models.ScanResults, resultsDir string) (prevs models.ScanResults, err error) {
+	dirs, err := ListValidJSONDirs(resultsDir)
 	if err != nil {
 		return
 	}
@@ -234,16 +234,16 @@ var jsonDirPattern = regexp.MustCompile(
 
 // ListValidJSONDirs returns valid json directory as array
 // Returned array is sorted so that recent directories are at the head
-func ListValidJSONDirs() (dirs []string, err error) {
+func ListValidJSONDirs(resultsDir string) (dirs []string, err error) {
 	var dirInfo []os.FileInfo
-	if dirInfo, err = ioutil.ReadDir(config.Conf.ResultsDir); err != nil {
+	if dirInfo, err = ioutil.ReadDir(resultsDir); err != nil {
 		err = xerrors.Errorf("Failed to read %s: %w",
 			config.Conf.ResultsDir, err)
 		return
 	}
 	for _, d := range dirInfo {
 		if d.IsDir() && jsonDirPattern.MatchString(d.Name()) {
-			jsonDir := filepath.Join(config.Conf.ResultsDir, d.Name())
+			jsonDir := filepath.Join(resultsDir, d.Name())
 			dirs = append(dirs, jsonDir)
 		}
 	}

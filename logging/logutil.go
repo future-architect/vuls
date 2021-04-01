@@ -15,6 +15,14 @@ import (
 	formatter "github.com/kotakanbe/logrus-prefixed-formatter"
 )
 
+//LogOpts has options for logging
+type LogOpts struct {
+	Debug    bool   `json:"debug,omitempty"`
+	DebugSQL bool   `json:"debugSQL,omitempty"`
+	LogDir   string `json:"logDir,omitempty"`
+	Quiet    bool   `json:"quiet,omitempty"`
+}
+
 // Log for localhost
 var Log Logger
 

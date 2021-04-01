@@ -16,10 +16,12 @@ import (
 )
 
 // TelegramWriter sends report to Telegram
-type TelegramWriter struct{}
+type TelegramWriter struct {
+	Cnf   config.TelegramConf
+	Proxy string
+}
 
 func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
-	conf := config.Conf.Telegram
 	for _, r := range rs {
 		msgs := []string{fmt.Sprintf("*%s*\n%s\n%s\n%s",
 			r.ServerInfo(),
@@ -40,14 +42,14 @@ func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 				maxCvss.Value.Vector,
 				vinfo.Summaries(r.Lang, r.Family)[0].Value))
 			if len(msgs) == 5 {
-				if err = sendMessage(conf.ChatID, conf.Token, strings.Join(msgs, "\n\n")); err != nil {
+				if err = w.sendMessage(w.Cnf.ChatID, w.Cnf.Token, strings.Join(msgs, "\n\n")); err != nil {
 					return err
 				}
 				msgs = []string{}
 			}
 		}
 		if len(msgs) != 0 {
-			if err = sendMessage(conf.ChatID, conf.Token, strings.Join(msgs, "\n\n")); err != nil {
+			if err = w.sendMessage(w.Cnf.ChatID, w.Cnf.Token, strings.Join(msgs, "\n\n")); err != nil {
 				return err
 			}
 		}
@@ -55,7 +57,7 @@ func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 	return nil
 }
 
-func sendMessage(chatID, token, message string) error {
+func (w TelegramWriter) sendMessage(chatID, token, message string) error {
 	uri := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", token)
 	payload := `{"text": "` + strings.Replace(message, `"`, `\"`, -1) + `", "chat_id": "` + chatID + `", "parse_mode": "Markdown" }`
 
@@ -67,7 +69,7 @@ func sendMessage(chatID, token, message string) error {
 	}
 	req.Header.Add("Content-Type", "application/json")
 
-	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
+	client, err := util.GetHTTPClient(w.Proxy)
 	if err != nil {
 		return err
 	}

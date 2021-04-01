@@ -357,17 +357,15 @@ func (l *base) detectDeepSecurity() (string, error) {
 	return "", xerrors.Errorf("Failed to detect deepsecurity %s", l.ServerInfo.ServerName)
 }
 
-func (l *base) detectIPS() {
-	if !config.Conf.DetectIPS {
-		return
-	}
+const deepSecurity string = "deepsecurity"
 
+func (l *base) detectIPS() {
 	ips := map[string]string{}
 	fingerprint, err := l.detectDeepSecurity()
 	if err != nil {
 		return
 	}
-	ips[config.DeepSecurity] = fingerprint
+	ips[deepSecurity] = fingerprint
 	l.ServerInfo.IPSIdentifiers = ips
 }
 

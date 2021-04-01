@@ -1,6 +1,5 @@
 .vscode
 *.txt
-*.json
 *.sqlite3*
 *.db
 tags
@@ -10,7 +9,7 @@ issues/
 vendor/
 log/
 results/
-*config.toml
+config.toml
 !setup/docker/*
 .DS_Store
 dist/

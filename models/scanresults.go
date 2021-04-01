@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -56,7 +57,7 @@ type ScanResult struct {
 	Config            struct {
 		Scan   config.Config `json:"scan"`
 		Report config.Config `json:"report"`
-	} `json:"constant"`
+	} `json:"config"`
 }
 
 // Container has Container information
@@ -371,6 +372,48 @@ func (r *ScanResult) CheckEOL() {
 		r.Warnings = append(r.Warnings,
 			fmt.Sprintf("Standard OS support will be end in 3 months. EOL date: %s",
 				eol.StandardSupportUntil.Format("2006-01-02")))
+	}
+}
+
+func (r *ScanResult) SortForJSONOutput() {
+	for k, v := range r.Packages {
+		sort.SliceStable(v.AffectedProcs, func(i, j int) bool {
+			return v.AffectedProcs[i].PID < v.AffectedProcs[j].PID
+		})
+		sort.SliceStable(v.NeedRestartProcs, func(i, j int) bool {
+			return v.NeedRestartProcs[i].PID < v.NeedRestartProcs[j].PID
+		})
+		r.Packages[k] = v
+	}
+
+	for k, v := range r.ScannedCves {
+		sort.SliceStable(v.AffectedPackages, func(i, j int) bool {
+			return v.AffectedPackages[i].Name < v.AffectedPackages[j].Name
+		})
+		sort.SliceStable(v.DistroAdvisories, func(i, j int) bool {
+			return v.DistroAdvisories[i].AdvisoryID < v.DistroAdvisories[j].AdvisoryID
+		})
+		sort.SliceStable(v.Exploits, func(i, j int) bool {
+			return v.Exploits[i].ID < v.Exploits[j].ID
+		})
+		sort.SliceStable(v.Metasploits, func(i, j int) bool {
+			return v.Metasploits[i].Name < v.Metasploits[j].Name
+		})
+		for kk, vv := range v.CveContents {
+			sort.SliceStable(vv.References, func(i, j int) bool {
+				return vv.References[i].Link < vv.References[j].Link
+			})
+			v.CveContents[kk] = vv
+		}
+
+		sort.SliceStable(v.AlertDict.En, func(i, j int) bool {
+			return v.AlertDict.En[i].Title < v.AlertDict.En[j].Title
+		})
+		sort.SliceStable(v.AlertDict.Ja, func(i, j int) bool {
+			return v.AlertDict.Ja[i].Title < v.AlertDict.Ja[j].Title
+		})
+
+		r.ScannedCves[k] = v
 	}
 }
 
