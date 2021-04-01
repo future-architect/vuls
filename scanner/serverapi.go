@@ -175,6 +175,10 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 		Release: kernelRelease,
 		Version: kernelVersion,
 	}
+	return GetScanResultFromPkgList(serverName, distro, kernel, body)
+}
+
+func GetScanResultFromPkgList(serverName string, distro config.Distro, kernel models.Kernel, pkgList string) (result models.ScanResult, err error) {
 	base := base{
 		Distro: distro,
 		osPackages: osPackages{
@@ -183,12 +187,8 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 		log: logging.Log,
 	}
 
-	return GetScanResultFromPkgList(serverName, base, body)
-}
-
-func GetScanResultFromPkgList(serverName string, base base, pkgList string) (result models.ScanResult, err error) {
 	var osType osTypeInterface
-	switch base.Distro.Family {
+	switch distro.Family {
 	case constant.Debian, constant.Ubuntu:
 		osType = &debian{base}
 	case constant.RedHat:
@@ -218,11 +218,11 @@ func GetScanResultFromPkgList(serverName string, base base, pkgList string) (res
 
 	return models.ScanResult{
 		ServerName: serverName,
-		Family:     base.Distro.Family,
-		Release:    base.Distro.Release,
+		Family:     distro.Family,
+		Release:    distro.Release,
 		RunningKernel: models.Kernel{
-			Release: base.Kernel.Release,
-			Version: base.Kernel.Version,
+			Release: kernel.Release,
+			Version: kernel.Version,
 		},
 		Packages:    installedPackages,
 		SrcPackages: srcPackages,
