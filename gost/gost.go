@@ -38,7 +38,7 @@ func FillCVEsWithRedHat(r *models.ScanResult, cnf config.GostConf) error {
 	}
 	defer func() {
 		if err := db.CloseDB(); err != nil {
-			logging.Log.Errorf("Failed to close DB. err: %+v")
+			logging.Log.Errorf("Failed to close DB. err: %+v", err)
 		}
 	}()
 	return RedHat{Base{DBDriver{DB: db, Cnf: &cnf}}}.fillCvesWithRedHatAPI(r)
