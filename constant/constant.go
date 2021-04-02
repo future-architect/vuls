@@ -55,4 +55,7 @@ const (
 
 	// ServerTypePseudo is used for ServerInfo.Type, r.Family
 	ServerTypePseudo = "pseudo"
+
+	// DeepSecurity
+	DeepSecurity = "deepsecurity"
 )
