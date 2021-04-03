@@ -265,7 +265,6 @@ func (deb Debian) ConvertToModel(cve *gostmodels.DebianCVE) *models.CveContent {
 	}
 }
 
-//
 func checkPackageFixStatus(cve *gostmodels.DebianCVE) []models.PackageFixStatus {
 	fixes := []models.PackageFixStatus{}
 	for _, p := range cve.Package {
