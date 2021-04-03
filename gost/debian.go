@@ -10,6 +10,7 @@ import (
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	debver "github.com/knqyf263/go-deb-version"
 	"github.com/knqyf263/gost/db"
 	gostmodels "github.com/knqyf263/gost/models"
 	"golang.org/x/xerrors"
@@ -62,11 +63,13 @@ func (deb Debian) DetectCVEs(driver db.DB, r *models.ScanResult, _ bool) (nCVEs 
 		r = r.RemoveRaspbianPackFromResult()
 	}
 
+	stashLinuxPackage := r.Packages["linux"]
 	nFixedCVEs, err := deb.detectCVEsWithFixState(driver, r, "resolved")
 	if err != nil {
 		return 0, err
 	}
 
+	r.Packages["linux"] = stashLinuxPackage
 	nUnfixedCVEs, err := deb.detectCVEsWithFixState(driver, r, "open")
 	if err != nil {
 		return 0, err
@@ -142,7 +145,7 @@ func (deb Debian) detectCVEsWithFixState(driver db.DB, r *models.ScanResult, fix
 	delete(r.Packages, "linux")
 
 	for _, p := range packCvesList {
-		for _, cve := range p.cves {
+		for i, cve := range p.cves {
 			v, ok := r.ScannedCves[cve.CveID]
 			if ok {
 				if v.CveContents == nil {
@@ -157,20 +160,79 @@ func (deb Debian) detectCVEsWithFixState(driver db.DB, r *models.ScanResult, fix
 					CveContents: models.NewCveContents(cve),
 					Confidences: models.Confidences{models.DebianSecurityTrackerMatch},
 				}
+
+				if fixStatus == "resolved" {
+					versionRelease := func() string {
+						if p.isSrcPack {
+							return r.SrcPackages[p.packName].Version
+						}
+						return r.Packages[p.packName].FormatVer()
+					}()
+
+					if versionRelease == "" {
+						break
+					}
+
+					affected, err := isGostDefAffected(versionRelease, p.fixes[i].FixedIn)
+					if err != nil {
+						logging.Log.Debugf("Failed to parse versions: %s, Ver: %s, Gost: %s",
+							err, versionRelease, p.fixes[i].FixedIn)
+						continue
+					}
+
+					if !affected {
+						continue
+					}
+				}
+
 				nCVEs++
 			}
 
-			for _, f := range p.fixes {
-				if f.Name == "linux" {
-					f.Name = "linux-image-" + r.RunningKernel.Release
+			names := []string{}
+			if p.isSrcPack {
+				if srcPack, ok := r.SrcPackages[p.packName]; ok {
+					for _, binName := range srcPack.BinaryNames {
+						if _, ok := r.Packages[binName]; ok {
+							names = append(names, binName)
+						}
+					}
 				}
-				v.AffectedPackages = v.AffectedPackages.Store(f)
+			} else {
+				if p.packName == "linux" {
+					names = append(names, "linux-image-"+r.RunningKernel.Release)
+				} else {
+					names = append(names, p.packName)
+				}
 			}
+
+			for _, name := range names {
+				v.AffectedPackages = v.AffectedPackages.Store(models.PackageFixStatus{
+					Name:     name,
+					FixState: fixStatus,
+					FixedIn:  p.fixes[i].FixedIn,
+					NotFixedYet: func(s string) bool {
+						return s != "resolved"
+					}(fixStatus),
+				})
+			}
+
 			r.ScannedCves[cve.CveID] = v
 		}
 	}
 
 	return nCVEs, nil
+}
+
+func isGostDefAffected(versionRelease, gostVersion string) (affected bool, err error) {
+	vera, err := debver.NewVersion(versionRelease)
+	if err != nil {
+		return false, err
+	}
+	verb, err := debver.NewVersion(gostVersion)
+	if err != nil {
+		return false, err
+	}
+	return vera.LessThan(verb), nil
 }
 
 func (deb Debian) getCvesDebianWithfixStatus(driver db.DB, fixStatus, release, pkgName string) (cves []models.CveContent, fixes []models.PackageFixStatus) {

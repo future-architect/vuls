@@ -414,8 +414,14 @@ func detectPkgsCvesWithOval(driver ovaldb.DB, r *models.ScanResult) error {
 func detectPkgsCvesWithGost(driver gostdb.DB, r *models.ScanResult) error {
 	nCVEs, err := gost.NewClient(r.Family).DetectCVEs(driver, r, true)
 
-	logging.Log.Infof("%s: %d unfixed CVEs are detected with gost",
-		r.FormatServerName(), nCVEs)
+	if r.Family == constant.Debian {
+		logging.Log.Infof("%s: %d CVEs are detected with gost",
+			r.FormatServerName(), nCVEs)
+	} else {
+		logging.Log.Infof("%s: %d unfixed CVEs are detected with gost",
+			r.FormatServerName(), nCVEs)
+	}
+
 	return err
 }
 
