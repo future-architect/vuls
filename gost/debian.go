@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -56,11 +55,6 @@ func (deb Debian) DetectCVEs(driver db.DB, r *models.ScanResult, _ bool) (nCVEs 
 			Version:    r.RunningKernel.Version,
 			NewVersion: newVer,
 		}
-	}
-
-	// Debian Security Tracker does not support Package for Raspbian, so skip it.
-	if r.Family == constant.Raspbian {
-		r = r.RemoveRaspbianPackFromResult()
 	}
 
 	stashLinuxPackage := r.Packages["linux"]

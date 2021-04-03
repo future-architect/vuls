@@ -140,11 +140,6 @@ func (o Debian) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err
 		}
 	}
 
-	// OVAL does not support Package for Raspbian, so skip it.
-	if r.Family == constant.Raspbian {
-		r = r.RemoveRaspbianPackFromResult()
-	}
-
 	var relatedDefs ovalResult
 	if config.Conf.OvalDict.IsFetchViaHTTP() {
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {

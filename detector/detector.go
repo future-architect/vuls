@@ -161,6 +161,11 @@ func Detect(dbclient DBClient, rs []models.ScanResult, dir string) ([]models.Sca
 func DetectPkgCves(dbclient DBClient, r *models.ScanResult) error {
 	// Pkg Scan
 	if r.Release != "" {
+		// OVAL, gost(Debian Security Tracker) does not support Package for Raspbian, so skip it.
+		if r.Family == constant.Raspbian {
+			r = r.RemoveRaspbianPackFromResult()
+		}
+
 		// OVAL
 		if err := detectPkgsCvesWithOval(dbclient.OvalDB, r); err != nil {
 			return xerrors.Errorf("Failed to detect CVE with OVAL: %w", err)
