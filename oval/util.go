@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"regexp"
+	"sort"
 	"time"
 
 	"github.com/cenkalti/backoff"
@@ -72,6 +73,12 @@ func (e *ovalResult) upsert(def ovalmodels.Definition, packName string, fstat fi
 	return false
 }
 
+func (e *ovalResult) Sort() {
+	sort.SliceStable(e.entries, func(i, j int) bool {
+		return e.entries[i].def.DefinitionID < e.entries[j].def.DefinitionID
+	})
+}
+
 type request struct {
 	packName          string
 	versionRelease    string
@@ -88,8 +95,7 @@ type response struct {
 }
 
 // getDefsByPackNameViaHTTP fetches OVAL information via HTTP
-func getDefsByPackNameViaHTTP(r *models.ScanResult) (
-	relatedDefs ovalResult, err error) {
+func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ovalResult, err error) {
 
 	nReq := len(r.Packages) + len(r.SrcPackages)
 	reqChan := make(chan request, nReq)
@@ -127,7 +133,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult) (
 			select {
 			case req := <-reqChan:
 				url, err := util.URLPathJoin(
-					config.Conf.OvalDict.URL,
+					url,
 					"packs",
 					r.Family,
 					r.Release,
@@ -190,7 +196,6 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 	var resp *http.Response
 	count, retryMax := 0, 3
 	f := func() (err error) {
-		//  resp, body, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
 		resp, body, errs = gorequest.New().Timeout(10 * time.Second).Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			count++
@@ -246,13 +251,18 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 		})
 	}
 
+	ovalFamily, err := GetFamilyInOval(r.Family)
+	if err != nil {
+		return relatedDefs, err
+	}
+
 	for _, req := range requests {
-		definitions, err := driver.GetByPackName(r.Family, r.Release, req.packName, req.arch)
+		definitions, err := driver.GetByPackName(ovalFamily, r.Release, req.packName, req.arch)
 		if err != nil {
 			return relatedDefs, xerrors.Errorf("Failed to get %s OVAL info by package: %#v, err: %w", r.Family, req, err)
 		}
 		for _, def := range definitions {
-			affected, notFixedYet, fixedIn := isOvalDefAffected(def, req, r.Family, r.RunningKernel, r.EnabledDnfModules)
+			affected, notFixedYet, fixedIn := isOvalDefAffected(def, req, ovalFamily, r.RunningKernel, r.EnabledDnfModules)
 			if !affected {
 				continue
 			}
@@ -413,4 +423,72 @@ var centosVerPattern = regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.centos)?`)
 
 func centOSVersionToRHEL(ver string) string {
 	return centosVerPattern.ReplaceAllString(ver, ".el$1")
+}
+
+// NewOVALClient returns a client for OVAL database
+func NewOVALClient(family string, cnf config.GovalDictConf) (Client, error) {
+	switch family {
+	case constant.Debian, constant.Raspbian:
+		return NewDebian(&cnf), nil
+	case constant.Ubuntu:
+		return NewUbuntu(&cnf), nil
+	case constant.RedHat:
+		return NewRedhat(&cnf), nil
+	case constant.CentOS:
+		//use RedHat's OVAL
+		return NewCentOS(&cnf), nil
+	case constant.Oracle:
+		return NewOracle(&cnf), nil
+	case constant.SUSEEnterpriseServer:
+		// TODO other suse family
+		return NewSUSE(&cnf), nil
+	case constant.Alpine:
+		return NewAlpine(&cnf), nil
+	case constant.Amazon:
+		return NewAmazon(&cnf), nil
+	case constant.FreeBSD, constant.Windows:
+		return nil, nil
+	case constant.ServerTypePseudo:
+		return nil, nil
+	default:
+		if family == "" {
+			return nil, xerrors.New("Probably an error occurred during scanning. Check the error message")
+		}
+		return nil, xerrors.Errorf("OVAL for %s is not implemented yet", family)
+	}
+}
+
+// GetFamilyInOval returns the OS family name in OVAL
+// For example, CentOS uses Red Hat's OVAL, so return 'redhat'
+func GetFamilyInOval(familyInScanResult string) (string, error) {
+	switch familyInScanResult {
+	case constant.Debian, constant.Raspbian:
+		return constant.Debian, nil
+	case constant.Ubuntu:
+		return constant.Ubuntu, nil
+	case constant.RedHat:
+		return constant.RedHat, nil
+	case constant.CentOS:
+		//use RedHat's OVAL
+		return constant.RedHat, nil
+	case constant.Oracle:
+		return constant.Oracle, nil
+	case constant.SUSEEnterpriseServer:
+		// TODO other suse family
+		return constant.SUSEEnterpriseServer, nil
+	case constant.Alpine:
+		return constant.Alpine, nil
+	case constant.Amazon:
+		return constant.Amazon, nil
+	case constant.FreeBSD, constant.Windows:
+		return "", nil
+	case constant.ServerTypePseudo:
+		return "", nil
+	default:
+		if familyInScanResult == "" {
+			return "", xerrors.New("Probably an error occurred during scanning. Check the error message")
+		}
+		return "", xerrors.Errorf("OVAL for %s is not implemented yet", familyInScanResult)
+	}
+
 }

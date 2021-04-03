@@ -20,12 +20,12 @@ type EMailWriter struct {
 	FormatOneEMail    bool
 	FormatOneLineText bool
 	FormatList        bool
+	Cnf               config.SMTPConf
 }
 
 func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
-	conf := config.Conf
 	var message string
-	sender := NewEMailSender()
+	sender := NewEMailSender(w.Cnf)
 	m := map[string]int{}
 	for _, r := range rs {
 		if w.FormatOneEMail {
@@ -39,10 +39,10 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 			var subject string
 			if len(r.Errors) != 0 {
 				subject = fmt.Sprintf("%s%s An error occurred while scanning",
-					conf.EMail.SubjectPrefix, r.ServerInfo())
+					w.Cnf.SubjectPrefix, r.ServerInfo())
 			} else {
 				subject = fmt.Sprintf("%s%s %s",
-					conf.EMail.SubjectPrefix,
+					w.Cnf.SubjectPrefix,
 					r.ServerInfo(),
 					r.ScannedCves.FormatCveSummary())
 			}
@@ -72,7 +72,7 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 
 		subject := fmt.Sprintf("%s %s",
-			conf.EMail.SubjectPrefix, summary)
+			w.Cnf.SubjectPrefix, summary)
 		return sender.Send(subject, message)
 	}
 	return nil
@@ -196,8 +196,8 @@ func (e *emailSender) Send(subject, body string) (err error) {
 }
 
 // NewEMailSender creates emailSender
-func NewEMailSender() EMailSender {
-	return &emailSender{config.Conf.EMail}
+func NewEMailSender(cnf config.SMTPConf) EMailSender {
+	return &emailSender{cnf}
 }
 
 func (e *emailSender) newSaslClient(authList []string) sasl.Client {

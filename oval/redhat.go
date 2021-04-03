@@ -11,7 +11,6 @@ import (
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"github.com/kotakanbe/goval-dictionary/db"
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
@@ -21,18 +20,29 @@ type RedHatBase struct {
 }
 
 // FillWithOval returns scan result after updating CVE info by OVAL
-func (o RedHatBase) FillWithOval(driver db.DB, r *models.ScanResult) (nCVEs int, err error) {
+func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 	var relatedDefs ovalResult
-	if config.Conf.OvalDict.IsFetchViaHTTP() {
-		if relatedDefs, err = getDefsByPackNameViaHTTP(r); err != nil {
+	if o.Cnf.IsFetchViaHTTP() {
+		if relatedDefs, err = getDefsByPackNameViaHTTP(r, o.Cnf.GetURL()); err != nil {
 			return 0, err
 		}
 	} else {
+		driver, err := newOvalDB(o.Cnf, r.Family)
+		if err != nil {
+			return 0, err
+		}
+		defer func() {
+			if err := driver.CloseDB(); err != nil {
+				logging.Log.Errorf("Failed to close DB. err: %+v")
+			}
+		}()
+
 		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
 			return 0, err
 		}
 	}
 
+	relatedDefs.Sort()
 	for _, defPacks := range relatedDefs.entries {
 		nCVEs += o.update(r, defPacks)
 	}
@@ -92,7 +102,7 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 		ovalContent := *o.convertToModel(cve.CveID, &defPacks.def)
 		vinfo, ok := r.ScannedCves[cve.CveID]
 		if !ok {
-			logging.Log.Debugf("%s is newly detected by OVAL", cve.CveID)
+			logging.Log.Debugf("%s is newly detected by OVAL: DefID: %s", cve.CveID, defPacks.def.DefinitionID)
 			vinfo = models.VulnInfo{
 				CveID:       cve.CveID,
 				Confidences: models.Confidences{models.OvalMatch},
@@ -103,13 +113,12 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 			cveContents := vinfo.CveContents
 			if v, ok := vinfo.CveContents[ctype]; ok {
 				if v.LastModified.After(ovalContent.LastModified) {
-					logging.Log.Debugf("%s, OvalID: %d ignored: ",
-						cve.CveID, defPacks.def.ID)
+					logging.Log.Debugf("%s ignored. DefID: %s ", cve.CveID, defPacks.def.DefinitionID)
 				} else {
-					logging.Log.Debugf("%s OVAL will be overwritten", cve.CveID)
+					logging.Log.Debugf("%s OVAL will be overwritten. DefID: %s", cve.CveID, defPacks.def.DefinitionID)
 				}
 			} else {
-				logging.Log.Debugf("%s also detected by OVAL", cve.CveID)
+				logging.Log.Debugf("%s also detected by OVAL. DefID: %s", cve.CveID, defPacks.def.DefinitionID)
 				cveContents = models.CveContents{}
 			}
 
@@ -247,11 +256,12 @@ type RedHat struct {
 }
 
 // NewRedhat creates OVAL client for Redhat
-func NewRedhat() RedHat {
+func NewRedhat(cnf config.VulnDictInterface) RedHat {
 	return RedHat{
 		RedHatBase{
 			Base{
 				family: constant.RedHat,
+				Cnf:    cnf,
 			},
 		},
 	}
@@ -263,11 +273,12 @@ type CentOS struct {
 }
 
 // NewCentOS creates OVAL client for CentOS
-func NewCentOS() CentOS {
+func NewCentOS(cnf config.VulnDictInterface) CentOS {
 	return CentOS{
 		RedHatBase{
 			Base{
 				family: constant.CentOS,
+				Cnf:    cnf,
 			},
 		},
 	}
@@ -279,11 +290,12 @@ type Oracle struct {
 }
 
 // NewOracle creates OVAL client for Oracle
-func NewOracle() Oracle {
+func NewOracle(cnf config.VulnDictInterface) Oracle {
 	return Oracle{
 		RedHatBase{
 			Base{
 				family: constant.Oracle,
+				Cnf:    cnf,
 			},
 		},
 	}
@@ -296,11 +308,12 @@ type Amazon struct {
 }
 
 // NewAmazon creates OVAL client for Amazon Linux
-func NewAmazon() Amazon {
+func NewAmazon(cnf config.VulnDictInterface) Amazon {
 	return Amazon{
 		RedHatBase{
 			Base{
 				family: constant.Amazon,
+				Cnf:    cnf,
 			},
 		},
 	}

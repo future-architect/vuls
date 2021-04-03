@@ -358,16 +358,12 @@ func (l *base) detectDeepSecurity() (string, error) {
 }
 
 func (l *base) detectIPS() {
-	if !config.Conf.DetectIPS {
-		return
-	}
-
 	ips := map[string]string{}
 	fingerprint, err := l.detectDeepSecurity()
 	if err != nil {
 		return
 	}
-	ips[config.DeepSecurity] = fingerprint
+	ips[constant.DeepSecurity] = fingerprint
 	l.ServerInfo.IPSIdentifiers = ips
 }
 

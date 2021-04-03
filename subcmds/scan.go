@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/asaskevich/govalidator"
-	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/scanner"
 	"github.com/google/subcommands"
@@ -24,6 +24,7 @@ type ScanCmd struct {
 	timeoutSec     int
 	scanTimeoutSec int
 	cacheDBPath    string
+	detectIPS      bool
 }
 
 // Name return subcommand name
@@ -57,34 +58,34 @@ func (*ScanCmd) Usage() string {
 
 // SetFlags set flag
 func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
-	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
-	f.BoolVar(&c.Conf.Quiet, "quiet", false, "Quiet mode. No output on stdout")
+	f.BoolVar(&config.Conf.Debug, "debug", false, "debug mode")
+	f.BoolVar(&config.Conf.Quiet, "quiet", false, "Quiet mode. No output on stdout")
 
 	wd, _ := os.Getwd()
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
 	defaultResultsDir := filepath.Join(wd, "results")
-	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+	f.StringVar(&config.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 
 	defaultLogDir := logging.GetDefaultLogDir()
-	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
+	f.StringVar(&config.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 
 	defaultCacheDBPath := filepath.Join(wd, "cache.db")
 	f.StringVar(&p.cacheDBPath, "cachedb-path", defaultCacheDBPath,
 		"/path/to/cache.db (local cache of changelog for Ubuntu/Debian)")
 
-	f.StringVar(&c.Conf.HTTPProxy, "http-proxy", "",
+	f.StringVar(&config.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
 
 	f.BoolVar(&p.askKeyPassword, "ask-key-password", false,
 		"Ask ssh privatekey password before scanning",
 	)
 
-	f.BoolVar(&c.Conf.Pipe, "pipe", false, "Use stdin via PIPE")
+	f.BoolVar(&config.Conf.Pipe, "pipe", false, "Use stdin via PIPE")
 
-	f.BoolVar(&c.Conf.DetectIPS, "ips", false, "retrieve IPS information")
-	f.BoolVar(&c.Conf.Vvv, "vvv", false, "ssh -vvv")
+	f.BoolVar(&p.detectIPS, "ips", false, "retrieve IPS information")
+	f.BoolVar(&config.Conf.Vvv, "vvv", false, "ssh -vvv")
 
 	f.IntVar(&p.timeoutSec, "timeout", 5*60,
 		"Number of seconds for processing other than scan",
@@ -97,8 +98,8 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	logging.Log = logging.NewCustomLogger(c.Conf.Debug, c.Conf.Quiet, c.Conf.LogDir, "", "")
-	logging.Log.Infof("vuls-%s-%s", c.Version, c.Revision)
+	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogDir, "", "")
+	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 
 	if err := mkdirDotVuls(); err != nil {
 		logging.Log.Errorf("Failed to create $HOME/.vuls err: %+v", err)
@@ -123,7 +124,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		}
 	}
 
-	err = c.Load(p.configPath, keyPass)
+	err = config.Load(p.configPath, keyPass)
 	if err != nil {
 		msg := []string{
 			fmt.Sprintf("Error loading %s", p.configPath),
@@ -140,7 +141,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	var servernames []string
 	if 0 < len(f.Args()) {
 		servernames = f.Args()
-	} else if c.Conf.Pipe {
+	} else if config.Conf.Pipe {
 		bytes, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
 			logging.Log.Errorf("Failed to read stdin. err: %+v", err)
@@ -152,10 +153,10 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		}
 	}
 
-	targets := make(map[string]c.ServerInfo)
+	targets := make(map[string]config.ServerInfo)
 	for _, arg := range servernames {
 		found := false
-		for servername, info := range c.Conf.Servers {
+		for servername, info := range config.Conf.Servers {
 			if servername == arg {
 				targets[servername] = info
 				found = true
@@ -169,26 +170,28 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 	if 0 < len(servernames) {
 		// if scan target servers are specified by args, set to the config
-		c.Conf.Servers = targets
+		config.Conf.Servers = targets
 	} else {
 		// if not specified by args, scan all servers in the config
-		targets = c.Conf.Servers
+		targets = config.Conf.Servers
 	}
 	logging.Log.Debugf("%s", pp.Sprintf("%v", targets))
 
 	logging.Log.Info("Validating config...")
-	if !c.Conf.ValidateOnScan() {
+	if !config.Conf.ValidateOnScan() {
 		return subcommands.ExitUsageError
 	}
 
 	s := scanner.Scanner{
+		ResultsDir:     config.Conf.ResultsDir,
 		TimeoutSec:     p.timeoutSec,
 		ScanTimeoutSec: p.scanTimeoutSec,
 		CacheDBPath:    p.cacheDBPath,
 		Targets:        targets,
-		Debug:          c.Conf.Debug,
-		Quiet:          c.Conf.Quiet,
-		LogDir:         c.Conf.LogDir,
+		Debug:          config.Conf.Debug,
+		Quiet:          config.Conf.Quiet,
+		LogDir:         config.Conf.LogDir,
+		DetectIPS:      p.detectIPS,
 	}
 
 	if err := s.Scan(); err != nil {

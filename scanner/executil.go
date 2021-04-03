@@ -11,14 +11,14 @@ import (
 
 	"golang.org/x/xerrors"
 
-	conf "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	homedir "github.com/mitchellh/go-homedir"
 )
 
 type execResult struct {
 	Servername string
-	Container  conf.Container
+	Container  config.Container
 	Host       string
 	Port       string
 	Cmd        string
@@ -131,7 +131,7 @@ func parallelExec(fn func(osTypeInterface) error, timeoutSec ...int) {
 	return
 }
 
-func exec(c conf.ServerInfo, cmd string, sudo bool, log ...logging.Logger) (result execResult) {
+func exec(c config.ServerInfo, cmd string, sudo bool, log ...logging.Logger) (result execResult) {
 	logger := getSSHLogger(log...)
 	logger.Debugf("Executing... %s", strings.Replace(cmd, "\n", "", -1))
 
@@ -149,7 +149,7 @@ func isLocalExec(port, host string) bool {
 	return port == "local" && (host == "127.0.0.1" || host == "localhost")
 }
 
-func localExec(c conf.ServerInfo, cmdstr string, sudo bool) (result execResult) {
+func localExec(c config.ServerInfo, cmdstr string, sudo bool) (result execResult) {
 	cmdstr = decorateCmd(c, cmdstr, sudo)
 	var cmd *ex.Cmd
 	switch c.Distro.Family {
@@ -180,7 +180,7 @@ func localExec(c conf.ServerInfo, cmdstr string, sudo bool) (result execResult) 
 	return
 }
 
-func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResult) {
+func sshExecExternal(c config.ServerInfo, cmd string, sudo bool) (result execResult) {
 	sshBinaryPath, err := ex.LookPath("ssh")
 	if err != nil {
 		return execResult{Error: err}
@@ -211,7 +211,7 @@ func sshExecExternal(c conf.ServerInfo, cmd string, sudo bool) (result execResul
 		)
 	}
 
-	if conf.Conf.Vvv {
+	if config.Conf.Vvv {
 		defaultSSHArgs = append(defaultSSHArgs, "-vvv")
 	}
 
@@ -276,7 +276,7 @@ func dockerShell(family string) string {
 	}
 }
 
-func decorateCmd(c conf.ServerInfo, cmd string, sudo bool) string {
+func decorateCmd(c config.ServerInfo, cmd string, sudo bool) string {
 	if sudo && c.User != "root" && !c.IsContainer() {
 		cmd = fmt.Sprintf("sudo -S %s", cmd)
 	}

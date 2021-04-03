@@ -18,7 +18,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/future-architect/vuls/config"
-	c "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -56,8 +55,8 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 	hostname, _ := os.Hostname()
 
 	payload := payload{
-		GroupID:      c.Conf.Saas.GroupID,
-		Token:        c.Conf.Saas.Token,
+		GroupID:      config.Conf.Saas.GroupID,
+		Token:        config.Conf.Saas.Token,
 		ScannedBy:    hostname,
 		ScannedIPv4s: strings.Join(ipv4s, ", "),
 		ScannedIPv6s: strings.Join(ipv6s, ", "),
@@ -68,13 +67,14 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.Conf.Saas.URL, bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, config.Conf.Saas.URL, bytes.NewBuffer(body))
 	defer cancel()
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+	// TODO Don't use global variable
 	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
 	if err != nil {
 		return err

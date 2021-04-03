@@ -22,6 +22,7 @@ type VulnDictInterface interface {
 	GetType() string
 	GetURL() string
 	GetSQLite3Path() string
+	GetDebugSQL() bool
 }
 
 // VulnDict is a base struct of vuln dicts
@@ -35,31 +36,38 @@ type VulnDict struct {
 	URL string `json:"-"`
 
 	// /path/to/cve.sqlite3
-	SQLite3Path string `json:"-"`
+	SQLite3Path string
+
+	DebugSQL bool
 }
 
 // GetType returns type
-func (cnf *VulnDict) GetType() string {
+func (cnf VulnDict) GetType() string {
 	return cnf.Type
 }
 
 // GetName returns name
-func (cnf *VulnDict) GetName() string {
+func (cnf VulnDict) GetName() string {
 	return cnf.Name
 }
 
 // GetURL returns url
-func (cnf *VulnDict) GetURL() string {
+func (cnf VulnDict) GetURL() string {
 	return cnf.URL
 }
 
 // GetSQLite3Path return the path of SQLite3
-func (cnf *VulnDict) GetSQLite3Path() string {
+func (cnf VulnDict) GetSQLite3Path() string {
 	return cnf.SQLite3Path
 }
 
+// GetDebugSQL return debugSQL flag
+func (cnf VulnDict) GetDebugSQL() bool {
+	return cnf.DebugSQL
+}
+
 // Validate settings
-func (cnf *VulnDict) Validate() error {
+func (cnf VulnDict) Validate() error {
 	logging.Log.Infof("%s.type=%s, %s.url=%s, %s.SQLite3Path=%s",
 		cnf.Name, cnf.Type, cnf.Name, cnf.URL, cnf.Name, cnf.SQLite3Path)
 
@@ -99,7 +107,7 @@ func (cnf *VulnDict) Validate() error {
 }
 
 // Init the struct
-func (cnf *VulnDict) Init() {}
+func (cnf VulnDict) Init() {}
 
 func (cnf *VulnDict) setDefault(sqlite3Name string) {
 	if cnf.Type == "" {
@@ -112,12 +120,12 @@ func (cnf *VulnDict) setDefault(sqlite3Name string) {
 }
 
 // IsFetchViaHTTP returns if fetch via HTTP
-func (cnf *VulnDict) IsFetchViaHTTP() bool {
+func (cnf VulnDict) IsFetchViaHTTP() bool {
 	return cnf.Type == "http"
 }
 
 // CheckHTTPHealth checks http server status
-func (cnf *VulnDict) CheckHTTPHealth() error {
+func (cnf VulnDict) CheckHTTPHealth() error {
 	if !cnf.IsFetchViaHTTP() {
 		return nil
 	}
@@ -156,6 +164,7 @@ func (cnf *GovalDictConf) Init() {
 		cnf.SQLite3Path = os.Getenv(govalPATH)
 	}
 	cnf.setDefault("oval.sqlite3")
+	cnf.DebugSQL = Conf.DebugSQL
 }
 
 // ExploitConf is exploit config
@@ -182,6 +191,7 @@ func (cnf *ExploitConf) Init() {
 		cnf.SQLite3Path = os.Getenv(exploitDBPATH)
 	}
 	cnf.setDefault("go-exploitdb.sqlite3")
+	cnf.DebugSQL = Conf.DebugSQL
 }
 
 // GoCveDictConf is GoCveDict config
@@ -208,6 +218,7 @@ func (cnf *GoCveDictConf) Init() {
 		cnf.SQLite3Path = os.Getenv(cveDBPATH)
 	}
 	cnf.setDefault("cve.sqlite3")
+	cnf.DebugSQL = Conf.DebugSQL
 }
 
 // GostConf is gost config
@@ -234,6 +245,7 @@ func (cnf *GostConf) Init() {
 		cnf.SQLite3Path = os.Getenv(gostDBPATH)
 	}
 	cnf.setDefault("gost.sqlite3")
+	cnf.DebugSQL = Conf.DebugSQL
 }
 
 // MetasploitConf is gost go-metasploitdb
@@ -260,4 +272,5 @@ func (cnf *MetasploitConf) Init() {
 		cnf.SQLite3Path = os.Getenv(metasploitDBPATH)
 	}
 	cnf.setDefault("go-msfdb.sqlite3")
+	cnf.DebugSQL = Conf.DebugSQL
 }

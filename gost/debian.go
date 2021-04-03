@@ -5,12 +5,10 @@ package gost
 import (
 	"encoding/json"
 
-	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	debver "github.com/knqyf263/go-deb-version"
-	"github.com/knqyf263/gost/db"
 	gostmodels "github.com/knqyf263/gost/models"
 	"golang.org/x/xerrors"
 )
@@ -37,7 +35,7 @@ func (deb Debian) supported(major string) bool {
 }
 
 // DetectCVEs fills cve information that has in Gost
-func (deb Debian) DetectCVEs(driver db.DB, r *models.ScanResult, _ bool) (nCVEs int, err error) {
+func (deb Debian) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error) {
 	if !deb.supported(major(r.Release)) {
 		// only logging
 		logging.Log.Warnf("Debian %s is not supported yet", r.Release)
@@ -58,13 +56,13 @@ func (deb Debian) DetectCVEs(driver db.DB, r *models.ScanResult, _ bool) (nCVEs 
 	}
 
 	stashLinuxPackage := r.Packages["linux"]
-	nFixedCVEs, err := deb.detectCVEsWithFixState(driver, r, "resolved")
+	nFixedCVEs, err := deb.detectCVEsWithFixState(r, "resolved")
 	if err != nil {
 		return 0, err
 	}
 
 	r.Packages["linux"] = stashLinuxPackage
-	nUnfixedCVEs, err := deb.detectCVEsWithFixState(driver, r, "open")
+	nUnfixedCVEs, err := deb.detectCVEsWithFixState(r, "open")
 	if err != nil {
 		return 0, err
 	}
@@ -72,14 +70,14 @@ func (deb Debian) DetectCVEs(driver db.DB, r *models.ScanResult, _ bool) (nCVEs 
 	return (nFixedCVEs + nUnfixedCVEs), nil
 }
 
-func (deb Debian) detectCVEsWithFixState(driver db.DB, r *models.ScanResult, fixStatus string) (nCVEs int, err error) {
+func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string) (nCVEs int, err error) {
 	if fixStatus != "resolved" && fixStatus != "open" {
 		return 0, xerrors.Errorf(`Failed to detectCVEsWithFixState. fixStatus is not allowed except "open" and "resolved"(actual: fixStatus -> %s).`, fixStatus)
 	}
 
 	packCvesList := []packCves{}
-	if config.Conf.Gost.IsFetchViaHTTP() {
-		url, _ := util.URLPathJoin(config.Conf.Gost.URL, "debian", major(r.Release), "pkgs")
+	if deb.DBDriver.Cnf.IsFetchViaHTTP() {
+		url, _ := util.URLPathJoin(deb.DBDriver.Cnf.GetURL(), "debian", major(r.Release), "pkgs")
 		s := func(s string) string {
 			if s == "resolved" {
 				return "fixed-cves"
@@ -111,11 +109,11 @@ func (deb Debian) detectCVEsWithFixState(driver db.DB, r *models.ScanResult, fix
 			})
 		}
 	} else {
-		if driver == nil {
+		if deb.DBDriver.DB == nil {
 			return 0, nil
 		}
 		for _, pack := range r.Packages {
-			cves, fixes := deb.getCvesDebianWithfixStatus(driver, fixStatus, major(r.Release), pack.Name)
+			cves, fixes := deb.getCvesDebianWithfixStatus(fixStatus, major(r.Release), pack.Name)
 			packCvesList = append(packCvesList, packCves{
 				packName:  pack.Name,
 				isSrcPack: false,
@@ -126,7 +124,7 @@ func (deb Debian) detectCVEsWithFixState(driver db.DB, r *models.ScanResult, fix
 
 		// SrcPack
 		for _, pack := range r.SrcPackages {
-			cves, fixes := deb.getCvesDebianWithfixStatus(driver, fixStatus, major(r.Release), pack.Name)
+			cves, fixes := deb.getCvesDebianWithfixStatus(fixStatus, major(r.Release), pack.Name)
 			packCvesList = append(packCvesList, packCves{
 				packName:  pack.Name,
 				isSrcPack: true,
@@ -229,12 +227,12 @@ func isGostDefAffected(versionRelease, gostVersion string) (affected bool, err e
 	return vera.LessThan(verb), nil
 }
 
-func (deb Debian) getCvesDebianWithfixStatus(driver db.DB, fixStatus, release, pkgName string) (cves []models.CveContent, fixes []models.PackageFixStatus) {
+func (deb Debian) getCvesDebianWithfixStatus(fixStatus, release, pkgName string) (cves []models.CveContent, fixes []models.PackageFixStatus) {
 	cveDebs := func(s string) map[string]gostmodels.DebianCVE {
 		if s == "resolved" {
-			return driver.GetFixedCvesDebian(release, pkgName)
+			return deb.DBDriver.DB.GetFixedCvesDebian(release, pkgName)
 		}
-		return driver.GetUnfixedCvesDebian(release, pkgName)
+		return deb.DBDriver.DB.GetUnfixedCvesDebian(release, pkgName)
 	}(fixStatus)
 
 	for _, cveDeb := range cveDebs {

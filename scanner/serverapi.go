@@ -66,12 +66,14 @@ type osTypeInterface interface {
 
 // Scanner has functions for scan
 type Scanner struct {
+	ResultsDir     string
 	TimeoutSec     int
 	ScanTimeoutSec int
 	CacheDBPath    string
 	Debug          bool
 	LogDir         string
 	Quiet          bool
+	DetectIPS      bool
 
 	Targets map[string]config.ServerInfo
 }
@@ -91,8 +93,10 @@ func (s Scanner) Scan() error {
 	logging.Log.Info("Detecting Platforms... ")
 	s.detectPlatform()
 
-	logging.Log.Info("Detecting IPS identifiers... ")
-	s.detectIPS()
+	if s.DetectIPS {
+		logging.Log.Info("Detecting IPS identifiers... ")
+		s.detectIPS()
+	}
 
 	if err := s.execScan(); err != nil {
 		return xerrors.Errorf("Failed to scan. err: %w", err)
@@ -175,6 +179,26 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 		Release: kernelRelease,
 		Version: kernelVersion,
 	}
+	installedPackages, srcPackages, err := ParseInstalledPkgs(distro, kernel, body)
+	if err != nil {
+		return models.ScanResult{}, err
+	}
+
+	return models.ScanResult{
+		ServerName: serverName,
+		Family:     family,
+		Release:    release,
+		RunningKernel: models.Kernel{
+			Release: kernelRelease,
+			Version: kernelVersion,
+		},
+		Packages:    installedPackages,
+		SrcPackages: srcPackages,
+		ScannedCves: models.VulnInfos{},
+	}, nil
+}
+
+func ParseInstalledPkgs(distro config.Distro, kernel models.Kernel, pkgList string) (models.Packages, models.SrcPackages, error) {
 	base := base{
 		Distro: distro,
 		osPackages: osPackages{
@@ -184,7 +208,7 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 	}
 
 	var osType osTypeInterface
-	switch family {
+	switch distro.Family {
 	case constant.Debian, constant.Ubuntu:
 		osType = &debian{base: base}
 	case constant.RedHat:
@@ -204,28 +228,10 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 			redhatBase: redhatBase{base: base},
 		}
 	default:
-		return models.ScanResult{}, xerrors.Errorf("Server mode for %s is not implemented yet", family)
+		return models.Packages{}, models.SrcPackages{}, xerrors.Errorf("Server mode for %s is not implemented yet", base.Distro.Family)
 	}
 
-	installedPackages, srcPackages, err := osType.parseInstalledPackages(body)
-	if err != nil {
-		return models.ScanResult{}, err
-	}
-
-	result := models.ScanResult{
-		ServerName: serverName,
-		Family:     family,
-		Release:    release,
-		RunningKernel: models.Kernel{
-			Release: kernelRelease,
-			Version: kernelVersion,
-		},
-		Packages:    installedPackages,
-		SrcPackages: srcPackages,
-		ScannedCves: models.VulnInfos{},
-	}
-
-	return result, nil
+	return osType.parseInstalledPackages(pkgList)
 }
 
 // initServers detect the kind of OS distribution of target servers
@@ -593,7 +599,7 @@ func (s Scanner) execScan() error {
 	}()
 
 	scannedAt := time.Now()
-	dir, err := EnsureResultDir(scannedAt)
+	dir, err := EnsureResultDir(s.ResultsDir, scannedAt)
 	if err != nil {
 		return err
 	}

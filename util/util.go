@@ -110,8 +110,16 @@ func IP() (ipv4Addrs []string, ipv6Addrs []string, err error) {
 	return ipv4Addrs, ipv6Addrs, nil
 }
 
-// ProxyEnv returns shell environment variables to set proxy
-func ProxyEnv() string {
+// PrependProxyEnv prepends proxy environment variable
+func PrependProxyEnv(cmd string) string {
+	if config.Conf.HTTPProxy == "" {
+		return cmd
+	}
+	return fmt.Sprintf("%s %s", proxyEnv(), cmd)
+}
+
+// proxyEnv returns shell environment variables to set proxy
+func proxyEnv() string {
 	httpProxyEnv := ""
 	keys := []string{
 		"http_proxy",
@@ -120,18 +128,9 @@ func ProxyEnv() string {
 		"HTTPS_PROXY",
 	}
 	for _, key := range keys {
-		httpProxyEnv += fmt.Sprintf(
-			` %s="%s"`, key, config.Conf.HTTPProxy)
+		httpProxyEnv += fmt.Sprintf(` %s="%s"`, key, config.Conf.HTTPProxy)
 	}
 	return httpProxyEnv
-}
-
-// PrependProxyEnv prepends proxy environment variable
-func PrependProxyEnv(cmd string) string {
-	if config.Conf.HTTPProxy == "" {
-		return cmd
-	}
-	return fmt.Sprintf("%s %s", ProxyEnv(), cmd)
 }
 
 //  func unixtime(s string) (time.Time, error) {

@@ -12,15 +12,16 @@ import (
 )
 
 // SyslogWriter send report to syslog
-type SyslogWriter struct{}
+type SyslogWriter struct {
+	Cnf config.SyslogConf
+}
 
 func (w SyslogWriter) Write(rs ...models.ScanResult) (err error) {
-	conf := config.Conf.Syslog
-	facility, _ := conf.GetFacility()
-	severity, _ := conf.GetSeverity()
-	raddr := fmt.Sprintf("%s:%s", conf.Host, conf.Port)
+	facility, _ := w.Cnf.GetFacility()
+	severity, _ := w.Cnf.GetSeverity()
+	raddr := fmt.Sprintf("%s:%s", w.Cnf.Host, w.Cnf.Port)
 
-	sysLog, err := syslog.Dial(conf.Protocol, raddr, severity|facility, conf.Tag)
+	sysLog, err := syslog.Dial(w.Cnf.Protocol, raddr, severity|facility, w.Cnf.Tag)
 	if err != nil {
 		return xerrors.Errorf("Failed to initialize syslog client: %w", err)
 	}
@@ -72,7 +73,7 @@ func (w SyslogWriter) encodeSyslog(result models.ScanResult) (messages []string)
 		if content, ok := vinfo.CveContents[models.Nvd]; ok {
 			cwes := strings.Join(content.CweIDs, ",")
 			kvPairs = append(kvPairs, fmt.Sprintf(`cwe_ids="%s"`, cwes))
-			if config.Conf.Syslog.Verbose {
+			if w.Cnf.Verbose {
 				kvPairs = append(kvPairs, fmt.Sprintf(`source_link="%s"`, content.SourceLink))
 				kvPairs = append(kvPairs, fmt.Sprintf(`summary="%s"`, content.Summary))
 			}

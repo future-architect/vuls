@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	c "github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/reporter"
@@ -41,41 +41,41 @@ func (*SaaSCmd) Usage() string {
 
 // SetFlags set flag
 func (p *SaaSCmd) SetFlags(f *flag.FlagSet) {
-	f.BoolVar(&c.Conf.Debug, "debug", false, "debug mode")
-	f.BoolVar(&c.Conf.Quiet, "quiet", false, "Quiet mode. No output on stdout")
+	f.BoolVar(&config.Conf.Debug, "debug", false, "debug mode")
+	f.BoolVar(&config.Conf.Quiet, "quiet", false, "Quiet mode. No output on stdout")
 
 	wd, _ := os.Getwd()
 	defaultConfPath := filepath.Join(wd, "config.toml")
 	f.StringVar(&p.configPath, "config", defaultConfPath, "/path/to/toml")
 
 	defaultResultsDir := filepath.Join(wd, "results")
-	f.StringVar(&c.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
+	f.StringVar(&config.Conf.ResultsDir, "results-dir", defaultResultsDir, "/path/to/results")
 
 	defaultLogDir := logging.GetDefaultLogDir()
-	f.StringVar(&c.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
+	f.StringVar(&config.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 
 	f.StringVar(
-		&c.Conf.HTTPProxy, "http-proxy", "",
+		&config.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
 }
 
 // Execute execute
 func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	logging.Log = logging.NewCustomLogger(c.Conf.Debug, c.Conf.Quiet, c.Conf.LogDir, "", "")
-	logging.Log.Infof("vuls-%s-%s", c.Version, c.Revision)
-	if err := c.Load(p.configPath, ""); err != nil {
+	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogDir, "", "")
+	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
+	if err := config.Load(p.configPath, ""); err != nil {
 		logging.Log.Errorf("Error loading %s, %+v", p.configPath, err)
 		return subcommands.ExitUsageError
 	}
 
-	dir, err := reporter.JSONDir(f.Args())
+	dir, err := reporter.JSONDir(config.Conf.ResultsDir, f.Args())
 	if err != nil {
 		logging.Log.Errorf("Failed to read from JSON: %+v", err)
 		return subcommands.ExitFailure
 	}
 
 	logging.Log.Info("Validating config...")
-	if !c.Conf.ValidateOnSaaS() {
+	if !config.Conf.ValidateOnSaaS() {
 		return subcommands.ExitUsageError
 	}
 
@@ -104,11 +104,11 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	for _, r := range res {
 		logging.Log.Debugf("%s: %s",
-			r.ServerInfo(), pp.Sprintf("%s", c.Conf.Servers[r.ServerName]))
+			r.ServerInfo(), pp.Sprintf("%s", config.Conf.Servers[r.ServerName]))
 	}
 
 	// Ensure UUIDs of scan target servers in config.toml
-	if err := saas.EnsureUUIDs(c.Conf.Servers, p.configPath, res); err != nil {
+	if err := saas.EnsureUUIDs(config.Conf.Servers, p.configPath, res); err != nil {
 		logging.Log.Errorf("Failed to ensure UUIDs. err: %+v", err)
 		return subcommands.ExitFailure
 	}

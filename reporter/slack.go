@@ -21,6 +21,8 @@ type SlackWriter struct {
 	FormatOneLineText bool
 	lang              string
 	osFamily          string
+	Cnf               config.SlackConf
+	Proxy             string
 }
 
 type message struct {
@@ -32,10 +34,8 @@ type message struct {
 }
 
 func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
-	conf := config.Conf.Slack
-	channel := conf.Channel
-	token := conf.LegacyToken
 
+	channel := w.Cnf.Channel
 	for _, r := range rs {
 		w.lang, w.osFamily = r.Lang, r.Family
 		if channel == "${servername}" {
@@ -57,15 +57,15 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 		sort.Ints(chunkKeys)
 
 		summary := fmt.Sprintf("%s\n%s",
-			w.getNotifyUsers(config.Conf.Slack.NotifyUsers),
+			w.getNotifyUsers(w.Cnf.NotifyUsers),
 			formatOneLineSummary(r))
 
 		// Send slack by API
-		if 0 < len(token) {
-			api := slack.New(token)
+		if 0 < len(w.Cnf.LegacyToken) {
+			api := slack.New(w.Cnf.LegacyToken)
 			msgPrms := slack.PostMessageParameters{
-				Username:  conf.AuthUser,
-				IconEmoji: conf.IconEmoji,
+				Username:  w.Cnf.AuthUser,
+				IconEmoji: w.Cnf.IconEmoji,
 			}
 
 			var ts string
@@ -83,8 +83,8 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 
 			for _, k := range chunkKeys {
 				params := slack.PostMessageParameters{
-					Username:        conf.AuthUser,
-					IconEmoji:       conf.IconEmoji,
+					Username:        w.Cnf.AuthUser,
+					IconEmoji:       w.Cnf.IconEmoji,
 					ThreadTimestamp: ts,
 				}
 				if _, _, err = api.PostMessage(
@@ -99,8 +99,8 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 		} else {
 			msg := message{
 				Text:      summary,
-				Username:  conf.AuthUser,
-				IconEmoji: conf.IconEmoji,
+				Username:  w.Cnf.AuthUser,
+				IconEmoji: w.Cnf.IconEmoji,
 				Channel:   channel,
 			}
 			if err := w.send(msg); err != nil {
@@ -119,8 +119,8 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 
 				msg := message{
 					Text:        txt,
-					Username:    conf.AuthUser,
-					IconEmoji:   conf.IconEmoji,
+					Username:    w.Cnf.AuthUser,
+					IconEmoji:   w.Cnf.IconEmoji,
 					Channel:     channel,
 					Attachments: m[k],
 				}
@@ -134,14 +134,13 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 }
 
 func (w SlackWriter) send(msg message) error {
-	conf := config.Conf.Slack
-	count, retryMax := 0, 10
 
+	count, retryMax := 0, 10
 	bytes, _ := json.Marshal(msg)
 	jsonBody := string(bytes)
 
 	f := func() (err error) {
-		resp, body, errs := gorequest.New().Timeout(10 * time.Second).Proxy(config.Conf.HTTPProxy).Post(conf.HookURL).Send(string(jsonBody)).End()
+		resp, body, errs := gorequest.New().Timeout(10 * time.Second).Proxy(w.Proxy).Post(w.Cnf.HookURL).Send(string(jsonBody)).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			count++
 			if count == retryMax {
@@ -149,7 +148,7 @@ func (w SlackWriter) send(msg message) error {
 			}
 			return xerrors.Errorf(
 				"HTTP POST error. url: %s, resp: %v, body: %s, err: %+v",
-				conf.HookURL, resp, body, errs)
+				w.Cnf.HookURL, resp, body, errs)
 		}
 		return nil
 	}

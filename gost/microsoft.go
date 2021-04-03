@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/future-architect/vuls/models"
-	"github.com/knqyf263/gost/db"
 	gostmodels "github.com/knqyf263/gost/models"
 )
 
@@ -16,15 +15,15 @@ type Microsoft struct {
 }
 
 // DetectCVEs fills cve information that has in Gost
-func (ms Microsoft) DetectCVEs(driver db.DB, r *models.ScanResult, _ bool) (nCVEs int, err error) {
-	if driver == nil {
+func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error) {
+	if ms.DBDriver.DB == nil {
 		return 0, nil
 	}
 	cveIDs := []string{}
 	for cveID := range r.ScannedCves {
 		cveIDs = append(cveIDs, cveID)
 	}
-	for cveID, msCve := range driver.GetMicrosoftMulti(cveIDs) {
+	for cveID, msCve := range ms.DBDriver.DB.GetMicrosoftMulti(cveIDs) {
 		if _, ok := r.ScannedCves[cveID]; !ok {
 			continue
 		}
