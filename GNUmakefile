@@ -99,7 +99,9 @@ diff:
 	# ln -s oldvuls vuls.old
 	# make int
     # (ex. test 10 times: for i in `seq 10`; do make int ARGS=-quiet ; done)
+ifneq ($(shell ls -U1 ${BASE_DIR} | wc -l), 0)
 	mv ${BASE_DIR}/* /tmp
+endif
 	mkdir -p ${NOW_JSON_DIR}
 	cp integration/data/*.json ${NOW_JSON_DIR}
 	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml $(ARGS)
