@@ -124,7 +124,9 @@ diff-redis:
 	# ln -s vuls vuls.new
 	# ln -s oldvuls vuls.old
 	# make int-redis
+ifneq ($(shell ls -U1 ${BASE_DIR} | wc -l), 0)
 	mv ${BASE_DIR}/* /tmp
+endif
 	mkdir -p ${NOW_JSON_DIR}
 	cp integration/data/*.json ${NOW_JSON_DIR}
 	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
@@ -137,7 +139,9 @@ diff-redis:
 	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
 
 diff-rdb-redis:
+ifneq ($(shell ls -U1 ${BASE_DIR} | wc -l), 0)
 	mv ${BASE_DIR}/* /tmp
+endif
 	mkdir -p ${NOW_JSON_DIR}
 	cp integration/data/*.json ${NOW_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml 
