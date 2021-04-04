@@ -126,7 +126,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 		}
 
 		if server.PortScan.ScannerBinPath != "" {
-			server.PortScan.ExternalScannerMode = true
+			server.PortScan.IsUseExternalScanner = true
 		}
 
 		server.LogMsgAnsiColor = Colors[index%len(Colors)]

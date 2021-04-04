@@ -12,7 +12,7 @@ import (
 
 // PortScanConf is the setting for using an external port scanner
 type PortScanConf struct {
-	ExternalScannerMode bool `toml:"-" json:"-"`
+	IsUseExternalScanner bool `toml:"-" json:"-"`
 
 	// Path to external scanner
 	ScannerBinPath string `toml:"scannerBinPath,omitempty" json:"scannerBinPath,omitempty"`
@@ -102,7 +102,7 @@ func (c *PortScanConf) GetScanTechniques() []ScanTechnique {
 
 // Validate validates configuration
 func (c *PortScanConf) Validate() (errs []error) {
-	if !c.ExternalScannerMode {
+	if !c.IsUseExternalScanner {
 		if c.IsZero() {
 			return
 		}

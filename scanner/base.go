@@ -800,7 +800,7 @@ func (l *base) detectScanDest() map[string][]string {
 }
 
 func (l *base) execPortsScan(scanDestIPPorts map[string][]string) ([]string, error) {
-	if l.getServerInfo().PortScan.ExternalScannerMode {
+	if l.getServerInfo().PortScan.IsUseExternalScanner {
 		listenIPPorts, err := l.execExternalPortScan(scanDestIPPorts)
 		if err != nil {
 			return []string{}, err

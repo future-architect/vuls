@@ -76,37 +76,38 @@ func TestPortScanConf_Validate(t *testing.T) {
 	}{
 		{
 			name:       "NotSetScannerBinPath",
-			conf:       PortScanConf{ExternalScannerMode: false, ScanTechniques: []string{"sS"}},
+			conf:       PortScanConf{IsUseExternalScanner: false, ScanTechniques: []string{"sS"}},
 			wantErrNum: 1,
 		},
 		{
 			name:       "UnsupportedScanTechnique",
-			conf:       PortScanConf{ExternalScannerMode: true, ScannerBinPath: "", ScanTechniques: []string{"sU"}},
+			conf:       PortScanConf{IsUseExternalScanner: true, ScannerBinPath: "", ScanTechniques: []string{"sU"}},
 			wantErrNum: 1,
 		},
 		{
 			name:       "MultipleScanTechniques",
-			conf:       PortScanConf{ExternalScannerMode: true, ScannerBinPath: "", ScanTechniques: []string{"sS", "sT"}},
+			conf:       PortScanConf{IsUseExternalScanner: true, ScannerBinPath: "", ScanTechniques: []string{"sS", "sT"}},
 			wantErrNum: 1,
 		},
 		{
 			name:       "InvalidSourceAddress",
-			conf:       PortScanConf{ExternalScannerMode: true, ScannerBinPath: "", SourceAddress: "192.168.1.a"},
+			conf:       PortScanConf{IsUseExternalScanner: true, ScannerBinPath: "", SourceAddress: "192.168.1.a"},
 			wantErrNum: 1,
 		},
 		{
 			name:       "InvalidSourcePort",
-			conf:       PortScanConf{ExternalScannerMode: true, ScannerBinPath: "", SourcePort: "a"},
+			conf:       PortScanConf{IsUseExternalScanner: true, ScannerBinPath: "", SourcePort: "a"},
 			wantErrNum: 1,
 		},
 		{
 			name:       "InvalidSourcePort2",
-			conf:       PortScanConf{ExternalScannerMode: true, ScannerBinPath: "", SourcePort: "-1"},
+			conf:       PortScanConf{IsUseExternalScanner: true, ScannerBinPath: "", SourcePort: "-1"},
 			wantErrNum: 1,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// The reason for adding 1 in tt.wantErrNum+1 is that there is always a path check error in ScannerBinPath: "".
 			if err := tt.conf.Validate(); len(err) != tt.wantErrNum+1 {
 				t.Errorf("PortScanConf.Validate() error = %v, len(error) = %d, wantErrNum %d", err, len(err), tt.wantErrNum+1)
 			}
