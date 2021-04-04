@@ -423,7 +423,7 @@ func (o Ubuntu) fillWithOval(r *models.ScanResult, kernelNamesInOval []string) (
 		}
 		defer func() {
 			if err := driver.CloseDB(); err != nil {
-				logging.Log.Errorf("Failed to close DB. err: %+v")
+				logging.Log.Errorf("Failed to close DB. err: %+v", err)
 			}
 		}()
 
