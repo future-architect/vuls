@@ -860,7 +860,10 @@ func nativeScanPort(scanDest string) (bool, error) {
 }
 
 func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]string, error) {
-	l.log.Infof("Using Port Scanner: External Scanner(PATH: %s)", l.getServerInfo().PortScan.ScannerBinPath)
+	portScanConf := l.getServerInfo().PortScan
+	l.log.Infof("Using Port Scanner: External Scanner(PATH: %s)", portScanConf.ScannerBinPath)
+	l.log.Infof("External Scanner Apply Options: Scan Techniques: %s, HasPrivileged: %t, Source Address: %s, Source Port: %s",
+		strings.Join(portScanConf.ScanTechniques, ","), portScanConf.HasPrivileged, portScanConf.SourceAddress, portScanConf.SourcePort)
 
 	listenIPPorts := []string{}
 
@@ -872,31 +875,31 @@ func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]stri
 		_, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 
-		scanner, err := nmap.NewScanner(nmap.WithBinaryPath(l.getServerInfo().PortScan.ScannerBinPath))
+		scanner, err := nmap.NewScanner(nmap.WithBinaryPath(portScanConf.ScannerBinPath))
 		if err != nil {
 			return []string{}, xerrors.Errorf("unable to create nmap scanner: %v", err)
 		}
 
-		technique, err := l.setScanTechniques()
+		scanTechnique, err := l.setScanTechniques()
 		if err != nil {
 			return []string{}, err
 		}
-		scanner.AddOptions(technique)
+		scanner.AddOptions(scanTechnique)
 
-		if l.getServerInfo().PortScan.HasPrivileged {
+		if portScanConf.HasPrivileged {
 			scanner.AddOptions(nmap.WithPrivileged())
 		} else {
 			scanner.AddOptions(nmap.WithUnprivileged())
 		}
 
-		if l.getServerInfo().PortScan.SourceAddress != "" {
-			scanner.AddOptions(nmap.WithSpoofIPAddress(l.getServerInfo().PortScan.SourceAddress))
+		if portScanConf.SourceAddress != "" {
+			scanner.AddOptions(nmap.WithSpoofIPAddress(portScanConf.SourceAddress))
 		}
 
-		if l.getServerInfo().PortScan.SourcePort != "" {
-			port, err := strconv.ParseInt(l.getServerInfo().PortScan.SourcePort, 10, 16)
+		if portScanConf.SourcePort != "" {
+			port, err := strconv.ParseInt(portScanConf.SourcePort, 10, 16)
 			if err != nil {
-				return []string{}, xerrors.Errorf("failed to strconv.ParseInt(%s, 10, 16) = %v", l.getServerInfo().PortScan.SourcePort, err)
+				return []string{}, xerrors.Errorf("failed to strconv.ParseInt(%s, 10, 16) = %v", portScanConf.SourcePort, err)
 			}
 			scanner.AddOptions(nmap.WithSourcePort(int16(port)))
 		}

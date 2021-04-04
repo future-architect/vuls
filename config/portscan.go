@@ -66,10 +66,26 @@ var scanTechniqueMap = map[ScanTechnique]string{
 }
 
 func (s ScanTechnique) String() string {
-	if s, ok := scanTechniqueMap[s]; ok {
-		return s
+	switch s {
+	case TCPSYN:
+		return "TCPSYN"
+	case TCPConnect:
+		return "TCPConnect"
+	case TCPACK:
+		return "TCPACK"
+	case TCPWindow:
+		return "TCPWindow"
+	case TCPMaimon:
+		return "TCPMaimon"
+	case TCPNull:
+		return "TCPNull"
+	case TCPFIN:
+		return "TCPFIN"
+	case TCPXmas:
+		return "TCPXmas"
+	default:
+		return "NotSupportTechnique"
 	}
-	return "NotSupportTechnique"
 }
 
 // GetScanTechniques converts ScanTechniques loaded from config.toml to []scanTechniques.
