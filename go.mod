@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/Azure/azure-sdk-for-go v50.2.0+incompatible
 	github.com/BurntSushi/toml v0.3.1
+	github.com/Ullaakut/nmap/v2 v2.1.1 // indirect
 	github.com/aquasecurity/fanal v0.0.0-20210119051230-28c249da7cfd
 	github.com/aquasecurity/trivy v0.16.0
 	github.com/aquasecurity/trivy-db v0.0.0-20210121143430-2a5c54036a86

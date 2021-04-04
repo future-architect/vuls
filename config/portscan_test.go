@@ -9,33 +9,33 @@ func TestPortScanConf_getScanTechniques(t *testing.T) {
 	tests := []struct {
 		name       string
 		techniques []string
-		want       []scanTechnique
+		want       []ScanTechnique
 	}{
 		{
 			name:       "nil",
 			techniques: []string{},
-			want:       []scanTechnique{},
+			want:       []ScanTechnique{},
 		},
 		{
 			name:       "single",
 			techniques: []string{"sS"},
-			want:       []scanTechnique{tcpSYN},
+			want:       []ScanTechnique{TCPSYN},
 		},
 		{
 			name:       "multiple",
 			techniques: []string{"sS", "sT"},
-			want:       []scanTechnique{tcpSYN, tcpConnect},
+			want:       []ScanTechnique{TCPSYN, TCPConnect},
 		},
 		{
 			name:       "unknown",
 			techniques: []string{"sU"},
-			want:       []scanTechnique{unknown},
+			want:       []ScanTechnique{NotSupportTechnique},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := PortScanConf{ScanTechniques: tt.techniques}
-			if got := c.getScanTechniques(); !reflect.DeepEqual(got, tt.want) {
+			if got := c.GetScanTechniques(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("PortScanConf.getScanTechniques() = %v, want %v", got, tt.want)
 			}
 		})

@@ -30,44 +30,55 @@ type PortScanConf struct {
 	SourcePort string `toml:"sourcePort,omitempty" json:"sourcePort,omitempty"`
 }
 
-type scanTechnique int
+// ScanTechnique is implemented to represent the supported ScanTechniques in an Enum.
+type ScanTechnique int
 
 const (
-	unknown scanTechnique = iota
-	tcpSYN
-	tcpConnect
-	tcpACK
-	tcpWindow
-	tcpMaimon
-	tcpNull
-	tcpFIN
-	tcpXmas
+	// NotSupportTechnique is a ScanTechnique that is currently not supported.
+	NotSupportTechnique ScanTechnique = iota
+	// TCPSYN is SYN scan
+	TCPSYN
+	// TCPConnect is TCP connect scan
+	TCPConnect
+	// TCPACK is ACK scan
+	TCPACK
+	// TCPWindow is Window scan
+	TCPWindow
+	// TCPMaimon is Maimon scan
+	TCPMaimon
+	// TCPNull is Null scan
+	TCPNull
+	// TCPFIN is FIN scan
+	TCPFIN
+	// TCPXmas is Xmas scan
+	TCPXmas
 )
 
-var scanTechniqueMap = map[scanTechnique]string{
-	tcpSYN:     "sS",
-	tcpConnect: "sT",
-	tcpACK:     "sA",
-	tcpWindow:  "sW",
-	tcpMaimon:  "sM",
-	tcpNull:    "sN",
-	tcpFIN:     "sF",
-	tcpXmas:    "sX",
+var scanTechniqueMap = map[ScanTechnique]string{
+	TCPSYN:     "sS",
+	TCPConnect: "sT",
+	TCPACK:     "sA",
+	TCPWindow:  "sW",
+	TCPMaimon:  "sM",
+	TCPNull:    "sN",
+	TCPFIN:     "sF",
+	TCPXmas:    "sX",
 }
 
-func (s scanTechnique) String() string {
+func (s ScanTechnique) String() string {
 	if s, ok := scanTechniqueMap[s]; ok {
 		return s
 	}
-	return "unknown"
+	return "NotSupportTechnique"
 }
 
-func (c *PortScanConf) getScanTechniques() []scanTechnique {
+// GetScanTechniques converts ScanTechniques loaded from config.toml to []scanTechniques.
+func (c *PortScanConf) GetScanTechniques() []ScanTechnique {
 	if len(c.ScanTechniques) == 0 {
-		return []scanTechnique{}
+		return []ScanTechnique{}
 	}
 
-	scanTechniques := []scanTechnique{}
+	scanTechniques := []ScanTechnique{}
 	for _, technique := range c.ScanTechniques {
 		findScanTechniqueFlag := false
 		for key, value := range scanTechniqueMap {
@@ -79,12 +90,12 @@ func (c *PortScanConf) getScanTechniques() []scanTechnique {
 		}
 
 		if !findScanTechniqueFlag {
-			scanTechniques = append(scanTechniques, unknown)
+			scanTechniques = append(scanTechniques, NotSupportTechnique)
 		}
 	}
 
 	if len(scanTechniques) == 0 {
-		return []scanTechnique{unknown}
+		return []ScanTechnique{NotSupportTechnique}
 	}
 	return scanTechniques
 }
@@ -103,9 +114,9 @@ func (c *PortScanConf) Validate() (errs []error) {
 			"scanner is not found. ScannerBinPath: %s not exists", c.ScannerBinPath))
 	}
 
-	scanTechniques := c.getScanTechniques()
+	scanTechniques := c.GetScanTechniques()
 	for _, technique := range scanTechniques {
-		if technique == unknown {
+		if technique == NotSupportTechnique {
 			errs = append(errs, xerrors.New("There is an unsupported option in ScanTechniques."))
 		}
 	}
