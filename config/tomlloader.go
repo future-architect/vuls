@@ -125,6 +125,10 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 			}
 		}
 
+		if server.PortScan.ScannerBinPath != "" {
+			server.PortScan.ExternalScannerMode = true
+		}
+
 		server.LogMsgAnsiColor = Colors[index%len(Colors)]
 		index++
 
@@ -200,6 +204,13 @@ func setDefaultIfEmpty(server *ServerInfo, d ServerInfo) error {
 		server.WordPress = Conf.Default.WordPress
 		if server.WordPress == nil {
 			server.WordPress = &WordPressConf{}
+		}
+	}
+
+	if server.PortScan == nil {
+		server.PortScan = Conf.Default.PortScan
+		if server.PortScan == nil {
+			server.PortScan = &PortScanConf{}
 		}
 	}
 
