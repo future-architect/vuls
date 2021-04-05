@@ -127,8 +127,8 @@ func (c *PortScanConf) Validate() (errs []error) {
 	}
 
 	scanTechniques := c.GetScanTechniques()
-	for _, technique := range scanTechniques {
-		if technique == NotSupportTechnique {
+	for _, scanTechnique := range scanTechniques {
+		if scanTechnique == NotSupportTechnique {
 			errs = append(errs, xerrors.New("There is an unsupported option in ScanTechniques."))
 		}
 	}
@@ -136,17 +136,37 @@ func (c *PortScanConf) Validate() (errs []error) {
 	// It does not currently support multiple ScanTechniques.
 	// But if it supports UDP scanning, it will need to accept multiple ScanTechniques.
 	if len(scanTechniques) > 1 {
-		errs = append(errs, xerrors.New("Multiple ScanTechniques are not supported."))
+		errs = append(errs, xerrors.New("Currently multiple ScanTechniques are not supported."))
+	}
+
+	if !c.HasPrivileged {
+		for _, scanTechnique := range scanTechniques {
+			if scanTechnique != TCPConnect && scanTechnique != NotSupportTechnique {
+				errs = append(errs, xerrors.New("If not privileged, only TCPConnect Scan(-sT) can be used."))
+				break
+			}
+		}
 	}
 
 	if c.SourcePort != "" {
+		for _, scanTechnique := range scanTechniques {
+			if scanTechnique == TCPConnect {
+				errs = append(errs, xerrors.New("SourcePort Option(-g/--source-port) is incompatible with the default TCPConnect Scan(-sT)."))
+				break
+			}
+		}
+
 		portNumber, err := strconv.Atoi(c.SourcePort)
 		if err != nil {
 			errs = append(errs, xerrors.Errorf("SourcePort conversion failed. %s", err))
-		}
+		} else {
+			if portNumber < 0 || 65535 < portNumber {
+				errs = append(errs, xerrors.Errorf("SourcePort(%s) must be between 0 and 65535.", c.SourcePort))
+			}
 
-		if portNumber < 0 || 65535 < portNumber {
-			errs = append(errs, xerrors.Errorf("SourcePort(%s) must be between 0 and 65535.", c.SourcePort))
+			if portNumber == 0 {
+				errs = append(errs, xerrors.New("SourcePort(0) may not work on all systems."))
+			}
 		}
 	}
 
