@@ -375,6 +375,7 @@ func (r *ScanResult) CheckEOL() {
 	}
 }
 
+// SortForJSONOutput sort list elements in the ScanResult to diff in integration-test
 func (r *ScanResult) SortForJSONOutput() {
 	for k, v := range r.Packages {
 		sort.SliceStable(v.AffectedProcs, func(i, j int) bool {
