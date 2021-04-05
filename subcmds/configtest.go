@@ -33,6 +33,7 @@ func (*ConfigtestCmd) Usage() string {
 	return `configtest:
 	configtest
 			[-config=/path/to/config.toml]
+			[-log-to-file]
 			[-log-dir=/path/to/log]
 			[-ask-key-password]
 			[-timeout=300]
@@ -53,6 +54,7 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 
 	defaultLogDir := logging.GetDefaultLogDir()
 	f.StringVar(&config.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
+	f.BoolVar(&config.Conf.LogToFile, "log-to-file", false, "output log to file")
 	f.BoolVar(&config.Conf.Debug, "debug", false, "debug mode")
 
 	f.IntVar(&p.timeoutSec, "timeout", 5*60, "Timeout(Sec)")
@@ -69,7 +71,7 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogDir, "", "")
+	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogToFile, config.Conf.LogDir, "", "")
 	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 
 	if err := mkdirDotVuls(); err != nil {

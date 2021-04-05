@@ -3,6 +3,7 @@ package logging
 import (
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -17,10 +18,11 @@ import (
 
 //LogOpts has options for logging
 type LogOpts struct {
-	Debug    bool   `json:"debug,omitempty"`
-	DebugSQL bool   `json:"debugSQL,omitempty"`
-	LogDir   string `json:"logDir,omitempty"`
-	Quiet    bool   `json:"quiet,omitempty"`
+	Debug     bool   `json:"debug,omitempty"`
+	DebugSQL  bool   `json:"debugSQL,omitempty"`
+	LogToFile bool   `json:"logToFile,omitempty"`
+	LogDir    string `json:"logDir,omitempty"`
+	Quiet     bool   `json:"quiet,omitempty"`
 }
 
 // Log for localhost
@@ -44,7 +46,7 @@ func NewNormalLogger() Logger {
 }
 
 // NewCustomLogger creates logrus
-func NewCustomLogger(debug, quiet bool, logDir, logMsgAnsiColor, serverName string) Logger {
+func NewCustomLogger(debug, quiet, logToFile bool, logDir, logMsgAnsiColor, serverName string) Logger {
 	log := logrus.New()
 	log.Formatter = &formatter.TextFormatter{MsgAnsiColor: logMsgAnsiColor}
 	log.Level = logrus.InfoLevel
@@ -57,14 +59,17 @@ func NewCustomLogger(debug, quiet bool, logDir, logMsgAnsiColor, serverName stri
 		return Logger{Entry: *logrus.NewEntry(log)}
 	}
 
-	// File output
-	dir := GetDefaultLogDir()
-	if logDir != "" {
-		dir = logDir
+	whereami := "localhost"
+	if serverName != "" {
+		whereami = serverName
 	}
 
-	// Only log to a file if quiet mode enabled
-	if quiet && flag.Lookup("test.v") == nil {
+	if logToFile {
+		dir := GetDefaultLogDir()
+		if logDir != "" {
+			dir = logDir
+		}
+
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
 			if err := os.Mkdir(dir, 0700); err != nil {
 				log.Errorf("Failed to create log directory. path: %s, err: %+v", dir, err)
@@ -73,34 +78,31 @@ func NewCustomLogger(debug, quiet bool, logDir, logMsgAnsiColor, serverName stri
 
 		logFile := dir + "/vuls.log"
 		if file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
-			log.Out = file
+			log.Out = io.MultiWriter(os.Stderr, file)
 		} else {
 			log.Out = os.Stderr
 			log.Errorf("Failed to create log file. path: %s, err: %+v", logFile, err)
 		}
+
+		if _, err := os.Stat(dir); err == nil {
+			path := filepath.Join(dir, fmt.Sprintf("%s.log", whereami))
+			if _, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
+				log.Hooks.Add(lfshook.NewHook(lfshook.PathMap{
+					logrus.DebugLevel: path,
+					logrus.InfoLevel:  path,
+					logrus.WarnLevel:  path,
+					logrus.ErrorLevel: path,
+					logrus.FatalLevel: path,
+					logrus.PanicLevel: path,
+				}, nil))
+			} else {
+				log.Errorf("Failed to create log file. path: %s, err: %+v", path, err)
+			}
+		}
+	} else if quiet {
+		log.Out = io.Discard
 	} else {
 		log.Out = os.Stderr
-	}
-
-	whereami := "localhost"
-	if 0 < len(serverName) {
-		whereami = serverName
-	}
-
-	if _, err := os.Stat(dir); err == nil {
-		path := filepath.Join(dir, fmt.Sprintf("%s.log", whereami))
-		if _, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
-			log.Hooks.Add(lfshook.NewHook(lfshook.PathMap{
-				logrus.DebugLevel: path,
-				logrus.InfoLevel:  path,
-				logrus.WarnLevel:  path,
-				logrus.ErrorLevel: path,
-				logrus.FatalLevel: path,
-				logrus.PanicLevel: path,
-			}, nil))
-		} else {
-			log.Errorf("Failed to create log file. path: %s, err: %+v", path, err)
-		}
 	}
 
 	entry := log.WithFields(logrus.Fields{"prefix": whereami})

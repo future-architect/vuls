@@ -32,6 +32,7 @@ func (*SaaSCmd) Usage() string {
 	saas
 		[-config=/path/to/config.toml]
 		[-results-dir=/path/to/results]
+		[-log-to-file]
 		[-log-dir=/path/to/log]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-debug]
@@ -53,6 +54,7 @@ func (p *SaaSCmd) SetFlags(f *flag.FlagSet) {
 
 	defaultLogDir := logging.GetDefaultLogDir()
 	f.StringVar(&config.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
+	f.BoolVar(&config.Conf.LogToFile, "log-to-file", false, "Output log to file")
 
 	f.StringVar(
 		&config.Conf.HTTPProxy, "http-proxy", "",
@@ -61,7 +63,7 @@ func (p *SaaSCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogDir, "", "")
+	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogToFile, config.Conf.LogDir, "", "")
 	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 	if err := config.Load(p.configPath, ""); err != nil {
 		logging.Log.Errorf("Error loading %s, %+v", p.configPath, err)
