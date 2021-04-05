@@ -221,7 +221,7 @@ host                = "{{$ip}}"
 #[servers.{{index $names $i}}.portscan]
 #scannerBinPath = "/usr/bin/nmap"
 #hasPrivileged = true
-#scanTechniques = ["sT"]
+#scanTechniques = ["sS"]
 #sourcePort = "65535"
 
 #[servers.{{index $names $i}}.optional]
