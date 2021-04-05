@@ -1,7 +1,6 @@
 package config
 
 import (
-	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -22,9 +21,6 @@ type PortScanConf struct {
 
 	// set the ScanTechniques for ScannerBinPath
 	ScanTechniques []string `toml:"scanTechniques,omitempty" json:"scanTechniques,omitempty"`
-
-	// set the FIREWALL/IDS EVASION AND SPOOFING(Spoof source address)
-	SourceAddress string `toml:"sourceAddress,omitempty" json:"sourceAddress,omitempty"`
 
 	// set the FIREWALL/IDS EVASION AND SPOOFING(Use given port number)
 	SourcePort string `toml:"sourcePort,omitempty" json:"sourcePort,omitempty"`
@@ -143,10 +139,6 @@ func (c *PortScanConf) Validate() (errs []error) {
 		errs = append(errs, xerrors.New("Multiple ScanTechniques are not supported."))
 	}
 
-	if c.SourceAddress != "" && net.ParseIP(c.SourceAddress) == nil {
-		errs = append(errs, xerrors.Errorf("Source Address(%s) is invalid.", c.SourceAddress))
-	}
-
 	if c.SourcePort != "" {
 		portNumber, err := strconv.Atoi(c.SourcePort)
 		if err != nil {
@@ -168,5 +160,5 @@ func (c *PortScanConf) Validate() (errs []error) {
 
 // IsZero return  whether this struct is not specified in config.toml
 func (c PortScanConf) IsZero() bool {
-	return c.ScannerBinPath == "" && !c.HasPrivileged && len(c.ScanTechniques) == 0 && c.SourceAddress == "" && c.SourcePort == ""
+	return c.ScannerBinPath == "" && !c.HasPrivileged && len(c.ScanTechniques) == 0 && c.SourcePort == ""
 }

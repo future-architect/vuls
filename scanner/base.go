@@ -862,8 +862,8 @@ func nativeScanPort(scanDest string) (bool, error) {
 func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]string, error) {
 	portScanConf := l.getServerInfo().PortScan
 	l.log.Infof("Using Port Scanner: External Scanner(PATH: %s)", portScanConf.ScannerBinPath)
-	l.log.Infof("External Scanner Apply Options: Scan Techniques: %s, HasPrivileged: %t, Source Address: %s, Source Port: %s",
-		strings.Join(portScanConf.ScanTechniques, ","), portScanConf.HasPrivileged, portScanConf.SourceAddress, portScanConf.SourcePort)
+	l.log.Infof("External Scanner Apply Options: Scan Techniques: %s, HasPrivileged: %t, Source Port: %s",
+		strings.Join(portScanConf.ScanTechniques, ","), portScanConf.HasPrivileged, portScanConf.SourcePort)
 
 	listenIPPorts := []string{}
 
@@ -892,10 +892,6 @@ func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]stri
 			scanner.AddOptions(nmap.WithUnprivileged())
 		}
 
-		if portScanConf.SourceAddress != "" {
-			scanner.AddOptions(nmap.WithSpoofIPAddress(portScanConf.SourceAddress))
-		}
-
 		if portScanConf.SourcePort != "" {
 			port, err := strconv.ParseInt(portScanConf.SourcePort, 10, 16)
 			if err != nil {
@@ -912,7 +908,7 @@ func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]stri
 
 		result, warnings, err := scanner.Run()
 		if err != nil {
-			return []string{}, xerrors.Errorf("unable to run nmap sacn: %v", err)
+			return []string{}, xerrors.Errorf("unable to run nmap scan: %v", err)
 		}
 
 		if warnings != nil {

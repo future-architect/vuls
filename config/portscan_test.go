@@ -90,11 +90,6 @@ func TestPortScanConf_Validate(t *testing.T) {
 			wantErrNum: 1,
 		},
 		{
-			name:       "InvalidSourceAddress",
-			conf:       PortScanConf{IsUseExternalScanner: true, ScannerBinPath: "", SourceAddress: "192.168.1.a"},
-			wantErrNum: 1,
-		},
-		{
 			name:       "InvalidSourcePort",
 			conf:       PortScanConf{IsUseExternalScanner: true, ScannerBinPath: "", SourcePort: "a"},
 			wantErrNum: 1,
