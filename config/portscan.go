@@ -16,7 +16,7 @@ type PortScanConf struct {
 	// Path to external scanner
 	ScannerBinPath string `toml:"scannerBinPath,omitempty" json:"scannerBinPath,omitempty"`
 
-	// set user has privileged (default: false)
+	// set user has privileged
 	HasPrivileged bool `toml:"hasPrivileged,omitempty" json:"hasPrivileged,omitempty"`
 
 	// set the ScanTechniques for ScannerBinPath
