@@ -78,12 +78,10 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 	packCvesList := []packCves{}
 	if deb.DBDriver.Cnf.IsFetchViaHTTP() {
 		url, _ := util.URLPathJoin(deb.DBDriver.Cnf.GetURL(), "debian", major(r.Release), "pkgs")
-		s := func(s string) string {
-			if s == "resolved" {
-				return "fixed-cves"
-			}
-			return "unfixed-cves"
-		}(fixStatus)
+		s := "unfixed-cves"
+		if s == "resolved" {
+			s = "fixed-cves"
+		}
 
 		responses, err := getCvesWithFixStateViaHTTP(r, url, s)
 		if err != nil {
@@ -154,12 +152,12 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 				}
 
 				if fixStatus == "resolved" {
-					versionRelease := func() string {
-						if p.isSrcPack {
-							return r.SrcPackages[p.packName].Version
-						}
-						return r.Packages[p.packName].FormatVer()
-					}()
+					versionRelease := ""
+					if p.isSrcPack {
+						versionRelease = r.SrcPackages[p.packName].Version
+					} else {
+						versionRelease = r.Packages[p.packName].FormatVer()
+					}
 
 					if versionRelease == "" {
 						break
@@ -197,15 +195,21 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 				}
 			}
 
-			for _, name := range names {
-				v.AffectedPackages = v.AffectedPackages.Store(models.PackageFixStatus{
-					Name:     name,
-					FixState: fixStatus,
-					FixedIn:  p.fixes[i].FixedIn,
-					NotFixedYet: func(s string) bool {
-						return s != "resolved"
-					}(fixStatus),
-				})
+			if fixStatus == "resolved" {
+				for _, name := range names {
+					v.AffectedPackages = v.AffectedPackages.Store(models.PackageFixStatus{
+						Name:    name,
+						FixedIn: p.fixes[i].FixedIn,
+					})
+				}
+			} else {
+				for _, name := range names {
+					v.AffectedPackages = v.AffectedPackages.Store(models.PackageFixStatus{
+						Name:        name,
+						FixState:    "open",
+						NotFixedYet: true,
+					})
+				}
 			}
 
 			r.ScannedCves[cve.CveID] = v
@@ -228,16 +232,16 @@ func isGostDefAffected(versionRelease, gostVersion string) (affected bool, err e
 }
 
 func (deb Debian) getCvesDebianWithfixStatus(fixStatus, release, pkgName string) (cves []models.CveContent, fixes []models.PackageFixStatus) {
-	cveDebs := func(s string) map[string]gostmodels.DebianCVE {
-		if s == "resolved" {
-			return deb.DBDriver.DB.GetFixedCvesDebian(release, pkgName)
+	if fixStatus == "resolved" {
+		for _, cveDeb := range deb.DBDriver.DB.GetFixedCvesDebian(release, pkgName) {
+			cves = append(cves, *deb.ConvertToModel(&cveDeb))
+			fixes = append(fixes, checkPackageFixStatus(&cveDeb)...)
 		}
-		return deb.DBDriver.DB.GetUnfixedCvesDebian(release, pkgName)
-	}(fixStatus)
-
-	for _, cveDeb := range cveDebs {
-		cves = append(cves, *deb.ConvertToModel(&cveDeb))
-		fixes = append(fixes, checkPackageFixStatus(&cveDeb)...)
+	} else {
+		for _, cveDeb := range deb.DBDriver.DB.GetUnfixedCvesDebian(release, pkgName) {
+			cves = append(cves, *deb.ConvertToModel(&cveDeb))
+			fixes = append(fixes, checkPackageFixStatus(&cveDeb)...)
+		}
 	}
 
 	return
@@ -269,15 +273,15 @@ func checkPackageFixStatus(cve *gostmodels.DebianCVE) []models.PackageFixStatus 
 	fixes := []models.PackageFixStatus{}
 	for _, p := range cve.Package {
 		for _, r := range p.Release {
-			f := func(name string, rel gostmodels.DebianRelease) models.PackageFixStatus {
-				if r.Status == "open" {
-					return models.PackageFixStatus{Name: name, NotFixedYet: true, FixState: rel.Status}
-				}
-				return models.PackageFixStatus{Name: name, FixedIn: r.FixedVersion}
-			}(p.PackageName, r)
-			fixes = append(fixes, f)
+			f := models.PackageFixStatus{Name: p.PackageName}
 
-			break
+			if r.Status == "open" {
+				f.NotFixedYet = true
+			} else {
+				f.FixedIn = r.FixedVersion
+			}
+
+			fixes = append(fixes, f)
 		}
 	}
 
