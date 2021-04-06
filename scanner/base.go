@@ -897,8 +897,7 @@ func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]stri
 			if err != nil {
 				return []string{}, xerrors.Errorf("failed to strconv.ParseUint(%s, 10, 16) = %v", portScanConf.SourcePort, err)
 			}
-			scanner.AddOptions(nmap.WithSourcePort(int16(port)))
-			// scanner.AddOptions(nmap.WithSourcePort(uint16(port)))
+			scanner.AddOptions(nmap.WithSourcePort(uint16(port)))
 		}
 
 		if strings.Contains(ip, ":") {

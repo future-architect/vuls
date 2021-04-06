@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/Azure/azure-sdk-for-go v50.2.0+incompatible
 	github.com/BurntSushi/toml v0.3.1
-	github.com/Ullaakut/nmap/v2 v2.1.1 // indirect
+	github.com/Ullaakut/nmap/v2 v2.1.2-0.20210406060955-59a52fe80a4f
 	github.com/aquasecurity/fanal v0.0.0-20210119051230-28c249da7cfd
 	github.com/aquasecurity/trivy v0.16.0
 	github.com/aquasecurity/trivy-db v0.0.0-20210121143430-2a5c54036a86
@@ -54,6 +54,7 @@ require (
 	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
 	golang.org/x/net v0.0.0-20210323141857-08027d57d8cf // indirect
 	golang.org/x/oauth2 v0.0.0-20210125201302-af13f521f196
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20210320140829-1e4c9ba3b0c4 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	gopkg.in/ini.v1 v1.62.0 // indirect
