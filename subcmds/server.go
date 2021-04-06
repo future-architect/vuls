@@ -35,6 +35,7 @@ func (*ServerCmd) Usage() string {
 	Server
 		[-lang=en|ja]
 		[-config=/path/to/config.toml]
+		[-log-to-file]
 		[-log-dir=/path/to/log]
 		[-cvss-over=7]
 		[-ignore-unscored-cves]
@@ -64,6 +65,7 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 
 	defaultLogDir := logging.GetDefaultLogDir()
 	f.StringVar(&config.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
+	f.BoolVar(&config.Conf.LogToFile, "log-to-file", false, "Output log to file")
 
 	f.Float64Var(&config.Conf.CvssScoreOver, "cvss-over", 0,
 		"-cvss-over=6.5 means Servering CVSS Score 6.5 and over (default: 0 (means Server all))")
@@ -84,7 +86,7 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogDir, "", "")
+	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogToFile, config.Conf.LogDir, "", "")
 	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 	if err := config.Load(p.configPath, ""); err != nil {
 		logging.Log.Errorf("Error loading %s. err: %+v", p.configPath, err)

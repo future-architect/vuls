@@ -334,6 +334,9 @@ func detectPkgsCvesWithOval(cnf config.GovalDictConf, r *models.ScanResult) erro
 	if err != nil {
 		return err
 	}
+	if ovalClient == nil {
+		return nil
+	}
 
 	logging.Log.Debugf("Check if oval fetched: %s %s", r.Family, r.Release)
 	ok, err := ovalClient.CheckIfOvalFetched(r.Family, r.Release)

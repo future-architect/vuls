@@ -71,6 +71,7 @@ type Scanner struct {
 	ScanTimeoutSec int
 	CacheDBPath    string
 	Debug          bool
+	LogToFile      bool
 	LogDir         string
 	Quiet          bool
 	DetectIPS      bool
@@ -198,6 +199,7 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 	}, nil
 }
 
+// ParseInstalledPkgs parses installed pkgs line
 func ParseInstalledPkgs(distro config.Distro, kernel models.Kernel, pkgList string) (models.Packages, models.SrcPackages, error) {
 	base := base{
 		Distro: distro,
@@ -212,21 +214,13 @@ func ParseInstalledPkgs(distro config.Distro, kernel models.Kernel, pkgList stri
 	case constant.Debian, constant.Ubuntu:
 		osType = &debian{base: base}
 	case constant.RedHat:
-		osType = &rhel{
-			redhatBase: redhatBase{base: base},
-		}
+		osType = &rhel{redhatBase: redhatBase{base: base}}
 	case constant.CentOS:
-		osType = &centos{
-			redhatBase: redhatBase{base: base},
-		}
+		osType = &centos{redhatBase: redhatBase{base: base}}
 	case constant.Oracle:
-		osType = &oracle{
-			redhatBase: redhatBase{base: base},
-		}
+		osType = &oracle{redhatBase: redhatBase{base: base}}
 	case constant.Amazon:
-		osType = &amazon{
-			redhatBase: redhatBase{base: base},
-		}
+		osType = &amazon{redhatBase: redhatBase{base: base}}
 	default:
 		return models.Packages{}, models.SrcPackages{}, xerrors.Errorf("Server mode for %s is not implemented yet", base.Distro.Family)
 	}
@@ -244,12 +238,12 @@ func (s Scanner) initServers() error {
 	// to generate random color for logging
 	rand.Seed(time.Now().UnixNano())
 	for _, srv := range hosts {
-		srv.setLogger(logging.NewCustomLogger(s.Debug, s.Quiet, s.LogDir, config.Colors[rand.Intn(len(config.Colors))], srv.getServerInfo().GetServerName()))
+		srv.setLogger(logging.NewCustomLogger(s.Debug, s.Quiet, s.LogToFile, s.LogDir, config.Colors[rand.Intn(len(config.Colors))], srv.getServerInfo().GetServerName()))
 	}
 
 	containers, errContainers := s.detectContainerOSes(hosts)
 	for _, srv := range containers {
-		srv.setLogger(logging.NewCustomLogger(s.Debug, s.Quiet, s.LogDir, config.Colors[rand.Intn(len(config.Colors))], srv.getServerInfo().GetServerName()))
+		srv.setLogger(logging.NewCustomLogger(s.Debug, s.Quiet, s.LogToFile, s.LogDir, config.Colors[rand.Intn(len(config.Colors))], srv.getServerInfo().GetServerName()))
 	}
 
 	// set to pkg global variable
