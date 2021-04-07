@@ -346,6 +346,11 @@ func detectPkgsCvesWithOval(cnf config.GovalDictConf, r *models.ScanResult) erro
 		return err
 	}
 	if !ok {
+		if r.Family == constant.Debian {
+			logging.Log.Debug("Skip OVAL and Scan with gost alone.")
+			logging.Log.Infof("%s: %d CVEs are detected with OVAL", r.FormatServerName(), 0)
+			return nil
+		}
 		return xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see `https://github.com/kotakanbe/goval-dictionary#usage`", r.Family, r.Release)
 	}
 
