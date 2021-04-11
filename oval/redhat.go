@@ -33,7 +33,7 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 		}
 		defer func() {
 			if err := driver.CloseDB(); err != nil {
-				logging.Log.Errorf("Failed to close DB. err: %+v")
+				logging.Log.Errorf("Failed to close DB. err: %+v", err)
 			}
 		}()
 
