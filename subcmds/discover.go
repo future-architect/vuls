@@ -125,14 +125,15 @@ func printConfigToml(ips []string) (err error) {
 
 # https://vuls.io/docs/en/config.toml.html#email-section
 #[email]
-#smtpAddr      = "smtp.example.com"
-#smtpPort      = "587"
-#user          = "username"
-#password      = "password"
-#from          = "from@example.com"
-#to            = ["to@example.com"]
-#cc            = ["cc@example.com"]
-#subjectPrefix = "[vuls]"
+#smtpAddr              = "smtp.example.com"
+#smtpPort              = "587"
+#tlsInsecureSkipVerify = false
+#user                  = "username"
+#password              = "password"
+#from                  = "from@example.com"
+#to                    = ["to@example.com"]
+#cc                    = ["cc@example.com"]
+#subjectPrefix         = "[vuls]"
 
 # https://vuls.io/docs/en/config.toml.html#http-section
 #[http]

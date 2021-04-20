@@ -94,7 +94,8 @@ func (e *emailSender) sendMail(smtpServerAddr, message string) (err error) {
 	emailConf := e.conf
 	//TLS Config
 	tlsConfig := &tls.Config{
-		ServerName: emailConf.SMTPAddr,
+		ServerName:         emailConf.SMTPAddr,
+		InsecureSkipVerify: emailConf.TLSInsecureSkipVerify,
 	}
 	switch emailConf.SMTPPort {
 	case "465":
