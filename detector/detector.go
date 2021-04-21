@@ -369,6 +369,12 @@ func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult) error {
 		return xerrors.Errorf("Failed to new a gost client: %w", err)
 	}
 
+	defer func() {
+		if err := client.CloseDB(); err != nil {
+			logging.Log.Errorf("Failed to close the gost DB. err: %+v", err)
+		}
+	}()
+
 	nCVEs, err := client.DetectUnfixed(r, true)
 	if err != nil {
 		return xerrors.Errorf("Failed to detect unfixed CVEs with gost: %w", err)
