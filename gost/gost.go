@@ -30,6 +30,9 @@ type Base struct {
 }
 
 func (b Base) CloseDB() error {
+	if b.DBDriver.DB == nil {
+		return nil
+	}
 	return b.DBDriver.DB.CloseDB()
 }
 
