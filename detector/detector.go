@@ -70,7 +70,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		}
 
 		repos := config.Conf.Servers[r.ServerName].GitHubRepos
-		if err := DetectGitHubCves(&r, repos, config.Conf.IgnoreGitHubDismissed); err != nil {
+		if err := DetectGitHubCves(&r, repos); err != nil {
 			return nil, xerrors.Errorf("Failed to detect GitHub Cves: %w", err)
 		}
 
@@ -219,7 +219,7 @@ func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf c
 }
 
 // DetectGitHubCves fetches CVEs from GitHub Security Alerts
-func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]config.GitHubConf, ignoreDismissed bool) error {
+func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]config.GitHubConf) error {
 	if len(githubConfs) == 0 {
 		return nil
 	}
@@ -229,7 +229,7 @@ func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]config.GitHub
 			return xerrors.Errorf("Failed to parse GitHub owner/repo: %s", ownerRepo)
 		}
 		owner, repo := ss[0], ss[1]
-		n, err := DetectGitHubSecurityAlerts(r, owner, repo, setting.Token, ignoreDismissed)
+		n, err := DetectGitHubSecurityAlerts(r, owner, repo, setting.Token, setting.IgnoreGitHubDismissed)
 		if err != nil {
 			return xerrors.Errorf("Failed to access GitHub Security Alerts: %w", err)
 		}
