@@ -861,9 +861,7 @@ func nativeScanPort(scanDest string) (bool, error) {
 
 func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]string, error) {
 	portScanConf := l.getServerInfo().PortScan
-	l.log.Infof("Using Port Scanner: External Scanner(PATH: %s)", portScanConf.ScannerBinPath)
-	l.log.Infof("External Scanner Apply Options: Scan Techniques: %s, HasPrivileged: %t, Source Port: %s",
-		strings.Join(portScanConf.ScanTechniques, ","), portScanConf.HasPrivileged, portScanConf.SourcePort)
+	l.displayExecNmapInfo(portScanConf)
 
 	listenIPPorts := []string{}
 
@@ -930,6 +928,28 @@ func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]stri
 	}
 
 	return listenIPPorts, nil
+}
+
+func (l *base) displayExecNmapInfo(conf *config.PortScanConf) {
+	l.log.Infof("Using Port Scanner: External Scanner(PATH: %s)", conf.ScannerBinPath)
+	l.log.Infof("External Scanner Apply Options: Scan Techniques: %s, HasPrivileged: %t, Source Port: %s",
+		strings.Join(conf.ScanTechniques, ","), conf.HasPrivileged, conf.SourcePort)
+
+	cmd := []string{conf.ScannerBinPath}
+	if len(conf.ScanTechniques) != 0 {
+		for _, technique := range conf.ScanTechniques {
+			cmd = append(cmd, "-"+technique)
+		}
+	}
+
+	if conf.SourcePort != "" {
+		cmd = append(cmd, "--source-port "+conf.SourcePort)
+	}
+
+	if conf.HasPrivileged {
+		cmd = append(cmd, "--privileged")
+	}
+	l.log.Debugf("Executing... %s", strings.Replace(strings.Join(cmd, " "), "\n", "", -1))
 }
 
 func (l *base) setScanTechniques() (func(*nmap.Scanner), error) {
