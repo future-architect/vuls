@@ -861,7 +861,10 @@ func nativeScanPort(scanDest string) (bool, error) {
 
 func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]string, error) {
 	portScanConf := l.getServerInfo().PortScan
-	l.displayExecNmapInfo(portScanConf)
+	l.log.Infof("Using Port Scanner: External Scanner(PATH: %s)", portScanConf.ScannerBinPath)
+	l.log.Infof("External Scanner Apply Options: Scan Techniques: %s, HasPrivileged: %t, Source Port: %s",
+		strings.Join(portScanConf.ScanTechniques, ","), portScanConf.HasPrivileged, portScanConf.SourcePort)
+	baseCmd := formatNmapOptionsToString(portScanConf)
 
 	listenIPPorts := []string{}
 
@@ -898,12 +901,16 @@ func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]stri
 			scanner.AddOptions(nmap.WithSourcePort(uint16(port)))
 		}
 
+		cmd := []string{baseCmd}
 		if strings.Contains(ip, ":") {
 			scanner.AddOptions(nmap.WithTargets(ip[1:len(ip)-1]), nmap.WithPorts(ports...), nmap.WithIPv6Scanning())
+			cmd = append(cmd, "-p", strings.Join(ports, ","), ip[1:len(ip)-1])
 		} else {
 			scanner.AddOptions(nmap.WithTargets(ip), nmap.WithPorts(ports...))
+			cmd = append(cmd, "-p", strings.Join(ports, ","), ip)
 		}
 
+		l.log.Debugf("Executing... %s", strings.Replace(strings.Join(cmd, " "), "\n", "", -1))
 		result, warnings, err := scanner.Run()
 		if err != nil {
 			return []string{}, xerrors.Errorf("unable to run nmap scan: %w", err)
@@ -930,11 +937,7 @@ func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]stri
 	return listenIPPorts, nil
 }
 
-func (l *base) displayExecNmapInfo(conf *config.PortScanConf) {
-	l.log.Infof("Using Port Scanner: External Scanner(PATH: %s)", conf.ScannerBinPath)
-	l.log.Infof("External Scanner Apply Options: Scan Techniques: %s, HasPrivileged: %t, Source Port: %s",
-		strings.Join(conf.ScanTechniques, ","), conf.HasPrivileged, conf.SourcePort)
-
+func formatNmapOptionsToString(conf *config.PortScanConf) string {
 	cmd := []string{conf.ScannerBinPath}
 	if len(conf.ScanTechniques) != 0 {
 		for _, technique := range conf.ScanTechniques {
@@ -949,7 +952,8 @@ func (l *base) displayExecNmapInfo(conf *config.PortScanConf) {
 	if conf.HasPrivileged {
 		cmd = append(cmd, "--privileged")
 	}
-	l.log.Debugf("Executing... %s", strings.Replace(strings.Join(cmd, " "), "\n", "", -1))
+
+	return strings.Join(cmd, " ")
 }
 
 func (l *base) setScanTechniques() (func(*nmap.Scanner), error) {
