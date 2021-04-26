@@ -877,7 +877,7 @@ func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]stri
 
 		scanner, err := nmap.NewScanner(nmap.WithBinaryPath(portScanConf.ScannerBinPath))
 		if err != nil {
-			return []string{}, xerrors.Errorf("unable to create nmap scanner: %v", err)
+			return []string{}, xerrors.Errorf("unable to create nmap scanner: %w", err)
 		}
 
 		scanTechnique, err := l.setScanTechniques()
@@ -895,7 +895,7 @@ func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]stri
 		if portScanConf.SourcePort != "" {
 			port, err := strconv.ParseUint(portScanConf.SourcePort, 10, 16)
 			if err != nil {
-				return []string{}, xerrors.Errorf("failed to strconv.ParseUint(%s, 10, 16) = %v", portScanConf.SourcePort, err)
+				return []string{}, xerrors.Errorf("failed to strconv.ParseUint(%s, 10, 16) = %w", portScanConf.SourcePort, err)
 			}
 			scanner.AddOptions(nmap.WithSourcePort(uint16(port)))
 		}
@@ -908,11 +908,11 @@ func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]stri
 
 		result, warnings, err := scanner.Run()
 		if err != nil {
-			return []string{}, xerrors.Errorf("unable to run nmap scan: %v", err)
+			return []string{}, xerrors.Errorf("unable to run nmap scan: %w", err)
 		}
 
 		if warnings != nil {
-			l.log.Warnf("nmap scan warnings: %v", warnings)
+			l.log.Warnf("nmap scan warnings: %w", warnings)
 		}
 
 		for _, host := range result.Hosts {
