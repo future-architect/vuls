@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -139,6 +140,43 @@ func (c *PortScanConf) Validate() (errs []error) {
 		errs = append(errs, xerrors.New("Currently multiple ScanTechniques are not supported."))
 	}
 
+	if c.HasPrivileged {
+		if os.Geteuid() != 0 {
+			output, err := exec.Command("getcap", c.ScannerBinPath).Output()
+			if err != nil {
+				errs = append(errs, xerrors.Errorf("Failed to check capability of %s. error message: %w", c.ScannerBinPath, err))
+			} else {
+				parseOutput := strings.SplitN(string(output), "=", 2)
+				if len(parseOutput) != 2 {
+					errs = append(errs, xerrors.Errorf("Failed to parse getcap outputs. please execute this command: `$ getcap %s`. If the following string (`/usr/bin/nmap = ... `) is not displayed, you need to set the capability with the following command. `$ setcap cap_net_raw,cap_net_admin,cap_net_bind_service+eip %s`", c.ScannerBinPath, c.ScannerBinPath))
+				} else {
+					parseCapability := strings.Split(strings.TrimSpace(parseOutput[1]), "+")
+					capabilities := strings.Split(parseCapability[0], ",")
+					for _, needCap := range []string{"cap_net_bind_service", "cap_net_admin", "cap_net_raw"} {
+						existCapFlag := false
+						for _, cap := range capabilities {
+							if needCap == cap {
+								existCapFlag = true
+								break
+							}
+						}
+
+						if existCapFlag {
+							continue
+						}
+
+						errs = append(errs, xerrors.Errorf("Not enough capability to execute. needs: ['cap_net_bind_service', 'cap_net_admin', 'cap_net_raw'], actual: %s. To fix this, run the following command. `$ setcap cap_net_raw,cap_net_admin,cap_net_bind_service+eip %s`", capabilities, c.ScannerBinPath))
+						break
+					}
+
+					if parseCapability[1] != "eip" {
+						errs = append(errs, xerrors.Errorf("Capability(`cap_net_bind_service,cap_net_admin,cap_net_raw`) must belong to the following capability set(need: eip, actual: %s). To fix this, run the following command. `$ setcap cap_net_raw,cap_net_admin,cap_net_bind_service+eip %s`", parseCapability[1], c.ScannerBinPath))
+					}
+				}
+			}
+		}
+	}
+
 	if !c.HasPrivileged {
 		for _, scanTechnique := range scanTechniques {
 			if scanTechnique != TCPConnect && scanTechnique != NotSupportTechnique {
@@ -158,7 +196,7 @@ func (c *PortScanConf) Validate() (errs []error) {
 
 		portNumber, err := strconv.Atoi(c.SourcePort)
 		if err != nil {
-			errs = append(errs, xerrors.Errorf("SourcePort conversion failed. %s", err))
+			errs = append(errs, xerrors.Errorf("SourcePort conversion failed. %w", err))
 		} else {
 			if portNumber < 0 || 65535 < portNumber {
 				errs = append(errs, xerrors.Errorf("SourcePort(%s) must be between 0 and 65535.", c.SourcePort))
