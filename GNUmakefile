@@ -183,10 +183,14 @@ build-integration:
 	make build
 	mv -f ./vuls ./vuls.${prev}
 
-	git checkout ${branch}
-	git stash apply stash@\{0\}
+	# master
+	git checkout master
+	make build
+	mv -f ./vuls ./vuls.master
 
 	# working tree
+	git checkout ${branch}
+	git stash apply stash@\{0\}
 	make build
 
 	# for integration testing, vuls.new and vuls.old needed.

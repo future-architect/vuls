@@ -296,6 +296,10 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 			continue
 		}
 
+		if ovalPack.Arch != "" && req.arch != ovalPack.Arch {
+			continue
+		}
+
 		// https://github.com/aquasecurity/trivy/pull/745
 		if strings.Contains(req.versionRelease, ".ksplice1.") != strings.Contains(ovalPack.Version, ".ksplice1.") {
 			continue
