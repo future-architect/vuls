@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"regexp"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff"
@@ -295,6 +296,15 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 			continue
 		}
 
+		if ovalPack.Arch != "" && req.arch != ovalPack.Arch {
+			continue
+		}
+
+		// https://github.com/aquasecurity/trivy/pull/745
+		if strings.Contains(req.versionRelease, ".ksplice1.") != strings.Contains(ovalPack.Version, ".ksplice1.") {
+			continue
+		}
+
 		isModularityLabelEmptyOrSame := false
 		if ovalPack.ModularityLabel != "" {
 			for _, mod := range enabledMods {
@@ -312,7 +322,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 
 		if running.Release != "" {
 			switch family {
-			case constant.RedHat, constant.CentOS:
+			case constant.RedHat, constant.CentOS, constant.Oracle:
 				// For kernel related packages, ignore OVAL information with different major versions
 				if _, ok := kernelRelatedPackNames[ovalPack.Name]; ok {
 					if util.Major(ovalPack.Version) != util.Major(running.Release) {

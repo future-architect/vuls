@@ -29,6 +29,7 @@ type Base struct {
 	DBDriver DBDriver
 }
 
+// CloseDB close a DB connection
 func (b Base) CloseDB() error {
 	if b.DBDriver.DB == nil {
 		return nil

@@ -1153,6 +1153,45 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected:    false,
 			notFixedYet: false,
 		},
+		// .ksplice1.
+		{
+			in: in{
+				family: constant.Oracle,
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:    "nginx",
+							Version: "2:2.17-106.0.1.ksplice1.el7_2.4",
+						},
+					},
+				},
+				req: request{
+					packName:       "nginx",
+					versionRelease: "2:2.17-107",
+				},
+			},
+			affected: false,
+		},
+		// .ksplice1.
+		{
+			in: in{
+				family: constant.Oracle,
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:    "nginx",
+							Version: "2:2.17-106.0.1.ksplice1.el7_2.4",
+						},
+					},
+				},
+				req: request{
+					packName:       "nginx",
+					versionRelease: "2:2.17-105.0.1.ksplice1.el7_2.4",
+				},
+			},
+			affected: true,
+			fixedIn:  "2:2.17-106.0.1.ksplice1.el7_2.4",
+		},
 	}
 	for i, tt := range tests {
 		affected, notFixedYet, fixedIn := isOvalDefAffected(tt.in.def, tt.in.req, tt.in.family, tt.in.kernel, tt.in.mods)

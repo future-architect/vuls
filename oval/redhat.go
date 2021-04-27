@@ -92,6 +92,7 @@ var kernelRelatedPackNames = map[string]bool{
 	"kernel-tools":            true,
 	"kernel-tools-libs":       true,
 	"kernel-tools-libs-devel": true,
+	"kernel-uek":              true,
 	"perf":                    true,
 	"python-perf":             true,
 }
