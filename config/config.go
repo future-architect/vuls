@@ -260,7 +260,7 @@ func (cnf WordPressConf) IsZero() bool {
 // GitHubConf is used for GitHub Security Alerts
 type GitHubConf struct {
 	Token                 string `json:"-"`
-	IgnoreGitHubDismissed bool   `json:"IgnoreGitHubDismissed,omitempty"`
+	IgnoreGitHubDismissed bool   `json:"ignoreGitHubDismissed,omitempty"`
 }
 
 // GetServerName returns ServerName if this serverInfo is about host.
