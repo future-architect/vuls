@@ -63,7 +63,6 @@ func (*ReportCmd) Usage() string {
 		[-diff-plus]
 		[-ignore-unscored-cves]
 		[-ignore-unfixed]
-		[-ignore-github-dismissed]
 		[-to-email]
 		[-to-http]
 		[-to-slack]
@@ -130,9 +129,6 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 
 	f.BoolVar(&config.Conf.IgnoreUnfixed, "ignore-unfixed", false,
 		"Don't report the unfixed CVEs")
-
-	f.BoolVar(&config.Conf.IgnoreGitHubDismissed, "ignore-github-dismissed", false,
-		"Don't report the dismissed CVEs on GitHub Security Alerts")
 
 	f.StringVar(
 		&config.Conf.HTTPProxy, "http-proxy", "",
