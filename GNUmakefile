@@ -68,7 +68,7 @@ unused:
 cov:
 	@ go get -v github.com/axw/gocov/gocov
 	@ go get golang.org/x/tools/cmd/cover
-	gocov test | gocov report
+	gocov test -v ./... | gocov report
 
 clean:
 	echo $(PKGS) | xargs go clean || exit;
