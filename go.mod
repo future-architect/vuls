@@ -30,7 +30,7 @@ require (
 	github.com/knqyf263/gost v0.1.10
 	github.com/kotakanbe/go-cve-dictionary v0.5.12
 	github.com/kotakanbe/go-pingscanner v0.1.0
-	github.com/kotakanbe/goval-dictionary v0.3.5
+	github.com/kotakanbe/goval-dictionary v0.3.6-0.20210429000733-6db1754b1d87
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
 	github.com/lib/pq v1.10.1 // indirect
 	github.com/magiconair/properties v1.8.4 // indirect
@@ -53,9 +53,10 @@ require (
 	github.com/vulsio/go-exploitdb v0.1.7
 	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b // indirect
 	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
-	golang.org/x/net v0.0.0-20210423184538-5f58ad60dda6 // indirect
+	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781 // indirect
 	golang.org/x/oauth2 v0.0.0-20210125201302-af13f521f196
 	golang.org/x/sys v0.0.0-20210426230700-d19ff857e887 // indirect
+	golang.org/x/tools v0.1.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009
