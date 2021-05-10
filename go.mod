@@ -5,9 +5,9 @@ go 1.16
 require (
 	github.com/Azure/azure-sdk-for-go v50.2.0+incompatible
 	github.com/BurntSushi/toml v0.3.1
-	github.com/aquasecurity/fanal v0.0.0-20210119051230-28c249da7cfd
-	github.com/aquasecurity/trivy v0.16.0
-	github.com/aquasecurity/trivy-db v0.0.0-20210121143430-2a5c54036a86
+	github.com/aquasecurity/fanal v0.0.0-20210501093021-8aaac3e8dea7
+	github.com/aquasecurity/trivy v0.17.2
+	github.com/aquasecurity/trivy-db v0.0.0-20210429114658-ae22941a55d0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/aws/aws-sdk-go v1.36.31
 	github.com/boltdb/bolt v1.3.1
@@ -44,17 +44,16 @@ require (
 	github.com/parnurzeal/gorequest v0.2.16
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
-	github.com/sirupsen/logrus v1.7.0
+	github.com/sirupsen/logrus v1.8.0
 	github.com/spf13/afero v1.6.0
-	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/cobra v1.1.3
-	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/takuzoo3868/go-msfdb v0.1.5
 	github.com/vulsio/go-exploitdb v0.1.7
 	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b // indirect
 	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
 	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781 // indirect
 	golang.org/x/oauth2 v0.0.0-20210125201302-af13f521f196
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210426230700-d19ff857e887 // indirect
 	golang.org/x/tools v0.1.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1

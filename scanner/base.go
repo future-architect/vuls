@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aquasecurity/fanal/analyzer"
@@ -18,6 +20,7 @@ import (
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	"golang.org/x/sync/semaphore"
 	"golang.org/x/xerrors"
 
 	// Import library scanner
@@ -603,13 +606,36 @@ func (l *base) scanLibraries() (err error) {
 	}
 
 	for path, b := range libFilemap {
-		res, err := analyzer.AnalyzeFile(path, &DummyFileInfo{}, func() ([]byte, error) {
-			return b, nil
+		anal := analyzer.NewAnalyzer([]analyzer.Type{
+			analyzer.TypeAlpine,
+			analyzer.TypeAmazon,
+			analyzer.TypeDebian,
+			analyzer.TypePhoton,
+			analyzer.TypeCentOS,
+			analyzer.TypeFedora,
+			analyzer.TypeOracle,
+			analyzer.TypeRedHatBase,
+			analyzer.TypeSUSE,
+			analyzer.TypeUbuntu,
+			analyzer.TypeApk,
+			analyzer.TypeDpkg,
+			analyzer.TypeRpm,
+			analyzer.TypeApkCommand,
+			analyzer.TypeYaml,
+			analyzer.TypeTOML,
+			analyzer.TypeJSON,
+			analyzer.TypeDockerfile,
+			analyzer.TypeHCL,
 		})
+		ctx := context.Background()
+		wg := sync.WaitGroup{}
+		limit := semaphore.NewWeighted(10)
+		result := new(analyzer.AnalysisResult)
+		err := anal.AnalyzeFile(ctx, &wg, limit, result, path, &DummyFileInfo{}, func() ([]byte, error) { return b, nil })
 		if err != nil {
 			return xerrors.Errorf("Failed to get libs: %w", err)
 		}
-		libscan, err := convertLibWithScanner(res.Applications)
+		libscan, err := convertLibWithScanner(result.Applications)
 		if err != nil {
 			return xerrors.Errorf("Failed to scan libraries: %w", err)
 		}

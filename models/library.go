@@ -46,7 +46,7 @@ type LibraryScanner struct {
 
 // Scan : scan target library
 func (s LibraryScanner) Scan() ([]VulnInfo, error) {
-	scanner, err := library.DriverFactory{}.NewDriver(filepath.Base(string(s.Path)))
+	scanner, err := library.NewDriver(filepath.Base(string(s.Path)))
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to new a library driver: %w", err)
 	}
