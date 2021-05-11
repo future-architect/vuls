@@ -605,39 +605,47 @@ func (l *base) scanLibraries() (err error) {
 		libFilemap[path] = bytes
 	}
 
+	disabledAnalyzers := []analyzer.Type{
+		analyzer.TypeAlpine,
+		analyzer.TypeAmazon,
+		analyzer.TypeDebian,
+		analyzer.TypePhoton,
+		analyzer.TypeCentOS,
+		analyzer.TypeFedora,
+		analyzer.TypeOracle,
+		analyzer.TypeRedHatBase,
+		analyzer.TypeSUSE,
+		analyzer.TypeUbuntu,
+		analyzer.TypeApk,
+		analyzer.TypeDpkg,
+		analyzer.TypeRpm,
+		analyzer.TypeApkCommand,
+		analyzer.TypeYaml,
+		analyzer.TypeTOML,
+		analyzer.TypeJSON,
+		analyzer.TypeDockerfile,
+		analyzer.TypeHCL,
+	}
+	anal := analyzer.NewAnalyzer(disabledAnalyzers)
+
 	for path, b := range libFilemap {
-		anal := analyzer.NewAnalyzer([]analyzer.Type{
-			analyzer.TypeAlpine,
-			analyzer.TypeAmazon,
-			analyzer.TypeDebian,
-			analyzer.TypePhoton,
-			analyzer.TypeCentOS,
-			analyzer.TypeFedora,
-			analyzer.TypeOracle,
-			analyzer.TypeRedHatBase,
-			analyzer.TypeSUSE,
-			analyzer.TypeUbuntu,
-			analyzer.TypeApk,
-			analyzer.TypeDpkg,
-			analyzer.TypeRpm,
-			analyzer.TypeApkCommand,
-			analyzer.TypeYaml,
-			analyzer.TypeTOML,
-			analyzer.TypeJSON,
-			analyzer.TypeDockerfile,
-			analyzer.TypeHCL,
-		})
-		ctx := context.Background()
-		wg := sync.WaitGroup{}
-		limit := semaphore.NewWeighted(10)
+		var wg sync.WaitGroup
 		result := new(analyzer.AnalysisResult)
-		err := anal.AnalyzeFile(ctx, &wg, limit, result, path, &DummyFileInfo{}, func() ([]byte, error) { return b, nil })
-		if err != nil {
-			return xerrors.Errorf("Failed to get libs: %w", err)
+		if err := anal.AnalyzeFile(
+			context.Background(),
+			&wg,
+			semaphore.NewWeighted(1),
+			result,
+			path,
+			&DummyFileInfo{},
+			func() ([]byte, error) { return b, nil }); err != nil {
+			return xerrors.Errorf("Failed to get libs. err: %w", err)
 		}
+		wg.Wait()
+
 		libscan, err := convertLibWithScanner(result.Applications)
 		if err != nil {
-			return xerrors.Errorf("Failed to scan libraries: %w", err)
+			return xerrors.Errorf("Failed to convert libs. err: %w", err)
 		}
 		l.LibraryScanners = append(l.LibraryScanners, libscan...)
 	}
