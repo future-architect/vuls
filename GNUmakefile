@@ -103,13 +103,15 @@ ifneq ($(shell ls -U1 ${BASE_DIR} | wc -l), 0)
 	mv ${BASE_DIR}/* /tmp
 endif
 	mkdir -p ${NOW_JSON_DIR}
-	cp integration/data/*.json ${NOW_JSON_DIR}
+	cp integration/data/results/*.json ${NOW_JSON_DIR}
 	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml $(ARGS)
 	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
-	cp integration/data/*.json ${ONE_SEC_AFTER_JSON_DIR}
+	cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml  $(ARGS)
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
+	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedRevision/d' {} \;
+	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedRevision/d' {} \;
 	diff -c ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
 	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
 
@@ -128,13 +130,15 @@ ifneq ($(shell ls -U1 ${BASE_DIR} | wc -l), 0)
 	mv ${BASE_DIR}/* /tmp
 endif
 	mkdir -p ${NOW_JSON_DIR}
-	cp integration/data/*.json ${NOW_JSON_DIR}
+	cp integration/data/results/*.json ${NOW_JSON_DIR}
 	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
 	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
-	cp integration/data/*.json ${ONE_SEC_AFTER_JSON_DIR}
+	cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
+	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedRevision/d' {} \;
+	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedRevision/d' {} \;
 	diff -c ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
 	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
 
@@ -143,20 +147,19 @@ ifneq ($(shell ls -U1 ${BASE_DIR} | wc -l), 0)
 	mv ${BASE_DIR}/* /tmp
 endif
 	mkdir -p ${NOW_JSON_DIR}
-	cp integration/data/*.json ${NOW_JSON_DIR}
+	cp integration/data/results/*.json ${NOW_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml 
 	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
-	cp integration/data/*.json ${ONE_SEC_AFTER_JSON_DIR}
+	cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
-	# remove reportedAt line
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
-	# remove "Type": line
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/"Type":/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/"Type":/d' {} \;
-	# remove "SQLite3Path": line
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/"SQLite3Path":/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/"SQLite3Path":/d' {} \;
+	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedRevision/d' {} \;
+	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedRevision/d' {} \;
 	diff -c ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
 	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
 	for jsonfile in ${NOW_JSON_DIR}/*.json ;  do \
