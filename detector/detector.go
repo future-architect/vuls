@@ -90,13 +90,13 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to fill with exploit: %w", err)
 		}
-		logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nExploitCve)
+		logging.Log.Infof("%s: %d PoC are detected", r.FormatServerName(), nExploitCve)
 
 		nMetasploitCve, err := FillWithMetasploit(&r, config.Conf.Metasploit)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to fill with metasploit: %w", err)
 		}
-		logging.Log.Infof("%s: %d modules are detected", r.FormatServerName(), nMetasploitCve)
+		logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nMetasploitCve)
 
 		FillCweDict(&r)
 

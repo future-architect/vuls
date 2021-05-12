@@ -41,3 +41,15 @@ lockfiles = ["./integration/data/lockfile/poetry.lock"]
 [servers.composer]
 type = "pseudo"
 lockfiles = ["./integration/data/lockfile/composer.lock"]
+
+[servers.packagelock]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/package-lock.json"]
+
+[servers.yarn]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/yarn.lock"]
+
+[servers.cargo]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/Cargo.lock"]
