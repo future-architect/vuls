@@ -48,7 +48,7 @@ func detectDebian(c config.ServerInfo) (bool, osTypeInterface, error) {
 			return false, nil, nil
 		}
 		if r.ExitStatus == 255 {
-			deb := newDebian(c) // Panic occor when return value 2 is nil and 3 is non-nil
+			deb := newDebian(c) // Panic occur when return value 2 is nil and 3 is non-nil
 			return false, deb, xerrors.Errorf("Unable to connect via SSH. Scan with -vvv option to print SSH debugging messages and check SSH settings. If you have never SSH to the host to be scanned, SSH to the host before scanning in order to add the HostKey. %s@%s port: %s\n%s", c.User, c.Host, c.Port, r)
 		}
 		logging.Log.Debugf("Not Debian like Linux. %s", r)
