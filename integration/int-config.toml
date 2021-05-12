@@ -24,7 +24,8 @@
 
 [servers.rails]
 type = "pseudo"
-cpeNames       = [ "cpe:/a:rubyonrails:ruby_on_rails:3.0.1" ]
+cpeNames = [ "cpe:/a:rubyonrails:ruby_on_rails:3.0.1" ]
 
 [servers.redmine]
 type = "pseudo"
+lockfiles = ["./integration/data/lockfile/Gemfile.lock"]

@@ -84,10 +84,12 @@ build-future-vuls: pretest fmt
 
 # integration-test
 BASE_DIR := '${PWD}/integration/results'
+$(shell mkdir -p ${BASE_DIR})
 NOW=$(shell date --iso-8601=seconds)
 NOW_JSON_DIR := '${BASE_DIR}/$(NOW)'
 ONE_SEC_AFTER=$(shell date -d '+1 second' --iso-8601=seconds)
 ONE_SEC_AFTER_JSON_DIR := '${BASE_DIR}/$(ONE_SEC_AFTER)'
+LIBS := 'redmine'
 
 diff:
 	# git clone git@github.com:vulsio/vulsctl.git
@@ -100,14 +102,22 @@ diff:
 	# make int
     # (ex. test 10 times: for i in `seq 10`; do make int ARGS=-quiet ; done)
 ifneq ($(shell ls -U1 ${BASE_DIR} | wc -l), 0)
-	mv ${BASE_DIR}/* /tmp
+	mv ${BASE_DIR} /tmp/${NOW}
 endif
 	mkdir -p ${NOW_JSON_DIR}
+	sleep 1
+	./vuls.old scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
+	cp ${BASE_DIR}/current/*.json ${NOW_JSON_DIR}
 	cp integration/data/results/*.json ${NOW_JSON_DIR}
-	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml $(ARGS)
+	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml ${NOW}
+
 	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
+	sleep 1
+	./vuls.new scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
+	cp ${BASE_DIR}/current/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
-	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml  $(ARGS)
+	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml ${ONE_SEC_AFTER}
+
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedRevision/d' {} \;
@@ -127,14 +137,22 @@ diff-redis:
 	# ln -s oldvuls vuls.old
 	# make int-redis
 ifneq ($(shell ls -U1 ${BASE_DIR} | wc -l), 0)
-	mv ${BASE_DIR}/* /tmp
+	mv ${BASE_DIR} /tmp/${NOW}
 endif
 	mkdir -p ${NOW_JSON_DIR}
+	sleep 1
+	./vuls.old scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
+	cp -f ${BASE_DIR}/current/*.json ${NOW_JSON_DIR}
 	cp integration/data/results/*.json ${NOW_JSON_DIR}
-	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
+	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml ${NOW}
+
 	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
+	sleep 1
+	./vuls.new scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
+	cp -f ${BASE_DIR}/current/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
-	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
+	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml ${ONE_SEC_AFTER}
+
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedRevision/d' {} \;
@@ -144,14 +162,25 @@ endif
 
 diff-rdb-redis:
 ifneq ($(shell ls -U1 ${BASE_DIR} | wc -l), 0)
-	mv ${BASE_DIR}/* /tmp
+	mv ${BASE_DIR} /tmp/${NOW}
 endif
 	mkdir -p ${NOW_JSON_DIR}
+	sleep 1
+	# new vs new
+	./vuls.new scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
+	cp -f ${BASE_DIR}/current/*.json ${NOW_JSON_DIR}
 	cp integration/data/results/*.json ${NOW_JSON_DIR}
-	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml 
+	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml ${NOW}
+
 	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
+	sleep 1
+	./vuls.new scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
+	cp -f ${BASE_DIR}/current/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
-	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
+	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml ${ONE_SEC_AFTER}
+
+	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/scannedAt/d' {} \;
+	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/scannedAt/d' {} \;
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/"Type":/d' {} \;
@@ -202,5 +231,7 @@ build-integration:
 	# $ ln -s ./vuls.${head} ./vuls.old
 	# or 
 	# $ ln -s ./vuls.${prev} ./vuls.old
-	# $ make int 
-	# $ make int-redis
+	# then
+	# $ make diff
+	# $ make diff-redis
+	# $ make diff-rdb-redis

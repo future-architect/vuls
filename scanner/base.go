@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -582,6 +583,11 @@ func (l *base) scanLibraries() (err error) {
 		if path == "" {
 			continue
 		}
+
+		if path, err = filepath.Abs(path); err != nil {
+			return xerrors.Errorf("Failed to abs the lockfile. err: %w, filepath: %s", err, path)
+		}
+
 		// skip already exist
 		if _, ok := libFilemap[path]; ok {
 			continue
@@ -592,7 +598,7 @@ func (l *base) scanLibraries() (err error) {
 		case constant.ServerTypePseudo:
 			bytes, err = ioutil.ReadFile(path)
 			if err != nil {
-				return xerrors.Errorf("Failed to get target file: %s, filepath: %s", err, path)
+				return xerrors.Errorf("Failed to get target file. err: %w, filepath: %s", err, path)
 			}
 		default:
 			cmd := fmt.Sprintf("cat %s", path)
