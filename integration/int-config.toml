@@ -33,3 +33,7 @@ lockfiles = ["./integration/data/lockfile/Gemfile.lock"]
 [servers.pipfile]
 type = "pseudo"
 lockfiles = ["./integration/data/lockfile/Pipfile.lock"]
+
+[servers.poetry]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/poetry.lock"]
