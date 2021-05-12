@@ -386,6 +386,12 @@ func (r *ScanResult) SortForJSONOutput() {
 		})
 		r.Packages[k] = v
 	}
+	for i, v := range r.LibraryScanners {
+		sort.SliceStable(v.Libs, func(i, j int) bool {
+			return v.Libs[i].Name < v.Libs[j].Name
+		})
+		r.LibraryScanners[i] = v
+	}
 
 	for k, v := range r.ScannedCves {
 		sort.SliceStable(v.AffectedPackages, func(i, j int) bool {
@@ -425,7 +431,6 @@ func (r *ScanResult) SortForJSONOutput() {
 		sort.SliceStable(v.AlertDict.Ja, func(i, j int) bool {
 			return v.AlertDict.Ja[i].Title < v.AlertDict.Ja[j].Title
 		})
-
 		r.ScannedCves[k] = v
 	}
 }

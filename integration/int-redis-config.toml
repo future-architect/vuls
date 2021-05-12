@@ -26,6 +26,10 @@ Url = "redis://127.0.0.1/3"
 type = "pseudo"
 cpeNames       = [ "cpe:/a:rubyonrails:ruby_on_rails:3.0.1" ]
 
-[servers.redmine]
+[servers.gemfile]
 type = "pseudo"
 lockfiles = ["./integration/data/lockfile/Gemfile.lock"]
+
+[servers.pipfile]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/Pipfile.lock"]

@@ -78,12 +78,10 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			return nil, xerrors.Errorf("Failed to detect WordPress Cves: %w", err)
 		}
 
-		logging.Log.Infof("Fill CVE detailed with gost")
 		if err := gost.FillCVEsWithRedHat(&r, config.Conf.Gost); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with gost: %w", err)
 		}
 
-		logging.Log.Infof("Fill CVE detailed with go-cve-dictionary")
 		if err := FillCvesWithNvdJvn(&r, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with CVE: %w", err)
 		}
@@ -244,7 +242,7 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf config.WpScanConf) error {
 	if len(r.WordPressPackages) == 0 {
 		return nil
 	}
-	logging.Log.Infof("Detect WordPress CVE. pkgs: %d ", len(r.WordPressPackages))
+	logging.Log.Infof("%s: Detect WordPress CVE. pkgs: %d ", r.ServerInfo(), (r.WordPressPackages))
 	n, err := detectWordPressCves(r, wpCnf)
 	if err != nil {
 		return xerrors.Errorf("Failed to detect WordPress CVE: %w", err)
