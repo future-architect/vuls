@@ -40,13 +40,14 @@ func (lss LibraryScanners) Total() (total int) {
 
 // LibraryScanner has libraries information
 type LibraryScanner struct {
+	Type string
 	Path string
 	Libs []types.Library
 }
 
 // Scan : scan target library
 func (s LibraryScanner) Scan() ([]VulnInfo, error) {
-	scanner, err := library.DriverFactory{}.NewDriver(filepath.Base(string(s.Path)))
+	scanner, err := library.NewDriver(s.Type)
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to new a library driver: %w", err)
 	}
