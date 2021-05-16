@@ -242,7 +242,7 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf config.WpScanConf) error {
 	if len(r.WordPressPackages) == 0 {
 		return nil
 	}
-	logging.Log.Infof("%s: Detect WordPress CVE. pkgs: %d ", r.ServerInfo(), (r.WordPressPackages))
+	logging.Log.Infof("%s: Detect WordPress CVE. Number of pkgs: %d ", r.ServerInfo(), len(r.WordPressPackages))
 	n, err := detectWordPressCves(r, wpCnf)
 	if err != nil {
 		return xerrors.Errorf("Failed to detect WordPress CVE: %w", err)
