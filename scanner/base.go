@@ -8,9 +8,11 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aquasecurity/fanal/analyzer"
@@ -20,6 +22,7 @@ import (
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
+	"golang.org/x/sync/semaphore"
 	"golang.org/x/xerrors"
 
 	// Import library scanner
@@ -583,6 +586,11 @@ func (l *base) scanLibraries() (err error) {
 		if path == "" {
 			continue
 		}
+
+		if path, err = filepath.Abs(path); err != nil {
+			return xerrors.Errorf("Failed to abs the lockfile. err: %w, filepath: %s", err, path)
+		}
+
 		// skip already exist
 		if _, ok := libFilemap[path]; ok {
 			continue
@@ -593,7 +601,7 @@ func (l *base) scanLibraries() (err error) {
 		case constant.ServerTypePseudo:
 			bytes, err = ioutil.ReadFile(path)
 			if err != nil {
-				return xerrors.Errorf("Failed to get target file: %s, filepath: %s", err, path)
+				return xerrors.Errorf("Failed to get target file. err: %w, filepath: %s", err, path)
 			}
 		default:
 			cmd := fmt.Sprintf("cat %s", path)
@@ -606,16 +614,47 @@ func (l *base) scanLibraries() (err error) {
 		libFilemap[path] = bytes
 	}
 
+	disabledAnalyzers := []analyzer.Type{
+		analyzer.TypeAlpine,
+		analyzer.TypeAmazon,
+		analyzer.TypeDebian,
+		analyzer.TypePhoton,
+		analyzer.TypeCentOS,
+		analyzer.TypeFedora,
+		analyzer.TypeOracle,
+		analyzer.TypeRedHatBase,
+		analyzer.TypeSUSE,
+		analyzer.TypeUbuntu,
+		analyzer.TypeApk,
+		analyzer.TypeDpkg,
+		analyzer.TypeRpm,
+		analyzer.TypeApkCommand,
+		analyzer.TypeYaml,
+		analyzer.TypeTOML,
+		analyzer.TypeJSON,
+		analyzer.TypeDockerfile,
+		analyzer.TypeHCL,
+	}
+	anal := analyzer.NewAnalyzer(disabledAnalyzers)
+
 	for path, b := range libFilemap {
-		res, err := analyzer.AnalyzeFile(path, &DummyFileInfo{}, func() ([]byte, error) {
-			return b, nil
-		})
-		if err != nil {
-			return xerrors.Errorf("Failed to get libs: %w", err)
+		var wg sync.WaitGroup
+		result := new(analyzer.AnalysisResult)
+		if err := anal.AnalyzeFile(
+			context.Background(),
+			&wg,
+			semaphore.NewWeighted(1),
+			result,
+			path,
+			&DummyFileInfo{},
+			func() ([]byte, error) { return b, nil }); err != nil {
+			return xerrors.Errorf("Failed to get libs. err: %w", err)
 		}
-		libscan, err := convertLibWithScanner(res.Applications)
+		wg.Wait()
+
+		libscan, err := convertLibWithScanner(result.Applications)
 		if err != nil {
-			return xerrors.Errorf("Failed to scan libraries: %w", err)
+			return xerrors.Errorf("Failed to convert libs. err: %w", err)
 		}
 		l.LibraryScanners = append(l.LibraryScanners, libscan...)
 	}

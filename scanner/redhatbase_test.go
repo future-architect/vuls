@@ -517,3 +517,127 @@ func Test_redhatBase_parseRpmQfLine(t *testing.T) {
 		})
 	}
 }
+
+func Test_redhatBase_rebootRequired(t *testing.T) {
+	type fields struct {
+		base base
+		sudo rootPriv
+	}
+	type args struct {
+		fn func(s string) execResult
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		{
+			name: "uek kernel no-reboot",
+			fields: fields{
+				base: base{
+					osPackages: osPackages{
+						Kernel: models.Kernel{
+							Release: "5.4.17-2102.200.13.el7uek.x86_64",
+						},
+					},
+				},
+			},
+			args: args{
+				fn: func(s string) execResult {
+					return execResult{
+						Stdout: `kernel-uek-5.4.17-2102.200.13.el7uek.x86_64   Mon 05 Apr 2021 04:52:06 PM UTC
+	kernel-uek-4.14.35-2047.501.2.el7uek.x86_64   Mon 05 Apr 2021 04:49:39 PM UTC
+	kernel-uek-4.14.35-1902.10.2.1.el7uek.x86_64  Wed 29 Jan 2020 05:04:52 PM UTC`,
+					}
+				},
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name: "uek kernel needs-reboot",
+			fields: fields{
+				base: base{
+					osPackages: osPackages{
+						Kernel: models.Kernel{
+							Release: "4.14.35-2047.501.2.el7uek.x86_64",
+						},
+					},
+				},
+			},
+			args: args{
+				fn: func(s string) execResult {
+					return execResult{
+						Stdout: `kernel-uek-5.4.17-2102.200.13.el7uek.x86_64   Mon 05 Apr 2021 04:52:06 PM UTC
+	kernel-uek-4.14.35-2047.501.2.el7uek.x86_64   Mon 05 Apr 2021 04:49:39 PM UTC
+	kernel-uek-4.14.35-1902.10.2.1.el7uek.x86_64  Wed 29 Jan 2020 05:04:52 PM UTC`,
+					}
+				},
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "kerne needs-reboot",
+			fields: fields{
+				base: base{
+					osPackages: osPackages{
+						Kernel: models.Kernel{
+							Release: "3.10.0-1062.12.1.el7.x86_64",
+						},
+					},
+				},
+			},
+			args: args{
+				fn: func(s string) execResult {
+					return execResult{
+						Stdout: `kernel-3.10.0-1160.24.1.el7.x86_64            Mon 26 Apr 2021 10:13:54 AM UTC
+kernel-3.10.0-1062.12.1.el7.x86_64            Sat 29 Feb 2020 12:09:00 PM UTC`,
+					}
+				},
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "kerne no-reboot",
+			fields: fields{
+				base: base{
+					osPackages: osPackages{
+						Kernel: models.Kernel{
+							Release: "3.10.0-1160.24.1.el7.x86_64",
+						},
+					},
+				},
+			},
+			args: args{
+				fn: func(s string) execResult {
+					return execResult{
+						Stdout: `kernel-3.10.0-1160.24.1.el7.x86_64            Mon 26 Apr 2021 10:13:54 AM UTC
+kernel-3.10.0-1062.12.1.el7.x86_64            Sat 29 Feb 2020 12:09:00 PM UTC`,
+					}
+				},
+			},
+			want:    false,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := &redhatBase{
+				base: tt.fields.base,
+				sudo: tt.fields.sudo,
+			}
+			got, err := o.rebootRequired(tt.args.fn)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("redhatBase.rebootRequired() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("redhatBase.rebootRequired() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

@@ -125,5 +125,16 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitFailure
 	}
 
+	if !config.Conf.Debug {
+		if err := os.RemoveAll(dir); err != nil {
+			logging.Log.Warnf("Failed to remove %s. err: %+v", dir, err)
+		}
+		symlink := filepath.Join(config.Conf.ResultsDir, "current")
+		err := os.Remove(symlink)
+		if err != nil {
+			logging.Log.Warnf("Failed to remove %s. err: %+v", dir, err)
+		}
+	}
+
 	return subcommands.ExitSuccess
 }

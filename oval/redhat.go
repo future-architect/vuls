@@ -33,7 +33,7 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 		}
 		defer func() {
 			if err := driver.CloseDB(); err != nil {
-				logging.Log.Errorf("Failed to close DB. err: %+v")
+				logging.Log.Errorf("Failed to close DB. err: %+v", err)
 			}
 		}()
 
@@ -92,6 +92,7 @@ var kernelRelatedPackNames = map[string]bool{
 	"kernel-tools":            true,
 	"kernel-tools-libs":       true,
 	"kernel-tools-libs-devel": true,
+	"kernel-uek":              true,
 	"perf":                    true,
 	"python-perf":             true,
 }
@@ -153,9 +154,12 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 
 func (o RedHatBase) convertToDistroAdvisory(def *ovalmodels.Definition) *models.DistroAdvisory {
 	advisoryID := def.Title
-	if (o.family == constant.RedHat || o.family == constant.CentOS) && len(advisoryID) > 0 {
-		ss := strings.Fields(def.Title)
-		advisoryID = strings.TrimSuffix(ss[0], ":")
+	switch o.family {
+	case constant.RedHat, constant.CentOS, constant.Oracle:
+		if def.Title != "" {
+			ss := strings.Fields(def.Title)
+			advisoryID = strings.TrimSuffix(ss[0], ":")
+		}
 	}
 	return &models.DistroAdvisory{
 		AdvisoryID:  advisoryID,

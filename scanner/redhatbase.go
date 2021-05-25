@@ -210,7 +210,8 @@ func (o *redhatBase) scanPackages() (err error) {
 		return xerrors.Errorf("Failed to detect installed dnf modules: %w", err)
 	}
 
-	o.Kernel.RebootRequired, err = o.rebootRequired()
+	fn := func(pkgName string) execResult { return o.exec(fmt.Sprintf("rpm -q --last %s", pkgName), noSudo) }
+	o.Kernel.RebootRequired, err = o.rebootRequired(fn)
 	if err != nil {
 		err = xerrors.Errorf("Failed to detect the kernel reboot required: %w", err)
 		o.log.Warnf("err: %+v", err)
@@ -238,8 +239,13 @@ func (o *redhatBase) scanPackages() (err error) {
 	return nil
 }
 
-func (o *redhatBase) rebootRequired() (bool, error) {
-	r := o.exec("rpm -q --last kernel", noSudo)
+func (o *redhatBase) rebootRequired(fn func(s string) execResult) (bool, error) {
+	pkgName := "kernel"
+	if strings.Contains(o.Kernel.Release, "uek.") {
+		pkgName = "kernel-uek"
+	}
+
+	r := fn(pkgName)
 	scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
 	if !r.isSuccess(0, 1) {
 		return false, xerrors.Errorf("Failed to detect the last installed kernel : %v", r)
@@ -248,7 +254,7 @@ func (o *redhatBase) rebootRequired() (bool, error) {
 		return false, nil
 	}
 	lastInstalledKernelVer := strings.Fields(scanner.Text())[0]
-	running := fmt.Sprintf("kernel-%s", o.Kernel.Release)
+	running := fmt.Sprintf("%s-%s", pkgName, o.Kernel.Release)
 	return running != lastInstalledKernelVer, nil
 }
 

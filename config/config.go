@@ -79,9 +79,6 @@ type ReportOpts struct {
 	DiffMinus          bool    `json:"diffMinus,omitempty"`
 	Diff               bool    `json:"diff,omitempty"`
 	Lang               string  `json:"lang,omitempty"`
-
-	//TODO move to GitHubConf
-	IgnoreGitHubDismissed bool `json:"ignore_git_hub_dismissed,omitempty"`
 }
 
 // ValidateOnConfigtest validates
@@ -273,7 +270,8 @@ func (cnf WordPressConf) IsZero() bool {
 
 // GitHubConf is used for GitHub Security Alerts
 type GitHubConf struct {
-	Token string `json:"-"`
+	Token                 string `json:"-"`
+	IgnoreGitHubDismissed bool   `json:"ignoreGitHubDismissed,omitempty"`
 }
 
 // GetServerName returns ServerName if this serverInfo is about host.
