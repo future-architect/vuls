@@ -14,3 +14,6 @@ config.toml
 .DS_Store
 dist/
 .idea
+
+# binary
+vuls
