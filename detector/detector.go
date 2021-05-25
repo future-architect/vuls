@@ -383,7 +383,7 @@ func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult) error {
 		}
 	}()
 
-	nCVEs, err := client.DetectUnfixed(r, true)
+	nCVEs, err := client.DetectCVEs(r, true)
 	if err != nil {
 		if r.Family == constant.Debian {
 			return xerrors.Errorf("Failed to detect CVEs with gost: %w", err)
