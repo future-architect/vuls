@@ -282,6 +282,9 @@ const (
 	// Ubuntu is Ubuntu
 	Ubuntu CveContentType = "ubuntu"
 
+	// UbuntuAPI is Ubuntu
+	UbuntuAPI CveContentType = "ubuntu_api"
+
 	// Oracle is Oracle Linux
 	Oracle CveContentType = "oracle"
 
