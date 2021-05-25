@@ -68,7 +68,7 @@ unused:
 cov:
 	@ go get -v github.com/axw/gocov/gocov
 	@ go get golang.org/x/tools/cmd/cover
-	gocov test | gocov report
+	gocov test -v ./... | gocov report
 
 clean:
 	echo $(PKGS) | xargs go clean || exit;
@@ -84,10 +84,12 @@ build-future-vuls: pretest fmt
 
 # integration-test
 BASE_DIR := '${PWD}/integration/results'
+# $(shell mkdir -p ${BASE_DIR})
 NOW=$(shell date --iso-8601=seconds)
 NOW_JSON_DIR := '${BASE_DIR}/$(NOW)'
 ONE_SEC_AFTER=$(shell date -d '+1 second' --iso-8601=seconds)
 ONE_SEC_AFTER_JSON_DIR := '${BASE_DIR}/$(ONE_SEC_AFTER)'
+LIBS := 'gemfile' 'pipfile' 'poetry' 'composer' 'packagelock' 'yarn' 'cargo'
 
 diff:
 	# git clone git@github.com:vulsio/vulsctl.git
@@ -100,18 +102,26 @@ diff:
 	# make int
     # (ex. test 10 times: for i in `seq 10`; do make int ARGS=-quiet ; done)
 ifneq ($(shell ls -U1 ${BASE_DIR} | wc -l), 0)
-	mv ${BASE_DIR}/* /tmp
+	mv ${BASE_DIR} /tmp/${NOW}
 endif
 	mkdir -p ${NOW_JSON_DIR}
-	cp integration/data/*.json ${NOW_JSON_DIR}
-	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml $(ARGS)
+	sleep 1
+	./vuls.old scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
+	cp ${BASE_DIR}/current/*.json ${NOW_JSON_DIR}
+	cp integration/data/results/*.json ${NOW_JSON_DIR}
+	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml ${NOW}
+
 	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
-	cp integration/data/*.json ${ONE_SEC_AFTER_JSON_DIR}
-	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml  $(ARGS)
-	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
-	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
-	diff -c ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
+	sleep 1
+	./vuls.new scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
+	cp ${BASE_DIR}/current/*.json ${ONE_SEC_AFTER_JSON_DIR}
+	cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
+	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml ${ONE_SEC_AFTER}
+
+	$(call sed-d)
+	- diff -c ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
 	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
+	$(call count-cve)
 
 diff-redis:
 	# docker network create redis-nw
@@ -125,47 +135,50 @@ diff-redis:
 	# ln -s oldvuls vuls.old
 	# make int-redis
 ifneq ($(shell ls -U1 ${BASE_DIR} | wc -l), 0)
-	mv ${BASE_DIR}/* /tmp
+	mv ${BASE_DIR} /tmp/${NOW}
 endif
 	mkdir -p ${NOW_JSON_DIR}
-	cp integration/data/*.json ${NOW_JSON_DIR}
-	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
+	sleep 1
+	./vuls.old scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
+	cp -f ${BASE_DIR}/current/*.json ${NOW_JSON_DIR}
+	cp integration/data/results/*.json ${NOW_JSON_DIR}
+	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml ${NOW}
+
 	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
-	cp integration/data/*.json ${ONE_SEC_AFTER_JSON_DIR}
-	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
-	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
-	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
-	diff -c ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
+	sleep 1
+	./vuls.new scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
+	cp -f ${BASE_DIR}/current/*.json ${ONE_SEC_AFTER_JSON_DIR}
+	cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
+	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml ${ONE_SEC_AFTER}
+
+	$(call sed-d)
+	- diff -c ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
 	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
+	$(call count-cve)
 
 diff-rdb-redis:
 ifneq ($(shell ls -U1 ${BASE_DIR} | wc -l), 0)
-	mv ${BASE_DIR}/* /tmp
+	mv ${BASE_DIR} /tmp/${NOW}
 endif
 	mkdir -p ${NOW_JSON_DIR}
-	cp integration/data/*.json ${NOW_JSON_DIR}
-	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml 
-	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
-	cp integration/data/*.json ${ONE_SEC_AFTER_JSON_DIR}
-	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml 
-	# remove reportedAt line
-	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
-	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
-	# remove "Type": line
-	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/"Type":/d' {} \;
-	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/"Type":/d' {} \;
-	# remove "SQLite3Path": line
-	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/"SQLite3Path":/d' {} \;
-	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/"SQLite3Path":/d' {} \;
-	diff -c ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
-	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
-	for jsonfile in ${NOW_JSON_DIR}/*.json ;  do \
-		echo $$jsonfile; cat $$jsonfile | jq ".scannedCves | length" ; \
-	done
-	for jsonfile in ${ONE_SEC_AFTER_JSON_DIR}/*.json ;  do \
-		echo $$jsonfile; cat $$jsonfile | jq ".scannedCves | length" ; \
-	done
+	sleep 1
+	# new vs new
+	./vuls.new scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
+	cp -f ${BASE_DIR}/current/*.json ${NOW_JSON_DIR}
+	cp integration/data/results/*.json ${NOW_JSON_DIR}
+	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml ${NOW}
 
+	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
+	sleep 1
+	./vuls.new scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
+	cp -f ${BASE_DIR}/current/*.json ${ONE_SEC_AFTER_JSON_DIR}
+	cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
+	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml ${ONE_SEC_AFTER}
+
+	$(call sed-d)
+	- diff -c ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
+	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
+	$(call count-cve)
 
 head= $(shell git rev-parse HEAD)
 prev= $(shell git rev-parse HEAD^)
@@ -183,10 +196,14 @@ build-integration:
 	make build
 	mv -f ./vuls ./vuls.${prev}
 
-	git checkout ${branch}
-	git stash apply stash@\{0\}
+	# master
+	git checkout master
+	make build
+	mv -f ./vuls ./vuls.master
 
 	# working tree
+	git checkout ${branch}
+	git stash apply stash@\{0\}
 	make build
 
 	# for integration testing, vuls.new and vuls.old needed.
@@ -195,5 +212,32 @@ build-integration:
 	# $ ln -s ./vuls.${head} ./vuls.old
 	# or 
 	# $ ln -s ./vuls.${prev} ./vuls.old
-	# $ make int 
-	# $ make int-redis
+	# then
+	# $ make diff
+	# $ make diff-redis
+	# $ make diff-rdb-redis
+
+
+define sed-d
+	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/scannedAt/d' {} \;
+	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/scannedAt/d' {} \;
+	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
+	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
+	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/"Type":/d' {} \;
+	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/"Type":/d' {} \;
+	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/"SQLite3Path":/d' {} \;
+	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/"SQLite3Path":/d' {} \;
+	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedRevision/d' {} \;
+	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedRevision/d' {} \;
+	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/scannedRevision/d' {} \;
+	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/scannedRevision/d' {} \;
+endef
+
+define count-cve
+	for jsonfile in ${NOW_JSON_DIR}/*.json ;  do \
+		echo $$jsonfile; cat $$jsonfile | jq ".scannedCves | length" ; \
+	done
+	for jsonfile in ${ONE_SEC_AFTER_JSON_DIR}/*.json ;  do \
+		echo $$jsonfile; cat $$jsonfile | jq ".scannedCves | length" ; \
+	done
+endef

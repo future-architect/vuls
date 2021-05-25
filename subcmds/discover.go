@@ -39,7 +39,7 @@ func (p *DiscoverCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *DiscoverCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogDir, "", "")
+	logging.Log = logging.NewCustomLogger(false, false, false, config.Conf.LogDir, "", "")
 	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 	// validate
 	if len(f.Args()) == 0 {
@@ -211,7 +211,8 @@ host                = "{{$ip}}"
 #ignoreCves     = ["CVE-2014-0160"]
 
 #[servers.{{index $names $i}}.githubs."owner/repo"]
-#token   = "yourToken"
+#token	= "yourToken"
+#ignoreGitHubDismissed	= false
 
 #[servers.{{index $names $i}}.wordpress]
 #cmdPath = "/usr/local/bin/wp"

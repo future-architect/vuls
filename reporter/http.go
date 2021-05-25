@@ -11,7 +11,7 @@ import (
 
 // HTTPRequestWriter writes results to HTTP request
 type HTTPRequestWriter struct {
-	Proxy string
+	URL string
 }
 
 // Write sends results as HTTP response
@@ -21,7 +21,7 @@ func (w HTTPRequestWriter) Write(rs ...models.ScanResult) (err error) {
 		if err := json.NewEncoder(b).Encode(r); err != nil {
 			return err
 		}
-		_, err = http.Post(w.Proxy, "application/json; charset=utf-8", b)
+		_, err = http.Post(w.URL, "application/json; charset=utf-8", b)
 		if err != nil {
 			return err
 		}

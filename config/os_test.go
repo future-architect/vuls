@@ -194,6 +194,14 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			extEnded: false,
 		},
 		{
+			name:     "Ubuntu 20.10 supported",
+			fields:   fields{family: Ubuntu, release: "20.10"},
+			now:      time.Date(2021, 5, 1, 23, 59, 59, 0, time.UTC),
+			found:    true,
+			stdEnded: false,
+			extEnded: false,
+		},
+		{
 			name:     "Ubuntu 21.04 supported",
 			fields:   fields{family: Ubuntu, release: "21.04"},
 			now:      time.Date(2021, 1, 6, 23, 59, 59, 0, time.UTC),

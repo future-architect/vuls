@@ -70,7 +70,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		}
 
 		repos := config.Conf.Servers[r.ServerName].GitHubRepos
-		if err := DetectGitHubCves(&r, repos, config.Conf.IgnoreGitHubDismissed); err != nil {
+		if err := DetectGitHubCves(&r, repos); err != nil {
 			return nil, xerrors.Errorf("Failed to detect GitHub Cves: %w", err)
 		}
 
@@ -78,12 +78,10 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			return nil, xerrors.Errorf("Failed to detect WordPress Cves: %w", err)
 		}
 
-		logging.Log.Infof("Fill CVE detailed with gost")
 		if err := gost.FillCVEsWithRedHat(&r, config.Conf.Gost); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with gost: %w", err)
 		}
 
-		logging.Log.Infof("Fill CVE detailed with go-cve-dictionary")
 		if err := FillCvesWithNvdJvn(&r, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with CVE: %w", err)
 		}
@@ -92,13 +90,13 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to fill with exploit: %w", err)
 		}
-		logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nExploitCve)
+		logging.Log.Infof("%s: %d PoC are detected", r.FormatServerName(), nExploitCve)
 
 		nMetasploitCve, err := FillWithMetasploit(&r, config.Conf.Metasploit)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to fill with metasploit: %w", err)
 		}
-		logging.Log.Infof("%s: %d modules are detected", r.FormatServerName(), nMetasploitCve)
+		logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nMetasploitCve)
 
 		FillCweDict(&r)
 
@@ -224,7 +222,7 @@ func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf c
 }
 
 // DetectGitHubCves fetches CVEs from GitHub Security Alerts
-func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]config.GitHubConf, ignoreDismissed bool) error {
+func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]config.GitHubConf) error {
 	if len(githubConfs) == 0 {
 		return nil
 	}
@@ -234,7 +232,7 @@ func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]config.GitHub
 			return xerrors.Errorf("Failed to parse GitHub owner/repo: %s", ownerRepo)
 		}
 		owner, repo := ss[0], ss[1]
-		n, err := DetectGitHubSecurityAlerts(r, owner, repo, setting.Token, ignoreDismissed)
+		n, err := DetectGitHubSecurityAlerts(r, owner, repo, setting.Token, setting.IgnoreGitHubDismissed)
 		if err != nil {
 			return xerrors.Errorf("Failed to access GitHub Security Alerts: %w", err)
 		}
@@ -249,7 +247,7 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf config.WpScanConf) error {
 	if len(r.WordPressPackages) == 0 {
 		return nil
 	}
-	logging.Log.Infof("Detect WordPress CVE. pkgs: %d ", len(r.WordPressPackages))
+	logging.Log.Infof("%s: Detect WordPress CVE. Number of pkgs: %d ", r.ServerInfo(), len(r.WordPressPackages))
 	n, err := detectWordPressCves(r, wpCnf)
 	if err != nil {
 		return xerrors.Errorf("Failed to detect WordPress CVE: %w", err)
@@ -339,6 +337,9 @@ func detectPkgsCvesWithOval(cnf config.GovalDictConf, r *models.ScanResult) erro
 	if err != nil {
 		return err
 	}
+	if ovalClient == nil {
+		return nil
+	}
 
 	logging.Log.Debugf("Check if oval fetched: %s %s", r.Family, r.Release)
 	ok, err := ovalClient.CheckIfOvalFetched(r.Family, r.Release)
@@ -376,7 +377,13 @@ func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult) error {
 		return xerrors.Errorf("Failed to new a gost client: %w", err)
 	}
 
-	nCVEs, err := client.DetectCVEs(r, true)
+	defer func() {
+		if err := client.CloseDB(); err != nil {
+			logging.Log.Errorf("Failed to close the gost DB. err: %+v", err)
+		}
+	}()
+
+	nCVEs, err := client.DetectUnfixed(r, true)
 	if err != nil {
 		if r.Family == constant.Debian {
 			return xerrors.Errorf("Failed to detect CVEs with gost: %w", err)

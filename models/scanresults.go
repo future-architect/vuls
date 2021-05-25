@@ -374,6 +374,7 @@ func (r *ScanResult) CheckEOL() {
 	}
 }
 
+// SortForJSONOutput sort list elements in the ScanResult to diff in integration-test
 func (r *ScanResult) SortForJSONOutput() {
 	for k, v := range r.Packages {
 		sort.SliceStable(v.AffectedProcs, func(i, j int) bool {
@@ -384,6 +385,12 @@ func (r *ScanResult) SortForJSONOutput() {
 		})
 		r.Packages[k] = v
 	}
+	for i, v := range r.LibraryScanners {
+		sort.SliceStable(v.Libs, func(i, j int) bool {
+			return v.Libs[i].Name < v.Libs[j].Name
+		})
+		r.LibraryScanners[i] = v
+	}
 
 	for k, v := range r.ScannedCves {
 		sort.SliceStable(v.AffectedPackages, func(i, j int) bool {
@@ -393,25 +400,36 @@ func (r *ScanResult) SortForJSONOutput() {
 			return v.DistroAdvisories[i].AdvisoryID < v.DistroAdvisories[j].AdvisoryID
 		})
 		sort.SliceStable(v.Exploits, func(i, j int) bool {
-			return v.Exploits[i].ID < v.Exploits[j].ID
+			return v.Exploits[i].URL < v.Exploits[j].URL
 		})
 		sort.SliceStable(v.Metasploits, func(i, j int) bool {
 			return v.Metasploits[i].Name < v.Metasploits[j].Name
+		})
+		sort.SliceStable(v.Mitigations, func(i, j int) bool {
+			return v.Mitigations[i].URL < v.Mitigations[j].URL
 		})
 		for kk, vv := range v.CveContents {
 			sort.SliceStable(vv.References, func(i, j int) bool {
 				return vv.References[i].Link < vv.References[j].Link
 			})
+			sort.SliceStable(vv.CweIDs, func(i, j int) bool {
+				return vv.CweIDs[i] < vv.CweIDs[j]
+			})
+			for kkk, vvv := range vv.References {
+				// sort v.CveContents[].References[].Tags
+				sort.SliceStable(vvv.Tags, func(i, j int) bool {
+					return vvv.Tags[i] < vvv.Tags[j]
+				})
+				vv.References[kkk] = vvv
+			}
 			v.CveContents[kk] = vv
 		}
-
 		sort.SliceStable(v.AlertDict.En, func(i, j int) bool {
 			return v.AlertDict.En[i].Title < v.AlertDict.En[j].Title
 		})
 		sort.SliceStable(v.AlertDict.Ja, func(i, j int) bool {
 			return v.AlertDict.Ja[i].Title < v.AlertDict.Ja[j].Title
 		})
-
 		r.ScannedCves[k] = v
 	}
 }

@@ -54,6 +54,7 @@ func (*ReportCmd) Usage() string {
 		[-lang=en|ja]
 		[-config=/path/to/config.toml]
 		[-results-dir=/path/to/results]
+		[-log-to-file]
 		[-log-dir=/path/to/log]
 		[-refresh-cve]
 		[-cvss-over=7]
@@ -62,7 +63,6 @@ func (*ReportCmd) Usage() string {
 		[-diff-plus]
 		[-ignore-unscored-cves]
 		[-ignore-unfixed]
-		[-ignore-github-dismissed]
 		[-to-email]
 		[-to-http]
 		[-to-slack]
@@ -107,6 +107,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 
 	defaultLogDir := logging.GetDefaultLogDir()
 	f.StringVar(&config.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
+	f.BoolVar(&config.Conf.LogToFile, "log-to-file", false, "Output log to file")
 
 	f.BoolVar(&config.Conf.RefreshCve, "refresh-cve", false,
 		"Refresh CVE information in JSON file under results dir")
@@ -128,9 +129,6 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 
 	f.BoolVar(&config.Conf.IgnoreUnfixed, "ignore-unfixed", false,
 		"Don't report the unfixed CVEs")
-
-	f.BoolVar(&config.Conf.IgnoreGitHubDismissed, "ignore-github-dismissed", false,
-		"Don't report the dismissed CVEs on GitHub Security Alerts")
 
 	f.StringVar(
 		&config.Conf.HTTPProxy, "http-proxy", "",
@@ -166,7 +164,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogDir, "", "")
+	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogToFile, config.Conf.LogDir, "", "")
 	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 
 	if err := config.Load(p.configPath, ""); err != nil {
@@ -281,7 +279,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if p.toHTTP {
-		reports = append(reports, reporter.HTTPRequestWriter{Proxy: config.Conf.HTTPProxy})
+		reports = append(reports, reporter.HTTPRequestWriter{URL: config.Conf.HTTP.URL})
 	}
 
 	if p.toLocalFile {

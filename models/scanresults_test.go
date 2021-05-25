@@ -180,8 +180,8 @@ func TestScanResult_Sort(t *testing.T) {
 							{AdvisoryID: "adv-2"},
 						},
 						Exploits: []Exploit{
-							{ID: "a"},
-							{ID: "b"},
+							{URL: "a"},
+							{URL: "b"},
 						},
 						Metasploits: []Metasploit{
 							{Name: "a"},
@@ -239,8 +239,8 @@ func TestScanResult_Sort(t *testing.T) {
 							{AdvisoryID: "adv-2"},
 						},
 						Exploits: []Exploit{
-							{ID: "a"},
-							{ID: "b"},
+							{URL: "a"},
+							{URL: "b"},
 						},
 						Metasploits: []Metasploit{
 							{Name: "a"},
@@ -301,8 +301,8 @@ func TestScanResult_Sort(t *testing.T) {
 							{AdvisoryID: "adv-1"},
 						},
 						Exploits: []Exploit{
-							{ID: "b"},
-							{ID: "a"},
+							{URL: "b"},
+							{URL: "a"},
 						},
 						Metasploits: []Metasploit{
 							{Name: "b"},
@@ -360,8 +360,8 @@ func TestScanResult_Sort(t *testing.T) {
 							{AdvisoryID: "adv-2"},
 						},
 						Exploits: []Exploit{
-							{ID: "a"},
-							{ID: "b"},
+							{URL: "a"},
+							{URL: "b"},
 						},
 						Metasploits: []Metasploit{
 							{Name: "a"},

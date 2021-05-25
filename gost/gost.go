@@ -20,12 +20,21 @@ type DBDriver struct {
 
 // Client is the interface of OVAL client.
 type Client interface {
-	DetectCVEs(*models.ScanResult, bool) (int, error)
+	DetectUnfixed(*models.ScanResult, bool) (int, error)
+	CloseDB() error
 }
 
 // Base is a base struct
 type Base struct {
 	DBDriver DBDriver
+}
+
+// CloseDB close a DB connection
+func (b Base) CloseDB() error {
+	if b.DBDriver.DB == nil {
+		return nil
+	}
+	return b.DBDriver.DB.CloseDB()
 }
 
 // FillCVEsWithRedHat fills CVE detailed with Red Hat Security

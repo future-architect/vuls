@@ -39,6 +39,7 @@ func (*ScanCmd) Usage() string {
 	scan
 		[-config=/path/to/config.toml]
 		[-results-dir=/path/to/results]
+		[-log-to-file]
 		[-log-dir=/path/to/log]
 		[-cachedb-path=/path/to/cache.db]
 		[-http-proxy=http://192.168.0.1:8080]
@@ -70,6 +71,7 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 	defaultLogDir := logging.GetDefaultLogDir()
 	f.StringVar(&config.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
+	f.BoolVar(&config.Conf.LogToFile, "log-to-file", false, "Output log to file")
 
 	defaultCacheDBPath := filepath.Join(wd, "cache.db")
 	f.StringVar(&p.cacheDBPath, "cachedb-path", defaultCacheDBPath,
@@ -98,7 +100,7 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogDir, "", "")
+	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogToFile, config.Conf.LogDir, "", "")
 	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 
 	if err := mkdirDotVuls(); err != nil {
@@ -190,6 +192,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		Targets:        targets,
 		Debug:          config.Conf.Debug,
 		Quiet:          config.Conf.Quiet,
+		LogToFile:      config.Conf.LogToFile,
 		LogDir:         config.Conf.LogDir,
 		DetectIPS:      p.detectIPS,
 	}

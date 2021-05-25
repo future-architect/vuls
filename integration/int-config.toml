@@ -24,4 +24,32 @@
 
 [servers.rails]
 type = "pseudo"
-cpeNames       = [ "cpe:/a:rubyonrails:ruby_on_rails:3.0.1" ]
+cpeNames = [ "cpe:/a:rubyonrails:ruby_on_rails:3.0.1" ]
+
+[servers.gemfile]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/Gemfile.lock"]
+
+[servers.pipfile]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/Pipfile.lock"]
+
+[servers.poetry]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/poetry.lock"]
+
+[servers.composer]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/composer.lock"]
+
+[servers.packagelock]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/package-lock.json"]
+
+[servers.yarn]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/yarn.lock"]
+
+[servers.cargo]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/Cargo.lock"]
