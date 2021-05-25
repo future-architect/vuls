@@ -956,7 +956,7 @@ func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]stri
 		}
 
 		if warnings != nil {
-			l.log.Warnf("nmap scan warnings: %w", warnings)
+			l.log.Warnf("nmap scan warnings: %+v", warnings)
 		}
 
 		for _, host := range result.Hosts {
