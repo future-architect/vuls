@@ -38,7 +38,7 @@ func (ubu Ubuntu) DetectUnfixed(r *models.ScanResult, _ bool) (nCVEs int, err er
 	}
 
 	linuxImage := "linux-image-" + r.RunningKernel.Release
-	// Add linux and set the version of running kernel to search OVAL.
+	// Add linux and set the version of running kernel to search Gost.
 	if r.Container.ContainerID == "" {
 		newVer := ""
 		if p, ok := r.Packages[linuxImage]; ok {
@@ -158,6 +158,25 @@ func (ubu Ubuntu) DetectUnfixed(r *models.ScanResult, _ bool) (nCVEs int, err er
 
 // ConvertToModel converts gost model to vuls model
 func (ubu Ubuntu) ConvertToModel(cve *gostmodels.UbuntuCVE) *models.CveContent {
+	references := []models.Reference{}
+	for _, r := range cve.References {
+		if strings.Contains(r.Reference, "https://cve.mitre.org/cgi-bin/cvename.cgi?name=") {
+			references = append(references, models.Reference{Source: "CVE", Link: r.Reference})
+		} else {
+			references = append(references, models.Reference{Link: r.Reference})
+		}
+	}
+
+	for _, b := range cve.Bugs {
+		references = append(references, models.Reference{Source: "Bug", Link: b.Bug})
+	}
+
+	for _, u := range cve.Upstreams {
+		for _, upstreamLink := range u.UpstreamLinks {
+			references = append(references, models.Reference{Source: "UPSTREAM", Link: upstreamLink.Link})
+		}
+	}
+
 	return &models.CveContent{
 		Type:          models.UbuntuAPI,
 		CveID:         cve.Candidate,
@@ -165,5 +184,7 @@ func (ubu Ubuntu) ConvertToModel(cve *gostmodels.UbuntuCVE) *models.CveContent {
 		Cvss2Severity: cve.Priority,
 		Cvss3Severity: cve.Priority,
 		SourceLink:    "https://ubuntu.com/security/" + cve.Candidate,
+		References:    references,
+		Published:     cve.PublicDate,
 	}
 }
