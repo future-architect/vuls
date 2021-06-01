@@ -41,7 +41,7 @@ func (deb Debian) DetectUnfixed(r *models.ScanResult, _ bool) (nCVEs int, err er
 	}
 
 	linuxImage := "linux-image-" + r.RunningKernel.Release
-	// Add linux and set the version of running kernel to search OVAL.
+	// Add linux and set the version of running kernel to search Gost.
 	if r.Container.ContainerID == "" {
 		newVer := ""
 		if p, ok := r.Packages[linuxImage]; ok {
