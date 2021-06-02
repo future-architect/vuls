@@ -129,6 +129,7 @@ var LibraryMap = map[string]string{
 	"composer.lock":     "php",
 	"Pipfile.lock":      "python",
 	"poetry.lock":       "python",
+	"go.sum":            "gomod",
 }
 
 // GetLibraryKey returns target library key
