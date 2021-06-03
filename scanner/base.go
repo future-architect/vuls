@@ -615,6 +615,15 @@ func (l *base) scanLibraries() (err error) {
 		libFilemap[path] = bytes
 	}
 
+	var libraryScanners []models.LibraryScanner
+	if libraryScanners, err = AnalizeLibraries(context.Background(), libFilemap); err != nil {
+		return err
+	}
+	l.LibraryScanners = append(l.LibraryScanners, libraryScanners...)
+	return nil
+}
+
+func AnalizeLibraries(ctx context.Context, libFilemap map[string][]byte) (libraryScanners []models.LibraryScanner, err error) {
 	disabledAnalyzers := []analyzer.Type{
 		analyzer.TypeAlpine,
 		analyzer.TypeAmazon,
@@ -642,24 +651,24 @@ func (l *base) scanLibraries() (err error) {
 		var wg sync.WaitGroup
 		result := new(analyzer.AnalysisResult)
 		if err := anal.AnalyzeFile(
-			context.Background(),
+			ctx,
 			&wg,
 			semaphore.NewWeighted(1),
 			result,
 			path,
 			&DummyFileInfo{},
 			func() ([]byte, error) { return b, nil }); err != nil {
-			return xerrors.Errorf("Failed to get libs. err: %w", err)
+			return nil, xerrors.Errorf("Failed to get libs. err: %w", err)
 		}
 		wg.Wait()
 
 		libscan, err := convertLibWithScanner(result.Applications)
 		if err != nil {
-			return xerrors.Errorf("Failed to convert libs. err: %w", err)
+			return nil, xerrors.Errorf("Failed to convert libs. err: %w", err)
 		}
-		l.LibraryScanners = append(l.LibraryScanners, libscan...)
+		libraryScanners = append(libraryScanners, libscan...)
 	}
-	return nil
+	return libraryScanners, nil
 }
 
 // DummyFileInfo is a dummy struct for libscan
