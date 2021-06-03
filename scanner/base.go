@@ -616,14 +616,14 @@ func (l *base) scanLibraries() (err error) {
 	}
 
 	var libraryScanners []models.LibraryScanner
-	if libraryScanners, err = AnalizeLibraries(context.Background(), libFilemap); err != nil {
+	if libraryScanners, err = AnalyzeLibraries(context.Background(), libFilemap); err != nil {
 		return err
 	}
 	l.LibraryScanners = append(l.LibraryScanners, libraryScanners...)
 	return nil
 }
 
-func AnalizeLibraries(ctx context.Context, libFilemap map[string][]byte) (libraryScanners []models.LibraryScanner, err error) {
+func AnalyzeLibraries(ctx context.Context, libFilemap map[string][]byte) (libraryScanners []models.LibraryScanner, err error) {
 	disabledAnalyzers := []analyzer.Type{
 		analyzer.TypeAlpine,
 		analyzer.TypeAmazon,
