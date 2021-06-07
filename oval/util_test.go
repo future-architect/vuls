@@ -1263,7 +1263,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected: true,
 			fixedIn:  "2.17-106.0.1",
 		},
-		// error when arch is empty for Oracle, Amazon linux
+		// arch is empty for Oracle, Amazon linux
 		{
 			in: in{
 				family: constant.Oracle,
@@ -1282,9 +1282,10 @@ func TestIsOvalDefAffected(t *testing.T) {
 					arch:           "x86_64",
 				},
 			},
-			wantErr: true,
+			wantErr: false,
+			fixedIn: "",
 		},
-		// error when arch is empty for Oracle, Amazon linux
+		// arch is empty for Oracle, Amazon linux
 		{
 			in: in{
 				family: constant.Amazon,
@@ -1303,7 +1304,8 @@ func TestIsOvalDefAffected(t *testing.T) {
 					arch:           "x86_64",
 				},
 			},
-			wantErr: true,
+			wantErr: false,
+			fixedIn: "",
 		},
 	}
 
