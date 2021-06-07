@@ -371,7 +371,8 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 				constant.SUSEEnterpriseServer,
 				constant.Debian,
 				constant.Ubuntu,
-				constant.Raspbian:
+				constant.Raspbian,
+				constant.Oracle:
 				// Use fixed state in OVAL for these distros.
 				return true, false, ovalPack.Version, nil
 			}
