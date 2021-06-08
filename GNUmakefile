@@ -32,13 +32,13 @@ build: ./cmd/vuls/main.go pretest fmt
 b: ./cmd/vuls/main.go 
 	$(GO) build -a -ldflags "$(LDFLAGS)" -o vuls ./cmd/vuls
 
-install: ./cmd/vuls/main.go pretest fmt
+install: ./cmd/vuls/main.go
 	$(GO) install -ldflags "$(LDFLAGS)" ./cmd/vuls
 
-build-scanner: ./cmd/scanner/main.go pretest fmt
+build-scanner: ./cmd/scanner/main.go 
 	$(CGO_UNABLED) build -tags=scanner -a -ldflags "$(LDFLAGS)" -o vuls ./cmd/scanner
 
-install-scanner: ./cmd/scanner/main.go pretest fmt
+install-scanner: ./cmd/scanner/main.go 
 	$(CGO_UNABLED) install -tags=scanner -ldflags "$(LDFLAGS)" ./cmd/scanner
 
 lint:
