@@ -1,3 +1,5 @@
+// +build !scanner
+
 package gost
 
 import (
