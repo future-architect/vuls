@@ -31,7 +31,8 @@ builds:
   main: ./cmd/scanner/main.go
   flags:
   - -a
-  - -tags=scanner
+  tags:
+  - scanner
   ldflags: 
   - -s -w -X github.com/future-architect/vuls/config.Version={{.Version}} -X github.com/future-architect/vuls/config.Revision={{.Commit}}-{{ .CommitDate }}
   binary: vuls-scanner
@@ -46,6 +47,8 @@ builds:
   - amd64
   - arm
   - arm64
+  tags:
+  - scanner
   main: ./contrib/trivy/cmd/main.go
   binary: trivy-to-vuls
 
@@ -61,7 +64,8 @@ builds:
   - arm64
   flags:
   - -a
-  - -tags=scanner
+  tags:
+  - scanner
   main: ./contrib/future-vuls/cmd/main.go
   binary: future-vuls
 
