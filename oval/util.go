@@ -306,7 +306,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 		switch family {
 		case constant.Oracle, constant.Amazon:
 			if ovalPack.Arch == "" {
-				logging.Log.Infof("Arch is needed to detect Vulns for Amazon and Oracle Linux, but empty. You need refresh OVAL maybe. oval: %s, defID: %s", ovalPack, def.DefinitionID)
+				logging.Log.Infof("Arch is needed to detect Vulns for Amazon and Oracle Linux, but empty. You need refresh OVAL maybe. oval: %#v, defID: %s", ovalPack, def.DefinitionID)
 				continue
 			}
 		}
