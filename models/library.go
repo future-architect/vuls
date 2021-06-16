@@ -88,15 +88,13 @@ func (s LibraryScanner) getVulnDetail(tvuln types.DetectedVulnerability) (vinfo 
 
 	vinfo.CveID = tvuln.VulnerabilityID
 	vinfo.CveContents = getCveContents(tvuln.VulnerabilityID, vul)
-	if tvuln.FixedVersion != "" {
-		vinfo.LibraryFixedIns = []LibraryFixedIn{
-			{
-				Key:     s.GetLibraryKey(),
-				Name:    tvuln.PkgName,
-				FixedIn: tvuln.FixedVersion,
-				Path:    s.Path,
-			},
-		}
+	vinfo.LibraryFixedIns = []LibraryFixedIn{
+		{
+			Key:     s.GetLibraryKey(),
+			Name:    tvuln.PkgName,
+			FixedIn: tvuln.FixedVersion,
+			Path:    s.Path,
+		},
 	}
 	return vinfo, nil
 }
