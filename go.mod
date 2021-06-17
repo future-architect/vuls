@@ -33,7 +33,7 @@ require (
 	github.com/knqyf263/go-cpe v0.0.0-20201213041631-54f6ab28673f
 	github.com/knqyf263/go-deb-version v0.0.0-20190517075300-09fca494f03d
 	github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936
-	github.com/knqyf263/gost v0.1.11-0.20210615205949-22120a6441d8
+	github.com/knqyf263/gost v0.1.11-0.20210617031744-8336262ce757
 	github.com/kotakanbe/go-cve-dictionary v0.15.14
 	github.com/kotakanbe/go-pingscanner v0.1.0
 	github.com/kotakanbe/goval-dictionary v0.3.6-0.20210429000733-6db1754b1d87
@@ -54,11 +54,11 @@ require (
 	github.com/spf13/viper v1.8.0 // indirect
 	github.com/takuzoo3868/go-msfdb v0.1.5
 	github.com/vulsio/go-exploitdb v0.1.7
-	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect
+	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
 	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210616045830-e2b7044e8c71 // indirect
+	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	gorm.io/driver/mysql v1.1.0 // indirect
 	gorm.io/driver/postgres v1.1.0 // indirect
