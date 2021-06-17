@@ -306,7 +306,8 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 		switch family {
 		case constant.Oracle, constant.Amazon:
 			if ovalPack.Arch == "" {
-				return false, false, "", xerrors.Errorf("OVAL DB for %s is old. Please re-fetch the OVAL", family)
+				logging.Log.Infof("Arch is needed to detect Vulns for Amazon and Oracle Linux, but empty. You need refresh OVAL maybe. oval: %#v, defID: %s", ovalPack, def.DefinitionID)
+				continue
 			}
 		}
 
@@ -370,7 +371,8 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 				constant.SUSEEnterpriseServer,
 				constant.Debian,
 				constant.Ubuntu,
-				constant.Raspbian:
+				constant.Raspbian,
+				constant.Oracle:
 				// Use fixed state in OVAL for these distros.
 				return true, false, ovalPack.Version, nil
 			}

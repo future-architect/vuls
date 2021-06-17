@@ -623,6 +623,7 @@ func (l *base) scanLibraries() (err error) {
 	return nil
 }
 
+// AnalyzeLibraries : detects libs defined in lockfile
 func AnalyzeLibraries(ctx context.Context, libFilemap map[string][]byte) (libraryScanners []models.LibraryScanner, err error) {
 	disabledAnalyzers := []analyzer.Type{
 		analyzer.TypeAlpine,
