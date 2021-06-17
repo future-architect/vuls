@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -28,10 +29,13 @@ import (
 	_ "github.com/aquasecurity/fanal/analyzer/library/bundler"
 	_ "github.com/aquasecurity/fanal/analyzer/library/cargo"
 	_ "github.com/aquasecurity/fanal/analyzer/library/composer"
+	_ "github.com/aquasecurity/fanal/analyzer/library/gomod"
 	_ "github.com/aquasecurity/fanal/analyzer/library/npm"
 	_ "github.com/aquasecurity/fanal/analyzer/library/pipenv"
 	_ "github.com/aquasecurity/fanal/analyzer/library/poetry"
 	_ "github.com/aquasecurity/fanal/analyzer/library/yarn"
+
+	nmap "github.com/Ullaakut/nmap/v2"
 )
 
 type base struct {
@@ -611,6 +615,15 @@ func (l *base) scanLibraries() (err error) {
 		libFilemap[path] = bytes
 	}
 
+	var libraryScanners []models.LibraryScanner
+	if libraryScanners, err = AnalyzeLibraries(context.Background(), libFilemap); err != nil {
+		return err
+	}
+	l.LibraryScanners = append(l.LibraryScanners, libraryScanners...)
+	return nil
+}
+
+func AnalyzeLibraries(ctx context.Context, libFilemap map[string][]byte) (libraryScanners []models.LibraryScanner, err error) {
 	disabledAnalyzers := []analyzer.Type{
 		analyzer.TypeAlpine,
 		analyzer.TypeAmazon,
@@ -638,24 +651,24 @@ func (l *base) scanLibraries() (err error) {
 		var wg sync.WaitGroup
 		result := new(analyzer.AnalysisResult)
 		if err := anal.AnalyzeFile(
-			context.Background(),
+			ctx,
 			&wg,
 			semaphore.NewWeighted(1),
 			result,
 			path,
 			&DummyFileInfo{},
 			func() ([]byte, error) { return b, nil }); err != nil {
-			return xerrors.Errorf("Failed to get libs. err: %w", err)
+			return nil, xerrors.Errorf("Failed to get libs. err: %w", err)
 		}
 		wg.Wait()
 
 		libscan, err := convertLibWithScanner(result.Applications)
 		if err != nil {
-			return xerrors.Errorf("Failed to convert libs. err: %w", err)
+			return nil, xerrors.Errorf("Failed to convert libs. err: %w", err)
 		}
-		l.LibraryScanners = append(l.LibraryScanners, libscan...)
+		libraryScanners = append(libraryScanners, libscan...)
 	}
-	return nil
+	return libraryScanners, nil
 }
 
 // DummyFileInfo is a dummy struct for libscan
@@ -836,24 +849,194 @@ func (l *base) detectScanDest() map[string][]string {
 }
 
 func (l *base) execPortsScan(scanDestIPPorts map[string][]string) ([]string, error) {
+	if l.getServerInfo().PortScan.IsUseExternalScanner {
+		listenIPPorts, err := l.execExternalPortScan(scanDestIPPorts)
+		if err != nil {
+			return []string{}, err
+		}
+		return listenIPPorts, nil
+	}
+
+	listenIPPorts, err := l.execNativePortScan(scanDestIPPorts)
+	if err != nil {
+		return []string{}, err
+	}
+
+	return listenIPPorts, nil
+}
+
+func (l *base) execNativePortScan(scanDestIPPorts map[string][]string) ([]string, error) {
+	l.log.Info("Using Port Scanner: Vuls built-in Scanner")
+
 	listenIPPorts := []string{}
 
 	for ip, ports := range scanDestIPPorts {
 		if !isLocalExec(l.ServerInfo.Port, l.ServerInfo.Host) && net.ParseIP(ip).IsLoopback() {
 			continue
 		}
+
 		for _, port := range ports {
 			scanDest := ip + ":" + port
-			conn, err := net.DialTimeout("tcp", scanDest, time.Duration(1)*time.Second)
+			isOpen, err := nativeScanPort(scanDest)
 			if err != nil {
-				continue
+				return []string{}, err
 			}
-			conn.Close()
-			listenIPPorts = append(listenIPPorts, scanDest)
+
+			if isOpen {
+				listenIPPorts = append(listenIPPorts, scanDest)
+			}
 		}
 	}
 
 	return listenIPPorts, nil
+}
+
+func nativeScanPort(scanDest string) (bool, error) {
+	conn, err := net.DialTimeout("tcp", scanDest, time.Duration(1)*time.Second)
+	if err != nil {
+		if strings.Contains(err.Error(), "i/o timeout") || strings.Contains(err.Error(), "connection refused") {
+			return false, nil
+		}
+		if strings.Contains(err.Error(), "too many open files") {
+			time.Sleep(time.Duration(1) * time.Second)
+			return nativeScanPort(scanDest)
+		}
+		return false, err
+	}
+	conn.Close()
+
+	return true, nil
+}
+
+func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]string, error) {
+	portScanConf := l.getServerInfo().PortScan
+	l.log.Infof("Using Port Scanner: External Scanner(PATH: %s)", portScanConf.ScannerBinPath)
+	l.log.Infof("External Scanner Apply Options: Scan Techniques: %s, HasPrivileged: %t, Source Port: %s",
+		strings.Join(portScanConf.ScanTechniques, ","), portScanConf.HasPrivileged, portScanConf.SourcePort)
+	baseCmd := formatNmapOptionsToString(portScanConf)
+
+	listenIPPorts := []string{}
+
+	for ip, ports := range scanDestIPPorts {
+		if !isLocalExec(l.ServerInfo.Port, l.ServerInfo.Host) && net.ParseIP(ip).IsLoopback() {
+			continue
+		}
+
+		_, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+
+		scanner, err := nmap.NewScanner(nmap.WithBinaryPath(portScanConf.ScannerBinPath))
+		if err != nil {
+			return []string{}, xerrors.Errorf("unable to create nmap scanner: %w", err)
+		}
+
+		scanTechnique, err := l.setScanTechniques()
+		if err != nil {
+			return []string{}, err
+		}
+		scanner.AddOptions(scanTechnique)
+
+		if portScanConf.HasPrivileged {
+			scanner.AddOptions(nmap.WithPrivileged())
+		} else {
+			scanner.AddOptions(nmap.WithUnprivileged())
+		}
+
+		if portScanConf.SourcePort != "" {
+			port, err := strconv.ParseUint(portScanConf.SourcePort, 10, 16)
+			if err != nil {
+				return []string{}, xerrors.Errorf("failed to strconv.ParseUint(%s, 10, 16) = %w", portScanConf.SourcePort, err)
+			}
+			scanner.AddOptions(nmap.WithSourcePort(uint16(port)))
+		}
+
+		cmd := []string{baseCmd}
+		if strings.Contains(ip, ":") {
+			scanner.AddOptions(nmap.WithTargets(ip[1:len(ip)-1]), nmap.WithPorts(ports...), nmap.WithIPv6Scanning())
+			cmd = append(cmd, "-p", strings.Join(ports, ","), ip[1:len(ip)-1])
+		} else {
+			scanner.AddOptions(nmap.WithTargets(ip), nmap.WithPorts(ports...))
+			cmd = append(cmd, "-p", strings.Join(ports, ","), ip)
+		}
+
+		l.log.Debugf("Executing... %s", strings.Replace(strings.Join(cmd, " "), "\n", "", -1))
+		result, warnings, err := scanner.Run()
+		if err != nil {
+			return []string{}, xerrors.Errorf("unable to run nmap scan: %w", err)
+		}
+
+		if warnings != nil {
+			l.log.Warnf("nmap scan warnings: %s", warnings)
+		}
+
+		for _, host := range result.Hosts {
+			if len(host.Ports) == 0 || len(host.Addresses) == 0 {
+				continue
+			}
+
+			for _, port := range host.Ports {
+				if strings.Contains(string(port.Status()), string(nmap.Open)) {
+					scanDest := fmt.Sprintf("%s:%d", ip, port.ID)
+					listenIPPorts = append(listenIPPorts, scanDest)
+				}
+			}
+		}
+	}
+
+	return listenIPPorts, nil
+}
+
+func formatNmapOptionsToString(conf *config.PortScanConf) string {
+	cmd := []string{conf.ScannerBinPath}
+	if len(conf.ScanTechniques) != 0 {
+		for _, technique := range conf.ScanTechniques {
+			cmd = append(cmd, "-"+technique)
+		}
+	}
+
+	if conf.SourcePort != "" {
+		cmd = append(cmd, "--source-port "+conf.SourcePort)
+	}
+
+	if conf.HasPrivileged {
+		cmd = append(cmd, "--privileged")
+	}
+
+	return strings.Join(cmd, " ")
+}
+
+func (l *base) setScanTechniques() (func(*nmap.Scanner), error) {
+	scanTechniques := l.getServerInfo().PortScan.GetScanTechniques()
+
+	if len(scanTechniques) == 0 {
+		if l.getServerInfo().PortScan.HasPrivileged {
+			return nmap.WithSYNScan(), nil
+		}
+		return nmap.WithConnectScan(), nil
+	}
+
+	for _, technique := range scanTechniques {
+		switch technique {
+		case config.TCPSYN:
+			return nmap.WithSYNScan(), nil
+		case config.TCPConnect:
+			return nmap.WithConnectScan(), nil
+		case config.TCPACK:
+			return nmap.WithACKScan(), nil
+		case config.TCPWindow:
+			return nmap.WithWindowScan(), nil
+		case config.TCPMaimon:
+			return nmap.WithMaimonScan(), nil
+		case config.TCPNull:
+			return nmap.WithTCPNullScan(), nil
+		case config.TCPFIN:
+			return nmap.WithTCPFINScan(), nil
+		case config.TCPXmas:
+			return nmap.WithTCPXmasScan(), nil
+		}
+	}
+
+	return nil, xerrors.Errorf("Failed to setScanTechniques. There is an unsupported option in ScanTechniques.")
 }
 
 func (l *base) updatePortStatus(listenIPPorts []string) {

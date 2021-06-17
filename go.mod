@@ -5,8 +5,9 @@ go 1.16
 require (
 	github.com/Azure/azure-sdk-for-go v50.2.0+incompatible
 	github.com/BurntSushi/toml v0.3.1
-	github.com/aquasecurity/fanal v0.0.0-20210501093021-8aaac3e8dea7
-	github.com/aquasecurity/trivy v0.17.2
+	github.com/Ullaakut/nmap/v2 v2.1.2-0.20210406060955-59a52fe80a4f
+	github.com/aquasecurity/fanal v0.0.0-20210520034323-54c5a82e861f
+	github.com/aquasecurity/trivy v0.18.3
 	github.com/aquasecurity/trivy-db v0.0.0-20210429114658-ae22941a55d0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/aws/aws-sdk-go v1.36.31
@@ -37,7 +38,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.12 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/nlopes/slack v0.6.0
 	github.com/nsf/termbox-go v0.0.0-20200418040025-38ba6e5628f1 // indirect
 	github.com/olekukonko/tablewriter v0.0.5

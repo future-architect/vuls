@@ -53,3 +53,8 @@ lockfiles = ["./integration/data/lockfile/yarn.lock"]
 [servers.cargo]
 type = "pseudo"
 lockfiles = ["./integration/data/lockfile/Cargo.lock"]
+
+[servers.gomod]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/go.sum"]
+

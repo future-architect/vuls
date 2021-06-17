@@ -219,6 +219,12 @@ host                = "{{$ip}}"
 #osUser = "wordpress"
 #docRoot = "/path/to/DocumentRoot/"
 
+#[servers.{{index $names $i}}.portscan]
+#scannerBinPath = "/usr/bin/nmap"
+#hasPrivileged = true
+#scanTechniques = ["sS"]
+#sourcePort = "65535"
+
 #[servers.{{index $names $i}}.optional]
 #key = "value1"
 
