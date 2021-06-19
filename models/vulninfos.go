@@ -157,7 +157,7 @@ func (v VulnInfos) CountGroupBySeverity() map[string]int {
 func (v VulnInfos) FormatCveSummary() string {
 	m := v.CountGroupBySeverity()
 	line := fmt.Sprintf("Total: %d (Critical:%d High:%d Medium:%d Low:%d ?:%d)",
-		m["High"]+m["Medium"]+m["Low"]+m["Unknown"],
+		m["Critical"]+m["High"]+m["Medium"]+m["Low"]+m["Unknown"],
 		m["Critical"], m["High"], m["Medium"], m["Low"], m["Unknown"])
 
 	nPlus, nMinus := v.CountDiff()

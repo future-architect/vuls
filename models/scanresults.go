@@ -378,54 +378,66 @@ func (r *ScanResult) CheckEOL() {
 // SortForJSONOutput sort list elements in the ScanResult to diff in integration-test
 func (r *ScanResult) SortForJSONOutput() {
 	for k, v := range r.Packages {
-		sort.SliceStable(v.AffectedProcs, func(i, j int) bool {
+		sort.Slice(v.AffectedProcs, func(i, j int) bool {
 			return v.AffectedProcs[i].PID < v.AffectedProcs[j].PID
 		})
-		sort.SliceStable(v.NeedRestartProcs, func(i, j int) bool {
+		sort.Slice(v.NeedRestartProcs, func(i, j int) bool {
 			return v.NeedRestartProcs[i].PID < v.NeedRestartProcs[j].PID
 		})
 		r.Packages[k] = v
 	}
+	for i, v := range r.LibraryScanners {
+		sort.Slice(v.Libs, func(i, j int) bool {
+			switch strings.Compare(v.Libs[i].Name, v.Libs[j].Name) {
+			case -1:
+				return true
+			case 1:
+				return false
+			}
+			return v.Libs[i].Version < v.Libs[j].Version
+
+		})
+		r.LibraryScanners[i] = v
+	}
 
 	for k, v := range r.ScannedCves {
-		sort.SliceStable(v.AffectedPackages, func(i, j int) bool {
+		sort.Slice(v.AffectedPackages, func(i, j int) bool {
 			return v.AffectedPackages[i].Name < v.AffectedPackages[j].Name
 		})
-		sort.SliceStable(v.DistroAdvisories, func(i, j int) bool {
+		sort.Slice(v.DistroAdvisories, func(i, j int) bool {
 			return v.DistroAdvisories[i].AdvisoryID < v.DistroAdvisories[j].AdvisoryID
 		})
-		sort.SliceStable(v.Exploits, func(i, j int) bool {
+		sort.Slice(v.Exploits, func(i, j int) bool {
 			return v.Exploits[i].URL < v.Exploits[j].URL
 		})
-		sort.SliceStable(v.Metasploits, func(i, j int) bool {
+		sort.Slice(v.Metasploits, func(i, j int) bool {
 			return v.Metasploits[i].Name < v.Metasploits[j].Name
 		})
-		sort.SliceStable(v.Mitigations, func(i, j int) bool {
+		sort.Slice(v.Mitigations, func(i, j int) bool {
 			return v.Mitigations[i].URL < v.Mitigations[j].URL
 		})
 		for kk, vv := range v.CveContents {
-			sort.SliceStable(vv.References, func(i, j int) bool {
+			sort.Slice(vv.References, func(i, j int) bool {
 				return vv.References[i].Link < vv.References[j].Link
 			})
-			sort.SliceStable(vv.CweIDs, func(i, j int) bool {
+			sort.Slice(vv.CweIDs, func(i, j int) bool {
 				return vv.CweIDs[i] < vv.CweIDs[j]
 			})
 			for kkk, vvv := range vv.References {
 				// sort v.CveContents[].References[].Tags
-				sort.SliceStable(vvv.Tags, func(i, j int) bool {
+				sort.Slice(vvv.Tags, func(i, j int) bool {
 					return vvv.Tags[i] < vvv.Tags[j]
 				})
 				vv.References[kkk] = vvv
 			}
 			v.CveContents[kk] = vv
 		}
-		sort.SliceStable(v.AlertDict.En, func(i, j int) bool {
+		sort.Slice(v.AlertDict.En, func(i, j int) bool {
 			return v.AlertDict.En[i].Title < v.AlertDict.En[j].Title
 		})
-		sort.SliceStable(v.AlertDict.Ja, func(i, j int) bool {
+		sort.Slice(v.AlertDict.Ja, func(i, j int) bool {
 			return v.AlertDict.Ja[i].Title < v.AlertDict.Ja[j].Title
 		})
-
 		r.ScannedCves[k] = v
 	}
 }

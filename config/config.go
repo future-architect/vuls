@@ -106,6 +106,16 @@ func (c Config) ValidateOnScan() bool {
 	if _, err := govalidator.ValidateStruct(c); err != nil {
 		errs = append(errs, err)
 	}
+
+	for _, server := range c.Servers {
+		if !server.Module.IsScanPort() {
+			continue
+		}
+		if es := server.PortScan.Validate(); 0 < len(es) {
+			errs = append(errs, es...)
+		}
+	}
+
 	for _, err := range errs {
 		logging.Log.Error(err)
 	}
@@ -228,6 +238,7 @@ type ServerInfo struct {
 	IPv6Addrs          []string                    `toml:"-" json:"ipv6Addrs,omitempty"`
 	IPSIdentifiers     map[string]string           `toml:"-" json:"ipsIdentifiers,omitempty"`
 	WordPress          *WordPressConf              `toml:"wordpress,omitempty" json:"wordpress,omitempty"`
+	PortScan           *PortScanConf               `toml:"portscan,omitempty" json:"portscan,omitempty"`
 
 	// internal use
 	LogMsgAnsiColor string     `toml:"-" json:"-"` // DebugLog Color

@@ -14,7 +14,7 @@
     },
     "platform": {
         "name": "aws",
-        "instanceID": "i-0545d194b9d8a7a45"
+        "instanceID": ""
     },
     "ipv4Addrs": [
         "192.168.0.175"
@@ -5556,7 +5556,7 @@
                     "user": "admin",
                     "host": "52.199.253.40",
                     "port": "22",
-                    "keyPath": "/home/ubuntu/.ssh/stg.pem",
+                    "keyPath": "/home/ubuntu/.ssh/hoge.pem",
                     "scanMode": [
                         "fast-root"
                     ],
