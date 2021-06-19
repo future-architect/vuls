@@ -1,0 +1,27 @@
+package config
+
+import (
+	"github.com/asaskevich/govalidator"
+	"golang.org/x/xerrors"
+)
+
+// GoogleChatConf is GoogleChat config
+type GoogleChatConf struct {
+	WebHookURL string `json:"-"`
+	Enabled    bool   `toml:"-" json:"-"`
+}
+
+// Validate validates configuration
+func (c *GoogleChatConf) Validate() (errs []error) {
+	if !c.Enabled {
+		return
+	}
+	if len(c.WebHookURL) == 0 {
+		errs = append(errs, xerrors.New("googleChatConf.webHookURL must not be empty"))
+	}
+	_, err := govalidator.ValidateStruct(c)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	return
+}
