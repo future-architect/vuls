@@ -40,7 +40,7 @@ func (w GoogleChatWriter) Write(rs ...models.ScanResult) (err error) {
 				strconv.FormatFloat(maxCvss.Value.Score, 'f', 1, 64),
 				severity))
 			if len(msgs) == 50 {
-				// near by 4000 bytes limit
+				msgs = append(msgs, "(The rest is omitted.)")
 				break
 			}
 		}
