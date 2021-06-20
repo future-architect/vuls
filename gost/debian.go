@@ -232,16 +232,17 @@ func isGostDefAffected(versionRelease, gostVersion string) (affected bool, err e
 }
 
 func (deb Debian) getCvesDebianWithfixStatus(fixStatus, release, pkgName string) (cves []models.CveContent, fixes []models.PackageFixStatus) {
+	var f func(string, string) map[string]gostmodels.DebianCVE
+
 	if fixStatus == "resolved" {
-		for _, cveDeb := range deb.DBDriver.DB.GetFixedCvesDebian(release, pkgName) {
-			cves = append(cves, *deb.ConvertToModel(&cveDeb))
-			fixes = append(fixes, checkPackageFixStatus(&cveDeb)...)
-		}
+		f = deb.DBDriver.DB.GetFixedCvesDebian
 	} else {
-		for _, cveDeb := range deb.DBDriver.DB.GetUnfixedCvesDebian(release, pkgName) {
-			cves = append(cves, *deb.ConvertToModel(&cveDeb))
-			fixes = append(fixes, checkPackageFixStatus(&cveDeb)...)
-		}
+		f = deb.DBDriver.DB.GetUnfixedCvesDebian
+	}
+
+	for _, cveDeb := range f(release, pkgName) {
+		cves = append(cves, *deb.ConvertToModel(&cveDeb))
+		fixes = append(fixes, checkPackageFixStatus(&cveDeb)...)
 	}
 
 	return
