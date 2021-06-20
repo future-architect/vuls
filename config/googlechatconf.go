@@ -7,8 +7,9 @@ import (
 
 // GoogleChatConf is GoogleChat config
 type GoogleChatConf struct {
-	WebHookURL string `json:"-"`
-	Enabled    bool   `toml:"-" json:"-"`
+	WebHookURL  string `json:"-" toml:"webHookURL,omitempty"`
+	SkipHealthy bool   `json:"-" toml:"skipHealthy"`
+	Enabled     bool   `json:"-" toml:"-"`
 }
 
 // Validate validates configuration

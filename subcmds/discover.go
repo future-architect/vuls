@@ -160,6 +160,7 @@ func printConfigToml(ips []string) (err error) {
 # https://vuls.io/docs/en/config.toml.html#googlechat-section
 #[googlechat]
 #webHookURL = "https://chat.googleapis.com/v1/spaces/xxxxxxxxxx/messages?key=yyyyyyyyyy&token=zzzzzzzzzz%3D"
+#skipHealthy = false
 
 # https://vuls.io/docs/en/config.toml.html#telegram-section
 #[telegram]
