@@ -18,8 +18,8 @@ type RedHat struct {
 	Base
 }
 
-// DetectUnfixed fills cve information that has in Gost
-func (red RedHat) DetectUnfixed(r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
+// DetectCVEs fills cve information that has in Gost
+func (red RedHat) DetectCVEs(r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
 	if red.DBDriver.Cnf.IsFetchViaHTTP() {
 		prefix, _ := util.URLPathJoin(red.DBDriver.Cnf.GetURL(), "redhat", major(r.Release), "pkgs")
 		responses, err := getAllUnfixedCvesViaHTTP(r, prefix)
