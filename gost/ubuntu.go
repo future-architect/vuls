@@ -29,8 +29,8 @@ func (ubu Ubuntu) supported(version string) bool {
 	return ok
 }
 
-// DetectUnfixed fills cve information that has in Gost
-func (ubu Ubuntu) DetectUnfixed(r *models.ScanResult, _ bool) (nCVEs int, err error) {
+// DetectCVEs fills cve information that has in Gost
+func (ubu Ubuntu) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error) {
 	ubuReleaseVer := strings.Replace(r.Release, ".", "", 1)
 	if !ubu.supported(ubuReleaseVer) {
 		logging.Log.Warnf("Ubuntu %s is not supported yet", r.Release)
