@@ -20,7 +20,7 @@ type DBDriver struct {
 
 // Client is the interface of OVAL client.
 type Client interface {
-	DetectUnfixed(*models.ScanResult, bool) (int, error)
+	DetectCVEs(*models.ScanResult, bool) (int, error)
 	CloseDB() error
 }
 

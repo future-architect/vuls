@@ -169,6 +169,11 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf config.GostConf) error {
 	// Pkg Scan
 	if r.Release != "" {
+		// OVAL, gost(Debian Security Tracker) does not support Package for Raspbian, so skip it.
+		if r.Family == constant.Raspbian {
+			r = r.RemoveRaspbianPackFromResult()
+		}
+
 		// OVAL
 		if err := detectPkgsCvesWithOval(ovalCnf, r); err != nil {
 			return xerrors.Errorf("Failed to detect CVE with OVAL: %w", err)
@@ -342,6 +347,11 @@ func detectPkgsCvesWithOval(cnf config.GovalDictConf, r *models.ScanResult) erro
 		return err
 	}
 	if !ok {
+		if r.Family == constant.Debian {
+			logging.Log.Debug("Skip OVAL and Scan with gost alone.")
+			logging.Log.Infof("%s: %d CVEs are detected with OVAL", r.FormatServerName(), 0)
+			return nil
+		}
 		return xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see `https://github.com/kotakanbe/goval-dictionary#usage`", r.Family, r.Release)
 	}
 
@@ -373,12 +383,21 @@ func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult) error {
 		}
 	}()
 
-	nCVEs, err := client.DetectUnfixed(r, true)
+	nCVEs, err := client.DetectCVEs(r, true)
 	if err != nil {
+		if r.Family == constant.Debian {
+			return xerrors.Errorf("Failed to detect CVEs with gost: %w", err)
+		}
 		return xerrors.Errorf("Failed to detect unfixed CVEs with gost: %w", err)
 	}
 
-	logging.Log.Infof("%s: %d unfixed CVEs are detected with gost", r.FormatServerName(), nCVEs)
+	if r.Family == constant.Debian {
+		logging.Log.Infof("%s: %d CVEs are detected with gost",
+			r.FormatServerName(), nCVEs)
+	} else {
+		logging.Log.Infof("%s: %d unfixed CVEs are detected with gost",
+			r.FormatServerName(), nCVEs)
+	}
 	return nil
 }
 
