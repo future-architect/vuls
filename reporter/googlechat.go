@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -29,16 +28,26 @@ func (w GoogleChatWriter) Write(rs ...models.ScanResult) (err error) {
 			r.ScannedCves.FormatFixedStatus(r.Packages),
 			r.FormatUpdatablePkgsSummary())}
 		for _, vinfo := range r.ScannedCves.ToSortedSlice() {
-			maxCvss := vinfo.MaxCvssScore()
-			severity := strings.ToUpper(maxCvss.Value.Severity)
-			if severity == "" {
-				severity = "?"
+			max := vinfo.MaxCvssScore().Value.Score
+
+			exploits := ""
+			if 0 < len(vinfo.Exploits) || 0 < len(vinfo.Metasploits) {
+				exploits = "*POC*"
 			}
-			msgs = append(msgs, fmt.Sprintf(`[%s](https://nvd.nist.gov/vuln/detail/%s) _%s %s_`,
-				vinfo.CveID,
-				vinfo.CveID,
-				strconv.FormatFloat(maxCvss.Value.Score, 'f', 1, 64),
-				severity))
+
+			link := ""
+			if strings.HasPrefix(vinfo.CveID, "CVE-") {
+				link = fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", vinfo.CveID)
+			} else if strings.HasPrefix(vinfo.CveID, "WPVDBID-") {
+				link = fmt.Sprintf("https://wpscan.com/vulnerabilities/%s", strings.TrimPrefix(vinfo.CveID, "WPVDBID-"))
+			}
+
+			msgs = append(msgs, fmt.Sprintf(`%s %s %4.1f %5s %s`,
+				vinfo.CveIDDiffFormat(),
+				link,
+				max,
+				vinfo.AttackVector(),
+				exploits))
 			if len(msgs) == 50 {
 				msgs = append(msgs, "(The rest is omitted.)")
 				break
