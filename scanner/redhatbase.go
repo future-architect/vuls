@@ -41,6 +41,48 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 		}
 	}
 
+	if r := exec(c, "ls /etc/rocky-release", noSudo); r.isSuccess() {
+		if r := exec(c, "cat /etc/rocky-release", noSudo); r.isSuccess() {
+			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
+			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
+			if len(result) != 3 {
+				logging.Log.Warnf("Failed to parse Rocky version: %s", r)
+				return true, newRocky(c)
+			}
+
+			release := result[2]
+			switch strings.ToLower(result[1]) {
+			case "rocky", "rocky linux":
+				rocky := newRocky(c)
+				rocky.setDistro(constant.Rocky, release)
+				return true, rocky
+			default:
+				logging.Log.Warnf("Failed to parse Rocky: %s", r)
+			}
+		}
+	}
+
+	if r := exec(c, "ls /etc/almalinux-release", noSudo); r.isSuccess() {
+		if r := exec(c, "cat /etc/alma-release", noSudo); r.isSuccess() {
+			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
+			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
+			if len(result) != 3 {
+				logging.Log.Warnf("Failed to parse Alma version: %s", r)
+				return true, newAlma(c)
+			}
+
+			release := result[2]
+			switch strings.ToLower(result[1]) {
+			case "alma", "AlmaLinux":
+				alma := newAlma(c)
+				alma.setDistro(constant.Alma, release)
+				return true, alma
+			default:
+				logging.Log.Warnf("Failed to parse Alma: %s", r)
+			}
+		}
+	}
+
 	// https://bugzilla.redhat.com/show_bug.cgi?id=1332025
 	// CentOS cloud image
 	if r := exec(c, "ls /etc/centos-release", noSudo); r.isSuccess() {
@@ -60,27 +102,6 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 				return true, cent
 			default:
 				logging.Log.Warnf("Failed to parse CentOS: %s", r)
-			}
-		}
-	}
-
-	if r := exec(c, "ls /etc/rocky-release", noSudo); r.isSuccess() {
-		if r := exec(c, "cat /etc/rocky-release", noSudo); r.isSuccess() {
-			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
-			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
-			if len(result) != 3 {
-				logging.Log.Warnf("Failed to parse Rocky version: %s", r)
-				return true, newRocky(c)
-			}
-
-			release := result[2]
-			switch strings.ToLower(result[1]) {
-			case "rocky", "rocky linux":
-				rocky := newRocky(c)
-				rocky.setDistro(constant.Rocky, release)
-				return true, rocky
-			default:
-				logging.Log.Warnf("Failed to parse Rocky: %s", r)
 			}
 		}
 	}
