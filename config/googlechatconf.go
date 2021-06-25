@@ -9,6 +9,7 @@ import (
 type GoogleChatConf struct {
 	WebHookURL  string `json:"-" toml:"webHookURL,omitempty"`
 	SkipHealthy bool   `json:"-" toml:"skipHealthy"`
+	Filter      string `json:"-" toml:"filter,omitempty"`
 	Enabled     bool   `json:"-" toml:"-"`
 }
 

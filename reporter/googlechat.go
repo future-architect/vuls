@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -21,7 +22,12 @@ type GoogleChatWriter struct {
 }
 
 func (w GoogleChatWriter) Write(rs ...models.ScanResult) (err error) {
+	filter := regexp.MustCompile(w.Cnf.Filter)
+
 	for _, r := range rs {
+		if filter.Match([]byte(r.FormatServerName())) {
+			continue
+		}
 		msgs := []string{fmt.Sprintf("*%s*\n%s\t%s\t%s",
 			r.ServerInfo(),
 			r.ScannedCves.FormatCveSummary(),
