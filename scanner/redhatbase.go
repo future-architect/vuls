@@ -78,7 +78,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 			case "rocky", "rocky linux":
 				rocky := newRocky(c)
 				rocky.setDistro(constant.Rocky, release)
-				return true, rocky 
+				return true, rocky
 			default:
 				logging.Log.Warnf("Failed to parse Rocky: %s", r)
 			}
