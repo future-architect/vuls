@@ -21,7 +21,7 @@ func newRocky(c config.ServerInfo) *rocky {
 					VulnInfos: models.VulnInfos{},
 				},
 			},
-			sudo: rootPrivCentos{},
+			sudo: rootPrivRocky{},
 		},
 	}
 	r.log = logging.NewNormalLogger()
@@ -49,7 +49,7 @@ func (o *rocky) depsFast() []string {
 	}
 
 	// repoquery
-	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8
+	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Rocky
 	return []string{"yum-utils"}
 }
 
@@ -59,7 +59,7 @@ func (o *rocky) depsFastRoot() []string {
 	}
 
 	// repoquery
-	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8
+	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Rocky
 	return []string{"yum-utils"}
 }
 
