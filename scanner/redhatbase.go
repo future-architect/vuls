@@ -73,7 +73,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 
 			release := result[2]
 			switch strings.ToLower(result[1]) {
-			case "alma", "AlmaLinux":
+			case "alma", "almalinux":
 				alma := newAlma(c)
 				alma.setDistro(constant.Alma, release)
 				return true, alma
