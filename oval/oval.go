@@ -83,7 +83,10 @@ func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 				logging.Log.Errorf("Failed to close DB. err: %+v", err)
 			}
 		}()
-		lastModified = driver.GetLastModified(ovalFamily, release)
+		lastModified, err = driver.GetLastModified(ovalFamily, release)
+		if err != nil {
+			return false, xerrors.Errorf("Failed to GetLastModified: %w", err)
+		}
 	} else {
 		url, _ := util.URLPathJoin(config.Conf.OvalDict.URL, "lastmodified", ovalFamily, release)
 		resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
