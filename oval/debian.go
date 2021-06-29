@@ -342,6 +342,47 @@ func (o Ubuntu) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 			"linux",
 		}
 		return o.fillWithOval(r, kernelNamesInOval)
+	case "21":
+		kernelNamesInOval := []string{
+			"linux-aws",
+			"linux-base-sgx",
+			"linux-base",
+			"linux-cloud-tools-common",
+			"linux-cloud-tools-generic",
+			"linux-cloud-tools-lowlatency",
+			"linux-cloud-tools-virtual",
+			"linux-gcp",
+			"linux-generic",
+			"linux-gke",
+			"linux-headers-aws",
+			"linux-headers-gcp",
+			"linux-headers-gke",
+			"linux-headers-oracle",
+			"linux-image-aws",
+			"linux-image-extra-virtual",
+			"linux-image-gcp",
+			"linux-image-generic",
+			"linux-image-gke",
+			"linux-image-lowlatency",
+			"linux-image-oracle",
+			"linux-image-virtual",
+			"linux-lowlatency",
+			"linux-modules-extra-aws",
+			"linux-modules-extra-gcp",
+			"linux-modules-extra-gke",
+			"linux-oracle",
+			"linux-tools-aws",
+			"linux-tools-common",
+			"linux-tools-gcp",
+			"linux-tools-generic",
+			"linux-tools-gke",
+			"linux-tools-host",
+			"linux-tools-lowlatency",
+			"linux-tools-oracle",
+			"linux-tools-virtual",
+			"linux-virtual",
+		}
+		return o.fillWithOval(r, kernelNamesInOval)
 	}
 	return 0, fmt.Errorf("Ubuntu %s is not support for now", r.Release)
 }
