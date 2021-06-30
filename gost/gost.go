@@ -72,7 +72,7 @@ func NewClient(cnf config.GostConf, family string) (Client, error) {
 	case constant.Windows:
 		return Microsoft{Base{DBDriver: driver}}, nil
 	default:
-		return Pseudo{}, nil
+		return Pseudo{Base{DBDriver: driver}}, nil
 	}
 }
 
