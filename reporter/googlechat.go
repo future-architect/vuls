@@ -22,10 +22,10 @@ type GoogleChatWriter struct {
 }
 
 func (w GoogleChatWriter) Write(rs ...models.ScanResult) (err error) {
-	filter := regexp.MustCompile(w.Cnf.Filter)
+	re := regexp.MustCompile(w.Cnf.ServerNameRegexp)
 
 	for _, r := range rs {
-		if filter.Match([]byte(r.FormatServerName())) {
+		if re.Match([]byte(r.FormatServerName())) {
 			continue
 		}
 		msgs := []string{fmt.Sprintf("*%s*\n%s\t%s\t%s",
