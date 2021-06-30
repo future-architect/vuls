@@ -38,7 +38,7 @@ func (w GoogleChatWriter) Write(rs ...models.ScanResult) (err error) {
 
 			exploits := ""
 			if 0 < len(vinfo.Exploits) || 0 < len(vinfo.Metasploits) {
-				exploits = "*POC*"
+				exploits = "*PoC*"
 			}
 
 			link := ""
