@@ -59,7 +59,7 @@ func (w GoogleChatWriter) Write(rs ...models.ScanResult) (err error) {
 				break
 			}
 		}
-		if len(msgs) == 1 && w.Cnf.SkipHealthy {
+		if len(msgs) == 1 && w.Cnf.SkipIfNoCve {
 			msgs = []string{}
 		}
 		if len(msgs) != 0 {
