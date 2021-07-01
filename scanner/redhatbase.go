@@ -64,6 +64,27 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 		}
 	}
 
+	if r := exec(c, "ls /etc/rocky-release", noSudo); r.isSuccess() {
+		if r := exec(c, "cat /etc/rocky-release", noSudo); r.isSuccess() {
+			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
+			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
+			if len(result) != 3 {
+				logging.Log.Warnf("Failed to parse Rocky version: %s", r)
+				return true, newRocky(c)
+			}
+
+			release := result[2]
+			switch strings.ToLower(result[1]) {
+			case "rocky", "rocky linux":
+				rocky := newRocky(c)
+				rocky.setDistro(constant.Rocky, release)
+				return true, rocky
+			default:
+				logging.Log.Warnf("Failed to parse Rocky: %s", r)
+			}
+		}
+	}
+
 	if r := exec(c, "ls /etc/redhat-release", noSudo); r.isSuccess() {
 		// https://www.rackaid.com/blog/how-to-determine-centos-or-red-hat-version/
 		// e.g.
