@@ -1417,8 +1417,8 @@ github.com/vmihailenco/msgpack v3.3.3+incompatible/go.mod h1:fy3FlTQTDXWkZ7Bh6Ac
 github.com/vmihailenco/msgpack/v4 v4.3.12/go.mod h1:gborTTJjAo/GWTqqRjrLCn9pgNN+NXzzngzBKDPIqw4=
 github.com/vmihailenco/tagparser v0.1.1/go.mod h1:OeAg3pn3UbLjkWt+rN9oFYB6u/cQgqMEUPoW2WPyhdI=
 github.com/vmware/govmomi v0.20.3/go.mod h1:URlwyTFZX72RmxtxuaFL2Uj3fD1JTvZdx59bHWk6aFU=
-github.com/vulsio/go-exploitdb v0.1.7 h1:wdq+6H/PvGGnUiyAaLQ3DtczsLy3rrBQgmNOiXH62z0=
-github.com/vulsio/go-exploitdb v0.1.7/go.mod h1:4strSWuNtCTz76QB8RuxpMQmYifArGKiHKBFCMOTxY4=
+github.com/vulsio/go-exploitdb v0.1.8-0.20210625021845-e5081ca67229 h1:fgwhSbKAPf0wnGwmrkjWyfUi48lMJhS6y8rqGPyHyJE=
+github.com/vulsio/go-exploitdb v0.1.8-0.20210625021845-e5081ca67229/go.mod h1:4strSWuNtCTz76QB8RuxpMQmYifArGKiHKBFCMOTxY4=
 github.com/wasmerio/go-ext-wasm v0.3.1/go.mod h1:VGyarTzasuS7k5KhSIGpM3tciSZlkP31Mp9VJTHMMeI=
 github.com/willf/bitset v1.1.10/go.mod h1:RjeCKbqT1RxIR/KWY6phxZiaY1IyutSBfGjNPySAYV4=
 github.com/willf/bitset v1.1.11-0.20200630133818-d5bec3311243/go.mod h1:RjeCKbqT1RxIR/KWY6phxZiaY1IyutSBfGjNPySAYV4=

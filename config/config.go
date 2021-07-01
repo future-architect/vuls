@@ -42,16 +42,17 @@ type Config struct {
 	Exploit    ExploitConf    `json:"exploit,omitempty"`
 	Metasploit MetasploitConf `json:"metasploit,omitempty"`
 
-	Slack    SlackConf    `json:"-"`
-	EMail    SMTPConf     `json:"-"`
-	HTTP     HTTPConf     `json:"-"`
-	Syslog   SyslogConf   `json:"-"`
-	AWS      AWSConf      `json:"-"`
-	Azure    AzureConf    `json:"-"`
-	ChatWork ChatWorkConf `json:"-"`
-	Telegram TelegramConf `json:"-"`
-	WpScan   WpScanConf   `json:"-"`
-	Saas     SaasConf     `json:"-"`
+	Slack      SlackConf      `json:"-"`
+	EMail      SMTPConf       `json:"-"`
+	HTTP       HTTPConf       `json:"-"`
+	Syslog     SyslogConf     `json:"-"`
+	AWS        AWSConf        `json:"-"`
+	Azure      AzureConf      `json:"-"`
+	ChatWork   ChatWorkConf   `json:"-"`
+	GoogleChat GoogleChatConf `json:"-"`
+	Telegram   TelegramConf   `json:"-"`
+	WpScan     WpScanConf     `json:"-"`
+	Saas       SaasConf       `json:"-"`
 
 	ReportOpts
 }
@@ -157,6 +158,7 @@ func (c *Config) ValidateOnReport() bool {
 		&c.EMail,
 		&c.Slack,
 		&c.ChatWork,
+		&c.GoogleChat,
 		&c.Telegram,
 		&c.Syslog,
 		&c.HTTP,
