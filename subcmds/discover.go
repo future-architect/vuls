@@ -157,6 +157,13 @@ func printConfigToml(ips []string) (err error) {
 #room     = "xxxxxxxxxxx"
 #apiToken = "xxxxxxxxxxxxxxxxxx"
 
+# https://vuls.io/docs/en/config.toml.html#googlechat-section
+#[googlechat]
+#webHookURL = "https://chat.googleapis.com/v1/spaces/xxxxxxxxxx/messages?key=yyyyyyyyyy&token=zzzzzzzzzz%3D"
+#skipIfNoCve = false
+#serverNameRegexp = "^(\\[Reboot Required\\] )?((spam|ham).*|.*(egg)$)" # include spamonigiri, hamburger, boiledegg
+#serverNameRegexp = "^(\\[Reboot Required\\] )?(?:(spam|ham).*|.*(?:egg)$)" # exclude spamonigiri, hamburger, boiledegg
+
 # https://vuls.io/docs/en/config.toml.html#telegram-section
 #[telegram]
 #chatID     = "xxxxxxxxxxx"

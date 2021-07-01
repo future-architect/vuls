@@ -30,15 +30,16 @@ type ReportCmd struct {
 	formatList        bool
 	gzip              bool
 
-	toSlack     bool
-	toChatWork  bool
-	toTelegram  bool
-	toEmail     bool
-	toSyslog    bool
-	toLocalFile bool
-	toS3        bool
-	toAzureBlob bool
-	toHTTP      bool
+	toSlack      bool
+	toChatWork   bool
+	toGoogleChat bool
+	toTelegram   bool
+	toEmail      bool
+	toSyslog     bool
+	toLocalFile  bool
+	toS3         bool
+	toAzureBlob  bool
+	toHTTP       bool
 }
 
 // Name return subcommand name
@@ -67,6 +68,7 @@ func (*ReportCmd) Usage() string {
 		[-to-http]
 		[-to-slack]
 		[-to-chatwork]
+		[-to-googlechat]
 		[-to-telegram]
 		[-to-localfile]
 		[-to-s3]
@@ -146,6 +148,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 
 	f.BoolVar(&p.toSlack, "to-slack", false, "Send report via Slack")
 	f.BoolVar(&p.toChatWork, "to-chatwork", false, "Send report via chatwork")
+	f.BoolVar(&p.toGoogleChat, "to-googlechat", false, "Send report via Google Chat")
 	f.BoolVar(&p.toTelegram, "to-telegram", false, "Send report via Telegram")
 	f.BoolVar(&p.toEmail, "to-email", false, "Send report via Email")
 	f.BoolVar(&p.toSyslog, "to-syslog", false, "Send report via Syslog")
@@ -173,6 +176,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 	config.Conf.Slack.Enabled = p.toSlack
 	config.Conf.ChatWork.Enabled = p.toChatWork
+	config.Conf.GoogleChat.Enabled = p.toGoogleChat
 	config.Conf.Telegram.Enabled = p.toTelegram
 	config.Conf.EMail.Enabled = p.toEmail
 	config.Conf.Syslog.Enabled = p.toSyslog
@@ -259,6 +263,10 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if p.toChatWork {
 		reports = append(reports, reporter.ChatWorkWriter{Cnf: config.Conf.ChatWork, Proxy: config.Conf.HTTPProxy})
+	}
+
+	if p.toGoogleChat {
+		reports = append(reports, reporter.GoogleChatWriter{Cnf: config.Conf.GoogleChat, Proxy: config.Conf.HTTPProxy})
 	}
 
 	if p.toTelegram {
