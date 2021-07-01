@@ -11,7 +11,7 @@ type rocky struct {
 	redhatBase
 }
 
-// NewAmazon is constructor
+// NewRocky is constructor
 func newRocky(c config.ServerInfo) *rocky {
 	r := &rocky{
 		redhatBase{
