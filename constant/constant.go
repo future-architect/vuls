@@ -23,6 +23,9 @@ const (
 	// Alma is
 	Alma = "alma"
 
+	// Rocky is
+	Rocky = "rocky"
+
 	// Fedora is
 	// Fedora = "fedora"
 
