@@ -322,3 +322,21 @@ func NewAmazon(cnf config.VulnDictInterface) Amazon {
 		},
 	}
 }
+
+// Rocky is the interface for RedhatBase OVAL
+type Rocky struct {
+	// Base
+	RedHatBase
+}
+
+// NewRocky creates OVAL client for Rocky Linux
+func NewRocky(cnf config.VulnDictInterface) Rocky {
+	return Rocky{
+		RedHatBase{
+			Base{
+				family: constant.Rocky,
+				Cnf:    cnf,
+			},
+		},
+	}
+}
