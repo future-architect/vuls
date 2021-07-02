@@ -14,7 +14,7 @@ import (
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
-// RedHatBase is the base struct for RedHat and CentOS
+// RedHatBase is the base struct for RedHat, CentOS and Rocky
 type RedHatBase struct {
 	Base
 }

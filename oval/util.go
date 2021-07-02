@@ -377,7 +377,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 				return true, false, ovalPack.Version, nil
 			}
 
-			// But CentOS can't judge whether fixed or unfixed.
+			// But CentOS/Rocky can't judge whether fixed or unfixed.
 			// Because fixed state in RHEL OVAL is different.
 			// So, it have to be judged version comparison.
 
@@ -487,7 +487,7 @@ func NewOVALClient(family string, cnf config.GovalDictConf) (Client, error) {
 }
 
 // GetFamilyInOval returns the OS family name in OVAL
-// For example, CentOS uses Red Hat's OVAL, so return 'redhat'
+// For example, CentOS/Rocky uses Red Hat's OVAL, so return 'redhat'
 func GetFamilyInOval(familyInScanResult string) (string, error) {
 	switch familyInScanResult {
 	case constant.Debian, constant.Raspbian:

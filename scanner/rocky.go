@@ -11,7 +11,7 @@ type rocky struct {
 	redhatBase
 }
 
-// NewAmazon is constructor
+// NewRocky is constructor
 func newRocky(c config.ServerInfo) *rocky {
 	r := &rocky{
 		redhatBase{
@@ -49,7 +49,7 @@ func (o *rocky) depsFast() []string {
 	}
 
 	// repoquery
-	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Rocky
+	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Rocky8
 	return []string{"yum-utils"}
 }
 
@@ -59,7 +59,7 @@ func (o *rocky) depsFastRoot() []string {
 	}
 
 	// repoquery
-	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Rocky
+	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Rocky8
 	return []string{"yum-utils"}
 }
 
