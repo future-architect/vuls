@@ -309,6 +309,14 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			found:    true,
 		},
 		{
+			name:     "freebsd 13 supported",
+			fields:   fields{family: FreeBSD, release: "13"},
+			now:      time.Date(2021, 7, 2, 23, 59, 59, 0, time.UTC),
+			stdEnded: false,
+			extEnded: false,
+			found:    true,
+		},
+		{
 			name:     "freebsd 10 eol",
 			fields:   fields{family: FreeBSD, release: "10"},
 			now:      time.Date(2021, 1, 6, 23, 59, 59, 0, time.UTC),

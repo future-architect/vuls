@@ -183,6 +183,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"10": {Ended: true},
 			"11": {StandardSupportUntil: time.Date(2021, 9, 30, 23, 59, 59, 0, time.UTC)},
 			"12": {StandardSupportUntil: time.Date(2024, 6, 30, 23, 59, 59, 0, time.UTC)},
+			"13": {StandardSupportUntil: time.Date(2026, 1, 31, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
 	}
 	return
