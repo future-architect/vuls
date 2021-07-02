@@ -337,7 +337,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 
 		if running.Release != "" {
 			switch family {
-			case constant.RedHat, constant.CentOS, constant.Oracle:
+			case constant.RedHat, constant.CentOS, constant.Rocky, constant.Oracle:
 				// For kernel related packages, ignore OVAL information with different major versions
 				if _, ok := kernelRelatedPackNames[ovalPack.Name]; ok {
 					if util.Major(ovalPack.Version) != util.Major(running.Release) {
@@ -436,8 +436,8 @@ func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error
 
 	case constant.RedHat,
 		constant.CentOS:
-		vera := rpmver.NewVersion(centOSVersionToRHEL(newVer))
-		verb := rpmver.NewVersion(centOSVersionToRHEL(packInOVAL.Version))
+		vera := rpmver.NewVersion(rhelDownStreamOSVersionToRHEL(newVer))
+		verb := rpmver.NewVersion(rhelDownStreamOSVersionToRHEL(packInOVAL.Version))
 		return vera.LessThan(verb), nil
 
 	default:
@@ -445,10 +445,10 @@ func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error
 	}
 }
 
-var centosVerPattern = regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.centos)?`)
+var rhelDownStreamOSVerPattern = regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.(centos|rocky))?`)
 
-func centOSVersionToRHEL(ver string) string {
-	return centosVerPattern.ReplaceAllString(ver, ".el$1")
+func rhelDownStreamOSVersionToRHEL(ver string) string {
+	return rhelDownStreamOSVerPattern.ReplaceAllString(ver, ".el$1")
 }
 
 // NewOVALClient returns a client for OVAL database
@@ -461,8 +461,9 @@ func NewOVALClient(family string, cnf config.GovalDictConf) (Client, error) {
 	case constant.RedHat:
 		return NewRedhat(&cnf), nil
 	case constant.CentOS:
-		//use RedHat's OVAL
 		return NewCentOS(&cnf), nil
+	case constant.Rocky:
+		return NewRocky(&cnf), nil
 	case constant.Oracle:
 		return NewOracle(&cnf), nil
 	case constant.SUSEEnterpriseServer:
@@ -492,10 +493,7 @@ func GetFamilyInOval(familyInScanResult string) (string, error) {
 		return constant.Debian, nil
 	case constant.Ubuntu:
 		return constant.Ubuntu, nil
-	case constant.RedHat:
-		return constant.RedHat, nil
-	case constant.CentOS:
-		//use RedHat's OVAL
+	case constant.RedHat, constant.CentOS, constant.Rocky:
 		return constant.RedHat, nil
 	case constant.Oracle:
 		return constant.Oracle, nil

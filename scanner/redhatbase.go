@@ -100,10 +100,14 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 
 			release := result[2]
 			switch strings.ToLower(result[1]) {
-			case "centos", "centos linux":
+			case "centos", "centos linux", "centos stream":
 				cent := newCentOS(c)
 				cent.setDistro(constant.CentOS, release)
 				return true, cent
+			case "rocky", "rocky linux":
+				rocky := newRocky(c)
+				rocky.setDistro(constant.Rocky, release)
+				return true, rocky
 			default:
 				// RHEL
 				rhel := newRHEL(c)
@@ -476,7 +480,7 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 		// TODO zypper ps
 		// https://github.com/future-architect/vuls/issues/696
 		return false
-	case constant.RedHat, constant.CentOS, constant.Oracle:
+	case constant.RedHat, constant.CentOS, constant.Rocky, constant.Oracle:
 		majorVersion, err := o.Distro.MajorVersion()
 		if err != nil || majorVersion < 6 {
 			o.log.Errorf("Not implemented yet: %s, err: %+v", o.Distro, err)
@@ -655,7 +659,7 @@ func (o *redhatBase) rpmQf() string {
 
 func (o *redhatBase) detectEnabledDnfModules() ([]string, error) {
 	switch o.Distro.Family {
-	case constant.RedHat, constant.CentOS:
+	case constant.RedHat, constant.CentOS, constant.Rocky:
 		//TODO OracleLinux
 	default:
 		return nil, nil

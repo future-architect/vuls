@@ -155,7 +155,7 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 func (o RedHatBase) convertToDistroAdvisory(def *ovalmodels.Definition) *models.DistroAdvisory {
 	advisoryID := def.Title
 	switch o.family {
-	case constant.RedHat, constant.CentOS, constant.Oracle:
+	case constant.RedHat, constant.CentOS, constant.Rocky, constant.Oracle:
 		if def.Title != "" {
 			ss := strings.Fields(def.Title)
 			advisoryID = strings.TrimSuffix(ss[0], ":")

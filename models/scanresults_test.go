@@ -58,6 +58,11 @@ func TestIsDisplayUpdatableNum(t *testing.T) {
 		},
 		{
 			mode:     []byte{config.Fast},
+			family:   constant.Rocky,
+			expected: true,
+		},
+		{
+			mode:     []byte{config.Fast},
 			family:   constant.Amazon,
 			expected: true,
 		},
