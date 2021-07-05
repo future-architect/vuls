@@ -420,17 +420,21 @@ func DetectCpeURIsCves(r *models.ScanResult, cpeURIs []string, cnf config.GoCveD
 			return err
 		}
 		for _, detail := range details {
+
+			confidence := models.CpeVersionMatch
+			if detail.IsJvn() {
+				confidence = models.CpeVendorProductMatch
+			}
+
 			if val, ok := r.ScannedCves[detail.CveID]; ok {
-				names := val.CpeURIs
-				names = util.AppendIfMissing(names, name)
-				val.CpeURIs = names
-				val.Confidences.AppendIfMissing(models.CpeNameMatch)
+				val.CpeURIs = util.AppendIfMissing(val.CpeURIs, name)
+				val.Confidences.AppendIfMissing(confidence)
 				r.ScannedCves[detail.CveID] = val
 			} else {
 				v := models.VulnInfo{
 					CveID:       detail.CveID,
 					CpeURIs:     []string{name},
-					Confidences: models.Confidences{models.CpeNameMatch},
+					Confidences: models.Confidences{confidence},
 				}
 				r.ScannedCves[detail.CveID] = v
 				nCVEs++

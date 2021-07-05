@@ -62,7 +62,7 @@ type osPackages struct {
 	// enabled dnf modules or packages
 	EnabledDnfModules []string
 
-	// unsecure packages
+	// Detected Vulnerabilities Key: CVE-ID
 	VulnInfos models.VulnInfos
 
 	// kernel information
