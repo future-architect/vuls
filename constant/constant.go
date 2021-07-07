@@ -18,7 +18,7 @@ const (
 	CentOS = "centos"
 
 	// Rocky is
-	Rocky = "Rocky"
+	Rocky = "rocky"
 
 	// Fedora is
 	// Fedora = "fedora"

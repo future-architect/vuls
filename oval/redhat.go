@@ -14,7 +14,7 @@ import (
 	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 )
 
-// RedHatBase is the base struct for RedHat and CentOS
+// RedHatBase is the base struct for RedHat, CentOS and Rocky
 type RedHatBase struct {
 	Base
 }
@@ -155,7 +155,7 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 func (o RedHatBase) convertToDistroAdvisory(def *ovalmodels.Definition) *models.DistroAdvisory {
 	advisoryID := def.Title
 	switch o.family {
-	case constant.RedHat, constant.CentOS, constant.Oracle:
+	case constant.RedHat, constant.CentOS, constant.Rocky, constant.Oracle:
 		if def.Title != "" {
 			ss := strings.Fields(def.Title)
 			advisoryID = strings.TrimSuffix(ss[0], ":")
@@ -317,6 +317,24 @@ func NewAmazon(cnf config.VulnDictInterface) Amazon {
 		RedHatBase{
 			Base{
 				family: constant.Amazon,
+				Cnf:    cnf,
+			},
+		},
+	}
+}
+
+// Rocky is the interface for RedhatBase OVAL
+type Rocky struct {
+	// Base
+	RedHatBase
+}
+
+// NewRocky creates OVAL client for Rocky Linux
+func NewRocky(cnf config.VulnDictInterface) Rocky {
+	return Rocky{
+		RedHatBase{
+			Base{
+				family: constant.Rocky,
 				Cnf:    cnf,
 			},
 		},

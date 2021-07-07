@@ -111,6 +111,31 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			extEnded: false,
 			found:    false,
 		},
+		// Rocky
+		{
+			name:     "Rocky Linux 8 supported",
+			fields:   fields{family: Rocky, release: "8"},
+			now:      time.Date(2021, 7, 2, 23, 59, 59, 0, time.UTC),
+			stdEnded: false,
+			extEnded: false,
+			found:    true,
+		},
+		{
+			name:     "Rocky Linux 8 EOL",
+			fields:   fields{family: Rocky, release: "8"},
+			now:      time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC),
+			stdEnded: false,
+			extEnded: false,
+			found:    true,
+		},
+		{
+			name:     "Rocky Linux 9 Not Found",
+			fields:   fields{family: Rocky, release: "9"},
+			now:      time.Date(2021, 7, 2, 23, 59, 59, 0, time.UTC),
+			stdEnded: false,
+			extEnded: false,
+			found:    false,
+		},
 		//Oracle
 		{
 			name:     "Oracle Linux 7 supported",
@@ -304,6 +329,14 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			name:     "freebsd 12 supported",
 			fields:   fields{family: FreeBSD, release: "12"},
 			now:      time.Date(2021, 1, 6, 23, 59, 59, 0, time.UTC),
+			stdEnded: false,
+			extEnded: false,
+			found:    true,
+		},
+		{
+			name:     "freebsd 13 supported",
+			fields:   fields{family: FreeBSD, release: "13"},
+			now:      time.Date(2021, 7, 2, 23, 59, 59, 0, time.UTC),
 			stdEnded: false,
 			extEnded: false,
 			found:    true,
