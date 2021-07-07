@@ -257,8 +257,8 @@ github.com/bombsimon/wsl/v3 v3.0.0/go.mod h1:st10JtZYLE4D5sC7b8xV4zTKZwAQjCH/Hy2
 github.com/bombsimon/wsl/v3 v3.1.0/go.mod h1:st10JtZYLE4D5sC7b8xV4zTKZwAQjCH/Hy2Pm1FNZIc=
 github.com/bradfitz/go-smtpd v0.0.0-20170404230938-deb6d6237625/go.mod h1:HYsPBTaaSFSlLx/70C2HPIMNZpVV8+vt/A+FMnYP11g=
 github.com/briandowns/spinner v1.12.0/go.mod h1:QOuQk7x+EaDASo80FEXwlwiA+j/PPIcX3FScO+3/ZPQ=
-github.com/briandowns/spinner v1.15.0 h1:L0jR0MYN7OAeMwpTzDZWIeqyDLXtTeJFxqoq+sL0VQM=
-github.com/briandowns/spinner v1.15.0/go.mod h1:QOuQk7x+EaDASo80FEXwlwiA+j/PPIcX3FScO+3/ZPQ=
+github.com/briandowns/spinner v1.16.0 h1:DFmp6hEaIx2QXXuqSJmtfSBSAjRmpGiKG6ip2Wm/yOs=
+github.com/briandowns/spinner v1.16.0/go.mod h1:QOuQk7x+EaDASo80FEXwlwiA+j/PPIcX3FScO+3/ZPQ=
 github.com/bshuster-repo/logrus-logstash-hook v0.4.1/go.mod h1:zsTqEiSzDgAa/8GZR7E1qaXrhYNDKBYy5/dWPTIflbk=
 github.com/bugsnag/bugsnag-go v0.0.0-20141110184014-b1d153021fcd/go.mod h1:2oa8nejYd4cQ/b0hMIopN0lCRxU0bueqREvZLWFrtK8=
 github.com/bugsnag/osext v0.0.0-20130617224835-0dd3f918b21b/go.mod h1:obH5gd0BsqsP2LwDJ9aOkm/6J86V6lyAXCoQWGw3K50=
@@ -921,8 +921,8 @@ github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936 h1:HDjRqot
 github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936/go.mod h1:i4sF0l1fFnY1aiw08QQSwVAFxHEm311Me3WsU/X7nL0=
 github.com/knqyf263/go-rpmdb v0.0.0-20201215100354-a9e3110d8ee1 h1:sRDvjjWoHLWAxtPXBKYRJp8Ot4ugxYE/ZyADl3jzc1g=
 github.com/knqyf263/go-rpmdb v0.0.0-20201215100354-a9e3110d8ee1/go.mod h1:RDPNeIkU5NWXtt0OMEoILyxwUC/DyXeRtK295wpqSi0=
-github.com/knqyf263/gost v0.1.11-0.20210615205949-22120a6441d8 h1:kpIwDZ5QHns0kmfACWlrDUPP/KFMIec/3pn8uVy5v/A=
-github.com/knqyf263/gost v0.1.11-0.20210615205949-22120a6441d8/go.mod h1:VgcvOkxaqKbf695UyQrNFKMPQgWChNlGUnJbw8kmET8=
+github.com/knqyf263/gost v0.2.0 h1:A62Kzj7+0T5/TdAAwDH6uK5HfffN+6h/wClX5lTSzZ8=
+github.com/knqyf263/gost v0.2.0/go.mod h1:VgcvOkxaqKbf695UyQrNFKMPQgWChNlGUnJbw8kmET8=
 github.com/knqyf263/nested v0.0.1 h1:Sv26CegUMhjt19zqbBKntjwESdxe5hxVPSk0+AKjdUc=
 github.com/knqyf263/nested v0.0.1/go.mod h1:zwhsIhMkBg90DTOJQvxPkKIypEHPYkgWHs4gybdlUmk=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=

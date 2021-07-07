@@ -826,6 +826,9 @@ const (
 	// DebianSecurityTrackerMatchStr is a String representation of DebianSecurityTrackerMatch
 	DebianSecurityTrackerMatchStr = "DebianSecurityTrackerMatch"
 
+	// UbuntuAPIMatchStr is a String representation of UbuntuAPIMatch
+	UbuntuAPIMatchStr = "UbuntuAPIMatch"
+
 	// TrivyMatchStr is a String representation of Trivy
 	TrivyMatchStr = "TrivyMatch"
 
@@ -866,6 +869,9 @@ var (
 
 	// DebianSecurityTrackerMatch ranking how confident the CVE-ID was detected correctly
 	DebianSecurityTrackerMatch = Confidence{100, DebianSecurityTrackerMatchStr, 0}
+
+	// UbuntuAPIMatch ranking how confident the CVE-ID was detected correctly
+	UbuntuAPIMatch = Confidence{100, UbuntuAPIMatchStr, 0}
 
 	// TrivyMatch ranking how confident the CVE-ID was detected correctly
 	TrivyMatch = Confidence{100, TrivyMatchStr, 0}

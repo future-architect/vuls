@@ -13,7 +13,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/aws/aws-sdk-go v1.36.31
 	github.com/boltdb/bolt v1.3.1
-	github.com/briandowns/spinner v1.15.0 // indirect
+	github.com/briandowns/spinner v1.16.0 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cheggaaa/pb/v3 v3.0.8 // indirect
 	github.com/d4l3k/messagediff v1.2.2-0.20190829033028-7e0a312ae40b
@@ -33,7 +33,7 @@ require (
 	github.com/knqyf263/go-cpe v0.0.0-20201213041631-54f6ab28673f
 	github.com/knqyf263/go-deb-version v0.0.0-20190517075300-09fca494f03d
 	github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936
-	github.com/knqyf263/gost v0.1.11-0.20210615205949-22120a6441d8
+	github.com/knqyf263/gost v0.2.0
 	github.com/kotakanbe/go-cve-dictionary v0.15.14
 	github.com/kotakanbe/go-pingscanner v0.1.0
 	github.com/kotakanbe/goval-dictionary v0.3.6-0.20210625044258-9be85404d7dd

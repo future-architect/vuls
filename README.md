@@ -71,6 +71,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
   - [Alpine-secdb](https://git.alpinelinux.org/cgit/alpine-secdb/)
   - [Red Hat Security Advisories](https://access.redhat.com/security/security-updates/)
   - [Debian Security Bug Tracker](https://security-tracker.debian.org/tracker/)
+  - [Ubuntu CVE Tracker](https://people.canonical.com/~ubuntu-security/cve/)
 
 - Commands(yum, zypper, pkg-audit)
   - RHSA / ALAS / ELSA / FreeBSD-SA

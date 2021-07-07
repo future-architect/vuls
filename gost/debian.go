@@ -42,7 +42,7 @@ func (deb Debian) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 		return 0, nil
 	}
 
-	// Add linux and set the version of running kernel to search OVAL.
+	// Add linux and set the version of running kernel to search Gost.
 	if r.Container.ContainerID == "" {
 		newVer := ""
 		if p, ok := r.Packages["linux-image-"+r.RunningKernel.Release]; ok {
