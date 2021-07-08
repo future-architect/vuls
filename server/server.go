@@ -143,7 +143,6 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		})
 	}
 
-
 	for _, w := range reports {
 		if err := w.Write(r); err != nil {
 			logging.Log.Errorf("Failed to report. err: %+v", err)
