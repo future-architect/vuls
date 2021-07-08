@@ -337,7 +337,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 
 		if running.Release != "" {
 			switch family {
-			case constant.RedHat, constant.CentOS, constant.Oracle:
+			case constant.RedHat, constant.CentOS, constant.Rocky, constant.Oracle:
 				// For kernel related packages, ignore OVAL information with different major versions
 				if _, ok := kernelRelatedPackNames[ovalPack.Name]; ok {
 					if util.Major(ovalPack.Version) != util.Major(running.Release) {
@@ -377,7 +377,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 				return true, false, ovalPack.Version, nil
 			}
 
-			// But CentOS can't judge whether fixed or unfixed.
+			// But CentOS/Rocky can't judge whether fixed or unfixed.
 			// Because fixed state in RHEL OVAL is different.
 			// So, it have to be judged version comparison.
 
@@ -435,9 +435,10 @@ func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error
 		return vera.LessThan(verb), nil
 
 	case constant.RedHat,
-		constant.CentOS:
-		vera := rpmver.NewVersion(centOSVersionToRHEL(newVer))
-		verb := rpmver.NewVersion(centOSVersionToRHEL(packInOVAL.Version))
+		constant.CentOS,
+		constant.Rocky:
+		vera := rpmver.NewVersion(rhelDownStreamOSVersionToRHEL(newVer))
+		verb := rpmver.NewVersion(rhelDownStreamOSVersionToRHEL(packInOVAL.Version))
 		return vera.LessThan(verb), nil
 
 	default:
@@ -445,10 +446,10 @@ func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error
 	}
 }
 
-var centosVerPattern = regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.centos)?`)
+var rhelDownStreamOSVerPattern = regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.(centos|rocky))?`)
 
-func centOSVersionToRHEL(ver string) string {
-	return centosVerPattern.ReplaceAllString(ver, ".el$1")
+func rhelDownStreamOSVersionToRHEL(ver string) string {
+	return rhelDownStreamOSVerPattern.ReplaceAllString(ver, ".el$1")
 }
 
 // NewOVALClient returns a client for OVAL database
@@ -461,8 +462,9 @@ func NewOVALClient(family string, cnf config.GovalDictConf) (Client, error) {
 	case constant.RedHat:
 		return NewRedhat(&cnf), nil
 	case constant.CentOS:
-		//use RedHat's OVAL
 		return NewCentOS(&cnf), nil
+	case constant.Rocky:
+		return NewRocky(&cnf), nil
 	case constant.Oracle:
 		return NewOracle(&cnf), nil
 	case constant.SUSEEnterpriseServer:
@@ -485,17 +487,14 @@ func NewOVALClient(family string, cnf config.GovalDictConf) (Client, error) {
 }
 
 // GetFamilyInOval returns the OS family name in OVAL
-// For example, CentOS uses Red Hat's OVAL, so return 'redhat'
+// For example, CentOS/Rocky uses Red Hat's OVAL, so return 'redhat'
 func GetFamilyInOval(familyInScanResult string) (string, error) {
 	switch familyInScanResult {
 	case constant.Debian, constant.Raspbian:
 		return constant.Debian, nil
 	case constant.Ubuntu:
 		return constant.Ubuntu, nil
-	case constant.RedHat:
-		return constant.RedHat, nil
-	case constant.CentOS:
-		//use RedHat's OVAL
+	case constant.RedHat, constant.CentOS, constant.Rocky:
 		return constant.RedHat, nil
 	case constant.Oracle:
 		return constant.Oracle, nil

@@ -65,10 +65,12 @@ func NewClient(cnf config.GostConf, family string) (Client, error) {
 	driver := DBDriver{DB: db, Cnf: &cnf}
 
 	switch family {
-	case constant.RedHat, constant.CentOS:
+	case constant.RedHat, constant.CentOS, constant.Rocky:
 		return RedHat{Base{DBDriver: driver}}, nil
 	case constant.Debian, constant.Raspbian:
 		return Debian{Base{DBDriver: driver}}, nil
+	case constant.Ubuntu:
+		return Ubuntu{Base{DBDriver: driver}}, nil
 	case constant.Windows:
 		return Microsoft{Base{DBDriver: driver}}, nil
 	default:

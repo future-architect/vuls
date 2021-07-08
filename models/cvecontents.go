@@ -233,7 +233,7 @@ func NewCveContentType(name string) CveContentType {
 		return Nvd
 	case "jvn":
 		return Jvn
-	case "redhat", "centos":
+	case "redhat", "centos", "rocky":
 		return RedHat
 	case "oracle":
 		return Oracle
@@ -245,6 +245,8 @@ func NewCveContentType(name string) CveContentType {
 		return RedHatAPI
 	case "debian_security_tracker":
 		return DebianSecurityTracker
+	case "ubuntu_api":
+		return UbuntuAPI
 	case "microsoft":
 		return Microsoft
 	case "wordpress":
@@ -282,6 +284,9 @@ const (
 	// Ubuntu is Ubuntu
 	Ubuntu CveContentType = "ubuntu"
 
+	// UbuntuAPI is Ubuntu
+	UbuntuAPI CveContentType = "ubuntu_api"
+
 	// Oracle is Oracle Linux
 	Oracle CveContentType = "oracle"
 
@@ -317,10 +322,11 @@ var AllCveContetTypes = CveContentTypes{
 	RedHat,
 	RedHatAPI,
 	Debian,
+	DebianSecurityTracker,
 	Ubuntu,
+	UbuntuAPI,
 	Amazon,
 	SUSE,
-	DebianSecurityTracker,
 	WpScan,
 	Trivy,
 	GitHub,

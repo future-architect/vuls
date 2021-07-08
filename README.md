@@ -50,7 +50,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 
 [Supports major Linux/FreeBSD](https://vuls.io/docs/en/supported-os.html)
 
-- Alpine, Amazon Linux, CentOS, Debian, Oracle Linux, Raspbian, RHEL, SUSE Enterprise Linux, and Ubuntu
+- Alpine, Amazon Linux, CentOS, Rocky Linux, Debian, Oracle Linux, Raspbian, RHEL, SUSE Enterprise Linux, and Ubuntu
 - FreeBSD
 - Cloud, on-premise, Running Docker Container
 
@@ -71,6 +71,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
   - [Alpine-secdb](https://git.alpinelinux.org/cgit/alpine-secdb/)
   - [Red Hat Security Advisories](https://access.redhat.com/security/security-updates/)
   - [Debian Security Bug Tracker](https://security-tracker.debian.org/tracker/)
+  - [Ubuntu CVE Tracker](https://people.canonical.com/~ubuntu-security/cve/)
 
 - Commands(yum, zypper, pkg-audit)
   - RHSA / ALAS / ELSA / FreeBSD-SA
@@ -100,15 +101,15 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 
 - Scan without root privilege, no dependencies
 - Almost no load on the scan target server
-- Offline mode scan with no internet access. (CentOS, Debian, Oracle Linux, Red Hat, and Ubuntu)
+- Offline mode scan with no internet access. (CentOS, Rocky Linux, Debian, Oracle Linux, Red Hat, and Ubuntu)
 
 [Fast Root Scan](https://vuls.io/docs/en/architecture-fast-root-scan.html)
 
 - Scan with root privilege
 - Almost no load on the scan target server
-- Detect processes affected by update using yum-ps (Amazon Linux, CentOS, Oracle Linux, and RedHat)
+- Detect processes affected by update using yum-ps (Amazon Linux, CentOS, Rocky Linux, Oracle Linux, and RedHat)
 - Detect processes which updated before but not restarting yet using checkrestart of debian-goodies (Debian and Ubuntu)
-- Offline mode scan with no internet access. (CentOS, Debian, Oracle Linux, Red Hat, and Ubuntu)
+- Offline mode scan with no internet access. (CentOS, Rocky Linux, Debian, Oracle Linux, Red Hat, and Ubuntu)
 
 ### [Remote, Local scan mode, Server mode](https://vuls.io/docs/en/architecture-remote-local.html)
 

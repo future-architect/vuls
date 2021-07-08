@@ -1078,6 +1078,472 @@ func TestIsOvalDefAffected(t *testing.T) {
 			notFixedYet: false,
 			fixedIn:     "3.1.0",
 		},
+		// Rocky Linux
+		{
+			in: in{
+				family: "rocky",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.el6.rocky.7",
+					newVersionRelease: "",
+				},
+			},
+			affected:    true,
+			notFixedYet: false,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
+		},
+		{
+			in: in{
+				family: "rocky",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6.rocky.8",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "rocky",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6.rocky.9",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "rocky",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.el6.rocky.6",
+					newVersionRelease: "0:1.2.3-45.el6.rocky.7",
+				},
+			},
+			affected:    true,
+			notFixedYet: true,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
+		},
+		{
+			in: in{
+				family: "rocky",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.el6.rocky.6",
+					newVersionRelease: "0:1.2.3-45.el6.rocky.8",
+				},
+			},
+			affected:    true,
+			notFixedYet: false,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
+		},
+		{
+			in: in{
+				family: "rocky",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.el6.rocky.6",
+					newVersionRelease: "0:1.2.3-45.el6.rocky.9",
+				},
+			},
+			affected:    true,
+			notFixedYet: false,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
+		},
+		{
+			in: in{
+				family: "rocky",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6.8",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "rocky",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6_7.8",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "rocky",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.sl6.7",
+				},
+			},
+			affected:    true,
+			notFixedYet: false,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
+		},
+		{
+			in: in{
+				family: "rocky",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.sl6.8",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "rocky",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.sl6.9",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "rocky",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.sl6.6",
+					newVersionRelease: "0:1.2.3-45.sl6.7",
+				},
+			},
+			affected:    true,
+			notFixedYet: true,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
+		},
+		{
+			in: in{
+				family: "rocky",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.sl6.6",
+					newVersionRelease: "0:1.2.3-45.sl6.8",
+				},
+			},
+			affected:    true,
+			notFixedYet: false,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
+		},
+		{
+			in: in{
+				family: "rocky",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.sl6.6",
+					newVersionRelease: "0:1.2.3-45.sl6.9",
+				},
+			},
+			affected:    true,
+			notFixedYet: false,
+			fixedIn:     "0:1.2.3-45.el6_7.8",
+		},
+		{
+			in: in{
+				family: "rocky",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6.8",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: "rocky",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6.8",
+						},
+					},
+				},
+				req: request{
+					packName:       "b",
+					isSrcPack:      false,
+					versionRelease: "0:1.2.3-45.el6_7.8",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		// For kernel related packages, ignore OVAL with different major versions
+		{
+			in: in{
+				family: constant.Rocky,
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "kernel",
+							Version:     "4.1.0",
+							NotFixedYet: false,
+						},
+					},
+				},
+				req: request{
+					packName:          "kernel",
+					versionRelease:    "3.0.0",
+					newVersionRelease: "3.2.0",
+				},
+				kernel: models.Kernel{
+					Release: "3.0.0",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		{
+			in: in{
+				family: constant.Rocky,
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "kernel",
+							Version:     "3.1.0",
+							NotFixedYet: false,
+						},
+					},
+				},
+				req: request{
+					packName:          "kernel",
+					versionRelease:    "3.0.0",
+					newVersionRelease: "3.2.0",
+				},
+				kernel: models.Kernel{
+					Release: "3.0.0",
+				},
+			},
+			affected:    true,
+			notFixedYet: false,
+			fixedIn:     "3.1.0",
+		},
 		// dnf module
 		{
 			in: in{
@@ -1326,7 +1792,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 	}
 }
 
-func Test_centOSVersionToRHEL(t *testing.T) {
+func Test_rhelDownStreamOSVersionToRHEL(t *testing.T) {
 	type args struct {
 		ver string
 	}
@@ -1341,6 +1807,13 @@ func Test_centOSVersionToRHEL(t *testing.T) {
 				ver: "grub2-tools-2.02-0.80.el7.centos.x86_64",
 			},
 			want: "grub2-tools-2.02-0.80.el7.x86_64",
+		},
+		{
+			name: "remove rocky.",
+			args: args{
+				ver: "platform-python-3.6.8-37.el8.rocky.x86_64",
+			},
+			want: "platform-python-3.6.8-37.el8.x86_64",
 		},
 		{
 			name: "noop",
@@ -1359,8 +1832,8 @@ func Test_centOSVersionToRHEL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := centOSVersionToRHEL(tt.args.ver); got != tt.want {
-				t.Errorf("centOSVersionToRHEL() = %v, want %v", got, tt.want)
+			if got := rhelDownStreamOSVersionToRHEL(tt.args.ver); got != tt.want {
+				t.Errorf("rhelDownStreamOSVersionToRHEL() = %v, want %v", got, tt.want)
 			}
 		})
 	}
