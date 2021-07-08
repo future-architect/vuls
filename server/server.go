@@ -95,6 +95,24 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	detector.FillCweDict(&r)
 
+	// IgnoreCves
+	ignoreCves := []string{}
+	if r.Container.Name == "" {
+		ignoreCves = config.Conf.Servers[r.ServerName].IgnoreCves
+	} else if con, ok := config.Conf.Servers[r.ServerName].Containers[r.Container.Name]; ok {
+		ignoreCves = con.IgnoreCves
+	}
+	r.ScannedCves = r.ScannedCves.FilterIgnoreCves(ignoreCves)
+
+	// ignorePkgs
+	ignorePkgsRegexps := []string{}
+	if r.Container.Name == "" {
+		ignorePkgsRegexps = config.Conf.Servers[r.ServerName].IgnorePkgsRegexp
+	} else if s, ok := config.Conf.Servers[r.ServerName].Containers[r.Container.Name]; ok {
+		ignorePkgsRegexps = s.IgnorePkgsRegexp
+	}
+	r.ScannedCves = r.ScannedCves.FilterIgnorePkgs(ignorePkgsRegexps)
+
 	// set ReportedAt to current time when it's set to the epoch, ensures that ReportedAt will be set
 	// properly for scans sent to vuls when running in server mode
 	if r.ReportedAt.IsZero() {
@@ -124,6 +142,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			FormatJSON: true,
 		})
 	}
+
 
 	for _, w := range reports {
 		if err := w.Write(r); err != nil {
