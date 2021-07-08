@@ -808,8 +808,11 @@ func (c Confidence) String() string {
 type DetectionMethod string
 
 const (
-	// CpeNameMatchStr is a String representation of CpeNameMatch
-	CpeNameMatchStr = "CpeNameMatch"
+	// CpeVersionMatchStr is a String representation of CpeNameMatch
+	CpeVersionMatchStr = "CpeVersionMatch"
+
+	// CpeVendorProductMatchStr is a String representation of CpeNameMatch
+	CpeVendorProductMatchStr = "CpeVendorProductMatch"
 
 	// YumUpdateSecurityMatchStr is a String representation of YumUpdateSecurityMatch
 	YumUpdateSecurityMatchStr = "YumUpdateSecurityMatch"
@@ -852,8 +855,8 @@ const (
 )
 
 var (
-	// CpeNameMatch is a ranking how confident the CVE-ID was detected correctly
-	CpeNameMatch = Confidence{100, CpeNameMatchStr, 1}
+	// CpeVersionMatch is a ranking how confident the CVE-ID was detected correctly
+	CpeVersionMatch = Confidence{100, CpeVersionMatchStr, 1}
 
 	// YumUpdateSecurityMatch is a ranking how confident the CVE-ID was detected correctly
 	YumUpdateSecurityMatch = Confidence{100, YumUpdateSecurityMatchStr, 2}
@@ -887,4 +890,7 @@ var (
 
 	// WpScanMatch is a ranking how confident the CVE-ID was detected correctly
 	WpScanMatch = Confidence{100, WpScanMatchStr, 0}
+
+	// CpeVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
+	CpeVendorProductMatch = Confidence{10, CpeVendorProductMatchStr, 9}
 )

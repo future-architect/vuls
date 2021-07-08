@@ -1014,7 +1014,7 @@ CWE
 Confidence
 -----------
 {{range $confidence := .Confidences -}}
-* {{$confidence.DetectionMethod}}
+* {{$confidence.Score}} / {{$confidence.DetectionMethod}}
 {{end}}
 References
 -----------
