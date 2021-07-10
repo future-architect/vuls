@@ -11,7 +11,7 @@ type centos struct {
 	redhatBase
 }
 
-// NewAmazon is constructor
+// NewCentOS is constructor
 func newCentOS(c config.ServerInfo) *centos {
 	r := &centos{
 		redhatBase{

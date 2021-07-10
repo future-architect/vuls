@@ -121,6 +121,10 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 				cent := newCentOS(c)
 				cent.setDistro(constant.CentOS, release)
 				return true, cent
+			case "alma", "almalinux":
+				alma := newAlma(c)
+				alma.setDistro(constant.Alma, release)
+				return true, alma
 			default:
 				logging.Log.Warnf("Failed to parse CentOS: %s", r)
 			}

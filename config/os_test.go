@@ -136,6 +136,31 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			extEnded: false,
 			found:    false,
 		},
+		// Alma
+		{
+			name:     "Alma Linux 8 supported",
+			fields:   fields{family: Alma, release: "8"},
+			now:      time.Date(2021, 7, 2, 23, 59, 59, 0, time.UTC),
+			stdEnded: false,
+			extEnded: false,
+			found:    true,
+		},
+		{
+			name:     "Alma Linux 8 EOL",
+			fields:   fields{family: Alma, release: "8"},
+			now:      time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC),
+			stdEnded: false,
+			extEnded: false,
+			found:    true,
+		},
+		{
+			name:     "Alma Linux 9 Not Found",
+			fields:   fields{family: Alma, release: "9"},
+			now:      time.Date(2021, 7, 2, 23, 59, 59, 0, time.UTC),
+			stdEnded: false,
+			extEnded: false,
+			found:    false,
+		},
 		//Oracle
 		{
 			name:     "Oracle Linux 7 supported",

@@ -11,7 +11,7 @@ type alma struct {
 	redhatBase
 }
 
-// NewAmazon is constructor
+// NewAlma is constructor
 func newAlma(c config.ServerInfo) *alma {
 	r := &alma{
 		redhatBase{

@@ -233,7 +233,7 @@ func NewCveContentType(name string) CveContentType {
 		return Nvd
 	case "jvn":
 		return Jvn
-	case "redhat", "centos", "rocky":
+	case "redhat", "centos", "rocky", "alma":
 		return RedHat
 	case "oracle":
 		return Oracle
