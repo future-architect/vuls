@@ -148,7 +148,7 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 		{
 			name:     "Alma Linux 8 EOL",
 			fields:   fields{family: Alma, release: "8"},
-			now:      time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC),
+			now:      time.Date(2029, 2, 1, 0, 0, 0, 0, time.UTC),
 			stdEnded: false,
 			extEnded: false,
 			found:    true,
