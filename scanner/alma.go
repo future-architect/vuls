@@ -7,13 +7,13 @@ import (
 )
 
 // inherit OsTypeInterface
-type centos struct {
+type alma struct {
 	redhatBase
 }
 
-// NewCentOS is constructor
-func newCentOS(c config.ServerInfo) *centos {
-	r := &centos{
+// NewAlma is constructor
+func newAlma(c config.ServerInfo) *alma {
+	r := &alma{
 		redhatBase{
 			base: base{
 				osPackages: osPackages{
@@ -21,7 +21,7 @@ func newCentOS(c config.ServerInfo) *centos {
 					VulnInfos: models.VulnInfos{},
 				},
 			},
-			sudo: rootPrivCentos{},
+			sudo: rootPrivAlma{},
 		},
 	}
 	r.log = logging.NewNormalLogger()
@@ -29,11 +29,11 @@ func newCentOS(c config.ServerInfo) *centos {
 	return r
 }
 
-func (o *centos) checkScanMode() error {
+func (o *alma) checkScanMode() error {
 	return nil
 }
 
-func (o *centos) checkDeps() error {
+func (o *alma) checkDeps() error {
 	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckDeps(o.depsFast())
 	} else if o.getServerInfo().Mode.IsFastRoot() {
@@ -43,31 +43,31 @@ func (o *centos) checkDeps() error {
 	}
 }
 
-func (o *centos) depsFast() []string {
+func (o *alma) depsFast() []string {
 	if o.getServerInfo().Mode.IsOffline() {
 		return []string{}
 	}
 
 	// repoquery
-	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Rocky8
+	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Alma
 	return []string{"yum-utils"}
 }
 
-func (o *centos) depsFastRoot() []string {
+func (o *alma) depsFastRoot() []string {
 	if o.getServerInfo().Mode.IsOffline() {
 		return []string{}
 	}
 
 	// repoquery
-	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Rocky8
+	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Alma
 	return []string{"yum-utils"}
 }
 
-func (o *centos) depsDeep() []string {
+func (o *alma) depsDeep() []string {
 	return o.depsFastRoot()
 }
 
-func (o *centos) checkIfSudoNoPasswd() error {
+func (o *alma) checkIfSudoNoPasswd() error {
 	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsFast())
 	} else if o.getServerInfo().Mode.IsFastRoot() {
@@ -77,11 +77,11 @@ func (o *centos) checkIfSudoNoPasswd() error {
 	}
 }
 
-func (o *centos) sudoNoPasswdCmdsFast() []cmd {
+func (o *alma) sudoNoPasswdCmdsFast() []cmd {
 	return []cmd{}
 }
 
-func (o *centos) sudoNoPasswdCmdsFastRoot() []cmd {
+func (o *alma) sudoNoPasswdCmdsFastRoot() []cmd {
 	if !o.ServerInfo.IsContainer() {
 		return []cmd{
 			{"repoquery -h", exitStatusZero},
@@ -99,20 +99,20 @@ func (o *centos) sudoNoPasswdCmdsFastRoot() []cmd {
 	}
 }
 
-func (o *centos) sudoNoPasswdCmdsDeep() []cmd {
+func (o *alma) sudoNoPasswdCmdsDeep() []cmd {
 	return o.sudoNoPasswdCmdsFastRoot()
 }
 
-type rootPrivCentos struct{}
+type rootPrivAlma struct{}
 
-func (o rootPrivCentos) repoquery() bool {
+func (o rootPrivAlma) repoquery() bool {
 	return false
 }
 
-func (o rootPrivCentos) yumMakeCache() bool {
+func (o rootPrivAlma) yumMakeCache() bool {
 	return false
 }
 
-func (o rootPrivCentos) yumPS() bool {
+func (o rootPrivAlma) yumPS() bool {
 	return false
 }
