@@ -41,23 +41,29 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 		}
 	}
 
-	if r := exec(c, "ls /etc/rocky-release", noSudo); r.isSuccess() {
-		if r := exec(c, "cat /etc/rocky-release", noSudo); r.isSuccess() {
+	// https://bugzilla.redhat.com/show_bug.cgi?id=1332025
+	// CentOS cloud image
+	if r := exec(c, "ls /etc/centos-release", noSudo); r.isSuccess() {
+		if r := exec(c, "cat /etc/centos-release", noSudo); r.isSuccess() {
 			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
 			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
-				logging.Log.Warnf("Failed to parse Rocky version: %s", r)
-				return true, newRocky(c)
+				logging.Log.Warnf("Failed to parse CentOS version: %s", r)
+				return true, newCentOS(c)
 			}
 
 			release := result[2]
 			switch strings.ToLower(result[1]) {
-			case "rocky", "rocky linux":
-				rocky := newRocky(c)
-				rocky.setDistro(constant.Rocky, release)
-				return true, rocky
+			case "centos", "centos linux", "centos stream":
+				cent := newCentOS(c)
+				cent.setDistro(constant.CentOS, release)
+				return true, cent
+			case "alma", "almalinux":
+				alma := newAlma(c)
+				alma.setDistro(constant.Alma, release)
+				return true, alma
 			default:
-				logging.Log.Warnf("Failed to parse Rocky: %s", r)
+				logging.Log.Warnf("Failed to parse CentOS: %s", r)
 			}
 		}
 	}
@@ -104,33 +110,6 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 		}
 	}
 
-	// https://bugzilla.redhat.com/show_bug.cgi?id=1332025
-	// CentOS cloud image
-	if r := exec(c, "ls /etc/centos-release", noSudo); r.isSuccess() {
-		if r := exec(c, "cat /etc/centos-release", noSudo); r.isSuccess() {
-			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
-			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
-			if len(result) != 3 {
-				logging.Log.Warnf("Failed to parse CentOS version: %s", r)
-				return true, newCentOS(c)
-			}
-
-			release := result[2]
-			switch strings.ToLower(result[1]) {
-			case "centos", "centos linux", "centos stream":
-				cent := newCentOS(c)
-				cent.setDistro(constant.CentOS, release)
-				return true, cent
-			case "alma", "almalinux":
-				alma := newAlma(c)
-				alma.setDistro(constant.Alma, release)
-				return true, alma
-			default:
-				logging.Log.Warnf("Failed to parse CentOS: %s", r)
-			}
-		}
-	}
-
 	if r := exec(c, "ls /etc/redhat-release", noSudo); r.isSuccess() {
 		// https://www.rackaid.com/blog/how-to-determine-centos-or-red-hat-version/
 		// e.g.
@@ -154,6 +133,10 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 				rocky := newRocky(c)
 				rocky.setDistro(constant.Rocky, release)
 				return true, rocky
+			case "alma", "almalinux":
+				alma := newAlma(c)
+				alma.setDistro(constant.Alma, release)
+				return true, alma
 			default:
 				// RHEL
 				rhel := newRHEL(c)

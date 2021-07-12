@@ -11,7 +11,7 @@ type oracle struct {
 	redhatBase
 }
 
-// NewAmazon is constructor
+// NewOracle is constructor
 func newOracle(c config.ServerInfo) *oracle {
 	r := &oracle{
 		redhatBase{
