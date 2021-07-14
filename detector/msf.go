@@ -3,9 +3,12 @@
 package detector
 
 import (
+	"encoding/json"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/util"
 	metasploitdb "github.com/takuzoo3868/go-msfdb/db"
 	metasploitmodels "github.com/takuzoo3868/go-msfdb/models"
 	"golang.org/x/xerrors"
@@ -13,33 +16,56 @@ import (
 
 // FillWithMetasploit fills metasploit module information that has in module
 func FillWithMetasploit(r *models.ScanResult, cnf config.MetasploitConf) (nMetasploitCve int, err error) {
+	if cnf.IsFetchViaHTTP() {
+		var cveIDs []string
+		for cveID := range r.ScannedCves {
+			cveIDs = append(cveIDs, cveID)
+		}
+		prefix, _ := util.URLPathJoin(cnf.GetURL(), "cves")
+		responses, err := getCvesViaHTTP(cveIDs, prefix)
+		if err != nil {
+			return 0, err
+		}
+		for _, res := range responses {
+			msfs := []*metasploitmodels.Metasploit{}
+			if err := json.Unmarshal([]byte(res.json), &msfs); err != nil {
+				return 0, err
+			}
+			metasploits := ConvertToModelsMsf(msfs)
+			v, ok := r.ScannedCves[res.request.cveID]
+			if ok {
+				v.Metasploits = metasploits
+			}
+			r.ScannedCves[res.request.cveID] = v
+			nMetasploitCve++
+		}
+	} else {
+		driver, locked, err := newMetasploitDB(&cnf)
+		if locked {
+			return 0, xerrors.Errorf("SQLite3 is locked: %s", cnf.GetSQLite3Path())
+		} else if err != nil {
+			return 0, err
+		}
+		defer func() {
+			if err := driver.CloseDB(); err != nil {
+				logging.Log.Errorf("Failed to close DB. err: %+v", err)
+			}
+		}()
 
-	driver, locked, err := newMetasploitDB(&cnf)
-	if locked {
-		return 0, xerrors.Errorf("SQLite3 is locked: %s", cnf.GetSQLite3Path())
-	} else if err != nil {
-		return 0, err
+		for cveID, vuln := range r.ScannedCves {
+			if cveID == "" {
+				continue
+			}
+			ms := driver.GetModuleByCveID(cveID)
+			if len(ms) == 0 {
+				continue
+			}
+			modules := ConvertToModelsMsf(ms)
+			vuln.Metasploits = modules
+			r.ScannedCves[cveID] = vuln
+			nMetasploitCve++
+		}
 	}
-	defer func() {
-		if err := driver.CloseDB(); err != nil {
-			logging.Log.Errorf("Failed to close DB. err: %+v", err)
-		}
-	}()
-
-	for cveID, vuln := range r.ScannedCves {
-		if cveID == "" {
-			continue
-		}
-		ms := driver.GetModuleByCveID(cveID)
-		if len(ms) == 0 {
-			continue
-		}
-		modules := ConvertToModelsMsf(ms)
-		vuln.Metasploits = modules
-		r.ScannedCves[cveID] = vuln
-		nMetasploitCve++
-	}
-
 	return nMetasploitCve, nil
 }
 
