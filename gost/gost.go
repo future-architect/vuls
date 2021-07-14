@@ -40,16 +40,18 @@ func (b Base) CloseDB() error {
 // FillCVEsWithRedHat fills CVE detailed with Red Hat Security
 func FillCVEsWithRedHat(r *models.ScanResult, cnf config.GostConf) error {
 	db, locked, err := newGostDB(cnf)
-	if locked {
-		return xerrors.Errorf("SQLite3 is locked: %s", cnf.GetSQLite3Path())
-	} else if err != nil {
-		return err
-	}
-	defer func() {
-		if err := db.CloseDB(); err != nil {
-			logging.Log.Errorf("Failed to close DB. err: %+v", err)
+	if !cnf.IsFetchViaHTTP() {
+		if locked {
+			return xerrors.Errorf("SQLite3 is locked: %s", cnf.GetSQLite3Path())
+		} else if err != nil {
+			return err
 		}
-	}()
+		defer func() {
+			if err := db.CloseDB(); err != nil {
+				logging.Log.Errorf("Failed to close DB. err: %+v", err)
+			}
+		}()
+	}
 	return RedHat{Base{DBDriver{DB: db, Cnf: &cnf}}}.fillCvesWithRedHatAPI(r)
 }
 
