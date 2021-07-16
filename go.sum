@@ -928,8 +928,8 @@ github.com/knqyf263/nested v0.0.1/go.mod h1:zwhsIhMkBg90DTOJQvxPkKIypEHPYkgWHs4g
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/konsorten/go-windows-terminal-sequences v1.0.2/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/konsorten/go-windows-terminal-sequences v1.0.3/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
-github.com/kotakanbe/go-cve-dictionary v0.6.0 h1:HNSzAJ8gRDmM9heKLUhYx68V+i+dHMnXyKg8ZcvI+ac=
-github.com/kotakanbe/go-cve-dictionary v0.6.0/go.mod h1:Ht9ESpkhbQtdVRoo/lEPZ6B8j6lVUsfRkxpfl6FlwD8=
+github.com/kotakanbe/go-cve-dictionary v0.6.2-0.20210716103525-5c314c478f70 h1:hHBPT8wxTavpMS/s/ZfcEHXaaDFCSoLuAa8eMMgFg98=
+github.com/kotakanbe/go-cve-dictionary v0.6.2-0.20210716103525-5c314c478f70/go.mod h1:Ht9ESpkhbQtdVRoo/lEPZ6B8j6lVUsfRkxpfl6FlwD8=
 github.com/kotakanbe/go-pingscanner v0.1.0 h1:VG4/9l0i8WeToXclj7bIGoAZAu7a07Z3qmQiIfU0gT0=
 github.com/kotakanbe/go-pingscanner v0.1.0/go.mod h1:/761QZzuZFcfN8h/1QuawUA+pKukp3qcNj5mxJCOiAk=
 github.com/kotakanbe/goval-dictionary v0.3.6-0.20210625044258-9be85404d7dd h1:hnkOzwlknmNU64P5UaQzAZcyNnuSsCz/PIt/P/ZPKYg=
@@ -1529,8 +1529,8 @@ golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad/go.mod h1:jdWPYTVW3xRLrWP
 golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2/go.mod h1:T9bdIzuCu7OtxOm1hfPfRQxPLYneinmdGuTeoZ9dtd4=
 golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b/go.mod h1:T9bdIzuCu7OtxOm1hfPfRQxPLYneinmdGuTeoZ9dtd4=
 golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a/go.mod h1:P+XmwS30IXTQdn5tA2iutPOUgjI07+tq3H3K9MVA1s8=
-golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e h1:gsTQYXdTw2Gq7RBsWvlQ91b+aEQ6bXFUngBGuR8sPpI=
-golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e/go.mod h1:GvvjBRRGRdwPK5ydBHafDWAxML/pGHZbMvKqRZ5+Abc=
+golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 h1:/UOmuWzQfxxo9UtlXMwuQU8CMgg1eZXqTRwkSQJWKOI=
+golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97/go.mod h1:GvvjBRRGRdwPK5ydBHafDWAxML/pGHZbMvKqRZ5+Abc=
 golang.org/x/exp v0.0.0-20190121172915-509febef88a4/go.mod h1:CJ0aWSM057203Lf6IL+f9T1iT9GByDxfZKAQTCR3kQA=
 golang.org/x/exp v0.0.0-20190125153040-c74c464bbbf2/go.mod h1:CJ0aWSM057203Lf6IL+f9T1iT9GByDxfZKAQTCR3kQA=
 golang.org/x/exp v0.0.0-20190306152737-a1d7652674e8/go.mod h1:CJ0aWSM057203Lf6IL+f9T1iT9GByDxfZKAQTCR3kQA=
