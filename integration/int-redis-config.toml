@@ -24,7 +24,7 @@ Url = "redis://127.0.0.1/3"
 
 [servers.rails]
 type = "pseudo"
-cpeNames       = [ "cpe:/a:rubyonrails:ruby_on_rails:3.0.1" ]
+cpeNames = [ "cpe:/a:rubyonrails:rails:3.0.1" ]
 
 [servers.gemfile]
 type = "pseudo"
