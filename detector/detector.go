@@ -419,10 +419,11 @@ func DetectCpeURIsCves(r *models.ScanResult, cpeURIs []string, cnf config.GoCveD
 		if err != nil {
 			return err
 		}
-		for _, detail := range details {
 
+		for _, detail := range details {
 			confidence := models.CpeVersionMatch
-			if detail.IsJvn() {
+			if detail.HasJvn() && !detail.HasNvd() {
+				// In the case of CpeVendorProduct-match, only the JVN is set(Nvd is not set).
 				confidence = models.CpeVendorProductMatch
 			}
 

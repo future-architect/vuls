@@ -24,7 +24,11 @@
 
 [servers.rails]
 type = "pseudo"
-cpeNames = [ "cpe:/a:rubyonrails:ruby_on_rails:3.0.1" ]
+cpeNames = [ "cpe:/a:rubyonrails:rails:3.0.1" ]
+
+[servers.cpe_vendor_product_match]
+type = "pseudo"
+cpeNames = ["cpe:/a:hitachi_abb_power_grids:afs660"]
 
 [servers.gemfile]
 type = "pseudo"

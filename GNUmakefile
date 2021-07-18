@@ -89,7 +89,7 @@ NOW=$(shell date --iso-8601=seconds)
 NOW_JSON_DIR := '${BASE_DIR}/$(NOW)'
 ONE_SEC_AFTER=$(shell date -d '+1 second' --iso-8601=seconds)
 ONE_SEC_AFTER_JSON_DIR := '${BASE_DIR}/$(ONE_SEC_AFTER)'
-LIBS := 'gemfile' 'pipfile' 'poetry' 'composer' 'packagelock' 'yarn' 'cargo' 'gomod'
+LIBS := 'gemfile' 'pipfile' 'poetry' 'composer' 'packagelock' 'yarn' 'cargo' 'gomod' 'rails' 'cpe_vendor_product_match'
 
 diff:
 	# git clone git@github.com:vulsio/vulsctl.git
@@ -108,14 +108,14 @@ endif
 	sleep 1
 	./vuls.old scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
 	cp ${BASE_DIR}/current/*.json ${NOW_JSON_DIR}
-	cp integration/data/results/*.json ${NOW_JSON_DIR}
+	- cp integration/data/results/*.json ${NOW_JSON_DIR}
 	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml ${NOW}
 
 	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
 	sleep 1
 	./vuls.new scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
 	cp ${BASE_DIR}/current/*.json ${ONE_SEC_AFTER_JSON_DIR}
-	cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
+	- cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml ${ONE_SEC_AFTER}
 
 	$(call sed-d)
@@ -141,14 +141,14 @@ endif
 	sleep 1
 	./vuls.old scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
 	cp -f ${BASE_DIR}/current/*.json ${NOW_JSON_DIR}
-	cp integration/data/results/*.json ${NOW_JSON_DIR}
+	- cp integration/data/results/*.json ${NOW_JSON_DIR}
 	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml ${NOW}
 
 	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
 	sleep 1
 	./vuls.new scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
 	cp -f ${BASE_DIR}/current/*.json ${ONE_SEC_AFTER_JSON_DIR}
-	cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
+	- cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml ${ONE_SEC_AFTER}
 
 	$(call sed-d)
