@@ -34,7 +34,7 @@ require (
 	github.com/knqyf263/go-deb-version v0.0.0-20190517075300-09fca494f03d
 	github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936
 	github.com/knqyf263/gost v0.2.0
-	github.com/kotakanbe/go-cve-dictionary v0.6.2-0.20210717230516-a3ecd8693395
+	github.com/kotakanbe/go-cve-dictionary v0.6.2
 	github.com/kotakanbe/go-pingscanner v0.1.0
 	github.com/kotakanbe/goval-dictionary v0.3.6-0.20210625044258-9be85404d7dd
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
