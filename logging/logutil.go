@@ -100,7 +100,7 @@ func NewCustomLogger(debug, quiet, logToFile bool, logDir, logMsgAnsiColor, serv
 			}
 		}
 	} else if quiet {
-		log.Out = io.Discard
+		log.Out = ioutil.Discard
 	} else {
 		log.Out = os.Stderr
 	}
