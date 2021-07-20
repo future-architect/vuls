@@ -26,7 +26,7 @@ require (
 	github.com/hashicorp/go-uuid v1.0.2
 	github.com/hashicorp/go-version v1.3.0
 	github.com/howeyc/gopass v0.0.0-20190910152052-7cb4b85ec19c
-	github.com/jackc/pgproto3/v2 v2.1.0 // indirect
+	github.com/jackc/pgx/v4 v4.12.0 // indirect
 	github.com/jesseduffield/gocui v0.3.0
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/knqyf263/go-apk-version v0.0.0-20200609155635-041fdbb8563f
@@ -38,7 +38,6 @@ require (
 	github.com/kotakanbe/go-pingscanner v0.1.0
 	github.com/kotakanbe/goval-dictionary v0.3.6-0.20210625044258-9be85404d7dd
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
-	github.com/lib/pq v1.10.2 // indirect
 	github.com/mattn/go-isatty v0.0.13 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
@@ -50,17 +49,14 @@ require (
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.8.0
 	github.com/spf13/afero v1.6.0
-	github.com/spf13/cobra v1.1.3
-	github.com/spf13/viper v1.8.1 // indirect
-	github.com/takuzoo3868/go-msfdb v0.1.5
+	github.com/spf13/cobra v1.2.1
+	github.com/takuzoo3868/go-msfdb v0.1.6
 	github.com/vulsio/go-exploitdb v0.1.8-0.20210625021845-e5081ca67229
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
 	golang.org/x/net v0.0.0-20210716203947-853a461950ff // indirect
 	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
-	gorm.io/driver/mysql v1.1.1 // indirect
-	gorm.io/gorm v1.21.11 // indirect
+	gorm.io/gorm v1.21.12 // indirect
 	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009
 )
