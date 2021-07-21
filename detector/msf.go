@@ -16,8 +16,31 @@ import (
 
 // FillWithMetasploit fills metasploit module information that has in module
 func FillWithMetasploit(r *models.ScanResult, cnf config.MetasploitConf) (nMetasploitCve int, err error) {
-	driver, locked, err := newMetasploitDB(&cnf)
-	if driver != nil {
+	if cnf.IsFetchViaHTTP() {
+		var cveIDs []string
+		for cveID := range r.ScannedCves {
+			cveIDs = append(cveIDs, cveID)
+		}
+		prefix, _ := util.URLPathJoin(cnf.GetURL(), "cves")
+		responses, err := getCvesViaHTTP(cveIDs, prefix)
+		if err != nil {
+			return 0, err
+		}
+		for _, res := range responses {
+			msfs := []*metasploitmodels.Metasploit{}
+			if err := json.Unmarshal([]byte(res.json), &msfs); err != nil {
+				return 0, err
+			}
+			metasploits := ConvertToModelsMsf(msfs)
+			v, ok := r.ScannedCves[res.request.cveID]
+			if ok {
+				v.Metasploits = metasploits
+			}
+			r.ScannedCves[res.request.cveID] = v
+			nMetasploitCve++
+		}
+	} else {
+		driver, locked, err := newMetasploitDB(&cnf)
 		if locked {
 			return 0, xerrors.Errorf("SQLite3 is locked: %s", cnf.GetSQLite3Path())
 		} else if err != nil {
@@ -40,29 +63,6 @@ func FillWithMetasploit(r *models.ScanResult, cnf config.MetasploitConf) (nMetas
 			modules := ConvertToModelsMsf(ms)
 			vuln.Metasploits = modules
 			r.ScannedCves[cveID] = vuln
-			nMetasploitCve++
-		}
-	} else {
-		var cveIDs []string
-		for cveID := range r.ScannedCves {
-			cveIDs = append(cveIDs, cveID)
-		}
-		prefix, _ := util.URLPathJoin(cnf.GetURL(), "cves")
-		responses, err := getCvesViaHTTP(cveIDs, prefix)
-		if err != nil {
-			return 0, err
-		}
-		for _, res := range responses {
-			msfs := []*metasploitmodels.Metasploit{}
-			if err := json.Unmarshal([]byte(res.json), &msfs); err != nil {
-				return 0, err
-			}
-			metasploits := ConvertToModelsMsf(msfs)
-			v, ok := r.ScannedCves[res.request.cveID]
-			if ok {
-				v.Metasploits = metasploits
-			}
-			r.ScannedCves[res.request.cveID] = v
 			nMetasploitCve++
 		}
 	}

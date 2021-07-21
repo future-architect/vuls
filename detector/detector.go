@@ -269,10 +269,10 @@ func FillCvesWithNvdJvn(r *models.ScanResult, cnf config.GoCveDictConf, logOpts 
 	}()
 
 	var ds []cvemodels.CveDetail
-	if client.driver != nil {
-		ds, err = client.fetchCveDetails(cveIDs)
-	} else {
+	if cnf.IsFetchViaHTTP() {
 		ds, err = client.fetchCveDetailsViaHTTP(cveIDs)
+	} else {
+		ds, err = client.fetchCveDetails(cveIDs)
 	}
 	if err != nil {
 		return err
