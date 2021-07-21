@@ -44,7 +44,7 @@ func FillWithMetasploit(r *models.ScanResult, cnf config.MetasploitConf) (nMetas
 }
 
 // ConvertToModelsMsf converts gost model to vuls model
-func ConvertToModelsMsf(ms []*metasploitmodels.Metasploit) (modules []models.Metasploit) {
+func ConvertToModelsMsf(ms []metasploitmodels.Metasploit) (modules []models.Metasploit) {
 	for _, m := range ms {
 		var links []string
 		if 0 < len(m.References) {
@@ -71,7 +71,7 @@ func newMetasploitDB(cnf config.VulnDictInterface) (driver metasploitdb.DB, lock
 	if cnf.GetType() == "sqlite3" {
 		path = cnf.GetSQLite3Path()
 	}
-	if driver, locked, err = metasploitdb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), false); err != nil {
+	if driver, locked, err = metasploitdb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL()); err != nil {
 		if locked {
 			return nil, true, xerrors.Errorf("metasploitDB is locked. err: %w", err)
 		}
