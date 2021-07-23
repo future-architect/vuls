@@ -656,6 +656,7 @@ func AnalyzeLibraries(ctx context.Context, libFilemap map[string][]byte) (librar
 			&wg,
 			semaphore.NewWeighted(1),
 			result,
+			"",
 			path,
 			&DummyFileInfo{},
 			func() ([]byte, error) { return b, nil }); err != nil {
