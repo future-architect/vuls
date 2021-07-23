@@ -155,7 +155,7 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 func (o RedHatBase) convertToDistroAdvisory(def *ovalmodels.Definition) *models.DistroAdvisory {
 	advisoryID := def.Title
 	switch o.family {
-	case constant.RedHat, constant.CentOS, constant.Rocky, constant.Alma, constant.Oracle:
+	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Oracle:
 		if def.Title != "" {
 			ss := strings.Fields(def.Title)
 			advisoryID = strings.TrimSuffix(ss[0], ":")
@@ -323,6 +323,24 @@ func NewAmazon(cnf config.VulnDictInterface) Amazon {
 	}
 }
 
+// Alma is the interface for RedhatBase OVAL
+type Alma struct {
+	// Base
+	RedHatBase
+}
+
+// NewAlma creates OVAL client for Alma Linux
+func NewAlma(cnf config.VulnDictInterface) Alma {
+	return Alma{
+		RedHatBase{
+			Base{
+				family: constant.Alma,
+				Cnf:    cnf,
+			},
+		},
+	}
+}
+
 // Rocky is the interface for RedhatBase OVAL
 type Rocky struct {
 	// Base
@@ -341,20 +359,3 @@ func NewRocky(cnf config.VulnDictInterface) Rocky {
 	}
 }
 
-// Alma is the interface for RedhatBase OVAL
-type Alma struct {
-	// Base
-	RedHatBase
-}
-
-// NewAlma creates OVAL client for Alma Linux
-func NewAlma(cnf config.VulnDictInterface) Alma {
-	return Alma{
-		RedHatBase{
-			Base{
-				family: constant.Alma,
-				Cnf:    cnf,
-			},
-		},
-	}
-}

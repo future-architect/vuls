@@ -49,7 +49,7 @@ func (o *centos) depsFast() []string {
 	}
 
 	// repoquery
-	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Rocky8
+	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Alma8, Rocky8
 	return []string{"yum-utils"}
 }
 
@@ -59,7 +59,7 @@ func (o *centos) depsFastRoot() []string {
 	}
 
 	// repoquery
-	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Rocky8
+	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Alma8, Rocky8
 	return []string{"yum-utils"}
 }
 

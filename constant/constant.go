@@ -17,11 +17,11 @@ const (
 	// CentOS is
 	CentOS = "centos"
 
-	// Rocky is
-	Rocky = "rocky"
-
 	// Alma is
 	Alma = "alma"
+
+	// Rocky is
+	Rocky = "rocky"
 
 	// Fedora is
 	// Fedora = "fedora"

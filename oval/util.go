@@ -337,7 +337,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 
 		if running.Release != "" {
 			switch family {
-			case constant.RedHat, constant.CentOS, constant.Rocky, constant.Alma, constant.Oracle:
+			case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Oracle:
 				// For kernel related packages, ignore OVAL information with different major versions
 				if _, ok := kernelRelatedPackNames[ovalPack.Name]; ok {
 					if util.Major(ovalPack.Version) != util.Major(running.Release) {
@@ -377,7 +377,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 				return true, false, ovalPack.Version, nil
 			}
 
-			// But CentOS/Rocky/Alma can't judge whether fixed or unfixed.
+			// But CentOS/Alma/Rocky can't judge whether fixed or unfixed.
 			// Because fixed state in RHEL OVAL is different.
 			// So, it have to be judged version comparison.
 
@@ -464,10 +464,10 @@ func NewOVALClient(family string, cnf config.GovalDictConf) (Client, error) {
 		return NewRedhat(&cnf), nil
 	case constant.CentOS:
 		return NewCentOS(&cnf), nil
-	case constant.Rocky:
-		return NewRocky(&cnf), nil
 	case constant.Alma:
 		return NewAlma(&cnf), nil
+	case constant.Rocky:
+		return NewRocky(&cnf), nil
 	case constant.Oracle:
 		return NewOracle(&cnf), nil
 	case constant.SUSEEnterpriseServer:
@@ -490,14 +490,14 @@ func NewOVALClient(family string, cnf config.GovalDictConf) (Client, error) {
 }
 
 // GetFamilyInOval returns the OS family name in OVAL
-// For example, CentOS/Rocky/Alma uses Red Hat's OVAL, so return 'redhat'
+// For example, CentOS/Alma/Rocky uses Red Hat's OVAL, so return 'redhat'
 func GetFamilyInOval(familyInScanResult string) (string, error) {
 	switch familyInScanResult {
 	case constant.Debian, constant.Raspbian:
 		return constant.Debian, nil
 	case constant.Ubuntu:
 		return constant.Ubuntu, nil
-	case constant.RedHat, constant.CentOS, constant.Rocky, constant.Alma:
+	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
 		return constant.RedHat, nil
 	case constant.Oracle:
 		return constant.Oracle, nil
