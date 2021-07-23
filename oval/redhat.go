@@ -358,4 +358,3 @@ func NewRocky(cnf config.VulnDictInterface) Rocky {
 		},
 	}
 }
-
