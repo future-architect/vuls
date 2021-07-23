@@ -416,18 +416,21 @@ func (r *ScanResult) SortForJSONOutput() {
 			return v.Mitigations[i].URL < v.Mitigations[j].URL
 		})
 		for kk, vv := range v.CveContents {
-			sort.Slice(vv.References, func(i, j int) bool {
-				return vv.References[i].Link < vv.References[j].Link
-			})
-			sort.Slice(vv.CweIDs, func(i, j int) bool {
-				return vv.CweIDs[i] < vv.CweIDs[j]
-			})
-			for kkk, vvv := range vv.References {
-				// sort v.CveContents[].References[].Tags
-				sort.Slice(vvv.Tags, func(i, j int) bool {
-					return vvv.Tags[i] < vvv.Tags[j]
+			for kkk, vvv := range vv {
+				sort.Slice(vvv.References, func(i, j int) bool {
+					return vvv.References[i].Link < vvv.References[j].Link
 				})
-				vv.References[kkk] = vvv
+				sort.Slice(vvv.CweIDs, func(i, j int) bool {
+					return vvv.CweIDs[i] < vvv.CweIDs[j]
+				})
+				for kkkk, vvvv := range vvv.References {
+					// sort v.CveContents[].References[].Tags
+					sort.Slice(vvvv.Tags, func(i, j int) bool {
+						return vvvv.Tags[i] < vvvv.Tags[j]
+					})
+					vvv.References[kkkk] = vvvv
+				}
+				vv[kkk] = vvv
 			}
 			v.CveContents[kk] = vv
 		}

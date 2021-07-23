@@ -11,12 +11,12 @@ func TestExcept(t *testing.T) {
 		out CveContents
 	}{{
 		in: CveContents{
-			RedHat: {Type: RedHat},
-			Ubuntu: {Type: Ubuntu},
-			Debian: {Type: Debian},
+			RedHat: []CveContent{{Type: RedHat}},
+			Ubuntu: []CveContent{{Type: Ubuntu}},
+			Debian: []CveContent{{Type: Debian}},
 		},
 		out: CveContents{
-			RedHat: {Type: RedHat},
+			RedHat: []CveContent{{Type: RedHat}},
 		},
 	},
 	}
@@ -44,15 +44,15 @@ func TestSourceLinks(t *testing.T) {
 				lang:  "ja",
 				cveID: "CVE-2017-6074",
 				cont: CveContents{
-					Jvn: {
+					Jvn: []CveContent{{
 						Type:       Jvn,
 						SourceLink: "https://jvn.jp/vu/JVNVU93610402/",
-					},
-					RedHat: {
+					}},
+					RedHat: []CveContent{{
 						Type:       RedHat,
 						SourceLink: "https://access.redhat.com/security/cve/CVE-2017-6074",
-					},
-					Nvd: {
+					}},
+					Nvd: []CveContent{{
 						Type: Nvd,
 						References: []Reference{
 							{
@@ -69,7 +69,7 @@ func TestSourceLinks(t *testing.T) {
 							},
 						},
 						SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-2017-6074",
-					},
+					}},
 				},
 			},
 			out: []CveContentStr{
@@ -97,14 +97,14 @@ func TestSourceLinks(t *testing.T) {
 				lang:  "en",
 				cveID: "CVE-2017-6074",
 				cont: CveContents{
-					Jvn: {
+					Jvn: []CveContent{{
 						Type:       Jvn,
 						SourceLink: "https://jvn.jp/vu/JVNVU93610402/",
-					},
-					RedHat: {
+					}},
+					RedHat: []CveContent{{
 						Type:       RedHat,
 						SourceLink: "https://access.redhat.com/security/cve/CVE-2017-6074",
-					},
+					}},
 				},
 			},
 			out: []CveContentStr{

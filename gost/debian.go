@@ -141,7 +141,7 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 				if v.CveContents == nil {
 					v.CveContents = models.NewCveContents(cve)
 				} else {
-					v.CveContents[models.DebianSecurityTracker] = cve
+					v.CveContents[models.DebianSecurityTracker] = append(v.CveContents[models.DebianSecurityTracker], cve)
 					v.Confidences = models.Confidences{models.DebianSecurityTrackerMatch}
 				}
 			} else {

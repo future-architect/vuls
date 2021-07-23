@@ -50,14 +50,18 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 	for _, vuln := range r.ScannedCves {
 		switch models.NewCveContentType(o.family) {
 		case models.RedHat:
-			if cont, ok := vuln.CveContents[models.RedHat]; ok {
-				cont.SourceLink = "https://access.redhat.com/security/cve/" + cont.CveID
-				vuln.CveContents[models.RedHat] = cont
+			if conts, ok := vuln.CveContents[models.RedHat]; ok {
+				for _, cont := range conts {
+					cont.SourceLink = "https://access.redhat.com/security/cve/" + cont.CveID
+					vuln.CveContents[models.RedHat] = append(vuln.CveContents[models.RedHat], cont)
+				}
 			}
 		case models.Oracle:
-			if cont, ok := vuln.CveContents[models.Oracle]; ok {
-				cont.SourceLink = fmt.Sprintf("https://linux.oracle.com/cve/%s.html", cont.CveID)
-				vuln.CveContents[models.Oracle] = cont
+			if conts, ok := vuln.CveContents[models.Oracle]; ok {
+				for _, cont := range conts {
+					cont.SourceLink = fmt.Sprintf("https://linux.oracle.com/cve/%s.html", cont.CveID)
+					vuln.CveContents[models.Oracle] = append(vuln.CveContents[models.Oracle], cont)
+				}
 			}
 		}
 	}
@@ -113,10 +117,12 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 		} else {
 			cveContents := vinfo.CveContents
 			if v, ok := vinfo.CveContents[ctype]; ok {
-				if v.LastModified.After(ovalContent.LastModified) {
-					logging.Log.Debugf("%s ignored. DefID: %s ", cve.CveID, defPacks.def.DefinitionID)
-				} else {
-					logging.Log.Debugf("%s OVAL will be overwritten. DefID: %s", cve.CveID, defPacks.def.DefinitionID)
+				for _, vv := range v {
+					if vv.LastModified.After(ovalContent.LastModified) {
+						logging.Log.Debugf("%s ignored. DefID: %s ", cve.CveID, defPacks.def.DefinitionID)
+					} else {
+						logging.Log.Debugf("%s OVAL will be overwritten. DefID: %s", cve.CveID, defPacks.def.DefinitionID)
+					}
 				}
 			} else {
 				logging.Log.Debugf("%s also detected by OVAL. DefID: %s", cve.CveID, defPacks.def.DefinitionID)
@@ -124,7 +130,7 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 			}
 
 			vinfo.Confidences.AppendIfMissing(models.OvalMatch)
-			cveContents[ctype] = ovalContent
+			cveContents[ctype] = append(cveContents[ctype], ovalContent)
 			vinfo.CveContents = cveContents
 		}
 

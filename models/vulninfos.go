@@ -347,30 +347,46 @@ func (v VulnInfo) CveIDDiffFormat() string {
 // Titles returns title (TUI)
 func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 	if lang == "ja" {
-		if cont, found := v.CveContents[Jvn]; found && cont.Title != "" {
-			values = append(values, CveContentStr{Jvn, cont.Title})
+		if conts, found := v.CveContents[Jvn]; found {
+			for _, cont := range conts {
+				if cont.Title != "" {
+					values = append(values, CveContentStr{Jvn, cont.Title})
+				}
+			}
 		}
 	}
 
 	// RedHat API has one line title.
-	if cont, found := v.CveContents[RedHatAPI]; found && cont.Title != "" {
-		values = append(values, CveContentStr{RedHatAPI, cont.Title})
+	if conts, found := v.CveContents[RedHatAPI]; found {
+		for _, cont := range conts {
+			if cont.Title != "" {
+				values = append(values, CveContentStr{RedHatAPI, cont.Title})
+			}
+		}
 	}
 
 	// GitHub security alerts has a title.
-	if cont, found := v.CveContents[GitHub]; found && cont.Title != "" {
-		values = append(values, CveContentStr{GitHub, cont.Title})
+	if conts, found := v.CveContents[GitHub]; found {
+		for _, cont := range conts {
+			if cont.Title != "" {
+				values = append(values, CveContentStr{GitHub, cont.Title})
+			}
+		}
 	}
 
 	order := CveContentTypes{Trivy, Nvd, NewCveContentType(myFamily)}
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
-		if cont, found := v.CveContents[ctype]; found && cont.Summary != "" {
-			summary := strings.Replace(cont.Summary, "\n", " ", -1)
-			values = append(values, CveContentStr{
-				Type:  ctype,
-				Value: summary,
-			})
+		if conts, found := v.CveContents[ctype]; found {
+			for _, cont := range conts {
+				if cont.Summary != "" {
+					summary := strings.Replace(cont.Summary, "\n", " ", -1)
+					values = append(values, CveContentStr{
+						Type:  ctype,
+						Value: summary,
+					})
+				}
+			}
 		}
 	}
 
@@ -393,23 +409,31 @@ func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 // Summaries returns summaries
 func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 	if lang == "ja" {
-		if cont, found := v.CveContents[Jvn]; found && cont.Summary != "" {
-			summary := cont.Title
-			summary += "\n" + strings.Replace(
-				strings.Replace(cont.Summary, "\n", " ", -1), "\r", " ", -1)
-			values = append(values, CveContentStr{Jvn, summary})
+		if conts, found := v.CveContents[Jvn]; found {
+			for _, cont := range conts {
+				if cont.Summary != "" {
+					summary := cont.Title
+					summary += "\n" + strings.Replace(
+						strings.Replace(cont.Summary, "\n", " ", -1), "\r", " ", -1)
+					values = append(values, CveContentStr{Jvn, summary})
+				}
+			}
 		}
 	}
 
 	order := CveContentTypes{Trivy, NewCveContentType(myFamily), Nvd, GitHub}
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
-		if cont, found := v.CveContents[ctype]; found && cont.Summary != "" {
-			summary := strings.Replace(cont.Summary, "\n", " ", -1)
-			values = append(values, CveContentStr{
-				Type:  ctype,
-				Value: summary,
-			})
+		if conts, found := v.CveContents[ctype]; found {
+			for _, cont := range conts {
+				if cont.Summary != "" {
+					summary := strings.Replace(cont.Summary, "\n", " ", -1)
+					values = append(values, CveContentStr{
+						Type:  ctype,
+						Value: summary,
+					})
+				}
+			}
 		}
 	}
 
@@ -420,11 +444,15 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		})
 	}
 
-	if v, ok := v.CveContents[WpScan]; ok {
-		values = append(values, CveContentStr{
-			Type:  WpScan,
-			Value: v.Title,
-		})
+	if conts, ok := v.CveContents[WpScan]; ok {
+		for _, cont := range conts {
+			if cont.Title != "" {
+				values = append(values, CveContentStr{
+					Type:  WpScan,
+					Value: cont.Title,
+				})
+			}
+		}
 	}
 
 	if len(values) == 0 {
@@ -441,20 +469,22 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
 	order := []CveContentType{RedHatAPI, RedHat, Nvd, Jvn}
 	for _, ctype := range order {
-		if cont, found := v.CveContents[ctype]; found {
-			if cont.Cvss2Score == 0 && cont.Cvss2Severity == "" {
-				continue
+		if conts, found := v.CveContents[ctype]; found {
+			for _, cont := range conts {
+				if cont.Cvss2Score == 0 && cont.Cvss2Severity == "" {
+					continue
+				}
+				// https://nvd.nist.gov/vuln-metrics/cvss
+				values = append(values, CveContentCvss{
+					Type: ctype,
+					Value: Cvss{
+						Type:     CVSS2,
+						Score:    cont.Cvss2Score,
+						Vector:   cont.Cvss2Vector,
+						Severity: strings.ToUpper(cont.Cvss2Severity),
+					},
+				})
 			}
-			// https://nvd.nist.gov/vuln-metrics/cvss
-			values = append(values, CveContentCvss{
-				Type: ctype,
-				Value: Cvss{
-					Type:     CVSS2,
-					Score:    cont.Cvss2Score,
-					Vector:   cont.Cvss2Vector,
-					Severity: strings.ToUpper(cont.Cvss2Severity),
-				},
-			})
 		}
 	}
 	return
@@ -464,34 +494,40 @@ func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
 func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 	order := []CveContentType{RedHatAPI, RedHat, Nvd, Jvn}
 	for _, ctype := range order {
-		if cont, found := v.CveContents[ctype]; found {
-			if cont.Cvss3Score == 0 && cont.Cvss3Severity == "" {
-				continue
+		if conts, found := v.CveContents[ctype]; found {
+			for _, cont := range conts {
+				if cont.Cvss3Score == 0 && cont.Cvss3Severity == "" {
+					continue
+				}
+				// https://nvd.nist.gov/vuln-metrics/cvss
+				values = append(values, CveContentCvss{
+					Type: ctype,
+					Value: Cvss{
+						Type:     CVSS3,
+						Score:    cont.Cvss3Score,
+						Vector:   cont.Cvss3Vector,
+						Severity: strings.ToUpper(cont.Cvss3Severity),
+					},
+				})
 			}
-			// https://nvd.nist.gov/vuln-metrics/cvss
-			values = append(values, CveContentCvss{
-				Type: ctype,
-				Value: Cvss{
-					Type:     CVSS3,
-					Score:    cont.Cvss3Score,
-					Vector:   cont.Cvss3Vector,
-					Severity: strings.ToUpper(cont.Cvss3Severity),
-				},
-			})
 		}
 	}
 
 	for _, ctype := range []CveContentType{Debian, DebianSecurityTracker, Ubuntu, Amazon, Trivy, GitHub, WpScan} {
-		if cont, found := v.CveContents[ctype]; found && cont.Cvss3Severity != "" {
-			values = append(values, CveContentCvss{
-				Type: ctype,
-				Value: Cvss{
-					Type:                 CVSS3,
-					Score:                severityToCvssScoreRoughly(cont.Cvss3Severity),
-					CalculatedBySeverity: true,
-					Severity:             strings.ToUpper(cont.Cvss3Severity),
-				},
-			})
+		if conts, found := v.CveContents[ctype]; found {
+			for _, cont := range conts {
+				if cont.Cvss3Severity != "" {
+					values = append(values, CveContentCvss{
+						Type: ctype,
+						Value: Cvss{
+							Type:                 CVSS3,
+							Score:                severityToCvssScoreRoughly(cont.Cvss3Severity),
+							CalculatedBySeverity: true,
+							Severity:             strings.ToUpper(cont.Cvss3Severity),
+						},
+					})
+				}
+			}
 		}
 	}
 
@@ -553,24 +589,28 @@ func (v VulnInfo) MaxCvss2Score() CveContentCvss {
 
 // AttackVector returns attack vector string
 func (v VulnInfo) AttackVector() string {
-	for _, cnt := range v.CveContents {
-		if strings.HasPrefix(cnt.Cvss2Vector, "AV:N") ||
-			strings.Contains(cnt.Cvss3Vector, "AV:N") {
-			return "AV:N"
-		} else if strings.HasPrefix(cnt.Cvss2Vector, "AV:A") ||
-			strings.Contains(cnt.Cvss3Vector, "AV:A") {
-			return "AV:A"
-		} else if strings.HasPrefix(cnt.Cvss2Vector, "AV:L") ||
-			strings.Contains(cnt.Cvss3Vector, "AV:L") {
-			return "AV:L"
-		} else if strings.Contains(cnt.Cvss3Vector, "AV:P") {
-			// no AV:P in CVSS v2
-			return "AV:P"
+	for _, conts := range v.CveContents {
+		for _, cont := range conts {
+			if strings.HasPrefix(cont.Cvss2Vector, "AV:N") ||
+				strings.Contains(cont.Cvss3Vector, "AV:N") {
+				return "AV:N"
+			} else if strings.HasPrefix(cont.Cvss2Vector, "AV:A") ||
+				strings.Contains(cont.Cvss3Vector, "AV:A") {
+				return "AV:A"
+			} else if strings.HasPrefix(cont.Cvss2Vector, "AV:L") ||
+				strings.Contains(cont.Cvss3Vector, "AV:L") {
+				return "AV:L"
+			} else if strings.Contains(cont.Cvss3Vector, "AV:P") {
+				// no AV:P in CVSS v2
+				return "AV:P"
+			}
 		}
 	}
-	if cont, found := v.CveContents[DebianSecurityTracker]; found {
-		if attackRange, found := cont.Optional["attack range"]; found {
-			return attackRange
+	if conts, found := v.CveContents[DebianSecurityTracker]; found {
+		for _, cont := range conts {
+			if attackRange, found := cont.Optional["attack range"]; found {
+				return attackRange
+			}
 		}
 	}
 	return ""

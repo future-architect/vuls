@@ -284,8 +284,8 @@ func FillCvesWithNvdJvn(r *models.ScanResult, cnf config.GoCveDictConf, logOpts 
 	}
 
 	for _, d := range ds {
-		nvd, exploits, mitigations := models.ConvertNvdJSONToModel(d.CveID, d.NvdJSON)
-		jvn := models.ConvertJvnToModel(d.CveID, d.Jvn)
+		nvds, exploits, mitigations := models.ConvertNvdToModel(d.CveID, d.Nvd)
+		jvns := models.ConvertJvnToModel(d.CveID, d.Jvn)
 
 		alerts := fillCertAlerts(&d)
 		for cveID, vinfo := range r.ScannedCves {
@@ -293,9 +293,9 @@ func FillCvesWithNvdJvn(r *models.ScanResult, cnf config.GoCveDictConf, logOpts 
 				if vinfo.CveContents == nil {
 					vinfo.CveContents = models.CveContents{}
 				}
-				for _, con := range []*models.CveContent{nvd, jvn} {
-					if con != nil && !con.Empty() {
-						vinfo.CveContents[con.Type] = *con
+				for _, con := range append(nvds, jvns...) {
+					if !con.Empty() {
+						vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
 					}
 				}
 				vinfo.AlertDict = alerts
@@ -310,8 +310,8 @@ func FillCvesWithNvdJvn(r *models.ScanResult, cnf config.GoCveDictConf, logOpts 
 }
 
 func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
-	if cvedetail.NvdJSON != nil {
-		for _, cert := range cvedetail.NvdJSON.Certs {
+	for _, nvd := range cvedetail.Nvd {
+		for _, cert := range nvd.Certs {
 			dict.En = append(dict.En, models.Alert{
 				URL:   cert.Link,
 				Title: cert.Title,
@@ -319,8 +319,9 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 			})
 		}
 	}
-	if cvedetail.Jvn != nil {
-		for _, cert := range cvedetail.Jvn.Certs {
+
+	for _, jvn := range cvedetail.Jvn {
+		for _, cert := range jvn.Certs {
 			dict.Ja = append(dict.Ja, models.Alert{
 				URL:   cert.Link,
 				Title: cert.Title,
@@ -328,6 +329,7 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 			})
 		}
 	}
+
 	return dict
 }
 
@@ -450,11 +452,13 @@ func DetectCpeURIsCves(r *models.ScanResult, cpeURIs []string, cnf config.GoCveD
 func FillCweDict(r *models.ScanResult) {
 	uniqCweIDMap := map[string]bool{}
 	for _, vinfo := range r.ScannedCves {
-		for _, cont := range vinfo.CveContents {
-			for _, id := range cont.CweIDs {
-				if strings.HasPrefix(id, "CWE-") {
-					id = strings.TrimPrefix(id, "CWE-")
-					uniqCweIDMap[id] = true
+		for _, conts := range vinfo.CveContents {
+			for _, cont := range conts {
+				for _, id := range cont.CweIDs {
+					if strings.HasPrefix(id, "CWE-") {
+						id = strings.TrimPrefix(id, "CWE-")
+						uniqCweIDMap[id] = true
+					}
 				}
 			}
 		}
