@@ -53,7 +53,7 @@ func (ubu Ubuntu) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 
 	packCvesList := []packCves{}
 	if ubu.DBDriver.Cnf.IsFetchViaHTTP() {
-		url, _ := util.URLPathJoin(ubu.DBDriver.Cnf.GetURL(), "ubuntu", ubuReleaseVer, "pkg")
+		url, _ := util.URLPathJoin(ubu.DBDriver.Cnf.GetURL(), "ubuntu", ubuReleaseVer, "pkgs")
 		responses, err := getAllUnfixedCvesViaHTTP(r, url)
 		if err != nil {
 			return 0, err
