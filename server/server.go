@@ -23,6 +23,8 @@ import (
 // VulsHandler is used for vuls server mode
 type VulsHandler struct {
 	ToLocalFile bool
+	IgnoreUnfixed bool
+	IgnoreUnscoredCves bool
 }
 
 // ServeHTTP is http handler
@@ -112,6 +114,14 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		ignorePkgsRegexps = s.IgnorePkgsRegexp
 	}
 	r.ScannedCves = r.ScannedCves.FilterIgnorePkgs(ignorePkgsRegexps)
+
+	// IgnoreUnfixed
+	r.ScannedCves = r.ScannedCves.FilterUnfixed(h.IgnoreUnfixed)
+
+	// IgnoreUnscoredCves
+	if h.IgnoreUnscoredCves {
+		r.ScannedCves = r.ScannedCves.FindScoredVulns()
+	}
 
 	// set ReportedAt to current time when it's set to the epoch, ensures that ReportedAt will be set
 	// properly for scans sent to vuls when running in server mode

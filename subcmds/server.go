@@ -18,9 +18,11 @@ import (
 
 // ServerCmd is subcommand for server
 type ServerCmd struct {
-	configPath  string
-	listen      string
-	toLocalFile bool
+	configPath         string
+	listen             string
+	toLocalFile        bool
+	ignoreUnfixed      bool
+	ignoreUnscoredCves bool
 }
 
 // Name return subcommand name
@@ -70,11 +72,11 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 	f.Float64Var(&config.Conf.CvssScoreOver, "cvss-over", 0,
 		"-cvss-over=6.5 means Servering CVSS Score 6.5 and over (default: 0 (means Server all))")
 
-	f.BoolVar(&config.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
-		"Don't Server the unscored CVEs")
-
-	f.BoolVar(&config.Conf.IgnoreUnfixed, "ignore-unfixed", false,
+	f.BoolVar(&p.ignoreUnfixed, "ignore-unfixed", false,
 		"Don't show the unfixed CVEs")
+
+	f.BoolVar(&p.ignoreUnscoredCves, "ignore-unscored-cves", false,
+		"Don't show the unscored CVEs")
 
 	f.StringVar(&config.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
@@ -99,7 +101,9 @@ func (p *ServerCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	http.Handle("/vuls", server.VulsHandler{
-		ToLocalFile: p.toLocalFile,
+		ToLocalFile:        p.toLocalFile,
+		IgnoreUnfixed:      p.ignoreUnfixed,
+		IgnoreUnscoredCves: p.ignoreUnscoredCves,
 	})
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "ok")
