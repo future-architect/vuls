@@ -58,8 +58,33 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 				cent := newCentOS(c)
 				cent.setDistro(constant.CentOS, release)
 				return true, cent
+			case "alma", "almalinux":
+				alma := newAlma(c)
+				alma.setDistro(constant.Alma, release)
+				return true, alma
 			default:
 				logging.Log.Warnf("Failed to parse CentOS: %s", r)
+			}
+		}
+	}
+
+	if r := exec(c, "ls /etc/almalinux-release", noSudo); r.isSuccess() {
+		if r := exec(c, "cat /etc/almalinux-release", noSudo); r.isSuccess() {
+			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
+			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
+			if len(result) != 3 {
+				logging.Log.Warnf("Failed to parse Alma version: %s", r)
+				return true, newAlma(c)
+			}
+
+			release := result[2]
+			switch strings.ToLower(result[1]) {
+			case "alma", "almalinux":
+				alma := newAlma(c)
+				alma.setDistro(constant.Alma, release)
+				return true, alma
+			default:
+				logging.Log.Warnf("Failed to parse Alma: %s", r)
 			}
 		}
 	}
@@ -104,6 +129,10 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 				cent := newCentOS(c)
 				cent.setDistro(constant.CentOS, release)
 				return true, cent
+			case "alma", "almalinux":
+				alma := newAlma(c)
+				alma.setDistro(constant.Alma, release)
+				return true, alma
 			case "rocky", "rocky linux":
 				rocky := newRocky(c)
 				rocky.setDistro(constant.Rocky, release)
@@ -659,7 +688,7 @@ func (o *redhatBase) rpmQf() string {
 
 func (o *redhatBase) detectEnabledDnfModules() ([]string, error) {
 	switch o.Distro.Family {
-	case constant.RedHat, constant.CentOS, constant.Rocky:
+	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
 		//TODO OracleLinux
 	default:
 		return nil, nil

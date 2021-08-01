@@ -230,7 +230,7 @@ type ServerInfo struct {
 	GitHubRepos        map[string]GitHubConf       `toml:"githubs" json:"githubs,omitempty"` // key: owner/repo
 	UUIDs              map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
 	Memo               string                      `toml:"memo,omitempty" json:"memo,omitempty"`
-	Enablerepo         []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, Rocky, RHEL, Amazon
+	Enablerepo         []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, Alma, Rocky, RHEL, Amazon
 	Optional           map[string]interface{}      `toml:"optional,omitempty" json:"optional,omitempty"`     // Optional key-value set that will be outputted to JSON
 	Lockfiles          []string                    `toml:"lockfiles,omitempty" json:"lockfiles,omitempty"`   // ie) path/to/package-lock.json
 	FindLock           bool                        `toml:"findLock,omitempty" json:"findLock,omitempty"`
