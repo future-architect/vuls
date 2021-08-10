@@ -80,7 +80,7 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 }
 
 func (o DebianBase) convertToModel(cveID string, def *ovalmodels.Definition) *models.CveContent {
-	refs := make([]models.Reference, len(def.References))
+	refs := make([]models.Reference, 0, len(def.References))
 	for _, r := range def.References {
 		refs = append(refs, models.Reference{
 			Link:   r.RefURL,
