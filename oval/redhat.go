@@ -173,7 +173,7 @@ func (o RedHatBase) convertToDistroAdvisory(def *ovalmodels.Definition) *models.
 }
 
 func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *models.CveContent {
-	var refs []models.Reference
+	refs := make([]models.Reference, len(def.References))
 	for _, r := range def.References {
 		refs = append(refs, models.Reference{
 			Link:   r.RefURL,
