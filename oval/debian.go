@@ -20,71 +20,66 @@ type DebianBase struct {
 }
 
 func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
-	ovalContent := *o.convertToModel(&defPacks.def)
-	ovalContent.Type = models.NewCveContentType(o.family)
-	vinfo, ok := r.ScannedCves[defPacks.def.Debian.CveID]
-	if !ok {
-		logging.Log.Debugf("%s is newly detected by OVAL", defPacks.def.Debian.CveID)
-		vinfo = models.VulnInfo{
-			CveID:       defPacks.def.Debian.CveID,
-			Confidences: []models.Confidence{models.OvalMatch},
-			CveContents: models.NewCveContents(ovalContent),
+	for _, cve := range defPacks.def.Advisory.Cves {
+		ovalContent := o.convertToModel(cve.CveID, &defPacks.def)
+		if ovalContent == nil {
+			continue
 		}
-	} else {
-		cveContents := vinfo.CveContents
-		ctype := models.NewCveContentType(o.family)
-		if _, ok := vinfo.CveContents[ctype]; ok {
-			logging.Log.Debugf("%s OVAL will be overwritten",
-				defPacks.def.Debian.CveID)
+		vinfo, ok := r.ScannedCves[cve.CveID]
+		if !ok {
+			logging.Log.Debugf("%s is newly detected by OVAL", cve.CveID)
+			vinfo = models.VulnInfo{
+				CveID:       cve.CveID,
+				Confidences: []models.Confidence{models.OvalMatch},
+				CveContents: models.NewCveContents(*ovalContent),
+			}
 		} else {
-			logging.Log.Debugf("%s is also detected by OVAL",
-				defPacks.def.Debian.CveID)
-			cveContents = models.CveContents{}
-		}
-		if r.Family != constant.Raspbian {
+			cveContents := vinfo.CveContents
+			if _, ok := vinfo.CveContents[ovalContent.Type]; ok {
+				logging.Log.Debugf("%s OVAL will be overwritten", cve.CveID)
+			} else {
+				logging.Log.Debugf("%s is also detected by OVAL", cve.CveID)
+				cveContents = models.CveContents{}
+			}
 			vinfo.Confidences.AppendIfMissing(models.OvalMatch)
-		} else {
-			if len(vinfo.Confidences) == 0 {
-				vinfo.Confidences.AppendIfMissing(models.OvalMatch)
+			cveContents[ovalContent.Type] = *ovalContent
+			vinfo.CveContents = cveContents
+		}
+
+		// uniq(vinfo.PackNames + defPacks.binpkgStat)
+		for _, pack := range vinfo.AffectedPackages {
+			defPacks.binpkgFixstat[pack.Name] = fixStat{
+				notFixedYet: pack.NotFixedYet,
+				fixedIn:     pack.FixedIn,
+				isSrcPack:   false,
 			}
 		}
-		cveContents[ctype] = ovalContent
-		vinfo.CveContents = cveContents
-	}
 
-	// uniq(vinfo.PackNames + defPacks.binpkgStat)
-	for _, pack := range vinfo.AffectedPackages {
-		defPacks.binpkgFixstat[pack.Name] = fixStat{
-			notFixedYet: pack.NotFixedYet,
-			fixedIn:     pack.FixedIn,
-			isSrcPack:   false,
-		}
-	}
-
-	// Update package status of source packages.
-	// In the case of Debian based Linux, sometimes source package name is defined as affected package in OVAL.
-	// To display binary package name showed in apt-get, need to convert source name to binary name.
-	for binName := range defPacks.binpkgFixstat {
-		if srcPack, ok := r.SrcPackages.FindByBinName(binName); ok {
-			for _, p := range defPacks.def.AffectedPacks {
-				if p.Name == srcPack.Name {
-					defPacks.binpkgFixstat[binName] = fixStat{
-						notFixedYet: p.NotFixedYet,
-						fixedIn:     p.Version,
-						isSrcPack:   true,
-						srcPackName: srcPack.Name,
+		// Update package status of source packages.
+		// In the case of Debian based Linux, sometimes source package name is defined as affected package in OVAL.
+		// To display binary package name showed in apt-get, need to convert source name to binary name.
+		for binName := range defPacks.binpkgFixstat {
+			if srcPack, ok := r.SrcPackages.FindByBinName(binName); ok {
+				for _, p := range defPacks.def.AffectedPacks {
+					if p.Name == srcPack.Name {
+						defPacks.binpkgFixstat[binName] = fixStat{
+							notFixedYet: p.NotFixedYet,
+							fixedIn:     p.Version,
+							isSrcPack:   true,
+							srcPackName: srcPack.Name,
+						}
 					}
 				}
 			}
 		}
-	}
 
-	vinfo.AffectedPackages = defPacks.toPackStatuses()
-	vinfo.AffectedPackages.Sort()
-	r.ScannedCves[defPacks.def.Debian.CveID] = vinfo
+		vinfo.AffectedPackages = defPacks.toPackStatuses()
+		vinfo.AffectedPackages.Sort()
+		r.ScannedCves[cve.CveID] = vinfo
+	}
 }
 
-func (o DebianBase) convertToModel(def *ovalmodels.Definition) *models.CveContent {
+func (o DebianBase) convertToModel(cveID string, def *ovalmodels.Definition) *models.CveContent {
 	refs := []models.Reference{}
 	for _, r := range def.References {
 		refs = append(refs, models.Reference{
@@ -94,14 +89,23 @@ func (o DebianBase) convertToModel(def *ovalmodels.Definition) *models.CveConten
 		})
 	}
 
-	return &models.CveContent{
-		CveID:         def.Debian.CveID,
-		Title:         def.Title,
-		Summary:       def.Description,
-		Cvss2Severity: def.Advisory.Severity,
-		Cvss3Severity: def.Advisory.Severity,
-		References:    refs,
+	for _, cve := range def.Advisory.Cves {
+		if cve.CveID != cveID {
+			continue
+		}
+
+		return &models.CveContent{
+			Type:          models.NewCveContentType(o.family),
+			CveID:         cve.CveID,
+			Title:         def.Title,
+			Summary:       def.Description,
+			Cvss2Severity: def.Advisory.Severity,
+			Cvss3Severity: def.Advisory.Severity,
+			References:    refs,
+		}
 	}
+
+	return nil
 }
 
 // Debian is the interface for Debian OVAL

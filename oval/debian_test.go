@@ -29,8 +29,8 @@ func TestPackNamesOfUpdateDebian(t *testing.T) {
 			},
 			defPacks: defPacks{
 				def: ovalmodels.Definition{
-					Debian: ovalmodels.Debian{
-						CveID: "CVE-2000-1000",
+					Advisory: ovalmodels.Advisory{
+						Cves: []ovalmodels.Cve{{CveID: "CVE-2000-1000"}},
 					},
 				},
 				binpkgFixstat: map[string]fixStat{

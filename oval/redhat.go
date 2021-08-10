@@ -98,21 +98,23 @@ var kernelRelatedPackNames = map[string]bool{
 }
 
 func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) {
-	ctype := models.NewCveContentType(o.family)
 	for _, cve := range defPacks.def.Advisory.Cves {
-		ovalContent := *o.convertToModel(cve.CveID, &defPacks.def)
+		ovalContent := o.convertToModel(cve.CveID, &defPacks.def)
+		if ovalContent == nil {
+			continue
+		}
 		vinfo, ok := r.ScannedCves[cve.CveID]
 		if !ok {
 			logging.Log.Debugf("%s is newly detected by OVAL: DefID: %s", cve.CveID, defPacks.def.DefinitionID)
 			vinfo = models.VulnInfo{
 				CveID:       cve.CveID,
 				Confidences: models.Confidences{models.OvalMatch},
-				CveContents: models.NewCveContents(ovalContent),
+				CveContents: models.NewCveContents(*ovalContent),
 			}
 			nCVEs++
 		} else {
 			cveContents := vinfo.CveContents
-			if v, ok := vinfo.CveContents[ctype]; ok {
+			if v, ok := vinfo.CveContents[ovalContent.Type]; ok {
 				if v.LastModified.After(ovalContent.LastModified) {
 					logging.Log.Debugf("%s ignored. DefID: %s ", cve.CveID, defPacks.def.DefinitionID)
 				} else {
@@ -124,7 +126,7 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 			}
 
 			vinfo.Confidences.AppendIfMissing(models.OvalMatch)
-			cveContents[ctype] = ovalContent
+			cveContents[ovalContent.Type] = *ovalContent
 			vinfo.CveContents = cveContents
 		}
 
@@ -171,17 +173,18 @@ func (o RedHatBase) convertToDistroAdvisory(def *ovalmodels.Definition) *models.
 }
 
 func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *models.CveContent {
+	var refs []models.Reference
+	for _, r := range def.References {
+		refs = append(refs, models.Reference{
+			Link:   r.RefURL,
+			Source: r.Source,
+			RefID:  r.RefID,
+		})
+	}
+
 	for _, cve := range def.Advisory.Cves {
 		if cve.CveID != cveID {
 			continue
-		}
-		var refs []models.Reference
-		for _, r := range def.References {
-			refs = append(refs, models.Reference{
-				Link:   r.RefURL,
-				Source: r.Source,
-				RefID:  r.RefID,
-			})
 		}
 
 		score2, vec2 := o.parseCvss2(cve.Cvss2)
