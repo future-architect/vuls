@@ -61,14 +61,14 @@ func (o SUSE) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 	return len(relatedDefs.entries), nil
 }
 
-func (o SUSE) update(r *models.ScanResult, defPacks defPacks) {
-	ovalContent := *o.convertToModel(&defPacks.def)
+func (o SUSE) update(r *models.ScanResult, defpacks defPacks) {
+	ovalContent := *o.convertToModel(&defpacks.def)
 	ovalContent.Type = models.NewCveContentType(o.family)
-	vinfo, ok := r.ScannedCves[defPacks.def.Title]
+	vinfo, ok := r.ScannedCves[defpacks.def.Title]
 	if !ok {
-		logging.Log.Debugf("%s is newly detected by OVAL", defPacks.def.Title)
+		logging.Log.Debugf("%s is newly detected by OVAL", defpacks.def.Title)
 		vinfo = models.VulnInfo{
-			CveID:       defPacks.def.Title,
+			CveID:       defpacks.def.Title,
 			Confidences: models.Confidences{models.OvalMatch},
 			CveContents: models.NewCveContents(ovalContent),
 		}
@@ -76,9 +76,9 @@ func (o SUSE) update(r *models.ScanResult, defPacks defPacks) {
 		cveContents := vinfo.CveContents
 		ctype := models.NewCveContentType(o.family)
 		if _, ok := vinfo.CveContents[ctype]; ok {
-			logging.Log.Debugf("%s OVAL will be overwritten", defPacks.def.Title)
+			logging.Log.Debugf("%s OVAL will be overwritten", defpacks.def.Title)
 		} else {
-			logging.Log.Debugf("%s is also detected by OVAL", defPacks.def.Title)
+			logging.Log.Debugf("%s is also detected by OVAL", defpacks.def.Title)
 			cveContents = models.CveContents{}
 		}
 		vinfo.Confidences.AppendIfMissing(models.OvalMatch)
@@ -86,16 +86,19 @@ func (o SUSE) update(r *models.ScanResult, defPacks defPacks) {
 		vinfo.CveContents = cveContents
 	}
 
-	// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
+	// uniq(vinfo.AffectedPackages[].Name + defPacks.binpkgFixstat(map[string(=package name)]fixStat{}))
+	collectBinpkgFixstat := defPacks{
+		binpkgFixstat: defpacks.binpkgFixstat,
+	}
 	for _, pack := range vinfo.AffectedPackages {
-		defPacks.binpkgFixstat[pack.Name] = fixStat{
+		collectBinpkgFixstat.binpkgFixstat[pack.Name] = fixStat{
 			notFixedYet: pack.NotFixedYet,
 			fixedIn:     pack.FixedIn,
 		}
 	}
-	vinfo.AffectedPackages = defPacks.toPackStatuses()
+	vinfo.AffectedPackages = collectBinpkgFixstat.toPackStatuses()
 	vinfo.AffectedPackages.Sort()
-	r.ScannedCves[defPacks.def.Title] = vinfo
+	r.ScannedCves[defpacks.def.Title] = vinfo
 }
 
 func (o SUSE) convertToModel(def *ovalmodels.Definition) *models.CveContent {

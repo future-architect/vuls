@@ -19,9 +19,9 @@ type DebianBase struct {
 	Base
 }
 
-func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
-	for _, cve := range defPacks.def.Advisory.Cves {
-		ovalContent := o.convertToModel(cve.CveID, &defPacks.def)
+func (o DebianBase) update(r *models.ScanResult, defpacks defPacks) {
+	for _, cve := range defpacks.def.Advisory.Cves {
+		ovalContent := o.convertToModel(cve.CveID, &defpacks.def)
 		if ovalContent == nil {
 			continue
 		}
@@ -46,9 +46,12 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 			vinfo.CveContents = cveContents
 		}
 
-		// uniq(vinfo.PackNames + defPacks.binpkgStat)
+		// uniq(vinfo.AffectedPackages[].Name + defPacks.binpkgFixstat(map[string(=package name)]fixStat{}))
+		collectBinpkgFixstat := defPacks{
+			binpkgFixstat: defpacks.binpkgFixstat,
+		}
 		for _, pack := range vinfo.AffectedPackages {
-			defPacks.binpkgFixstat[pack.Name] = fixStat{
+			collectBinpkgFixstat.binpkgFixstat[pack.Name] = fixStat{
 				notFixedYet: pack.NotFixedYet,
 				fixedIn:     pack.FixedIn,
 				isSrcPack:   false,
@@ -58,11 +61,11 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 		// Update package status of source packages.
 		// In the case of Debian based Linux, sometimes source package name is defined as affected package in OVAL.
 		// To display binary package name showed in apt-get, need to convert source name to binary name.
-		for binName := range defPacks.binpkgFixstat {
+		for binName := range defpacks.binpkgFixstat {
 			if srcPack, ok := r.SrcPackages.FindByBinName(binName); ok {
-				for _, p := range defPacks.def.AffectedPacks {
+				for _, p := range defpacks.def.AffectedPacks {
 					if p.Name == srcPack.Name {
-						defPacks.binpkgFixstat[binName] = fixStat{
+						collectBinpkgFixstat.binpkgFixstat[binName] = fixStat{
 							notFixedYet: p.NotFixedYet,
 							fixedIn:     p.Version,
 							isSrcPack:   true,
@@ -73,7 +76,7 @@ func (o DebianBase) update(r *models.ScanResult, defPacks defPacks) {
 			}
 		}
 
-		vinfo.AffectedPackages = defPacks.toPackStatuses()
+		vinfo.AffectedPackages = collectBinpkgFixstat.toPackStatuses()
 		vinfo.AffectedPackages.Sort()
 		r.ScannedCves[cve.CveID] = vinfo
 	}

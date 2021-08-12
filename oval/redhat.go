@@ -97,15 +97,15 @@ var kernelRelatedPackNames = map[string]bool{
 	"python-perf":             true,
 }
 
-func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) {
-	for _, cve := range defPacks.def.Advisory.Cves {
-		ovalContent := o.convertToModel(cve.CveID, &defPacks.def)
+func (o RedHatBase) update(r *models.ScanResult, defpacks defPacks) (nCVEs int) {
+	for _, cve := range defpacks.def.Advisory.Cves {
+		ovalContent := o.convertToModel(cve.CveID, &defpacks.def)
 		if ovalContent == nil {
 			continue
 		}
 		vinfo, ok := r.ScannedCves[cve.CveID]
 		if !ok {
-			logging.Log.Debugf("%s is newly detected by OVAL: DefID: %s", cve.CveID, defPacks.def.DefinitionID)
+			logging.Log.Debugf("%s is newly detected by OVAL: DefID: %s", cve.CveID, defpacks.def.DefinitionID)
 			vinfo = models.VulnInfo{
 				CveID:       cve.CveID,
 				Confidences: models.Confidences{models.OvalMatch},
@@ -116,12 +116,12 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 			cveContents := vinfo.CveContents
 			if v, ok := vinfo.CveContents[ovalContent.Type]; ok {
 				if v.LastModified.After(ovalContent.LastModified) {
-					logging.Log.Debugf("%s ignored. DefID: %s ", cve.CveID, defPacks.def.DefinitionID)
+					logging.Log.Debugf("%s ignored. DefID: %s ", cve.CveID, defpacks.def.DefinitionID)
 				} else {
-					logging.Log.Debugf("%s OVAL will be overwritten. DefID: %s", cve.CveID, defPacks.def.DefinitionID)
+					logging.Log.Debugf("%s OVAL will be overwritten. DefID: %s", cve.CveID, defpacks.def.DefinitionID)
 				}
 			} else {
-				logging.Log.Debugf("%s also detected by OVAL. DefID: %s", cve.CveID, defPacks.def.DefinitionID)
+				logging.Log.Debugf("%s also detected by OVAL. DefID: %s", cve.CveID, defpacks.def.DefinitionID)
 				cveContents = models.CveContents{}
 			}
 
@@ -131,23 +131,26 @@ func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) 
 		}
 
 		vinfo.DistroAdvisories.AppendIfMissing(
-			o.convertToDistroAdvisory(&defPacks.def))
+			o.convertToDistroAdvisory(&defpacks.def))
 
-		// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
+		// uniq(vinfo.AffectedPackages[].Name + defPacks.binpkgFixstat(map[string(=package name)]fixStat{}))
+		collectBinpkgFixstat := defPacks{
+			binpkgFixstat: defpacks.binpkgFixstat,
+		}
 		for _, pack := range vinfo.AffectedPackages {
-			if stat, ok := defPacks.binpkgFixstat[pack.Name]; !ok {
-				defPacks.binpkgFixstat[pack.Name] = fixStat{
+			if stat, ok := collectBinpkgFixstat.binpkgFixstat[pack.Name]; !ok {
+				collectBinpkgFixstat.binpkgFixstat[pack.Name] = fixStat{
 					notFixedYet: pack.NotFixedYet,
 					fixedIn:     pack.FixedIn,
 				}
 			} else if stat.notFixedYet {
-				defPacks.binpkgFixstat[pack.Name] = fixStat{
+				collectBinpkgFixstat.binpkgFixstat[pack.Name] = fixStat{
 					notFixedYet: true,
 					fixedIn:     pack.FixedIn,
 				}
 			}
 		}
-		vinfo.AffectedPackages = defPacks.toPackStatuses()
+		vinfo.AffectedPackages = collectBinpkgFixstat.toPackStatuses()
 		vinfo.AffectedPackages.Sort()
 		r.ScannedCves[cve.CveID] = vinfo
 	}
