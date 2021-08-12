@@ -80,6 +80,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 - PoC, Exploit
   - [Exploit Database](https://www.exploit-db.com/)
   - [Metasploit-Framework modules](https://www.rapid7.com/db/?q=&type=metasploit)
+  - [qazbnm456/awesome-cve-poc](https://github.com/qazbnm456/awesome-cve-poc)
 
 - CERT
   - [US-CERT](https://www.us-cert.gov/ncas/alerts)
