@@ -7,13 +7,13 @@ import (
 )
 
 // inherit OsTypeInterface
-type rocky struct {
+type alma struct {
 	redhatBase
 }
 
-// NewRocky is constructor
-func newRocky(c config.ServerInfo) *rocky {
-	r := &rocky{
+// NewAlma is constructor
+func newAlma(c config.ServerInfo) *alma {
+	r := &alma{
 		redhatBase{
 			base: base{
 				osPackages: osPackages{
@@ -21,7 +21,7 @@ func newRocky(c config.ServerInfo) *rocky {
 					VulnInfos: models.VulnInfos{},
 				},
 			},
-			sudo: rootPrivRocky{},
+			sudo: rootPrivAlma{},
 		},
 	}
 	r.log = logging.NewNormalLogger()
@@ -29,11 +29,11 @@ func newRocky(c config.ServerInfo) *rocky {
 	return r
 }
 
-func (o *rocky) checkScanMode() error {
+func (o *alma) checkScanMode() error {
 	return nil
 }
 
-func (o *rocky) checkDeps() error {
+func (o *alma) checkDeps() error {
 	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckDeps(o.depsFast())
 	} else if o.getServerInfo().Mode.IsFastRoot() {
@@ -43,7 +43,7 @@ func (o *rocky) checkDeps() error {
 	}
 }
 
-func (o *rocky) depsFast() []string {
+func (o *alma) depsFast() []string {
 	if o.getServerInfo().Mode.IsOffline() {
 		return []string{}
 	}
@@ -53,7 +53,7 @@ func (o *rocky) depsFast() []string {
 	return []string{"yum-utils"}
 }
 
-func (o *rocky) depsFastRoot() []string {
+func (o *alma) depsFastRoot() []string {
 	if o.getServerInfo().Mode.IsOffline() {
 		return []string{}
 	}
@@ -63,11 +63,11 @@ func (o *rocky) depsFastRoot() []string {
 	return []string{"yum-utils"}
 }
 
-func (o *rocky) depsDeep() []string {
+func (o *alma) depsDeep() []string {
 	return o.depsFastRoot()
 }
 
-func (o *rocky) checkIfSudoNoPasswd() error {
+func (o *alma) checkIfSudoNoPasswd() error {
 	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsFast())
 	} else if o.getServerInfo().Mode.IsFastRoot() {
@@ -77,11 +77,11 @@ func (o *rocky) checkIfSudoNoPasswd() error {
 	}
 }
 
-func (o *rocky) sudoNoPasswdCmdsFast() []cmd {
+func (o *alma) sudoNoPasswdCmdsFast() []cmd {
 	return []cmd{}
 }
 
-func (o *rocky) sudoNoPasswdCmdsFastRoot() []cmd {
+func (o *alma) sudoNoPasswdCmdsFastRoot() []cmd {
 	if !o.ServerInfo.IsContainer() {
 		return []cmd{
 			{"repoquery -h", exitStatusZero},
@@ -99,20 +99,20 @@ func (o *rocky) sudoNoPasswdCmdsFastRoot() []cmd {
 	}
 }
 
-func (o *rocky) sudoNoPasswdCmdsDeep() []cmd {
+func (o *alma) sudoNoPasswdCmdsDeep() []cmd {
 	return o.sudoNoPasswdCmdsFastRoot()
 }
 
-type rootPrivRocky struct{}
+type rootPrivAlma struct{}
 
-func (o rootPrivRocky) repoquery() bool {
+func (o rootPrivAlma) repoquery() bool {
 	return false
 }
 
-func (o rootPrivRocky) yumMakeCache() bool {
+func (o rootPrivAlma) yumMakeCache() bool {
 	return false
 }
 
-func (o rootPrivRocky) yumPS() bool {
+func (o rootPrivAlma) yumPS() bool {
 	return false
 }

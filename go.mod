@@ -7,11 +7,11 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/Ullaakut/nmap/v2 v2.1.2-0.20210406060955-59a52fe80a4f
 	github.com/VividCortex/ewma v1.2.0 // indirect
-	github.com/aquasecurity/fanal v0.0.0-20210520034323-54c5a82e861f
-	github.com/aquasecurity/trivy v0.18.3
-	github.com/aquasecurity/trivy-db v0.0.0-20210429114658-ae22941a55d0
+	github.com/aquasecurity/fanal v0.0.0-20210719144537-c73c1e9f21bf
+	github.com/aquasecurity/trivy v0.19.2
+	github.com/aquasecurity/trivy-db v0.0.0-20210531102723-aaab62dec6ee
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
-	github.com/aws/aws-sdk-go v1.36.31
+	github.com/aws/aws-sdk-go v1.37.0
 	github.com/boltdb/bolt v1.3.1
 	github.com/briandowns/spinner v1.16.0 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible

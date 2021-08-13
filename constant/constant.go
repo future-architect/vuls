@@ -17,6 +17,9 @@ const (
 	// CentOS is
 	CentOS = "centos"
 
+	// Alma is
+	Alma = "alma"
+
 	// Rocky is
 	Rocky = "rocky"
 
