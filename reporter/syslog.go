@@ -70,16 +70,20 @@ func (w SyslogWriter) encodeSyslog(result models.ScanResult) (messages []string)
 			kvPairs = append(kvPairs, fmt.Sprintf(`cvss_vector_%s_v3="%s"`, cvss.Type, cvss.Value.Vector))
 		}
 
-		if content, ok := vinfo.CveContents[models.Nvd]; ok {
-			cwes := strings.Join(content.CweIDs, ",")
-			kvPairs = append(kvPairs, fmt.Sprintf(`cwe_ids="%s"`, cwes))
-			if w.Cnf.Verbose {
-				kvPairs = append(kvPairs, fmt.Sprintf(`source_link="%s"`, content.SourceLink))
-				kvPairs = append(kvPairs, fmt.Sprintf(`summary="%s"`, content.Summary))
+		if conts, ok := vinfo.CveContents[models.Nvd]; ok {
+			for _, cont := range conts {
+				cwes := strings.Join(cont.CweIDs, ",")
+				kvPairs = append(kvPairs, fmt.Sprintf(`cwe_ids="%s"`, cwes))
+				if w.Cnf.Verbose {
+					kvPairs = append(kvPairs, fmt.Sprintf(`source_link="%s"`, cont.SourceLink))
+					kvPairs = append(kvPairs, fmt.Sprintf(`summary="%s"`, cont.Summary))
+				}
 			}
 		}
-		if content, ok := vinfo.CveContents[models.RedHat]; ok {
-			kvPairs = append(kvPairs, fmt.Sprintf(`title="%s"`, content.Title))
+		if conts, ok := vinfo.CveContents[models.RedHat]; ok {
+			for _, cont := range conts {
+				kvPairs = append(kvPairs, fmt.Sprintf(`title="%s"`, cont.Title))
+			}
 		}
 
 		// message: key1="value1" key2="value2"...

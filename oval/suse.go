@@ -53,9 +53,11 @@ func (o SUSE) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 	}
 
 	for _, vuln := range r.ScannedCves {
-		if cont, ok := vuln.CveContents[models.SUSE]; ok {
-			cont.SourceLink = "https://security-tracker.debian.org/tracker/" + cont.CveID
-			vuln.CveContents[models.SUSE] = cont
+		if conts, ok := vuln.CveContents[models.SUSE]; ok {
+			for _, cont := range conts {
+				cont.SourceLink = "https://security-tracker.debian.org/tracker/" + cont.CveID
+				vuln.CveContents[models.SUSE] = append(vuln.CveContents[models.SUSE], cont)
+			}
 		}
 	}
 	return len(relatedDefs.entries), nil
@@ -82,7 +84,7 @@ func (o SUSE) update(r *models.ScanResult, defPacks defPacks) {
 			cveContents = models.CveContents{}
 		}
 		vinfo.Confidences.AppendIfMissing(models.OvalMatch)
-		cveContents[ctype] = ovalContent
+		cveContents[ctype] = append(cveContents[ctype], ovalContent)
 		vinfo.CveContents = cveContents
 	}
 

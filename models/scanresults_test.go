@@ -198,17 +198,17 @@ func TestScanResult_Sort(t *testing.T) {
 							{Name: "b"},
 						},
 						CveContents: CveContents{
-							"nvd": CveContent{
+							"nvd": []CveContent{{
 								References: References{
 									Reference{Link: "a"},
 									Reference{Link: "b"},
-								},
+								}},
 							},
-							"jvn": CveContent{
+							"jvn": []CveContent{{
 								References: References{
 									Reference{Link: "a"},
 									Reference{Link: "b"},
-								},
+								}},
 							},
 						},
 						AlertDict: AlertDict{
@@ -257,17 +257,17 @@ func TestScanResult_Sort(t *testing.T) {
 							{Name: "b"},
 						},
 						CveContents: CveContents{
-							"nvd": CveContent{
+							"nvd": []CveContent{{
 								References: References{
 									Reference{Link: "a"},
 									Reference{Link: "b"},
-								},
+								}},
 							},
-							"jvn": CveContent{
+							"jvn": []CveContent{{
 								References: References{
 									Reference{Link: "a"},
 									Reference{Link: "b"},
-								},
+								}},
 							},
 						},
 						AlertDict: AlertDict{
@@ -319,17 +319,17 @@ func TestScanResult_Sort(t *testing.T) {
 							{Name: "a"},
 						},
 						CveContents: CveContents{
-							"nvd": CveContent{
+							"nvd": []CveContent{{
 								References: References{
 									Reference{Link: "b"},
 									Reference{Link: "a"},
-								},
+								}},
 							},
-							"jvn": CveContent{
+							"jvn": []CveContent{{
 								References: References{
 									Reference{Link: "b"},
 									Reference{Link: "a"},
-								},
+								}},
 							},
 						},
 						AlertDict: AlertDict{
@@ -378,17 +378,17 @@ func TestScanResult_Sort(t *testing.T) {
 							{Name: "b"},
 						},
 						CveContents: CveContents{
-							"nvd": CveContent{
+							"nvd": []CveContent{{
 								References: References{
 									Reference{Link: "a"},
 									Reference{Link: "b"},
-								},
+								}},
 							},
-							"jvn": CveContent{
+							"jvn": []CveContent{{
 								References: References{
 									Reference{Link: "a"},
 									Reference{Link: "b"},
-								},
+								}},
 							},
 						},
 						AlertDict: AlertDict{

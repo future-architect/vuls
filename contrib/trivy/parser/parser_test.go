@@ -88,7 +88,7 @@ func TestParse(t *testing.T) {
 								FixedIn:     "1.1.1g-r0",
 							}},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Title:         "openssl: Segmentation fault in SSL_check_chain causes denial of service",
 								Summary:       "Server or client applications that call the SSL_check_chain() function during or after a TLS 1.3 handshake may crash due to a NULL pointer dereference as a result of incorrect handling of the \"signature_algorithms_cert\" TLS extension. The crash occurs if an invalid or unrecognised signature algorithm is received from the peer. This could be exploited by a malicious peer in a Denial of Service attack. OpenSSL version 1.1.1d, 1.1.1e, and 1.1.1f are affected by this issue. This issue did not affect OpenSSL versions prior to 1.1.1d. Fixed in OpenSSL 1.1.1g (Affected 1.1.1d-1.1.1f).",
 								Cvss3Severity: "MEDIUM",
@@ -114,7 +114,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.synology.com/security/advisory/Synology_SA_20_05_OpenSSL"},
 									{Source: "trivy", Link: "https://www.tenable.com/security/tns-2020-03"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 					},
@@ -157,7 +157,7 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Title:         "PHP: sets environmental variable based on user supplied Proxy request header",
 								Summary:       "PHP through 7.0.8 does not attempt to address RFC 3875 section 4.1.18 namespace conflicts and therefore does not protect applications from the presence of untrusted client data in the HTTP_PROXY environment variable, which might allow remote attackers to redirect an application's outbound HTTP traffic to an arbitrary proxy server via a crafted Proxy header in an HTTP request, as demonstrated by (1) an application that makes a getenv('HTTP_PROXY') call or (2) a CGI configuration of PHP, aka an \"httpoxy\" issue.",
 								Cvss3Severity: "MEDIUM",
@@ -192,7 +192,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://security.gentoo.org/glsa/201611-22"},
 									{Source: "trivy", Link: "https://www.drupal.org/SA-CORE-2016-003"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -214,7 +214,7 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "LOW",
 								References: models.References{
 									{Source: "trivy", Link: "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-3721"},
@@ -224,7 +224,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://nvd.nist.gov/vuln/detail/CVE-2018-3721"},
 									{Source: "trivy", Link: "https://security.netapp.com/advisory/ntap-20190919-0004/"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -246,7 +246,7 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-3741"},
@@ -255,7 +255,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://groups.google.com/d/msg/rubyonrails-security/tP7W3kLc5u4/uDy2Br7xBgAJ"},
 									{Source: "trivy", Link: "https://nvd.nist.gov/vuln/detail/CVE-2018-3741"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -284,7 +284,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2018-6952.html"},
@@ -294,7 +294,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://savannah.gnu.org/bugs/index.php?53133"},
 									{Source: "trivy", Link: "https://security.gentoo.org/glsa/201904-17"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -316,13 +316,13 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "LOW",
 								References: models.References{
 									{Source: "trivy", Link: "https://bugzilla.gnome.org/show_bug.cgi?id=794914"},
 									{Source: "trivy", Link: "https://lists.debian.org/debian-lts-announce/2018/09/msg00035.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -344,14 +344,14 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://subversion.apache.org/security/CVE-2018-11782-advisory.txt"},
 									{Source: "trivy", Link: "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-11782"},
 									{Source: "trivy", Link: "https://subversion.apache.org/security/CVE-2018-11782-advisory.txt"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -373,7 +373,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2018-14404.html"},
@@ -394,7 +394,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://usn.ubuntu.com/3739-1/"},
 									{Source: "trivy", Link: "https://usn.ubuntu.com/3739-2/"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -416,7 +416,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2018-14567.html"},
@@ -427,7 +427,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://lists.debian.org/debian-lts-announce/2018/09/msg00035.html"},
 									{Source: "trivy", Link: "https://usn.ubuntu.com/3739-1/"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -449,7 +449,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2018-14618.html"},
@@ -467,7 +467,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://usn.ubuntu.com/3765-2/"},
 									{Source: "trivy", Link: "https://www.debian.org/security/2018/dsa-4286"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -482,7 +482,7 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16487"},
@@ -492,7 +492,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://security.netapp.com/advisory/ntap-20190919-0004/"},
 									{Source: "trivy", Link: "https://www.npmjs.com/advisories/782"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -521,7 +521,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://www.securitytracker.com/id/1042012"},
@@ -535,7 +535,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://usn.ubuntu.com/3805-1/"},
 									{Source: "trivy", Link: "https://www.debian.org/security/2018/dsa-4331"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -557,7 +557,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://www.securitytracker.com/id/1042013"},
@@ -568,7 +568,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://security.gentoo.org/glsa/201903-03"},
 									{Source: "trivy", Link: "https://usn.ubuntu.com/3805-1/"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -590,7 +590,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2018-16842.html"},
@@ -608,7 +608,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.debian.org/security/2018/dsa-4331"},
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpuoct2019-5072832.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -630,7 +630,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2018-16890.html"},
@@ -649,7 +649,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpuapr2019-5072813.html"},
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpujul2019-5072835.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -671,7 +671,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2018-17456.html"},
@@ -696,7 +696,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.exploit-db.com/exploits/45631/"},
 									{Source: "trivy", Link: "https://www.openwall.com/lists/oss-security/2018/10/06/3"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -718,7 +718,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://www.securityfocus.com/bid/106020"},
@@ -730,7 +730,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://security.gentoo.org/glsa/201904-13"},
 									{Source: "trivy", Link: "https://usn.ubuntu.com/3829-1/"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -752,7 +752,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://lists.opensuse.org/opensuse-security-announce/2019-04/msg00040.html"},
@@ -788,7 +788,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.sqlite.org/releaselog/3_25_3.html"},
 									{Source: "trivy", Link: "https://www.synology.com/security/advisory/Synology_SA_18_61"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -810,7 +810,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "LOW",
 								References: models.References{
 									{Source: "trivy", Link: "http://git.savannah.gnu.org/cgit/tar.git/commit/?id=c15c42ccd1e2377945fd0414eca1a49294bff454"},
@@ -824,7 +824,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://twitter.com/thatcks/status/1076166645708668928"},
 									{Source: "trivy", Link: "https://utcc.utoronto.ca/~cks/space/blog/sysadmin/TarFindingTruncateBug"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -846,7 +846,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "LOW",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2018-20685.html"},
@@ -866,7 +866,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpuapr2019-5072813.html"},
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpuoct2019-5072832.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -888,7 +888,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://lists.opensuse.org/opensuse-security-announce/2019-07/msg00039.html"},
@@ -911,7 +911,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.debian.org/security/2019/dsa-4472"},
 									{Source: "trivy", Link: "https://www.oracle.com/security-alerts/cpuapr2020.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -933,7 +933,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2018-1000156.html"},
@@ -960,7 +960,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://usn.ubuntu.com/3624-1/"},
 									{Source: "trivy", Link: "https://usn.ubuntu.com/3624-2/"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -982,7 +982,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-0203.html"},
@@ -991,7 +991,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-0203"},
 									{Source: "trivy", Link: "https://subversion.apache.org/security/CVE-2019-0203-advisory.txt"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1013,7 +1013,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "LOW",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-1348.html"},
@@ -1029,7 +1029,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://security.gentoo.org/glsa/202003-42"},
 									{Source: "trivy", Link: "https://support.apple.com/kb/HT210729"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1051,7 +1051,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-1349.html"},
@@ -1065,7 +1065,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://public-inbox.org/git/xmqqr21cqcn9.fsf@gitster-ct.c.googlers.com/"},
 									{Source: "trivy", Link: "https://security.gentoo.org/glsa/202003-30"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1087,7 +1087,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://lists.opensuse.org/opensuse-security-announce/2020-01/msg00056.html"},
@@ -1099,7 +1099,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://security.gentoo.org/glsa/202003-30"},
 									{Source: "trivy", Link: "https://security.gentoo.org/glsa/202003-42"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1121,7 +1121,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://lists.opensuse.org/opensuse-security-announce/2020-01/msg00056.html"},
@@ -1132,7 +1132,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://public-inbox.org/git/xmqqr21cqcn9.fsf@gitster-ct.c.googlers.com/"},
 									{Source: "trivy", Link: "https://security.gentoo.org/glsa/202003-30"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1154,7 +1154,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-1352.html"},
@@ -1168,7 +1168,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://public-inbox.org/git/xmqqr21cqcn9.fsf@gitster-ct.c.googlers.com/"},
 									{Source: "trivy", Link: "https://security.gentoo.org/glsa/202003-30"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1190,7 +1190,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://lists.opensuse.org/opensuse-security-announce/2020-01/msg00056.html"},
@@ -1201,7 +1201,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://public-inbox.org/git/xmqqr21cqcn9.fsf@gitster-ct.c.googlers.com/"},
 									{Source: "trivy", Link: "https://security.gentoo.org/glsa/202003-30"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1223,7 +1223,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://lists.opensuse.org/opensuse-security-announce/2020-01/msg00056.html"},
@@ -1234,7 +1234,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://public-inbox.org/git/xmqqr21cqcn9.fsf@gitster-ct.c.googlers.com/"},
 									{Source: "trivy", Link: "https://security.gentoo.org/glsa/202003-30"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1256,7 +1256,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-1387.html"},
@@ -1276,7 +1276,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://security.gentoo.org/glsa/202003-30"},
 									{Source: "trivy", Link: "https://security.gentoo.org/glsa/202003-42"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1298,7 +1298,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-3822.html"},
@@ -1320,7 +1320,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpuapr2019-5072813.html"},
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpujul2019-5072835.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1342,7 +1342,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-3823.html"},
@@ -1360,7 +1360,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpuapr2019-5072813.html"},
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpujul2019-5072835.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1382,7 +1382,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-3855.html"},
@@ -1416,7 +1416,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.libssh2.org/CVE-2019-3855.html"},
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpuoct2019-5072832.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1438,7 +1438,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-3856.html"},
@@ -1461,7 +1461,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.libssh2.org/CVE-2019-3856.html"},
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpuoct2019-5072832.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1483,7 +1483,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-3857.html"},
@@ -1506,7 +1506,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.libssh2.org/CVE-2019-3857.html"},
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpuoct2019-5072832.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1528,7 +1528,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-3858.html"},
@@ -1552,7 +1552,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.libssh2.org/CVE-2019-3858.html"},
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpuoct2019-5072832.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1574,7 +1574,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://lists.opensuse.org/opensuse-security-announce/2019-03/msg00040.html"},
@@ -1599,7 +1599,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.libssh2.org/CVE-2019-3859.html"},
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpuoct2019-5072832.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1621,7 +1621,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://lists.opensuse.org/opensuse-security-announce/2019-03/msg00040.html"},
@@ -1638,7 +1638,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.libssh2.org/CVE-2019-3860.html"},
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpuoct2019-5072832.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1660,7 +1660,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-3861.html"},
@@ -1678,7 +1678,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.libssh2.org/CVE-2019-3861.html"},
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpuoct2019-5072832.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1700,7 +1700,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-3862.html"},
@@ -1725,7 +1725,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.oracle.com/security-alerts/cpujan2020.html"},
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpuoct2019-5072832.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1747,7 +1747,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-3863.html"},
@@ -1770,7 +1770,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.libssh2.org/CVE-2019-3863.html"},
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpuoct2019-5072832.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1792,7 +1792,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2019-3902"},
@@ -1801,7 +1801,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://usn.ubuntu.com/4086-1/"},
 									{Source: "trivy", Link: "https://www.mercurial-scm.org/wiki/WhatsNew#Mercurial_4.9_.282019-02-01.29"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1816,14 +1816,14 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "https://github.com/advisories/GHSA-wv67-q8rr-grjp"},
 									{Source: "trivy", Link: "https://hackerone.com/reports/454365"},
 									{Source: "trivy", Link: "https://nvd.nist.gov/vuln/detail/CVE-2019-5428"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -1845,7 +1845,7 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-5477"},
@@ -1860,7 +1860,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://nvd.nist.gov/vuln/detail/CVE-2019-5477"},
 									{Source: "trivy", Link: "https://usn.ubuntu.com/4175-1/"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -1889,7 +1889,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://lists.opensuse.org/opensuse-security-announce/2019-09/msg00048.html"},
@@ -1906,7 +1906,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.oracle.com/security-alerts/cpuapr2020.html"},
 									{Source: "trivy", Link: "https://www.oracle.com/security-alerts/cpujan2020.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1928,7 +1928,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-5482.html"},
@@ -1948,7 +1948,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.oracle.com/security-alerts/cpuapr2020.html"},
 									{Source: "trivy", Link: "https://www.oracle.com/security-alerts/cpujan2020.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -1970,7 +1970,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-6109.html"},
@@ -1989,7 +1989,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.debian.org/security/2019/dsa-4387"},
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpuoct2019-5072832.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -2011,7 +2011,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-6111.html"},
@@ -2039,7 +2039,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.freebsd.org/security/advisories/FreeBSD-EN-19:10.scp.asc"},
 									{Source: "trivy", Link: "https://www.oracle.com/technetwork/security-advisory/cpuoct2019-5072832.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -2061,7 +2061,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://lists.opensuse.org/opensuse-security-announce/2019-06/msg00074.html"},
@@ -2079,7 +2079,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.sqlite.org/releaselog/3_28_0.html"},
 									{Source: "trivy", Link: "https://www.sqlite.org/src/info/90acdbfce9c08858"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -2094,7 +2094,7 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-11236.html"},
@@ -2114,7 +2114,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://usn.ubuntu.com/3990-1/"},
 									{Source: "trivy", Link: "https://usn.ubuntu.com/3990-2/"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -2136,7 +2136,7 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-11324.html"},
@@ -2154,7 +2154,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://usn.ubuntu.com/3990-1/"},
 									{Source: "trivy", Link: "https://www.openwall.com/lists/oss-security/2019/04/17/3"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -2176,7 +2176,7 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://lists.opensuse.org/opensuse-security-announce/2019-08/msg00006.html"},
@@ -2247,7 +2247,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.tenable.com/security/tns-2019-08"},
 									{Source: "trivy", Link: "https://www.tenable.com/security/tns-2020-02"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -2276,7 +2276,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://lists.opensuse.org/opensuse-security-announce/2019-07/msg00040.html"},
@@ -2301,7 +2301,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://usn.ubuntu.com/4146-1/"},
 									{Source: "trivy", Link: "https://usn.ubuntu.com/4146-2/"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -2316,7 +2316,7 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://www.openwall.com/lists/oss-security/2019/11/17/2"},
@@ -2335,7 +2335,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://usn.ubuntu.com/4164-1/"},
 									{Source: "trivy", Link: "https://www.oracle.com/security-alerts/cpujan2020.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -2364,7 +2364,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://packetstormsecurity.com/files/154124/GNU-patch-Command-Injection-Directory-Traversal.html"},
@@ -2381,7 +2381,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://usn.ubuntu.com/4071-2/"},
 									{Source: "trivy", Link: "https://www.debian.org/security/2019/dsa-4489"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -2403,7 +2403,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-13638.html"},
@@ -2425,7 +2425,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://security.netapp.com/advisory/ntap-20190828-0001/"},
 									{Source: "trivy", Link: "https://www.debian.org/security/2019/dsa-4489"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -2447,14 +2447,14 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://www.openwall.com/lists/oss-security/2019/08/06/4"},
 									{Source: "trivy", Link: "https://security.gentoo.org/glsa/202003-13"},
 									{Source: "trivy", Link: "https://www.openwall.com/lists/musl/2019/08/06/1"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 						VulnType:        "",
@@ -2469,7 +2469,7 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-15587"},
@@ -2482,7 +2482,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://security.netapp.com/advisory/ntap-20191122-0003/"},
 									{Source: "trivy", Link: "https://www.debian.org/security/2019/dsa-4554"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -2512,7 +2512,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://linux.oracle.com/cve/CVE-2019-15903.html"},
@@ -2576,7 +2576,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://www.debian.org/security/2019/dsa-4571"},
 									{Source: "trivy", Link: "https://www.oracle.com/security-alerts/cpuapr2020.html"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{},
 					},
@@ -2590,7 +2590,7 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://lists.opensuse.org/opensuse-security-announce/2020-02/msg00016.html"},
@@ -2605,7 +2605,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/HZXMWILCICQLA2BYSP6I2CRMUG53YBLX/"},
 									{Source: "trivy", Link: "https://nvd.nist.gov/vuln/detail/CVE-2019-16782"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -2626,7 +2626,7 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									{Source: "trivy", Link: "http://lists.opensuse.org/opensuse-security-announce/2020-04/msg00017.html"},
@@ -2637,7 +2637,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/WORRFHPQVAFKKXXWLSSW6XKUYLWM6CSH/"},
 									{Source: "trivy", Link: "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/ZBJA3SGNJKCAYPSHOHWY3KBCWNM5NYK2/"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -2658,7 +2658,7 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "LOW",
 								References: models.References{
 									{Source: "trivy", Link: "http://lists.opensuse.org/opensuse-security-announce/2020-05/msg00019.html"},
@@ -2672,7 +2672,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://nvd.nist.gov/vuln/detail/CVE-2020-5267"},
 									{Source: "trivy", Link: "https://www.openwall.com/lists/oss-security/2020/03/19/1"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -2693,7 +2693,7 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": models.CveContent{
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "https://github.com/advisories/GHSA-7553-jr98-vx47"},
@@ -2705,7 +2705,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://nvd.nist.gov/vuln/detail/CVE-2020-7595"},
 									{Source: "trivy", Link: "https://usn.ubuntu.com/4274-1/"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							models.LibraryFixedIn{
@@ -2726,7 +2726,7 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": models.CveContent{
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "CRITICAL",
 								References: models.References{
 									{Source: "trivy", Link: "http://lists.opensuse.org/opensuse-security-announce/2020-03/msg00041.html"},
@@ -2739,7 +2739,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://nvd.nist.gov/vuln/detail/CVE-2020-8130"},
 									{Source: "trivy", Link: "https://usn.ubuntu.com/4295-1/"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							models.LibraryFixedIn{
@@ -2760,7 +2760,7 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": models.CveContent{
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{
@@ -2768,7 +2768,7 @@ func TestParse(t *testing.T) {
 										Link:   "https://groups.google.com/forum/#!topic/ruby-security-ann/T4ZIsfRf2eA",
 									},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							models.LibraryFixedIn{
@@ -2789,7 +2789,7 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": models.CveContent{
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "UNKNOWN",
 								References: models.References{
 									{
@@ -2797,7 +2797,7 @@ func TestParse(t *testing.T) {
 										Link:   "https://groups.google.com/forum/#!topic/rubyonrails-security/PjU3946mreQ",
 									},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							models.LibraryFixedIn{
@@ -2818,7 +2818,7 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": models.CveContent{
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "MEDIUM",
 								References: models.References{
 									{Source: "trivy", Link: "http://lists.opensuse.org/opensuse-security-announce/2020-05/msg00004.html"},
@@ -2829,7 +2829,7 @@ func TestParse(t *testing.T) {
 									{Source: "trivy", Link: "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/NK2PBXWMFRUD7U7Q7LHV4KYLYID77RI4/"},
 									{Source: "trivy", Link: "https://www.ruby-lang.org/en/news/2020/03/19/json-dos-cve-2020-10663/"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							models.LibraryFixedIn{
@@ -2850,12 +2850,12 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": models.CveContent{
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "UNKNOWN",
 								References: models.References{
 									models.Reference{Source: "trivy", Link: "https://groups.google.com/forum/#!topic/rubyonrails-security/f6ioe4sdpbY"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -2876,12 +2876,12 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": models.CveContent{
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "UNKNOWN",
 								References: models.References{
 									models.Reference{Source: "trivy", Link: "https://groups.google.com/forum/#!topic/rubyonrails-security/bv6fW4S0Y1c"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -2902,12 +2902,12 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": models.CveContent{
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "UNKNOWN",
 								References: models.References{
 									models.Reference{Source: "trivy", Link: "https://groups.google.com/forum/#!topic/rubyonrails-security/NOjKiGeXUgw"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -2928,12 +2928,12 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": models.CveContent{
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "UNKNOWN",
 								References: models.References{
 									models.Reference{Source: "trivy", Link: "https://groups.google.com/forum/#!topic/rubyonrails-security/x9DixQDG9a0"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -2954,12 +2954,12 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": models.CveContent{
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "HIGH",
 								References: models.References{
 									models.Reference{Source: "trivy", Link: "https://hackerone.com/reports/712065"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -2980,10 +2980,10 @@ func TestParse(t *testing.T) {
 						},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": models.CveContent{
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "UNKNOWN",
 								References:    models.References(nil),
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -2999,12 +2999,12 @@ func TestParse(t *testing.T) {
 						Confidences:      models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "UNKNOWN",
 								References: models.References{
 									{Source: "trivy", Link: "https://github.com/sfackler/rust-openssl/releases/tag/v0.9.0"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -3020,12 +3020,12 @@ func TestParse(t *testing.T) {
 						Confidences:      models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "UNKNOWN",
 								References: models.References{
 									{Source: "trivy", Link: "https://github.com/servo/rust-smallvec/issues/96"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -3041,12 +3041,12 @@ func TestParse(t *testing.T) {
 						Confidences:      models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "UNKNOWN",
 								References: models.References{
 									{Source: "trivy", Link: "https://github.com/sfackler/rust-openssl/pull/942"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -3062,12 +3062,12 @@ func TestParse(t *testing.T) {
 						Confidences:      models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "UNKNOWN",
 								References: models.References{
 									{Source: "trivy", Link: "https://github.com/rust-lang-deprecated/tempdir/pull/46"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -3083,12 +3083,12 @@ func TestParse(t *testing.T) {
 						Confidences:      models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "UNKNOWN",
 								References: models.References{
 									{Source: "trivy", Link: "https://github.com/rust-ammonia/ammonia/blob/master/CHANGELOG.md#210"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -3103,12 +3103,12 @@ func TestParse(t *testing.T) {
 						Confidences:      models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "UNKNOWN",
 								References: models.References{
 									{Source: "trivy", Link: "https://github.com/servo/rust-smallvec/issues/148"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{
@@ -3124,12 +3124,12 @@ func TestParse(t *testing.T) {
 						Confidences:      models.Confidences{{Score: 100, DetectionMethod: "TrivyMatch"}},
 						AffectedPackages: models.PackageFixStatuses{},
 						CveContents: models.CveContents{
-							"trivy": {
+							"trivy": []models.CveContent{{
 								Cvss3Severity: "UNKNOWN",
 								References: models.References{
 									{Source: "trivy", Link: "https://github.com/servo/rust-smallvec/issues/149"},
 								},
-							},
+							}},
 						},
 						LibraryFixedIns: models.LibraryFixedIns{
 							{

@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"sort"
 	"time"
@@ -196,30 +197,34 @@ func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
 		models.NewCveContentType(current.Family),
 	}
 
-	prevLastModified := map[models.CveContentType]time.Time{}
+	prevLastModified := map[models.CveContentType][]time.Time{}
 	preVinfo, ok := previous.ScannedCves[cveID]
 	if !ok {
 		return true
 	}
 	for _, cType := range cTypes {
-		if content, ok := preVinfo.CveContents[cType]; ok {
-			prevLastModified[cType] = content.LastModified
+		if conts, ok := preVinfo.CveContents[cType]; ok {
+			for _, cont := range conts {
+				prevLastModified[cType] = append(prevLastModified[cType], cont.LastModified)
+			}
 		}
 	}
 
-	curLastModified := map[models.CveContentType]time.Time{}
+	curLastModified := map[models.CveContentType][]time.Time{}
 	curVinfo, ok := current.ScannedCves[cveID]
 	if !ok {
 		return true
 	}
 	for _, cType := range cTypes {
-		if content, ok := curVinfo.CveContents[cType]; ok {
-			curLastModified[cType] = content.LastModified
+		if conts, ok := curVinfo.CveContents[cType]; ok {
+			for _, cont := range conts {
+				curLastModified[cType] = append(curLastModified[cType], cont.LastModified)
+			}
 		}
 	}
 
 	for _, t := range cTypes {
-		if !curLastModified[t].Equal(prevLastModified[t]) {
+		if !reflect.DeepEqual(curLastModified[t], prevLastModified[t]) {
 			logging.Log.Debugf("%s LastModified not equal: \n%s\n%s",
 				cveID, curLastModified[t], prevLastModified[t])
 			return true

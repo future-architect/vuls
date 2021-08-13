@@ -53,11 +53,7 @@ func (api goCveDictClient) fetchCveDetails(cveIDs []string) (cveDetails []cvemod
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to fetch CVE. err: %w", err)
 		}
-		if len(cveDetail.CveID) == 0 {
-			cveDetails = append(cveDetails, cvemodels.CveDetail{CveID: cveID})
-		} else {
-			cveDetails = append(cveDetails, *cveDetail)
-		}
+		cveDetails = append(cveDetails, *cveDetail)
 	}
 	return
 }
@@ -103,13 +99,7 @@ func (api goCveDictClient) fetchCveDetailsViaHTTP(cveIDs []string) (cveDetails [
 	for range cveIDs {
 		select {
 		case res := <-resChan:
-			if len(res.CveDetail.CveID) == 0 {
-				cveDetails = append(cveDetails, cvemodels.CveDetail{
-					CveID: res.Key,
-				})
-			} else {
-				cveDetails = append(cveDetails, res.CveDetail)
-			}
+			cveDetails = append(cveDetails, res.CveDetail)
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:

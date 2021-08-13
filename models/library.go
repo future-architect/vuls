@@ -99,8 +99,8 @@ func (s LibraryScanner) getVulnDetail(tvuln types.DetectedVulnerability) (vinfo 
 	return vinfo, nil
 }
 
-func getCveContents(cveID string, vul trivyDBTypes.Vulnerability) (contents map[CveContentType]CveContent) {
-	contents = map[CveContentType]CveContent{}
+func getCveContents(cveID string, vul trivyDBTypes.Vulnerability) (contents map[CveContentType][]CveContent) {
+	contents = map[CveContentType][]CveContent{}
 	refs := []Reference{}
 	for _, refURL := range vul.References {
 		refs = append(refs, Reference{Source: "trivy", Link: refURL})
@@ -114,7 +114,7 @@ func getCveContents(cveID string, vul trivyDBTypes.Vulnerability) (contents map[
 		Cvss3Severity: string(vul.Severity),
 		References:    refs,
 	}
-	contents[Trivy] = content
+	contents[Trivy] = append(contents[Trivy], content)
 	return contents
 }
 

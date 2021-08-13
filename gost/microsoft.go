@@ -32,7 +32,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 		if v.CveContents == nil {
 			v.CveContents = models.CveContents{}
 		}
-		v.CveContents[models.Microsoft] = *cveCont
+		v.CveContents[models.Microsoft] = append(v.CveContents[models.Microsoft], *cveCont)
 		v.Mitigations = append(v.Mitigations, mitigations...)
 		r.ScannedCves[cveID] = v
 	}

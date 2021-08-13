@@ -33,7 +33,7 @@ func TestSyslogWriterEncodeSyslog(t *testing.T) {
 							models.PackageFixStatus{Name: "pkg4"},
 						},
 						CveContents: models.CveContents{
-							models.Nvd: models.CveContent{
+							models.Nvd: []models.CveContent{{
 								Cvss2Score:    5.0,
 								Cvss2Vector:   "AV:L/AC:L/Au:N/C:N/I:N/A:C",
 								Cvss2Severity: "MEDIUM",
@@ -41,7 +41,7 @@ func TestSyslogWriterEncodeSyslog(t *testing.T) {
 								Cvss3Score:    9.8,
 								Cvss3Vector:   "AV:L/AC:L/Au:N/C:N/I:N/A:C",
 								Cvss3Severity: "HIGH",
-							},
+							}},
 						},
 					},
 				},
@@ -65,13 +65,13 @@ func TestSyslogWriterEncodeSyslog(t *testing.T) {
 							models.PackageFixStatus{Name: "pkg5"},
 						},
 						CveContents: models.CveContents{
-							models.RedHat: models.CveContent{
+							models.RedHat: []models.CveContent{{
 								Cvss3Score:    5.0,
 								Cvss3Severity: "Medium",
 								Cvss3Vector:   "AV:L/AC:L/Au:N/C:N/I:N/A:C",
 								CweIDs:        []string{"CWE-284"},
 								Title:         "RHSA-2017:0001: pkg5 security update (Important)",
-							},
+							}},
 						},
 					},
 				},
