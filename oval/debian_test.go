@@ -52,15 +52,68 @@ func TestPackNamesOfUpdateDebian(t *testing.T) {
 				},
 			},
 		},
+		{
+			in: models.ScanResult{
+				ScannedCves: models.VulnInfos{
+					"CVE-2000-1000": models.VulnInfo{
+						AffectedPackages: models.PackageFixStatuses{
+							{Name: "packA"},
+						},
+					},
+					"CVE-2000-1001": models.VulnInfo{
+						AffectedPackages: models.PackageFixStatuses{
+							{Name: "packC"},
+						},
+					},
+				},
+			},
+			defPacks: defPacks{
+				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						Cves: []ovalmodels.Cve{
+							{
+								CveID: "CVE-2000-1000",
+							},
+							{
+								CveID: "CVE-2000-1001",
+							},
+						},
+					},
+				},
+				binpkgFixstat: map[string]fixStat{
+					"packB": {
+						notFixedYet: false,
+					},
+				},
+			},
+			out: models.ScanResult{
+				ScannedCves: models.VulnInfos{
+					"CVE-2000-1000": models.VulnInfo{
+						AffectedPackages: models.PackageFixStatuses{
+							{Name: "packA"},
+							{Name: "packB", NotFixedYet: false},
+						},
+					},
+					"CVE-2000-1001": models.VulnInfo{
+						AffectedPackages: models.PackageFixStatuses{
+							{Name: "packB", NotFixedYet: false},
+							{Name: "packC"},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	// util.Log = util.NewCustomLogger()
 	for i, tt := range tests {
 		Debian{}.update(&tt.in, tt.defPacks)
-		e := tt.out.ScannedCves["CVE-2000-1000"].AffectedPackages
-		a := tt.in.ScannedCves["CVE-2000-1000"].AffectedPackages
-		if !reflect.DeepEqual(a, e) {
-			t.Errorf("[%d] expected: %#v\n  actual: %#v\n", i, e, a)
+		for cveid := range tt.out.ScannedCves {
+			e := tt.out.ScannedCves[cveid].AffectedPackages
+			a := tt.in.ScannedCves[cveid].AffectedPackages
+			if !reflect.DeepEqual(a, e) {
+				t.Errorf("[%d] expected: %v\n  actual: %v\n", i, e, a)
+			}
 		}
 	}
 }

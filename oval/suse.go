@@ -88,8 +88,12 @@ func (o SUSE) update(r *models.ScanResult, defpacks defPacks) {
 
 	// uniq(vinfo.AffectedPackages[].Name + defPacks.binpkgFixstat(map[string(=package name)]fixStat{}))
 	collectBinpkgFixstat := defPacks{
-		binpkgFixstat: defpacks.binpkgFixstat,
+		binpkgFixstat: map[string]fixStat{},
 	}
+	for packName, fixStatus := range defpacks.binpkgFixstat {
+		collectBinpkgFixstat.binpkgFixstat[packName] = fixStatus
+	}
+
 	for _, pack := range vinfo.AffectedPackages {
 		collectBinpkgFixstat.binpkgFixstat[pack.Name] = fixStat{
 			notFixedYet: pack.NotFixedYet,
