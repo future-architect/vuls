@@ -51,16 +51,16 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 		switch models.NewCveContentType(o.family) {
 		case models.RedHat:
 			if conts, ok := vuln.CveContents[models.RedHat]; ok {
-				for _, cont := range conts {
+				for i, cont := range conts {
 					cont.SourceLink = "https://access.redhat.com/security/cve/" + cont.CveID
-					vuln.CveContents[models.RedHat] = append(vuln.CveContents[models.RedHat], cont)
+					vuln.CveContents[models.RedHat][i] = cont
 				}
 			}
 		case models.Oracle:
 			if conts, ok := vuln.CveContents[models.Oracle]; ok {
-				for _, cont := range conts {
+				for i, cont := range conts {
 					cont.SourceLink = fmt.Sprintf("https://linux.oracle.com/cve/%s.html", cont.CveID)
-					vuln.CveContents[models.Oracle] = append(vuln.CveContents[models.Oracle], cont)
+					vuln.CveContents[models.Oracle][i] = cont
 				}
 			}
 		}
@@ -132,7 +132,7 @@ func (o RedHatBase) update(r *models.ScanResult, defpacks defPacks) (nCVEs int) 
 			}
 
 			vinfo.Confidences.AppendIfMissing(models.OvalMatch)
-			cveContents[ovalContent.Type] = append(cveContents[ovalContent.Type], *ovalContent)
+			cveContents[ovalContent.Type] = []models.CveContent{*ovalContent}
 			vinfo.CveContents = cveContents
 		}
 

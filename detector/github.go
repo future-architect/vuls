@@ -125,7 +125,7 @@ func DetectGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string,
 
 				if val, ok := r.ScannedCves[cveID]; ok {
 					val.GitHubSecurityAlerts = val.GitHubSecurityAlerts.Add(m)
-					val.CveContents[models.GitHub] = append(val.CveContents[models.GitHub], cveContent)
+					val.CveContents[models.GitHub] = []models.CveContent{cveContent}
 					r.ScannedCves[cveID] = val
 				} else {
 					v := models.VulnInfo{

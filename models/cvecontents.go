@@ -14,7 +14,20 @@ type CveContents map[CveContentType][]CveContent
 func NewCveContents(conts ...CveContent) CveContents {
 	m := CveContents{}
 	for _, cont := range conts {
-		m[cont.Type] = append(m[cont.Type], cont)
+		if cont.Type == Jvn {
+			found := false
+			for _, cveCont := range m[cont.Type] {
+				if cont.SourceLink == cveCont.SourceLink {
+					found = true
+					break
+				}
+			}
+			if !found {
+				m[cont.Type] = append(m[cont.Type], cont)
+			}
+		} else {
+			m[cont.Type] = []CveContent{cont}
+		}
 	}
 	return m
 }

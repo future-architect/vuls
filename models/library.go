@@ -106,15 +106,16 @@ func getCveContents(cveID string, vul trivyDBTypes.Vulnerability) (contents map[
 		refs = append(refs, Reference{Source: "trivy", Link: refURL})
 	}
 
-	content := CveContent{
-		Type:          Trivy,
-		CveID:         cveID,
-		Title:         vul.Title,
-		Summary:       vul.Description,
-		Cvss3Severity: string(vul.Severity),
-		References:    refs,
+	contents[Trivy] = []CveContent{
+		{
+			Type:          Trivy,
+			CveID:         cveID,
+			Title:         vul.Title,
+			Summary:       vul.Description,
+			Cvss3Severity: string(vul.Severity),
+			References:    refs,
+		},
 	}
-	contents[Trivy] = append(contents[Trivy], content)
 	return contents
 }
 

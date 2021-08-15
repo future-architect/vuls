@@ -293,9 +293,23 @@ func FillCvesWithNvdJvn(r *models.ScanResult, cnf config.GoCveDictConf, logOpts 
 				if vinfo.CveContents == nil {
 					vinfo.CveContents = models.CveContents{}
 				}
-				for _, con := range append(nvds, jvns...) {
+				for _, con := range nvds {
 					if !con.Empty() {
-						vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
+						vinfo.CveContents[con.Type] = []models.CveContent{con}
+					}
+				}
+				for _, con := range jvns {
+					if !con.Empty() {
+						found := false
+						for _, cveCont := range vinfo.CveContents[con.Type] {
+							if con.SourceLink == cveCont.SourceLink {
+								found = true
+								break
+							}
+						}
+						if !found {
+							vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
+						}
 					}
 				}
 				vinfo.AlertDict = alerts
