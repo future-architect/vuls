@@ -8,13 +8,13 @@ import (
 )
 
 // CveContents has CveContent
-type CveContents map[CveContentType]CveContent
+type CveContents map[CveContentType][]CveContent
 
 // NewCveContents create CveContents
 func NewCveContents(conts ...CveContent) CveContents {
 	m := CveContents{}
 	for _, cont := range conts {
-		m[cont.Type] = cont
+		m[cont.Type] = append(m[cont.Type], cont)
 	}
 	return m
 }
@@ -49,11 +49,13 @@ func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string) (values []CveC
 		return
 	}
 
-	if cont, found := v[Nvd]; found {
-		for _, r := range cont.References {
-			for _, t := range r.Tags {
-				if t == "Vendor Advisory" {
-					values = append(values, CveContentStr{Nvd, r.Link})
+	if conts, found := v[Nvd]; found {
+		for _, cont := range conts {
+			for _, r := range cont.References {
+				for _, t := range r.Tags {
+					if t == "Vendor Advisory" {
+						values = append(values, CveContentStr{Nvd, r.Link})
+					}
 				}
 			}
 		}
@@ -61,17 +63,23 @@ func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string) (values []CveC
 
 	order := CveContentTypes{Nvd, NewCveContentType(myFamily), GitHub}
 	for _, ctype := range order {
-		if cont, found := v[ctype]; found {
-			if cont.SourceLink == "" {
-				continue
+		if conts, found := v[ctype]; found {
+			for _, cont := range conts {
+				if cont.SourceLink == "" {
+					continue
+				}
+				values = append(values, CveContentStr{ctype, cont.SourceLink})
 			}
-			values = append(values, CveContentStr{ctype, cont.SourceLink})
 		}
 	}
 
 	if lang == "ja" {
-		if cont, found := v[Jvn]; found && 0 < len(cont.SourceLink) {
-			values = append(values, CveContentStr{Jvn, cont.SourceLink})
+		if conts, found := v[Jvn]; found {
+			for _, cont := range conts {
+				if 0 < len(cont.SourceLink) {
+					values = append(values, CveContentStr{Jvn, cont.SourceLink})
+				}
+			}
 		}
 	}
 
@@ -86,14 +94,17 @@ func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string) (values []CveC
 
 // PatchURLs returns link of patch
 func (v CveContents) PatchURLs() (urls []string) {
-	cont, found := v[Nvd]
+	conts, found := v[Nvd]
 	if !found {
 		return
 	}
-	for _, r := range cont.References {
-		for _, t := range r.Tags {
-			if t == "Patch" {
-				urls = append(urls, r.Link)
+
+	for _, cont := range conts {
+		for _, r := range cont.References {
+			for _, t := range r.Tags {
+				if t == "Patch" {
+					urls = append(urls, r.Link)
+				}
 			}
 		}
 	}
@@ -130,11 +141,15 @@ func (v CveContents) Cpes(myFamily string) (values []CveContentCpes) {
 	order = append(order, AllCveContetTypes.Except(order...)...)
 
 	for _, ctype := range order {
-		if cont, found := v[ctype]; found && 0 < len(cont.Cpes) {
-			values = append(values, CveContentCpes{
-				Type:  ctype,
-				Value: cont.Cpes,
-			})
+		if conts, found := v[ctype]; found {
+			for _, cont := range conts {
+				if 0 < len(cont.Cpes) {
+					values = append(values, CveContentCpes{
+						Type:  ctype,
+						Value: cont.Cpes,
+					})
+				}
+			}
 		}
 	}
 	return
@@ -152,11 +167,15 @@ func (v CveContents) References(myFamily string) (values []CveContentRefs) {
 	order = append(order, AllCveContetTypes.Except(order...)...)
 
 	for _, ctype := range order {
-		if cont, found := v[ctype]; found && 0 < len(cont.References) {
-			values = append(values, CveContentRefs{
-				Type:  ctype,
-				Value: cont.References,
-			})
+		if conts, found := v[ctype]; found {
+			for _, cont := range conts {
+				if 0 < len(cont.References) {
+					values = append(values, CveContentRefs{
+						Type:  ctype,
+						Value: cont.References,
+					})
+				}
+			}
 		}
 	}
 
@@ -168,17 +187,21 @@ func (v CveContents) CweIDs(myFamily string) (values []CveContentStr) {
 	order := CveContentTypes{NewCveContentType(myFamily)}
 	order = append(order, AllCveContetTypes.Except(order...)...)
 	for _, ctype := range order {
-		if cont, found := v[ctype]; found && 0 < len(cont.CweIDs) {
-			for _, cweID := range cont.CweIDs {
-				for _, val := range values {
-					if val.Value == cweID {
-						continue
+		if conts, found := v[ctype]; found {
+			for _, cont := range conts {
+				if 0 < len(cont.CweIDs) {
+					for _, cweID := range cont.CweIDs {
+						for _, val := range values {
+							if val.Value == cweID {
+								continue
+							}
+						}
+						values = append(values, CveContentStr{
+							Type:  ctype,
+							Value: cweID,
+						})
 					}
 				}
-				values = append(values, CveContentStr{
-					Type:  ctype,
-					Value: cweID,
-				})
 			}
 		}
 	}

@@ -269,15 +269,16 @@ func (w SlackWriter) attachmentText(vinfo models.VulnInfo, cweDict map[string]mo
 				vinfo.CveID)
 		}
 
-		if cont, ok := vinfo.CveContents[cvss.Type]; ok {
-			v := fmt.Sprintf("<%s|%s> %s (<%s|%s>)",
-				calcURL,
-				fmt.Sprintf("%3.1f/%s", cvss.Value.Score, cvss.Value.Vector),
-				cvss.Value.Severity,
-				cont.SourceLink,
-				cvss.Type)
-			vectors = append(vectors, v)
-
+		if conts, ok := vinfo.CveContents[cvss.Type]; ok {
+			for _, cont := range conts {
+				v := fmt.Sprintf("<%s|%s> %s (<%s|%s>)",
+					calcURL,
+					fmt.Sprintf("%3.1f/%s", cvss.Value.Score, cvss.Value.Vector),
+					cvss.Value.Severity,
+					cont.SourceLink,
+					cvss.Type)
+				vectors = append(vectors, v)
+			}
 		} else {
 			if 0 < len(vinfo.DistroAdvisories) {
 				links := []string{}

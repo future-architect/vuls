@@ -42,7 +42,7 @@ func (o DebianBase) update(r *models.ScanResult, defpacks defPacks) {
 				cveContents = models.CveContents{}
 			}
 			vinfo.Confidences.AppendIfMissing(models.OvalMatch)
-			cveContents[ovalContent.Type] = *ovalContent
+			cveContents[ovalContent.Type] = append(cveContents[ovalContent.Type], *ovalContent)
 			vinfo.CveContents = cveContents
 		}
 
@@ -192,9 +192,11 @@ func (o Debian) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 	}
 
 	for _, vuln := range r.ScannedCves {
-		if cont, ok := vuln.CveContents[models.Debian]; ok {
-			cont.SourceLink = "https://security-tracker.debian.org/tracker/" + cont.CveID
-			vuln.CveContents[models.Debian] = cont
+		if conts, ok := vuln.CveContents[models.Debian]; ok {
+			for _, cont := range conts {
+				cont.SourceLink = "https://security-tracker.debian.org/tracker/" + cont.CveID
+				vuln.CveContents[models.Debian] = append(vuln.CveContents[models.Debian], cont)
+			}
 		}
 	}
 	return len(relatedDefs.entries), nil
@@ -509,9 +511,11 @@ func (o Ubuntu) fillWithOval(r *models.ScanResult, kernelNamesInOval []string) (
 	}
 
 	for _, vuln := range r.ScannedCves {
-		if cont, ok := vuln.CveContents[models.Ubuntu]; ok {
-			cont.SourceLink = "http://people.ubuntu.com/~ubuntu-security/cve/" + cont.CveID
-			vuln.CveContents[models.Ubuntu] = cont
+		if conts, ok := vuln.CveContents[models.Ubuntu]; ok {
+			for _, cont := range conts {
+				cont.SourceLink = "http://people.ubuntu.com/~ubuntu-security/cve/" + cont.CveID
+				vuln.CveContents[models.Ubuntu] = append(vuln.CveContents[models.Ubuntu], cont)
+			}
 		}
 	}
 	return len(relatedDefs.entries), nil

@@ -908,9 +908,11 @@ func detailLines() (string, error) {
 			refsMap[ref.Link] = ref
 		}
 	}
-	if cont, found := vinfo.CveContents[models.Trivy]; found {
-		for _, ref := range cont.References {
-			refsMap[ref.Link] = ref
+	if conts, found := vinfo.CveContents[models.Trivy]; found {
+		for _, cont := range conts {
+			for _, ref := range cont.References {
+				refsMap[ref.Link] = ref
+			}
 		}
 	}
 	refs := []models.Reference{}

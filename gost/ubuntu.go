@@ -115,7 +115,7 @@ func (ubu Ubuntu) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 				if v.CveContents == nil {
 					v.CveContents = models.NewCveContents(cve)
 				} else {
-					v.CveContents[models.UbuntuAPI] = cve
+					v.CveContents[models.UbuntuAPI] = append(v.CveContents[models.UbuntuAPI], cve)
 				}
 			} else {
 				v = models.VulnInfo{
