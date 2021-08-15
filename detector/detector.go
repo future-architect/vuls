@@ -432,7 +432,7 @@ func DetectCpeURIsCves(r *models.ScanResult, cpeURIs []string, cnf config.GoCveD
 		for _, detail := range details {
 			var confidence models.Confidence
 			switch specifiedVer {
-			case "ANY":
+			case "NA", "ANY":
 				confidence = models.CpeVendorProductMatch
 			default:
 				confidence = models.CpeVersionMatch
