@@ -26,7 +26,9 @@ type goCveDictClient struct {
 }
 
 func newGoCveDictClient(cnf config.VulnDictInterface, o logging.LogOpts) (*goCveDictClient, error) {
-	cvelog.SetLogger(o.Debug, o.Quiet, false, o.LogToFile, o.LogDir)
+	if err := cvelog.SetLogger(o.LogToFile, o.LogDir, o.Debug, false); err != nil {
+		return nil, err
+	}
 
 	driver, locked, err := newCveDB(cnf)
 	if locked {

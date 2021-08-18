@@ -21,12 +21,13 @@ require (
 	github.com/emersion/go-smtp v0.14.0
 	github.com/fatih/color v1.12.0 // indirect
 	github.com/go-redis/redis/v8 v8.11.3 // indirect
+	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/google/subcommands v1.2.0
 	github.com/gosuri/uitable v0.0.4
 	github.com/hashicorp/go-uuid v1.0.2
 	github.com/hashicorp/go-version v1.3.0
 	github.com/howeyc/gopass v0.0.0-20190910152052-7cb4b85ec19c
-	github.com/jackc/pgx/v4 v4.12.0 // indirect
+	github.com/jackc/pgx/v4 v4.13.0 // indirect
 	github.com/jesseduffield/gocui v0.3.0
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/knqyf263/go-apk-version v0.0.0-20200609155635-041fdbb8563f
@@ -34,7 +35,7 @@ require (
 	github.com/knqyf263/go-deb-version v0.0.0-20190517075300-09fca494f03d
 	github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936
 	github.com/knqyf263/gost v0.2.0
-	github.com/kotakanbe/go-cve-dictionary v0.6.3-0.20210815233636-a31a3152c114
+	github.com/kotakanbe/go-cve-dictionary v0.7.0
 	github.com/kotakanbe/go-pingscanner v0.1.0
 	github.com/kotakanbe/goval-dictionary v0.3.6-0.20210625044258-9be85404d7dd
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
@@ -49,16 +50,18 @@ require (
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.8.0
 	github.com/spf13/afero v1.6.0
+	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/cobra v1.2.1
 	github.com/takuzoo3868/go-msfdb v0.1.6
 	github.com/vulsio/go-exploitdb v0.1.8-0.20210625021845-e5081ca67229
-	golang.org/x/crypto v0.0.0-20210813211128-0a44fdfbc16e // indirect
+	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
 	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210816032535-30e4713e60e3 // indirect
+	golang.org/x/sys v0.0.0-20210818153620-00dd8d7831e7 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
-	gorm.io/gorm v1.21.12 // indirect
+	gorm.io/driver/mysql v1.1.2 // indirect
+	gorm.io/gorm v1.21.13 // indirect
 	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009
 )
