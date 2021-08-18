@@ -17,6 +17,8 @@ import (
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/util"
+	"github.com/knqyf263/go-cpe/common"
+	"github.com/knqyf263/go-cpe/naming"
 	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
 	"golang.org/x/xerrors"
 )
@@ -422,11 +424,21 @@ func DetectCpeURIsCves(r *models.ScanResult, cpeURIs []string, cnf config.GoCveD
 			return err
 		}
 
+		specified, err := naming.UnbindURI(name)
+		if err != nil {
+			return xerrors.Errorf("Failed to unbind. CPE: %s. err: %w", name, err)
+		}
+		specifiedVer := specified.GetString(common.AttributeVersion)
 		for _, detail := range details {
-			confidence := models.CpeVersionMatch
-			if detail.CveIDSource == cvemodels.JvnType {
-				// In the case of CpeVendorProduct-match
+			var confidence models.Confidence
+			switch specifiedVer {
+			case "NA", "ANY":
 				confidence = models.CpeVendorProductMatch
+			default:
+				confidence = models.CpeVersionMatch
+				if !detail.HasNvd() && detail.HasJvn() {
+					confidence = models.CpeVendorProductMatch
+				}
 			}
 
 			if val, ok := r.ScannedCves[detail.CveID]; ok {
