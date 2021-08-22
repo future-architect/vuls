@@ -32,6 +32,8 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
           tags: |
             vuls/vuls:latest
             ${{ steps.meta.outputs.tags }}
