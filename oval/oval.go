@@ -121,7 +121,7 @@ func newOvalDB(cnf config.VulnDictInterface, familyInScanResult string) (driver 
 	if cnf.GetType() == "sqlite3" {
 		path = cnf.GetSQLite3Path()
 		if _, err := os.Stat(path); err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("OVAL DB not found in %s. Fetch OVAL before reporting. For details, see `https://github.com/kotakanbe/goval-dictionary#usage`", path)
 		}
 	}
 
