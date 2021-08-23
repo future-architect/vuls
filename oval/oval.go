@@ -4,6 +4,7 @@ package oval
 
 import (
 	"encoding/json"
+	"os"
 	"time"
 
 	"github.com/future-architect/vuls/config"
@@ -119,6 +120,9 @@ func newOvalDB(cnf config.VulnDictInterface, familyInScanResult string) (driver 
 	path := cnf.GetURL()
 	if cnf.GetType() == "sqlite3" {
 		path = cnf.GetSQLite3Path()
+		if _, err := os.Stat(path); err != nil {
+			return nil, err
+		}
 	}
 
 	ovalFamily, err := GetFamilyInOval(familyInScanResult)
