@@ -24,6 +24,11 @@ import (
 	"golang.org/x/xerrors"
 )
 
+type Cpe struct {
+	CpeURI string
+	UseJVN bool
+}
+
 // Detect vulns and fill CVE detailed information
 func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 
@@ -39,7 +44,16 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			r.ScannedCves = models.VulnInfos{}
 		}
 
+		if err := DetectLibsCves(&r, config.Conf.TrivyCacheDBDir, config.Conf.NoProgress); err != nil {
+			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
+		}
+
+		if err := DetectPkgCves(&r, config.Conf.OvalDict, config.Conf.Gost); err != nil {
+			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
+		}
+
 		cpeURIs, owaspDCXMLPath := []string{}, ""
+		cpes := []Cpe{}
 		if len(r.Container.ContainerID) == 0 {
 			cpeURIs = config.Conf.Servers[r.ServerName].CpeNames
 			owaspDCXMLPath = config.Conf.Servers[r.ServerName].OwaspDCXMLPath
@@ -59,16 +73,13 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			}
 			cpeURIs = append(cpeURIs, cpes...)
 		}
-
-		if err := DetectLibsCves(&r, config.Conf.TrivyCacheDBDir, config.Conf.NoProgress); err != nil {
-			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
+		for _, uri := range cpeURIs {
+			cpes = append(cpes, Cpe{
+				CpeURI: uri,
+				UseJVN: true,
+			})
 		}
-
-		if err := DetectPkgCves(&r, config.Conf.OvalDict, config.Conf.Gost); err != nil {
-			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
-		}
-
-		if err := DetectCpeURIsCves(&r, cpeURIs, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
+		if err := DetectCpeURIsCves(&r, cpes, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
 			return nil, xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
 		}
 
@@ -407,7 +418,7 @@ func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult) error {
 }
 
 // DetectCpeURIsCves detects CVEs of given CPE-URIs
-func DetectCpeURIsCves(r *models.ScanResult, cpeURIs []string, cnf config.GoCveDictConf, logOpts logging.LogOpts) error {
+func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictConf, logOpts logging.LogOpts) error {
 	client, err := newGoCveDictClient(&cnf, logOpts)
 	if err != nil {
 		return err
@@ -419,15 +430,15 @@ func DetectCpeURIsCves(r *models.ScanResult, cpeURIs []string, cnf config.GoCveD
 	}()
 
 	nCVEs := 0
-	for _, name := range cpeURIs {
-		details, err := client.fetchCveDetailsByCpeName(name)
+	for _, cpe := range cpes {
+		details, err := client.fetchCveDetailsByCpeURI(cpe.CpeURI, cpe.UseJVN)
 		if err != nil {
 			return err
 		}
 
-		specified, err := naming.UnbindURI(name)
+		specified, err := naming.UnbindURI(cpe.CpeURI)
 		if err != nil {
-			return xerrors.Errorf("Failed to unbind. CPE: %s. err: %w", name, err)
+			return xerrors.Errorf("Failed to unbind. CPE: %s. err: %w", cpe.CpeURI, err)
 		}
 		specifiedVer := specified.GetString(common.AttributeVersion)
 		for _, detail := range details {
@@ -443,13 +454,13 @@ func DetectCpeURIsCves(r *models.ScanResult, cpeURIs []string, cnf config.GoCveD
 			}
 
 			if val, ok := r.ScannedCves[detail.CveID]; ok {
-				val.CpeURIs = util.AppendIfMissing(val.CpeURIs, name)
+				val.CpeURIs = util.AppendIfMissing(val.CpeURIs, cpe.CpeURI)
 				val.Confidences.AppendIfMissing(confidence)
 				r.ScannedCves[detail.CveID] = val
 			} else {
 				v := models.VulnInfo{
 					CveID:       detail.CveID,
-					CpeURIs:     []string{name},
+					CpeURIs:     []string{cpe.CpeURI},
 					Confidences: models.Confidences{confidence},
 				}
 				r.ScannedCves[detail.CveID] = v
