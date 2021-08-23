@@ -147,20 +147,20 @@ func (api goCveDictClient) httpGet(key, url string, resChan chan<- response, err
 	}
 }
 
-func (api goCveDictClient) fetchCveDetailsByCpeURI(cpeName string, useJVN bool) (cves []cvemodels.CveDetail, err error) {
+func (api goCveDictClient) fetchCveDetailsByCpeURI(cpeURI string, useJVN bool) (cves []cvemodels.CveDetail, err error) {
 	if api.cnf.IsFetchViaHTTP() {
 		url, err := util.URLPathJoin(api.cnf.GetURL(), "cpes")
 		if err != nil {
 			return nil, err
 		}
 
-		query := map[string]string{"name": cpeName}
+		query := map[string]string{"name": cpeURI}
 		logging.Log.Debugf("HTTP Request to %s, query: %#v", url, query)
-		if cves, err = api.httpPost(cpeName, url, query); err != nil {
+		if cves, err = api.httpPost(cpeURI, url, query); err != nil {
 			return nil, err
 		}
 	} else {
-		if cves, err = api.driver.GetByCpeURI(cpeName); err != nil {
+		if cves, err = api.driver.GetByCpeURI(cpeURI); err != nil {
 			return nil, err
 		}
 	}
@@ -171,9 +171,10 @@ func (api goCveDictClient) fetchCveDetailsByCpeURI(cpeName string, useJVN bool) 
 
 	nvdCves := []cvemodels.CveDetail{}
 	for _, cve := range cves {
-		if cve.HasJvn() {
+		if !cve.HasNvd() {
 			continue
 		}
+		cve.Jvn = []cvemodels.Jvn{}
 		nvdCves = append(nvdCves, cve)
 	}
 	return nvdCves, nil
