@@ -174,7 +174,7 @@ func (api goCveDictClient) fetchCveDetailsByCpeURI(cpeURI string, useJVN bool) (
 		if !cve.HasNvd() {
 			continue
 		}
-		cve.Jvn = []cvemodels.Jvn{}
+		cve.Jvns = []cvemodels.Jvn{}
 		nvdCves = append(nvdCves, cve)
 	}
 	return nvdCves, nil
