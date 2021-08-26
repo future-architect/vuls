@@ -655,7 +655,8 @@ func (s Scanner) getScanResults(scannedAt time.Time) (results models.ScanResults
 		}
 		if o.getServerInfo().Module.IsScanPort() {
 			if err = o.scanPorts(); err != nil {
-				return xerrors.Errorf("Failed to scan Ports: %w", err)
+				// continue scanning
+				logging.Log.Warnf("Failed to scan Ports: %w", err)
 			}
 		}
 		if o.getServerInfo().Module.IsScanWordPress() {
