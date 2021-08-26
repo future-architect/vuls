@@ -1,3 +1,4 @@
+//go:build !scanner
 // +build !scanner
 
 package detector
@@ -286,8 +287,8 @@ func FillCvesWithNvdJvn(r *models.ScanResult, cnf config.GoCveDictConf, logOpts 
 	}
 
 	for _, d := range ds {
-		nvds, exploits, mitigations := models.ConvertNvdToModel(d.CveID, d.Nvd)
-		jvns := models.ConvertJvnToModel(d.CveID, d.Jvn)
+		nvds, exploits, mitigations := models.ConvertNvdToModel(d.CveID, d.Nvds)
+		jvns := models.ConvertJvnToModel(d.CveID, d.Jvns)
 
 		alerts := fillCertAlerts(&d)
 		for cveID, vinfo := range r.ScannedCves {
@@ -312,7 +313,7 @@ func FillCvesWithNvdJvn(r *models.ScanResult, cnf config.GoCveDictConf, logOpts 
 }
 
 func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
-	for _, nvd := range cvedetail.Nvd {
+	for _, nvd := range cvedetail.Nvds {
 		for _, cert := range nvd.Certs {
 			dict.En = append(dict.En, models.Alert{
 				URL:   cert.Link,
@@ -322,7 +323,7 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 		}
 	}
 
-	for _, jvn := range cvedetail.Jvn {
+	for _, jvn := range cvedetail.Jvns {
 		for _, cert := range jvn.Certs {
 			dict.Ja = append(dict.Ja, models.Alert{
 				URL:   cert.Link,
