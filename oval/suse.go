@@ -1,3 +1,4 @@
+//go:build !scanner
 // +build !scanner
 
 package oval
