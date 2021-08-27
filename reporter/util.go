@@ -348,7 +348,7 @@ No CVE-IDs are found in updatable packages.
 			data = append(data, []string{"Mitigation", m.URL})
 		}
 
-		links := vuln.CveContents.PrimarySrcURLs(r.Lang, r.Family, vuln.CveID)
+		links := vuln.CveContents.PrimarySrcURLs(r.Lang, r.Family, vuln.CveID, vuln.Confidences)
 		for _, link := range links {
 			data = append(data, []string{"Primary Src", link.Value})
 		}

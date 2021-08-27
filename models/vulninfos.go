@@ -851,8 +851,11 @@ const (
 	// CpeVersionMatchStr is a String representation of CpeNameMatch
 	CpeVersionMatchStr = "CpeVersionMatch"
 
-	// CpeVendorProductMatchStr is a String representation of CpeNameMatch
-	CpeVendorProductMatchStr = "CpeVendorProductMatch"
+	// NvdVendorProductMatchStr is a String representation of CpeNameMatch
+	NvdVendorProductMatchStr = "NvdVendorProductMatch"
+
+	// JvnVendorProductMatchStr is a String representation of CpeNameMatch
+	JvnVendorProductMatchStr = "JvnVendorProductMatch"
 
 	// YumUpdateSecurityMatchStr is a String representation of YumUpdateSecurityMatch
 	YumUpdateSecurityMatchStr = "YumUpdateSecurityMatch"
@@ -931,6 +934,9 @@ var (
 	// WpScanMatch is a ranking how confident the CVE-ID was detected correctly
 	WpScanMatch = Confidence{100, WpScanMatchStr, 0}
 
-	// CpeVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
-	CpeVendorProductMatch = Confidence{10, CpeVendorProductMatchStr, 9}
+	// NvdVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
+	NvdVendorProductMatch = Confidence{10, NvdVendorProductMatchStr, 9}
+
+	// JvnVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
+	JvnVendorProductMatch = Confidence{10, JvnVendorProductMatchStr, 10}
 )

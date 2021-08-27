@@ -24,6 +24,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
+// Cpe
 type Cpe struct {
 	CpeURI string
 	UseJVN bool
@@ -440,28 +441,41 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 		if err != nil {
 			return xerrors.Errorf("Failed to unbind. CPE: %s. err: %w", cpe.CpeURI, err)
 		}
-		specifiedVer := specified.GetString(common.AttributeVersion)
+
 		for _, detail := range details {
 			var confidence models.Confidence
-			switch specifiedVer {
+			advisories := []models.DistroAdvisory{}
+
+			switch specified.GetString(common.AttributeVersion) {
 			case "NA", "ANY":
-				confidence = models.CpeVendorProductMatch
+				if !detail.HasNvd() && detail.HasJvn() {
+					confidence = models.JvnVendorProductMatch
+				} else {
+					confidence = models.NvdVendorProductMatch
+				}
 			default:
 				confidence = models.CpeVersionMatch
 				if !detail.HasNvd() && detail.HasJvn() {
-					confidence = models.CpeVendorProductMatch
+					confidence = models.JvnVendorProductMatch
+					for _, jvn := range detail.Jvns {
+						advisories = append(advisories, models.DistroAdvisory{
+							AdvisoryID: jvn.JvnID,
+						})
+					}
 				}
 			}
 
 			if val, ok := r.ScannedCves[detail.CveID]; ok {
 				val.CpeURIs = util.AppendIfMissing(val.CpeURIs, cpe.CpeURI)
 				val.Confidences.AppendIfMissing(confidence)
+				val.DistroAdvisories = advisories
 				r.ScannedCves[detail.CveID] = val
 			} else {
 				v := models.VulnInfo{
-					CveID:       detail.CveID,
-					CpeURIs:     []string{cpe.CpeURI},
-					Confidences: models.Confidences{confidence},
+					CveID:            detail.CveID,
+					CpeURIs:          []string{cpe.CpeURI},
+					Confidences:      models.Confidences{confidence},
+					DistroAdvisories: advisories,
 				}
 				r.ScannedCves[detail.CveID] = v
 				nCVEs++

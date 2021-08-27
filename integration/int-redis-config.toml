@@ -22,13 +22,25 @@ Url = "redis://127.0.0.1/3"
 
 [servers]
 
-[servers.rails]
+[servers.cpe_version_match]
 type = "pseudo"
 cpeNames = [ "cpe:/a:rubyonrails:rails:3.0.1" ]
 
-[servers.cpe_vendor_product_match]
+ [servers.nvd_vendor_product_match]
+ type = "pseudo"
+ cpeNames = [ "cpe:/a:djangoproject:django" ]
+
+[servers.cpe_version_match_no_jvn]
 type = "pseudo"
-cpeNames = ["cpe:/a:hitachi_abb_power_grids:afs660"]
+cpeNames = [ "cpe:/a:apache:tomcat:7.0.27" ]
+
+[servers.jvn_vendor_product_match]
+type = "pseudo"
+cpeNames = [ "cpe:/a:hitachi_abb_power_grids:afs660:1.0.0" ]
+
+[servers.jvn_vendor_product_match_no_version]
+type = "pseudo"
+cpeNames = [ "cpe:/o:nec:aterm_wg2600hp2_firmware"]
 
 [servers.gemfile]
 type = "pseudo"

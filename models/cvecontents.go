@@ -44,7 +44,7 @@ func (v CveContents) Except(exceptCtypes ...CveContentType) (values CveContents)
 }
 
 // PrimarySrcURLs returns link of source
-func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string) (values []CveContentStr) {
+func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string, confidences Confidences) (values []CveContentStr) {
 	if cveID == "" {
 		return
 	}
@@ -73,7 +73,15 @@ func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string) (values []CveC
 		}
 	}
 
-	if lang == "ja" {
+	jvnMatch := false
+	for _, confidence := range confidences {
+		if confidence.DetectionMethod == JvnVendorProductMatchStr {
+			jvnMatch = true
+			break
+		}
+	}
+
+	if lang == "ja" || jvnMatch {
 		if conts, found := v[Jvn]; found {
 			for _, cont := range conts {
 				if 0 < len(cont.SourceLink) {

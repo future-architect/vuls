@@ -30,9 +30,10 @@ func TestExcept(t *testing.T) {
 
 func TestSourceLinks(t *testing.T) {
 	type in struct {
-		lang  string
-		cveID string
-		cont  CveContents
+		lang        string
+		cveID       string
+		cont        CveContents
+		confidences Confidences
 	}
 	var tests = []struct {
 		in  in
@@ -128,9 +129,31 @@ func TestSourceLinks(t *testing.T) {
 				},
 			},
 		},
+		// Confidence: JvnVendorProductMatch
+		{
+			in: in{
+				lang:  "en",
+				cveID: "CVE-2017-6074",
+				cont: CveContents{
+					Jvn: []CveContent{{
+						Type:       Jvn,
+						SourceLink: "https://jvn.jp/vu/JVNVU93610402/",
+					}},
+				},
+				confidences: Confidences{
+					Confidence{DetectionMethod: JvnVendorProductMatchStr},
+				},
+			},
+			out: []CveContentStr{
+				{
+					Type:  Jvn,
+					Value: "https://jvn.jp/vu/JVNVU93610402/",
+				},
+			},
+		},
 	}
 	for i, tt := range tests {
-		actual := tt.in.cont.PrimarySrcURLs(tt.in.lang, "redhat", tt.in.cveID)
+		actual := tt.in.cont.PrimarySrcURLs(tt.in.lang, "redhat", tt.in.cveID, tt.in.confidences)
 		if !reflect.DeepEqual(tt.out, actual) {
 			t.Errorf("\n[%d] expected: %v\n  actual: %v\n", i, tt.out, actual)
 		}
