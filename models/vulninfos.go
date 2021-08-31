@@ -848,8 +848,11 @@ func (c Confidence) String() string {
 type DetectionMethod string
 
 const (
-	// CpeVersionMatchStr is a String representation of CpeNameMatch
-	CpeVersionMatchStr = "CpeVersionMatch"
+	// NvdExactVersionMatchStr is a String representation of CpeNameMatch
+	NvdExactVersionMatchStr = "NvdExactVersionMatch"
+
+	// NvdRoughVersionMatchStr is a String representation of CpeNameMatch
+	NvdRoughVersionMatchStr = "NvdRoughVersionMatch"
 
 	// NvdVendorProductMatchStr is a String representation of CpeNameMatch
 	NvdVendorProductMatchStr = "NvdVendorProductMatch"
@@ -898,9 +901,6 @@ const (
 )
 
 var (
-	// CpeVersionMatch is a ranking how confident the CVE-ID was detected correctly
-	CpeVersionMatch = Confidence{100, CpeVersionMatchStr, 1}
-
 	// YumUpdateSecurityMatch is a ranking how confident the CVE-ID was detected correctly
 	YumUpdateSecurityMatch = Confidence{100, YumUpdateSecurityMatchStr, 2}
 
@@ -933,6 +933,12 @@ var (
 
 	// WpScanMatch is a ranking how confident the CVE-ID was detected correctly
 	WpScanMatch = Confidence{100, WpScanMatchStr, 0}
+
+	// NvdExactVersionMatch is a ranking how confident the CVE-ID was detected correctly
+	NvdExactVersionMatch = Confidence{100, NvdExactVersionMatchStr, 1}
+
+	// NvdRoughVersionMatch NvdExactVersionMatch is a ranking how confident the CVE-ID was detected correctly
+	NvdRoughVersionMatch = Confidence{80, NvdRoughVersionMatchStr, 1}
 
 	// NvdVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
 	NvdVendorProductMatch = Confidence{10, NvdVendorProductMatchStr, 9}

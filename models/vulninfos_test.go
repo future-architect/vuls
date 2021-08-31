@@ -1037,20 +1037,20 @@ func TestAppendIfMissing(t *testing.T) {
 	}{
 		{
 			in: Confidences{
-				CpeVersionMatch,
+				NvdExactVersionMatch,
 			},
-			arg: CpeVersionMatch,
+			arg: NvdExactVersionMatch,
 			out: Confidences{
-				CpeVersionMatch,
+				NvdExactVersionMatch,
 			},
 		},
 		{
 			in: Confidences{
-				CpeVersionMatch,
+				NvdExactVersionMatch,
 			},
 			arg: ChangelogExactMatch,
 			out: Confidences{
-				CpeVersionMatch,
+				NvdExactVersionMatch,
 				ChangelogExactMatch,
 			},
 		},
@@ -1071,21 +1071,21 @@ func TestSortByConfident(t *testing.T) {
 		{
 			in: Confidences{
 				OvalMatch,
-				CpeVersionMatch,
+				NvdExactVersionMatch,
 			},
 			out: Confidences{
 				OvalMatch,
-				CpeVersionMatch,
+				NvdExactVersionMatch,
 			},
 		},
 		{
 			in: Confidences{
-				CpeVersionMatch,
+				NvdExactVersionMatch,
 				OvalMatch,
 			},
 			out: Confidences{
 				OvalMatch,
-				CpeVersionMatch,
+				NvdExactVersionMatch,
 			},
 		},
 	}

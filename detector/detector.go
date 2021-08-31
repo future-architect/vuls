@@ -18,13 +18,11 @@ import (
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/util"
-	"github.com/knqyf263/go-cpe/common"
-	"github.com/knqyf263/go-cpe/naming"
 	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
 	"golang.org/x/xerrors"
 )
 
-// Cpe
+// Cpe :
 type Cpe struct {
 	CpeURI string
 	UseJVN bool
@@ -437,44 +435,27 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 			return err
 		}
 
-		specified, err := naming.UnbindURI(cpe.CpeURI)
-		if err != nil {
-			return xerrors.Errorf("Failed to unbind. CPE: %s. err: %w", cpe.CpeURI, err)
-		}
-
 		for _, detail := range details {
-			var confidence models.Confidence
 			advisories := []models.DistroAdvisory{}
-
-			switch specified.GetString(common.AttributeVersion) {
-			case "NA", "ANY":
-				if !detail.HasNvd() && detail.HasJvn() {
-					confidence = models.JvnVendorProductMatch
-				} else {
-					confidence = models.NvdVendorProductMatch
-				}
-			default:
-				confidence = models.CpeVersionMatch
-				if !detail.HasNvd() && detail.HasJvn() {
-					confidence = models.JvnVendorProductMatch
-					for _, jvn := range detail.Jvns {
-						advisories = append(advisories, models.DistroAdvisory{
-							AdvisoryID: jvn.JvnID,
-						})
-					}
+			if !detail.HasNvd() && detail.HasJvn() {
+				for _, jvn := range detail.Jvns {
+					advisories = append(advisories, models.DistroAdvisory{
+						AdvisoryID: jvn.JvnID,
+					})
 				}
 			}
+			maxConfidence := getMaxConfidence(detail)
 
 			if val, ok := r.ScannedCves[detail.CveID]; ok {
 				val.CpeURIs = util.AppendIfMissing(val.CpeURIs, cpe.CpeURI)
-				val.Confidences.AppendIfMissing(confidence)
+				val.Confidences.AppendIfMissing(maxConfidence)
 				val.DistroAdvisories = advisories
 				r.ScannedCves[detail.CveID] = val
 			} else {
 				v := models.VulnInfo{
 					CveID:            detail.CveID,
 					CpeURIs:          []string{cpe.CpeURI},
-					Confidences:      models.Confidences{confidence},
+					Confidences:      models.Confidences{maxConfidence},
 					DistroAdvisories: advisories,
 				}
 				r.ScannedCves[detail.CveID] = v
@@ -484,6 +465,28 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 	}
 	logging.Log.Infof("%s: %d CVEs are detected with CPE", r.FormatServerName(), nCVEs)
 	return nil
+}
+
+func getMaxConfidence(detail cvemodels.CveDetail) (max models.Confidence) {
+	if !detail.HasNvd() && detail.HasJvn() {
+		return models.JvnVendorProductMatch
+	} else if detail.HasNvd() {
+		for _, nvd := range detail.Nvds {
+			confidence := models.Confidence{}
+			switch nvd.DetectionMethod {
+			case cvemodels.NvdExactVersionMatch:
+				confidence = models.NvdExactVersionMatch
+			case cvemodels.NvdRoughVersionMatch:
+				confidence = models.NvdRoughVersionMatch
+			case cvemodels.NvdVendorProductMatch:
+				confidence = models.NvdVendorProductMatch
+			}
+			if max.Score < confidence.Score {
+				max = confidence
+			}
+		}
+	}
+	return max
 }
 
 // FillCweDict fills CWE
