@@ -15,6 +15,7 @@ require (
 	github.com/boltdb/bolt v1.3.1
 	github.com/briandowns/spinner v1.16.0 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cheggaaa/pb/v3 v3.0.8 // indirect
 	github.com/d4l3k/messagediff v1.2.2-0.20190829033028-7e0a312ae40b
 	github.com/emersion/go-sasl v0.0.0-20200509203442-7bfe0ed36a21
@@ -36,7 +37,7 @@ require (
 	github.com/knqyf263/go-deb-version v0.0.0-20190517075300-09fca494f03d
 	github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936
 	github.com/knqyf263/gost v0.2.0
-	github.com/kotakanbe/go-cve-dictionary v0.7.1-0.20210824005621-13337a1b780a
+	github.com/kotakanbe/go-cve-dictionary v0.7.1
 	github.com/kotakanbe/go-pingscanner v0.1.0
 	github.com/kotakanbe/goval-dictionary v0.3.6-0.20210625044258-9be85404d7dd
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
@@ -56,13 +57,13 @@ require (
 	github.com/takuzoo3868/go-msfdb v0.1.6
 	github.com/vulsio/go-exploitdb v0.2.0
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
-	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
+	golang.org/x/net v0.0.0-20210825183410-e898025ed96a // indirect
 	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210819135213-f52c844e1c1c // indirect
+	golang.org/x/sys v0.0.0-20210831042530-f4d43177bf5e // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	gorm.io/driver/mysql v1.1.2 // indirect
-	gorm.io/gorm v1.21.13 // indirect
+	gorm.io/gorm v1.21.14 // indirect
 	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009
 )
