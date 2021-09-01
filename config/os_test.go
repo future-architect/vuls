@@ -290,6 +290,14 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			now:      time.Date(2021, 1, 6, 23, 59, 59, 0, time.UTC),
 			stdEnded: false,
 			extEnded: false,
+			found:    true,
+		},
+		{
+			name:     "Debian 12 is not supported yet",
+			fields:   fields{family: Debian, release: "12"},
+			now:      time.Date(2021, 1, 6, 23, 59, 59, 0, time.UTC),
+			stdEnded: false,
+			extEnded: false,
 			found:    false,
 		},
 		//alpine
