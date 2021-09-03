@@ -931,7 +931,7 @@ func (o *debian) getCveIDsFromChangelog(
 	if 1 < len(splittedByColon) {
 		verAfterColon = splittedByColon[1]
 		if cveIDs, pack, err := o.parseChangelog(
-			changelog, name, verAfterColon, models.ChangelogLenientMatch); err == nil {
+			changelog, name, verAfterColon, models.ChangelogRoughMatch); err == nil {
 			return cveIDs, pack
 		}
 	}
@@ -948,7 +948,7 @@ func (o *debian) getCveIDsFromChangelog(
 		ss := strings.Split(ver, d)
 		if 1 < len(ss) {
 			if cveIDs, pack, err := o.parseChangelog(
-				changelog, name, ss[0], models.ChangelogLenientMatch); err == nil {
+				changelog, name, ss[0], models.ChangelogRoughMatch); err == nil {
 				return cveIDs, pack
 			}
 		}
@@ -956,7 +956,7 @@ func (o *debian) getCveIDsFromChangelog(
 		ss = strings.Split(verAfterColon, d)
 		if 1 < len(ss) {
 			if cveIDs, pack, err := o.parseChangelog(
-				changelog, name, ss[0], models.ChangelogLenientMatch); err == nil {
+				changelog, name, ss[0], models.ChangelogRoughMatch); err == nil {
 				return cveIDs, pack
 			}
 		}
@@ -1020,7 +1020,7 @@ func (o *debian) parseChangelog(changelog, name, ver string, confidence models.C
 			pack := o.Packages[name]
 			pack.Changelog = &models.Changelog{
 				Contents: strings.Join(buf, "\n"),
-				Method:   models.ChangelogLenientMatchStr,
+				Method:   models.ChangelogRoughMatchStr,
 			}
 
 			cves := []DetectedCveID{}

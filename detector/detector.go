@@ -147,6 +147,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 	for i, r := range rs {
 		r.ScannedCves = r.ScannedCves.FilterByCvssOver(config.Conf.CvssScoreOver)
 		r.ScannedCves = r.ScannedCves.FilterUnfixed(config.Conf.IgnoreUnfixed)
+		r.ScannedCves = r.ScannedCves.FilterByConfidenceOver(config.Conf.ConfidenceScoreOver)
 
 		// IgnoreCves
 		ignoreCves := []string{}

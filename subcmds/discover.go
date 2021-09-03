@@ -211,6 +211,7 @@ host                = "{{$ip}}"
 #containerType      = "docker" #or "lxd" or "lxc" default: docker
 #containersIncluded = ["${running}"]
 #containersExcluded = ["container_name_a"]
+#confidenceScoreOver = 80
 
 #[servers.{{index $names $i}}.containers.container_name_a]
 #cpeNames       = [ "cpe:/a:rubyonrails:ruby_on_rails:4.2.1" ]

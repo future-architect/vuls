@@ -37,6 +37,18 @@ func (v VulnInfos) FilterByCvssOver(over float64) VulnInfos {
 	})
 }
 
+// FilterByConfidenceOver scored vulnerabilities
+func (v VulnInfos) FilterByConfidenceOver(over int) VulnInfos {
+	return v.Find(func(v VulnInfo) bool {
+		for _, c := range v.Confidences {
+			if over <= c.Score {
+				return true
+			}
+		}
+		return false
+	})
+}
+
 // FilterIgnoreCves filter function.
 func (v VulnInfos) FilterIgnoreCves(ignoreCveIDs []string) VulnInfos {
 	return v.Find(func(v VulnInfo) bool {
@@ -848,62 +860,56 @@ func (c Confidence) String() string {
 type DetectionMethod string
 
 const (
-	// NvdExactVersionMatchStr is a String representation of CpeNameMatch
+	// NvdExactVersionMatchStr :
 	NvdExactVersionMatchStr = "NvdExactVersionMatch"
 
-	// NvdRoughVersionMatchStr is a String representation of CpeNameMatch
+	// NvdRoughVersionMatchStr :
 	NvdRoughVersionMatchStr = "NvdRoughVersionMatch"
 
-	// NvdVendorProductMatchStr is a String representation of CpeNameMatch
+	// NvdVendorProductMatchStr :
 	NvdVendorProductMatchStr = "NvdVendorProductMatch"
 
-	// JvnVendorProductMatchStr is a String representation of CpeNameMatch
+	// JvnVendorProductMatchStr :
 	JvnVendorProductMatchStr = "JvnVendorProductMatch"
 
-	// YumUpdateSecurityMatchStr is a String representation of YumUpdateSecurityMatch
-	YumUpdateSecurityMatchStr = "YumUpdateSecurityMatch"
-
-	// PkgAuditMatchStr is a String representation of PkgAuditMatch
+	// PkgAuditMatchStr :
 	PkgAuditMatchStr = "PkgAuditMatch"
 
-	// OvalMatchStr is a String representation of OvalMatch
+	// OvalMatchStr :
 	OvalMatchStr = "OvalMatch"
 
-	// RedHatAPIStr is a String representation of RedHatAPIMatch
+	// RedHatAPIStr is :
 	RedHatAPIStr = "RedHatAPIMatch"
 
-	// DebianSecurityTrackerMatchStr is a String representation of DebianSecurityTrackerMatch
+	// DebianSecurityTrackerMatchStr :
 	DebianSecurityTrackerMatchStr = "DebianSecurityTrackerMatch"
 
-	// UbuntuAPIMatchStr is a String representation of UbuntuAPIMatch
+	// UbuntuAPIMatchStr :
 	UbuntuAPIMatchStr = "UbuntuAPIMatch"
 
-	// TrivyMatchStr is a String representation of Trivy
+	// TrivyMatchStr :
 	TrivyMatchStr = "TrivyMatch"
 
-	// ChangelogExactMatchStr is a String representation of ChangelogExactMatch
+	// ChangelogExactMatchStr :
 	ChangelogExactMatchStr = "ChangelogExactMatch"
 
-	// ChangelogLenientMatchStr is a String representation of ChangelogLenientMatch
-	ChangelogLenientMatchStr = "ChangelogLenientMatch"
+	// ChangelogRoughMatch :
+	ChangelogRoughMatchStr = "ChangelogRoughMatch"
 
-	// GitHubMatchStr is a String representation of GitHubMatch
+	// GitHubMatchStr :
 	GitHubMatchStr = "GitHubMatch"
 
-	// WpScanMatchStr is a String representation of WordPress VulnDB scanning
+	// WpScanMatchStr :
 	WpScanMatchStr = "WpScanMatch"
 
-	// FailedToGetChangelog is a String representation of FailedToGetChangelog
+	// FailedToGetChangelog :
 	FailedToGetChangelog = "FailedToGetChangelog"
 
-	// FailedToFindVersionInChangelog is a String representation of FailedToFindVersionInChangelog
+	// FailedToFindVersionInChangelog :
 	FailedToFindVersionInChangelog = "FailedToFindVersionInChangelog"
 )
 
 var (
-	// YumUpdateSecurityMatch is a ranking how confident the CVE-ID was detected correctly
-	YumUpdateSecurityMatch = Confidence{100, YumUpdateSecurityMatchStr, 2}
-
 	// PkgAuditMatch is a ranking how confident the CVE-ID was detected correctly
 	PkgAuditMatch = Confidence{100, PkgAuditMatchStr, 2}
 
@@ -925,11 +931,11 @@ var (
 	// ChangelogExactMatch is a ranking how confident the CVE-ID was detected correctly
 	ChangelogExactMatch = Confidence{95, ChangelogExactMatchStr, 3}
 
-	// ChangelogLenientMatch is a ranking how confident the CVE-ID was detected correctly
-	ChangelogLenientMatch = Confidence{50, ChangelogLenientMatchStr, 4}
+	// ChangelogRoughMatch is a ranking how confident the CVE-ID was detected correctly
+	ChangelogRoughMatch = Confidence{50, ChangelogRoughMatchStr, 4}
 
 	// GitHubMatch is a ranking how confident the CVE-ID was detected correctly
-	GitHubMatch = Confidence{97, GitHubMatchStr, 2}
+	GitHubMatch = Confidence{100, GitHubMatchStr, 2}
 
 	// WpScanMatch is a ranking how confident the CVE-ID was detected correctly
 	WpScanMatch = Confidence{100, WpScanMatchStr, 0}

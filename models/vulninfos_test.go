@@ -1610,3 +1610,78 @@ func TestVulnInfos_FilterIgnorePkgs(t *testing.T) {
 		})
 	}
 }
+
+func TestVulnInfos_FilterByConfidenceOver(t *testing.T) {
+	type args struct {
+		over int
+	}
+	tests := []struct {
+		name string
+		v    VulnInfos
+		args args
+		want VulnInfos
+	}{
+		{
+			name: "over 0",
+			v: map[string]VulnInfo{
+				"CVE-2021-1111": {
+					CveID:       "CVE-2021-1111",
+					Confidences: Confidences{JvnVendorProductMatch},
+				},
+			},
+			args: args{
+				over: 0,
+			},
+			want: map[string]VulnInfo{
+				"CVE-2021-1111": {
+					CveID:       "CVE-2021-1111",
+					Confidences: Confidences{JvnVendorProductMatch},
+				},
+			},
+		},
+		{
+			name: "over 20",
+			v: map[string]VulnInfo{
+				"CVE-2021-1111": {
+					CveID:       "CVE-2021-1111",
+					Confidences: Confidences{JvnVendorProductMatch},
+				},
+			},
+			args: args{
+				over: 20,
+			},
+			want: map[string]VulnInfo{},
+		},
+		{
+			name: "over 100",
+			v: map[string]VulnInfo{
+				"CVE-2021-1111": {
+					CveID: "CVE-2021-1111",
+					Confidences: Confidences{
+						NvdExactVersionMatch,
+						JvnVendorProductMatch,
+					},
+				},
+			},
+			args: args{
+				over: 20,
+			},
+			want: map[string]VulnInfo{
+				"CVE-2021-1111": {
+					CveID: "CVE-2021-1111",
+					Confidences: Confidences{
+						NvdExactVersionMatch,
+						JvnVendorProductMatch,
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.v.FilterByConfidenceOver(tt.args.over); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("VulnInfos.FilterByConfidenceOver() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
