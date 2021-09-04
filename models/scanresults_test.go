@@ -405,6 +405,115 @@ func TestScanResult_Sort(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "sort JVN by cvss v3",
+			fields: fields{
+				ScannedCves: VulnInfos{
+					"CVE-2014-3591": VulnInfo{
+						CveContents: CveContents{
+							"jvn": []CveContent{
+								{Cvss3Score: 3},
+								{Cvss3Score: 10},
+							},
+						},
+					},
+				},
+			},
+			expected: fields{
+				ScannedCves: VulnInfos{
+					"CVE-2014-3591": VulnInfo{
+						CveContents: CveContents{
+							"jvn": []CveContent{
+								{Cvss3Score: 10},
+								{Cvss3Score: 3},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "sort JVN by cvss3, cvss2, sourceLink",
+			fields: fields{
+				ScannedCves: VulnInfos{
+					"CVE-2014-3591": VulnInfo{
+						CveContents: CveContents{
+							"jvn": []CveContent{
+								{
+									Cvss3Score: 3,
+									Cvss2Score: 3,
+									SourceLink: "https://jvndb.jvn.jp/ja/contents/2023/JVNDB-2023-001210.html",
+								},
+								{
+									Cvss3Score: 3,
+									Cvss2Score: 3,
+									SourceLink: "https://jvndb.jvn.jp/ja/contents/2021/JVNDB-2021-001210.html",
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: fields{
+				ScannedCves: VulnInfos{
+					"CVE-2014-3591": VulnInfo{
+						CveContents: CveContents{
+							"jvn": []CveContent{
+								{
+									Cvss3Score: 3,
+									Cvss2Score: 3,
+									SourceLink: "https://jvndb.jvn.jp/ja/contents/2021/JVNDB-2021-001210.html",
+								},
+								{
+									Cvss3Score: 3,
+									Cvss2Score: 3,
+									SourceLink: "https://jvndb.jvn.jp/ja/contents/2023/JVNDB-2023-001210.html",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "sort JVN by cvss3, cvss2",
+			fields: fields{
+				ScannedCves: VulnInfos{
+					"CVE-2014-3591": VulnInfo{
+						CveContents: CveContents{
+							"jvn": []CveContent{
+								{
+									Cvss3Score: 3,
+									Cvss2Score: 1,
+								},
+								{
+									Cvss3Score: 3,
+									Cvss2Score: 10,
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: fields{
+				ScannedCves: VulnInfos{
+					"CVE-2014-3591": VulnInfo{
+						CveContents: CveContents{
+							"jvn": []CveContent{
+								{
+									Cvss3Score: 3,
+									Cvss2Score: 10,
+								},
+								{
+									Cvss3Score: 3,
+									Cvss2Score: 1,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
