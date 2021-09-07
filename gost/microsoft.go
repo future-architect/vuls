@@ -1,8 +1,10 @@
+//go:build !scanner
 // +build !scanner
 
 package gost
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/future-architect/vuls/models"
@@ -41,6 +43,9 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 
 // ConvertToModel converts gost model to vuls model
 func (ms Microsoft) ConvertToModel(cve *gostmodels.MicrosoftCVE) (*models.CveContent, []models.Mitigation) {
+	sort.Slice(cve.ScoreSets, func(i, j int) bool {
+		return cve.ScoreSets[i].Vector < cve.ScoreSets[j].Vector
+	})
 	v3score := 0.0
 	var v3Vector string
 	for _, scoreSet := range cve.ScoreSets {

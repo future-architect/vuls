@@ -24,7 +24,7 @@ CGO_UNABLED := CGO_ENABLED=0 go
 GO_OFF := GO111MODULE=off go
 
 
-all: build
+all: b
 
 build: ./cmd/vuls/main.go pretest fmt
 	$(GO) build -a -ldflags "$(LDFLAGS)" -o vuls ./cmd/vuls
@@ -48,6 +48,9 @@ lint:
 vet:
 	echo $(PKGS) | xargs env $(GO) vet || exit;
 
+golangci:
+	golangci-lint run
+
 fmt:
 	gofmt -s -w $(SRCS)
 
@@ -57,7 +60,7 @@ mlint:
 fmtcheck:
 	$(foreach file,$(SRCS),gofmt -s -d $(file);)
 
-pretest: lint vet fmtcheck
+pretest: lint vet fmtcheck golangci
 
 test: 
 	$(GO) test -cover -v ./... || exit;

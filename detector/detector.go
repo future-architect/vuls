@@ -1,3 +1,4 @@
+//go:build !scanner
 // +build !scanner
 
 package detector
@@ -17,6 +18,8 @@ import (
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/util"
+	"github.com/knqyf263/go-cpe/common"
+	"github.com/knqyf263/go-cpe/naming"
 	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
 	"golang.org/x/xerrors"
 )
@@ -284,8 +287,8 @@ func FillCvesWithNvdJvn(r *models.ScanResult, cnf config.GoCveDictConf, logOpts 
 	}
 
 	for _, d := range ds {
-		nvds, exploits, mitigations := models.ConvertNvdToModel(d.CveID, d.Nvd)
-		jvns := models.ConvertJvnToModel(d.CveID, d.Jvn)
+		nvds, exploits, mitigations := models.ConvertNvdToModel(d.CveID, d.Nvds)
+		jvns := models.ConvertJvnToModel(d.CveID, d.Jvns)
 
 		alerts := fillCertAlerts(&d)
 		for cveID, vinfo := range r.ScannedCves {
@@ -324,7 +327,7 @@ func FillCvesWithNvdJvn(r *models.ScanResult, cnf config.GoCveDictConf, logOpts 
 }
 
 func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
-	for _, nvd := range cvedetail.Nvd {
+	for _, nvd := range cvedetail.Nvds {
 		for _, cert := range nvd.Certs {
 			dict.En = append(dict.En, models.Alert{
 				URL:   cert.Link,
@@ -334,7 +337,7 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 		}
 	}
 
-	for _, jvn := range cvedetail.Jvn {
+	for _, jvn := range cvedetail.Jvns {
 		for _, cert := range jvn.Certs {
 			dict.Ja = append(dict.Ja, models.Alert{
 				URL:   cert.Link,
@@ -436,11 +439,21 @@ func DetectCpeURIsCves(r *models.ScanResult, cpeURIs []string, cnf config.GoCveD
 			return err
 		}
 
+		specified, err := naming.UnbindURI(name)
+		if err != nil {
+			return xerrors.Errorf("Failed to unbind. CPE: %s. err: %w", name, err)
+		}
+		specifiedVer := specified.GetString(common.AttributeVersion)
 		for _, detail := range details {
-			confidence := models.CpeVersionMatch
-			if detail.CveIDSource == cvemodels.JvnType {
-				// In the case of CpeVendorProduct-match
+			var confidence models.Confidence
+			switch specifiedVer {
+			case "NA", "ANY":
 				confidence = models.CpeVendorProductMatch
+			default:
+				confidence = models.CpeVersionMatch
+				if !detail.HasNvd() && detail.HasJvn() {
+					confidence = models.CpeVendorProductMatch
+				}
 			}
 
 			if val, ok := r.ScannedCves[detail.CveID]; ok {
