@@ -18,11 +18,15 @@ import (
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/util"
-	"github.com/knqyf263/go-cpe/common"
-	"github.com/knqyf263/go-cpe/naming"
 	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
 	"golang.org/x/xerrors"
 )
+
+// Cpe :
+type Cpe struct {
+	CpeURI string
+	UseJVN bool
+}
 
 // Detect vulns and fill CVE detailed information
 func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
@@ -39,7 +43,16 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			r.ScannedCves = models.VulnInfos{}
 		}
 
+		if err := DetectLibsCves(&r, config.Conf.TrivyCacheDBDir, config.Conf.NoProgress); err != nil {
+			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
+		}
+
+		if err := DetectPkgCves(&r, config.Conf.OvalDict, config.Conf.Gost); err != nil {
+			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
+		}
+
 		cpeURIs, owaspDCXMLPath := []string{}, ""
+		cpes := []Cpe{}
 		if len(r.Container.ContainerID) == 0 {
 			cpeURIs = config.Conf.Servers[r.ServerName].CpeNames
 			owaspDCXMLPath = config.Conf.Servers[r.ServerName].OwaspDCXMLPath
@@ -59,16 +72,13 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			}
 			cpeURIs = append(cpeURIs, cpes...)
 		}
-
-		if err := DetectLibsCves(&r, config.Conf.TrivyCacheDBDir, config.Conf.NoProgress); err != nil {
-			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
+		for _, uri := range cpeURIs {
+			cpes = append(cpes, Cpe{
+				CpeURI: uri,
+				UseJVN: true,
+			})
 		}
-
-		if err := DetectPkgCves(&r, config.Conf.OvalDict, config.Conf.Gost); err != nil {
-			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
-		}
-
-		if err := DetectCpeURIsCves(&r, cpeURIs, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
+		if err := DetectCpeURIsCves(&r, cpes, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
 			return nil, xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
 		}
 
@@ -137,6 +147,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 	for i, r := range rs {
 		r.ScannedCves = r.ScannedCves.FilterByCvssOver(config.Conf.CvssScoreOver)
 		r.ScannedCves = r.ScannedCves.FilterUnfixed(config.Conf.IgnoreUnfixed)
+		r.ScannedCves = r.ScannedCves.FilterByConfidenceOver(config.Conf.ConfidenceScoreOver)
 
 		// IgnoreCves
 		ignoreCves := []string{}
@@ -407,7 +418,7 @@ func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult) error {
 }
 
 // DetectCpeURIsCves detects CVEs of given CPE-URIs
-func DetectCpeURIsCves(r *models.ScanResult, cpeURIs []string, cnf config.GoCveDictConf, logOpts logging.LogOpts) error {
+func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictConf, logOpts logging.LogOpts) error {
 	client, err := newGoCveDictClient(&cnf, logOpts)
 	if err != nil {
 		return err
@@ -419,38 +430,34 @@ func DetectCpeURIsCves(r *models.ScanResult, cpeURIs []string, cnf config.GoCveD
 	}()
 
 	nCVEs := 0
-	for _, name := range cpeURIs {
-		details, err := client.fetchCveDetailsByCpeName(name)
+	for _, cpe := range cpes {
+		details, err := client.detectCveByCpeURI(cpe.CpeURI, cpe.UseJVN)
 		if err != nil {
 			return err
 		}
 
-		specified, err := naming.UnbindURI(name)
-		if err != nil {
-			return xerrors.Errorf("Failed to unbind. CPE: %s. err: %w", name, err)
-		}
-		specifiedVer := specified.GetString(common.AttributeVersion)
 		for _, detail := range details {
-			var confidence models.Confidence
-			switch specifiedVer {
-			case "NA", "ANY":
-				confidence = models.CpeVendorProductMatch
-			default:
-				confidence = models.CpeVersionMatch
-				if !detail.HasNvd() && detail.HasJvn() {
-					confidence = models.CpeVendorProductMatch
+			advisories := []models.DistroAdvisory{}
+			if !detail.HasNvd() && detail.HasJvn() {
+				for _, jvn := range detail.Jvns {
+					advisories = append(advisories, models.DistroAdvisory{
+						AdvisoryID: jvn.JvnID,
+					})
 				}
 			}
+			maxConfidence := getMaxConfidence(detail)
 
 			if val, ok := r.ScannedCves[detail.CveID]; ok {
-				val.CpeURIs = util.AppendIfMissing(val.CpeURIs, name)
-				val.Confidences.AppendIfMissing(confidence)
+				val.CpeURIs = util.AppendIfMissing(val.CpeURIs, cpe.CpeURI)
+				val.Confidences.AppendIfMissing(maxConfidence)
+				val.DistroAdvisories = advisories
 				r.ScannedCves[detail.CveID] = val
 			} else {
 				v := models.VulnInfo{
-					CveID:       detail.CveID,
-					CpeURIs:     []string{name},
-					Confidences: models.Confidences{confidence},
+					CveID:            detail.CveID,
+					CpeURIs:          []string{cpe.CpeURI},
+					Confidences:      models.Confidences{maxConfidence},
+					DistroAdvisories: advisories,
 				}
 				r.ScannedCves[detail.CveID] = v
 				nCVEs++
@@ -459,6 +466,28 @@ func DetectCpeURIsCves(r *models.ScanResult, cpeURIs []string, cnf config.GoCveD
 	}
 	logging.Log.Infof("%s: %d CVEs are detected with CPE", r.FormatServerName(), nCVEs)
 	return nil
+}
+
+func getMaxConfidence(detail cvemodels.CveDetail) (max models.Confidence) {
+	if !detail.HasNvd() && detail.HasJvn() {
+		return models.JvnVendorProductMatch
+	} else if detail.HasNvd() {
+		for _, nvd := range detail.Nvds {
+			confidence := models.Confidence{}
+			switch nvd.DetectionMethod {
+			case cvemodels.NvdExactVersionMatch:
+				confidence = models.NvdExactVersionMatch
+			case cvemodels.NvdRoughVersionMatch:
+				confidence = models.NvdRoughVersionMatch
+			case cvemodels.NvdVendorProductMatch:
+				confidence = models.NvdVendorProductMatch
+			}
+			if max.Score < confidence.Score {
+				max = confidence
+			}
+		}
+	}
+	return max
 }
 
 // FillCweDict fills CWE

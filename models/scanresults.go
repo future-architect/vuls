@@ -415,25 +415,9 @@ func (r *ScanResult) SortForJSONOutput() {
 		sort.Slice(v.Mitigations, func(i, j int) bool {
 			return v.Mitigations[i].URL < v.Mitigations[j].URL
 		})
-		for kk, vv := range v.CveContents {
-			for kkk, vvv := range vv {
-				sort.Slice(vvv.References, func(i, j int) bool {
-					return vvv.References[i].Link < vvv.References[j].Link
-				})
-				sort.Slice(vvv.CweIDs, func(i, j int) bool {
-					return vvv.CweIDs[i] < vvv.CweIDs[j]
-				})
-				for kkkk, vvvv := range vvv.References {
-					// sort v.CveContents[].References[].Tags
-					sort.Slice(vvvv.Tags, func(i, j int) bool {
-						return vvvv.Tags[i] < vvvv.Tags[j]
-					})
-					vvv.References[kkkk] = vvvv
-				}
-				vv[kkk] = vvv
-			}
-			v.CveContents[kk] = vv
-		}
+
+		v.CveContents.Sort()
+
 		sort.Slice(v.AlertDict.En, func(i, j int) bool {
 			return v.AlertDict.En[i].Title < v.AlertDict.En[j].Title
 		})
