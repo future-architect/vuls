@@ -431,7 +431,7 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 
 	nCVEs := 0
 	for _, cpe := range cpes {
-		details, err := client.fetchCveDetailsByCpeURI(cpe.CpeURI, cpe.UseJVN)
+		details, err := client.detectCveByCpeURI(cpe.CpeURI, cpe.UseJVN)
 		if err != nil {
 			return err
 		}

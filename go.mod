@@ -37,7 +37,7 @@ require (
 	github.com/knqyf263/go-deb-version v0.0.0-20190517075300-09fca494f03d
 	github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936
 	github.com/knqyf263/gost v0.2.0
-	github.com/kotakanbe/go-cve-dictionary v0.7.2-0.20210903073701-c7376780cf65
+	github.com/kotakanbe/go-cve-dictionary v0.7.2-0.20210907024016-69922490c76a
 	github.com/kotakanbe/go-pingscanner v0.1.0
 	github.com/kotakanbe/goval-dictionary v0.3.6-0.20210625044258-9be85404d7dd
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
@@ -121,7 +121,7 @@ require (
 	github.com/mitchellh/copystructure v1.1.1 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
-	github.com/pelletier/go-toml v1.9.3 // indirect
+	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
@@ -144,7 +144,7 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.26.0 // indirect
 	gopkg.in/cheggaaa/pb.v1 v1.0.28 // indirect
-	gopkg.in/ini.v1 v1.62.0 // indirect
+	gopkg.in/ini.v1 v1.63.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	gorm.io/driver/postgres v1.1.0 // indirect

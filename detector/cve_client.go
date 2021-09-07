@@ -147,7 +147,7 @@ func (api goCveDictClient) httpGet(key, url string, resChan chan<- response, err
 	}
 }
 
-func (api goCveDictClient) fetchCveDetailsByCpeURI(cpeURI string, useJVN bool) (cves []cvemodels.CveDetail, err error) {
+func (api goCveDictClient) detectCveByCpeURI(cpeURI string, useJVN bool) (cves []cvemodels.CveDetail, err error) {
 	if api.cnf.IsFetchViaHTTP() {
 		url, err := util.URLPathJoin(api.cnf.GetURL(), "cpes")
 		if err != nil {
