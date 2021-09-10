@@ -7,11 +7,11 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/Ullaakut/nmap/v2 v2.1.2-0.20210406060955-59a52fe80a4f
 	github.com/VividCortex/ewma v1.2.0 // indirect
-	github.com/aquasecurity/fanal v0.0.0-20210719144537-c73c1e9f21bf
-	github.com/aquasecurity/trivy v0.19.2
-	github.com/aquasecurity/trivy-db v0.0.0-20210531102723-aaab62dec6ee
+	github.com/aquasecurity/fanal v0.0.0-20210815095355-42429a80d0e3
+	github.com/aquasecurity/trivy v0.19.3-0.20210909113250-19c0b70d2613
+	github.com/aquasecurity/trivy-db v0.0.0-20210809142931-da8e09204404
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
-	github.com/aws/aws-sdk-go v1.37.0
+	github.com/aws/aws-sdk-go v1.40.22
 	github.com/boltdb/bolt v1.3.1
 	github.com/briandowns/spinner v1.16.0 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
@@ -50,7 +50,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/parnurzeal/gorequest v0.2.16
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
-	github.com/sirupsen/logrus v1.8.0
+	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/cobra v1.2.1
@@ -58,7 +58,7 @@ require (
 	github.com/vulsio/go-exploitdb v0.2.0
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/net v0.0.0-20210902165921-8d991716f632 // indirect
-	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602
+	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
@@ -68,38 +68,41 @@ require (
 )
 
 require (
-	github.com/Azure/go-autorest/autorest v0.10.2 // indirect
-	github.com/Azure/go-autorest/autorest/adal v0.8.3 // indirect
-	github.com/Azure/go-autorest/autorest/date v0.2.0 // indirect
-	github.com/Azure/go-autorest/logger v0.1.0 // indirect
-	github.com/Azure/go-autorest/tracing v0.5.0 // indirect
+	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
+	github.com/Azure/go-autorest/autorest v0.11.1 // indirect
+	github.com/Azure/go-autorest/autorest/adal v0.9.5 // indirect
+	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
+	github.com/Azure/go-autorest/logger v0.2.0 // indirect
+	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
-	github.com/aquasecurity/go-dep-parser v0.0.0-20210520015931-0dd56983cc62 // indirect
+	github.com/aquasecurity/go-dep-parser v0.0.0-20210815080135-5be65146849a // indirect
 	github.com/aquasecurity/go-gem-version v0.0.0-20201115065557-8eed6fe000ce // indirect
 	github.com/aquasecurity/go-npm-version v0.0.0-20201110091526-0b796d180798 // indirect
 	github.com/aquasecurity/go-pep440-version v0.0.0-20210121094942-22b2f8951d46 // indirect
 	github.com/aquasecurity/go-version v0.0.0-20210121072130-637058cfe492 // indirect
 	github.com/caarlos0/env/v6 v6.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/form3tech-oss/jwt-go v3.2.2+incompatible // indirect
 	github.com/go-redis/redis v6.15.9+incompatible // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-github/v33 v33.0.0 // indirect
 	github.com/google/go-querystring v1.0.0 // indirect
-	github.com/google/uuid v1.2.0 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/google/wire v0.4.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/grokify/html-strip-tags-go v0.0.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/hashicorp/go-retryablehttp v0.6.8 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/htcat/htcat v1.0.2 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
-	github.com/imdario/mergo v0.3.9 // indirect
+	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/log15 v0.0.0-20201112154412-8562bdadbbac // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
@@ -113,7 +116,6 @@ require (
 	github.com/jinzhu/now v1.1.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/labstack/gommon v0.3.0 // indirect
-	github.com/magefile/mage v1.11.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/masahiro331/go-mvn-version v0.0.0-20210429150710-d3157d602a08 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
@@ -135,7 +137,7 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	github.com/ymomoi/goval-parser v0.0.0-20170813122243-0a0be1dd9d08 // indirect
-	go.etcd.io/bbolt v1.3.5 // indirect
+	go.etcd.io/bbolt v1.3.6 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.17.0 // indirect

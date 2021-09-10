@@ -893,7 +893,7 @@ const (
 	// ChangelogExactMatchStr :
 	ChangelogExactMatchStr = "ChangelogExactMatch"
 
-	// ChangelogRoughMatch :
+	// ChangelogRoughMatchStr :
 	ChangelogRoughMatchStr = "ChangelogRoughMatch"
 
 	// GitHubMatchStr :
