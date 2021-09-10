@@ -6,8 +6,11 @@ import (
 	"time"
 
 	"github.com/aquasecurity/fanal/analyzer/os"
+	ftypes "github.com/aquasecurity/fanal/types"
 	"github.com/aquasecurity/trivy/pkg/report"
+
 	"github.com/aquasecurity/trivy/pkg/types"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 )
 
@@ -22,9 +25,7 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 	vulnInfos := models.VulnInfos{}
 	uniqueLibraryScannerPaths := map[string]models.LibraryScanner{}
 	for _, trivyResult := range trivyResults {
-		if IsTrivySupportedOS(trivyResult.Type) {
-			overrideServerData(scanResult, &trivyResult)
-		}
+		setScanResultMeta(scanResult, &trivyResult)
 		for _, vuln := range trivyResult.Vulnerabilities {
 			if _, ok := vulnInfos[vuln.VulnerabilityID]; !ok {
 				vulnInfos[vuln.VulnerabilityID] = models.VulnInfo{
@@ -81,7 +82,7 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 				}},
 			}
 			// do only if image type is Vuln
-			if IsTrivySupportedOS(trivyResult.Type) {
+			if isTrivySupportedOS(trivyResult.Type) {
 				pkgs[vuln.PkgName] = models.Package{
 					Name:    vuln.PkgName,
 					Version: vuln.InstalledVersion,
@@ -93,7 +94,6 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 					FixedIn:     vuln.FixedVersion,
 				})
 			} else {
-				// LibraryScanの結果
 				vulnInfo.LibraryFixedIns = append(vulnInfo.LibraryFixedIns, models.LibraryFixedIn{
 					Key:     trivyResult.Type,
 					Name:    vuln.PkgName,
@@ -101,6 +101,7 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 					FixedIn: vuln.FixedVersion,
 				})
 				libScanner := uniqueLibraryScannerPaths[trivyResult.Target]
+				libScanner.Type = trivyResult.Type
 				libScanner.Libs = append(libScanner.Libs, types.Library{
 					Name:    vuln.PkgName,
 					Version: vuln.InstalledVersion,
@@ -128,6 +129,7 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 		})
 
 		libscanner := models.LibraryScanner{
+			Type: v.Type,
 			Path: path,
 			Libs: libraries,
 		}
@@ -142,39 +144,70 @@ func Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanR
 	return scanResult, nil
 }
 
-// IsTrivySupportedOS :
-func IsTrivySupportedOS(family string) bool {
-	supportedFamilies := []string{
-		os.RedHat,
-		os.Debian,
-		os.Ubuntu,
-		os.CentOS,
-		os.Fedora,
-		os.Amazon,
-		os.Oracle,
-		os.Windows,
-		os.OpenSUSE,
-		os.OpenSUSELeap,
-		os.OpenSUSETumbleweed,
-		os.SLES,
-		os.Photon,
-		os.Alpine,
-	}
-	for _, supportedFamily := range supportedFamilies {
-		if family == supportedFamily {
-			return true
-		}
-	}
-	return false
-}
+const trivyTarget = "trivy-target"
 
-func overrideServerData(scanResult *models.ScanResult, trivyResult *report.Result) {
-	scanResult.Family = trivyResult.Type
-	scanResult.ServerName = trivyResult.Target
-	scanResult.Optional = map[string]interface{}{
-		"trivy-target": trivyResult.Target,
+func setScanResultMeta(scanResult *models.ScanResult, trivyResult *report.Result) {
+	if isTrivySupportedOS(trivyResult.Type) {
+		scanResult.Family = trivyResult.Type
+		scanResult.ServerName = trivyResult.Target
+		scanResult.Optional = map[string]interface{}{
+			trivyTarget: trivyResult.Target,
+		}
+	} else if isTrivySupportedLib(trivyResult.Type) {
+		if scanResult.Family == "" {
+			scanResult.Family = constant.ServerTypePseudo
+		}
+		if scanResult.ServerName == "" {
+			scanResult.ServerName = "library scan by trivy"
+		}
+		if _, ok := scanResult.Optional[trivyTarget]; !ok {
+			scanResult.Optional = map[string]interface{}{
+				trivyTarget: trivyResult.Target,
+			}
+		}
 	}
 	scanResult.ScannedAt = time.Now()
 	scanResult.ScannedBy = "trivy"
 	scanResult.ScannedVia = "trivy"
+}
+
+// isTrivySupportedOS :
+func isTrivySupportedOS(family string) bool {
+	supportedFamilies := map[string]interface{}{
+		os.RedHat:             struct{}{},
+		os.Debian:             struct{}{},
+		os.Ubuntu:             struct{}{},
+		os.CentOS:             struct{}{},
+		os.Fedora:             struct{}{},
+		os.Amazon:             struct{}{},
+		os.Oracle:             struct{}{},
+		os.Windows:            struct{}{},
+		os.OpenSUSE:           struct{}{},
+		os.OpenSUSELeap:       struct{}{},
+		os.OpenSUSETumbleweed: struct{}{},
+		os.SLES:               struct{}{},
+		os.Photon:             struct{}{},
+		os.Alpine:             struct{}{},
+	}
+	_, ok := supportedFamilies[family]
+	return ok
+}
+
+func isTrivySupportedLib(typestr string) bool {
+	supportedLibs := map[string]interface{}{
+		ftypes.Bundler:  struct{}{},
+		ftypes.Cargo:    struct{}{},
+		ftypes.Composer: struct{}{},
+		ftypes.Npm:      struct{}{},
+		ftypes.NuGet:    struct{}{},
+		ftypes.Pip:      struct{}{},
+		ftypes.Pipenv:   struct{}{},
+		ftypes.Poetry:   struct{}{},
+		ftypes.Yarn:     struct{}{},
+		ftypes.Jar:      struct{}{},
+		ftypes.GoBinary: struct{}{},
+		ftypes.GoMod:    struct{}{},
+	}
+	_, ok := supportedLibs[typestr]
+	return ok
 }

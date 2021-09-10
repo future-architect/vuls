@@ -202,7 +202,7 @@ func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf c
 	} else if r.Family == constant.ServerTypePseudo {
 		logging.Log.Infof("pseudo type. Skip OVAL and gost detection")
 	} else {
-		return xerrors.Errorf("Failed to fill CVEs. r.Release is empty")
+		logging.Log.Infof("r.Release is empty. detect as pseudo type. Skip OVAL and gost detection")
 	}
 
 	for i, v := range r.ScannedCves {

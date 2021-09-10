@@ -229,6 +229,7 @@ func (v CveContents) UniqCweIDs(myFamily string) (values []CveContentStr) {
 	return values
 }
 
+// Sort elements for integration-testing
 func (v CveContents) Sort() {
 	for contType, contents := range v {
 		// CVSS3 desc, CVSS2 desc, SourceLink asc
