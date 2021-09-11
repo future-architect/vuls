@@ -39,6 +39,7 @@ func (*ServerCmd) Usage() string {
 		[-log-to-file]
 		[-log-dir=/path/to/log]
 		[-cvss-over=7]
+		[-confidence-over=80]
 		[-ignore-unscored-cves]
 		[-ignore-unfixed]
 		[-to-localfile]
@@ -70,6 +71,9 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 
 	f.Float64Var(&config.Conf.CvssScoreOver, "cvss-over", 0,
 		"-cvss-over=6.5 means Servering CVSS Score 6.5 and over (default: 0 (means Server all))")
+
+	f.IntVar(&config.Conf.ConfidenceScoreOver, "confidence-over", 80,
+		"-confidence-over=40 means reporting Confidence Score 40 and over (default: 80)")
 
 	f.BoolVar(&config.Conf.IgnoreUnscoredCves, "ignore-unscored-cves", false,
 		"Don't Server the unscored CVEs")

@@ -60,6 +60,7 @@ func (*ReportCmd) Usage() string {
 		[-log-dir=/path/to/log]
 		[-refresh-cve]
 		[-cvss-over=7]
+		[-confidence-over=80]
 		[-diff]
 		[-diff-minus]
 		[-diff-plus]
@@ -117,6 +118,9 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 
 	f.Float64Var(&config.Conf.CvssScoreOver, "cvss-over", 0,
 		"-cvss-over=6.5 means reporting CVSS Score 6.5 and over (default: 0 (means report all))")
+
+	f.IntVar(&config.Conf.ConfidenceScoreOver, "confidence-over", 80,
+		"-confidence-over=40 means reporting Confidence Score 40 and over (default: 80)")
 
 	f.BoolVar(&config.Conf.DiffMinus, "diff-minus", false,
 		"Minus Difference between previous result and current result")

@@ -1,6 +1,7 @@
 package models
 
 import (
+	"sort"
 	"strings"
 	"time"
 
@@ -57,7 +58,7 @@ func (v CveContents) Except(exceptCtypes ...CveContentType) (values CveContents)
 }
 
 // PrimarySrcURLs returns link of source
-func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string) (values []CveContentStr) {
+func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string, confidences Confidences) (values []CveContentStr) {
 	if cveID == "" {
 		return
 	}
@@ -86,7 +87,15 @@ func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string) (values []CveC
 		}
 	}
 
-	if lang == "ja" {
+	jvnMatch := false
+	for _, confidence := range confidences {
+		if confidence.DetectionMethod == JvnVendorProductMatchStr {
+			jvnMatch = true
+			break
+		}
+	}
+
+	if lang == "ja" || jvnMatch {
 		if conts, found := v[Jvn]; found {
 			for _, cont := range conts {
 				if 0 < len(cont.SourceLink) {
@@ -231,6 +240,47 @@ func (v CveContents) UniqCweIDs(myFamily string) (values []CveContentStr) {
 		values = append(values, cwe)
 	}
 	return values
+}
+
+// Sort elements for integration-testing
+func (v CveContents) Sort() {
+	for contType, contents := range v {
+		// CVSS3 desc, CVSS2 desc, SourceLink asc
+		sort.Slice(contents, func(i, j int) bool {
+			if contents[i].Cvss3Score > contents[j].Cvss3Score {
+				return true
+			} else if contents[i].Cvss3Score == contents[i].Cvss3Score {
+				if contents[i].Cvss2Score > contents[j].Cvss2Score {
+					return true
+				} else if contents[i].Cvss2Score == contents[i].Cvss2Score {
+					if contents[i].SourceLink < contents[j].SourceLink {
+						return true
+					}
+				}
+			}
+			return false
+		})
+		v[contType] = contents
+	}
+	for contType, contents := range v {
+		for cveID, cont := range contents {
+			sort.Slice(cont.References, func(i, j int) bool {
+				return cont.References[i].Link < cont.References[j].Link
+			})
+			sort.Slice(cont.CweIDs, func(i, j int) bool {
+				return cont.CweIDs[i] < cont.CweIDs[j]
+			})
+			for i, ref := range cont.References {
+				// sort v.CveContents[].References[].Tags
+				sort.Slice(ref.Tags, func(j, k int) bool {
+					return ref.Tags[j] < ref.Tags[k]
+				})
+				cont.References[i] = ref
+			}
+			contents[cveID] = cont
+		}
+		v[contType] = contents
+	}
 }
 
 // CveContent has abstraction of various vulnerability information

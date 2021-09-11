@@ -69,17 +69,17 @@ type ScanOpts struct {
 
 // ReportOpts is options for report
 type ReportOpts struct {
-	// refactored
-	CvssScoreOver      float64 `json:"cvssScoreOver,omitempty"`
-	TrivyCacheDBDir    string  `json:"trivyCacheDBDir,omitempty"`
-	NoProgress         bool    `json:"noProgress,omitempty"`
-	RefreshCve         bool    `json:"refreshCve,omitempty"`
-	IgnoreUnfixed      bool    `json:"ignoreUnfixed,omitempty"`
-	IgnoreUnscoredCves bool    `json:"ignoreUnscoredCves,omitempty"`
-	DiffPlus           bool    `json:"diffPlus,omitempty"`
-	DiffMinus          bool    `json:"diffMinus,omitempty"`
-	Diff               bool    `json:"diff,omitempty"`
-	Lang               string  `json:"lang,omitempty"`
+	CvssScoreOver       float64 `json:"cvssScoreOver,omitempty"`
+	ConfidenceScoreOver int     `json:"confidenceScoreOver,omitempty"`
+	TrivyCacheDBDir     string  `json:"trivyCacheDBDir,omitempty"`
+	NoProgress          bool    `json:"noProgress,omitempty"`
+	RefreshCve          bool    `json:"refreshCve,omitempty"`
+	IgnoreUnfixed       bool    `json:"ignoreUnfixed,omitempty"`
+	IgnoreUnscoredCves  bool    `json:"ignoreUnscoredCves,omitempty"`
+	DiffPlus            bool    `json:"diffPlus,omitempty"`
+	DiffMinus           bool    `json:"diffMinus,omitempty"`
+	Diff                bool    `json:"diff,omitempty"`
+	Lang                string  `json:"lang,omitempty"`
 }
 
 // ValidateOnConfigtest validates
@@ -236,11 +236,12 @@ type ServerInfo struct {
 	FindLock           bool                        `toml:"findLock,omitempty" json:"findLock,omitempty"`
 	Type               string                      `toml:"type,omitempty" json:"type,omitempty"` // "pseudo" or ""
 	IgnoredJSONKeys    []string                    `toml:"ignoredJSONKeys,omitempty" json:"ignoredJSONKeys,omitempty"`
-	IPv4Addrs          []string                    `toml:"-" json:"ipv4Addrs,omitempty"`
-	IPv6Addrs          []string                    `toml:"-" json:"ipv6Addrs,omitempty"`
-	IPSIdentifiers     map[string]string           `toml:"-" json:"ipsIdentifiers,omitempty"`
 	WordPress          *WordPressConf              `toml:"wordpress,omitempty" json:"wordpress,omitempty"`
 	PortScan           *PortScanConf               `toml:"portscan,omitempty" json:"portscan,omitempty"`
+
+	IPv4Addrs      []string          `toml:"-" json:"ipv4Addrs,omitempty"`
+	IPv6Addrs      []string          `toml:"-" json:"ipv6Addrs,omitempty"`
+	IPSIdentifiers map[string]string `toml:"-" json:"ipsIdentifiers,omitempty"`
 
 	// internal use
 	LogMsgAnsiColor string     `toml:"-" json:"-"` // DebugLog Color

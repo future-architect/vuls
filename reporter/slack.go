@@ -282,7 +282,7 @@ func (w SlackWriter) attachmentText(vinfo models.VulnInfo, cweDict map[string]mo
 		} else {
 			if 0 < len(vinfo.DistroAdvisories) {
 				links := []string{}
-				for _, v := range vinfo.CveContents.PrimarySrcURLs(w.lang, w.osFamily, vinfo.CveID) {
+				for _, v := range vinfo.CveContents.PrimarySrcURLs(w.lang, w.osFamily, vinfo.CveID, vinfo.Confidences) {
 					links = append(links, fmt.Sprintf("<%s|%s>", v.Value, v.Type))
 				}
 

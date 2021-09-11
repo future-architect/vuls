@@ -31,6 +31,7 @@ func (deb Debian) supported(major string) bool {
 		"8":  "jessie",
 		"9":  "stretch",
 		"10": "buster",
+		"11": "bullseye",
 	}[major]
 	return ok
 }

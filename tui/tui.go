@@ -895,7 +895,7 @@ func detailLines() (string, error) {
 
 	vinfo := vinfos[currentVinfo]
 	links := []string{}
-	for _, r := range vinfo.CveContents.PrimarySrcURLs(r.Lang, r.Family, vinfo.CveID) {
+	for _, r := range vinfo.CveContents.PrimarySrcURLs(r.Lang, r.Family, vinfo.CveID, vinfo.Confidences) {
 		links = append(links, r.Value)
 	}
 

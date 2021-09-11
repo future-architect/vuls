@@ -1037,20 +1037,20 @@ func TestAppendIfMissing(t *testing.T) {
 	}{
 		{
 			in: Confidences{
-				CpeVersionMatch,
+				NvdExactVersionMatch,
 			},
-			arg: CpeVersionMatch,
+			arg: NvdExactVersionMatch,
 			out: Confidences{
-				CpeVersionMatch,
+				NvdExactVersionMatch,
 			},
 		},
 		{
 			in: Confidences{
-				CpeVersionMatch,
+				NvdExactVersionMatch,
 			},
 			arg: ChangelogExactMatch,
 			out: Confidences{
-				CpeVersionMatch,
+				NvdExactVersionMatch,
 				ChangelogExactMatch,
 			},
 		},
@@ -1071,21 +1071,21 @@ func TestSortByConfident(t *testing.T) {
 		{
 			in: Confidences{
 				OvalMatch,
-				CpeVersionMatch,
+				NvdExactVersionMatch,
 			},
 			out: Confidences{
 				OvalMatch,
-				CpeVersionMatch,
+				NvdExactVersionMatch,
 			},
 		},
 		{
 			in: Confidences{
-				CpeVersionMatch,
+				NvdExactVersionMatch,
 				OvalMatch,
 			},
 			out: Confidences{
 				OvalMatch,
-				CpeVersionMatch,
+				NvdExactVersionMatch,
 			},
 		},
 	}
@@ -1606,6 +1606,81 @@ func TestVulnInfos_FilterIgnorePkgs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.v.FilterIgnorePkgs(tt.args.ignorePkgsRegexps); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("VulnInfos.FilterIgnorePkgs() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestVulnInfos_FilterByConfidenceOver(t *testing.T) {
+	type args struct {
+		over int
+	}
+	tests := []struct {
+		name string
+		v    VulnInfos
+		args args
+		want VulnInfos
+	}{
+		{
+			name: "over 0",
+			v: map[string]VulnInfo{
+				"CVE-2021-1111": {
+					CveID:       "CVE-2021-1111",
+					Confidences: Confidences{JvnVendorProductMatch},
+				},
+			},
+			args: args{
+				over: 0,
+			},
+			want: map[string]VulnInfo{
+				"CVE-2021-1111": {
+					CveID:       "CVE-2021-1111",
+					Confidences: Confidences{JvnVendorProductMatch},
+				},
+			},
+		},
+		{
+			name: "over 20",
+			v: map[string]VulnInfo{
+				"CVE-2021-1111": {
+					CveID:       "CVE-2021-1111",
+					Confidences: Confidences{JvnVendorProductMatch},
+				},
+			},
+			args: args{
+				over: 20,
+			},
+			want: map[string]VulnInfo{},
+		},
+		{
+			name: "over 100",
+			v: map[string]VulnInfo{
+				"CVE-2021-1111": {
+					CveID: "CVE-2021-1111",
+					Confidences: Confidences{
+						NvdExactVersionMatch,
+						JvnVendorProductMatch,
+					},
+				},
+			},
+			args: args{
+				over: 20,
+			},
+			want: map[string]VulnInfo{
+				"CVE-2021-1111": {
+					CveID: "CVE-2021-1111",
+					Confidences: Confidences{
+						NvdExactVersionMatch,
+						JvnVendorProductMatch,
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.v.FilterByConfidenceOver(tt.args.over); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("VulnInfos.FilterByConfidenceOver() = %v, want %v", got, tt.want)
 			}
 		})
 	}

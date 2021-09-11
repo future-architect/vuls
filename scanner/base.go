@@ -26,14 +26,22 @@ import (
 	"golang.org/x/xerrors"
 
 	// Import library scanner
-	_ "github.com/aquasecurity/fanal/analyzer/library/bundler"
-	_ "github.com/aquasecurity/fanal/analyzer/library/cargo"
-	_ "github.com/aquasecurity/fanal/analyzer/library/composer"
-	_ "github.com/aquasecurity/fanal/analyzer/library/gomod"
-	_ "github.com/aquasecurity/fanal/analyzer/library/npm"
-	_ "github.com/aquasecurity/fanal/analyzer/library/pipenv"
-	_ "github.com/aquasecurity/fanal/analyzer/library/poetry"
-	_ "github.com/aquasecurity/fanal/analyzer/library/yarn"
+	_ "github.com/aquasecurity/fanal/analyzer/language/dotnet/nuget"
+	_ "github.com/aquasecurity/fanal/analyzer/language/golang/binary"
+	_ "github.com/aquasecurity/fanal/analyzer/language/golang/mod"
+	_ "github.com/aquasecurity/fanal/analyzer/language/java/jar"
+	_ "github.com/aquasecurity/fanal/analyzer/language/nodejs/npm"
+	_ "github.com/aquasecurity/fanal/analyzer/language/nodejs/yarn"
+	_ "github.com/aquasecurity/fanal/analyzer/language/php/composer"
+	_ "github.com/aquasecurity/fanal/analyzer/language/python/pip"
+	_ "github.com/aquasecurity/fanal/analyzer/language/python/pipenv"
+	_ "github.com/aquasecurity/fanal/analyzer/language/python/poetry"
+	_ "github.com/aquasecurity/fanal/analyzer/language/ruby/bundler"
+	_ "github.com/aquasecurity/fanal/analyzer/language/rust/cargo"
+
+	// _ "github.com/aquasecurity/fanal/analyzer/language/ruby/gemspec"
+	// _ "github.com/aquasecurity/fanal/analyzer/language/nodejs/pkg"
+	// _ "github.com/aquasecurity/fanal/analyzer/language/python/packaging"
 
 	nmap "github.com/Ullaakut/nmap/v2"
 )
