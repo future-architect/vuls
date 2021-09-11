@@ -29,7 +29,6 @@ require (
 	github.com/hashicorp/go-uuid v1.0.2
 	github.com/hashicorp/go-version v1.3.0
 	github.com/howeyc/gopass v0.0.0-20190910152052-7cb4b85ec19c
-	github.com/jackc/pgx/v4 v4.13.0 // indirect
 	github.com/jesseduffield/gocui v0.3.0
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/knqyf263/go-apk-version v0.0.0-20200609155635-041fdbb8563f
@@ -39,9 +38,9 @@ require (
 	github.com/knqyf263/gost v0.2.0
 	github.com/kotakanbe/go-cve-dictionary v0.7.1
 	github.com/kotakanbe/go-pingscanner v0.1.0
-	github.com/kotakanbe/goval-dictionary v0.3.6-0.20210625044258-9be85404d7dd
+	github.com/kotakanbe/goval-dictionary v0.3.6-0.20210911121416-e8d9e40ef476
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
-	github.com/mattn/go-isatty v0.0.13 // indirect
+	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/mitchellh/go-homedir v1.1.0
@@ -49,6 +48,7 @@ require (
 	github.com/nsf/termbox-go v0.0.0-20200418040025-38ba6e5628f1 // indirect
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/parnurzeal/gorequest v0.2.16
+	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.8.0
 	github.com/spf13/afero v1.6.0
@@ -56,14 +56,14 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/takuzoo3868/go-msfdb v0.1.6
 	github.com/vulsio/go-exploitdb v0.2.0
-	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
-	golang.org/x/net v0.0.0-20210825183410-e898025ed96a // indirect
+	golang.org/x/net v0.0.0-20210908191846-a5e095526f91 // indirect
 	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210831042530-f4d43177bf5e // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/sys v0.0.0-20210910150752-751e447fb3d0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
+	gopkg.in/ini.v1 v1.63.0 // indirect
 	gorm.io/driver/mysql v1.1.2 // indirect
-	gorm.io/gorm v1.21.14 // indirect
+	gorm.io/driver/postgres v1.1.1 // indirect
+	gorm.io/driver/sqlite v1.1.5 // indirect
 	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009
 )
