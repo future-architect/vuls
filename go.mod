@@ -38,7 +38,7 @@ require (
 	github.com/knqyf263/gost v0.2.0
 	github.com/kotakanbe/go-cve-dictionary v0.7.2-0.20210907024016-69922490c76a
 	github.com/kotakanbe/go-pingscanner v0.1.0
-	github.com/kotakanbe/goval-dictionary v0.3.6-0.20210911121416-e8d9e40ef476
+	github.com/kotakanbe/goval-dictionary v0.3.6-0.20210912113205-047e4dbfd356
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
