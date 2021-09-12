@@ -5578,7 +5578,7 @@ var jarScanResult = &models.ScanResult{
 	JSONVersion:     1,
 	ServerUUID:      "uuid",
 	Family:          "pseudo",
-	LibraryScanners: models.LibraryScanners{models.LibraryScanner{Type: "jar", Path: "contrib/struts-el/lib/struts.jar", Libs: []types.Library{types.Library{Name: "struts:struts", Version: "1.2.7"}}}},
+	LibraryScanners: models.LibraryScanners{models.LibraryScanner{Type: "jar", Path: "contrib/struts-el/lib/struts.jar", Libs: []types.Library{{Name: "struts:struts", Version: "1.2.7"}}}},
 	Packages:        models.Packages{},
 	ScannedBy:       "trivy",
 	ScannedVia:      "trivy",
