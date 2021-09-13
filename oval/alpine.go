@@ -54,8 +54,8 @@ func (o Alpine) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 	return len(relatedDefs.entries), nil
 }
 
-func (o Alpine) update(r *models.ScanResult, defPacks defPacks) {
-	cveID := defPacks.def.Advisory.Cves[0].CveID
+func (o Alpine) update(r *models.ScanResult, defpacks defPacks) {
+	cveID := defpacks.def.Advisory.Cves[0].CveID
 	vinfo, ok := r.ScannedCves[cveID]
 	if !ok {
 		logging.Log.Debugf("%s is newly detected by OVAL", cveID)
@@ -65,7 +65,7 @@ func (o Alpine) update(r *models.ScanResult, defPacks defPacks) {
 		}
 	}
 
-	vinfo.AffectedPackages = defPacks.toPackStatuses()
+	vinfo.AffectedPackages = defpacks.toPackStatuses()
 	vinfo.AffectedPackages.Sort()
 	r.ScannedCves[cveID] = vinfo
 }

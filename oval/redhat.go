@@ -52,16 +52,16 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 		switch models.NewCveContentType(o.family) {
 		case models.RedHat:
 			if conts, ok := vuln.CveContents[models.RedHat]; ok {
-				for _, cont := range conts {
+				for i, cont := range conts {
 					cont.SourceLink = "https://access.redhat.com/security/cve/" + cont.CveID
-					vuln.CveContents[models.RedHat] = append(vuln.CveContents[models.RedHat], cont)
+					vuln.CveContents[models.RedHat][i] = cont
 				}
 			}
 		case models.Oracle:
 			if conts, ok := vuln.CveContents[models.Oracle]; ok {
-				for _, cont := range conts {
+				for i, cont := range conts {
 					cont.SourceLink = fmt.Sprintf("https://linux.oracle.com/cve/%s.html", cont.CveID)
-					vuln.CveContents[models.Oracle] = append(vuln.CveContents[models.Oracle], cont)
+					vuln.CveContents[models.Oracle][i] = cont
 				}
 			}
 		}
@@ -102,57 +102,66 @@ var kernelRelatedPackNames = map[string]bool{
 	"python-perf":             true,
 }
 
-func (o RedHatBase) update(r *models.ScanResult, defPacks defPacks) (nCVEs int) {
-	ctype := models.NewCveContentType(o.family)
-	for _, cve := range defPacks.def.Advisory.Cves {
-		ovalContent := *o.convertToModel(cve.CveID, &defPacks.def)
+func (o RedHatBase) update(r *models.ScanResult, defpacks defPacks) (nCVEs int) {
+	for _, cve := range defpacks.def.Advisory.Cves {
+		ovalContent := o.convertToModel(cve.CveID, &defpacks.def)
+		if ovalContent == nil {
+			continue
+		}
 		vinfo, ok := r.ScannedCves[cve.CveID]
 		if !ok {
-			logging.Log.Debugf("%s is newly detected by OVAL: DefID: %s", cve.CveID, defPacks.def.DefinitionID)
+			logging.Log.Debugf("%s is newly detected by OVAL: DefID: %s", cve.CveID, defpacks.def.DefinitionID)
 			vinfo = models.VulnInfo{
 				CveID:       cve.CveID,
 				Confidences: models.Confidences{models.OvalMatch},
-				CveContents: models.NewCveContents(ovalContent),
+				CveContents: models.NewCveContents(*ovalContent),
 			}
 			nCVEs++
 		} else {
 			cveContents := vinfo.CveContents
-			if v, ok := vinfo.CveContents[ctype]; ok {
+			if v, ok := vinfo.CveContents[ovalContent.Type]; ok {
 				for _, vv := range v {
 					if vv.LastModified.After(ovalContent.LastModified) {
-						logging.Log.Debugf("%s ignored. DefID: %s ", cve.CveID, defPacks.def.DefinitionID)
+						logging.Log.Debugf("%s ignored. DefID: %s ", cve.CveID, defpacks.def.DefinitionID)
 					} else {
-						logging.Log.Debugf("%s OVAL will be overwritten. DefID: %s", cve.CveID, defPacks.def.DefinitionID)
+						logging.Log.Debugf("%s OVAL will be overwritten. DefID: %s", cve.CveID, defpacks.def.DefinitionID)
 					}
 				}
 			} else {
-				logging.Log.Debugf("%s also detected by OVAL. DefID: %s", cve.CveID, defPacks.def.DefinitionID)
+				logging.Log.Debugf("%s also detected by OVAL. DefID: %s", cve.CveID, defpacks.def.DefinitionID)
 				cveContents = models.CveContents{}
 			}
 
 			vinfo.Confidences.AppendIfMissing(models.OvalMatch)
-			cveContents[ctype] = append(cveContents[ctype], ovalContent)
+			cveContents[ovalContent.Type] = []models.CveContent{*ovalContent}
 			vinfo.CveContents = cveContents
 		}
 
 		vinfo.DistroAdvisories.AppendIfMissing(
-			o.convertToDistroAdvisory(&defPacks.def))
+			o.convertToDistroAdvisory(&defpacks.def))
 
-		// uniq(vinfo.PackNames + defPacks.actuallyAffectedPackNames)
+		// uniq(vinfo.AffectedPackages[].Name + defPacks.binpkgFixstat(map[string(=package name)]fixStat{}))
+		collectBinpkgFixstat := defPacks{
+			binpkgFixstat: map[string]fixStat{},
+		}
+		for packName, fixStatus := range defpacks.binpkgFixstat {
+			collectBinpkgFixstat.binpkgFixstat[packName] = fixStatus
+		}
+
 		for _, pack := range vinfo.AffectedPackages {
-			if stat, ok := defPacks.binpkgFixstat[pack.Name]; !ok {
-				defPacks.binpkgFixstat[pack.Name] = fixStat{
+			if stat, ok := collectBinpkgFixstat.binpkgFixstat[pack.Name]; !ok {
+				collectBinpkgFixstat.binpkgFixstat[pack.Name] = fixStat{
 					notFixedYet: pack.NotFixedYet,
 					fixedIn:     pack.FixedIn,
 				}
 			} else if stat.notFixedYet {
-				defPacks.binpkgFixstat[pack.Name] = fixStat{
+				collectBinpkgFixstat.binpkgFixstat[pack.Name] = fixStat{
 					notFixedYet: true,
 					fixedIn:     pack.FixedIn,
 				}
 			}
 		}
-		vinfo.AffectedPackages = defPacks.toPackStatuses()
+		vinfo.AffectedPackages = collectBinpkgFixstat.toPackStatuses()
 		vinfo.AffectedPackages.Sort()
 		r.ScannedCves[cve.CveID] = vinfo
 	}
@@ -178,17 +187,18 @@ func (o RedHatBase) convertToDistroAdvisory(def *ovalmodels.Definition) *models.
 }
 
 func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *models.CveContent {
+	refs := make([]models.Reference, 0, len(def.References))
+	for _, r := range def.References {
+		refs = append(refs, models.Reference{
+			Link:   r.RefURL,
+			Source: r.Source,
+			RefID:  r.RefID,
+		})
+	}
+
 	for _, cve := range def.Advisory.Cves {
 		if cve.CveID != cveID {
 			continue
-		}
-		var refs []models.Reference
-		for _, r := range def.References {
-			refs = append(refs, models.Reference{
-				Link:   r.RefURL,
-				Source: r.Source,
-				RefID:  r.RefID,
-			})
 		}
 
 		score2, vec2 := o.parseCvss2(cve.Cvss2)

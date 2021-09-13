@@ -103,7 +103,7 @@ func (red RedHat) setFixedCveToScanResult(cve *gostmodels.RedhatCVE, r *models.S
 		if v.CveContents == nil {
 			v.CveContents = models.NewCveContents(*cveCont)
 		} else {
-			v.CveContents[models.RedHatAPI] = append(v.CveContents[models.RedHatAPI], *cveCont)
+			v.CveContents[models.RedHatAPI] = []models.CveContent{*cveCont}
 		}
 	} else {
 		v = models.VulnInfo{
@@ -123,7 +123,7 @@ func (red RedHat) setUnfixedCveToScanResult(cve *gostmodels.RedhatCVE, r *models
 		if v.CveContents == nil {
 			v.CveContents = models.NewCveContents(*cveCont)
 		} else {
-			v.CveContents[models.RedHatAPI] = append(v.CveContents[models.RedHatAPI], *cveCont)
+			v.CveContents[models.RedHatAPI] = []models.CveContent{*cveCont}
 		}
 	} else {
 		v = models.VulnInfo{
