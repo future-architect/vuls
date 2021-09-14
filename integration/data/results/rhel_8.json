@@ -44,6 +44,7 @@
         "version": "",
         "rebootRequired": false
     },
+    "enabledDnfModules": ["nodejs:12"],
     "packages": {
         "NetworkManager": {
             "name": "NetworkManager",
@@ -5905,6 +5906,15 @@
                     "name": "rsyslogd"
                 }
             ]
+        },
+        "nodejs": {
+            "name": "nodejs",
+            "version": "1:12.14.1",
+            "release": "1.module+el8.1.0+5466+30f75628",
+            "newVersion": "1:12.14.1",
+            "newRelease": "1.module+el8.1.0+5466+30f75629",
+            "arch": "x86_64",
+            "repository": "rhel-8-appstream-rhui-rpms"
         },
         "sed": {
             "name": "sed",
