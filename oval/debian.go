@@ -12,7 +12,7 @@ import (
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
+	ovalmodels "github.com/vulsio/goval-dictionary/models"
 )
 
 // DebianBase is the base struct of Debian and Ubuntu

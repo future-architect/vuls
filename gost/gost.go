@@ -7,7 +7,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"github.com/knqyf263/gost/db"
+	"github.com/vulsio/gost/db"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/constant"

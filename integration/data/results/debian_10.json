@@ -5566,13 +5566,13 @@
             "cveDict": {
                 "Name": "cveDict",
                 "Type": "sqlite3",
-                "SQLite3Path": "/home/ubuntu/go/src/github.com/kotakanbe/go-cve-dictionary/cve.sqlite3",
+                "SQLite3Path": "/home/ubuntu/go/src/github.com/vulsio/go-cve-dictionary/cve.sqlite3",
                 "DebugSQL": false
             },
             "ovalDict": {
                 "Name": "ovalDict",
                 "Type": "sqlite3",
-                "SQLite3Path": "/home/ubuntu/go/src/github.com/kotakanbe/goval-dictionary/oval.sqlite3",
+                "SQLite3Path": "/home/ubuntu/go/src/github.com/vulsio/goval-dictionary/oval.sqlite3",
                 "DebugSQL": false
             },
             "gost": {
@@ -5590,7 +5590,7 @@
             "metasploit": {
                 "Name": "metasploit",
                 "Type": "sqlite3",
-                "SQLite3Path": "/home/ubuntu/go/src/github.com/takuzoo3868/go-msfdb/go-msfdb.sqlite3",
+                "SQLite3Path": "/home/ubuntu/go/src/github.com/vulsio/go-msfdb/go-msfdb.sqlite3",
                 "DebugSQL": false
             }
         },

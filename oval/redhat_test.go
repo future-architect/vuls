@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/future-architect/vuls/models"
-	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
+	ovalmodels "github.com/vulsio/goval-dictionary/models"
 )
 
 func TestParseCvss2(t *testing.T) {

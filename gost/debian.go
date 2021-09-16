@@ -10,7 +10,7 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	debver "github.com/knqyf263/go-deb-version"
-	gostmodels "github.com/knqyf263/gost/models"
+	gostmodels "github.com/vulsio/gost/models"
 	"golang.org/x/xerrors"
 )
 

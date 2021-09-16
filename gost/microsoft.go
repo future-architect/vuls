@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/future-architect/vuls/models"
-	gostmodels "github.com/knqyf263/gost/models"
+	gostmodels "github.com/vulsio/gost/models"
 )
 
 // Microsoft is Gost client for windows

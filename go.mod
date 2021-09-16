@@ -35,10 +35,7 @@ require (
 	github.com/knqyf263/go-cpe v0.0.0-20201213041631-54f6ab28673f
 	github.com/knqyf263/go-deb-version v0.0.0-20190517075300-09fca494f03d
 	github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936
-	github.com/knqyf263/gost v0.2.0
-	github.com/kotakanbe/go-cve-dictionary v0.7.2-0.20210907024016-69922490c76a
 	github.com/kotakanbe/go-pingscanner v0.1.0
-	github.com/kotakanbe/goval-dictionary v0.5.0
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
@@ -54,8 +51,11 @@ require (
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/cobra v1.2.1
-	github.com/takuzoo3868/go-msfdb v0.1.6
+	github.com/vulsio/go-cve-dictionary v0.8.1-0.20210916000615-947df305878a
 	github.com/vulsio/go-exploitdb v0.2.0
+	github.com/vulsio/go-msfdb v0.2.0
+	github.com/vulsio/gost v0.3.0
+	github.com/vulsio/goval-dictionary v0.6.0
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/net v0.0.0-20210902165921-8d991716f632 // indirect
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
@@ -79,6 +79,8 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
+	github.com/PuerkitoBio/goquery v1.6.1 // indirect
+	github.com/andybalholm/cascadia v1.2.0 // indirect
 	github.com/aquasecurity/go-dep-parser v0.0.0-20210815080135-5be65146849a // indirect
 	github.com/aquasecurity/go-gem-version v0.0.0-20201115065557-8eed6fe000ce // indirect
 	github.com/aquasecurity/go-npm-version v0.0.0-20201110091526-0b796d180798 // indirect
