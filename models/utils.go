@@ -6,7 +6,7 @@ package models
 import (
 	"strings"
 
-	cvedict "github.com/kotakanbe/go-cve-dictionary/models"
+	cvedict "github.com/vulsio/go-cve-dictionary/models"
 )
 
 // ConvertJvnToModel convert JVN to CveContent

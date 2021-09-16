@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/models"
-	gostmodels "github.com/knqyf263/gost/models"
+	gostmodels "github.com/vulsio/gost/models"
 )
 
 func TestUbuntu_Supported(t *testing.T) {

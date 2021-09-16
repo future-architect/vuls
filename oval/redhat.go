@@ -12,7 +12,7 @@ import (
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
+	ovalmodels "github.com/vulsio/goval-dictionary/models"
 )
 
 // RedHatBase is the base struct for RedHat, CentOS, Alma and Rocky

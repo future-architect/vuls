@@ -18,7 +18,7 @@ import (
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/util"
-	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
+	cvemodels "github.com/vulsio/go-cve-dictionary/models"
 	"golang.org/x/xerrors"
 )
 
@@ -382,7 +382,7 @@ func detectPkgsCvesWithOval(cnf config.GovalDictConf, r *models.ScanResult) erro
 			logging.Log.Infof("%s: %d CVEs are detected with OVAL", r.FormatServerName(), 0)
 			return nil
 		}
-		return xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see `https://github.com/kotakanbe/goval-dictionary#usage`", r.Family, r.Release)
+		return xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see `https://github.com/vulsio/goval-dictionary#usage`", r.Family, r.Release)
 	}
 
 	logging.Log.Debugf("Check if oval fresh: %s %s", r.Family, r.Release)

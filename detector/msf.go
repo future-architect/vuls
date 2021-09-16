@@ -7,8 +7,8 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	metasploitdb "github.com/takuzoo3868/go-msfdb/db"
-	metasploitmodels "github.com/takuzoo3868/go-msfdb/models"
+	metasploitdb "github.com/vulsio/go-msfdb/db"
+	metasploitmodels "github.com/vulsio/go-msfdb/models"
 	"golang.org/x/xerrors"
 )
 

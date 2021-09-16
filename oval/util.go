@@ -20,9 +20,9 @@ import (
 	apkver "github.com/knqyf263/go-apk-version"
 	debver "github.com/knqyf263/go-deb-version"
 	rpmver "github.com/knqyf263/go-rpm-version"
-	"github.com/kotakanbe/goval-dictionary/db"
-	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
 	"github.com/parnurzeal/gorequest"
+	"github.com/vulsio/goval-dictionary/db"
+	ovalmodels "github.com/vulsio/goval-dictionary/models"
 	"golang.org/x/xerrors"
 )
 

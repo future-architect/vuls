@@ -16,9 +16,9 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/util"
-	cvedb "github.com/kotakanbe/go-cve-dictionary/db"
-	cvelog "github.com/kotakanbe/go-cve-dictionary/log"
-	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
+	cvedb "github.com/vulsio/go-cve-dictionary/db"
+	cvelog "github.com/vulsio/go-cve-dictionary/log"
+	cvemodels "github.com/vulsio/go-cve-dictionary/models"
 )
 
 type goCveDictClient struct {

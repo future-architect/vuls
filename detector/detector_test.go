@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/future-architect/vuls/models"
-	cvemodels "github.com/kotakanbe/go-cve-dictionary/models"
+	cvemodels "github.com/vulsio/go-cve-dictionary/models"
 )
 
 func Test_getMaxConfidence(t *testing.T) {

@@ -10,7 +10,7 @@ import (
 
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
-	ovalmodels "github.com/kotakanbe/goval-dictionary/models"
+	ovalmodels "github.com/vulsio/goval-dictionary/models"
 )
 
 func TestUpsert(t *testing.T) {
