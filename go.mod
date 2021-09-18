@@ -54,7 +54,7 @@ require (
 	github.com/vulsio/go-cve-dictionary v0.9.0
 	github.com/vulsio/go-exploitdb v0.4.0
 	github.com/vulsio/go-msfdb v0.2.0
-	github.com/vulsio/gost v0.4.0
+	github.com/vulsio/gost v0.4.1-0.20210918114634-18ba72bf82d5
 	github.com/vulsio/goval-dictionary v0.6.1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/net v0.0.0-20210902165921-8d991716f632 // indirect
