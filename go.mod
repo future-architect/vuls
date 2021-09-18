@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/Azure/azure-sdk-for-go v50.2.0+incompatible
-	github.com/BurntSushi/toml v0.3.1
+	github.com/BurntSushi/toml v0.4.1
 	github.com/Ullaakut/nmap/v2 v2.1.2-0.20210406060955-59a52fe80a4f
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/aquasecurity/fanal v0.0.0-20210815095355-42429a80d0e3
@@ -51,18 +51,18 @@ require (
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/cobra v1.2.1
-	github.com/vulsio/go-cve-dictionary v0.8.1-0.20210916000615-947df305878a
-	github.com/vulsio/go-exploitdb v0.2.0
+	github.com/vulsio/go-cve-dictionary v0.9.0
+	github.com/vulsio/go-exploitdb v0.4.0
 	github.com/vulsio/go-msfdb v0.2.0
-	github.com/vulsio/gost v0.3.0
-	github.com/vulsio/goval-dictionary v0.6.0
+	github.com/vulsio/gost v0.4.0
+	github.com/vulsio/goval-dictionary v0.6.1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/net v0.0.0-20210902165921-8d991716f632 // indirect
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
-	gopkg.in/ini.v1 v1.63.0 // indirect
+	gopkg.in/ini.v1 v1.63.2 // indirect
 	gorm.io/driver/mysql v1.1.2 // indirect
 	gorm.io/driver/postgres v1.1.1 // indirect
 	gorm.io/driver/sqlite v1.1.5 // indirect
@@ -79,7 +79,7 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
-	github.com/PuerkitoBio/goquery v1.6.1 // indirect
+	github.com/PuerkitoBio/goquery v1.7.1 // indirect
 	github.com/andybalholm/cascadia v1.2.0 // indirect
 	github.com/aquasecurity/go-dep-parser v0.0.0-20210815080135-5be65146849a // indirect
 	github.com/aquasecurity/go-gem-version v0.0.0-20201115065557-8eed6fe000ce // indirect
@@ -88,6 +88,7 @@ require (
 	github.com/aquasecurity/go-version v0.0.0-20210121072130-637058cfe492 // indirect
 	github.com/caarlos0/env/v6 v6.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/form3tech-oss/jwt-go v3.2.2+incompatible // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
@@ -119,6 +120,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/labstack/echo v3.3.10+incompatible // indirect
 	github.com/labstack/gommon v0.3.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/masahiro331/go-mvn-version v0.0.0-20210429150710-d3157d602a08 // indirect
