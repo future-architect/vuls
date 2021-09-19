@@ -8,7 +8,7 @@ linters:
   disable-all: true
   enable:
     - goimports
-    - golint
+    - revive
     - govet
     - misspell
     - errcheck
