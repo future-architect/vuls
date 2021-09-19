@@ -156,7 +156,7 @@ func (api goCveDictClient) detectCveByCpeURI(cpeURI string, useJVN bool) (cves [
 
 		query := map[string]string{"name": cpeURI}
 		logging.Log.Debugf("HTTP Request to %s, query: %#v", url, query)
-		if cves, err = api.httpPost(cpeURI, url, query); err != nil {
+		if cves, err = api.httpPost(url, query); err != nil {
 			return nil, err
 		}
 	} else {
@@ -180,7 +180,7 @@ func (api goCveDictClient) detectCveByCpeURI(cpeURI string, useJVN bool) (cves [
 	return nvdCves, nil
 }
 
-func (api goCveDictClient) httpPost(key, url string, query map[string]string) ([]cvemodels.CveDetail, error) {
+func (api goCveDictClient) httpPost(url string, query map[string]string) ([]cvemodels.CveDetail, error) {
 	var body string
 	var errs []error
 	var resp *http.Response

@@ -84,7 +84,7 @@ func (s ScanMode) String() string {
 	return ss + " mode"
 }
 
-func setScanMode(server *ServerInfo, d ServerInfo) error {
+func setScanMode(server *ServerInfo) error {
 	if len(server.ScanMode) == 0 {
 		server.ScanMode = Conf.Default.ScanMode
 	}

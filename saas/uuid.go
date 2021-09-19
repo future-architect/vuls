@@ -19,7 +19,7 @@ import (
 // EnsureUUIDs generate a new UUID of the scan target server if UUID is not assigned yet.
 // And then set the generated UUID to config.toml and scan results.
 func EnsureUUIDs(servers map[string]config.ServerInfo, path string, scanResults models.ScanResults) (err error) {
-	needsOverwrite, err := ensure(servers, path, scanResults, uuid.GenerateUUID)
+	needsOverwrite, err := ensure(servers, scanResults, uuid.GenerateUUID)
 	if err != nil {
 		return xerrors.Errorf("Failed to ensure UUIDs. err: %w", err)
 	}
@@ -30,7 +30,7 @@ func EnsureUUIDs(servers map[string]config.ServerInfo, path string, scanResults 
 	return writeToFile(config.Conf, path)
 }
 
-func ensure(servers map[string]config.ServerInfo, path string, scanResults models.ScanResults, generateFunc func() (string, error)) (needsOverwrite bool, err error) {
+func ensure(servers map[string]config.ServerInfo, scanResults models.ScanResults, generateFunc func() (string, error)) (needsOverwrite bool, err error) {
 	for i, r := range scanResults {
 		serverInfo := servers[r.ServerName]
 		if serverInfo.UUIDs == nil {
