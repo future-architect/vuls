@@ -43,7 +43,7 @@ install-scanner: ./cmd/scanner/main.go
 
 lint:
 	go install github.com/mgechev/revive@latest
-	revive $(PKGS)
+	revive -config ./.revive.toml -formatter plain $(PKGS)
 
 vet:
 	echo $(PKGS) | xargs env $(GO) vet || exit;
