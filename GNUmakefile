@@ -42,7 +42,7 @@ install-scanner: ./cmd/scanner/main.go
 	$(CGO_UNABLED) install -tags=scanner -ldflags "$(LDFLAGS)" ./cmd/scanner
 
 lint:
-	go install github.com/mgechev/revive@latest
+	$(GO_OFF) get -u github.com/mgechev/revive
 	revive -config ./.revive.toml -formatter plain $(PKGS)
 
 vet:
