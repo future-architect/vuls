@@ -42,8 +42,8 @@ install-scanner: ./cmd/scanner/main.go
 	$(CGO_UNABLED) install -tags=scanner -ldflags "$(LDFLAGS)" ./cmd/scanner
 
 lint:
-	$(GO_OFF) get -u golang.org/x/lint/golint
-	golint $(PKGS)
+	$(GO_OFF) get -u github.com/mgechev/revive
+	revive -config ./.revive.toml -formatter plain $(PKGS)
 
 vet:
 	echo $(PKGS) | xargs env $(GO) vet || exit;

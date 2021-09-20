@@ -1,14 +1,44 @@
 name: golang-ci
 
 linters-settings:
-  errcheck:
+  revive:
+    # see https://github.com/mgechev/revive#available-rules for details.
+    ignore-generated-header: true
+    severity: warning
+    confidence: 0.8
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+  # errcheck:
     #exclude: /path/to/file.txt
 
 linters:
   disable-all: true
   enable:
     - goimports
-    - golint
+    - revive
     - govet
     - misspell
     - errcheck

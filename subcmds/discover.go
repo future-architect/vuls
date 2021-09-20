@@ -34,7 +34,7 @@ func (*DiscoverCmd) Usage() string {
 }
 
 // SetFlags set flag
-func (p *DiscoverCmd) SetFlags(f *flag.FlagSet) {
+func (p *DiscoverCmd) SetFlags(_ *flag.FlagSet) {
 }
 
 // Execute execute

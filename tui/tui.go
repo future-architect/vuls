@@ -301,10 +301,7 @@ func cursorMoveMiddle(g *gocui.Gui, v *gocui.View) error {
 			return err
 		}
 	}
-	if err := onMovingCursorRedrawView(g, v); err != nil {
-		return err
-	}
-	return nil
+	return onMovingCursorRedrawView(g, v)
 }
 
 func cursorPageDown(g *gocui.Gui, v *gocui.View) error {
@@ -505,7 +502,7 @@ func showMsg(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 
-func delMsg(g *gocui.Gui, v *gocui.View) error {
+func delMsg(g *gocui.Gui, _ *gocui.View) error {
 	if err := g.DeleteView("msg"); err != nil {
 		return err
 	}
@@ -513,7 +510,7 @@ func delMsg(g *gocui.Gui, v *gocui.View) error {
 	return err
 }
 
-func quit(g *gocui.Gui, v *gocui.View) error {
+func quit(_ *gocui.Gui, _ *gocui.View) error {
 	return gocui.ErrQuit
 }
 

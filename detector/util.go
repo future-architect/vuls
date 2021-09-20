@@ -68,10 +68,9 @@ func loadPrevious(currs models.ScanResults, resultsDir string) (prevs models.Sca
 				prevs = append(prevs, *r)
 				logging.Log.Infof("Previous json found: %s", path)
 				break
-			} else {
-				logging.Log.Infof("Previous json is different family.Release: %s, pre: %s.%s cur: %s.%s",
-					path, r.Family, r.Release, result.Family, result.Release)
 			}
+			logging.Log.Infof("Previous json is different family.Release: %s, pre: %s.%s cur: %s.%s",
+				path, r.Family, r.Release, result.Family, result.Release)
 		}
 	}
 	return prevs, nil

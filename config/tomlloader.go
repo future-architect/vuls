@@ -15,7 +15,7 @@ type TOMLLoader struct {
 }
 
 // Load load the configuration TOML file specified by path arg.
-func (c TOMLLoader) Load(pathToToml, keyPass string) error {
+func (c TOMLLoader) Load(pathToToml, _ string) error {
 	// util.Log.Infof("Loading config: %s", pathToToml)
 	if _, err := toml.DecodeFile(pathToToml, &Conf); err != nil {
 		return err
@@ -34,11 +34,11 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	index := 0
 	for name, server := range Conf.Servers {
 		server.ServerName = name
-		if err := setDefaultIfEmpty(&server, Conf.Default); err != nil {
+		if err := setDefaultIfEmpty(&server); err != nil {
 			return xerrors.Errorf("Failed to set default value to config. server: %s, err: %w", name, err)
 		}
 
-		if err := setScanMode(&server, Conf.Default); err != nil {
+		if err := setScanMode(&server); err != nil {
 			return xerrors.Errorf("Failed to set ScanMode: %w", err)
 		}
 
@@ -137,7 +137,7 @@ func (c TOMLLoader) Load(pathToToml, keyPass string) error {
 	return nil
 }
 
-func setDefaultIfEmpty(server *ServerInfo, d ServerInfo) error {
+func setDefaultIfEmpty(server *ServerInfo) error {
 	if server.Type != constant.ServerTypePseudo {
 		if len(server.Host) == 0 {
 			return xerrors.Errorf("server.host is empty")

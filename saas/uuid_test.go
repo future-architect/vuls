@@ -377,7 +377,7 @@ func Test_ensure(t *testing.T) {
 	}
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotNeedsOverwrite, err := ensure(tt.args.servers, tt.args.path, tt.args.scanResults, tt.args.generateFunc)
+			gotNeedsOverwrite, err := ensure(tt.args.servers, tt.args.scanResults, tt.args.generateFunc)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ensure() error = %v, wantErr %v", err, tt.wantErr)
 				return

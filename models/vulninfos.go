@@ -87,9 +87,8 @@ func (v VulnInfos) FilterIgnorePkgs(ignorePkgsRegexps []string) VulnInfos {
 		if err != nil {
 			logging.Log.Warnf("Failed to parse %s. err: %+v", pkgRegexp, err)
 			continue
-		} else {
-			regexps = append(regexps, re)
 		}
+		regexps = append(regexps, re)
 	}
 	if len(regexps) == 0 {
 		return v
