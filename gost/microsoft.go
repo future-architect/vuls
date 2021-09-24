@@ -25,7 +25,11 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 	for cveID := range r.ScannedCves {
 		cveIDs = append(cveIDs, cveID)
 	}
-	for cveID, msCve := range ms.DBDriver.DB.GetMicrosoftMulti(cveIDs) {
+	msCves, err := ms.DBDriver.DB.GetMicrosoftMulti(cveIDs)
+	if err != nil {
+		return 0, nil
+	}
+	for cveID, msCve := range msCves {
 		if _, ok := r.ScannedCves[cveID]; !ok {
 			continue
 		}
