@@ -10,7 +10,6 @@ import (
 
 	"github.com/aquasecurity/trivy/pkg/types"
 	"golang.org/x/xerrors"
-	// "github.com/aquasecurity/go-dep-parser/pkg/types"
 )
 
 // LibraryScanners is an array of LibraryScanner
@@ -121,19 +120,24 @@ func getCveContents(cveID string, vul trivyDBTypes.Vulnerability) (contents map[
 
 // LibraryMap is filename and library type
 var LibraryMap = map[string]string{
-	"package-lock.json": "node",
-	"yarn.lock":         "node",
-	"Gemfile.lock":      "ruby",
-	"Cargo.lock":        "rust",
-	"composer.lock":     "php",
-	"Pipfile.lock":      "python",
-	"poetry.lock":       "python",
-	"go.sum":            "gomod",
+	"package-lock.json":  "node",
+	"yarn.lock":          "node",
+	"Gemfile.lock":       "ruby",
+	"Cargo.lock":         "rust",
+	"composer.lock":      "php",
+	"Pipfile.lock":       "python",
+	"poetry.lock":        "python",
+	"packages.lock.json": ".net",
+	"go.sum":             "gomod",
 }
 
 // GetLibraryKey returns target library key
 func (s LibraryScanner) GetLibraryKey() string {
 	fileName := filepath.Base(s.Path)
+	switch s.Type {
+	case "jar", "war", "ear":
+		return "java"
+	}
 	return LibraryMap[fileName]
 }
 
