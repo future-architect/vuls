@@ -31,7 +31,10 @@ func FillWithMetasploit(r *models.ScanResult, cnf config.MetasploitConf) (nMetas
 		if cveID == "" {
 			continue
 		}
-		ms := driver.GetModuleByCveID(cveID)
+		ms, err := driver.GetModuleByCveID(cveID)
+		if err != nil {
+			return 0, err
+		}
 		if len(ms) == 0 {
 			continue
 		}
