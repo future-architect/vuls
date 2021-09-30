@@ -1596,8 +1596,8 @@ github.com/vulsio/go-exploitdb v0.4.0 h1:itUM3pI3FUUs20+gmwtcZsrVy0zG81yN42aHJmw
 github.com/vulsio/go-exploitdb v0.4.0/go.mod h1:C1X/lRIvDDBWDeW19Msw7asZ4q0pFjmFx/kXGns2raA=
 github.com/vulsio/go-msfdb v0.2.1-0.20210928020521-9b56a938f544 h1:wG6rTODeLpm+N8wERjdVTo5kr64WqNEDR+VrKny/vAo=
 github.com/vulsio/go-msfdb v0.2.1-0.20210928020521-9b56a938f544/go.mod h1:QsHhtjF4hAheLgeGJQRv/ccmE3txtOSgwzTgziyStKY=
-github.com/vulsio/gost v0.4.1-0.20210919121048-2a7957bf1885 h1:J9ISMRl26ayPzoYWHMiX4ORHWzLwanl5aWUDNcXu264=
-github.com/vulsio/gost v0.4.1-0.20210919121048-2a7957bf1885/go.mod h1:49trASwbe0ZhntJhEc1rv3MDGUpIhIkZktELgZ8a5YA=
+github.com/vulsio/gost v0.4.1-0.20210928234623-3e6372ba2821 h1:MPbc8QNX9Rld5ksdWTWMdKbxfgj4qhiXosEvwfRl9Jk=
+github.com/vulsio/gost v0.4.1-0.20210928234623-3e6372ba2821/go.mod h1:49trASwbe0ZhntJhEc1rv3MDGUpIhIkZktELgZ8a5YA=
 github.com/vulsio/goval-dictionary v0.6.1 h1:w2AXwgPWD5/IrJ+44ywD0u5I9ILNdHvzlR+n6iu0eAQ=
 github.com/vulsio/goval-dictionary v0.6.1/go.mod h1:RU1jWunEAwnErgIbM5Hc2j4OnTHQEvMagBq6/6wfWPU=
 github.com/willf/bitset v1.1.11-0.20200630133818-d5bec3311243/go.mod h1:RjeCKbqT1RxIR/KWY6phxZiaY1IyutSBfGjNPySAYV4=

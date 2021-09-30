@@ -113,7 +113,10 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 			return 0, nil
 		}
 		for _, pack := range r.Packages {
-			cves, fixes := deb.getCvesDebianWithfixStatus(fixStatus, major(r.Release), pack.Name)
+			cves, fixes, err := deb.getCvesDebianWithfixStatus(fixStatus, major(r.Release), pack.Name)
+			if err != nil {
+				return 0, err
+			}
 			packCvesList = append(packCvesList, packCves{
 				packName:  pack.Name,
 				isSrcPack: false,
@@ -124,7 +127,10 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 
 		// SrcPack
 		for _, pack := range r.SrcPackages {
-			cves, fixes := deb.getCvesDebianWithfixStatus(fixStatus, major(r.Release), pack.Name)
+			cves, fixes, err := deb.getCvesDebianWithfixStatus(fixStatus, major(r.Release), pack.Name)
+			if err != nil {
+				return 0, err
+			}
 			packCvesList = append(packCvesList, packCves{
 				packName:  pack.Name,
 				isSrcPack: true,
@@ -233,21 +239,25 @@ func isGostDefAffected(versionRelease, gostVersion string) (affected bool, err e
 	return vera.LessThan(verb), nil
 }
 
-func (deb Debian) getCvesDebianWithfixStatus(fixStatus, release, pkgName string) (cves []models.CveContent, fixes []models.PackageFixStatus) {
-	var f func(string, string) map[string]gostmodels.DebianCVE
-
+func (deb Debian) getCvesDebianWithfixStatus(fixStatus, release, pkgName string) ([]models.CveContent, []models.PackageFixStatus, error) {
+	var f func(string, string) (map[string]gostmodels.DebianCVE, error)
 	if fixStatus == "resolved" {
 		f = deb.DBDriver.DB.GetFixedCvesDebian
 	} else {
 		f = deb.DBDriver.DB.GetUnfixedCvesDebian
 	}
-
-	for _, cveDeb := range f(release, pkgName) {
-		cves = append(cves, *deb.ConvertToModel(&cveDeb))
-		fixes = append(fixes, checkPackageFixStatus(&cveDeb)...)
+	debCves, err := f(release, pkgName)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	return
+	cves := []models.CveContent{}
+	fixes := []models.PackageFixStatus{}
+	for _, devbCve := range debCves {
+		cves = append(cves, *deb.ConvertToModel(&devbCve))
+		fixes = append(fixes, checkPackageFixStatus(&devbCve)...)
+	}
+	return cves, fixes, nil
 }
 
 // ConvertToModel converts gost model to vuls model

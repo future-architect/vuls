@@ -45,7 +45,10 @@ func (red RedHat) DetectCVEs(r *models.ScanResult, ignoreWillNotFix bool) (nCVEs
 		}
 		for _, pack := range r.Packages {
 			// CVE-ID: RedhatCVE
-			cves := red.DBDriver.DB.GetUnfixedCvesRedhat(major(r.Release), pack.Name, ignoreWillNotFix)
+			cves, err := red.DBDriver.DB.GetUnfixedCvesRedhat(major(r.Release), pack.Name, ignoreWillNotFix)
+			if err != nil {
+				return 0, err
+			}
 			for _, cve := range cves {
 				if newly := red.setUnfixedCveToScanResult(&cve, r); newly {
 					nCVEs++
@@ -85,7 +88,11 @@ func (red RedHat) fillCvesWithRedHatAPI(r *models.ScanResult) error {
 		if red.DBDriver.DB == nil {
 			return nil
 		}
-		for _, redCve := range red.DBDriver.DB.GetRedhatMulti(cveIDs) {
+		redCves, err := red.DBDriver.DB.GetRedhatMulti(cveIDs)
+		if err != nil {
+			return err
+		}
+		for _, redCve := range redCves {
 			if len(redCve.Name) == 0 {
 				continue
 			}

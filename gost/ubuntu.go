@@ -80,7 +80,10 @@ func (ubu Ubuntu) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 			return 0, nil
 		}
 		for _, pack := range r.Packages {
-			ubuCves := ubu.DBDriver.DB.GetUnfixedCvesUbuntu(ubuReleaseVer, pack.Name)
+			ubuCves, err := ubu.DBDriver.DB.GetUnfixedCvesUbuntu(ubuReleaseVer, pack.Name)
+			if err != nil {
+				return 0, nil
+			}
 			cves := []models.CveContent{}
 			for _, ubucve := range ubuCves {
 				cves = append(cves, *ubu.ConvertToModel(&ubucve))
@@ -94,7 +97,10 @@ func (ubu Ubuntu) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 
 		// SrcPack
 		for _, pack := range r.SrcPackages {
-			ubuCves := ubu.DBDriver.DB.GetUnfixedCvesUbuntu(ubuReleaseVer, pack.Name)
+			ubuCves, err := ubu.DBDriver.DB.GetUnfixedCvesUbuntu(ubuReleaseVer, pack.Name)
+			if err != nil {
+				return 0, nil
+			}
 			cves := []models.CveContent{}
 			for _, ubucve := range ubuCves {
 				cves = append(cves, *ubu.ConvertToModel(&ubucve))
