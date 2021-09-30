@@ -53,7 +53,7 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/vulsio/go-cve-dictionary v0.8.1
 	github.com/vulsio/go-exploitdb v0.4.0
-	github.com/vulsio/go-msfdb v0.2.0
+	github.com/vulsio/go-msfdb v0.2.1-0.20210928020521-9b56a938f544
 	github.com/vulsio/gost v0.4.1-0.20210928234623-3e6372ba2821
 	github.com/vulsio/goval-dictionary v0.6.1
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
