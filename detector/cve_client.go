@@ -44,21 +44,18 @@ func (api goCveDictClient) closeDB() error {
 	if api.driver == nil {
 		return nil
 	}
-	if err := api.driver.CloseDB(); err != nil {
-		return xerrors.Errorf("Failed to close DB: %+v", err)
-	}
-	return nil
+	return api.driver.CloseDB()
 }
 
 func (api goCveDictClient) fetchCveDetails(cveIDs []string) (cveDetails []cvemodels.CveDetail, err error) {
-	for _, cveID := range cveIDs {
-		cveDetail, err := api.driver.Get(cveID)
-		if err != nil {
-			return nil, xerrors.Errorf("Failed to fetch CVE. err: %w", err)
-		}
-		cveDetails = append(cveDetails, *cveDetail)
+	m, err := api.driver.GetMulti(cveIDs)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to GetMulti. err: %w", err)
 	}
-	return
+	for _, v := range m {
+		cveDetails = append(cveDetails, v)
+	}
+	return cveDetails, nil
 }
 
 type response struct {
