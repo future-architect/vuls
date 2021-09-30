@@ -51,13 +51,13 @@ require (
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/cobra v1.2.1
-	github.com/vulsio/go-cve-dictionary v0.8.1
+	github.com/vulsio/go-cve-dictionary v0.8.2-0.20210930001709-cf3186eb9baf
 	github.com/vulsio/go-exploitdb v0.4.2-0.20210930011714-10b78a3740a9
 	github.com/vulsio/go-msfdb v0.2.1-0.20210928020521-9b56a938f544
 	github.com/vulsio/gost v0.4.1-0.20210928234623-3e6372ba2821
 	github.com/vulsio/goval-dictionary v0.6.1
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
-	golang.org/x/net v0.0.0-20210902165921-8d991716f632 // indirect
+	golang.org/x/net v0.0.0-20210916014120-12bc252f5db8 // indirect
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.7 // indirect
@@ -80,7 +80,7 @@ require (
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/PuerkitoBio/goquery v1.7.1 // indirect
-	github.com/andybalholm/cascadia v1.2.0 // indirect
+	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/aquasecurity/go-dep-parser v0.0.0-20210815080135-5be65146849a // indirect
 	github.com/aquasecurity/go-gem-version v0.0.0-20201115065557-8eed6fe000ce // indirect
 	github.com/aquasecurity/go-npm-version v0.0.0-20201110091526-0b796d180798 // indirect
