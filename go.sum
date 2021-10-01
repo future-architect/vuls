@@ -1593,8 +1593,8 @@ github.com/vmihailenco/tagparser v0.1.1/go.mod h1:OeAg3pn3UbLjkWt+rN9oFYB6u/cQgq
 github.com/vmware/govmomi v0.20.3/go.mod h1:URlwyTFZX72RmxtxuaFL2Uj3fD1JTvZdx59bHWk6aFU=
 github.com/vulsio/go-cve-dictionary v0.8.2-0.20210930001709-cf3186eb9baf h1:P6s8j72GuepPMPFJEijGp/woZyAE1RuY6jW0oSxbdRg=
 github.com/vulsio/go-cve-dictionary v0.8.2-0.20210930001709-cf3186eb9baf/go.mod h1:Ii9TEH35giMSWJM2FwGm1PCPxuBKrbaYhDun2PM7ERo=
-github.com/vulsio/go-exploitdb v0.4.2-0.20210930011714-10b78a3740a9 h1:WGNUxybShyToLOhX2jA7H8QHbyF86MqardaxS6hNLfc=
-github.com/vulsio/go-exploitdb v0.4.2-0.20210930011714-10b78a3740a9/go.mod h1:C1X/lRIvDDBWDeW19Msw7asZ4q0pFjmFx/kXGns2raA=
+github.com/vulsio/go-exploitdb v0.4.2-0.20210930235136-c10d2716b7e2 h1:9qNocUoE2Ko2LJFWDIuDZOuo4KHMxksIpAWY3BAOCjM=
+github.com/vulsio/go-exploitdb v0.4.2-0.20210930235136-c10d2716b7e2/go.mod h1:C1X/lRIvDDBWDeW19Msw7asZ4q0pFjmFx/kXGns2raA=
 github.com/vulsio/go-msfdb v0.2.1-0.20210928020521-9b56a938f544 h1:wG6rTODeLpm+N8wERjdVTo5kr64WqNEDR+VrKny/vAo=
 github.com/vulsio/go-msfdb v0.2.1-0.20210928020521-9b56a938f544/go.mod h1:QsHhtjF4hAheLgeGJQRv/ccmE3txtOSgwzTgziyStKY=
 github.com/vulsio/gost v0.4.1-0.20210928234623-3e6372ba2821 h1:MPbc8QNX9Rld5ksdWTWMdKbxfgj4qhiXosEvwfRl9Jk=
