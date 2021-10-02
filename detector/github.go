@@ -37,7 +37,7 @@ func DetectGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string,
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost,
 			"https://api.github.com/graphql",
-			bytes.NewBuffer([]byte(jsonStr)),
+			bytes.NewBufferString(jsonStr),
 		)
 		defer cancel()
 		if err != nil {

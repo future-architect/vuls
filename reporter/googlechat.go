@@ -25,7 +25,7 @@ func (w GoogleChatWriter) Write(rs ...models.ScanResult) (err error) {
 	re := regexp.MustCompile(w.Cnf.ServerNameRegexp)
 
 	for _, r := range rs {
-		if re.Match([]byte(r.FormatServerName())) {
+		if re.MatchString(r.FormatServerName()) {
 			continue
 		}
 		msgs := []string{fmt.Sprintf("*%s*\n%s\t%s\t%s",
@@ -76,7 +76,7 @@ func (w GoogleChatWriter) postMessage(message string) error {
 	payload := `{"text": "` + message + `" }`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uri, bytes.NewBuffer([]byte(payload)))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uri, bytes.NewBufferString(payload))
 	defer cancel()
 	if err != nil {
 		return err

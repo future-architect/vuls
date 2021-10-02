@@ -62,7 +62,7 @@ func (w TelegramWriter) sendMessage(chatID, token, message string) error {
 	payload := `{"text": "` + strings.Replace(message, `"`, `\"`, -1) + `", "chat_id": "` + chatID + `", "parse_mode": "Markdown" }`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uri, bytes.NewBuffer([]byte(payload)))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uri, bytes.NewBufferString(payload))
 	defer cancel()
 	if err != nil {
 		return err
