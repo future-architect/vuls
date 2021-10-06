@@ -9,8 +9,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/contrib/trivy/parser"
-	"github.com/future-architect/vuls/models"
 	"github.com/spf13/cobra"
 )
 
@@ -34,46 +34,55 @@ func main() {
 				reader := bufio.NewReader(os.Stdin)
 				buf := new(bytes.Buffer)
 				if _, err = buf.ReadFrom(reader); err != nil {
-					fmt.Printf("Failed to read file. err: %+v", err)
+					fmt.Printf("Failed to read file. err: %+v\n", err)
 					os.Exit(1)
 				}
 				trivyJSON = buf.Bytes()
 			} else {
 				if trivyJSON, err = ioutil.ReadFile(jsonFilePath); err != nil {
-					fmt.Printf("Failed to read file. err: %+v", err)
+					fmt.Printf("Failed to read file. err: %+v\n", err)
 					os.Exit(1)
 				}
 			}
 
-			scanResult := &models.ScanResult{
-				JSONVersion: models.JSONVersion,
-				ScannedCves: models.VulnInfos{},
-			}
 			parser, err := parser.NewParser(trivyJSON)
 			if err != nil {
-				fmt.Printf("Failed to new parser. err: %+v", err)
+				fmt.Printf("Failed to new parser. err: %+v\n", err)
 				os.Exit(1)
 			}
-			if scanResult, err = parser.Parse(trivyJSON, scanResult); err != nil {
-				fmt.Printf("Failed to parse. err: %+v", err)
+			scanResult, err := parser.Parse(trivyJSON)
+			if err != nil {
+				fmt.Printf("Failed to parse. err: %+v\n", err)
 				os.Exit(1)
 			}
 			var resultJSON []byte
 			if resultJSON, err = json.MarshalIndent(scanResult, "", "   "); err != nil {
-				fmt.Printf("Failed to create json. err: %+v", err)
+				fmt.Printf("Failed to create json. err: %+v\n", err)
 				os.Exit(1)
 			}
 			fmt.Println(string(resultJSON))
 		},
 	}
+
+	var cmdVersion = &cobra.Command{
+		Use:   "version",
+		Short: "Show version",
+		Long:  "Show version",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("trivy-to-vuls-%s-%s\n", config.Version, config.Revision)
+		},
+	}
+
 	cmdTrivyToVuls.Flags().BoolVarP(&stdIn, "stdin", "s", false, "input from stdin")
 	cmdTrivyToVuls.Flags().StringVarP(&jsonDir, "trivy-json-dir", "d", "./", "trivy json dir")
 	cmdTrivyToVuls.Flags().StringVarP(&jsonFileName, "trivy-json-file-name", "f", "results.json", "trivy json file name")
 
 	var rootCmd = &cobra.Command{Use: "trivy-to-vuls"}
 	rootCmd.AddCommand(cmdTrivyToVuls)
+	rootCmd.AddCommand(cmdVersion)
 	if err = rootCmd.Execute(); err != nil {
-		fmt.Printf("Failed to execute command. err: %+v", err)
+		fmt.Printf("Failed to execute command. err: %+v\n", err)
 		os.Exit(1)
 	}
+	os.Exit(0)
 }

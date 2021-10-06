@@ -10,7 +10,7 @@ import (
 )
 
 type Parser interface {
-	Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanResult, err error)
+	Parse(vulnJSON []byte) (result *models.ScanResult, err error)
 }
 
 type Report struct {

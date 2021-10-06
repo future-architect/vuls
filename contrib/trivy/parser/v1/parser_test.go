@@ -11,34 +11,18 @@ import (
 
 func TestParse(t *testing.T) {
 	cases := map[string]struct {
-		vulnJSON   []byte
-		scanResult *models.ScanResult
-		expected   *models.ScanResult
+		vulnJSON []byte
+		expected *models.ScanResult
 	}{
 		"golang:1.12-alpine": {vulnJSON: golang112JSON,
-			scanResult: &models.ScanResult{
-				JSONVersion: 1,
-				ServerUUID:  "uuid",
-				ScannedCves: models.VulnInfos{},
-			},
 			expected: golang112scanResult,
 		},
 		"knqyf263/vuln-image:1.2.3": {
 			vulnJSON: trivyResultVulnImage,
-			scanResult: &models.ScanResult{
-				JSONVersion: 1,
-				ServerUUID:  "uuid",
-				ScannedCves: models.VulnInfos{},
-			},
 			expected: trivyResultVulnImageScanResult,
 		},
 		"jar": {
 			vulnJSON: jarJSON,
-			scanResult: &models.ScanResult{
-				JSONVersion: 1,
-				ServerUUID:  "uuid",
-				ScannedCves: models.VulnInfos{},
-			},
 			expected: jarScanResult,
 		},
 		"found-no-vulns": {
@@ -50,14 +34,8 @@ func TestParse(t *testing.T) {
 			}
 			]
 		`),
-			scanResult: &models.ScanResult{
-				JSONVersion: 1,
-				ServerUUID:  "uuid",
-				ScannedCves: models.VulnInfos{},
-			},
 			expected: &models.ScanResult{
-				JSONVersion:     1,
-				ServerUUID:      "uuid",
+				JSONVersion:     4,
 				ServerName:      "no-vuln-image:v1 (debian 9.13)",
 				Family:          "debian",
 				ScannedBy:       "trivy",
@@ -71,7 +49,7 @@ func TestParse(t *testing.T) {
 	}
 
 	for testcase, v := range cases {
-		actual, err := ParserV1{}.Parse(v.vulnJSON, v.scanResult)
+		actual, err := ParserV1{}.Parse(v.vulnJSON)
 		if err != nil {
 			t.Errorf("%s", err)
 		}
@@ -135,8 +113,7 @@ var golang112JSON = []byte(`[
 ]`)
 
 var golang112scanResult = &models.ScanResult{
-	JSONVersion: 1,
-	ServerUUID:  "uuid",
+	JSONVersion: 4,
 	ServerName:  "golang:1.12-alpine (alpine 3.11.3)",
 	Family:      "alpine",
 	ScannedBy:   "trivy",
@@ -2457,8 +2434,7 @@ var trivyResultVulnImage = []byte(`[
 ]`)
 
 var trivyResultVulnImageScanResult = &models.ScanResult{
-	JSONVersion: 1,
-	ServerUUID:  "uuid",
+	JSONVersion: 4,
 	ServerName:  "knqyf263/vuln-image:1.2.3 (alpine 3.7.1)",
 	Family:      "alpine",
 	ScannedBy:   "trivy",
@@ -5575,8 +5551,7 @@ var jarJSON = []byte(`
 `)
 
 var jarScanResult = &models.ScanResult{
-	JSONVersion:     1,
-	ServerUUID:      "uuid",
+	JSONVersion:     4,
 	Family:          "pseudo",
 	LibraryScanners: models.LibraryScanners{models.LibraryScanner{Type: "jar", Path: "contrib/struts-el/lib/struts.jar", Libs: []types.Library{{Name: "struts:struts", Version: "1.2.7"}}}},
 	Packages:        models.Packages{},
