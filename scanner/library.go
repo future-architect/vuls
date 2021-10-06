@@ -13,8 +13,8 @@ func convertLibWithScanner(apps []types.Application) ([]models.LibraryScanner, e
 		libs := []trivyTypes.Library{}
 		for _, lib := range app.Libraries {
 			libs = append(libs, trivyTypes.Library{
-				Name:    lib.Library.Name,
-				Version: lib.Library.Version,
+				Name:    lib.Name,
+				Version: lib.Version,
 			})
 		}
 		scanners = append(scanners, models.LibraryScanner{

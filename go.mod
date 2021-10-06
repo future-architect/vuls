@@ -7,8 +7,8 @@ require (
 	github.com/BurntSushi/toml v0.4.1
 	github.com/Ullaakut/nmap/v2 v2.1.2-0.20210406060955-59a52fe80a4f
 	github.com/VividCortex/ewma v1.2.0 // indirect
-	github.com/aquasecurity/fanal v0.0.0-20211004144717-124d5e3ef398
-	github.com/aquasecurity/trivy v0.19.3-0.20211004180334-1c9ccb5e03b2
+	github.com/aquasecurity/fanal v0.0.0-20211005172059-69527b46560c
+	github.com/aquasecurity/trivy v0.20.0
 	github.com/aquasecurity/trivy-db v0.0.0-20210916043317-726b7b72a47b
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/aws/aws-sdk-go v1.40.49
