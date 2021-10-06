@@ -19,15 +19,15 @@ type ParserV2 struct {
 
 // Parse :
 func (p ParserV2) Parse(vulnJSON []byte, scanResult *models.ScanResult) (result *models.ScanResult, err error) {
-	var trivyResults report.Results
-	if err = json.Unmarshal(vulnJSON, &trivyResults); err != nil {
+	var report report.Report
+	if err = json.Unmarshal(vulnJSON, &report); err != nil {
 		return nil, err
 	}
 
 	pkgs := models.Packages{}
 	vulnInfos := models.VulnInfos{}
 	uniqueLibraryScannerPaths := map[string]models.LibraryScanner{}
-	for _, trivyResult := range trivyResults {
+	for _, trivyResult := range report.Results {
 		setScanResultMeta(scanResult, &trivyResult)
 		for _, vuln := range trivyResult.Vulnerabilities {
 			if _, ok := vulnInfos[vuln.VulnerabilityID]; !ok {

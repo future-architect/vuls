@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 
 	"github.com/future-architect/vuls/contrib/trivy/parser"
-	v1 "github.com/future-architect/vuls/contrib/trivy/parser/v1"
 	"github.com/future-architect/vuls/models"
 	"github.com/spf13/cobra"
 )
@@ -35,15 +34,14 @@ func main() {
 				reader := bufio.NewReader(os.Stdin)
 				buf := new(bytes.Buffer)
 				if _, err = buf.ReadFrom(reader); err != nil {
+					fmt.Printf("Failed to read file. err: %+v", err)
 					os.Exit(1)
-					return
 				}
 				trivyJSON = buf.Bytes()
 			} else {
 				if trivyJSON, err = ioutil.ReadFile(jsonFilePath); err != nil {
-					fmt.Println("Failed to read file", err)
+					fmt.Printf("Failed to read file. err: %+v", err)
 					os.Exit(1)
-					return
 				}
 			}
 
@@ -51,20 +49,21 @@ func main() {
 				JSONVersion: models.JSONVersion,
 				ScannedCves: models.VulnInfos{},
 			}
-			var parser parser.Parser = v1.ParserV1{}
-			if scanResult, err = parser.Parse(trivyJSON, scanResult); err != nil {
-				fmt.Println("Failed to execute command", err)
+			parser, err := parser.NewParser(trivyJSON)
+			if err != nil {
+				fmt.Printf("Failed to new parser. err: %+v", err)
 				os.Exit(1)
-				return
+			}
+			if scanResult, err = parser.Parse(trivyJSON, scanResult); err != nil {
+				fmt.Printf("Failed to parse. err: %+v", err)
+				os.Exit(1)
 			}
 			var resultJSON []byte
 			if resultJSON, err = json.MarshalIndent(scanResult, "", "   "); err != nil {
-				fmt.Println("Failed to create json", err)
+				fmt.Printf("Failed to create json. err: %+v", err)
 				os.Exit(1)
-				return
 			}
 			fmt.Println(string(resultJSON))
-			return
 		},
 	}
 	cmdTrivyToVuls.Flags().BoolVarP(&stdIn, "stdin", "s", false, "input from stdin")
@@ -74,7 +73,7 @@ func main() {
 	var rootCmd = &cobra.Command{Use: "trivy-to-vuls"}
 	rootCmd.AddCommand(cmdTrivyToVuls)
 	if err = rootCmd.Execute(); err != nil {
-		fmt.Println("Failed to execute command", err)
+		fmt.Printf("Failed to execute command. err: %+v", err)
 		os.Exit(1)
 	}
 }

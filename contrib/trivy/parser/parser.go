@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	v1 "github.com/future-architect/vuls/contrib/trivy/parser/v1"
+	v2 "github.com/future-architect/vuls/contrib/trivy/parser/v2"
 	"github.com/future-architect/vuls/models"
 	"golang.org/x/xerrors"
 )
@@ -23,7 +24,7 @@ func NewParser(vulnJSON []byte) (Parser, error) {
 	}
 	switch r.SchemaVersion {
 	case 2:
-		return v1.ParserV1{}, nil
+		return v2.ParserV2{}, nil
 	default:
 		return nil, xerrors.Errorf("Failed to parse trivy json. SchemeVersion %d is not supported yet. Please contact support", r.SchemaVersion)
 	}
