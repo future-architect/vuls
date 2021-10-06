@@ -81,6 +81,14 @@ func main() {
 			return
 		},
 	}
+	var cmdVersion = &cobra.Command{
+		Use:   "version",
+		Short: "Show version",
+		Long:  "Show version",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("future-vuls-%s-%s\n", config.Version, config.Revision)
+		},
+	}
 	cmdFvulsUploader.PersistentFlags().StringVar(&serverUUID, "uuid", "", "server uuid. ENV: VULS_SERVER_UUID")
 	cmdFvulsUploader.PersistentFlags().StringVar(&configFile, "config", "", "config file (default is $HOME/.cobra.yaml)")
 	cmdFvulsUploader.PersistentFlags().BoolVarP(&stdIn, "stdin", "s", false, "input from stdin. ENV: VULS_STDIN")
@@ -92,6 +100,7 @@ func main() {
 
 	var rootCmd = &cobra.Command{Use: "future-vuls"}
 	rootCmd.AddCommand(cmdFvulsUploader)
+	rootCmd.AddCommand(cmdVersion)
 	if err = rootCmd.Execute(); err != nil {
 		fmt.Println("Failed to execute command", err)
 	}
