@@ -1,4 +1,4 @@
-package parser
+package v1
 
 import (
 	"testing"
@@ -71,7 +71,7 @@ func TestParse(t *testing.T) {
 	}
 
 	for testcase, v := range cases {
-		actual, err := Parse(v.vulnJSON, v.scanResult)
+		actual, err := ParserV1{}.Parse(v.vulnJSON, v.scanResult)
 		if err != nil {
 			t.Errorf("%s", err)
 		}

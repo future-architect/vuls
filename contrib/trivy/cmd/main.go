@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/future-architect/vuls/contrib/trivy/parser"
+	v1 "github.com/future-architect/vuls/contrib/trivy/parser/v1"
 	"github.com/future-architect/vuls/models"
 	"github.com/spf13/cobra"
 )
@@ -50,6 +51,7 @@ func main() {
 				JSONVersion: models.JSONVersion,
 				ScannedCves: models.VulnInfos{},
 			}
+			var parser parser.Parser = v1.ParserV1{}
 			if scanResult, err = parser.Parse(trivyJSON, scanResult); err != nil {
 				fmt.Println("Failed to execute command", err)
 				os.Exit(1)
