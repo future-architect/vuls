@@ -119,6 +119,44 @@ var redisTrivy = []byte(`
       "Target": "redis (debian 10.10)",
       "Class": "os-pkgs",
       "Type": "debian",
+      "Packages": [
+        {
+          "Name": "adduser",
+          "Version": "3.118",
+          "SrcName": "adduser",
+          "SrcVersion": "3.118",
+          "Layer": {
+            "DiffID": "sha256:f68ef921efae588b3dd5cc466a1ca9c94c24785f1fa9420bea15ecc2dedbe781"
+          }
+        },
+        {
+          "Name": "apt",
+          "Version": "1.8.2.3",
+          "SrcName": "apt",
+          "SrcVersion": "1.8.2.3",
+          "Layer": {
+            "DiffID": "sha256:f68ef921efae588b3dd5cc466a1ca9c94c24785f1fa9420bea15ecc2dedbe781"
+          }
+        },
+        {
+          "Name": "bsdutils",
+          "Version": "1:2.33.1-0.1",
+          "SrcName": "util-linux",
+          "SrcVersion": "2.33.1-0.1",
+          "Layer": {
+            "DiffID": "sha256:f68ef921efae588b3dd5cc466a1ca9c94c24785f1fa9420bea15ecc2dedbe781"
+          }
+        },
+        {
+          "Name": "pkgA",
+          "Version": "1:2.33.1-0.1",
+          "SrcName": "util-linux",
+          "SrcVersion": "2.33.1-0.1",
+          "Layer": {
+            "DiffID": "sha256:f68ef921efae588b3dd5cc466a1ca9c94c24785f1fa9420bea15ecc2dedbe781"
+          }
+        }
+      ],
       "Vulnerabilities": [
         {
           "VulnerabilityID": "CVE-2011-3374",
@@ -192,7 +230,25 @@ var redisSR = &models.ScanResult{
 		"apt": models.Package{
 			Name:    "apt",
 			Version: "1.8.2.3",
-			Release: "",
+		},
+		"adduser": models.Package{
+			Name:    "adduser",
+			Version: "3.118",
+		},
+		"bsdutils": models.Package{
+			Name:    "bsdutils",
+			Version: "1:2.33.1-0.1",
+		},
+		"pkgA": models.Package{
+			Name:    "pkgA",
+			Version: "1:2.33.1-0.1",
+		},
+	},
+	SrcPackages: models.SrcPackages{
+		"util-linux": models.SrcPackage{
+			Name:        "util-linux",
+			Version:     "2.33.1-0.1",
+			BinaryNames: []string{"bsdutils", "pkgA"},
 		},
 	},
 	Optional: map[string]interface{}{

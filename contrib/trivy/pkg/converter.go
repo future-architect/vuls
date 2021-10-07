@@ -20,10 +20,10 @@ func Convert(results report.Results) (result *models.ScanResult, err error) {
 	}
 
 	pkgs := models.Packages{}
+	srcPkgs := models.SrcPackages{}
 	vulnInfos := models.VulnInfos{}
 	uniqueLibraryScannerPaths := map[string]models.LibraryScanner{}
 	for _, trivyResult := range results {
-		// setScanResultMeta(scanResult, &trivyResult)
 		for _, vuln := range trivyResult.Vulnerabilities {
 			if _, ok := vulnInfos[vuln.VulnerabilityID]; !ok {
 				vulnInfos[vuln.VulnerabilityID] = models.VulnInfo{
@@ -108,7 +108,39 @@ func Convert(results report.Results) (result *models.ScanResult, err error) {
 			}
 			vulnInfos[vuln.VulnerabilityID] = vulnInfo
 		}
+
+		// --list-all-pkgs flg of trivy will output all installed packages, so collect them.
+		if trivyResult.Class == report.ClassOSPkg {
+			for _, p := range trivyResult.Packages {
+				pkgs[p.Name] = models.Package{
+					Name:    p.Name,
+					Version: p.Version,
+				}
+				if p.Name != p.SrcName {
+					if v, ok := srcPkgs[p.SrcName]; !ok {
+						srcPkgs[p.SrcName] = models.SrcPackage{
+							Name:        p.SrcName,
+							Version:     p.SrcVersion,
+							BinaryNames: []string{p.Name},
+						}
+					} else {
+						v.AddBinaryName(p.Name)
+						srcPkgs[p.SrcName] = v
+					}
+				}
+			}
+		} else if trivyResult.Class == report.ClassLangPkg {
+			libScanner := uniqueLibraryScannerPaths[trivyResult.Target]
+			libScanner.Type = trivyResult.Type
+			for _, p := range trivyResult.Packages {
+				libScanner.Libs = append(libScanner.Libs, types.Library{
+					Name:    p.Name,
+					Version: p.Version,
+				})
+			}
+		}
 	}
+
 	// flatten and unique libraries
 	libraryScanners := make([]models.LibraryScanner, 0, len(uniqueLibraryScannerPaths))
 	for path, v := range uniqueLibraryScannerPaths {
@@ -138,6 +170,7 @@ func Convert(results report.Results) (result *models.ScanResult, err error) {
 	})
 	scanResult.ScannedCves = vulnInfos
 	scanResult.Packages = pkgs
+	scanResult.SrcPackages = srcPkgs
 	scanResult.LibraryScanners = libraryScanners
 	return scanResult, nil
 }
