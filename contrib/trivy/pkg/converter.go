@@ -13,6 +13,7 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
+// Convert :
 func Convert(results report.Results) (result *models.ScanResult, err error) {
 	scanResult := &models.ScanResult{
 		JSONVersion: models.JSONVersion,

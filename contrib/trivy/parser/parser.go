@@ -9,14 +9,17 @@ import (
 	"golang.org/x/xerrors"
 )
 
+// Parser is a parser interface
 type Parser interface {
 	Parse(vulnJSON []byte) (result *models.ScanResult, err error)
 }
 
+// Report is used for judgeing the scheme version of trivy
 type Report struct {
 	SchemaVersion int `json:",omitempty"`
 }
 
+// NewParser make a parser for the schema version of trivy
 func NewParser(vulnJSON []byte) (Parser, error) {
 	r := Report{}
 	if err := json.Unmarshal(vulnJSON, &r); err != nil {

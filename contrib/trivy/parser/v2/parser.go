@@ -11,10 +11,11 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
+// ParserV2 is a parser for scheme v2
 type ParserV2 struct {
 }
 
-// Parse :
+// Parse trivy's JSON and convert to the Vuls struct
 func (p ParserV2) Parse(vulnJSON []byte) (result *models.ScanResult, err error) {
 	var report report.Report
 	if err = json.Unmarshal(vulnJSON, &report); err != nil {
