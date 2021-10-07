@@ -16,8 +16,8 @@ import (
 type LibraryScanners []LibraryScanner
 
 // Find : find by name
-func (lss LibraryScanners) Find(path, name string) map[string]types.Library {
-	filtered := map[string]types.Library{}
+func (lss LibraryScanners) Find(path, name string) map[string]Library {
+	filtered := map[string]Library{}
 	for _, ls := range lss {
 		for _, lib := range ls.Libs {
 			if ls.Path == path && lib.Name == name {
@@ -40,8 +40,16 @@ func (lss LibraryScanners) Total() (total int) {
 // LibraryScanner has libraries information
 type LibraryScanner struct {
 	Type string
+	// TODO
 	Path string
-	Libs []types.Library
+	Libs []Library
+}
+
+// Library holds the attribute of a package library
+type Library struct {
+	Name    string
+	Version string
+	Path    string
 }
 
 // Scan : scan target library

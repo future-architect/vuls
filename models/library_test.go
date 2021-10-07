@@ -3,8 +3,6 @@ package models
 import (
 	"reflect"
 	"testing"
-
-	"github.com/aquasecurity/trivy/pkg/types"
 )
 
 func TestLibraryScanners_Find(t *testing.T) {
@@ -16,14 +14,14 @@ func TestLibraryScanners_Find(t *testing.T) {
 		name string
 		lss  LibraryScanners
 		args args
-		want map[string]types.Library
+		want map[string]Library
 	}{
 		{
 			name: "single file",
 			lss: LibraryScanners{
 				{
 					Path: "/pathA",
-					Libs: []types.Library{
+					Libs: []Library{
 						{
 							Name:    "libA",
 							Version: "1.0.0",
@@ -32,7 +30,7 @@ func TestLibraryScanners_Find(t *testing.T) {
 				},
 			},
 			args: args{"/pathA", "libA"},
-			want: map[string]types.Library{
+			want: map[string]Library{
 				"/pathA": {
 					Name:    "libA",
 					Version: "1.0.0",
@@ -44,7 +42,7 @@ func TestLibraryScanners_Find(t *testing.T) {
 			lss: LibraryScanners{
 				{
 					Path: "/pathA",
-					Libs: []types.Library{
+					Libs: []Library{
 						{
 							Name:    "libA",
 							Version: "1.0.0",
@@ -53,7 +51,7 @@ func TestLibraryScanners_Find(t *testing.T) {
 				},
 				{
 					Path: "/pathB",
-					Libs: []types.Library{
+					Libs: []Library{
 						{
 							Name:    "libA",
 							Version: "1.0.5",
@@ -62,7 +60,7 @@ func TestLibraryScanners_Find(t *testing.T) {
 				},
 			},
 			args: args{"/pathA", "libA"},
-			want: map[string]types.Library{
+			want: map[string]Library{
 				"/pathA": {
 					Name:    "libA",
 					Version: "1.0.0",
@@ -74,7 +72,7 @@ func TestLibraryScanners_Find(t *testing.T) {
 			lss: LibraryScanners{
 				{
 					Path: "/pathA",
-					Libs: []types.Library{
+					Libs: []Library{
 						{
 							Name:    "libA",
 							Version: "1.0.0",
@@ -83,7 +81,7 @@ func TestLibraryScanners_Find(t *testing.T) {
 				},
 			},
 			args: args{"/pathA", "libB"},
-			want: map[string]types.Library{},
+			want: map[string]Library{},
 		},
 	}
 	for _, tt := range tests {

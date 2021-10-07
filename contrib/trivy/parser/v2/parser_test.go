@@ -3,7 +3,6 @@ package v2
 import (
 	"testing"
 
-	"github.com/aquasecurity/trivy/pkg/types"
 	"github.com/d4l3k/messagediff"
 
 	"github.com/future-architect/vuls/models"
@@ -441,7 +440,7 @@ var strutsSR = &models.ScanResult{
 		models.LibraryScanner{
 			Type: "jar",
 			Path: "Java",
-			Libs: []types.Library{
+			Libs: []models.Library{
 				{
 					Name:    "commons-beanutils:commons-beanutils",
 					Version: "1.7.0",
@@ -697,13 +696,12 @@ var osAndLibSR = &models.ScanResult{
 	LibraryScanners: models.LibraryScanners{
 		models.LibraryScanner{
 			Type: "gemspec",
-			// TODO
-			// Path: "var/lib/gems/2.5.0/specifications/activesupport-6.0.2.1.gemspec",
 			Path: "Ruby",
-			Libs: []types.Library{
+			Libs: []models.Library{
 				{
 					Name:    "activesupport",
 					Version: "6.0.2.1",
+					Path:    "var/lib/gems/2.5.0/specifications/activesupport-6.0.2.1.gemspec",
 				},
 			},
 		},

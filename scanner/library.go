@@ -3,18 +3,17 @@ package scanner
 import (
 	"github.com/aquasecurity/fanal/types"
 	"github.com/future-architect/vuls/models"
-
-	trivyTypes "github.com/aquasecurity/trivy/pkg/types"
 )
 
 func convertLibWithScanner(apps []types.Application) ([]models.LibraryScanner, error) {
 	scanners := []models.LibraryScanner{}
 	for _, app := range apps {
-		libs := []trivyTypes.Library{}
+		libs := []models.Library{}
 		for _, lib := range app.Libraries {
-			libs = append(libs, trivyTypes.Library{
+			libs = append(libs, models.Library{
 				Name:    lib.Name,
 				Version: lib.Version,
+				Path:    lib.FilePath,
 			})
 		}
 		scanners = append(scanners, models.LibraryScanner{

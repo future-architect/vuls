@@ -9,7 +9,6 @@ import (
 	"github.com/aquasecurity/fanal/analyzer/os"
 	"github.com/aquasecurity/trivy/pkg/report"
 
-	"github.com/aquasecurity/trivy/pkg/types"
 	"github.com/future-architect/vuls/models"
 )
 
@@ -101,9 +100,10 @@ func Convert(results report.Results) (result *models.ScanResult, err error) {
 				})
 				libScanner := uniqueLibraryScannerPaths[trivyResult.Target]
 				libScanner.Type = trivyResult.Type
-				libScanner.Libs = append(libScanner.Libs, types.Library{
+				libScanner.Libs = append(libScanner.Libs, models.Library{
 					Name:    vuln.PkgName,
 					Version: vuln.InstalledVersion,
+					Path:    vuln.PkgPath,
 				})
 				uniqueLibraryScannerPaths[trivyResult.Target] = libScanner
 			}
@@ -134,9 +134,10 @@ func Convert(results report.Results) (result *models.ScanResult, err error) {
 			libScanner := uniqueLibraryScannerPaths[trivyResult.Target]
 			libScanner.Type = trivyResult.Type
 			for _, p := range trivyResult.Packages {
-				libScanner.Libs = append(libScanner.Libs, types.Library{
+				libScanner.Libs = append(libScanner.Libs, models.Library{
 					Name:    p.Name,
 					Version: p.Version,
+					Path:    p.FilePath,
 				})
 			}
 			uniqueLibraryScannerPaths[trivyResult.Target] = libScanner
@@ -146,12 +147,12 @@ func Convert(results report.Results) (result *models.ScanResult, err error) {
 	// flatten and unique libraries
 	libraryScanners := make([]models.LibraryScanner, 0, len(uniqueLibraryScannerPaths))
 	for path, v := range uniqueLibraryScannerPaths {
-		uniqueLibrary := map[string]types.Library{}
+		uniqueLibrary := map[string]models.Library{}
 		for _, lib := range v.Libs {
 			uniqueLibrary[lib.Name+lib.Version] = lib
 		}
 
-		var libraries []types.Library
+		var libraries []models.Library
 		for _, library := range uniqueLibrary {
 			libraries = append(libraries, library)
 		}

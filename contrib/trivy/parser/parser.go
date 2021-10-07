@@ -3,7 +3,6 @@ package parser
 import (
 	"encoding/json"
 
-	v1 "github.com/future-architect/vuls/contrib/trivy/parser/v1"
 	v2 "github.com/future-architect/vuls/contrib/trivy/parser/v2"
 	"github.com/future-architect/vuls/models"
 	"golang.org/x/xerrors"
@@ -23,7 +22,7 @@ type Report struct {
 func NewParser(vulnJSON []byte) (Parser, error) {
 	r := Report{}
 	if err := json.Unmarshal(vulnJSON, &r); err != nil {
-		return v1.ParserV1{}, nil
+		return nil, xerrors.Errorf("Failed to parse JSON. Please use the latest version of trivy, trivy-to-vuls and future-vuls")
 	}
 	switch r.SchemaVersion {
 	case 2:
