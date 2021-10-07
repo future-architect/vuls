@@ -139,6 +139,7 @@ func Convert(results report.Results) (result *models.ScanResult, err error) {
 					Version: p.Version,
 				})
 			}
+			uniqueLibraryScannerPaths[trivyResult.Target] = libScanner
 		}
 	}
 

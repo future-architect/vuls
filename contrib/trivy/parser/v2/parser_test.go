@@ -3,6 +3,7 @@ package v2
 import (
 	"testing"
 
+	"github.com/aquasecurity/trivy/pkg/types"
 	"github.com/d4l3k/messagediff"
 
 	"github.com/future-architect/vuls/models"
@@ -13,8 +14,13 @@ func TestParse(t *testing.T) {
 		vulnJSON []byte
 		expected *models.ScanResult
 	}{
-		"redis": {vulnJSON: redisTrivy,
+		"redis": {
+			vulnJSON: redisTrivy,
 			expected: redisSR,
+		},
+		"struts": {
+			vulnJSON: strutsTrivy,
+			expected: strutsSR,
 		},
 	}
 
@@ -253,5 +259,200 @@ var redisSR = &models.ScanResult{
 	},
 	Optional: map[string]interface{}{
 		"trivy-target": "redis (debian 10.10)",
+	},
+}
+
+var strutsTrivy = []byte(`
+{
+  "SchemaVersion": 2,
+  "ArtifactName": "/data/struts-1.2.7/lib",
+  "ArtifactType": "filesystem",
+  "Metadata": {
+    "ImageConfig": {
+      "architecture": "",
+      "created": "0001-01-01T00:00:00Z",
+      "os": "",
+      "rootfs": {
+        "type": "",
+        "diff_ids": null
+      },
+      "config": {}
+    }
+  },
+  "Results": [
+    {
+      "Target": "Java",
+      "Class": "lang-pkgs",
+      "Type": "jar",
+      "Packages": [
+        {
+          "Name": "oro:oro",
+          "Version": "2.0.7",
+          "Layer": {}
+        },
+        {
+          "Name": "struts:struts",
+          "Version": "1.2.7",
+          "Layer": {}
+        },
+        {
+          "Name": "commons-beanutils:commons-beanutils",
+          "Version": "1.7.0",
+          "Layer": {}
+        }
+      ],
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2014-0114",
+          "PkgName": "commons-beanutils:commons-beanutils",
+          "InstalledVersion": "1.7.0",
+          "FixedVersion": "1.9.2",
+          "Layer": {},
+          "SeveritySource": "nvd",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2014-0114",
+          "Title": "Apache Struts 1: Class Loader manipulation via request parameters",
+          "Description": "Apache Commons BeanUtils, as distributed in lib/commons-beanutils-1.8.0.jar in Apache Struts 1.x through 1.3.10 and in other products requiring commons-beanutils through 1.9.2, does not suppress the class property, which allows remote attackers to \"manipulate\" the ClassLoader and execute arbitrary code via the class parameter, as demonstrated by the passing of this parameter to the getClass method of the ActionForm object in Struts 1.",
+          "Severity": "HIGH",
+          "CweIDs": [
+            "CWE-20"
+          ],
+          "CVSS": {
+            "nvd": {
+              "V2Vector": "AV:N/AC:L/Au:N/C:P/I:P/A:P",
+              "V2Score": 7.5
+            },
+            "redhat": {
+              "V2Vector": "AV:N/AC:L/Au:N/C:P/I:P/A:P",
+              "V2Score": 7.5
+            }
+          },
+          "References": [
+            "http://advisories.mageia.org/MGASA-2014-0219.html"
+          ],
+          "PublishedDate": "2014-04-30T10:49:00Z",
+          "LastModifiedDate": "2021-01-26T18:15:00Z"
+        },
+        {
+          "VulnerabilityID": "CVE-2012-1007",
+          "PkgName": "struts:struts",
+          "InstalledVersion": "1.2.7",
+          "Layer": {},
+          "SeveritySource": "nvd",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2012-1007",
+          "Title": "struts: multiple XSS flaws",
+          "Description": "Multiple cross-site scripting (XSS) vulnerabilities in Apache Struts 1.3.10 allow remote attackers to inject arbitrary web script or HTML via (1) the name parameter to struts-examples/upload/upload-submit.do, or the message parameter to (2) struts-cookbook/processSimple.do or (3) struts-cookbook/processDyna.do.",
+          "Severity": "MEDIUM",
+          "CweIDs": [
+            "CWE-79"
+          ],
+          "CVSS": {
+            "nvd": {
+              "V2Vector": "AV:N/AC:M/Au:N/C:N/I:P/A:N",
+              "V2Score": 4.3
+            },
+            "redhat": {
+              "V2Vector": "AV:N/AC:M/Au:N/C:N/I:P/A:N",
+              "V2Score": 4.3
+            }
+          },
+          "References": [
+            "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2012-1007"
+          ],
+          "PublishedDate": "2012-02-07T04:09:00Z",
+          "LastModifiedDate": "2018-10-17T01:29:00Z"
+        }
+      ]
+    }
+  ]
+}`)
+
+var strutsSR = &models.ScanResult{
+	JSONVersion: 4,
+	ServerName:  "library scan by trivy",
+	Family:      "pseudo",
+	ScannedBy:   "trivy",
+	ScannedVia:  "trivy",
+	ScannedCves: models.VulnInfos{
+		"CVE-2014-0114": {
+			CveID: "CVE-2014-0114",
+			Confidences: models.Confidences{
+				models.Confidence{Score: 100,
+					DetectionMethod: "TrivyMatch",
+				},
+			},
+			CveContents: models.CveContents{
+				"trivy": []models.CveContent{{
+					Title:         "Apache Struts 1: Class Loader manipulation via request parameters",
+					Summary:       "Apache Commons BeanUtils, as distributed in lib/commons-beanutils-1.8.0.jar in Apache Struts 1.x through 1.3.10 and in other products requiring commons-beanutils through 1.9.2, does not suppress the class property, which allows remote attackers to \"manipulate\" the ClassLoader and execute arbitrary code via the class parameter, as demonstrated by the passing of this parameter to the getClass method of the ActionForm object in Struts 1.",
+					Cvss3Severity: "HIGH",
+					References: models.References{
+						{Source: "trivy", Link: "http://advisories.mageia.org/MGASA-2014-0219.html"},
+					},
+				}},
+			},
+			LibraryFixedIns: models.LibraryFixedIns{
+				models.LibraryFixedIn{
+					Key:     "jar",
+					Name:    "commons-beanutils:commons-beanutils",
+					FixedIn: "1.9.2",
+					//TODO use Artifactname?
+					Path: "Java",
+				},
+			},
+			AffectedPackages: models.PackageFixStatuses{},
+		},
+		"CVE-2012-1007": {
+			CveID: "CVE-2012-1007",
+			Confidences: models.Confidences{
+				models.Confidence{Score: 100,
+					DetectionMethod: "TrivyMatch",
+				},
+			},
+			CveContents: models.CveContents{
+				"trivy": []models.CveContent{{
+					Title:         "struts: multiple XSS flaws",
+					Summary:       "Multiple cross-site scripting (XSS) vulnerabilities in Apache Struts 1.3.10 allow remote attackers to inject arbitrary web script or HTML via (1) the name parameter to struts-examples/upload/upload-submit.do, or the message parameter to (2) struts-cookbook/processSimple.do or (3) struts-cookbook/processDyna.do.",
+					Cvss3Severity: "MEDIUM",
+					References: models.References{
+						{Source: "trivy", Link: "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2012-1007"},
+					},
+				}},
+			},
+			LibraryFixedIns: models.LibraryFixedIns{
+				models.LibraryFixedIn{
+					Key:     "jar",
+					Name:    "struts:struts",
+					FixedIn: "",
+					//TODO use Artifactname?
+					Path: "Java",
+				},
+			},
+			AffectedPackages: models.PackageFixStatuses{},
+		},
+	},
+	LibraryScanners: models.LibraryScanners{
+		models.LibraryScanner{
+			Type: "jar",
+			Path: "Java",
+			Libs: []types.Library{
+				{
+					Name:    "commons-beanutils:commons-beanutils",
+					Version: "1.7.0",
+				},
+				{
+					Name:    "oro:oro",
+					Version: "2.0.7",
+				},
+				{
+					Name:    "struts:struts",
+					Version: "1.2.7",
+				},
+			},
+		},
+	},
+	Packages:    models.Packages{},
+	SrcPackages: models.SrcPackages{},
+	Optional: map[string]interface{}{
+		"trivy-target": "Java",
 	},
 }
