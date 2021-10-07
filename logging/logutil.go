@@ -22,6 +22,7 @@ type LogOpts struct {
 	DebugSQL  bool   `json:"debugSQL,omitempty"`
 	LogToFile bool   `json:"logToFile,omitempty"`
 	LogDir    string `json:"logDir,omitempty"`
+	LogJSON   bool   `json:"logJSON"`
 	Quiet     bool   `json:"quiet,omitempty"`
 }
 
