@@ -438,8 +438,8 @@ var strutsSR = &models.ScanResult{
 	},
 	LibraryScanners: models.LibraryScanners{
 		models.LibraryScanner{
-			Type: "jar",
-			Path: "Java",
+			Type:         "jar",
+			LockfilePath: "Java",
 			Libs: []models.Library{
 				{
 					Name:    "commons-beanutils:commons-beanutils",
@@ -695,13 +695,13 @@ var osAndLibSR = &models.ScanResult{
 	},
 	LibraryScanners: models.LibraryScanners{
 		models.LibraryScanner{
-			Type: "gemspec",
-			Path: "Ruby",
+			Type:         "gemspec",
+			LockfilePath: "Ruby",
 			Libs: []models.Library{
 				{
-					Name:    "activesupport",
-					Version: "6.0.2.1",
-					Path:    "var/lib/gems/2.5.0/specifications/activesupport-6.0.2.1.gemspec",
+					Name:     "activesupport",
+					Version:  "6.0.2.1",
+					FilePath: "var/lib/gems/2.5.0/specifications/activesupport-6.0.2.1.gemspec",
 				},
 			},
 		},

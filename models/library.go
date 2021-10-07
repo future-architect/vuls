@@ -20,8 +20,8 @@ func (lss LibraryScanners) Find(path, name string) map[string]Library {
 	filtered := map[string]Library{}
 	for _, ls := range lss {
 		for _, lib := range ls.Libs {
-			if ls.Path == path && lib.Name == name {
-				filtered[ls.Path] = lib
+			if ls.LockfilePath == path && lib.Name == name {
+				filtered[ls.LockfilePath] = lib
 				break
 			}
 		}
@@ -39,17 +39,16 @@ func (lss LibraryScanners) Total() (total int) {
 
 // LibraryScanner has libraries information
 type LibraryScanner struct {
-	Type string
-	// TODO
-	Path string
-	Libs []Library
+	Type         string
+	LockfilePath string
+	Libs         []Library
 }
 
 // Library holds the attribute of a package library
 type Library struct {
-	Name    string
-	Version string
-	Path    string
+	Name     string
+	Version  string
+	FilePath string
 }
 
 // Scan : scan target library
@@ -100,7 +99,7 @@ func (s LibraryScanner) getVulnDetail(tvuln types.DetectedVulnerability) (vinfo 
 			Key:     s.GetLibraryKey(),
 			Name:    tvuln.PkgName,
 			FixedIn: tvuln.FixedVersion,
-			Path:    s.Path,
+			Path:    s.LockfilePath,
 		},
 	}
 	return vinfo, nil
@@ -141,7 +140,7 @@ var LibraryMap = map[string]string{
 
 // GetLibraryKey returns target library key
 func (s LibraryScanner) GetLibraryKey() string {
-	fileName := filepath.Base(s.Path)
+	fileName := filepath.Base(s.LockfilePath)
 	switch s.Type {
 	case "jar", "war", "ear":
 		return "java"

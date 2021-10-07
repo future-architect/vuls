@@ -11,15 +11,15 @@ func convertLibWithScanner(apps []types.Application) ([]models.LibraryScanner, e
 		libs := []models.Library{}
 		for _, lib := range app.Libraries {
 			libs = append(libs, models.Library{
-				Name:    lib.Name,
-				Version: lib.Version,
-				Path:    lib.FilePath,
+				Name:     lib.Name,
+				Version:  lib.Version,
+				FilePath: lib.FilePath,
 			})
 		}
 		scanners = append(scanners, models.LibraryScanner{
-			Type: app.Type,
-			Path: app.FilePath,
-			Libs: libs,
+			Type:         app.Type,
+			LockfilePath: app.FilePath,
+			Libs:         libs,
 		})
 	}
 	return scanners, nil

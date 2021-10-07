@@ -20,7 +20,7 @@ func TestLibraryScanners_Find(t *testing.T) {
 			name: "single file",
 			lss: LibraryScanners{
 				{
-					Path: "/pathA",
+					LockfilePath: "/pathA",
 					Libs: []Library{
 						{
 							Name:    "libA",
@@ -41,7 +41,7 @@ func TestLibraryScanners_Find(t *testing.T) {
 			name: "multi file",
 			lss: LibraryScanners{
 				{
-					Path: "/pathA",
+					LockfilePath: "/pathA",
 					Libs: []Library{
 						{
 							Name:    "libA",
@@ -50,7 +50,7 @@ func TestLibraryScanners_Find(t *testing.T) {
 					},
 				},
 				{
-					Path: "/pathB",
+					LockfilePath: "/pathB",
 					Libs: []Library{
 						{
 							Name:    "libA",
@@ -71,7 +71,7 @@ func TestLibraryScanners_Find(t *testing.T) {
 			name: "miss",
 			lss: LibraryScanners{
 				{
-					Path: "/pathA",
+					LockfilePath: "/pathA",
 					Libs: []Library{
 						{
 							Name:    "libA",

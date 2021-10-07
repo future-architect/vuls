@@ -101,9 +101,9 @@ func Convert(results report.Results) (result *models.ScanResult, err error) {
 				libScanner := uniqueLibraryScannerPaths[trivyResult.Target]
 				libScanner.Type = trivyResult.Type
 				libScanner.Libs = append(libScanner.Libs, models.Library{
-					Name:    vuln.PkgName,
-					Version: vuln.InstalledVersion,
-					Path:    vuln.PkgPath,
+					Name:     vuln.PkgName,
+					Version:  vuln.InstalledVersion,
+					FilePath: vuln.PkgPath,
 				})
 				uniqueLibraryScannerPaths[trivyResult.Target] = libScanner
 			}
@@ -135,9 +135,9 @@ func Convert(results report.Results) (result *models.ScanResult, err error) {
 			libScanner.Type = trivyResult.Type
 			for _, p := range trivyResult.Packages {
 				libScanner.Libs = append(libScanner.Libs, models.Library{
-					Name:    p.Name,
-					Version: p.Version,
-					Path:    p.FilePath,
+					Name:     p.Name,
+					Version:  p.Version,
+					FilePath: p.FilePath,
 				})
 			}
 			uniqueLibraryScannerPaths[trivyResult.Target] = libScanner
@@ -162,14 +162,14 @@ func Convert(results report.Results) (result *models.ScanResult, err error) {
 		})
 
 		libscanner := models.LibraryScanner{
-			Type: v.Type,
-			Path: path,
-			Libs: libraries,
+			Type:         v.Type,
+			LockfilePath: path,
+			Libs:         libraries,
 		}
 		libraryScanners = append(libraryScanners, libscanner)
 	}
 	sort.Slice(libraryScanners, func(i, j int) bool {
-		return libraryScanners[i].Path < libraryScanners[j].Path
+		return libraryScanners[i].LockfilePath < libraryScanners[j].LockfilePath
 	})
 	scanResult.ScannedCves = vulnInfos
 	scanResult.Packages = pkgs
