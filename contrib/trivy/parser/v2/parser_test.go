@@ -13,15 +13,15 @@ func TestParse(t *testing.T) {
 		vulnJSON []byte
 		expected *models.ScanResult
 	}{
-		"redis": {
+		"image redis": {
 			vulnJSON: redisTrivy,
 			expected: redisSR,
 		},
-		"struts": {
+		"image struts": {
 			vulnJSON: strutsTrivy,
 			expected: strutsSR,
 		},
-		"osAndLib": {
+		"image osAndLib": {
 			vulnJSON: osAndLibTrivy,
 			expected: osAndLibSR,
 		},
