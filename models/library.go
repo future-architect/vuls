@@ -51,8 +51,8 @@ type Library struct {
 	Name    string
 	Version string
 
-	// Contains the path to the library in the container image. Empty string when Lockfile scan.
-	// This field is used to convert the result JSON of a `trivy image` using trivy-to-vul.
+	// The Path to the library in the container image. Empty string when Lockfile scan.
+	// This field is used to convert the result JSON of a `trivy image` using trivy-to-vuls.
 	FilePath string
 }
 
