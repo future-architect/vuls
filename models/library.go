@@ -43,7 +43,7 @@ type LibraryScanner struct {
 	Libs []Library
 
 	// The path to the Lockfile is stored.
-	LockfilePath string
+	LockfilePath string `json:"path,omitempty"`
 }
 
 // Library holds the attribute of a package library
