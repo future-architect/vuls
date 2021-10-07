@@ -39,15 +39,19 @@ func (lss LibraryScanners) Total() (total int) {
 
 // LibraryScanner has libraries information
 type LibraryScanner struct {
-	Type         string
+	Type string
+	Libs []Library
+
+	// The path to the Lockfile is stored.
 	LockfilePath string
-	Libs         []Library
 }
 
 // Library holds the attribute of a package library
 type Library struct {
-	Name     string
-	Version  string
+	Name    string
+	Version string
+
+	// Contains the path to the library in the container image.  Empty when Lockfile scan.
 	FilePath string
 }
 
