@@ -16,12 +16,12 @@ import (
 type LibraryScanners []LibraryScanner
 
 // Find : find by name
-func (lss LibraryScanners) Find(path, name string) map[string]types.Library {
-	filtered := map[string]types.Library{}
+func (lss LibraryScanners) Find(path, name string) map[string]Library {
+	filtered := map[string]Library{}
 	for _, ls := range lss {
 		for _, lib := range ls.Libs {
-			if ls.Path == path && lib.Name == name {
-				filtered[ls.Path] = lib
+			if ls.LockfilePath == path && lib.Name == name {
+				filtered[ls.LockfilePath] = lib
 				break
 			}
 		}
@@ -40,8 +40,20 @@ func (lss LibraryScanners) Total() (total int) {
 // LibraryScanner has libraries information
 type LibraryScanner struct {
 	Type string
-	Path string
-	Libs []types.Library
+	Libs []Library
+
+	// The path to the Lockfile is stored.
+	LockfilePath string `json:"path,omitempty"`
+}
+
+// Library holds the attribute of a package library
+type Library struct {
+	Name    string
+	Version string
+
+	// The Path to the library in the container image. Empty string when Lockfile scan.
+	// This field is used to convert the result JSON of a `trivy image` using trivy-to-vuls.
+	FilePath string
 }
 
 // Scan : scan target library
@@ -92,7 +104,7 @@ func (s LibraryScanner) getVulnDetail(tvuln types.DetectedVulnerability) (vinfo 
 			Key:     s.GetLibraryKey(),
 			Name:    tvuln.PkgName,
 			FixedIn: tvuln.FixedVersion,
-			Path:    s.Path,
+			Path:    s.LockfilePath,
 		},
 	}
 	return vinfo, nil
@@ -133,7 +145,7 @@ var LibraryMap = map[string]string{
 
 // GetLibraryKey returns target library key
 func (s LibraryScanner) GetLibraryKey() string {
-	fileName := filepath.Base(s.Path)
+	fileName := filepath.Base(s.LockfilePath)
 	switch s.Type {
 	case "jar", "war", "ear":
 		return "java"
