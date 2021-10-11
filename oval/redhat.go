@@ -64,6 +64,19 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 					vuln.CveContents[models.Oracle][i] = cont
 				}
 			}
+		case models.Amazon:
+			for _, d := range vuln.DistroAdvisories {
+				if conts, ok := vuln.CveContents[models.Amazon]; ok {
+					for i, cont := range conts {
+						if strings.HasPrefix(d.AdvisoryID, "ALAS2-") {
+							cont.SourceLink = fmt.Sprintf("https://alas.aws.amazon.com/AL2/%s.html", strings.ReplaceAll(d.AdvisoryID, "ALAS2", "ALAS"))
+						} else if strings.HasPrefix(d.AdvisoryID, "ALAS-") {
+							cont.SourceLink = fmt.Sprintf("https://alas.aws.amazon.com/%s.html", d.AdvisoryID)
+						}
+						vuln.CveContents[models.Amazon][i] = cont
+					}
+				}
+			}
 		}
 	}
 
