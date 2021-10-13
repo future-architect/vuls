@@ -51,7 +51,7 @@ require (
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/cobra v1.2.1
-	github.com/vulsio/go-cve-dictionary v0.8.2-0.20211013004255-4618f0847913
+	github.com/vulsio/go-cve-dictionary v0.8.2-0.20211013020338-ec22aa70ffdb
 	github.com/vulsio/go-exploitdb v0.4.2-0.20210930235136-c10d2716b7e2
 	github.com/vulsio/go-msfdb v0.2.1-0.20210928020521-9b56a938f544
 	github.com/vulsio/gost v0.4.1-0.20210928234623-3e6372ba2821
