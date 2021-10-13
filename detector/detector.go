@@ -145,9 +145,23 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 	}
 
 	for i, r := range rs {
-		r.ScannedCves = r.ScannedCves.FilterByCvssOver(config.Conf.CvssScoreOver)
-		r.ScannedCves = r.ScannedCves.FilterUnfixed(config.Conf.IgnoreUnfixed)
-		r.ScannedCves = r.ScannedCves.FilterByConfidenceOver(config.Conf.ConfidenceScoreOver)
+		nFiltered := 0
+		logging.Log.Infof("%s: total %d CVEs detected", r.FormatServerName(), len(r.ScannedCves))
+
+		if 0 < config.Conf.CvssScoreOver {
+			r.ScannedCves, nFiltered = r.ScannedCves.FilterByCvssOver(config.Conf.CvssScoreOver)
+			logging.Log.Infof("%s: %d CVEs filtered by --cvss-over=%d", r.FormatServerName(), nFiltered, config.Conf.CvssScoreOver)
+		}
+
+		if config.Conf.IgnoreUnfixed {
+			r.ScannedCves, nFiltered = r.ScannedCves.FilterUnfixed(config.Conf.IgnoreUnfixed)
+			logging.Log.Infof("%s: %d CVEs filtered by --ignore-unfixed=%d", r.FormatServerName(), nFiltered)
+		}
+
+		if 0 < config.Conf.ConfidenceScoreOver {
+			r.ScannedCves, nFiltered = r.ScannedCves.FilterByConfidenceOver(config.Conf.ConfidenceScoreOver)
+			logging.Log.Infof("%s: %d CVEs filtered by --confidence-over=%d", r.FormatServerName(), nFiltered, config.Conf.ConfidenceScoreOver)
+		}
 
 		// IgnoreCves
 		ignoreCves := []string{}
@@ -156,7 +170,10 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		} else if con, ok := config.Conf.Servers[r.ServerName].Containers[r.Container.Name]; ok {
 			ignoreCves = con.IgnoreCves
 		}
-		r.ScannedCves = r.ScannedCves.FilterIgnoreCves(ignoreCves)
+		if 0 < len(ignoreCves) {
+			r.ScannedCves, nFiltered = r.ScannedCves.FilterIgnoreCves(ignoreCves)
+			logging.Log.Infof("%s: %d CVEs filtered by ignoreCves=%s", r.FormatServerName(), nFiltered, ignoreCves)
+		}
 
 		// ignorePkgs
 		ignorePkgsRegexps := []string{}
@@ -165,11 +182,15 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		} else if s, ok := config.Conf.Servers[r.ServerName].Containers[r.Container.Name]; ok {
 			ignorePkgsRegexps = s.IgnorePkgsRegexp
 		}
-		r.ScannedCves = r.ScannedCves.FilterIgnorePkgs(ignorePkgsRegexps)
+		if 0 < len(ignorePkgsRegexps) {
+			r.ScannedCves, nFiltered = r.ScannedCves.FilterIgnorePkgs(ignorePkgsRegexps)
+			logging.Log.Infof("%s: %d CVEs filtered by ignorePkgsRegexp=%s", r.FormatServerName(), nFiltered, ignorePkgsRegexps)
+		}
 
 		// IgnoreUnscored
 		if config.Conf.IgnoreUnscoredCves {
-			r.ScannedCves = r.ScannedCves.FindScoredVulns()
+			r.ScannedCves, nFiltered = r.ScannedCves.FindScoredVulns()
+			logging.Log.Infof("%s: %d CVEs filtered by --ignore-unscored-cves=%s", r.FormatServerName(), nFiltered, config.Conf.IgnoreUnscoredCves)
 		}
 
 		r.FilterInactiveWordPressLibs(config.Conf.WpScan.DetectInactive)
