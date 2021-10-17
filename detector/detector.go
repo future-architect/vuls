@@ -150,12 +150,12 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 
 		if 0 < config.Conf.CvssScoreOver {
 			r.ScannedCves, nFiltered = r.ScannedCves.FilterByCvssOver(config.Conf.CvssScoreOver)
-			logging.Log.Infof("%s: %d CVEs filtered by --cvss-over=%d", r.FormatServerName(), nFiltered, config.Conf.CvssScoreOver)
+			logging.Log.Infof("%s: %d CVEs filtered by --cvss-over=%g", r.FormatServerName(), nFiltered, config.Conf.CvssScoreOver)
 		}
 
 		if config.Conf.IgnoreUnfixed {
 			r.ScannedCves, nFiltered = r.ScannedCves.FilterUnfixed(config.Conf.IgnoreUnfixed)
-			logging.Log.Infof("%s: %d CVEs filtered by --ignore-unfixed=%d", r.FormatServerName(), nFiltered)
+			logging.Log.Infof("%s: %d CVEs filtered by --ignore-unfixed", r.FormatServerName(), nFiltered)
 		}
 
 		if 0 < config.Conf.ConfidenceScoreOver {
@@ -190,7 +190,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		// IgnoreUnscored
 		if config.Conf.IgnoreUnscoredCves {
 			r.ScannedCves, nFiltered = r.ScannedCves.FindScoredVulns()
-			logging.Log.Infof("%s: %d CVEs filtered by --ignore-unscored-cves=%s", r.FormatServerName(), nFiltered, config.Conf.IgnoreUnscoredCves)
+			logging.Log.Infof("%s: %d CVEs filtered by --ignore-unscored-cves", r.FormatServerName(), nFiltered, config.Conf.IgnoreUnscoredCves)
 		}
 
 		r.FilterInactiveWordPressLibs(config.Conf.WpScan.DetectInactive)

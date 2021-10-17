@@ -186,11 +186,14 @@ see [vulsdoc](https://vuls.io/docs/en/how-to-contribute.html)
 
 ----
 
-## Stargazers over time
+## Sponsors
 
-[![Stargazers over time](https://starcharts.herokuapp.com/future-architect/vuls.svg)](https://starcharts.herokuapp.com/future-architect/vuls)
+|  |  |
+| ------------- | ------------- |
+| <a href="https://www.tines.com/?utm_source=oss&utm_medium=sponsorship&utm_campaign=vuls"><img src="img/sponsor/tines.png" align="left" width="200" ></a> | Tines is no-code automation for security teams. Build powerful, reliable workflows without a development team. |
+| <a href="https://www.sakura.ad.jp/"><img src="https://vuls.io/img/icons/sakura.svg" align="left" width="200" ></a> | |
 
------;
+----
 
 ## License
 
