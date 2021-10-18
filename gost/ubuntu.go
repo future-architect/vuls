@@ -26,6 +26,7 @@ func (ubu Ubuntu) supported(version string) bool {
 		"2004": "focal",
 		"2010": "groovy",
 		"2104": "hirsute",
+		"2110": "impish",
 	}[version]
 	return ok
 }

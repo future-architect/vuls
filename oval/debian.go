@@ -331,9 +331,18 @@ func (o Ubuntu) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 	case "20":
 		kernelNamesInOval := []string{
 			"linux-aws",
+			"linux-aws-edge",
 			"linux-azure",
+			"linux-base",
+			"linux-base-sgx",
 			"linux-gcp",
+			"linux-gcp-edge",
+			"linux-generic",
+			"linux-gke",
+			"linux-gkeop",
+			"linux-ibm",
 			"linux-kvm",
+			"linux-lowlatency",
 			"linux-meta",
 			"linux-meta-aws",
 			"linux-meta-azure",
@@ -343,8 +352,10 @@ func (o Ubuntu) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 			"linux-meta-oracle",
 			"linux-meta-raspi",
 			"linux-meta-riscv",
+			"linux-oem",
 			"linux-oem-5.6",
 			"linux-oracle",
+			"linux-oracle-edge",
 			"linux-raspi",
 			"linux-raspi2",
 			"linux-riscv",
@@ -353,6 +364,7 @@ func (o Ubuntu) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 			"linux-signed-gcp",
 			"linux-signed-oem-5.6",
 			"linux-signed-oracle",
+			"linux-virtual",
 			"linux",
 		}
 		return o.fillWithOval(r, kernelNamesInOval)
