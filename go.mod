@@ -53,7 +53,7 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/vulsio/go-cve-dictionary v0.8.2-0.20211013020338-ec22aa70ffdb
 	github.com/vulsio/go-exploitdb v0.4.2-0.20210930235136-c10d2716b7e2
-	github.com/vulsio/go-msfdb v0.2.1-0.20210928020521-9b56a938f544
+	github.com/vulsio/go-msfdb v0.2.1-0.20211020031651-4347c01aab66
 	github.com/vulsio/gost v0.4.1-0.20210928234623-3e6372ba2821
 	github.com/vulsio/goval-dictionary v0.6.1-0.20211020012854-1ceb24aae1a7
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
@@ -123,7 +123,7 @@ require (
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/masahiro331/go-mvn-version v0.0.0-20210429150710-d3157d602a08 // indirect
 	github.com/mattn/go-colorable v0.1.11 // indirect
-	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
+	github.com/mattn/go-sqlite3 v1.14.9 // indirect
 	github.com/mitchellh/copystructure v1.1.1 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
