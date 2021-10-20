@@ -190,7 +190,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		// IgnoreUnscored
 		if config.Conf.IgnoreUnscoredCves {
 			r.ScannedCves, nFiltered = r.ScannedCves.FindScoredVulns()
-			logging.Log.Infof("%s: %d CVEs filtered by --ignore-unscored-cves", r.FormatServerName(), nFiltered, config.Conf.IgnoreUnscoredCves)
+			logging.Log.Infof("%s: %d CVEs filtered by --ignore-unscored-cves", r.FormatServerName(), nFiltered)
 		}
 
 		r.FilterInactiveWordPressLibs(config.Conf.WpScan.DetectInactive)
