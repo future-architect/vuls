@@ -1179,8 +1179,8 @@ github.com/mattn/go-sqlite3 v1.9.0/go.mod h1:FPy6KqzDD04eiIsT53CuJW3U88zkxoIYsOq
 github.com/mattn/go-sqlite3 v1.14.5/go.mod h1:WVKg1VTActs4Qso6iwGbiFih2UIHo0ENGwNd0Lj+XmI=
 github.com/mattn/go-sqlite3 v1.14.7/go.mod h1:NyWgC/yNuGj7Q9rpYnZvas74GogHl5/Z4A/KQRfk6bU=
 github.com/mattn/go-sqlite3 v1.14.8/go.mod h1:NyWgC/yNuGj7Q9rpYnZvas74GogHl5/Z4A/KQRfk6bU=
-github.com/mattn/go-sqlite3 v2.0.3+incompatible h1:gXHsfypPkaMZrKbD5209QV9jbUTJKjyR5WD3HYQSd+U=
-github.com/mattn/go-sqlite3 v2.0.3+incompatible/go.mod h1:FPy6KqzDD04eiIsT53CuJW3U88zkxoIYsOqkbpncsNc=
+github.com/mattn/go-sqlite3 v1.14.9 h1:10HX2Td0ocZpYEjhilsuo6WWtUqttj2Kb0KtD86/KYA=
+github.com/mattn/go-sqlite3 v1.14.9/go.mod h1:NyWgC/yNuGj7Q9rpYnZvas74GogHl5/Z4A/KQRfk6bU=
 github.com/mattn/go-zglob v0.0.1/go.mod h1:9fxibJccNxU2cnpIKLRRFA7zX7qhkJIQWBb449FYHOo=
 github.com/mattn/goveralls v0.0.2/go.mod h1:8d1ZMHsd7fW6IRPKQh46F2WRpyib5/X4FOpevwGNQEw=
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
@@ -1613,8 +1613,8 @@ github.com/vulsio/go-cve-dictionary v0.8.2-0.20211013020338-ec22aa70ffdb h1:HTgu
 github.com/vulsio/go-cve-dictionary v0.8.2-0.20211013020338-ec22aa70ffdb/go.mod h1:Ii9TEH35giMSWJM2FwGm1PCPxuBKrbaYhDun2PM7ERo=
 github.com/vulsio/go-exploitdb v0.4.2-0.20210930235136-c10d2716b7e2 h1:9qNocUoE2Ko2LJFWDIuDZOuo4KHMxksIpAWY3BAOCjM=
 github.com/vulsio/go-exploitdb v0.4.2-0.20210930235136-c10d2716b7e2/go.mod h1:C1X/lRIvDDBWDeW19Msw7asZ4q0pFjmFx/kXGns2raA=
-github.com/vulsio/go-msfdb v0.2.1-0.20210928020521-9b56a938f544 h1:wG6rTODeLpm+N8wERjdVTo5kr64WqNEDR+VrKny/vAo=
-github.com/vulsio/go-msfdb v0.2.1-0.20210928020521-9b56a938f544/go.mod h1:QsHhtjF4hAheLgeGJQRv/ccmE3txtOSgwzTgziyStKY=
+github.com/vulsio/go-msfdb v0.2.1-0.20211020031651-4347c01aab66 h1:77Ms/nkA8pB58fuwBOeiJNgKhjyWpm4pyVdwLup+Gns=
+github.com/vulsio/go-msfdb v0.2.1-0.20211020031651-4347c01aab66/go.mod h1:NGdcwWxCK/ES8vZ/crzREqI69S5gH1MivCpSp1pa2Rc=
 github.com/vulsio/gost v0.4.1-0.20210928234623-3e6372ba2821 h1:MPbc8QNX9Rld5ksdWTWMdKbxfgj4qhiXosEvwfRl9Jk=
 github.com/vulsio/gost v0.4.1-0.20210928234623-3e6372ba2821/go.mod h1:49trASwbe0ZhntJhEc1rv3MDGUpIhIkZktELgZ8a5YA=
 github.com/vulsio/goval-dictionary v0.6.1-0.20211020012854-1ceb24aae1a7 h1:YS3DggefYXKg2SOFdd2a9BKiugZntSDtVCiolj3HJbA=
