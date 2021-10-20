@@ -36,7 +36,7 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err er
 		return false, err
 	}
 	if !b.Cnf.IsFetchViaHTTP() {
-		driver, err := newOvalDB(b.Cnf, ovalFamily)
+		driver, err := newOvalDB(b.Cnf)
 		if err != nil {
 			return false, err
 		}
@@ -75,7 +75,7 @@ func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 	}
 	var lastModified time.Time
 	if !b.Cnf.IsFetchViaHTTP() {
-		driver, err := newOvalDB(b.Cnf, ovalFamily)
+		driver, err := newOvalDB(b.Cnf)
 		if err != nil {
 			return false, err
 		}
@@ -112,7 +112,7 @@ func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 }
 
 // NewOvalDB returns oval db client
-func newOvalDB(cnf config.VulnDictInterface, familyInScanResult string) (driver db.DB, err error) {
+func newOvalDB(cnf config.VulnDictInterface) (driver db.DB, err error) {
 	if cnf.IsFetchViaHTTP() {
 		return nil, nil
 	}
@@ -122,12 +122,7 @@ func newOvalDB(cnf config.VulnDictInterface, familyInScanResult string) (driver 
 		path = cnf.GetSQLite3Path()
 	}
 
-	ovalFamily, err := GetFamilyInOval(familyInScanResult)
-	if err != nil {
-		return nil, err
-	}
-
-	driver, locked, err := db.NewDB(ovalFamily, cnf.GetType(), path, cnf.GetDebugSQL())
+	driver, locked, err := db.NewDB(cnf.GetType(), path, cnf.GetDebugSQL())
 	if err != nil {
 		if locked {
 			err = xerrors.Errorf("SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)

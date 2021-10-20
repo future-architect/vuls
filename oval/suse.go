@@ -35,7 +35,7 @@ func (o SUSE) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 			return 0, err
 		}
 	} else {
-		driver, err := newOvalDB(o.Cnf, r.Family)
+		driver, err := newOvalDB(o.Cnf)
 		if err != nil {
 			return 0, err
 		}
