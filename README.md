@@ -190,8 +190,8 @@ see [vulsdoc](https://vuls.io/docs/en/how-to-contribute.html)
 
 |  |  |
 | ------------- | ------------- |
-| <a href="https://www.tines.com/?utm_source=oss&utm_medium=sponsorship&utm_campaign=vuls"><img src="img/sponsor/tines.png" align="left" width="200" ></a> | Tines is no-code automation for security teams. Build powerful, reliable workflows without a development team. |
-| <a href="https://www.sakura.ad.jp/"><img src="https://vuls.io/img/icons/sakura.svg" align="left" width="200" ></a> | SAKURA internet Inc. is an Internet company founded in 1996. We provide cloud computing services such as "Sakura's Shared Server", "Sakura's VPS", and "Sakura's Cloud" to meet the needs of a wide range of customers, from individuals and corporations to the education and public sectors, using its own data centers in Japan. Based on the philosophy of "changing what you want to do into what you can do," we offer DX solutions for all fields.  |
+| <a href="https://www.tines.com/?utm_source=oss&utm_medium=sponsorship&utm_campaign=vuls"><img src="img/sponsor/tines.png" align="left" width="400px" ></a> | Tines is no-code automation for security teams. Build powerful, reliable workflows without a development team. |
+| <a href="https://www.sakura.ad.jp/"><img src="https://vuls.io/img/icons/sakura.svg" align="left" width="400px" ></a> | SAKURA internet Inc. is an Internet company founded in 1996. We provide cloud computing services such as "Sakura's Shared Server", "Sakura's VPS", and "Sakura's Cloud" to meet the needs of a wide range of customers, from individuals and corporations to the education and public sectors, using its own data centers in Japan. Based on the philosophy of "changing what you want to do into what you can do," we offer DX solutions for all fields.  |
 
 ----
 
