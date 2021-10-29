@@ -122,7 +122,7 @@ func newOvalDB(cnf config.VulnDictInterface) (driver db.DB, err error) {
 		path = cnf.GetSQLite3Path()
 	}
 
-	driver, locked, err := db.NewDB(cnf.GetType(), path, cnf.GetDebugSQL())
+	driver, locked, err := db.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), db.Option{})
 	if err != nil {
 		if locked {
 			err = xerrors.Errorf("SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)

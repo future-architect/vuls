@@ -207,7 +207,7 @@ func newMetasploitDB(cnf config.VulnDictInterface) (driver metasploitdb.DB, lock
 	if cnf.GetType() == "sqlite3" {
 		path = cnf.GetSQLite3Path()
 	}
-	if driver, locked, err = metasploitdb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL()); err != nil {
+	if driver, locked, err = metasploitdb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), metasploitdb.Option{}); err != nil {
 		if locked {
 			return nil, true, xerrors.Errorf("metasploitDB is locked. err: %w", err)
 		}

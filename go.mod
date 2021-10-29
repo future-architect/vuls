@@ -51,11 +51,11 @@ require (
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/cobra v1.2.1
-	github.com/vulsio/go-cve-dictionary v0.8.2-0.20211013020338-ec22aa70ffdb
-	github.com/vulsio/go-exploitdb v0.4.2-0.20210930235136-c10d2716b7e2
-	github.com/vulsio/go-msfdb v0.2.1-0.20211020031651-4347c01aab66
-	github.com/vulsio/gost v0.4.1-0.20210928234623-3e6372ba2821
-	github.com/vulsio/goval-dictionary v0.6.1-0.20211020012854-1ceb24aae1a7
+	github.com/vulsio/go-cve-dictionary v0.8.2-0.20211028094424-0a854f8e8f85
+	github.com/vulsio/go-exploitdb v0.4.2-0.20211028071949-1ebf9c4f6c4d
+	github.com/vulsio/go-msfdb v0.2.1-0.20211028071756-4a9759bd9f14
+	github.com/vulsio/gost v0.4.1-0.20211028071837-7ad032a6ffa8
+	github.com/vulsio/goval-dictionary v0.6.1-0.20211028072035-e85e14b91ccc
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/net v0.0.0-20211019232329-c6ed85c7a12d // indirect
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
