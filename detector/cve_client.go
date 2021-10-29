@@ -216,7 +216,7 @@ func newCveDB(cnf config.VulnDictInterface) (driver cvedb.DB, locked bool, err e
 	if cnf.GetType() == "sqlite3" {
 		path = cnf.GetSQLite3Path()
 	}
-	driver, locked, err = cvedb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL())
+	driver, locked, err = cvedb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), cvedb.Option{})
 	if err != nil {
 		err = xerrors.Errorf("Failed to init CVE DB. err: %w, path: %s", err, path)
 		return nil, locked, err

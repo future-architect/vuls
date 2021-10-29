@@ -88,7 +88,7 @@ func newGostDB(cnf config.GostConf) (driver db.DB, locked bool, err error) {
 	if cnf.GetType() == "sqlite3" {
 		path = cnf.GetSQLite3Path()
 	}
-	if driver, locked, err = db.NewDB(cnf.GetType(), path, cnf.GetDebugSQL()); err != nil {
+	if driver, locked, err = db.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), db.Option{}); err != nil {
 		if locked {
 			return nil, true, xerrors.Errorf("gostDB is locked. err: %w", err)
 		}
