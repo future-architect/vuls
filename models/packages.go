@@ -84,6 +84,15 @@ type Package struct {
 	Changelog        *Changelog           `json:"changelog,omitempty"`
 	AffectedProcs    []AffectedProcess    `json:",omitempty"`
 	NeedRestartProcs []NeedRestartProcess `json:",omitempty"`
+
+	// Dependencies are dependent packages
+	Dependencies []string `json:",omitempty"`
+
+	// ReverseDependencies are packages which depend on this package
+	ReverseDependencies []string `json:",omitempty"`
+
+	// DependenciesForUpdate are packages that needs to be updated together
+	DependenciesForUpdate []string `json:",omitempty"`
 }
 
 // FQPN returns Fully-Qualified-Package-Name

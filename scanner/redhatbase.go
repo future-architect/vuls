@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/cheggaaa/pb"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
@@ -230,8 +231,7 @@ func (o *redhatBase) preCure() error {
 func (o *redhatBase) postScan() error {
 	if o.isExecYumPS() {
 		if err := o.pkgPs(o.getOwnerPkgs); err != nil {
-			err = xerrors.Errorf("Failed to execute yum-ps: %w", err)
-			o.log.Warnf("err: %+v", err)
+			o.log.Warnf("err: %+v", xerrors.Errorf("Failed to execute yum-ps: %w", err))
 			o.warns = append(o.warns, err)
 			// Only warning this error
 		}
@@ -239,8 +239,7 @@ func (o *redhatBase) postScan() error {
 
 	if o.isExecNeedsRestarting() {
 		if err := o.needsRestarting(); err != nil {
-			err = xerrors.Errorf("Failed to execute need-restarting: %w", err)
-			o.log.Warnf("err: %+v", err)
+			o.log.Warnf("err: %+v", xerrors.Errorf("Failed to execute need-restarting: %w", err))
 			o.warns = append(o.warns, err)
 			// Only warning this error
 		}
@@ -267,8 +266,7 @@ func (o *redhatBase) scanPackages() (err error) {
 	fn := func(pkgName string) execResult { return o.exec(fmt.Sprintf("rpm -q --last %s", pkgName), noSudo) }
 	o.Kernel.RebootRequired, err = o.rebootRequired(fn)
 	if err != nil {
-		err = xerrors.Errorf("Failed to detect the kernel reboot required: %w", err)
-		o.log.Warnf("err: %+v", err)
+		o.log.Warnf("err: %+v", xerrors.Errorf("Failed to detect the kernel reboot required: %w", err))
 		o.warns = append(o.warns, err)
 		// Only warning this error
 	}
@@ -283,13 +281,18 @@ func (o *redhatBase) scanPackages() (err error) {
 
 	updatable, err := o.scanUpdatablePackages()
 	if err != nil {
-		err = xerrors.Errorf("Failed to scan updatable packages: %w", err)
-		o.log.Warnf("err: %+v", err)
+		o.log.Warnf("err: %+v", xerrors.Errorf("Failed to scan updatable packages: %w", err))
 		o.warns = append(o.warns, err)
 		// Only warning this error
 	} else {
 		o.Packages.MergeNewVersion(updatable)
 	}
+
+	if o.getServerInfo().Mode.IsDeep() {
+		resolver := yumInstallDependentResolver{redhat: o}
+		resolver.scanDependentPkgsForUpdate()
+	}
+
 	return nil
 }
 
@@ -722,4 +725,66 @@ func (o *redhatBase) parseDnfModuleList(stdout string) (labels []string, err err
 		labels = append(labels, fmt.Sprintf("%s:%s", ss[0], ss[1]))
 	}
 	return
+}
+
+type yumInstallDependentResolver struct {
+	redhat *redhatBase
+}
+
+func (o *yumInstallDependentResolver) scanDependentPkgsForUpdate() {
+	o.redhat.log.Infof("Detecting the dependencies of each packages when yum updating")
+	bar := pb.StartNew(len(o.redhat.Packages))
+	for name, pkg := range o.redhat.Packages {
+		bar.Increment()
+		if pkg.Version == pkg.NewVersion && pkg.Release == pkg.NewRelease {
+			continue
+		}
+		names, err := o.scanUpdatablePkgDeps(name)
+		if err != nil {
+			o.redhat.log.Warnf("err: %+v", xerrors.Errorf("Failed to scan dependent packages for update: %w", err))
+			o.redhat.warns = append(o.redhat.warns, err)
+			// Only warning this error
+		}
+		for _, n := range names {
+			pkg.DependenciesForUpdate = append(pkg.DependenciesForUpdate, n)
+		}
+		o.redhat.Packages[name] = pkg
+	}
+	bar.Finish()
+	return
+}
+
+func (o *yumInstallDependentResolver) scanUpdatablePkgDeps(name string) (depsPkgNames []string, err error) {
+	cmd := fmt.Sprintf("LANGUAGE=en_US.UTF-8 yum install --assumeno --cacheonly --quiet %s", name)
+	r := o.redhat.exec(cmd, true)
+	if !r.isSuccess(0, 1) {
+		return nil, xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	names := o.parseYumInstall(r.Stdout)
+	for _, n := range names {
+		if _, ok := o.redhat.Packages[n]; ok {
+			depsPkgNames = append(depsPkgNames, n)
+		}
+	}
+	return
+}
+
+func (o *yumInstallDependentResolver) parseYumInstall(stdout string) []string {
+	names, inDepsLines := []string{}, false
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "Updating for dependencies:") {
+			inDepsLines = true
+			continue
+		}
+		if inDepsLines {
+			ss := strings.Fields(line)
+			if len(ss) == 0 {
+				break
+			}
+			names = append(names, ss[0])
+		}
+	}
+	return names
 }

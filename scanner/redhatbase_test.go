@@ -641,3 +641,71 @@ kernel-3.10.0-1062.12.1.el7.x86_64            Sat 29 Feb 2020 12:09:00 PM UTC`,
 		})
 	}
 }
+
+func Test_redhatBase_parseYumInstall(t *testing.T) {
+	type fields struct {
+		base base
+		sudo rootPriv
+	}
+	type args struct {
+		stdout string
+	}
+	tests := []struct {
+		name         string
+		fields       fields
+		args         args
+		wantPkgNames []string
+	}{
+		{
+			name: "ok",
+			fields: fields{
+				base: base{},
+			},
+			args: args{
+				stdout: `===========================================================================================================================================================
+ Package                                 Arch                             Version                                  Repository                         Size
+===========================================================================================================================================================
+Updating:
+ glibc                                   x86_64                           2.17-325.el7_9                           updates                           3.6 M
+Updating for dependencies:
+ glibc-common                            x86_64                           2.17-325.el7_9                           updates                            12 M
+ glibc-devel                             x86_64                           2.17-325.el7_9                           updates                           1.1 M
+ glibc-headers                           x86_64                           2.17-325.el7_9                           updates                           691 k
+
+Transaction Summary
+===========================================================================================================================================================
+Upgrade  1 Package (+3 Dependent packages)
+
+Exiting on user command
+Your transaction was saved, rerun it with:
+ yum load-transaction /tmp/yum_save_tx.2021-10-25.08-24.1EXcRc.yumtx`,
+			},
+			wantPkgNames: []string{
+				"glibc-common",
+				"glibc-devel",
+				"glibc-headers",
+			},
+		},
+		{
+			name: "no deps",
+			fields: fields{
+				base: base{},
+			},
+			args: args{
+				stdout: `Package zlib-1.2.7-19.el7_9.x86_64 already installed and latest version`,
+			},
+			wantPkgNames: []string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := &redhatBase{
+				base: tt.fields.base,
+			}
+			resolver := yumInstallDependentResolver{redhat: o}
+			if gotPkgNames := resolver.parseYumInstall(tt.args.stdout); !reflect.DeepEqual(gotPkgNames, tt.wantPkgNames) {
+				t.Errorf("redhatBase.parseYumInstall() = %v, want %v", gotPkgNames, tt.wantPkgNames)
+			}
+		})
+	}
+}
