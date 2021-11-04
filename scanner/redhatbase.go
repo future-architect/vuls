@@ -289,8 +289,9 @@ func (o *redhatBase) scanPackages() (err error) {
 	}
 
 	if o.getServerInfo().Mode.IsDeep() {
-		resolver := yumInstallDependentResolver{redhat: o}
-		resolver.scanDependentPkgsForUpdate()
+		resolver := yumDependentResolver{redhat: o}
+		resolver.detectDependenciesForUpdate()
+		resolver.detectReverseDependencies()
 	}
 
 	return nil
@@ -727,16 +728,18 @@ func (o *redhatBase) parseDnfModuleList(stdout string) (labels []string, err err
 	return
 }
 
-type yumInstallDependentResolver struct {
+type yumDependentResolver struct {
 	redhat *redhatBase
 }
 
-func (o *yumInstallDependentResolver) scanDependentPkgsForUpdate() {
-	o.redhat.log.Infof("Detecting the dependencies of each packages when yum updating")
+func (o *yumDependentResolver) detectDependenciesForUpdate() {
+	o.redhat.log.Infof("Detecting the dependencies for each packages when yum updating")
+	o.redhat.log.Infof("If it is too slow, `yum clean all` may make it faster")
 	bar := pb.StartNew(len(o.redhat.Packages))
 	for name, pkg := range o.redhat.Packages {
 		bar.Increment()
 		if pkg.Version == pkg.NewVersion && pkg.Release == pkg.NewRelease {
+			// only updatable pkgs
 			continue
 		}
 		names, err := o.scanUpdatablePkgDeps(name)
@@ -745,16 +748,14 @@ func (o *yumInstallDependentResolver) scanDependentPkgsForUpdate() {
 			o.redhat.warns = append(o.redhat.warns, err)
 			// Only warning this error
 		}
-		for _, n := range names {
-			pkg.DependenciesForUpdate = append(pkg.DependenciesForUpdate, n)
-		}
+		pkg.DependenciesForUpdate = names
 		o.redhat.Packages[name] = pkg
 	}
 	bar.Finish()
 	return
 }
 
-func (o *yumInstallDependentResolver) scanUpdatablePkgDeps(name string) (depsPkgNames []string, err error) {
+func (o *yumDependentResolver) scanUpdatablePkgDeps(name string) (depsPkgNames []string, err error) {
 	cmd := fmt.Sprintf("LANGUAGE=en_US.UTF-8 yum install --assumeno --cacheonly --quiet %s", name)
 	r := o.redhat.exec(cmd, true)
 	if !r.isSuccess(0, 1) {
@@ -769,7 +770,7 @@ func (o *yumInstallDependentResolver) scanUpdatablePkgDeps(name string) (depsPkg
 	return
 }
 
-func (o *yumInstallDependentResolver) parseYumInstall(stdout string) []string {
+func (o *yumDependentResolver) parseYumInstall(stdout string) []string {
 	names, inDepsLines := []string{}, false
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
@@ -784,6 +785,57 @@ func (o *yumInstallDependentResolver) parseYumInstall(stdout string) []string {
 				break
 			}
 			names = append(names, ss[0])
+		}
+	}
+	return names
+}
+
+func (o *yumDependentResolver) detectReverseDependencies() {
+	o.redhat.log.Infof("Detecting the reverse dependencies for each packages")
+	bar := pb.StartNew(len(o.redhat.Packages))
+	for name, pkg := range o.redhat.Packages {
+		bar.Increment()
+		if pkg.Version == pkg.NewVersion && pkg.Release == pkg.NewRelease {
+			continue
+		}
+		names, err := o.repoqueryWhatRequires(name)
+		if err != nil {
+			o.redhat.log.Warnf("err: %+v", xerrors.Errorf("Failed to scan reverse dependent packages: %w", err))
+			o.redhat.warns = append(o.redhat.warns, err)
+			// Only warning this error
+		}
+		pkg.ReverseDependencies = names
+		o.redhat.Packages[name] = pkg
+	}
+	bar.Finish()
+	return
+}
+
+func (o *yumDependentResolver) repoqueryWhatRequires(pkgName string) (depsPkgNames []string, err error) {
+	cmd := `LANGUAGE=en_US.UTF-8 repoquery --whatrequires --resolve --pkgnarrow=installed --qf "%{name}" ` + pkgName
+	r := o.redhat.exec(cmd, true)
+	if !r.isSuccess() {
+		return nil, xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	names := o.parseRepoqueryWhatRequires(r.Stdout)
+	for _, n := range names {
+		if pkgName == n {
+			continue
+		}
+		if _, ok := o.redhat.Packages[n]; ok {
+			depsPkgNames = append(depsPkgNames, n)
+		}
+	}
+	return
+}
+
+func (o *yumDependentResolver) parseRepoqueryWhatRequires(stdout string) []string {
+	names := []string{}
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line != "" {
+			names = append(names, line)
 		}
 	}
 	return names

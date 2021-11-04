@@ -10,11 +10,6 @@ import (
 	"github.com/k0kubun/pp"
 )
 
-//  func unixtimeNoerr(s string) time.Time {
-//      t, _ := unixtime(s)
-//      return t
-//  }
-
 func TestParseInstalledPackagesLinesRedhat(t *testing.T) {
 	r := newRHEL(config.ServerInfo{})
 	r.Distro = config.Distro{Family: constant.RedHat}
@@ -702,9 +697,63 @@ Your transaction was saved, rerun it with:
 			o := &redhatBase{
 				base: tt.fields.base,
 			}
-			resolver := yumInstallDependentResolver{redhat: o}
+			resolver := yumDependentResolver{redhat: o}
 			if gotPkgNames := resolver.parseYumInstall(tt.args.stdout); !reflect.DeepEqual(gotPkgNames, tt.wantPkgNames) {
 				t.Errorf("redhatBase.parseYumInstall() = %v, want %v", gotPkgNames, tt.wantPkgNames)
+			}
+		})
+	}
+}
+
+func Test_yumDependentResolver_parseRepoqueryWhatRequires(t *testing.T) {
+	type fields struct {
+		redhat *redhatBase
+	}
+	type args struct {
+		stdout string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   []string
+	}{
+		{
+			name:   "no deps",
+			fields: fields{redhat: &redhatBase{}},
+			args: args{
+				stdout: "",
+			},
+			want: []string{},
+		},
+		{
+			name:   "no deps",
+			fields: fields{redhat: &redhatBase{}},
+			args: args{
+				stdout: `which
+whois
+wpa_supplicant
+xcb-util
+xfsprogs
+xinetd`,
+			},
+			want: []string{
+				"which",
+				"whois",
+				"wpa_supplicant",
+				"xcb-util",
+				"xfsprogs",
+				"xinetd",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := &yumDependentResolver{
+				redhat: tt.fields.redhat,
+			}
+			if got := o.parseRepoqueryWhatRequires(tt.args.stdout); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("yumDependentResolver.parseRepoqueryWhatRequires() = %v, want %v", got, tt.want)
 			}
 		})
 	}
