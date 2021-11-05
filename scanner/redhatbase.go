@@ -292,6 +292,7 @@ func (o *redhatBase) scanPackages() (err error) {
 		resolver := yumDependentResolver{redhat: o}
 		resolver.detectDependenciesForUpdate()
 		resolver.detectReverseDependencies()
+		o.Packages.ResolveReverseDepsRecursively()
 	}
 
 	return nil
@@ -812,7 +813,7 @@ func (o *yumDependentResolver) detectReverseDependencies() {
 }
 
 func (o *yumDependentResolver) repoqueryWhatRequires(pkgName string) (depsPkgNames []string, err error) {
-	cmd := `LANGUAGE=en_US.UTF-8 repoquery --whatrequires --resolve --pkgnarrow=installed --qf "%{name}" ` + pkgName
+	cmd := `LANGUAGE=en_US.UTF-8 repoquery --cache --whatrequires --resolve --pkgnarrow=installed --qf "%{name}" ` + pkgName
 	r := o.redhat.exec(cmd, true)
 	if !r.isSuccess() {
 		return nil, xerrors.Errorf("Failed to SSH: %s", r)

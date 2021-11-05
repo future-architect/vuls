@@ -72,6 +72,31 @@ func (ps Packages) FindByFQPN(nameVerRel string) (*Package, error) {
 	return nil, xerrors.Errorf("Failed to find the package: %s", nameVerRel)
 }
 
+// ResolveReverseDepsRecursively resolve and set reverse dependencies for each packages recursively
+func (ps Packages) ResolveReverseDepsRecursively() {
+	for name, pkg := range ps {
+		depsmap := ps.resolveReverseDeps(pkg, map[string]struct{}{})
+		delete(depsmap, pkg.Name)
+		for depname := range depsmap {
+			pkg.ReverseDependenciesRecursively = append(pkg.ReverseDependenciesRecursively, depname)
+		}
+		ps[name] = pkg
+	}
+}
+
+func (ps Packages) resolveReverseDeps(pkg Package, acc map[string]struct{}) map[string]struct{} {
+	acc[pkg.Name] = struct{}{}
+	for _, name := range pkg.ReverseDependencies {
+		if _, ok := acc[name]; ok {
+			continue
+		}
+		if p, ok := ps[name]; ok {
+			acc = ps.resolveReverseDeps(p, acc)
+		}
+	}
+	return acc
+}
+
 // Package has installed binary packages.
 type Package struct {
 	Name             string               `json:"name"`
@@ -90,6 +115,9 @@ type Package struct {
 
 	// ReverseDependencies are packages which depend on this package
 	ReverseDependencies []string `json:",omitempty"`
+
+	// ReverseDependencies are packages which depend on this package
+	ReverseDependenciesRecursively []string `json:",omitempty"`
 
 	// DependenciesForUpdate are packages that needs to be updated together
 	DependenciesForUpdate []string `json:",omitempty"`

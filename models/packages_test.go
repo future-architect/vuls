@@ -428,3 +428,166 @@ func Test_NewPortStat(t *testing.T) {
 		})
 	}
 }
+
+func TestPackages_resolveReverseDeps(t *testing.T) {
+	type args struct {
+		pkg Package
+		acc map[string]struct{}
+	}
+	tests := []struct {
+		name string
+		ps   Packages
+		args args
+		want map[string]struct{}
+	}{
+		{
+			name: "",
+			ps: map[string]Package{
+				"pkgA": {
+					Name:                "pkgA",
+					ReverseDependencies: []string{"pkgB"},
+				},
+				"pkgB": {
+					Name:                "pkgB",
+					ReverseDependencies: []string{"pkgC"},
+				},
+				"pkgC": {
+					Name:                "pkgC",
+					ReverseDependencies: []string{""},
+				},
+			},
+			args: args{
+				pkg: Package{
+					Name:                "pkgA",
+					ReverseDependencies: []string{"pkgB"},
+				},
+				acc: map[string]struct{}{},
+			},
+			want: map[string]struct{}{
+				"pkgA": {},
+				"pkgB": {},
+				"pkgC": {},
+			},
+		},
+		{
+			name: "",
+			ps: map[string]Package{
+				"pkgA": {
+					Name:                "pkgA",
+					ReverseDependencies: []string{"pkgB"},
+				},
+				"pkgB": {
+					Name:                "pkgB",
+					ReverseDependencies: []string{"pkgA", "pkgC"},
+				},
+				"pkgC": {
+					Name:                "pkgC",
+					ReverseDependencies: []string{"pkgB"},
+				},
+			},
+			args: args{
+				pkg: Package{
+					Name:                "pkgA",
+					ReverseDependencies: []string{"pkgB"},
+				},
+				acc: map[string]struct{}{},
+			},
+			want: map[string]struct{}{
+				"pkgA": {},
+				"pkgB": {},
+				"pkgC": {},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.ps.resolveReverseDeps(tt.args.pkg, tt.args.acc); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Packages.resolveReverseDeps() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPackages_resolveReverseDepsRecursively(t *testing.T) {
+	tests := []struct {
+		name string
+		ps   Packages
+		want Packages
+	}{
+		{
+			name: "",
+			ps: map[string]Package{
+				"pkgA": {
+					Name:                "pkgA",
+					ReverseDependencies: []string{"pkgB"},
+				},
+				"pkgB": {
+					Name:                "pkgB",
+					ReverseDependencies: []string{"pkgC"},
+				},
+				"pkgC": {
+					Name:                "pkgC",
+					ReverseDependencies: []string{""},
+				},
+			},
+			want: map[string]Package{
+				"pkgA": {
+					Name:                           "pkgA",
+					ReverseDependencies:            []string{"pkgB"},
+					ReverseDependenciesRecursively: []string{"pkgB", "pkgC"},
+				},
+				"pkgB": {
+					Name:                           "pkgB",
+					ReverseDependencies:            []string{"pkgC"},
+					ReverseDependenciesRecursively: []string{"pkgC"},
+				},
+				"pkgC": {
+					Name:                "pkgC",
+					ReverseDependencies: []string{""},
+				},
+			},
+		},
+		{
+			name: "",
+			ps: map[string]Package{
+				"pkgA": {
+					Name:                "pkgA",
+					ReverseDependencies: []string{"pkgB"},
+				},
+				"pkgB": {
+					Name:                "pkgB",
+					ReverseDependencies: []string{"pkgA", "pkgC"},
+				},
+				"pkgC": {
+					Name:                "pkgC",
+					ReverseDependencies: []string{"pkgB"},
+				},
+			},
+			want: map[string]Package{
+				"pkgA": {
+					Name:                           "pkgA",
+					ReverseDependencies:            []string{"pkgB"},
+					ReverseDependenciesRecursively: []string{"pkgB", "pkgC"},
+				},
+				"pkgB": {
+					Name:                           "pkgB",
+					ReverseDependencies:            []string{"pkgA", "pkgC"},
+					ReverseDependenciesRecursively: []string{"pkgA", "pkgC"},
+				},
+				"pkgC": {
+					Name:                           "pkgC",
+					ReverseDependencies:            []string{"pkgB"},
+					ReverseDependenciesRecursively: []string{"pkgA", "pkgB"},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.ps.ResolveReverseDepsRecursively()
+			if !reflect.DeepEqual(tt.ps, tt.want) {
+				t.Errorf("Packages.resolveReverseDepsRecursively() = \n%+v, want \n%+v", tt.ps, tt.want)
+			}
+		})
+	}
+}
