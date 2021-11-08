@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/cheggaaa/pb"
@@ -219,6 +220,10 @@ func (o *redhatBase) execCheckDeps(packNames []string) error {
 	return nil
 }
 
+func (o *redhatBase) isDnf() bool {
+	return o.exec(util.PrependProxyEnv(`repoquery --version | grep dnf`), o.sudo.repoquery()).isSuccess()
+}
+
 func (o *redhatBase) preCure() error {
 	if err := o.detectIPAddr(); err != nil {
 		o.log.Warnf("Failed to detect IP addresses: %s", err)
@@ -259,10 +264,6 @@ func (o *redhatBase) scanPackages() (err error) {
 		return xerrors.Errorf("Failed to scan installed packages: %w", err)
 	}
 
-	if o.EnabledDnfModules, err = o.detectEnabledDnfModules(); err != nil {
-		return xerrors.Errorf("Failed to detect installed dnf modules: %w", err)
-	}
-
 	fn := func(pkgName string) execResult { return o.exec(fmt.Sprintf("rpm -q --last %s", pkgName), noSudo) }
 	o.Kernel.RebootRequired, err = o.rebootRequired(fn)
 	if err != nil {
@@ -279,6 +280,15 @@ func (o *redhatBase) scanPackages() (err error) {
 		}
 	}
 
+	if err := o.yumMakeCache(); err != nil {
+		return xerrors.Errorf("Failed to `yum makecache`: %w", err)
+	}
+
+	// `dnf module list` needs yum cache
+	if o.EnabledDnfModules, err = o.detectEnabledDnfModules(); err != nil {
+		return xerrors.Errorf("Failed to detect installed dnf modules: %w", err)
+	}
+
 	updatable, err := o.scanUpdatablePackages()
 	if err != nil {
 		o.log.Warnf("err: %+v", xerrors.Errorf("Failed to scan updatable packages: %w", err))
@@ -289,7 +299,7 @@ func (o *redhatBase) scanPackages() (err error) {
 	}
 
 	if o.getServerInfo().Mode.IsDeep() {
-		resolver := yumDependentResolver{redhat: o}
+		resolver := yumDependentResolver{redhat: o, isDnf: o.isDnf()}
 		resolver.detectDependenciesForUpdate()
 		resolver.detectReverseDependencies()
 		o.Packages.ResolveReverseDepsRecursively()
@@ -425,13 +435,8 @@ func (o *redhatBase) yumMakeCache() error {
 }
 
 func (o *redhatBase) scanUpdatablePackages() (models.Packages, error) {
-	if err := o.yumMakeCache(); err != nil {
-		return nil, xerrors.Errorf("Failed to `yum makecache`: %w", err)
-	}
-
-	isDnf := o.exec(util.PrependProxyEnv(`repoquery --version | grep dnf`), o.sudo.repoquery()).isSuccess()
 	cmd := `repoquery --all --pkgnarrow=updates --qf='%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPO}'`
-	if isDnf {
+	if o.isDnf() {
 		cmd = `repoquery --upgrades --qf='%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPONAME}' -q`
 	}
 	for _, repo := range o.getServerInfo().Enablerepo {
@@ -705,9 +710,6 @@ func (o *redhatBase) detectEnabledDnfModules() ([]string, error) {
 	cmd := `dnf --nogpgcheck --cacheonly --color=never --quiet module list --enabled`
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess() {
-		if strings.Contains(r.Stdout, "Cache-only enabled but no cache") {
-			return nil, xerrors.Errorf("sudo yum check-update to make local cache before scanning: %s", r)
-		}
 		return nil, xerrors.Errorf("Failed to dnf module list: %s", r)
 	}
 	return o.parseDnfModuleList(r.Stdout)
@@ -731,6 +733,7 @@ func (o *redhatBase) parseDnfModuleList(stdout string) (labels []string, err err
 
 type yumDependentResolver struct {
 	redhat *redhatBase
+	isDnf  bool
 }
 
 func (o *yumDependentResolver) detectDependenciesForUpdate() {
@@ -749,6 +752,7 @@ func (o *yumDependentResolver) detectDependenciesForUpdate() {
 			o.redhat.warns = append(o.redhat.warns, err)
 			// Only warning this error
 		}
+		sort.Strings(names)
 		pkg.DependenciesForUpdate = names
 		o.redhat.Packages[name] = pkg
 	}
@@ -757,7 +761,7 @@ func (o *yumDependentResolver) detectDependenciesForUpdate() {
 }
 
 func (o *yumDependentResolver) scanUpdatablePkgDeps(name string) (depsPkgNames []string, err error) {
-	cmd := fmt.Sprintf("LANGUAGE=en_US.UTF-8 yum install --assumeno --cacheonly --quiet %s", name)
+	cmd := fmt.Sprintf("LANGUAGE=en_US.UTF-8 yum install --assumeno --cacheonly %s", name)
 	r := o.redhat.exec(cmd, true)
 	if !r.isSuccess(0, 1) {
 		return nil, xerrors.Errorf("Failed to SSH: %s", r)
@@ -796,15 +800,16 @@ func (o *yumDependentResolver) detectReverseDependencies() {
 	bar := pb.StartNew(len(o.redhat.Packages))
 	for name, pkg := range o.redhat.Packages {
 		bar.Increment()
-		if pkg.Version == pkg.NewVersion && pkg.Release == pkg.NewRelease {
-			continue
-		}
+		// if pkg.Version == pkg.NewVersion && pkg.Release == pkg.NewRelease {
+		// 	continue
+		// }
 		names, err := o.repoqueryWhatRequires(name)
 		if err != nil {
 			o.redhat.log.Warnf("err: %+v", xerrors.Errorf("Failed to scan reverse dependent packages: %w", err))
 			o.redhat.warns = append(o.redhat.warns, err)
 			// Only warning this error
 		}
+		sort.Strings(names)
 		pkg.ReverseDependencies = names
 		o.redhat.Packages[name] = pkg
 	}
@@ -813,7 +818,10 @@ func (o *yumDependentResolver) detectReverseDependencies() {
 }
 
 func (o *yumDependentResolver) repoqueryWhatRequires(pkgName string) (depsPkgNames []string, err error) {
-	cmd := `LANGUAGE=en_US.UTF-8 repoquery --cache --whatrequires --resolve --pkgnarrow=installed --qf "%{name}" ` + pkgName
+	cmd := `LANGUAGE=en_US.UTF-8 repoquery --cache --resolve --pkgnarrow=installed --qf "%{name}" --whatrequires ` + pkgName
+	if o.isDnf {
+		cmd = `LANGUAGE=en_US.UTF-8 repoquery --cache --installed --qf "%{name}" --whatrequires ` + pkgName
+	}
 	r := o.redhat.exec(cmd, true)
 	if !r.isSuccess() {
 		return nil, xerrors.Errorf("Failed to SSH: %s", r)
