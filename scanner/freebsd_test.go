@@ -196,6 +196,54 @@ WWW: https://vuxml.FreeBSD.org/freebsd/ab3e98d9-8175-11e4-907d-d050992ecde8.html
 			t.Errorf("expected vulnID: %s, actual %s", tt.vulnID, aVulnID)
 		}
 	}
+
+	// alternative outputs
+	tests = []struct {
+		in     string
+		name   string
+		cveIDs []string
+		vulnID string
+	}{
+		{
+			in: `vulnxml file up-to-date
+go-1.17.1,1 is vulnerable:
+go -- multiple vulnerabilities
+CVE: CVE-2021-41772
+CVE: CVE-2021-41771
+WWW: https://vuxml.FreeBSD.org/freebsd/930def19-3e05-11ec-9ba8-002324b2fba8.html`,
+			name:   "go",
+			cveIDs: []string{"CVE-2021-41772", "CVE-2021-41771"},
+			vulnID: "930def19-3e05-11ec-9ba8-002324b2fba8",
+		},
+		{
+			in: `go -- misc/wasm, cmd/link: do not let command line arguments overwrite global data
+CVE: CVE-2021-38297
+WWW: https://vuxml.FreeBSD.org/freebsd/4fce9635-28c0-11ec-9ba8-002324b2fba8.html`,
+			name:   "",
+			cveIDs: []string{"CVE-2021-38297"},
+			vulnID: "4fce9635-28c0-11ec-9ba8-002324b2fba8",
+		},
+		{
+			in:     `2 problem(s) in 1 installed package(s) found.`,
+			cveIDs: []string{},
+			vulnID: "",
+		},
+	}
+
+	for _, tt := range tests {
+		aName, aCveIDs, aVulnID := d.parseBlock(tt.in)
+		if tt.name != aName {
+			t.Errorf("expected vulnID: %s, actual %s", tt.vulnID, aVulnID)
+		}
+		for i := range tt.cveIDs {
+			if tt.cveIDs[i] != aCveIDs[i] {
+				t.Errorf("expected cveID: %s, actual %s", tt.cveIDs[i], aCveIDs[i])
+			}
+		}
+		if tt.vulnID != aVulnID {
+			t.Errorf("expected vulnID: %s, actual %s", tt.vulnID, aVulnID)
+		}
+	}
 }
 
 func TestParsePkgInfo(t *testing.T) {
