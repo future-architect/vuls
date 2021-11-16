@@ -636,7 +636,7 @@ func summaryLines(r models.ScanResult) string {
 			cvssScore + " |",
 			fmt.Sprintf("%-6s |", av),
 			fmt.Sprintf("%3s |", exploits),
-			fmt.Sprintf("%6s |", vinfo.AlertDict.FormatSource()),
+			fmt.Sprintf("%9s |", vinfo.AlertDict.FormatSource()),
 			fmt.Sprintf("%7s |", vinfo.PatchStatus(r.Packages)),
 			strings.Join(pkgNames, ", "),
 		}
@@ -829,6 +829,16 @@ func setChangelogLayout(g *gocui.Gui) error {
 				} else {
 					lines = append(lines, fmt.Sprintf("* [JPCERT](%s)", alert.URL))
 				}
+			}
+		}
+
+		if len(vinfo.AlertDict.CISA) > 0 {
+			lines = append(lines, "\n",
+				"CISA Alert",
+				"===========",
+			)
+			for _, alert := range vinfo.AlertDict.CISA {
+				lines = append(lines, fmt.Sprintf("* [%s](%s)", alert.Title, alert.URL))
 			}
 		}
 

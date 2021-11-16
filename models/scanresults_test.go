@@ -220,6 +220,10 @@ func TestScanResult_Sort(t *testing.T) {
 								{Title: "a"},
 								{Title: "b"},
 							},
+							CISA: []Alert{
+								{Title: "a"},
+								{Title: "b"},
+							},
 						},
 					},
 				},
@@ -276,6 +280,10 @@ func TestScanResult_Sort(t *testing.T) {
 								{Title: "b"},
 							},
 							Ja: []Alert{
+								{Title: "a"},
+								{Title: "b"},
+							},
+							CISA: []Alert{
 								{Title: "a"},
 								{Title: "b"},
 							},
@@ -341,6 +349,10 @@ func TestScanResult_Sort(t *testing.T) {
 								{Title: "b"},
 								{Title: "a"},
 							},
+							CISA: []Alert{
+								{Title: "b"},
+								{Title: "a"},
+							},
 						},
 					},
 				},
@@ -397,6 +409,10 @@ func TestScanResult_Sort(t *testing.T) {
 								{Title: "b"},
 							},
 							Ja: []Alert{
+								{Title: "a"},
+								{Title: "b"},
+							},
+							CISA: []Alert{
 								{Title: "a"},
 								{Title: "b"},
 							},

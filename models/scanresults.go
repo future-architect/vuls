@@ -105,13 +105,12 @@ func (r *ScanResult) FilterInactiveWordPressLibs(detectInactive bool) {
 		return false
 	})
 	r.ScannedCves = filtered
-	return
 }
 
 // ReportFileName returns the filename on localhost without extension
 func (r ScanResult) ReportFileName() (name string) {
 	if r.Container.ContainerID == "" {
-		return fmt.Sprintf("%s", r.ServerName)
+		return r.ServerName
 	}
 	return fmt.Sprintf("%s@%s", r.Container.Name, r.ServerName)
 }
@@ -248,6 +247,7 @@ func (r ScanResult) FormatMetasploitCveSummary() string {
 func (r ScanResult) FormatAlertSummary() string {
 	jaCnt := 0
 	enCnt := 0
+	cisaCnt := 0
 	for _, vuln := range r.ScannedCves {
 		if len(vuln.AlertDict.En) > 0 {
 			enCnt += len(vuln.AlertDict.En)
@@ -255,8 +255,11 @@ func (r ScanResult) FormatAlertSummary() string {
 		if len(vuln.AlertDict.Ja) > 0 {
 			jaCnt += len(vuln.AlertDict.Ja)
 		}
+		if len(vuln.AlertDict.CISA) > 0 {
+			cisaCnt += len(vuln.AlertDict.CISA)
+		}
 	}
-	return fmt.Sprintf("en: %d, ja: %d alerts", enCnt, jaCnt)
+	return fmt.Sprintf("cert(en: %d, ja: %d), cisa %d alerts", enCnt, jaCnt, cisaCnt)
 }
 
 func (r ScanResult) isDisplayUpdatableNum(mode config.ScanMode) bool {
@@ -423,6 +426,9 @@ func (r *ScanResult) SortForJSONOutput() {
 		})
 		sort.Slice(v.AlertDict.Ja, func(i, j int) bool {
 			return v.AlertDict.Ja[i].Title < v.AlertDict.Ja[j].Title
+		})
+		sort.Slice(v.AlertDict.CISA, func(i, j int) bool {
+			return v.AlertDict.CISA[i].Title < v.AlertDict.CISA[j].Title
 		})
 		r.ScannedCves[k] = v
 	}

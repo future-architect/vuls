@@ -41,6 +41,7 @@ type Config struct {
 	Gost       GostConf       `json:"gost,omitempty"`
 	Exploit    ExploitConf    `json:"exploit,omitempty"`
 	Metasploit MetasploitConf `json:"metasploit,omitempty"`
+	KEVuln     KEVulnConf     `json:"kevuln,omitempty"`
 
 	Slack      SlackConf      `json:"-"`
 	EMail      SMTPConf       `json:"-"`
@@ -176,6 +177,7 @@ func (c *Config) ValidateOnReport() bool {
 		&Conf.Gost,
 		&Conf.Exploit,
 		&Conf.Metasploit,
+		&Conf.KEVuln,
 	} {
 		if err := cnf.Validate(); err != nil {
 			errs = append(errs, xerrors.Errorf("Failed to validate %s: %+v", cnf.GetName(), err))

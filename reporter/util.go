@@ -277,7 +277,7 @@ No CVE-IDs are found in updatable packages.
 			// fmt.Sprintf("%4.1f", v2max),
 			// fmt.Sprintf("%4.1f", v3max),
 			exploits,
-			vinfo.AlertDict.FormatSource(),
+			fmt.Sprintf("%9s", vinfo.AlertDict.FormatSource()),
 			fmt.Sprintf("%7s", vinfo.PatchStatus(r.Packages)),
 			link,
 		})
@@ -292,7 +292,7 @@ No CVE-IDs are found in updatable packages.
 		// "v3",
 		// "v2",
 		"PoC",
-		"CERT",
+		"Alert",
 		"Fixed",
 		"NVD",
 	})
@@ -481,6 +481,10 @@ No CVE-IDs are found in updatable packages.
 
 		for _, alert := range vuln.AlertDict.En {
 			data = append(data, []string{"US-CERT Alert", alert.URL})
+		}
+
+		for _, alert := range vuln.AlertDict.CISA {
+			data = append(data, []string{"CISA Alert", alert.URL})
 		}
 
 		// for _, rr := range vuln.CveContents.References(r.Family) {
