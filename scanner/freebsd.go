@@ -208,11 +208,11 @@ func (o *bsd) scanUnsecurePackages() (models.VulnInfos, error) {
 	blocks := o.splitIntoBlocks(r.Stdout)
 	for _, b := range blocks {
 		n, cveIDs, vulnID := o.parseBlock(b)
-		if len(cveIDs) == 0 {
-			continue
-		}
 		if len(n) != 0 {
 			name = n
+		}
+		if len(cveIDs) == 0 {
+			continue
 		}
 		pack, found := o.Packages[name]
 		if !found {

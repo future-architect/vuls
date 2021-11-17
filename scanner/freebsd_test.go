@@ -206,7 +206,23 @@ WWW: https://vuxml.FreeBSD.org/freebsd/ab3e98d9-8175-11e4-907d-d050992ecde8.html
 	}{
 		{
 			in: `vulnxml file up-to-date
-go-1.17.1,1 is vulnerable:
+libxml2-2.9.10 is vulnerable:
+libxml -- multiple vulnerabilities
+WWW: https://vuxml.FreeBSD.org/freebsd/f5abafc0-fcf6-11ea-8758-e0d55e2a8bf9.html`,
+			name:   "libxml2",
+			cveIDs: []string{},
+			vulnID: "f5abafc0-fcf6-11ea-8758-e0d55e2a8bf9",
+		},
+		{
+			in: `libxml2 -- Possible denial of service
+CVE: CVE-2021-3541
+WWW: https://vuxml.FreeBSD.org/freebsd/524bd03a-bb75-11eb-bf35-080027f515ea.html`,
+			name:   "",
+			cveIDs: []string{"CVE-2021-3541"},
+			vulnID: "524bd03a-bb75-11eb-bf35-080027f515ea",
+		},
+		{
+			in: `go-1.17.1,1 is vulnerable:
 go -- multiple vulnerabilities
 CVE: CVE-2021-41772
 CVE: CVE-2021-41771
@@ -222,11 +238,6 @@ WWW: https://vuxml.FreeBSD.org/freebsd/4fce9635-28c0-11ec-9ba8-002324b2fba8.html
 			name:   "",
 			cveIDs: []string{"CVE-2021-38297"},
 			vulnID: "4fce9635-28c0-11ec-9ba8-002324b2fba8",
-		},
-		{
-			in:     `2 problem(s) in 1 installed package(s) found.`,
-			cveIDs: []string{},
-			vulnID: "",
 		},
 	}
 
