@@ -212,11 +212,15 @@ func TestScanResult_Sort(t *testing.T) {
 							},
 						},
 						AlertDict: AlertDict{
-							En: []Alert{
+							USCERT: []Alert{
 								{Title: "a"},
 								{Title: "b"},
 							},
-							Ja: []Alert{
+							JPCERT: []Alert{
+								{Title: "a"},
+								{Title: "b"},
+							},
+							CISA: []Alert{
 								{Title: "a"},
 								{Title: "b"},
 							},
@@ -271,11 +275,15 @@ func TestScanResult_Sort(t *testing.T) {
 							},
 						},
 						AlertDict: AlertDict{
-							En: []Alert{
+							USCERT: []Alert{
 								{Title: "a"},
 								{Title: "b"},
 							},
-							Ja: []Alert{
+							JPCERT: []Alert{
+								{Title: "a"},
+								{Title: "b"},
+							},
+							CISA: []Alert{
 								{Title: "a"},
 								{Title: "b"},
 							},
@@ -333,11 +341,15 @@ func TestScanResult_Sort(t *testing.T) {
 							},
 						},
 						AlertDict: AlertDict{
-							En: []Alert{
+							USCERT: []Alert{
 								{Title: "b"},
 								{Title: "a"},
 							},
-							Ja: []Alert{
+							JPCERT: []Alert{
+								{Title: "b"},
+								{Title: "a"},
+							},
+							CISA: []Alert{
 								{Title: "b"},
 								{Title: "a"},
 							},
@@ -392,11 +404,15 @@ func TestScanResult_Sort(t *testing.T) {
 							},
 						},
 						AlertDict: AlertDict{
-							En: []Alert{
+							USCERT: []Alert{
 								{Title: "a"},
 								{Title: "b"},
 							},
-							Ja: []Alert{
+							JPCERT: []Alert{
+								{Title: "a"},
+								{Title: "b"},
+							},
+							CISA: []Alert{
 								{Title: "a"},
 								{Title: "b"},
 							},

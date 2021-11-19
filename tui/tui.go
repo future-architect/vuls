@@ -636,7 +636,7 @@ func summaryLines(r models.ScanResult) string {
 			cvssScore + " |",
 			fmt.Sprintf("%-6s |", av),
 			fmt.Sprintf("%3s |", exploits),
-			fmt.Sprintf("%6s |", vinfo.AlertDict.FormatSource()),
+			fmt.Sprintf("%9s |", vinfo.AlertDict.FormatSource()),
 			fmt.Sprintf("%7s |", vinfo.PatchStatus(r.Packages)),
 			strings.Join(pkgNames, ", "),
 		}
@@ -808,22 +808,32 @@ func setChangelogLayout(g *gocui.Gui) error {
 			}
 		}
 
-		if len(vinfo.AlertDict.En) > 0 {
+		if len(vinfo.AlertDict.CISA) > 0 {
 			lines = append(lines, "\n",
-				"USCERT Alert",
-				"=============",
+				"CISA Alert",
+				"===========",
 			)
-			for _, alert := range vinfo.AlertDict.En {
+			for _, alert := range vinfo.AlertDict.CISA {
 				lines = append(lines, fmt.Sprintf("* [%s](%s)", alert.Title, alert.URL))
 			}
 		}
 
-		if len(vinfo.AlertDict.Ja) > 0 {
+		if len(vinfo.AlertDict.USCERT) > 0 {
+			lines = append(lines, "\n",
+				"USCERT Alert",
+				"=============",
+			)
+			for _, alert := range vinfo.AlertDict.USCERT {
+				lines = append(lines, fmt.Sprintf("* [%s](%s)", alert.Title, alert.URL))
+			}
+		}
+
+		if len(vinfo.AlertDict.JPCERT) > 0 {
 			lines = append(lines, "\n",
 				"JPCERT Alert",
 				"=============",
 			)
-			for _, alert := range vinfo.AlertDict.Ja {
+			for _, alert := range vinfo.AlertDict.JPCERT {
 				if r.Lang == "ja" {
 					lines = append(lines, fmt.Sprintf("* [%s](%s)", alert.Title, alert.URL))
 				} else {

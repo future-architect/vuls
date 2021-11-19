@@ -241,7 +241,6 @@ func (ps PackageFixStatuses) Sort() {
 	sort.Slice(ps, func(i, j int) bool {
 		return ps[i].Name < ps[j].Name
 	})
-	return
 }
 
 // PackageFixStatus has name and other status about the package
@@ -360,7 +359,7 @@ func (v VulnInfo) CveIDDiffFormat() string {
 	if v.DiffStatus != "" {
 		return fmt.Sprintf("%s %s", v.DiffStatus, v.CveID)
 	}
-	return fmt.Sprintf("%s", v.CveID)
+	return v.CveID
 }
 
 // Titles returns title (TUI)
@@ -814,18 +813,27 @@ type Mitigation struct {
 	URL            string         `json:"url,omitempty"`
 }
 
-// AlertDict has target cve JPCERT and USCERT alert data
+// AlertDict has target cve JPCERT, USCERT and CISA alert data
 type AlertDict struct {
-	Ja []Alert `json:"ja"`
-	En []Alert `json:"en"`
+	CISA   []Alert `json:"cisa"`
+	JPCERT []Alert `json:"jpcert"`
+	USCERT []Alert `json:"uscert"`
+}
+
+func (a AlertDict) IsEmpty() bool {
+	return len(a.CISA) == 0 && len(a.JPCERT) == 0 && len(a.USCERT) == 0
 }
 
 // FormatSource returns which source has this alert
 func (a AlertDict) FormatSource() string {
-	if len(a.En) != 0 || len(a.Ja) != 0 {
-		return "CERT"
+	var s []string
+	if len(a.CISA) != 0 {
+		s = append(s, "CISA")
 	}
-	return ""
+	if len(a.USCERT) != 0 || len(a.JPCERT) != 0 {
+		s = append(s, "CERT")
+	}
+	return strings.Join(s, "/")
 }
 
 // Confidences is a list of Confidence
