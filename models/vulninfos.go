@@ -826,17 +826,14 @@ func (a AlertDict) IsEmpty() bool {
 
 // FormatSource returns which source has this alert
 func (a AlertDict) FormatSource() string {
-	s := ""
+	var s []string
 	if len(a.CISA) != 0 {
-		s = "CISA"
+		s = append(s, "CISA")
 	}
 	if len(a.USCERT) != 0 || len(a.JPCERT) != 0 {
-		if s != "" {
-			s += "/"
-		}
-		s += "CERT"
+		s = append(s, "CERT")
 	}
-	return s
+	return strings.Join(s, "/")
 }
 
 // Confidences is a list of Confidence
