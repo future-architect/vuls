@@ -820,6 +820,7 @@ type AlertDict struct {
 	USCERT []Alert `json:"uscert"`
 }
 
+// IsEmpty checks if the content of AlertDict is empty
 func (a AlertDict) IsEmpty() bool {
 	return len(a.CISA) == 0 && len(a.JPCERT) == 0 && len(a.USCERT) == 0
 }
