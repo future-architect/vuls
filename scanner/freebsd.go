@@ -1,6 +1,8 @@
 package scanner
 
 import (
+	"bufio"
+	"fmt"
 	"net"
 	"strings"
 
@@ -203,15 +205,11 @@ func (o *bsd) scanUnsecurePackages() (models.VulnInfos, error) {
 		return nil, nil
 	}
 
-	name := ""
 	packAdtRslt := []pkgAuditResult{}
 	blocks := o.splitIntoBlocks(r.Stdout)
 	for _, b := range blocks {
-		n, cveIDs, vulnID := o.parseBlock(b)
-		if len(n) != 0 {
-			name = n
-		}
-		if len(cveIDs) == 0 {
+		name, cveIDs, vulnID := o.parseBlock(b)
+		if name == "" || len(cveIDs) == 0 {
 			continue
 		}
 		pack, found := o.Packages[name]
@@ -335,20 +333,21 @@ type pkgAuditResult struct {
 }
 
 func (o *bsd) splitIntoBlocks(stdout string) (blocks []string) {
-	lines := strings.Split(stdout, "\n")
-	block := []string{}
-	for _, l := range lines {
-		if len(strings.TrimSpace(l)) == 0 {
-			if 0 < len(block) {
-				blocks = append(blocks, strings.Join(block, "\n"))
-				block = []string{}
-			}
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasSuffix(line, " is vulnerable:") {
+			blocks = append(blocks, line)
 			continue
 		}
-		block = append(block, strings.TrimSpace(l))
-	}
-	if 0 < len(block) {
-		blocks = append(blocks, strings.Join(block, "\n"))
+
+		if len(blocks) == 0 {
+			continue
+		}
+
+		last := blocks[len(blocks)-1]
+		last = fmt.Sprintf("%s\n%s", last, line)
+		blocks[len(blocks)-1] = last
 	}
 	return
 }

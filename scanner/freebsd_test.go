@@ -107,20 +107,46 @@ func TestSplitIntoBlocks(t *testing.T) {
 		expected []string
 	}{
 		{
-			`
-block1
+			`vulnxml file up-to-date
+bind95-9.6.3.2.ESV.R10_2 is vulnerable:
+bind -- denial of service vulnerability
+CVE: CVE-2014-8680
+CVE: CVE-2014-8500
+WWW: https://vuxml.FreeBSD.org/freebsd/ab3e98d9-8175-11e4-907d-d050992ecde8.html
 
-block2
-block2
-block2
+go-1.17.1,1 is vulnerable:
+  go -- multiple vulnerabilities
+  CVE: CVE-2021-41772
+  CVE: CVE-2021-41771
+  WWW: https://vuxml.FreeBSD.org/freebsd/930def19-3e05-11ec-9ba8-002324b2fba8.html
 
-block3
-block3`,
+  go -- misc/wasm, cmd/link: do not let command line arguments overwrite global data
+  CVE: CVE-2021-38297
+  WWW: https://vuxml.FreeBSD.org/freebsd/4fce9635-28c0-11ec-9ba8-002324b2fba8.html
+
+  Packages that depend on go: 
+
+2 problem(s) in 1 installed package(s) found.`,
 			[]string{
-				`block1`,
-				"block2\nblock2\nblock2",
-				"block3\nblock3",
-			},
+				`bind95-9.6.3.2.ESV.R10_2 is vulnerable:
+bind -- denial of service vulnerability
+CVE: CVE-2014-8680
+CVE: CVE-2014-8500
+WWW: https://vuxml.FreeBSD.org/freebsd/ab3e98d9-8175-11e4-907d-d050992ecde8.html
+`,
+				`go-1.17.1,1 is vulnerable:
+  go -- multiple vulnerabilities
+  CVE: CVE-2021-41772
+  CVE: CVE-2021-41771
+  WWW: https://vuxml.FreeBSD.org/freebsd/930def19-3e05-11ec-9ba8-002324b2fba8.html
+
+  go -- misc/wasm, cmd/link: do not let command line arguments overwrite global data
+  CVE: CVE-2021-38297
+  WWW: https://vuxml.FreeBSD.org/freebsd/4fce9635-28c0-11ec-9ba8-002324b2fba8.html
+
+  Packages that depend on go: 
+
+2 problem(s) in 1 installed package(s) found.`},
 		},
 	}
 
@@ -128,9 +154,10 @@ block3`,
 	for _, tt := range tests {
 		actual := d.splitIntoBlocks(tt.in)
 		if !reflect.DeepEqual(tt.expected, actual) {
-			e := pp.Sprintf("%v", tt.expected)
-			a := pp.Sprintf("%v", actual)
-			t.Errorf("expected %s, actual %s", e, a)
+			pp.ColoringEnabled = false
+			t.Errorf("expected %s\n, actual %s",
+				pp.Sprintf("%s", tt.expected),
+				pp.Sprintf("%s", actual))
 		}
 	}
 
@@ -179,31 +206,6 @@ WWW: https://vuxml.FreeBSD.org/freebsd/ab3e98d9-8175-11e4-907d-d050992ecde8.html
 			cveIDs: []string{},
 			vulnID: "",
 		},
-	}
-
-	d := newBsd(config.ServerInfo{})
-	for _, tt := range tests {
-		aName, aCveIDs, aVulnID := d.parseBlock(tt.in)
-		if tt.name != aName {
-			t.Errorf("expected vulnID: %s, actual %s", tt.vulnID, aVulnID)
-		}
-		for i := range tt.cveIDs {
-			if tt.cveIDs[i] != aCveIDs[i] {
-				t.Errorf("expected cveID: %s, actual %s", tt.cveIDs[i], aCveIDs[i])
-			}
-		}
-		if tt.vulnID != aVulnID {
-			t.Errorf("expected vulnID: %s, actual %s", tt.vulnID, aVulnID)
-		}
-	}
-
-	// alternative outputs
-	tests = []struct {
-		in     string
-		name   string
-		cveIDs []string
-		vulnID string
-	}{
 		{
 			in: `vulnxml file up-to-date
 libxml2-2.9.10 is vulnerable:
@@ -212,14 +214,6 @@ WWW: https://vuxml.FreeBSD.org/freebsd/f5abafc0-fcf6-11ea-8758-e0d55e2a8bf9.html
 			name:   "libxml2",
 			cveIDs: []string{},
 			vulnID: "f5abafc0-fcf6-11ea-8758-e0d55e2a8bf9",
-		},
-		{
-			in: `libxml2 -- Possible denial of service
-CVE: CVE-2021-3541
-WWW: https://vuxml.FreeBSD.org/freebsd/524bd03a-bb75-11eb-bf35-080027f515ea.html`,
-			name:   "",
-			cveIDs: []string{"CVE-2021-3541"},
-			vulnID: "524bd03a-bb75-11eb-bf35-080027f515ea",
 		},
 		{
 			in: `go-1.17.1,1 is vulnerable:
@@ -232,15 +226,22 @@ WWW: https://vuxml.FreeBSD.org/freebsd/930def19-3e05-11ec-9ba8-002324b2fba8.html
 			vulnID: "930def19-3e05-11ec-9ba8-002324b2fba8",
 		},
 		{
-			in: `go -- misc/wasm, cmd/link: do not let command line arguments overwrite global data
+			in: `go-1.17.1,1 is vulnerable:
+go -- multiple vulnerabilities
+CVE: CVE-2021-41772
+CVE: CVE-2021-41771
+WWW: https://vuxml.FreeBSD.org/freebsd/930def19-3e05-11ec-9ba8-002324b2fba8.html
+
+go -- misc/wasm, cmd/link: do not let command line arguments overwrite global data
 CVE: CVE-2021-38297
 WWW: https://vuxml.FreeBSD.org/freebsd/4fce9635-28c0-11ec-9ba8-002324b2fba8.html`,
-			name:   "",
-			cveIDs: []string{"CVE-2021-38297"},
+			name:   "go",
+			cveIDs: []string{"CVE-2021-41772", "CVE-2021-41771", "CVE-2021-38297"},
 			vulnID: "4fce9635-28c0-11ec-9ba8-002324b2fba8",
 		},
 	}
 
+	d := newBsd(config.ServerInfo{})
 	for _, tt := range tests {
 		aName, aCveIDs, aVulnID := d.parseBlock(tt.in)
 		if tt.name != aName {
