@@ -73,14 +73,13 @@ func FillWithKEVuln(r *models.ScanResult, cnf config.KEVulnConf) error {
 			if cveID == "" {
 				continue
 			}
-			vs, err := driver.GetKEVulnByCveID(cveID)
+			kevulns, err := driver.GetKEVulnByCveID(cveID)
 			if err != nil {
 				return err
 			}
-			if len(vs) == 0 {
+			if len(kevulns) == 0 {
 				continue
 			}
-			kevulns := ConvertToModelsKEVuln(vs)
 
 			alerts := []models.Alert{}
 			if len(kevulns) > 0 {
@@ -195,18 +194,6 @@ func httpGetKEVuln(url string, req kevulnRequest, resChan chan<- kevulnResponse,
 		request: req,
 		json:    body,
 	}
-}
-
-// ConvertToModelsKEVuln converts kevuln model to vuls model
-func ConvertToModelsKEVuln(vs []kevulnmodels.KEVuln) (vulns []models.KEVuln) {
-	for _, v := range vs {
-		vuln := models.KEVuln{
-			Title:       v.Title,
-			Description: v.Description,
-		}
-		vulns = append(vulns, vuln)
-	}
-	return vulns
 }
 
 func newKEVulnDB(cnf config.VulnDictInterface) (driver kevulndb.DB, locked bool, err error) {

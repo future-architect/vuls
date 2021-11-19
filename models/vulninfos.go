@@ -806,12 +806,6 @@ type Metasploit struct {
 	URLs        []string `json:",omitempty"`
 }
 
-// KEVuln :
-type KEVuln struct {
-	Title       string `json:"title"`
-	Description string `json:"description,omitempty"`
-}
-
 // Mitigation has a link and content
 type Mitigation struct {
 	CveContentType CveContentType `json:"cveContentType,omitempty"`
@@ -829,14 +823,14 @@ type AlertDict struct {
 // FormatSource returns which source has this alert
 func (a AlertDict) FormatSource() string {
 	s := ""
-	if len(a.En) != 0 || len(a.Ja) != 0 {
-		s = "CERT"
-	}
 	if len(a.CISA) != 0 {
+		s = "CISA"
+	}
+	if len(a.En) != 0 || len(a.Ja) != 0 {
 		if s != "" {
 			s += "/"
 		}
-		s += "CISA"
+		s += "CERT"
 	}
 	return s
 }

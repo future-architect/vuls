@@ -808,6 +808,16 @@ func setChangelogLayout(g *gocui.Gui) error {
 			}
 		}
 
+		if len(vinfo.AlertDict.CISA) > 0 {
+			lines = append(lines, "\n",
+				"CISA Alert",
+				"===========",
+			)
+			for _, alert := range vinfo.AlertDict.CISA {
+				lines = append(lines, fmt.Sprintf("* [%s](%s)", alert.Title, alert.URL))
+			}
+		}
+
 		if len(vinfo.AlertDict.En) > 0 {
 			lines = append(lines, "\n",
 				"USCERT Alert",
@@ -829,16 +839,6 @@ func setChangelogLayout(g *gocui.Gui) error {
 				} else {
 					lines = append(lines, fmt.Sprintf("* [JPCERT](%s)", alert.URL))
 				}
-			}
-		}
-
-		if len(vinfo.AlertDict.CISA) > 0 {
-			lines = append(lines, "\n",
-				"CISA Alert",
-				"===========",
-			)
-			for _, alert := range vinfo.AlertDict.CISA {
-				lines = append(lines, fmt.Sprintf("* [%s](%s)", alert.Title, alert.URL))
 			}
 		}
 

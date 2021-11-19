@@ -259,7 +259,7 @@ func (r ScanResult) FormatAlertSummary() string {
 			cisaCnt += len(vuln.AlertDict.CISA)
 		}
 	}
-	return fmt.Sprintf("cert(en: %d, ja: %d), cisa %d alerts", enCnt, jaCnt, cisaCnt)
+	return fmt.Sprintf("cisa %d alerts, cert(en: %d, ja: %d)", cisaCnt, enCnt, jaCnt)
 }
 
 func (r ScanResult) isDisplayUpdatableNum(mode config.ScanMode) bool {
