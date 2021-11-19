@@ -212,11 +212,11 @@ func TestScanResult_Sort(t *testing.T) {
 							},
 						},
 						AlertDict: AlertDict{
-							CERTEn: []Alert{
+							USCERT: []Alert{
 								{Title: "a"},
 								{Title: "b"},
 							},
-							CERTJa: []Alert{
+							JPCERT: []Alert{
 								{Title: "a"},
 								{Title: "b"},
 							},
@@ -275,11 +275,11 @@ func TestScanResult_Sort(t *testing.T) {
 							},
 						},
 						AlertDict: AlertDict{
-							CERTEn: []Alert{
+							USCERT: []Alert{
 								{Title: "a"},
 								{Title: "b"},
 							},
-							CERTJa: []Alert{
+							JPCERT: []Alert{
 								{Title: "a"},
 								{Title: "b"},
 							},
@@ -341,11 +341,11 @@ func TestScanResult_Sort(t *testing.T) {
 							},
 						},
 						AlertDict: AlertDict{
-							CERTEn: []Alert{
+							USCERT: []Alert{
 								{Title: "b"},
 								{Title: "a"},
 							},
-							CERTJa: []Alert{
+							JPCERT: []Alert{
 								{Title: "b"},
 								{Title: "a"},
 							},
@@ -404,11 +404,11 @@ func TestScanResult_Sort(t *testing.T) {
 							},
 						},
 						AlertDict: AlertDict{
-							CERTEn: []Alert{
+							USCERT: []Alert{
 								{Title: "a"},
 								{Title: "b"},
 							},
-							CERTJa: []Alert{
+							JPCERT: []Alert{
 								{Title: "a"},
 								{Title: "b"},
 							},

@@ -818,22 +818,22 @@ func setChangelogLayout(g *gocui.Gui) error {
 			}
 		}
 
-		if len(vinfo.AlertDict.CERTEn) > 0 {
+		if len(vinfo.AlertDict.USCERT) > 0 {
 			lines = append(lines, "\n",
 				"USCERT Alert",
 				"=============",
 			)
-			for _, alert := range vinfo.AlertDict.CERTEn {
+			for _, alert := range vinfo.AlertDict.USCERT {
 				lines = append(lines, fmt.Sprintf("* [%s](%s)", alert.Title, alert.URL))
 			}
 		}
 
-		if len(vinfo.AlertDict.CERTJa) > 0 {
+		if len(vinfo.AlertDict.JPCERT) > 0 {
 			lines = append(lines, "\n",
 				"JPCERT Alert",
 				"=============",
 			)
-			for _, alert := range vinfo.AlertDict.CERTJa {
+			for _, alert := range vinfo.AlertDict.JPCERT {
 				if r.Lang == "ja" {
 					lines = append(lines, fmt.Sprintf("* [%s](%s)", alert.Title, alert.URL))
 				} else {

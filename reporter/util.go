@@ -479,11 +479,11 @@ No CVE-IDs are found in updatable packages.
 			data = append(data, []string{"CISA Alert", alert.URL})
 		}
 
-		for _, alert := range vuln.AlertDict.CERTJa {
+		for _, alert := range vuln.AlertDict.JPCERT {
 			data = append(data, []string{"JPCERT Alert", alert.URL})
 		}
 
-		for _, alert := range vuln.AlertDict.CERTEn {
+		for _, alert := range vuln.AlertDict.USCERT {
 			data = append(data, []string{"US-CERT Alert", alert.URL})
 		}
 

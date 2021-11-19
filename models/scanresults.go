@@ -245,21 +245,21 @@ func (r ScanResult) FormatMetasploitCveSummary() string {
 
 // FormatAlertSummary returns a summary of CERT alerts
 func (r ScanResult) FormatAlertSummary() string {
-	jaCnt := 0
-	enCnt := 0
 	cisaCnt := 0
+	uscertCnt := 0
+	jpcertCnt := 0
 	for _, vuln := range r.ScannedCves {
-		if len(vuln.AlertDict.CERTEn) > 0 {
-			enCnt += len(vuln.AlertDict.CERTEn)
-		}
-		if len(vuln.AlertDict.CERTJa) > 0 {
-			jaCnt += len(vuln.AlertDict.CERTJa)
-		}
 		if len(vuln.AlertDict.CISA) > 0 {
 			cisaCnt += len(vuln.AlertDict.CISA)
 		}
+		if len(vuln.AlertDict.USCERT) > 0 {
+			uscertCnt += len(vuln.AlertDict.USCERT)
+		}
+		if len(vuln.AlertDict.JPCERT) > 0 {
+			jpcertCnt += len(vuln.AlertDict.JPCERT)
+		}
 	}
-	return fmt.Sprintf("cisa %d alerts, cert(en: %d, ja: %d)", cisaCnt, enCnt, jaCnt)
+	return fmt.Sprintf("cisa: %d alerts, uscert: %d, jpcert: %d)", cisaCnt, uscertCnt, jpcertCnt)
 }
 
 func (r ScanResult) isDisplayUpdatableNum(mode config.ScanMode) bool {
@@ -421,11 +421,11 @@ func (r *ScanResult) SortForJSONOutput() {
 
 		v.CveContents.Sort()
 
-		sort.Slice(v.AlertDict.CERTEn, func(i, j int) bool {
-			return v.AlertDict.CERTEn[i].Title < v.AlertDict.CERTEn[j].Title
+		sort.Slice(v.AlertDict.USCERT, func(i, j int) bool {
+			return v.AlertDict.USCERT[i].Title < v.AlertDict.USCERT[j].Title
 		})
-		sort.Slice(v.AlertDict.CERTJa, func(i, j int) bool {
-			return v.AlertDict.CERTJa[i].Title < v.AlertDict.CERTJa[j].Title
+		sort.Slice(v.AlertDict.JPCERT, func(i, j int) bool {
+			return v.AlertDict.JPCERT[i].Title < v.AlertDict.JPCERT[j].Title
 		})
 		sort.Slice(v.AlertDict.CISA, func(i, j int) bool {
 			return v.AlertDict.CISA[i].Title < v.AlertDict.CISA[j].Title
