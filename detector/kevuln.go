@@ -16,8 +16,8 @@ import (
 	"github.com/parnurzeal/gorequest"
 	"golang.org/x/xerrors"
 
-	kevulndb "github.com/MaineK00n/go-kev/db"
-	kevulnmodels "github.com/MaineK00n/go-kev/models"
+	kevulndb "github.com/vulsio/go-kev/db"
+	kevulnmodels "github.com/vulsio/go-kev/models"
 )
 
 // FillWithKEVuln :

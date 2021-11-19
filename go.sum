@@ -128,8 +128,6 @@ github.com/GoogleCloudPlatform/cloudsql-proxy v0.0.0-20191009163259-e802c2cb94ae
 github.com/GoogleCloudPlatform/docker-credential-gcr v1.5.0/go.mod h1:BB1eHdMLYEFuFdBlRMb0N7YGVdM5s6Pt0njxgvfbGGs=
 github.com/GoogleCloudPlatform/k8s-cloud-provider v0.0.0-20190822182118-27a4ced34534/go.mod h1:iroGtC8B3tQiqtds1l+mgk/BBOrxbqjH+eUfFQYRc14=
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
-github.com/MaineK00n/go-kev v0.0.0 h1:lo+NN9H37iyPtxNGCuhEOJ9RkbR9//fT9CSliDQoo1g=
-github.com/MaineK00n/go-kev v0.0.0/go.mod h1:NA6BeYsODViFBpuj9bduhgE30iqgFL0JluzxEbOsEfw=
 github.com/Masterminds/goutils v1.1.1 h1:5nUrii3FMTL5diU80unEVvNevw1nH4+ZV4DSLVJLSYI=
 github.com/Masterminds/goutils v1.1.1/go.mod h1:8cTjp+g8YejhMuvIA5y2vz3BpJxksy863GQaJW2MFNU=
 github.com/Masterminds/semver v1.5.0 h1:H65muMkzWKEuNDnfl9d70GUjFniHKHRbFPGBuZ3QEww=
@@ -1022,8 +1020,9 @@ github.com/jingyugao/rowserrcheck v0.0.0-20191204022205-72ab7603b68a/go.mod h1:x
 github.com/jinzhu/inflection v1.0.0 h1:K317FqzuhWc8YvSVlFMCCUb36O/S9MCKRDI7QkRKD/E=
 github.com/jinzhu/inflection v1.0.0/go.mod h1:h+uFLlag+Qp1Va5pdKtLDYj+kHp5pxUVkryuEj+Srlc=
 github.com/jinzhu/now v1.1.1/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/z8=
-github.com/jinzhu/now v1.1.2 h1:eVKgfIdy9b6zbWBMgFpfDPoAMifwSZagU9HmEU6zgiI=
 github.com/jinzhu/now v1.1.2/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/z8=
+github.com/jinzhu/now v1.1.3 h1:PlHq1bSCSZL9K0wUhbm2pGLoTWs2GwVhsP6emvGV/ZI=
+github.com/jinzhu/now v1.1.3/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/z8=
 github.com/jirfag/go-printf-func-name v0.0.0-20191110105641-45db9963cdd3/go.mod h1:HEWGJkRDzjJY2sqdDwxccsGicWEf9BQOZsq2tV+xzM0=
 github.com/jirfag/go-printf-func-name v0.0.0-20200119135958-7558a9eaa5af/go.mod h1:HEWGJkRDzjJY2sqdDwxccsGicWEf9BQOZsq2tV+xzM0=
 github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
@@ -1617,6 +1616,8 @@ github.com/vulsio/go-cve-dictionary v0.8.2-0.20211028094424-0a854f8e8f85 h1:nEha
 github.com/vulsio/go-cve-dictionary v0.8.2-0.20211028094424-0a854f8e8f85/go.mod h1:Ii9TEH35giMSWJM2FwGm1PCPxuBKrbaYhDun2PM7ERo=
 github.com/vulsio/go-exploitdb v0.4.2-0.20211028071949-1ebf9c4f6c4d h1:iMXVmz2f1Phor1TAmRKx324mDOuXst0GXGEboVRgysg=
 github.com/vulsio/go-exploitdb v0.4.2-0.20211028071949-1ebf9c4f6c4d/go.mod h1:2R5gwySHHjF3DoEt11xqnIWEJLS93CLfCUDPwYH+VdM=
+github.com/vulsio/go-kev v0.0.1 h1:FRAnSdrF4fgqBoeWnctydazLUMBJW9HWzwki+iAu5lw=
+github.com/vulsio/go-kev v0.0.1/go.mod h1:NrXTTkGG83ZYl7ypHHLqqzx6HvVkWH37qCizU5UoCS8=
 github.com/vulsio/go-msfdb v0.2.1-0.20211028071756-4a9759bd9f14 h1:2uYZw2gQ0kymwerTS1FXZbNgptnlye+SB7o3QlLDIBo=
 github.com/vulsio/go-msfdb v0.2.1-0.20211028071756-4a9759bd9f14/go.mod h1:NGdcwWxCK/ES8vZ/crzREqI69S5gH1MivCpSp1pa2Rc=
 github.com/vulsio/gost v0.4.1-0.20211028071837-7ad032a6ffa8 h1:jqsECpLRp1EAXGOdhPxHzqYjWP5l980GjJ8s/AUYH/4=
