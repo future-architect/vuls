@@ -335,7 +335,7 @@ type pkgAuditResult struct {
 func (o *bsd) splitIntoBlocks(stdout string) (blocks []string) {
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
-		line := scanner.Text()
+		line := strings.TrimSpace(scanner.Text())
 		if strings.HasSuffix(line, " is vulnerable:") {
 			blocks = append(blocks, line)
 			continue

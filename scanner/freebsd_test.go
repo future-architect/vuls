@@ -135,16 +135,16 @@ CVE: CVE-2014-8500
 WWW: https://vuxml.FreeBSD.org/freebsd/ab3e98d9-8175-11e4-907d-d050992ecde8.html
 `,
 				`go-1.17.1,1 is vulnerable:
-  go -- multiple vulnerabilities
-  CVE: CVE-2021-41772
-  CVE: CVE-2021-41771
-  WWW: https://vuxml.FreeBSD.org/freebsd/930def19-3e05-11ec-9ba8-002324b2fba8.html
+go -- multiple vulnerabilities
+CVE: CVE-2021-41772
+CVE: CVE-2021-41771
+WWW: https://vuxml.FreeBSD.org/freebsd/930def19-3e05-11ec-9ba8-002324b2fba8.html
 
-  go -- misc/wasm, cmd/link: do not let command line arguments overwrite global data
-  CVE: CVE-2021-38297
-  WWW: https://vuxml.FreeBSD.org/freebsd/4fce9635-28c0-11ec-9ba8-002324b2fba8.html
+go -- misc/wasm, cmd/link: do not let command line arguments overwrite global data
+CVE: CVE-2021-38297
+WWW: https://vuxml.FreeBSD.org/freebsd/4fce9635-28c0-11ec-9ba8-002324b2fba8.html
 
-  Packages that depend on go: 
+Packages that depend on go:
 
 2 problem(s) in 1 installed package(s) found.`},
 		},
