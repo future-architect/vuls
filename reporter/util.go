@@ -475,16 +475,16 @@ No CVE-IDs are found in updatable packages.
 			data = append(data, []string{"SANS/CWE Top25", sansTop25URLs[0]})
 		}
 
-		for _, alert := range vuln.AlertDict.Ja {
+		for _, alert := range vuln.AlertDict.CISA {
+			data = append(data, []string{"CISA Alert", alert.URL})
+		}
+
+		for _, alert := range vuln.AlertDict.CERTJa {
 			data = append(data, []string{"JPCERT Alert", alert.URL})
 		}
 
-		for _, alert := range vuln.AlertDict.En {
+		for _, alert := range vuln.AlertDict.CERTEn {
 			data = append(data, []string{"US-CERT Alert", alert.URL})
-		}
-
-		for _, alert := range vuln.AlertDict.CISA {
-			data = append(data, []string{"CISA Alert", alert.URL})
 		}
 
 		// for _, rr := range vuln.CveContents.References(r.Family) {

@@ -249,11 +249,11 @@ func (r ScanResult) FormatAlertSummary() string {
 	enCnt := 0
 	cisaCnt := 0
 	for _, vuln := range r.ScannedCves {
-		if len(vuln.AlertDict.En) > 0 {
-			enCnt += len(vuln.AlertDict.En)
+		if len(vuln.AlertDict.CERTEn) > 0 {
+			enCnt += len(vuln.AlertDict.CERTEn)
 		}
-		if len(vuln.AlertDict.Ja) > 0 {
-			jaCnt += len(vuln.AlertDict.Ja)
+		if len(vuln.AlertDict.CERTJa) > 0 {
+			jaCnt += len(vuln.AlertDict.CERTJa)
 		}
 		if len(vuln.AlertDict.CISA) > 0 {
 			cisaCnt += len(vuln.AlertDict.CISA)
@@ -421,11 +421,11 @@ func (r *ScanResult) SortForJSONOutput() {
 
 		v.CveContents.Sort()
 
-		sort.Slice(v.AlertDict.En, func(i, j int) bool {
-			return v.AlertDict.En[i].Title < v.AlertDict.En[j].Title
+		sort.Slice(v.AlertDict.CERTEn, func(i, j int) bool {
+			return v.AlertDict.CERTEn[i].Title < v.AlertDict.CERTEn[j].Title
 		})
-		sort.Slice(v.AlertDict.Ja, func(i, j int) bool {
-			return v.AlertDict.Ja[i].Title < v.AlertDict.Ja[j].Title
+		sort.Slice(v.AlertDict.CERTJa, func(i, j int) bool {
+			return v.AlertDict.CERTJa[i].Title < v.AlertDict.CERTJa[j].Title
 		})
 		sort.Slice(v.AlertDict.CISA, func(i, j int) bool {
 			return v.AlertDict.CISA[i].Title < v.AlertDict.CISA[j].Title

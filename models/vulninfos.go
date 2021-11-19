@@ -815,9 +815,9 @@ type Mitigation struct {
 
 // AlertDict has target cve JPCERT, USCERT and CISA alert data
 type AlertDict struct {
-	Ja   []Alert `json:"ja"`
-	En   []Alert `json:"en"`
-	CISA []Alert `json:"cisa"`
+	CISA   []Alert `json:"cisa"`
+	CERTJa []Alert `json:"cert(ja)"`
+	CERTEn []Alert `json:"cert(en)"`
 }
 
 // FormatSource returns which source has this alert
@@ -826,7 +826,7 @@ func (a AlertDict) FormatSource() string {
 	if len(a.CISA) != 0 {
 		s = "CISA"
 	}
-	if len(a.En) != 0 || len(a.Ja) != 0 {
+	if len(a.CERTEn) != 0 || len(a.CERTJa) != 0 {
 		if s != "" {
 			s += "/"
 		}

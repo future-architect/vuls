@@ -365,7 +365,7 @@ func FillCvesWithNvdJvn(r *models.ScanResult, cnf config.GoCveDictConf, logOpts 
 func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 	for _, nvd := range cvedetail.Nvds {
 		for _, cert := range nvd.Certs {
-			dict.En = append(dict.En, models.Alert{
+			dict.CERTEn = append(dict.CERTEn, models.Alert{
 				URL:   cert.Link,
 				Title: cert.Title,
 				Team:  "cert(us)",
@@ -375,7 +375,7 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 
 	for _, jvn := range cvedetail.Jvns {
 		for _, cert := range jvn.Certs {
-			dict.Ja = append(dict.Ja, models.Alert{
+			dict.CERTJa = append(dict.CERTJa, models.Alert{
 				URL:   cert.Link,
 				Title: cert.Title,
 				Team:  "cert(jp)",
