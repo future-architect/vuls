@@ -39,14 +39,11 @@ func (e EOL) IsExtendedSuppportEnded(now time.Time) bool {
 func GetEOL(family, release string) (eol EOL, found bool) {
 	switch family {
 	case constant.Amazon:
-		rel := "2"
-		if isAmazonLinux1(release) {
-			rel = "1"
-		}
 		eol, found = map[string]EOL{
-			"1": {StandardSupportUntil: time.Date(2023, 6, 30, 23, 59, 59, 0, time.UTC)},
-			"2": {},
-		}[rel]
+			"1":    {StandardSupportUntil: time.Date(2023, 6, 30, 23, 59, 59, 0, time.UTC)},
+			"2":    {},
+			"2022": {},
+		}[getAmazonLinuxVersion(release)]
 	case constant.RedHat:
 		// https://access.redhat.com/support/policy/updates/errata
 		eol, found = map[string]EOL{
@@ -206,6 +203,10 @@ func majorDotMinor(osVer string) (majorDotMinor string) {
 	return fmt.Sprintf("%s.%s", ss[0], ss[1])
 }
 
-func isAmazonLinux1(osRelease string) bool {
-	return len(strings.Fields(osRelease)) == 1
+func getAmazonLinuxVersion(osRelease string) string {
+	ss := strings.Fields(osRelease)
+	if len(ss) == 1 {
+		return "1"
+	}
+	return ss[0]
 }

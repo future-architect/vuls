@@ -56,17 +56,17 @@ require (
 	github.com/vulsio/go-kev v0.0.1
 	github.com/vulsio/go-msfdb v0.2.1-0.20211028071756-4a9759bd9f14
 	github.com/vulsio/gost v0.4.1-0.20211028071837-7ad032a6ffa8
-	github.com/vulsio/goval-dictionary v0.6.1-0.20211028072035-e85e14b91ccc
+	github.com/vulsio/goval-dictionary v0.6.1-0.20211125125534-1b9209ce58ff
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/net v0.0.0-20211019232329-c6ed85c7a12d // indirect
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
-	gopkg.in/ini.v1 v1.64.0 // indirect
+	gopkg.in/ini.v1 v1.65.0 // indirect
 	gorm.io/driver/mysql v1.2.0 // indirect
 	gorm.io/driver/postgres v1.2.2 // indirect
-	gorm.io/driver/sqlite v1.2.4 // indirect
+	gorm.io/driver/sqlite v1.2.6 // indirect
 	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009
 )
 
@@ -111,19 +111,19 @@ require (
 	github.com/inconshreveable/log15 v0.0.0-20201112154412-8562bdadbbac // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.10.0 // indirect
+	github.com/jackc/pgconn v1.10.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.1.1 // indirect
+	github.com/jackc/pgproto3/v2 v2.2.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
-	github.com/jackc/pgtype v1.8.1 // indirect
-	github.com/jackc/pgx/v4 v4.13.0 // indirect
+	github.com/jackc/pgtype v1.9.1 // indirect
+	github.com/jackc/pgx/v4 v4.14.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.3 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/masahiro331/go-mvn-version v0.0.0-20210429150710-d3157d602a08 // indirect
-	github.com/mattn/go-colorable v0.1.11 // indirect
+	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-sqlite3 v1.14.9 // indirect
 	github.com/mitchellh/copystructure v1.1.1 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
