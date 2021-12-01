@@ -90,7 +90,7 @@ func (o *alma) sudoNoPasswdCmdsFastRoot() []cmd {
 			{"stat /proc/1/exe", exitStatusZero},
 			{"ls -l /proc/1/exe", exitStatusZero},
 			{"cat /proc/1/maps", exitStatusZero},
-			{"lsof -i -P", exitStatusZero},
+			{"lsof -i -P -n", exitStatusZero},
 		}
 	}
 	return []cmd{
