@@ -84,7 +84,6 @@ func (o *centos) sudoNoPasswdCmdsFast() []cmd {
 func (o *centos) sudoNoPasswdCmdsFastRoot() []cmd {
 	if !o.ServerInfo.IsContainer() {
 		return []cmd{
-			{"repoquery -h", exitStatusZero},
 			{"needs-restarting", exitStatusZero},
 			{"which which", exitStatusZero},
 			{"stat /proc/1/exe", exitStatusZero},
@@ -94,7 +93,6 @@ func (o *centos) sudoNoPasswdCmdsFastRoot() []cmd {
 		}
 	}
 	return []cmd{
-		{"repoquery -h", exitStatusZero},
 		{"needs-restarting", exitStatusZero},
 	}
 }
