@@ -105,13 +105,12 @@ func (r *ScanResult) FilterInactiveWordPressLibs(detectInactive bool) {
 		return false
 	})
 	r.ScannedCves = filtered
-	return
 }
 
 // ReportFileName returns the filename on localhost without extension
 func (r ScanResult) ReportFileName() (name string) {
 	if r.Container.ContainerID == "" {
-		return fmt.Sprintf("%s", r.ServerName)
+		return r.ServerName
 	}
 	return fmt.Sprintf("%s@%s", r.Container.Name, r.ServerName)
 }
@@ -246,17 +245,21 @@ func (r ScanResult) FormatMetasploitCveSummary() string {
 
 // FormatAlertSummary returns a summary of CERT alerts
 func (r ScanResult) FormatAlertSummary() string {
-	jaCnt := 0
-	enCnt := 0
+	cisaCnt := 0
+	uscertCnt := 0
+	jpcertCnt := 0
 	for _, vuln := range r.ScannedCves {
-		if len(vuln.AlertDict.En) > 0 {
-			enCnt += len(vuln.AlertDict.En)
+		if len(vuln.AlertDict.CISA) > 0 {
+			cisaCnt += len(vuln.AlertDict.CISA)
 		}
-		if len(vuln.AlertDict.Ja) > 0 {
-			jaCnt += len(vuln.AlertDict.Ja)
+		if len(vuln.AlertDict.USCERT) > 0 {
+			uscertCnt += len(vuln.AlertDict.USCERT)
+		}
+		if len(vuln.AlertDict.JPCERT) > 0 {
+			jpcertCnt += len(vuln.AlertDict.JPCERT)
 		}
 	}
-	return fmt.Sprintf("en: %d, ja: %d alerts", enCnt, jaCnt)
+	return fmt.Sprintf("cisa: %d, uscert: %d, jpcert: %d alerts", cisaCnt, uscertCnt, jpcertCnt)
 }
 
 func (r ScanResult) isDisplayUpdatableNum(mode config.ScanMode) bool {
@@ -418,11 +421,14 @@ func (r *ScanResult) SortForJSONOutput() {
 
 		v.CveContents.Sort()
 
-		sort.Slice(v.AlertDict.En, func(i, j int) bool {
-			return v.AlertDict.En[i].Title < v.AlertDict.En[j].Title
+		sort.Slice(v.AlertDict.USCERT, func(i, j int) bool {
+			return v.AlertDict.USCERT[i].Title < v.AlertDict.USCERT[j].Title
 		})
-		sort.Slice(v.AlertDict.Ja, func(i, j int) bool {
-			return v.AlertDict.Ja[i].Title < v.AlertDict.Ja[j].Title
+		sort.Slice(v.AlertDict.JPCERT, func(i, j int) bool {
+			return v.AlertDict.JPCERT[i].Title < v.AlertDict.JPCERT[j].Title
+		})
+		sort.Slice(v.AlertDict.CISA, func(i, j int) bool {
+			return v.AlertDict.CISA[i].Title < v.AlertDict.CISA[j].Title
 		})
 		r.ScannedCves[k] = v
 	}

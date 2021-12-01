@@ -111,6 +111,10 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		}
 		logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nMetasploitCve)
 
+		if err := FillWithKEVuln(&r, config.Conf.KEVuln); err != nil {
+			return nil, xerrors.Errorf("Failed to fill with Known Exploited Vulnerabilities: %w", err)
+		}
+
 		FillCweDict(&r)
 
 		r.ReportedBy, _ = os.Hostname()
@@ -361,20 +365,20 @@ func FillCvesWithNvdJvn(r *models.ScanResult, cnf config.GoCveDictConf, logOpts 
 func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 	for _, nvd := range cvedetail.Nvds {
 		for _, cert := range nvd.Certs {
-			dict.En = append(dict.En, models.Alert{
+			dict.USCERT = append(dict.USCERT, models.Alert{
 				URL:   cert.Link,
 				Title: cert.Title,
-				Team:  "us",
+				Team:  "uscert",
 			})
 		}
 	}
 
 	for _, jvn := range cvedetail.Jvns {
 		for _, cert := range jvn.Certs {
-			dict.Ja = append(dict.Ja, models.Alert{
+			dict.JPCERT = append(dict.JPCERT, models.Alert{
 				URL:   cert.Link,
 				Title: cert.Title,
-				Team:  "jp",
+				Team:  "jpcert",
 			})
 		}
 	}

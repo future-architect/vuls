@@ -53,6 +53,7 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/vulsio/go-cve-dictionary v0.8.2-0.20211028094424-0a854f8e8f85
 	github.com/vulsio/go-exploitdb v0.4.2-0.20211028071949-1ebf9c4f6c4d
+	github.com/vulsio/go-kev v0.0.1
 	github.com/vulsio/go-msfdb v0.2.1-0.20211028071756-4a9759bd9f14
 	github.com/vulsio/gost v0.4.1-0.20211028071837-7ad032a6ffa8
 	github.com/vulsio/goval-dictionary v0.6.1-0.20211028072035-e85e14b91ccc
@@ -62,10 +63,10 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
-	gopkg.in/ini.v1 v1.63.2 // indirect
-	gorm.io/driver/mysql v1.1.2 // indirect
-	gorm.io/driver/postgres v1.1.2 // indirect
-	gorm.io/driver/sqlite v1.1.6 // indirect
+	gopkg.in/ini.v1 v1.64.0 // indirect
+	gorm.io/driver/mysql v1.2.0 // indirect
+	gorm.io/driver/postgres v1.2.2 // indirect
+	gorm.io/driver/sqlite v1.2.4 // indirect
 	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009
 )
 
@@ -118,7 +119,7 @@ require (
 	github.com/jackc/pgtype v1.8.1 // indirect
 	github.com/jackc/pgx/v4 v4.13.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/jinzhu/now v1.1.2 // indirect
+	github.com/jinzhu/now v1.1.3 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/masahiro331/go-mvn-version v0.0.0-20210429150710-d3157d602a08 // indirect
@@ -142,13 +143,13 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
-	golang.org/x/sys v0.0.0-20211019181941-9d821ace8654 // indirect
+	golang.org/x/sys v0.0.0-20211103235746-7861aae1554b // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/cheggaaa/pb.v1 v1.0.28 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-	gorm.io/gorm v1.21.16 // indirect
+	gorm.io/gorm v1.22.3 // indirect
 	moul.io/http2curl v1.0.0 // indirect
 )

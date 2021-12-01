@@ -277,7 +277,7 @@ No CVE-IDs are found in updatable packages.
 			// fmt.Sprintf("%4.1f", v2max),
 			// fmt.Sprintf("%4.1f", v3max),
 			exploits,
-			vinfo.AlertDict.FormatSource(),
+			fmt.Sprintf("%9s", vinfo.AlertDict.FormatSource()),
 			fmt.Sprintf("%7s", vinfo.PatchStatus(r.Packages)),
 			link,
 		})
@@ -292,7 +292,7 @@ No CVE-IDs are found in updatable packages.
 		// "v3",
 		// "v2",
 		"PoC",
-		"CERT",
+		"Alert",
 		"Fixed",
 		"NVD",
 	})
@@ -475,11 +475,15 @@ No CVE-IDs are found in updatable packages.
 			data = append(data, []string{"SANS/CWE Top25", sansTop25URLs[0]})
 		}
 
-		for _, alert := range vuln.AlertDict.Ja {
+		for _, alert := range vuln.AlertDict.CISA {
+			data = append(data, []string{"CISA Alert", alert.URL})
+		}
+
+		for _, alert := range vuln.AlertDict.JPCERT {
 			data = append(data, []string{"JPCERT Alert", alert.URL})
 		}
 
-		for _, alert := range vuln.AlertDict.En {
+		for _, alert := range vuln.AlertDict.USCERT {
 			data = append(data, []string{"US-CERT Alert", alert.URL})
 		}
 

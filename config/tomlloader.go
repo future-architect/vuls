@@ -27,6 +27,7 @@ func (c TOMLLoader) Load(pathToToml, _ string) error {
 		&Conf.Gost,
 		&Conf.Exploit,
 		&Conf.Metasploit,
+		&Conf.KEVuln,
 	} {
 		cnf.Init()
 	}
