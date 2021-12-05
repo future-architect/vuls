@@ -756,7 +756,7 @@ func (l *base) detectWpCore() (string, error) {
 }
 
 func (l *base) detectWpThemes() ([]models.WpPackage, error) {
-	cmd := fmt.Sprintf("sudo -u %s -i -- %s theme list --path=%s --format=json --allow-root 2>/dev/null",
+	cmd := fmt.Sprintf("( sudo -u %s -i -- %s theme list --path=%s --format=json --allow-root > /dev/tty ) >& /dev/null",
 		l.ServerInfo.WordPress.OSUser,
 		l.ServerInfo.WordPress.CmdPath,
 		l.ServerInfo.WordPress.DocRoot)
@@ -777,7 +777,7 @@ func (l *base) detectWpThemes() ([]models.WpPackage, error) {
 }
 
 func (l *base) detectWpPlugins() ([]models.WpPackage, error) {
-	cmd := fmt.Sprintf("sudo -u %s -i -- %s plugin list --path=%s --format=json --allow-root 2>/dev/null",
+	cmd := fmt.Sprintf("( sudo -u %s -i -- %s plugin list --path=%s --format=json --allow-root > /dev/tty ) >& /dev/null",
 		l.ServerInfo.WordPress.OSUser,
 		l.ServerInfo.WordPress.CmdPath,
 		l.ServerInfo.WordPress.DocRoot)
