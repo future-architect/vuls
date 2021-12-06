@@ -4,6 +4,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/util"
 )
 
 // inherit OsTypeInterface
@@ -101,6 +102,13 @@ func (o *alma) sudoNoPasswdCmdsFastRoot() []cmd {
 
 func (o *alma) sudoNoPasswdCmdsDeep() []cmd {
 	return o.sudoNoPasswdCmdsFastRoot()
+}
+
+func (o *alma) checkEnabledRepoList(version string) {
+	switch util.Major(version) {
+	case "8":
+		o.EnabledRepoList = []string{"rhel-8-for-x86_64-appstream-rpms", "rhel-8-for-x86_64-baseos-rpms"}
+	}
 }
 
 type rootPrivAlma struct{}

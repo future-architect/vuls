@@ -50,6 +50,7 @@ type ScanResult struct {
 	Packages          Packages               `json:"packages"`
 	SrcPackages       SrcPackages            `json:",omitempty"`
 	EnabledDnfModules []string               `json:"enabledDnfModules,omitempty"` // for dnf modules
+	EnabledRepoList   []string               `json:"enabledRepoList,omitempty"`   // for RedHat OVALv2 scan
 	WordPressPackages WordPressPackages      `json:",omitempty"`
 	LibraryScanners   LibraryScanners        `json:"libraries,omitempty"`
 	CweDict           CweDict                `json:"cweDict,omitempty"`

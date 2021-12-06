@@ -90,6 +90,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 			}
 			switch strings.ToLower(result[1]) {
 			case "alma", "almalinux":
+				alma.checkEnabledRepoList(release)
 				alma.setDistro(constant.Alma, release)
 				return true, alma
 			default:
@@ -120,6 +121,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 			}
 			switch strings.ToLower(result[1]) {
 			case "rocky", "rocky linux":
+				rocky.checkEnabledRepoList(release)
 				rocky.setDistro(constant.Rocky, release)
 				return true, rocky
 			default:
@@ -154,6 +156,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 					cent.setErrs([]error{xerrors.Errorf("Failed to init CentOS. err: not supported major version. versions prior to CentOS 5 are not supported, detected version is %s", release)})
 					return true, cent
 				}
+				cent.checkEnabledRepoList(release)
 				cent.setDistro(constant.CentOS, release)
 				return true, cent
 			case "centos stream":
@@ -162,6 +165,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 					cent.setErrs([]error{xerrors.Errorf("Failed to init CentOS Stream. err: not supported major version. versions prior to CentOS Stream 8 are not supported, detected version is %s", release)})
 					return true, cent
 				}
+				cent.checkEnabledRepoList(release)
 				cent.setDistro(constant.CentOS, fmt.Sprintf("stream%s", release))
 				return true, cent
 			case "alma", "almalinux":
@@ -170,6 +174,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 					alma.setErrs([]error{xerrors.Errorf("Failed to init AlmaLinux. err: not supported major version. versions prior to AlmaLinux 8 are not supported, detected version is %s", release)})
 					return true, alma
 				}
+				alma.checkEnabledRepoList(release)
 				alma.setDistro(constant.Alma, release)
 				return true, alma
 			case "rocky", "rocky linux":
@@ -178,6 +183,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 					rocky.setErrs([]error{xerrors.Errorf("Failed to init Rocky Linux. err: not supported major version. versions prior to Rocky Linux 8 are not supported, detected version is %s", release)})
 					return true, rocky
 				}
+				rocky.checkEnabledRepoList(release)
 				rocky.setDistro(constant.Rocky, release)
 				return true, rocky
 			default:
@@ -228,6 +234,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 					cent.setErrs([]error{xerrors.Errorf("Failed to init CentOS. err: not supported major version. versions prior to CentOS 5 are not supported, detected version is %s", release)})
 					return true, cent
 				}
+				cent.checkEnabledRepoList(release)
 				cent.setDistro(constant.CentOS, release)
 				return true, cent
 			case "centos stream":
@@ -236,6 +243,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 					cent.setErrs([]error{xerrors.Errorf("Failed to init CentOS Stream. err: not supported major version. versions prior to CentOS Stream 8 are not supported, detected version is %s", release)})
 					return true, cent
 				}
+				cent.checkEnabledRepoList(release)
 				cent.setDistro(constant.CentOS, fmt.Sprintf("stream%s", release))
 				return true, cent
 			case "alma", "almalinux":
@@ -244,6 +252,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 					alma.setErrs([]error{xerrors.Errorf("Failed to init AlmaLinux. err: not supported major version. versions prior to AlmaLinux 8 are not supported, detected version is %s", release)})
 					return true, alma
 				}
+				alma.checkEnabledRepoList(release)
 				alma.setDistro(constant.Alma, release)
 				return true, alma
 			case "rocky", "rocky linux":
@@ -252,6 +261,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 					rocky.setErrs([]error{xerrors.Errorf("Failed to init Rocky Linux. err: not supported major version. versions prior to Rocky Linux 8 are not supported, detected version is %s", release)})
 					return true, rocky
 				}
+				rocky.checkEnabledRepoList(release)
 				rocky.setDistro(constant.Rocky, release)
 				return true, rocky
 			default:
@@ -259,6 +269,17 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 				if major < 5 {
 					rhel.setErrs([]error{xerrors.Errorf("Failed to init RedHat Enterprise Linux. err: not supported major version. versions prior to RedHat Enterprise Linux 5 are not supported, detected version is %s", release)})
 					return true, rhel
+				}
+				rhel.checkEnabledRepoList(release)
+				// detect EUS/AUS from enable repository list
+				for _, repo := range rhel.EnabledRepoList {
+					if strings.Contains(repo, "-aus-") {
+						release += "-aus"
+						break
+					} else if strings.Contains(repo, "-eus-") {
+						release += "-eus"
+						break
+					}
 				}
 				rhel.setDistro(constant.RedHat, release)
 				return true, rhel
