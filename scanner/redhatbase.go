@@ -150,7 +150,13 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 		family := constant.Amazon
 		release := "unknown"
 		if r := exec(c, "cat /etc/system-release", noSudo); r.isSuccess() {
-			if strings.HasPrefix(r.Stdout, "Amazon Linux release 2") {
+			if strings.HasPrefix(r.Stdout, "Amazon Linux release 2022") {
+				fields := strings.Fields(r.Stdout)
+				release = strings.Join(fields[3:], " ")
+			} else if strings.HasPrefix(r.Stdout, "Amazon Linux 2022") {
+				fields := strings.Fields(r.Stdout)
+				release = strings.Join(fields[2:], " ")
+			} else if strings.HasPrefix(r.Stdout, "Amazon Linux release 2") {
 				fields := strings.Fields(r.Stdout)
 				release = fmt.Sprintf("%s %s", fields[3], fields[4])
 			} else if strings.HasPrefix(r.Stdout, "Amazon Linux 2") {
