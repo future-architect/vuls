@@ -26,10 +26,7 @@ func reuseScannedCves(r *models.ScanResult) bool {
 	case constant.FreeBSD, constant.Raspbian:
 		return true
 	}
-	if isTrivyResult(r) {
-		return true
-	}
-	return false
+	return isTrivyResult(r)
 }
 
 func isTrivyResult(r *models.ScanResult) bool {
