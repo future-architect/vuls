@@ -107,20 +107,46 @@ func TestSplitIntoBlocks(t *testing.T) {
 		expected []string
 	}{
 		{
-			`
-block1
+			`vulnxml file up-to-date
+bind95-9.6.3.2.ESV.R10_2 is vulnerable:
+bind -- denial of service vulnerability
+CVE: CVE-2014-8680
+CVE: CVE-2014-8500
+WWW: https://vuxml.FreeBSD.org/freebsd/ab3e98d9-8175-11e4-907d-d050992ecde8.html
 
-block2
-block2
-block2
+go-1.17.1,1 is vulnerable:
+  go -- multiple vulnerabilities
+  CVE: CVE-2021-41772
+  CVE: CVE-2021-41771
+  WWW: https://vuxml.FreeBSD.org/freebsd/930def19-3e05-11ec-9ba8-002324b2fba8.html
 
-block3
-block3`,
+  go -- misc/wasm, cmd/link: do not let command line arguments overwrite global data
+  CVE: CVE-2021-38297
+  WWW: https://vuxml.FreeBSD.org/freebsd/4fce9635-28c0-11ec-9ba8-002324b2fba8.html
+
+  Packages that depend on go: 
+
+2 problem(s) in 1 installed package(s) found.`,
 			[]string{
-				`block1`,
-				"block2\nblock2\nblock2",
-				"block3\nblock3",
-			},
+				`bind95-9.6.3.2.ESV.R10_2 is vulnerable:
+bind -- denial of service vulnerability
+CVE: CVE-2014-8680
+CVE: CVE-2014-8500
+WWW: https://vuxml.FreeBSD.org/freebsd/ab3e98d9-8175-11e4-907d-d050992ecde8.html
+`,
+				`go-1.17.1,1 is vulnerable:
+go -- multiple vulnerabilities
+CVE: CVE-2021-41772
+CVE: CVE-2021-41771
+WWW: https://vuxml.FreeBSD.org/freebsd/930def19-3e05-11ec-9ba8-002324b2fba8.html
+
+go -- misc/wasm, cmd/link: do not let command line arguments overwrite global data
+CVE: CVE-2021-38297
+WWW: https://vuxml.FreeBSD.org/freebsd/4fce9635-28c0-11ec-9ba8-002324b2fba8.html
+
+Packages that depend on go:
+
+2 problem(s) in 1 installed package(s) found.`},
 		},
 	}
 
@@ -128,9 +154,10 @@ block3`,
 	for _, tt := range tests {
 		actual := d.splitIntoBlocks(tt.in)
 		if !reflect.DeepEqual(tt.expected, actual) {
-			e := pp.Sprintf("%v", tt.expected)
-			a := pp.Sprintf("%v", actual)
-			t.Errorf("expected %s, actual %s", e, a)
+			pp.ColoringEnabled = false
+			t.Errorf("expected %s\n, actual %s",
+				pp.Sprintf("%s", tt.expected),
+				pp.Sprintf("%s", actual))
 		}
 	}
 
@@ -178,6 +205,39 @@ WWW: https://vuxml.FreeBSD.org/freebsd/ab3e98d9-8175-11e4-907d-d050992ecde8.html
 			in:     `1 problem(s) in the installed packages found.`,
 			cveIDs: []string{},
 			vulnID: "",
+		},
+		{
+			in: `vulnxml file up-to-date
+libxml2-2.9.10 is vulnerable:
+libxml -- multiple vulnerabilities
+WWW: https://vuxml.FreeBSD.org/freebsd/f5abafc0-fcf6-11ea-8758-e0d55e2a8bf9.html`,
+			name:   "libxml2",
+			cveIDs: []string{},
+			vulnID: "f5abafc0-fcf6-11ea-8758-e0d55e2a8bf9",
+		},
+		{
+			in: `go-1.17.1,1 is vulnerable:
+go -- multiple vulnerabilities
+CVE: CVE-2021-41772
+CVE: CVE-2021-41771
+WWW: https://vuxml.FreeBSD.org/freebsd/930def19-3e05-11ec-9ba8-002324b2fba8.html`,
+			name:   "go",
+			cveIDs: []string{"CVE-2021-41772", "CVE-2021-41771"},
+			vulnID: "930def19-3e05-11ec-9ba8-002324b2fba8",
+		},
+		{
+			in: `go-1.17.1,1 is vulnerable:
+go -- multiple vulnerabilities
+CVE: CVE-2021-41772
+CVE: CVE-2021-41771
+WWW: https://vuxml.FreeBSD.org/freebsd/930def19-3e05-11ec-9ba8-002324b2fba8.html
+
+go -- misc/wasm, cmd/link: do not let command line arguments overwrite global data
+CVE: CVE-2021-38297
+WWW: https://vuxml.FreeBSD.org/freebsd/4fce9635-28c0-11ec-9ba8-002324b2fba8.html`,
+			name:   "go",
+			cveIDs: []string{"CVE-2021-41772", "CVE-2021-41771", "CVE-2021-38297"},
+			vulnID: "4fce9635-28c0-11ec-9ba8-002324b2fba8",
 		},
 	}
 
