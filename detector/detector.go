@@ -208,19 +208,23 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf config.GostConf) error {
 	// Pkg Scan
 	if r.Release != "" {
-		// OVAL, gost(Debian Security Tracker) does not support Package for Raspbian, so skip it.
-		if r.Family == constant.Raspbian {
-			r = r.RemoveRaspbianPackFromResult()
-		}
+		if len(r.Packages)+len(r.SrcPackages) > 0 {
+			// OVAL, gost(Debian Security Tracker) does not support Package for Raspbian, so skip it.
+			if r.Family == constant.Raspbian {
+				r = r.RemoveRaspbianPackFromResult()
+			}
 
-		// OVAL
-		if err := detectPkgsCvesWithOval(ovalCnf, r); err != nil {
-			return xerrors.Errorf("Failed to detect CVE with OVAL: %w", err)
-		}
+			// OVAL
+			if err := detectPkgsCvesWithOval(ovalCnf, r); err != nil {
+				return xerrors.Errorf("Failed to detect CVE with OVAL: %w", err)
+			}
 
-		// gost
-		if err := detectPkgsCvesWithGost(gostCnf, r); err != nil {
-			return xerrors.Errorf("Failed to detect CVE with gost: %w", err)
+			// gost
+			if err := detectPkgsCvesWithGost(gostCnf, r); err != nil {
+				return xerrors.Errorf("Failed to detect CVE with gost: %w", err)
+			}
+		} else {
+			logging.Log.Infof("Number of packages is 0. Skip OVAL and gost detection")
 		}
 	} else if reuseScannedCves(r) {
 		logging.Log.Infof("r.Release is empty. Use CVEs as it as.")

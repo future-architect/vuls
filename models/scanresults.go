@@ -309,7 +309,6 @@ func (r ScanResult) RemoveRaspbianPackFromResult() *ScanResult {
 	for _, pack := range r.SrcPackages {
 		if !IsRaspbianPackage(pack.Name, pack.Version) {
 			srcPacks[pack.Name] = pack
-
 		}
 	}
 
