@@ -8,6 +8,7 @@ require (
 	github.com/Ullaakut/nmap/v2 v2.1.2-0.20210406060955-59a52fe80a4f
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/aquasecurity/fanal v0.0.0-20211224205755-c94f68b6d71a
+	github.com/aquasecurity/go-dep-parser v0.0.0-20220110153540-4a30ebc4b509
 	github.com/aquasecurity/trivy v0.22.0
 	github.com/aquasecurity/trivy-db v0.0.0-20210916043317-726b7b72a47b
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
@@ -84,7 +85,6 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/PuerkitoBio/goquery v1.7.1 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
-	github.com/aquasecurity/go-dep-parser v0.0.0-20211224170007-df43bca6b6ff // indirect
 	github.com/aquasecurity/go-gem-version v0.0.0-20201115065557-8eed6fe000ce // indirect
 	github.com/aquasecurity/go-npm-version v0.0.0-20201110091526-0b796d180798 // indirect
 	github.com/aquasecurity/go-pep440-version v0.0.0-20210121094942-22b2f8951d46 // indirect
@@ -154,7 +154,7 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	go.uber.org/zap v1.19.1 // indirect
+	go.uber.org/zap v1.20.0 // indirect
 	golang.org/x/sys v0.0.0-20211210111614-af8b64212486 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	google.golang.org/api v0.63.0 // indirect

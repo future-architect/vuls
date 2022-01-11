@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/fanal/analyzer"
+	dio "github.com/aquasecurity/go-dep-parser/pkg/io"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
@@ -30,6 +32,7 @@ import (
 	_ "github.com/aquasecurity/fanal/analyzer/language/golang/binary"
 	_ "github.com/aquasecurity/fanal/analyzer/language/golang/mod"
 	_ "github.com/aquasecurity/fanal/analyzer/language/java/jar"
+	_ "github.com/aquasecurity/fanal/analyzer/language/java/pom"
 	_ "github.com/aquasecurity/fanal/analyzer/language/nodejs/npm"
 	_ "github.com/aquasecurity/fanal/analyzer/language/nodejs/yarn"
 	_ "github.com/aquasecurity/fanal/analyzer/language/php/composer"
@@ -666,8 +669,10 @@ func AnalyzeLibraries(ctx context.Context, libFilemap map[string][]byte) (librar
 			result,
 			"",
 			path,
-			&DummyFileInfo{},
-			func() ([]byte, error) { return b, nil }); err != nil {
+			&DummyFileInfo{size: int64(len(b))},
+			func() (dio.ReadSeekCloserAt, error) { return dio.NopCloser(bytes.NewReader(b)), nil },
+			analyzer.AnalysisOptions{Offline: false},
+		); err != nil {
 			return nil, xerrors.Errorf("Failed to get libs. err: %w", err)
 		}
 		wg.Wait()
@@ -682,13 +687,15 @@ func AnalyzeLibraries(ctx context.Context, libFilemap map[string][]byte) (librar
 }
 
 // DummyFileInfo is a dummy struct for libscan
-type DummyFileInfo struct{}
+type DummyFileInfo struct {
+	size int64
+}
 
 // Name is
 func (d *DummyFileInfo) Name() string { return "dummy" }
 
 // Size is
-func (d *DummyFileInfo) Size() int64 { return 0 }
+func (d *DummyFileInfo) Size() int64 { return d.size }
 
 // Mode is
 func (d *DummyFileInfo) Mode() os.FileMode { return 0 }
