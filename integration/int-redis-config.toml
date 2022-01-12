@@ -47,11 +47,15 @@ cpeNames = [ "cpe:/a:hitachi_abb_power_grids:afs660:1.0.0" ]
 type = "pseudo"
 cpeNames = [ "cpe:/o:nec:aterm_wg2600hp2_firmware"]
 
-[servers.gemfile]
+[servers.bundler]
 type = "pseudo"
 lockfiles = ["./integration/data/lockfile/Gemfile.lock"]
 
-[servers.pipfile]
+[servers.pip]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/requirements.txt"]
+
+[servers.pipenv]
 type = "pseudo"
 lockfiles = ["./integration/data/lockfile/Pipfile.lock"]
 
@@ -63,7 +67,7 @@ lockfiles = ["./integration/data/lockfile/poetry.lock"]
 type = "pseudo"
 lockfiles = ["./integration/data/lockfile/composer.lock"]
 
-[servers.packagelock]
+[servers.npm]
 type = "pseudo"
 lockfiles = ["./integration/data/lockfile/package-lock.json"]
 
@@ -78,4 +82,24 @@ lockfiles = ["./integration/data/lockfile/Cargo.lock"]
 [servers.gomod]
 type = "pseudo"
 lockfiles = ["./integration/data/lockfile/go.sum"]
+
+[servers.gobinary]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/gobinary"]
+
+[servers.jar]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/test.jar"]
+
+[servers.pom]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/pom.xml"]
+
+[servers.nuget-lock]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/packages.lock.json"]
+
+[servers.nuget-config]
+type = "pseudo"
+lockfiles = ["./integration/data/lockfile/packages.config"]
 

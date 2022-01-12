@@ -1,0 +1,13 @@
+{
+    "version": 1,
+    "dependencies": {
+        ".NETCoreApp,Version=v5.0": {
+            "Microsoft.AspNetCore.App": {
+                "type": "Direct",
+                "requested": "[2.1.0, )",
+                "resolved": "2.1.0",
+                "contentHash": "6mgjfnRB4jKMlzHSl+VD+oUc1IebOZabkbyWj2RiTgWwYPPuaK1H97G1sHqGwPlS5npiF5Q0OrxN1wni2n5QWg=="
+            }
+        }
+    }
+}
