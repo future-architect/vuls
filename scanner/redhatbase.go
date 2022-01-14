@@ -54,14 +54,14 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 
 			release := result[2]
 			switch strings.ToLower(result[1]) {
-			case "centos", "centos linux", "centos stream":
+			case "centos", "centos linux":
 				cent := newCentOS(c)
 				cent.setDistro(constant.CentOS, release)
 				return true, cent
-			case "alma", "almalinux":
-				alma := newAlma(c)
-				alma.setDistro(constant.Alma, release)
-				return true, alma
+			case "centos stream":
+				cent := newCentOS(c)
+				cent.setDistro(constant.CentOS, fmt.Sprintf("stream%s", release))
+				return true, cent
 			default:
 				logging.Log.Warnf("Failed to parse CentOS: %s", r)
 			}
@@ -125,9 +125,13 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 
 			release := result[2]
 			switch strings.ToLower(result[1]) {
-			case "centos", "centos linux", "centos stream":
+			case "centos", "centos linux":
 				cent := newCentOS(c)
 				cent.setDistro(constant.CentOS, release)
+				return true, cent
+			case "centos stream":
+				cent := newCentOS(c)
+				cent.setDistro(constant.CentOS, fmt.Sprintf("stream%s", release))
 				return true, cent
 			case "alma", "almalinux":
 				alma := newAlma(c)
@@ -515,7 +519,7 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 		// TODO zypper ps
 		// https://github.com/future-architect/vuls/issues/696
 		return false
-	case constant.RedHat, constant.CentOS, constant.Rocky, constant.Oracle:
+	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Oracle:
 		majorVersion, err := o.Distro.MajorVersion()
 		if err != nil || majorVersion < 6 {
 			o.log.Errorf("Not implemented yet: %s, err: %+v", o.Distro, err)
