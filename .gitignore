@@ -10,8 +10,6 @@ issues/
 vendor/
 log/
 results
-!integration/data/results
-!integration/data/lockfile/requirements.txt
 config.toml
 !setup/docker/*
 .DS_Store
