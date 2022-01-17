@@ -208,6 +208,9 @@ build-integration:
 	git stash apply stash@\{0\}
 	make build
 
+	# update integration data
+	git submodule update --remote
+
 	# for integration testing, vuls.new and vuls.old needed.
 	# ex)
 	# $ ln -s ./vuls ./vuls.new
