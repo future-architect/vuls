@@ -7,11 +7,12 @@ require (
 	github.com/BurntSushi/toml v0.4.1
 	github.com/Ullaakut/nmap/v2 v2.1.2-0.20210406060955-59a52fe80a4f
 	github.com/VividCortex/ewma v1.2.0 // indirect
-	github.com/aquasecurity/fanal v0.0.0-20211005172059-69527b46560c
-	github.com/aquasecurity/trivy v0.20.0
+	github.com/aquasecurity/fanal v0.0.0-20211224205755-c94f68b6d71a
+	github.com/aquasecurity/go-dep-parser v0.0.0-20220110153540-4a30ebc4b509
+	github.com/aquasecurity/trivy v0.22.0
 	github.com/aquasecurity/trivy-db v0.0.0-20210916043317-726b7b72a47b
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
-	github.com/aws/aws-sdk-go v1.40.49
+	github.com/aws/aws-sdk-go v1.42.0
 	github.com/boltdb/bolt v1.3.1
 	github.com/briandowns/spinner v1.16.0 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
@@ -48,7 +49,7 @@ require (
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/afero v1.7.0
+	github.com/spf13/afero v1.8.0
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/cobra v1.3.0
 	github.com/vulsio/go-cve-dictionary v0.8.2-0.20211028094424-0a854f8e8f85
@@ -71,8 +72,6 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.99.0 // indirect
-	cloud.google.com/go/storage v1.18.2 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.1 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.5 // indirect
@@ -84,31 +83,21 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/PuerkitoBio/goquery v1.7.1 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
-	github.com/aquasecurity/go-dep-parser v0.0.0-20210919151457-76db061b9305 // indirect
 	github.com/aquasecurity/go-gem-version v0.0.0-20201115065557-8eed6fe000ce // indirect
 	github.com/aquasecurity/go-npm-version v0.0.0-20201110091526-0b796d180798 // indirect
 	github.com/aquasecurity/go-pep440-version v0.0.0-20210121094942-22b2f8951d46 // indirect
 	github.com/aquasecurity/go-version v0.0.0-20210121072130-637058cfe492 // indirect
 	github.com/caarlos0/env/v6 v6.0.0 // indirect
-	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
-	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4 // indirect
-	github.com/cncf/xds/go v0.0.0-20211216145620-d92e9ce0af51 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
-	github.com/envoyproxy/go-control-plane v0.10.1 // indirect
-	github.com/envoyproxy/protoc-gen-validate v0.6.2 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.2+incompatible // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/go-containerregistry v0.6.0 // indirect
 	github.com/google/go-github/v33 v33.0.0 // indirect
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/google/wire v0.4.0 // indirect
-	github.com/googleapis/gax-go/v2 v2.1.1 // indirect
-	github.com/googleapis/google-cloud-go-testing v0.0.0-20210719221736-1c9a4c676720 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/grokify/html-strip-tags-go v0.0.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -151,16 +140,12 @@ require (
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/ymomoi/goval-parser v0.0.0-20170813122243-0a0be1dd9d08 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
-	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	go.uber.org/zap v1.19.1 // indirect
+	go.uber.org/zap v1.20.0 // indirect
 	golang.org/x/sys v0.0.0-20211210111614-af8b64212486 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
-	google.golang.org/api v0.63.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20211223182754-3ac035c7e7cb // indirect
-	google.golang.org/grpc v1.43.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/cheggaaa/pb.v1 v1.0.28 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
