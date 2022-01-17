@@ -649,7 +649,7 @@ func (l *base) scanLibraries() (err error) {
 	}
 
 	var libraryScanners []models.LibraryScanner
-	if libraryScanners, err = AnalyzeLibraries(context.Background(), libFilemap); err != nil {
+	if libraryScanners, err = AnalyzeLibraries(context.Background(), libFilemap, l.ServerInfo.Mode.IsOffline()); err != nil {
 		return err
 	}
 	l.LibraryScanners = append(l.LibraryScanners, libraryScanners...)
@@ -657,7 +657,7 @@ func (l *base) scanLibraries() (err error) {
 }
 
 // AnalyzeLibraries : detects libs defined in lockfile
-func AnalyzeLibraries(ctx context.Context, libFilemap map[string]libFile) (libraryScanners []models.LibraryScanner, err error) {
+func AnalyzeLibraries(ctx context.Context, libFilemap map[string]libFile, isOffline bool) (libraryScanners []models.LibraryScanner, err error) {
 	disabledAnalyzers := []analyzer.Type{
 		analyzer.TypeAlpine,
 		analyzer.TypeAlma,
@@ -695,7 +695,7 @@ func AnalyzeLibraries(ctx context.Context, libFilemap map[string]libFile) (libra
 			path,
 			&DummyFileInfo{size: int64(len(f.contents)), filemode: f.filemode},
 			func() (dio.ReadSeekCloserAt, error) { return dio.NopCloser(bytes.NewReader(f.contents)), nil },
-			analyzer.AnalysisOptions{Offline: false},
+			analyzer.AnalysisOptions{Offline: isOffline},
 		); err != nil {
 			return nil, xerrors.Errorf("Failed to get libs. err: %w", err)
 		}
