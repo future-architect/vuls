@@ -12,7 +12,7 @@ require (
 	github.com/aquasecurity/trivy v0.22.0
 	github.com/aquasecurity/trivy-db v0.0.0-20210916043317-726b7b72a47b
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
-	github.com/aws/aws-sdk-go v1.42.0
+	github.com/aws/aws-sdk-go v1.42.35
 	github.com/boltdb/bolt v1.3.1
 	github.com/briandowns/spinner v1.16.0 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
@@ -59,7 +59,7 @@ require (
 	github.com/vulsio/gost v0.4.1-0.20211028071837-7ad032a6ffa8
 	github.com/vulsio/goval-dictionary v0.6.1-0.20211224012144-554a54938173
 	golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa // indirect
-	golang.org/x/net v0.0.0-20211206223403-eba003a116a9 // indirect
+	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.7 // indirect
