@@ -91,7 +91,7 @@ NOW=$(shell date --iso-8601=seconds)
 NOW_JSON_DIR := '${BASE_DIR}/$(NOW)'
 ONE_SEC_AFTER=$(shell date -d '+1 second' --iso-8601=seconds)
 ONE_SEC_AFTER_JSON_DIR := '${BASE_DIR}/$(ONE_SEC_AFTER)'
-LIBS := 'gemfile' 'pipfile' 'poetry' 'composer' 'packagelock' 'yarn' 'cargo' 'gomod' 'nvd_exact' 'nvd_rough' 'nvd_vendor_product' 'nvd_match_no_jvn' 'jvn_vendor_product' 'jvn_vendor_product_nover'
+LIBS := 'bundler' 'pip' 'pipenv' 'poetry' 'composer' 'npm' 'yarn' 'cargo' 'gomod' 'gobinary' 'jar' 'pom' 'nuget-lock' 'nuget-config' 'nvd_exact' 'nvd_rough' 'nvd_vendor_product' 'nvd_match_no_jvn' 'jvn_vendor_product' 'jvn_vendor_product_nover'
 
 diff:
 	# git clone git@github.com:vulsio/vulsctl.git
@@ -207,6 +207,9 @@ build-integration:
 	git checkout ${branch}
 	git stash apply stash@\{0\}
 	make build
+
+	# update integration data
+	git submodule update --remote
 
 	# for integration testing, vuls.new and vuls.old needed.
 	# ex)

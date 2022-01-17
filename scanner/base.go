@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/fanal/analyzer"
+	dio "github.com/aquasecurity/go-dep-parser/pkg/io"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
@@ -30,6 +32,7 @@ import (
 	_ "github.com/aquasecurity/fanal/analyzer/language/golang/binary"
 	_ "github.com/aquasecurity/fanal/analyzer/language/golang/mod"
 	_ "github.com/aquasecurity/fanal/analyzer/language/java/jar"
+	_ "github.com/aquasecurity/fanal/analyzer/language/java/pom"
 	_ "github.com/aquasecurity/fanal/analyzer/language/nodejs/npm"
 	_ "github.com/aquasecurity/fanal/analyzer/language/nodejs/yarn"
 	_ "github.com/aquasecurity/fanal/analyzer/language/php/composer"
@@ -559,6 +562,11 @@ func (l *base) parseSystemctlStatus(stdout string) string {
 	return ss[1]
 }
 
+type libFile struct {
+	contents []byte
+	filemode os.FileMode
+}
+
 func (l *base) scanLibraries() (err error) {
 	if len(l.LibraryScanners) != 0 {
 		return nil
@@ -571,7 +579,7 @@ func (l *base) scanLibraries() (err error) {
 
 	l.log.Info("Scanning Lockfile...")
 
-	libFilemap := map[string][]byte{}
+	libFilemap := map[string]libFile{}
 	detectFiles := l.ServerInfo.Lockfiles
 
 	// auto detect lockfile
@@ -605,26 +613,43 @@ func (l *base) scanLibraries() (err error) {
 			continue
 		}
 
-		var bytes []byte
+		var f libFile
 		switch l.Distro.Family {
 		case constant.ServerTypePseudo:
-			bytes, err = ioutil.ReadFile(path)
+			fileinfo, err := os.Stat(path)
 			if err != nil {
-				return xerrors.Errorf("Failed to get target file. err: %w, filepath: %s", err, path)
+				return xerrors.Errorf("Failed to get target file info. err: %w, filepath: %s", err, path)
+			}
+			f.filemode = fileinfo.Mode().Perm()
+			f.contents, err = ioutil.ReadFile(path)
+			if err != nil {
+				return xerrors.Errorf("Failed to read target file contents. err: %w, filepath: %s", err, path)
 			}
 		default:
-			cmd := fmt.Sprintf("cat %s", path)
+			cmd := fmt.Sprintf(`stat -c "%%a" %s`, path)
 			r := exec(l.ServerInfo, cmd, noSudo)
 			if !r.isSuccess() {
-				return xerrors.Errorf("Failed to get target file: %s, filepath: %s", r, path)
+				return xerrors.Errorf("Failed to get target file permission: %s, filepath: %s", r, path)
 			}
-			bytes = []byte(r.Stdout)
+			permStr := fmt.Sprintf("0%s", strings.ReplaceAll(r.Stdout, "\n", ""))
+			perm, err := strconv.ParseUint(permStr, 8, 32)
+			if err != nil {
+				return xerrors.Errorf("Failed to parse permission string. err: %w, permission string: %s", err, permStr)
+			}
+			f.filemode = os.FileMode(perm)
+
+			cmd = fmt.Sprintf("cat %s", path)
+			r = exec(l.ServerInfo, cmd, noSudo)
+			if !r.isSuccess() {
+				return xerrors.Errorf("Failed to get target file contents: %s, filepath: %s", r, path)
+			}
+			f.contents = []byte(r.Stdout)
 		}
-		libFilemap[path] = bytes
+		libFilemap[path] = f
 	}
 
 	var libraryScanners []models.LibraryScanner
-	if libraryScanners, err = AnalyzeLibraries(context.Background(), libFilemap); err != nil {
+	if libraryScanners, err = AnalyzeLibraries(context.Background(), libFilemap, l.ServerInfo.Mode.IsOffline()); err != nil {
 		return err
 	}
 	l.LibraryScanners = append(l.LibraryScanners, libraryScanners...)
@@ -632,9 +657,10 @@ func (l *base) scanLibraries() (err error) {
 }
 
 // AnalyzeLibraries : detects libs defined in lockfile
-func AnalyzeLibraries(ctx context.Context, libFilemap map[string][]byte) (libraryScanners []models.LibraryScanner, err error) {
+func AnalyzeLibraries(ctx context.Context, libFilemap map[string]libFile, isOffline bool) (libraryScanners []models.LibraryScanner, err error) {
 	disabledAnalyzers := []analyzer.Type{
 		analyzer.TypeAlpine,
+		analyzer.TypeAlma,
 		analyzer.TypeAmazon,
 		analyzer.TypeDebian,
 		analyzer.TypePhoton,
@@ -642,6 +668,7 @@ func AnalyzeLibraries(ctx context.Context, libFilemap map[string][]byte) (librar
 		analyzer.TypeFedora,
 		analyzer.TypeOracle,
 		analyzer.TypeRedHatBase,
+		analyzer.TypeRocky,
 		analyzer.TypeSUSE,
 		analyzer.TypeUbuntu,
 		analyzer.TypeApk,
@@ -656,7 +683,7 @@ func AnalyzeLibraries(ctx context.Context, libFilemap map[string][]byte) (librar
 	}
 	anal := analyzer.NewAnalyzer(disabledAnalyzers)
 
-	for path, b := range libFilemap {
+	for path, f := range libFilemap {
 		var wg sync.WaitGroup
 		result := new(analyzer.AnalysisResult)
 		if err := anal.AnalyzeFile(
@@ -666,8 +693,10 @@ func AnalyzeLibraries(ctx context.Context, libFilemap map[string][]byte) (librar
 			result,
 			"",
 			path,
-			&DummyFileInfo{},
-			func() ([]byte, error) { return b, nil }); err != nil {
+			&DummyFileInfo{size: int64(len(f.contents)), filemode: f.filemode},
+			func() (dio.ReadSeekCloserAt, error) { return dio.NopCloser(bytes.NewReader(f.contents)), nil },
+			analyzer.AnalysisOptions{Offline: isOffline},
+		); err != nil {
 			return nil, xerrors.Errorf("Failed to get libs. err: %w", err)
 		}
 		wg.Wait()
@@ -682,16 +711,19 @@ func AnalyzeLibraries(ctx context.Context, libFilemap map[string][]byte) (librar
 }
 
 // DummyFileInfo is a dummy struct for libscan
-type DummyFileInfo struct{}
+type DummyFileInfo struct {
+	size     int64
+	filemode os.FileMode
+}
 
 // Name is
 func (d *DummyFileInfo) Name() string { return "dummy" }
 
 // Size is
-func (d *DummyFileInfo) Size() int64 { return 0 }
+func (d *DummyFileInfo) Size() int64 { return d.size }
 
 // Mode is
-func (d *DummyFileInfo) Mode() os.FileMode { return 0 }
+func (d *DummyFileInfo) Mode() os.FileMode { return d.filemode }
 
 //ModTime is
 func (d *DummyFileInfo) ModTime() time.Time { return time.Now() }

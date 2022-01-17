@@ -218,6 +218,7 @@ func IsTrivySupportedLib(typestr string) bool {
 		ftypes.NodePkg:   struct{}{},
 		ftypes.Yarn:      struct{}{},
 		ftypes.Jar:       struct{}{},
+		ftypes.Pom:       struct{}{},
 		ftypes.GoBinary:  struct{}{},
 		ftypes.GoMod:     struct{}{},
 	}
