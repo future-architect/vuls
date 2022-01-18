@@ -562,6 +562,7 @@ func (l *base) parseSystemctlStatus(stdout string) string {
 	return ss[1]
 }
 
+// LibFile : library file content
 type LibFile struct {
 	Contents []byte
 	Filemode os.FileMode
