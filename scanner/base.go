@@ -562,7 +562,7 @@ func (l *base) parseSystemctlStatus(stdout string) string {
 	return ss[1]
 }
 
-type libFile struct {
+type LibFile struct {
 	contents []byte
 	filemode os.FileMode
 }
@@ -579,7 +579,7 @@ func (l *base) scanLibraries() (err error) {
 
 	l.log.Info("Scanning Lockfile...")
 
-	libFilemap := map[string]libFile{}
+	libFilemap := map[string]LibFile{}
 	detectFiles := l.ServerInfo.Lockfiles
 
 	// auto detect lockfile
@@ -613,7 +613,7 @@ func (l *base) scanLibraries() (err error) {
 			continue
 		}
 
-		var f libFile
+		var f LibFile
 		switch l.Distro.Family {
 		case constant.ServerTypePseudo:
 			fileinfo, err := os.Stat(path)
@@ -657,7 +657,7 @@ func (l *base) scanLibraries() (err error) {
 }
 
 // AnalyzeLibraries : detects libs defined in lockfile
-func AnalyzeLibraries(ctx context.Context, libFilemap map[string]libFile, isOffline bool) (libraryScanners []models.LibraryScanner, err error) {
+func AnalyzeLibraries(ctx context.Context, libFilemap map[string]LibFile, isOffline bool) (libraryScanners []models.LibraryScanner, err error) {
 	disabledAnalyzers := []analyzer.Type{
 		analyzer.TypeAlpine,
 		analyzer.TypeAlma,
