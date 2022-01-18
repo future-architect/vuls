@@ -563,8 +563,8 @@ func (l *base) parseSystemctlStatus(stdout string) string {
 }
 
 type LibFile struct {
-	contents []byte
-	filemode os.FileMode
+	Contents []byte
+	Filemode os.FileMode
 }
 
 func (l *base) scanLibraries() (err error) {
@@ -620,8 +620,8 @@ func (l *base) scanLibraries() (err error) {
 			if err != nil {
 				return xerrors.Errorf("Failed to get target file info. err: %w, filepath: %s", err, path)
 			}
-			f.filemode = fileinfo.Mode().Perm()
-			f.contents, err = ioutil.ReadFile(path)
+			f.Filemode = fileinfo.Mode().Perm()
+			f.Contents, err = ioutil.ReadFile(path)
 			if err != nil {
 				return xerrors.Errorf("Failed to read target file contents. err: %w, filepath: %s", err, path)
 			}
@@ -636,14 +636,14 @@ func (l *base) scanLibraries() (err error) {
 			if err != nil {
 				return xerrors.Errorf("Failed to parse permission string. err: %w, permission string: %s", err, permStr)
 			}
-			f.filemode = os.FileMode(perm)
+			f.Filemode = os.FileMode(perm)
 
 			cmd = fmt.Sprintf("cat %s", path)
 			r = exec(l.ServerInfo, cmd, noSudo)
 			if !r.isSuccess() {
 				return xerrors.Errorf("Failed to get target file contents: %s, filepath: %s", r, path)
 			}
-			f.contents = []byte(r.Stdout)
+			f.Contents = []byte(r.Stdout)
 		}
 		libFilemap[path] = f
 	}
@@ -693,8 +693,8 @@ func AnalyzeLibraries(ctx context.Context, libFilemap map[string]LibFile, isOffl
 			result,
 			"",
 			path,
-			&DummyFileInfo{size: int64(len(f.contents)), filemode: f.filemode},
-			func() (dio.ReadSeekCloserAt, error) { return dio.NopCloser(bytes.NewReader(f.contents)), nil },
+			&DummyFileInfo{size: int64(len(f.Contents)), filemode: f.Filemode},
+			func() (dio.ReadSeekCloserAt, error) { return dio.NopCloser(bytes.NewReader(f.Contents)), nil },
 			analyzer.AnalysisOptions{Offline: isOffline},
 		); err != nil {
 			return nil, xerrors.Errorf("Failed to get libs. err: %w", err)
