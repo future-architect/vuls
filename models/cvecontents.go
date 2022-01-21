@@ -319,6 +319,8 @@ func NewCveContentType(name string) CveContentType {
 		return Jvn
 	case "redhat", "centos", "alma", "rocky":
 		return RedHat
+	case "fedora":
+		return Fedora
 	case "oracle":
 		return Oracle
 	case "ubuntu":
@@ -377,6 +379,9 @@ const (
 	// Amazon is Amazon Linux
 	Amazon CveContentType = "amazon"
 
+	// Fedora is Fedora Linux
+	Fedora CveContentType = "fedora"
+
 	// SUSE is SUSE Linux
 	SUSE CveContentType = "suse"
 
@@ -410,6 +415,7 @@ var AllCveContetTypes = CveContentTypes{
 	Ubuntu,
 	UbuntuAPI,
 	Amazon,
+	Fedora,
 	SUSE,
 	WpScan,
 	Trivy,

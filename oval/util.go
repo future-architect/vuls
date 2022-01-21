@@ -348,7 +348,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 
 		if running.Release != "" {
 			switch family {
-			case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Oracle:
+			case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Oracle, constant.Fedora:
 				// For kernel related packages, ignore OVAL information with different major versions
 				if _, ok := kernelRelatedPackNames[ovalPack.Name]; ok {
 					if util.Major(ovalPack.Version) != util.Major(running.Release) {
@@ -440,7 +440,8 @@ func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error
 
 	case constant.Oracle,
 		constant.SUSEEnterpriseServer,
-		constant.Amazon:
+		constant.Amazon,
+		constant.Fedora:
 		vera := rpmver.NewVersion(newVer)
 		verb := rpmver.NewVersion(packInOVAL.Version)
 		return vera.LessThan(verb), nil
@@ -488,6 +489,8 @@ func NewOVALClient(family string, cnf config.GovalDictConf) (Client, error) {
 		return NewAlpine(&cnf), nil
 	case constant.Amazon:
 		return NewAmazon(&cnf), nil
+	case constant.Fedora:
+		return NewFedora(&cnf), nil
 	case constant.FreeBSD, constant.Windows:
 		return nil, nil
 	case constant.ServerTypePseudo:
@@ -510,6 +513,8 @@ func GetFamilyInOval(familyInScanResult string) (string, error) {
 		return constant.Ubuntu, nil
 	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
 		return constant.RedHat, nil
+	case constant.Fedora:
+		return constant.Fedora, nil
 	case constant.Oracle:
 		return constant.Oracle, nil
 	case constant.SUSEEnterpriseServer:

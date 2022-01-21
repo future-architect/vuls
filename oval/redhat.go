@@ -15,7 +15,7 @@ import (
 	ovalmodels "github.com/vulsio/goval-dictionary/models"
 )
 
-// RedHatBase is the base struct for RedHat, CentOS, Alma and Rocky
+// RedHatBase is the base struct for RedHat, CentOS, Alma, Rocky and Fedora
 type RedHatBase struct {
 	Base
 }
@@ -385,6 +385,24 @@ func NewRocky(cnf config.VulnDictInterface) Rocky {
 		RedHatBase{
 			Base{
 				family: constant.Rocky,
+				Cnf:    cnf,
+			},
+		},
+	}
+}
+
+// Fedora is the interface for RedhatBase OVAL
+type Fedora struct {
+	// Base
+	RedHatBase
+}
+
+// NewFedora creates OVAL client for Fedora Linux
+func NewFedora(cnf config.VulnDictInterface) Fedora {
+	return Fedora{
+		RedHatBase{
+			Base{
+				family: constant.Fedora,
 				Cnf:    cnf,
 			},
 		},

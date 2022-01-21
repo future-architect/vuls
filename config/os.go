@@ -189,6 +189,15 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"12": {StandardSupportUntil: time.Date(2024, 6, 30, 23, 59, 59, 0, time.UTC)},
 			"13": {StandardSupportUntil: time.Date(2026, 1, 31, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
+	case constant.Fedora:
+		// https://docs.fedoraproject.org/en-US/releases/eol/
+		// https://endoflife.date/fedora
+		eol, found = map[string]EOL{
+			"32": {StandardSupportUntil: time.Date(2021, 5, 25, 23, 59, 59, 0, time.UTC)},
+			"33": {StandardSupportUntil: time.Date(2021, 11, 30, 23, 59, 59, 0, time.UTC)},
+			"34": {StandardSupportUntil: time.Date(2022, 5, 17, 23, 59, 59, 0, time.UTC)},
+			"35": {StandardSupportUntil: time.Date(2022, 12, 7, 23, 59, 59, 0, time.UTC)},
+		}[major(release)]
 	}
 	return
 }

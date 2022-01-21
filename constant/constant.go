@@ -64,4 +64,7 @@ const (
 
 	// DeepSecurity is
 	DeepSecurity = "deepsecurity"
+
+	//Fedora is
+	Fedora = "fedora"
 )

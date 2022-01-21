@@ -225,6 +225,8 @@ func ParseInstalledPkgs(distro config.Distro, kernel models.Kernel, pkgList stri
 		osType = &oracle{redhatBase: redhatBase{base: base}}
 	case constant.Amazon:
 		osType = &amazon{redhatBase: redhatBase{base: base}}
+	case constant.Fedora:
+		osType = &fedora{redhatBase: redhatBase{base: base}}
 	default:
 		return models.Packages{}, models.SrcPackages{}, xerrors.Errorf("Server mode for %s is not implemented yet", base.Distro.Family)
 	}
