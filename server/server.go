@@ -124,7 +124,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		// sever subcmd doesn't have diff option
+		// server subcmd doesn't have diff option
 		reports = append(reports, reporter.LocalFileWriter{
 			CurrentDir: dir,
 			FormatJSON: true,
