@@ -21,42 +21,56 @@ func TestUbuntu_Supported(t *testing.T) {
 		{
 			name: "14.04 is supported",
 			args: args{
-				ubuReleaseVer: "1404",
+				ubuReleaseVer: "14.04",
 			},
 			want: true,
 		},
 		{
 			name: "16.04 is supported",
 			args: args{
-				ubuReleaseVer: "1604",
+				ubuReleaseVer: "16.04",
 			},
 			want: true,
 		},
 		{
 			name: "18.04 is supported",
 			args: args{
-				ubuReleaseVer: "1804",
+				ubuReleaseVer: "18.04",
+			},
+			want: true,
+		},
+		{
+			name: "19.10 is supported",
+			args: args{
+				ubuReleaseVer: "19.10",
 			},
 			want: true,
 		},
 		{
 			name: "20.04 is supported",
 			args: args{
-				ubuReleaseVer: "2004",
+				ubuReleaseVer: "20.04",
 			},
 			want: true,
 		},
 		{
 			name: "20.10 is supported",
 			args: args{
-				ubuReleaseVer: "2010",
+				ubuReleaseVer: "20.10",
 			},
 			want: true,
 		},
 		{
 			name: "21.04 is supported",
 			args: args{
-				ubuReleaseVer: "2104",
+				ubuReleaseVer: "21.04",
+			},
+			want: true,
+		},
+		{
+			name: "21.10 is supported",
+			args: args{
+				ubuReleaseVer: "21.10",
 			},
 			want: true,
 		},

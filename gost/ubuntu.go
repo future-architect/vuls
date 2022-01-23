@@ -20,20 +20,21 @@ type Ubuntu struct {
 
 func (ubu Ubuntu) supported(version string) bool {
 	_, ok := map[string]string{
-		"1404": "trusty",
-		"1604": "xenial",
-		"1804": "bionic",
-		"2004": "focal",
-		"2010": "groovy",
-		"2104": "hirsute",
+		"14.04": "trusty",
+		"16.04": "xenial",
+		"18.04": "bionic",
+		"19.10": "eoan",
+		"20.04": "focal",
+		"20.10": "groovy",
+		"21.04": "hirsute",
+		"21.10": "impish",
 	}[version]
 	return ok
 }
 
 // DetectCVEs fills cve information that has in Gost
 func (ubu Ubuntu) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error) {
-	ubuReleaseVer := strings.Replace(r.Release, ".", "", 1)
-	if !ubu.supported(ubuReleaseVer) {
+	if !ubu.supported(r.Release) {
 		logging.Log.Warnf("Ubuntu %s is not supported yet", r.Release)
 		return 0, nil
 	}
@@ -54,7 +55,7 @@ func (ubu Ubuntu) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 
 	packCvesList := []packCves{}
 	if ubu.DBDriver.Cnf.IsFetchViaHTTP() {
-		url, _ := util.URLPathJoin(ubu.DBDriver.Cnf.GetURL(), "ubuntu", ubuReleaseVer, "pkgs")
+		url, _ := util.URLPathJoin(ubu.DBDriver.Cnf.GetURL(), "ubuntu", r.Release, "pkgs")
 		responses, err := getAllUnfixedCvesViaHTTP(r, url)
 		if err != nil {
 			return 0, err
@@ -80,7 +81,7 @@ func (ubu Ubuntu) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 			return 0, nil
 		}
 		for _, pack := range r.Packages {
-			ubuCves, err := ubu.DBDriver.DB.GetUnfixedCvesUbuntu(ubuReleaseVer, pack.Name)
+			ubuCves, err := ubu.DBDriver.DB.GetUnfixedCvesUbuntu(r.Release, pack.Name)
 			if err != nil {
 				return 0, nil
 			}
@@ -97,7 +98,7 @@ func (ubu Ubuntu) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 
 		// SrcPack
 		for _, pack := range r.SrcPackages {
-			ubuCves, err := ubu.DBDriver.DB.GetUnfixedCvesUbuntu(ubuReleaseVer, pack.Name)
+			ubuCves, err := ubu.DBDriver.DB.GetUnfixedCvesUbuntu(r.Release, pack.Name)
 			if err != nil {
 				return 0, nil
 			}
