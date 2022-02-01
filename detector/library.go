@@ -64,7 +64,6 @@ func DetectLibsCves(r *models.ScanResult, cacheDir string, noProgress bool) (err
 
 func downloadDB(appVersion, cacheDir string, quiet, skipUpdate bool) error {
 	client := db.NewClient(cacheDir, quiet)
-	// client := initializeDBClient(cacheDir, quiet)
 	ctx := context.Background()
 	needsUpdate, err := client.NeedsUpdate(appVersion, skipUpdate)
 	if err != nil {
