@@ -4,8 +4,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/aquasecurity/trivy-db/pkg/vulnsrc/vulnerability"
 )
 
 // CveContents has CveContent
@@ -325,7 +323,7 @@ func NewCveContentType(name string) CveContentType {
 		return Oracle
 	case "ubuntu":
 		return Ubuntu
-	case "debian", vulnerability.DebianOVAL:
+	case "debian", "debian-oval":
 		return Debian
 	case "redhat_api":
 		return RedHatAPI

@@ -64,7 +64,7 @@ func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 	}
 	var vulnerabilities = []VulnInfo{}
 	for _, pkg := range s.Libs {
-		tvulns, err := scanner.Detect(pkg.Name, pkg.Version)
+		tvulns, err := scanner.DetectVulnerabilities(pkg.Name, pkg.Version)
 		if err != nil {
 			return nil, xerrors.Errorf("failed to detect %s vulnerabilities: %w", scanner.Type(), err)
 		}
