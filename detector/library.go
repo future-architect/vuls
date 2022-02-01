@@ -30,7 +30,7 @@ func DetectLibsCves(r *models.ScanResult, cacheDir string, noProgress bool) (err
 	}
 
 	logging.Log.Info("Updating library db...")
-	if err := downloadDB("", cacheDir, noProgress, false, false); err != nil {
+	if err := downloadDB("", cacheDir, noProgress, false); err != nil {
 		return err
 	}
 
@@ -62,7 +62,7 @@ func DetectLibsCves(r *models.ScanResult, cacheDir string, noProgress bool) (err
 	return nil
 }
 
-func downloadDB(appVersion, cacheDir string, quiet, light, skipUpdate bool) error {
+func downloadDB(appVersion, cacheDir string, quiet, skipUpdate bool) error {
 	client := db.NewClient(cacheDir, quiet)
 	// client := initializeDBClient(cacheDir, quiet)
 	ctx := context.Background()
