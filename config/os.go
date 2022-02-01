@@ -151,7 +151,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 		//TODO
 	case constant.Alpine:
 		// https://github.com/aquasecurity/trivy/blob/master/pkg/detector/ospkg/alpine/alpine.go#L19
-		// https://wiki.alpinelinux.org/wiki/Alpine_Linux:Releases
+		// https://alpinelinux.org/releases/
 		eol, found = map[string]EOL{
 			"2.0":  {Ended: true},
 			"2.1":  {Ended: true},
@@ -175,6 +175,8 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"3.11": {StandardSupportUntil: time.Date(2021, 11, 1, 23, 59, 59, 0, time.UTC)},
 			"3.12": {StandardSupportUntil: time.Date(2022, 5, 1, 23, 59, 59, 0, time.UTC)},
 			"3.13": {StandardSupportUntil: time.Date(2022, 11, 1, 23, 59, 59, 0, time.UTC)},
+			"3.14": {StandardSupportUntil: time.Date(2023, 5, 1, 23, 59, 59, 0, time.UTC)},
+			"3.15": {StandardSupportUntil: time.Date(2023, 11, 1, 23, 59, 59, 0, time.UTC)},
 		}[majorDotMinor(release)]
 	case constant.FreeBSD:
 		// https://www.freebsd.org/security/
