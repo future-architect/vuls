@@ -682,7 +682,7 @@ func AnalyzeLibraries(ctx context.Context, libFilemap map[string]LibFile, isOffl
 		analyzer.TypeDockerfile,
 		analyzer.TypeHCL,
 	}
-	anal := analyzer.NewAnalyzer(disabledAnalyzers)
+	anal := analyzer.NewAnalyzerGroup(analyzer.GroupBuiltin, disabledAnalyzers)
 
 	for path, f := range libFilemap {
 		var wg sync.WaitGroup
