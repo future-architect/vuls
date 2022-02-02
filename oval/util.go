@@ -98,7 +98,6 @@ type response struct {
 
 // getDefsByPackNameViaHTTP fetches OVAL information via HTTP
 func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ovalResult, err error) {
-
 	nReq := len(r.Packages) + len(r.SrcPackages)
 	reqChan := make(chan request, nReq)
 	resChan := make(chan response, nReq)
@@ -128,6 +127,14 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 		}
 	}()
 
+	ovalFamily, err := GetFamilyInOval(r.Family)
+	if err != nil {
+		return relatedDefs, xerrors.Errorf("Failed to GetFamilyInOval. err: %w", err)
+	}
+	ovalRelease := r.Release
+	if r.Family == constant.CentOS {
+		ovalRelease = strings.TrimPrefix(r.Release, "stream")
+	}
 	concurrency := 10
 	tasks := util.GenWorkers(concurrency)
 	for i := 0; i < nReq; i++ {
@@ -137,8 +144,8 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 				url, err := util.URLPathJoin(
 					url,
 					"packs",
-					r.Family,
-					r.Release,
+					ovalFamily,
+					ovalRelease,
 					req.packName,
 				)
 				if err != nil {
@@ -157,7 +164,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 		select {
 		case res := <-resChan:
 			for _, def := range res.defs {
-				affected, notFixedYet, fixedIn, err := isOvalDefAffected(def, res.request, r.Family, r.RunningKernel, r.EnabledDnfModules)
+				affected, notFixedYet, fixedIn, err := isOvalDefAffected(def, res.request, ovalFamily, r.RunningKernel, r.EnabledDnfModules)
 				if err != nil {
 					errs = append(errs, err)
 					continue
@@ -259,11 +266,14 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 
 	ovalFamily, err := GetFamilyInOval(r.Family)
 	if err != nil {
-		return relatedDefs, err
+		return relatedDefs, xerrors.Errorf("Failed to GetFamilyInOval. err: %w", err)
 	}
-
+	ovalRelease := r.Release
+	if r.Family == constant.CentOS {
+		ovalRelease = strings.TrimPrefix(r.Release, "stream")
+	}
 	for _, req := range requests {
-		definitions, err := driver.GetByPackName(ovalFamily, r.Release, req.packName, req.arch)
+		definitions, err := driver.GetByPackName(ovalFamily, ovalRelease, req.packName, req.arch)
 		if err != nil {
 			return relatedDefs, xerrors.Errorf("Failed to get %s OVAL info by package: %#v, err: %w", r.Family, req, err)
 		}
@@ -439,8 +449,8 @@ func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error
 		constant.CentOS,
 		constant.Alma,
 		constant.Rocky:
-		vera := rpmver.NewVersion(rhelDownStreamOSVersionToRHEL(newVer))
-		verb := rpmver.NewVersion(rhelDownStreamOSVersionToRHEL(packInOVAL.Version))
+		vera := rpmver.NewVersion(rhelRebuildOSVersionToRHEL(newVer))
+		verb := rpmver.NewVersion(rhelRebuildOSVersionToRHEL(packInOVAL.Version))
 		return vera.LessThan(verb), nil
 
 	default:
@@ -448,10 +458,10 @@ func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error
 	}
 }
 
-var rhelDownStreamOSVerPattern = regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.(centos|rocky|alma))?`)
+var rhelRebuildOSVerPattern = regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.(centos|rocky|alma))?`)
 
-func rhelDownStreamOSVersionToRHEL(ver string) string {
-	return rhelDownStreamOSVerPattern.ReplaceAllString(ver, ".el$1")
+func rhelRebuildOSVersionToRHEL(ver string) string {
+	return rhelRebuildOSVerPattern.ReplaceAllString(ver, ".el$1")
 }
 
 // NewOVALClient returns a client for OVAL database

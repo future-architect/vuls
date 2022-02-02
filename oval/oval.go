@@ -5,9 +5,11 @@ package oval
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -33,7 +35,11 @@ type Base struct {
 func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err error) {
 	ovalFamily, err := GetFamilyInOval(osFamily)
 	if err != nil {
-		return false, err
+		return false, xerrors.Errorf("Failed to GetFamilyInOval. err: %w", err)
+	}
+	ovalRelease := release
+	if osFamily == constant.CentOS {
+		ovalRelease = strings.TrimPrefix(release, "stream")
 	}
 	if !b.Cnf.IsFetchViaHTTP() {
 		driver, err := newOvalDB(b.Cnf)
@@ -46,15 +52,15 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err er
 			}
 		}()
 
-		count, err := driver.CountDefs(ovalFamily, release)
+		count, err := driver.CountDefs(ovalFamily, ovalRelease)
 		if err != nil {
-			return false, xerrors.Errorf("Failed to count OVAL defs: %s, %s, %w", ovalFamily, release, err)
+			return false, xerrors.Errorf("Failed to count OVAL defs: %s, %s, %w", ovalFamily, ovalRelease, err)
 		}
-		logging.Log.Infof("OVAL %s %s found. defs: %d", osFamily, release, count)
+		logging.Log.Infof("OVAL %s %s found. defs: %d", ovalFamily, ovalRelease, count)
 		return 0 < count, nil
 	}
 
-	url, _ := util.URLPathJoin(config.Conf.OvalDict.URL, "count", ovalFamily, release)
+	url, _ := util.URLPathJoin(config.Conf.OvalDict.URL, "count", ovalFamily, ovalRelease)
 	resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
 	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 		return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
@@ -63,7 +69,7 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err er
 	if err := json.Unmarshal([]byte(body), &count); err != nil {
 		return false, xerrors.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
 	}
-	logging.Log.Infof("OVAL %s %s is fresh. defs: %d", osFamily, release, count)
+	logging.Log.Infof("OVAL %s %s found. defs: %d", ovalFamily, ovalRelease, count)
 	return 0 < count, nil
 }
 
@@ -71,7 +77,11 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err er
 func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 	ovalFamily, err := GetFamilyInOval(osFamily)
 	if err != nil {
-		return false, err
+		return false, xerrors.Errorf("Failed to GetFamilyInOval. err: %w", err)
+	}
+	ovalRelease := release
+	if osFamily == constant.CentOS {
+		ovalRelease = strings.TrimPrefix(release, "stream")
 	}
 	var lastModified time.Time
 	if !b.Cnf.IsFetchViaHTTP() {
@@ -84,12 +94,12 @@ func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 				logging.Log.Errorf("Failed to close DB. err: %+v", err)
 			}
 		}()
-		lastModified, err = driver.GetLastModified(ovalFamily, release)
+		lastModified, err = driver.GetLastModified(ovalFamily, ovalRelease)
 		if err != nil {
 			return false, xerrors.Errorf("Failed to GetLastModified: %w", err)
 		}
 	} else {
-		url, _ := util.URLPathJoin(config.Conf.OvalDict.URL, "lastmodified", ovalFamily, release)
+		url, _ := util.URLPathJoin(config.Conf.OvalDict.URL, "lastmodified", ovalFamily, ovalRelease)
 		resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
@@ -104,10 +114,10 @@ func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 	since = since.AddDate(0, 0, -3)
 	if lastModified.Before(since) {
 		logging.Log.Warnf("OVAL for %s %s is old, last modified is %s. It's recommended to update OVAL to improve scanning accuracy. How to update OVAL database, see https://github.com/vulsio/goval-dictionary#usage",
-			osFamily, release, lastModified)
+			ovalFamily, ovalRelease, lastModified)
 		return false, nil
 	}
-	logging.Log.Infof("OVAL %s %s is fresh. lastModified: %s", osFamily, release, lastModified.Format(time.RFC3339))
+	logging.Log.Infof("OVAL %s %s is fresh. lastModified: %s", ovalFamily, ovalRelease, lastModified.Format(time.RFC3339))
 	return true, nil
 }
 

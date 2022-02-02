@@ -300,11 +300,17 @@ func (l Distro) String() string {
 
 // MajorVersion returns Major version
 func (l Distro) MajorVersion() (int, error) {
-	if l.Family == constant.Amazon {
+	switch l.Family {
+	case constant.Amazon:
 		return strconv.Atoi(getAmazonLinuxVersion(l.Release))
-	}
-	if 0 < len(l.Release) {
-		return strconv.Atoi(strings.Split(l.Release, ".")[0])
+	case constant.CentOS:
+		if 0 < len(l.Release) {
+			return strconv.Atoi(strings.Split(strings.TrimPrefix(l.Release, "stream"), ".")[0])
+		}
+	default:
+		if 0 < len(l.Release) {
+			return strconv.Atoi(strings.Split(l.Release, ".")[0])
+		}
 	}
 	return 0, xerrors.New("Release is empty")
 }

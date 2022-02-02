@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	gostmodels "github.com/vulsio/gost/models"
@@ -21,8 +22,12 @@ type RedHat struct {
 
 // DetectCVEs fills cve information that has in Gost
 func (red RedHat) DetectCVEs(r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
+	gostRelease := r.Release
+	if r.Family == constant.CentOS {
+		gostRelease = strings.TrimPrefix(r.Release, "stream")
+	}
 	if red.DBDriver.Cnf.IsFetchViaHTTP() {
-		prefix, _ := util.URLPathJoin(red.DBDriver.Cnf.GetURL(), "redhat", major(r.Release), "pkgs")
+		prefix, _ := util.URLPathJoin(red.DBDriver.Cnf.GetURL(), "redhat", major(gostRelease), "pkgs")
 		responses, err := getAllUnfixedCvesViaHTTP(r, prefix)
 		if err != nil {
 			return 0, err
@@ -45,7 +50,7 @@ func (red RedHat) DetectCVEs(r *models.ScanResult, ignoreWillNotFix bool) (nCVEs
 		}
 		for _, pack := range r.Packages {
 			// CVE-ID: RedhatCVE
-			cves, err := red.DBDriver.DB.GetUnfixedCvesRedhat(major(r.Release), pack.Name, ignoreWillNotFix)
+			cves, err := red.DBDriver.DB.GetUnfixedCvesRedhat(major(gostRelease), pack.Name, ignoreWillNotFix)
 			if err != nil {
 				return 0, err
 			}
@@ -141,8 +146,12 @@ func (red RedHat) setUnfixedCveToScanResult(cve *gostmodels.RedhatCVE, r *models
 		newly = true
 	}
 	v.Mitigations = append(v.Mitigations, mitigations...)
-	pkgStats := red.mergePackageStates(v,
-		cve.PackageState, r.Packages, r.Release)
+
+	gostRelease := r.Release
+	if r.Family == constant.CentOS {
+		gostRelease = strings.TrimPrefix(r.Release, "stream")
+	}
+	pkgStats := red.mergePackageStates(v, cve.PackageState, r.Packages, gostRelease)
 	if 0 < len(pkgStats) {
 		v.AffectedPackages = pkgStats
 		r.ScannedCves[cve.Name] = v

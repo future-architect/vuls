@@ -63,14 +63,14 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 		}[major(release)]
 	case constant.CentOS:
 		// https://en.wikipedia.org/wiki/CentOS#End-of-support_schedule
-		// TODO Stream
 		eol, found = map[string]EOL{
-			"3": {Ended: true},
-			"4": {Ended: true},
-			"5": {Ended: true},
-			"6": {Ended: true},
-			"7": {StandardSupportUntil: time.Date(2024, 6, 30, 23, 59, 59, 0, time.UTC)},
-			"8": {StandardSupportUntil: time.Date(2021, 12, 31, 23, 59, 59, 0, time.UTC)},
+			"3":       {Ended: true},
+			"4":       {Ended: true},
+			"5":       {Ended: true},
+			"6":       {Ended: true},
+			"7":       {StandardSupportUntil: time.Date(2024, 6, 30, 23, 59, 59, 0, time.UTC)},
+			"8":       {StandardSupportUntil: time.Date(2021, 12, 31, 23, 59, 59, 0, time.UTC)},
+			"stream8": {StandardSupportUntil: time.Date(2024, 5, 31, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
 	case constant.Alma:
 		eol, found = map[string]EOL{
