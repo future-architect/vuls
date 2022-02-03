@@ -7,19 +7,14 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"github.com/vulsio/gost/db"
+	gostdb "github.com/vulsio/gost/db"
+	gostlog "github.com/vulsio/gost/util"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/constant"
 )
 
-// DBDriver is a DB Driver
-type DBDriver struct {
-	DB  db.DB
-	Cnf config.VulnDictInterface
-}
-
-// Client is the interface of OVAL client.
+// Client is the interface of Gost client.
 type Client interface {
 	DetectCVEs(*models.ScanResult, bool) (int, error)
 	CloseDB() error
@@ -27,74 +22,79 @@ type Client interface {
 
 // Base is a base struct
 type Base struct {
-	DBDriver DBDriver
+	driver  gostdb.DB
+	baseURL string
 }
 
 // CloseDB close a DB connection
 func (b Base) CloseDB() error {
-	if b.DBDriver.DB == nil {
+	if b.driver == nil {
 		return nil
 	}
-	return b.DBDriver.DB.CloseDB()
+	return b.driver.CloseDB()
 }
 
 // FillCVEsWithRedHat fills CVE detailed with Red Hat Security
-func FillCVEsWithRedHat(r *models.ScanResult, cnf config.GostConf) error {
-	db, locked, err := newGostDB(cnf)
-	if locked {
-		return xerrors.Errorf("SQLite3 is locked: %s", cnf.GetSQLite3Path())
-	} else if err != nil {
+func FillCVEsWithRedHat(r *models.ScanResult, cnf config.GostConf, o logging.LogOpts) error {
+	if err := gostlog.SetLogger(o.LogToFile, o.LogDir, o.Debug, o.LogJSON); err != nil {
 		return err
 	}
+
+	db, err := newGostDB(&cnf)
+	if err != nil {
+		return xerrors.Errorf("Failed to newGostDB. err: %w", err)
+	}
+
+	client := RedHat{Base{driver: db, baseURL: cnf.GetURL()}}
 	defer func() {
-		if db != nil {
-			if err := db.CloseDB(); err != nil {
-				logging.Log.Errorf("Failed to close DB. err: %+v", err)
-			}
+		if err := client.CloseDB(); err != nil {
+			logging.Log.Errorf("Failed to close DB. err: %+v", err)
 		}
 	}()
-	return RedHat{Base{DBDriver{DB: db, Cnf: &cnf}}}.fillCvesWithRedHatAPI(r)
+	return client.fillCvesWithRedHatAPI(r)
 }
 
 // NewClient make Client by family
-func NewClient(cnf config.GostConf, family string) (Client, error) {
-	db, locked, err := newGostDB(cnf)
-	if locked {
-		return nil, xerrors.Errorf("SQLite3 is locked: %s", cnf.GetSQLite3Path())
-	} else if err != nil {
+func NewGostClient(cnf config.GostConf, family string, o logging.LogOpts) (Client, error) {
+	if err := gostlog.SetLogger(o.LogToFile, o.LogDir, o.Debug, o.LogJSON); err != nil {
 		return nil, err
 	}
 
-	driver := DBDriver{DB: db, Cnf: &cnf}
+	db, err := newGostDB(&cnf)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to newGostDB. err: %w", err)
+	}
 
+	base := Base{driver: db, baseURL: cnf.GetURL()}
 	switch family {
 	case constant.RedHat, constant.CentOS, constant.Rocky, constant.Alma:
-		return RedHat{Base{DBDriver: driver}}, nil
+		return RedHat{base}, nil
 	case constant.Debian, constant.Raspbian:
-		return Debian{Base{DBDriver: driver}}, nil
+		return Debian{base}, nil
 	case constant.Ubuntu:
-		return Ubuntu{Base{DBDriver: driver}}, nil
+		return Ubuntu{base}, nil
 	case constant.Windows:
-		return Microsoft{Base{DBDriver: driver}}, nil
+		return Microsoft{base}, nil
 	default:
-		return Pseudo{Base{DBDriver: driver}}, nil
+		return Pseudo{base}, nil
 	}
 }
 
 // NewGostDB returns db client for Gost
-func newGostDB(cnf config.GostConf) (driver db.DB, locked bool, err error) {
+func newGostDB(cnf config.VulnDictInterface) (gostdb.DB, error) {
 	if cnf.IsFetchViaHTTP() {
-		return nil, false, nil
+		return nil, nil
 	}
 	path := cnf.GetURL()
 	if cnf.GetType() == "sqlite3" {
 		path = cnf.GetSQLite3Path()
 	}
-	if driver, locked, err = db.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), db.Option{}); err != nil {
+	driver, locked, err := gostdb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), gostdb.Option{})
+	if err != nil {
 		if locked {
-			return nil, true, xerrors.Errorf("gostDB is locked. err: %w", err)
+			return nil, xerrors.Errorf("Failed to init gost DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
 		}
-		return nil, false, err
+		return nil, xerrors.Errorf("Failed to init gost DB. DB Path: %s, err: %w", path, err)
 	}
-	return driver, false, nil
+	return driver, nil
 }

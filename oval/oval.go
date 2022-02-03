@@ -14,7 +14,7 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	"github.com/parnurzeal/gorequest"
-	"github.com/vulsio/goval-dictionary/db"
+	ovaldb "github.com/vulsio/goval-dictionary/db"
 	"golang.org/x/xerrors"
 )
 
@@ -23,16 +23,26 @@ type Client interface {
 	FillWithOval(*models.ScanResult) (int, error)
 	CheckIfOvalFetched(string, string) (bool, error)
 	CheckIfOvalFresh(string, string) (bool, error)
+	CloseDB() error
 }
 
 // Base is a base struct
 type Base struct {
-	family string
-	Cnf    config.VulnDictInterface
+	driver  ovaldb.DB
+	baseURL string
+	family  string
+}
+
+// CloseDB close a DB connection
+func (b Base) CloseDB() error {
+	if b.driver == nil {
+		return nil
+	}
+	return b.driver.CloseDB()
 }
 
 // CheckIfOvalFetched checks if oval entries are in DB by family, release.
-func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err error) {
+func (b Base) CheckIfOvalFetched(osFamily, release string) (bool, error) {
 	ovalFamily, err := GetFamilyInOval(osFamily)
 	if err != nil {
 		return false, xerrors.Errorf("Failed to GetFamilyInOval. err: %w", err)
@@ -41,33 +51,25 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (fetched bool, err er
 	if osFamily == constant.CentOS {
 		ovalRelease = strings.TrimPrefix(release, "stream")
 	}
-	if !b.Cnf.IsFetchViaHTTP() {
-		driver, err := newOvalDB(b.Cnf)
+
+	var count int
+	if b.driver == nil {
+		url, err := util.URLPathJoin(b.baseURL, "count", ovalFamily, ovalRelease)
 		if err != nil {
 			return false, err
 		}
-		defer func() {
-			if err := driver.CloseDB(); err != nil {
-				logging.Log.Errorf("Failed to close DB. err: %+v", err)
-			}
-		}()
-
-		count, err := driver.CountDefs(ovalFamily, ovalRelease)
+		resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
+		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
+			return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
+		}
+		if err := json.Unmarshal([]byte(body), &count); err != nil {
+			return false, xerrors.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
+		}
+	} else {
+		count, err = b.driver.CountDefs(ovalFamily, ovalRelease)
 		if err != nil {
 			return false, xerrors.Errorf("Failed to count OVAL defs: %s, %s, %w", ovalFamily, ovalRelease, err)
 		}
-		logging.Log.Infof("OVAL %s %s found. defs: %d", ovalFamily, ovalRelease, count)
-		return 0 < count, nil
-	}
-
-	url, _ := util.URLPathJoin(config.Conf.OvalDict.URL, "count", ovalFamily, ovalRelease)
-	resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
-	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-		return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
-	}
-	count := 0
-	if err := json.Unmarshal([]byte(body), &count); err != nil {
-		return false, xerrors.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
 	}
 	logging.Log.Infof("OVAL %s %s found. defs: %d", ovalFamily, ovalRelease, count)
 	return 0 < count, nil
@@ -83,30 +85,24 @@ func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 	if osFamily == constant.CentOS {
 		ovalRelease = strings.TrimPrefix(release, "stream")
 	}
+
 	var lastModified time.Time
-	if !b.Cnf.IsFetchViaHTTP() {
-		driver, err := newOvalDB(b.Cnf)
+	if b.driver == nil {
+		url, err := util.URLPathJoin(b.baseURL, "lastmodified", ovalFamily, ovalRelease)
 		if err != nil {
 			return false, err
 		}
-		defer func() {
-			if err := driver.CloseDB(); err != nil {
-				logging.Log.Errorf("Failed to close DB. err: %+v", err)
-			}
-		}()
-		lastModified, err = driver.GetLastModified(ovalFamily, ovalRelease)
-		if err != nil {
-			return false, xerrors.Errorf("Failed to GetLastModified: %w", err)
-		}
-	} else {
-		url, _ := util.URLPathJoin(config.Conf.OvalDict.URL, "lastmodified", ovalFamily, ovalRelease)
 		resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
 		}
-
 		if err := json.Unmarshal([]byte(body), &lastModified); err != nil {
 			return false, xerrors.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
+		}
+	} else {
+		lastModified, err = b.driver.GetLastModified(ovalFamily, ovalRelease)
+		if err != nil {
+			return false, xerrors.Errorf("Failed to GetLastModified: %w", err)
 		}
 	}
 
@@ -122,23 +118,20 @@ func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 }
 
 // NewOvalDB returns oval db client
-func newOvalDB(cnf config.VulnDictInterface) (driver db.DB, err error) {
+func newOvalDB(cnf config.VulnDictInterface) (ovaldb.DB, error) {
 	if cnf.IsFetchViaHTTP() {
 		return nil, nil
 	}
-
 	path := cnf.GetURL()
 	if cnf.GetType() == "sqlite3" {
 		path = cnf.GetSQLite3Path()
 	}
-
-	driver, locked, err := db.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), db.Option{})
+	driver, locked, err := ovaldb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), ovaldb.Option{})
 	if err != nil {
 		if locked {
-			err = xerrors.Errorf("SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
+			return nil, xerrors.Errorf("Failed to init OVAL DB. SQLite3: %s is locked. err: %w, ", cnf.GetSQLite3Path(), err)
 		}
-		err = xerrors.Errorf("Failed to new OVAL DB. err: %w", err)
-		return nil, err
+		return nil, xerrors.Errorf("Failed to init OVAL DB. DB Path: %s, err: %w", path, err)
 	}
 	return driver, nil
 }

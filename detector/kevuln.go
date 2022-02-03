@@ -18,16 +18,53 @@ import (
 
 	kevulndb "github.com/vulsio/go-kev/db"
 	kevulnmodels "github.com/vulsio/go-kev/models"
+	kevulnlog "github.com/vulsio/go-kev/utils"
 )
 
+// goKEVulnDBClient is a DB Driver
+type goKEVulnDBClient struct {
+	driver  kevulndb.DB
+	baseURL string
+}
+
+// closeDB close a DB connection
+func (client goKEVulnDBClient) closeDB() error {
+	if client.driver == nil {
+		return nil
+	}
+	return client.driver.CloseDB()
+}
+
+func newGoKEVulnDBClient(cnf config.VulnDictInterface, o logging.LogOpts) (*goKEVulnDBClient, error) {
+	if err := kevulnlog.SetLogger(o.LogToFile, o.LogDir, o.Debug, o.LogJSON); err != nil {
+		return nil, err
+	}
+
+	db, err := newKEVulnDB(cnf)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to newKEVulnDB. err: %w", err)
+	}
+	return &goKEVulnDBClient{driver: db, baseURL: cnf.GetURL()}, nil
+}
+
 // FillWithKEVuln :
-func FillWithKEVuln(r *models.ScanResult, cnf config.KEVulnConf) error {
-	if cnf.IsFetchViaHTTP() {
+func FillWithKEVuln(r *models.ScanResult, cnf config.KEVulnConf, logOpts logging.LogOpts) error {
+	client, err := newGoKEVulnDBClient(&cnf, logOpts)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := client.closeDB(); err != nil {
+			logging.Log.Errorf("Failed to close DB. err: %+v", err)
+		}
+	}()
+
+	if client.driver == nil {
 		var cveIDs []string
 		for cveID := range r.ScannedCves {
 			cveIDs = append(cveIDs, cveID)
 		}
-		prefix, err := util.URLPathJoin(cnf.GetURL(), "cves")
+		prefix, err := util.URLPathJoin(client.baseURL, "cves")
 		if err != nil {
 			return err
 		}
@@ -57,23 +94,11 @@ func FillWithKEVuln(r *models.ScanResult, cnf config.KEVulnConf) error {
 			r.ScannedCves[res.request.cveID] = v
 		}
 	} else {
-		driver, locked, err := newKEVulnDB(&cnf)
-		if locked {
-			return xerrors.Errorf("SQLite3 is locked: %s", cnf.GetSQLite3Path())
-		} else if err != nil {
-			return err
-		}
-		defer func() {
-			if err := driver.CloseDB(); err != nil {
-				logging.Log.Errorf("Failed to close DB. err: %+v", err)
-			}
-		}()
-
 		for cveID, vuln := range r.ScannedCves {
 			if cveID == "" {
 				continue
 			}
-			kevulns, err := driver.GetKEVulnByCveID(cveID)
+			kevulns, err := client.driver.GetKEVulnByCveID(cveID)
 			if err != nil {
 				return err
 			}
@@ -196,19 +221,20 @@ func httpGetKEVuln(url string, req kevulnRequest, resChan chan<- kevulnResponse,
 	}
 }
 
-func newKEVulnDB(cnf config.VulnDictInterface) (driver kevulndb.DB, locked bool, err error) {
+func newKEVulnDB(cnf config.VulnDictInterface) (kevulndb.DB, error) {
 	if cnf.IsFetchViaHTTP() {
-		return nil, false, nil
+		return nil, nil
 	}
 	path := cnf.GetURL()
 	if cnf.GetType() == "sqlite3" {
 		path = cnf.GetSQLite3Path()
 	}
-	if driver, locked, err = kevulndb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), kevulndb.Option{}); err != nil {
+	driver, locked, err := kevulndb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), kevulndb.Option{})
+	if err != nil {
 		if locked {
-			return nil, true, xerrors.Errorf("kevulnDB is locked. err: %w", err)
+			return nil, xerrors.Errorf("Failed to init kevuln DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
 		}
-		return nil, false, err
+		return nil, xerrors.Errorf("Failed to init kevuln DB. DB Path: %s, err: %w", path, err)
 	}
-	return driver, false, nil
+	return driver, nil
 }

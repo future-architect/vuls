@@ -7,10 +7,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
+
+	ovaldb "github.com/vulsio/goval-dictionary/db"
 	ovalmodels "github.com/vulsio/goval-dictionary/models"
 )
 
@@ -22,22 +23,12 @@ type RedHatBase struct {
 // FillWithOval returns scan result after updating CVE info by OVAL
 func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 	var relatedDefs ovalResult
-	if o.Cnf.IsFetchViaHTTP() {
-		if relatedDefs, err = getDefsByPackNameViaHTTP(r, o.Cnf.GetURL()); err != nil {
+	if o.driver == nil {
+		if relatedDefs, err = getDefsByPackNameViaHTTP(r, o.baseURL); err != nil {
 			return 0, err
 		}
 	} else {
-		driver, err := newOvalDB(o.Cnf)
-		if err != nil {
-			return 0, err
-		}
-		defer func() {
-			if err := driver.CloseDB(); err != nil {
-				logging.Log.Errorf("Failed to close DB. err: %+v", err)
-			}
-		}()
-
-		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
+		if relatedDefs, err = getDefsByPackNameFromOvalDB(r, o.driver); err != nil {
 			return 0, err
 		}
 	}
@@ -267,12 +258,13 @@ type RedHat struct {
 }
 
 // NewRedhat creates OVAL client for Redhat
-func NewRedhat(cnf config.VulnDictInterface) RedHat {
+func NewRedhat(driver ovaldb.DB, baseURL string) RedHat {
 	return RedHat{
 		RedHatBase{
 			Base{
-				family: constant.RedHat,
-				Cnf:    cnf,
+				driver:  driver,
+				baseURL: baseURL,
+				family:  constant.RedHat,
 			},
 		},
 	}
@@ -284,12 +276,13 @@ type CentOS struct {
 }
 
 // NewCentOS creates OVAL client for CentOS
-func NewCentOS(cnf config.VulnDictInterface) CentOS {
+func NewCentOS(driver ovaldb.DB, baseURL string) CentOS {
 	return CentOS{
 		RedHatBase{
 			Base{
-				family: constant.CentOS,
-				Cnf:    cnf,
+				driver:  driver,
+				baseURL: baseURL,
+				family:  constant.CentOS,
 			},
 		},
 	}
@@ -301,12 +294,13 @@ type Oracle struct {
 }
 
 // NewOracle creates OVAL client for Oracle
-func NewOracle(cnf config.VulnDictInterface) Oracle {
+func NewOracle(driver ovaldb.DB, baseURL string) Oracle {
 	return Oracle{
 		RedHatBase{
 			Base{
-				family: constant.Oracle,
-				Cnf:    cnf,
+				driver:  driver,
+				baseURL: baseURL,
+				family:  constant.Oracle,
 			},
 		},
 	}
@@ -319,12 +313,13 @@ type Amazon struct {
 }
 
 // NewAmazon creates OVAL client for Amazon Linux
-func NewAmazon(cnf config.VulnDictInterface) Amazon {
+func NewAmazon(driver ovaldb.DB, baseURL string) Amazon {
 	return Amazon{
 		RedHatBase{
 			Base{
-				family: constant.Amazon,
-				Cnf:    cnf,
+				driver:  driver,
+				baseURL: baseURL,
+				family:  constant.Amazon,
 			},
 		},
 	}
@@ -337,12 +332,13 @@ type Alma struct {
 }
 
 // NewAlma creates OVAL client for Alma Linux
-func NewAlma(cnf config.VulnDictInterface) Alma {
+func NewAlma(driver ovaldb.DB, baseURL string) Alma {
 	return Alma{
 		RedHatBase{
 			Base{
-				family: constant.Alma,
-				Cnf:    cnf,
+				driver:  driver,
+				baseURL: baseURL,
+				family:  constant.Alma,
 			},
 		},
 	}
@@ -355,12 +351,13 @@ type Rocky struct {
 }
 
 // NewRocky creates OVAL client for Rocky Linux
-func NewRocky(cnf config.VulnDictInterface) Rocky {
+func NewRocky(driver ovaldb.DB, baseURL string) Rocky {
 	return Rocky{
 		RedHatBase{
 			Base{
-				family: constant.Rocky,
-				Cnf:    cnf,
+				driver:  driver,
+				baseURL: baseURL,
+				family:  constant.Rocky,
 			},
 		},
 	}
@@ -373,12 +370,13 @@ type Fedora struct {
 }
 
 // NewFedora creates OVAL client for Fedora Linux
-func NewFedora(cnf config.VulnDictInterface) Fedora {
+func NewFedora(driver ovaldb.DB, baseURL string) Fedora {
 	return Fedora{
 		RedHatBase{
 			Base{
-				family: constant.Fedora,
-				Cnf:    cnf,
+				driver:  driver,
+				baseURL: baseURL,
+				family:  constant.Fedora,
 			},
 		},
 	}

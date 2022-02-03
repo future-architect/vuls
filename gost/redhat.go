@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -26,8 +25,11 @@ func (red RedHat) DetectCVEs(r *models.ScanResult, ignoreWillNotFix bool) (nCVEs
 	if r.Family == constant.CentOS {
 		gostRelease = strings.TrimPrefix(r.Release, "stream")
 	}
-	if red.DBDriver.Cnf.IsFetchViaHTTP() {
-		prefix, _ := util.URLPathJoin(red.DBDriver.Cnf.GetURL(), "redhat", major(gostRelease), "pkgs")
+	if red.driver == nil {
+		prefix, err := util.URLPathJoin(red.baseURL, "redhat", major(gostRelease), "pkgs")
+		if err != nil {
+			return 0, err
+		}
 		responses, err := getAllUnfixedCvesViaHTTP(r, prefix)
 		if err != nil {
 			return 0, err
@@ -45,12 +47,9 @@ func (red RedHat) DetectCVEs(r *models.ScanResult, ignoreWillNotFix bool) (nCVEs
 			}
 		}
 	} else {
-		if red.DBDriver.DB == nil {
-			return 0, nil
-		}
 		for _, pack := range r.Packages {
 			// CVE-ID: RedhatCVE
-			cves, err := red.DBDriver.DB.GetUnfixedCvesRedhat(major(gostRelease), pack.Name, ignoreWillNotFix)
+			cves, err := red.driver.GetUnfixedCvesRedhat(major(gostRelease), pack.Name, ignoreWillNotFix)
 			if err != nil {
 				return 0, err
 			}
@@ -73,8 +72,11 @@ func (red RedHat) fillCvesWithRedHatAPI(r *models.ScanResult) error {
 		cveIDs = append(cveIDs, cveID)
 	}
 
-	if red.DBDriver.Cnf.IsFetchViaHTTP() {
-		prefix, _ := util.URLPathJoin(config.Conf.Gost.URL, "redhat", "cves")
+	if red.driver == nil {
+		prefix, err := util.URLPathJoin(red.baseURL, "redhat", "cves")
+		if err != nil {
+			return err
+		}
 		responses, err := getCvesViaHTTP(cveIDs, prefix)
 		if err != nil {
 			return err
@@ -90,10 +92,7 @@ func (red RedHat) fillCvesWithRedHatAPI(r *models.ScanResult) error {
 			red.setFixedCveToScanResult(&redCve, r)
 		}
 	} else {
-		if red.DBDriver.DB == nil {
-			return nil
-		}
-		redCves, err := red.DBDriver.DB.GetRedhatMulti(cveIDs)
+		redCves, err := red.driver.GetRedhatMulti(cveIDs)
 		if err != nil {
 			return err
 		}

@@ -87,8 +87,8 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 	}
 
 	packCvesList := []packCves{}
-	if deb.DBDriver.Cnf.IsFetchViaHTTP() {
-		url, _ := util.URLPathJoin(deb.DBDriver.Cnf.GetURL(), "debian", major(r.Release), "pkgs")
+	if deb.driver == nil {
+		url, _ := util.URLPathJoin(deb.baseURL, "debian", major(r.Release), "pkgs")
 		s := "unfixed-cves"
 		if s == "resolved" {
 			s = "fixed-cves"
@@ -118,9 +118,6 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 			})
 		}
 	} else {
-		if deb.DBDriver.DB == nil {
-			return 0, nil
-		}
 		for _, pack := range r.Packages {
 			cves, fixes, err := deb.getCvesDebianWithfixStatus(fixStatus, major(r.Release), pack.Name)
 			if err != nil {
@@ -251,9 +248,9 @@ func isGostDefAffected(versionRelease, gostVersion string) (affected bool, err e
 func (deb Debian) getCvesDebianWithfixStatus(fixStatus, release, pkgName string) ([]models.CveContent, []models.PackageFixStatus, error) {
 	var f func(string, string) (map[string]gostmodels.DebianCVE, error)
 	if fixStatus == "resolved" {
-		f = deb.DBDriver.DB.GetFixedCvesDebian
+		f = deb.driver.GetFixedCvesDebian
 	} else {
-		f = deb.DBDriver.DB.GetUnfixedCvesDebian
+		f = deb.driver.GetUnfixedCvesDebian
 	}
 	debCves, err := f(release, pkgName)
 	if err != nil {
