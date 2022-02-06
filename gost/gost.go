@@ -4,14 +4,14 @@
 package gost
 
 import (
+	"golang.org/x/xerrors"
+
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	gostdb "github.com/vulsio/gost/db"
 	gostlog "github.com/vulsio/gost/util"
-	"golang.org/x/xerrors"
-
-	"github.com/future-architect/vuls/constant"
 )
 
 // Client is the interface of Gost client.

@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
+	"github.com/parnurzeal/gorequest"
+	"golang.org/x/xerrors"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	"github.com/parnurzeal/gorequest"
-	"golang.org/x/xerrors"
-
 	kevulndb "github.com/vulsio/go-kev/db"
 	kevulnmodels "github.com/vulsio/go-kev/models"
 	kevulnlog "github.com/vulsio/go-kev/utils"

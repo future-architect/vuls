@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/xerrors"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
@@ -19,7 +21,6 @@ import (
 	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/util"
 	cvemodels "github.com/vulsio/go-cve-dictionary/models"
-	"golang.org/x/xerrors"
 )
 
 // Cpe :

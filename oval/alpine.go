@@ -7,7 +7,6 @@ import (
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-
 	ovaldb "github.com/vulsio/goval-dictionary/db"
 )
 

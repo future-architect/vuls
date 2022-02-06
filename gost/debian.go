@@ -6,12 +6,13 @@ package gost
 import (
 	"encoding/json"
 
+	debver "github.com/knqyf263/go-deb-version"
+	"golang.org/x/xerrors"
+
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	debver "github.com/knqyf263/go-deb-version"
 	gostmodels "github.com/vulsio/gost/models"
-	"golang.org/x/xerrors"
 )
 
 // Debian is Gost client for Debian GNU/Linux

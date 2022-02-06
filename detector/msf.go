@@ -9,15 +9,16 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
+	"github.com/parnurzeal/gorequest"
+	"golang.org/x/xerrors"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	"github.com/parnurzeal/gorequest"
 	metasploitdb "github.com/vulsio/go-msfdb/db"
 	metasploitmodels "github.com/vulsio/go-msfdb/models"
 	metasploitlog "github.com/vulsio/go-msfdb/utils"
-	"golang.org/x/xerrors"
 )
 
 // goMetasploitDBClient is a DB Driver

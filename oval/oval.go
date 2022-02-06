@@ -8,14 +8,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/parnurzeal/gorequest"
+	"golang.org/x/xerrors"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	"github.com/parnurzeal/gorequest"
 	ovaldb "github.com/vulsio/goval-dictionary/db"
-	"golang.org/x/xerrors"
 )
 
 // Client is the interface of OVAL client.

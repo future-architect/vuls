@@ -11,10 +11,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/google/subcommands"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/server"
-	"github.com/google/subcommands"
 )
 
 // ServerCmd is subcommand for server
