@@ -37,12 +37,12 @@ func (client goMetasploitDBClient) closeDB() error {
 
 func newGoMetasploitDBClient(cnf config.VulnDictInterface, o logging.LogOpts) (*goMetasploitDBClient, error) {
 	if err := metasploitlog.SetLogger(o.LogToFile, o.LogDir, o.Debug, o.LogJSON); err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("Failed to set go-msfdb logger. err: %w", err)
 	}
 
 	db, err := newMetasploitDB(cnf)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to newExploitDB. err: %w", err)
+		return nil, xerrors.Errorf("Failed to newMetasploitDB. err: %w", err)
 	}
 	return &goMetasploitDBClient{driver: db, baseURL: cnf.GetURL()}, nil
 }
@@ -51,7 +51,7 @@ func newGoMetasploitDBClient(cnf config.VulnDictInterface, o logging.LogOpts) (*
 func FillWithMetasploit(r *models.ScanResult, cnf config.MetasploitConf, logOpts logging.LogOpts) (nMetasploitCve int, err error) {
 	client, err := newGoMetasploitDBClient(&cnf, logOpts)
 	if err != nil {
-		return 0, err
+		return 0, xerrors.Errorf("Failed to newGoMetasploitDBClient. err: %w", err)
 	}
 	defer func() {
 		if err := client.closeDB(); err != nil {
@@ -66,16 +66,16 @@ func FillWithMetasploit(r *models.ScanResult, cnf config.MetasploitConf, logOpts
 		}
 		prefix, err := util.URLPathJoin(client.baseURL, "cves")
 		if err != nil {
-			return 0, err
+			return 0, xerrors.Errorf("Failed to join URLPath. err: %w", err)
 		}
 		responses, err := getMetasploitsViaHTTP(cveIDs, prefix)
 		if err != nil {
-			return 0, err
+			return 0, xerrors.Errorf("Failed to get Metasploits via HTTP. err: %w", err)
 		}
 		for _, res := range responses {
 			msfs := []metasploitmodels.Metasploit{}
 			if err := json.Unmarshal([]byte(res.json), &msfs); err != nil {
-				return 0, err
+				return 0, xerrors.Errorf("Failed to unmarshal json. err: %w", err)
 			}
 			metasploits := ConvertToModelsMsf(msfs)
 			v, ok := r.ScannedCves[res.request.cveID]
@@ -92,7 +92,7 @@ func FillWithMetasploit(r *models.ScanResult, cnf config.MetasploitConf, logOpts
 			}
 			ms, err := client.driver.GetModuleByCveID(cveID)
 			if err != nil {
-				return 0, err
+				return 0, xerrors.Errorf("Failed to get Metasploits by CVE-ID. err: %w", err)
 			}
 			if len(ms) == 0 {
 				continue

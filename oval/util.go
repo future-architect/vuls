@@ -443,22 +443,22 @@ func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error
 		constant.Raspbian:
 		vera, err := debver.NewVersion(newVer)
 		if err != nil {
-			return false, err
+			return false, xerrors.Errorf("Failed to parse version. version: %s, err: %w", newVer, err)
 		}
 		verb, err := debver.NewVersion(packInOVAL.Version)
 		if err != nil {
-			return false, err
+			return false, xerrors.Errorf("Failed to parse version. version: %s, err: %w", packInOVAL.Version, err)
 		}
 		return vera.LessThan(verb), nil
 
 	case constant.Alpine:
 		vera, err := apkver.NewVersion(newVer)
 		if err != nil {
-			return false, err
+			return false, xerrors.Errorf("Failed to parse version. version: %s, err: %w", newVer, err)
 		}
 		verb, err := apkver.NewVersion(packInOVAL.Version)
 		if err != nil {
-			return false, err
+			return false, xerrors.Errorf("Failed to parse version. version: %s, err: %w", packInOVAL.Version, err)
 		}
 		return vera.LessThan(verb), nil
 
@@ -495,7 +495,7 @@ func rhelRebuildOSVersionToRHEL(ver string) string {
 // NewOVALClient returns a client for OVAL database
 func NewOVALClient(family string, cnf config.GovalDictConf, o logging.LogOpts) (Client, error) {
 	if err := ovallog.SetLogger(o.LogToFile, o.LogDir, o.Debug, o.LogJSON); err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("Failed to set goval-dictionary logger. err: %w", err)
 	}
 
 	driver, err := newOvalDB(&cnf)

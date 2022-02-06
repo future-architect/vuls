@@ -68,7 +68,7 @@ func (deb Debian) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 	}
 	nFixedCVEs, err := deb.detectCVEsWithFixState(r, "resolved")
 	if err != nil {
-		return 0, err
+		return 0, xerrors.Errorf("Failed to detect fixed CVEs. err: %w", err)
 	}
 
 	if stashLinuxPackage.Name != "" {
@@ -76,7 +76,7 @@ func (deb Debian) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 	}
 	nUnfixedCVEs, err := deb.detectCVEsWithFixState(r, "open")
 	if err != nil {
-		return 0, err
+		return 0, xerrors.Errorf("Failed to detect unfixed CVEs. err: %w", err)
 	}
 
 	return (nFixedCVEs + nUnfixedCVEs), nil
@@ -89,21 +89,24 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 
 	packCvesList := []packCves{}
 	if deb.driver == nil {
-		url, _ := util.URLPathJoin(deb.baseURL, "debian", major(r.Release), "pkgs")
+		url, err := util.URLPathJoin(deb.baseURL, "debian", major(r.Release), "pkgs")
+		if err != nil {
+			return 0, xerrors.Errorf("Failed to join URLPath. err: %w", err)
+		}
+
 		s := "unfixed-cves"
 		if s == "resolved" {
 			s = "fixed-cves"
 		}
-
 		responses, err := getCvesWithFixStateViaHTTP(r, url, s)
 		if err != nil {
-			return 0, err
+			return 0, xerrors.Errorf("Failed to get CVEs via HTTP. err: %w", err)
 		}
 
 		for _, res := range responses {
 			debCves := map[string]gostmodels.DebianCVE{}
 			if err := json.Unmarshal([]byte(res.json), &debCves); err != nil {
-				return 0, err
+				return 0, xerrors.Errorf("Failed to unmarshal json. err: %w", err)
 			}
 			cves := []models.CveContent{}
 			fixes := []models.PackageFixStatus{}
@@ -122,7 +125,7 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 		for _, pack := range r.Packages {
 			cves, fixes, err := deb.getCvesDebianWithfixStatus(fixStatus, major(r.Release), pack.Name)
 			if err != nil {
-				return 0, err
+				return 0, xerrors.Errorf("Failed to get CVEs for Package. err: %w", err)
 			}
 			packCvesList = append(packCvesList, packCves{
 				packName:  pack.Name,
@@ -136,7 +139,7 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 		for _, pack := range r.SrcPackages {
 			cves, fixes, err := deb.getCvesDebianWithfixStatus(fixStatus, major(r.Release), pack.Name)
 			if err != nil {
-				return 0, err
+				return 0, xerrors.Errorf("Failed to get CVEs for SrcPackage. err: %w", err)
 			}
 			packCvesList = append(packCvesList, packCves{
 				packName:  pack.Name,
@@ -237,11 +240,11 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 func isGostDefAffected(versionRelease, gostVersion string) (affected bool, err error) {
 	vera, err := debver.NewVersion(versionRelease)
 	if err != nil {
-		return false, err
+		return false, xerrors.Errorf("Failed to parse version. version: %s, err: %w", versionRelease, err)
 	}
 	verb, err := debver.NewVersion(gostVersion)
 	if err != nil {
-		return false, err
+		return false, xerrors.Errorf("Failed to parse version. version: %s, err: %w", gostVersion, err)
 	}
 	return vera.LessThan(verb), nil
 }
@@ -255,7 +258,7 @@ func (deb Debian) getCvesDebianWithfixStatus(fixStatus, release, pkgName string)
 	}
 	debCves, err := f(release, pkgName)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, xerrors.Errorf("Failed to get CVEs. fixStatus: %s, release: %s, src package: %s, err: %w", fixStatus, release, pkgName, err)
 	}
 
 	cves := []models.CveContent{}

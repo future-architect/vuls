@@ -37,7 +37,7 @@ func (client goKEVulnDBClient) closeDB() error {
 
 func newGoKEVulnDBClient(cnf config.VulnDictInterface, o logging.LogOpts) (*goKEVulnDBClient, error) {
 	if err := kevulnlog.SetLogger(o.LogToFile, o.LogDir, o.Debug, o.LogJSON); err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("Failed to set go-kev logger. err: %w", err)
 	}
 
 	db, err := newKEVulnDB(cnf)

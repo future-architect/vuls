@@ -57,7 +57,7 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (bool, error) {
 	if b.driver == nil {
 		url, err := util.URLPathJoin(b.baseURL, "count", ovalFamily, ovalRelease)
 		if err != nil {
-			return false, err
+			return false, xerrors.Errorf("Failed to join URLPath. err: %w", err)
 		}
 		resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
@@ -91,7 +91,7 @@ func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 	if b.driver == nil {
 		url, err := util.URLPathJoin(b.baseURL, "lastmodified", ovalFamily, ovalRelease)
 		if err != nil {
-			return false, err
+			return false, xerrors.Errorf("Failed to join URLPath. err: %w", err)
 		}
 		resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {

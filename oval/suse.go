@@ -6,6 +6,8 @@ package oval
 import (
 	"fmt"
 
+	"golang.org/x/xerrors"
+
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	ovaldb "github.com/vulsio/goval-dictionary/db"
@@ -34,11 +36,11 @@ func (o SUSE) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 	var relatedDefs ovalResult
 	if o.driver == nil {
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r, o.baseURL); err != nil {
-			return 0, err
+			return 0, xerrors.Errorf("Failed to get Definitions via HTTP. err: %w", err)
 		}
 	} else {
 		if relatedDefs, err = getDefsByPackNameFromOvalDB(r, o.driver); err != nil {
-			return 0, err
+			return 0, xerrors.Errorf("Failed to get Definitions from DB. err: %w", err)
 		}
 	}
 	for _, defPacks := range relatedDefs.entries {

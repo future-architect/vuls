@@ -144,7 +144,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 	if config.Conf.DiffPlus || config.Conf.DiffMinus {
 		prevs, err := loadPrevious(rs, config.Conf.ResultsDir)
 		if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("Failed to load previous results. err: %w", err)
 		}
 		rs = diff(rs, prevs, config.Conf.DiffPlus, config.Conf.DiffMinus)
 	}

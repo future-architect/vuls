@@ -28,7 +28,7 @@ type goCveDictClient struct {
 
 func newGoCveDictClient(cnf config.VulnDictInterface, o logging.LogOpts) (*goCveDictClient, error) {
 	if err := cvelog.SetLogger(o.LogToFile, o.LogDir, o.Debug, o.LogJSON); err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("Failed to set go-cve-dictionary logger. err: %w", err)
 	}
 
 	driver, err := newCveDB(cnf)
@@ -145,17 +145,17 @@ func (client goCveDictClient) detectCveByCpeURI(cpeURI string, useJVN bool) (cve
 	if client.driver == nil {
 		url, err := util.URLPathJoin(client.baseURL, "cpes")
 		if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("Failed to join URLPath. err: %w", err)
 		}
 
 		query := map[string]string{"name": cpeURI}
 		logging.Log.Debugf("HTTP Request to %s, query: %#v", url, query)
 		if cves, err = httpPost(url, query); err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("Failed to post HTTP Request. err: %w", err)
 		}
 	} else {
 		if cves, err = client.driver.GetByCpeURI(cpeURI); err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("Failed to get CVEs by CPEURI. err: %w", err)
 		}
 	}
 
