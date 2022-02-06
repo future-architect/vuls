@@ -555,7 +555,7 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 		// TODO zypper ps
 		// https://github.com/future-architect/vuls/issues/696
 		return false
-	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Oracle:
+	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Oracle, constant.Fedora:
 		majorVersion, err := o.Distro.MajorVersion()
 		if err != nil || majorVersion < 6 {
 			o.log.Errorf("Not implemented yet: %s, err: %+v", o.Distro, err)

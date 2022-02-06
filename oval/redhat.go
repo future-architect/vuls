@@ -57,6 +57,15 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 					vuln.CveContents[models.RedHat][i] = cont
 				}
 			}
+		case models.Fedora:
+			for _, d := range vuln.DistroAdvisories {
+				if conts, ok := vuln.CveContents[models.Fedora]; ok {
+					for i, cont := range conts {
+						cont.SourceLink = "https://bodhi.fedoraproject.org/updates/" + d.AdvisoryID
+						vuln.CveContents[models.Fedora][i] = cont
+					}
+				}
+			}
 		case models.Oracle:
 			if conts, ok := vuln.CveContents[models.Oracle]; ok {
 				for i, cont := range conts {
