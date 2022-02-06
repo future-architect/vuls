@@ -36,14 +36,6 @@ func TestViaHTTP(t *testing.T) {
 		},
 		{
 			header: map[string]string{
-				"X-Vuls-OS-Family":      "debian",
-				"X-Vuls-OS-Release":     "8",
-				"X-Vuls-Kernel-Release": "2.6.32-695.20.3.el6.x86_64",
-			},
-			wantErr: errKernelVersionHeader,
-		},
-		{
-			header: map[string]string{
 				"X-Vuls-OS-Family":      "centos",
 				"X-Vuls-OS-Release":     "6.9",
 				"X-Vuls-Kernel-Release": "2.6.32-695.20.3.el6.x86_64",
@@ -92,6 +84,22 @@ func TestViaHTTP(t *testing.T) {
 				RunningKernel: models.Kernel{
 					Release: "3.16.0-4-amd64",
 					Version: "3.16.51-2",
+				},
+			},
+		},
+		{
+			header: map[string]string{
+				"X-Vuls-OS-Family":      "debian",
+				"X-Vuls-OS-Release":     "8.10",
+				"X-Vuls-Kernel-Release": "3.16.0-4-amd64",
+			},
+			body: "",
+			expectedResult: models.ScanResult{
+				Family:  "debian",
+				Release: "8.10",
+				RunningKernel: models.Kernel{
+					Release: "3.16.0-4-amd64",
+					Version: "",
 				},
 			},
 		},

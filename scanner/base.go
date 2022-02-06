@@ -18,6 +18,7 @@ import (
 
 	"github.com/aquasecurity/fanal/analyzer"
 	dio "github.com/aquasecurity/go-dep-parser/pkg/io"
+	debver "github.com/knqyf263/go-deb-version"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
@@ -132,6 +133,10 @@ func (l *base) runningKernel() (release, version string, err error) {
 		ss := strings.Fields(r.Stdout)
 		if 6 < len(ss) {
 			version = ss[6]
+		}
+		if _, err := debver.NewVersion(version); err != nil {
+			l.log.Warnf("kernel running version is invalid. skip kernel vulnerability detection. actual kernel version: %s, err: %s", version, err)
+			version = ""
 		}
 	}
 	return
