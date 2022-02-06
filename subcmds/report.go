@@ -175,10 +175,24 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogToFile, config.Conf.LogDir, "", "")
 	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 
-	if err := config.Load(p.configPath); err != nil {
-		logging.Log.Errorf("Error loading %s, %+v", p.configPath, err)
-		return subcommands.ExitUsageError
+	if p.configPath == "" {
+		for _, cnf := range []config.VulnDictInterface{
+			&config.Conf.CveDict,
+			&config.Conf.OvalDict,
+			&config.Conf.Gost,
+			&config.Conf.Exploit,
+			&config.Conf.Metasploit,
+			&config.Conf.KEVuln,
+		} {
+			cnf.Init()
+		}
+	} else {
+		if err := config.Load(p.configPath); err != nil {
+			logging.Log.Errorf("Error loading %s. err: %+v", p.configPath, err)
+			return subcommands.ExitUsageError
+		}
 	}
+
 	config.Conf.Slack.Enabled = p.toSlack
 	config.Conf.ChatWork.Enabled = p.toChatWork
 	config.Conf.GoogleChat.Enabled = p.toGoogleChat
