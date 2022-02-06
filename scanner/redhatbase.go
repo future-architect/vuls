@@ -734,7 +734,7 @@ func (o *redhatBase) rpmQf() string {
 
 func (o *redhatBase) detectEnabledDnfModules() ([]string, error) {
 	switch o.Distro.Family {
-	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
+	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Fedora:
 		//TODO OracleLinux
 	default:
 		return nil, nil

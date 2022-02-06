@@ -5,6 +5,7 @@ package oval
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"regexp"
 	"sort"
@@ -308,6 +309,8 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 	return
 }
 
+var modularVersionPattern = regexp.MustCompile(`.+\.module(?:\+el|_f)\d{1,2}.*`)
+
 func isOvalDefAffected(def ovalmodels.Definition, req request, family string, running models.Kernel, enabledMods []string) (affected, notFixedYet bool, fixedIn string, err error) {
 	for _, ovalPack := range def.AffectedPacks {
 		if req.packName != ovalPack.Name {
@@ -331,10 +334,24 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 			continue
 		}
 
+		// There is a modular package and a non-modular package with the same name. (e.g. fedora 35 community-mysql)
+		if ovalPack.ModularityLabel == "" && modularVersionPattern.MatchString(req.versionRelease) {
+			continue
+		} else if ovalPack.ModularityLabel != "" && !modularVersionPattern.MatchString(req.versionRelease) {
+			continue
+		}
+
 		isModularityLabelEmptyOrSame := false
 		if ovalPack.ModularityLabel != "" {
+			// expect ovalPack.ModularityLabel e.g. RedHat: nginx:1.16, Fedora: mysql:8.0:3520211031142409:f27b74a8
+			ss := strings.Split(ovalPack.ModularityLabel, ":")
+			if len(ss) < 2 {
+				logging.Log.Warnf("Invalid modularitylabel format in oval package. Maybe it is necessary to fix modularitylabel of goval-dictionary. expected: ${name}:${stream}(:${version}:${context}:${arch}), actual: %s", ovalPack.ModularityLabel)
+				continue
+			}
+			modularityNameStreamLabel := fmt.Sprintf("%s:%s", ss[0], ss[1])
 			for _, mod := range enabledMods {
-				if mod == ovalPack.ModularityLabel {
+				if mod == modularityNameStreamLabel {
 					isModularityLabelEmptyOrSame = true
 					break
 				}
@@ -378,12 +395,13 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 			// If the version of installed is less than in OVAL
 			switch family {
 			case constant.RedHat,
+				constant.Fedora,
 				constant.Amazon,
+				constant.Oracle,
 				constant.SUSEEnterpriseServer,
 				constant.Debian,
-				constant.Ubuntu,
 				constant.Raspbian,
-				constant.Oracle:
+				constant.Ubuntu:
 				// Use fixed state in OVAL for these distros.
 				return true, false, ovalPack.Version, nil
 			}
