@@ -154,6 +154,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 				isSrcPack:         false,
 				arch:              pack.Arch,
 				repository:        pack.Repository,
+				modularityLabel:   pack.ModularityLabel,
 			}
 			if ovalFamily == constant.Amazon && ovalRelease == "2" && req.repository == "" {
 				req.repository = "amzn2-core"
@@ -321,6 +322,7 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relate
 			newVersionRelease: pack.FormatNewVer(),
 			arch:              pack.Arch,
 			repository:        pack.Repository,
+			modularityLabel:   pack.ModularityLabel,
 			isSrcPack:         false,
 		}
 		if ovalFamily == constant.Amazon && ovalRelease == "2" && req.repository == "" {
@@ -410,25 +412,39 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family, release s
 		}
 
 		// There is a modular package and a non-modular package with the same name. (e.g. fedora 35 community-mysql)
-		var modularityNameStreamLabel string
+		var modularityLabel string
 		if ovalPack.ModularityLabel == "" {
 			if modularVersionPattern.MatchString(req.versionRelease) {
 				continue
 			}
 		} else {
-			// expect ovalPack.ModularityLabel e.g. RedHat: nginx:1.16, Fedora: mysql:8.0:3520211031142409:f27b74a8
 			if !modularVersionPattern.MatchString(req.versionRelease) {
 				continue
 			}
 
+			// expect ovalPack.ModularityLabel e.g. RedHat: nginx:1.16, Fedora: mysql:8.0:3520211031142409:f27b74a8
 			ss := strings.Split(ovalPack.ModularityLabel, ":")
 			if len(ss) < 2 {
 				logging.Log.Warnf("Invalid modularitylabel format in oval package. Maybe it is necessary to fix modularitylabel of goval-dictionary. expected: ${name}:${stream}(:${version}:${context}:${arch}), actual: %s", ovalPack.ModularityLabel)
 				continue
 			}
-			modularityNameStreamLabel = fmt.Sprintf("%s:%s", ss[0], ss[1])
-			if !slices.Contains(enabledMods, modularityNameStreamLabel) {
-				continue
+			modularityLabel = fmt.Sprintf("%s:%s", ss[0], ss[1])
+
+			if req.modularityLabel != "" {
+				ss := strings.Split(req.modularityLabel, ":")
+				if len(ss) < 2 {
+					logging.Log.Warnf("Invalid modularitylabel format in request package. expected: ${name}:${stream}(:${version}:${context}:${arch}), actual: %s", req.modularityLabel)
+					continue
+				}
+				reqModularityLabel := fmt.Sprintf("%s:%s", ss[0], ss[1])
+
+				if reqModularityLabel != modularityLabel {
+					continue
+				}
+			} else {
+				if !slices.Contains(enabledMods, modularityLabel) {
+					continue
+				}
 			}
 		}
 
@@ -436,8 +452,8 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family, release s
 			switch family {
 			case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
 				n := req.packName
-				if modularityNameStreamLabel != "" {
-					n = fmt.Sprintf("%s/%s", modularityNameStreamLabel, req.packName)
+				if modularityLabel != "" {
+					n = fmt.Sprintf("%s/%s", modularityLabel, req.packName)
 				}
 				for _, r := range def.Advisory.AffectedResolution {
 					if slices.ContainsFunc(r.Components, func(c ovalmodels.Component) bool { return c.Component == n }) {
