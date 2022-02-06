@@ -61,13 +61,18 @@ func (deb Debian) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 		}
 	}
 
-	stashLinuxPackage := r.Packages["linux"]
+	var stashLinuxPackage models.Package
+	if linux, ok := r.Packages["linux"]; ok {
+		stashLinuxPackage = linux
+	}
 	nFixedCVEs, err := deb.detectCVEsWithFixState(r, "resolved")
 	if err != nil {
 		return 0, err
 	}
 
-	r.Packages["linux"] = stashLinuxPackage
+	if stashLinuxPackage.Name != "" {
+		r.Packages["linux"] = stashLinuxPackage
+	}
 	nUnfixedCVEs, err := deb.detectCVEsWithFixState(r, "open")
 	if err != nil {
 		return 0, err
