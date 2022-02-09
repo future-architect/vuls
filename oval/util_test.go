@@ -1621,6 +1621,88 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected:    false,
 			notFixedYet: false,
 		},
+		// dnf module 4 (long modularitylabel)
+		{
+			in: in{
+				family: constant.Fedora,
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:            "community-mysql",
+							Version:         "0:8.0.27-1.module_f35+13269+c9322734",
+							Arch:            "x86_64",
+							NotFixedYet:     false,
+							ModularityLabel: "mysql:8.0:3520211031142409:f27b74a8",
+						},
+					},
+				},
+				req: request{
+					packName:       "community-mysql",
+					arch:           "x86_64",
+					versionRelease: "8.0.26-1.module_f35+12627+b26747dd",
+				},
+				mods: []string{
+					"mysql:8.0",
+				},
+			},
+			affected:    true,
+			notFixedYet: false,
+			fixedIn:     "0:8.0.27-1.module_f35+13269+c9322734",
+		},
+		// dnf module 5 (req is non-modular package, oval is modular package)
+		{
+			in: in{
+				family: constant.Fedora,
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:            "community-mysql",
+							Version:         "0:8.0.27-1.module_f35+13269+c9322734",
+							Arch:            "x86_64",
+							NotFixedYet:     false,
+							ModularityLabel: "mysql:8.0:3520211031142409:f27b74a8",
+						},
+					},
+				},
+				req: request{
+					packName:       "community-mysql",
+					arch:           "x86_64",
+					versionRelease: "8.0.26-1.fc35",
+				},
+				mods: []string{
+					"mysql:8.0",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		// dnf module 6 (req is modular package, oval is non-modular package)
+		{
+			in: in{
+				family: constant.Fedora,
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:            "community-mysql",
+							Version:         "0:8.0.27-1.fc35",
+							Arch:            "x86_64",
+							NotFixedYet:     false,
+							ModularityLabel: "",
+						},
+					},
+				},
+				req: request{
+					packName:       "community-mysql",
+					arch:           "x86_64",
+					versionRelease: "8.0.26-1.module_f35+12627+b26747dd",
+				},
+				mods: []string{
+					"mysql:8.0",
+				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
 		// .ksplice1.
 		{
 			in: in{

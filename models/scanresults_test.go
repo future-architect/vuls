@@ -86,6 +86,11 @@ func TestIsDisplayUpdatableNum(t *testing.T) {
 			family:   constant.Alpine,
 			expected: true,
 		},
+		{
+			mode:     []byte{config.Fast},
+			family:   constant.Fedora,
+			expected: true,
+		},
 	}
 
 	for i, tt := range tests {

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/future-architect/vuls/config"
@@ -16,19 +17,38 @@ import (
 	ver "github.com/knqyf263/go-rpm-version"
 )
 
+var releasePattern = regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
+
 // https://github.com/serverspec/specinfra/blob/master/lib/specinfra/helper/detect_os/redhat.rb
 func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 	if r := exec(c, "ls /etc/fedora-release", noSudo); r.isSuccess() {
-		logging.Log.Warnf("Fedora not tested yet: %s", r)
-		return true, &unknown{}
+		if r := exec(c, "cat /etc/fedora-release", noSudo); r.isSuccess() {
+			fed := newFedora(c)
+			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
+			if len(result) != 3 {
+				logging.Log.Warnf("Failed to parse Fedora version: %s", r)
+				return true, fed
+			}
+			release := result[2]
+			ver, err := strconv.Atoi(release)
+			if err != nil {
+				logging.Log.Warnf("Failed to parse Fedora version: %s", release)
+				return true, fed
+			}
+			if ver < 32 {
+				logging.Log.Warnf("Versions prior to Fedora 32 are not supported, detected version is %s", release)
+				return true, fed
+			}
+			fed.setDistro(constant.Fedora, release)
+			return true, fed
+		}
 	}
 
 	if r := exec(c, "ls /etc/oracle-release", noSudo); r.isSuccess() {
 		// Need to discover Oracle Linux first, because it provides an
 		// /etc/redhat-release that matches the upstream distribution
 		if r := exec(c, "cat /etc/oracle-release", noSudo); r.isSuccess() {
-			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
-			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
+			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
 				logging.Log.Warnf("Failed to parse Oracle Linux version: %s", r)
 				return true, newOracle(c)
@@ -41,37 +61,9 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 		}
 	}
 
-	// https://bugzilla.redhat.com/show_bug.cgi?id=1332025
-	// CentOS cloud image
-	if r := exec(c, "ls /etc/centos-release", noSudo); r.isSuccess() {
-		if r := exec(c, "cat /etc/centos-release", noSudo); r.isSuccess() {
-			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
-			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
-			if len(result) != 3 {
-				logging.Log.Warnf("Failed to parse CentOS version: %s", r)
-				return true, newCentOS(c)
-			}
-
-			release := result[2]
-			switch strings.ToLower(result[1]) {
-			case "centos", "centos linux":
-				cent := newCentOS(c)
-				cent.setDistro(constant.CentOS, release)
-				return true, cent
-			case "centos stream":
-				cent := newCentOS(c)
-				cent.setDistro(constant.CentOS, fmt.Sprintf("stream%s", release))
-				return true, cent
-			default:
-				logging.Log.Warnf("Failed to parse CentOS: %s", r)
-			}
-		}
-	}
-
 	if r := exec(c, "ls /etc/almalinux-release", noSudo); r.isSuccess() {
 		if r := exec(c, "cat /etc/almalinux-release", noSudo); r.isSuccess() {
-			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
-			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
+			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
 				logging.Log.Warnf("Failed to parse Alma version: %s", r)
 				return true, newAlma(c)
@@ -91,8 +83,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 
 	if r := exec(c, "ls /etc/rocky-release", noSudo); r.isSuccess() {
 		if r := exec(c, "cat /etc/rocky-release", noSudo); r.isSuccess() {
-			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
-			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
+			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
 				logging.Log.Warnf("Failed to parse Rocky version: %s", r)
 				return true, newRocky(c)
@@ -110,21 +101,66 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 		}
 	}
 
+	// https://bugzilla.redhat.com/show_bug.cgi?id=1332025
+	// CentOS cloud image
+	if r := exec(c, "ls /etc/centos-release", noSudo); r.isSuccess() {
+		if r := exec(c, "cat /etc/centos-release", noSudo); r.isSuccess() {
+			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
+			if len(result) != 3 {
+				logging.Log.Warnf("Failed to parse CentOS version: %s", r)
+				return true, newCentOS(c)
+			}
+
+			release := result[2]
+			switch strings.ToLower(result[1]) {
+			case "centos", "centos linux":
+				cent := newCentOS(c)
+				cent.setDistro(constant.CentOS, release)
+				return true, cent
+			case "centos stream":
+				cent := newCentOS(c)
+				cent.setDistro(constant.CentOS, fmt.Sprintf("stream%s", release))
+				return true, cent
+			case "alma", "almalinux":
+				alma := newAlma(c)
+				alma.setDistro(constant.Alma, release)
+				return true, alma
+			case "rocky", "rocky linux":
+				rocky := newRocky(c)
+				rocky.setDistro(constant.Rocky, release)
+				return true, rocky
+			default:
+				logging.Log.Warnf("Failed to parse CentOS: %s", r)
+			}
+		}
+	}
+
 	if r := exec(c, "ls /etc/redhat-release", noSudo); r.isSuccess() {
 		// https://www.rackaid.com/blog/how-to-determine-centos-or-red-hat-version/
 		// e.g.
 		// $ cat /etc/redhat-release
 		// CentOS release 6.5 (Final)
 		if r := exec(c, "cat /etc/redhat-release", noSudo); r.isSuccess() {
-			re := regexp.MustCompile(`(.*) release (\d[\d\.]*)`)
-			result := re.FindStringSubmatch(strings.TrimSpace(r.Stdout))
+			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
 				logging.Log.Warnf("Failed to parse RedHat/CentOS version: %s", r)
 				return true, newCentOS(c)
 			}
 
 			release := result[2]
+			ver, err := strconv.Atoi(release)
+			if err != nil {
+				logging.Log.Warnf("Failed to parse RedHat/CentOS version number: %s", release)
+				return true, newCentOS(c)
+			}
+			if ver < 5 {
+				logging.Log.Warnf("Versions prior to RedHat/CentOS 5 are not supported, detected version is %s", release)
+			}
 			switch strings.ToLower(result[1]) {
+			case "fedora":
+				fed := newFedora(c)
+				fed.setDistro(constant.Fedora, release)
+				return true, fed
 			case "centos", "centos linux":
 				cent := newCentOS(c)
 				cent.setDistro(constant.CentOS, release)
@@ -519,7 +555,7 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 		// TODO zypper ps
 		// https://github.com/future-architect/vuls/issues/696
 		return false
-	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Oracle:
+	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Oracle, constant.Fedora:
 		majorVersion, err := o.Distro.MajorVersion()
 		if err != nil || majorVersion < 6 {
 			o.log.Errorf("Not implemented yet: %s, err: %+v", o.Distro, err)
@@ -698,7 +734,7 @@ func (o *redhatBase) rpmQf() string {
 
 func (o *redhatBase) detectEnabledDnfModules() ([]string, error) {
 	switch o.Distro.Family {
-	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
+	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Fedora:
 		//TODO OracleLinux
 	default:
 		return nil, nil

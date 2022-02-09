@@ -197,6 +197,7 @@ func IsTrivySupportedOS(family string) bool {
 		os.SLES:               struct{}{},
 		os.Photon:             struct{}{},
 		os.Alpine:             struct{}{},
+		// os.Fedora:             struct{}{}, not supported yet
 	}
 	_, ok := supportedFamilies[family]
 	return ok

@@ -15,7 +15,7 @@ import (
 	ovalmodels "github.com/vulsio/goval-dictionary/models"
 )
 
-// RedHatBase is the base struct for RedHat, CentOS, Alma and Rocky
+// RedHatBase is the base struct for RedHat, CentOS, Alma, Rocky and Fedora
 type RedHatBase struct {
 	Base
 }
@@ -55,6 +55,15 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 				for i, cont := range conts {
 					cont.SourceLink = "https://access.redhat.com/security/cve/" + cont.CveID
 					vuln.CveContents[models.RedHat][i] = cont
+				}
+			}
+		case models.Fedora:
+			for _, d := range vuln.DistroAdvisories {
+				if conts, ok := vuln.CveContents[models.Fedora]; ok {
+					for i, cont := range conts {
+						cont.SourceLink = "https://bodhi.fedoraproject.org/updates/" + d.AdvisoryID
+						vuln.CveContents[models.Fedora][i] = cont
+					}
 				}
 			}
 		case models.Oracle:
@@ -385,6 +394,24 @@ func NewRocky(cnf config.VulnDictInterface) Rocky {
 		RedHatBase{
 			Base{
 				family: constant.Rocky,
+				Cnf:    cnf,
+			},
+		},
+	}
+}
+
+// Fedora is the interface for RedhatBase OVAL
+type Fedora struct {
+	// Base
+	RedHatBase
+}
+
+// NewFedora creates OVAL client for Fedora Linux
+func NewFedora(cnf config.VulnDictInterface) Fedora {
+	return Fedora{
+		RedHatBase{
+			Base{
+				family: constant.Fedora,
 				Cnf:    cnf,
 			},
 		},

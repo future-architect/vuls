@@ -5,6 +5,7 @@ package oval
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"regexp"
 	"sort"
@@ -308,6 +309,8 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 	return
 }
 
+var modularVersionPattern = regexp.MustCompile(`.+\.module(?:\+el|_f)\d{1,2}.*`)
+
 func isOvalDefAffected(def ovalmodels.Definition, req request, family string, running models.Kernel, enabledMods []string) (affected, notFixedYet bool, fixedIn string, err error) {
 	for _, ovalPack := range def.AffectedPacks {
 		if req.packName != ovalPack.Name {
@@ -315,9 +318,9 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 		}
 
 		switch family {
-		case constant.Oracle, constant.Amazon:
+		case constant.Oracle, constant.Amazon, constant.Fedora:
 			if ovalPack.Arch == "" {
-				logging.Log.Infof("Arch is needed to detect Vulns for Amazon and Oracle Linux, but empty. You need refresh OVAL maybe. oval: %#v, defID: %s", ovalPack, def.DefinitionID)
+				logging.Log.Infof("Arch is needed to detect Vulns for Amazon Linux, Oracle Linux and Fedora, but empty. You need refresh OVAL maybe. oval: %#v, defID: %s", ovalPack, def.DefinitionID)
 				continue
 			}
 		}
@@ -331,10 +334,24 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 			continue
 		}
 
+		// There is a modular package and a non-modular package with the same name. (e.g. fedora 35 community-mysql)
+		if ovalPack.ModularityLabel == "" && modularVersionPattern.MatchString(req.versionRelease) {
+			continue
+		} else if ovalPack.ModularityLabel != "" && !modularVersionPattern.MatchString(req.versionRelease) {
+			continue
+		}
+
 		isModularityLabelEmptyOrSame := false
 		if ovalPack.ModularityLabel != "" {
+			// expect ovalPack.ModularityLabel e.g. RedHat: nginx:1.16, Fedora: mysql:8.0:3520211031142409:f27b74a8
+			ss := strings.Split(ovalPack.ModularityLabel, ":")
+			if len(ss) < 2 {
+				logging.Log.Warnf("Invalid modularitylabel format in oval package. Maybe it is necessary to fix modularitylabel of goval-dictionary. expected: ${name}:${stream}(:${version}:${context}:${arch}), actual: %s", ovalPack.ModularityLabel)
+				continue
+			}
+			modularityNameStreamLabel := fmt.Sprintf("%s:%s", ss[0], ss[1])
 			for _, mod := range enabledMods {
-				if mod == ovalPack.ModularityLabel {
+				if mod == modularityNameStreamLabel {
 					isModularityLabelEmptyOrSame = true
 					break
 				}
@@ -348,7 +365,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 
 		if running.Release != "" {
 			switch family {
-			case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Oracle:
+			case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Oracle, constant.Fedora:
 				// For kernel related packages, ignore OVAL information with different major versions
 				if _, ok := kernelRelatedPackNames[ovalPack.Name]; ok {
 					if util.Major(ovalPack.Version) != util.Major(running.Release) {
@@ -378,12 +395,13 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 			// If the version of installed is less than in OVAL
 			switch family {
 			case constant.RedHat,
+				constant.Fedora,
 				constant.Amazon,
+				constant.Oracle,
 				constant.SUSEEnterpriseServer,
 				constant.Debian,
-				constant.Ubuntu,
 				constant.Raspbian,
-				constant.Oracle:
+				constant.Ubuntu:
 				// Use fixed state in OVAL for these distros.
 				return true, false, ovalPack.Version, nil
 			}
@@ -440,7 +458,8 @@ func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error
 
 	case constant.Oracle,
 		constant.SUSEEnterpriseServer,
-		constant.Amazon:
+		constant.Amazon,
+		constant.Fedora:
 		vera := rpmver.NewVersion(newVer)
 		verb := rpmver.NewVersion(packInOVAL.Version)
 		return vera.LessThan(verb), nil
@@ -488,6 +507,8 @@ func NewOVALClient(family string, cnf config.GovalDictConf) (Client, error) {
 		return NewAlpine(&cnf), nil
 	case constant.Amazon:
 		return NewAmazon(&cnf), nil
+	case constant.Fedora:
+		return NewFedora(&cnf), nil
 	case constant.FreeBSD, constant.Windows:
 		return nil, nil
 	case constant.ServerTypePseudo:
@@ -510,6 +531,8 @@ func GetFamilyInOval(familyInScanResult string) (string, error) {
 		return constant.Ubuntu, nil
 	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
 		return constant.RedHat, nil
+	case constant.Fedora:
+		return constant.Fedora, nil
 	case constant.Oracle:
 		return constant.Oracle, nil
 	case constant.SUSEEnterpriseServer:
