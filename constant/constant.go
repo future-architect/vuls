@@ -53,9 +53,6 @@ const (
 	// SUSEEnterpriseDesktop is
 	SUSEEnterpriseDesktop = "suse.linux.enterprise.desktop"
 
-	// SUSEOpenstackCloud is
-	SUSEOpenstackCloud = "suse.openstack.cloud"
-
 	// Alpine is
 	Alpine = "alpine"
 

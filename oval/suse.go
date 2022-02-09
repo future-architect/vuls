@@ -5,7 +5,6 @@ package oval
 
 import (
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	ovalmodels "github.com/vulsio/goval-dictionary/models"
@@ -17,11 +16,10 @@ type SUSE struct {
 }
 
 // NewSUSE creates OVAL client for SUSE
-func NewSUSE(cnf config.VulnDictInterface) SUSE {
-	// TODO implement other family
+func NewSUSE(cnf config.VulnDictInterface, family string) SUSE {
 	return SUSE{
 		Base{
-			family: constant.SUSEEnterpriseServer,
+			family: family,
 			Cnf:    cnf,
 		},
 	}

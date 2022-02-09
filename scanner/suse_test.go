@@ -105,27 +105,40 @@ func TestParseOSRelease(t *testing.T) {
 		ver  string
 	}{
 		{
-			in: `NAME="openSUSE Leap"
-ID=opensuse
-VERSION_ID="42.3.4"`,
+			in: `CPE_NAME="cpe:/o:opensuse:opensuse:13.2"
+VERSION_ID="13.2"`,
 			name: constant.OpenSUSE,
+			ver:  "13.2",
+		},
+		{
+			in: `CPE_NAME="cpe:/o:opensuse:tumbleweed:20220124"
+VERSION_ID="20220124"`,
+			name: constant.OpenSUSE,
+			ver:  "tumbleweed",
+		},
+		{
+			in: `CPE_NAME="cpe:/o:opensuse:leap:42.3"
+VERSION_ID="42.3.4"`,
+			name: constant.OpenSUSELeap,
 			ver:  "42.3.4",
 		},
 		{
-			in: `NAME="SLES"
-VERSION="12-SP1"
-VERSION_ID="12.1"
-ID="sles"`,
+			in: `CPE_NAME="cpe:/o:suse:sles:12:sp1"
+VERSION_ID="12.1"`,
 			name: constant.SUSEEnterpriseServer,
 			ver:  "12.1",
 		},
 		{
-			in: `NAME="SLES_SAP"
-VERSION="12-SP1"
-VERSION_ID="12.1.0.1"
-ID="sles"`,
+			in: `CPE_NAME="cpe:/o:suse:sles_sap:12:sp1"
+VERSION_ID="12.1.0.1"`,
 			name: constant.SUSEEnterpriseServer,
 			ver:  "12.1.0.1",
+		},
+		{
+			in: `CPE_NAME="cpe:/o:suse:sled:15"
+VERSION_ID="15"`,
+			name: constant.SUSEEnterpriseDesktop,
+			ver:  "15",
 		},
 	}
 
