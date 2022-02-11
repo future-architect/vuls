@@ -26,17 +26,17 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 			fed := newFedora(c)
 			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
-				logging.Log.Warnf("Failed to parse Fedora version: %s", r)
+				fed.setErrs([]error{xerrors.Errorf("Failed to parse /etc/fedora-release. r.Stdout: %w", r.Stdout)})
 				return true, fed
 			}
 			release := result[2]
-			ver, err := strconv.Atoi(release)
+			major, err := strconv.Atoi(util.Major(release))
 			if err != nil {
-				logging.Log.Warnf("Failed to parse Fedora version: %s", release)
+				fed.setErrs([]error{xerrors.Errorf("Failed to parse major version from release: %s", release)})
 				return true, fed
 			}
-			if ver < 32 {
-				logging.Log.Warnf("Versions prior to Fedora 32 are not supported, detected version is %s", release)
+			if major < 32 {
+				fed.setErrs([]error{xerrors.Errorf("Failed to init Fedora. err: not supported major version. versions prior to Fedora 32 are not supported, detected version is %s", release)})
 				return true, fed
 			}
 			fed.setDistro(constant.Fedora, release)
@@ -48,14 +48,22 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 		// Need to discover Oracle Linux first, because it provides an
 		// /etc/redhat-release that matches the upstream distribution
 		if r := exec(c, "cat /etc/oracle-release", noSudo); r.isSuccess() {
+			ora := newOracle(c)
 			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
-				logging.Log.Warnf("Failed to parse Oracle Linux version: %s", r)
-				return true, newOracle(c)
+				ora.setErrs([]error{xerrors.Errorf("Failed to parse /etc/oracle-release. r.Stdout: %w", r.Stdout)})
+				return true, ora
 			}
-
-			ora := newOracle(c)
 			release := result[2]
+			major, err := strconv.Atoi(util.Major(release))
+			if err != nil {
+				ora.setErrs([]error{xerrors.Errorf("Failed to parse major version from release: %s", release)})
+				return true, ora
+			}
+			if major < 5 {
+				ora.setErrs([]error{xerrors.Errorf("Failed to init Oracle Linux. err: not supported major version. versions prior to Oracle Linux 5 are not supported, detected version is %s", release)})
+				return true, ora
+			}
 			ora.setDistro(constant.Oracle, release)
 			return true, ora
 		}
@@ -63,40 +71,60 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 
 	if r := exec(c, "ls /etc/almalinux-release", noSudo); r.isSuccess() {
 		if r := exec(c, "cat /etc/almalinux-release", noSudo); r.isSuccess() {
+			alma := newAlma(c)
 			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
-				logging.Log.Warnf("Failed to parse Alma version: %s", r)
-				return true, newAlma(c)
+				alma.setErrs([]error{xerrors.Errorf("Failed to parse /etc/almalinux-release. r.Stdout: %w", r.Stdout)})
+				return true, alma
 			}
 
 			release := result[2]
+			major, err := strconv.Atoi(util.Major(release))
+			if err != nil {
+				alma.setErrs([]error{xerrors.Errorf("Failed to parse major version from release: %s", release)})
+				return true, alma
+			}
+			if major < 8 {
+				alma.setErrs([]error{xerrors.Errorf("Failed to init AlmaLinux. err: not supported major version. versions prior to AlmaLinux 8 are not supported, detected version is %s", release)})
+				return true, alma
+			}
 			switch strings.ToLower(result[1]) {
 			case "alma", "almalinux":
-				alma := newAlma(c)
 				alma.setDistro(constant.Alma, release)
 				return true, alma
 			default:
-				logging.Log.Warnf("Failed to parse Alma: %s", r)
+				alma.setErrs([]error{xerrors.Errorf("Failed to parse AlmaLinux Name. release: %s", release)})
+				return true, alma
 			}
 		}
 	}
 
 	if r := exec(c, "ls /etc/rocky-release", noSudo); r.isSuccess() {
 		if r := exec(c, "cat /etc/rocky-release", noSudo); r.isSuccess() {
+			rocky := newRocky(c)
 			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
-				logging.Log.Warnf("Failed to parse Rocky version: %s", r)
-				return true, newRocky(c)
+				rocky.setErrs([]error{xerrors.Errorf("Failed to parse /etc/rocky-release. r.Stdout: %w", r.Stdout)})
+				return true, rocky
 			}
 
 			release := result[2]
+			major, err := strconv.Atoi(util.Major(release))
+			if err != nil {
+				rocky.setErrs([]error{xerrors.Errorf("Failed to parse major version from release: %s", release)})
+				return true, rocky
+			}
+			if major < 8 {
+				rocky.setErrs([]error{xerrors.Errorf("Failed to init Rocky Linux. err: not supported major version. versions prior to Rocky Linux 8 are not supported, detected version is %s", release)})
+				return true, rocky
+			}
 			switch strings.ToLower(result[1]) {
 			case "rocky", "rocky linux":
-				rocky := newRocky(c)
 				rocky.setDistro(constant.Rocky, release)
 				return true, rocky
 			default:
-				logging.Log.Warnf("Failed to parse Rocky: %s", r)
+				rocky.setErrs([]error{xerrors.Errorf("Failed to parse Rocky Linux Name. release: %s", release)})
+				return true, rocky
 			}
 		}
 	}
@@ -107,30 +135,55 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 		if r := exec(c, "cat /etc/centos-release", noSudo); r.isSuccess() {
 			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
-				logging.Log.Warnf("Failed to parse CentOS version: %s", r)
-				return true, newCentOS(c)
+				cent := newCentOS(c)
+				cent.setErrs([]error{xerrors.Errorf("Failed to parse /etc/centos-release. r.Stdout: %w", r.Stdout)})
+				return true, cent
 			}
 
 			release := result[2]
+			major, err := strconv.Atoi(util.Major(release))
+			if err != nil {
+				cent := newCentOS(c)
+				cent.setErrs([]error{xerrors.Errorf("Failed to parse major version from release: %s", release)})
+				return true, cent
+			}
 			switch strings.ToLower(result[1]) {
 			case "centos", "centos linux":
 				cent := newCentOS(c)
+				if major < 5 {
+					cent.setErrs([]error{xerrors.Errorf("Failed to init CentOS. err: not supported major version. versions prior to CentOS 5 are not supported, detected version is %s", release)})
+					return true, cent
+				}
 				cent.setDistro(constant.CentOS, release)
 				return true, cent
 			case "centos stream":
 				cent := newCentOS(c)
+				if major < 8 {
+					cent.setErrs([]error{xerrors.Errorf("Failed to init CentOS Stream. err: not supported major version. versions prior to CentOS Stream 8 are not supported, detected version is %s", release)})
+					return true, cent
+				}
 				cent.setDistro(constant.CentOS, fmt.Sprintf("stream%s", release))
 				return true, cent
 			case "alma", "almalinux":
 				alma := newAlma(c)
+				if major < 8 {
+					alma.setErrs([]error{xerrors.Errorf("Failed to init AlmaLinux. err: not supported major version. versions prior to AlmaLinux 8 are not supported, detected version is %s", release)})
+					return true, alma
+				}
 				alma.setDistro(constant.Alma, release)
 				return true, alma
 			case "rocky", "rocky linux":
 				rocky := newRocky(c)
+				if major < 8 {
+					rocky.setErrs([]error{xerrors.Errorf("Failed to init Rocky Linux. err: not supported major version. versions prior to Rocky Linux 8 are not supported, detected version is %s", release)})
+					return true, rocky
+				}
 				rocky.setDistro(constant.Rocky, release)
 				return true, rocky
 			default:
-				logging.Log.Warnf("Failed to parse CentOS: %s", r)
+				cent := newCentOS(c)
+				cent.setErrs([]error{xerrors.Errorf("Failed to parse CentOS Name. release: %s", release)})
+				return true, cent
 			}
 		}
 	}
@@ -139,47 +192,74 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 		// https://www.rackaid.com/blog/how-to-determine-centos-or-red-hat-version/
 		// e.g.
 		// $ cat /etc/redhat-release
+		// Red Hat Enterprise Linux Server release 6.8 (Santiago)
 		// CentOS release 6.5 (Final)
+		// CentOS Stream release 8
+		// AlmaLinux release 8.5 (Arctic Sphynx)
+		// Rocky Linux release 8.5 (Green Obsidian)
+		// Fedora release 35 (Thirty Five)
 		if r := exec(c, "cat /etc/redhat-release", noSudo); r.isSuccess() {
 			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
-				logging.Log.Warnf("Failed to parse RedHat/CentOS version: %s", r)
-				return true, newCentOS(c)
+				rhel := newRHEL(c)
+				rhel.setErrs([]error{xerrors.Errorf("Failed to parse /etc/redhat-release. r.Stdout: %w", r.Stdout)})
+				return true, rhel
 			}
 
 			release := result[2]
-			ver, err := strconv.Atoi(release)
+			major, err := strconv.Atoi(util.Major(release))
 			if err != nil {
-				logging.Log.Warnf("Failed to parse RedHat/CentOS version number: %s", release)
-				return true, newCentOS(c)
-			}
-			if ver < 5 {
-				logging.Log.Warnf("Versions prior to RedHat/CentOS 5 are not supported, detected version is %s", release)
+				rhel := newRHEL(c)
+				rhel.setErrs([]error{xerrors.Errorf("Failed to parse major version from release: %s", release)})
+				return true, rhel
 			}
 			switch strings.ToLower(result[1]) {
 			case "fedora":
 				fed := newFedora(c)
+				if major < 32 {
+					fed.setErrs([]error{xerrors.Errorf("Failed to init Fedora. err: not supported major version. versions prior to Fedora 32 are not supported, detected version is %s", release)})
+					return true, fed
+				}
 				fed.setDistro(constant.Fedora, release)
 				return true, fed
 			case "centos", "centos linux":
 				cent := newCentOS(c)
+				if major < 5 {
+					cent.setErrs([]error{xerrors.Errorf("Failed to init CentOS. err: not supported major version. versions prior to CentOS 5 are not supported, detected version is %s", release)})
+					return true, cent
+				}
 				cent.setDistro(constant.CentOS, release)
 				return true, cent
 			case "centos stream":
 				cent := newCentOS(c)
+				if major < 8 {
+					cent.setErrs([]error{xerrors.Errorf("Failed to init CentOS Stream. err: not supported major version. versions prior to CentOS Stream 8 are not supported, detected version is %s", release)})
+					return true, cent
+				}
 				cent.setDistro(constant.CentOS, fmt.Sprintf("stream%s", release))
 				return true, cent
 			case "alma", "almalinux":
 				alma := newAlma(c)
+				if major < 8 {
+					alma.setErrs([]error{xerrors.Errorf("Failed to init AlmaLinux. err: not supported major version. versions prior to AlmaLinux 8 are not supported, detected version is %s", release)})
+					return true, alma
+				}
 				alma.setDistro(constant.Alma, release)
 				return true, alma
 			case "rocky", "rocky linux":
 				rocky := newRocky(c)
+				if major < 8 {
+					rocky.setErrs([]error{xerrors.Errorf("Failed to init Rocky Linux. err: not supported major version. versions prior to Rocky Linux 8 are not supported, detected version is %s", release)})
+					return true, rocky
+				}
 				rocky.setDistro(constant.Rocky, release)
 				return true, rocky
 			default:
-				// RHEL
 				rhel := newRHEL(c)
+				if major < 5 {
+					rhel.setErrs([]error{xerrors.Errorf("Failed to init RedHat Enterprise Linux. err: not supported major version. versions prior to RedHat Enterprise Linux 5 are not supported, detected version is %s", release)})
+					return true, rhel
+				}
 				rhel.setDistro(constant.RedHat, release)
 				return true, rhel
 			}
@@ -555,7 +635,7 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 		// TODO zypper ps
 		// https://github.com/future-architect/vuls/issues/696
 		return false
-	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Oracle, constant.Fedora:
+	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Oracle:
 		majorVersion, err := o.Distro.MajorVersion()
 		if err != nil || majorVersion < 6 {
 			o.log.Errorf("Not implemented yet: %s, err: %+v", o.Distro, err)
@@ -569,12 +649,23 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 			return true
 		}
 		return false
-	}
+	case constant.Fedora:
+		majorVersion, err := o.Distro.MajorVersion()
+		if err != nil || majorVersion < 13 {
+			o.log.Errorf("Not implemented yet: %s, err: %+v", o.Distro, err)
+			return false
+		}
 
-	if o.getServerInfo().Mode.IsFast() {
+		if o.getServerInfo().Mode.IsOffline() {
+			return false
+		} else if o.getServerInfo().Mode.IsFastRoot() ||
+			o.getServerInfo().Mode.IsDeep() {
+			return true
+		}
 		return false
 	}
-	return true
+
+	return !o.getServerInfo().Mode.IsFast()
 }
 
 func (o *redhatBase) needsRestarting() error {
