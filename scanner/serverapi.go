@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	debver "github.com/knqyf263/go-deb-version"
@@ -286,6 +287,12 @@ func (s Scanner) detectServerOSes() (servers, errServers []osTypeInterface) {
 					logging.Log.Debugf("Panic: %s on %s", p, srv.ServerName)
 				}
 			}()
+			if err := checkHostinKnownHosts(srv); err != nil {
+				checkOS := unknown{base{ServerInfo: srv}}
+				checkOS.setErrs([]error{err})
+				osTypeChan <- &checkOS
+				return
+			}
 			osTypeChan <- s.detectOS(srv)
 		}(target)
 	}
@@ -296,12 +303,10 @@ func (s Scanner) detectServerOSes() (servers, errServers []osTypeInterface) {
 		case res := <-osTypeChan:
 			if 0 < len(res.getErrs()) {
 				errServers = append(errServers, res)
-				logging.Log.Errorf("(%d/%d) Failed: %s, err: %+v",
-					i+1, len(s.Targets), res.getServerInfo().ServerName, res.getErrs())
+				logging.Log.Errorf("(%d/%d) Failed: %s, err: %+v", i+1, len(s.Targets), res.getServerInfo().ServerName, res.getErrs())
 			} else {
 				servers = append(servers, res)
-				logging.Log.Infof("(%d/%d) Detected: %s: %s",
-					i+1, len(s.Targets), res.getServerInfo().ServerName, res.getDistro())
+				logging.Log.Infof("(%d/%d) Detected: %s: %s", i+1, len(s.Targets), res.getServerInfo().ServerName, res.getDistro())
 			}
 		case <-timeout:
 			msg := "Timed out while detecting servers"
@@ -325,6 +330,69 @@ func (s Scanner) detectServerOSes() (servers, errServers []osTypeInterface) {
 		}
 	}
 	return
+}
+
+func checkHostinKnownHosts(c config.ServerInfo) error {
+	if isLocalExec(c.Port, c.Host) {
+		return nil
+	}
+
+	args := []string{"-G"}
+	if len(c.SSHConfigPath) > 0 {
+		args = []string{"-G", "-F", c.SSHConfigPath}
+	}
+	r := localExec(c, fmt.Sprintf("ssh %s %s", strings.Join(args, " "), c.Host), noSudo)
+	if !r.isSuccess() {
+		return xerrors.Errorf("Failed to print SSH configuration. err: %w", r.Error)
+	}
+
+	var (
+		hostname         string
+		globalKnownHosts string
+		userKnownHosts   string
+	)
+	for _, line := range strings.Split(r.Stdout, "\n") {
+		if strings.HasPrefix(line, "hostname ") {
+			hostname = strings.TrimPrefix(line, "hostname ")
+		} else if strings.HasPrefix(line, "globalknownhostsfile ") {
+			globalKnownHosts = strings.TrimPrefix(line, "globalknownhostsfile ")
+		} else if strings.HasPrefix(line, "userknownhostsfile ") {
+			userKnownHosts = strings.TrimPrefix(line, "userknownhostsfile ")
+		}
+	}
+
+	knownHostsPaths := []string{}
+	for _, knownHosts := range []string{userKnownHosts, globalKnownHosts} {
+		for _, knownHost := range strings.Split(knownHosts, " ") {
+			if knownHost != "" {
+				knownHostsPaths = append(knownHostsPaths, knownHost)
+			}
+		}
+	}
+	if len(knownHostsPaths) == 0 {
+		return xerrors.New("Failed to find any known_hosts to use. Please check the UserKnownHostsFile and GlobalKnownHostsFile settings for SSH.")
+	}
+
+	for _, knownHosts := range knownHostsPaths {
+		if c.Port != "" && c.Port != "22" {
+			cmd := fmt.Sprintf("ssh-keygen -F %s -f %s", fmt.Sprintf("\"[%s]:%s\"", c.Host, c.Port), knownHosts)
+			if r := localExec(c, cmd, noSudo); r.isSuccess() {
+				return nil
+			}
+		}
+		cmd := fmt.Sprintf("ssh-keygen -F %s -f %s", c.Host, knownHosts)
+		if r := localExec(c, cmd, noSudo); r.isSuccess() {
+			return nil
+		}
+	}
+
+	sshCmd := fmt.Sprintf("ssh -i %s %s@%s", c.KeyPath, c.User, c.Host)
+	sshKeyScancmd := fmt.Sprintf("ssh-keyscan -H %s >> %s", hostname, knownHostsPaths[0])
+	if c.Port != "" && c.Port != "22" {
+		sshCmd = fmt.Sprintf("ssh -i %s -p %s %s@%s", c.KeyPath, c.Port, c.User, c.Host)
+		sshKeyScancmd = fmt.Sprintf("ssh-keyscan -H -p %s %s >> %s", c.Port, hostname, knownHostsPaths[0])
+	}
+	return xerrors.Errorf("Failed to find the host in known_hosts. Plaese exec `$ %s` or `$ %s`", sshCmd, sshKeyScancmd)
 }
 
 func (s Scanner) detectContainerOSes(hosts []osTypeInterface) (actives, inactives []osTypeInterface) {
