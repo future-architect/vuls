@@ -149,18 +149,11 @@ func setDefaultIfEmpty(server *ServerInfo) error {
 		}
 
 		if server.Port == "" {
-			if Conf.Default.Port != "" {
-				server.Port = Conf.Default.Port
-			} else {
-				server.Port = "22"
-			}
+			server.Port = Conf.Default.Port
 		}
 
 		if server.User == "" {
 			server.User = Conf.Default.User
-			if server.User == "" && server.Port != "local" {
-				return xerrors.Errorf("server.user is empty")
-			}
 		}
 
 		if server.SSHConfigPath == "" {

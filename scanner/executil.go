@@ -186,10 +186,10 @@ func sshExecExternal(c config.ServerInfo, cmd string, sudo bool) (result execRes
 		return execResult{Error: err}
 	}
 
-	defaultSSHArgs := []string{"-tt"}
+	args := []string{"-tt"}
 
-	if 0 < len(c.SSHConfigPath) {
-		defaultSSHArgs = append(defaultSSHArgs, "-F", c.SSHConfigPath)
+	if c.SSHConfigPath != "" {
+		args = append(args, "-F", c.SSHConfigPath)
 	} else {
 		home, err := homedir.Dir()
 		if err != nil {
@@ -200,7 +200,7 @@ func sshExecExternal(c config.ServerInfo, cmd string, sudo bool) (result execRes
 		}
 		controlPath := filepath.Join(home, ".vuls", `controlmaster-%r-`+c.ServerName+`.%p`)
 
-		defaultSSHArgs = append(defaultSSHArgs,
+		args = append(args,
 			"-o", "StrictHostKeyChecking=yes",
 			"-o", "LogLevel=quiet",
 			"-o", "ConnectionAttempts=3",
@@ -212,19 +212,22 @@ func sshExecExternal(c config.ServerInfo, cmd string, sudo bool) (result execRes
 	}
 
 	if config.Conf.Vvv {
-		defaultSSHArgs = append(defaultSSHArgs, "-vvv")
+		args = append(args, "-vvv")
 	}
-
 	if len(c.JumpServer) != 0 {
-		defaultSSHArgs = append(defaultSSHArgs, "-J", strings.Join(c.JumpServer, ","))
+		args = append(args, "-J", strings.Join(c.JumpServer, ","))
 	}
-
-	args := append(defaultSSHArgs, fmt.Sprintf("%s@%s", c.User, c.Host))
-	args = append(args, "-p", c.Port)
-	if 0 < len(c.KeyPath) {
+	if c.User != "" {
+		args = append(args, "-l", c.User)
+	}
+	if c.Port != "" {
+		args = append(args, "-p", c.Port)
+	}
+	if c.KeyPath != "" {
 		args = append(args, "-i", c.KeyPath)
 		args = append(args, "-o", "PasswordAuthentication=no")
 	}
+	args = append(args, c.Host)
 
 	cmd = decorateCmd(c, cmd, sudo)
 	cmd = fmt.Sprintf("stty cols 1000; %s", cmd)

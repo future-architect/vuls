@@ -2,8 +2,7 @@ package config
 
 // Load loads configuration
 func Load(path, keyPass string) error {
-	var loader Loader
-	loader = TOMLLoader{}
+	loader := TOMLLoader{}
 	return loader.Load(path, keyPass)
 }
 
