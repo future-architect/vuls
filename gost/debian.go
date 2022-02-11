@@ -46,24 +46,33 @@ func (deb Debian) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 
 	// Add linux and set the version of running kernel to search Gost.
 	if r.Container.ContainerID == "" {
-		newVer := ""
-		if p, ok := r.Packages["linux-image-"+r.RunningKernel.Release]; ok {
-			newVer = p.NewVersion
-		}
-		r.Packages["linux"] = models.Package{
-			Name:       "linux",
-			Version:    r.RunningKernel.Version,
-			NewVersion: newVer,
+		if r.RunningKernel.Version != "" {
+			newVer := ""
+			if p, ok := r.Packages["linux-image-"+r.RunningKernel.Release]; ok {
+				newVer = p.NewVersion
+			}
+			r.Packages["linux"] = models.Package{
+				Name:       "linux",
+				Version:    r.RunningKernel.Version,
+				NewVersion: newVer,
+			}
+		} else {
+			logging.Log.Warnf("Since the exact kernel version is not available, the vulnerability in the linux package is not detected.")
 		}
 	}
 
-	stashLinuxPackage := r.Packages["linux"]
+	var stashLinuxPackage models.Package
+	if linux, ok := r.Packages["linux"]; ok {
+		stashLinuxPackage = linux
+	}
 	nFixedCVEs, err := deb.detectCVEsWithFixState(r, "resolved")
 	if err != nil {
 		return 0, err
 	}
 
-	r.Packages["linux"] = stashLinuxPackage
+	if stashLinuxPackage.Name != "" {
+		r.Packages["linux"] = stashLinuxPackage
+	}
 	nUnfixedCVEs, err := deb.detectCVEsWithFixState(r, "open")
 	if err != nil {
 		return 0, err

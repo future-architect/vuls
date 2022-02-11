@@ -141,14 +141,18 @@ func (o Debian) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 
 	// Add linux and set the version of running kernel to search OVAL.
 	if r.Container.ContainerID == "" {
-		newVer := ""
-		if p, ok := r.Packages[linuxImage]; ok {
-			newVer = p.NewVersion
-		}
-		r.Packages["linux"] = models.Package{
-			Name:       "linux",
-			Version:    r.RunningKernel.Version,
-			NewVersion: newVer,
+		if r.RunningKernel.Version != "" {
+			newVer := ""
+			if p, ok := r.Packages[linuxImage]; ok {
+				newVer = p.NewVersion
+			}
+			r.Packages["linux"] = models.Package{
+				Name:       "linux",
+				Version:    r.RunningKernel.Version,
+				NewVersion: newVer,
+			}
+		} else {
+			logging.Log.Warnf("Since the exact kernel version is not available, the vulnerability in the linux package is not detected.")
 		}
 	}
 
