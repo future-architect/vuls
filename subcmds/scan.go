@@ -20,7 +20,6 @@ import (
 // ScanCmd is Subcommand of host discovery mode
 type ScanCmd struct {
 	configPath     string
-	askKeyPassword bool
 	timeoutSec     int
 	scanTimeoutSec int
 	cacheDBPath    string
@@ -43,7 +42,6 @@ func (*ScanCmd) Usage() string {
 		[-log-dir=/path/to/log]
 		[-cachedb-path=/path/to/cache.db]
 		[-http-proxy=http://192.168.0.1:8080]
-		[-ask-key-password]
 		[-timeout=300]
 		[-timeout-scan=7200]
 		[-debug]
@@ -80,10 +78,6 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&config.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
 
-	f.BoolVar(&p.askKeyPassword, "ask-key-password", false,
-		"Ask ssh privatekey password before scanning",
-	)
-
 	f.BoolVar(&config.Conf.Pipe, "pipe", false, "Use stdin via PIPE")
 
 	f.BoolVar(&p.detectIPS, "ips", false, "retrieve IPS information")
@@ -116,18 +110,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		}
 	}
 
-	var keyPass string
-	var err error
-	if p.askKeyPassword {
-		prompt := "SSH key password: "
-		if keyPass, err = getPasswd(prompt); err != nil {
-			logging.Log.Error(err)
-			return subcommands.ExitFailure
-		}
-	}
-
-	err = config.Load(p.configPath, keyPass)
-	if err != nil {
+	if err := config.Load(p.configPath); err != nil {
 		msg := []string{
 			fmt.Sprintf("Error loading %s", p.configPath),
 			"If you update Vuls and get this error, there may be incompatible changes in config.toml",

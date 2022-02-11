@@ -17,9 +17,8 @@ import (
 
 // ConfigtestCmd is Subcommand
 type ConfigtestCmd struct {
-	configPath     string
-	askKeyPassword bool
-	timeoutSec     int
+	configPath string
+	timeoutSec int
 }
 
 // Name return subcommand name
@@ -35,7 +34,6 @@ func (*ConfigtestCmd) Usage() string {
 			[-config=/path/to/config.toml]
 			[-log-to-file]
 			[-log-dir=/path/to/log]
-			[-ask-key-password]
 			[-timeout=300]
 			[-containers-only]
 			[-http-proxy=http://192.168.0.1:8080]
@@ -59,10 +57,6 @@ func (p *ConfigtestCmd) SetFlags(f *flag.FlagSet) {
 
 	f.IntVar(&p.timeoutSec, "timeout", 5*60, "Timeout(Sec)")
 
-	f.BoolVar(&p.askKeyPassword, "ask-key-password", false,
-		"Ask ssh privatekey password before scanning",
-	)
-
 	f.StringVar(&config.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
 
@@ -79,18 +73,7 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		return subcommands.ExitUsageError
 	}
 
-	var keyPass string
-	var err error
-	if p.askKeyPassword {
-		prompt := "SSH key password: "
-		if keyPass, err = getPasswd(prompt); err != nil {
-			logging.Log.Error(err)
-			return subcommands.ExitFailure
-		}
-	}
-
-	err = config.Load(p.configPath, keyPass)
-	if err != nil {
+	if err := config.Load(p.configPath); err != nil {
 		msg := []string{
 			fmt.Sprintf("Error loading %s", p.configPath),
 			"If you update Vuls and get this error, there may be incompatible changes in config.toml",

@@ -15,7 +15,7 @@ type TOMLLoader struct {
 }
 
 // Load load the configuration TOML file specified by path arg.
-func (c TOMLLoader) Load(pathToToml, _ string) error {
+func (c TOMLLoader) Load(pathToToml string) error {
 	// util.Log.Infof("Loading config: %s", pathToToml)
 	if _, err := toml.DecodeFile(pathToToml, &Conf); err != nil {
 		return err
