@@ -26,7 +26,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 			fed := newFedora(c)
 			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
-				fed.setErrs([]error{xerrors.Errorf("Failed to parse /etc/fedora-release. r.Stdout: %w", r.Stdout)})
+				fed.setErrs([]error{xerrors.Errorf("Failed to parse /etc/fedora-release. r.Stdout: %s", r.Stdout)})
 				return true, fed
 			}
 			release := result[2]
@@ -51,7 +51,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 			ora := newOracle(c)
 			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
-				ora.setErrs([]error{xerrors.Errorf("Failed to parse /etc/oracle-release. r.Stdout: %w", r.Stdout)})
+				ora.setErrs([]error{xerrors.Errorf("Failed to parse /etc/oracle-release. r.Stdout: %s", r.Stdout)})
 				return true, ora
 			}
 			release := result[2]
@@ -74,7 +74,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 			alma := newAlma(c)
 			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
-				alma.setErrs([]error{xerrors.Errorf("Failed to parse /etc/almalinux-release. r.Stdout: %w", r.Stdout)})
+				alma.setErrs([]error{xerrors.Errorf("Failed to parse /etc/almalinux-release. r.Stdout: %s", r.Stdout)})
 				return true, alma
 			}
 
@@ -104,7 +104,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 			rocky := newRocky(c)
 			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
-				rocky.setErrs([]error{xerrors.Errorf("Failed to parse /etc/rocky-release. r.Stdout: %w", r.Stdout)})
+				rocky.setErrs([]error{xerrors.Errorf("Failed to parse /etc/rocky-release. r.Stdout: %s", r.Stdout)})
 				return true, rocky
 			}
 
@@ -136,7 +136,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
 				cent := newCentOS(c)
-				cent.setErrs([]error{xerrors.Errorf("Failed to parse /etc/centos-release. r.Stdout: %w", r.Stdout)})
+				cent.setErrs([]error{xerrors.Errorf("Failed to parse /etc/centos-release. r.Stdout: %s", r.Stdout)})
 				return true, cent
 			}
 
@@ -202,7 +202,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
 			if len(result) != 3 {
 				rhel := newRHEL(c)
-				rhel.setErrs([]error{xerrors.Errorf("Failed to parse /etc/redhat-release. r.Stdout: %w", r.Stdout)})
+				rhel.setErrs([]error{xerrors.Errorf("Failed to parse /etc/redhat-release. r.Stdout: %s", r.Stdout)})
 				return true, rhel
 			}
 
