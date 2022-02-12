@@ -50,7 +50,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 
 [Supports major Linux/FreeBSD](https://vuls.io/docs/en/supported-os.html)
 
-- Alpine, Amazon Linux, CentOS, Alma Linux, Rocky Linux, Debian, Oracle Linux, Raspbian, RHEL, SUSE Enterprise Linux, Fedora, and Ubuntu
+- Alpine, Amazon Linux, CentOS, AlmaLinux, Rocky Linux, Debian, Oracle Linux, Raspbian, RHEL, openSUSE, openSUSE Leap, SUSE Enterprise Linux, Fedora, and Ubuntu
 - FreeBSD
 - Cloud, on-premise, Running Docker Container
 
