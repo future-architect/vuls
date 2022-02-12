@@ -15,7 +15,7 @@ type TOMLLoader struct {
 }
 
 // Load load the configuration TOML file specified by path arg.
-func (c TOMLLoader) Load(pathToToml, _ string) error {
+func (c TOMLLoader) Load(pathToToml string) error {
 	// util.Log.Infof("Loading config: %s", pathToToml)
 	if _, err := toml.DecodeFile(pathToToml, &Conf); err != nil {
 		return err
@@ -149,18 +149,11 @@ func setDefaultIfEmpty(server *ServerInfo) error {
 		}
 
 		if server.Port == "" {
-			if Conf.Default.Port != "" {
-				server.Port = Conf.Default.Port
-			} else {
-				server.Port = "22"
-			}
+			server.Port = Conf.Default.Port
 		}
 
 		if server.User == "" {
 			server.User = Conf.Default.User
-			if server.User == "" && server.Port != "local" {
-				return xerrors.Errorf("server.user is empty")
-			}
 		}
 
 		if server.SSHConfigPath == "" {

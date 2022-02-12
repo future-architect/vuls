@@ -65,7 +65,7 @@ func (p *SaaSCmd) SetFlags(f *flag.FlagSet) {
 func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogToFile, config.Conf.LogDir, "", "")
 	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
-	if err := config.Load(p.configPath, ""); err != nil {
+	if err := config.Load(p.configPath); err != nil {
 		logging.Log.Errorf("Error loading %s, %+v", p.configPath, err)
 		return subcommands.ExitUsageError
 	}

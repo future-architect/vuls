@@ -3,8 +3,10 @@ package scanner
 import (
 	"fmt"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
+	ex "os/exec"
 	"strings"
 	"time"
 
@@ -287,7 +289,7 @@ func (s Scanner) detectServerOSes() (servers, errServers []osTypeInterface) {
 					logging.Log.Debugf("Panic: %s on %s", p, srv.ServerName)
 				}
 			}()
-			if err := checkHostinKnownHosts(srv); err != nil {
+			if err := validateSSHConfig(&srv); err != nil {
 				checkOS := unknown{base{ServerInfo: srv}}
 				checkOS.setErrs([]error{err})
 				osTypeChan <- &checkOS
@@ -332,16 +334,36 @@ func (s Scanner) detectServerOSes() (servers, errServers []osTypeInterface) {
 	return
 }
 
-func checkHostinKnownHosts(c config.ServerInfo) error {
+func validateSSHConfig(c *config.ServerInfo) error {
 	if isLocalExec(c.Port, c.Host) {
 		return nil
 	}
 
-	args := []string{"-G"}
-	if len(c.SSHConfigPath) > 0 {
-		args = []string{"-G", "-F", c.SSHConfigPath}
+	logging.Log.Debugf("Validating SSH Settings for Server:%s ...", c.GetServerName())
+
+	sshBinaryPath, err := ex.LookPath("ssh")
+	if err != nil {
+		return xerrors.Errorf("Failed to lookup ssh binary path. err: %w", err)
 	}
-	r := localExec(c, fmt.Sprintf("ssh %s %s", strings.Join(args, " "), c.Host), noSudo)
+	sshKeygenBinaryPath, err := ex.LookPath("ssh-keygen")
+	if err != nil {
+		return xerrors.Errorf("Failed to lookup ssh-keygen binary path. err: %w", err)
+	}
+
+	sshConfigCmd := []string{sshBinaryPath, "-G"}
+	if c.SSHConfigPath != "" {
+		sshConfigCmd = append(sshConfigCmd, "-F", c.SSHConfigPath)
+	}
+	if c.Port != "" {
+		sshConfigCmd = append(sshConfigCmd, "-p", c.Port)
+	}
+	if c.User != "" {
+		sshConfigCmd = append(sshConfigCmd, "-l", c.User)
+	}
+	sshConfigCmd = append(sshConfigCmd, c.Host)
+	cmd := strings.Join(sshConfigCmd, " ")
+	logging.Log.Debugf("Executing... %s", strings.Replace(cmd, "\n", "", -1))
+	r := localExec(*c, cmd, noSudo)
 	if !r.isSuccess() {
 		return xerrors.Errorf("Failed to print SSH configuration. err: %w", r.Error)
 	}
@@ -352,14 +374,31 @@ func checkHostinKnownHosts(c config.ServerInfo) error {
 		userKnownHosts   string
 	)
 	for _, line := range strings.Split(r.Stdout, "\n") {
-		if strings.HasPrefix(line, "hostname ") {
+		if strings.HasPrefix(line, "user ") {
+			user := strings.TrimPrefix(line, "user ")
+			logging.Log.Debugf("Setting SSH User:%s for Server:%s ...", user, c.GetServerName())
+			c.User = user
+		} else if strings.HasPrefix(line, "hostname ") {
 			hostname = strings.TrimPrefix(line, "hostname ")
+			logging.Log.Debugf("Validating SSH HostName:%s for Server:%s ...", hostname, c.GetServerName())
+			if _, err := net.LookupHost(hostname); err != nil {
+				return xerrors.New("Failed to name resolution. Please check the HostName settings for SSH")
+			}
+		} else if strings.HasPrefix(line, "port ") {
+			port := strings.TrimPrefix(line, "port ")
+			logging.Log.Debugf("Setting SSH Port:%s for Server:%s ...", port, c.GetServerName())
+			c.Port = port
 		} else if strings.HasPrefix(line, "globalknownhostsfile ") {
 			globalKnownHosts = strings.TrimPrefix(line, "globalknownhostsfile ")
 		} else if strings.HasPrefix(line, "userknownhostsfile ") {
 			userKnownHosts = strings.TrimPrefix(line, "userknownhostsfile ")
 		}
 	}
+	if c.User == "" || c.Port == "" {
+		return xerrors.New("Failed to find User or Port setting. Please check the User or Port settings for SSH")
+	}
+
+	logging.Log.Debugf("Checking if the host's public key is in known_hosts...")
 
 	knownHostsPaths := []string{}
 	for _, knownHosts := range []string{userKnownHosts, globalKnownHosts} {
@@ -370,29 +409,44 @@ func checkHostinKnownHosts(c config.ServerInfo) error {
 		}
 	}
 	if len(knownHostsPaths) == 0 {
-		return xerrors.New("Failed to find any known_hosts to use. Please check the UserKnownHostsFile and GlobalKnownHostsFile settings for SSH.")
+		return xerrors.New("Failed to find any known_hosts to use. Please check the UserKnownHostsFile and GlobalKnownHostsFile settings for SSH")
 	}
 
 	for _, knownHosts := range knownHostsPaths {
 		if c.Port != "" && c.Port != "22" {
-			cmd := fmt.Sprintf("ssh-keygen -F %s -f %s", fmt.Sprintf("\"[%s]:%s\"", c.Host, c.Port), knownHosts)
-			if r := localExec(c, cmd, noSudo); r.isSuccess() {
+			cmd := fmt.Sprintf("%s -F %s -f %s", sshKeygenBinaryPath, fmt.Sprintf("\"[%s]:%s\"", hostname, c.Port), knownHosts)
+			logging.Log.Debugf("Executing... %s", strings.Replace(cmd, "\n", "", -1))
+			if r := localExec(*c, cmd, noSudo); r.isSuccess() {
 				return nil
 			}
 		}
-		cmd := fmt.Sprintf("ssh-keygen -F %s -f %s", c.Host, knownHosts)
-		if r := localExec(c, cmd, noSudo); r.isSuccess() {
+		cmd := fmt.Sprintf("%s -F %s -f %s", sshKeygenBinaryPath, hostname, knownHosts)
+		logging.Log.Debugf("Executing... %s", strings.Replace(cmd, "\n", "", -1))
+		if r := localExec(*c, cmd, noSudo); r.isSuccess() {
 			return nil
 		}
 	}
 
-	sshCmd := fmt.Sprintf("ssh -i %s %s@%s", c.KeyPath, c.User, c.Host)
-	sshKeyScancmd := fmt.Sprintf("ssh-keyscan -H %s >> %s", hostname, knownHostsPaths[0])
-	if c.Port != "" && c.Port != "22" {
-		sshCmd = fmt.Sprintf("ssh -i %s -p %s %s@%s", c.KeyPath, c.Port, c.User, c.Host)
-		sshKeyScancmd = fmt.Sprintf("ssh-keyscan -H -p %s %s >> %s", c.Port, hostname, knownHostsPaths[0])
+	sshConnArgs := []string{}
+	sshKeyScanArgs := []string{"-H"}
+	if c.SSHConfigPath != "" {
+		sshConnArgs = append(sshConnArgs, "-F", c.SSHConfigPath)
 	}
-	return xerrors.Errorf("Failed to find the host in known_hosts. Plaese exec `$ %s` or `$ %s`", sshCmd, sshKeyScancmd)
+	if c.KeyPath != "" {
+		sshConnArgs = append(sshConnArgs, "-i", c.KeyPath)
+	}
+	if c.Port != "" {
+		sshConnArgs = append(sshConnArgs, "-p", c.Port)
+		sshKeyScanArgs = append(sshKeyScanArgs, "-p", c.Port)
+	}
+	if c.User != "" {
+		sshConnArgs = append(sshConnArgs, "-l", c.User)
+	}
+	sshConnArgs = append(sshConnArgs, c.Host)
+	sshKeyScanArgs = append(sshKeyScanArgs, fmt.Sprintf("%s >> %s", hostname, knownHostsPaths[0]))
+	sshConnCmd := fmt.Sprintf("ssh %s", strings.Join(sshConnArgs, " "))
+	sshKeyScancmd := fmt.Sprintf("ssh-keyscan %s", strings.Join(sshKeyScanArgs, " "))
+	return xerrors.Errorf("Failed to find the host in known_hosts. Plaese exec `$ %s` or `$ %s`", sshConnCmd, sshKeyScancmd)
 }
 
 func (s Scanner) detectContainerOSes(hosts []osTypeInterface) (actives, inactives []osTypeInterface) {

@@ -1,10 +1,9 @@
 package config
 
 // Load loads configuration
-func Load(path, keyPass string) error {
-	var loader Loader
-	loader = TOMLLoader{}
-	return loader.Load(path, keyPass)
+func Load(path string) error {
+	loader := TOMLLoader{}
+	return loader.Load(path)
 }
 
 // Loader is interface of concrete loader
