@@ -24,7 +24,7 @@ const (
 	Rocky = "rocky"
 
 	// Fedora is
-	// Fedora = "fedora"
+	Fedora = "fedora"
 
 	// Amazon is
 	Amazon = "amazon"
@@ -61,7 +61,4 @@ const (
 
 	// DeepSecurity is
 	DeepSecurity = "deepsecurity"
-
-	//Fedora is
-	Fedora = "fedora"
 )

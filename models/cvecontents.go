@@ -4,6 +4,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/future-architect/vuls/constant"
 )
 
 // CveContents has CveContent
@@ -333,6 +335,8 @@ func NewCveContentType(name string) CveContentType {
 		return DebianSecurityTracker
 	case "ubuntu_api":
 		return UbuntuAPI
+	case constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
+		return SUSE
 	case "microsoft":
 		return Microsoft
 	case "wordpress":
