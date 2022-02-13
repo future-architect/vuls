@@ -18,3 +18,5 @@ dist/
 vuls.*
 vuls
 !cmd/vuls
+future-vuls
+trivy-to-vuls
