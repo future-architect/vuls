@@ -5,7 +5,6 @@ package oval
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/future-architect/vuls/config"
@@ -225,8 +224,8 @@ func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *mo
 			continue
 		}
 
-		score2, vec2 := o.parseCvss2(cve.Cvss2)
-		score3, vec3 := o.parseCvss3(cve.Cvss3)
+		score2, vec2 := parseCvss2(cve.Cvss2)
+		score3, vec3 := parseCvss3(cve.Cvss3)
 
 		sev2, sev3, severity := "", "", def.Advisory.Severity
 		if cve.Impact != "" {
@@ -260,39 +259,6 @@ func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *mo
 		}
 	}
 	return nil
-}
-
-// ParseCvss2 divide CVSSv2 string into score and vector
-// 5/AV:N/AC:L/Au:N/C:N/I:N/A:P
-func (o RedHatBase) parseCvss2(scoreVector string) (score float64, vector string) {
-	var err error
-	ss := strings.Split(scoreVector, "/")
-	if 1 < len(ss) {
-		if score, err = strconv.ParseFloat(ss[0], 64); err != nil {
-			return 0, ""
-		}
-		return score, strings.Join(ss[1:], "/")
-	}
-	return 0, ""
-}
-
-// ParseCvss3 divide CVSSv3 string into score and vector
-// 5.6/CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L
-func (o RedHatBase) parseCvss3(scoreVector string) (score float64, vector string) {
-	var err error
-	for _, s := range []string{
-		"/CVSS:3.0/",
-		"/CVSS:3.1/",
-	} {
-		ss := strings.Split(scoreVector, s)
-		if 1 < len(ss) {
-			if score, err = strconv.ParseFloat(ss[0], 64); err != nil {
-				return 0, ""
-			}
-			return score, strings.TrimPrefix(s, "/") + ss[1]
-		}
-	}
-	return 0, ""
 }
 
 // RedHat is the interface for RedhatBase OVAL

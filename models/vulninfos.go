@@ -510,7 +510,7 @@ func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
 
 // Cvss3Scores returns CVSS V3 Score
 func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
-	order := []CveContentType{RedHatAPI, RedHat, Nvd, Jvn}
+	order := []CveContentType{RedHatAPI, RedHat, SUSE, Nvd, Jvn}
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
@@ -549,7 +549,7 @@ func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 		}
 	}
 
-	// Memo: Only RedHat, Oracle and Amazon has severity data in advisory.
+	// Memo: Only RedHat, SUSE, Oracle and Amazon has severity data in advisory.
 	for _, adv := range v.DistroAdvisories {
 		if adv.Severity != "" {
 			score := severityToCvssScoreRoughly(adv.Severity)
