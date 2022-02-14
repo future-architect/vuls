@@ -176,7 +176,7 @@ func Major(version string) string {
 	} else {
 		ver = ss[1]
 	}
-	return ver[0:strings.Index(ver, ".")]
+	return strings.Split(ver, ".")[0]
 }
 
 // GetHTTPClient return http.Client
