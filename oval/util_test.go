@@ -204,6 +204,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 		family string
 		kernel models.Kernel
 		mods   []string
+		cpes   []string
 	}
 	var tests = []struct {
 		in          in
@@ -367,6 +368,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "redhat",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -385,6 +391,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.el6_7.7",
 					newVersionRelease: "",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -395,6 +402,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "redhat",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -413,6 +425,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.el6_7.6",
 					newVersionRelease: "0:1.2.3-45.el6_7.7",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -423,6 +436,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "redhat",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -440,6 +458,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6_7.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -449,6 +468,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "redhat",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -466,6 +490,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6_7.9",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -475,6 +500,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "redhat",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -493,6 +523,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.el6_7.6",
 					newVersionRelease: "0:1.2.3-45.el6_7.7",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -503,6 +534,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "redhat",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -521,6 +557,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.el6_7.6",
 					newVersionRelease: "0:1.2.3-45.el6_7.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -531,6 +568,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "redhat",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -548,6 +590,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.el6_7.6",
 					newVersionRelease: "0:1.2.3-45.el6_7.9",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -558,6 +601,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "redhat",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -575,6 +623,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -584,6 +633,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "redhat",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -601,6 +655,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6_7.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -610,6 +665,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "centos",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -628,6 +688,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.el6.centos.7",
 					newVersionRelease: "",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -638,6 +699,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "centos",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -655,6 +721,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6.centos.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -664,6 +731,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "centos",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -681,6 +753,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6.centos.9",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -690,6 +763,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "centos",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -708,6 +786,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.el6.centos.6",
 					newVersionRelease: "0:1.2.3-45.el6.centos.7",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: true,
@@ -718,6 +797,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "centos",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -736,6 +820,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.el6.centos.6",
 					newVersionRelease: "0:1.2.3-45.el6.centos.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -746,6 +831,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "centos",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -764,6 +854,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.el6.centos.6",
 					newVersionRelease: "0:1.2.3-45.el6.centos.9",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -774,6 +865,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "centos",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -791,6 +887,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -800,6 +897,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "centos",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -817,6 +919,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6_7.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -826,6 +929,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "centos",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -843,6 +951,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.sl6.7",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -852,6 +961,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "centos",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -869,6 +983,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.sl6.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -877,6 +992,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "centos",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -894,6 +1014,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.sl6.9",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -902,6 +1023,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "centos",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -920,6 +1046,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.sl6.6",
 					newVersionRelease: "0:1.2.3-45.sl6.7",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: true,
@@ -929,6 +1056,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "centos",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -947,6 +1079,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.sl6.6",
 					newVersionRelease: "0:1.2.3-45.sl6.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -956,6 +1089,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "centos",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -974,6 +1112,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.sl6.6",
 					newVersionRelease: "0:1.2.3-45.sl6.9",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -983,6 +1122,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "centos",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -1000,6 +1144,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -1008,6 +1153,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "centos",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -1025,6 +1175,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6_7.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -1034,6 +1185,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: constant.CentOS,
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/o:redhat:enterprise_linux:8::baseos",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "kernel",
@@ -1050,6 +1206,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 				kernel: models.Kernel{
 					Release: "3.0.0",
 				},
+				cpes: []string{"cpe:/o:redhat:enterprise_linux:8::baseos"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -1058,6 +1215,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: constant.CentOS,
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/o:redhat:enterprise_linux:8::baseos",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "kernel",
@@ -1074,6 +1236,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 				kernel: models.Kernel{
 					Release: "3.0.0",
 				},
+				cpes: []string{"cpe:/o:redhat:enterprise_linux:8::baseos"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -1084,6 +1247,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "rocky",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -1102,6 +1270,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.el6.rocky.7",
 					newVersionRelease: "",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -1111,6 +1280,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "rocky",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -1128,6 +1302,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6.rocky.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -1136,6 +1311,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "rocky",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -1153,6 +1333,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6.rocky.9",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -1161,6 +1342,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "rocky",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -1179,6 +1365,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.el6.rocky.6",
 					newVersionRelease: "0:1.2.3-45.el6.rocky.7",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: true,
@@ -1188,6 +1375,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "rocky",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -1206,6 +1398,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.el6.rocky.6",
 					newVersionRelease: "0:1.2.3-45.el6.rocky.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -1215,6 +1408,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "rocky",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -1233,6 +1431,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.el6.rocky.6",
 					newVersionRelease: "0:1.2.3-45.el6.rocky.9",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -1242,6 +1441,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "rocky",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -1259,6 +1463,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -1267,6 +1472,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "rocky",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -1284,6 +1494,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6_7.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -1292,6 +1503,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "rocky",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -1309,6 +1525,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.sl6.7",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -1318,6 +1535,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "rocky",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -1335,6 +1557,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.sl6.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -1343,6 +1566,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "rocky",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -1360,6 +1588,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.sl6.9",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -1368,6 +1597,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "rocky",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -1386,6 +1620,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.sl6.6",
 					newVersionRelease: "0:1.2.3-45.sl6.7",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: true,
@@ -1395,6 +1630,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "rocky",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -1413,6 +1653,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.sl6.6",
 					newVersionRelease: "0:1.2.3-45.sl6.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -1422,6 +1663,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "rocky",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -1440,6 +1686,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease:    "0:1.2.3-45.sl6.6",
 					newVersionRelease: "0:1.2.3-45.sl6.9",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -1449,6 +1696,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "rocky",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -1466,6 +1718,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -1474,6 +1727,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: "rocky",
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "a",
@@ -1491,6 +1749,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6_7.8",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -1500,6 +1759,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: constant.Rocky,
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/o:redhat:enterprise_linux:8::baseos",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "kernel",
@@ -1516,6 +1780,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 				kernel: models.Kernel{
 					Release: "3.0.0",
 				},
+				cpes: []string{"cpe:/o:redhat:enterprise_linux:8::baseos"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -1524,6 +1789,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: constant.Rocky,
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/o:redhat:enterprise_linux:8::baseos",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:        "kernel",
@@ -1540,6 +1810,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 				kernel: models.Kernel{
 					Release: "3.0.0",
 				},
+				cpes: []string{"cpe:/o:redhat:enterprise_linux:8::baseos"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -1550,6 +1821,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: constant.RedHat,
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:            "nginx",
@@ -1566,6 +1842,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 				mods: []string{
 					"nginx:1.16",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    true,
 			notFixedYet: false,
@@ -1576,6 +1853,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: constant.RedHat,
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:            "nginx",
@@ -1592,6 +1874,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 				mods: []string{
 					"nginx:1.16",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -1601,6 +1884,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: constant.RedHat,
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:            "nginx",
@@ -1617,6 +1905,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 				mods: []string{
 					"nginx:1.14",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -1699,6 +1988,39 @@ func TestIsOvalDefAffected(t *testing.T) {
 				mods: []string{
 					"mysql:8.0",
 				},
+			},
+			affected:    false,
+			notFixedYet: false,
+		},
+		// If there is no repoCPE in affectedCPE
+		{
+			in: in{
+				family: "redhat",
+				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:        "a",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "b",
+							NotFixedYet: false,
+							Version:     "0:1.2.3-45.el6_7.8",
+						},
+					},
+				},
+				req: request{
+					packName:          "b",
+					isSrcPack:         false,
+					versionRelease:    "0:1.2.3-45.el6_7.7",
+					newVersionRelease: "",
+				},
+				cpes: []string{"cpe:/o:redhat:enterprise_linux:8::baseos"},
 			},
 			affected:    false,
 			notFixedYet: false,
@@ -1795,6 +2117,11 @@ func TestIsOvalDefAffected(t *testing.T) {
 			in: in{
 				family: constant.RedHat,
 				def: ovalmodels.Definition{
+					Advisory: ovalmodels.Advisory{
+						AffectedCPEList: []ovalmodels.Cpe{{
+							Cpe: "cpe:/a:redhat:enterprise_linux:8::appstream",
+						}},
+					},
 					AffectedPacks: []ovalmodels.Package{
 						{
 							Name:    "nginx",
@@ -1808,6 +2135,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 					versionRelease: "2.17-105.0.1",
 					arch:           "x86_64",
 				},
+				cpes: []string{"cpe:/a:redhat:enterprise_linux:8::appstream"},
 			},
 			affected: true,
 			fixedIn:  "2.17-106.0.1",
@@ -1859,7 +2187,7 @@ func TestIsOvalDefAffected(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		affected, notFixedYet, fixedIn, err := isOvalDefAffected(tt.in.def, tt.in.req, tt.in.family, tt.in.kernel, tt.in.mods)
+		affected, notFixedYet, fixedIn, err := isOvalDefAffected(tt.in.def, tt.in.req, tt.in.family, tt.in.kernel, tt.in.mods, tt.in.cpes)
 		if tt.wantErr != (err != nil) {
 			t.Errorf("[%d] err\nexpected: %t\n  actual: %s\n", i, tt.wantErr, err)
 		}

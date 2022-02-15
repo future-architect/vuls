@@ -4,6 +4,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/util"
 )
 
 // inherit OsTypeInterface
@@ -99,6 +100,19 @@ func (o *centos) sudoNoPasswdCmdsFastRoot() []cmd {
 
 func (o *centos) sudoNoPasswdCmdsDeep() []cmd {
 	return o.sudoNoPasswdCmdsFastRoot()
+}
+
+func (o *centos) checkEnabledRepoList(version string) {
+	switch util.Major(version) {
+	case "5":
+		o.EnabledRepoList = []string{"rhel-5-desktop-rpms", "rhel-5-server-rpms"}
+	case "6":
+		o.EnabledRepoList = []string{"rhel-6-desktop-rpms", "rhel-6-server-rpms", "rhel-6-server-extras-rpms"}
+	case "7":
+		o.EnabledRepoList = []string{"rhel-7-desktop-rpms", "rhel-7-server-rpms", "rhel-7-server-extras-rpms"}
+	case "8":
+		o.EnabledRepoList = []string{"rhel-8-for-x86_64-appstream-rpms", "rhel-8-for-x86_64-baseos-rpms"}
+	}
 }
 
 type rootPrivCentos struct{}

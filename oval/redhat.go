@@ -4,14 +4,20 @@
 package oval
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/util"
+	"github.com/parnurzeal/gorequest"
+	"github.com/vulsio/goval-dictionary/db"
 	ovalmodels "github.com/vulsio/goval-dictionary/models"
+	"golang.org/x/xerrors"
 )
 
 // RedHatBase is the base struct for RedHat, CentOS, Alma, Rocky and Fedora
@@ -19,10 +25,38 @@ type RedHatBase struct {
 	Base
 }
 
+func countRepoToCPEsViaHTTP(baseURL string) (int, error) {
+	url, _ := util.URLPathJoin(baseURL, "countrepotocpe")
+	resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
+	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
+		return 0, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
+	}
+	count := 0
+	if err := json.Unmarshal([]byte(body), &count); err != nil {
+		return 0, xerrors.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
+	}
+	return count, nil
+}
+
+func countRepoToCPEsFromOvalDB(driver db.DB) (int, error) {
+	count, err := driver.CountRepositoryToCPEs()
+	if err != nil {
+		return 0, xerrors.Errorf("Failed to count Repository to CPE records. err: %w", err)
+	}
+	return count, nil
+}
+
 // FillWithOval returns scan result after updating CVE info by OVAL
 func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 	var relatedDefs ovalResult
 	if o.Cnf.IsFetchViaHTTP() {
+		count, err := countRepoToCPEsViaHTTP(o.Cnf.GetURL())
+		if err != nil {
+			return 0, xerrors.Errorf("Failed to count Repository To CPE. err: %w", err)
+		}
+		if count == 0 {
+			return 0, xerrors.New("Failed to find Repository To CPE. please execute this command: `$ goval-dictinoary fetch redhat ${version}`. err: repository_to_cpes table has zero records.")
+		}
 		if relatedDefs, err = getDefsByPackNameViaHTTP(r, o.Cnf.GetURL()); err != nil {
 			return 0, err
 		}
@@ -36,7 +70,13 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 				logging.Log.Errorf("Failed to close DB. err: %+v", err)
 			}
 		}()
-
+		count, err := countRepoToCPEsFromOvalDB(driver)
+		if err != nil {
+			return 0, xerrors.Errorf("Failed to count Repository To CPE. err: %w", err)
+		}
+		if count == 0 {
+			return 0, xerrors.New("Failed to find Repository To CPE. please execute this command: `$ goval-dictinoary fetch redhat ${version}`. err: repository_to_cpes table has zero records.")
+		}
 		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
 			return 0, err
 		}

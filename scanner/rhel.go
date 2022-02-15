@@ -1,6 +1,9 @@
 package scanner
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
@@ -97,6 +100,33 @@ func (o *rhel) sudoNoPasswdCmdsFastRoot() []cmd {
 
 func (o *rhel) sudoNoPasswdCmdsDeep() []cmd {
 	return o.sudoNoPasswdCmdsFastRoot()
+}
+
+func (o *rhel) checkEnabledRepoList(version string) {
+	ss := strings.Split(version, ".")
+	if len(ss) < 2 {
+		o.setErrs([]error{xerrors.Errorf("Failed to detect repository name. err: expected version format: major.minor, actual version: %s", version)})
+		return
+	}
+
+	major, minor := ss[0], ss[1]
+	if major == "5" {
+		o.EnabledRepoList = []string{"rhel-5-desktop-rpms", "rhel-5-server-rpms"}
+		return
+	}
+
+	r := o.exec(`yum repolist enabled 2>/dev/null`, noSudo)
+	if !r.isSuccess() {
+		o.setErrs([]error{xerrors.Errorf("Failed to check enable repository list. err: %w", r.Error)})
+		return
+	}
+	for _, l := range strings.Split(r.Stdout, "\n")[1:] {
+		repo := strings.Split(l, " ")[0]
+		if strings.Contains(repo, "-eus-") || strings.Contains(repo, "-aus-") {
+			repo = fmt.Sprintf("%s__%s_DOT_%s", repo, major, minor)
+		}
+		o.EnabledRepoList = append(o.EnabledRepoList, repo)
+	}
 }
 
 type rootPrivRHEL struct{}

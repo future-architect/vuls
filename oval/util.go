@@ -160,13 +160,25 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 		}
 	}
 
+	var cpes []string
+	if ovalFamily == constant.RedHat {
+		url, _ := util.URLPathJoin(url, "repotocpe")
+		resp, body, errs := gorequest.New().Timeout(10 * time.Second).Post(url).Send(map[string][]string{"repositories": r.EnabledRepoList}).End()
+		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
+			return relatedDefs, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
+		}
+		if err := json.Unmarshal([]byte(body), &cpes); err != nil {
+			return relatedDefs, xerrors.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
+		}
+	}
+
 	timeout := time.After(2 * 60 * time.Second)
 	var errs []error
 	for i := 0; i < nReq; i++ {
 		select {
 		case res := <-resChan:
 			for _, def := range res.defs {
-				affected, notFixedYet, fixedIn, err := isOvalDefAffected(def, res.request, ovalFamily, r.RunningKernel, r.EnabledDnfModules)
+				affected, notFixedYet, fixedIn, err := isOvalDefAffected(def, res.request, r.Family, r.RunningKernel, r.EnabledDnfModules, cpes)
 				if err != nil {
 					errs = append(errs, err)
 					continue
@@ -274,13 +286,22 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 	if r.Family == constant.CentOS {
 		ovalRelease = strings.TrimPrefix(r.Release, "stream")
 	}
+
+	var cpes []string
+	if ovalFamily == constant.RedHat {
+		cpes, err = driver.GetRepositoryCPE(r.EnabledRepoList)
+		if err != nil {
+			return relatedDefs, xerrors.Errorf("Failed to get RepositoryCPE. err: %w", err)
+		}
+	}
+
 	for _, req := range requests {
 		definitions, err := driver.GetByPackName(ovalFamily, ovalRelease, req.packName, req.arch)
 		if err != nil {
 			return relatedDefs, xerrors.Errorf("Failed to get %s OVAL info by package: %#v, err: %w", r.Family, req, err)
 		}
 		for _, def := range definitions {
-			affected, notFixedYet, fixedIn, err := isOvalDefAffected(def, req, ovalFamily, r.RunningKernel, r.EnabledDnfModules)
+			affected, notFixedYet, fixedIn, err := isOvalDefAffected(def, req, ovalFamily, r.RunningKernel, r.EnabledDnfModules, cpes)
 			if err != nil {
 				return relatedDefs, xerrors.Errorf("Failed to exec isOvalAffected. err: %w", err)
 			}
@@ -312,7 +333,7 @@ func getDefsByPackNameFromOvalDB(driver db.DB, r *models.ScanResult) (relatedDef
 
 var modularVersionPattern = regexp.MustCompile(`.+\.module(?:\+el|_f)\d{1,2}.*`)
 
-func isOvalDefAffected(def ovalmodels.Definition, req request, family string, running models.Kernel, enabledMods []string) (affected, notFixedYet bool, fixedIn string, err error) {
+func isOvalDefAffected(def ovalmodels.Definition, req request, family string, running models.Kernel, enabledMods []string, repoCPEs []string) (affected, notFixedYet bool, fixedIn string, err error) {
 	for _, ovalPack := range def.AffectedPacks {
 		if req.packName != ovalPack.Name {
 			continue
@@ -361,6 +382,17 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 			isModularityLabelEmptyOrSame = true
 		}
 		if !isModularityLabelEmptyOrSame {
+			continue
+		}
+
+		isAffectedDefinition := false
+		switch family {
+		case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
+			isAffectedDefinition = isRepoCPEinAffectedCPE(repoCPEs, def.Advisory.AffectedCPEList)
+		default:
+			isAffectedDefinition = true
+		}
+		if !isAffectedDefinition {
 			continue
 		}
 
@@ -432,6 +464,17 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 		}
 	}
 	return false, false, "", nil
+}
+
+func isRepoCPEinAffectedCPE(repoCPEs []string, affectedCPEs []ovalmodels.Cpe) bool {
+	for _, affectedCPE := range affectedCPEs {
+		for _, repoCPE := range repoCPEs {
+			if repoCPE == affectedCPE.Cpe {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error) {
