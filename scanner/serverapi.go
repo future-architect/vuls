@@ -335,7 +335,7 @@ func (s Scanner) detectServerOSes() (servers, errServers []osTypeInterface) {
 }
 
 func validateSSHConfig(c *config.ServerInfo) error {
-	if isLocalExec(c.Port, c.Host) {
+	if isLocalExec(c.Port, c.Host) || c.Type == constant.ServerTypePseudo {
 		return nil
 	}
 
