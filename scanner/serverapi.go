@@ -3,7 +3,6 @@ package scanner
 import (
 	"fmt"
 	"math/rand"
-	"net"
 	"net/http"
 	"os"
 	ex "os/exec"
@@ -360,6 +359,9 @@ func validateSSHConfig(c *config.ServerInfo) error {
 	if c.User != "" {
 		sshConfigCmd = append(sshConfigCmd, "-l", c.User)
 	}
+	if len(c.JumpServer) > 0 {
+		sshConfigCmd = append(sshConfigCmd, "-J", strings.Join(c.JumpServer, ","))
+	}
 	sshConfigCmd = append(sshConfigCmd, c.Host)
 	cmd := strings.Join(sshConfigCmd, " ")
 	logging.Log.Debugf("Executing... %s", strings.Replace(cmd, "\n", "", -1))
@@ -373,39 +375,41 @@ func validateSSHConfig(c *config.ServerInfo) error {
 		strictHostKeyChecking string
 		globalKnownHosts      string
 		userKnownHosts        string
+		proxyCommand          string
+		proxyJump             string
 	)
 	for _, line := range strings.Split(r.Stdout, "\n") {
-		if strings.HasPrefix(line, "user ") {
+		switch {
+		case strings.HasPrefix(line, "user "):
 			user := strings.TrimPrefix(line, "user ")
 			logging.Log.Debugf("Setting SSH User:%s for Server:%s ...", user, c.GetServerName())
 			c.User = user
-		} else if strings.HasPrefix(line, "hostname ") {
+		case strings.HasPrefix(line, "hostname "):
 			hostname = strings.TrimPrefix(line, "hostname ")
-			logging.Log.Debugf("Validating SSH HostName:%s for Server:%s ...", hostname, c.GetServerName())
-			if _, err := net.LookupHost(hostname); err != nil {
-				return xerrors.New("Failed to name resolution. Please check the HostName settings for SSH")
-			}
-		} else if strings.HasPrefix(line, "port ") {
+		case strings.HasPrefix(line, "port "):
 			port := strings.TrimPrefix(line, "port ")
 			logging.Log.Debugf("Setting SSH Port:%s for Server:%s ...", port, c.GetServerName())
 			c.Port = port
-		} else if strings.HasPrefix(line, "stricthostkeychecking ") {
+		case strings.HasPrefix(line, "stricthostkeychecking "):
 			strictHostKeyChecking = strings.TrimPrefix(line, "stricthostkeychecking ")
-		} else if strings.HasPrefix(line, "globalknownhostsfile ") {
+		case strings.HasPrefix(line, "globalknownhostsfile "):
 			globalKnownHosts = strings.TrimPrefix(line, "globalknownhostsfile ")
-		} else if strings.HasPrefix(line, "userknownhostsfile ") {
+		case strings.HasPrefix(line, "userknownhostsfile "):
 			userKnownHosts = strings.TrimPrefix(line, "userknownhostsfile ")
+		case strings.HasPrefix(line, "proxycommand "):
+			proxyCommand = strings.TrimPrefix(line, "proxycommand ")
+		case strings.HasPrefix(line, "proxyjump "):
+			proxyJump = strings.TrimPrefix(line, "proxyjump ")
 		}
 	}
 	if c.User == "" || c.Port == "" {
 		return xerrors.New("Failed to find User or Port setting. Please check the User or Port settings for SSH")
 	}
-	if strictHostKeyChecking == "false" {
+	if strictHostKeyChecking == "false" || proxyCommand != "" || proxyJump != "" {
 		return nil
 	}
 
 	logging.Log.Debugf("Checking if the host's public key is in known_hosts...")
-
 	knownHostsPaths := []string{}
 	for _, knownHosts := range []string{userKnownHosts, globalKnownHosts} {
 		for _, knownHost := range strings.Split(knownHosts, " ") {
