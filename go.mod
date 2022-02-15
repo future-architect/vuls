@@ -3,7 +3,7 @@ module github.com/future-architect/vuls
 go 1.17
 
 require (
-	github.com/Azure/azure-sdk-for-go v61.2.0+incompatible
+	github.com/Azure/azure-sdk-for-go v61.5.0+incompatible
 	github.com/BurntSushi/toml v1.0.0
 	github.com/Ullaakut/nmap/v2 v2.1.2-0.20210406060955-59a52fe80a4f
 	github.com/VividCortex/ewma v1.2.0 // indirect
@@ -29,7 +29,6 @@ require (
 	github.com/gosuri/uitable v0.0.4
 	github.com/hashicorp/go-uuid v1.0.2
 	github.com/hashicorp/go-version v1.4.0
-	github.com/howeyc/gopass v0.0.0-20190910152052-7cb4b85ec19c
 	github.com/jesseduffield/gocui v0.3.0
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/knqyf263/go-apk-version v0.0.0-20200609155635-041fdbb8563f
