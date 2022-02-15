@@ -614,12 +614,7 @@ func (o *redhatBase) parseUpdatablePacksLine(line string) (models.Package, error
 
 func (o *redhatBase) isExecYumPS() bool {
 	switch o.Distro.Family {
-	case constant.Oracle,
-		constant.OpenSUSE,
-		constant.OpenSUSELeap,
-		constant.SUSEEnterpriseServer,
-		constant.SUSEEnterpriseDesktop,
-		constant.SUSEOpenstackCloud:
+	case constant.Oracle:
 		return false
 	}
 	return !o.getServerInfo().Mode.IsFast()
@@ -627,13 +622,12 @@ func (o *redhatBase) isExecYumPS() bool {
 
 func (o *redhatBase) isExecNeedsRestarting() bool {
 	switch o.Distro.Family {
-	case constant.OpenSUSE,
-		constant.OpenSUSELeap,
-		constant.SUSEEnterpriseServer,
-		constant.SUSEEnterpriseDesktop,
-		constant.SUSEOpenstackCloud:
-		// TODO zypper ps
-		// https://github.com/future-architect/vuls/issues/696
+	case constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
+		if o.getServerInfo().Mode.IsOffline() {
+			return false
+		} else if o.getServerInfo().Mode.IsFastRoot() || o.getServerInfo().Mode.IsDeep() {
+			return true
+		}
 		return false
 	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Oracle:
 		majorVersion, err := o.Distro.MajorVersion()
@@ -644,8 +638,7 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 
 		if o.getServerInfo().Mode.IsOffline() {
 			return false
-		} else if o.getServerInfo().Mode.IsFastRoot() ||
-			o.getServerInfo().Mode.IsDeep() {
+		} else if o.getServerInfo().Mode.IsFastRoot() || o.getServerInfo().Mode.IsDeep() {
 			return true
 		}
 		return false
@@ -793,7 +786,14 @@ func (o *redhatBase) rpmQa() string {
 	const old = `rpm -qa --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n"`
 	const new = `rpm -qa --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n"`
 	switch o.Distro.Family {
-	case constant.SUSEEnterpriseServer:
+	case constant.OpenSUSE:
+		if o.Distro.Release == "tumbleweed" {
+			return new
+		}
+		return old
+	case constant.OpenSUSELeap:
+		return new
+	case constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
 		if v, _ := o.Distro.MajorVersion(); v < 12 {
 			return old
 		}
@@ -810,7 +810,14 @@ func (o *redhatBase) rpmQf() string {
 	const old = `rpm -qf --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n" `
 	const new = `rpm -qf --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n" `
 	switch o.Distro.Family {
-	case constant.SUSEEnterpriseServer:
+	case constant.OpenSUSE:
+		if o.Distro.Release == "tumbleweed" {
+			return new
+		}
+		return old
+	case constant.OpenSUSELeap:
+		return new
+	case constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
 		if v, _ := o.Distro.MajorVersion(); v < 12 {
 			return old
 		}

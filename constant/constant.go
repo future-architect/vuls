@@ -24,7 +24,7 @@ const (
 	Rocky = "rocky"
 
 	// Fedora is
-	// Fedora = "fedora"
+	Fedora = "fedora"
 
 	// Amazon is
 	Amazon = "amazon"
@@ -53,9 +53,6 @@ const (
 	// SUSEEnterpriseDesktop is
 	SUSEEnterpriseDesktop = "suse.linux.enterprise.desktop"
 
-	// SUSEOpenstackCloud is
-	SUSEOpenstackCloud = "suse.openstack.cloud"
-
 	// Alpine is
 	Alpine = "alpine"
 
@@ -64,7 +61,4 @@ const (
 
 	// DeepSecurity is
 	DeepSecurity = "deepsecurity"
-
-	//Fedora is
-	Fedora = "fedora"
 )

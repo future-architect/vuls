@@ -147,8 +147,74 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 				StandardSupportUntil: time.Date(2022, 7, 1, 23, 59, 59, 0, time.UTC),
 			},
 		}[release]
+	case constant.OpenSUSE:
+		// https://en.opensuse.org/Lifetime
+		eol, found = map[string]EOL{
+			"10.2":       {Ended: true},
+			"10.3":       {Ended: true},
+			"11.0":       {Ended: true},
+			"11.1":       {Ended: true},
+			"11.2":       {Ended: true},
+			"11.3":       {Ended: true},
+			"11.4":       {Ended: true},
+			"12.1":       {Ended: true},
+			"12.2":       {Ended: true},
+			"12.3":       {Ended: true},
+			"13.1":       {Ended: true},
+			"13.2":       {Ended: true},
+			"tumbleweed": {},
+		}[release]
+	case constant.OpenSUSELeap:
+		// https://en.opensuse.org/Lifetime
+		eol, found = map[string]EOL{
+			"42.1": {Ended: true},
+			"42.2": {Ended: true},
+			"42.3": {Ended: true},
+			"15.0": {Ended: true},
+			"15.1": {Ended: true},
+			"15.2": {Ended: true},
+			"15.3": {StandardSupportUntil: time.Date(2022, 11, 30, 23, 59, 59, 0, time.UTC)},
+			"15.4": {StandardSupportUntil: time.Date(2023, 11, 30, 23, 59, 59, 0, time.UTC)},
+		}[release]
 	case constant.SUSEEnterpriseServer:
-		//TODO
+		// https://www.suse.com/lifecycle
+		eol, found = map[string]EOL{
+			"11":   {Ended: true},
+			"11.1": {Ended: true},
+			"11.2": {Ended: true},
+			"11.3": {Ended: true},
+			"11.4": {Ended: true},
+			"12":   {Ended: true},
+			"12.1": {Ended: true},
+			"12.2": {Ended: true},
+			"12.3": {Ended: true},
+			"12.4": {Ended: true},
+			"12.5": {StandardSupportUntil: time.Date(2024, 10, 31, 23, 59, 59, 0, time.UTC)},
+			"15":   {Ended: true},
+			"15.1": {Ended: true},
+			"15.2": {Ended: true},
+			"15.3": {StandardSupportUntil: time.Date(2022, 11, 30, 23, 59, 59, 0, time.UTC)},
+			"15.4": {StandardSupportUntil: time.Date(2023, 11, 30, 23, 59, 59, 0, time.UTC)},
+		}[release]
+	case constant.SUSEEnterpriseDesktop:
+		// https://www.suse.com/lifecycle
+		eol, found = map[string]EOL{
+			"11":   {Ended: true},
+			"11.1": {Ended: true},
+			"11.2": {Ended: true},
+			"11.3": {Ended: true},
+			"11.4": {Ended: true},
+			"12":   {Ended: true},
+			"12.1": {Ended: true},
+			"12.2": {Ended: true},
+			"12.3": {Ended: true},
+			"12.4": {Ended: true},
+			"15":   {Ended: true},
+			"15.1": {Ended: true},
+			"15.2": {Ended: true},
+			"15.3": {StandardSupportUntil: time.Date(2022, 11, 30, 23, 59, 59, 0, time.UTC)},
+			"15.4": {StandardSupportUntil: time.Date(2023, 11, 30, 23, 59, 59, 0, time.UTC)},
+		}[release]
 	case constant.Alpine:
 		// https://github.com/aquasecurity/trivy/blob/master/pkg/detector/ospkg/alpine/alpine.go#L19
 		// https://alpinelinux.org/releases/

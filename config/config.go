@@ -307,6 +307,13 @@ func (l Distro) MajorVersion() (int, error) {
 		if 0 < len(l.Release) {
 			return strconv.Atoi(strings.Split(strings.TrimPrefix(l.Release, "stream"), ".")[0])
 		}
+	case constant.OpenSUSE:
+		if l.Release != "" {
+			if l.Release == "tumbleweed" {
+				return 0, nil
+			}
+			return strconv.Atoi(strings.Split(l.Release, ".")[0])
+		}
 	default:
 		if 0 < len(l.Release) {
 			return strconv.Atoi(strings.Split(l.Release, ".")[0])

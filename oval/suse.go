@@ -4,8 +4,9 @@
 package oval
 
 import (
+	"fmt"
+
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	ovalmodels "github.com/vulsio/goval-dictionary/models"
@@ -17,11 +18,10 @@ type SUSE struct {
 }
 
 // NewSUSE creates OVAL client for SUSE
-func NewSUSE(cnf config.VulnDictInterface) SUSE {
-	// TODO implement other family
+func NewSUSE(cnf config.VulnDictInterface, family string) SUSE {
 	return SUSE{
 		Base{
-			family: constant.SUSEEnterpriseServer,
+			family: family,
 			Cnf:    cnf,
 		},
 	}
@@ -56,7 +56,7 @@ func (o SUSE) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 	for _, vuln := range r.ScannedCves {
 		if conts, ok := vuln.CveContents[models.SUSE]; ok {
 			for i, cont := range conts {
-				cont.SourceLink = "https://security-tracker.debian.org/tracker/" + cont.CveID
+				cont.SourceLink = fmt.Sprintf("https://www.suse.com/security/cve/%s.html", cont.CveID)
 				vuln.CveContents[models.SUSE][i] = cont
 			}
 		}
@@ -117,11 +117,23 @@ func (o SUSE) convertToModel(def *ovalmodels.Definition) *models.CveContent {
 			RefID:  r.RefID,
 		})
 	}
-
-	return &models.CveContent{
+	cveCont := models.CveContent{
 		CveID:      def.Title,
 		Title:      def.Title,
 		Summary:    def.Description,
 		References: refs,
 	}
+
+	if 0 < len(def.Advisory.Cves) {
+		if len(def.Advisory.Cves) == 1 {
+			cve := def.Advisory.Cves[0]
+			score3, vec3 := parseCvss3(cve.Cvss3)
+			cveCont.Cvss3Score = score3
+			cveCont.Cvss3Vector = vec3
+			cveCont.Cvss3Severity = cve.Impact
+		} else {
+			logging.Log.Warnf("Unknown Oval format. Please register the issue as it needs to be investigated. https://github.com/future-architect/vuls/issues family: %s, defID: %s", o.family, def.DefinitionID)
+		}
+	}
+	return &cveCont
 }

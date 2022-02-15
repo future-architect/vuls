@@ -373,8 +373,8 @@ No CVE-IDs are found in updatable packages.
 				if len(pack.AffectedProcs) != 0 {
 					for _, p := range pack.AffectedProcs {
 						if len(p.ListenPortStats) == 0 {
-							data = append(data, []string{"",
-								fmt.Sprintf("  - PID: %s %s, Port: []", p.PID, p.Name)})
+							data = append(data, []string{"", fmt.Sprintf("  - PID: %s %s", p.PID, p.Name)})
+							continue
 						}
 
 						var ports []string
@@ -412,8 +412,7 @@ No CVE-IDs are found in updatable packages.
 							wp.Name, p.Version, p.Update, wp.FixedIn, p.Status)})
 				}
 			} else {
-				data = append(data, []string{"WordPress",
-					fmt.Sprintf("%s", wp.Name)})
+				data = append(data, []string{"WordPress", wp.Name})
 			}
 		}
 
