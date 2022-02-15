@@ -369,9 +369,10 @@ func validateSSHConfig(c *config.ServerInfo) error {
 	}
 
 	var (
-		hostname         string
-		globalKnownHosts string
-		userKnownHosts   string
+		hostname              string
+		strictHostKeyChecking string
+		globalKnownHosts      string
+		userKnownHosts        string
 	)
 	for _, line := range strings.Split(r.Stdout, "\n") {
 		if strings.HasPrefix(line, "user ") {
@@ -388,6 +389,8 @@ func validateSSHConfig(c *config.ServerInfo) error {
 			port := strings.TrimPrefix(line, "port ")
 			logging.Log.Debugf("Setting SSH Port:%s for Server:%s ...", port, c.GetServerName())
 			c.Port = port
+		} else if strings.HasPrefix(line, "stricthostkeychecking ") {
+			strictHostKeyChecking = strings.TrimPrefix(line, "stricthostkeychecking ")
 		} else if strings.HasPrefix(line, "globalknownhostsfile ") {
 			globalKnownHosts = strings.TrimPrefix(line, "globalknownhostsfile ")
 		} else if strings.HasPrefix(line, "userknownhostsfile ") {
@@ -397,13 +400,16 @@ func validateSSHConfig(c *config.ServerInfo) error {
 	if c.User == "" || c.Port == "" {
 		return xerrors.New("Failed to find User or Port setting. Please check the User or Port settings for SSH")
 	}
+	if strictHostKeyChecking == "false" {
+		return nil
+	}
 
 	logging.Log.Debugf("Checking if the host's public key is in known_hosts...")
 
 	knownHostsPaths := []string{}
 	for _, knownHosts := range []string{userKnownHosts, globalKnownHosts} {
 		for _, knownHost := range strings.Split(knownHosts, " ") {
-			if knownHost != "" {
+			if knownHost != "" && knownHost != "/dev/null" {
 				knownHostsPaths = append(knownHostsPaths, knownHost)
 			}
 		}
