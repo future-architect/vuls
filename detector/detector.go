@@ -394,13 +394,9 @@ func detectPkgsCvesWithOval(cnf config.GovalDictConf, r *models.ScanResult, logO
 	}
 	defer func() {
 		if err := client.CloseDB(); err != nil {
-			logging.Log.Errorf("Failed to close the gost DB. err: %+v", err)
+			logging.Log.Errorf("Failed to close the OVAL DB. err: %+v", err)
 		}
 	}()
-
-	if client == nil {
-		return nil
-	}
 
 	logging.Log.Debugf("Check if oval fetched: %s %s", r.Family, r.Release)
 	ok, err := client.CheckIfOvalFetched(r.Family, r.Release)
@@ -408,12 +404,16 @@ func detectPkgsCvesWithOval(cnf config.GovalDictConf, r *models.ScanResult, logO
 		return err
 	}
 	if !ok {
-		if r.Family == constant.Debian {
+		switch r.Family {
+		case constant.Debian:
 			logging.Log.Infof("Skip OVAL and Scan with gost alone.")
 			logging.Log.Infof("%s: %d CVEs are detected with OVAL", r.FormatServerName(), 0)
 			return nil
+		case constant.Windows, constant.FreeBSD, constant.ServerTypePseudo:
+			return nil
+		default:
+			return xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see `https://github.com/vulsio/goval-dictionary#usage`", r.Family, r.Release)
 		}
-		return xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see `https://github.com/vulsio/goval-dictionary#usage`", r.Family, r.Release)
 	}
 
 	logging.Log.Debugf("Check if oval fresh: %s %s", r.Family, r.Release)

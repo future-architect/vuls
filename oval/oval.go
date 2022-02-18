@@ -48,6 +48,9 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (bool, error) {
 	if err != nil {
 		return false, xerrors.Errorf("Failed to GetFamilyInOval. err: %w", err)
 	}
+	if ovalFamily == "" {
+		return false, nil
+	}
 	ovalRelease := release
 	if osFamily == constant.CentOS {
 		ovalRelease = strings.TrimPrefix(release, "stream")
@@ -81,6 +84,9 @@ func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 	ovalFamily, err := GetFamilyInOval(osFamily)
 	if err != nil {
 		return false, xerrors.Errorf("Failed to GetFamilyInOval. err: %w", err)
+	}
+	if ovalFamily == "" {
+		return false, nil
 	}
 	ovalRelease := release
 	if osFamily == constant.CentOS {

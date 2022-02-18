@@ -533,9 +533,9 @@ func NewOVALClient(family string, cnf config.GovalDictConf, o logging.LogOpts) (
 	case constant.Fedora:
 		return NewFedora(driver, cnf.GetURL()), nil
 	case constant.FreeBSD, constant.Windows:
-		return nil, nil
+		return NewPseudo(family), nil
 	case constant.ServerTypePseudo:
-		return nil, nil
+		return NewPseudo(family), nil
 	default:
 		if family == "" {
 			return nil, xerrors.New("Probably an error occurred during scanning. Check the error message")
