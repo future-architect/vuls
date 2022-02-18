@@ -198,6 +198,13 @@ func (o *suse) scanPackages() error {
 	}
 
 	o.Packages = installed
+
+	unsecures, err := o.scanUnsecurePackages()
+	if err != nil {
+		o.log.Errorf("Failed to scan vulnerable packages: %s", err)
+		return err
+	}
+	o.VulnInfos = unsecures
 	return nil
 }
 
@@ -222,6 +229,47 @@ func (o *suse) scanUpdatablePackages() (models.Packages, error) {
 		return nil, xerrors.Errorf("Failed to scan updatable packages: %v", r)
 	}
 	return o.parseZypperLULines(r.Stdout)
+}
+
+func (o *suse) scanUnsecurePackages() (models.VulnInfos, error) {
+	cmd := util.PrependProxyEnv("zypper -q list-patches --cve")
+	if o.hasZypperColorOption() {
+		cmd = util.PrependProxyEnv("zypper -q --no-color list-patches --cve")
+	}
+	r := o.exec(cmd, sudo)
+	if !r.isSuccess(0) {
+		return nil, xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	return o.parseZypperLPLines(r.Stdout)
+}
+
+func (o *suse) parseZypperLPLines(stdout string) (models.VulnInfos, error) {
+	vInfos := models.VulnInfos{}
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if len(line) == 0 || strings.Contains(line, "Issue | No.") || strings.Contains(line, "------+----") {
+			continue
+		}
+		vInfo, err := o.parseZypperLPOneLine(line)
+		if err != nil {
+			return nil, err
+		}
+		vInfos[vInfo.CveID] = *vInfo
+	}
+	return vInfos, nil
+}
+
+func (o *suse) parseZypperLPOneLine(line string) (*models.VulnInfo, error) {
+	ss := strings.Split(line, "|")
+	if len(ss) != 8 {
+		return nil, xerrors.Errorf("zypper -q lp --cve Unknown format: %s", line)
+	}
+	cveID := strings.TrimSpace(ss[1])
+	return &models.VulnInfo{
+		CveID:       cveID,
+		Confidences: models.Confidences{models.ZypperMatch},
+	}, nil
 }
 
 var warnRepoPattern = regexp.MustCompile(`Warning: Repository '.+' appears to be outdated\. Consider using a different mirror or server\.`)

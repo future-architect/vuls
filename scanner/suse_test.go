@@ -153,3 +153,104 @@ VERSION_ID="15"`,
 		}
 	}
 }
+
+func TestScanUnsecurePackages(t *testing.T) {
+	r := newSUSE(config.ServerInfo{})
+	r.Distro = config.Distro{Family: "sles"}
+	stdout := `
+Issue | No.              | Patch                                     | Category    | Severity  | Interactive | Status | Summary                                      
+------+------------------+-------------------------------------------+-------------+-----------+-------------+--------+----------------------------------------------
+cve   | CVE-2021-43784   | SUSE-SLE-Module-Containers-12-2021-4059   | security    | moderate  | ---         | needed | Security update for runc                     
+cve   | CVE-2021-41089   | SUSE-SLE-Module-Containers-12-2022-213    | security    | moderate  | message     | needed | Security update for containerd, docker       
+cve   | CVE-2021-33503   | SUSE-SLE-Module-Public-Cloud-12-2021-2194 | recommended | important | ---         | needed | Recommended update for the Azure and AWS SDKs`
+
+	var tests = []struct {
+		in  string
+		out models.VulnInfos
+	}{
+		{
+			stdout,
+			models.VulnInfos{
+				"CVE-2021-43784": models.VulnInfo{
+					CveID: "CVE-2021-43784",
+					Confidences: models.Confidences{
+						models.Confidence{
+							Score:           100,
+							DetectionMethod: "ZypperMatch",
+						},
+					},
+				},
+				"CVE-2021-41089": models.VulnInfo{
+					CveID: "CVE-2021-41089",
+					Confidences: models.Confidences{
+						models.Confidence{
+							Score:           100,
+							DetectionMethod: "ZypperMatch",
+						},
+					},
+				},
+				"CVE-2021-33503": models.VulnInfo{
+					CveID: "CVE-2021-33503",
+					Confidences: models.Confidences{
+						models.Confidence{
+							Score:           100,
+							DetectionMethod: "ZypperMatch",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		vInfos, err := r.parseZypperLPLines(tt.in)
+		if err != nil {
+			t.Errorf("Error has occurred, err: %+v\ntt.in: %v", err, tt.in)
+			return
+		}
+		for cveID, ePack := range tt.out {
+			if !reflect.DeepEqual(ePack, vInfos[cveID]) {
+				e := pp.Sprintf("%v", ePack)
+				a := pp.Sprintf("%v", vInfos[cveID])
+				t.Errorf("expected %s, actual %s", e, a)
+			}
+		}
+	}
+}
+
+func TestScanUnsecurePackage(t *testing.T) {
+	r := newSUSE(config.ServerInfo{})
+	r.Distro = config.Distro{Family: "sles"}
+	stdout := `cve   | CVE-2021-43784   | SUSE-SLE-Module-Containers-12-2021-4059   | security    | moderate  | ---         | needed | Security update for runc                     `
+
+	var tests = []struct {
+		in  string
+		out models.VulnInfo
+	}{
+		{
+			stdout,
+			models.VulnInfo{
+				CveID: "CVE-2021-43784",
+				Confidences: models.Confidences{
+					models.Confidence{
+						Score:           100,
+						DetectionMethod: "ZypperMatch",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		vInfo, err := r.parseZypperLPOneLine(tt.in)
+		if err != nil {
+			t.Errorf("Error has occurred, err: %+v\ntt.in: %v", err, tt.in)
+			return
+		}
+		if !reflect.DeepEqual(*vInfo, tt.out) {
+			e := pp.Sprintf("%v", tt.out)
+			a := pp.Sprintf("%v", vInfo)
+			t.Errorf("expected %s, actual %s", e, a)
+		}
+	}
+}

@@ -891,6 +891,9 @@ const (
 	// PkgAuditMatchStr :
 	PkgAuditMatchStr = "PkgAuditMatch"
 
+	// ZypperMatch :
+	ZypperMatchStr = "ZypperMatch"
+
 	// OvalMatchStr :
 	OvalMatchStr = "OvalMatch"
 
@@ -928,6 +931,9 @@ const (
 var (
 	// PkgAuditMatch is a ranking how confident the CVE-ID was detected correctly
 	PkgAuditMatch = Confidence{100, PkgAuditMatchStr, 2}
+
+	// TODO あとでかく ZypperMatch is ...
+	ZypperMatch = Confidence{100, ZypperMatchStr, 0}
 
 	// OvalMatch is a ranking how confident the CVE-ID was detected correctly
 	OvalMatch = Confidence{100, OvalMatchStr, 0}
