@@ -18,6 +18,6 @@ func NewPseudo(family string) Pseudo {
 	}
 }
 
-func (pse Pseudo) FillWithOval(r *models.ScanResult) (int, error) {
+func (pse Pseudo) FillWithOval(_ *models.ScanResult) (int, error) {
 	return 0, nil
 }
