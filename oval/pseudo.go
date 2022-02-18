@@ -2,7 +2,7 @@ package oval
 
 import "github.com/future-architect/vuls/models"
 
-// Pseudo is OVAL client except for Windows, FreeBSD and Pseudo
+// Pseudo is OVAL client for Windows, FreeBSD and Pseudo
 type Pseudo struct {
 	Base
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
-// Pseudo is Gost client except for RedHat family and Debian
+// Pseudo is Gost client except for RedHat family, Debian, Ubuntu and Windows
 type Pseudo struct {
 	Base
 }
