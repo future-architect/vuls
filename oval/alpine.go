@@ -4,10 +4,12 @@
 package oval
 
 import (
-	"github.com/future-architect/vuls/config"
+	"golang.org/x/xerrors"
+
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
+	ovaldb "github.com/vulsio/goval-dictionary/db"
 )
 
 // Alpine is the struct of Alpine Linux
@@ -16,11 +18,12 @@ type Alpine struct {
 }
 
 // NewAlpine creates OVAL client for SUSE
-func NewAlpine(cnf config.VulnDictInterface) Alpine {
+func NewAlpine(driver ovaldb.DB, baseURL string) Alpine {
 	return Alpine{
 		Base{
-			family: constant.Alpine,
-			Cnf:    cnf,
+			driver:  driver,
+			baseURL: baseURL,
+			family:  constant.Alpine,
 		},
 	}
 }
@@ -28,23 +31,13 @@ func NewAlpine(cnf config.VulnDictInterface) Alpine {
 // FillWithOval returns scan result after updating CVE info by OVAL
 func (o Alpine) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 	var relatedDefs ovalResult
-	if o.Cnf.IsFetchViaHTTP() {
-		if relatedDefs, err = getDefsByPackNameViaHTTP(r, o.Cnf.GetURL()); err != nil {
-			return 0, err
+	if o.driver == nil {
+		if relatedDefs, err = getDefsByPackNameViaHTTP(r, o.baseURL); err != nil {
+			return 0, xerrors.Errorf("Failed to get Definitions via HTTP. err: %w", err)
 		}
 	} else {
-		driver, err := newOvalDB(o.Cnf)
-		if err != nil {
-			return 0, err
-		}
-		defer func() {
-			if err := driver.CloseDB(); err != nil {
-				logging.Log.Errorf("Failed to close DB. err: %+v", err)
-			}
-		}()
-
-		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
-			return 0, err
+		if relatedDefs, err = getDefsByPackNameFromOvalDB(r, o.driver); err != nil {
+			return 0, xerrors.Errorf("Failed to get Definitions from DB. err: %w", err)
 		}
 	}
 	for _, defPacks := range relatedDefs.entries {

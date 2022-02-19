@@ -9,35 +9,73 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
+	"github.com/parnurzeal/gorequest"
+	"golang.org/x/xerrors"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	"github.com/parnurzeal/gorequest"
 	metasploitdb "github.com/vulsio/go-msfdb/db"
 	metasploitmodels "github.com/vulsio/go-msfdb/models"
-	"golang.org/x/xerrors"
+	metasploitlog "github.com/vulsio/go-msfdb/utils"
 )
 
+// goMetasploitDBClient is a DB Driver
+type goMetasploitDBClient struct {
+	driver  metasploitdb.DB
+	baseURL string
+}
+
+// closeDB close a DB connection
+func (client goMetasploitDBClient) closeDB() error {
+	if client.driver == nil {
+		return nil
+	}
+	return client.driver.CloseDB()
+}
+
+func newGoMetasploitDBClient(cnf config.VulnDictInterface, o logging.LogOpts) (*goMetasploitDBClient, error) {
+	if err := metasploitlog.SetLogger(o.LogToFile, o.LogDir, o.Debug, o.LogJSON); err != nil {
+		return nil, xerrors.Errorf("Failed to set go-msfdb logger. err: %w", err)
+	}
+
+	db, err := newMetasploitDB(cnf)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to newMetasploitDB. err: %w", err)
+	}
+	return &goMetasploitDBClient{driver: db, baseURL: cnf.GetURL()}, nil
+}
+
 // FillWithMetasploit fills metasploit module information that has in module
-func FillWithMetasploit(r *models.ScanResult, cnf config.MetasploitConf) (nMetasploitCve int, err error) {
-	if cnf.IsFetchViaHTTP() {
+func FillWithMetasploit(r *models.ScanResult, cnf config.MetasploitConf, logOpts logging.LogOpts) (nMetasploitCve int, err error) {
+	client, err := newGoMetasploitDBClient(&cnf, logOpts)
+	if err != nil {
+		return 0, xerrors.Errorf("Failed to newGoMetasploitDBClient. err: %w", err)
+	}
+	defer func() {
+		if err := client.closeDB(); err != nil {
+			logging.Log.Errorf("Failed to close DB. err: %+v", err)
+		}
+	}()
+
+	if client.driver == nil {
 		var cveIDs []string
 		for cveID := range r.ScannedCves {
 			cveIDs = append(cveIDs, cveID)
 		}
-		prefix, err := util.URLPathJoin(cnf.GetURL(), "cves")
+		prefix, err := util.URLPathJoin(client.baseURL, "cves")
 		if err != nil {
-			return 0, err
+			return 0, xerrors.Errorf("Failed to join URLPath. err: %w", err)
 		}
 		responses, err := getMetasploitsViaHTTP(cveIDs, prefix)
 		if err != nil {
-			return 0, err
+			return 0, xerrors.Errorf("Failed to get Metasploits via HTTP. err: %w", err)
 		}
 		for _, res := range responses {
 			msfs := []metasploitmodels.Metasploit{}
 			if err := json.Unmarshal([]byte(res.json), &msfs); err != nil {
-				return 0, err
+				return 0, xerrors.Errorf("Failed to unmarshal json. err: %w", err)
 			}
 			metasploits := ConvertToModelsMsf(msfs)
 			v, ok := r.ScannedCves[res.request.cveID]
@@ -48,25 +86,13 @@ func FillWithMetasploit(r *models.ScanResult, cnf config.MetasploitConf) (nMetas
 			nMetasploitCve++
 		}
 	} else {
-		driver, locked, err := newMetasploitDB(&cnf)
-		if locked {
-			return 0, xerrors.Errorf("SQLite3 is locked: %s", cnf.GetSQLite3Path())
-		} else if err != nil {
-			return 0, err
-		}
-		defer func() {
-			if err := driver.CloseDB(); err != nil {
-				logging.Log.Errorf("Failed to close DB. err: %+v", err)
-			}
-		}()
-
 		for cveID, vuln := range r.ScannedCves {
 			if cveID == "" {
 				continue
 			}
-			ms, err := driver.GetModuleByCveID(cveID)
+			ms, err := client.driver.GetModuleByCveID(cveID)
 			if err != nil {
-				return 0, err
+				return 0, xerrors.Errorf("Failed to get Metasploits by CVE-ID. err: %w", err)
 			}
 			if len(ms) == 0 {
 				continue
@@ -199,19 +225,20 @@ func ConvertToModelsMsf(ms []metasploitmodels.Metasploit) (modules []models.Meta
 	return modules
 }
 
-func newMetasploitDB(cnf config.VulnDictInterface) (driver metasploitdb.DB, locked bool, err error) {
+func newMetasploitDB(cnf config.VulnDictInterface) (metasploitdb.DB, error) {
 	if cnf.IsFetchViaHTTP() {
-		return nil, false, nil
+		return nil, nil
 	}
 	path := cnf.GetURL()
 	if cnf.GetType() == "sqlite3" {
 		path = cnf.GetSQLite3Path()
 	}
-	if driver, locked, err = metasploitdb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), metasploitdb.Option{}); err != nil {
+	driver, locked, err := metasploitdb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), metasploitdb.Option{})
+	if err != nil {
 		if locked {
-			return nil, true, xerrors.Errorf("metasploitDB is locked. err: %w", err)
+			return nil, xerrors.Errorf("Failed to init metasploit DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
 		}
-		return nil, false, err
+		return nil, xerrors.Errorf("Failed to init metasploit DB. DB Path: %s, err: %w", path, err)
 	}
-	return driver, false, nil
+	return driver, nil
 }

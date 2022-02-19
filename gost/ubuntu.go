@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"strings"
 
+	"golang.org/x/xerrors"
+
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -53,17 +55,20 @@ func (ubu Ubuntu) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 	}
 
 	packCvesList := []packCves{}
-	if ubu.DBDriver.Cnf.IsFetchViaHTTP() {
-		url, _ := util.URLPathJoin(ubu.DBDriver.Cnf.GetURL(), "ubuntu", ubuReleaseVer, "pkgs")
+	if ubu.driver == nil {
+		url, err := util.URLPathJoin(ubu.baseURL, "ubuntu", ubuReleaseVer, "pkgs")
+		if err != nil {
+			return 0, xerrors.Errorf("Failed to join URLPath. err: %w", err)
+		}
 		responses, err := getAllUnfixedCvesViaHTTP(r, url)
 		if err != nil {
-			return 0, err
+			return 0, xerrors.Errorf("Failed to get Unfixed CVEs via HTTP. err: %w", err)
 		}
 
 		for _, res := range responses {
 			ubuCves := map[string]gostmodels.UbuntuCVE{}
 			if err := json.Unmarshal([]byte(res.json), &ubuCves); err != nil {
-				return 0, err
+				return 0, xerrors.Errorf("Failed to unmarshal json. err: %w", err)
 			}
 			cves := []models.CveContent{}
 			for _, ubucve := range ubuCves {
@@ -76,13 +81,10 @@ func (ubu Ubuntu) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 			})
 		}
 	} else {
-		if ubu.DBDriver.DB == nil {
-			return 0, nil
-		}
 		for _, pack := range r.Packages {
-			ubuCves, err := ubu.DBDriver.DB.GetUnfixedCvesUbuntu(ubuReleaseVer, pack.Name)
+			ubuCves, err := ubu.driver.GetUnfixedCvesUbuntu(ubuReleaseVer, pack.Name)
 			if err != nil {
-				return 0, nil
+				return 0, xerrors.Errorf("Failed to get Unfixed CVEs For Package. err: %w", err)
 			}
 			cves := []models.CveContent{}
 			for _, ubucve := range ubuCves {
@@ -97,9 +99,9 @@ func (ubu Ubuntu) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 
 		// SrcPack
 		for _, pack := range r.SrcPackages {
-			ubuCves, err := ubu.DBDriver.DB.GetUnfixedCvesUbuntu(ubuReleaseVer, pack.Name)
+			ubuCves, err := ubu.driver.GetUnfixedCvesUbuntu(ubuReleaseVer, pack.Name)
 			if err != nil {
-				return 0, nil
+				return 0, xerrors.Errorf("Failed to get Unfixed CVEs For SrcPackage. err: %w", err)
 			}
 			cves := []models.CveContent{}
 			for _, ubucve := range ubuCves {
