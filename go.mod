@@ -12,7 +12,7 @@ require (
 	github.com/aquasecurity/trivy v0.23.0
 	github.com/aquasecurity/trivy-db v0.0.0-20220130223604-df65ebde46f4
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
-	github.com/aws/aws-sdk-go v1.42.30
+	github.com/aws/aws-sdk-go v1.43.2
 	github.com/boltdb/bolt v1.3.1
 	github.com/briandowns/spinner v1.16.0 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
