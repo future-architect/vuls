@@ -3,7 +3,7 @@ module github.com/future-architect/vuls
 go 1.17
 
 require (
-	github.com/Azure/azure-sdk-for-go v61.2.0+incompatible
+	github.com/Azure/azure-sdk-for-go v61.6.0+incompatible
 	github.com/BurntSushi/toml v1.0.0
 	github.com/Ullaakut/nmap/v2 v2.1.2-0.20210406060955-59a52fe80a4f
 	github.com/VividCortex/ewma v1.2.0 // indirect
