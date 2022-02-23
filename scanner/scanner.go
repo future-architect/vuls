@@ -580,49 +580,42 @@ func (s Scanner) detectContainerOSesOnServer(containerHost osTypeInterface) (ose
 	return oses
 }
 
-func (s Scanner) detectOS(c config.ServerInfo) (osType osTypeInterface) {
-	var itsMe bool
-	var fatalErr error
-
-	if itsMe, osType, _ = detectPseudo(c); itsMe {
-		return
+func (s Scanner) detectOS(c config.ServerInfo) osTypeInterface {
+	if itsMe, osType, _ := detectPseudo(c); itsMe {
+		return osType
 	}
 
-	itsMe, osType, fatalErr = s.detectDebianWithRetry(c)
-	if fatalErr != nil {
-		osType.setErrs([]error{
-			xerrors.Errorf("Failed to detect OS: %w", fatalErr)})
-		return
+	if itsMe, osType, fatalErr := s.detectDebianWithRetry(c); fatalErr != nil {
+		osType.setErrs([]error{xerrors.Errorf("Failed to detect OS: %w", fatalErr)})
+		return osType
+	} else if itsMe {
+		logging.Log.Debugf("Debian based Linux. Host: %s:%s", c.Host, c.Port)
+		return osType
 	}
 
-	if itsMe {
-		logging.Log.Debugf("Debian like Linux. Host: %s:%s", c.Host, c.Port)
-		return
+	if itsMe, osType := detectRedhat(c); itsMe {
+		logging.Log.Debugf("Redhat based Linux. Host: %s:%s", c.Host, c.Port)
+		return osType
 	}
 
-	if itsMe, osType = detectRedhat(c); itsMe {
-		logging.Log.Debugf("Redhat like Linux. Host: %s:%s", c.Host, c.Port)
-		return
-	}
-
-	if itsMe, osType = detectSUSE(c); itsMe {
+	if itsMe, osType := detectSUSE(c); itsMe {
 		logging.Log.Debugf("SUSE Linux. Host: %s:%s", c.Host, c.Port)
-		return
+		return osType
 	}
 
-	if itsMe, osType = detectFreebsd(c); itsMe {
+	if itsMe, osType := detectFreebsd(c); itsMe {
 		logging.Log.Debugf("FreeBSD. Host: %s:%s", c.Host, c.Port)
-		return
+		return osType
 	}
 
-	if itsMe, osType = detectAlpine(c); itsMe {
+	if itsMe, osType := detectAlpine(c); itsMe {
 		logging.Log.Debugf("Alpine. Host: %s:%s", c.Host, c.Port)
-		return
+		return osType
 	}
 
-	//TODO darwin https://github.com/mizzy/specinfra/blob/master/lib/specinfra/helper/detect_os/darwin.rb
+	osType := &unknown{base{ServerInfo: c}}
 	osType.setErrs([]error{xerrors.New("Unknown OS Type")})
-	return
+	return osType
 }
 
 // Retry as it may stall on the first SSH connection
