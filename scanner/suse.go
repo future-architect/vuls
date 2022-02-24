@@ -154,6 +154,7 @@ func (o *suse) sudoNoPasswdCmdsFastRoot() []cmd {
 	if !o.ServerInfo.IsContainer() {
 		return []cmd{
 			{"zypper ps -s", exitStatusZero},
+			{"zypper refresh", exitStatusZero},
 			{"which which", exitStatusZero},
 			{"stat /proc/1/exe", exitStatusZero},
 			{"ls -l /proc/1/exe", exitStatusZero},
@@ -163,6 +164,7 @@ func (o *suse) sudoNoPasswdCmdsFastRoot() []cmd {
 	}
 	return []cmd{
 		{"zypper ps -s", exitStatusZero},
+		{"zypper refresh", exitStatusZero},
 	}
 }
 
@@ -187,6 +189,13 @@ func (o *suse) scanPackages() error {
 		return nil
 	}
 
+	if err := o.updateRepository(); err != nil {
+		err = xerrors.Errorf("Failed to update repository: %s", err)
+		o.log.Warnf("err: %+v", err)
+		o.warns = append(o.warns, err)
+		// Only warning this error
+	}
+
 	updatable, err := o.scanUpdatablePackages()
 	if err != nil {
 		err = xerrors.Errorf("Failed to scan updatable packages: %w", err)
@@ -201,8 +210,10 @@ func (o *suse) scanPackages() error {
 
 	unsecures, err := o.scanUnsecurePackages()
 	if err != nil {
-		o.log.Errorf("Failed to scan vulnerable packages: %s", err)
-		return err
+		err = xerrors.Errorf("Failed to scan vulnerable packages: %s", err)
+		o.log.Warnf("err: %+v", err)
+		o.warns = append(o.warns, err)
+		// Only warning this error
 	}
 	o.VulnInfos = unsecures
 	return nil
@@ -231,12 +242,21 @@ func (o *suse) scanUpdatablePackages() (models.Packages, error) {
 	return o.parseZypperLULines(r.Stdout)
 }
 
+func (o *suse) updateRepository() error {
+	cmd := util.PrependProxyEnv("zypper refresh")
+	r := o.exec(cmd, sudo)
+	if !r.isSuccess(0) {
+		return xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	return nil
+}
+
 func (o *suse) scanUnsecurePackages() (models.VulnInfos, error) {
 	cmd := util.PrependProxyEnv("zypper -q list-patches --cve")
 	if o.hasZypperColorOption() {
 		cmd = util.PrependProxyEnv("zypper -q --no-color list-patches --cve")
 	}
-	r := o.exec(cmd, sudo)
+	r := o.exec(cmd, noSudo)
 	if !r.isSuccess(0) {
 		return nil, xerrors.Errorf("Failed to SSH: %s", r)
 	}
