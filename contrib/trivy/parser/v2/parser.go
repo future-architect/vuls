@@ -62,7 +62,7 @@ func setScanResultMeta(scanResult *models.ScanResult, report *report.Report) err
 	}
 
 	if _, ok := scanResult.Optional[trivyTarget]; !ok {
-		return xerrors.Errorf("this image contains no trivy target os or libraries.")
+		return xerrors.Errorf("scanned images or libraries are not supported by Trivy. see https://aquasecurity.github.io/trivy/dev/vulnerability/detection/os/, https://aquasecurity.github.io/trivy/dev/vulnerability/detection/language/")
 	}
 	return nil
 }

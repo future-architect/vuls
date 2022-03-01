@@ -732,7 +732,7 @@ func TestParseError(t *testing.T) {
 	}{
 		"image hello-world": {
 			vulnJSON: helloWorldTrivy,
-			expected: xerrors.Errorf("this image contains no trivy target os or libraries."),
+			expected: xerrors.Errorf("scanned images or libraries are not supported by Trivy. see https://aquasecurity.github.io/trivy/dev/vulnerability/detection/os/, https://aquasecurity.github.io/trivy/dev/vulnerability/detection/language/"),
 		},
 	}
 
