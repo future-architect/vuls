@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/trivy/pkg/report"
+	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/contrib/trivy/pkg"
@@ -27,11 +28,14 @@ func (p ParserV2) Parse(vulnJSON []byte) (result *models.ScanResult, err error) 
 		return nil, err
 	}
 
-	setScanResultMeta(scanResult, &report)
+	if err := setScanResultMeta(scanResult, &report); err != nil {
+		return nil, err
+	}
 	return scanResult, nil
 }
 
-func setScanResultMeta(scanResult *models.ScanResult, report *report.Report) {
+func setScanResultMeta(scanResult *models.ScanResult, report *report.Report) error {
+	isTrivyTarget := false
 	for _, r := range report.Results {
 		const trivyTarget = "trivy-target"
 		if pkg.IsTrivySupportedOS(r.Type) {
@@ -40,6 +44,7 @@ func setScanResultMeta(scanResult *models.ScanResult, report *report.Report) {
 			scanResult.Optional = map[string]interface{}{
 				trivyTarget: r.Target,
 			}
+			isTrivyTarget = true
 		} else if pkg.IsTrivySupportedLib(r.Type) {
 			if scanResult.Family == "" {
 				scanResult.Family = constant.ServerTypePseudo
@@ -52,9 +57,15 @@ func setScanResultMeta(scanResult *models.ScanResult, report *report.Report) {
 					trivyTarget: r.Target,
 				}
 			}
+			isTrivyTarget = true
 		}
 		scanResult.ScannedAt = time.Now()
 		scanResult.ScannedBy = "trivy"
 		scanResult.ScannedVia = "trivy"
 	}
+
+	if !isTrivyTarget {
+		return xerrors.Errorf("this image contains no trivy target os or libraries.")
+	}
+	return nil
 }
