@@ -18,14 +18,14 @@ type Microsoft struct {
 
 // DetectCVEs fills cve information that has in Gost
 func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error) {
-	if ms.DBDriver.DB == nil {
+	if ms.driver == nil {
 		return 0, nil
 	}
 	cveIDs := []string{}
 	for cveID := range r.ScannedCves {
 		cveIDs = append(cveIDs, cveID)
 	}
-	msCves, err := ms.DBDriver.DB.GetMicrosoftMulti(cveIDs)
+	msCves, err := ms.driver.GetMicrosoftMulti(cveIDs)
 	if err != nil {
 		return 0, nil
 	}
@@ -34,7 +34,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			continue
 		}
 		cveCont, mitigations := ms.ConvertToModel(&msCve)
-		v, _ := r.ScannedCves[cveID]
+		v := r.ScannedCves[cveID]
 		if v.CveContents == nil {
 			v.CveContents = models.CveContents{}
 		}

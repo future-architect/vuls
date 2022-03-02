@@ -62,14 +62,14 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := detector.DetectPkgCves(&r, config.Conf.OvalDict, config.Conf.Gost); err != nil {
+	if err := detector.DetectPkgCves(&r, config.Conf.OvalDict, config.Conf.Gost, config.Conf.LogOpts); err != nil {
 		logging.Log.Errorf("Failed to detect Pkg CVE: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
 
 	logging.Log.Infof("Fill CVE detailed with gost")
-	if err := gost.FillCVEsWithRedHat(&r, config.Conf.Gost); err != nil {
+	if err := gost.FillCVEsWithRedHat(&r, config.Conf.Gost, config.Conf.LogOpts); err != nil {
 		logging.Log.Errorf("Failed to fill with gost: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
@@ -80,21 +80,21 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
 
-	nExploitCve, err := detector.FillWithExploit(&r, config.Conf.Exploit)
+	nExploitCve, err := detector.FillWithExploit(&r, config.Conf.Exploit, config.Conf.LogOpts)
 	if err != nil {
 		logging.Log.Errorf("Failed to fill with exploit: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
 	logging.Log.Infof("%s: %d PoC detected", r.FormatServerName(), nExploitCve)
 
-	nMetasploitCve, err := detector.FillWithMetasploit(&r, config.Conf.Metasploit)
+	nMetasploitCve, err := detector.FillWithMetasploit(&r, config.Conf.Metasploit, config.Conf.LogOpts)
 	if err != nil {
 		logging.Log.Errorf("Failed to fill with metasploit: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
 	logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nMetasploitCve)
 
-	if err := detector.FillWithKEVuln(&r, config.Conf.KEVuln); err != nil {
+	if err := detector.FillWithKEVuln(&r, config.Conf.KEVuln, config.Conf.LogOpts); err != nil {
 		logging.Log.Errorf("Failed to fill with Known Exploited Vulnerabilities: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}

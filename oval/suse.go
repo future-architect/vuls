@@ -6,9 +6,11 @@ package oval
 import (
 	"fmt"
 
-	"github.com/future-architect/vuls/config"
+	"golang.org/x/xerrors"
+
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
+	ovaldb "github.com/vulsio/goval-dictionary/db"
 	ovalmodels "github.com/vulsio/goval-dictionary/models"
 )
 
@@ -18,11 +20,13 @@ type SUSE struct {
 }
 
 // NewSUSE creates OVAL client for SUSE
-func NewSUSE(cnf config.VulnDictInterface, family string) SUSE {
+func NewSUSE(driver ovaldb.DB, baseURL, family string) SUSE {
+	// TODO implement other family
 	return SUSE{
 		Base{
-			family: family,
-			Cnf:    cnf,
+			driver:  driver,
+			baseURL: baseURL,
+			family:  family,
 		},
 	}
 }
@@ -30,23 +34,13 @@ func NewSUSE(cnf config.VulnDictInterface, family string) SUSE {
 // FillWithOval returns scan result after updating CVE info by OVAL
 func (o SUSE) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 	var relatedDefs ovalResult
-	if o.Cnf.IsFetchViaHTTP() {
-		if relatedDefs, err = getDefsByPackNameViaHTTP(r, o.Cnf.GetURL()); err != nil {
-			return 0, err
+	if o.driver == nil {
+		if relatedDefs, err = getDefsByPackNameViaHTTP(r, o.baseURL); err != nil {
+			return 0, xerrors.Errorf("Failed to get Definitions via HTTP. err: %w", err)
 		}
 	} else {
-		driver, err := newOvalDB(o.Cnf)
-		if err != nil {
-			return 0, err
-		}
-		defer func() {
-			if err := driver.CloseDB(); err != nil {
-				logging.Log.Errorf("Failed to close DB. err: %+v", err)
-			}
-		}()
-
-		if relatedDefs, err = getDefsByPackNameFromOvalDB(driver, r); err != nil {
-			return 0, err
+		if relatedDefs, err = getDefsByPackNameFromOvalDB(r, o.driver); err != nil {
+			return 0, xerrors.Errorf("Failed to get Definitions from DB. err: %w", err)
 		}
 	}
 	for _, defPacks := range relatedDefs.entries {
@@ -65,27 +59,30 @@ func (o SUSE) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 }
 
 func (o SUSE) update(r *models.ScanResult, defpacks defPacks) {
-	ovalContent := *o.convertToModel(&defpacks.def)
+	ovalContent := o.convertToModel(&defpacks.def)
+	if ovalContent == nil {
+		return
+	}
 	ovalContent.Type = models.NewCveContentType(o.family)
-	vinfo, ok := r.ScannedCves[defpacks.def.Title]
+	vinfo, ok := r.ScannedCves[ovalContent.CveID]
 	if !ok {
-		logging.Log.Debugf("%s is newly detected by OVAL", defpacks.def.Title)
+		logging.Log.Debugf("%s is newly detected by OVAL", ovalContent.CveID)
 		vinfo = models.VulnInfo{
-			CveID:       defpacks.def.Title,
+			CveID:       ovalContent.CveID,
 			Confidences: models.Confidences{models.OvalMatch},
-			CveContents: models.NewCveContents(ovalContent),
+			CveContents: models.NewCveContents(*ovalContent),
 		}
 	} else {
 		cveContents := vinfo.CveContents
 		ctype := models.NewCveContentType(o.family)
 		if _, ok := vinfo.CveContents[ctype]; ok {
-			logging.Log.Debugf("%s OVAL will be overwritten", defpacks.def.Title)
+			logging.Log.Debugf("%s OVAL will be overwritten", ovalContent.CveID)
 		} else {
-			logging.Log.Debugf("%s is also detected by OVAL", defpacks.def.Title)
+			logging.Log.Debugf("%s is also detected by OVAL", ovalContent.CveID)
 			cveContents = models.CveContents{}
 		}
 		vinfo.Confidences.AppendIfMissing(models.OvalMatch)
-		cveContents[ctype] = []models.CveContent{ovalContent}
+		cveContents[ctype] = []models.CveContent{*ovalContent}
 		vinfo.CveContents = cveContents
 	}
 
@@ -105,10 +102,15 @@ func (o SUSE) update(r *models.ScanResult, defpacks defPacks) {
 	}
 	vinfo.AffectedPackages = collectBinpkgFixstat.toPackStatuses()
 	vinfo.AffectedPackages.Sort()
-	r.ScannedCves[defpacks.def.Title] = vinfo
+	r.ScannedCves[ovalContent.CveID] = vinfo
 }
 
 func (o SUSE) convertToModel(def *ovalmodels.Definition) *models.CveContent {
+	if len(def.Advisory.Cves) != 1 {
+		logging.Log.Warnf("Unknown Oval format. Please register the issue as it needs to be investigated. https://github.com/vulsio/goval-dictionary/issues family: %s, defID: %s", o.family, def.DefinitionID)
+		return nil
+	}
+
 	refs := []models.Reference{}
 	for _, r := range def.References {
 		refs = append(refs, models.Reference{
@@ -117,23 +119,15 @@ func (o SUSE) convertToModel(def *ovalmodels.Definition) *models.CveContent {
 			RefID:  r.RefID,
 		})
 	}
-	cveCont := models.CveContent{
-		CveID:      def.Title,
-		Title:      def.Title,
-		Summary:    def.Description,
-		References: refs,
+	cve := def.Advisory.Cves[0]
+	score3, vec3 := parseCvss3(cve.Cvss3)
+	return &models.CveContent{
+		Title:         def.Title,
+		Summary:       def.Description,
+		CveID:         cve.CveID,
+		Cvss3Score:    score3,
+		Cvss3Vector:   vec3,
+		Cvss3Severity: cve.Impact,
+		References:    refs,
 	}
-
-	if 0 < len(def.Advisory.Cves) {
-		if len(def.Advisory.Cves) == 1 {
-			cve := def.Advisory.Cves[0]
-			score3, vec3 := parseCvss3(cve.Cvss3)
-			cveCont.Cvss3Score = score3
-			cveCont.Cvss3Vector = vec3
-			cveCont.Cvss3Severity = cve.Impact
-		} else {
-			logging.Log.Warnf("Unknown Oval format. Please register the issue as it needs to be investigated. https://github.com/future-architect/vuls/issues family: %s, defID: %s", o.family, def.DefinitionID)
-		}
-	}
-	return &cveCont
 }

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/trivy/pkg/report"
+	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/contrib/trivy/pkg"
@@ -27,13 +28,15 @@ func (p ParserV2) Parse(vulnJSON []byte) (result *models.ScanResult, err error) 
 		return nil, err
 	}
 
-	setScanResultMeta(scanResult, &report)
+	if err := setScanResultMeta(scanResult, &report); err != nil {
+		return nil, err
+	}
 	return scanResult, nil
 }
 
-func setScanResultMeta(scanResult *models.ScanResult, report *report.Report) {
+func setScanResultMeta(scanResult *models.ScanResult, report *report.Report) error {
+	const trivyTarget = "trivy-target"
 	for _, r := range report.Results {
-		const trivyTarget = "trivy-target"
 		if pkg.IsTrivySupportedOS(r.Type) {
 			scanResult.Family = r.Type
 			scanResult.ServerName = r.Target
@@ -57,4 +60,9 @@ func setScanResultMeta(scanResult *models.ScanResult, report *report.Report) {
 		scanResult.ScannedBy = "trivy"
 		scanResult.ScannedVia = "trivy"
 	}
+
+	if _, ok := scanResult.Optional[trivyTarget]; !ok {
+		return xerrors.Errorf("scanned images or libraries are not supported by Trivy. see https://aquasecurity.github.io/trivy/dev/vulnerability/detection/os/, https://aquasecurity.github.io/trivy/dev/vulnerability/detection/language/")
+	}
+	return nil
 }

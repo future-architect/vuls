@@ -999,8 +999,6 @@ github.com/hashicorp/serf v0.8.2/go.mod h1:6hOLApaqBFA1NXqRQAsxw9QxuDEvNxSQRwA/J
 github.com/hashicorp/serf v0.9.5/go.mod h1:UWDWwZeL5cuWDJdl0C6wrvrUwEqtQ4ZKBKKENpqIUyk=
 github.com/hashicorp/serf v0.9.6/go.mod h1:TXZNMjZQijwlDvp+r0b63xZ45H7JmCmgg4gpTwn9UV4=
 github.com/hashicorp/uuid v0.0.0-20160311170451-ebb0a03e909c/go.mod h1:fHzc09UnyJyqyW+bFuq864eh+wC7dj65aXmXLRe5to0=
-github.com/howeyc/gopass v0.0.0-20190910152052-7cb4b85ec19c h1:aY2hhxLhjEAbfXOx2nRJxCXezC6CO2V/yN+OCr1srtk=
-github.com/howeyc/gopass v0.0.0-20190910152052-7cb4b85ec19c/go.mod h1:lADxMC39cJJqL93Duh1xhAs4I2Zs8mKS89XWXFGp9cs=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/htcat/htcat v1.0.2/go.mod h1:i8ViQbjSi2+lJzM6Lx20FIxHENCz6mzJglK3HH06W3s=
 github.com/huandu/xstrings v1.3.2 h1:L18LIDzqlW6xN2rEkpdV8+oL/IXWJ1APd+vsdYy4Wdw=
@@ -1763,8 +1761,8 @@ github.com/vulsio/go-msfdb v0.2.1-0.20211028071756-4a9759bd9f14 h1:2uYZw2gQ0kymw
 github.com/vulsio/go-msfdb v0.2.1-0.20211028071756-4a9759bd9f14/go.mod h1:NGdcwWxCK/ES8vZ/crzREqI69S5gH1MivCpSp1pa2Rc=
 github.com/vulsio/gost v0.4.1-0.20211028071837-7ad032a6ffa8 h1:jqsECpLRp1EAXGOdhPxHzqYjWP5l980GjJ8s/AUYH/4=
 github.com/vulsio/gost v0.4.1-0.20211028071837-7ad032a6ffa8/go.mod h1:DaWLus8dJ4DdhVsBe5TAEEZ3IdoTMIb/z2StR4Bhb7Q=
-github.com/vulsio/goval-dictionary v0.7.1-0.20220212015000-031fc960b77c h1:LV/HjQRJGhJiKq6huf6ywF09OW+btoo0Y96y01vVp7o=
-github.com/vulsio/goval-dictionary v0.7.1-0.20220212015000-031fc960b77c/go.mod h1:BEvFNaiPCKwYWtITjn+hGJQT9N8WfigSd7NXHNnbxkI=
+github.com/vulsio/goval-dictionary v0.7.1-0.20220215081041-a472884d0afa h1:WU96+6NY7WOPcZBt52ySI3SXd0RHnCBpSBC5F/VL4i8=
+github.com/vulsio/goval-dictionary v0.7.1-0.20220215081041-a472884d0afa/go.mod h1:BEvFNaiPCKwYWtITjn+hGJQT9N8WfigSd7NXHNnbxkI=
 github.com/willf/bitset v1.1.11-0.20200630133818-d5bec3311243/go.mod h1:RjeCKbqT1RxIR/KWY6phxZiaY1IyutSBfGjNPySAYV4=
 github.com/willf/bitset v1.1.11/go.mod h1:83CECat5yLh5zVOf4P1ErAgKA5UDvKtgyUABdr3+MjI=
 github.com/xanzy/go-gitlab v0.31.0/go.mod h1:sPLojNBn68fMUWSxIJtdVVIP8uSBYqesTfDUseX11Ug=
