@@ -531,14 +531,16 @@ func parseSSHKeygen(stdout string) (string, string, error) {
 		// HashKnownHosts yes
 		if strings.HasPrefix(line, "|1|") {
 			ss := strings.Split(line, "|")
-			ss = strings.Split(ss[len(ss)-1], " ")
-			return ss[1], ss[2], nil
+			if ss := strings.Split(ss[len(ss)-1], " "); len(ss) == 3 {
+				return ss[1], ss[2], nil
+			}
 		} else {
-			ss := strings.Split(line, " ")
-			return ss[1], ss[2], nil
+			if ss := strings.Split(line, " "); len(ss) == 3 {
+				return ss[1], ss[2], nil
+			}
 		}
 	}
-	return "", "", xerrors.Errorf("Failed to parse ssh-keygen result. err: public key not found")
+	return "", "", xerrors.New("Failed to parse ssh-keygen result. err: public key not found")
 }
 
 func (s Scanner) detectContainerOSes(hosts []osTypeInterface) (actives, inactives []osTypeInterface) {
