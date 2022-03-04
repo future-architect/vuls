@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/aquasecurity/trivy/pkg/report"
+	"github.com/aquasecurity/trivy/pkg/types"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/constant"
@@ -18,7 +18,7 @@ type ParserV2 struct {
 
 // Parse trivy's JSON and convert to the Vuls struct
 func (p ParserV2) Parse(vulnJSON []byte) (result *models.ScanResult, err error) {
-	var report report.Report
+	var report types.Report
 	if err = json.Unmarshal(vulnJSON, &report); err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func (p ParserV2) Parse(vulnJSON []byte) (result *models.ScanResult, err error) 
 	return scanResult, nil
 }
 
-func setScanResultMeta(scanResult *models.ScanResult, report *report.Report) error {
+func setScanResultMeta(scanResult *models.ScanResult, report *types.Report) error {
 	const trivyTarget = "trivy-target"
 	for _, r := range report.Results {
 		if pkg.IsTrivySupportedOS(r.Type) {
