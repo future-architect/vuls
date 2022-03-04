@@ -7,13 +7,13 @@ import (
 	ftypes "github.com/aquasecurity/fanal/types"
 
 	"github.com/aquasecurity/fanal/analyzer/os"
-	"github.com/aquasecurity/trivy/pkg/report"
+	"github.com/aquasecurity/trivy/pkg/types"
 
 	"github.com/future-architect/vuls/models"
 )
 
 // Convert :
-func Convert(results report.Results) (result *models.ScanResult, err error) {
+func Convert(results types.Results) (result *models.ScanResult, err error) {
 	scanResult := &models.ScanResult{
 		JSONVersion: models.JSONVersion,
 		ScannedCves: models.VulnInfos{},
@@ -111,7 +111,7 @@ func Convert(results report.Results) (result *models.ScanResult, err error) {
 		}
 
 		// --list-all-pkgs flg of trivy will output all installed packages, so collect them.
-		if trivyResult.Class == report.ClassOSPkg {
+		if trivyResult.Class == types.ClassOSPkg {
 			for _, p := range trivyResult.Packages {
 				pkgs[p.Name] = models.Package{
 					Name:    p.Name,
@@ -130,7 +130,7 @@ func Convert(results report.Results) (result *models.ScanResult, err error) {
 					}
 				}
 			}
-		} else if trivyResult.Class == report.ClassLangPkg {
+		} else if trivyResult.Class == types.ClassLangPkg {
 			libScanner := uniqueLibraryScannerPaths[trivyResult.Target]
 			libScanner.Type = trivyResult.Type
 			for _, p := range trivyResult.Packages {
