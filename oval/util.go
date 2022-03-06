@@ -86,6 +86,8 @@ func (e *ovalResult) Sort() {
 }
 
 type request struct {
+	family            string
+	release           string
 	packName          string
 	versionRelease    string
 	newVersionRelease string
@@ -110,18 +112,54 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 	defer close(resChan)
 	defer close(errChan)
 
+	ovalFamily, err := GetFamilyInOval(r.Family)
+	if err != nil {
+		return relatedDefs, xerrors.Errorf("Failed to GetFamilyInOval. err: %w", err)
+	}
+	ovalRelease := r.Release
+	if r.Family == constant.CentOS {
+		ovalRelease = strings.TrimPrefix(r.Release, "stream")
+	}
 	go func() {
 		for _, pack := range r.Packages {
-			reqChan <- request{
+			req := request{
+				family:            ovalFamily,
+				release:           ovalRelease,
 				packName:          pack.Name,
 				versionRelease:    pack.FormatVer(),
-				newVersionRelease: pack.FormatVer(),
-				isSrcPack:         false,
+				newVersionRelease: pack.FormatNewVer(),
 				arch:              pack.Arch,
+				isSrcPack:         false,
 			}
+
+			switch ovalFamily {
+			case constant.RedHat, constant.Alma, constant.Rocky, constant.Oracle:
+				if pack.Vendor == "Fedora Project" {
+					switch util.Major(ovalRelease) {
+					case "7", "8":
+						req.family = constant.EPEL
+					default:
+						continue
+					}
+				}
+			case constant.Amazon:
+				if pack.Vendor == "Fedora Project" {
+					switch strings.Fields(ovalRelease)[0] {
+					case "2":
+						req.family = constant.EPEL
+						req.release = "7"
+					default:
+						continue
+					}
+				}
+			}
+
+			reqChan <- req
 		}
 		for _, pack := range r.SrcPackages {
 			reqChan <- request{
+				family:          ovalFamily,
+				release:         ovalRelease,
 				packName:        pack.Name,
 				binaryPackNames: pack.BinaryNames,
 				versionRelease:  pack.Version,
@@ -131,14 +169,6 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 		}
 	}()
 
-	ovalFamily, err := GetFamilyInOval(r.Family)
-	if err != nil {
-		return relatedDefs, xerrors.Errorf("Failed to GetFamilyInOval. err: %w", err)
-	}
-	ovalRelease := r.Release
-	if r.Family == constant.CentOS {
-		ovalRelease = strings.TrimPrefix(r.Release, "stream")
-	}
 	concurrency := 10
 	tasks := util.GenWorkers(concurrency)
 	for i := 0; i < nReq; i++ {
@@ -148,8 +178,8 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 				url, err := util.URLPathJoin(
 					url,
 					"packs",
-					ovalFamily,
-					ovalRelease,
+					req.family,
+					req.release,
 					req.packName,
 				)
 				if err != nil {
@@ -248,26 +278,6 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 }
 
 func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relatedDefs ovalResult, err error) {
-	requests := []request{}
-	for _, pack := range r.Packages {
-		requests = append(requests, request{
-			packName:          pack.Name,
-			versionRelease:    pack.FormatVer(),
-			newVersionRelease: pack.FormatNewVer(),
-			arch:              pack.Arch,
-			isSrcPack:         false,
-		})
-	}
-	for _, pack := range r.SrcPackages {
-		requests = append(requests, request{
-			packName:        pack.Name,
-			binaryPackNames: pack.BinaryNames,
-			versionRelease:  pack.Version,
-			arch:            pack.Arch,
-			isSrcPack:       true,
-		})
-	}
-
 	ovalFamily, err := GetFamilyInOval(r.Family)
 	if err != nil {
 		return relatedDefs, xerrors.Errorf("Failed to GetFamilyInOval. err: %w", err)
@@ -276,8 +286,57 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relate
 	if r.Family == constant.CentOS {
 		ovalRelease = strings.TrimPrefix(r.Release, "stream")
 	}
+
+	requests := []request{}
+	for _, pack := range r.Packages {
+		req := request{
+			family:            ovalFamily,
+			release:           ovalRelease,
+			packName:          pack.Name,
+			versionRelease:    pack.FormatVer(),
+			newVersionRelease: pack.FormatNewVer(),
+			arch:              pack.Arch,
+			isSrcPack:         false,
+		}
+
+		switch ovalFamily {
+		case constant.RedHat, constant.Alma, constant.Rocky, constant.Oracle:
+			if pack.Vendor == "Fedora Project" {
+				switch util.Major(ovalRelease) {
+				case "7", "8":
+					req.family = constant.EPEL
+				default:
+					continue
+				}
+			}
+		case constant.Amazon:
+			if pack.Vendor == "Fedora Project" {
+				switch strings.Fields(ovalRelease)[0] {
+				case "2":
+					req.family = constant.EPEL
+					req.release = "7"
+				default:
+					continue
+				}
+			}
+		}
+
+		requests = append(requests, req)
+	}
+	for _, pack := range r.SrcPackages {
+		requests = append(requests, request{
+			family:          ovalFamily,
+			release:         ovalRelease,
+			packName:        pack.Name,
+			binaryPackNames: pack.BinaryNames,
+			versionRelease:  pack.Version,
+			arch:            pack.Arch,
+			isSrcPack:       true,
+		})
+	}
+
 	for _, req := range requests {
-		definitions, err := driver.GetByPackName(ovalFamily, ovalRelease, req.packName, req.arch)
+		definitions, err := driver.GetByPackName(req.family, req.release, req.packName, req.arch)
 		if err != nil {
 			return relatedDefs, xerrors.Errorf("Failed to get %s OVAL info by package: %#v, err: %w", r.Family, req, err)
 		}
@@ -321,9 +380,9 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 		}
 
 		switch family {
-		case constant.Oracle, constant.Amazon, constant.Fedora:
+		case constant.Oracle, constant.Amazon, constant.Fedora, constant.EPEL:
 			if ovalPack.Arch == "" {
-				logging.Log.Infof("Arch is needed to detect Vulns for Amazon Linux, Oracle Linux and Fedora, but empty. You need refresh OVAL maybe. oval: %#v, defID: %s", ovalPack, def.DefinitionID)
+				logging.Log.Infof("Arch is needed to detect Vulns for Amazon Linux, Oracle Linux, Fedora and EPEL, but empty. You need refresh OVAL maybe. oval: %#v, defID: %s", ovalPack, def.DefinitionID)
 				continue
 			}
 		}
