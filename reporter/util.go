@@ -255,6 +255,7 @@ No CVE-IDs are found in updatable packages.
 		// v2max := vinfo.MaxCvss2Score().Value.Score
 		// v3max := vinfo.MaxCvss3Score().Value.Score
 
+		packnames := strings.Join(vinfo.AffectedPackages.Names(), ", ")
 		// packname := vinfo.AffectedPackages.FormatTuiSummary()
 		// packname += strings.Join(vinfo.CpeURIs, ", ")
 
@@ -263,12 +264,12 @@ No CVE-IDs are found in updatable packages.
 			exploits = "POC"
 		}
 
-		link := ""
-		if strings.HasPrefix(vinfo.CveID, "CVE-") {
-			link = fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", vinfo.CveID)
-		} else if strings.HasPrefix(vinfo.CveID, "WPVDBID-") {
-			link = fmt.Sprintf("https://wpscan.com/vulnerabilities/%s", strings.TrimPrefix(vinfo.CveID, "WPVDBID-"))
-		}
+		// link := ""
+		// if strings.HasPrefix(vinfo.CveID, "CVE-") {
+		// 	link = fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", vinfo.CveID)
+		// } else if strings.HasPrefix(vinfo.CveID, "WPVDBID-") {
+		// 	link = fmt.Sprintf("https://wpscan.com/vulnerabilities/%s", strings.TrimPrefix(vinfo.CveID, "WPVDBID-"))
+		// }
 
 		data = append(data, []string{
 			vinfo.CveIDDiffFormat(),
@@ -279,7 +280,7 @@ No CVE-IDs are found in updatable packages.
 			exploits,
 			fmt.Sprintf("%9s", vinfo.AlertDict.FormatSource()),
 			fmt.Sprintf("%7s", vinfo.PatchStatus(r.Packages)),
-			link,
+			packnames,
 		})
 	}
 
@@ -294,7 +295,8 @@ No CVE-IDs are found in updatable packages.
 		"PoC",
 		"Alert",
 		"Fixed",
-		"NVD",
+		// "NVD",
+		"Packages",
 	})
 	table.SetBorder(true)
 	table.AppendBulk(data)
