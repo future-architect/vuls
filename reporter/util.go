@@ -299,6 +299,7 @@ No CVE-IDs are found in updatable packages.
 		"Packages",
 	})
 	table.SetBorder(true)
+	table.SetRowLine(true)
 	table.AppendBulk(data)
 	table.Render()
 	return fmt.Sprintf("%s\n%s", header, b.String())
