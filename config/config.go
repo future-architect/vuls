@@ -211,9 +211,11 @@ type WpScanConf struct {
 
 // ServerInfo has SSH Info, additional CPE packages to scan.
 type ServerInfo struct {
+	BaseName           string                      `toml:"-" json:"-"`
 	ServerName         string                      `toml:"-" json:"serverName,omitempty"`
 	User               string                      `toml:"user,omitempty" json:"user,omitempty"`
 	Host               string                      `toml:"host,omitempty" json:"host,omitempty"`
+	IgnoreIPAddresses  []string                    `toml:"ignoreIPAddresses,omitempty" json:"ignoreIPAddresses,omitempty"`
 	JumpServer         []string                    `toml:"jumpServer,omitempty" json:"jumpServer,omitempty"`
 	Port               string                      `toml:"port,omitempty" json:"port,omitempty"`
 	SSHConfigPath      string                      `toml:"sshConfigPath,omitempty" json:"sshConfigPath,omitempty"`
