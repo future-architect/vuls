@@ -185,12 +185,12 @@ func printConfigToml(ips []string) (err error) {
 #keyPath            = "/home/username/.ssh/id_rsa"
 #scanMode           = ["fast", "fast-root", "deep", "offline"]
 #scanModules        = ["ospkg", "wordpress", "lockfile", "port"]
+#lockfiles = ["/path/to/package-lock.json"]
 #cpeNames = [
 #  "cpe:/a:rubyonrails:ruby_on_rails:4.2.1",
 #]
 #owaspDCXMLPath     = "/tmp/dependency-check-report.xml"
 #ignoreCves         = ["CVE-2014-6271"]
-#containersOnly     = false
 #containerType      = "docker" #or "lxd" or "lxc" default: docker
 #containersIncluded = ["${running}"]
 #containersExcluded = ["container_name_a"]
@@ -209,6 +209,8 @@ host                = "{{$ip}}"
 #scanModules        = ["ospkg", "wordpress", "lockfile", "port"]
 #type               = "pseudo"
 #memo               = "DB Server"
+#findLock = true
+#lockfiles = ["/path/to/package-lock.json"]
 #cpeNames           = [ "cpe:/a:rubyonrails:ruby_on_rails:4.2.1" ]
 #owaspDCXMLPath     = "/path/to/dependency-check-report.xml"
 #ignoreCves         = ["CVE-2014-0160"]
