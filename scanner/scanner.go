@@ -456,7 +456,7 @@ func validateSSHConfig(c *config.ServerInfo) error {
 	sshKeyScanArgs = append(sshKeyScanArgs, fmt.Sprintf("%s >> %s", hostname, knownHostsPaths[0]))
 	sshConnCmd := fmt.Sprintf("ssh %s", strings.Join(sshConnArgs, " "))
 	sshKeyScancmd := fmt.Sprintf("ssh-keyscan %s", strings.Join(sshKeyScanArgs, " "))
-	return xerrors.Errorf("Failed to find the host in known_hosts. Plaese exec `$ %s` or `$ %s`", sshConnCmd, sshKeyScancmd)
+	return xerrors.Errorf("Failed to find the host in known_hosts. Please exec `$ %s` or `$ %s`", sshConnCmd, sshKeyScancmd)
 }
 
 func (s Scanner) detectContainerOSes(hosts []osTypeInterface) (actives, inactives []osTypeInterface) {
