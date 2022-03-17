@@ -137,17 +137,24 @@ var LibraryMap = map[string]string{
 	"Gemfile.lock":       "ruby",
 	"Cargo.lock":         "rust",
 	"composer.lock":      "php",
+	"requirements.txt":   "python",
 	"Pipfile.lock":       "python",
 	"poetry.lock":        "python",
 	"packages.lock.json": ".net",
+	"packages.config":    ".net",
 	"go.sum":             "gomod",
+	"pom.xml":            "java",
+	"*.jar":              "java",
+	"*.war":              "java",
+	"*.ear":              "java",
+	"*.par":              "java",
 }
 
 // GetLibraryKey returns target library key
 func (s LibraryScanner) GetLibraryKey() string {
 	fileName := filepath.Base(s.LockfilePath)
 	switch s.Type {
-	case "jar", "war", "ear":
+	case "jar", "war", "ear", "par":
 		return "java"
 	}
 	return LibraryMap[fileName]

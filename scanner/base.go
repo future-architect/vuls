@@ -592,12 +592,12 @@ func (l *base) scanLibraries() (err error) {
 	if l.ServerInfo.FindLock {
 		findopt := ""
 		for filename := range models.LibraryMap {
-			findopt += fmt.Sprintf("-name %q -o ", "*"+filename)
+			findopt += fmt.Sprintf("-name %q -o ", filename)
 		}
 
 		// delete last "-o "
-		// find / -name "*package-lock.json" -o -name "*yarn.lock" ... 2>&1 | grep -v "find: "
-		cmd := fmt.Sprintf(`find / ` + findopt[:len(findopt)-3] + ` 2>&1 | grep -v "find: "`)
+		// find / -type f -and \( -name "package-lock.json" -o -name "yarn.lock" ... \) 2>&1 | grep -v "find: "
+		cmd := fmt.Sprintf(`find / -type f -and \( ` + findopt[:len(findopt)-3] + ` \) 2>&1 | grep -v "find: "`)
 		r := exec(l.ServerInfo, cmd, noSudo)
 		if r.ExitStatus != 0 && r.ExitStatus != 1 {
 			return xerrors.Errorf("Failed to find lock files")
