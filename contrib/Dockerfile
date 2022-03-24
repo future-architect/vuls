@@ -5,10 +5,14 @@ RUN apk add --no-cache \
         make \
         gcc \
         musl-dev
+RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.45.0
 
 ENV REPOSITORY github.com/future-architect/vuls
 COPY . $GOPATH/src/$REPOSITORY
-RUN cd $GOPATH/src/$REPOSITORY && make install
+RUN cd $GOPATH/src/$REPOSITORY && \
+        make build-scanner && mv vuls $GOPATH/bin && \
+        make build-trivy-to-vuls && mv trivy-to-vuls $GOPATH/bin && \
+        make build-future-vuls && mv future-vuls $GOPATH/bin
 
 FROM alpine:3.15
 
@@ -22,11 +26,8 @@ RUN apk add --no-cache \
         nmap \
     && mkdir -p $WORKDIR $LOGDIR
 
-COPY --from=builder /go/bin/vuls /usr/local/bin/
+COPY --from=builder /go/bin/vuls /go/bin/trivy-to-vuls /go/bin/future-vuls /usr/local/bin/
 
 VOLUME ["$WORKDIR", "$LOGDIR"]
 WORKDIR $WORKDIR
 ENV PWD $WORKDIR
-
-ENTRYPOINT ["vuls"]
-CMD ["--help"]
