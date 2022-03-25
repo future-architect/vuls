@@ -464,9 +464,16 @@ No CVE-IDs are found in updatable packages.
 		for _, url := range cweURLs {
 			data = append(data, []string{"CWE", url})
 		}
+
+		m := map[string]struct{}{}
 		for _, exploit := range vuln.Exploits {
+			if _, ok := m[exploit.URL]; ok {
+				continue
+			}
 			data = append(data, []string{string(exploit.ExploitType), exploit.URL})
+			m[exploit.URL] = struct{}{}
 		}
+
 		for _, url := range top10URLs {
 			data = append(data, []string{"OWASP Top10", url})
 		}

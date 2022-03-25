@@ -781,13 +781,18 @@ func setChangelogLayout(g *gocui.Gui) error {
 			lines = append(lines, adv.Format())
 		}
 
+		m := map[string]struct{}{}
 		if len(vinfo.Exploits) != 0 {
 			lines = append(lines, "\n",
-				"Exploit Codes",
+				"PoC",
 				"=============",
 			)
 			for _, exploit := range vinfo.Exploits {
+				if _, ok := m[exploit.URL]; ok {
+					continue
+				}
 				lines = append(lines, fmt.Sprintf("* [%s](%s)", exploit.Description, exploit.URL))
+				m[exploit.URL] = struct{}{}
 			}
 		}
 
