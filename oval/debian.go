@@ -395,6 +395,9 @@ func (o Ubuntu) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 			"linux-virtual",
 		}
 		return o.fillWithOval(r, kernelNamesInOval)
+	case "22":
+		kernelNamesInOval := []string{}
+		return o.fillWithOval(r, kernelNamesInOval)
 	}
 	return 0, fmt.Errorf("Ubuntu %s is not support for now", r.Release)
 }

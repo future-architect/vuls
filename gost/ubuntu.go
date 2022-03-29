@@ -25,9 +25,12 @@ func (ubu Ubuntu) supported(version string) bool {
 		"1404": "trusty",
 		"1604": "xenial",
 		"1804": "bionic",
+		"1910": "eoan",
 		"2004": "focal",
 		"2010": "groovy",
 		"2104": "hirsute",
+		"2110": "impish",
+		"2204": "jammy",
 	}[version]
 	return ok
 }
