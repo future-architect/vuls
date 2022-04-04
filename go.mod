@@ -7,10 +7,10 @@ require (
 	github.com/BurntSushi/toml v1.0.0
 	github.com/Ullaakut/nmap/v2 v2.1.2-0.20210406060955-59a52fe80a4f
 	github.com/VividCortex/ewma v1.2.0 // indirect
-	github.com/aquasecurity/fanal v0.0.0-20220303080309-254063f95ea0
+	github.com/aquasecurity/fanal v0.0.0-20220324154234-b2df5b98f8cd
 	github.com/aquasecurity/go-dep-parser v0.0.0-20220302151315-ff6d77c26988
-	github.com/aquasecurity/trivy v0.24.2
-	github.com/aquasecurity/trivy-db v0.0.0-20220130223604-df65ebde46f4
+	github.com/aquasecurity/trivy v0.25.0
+	github.com/aquasecurity/trivy-db v0.0.0-20220327074450-74195d9604b2
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/aws/aws-sdk-go v1.43.8
 	github.com/boltdb/bolt v1.3.1
@@ -145,6 +145,7 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064 // indirect
+	golang.org/x/exp v0.0.0-20220321124402-2d6d886f8a82 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
