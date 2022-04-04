@@ -237,6 +237,8 @@ func ParseInstalledPkgs(distro config.Distro, kernel models.Kernel, pkgList stri
 		osType = &amazon{redhatBase: redhatBase{base: base}}
 	case constant.Fedora:
 		osType = &fedora{redhatBase: redhatBase{base: base}}
+	case constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
+		osType = &suse{redhatBase: redhatBase{base: base}}
 	default:
 		return models.Packages{}, models.SrcPackages{}, xerrors.Errorf("Server mode for %s is not implemented yet", base.Distro.Family)
 	}
