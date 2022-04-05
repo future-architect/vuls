@@ -18,6 +18,7 @@ func NewPseudo(family string) Pseudo {
 	}
 }
 
+// FillWithOval is a mock function for operating systems that do not use OVAL
 func (pse Pseudo) FillWithOval(_ *models.ScanResult) (int, error) {
 	return 0, nil
 }
