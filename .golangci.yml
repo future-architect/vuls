@@ -1,5 +1,9 @@
 name: golang-ci
 
+run:
+  timeout: 10m
+  go: '1.18'
+  
 linters-settings:
   revive:
     # see https://github.com/mgechev/revive#available-rules for details.

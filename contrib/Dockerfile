@@ -5,7 +5,7 @@ RUN apk add --no-cache \
         make \
         gcc \
         musl-dev
-RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.45.0
+RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
 ENV REPOSITORY github.com/future-architect/vuls
 COPY . $GOPATH/src/$REPOSITORY
