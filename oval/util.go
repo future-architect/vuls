@@ -118,6 +118,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 				newVersionRelease: pack.FormatVer(),
 				isSrcPack:         false,
 				arch:              pack.Arch,
+				modularityLabel:   pack.ModularityLabel,
 			}
 		}
 		for _, pack := range r.SrcPackages {
@@ -127,6 +128,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 				versionRelease:  pack.Version,
 				isSrcPack:       true,
 				// arch:            pack.Arch,
+				modularityLabel: pack.ModularityLabel,
 			}
 		}
 	}()
@@ -168,7 +170,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 		select {
 		case res := <-resChan:
 			for _, def := range res.defs {
-				affected, notFixedYet, fixedIn, err := isOvalDefAffected(def, res.request, ovalFamily, r.RunningKernel, r.EnabledDnfModules)
+				affected, notFixedYet, fixedIn, err := isOvalDefAffected(def, res.request, ovalFamily, r.RunningKernel)
 				if err != nil {
 					errs = append(errs, err)
 					continue
@@ -255,6 +257,7 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relate
 			versionRelease:    pack.FormatVer(),
 			newVersionRelease: pack.FormatNewVer(),
 			arch:              pack.Arch,
+			modularityLabel:   pack.ModularityLabel,
 			isSrcPack:         false,
 		})
 	}
@@ -264,6 +267,7 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relate
 			binaryPackNames: pack.BinaryNames,
 			versionRelease:  pack.Version,
 			arch:            pack.Arch,
+			modularityLabel: pack.ModularityLabel,
 			isSrcPack:       true,
 		})
 	}
@@ -282,7 +286,7 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relate
 			return relatedDefs, xerrors.Errorf("Failed to get %s OVAL info by package: %#v, err: %w", r.Family, req, err)
 		}
 		for _, def := range definitions {
-			affected, notFixedYet, fixedIn, err := isOvalDefAffected(def, req, ovalFamily, r.RunningKernel, r.EnabledDnfModules)
+			affected, notFixedYet, fixedIn, err := isOvalDefAffected(def, req, ovalFamily, r.RunningKernel)
 			if err != nil {
 				return relatedDefs, xerrors.Errorf("Failed to exec isOvalAffected. err: %w", err)
 			}
@@ -312,9 +316,7 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relate
 	return
 }
 
-var modularVersionPattern = regexp.MustCompile(`.+\.module(?:\+el|_f)\d{1,2}.*`)
-
-func isOvalDefAffected(def ovalmodels.Definition, req request, family string, running models.Kernel, enabledMods []string) (affected, notFixedYet bool, fixedIn string, err error) {
+func isOvalDefAffected(def ovalmodels.Definition, req request, family string, running models.Kernel) (affected, notFixedYet bool, fixedIn string, err error) {
 	for _, ovalPack := range def.AffectedPacks {
 		if req.packName != ovalPack.Name {
 			continue
@@ -337,33 +339,27 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family string, ru
 			continue
 		}
 
-		// There is a modular package and a non-modular package with the same name. (e.g. fedora 35 community-mysql)
-		if ovalPack.ModularityLabel == "" && modularVersionPattern.MatchString(req.versionRelease) {
+		if ovalPack.ModularityLabel != "" && req.modularityLabel == "" {
 			continue
-		} else if ovalPack.ModularityLabel != "" && !modularVersionPattern.MatchString(req.versionRelease) {
+		} else if ovalPack.ModularityLabel == "" && req.modularityLabel != "" {
 			continue
-		}
-
-		isModularityLabelEmptyOrSame := false
-		if ovalPack.ModularityLabel != "" {
-			// expect ovalPack.ModularityLabel e.g. RedHat: nginx:1.16, Fedora: mysql:8.0:3520211031142409:f27b74a8
+		} else if ovalPack.ModularityLabel != "" && req.modularityLabel != "" {
+			// expect modularityLabel e.g. nginx:1.16, mysql:8.0:3520211031142409:f27b74a8
 			ss := strings.Split(ovalPack.ModularityLabel, ":")
 			if len(ss) < 2 {
 				logging.Log.Warnf("Invalid modularitylabel format in oval package. Maybe it is necessary to fix modularitylabel of goval-dictionary. expected: ${name}:${stream}(:${version}:${context}:${arch}), actual: %s", ovalPack.ModularityLabel)
 				continue
 			}
-			modularityNameStreamLabel := fmt.Sprintf("%s:%s", ss[0], ss[1])
-			for _, mod := range enabledMods {
-				if mod == modularityNameStreamLabel {
-					isModularityLabelEmptyOrSame = true
-					break
-				}
+			ovalModularityNameStreamLabel := fmt.Sprintf("%s:%s", ss[0], ss[1])
+			ss = strings.Split(req.modularityLabel, ":")
+			if len(ss) < 2 {
+				logging.Log.Warnf("Invalid modularitylabel format in request package. Maybe it is necessary to fix modularitylabel of rpm. expected: ${name}:${stream}(:${version}:${context}:${arch}), actual: %s", req.modularityLabel)
+				continue
 			}
-		} else {
-			isModularityLabelEmptyOrSame = true
-		}
-		if !isModularityLabelEmptyOrSame {
-			continue
+			reqModularityNameStreamLabel := fmt.Sprintf("%s:%s", ss[0], ss[1])
+			if ovalModularityNameStreamLabel != reqModularityNameStreamLabel {
+				continue
+			}
 		}
 
 		if running.Release != "" {

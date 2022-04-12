@@ -81,6 +81,7 @@ type Package struct {
 	NewRelease       string               `json:"newRelease"`
 	Arch             string               `json:"arch"`
 	Repository       string               `json:"repository"`
+	ModularityLabel  string               `json:"modularitylabel"`
 	Changelog        *Changelog           `json:"changelog,omitempty"`
 	AffectedProcs    []AffectedProcess    `json:",omitempty"`
 	NeedRestartProcs []NeedRestartProcess `json:",omitempty"`
@@ -226,10 +227,11 @@ type NeedRestartProcess struct {
 // so it is also needed to capture source version for OVAL version comparison.
 // https://github.com/future-architect/vuls/issues/504
 type SrcPackage struct {
-	Name        string   `json:"name"`
-	Version     string   `json:"version"`
-	Arch        string   `json:"arch"`
-	BinaryNames []string `json:"binaryNames"`
+	Name            string   `json:"name"`
+	Version         string   `json:"version"`
+	Arch            string   `json:"arch"`
+	ModularityLabel string   `json:"modularitylabel"`
+	BinaryNames     []string `json:"binaryNames"`
 }
 
 // AddBinaryName add the name if not exists
