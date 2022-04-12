@@ -500,25 +500,25 @@ func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, mod
 }
 
 func (o *redhatBase) parseInstalledPackagesLine(line string) (*models.Package, error) {
-	fields := strings.Fields(line)
-	if len(fields) != 5 {
-		return nil,
-			xerrors.Errorf("Failed to parse package line: %s", line)
+	ss := strings.SplitN(line, " ", 6)
+	if len(ss) != 6 {
+		return nil, xerrors.Errorf("Failed to parse package line: %s", line)
 	}
 
 	ver := ""
-	epoch := fields[1]
+	epoch := ss[1]
 	if epoch == "0" || epoch == "(none)" {
-		ver = fields[2]
+		ver = ss[2]
 	} else {
-		ver = fmt.Sprintf("%s:%s", epoch, fields[2])
+		ver = fmt.Sprintf("%s:%s", epoch, ss[2])
 	}
 
 	return &models.Package{
-		Name:    fields[0],
+		Name:    ss[0],
 		Version: ver,
-		Release: fields[3],
-		Arch:    fields[4],
+		Release: ss[3],
+		Arch:    ss[4],
+		Vendor:  strings.TrimSuffix(ss[5], "\r"),
 	}, nil
 }
 
@@ -783,8 +783,8 @@ func (o *redhatBase) getOwnerPkgs(paths []string) (names []string, _ error) {
 }
 
 func (o *redhatBase) rpmQa() string {
-	const old = `rpm -qa --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n"`
-	const new = `rpm -qa --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n"`
+	const old = `rpm -qa --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH} %{VENDOR}\n"`
+	const new = `rpm -qa --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH} %{VENDOR}\n"`
 	switch o.Distro.Family {
 	case constant.OpenSUSE:
 		if o.Distro.Release == "tumbleweed" {
@@ -807,8 +807,8 @@ func (o *redhatBase) rpmQa() string {
 }
 
 func (o *redhatBase) rpmQf() string {
-	const old = `rpm -qf --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n" `
-	const new = `rpm -qf --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n" `
+	const old = `rpm -qf --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH} %{VENDOR}\n" `
+	const new = `rpm -qf --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH} %{VENDOR}\n" `
 	switch o.Distro.Family {
 	case constant.OpenSUSE:
 		if o.Distro.Release == "tumbleweed" {

@@ -80,6 +80,7 @@ type Package struct {
 	NewVersion       string               `json:"newVersion"`
 	NewRelease       string               `json:"newRelease"`
 	Arch             string               `json:"arch"`
+	Vendor           string               `json:"vendor"`
 	Repository       string               `json:"repository"`
 	Changelog        *Changelog           `json:"changelog,omitempty"`
 	AffectedProcs    []AffectedProcess    `json:",omitempty"`

@@ -32,6 +32,9 @@ const (
 	// Oracle is
 	Oracle = "oracle"
 
+	// EPEL is
+	EPEL = "epel"
+
 	// FreeBSD is
 	FreeBSD = "freebsd"
 
