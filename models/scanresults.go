@@ -436,23 +436,23 @@ func (r *ScanResult) SortForJSONOutput() {
 // CweDict is a dictionary for CWE
 type CweDict map[string]CweDictEntry
 
+// AttentionCWE has OWASP TOP10, CWE TOP25, CWE/SANS TOP25 rank and url
+type AttentionCWE struct {
+	Rank string
+	URL  string
+}
+
 // Get the name, url, top10URL for the specified cweID, lang
-func (c CweDict) Get(cweID, lang string) (name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL string) {
+func (c CweDict) Get(cweID, lang string) (name, url string, owasp, cwe25, sans map[string]AttentionCWE) {
 	cweNum := strings.TrimPrefix(cweID, "CWE-")
+	dict, ok := c[cweNum]
+	if !ok {
+		return
+	}
+
+	owasp, cwe25, sans = fillAttentionCwe(dict, lang)
 	switch lang {
 	case "ja":
-		if dict, ok := c[cweNum]; ok && dict.OwaspTopTen2017 != "" {
-			top10Rank = dict.OwaspTopTen2017
-			top10URL = cwe.OwaspTopTen2017GitHubURLJa[dict.OwaspTopTen2017]
-		}
-		if dict, ok := c[cweNum]; ok && dict.CweTopTwentyfive2019 != "" {
-			cweTop25Rank = dict.CweTopTwentyfive2019
-			cweTop25URL = cwe.CweTopTwentyfive2019URL
-		}
-		if dict, ok := c[cweNum]; ok && dict.SansTopTwentyfive != "" {
-			sansTop25Rank = dict.SansTopTwentyfive
-			sansTop25URL = cwe.SansTopTwentyfiveURL
-		}
 		if dict, ok := cwe.CweDictJa[cweNum]; ok {
 			name = dict.Name
 			url = fmt.Sprintf("http://jvndb.jvn.jp/ja/cwe/%s.html", cweID)
@@ -463,18 +463,6 @@ func (c CweDict) Get(cweID, lang string) (name, url, top10Rank, top10URL, cweTop
 			url = fmt.Sprintf("https://cwe.mitre.org/data/definitions/%s.html", cweID)
 		}
 	default:
-		if dict, ok := c[cweNum]; ok && dict.OwaspTopTen2017 != "" {
-			top10Rank = dict.OwaspTopTen2017
-			top10URL = cwe.OwaspTopTen2017GitHubURLEn[dict.OwaspTopTen2017]
-		}
-		if dict, ok := c[cweNum]; ok && dict.CweTopTwentyfive2019 != "" {
-			cweTop25Rank = dict.CweTopTwentyfive2019
-			cweTop25URL = cwe.CweTopTwentyfive2019URL
-		}
-		if dict, ok := c[cweNum]; ok && dict.SansTopTwentyfive != "" {
-			sansTop25Rank = dict.SansTopTwentyfive
-			sansTop25URL = cwe.SansTopTwentyfiveURL
-		}
 		url = fmt.Sprintf("https://cwe.mitre.org/data/definitions/%s.html", cweID)
 		if dict, ok := cwe.CweDictEn[cweNum]; ok {
 			name = dict.Name
@@ -483,11 +471,47 @@ func (c CweDict) Get(cweID, lang string) (name, url, top10Rank, top10URL, cweTop
 	return
 }
 
+func fillAttentionCwe(dict CweDictEntry, lang string) (owasp, cwe25, sans map[string]AttentionCWE) {
+	owasp, cwe25, sans = map[string]AttentionCWE{}, map[string]AttentionCWE{}, map[string]AttentionCWE{}
+	switch lang {
+	case "ja":
+		for year, rank := range dict.OwaspTopTens {
+			owasp[year] = AttentionCWE{
+				Rank: rank,
+				URL:  cwe.OwaspTopTenURLsJa[year][rank],
+			}
+		}
+	default:
+		for year, rank := range dict.OwaspTopTens {
+			owasp[year] = AttentionCWE{
+				Rank: rank,
+				URL:  cwe.OwaspTopTenURLsEn[year][rank],
+			}
+		}
+	}
+
+	for year, rank := range dict.CweTopTwentyfives {
+		cwe25[year] = AttentionCWE{
+			Rank: rank,
+			URL:  cwe.CweTopTwentyfiveURLs[year],
+		}
+	}
+
+	for year, rank := range dict.SansTopTwentyfives {
+		sans[year] = AttentionCWE{
+			Rank: rank,
+			URL:  cwe.SansTopTwentyfiveURLs[year],
+		}
+	}
+
+	return
+}
+
 // CweDictEntry is a entry of CWE
 type CweDictEntry struct {
-	En                   *cwe.Cwe `json:"en,omitempty"`
-	Ja                   *cwe.Cwe `json:"ja,omitempty"`
-	OwaspTopTen2017      string   `json:"owaspTopTen2017"`
-	CweTopTwentyfive2019 string   `json:"cweTopTwentyfive2019"`
-	SansTopTwentyfive    string   `json:"sansTopTwentyfive"`
+	En                 *cwe.Cwe          `json:"en,omitempty"`
+	Ja                 *cwe.Cwe          `json:"ja,omitempty"`
+	OwaspTopTens       map[string]string `json:"owaspTopTens"`
+	CweTopTwentyfives  map[string]string `json:"cweTopTwentyfives"`
+	SansTopTwentyfives map[string]string `json:"sansTopTwentyfives"`
 }
