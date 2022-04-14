@@ -301,3 +301,30 @@ func (cnf *KEVulnConf) Init() {
 	cnf.setDefault("go-kev.sqlite3")
 	cnf.DebugSQL = Conf.DebugSQL
 }
+
+// CtiConf is go-cti config
+type CtiConf struct {
+	VulnDict
+}
+
+const ctiDBType = "CTI_TYPE"
+const ctiDBURL = "CTI_URL"
+const ctiDBPATH = "CTI_SQLITE3_PATH"
+
+// Init set options with the following priority.
+// 1. Environment variable
+// 2. config.toml
+func (cnf *CtiConf) Init() {
+	cnf.Name = "cti"
+	if os.Getenv(ctiDBType) != "" {
+		cnf.Type = os.Getenv(ctiDBType)
+	}
+	if os.Getenv(ctiDBURL) != "" {
+		cnf.URL = os.Getenv(ctiDBURL)
+	}
+	if os.Getenv(ctiDBPATH) != "" {
+		cnf.SQLite3Path = os.Getenv(ctiDBPATH)
+	}
+	cnf.setDefault("go-cti.sqlite3")
+	cnf.DebugSQL = Conf.DebugSQL
+}

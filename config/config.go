@@ -42,6 +42,7 @@ type Config struct {
 	Exploit    ExploitConf    `json:"exploit,omitempty"`
 	Metasploit MetasploitConf `json:"metasploit,omitempty"`
 	KEVuln     KEVulnConf     `json:"kevuln,omitempty"`
+	Cti        CtiConf        `json:"cti,omitempty"`
 
 	Slack      SlackConf      `json:"-"`
 	EMail      SMTPConf       `json:"-"`
@@ -178,6 +179,7 @@ func (c *Config) ValidateOnReport() bool {
 		&Conf.Exploit,
 		&Conf.Metasploit,
 		&Conf.KEVuln,
+		&Conf.Cti,
 	} {
 		if err := cnf.Validate(); err != nil {
 			errs = append(errs, xerrors.Errorf("Failed to validate %s: %+v", cnf.GetName(), err))

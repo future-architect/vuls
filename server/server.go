@@ -99,6 +99,11 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
 
+	if err := detector.FillWithCTI(&r, config.Conf.Cti, config.Conf.LogOpts); err != nil {
+		logging.Log.Errorf("Failed to fill with Cyber Threat Intelligences: %+v", err)
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+	}
+
 	detector.FillCweDict(&r)
 
 	// set ReportedAt to current time when it's set to the epoch, ensures that ReportedAt will be set

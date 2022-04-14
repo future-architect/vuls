@@ -9,9 +9,11 @@ import (
 	"text/template"
 	"time"
 
+	"golang.org/x/exp/slices"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/cti"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -843,6 +845,32 @@ func setChangelogLayout(g *gocui.Gui) error {
 					lines = append(lines, fmt.Sprintf("* [JPCERT](%s)", alert.URL))
 				}
 			}
+		}
+
+		if len(vinfo.Ctis) > 0 {
+			lines = append(lines, "\n",
+				"Cyber Threat Intelligence",
+				"=========================",
+			)
+
+			attacks := []string{}
+			capecs := []string{}
+			for _, techniqueID := range vinfo.Ctis {
+				technique, ok := cti.TechniqueDict[techniqueID]
+				if !ok {
+					continue
+				}
+				if strings.HasPrefix(techniqueID, "CAPEC-") {
+					capecs = append(capecs, fmt.Sprintf("* %s", technique.Name))
+				} else {
+					attacks = append(attacks, fmt.Sprintf("* %s", technique.Name))
+				}
+			}
+			slices.Sort(attacks)
+			slices.Sort(capecs)
+			lines = append(lines, append([]string{"MITRE ATT&CK:"}, attacks...)...)
+			lines = append(lines, "\n")
+			lines = append(lines, append([]string{"CAPEC:"}, capecs...)...)
 		}
 
 		if currentScanResult.Config.Scan.Servers[currentScanResult.ServerName].Mode.IsDeep() {
