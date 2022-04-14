@@ -3,13 +3,13 @@ module github.com/future-architect/vuls
 go 1.18
 
 require (
-	github.com/Azure/azure-sdk-for-go v62.0.0+incompatible
-	github.com/BurntSushi/toml v1.0.0
+	github.com/Azure/azure-sdk-for-go v63.0.0+incompatible
+	github.com/BurntSushi/toml v1.1.0
 	github.com/Ullaakut/nmap/v2 v2.1.2-0.20210406060955-59a52fe80a4f
 	github.com/VividCortex/ewma v1.2.0 // indirect
-	github.com/aquasecurity/fanal v0.0.0-20220404155252-996e81f58b02
-	github.com/aquasecurity/go-dep-parser v0.0.0-20220302151315-ff6d77c26988
-	github.com/aquasecurity/trivy v0.25.1
+	github.com/aquasecurity/fanal v0.0.0-20220406084015-9cc93a8482b8
+	github.com/aquasecurity/go-dep-parser v0.0.0-20220406074731-71021a481237
+	github.com/aquasecurity/trivy v0.25.4
 	github.com/aquasecurity/trivy-db v0.0.0-20220327074450-74195d9604b2
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/aws/aws-sdk-go v1.43.31
