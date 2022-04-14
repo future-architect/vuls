@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -627,7 +626,7 @@ func (l *base) scanLibraries() (err error) {
 				return xerrors.Errorf("Failed to get target file info. err: %w, filepath: %s", err, path)
 			}
 			f.Filemode = fileinfo.Mode().Perm()
-			f.Contents, err = ioutil.ReadFile(path)
+			f.Contents, err = os.ReadFile(path)
 			if err != nil {
 				return xerrors.Errorf("Failed to read target file contents. err: %w, filepath: %s", err, path)
 			}

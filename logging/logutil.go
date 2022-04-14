@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -36,7 +35,7 @@ type Logger struct {
 
 func init() {
 	log := logrus.New()
-	log.Out = ioutil.Discard
+	log.Out = io.Discard
 	fields := logrus.Fields{"prefix": ""}
 	Log = Logger{Entry: *log.WithFields(fields)}
 }
@@ -101,7 +100,7 @@ func NewCustomLogger(debug, quiet, logToFile bool, logDir, logMsgAnsiColor, serv
 			}
 		}
 	} else if quiet {
-		log.Out = ioutil.Discard
+		log.Out = io.Discard
 	} else {
 		log.Out = os.Stderr
 	}

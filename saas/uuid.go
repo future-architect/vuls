@@ -3,7 +3,6 @@ package saas
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"strings"
@@ -139,7 +138,7 @@ func writeToFile(cnf config.Config, path string) error {
 		"# See README for details: https://vuls.io/docs/en/usage-settings.html",
 		str)
 
-	return ioutil.WriteFile(realPath, []byte(str), 0600)
+	return os.WriteFile(realPath, []byte(str), 0600)
 }
 
 func cleanForTOMLEncoding(server config.ServerInfo, def config.ServerInfo) config.ServerInfo {

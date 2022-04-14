@@ -2,7 +2,7 @@ package parser
 
 import (
 	"encoding/xml"
-	"io/ioutil"
+	"io"
 	"os"
 	"strings"
 
@@ -41,7 +41,7 @@ func Parse(path string) ([]string, error) {
 	}
 	defer file.Close()
 
-	b, err := ioutil.ReadAll(file)
+	b, err := io.ReadAll(file)
 	if err != nil {
 		log.Warnf("Failed to read OWASP Dependency Check XML: %s", path)
 		return []string{}, nil

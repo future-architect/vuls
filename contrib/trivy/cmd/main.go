@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -39,7 +38,7 @@ func main() {
 				}
 				trivyJSON = buf.Bytes()
 			} else {
-				if trivyJSON, err = ioutil.ReadFile(jsonFilePath); err != nil {
+				if trivyJSON, err = os.ReadFile(jsonFilePath); err != nil {
 					fmt.Printf("Failed to read file. err: %+v\n", err)
 					os.Exit(1)
 				}

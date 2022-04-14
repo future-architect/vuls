@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path"
@@ -88,7 +88,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 		return xerrors.Errorf("Failed to get Credential. Request JSON : %s,", string(body))
 	}
 
-	t, err := ioutil.ReadAll(resp.Body)
+	t, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}

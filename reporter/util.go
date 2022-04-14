@@ -5,7 +5,8 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -42,8 +43,8 @@ func OverwriteJSONFile(dir string, r models.ScanResult) error {
 
 // LoadScanResults read JSON data
 func LoadScanResults(jsonDir string) (results models.ScanResults, err error) {
-	var files []os.FileInfo
-	if files, err = ioutil.ReadDir(jsonDir); err != nil {
+	var files []fs.DirEntry
+	if files, err = os.ReadDir(jsonDir); err != nil {
 		return nil, xerrors.Errorf("Failed to read %s: %w", jsonDir, err)
 	}
 	for _, f := range files {
@@ -70,7 +71,7 @@ func loadOneServerScanResult(jsonFile string) (*models.ScanResult, error) {
 		data []byte
 		err  error
 	)
-	if data, err = ioutil.ReadFile(jsonFile); err != nil {
+	if data, err = os.ReadFile(jsonFile); err != nil {
 		return nil, xerrors.Errorf("Failed to read %s: %w", jsonFile, err)
 	}
 	result := &models.ScanResult{}
@@ -89,8 +90,8 @@ var jsonDirPattern = regexp.MustCompile(
 // ListValidJSONDirs returns valid json directory as array
 // Returned array is sorted so that recent directories are at the head
 func ListValidJSONDirs(resultsDir string) (dirs []string, err error) {
-	var dirInfo []os.FileInfo
-	if dirInfo, err = ioutil.ReadDir(resultsDir); err != nil {
+	var dirInfo []fs.DirEntry
+	if dirInfo, err = os.ReadDir(resultsDir); err != nil {
 		err = xerrors.Errorf("Failed to read %s: %w", resultsDir, err)
 		return
 	}
@@ -130,7 +131,7 @@ func JSONDir(resultsDir string, args []string) (path string, err error) {
 
 	// TODO remove Pipe flag
 	if config.Conf.Pipe {
-		bytes, err := ioutil.ReadAll(os.Stdin)
+		bytes, err := io.ReadAll(os.Stdin)
 		if err != nil {
 			return "", xerrors.Errorf("Failed to read stdin: %w", err)
 		}

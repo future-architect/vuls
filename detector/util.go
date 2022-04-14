@@ -6,7 +6,7 @@ package detector
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -234,8 +234,8 @@ var jsonDirPattern = regexp.MustCompile(
 // ListValidJSONDirs returns valid json directory as array
 // Returned array is sorted so that recent directories are at the head
 func ListValidJSONDirs(resultsDir string) (dirs []string, err error) {
-	var dirInfo []os.FileInfo
-	if dirInfo, err = ioutil.ReadDir(resultsDir); err != nil {
+	var dirInfo []fs.DirEntry
+	if dirInfo, err = os.ReadDir(resultsDir); err != nil {
 		err = xerrors.Errorf("Failed to read %s: %w",
 			config.Conf.ResultsDir, err)
 		return
@@ -258,7 +258,7 @@ func loadOneServerScanResult(jsonFile string) (*models.ScanResult, error) {
 		data []byte
 		err  error
 	)
-	if data, err = ioutil.ReadFile(jsonFile); err != nil {
+	if data, err = os.ReadFile(jsonFile); err != nil {
 		return nil, xerrors.Errorf("Failed to read %s: %w", jsonFile, err)
 	}
 	result := &models.ScanResult{}
