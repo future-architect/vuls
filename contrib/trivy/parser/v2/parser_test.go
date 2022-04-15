@@ -205,6 +205,7 @@ var redisSR = &models.ScanResult{
 	JSONVersion: 4,
 	ServerName:  "redis (debian 10.10)",
 	Family:      "debian",
+	Release:     "10.10",
 	ScannedBy:   "trivy",
 	ScannedVia:  "trivy",
 	ScannedCves: models.VulnInfos{
@@ -635,6 +636,7 @@ var osAndLibSR = &models.ScanResult{
 	JSONVersion: 4,
 	ServerName:  "quay.io/fluentd_elasticsearch/fluentd:v2.9.0 (debian 10.2)",
 	Family:      "debian",
+	Release:     "10.2",
 	ScannedBy:   "trivy",
 	ScannedVia:  "trivy",
 	ScannedCves: models.VulnInfos{
