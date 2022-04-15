@@ -26,6 +26,7 @@ RUN apk add --no-cache \
     && mkdir -p $WORKDIR $LOGDIR
 
 COPY --from=builder /go/bin/vuls /go/bin/trivy-to-vuls /go/bin/future-vuls /usr/local/bin/
+COPY --from=aquasec/trivy:latest /usr/local/bin/trivy /usr/local/bin/trivy
 
 VOLUME ["$WORKDIR", "$LOGDIR"]
 WORKDIR $WORKDIR
