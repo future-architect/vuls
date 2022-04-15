@@ -35,10 +35,17 @@ func (p ParserV2) Parse(vulnJSON []byte) (result *models.ScanResult, err error) 
 }
 
 func setScanResultMeta(scanResult *models.ScanResult, report *types.Report) error {
+	if report.Metadata.OS != nil {
+		scanResult.Family = report.Metadata.OS.Family
+		scanResult.Release = report.Metadata.OS.Name
+	}
+
 	const trivyTarget = "trivy-target"
 	for _, r := range report.Results {
 		if pkg.IsTrivySupportedOS(r.Type) {
-			scanResult.Family = r.Type
+			if scanResult.Family == "" {
+				scanResult.Family = r.Type
+			}
 			scanResult.ServerName = r.Target
 			scanResult.Optional = map[string]interface{}{
 				trivyTarget: r.Target,
