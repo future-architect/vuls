@@ -130,7 +130,7 @@ func getPlusDiffCves(previous, current models.ScanResult) models.VulnInfos {
 		previousCveIDsSet[previousVulnInfo.CveID] = true
 	}
 
-	new := models.VulnInfos{}
+	newer := models.VulnInfos{}
 	updated := models.VulnInfos{}
 	for _, v := range current.ScannedCves {
 		if previousCveIDsSet[v.CveID] {
@@ -150,17 +150,17 @@ func getPlusDiffCves(previous, current models.ScanResult) models.VulnInfos {
 				logging.Log.Debugf("same: %s", v.CveID)
 			}
 		} else {
-			logging.Log.Debugf("new: %s", v.CveID)
+			logging.Log.Debugf("newer: %s", v.CveID)
 			v.DiffStatus = models.DiffPlus
-			new[v.CveID] = v
+			newer[v.CveID] = v
 		}
 	}
 
-	if len(updated) == 0 && len(new) == 0 {
+	if len(updated) == 0 && len(newer) == 0 {
 		logging.Log.Infof("%s: There are %d vulnerabilities, but no difference between current result and previous one.", current.FormatServerName(), len(current.ScannedCves))
 	}
 
-	for cveID, vuln := range new {
+	for cveID, vuln := range newer {
 		updated[cveID] = vuln
 	}
 	return updated
