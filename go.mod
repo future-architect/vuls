@@ -3,13 +3,13 @@ module github.com/future-architect/vuls
 go 1.18
 
 require (
-	github.com/Azure/azure-sdk-for-go v62.0.0+incompatible
-	github.com/BurntSushi/toml v1.0.0
+	github.com/Azure/azure-sdk-for-go v63.0.0+incompatible
+	github.com/BurntSushi/toml v1.1.0
 	github.com/Ullaakut/nmap/v2 v2.1.2-0.20210406060955-59a52fe80a4f
 	github.com/VividCortex/ewma v1.2.0 // indirect
-	github.com/aquasecurity/fanal v0.0.0-20220404155252-996e81f58b02
-	github.com/aquasecurity/go-dep-parser v0.0.0-20220302151315-ff6d77c26988
-	github.com/aquasecurity/trivy v0.25.1
+	github.com/aquasecurity/fanal v0.0.0-20220414083417-61bfa9f92483
+	github.com/aquasecurity/go-dep-parser v0.0.0-20220412145205-d0501f906d90
+	github.com/aquasecurity/trivy v0.26.0
 	github.com/aquasecurity/trivy-db v0.0.0-20220327074450-74195d9604b2
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/aws/aws-sdk-go v1.43.31
@@ -145,7 +145,8 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064 // indirect
-	golang.org/x/exp v0.0.0-20220321124402-2d6d886f8a82 // indirect
+	golang.org/x/exp v0.0.0-20220407100705-7b9b53b0aca4 // indirect
+	golang.org/x/mod v0.6.0-dev.0.20211013180041-c96bc1413d57 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
