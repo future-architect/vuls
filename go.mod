@@ -36,7 +36,7 @@ require (
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.4.0
-	github.com/vulsio/go-cti v0.0.0-20220414153043-0e9061e7c88d
+	github.com/vulsio/go-cti v0.0.1
 	github.com/vulsio/go-cve-dictionary v0.8.2-0.20211028094424-0a854f8e8f85
 	github.com/vulsio/go-exploitdb v0.4.2
 	github.com/vulsio/go-kev v0.1.1-0.20220118062020-5f69b364106f
@@ -44,7 +44,7 @@ require (
 	github.com/vulsio/gost v0.4.1
 	github.com/vulsio/goval-dictionary v0.7.3
 	go.etcd.io/bbolt v1.3.6
-	golang.org/x/exp v0.0.0-20220407100705-7b9b53b0aca4
+	golang.org/x/exp v0.0.0-20220414153411-bcd21879b8fd
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/xerrors v0.0.0-20220411194840-2f41105eb62f
@@ -63,7 +63,7 @@ require (
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/PuerkitoBio/goquery v1.6.1 // indirect
-	github.com/VividCortex/ewma v1.1.1 // indirect
+	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/andybalholm/cascadia v1.2.0 // indirect
 	github.com/aquasecurity/go-gem-version v0.0.0-20201115065557-8eed6fe000ce // indirect
 	github.com/aquasecurity/go-npm-version v0.0.0-20201110091526-0b796d180798 // indirect
@@ -119,7 +119,7 @@ require (
 	github.com/masahiro331/go-mvn-version v0.0.0-20210429150710-d3157d602a08 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
-	github.com/mattn/go-runewidth v0.0.12 // indirect
+	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/mattn/go-sqlite3 v1.14.12 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/mitchellh/go-testing-interface v1.0.0 // indirect
@@ -132,6 +132,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
@@ -148,7 +149,7 @@ require (
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.0.0-20220513210258-46612604a0f9 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20211013180041-c96bc1413d57 // indirect
-	golang.org/x/net v0.0.0-20220412020605-290c469a71a5 // indirect
+	golang.org/x/net v0.0.0-20220418201149-a630d4f3e7a2 // indirect
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
