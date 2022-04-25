@@ -19,8 +19,8 @@ func TestMain(m *testing.M) {
 
 func TestIsCveInfoUpdated(t *testing.T) {
 	f := "2006-01-02"
-	old, _ := time.Parse(f, "2015-12-15")
-	new, _ := time.Parse(f, "2015-12-16")
+	base, _ := time.Parse(f, "2015-12-15")
+	newer, _ := time.Parse(f, "2015-12-16")
 
 	type In struct {
 		cveID string
@@ -78,7 +78,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 								models.CveContent{
 									Type:         models.Jvn,
 									CveID:        "CVE-2017-0002",
-									LastModified: old,
+									LastModified: base,
 								},
 							),
 						},
@@ -92,7 +92,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 								models.CveContent{
 									Type:         models.Jvn,
 									CveID:        "CVE-2017-0002",
-									LastModified: old,
+									LastModified: base,
 								},
 							),
 						},
@@ -114,7 +114,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 								models.CveContent{
 									Type:         models.Nvd,
 									CveID:        "CVE-2017-0002",
-									LastModified: new,
+									LastModified: newer,
 								},
 							),
 						},
@@ -129,7 +129,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 								models.CveContent{
 									Type:         models.Nvd,
 									CveID:        "CVE-2017-0002",
-									LastModified: old,
+									LastModified: base,
 								},
 							),
 						},
@@ -151,7 +151,7 @@ func TestIsCveInfoUpdated(t *testing.T) {
 								models.CveContent{
 									Type:         models.Nvd,
 									CveID:        "CVE-2017-0002",
-									LastModified: old,
+									LastModified: base,
 								},
 							),
 						},

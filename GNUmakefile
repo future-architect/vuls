@@ -23,12 +23,9 @@ CGO_UNABLED := CGO_ENABLED=0 go
 GO_OFF := GO111MODULE=off go
 
 
-all: b
+all: build test
 
-build: ./cmd/vuls/main.go pretest fmt
-	$(GO) build -a -ldflags "$(LDFLAGS)" -o vuls ./cmd/vuls
-
-b: ./cmd/vuls/main.go 
+build: ./cmd/vuls/main.go
 	$(GO) build -a -ldflags "$(LDFLAGS)" -o vuls ./cmd/vuls
 
 install: ./cmd/vuls/main.go
@@ -41,13 +38,14 @@ install-scanner: ./cmd/scanner/main.go
 	$(CGO_UNABLED) install -tags=scanner -ldflags "$(LDFLAGS)" ./cmd/scanner
 
 lint:
-	$(GO_OFF) get -u github.com/mgechev/revive
+	$(GO) install github.com/mgechev/revive@latest
 	revive -config ./.revive.toml -formatter plain $(PKGS)
 
 vet:
 	echo $(PKGS) | xargs env $(GO) vet || exit;
 
 golangci:
+	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	golangci-lint run
 
 fmt:
@@ -59,9 +57,9 @@ mlint:
 fmtcheck:
 	$(foreach file,$(SRCS),gofmt -s -d $(file);)
 
-pretest: lint vet fmtcheck golangci
+pretest: lint vet fmtcheck
 
-test: 
+test: pretest
 	$(GO) test -cover -v ./... || exit;
 
 unused:
@@ -76,13 +74,12 @@ clean:
 	echo $(PKGS) | xargs go clean || exit;
 
 # trivy-to-vuls
-build-trivy-to-vuls: pretest fmt
-	$(GO) build -a -ldflags "$(LDFLAGS)" -o trivy-to-vuls contrib/trivy/cmd/*.go
+build-trivy-to-vuls: ./contrib/trivy/cmd/main.go
+	$(GO) build -a -ldflags "$(LDFLAGS)" -o trivy-to-vuls ./contrib/trivy/cmd
 
 # future-vuls
-build-future-vuls: pretest fmt
-	$(GO) build -a -ldflags "$(LDFLAGS)" -o future-vuls contrib/future-vuls/cmd/*.go
-
+build-future-vuls: ./contrib/future-vuls/cmd/main.go
+	$(GO) build -a -ldflags "$(LDFLAGS)" -o future-vuls ./contrib/future-vuls/cmd
 
 # integration-test
 BASE_DIR := '${PWD}/integration/results'
