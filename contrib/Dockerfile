@@ -5,7 +5,6 @@ RUN apk add --no-cache \
         make \
         gcc \
         musl-dev
-RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.45.0
 
 ENV REPOSITORY github.com/future-architect/vuls
 COPY . $GOPATH/src/$REPOSITORY
@@ -27,6 +26,7 @@ RUN apk add --no-cache \
     && mkdir -p $WORKDIR $LOGDIR
 
 COPY --from=builder /go/bin/vuls /go/bin/trivy-to-vuls /go/bin/future-vuls /usr/local/bin/
+COPY --from=aquasec/trivy:latest /usr/local/bin/trivy /usr/local/bin/trivy
 
 VOLUME ["$WORKDIR", "$LOGDIR"]
 WORKDIR $WORKDIR

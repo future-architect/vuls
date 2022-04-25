@@ -54,7 +54,7 @@ func FillCVEsWithRedHat(r *models.ScanResult, cnf config.GostConf, o logging.Log
 	return client.fillCvesWithRedHatAPI(r)
 }
 
-// NewClient make Client by family
+// NewGostClient make Client by family
 func NewGostClient(cnf config.GostConf, family string, o logging.LogOpts) (Client, error) {
 	if err := gostlog.SetLogger(o.LogToFile, o.LogDir, o.Debug, o.LogJSON); err != nil {
 		return nil, xerrors.Errorf("Failed to set gost logger. err: %w", err)

@@ -784,49 +784,49 @@ func (o *redhatBase) getOwnerPkgs(paths []string) (names []string, _ error) {
 
 func (o *redhatBase) rpmQa() string {
 	const old = `rpm -qa --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n"`
-	const new = `rpm -qa --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n"`
+	const newer = `rpm -qa --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n"`
 	switch o.Distro.Family {
 	case constant.OpenSUSE:
 		if o.Distro.Release == "tumbleweed" {
-			return new
+			return newer
 		}
 		return old
 	case constant.OpenSUSELeap:
-		return new
+		return newer
 	case constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
 		if v, _ := o.Distro.MajorVersion(); v < 12 {
 			return old
 		}
-		return new
+		return newer
 	default:
 		if v, _ := o.Distro.MajorVersion(); v < 6 {
 			return old
 		}
-		return new
+		return newer
 	}
 }
 
 func (o *redhatBase) rpmQf() string {
 	const old = `rpm -qf --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH}\n" `
-	const new = `rpm -qf --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n" `
+	const newer = `rpm -qf --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH}\n" `
 	switch o.Distro.Family {
 	case constant.OpenSUSE:
 		if o.Distro.Release == "tumbleweed" {
-			return new
+			return newer
 		}
 		return old
 	case constant.OpenSUSELeap:
-		return new
+		return newer
 	case constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
 		if v, _ := o.Distro.MajorVersion(); v < 12 {
 			return old
 		}
-		return new
+		return newer
 	default:
 		if v, _ := o.Distro.MajorVersion(); v < 6 {
 			return old
 		}
-		return new
+		return newer
 	}
 }
 
