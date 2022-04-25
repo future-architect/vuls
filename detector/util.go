@@ -26,12 +26,7 @@ func reuseScannedCves(r *models.ScanResult) bool {
 	case constant.FreeBSD, constant.Raspbian:
 		return true
 	}
-	return isTrivyResult(r)
-}
-
-func isTrivyResult(r *models.ScanResult) bool {
-	_, ok := r.Optional["trivy-target"]
-	return ok
+	return r.ScannedBy == "trivy"
 }
 
 func needToRefreshCve(r models.ScanResult) bool {

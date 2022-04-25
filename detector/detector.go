@@ -208,7 +208,9 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 // pass 2 configs
 func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf config.GostConf, logOpts logging.LogOpts) error {
 	// Pkg Scan
-	if r.Release != "" {
+	if reuseScannedCves(r) {
+		logging.Log.Infof("This result made by trivy. Use CVEs as it as.")
+	} else if r.Release != "" {
 		if len(r.Packages)+len(r.SrcPackages) > 0 {
 			// OVAL, gost(Debian Security Tracker) does not support Package for Raspbian, so skip it.
 			if r.Family == constant.Raspbian {
@@ -227,8 +229,6 @@ func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf c
 		} else {
 			logging.Log.Infof("Number of packages is 0. Skip OVAL and gost detection")
 		}
-	} else if reuseScannedCves(r) {
-		logging.Log.Infof("r.Release is empty. Use CVEs as it as.")
 	} else if r.Family == constant.ServerTypePseudo {
 		logging.Log.Infof("pseudo type. Skip OVAL and gost detection")
 	} else {
