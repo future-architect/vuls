@@ -257,27 +257,27 @@ func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf c
 
 // isPkgCvesDetactable checks whether CVEs is detactable with gost and oval from the result
 func isPkgCvesDetactable(r *models.ScanResult) bool {
-	if reuseScannedCves(r) {
-		logging.Log.Infof("Use CVEs as it as. Skip OVAL and gost detection")
-		return false
-	}
-
-	if r.Family == constant.ServerTypePseudo {
-		logging.Log.Infof("pseudo type. Skip OVAL and gost detection")
-		return false
-	}
-
 	if r.Release == "" {
-		logging.Log.Infof("r.Release is empty. detect as pseudo type. Skip OVAL and gost detection")
+		logging.Log.Infof("r.Release is empty. Skip OVAL and gost detection")
 		return false
 	}
 
-	if len(r.Packages)+len(r.SrcPackages) == 0 {
-		logging.Log.Infof("Number of packages is 0. Skip OVAL and gost detection")
+	if r.ScannedBy == "trivy" {
+		logging.Log.Infof("r.ScannedBy is trivy. Skip OVAL and gost detection")
 		return false
 	}
 
-	return true
+	switch r.Family {
+	case constant.FreeBSD, constant.ServerTypePseudo:
+		logging.Log.Infof("%s type. Skip OVAL and gost detection", r.Family)
+		return false
+	default:
+		if len(r.Packages)+len(r.SrcPackages) == 0 {
+			logging.Log.Infof("Number of packages is 0. Skip OVAL and gost detection")
+			return false
+		}
+		return true
+	}
 }
 
 // DetectGitHubCves fetches CVEs from GitHub Security Alerts
