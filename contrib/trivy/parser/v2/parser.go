@@ -2,6 +2,7 @@ package v2
 
 import (
 	"encoding/json"
+	"regexp"
 	"time"
 
 	"github.com/aquasecurity/trivy/pkg/types"
@@ -34,12 +35,18 @@ func (p ParserV2) Parse(vulnJSON []byte) (result *models.ScanResult, err error) 
 	return scanResult, nil
 }
 
+var dockerTagPattern = regexp.MustCompile(`:.*$`)
+
 func setScanResultMeta(scanResult *models.ScanResult, report *types.Report) error {
 	if len(report.Results) == 0 {
 		return xerrors.Errorf("scanned images or libraries are not supported by Trivy. see https://aquasecurity.github.io/trivy/dev/vulnerability/detection/os/, https://aquasecurity.github.io/trivy/dev/vulnerability/detection/language/")
 	}
 
 	scanResult.ServerName = report.ArtifactName
+	if report.ArtifactType == "container_image" && !dockerTagPattern.MatchString(scanResult.ServerName) {
+		scanResult.ServerName += ":latest" // Complement if the tag is omitted
+	}
+
 	if report.Metadata.OS != nil {
 		scanResult.Family = report.Metadata.OS.Family
 		scanResult.Release = report.Metadata.OS.Name

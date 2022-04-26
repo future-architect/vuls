@@ -203,7 +203,7 @@ var redisTrivy = []byte(`
 `)
 var redisSR = &models.ScanResult{
 	JSONVersion: 4,
-	ServerName:  "redis",
+	ServerName:  "redis:latest",
 	Family:      "debian",
 	Release:     "10.10",
 	ScannedBy:   "trivy",
