@@ -35,7 +35,7 @@ func (p ParserV2) Parse(vulnJSON []byte) (result *models.ScanResult, err error) 
 	return scanResult, nil
 }
 
-var dockerTagPattern = regexp.MustCompile(`:.*$`)
+var dockerTagPattern = regexp.MustCompile(`:.+$`)
 
 func setScanResultMeta(scanResult *models.ScanResult, report *types.Report) error {
 	if len(report.Results) == 0 {
