@@ -23,7 +23,12 @@ import (
 
 func reuseScannedCves(r *models.ScanResult) bool {
 	switch r.Family {
-	case constant.FreeBSD, constant.Raspbian:
+	case constant.FreeBSD,
+		constant.Raspbian,
+		constant.SUSEEnterpriseServer,
+		constant.OpenSUSELeap,
+		constant.SUSEEnterpriseDesktop,
+		constant.OpenSUSE:
 		return true
 	}
 	return isTrivyResult(r)

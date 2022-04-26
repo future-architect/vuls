@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/future-architect/vuls/config"
@@ -150,6 +151,165 @@ VERSION_ID="15"`,
 		}
 		if tt.ver != ver {
 			t.Errorf("[%d] expected %s, actual %s", i, tt.ver, ver)
+		}
+	}
+}
+
+func TestScanUnsecurePackages(t *testing.T) {
+	r := newSUSE(config.ServerInfo{})
+	r.Distro = config.Distro{Family: "sles"}
+	stdout := `
+Issue | No.              | Patch                                     | Category    | Severity  | Interactive | Status | Summary                                      
+------+------------------+-------------------------------------------+-------------+-----------+-------------+--------+----------------------------------------------
+cve   | CVE-2021-43784   | SUSE-SLE-Module-Containers-12-2021-4059   | security    | moderate  | ---         | needed | Security update for runc                     
+cve   | CVE-2021-41089   | SUSE-SLE-Module-Containers-12-2022-213    | security    | moderate  | message     | needed | Security update for containerd, docker       
+cve   | CVE-2021-33503   | SUSE-SLE-Module-Public-Cloud-12-2021-2194 | recommended | important | ---         | needed | Recommended update for the Azure and AWS SDKs`
+
+	var tests = []struct {
+		in  string
+		out map[string][]string
+	}{
+		{
+			stdout,
+			map[string][]string{
+				"SUSE-SLE-Module-Containers-12-2021-4059":   {"CVE-2021-43784"},
+				"SUSE-SLE-Module-Containers-12-2022-213":    {"CVE-2021-41089"},
+				"SUSE-SLE-Module-Public-Cloud-12-2021-2194": {"CVE-2021-33503"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		vInfos, err := r.parseZypperLPLines(tt.in)
+		if err != nil {
+			t.Errorf("Error has occurred, err: %+v\ntt.in: %v", err, tt.in)
+			return
+		}
+		for cveID, ePack := range tt.out {
+			if !reflect.DeepEqual(ePack, vInfos[cveID]) {
+				e := pp.Sprintf("%v", ePack)
+				a := pp.Sprintf("%v", vInfos[cveID])
+				t.Errorf("expected %s, actual %s", e, a)
+			}
+		}
+	}
+}
+
+func TestScanUnsecurePackage(t *testing.T) {
+	r := newSUSE(config.ServerInfo{})
+	r.Distro = config.Distro{Family: "sles"}
+	stdout := `cve   | CVE-2021-43784   | SUSE-SLE-Module-Containers-12-2021-4059   | security    | moderate  | ---         | needed | Security update for runc                     `
+
+	var tests = []struct {
+		in       string
+		outCVE   string
+		outPatch string
+	}{
+		{
+			in:       stdout,
+			outCVE:   "CVE-2021-43784",
+			outPatch: "SUSE-SLE-Module-Containers-12-2021-4059",
+		},
+	}
+
+	for _, tt := range tests {
+		cve, patch, err := r.parseZypperLPOneLine(tt.in)
+		if err != nil {
+			t.Errorf("Error has occurred, err: %+v\ntt.in: %v", err, tt.in)
+			return
+		}
+		if !reflect.DeepEqual(cve, tt.outCVE) {
+			e := pp.Sprintf("%v", tt.outCVE)
+			a := pp.Sprintf("%v", cve)
+			t.Errorf("expected CVE %s, actual CVE %s", e, a)
+		}
+		if !reflect.DeepEqual(patch, tt.outPatch) {
+			e := pp.Sprintf("%v", tt.outPatch)
+			a := pp.Sprintf("%v", cve)
+			t.Errorf("expected patch %s, actual patch %s", e, a)
+		}
+	}
+}
+
+func TestParseUnPatchedPackage(t *testing.T) {
+	r := newSUSE(config.ServerInfo{})
+	r.Distro = config.Distro{Family: "sles"}
+	stdout := `
+Refreshing service 'Advanced_Systems_Management_Module_x86_64'.
+Refreshing service 'Containers_Module_x86_64'.
+Refreshing service 'HPC_Module_x86_64'.
+Refreshing service 'Legacy_Module_x86_64'.
+Refreshing service 'Public_Cloud_Module_x86_64'.
+Refreshing service 'SUSE_Linux_Enterprise_Server_x86_64'.
+Refreshing service 'SUSE_Linux_Enterprise_Software_Development_Kit_x86_64'.
+Refreshing service 'Toolchain_Module_x86_64'.
+Refreshing service 'Web_and_Scripting_Module_x86_64'.
+Loading repository data...
+Reading installed packages...
+
+Information for patch SUSE-SLE-Module-Public-Cloud-12-2021-2194:
+----------------------------------------------------------------
+Repository  : SLE-Module-Public-Cloud12-Updates
+Name        : SUSE-SLE-Module-Public-Cloud-12-2021-2194
+Version     : 1
+Arch        : noarch
+Vendor      : maint-coord@suse.de
+Status      : needed
+Category    : recommended
+Severity    : important
+Created On  : Mon Jun 28 16:57:53 2021
+Interactive : ---
+Summary     : Recommended update for the Azure and AWS SDKs
+Description :
+    This update for the SLE Public Cloud module provides the following fixes:
+
+    Azure SDK update:
+    This update for the Azure SDK and CLI adds support for the AHB (Azure Hybrid Benefit).
+    (bsc#1176784, jsc#ECO-3105)
+
+    AWS SDK update:
+    This update for the AWS SDK updates python-boto3 to version 1.17.9 and aws-cli to
+    1.19.9.
+    (bsc#1182421, jsc#ECO-3352)
+
+    Security fix for python-urllib3:
+
+    - Improve performance of sub-authority splitting in URL. (bsc#1187045, CVE-2021-33503)
+
+Provides    : patch:SUSE-SLE-Module-Public-Cloud-12-2021-2194 = 1
+Conflicts   : [753]
+    aws-cli.noarch < 1.19.9-22.24.2
+    aws-cli.src < 1.19.9-22.24.2
+    azure-cli.noarch < 2.14.2-2.10.2
+    azure-cli.src < 2.14.2-2.10.2
+`
+
+	var tests = []struct {
+		in  string
+		out []string
+	}{
+		{
+			stdout,
+			[]string{
+				"aws-cli",
+				"azure-cli",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		packages, err := r.parseZypperIFLines(tt.in)
+		if err != nil {
+			t.Errorf("Error has occurred, err: %+v\ntt.in: %v", err, tt.in)
+			return
+		}
+		//Sort because the order is not guaranteed
+		sort.Strings(tt.out)
+		sort.Strings(packages)
+		if !reflect.DeepEqual(tt.out, packages) {
+			e := pp.Sprintf("%v", tt.out)
+			a := pp.Sprintf("%v", packages)
+			t.Errorf("expected %s, actual %s", e, a)
 		}
 	}
 }

@@ -154,6 +154,7 @@ func (o *suse) sudoNoPasswdCmdsFastRoot() []cmd {
 	if !o.ServerInfo.IsContainer() {
 		return []cmd{
 			{"zypper ps -s", exitStatusZero},
+			{"zypper refresh", exitStatusZero},
 			{"which which", exitStatusZero},
 			{"stat /proc/1/exe", exitStatusZero},
 			{"ls -l /proc/1/exe", exitStatusZero},
@@ -163,6 +164,7 @@ func (o *suse) sudoNoPasswdCmdsFastRoot() []cmd {
 	}
 	return []cmd{
 		{"zypper ps -s", exitStatusZero},
+		{"zypper refresh", exitStatusZero},
 	}
 }
 
@@ -187,6 +189,13 @@ func (o *suse) scanPackages() error {
 		return nil
 	}
 
+	if err := o.updateRepository(); err != nil {
+		err = xerrors.Errorf("Failed to update repository: %s", err)
+		o.log.Warnf("err: %+v", err)
+		o.warns = append(o.warns, err)
+		// Only warning this error
+	}
+
 	updatable, err := o.scanUpdatablePackages()
 	if err != nil {
 		err = xerrors.Errorf("Failed to scan updatable packages: %w", err)
@@ -198,6 +207,15 @@ func (o *suse) scanPackages() error {
 	}
 
 	o.Packages = installed
+
+	unsecures, err := o.scanUnsecurePackages()
+	if err != nil {
+		err = xerrors.Errorf("Failed to scan vulnerable packages: %s", err)
+		o.log.Warnf("err: %+v", err)
+		o.warns = append(o.warns, err)
+		// Only warning this error
+	}
+	o.VulnInfos = unsecures
 	return nil
 }
 
@@ -222,6 +240,138 @@ func (o *suse) scanUpdatablePackages() (models.Packages, error) {
 		return nil, xerrors.Errorf("Failed to scan updatable packages: %v", r)
 	}
 	return o.parseZypperLULines(r.Stdout)
+}
+
+func (o *suse) updateRepository() error {
+	cmd := util.PrependProxyEnv("zypper refresh")
+	r := o.exec(cmd, sudo)
+	if !r.isSuccess(0) {
+		return xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	return nil
+}
+
+func (o *suse) scanUnsecurePackages() (models.VulnInfos, error) {
+	cmd := util.PrependProxyEnv("zypper -q list-patches --cve")
+	if o.hasZypperColorOption() {
+		cmd = util.PrependProxyEnv("zypper -q --no-color list-patches --cve")
+	}
+	r := o.exec(cmd, noSudo)
+	if !r.isSuccess(0) {
+		return nil, xerrors.Errorf("Failed to SSH: %s", r)
+	}
+
+	patchMap, err := o.parseZypperLPLines(r.Stdout)
+	if err != nil {
+		return nil, err
+	}
+
+	vInfos := models.VulnInfos{}
+	for patch, cveIDs := range patchMap {
+		cmdStr := "zypper info --conflicts -t patch %s"
+		if o.hasZypperColorOption() {
+			cmdStr = "zypper --no-color info --conflicts -t patch %s"
+		}
+		r := o.exec(util.PrependProxyEnv(fmt.Sprintf(cmdStr, patch)), noSudo)
+		if !r.isSuccess(0) {
+			return nil, xerrors.Errorf("Failed to SSH: %s", r)
+		}
+		packages, err := o.parseZypperIFLines(r.Stdout)
+		if err != nil {
+			return nil, err
+		}
+		affectedPackages := models.PackageFixStatuses{}
+		for _, pkg := range packages {
+			if _, ok := o.Packages[pkg]; !ok {
+				// skip the package which has not been installed
+				continue
+			}
+			affectedPackages = append(affectedPackages, models.PackageFixStatus{
+				Name: pkg,
+			})
+		}
+		if len(affectedPackages) == 0 {
+			// skip because no affected packages has been installed
+			continue
+		}
+		for _, cveID := range cveIDs {
+			if _, ok := vInfos[cveID]; !ok {
+				vInfos[cveID] = models.VulnInfo{
+					CveID:            cveID,
+					AffectedPackages: affectedPackages,
+					Confidences:      models.Confidences{models.ZypperMatch},
+				}
+			} else {
+				pkgs := append(vInfos[cveID].AffectedPackages, affectedPackages...)
+				vInfos[cveID] = models.VulnInfo{
+					CveID:            cveID,
+					AffectedPackages: pkgs,
+					Confidences:      models.Confidences{models.ZypperMatch},
+				}
+			}
+		}
+	}
+	return vInfos, nil
+}
+
+// parseZypperLPOneLine parses the lines of result of `zypper -q lp --cve`
+// and extract patches and its associated cveIDs
+func (o *suse) parseZypperLPLines(stdout string) (map[string][]string, error) {
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	patchMap := map[string][]string{} // key: patch, value: cveIDs
+	for scanner.Scan() {
+		line := scanner.Text()
+		if len(line) == 0 || strings.Contains(line, "Issue | No.") || strings.Contains(line, "------+----") {
+			continue
+		}
+		cveID, patch, err := o.parseZypperLPOneLine(line)
+		if err != nil {
+			return nil, err
+		}
+		patchMap[patch] = append(patchMap[patch], cveID)
+	}
+	return patchMap, nil
+}
+
+// parseZypperLPOneLine parses the line of result of `zypper -q lp --cve`
+// and extract cveID and patch.
+func (o *suse) parseZypperLPOneLine(line string) (string, string, error) {
+	ss := strings.Split(line, "|")
+	if len(ss) != 8 {
+		return "", "", xerrors.Errorf("zypper -q lp --cve Unknown format: %s", line)
+	}
+	return strings.TrimSpace(ss[1]), strings.TrimSpace(ss[2]), nil
+}
+
+var zypperConflictPackagePattern = regexp.MustCompile(`(.*?)(\..*?)? < (.*?)-(.*?)`)
+
+// parseZypperIFLines parses the lines of result of `zypper info --conflicts`
+// and extract the packages which conflicts with the patch
+func (o *suse) parseZypperIFLines(stdout string) ([]string, error) {
+	packageSet := map[string]struct{}{}
+	isConflictSection := false
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" || !isConflictSection {
+			if strings.HasPrefix(line, "Conflicts") {
+				isConflictSection = true
+			}
+			continue // parse conflicts package only
+		}
+
+		group := zypperConflictPackagePattern.FindSubmatch([]byte(line))
+		if group == nil || len(group) != 5 {
+			return nil, xerrors.Errorf("zypper info Unknown format: %s", line)
+		}
+		packageSet[strings.TrimSpace(string(group[1]))] = struct{}{}
+	}
+
+	packages := make([]string, 0, len(packageSet))
+	for pkg := range packageSet {
+		packages = append(packages, pkg)
+	}
+	return packages, nil
 }
 
 var warnRepoPattern = regexp.MustCompile(`Warning: Repository '.+' appears to be outdated\. Consider using a different mirror or server\.`)
