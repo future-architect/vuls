@@ -4,8 +4,6 @@ import (
 	"sort"
 	"time"
 
-	ftypes "github.com/aquasecurity/fanal/types"
-
 	"github.com/aquasecurity/fanal/analyzer/os"
 	"github.com/aquasecurity/trivy/pkg/types"
 
@@ -79,8 +77,8 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 					LastModified:  lastModified,
 				}},
 			}
-			// do onlyIif image type is Vuln
-			if IsTrivySupportedOS(trivyResult.Type) {
+			// do only if image type is Vuln
+			if isTrivySupportedOS(trivyResult.Type) {
 				pkgs[vuln.PkgName] = models.Package{
 					Name:    vuln.PkgName,
 					Version: vuln.InstalledVersion,
@@ -178,51 +176,25 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 	return scanResult, nil
 }
 
-// IsTrivySupportedOS :
-func IsTrivySupportedOS(family string) bool {
-	supportedFamilies := map[string]interface{}{
-		os.RedHat:             struct{}{},
-		os.Debian:             struct{}{},
-		os.Ubuntu:             struct{}{},
-		os.CentOS:             struct{}{},
-		os.Rocky:              struct{}{},
-		os.Alma:               struct{}{},
-		os.Fedora:             struct{}{},
-		os.Amazon:             struct{}{},
-		os.Oracle:             struct{}{},
-		os.Windows:            struct{}{},
-		os.OpenSUSE:           struct{}{},
-		os.OpenSUSELeap:       struct{}{},
-		os.OpenSUSETumbleweed: struct{}{},
-		os.SLES:               struct{}{},
-		os.Photon:             struct{}{},
-		os.Alpine:             struct{}{},
-		// os.Fedora:             struct{}{}, not supported yet
+func isTrivySupportedOS(family string) bool {
+	supportedFamilies := map[string]struct{}{
+		os.RedHat:             {},
+		os.Debian:             {},
+		os.Ubuntu:             {},
+		os.CentOS:             {},
+		os.Rocky:              {},
+		os.Alma:               {},
+		os.Fedora:             {},
+		os.Amazon:             {},
+		os.Oracle:             {},
+		os.Windows:            {},
+		os.OpenSUSE:           {},
+		os.OpenSUSELeap:       {},
+		os.OpenSUSETumbleweed: {},
+		os.SLES:               {},
+		os.Photon:             {},
+		os.Alpine:             {},
 	}
 	_, ok := supportedFamilies[family]
-	return ok
-}
-
-// IsTrivySupportedLib :
-func IsTrivySupportedLib(typestr string) bool {
-	supportedLibs := map[string]interface{}{
-		ftypes.Bundler:   struct{}{},
-		ftypes.GemSpec:   struct{}{},
-		ftypes.Cargo:     struct{}{},
-		ftypes.Composer:  struct{}{},
-		ftypes.Npm:       struct{}{},
-		ftypes.NuGet:     struct{}{},
-		ftypes.Pip:       struct{}{},
-		ftypes.Pipenv:    struct{}{},
-		ftypes.Poetry:    struct{}{},
-		ftypes.PythonPkg: struct{}{},
-		ftypes.NodePkg:   struct{}{},
-		ftypes.Yarn:      struct{}{},
-		ftypes.Jar:       struct{}{},
-		ftypes.Pom:       struct{}{},
-		ftypes.GoBinary:  struct{}{},
-		ftypes.GoMod:     struct{}{},
-	}
-	_, ok := supportedLibs[typestr]
 	return ok
 }
