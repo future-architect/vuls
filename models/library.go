@@ -3,13 +3,14 @@ package models
 import (
 	"path/filepath"
 
+	ftypes "github.com/aquasecurity/fanal/types"
 	"github.com/aquasecurity/trivy-db/pkg/db"
 	trivyDBTypes "github.com/aquasecurity/trivy-db/pkg/types"
 	"github.com/aquasecurity/trivy/pkg/detector/library"
-	"github.com/future-architect/vuls/logging"
-
 	"github.com/aquasecurity/trivy/pkg/types"
 	"golang.org/x/xerrors"
+
+	"github.com/future-architect/vuls/logging"
 )
 
 // LibraryScanners is an array of LibraryScanner
@@ -132,32 +133,53 @@ func getCveContents(cveID string, vul trivyDBTypes.Vulnerability) (contents map[
 
 // LibraryMap is filename and library type
 var LibraryMap = map[string]string{
-	"package-lock.json":  "node",
-	"yarn.lock":          "node",
-	"Gemfile.lock":       "ruby",
-	"Cargo.lock":         "rust",
-	"composer.lock":      "php",
-	"requirements.txt":   "python",
-	"Pipfile.lock":       "python",
-	"poetry.lock":        "python",
-	"packages.lock.json": ".net",
-	"packages.config":    ".net",
-	"go.sum":             "gomod",
-	"pom.xml":            "java",
-	"*.jar":              "java",
-	"*.war":              "java",
-	"*.ear":              "java",
-	"*.par":              "java",
+	ftypes.NpmPkgLock:      "node",
+	ftypes.YarnLock:        "node",
+	ftypes.GemfileLock:     "ruby",
+	ftypes.CargoLock:       "rust",
+	ftypes.ComposerLock:    "php",
+	ftypes.PipRequirements: "python",
+	ftypes.PipfileLock:     "python",
+	ftypes.PoetryLock:      "python",
+	ftypes.NuGetPkgsLock:   ".net",
+	ftypes.NuGetPkgsConfig: ".net",
+	ftypes.GoMod:           "gomod",
+	ftypes.GoSum:           "gomod",
+	ftypes.MavenPom:        "java",
+	"*.jar":                "java",
+	"*.war":                "java",
+	"*.ear":                "java",
+	"*.par":                "java",
 }
 
 // GetLibraryKey returns target library key
 func (s LibraryScanner) GetLibraryKey() string {
-	fileName := filepath.Base(s.LockfilePath)
 	switch s.Type {
-	case "jar", "war", "ear", "par":
+	case ftypes.Bundler, ftypes.GemSpec:
+		return "ruby"
+	case ftypes.Cargo:
+		return "rust"
+	case ftypes.Composer:
+		return "php"
+	case ftypes.GoBinary, ftypes.GoModule:
+		return "gomod"
+	case ftypes.Jar, ftypes.Pom:
 		return "java"
+	case ftypes.Npm, ftypes.Yarn, ftypes.NodePkg, ftypes.JavaScript:
+		return "node"
+	case ftypes.NuGet:
+		return ".net"
+	case ftypes.Pipenv, ftypes.Poetry, ftypes.Pip, ftypes.PythonPkg:
+		return "python"
+	default:
+		filename := filepath.Base(s.LockfilePath)
+		switch filepath.Ext(filename) {
+		case ".jar", ".war", ".ear", ".par":
+			return "java"
+		default:
+			return LibraryMap[filename]
+		}
 	}
-	return LibraryMap[fileName]
 }
 
 // LibraryFixedIn has library fixed information

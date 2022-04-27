@@ -686,6 +686,7 @@ func AnalyzeLibraries(ctx context.Context, libFilemap map[string]LibFile, isOffl
 		analyzer.TypeJSON,
 		analyzer.TypeDockerfile,
 		analyzer.TypeHCL,
+		analyzer.TypeSecret,
 	}
 	anal := analyzer.NewAnalyzerGroup(analyzer.GroupBuiltin, disabledAnalyzers)
 
@@ -701,6 +702,7 @@ func AnalyzeLibraries(ctx context.Context, libFilemap map[string]LibFile, isOffl
 			path,
 			&DummyFileInfo{size: int64(len(f.Contents)), filemode: f.Filemode},
 			func() (dio.ReadSeekCloserAt, error) { return dio.NopCloser(bytes.NewReader(f.Contents)), nil },
+			nil,
 			analyzer.AnalysisOptions{Offline: isOffline},
 		); err != nil {
 			return nil, xerrors.Errorf("Failed to get libs. err: %w", err)
