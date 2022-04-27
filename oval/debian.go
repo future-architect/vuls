@@ -395,6 +395,35 @@ func (o Ubuntu) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 			"linux-virtual",
 		}
 		return o.fillWithOval(r, kernelNamesInOval)
+	case "22":
+		kernelNamesInOval := []string{
+			"linux-aws",
+			"linux-azure",
+			"linux-gcp",
+			"linux-generic",
+			"linux-gke",
+			"linux-header-aws",
+			"linux-header-azure",
+			"linux-header-gcp",
+			"linux-header-generic",
+			"linux-header-gke",
+			"linux-header-oracle",
+			"linux-image-aws",
+			"linux-image-azure",
+			"linux-image-gcp",
+			"linux-image-generic",
+			"linux-image-gke",
+			"linux-image-oracle",
+			"linux-oracle",
+			"linux-tools-aws",
+			"linux-tools-azure",
+			"linux-tools-common",
+			"linux-tools-gcp",
+			"linux-tools-generic",
+			"linux-tools-gke",
+			"linux-tools-oracle",
+		}
+		return o.fillWithOval(r, kernelNamesInOval)
 	}
 	return 0, fmt.Errorf("Ubuntu %s is not support for now", r.Release)
 }

@@ -136,15 +136,20 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"19.10": {Ended: true},
 			"20.04": {
 				StandardSupportUntil: time.Date(2025, 4, 1, 23, 59, 59, 0, time.UTC),
+				ExtendedSupportUntil: time.Date(2030, 4, 1, 23, 59, 59, 0, time.UTC),
 			},
 			"20.10": {
 				StandardSupportUntil: time.Date(2021, 7, 22, 23, 59, 59, 0, time.UTC),
 			},
 			"21.04": {
-				StandardSupportUntil: time.Date(2022, 1, 22, 23, 59, 59, 0, time.UTC),
+				StandardSupportUntil: time.Date(2022, 1, 20, 23, 59, 59, 0, time.UTC),
 			},
 			"21.10": {
-				StandardSupportUntil: time.Date(2022, 7, 1, 23, 59, 59, 0, time.UTC),
+				StandardSupportUntil: time.Date(2022, 7, 14, 23, 59, 59, 0, time.UTC),
+			},
+			"22.04": {
+				StandardSupportUntil: time.Date(2027, 4, 1, 23, 59, 59, 0, time.UTC),
+				ExtendedSupportUntil: time.Date(2032, 4, 1, 23, 59, 59, 0, time.UTC),
 			},
 		}[release]
 	case constant.OpenSUSE:
