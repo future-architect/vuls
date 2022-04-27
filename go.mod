@@ -45,8 +45,8 @@ require (
 	github.com/vulsio/go-exploitdb v0.4.2
 	github.com/vulsio/go-kev v0.1.1-0.20220118062020-5f69b364106f
 	github.com/vulsio/go-msfdb v0.2.1-0.20211028071756-4a9759bd9f14
-	github.com/vulsio/gost v0.4.1-0.20220425034953-bb3b7c3c1873
-	github.com/vulsio/goval-dictionary v0.7.1-0.20220215081041-a472884d0afa
+	github.com/vulsio/gost v0.4.1
+	github.com/vulsio/goval-dictionary v0.7.3
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/xerrors v0.0.0-20220411194840-2f41105eb62f
@@ -85,7 +85,7 @@ require (
 	github.com/docker/docker v20.10.14+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.6.4 // indirect
 	github.com/fatih/color v1.13.0 // indirect
-	github.com/fsnotify/fsnotify v1.5.3 // indirect
+	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
@@ -150,8 +150,8 @@ require (
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	golang.org/x/exp v0.0.0-20220407100705-7b9b53b0aca4 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20211013180041-c96bc1413d57 // indirect
-	golang.org/x/net v0.0.0-20220412020605-290c469a71a5 // indirect
-	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
+	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
+	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/api v0.74.0 // indirect
@@ -161,7 +161,7 @@ require (
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-	gorm.io/gorm v1.23.4 // indirect
+	gorm.io/gorm v1.23.5 // indirect
 	k8s.io/utils v0.0.0-20201110183641-67b214c5f920 // indirect
 	moul.io/http2curl v1.0.0 // indirect
 )
