@@ -262,8 +262,8 @@ func isPkgCvesDetactable(r *models.ScanResult) bool {
 		return false
 	}
 
-	if r.ScannedBy == "trivy" {
-		logging.Log.Infof("r.ScannedBy is trivy. Skip OVAL and gost detection")
+	if r.ScannedVia == "trivy" {
+		logging.Log.Infof("r.ScannedVia is trivy. Skip OVAL and gost detection")
 		return false
 	}
 
