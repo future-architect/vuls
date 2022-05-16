@@ -61,7 +61,7 @@ type Library struct {
 func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 	scanner, err := library.NewDriver(s.Type)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to new a library driver: %w", err)
+		return nil, xerrors.Errorf("Failed to new a library driver %s: %w", s.Type, err)
 	}
 	var vulnerabilities = []VulnInfo{}
 	for _, pkg := range s.Libs {
