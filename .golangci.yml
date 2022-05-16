@@ -35,6 +35,9 @@ linters-settings:
       - name: unused-parameter
       - name: unreachable-code
       - name: redefines-builtin-id
+  staticcheck:
+    # https://staticcheck.io/docs/options#checks
+    checks: ["all", "-SA1019"]
   # errcheck:
     #exclude: /path/to/file.txt
 
