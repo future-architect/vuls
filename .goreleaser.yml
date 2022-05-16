@@ -6,11 +6,29 @@ release:
     owner: future-architect
     name: vuls
 builds:
-- id: vuls
+- id: vuls-amd64
   goos:
   - linux
   goarch:
   - amd64
+  env:
+  - CGO_ENABLED=1
+  - CC=x86_64-linux-gnu-gcc
+  main: ./cmd/vuls/main.go
+  flags:
+  - -a
+  ldflags: 
+  - -s -w -X github.com/future-architect/vuls/config.Version={{.Version}} -X github.com/future-architect/vuls/config.Revision={{.Commit}}-{{ .CommitDate }}
+  binary: vuls
+
+- id: vuls-arm64
+  goos:
+  - linux
+  goarch:
+  - arm64
+  env:
+  - CGO_ENABLED=1
+  - CC=aarch64-linux-gnu-gcc
   main: ./cmd/vuls/main.go
   flags:
   - -a
@@ -74,7 +92,8 @@ archives:
 - id: vuls
   name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
   builds:
-  - vuls
+  - vuls-amd64
+  - vuls-arm64
   format: tar.gz
   files:
   - LICENSE

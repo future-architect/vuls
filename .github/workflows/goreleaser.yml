@@ -11,13 +11,16 @@ jobs:
     steps:
       -
         name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+      - 
+        name: install package for cross compile
+        run: sudo apt update && sudo apt install -y gcc-aarch64-linux-gnu
       -
         name: Unshallow
         run: git fetch --prune --unshallow
       -
         name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.18
       -
