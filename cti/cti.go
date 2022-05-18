@@ -1700,7 +1700,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1005": {
 		Name:      "TA0009: Collection => T1005: Data from Local System",
-		Platforms: []string{"Linux", "Windows", "macOS"},
+		Platforms: []string{"Linux", "Network", "Windows", "macOS"},
 	},
 	"T1006": {
 		Name:      "TA0005: Defense Evasion => T1006: Direct Volume Access",
@@ -1708,7 +1708,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1007": {
 		Name:      "TA0007: Discovery => T1007: System Service Discovery",
-		Platforms: []string{"Windows", "macOS"},
+		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1008": {
 		Name:      "TA0011: Command and Control => T1008: Fallback Channels",
@@ -1716,7 +1716,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1010": {
 		Name:      "TA0007: Discovery => T1010: Application Window Discovery",
-		Platforms: []string{"Windows", "macOS"},
+		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1011": {
 		Name:      "TA0010: Exfiltration => T1011: Exfiltration Over Other Network Medium",
@@ -1736,7 +1736,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1016": {
 		Name:      "TA0007: Discovery => T1016: System Network Configuration Discovery",
-		Platforms: []string{"Linux", "Windows", "macOS"},
+		Platforms: []string{"Linux", "Network", "Windows", "macOS"},
 	},
 	"T1016.001": {
 		Name:      "TA0007: Discovery => T1016.001: Internet Connection Discovery",
@@ -1744,7 +1744,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1018": {
 		Name:      "TA0007: Discovery => T1018: Remote System Discovery",
-		Platforms: []string{"Linux", "Windows", "macOS"},
+		Platforms: []string{"Linux", "Network", "Windows", "macOS"},
 	},
 	"T1020": {
 		Name:      "TA0010: Exfiltration => T1020: Automated Exfiltration",
@@ -1796,7 +1796,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1027.002": {
 		Name:      "TA0005: Defense Evasion => T1027.002: Software Packing",
-		Platforms: []string{"Windows", "macOS"},
+		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1027.003": {
 		Name:      "TA0005: Defense Evasion => T1027.003: Steganography",
@@ -1867,7 +1867,7 @@ var TechniqueDict = map[string]Technique{
 		Platforms: []string{"Windows"},
 	},
 	"T1037.002": {
-		Name:      "TA0003: Persistence, TA0004: Privilege Escalation => T1037.002: Logon Script (Mac)",
+		Name:      "TA0003: Persistence, TA0004: Privilege Escalation => T1037.002: Login Hook",
 		Platforms: []string{"macOS"},
 	},
 	"T1037.003": {
@@ -1888,15 +1888,15 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1040": {
 		Name:      "TA0006: Credential Access, TA0007: Discovery => T1040: Network Sniffing",
-		Platforms: []string{"Linux", "Network", "Windows", "macOS"},
+		Platforms: []string{"IaaS", "Linux", "Network", "Windows", "macOS"},
 	},
 	"T1041": {
 		Name:      "TA0010: Exfiltration => T1041: Exfiltration Over C2 Channel",
 		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1046": {
-		Name:      "TA0007: Discovery => T1046: Network Service Scanning",
-		Platforms: []string{"Containers", "IaaS", "Linux", "Windows", "macOS"},
+		Name:      "TA0007: Discovery => T1046: Network Service Discovery",
+		Platforms: []string{"Containers", "IaaS", "Linux", "Network", "Windows", "macOS"},
 	},
 	"T1047": {
 		Name:      "TA0002: Execution => T1047: Windows Management Instrumentation",
@@ -1915,12 +1915,12 @@ var TechniqueDict = map[string]Technique{
 		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1048.003": {
-		Name:      "TA0010: Exfiltration => T1048.003: Exfiltration Over Unencrypted/Obfuscated Non-C2 Protocol",
+		Name:      "TA0010: Exfiltration => T1048.003: Exfiltration Over Unencrypted Non-C2 Protocol",
 		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1049": {
 		Name:      "TA0007: Discovery => T1049: System Network Connections Discovery",
-		Platforms: []string{"IaaS", "Linux", "Windows", "macOS"},
+		Platforms: []string{"IaaS", "Linux", "Network", "Windows", "macOS"},
 	},
 	"T1052": {
 		Name:      "TA0010: Exfiltration => T1052: Exfiltration Over Physical Medium",
@@ -1934,13 +1934,9 @@ var TechniqueDict = map[string]Technique{
 		Name:      "TA0002: Execution, TA0003: Persistence, TA0004: Privilege Escalation => T1053: Scheduled Task/Job",
 		Platforms: []string{"Containers", "Linux", "Windows", "macOS"},
 	},
-	"T1053.001": {
-		Name:      "TA0002: Execution, TA0003: Persistence, TA0004: Privilege Escalation => T1053.001: At (Linux)",
-		Platforms: []string{"Linux"},
-	},
 	"T1053.002": {
-		Name:      "TA0002: Execution, TA0003: Persistence, TA0004: Privilege Escalation => T1053.002: At (Windows)",
-		Platforms: []string{"Windows"},
+		Name:      "TA0002: Execution, TA0003: Persistence, TA0004: Privilege Escalation => T1053.002: At",
+		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1053.003": {
 		Name:      "TA0002: Execution, TA0003: Persistence, TA0004: Privilege Escalation => T1053.003: Cron",
@@ -2005,6 +2001,10 @@ var TechniqueDict = map[string]Technique{
 	"T1055.014": {
 		Name:      "TA0004: Privilege Escalation, TA0005: Defense Evasion => T1055.014: VDSO Hijacking",
 		Platforms: []string{"Linux"},
+	},
+	"T1055.015": {
+		Name:      "TA0004: Privilege Escalation, TA0005: Defense Evasion => T1055.015: ListPlanting",
+		Platforms: []string{"Windows"},
 	},
 	"T1056": {
 		Name:      "TA0006: Credential Access, TA0009: Collection => T1056: Input Capture",
@@ -2088,7 +2088,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1070": {
 		Name:      "TA0005: Defense Evasion => T1070: Indicator Removal on Host",
-		Platforms: []string{"Containers", "Linux", "Windows", "macOS"},
+		Platforms: []string{"Containers", "Linux", "Network", "Windows", "macOS"},
 	},
 	"T1070.001": {
 		Name:      "TA0005: Defense Evasion => T1070.001: Clear Windows Event Logs",
@@ -2100,7 +2100,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1070.003": {
 		Name:      "TA0005: Defense Evasion => T1070.003: Clear Command History",
-		Platforms: []string{"Linux", "Windows", "macOS"},
+		Platforms: []string{"Linux", "Network", "Windows", "macOS"},
 	},
 	"T1070.004": {
 		Name:      "TA0005: Defense Evasion => T1070.004: File Deletion",
@@ -2176,11 +2176,11 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1082": {
 		Name:      "TA0007: Discovery => T1082: System Information Discovery",
-		Platforms: []string{"IaaS", "Linux", "Windows", "macOS"},
+		Platforms: []string{"IaaS", "Linux", "Network", "Windows", "macOS"},
 	},
 	"T1083": {
 		Name:      "TA0007: Discovery => T1083: File and Directory Discovery",
-		Platforms: []string{"Linux", "Windows", "macOS"},
+		Platforms: []string{"Linux", "Network", "Windows", "macOS"},
 	},
 	"T1087": {
 		Name:      "TA0007: Discovery => T1087: Account Discovery",
@@ -2236,23 +2236,27 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1098": {
 		Name:      "TA0003: Persistence => T1098: Account Manipulation",
-		Platforms: []string{"Azure AD", "Google Workspace", "IaaS", "Linux", "Office 365", "Windows", "macOS"},
+		Platforms: []string{"Azure AD", "Google Workspace", "IaaS", "Linux", "Office 365", "SaaS", "Windows", "macOS"},
 	},
 	"T1098.001": {
 		Name:      "TA0003: Persistence => T1098.001: Additional Cloud Credentials",
-		Platforms: []string{"Azure AD", "IaaS"},
+		Platforms: []string{"Azure AD", "IaaS", "SaaS"},
 	},
 	"T1098.002": {
-		Name:      "TA0003: Persistence => T1098.002: Exchange Email Delegate Permissions",
-		Platforms: []string{"Office 365", "Windows"},
+		Name:      "TA0003: Persistence => T1098.002: Additional Email Delegate Permissions",
+		Platforms: []string{"Google Workspace", "Office 365", "Windows"},
 	},
 	"T1098.003": {
-		Name:      "TA0003: Persistence => T1098.003: Add Office 365 Global Administrator Role",
-		Platforms: []string{"Office 365"},
+		Name:      "TA0003: Persistence => T1098.003: Additional Cloud Roles",
+		Platforms: []string{"Azure AD", "Google Workspace", "IaaS", "Office 365", "SaaS"},
 	},
 	"T1098.004": {
 		Name:      "TA0003: Persistence => T1098.004: SSH Authorized Keys",
-		Platforms: []string{"Linux", "macOS"},
+		Platforms: []string{"IaaS", "Linux", "macOS"},
+	},
+	"T1098.005": {
+		Name:      "TA0003: Persistence => T1098.005: Device Registration",
+		Platforms: []string{"Azure AD", "SaaS", "Windows"},
 	},
 	"T1102": {
 		Name:      "TA0011: Command and Control => T1102: Web Service",
@@ -2284,15 +2288,15 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1110": {
 		Name:      "TA0006: Credential Access => T1110: Brute Force",
-		Platforms: []string{"Azure AD", "Containers", "Google Workspace", "IaaS", "Linux", "Office 365", "SaaS", "Windows", "macOS"},
+		Platforms: []string{"Azure AD", "Containers", "Google Workspace", "IaaS", "Linux", "Network", "Office 365", "SaaS", "Windows", "macOS"},
 	},
 	"T1110.001": {
 		Name:      "TA0006: Credential Access => T1110.001: Password Guessing",
-		Platforms: []string{"Azure AD", "Containers", "Google Workspace", "IaaS", "Linux", "Office 365", "SaaS", "Windows", "macOS"},
+		Platforms: []string{"Azure AD", "Containers", "Google Workspace", "IaaS", "Linux", "Network", "Office 365", "SaaS", "Windows", "macOS"},
 	},
 	"T1110.002": {
 		Name:      "TA0006: Credential Access => T1110.002: Password Cracking",
-		Platforms: []string{"Azure AD", "Linux", "Office 365", "Windows", "macOS"},
+		Platforms: []string{"Azure AD", "Linux", "Network", "Office 365", "Windows", "macOS"},
 	},
 	"T1110.003": {
 		Name:      "TA0006: Credential Access => T1110.003: Password Spraying",
@@ -2303,7 +2307,7 @@ var TechniqueDict = map[string]Technique{
 		Platforms: []string{"Azure AD", "Containers", "Google Workspace", "IaaS", "Linux", "Office 365", "SaaS", "Windows", "macOS"},
 	},
 	"T1111": {
-		Name:      "TA0006: Credential Access => T1111: Two-Factor Authentication Interception",
+		Name:      "TA0006: Credential Access => T1111: Multi-Factor Authentication Interception",
 		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1112": {
@@ -2336,11 +2340,11 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1119": {
 		Name:      "TA0009: Collection => T1119: Automated Collection",
-		Platforms: []string{"Linux", "Windows", "macOS"},
+		Platforms: []string{"IaaS", "Linux", "SaaS", "Windows", "macOS"},
 	},
 	"T1120": {
 		Name:      "TA0007: Discovery => T1120: Peripheral Device Discovery",
-		Platforms: []string{"Windows", "macOS"},
+		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1123": {
 		Name:      "TA0009: Collection => T1123: Audio Capture",
@@ -2352,7 +2356,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1125": {
 		Name:      "TA0009: Collection => T1125: Video Capture",
-		Platforms: []string{"Windows", "macOS"},
+		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1127": {
 		Name:      "TA0005: Defense Evasion => T1127: Trusted Developer Utilities Proxy Execution",
@@ -2424,7 +2428,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1136.003": {
 		Name:      "TA0003: Persistence => T1136.003: Cloud Account",
-		Platforms: []string{"Azure AD", "Google Workspace", "IaaS", "Office 365"},
+		Platforms: []string{"Azure AD", "Google Workspace", "IaaS", "Office 365", "SaaS"},
 	},
 	"T1137": {
 		Name:      "TA0003: Persistence => T1137: Office Application Startup",
@@ -2508,7 +2512,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1201": {
 		Name:      "TA0007: Discovery => T1201: Password Policy Discovery",
-		Platforms: []string{"IaaS", "Linux", "Windows", "macOS"},
+		Platforms: []string{"IaaS", "Linux", "Network", "Windows", "macOS"},
 	},
 	"T1202": {
 		Name:      "TA0005: Defense Evasion => T1202: Indirect Command Execution",
@@ -2575,7 +2579,7 @@ var TechniqueDict = map[string]Technique{
 		Platforms: []string{"SaaS"},
 	},
 	"T1216": {
-		Name:      "TA0005: Defense Evasion => T1216: Signed Script Proxy Execution",
+		Name:      "TA0005: Defense Evasion => T1216: System Script Proxy Execution",
 		Platforms: []string{"Windows"},
 	},
 	"T1216.001": {
@@ -2587,8 +2591,8 @@ var TechniqueDict = map[string]Technique{
 		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1218": {
-		Name:      "TA0005: Defense Evasion => T1218: Signed Binary Proxy Execution",
-		Platforms: []string{"Windows"},
+		Name:      "TA0005: Defense Evasion => T1218: System Binary Proxy Execution",
+		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1218.001": {
 		Name:      "TA0005: Defense Evasion => T1218.001: Compiled HTML File",
@@ -2720,7 +2724,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1495": {
 		Name:      "TA0040: Impact => T1495: Firmware Corruption",
-		Platforms: []string{"Linux", "Windows", "macOS"},
+		Platforms: []string{"Linux", "Network", "Windows", "macOS"},
 	},
 	"T1496": {
 		Name:      "TA0040: Impact => T1496: Resource Hijacking",
@@ -2794,6 +2798,10 @@ var TechniqueDict = map[string]Technique{
 		Name:      "TA0003: Persistence => T1505.004: IIS Components",
 		Platforms: []string{"Windows"},
 	},
+	"T1505.005": {
+		Name:      "TA0003: Persistence => T1505.005: Terminal Services DLL",
+		Platforms: []string{"Windows"},
+	},
 	"T1518": {
 		Name:      "TA0007: Discovery => T1518: Software Discovery",
 		Platforms: []string{"Azure AD", "Google Workspace", "IaaS", "Linux", "Office 365", "SaaS", "Windows", "macOS"},
@@ -2812,11 +2820,11 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1528": {
 		Name:      "TA0006: Credential Access => T1528: Steal Application Access Token",
-		Platforms: []string{"Azure AD", "Google Workspace", "Office 365", "SaaS"},
+		Platforms: []string{"Azure AD", "Containers", "Google Workspace", "Office 365", "SaaS"},
 	},
 	"T1529": {
 		Name:      "TA0040: Impact => T1529: System Shutdown/Reboot",
-		Platforms: []string{"Linux", "Windows", "macOS"},
+		Platforms: []string{"Linux", "Network", "Windows", "macOS"},
 	},
 	"T1530": {
 		Name:      "TA0009: Collection => T1530: Data from Cloud Storage Object",
@@ -2824,7 +2832,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1531": {
 		Name:      "TA0040: Impact => T1531: Account Access Removal",
-		Platforms: []string{"Linux", "Windows", "macOS"},
+		Platforms: []string{"Linux", "Office 365", "SaaS", "Windows", "macOS"},
 	},
 	"T1534": {
 		Name:      "TA0008: Lateral Movement => T1534: Internal Spearphishing",
@@ -2848,7 +2856,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1542": {
 		Name:      "TA0003: Persistence, TA0005: Defense Evasion => T1542: Pre-OS Boot",
-		Platforms: []string{"Linux", "Network", "Windows"},
+		Platforms: []string{"Linux", "Network", "Windows", "macOS"},
 	},
 	"T1542.001": {
 		Name:      "TA0003: Persistence, TA0005: Defense Evasion => T1542.001: System Firmware",
@@ -2856,7 +2864,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1542.002": {
 		Name:      "TA0003: Persistence, TA0005: Defense Evasion => T1542.002: Component Firmware",
-		Platforms: []string{"Windows"},
+		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1542.003": {
 		Name:      "TA0003: Persistence, TA0005: Defense Evasion => T1542.003: Bootkit",
@@ -2998,10 +3006,6 @@ var TechniqueDict = map[string]Technique{
 		Name:      "TA0003: Persistence, TA0004: Privilege Escalation => T1547.010: Port Monitors",
 		Platforms: []string{"Windows"},
 	},
-	"T1547.011": {
-		Name:      "TA0003: Persistence, TA0004: Privilege Escalation => T1547.011: Plist Modification",
-		Platforms: []string{"macOS"},
-	},
 	"T1547.012": {
 		Name:      "TA0003: Persistence, TA0004: Privilege Escalation => T1547.012: Print Processors",
 		Platforms: []string{"Windows"},
@@ -3040,11 +3044,11 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1550": {
 		Name:      "TA0005: Defense Evasion, TA0008: Lateral Movement => T1550: Use Alternate Authentication Material",
-		Platforms: []string{"Google Workspace", "IaaS", "Office 365", "SaaS", "Windows"},
+		Platforms: []string{"Containers", "Google Workspace", "IaaS", "Office 365", "SaaS", "Windows"},
 	},
 	"T1550.001": {
 		Name:      "TA0005: Defense Evasion, TA0008: Lateral Movement => T1550.001: Application Access Token",
-		Platforms: []string{"Google Workspace", "Office 365", "SaaS"},
+		Platforms: []string{"Containers", "Google Workspace", "Office 365", "SaaS"},
 	},
 	"T1550.002": {
 		Name:      "TA0005: Defense Evasion, TA0008: Lateral Movement => T1550.002: Pass the Hash",
@@ -3166,6 +3170,10 @@ var TechniqueDict = map[string]Technique{
 		Name:      "TA0003: Persistence, TA0005: Defense Evasion, TA0006: Credential Access => T1556.004: Network Device Authentication",
 		Platforms: []string{"Network"},
 	},
+	"T1556.005": {
+		Name:      "TA0003: Persistence, TA0005: Defense Evasion, TA0006: Credential Access => T1556.005: Reversible Encryption",
+		Platforms: []string{"Windows"},
+	},
 	"T1557": {
 		Name:      "TA0006: Credential Access, TA0009: Collection => T1557: Adversary-in-the-Middle",
 		Platforms: []string{"Linux", "Windows", "macOS"},
@@ -3176,6 +3184,10 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1557.002": {
 		Name:      "TA0006: Credential Access, TA0009: Collection => T1557.002: ARP Cache Poisoning",
+		Platforms: []string{"Linux", "Windows", "macOS"},
+	},
+	"T1557.003": {
+		Name:      "TA0006: Credential Access, TA0009: Collection => T1557.003: DHCP Spoofing",
 		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1558": {
@@ -3200,7 +3212,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1559": {
 		Name:      "TA0002: Execution => T1559: Inter-Process Communication",
-		Platforms: []string{"Windows", "macOS"},
+		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1559.001": {
 		Name:      "TA0002: Execution => T1559.001: Component Object Model",
@@ -3209,6 +3221,10 @@ var TechniqueDict = map[string]Technique{
 	"T1559.002": {
 		Name:      "TA0002: Execution => T1559.002: Dynamic Data Exchange",
 		Platforms: []string{"Windows"},
+	},
+	"T1559.003": {
+		Name:      "TA0002: Execution => T1559.003: XPC Services",
+		Platforms: []string{"macOS"},
 	},
 	"T1560": {
 		Name:      "TA0009: Collection => T1560: Archive Collected Data",
@@ -3252,7 +3268,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1562.003": {
 		Name:      "TA0005: Defense Evasion => T1562.003: Impair Command History Logging",
-		Platforms: []string{"Linux", "Windows", "macOS"},
+		Platforms: []string{"Linux", "Network", "Windows", "macOS"},
 	},
 	"T1562.004": {
 		Name:      "TA0005: Defense Evasion => T1562.004: Disable or Modify System Firewall",
@@ -3300,11 +3316,11 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1564.002": {
 		Name:      "TA0005: Defense Evasion => T1564.002: Hidden Users",
-		Platforms: []string{"Windows", "macOS"},
+		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1564.003": {
 		Name:      "TA0005: Defense Evasion => T1564.003: Hidden Window",
-		Platforms: []string{"Windows", "macOS"},
+		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1564.004": {
 		Name:      "TA0005: Defense Evasion => T1564.004: NTFS File Attributes",
@@ -3324,11 +3340,15 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1564.008": {
 		Name:      "TA0005: Defense Evasion => T1564.008: Email Hiding Rules",
-		Platforms: []string{"Linux", "Office 365", "Windows", "macOS"},
+		Platforms: []string{"Google Workspace", "Linux", "Office 365", "Windows", "macOS"},
 	},
 	"T1564.009": {
 		Name:      "TA0005: Defense Evasion => T1564.009: Resource Forking",
 		Platforms: []string{"macOS"},
+	},
+	"T1564.010": {
+		Name:      "TA0005: Defense Evasion => T1564.010: Process Argument Spoofing",
+		Platforms: []string{"Windows"},
 	},
 	"T1565": {
 		Name:      "TA0040: Impact => T1565: Data Manipulation",
@@ -3392,7 +3412,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1569": {
 		Name:      "TA0002: Execution => T1569: System Services",
-		Platforms: []string{"Windows", "macOS"},
+		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1569.001": {
 		Name:      "TA0002: Execution => T1569.001: Launchctl",
@@ -3472,6 +3492,10 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1574.012": {
 		Name:      "TA0003: Persistence, TA0004: Privilege Escalation, TA0005: Defense Evasion => T1574.012: COR_PROFILER",
+		Platforms: []string{"Windows"},
+	},
+	"T1574.013": {
+		Name:      "TA0003: Persistence, TA0004: Privilege Escalation, TA0005: Defense Evasion => T1574.013: KernelCallbackTable",
 		Platforms: []string{"Windows"},
 	},
 	"T1578": {
@@ -3738,6 +3762,10 @@ var TechniqueDict = map[string]Technique{
 		Name:      "TA0043: Reconnaissance => T1595.002: Vulnerability Scanning",
 		Platforms: []string{"PRE"},
 	},
+	"T1595.003": {
+		Name:      "TA0043: Reconnaissance => T1595.003: Wordlist Scanning",
+		Platforms: []string{"PRE"},
+	},
 	"T1596": {
 		Name:      "TA0043: Reconnaissance => T1596: Search Open Technical Databases",
 		Platforms: []string{"PRE"},
@@ -3909,5 +3937,17 @@ var TechniqueDict = map[string]Technique{
 	"T1620": {
 		Name:      "TA0005: Defense Evasion => T1620: Reflective Code Loading",
 		Platforms: []string{"Linux", "Windows", "macOS"},
+	},
+	"T1621": {
+		Name:      "TA0006: Credential Access => T1621: Multi-Factor Authentication Request Generation",
+		Platforms: []string{"Azure AD", "Google Workspace", "IaaS", "Linux", "Office 365", "SaaS", "Windows", "macOS"},
+	},
+	"T1622": {
+		Name:      "TA0005: Defense Evasion, TA0007: Discovery => T1622: Debugger Evasion",
+		Platforms: []string{"Linux", "Windows", "macOS"},
+	},
+	"T1647": {
+		Name:      "TA0005: Defense Evasion => T1647: Plist File Modification",
+		Platforms: []string{"macOS"},
 	},
 }
