@@ -55,6 +55,14 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 		},
 		//RHEL
 		{
+			name:     "RHEL6 eol",
+			fields:   fields{family: RedHat, release: "6"},
+			now:      time.Date(2021, 1, 6, 23, 59, 59, 0, time.UTC),
+			stdEnded: true,
+			extEnded: false,
+			found:    true,
+		},
+		{
 			name:     "RHEL7 supported",
 			fields:   fields{family: RedHat, release: "7"},
 			now:      time.Date(2021, 1, 6, 23, 59, 59, 0, time.UTC),
@@ -71,16 +79,16 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			found:    true,
 		},
 		{
-			name:     "RHEL6 eol",
-			fields:   fields{family: RedHat, release: "6"},
+			name:     "RHEL9 supported",
+			fields:   fields{family: RedHat, release: "9"},
 			now:      time.Date(2021, 1, 6, 23, 59, 59, 0, time.UTC),
-			stdEnded: true,
+			stdEnded: false,
 			extEnded: false,
 			found:    true,
 		},
 		{
-			name:     "RHEL9 not found",
-			fields:   fields{family: RedHat, release: "9"},
+			name:     "RHEL10 not found",
+			fields:   fields{family: RedHat, release: "10"},
 			now:      time.Date(2021, 1, 6, 23, 59, 59, 0, time.UTC),
 			stdEnded: false,
 			extEnded: false,
