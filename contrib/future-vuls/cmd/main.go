@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -21,6 +22,7 @@ var (
 	serverUUID string
 	groupID    int64
 	token      string
+	tags       []string
 	url        string
 )
 
@@ -47,6 +49,9 @@ func main() {
 			if len(token) == 0 {
 				token = os.Getenv("VULS_TOKEN")
 			}
+			if len(tags) == 0 {
+				tags = strings.Split(os.Getenv("VULS_TAGS"), ",")
+			}
 
 			var scanResultJSON []byte
 			if stdIn {
@@ -69,6 +74,9 @@ func main() {
 				return
 			}
 			scanResult.ServerUUID = serverUUID
+			if 0 < len(tags) {
+				scanResult.Optional["VULS_TAGS"] = tags
+			}
 
 			config.Conf.Saas.GroupID = groupID
 			config.Conf.Saas.Token = token
