@@ -75,6 +75,9 @@ func main() {
 			}
 			scanResult.ServerUUID = serverUUID
 			if 0 < len(tags) {
+				if scanResult.Optional == nil {
+					scanResult.Optional = map[string]interface{}{}
+				}
 				scanResult.Optional["VULS_TAGS"] = tags
 			}
 
