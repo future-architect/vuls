@@ -747,9 +747,10 @@ func (l *base) scanWordPress() error {
 		return nil
 	}
 	l.log.Info("Scanning WordPress...")
-	cmd := fmt.Sprintf("sudo -u %s -i -- %s cli version --allow-root",
+	cmd := fmt.Sprintf("sudo -u %s -i -- %s core version --path=%s --allow-root",
 		l.ServerInfo.WordPress.OSUser,
-		l.ServerInfo.WordPress.CmdPath)
+		l.ServerInfo.WordPress.CmdPath,
+		l.ServerInfo.WordPress.DocRoot)
 	if r := exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
 		return xerrors.Errorf("Failed to exec `%s`. Check the OS user, command path of wp-cli, DocRoot and permission: %#v", cmd, l.ServerInfo.WordPress)
 	}
@@ -791,7 +792,7 @@ func (l *base) detectWordPress() (*models.WordPressPackages, error) {
 }
 
 func (l *base) detectWpCore() (string, error) {
-	cmd := fmt.Sprintf("sudo -u %s -i -- %s core version --path=%s --allow-root",
+	cmd := fmt.Sprintf("sudo -u %s -i -- %s core version --path=%s --allow-root 2>/dev/null",
 		l.ServerInfo.WordPress.OSUser,
 		l.ServerInfo.WordPress.CmdPath,
 		l.ServerInfo.WordPress.DocRoot)
