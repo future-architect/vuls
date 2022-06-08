@@ -5,7 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/boltdb/bolt"
+	bolt "go.etcd.io/bbolt"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
