@@ -1,7 +1,13 @@
 package cwe
 
-// CweTopTwentyfive2019 has CWE-ID in CWE Top 25
-var CweTopTwentyfive2019 = map[string]string{
+// CweTopTwentyfives has CWE-ID in CWE Top 25
+var CweTopTwentyfives = map[string]map[string]string{
+	"2019": cweTopTwentyfive2019,
+	"2020": cweTopTwentyfive2020,
+	"2021": cweTopTwentyfive2021,
+}
+
+var cweTopTwentyfive2019 = map[string]string{
 	"119": "1",
 	"79":  "2",
 	"20":  "3",
@@ -29,5 +35,65 @@ var CweTopTwentyfive2019 = map[string]string{
 	"295": "25",
 }
 
-// CweTopTwentyfive2019URL has CWE Top25 links
-var CweTopTwentyfive2019URL = "https://cwe.mitre.org/top25/archive/2019/2019_cwe_top25.html"
+var cweTopTwentyfive2020 = map[string]string{
+	"79":  "1",
+	"787": "2",
+	"20":  "3",
+	"125": "4",
+	"119": "5",
+	"89":  "6",
+	"200": "7",
+	"416": "8",
+	"352": "9",
+	"78":  "10",
+	"190": "11",
+	"22":  "12",
+	"476": "13",
+	"287": "14",
+	"434": "16",
+	"732": "16",
+	"94":  "17",
+	"522": "18",
+	"611": "19",
+	"798": "20",
+	"502": "21",
+	"269": "22",
+	"400": "23",
+	"306": "24",
+	"862": "25",
+}
+
+var cweTopTwentyfive2021 = map[string]string{
+	"787": "1",
+	"79":  "2",
+	"125": "3",
+	"20":  "4",
+	"78":  "5",
+	"89":  "6",
+	"416": "7",
+	"22":  "8",
+	"352": "9",
+	"434": "10",
+	"306": "11",
+	"190": "12",
+	"502": "13",
+	"287": "14",
+	"476": "16",
+	"798": "16",
+	"119": "17",
+	"862": "18",
+	"276": "19",
+	"200": "20",
+	"522": "21",
+	"732": "22",
+	"611": "23",
+	"918": "24",
+	"77":  "25",
+}
+
+// CweTopTwentyfiveURLs has CWE Top25 links
+var CweTopTwentyfiveURLs = map[string]string{
+	"2019": "https://cwe.mitre.org/top25/archive/2019/2019_cwe_top25.html",
+	"2020": "https://cwe.mitre.org/top25/archive/2020/2020_cwe_top25.html",
+	"2021": "https://cwe.mitre.org/top25/archive/2021/2021_cwe_top25.html",
+}

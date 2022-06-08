@@ -326,23 +326,19 @@ func (w SlackWriter) attachmentText(vinfo models.VulnInfo, cweDict map[string]mo
 func (w SlackWriter) cweIDs(vinfo models.VulnInfo, osFamily string, cweDict models.CweDict) string {
 	links := []string{}
 	for _, c := range vinfo.CveContents.UniqCweIDs(osFamily) {
-		name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL := cweDict.Get(c.Value, w.lang)
-		line := ""
-		if top10Rank != "" {
-			line = fmt.Sprintf("<%s|[OWASP Top %s]>",
-				top10URL, top10Rank)
+		name, url, owasp, cwe25, sans := cweDict.Get(c.Value, w.lang)
+		line := fmt.Sprintf("<%s|%s>: %s", url, c.Value, name)
+		for year, info := range owasp {
+			links = append(links, fmt.Sprintf("<%s|[OWASP(%s) Top %s]> %s", info.URL, year, info.Rank, line))
 		}
-		if cweTop25Rank != "" {
-			line = fmt.Sprintf("<%s|[CWE Top %s]>",
-				cweTop25URL, cweTop25Rank)
+		for year, info := range cwe25 {
+			links = append(links, fmt.Sprintf("<%s|[CWE(%s) Top %s]> %s", info.URL, year, info.Rank, line))
 		}
-		if sansTop25Rank != "" {
-			line = fmt.Sprintf("<%s|[CWE/SANS Top %s]>",
-				sansTop25URL, sansTop25Rank)
+		for year, info := range sans {
+			links = append(links, fmt.Sprintf("<%s|[CWE/SANS(%s) Top %s]> %s", info.URL, year, info.Rank, line))
 		}
-		if top10Rank == "" && cweTop25Rank == "" && sansTop25Rank == "" {
-			links = append(links, fmt.Sprintf("%s <%s|%s>: %s",
-				line, url, c.Value, name))
+		if len(owasp) == 0 && len(cwe25) == 0 && len(sans) == 0 {
+			links = append(links, line)
 		}
 	}
 	return strings.Join(links, "\n")

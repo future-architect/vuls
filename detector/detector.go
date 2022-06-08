@@ -567,17 +567,13 @@ func FillCweDict(r *models.ScanResult) {
 
 	dict := map[string]models.CweDictEntry{}
 	for id := range uniqCweIDMap {
-		entry := models.CweDictEntry{}
+		entry := models.CweDictEntry{
+			OwaspTopTens:       map[string]string{},
+			CweTopTwentyfives:  map[string]string{},
+			SansTopTwentyfives: map[string]string{},
+		}
 		if e, ok := cwe.CweDictEn[id]; ok {
-			if rank, ok := cwe.OwaspTopTen2017[id]; ok {
-				entry.OwaspTopTen2017 = rank
-			}
-			if rank, ok := cwe.CweTopTwentyfive2019[id]; ok {
-				entry.CweTopTwentyfive2019 = rank
-			}
-			if rank, ok := cwe.SansTopTwentyfive[id]; ok {
-				entry.SansTopTwentyfive = rank
-			}
+			fillCweRank(&entry, id)
 			entry.En = &e
 		} else {
 			logging.Log.Debugf("CWE-ID %s is not found in English CWE Dict", id)
@@ -586,23 +582,34 @@ func FillCweDict(r *models.ScanResult) {
 
 		if r.Lang == "ja" {
 			if e, ok := cwe.CweDictJa[id]; ok {
-				if rank, ok := cwe.OwaspTopTen2017[id]; ok {
-					entry.OwaspTopTen2017 = rank
-				}
-				if rank, ok := cwe.CweTopTwentyfive2019[id]; ok {
-					entry.CweTopTwentyfive2019 = rank
-				}
-				if rank, ok := cwe.SansTopTwentyfive[id]; ok {
-					entry.SansTopTwentyfive = rank
-				}
+				fillCweRank(&entry, id)
 				entry.Ja = &e
 			} else {
 				logging.Log.Debugf("CWE-ID %s is not found in Japanese CWE Dict", id)
 				entry.Ja = &cwe.Cwe{CweID: id}
 			}
 		}
+
 		dict[id] = entry
 	}
 	r.CweDict = dict
 	return
+}
+
+func fillCweRank(entry *models.CweDictEntry, id string) {
+	for year, ranks := range cwe.OwaspTopTens {
+		if rank, ok := ranks[id]; ok {
+			entry.OwaspTopTens[year] = rank
+		}
+	}
+	for year, ranks := range cwe.CweTopTwentyfives {
+		if rank, ok := ranks[id]; ok {
+			entry.CweTopTwentyfives[year] = rank
+		}
+	}
+	for year, ranks := range cwe.SansTopTwentyfives {
+		if rank, ok := ranks[id]; ok {
+			entry.SansTopTwentyfives[year] = rank
+		}
+	}
 }

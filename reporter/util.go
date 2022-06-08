@@ -19,6 +19,7 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/gosuri/uitable"
 	"github.com/olekukonko/tablewriter"
+	"golang.org/x/exp/slices"
 	"golang.org/x/xerrors"
 )
 
@@ -432,31 +433,42 @@ No CVE-IDs are found in updatable packages.
 			data = append(data, []string{"Confidence", confidence.String()})
 		}
 
-		cweURLs, top10URLs := []string{}, []string{}
-		cweTop25URLs, sansTop25URLs := []string{}, []string{}
+		cweURLs, top10URLs, cweTop25URLs, sansTop25URLs := []string{}, map[string][]string{}, map[string][]string{}, map[string][]string{}
 		for _, v := range vuln.CveContents.UniqCweIDs(r.Family) {
-			name, url, top10Rank, top10URL, cweTop25Rank, cweTop25URL, sansTop25Rank, sansTop25URL := r.CweDict.Get(v.Value, r.Lang)
-			if top10Rank != "" {
-				data = append(data, []string{"CWE",
-					fmt.Sprintf("[OWASP Top%s] %s: %s (%s)",
-						top10Rank, v.Value, name, v.Type)})
-				top10URLs = append(top10URLs, top10URL)
+			name, url, owasp, cwe25, sans := r.CweDict.Get(v.Value, r.Lang)
+
+			ds := [][]string{}
+			for year, info := range owasp {
+				ds = append(ds, []string{"CWE", fmt.Sprintf("[OWASP(%s) Top%s] %s: %s (%s)", year, info.Rank, v.Value, name, v.Type)})
+				top10URLs[year] = append(top10URLs[year], info.URL)
 			}
-			if cweTop25Rank != "" {
-				data = append(data, []string{"CWE",
-					fmt.Sprintf("[CWE Top%s] %s: %s (%s)",
-						cweTop25Rank, v.Value, name, v.Type)})
-				cweTop25URLs = append(cweTop25URLs, cweTop25URL)
+			slices.SortFunc(ds, func(a, b []string) bool {
+				return a[1] < b[1]
+			})
+			data = append(data, ds...)
+
+			ds = [][]string{}
+			for year, info := range cwe25 {
+				ds = append(ds, []string{"CWE", fmt.Sprintf("[CWE(%s) Top%s] %s: %s (%s)", year, info.Rank, v.Value, name, v.Type)})
+				cweTop25URLs[year] = append(cweTop25URLs[year], info.URL)
 			}
-			if sansTop25Rank != "" {
-				data = append(data, []string{"CWE",
-					fmt.Sprintf("[CWE/SANS Top%s]  %s: %s (%s)",
-						sansTop25Rank, v.Value, name, v.Type)})
-				sansTop25URLs = append(sansTop25URLs, sansTop25URL)
+			slices.SortFunc(ds, func(a, b []string) bool {
+				return a[1] < b[1]
+			})
+			data = append(data, ds...)
+
+			ds = [][]string{}
+			for year, info := range sans {
+				ds = append(ds, []string{"CWE", fmt.Sprintf("[CWE/SANS(%s) Top%s]  %s: %s (%s)", year, info.Rank, v.Value, name, v.Type)})
+				sansTop25URLs[year] = append(sansTop25URLs[year], info.URL)
 			}
-			if top10Rank == "" && cweTop25Rank == "" && sansTop25Rank == "" {
-				data = append(data, []string{"CWE", fmt.Sprintf("%s: %s (%s)",
-					v.Value, name, v.Type)})
+			slices.SortFunc(ds, func(a, b []string) bool {
+				return a[1] < b[1]
+			})
+			data = append(data, ds...)
+
+			if len(owasp) == 0 && len(cwe25) == 0 && len(sans) == 0 {
+				data = append(data, []string{"CWE", fmt.Sprintf("%s: %s (%s)", v.Value, name, v.Type)})
 			}
 			cweURLs = append(cweURLs, url)
 		}
@@ -474,15 +486,34 @@ No CVE-IDs are found in updatable packages.
 			m[exploit.URL] = struct{}{}
 		}
 
-		for _, url := range top10URLs {
-			data = append(data, []string{"OWASP Top10", url})
+		for year, urls := range top10URLs {
+			ds := [][]string{}
+			for _, url := range urls {
+				ds = append(ds, []string{fmt.Sprintf("OWASP(%s) Top10", year), url})
+			}
+			slices.SortFunc(ds, func(a, b []string) bool {
+				return a[0] < b[0]
+			})
+			data = append(data, ds...)
 		}
-		if len(cweTop25URLs) != 0 {
-			data = append(data, []string{"CWE Top25", cweTop25URLs[0]})
+
+		ds := [][]string{}
+		for year, urls := range cweTop25URLs {
+			ds = append(ds, []string{fmt.Sprintf("CWE(%s) Top25", year), urls[0]})
 		}
-		if len(sansTop25URLs) != 0 {
-			data = append(data, []string{"SANS/CWE Top25", sansTop25URLs[0]})
+		slices.SortFunc(ds, func(a, b []string) bool {
+			return a[0] < b[0]
+		})
+		data = append(data, ds...)
+
+		ds = [][]string{}
+		for year, urls := range sansTop25URLs {
+			ds = append(ds, []string{fmt.Sprintf("SANS/CWE(%s) Top25", year), urls[0]})
 		}
+		slices.SortFunc(ds, func(a, b []string) bool {
+			return a[0] < b[0]
+		})
+		data = append(data, ds...)
 
 		for _, alert := range vuln.AlertDict.CISA {
 			data = append(data, []string{"CISA Alert", alert.URL})

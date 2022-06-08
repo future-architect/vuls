@@ -1,7 +1,41 @@
 package cwe
 
-// SansTopTwentyfive has CWE-ID in CWE/SANS Top 25
-var SansTopTwentyfive = map[string]string{
+// SansTopTwentyfives has CWE-ID in CWE/SANS Top 25
+var SansTopTwentyfives = map[string]map[string]string{
+	"2010":   sansTopTwentyfive2010,
+	"2011":   sansTopTwentyfive2011,
+	"latest": sansTopTwentyfiveLatest,
+}
+
+var sansTopTwentyfive2010 = map[string]string{
+	"79":  "1",
+	"89":  "2",
+	"120": "3",
+	"352": "4",
+	"285": "5",
+	"807": "6",
+	"22":  "7",
+	"434": "8",
+	"78":  "9",
+	"311": "10",
+	"798": "11",
+	"805": "12",
+	"98":  "13",
+	"129": "14",
+	"754": "15",
+	"209": "16",
+	"190": "17",
+	"131": "18",
+	"306": "19",
+	"494": "20",
+	"732": "21",
+	"770": "22",
+	"601": "23",
+	"327": "24",
+	"362": "25",
+}
+
+var sansTopTwentyfive2011 = map[string]string{
 	"89":  "1",
 	"78":  "2",
 	"120": "3",
@@ -29,5 +63,37 @@ var SansTopTwentyfive = map[string]string{
 	"759": "25",
 }
 
-// SansTopTwentyfiveURL is a URL of sans 25
-var SansTopTwentyfiveURL = "https://www.sans.org/top25-software-errors/"
+var sansTopTwentyfiveLatest = map[string]string{
+	"119": "1",
+	"79":  "2",
+	"20":  "3",
+	"200": "4",
+	"125": "5",
+	"89":  "6",
+	"416": "7",
+	"190": "8",
+	"352": "9",
+	"22":  "10",
+	"78":  "11",
+	"787": "12",
+	"287": "13",
+	"476": "14",
+	"732": "15",
+	"434": "16",
+	"611": "17",
+	"94":  "18",
+	"798": "19",
+	"400": "20",
+	"772": "21",
+	"426": "22",
+	"502": "23",
+	"269": "24",
+	"295": "25",
+}
+
+// SansTopTwentyfiveURLs has CWE/SANS Top25 links
+var SansTopTwentyfiveURLs = map[string]string{
+	"2010":   "https://cwe.mitre.org/top25/archive/2010/2010_cwe_sans_top25.html",
+	"2011":   "https://cwe.mitre.org/top25/archive/2011/2011_cwe_sans_top25.html",
+	"latest": "https://www.sans.org/top25-software-errors/",
+}
