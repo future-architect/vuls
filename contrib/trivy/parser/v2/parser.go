@@ -47,7 +47,7 @@ func setScanResultMeta(scanResult *models.ScanResult, report *types.Report) erro
 	if report.ArtifactType == "container_image" {
 		matches := dockerTagPattern.FindStringSubmatch(report.ArtifactName)
 		var imageName, imageTag string
-		if 3 < len(matches) {
+		if 2 < len(matches) {
 			// including the image tag
 			imageName = matches[1]
 			imageTag = matches[2]
