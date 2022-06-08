@@ -2,6 +2,7 @@ package v2
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"time"
 
@@ -35,7 +36,7 @@ func (p ParserV2) Parse(vulnJSON []byte) (result *models.ScanResult, err error) 
 	return scanResult, nil
 }
 
-var dockerTagPattern = regexp.MustCompile(`:.+$`)
+var dockerTagPattern = regexp.MustCompile(`^(.*):(.*)$`)
 
 func setScanResultMeta(scanResult *models.ScanResult, report *types.Report) error {
 	if len(report.Results) == 0 {
@@ -43,8 +44,24 @@ func setScanResultMeta(scanResult *models.ScanResult, report *types.Report) erro
 	}
 
 	scanResult.ServerName = report.ArtifactName
-	if report.ArtifactType == "container_image" && !dockerTagPattern.MatchString(scanResult.ServerName) {
-		scanResult.ServerName += ":latest" // Complement if the tag is omitted
+	if report.ArtifactType == "container_image" {
+		matches := dockerTagPattern.FindStringSubmatch(report.ArtifactName)
+		var imageName, imageTag string
+		if 0 < len(matches) {
+			// including the image tag
+			imageName = matches[1]
+			imageTag = matches[2]
+		} else {
+			// no image tag
+			imageName = report.ArtifactName
+			imageTag = "latest" // Complement if the tag is omitted
+		}
+		scanResult.ServerName = fmt.Sprintf("%s:%s", imageName, imageTag)
+		if scanResult.Optional == nil {
+			scanResult.Optional = map[string]interface{}{}
+		}
+		scanResult.Optional["TRIVY_IMAGE_NAME"] = imageName
+		scanResult.Optional["TRIVY_IMAGE_TAG"] = imageTag
 	}
 
 	if report.Metadata.OS != nil {

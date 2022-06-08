@@ -263,7 +263,10 @@ var redisSR = &models.ScanResult{
 			BinaryNames: []string{"bsdutils", "pkgA"},
 		},
 	},
-	Optional: nil,
+	Optional: map[string]interface{}{
+		"TRIVY_IMAGE_NAME": "redis",
+		"TRIVY_IMAGE_TAG":  "latest",
+	},
 }
 
 var strutsTrivy = []byte(`
@@ -718,7 +721,10 @@ var osAndLibSR = &models.ScanResult{
 			BinaryNames: []string{"libgnutls30"},
 		},
 	},
-	Optional: nil,
+	Optional: map[string]interface{}{
+		"TRIVY_IMAGE_NAME": "quay.io/fluentd_elasticsearch/fluentd",
+		"TRIVY_IMAGE_TAG":  "v2.9.0",
+	},
 }
 
 func TestParseError(t *testing.T) {
