@@ -201,6 +201,7 @@ func printConfigToml(ips []string) (err error) {
 {{range $i, $ip := .IPs}}
 [servers.{{index $names $i}}]
 host                = "{{$ip}}"
+#ignoreIPAddresses  = ["{{$ip}}"]
 #port               = "22"
 #user               = "root"
 #sshConfigPath		= "/home/username/.ssh/config"
