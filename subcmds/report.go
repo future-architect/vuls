@@ -265,7 +265,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	// report
 	reports := []reporter.ResultWriter{
 		reporter.StdoutWriter{
-			FormatCsv:         p.formatCsv,
 			FormatFullText:    p.formatFullText,
 			FormatOneLineText: p.formatOneLineText,
 			FormatList:        p.formatList,

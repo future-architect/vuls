@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -127,7 +127,7 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	if 0 < len(f.Args()) {
 		servernames = f.Args()
 	} else if config.Conf.Pipe {
-		bytes, err := ioutil.ReadAll(os.Stdin)
+		bytes, err := io.ReadAll(os.Stdin)
 		if err != nil {
 			logging.Log.Errorf("Failed to read stdin. err: %+v", err)
 			return subcommands.ExitFailure

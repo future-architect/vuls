@@ -16,40 +16,39 @@ import (
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	kevulndb "github.com/vulsio/go-kev/db"
-	kevulnmodels "github.com/vulsio/go-kev/models"
-	kevulnlog "github.com/vulsio/go-kev/utils"
+	ctidb "github.com/vulsio/go-cti/db"
+	ctilog "github.com/vulsio/go-cti/utils"
 )
 
-// goKEVulnDBClient is a DB Driver
-type goKEVulnDBClient struct {
-	driver  kevulndb.DB
+// goCTIDBClient is a DB Driver
+type goCTIDBClient struct {
+	driver  ctidb.DB
 	baseURL string
 }
 
 // closeDB close a DB connection
-func (client goKEVulnDBClient) closeDB() error {
+func (client goCTIDBClient) closeDB() error {
 	if client.driver == nil {
 		return nil
 	}
 	return client.driver.CloseDB()
 }
 
-func newGoKEVulnDBClient(cnf config.VulnDictInterface, o logging.LogOpts) (*goKEVulnDBClient, error) {
-	if err := kevulnlog.SetLogger(o.LogToFile, o.LogDir, o.Debug, o.LogJSON); err != nil {
-		return nil, xerrors.Errorf("Failed to set go-kev logger. err: %w", err)
+func newGoCTIDBClient(cnf config.VulnDictInterface, o logging.LogOpts) (*goCTIDBClient, error) {
+	if err := ctilog.SetLogger(o.LogToFile, o.LogDir, o.Debug, o.LogJSON); err != nil {
+		return nil, xerrors.Errorf("Failed to set go-cti logger. err: %w", err)
 	}
 
-	db, err := newKEVulnDB(cnf)
+	db, err := newCTIDB(cnf)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to newKEVulnDB. err: %w", err)
+		return nil, xerrors.Errorf("Failed to newCTIDB. err: %w", err)
 	}
-	return &goKEVulnDBClient{driver: db, baseURL: cnf.GetURL()}, nil
+	return &goCTIDBClient{driver: db, baseURL: cnf.GetURL()}, nil
 }
 
-// FillWithKEVuln :
-func FillWithKEVuln(r *models.ScanResult, cnf config.KEVulnConf, logOpts logging.LogOpts) error {
-	client, err := newGoKEVulnDBClient(&cnf, logOpts)
+// FillWithCTI :
+func FillWithCTI(r *models.ScanResult, cnf config.CtiConf, logOpts logging.LogOpts) error {
+	client, err := newGoCTIDBClient(&cnf, logOpts)
 	if err != nil {
 		return err
 	}
@@ -59,7 +58,7 @@ func FillWithKEVuln(r *models.ScanResult, cnf config.KEVulnConf, logOpts logging
 		}
 	}()
 
-	nKEV := 0
+	nCti := 0
 	if client.driver == nil {
 		var cveIDs []string
 		for cveID := range r.ScannedCves {
@@ -69,29 +68,19 @@ func FillWithKEVuln(r *models.ScanResult, cnf config.KEVulnConf, logOpts logging
 		if err != nil {
 			return err
 		}
-		responses, err := getKEVulnsViaHTTP(cveIDs, prefix)
+		responses, err := getCTIsViaHTTP(cveIDs, prefix)
 		if err != nil {
 			return err
 		}
 		for _, res := range responses {
-			kevulns := []kevulnmodels.KEVuln{}
-			if err := json.Unmarshal([]byte(res.json), &kevulns); err != nil {
+			var techniqueIDs []string
+			if err := json.Unmarshal([]byte(res.json), &techniqueIDs); err != nil {
 				return err
 			}
-
-			alerts := []models.Alert{}
-			if len(kevulns) > 0 {
-				alerts = append(alerts, models.Alert{
-					Title: "Known Exploited Vulnerabilities Catalog",
-					URL:   "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
-					Team:  "cisa",
-				})
-			}
-
 			v, ok := r.ScannedCves[res.request.cveID]
 			if ok {
-				v.AlertDict.CISA = alerts
-				nKEV++
+				v.Ctis = techniqueIDs
+				nCti++
 			}
 			r.ScannedCves[res.request.cveID] = v
 		}
@@ -100,43 +89,32 @@ func FillWithKEVuln(r *models.ScanResult, cnf config.KEVulnConf, logOpts logging
 			if cveID == "" {
 				continue
 			}
-			kevulns, err := client.driver.GetKEVulnByCveID(cveID)
+			techniqueIDs, err := client.driver.GetTechniqueIDsByCveID(cveID)
 			if err != nil {
-				return err
+				return xerrors.Errorf("Failed to get CTIs by CVE-ID. err: %w", err)
 			}
-			if len(kevulns) == 0 {
+			if len(techniqueIDs) == 0 {
 				continue
 			}
-
-			alerts := []models.Alert{}
-			if len(kevulns) > 0 {
-				alerts = append(alerts, models.Alert{
-					Title: "Known Exploited Vulnerabilities Catalog",
-					URL:   "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
-					Team:  "cisa",
-				})
-			}
-
-			vuln.AlertDict.CISA = alerts
-			nKEV++
+			vuln.Ctis = techniqueIDs
+			nCti++
 			r.ScannedCves[cveID] = vuln
 		}
 	}
 
-	logging.Log.Infof("%s: Known Exploited Vulnerabilities are detected for %d CVEs", r.FormatServerName(), nKEV)
+	logging.Log.Infof("%s: Cyber Threat Intelligences are detected for %d CVEs", r.FormatServerName(), nCti)
 	return nil
 }
 
-type kevulnResponse struct {
-	request kevulnRequest
+type ctiResponse struct {
+	request ctiRequest
 	json    string
 }
 
-func getKEVulnsViaHTTP(cveIDs []string, urlPrefix string) (
-	responses []kevulnResponse, err error) {
+func getCTIsViaHTTP(cveIDs []string, urlPrefix string) (responses []ctiResponse, err error) {
 	nReq := len(cveIDs)
-	reqChan := make(chan kevulnRequest, nReq)
-	resChan := make(chan kevulnResponse, nReq)
+	reqChan := make(chan ctiRequest, nReq)
+	resChan := make(chan ctiResponse, nReq)
 	errChan := make(chan error, nReq)
 	defer close(reqChan)
 	defer close(resChan)
@@ -144,7 +122,7 @@ func getKEVulnsViaHTTP(cveIDs []string, urlPrefix string) (
 
 	go func() {
 		for _, cveID := range cveIDs {
-			reqChan <- kevulnRequest{
+			reqChan <- ctiRequest{
 				cveID: cveID,
 			}
 		}
@@ -163,7 +141,7 @@ func getKEVulnsViaHTTP(cveIDs []string, urlPrefix string) (
 				errChan <- err
 			} else {
 				logging.Log.Debugf("HTTP Request to %s", url)
-				httpGetKEVuln(url, req, resChan, errChan)
+				httpGetCTI(url, req, resChan, errChan)
 			}
 		}
 	}
@@ -177,20 +155,20 @@ func getKEVulnsViaHTTP(cveIDs []string, urlPrefix string) (
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
-			return nil, xerrors.New("Timeout Fetching KEVuln")
+			return nil, xerrors.New("Timeout Fetching CTI")
 		}
 	}
 	if len(errs) != 0 {
-		return nil, xerrors.Errorf("Failed to fetch KEVuln. err: %w", errs)
+		return nil, xerrors.Errorf("Failed to fetch CTI. err: %w", errs)
 	}
 	return
 }
 
-type kevulnRequest struct {
+type ctiRequest struct {
 	cveID string
 }
 
-func httpGetKEVuln(url string, req kevulnRequest, resChan chan<- kevulnResponse, errChan chan<- error) {
+func httpGetCTI(url string, req ctiRequest, resChan chan<- ctiResponse, errChan chan<- error) {
 	var body string
 	var errs []error
 	var resp *http.Response
@@ -210,8 +188,7 @@ func httpGetKEVuln(url string, req kevulnRequest, resChan chan<- kevulnResponse,
 	notify := func(err error, t time.Duration) {
 		logging.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %+v", t, err)
 	}
-	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
-	if err != nil {
+	if err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify); err != nil {
 		errChan <- xerrors.Errorf("HTTP Error %w", err)
 		return
 	}
@@ -220,13 +197,13 @@ func httpGetKEVuln(url string, req kevulnRequest, resChan chan<- kevulnResponse,
 		return
 	}
 
-	resChan <- kevulnResponse{
+	resChan <- ctiResponse{
 		request: req,
 		json:    body,
 	}
 }
 
-func newKEVulnDB(cnf config.VulnDictInterface) (kevulndb.DB, error) {
+func newCTIDB(cnf config.VulnDictInterface) (ctidb.DB, error) {
 	if cnf.IsFetchViaHTTP() {
 		return nil, nil
 	}
@@ -234,12 +211,12 @@ func newKEVulnDB(cnf config.VulnDictInterface) (kevulndb.DB, error) {
 	if cnf.GetType() == "sqlite3" {
 		path = cnf.GetSQLite3Path()
 	}
-	driver, locked, err := kevulndb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), kevulndb.Option{})
+	driver, locked, err := ctidb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), ctidb.Option{})
 	if err != nil {
 		if locked {
-			return nil, xerrors.Errorf("Failed to init kevuln DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
+			return nil, xerrors.Errorf("Failed to init cti DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
 		}
-		return nil, xerrors.Errorf("Failed to init kevuln DB. DB Path: %s, err: %w", path, err)
+		return nil, xerrors.Errorf("Failed to init cti DB. DB Path: %s, err: %w", path, err)
 	}
 	return driver, nil
 }

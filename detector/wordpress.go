@@ -7,7 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -242,7 +242,7 @@ func httpRequest(url, token string) (string, error) {
 		return "", errof.New(errof.ErrFailedToAccessWpScan,
 			fmt.Sprintf("Failed to access to wpscan.com. err: %s", err))
 	}
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", errof.New(errof.ErrFailedToAccessWpScan,
 			fmt.Sprintf("Failed to access to wpscan.com. err: %s", err))

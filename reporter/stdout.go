@@ -8,7 +8,6 @@ import (
 
 // StdoutWriter write to stdout
 type StdoutWriter struct {
-	FormatCsv         bool
 	FormatFullText    bool
 	FormatOneLineText bool
 	FormatList        bool
@@ -33,7 +32,7 @@ func (w StdoutWriter) Write(rs ...models.ScanResult) error {
 		fmt.Print("\n")
 	}
 
-	if w.FormatList || w.FormatCsv {
+	if w.FormatList {
 		for _, r := range rs {
 			fmt.Println(formatList(r))
 		}

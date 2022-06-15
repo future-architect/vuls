@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -49,8 +49,8 @@ func (p *HistoryCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...interface{
 		return subcommands.ExitFailure
 	}
 	for _, d := range dirs {
-		var files []os.FileInfo
-		if files, err = ioutil.ReadDir(d); err != nil {
+		var files []fs.DirEntry
+		if files, err = os.ReadDir(d); err != nil {
 			return subcommands.ExitFailure
 		}
 		var hosts []string

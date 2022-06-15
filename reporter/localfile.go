@@ -2,7 +2,6 @@ package reporter
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -99,5 +98,5 @@ func (w LocalFileWriter) writeFile(path string, data []byte, perm os.FileMode) (
 		}
 		path += ".gz"
 	}
-	return ioutil.WriteFile(path, []byte(data), perm)
+	return os.WriteFile(path, []byte(data), perm)
 }
