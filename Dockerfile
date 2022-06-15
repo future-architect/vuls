@@ -10,7 +10,7 @@ ENV REPOSITORY github.com/future-architect/vuls
 COPY . $GOPATH/src/$REPOSITORY
 RUN cd $GOPATH/src/$REPOSITORY && make install
 
-FROM alpine:3.15
+FROM alpine:3.16
 
 ENV LOGDIR /var/log/vuls
 ENV WORKDIR /vuls

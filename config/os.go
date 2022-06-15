@@ -257,6 +257,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"3.13": {StandardSupportUntil: time.Date(2022, 11, 1, 23, 59, 59, 0, time.UTC)},
 			"3.14": {StandardSupportUntil: time.Date(2023, 5, 1, 23, 59, 59, 0, time.UTC)},
 			"3.15": {StandardSupportUntil: time.Date(2023, 11, 1, 23, 59, 59, 0, time.UTC)},
+			"3.16": {StandardSupportUntil: time.Date(2024, 5, 23, 23, 59, 59, 0, time.UTC)},
 		}[majorDotMinor(release)]
 	case constant.FreeBSD:
 		// https://www.freebsd.org/security/
