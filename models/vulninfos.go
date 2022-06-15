@@ -904,6 +904,9 @@ const (
 	// UbuntuAPIMatchStr :
 	UbuntuAPIMatchStr = "UbuntuAPIMatch"
 
+	// WindowsUpdateSearchStr :
+	WindowsUpdateSearchStr = "WindowsUpdateSearch"
+
 	// TrivyMatchStr :
 	TrivyMatchStr = "TrivyMatch"
 
@@ -941,6 +944,9 @@ var (
 
 	// UbuntuAPIMatch ranking how confident the CVE-ID was detected correctly
 	UbuntuAPIMatch = Confidence{100, UbuntuAPIMatchStr, 0}
+
+	// WindowsUpdateSearch ranking how confident the CVE-ID was detected correctly
+	WindowsUpdateSearch = Confidence{100, WindowsUpdateSearchStr, 0}
 
 	// TrivyMatch ranking how confident the CVE-ID was detected correctly
 	TrivyMatch = Confidence{100, TrivyMatchStr, 0}
