@@ -113,11 +113,27 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 
 	for cveID, cve := range cves {
 		cveCont, mitigations := ms.ConvertToModel(&cve)
+		advisories := []models.DistroAdvisory{}
+		for _, p := range cve.Products {
+			for _, kb := range p.KBs {
+				adv := models.DistroAdvisory{
+					Description: "Microsoft Knowledge Base",
+				}
+				if kbIDPattern.MatchString(kb.Article) {
+					adv.AdvisoryID = fmt.Sprintf("KB%s", kb.Article)
+				} else {
+					adv.AdvisoryID = kb.Article
+				}
+				advisories = append(advisories, adv)
+			}
+		}
+
 		r.ScannedCves[cveID] = models.VulnInfo{
-			CveID:       cveID,
-			CveContents: models.NewCveContents(*cveCont),
-			Confidences: models.Confidences{models.WindowsUpdateSearch},
-			Mitigations: mitigations,
+			CveID:            cveID,
+			Confidences:      models.Confidences{models.WindowsUpdateSearch},
+			DistroAdvisories: advisories,
+			CveContents:      models.NewCveContents(*cveCont),
+			Mitigations:      mitigations,
 		}
 	}
 	return len(cves), nil
@@ -152,15 +168,6 @@ func (ms Microsoft) ConvertToModel(cve *gostmodels.MicrosoftCVE) (*models.CveCon
 		// TODO: CVE-2020-0739
 		// "exploit_status": "Publicly Disclosed:No;Exploited:No;Latest Software Release:Exploitation Less Likely;Older Software Release:Exploitation Less Likely;DOS:N/A",
 		option["exploit"] = cve.ExploitStatus
-	}
-	kbids := []string{}
-	for _, p := range cve.Products {
-		for _, kb := range p.KBs {
-			kbids = append(kbids, kb.Article)
-		}
-	}
-	if 0 < len(kbids) {
-		option["kbids"] = strings.Join(kbids, ",")
 	}
 
 	mitigations := []models.Mitigation{}
