@@ -148,7 +148,7 @@ func (ms Microsoft) ConvertToModel(cve *gostmodels.MicrosoftCVE) (*models.CveCon
 	v3score := 0.0
 	var v3Vector string
 	for _, p := range cve.Products {
-		v, err := strconv.ParseFloat(p.ScoreSet.BaseScore, 32)
+		v, err := strconv.ParseFloat(p.ScoreSet.BaseScore, 64)
 		if err != nil {
 			continue
 		}
