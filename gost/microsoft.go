@@ -134,12 +134,11 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 		for _, p := range cve.Products {
 			for _, kb := range p.KBs {
 				adv := models.DistroAdvisory{
+					AdvisoryID:  kb.Article,
 					Description: "Microsoft Knowledge Base",
 				}
-				if kbIDPattern.MatchString(kb.Article) {
+				if _, err := strconv.Atoi(kb.Article); err == nil {
 					adv.AdvisoryID = fmt.Sprintf("KB%s", kb.Article)
-				} else {
-					adv.AdvisoryID = kb.Article
 				}
 				advisories = append(advisories, adv)
 			}
