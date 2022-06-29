@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/inconshreveable/log15"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 	"golang.org/x/xerrors"
 
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	gostmodels "github.com/vulsio/gost/models"
 )
@@ -34,7 +34,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 	var osName string
 	osName, ok := r.Optional["OSName"].(string)
 	if !ok {
-		log15.Warn("This Windows has wrong type option(OSName).", "UUID", r.ServerUUID)
+		logging.Log.Warnf("This Windows has wrong type option(OSName). UUID: %s", r.ServerUUID)
 	}
 
 	var products []string
@@ -44,7 +44,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			for _, p := range ps {
 				pname, ok := p.(string)
 				if !ok {
-					log15.Warn("skip products: %v", p)
+					logging.Log.Warnf("skip products: %v", p)
 					continue
 				}
 				products = append(products, pname)
@@ -54,7 +54,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 				products = append(products, p)
 			}
 		case nil:
-			log15.Warn("This Windows has no option(InstalledProducts).", "UUID", r.ServerUUID)
+			logging.Log.Warnf("This Windows has no option(InstalledProducts). UUID: %s", r.ServerUUID)
 		}
 	}
 
@@ -65,7 +65,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			for _, kbID := range kbIDs {
 				s, ok := kbID.(string)
 				if !ok {
-					log15.Warn("skip KBID: %v", kbID)
+					logging.Log.Warnf("skip KBID: %v", kbID)
 					continue
 				}
 				unapplied[strings.TrimPrefix(s, "KB")] = struct{}{}
@@ -75,7 +75,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 				unapplied[strings.TrimPrefix(kbID, "KB")] = struct{}{}
 			}
 		case nil:
-			log15.Warn("This windows server has no option(KBID).", "UUID", r.ServerUUID)
+			logging.Log.Warnf("This Windows has no option(KBID). UUID: %s", r.ServerUUID)
 		}
 
 		for _, pkg := range r.Packages {
@@ -90,7 +90,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			for _, kbID := range kbIDs {
 				s, ok := kbID.(string)
 				if !ok {
-					log15.Warn("skip KBID: %v", kbID)
+					logging.Log.Warnf("skip KBID: %v", kbID)
 					continue
 				}
 				applied[strings.TrimPrefix(s, "KB")] = struct{}{}
@@ -100,7 +100,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 				applied[strings.TrimPrefix(kbID, "KB")] = struct{}{}
 			}
 		case nil:
-			log15.Warn("This windows server has no option(AppliedKBID).", "UUID", r.ServerUUID)
+			logging.Log.Warnf("This Windows has no option(AppliedKBID). UUID: %s", r.ServerUUID)
 		}
 
 		switch kbIDs := r.Optional["UnappliedKBID"].(type) {
@@ -108,7 +108,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			for _, kbID := range kbIDs {
 				s, ok := kbID.(string)
 				if !ok {
-					log15.Warn("skip KBID: %v", kbID)
+					logging.Log.Warnf("skip KBID: %v", kbID)
 					continue
 				}
 				unapplied[strings.TrimPrefix(s, "KB")] = struct{}{}
@@ -118,10 +118,11 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 				unapplied[strings.TrimPrefix(kbID, "KB")] = struct{}{}
 			}
 		case nil:
-			log15.Warn("This windows server has no option(UnappliedKBID).", "UUID", r.ServerUUID)
+			logging.Log.Warnf("This Windows has no option(UnappliedKBID). UUID: %s", r.ServerUUID)
 		}
 	}
 
+	logging.Log.Debugf(`GetCvesByMicrosoftKBID query body {"osName": %s, "installedProducts": %q, "applied": %q, "unapplied: %q"}`, osName, products, maps.Keys(applied), maps.Keys(unapplied))
 	cves, err := ms.driver.GetCvesByMicrosoftKBID(osName, products, maps.Keys(applied), maps.Keys(unapplied))
 	if err != nil {
 		return 0, xerrors.Errorf("Failed to detect CVEs. err: %w", err)
