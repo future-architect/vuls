@@ -32,13 +32,9 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 	}
 
 	var osName string
-	if n, ok := r.Optional["OSName"]; ok {
-		switch n.(type) {
-		case string:
-			osName = n.(string)
-		default:
-			log15.Warn("This Windows has wrong type option(OSName).", "UUID", r.ServerUUID)
-		}
+	osName, ok := r.Optional["OSName"].(string)
+	if !ok {
+		log15.Warn("This Windows has wrong type option(OSName).", "UUID", r.ServerUUID)
 	}
 
 	var products []string
@@ -46,7 +42,16 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 		switch ps := r.Optional["InstalledProducts"].(type) {
 		case []interface{}:
 			for _, p := range ps {
-				products = append(products, p.(string))
+				pname, ok := p.(string)
+				if !ok {
+					log15.Warn("skip products: %v", p)
+					continue
+				}
+				products = append(products, pname)
+			}
+		case []string:
+			for _, p := range ps {
+				products = append(products, p)
 			}
 		case nil:
 			log15.Warn("This Windows has no option(InstalledProducts).", "UUID", r.ServerUUID)
@@ -58,11 +63,16 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 		switch kbIDs := r.Optional["KBID"].(type) {
 		case []interface{}:
 			for _, kbID := range kbIDs {
-				formattedKBID := kbID.(string)
-				if !strings.HasPrefix(formattedKBID, "KB") {
-					formattedKBID = fmt.Sprintf("KB%s", formattedKBID)
+				s, ok := kbID.(string)
+				if !ok {
+					log15.Warn("skip KBID: %v", kbID)
+					continue
 				}
-				unapplied[formattedKBID] = struct{}{}
+				unapplied[strings.TrimPrefix(s, "KB")] = struct{}{}
+			}
+		case []string:
+			for _, kbID := range kbIDs {
+				unapplied[strings.TrimPrefix(kbID, "KB")] = struct{}{}
 			}
 		case nil:
 			log15.Warn("This windows server has no option(KBID).", "UUID", r.ServerUUID)
@@ -71,22 +81,23 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 		for _, pkg := range r.Packages {
 			matches := kbIDPattern.FindAllStringSubmatch(pkg.Name, -1)
 			for _, match := range matches {
-				formattedKBID := match[1]
-				if !strings.HasPrefix(formattedKBID, "KB") {
-					formattedKBID = fmt.Sprintf("KB%s", formattedKBID)
-				}
-				applied[formattedKBID] = struct{}{}
+				applied[match[1]] = struct{}{}
 			}
 		}
 	} else {
 		switch kbIDs := r.Optional["AppliedKBID"].(type) {
 		case []interface{}:
 			for _, kbID := range kbIDs {
-				formattedKBID := kbID.(string)
-				if !strings.HasPrefix(formattedKBID, "KB") {
-					formattedKBID = fmt.Sprintf("KB%s", formattedKBID)
+				s, ok := kbID.(string)
+				if !ok {
+					log15.Warn("skip KBID: %v", kbID)
+					continue
 				}
-				applied[formattedKBID] = struct{}{}
+				applied[strings.TrimPrefix(s, "KB")] = struct{}{}
+			}
+		case []string:
+			for _, kbID := range kbIDs {
+				applied[strings.TrimPrefix(kbID, "KB")] = struct{}{}
 			}
 		case nil:
 			log15.Warn("This windows server has no option(AppliedKBID).", "UUID", r.ServerUUID)
@@ -95,11 +106,16 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 		switch kbIDs := r.Optional["UnappliedKBID"].(type) {
 		case []interface{}:
 			for _, kbID := range kbIDs {
-				formattedKBID := kbID.(string)
-				if !strings.HasPrefix(formattedKBID, "KB") {
-					formattedKBID = fmt.Sprintf("KB%s", formattedKBID)
+				s, ok := kbID.(string)
+				if !ok {
+					log15.Warn("skip KBID: %v", kbID)
+					continue
 				}
-				unapplied[formattedKBID] = struct{}{}
+				unapplied[strings.TrimPrefix(s, "KB")] = struct{}{}
+			}
+		case []string:
+			for _, kbID := range kbIDs {
+				unapplied[strings.TrimPrefix(kbID, "KB")] = struct{}{}
 			}
 		case nil:
 			log15.Warn("This windows server has no option(UnappliedKBID).", "UUID", r.ServerUUID)
