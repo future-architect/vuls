@@ -19,7 +19,7 @@ require (
 	github.com/emersion/go-smtp v0.14.0
 	github.com/google/subcommands v1.2.0
 	github.com/gosuri/uitable v0.0.4
-	github.com/hashicorp/go-uuid v1.0.2
+	github.com/hashicorp/go-uuid v1.0.3
 	github.com/hashicorp/go-version v1.6.0
 	github.com/jesseduffield/gocui v0.3.0
 	github.com/k0kubun/pp v3.0.1+incompatible
