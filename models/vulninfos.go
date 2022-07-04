@@ -256,7 +256,7 @@ type VulnInfo struct {
 	CveID                string               `json:"cveID,omitempty"`
 	Confidences          Confidences          `json:"confidences,omitempty"`
 	AffectedPackages     PackageFixStatuses   `json:"affectedPackages,omitempty"`
-	DistroAdvisories     DistroAdvisories     `json:"distroAdvisories,omitempty"` // for Amazon, RHEL, Fedora, FreeBSD
+	DistroAdvisories     DistroAdvisories     `json:"distroAdvisories,omitempty"` // for Amazon, RHEL, Fedora, FreeBSD, Microsoft
 	CveContents          CveContents          `json:"cveContents,omitempty"`
 	Exploits             []Exploit            `json:"exploits,omitempty"`
 	Metasploits          []Metasploit         `json:"metasploits,omitempty"`
@@ -904,6 +904,9 @@ const (
 	// UbuntuAPIMatchStr :
 	UbuntuAPIMatchStr = "UbuntuAPIMatch"
 
+	// WindowsUpdateSearchStr :
+	WindowsUpdateSearchStr = "WindowsUpdateSearch"
+
 	// TrivyMatchStr :
 	TrivyMatchStr = "TrivyMatch"
 
@@ -941,6 +944,9 @@ var (
 
 	// UbuntuAPIMatch ranking how confident the CVE-ID was detected correctly
 	UbuntuAPIMatch = Confidence{100, UbuntuAPIMatchStr, 0}
+
+	// WindowsUpdateSearch ranking how confident the CVE-ID was detected correctly
+	WindowsUpdateSearch = Confidence{100, WindowsUpdateSearchStr, 0}
 
 	// TrivyMatch ranking how confident the CVE-ID was detected correctly
 	TrivyMatch = Confidence{100, TrivyMatchStr, 0}
