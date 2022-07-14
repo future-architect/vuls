@@ -130,18 +130,22 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 
 	for cveID, cve := range cves {
 		cveCont, mitigations := ms.ConvertToModel(&cve)
-		advisories := []models.DistroAdvisory{}
+		uniqKB := map[string]struct{}{}
 		for _, p := range cve.Products {
 			for _, kb := range p.KBs {
-				adv := models.DistroAdvisory{
-					AdvisoryID:  kb.Article,
-					Description: "Microsoft Knowledge Base",
-				}
 				if _, err := strconv.Atoi(kb.Article); err == nil {
-					adv.AdvisoryID = fmt.Sprintf("KB%s", kb.Article)
+					uniqKB[fmt.Sprintf("KB%s", kb.Article)] = struct{}{}
+				} else {
+					uniqKB[kb.Article] = struct{}{}
 				}
-				advisories = append(advisories, adv)
 			}
+		}
+		advisories := []models.DistroAdvisory{}
+		for kb := range uniqKB {
+			advisories = append(advisories, models.DistroAdvisory{
+				AdvisoryID:  kb,
+				Description: "Microsoft Knowledge Base",
+			})
 		}
 
 		r.ScannedCves[cveID] = models.VulnInfo{
