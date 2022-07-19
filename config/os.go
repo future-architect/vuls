@@ -87,7 +87,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 	case constant.Rocky:
 		eol, found = map[string]EOL{
 			"8": {StandardSupportUntil: time.Date(2029, 5, 31, 23, 59, 59, 0, time.UTC)},
-			// "9": {StandardSupportUntil: time.Date(2032, 5, 31, 23, 59, 59, 0, time.UTC)},
+			"9": {StandardSupportUntil: time.Date(2032, 5, 31, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
 	case constant.Oracle:
 		eol, found = map[string]EOL{
