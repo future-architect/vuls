@@ -1,7 +1,7 @@
 package scanner
 
 import (
-	"github.com/aquasecurity/fanal/types"
+	"github.com/aquasecurity/trivy/pkg/fanal/types"
 	"github.com/future-architect/vuls/models"
 )
 

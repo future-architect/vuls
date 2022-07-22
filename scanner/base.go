@@ -15,8 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aquasecurity/fanal/analyzer"
 	dio "github.com/aquasecurity/go-dep-parser/pkg/io"
+	"github.com/aquasecurity/trivy/pkg/fanal/analyzer"
 	debver "github.com/knqyf263/go-deb-version"
 
 	"github.com/future-architect/vuls/config"
@@ -28,23 +28,25 @@ import (
 	"golang.org/x/xerrors"
 
 	// Import library scanner
-	_ "github.com/aquasecurity/fanal/analyzer/language/dotnet/nuget"
-	_ "github.com/aquasecurity/fanal/analyzer/language/golang/binary"
-	_ "github.com/aquasecurity/fanal/analyzer/language/golang/mod"
-	_ "github.com/aquasecurity/fanal/analyzer/language/java/jar"
-	_ "github.com/aquasecurity/fanal/analyzer/language/java/pom"
-	_ "github.com/aquasecurity/fanal/analyzer/language/nodejs/npm"
-	_ "github.com/aquasecurity/fanal/analyzer/language/nodejs/yarn"
-	_ "github.com/aquasecurity/fanal/analyzer/language/php/composer"
-	_ "github.com/aquasecurity/fanal/analyzer/language/python/pip"
-	_ "github.com/aquasecurity/fanal/analyzer/language/python/pipenv"
-	_ "github.com/aquasecurity/fanal/analyzer/language/python/poetry"
-	_ "github.com/aquasecurity/fanal/analyzer/language/ruby/bundler"
-	_ "github.com/aquasecurity/fanal/analyzer/language/rust/cargo"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/dotnet/deps"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/dotnet/nuget"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/golang/binary"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/golang/mod"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/jar"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/pom"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/npm"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pnpm"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/yarn"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/php/composer"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/pip"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/pipenv"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/poetry"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/ruby/bundler"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/rust/cargo"
 
-	// _ "github.com/aquasecurity/fanal/analyzer/language/ruby/gemspec"
-	// _ "github.com/aquasecurity/fanal/analyzer/language/nodejs/pkg"
-	// _ "github.com/aquasecurity/fanal/analyzer/language/python/packaging"
+	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/ruby/gemspec"
+	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pkg"
+	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/packaging"
 
 	nmap "github.com/Ullaakut/nmap/v2"
 )
@@ -663,29 +665,66 @@ func (l *base) scanLibraries() (err error) {
 
 // AnalyzeLibraries : detects libs defined in lockfile
 func AnalyzeLibraries(ctx context.Context, libFilemap map[string]LibFile, isOffline bool) (libraryScanners []models.LibraryScanner, err error) {
+	// https://github.com/aquasecurity/trivy/blob/84677903a6fa1b707a32d0e8b2bffc23dde52afa/pkg/fanal/analyzer/const.go
 	disabledAnalyzers := []analyzer.Type{
+		// ======
+		//   OS
+		// ======
+		analyzer.TypeOSRelease,
 		analyzer.TypeAlpine,
-		analyzer.TypeAlma,
 		analyzer.TypeAmazon,
+		analyzer.TypeCBLMariner,
 		analyzer.TypeDebian,
 		analyzer.TypePhoton,
 		analyzer.TypeCentOS,
+		analyzer.TypeRocky,
+		analyzer.TypeAlma,
 		analyzer.TypeFedora,
 		analyzer.TypeOracle,
 		analyzer.TypeRedHatBase,
-		analyzer.TypeRocky,
 		analyzer.TypeSUSE,
 		analyzer.TypeUbuntu,
+
+		// OS Package
 		analyzer.TypeApk,
 		analyzer.TypeDpkg,
+		analyzer.TypeDpkgLicense,
 		analyzer.TypeRpm,
+		analyzer.TypeRpmqa,
+
+		// OS Package Repository
+		analyzer.TypeApkRepo,
+
+		// ============
+		// Image Config
+		// ============
 		analyzer.TypeApkCommand,
+
+		// =================
+		// Structured Config
+		// =================
 		analyzer.TypeYaml,
-		analyzer.TypeTOML,
 		analyzer.TypeJSON,
 		analyzer.TypeDockerfile,
-		analyzer.TypeHCL,
+		analyzer.TypeTerraform,
+		analyzer.TypeCloudFormation,
+		analyzer.TypeHelm,
+
+		// ========
+		// License
+		// ========
+		analyzer.TypeLicenseFile,
+
+		// ========
+		// Secrets
+		// ========
 		analyzer.TypeSecret,
+
+		// =======
+		// Red Hat
+		// =======
+		analyzer.TypeRedHatContentManifestType,
+		analyzer.TypeRedHatDockerfileType,
 	}
 	anal := analyzer.NewAnalyzerGroup(analyzer.GroupBuiltin, disabledAnalyzers)
 
