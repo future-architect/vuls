@@ -129,27 +129,24 @@ func getCveContents(cveID string, vul trivyDBTypes.Vulnerability) (contents map[
 	return contents
 }
 
-// LibraryMap is filename and library type
-var LibraryMap = map[string]string{
-	ftypes.NpmPkgLock:      "node",
-	ftypes.YarnLock:        "node",
-	ftypes.PnpmLock:        "node",
-	ftypes.GemfileLock:     "ruby",
-	ftypes.CargoLock:       "rust",
-	ftypes.ComposerLock:    "php",
-	ftypes.PipRequirements: "python",
-	ftypes.PipfileLock:     "python",
-	ftypes.PoetryLock:      "python",
-	ftypes.NuGetPkgsLock:   ".net",
-	ftypes.NuGetPkgsConfig: ".net",
-	"*.deps.json":          ".net",
-	ftypes.GoMod:           "gomod",
-	ftypes.GoSum:           "gomod",
-	ftypes.MavenPom:        "java",
-	"*.jar":                "java",
-	"*.war":                "java",
-	"*.ear":                "java",
-	"*.par":                "java",
+// FindLockFiles is a list of filenames that is the target of findLock
+var FindLockFiles = []string{
+	// node
+	ftypes.NpmPkgLock, ftypes.YarnLock, ftypes.PnpmLock,
+	// ruby
+	ftypes.GemfileLock,
+	// rust
+	ftypes.CargoLock,
+	// php
+	ftypes.ComposerLock,
+	// python
+	ftypes.PipRequirements, ftypes.PipfileLock, ftypes.PoetryLock,
+	// .net
+	ftypes.NuGetPkgsLock, ftypes.NuGetPkgsConfig, "*.deps.json",
+	// gomod
+	ftypes.GoMod, ftypes.GoSum,
+	// java
+	ftypes.MavenPom, "*.jar", "*.war", "*.ear", "*.par",
 }
 
 // GetLibraryKey returns target library key
