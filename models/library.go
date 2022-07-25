@@ -1,8 +1,6 @@
 package models
 
 import (
-	"path/filepath"
-
 	"github.com/aquasecurity/trivy-db/pkg/db"
 	trivyDBTypes "github.com/aquasecurity/trivy-db/pkg/types"
 	"github.com/aquasecurity/trivy/pkg/detector/library"
@@ -135,6 +133,7 @@ func getCveContents(cveID string, vul trivyDBTypes.Vulnerability) (contents map[
 var LibraryMap = map[string]string{
 	ftypes.NpmPkgLock:      "node",
 	ftypes.YarnLock:        "node",
+	ftypes.PnpmLock:        "node",
 	ftypes.GemfileLock:     "ruby",
 	ftypes.CargoLock:       "rust",
 	ftypes.ComposerLock:    "php",
@@ -143,6 +142,7 @@ var LibraryMap = map[string]string{
 	ftypes.PoetryLock:      "python",
 	ftypes.NuGetPkgsLock:   ".net",
 	ftypes.NuGetPkgsConfig: ".net",
+	"*.deps.json":          ".net",
 	ftypes.GoMod:           "gomod",
 	ftypes.GoSum:           "gomod",
 	ftypes.MavenPom:        "java",
@@ -165,20 +165,14 @@ func (s LibraryScanner) GetLibraryKey() string {
 		return "gomod"
 	case ftypes.Jar, ftypes.Pom:
 		return "java"
-	case ftypes.Npm, ftypes.Yarn, ftypes.NodePkg, ftypes.JavaScript:
+	case ftypes.Npm, ftypes.Yarn, ftypes.Pnpm, ftypes.NodePkg, ftypes.JavaScript:
 		return "node"
-	case ftypes.NuGet:
+	case ftypes.NuGet, ftypes.DotNetCore:
 		return ".net"
 	case ftypes.Pipenv, ftypes.Poetry, ftypes.Pip, ftypes.PythonPkg:
 		return "python"
 	default:
-		filename := filepath.Base(s.LockfilePath)
-		switch filepath.Ext(filename) {
-		case ".jar", ".war", ".ear", ".par":
-			return "java"
-		default:
-			return LibraryMap[filename]
-		}
+		return ""
 	}
 }
 
