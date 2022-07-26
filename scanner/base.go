@@ -592,7 +592,7 @@ func (l *base) scanLibraries() (err error) {
 	// auto detect lockfile
 	if l.ServerInfo.FindLock {
 		findopt := ""
-		for filename := range models.LibraryMap {
+		for _, filename := range models.FindLockFiles {
 			findopt += fmt.Sprintf("-name %q -o ", filename)
 		}
 
