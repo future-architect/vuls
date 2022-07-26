@@ -178,8 +178,16 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			found:    true,
 		},
 		{
-			name:     "Rocky Linux 9 Not Found",
+			name:     "Rocky Linux 9 supported",
 			fields:   fields{family: Rocky, release: "9"},
+			now:      time.Date(2021, 7, 2, 23, 59, 59, 0, time.UTC),
+			stdEnded: false,
+			extEnded: false,
+			found:    true,
+		},
+		{
+			name:     "Rocky Linux 10 Not Found",
+			fields:   fields{family: Rocky, release: "10"},
 			now:      time.Date(2021, 7, 2, 23, 59, 59, 0, time.UTC),
 			stdEnded: false,
 			extEnded: false,
