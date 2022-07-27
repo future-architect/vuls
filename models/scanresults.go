@@ -11,6 +11,7 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/cwe"
+	"github.com/future-architect/vuls/errof"
 	"github.com/future-architect/vuls/logging"
 )
 
@@ -42,7 +43,7 @@ type ScanResult struct {
 	ReportedVersion  string            `json:"reportedVersion"`
 	ReportedRevision string            `json:"reportedRevision"`
 	ReportedBy       string            `json:"reportedBy"`
-	Errors           []string          `json:"errors"`
+	Errors           []errof.Error     `json:"errors"`
 	Warnings         []string          `json:"warnings"`
 
 	ScannedCves       VulnInfos              `json:"scannedCves"`
@@ -341,6 +342,10 @@ func (r ScanResult) ClearFields(targetTagNames []string) ScanResult {
 
 // CheckEOL checks the EndOfLife of the OS
 func (r *ScanResult) CheckEOL() {
+	if len(r.Errors) > 0 {
+		return
+	}
+
 	switch r.Family {
 	case constant.ServerTypePseudo, constant.Raspbian:
 		return

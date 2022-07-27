@@ -18,9 +18,11 @@ import (
 	dio "github.com/aquasecurity/go-dep-parser/pkg/io"
 	"github.com/aquasecurity/trivy/pkg/fanal/analyzer"
 	debver "github.com/knqyf263/go-deb-version"
+	"github.com/pkg/errors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/errof"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -456,9 +458,13 @@ func (l *base) convertToModel() models.ScanResult {
 		Type:        ctype,
 	}
 
-	errs, warns := []string{}, []string{}
+	errs, warns := []errof.Error{}, []string{}
 	for _, e := range l.errs {
-		errs = append(errs, fmt.Sprintf("%+v", e))
+		if errWithCode, ok := errors.Cause(e).(errof.Error); ok {
+			errs = append(errs, errof.New(errWithCode.Code, errWithCode.Message))
+		} else {
+			errs = append(errs, errof.New(errof.ErrUncategorized, e.Error()))
+		}
 	}
 	for _, w := range l.warns {
 		warns = append(warns, fmt.Sprintf("%+v", w))

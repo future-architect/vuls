@@ -15,6 +15,14 @@ type StdoutWriter struct {
 
 //TODO support -format-jSON
 
+// WriteConfigtestSummary prints Configtest summary at the end of configtest
+func (w StdoutWriter) WriteConfigtestSummary(rs map[string][]error) {
+	fmt.Printf("\n\n")
+	fmt.Println("Configtest Summary")
+	fmt.Println("================")
+	fmt.Printf("%s\n", formatConfigtestSummary(rs))
+}
+
 // WriteScanSummary prints Scan summary at the end of scan
 func (w StdoutWriter) WriteScanSummary(rs ...models.ScanResult) {
 	fmt.Printf("\n\n")

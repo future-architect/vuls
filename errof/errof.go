@@ -5,8 +5,8 @@ type ErrorCode string
 
 // Error is vuls error
 type Error struct {
-	Code    ErrorCode
-	Message string
+	Code    ErrorCode `json:"code"`
+	Message string    `json:"message"`
 }
 
 func (e Error) Error() string {
@@ -14,6 +14,15 @@ func (e Error) Error() string {
 }
 
 var (
+	// ErrIPUnreachable is error that ping is unreachable
+	ErrIPUnreachable ErrorCode = "ErrIPUnreachable"
+
+	// ErrSSHConfig is error of ssh config
+	ErrSSHConfig ErrorCode = "ErrSSHConfig"
+
+	// ErrUncategorized is an uncategorized error other than ErrIPUnreachable and ErrSSHConfig
+	ErrUncategorized ErrorCode = "ErrUncategorized"
+
 	// ErrFailedToAccessGithubAPI is error of github alert's api access
 	ErrFailedToAccessGithubAPI ErrorCode = "ErrFailedToAccessGithubAPI"
 
