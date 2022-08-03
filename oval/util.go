@@ -93,6 +93,7 @@ type request struct {
 	binaryPackNames   []string
 	isSrcPack         bool
 	modularityLabel   string // RHEL 8 or later only
+	repository        string // Amazon Linux 2 Only
 }
 
 type response struct {
@@ -102,6 +103,25 @@ type response struct {
 
 // getDefsByPackNameViaHTTP fetches OVAL information via HTTP
 func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ovalResult, err error) {
+	ovalFamily, err := GetFamilyInOval(r.Family)
+	if err != nil {
+		return relatedDefs, xerrors.Errorf("Failed to GetFamilyInOval. err: %w", err)
+	}
+	ovalRelease := r.Release
+	switch r.Family {
+	case constant.CentOS:
+		ovalRelease = strings.TrimPrefix(r.Release, "stream")
+	case constant.Amazon:
+		switch strings.Fields(r.Release)[0] {
+		case "2022":
+			ovalRelease = "2022"
+		case "2":
+			ovalRelease = "2"
+		default:
+			ovalRelease = "1"
+		}
+	}
+
 	nReq := len(r.Packages) + len(r.SrcPackages)
 	reqChan := make(chan request, nReq)
 	resChan := make(chan response, nReq)
@@ -112,13 +132,18 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 
 	go func() {
 		for _, pack := range r.Packages {
-			reqChan <- request{
+			req := request{
 				packName:          pack.Name,
 				versionRelease:    pack.FormatVer(),
-				newVersionRelease: pack.FormatVer(),
+				newVersionRelease: pack.FormatNewVer(),
 				isSrcPack:         false,
 				arch:              pack.Arch,
+				repository:        pack.Repository,
 			}
+			if ovalFamily == constant.Amazon && ovalRelease == "2" && req.repository == "" {
+				req.repository = "amzn2-core"
+			}
+			reqChan <- req
 		}
 		for _, pack := range r.SrcPackages {
 			reqChan <- request{
@@ -131,14 +156,6 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 		}
 	}()
 
-	ovalFamily, err := GetFamilyInOval(r.Family)
-	if err != nil {
-		return relatedDefs, xerrors.Errorf("Failed to GetFamilyInOval. err: %w", err)
-	}
-	ovalRelease := r.Release
-	if r.Family == constant.CentOS {
-		ovalRelease = strings.TrimPrefix(r.Release, "stream")
-	}
 	concurrency := 10
 	tasks := util.GenWorkers(concurrency)
 	for i := 0; i < nReq; i++ {
@@ -168,7 +185,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 		select {
 		case res := <-resChan:
 			for _, def := range res.defs {
-				affected, notFixedYet, fixedIn, err := isOvalDefAffected(def, res.request, ovalFamily, r.RunningKernel, r.EnabledDnfModules)
+				affected, notFixedYet, fixedIn, err := isOvalDefAffected(def, res.request, ovalFamily, ovalRelease, r.RunningKernel, r.EnabledDnfModules)
 				if err != nil {
 					errs = append(errs, err)
 					continue
@@ -248,15 +265,39 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 }
 
 func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relatedDefs ovalResult, err error) {
+	ovalFamily, err := GetFamilyInOval(r.Family)
+	if err != nil {
+		return relatedDefs, xerrors.Errorf("Failed to GetFamilyInOval. err: %w", err)
+	}
+	ovalRelease := r.Release
+	switch r.Family {
+	case constant.CentOS:
+		ovalRelease = strings.TrimPrefix(r.Release, "stream")
+	case constant.Amazon:
+		switch strings.Fields(r.Release)[0] {
+		case "2022":
+			ovalRelease = "2022"
+		case "2":
+			ovalRelease = "2"
+		default:
+			ovalRelease = "1"
+		}
+	}
+
 	requests := []request{}
 	for _, pack := range r.Packages {
-		requests = append(requests, request{
+		req := request{
 			packName:          pack.Name,
 			versionRelease:    pack.FormatVer(),
 			newVersionRelease: pack.FormatNewVer(),
 			arch:              pack.Arch,
+			repository:        pack.Repository,
 			isSrcPack:         false,
-		})
+		}
+		if ovalFamily == constant.Amazon && ovalRelease == "2" && req.repository == "" {
+			req.repository = "amzn2-core"
+		}
+		requests = append(requests, req)
 	}
 	for _, pack := range r.SrcPackages {
 		requests = append(requests, request{
@@ -267,22 +308,13 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relate
 			isSrcPack:       true,
 		})
 	}
-
-	ovalFamily, err := GetFamilyInOval(r.Family)
-	if err != nil {
-		return relatedDefs, xerrors.Errorf("Failed to GetFamilyInOval. err: %w", err)
-	}
-	ovalRelease := r.Release
-	if r.Family == constant.CentOS {
-		ovalRelease = strings.TrimPrefix(r.Release, "stream")
-	}
 	for _, req := range requests {
 		definitions, err := driver.GetByPackName(ovalFamily, ovalRelease, req.packName, req.arch)
 		if err != nil {
 			return relatedDefs, xerrors.Errorf("Failed to get %s OVAL info by package: %#v, err: %w", r.Family, req, err)
 		}
 		for _, def := range definitions {
-			affected, notFixedYet, fixedIn, err := isOvalDefAffected(def, req, ovalFamily, r.RunningKernel, r.EnabledDnfModules)
+			affected, notFixedYet, fixedIn, err := isOvalDefAffected(def, req, ovalFamily, ovalRelease, r.RunningKernel, r.EnabledDnfModules)
 			if err != nil {
 				return relatedDefs, xerrors.Errorf("Failed to exec isOvalAffected. err: %w", err)
 			}
@@ -314,7 +346,16 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relate
 
 var modularVersionPattern = regexp.MustCompile(`.+\.module(?:\+el|_f)\d{1,2}.*`)
 
-func isOvalDefAffected(def ovalmodels.Definition, req request, family string, running models.Kernel, enabledMods []string) (affected, notFixedYet bool, fixedIn string, err error) {
+func isOvalDefAffected(def ovalmodels.Definition, req request, family, release string, running models.Kernel, enabledMods []string) (affected, notFixedYet bool, fixedIn string, err error) {
+	if family == constant.Amazon && release == "2" {
+		if def.Advisory.AffectedRepository == "" {
+			def.Advisory.AffectedRepository = "amzn2-core"
+		}
+		if req.repository != def.Advisory.AffectedRepository {
+			return false, false, "", nil
+		}
+	}
+
 	for _, ovalPack := range def.AffectedPacks {
 		if req.packName != ovalPack.Name {
 			continue
