@@ -7,7 +7,7 @@ require (
 	github.com/BurntSushi/toml v1.1.0
 	github.com/Ullaakut/nmap/v2 v2.1.2-0.20210406060955-59a52fe80a4f
 	github.com/aquasecurity/go-dep-parser v0.0.0-20220626060741-179d0b167e5f
-	github.com/aquasecurity/trivy v0.30.3
+	github.com/aquasecurity/trivy v0.30.4
 	github.com/aquasecurity/trivy-db v0.0.0-20220627104749-930461748b63
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/aws/aws-sdk-go v1.44.46
