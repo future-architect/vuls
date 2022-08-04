@@ -41,8 +41,8 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 	case constant.Amazon:
 		eol, found = map[string]EOL{
 			"1":    {StandardSupportUntil: time.Date(2023, 6, 30, 23, 59, 59, 0, time.UTC)},
-			"2":    {},
-			"2022": {},
+			"2":    {StandardSupportUntil: time.Date(2024, 6, 30, 23, 59, 59, 0, time.UTC)},
+			"2022": {StandardSupportUntil: time.Date(2026, 6, 30, 23, 59, 59, 0, time.UTC)},
 		}[getAmazonLinuxVersion(release)]
 	case constant.RedHat:
 		// https://access.redhat.com/support/policy/updates/errata
@@ -99,13 +99,19 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"5": {Ended: true},
 			"6": {
 				StandardSupportUntil: time.Date(2021, 3, 1, 23, 59, 59, 0, time.UTC),
-				ExtendedSupportUntil: time.Date(2024, 3, 1, 23, 59, 59, 0, time.UTC),
+				ExtendedSupportUntil: time.Date(2024, 6, 1, 23, 59, 59, 0, time.UTC),
 			},
 			"7": {
 				StandardSupportUntil: time.Date(2024, 7, 1, 23, 59, 59, 0, time.UTC),
+				ExtendedSupportUntil: time.Date(2026, 6, 1, 23, 59, 59, 0, time.UTC),
 			},
 			"8": {
 				StandardSupportUntil: time.Date(2029, 7, 1, 23, 59, 59, 0, time.UTC),
+				ExtendedSupportUntil: time.Date(2031, 7, 1, 23, 59, 59, 0, time.UTC),
+			},
+			"9": {
+				StandardSupportUntil: time.Date(2032, 6, 1, 23, 59, 59, 0, time.UTC),
+				ExtendedSupportUntil: time.Date(2034, 6, 1, 23, 59, 59, 0, time.UTC),
 			},
 		}[major(release)]
 	case constant.Debian:
