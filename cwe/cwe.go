@@ -5,6 +5,7 @@ var CweTopTwentyfives = map[string]map[string]string{
 	"2019": cweTopTwentyfive2019,
 	"2020": cweTopTwentyfive2020,
 	"2021": cweTopTwentyfive2021,
+	"2022": cweTopTwentyfive2022,
 }
 
 var cweTopTwentyfive2019 = map[string]string{
@@ -91,9 +92,38 @@ var cweTopTwentyfive2021 = map[string]string{
 	"77":  "25",
 }
 
+var cweTopTwentyfive2022 = map[string]string{
+	"787": "1",
+	"79":  "2",
+	"89":  "3",
+	"20":  "4",
+	"125": "5",
+	"78":  "6",
+	"416": "7",
+	"22":  "8",
+	"352": "9",
+	"434": "10",
+	"476": "11",
+	"502": "12",
+	"190": "13",
+	"287": "14",
+	"798": "16",
+	"862": "16",
+	"77":  "17",
+	"306": "18",
+	"119": "19",
+	"276": "20",
+	"918": "21",
+	"362": "22",
+	"400": "23",
+	"611": "24",
+	"94":  "25",
+}
+
 // CweTopTwentyfiveURLs has CWE Top25 links
 var CweTopTwentyfiveURLs = map[string]string{
 	"2019": "https://cwe.mitre.org/top25/archive/2019/2019_cwe_top25.html",
 	"2020": "https://cwe.mitre.org/top25/archive/2020/2020_cwe_top25.html",
 	"2021": "https://cwe.mitre.org/top25/archive/2021/2021_cwe_top25.html",
+	"2022": "https://cwe.mitre.org/top25/archive/2022/2022_cwe_top25.html",
 }
