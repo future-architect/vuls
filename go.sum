@@ -1381,8 +1381,8 @@ github.com/vulsio/go-msfdb v0.2.1-0.20211028071756-4a9759bd9f14 h1:2uYZw2gQ0kymw
 github.com/vulsio/go-msfdb v0.2.1-0.20211028071756-4a9759bd9f14/go.mod h1:NGdcwWxCK/ES8vZ/crzREqI69S5gH1MivCpSp1pa2Rc=
 github.com/vulsio/gost v0.4.2-0.20220630181607-2ed593791ec3 h1:a9Efv2KuTXfxZRbAD0uSapj43ox0k9lrAOlQ5s0dU04=
 github.com/vulsio/gost v0.4.2-0.20220630181607-2ed593791ec3/go.mod h1:6xRvzXkpm8nJ/jMmL/TJZvabfVZyy2aB1nr4wtmJ1KI=
-github.com/vulsio/goval-dictionary v0.7.4-0.20220803092243-4891cffd7a65 h1:qnfTzmWjz7LKVtjqcq90WIGY4bo8EFa38l5oW5sBxA4=
-github.com/vulsio/goval-dictionary v0.7.4-0.20220803092243-4891cffd7a65/go.mod h1:6gfsQfQN0jkO3ZNJlHP5r+2iyx375CBiMBdCcL8MmwM=
+github.com/vulsio/goval-dictionary v0.8.0 h1:hwxIwSEo7C3yPGOcrzr5jyKhBnxEidtUVNPIlbrBg+8=
+github.com/vulsio/goval-dictionary v0.8.0/go.mod h1:6gfsQfQN0jkO3ZNJlHP5r+2iyx375CBiMBdCcL8MmwM=
 github.com/willf/bitset v1.1.11-0.20200630133818-d5bec3311243/go.mod h1:RjeCKbqT1RxIR/KWY6phxZiaY1IyutSBfGjNPySAYV4=
 github.com/willf/bitset v1.1.11/go.mod h1:83CECat5yLh5zVOf4P1ErAgKA5UDvKtgyUABdr3+MjI=
 github.com/xanzy/ssh-agent v0.2.1/go.mod h1:mLlQY/MoOhWBj+gOGMQkOeiEvkx+8pJSI+0Bx9h2kr4=
