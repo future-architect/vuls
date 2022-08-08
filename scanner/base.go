@@ -589,6 +589,11 @@ func (l *base) scanLibraries() (err error) {
 	libFilemap := map[string]LibFile{}
 	detectFiles := l.ServerInfo.Lockfiles
 
+	priv := noSudo
+	if l.getServerInfo().Mode.IsFastRoot() || l.getServerInfo().Mode.IsDeep() {
+		priv = sudo
+	}
+
 	// auto detect lockfile
 	if l.ServerInfo.FindLock {
 		findopt := ""
@@ -599,7 +604,7 @@ func (l *base) scanLibraries() (err error) {
 		// delete last "-o "
 		// find / -type f -and \( -name "package-lock.json" -o -name "yarn.lock" ... \) 2>&1 | grep -v "find: "
 		cmd := fmt.Sprintf(`find / -type f -and \( ` + findopt[:len(findopt)-3] + ` \) 2>&1 | grep -v "find: "`)
-		r := exec(l.ServerInfo, cmd, noSudo)
+		r := exec(l.ServerInfo, cmd, priv)
 		if r.ExitStatus != 0 && r.ExitStatus != 1 {
 			return xerrors.Errorf("Failed to find lock files")
 		}
@@ -634,7 +639,7 @@ func (l *base) scanLibraries() (err error) {
 			}
 		default:
 			cmd := fmt.Sprintf(`stat -c "%%a" %s`, path)
-			r := exec(l.ServerInfo, cmd, noSudo)
+			r := exec(l.ServerInfo, cmd, priv)
 			if !r.isSuccess() {
 				return xerrors.Errorf("Failed to get target file permission: %s, filepath: %s", r, path)
 			}
@@ -646,7 +651,7 @@ func (l *base) scanLibraries() (err error) {
 			f.Filemode = os.FileMode(perm)
 
 			cmd = fmt.Sprintf("cat %s", path)
-			r = exec(l.ServerInfo, cmd, noSudo)
+			r = exec(l.ServerInfo, cmd, priv)
 			if !r.isSuccess() {
 				return xerrors.Errorf("Failed to get target file contents: %s, filepath: %s", r, path)
 			}
