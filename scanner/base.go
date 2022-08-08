@@ -776,13 +776,13 @@ func (d *DummyFileInfo) Size() int64 { return d.size }
 // Mode is
 func (d *DummyFileInfo) Mode() os.FileMode { return d.filemode }
 
-//ModTime is
+// ModTime is
 func (d *DummyFileInfo) ModTime() time.Time { return time.Now() }
 
 // IsDir is
 func (d *DummyFileInfo) IsDir() bool { return false }
 
-//Sys is
+// Sys is
 func (d *DummyFileInfo) Sys() interface{} { return nil }
 
 func (l *base) scanWordPress() error {
