@@ -404,6 +404,21 @@ func (l *base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 			return true, id, nil
 		}
 
+		cmd = "curl -X PUT --max-time 1 --noproxy 169.254.169.254 -H \"X-aws-ec2-metadata-token-ttl-seconds: 300\" http://169.254.169.254/latest/api/token"
+		r = l.exec(cmd, noSudo)
+		if r.isSuccess() {
+			token := strings.TrimSpace(r.Stdout)
+			cmd = fmt.Sprintf("curl -H \"X-aws-ec2-metadata-token: %s\" --max-time 1 --noproxy 169.254.169.254 http://169.254.169.254/latest/meta-data/instance-id", token)
+			r = l.exec(cmd, noSudo)
+			if r.isSuccess() {
+				id := strings.TrimSpace(r.Stdout)
+				if !l.isAwsInstanceID(id) {
+					return false, "", nil
+				}
+				return true, id, nil
+			}
+		}
+
 		switch r.ExitStatus {
 		case 28, 7:
 			// Not running on AWS
