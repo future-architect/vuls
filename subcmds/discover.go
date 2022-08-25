@@ -240,6 +240,7 @@ host                = "{{$ip}}"
 #cmdPath = "/usr/local/bin/wp"
 #osUser = "wordpress"
 #docRoot = "/path/to/DocumentRoot/"
+#noSudo = false
 
 #[servers.{{index $names $i}}.portscan]
 #scannerBinPath = "/usr/bin/nmap"

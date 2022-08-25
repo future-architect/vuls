@@ -276,6 +276,7 @@ type WordPressConf struct {
 	OSUser  string `toml:"osUser,omitempty" json:"osUser,omitempty"`
 	DocRoot string `toml:"docRoot,omitempty" json:"docRoot,omitempty"`
 	CmdPath string `toml:"cmdPath,omitempty" json:"cmdPath,omitempty"`
+	NoSudo  bool   `toml:"noSudo,omitempty" json:"noSudo,omitempty"`
 }
 
 // IsZero return  whether this struct is not specified in config.toml

@@ -817,20 +817,48 @@ func (d *DummyFileInfo) IsDir() bool { return false }
 // Sys is
 func (d *DummyFileInfo) Sys() interface{} { return nil }
 
+func (l *base) buildWpCliCmd(wpCliArgs string, suppressStderr bool, shell string) string {
+	cmd := fmt.Sprintf("%s %s --path=%s", l.ServerInfo.WordPress.CmdPath, wpCliArgs, l.ServerInfo.WordPress.DocRoot)
+	if !l.ServerInfo.WordPress.NoSudo {
+		cmd = fmt.Sprintf("sudo -u %s -i -- %s --allow-root", l.ServerInfo.WordPress.OSUser, cmd)
+	} else if l.ServerInfo.User != l.ServerInfo.WordPress.OSUser {
+		cmd = fmt.Sprintf("su %s -c '%s'", l.ServerInfo.WordPress.OSUser, cmd)
+	}
+
+	if suppressStderr {
+		switch shell {
+		case "csh", "tcsh":
+			cmd = fmt.Sprintf("( %s > /dev/tty ) >& /dev/null", cmd)
+		default:
+			cmd = fmt.Sprintf("%s 2>/dev/null", cmd)
+		}
+	}
+	return cmd
+}
+
 func (l *base) scanWordPress() error {
 	if l.ServerInfo.WordPress.IsZero() || l.ServerInfo.Type == constant.ServerTypePseudo {
 		return nil
 	}
+
+	shell, err := l.detectShell()
+	if err != nil {
+		return xerrors.Errorf("Failed to detect shell. err: %w", err)
+	}
+
 	l.log.Info("Scanning WordPress...")
-	cmd := fmt.Sprintf("sudo -u %s -i -- %s core version --path=%s --allow-root",
-		l.ServerInfo.WordPress.OSUser,
-		l.ServerInfo.WordPress.CmdPath,
-		l.ServerInfo.WordPress.DocRoot)
+	if l.ServerInfo.WordPress.NoSudo && l.ServerInfo.User != l.ServerInfo.WordPress.OSUser {
+		if r := l.exec(fmt.Sprintf("timeout 2 su %s -c exit", l.ServerInfo.WordPress.OSUser), noSudo); !r.isSuccess() {
+			return xerrors.New("Failed to switch user without password. err: please configure to switch users without password")
+		}
+	}
+
+	cmd := l.buildWpCliCmd("core version", false, shell)
 	if r := exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
 		return xerrors.Errorf("Failed to exec `%s`. Check the OS user, command path of wp-cli, DocRoot and permission: %#v", cmd, l.ServerInfo.WordPress)
 	}
 
-	wp, err := l.detectWordPress()
+	wp, err := l.detectWordPress(shell)
 	if err != nil {
 		return xerrors.Errorf("Failed to scan wordpress: %w", err)
 	}
@@ -838,18 +866,44 @@ func (l *base) scanWordPress() error {
 	return nil
 }
 
-func (l *base) detectWordPress() (*models.WordPressPackages, error) {
-	ver, err := l.detectWpCore()
+func (l *base) detectShell() (string, error) {
+	if r := l.exec("printenv SHELL", noSudo); r.isSuccess() {
+		if t := strings.TrimSpace(r.Stdout); t != "" {
+			return filepath.Base(t), nil
+		}
+	}
+
+	if r := l.exec(fmt.Sprintf(`grep "^%s" /etc/passwd | awk -F: '/%s/ { print $7 }'`, l.ServerInfo.User, l.ServerInfo.User), noSudo); r.isSuccess() {
+		if t := strings.TrimSpace(r.Stdout); t != "" {
+			return filepath.Base(t), nil
+		}
+	}
+
+	if isLocalExec(l.ServerInfo.Port, l.ServerInfo.Host) {
+		if r := l.exec("ps -p $$ | tail +2 | awk '{print $NF}'", noSudo); r.isSuccess() {
+			return strings.TrimSpace(r.Stdout), nil
+		}
+
+		if r := l.exec("ps -p %self | tail +2 | awk '{print $NF}'", noSudo); r.isSuccess() {
+			return strings.TrimSpace(r.Stdout), nil
+		}
+	}
+
+	return "", xerrors.New("shell cannot be determined")
+}
+
+func (l *base) detectWordPress(shell string) (*models.WordPressPackages, error) {
+	ver, err := l.detectWpCore(shell)
 	if err != nil {
 		return nil, err
 	}
 
-	themes, err := l.detectWpThemes()
+	themes, err := l.detectWpThemes(shell)
 	if err != nil {
 		return nil, err
 	}
 
-	plugins, err := l.detectWpPlugins()
+	plugins, err := l.detectWpPlugins(shell)
 	if err != nil {
 		return nil, err
 	}
@@ -866,11 +920,8 @@ func (l *base) detectWordPress() (*models.WordPressPackages, error) {
 	return &pkgs, nil
 }
 
-func (l *base) detectWpCore() (string, error) {
-	cmd := fmt.Sprintf("sudo -u %s -i -- %s core version --path=%s --allow-root 2>/dev/null",
-		l.ServerInfo.WordPress.OSUser,
-		l.ServerInfo.WordPress.CmdPath,
-		l.ServerInfo.WordPress.DocRoot)
+func (l *base) detectWpCore(shell string) (string, error) {
+	cmd := l.buildWpCliCmd("core version", true, shell)
 
 	r := exec(l.ServerInfo, cmd, noSudo)
 	if !r.isSuccess() {
@@ -879,11 +930,8 @@ func (l *base) detectWpCore() (string, error) {
 	return strings.TrimSpace(r.Stdout), nil
 }
 
-func (l *base) detectWpThemes() ([]models.WpPackage, error) {
-	cmd := fmt.Sprintf("sudo -u %s -i -- %s theme list --path=%s --format=json --allow-root 2>/dev/null",
-		l.ServerInfo.WordPress.OSUser,
-		l.ServerInfo.WordPress.CmdPath,
-		l.ServerInfo.WordPress.DocRoot)
+func (l *base) detectWpThemes(shell string) ([]models.WpPackage, error) {
+	cmd := l.buildWpCliCmd("theme list --format=json", true, shell)
 
 	var themes []models.WpPackage
 	r := exec(l.ServerInfo, cmd, noSudo)
@@ -900,11 +948,8 @@ func (l *base) detectWpThemes() ([]models.WpPackage, error) {
 	return themes, nil
 }
 
-func (l *base) detectWpPlugins() ([]models.WpPackage, error) {
-	cmd := fmt.Sprintf("sudo -u %s -i -- %s plugin list --path=%s --format=json --allow-root 2>/dev/null",
-		l.ServerInfo.WordPress.OSUser,
-		l.ServerInfo.WordPress.CmdPath,
-		l.ServerInfo.WordPress.DocRoot)
+func (l *base) detectWpPlugins(shell string) ([]models.WpPackage, error) {
+	cmd := l.buildWpCliCmd("plugin list --format=json", true, shell)
 
 	var plugins []models.WpPackage
 	r := exec(l.ServerInfo, cmd, noSudo)
