@@ -398,10 +398,9 @@ func (l *base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 		r := l.exec(cmd, noSudo)
 		if r.isSuccess() {
 			id := strings.TrimSpace(r.Stdout)
-			if !l.isAwsInstanceID(id) {
-				return false, "", nil
+			if l.isAwsInstanceID(id) {
+				return true, id, nil
 			}
-			return true, id, nil
 		}
 
 		cmd = "curl -X PUT --max-time 1 --noproxy 169.254.169.254 -H \"X-aws-ec2-metadata-token-ttl-seconds: 300\" http://169.254.169.254/latest/api/token"
