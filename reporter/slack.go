@@ -38,7 +38,7 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 	for _, r := range rs {
 		w.lang, w.osFamily = r.Lang, r.Family
 		channel := w.Cnf.Channel
-		if channel == "${servername}" {
+		if w.Cnf.Channel == "${servername}" {
 			channel = fmt.Sprintf("#%s", r.ServerName)
 		}
 
