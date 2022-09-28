@@ -29,7 +29,7 @@ func DetectGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string,
 	// TODO Use `https://github.com/shurcooL/githubv4` if the tool supports vulnerabilityAlerts Endpoint
 	// Memo : https://developer.github.com/v4/explorer/
 	const jsonfmt = `{"query":
-	"query { repository(owner:\"%s\", name:\"%s\") { url vulnerabilityAlerts(first: %d, %s) { pageInfo { endCursor hasNextPage startCursor } edges { node { id dismissReason dismissedAt securityVulnerability{ package { name ecosystem } severity vulnerableVersionRange firstPatchedVersion { identifier } } securityAdvisory { description ghsaId permalink publishedAt summary updatedAt withdrawnAt origin severity references { url } identifiers { type value } } } } } } } "}`
+	"query { repository(owner:\"%s\", name:\"%s\") { url vulnerabilityAlerts(first: %d, states:[OPEN], %s) { pageInfo { endCursor hasNextPage startCursor } edges { node { id dismissReason dismissedAt securityVulnerability{ package { name ecosystem } severity vulnerableVersionRange firstPatchedVersion { identifier } } securityAdvisory { description ghsaId permalink publishedAt summary updatedAt withdrawnAt origin severity references { url } identifiers { type value } } } } } } } "}`
 	after := ""
 
 	for {
