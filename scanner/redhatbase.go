@@ -200,68 +200,64 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 		// Fedora release 35 (Thirty Five)
 		if r := exec(c, "cat /etc/redhat-release", noSudo); r.isSuccess() {
 			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
-			if len(result) != 3 {
-				rhel := newRHEL(c)
-				rhel.setErrs([]error{xerrors.Errorf("Failed to parse /etc/redhat-release. r.Stdout: %s", r.Stdout)})
-				return true, rhel
-			}
-
-			release := result[2]
-			major, err := strconv.Atoi(util.Major(release))
-			if err != nil {
-				rhel := newRHEL(c)
-				rhel.setErrs([]error{xerrors.Errorf("Failed to parse major version from release: %s", release)})
-				return true, rhel
-			}
-			switch strings.ToLower(result[1]) {
-			case "fedora":
-				fed := newFedora(c)
-				if major < 32 {
-					fed.setErrs([]error{xerrors.Errorf("Failed to init Fedora. err: not supported major version. versions prior to Fedora 32 are not supported, detected version is %s", release)})
-					return true, fed
-				}
-				fed.setDistro(constant.Fedora, release)
-				return true, fed
-			case "centos", "centos linux":
-				cent := newCentOS(c)
-				if major < 5 {
-					cent.setErrs([]error{xerrors.Errorf("Failed to init CentOS. err: not supported major version. versions prior to CentOS 5 are not supported, detected version is %s", release)})
-					return true, cent
-				}
-				cent.setDistro(constant.CentOS, release)
-				return true, cent
-			case "centos stream":
-				cent := newCentOS(c)
-				if major < 8 {
-					cent.setErrs([]error{xerrors.Errorf("Failed to init CentOS Stream. err: not supported major version. versions prior to CentOS Stream 8 are not supported, detected version is %s", release)})
-					return true, cent
-				}
-				cent.setDistro(constant.CentOS, fmt.Sprintf("stream%s", release))
-				return true, cent
-			case "alma", "almalinux":
-				alma := newAlma(c)
-				if major < 8 {
-					alma.setErrs([]error{xerrors.Errorf("Failed to init AlmaLinux. err: not supported major version. versions prior to AlmaLinux 8 are not supported, detected version is %s", release)})
-					return true, alma
-				}
-				alma.setDistro(constant.Alma, release)
-				return true, alma
-			case "rocky", "rocky linux":
-				rocky := newRocky(c)
-				if major < 8 {
-					rocky.setErrs([]error{xerrors.Errorf("Failed to init Rocky Linux. err: not supported major version. versions prior to Rocky Linux 8 are not supported, detected version is %s", release)})
-					return true, rocky
-				}
-				rocky.setDistro(constant.Rocky, release)
-				return true, rocky
-			default:
-				rhel := newRHEL(c)
-				if major < 5 {
-					rhel.setErrs([]error{xerrors.Errorf("Failed to init RedHat Enterprise Linux. err: not supported major version. versions prior to RedHat Enterprise Linux 5 are not supported, detected version is %s", release)})
+			if len(result) == 3 {
+				release := result[2]
+				major, err := strconv.Atoi(util.Major(release))
+				if err != nil {
+					rhel := newRHEL(c)
+					rhel.setErrs([]error{xerrors.Errorf("Failed to parse major version from release: %s", release)})
 					return true, rhel
 				}
-				rhel.setDistro(constant.RedHat, release)
-				return true, rhel
+				switch strings.ToLower(result[1]) {
+				case "fedora":
+					fed := newFedora(c)
+					if major < 32 {
+						fed.setErrs([]error{xerrors.Errorf("Failed to init Fedora. err: not supported major version. versions prior to Fedora 32 are not supported, detected version is %s", release)})
+						return true, fed
+					}
+					fed.setDistro(constant.Fedora, release)
+					return true, fed
+				case "centos", "centos linux":
+					cent := newCentOS(c)
+					if major < 5 {
+						cent.setErrs([]error{xerrors.Errorf("Failed to init CentOS. err: not supported major version. versions prior to CentOS 5 are not supported, detected version is %s", release)})
+						return true, cent
+					}
+					cent.setDistro(constant.CentOS, release)
+					return true, cent
+				case "centos stream":
+					cent := newCentOS(c)
+					if major < 8 {
+						cent.setErrs([]error{xerrors.Errorf("Failed to init CentOS Stream. err: not supported major version. versions prior to CentOS Stream 8 are not supported, detected version is %s", release)})
+						return true, cent
+					}
+					cent.setDistro(constant.CentOS, fmt.Sprintf("stream%s", release))
+					return true, cent
+				case "alma", "almalinux":
+					alma := newAlma(c)
+					if major < 8 {
+						alma.setErrs([]error{xerrors.Errorf("Failed to init AlmaLinux. err: not supported major version. versions prior to AlmaLinux 8 are not supported, detected version is %s", release)})
+						return true, alma
+					}
+					alma.setDistro(constant.Alma, release)
+					return true, alma
+				case "rocky", "rocky linux":
+					rocky := newRocky(c)
+					if major < 8 {
+						rocky.setErrs([]error{xerrors.Errorf("Failed to init Rocky Linux. err: not supported major version. versions prior to Rocky Linux 8 are not supported, detected version is %s", release)})
+						return true, rocky
+					}
+					rocky.setDistro(constant.Rocky, release)
+					return true, rocky
+				default:
+					rhel := newRHEL(c)
+					if major < 5 {
+						rhel.setErrs([]error{xerrors.Errorf("Failed to init RedHat Enterprise Linux. err: not supported major version. versions prior to RedHat Enterprise Linux 5 are not supported, detected version is %s", release)})
+						return true, rhel
+					}
+					rhel.setDistro(constant.RedHat, release)
+					return true, rhel
+				}
 			}
 		}
 	}
