@@ -35,10 +35,10 @@ type message struct {
 
 func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 
-	channel := w.Cnf.Channel
 	for _, r := range rs {
 		w.lang, w.osFamily = r.Lang, r.Family
-		if channel == "${servername}" {
+		channel := w.Cnf.Channel
+		if w.Cnf.Channel == "${servername}" {
 			channel = fmt.Sprintf("#%s", r.ServerName)
 		}
 
