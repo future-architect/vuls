@@ -103,6 +103,9 @@ func writeToFile(cnf config.Config, path string) error {
 	if cnf.Default.WordPress != nil && cnf.Default.WordPress.IsZero() {
 		cnf.Default.WordPress = nil
 	}
+	if cnf.Default.PortScan != nil && cnf.Default.PortScan.IsZero() {
+		cnf.Default.PortScan = nil
+	}
 
 	c := struct {
 		Saas    *config.SaasConf             `toml:"saas"`
@@ -195,6 +198,12 @@ func cleanForTOMLEncoding(server config.ServerInfo, def config.ServerInfo) confi
 	if server.WordPress != nil {
 		if server.WordPress.IsZero() || reflect.DeepEqual(server.WordPress, def.WordPress) {
 			server.WordPress = nil
+		}
+	}
+
+	if server.PortScan != nil {
+		if server.PortScan.IsZero() || reflect.DeepEqual(server.PortScan, def.PortScan) {
+			server.PortScan = nil
 		}
 	}
 
