@@ -770,6 +770,21 @@ func AnalyzeLibraries(ctx context.Context, libFilemap map[string]LibFile, isOffl
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to convert libs. err: %w", err)
 		}
+
+		found := false
+		for _, a := range result.Applications {
+			if a.FilePath == path {
+				found = true
+			}
+		}
+		if !found {
+			libscan = append(libscan, models.LibraryScanner{
+				// TODO
+				// Type:         app.Type,
+				LockfilePath: path,
+			})
+		}
+
 		libraryScanners = append(libraryScanners, libscan...)
 	}
 	return libraryScanners, nil
