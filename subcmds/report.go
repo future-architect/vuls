@@ -10,26 +10,29 @@ import (
 	"path/filepath"
 
 	"github.com/aquasecurity/trivy/pkg/utils"
+	"github.com/google/subcommands"
+	"github.com/k0kubun/pp"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/reporter"
-	"github.com/google/subcommands"
-	"github.com/k0kubun/pp"
 )
 
 // ReportCmd is subcommand for reporting
 type ReportCmd struct {
 	configPath string
 
-	formatJSON        bool
-	formatOneEMail    bool
-	formatCsv         bool
-	formatFullText    bool
-	formatOneLineText bool
-	formatList        bool
-	gzip              bool
+	formatJSON          bool
+	formatOneEMail      bool
+	formatCsv           bool
+	formatFullText      bool
+	formatOneLineText   bool
+	formatList          bool
+	formatCycloneDXJSON bool
+	formatCycloneDXXML  bool
+	gzip                bool
 
 	toSlack      bool
 	toChatWork   bool
@@ -80,6 +83,9 @@ func (*ReportCmd) Usage() string {
 		[-format-one-line-text]
 		[-format-list]
 		[-format-full-text]
+		[-format-csv]
+		[-format-cyclonedx-json]
+		[-format-cyclonedx-xml]
 		[-gzip]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-debug]
@@ -150,6 +156,8 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.formatList, "format-list", false, "Display as list format")
 	f.BoolVar(&p.formatFullText, "format-full-text", false,
 		"Detail report in plain text")
+	f.BoolVar(&p.formatCycloneDXJSON, "format-cyclonedx-json", false, "CycloneDX JSON format")
+	f.BoolVar(&p.formatCycloneDXXML, "format-cyclonedx-xml", false, "CycloneDX XML format")
 
 	f.BoolVar(&p.toSlack, "to-slack", false, "Send report via Slack")
 	f.BoolVar(&p.toChatWork, "to-chatwork", false, "Send report via chatwork")
@@ -225,7 +233,8 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if !(p.formatJSON || p.formatOneLineText ||
-		p.formatList || p.formatFullText || p.formatCsv) {
+		p.formatList || p.formatFullText || p.formatCsv ||
+		p.formatCycloneDXJSON || p.formatCycloneDXXML) {
 		p.formatList = true
 	}
 
@@ -310,15 +319,17 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if p.toLocalFile {
 		reports = append(reports, reporter.LocalFileWriter{
-			CurrentDir:        dir,
-			DiffPlus:          config.Conf.DiffPlus,
-			DiffMinus:         config.Conf.DiffMinus,
-			FormatJSON:        p.formatJSON,
-			FormatCsv:         p.formatCsv,
-			FormatFullText:    p.formatFullText,
-			FormatOneLineText: p.formatOneLineText,
-			FormatList:        p.formatList,
-			Gzip:              p.gzip,
+			CurrentDir:          dir,
+			DiffPlus:            config.Conf.DiffPlus,
+			DiffMinus:           config.Conf.DiffMinus,
+			FormatJSON:          p.formatJSON,
+			FormatCsv:           p.formatCsv,
+			FormatFullText:      p.formatFullText,
+			FormatOneLineText:   p.formatOneLineText,
+			FormatList:          p.formatList,
+			FormatCycloneDXJSON: p.formatCycloneDXJSON,
+			FormatCycloneDXXML:  p.formatCycloneDXXML,
+			Gzip:                p.gzip,
 		})
 	}
 
