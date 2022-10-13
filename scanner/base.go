@@ -782,6 +782,7 @@ func AnalyzeLibraries(ctx context.Context, libFilemap map[string]LibFile, isOffl
 				// TODO
 				// Type:         app.Type,
 				LockfilePath: path,
+				Libs:         []models.Library{},
 			})
 		}
 
