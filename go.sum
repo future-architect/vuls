@@ -1369,8 +1369,8 @@ github.com/vishvananda/netns v0.0.0-20191106174202-0a2b9b5464df/go.mod h1:JP3t17
 github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae/go.mod h1:DD4vA1DwXk04H54A1oHXtwZmA0grkVMdPxx/VGLCah0=
 github.com/vulsio/go-cti v0.0.2-0.20220613013115-8c7e57a6aa86 h1:/Xie1YmCGo+SMpOP5xhZ7bzRBTvTu6zGZlCv1cahE8E=
 github.com/vulsio/go-cti v0.0.2-0.20220613013115-8c7e57a6aa86/go.mod h1:EBt6G1VZylPciq3CHKmBIth6nDbcPOU59lqOily2aZM=
-github.com/vulsio/go-cve-dictionary v0.8.2-0.20211028094424-0a854f8e8f85 h1:nEhaBIAixxDQGeu/3sgHLSjpQpKGqENcUtWHEwkwC4k=
-github.com/vulsio/go-cve-dictionary v0.8.2-0.20211028094424-0a854f8e8f85/go.mod h1:Ii9TEH35giMSWJM2FwGm1PCPxuBKrbaYhDun2PM7ERo=
+github.com/vulsio/go-cve-dictionary v0.8.2 h1:abj5449xjuHVRPIeNS41TE+MDMZmw+nbjxm3QZbL4Ks=
+github.com/vulsio/go-cve-dictionary v0.8.2/go.mod h1:GOeHvUi9MaPJgNgnYXry73lnypShLett5yfpw00IJrg=
 github.com/vulsio/go-exploitdb v0.4.2 h1:eCqyOLWKPwD8hZ0NHGCtT6OG37Sadr5RGMnnHEEy0bI=
 github.com/vulsio/go-exploitdb v0.4.2/go.mod h1:2R5gwySHHjF3DoEt11xqnIWEJLS93CLfCUDPwYH+VdM=
 github.com/vulsio/go-kev v0.1.1-0.20220118062020-5f69b364106f h1:s28XqL35U+N2xkl6bLXPH68IqzmliuqeF37x5pzNLuc=
