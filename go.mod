@@ -34,7 +34,7 @@ require (
 	github.com/parnurzeal/gorequest v0.2.16
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.9.0
-	github.com/spf13/cobra v1.5.0
+	github.com/spf13/cobra v1.6.0
 	github.com/vulsio/go-cti v0.0.2-0.20220613013115-8c7e57a6aa86
 	github.com/vulsio/go-cve-dictionary v0.8.2
 	github.com/vulsio/go-exploitdb v0.4.2
@@ -112,7 +112,7 @@ require (
 	github.com/hhatto/gorst v0.0.0-20181029133204-ca9f730cac5b // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/log15 v0.0.0-20201112154412-8562bdadbbac // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.12.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
