@@ -745,7 +745,13 @@ func AnalyzeLibraries(ctx context.Context, libFilemap map[string]LibFile, isOffl
 		analyzer.TypeRedHatContentManifestType,
 		analyzer.TypeRedHatDockerfileType,
 	}
-	anal := analyzer.NewAnalyzerGroup(analyzer.GroupBuiltin, disabledAnalyzers)
+	anal, err := analyzer.NewAnalyzerGroup(analyzer.AnalyzerOptions{
+		Group:             analyzer.GroupBuiltin,
+		DisabledAnalyzers: disabledAnalyzers,
+	})
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to new analyzer group. err: %w", err)
+	}
 
 	for path, f := range libFilemap {
 		var wg sync.WaitGroup
