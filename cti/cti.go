@@ -660,7 +660,7 @@ var TechniqueDict = map[string]Technique{
 		Name: "CAPEC-35: Leverage Executable Code in Non-Executable Files",
 	},
 	"CAPEC-36": {
-		Name: "CAPEC-36: Using Unpublished Interfaces",
+		Name: "CAPEC-36: Using Unpublished Interfaces or Functionality",
 	},
 	"CAPEC-37": {
 		Name: "CAPEC-37: Retrieve Embedded Sensitive Data",
@@ -831,7 +831,7 @@ var TechniqueDict = map[string]Technique{
 		Name: "CAPEC-442: Infected Software",
 	},
 	"CAPEC-443": {
-		Name: "CAPEC-443: Malicious Logic Inserted Into Product Software by Authorized Developer",
+		Name: "CAPEC-443: Malicious Logic Inserted Into Product by Authorized Developer",
 	},
 	"CAPEC-444": {
 		Name: "CAPEC-444: Development Alteration",
@@ -840,7 +840,7 @@ var TechniqueDict = map[string]Technique{
 		Name: "CAPEC-445: Malicious Logic Insertion into Product Software via Configuration Management Manipulation",
 	},
 	"CAPEC-446": {
-		Name: "CAPEC-446: Malicious Logic Insertion into Product Software via Inclusion of 3rd Party Component Dependency",
+		Name: "CAPEC-446: Malicious Logic Insertion into Product via Inclusion of Third-Party Component",
 	},
 	"CAPEC-447": {
 		Name: "CAPEC-447: Design Alteration",
@@ -1382,9 +1382,6 @@ var TechniqueDict = map[string]Technique{
 	"CAPEC-628": {
 		Name: "CAPEC-628: Carry-Off GPS Attack",
 	},
-	"CAPEC-629": {
-		Name: "CAPEC-629: Unauthorized Use of Device Resources",
-	},
 	"CAPEC-63": {
 		Name: "CAPEC-63: Cross-Site Scripting (XSS)",
 	},
@@ -1464,7 +1461,7 @@ var TechniqueDict = map[string]Technique{
 		Name: "CAPEC-652: Use of Known Kerberos Credentials",
 	},
 	"CAPEC-653": {
-		Name: "CAPEC-653: Use of Known Windows Credentials",
+		Name: "CAPEC-653: Use of Known Operating System Credentials",
 	},
 	"CAPEC-654": {
 		Name: "CAPEC-654: Credential Prompt Impersonation",
@@ -1553,8 +1550,38 @@ var TechniqueDict = map[string]Technique{
 	"CAPEC-681": {
 		Name: "CAPEC-681: Exploitation of Improperly Controlled Hardware Security Identifiers",
 	},
+	"CAPEC-682": {
+		Name: "CAPEC-682: Exploitation of Firmware or ROM Code with Unpatchable Vulnerabilities",
+	},
 	"CAPEC-69": {
 		Name: "CAPEC-69: Target Programs with Elevated Privileges",
+	},
+	"CAPEC-690": {
+		Name: "CAPEC-690: Metadata Spoofing",
+	},
+	"CAPEC-691": {
+		Name: "CAPEC-691: Spoof Open-Source Software Metadata",
+	},
+	"CAPEC-692": {
+		Name: "CAPEC-692: Spoof Version Control System Commit Metadata",
+	},
+	"CAPEC-693": {
+		Name: "CAPEC-693: StarJacking",
+	},
+	"CAPEC-694": {
+		Name: "CAPEC-694: System Location Discovery",
+	},
+	"CAPEC-695": {
+		Name: "CAPEC-695: Repo Jacking",
+	},
+	"CAPEC-696": {
+		Name: "CAPEC-696: Load Value Injection",
+	},
+	"CAPEC-697": {
+		Name: "CAPEC-697: DHCP Spoofing",
+	},
+	"CAPEC-698": {
+		Name: "CAPEC-698: Install Malicious Extension",
 	},
 	"CAPEC-7": {
 		Name: "CAPEC-7: Blind SQL Injection",
@@ -1596,7 +1623,7 @@ var TechniqueDict = map[string]Technique{
 		Name: "CAPEC-80: Using UTF-8 Encoding to Bypass Validation Logic",
 	},
 	"CAPEC-81": {
-		Name: "CAPEC-81: Web Logs Tampering",
+		Name: "CAPEC-81: Web Server Logs Tampering",
 	},
 	"CAPEC-83": {
 		Name: "CAPEC-83: XPath Injection",
@@ -1812,6 +1839,18 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1027.006": {
 		Name:      "TA0005: Defense Evasion => T1027.006: HTML Smuggling",
+		Platforms: []string{"Linux", "Windows", "macOS"},
+	},
+	"T1027.007": {
+		Name:      "TA0005: Defense Evasion => T1027.007: Dynamic API Resolution",
+		Platforms: []string{"Windows"},
+	},
+	"T1027.008": {
+		Name:      "TA0005: Defense Evasion => T1027.008: Stripped Payloads",
+		Platforms: []string{"Linux", "Windows", "macOS"},
+	},
+	"T1027.009": {
+		Name:      "TA0005: Defense Evasion => T1027.009: Embedded Payloads",
 		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1029": {
@@ -2087,8 +2126,8 @@ var TechniqueDict = map[string]Technique{
 		Platforms: []string{"Azure AD", "Google Workspace", "IaaS", "Office 365", "SaaS"},
 	},
 	"T1070": {
-		Name:      "TA0005: Defense Evasion => T1070: Indicator Removal on Host",
-		Platforms: []string{"Containers", "Linux", "Network", "Windows", "macOS"},
+		Name:      "TA0005: Defense Evasion => T1070: Indicator Removal",
+		Platforms: []string{"Containers", "Google Workspace", "Linux", "Network", "Office 365", "Windows", "macOS"},
 	},
 	"T1070.001": {
 		Name:      "TA0005: Defense Evasion => T1070.001: Clear Windows Event Logs",
@@ -2112,6 +2151,18 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1070.006": {
 		Name:      "TA0005: Defense Evasion => T1070.006: Timestomp",
+		Platforms: []string{"Linux", "Windows", "macOS"},
+	},
+	"T1070.007": {
+		Name:      "TA0005: Defense Evasion => T1070.007: Clear Network Connection History and Configurations",
+		Platforms: []string{"Linux", "Network", "Windows", "macOS"},
+	},
+	"T1070.008": {
+		Name:      "TA0005: Defense Evasion => T1070.008: Clear Mailbox Data",
+		Platforms: []string{"Google Workspace", "Linux", "Office 365", "Windows", "macOS"},
+	},
+	"T1070.009": {
+		Name:      "TA0005: Defense Evasion => T1070.009: Clear Persistence",
 		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1071": {
@@ -2152,7 +2203,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1078": {
 		Name:      "TA0001: Initial Access, TA0003: Persistence, TA0004: Privilege Escalation, TA0005: Defense Evasion => T1078: Valid Accounts",
-		Platforms: []string{"Azure AD", "Containers", "Google Workspace", "IaaS", "Linux", "Office 365", "SaaS", "Windows", "macOS"},
+		Platforms: []string{"Azure AD", "Containers", "Google Workspace", "IaaS", "Linux", "Network", "Office 365", "SaaS", "Windows", "macOS"},
 	},
 	"T1078.001": {
 		Name:      "TA0001: Initial Access, TA0003: Persistence, TA0004: Privilege Escalation, TA0005: Defense Evasion => T1078.001: Default Accounts",
@@ -2504,7 +2555,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1199": {
 		Name:      "TA0001: Initial Access => T1199: Trusted Relationship",
-		Platforms: []string{"IaaS", "Linux", "SaaS", "Windows", "macOS"},
+		Platforms: []string{"IaaS", "Linux", "Office 365", "SaaS", "Windows", "macOS"},
 	},
 	"T1200": {
 		Name:      "TA0001: Initial Access => T1200: Hardware Additions",
@@ -2545,6 +2596,10 @@ var TechniqueDict = map[string]Technique{
 	"T1205.001": {
 		Name:      "TA0003: Persistence, TA0005: Defense Evasion, TA0011: Command and Control => T1205.001: Port Knocking",
 		Platforms: []string{"Linux", "Network", "Windows", "macOS"},
+	},
+	"T1205.002": {
+		Name:      "TA0003: Persistence, TA0005: Defense Evasion, TA0011: Command and Control => T1205.002: Socket Filters",
+		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1207": {
 		Name:      "TA0005: Defense Evasion => T1207: Rogue Domain Controller",
@@ -2780,7 +2835,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1505": {
 		Name:      "TA0003: Persistence => T1505: Server Software Component",
-		Platforms: []string{"Linux", "Windows", "macOS"},
+		Platforms: []string{"Linux", "Network", "Windows", "macOS"},
 	},
 	"T1505.001": {
 		Name:      "TA0003: Persistence => T1505.001: SQL Stored Procedures",
@@ -2792,7 +2847,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1505.003": {
 		Name:      "TA0003: Persistence => T1505.003: Web Shell",
-		Platforms: []string{"Linux", "Windows", "macOS"},
+		Platforms: []string{"Linux", "Network", "Windows", "macOS"},
 	},
 	"T1505.004": {
 		Name:      "TA0003: Persistence => T1505.004: IIS Components",
@@ -2827,8 +2882,8 @@ var TechniqueDict = map[string]Technique{
 		Platforms: []string{"Linux", "Network", "Windows", "macOS"},
 	},
 	"T1530": {
-		Name:      "TA0009: Collection => T1530: Data from Cloud Storage Object",
-		Platforms: []string{"IaaS"},
+		Name:      "TA0009: Collection => T1530: Data from Cloud Storage",
+		Platforms: []string{"IaaS", "SaaS"},
 	},
 	"T1531": {
 		Name:      "TA0040: Impact => T1531: Account Access Removal",
@@ -2900,7 +2955,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1546": {
 		Name:      "TA0003: Persistence, TA0004: Privilege Escalation => T1546: Event Triggered Execution",
-		Platforms: []string{"Linux", "Windows", "macOS"},
+		Platforms: []string{"IaaS", "Linux", "Office 365", "SaaS", "Windows", "macOS"},
 	},
 	"T1546.001": {
 		Name:      "TA0003: Persistence, TA0004: Privilege Escalation => T1546.001: Change Default File Association",
@@ -2961,6 +3016,10 @@ var TechniqueDict = map[string]Technique{
 	"T1546.015": {
 		Name:      "TA0003: Persistence, TA0004: Privilege Escalation => T1546.015: Component Object Model Hijacking",
 		Platforms: []string{"Windows"},
+	},
+	"T1546.016": {
+		Name:      "TA0003: Persistence, TA0004: Privilege Escalation => T1546.016: Installer Packages",
+		Platforms: []string{"Linux", "Windows", "macOS"},
 	},
 	"T1547": {
 		Name:      "TA0003: Persistence, TA0004: Privilege Escalation => T1547: Boot or Logon Autostart Execution",
@@ -3048,7 +3107,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1550.001": {
 		Name:      "TA0005: Defense Evasion, TA0008: Lateral Movement => T1550.001: Application Access Token",
-		Platforms: []string{"Containers", "Google Workspace", "Office 365", "SaaS"},
+		Platforms: []string{"Azure AD", "Containers", "Google Workspace", "IaaS", "Office 365", "SaaS"},
 	},
 	"T1550.002": {
 		Name:      "TA0005: Defense Evasion, TA0008: Lateral Movement => T1550.002: Pass the Hash",
@@ -3152,7 +3211,7 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1556": {
 		Name:      "TA0003: Persistence, TA0005: Defense Evasion, TA0006: Credential Access => T1556: Modify Authentication Process",
-		Platforms: []string{"Linux", "Network", "Windows", "macOS"},
+		Platforms: []string{"Azure AD", "Google Workspace", "IaaS", "Linux", "Network", "Office 365", "SaaS", "Windows", "macOS"},
 	},
 	"T1556.001": {
 		Name:      "TA0003: Persistence, TA0005: Defense Evasion, TA0006: Credential Access => T1556.001: Domain Controller Authentication",
@@ -3174,9 +3233,17 @@ var TechniqueDict = map[string]Technique{
 		Name:      "TA0003: Persistence, TA0005: Defense Evasion, TA0006: Credential Access => T1556.005: Reversible Encryption",
 		Platforms: []string{"Windows"},
 	},
+	"T1556.006": {
+		Name:      "TA0003: Persistence, TA0005: Defense Evasion, TA0006: Credential Access => T1556.006: Multi-Factor Authentication",
+		Platforms: []string{"Azure AD", "Google Workspace", "IaaS", "Linux", "Office 365", "SaaS", "Windows", "macOS"},
+	},
+	"T1556.007": {
+		Name:      "TA0003: Persistence, TA0005: Defense Evasion, TA0006: Credential Access => T1556.007: Hybrid Identity",
+		Platforms: []string{"Azure AD", "Google Workspace", "IaaS", "Office 365", "SaaS", "Windows"},
+	},
 	"T1557": {
 		Name:      "TA0006: Credential Access, TA0009: Collection => T1557: Adversary-in-the-Middle",
-		Platforms: []string{"Linux", "Windows", "macOS"},
+		Platforms: []string{"Linux", "Network", "Windows", "macOS"},
 	},
 	"T1557.001": {
 		Name:      "TA0006: Credential Access, TA0009: Collection => T1557.001: LLMNR/NBT-NS Poisoning and SMB Relay",
@@ -3550,6 +3617,10 @@ var TechniqueDict = map[string]Technique{
 		Name:      "TA0042: Resource Development => T1583.006: Web Services",
 		Platforms: []string{"PRE"},
 	},
+	"T1583.007": {
+		Name:      "TA0042: Resource Development => T1583.007: Serverless",
+		Platforms: []string{"PRE"},
+	},
 	"T1584": {
 		Name:      "TA0042: Resource Development => T1584: Compromise Infrastructure",
 		Platforms: []string{"PRE"},
@@ -3578,6 +3649,10 @@ var TechniqueDict = map[string]Technique{
 		Name:      "TA0042: Resource Development => T1584.006: Web Services",
 		Platforms: []string{"PRE"},
 	},
+	"T1584.007": {
+		Name:      "TA0042: Resource Development => T1584.007: Serverless",
+		Platforms: []string{"PRE"},
+	},
 	"T1585": {
 		Name:      "TA0042: Resource Development => T1585: Establish Accounts",
 		Platforms: []string{"PRE"},
@@ -3590,6 +3665,10 @@ var TechniqueDict = map[string]Technique{
 		Name:      "TA0042: Resource Development => T1585.002: Email Accounts",
 		Platforms: []string{"PRE"},
 	},
+	"T1585.003": {
+		Name:      "TA0042: Resource Development => T1585.003: Cloud Accounts",
+		Platforms: []string{"PRE"},
+	},
 	"T1586": {
 		Name:      "TA0042: Resource Development => T1586: Compromise Accounts",
 		Platforms: []string{"PRE"},
@@ -3600,6 +3679,10 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1586.002": {
 		Name:      "TA0042: Resource Development => T1586.002: Email Accounts",
+		Platforms: []string{"PRE"},
+	},
+	"T1586.003": {
+		Name:      "TA0042: Resource Development => T1586.003: Cloud Accounts",
 		Platforms: []string{"PRE"},
 	},
 	"T1587": {
@@ -3744,6 +3827,10 @@ var TechniqueDict = map[string]Technique{
 	},
 	"T1593.002": {
 		Name:      "TA0043: Reconnaissance => T1593.002: Search Engines",
+		Platforms: []string{"PRE"},
+	},
+	"T1593.003": {
+		Name:      "TA0043: Reconnaissance => T1593.003: Code Repositories",
 		Platforms: []string{"PRE"},
 	},
 	"T1594": {
@@ -3898,6 +3985,10 @@ var TechniqueDict = map[string]Technique{
 		Name:      "TA0042: Resource Development => T1608.005: Link Target",
 		Platforms: []string{"PRE"},
 	},
+	"T1608.006": {
+		Name:      "TA0042: Resource Development => T1608.006: SEO Poisoning",
+		Platforms: []string{"PRE"},
+	},
 	"T1609": {
 		Name:      "TA0002: Execution => T1609: Container Administration Command",
 		Platforms: []string{"Containers"},
@@ -3949,5 +4040,13 @@ var TechniqueDict = map[string]Technique{
 	"T1647": {
 		Name:      "TA0005: Defense Evasion => T1647: Plist File Modification",
 		Platforms: []string{"macOS"},
+	},
+	"T1648": {
+		Name:      "TA0002: Execution => T1648: Serverless Execution",
+		Platforms: []string{"IaaS", "Office 365", "SaaS"},
+	},
+	"T1649": {
+		Name:      "TA0006: Credential Access => T1649: Steal or Forge Authentication Certificates",
+		Platforms: []string{"Azure AD", "Linux", "Windows", "macOS"},
 	},
 }
