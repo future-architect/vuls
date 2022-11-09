@@ -240,6 +240,7 @@ type ServerInfo struct {
 	Optional           map[string]interface{}      `toml:"optional,omitempty" json:"optional,omitempty"`     // Optional key-value set that will be outputted to JSON
 	Lockfiles          []string                    `toml:"lockfiles,omitempty" json:"lockfiles,omitempty"`   // ie) path/to/package-lock.json
 	FindLock           bool                        `toml:"findLock,omitempty" json:"findLock,omitempty"`
+	FindLockDirs       []string                    `toml:"findLockDirs,omitempty" json:"findLockDirs,omitempty"`
 	Type               string                      `toml:"type,omitempty" json:"type,omitempty"` // "pseudo" or ""
 	IgnoredJSONKeys    []string                    `toml:"ignoredJSONKeys,omitempty" json:"ignoredJSONKeys,omitempty"`
 	WordPress          *WordPressConf              `toml:"wordpress,omitempty" json:"wordpress,omitempty"`

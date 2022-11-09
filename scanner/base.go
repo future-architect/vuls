@@ -591,7 +591,7 @@ func (l *base) scanLibraries() (err error) {
 		return nil
 	}
 
-	l.log.Info("Scanning Lockfile...")
+	l.log.Info("Scanning Language-specific Packages...")
 
 	found := map[string]bool{}
 	detectFiles := l.ServerInfo.Lockfiles
@@ -608,9 +608,17 @@ func (l *base) scanLibraries() (err error) {
 			findopt += fmt.Sprintf("-name %q -o ", filename)
 		}
 
+		dir := "/"
+		if len(l.ServerInfo.FindLockDirs) != 0 {
+			dir = strings.Join(l.ServerInfo.FindLockDirs, " ")
+		} else {
+			l.log.Infof("It's recommended to specify FindLockDirs in config.toml. If FindLockDirs is not specified, all directories under / will be searched, which may increase CPU load")
+		}
+		l.log.Infof("Finding files under %s", dir)
+
 		// delete last "-o "
 		// find / -type f -and \( -name "package-lock.json" -o -name "yarn.lock" ... \) 2>&1 | grep -v "find: "
-		cmd := fmt.Sprintf(`find / -type f -and \( ` + findopt[:len(findopt)-3] + ` \) 2>&1 | grep -v "find: "`)
+		cmd := fmt.Sprintf(`find %s -type f -and \( `+findopt[:len(findopt)-3]+` \) 2>&1 | grep -v "find: "`, dir)
 		r := exec(l.ServerInfo, cmd, priv)
 		if r.ExitStatus != 0 && r.ExitStatus != 1 {
 			return xerrors.Errorf("Failed to find lock files")
