@@ -128,7 +128,6 @@ func parallelExec(fn func(osTypeInterface) error, timeoutSec ...int) {
 		}
 	}
 	servers = successes
-	return
 }
 
 func exec(c config.ServerInfo, cmd string, sudo bool, log ...logging.Logger) (result execResult) {

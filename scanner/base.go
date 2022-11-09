@@ -361,7 +361,6 @@ func (l *base) detectPlatform() {
 
 	//TODO Azure, GCP...
 	l.setPlatform(models.Platform{Name: "other"})
-	return
 }
 
 var dsFingerPrintPrefix = "AgentStatus.agentCertHash: "
@@ -640,30 +639,36 @@ func (l *base) scanLibraries() (err error) {
 		case constant.ServerTypePseudo:
 			fileinfo, err := os.Stat(path)
 			if err != nil {
-				return xerrors.Errorf("Failed to get target file info. err: %w, filepath: %s", err, path)
+				l.log.Warnf("Failed to get target file info. err: %w, filepath: %s", err, path)
+				continue
 			}
 			filemode = fileinfo.Mode().Perm()
 			contents, err = os.ReadFile(path)
 			if err != nil {
-				return xerrors.Errorf("Failed to read target file contents. err: %w, filepath: %s", err, path)
+				l.log.Warnf("Failed to read target file contents. err: %w, filepath: %s", err, path)
+				continue
 			}
 		default:
+			l.log.Debugf("Analyzing file: %s", path)
 			cmd := fmt.Sprintf(`stat -c "%%a" %s`, path)
-			r := exec(l.ServerInfo, cmd, priv)
+			r := exec(l.ServerInfo, cmd, priv, logging.NewIODiscardLogger())
 			if !r.isSuccess() {
-				return xerrors.Errorf("Failed to get target file permission: %s, filepath: %s", r, path)
+				l.log.Warnf("Failed to get target file permission: %s, filepath: %s", r, path)
+				continue
 			}
 			permStr := fmt.Sprintf("0%s", strings.ReplaceAll(r.Stdout, "\n", ""))
 			perm, err := strconv.ParseUint(permStr, 8, 32)
 			if err != nil {
-				return xerrors.Errorf("Failed to parse permission string. err: %w, permission string: %s", err, permStr)
+				l.log.Warnf("Failed to parse permission string. err: %w, permission string: %s", err, permStr)
+				continue
 			}
 			filemode = os.FileMode(perm)
 
 			cmd = fmt.Sprintf("cat %s", path)
-			r = exec(l.ServerInfo, cmd, priv)
+			r = exec(l.ServerInfo, cmd, priv, logging.NewIODiscardLogger())
 			if !r.isSuccess() {
-				return xerrors.Errorf("Failed to get target file contents: %s, filepath: %s", r, path)
+				l.log.Warnf("Failed to get target file contents: %s, filepath: %s", r, path)
+				continue
 			}
 			contents = []byte(r.Stdout)
 		}
