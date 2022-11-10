@@ -647,13 +647,13 @@ func (l *base) scanLibraries() (err error) {
 		case constant.ServerTypePseudo:
 			fileinfo, err := os.Stat(path)
 			if err != nil {
-				l.log.Warnf("Failed to get target file info. err: %w, filepath: %s", err, path)
+				l.log.Warnf("Failed to get target file info. err: %s, filepath: %s", err, path)
 				continue
 			}
 			filemode = fileinfo.Mode().Perm()
 			contents, err = os.ReadFile(path)
 			if err != nil {
-				l.log.Warnf("Failed to read target file contents. err: %w, filepath: %s", err, path)
+				l.log.Warnf("Failed to read target file contents. err: %s, filepath: %s", err, path)
 				continue
 			}
 		default:
@@ -667,7 +667,7 @@ func (l *base) scanLibraries() (err error) {
 			permStr := fmt.Sprintf("0%s", strings.ReplaceAll(r.Stdout, "\n", ""))
 			perm, err := strconv.ParseUint(permStr, 8, 32)
 			if err != nil {
-				l.log.Warnf("Failed to parse permission string. err: %w, permission string: %s", err, permStr)
+				l.log.Warnf("Failed to parse permission string. err: %s, permission string: %s", err, permStr)
 				continue
 			}
 			filemode = os.FileMode(perm)
