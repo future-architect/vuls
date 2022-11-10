@@ -1155,7 +1155,7 @@ func (o *debian) checkrestart() error {
 		o.Packages[p.Name] = pack
 
 		for j, proc := range p.NeedRestartProcs {
-			if proc.HasInit == false {
+			if !proc.HasInit {
 				continue
 			}
 			packs[i].NeedRestartProcs[j].InitSystem = initName

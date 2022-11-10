@@ -361,7 +361,6 @@ func (l *base) detectPlatform() {
 
 	//TODO Azure, GCP...
 	l.setPlatform(models.Platform{Name: "other"})
-	return
 }
 
 var dsFingerPrintPrefix = "AgentStatus.agentCertHash: "
@@ -582,12 +581,6 @@ func (l *base) parseSystemctlStatus(stdout string) string {
 	return ss[1]
 }
 
-// LibFile : library file content
-type LibFile struct {
-	Contents []byte
-	Filemode os.FileMode
-}
-
 func (l *base) scanLibraries() (err error) {
 	if len(l.LibraryScanners) != 0 {
 		return nil
@@ -598,9 +591,9 @@ func (l *base) scanLibraries() (err error) {
 		return nil
 	}
 
-	l.log.Info("Scanning Lockfile...")
+	l.log.Info("Scanning Language-specific Packages...")
 
-	libFilemap := map[string]LibFile{}
+	found := map[string]bool{}
 	detectFiles := l.ServerInfo.Lockfiles
 
 	priv := noSudo
@@ -615,9 +608,17 @@ func (l *base) scanLibraries() (err error) {
 			findopt += fmt.Sprintf("-name %q -o ", filename)
 		}
 
+		dir := "/"
+		if len(l.ServerInfo.FindLockDirs) != 0 {
+			dir = strings.Join(l.ServerInfo.FindLockDirs, " ")
+		} else {
+			l.log.Infof("It's recommended to specify FindLockDirs in config.toml. If FindLockDirs is not specified, all directories under / will be searched, which may increase CPU load")
+		}
+		l.log.Infof("Finding files under %s", dir)
+
 		// delete last "-o "
 		// find / -type f -and \( -name "package-lock.json" -o -name "yarn.lock" ... \) 2>&1 | grep -v "find: "
-		cmd := fmt.Sprintf(`find / -type f -and \( ` + findopt[:len(findopt)-3] + ` \) 2>&1 | grep -v "find: "`)
+		cmd := fmt.Sprintf(`find %s -type f -and \( `+findopt[:len(findopt)-3]+` \) 2>&1 | grep -v "find: "`, dir)
 		r := exec(l.ServerInfo, cmd, priv)
 		if r.ExitStatus != 0 && r.ExitStatus != 1 {
 			return xerrors.Errorf("Failed to find lock files")
@@ -635,116 +636,62 @@ func (l *base) scanLibraries() (err error) {
 		}
 
 		// skip already exist
-		if _, ok := libFilemap[path]; ok {
+		if _, ok := found[path]; ok {
 			continue
 		}
 
-		var f LibFile
+		var contents []byte
+		var filemode os.FileMode
+
 		switch l.Distro.Family {
 		case constant.ServerTypePseudo:
 			fileinfo, err := os.Stat(path)
 			if err != nil {
-				return xerrors.Errorf("Failed to get target file info. err: %w, filepath: %s", err, path)
+				l.log.Warnf("Failed to get target file info. err: %s, filepath: %s", err, path)
+				continue
 			}
-			f.Filemode = fileinfo.Mode().Perm()
-			f.Contents, err = os.ReadFile(path)
+			filemode = fileinfo.Mode().Perm()
+			contents, err = os.ReadFile(path)
 			if err != nil {
-				return xerrors.Errorf("Failed to read target file contents. err: %w, filepath: %s", err, path)
+				l.log.Warnf("Failed to read target file contents. err: %s, filepath: %s", err, path)
+				continue
 			}
 		default:
+			l.log.Debugf("Analyzing file: %s", path)
 			cmd := fmt.Sprintf(`stat -c "%%a" %s`, path)
-			r := exec(l.ServerInfo, cmd, priv)
+			r := exec(l.ServerInfo, cmd, priv, logging.NewIODiscardLogger())
 			if !r.isSuccess() {
-				return xerrors.Errorf("Failed to get target file permission: %s, filepath: %s", r, path)
+				l.log.Warnf("Failed to get target file permission: %s, filepath: %s", r, path)
+				continue
 			}
 			permStr := fmt.Sprintf("0%s", strings.ReplaceAll(r.Stdout, "\n", ""))
 			perm, err := strconv.ParseUint(permStr, 8, 32)
 			if err != nil {
-				return xerrors.Errorf("Failed to parse permission string. err: %w, permission string: %s", err, permStr)
+				l.log.Warnf("Failed to parse permission string. err: %s, permission string: %s", err, permStr)
+				continue
 			}
-			f.Filemode = os.FileMode(perm)
+			filemode = os.FileMode(perm)
 
 			cmd = fmt.Sprintf("cat %s", path)
-			r = exec(l.ServerInfo, cmd, priv)
+			r = exec(l.ServerInfo, cmd, priv, logging.NewIODiscardLogger())
 			if !r.isSuccess() {
-				return xerrors.Errorf("Failed to get target file contents: %s, filepath: %s", r, path)
+				l.log.Warnf("Failed to get target file contents: %s, filepath: %s", r, path)
+				continue
 			}
-			f.Contents = []byte(r.Stdout)
+			contents = []byte(r.Stdout)
 		}
-		libFilemap[path] = f
+		found[path] = true
+		var libraryScanners []models.LibraryScanner
+		if libraryScanners, err = AnalyzeLibrary(context.Background(), path, contents, filemode, l.ServerInfo.Mode.IsOffline()); err != nil {
+			return err
+		}
+		l.LibraryScanners = append(l.LibraryScanners, libraryScanners...)
 	}
-
-	var libraryScanners []models.LibraryScanner
-	if libraryScanners, err = AnalyzeLibraries(context.Background(), libFilemap, l.ServerInfo.Mode.IsOffline()); err != nil {
-		return err
-	}
-	l.LibraryScanners = append(l.LibraryScanners, libraryScanners...)
 	return nil
 }
 
-// AnalyzeLibraries : detects libs defined in lockfile
-func AnalyzeLibraries(ctx context.Context, libFilemap map[string]LibFile, isOffline bool) (libraryScanners []models.LibraryScanner, err error) {
-	// https://github.com/aquasecurity/trivy/blob/84677903a6fa1b707a32d0e8b2bffc23dde52afa/pkg/fanal/analyzer/const.go
-	disabledAnalyzers := []analyzer.Type{
-		// ======
-		//   OS
-		// ======
-		analyzer.TypeOSRelease,
-		analyzer.TypeAlpine,
-		analyzer.TypeAmazon,
-		analyzer.TypeCBLMariner,
-		analyzer.TypeDebian,
-		analyzer.TypePhoton,
-		analyzer.TypeCentOS,
-		analyzer.TypeRocky,
-		analyzer.TypeAlma,
-		analyzer.TypeFedora,
-		analyzer.TypeOracle,
-		analyzer.TypeRedHatBase,
-		analyzer.TypeSUSE,
-		analyzer.TypeUbuntu,
-
-		// OS Package
-		analyzer.TypeApk,
-		analyzer.TypeDpkg,
-		analyzer.TypeDpkgLicense,
-		analyzer.TypeRpm,
-		analyzer.TypeRpmqa,
-
-		// OS Package Repository
-		analyzer.TypeApkRepo,
-
-		// ============
-		// Image Config
-		// ============
-		analyzer.TypeApkCommand,
-
-		// =================
-		// Structured Config
-		// =================
-		analyzer.TypeYaml,
-		analyzer.TypeJSON,
-		analyzer.TypeDockerfile,
-		analyzer.TypeTerraform,
-		analyzer.TypeCloudFormation,
-		analyzer.TypeHelm,
-
-		// ========
-		// License
-		// ========
-		analyzer.TypeLicenseFile,
-
-		// ========
-		// Secrets
-		// ========
-		analyzer.TypeSecret,
-
-		// =======
-		// Red Hat
-		// =======
-		analyzer.TypeRedHatContentManifestType,
-		analyzer.TypeRedHatDockerfileType,
-	}
+// AnalyzeLibrary : detects library defined in artifact such as lockfile or jar
+func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode os.FileMode, isOffline bool) (libraryScanners []models.LibraryScanner, err error) {
 	anal, err := analyzer.NewAnalyzerGroup(analyzer.AnalyzerOptions{
 		Group:             analyzer.GroupBuiltin,
 		DisabledAnalyzers: disabledAnalyzers,
@@ -753,32 +700,92 @@ func AnalyzeLibraries(ctx context.Context, libFilemap map[string]LibFile, isOffl
 		return nil, xerrors.Errorf("Failed to new analyzer group. err: %w", err)
 	}
 
-	for path, f := range libFilemap {
-		var wg sync.WaitGroup
-		result := new(analyzer.AnalysisResult)
-		if err := anal.AnalyzeFile(
-			ctx,
-			&wg,
-			semaphore.NewWeighted(1),
-			result,
-			"",
-			path,
-			&DummyFileInfo{size: int64(len(f.Contents)), filemode: f.Filemode},
-			func() (dio.ReadSeekCloserAt, error) { return dio.NopCloser(bytes.NewReader(f.Contents)), nil },
-			nil,
-			analyzer.AnalysisOptions{Offline: isOffline},
-		); err != nil {
-			return nil, xerrors.Errorf("Failed to get libs. err: %w", err)
-		}
-		wg.Wait()
-
-		libscan, err := convertLibWithScanner(result.Applications)
-		if err != nil {
-			return nil, xerrors.Errorf("Failed to convert libs. err: %w", err)
-		}
-		libraryScanners = append(libraryScanners, libscan...)
+	var wg sync.WaitGroup
+	result := new(analyzer.AnalysisResult)
+	if err := anal.AnalyzeFile(
+		ctx,
+		&wg,
+		semaphore.NewWeighted(1),
+		result,
+		"",
+		path,
+		&DummyFileInfo{size: int64(len(contents)), filemode: filemode},
+		func() (dio.ReadSeekCloserAt, error) { return dio.NopCloser(bytes.NewReader(contents)), nil },
+		nil,
+		analyzer.AnalysisOptions{Offline: isOffline},
+	); err != nil {
+		return nil, xerrors.Errorf("Failed to get libs. err: %w", err)
 	}
+	wg.Wait()
+
+	libscan, err := convertLibWithScanner(result.Applications)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to convert libs. err: %w", err)
+	}
+	libraryScanners = append(libraryScanners, libscan...)
 	return libraryScanners, nil
+}
+
+// https://github.com/aquasecurity/trivy/blob/84677903a6fa1b707a32d0e8b2bffc23dde52afa/pkg/fanal/analyzer/const.go
+var disabledAnalyzers = []analyzer.Type{
+	// ======
+	//   OS
+	// ======
+	analyzer.TypeOSRelease,
+	analyzer.TypeAlpine,
+	analyzer.TypeAmazon,
+	analyzer.TypeCBLMariner,
+	analyzer.TypeDebian,
+	analyzer.TypePhoton,
+	analyzer.TypeCentOS,
+	analyzer.TypeRocky,
+	analyzer.TypeAlma,
+	analyzer.TypeFedora,
+	analyzer.TypeOracle,
+	analyzer.TypeRedHatBase,
+	analyzer.TypeSUSE,
+	analyzer.TypeUbuntu,
+
+	// OS Package
+	analyzer.TypeApk,
+	analyzer.TypeDpkg,
+	analyzer.TypeDpkgLicense,
+	analyzer.TypeRpm,
+	analyzer.TypeRpmqa,
+
+	// OS Package Repository
+	analyzer.TypeApkRepo,
+
+	// ============
+	// Image Config
+	// ============
+	analyzer.TypeApkCommand,
+
+	// =================
+	// Structured Config
+	// =================
+	analyzer.TypeYaml,
+	analyzer.TypeJSON,
+	analyzer.TypeDockerfile,
+	analyzer.TypeTerraform,
+	analyzer.TypeCloudFormation,
+	analyzer.TypeHelm,
+
+	// ========
+	// License
+	// ========
+	analyzer.TypeLicenseFile,
+
+	// ========
+	// Secrets
+	// ========
+	analyzer.TypeSecret,
+
+	// =======
+	// Red Hat
+	// =======
+	analyzer.TypeRedHatContentManifestType,
+	analyzer.TypeRedHatDockerfileType,
 }
 
 // DummyFileInfo is a dummy struct for libscan

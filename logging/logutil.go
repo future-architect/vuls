@@ -45,6 +45,13 @@ func NewNormalLogger() Logger {
 	return Logger{Entry: logrus.Entry{Logger: logrus.New()}}
 }
 
+// NewNormalLogger creates normal logger
+func NewIODiscardLogger() Logger {
+	l := logrus.New()
+	l.Out = io.Discard
+	return Logger{Entry: logrus.Entry{Logger: l}}
+}
+
 // NewCustomLogger creates logrus
 func NewCustomLogger(debug, quiet, logToFile bool, logDir, logMsgAnsiColor, serverName string) Logger {
 	log := logrus.New()
