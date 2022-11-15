@@ -1,21 +1,26 @@
 name: Test
 
-on: [pull_request]
+on: 
+  pull_request:
 
 jobs:
-  build:
-    name: Build
+  test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
 
     - name: Set up Go 1.x
       uses: actions/setup-go@v3
       with:
-        go-version: 1.18.x
-      id: go
+        go-version-file: 'go.mod'
 
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
-
-    - name: Test
-      run: make test
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        args: --timeout=10m
+        
+    - name: testing
+      run: go test -race ./...

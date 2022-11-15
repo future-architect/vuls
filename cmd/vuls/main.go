@@ -1,38 +1,15 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
-	"context"
-
-	"github.com/future-architect/vuls/config"
-	commands "github.com/future-architect/vuls/subcmds"
-	"github.com/google/subcommands"
+	"github.com/future-architect/vuls/pkg/cmd/root"
 )
 
 func main() {
-	subcommands.Register(subcommands.HelpCommand(), "")
-	subcommands.Register(subcommands.FlagsCommand(), "")
-	subcommands.Register(subcommands.CommandsCommand(), "")
-	subcommands.Register(&commands.DiscoverCmd{}, "discover")
-	subcommands.Register(&commands.TuiCmd{}, "tui")
-	subcommands.Register(&commands.ScanCmd{}, "scan")
-	subcommands.Register(&commands.HistoryCmd{}, "history")
-	subcommands.Register(&commands.ReportCmd{}, "report")
-	subcommands.Register(&commands.ConfigtestCmd{}, "configtest")
-	subcommands.Register(&commands.ServerCmd{}, "server")
-
-	var v = flag.Bool("v", false, "Show version")
-
-	flag.Parse()
-
-	if *v {
-		fmt.Printf("vuls-%s-%s\n", config.Version, config.Revision)
-		os.Exit(int(subcommands.ExitSuccess))
+	if err := root.NewCmdRoot().Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to exec vuls: %s\n", fmt.Sprintf("%+v", err))
+		os.Exit(1)
 	}
-
-	ctx := context.Background()
-	os.Exit(int(subcommands.Execute(ctx)))
 }

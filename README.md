@@ -1,207 +1,513 @@
-
 # Vuls: VULnerability Scanner
 
-[![Slack](https://img.shields.io/badge/slack-join-blue.svg)](http://goo.gl/forms/xm5KFo35tu)
-[![License](https://img.shields.io/github/license/future-architect/vuls.svg?style=flat-square)](https://github.com/future-architect/vuls/blob/master/LICENSE)
-[![Build Status](https://travis-ci.org/future-architect/vuls.svg?branch=master)](https://travis-ci.org/future-architect/vuls)
-[![Go Report Card](https://goreportcard.com/badge/github.com/future-architect/vuls)](https://goreportcard.com/report/github.com/future-architect/vuls)
-[![Contributors](https://img.shields.io/github/contributors/future-architect/vuls.svg)](https://github.com/future-architect/vuls/graphs/contributors)
-
-![Vuls-logo](img/vuls_logo.png)
-
-Vulnerability scanner for Linux/FreeBSD, agent-less, written in Go.  
-We have a slack team. [Join slack team](https://join.slack.com/t/vuls-github/shared_invite/zt-1fculjwj4-6nex2JNE7DpOSiKZ1ztDFw)  
-Twitter: [@vuls_en](https://twitter.com/vuls_en)
-
-![Vuls-Abstract](img/vuls-abstract.png)
-
-![Vulsrepo](https://raw.githubusercontent.com/usiusi360/vulsrepo/master/gallery/demo.gif)
-
-[![asciicast](https://asciinema.org/a/3y9zrf950agiko7klg8abvyck.png)](https://asciinema.org/a/3y9zrf950agiko7klg8abvyck)
-
-![Vuls-slack](img/vuls-slack-en.png)
-
-----
-
-## Abstract
-
-For a system administrator, having to perform security vulnerability analysis and software update on a daily basis can be a burden.
-To avoid downtime in a production environment, it is common for a system administrator to choose not to use the automatic update option provided by the package manager and to perform update manually.
-This leads to the following problems.
-
-- The system administrator will have to constantly watch out for any new vulnerabilities in NVD (National Vulnerability Database) or similar databases.
-- It might be impossible for the system administrator to monitor all the software if there are a large number of software packages installed in the server.
-- It is expensive to perform analysis to determine the servers affected by new vulnerabilities. The possibility of overlooking a server or two during analysis is there.
-
-Vuls is a tool created to solve the problems listed above. It has the following characteristics.
-
-- Informs users of the vulnerabilities that are related to the system.
-- Informs users of the servers that are affected.
-- Vulnerability detection is done automatically to prevent any oversight.
-- A report is generated on a regular basis using CRON or other methods. to manage vulnerability.
-
-![Vuls-Motivation](img/vuls-motivation.png)
-
-----
-
-## Main Features
-
-### Scan for any vulnerabilities in Linux/FreeBSD Server
-
-[Supports major Linux/FreeBSD](https://vuls.io/docs/en/supported-os.html)
-
-- Alpine, Amazon Linux, CentOS, AlmaLinux, Rocky Linux, Debian, Oracle Linux, Raspbian, RHEL, openSUSE, openSUSE Leap, SUSE Enterprise Linux, Fedora, and Ubuntu
-- FreeBSD
-- Cloud, on-premise, Running Docker Container
-
-### High-quality scan
-
-- Vulnerability Database
-  - [NVD](https://nvd.nist.gov/)
-  - [JVN(Japanese)](http://jvndb.jvn.jp/apis/myjvn/)
-
-- OVAL
-  - [Red Hat](https://www.redhat.com/security/data/oval/)
-  - [Debian](https://www.debian.org/security/oval/)
-  - [Ubuntu](https://people.canonical.com/~ubuntu-security/oval/)
-  - [SUSE](http://ftp.suse.com/pub/projects/security/oval/)
-  - [Oracle Linux](https://linux.oracle.com/security/oval/)
-
-- Security Advisory
-  - [Alpine-secdb](https://git.alpinelinux.org/cgit/alpine-secdb/)
-  - [Red Hat Security Advisories](https://access.redhat.com/security/security-updates/)
-  - [Debian Security Bug Tracker](https://security-tracker.debian.org/tracker/)
-  - [Ubuntu CVE Tracker](https://people.canonical.com/~ubuntu-security/cve/)
-
-- Commands(yum, zypper, pkg-audit)
-  - RHSA / ALAS / ELSA / FreeBSD-SA
-  - Changelog
-
-- PoC, Exploit
-  - [Exploit Database](https://www.exploit-db.com/)
-  - [Metasploit-Framework modules](https://www.rapid7.com/db/?q=&type=metasploit)
-  - [qazbnm456/awesome-cve-poc](https://github.com/qazbnm456/awesome-cve-poc)
-  - [nomi-sec/PoC-in-GitHub](https://github.com/nomi-sec/PoC-in-GitHub)
-  - [gmatuz/inthewilddb](https://github.com/gmatuz/inthewilddb)
-
-- CERT
-  - [US-CERT](https://www.us-cert.gov/ncas/alerts)
-  - [JPCERT](http://www.jpcert.or.jp/at/2019.html)
-
-- CISA(Cybersecurity & Infrastructure Security Agency)
-  - [Known Exploited Vulnerabilities Catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
-
-- Cyber Threat Intelligence(MITRE ATT&CK and CAPEC)
-  - [mitre/cti](https://github.com/mitre/cti)
-
-- Libraries
-  - [Node.js Security Working Group](https://github.com/nodejs/security-wg)
-  - [Ruby Advisory Database](https://github.com/rubysec/ruby-advisory-db)
-  - [Safety DB(Python)](https://github.com/pyupio/safety-db)
-  - [PHP Security Advisories Database](https://github.com/FriendsOfPHP/security-advisories)
-  - [RustSec Advisory Database](https://github.com/RustSec/advisory-db)
-
-- WordPress
-  - [wpscan](https://wpscan.com/api)
-
-### Scan mode
-
-[Fast Scan](https://vuls.io/docs/en/architecture-fast-scan.html)
-
-- Scan without root privilege, no dependencies
-- Almost no load on the scan target server
-- Offline mode scan with no internet access. (CentOS, Alma Linux, Rocky Linux, Debian, Oracle Linux, Red Hat, Fedora, and Ubuntu)
-
-[Fast Root Scan](https://vuls.io/docs/en/architecture-fast-root-scan.html)
-
-- Scan with root privilege
-- Almost no load on the scan target server
-- Detect processes affected by update using yum-ps (Amazon Linux, CentOS, Alma Linux, Rocky Linux, Oracle Linux, Fedora, and RedHat)
-- Detect processes which updated before but not restarting yet using checkrestart of debian-goodies (Debian and Ubuntu)
-- Offline mode scan with no internet access. (CentOS, Alma Linux, Rocky Linux, Debian, Oracle Linux, Red Hat, Fedora, and Ubuntu)
-
-### [Remote, Local scan mode, Server mode](https://vuls.io/docs/en/architecture-remote-local.html)
-
-[Remote scan mode](https://vuls.io/docs/en/architecture-remote-scan.html)
-
-- User is required to only set up one machine that is connected to other target servers via SSH
-
-[Local scan mode](https://vuls.io/docs/en/architecture-local-scan.html)
-
-- If you don't want the central Vuls server to connect to each server by SSH, you can use Vuls in the Local Scan mode.
-
-[Server mode](https://vuls.io/docs/en/usage-server.html)
-
-- First, start Vuls in server mode and listen as an HTTP server.
-- Next, issue a command on the scan target server to collect software information. Then send the result to Vuls Server via HTTP. You receive the scan results as JSON format.
-- No SSH needed, No Scanner needed. Only issuing Linux commands directory on the scan target server.
-
-### **Dynamic** Analysis
-
-- It is possible to acquire the state of the server by connecting via SSH and executing the command.
-- Vuls warns when the scan target server was updated the kernel etc. but not restarting it.
-
-### Scan vulnerabilities of non-OS-packages
-
-- Libraries of programming language
-- Self-compiled software
-- Network Devices
-
-Vuls has some options to detect the vulnerabilities
-
-- [Lockfile based Scan](https://vuls.io/docs/en/usage-scan-non-os-packages.html#library-vulns-scan)
-- [GitHub Integration](https://vuls.io/docs/en/usage-scan-non-os-packages.html#usage-integrate-with-github-security-alerts)
-- [Common Platform Enumeration (CPE) based Scan](https://vuls.io/docs/en/usage-scan-non-os-packages.html#cpe-scan)
-- [OWASP Dependency Check Integration](https://vuls.io/docs/en/usage-scan-non-os-packages.html#usage-integrate-with-owasp-dependency-check-to-automatic-update-when-the-libraries-are-updated-experimental)
-
-## Scan WordPress core, themes, plugins
-
-- [Scan WordPress](https://vuls.io/docs/en/usage-scan-wordpress.html)
-
-## MISC
-
-- Nondestructive testing
-- Pre-authorization is *NOT* necessary before scanning on AWS
-  - Vuls works well with Continuous Integration since tests can be run every day. This allows you to find vulnerabilities very quickly.
-- Auto-generation of configuration file template
-  - Auto-detection of servers set using CIDR, generate configuration file template
-- Email and Slack notification is possible (supports Japanese language)
-- Scan result is viewable on accessory software, TUI Viewer in a terminal or Web UI ([VulsRepo](https://github.com/ishiDACo/vulsrepo)).
-
-----
-
-## What Vuls Doesn't Do
-
-- Vuls doesn't update the vulnerable packages.
-
-----
-
-## Document
-
-For more information such as Installation, Tutorial, Usage, visit [vuls.io](https://vuls.io/)  
-[日本語翻訳ドキュメント](https://vuls.io/ja/)
-
-----
-
-## Authors
-
-kotakanbe ([@kotakanbe](https://twitter.com/kotakanbe)) created vuls and [these fine people](https://github.com/future-architect/vuls/graphs/contributors) have contributed.
-
-## Contribute
-
-see [vulsdoc](https://vuls.io/docs/en/how-to-contribute.html)
-
-----
-
-## Sponsors
-
-|  |  |
-| ------------- | ------------- |
-| <a href="https://www.tines.com/?utm_source=oss&utm_medium=sponsorship&utm_campaign=vuls"><img src="img/sponsor/tines.png" align="left" width="600px" ></a> | Tines is no-code automation for security teams. Build powerful, reliable workflows without a development team. |
-| <a href="https://www.sakura.ad.jp/"><img src="https://vuls.io/img/icons/sakura.svg" align="left" width="600px" ></a> | SAKURA internet Inc. is an Internet company founded in 1996. We provide cloud computing services such as "Sakura's Shared Server", "Sakura's VPS", and "Sakura's Cloud" to meet the needs of a wide range of customers, from individuals and corporations to the education and public sectors, using its own data centers in Japan. Based on the philosophy of "changing what you want to do into what you can do," we offer DX solutions for all fields.  |
-
-----
-
-## License
-
-Please see [LICENSE](https://github.com/future-architect/vuls/blob/master/LICENSE).
+## NOTE
+This is the nightly branch and provides the latest functionality. 
+Please use the master branch if you want to use it stably, as destructive changes are also made.
+
+## Usage
+
+### 1. Nightly Vuls installation
+
+```console
+$ go install github.com/future-architect/vuls/cmd/vuls@nightly
+$ vuls version
+vuls nightly 2ef5390
+```
+
+### 2. DB Fetch
+
+```console
+$ vuls db fetch
+```
+
+### 3. init config & configuration change
+
+Execute the following command to output a config template to stdout.
+Make a file of it and change the necessary host part, path to the DB, etc. to suit your environment.
+
+```console
+$ vuls config init
+```
+
+### Optional. add to list of known hosts
+
+When using remote as the host type, make an ssh connection to the remote host.
+Before scanning, register the host in the known_hosts.
+
+```console
+$ ssh -i /home/mainek00n/.ssh/id_rsa -p 2222 root@127.0.0.1
+The authenticity of host '[127.0.0.1]:2222 ([127.0.0.1]:2222)' can't be established.
+ED25519 key fingerprint is SHA256:dK+aO73n6hymIC3+3yFFHpvyNu/txTYi/LXvMl/TzOk.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '[127.0.0.1]:2222' (ED25519) to the list of known hosts.
+```
+
+### 4. Scan
+
+```console
+$ vuls scan
+Scan Summary
+============
+local (ubuntu 22.04): success ospkg: 2663, cpe: 0 installed
+remote (debian 11): success ospkg: 319, cpe: 0 installed
+cpe: success ospkg: 0, cpe: 1 installed
+
+or 
+
+$ vuls server
+
+$ cat machine.json
+{
+    "contents": [
+        {
+            "content_type": "os-release",
+            "content": "PRETTY_NAME=\"Ubuntu 22.04.1 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"22.04\"\nVERSION=\"22.04.1 LTS (Jammy Jellyfish)\"\nVERSION_CODENAME=jammy\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https:\/\/www.ubuntu.com\/\"\nSUPPORT_URL=\"https:\/\/help.ubuntu.com\/\"\nBUG_REPORT_URL=\"https:\/\/bugs.launchpad.net\/ubuntu\/\"\nPRIVACY_POLICY_URL=\"https:\/\/www.ubuntu.com\/legal\/terms-and-policies\/privacy-policy\"\nUBUNTU_CODENAME=jammy"
+        },
+        {
+            "content_type": "dpkg",
+            "content": "accountsservice,ii ,22.07.5-2ubuntu1.3,amd64,accountsservice,22.07.5-2ubuntu1.3\nacl,ii ,2.3.1-1,amd64,acl,2.3.1-1\nnvim-common,ii ,2:8.2.3995-1ubuntu2.1,all,vim,2:8.2.3995-1ubuntu2.1\n"
+        }
+    ]
+}
+
+$ curl -s -X POST -H "Content-Type: application/json" -d @machine.json  127.0.0.1:5515/scan | jq
+{
+  "name": "8002e134-dc2d-4786-96b3-e751103fe5c3",
+  "family": "ubuntu",
+  "release": "22.04",
+  "scanned_at": "2022-11-14T10:41:07.558379311+09:00",
+  "packages": {
+    "kernel": {},
+    "os_pkg": {
+      "accountsservice": {
+        "name": "accountsservice",
+        "version": "22.07.5-2ubuntu1.3",
+        "arch": "amd64",
+        "src_name": "accountsservice",
+        "src_version": "22.07.5-2ubuntu1.3"
+      },
+      "acl": {
+        "name": "acl",
+        "version": "2.3.1-1",
+        "arch": "amd64",
+        "src_name": "acl",
+        "src_version": "2.3.1-1"
+      },
+      "nvim-common": {
+        "name": "nvim-common",
+        "version": "2:8.2.3995-1ubuntu2.1",
+        "arch": "all",
+        "src_name": "vim",
+        "src_version": "2:8.2.3995-1ubuntu2.1"
+      }
+    }
+  },
+  "config": {}
+}
+```
+
+### 5. Detect
+
+```console
+$ vuls detect
+Detect Summary
+==============
+local (ubuntu 22.04) : success 143 CVEs detected
+remote (debian 11) : success 101 CVEs detected
+cpe : success 7 CVEs detected
+
+or 
+
+$ vuls server
+
+$ cat scan.json
+{
+  "name": "8002e134-dc2d-4786-96b3-e751103fe5c3",
+  "family": "ubuntu",
+  "release": "22.04",
+  "scanned_at": "2022-11-14T10:41:07.558379311+09:00",
+  "packages": {
+    "kernel": {},
+    "os_pkg": {
+      "accountsservice": {
+        "name": "accountsservice",
+        "version": "22.07.5-2ubuntu1.3",
+        "arch": "amd64",
+        "src_name": "accountsservice",
+        "src_version": "22.07.5-2ubuntu1.3"
+      },
+      "acl": {
+        "name": "acl",
+        "version": "2.3.1-1",
+        "arch": "amd64",
+        "src_name": "acl",
+        "src_version": "2.3.1-1"
+      },
+      "nvim-common": {
+        "name": "nvim-common",
+        "version": "2:8.2.3995-1ubuntu2.1",
+        "arch": "all",
+        "src_name": "vim",
+        "src_version": "2:8.2.3995-1ubuntu2.1"
+      }
+    }
+  },
+  "config": {}
+}
+
+$ curl -s -X POST -H "Content-Type: application/json" -d @scan.json  127.0.0.1:5515/detect | jq
+{
+    "name": "0c33d5fc-add4-465b-9ffa-90e74036259d",
+    "family": "ubuntu",
+    "release": "22.04",
+    "scanned_at": "2022-11-14T10:42:31.863598309+09:00",
+    "detectedd_at": "2022-11-14T10:42:50.677085953+09:00",
+    "packages": {
+      "kernel": {},
+      "os_pkg": {
+        "accountsservice": {
+          "name": "accountsservice",
+          "version": "22.07.5-2ubuntu1.3",
+          "arch": "amd64",
+          "src_name": "accountsservice",
+          "src_version": "22.07.5-2ubuntu1.3"
+        },
+        "acl": {
+          "name": "acl",
+          "version": "2.3.1-1",
+          "arch": "amd64",
+          "src_name": "acl",
+          "src_version": "2.3.1-1"
+        },
+        "nvim-common": {
+          "name": "nvim-common",
+          "version": "2:8.2.3995-1ubuntu2.1",
+          "arch": "all",
+          "src_name": "vim",
+          "src_version": "2:8.2.3995-1ubuntu2.1"
+        }
+      }
+    },
+    "scanned_cves": {
+      "CVE-2022-0128": {
+        "content": {
+          "official": {
+            "id": "CVE-2022-0128",
+            "advisory": [
+              "mitre",
+              "nvd",
+              "alpine:3.12:CVE-2022-0128",
+              "alpine:3.13:CVE-2022-0128",
+              "alpine:3.14:CVE-2022-0128",
+              "alpine:3.15:CVE-2022-0128",
+              "alpine:3.16:CVE-2022-0128",
+              "amazon:2022:ALAS2022-2022-014",
+              "debian_security_tracker:11:CVE-2022-0128",
+              "debian_security_tracker:12:CVE-2022-0128",
+              "debian_security_tracker:sid:CVE-2022-0128",
+              "debian_security_tracker:10:CVE-2022-0128",
+              "redhat_oval:6-including-unpatched:oval:com.redhat.unaffected:def:20220128",
+              "redhat_oval:7-including-unpatched:oval:com.redhat.unaffected:def:20220128",
+              "redhat_oval:8-including-unpatched:oval:com.redhat.unaffected:def:20220128",
+              "redhat_oval:9-including-unpatched:oval:com.redhat.unaffected:def:20220128",
+              "suse_oval:opensuse.leap.15.3:oval:org.opensuse.security:def:20220128",
+              "suse_oval:opensuse.leap.15.4:oval:org.opensuse.security:def:20220128",
+              "suse_oval:suse.linux.enterprise.desktop.15:oval:org.opensuse.security:def:20220128",
+              "suse_oval:suse.linux.enterprise.server.12:oval:org.opensuse.security:def:20220128",
+              "suse_oval:suse.linux.enterprise.server.15:oval:org.opensuse.security:def:20220128",
+              "suse_cvrf",
+              "ubuntu_oval:14.04:oval:com.ubuntu.trusty:def:202201280000000",
+              "ubuntu_oval:16.04:oval:com.ubuntu.xenial:def:202201280000000",
+              "ubuntu_oval:21.04:oval:com.ubuntu.hirsute:def:202201280000000",
+              "ubuntu_oval:22.04:oval:com.ubuntu.jammy:def:202201280000000",
+              "ubuntu_oval:22.10:oval:com.ubuntu.kinetic:def:202201280000000",
+              "ubuntu_security_tracker"
+            ],
+            "title": "CVE-2022-0128",
+            "description": "vim is vulnerable to Out-of-bounds Read",
+            "cvss": [
+              {
+                "source": "nvd",
+                "version": "2.0",
+                "vector": "AV:N/AC:M/Au:N/C:P/I:P/A:P",
+                "score": 6.8,
+                "severity": "MEDIUM"
+              },
+              {
+                "source": "nvd",
+                "version": "3.1",
+                "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+                "score": 7.8,
+                "severity": "HIGH"
+              },
+              {
+                "source": "amazon:2022:ALAS2022-2022-014",
+                "severity": "Important"
+              },
+              {
+                "source": "redhat_oval:7-including-unpatched:oval:com.redhat.unaffected:def:20220128",
+                "version": "3.1",
+                "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:L/I:N/A:H",
+                "score": 6.1,
+                "severity": "moderate"
+              },
+              {
+                "source": "redhat_oval:8-including-unpatched:oval:com.redhat.unaffected:def:20220128",
+                "version": "3.1",
+                "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:L/I:N/A:H",
+                "score": 6.1,
+                "severity": "moderate"
+              },
+              {
+                "source": "redhat_oval:9-including-unpatched:oval:com.redhat.unaffected:def:20220128",
+                "version": "3.1",
+                "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:L/I:N/A:H",
+                "score": 6.1,
+                "severity": "moderate"
+              },
+              {
+                "source": "redhat_oval:6-including-unpatched:oval:com.redhat.unaffected:def:20220128",
+                "version": "3.1",
+                "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:L/I:N/A:H",
+                "score": 6.1,
+                "severity": "moderate"
+              },
+              {
+                "source": "suse_oval:opensuse.leap.15.4:oval:org.opensuse.security:def:20220128",
+                "version": "3.1",
+                "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:L/I:N/A:N",
+                "score": 3.3,
+                "severity": "low"
+              },
+              {
+                "source": "suse_oval:suse.linux.enterprise.desktop.15:oval:org.opensuse.security:def:20220128",
+                "version": "3.1",
+                "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:L/I:N/A:N",
+                "score": 3.3,
+                "severity": "low"
+              },
+              {
+                "source": "suse_oval:suse.linux.enterprise.server.12:oval:org.opensuse.security:def:20220128",
+                "version": "3.1",
+                "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:L/I:N/A:N",
+                "score": 3.3,
+                "severity": "low"
+              },
+              {
+                "source": "suse_oval:suse.linux.enterprise.server.15:oval:org.opensuse.security:def:20220128",
+                "version": "3.1",
+                "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:L/I:N/A:N",
+                "score": 3.3,
+                "severity": "low"
+              },
+              {
+                "source": "suse_oval:opensuse.leap.15.3:oval:org.opensuse.security:def:20220128",
+                "version": "3.1",
+                "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:L/I:N/A:N",
+                "score": 3.3,
+                "severity": "low"
+              },
+              {
+                "source": "suse_cvrf",
+                "version": "2.0",
+                "vector": "AV:N/AC:M/Au:N/C:P/I:P/A:P",
+                "score": 6.8
+              },
+              {
+                "source": "suse_cvrf",
+                "version": "3.1",
+                "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:L/I:N/A:N",
+                "score": 3.3
+              },
+              {
+                "source": "ubuntu_oval:14.04:oval:com.ubuntu.trusty:def:202201280000000",
+                "severity": "Medium"
+              },
+              {
+                "source": "ubuntu_oval:16.04:oval:com.ubuntu.xenial:def:202201280000000",
+                "severity": "Medium"
+              },
+              {
+                "source": "ubuntu_oval:21.04:oval:com.ubuntu.hirsute:def:202201280000000",
+                "severity": "Medium"
+              },
+              {
+                "source": "ubuntu_oval:22.04:oval:com.ubuntu.jammy:def:202201280000000",
+                "severity": "Medium"
+              },
+              {
+                "source": "ubuntu_oval:22.10:oval:com.ubuntu.kinetic:def:202201280000000",
+                "severity": "Medium"
+              },
+              {
+                "source": "ubuntu_security_tracker",
+                "severity": "medium"
+              },
+              {
+                "source": "ubuntu_security_tracker",
+                "version": "3.1",
+                "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+                "score": 7.8,
+                "severity": "HIGH"
+              }
+            ],
+            "epss": {
+              "epss": 0.01537,
+              "percentile": 0.73989
+            },
+            "cwe": [
+              {
+                "source": [
+                  "nvd",
+                  "redhat_oval:6-including-unpatched:oval:com.redhat.unaffected:def:20220128",
+                  "redhat_oval:7-including-unpatched:oval:com.redhat.unaffected:def:20220128",
+                  "redhat_oval:8-including-unpatched:oval:com.redhat.unaffected:def:20220128",
+                  "redhat_oval:9-including-unpatched:oval:com.redhat.unaffected:def:20220128"
+                ],
+                "id": "125"
+              }
+            ],
+            "exploit": [
+              {
+                "source": [
+                  "nvd",
+                  "inthewild",
+                  "trickest"
+                ],
+                "url": "https://huntr.dev/bounties/63f51299-008a-4112-b85b-1e904aadd4ba"
+              }
+            ],
+            "published": "2022-01-06T17:15:00Z",
+            "modified": "2022-11-02T13:18:00Z",
+            "reference": [
+              "http://www.openwall.com/lists/oss-security/2022/01/15/1",
+              "http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-4166",
+              "https://access.redhat.com/security/cve/CVE-2022-0128",
+              "https://lists.suse.com/pipermail/sle-security-updates/2022-July/011493.html",
+              "https://lists.suse.com/pipermail/sle-security-updates/2022-July/011575.html",
+              "https://lists.suse.com/pipermail/sle-security-updates/2022-July/011592.html",
+              "https://lists.suse.com/pipermail/sle-security-updates/2022-June/011301.html",
+              "https://bugs.launchpad.net/ubuntu/+bug/https://huntr.dev/bounties/63f51299-008a-4112-b85b-1e904aadd4ba",
+              "https://support.apple.com/kb/HT213343",
+              "http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-4019",
+              "http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-4187",
+              "http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-4193",
+              "http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-0156",
+              "https://lists.suse.com/pipermail/sle-security-updates/2022-August/011821.html",
+              "https://lists.suse.com/pipermail/sle-security-updates/2022-September/012143.html",
+              "https://bugzilla.suse.com/1194388",
+              "https://www.suse.com/support/security/rating/",
+              "http://people.canonical.com/~ubuntu-security/cve/2022/CVE-2022-0128.html",
+              "http://seclists.org/fulldisclosure/2022/May/35",
+              "http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-4069",
+              "https://www.suse.com/security/cve/CVE-2022-0128",
+              "https://lists.suse.com/pipermail/sle-security-updates/2022-July/011573.html",
+              "http://seclists.org/fulldisclosure/2022/Mar/29",
+              "http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-0128",
+              "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-0128",
+              "https://lists.suse.com/pipermail/sle-security-updates/2022-August/011795.html",
+              "https://lists.suse.com/pipermail/sle-security-updates/2022-July/011495.html",
+              "https://ubuntu.com/security/CVE-2022-0128",
+              "https://huntr.dev/bounties/63f51299-008a-4112-b85b-1e904aadd4ba",
+              "http://seclists.org/fulldisclosure/2022/Jul/14",
+              "https://security.gentoo.org/glsa/202208-32",
+              "http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-0158",
+              "https://lists.suse.com/pipermail/sle-security-updates/2022-July/011591.html",
+              "http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-4136",
+              "http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-4173",
+              "https://lists.suse.com/pipermail/sle-security-updates/2022-July/011494.html",
+              "https://support.apple.com/kb/HT213183",
+              "https://support.apple.com/kb/HT213256",
+              "https://github.com/vim/vim/commit/d3a117814d6acbf0dca3eff1a7626843b9b3734a",
+              "http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-4192",
+              "https://lists.suse.com/pipermail/sle-security-updates/2022-July/011574.html",
+              "https://lists.suse.com/pipermail/sle-security-updates/2022-July/011593.html"
+            ]
+          }
+        },
+        "affected_packages": [
+          {
+            "name": "vim",
+            "source": "official:ubuntu_security_tracker:CVE-2022-0128",
+            "status": "needed"
+          }
+        ]
+      },
+      ...
+    },
+    "config": {
+      "detect": {
+        "path": "/home/mainek00n/github/github.com/future-architect/vuls/vuls.db",
+        "result_dir": ""
+      }
+    }
+  }
+```
+
+### 6. Report
+
+```console
+$ vuls report --format list
+cpe
+===
++----------------+----------------------------+------+----------+-------+----------------------------------------+--------+----------+
+|     CVEID      |           VECTOR           | CVSS |   EPSS   |  KEV  |                PACKAGE                 | STATUS |  SOURCE  |
++----------------+----------------------------+------+----------+-------+----------------------------------------+--------+----------+
+| CVE-2021-44228 | AV:N/AC:M/Au:N/C:C/I:C/A:C |  9.3 | 0.911590 | true  | cpe:2.3:a:apache:log4j:*:*:*:*:*:*:*:* |        | official |
++----------------+----------------------------+------+----------+-------+                                        +--------+          +
+| CVE-2022-23307 | AV:N/AC:L/Au:S/C:C/I:C/A:C |  9.0 | 0.011640 | false |                                        |        |          |
++----------------+----------------------------+------+----------+       +                                        +--------+          +
+| CVE-2021-44832 | AV:N/AC:M/Au:S/C:C/I:C/A:C |  8.5 | 0.686370 |       |                                        |        |          |
++----------------+----------------------------+------+----------+       +                                        +--------+          +
+| CVE-2022-23305 | AV:N/AC:M/Au:N/C:P/I:P/A:P |  6.8 | 0.017420 |       |                                        |        |          |
++----------------+----------------------------+------+----------+       +                                        +--------+          +
+| CVE-2022-23302 | AV:N/AC:M/Au:S/C:P/I:P/A:P |  6.0 | 0.091480 |       |                                        |        |          |
++----------------+----------------------------+------+----------+       +                                        +--------+          +
+| CVE-2021-45046 | AV:N/AC:H/Au:N/C:P/I:P/A:P |  5.1 | 0.719510 |       |                                        |        |          |
++----------------+----------------------------+------+----------+       +                                        +--------+          +
+| CVE-2021-45105 | AV:N/AC:M/Au:N/C:N/I:N/A:P |  4.3 | 0.442620 |       |                                        |        |          |
++----------------+----------------------------+------+----------+-------+----------------------------------------+--------+----------+
+
+local (ubuntu 22.04)
+====================
++----------------+----------------------------+------+----------+-------+-----------------------+----------+----------+
+|     CVEID      |           VECTOR           | CVSS |   EPSS   |  KEV  |        PACKAGE        |  STATUS  |  SOURCE  |
++----------------+----------------------------+------+----------+-------+-----------------------+----------+----------+
+| CVE-2022-0318  | AV:N/AC:L/Au:N/C:P/I:P/A:P |  7.5 | 0.011830 | false | vim                   | needed   | official |
++----------------+----------------------------+------+----------+       +-----------------------+          +          +
+| CVE-2022-25255 | AV:L/AC:L/Au:N/C:C/I:C/A:C |  7.2 | 0.009500 |       | qtbase-opensource-src |          |          |
++----------------+                            +      +----------+       +-----------------------+          +          +
+| CVE-2022-0995  |                            |      | 0.024480 |       | linux                 |          |          |
++----------------+----------------------------+------+----------+       +-----------------------+          +          +
+...
++----------------+----------------------------+------+----------+       +-----------------------+----------+          +
+| CVE-2022-42799 |                            |      | 0.011080 |       | webkit2gtk            | needed   |          |
++----------------+----------------------------+------+----------+       +-----------------------+          +          +
+| CVE-2022-3061  |                            |      | 0.008900 |       | linux                 |          |          |
++----------------+----------------------------+------+----------+-------+-----------------------+----------+----------+
+
+remote (debian 11)
+==================
++----------------+----------------------------+------+----------+-------+------------+--------+----------+
+|     CVEID      |           VECTOR           | CVSS |   EPSS   |  KEV  |  PACKAGE   | STATUS |  SOURCE  |
++----------------+----------------------------+------+----------+-------+------------+--------+----------+
+| CVE-2022-31782 | AV:N/AC:M/Au:N/C:P/I:P/A:P |  6.8 | 0.008850 | false | freetype   | open   | official |
++----------------+                            +      +----------+       +------------+        +          +
+| CVE-2022-1304  |                            |      | 0.010360 |       | e2fsprogs  |        |          |
++----------------+----------------------------+------+----------+       +------------+        +          +
+| CVE-2022-1587  | AV:N/AC:L/Au:N/C:P/I:N/A:P |  6.4 | 0.011080 |       | pcre2      |        |          |
++----------------+                            +      +----------+       +            +        +          +
+| CVE-2022-1586  |                            |      | 0.011830 |       |            |        |          |
++----------------+----------------------------+------+          +       +------------+        +          +
+| CVE-2022-2097  | AV:N/AC:L/Au:N/C:P/I:N/A:N |  5.0 |          |       | openssl    |        |          |
++----------------+----------------------------+------+----------+       +------------+        +          +
+...
++----------------+----------------------------+------+----------+       +------------+        +          +
+| CVE-2022-38126 |                            |      | 0.008850 |       | binutils   |        |          |
++----------------+----------------------------+------+          +       +------------+        +          +
+| CVE-2022-41848 |                            |      |          |       | linux      |        |          |
++----------------+----------------------------+------+----------+-------+------------+--------+----------+
+
+
+```
