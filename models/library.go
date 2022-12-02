@@ -146,7 +146,7 @@ var FindLockFiles = []string{
 	// gomod
 	ftypes.GoMod, ftypes.GoSum,
 	// java
-	ftypes.MavenPom, "*.jar", "*.war", "*.ear", "*.par",
+	ftypes.MavenPom, "*.jar", "*.war", "*.ear", "*.par", "gradle.lockfile",
 }
 
 // GetLibraryKey returns target library key
@@ -160,7 +160,7 @@ func (s LibraryScanner) GetLibraryKey() string {
 		return "php"
 	case ftypes.GoBinary, ftypes.GoModule:
 		return "gomod"
-	case ftypes.Jar, ftypes.Pom:
+	case ftypes.Jar, ftypes.Pom, ftypes.Gradle:
 		return "java"
 	case ftypes.Npm, ftypes.Yarn, ftypes.Pnpm, ftypes.NodePkg, ftypes.JavaScript:
 		return "node"
