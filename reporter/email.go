@@ -60,9 +60,9 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 	}
 
-	summary := fmt.Sprintf("Total: %d (High:%d Medium:%d Low:%d ?:%d)",
-		m["High"]+m["Medium"]+m["Low"]+m["Unknown"],
-		m["High"], m["Medium"], m["Low"], m["Unknown"])
+	summary := fmt.Sprintf("Total: %d (Critical:%d High:%d Medium:%d Low:%d ?:%d)",
+		m["Critical"]+m["High"]+m["Medium"]+m["Low"]+m["Unknown"],
+		m["Critical"], m["High"], m["Medium"], m["Low"], m["Unknown"])
 
 	origmessage := message
 	if w.FormatOneEMail {
