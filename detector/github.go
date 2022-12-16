@@ -148,7 +148,7 @@ func DetectGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string,
 	return nCVEs, err
 }
 
-//SecurityAlerts has detected CVE-IDs, PackageNames, Refs
+// SecurityAlerts has detected CVE-IDs, PackageNames, Refs
 type SecurityAlerts struct {
 	Data struct {
 		Repository struct {
