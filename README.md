@@ -95,11 +95,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
   - [mitre/cti](https://github.com/mitre/cti)
 
 - Libraries
-  - [Node.js Security Working Group](https://github.com/nodejs/security-wg)
-  - [Ruby Advisory Database](https://github.com/rubysec/ruby-advisory-db)
-  - [Safety DB(Python)](https://github.com/pyupio/safety-db)
-  - [PHP Security Advisories Database](https://github.com/FriendsOfPHP/security-advisories)
-  - [RustSec Advisory Database](https://github.com/RustSec/advisory-db)
+  - [aquasecurity/vuln-list](https://github.com/aquasecurity/vuln-list)
 
 - WordPress
   - [wpscan](https://wpscan.com/api)

@@ -28,10 +28,12 @@ import (
 	"golang.org/x/xerrors"
 
 	// Import library scanner
+	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/c/conan"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/dotnet/deps"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/dotnet/nuget"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/golang/binary"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/golang/mod"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/gradle"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/jar"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/pom"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/npm"
@@ -709,7 +711,7 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 		result,
 		"",
 		path,
-		&DummyFileInfo{size: int64(len(contents)), filemode: filemode},
+		&DummyFileInfo{name: filepath.Base(path), size: int64(len(contents)), filemode: filemode},
 		func() (dio.ReadSeekCloserAt, error) { return dio.NopCloser(bytes.NewReader(contents)), nil },
 		nil,
 		analyzer.AnalysisOptions{Offline: isOffline},
@@ -790,12 +792,13 @@ var disabledAnalyzers = []analyzer.Type{
 
 // DummyFileInfo is a dummy struct for libscan
 type DummyFileInfo struct {
+	name     string
 	size     int64
 	filemode os.FileMode
 }
 
 // Name is
-func (d *DummyFileInfo) Name() string { return "dummy" }
+func (d *DummyFileInfo) Name() string { return d.name }
 
 // Size is
 func (d *DummyFileInfo) Size() int64 { return d.size }
