@@ -146,7 +146,7 @@ var FindLockFiles = []string{
 	// gomod
 	ftypes.GoMod, ftypes.GoSum,
 	// java
-	ftypes.MavenPom, "*.jar", "*.war", "*.ear", "*.par", "gradle.lockfile",
+	ftypes.MavenPom, "*.jar", "*.war", "*.ear", "*.par", "*gradle.lockfile",
 }
 
 // GetLibraryKey returns target library key
