@@ -147,6 +147,8 @@ var FindLockFiles = []string{
 	ftypes.GoMod, ftypes.GoSum,
 	// java
 	ftypes.MavenPom, "*.jar", "*.war", "*.ear", "*.par", "*gradle.lockfile",
+	// C / C++
+	ftypes.ConanLock,
 }
 
 // GetLibraryKey returns target library key
@@ -168,6 +170,8 @@ func (s LibraryScanner) GetLibraryKey() string {
 		return ".net"
 	case ftypes.Pipenv, ftypes.Poetry, ftypes.Pip, ftypes.PythonPkg:
 		return "python"
+	case ftypes.ConanLock:
+		return "c"
 	default:
 		return ""
 	}
