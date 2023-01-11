@@ -294,6 +294,13 @@ func setDefaultIfEmpty(server *ServerInfo) error {
 		}
 	}
 
+	if server.Windows == nil {
+		server.Windows = Conf.Default.Windows
+		if server.Windows == nil {
+			server.Windows = &WindowsConf{}
+		}
+	}
+
 	if len(server.IgnoredJSONKeys) == 0 {
 		server.IgnoredJSONKeys = Conf.Default.IgnoredJSONKeys
 	}

@@ -83,10 +83,10 @@ build-future-vuls: ./contrib/future-vuls/cmd/main.go
 
 # integration-test
 BASE_DIR := '${PWD}/integration/results'
-# $(shell mkdir -p ${BASE_DIR})
-NOW=$(shell date --iso-8601=seconds)
+CURRENT := `find ${BASE_DIR} -type d  -exec basename {} \; | sort -nr | head -n 1`
+NOW=$(shell date '+%Y-%m-%dT%H-%M-%S%z')
 NOW_JSON_DIR := '${BASE_DIR}/$(NOW)'
-ONE_SEC_AFTER=$(shell date -d '+1 second' --iso-8601=seconds)
+ONE_SEC_AFTER=$(shell date -d '+1 second' '+%Y-%m-%dT%H-%M-%S%z')
 ONE_SEC_AFTER_JSON_DIR := '${BASE_DIR}/$(ONE_SEC_AFTER)'
 LIBS := 'bundler' 'pip' 'pipenv' 'poetry' 'composer' 'npm' 'yarn' 'pnpm' 'cargo' 'gomod' 'gosum' 'gobinary' 'jar' 'pom' 'gradle' 'nuget-lock' 'nuget-config' 'dotnet-deps' 'conan' 'nvd_exact' 'nvd_rough' 'nvd_vendor_product' 'nvd_match_no_jvn' 'jvn_vendor_product' 'jvn_vendor_product_nover'
 
@@ -106,14 +106,14 @@ endif
 	mkdir -p ${NOW_JSON_DIR}
 	sleep 1
 	./vuls.old scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
-	cp ${BASE_DIR}/current/*.json ${NOW_JSON_DIR}
+	cp ${BASE_DIR}/$(CURRENT)/*.json ${NOW_JSON_DIR}
 	- cp integration/data/results/*.json ${NOW_JSON_DIR}
 	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml ${NOW}
 
 	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
 	sleep 1
 	./vuls.new scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
-	cp ${BASE_DIR}/current/*.json ${ONE_SEC_AFTER_JSON_DIR}
+	cp ${BASE_DIR}/$(CURRENT)/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	- cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml ${ONE_SEC_AFTER}
 
@@ -139,14 +139,14 @@ endif
 	mkdir -p ${NOW_JSON_DIR}
 	sleep 1
 	./vuls.old scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
-	cp -f ${BASE_DIR}/current/*.json ${NOW_JSON_DIR}
+	cp -f ${BASE_DIR}/$(CURRENT)/*.json ${NOW_JSON_DIR}
 	- cp integration/data/results/*.json ${NOW_JSON_DIR}
 	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml ${NOW}
 
 	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
 	sleep 1
 	./vuls.new scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
-	cp -f ${BASE_DIR}/current/*.json ${ONE_SEC_AFTER_JSON_DIR}
+	cp -f ${BASE_DIR}/$(CURRENT)/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	- cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml ${ONE_SEC_AFTER}
 
@@ -163,14 +163,14 @@ endif
 	sleep 1
 	# new vs new
 	./vuls.new scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
-	cp -f ${BASE_DIR}/current/*.json ${NOW_JSON_DIR}
+	cp -f ${BASE_DIR}/$(CURRENT)/*.json ${NOW_JSON_DIR}
 	cp integration/data/results/*.json ${NOW_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml ${NOW}
 
 	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
 	sleep 1
 	./vuls.new scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
-	cp -f ${BASE_DIR}/current/*.json ${ONE_SEC_AFTER_JSON_DIR}
+	cp -f ${BASE_DIR}/$(CURRENT)/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml ${ONE_SEC_AFTER}
 

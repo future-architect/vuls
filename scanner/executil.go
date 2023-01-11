@@ -3,17 +3,24 @@ package scanner
 import (
 	"bytes"
 	"fmt"
+	"io"
 	ex "os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
 
+	homedir "github.com/mitchellh/go-homedir"
+	"github.com/saintfish/chardet"
+	"golang.org/x/text/encoding/japanese"
+	"golang.org/x/text/encoding/unicode"
+	"golang.org/x/text/transform"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
-	homedir "github.com/mitchellh/go-homedir"
 )
 
 type execResult struct {
@@ -152,15 +159,14 @@ func localExec(c config.ServerInfo, cmdstr string, sudo bool) (result execResult
 	cmdstr = decorateCmd(c, cmdstr, sudo)
 	var cmd *ex.Cmd
 	switch c.Distro.Family {
-	// case conf.FreeBSD, conf.Alpine, conf.Debian:
-	// cmd = ex.Command("/bin/sh", "-c", cmdstr)
+	case constant.Windows:
+		cmd = ex.Command("powershell.exe", "-NoProfile", "-NonInteractive", cmdstr)
 	default:
 		cmd = ex.Command("/bin/sh", "-c", cmdstr)
 	}
 	var stdoutBuf, stderrBuf bytes.Buffer
 	cmd.Stdout = &stdoutBuf
 	cmd.Stderr = &stderrBuf
-
 	if err := cmd.Run(); err != nil {
 		result.Error = err
 		if exitError, ok := err.(*ex.ExitError); ok {
@@ -172,17 +178,19 @@ func localExec(c config.ServerInfo, cmdstr string, sudo bool) (result execResult
 	} else {
 		result.ExitStatus = 0
 	}
-
-	result.Stdout = stdoutBuf.String()
-	result.Stderr = stderrBuf.String()
+	result.Stdout = toUTF8(stdoutBuf.String())
+	result.Stderr = toUTF8(stderrBuf.String())
 	result.Cmd = strings.Replace(cmdstr, "\n", "", -1)
 	return
 }
 
-func sshExecExternal(c config.ServerInfo, cmd string, sudo bool) (result execResult) {
+func sshExecExternal(c config.ServerInfo, cmdstr string, sudo bool) (result execResult) {
 	sshBinaryPath, err := ex.LookPath("ssh")
 	if err != nil {
 		return execResult{Error: err}
+	}
+	if runtime.GOOS == "windows" {
+		sshBinaryPath = "ssh.exe"
 	}
 
 	var args []string
@@ -190,24 +198,27 @@ func sshExecExternal(c config.ServerInfo, cmd string, sudo bool) (result execRes
 	if c.SSHConfigPath != "" {
 		args = append(args, "-F", c.SSHConfigPath)
 	} else {
-		home, err := homedir.Dir()
-		if err != nil {
-			msg := fmt.Sprintf("Failed to get HOME directory: %s", err)
-			result.Stderr = msg
-			result.ExitStatus = 997
-			return
-		}
-		controlPath := filepath.Join(home, ".vuls", `controlmaster-%r-`+c.ServerName+`.%p`)
-
 		args = append(args,
 			"-o", "StrictHostKeyChecking=yes",
 			"-o", "LogLevel=quiet",
 			"-o", "ConnectionAttempts=3",
 			"-o", "ConnectTimeout=10",
-			"-o", "ControlMaster=auto",
-			"-o", fmt.Sprintf("ControlPath=%s", controlPath),
-			"-o", "Controlpersist=10m",
 		)
+		if runtime.GOOS != "windows" {
+			home, err := homedir.Dir()
+			if err != nil {
+				msg := fmt.Sprintf("Failed to get HOME directory: %s", err)
+				result.Stderr = msg
+				result.ExitStatus = 997
+				return
+			}
+
+			controlPath := filepath.Join(home, ".vuls", `controlmaster-%r-`+c.ServerName+`.%p`)
+			args = append(args,
+				"-o", "ControlMaster=auto",
+				"-o", fmt.Sprintf("ControlPath=%s", controlPath),
+				"-o", "Controlpersist=10m")
+		}
 	}
 
 	if config.Conf.Vvv {
@@ -228,16 +239,18 @@ func sshExecExternal(c config.ServerInfo, cmd string, sudo bool) (result execRes
 	}
 	args = append(args, c.Host)
 
-	cmd = decorateCmd(c, cmd, sudo)
-	cmd = fmt.Sprintf("stty cols 1000; %s", cmd)
-
-	args = append(args, cmd)
-	execCmd := ex.Command(sshBinaryPath, args...)
-
+	cmdstr = decorateCmd(c, cmdstr, sudo)
+	var cmd *ex.Cmd
+	switch c.Distro.Family {
+	case constant.Windows:
+		cmd = ex.Command(sshBinaryPath, append(args, "powershell.exe", "-NoProfile", "-NonInteractive", fmt.Sprintf(`"%s`, cmdstr))...)
+	default:
+		cmd = ex.Command(sshBinaryPath, append(args, fmt.Sprintf("stty cols 1000; %s", cmdstr))...)
+	}
 	var stdoutBuf, stderrBuf bytes.Buffer
-	execCmd.Stdout = &stdoutBuf
-	execCmd.Stderr = &stderrBuf
-	if err := execCmd.Run(); err != nil {
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
+	if err := cmd.Run(); err != nil {
 		if e, ok := err.(*ex.ExitError); ok {
 			if s, ok := e.Sys().(syscall.WaitStatus); ok {
 				result.ExitStatus = s.ExitStatus()
@@ -250,9 +263,8 @@ func sshExecExternal(c config.ServerInfo, cmd string, sudo bool) (result execRes
 	} else {
 		result.ExitStatus = 0
 	}
-
-	result.Stdout = stdoutBuf.String()
-	result.Stderr = stderrBuf.String()
+	result.Stdout = toUTF8(stdoutBuf.String())
+	result.Stderr = toUTF8(stderrBuf.String())
 	result.Servername = c.ServerName
 	result.Container = c.Container
 	result.Host = c.Host
@@ -312,4 +324,34 @@ func decorateCmd(c config.ServerInfo, cmd string, sudo bool) string {
 	}
 	//  cmd = fmt.Sprintf("set -x; %s", cmd)
 	return cmd
+}
+
+func toUTF8(s string) string {
+	d := chardet.NewTextDetector()
+	res, err := d.DetectBest([]byte(s))
+	if err != nil {
+		return s
+	}
+
+	var bs []byte
+	switch res.Charset {
+	case "UTF-8":
+		bs, err = []byte(s), nil
+	case "UTF-16LE":
+		bs, err = io.ReadAll(transform.NewReader(strings.NewReader(s), unicode.UTF16(unicode.LittleEndian, unicode.UseBOM).NewDecoder()))
+	case "UTF-16BE":
+		bs, err = io.ReadAll(transform.NewReader(strings.NewReader(s), unicode.UTF16(unicode.BigEndian, unicode.UseBOM).NewDecoder()))
+	case "Shift_JIS":
+		bs, err = io.ReadAll(transform.NewReader(strings.NewReader(s), japanese.ShiftJIS.NewDecoder()))
+	case "EUC-JP":
+		bs, err = io.ReadAll(transform.NewReader(strings.NewReader(s), japanese.EUCJP.NewDecoder()))
+	case "ISO-2022-JP":
+		bs, err = io.ReadAll(transform.NewReader(strings.NewReader(s), japanese.ISO2022JP.NewDecoder()))
+	default:
+		bs, err = []byte(s), nil
+	}
+	if err != nil {
+		return s
+	}
+	return string(bs)
 }

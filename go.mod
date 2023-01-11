@@ -1,6 +1,6 @@
 module github.com/future-architect/vuls
 
-go 1.18
+go 1.20
 
 require (
 	github.com/Azure/azure-sdk-for-go v66.0.0+incompatible
@@ -36,6 +36,7 @@ require (
 	github.com/package-url/packageurl-go v0.1.1-0.20220203205134-d70459300c8a
 	github.com/parnurzeal/gorequest v0.2.16
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
+	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.6.1
 	github.com/vulsio/go-cti v0.0.2
@@ -43,12 +44,13 @@ require (
 	github.com/vulsio/go-exploitdb v0.4.4
 	github.com/vulsio/go-kev v0.1.1
 	github.com/vulsio/go-msfdb v0.2.1
-	github.com/vulsio/gost v0.4.2-0.20230203045609-dcfab39a9ff4
+	github.com/vulsio/gost v0.4.2
 	github.com/vulsio/goval-dictionary v0.8.2
 	go.etcd.io/bbolt v1.3.6
 	golang.org/x/exp v0.0.0-20230213192124-5e25df0256eb
 	golang.org/x/oauth2 v0.1.0
 	golang.org/x/sync v0.1.0
+	golang.org/x/text v0.7.0
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2
 )
 
@@ -142,7 +144,7 @@ require (
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/smartystreets/assertions v1.13.0 // indirect
 	github.com/spdx/tools-golang v0.3.0 // indirect
-	github.com/spf13/afero v1.9.3 // indirect
+	github.com/spf13/afero v1.9.4 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -162,7 +164,6 @@ require (
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/term v0.5.0 // indirect
-	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
 	google.golang.org/api v0.107.0 // indirect

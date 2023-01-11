@@ -473,7 +473,7 @@ func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult, logOpts l
 	nCVEs, err := client.DetectCVEs(r, true)
 	if err != nil {
 		switch r.Family {
-		case constant.Debian, constant.Ubuntu:
+		case constant.Debian, constant.Ubuntu, constant.Windows:
 			return xerrors.Errorf("Failed to detect CVEs with gost: %w", err)
 		default:
 			return xerrors.Errorf("Failed to detect unfixed CVEs with gost: %w", err)
@@ -481,7 +481,7 @@ func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult, logOpts l
 	}
 
 	switch r.Family {
-	case constant.Debian, constant.Ubuntu:
+	case constant.Debian, constant.Ubuntu, constant.Windows:
 		logging.Log.Infof("%s: %d CVEs are detected with gost", r.FormatServerName(), nCVEs)
 	default:
 		logging.Log.Infof("%s: %d unfixed CVEs are detected with gost", r.FormatServerName(), nCVEs)

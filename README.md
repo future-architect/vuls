@@ -48,10 +48,11 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 
 ### Scan for any vulnerabilities in Linux/FreeBSD Server
 
-[Supports major Linux/FreeBSD](https://vuls.io/docs/en/supported-os.html)
+[Supports major Linux/FreeBSD/Windows](https://vuls.io/docs/en/supported-os.html)
 
 - Alpine, Amazon Linux, CentOS, AlmaLinux, Rocky Linux, Debian, Oracle Linux, Raspbian, RHEL, openSUSE, openSUSE Leap, SUSE Enterprise Linux, Fedora, and Ubuntu
 - FreeBSD
+- Windows
 - Cloud, on-premise, Running Docker Container
 
 ### High-quality scan
@@ -72,6 +73,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
   - [Red Hat Security Advisories](https://access.redhat.com/security/security-updates/)
   - [Debian Security Bug Tracker](https://security-tracker.debian.org/tracker/)
   - [Ubuntu CVE Tracker](https://people.canonical.com/~ubuntu-security/cve/)
+  - [Microsoft CVRF](https://api.msrc.microsoft.com/cvrf/v2.0/swagger/index)
 
 - Commands(yum, zypper, pkg-audit)
   - RHSA / ALAS / ELSA / FreeBSD-SA
