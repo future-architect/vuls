@@ -267,6 +267,7 @@ type VulnInfo struct {
 	GitHubSecurityAlerts GitHubSecurityAlerts `json:"gitHubSecurityAlerts,omitempty"`
 	WpPackageFixStats    WpPackageFixStats    `json:"wpPackageFixStats,omitempty"`
 	LibraryFixedIns      LibraryFixedIns      `json:"libraryFixedIns,omitempty"`
+	WindowsKBFixedIns    []string             `json:"windowsKBFixedIns,omitempty"`
 	VulnType             string               `json:"vulnType,omitempty"`
 	DiffStatus           DiffStatus           `json:"diffStatus,omitempty"`
 }
@@ -531,7 +532,7 @@ func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
 
 // Cvss3Scores returns CVSS V3 Score
 func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
-	order := []CveContentType{RedHatAPI, RedHat, SUSE, Nvd, Jvn}
+	order := []CveContentType{RedHatAPI, RedHat, SUSE, Microsoft, Nvd, Jvn}
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
@@ -661,6 +662,7 @@ func (v VulnInfo) PatchStatus(packs Packages) string {
 	if len(v.CpeURIs) != 0 {
 		return ""
 	}
+
 	for _, p := range v.AffectedPackages {
 		if p.NotFixedYet {
 			return "unfixed"
@@ -680,6 +682,13 @@ func (v VulnInfo) PatchStatus(packs Packages) string {
 			}
 		}
 	}
+
+	for _, c := range v.Confidences {
+		if c == WindowsUpdateSearch && len(v.WindowsKBFixedIns) == 0 {
+			return "unfixed"
+		}
+	}
+
 	return "fixed"
 }
 

@@ -42,16 +42,10 @@ func newDebian(c config.ServerInfo) *debian {
 
 // Ubuntu, Debian, Raspbian
 // https://github.com/serverspec/specinfra/blob/master/lib/specinfra/helper/detect_os/debian.rb
-func detectDebian(c config.ServerInfo) (bool, osTypeInterface, error) {
+func detectDebian(c config.ServerInfo) (bool, osTypeInterface) {
 	if r := exec(c, "ls /etc/debian_version", noSudo); !r.isSuccess() {
-		if r.Error != nil {
-			return false, nil, nil
-		}
-		if r.ExitStatus == 255 {
-			return false, &unknown{base{ServerInfo: c}}, xerrors.Errorf("Unable to connect via SSH. Scan with -vvv option to print SSH debugging messages and check SSH settings.\n%s", r)
-		}
 		logging.Log.Debugf("Not Debian like Linux. %s", r)
-		return false, nil, nil
+		return false, nil
 	}
 
 	// Raspbian
@@ -64,7 +58,7 @@ func detectDebian(c config.ServerInfo) (bool, osTypeInterface, error) {
 		if len(result) > 2 && result[0] == constant.Raspbian {
 			deb := newDebian(c)
 			deb.setDistro(strings.ToLower(trim(result[0])), trim(result[2]))
-			return true, deb, nil
+			return true, deb
 		}
 	}
 
@@ -84,7 +78,7 @@ func detectDebian(c config.ServerInfo) (bool, osTypeInterface, error) {
 			distro := strings.ToLower(trim(result[1]))
 			deb.setDistro(distro, trim(result[2]))
 		}
-		return true, deb, nil
+		return true, deb
 	}
 
 	if r := exec(c, "cat /etc/lsb-release", noSudo); r.isSuccess() {
@@ -104,7 +98,7 @@ func detectDebian(c config.ServerInfo) (bool, osTypeInterface, error) {
 			distro := strings.ToLower(trim(result[1]))
 			deb.setDistro(distro, trim(result[2]))
 		}
-		return true, deb, nil
+		return true, deb
 	}
 
 	// Debian
@@ -112,11 +106,11 @@ func detectDebian(c config.ServerInfo) (bool, osTypeInterface, error) {
 	if r := exec(c, cmd, noSudo); r.isSuccess() {
 		deb := newDebian(c)
 		deb.setDistro(constant.Debian, trim(r.Stdout))
-		return true, deb, nil
+		return true, deb
 	}
 
 	logging.Log.Debugf("Not Debian like Linux: %s", c.ServerName)
-	return false, nil, nil
+	return false, nil
 }
 
 func trim(str string) string {

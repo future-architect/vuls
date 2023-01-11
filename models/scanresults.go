@@ -53,6 +53,7 @@ type ScanResult struct {
 	WordPressPackages WordPressPackages        `json:",omitempty"`
 	GitHubManifests   DependencyGraphManifests `json:"gitHubManifests,omitempty"`
 	LibraryScanners   LibraryScanners          `json:"libraries,omitempty"`
+	WindowsKB         *WindowsKB               `json:"windowsKB,omitempty"`
 	CweDict           CweDict                  `json:"cweDict,omitempty"`
 	Optional          map[string]interface{}   `json:",omitempty"`
 	Config            struct {
@@ -81,6 +82,12 @@ type Kernel struct {
 	Release        string `json:"release"`
 	Version        string `json:"version"`
 	RebootRequired bool   `json:"rebootRequired"`
+}
+
+// WindowsKB has applied and unapplied KBs
+type WindowsKB struct {
+	Applied   []string `json:"applied,omitempty"`
+	Unapplied []string `json:"unapplied,omitempty"`
 }
 
 // FilterInactiveWordPressLibs is filter function.

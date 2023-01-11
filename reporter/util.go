@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -81,24 +80,23 @@ func loadOneServerScanResult(jsonFile string) (*models.ScanResult, error) {
 	return result, nil
 }
 
-// jsonDirPattern is file name pattern of JSON directory
-// 2016-11-16T10:43:28+09:00
-// 2016-11-16T10:43:28Z
-var jsonDirPattern = regexp.MustCompile(
-	`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$`)
-
 // ListValidJSONDirs returns valid json directory as array
 // Returned array is sorted so that recent directories are at the head
 func ListValidJSONDirs(resultsDir string) (dirs []string, err error) {
-	var dirInfo []fs.DirEntry
-	if dirInfo, err = os.ReadDir(resultsDir); err != nil {
-		err = xerrors.Errorf("Failed to read %s: %w", resultsDir, err)
-		return
+	dirInfo, err := os.ReadDir(resultsDir)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to read %s: %w", resultsDir, err)
 	}
 	for _, d := range dirInfo {
-		if d.IsDir() && jsonDirPattern.MatchString(d.Name()) {
-			jsonDir := filepath.Join(resultsDir, d.Name())
-			dirs = append(dirs, jsonDir)
+		if !d.IsDir() {
+			continue
+		}
+
+		for _, layout := range []string{"2006-01-02T15:04:05Z", "2006-01-02T15:04:05-07:00", "2006-01-02T15-04-05-0700"} {
+			if _, err := time.Parse(layout, d.Name()); err == nil {
+				dirs = append(dirs, filepath.Join(resultsDir, d.Name()))
+				break
+			}
 		}
 	}
 	sort.Slice(dirs, func(i, j int) bool {
@@ -258,9 +256,13 @@ No CVE-IDs are found in updatable packages.
 		// v2max := vinfo.MaxCvss2Score().Value.Score
 		// v3max := vinfo.MaxCvss3Score().Value.Score
 
-		packnames := strings.Join(vinfo.AffectedPackages.Names(), ", ")
-		// packname := vinfo.AffectedPackages.FormatTuiSummary()
-		// packname += strings.Join(vinfo.CpeURIs, ", ")
+		pkgNames := vinfo.AffectedPackages.Names()
+		pkgNames = append(pkgNames, vinfo.CpeURIs...)
+		pkgNames = append(pkgNames, vinfo.GitHubSecurityAlerts.Names()...)
+		pkgNames = append(pkgNames, vinfo.WpPackageFixStats.Names()...)
+		pkgNames = append(pkgNames, vinfo.LibraryFixedIns.Names()...)
+		pkgNames = append(pkgNames, vinfo.WindowsKBFixedIns...)
+		packnames := strings.Join(pkgNames, ", ")
 
 		exploits := ""
 		if 0 < len(vinfo.Exploits) || 0 < len(vinfo.Metasploits) {
@@ -429,6 +431,10 @@ No CVE-IDs are found in updatable packages.
 					fmt.Sprintf("%s-%s, FixedIn: %s (%s)",
 						lib.Name, lib.Version, l.FixedIn, path)})
 			}
+		}
+
+		if len(vuln.WindowsKBFixedIns) > 0 {
+			data = append(data, []string{"Windows KB", fmt.Sprintf("FixedIn: %s", strings.Join(vuln.WindowsKBFixedIns, ", "))})
 		}
 
 		for _, confidence := range vuln.Confidences {

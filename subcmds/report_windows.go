@@ -1,4 +1,4 @@
-//go:build !scanner && !windows
+//go:build !scanner && windows
 
 package subcmds
 
@@ -38,7 +38,6 @@ type ReportCmd struct {
 	toGoogleChat bool
 	toTelegram   bool
 	toEmail      bool
-	toSyslog     bool
 	toLocalFile  bool
 	toS3         bool
 	toAzureBlob  bool
@@ -163,7 +162,6 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.toGoogleChat, "to-googlechat", false, "Send report via Google Chat")
 	f.BoolVar(&p.toTelegram, "to-telegram", false, "Send report via Telegram")
 	f.BoolVar(&p.toEmail, "to-email", false, "Send report via Email")
-	f.BoolVar(&p.toSyslog, "to-syslog", false, "Send report via Syslog")
 	f.BoolVar(&p.toLocalFile, "to-localfile", false, "Write report to localfile")
 	f.BoolVar(&p.toS3, "to-s3", false, "Write report to S3 (bucket/yyyyMMdd_HHmm/servername.json/txt)")
 	f.BoolVar(&p.toHTTP, "to-http", false, "Send report via HTTP POST")
@@ -205,7 +203,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	config.Conf.GoogleChat.Enabled = p.toGoogleChat
 	config.Conf.Telegram.Enabled = p.toTelegram
 	config.Conf.EMail.Enabled = p.toEmail
-	config.Conf.Syslog.Enabled = p.toSyslog
 	config.Conf.AWS.Enabled = p.toS3
 	config.Conf.Azure.Enabled = p.toAzureBlob
 	config.Conf.HTTP.Enabled = p.toHTTP
@@ -306,10 +303,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			FormatList:        p.formatList,
 			Cnf:               config.Conf.EMail,
 		})
-	}
-
-	if p.toSyslog {
-		reports = append(reports, reporter.SyslogWriter{Cnf: config.Conf.Syslog})
 	}
 
 	if p.toHTTP {

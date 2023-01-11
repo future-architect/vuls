@@ -311,6 +311,88 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"36": {StandardSupportUntil: time.Date(2023, 5, 16, 23, 59, 59, 0, time.UTC)},
 			"37": {StandardSupportUntil: time.Date(2023, 12, 15, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
+	case constant.Windows:
+		// https://learn.microsoft.com/ja-jp/lifecycle/products/?products=windows
+
+		lhs, rhs, _ := strings.Cut(strings.TrimSuffix(release, "(Server Core installation)"), "for")
+		switch strings.TrimSpace(lhs) {
+		case "Windows 7":
+			eol, found = EOL{StandardSupportUntil: time.Date(2013, 4, 9, 23, 59, 59, 0, time.UTC)}, true
+			if strings.Contains(rhs, "Service Pack 1") {
+				eol, found = EOL{StandardSupportUntil: time.Date(2020, 1, 14, 23, 59, 59, 0, time.UTC)}, true
+			}
+		case "Windows 8":
+			eol, found = EOL{StandardSupportUntil: time.Date(2016, 1, 12, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 8.1":
+			eol, found = EOL{StandardSupportUntil: time.Date(2023, 1, 10, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 10":
+			eol, found = EOL{StandardSupportUntil: time.Date(2017, 5, 9, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 10 Version 1511":
+			eol, found = EOL{StandardSupportUntil: time.Date(2017, 10, 10, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 10 Version 1607":
+			eol, found = EOL{StandardSupportUntil: time.Date(2018, 4, 10, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 10 Version 1703":
+			eol, found = EOL{StandardSupportUntil: time.Date(2018, 10, 9, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 10 Version 1709":
+			eol, found = EOL{StandardSupportUntil: time.Date(2019, 4, 9, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 10 Version 1803":
+			eol, found = EOL{StandardSupportUntil: time.Date(2019, 11, 12, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 10 Version 1809":
+			eol, found = EOL{StandardSupportUntil: time.Date(2020, 11, 10, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 10 Version 1903":
+			eol, found = EOL{StandardSupportUntil: time.Date(2020, 12, 8, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 10 Version 1909":
+			eol, found = EOL{StandardSupportUntil: time.Date(2021, 5, 11, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 10 Version 2004":
+			eol, found = EOL{StandardSupportUntil: time.Date(2021, 12, 14, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 10 Version 20H2":
+			eol, found = EOL{StandardSupportUntil: time.Date(2022, 5, 10, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 10 Version 21H1":
+			eol, found = EOL{StandardSupportUntil: time.Date(2022, 12, 13, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 10 Version 21H2":
+			eol, found = EOL{StandardSupportUntil: time.Date(2023, 6, 13, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 10 Version 22H2":
+			eol, found = EOL{StandardSupportUntil: time.Date(2024, 5, 14, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 11 Version 21H2":
+			eol, found = EOL{StandardSupportUntil: time.Date(2024, 10, 8, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 11 Version 22H2":
+			eol, found = EOL{StandardSupportUntil: time.Date(2025, 10, 14, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows Server 2008":
+			eol, found = EOL{StandardSupportUntil: time.Date(2011, 7, 12, 23, 59, 59, 0, time.UTC)}, true
+			if strings.Contains(rhs, "Service Pack 2") {
+				eol, found = EOL{StandardSupportUntil: time.Date(2020, 1, 14, 23, 59, 59, 0, time.UTC)}, true
+			}
+		case "Windows Server 2008 R2":
+			eol, found = EOL{StandardSupportUntil: time.Date(2013, 4, 9, 23, 59, 59, 0, time.UTC)}, true
+			if strings.Contains(rhs, "Service Pack 1") {
+				eol, found = EOL{StandardSupportUntil: time.Date(2020, 1, 14, 23, 59, 59, 0, time.UTC)}, true
+			}
+		case "Windows Server 2012":
+			eol, found = EOL{StandardSupportUntil: time.Date(2023, 10, 10, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows Server 2012 R2":
+			eol, found = EOL{StandardSupportUntil: time.Date(2023, 10, 10, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows Server 2016":
+			eol, found = EOL{StandardSupportUntil: time.Date(2027, 1, 12, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows Server, Version 1709":
+			eol, found = EOL{StandardSupportUntil: time.Date(2019, 4, 9, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows Server, Version 1803":
+			eol, found = EOL{StandardSupportUntil: time.Date(2019, 11, 12, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows Server, Version 1809":
+			eol, found = EOL{StandardSupportUntil: time.Date(2020, 11, 10, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows Server 2019":
+			eol, found = EOL{StandardSupportUntil: time.Date(2029, 1, 9, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows Server, Version 1903":
+			eol, found = EOL{StandardSupportUntil: time.Date(2020, 12, 8, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows Server, Version 1909":
+			eol, found = EOL{StandardSupportUntil: time.Date(2021, 5, 11, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows Server, Version 2004":
+			eol, found = EOL{StandardSupportUntil: time.Date(2021, 12, 14, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows Server, Version 20H2":
+			eol, found = EOL{StandardSupportUntil: time.Date(2022, 8, 9, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows Server 2022":
+			eol, found = EOL{StandardSupportUntil: time.Date(2031, 10, 14, 23, 59, 59, 0, time.UTC)}, true
+		default:
+		}
 	}
 	return
 }

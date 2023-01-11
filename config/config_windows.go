@@ -1,4 +1,4 @@
-//go:build !windows
+//go:build windows
 
 package config
 
@@ -50,7 +50,6 @@ type Config struct {
 	Slack      SlackConf      `json:"-"`
 	EMail      SMTPConf       `json:"-"`
 	HTTP       HTTPConf       `json:"-"`
-	Syslog     SyslogConf     `json:"-"`
 	AWS        AWSConf        `json:"-"`
 	Azure      AzureConf      `json:"-"`
 	ChatWork   ChatWorkConf   `json:"-"`
@@ -168,7 +167,6 @@ func (c *Config) ValidateOnReport() bool {
 		&c.ChatWork,
 		&c.GoogleChat,
 		&c.Telegram,
-		&c.Syslog,
 		&c.HTTP,
 		&c.AWS,
 		&c.Azure,

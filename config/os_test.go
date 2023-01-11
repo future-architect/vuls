@@ -607,6 +607,22 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			extEnded: false,
 			found:    false,
 		},
+		{
+			name:     "Windows 10 EOL",
+			fields:   fields{family: Windows, release: "Windows 10 for x64-based Systems"},
+			now:      time.Date(2022, 12, 8, 23, 59, 59, 0, time.UTC),
+			stdEnded: true,
+			extEnded: true,
+			found:    true,
+		},
+		{
+			name:     "Windows 10 Version 22H2 supported",
+			fields:   fields{family: Windows, release: "Windows 10 Version 22H2 for x64-based Systems"},
+			now:      time.Date(2022, 12, 8, 23, 59, 59, 0, time.UTC),
+			stdEnded: false,
+			extEnded: false,
+			found:    true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

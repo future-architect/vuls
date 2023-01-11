@@ -12,9 +12,6 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v3
-      - 
-        name: install package for cross compile
-        run: sudo apt update && sudo apt install -y gcc-aarch64-linux-gnu
       -
         name: Unshallow
         run: git fetch --prune --unshallow
@@ -22,13 +19,16 @@ jobs:
         name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version-file: go.mod
       -
         name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2
-        with:
-          version: latest
-          args: release --rm-dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          docker run --rm \
+            -e CGO_ENABLED=1 \
+            -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v `pwd`:/go/src/github.com/future-architect/vuls \
+            -w /go/src/github.com/future-architect/vuls \
+            ghcr.io/goreleaser/goreleaser-cross:v1.20 \
+            release --clean
 
