@@ -48,7 +48,7 @@ func (b Bolt) Close() error {
 	return b.db.Close()
 }
 
-//  CreateBucketIfNotExists creates a bucket that is specified by arg.
+// CreateBucketIfNotExists creates a bucket that is specified by arg.
 func (b *Bolt) createBucketIfNotExists(name string) error {
 	return b.db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(name))

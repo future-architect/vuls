@@ -284,7 +284,7 @@ type GitHubSecurityAlerts []GitHubSecurityAlert
 // Add adds given arg to the slice and return the slice (immutable)
 func (g GitHubSecurityAlerts) Add(alert GitHubSecurityAlert) GitHubSecurityAlerts {
 	for _, a := range g {
-		if a.PackageName == alert.PackageName {
+		if a.RepoURLPackageName() == alert.RepoURLPackageName() {
 			return g
 		}
 	}
@@ -294,19 +294,34 @@ func (g GitHubSecurityAlerts) Add(alert GitHubSecurityAlert) GitHubSecurityAlert
 // Names return a slice of lib names
 func (g GitHubSecurityAlerts) Names() (names []string) {
 	for _, a := range g {
-		names = append(names, a.PackageName)
+		names = append(names, a.RepoURLPackageName())
 	}
 	return names
 }
 
 // GitHubSecurityAlert has detected CVE-ID, PackageName, Status fetched via GitHub API
 type GitHubSecurityAlert struct {
-	PackageName   string    `json:"packageName"`
-	FixedIn       string    `json:"fixedIn"`
-	AffectedRange string    `json:"affectedRange"`
-	Dismissed     bool      `json:"dismissed"`
-	DismissedAt   time.Time `json:"dismissedAt"`
-	DismissReason string    `json:"dismissReason"`
+	// TODO: PackageName deprecated. it will be removed next time.
+	PackageName   string               `json:"packageName"`
+	Repository    string               `json:"repository"`
+	Package       GSAVulnerablePackage `json:"package,omitempty"`
+	FixedIn       string               `json:"fixedIn"`
+	AffectedRange string               `json:"affectedRange"`
+	Dismissed     bool                 `json:"dismissed"`
+	DismissedAt   time.Time            `json:"dismissedAt"`
+	DismissReason string               `json:"dismissReason"`
+}
+
+func (a GitHubSecurityAlert) RepoURLPackageName() string {
+	return fmt.Sprintf("%s %s", a.Repository, a.Package.Name)
+}
+
+type GSAVulnerablePackage struct {
+	Name             string `json:"name"`
+	Ecosystem        string `json:"ecosystem"`
+	ManifestFilename string `json:"manifestFilename"`
+	ManifestPath     string `json:"manifestPath"`
+	Requirements     string `json:"requirements"`
 }
 
 // LibraryFixedIns is a list of Library's FixedIn

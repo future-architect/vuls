@@ -745,7 +745,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 		}
 
 		for _, alert := range vinfo.GitHubSecurityAlerts {
-			lines = append(lines, "* "+alert.PackageName)
+			lines = append(lines, "* "+alert.RepoURLPackageName())
 		}
 
 		r := currentScanResult

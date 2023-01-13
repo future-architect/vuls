@@ -21,7 +21,7 @@ var Revision string
 // Conf has Configuration
 var Conf Config
 
-//Config is struct of Configuration
+// Config is struct of Configuration
 type Config struct {
 	logging.LogOpts
 

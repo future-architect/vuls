@@ -801,7 +801,7 @@ func (o *redhatBase) parseNeedsRestarting(stdout string) (procs []models.NeedRes
 	return
 }
 
-//TODO refactor
+// TODO refactor
 // procPathToFQPN returns Fully-Qualified-Package-Name from the command
 func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
 	execCommand = strings.Replace(execCommand, "\x00", " ", -1) // for CentOS6.9

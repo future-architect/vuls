@@ -15,7 +15,7 @@ import (
 	formatter "github.com/kotakanbe/logrus-prefixed-formatter"
 )
 
-//LogOpts has options for logging
+// LogOpts has options for logging
 type LogOpts struct {
 	Debug     bool   `json:"debug,omitempty"`
 	DebugSQL  bool   `json:"debugSQL,omitempty"`
@@ -45,7 +45,6 @@ func NewNormalLogger() Logger {
 	return Logger{Entry: logrus.Entry{Logger: logrus.New()}}
 }
 
-// NewNormalLogger creates normal logger
 func NewIODiscardLogger() Logger {
 	l := logrus.New()
 	l.Out = io.Discard
