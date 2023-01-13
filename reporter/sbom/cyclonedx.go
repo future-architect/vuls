@@ -84,6 +84,19 @@ func cdxComponents(result models.ScanResult, metaBomRef string) (*[]cdx.Componen
 		components = append(components, libpkgComps...)
 	}
 
+	ghpkgToPURL := map[string]map[string]string{}
+	for _, ghpkg := range result.GitHubPackages {
+		ghpkgToPURL[ghpkg.Ecosystem()] = map[string]string{}
+		// TODO: prioritize lockfile
+
+		ghpkgComps := ghpkgToCdxComponents(ghpkg, ghpkgToPURL)
+		bomRefs[metaBomRef] = append(bomRefs[metaBomRef], ghpkgComps[0].BOMRef)
+		for _, comp := range ghpkgComps[1:] {
+			bomRefs[ghpkgComps[0].BOMRef] = append(bomRefs[ghpkgComps[0].BOMRef], comp.BOMRef)
+		}
+		components = append(components, ghpkgComps...)
+	}
+
 	wppkgToPURL := map[string]string{}
 	if wppkgComps := wppkgToCdxComponents(result.WordPressPackages, wppkgToPURL); wppkgComps != nil {
 		bomRefs[metaBomRef] = append(bomRefs[metaBomRef], wppkgComps[0].BOMRef)
@@ -93,7 +106,7 @@ func cdxComponents(result models.ScanResult, metaBomRef string) (*[]cdx.Componen
 		components = append(components, wppkgComps...)
 	}
 
-	return &components, cdxDependencies(bomRefs), cdxVulnerabilities(result, ospkgToPURL, libpkgToPURL, wppkgToPURL)
+	return &components, cdxDependencies(bomRefs), cdxVulnerabilities(result, ospkgToPURL, libpkgToPURL, ghpkgToPURL, wppkgToPURL)
 }
 
 func osToCdxComponent(family, release, runningKernelRelease, runningKernelVersion string) cdx.Component {
@@ -258,6 +271,38 @@ func libpkgToCdxComponents(libscanner models.LibraryScanner, libpkgToPURL map[st
 	return components
 }
 
+func ghpkgToCdxComponents(ghpkg models.DependencyGraphManifest, ghpkgToPURL map[string]map[string]string) []cdx.Component {
+	components := []cdx.Component{
+		{
+			BOMRef: uuid.NewString(),
+			Type:   cdx.ComponentTypeApplication,
+			Name:   ghpkg.Lockfile,
+			Properties: &[]cdx.Property{
+				{
+					Name:  "future-architect:vuls:Type",
+					Value: ghpkg.Ecosystem(),
+				},
+			},
+		},
+	}
+
+	for _, dep := range ghpkg.Dependencies {
+		// TODO: check dependency to PackageURL
+		purl := packageurl.NewPackageURL(dep.PackageManager, "", dep.PackageName, dep.Version(), packageurl.Qualifiers{{Key: "file_path", Value: ghpkg.Lockfile}}, "").ToString()
+		components = append(components, cdx.Component{
+			BOMRef:     purl,
+			Type:       cdx.ComponentTypeLibrary,
+			Name:       dep.PackageName,
+			Version:    dep.Version(),
+			PackageURL: purl,
+		})
+
+		ghpkgToPURL[ghpkg.Ecosystem()][dep.PackageName] = purl
+	}
+
+	return components
+}
+
 func wppkgToCdxComponents(wppkgs models.WordPressPackages, wppkgToPURL map[string]string) []cdx.Component {
 	if len(wppkgs) == 0 {
 		return nil
@@ -352,7 +397,7 @@ func toPkgPURL(osFamily, osVersion, packName, packVersion, packRelease, packArch
 	return packageurl.NewPackageURL(purlType, osFamily, packName, version, qualifiers, "").ToString()
 }
 
-func cdxVulnerabilities(result models.ScanResult, ospkgToPURL map[string]string, libpkgToPURL map[string]map[string]string, wppkgToPURL map[string]string) *[]cdx.Vulnerability {
+func cdxVulnerabilities(result models.ScanResult, ospkgToPURL map[string]string, libpkgToPURL map[string]map[string]string, ghpkgToPURL map[string]map[string]string, wppkgToPURL map[string]string) *[]cdx.Vulnerability {
 	vulnerabilities := make([]cdx.Vulnerability, 0, len(result.ScannedCves))
 	for _, cve := range result.ScannedCves {
 		vulnerabilities = append(vulnerabilities, cdx.Vulnerability{
@@ -361,7 +406,7 @@ func cdxVulnerabilities(result models.ScanResult, ospkgToPURL map[string]string,
 			CWEs:        cdxCWEs(cve.CveContents),
 			Description: cdxDescription(cve.CveContents),
 			Advisories:  cdxAdvisories(cve.CveContents),
-			Affects:     cdxAffects(cve, ospkgToPURL, libpkgToPURL, wppkgToPURL),
+			Affects:     cdxAffects(cve, ospkgToPURL, libpkgToPURL, ghpkgToPURL, wppkgToPURL),
 		})
 	}
 	return &vulnerabilities
@@ -433,7 +478,7 @@ func cdxCVSS3Rating(source, vector string, score float64, severity string) cdx.V
 	return r
 }
 
-func cdxAffects(cve models.VulnInfo, ospkgToPURL map[string]string, libpkgToPURL map[string]map[string]string, wppkgToPURL map[string]string) *[]cdx.Affects {
+func cdxAffects(cve models.VulnInfo, ospkgToPURL map[string]string, libpkgToPURL map[string]map[string]string, ghpkgToPURL map[string]map[string]string, wppkgToPURL map[string]string) *[]cdx.Affects {
 	affects := make([]cdx.Affects, 0, len(cve.AffectedPackages)+len(cve.CpeURIs)+len(cve.LibraryFixedIns)+len(cve.WpPackageFixStats))
 
 	for _, p := range cve.AffectedPackages {
@@ -450,7 +495,12 @@ func cdxAffects(cve models.VulnInfo, ospkgToPURL map[string]string, libpkgToPURL
 		affects = append(affects, cdx.Affects{
 			Ref: libpkgToPURL[lib.Path][lib.Name],
 		})
-
+	}
+	for _, alert := range cve.GitHubSecurityAlerts {
+		affects = append(affects, cdx.Affects{
+			// TODO: not sure
+			Ref: ghpkgToPURL[alert.Package.Ecosystem][alert.Package.Name],
+		})
 	}
 	for _, wppack := range cve.WpPackageFixStats {
 		affects = append(affects, cdx.Affects{

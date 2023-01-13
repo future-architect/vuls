@@ -83,7 +83,11 @@ func DetectGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string,
 				alerts.Data.Repository.URL, v.Node.SecurityVulnerability.Package.Name)
 
 			m := models.GitHubSecurityAlert{
-				PackageName:   pkgName,
+				PackageName: pkgName,
+				Package: models.GSAVulnerablePackage{
+					Name:      v.Node.SecurityVulnerability.Package.Name,
+					Ecosystem: v.Node.SecurityVulnerability.Package.Ecosystem,
+				},
 				FixedIn:       v.Node.SecurityVulnerability.FirstPatchedVersion.Identifier,
 				AffectedRange: v.Node.SecurityVulnerability.VulnerableVersionRange,
 				Dismissed:     len(v.Node.DismissReason) != 0,
@@ -196,6 +200,149 @@ type SecurityAlerts struct {
 					} `json:"node"`
 				} `json:"edges"`
 			} `json:"vulnerabilityAlerts"`
+		} `json:"repository"`
+	} `json:"data"`
+}
+
+// https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/about-the-dependency-graph
+func DetectGitHubDependencyGraph(r *models.ScanResult, owner, repo, token string) (err error) {
+	src := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	)
+	//TODO Proxy
+	httpClient := oauth2.NewClient(context.Background(), src)
+
+	const jsonfmt = `{"query":
+	"query { repository(owner:\"%s\", name:\"%s\") { url dependencyGraphManifests(first: %d, withDependencies: true%s) { pageInfo { endCursor hasNextPage } edges { node { blobPath filename repository { url } parseable exceedsMaxSize dependenciesCount dependencies%s { pageInfo { endCursor hasNextPage } edges { node { packageName packageManager repository { url } requirements hasDependencies } } } } } } } }"}`
+	after := ""
+	dependenciesAfter := ""
+
+	r.GitHubPackages = models.DependencyGraphManifests{}
+	for {
+		jsonStr := fmt.Sprintf(jsonfmt, owner, repo, 100, after, dependenciesAfter)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+			"https://api.github.com/graphql",
+			bytes.NewBuffer([]byte(jsonStr)),
+		)
+		defer cancel()
+		if err != nil {
+			return err
+		}
+
+		// https://docs.github.com/en/graphql/overview/schema-previews#access-to-a-repository-s-dependency-graph-preview
+		// TODO remove this header if it is no longer preview status in the future.
+		req.Header.Set("Accept", "application/vnd.github.hawkgirl-preview+json")
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		graph := DependencyGraph{}
+		if err := json.Unmarshal(body, &graph); err != nil {
+			return err
+		}
+
+		if graph.Data.Repository.URL == "" {
+			return errof.New(errof.ErrFailedToAccessGithubAPI,
+				fmt.Sprintf("Failed to access to GitHub API. Response: %s", string(body)))
+		}
+
+		dependenciesAfter = ""
+		for _, m := range graph.Data.Repository.DependencyGraphManifests.Edges {
+			if val, ok := r.GitHubPackages[m.Node.Filename]; ok {
+				for _, d := range m.Node.Dependencies.Edges {
+					val.Dependencies = append(val.Dependencies, models.Dependency{
+						PackageName:    d.Node.PackageName,
+						PackageManager: d.Node.PackageManager,
+						Repository:     d.Node.Repository.URL,
+						Requirements:   d.Node.Requirements,
+					})
+				}
+				r.GitHubPackages[m.Node.Filename] = val
+			} else {
+				manifest := models.DependencyGraphManifest{
+					Lockfile:     m.Node.Filename,
+					Repository:   m.Node.Repository.URL,
+					Dependencies: []models.Dependency{},
+				}
+
+				for _, d := range m.Node.Dependencies.Edges {
+					manifest.Dependencies = append(manifest.Dependencies, models.Dependency{
+						PackageName:    d.Node.PackageName,
+						PackageManager: d.Node.PackageManager,
+						Repository:     d.Node.Repository.URL,
+						Requirements:   d.Node.Requirements,
+					})
+				}
+				r.GitHubPackages[m.Node.Filename] = manifest
+			}
+
+			if m.Node.Dependencies.PageInfo.HasNextPage {
+				dependenciesAfter = fmt.Sprintf(`(after: \"%s\")`, m.Node.Dependencies.PageInfo.EndCursor)
+			}
+		}
+
+		if dependenciesAfter != "" {
+			continue
+		}
+
+		if !graph.Data.Repository.DependencyGraphManifests.PageInfo.HasNextPage {
+			break
+		}
+		after = fmt.Sprintf(`, after: \"%s\"`, graph.Data.Repository.DependencyGraphManifests.PageInfo.EndCursor)
+	}
+
+	return err
+}
+
+type DependencyGraph struct {
+	Data struct {
+		Repository struct {
+			URL                      string `json:"url"`
+			DependencyGraphManifests struct {
+				PageInfo struct {
+					EndCursor   string `json:"endCursor"`
+					HasNextPage bool   `json:"hasNextPage"`
+				} `json:"pageInfo"`
+				Edges []struct {
+					Node struct {
+						BlobPath   string `json:"blobPath"`
+						Filename   string `json:"filename"`
+						Repository struct {
+							URL string `json:"url"`
+						}
+						Parseable         bool `json:"parseable"`
+						ExceedsMaxSize    bool `json:"exceedsMaxSize"`
+						DependenciesCount int  `json:"dependenciesCount"`
+						Dependencies      struct {
+							PageInfo struct {
+								EndCursor   string `json:"endCursor"`
+								HasNextPage bool   `json:"hasNextPage"`
+							} `json:"pageInfo"`
+							Edges []struct {
+								Node struct {
+									PackageName    string `json:"packageName"`
+									PackageManager string `json:"packageManager"`
+									Repository     struct {
+										URL string `json:"url"`
+									}
+									Requirements    string `json:"requirements"`
+									HasDependencies bool   `json:"hasDependencies"`
+								} `json:"node"`
+							} `json:"edges"`
+						} `json:"dependencies"`
+					} `json:"node"`
+				} `json:"edges"`
+			} `json:"dependencyGraphManifests"`
 		} `json:"repository"`
 	} `json:"data"`
 }

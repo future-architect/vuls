@@ -301,12 +301,18 @@ func (g GitHubSecurityAlerts) Names() (names []string) {
 
 // GitHubSecurityAlert has detected CVE-ID, PackageName, Status fetched via GitHub API
 type GitHubSecurityAlert struct {
-	PackageName   string    `json:"packageName"`
-	FixedIn       string    `json:"fixedIn"`
-	AffectedRange string    `json:"affectedRange"`
-	Dismissed     bool      `json:"dismissed"`
-	DismissedAt   time.Time `json:"dismissedAt"`
-	DismissReason string    `json:"dismissReason"`
+	PackageName   string               `json:"packageName"`
+	Package       GSAVulnerablePackage `json:"package,omitempty"`
+	FixedIn       string               `json:"fixedIn"`
+	AffectedRange string               `json:"affectedRange"`
+	Dismissed     bool                 `json:"dismissed"`
+	DismissedAt   time.Time            `json:"dismissedAt"`
+	DismissReason string               `json:"dismissReason"`
+}
+
+type GSAVulnerablePackage struct {
+	Name      string `json:"name"`
+	Ecosystem string `json:"ecosystem"`
 }
 
 // LibraryFixedIns is a list of Library's FixedIn
