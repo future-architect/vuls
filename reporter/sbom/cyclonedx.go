@@ -287,7 +287,6 @@ func ghpkgToCdxComponents(ghpkg models.DependencyGraphManifest, ghpkgToPURL map[
 	}
 
 	for _, dep := range ghpkg.Dependencies {
-		// TODO: check dependency to PackageURL
 		purl := packageurl.NewPackageURL(dep.PackageManager, "", dep.PackageName, dep.Version(), packageurl.Qualifiers{{Key: "file_path", Value: ghpkg.Lockfile}}, "").ToString()
 		components = append(components, cdx.Component{
 			BOMRef:     purl,
