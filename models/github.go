@@ -15,10 +15,6 @@ type DependencyGraphManifest struct {
 }
 
 func (m DependencyGraphManifest) Ecosystem() string {
-	if len(m.Dependencies) > 0 {
-		return m.Dependencies[0].PackageManager
-	}
-
 	// https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/about-the-dependency-graph#supported-package-ecosystems
 	switch {
 	case strings.HasSuffix(m.Lockfile, "Cargo.lock"),
@@ -74,7 +70,7 @@ type Dependency struct {
 	Requirements   string `json:"requirements"`
 }
 
-var reDepReq = regexp.MustCompile(`^= ([a-z\d\-\.\+]+)$`)
+var reDepReq = regexp.MustCompile(`^= (.+)$`)
 
 func (d Dependency) Version() string {
 	if match := reDepReq.FindStringSubmatch(d.Requirements); len(match) == 2 {

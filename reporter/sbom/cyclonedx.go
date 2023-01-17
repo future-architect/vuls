@@ -495,10 +495,12 @@ func cdxAffects(cve models.VulnInfo, ospkgToPURL map[string]string, libpkgToPURL
 		})
 	}
 	for _, alert := range cve.GitHubSecurityAlerts {
-		affects = append(affects, cdx.Affects{
-			// TODO: not sure
-			Ref: ghpkgToPURL[alert.Package.ManifestPath][alert.Package.Name],
-		})
+		if purl, ok := ghpkgToPURL[alert.Package.ManifestPath][alert.Package.Name]; ok {
+			affects = append(affects, cdx.Affects{
+				// TODO: case on exist in GSA, but not in dependency graph
+				Ref: purl,
+			})
+		}
 	}
 	for _, wppack := range cve.WpPackageFixStats {
 		affects = append(affects, cdx.Affects{
