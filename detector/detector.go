@@ -305,7 +305,7 @@ func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]config.GitHub
 			r.FormatServerName(), n, owner, repo)
 
 		if err = DetectGitHubDependencyGraph(r, owner, repo, setting.Token); err != nil {
-			return xerrors.Errorf("Filed to access GitHub Dependency graph: %w", err)
+			return xerrors.Errorf("Failed to access GitHub Dependency graph: %w", err)
 		}
 	}
 	return nil
