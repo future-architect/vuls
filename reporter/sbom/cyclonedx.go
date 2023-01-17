@@ -85,11 +85,10 @@ func cdxComponents(result models.ScanResult, metaBomRef string) (*[]cdx.Componen
 	}
 
 	ghpkgToPURL := map[string]map[string]string{}
-	for _, ghpkg := range result.GitHubPackages {
-		ghpkgToPURL[ghpkg.Ecosystem()] = map[string]string{}
-		// TODO: prioritize lockfile
+	for _, ghm := range result.GitHubManifests {
+		ghpkgToPURL[ghm.Lockfile] = map[string]string{}
 
-		ghpkgComps := ghpkgToCdxComponents(ghpkg, ghpkgToPURL)
+		ghpkgComps := ghpkgToCdxComponents(ghm, ghpkgToPURL)
 		bomRefs[metaBomRef] = append(bomRefs[metaBomRef], ghpkgComps[0].BOMRef)
 		for _, comp := range ghpkgComps[1:] {
 			bomRefs[ghpkgComps[0].BOMRef] = append(bomRefs[ghpkgComps[0].BOMRef], comp.BOMRef)
@@ -271,23 +270,23 @@ func libpkgToCdxComponents(libscanner models.LibraryScanner, libpkgToPURL map[st
 	return components
 }
 
-func ghpkgToCdxComponents(ghpkg models.DependencyGraphManifest, ghpkgToPURL map[string]map[string]string) []cdx.Component {
+func ghpkgToCdxComponents(m models.DependencyGraphManifest, ghpkgToPURL map[string]map[string]string) []cdx.Component {
 	components := []cdx.Component{
 		{
 			BOMRef: uuid.NewString(),
 			Type:   cdx.ComponentTypeApplication,
-			Name:   ghpkg.Lockfile,
+			Name:   m.Lockfile,
 			Properties: &[]cdx.Property{
 				{
 					Name:  "future-architect:vuls:Type",
-					Value: ghpkg.Ecosystem(),
+					Value: m.Ecosystem(),
 				},
 			},
 		},
 	}
 
-	for _, dep := range ghpkg.Dependencies {
-		purl := packageurl.NewPackageURL(dep.PackageManager, "", dep.PackageName, dep.Version(), packageurl.Qualifiers{{Key: "file_path", Value: ghpkg.Lockfile}}, "").ToString()
+	for _, dep := range m.Dependencies {
+		purl := packageurl.NewPackageURL(m.Ecosystem(), "", dep.PackageName, dep.Version(), packageurl.Qualifiers{{Key: "file_path", Value: m.Lockfile}}, "").ToString()
 		components = append(components, cdx.Component{
 			BOMRef:     purl,
 			Type:       cdx.ComponentTypeLibrary,
@@ -296,7 +295,7 @@ func ghpkgToCdxComponents(ghpkg models.DependencyGraphManifest, ghpkgToPURL map[
 			PackageURL: purl,
 		})
 
-		ghpkgToPURL[ghpkg.Ecosystem()][dep.PackageName] = purl
+		ghpkgToPURL[m.Lockfile][dep.PackageName] = purl
 	}
 
 	return components
@@ -498,7 +497,7 @@ func cdxAffects(cve models.VulnInfo, ospkgToPURL map[string]string, libpkgToPURL
 	for _, alert := range cve.GitHubSecurityAlerts {
 		affects = append(affects, cdx.Affects{
 			// TODO: not sure
-			Ref: ghpkgToPURL[alert.Package.Ecosystem][alert.Package.Name],
+			Ref: ghpkgToPURL[alert.Package.ManifestPath][alert.Package.Name],
 		})
 	}
 	for _, wppack := range cve.WpPackageFixStats {

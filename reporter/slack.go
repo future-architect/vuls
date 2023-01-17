@@ -195,7 +195,7 @@ func (w SlackWriter) toSlackAttachments(r models.ScanResult) (attaches []slack.A
 			candidate = append(candidate, "?")
 		}
 		for _, n := range vinfo.GitHubSecurityAlerts {
-			installed = append(installed, n.PackageName)
+			installed = append(installed, n.RepoUrlPackageName())
 			candidate = append(candidate, "?")
 		}
 

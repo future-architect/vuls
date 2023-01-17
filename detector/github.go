@@ -29,7 +29,7 @@ func DetectGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string,
 	// TODO Use `https://github.com/shurcooL/githubv4` if the tool supports vulnerabilityAlerts Endpoint
 	// Memo : https://developer.github.com/v4/explorer/
 	const jsonfmt = `{"query":
-	"query { repository(owner:\"%s\", name:\"%s\") { url vulnerabilityAlerts(first: %d, states:[OPEN], %s) { pageInfo { endCursor hasNextPage startCursor } edges { node { id dismissReason dismissedAt securityVulnerability{ package { name ecosystem } severity vulnerableVersionRange firstPatchedVersion { identifier } } securityAdvisory { description ghsaId permalink publishedAt summary updatedAt withdrawnAt origin severity references { url } identifiers { type value } } } } } } } "}`
+	"query { repository(owner:\"%s\", name:\"%s\") { url vulnerabilityAlerts(first: %d, states:[OPEN], %s) { pageInfo { endCursor hasNextPage startCursor } edges { node { id dismissReason dismissedAt securityVulnerability{ package { name ecosystem } severity vulnerableVersionRange firstPatchedVersion { identifier } } vulnerableManifestFilename vulnerableManifestPath vulnerableRequirements securityAdvisory { description ghsaId permalink publishedAt summary updatedAt withdrawnAt origin severity references { url } identifiers { type value } } } } } } } "}`
 	after := ""
 
 	for {
@@ -79,14 +79,18 @@ func DetectGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string,
 				continue
 			}
 
-			pkgName := fmt.Sprintf("%s %s",
+			repoUrlPkgName := fmt.Sprintf("%s %s",
 				alerts.Data.Repository.URL, v.Node.SecurityVulnerability.Package.Name)
 
 			m := models.GitHubSecurityAlert{
-				PackageName: pkgName,
+				PackageName: repoUrlPkgName,
+				Repository:  alerts.Data.Repository.URL,
 				Package: models.GSAVulnerablePackage{
-					Name:      v.Node.SecurityVulnerability.Package.Name,
-					Ecosystem: v.Node.SecurityVulnerability.Package.Ecosystem,
+					Name:             v.Node.SecurityVulnerability.Package.Name,
+					Ecosystem:        v.Node.SecurityVulnerability.Package.Ecosystem,
+					ManifestFilename: v.Node.VulnerableManifestFilename,
+					ManifestPath:     v.Node.VulnerableManifestPath,
+					Requirements:     v.Node.VulnerableRequirements,
 				},
 				FixedIn:       v.Node.SecurityVulnerability.FirstPatchedVersion.Identifier,
 				AffectedRange: v.Node.SecurityVulnerability.VulnerableVersionRange,
@@ -179,7 +183,10 @@ type SecurityAlerts struct {
 								Identifier string `json:"identifier"`
 							} `json:"firstPatchedVersion"`
 						} `json:"securityVulnerability"`
-						SecurityAdvisory struct {
+						VulnerableManifestFilename string `json:"vulnerableManifestFilename"`
+						VulnerableManifestPath     string `json:"vulnerableManifestPath"`
+						VulnerableRequirements     string `json:"vulnerableRequirements"`
+						SecurityAdvisory           struct {
 							Description string    `json:"description"`
 							GhsaID      string    `json:"ghsaId"`
 							Permalink   string    `json:"permalink"`
@@ -217,7 +224,7 @@ func DetectGitHubDependencyGraph(r *models.ScanResult, owner, repo, token string
 	after := ""
 	dependenciesAfter := ""
 
-	r.GitHubPackages = models.DependencyGraphManifests{}
+	r.GitHubManifests = models.DependencyGraphManifests{}
 	for {
 		jsonStr := fmt.Sprintf(jsonfmt, owner, repo, 100, after, dependenciesAfter)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -258,7 +265,7 @@ func DetectGitHubDependencyGraph(r *models.ScanResult, owner, repo, token string
 
 		dependenciesAfter = ""
 		for _, m := range graph.Data.Repository.DependencyGraphManifests.Edges {
-			if val, ok := r.GitHubPackages[m.Node.Filename]; ok {
+			if val, ok := r.GitHubManifests[m.Node.Filename]; ok {
 				for _, d := range m.Node.Dependencies.Edges {
 					val.Dependencies = append(val.Dependencies, models.Dependency{
 						PackageName:    d.Node.PackageName,
@@ -267,7 +274,7 @@ func DetectGitHubDependencyGraph(r *models.ScanResult, owner, repo, token string
 						Requirements:   d.Node.Requirements,
 					})
 				}
-				r.GitHubPackages[m.Node.Filename] = val
+				r.GitHubManifests[m.Node.Filename] = val
 			} else {
 				manifest := models.DependencyGraphManifest{
 					Lockfile:     m.Node.Filename,
@@ -283,7 +290,7 @@ func DetectGitHubDependencyGraph(r *models.ScanResult, owner, repo, token string
 						Requirements:   d.Node.Requirements,
 					})
 				}
-				r.GitHubPackages[m.Node.Filename] = manifest
+				r.GitHubManifests[m.Node.Filename] = manifest
 			}
 
 			if m.Node.Dependencies.PageInfo.HasNextPage {

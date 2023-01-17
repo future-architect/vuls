@@ -404,7 +404,7 @@ No CVE-IDs are found in updatable packages.
 		}
 
 		for _, alert := range vuln.GitHubSecurityAlerts {
-			data = append(data, []string{"GitHub", alert.PackageName})
+			data = append(data, []string{"GitHub", alert.RepoUrlPackageName()})
 		}
 
 		for _, wp := range vuln.WpPackageFixStats {

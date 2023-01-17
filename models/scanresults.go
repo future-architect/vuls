@@ -51,7 +51,7 @@ type ScanResult struct {
 	SrcPackages       SrcPackages              `json:",omitempty"`
 	EnabledDnfModules []string                 `json:"enabledDnfModules,omitempty"` // for dnf modules
 	WordPressPackages WordPressPackages        `json:",omitempty"`
-	GitHubPackages    DependencyGraphManifests `json:"gitHubPackages,omitempty"`
+	GitHubManifests   DependencyGraphManifests `json:"gitHubManifests,omitempty"`
 	LibraryScanners   LibraryScanners          `json:"libraries,omitempty"`
 	CweDict           CweDict                  `json:"cweDict,omitempty"`
 	Optional          map[string]interface{}   `json:",omitempty"`
