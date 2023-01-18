@@ -211,6 +211,7 @@ type SecurityAlerts struct {
 	} `json:"data"`
 }
 
+// DetectGitHubDependencyGraph access to owner/repo on GitHub and fetch dependency graph of the repository via GitHub API v4 GraphQL and then set to the given ScanResult.
 // https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/about-the-dependency-graph
 func DetectGitHubDependencyGraph(r *models.ScanResult, owner, repo, token string) (err error) {
 	src := oauth2.StaticTokenSource(
@@ -218,87 +219,87 @@ func DetectGitHubDependencyGraph(r *models.ScanResult, owner, repo, token string
 	)
 	//TODO Proxy
 	httpClient := oauth2.NewClient(context.Background(), src)
-
-	const jsonfmt = `{"query":
-	"query { repository(owner:\"%s\", name:\"%s\") { url dependencyGraphManifests(first: %d, withDependencies: true%s) { pageInfo { endCursor hasNextPage } edges { node { blobPath filename repository { url } parseable exceedsMaxSize dependenciesCount dependencies%s { pageInfo { endCursor hasNextPage } edges { node { packageName packageManager repository { url } requirements hasDependencies } } } } } } } }"}`
-	after := ""
-	dependenciesAfter := ""
-
 	r.GitHubManifests = models.DependencyGraphManifests{}
-	for {
-		jsonStr := fmt.Sprintf(jsonfmt, owner, repo, 100, after, dependenciesAfter)
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost,
-			"https://api.github.com/graphql",
-			bytes.NewBuffer([]byte(jsonStr)),
-		)
-		defer cancel()
-		if err != nil {
-			return err
-		}
 
-		// https://docs.github.com/en/graphql/overview/schema-previews#access-to-a-repository-s-dependency-graph-preview
-		// TODO remove this header if it is no longer preview status in the future.
-		req.Header.Set("Accept", "application/vnd.github.hawkgirl-preview+json")
-		req.Header.Set("Content-Type", "application/json")
+	return fetchDependencyGraph(r, httpClient, owner, repo, "", "")
+}
 
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
+// recursive function
+func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, repo, after, dependenciesAfter string) (err error) {
+	const queryFmt = `{"query":
+	"query { repository(owner:\"%s\", name:\"%s\") { url dependencyGraphManifests(first: %d, withDependencies: true%s) { pageInfo { endCursor hasNextPage } edges { node { blobPath filename repository { url } parseable exceedsMaxSize dependenciesCount dependencies%s { pageInfo { endCursor hasNextPage } edges { node { packageName packageManager repository { url } requirements hasDependencies } } } } } } } }"}`
 
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-
-		graph := DependencyGraph{}
-		if err := json.Unmarshal(body, &graph); err != nil {
-			return err
-		}
-
-		if graph.Data.Repository.URL == "" {
-			return errof.New(errof.ErrFailedToAccessGithubAPI,
-				fmt.Sprintf("Failed to access to GitHub API. Response: %s", string(body)))
-		}
-
-		dependenciesAfter = ""
-		for _, m := range graph.Data.Repository.DependencyGraphManifests.Edges {
-			manifest, ok := r.GitHubManifests[m.Node.Filename]
-			if !ok {
-				manifest = models.DependencyGraphManifest{
-					Lockfile:     m.Node.Filename,
-					Repository:   m.Node.Repository.URL,
-					Dependencies: []models.Dependency{},
-				}
-			}
-			for _, d := range m.Node.Dependencies.Edges {
-				manifest.Dependencies = append(manifest.Dependencies, models.Dependency{
-					PackageName:    d.Node.PackageName,
-					PackageManager: d.Node.PackageManager,
-					Repository:     d.Node.Repository.URL,
-					Requirements:   d.Node.Requirements,
-				})
-			}
-			r.GitHubManifests[m.Node.Filename] = manifest
-
-			if m.Node.Dependencies.PageInfo.HasNextPage {
-				dependenciesAfter = fmt.Sprintf(`(after: \"%s\")`, m.Node.Dependencies.PageInfo.EndCursor)
-			}
-		}
-
-		if dependenciesAfter != "" {
-			continue
-		}
-
-		if !graph.Data.Repository.DependencyGraphManifests.PageInfo.HasNextPage {
-			break
-		}
-		after = fmt.Sprintf(`, after: \"%s\"`, graph.Data.Repository.DependencyGraphManifests.PageInfo.EndCursor)
+	queryStr := fmt.Sprintf(queryFmt, owner, repo, 100, after, dependenciesAfter)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		"https://api.github.com/graphql",
+		bytes.NewBuffer([]byte(queryStr)),
+	)
+	defer cancel()
+	if err != nil {
+		return err
 	}
 
-	return err
+	// https://docs.github.com/en/graphql/overview/schema-previews#access-to-a-repository-s-dependency-graph-preview
+	// TODO remove this header if it is no longer preview status in the future.
+	req.Header.Set("Accept", "application/vnd.github.hawkgirl-preview+json")
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	graph := DependencyGraph{}
+	if err := json.Unmarshal(body, &graph); err != nil {
+		return err
+	}
+
+	if graph.Data.Repository.URL == "" {
+		return errof.New(errof.ErrFailedToAccessGithubAPI,
+			fmt.Sprintf("Failed to access to GitHub API. Response: %s", string(body)))
+	}
+
+	dependenciesAfter = ""
+	for _, m := range graph.Data.Repository.DependencyGraphManifests.Edges {
+		manifest, ok := r.GitHubManifests[m.Node.Filename]
+		if !ok {
+			manifest = models.DependencyGraphManifest{
+				Lockfile:     m.Node.Filename,
+				Repository:   m.Node.Repository.URL,
+				Dependencies: []models.Dependency{},
+			}
+		}
+		for _, d := range m.Node.Dependencies.Edges {
+			manifest.Dependencies = append(manifest.Dependencies, models.Dependency{
+				PackageName:    d.Node.PackageName,
+				PackageManager: d.Node.PackageManager,
+				Repository:     d.Node.Repository.URL,
+				Requirements:   d.Node.Requirements,
+			})
+		}
+		r.GitHubManifests[m.Node.Filename] = manifest
+
+		if m.Node.Dependencies.PageInfo.HasNextPage {
+			dependenciesAfter = fmt.Sprintf(`(after: \"%s\")`, m.Node.Dependencies.PageInfo.EndCursor)
+		}
+	}
+	if dependenciesAfter != "" {
+		return fetchDependencyGraph(r, httpClient, owner, repo, after, dependenciesAfter)
+	}
+
+	if graph.Data.Repository.DependencyGraphManifests.PageInfo.HasNextPage {
+		after = fmt.Sprintf(`, after: \"%s\"`, graph.Data.Repository.DependencyGraphManifests.PageInfo.EndCursor)
+		return fetchDependencyGraph(r, httpClient, owner, repo, after, dependenciesAfter)
+	}
+
+	return nil
 }
 
 type DependencyGraph struct {
