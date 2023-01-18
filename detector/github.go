@@ -265,33 +265,23 @@ func DetectGitHubDependencyGraph(r *models.ScanResult, owner, repo, token string
 
 		dependenciesAfter = ""
 		for _, m := range graph.Data.Repository.DependencyGraphManifests.Edges {
-			if val, ok := r.GitHubManifests[m.Node.Filename]; ok {
-				for _, d := range m.Node.Dependencies.Edges {
-					val.Dependencies = append(val.Dependencies, models.Dependency{
-						PackageName:    d.Node.PackageName,
-						PackageManager: d.Node.PackageManager,
-						Repository:     d.Node.Repository.URL,
-						Requirements:   d.Node.Requirements,
-					})
-				}
-				r.GitHubManifests[m.Node.Filename] = val
-			} else {
-				manifest := models.DependencyGraphManifest{
+			manifest, ok := r.GitHubManifests[m.Node.Filename]
+			if !ok {
+				manifest = models.DependencyGraphManifest{
 					Lockfile:     m.Node.Filename,
 					Repository:   m.Node.Repository.URL,
 					Dependencies: []models.Dependency{},
 				}
-
-				for _, d := range m.Node.Dependencies.Edges {
-					manifest.Dependencies = append(manifest.Dependencies, models.Dependency{
-						PackageName:    d.Node.PackageName,
-						PackageManager: d.Node.PackageManager,
-						Repository:     d.Node.Repository.URL,
-						Requirements:   d.Node.Requirements,
-					})
-				}
-				r.GitHubManifests[m.Node.Filename] = manifest
 			}
+			for _, d := range m.Node.Dependencies.Edges {
+				manifest.Dependencies = append(manifest.Dependencies, models.Dependency{
+					PackageName:    d.Node.PackageName,
+					PackageManager: d.Node.PackageManager,
+					Repository:     d.Node.Repository.URL,
+					Requirements:   d.Node.Requirements,
+				})
+			}
+			r.GitHubManifests[m.Node.Filename] = manifest
 
 			if m.Node.Dependencies.PageInfo.HasNextPage {
 				dependenciesAfter = fmt.Sprintf(`(after: \"%s\")`, m.Node.Dependencies.PageInfo.EndCursor)
