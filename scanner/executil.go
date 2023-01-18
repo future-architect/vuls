@@ -185,7 +185,7 @@ func sshExecExternal(c config.ServerInfo, cmd string, sudo bool) (result execRes
 		return execResult{Error: err}
 	}
 
-	args := []string{"-tt"}
+	var args []string
 
 	if c.SSHConfigPath != "" {
 		args = append(args, "-F", c.SSHConfigPath)
@@ -280,7 +280,7 @@ func dockerShell(family string) string {
 
 func decorateCmd(c config.ServerInfo, cmd string, sudo bool) string {
 	if sudo && c.User != "root" && !c.IsContainer() {
-		cmd = fmt.Sprintf("sudo -S %s", cmd)
+		cmd = fmt.Sprintf("sudo %s", cmd)
 	}
 
 	// If you are using pipe and you want to detect preprocessing errors, remove comment out
@@ -306,7 +306,7 @@ func decorateCmd(c config.ServerInfo, cmd string, sudo bool) string {
 				c.Container.Name, dockerShell(c.Distro.Family), cmd)
 			// LXC required root privilege
 			if c.User != "root" {
-				cmd = fmt.Sprintf("sudo -S %s", cmd)
+				cmd = fmt.Sprintf("sudo %s", cmd)
 			}
 		}
 	}
