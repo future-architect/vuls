@@ -1,7 +1,7 @@
 package models
 
 import (
-	"regexp"
+	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
 	"strings"
 )
 
@@ -19,46 +19,50 @@ func (m DependencyGraphManifest) Ecosystem() string {
 	switch {
 	case strings.HasSuffix(m.Lockfile, "Cargo.lock"),
 		strings.HasSuffix(m.Lockfile, "Cargo.toml"):
-		return "RUST" // Rust
+		return ftypes.Cargo // Rust
 	case strings.HasSuffix(m.Lockfile, "composer.lock"),
 		strings.HasSuffix(m.Lockfile, "composer.json"):
-		return "COMPOSER" // PHP
+		return ftypes.Composer // PHP
 	case strings.HasSuffix(m.Lockfile, ".csproj"),
 		strings.HasSuffix(m.Lockfile, ".vbproj"),
 		strings.HasSuffix(m.Lockfile, ".nuspec"),
 		strings.HasSuffix(m.Lockfile, ".vcxproj"),
 		strings.HasSuffix(m.Lockfile, ".fsproj"),
 		strings.HasSuffix(m.Lockfile, "packages.config"):
-		return "NUGET" // .NET languages (C#, F#, VB), C++
+		return ftypes.NuGet // .NET languages (C#, F#, VB), C++
 	case strings.HasSuffix(m.Lockfile, "go.sum"),
 		strings.HasSuffix(m.Lockfile, "go.mod"):
-		return "GO" // Go
+		return ftypes.GoModule // Go
 	case strings.HasSuffix(m.Lockfile, "pom.xml"):
-		return "MAVEN" // Java, Scala
+		return ftypes.Pom // Java, Scala
 	case strings.HasSuffix(m.Lockfile, "package-lock.json"),
-		strings.HasSuffix(m.Lockfile, "yarn.lock"),
 		strings.HasSuffix(m.Lockfile, "package.json"):
-		return "NPM" // JavaScript
+		return ftypes.Npm // JavaScript
+	case strings.HasSuffix(m.Lockfile, "yarn.lock"):
+		return ftypes.Yarn // JavaScript
 	case strings.HasSuffix(m.Lockfile, "requirements.txt"),
 		strings.HasSuffix(m.Lockfile, "requirements-dev.txt"),
-		strings.HasSuffix(m.Lockfile, "Pipfile.lock"),
-		strings.HasSuffix(m.Lockfile, "Pipfile"),
-		strings.HasSuffix(m.Lockfile, "setup.py"),
-		strings.HasSuffix(m.Lockfile, "poetry.lock"),
+		strings.HasSuffix(m.Lockfile, "setup.py"):
+		return ftypes.Pip // Python
+	case strings.HasSuffix(m.Lockfile, "Pipfile.lock"),
+		strings.HasSuffix(m.Lockfile, "Pipfile"):
+		return ftypes.Pipenv // Python
+	case strings.HasSuffix(m.Lockfile, "poetry.lock"),
 		strings.HasSuffix(m.Lockfile, "pyproject.toml"):
-		return "PIP" // Python
+		return ftypes.Poetry // Python
 	case strings.HasSuffix(m.Lockfile, "Gemfile.lock"),
-		strings.HasSuffix(m.Lockfile, "Gemfile"),
-		strings.HasSuffix(m.Lockfile, ".gemspec"):
-		return "RUBYGEMS" // Ruby
+		strings.HasSuffix(m.Lockfile, "Gemfile"):
+		return ftypes.Bundler // Ruby
+	case strings.HasSuffix(m.Lockfile, ".gemspec"):
+		return ftypes.GemSpec // Ruby
 	case strings.HasSuffix(m.Lockfile, "pubspec.lock"),
 		strings.HasSuffix(m.Lockfile, "pubspec.yaml"):
-		return "PUB" // Dart
+		return "pub" // Dart
 	case strings.HasSuffix(m.Lockfile, ".yml"),
 		strings.HasSuffix(m.Lockfile, ".yaml"):
-		return "ACTIONS" // GitHub Actions workflows
+		return "actions" // GitHub Actions workflows
 	default:
-		return "UNKNOWN"
+		return "unknown"
 	}
 }
 
@@ -70,11 +74,11 @@ type Dependency struct {
 	Requirements   string `json:"requirements"`
 }
 
-var reDepReq = regexp.MustCompile(`^= (.+)$`)
-
 func (d Dependency) Version() string {
-	if match := reDepReq.FindStringSubmatch(d.Requirements); len(match) == 2 {
-		return match[1]
+	s := strings.Split(d.Requirements, " ")
+	if len(s) == 2 && s[0] == "=" {
+		return s[1]
 	}
+	// TODO: return d.Requirements?
 	return ""
 }
