@@ -395,7 +395,7 @@ func toPkgPURL(osFamily, osVersion, packName, packVersion, packRelease, packArch
 	return packageurl.NewPackageURL(purlType, osFamily, packName, version, qualifiers, "").ToString()
 }
 
-func cdxVulnerabilities(result models.ScanResult, ospkgToPURL map[string]string, libpkgToPURL map[string]map[string]string, ghpkgToPURL map[string]map[string]string, wppkgToPURL map[string]string) *[]cdx.Vulnerability {
+func cdxVulnerabilities(result models.ScanResult, ospkgToPURL map[string]string, libpkgToPURL, ghpkgToPURL map[string]map[string]string, wppkgToPURL map[string]string) *[]cdx.Vulnerability {
 	vulnerabilities := make([]cdx.Vulnerability, 0, len(result.ScannedCves))
 	for _, cve := range result.ScannedCves {
 		vulnerabilities = append(vulnerabilities, cdx.Vulnerability{
@@ -476,7 +476,7 @@ func cdxCVSS3Rating(source, vector string, score float64, severity string) cdx.V
 	return r
 }
 
-func cdxAffects(cve models.VulnInfo, ospkgToPURL map[string]string, libpkgToPURL map[string]map[string]string, ghpkgToPURL map[string]map[string]string, wppkgToPURL map[string]string) *[]cdx.Affects {
+func cdxAffects(cve models.VulnInfo, ospkgToPURL map[string]string, libpkgToPURL, ghpkgToPURL map[string]map[string]string, wppkgToPURL map[string]string) *[]cdx.Affects {
 	affects := make([]cdx.Affects, 0, len(cve.AffectedPackages)+len(cve.CpeURIs)+len(cve.LibraryFixedIns)+len(cve.WpPackageFixStats))
 
 	for _, p := range cve.AffectedPackages {
