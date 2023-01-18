@@ -86,7 +86,7 @@ func cdxComponents(result models.ScanResult, metaBomRef string) (*[]cdx.Componen
 
 	ghpkgToPURL := map[string]map[string]string{}
 	for _, ghm := range result.GitHubManifests {
-		ghpkgToPURL[ghm.Lockfile] = map[string]string{}
+		ghpkgToPURL[ghm.Filename] = map[string]string{}
 
 		ghpkgComps := ghpkgToCdxComponents(ghm, ghpkgToPURL)
 		bomRefs[metaBomRef] = append(bomRefs[metaBomRef], ghpkgComps[0].BOMRef)
@@ -275,7 +275,7 @@ func ghpkgToCdxComponents(m models.DependencyGraphManifest, ghpkgToPURL map[stri
 		{
 			BOMRef: uuid.NewString(),
 			Type:   cdx.ComponentTypeApplication,
-			Name:   m.Lockfile,
+			Name:   m.Filename,
 			Properties: &[]cdx.Property{
 				{
 					Name:  "future-architect:vuls:Type",
@@ -286,7 +286,7 @@ func ghpkgToCdxComponents(m models.DependencyGraphManifest, ghpkgToPURL map[stri
 	}
 
 	for _, dep := range m.Dependencies {
-		purl := packageurl.NewPackageURL(m.Ecosystem(), "", dep.PackageName, dep.Version(), packageurl.Qualifiers{{Key: "file_path", Value: m.Lockfile}}, "").ToString()
+		purl := packageurl.NewPackageURL(m.Ecosystem(), "", dep.PackageName, dep.Version(), packageurl.Qualifiers{{Key: "file_path", Value: m.Filename}}, "").ToString()
 		components = append(components, cdx.Component{
 			BOMRef:     purl,
 			Type:       cdx.ComponentTypeLibrary,
@@ -295,7 +295,7 @@ func ghpkgToCdxComponents(m models.DependencyGraphManifest, ghpkgToPURL map[stri
 			PackageURL: purl,
 		})
 
-		ghpkgToPURL[m.Lockfile][dep.PackageName] = purl
+		ghpkgToPURL[m.Filename][dep.PackageName] = purl
 	}
 
 	return components
@@ -495,9 +495,9 @@ func cdxAffects(cve models.VulnInfo, ospkgToPURL map[string]string, libpkgToPURL
 		})
 	}
 	for _, alert := range cve.GitHubSecurityAlerts {
+		// TODO: not in dependency graph
 		if purl, ok := ghpkgToPURL[alert.Package.ManifestPath][alert.Package.Name]; ok {
 			affects = append(affects, cdx.Affects{
-				// TODO: case on exist in GSA, but not in dependency graph
 				Ref: purl,
 			})
 		}

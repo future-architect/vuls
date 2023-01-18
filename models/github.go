@@ -5,68 +5,69 @@ import (
 	"strings"
 )
 
-// key: Lockfile
+// DependencyGraphManifests has a map of DependencyGraphManifest
+// key: Filename
 type DependencyGraphManifests map[string]DependencyGraphManifest
 
 type DependencyGraphManifest struct {
-	Lockfile     string       `json:"lockfile"`
+	Filename     string       `json:"filename"`
 	Repository   string       `json:"repository"`
 	Dependencies []Dependency `json:"dependencies"`
 }
 
+// Ecosystem returns a name of ecosystem(or package manager) of manifest(lock) file in trivy way
+// https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/about-the-dependency-graph#supported-package-ecosystems
 func (m DependencyGraphManifest) Ecosystem() string {
-	// https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/about-the-dependency-graph#supported-package-ecosystems
 	switch {
-	case strings.HasSuffix(m.Lockfile, "Cargo.lock"),
-		strings.HasSuffix(m.Lockfile, "Cargo.toml"):
+	case strings.HasSuffix(m.Filename, "Cargo.lock"),
+		strings.HasSuffix(m.Filename, "Cargo.toml"):
 		return ftypes.Cargo // Rust
-	case strings.HasSuffix(m.Lockfile, "composer.lock"),
-		strings.HasSuffix(m.Lockfile, "composer.json"):
+	case strings.HasSuffix(m.Filename, "composer.lock"),
+		strings.HasSuffix(m.Filename, "composer.json"):
 		return ftypes.Composer // PHP
-	case strings.HasSuffix(m.Lockfile, ".csproj"),
-		strings.HasSuffix(m.Lockfile, ".vbproj"),
-		strings.HasSuffix(m.Lockfile, ".nuspec"),
-		strings.HasSuffix(m.Lockfile, ".vcxproj"),
-		strings.HasSuffix(m.Lockfile, ".fsproj"),
-		strings.HasSuffix(m.Lockfile, "packages.config"):
+	case strings.HasSuffix(m.Filename, ".csproj"),
+		strings.HasSuffix(m.Filename, ".vbproj"),
+		strings.HasSuffix(m.Filename, ".nuspec"),
+		strings.HasSuffix(m.Filename, ".vcxproj"),
+		strings.HasSuffix(m.Filename, ".fsproj"),
+		strings.HasSuffix(m.Filename, "packages.config"):
 		return ftypes.NuGet // .NET languages (C#, F#, VB), C++
-	case strings.HasSuffix(m.Lockfile, "go.sum"),
-		strings.HasSuffix(m.Lockfile, "go.mod"):
+	case strings.HasSuffix(m.Filename, "go.sum"),
+		strings.HasSuffix(m.Filename, "go.mod"):
 		return ftypes.GoModule // Go
-	case strings.HasSuffix(m.Lockfile, "pom.xml"):
+	case strings.HasSuffix(m.Filename, "pom.xml"):
 		return ftypes.Pom // Java, Scala
-	case strings.HasSuffix(m.Lockfile, "package-lock.json"),
-		strings.HasSuffix(m.Lockfile, "package.json"):
+	case strings.HasSuffix(m.Filename, "package-lock.json"),
+		strings.HasSuffix(m.Filename, "package.json"):
 		return ftypes.Npm // JavaScript
-	case strings.HasSuffix(m.Lockfile, "yarn.lock"):
+	case strings.HasSuffix(m.Filename, "yarn.lock"):
 		return ftypes.Yarn // JavaScript
-	case strings.HasSuffix(m.Lockfile, "requirements.txt"),
-		strings.HasSuffix(m.Lockfile, "requirements-dev.txt"),
-		strings.HasSuffix(m.Lockfile, "setup.py"):
+	case strings.HasSuffix(m.Filename, "requirements.txt"),
+		strings.HasSuffix(m.Filename, "requirements-dev.txt"),
+		strings.HasSuffix(m.Filename, "setup.py"):
 		return ftypes.Pip // Python
-	case strings.HasSuffix(m.Lockfile, "Pipfile.lock"),
-		strings.HasSuffix(m.Lockfile, "Pipfile"):
+	case strings.HasSuffix(m.Filename, "Pipfile.lock"),
+		strings.HasSuffix(m.Filename, "Pipfile"):
 		return ftypes.Pipenv // Python
-	case strings.HasSuffix(m.Lockfile, "poetry.lock"),
-		strings.HasSuffix(m.Lockfile, "pyproject.toml"):
+	case strings.HasSuffix(m.Filename, "poetry.lock"),
+		strings.HasSuffix(m.Filename, "pyproject.toml"):
 		return ftypes.Poetry // Python
-	case strings.HasSuffix(m.Lockfile, "Gemfile.lock"),
-		strings.HasSuffix(m.Lockfile, "Gemfile"):
+	case strings.HasSuffix(m.Filename, "Gemfile.lock"),
+		strings.HasSuffix(m.Filename, "Gemfile"):
 		return ftypes.Bundler // Ruby
-	case strings.HasSuffix(m.Lockfile, ".gemspec"):
+	case strings.HasSuffix(m.Filename, ".gemspec"):
 		return ftypes.GemSpec // Ruby
-	case strings.HasSuffix(m.Lockfile, "pubspec.lock"),
-		strings.HasSuffix(m.Lockfile, "pubspec.yaml"):
+	case strings.HasSuffix(m.Filename, "pubspec.lock"),
+		strings.HasSuffix(m.Filename, "pubspec.yaml"):
 		return "pub" // Dart
-	case strings.HasSuffix(m.Lockfile, ".yml"),
-		strings.HasSuffix(m.Lockfile, ".yaml"):
+	case strings.HasSuffix(m.Filename, ".yml"),
+		strings.HasSuffix(m.Filename, ".yaml"):
 		return "actions" // GitHub Actions workflows
 	default:
 		return "unknown"
 	}
 }
 
-// equal to DependencyGraphDependency
 type Dependency struct {
 	PackageName    string `json:"packageName"`
 	PackageManager string `json:"packageManager"`
@@ -79,5 +80,6 @@ func (d Dependency) Version() string {
 	if len(s) == 2 && s[0] == "=" {
 		return s[1]
 	}
+	// in case of ranged version
 	return ""
 }

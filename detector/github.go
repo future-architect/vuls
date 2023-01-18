@@ -271,7 +271,7 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 		manifest, ok := r.GitHubManifests[m.Node.Filename]
 		if !ok {
 			manifest = models.DependencyGraphManifest{
-				Lockfile:     m.Node.Filename,
+				Filename:     m.Node.Filename,
 				Repository:   m.Node.Repository.URL,
 				Dependencies: []models.Dependency{},
 			}
