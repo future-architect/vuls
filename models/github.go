@@ -79,6 +79,5 @@ func (d Dependency) Version() string {
 	if len(s) == 2 && s[0] == "=" {
 		return s[1]
 	}
-	// TODO: return d.Requirements?
 	return ""
 }

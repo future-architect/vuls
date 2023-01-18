@@ -301,6 +301,7 @@ func (g GitHubSecurityAlerts) Names() (names []string) {
 
 // GitHubSecurityAlert has detected CVE-ID, PackageName, Status fetched via GitHub API
 type GitHubSecurityAlert struct {
+	// TODO: PackageName deprecated. it will be removed next time.
 	PackageName   string               `json:"packageName"`
 	Repository    string               `json:"repository"`
 	Package       GSAVulnerablePackage `json:"package,omitempty"`
