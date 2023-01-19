@@ -34,7 +34,7 @@ func newBsd(c config.ServerInfo) *bsd {
 	return d
 }
 
-//https://github.com/mizzy/specinfra/blob/master/lib/specinfra/helper/detect_os/freebsd.rb
+// https://github.com/mizzy/specinfra/blob/master/lib/specinfra/helper/detect_os/freebsd.rb
 func detectFreebsd(c config.ServerInfo) (bool, osTypeInterface) {
 	// Prevent from adding `set -o pipefail` option
 	c.Distro = config.Distro{Family: constant.FreeBSD}

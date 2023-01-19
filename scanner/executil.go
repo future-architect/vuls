@@ -62,7 +62,7 @@ const sudo = true
 // noSudo is Const value for normal user mode
 const noSudo = false
 
-//  Issue commands to the target servers in parallel via SSH or local execution.  If execution fails, the server will be excluded from the target server list(servers) and added to the error server list(errServers).
+// Issue commands to the target servers in parallel via SSH or local execution.  If execution fails, the server will be excluded from the target server list(servers) and added to the error server list(errServers).
 func parallelExec(fn func(osTypeInterface) error, timeoutSec ...int) {
 	resChan := make(chan osTypeInterface, len(servers))
 	defer close(resChan)

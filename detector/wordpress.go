@@ -21,7 +21,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
-//WpCveInfos is for wpscan json
+// WpCveInfos is for wpscan json
 type WpCveInfos struct {
 	ReleaseDate  string `json:"release_date"`
 	ChangelogURL string `json:"changelog_url"`
@@ -33,7 +33,7 @@ type WpCveInfos struct {
 	Error           string      `json:"error"`
 }
 
-//WpCveInfo is for wpscan json
+// WpCveInfo is for wpscan json
 type WpCveInfo struct {
 	ID         string     `json:"id"`
 	Title      string     `json:"title"`
@@ -44,7 +44,7 @@ type WpCveInfo struct {
 	FixedIn    string     `json:"fixed_in"`
 }
 
-//References is for wpscan json
+// References is for wpscan json
 type References struct {
 	URL     []string `json:"url"`
 	Cve     []string `json:"cve"`
