@@ -79,11 +79,11 @@ func DetectGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string,
 				continue
 			}
 
-			repoUrlPkgName := fmt.Sprintf("%s %s",
+			repoURLPkgName := fmt.Sprintf("%s %s",
 				alerts.Data.Repository.URL, v.Node.SecurityVulnerability.Package.Name)
 
 			m := models.GitHubSecurityAlert{
-				PackageName: repoUrlPkgName,
+				PackageName: repoURLPkgName,
 				Repository:  alerts.Data.Repository.URL,
 				Package: models.GSAVulnerablePackage{
 					Name:             v.Node.SecurityVulnerability.Package.Name,

@@ -284,7 +284,7 @@ type GitHubSecurityAlerts []GitHubSecurityAlert
 // Add adds given arg to the slice and return the slice (immutable)
 func (g GitHubSecurityAlerts) Add(alert GitHubSecurityAlert) GitHubSecurityAlerts {
 	for _, a := range g {
-		if a.RepoUrlPackageName() == alert.RepoUrlPackageName() {
+		if a.RepoURLPackageName() == alert.RepoURLPackageName() {
 			return g
 		}
 	}
@@ -294,7 +294,7 @@ func (g GitHubSecurityAlerts) Add(alert GitHubSecurityAlert) GitHubSecurityAlert
 // Names return a slice of lib names
 func (g GitHubSecurityAlerts) Names() (names []string) {
 	for _, a := range g {
-		names = append(names, a.RepoUrlPackageName())
+		names = append(names, a.RepoURLPackageName())
 	}
 	return names
 }
@@ -312,7 +312,7 @@ type GitHubSecurityAlert struct {
 	DismissReason string               `json:"dismissReason"`
 }
 
-func (a GitHubSecurityAlert) RepoUrlPackageName() string {
+func (a GitHubSecurityAlert) RepoURLPackageName() string {
 	return fmt.Sprintf("%s %s", a.Repository, a.Package.Name)
 }
 
