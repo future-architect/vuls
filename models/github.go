@@ -1,8 +1,9 @@
 package models
 
 import (
-	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
 	"strings"
+
+	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
 )
 
 // DependencyGraphManifests has a map of DependencyGraphManifest
