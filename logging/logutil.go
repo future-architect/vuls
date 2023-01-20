@@ -45,6 +45,7 @@ func NewNormalLogger() Logger {
 	return Logger{Entry: logrus.Entry{Logger: logrus.New()}}
 }
 
+// NewIODiscardLogger creates discard logger
 func NewIODiscardLogger() Logger {
 	l := logrus.New()
 	l.Out = io.Discard
