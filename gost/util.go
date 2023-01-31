@@ -9,11 +9,12 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
+	"github.com/parnurzeal/gorequest"
+	"golang.org/x/xerrors"
+
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	"github.com/parnurzeal/gorequest"
-	"golang.org/x/xerrors"
 )
 
 type response struct {
@@ -82,11 +83,6 @@ type request struct {
 	packName       string
 	isSrcPack      bool
 	cveID          string
-}
-
-func getAllUnfixedCvesViaHTTP(r *models.ScanResult, urlPrefix string) (
-	responses []response, err error) {
-	return getCvesWithFixStateViaHTTP(r, urlPrefix, "unfixed-cves")
 }
 
 func getCvesWithFixStateViaHTTP(r *models.ScanResult, urlPrefix, fixState string) (responses []response, err error) {
