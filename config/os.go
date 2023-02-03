@@ -130,18 +130,35 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 	case constant.Ubuntu:
 		// https://wiki.ubuntu.com/Releases
 		eol, found = map[string]EOL{
-			"14.10": {Ended: true},
+			"6.06":  {Ended: true},
+			"6.10":  {Ended: true},
+			"7.04":  {Ended: true},
+			"7.10":  {Ended: true},
+			"8.04":  {Ended: true},
+			"8.10":  {Ended: true},
+			"9.04":  {Ended: true},
+			"9.10":  {Ended: true},
+			"10.04": {Ended: true},
+			"10.10": {Ended: true},
+			"11.04": {Ended: true},
+			"11.10": {Ended: true},
+			"12.04": {Ended: true},
+			"12.10": {Ended: true},
+			"13.04": {Ended: true},
+			"13.10": {Ended: true},
 			"14.04": {
 				ExtendedSupportUntil: time.Date(2022, 4, 1, 23, 59, 59, 0, time.UTC),
 			},
+			"14.10": {Ended: true},
 			"15.04": {Ended: true},
-			"16.10": {Ended: true},
-			"17.04": {Ended: true},
-			"17.10": {Ended: true},
+			"15.10": {Ended: true},
 			"16.04": {
 				StandardSupportUntil: time.Date(2021, 4, 1, 23, 59, 59, 0, time.UTC),
 				ExtendedSupportUntil: time.Date(2024, 4, 1, 23, 59, 59, 0, time.UTC),
 			},
+			"16.10": {Ended: true},
+			"17.04": {Ended: true},
+			"17.10": {Ended: true},
 			"18.04": {
 				StandardSupportUntil: time.Date(2023, 4, 1, 23, 59, 59, 0, time.UTC),
 				ExtendedSupportUntil: time.Date(2028, 4, 1, 23, 59, 59, 0, time.UTC),
@@ -169,6 +186,9 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"22.10": {
 				StandardSupportUntil: time.Date(2023, 7, 20, 23, 59, 59, 0, time.UTC),
 			},
+			// "23.04": {
+			// 	StandardSupportUntil: time.Date(2024, 1, 31, 23, 59, 59, 0, time.UTC),
+			// },
 		}[release]
 	case constant.OpenSUSE:
 		// https://en.opensuse.org/Lifetime
