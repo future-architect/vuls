@@ -32,7 +32,7 @@ func (red RedHat) DetectCVEs(r *models.ScanResult, ignoreWillNotFix bool) (nCVEs
 		if err != nil {
 			return 0, xerrors.Errorf("Failed to join URLPath. err: %w", err)
 		}
-		responses, err := getAllUnfixedCvesViaHTTP(r, prefix)
+		responses, err := getCvesWithFixStateViaHTTP(r, prefix, "unfixed-cves")
 		if err != nil {
 			return 0, xerrors.Errorf("Failed to get Unfixed CVEs via HTTP. err: %w", err)
 		}

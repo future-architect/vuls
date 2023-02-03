@@ -430,7 +430,7 @@ func detectPkgsCvesWithOval(cnf config.GovalDictConf, r *models.ScanResult, logO
 	}
 	if !ok {
 		switch r.Family {
-		case constant.Debian:
+		case constant.Debian, constant.Ubuntu:
 			logging.Log.Infof("Skip OVAL and Scan with gost alone.")
 			logging.Log.Infof("%s: %d CVEs are detected with OVAL", r.FormatServerName(), 0)
 			return nil
@@ -470,19 +470,21 @@ func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult, logOpts l
 
 	nCVEs, err := client.DetectCVEs(r, true)
 	if err != nil {
-		if r.Family == constant.Debian {
+		switch r.Family {
+		case constant.Debian, constant.Ubuntu:
 			return xerrors.Errorf("Failed to detect CVEs with gost: %w", err)
+		default:
+			return xerrors.Errorf("Failed to detect unfixed CVEs with gost: %w", err)
 		}
-		return xerrors.Errorf("Failed to detect unfixed CVEs with gost: %w", err)
 	}
 
-	if r.Family == constant.Debian {
-		logging.Log.Infof("%s: %d CVEs are detected with gost",
-			r.FormatServerName(), nCVEs)
-	} else {
-		logging.Log.Infof("%s: %d unfixed CVEs are detected with gost",
-			r.FormatServerName(), nCVEs)
+	switch r.Family {
+	case constant.Debian, constant.Ubuntu:
+		logging.Log.Infof("%s: %d CVEs are detected with gost", r.FormatServerName(), nCVEs)
+	default:
+		logging.Log.Infof("%s: %d unfixed CVEs are detected with gost", r.FormatServerName(), nCVEs)
 	}
+
 	return nil
 }
 

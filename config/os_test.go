@@ -244,8 +244,8 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 		},
 		//Ubuntu
 		{
-			name:     "Ubuntu 12.10 not found",
-			fields:   fields{family: Ubuntu, release: "12.10"},
+			name:     "Ubuntu 5.10 not found",
+			fields:   fields{family: Ubuntu, release: "5.10"},
 			now:      time.Date(2021, 1, 6, 23, 59, 59, 0, time.UTC),
 			found:    false,
 			stdEnded: false,
