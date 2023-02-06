@@ -219,7 +219,6 @@ func DetectGitHubDependencyGraph(r *models.ScanResult, owner, repo, token string
 	)
 	//TODO Proxy
 	httpClient := oauth2.NewClient(context.Background(), src)
-	r.GitHubManifests = models.DependencyGraphManifests{}
 
 	return fetchDependencyGraph(r, httpClient, owner, repo, "", "")
 }
