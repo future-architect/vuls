@@ -263,9 +263,10 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 
 	dependenciesAfter = ""
 	for _, m := range graph.Data.Repository.DependencyGraphManifests.Edges {
-		manifest, ok := r.GitHubManifests[m.Node.Filename]
+		manifest, ok := r.GitHubManifests[m.Node.BlobPath]
 		if !ok {
 			manifest = models.DependencyGraphManifest{
+				BlobPath:     m.Node.BlobPath,
 				Filename:     m.Node.Filename,
 				Repository:   m.Node.Repository.URL,
 				Dependencies: []models.Dependency{},
@@ -279,7 +280,7 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 				Requirements:   d.Node.Requirements,
 			})
 		}
-		r.GitHubManifests[m.Node.Filename] = manifest
+		r.GitHubManifests[m.Node.BlobPath] = manifest
 
 		if m.Node.Dependencies.PageInfo.HasNextPage {
 			dependenciesAfter = fmt.Sprintf(`(after: \"%s\")`, m.Node.Dependencies.PageInfo.EndCursor)

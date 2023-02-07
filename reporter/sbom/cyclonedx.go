@@ -86,7 +86,7 @@ func cdxComponents(result models.ScanResult, metaBomRef string) (*[]cdx.Componen
 
 	ghpkgToPURL := map[string]map[string]string{}
 	for _, ghm := range result.GitHubManifests {
-		ghpkgToPURL[ghm.Filename] = map[string]string{}
+		ghpkgToPURL[ghm.RepoURLFilename()] = map[string]string{}
 
 		ghpkgComps := ghpkgToCdxComponents(ghm, ghpkgToPURL)
 		bomRefs[metaBomRef] = append(bomRefs[metaBomRef], ghpkgComps[0].BOMRef)
@@ -295,7 +295,7 @@ func ghpkgToCdxComponents(m models.DependencyGraphManifest, ghpkgToPURL map[stri
 			PackageURL: purl,
 		})
 
-		ghpkgToPURL[m.Filename][dep.PackageName] = purl
+		ghpkgToPURL[m.RepoURLFilename()][dep.PackageName] = purl
 	}
 
 	return components
@@ -496,7 +496,7 @@ func cdxAffects(cve models.VulnInfo, ospkgToPURL map[string]string, libpkgToPURL
 	}
 	for _, alert := range cve.GitHubSecurityAlerts {
 		// TODO: not in dependency graph
-		if purl, ok := ghpkgToPURL[alert.Package.ManifestPath][alert.Package.Name]; ok {
+		if purl, ok := ghpkgToPURL[alert.RepoURLManifestPath()][alert.Package.Name]; ok {
 			affects = append(affects, cdx.Affects{
 				Ref: purl,
 			})

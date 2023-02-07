@@ -1,19 +1,26 @@
 package models
 
 import (
+	"fmt"
 	"strings"
 
 	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
 )
 
 // DependencyGraphManifests has a map of DependencyGraphManifest
-// key: Filename
+// key: BlobPath
 type DependencyGraphManifests map[string]DependencyGraphManifest
 
 type DependencyGraphManifest struct {
+	BlobPath     string       `json:"blobPath"`
 	Filename     string       `json:"filename"`
 	Repository   string       `json:"repository"`
 	Dependencies []Dependency `json:"dependencies"`
+}
+
+// RepoURLFilename should be same format with GitHubSecurityAlert.RepoURLManifestPath()
+func (m DependencyGraphManifest) RepoURLFilename() string {
+	return fmt.Sprintf("%s/%s", m.Repository, m.Filename)
 }
 
 // Ecosystem returns a name of ecosystem(or package manager) of manifest(lock) file in trivy way

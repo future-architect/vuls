@@ -314,6 +314,11 @@ func (a GitHubSecurityAlert) RepoURLPackageName() string {
 	return fmt.Sprintf("%s %s", a.Repository, a.Package.Name)
 }
 
+// RepoURLManifestPath should be same format with DependencyGraphManifest.RepoURLFilename()
+func (a GitHubSecurityAlert) RepoURLManifestPath() string {
+	return fmt.Sprintf("%s/%s", a.Repository, a.Package.ManifestPath)
+}
+
 type GSAVulnerablePackage struct {
 	Name             string `json:"name"`
 	Ecosystem        string `json:"ecosystem"`
