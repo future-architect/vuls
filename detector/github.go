@@ -79,12 +79,8 @@ func DetectGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string,
 				continue
 			}
 
-			repoURLPkgName := fmt.Sprintf("%s %s",
-				alerts.Data.Repository.URL, v.Node.SecurityVulnerability.Package.Name)
-
 			m := models.GitHubSecurityAlert{
-				PackageName: repoURLPkgName,
-				Repository:  alerts.Data.Repository.URL,
+				Repository: alerts.Data.Repository.URL,
 				Package: models.GSAVulnerablePackage{
 					Name:             v.Node.SecurityVulnerability.Package.Name,
 					Ecosystem:        v.Node.SecurityVulnerability.Package.Ecosystem,
@@ -219,7 +215,6 @@ func DetectGitHubDependencyGraph(r *models.ScanResult, owner, repo, token string
 	)
 	//TODO Proxy
 	httpClient := oauth2.NewClient(context.Background(), src)
-	r.GitHubManifests = models.DependencyGraphManifests{}
 
 	return fetchDependencyGraph(r, httpClient, owner, repo, "", "")
 }
@@ -268,9 +263,10 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 
 	dependenciesAfter = ""
 	for _, m := range graph.Data.Repository.DependencyGraphManifests.Edges {
-		manifest, ok := r.GitHubManifests[m.Node.Filename]
+		manifest, ok := r.GitHubManifests[m.Node.BlobPath]
 		if !ok {
 			manifest = models.DependencyGraphManifest{
+				BlobPath:     m.Node.BlobPath,
 				Filename:     m.Node.Filename,
 				Repository:   m.Node.Repository.URL,
 				Dependencies: []models.Dependency{},
@@ -284,7 +280,7 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 				Requirements:   d.Node.Requirements,
 			})
 		}
-		r.GitHubManifests[m.Node.Filename] = manifest
+		r.GitHubManifests[m.Node.BlobPath] = manifest
 
 		if m.Node.Dependencies.PageInfo.HasNextPage {
 			dependenciesAfter = fmt.Sprintf(`(after: \"%s\")`, m.Node.Dependencies.PageInfo.EndCursor)

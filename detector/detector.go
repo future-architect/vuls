@@ -291,6 +291,8 @@ func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]config.GitHub
 	if len(githubConfs) == 0 {
 		return nil
 	}
+
+	r.GitHubManifests = models.DependencyGraphManifests{}
 	for ownerRepo, setting := range githubConfs {
 		ss := strings.Split(ownerRepo, "/")
 		if len(ss) != 2 {
