@@ -233,7 +233,7 @@ func detect(cves map[string]gostmodels.UbuntuCVE, fixed bool, srcPkg models.SrcP
 	var contents []cveContent
 	for _, cve := range cves {
 		c := cveContent{
-			cveContent: *convertToModel(&cve),
+			cveContent: *(Ubuntu{}).ConvertToModel(&cve),
 		}
 
 		if fixed {
@@ -296,7 +296,8 @@ func detect(cves map[string]gostmodels.UbuntuCVE, fixed bool, srcPkg models.SrcP
 	return contents
 }
 
-func convertToModel(cve *gostmodels.UbuntuCVE) *models.CveContent {
+// ConvertToModel converts gost model to vuls model
+func (ubu Ubuntu) ConvertToModel(cve *gostmodels.UbuntuCVE) *models.CveContent {
 	references := []models.Reference{}
 	for _, r := range cve.References {
 		if strings.Contains(r.Reference, "https://cve.mitre.org/cgi-bin/cvename.cgi?name=") {
