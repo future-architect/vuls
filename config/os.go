@@ -287,6 +287,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"3.14": {StandardSupportUntil: time.Date(2023, 5, 1, 23, 59, 59, 0, time.UTC)},
 			"3.15": {StandardSupportUntil: time.Date(2023, 11, 1, 23, 59, 59, 0, time.UTC)},
 			"3.16": {StandardSupportUntil: time.Date(2024, 5, 23, 23, 59, 59, 0, time.UTC)},
+			"3.17": {StandardSupportUntil: time.Date(2024, 11, 22, 23, 59, 59, 0, time.UTC)},
 		}[majorDotMinor(release)]
 	case constant.FreeBSD:
 		// https://www.freebsd.org/security/
@@ -296,17 +297,19 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"9":  {Ended: true},
 			"10": {Ended: true},
 			"11": {StandardSupportUntil: time.Date(2021, 9, 30, 23, 59, 59, 0, time.UTC)},
-			"12": {StandardSupportUntil: time.Date(2024, 6, 30, 23, 59, 59, 0, time.UTC)},
+			"12": {StandardSupportUntil: time.Date(2023, 12, 31, 23, 59, 59, 0, time.UTC)},
 			"13": {StandardSupportUntil: time.Date(2026, 1, 31, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
 	case constant.Fedora:
 		// https://docs.fedoraproject.org/en-US/releases/eol/
 		// https://endoflife.date/fedora
 		eol, found = map[string]EOL{
-			"32": {StandardSupportUntil: time.Date(2021, 5, 25, 23, 59, 59, 0, time.UTC)},
-			"33": {StandardSupportUntil: time.Date(2021, 11, 30, 23, 59, 59, 0, time.UTC)},
-			"34": {StandardSupportUntil: time.Date(2022, 5, 17, 23, 59, 59, 0, time.UTC)},
-			"35": {StandardSupportUntil: time.Date(2022, 12, 7, 23, 59, 59, 0, time.UTC)},
+			"32": {StandardSupportUntil: time.Date(2021, 5, 24, 23, 59, 59, 0, time.UTC)},
+			"33": {StandardSupportUntil: time.Date(2021, 11, 29, 23, 59, 59, 0, time.UTC)},
+			"34": {StandardSupportUntil: time.Date(2022, 6, 6, 23, 59, 59, 0, time.UTC)},
+			"35": {StandardSupportUntil: time.Date(2022, 12, 12, 23, 59, 59, 0, time.UTC)},
+			"36": {StandardSupportUntil: time.Date(2023, 5, 16, 23, 59, 59, 0, time.UTC)},
+			"37": {StandardSupportUntil: time.Date(2023, 12, 15, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
 	}
 	return
