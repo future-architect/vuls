@@ -20,6 +20,7 @@ type ChatWorkWriter struct {
 	Proxy string
 }
 
+// Write results to ChatWork
 func (w ChatWorkWriter) Write(rs ...models.ScanResult) (err error) {
 
 	for _, r := range rs {

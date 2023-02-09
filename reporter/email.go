@@ -23,6 +23,7 @@ type EMailWriter struct {
 	Cnf               config.SMTPConf
 }
 
+// Write results to Email
 func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 	var message string
 	sender := NewEMailSender(w.Cnf)

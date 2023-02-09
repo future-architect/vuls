@@ -298,6 +298,7 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 	return nil
 }
 
+// DependencyGraph is a GitHub API response
 type DependencyGraph struct {
 	Data struct {
 		Repository struct {

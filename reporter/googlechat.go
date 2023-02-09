@@ -21,6 +21,7 @@ type GoogleChatWriter struct {
 	Proxy string
 }
 
+// Write results to Google Chat
 func (w GoogleChatWriter) Write(rs ...models.ScanResult) (err error) {
 	re := regexp.MustCompile(w.Cnf.ServerNameRegexp)
 

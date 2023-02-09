@@ -310,6 +310,7 @@ type GitHubSecurityAlert struct {
 	DismissReason string               `json:"dismissReason"`
 }
 
+// RepoURLPackageName returns a string connecting the repository and package name
 func (a GitHubSecurityAlert) RepoURLPackageName() string {
 	return fmt.Sprintf("%s %s", a.Repository, a.Package.Name)
 }
@@ -319,6 +320,7 @@ func (a GitHubSecurityAlert) RepoURLManifestPath() string {
 	return fmt.Sprintf("%s/%s", a.Repository, a.Package.ManifestPath)
 }
 
+// GSAVulnerablePackage has vulnerable package information
 type GSAVulnerablePackage struct {
 	Name             string `json:"name"`
 	Ecosystem        string `json:"ecosystem"`

@@ -23,6 +23,7 @@ func (w StdoutWriter) WriteScanSummary(rs ...models.ScanResult) {
 	fmt.Printf("%s\n", formatScanSummary(rs...))
 }
 
+// Write results to stdout
 func (w StdoutWriter) Write(rs ...models.ScanResult) error {
 	if w.FormatOneLineText {
 		fmt.Print("\n\n")

@@ -21,6 +21,7 @@ type TelegramWriter struct {
 	Proxy string
 }
 
+// Write results to Telegram
 func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 	for _, r := range rs {
 		msgs := []string{fmt.Sprintf("*%s*\n%s\n%s\n%s",
