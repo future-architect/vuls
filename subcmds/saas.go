@@ -8,7 +8,6 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
-	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/saas"
 	"github.com/google/subcommands"
@@ -81,25 +80,12 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitUsageError
 	}
 
-	var loaded models.ScanResults
-	if loaded, err = reporter.LoadScanResults(dir); err != nil {
+	res, err := reporter.LoadScanResults(dir)
+	if err != nil {
 		logging.Log.Error(err)
 		return subcommands.ExitFailure
 	}
 	logging.Log.Infof("Loaded: %s", dir)
-
-	var res models.ScanResults
-	hasError := false
-	for _, r := range loaded {
-		if len(r.Errors) == 0 {
-			res = append(res, r)
-		} else {
-			logging.Log.Errorf("Ignored since errors occurred during scanning: %s, err: %v",
-				r.ServerName, r.Errors)
-			hasError = true
-		}
-	}
-
 	if len(res) == 0 {
 		return subcommands.ExitFailure
 	}
@@ -118,10 +104,6 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	var w reporter.ResultWriter = saas.Writer{}
 	if err := w.Write(res...); err != nil {
 		logging.Log.Errorf("Failed to upload. err: %+v", err)
-		return subcommands.ExitFailure
-	}
-
-	if hasError {
 		return subcommands.ExitFailure
 	}
 

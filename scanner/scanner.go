@@ -3,6 +3,7 @@ package scanner
 import (
 	"fmt"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
 	ex "os/exec"
@@ -15,8 +16,10 @@ import (
 	"github.com/future-architect/vuls/cache"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/errof"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/util"
 )
 
@@ -85,14 +88,10 @@ type Scanner struct {
 // Scan execute scan
 func (s Scanner) Scan() error {
 	logging.Log.Info("Detecting Server/Container OS... ")
-	if err := s.initServers(); err != nil {
-		return xerrors.Errorf("Failed to init servers. err: %w", err)
-	}
+	s.initServers()
 
 	logging.Log.Info("Checking Scan Modes... ")
-	if err := s.checkScanModes(); err != nil {
-		return xerrors.Errorf("Fix config.toml. err: %w", err)
-	}
+	s.checkScanModes()
 
 	logging.Log.Info("Detecting Platforms... ")
 	s.detectPlatform()
@@ -111,14 +110,10 @@ func (s Scanner) Scan() error {
 // Configtest checks if the server is scannable.
 func (s Scanner) Configtest() error {
 	logging.Log.Info("Detecting Server/Container OS... ")
-	if err := s.initServers(); err != nil {
-		return xerrors.Errorf("Failed to init servers. err: %w", err)
-	}
+	s.initServers()
 
 	logging.Log.Info("Checking Scan Modes...")
-	if err := s.checkScanModes(); err != nil {
-		return xerrors.Errorf("Fix config.toml. err: %w", err)
-	}
+	s.checkScanModes()
 
 	logging.Log.Info("Checking dependencies...")
 	s.checkDependencies()
@@ -128,22 +123,23 @@ func (s Scanner) Configtest() error {
 
 	logging.Log.Info("It can be scanned with fast scan mode even if warn or err messages are displayed due to lack of dependent packages or sudo settings in fast-root or deep scan mode")
 
-	if len(servers) == 0 {
-		return xerrors.Errorf("No scannable servers")
-	}
-
-	logging.Log.Info("Scannable servers are below...")
-	for _, s := range servers {
+	rs := map[string][]error{}
+	for _, s := range append(servers, errServers...) {
+		n := s.getServerInfo().ServerName
 		if s.getServerInfo().IsContainer() {
-			fmt.Printf("%s@%s ",
-				s.getServerInfo().Container.Name,
-				s.getServerInfo().ServerName,
-			)
-		} else {
-			fmt.Printf("%s ", s.getServerInfo().ServerName)
+			n = fmt.Sprintf("%s@%s", s.getServerInfo().Container.Name, s.getServerInfo().ServerName)
 		}
+		rs[n] = s.getErrs()
 	}
-	fmt.Printf("\n")
+	reporter.StdoutWriter{}.WriteConfigtestSummary(rs)
+
+	errServerNames := make([]string, 0, len(errServers))
+	for _, s := range errServers {
+		errServerNames = append(errServerNames, s.getServerInfo().ServerName)
+	}
+	if len(errServerNames) > 0 {
+		return xerrors.Errorf("Failed to configtest. err: an error occurred on %q", errServerNames)
+	}
 	return nil
 }
 
@@ -247,10 +243,11 @@ func ParseInstalledPkgs(distro config.Distro, kernel models.Kernel, pkgList stri
 }
 
 // initServers detect the kind of OS distribution of target servers
-func (s Scanner) initServers() error {
+func (s Scanner) initServers() {
 	hosts, errHosts := s.detectServerOSes()
 	if len(hosts) == 0 {
-		return xerrors.New("No scannable host OS")
+		errServers = errHosts
+		return
 	}
 
 	// to generate random color for logging
@@ -272,11 +269,6 @@ func (s Scanner) initServers() error {
 	}
 	servers = append(servers, containers...)
 	errServers = append(errHosts, errContainers...)
-
-	if len(servers) == 0 {
-		return xerrors.New("No scannable servers")
-	}
-	return nil
 }
 
 func (s Scanner) detectServerOSes() (servers, errServers []osTypeInterface) {
@@ -349,7 +341,7 @@ func validateSSHConfig(c *config.ServerInfo) error {
 
 	sshConfigCmd := buildSSHConfigCmd(sshBinaryPath, c)
 	logging.Log.Debugf("Executing... %s", strings.Replace(sshConfigCmd, "\n", "", -1))
-	configResult := localExec(*c, sshConfigCmd, noSudo)
+	configResult := localExec(config.ServerInfo{}, sshConfigCmd, noSudo)
 	if !configResult.isSuccess() {
 		return xerrors.Errorf("Failed to print SSH configuration. err: %w", configResult.Error)
 	}
@@ -359,7 +351,15 @@ func validateSSHConfig(c *config.ServerInfo) error {
 	c.Port = sshConfig.port
 	logging.Log.Debugf("Setting SSH Port:%s for Server:%s ...", sshConfig.port, c.GetServerName())
 	if c.User == "" || c.Port == "" {
-		return xerrors.New("Failed to find User or Port setting. Please check the User or Port settings for SSH")
+		return errof.New(errof.ErrSSHConfig, "Failed to find User or Port setting. Please check the User or Port settings for SSH")
+	}
+
+	conn, err := net.Dial("tcp", net.JoinHostPort(sshConfig.hostname, c.Port))
+	if err != nil {
+		return errof.New(errof.ErrIPUnreachable, err.Error())
+	}
+	if err := conn.Close(); err != nil {
+		return xerrors.Errorf("Failed to close connection(to %s). err: %w", net.JoinHostPort(sshConfig.hostname, c.Port), err)
 	}
 
 	if sshConfig.strictHostKeyChecking == "false" {
@@ -378,7 +378,7 @@ func validateSSHConfig(c *config.ServerInfo) error {
 		}
 	}
 	if len(knownHostsPaths) == 0 {
-		return xerrors.New("Failed to find any known_hosts to use. Please check the UserKnownHostsFile and GlobalKnownHostsFile settings for SSH")
+		return errof.New(errof.ErrSSHConfig, "Failed to find any known_hosts to use. Please check the UserKnownHostsFile and GlobalKnownHostsFile settings for SSH")
 	}
 
 	sshKeyscanBinaryPath, err := ex.LookPath("ssh-keyscan")
@@ -386,7 +386,7 @@ func validateSSHConfig(c *config.ServerInfo) error {
 		return xerrors.Errorf("Failed to lookup ssh-keyscan binary path. err: %w", err)
 	}
 	sshScanCmd := strings.Join([]string{sshKeyscanBinaryPath, "-p", c.Port, sshConfig.hostname}, " ")
-	r := localExec(*c, sshScanCmd, noSudo)
+	r := localExec(config.ServerInfo{}, sshScanCmd, noSudo)
 	if !r.isSuccess() {
 		return xerrors.Errorf("Failed to ssh-keyscan. cmd: %s, err: %w", sshScanCmd, r.Error)
 	}
@@ -409,23 +409,23 @@ func validateSSHConfig(c *config.ServerInfo) error {
 		}
 		cmd := fmt.Sprintf("%s -F %s -f %s", sshKeygenBinaryPath, hostname, knownHosts)
 		logging.Log.Debugf("Executing... %s", strings.Replace(cmd, "\n", "", -1))
-		if r := localExec(*c, cmd, noSudo); r.isSuccess() {
+		if r := localExec(config.ServerInfo{}, cmd, noSudo); r.isSuccess() {
 			keyType, clientKey, err := parseSSHKeygen(r.Stdout)
 			if err != nil {
-				return xerrors.Errorf("Failed to parse ssh-keygen result. stdout: %s, err: %w", r.Stdout, r.Error)
+				return xerrors.Errorf("Failed to parse ssh-keygen result. stdout: %s, err: %w", r.Stdout, err)
 			}
 			if serverKey, ok := serverKeys[keyType]; ok && serverKey == clientKey {
 				return nil
 			}
-			return xerrors.Errorf("Failed to find the server key that matches the key registered in the client. The server key may have been changed. Please exec `$ %s` and `$ %s` or `$ %s`",
+			return errof.New(errof.ErrSSHConfig, fmt.Sprintf("Failed to find the server key that matches the key registered in the client. The server key may have been changed. Please exec `$ %s` and `$ %s` or `$ %s`",
 				fmt.Sprintf("%s -R %s -f %s", sshKeygenBinaryPath, hostname, knownHosts),
 				strings.Join(buildSSHBaseCmd(sshBinaryPath, c, nil), " "),
-				buildSSHKeyScanCmd(sshKeyscanBinaryPath, c.Port, knownHostsPaths[0], sshConfig))
+				buildSSHKeyScanCmd(sshKeyscanBinaryPath, c.Port, knownHostsPaths[0], sshConfig)))
 		}
 	}
-	return xerrors.Errorf("Failed to find the host in known_hosts. Please exec `$ %s` or `$ %s`",
+	return errof.New(errof.ErrSSHConfig, fmt.Sprintf("Failed to find the host in known_hosts. Please exec `$ %s` or `$ %s`",
 		strings.Join(buildSSHBaseCmd(sshBinaryPath, c, nil), " "),
-		buildSSHKeyScanCmd(sshKeyscanBinaryPath, c.Port, knownHostsPaths[0], sshConfig))
+		buildSSHKeyScanCmd(sshKeyscanBinaryPath, c.Port, knownHostsPaths[0], sshConfig)))
 }
 
 func buildSSHBaseCmd(sshBinaryPath string, c *config.ServerInfo, options []string) []string {
@@ -540,7 +540,7 @@ func parseSSHKeygen(stdout string) (string, string, error) {
 			}
 		}
 	}
-	return "", "", xerrors.New("Failed to parse ssh-keygen result. err: public key not found")
+	return "", "", errof.New(errof.ErrSSHConfig, "Failed to parse ssh-keygen result. err: public key not found")
 }
 
 func (s Scanner) detectContainerOSes(hosts []osTypeInterface) (actives, inactives []osTypeInterface) {
@@ -727,14 +727,11 @@ func (s Scanner) detectDebianWithRetry(c config.ServerInfo) (itsMe bool, deb osT
 }
 
 // checkScanModes checks scan mode
-func (s Scanner) checkScanModes() error {
-	for _, s := range servers {
-		if err := s.checkScanMode(); err != nil {
-			return xerrors.Errorf("servers.%s.scanMode err: %w",
-				s.getServerInfo().GetServerName(), err)
-		}
-	}
-	return nil
+func (s Scanner) checkScanModes() {
+	parallelExec(func(o osTypeInterface) error {
+		return o.checkScanMode()
+	}, s.TimeoutSec)
+	return
 }
 
 // checkDependencies checks dependencies are installed on target servers.
@@ -802,10 +799,6 @@ func (s Scanner) detectIPS() {
 
 // execScan scan
 func (s Scanner) execScan() error {
-	if len(servers) == 0 {
-		return xerrors.New("No server defined. Check the configuration")
-	}
-
 	if err := s.setupChangelogCache(); err != nil {
 		return err
 	}
@@ -832,7 +825,20 @@ func (s Scanner) execScan() error {
 		}
 	}
 
-	return writeScanResults(dir, results)
+	if err := writeScanResults(dir, results); err != nil {
+		return err
+	}
+
+	var errServerNames []string
+	for _, r := range results {
+		if 0 < len(r.Errors) {
+			errServerNames = append(errServerNames, r.ServerName)
+		}
+	}
+	if 0 < len(errServerNames) {
+		return fmt.Errorf("An error occurred on %q", errServerNames)
+	}
+	return nil
 }
 
 func (s Scanner) setupChangelogCache() error {

@@ -80,14 +80,5 @@ func writeScanResults(jsonDir string, results models.ScanResults) error {
 
 	reporter.StdoutWriter{}.WriteScanSummary(results...)
 
-	errServerNames := []string{}
-	for _, r := range results {
-		if 0 < len(r.Errors) {
-			errServerNames = append(errServerNames, r.ServerName)
-		}
-	}
-	if 0 < len(errServerNames) {
-		return fmt.Errorf("An error occurred on %s", errServerNames)
-	}
 	return nil
 }

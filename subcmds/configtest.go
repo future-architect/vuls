@@ -115,15 +115,14 @@ func (p *ConfigtestCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interfa
 		return subcommands.ExitUsageError
 	}
 
-	s := scanner.Scanner{
-		TimeoutSec: p.timeoutSec,
-		Targets:    targets,
-	}
-
-	if err := s.Configtest(); err != nil {
+	sc := scanner.Scanner{TimeoutSec: p.timeoutSec, Targets: targets}
+	if err := sc.Configtest(); err != nil {
 		logging.Log.Errorf("Failed to configtest: %+v", err)
 		return subcommands.ExitFailure
 	}
+
+	fmt.Printf("\n\n\n")
+	fmt.Println("To scan the server, run vuls scan.")
 
 	return subcommands.ExitSuccess
 }

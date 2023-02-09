@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -15,14 +16,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/cti"
-	"github.com/future-architect/vuls/logging"
-	"github.com/future-architect/vuls/models"
 	"github.com/gosuri/uitable"
 	"github.com/olekukonko/tablewriter"
+	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 	"golang.org/x/xerrors"
+
+	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/cti"
+	"github.com/future-architect/vuls/errof"
+	"github.com/future-architect/vuls/logging"
+	"github.com/future-architect/vuls/models"
 )
 
 const (
@@ -152,42 +157,93 @@ func JSONDir(resultsDir string, args []string) (path string, err error) {
 	return dirs[0], nil
 }
 
-func formatScanSummary(rs ...models.ScanResult) string {
+func formatConfigtestSummary(rs map[string][]error) string {
 	table := uitable.New()
 	table.MaxColWidth = maxColWidth
 	table.Wrap = true
+	for _, n := range sortServernames(maps.Keys(rs)) {
+		col := []interface{}{n}
+		es := rs[n]
+		if len(es) == 0 {
+			col = append(col, "Pass")
+		} else {
+			errWithCode, ok := errors.Cause(es[0]).(errof.Error)
+			if !ok {
+				col = append(col, errof.ErrUncategorized, es[0].Error())
+			} else {
+				col = append(col, errWithCode.Code, es[0].Error())
+			}
+		}
+		table.AddRow(col...)
+	}
+	return fmt.Sprintf("%s\n\n", table)
+}
 
+func formatScanSummary(rs ...models.ScanResult) string {
+	cols := map[string][]interface{}{}
 	warnMsgs := []string{}
 	for _, r := range rs {
-		var cols []interface{}
 		if len(r.Errors) == 0 {
-			cols = []interface{}{
+			cols[r.FormatServerName()] = []interface{}{
 				r.FormatServerName(),
 				fmt.Sprintf("%s%s", r.Family, r.Release),
 				r.FormatUpdatablePkgsSummary(),
 			}
 			if 0 < len(r.WordPressPackages) {
-				cols = append(cols, fmt.Sprintf("%d WordPress pkgs", len(r.WordPressPackages)))
+				cols[r.FormatServerName()] = append(cols[r.FormatServerName()], fmt.Sprintf("%d WordPress pkgs", len(r.WordPressPackages)))
 			}
 			if 0 < len(r.LibraryScanners) {
-				cols = append(cols, fmt.Sprintf("%d libs", r.LibraryScanners.Total()))
+				cols[r.FormatServerName()] = append(cols[r.FormatServerName()], fmt.Sprintf("%d libs", r.LibraryScanners.Total()))
 			}
 		} else {
-			cols = []interface{}{
+			cols[r.FormatServerName()] = []interface{}{
 				r.FormatServerName(),
-				"Error",
+				r.Errors[0].Code,
 				"",
 				"Use configtest subcommand or scan with --debug to view the details",
 			}
 		}
-		table.AddRow(cols...)
-
-		if len(r.Warnings) != 0 {
-			warnMsgs = append(warnMsgs, fmt.Sprintf("Warning: %s", r.Warnings))
-		}
 	}
-	return fmt.Sprintf("%s\n\n%s", table, strings.Join(
-		warnMsgs, "\n\n"))
+
+	table := uitable.New()
+	table.MaxColWidth = maxColWidth
+	table.Wrap = true
+	for _, n := range sortServernames(maps.Keys(cols)) {
+		table.AddRow(cols[n]...)
+	}
+	return fmt.Sprintf("%s\n\n%s", table, strings.Join(warnMsgs, "\n\n"))
+}
+
+var cidrsrvPattern = regexp.MustCompile(`.*\((.*)\)$`)
+
+func sortServernames(names []string) []string {
+	srvs := make([]string, 0, len(names))
+	cidrsrvs := map[string]string{}
+	ips := []net.IP{}
+	for _, n := range names {
+		matches := cidrsrvPattern.FindStringSubmatch(n)
+		if len(matches) == 0 {
+			srvs = append(srvs, n)
+			continue
+		}
+		parsed := net.ParseIP(matches[1])
+		if parsed == nil {
+			srvs = append(srvs, n)
+			continue
+		}
+		cidrsrvs[parsed.String()] = n
+		ips = append(ips, parsed)
+	}
+	slices.SortFunc(ips, func(i, j net.IP) bool {
+		return bytes.Compare(i, j) < 0
+	})
+
+	slices.Sort(srvs)
+	for _, ip := range ips {
+		srvs = append(srvs, cidrsrvs[ip.String()])
+	}
+
+	return srvs
 }
 
 func formatOneLineSummary(rs ...models.ScanResult) string {
