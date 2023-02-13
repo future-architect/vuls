@@ -181,7 +181,7 @@ func (deb Debian) isKernelSourcePackage(pkgname string) bool {
 	case 1:
 		return pkgname == "linux"
 	case 2:
-		if ss[0] != "liunx" {
+		if ss[0] != "linux" {
 			return false
 		}
 		switch ss[1] {
