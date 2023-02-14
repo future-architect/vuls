@@ -183,11 +183,7 @@ func getMinusDiffCves(previous, current models.ScanResult) models.VulnInfos {
 }
 
 func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
-	cTypes := []models.CveContentType{
-		models.Nvd,
-		models.Jvn,
-		models.NewCveContentType(current.Family),
-	}
+	cTypes := append([]models.CveContentType{models.Nvd, models.Jvn}, models.GetCveContentTypes(current.Family)...)
 
 	prevLastModified := map[models.CveContentType][]time.Time{}
 	preVinfo, ok := previous.ScannedCves[cveID]

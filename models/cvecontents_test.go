@@ -3,6 +3,8 @@ package models
 import (
 	"reflect"
 	"testing"
+
+	"github.com/future-architect/vuls/constant"
 )
 
 func TestExcept(t *testing.T) {
@@ -245,6 +247,64 @@ func TestCveContents_Sort(t *testing.T) {
 			tt.v.Sort()
 			if !reflect.DeepEqual(tt.v, tt.want) {
 				t.Errorf("\n[%s] expected: %v\n  actual: %v\n", tt.name, tt.want, tt.v)
+			}
+		})
+	}
+}
+
+func TestNewCveContentType(t *testing.T) {
+	tests := []struct {
+		name string
+		want CveContentType
+	}{
+		{
+			name: "redhat",
+			want: RedHat,
+		},
+		{
+			name: "centos",
+			want: RedHat,
+		},
+		{
+			name: "unknown",
+			want: Unknown,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := NewCveContentType(tt.name); got != tt.want {
+				t.Errorf("NewCveContentType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetCveContentTypes(t *testing.T) {
+	tests := []struct {
+		family string
+		want   []CveContentType
+	}{
+		{
+			family: constant.RedHat,
+			want:   []CveContentType{RedHat, RedHatAPI},
+		},
+		{
+			family: constant.Debian,
+			want:   []CveContentType{Debian, DebianSecurityTracker},
+		},
+		{
+			family: constant.Ubuntu,
+			want:   []CveContentType{Ubuntu, UbuntuAPI},
+		},
+		{
+			family: constant.FreeBSD,
+			want:   nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.family, func(t *testing.T) {
+			if got := GetCveContentTypes(tt.family); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetCveContentTypes() = %v, want %v", got, tt.want)
 			}
 		})
 	}
