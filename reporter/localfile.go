@@ -28,6 +28,7 @@ type LocalFileWriter struct {
 	Gzip                bool
 }
 
+// Write results to Local File
 func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 	if w.FormatOneLineText {
 		path := filepath.Join(w.CurrentDir, "summary.txt")

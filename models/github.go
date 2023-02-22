@@ -11,6 +11,7 @@ import (
 // key: BlobPath
 type DependencyGraphManifests map[string]DependencyGraphManifest
 
+// DependencyGraphManifest has filename, repository, dependencies
 type DependencyGraphManifest struct {
 	BlobPath     string       `json:"blobPath"`
 	Filename     string       `json:"filename"`
@@ -76,6 +77,7 @@ func (m DependencyGraphManifest) Ecosystem() string {
 	}
 }
 
+// Dependency has dependency package information
 type Dependency struct {
 	PackageName    string `json:"packageName"`
 	PackageManager string `json:"packageManager"`
@@ -83,6 +85,7 @@ type Dependency struct {
 	Requirements   string `json:"requirements"`
 }
 
+// Version returns version
 func (d Dependency) Version() string {
 	s := strings.Split(d.Requirements, " ")
 	if len(s) == 2 && s[0] == "=" {

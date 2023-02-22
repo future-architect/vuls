@@ -16,6 +16,7 @@ type SyslogWriter struct {
 	Cnf config.SyslogConf
 }
 
+// Write results to syslog
 func (w SyslogWriter) Write(rs ...models.ScanResult) (err error) {
 	facility, _ := w.Cnf.GetFacility()
 	severity, _ := w.Cnf.GetSeverity()

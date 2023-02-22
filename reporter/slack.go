@@ -33,6 +33,7 @@ type message struct {
 	Attachments []slack.Attachment `json:"attachments"`
 }
 
+// Write results to Slack
 func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 
 	for _, r := range rs {

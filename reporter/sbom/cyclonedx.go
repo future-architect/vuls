@@ -17,6 +17,7 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
+// GenerateCycloneDX generates a string in CycloneDX format
 func GenerateCycloneDX(format cdx.BOMFileFormat, r models.ScanResult) ([]byte, error) {
 	bom := cdx.NewBOM()
 	bom.SerialNumber = uuid.New().URN()
