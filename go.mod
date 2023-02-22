@@ -38,13 +38,13 @@ require (
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.6.1
-	github.com/vulsio/go-cti v0.0.2-0.20220613013115-8c7e57a6aa86
-	github.com/vulsio/go-cve-dictionary v0.8.2
+	github.com/vulsio/go-cti v0.0.2
+	github.com/vulsio/go-cve-dictionary v0.8.3
 	github.com/vulsio/go-exploitdb v0.4.4
-	github.com/vulsio/go-kev v0.1.1-0.20220118062020-5f69b364106f
-	github.com/vulsio/go-msfdb v0.2.1-0.20211028071756-4a9759bd9f14
+	github.com/vulsio/go-kev v0.1.1
+	github.com/vulsio/go-msfdb v0.2.1
 	github.com/vulsio/gost v0.4.2-0.20230203045609-dcfab39a9ff4
-	github.com/vulsio/goval-dictionary v0.8.0
+	github.com/vulsio/goval-dictionary v0.8.2
 	go.etcd.io/bbolt v1.3.6
 	golang.org/x/exp v0.0.0-20230213192124-5e25df0256eb
 	golang.org/x/oauth2 v0.1.0
@@ -65,9 +65,9 @@ require (
 	github.com/Azure/go-autorest/autorest/to v0.3.0 // indirect
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
-	github.com/PuerkitoBio/goquery v1.6.1 // indirect
+	github.com/PuerkitoBio/goquery v1.8.1 // indirect
 	github.com/VividCortex/ewma v1.2.0 // indirect
-	github.com/andybalholm/cascadia v1.2.0 // indirect
+	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/aquasecurity/go-gem-version v0.0.0-20201115065557-8eed6fe000ce // indirect
 	github.com/aquasecurity/go-npm-version v0.0.0-20201110091526-0b796d180798 // indirect
 	github.com/aquasecurity/go-pep440-version v0.0.0-20210121094942-22b2f8951d46 // indirect
@@ -150,7 +150,7 @@ require (
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
-	github.com/ulikunitz/xz v0.5.10 // indirect
+	github.com/ulikunitz/xz v0.5.11 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
@@ -163,6 +163,7 @@ require (
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
+	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
 	google.golang.org/api v0.107.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
