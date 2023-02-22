@@ -819,6 +819,8 @@ type Exploit struct {
 	DocumentURL  *string                   `json:"documentURL,omitempty"`
 	ShellCodeURL *string                   `json:"shellCodeURL,omitempty"`
 	BinaryURL    *string                   `json:"binaryURL,omitempty"`
+	PaperURL     *string                   `json:"paperURL,omitempty"`
+	GHDBURL      *string                   `json:"ghdbURL,omitempty"`
 }
 
 // Metasploit :
