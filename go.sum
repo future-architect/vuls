@@ -609,6 +609,8 @@ github.com/vulsio/gost v0.4.2-0.20230203045609-dcfab39a9ff4 h1:aitlGPmn5WPb9aR6M
 github.com/vulsio/gost v0.4.2-0.20230203045609-dcfab39a9ff4/go.mod h1:6xRvzXkpm8nJ/jMmL/TJZvabfVZyy2aB1nr4wtmJ1KI=
 github.com/vulsio/goval-dictionary v0.8.0 h1:hwxIwSEo7C3yPGOcrzr5jyKhBnxEidtUVNPIlbrBg+8=
 github.com/vulsio/goval-dictionary v0.8.0/go.mod h1:6gfsQfQN0jkO3ZNJlHP5r+2iyx375CBiMBdCcL8MmwM=
+github.com/vulsio/goval-dictionary v0.8.2 h1:6aI10z/RFZjADzP4fvf7I1zGqbY3EfAsF0I1VOh/ep0=
+github.com/vulsio/goval-dictionary v0.8.2/go.mod h1:yRO+Xuce12lSQiV6gdMb86uc8V5Vncgzc6U84WvB/5k=
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=
 github.com/xanzy/ssh-agent v0.3.3/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=
 github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb h1:zGWFAtiMcyryUHoUjUJX0/lt1H2+i2Ka2n+D3DImSNo=
