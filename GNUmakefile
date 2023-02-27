@@ -37,7 +37,7 @@ build-scanner: ./cmd/scanner/main.go
 install-scanner: ./cmd/scanner/main.go 
 	$(CGO_UNABLED) install -tags=scanner -ldflags "$(LDFLAGS)" ./cmd/scanner
 
-lint:
+lint
 	$(GO) install github.com/mgechev/revive@latest
 	revive -config ./.revive.toml -formatter plain $(PKGS)
 
@@ -84,9 +84,9 @@ build-future-vuls: ./contrib/future-vuls/cmd/main.go
 # integration-test
 BASE_DIR := '${PWD}/integration/results'
 # $(shell mkdir -p ${BASE_DIR})
-NOW=$(shell date --iso-8601=seconds)
+NOW=$(shell date -Iseconds)
 NOW_JSON_DIR := '${BASE_DIR}/$(NOW)'
-ONE_SEC_AFTER=$(shell date -d '+1 second' --iso-8601=seconds)
+ONE_SEC_AFTER=$(shell date -d '+1 second' -Iseconds)
 ONE_SEC_AFTER_JSON_DIR := '${BASE_DIR}/$(ONE_SEC_AFTER)'
 LIBS := 'bundler' 'pip' 'pipenv' 'poetry' 'composer' 'npm' 'yarn' 'pnpm' 'cargo' 'gomod' 'gosum' 'gobinary' 'jar' 'pom' 'gradle' 'nuget-lock' 'nuget-config' 'dotnet-deps' 'conan' 'nvd_exact' 'nvd_rough' 'nvd_vendor_product' 'nvd_match_no_jvn' 'jvn_vendor_product' 'jvn_vendor_product_nover'
 
