@@ -91,9 +91,8 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	var res models.ScanResults
 	hasError := false
 	for _, r := range loaded {
-		if len(r.Errors) == 0 {
-			res = append(res, r)
-		} else {
+		res = append(res, r)
+		if len(r.Errors) != 0 {
 			logging.Log.Errorf("Ignored since errors occurred during scanning: %s, err: %v",
 				r.ServerName, r.Errors)
 			hasError = true
