@@ -225,7 +225,7 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 	"query { repository(owner:\"%s\", name:\"%s\") { url dependencyGraphManifests(first: %d, withDependencies: true%s) { pageInfo { endCursor hasNextPage } edges { node { blobPath filename repository { url } parseable exceedsMaxSize dependenciesCount dependencies%s { pageInfo { endCursor hasNextPage } edges { node { packageName packageManager repository { url } requirements hasDependencies } } } } } } } }"}`
 
 	queryStr := fmt.Sprintf(queryFmt, owner, repo, 100, after, dependenciesAfter)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		"https://api.github.com/graphql",
 		bytes.NewBuffer([]byte(queryStr)),
