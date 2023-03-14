@@ -81,6 +81,10 @@ build-trivy-to-vuls: ./contrib/trivy/cmd/main.go
 build-future-vuls: ./contrib/future-vuls/cmd/main.go
 	$(GO) build -a -ldflags "$(LDFLAGS)" -o future-vuls ./contrib/future-vuls/cmd
 
+# snmp2cpe
+build-snmp2cpe: ./contrib/snmp2cpe/cmd/main.go
+	$(GO) build -a -ldflags "$(LDFLAGS)" -o snmp2cpe ./contrib/snmp2cpe/cmd
+
 # integration-test
 BASE_DIR := '${PWD}/integration/results'
 # $(shell mkdir -p ${BASE_DIR})
