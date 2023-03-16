@@ -41,8 +41,12 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 	case constant.Amazon:
 		eol, found = map[string]EOL{
 			"1":    {StandardSupportUntil: time.Date(2023, 6, 30, 23, 59, 59, 0, time.UTC)},
-			"2":    {StandardSupportUntil: time.Date(2024, 6, 30, 23, 59, 59, 0, time.UTC)},
+			"2":    {StandardSupportUntil: time.Date(2025, 6, 30, 23, 59, 59, 0, time.UTC)},
 			"2022": {StandardSupportUntil: time.Date(2026, 6, 30, 23, 59, 59, 0, time.UTC)},
+			"2023": {StandardSupportUntil: time.Date(2027, 6, 30, 23, 59, 59, 0, time.UTC)},
+			"2025": {StandardSupportUntil: time.Date(2029, 6, 30, 23, 59, 59, 0, time.UTC)},
+			"2027": {StandardSupportUntil: time.Date(2031, 6, 30, 23, 59, 59, 0, time.UTC)},
+			"2029": {StandardSupportUntil: time.Date(2033, 6, 30, 23, 59, 59, 0, time.UTC)},
 		}[getAmazonLinuxVersion(release)]
 	case constant.RedHat:
 		// https://access.redhat.com/support/policy/updates/errata
@@ -328,9 +332,25 @@ func majorDotMinor(osVer string) (majorDotMinor string) {
 }
 
 func getAmazonLinuxVersion(osRelease string) string {
-	ss := strings.Fields(osRelease)
-	if len(ss) == 1 {
+	switch s := strings.Fields(osRelease)[0]; s {
+	case "1":
 		return "1"
+	case "2":
+		return "2"
+	case "2022":
+		return "2022"
+	case "2023":
+		return "2023"
+	case "2025":
+		return "2025"
+	case "2027":
+		return "2027"
+	case "2029":
+		return "2029"
+	default:
+		if _, err := time.Parse("2006.01", s); err == nil {
+			return "1"
+		}
+		return "unknown"
 	}
-	return ss[0]
 }

@@ -112,13 +112,25 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 	case constant.CentOS:
 		ovalRelease = strings.TrimPrefix(r.Release, "stream")
 	case constant.Amazon:
-		switch strings.Fields(r.Release)[0] {
-		case "2022":
-			ovalRelease = "2022"
+		switch s := strings.Fields(r.Release)[0]; s {
+		case "1":
+			ovalRelease = "1"
 		case "2":
 			ovalRelease = "2"
+		case "2022":
+			ovalRelease = "2022"
+		case "2023":
+			ovalRelease = "2023"
+		case "2025":
+			ovalRelease = "2025"
+		case "2027":
+			ovalRelease = "2027"
+		case "2029":
+			ovalRelease = "2029"
 		default:
-			ovalRelease = "1"
+			if _, err := time.Parse("2006.01", s); err == nil {
+				ovalRelease = "1"
+			}
 		}
 	}
 
@@ -274,13 +286,25 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relate
 	case constant.CentOS:
 		ovalRelease = strings.TrimPrefix(r.Release, "stream")
 	case constant.Amazon:
-		switch strings.Fields(r.Release)[0] {
-		case "2022":
-			ovalRelease = "2022"
+		switch s := strings.Fields(r.Release)[0]; s {
+		case "1":
+			ovalRelease = "1"
 		case "2":
 			ovalRelease = "2"
+		case "2022":
+			ovalRelease = "2022"
+		case "2023":
+			ovalRelease = "2023"
+		case "2025":
+			ovalRelease = "2025"
+		case "2027":
+			ovalRelease = "2027"
+		case "2029":
+			ovalRelease = "2029"
 		default:
-			ovalRelease = "1"
+			if _, err := time.Parse("2006.01", s); err == nil {
+				ovalRelease = "1"
+			}
 		}
 	}
 
