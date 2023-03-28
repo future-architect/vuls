@@ -75,14 +75,14 @@ func (w TelegramWriter) sendMessage(chatID, token, message string) error {
 		return err
 	}
 	resp, err := client.Do(req)
-	if checkResponse(resp) != nil && err != nil {
+	if w.checkResponse(resp) != nil && err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 	return nil
 }
 
-func checkResponse(r *http.Response) error {
+func (w TelegramWriter) checkResponse(r *http.Response) error {
 	if c := r.StatusCode; 200 <= c && c <= 299 {
 		return nil
 	}

@@ -73,11 +73,10 @@ func (w GoogleChatWriter) Write(rs ...models.ScanResult) (err error) {
 }
 
 func (w GoogleChatWriter) postMessage(message string) error {
-	uri := fmt.Sprintf("%s", w.Cnf.WebHookURL)
 	payload := `{"text": "` + message + `" }`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uri, bytes.NewBuffer([]byte(payload)))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, w.Cnf.WebHookURL, bytes.NewBuffer([]byte(payload)))
 	defer cancel()
 	if err != nil {
 		return err
@@ -88,7 +87,7 @@ func (w GoogleChatWriter) postMessage(message string) error {
 		return err
 	}
 	resp, err := client.Do(req)
-	if checkResponse(resp) != nil && err != nil {
+	if w.checkResponse(resp) != nil && err != nil {
 		return err
 	}
 	defer resp.Body.Close()
