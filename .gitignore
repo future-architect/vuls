@@ -20,3 +20,5 @@ vuls
 !cmd/vuls
 future-vuls
 trivy-to-vuls
+snmp2cpe
+!snmp2cpe/
