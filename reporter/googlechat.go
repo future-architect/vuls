@@ -26,7 +26,7 @@ func (w GoogleChatWriter) Write(rs ...models.ScanResult) (err error) {
 	re := regexp.MustCompile(w.Cnf.ServerNameRegexp)
 
 	for _, r := range rs {
-		if re.Match([]byte(r.FormatServerName())) {
+		if re.MatchString(r.FormatServerName()) {
 			continue
 		}
 		msgs := []string{fmt.Sprintf("*%s*\n%s\t%s\t%s",
