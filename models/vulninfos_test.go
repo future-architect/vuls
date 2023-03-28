@@ -1717,3 +1717,103 @@ func TestVulnInfos_FilterByConfidenceOver(t *testing.T) {
 		})
 	}
 }
+
+func TestVulnInfo_PatchStatus(t *testing.T) {
+	type fields struct {
+		Confidences       Confidences
+		AffectedPackages  PackageFixStatuses
+		CpeURIs           []string
+		WindowsKBFixedIns []string
+	}
+	type args struct {
+		packs Packages
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   string
+	}{
+		{
+			name: "cpe",
+			fields: fields{
+				CpeURIs: []string{"cpe:/a:microsoft:internet_explorer:10"},
+			},
+			want: "",
+		},
+		{
+			name: "package unfixed",
+			fields: fields{
+				AffectedPackages: PackageFixStatuses{
+					{
+						Name:        "bash",
+						NotFixedYet: true,
+					},
+				},
+			},
+			want: "unfixed",
+		},
+		{
+			name: "package unknown",
+			fields: fields{
+				AffectedPackages: PackageFixStatuses{
+					{
+						Name: "bash",
+					},
+				},
+			},
+			args: args{
+				packs: Packages{"bash": {
+					Name: "bash",
+				}},
+			},
+			want: "unknown",
+		},
+		{
+			name: "package fixed",
+			fields: fields{
+				AffectedPackages: PackageFixStatuses{
+					{
+						Name: "bash",
+					},
+				},
+			},
+			args: args{
+				packs: Packages{"bash": {
+					Name:       "bash",
+					Version:    "4.3-9.1",
+					NewVersion: "5.0-4",
+				}},
+			},
+			want: "fixed",
+		},
+		{
+			name: "windows unfixed",
+			fields: fields{
+				Confidences: Confidences{WindowsUpdateSearch},
+			},
+			want: "unfixed",
+		},
+		{
+			name: "windows fixed",
+			fields: fields{
+				Confidences:       Confidences{WindowsUpdateSearch},
+				WindowsKBFixedIns: []string{"000000"},
+			},
+			want: "fixed",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := VulnInfo{
+				Confidences:       tt.fields.Confidences,
+				AffectedPackages:  tt.fields.AffectedPackages,
+				CpeURIs:           tt.fields.CpeURIs,
+				WindowsKBFixedIns: tt.fields.WindowsKBFixedIns,
+			}
+			if got := v.PatchStatus(tt.args.packs); got != tt.want {
+				t.Errorf("VulnInfo.PatchStatus() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

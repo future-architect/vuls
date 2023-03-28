@@ -60,6 +60,7 @@ type base struct {
 	osPackages
 	LibraryScanners []models.LibraryScanner
 	WordPress       models.WordPressPackages
+	windowsKB       *models.WindowsKB
 
 	log   logging.Logger
 	errs  []error
@@ -506,6 +507,7 @@ func (l *base) convertToModel() models.ScanResult {
 		EnabledDnfModules: l.EnabledDnfModules,
 		WordPressPackages: l.WordPress,
 		LibraryScanners:   l.LibraryScanners,
+		WindowsKB:         l.windowsKB,
 		Optional:          l.ServerInfo.Optional,
 		Errors:            errs,
 		Warnings:          warns,

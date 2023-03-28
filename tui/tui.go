@@ -614,6 +614,7 @@ func summaryLines(r models.ScanResult) string {
 		pkgNames = append(pkgNames, vinfo.GitHubSecurityAlerts.Names()...)
 		pkgNames = append(pkgNames, vinfo.WpPackageFixStats.Names()...)
 		pkgNames = append(pkgNames, vinfo.LibraryFixedIns.Names()...)
+		pkgNames = append(pkgNames, vinfo.WindowsKBFixedIns...)
 
 		av := vinfo.AttackVector()
 		for _, pname := range vinfo.AffectedPackages.Names() {

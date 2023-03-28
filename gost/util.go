@@ -10,6 +10,7 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/parnurzeal/gorequest"
+	"golang.org/x/exp/maps"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/logging"
@@ -188,4 +189,12 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 
 func major(osVer string) (majorVersion string) {
 	return strings.Split(osVer, ".")[0]
+}
+
+func unique[T comparable](s []T) []T {
+	m := map[T]struct{}{}
+	for _, v := range s {
+		m[v] = struct{}{}
+	}
+	return maps.Keys(m)
 }

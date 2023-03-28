@@ -247,6 +247,10 @@ host                = "{{$ip}}"
 #scanTechniques = ["sS"]
 #sourcePort = "65535"
 
+#[servers.{{index $names $i}}.windows]
+#serverSelection = 3
+#cabPath = "/path/to/wsusscn2.cab"
+
 #[servers.{{index $names $i}}.optional]
 #key = "value1"
 

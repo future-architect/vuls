@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
@@ -104,6 +106,74 @@ func TestViaHTTP(t *testing.T) {
 				},
 			},
 		},
+		{
+			header: map[string]string{
+				"X-Vuls-OS-Family": "windows",
+			},
+			body: `
+Host Name:                 DESKTOP
+OS Name:                   Microsoft Windows 10 Pro
+OS Version:                10.0.19044 N/A Build 19044
+OS Manufacturer:           Microsoft Corporation
+OS Configuration:          Member Workstation
+OS Build Type:             Multiprocessor Free
+Registered Owner:          Windows User
+Registered Organization:
+Product ID:                00000-00000-00000-AA000
+Original Install Date:     2022/04/13, 12:25:41
+System Boot Time:          2022/06/06, 16:43:45
+System Manufacturer:       HP
+System Model:              HP EliteBook 830 G7 Notebook PC
+System Type:               x64-based PC
+Processor(s):              1 Processor(s) Installed.
+						   [01]: Intel64 Family 6 Model 142 Stepping 12 GenuineIntel ~1803 Mhz
+BIOS Version:              HP S70 Ver. 01.05.00, 2021/04/26
+Windows Directory:         C:\WINDOWS
+System Directory:          C:\WINDOWS\system32
+Boot Device:               \Device\HarddiskVolume2
+System Locale:             en-us;English (United States)
+Input Locale:              en-us;English (United States)
+Time Zone:                 (UTC-08:00) Pacific Time (US & Canada)
+Total Physical Memory:     15,709 MB
+Available Physical Memory: 12,347 MB
+Virtual Memory: Max Size:  18,141 MB
+Virtual Memory: Available: 14,375 MB
+Virtual Memory: In Use:    3,766 MB
+Page File Location(s):     C:\pagefile.sys
+Domain:                    WORKGROUP
+Logon Server:              \\DESKTOP
+Hotfix(s):                 7 Hotfix(s) Installed.
+						   [01]: KB5012117
+						   [02]: KB4562830
+						   [03]: KB5003791
+						   [04]: KB5007401
+						   [05]: KB5012599
+						   [06]: KB5011651
+						   [07]: KB5005699
+Network Card(s):           1 NIC(s) Installed.
+						   [01]: Intel(R) Wi-Fi 6 AX201 160MHz
+								 Connection Name: Wi-Fi
+								 DHCP Enabled:    Yes
+								 DHCP Server:     192.168.0.1
+								 IP address(es)
+								 [01]: 192.168.0.205
+Hyper-V Requirements:      VM Monitor Mode Extensions: Yes
+						   Virtualization Enabled In Firmware: Yes
+						   Second Level Address Translation: Yes
+						   Data Execution Prevention Available: Yes
+`,
+			expectedResult: models.ScanResult{
+				Family:  "windows",
+				Release: "Windows 10 Version 21H2 for x64-based Systems",
+				RunningKernel: models.Kernel{
+					Version: "10.0.19044",
+				},
+				WindowsKB: &models.WindowsKB{
+					Applied:   []string{"5012117", "4562830", "5003791", "5007401", "5012599", "5011651", "5005699"},
+					Unapplied: []string{},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -143,6 +213,18 @@ func TestViaHTTP(t *testing.T) {
 			if pack.Release != expectedPack.Release {
 				t.Errorf("release: expected %s, actual %s", expectedPack.Release, pack.Release)
 			}
+		}
+
+		if tt.expectedResult.WindowsKB != nil {
+			slices.Sort(tt.expectedResult.WindowsKB.Applied)
+			slices.Sort(tt.expectedResult.WindowsKB.Unapplied)
+		}
+		if result.WindowsKB != nil {
+			slices.Sort(result.WindowsKB.Applied)
+			slices.Sort(result.WindowsKB.Unapplied)
+		}
+		if !reflect.DeepEqual(tt.expectedResult.WindowsKB, result.WindowsKB) {
+			t.Errorf("windows KB: expected %s, actual %s", tt.expectedResult.WindowsKB, result.WindowsKB)
 		}
 	}
 }

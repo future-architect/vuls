@@ -42,7 +42,7 @@ func isRunningKernel(pack models.Package, family string, kernel models.Kernel) (
 
 // EnsureResultDir ensures the directory for scan results
 func EnsureResultDir(resultsDir string, scannedAt time.Time) (currentDir string, err error) {
-	jsonDirName := scannedAt.Format(time.RFC3339)
+	jsonDirName := scannedAt.Format("2006-01-02T15-04-05-0700")
 	if resultsDir == "" {
 		wd, _ := os.Getwd()
 		resultsDir = filepath.Join(wd, "results")
@@ -50,19 +50,6 @@ func EnsureResultDir(resultsDir string, scannedAt time.Time) (currentDir string,
 	jsonDir := filepath.Join(resultsDir, jsonDirName)
 	if err := os.MkdirAll(jsonDir, 0700); err != nil {
 		return "", xerrors.Errorf("Failed to create dir: %w", err)
-	}
-
-	symlinkPath := filepath.Join(resultsDir, "current")
-	if _, err := os.Lstat(symlinkPath); err == nil {
-		if err := os.Remove(symlinkPath); err != nil {
-			return "", xerrors.Errorf(
-				"Failed to remove symlink. path: %s, err: %w", symlinkPath, err)
-		}
-	}
-
-	if err := os.Symlink(jsonDir, symlinkPath); err != nil {
-		return "", xerrors.Errorf(
-			"Failed to create symlink: path: %s, err: %w", symlinkPath, err)
 	}
 	return jsonDir, nil
 }

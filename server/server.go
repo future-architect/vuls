@@ -39,13 +39,14 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if mediatype == "application/json" {
+	switch mediatype {
+	case "application/json":
 		if err = json.NewDecoder(req.Body).Decode(&r); err != nil {
 			logging.Log.Error(err)
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
-	} else if mediatype == "text/plain" {
+	case "text/plain":
 		buf := new(bytes.Buffer)
 		if _, err := io.Copy(buf, req.Body); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -56,7 +57,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-	} else {
+	default:
 		logging.Log.Error(mediatype)
 		http.Error(w, fmt.Sprintf("Invalid Content-Type: %s", contentType), http.StatusUnsupportedMediaType)
 		return
