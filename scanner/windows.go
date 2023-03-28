@@ -552,7 +552,6 @@ func parseRegistry(stdout, arch string) (osInfo, error) {
 }
 
 func detectOSName(osInfo osInfo) (string, error) {
-
 	osName, err := detectOSNameFromOSInfo(osInfo)
 	if err != nil {
 		return "", xerrors.Errorf("Failed to detect OS Name from OSInfo: %+v, err: %w", osInfo, err)
