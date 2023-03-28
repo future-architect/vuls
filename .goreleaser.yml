@@ -129,6 +129,7 @@ builds:
   - CGO_ENABLED=0
   goos:
   - linux
+  - windows
   goarch:
   - 386
   - amd64
