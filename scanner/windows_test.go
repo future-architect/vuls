@@ -18,7 +18,7 @@ func Test_parseSystemInfo(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "happy",
+			name: "Workstation",
 			args: `
 Host Name:                 DESKTOP
 OS Name:                   Microsoft Windows 10 Pro
@@ -82,6 +82,120 @@ Hyper-V Requirements:      VM Monitor Mode Extensions: Yes
 				installationType: "Client",
 			},
 			kbs: []string{"5012117", "4562830", "5003791", "5007401", "5012599", "5011651", "5005699"},
+		},
+		{
+			name: "Server",
+			args: `
+Host Name:                 WIN-RIBN7SM07BK
+OS Name:                   Microsoft Windows Server 2022 Standard
+OS Version:                10.0.20348 N/A Build 20348
+OS Manufacturer:           Microsoft Corporation
+OS Configuration:          Standalone Server
+OS Build Type:             Multiprocessor Free
+Registered Owner:          Windows User
+Registered Organization:   
+Product ID:                00454-10000-00001-AA483
+Original Install Date:     10/1/2021, 4:15:34 PM
+System Boot Time:          10/22/2021, 8:36:55 AM
+System Manufacturer:       Microsoft Corporation
+System Model:              Virtual Machine
+System Type:               x64-based PC
+Processor(s):              1 Processor(s) Installed.
+						   [01]: Intel64 Family 6 Model 158 Stepping 9 GenuineIntel ~2808 Mhz
+BIOS Version:              Microsoft Corporation Hyper-V UEFI Release v4.0, 12/17/2019
+Windows Directory:         C:\Windows
+System Directory:          C:\Windows\system32
+Boot Device:               \Device\HarddiskVolume1
+System Locale:             en-us;English (United States)
+Input Locale:              en-us;English (United States)
+Time Zone:                 (UTC-08:00) Pacific Time (US & Canada)
+Total Physical Memory:     2,047 MB
+Available Physical Memory: 900 MB
+Virtual Memory: Max Size:  3,199 MB
+Virtual Memory: Available: 2,143 MB
+Virtual Memory: In Use:    1,056 MB
+Page File Location(s):     C:\pagefile.sys
+Domain:                    WORKGROUP
+Logon Server:              \\WIN-RIBN7SM07BK
+Hotfix(s):                 3 Hotfix(s) Installed.
+						   [01]: KB5004330
+						   [02]: KB5005039
+						   [03]: KB5005552
+Network Card(s):           1 NIC(s) Installed.
+						   [01]: Microsoft Hyper-V Network Adapter
+								 Connection Name: Ethernet
+								 DHCP Enabled:    Yes
+								 DHCP Server:     192.168.254.254
+								 IP address(es)
+								 [01]: 192.168.254.172
+								 [02]: fe80::b4a1:11cc:2c4:4f57
+Hyper-V Requirements:      A hypervisor has been detected. Features required for Hyper-V will not be displayed.
+`,
+			osInfo: osInfo{
+				productName:      "Microsoft Windows Server 2022 Standard",
+				version:          "10.0",
+				build:            "20348",
+				revision:         "",
+				edition:          "",
+				servicePack:      "",
+				arch:             "x64-based",
+				installationType: "Server",
+			},
+			kbs: []string{"5004330", "5005039", "5005552"},
+		},
+		{
+			name: "Domain Controller",
+			args: `
+Host Name:                 vuls
+OS Name:                   Microsoft Windows Server 2019 Datacenter
+OS Version:                10.0.17763 N/A Build 17763
+OS Manufacturer:           Microsoft Corporation
+OS Configuration:          Primary Domain Controller
+OS Build Type:             Multiprocessor Free
+Registered Owner:          N/A
+Registered Organization:   N/A
+Product ID:                00430-00000-00000-AA602
+Original Install Date:     1/16/2023, 10:04:07 AM
+System Boot Time:          3/28/2023, 8:37:14 AM
+System Manufacturer:       Microsoft Corporation
+System Model:              Virtual Machine
+System Type:               x64-based PC
+Processor(s):              1 Processor(s) Installed.
+						   [01]: Intel64 Family 6 Model 85 Stepping 4 GenuineIntel ~2095 Mhz
+BIOS Version:              Microsoft Corporation Hyper-V UEFI Release v4.1, 5/9/2022
+Windows Directory:         C:\Windows
+System Directory:          C:\Windows\system32
+Boot Device:               \Device\HarddiskVolume3
+System Locale:             en-us;English (United States)
+Input Locale:              en-us;English (United States)
+Time Zone:                 (UTC) Coordinated Universal Time
+Total Physical Memory:     16,383 MB
+Available Physical Memory: 13,170 MB
+Virtual Memory: Max Size:  18,431 MB
+Virtual Memory: Available: 15,208 MB
+Virtual Memory: In Use:    3,223 MB
+Page File Location(s):     C:\pagefile.sys
+Domain:                    vuls
+Logon Server:              \\vuls
+Hotfix(s):                 5 Hotfix(s) Installed.
+						   [01]: KB5022511
+						   [02]: KB5012170
+						   [03]: KB5023702
+						   [04]: KB5020374
+						   [05]: KB5023789
+Hyper-V Requirements:      A hypervisor has been detected. Features required for Hyper-V will not be displayed.
+`,
+			osInfo: osInfo{
+				productName:      "Microsoft Windows Server 2019 Datacenter",
+				version:          "10.0",
+				build:            "17763",
+				revision:         "",
+				edition:          "",
+				servicePack:      "",
+				arch:             "x64-based",
+				installationType: "Domain Controller",
+			},
+			kbs: []string{"5022511", "5012170", "5023702", "5020374", "5023789"},
 		},
 	}
 	for _, tt := range tests {
@@ -290,6 +404,20 @@ func Test_detectOSName(t *testing.T) {
 				installationType: "Server",
 			},
 			want: "Windows Server 2022",
+		},
+		{
+			name: "Windows Server 2019",
+			args: osInfo{
+				productName:      "Microsoft Windows Server 2019 Datacenter",
+				version:          "10.0",
+				build:            "17763",
+				revision:         "",
+				edition:          "",
+				servicePack:      "",
+				arch:             "x64-based",
+				installationType: "Domain Controller",
+			},
+			want: "Windows Server 2019",
 		},
 		{
 			name: "err",

@@ -60,6 +60,7 @@ func detectWindows(c config.ServerInfo) (bool, osTypeInterface) {
 				return true, w
 			}
 
+			w.log.Debugf("osInfo(Registry): %+v", osInfo)
 			release, err := detectOSName(osInfo)
 			if err != nil {
 				w.setErrs([]error{xerrors.Errorf("Failed to detect os name. err: %w", err)})
@@ -79,6 +80,7 @@ func detectWindows(c config.ServerInfo) (bool, osTypeInterface) {
 			return true, w
 		}
 
+		w.log.Debugf("osInfo(Get-ComputerInfo): %+v", osInfo)
 		release, err := detectOSName(osInfo)
 		if err != nil {
 			w.setErrs([]error{xerrors.Errorf("Failed to detect os name. err: %w", err)})
@@ -97,6 +99,7 @@ func detectWindows(c config.ServerInfo) (bool, osTypeInterface) {
 			return true, w
 		}
 
+		w.log.Debugf("osInfo(Get-WmiObject): %+v", osInfo)
 		release, err := detectOSName(osInfo)
 		if err != nil {
 			w.setErrs([]error{xerrors.Errorf("Failed to detect os name. err: %w", err)})
@@ -115,6 +118,7 @@ func detectWindows(c config.ServerInfo) (bool, osTypeInterface) {
 			return true, w
 		}
 
+		w.log.Debugf("osInfo(systeminfo.exe): %+v", osInfo)
 		release, err := detectOSName(osInfo)
 		if err != nil {
 			w.setErrs([]error{xerrors.Errorf("Failed to detect os name. err: %w", err)})
@@ -171,6 +175,8 @@ func parseSystemInfo(stdout string) (osInfo, []string, error) {
 				o.installationType = "Server"
 			case strings.Contains(line, "Workstation"):
 				o.installationType = "Client"
+			case strings.Contains(line, "Domain Controller"):
+				o.installationType = "Domain Controller"
 			default:
 				return osInfo{}, nil, xerrors.Errorf("Failed to detect installation type. line: %s", line)
 			}
@@ -453,7 +459,7 @@ func parseWmiObject(stdout string) (osInfo, error) {
 			case "2", "3":
 				o.installationType = "Server"
 			case "4", "5":
-				o.installationType = "Controller"
+				o.installationType = "Domain Controller"
 			default:
 				return osInfo{}, xerrors.Errorf("Failed to detect Installation Type from DomainRole. err: %s is invalid DomainRole", domainRole)
 			}
@@ -546,6 +552,7 @@ func parseRegistry(stdout, arch string) (osInfo, error) {
 }
 
 func detectOSName(osInfo osInfo) (string, error) {
+
 	osName, err := detectOSNameFromOSInfo(osInfo)
 	if err != nil {
 		return "", xerrors.Errorf("Failed to detect OS Name from OSInfo: %+v, err: %w", osInfo, err)
@@ -562,7 +569,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 				return fmt.Sprintf("Microsoft Windows 2000 %s", osInfo.servicePack), nil
 			}
 			return "Microsoft Windows 2000", nil
-		case "Server":
+		case "Server", "Domain Controller":
 			if osInfo.servicePack != "" {
 				return fmt.Sprintf("Microsoft Windows 2000 Server %s", osInfo.servicePack), nil
 			}
@@ -613,7 +620,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 				return fmt.Sprintf("%s %s", n, osInfo.servicePack), nil
 			}
 			return n, nil
-		case "Server":
+		case "Server", "Domain Controller":
 			n := "Microsoft Windows Server 2003"
 			if strings.Contains(osInfo.productName, "R2") {
 				n = "Microsoft Windows Server 2003 R2"
@@ -647,7 +654,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 				return fmt.Sprintf("%s %s", n, osInfo.servicePack), nil
 			}
 			return n, nil
-		case "Server":
+		case "Server", "Domain Controller":
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
 				return "", err
@@ -677,7 +684,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 				return fmt.Sprintf("Windows 7 for %s Systems %s", arch, osInfo.servicePack), nil
 			}
 			return fmt.Sprintf("Windows 7 for %s Systems", arch), nil
-		case "Server":
+		case "Server", "Domain Controller":
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
 				return "", err
@@ -704,7 +711,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 				return "", err
 			}
 			return fmt.Sprintf("Windows 8 for %s Systems", arch), nil
-		case "Server":
+		case "Server", "Domain Controller":
 			return "Windows Server 2012", nil
 		case "Server Core":
 			return "Windows Server 2012 (Server Core installation)", nil
@@ -717,7 +724,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 				return "", err
 			}
 			return fmt.Sprintf("Windows 8.1 for %s Systems", arch), nil
-		case "Server":
+		case "Server", "Domain Controller":
 			return "Windows Server 2012 R2", nil
 		case "Server Core":
 			return "Windows Server 2012 R2 (Server Core installation)", nil
@@ -746,7 +753,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 				return "", err
 			}
 			return fmt.Sprintf("%s for %s Systems", name, arch), nil
-		case "Server":
+		case "Server", "Nano Server", "Domain Controller":
 			return formatNamebyBuild("Server", osInfo.build)
 		case "Server Core":
 			name, err := formatNamebyBuild("Server", osInfo.build)

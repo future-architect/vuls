@@ -170,6 +170,7 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 
 		release := header.Get("X-Vuls-OS-Release")
 		if release == "" {
+			logging.Log.Debugf("osInfo(systeminfo.exe): %+v", osInfo)
 			release, err = detectOSName(osInfo)
 			if err != nil {
 				return models.ScanResult{}, xerrors.Errorf("Failed to detect os name. err: %w", err)
