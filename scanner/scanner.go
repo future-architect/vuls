@@ -419,6 +419,10 @@ func validateSSHConfig(c *config.ServerInfo) error {
 	logging.Log.Debugf("Executing... %s", strings.Replace(sshConfigCmd, "\n", "", -1))
 	configResult := localExec(*c, sshConfigCmd, noSudo)
 	if !configResult.isSuccess() {
+		if strings.Contains(configResult.Stderr, "unknown option -- G") {
+			logging.Log.Warn("SSH configuration validation is skipped. To enable validation, G option introduced in OpenSSH 6.8 must be enabled.")
+			return nil
+		}
 		return xerrors.Errorf("Failed to print SSH configuration. err: %w", configResult.Error)
 	}
 	sshConfig := parseSSHConfiguration(configResult.Stdout)
