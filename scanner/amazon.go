@@ -1,10 +1,14 @@
 package scanner
 
 import (
+	"strings"
+	"time"
+
+	"golang.org/x/xerrors"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"golang.org/x/xerrors"
 )
 
 // inherit OsTypeInterface
@@ -50,12 +54,26 @@ func (o *amazon) depsFast() []string {
 		return []string{}
 	}
 	// repoquery
-	return []string{"yum-utils"}
+	switch s := strings.Fields(o.getDistro().Release)[0]; s {
+	case "1", "2":
+		return []string{"yum-utils"}
+	default:
+		if _, err := time.Parse("2006.01", s); err == nil {
+			return []string{"yum-utils"}
+		}
+		return []string{"dnf-utils"}
+	}
 }
 
 func (o *amazon) depsFastRoot() []string {
-	return []string{
-		"yum-utils",
+	switch s := strings.Fields(o.getDistro().Release)[0]; s {
+	case "1", "2":
+		return []string{"yum-utils"}
+	default:
+		if _, err := time.Parse("2006.01", s); err == nil {
+			return []string{"yum-utils"}
+		}
+		return []string{"dnf-utils"}
 	}
 }
 
