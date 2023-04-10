@@ -189,6 +189,17 @@ func TestConvert(t *testing.T) {
 			want: []string{"cpe:2.3:h:fortinet:fortigate-60f:-:*:*:*:*:*:*:*", "cpe:2.3:o:fortinet:fortios:6.4.11:*:*:*:*:*:*:*"},
 		},
 		{
+			name: "FortiSwitch-108E",
+			args: snmp.Result{
+				EntPhysicalTables: map[int]snmp.EntPhysicalTable{1: {
+					EntPhysicalMfgName:     "Fortinet",
+					EntPhysicalName:        "FS_108E",
+					EntPhysicalSoftwareRev: "FortiSwitch-108E v6.4.6,build0000,000000 (GA)",
+				}},
+			},
+			want: []string{"cpe:2.3:h:fortinet:fortiswitch-108e:-:*:*:*:*:*:*:*", "cpe:2.3:o:fortinet:fortiswitch:6.4.6:*:*:*:*:*:*:*", "cpe:2.3:o:fortinet:fortiswitch_firmware:6.4.6:*:*:*:*:*:*:*"},
+		},
+		{
 			name: "YAMAHA RTX1000",
 			args: snmp.Result{
 				SysDescr0: "RTX1000 Rev.8.01.29 (Fri Apr 15 11:50:44 2011)",
