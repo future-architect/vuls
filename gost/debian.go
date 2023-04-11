@@ -74,12 +74,12 @@ func (deb Debian) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 	if stashLinuxPackage.Name != "" {
 		r.Packages["linux"] = stashLinuxPackage
 	}
-	// nUnfixedCVEs, err := deb.detectCVEsWithFixState(r, "open")
-	// if err != nil {
-	// 	return 0, xerrors.Errorf("Failed to detect unfixed CVEs. err: %w", err)
-	// }
+	nUnfixedCVEs, err := deb.detectCVEsWithFixState(r, "open")
+	if err != nil {
+		return 0, xerrors.Errorf("Failed to detect unfixed CVEs. err: %w", err)
+	}
 
-	return (nFixedCVEs + 0), nil
+	return (nFixedCVEs + nUnfixedCVEs), nil
 }
 
 func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string) (nCVEs int, err error) {
