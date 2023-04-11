@@ -74,12 +74,12 @@ func (deb Debian) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 	if stashLinuxPackage.Name != "" {
 		r.Packages["linux"] = stashLinuxPackage
 	}
-	nUnfixedCVEs, err := deb.detectCVEsWithFixState(r, "open")
-	if err != nil {
-		return 0, xerrors.Errorf("Failed to detect unfixed CVEs. err: %w", err)
-	}
+	// nUnfixedCVEs, err := deb.detectCVEsWithFixState(r, "open")
+	// if err != nil {
+	// 	return 0, xerrors.Errorf("Failed to detect unfixed CVEs. err: %w", err)
+	// }
 
-	return (nFixedCVEs + nUnfixedCVEs), nil
+	return (nFixedCVEs + 0), nil
 }
 
 func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string) (nCVEs int, err error) {
@@ -160,7 +160,6 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 					v.CveContents = models.NewCveContents(cve)
 				} else {
 					v.CveContents[models.DebianSecurityTracker] = []models.CveContent{cve}
-					v.Confidences = models.Confidences{models.DebianSecurityTrackerMatch}
 				}
 			} else {
 				v = models.VulnInfo{
@@ -168,33 +167,33 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 					CveContents: models.NewCveContents(cve),
 					Confidences: models.Confidences{models.DebianSecurityTrackerMatch},
 				}
-
-				if fixStatus == "resolved" {
-					versionRelease := ""
-					if p.isSrcPack {
-						versionRelease = r.SrcPackages[p.packName].Version
-					} else {
-						versionRelease = r.Packages[p.packName].FormatVer()
-					}
-
-					if versionRelease == "" {
-						break
-					}
-
-					affected, err := isGostDefAffected(versionRelease, p.fixes[i].FixedIn)
-					if err != nil {
-						logging.Log.Debugf("Failed to parse versions: %s, Ver: %s, Gost: %s",
-							err, versionRelease, p.fixes[i].FixedIn)
-						continue
-					}
-
-					if !affected {
-						continue
-					}
-				}
-
 				nCVEs++
 			}
+
+			if fixStatus == "resolved" {
+				versionRelease := ""
+				if p.isSrcPack {
+					versionRelease = r.SrcPackages[p.packName].Version
+				} else {
+					versionRelease = r.Packages[p.packName].FormatVer()
+				}
+
+				if versionRelease == "" {
+					break
+				}
+
+				affected, err := isGostDefAffected(versionRelease, p.fixes[i].FixedIn)
+				if err != nil {
+					logging.Log.Debugf("Failed to parse versions: %s, Ver: %s, Gost: %s",
+						err, versionRelease, p.fixes[i].FixedIn)
+					continue
+				}
+
+				if !affected {
+					continue
+				}
+			}
+			v.Confidences = models.Confidences{models.DebianSecurityTrackerMatch}
 
 			names := []string{}
 			if p.isSrcPack {
