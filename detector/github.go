@@ -222,9 +222,9 @@ func DetectGitHubDependencyGraph(r *models.ScanResult, owner, repo, token string
 // recursive function
 func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, repo, after, dependenciesAfter string) (err error) {
 	const queryFmt = `{"query":
-	"query { repository(owner:\"%s\", name:\"%s\") { url dependencyGraphManifests(first: %d, withDependencies: true%s) { pageInfo { endCursor hasNextPage } edges { node { blobPath filename repository { url } parseable exceedsMaxSize dependenciesCount dependencies%s { pageInfo { endCursor hasNextPage } edges { node { packageName packageManager repository { url } requirements hasDependencies } } } } } } } }"}`
+	"query { repository(owner:\"%s\", name:\"%s\") { url dependencyGraphManifests(first: %d, withDependencies: true%s) { pageInfo { endCursor hasNextPage } edges { node { blobPath filename repository { url } parseable exceedsMaxSize dependenciesCount dependencies(first: %d%s) { pageInfo { endCursor hasNextPage } edges { node { packageName packageManager repository { url } requirements hasDependencies } } } } } } } }"}`
 
-	queryStr := fmt.Sprintf(queryFmt, owner, repo, 100, after, dependenciesAfter)
+	queryStr := fmt.Sprintf(queryFmt, owner, repo, 50, after, 100, dependenciesAfter)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		"https://api.github.com/graphql",
@@ -283,7 +283,7 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 		r.GitHubManifests[m.Node.BlobPath] = manifest
 
 		if m.Node.Dependencies.PageInfo.HasNextPage {
-			dependenciesAfter = fmt.Sprintf(`(after: \"%s\")`, m.Node.Dependencies.PageInfo.EndCursor)
+			dependenciesAfter = fmt.Sprintf(`, after: \"%s\"`, m.Node.Dependencies.PageInfo.EndCursor)
 		}
 	}
 	if dependenciesAfter != "" {
