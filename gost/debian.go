@@ -165,7 +165,6 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 				v = models.VulnInfo{
 					CveID:       cve.CveID,
 					CveContents: models.NewCveContents(cve),
-					Confidences: models.Confidences{models.DebianSecurityTrackerMatch},
 				}
 				nCVEs++
 			}
@@ -193,7 +192,6 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 					continue
 				}
 			}
-			v.Confidences = models.Confidences{models.DebianSecurityTrackerMatch}
 
 			names := []string{}
 			if p.isSrcPack {
@@ -229,6 +227,7 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 				}
 			}
 
+			v.Confidences.AppendIfMissing(models.DebianSecurityTrackerMatch)
 			r.ScannedCves[cve.CveID] = v
 		}
 	}
