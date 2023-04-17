@@ -160,40 +160,37 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 					v.CveContents = models.NewCveContents(cve)
 				} else {
 					v.CveContents[models.DebianSecurityTracker] = []models.CveContent{cve}
-					v.Confidences = models.Confidences{models.DebianSecurityTrackerMatch}
 				}
 			} else {
 				v = models.VulnInfo{
 					CveID:       cve.CveID,
 					CveContents: models.NewCveContents(cve),
-					Confidences: models.Confidences{models.DebianSecurityTrackerMatch},
 				}
-
-				if fixStatus == "resolved" {
-					versionRelease := ""
-					if p.isSrcPack {
-						versionRelease = r.SrcPackages[p.packName].Version
-					} else {
-						versionRelease = r.Packages[p.packName].FormatVer()
-					}
-
-					if versionRelease == "" {
-						break
-					}
-
-					affected, err := isGostDefAffected(versionRelease, p.fixes[i].FixedIn)
-					if err != nil {
-						logging.Log.Debugf("Failed to parse versions: %s, Ver: %s, Gost: %s",
-							err, versionRelease, p.fixes[i].FixedIn)
-						continue
-					}
-
-					if !affected {
-						continue
-					}
-				}
-
 				nCVEs++
+			}
+
+			if fixStatus == "resolved" {
+				versionRelease := ""
+				if p.isSrcPack {
+					versionRelease = r.SrcPackages[p.packName].Version
+				} else {
+					versionRelease = r.Packages[p.packName].FormatVer()
+				}
+
+				if versionRelease == "" {
+					break
+				}
+
+				affected, err := isGostDefAffected(versionRelease, p.fixes[i].FixedIn)
+				if err != nil {
+					logging.Log.Debugf("Failed to parse versions: %s, Ver: %s, Gost: %s",
+						err, versionRelease, p.fixes[i].FixedIn)
+					continue
+				}
+
+				if !affected {
+					continue
+				}
 			}
 
 			names := []string{}
@@ -230,6 +227,7 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixStatus string)
 				}
 			}
 
+			v.Confidences.AppendIfMissing(models.DebianSecurityTrackerMatch)
 			r.ScannedCves[cve.CveID] = v
 		}
 	}
