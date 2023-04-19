@@ -10,68 +10,51 @@ import (
 )
 
 func TestUbuntu_Supported(t *testing.T) {
-	type args struct {
-		ubuReleaseVer string
-	}
 	tests := []struct {
 		name string
-		args args
+		args string
 		want bool
 	}{
 		{
 			name: "14.04 is supported",
-			args: args{
-				ubuReleaseVer: "1404",
-			},
+			args: "1404",
 			want: true,
 		},
 		{
 			name: "16.04 is supported",
-			args: args{
-				ubuReleaseVer: "1604",
-			},
+			args: "1604",
 			want: true,
 		},
 		{
 			name: "18.04 is supported",
-			args: args{
-				ubuReleaseVer: "1804",
-			},
+			args: "1804",
 			want: true,
 		},
 		{
 			name: "20.04 is supported",
-			args: args{
-				ubuReleaseVer: "2004",
-			},
+			args: "2004",
 			want: true,
 		},
 		{
 			name: "20.10 is supported",
-			args: args{
-				ubuReleaseVer: "2010",
-			},
+			args: "2010",
 			want: true,
 		},
 		{
 			name: "21.04 is supported",
-			args: args{
-				ubuReleaseVer: "2104",
-			},
+			args: "2104",
 			want: true,
 		},
 		{
 			name: "empty string is not supported yet",
-			args: args{
-				ubuReleaseVer: "",
-			},
+			args: "",
 			want: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ubu := Ubuntu{}
-			if got := ubu.supported(tt.args.ubuReleaseVer); got != tt.want {
+			if got := ubu.supported(tt.args); got != tt.want {
 				t.Errorf("Ubuntu.Supported() = %v, want %v", got, tt.want)
 			}
 		})
@@ -289,7 +272,7 @@ func Test_detect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := detect(tt.args.cves, tt.args.fixed, tt.args.srcPkg, tt.args.runningKernelBinaryPkgName); !reflect.DeepEqual(got, tt.want) {
+			if got := (Ubuntu{}).detect(tt.args.cves, tt.args.fixed, tt.args.srcPkg, tt.args.runningKernelBinaryPkgName); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("detect() = %#v, want %#v", got, tt.want)
 			}
 		})

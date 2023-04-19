@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	debver "github.com/knqyf263/go-deb-version"
 	"golang.org/x/exp/maps"
 	"golang.org/x/xerrors"
 
@@ -230,16 +229,6 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 		}
 
 		kernelVersion := header.Get("X-Vuls-Kernel-Version")
-		if family == constant.Debian {
-			if kernelVersion == "" {
-				logging.Log.Warn("X-Vuls-Kernel-Version is empty. skip kernel vulnerability detection.")
-			} else {
-				if _, err := debver.NewVersion(kernelVersion); err != nil {
-					logging.Log.Warnf("X-Vuls-Kernel-Version is invalid. skip kernel vulnerability detection. actual kernelVersion: %s, err: %s", kernelVersion, err)
-					kernelVersion = ""
-				}
-			}
-		}
 
 		distro := config.Distro{
 			Family:  family,
