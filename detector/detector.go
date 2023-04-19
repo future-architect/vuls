@@ -425,20 +425,20 @@ func detectPkgsCvesWithOval(cnf config.GovalDictConf, r *models.ScanResult, logO
 		}
 	}()
 
-	logging.Log.Debugf("Check if oval fetched: %s %s", r.Family, r.Release)
-	ok, err := client.CheckIfOvalFetched(r.Family, r.Release)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		switch r.Family {
-		case constant.Debian, constant.Ubuntu:
-			logging.Log.Infof("Skip OVAL and Scan with gost alone.")
-			logging.Log.Infof("%s: %d CVEs are detected with OVAL", r.FormatServerName(), 0)
-			return nil
-		case constant.Windows, constant.FreeBSD, constant.ServerTypePseudo:
-			return nil
-		default:
+	switch r.Family {
+	case constant.Debian, constant.Raspbian, constant.Ubuntu:
+		logging.Log.Infof("Skip OVAL and Scan with gost alone.")
+		logging.Log.Infof("%s: %d CVEs are detected with OVAL", r.FormatServerName(), 0)
+		return nil
+	case constant.Windows, constant.FreeBSD, constant.ServerTypePseudo:
+		return nil
+	default:
+		logging.Log.Debugf("Check if oval fetched: %s %s", r.Family, r.Release)
+		ok, err := client.CheckIfOvalFetched(r.Family, r.Release)
+		if err != nil {
+			return err
+		}
+		if !ok {
 			return xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see `https://github.com/vulsio/goval-dictionary#usage`", r.Family, r.Release)
 		}
 	}
@@ -473,7 +473,7 @@ func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult, logOpts l
 	nCVEs, err := client.DetectCVEs(r, true)
 	if err != nil {
 		switch r.Family {
-		case constant.Debian, constant.Ubuntu, constant.Windows:
+		case constant.Debian, constant.Raspbian, constant.Ubuntu, constant.Windows:
 			return xerrors.Errorf("Failed to detect CVEs with gost: %w", err)
 		default:
 			return xerrors.Errorf("Failed to detect unfixed CVEs with gost: %w", err)
@@ -481,7 +481,7 @@ func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult, logOpts l
 	}
 
 	switch r.Family {
-	case constant.Debian, constant.Ubuntu, constant.Windows:
+	case constant.Debian, constant.Raspbian, constant.Ubuntu, constant.Windows:
 		logging.Log.Infof("%s: %d CVEs are detected with gost", r.FormatServerName(), nCVEs)
 	default:
 		logging.Log.Infof("%s: %d unfixed CVEs are detected with gost", r.FormatServerName(), nCVEs)
