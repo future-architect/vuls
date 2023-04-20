@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 
+	debver "github.com/knqyf263/go-deb-version"
+	"golang.org/x/exp/maps"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/logging"
@@ -72,21 +74,44 @@ var kernelSourceNamePattern = regexp.MustCompile(`^linux((-(ti-omap4|armadaxp|ma
 
 // DetectCVEs fills cve information that has in Gost
 func (ubu Ubuntu) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error) {
-	ubuReleaseVer := strings.Replace(r.Release, ".", "", 1)
-	if !ubu.supported(ubuReleaseVer) {
+	if !ubu.supported(strings.Replace(r.Release, ".", "", 1)) {
 		logging.Log.Warnf("Ubuntu %s is not supported yet", r.Release)
 		return 0, nil
 	}
 
+	if r.Container.ContainerID == "" {
+		if r.RunningKernel.Release == "" {
+			logging.Log.Warnf("Since the exact kernel release is not available, the vulnerability in the kernel package is not detected.")
+		}
+	}
+
+	fixedCVEs, err := ubu.detectCVEsWithFixState(r, true)
+	if err != nil {
+		return 0, xerrors.Errorf("Failed to detect fixed CVEs. err: %w", err)
+	}
+
+	unfixedCVEs, err := ubu.detectCVEsWithFixState(r, false)
+	if err != nil {
+		return 0, xerrors.Errorf("Failed to detect unfixed CVEs. err: %w", err)
+	}
+
+	return len(unique(append(fixedCVEs, unfixedCVEs...))), nil
+}
+
+func (ubu Ubuntu) detectCVEsWithFixState(r *models.ScanResult, fixed bool) ([]string, error) {
 	detects := map[string]cveContent{}
 	if ubu.driver == nil {
-		urlPrefix, err := util.URLPathJoin(ubu.baseURL, "ubuntu", ubuReleaseVer, "pkgs")
+		urlPrefix, err := util.URLPathJoin(ubu.baseURL, "ubuntu", strings.Replace(r.Release, ".", "", 1), "pkgs")
 		if err != nil {
-			return 0, xerrors.Errorf("Failed to join URLPath. err: %w", err)
+			return nil, xerrors.Errorf("Failed to join URLPath. err: %w", err)
 		}
-		responses, err := getCvesWithFixStateViaHTTP(r, urlPrefix, "fixed-cves")
+		s := "fixed-cves"
+		if !fixed {
+			s = "unfixed-cves"
+		}
+		responses, err := getCvesWithFixStateViaHTTP(r, urlPrefix, s)
 		if err != nil {
-			return 0, xerrors.Errorf("Failed to get fixed CVEs via HTTP. err: %w", err)
+			return nil, xerrors.Errorf("Failed to get fixed CVEs via HTTP. err: %w", err)
 		}
 
 		for _, res := range responses {
@@ -97,60 +122,24 @@ func (ubu Ubuntu) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 			n := strings.NewReplacer("linux-signed", "linux", "linux-meta", "linux").Replace(res.request.packName)
 
 			if kernelSourceNamePattern.MatchString(n) {
-				isDetect := false
+				isRunning := false
 				for _, bn := range r.SrcPackages[res.request.packName].BinaryNames {
 					if bn == fmt.Sprintf("linux-image-%s", r.RunningKernel.Release) {
-						isDetect = true
+						isRunning = true
 						break
 					}
 				}
-				if !isDetect {
+				// To detect vulnerabilities in running kernels only, skip if the kernel is not running.
+				if !isRunning {
 					continue
 				}
 			}
 
-			fixeds := map[string]gostmodels.UbuntuCVE{}
-			if err := json.Unmarshal([]byte(res.json), &fixeds); err != nil {
-				return 0, xerrors.Errorf("Failed to unmarshal json. err: %w", err)
+			cs := map[string]gostmodels.UbuntuCVE{}
+			if err := json.Unmarshal([]byte(res.json), &cs); err != nil {
+				return nil, xerrors.Errorf("Failed to unmarshal json. err: %w", err)
 			}
-			for _, content := range detect(fixeds, true, models.SrcPackage{Name: res.request.packName, Version: r.SrcPackages[res.request.packName].Version, BinaryNames: r.SrcPackages[res.request.packName].BinaryNames}, fmt.Sprintf("linux-image-%s", r.RunningKernel.Release)) {
-				c, ok := detects[content.cveContent.CveID]
-				if ok {
-					content.fixStatuses = append(content.fixStatuses, c.fixStatuses...)
-				}
-				detects[content.cveContent.CveID] = content
-			}
-		}
-
-		responses, err = getCvesWithFixStateViaHTTP(r, urlPrefix, "unfixed-cves")
-		if err != nil {
-			return 0, xerrors.Errorf("Failed to get unfixed CVEs via HTTP. err: %w", err)
-		}
-		for _, res := range responses {
-			if !res.request.isSrcPack {
-				continue
-			}
-
-			n := strings.NewReplacer("linux-signed", "linux", "linux-meta", "linux").Replace(res.request.packName)
-
-			if kernelSourceNamePattern.MatchString(n) {
-				isDetect := false
-				for _, bn := range r.SrcPackages[res.request.packName].BinaryNames {
-					if bn == fmt.Sprintf("linux-image-%s", r.RunningKernel.Release) {
-						isDetect = true
-						break
-					}
-				}
-				if !isDetect {
-					continue
-				}
-			}
-
-			unfixeds := map[string]gostmodels.UbuntuCVE{}
-			if err := json.Unmarshal([]byte(res.json), &unfixeds); err != nil {
-				return 0, xerrors.Errorf("Failed to unmarshal json. err: %w", err)
-			}
-			for _, content := range detect(unfixeds, false, models.SrcPackage{Name: res.request.packName, Version: r.SrcPackages[res.request.packName].Version, BinaryNames: r.SrcPackages[res.request.packName].BinaryNames}, fmt.Sprintf("linux-image-%s", r.RunningKernel.Release)) {
+			for _, content := range ubu.detect(cs, fixed, models.SrcPackage{Name: res.request.packName, Version: r.SrcPackages[res.request.packName].Version, BinaryNames: r.SrcPackages[res.request.packName].BinaryNames}, fmt.Sprintf("linux-image-%s", r.RunningKernel.Release)) {
 				c, ok := detects[content.cveContent.CveID]
 				if ok {
 					content.fixStatuses = append(content.fixStatuses, c.fixStatuses...)
@@ -159,39 +148,32 @@ func (ubu Ubuntu) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 			}
 		}
 	} else {
-		for _, pack := range r.SrcPackages {
-			n := strings.NewReplacer("linux-signed", "linux", "linux-meta", "linux").Replace(pack.Name)
+		for _, p := range r.SrcPackages {
+			n := strings.NewReplacer("linux-signed", "linux", "linux-meta", "linux").Replace(p.Name)
 
 			if kernelSourceNamePattern.MatchString(n) {
-				isDetect := false
-				for _, bn := range pack.BinaryNames {
+				isRunning := false
+				for _, bn := range p.BinaryNames {
 					if bn == fmt.Sprintf("linux-image-%s", r.RunningKernel.Release) {
-						isDetect = true
+						isRunning = true
 						break
 					}
 				}
-				if !isDetect {
+				// To detect vulnerabilities in running kernels only, skip if the kernel is not running.
+				if !isRunning {
 					continue
 				}
 			}
 
-			fixeds, err := ubu.driver.GetFixedCvesUbuntu(ubuReleaseVer, n)
+			var f func(string, string) (map[string]gostmodels.UbuntuCVE, error) = ubu.driver.GetFixedCvesUbuntu
+			if !fixed {
+				f = ubu.driver.GetUnfixedCvesUbuntu
+			}
+			cs, err := f(strings.Replace(r.Release, ".", "", 1), n)
 			if err != nil {
-				return 0, xerrors.Errorf("Failed to get fixed CVEs for SrcPackage. err: %w", err)
+				return nil, xerrors.Errorf("Failed to get CVEs. release: %s, src package: %s, err: %w", major(r.Release), p.Name, err)
 			}
-			for _, content := range detect(fixeds, true, pack, fmt.Sprintf("linux-image-%s", r.RunningKernel.Release)) {
-				c, ok := detects[content.cveContent.CveID]
-				if ok {
-					content.fixStatuses = append(content.fixStatuses, c.fixStatuses...)
-				}
-				detects[content.cveContent.CveID] = content
-			}
-
-			unfixeds, err := ubu.driver.GetUnfixedCvesUbuntu(ubuReleaseVer, n)
-			if err != nil {
-				return 0, xerrors.Errorf("Failed to get unfixed CVEs for SrcPackage. err: %w", err)
-			}
-			for _, content := range detect(unfixeds, false, pack, fmt.Sprintf("linux-image-%s", r.RunningKernel.Release)) {
+			for _, content := range ubu.detect(cs, fixed, p, fmt.Sprintf("linux-image-%s", r.RunningKernel.Release)) {
 				c, ok := detects[content.cveContent.CveID]
 				if ok {
 					content.fixStatuses = append(content.fixStatuses, c.fixStatuses...)
@@ -208,8 +190,8 @@ func (ubu Ubuntu) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 				v.CveContents = models.NewCveContents(content.cveContent)
 			} else {
 				v.CveContents[models.UbuntuAPI] = []models.CveContent{content.cveContent}
-				v.Confidences = models.Confidences{models.UbuntuAPIMatch}
 			}
+			v.Confidences.AppendIfMissing(models.UbuntuAPIMatch)
 		} else {
 			v = models.VulnInfo{
 				CveID:       content.cveContent.CveID,
@@ -224,10 +206,10 @@ func (ubu Ubuntu) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 		r.ScannedCves[content.cveContent.CveID] = v
 	}
 
-	return len(detects), nil
+	return maps.Keys(detects), nil
 }
 
-func detect(cves map[string]gostmodels.UbuntuCVE, fixed bool, srcPkg models.SrcPackage, runningKernelBinaryPkgName string) []cveContent {
+func (ubu Ubuntu) detect(cves map[string]gostmodels.UbuntuCVE, fixed bool, srcPkg models.SrcPackage, runningKernelBinaryPkgName string) []cveContent {
 	n := strings.NewReplacer("linux-signed", "linux", "linux-meta", "linux").Replace(srcPkg.Name)
 
 	var contents []cveContent
@@ -257,7 +239,7 @@ func detect(cves map[string]gostmodels.UbuntuCVE, fixed bool, srcPkg models.SrcP
 						}
 					}
 
-					affected, err := isGostDefAffected(installedVersion, patchedVersion)
+					affected, err := ubu.isGostDefAffected(installedVersion, patchedVersion)
 					if err != nil {
 						logging.Log.Debugf("Failed to parse versions: %s, Ver: %s, Gost: %s", err, installedVersion, patchedVersion)
 						continue
@@ -296,6 +278,18 @@ func detect(cves map[string]gostmodels.UbuntuCVE, fixed bool, srcPkg models.SrcP
 	return contents
 }
 
+func (ubu Ubuntu) isGostDefAffected(versionRelease, gostVersion string) (affected bool, err error) {
+	vera, err := debver.NewVersion(versionRelease)
+	if err != nil {
+		return false, xerrors.Errorf("Failed to parse version. version: %s, err: %w", versionRelease, err)
+	}
+	verb, err := debver.NewVersion(gostVersion)
+	if err != nil {
+		return false, xerrors.Errorf("Failed to parse version. version: %s, err: %w", gostVersion, err)
+	}
+	return vera.LessThan(verb), nil
+}
+
 // ConvertToModel converts gost model to vuls model
 func (ubu Ubuntu) ConvertToModel(cve *gostmodels.UbuntuCVE) *models.CveContent {
 	references := []models.Reference{}
@@ -323,7 +317,7 @@ func (ubu Ubuntu) ConvertToModel(cve *gostmodels.UbuntuCVE) *models.CveContent {
 		Summary:       cve.Description,
 		Cvss2Severity: cve.Priority,
 		Cvss3Severity: cve.Priority,
-		SourceLink:    "https://ubuntu.com/security/" + cve.Candidate,
+		SourceLink:    fmt.Sprintf("https://ubuntu.com/security/%s", cve.Candidate),
 		References:    references,
 		Published:     cve.PublicDate,
 	}

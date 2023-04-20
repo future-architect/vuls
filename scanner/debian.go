@@ -338,7 +338,7 @@ func (o *debian) rebootRequired() (bool, error) {
 	}
 }
 
-const dpkgQuery = `dpkg-query -W -f="\${binary:Package},\${db:Status-Abbrev},\${Version},\${Source},\${source:Version}\n"`
+const dpkgQuery = `dpkg-query -W -f="\${binary:Package},\${db:Status-Abbrev},\${Version},\${source:Package},\${source:Version}\n"`
 
 func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, models.SrcPackages, error) {
 	updatable := models.Packages{}
@@ -417,29 +417,19 @@ func (o *debian) parseInstalledPackages(stdout string) (models.Packages, models.
 				Version: version,
 			}
 
-			if srcName != "" && srcName != name {
-				if pack, ok := srcPacks[srcName]; ok {
-					pack.AddBinaryName(name)
-					srcPacks[srcName] = pack
-				} else {
-					srcPacks[srcName] = models.SrcPackage{
-						Name:        srcName,
-						Version:     srcVersion,
-						BinaryNames: []string{name},
-					}
+			if pack, ok := srcPacks[srcName]; ok {
+				pack.AddBinaryName(name)
+				srcPacks[srcName] = pack
+			} else {
+				srcPacks[srcName] = models.SrcPackage{
+					Name:        srcName,
+					Version:     srcVersion,
+					BinaryNames: []string{name},
 				}
 			}
 		}
 	}
 
-	// Remove "linux"
-	// kernel-related packages are showed "linux" as source package name
-	// If "linux" is left, oval detection will cause trouble, so delete.
-	delete(srcPacks, "linux")
-	// Remove duplicate
-	for name := range installed {
-		delete(srcPacks, name)
-	}
 	return installed, srcPacks, nil
 }
 
@@ -454,8 +444,20 @@ func (o *debian) parseScannedPackagesLine(line string) (name, status, version, s
 		status = strings.TrimSpace(ss[1])
 		version = ss[2]
 		// remove version. ex: tar (1.27.1-2)
+
+		// Source name and version are computed from binary package name and version in dpkg.
+		// Source package name:
+		// https://git.dpkg.org/cgit/dpkg/dpkg.git/tree/lib/dpkg/pkg-format.c#n338
 		srcName = strings.Split(ss[3], " ")[0]
+		if srcName == "" {
+			srcName = name
+		}
+		// Source package version:
+		// https://git.dpkg.org/cgit/dpkg/dpkg.git/tree/lib/dpkg/pkg-show.c#n428
 		srcVersion = ss[4]
+		if srcVersion == "" {
+			srcVersion = version
+		}
 		return
 	}
 

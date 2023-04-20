@@ -80,10 +80,9 @@ func getCvesViaHTTP(cveIDs []string, urlPrefix string) (
 }
 
 type request struct {
-	osMajorVersion string
-	packName       string
-	isSrcPack      bool
-	cveID          string
+	packName  string
+	isSrcPack bool
+	cveID     string
 }
 
 func getCvesWithFixStateViaHTTP(r *models.ScanResult, urlPrefix, fixState string) (responses []response, err error) {
@@ -98,16 +97,14 @@ func getCvesWithFixStateViaHTTP(r *models.ScanResult, urlPrefix, fixState string
 	go func() {
 		for _, pack := range r.Packages {
 			reqChan <- request{
-				osMajorVersion: major(r.Release),
-				packName:       pack.Name,
-				isSrcPack:      false,
+				packName:  pack.Name,
+				isSrcPack: false,
 			}
 		}
 		for _, pack := range r.SrcPackages {
 			reqChan <- request{
-				osMajorVersion: major(r.Release),
-				packName:       pack.Name,
-				isSrcPack:      true,
+				packName:  pack.Name,
+				isSrcPack: true,
 			}
 		}
 	}()
@@ -142,11 +139,11 @@ func getCvesWithFixStateViaHTTP(r *models.ScanResult, urlPrefix, fixState string
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
-			return nil, xerrors.New("Timeout Fetching OVAL")
+			return nil, xerrors.New("Timeout Fetching Gost")
 		}
 	}
 	if len(errs) != 0 {
-		return nil, xerrors.Errorf("Failed to fetch OVAL. err: %w", errs)
+		return nil, xerrors.Errorf("Failed to fetch Gost. err: %w", errs)
 	}
 	return
 }
