@@ -125,6 +125,7 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixed bool) ([]st
 						break
 					}
 				}
+				// To detect vulnerabilities in running kernels only, skip if the kernel is not running.
 				if !isDetect {
 					continue
 				}
