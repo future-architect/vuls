@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/future-architect/vuls/logging"
 	exploitmodels "github.com/vulsio/go-exploitdb/models"
 )
@@ -114,6 +116,23 @@ func (v VulnInfos) FilterIgnorePkgs(ignorePkgsRegexps []string) (_ VulnInfos, nF
 			if !match {
 				return true
 			}
+		}
+		nFiltered++
+		return false
+	}), nFiltered
+}
+
+// FilterIgnoreFixedStatus filter fixed status
+func (v VulnInfos) FilterIgnoreFixedStatus(ignoreFixStates []string) (_ VulnInfos, nFiltered int) {
+	return v.Find(func(v VulnInfo) bool {
+		var ps PackageFixStatuses
+		for _, p := range v.AffectedPackages {
+			if !slices.Contains(ignoreFixStates, p.FixState) {
+				ps = append(ps, p)
+			}
+		}
+		if len(ps) > 0 {
+			return true
 		}
 		nFiltered++
 		return false

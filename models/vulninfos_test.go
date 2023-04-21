@@ -1718,6 +1718,95 @@ func TestVulnInfos_FilterByConfidenceOver(t *testing.T) {
 	}
 }
 
+func TestVulnInfos_FilterIgnoreFixedStatus(t *testing.T) {
+	type args struct {
+		ignoreFixStates []string
+	}
+	tests := []struct {
+		name  string
+		v     VulnInfos
+		args  args
+		want  VulnInfos
+		nwant int
+	}{
+		{
+			name: "filter ignored",
+			v: VulnInfos{
+				"CVE-0000-0000": VulnInfo{
+					CveID: "CVE-0000-0000",
+					AffectedPackages: PackageFixStatuses{
+						{
+							Name:     "pkg",
+							FixState: "needed",
+						},
+					},
+				},
+				"CVE-0000-0001": VulnInfo{
+					CveID: "CVE-0000-0001",
+					AffectedPackages: PackageFixStatuses{
+						{
+							Name:     "pkg",
+							FixState: "ignored",
+						},
+					},
+				},
+				"CVE-0000-0002": VulnInfo{
+					CveID: "CVE-0000-0002",
+					AffectedPackages: PackageFixStatuses{
+						{
+							Name:     "pkg1",
+							FixState: "needed",
+						},
+						{
+							Name:     "pkg2",
+							FixState: "ignored",
+						},
+					},
+				},
+			},
+			args: args{
+				ignoreFixStates: []string{"ignored"},
+			},
+			want: VulnInfos{
+				"CVE-0000-0000": VulnInfo{
+					CveID: "CVE-0000-0000",
+					AffectedPackages: PackageFixStatuses{
+						{
+							Name:     "pkg",
+							FixState: "needed",
+						},
+					},
+				},
+				"CVE-0000-0002": VulnInfo{
+					CveID: "CVE-0000-0002",
+					AffectedPackages: PackageFixStatuses{
+						{
+							Name:     "pkg1",
+							FixState: "needed",
+						},
+						{
+							Name:     "pkg2",
+							FixState: "ignored",
+						},
+					},
+				},
+			},
+			nwant: 1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, gotNFiltered := tt.v.FilterIgnoreFixedStatus(tt.args.ignoreFixStates)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("VulnInfos.FilterIgnoreFixedStatus() got = %v, want %v", got, tt.want)
+			}
+			if gotNFiltered != tt.nwant {
+				t.Errorf("VulnInfos.FilterIgnoreFixedStatus() gotNFiltered = %v, want %v", gotNFiltered, tt.nwant)
+			}
+		})
+	}
+}
+
 func TestVulnInfo_PatchStatus(t *testing.T) {
 	type fields struct {
 		Confidences       Confidences

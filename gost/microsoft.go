@@ -30,7 +30,7 @@ type Microsoft struct {
 }
 
 // DetectCVEs fills cve information that has in Gost
-func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error) {
+func (ms Microsoft) DetectCVEs(r *models.ScanResult) (nCVEs int, err error) {
 	var applied, unapplied []string
 	if r.WindowsKB != nil {
 		applied = r.WindowsKB.Applied

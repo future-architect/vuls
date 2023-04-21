@@ -22,6 +22,7 @@ import (
 // Debian is Gost client for Debian GNU/Linux
 type Debian struct {
 	Base
+	Strict bool
 }
 
 func (deb Debian) supported(major string) bool {
@@ -39,7 +40,7 @@ func (deb Debian) supported(major string) bool {
 }
 
 // DetectCVEs fills cve information that has in Gost
-func (deb Debian) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error) {
+func (deb Debian) DetectCVEs(r *models.ScanResult) (nCVEs int, err error) {
 	if !deb.supported(major(r.Release)) {
 		// only logging
 		logging.Log.Warnf("Debian %s is not supported yet", r.Release)
@@ -132,11 +133,15 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixed bool) ([]st
 				}
 			}
 
-			var f func(string, string) (map[string]gostmodels.DebianCVE, error) = deb.driver.GetFixedCvesDebian
-			if !fixed {
-				f = deb.driver.GetUnfixedCvesDebian
+			var (
+				cs  map[string]gostmodels.DebianCVE
+				err error
+			)
+			if fixed {
+				cs, err = deb.driver.GetFixedCvesDebian(major(r.Release), n)
+			} else {
+				cs, err = deb.driver.GetUnfixedCvesDebian(major(r.Release), n, deb.Strict)
 			}
-			cs, err := f(major(r.Release), n)
 			if err != nil {
 				return nil, xerrors.Errorf("Failed to get CVEs. release: %s, src package: %s, err: %w", major(r.Release), p.Name, err)
 			}
@@ -239,8 +244,9 @@ func (deb Debian) detect(cves map[string]gostmodels.DebianCVE, srcPkg models.Src
 								continue
 							}
 							c.fixStatuses = append(c.fixStatuses, models.PackageFixStatus{
-								Name:    bn,
-								FixedIn: patchedVersion,
+								Name:     bn,
+								FixState: r.Status,
+								FixedIn:  patchedVersion,
 							})
 						}
 					}

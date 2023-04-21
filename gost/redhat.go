@@ -5,9 +5,11 @@ package gost
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 
+	"golang.org/x/exp/slices"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/constant"
@@ -19,10 +21,11 @@ import (
 // RedHat is Gost client for RedHat family linux
 type RedHat struct {
 	Base
+	Strict bool
 }
 
 // DetectCVEs fills cve information that has in Gost
-func (red RedHat) DetectCVEs(r *models.ScanResult, ignoreWillNotFix bool) (nCVEs int, err error) {
+func (red RedHat) DetectCVEs(r *models.ScanResult) (nCVEs int, err error) {
 	gostRelease := r.Release
 	if r.Family == constant.CentOS {
 		gostRelease = strings.TrimPrefix(r.Release, "stream")
@@ -51,7 +54,7 @@ func (red RedHat) DetectCVEs(r *models.ScanResult, ignoreWillNotFix bool) (nCVEs
 	} else {
 		for _, pack := range r.Packages {
 			// CVE-ID: RedhatCVE
-			cves, err := red.driver.GetUnfixedCvesRedhat(major(gostRelease), pack.Name, ignoreWillNotFix)
+			cves, err := red.driver.GetUnfixedCvesRedhat(major(gostRelease), pack.Name, red.Strict)
 			if err != nil {
 				return 0, xerrors.Errorf("Failed to get Unfixed CVEs. err: %w", err)
 			}
@@ -163,31 +166,22 @@ func (red RedHat) setUnfixedCveToScanResult(cve *gostmodels.RedhatCVE, r *models
 func (red RedHat) mergePackageStates(v models.VulnInfo, ps []gostmodels.RedhatPackageState, installed models.Packages, release string) (pkgStats models.PackageFixStatuses) {
 	pkgStats = v.AffectedPackages
 	for _, pstate := range ps {
-		if pstate.Cpe !=
-			"cpe:/o:redhat:enterprise_linux:"+major(release) {
-			return
+		if pstate.Cpe != fmt.Sprintf("cpe:/o:redhat:enterprise_linux:%s", major(release)) {
+			continue
 		}
 
-		if !(pstate.FixState == "Will not fix" ||
-			pstate.FixState == "Fix deferred" ||
-			pstate.FixState == "Affected") {
-			return
+		if !slices.Contains([]string{"Affected", "Fix deferred", "Will not fix", "Out of support scope"}, pstate.FixState) {
+			continue
 		}
 
 		if _, ok := installed[pstate.PackageName]; !ok {
-			return
-		}
-
-		notFixedYet := false
-		switch pstate.FixState {
-		case "Will not fix", "Fix deferred", "Affected":
-			notFixedYet = true
+			continue
 		}
 
 		pkgStats = pkgStats.Store(models.PackageFixStatus{
 			Name:        pstate.PackageName,
 			FixState:    pstate.FixState,
-			NotFixedYet: notFixedYet,
+			NotFixedYet: true,
 		})
 	}
 	return

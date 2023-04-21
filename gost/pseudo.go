@@ -13,6 +13,6 @@ type Pseudo struct {
 }
 
 // DetectCVEs fills cve information that has in Gost
-func (pse Pseudo) DetectCVEs(_ *models.ScanResult, _ bool) (int, error) {
+func (pse Pseudo) DetectCVEs(_ *models.ScanResult) (int, error) {
 	return 0, nil
 }

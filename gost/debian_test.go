@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/future-architect/vuls/models"
 	gostmodels "github.com/vulsio/gost/models"
 )
@@ -192,8 +194,9 @@ func TestDebian_detect(t *testing.T) {
 				{
 					cveContent: models.CveContent{Type: models.DebianSecurityTracker, CveID: "CVE-0000-0001", SourceLink: "https://security-tracker.debian.org/tracker/CVE-0000-0001"},
 					fixStatuses: models.PackageFixStatuses{{
-						Name:    "pkg",
-						FixedIn: "0.0.0-2",
+						Name:     "pkg",
+						FixState: "resolved",
+						FixedIn:  "0.0.0-2",
 					}},
 				},
 			},
@@ -294,8 +297,9 @@ func TestDebian_detect(t *testing.T) {
 				{
 					cveContent: models.CveContent{Type: models.DebianSecurityTracker, CveID: "CVE-0000-0001", SourceLink: "https://security-tracker.debian.org/tracker/CVE-0000-0001"},
 					fixStatuses: models.PackageFixStatuses{{
-						Name:    "linux-image-5.10.0-20-amd64",
-						FixedIn: "0.0.0-2",
+						Name:     "linux-image-5.10.0-20-amd64",
+						FixState: "resolved",
+						FixedIn:  "0.0.0-2",
 					}},
 				},
 			},
@@ -303,7 +307,11 @@ func TestDebian_detect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := (Debian{}).detect(tt.args.cves, tt.args.srcPkg, tt.args.runningKernel); !reflect.DeepEqual(got, tt.want) {
+			got := (Debian{}).detect(tt.args.cves, tt.args.srcPkg, tt.args.runningKernel)
+			slices.SortFunc(got, func(i, j cveContent) bool {
+				return i.cveContent.CveID < j.cveContent.CveID
+			})
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Debian.detect() = %v, want %v", got, tt.want)
 			}
 		})

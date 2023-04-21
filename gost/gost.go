@@ -16,7 +16,7 @@ import (
 
 // Client is the interface of Gost client.
 type Client interface {
-	DetectCVEs(*models.ScanResult, bool) (int, error)
+	DetectCVEs(*models.ScanResult) (int, error)
 	CloseDB() error
 }
 
@@ -45,7 +45,7 @@ func FillCVEsWithRedHat(r *models.ScanResult, cnf config.GostConf, o logging.Log
 		return xerrors.Errorf("Failed to newGostDB. err: %w", err)
 	}
 
-	client := RedHat{Base{driver: db, baseURL: cnf.GetURL()}}
+	client := RedHat{Base: Base{driver: db, baseURL: cnf.GetURL()}, Strict: cnf.Strict}
 	defer func() {
 		if err := client.CloseDB(); err != nil {
 			logging.Log.Errorf("Failed to close DB. err: %+v", err)
@@ -68,11 +68,11 @@ func NewGostClient(cnf config.GostConf, family string, o logging.LogOpts) (Clien
 	base := Base{driver: db, baseURL: cnf.GetURL()}
 	switch family {
 	case constant.RedHat, constant.CentOS, constant.Rocky, constant.Alma:
-		return RedHat{base}, nil
+		return RedHat{Base: base, Strict: cnf.Strict}, nil
 	case constant.Debian, constant.Raspbian:
-		return Debian{base}, nil
+		return Debian{Base: base, Strict: cnf.Strict}, nil
 	case constant.Ubuntu:
-		return Ubuntu{base}, nil
+		return Ubuntu{Base: base, Strict: cnf.Strict}, nil
 	case constant.Windows:
 		return Microsoft{base}, nil
 	default:

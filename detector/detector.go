@@ -202,6 +202,18 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			logging.Log.Infof("%s: %d CVEs filtered by --ignore-unscored-cves", r.FormatServerName(), nFiltered)
 		}
 
+		// IgnoreFixStates
+		ignoreFixStates := []string{}
+		if r.Container.Name == "" {
+			ignoreFixStates = config.Conf.Servers[r.ServerName].IgnoreFixStates
+		} else if con, ok := config.Conf.Servers[r.ServerName].Containers[r.Container.Name]; ok {
+			ignoreFixStates = con.IgnoreFixStates
+		}
+		if 0 < len(ignoreFixStates) {
+			r.ScannedCves, nFiltered = r.ScannedCves.FilterIgnoreFixedStatus(ignoreFixStates)
+			logging.Log.Infof("%s: %d CVEs filtered by ignoreFixStates=%s", r.FormatServerName(), nFiltered, ignoreFixStates)
+		}
+
 		r.FilterInactiveWordPressLibs(config.Conf.WpScan.DetectInactive)
 		rs[i] = r
 	}
@@ -470,7 +482,7 @@ func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult, logOpts l
 		}
 	}()
 
-	nCVEs, err := client.DetectCVEs(r, true)
+	nCVEs, err := client.DetectCVEs(r)
 	if err != nil {
 		switch r.Family {
 		case constant.Debian, constant.Raspbian, constant.Ubuntu, constant.Windows:
