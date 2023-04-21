@@ -267,7 +267,7 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 			return countCheck(err)
 		}
 
-		if graph.Data.Repository.URL == "" {
+		if len(graph.Errors) > 0 || graph.Data.Repository.URL == "" {
 			return countCheck(errof.New(errof.ErrFailedToAccessGithubAPI,
 				fmt.Sprintf("Failed to access to GitHub API. Response: %s", string(body))))
 		}
@@ -362,6 +362,12 @@ type DependencyGraph struct {
 		} `json:"repository"`
 	} `json:"data"`
 	Errors []struct {
+		Type      string        `json:"type,omitempty"`
+		Path      []interface{} `json:"path,omitempty"`
+		Locations []struct {
+			Line   int `json:"line"`
+			Column int `json:"column"`
+		} `json:"locations,omitempty"`
 		Message string `json:"message"`
 	} `json:"errors,omitempty"`
 }
