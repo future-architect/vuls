@@ -304,10 +304,6 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 				// Amazon Linux AMI release 2017.09
 				// Amazon Linux AMI release 2018.03
 				release = "1"
-			case strings.HasPrefix(r.Stdout, "Amazon Linux 2"), strings.HasPrefix(r.Stdout, "Amazon Linux release 2"):
-				// Amazon Linux 2 (Karoo)
-				// Amazon Linux release 2 (Karoo)
-				release = "2"
 			case strings.HasPrefix(r.Stdout, "Amazon Linux 2022"), strings.HasPrefix(r.Stdout, "Amazon Linux release 2022"):
 				// Amazon Linux 2022 (Amazon Linux)
 				// Amazon Linux release 2022 (Amazon Linux)
@@ -316,6 +312,10 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 				// Amazon Linux 2023 (Amazon Linux)
 				// Amazon Linux release 2023 (Amazon Linux)
 				release = "2023"
+			case strings.HasPrefix(r.Stdout, "Amazon Linux 2"), strings.HasPrefix(r.Stdout, "Amazon Linux release 2"):
+				// Amazon Linux 2 (Karoo)
+				// Amazon Linux release 2 (Karoo)
+				release = "2"
 			default:
 				fields := strings.Fields(r.Stdout)
 				if len(fields) == 5 {
