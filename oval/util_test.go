@@ -132,42 +132,24 @@ func TestUpsert(t *testing.T) {
 
 func TestDefpacksToPackStatuses(t *testing.T) {
 	type in struct {
-		dp    defPacks
-		packs models.Packages
+		dp defPacks
 	}
 	var tests = []struct {
 		in  in
 		out models.PackageFixStatuses
 	}{
-		// Ubuntu
 		{
 			in: in{
 				dp: defPacks{
-					def: ovalmodels.Definition{
-						AffectedPacks: []ovalmodels.Package{
-							{
-								Name:        "a",
-								NotFixedYet: true,
-								Version:     "1.0.0",
-							},
-							{
-								Name:        "b",
-								NotFixedYet: false,
-								Version:     "2.0.0",
-							},
-						},
-					},
 					binpkgFixstat: map[string]fixStat{
 						"a": {
-							notFixedYet: true,
+							fixState:    "fixed",
+							notFixedYet: false,
 							fixedIn:     "1.0.0",
-							isSrcPack:   false,
 						},
 						"b": {
 							notFixedYet: true,
 							fixedIn:     "1.0.0",
-							isSrcPack:   true,
-							srcPackName: "lib-b",
 						},
 					},
 				},
@@ -175,7 +157,8 @@ func TestDefpacksToPackStatuses(t *testing.T) {
 			out: models.PackageFixStatuses{
 				{
 					Name:        "a",
-					NotFixedYet: true,
+					FixState:    "fixed",
+					NotFixedYet: false,
 					FixedIn:     "1.0.0",
 				},
 				{
@@ -213,156 +196,6 @@ func TestIsOvalDefAffected(t *testing.T) {
 		fixedIn     string
 		wantErr     bool
 	}{
-		// 0. Ubuntu ovalpack.NotFixedYet == true
-		{
-			in: in{
-				family: "ubuntu",
-				def: ovalmodels.Definition{
-					AffectedPacks: []ovalmodels.Package{
-						{
-							Name:        "a",
-							NotFixedYet: true,
-						},
-						{
-							Name:        "b",
-							NotFixedYet: true,
-							Version:     "1.0.0",
-						},
-					},
-				},
-				req: request{
-					packName: "b",
-				},
-			},
-			affected:    true,
-			notFixedYet: true,
-			fixedIn:     "1.0.0",
-		},
-		// 1. Ubuntu
-		//   ovalpack.NotFixedYet == false
-		//   req.isSrcPack == true
-		//   Version comparison
-		//     oval vs installed
-		{
-			in: in{
-				family: "ubuntu",
-				def: ovalmodels.Definition{
-					AffectedPacks: []ovalmodels.Package{
-						{
-							Name:        "a",
-							NotFixedYet: false,
-						},
-						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "1.0.0-1",
-						},
-					},
-				},
-				req: request{
-					packName:       "b",
-					isSrcPack:      true,
-					versionRelease: "1.0.0-0",
-				},
-			},
-			affected:    true,
-			notFixedYet: false,
-			fixedIn:     "1.0.0-1",
-		},
-		// 2. Ubuntu
-		//   ovalpack.NotFixedYet == false
-		//   Version comparison not hit
-		//     oval vs installed
-		{
-			in: in{
-				family: "ubuntu",
-				def: ovalmodels.Definition{
-					AffectedPacks: []ovalmodels.Package{
-						{
-							Name:        "a",
-							NotFixedYet: false,
-						},
-						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "1.0.0-1",
-						},
-					},
-				},
-				req: request{
-					packName:       "b",
-					versionRelease: "1.0.0-2",
-				},
-			},
-			affected:    false,
-			notFixedYet: false,
-		},
-		// 3. Ubuntu
-		//   ovalpack.NotFixedYet == false
-		//   req.isSrcPack == false
-		//   Version comparison
-		//     oval vs NewVersion
-		//       oval.version > installed.newVersion
-		{
-			in: in{
-				family: "ubuntu",
-				def: ovalmodels.Definition{
-					AffectedPacks: []ovalmodels.Package{
-						{
-							Name:        "a",
-							NotFixedYet: false,
-						},
-						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "1.0.0-3",
-						},
-					},
-				},
-				req: request{
-					packName:          "b",
-					isSrcPack:         false,
-					versionRelease:    "1.0.0-0",
-					newVersionRelease: "1.0.0-2",
-				},
-			},
-			affected:    true,
-			fixedIn:     "1.0.0-3",
-			notFixedYet: false,
-		},
-		// 4. Ubuntu
-		//   ovalpack.NotFixedYet == false
-		//   req.isSrcPack == false
-		//   Version comparison
-		//     oval vs NewVersion
-		//       oval.version < installed.newVersion
-		{
-			in: in{
-				family: "ubuntu",
-				def: ovalmodels.Definition{
-					AffectedPacks: []ovalmodels.Package{
-						{
-							Name:        "a",
-							NotFixedYet: false,
-						},
-						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "1.0.0-2",
-						},
-					},
-				},
-				req: request{
-					packName:          "b",
-					isSrcPack:         false,
-					versionRelease:    "1.0.0-0",
-					newVersionRelease: "1.0.0-3",
-				},
-			},
-			affected:    true,
-			notFixedYet: false,
-			fixedIn:     "1.0.0-2",
-		},
 		// 5 RedHat
 		{
 			in: in{
@@ -370,19 +203,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.el6_7.7",
 					newVersionRelease: "",
 				},
@@ -398,19 +228,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.el6_7.6",
 					newVersionRelease: "0:1.2.3-45.el6_7.7",
 				},
@@ -426,19 +253,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6_7.8",
 				},
 			},
@@ -452,19 +276,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6_7.9",
 				},
 			},
@@ -478,19 +299,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.el6_7.6",
 					newVersionRelease: "0:1.2.3-45.el6_7.7",
 				},
@@ -506,19 +324,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.el6_7.6",
 					newVersionRelease: "0:1.2.3-45.el6_7.8",
 				},
@@ -534,18 +349,15 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{Name: "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.el6_7.6",
 					newVersionRelease: "0:1.2.3-45.el6_7.9",
 				},
@@ -561,19 +373,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6.8",
 				},
 			},
@@ -587,19 +396,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6_7.8",
 				},
 			},
@@ -613,19 +419,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.el6.centos.7",
 					newVersionRelease: "",
 				},
@@ -641,19 +444,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6.centos.8",
 				},
 			},
@@ -667,19 +467,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6.centos.9",
 				},
 			},
@@ -693,19 +490,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.el6.centos.6",
 					newVersionRelease: "0:1.2.3-45.el6.centos.7",
 				},
@@ -721,19 +515,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.el6.centos.6",
 					newVersionRelease: "0:1.2.3-45.el6.centos.8",
 				},
@@ -749,19 +540,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.el6.centos.6",
 					newVersionRelease: "0:1.2.3-45.el6.centos.9",
 				},
@@ -777,19 +565,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6.8",
 				},
 			},
@@ -803,19 +588,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6_7.8",
 				},
 			},
@@ -829,19 +611,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.sl6.7",
 				},
 			},
@@ -855,19 +634,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.sl6.8",
 				},
 			},
@@ -880,19 +656,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.sl6.9",
 				},
 			},
@@ -905,19 +678,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.sl6.6",
 					newVersionRelease: "0:1.2.3-45.sl6.7",
 				},
@@ -932,19 +702,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.sl6.6",
 					newVersionRelease: "0:1.2.3-45.sl6.8",
 				},
@@ -959,19 +726,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.sl6.6",
 					newVersionRelease: "0:1.2.3-45.sl6.9",
 				},
@@ -986,19 +750,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6.8",
 				},
 			},
@@ -1011,19 +772,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6_7.8",
 				},
 			},
@@ -1037,9 +795,8 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "kernel",
-							Version:     "4.1.0",
-							NotFixedYet: false,
+							Name:    "kernel",
+							Version: "4.1.0",
 						},
 					},
 				},
@@ -1061,9 +818,8 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "kernel",
-							Version:     "3.1.0",
-							NotFixedYet: false,
+							Name:    "kernel",
+							Version: "3.1.0",
 						},
 					},
 				},
@@ -1087,19 +843,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.el6.rocky.7",
 					newVersionRelease: "",
 				},
@@ -1114,19 +867,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6.rocky.8",
 				},
 			},
@@ -1139,19 +889,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6.rocky.9",
 				},
 			},
@@ -1164,19 +911,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.el6.rocky.6",
 					newVersionRelease: "0:1.2.3-45.el6.rocky.7",
 				},
@@ -1191,19 +935,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.el6.rocky.6",
 					newVersionRelease: "0:1.2.3-45.el6.rocky.8",
 				},
@@ -1218,19 +959,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.el6.rocky.6",
 					newVersionRelease: "0:1.2.3-45.el6.rocky.9",
 				},
@@ -1245,19 +983,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6.8",
 				},
 			},
@@ -1270,19 +1005,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6_7.8",
 				},
 			},
@@ -1295,19 +1027,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.sl6.7",
 				},
 			},
@@ -1321,19 +1050,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.sl6.8",
 				},
 			},
@@ -1346,19 +1072,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.sl6.9",
 				},
 			},
@@ -1371,19 +1094,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.sl6.6",
 					newVersionRelease: "0:1.2.3-45.sl6.7",
 				},
@@ -1398,19 +1118,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.sl6.6",
 					newVersionRelease: "0:1.2.3-45.sl6.8",
 				},
@@ -1425,19 +1142,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:          "b",
-					isSrcPack:         false,
 					versionRelease:    "0:1.2.3-45.sl6.6",
 					newVersionRelease: "0:1.2.3-45.sl6.9",
 				},
@@ -1452,19 +1166,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6_7.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6_7.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6.8",
 				},
 			},
@@ -1477,19 +1188,16 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "a",
-							NotFixedYet: false,
+							Name: "a",
 						},
 						{
-							Name:        "b",
-							NotFixedYet: false,
-							Version:     "0:1.2.3-45.el6.8",
+							Name:    "b",
+							Version: "0:1.2.3-45.el6.8",
 						},
 					},
 				},
 				req: request{
 					packName:       "b",
-					isSrcPack:      false,
 					versionRelease: "0:1.2.3-45.el6_7.8",
 				},
 			},
@@ -1503,9 +1211,8 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "kernel",
-							Version:     "4.1.0",
-							NotFixedYet: false,
+							Name:    "kernel",
+							Version: "4.1.0",
 						},
 					},
 				},
@@ -1527,9 +1234,8 @@ func TestIsOvalDefAffected(t *testing.T) {
 				def: ovalmodels.Definition{
 					AffectedPacks: []ovalmodels.Package{
 						{
-							Name:        "kernel",
-							Version:     "3.1.0",
-							NotFixedYet: false,
+							Name:    "kernel",
+							Version: "3.1.0",
 						},
 					},
 				},
@@ -1993,9 +1699,8 @@ func Test_lessThan(t *testing.T) {
 				family: "centos",
 				newVer: "1.8.23-10.el7_9.1",
 				AffectedPacks: ovalmodels.Package{
-					Name:        "sudo",
-					Version:     "1.8.23-10.el7_9.1",
-					NotFixedYet: false,
+					Name:    "sudo",
+					Version: "1.8.23-10.el7_9.1",
 				},
 			},
 			want: false,
@@ -2006,9 +1711,8 @@ func Test_lessThan(t *testing.T) {
 				family: "centos",
 				newVer: "1.8.23-10.el7_9.1",
 				AffectedPacks: ovalmodels.Package{
-					Name:        "sudo",
-					Version:     "1.8.23-10.el7.1",
-					NotFixedYet: false,
+					Name:    "sudo",
+					Version: "1.8.23-10.el7.1",
 				},
 			},
 			want: false,
@@ -2019,9 +1723,8 @@ func Test_lessThan(t *testing.T) {
 				family: "centos",
 				newVer: "1.8.23-10.el7.1",
 				AffectedPacks: ovalmodels.Package{
-					Name:        "sudo",
-					Version:     "1.8.23-10.el7_9.1",
-					NotFixedYet: false,
+					Name:    "sudo",
+					Version: "1.8.23-10.el7_9.1",
 				},
 			},
 			want: false,
@@ -2032,9 +1735,8 @@ func Test_lessThan(t *testing.T) {
 				family: "centos",
 				newVer: "1.8.23-10.el7.1",
 				AffectedPacks: ovalmodels.Package{
-					Name:        "sudo",
-					Version:     "1.8.23-10.el7.1",
-					NotFixedYet: false,
+					Name:    "sudo",
+					Version: "1.8.23-10.el7.1",
 				},
 			},
 			want: false,

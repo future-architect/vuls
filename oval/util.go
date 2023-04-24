@@ -15,7 +15,6 @@ import (
 
 	"github.com/cenkalti/backoff"
 	apkver "github.com/knqyf263/go-apk-version"
-	debver "github.com/knqyf263/go-deb-version"
 	rpmver "github.com/knqyf263/go-rpm-version"
 	"github.com/parnurzeal/gorequest"
 	"golang.org/x/xerrors"
@@ -42,16 +41,16 @@ type defPacks struct {
 }
 
 type fixStat struct {
+	fixState    string
 	notFixedYet bool
 	fixedIn     string
-	isSrcPack   bool
-	srcPackName string
 }
 
 func (e defPacks) toPackStatuses() (ps models.PackageFixStatuses) {
 	for name, stat := range e.binpkgFixstat {
 		ps = append(ps, models.PackageFixStatus{
 			Name:        name,
+			FixState:    stat.fixState,
 			NotFixedYet: stat.notFixedYet,
 			FixedIn:     stat.fixedIn,
 		})
@@ -90,8 +89,6 @@ type request struct {
 	versionRelease    string
 	newVersionRelease string
 	arch              string
-	binaryPackNames   []string
-	isSrcPack         bool
 	modularityLabel   string // RHEL 8 or later only
 	repository        string // Amazon Linux 2 Only
 }
@@ -134,7 +131,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 		}
 	}
 
-	nReq := len(r.Packages) + len(r.SrcPackages)
+	nReq := len(r.Packages)
 	reqChan := make(chan request, nReq)
 	resChan := make(chan response, nReq)
 	errChan := make(chan error, nReq)
@@ -148,7 +145,6 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 				packName:          pack.Name,
 				versionRelease:    pack.FormatVer(),
 				newVersionRelease: pack.FormatNewVer(),
-				isSrcPack:         false,
 				arch:              pack.Arch,
 				repository:        pack.Repository,
 			}
@@ -156,15 +152,6 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 				req.repository = "amzn2-core"
 			}
 			reqChan <- req
-		}
-		for _, pack := range r.SrcPackages {
-			reqChan <- request{
-				packName:        pack.Name,
-				binaryPackNames: pack.BinaryNames,
-				versionRelease:  pack.Version,
-				isSrcPack:       true,
-				// arch:            pack.Arch,
-			}
 		}
 	}()
 
@@ -206,23 +193,14 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 					continue
 				}
 
-				if res.request.isSrcPack {
-					for _, n := range res.request.binaryPackNames {
-						fs := fixStat{
-							srcPackName: res.request.packName,
-							isSrcPack:   true,
-							notFixedYet: notFixedYet,
-							fixedIn:     fixedIn,
-						}
-						relatedDefs.upsert(def, n, fs)
-					}
-				} else {
-					fs := fixStat{
-						notFixedYet: notFixedYet,
-						fixedIn:     fixedIn,
-					}
-					relatedDefs.upsert(def, res.request.packName, fs)
+				fs := fixStat{
+					notFixedYet: notFixedYet,
+					fixedIn:     fixedIn,
 				}
+				if !fs.notFixedYet {
+					fs.fixState = "fixed"
+				}
+				relatedDefs.upsert(def, res.request.packName, fs)
 			}
 		case err := <-errChan:
 			errs = append(errs, err)
@@ -316,21 +294,11 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relate
 			newVersionRelease: pack.FormatNewVer(),
 			arch:              pack.Arch,
 			repository:        pack.Repository,
-			isSrcPack:         false,
 		}
 		if ovalFamily == constant.Amazon && ovalRelease == "2" && req.repository == "" {
 			req.repository = "amzn2-core"
 		}
 		requests = append(requests, req)
-	}
-	for _, pack := range r.SrcPackages {
-		requests = append(requests, request{
-			packName:        pack.Name,
-			binaryPackNames: pack.BinaryNames,
-			versionRelease:  pack.Version,
-			arch:            pack.Arch,
-			isSrcPack:       true,
-		})
 	}
 	for _, req := range requests {
 		definitions, err := driver.GetByPackName(ovalFamily, ovalRelease, req.packName, req.arch)
@@ -346,23 +314,14 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relate
 				continue
 			}
 
-			if req.isSrcPack {
-				for _, binName := range req.binaryPackNames {
-					fs := fixStat{
-						notFixedYet: false,
-						isSrcPack:   true,
-						fixedIn:     fixedIn,
-						srcPackName: req.packName,
-					}
-					relatedDefs.upsert(def, binName, fs)
-				}
-			} else {
-				fs := fixStat{
-					notFixedYet: notFixedYet,
-					fixedIn:     fixedIn,
-				}
-				relatedDefs.upsert(def, req.packName, fs)
+			fs := fixStat{
+				notFixedYet: notFixedYet,
+				fixedIn:     fixedIn,
 			}
+			if !fs.notFixedYet {
+				fs.fixState = "fixed"
+			}
+			relatedDefs.upsert(def, req.packName, fs)
 		}
 	}
 	return
@@ -443,10 +402,6 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family, release s
 			}
 		}
 
-		if ovalPack.NotFixedYet {
-			return true, true, ovalPack.Version, nil
-		}
-
 		// Compare between the installed version vs the version in OVAL
 		less, err := lessThan(family, req.versionRelease, ovalPack)
 		if err != nil {
@@ -455,11 +410,6 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family, release s
 			return false, false, ovalPack.Version, nil
 		}
 		if less {
-			if req.isSrcPack {
-				// Unable to judge whether fixed or not-fixed of src package(Ubuntu, Debian)
-				return true, false, ovalPack.Version, nil
-			}
-
 			// If the version of installed is less than in OVAL
 			switch family {
 			case constant.RedHat,
@@ -470,32 +420,30 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family, release s
 				constant.OpenSUSELeap,
 				constant.SUSEEnterpriseServer,
 				constant.SUSEEnterpriseDesktop,
-				constant.Debian,
-				constant.Raspbian,
-				constant.Ubuntu:
+				constant.Alpine:
 				// Use fixed state in OVAL for these distros.
 				return true, false, ovalPack.Version, nil
-			}
+			case constant.CentOS, constant.Alma, constant.Rocky:
+				// But CentOS/Alma/Rocky can't judge whether fixed or unfixed.
+				// Because fixed state in RHEL OVAL is different.
+				// So, it have to be judged version comparison.
 
-			// But CentOS/Alma/Rocky can't judge whether fixed or unfixed.
-			// Because fixed state in RHEL OVAL is different.
-			// So, it have to be judged version comparison.
+				// `offline` or `fast` scan mode can't get a updatable version.
+				// In these mode, the blow field was set empty.
+				// Vuls can not judge fixed or unfixed.
+				if req.newVersionRelease == "" {
+					return true, false, ovalPack.Version, nil
+				}
 
-			// `offline` or `fast` scan mode can't get a updatable version.
-			// In these mode, the blow field was set empty.
-			// Vuls can not judge fixed or unfixed.
-			if req.newVersionRelease == "" {
-				return true, false, ovalPack.Version, nil
+				// compare version: newVer vs oval
+				less, err := lessThan(family, req.newVersionRelease, ovalPack)
+				if err != nil {
+					logging.Log.Debugf("Failed to parse versions: %s, NewVer: %#v, OVAL: %#v, DefID: %s",
+						err, req.newVersionRelease, ovalPack, def.DefinitionID)
+					return false, false, ovalPack.Version, nil
+				}
+				return true, less, ovalPack.Version, nil
 			}
-
-			// compare version: newVer vs oval
-			less, err := lessThan(family, req.newVersionRelease, ovalPack)
-			if err != nil {
-				logging.Log.Debugf("Failed to parse versions: %s, NewVer: %#v, OVAL: %#v, DefID: %s",
-					err, req.newVersionRelease, ovalPack, def.DefinitionID)
-				return false, false, ovalPack.Version, nil
-			}
-			return true, less, ovalPack.Version, nil
 		}
 	}
 	return false, false, "", nil
@@ -503,19 +451,6 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family, release s
 
 func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error) {
 	switch family {
-	case constant.Debian,
-		constant.Ubuntu,
-		constant.Raspbian:
-		vera, err := debver.NewVersion(newVer)
-		if err != nil {
-			return false, xerrors.Errorf("Failed to parse version. version: %s, err: %w", newVer, err)
-		}
-		verb, err := debver.NewVersion(packInOVAL.Version)
-		if err != nil {
-			return false, xerrors.Errorf("Failed to parse version. version: %s, err: %w", packInOVAL.Version, err)
-		}
-		return vera.LessThan(verb), nil
-
 	case constant.Alpine:
 		vera, err := apkver.NewVersion(newVer)
 		if err != nil {
