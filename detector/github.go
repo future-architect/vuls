@@ -243,7 +243,7 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 	req.Header.Set("Content-Type", "application/json")
 
 	graph := DependencyGraph{}
-	count, retryMax := 0, 3
+	count, retryMax := 0, 10
 	countCheck := func(err error) error {
 		if count == retryMax {
 			return backoff.Permanent(err)
