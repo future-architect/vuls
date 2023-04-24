@@ -12,7 +12,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/cenkalti/backoff"
 	"github.com/future-architect/vuls/errof"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"golang.org/x/oauth2"
 )
@@ -240,25 +242,44 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 	req.Header.Set("Accept", "application/vnd.github.hawkgirl-preview+json")
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
 	graph := DependencyGraph{}
-	if err := json.Unmarshal(body, &graph); err != nil {
+	count, retryMax := 0, 10
+	countCheck := func(err error) error {
+		if count == retryMax {
+			return backoff.Permanent(err)
+		}
 		return err
 	}
+	operation := func() error {
+		count++
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			return countCheck(err)
+		}
+		defer resp.Body.Close()
 
-	if graph.Data.Repository.URL == "" {
-		return errof.New(errof.ErrFailedToAccessGithubAPI,
-			fmt.Sprintf("Failed to access to GitHub API. Response: %s", string(body)))
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return countCheck(err)
+		}
+
+		if err := json.Unmarshal(body, &graph); err != nil {
+			return countCheck(err)
+		}
+
+		if len(graph.Errors) > 0 || graph.Data.Repository.URL == "" {
+			return countCheck(errof.New(errof.ErrFailedToAccessGithubAPI,
+				fmt.Sprintf("Failed to access to GitHub API. Response: %s", string(body))))
+		}
+
+		return nil
+	}
+	notify := func(err error, t time.Duration) {
+		logging.Log.Warnf("Failed trial (count: %d). retrying in %s. err: %+v", count, t, err)
+	}
+
+	if err = backoff.RetryNotify(operation, backoff.NewExponentialBackOff(), notify); err != nil {
+		return err
 	}
 
 	dependenciesAfter = ""
@@ -340,4 +361,13 @@ type DependencyGraph struct {
 			} `json:"dependencyGraphManifests"`
 		} `json:"repository"`
 	} `json:"data"`
+	Errors []struct {
+		Type      string        `json:"type,omitempty"`
+		Path      []interface{} `json:"path,omitempty"`
+		Locations []struct {
+			Line   int `json:"line"`
+			Column int `json:"column"`
+		} `json:"locations,omitempty"`
+		Message string `json:"message"`
+	} `json:"errors,omitempty"`
 }
