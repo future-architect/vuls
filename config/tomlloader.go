@@ -9,6 +9,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/c-robinson/iplib"
 	"github.com/knqyf263/go-cpe/naming"
+	"golang.org/x/exp/slices"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/constant"
@@ -76,29 +77,15 @@ func (c TOMLLoader) Load(pathToToml string) error {
 			server.CpeNames[i] = uri
 		}
 
-		for _, cve := range Conf.Default.IgnoreCves {
-			found := false
-			for _, c := range server.IgnoreCves {
-				if cve == c {
-					found = true
-					break
-				}
-			}
-			if !found {
-				server.IgnoreCves = append(server.IgnoreCves, cve)
+		for _, c := range Conf.Default.IgnoreCves {
+			if !slices.Contains(server.IgnoreCves, c) {
+				server.IgnoreCves = append(server.IgnoreCves, c)
 			}
 		}
 
-		for _, pkg := range Conf.Default.IgnorePkgsRegexp {
-			found := false
-			for _, p := range server.IgnorePkgsRegexp {
-				if pkg == p {
-					found = true
-					break
-				}
-			}
-			if !found {
-				server.IgnorePkgsRegexp = append(server.IgnorePkgsRegexp, pkg)
+		for _, p := range Conf.Default.IgnorePkgsRegexp {
+			if !slices.Contains(server.IgnorePkgsRegexp, p) {
+				server.IgnorePkgsRegexp = append(server.IgnorePkgsRegexp, p)
 			}
 		}
 		for _, reg := range server.IgnorePkgsRegexp {
@@ -113,6 +100,12 @@ func (c TOMLLoader) Load(pathToToml string) error {
 				if err != nil {
 					return xerrors.Errorf("Failed to parse %s in %s@%s. err: %w", reg, contName, name, err)
 				}
+			}
+		}
+
+		for _, s := range Conf.Default.IgnoreFixStates {
+			if !slices.Contains(server.IgnoreFixStates, s) {
+				server.IgnoreFixStates = append(server.IgnoreFixStates, s)
 			}
 		}
 

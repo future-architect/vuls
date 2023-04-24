@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/asaskevich/govalidator"
@@ -224,11 +225,13 @@ func (cnf *GoCveDictConf) Init() {
 // GostConf is gost config
 type GostConf struct {
 	VulnDict
+	Strict bool
 }
 
 const gostDBType = "GOSTDB_TYPE"
 const gostDBURL = "GOSTDB_URL"
 const gostDBPATH = "GOSTDB_SQLITE3_PATH"
+const gostStrict = "GOST_STRICT"
 
 // Init set options with the following priority.
 // 1. Environment variable
@@ -243,6 +246,13 @@ func (cnf *GostConf) Init() {
 	}
 	if os.Getenv(gostDBPATH) != "" {
 		cnf.SQLite3Path = os.Getenv(gostDBPATH)
+	}
+	if s := os.Getenv(gostStrict); s != "" {
+		b, err := strconv.ParseBool(s)
+		if err != nil {
+			logging.Log.Warnf("Failed to parse GOST_STRICT. GOST_STRICT accepts bool value. actual value: %v, type: %T", s, s)
+		}
+		cnf.Strict = b
 	}
 	cnf.setDefault("gost.sqlite3")
 	cnf.DebugSQL = Conf.DebugSQL

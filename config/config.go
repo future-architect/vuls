@@ -239,6 +239,7 @@ type ServerInfo struct {
 	Containers         map[string]ContainerSetting `toml:"containers,omitempty" json:"containers,omitempty"`
 	IgnoreCves         []string                    `toml:"ignoreCves,omitempty" json:"ignoreCves,omitempty"`
 	IgnorePkgsRegexp   []string                    `toml:"ignorePkgsRegexp,omitempty" json:"ignorePkgsRegexp,omitempty"`
+	IgnoreFixStates    []string                    `toml:"ignoreFixStates,omitempty" json:"ignoreFixStates,omitempty"`
 	GitHubRepos        map[string]GitHubConf       `toml:"githubs" json:"githubs,omitempty"` // key: owner/repo
 	UUIDs              map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
 	Memo               string                      `toml:"memo,omitempty" json:"memo,omitempty"`
@@ -271,6 +272,7 @@ type ContainerSetting struct {
 	OwaspDCXMLPath   string   `json:"owaspDCXMLPath,omitempty"`
 	IgnorePkgsRegexp []string `json:"ignorePkgsRegexp,omitempty"`
 	IgnoreCves       []string `json:"ignoreCves,omitempty"`
+	IgnoreFixStates  []string `json:"ignoreFixStates,omitempty"`
 }
 
 // WordPressConf used for WordPress Scanning

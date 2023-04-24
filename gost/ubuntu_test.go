@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/future-architect/vuls/models"
 	gostmodels "github.com/vulsio/gost/models"
 )
@@ -120,7 +122,6 @@ func TestUbuntuConvertToModel(t *testing.T) {
 func Test_detect(t *testing.T) {
 	type args struct {
 		cves                       map[string]gostmodels.UbuntuCVE
-		fixed                      bool
 		srcPkg                     models.SrcPackage
 		runningKernelBinaryPkgName string
 	}
@@ -152,7 +153,6 @@ func Test_detect(t *testing.T) {
 						},
 					},
 				},
-				fixed:                      true,
 				srcPkg:                     models.SrcPackage{Name: "pkg", Version: "0.0.0-1", BinaryNames: []string{"pkg"}},
 				runningKernelBinaryPkgName: "",
 			},
@@ -160,8 +160,9 @@ func Test_detect(t *testing.T) {
 				{
 					cveContent: models.CveContent{Type: models.UbuntuAPI, CveID: "CVE-0000-0001", SourceLink: "https://ubuntu.com/security/CVE-0000-0001", References: []models.Reference{}},
 					fixStatuses: models.PackageFixStatuses{{
-						Name:    "pkg",
-						FixedIn: "0.0.0-2",
+						Name:     "pkg",
+						FixState: "released",
+						FixedIn:  "0.0.0-2",
 					}},
 				},
 			},
@@ -175,12 +176,47 @@ func Test_detect(t *testing.T) {
 						Patches: []gostmodels.UbuntuPatch{
 							{
 								PackageName:    "pkg",
-								ReleasePatches: []gostmodels.UbuntuReleasePatch{{ReleaseName: "jammy", Status: "open"}},
+								ReleasePatches: []gostmodels.UbuntuReleasePatch{{ReleaseName: "jammy", Status: "needed"}},
+							},
+						},
+					},
+					"CVE-0000-0001": {
+						Candidate: "CVE-0000-0001",
+						Patches: []gostmodels.UbuntuPatch{
+							{
+								PackageName:    "pkg",
+								ReleasePatches: []gostmodels.UbuntuReleasePatch{{ReleaseName: "jammy", Status: "deferred"}},
+							},
+						},
+					},
+					"CVE-0000-0002": {
+						Candidate: "CVE-0000-0002",
+						Patches: []gostmodels.UbuntuPatch{
+							{
+								PackageName:    "pkg",
+								ReleasePatches: []gostmodels.UbuntuReleasePatch{{ReleaseName: "jammy", Status: "pending"}},
+							},
+						},
+					},
+					"CVE-0000-0003": {
+						Candidate: "CVE-0000-0003",
+						Patches: []gostmodels.UbuntuPatch{
+							{
+								PackageName:    "pkg",
+								ReleasePatches: []gostmodels.UbuntuReleasePatch{{ReleaseName: "jammy", Status: "active"}},
+							},
+						},
+					},
+					"CVE-0000-0004": {
+						Candidate: "CVE-0000-0004",
+						Patches: []gostmodels.UbuntuPatch{
+							{
+								PackageName:    "pkg",
+								ReleasePatches: []gostmodels.UbuntuReleasePatch{{ReleaseName: "jammy", Status: "ignored"}},
 							},
 						},
 					},
 				},
-				fixed:                      false,
 				srcPkg:                     models.SrcPackage{Name: "pkg", Version: "0.0.0-1", BinaryNames: []string{"pkg"}},
 				runningKernelBinaryPkgName: "",
 			},
@@ -189,7 +225,39 @@ func Test_detect(t *testing.T) {
 					cveContent: models.CveContent{Type: models.UbuntuAPI, CveID: "CVE-0000-0000", SourceLink: "https://ubuntu.com/security/CVE-0000-0000", References: []models.Reference{}},
 					fixStatuses: models.PackageFixStatuses{{
 						Name:        "pkg",
-						FixState:    "open",
+						FixState:    "needed",
+						NotFixedYet: true,
+					}},
+				},
+				{
+					cveContent: models.CveContent{Type: models.UbuntuAPI, CveID: "CVE-0000-0001", SourceLink: "https://ubuntu.com/security/CVE-0000-0001", References: []models.Reference{}},
+					fixStatuses: models.PackageFixStatuses{{
+						Name:        "pkg",
+						FixState:    "deferred",
+						NotFixedYet: true,
+					}},
+				},
+				{
+					cveContent: models.CveContent{Type: models.UbuntuAPI, CveID: "CVE-0000-0002", SourceLink: "https://ubuntu.com/security/CVE-0000-0002", References: []models.Reference{}},
+					fixStatuses: models.PackageFixStatuses{{
+						Name:        "pkg",
+						FixState:    "pending",
+						NotFixedYet: true,
+					}},
+				},
+				{
+					cveContent: models.CveContent{Type: models.UbuntuAPI, CveID: "CVE-0000-0003", SourceLink: "https://ubuntu.com/security/CVE-0000-0003", References: []models.Reference{}},
+					fixStatuses: models.PackageFixStatuses{{
+						Name:        "pkg",
+						FixState:    "active",
+						NotFixedYet: true,
+					}},
+				},
+				{
+					cveContent: models.CveContent{Type: models.UbuntuAPI, CveID: "CVE-0000-0004", SourceLink: "https://ubuntu.com/security/CVE-0000-0004", References: []models.Reference{}},
+					fixStatuses: models.PackageFixStatuses{{
+						Name:        "pkg",
+						FixState:    "ignored",
 						NotFixedYet: true,
 					}},
 				},
@@ -218,7 +286,6 @@ func Test_detect(t *testing.T) {
 						},
 					},
 				},
-				fixed:                      true,
 				srcPkg:                     models.SrcPackage{Name: "linux-signed", Version: "0.0.0-1", BinaryNames: []string{"linux-image-generic", "linux-headers-generic"}},
 				runningKernelBinaryPkgName: "linux-image-generic",
 			},
@@ -226,8 +293,9 @@ func Test_detect(t *testing.T) {
 				{
 					cveContent: models.CveContent{Type: models.UbuntuAPI, CveID: "CVE-0000-0001", SourceLink: "https://ubuntu.com/security/CVE-0000-0001", References: []models.Reference{}},
 					fixStatuses: models.PackageFixStatuses{{
-						Name:    "linux-image-generic",
-						FixedIn: "0.0.0-2",
+						Name:     "linux-image-generic",
+						FixState: "released",
+						FixedIn:  "0.0.0-2",
 					}},
 				},
 			},
@@ -255,7 +323,6 @@ func Test_detect(t *testing.T) {
 						},
 					},
 				},
-				fixed:                      true,
 				srcPkg:                     models.SrcPackage{Name: "linux-meta", Version: "0.0.0.1", BinaryNames: []string{"linux-image-generic", "linux-headers-generic"}},
 				runningKernelBinaryPkgName: "linux-image-generic",
 			},
@@ -263,8 +330,9 @@ func Test_detect(t *testing.T) {
 				{
 					cveContent: models.CveContent{Type: models.UbuntuAPI, CveID: "CVE-0000-0001", SourceLink: "https://ubuntu.com/security/CVE-0000-0001", References: []models.Reference{}},
 					fixStatuses: models.PackageFixStatuses{{
-						Name:    "linux-image-generic",
-						FixedIn: "0.0.0.2",
+						Name:     "linux-image-generic",
+						FixState: "released",
+						FixedIn:  "0.0.0.2",
 					}},
 				},
 			},
@@ -272,7 +340,11 @@ func Test_detect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := (Ubuntu{}).detect(tt.args.cves, tt.args.fixed, tt.args.srcPkg, tt.args.runningKernelBinaryPkgName); !reflect.DeepEqual(got, tt.want) {
+			got := (Ubuntu{}).detect(tt.args.cves, tt.args.srcPkg, tt.args.runningKernelBinaryPkgName)
+			slices.SortFunc(got, func(i, j cveContent) bool {
+				return i.cveContent.CveID < j.cveContent.CveID
+			})
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("detect() = %#v, want %#v", got, tt.want)
 			}
 		})

@@ -92,6 +92,7 @@ func printConfigToml(ips []string) (err error) {
 #type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
 #sqlite3Path = "/path/to/gost.sqlite3"
 #url        = ""
+#strict = false
 
 [exploit]
 #type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
@@ -196,6 +197,8 @@ func printConfigToml(ips []string) (err error) {
 #]
 #owaspDCXMLPath     = "/tmp/dependency-check-report.xml"
 #ignoreCves         = ["CVE-2014-6271"]
+#ignorePkgsRegexp = ["^kernel.*"]
+#ignoreFixStates = ["ignored"]
 #containerType      = "docker" #or "lxd" or "lxc" default: docker
 #containersIncluded = ["${running}"]
 #containersExcluded = ["container_name_a"]
@@ -221,6 +224,8 @@ host                = "{{$ip}}"
 #cpeNames           = [ "cpe:/a:rubyonrails:ruby_on_rails:4.2.1" ]
 #owaspDCXMLPath     = "/path/to/dependency-check-report.xml"
 #ignoreCves         = ["CVE-2014-0160"]
+#ignorePkgsRegexp = ["^kernel.*"]
+#ignoreFixStates = ["ignored"]
 #containersOnly     = false
 #containerType      = "docker" #or "lxd" or "lxc" default: docker
 #containersIncluded = ["${running}"]
@@ -231,6 +236,8 @@ host                = "{{$ip}}"
 #cpeNames       = [ "cpe:/a:rubyonrails:ruby_on_rails:4.2.1" ]
 #owaspDCXMLPath = "/path/to/dependency-check-report.xml"
 #ignoreCves     = ["CVE-2014-0160"]
+#ignorePkgsRegexp = ["^kernel.*"]
+#ignoreFixStates = ["ignored"]
 
 #[servers.{{index $names $i}}.githubs."owner/repo"]
 #token	= "yourToken"
