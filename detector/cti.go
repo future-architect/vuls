@@ -211,9 +211,9 @@ func newCTIDB(cnf config.VulnDictInterface) (ctidb.DB, error) {
 	if cnf.GetType() == "sqlite3" {
 		path = cnf.GetSQLite3Path()
 	}
-	driver, locked, err := ctidb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), ctidb.Option{})
+	driver, err := ctidb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), ctidb.Option{})
 	if err != nil {
-		if locked {
+		if xerrors.Is(err, ctidb.ErrDBLocked) {
 			return nil, xerrors.Errorf("Failed to init cti DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
 		}
 		return nil, xerrors.Errorf("Failed to init cti DB. DB Path: %s, err: %w", path, err)

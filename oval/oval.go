@@ -133,9 +133,9 @@ func newOvalDB(cnf config.VulnDictInterface) (ovaldb.DB, error) {
 	if cnf.GetType() == "sqlite3" {
 		path = cnf.GetSQLite3Path()
 	}
-	driver, locked, err := ovaldb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), ovaldb.Option{})
+	driver, err := ovaldb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), ovaldb.Option{})
 	if err != nil {
-		if locked {
+		if xerrors.Is(err, ovaldb.ErrDBLocked) {
 			return nil, xerrors.Errorf("Failed to init OVAL DB. SQLite3: %s is locked. err: %w, ", cnf.GetSQLite3Path(), err)
 		}
 		return nil, xerrors.Errorf("Failed to init OVAL DB. DB Path: %s, err: %w", path, err)

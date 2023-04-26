@@ -18,10 +18,7 @@ VERSION := $(shell git describe --tags --abbrev=0)
 REVISION := $(shell git rev-parse --short HEAD)
 BUILDTIME := $(shell date "+%Y%m%d_%H%M%S")
 LDFLAGS := -X 'github.com/future-architect/vuls/config.Version=$(VERSION)' -X 'github.com/future-architect/vuls/config.Revision=build-$(BUILDTIME)_$(REVISION)'
-GO := GO111MODULE=on go
-CGO_UNABLED := CGO_ENABLED=0 go
-GO_OFF := GO111MODULE=off go
-
+GO := CGO_ENABLED=0 go
 
 all: build test
 
@@ -32,27 +29,24 @@ install: ./cmd/vuls/main.go
 	$(GO) install -ldflags "$(LDFLAGS)" ./cmd/vuls
 
 build-scanner: ./cmd/scanner/main.go 
-	$(CGO_UNABLED) build -tags=scanner -a -ldflags "$(LDFLAGS)" -o vuls ./cmd/scanner
+	$(GO) build -tags=scanner -a -ldflags "$(LDFLAGS)" -o vuls ./cmd/scanner
 
 install-scanner: ./cmd/scanner/main.go 
-	$(CGO_UNABLED) install -tags=scanner -ldflags "$(LDFLAGS)" ./cmd/scanner
+	$(GO) install -tags=scanner -ldflags "$(LDFLAGS)" ./cmd/scanner
 
 lint:
-	$(GO) install github.com/mgechev/revive@latest
+	go install github.com/mgechev/revive@latest
 	revive -config ./.revive.toml -formatter plain $(PKGS)
 
 vet:
 	echo $(PKGS) | xargs env $(GO) vet || exit;
 
 golangci:
-	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	golangci-lint run
 
 fmt:
 	gofmt -s -w $(SRCS)
-
-mlint:
-	$(foreach file,$(SRCS),gometalinter $(file) || exit;)
 
 fmtcheck:
 	$(foreach file,$(SRCS),gofmt -s -d $(file);)
@@ -61,9 +55,6 @@ pretest: lint vet fmtcheck
 
 test: pretest
 	$(GO) test -cover -v ./... || exit;
-
-unused:
-	$(foreach pkg,$(PKGS),unused $(pkg);)
 
 cov:
 	@ go get -v github.com/axw/gocov/gocov
