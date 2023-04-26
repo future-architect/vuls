@@ -6,7 +6,7 @@ require (
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/BurntSushi/toml v1.2.1
 	github.com/CycloneDX/cyclonedx-go v0.7.0
-	github.com/Ullaakut/nmap/v2 v2.1.2-0.20210406060955-59a52fe80a4f
+	github.com/Ullaakut/nmap/v2 v2.2.2
 	github.com/aquasecurity/go-dep-parser v0.0.0-20221114145626-35ef808901e8
 	github.com/aquasecurity/trivy v0.35.0
 	github.com/aquasecurity/trivy-db v0.0.0-20220627104749-930461748b63
