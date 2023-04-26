@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/BurntSushi/toml v1.2.1
-	github.com/CycloneDX/cyclonedx-go v0.7.0
+	github.com/CycloneDX/cyclonedx-go v0.7.1
 	github.com/Ullaakut/nmap/v2 v2.2.2
 	github.com/aquasecurity/go-dep-parser v0.0.0-20221114145626-35ef808901e8
 	github.com/aquasecurity/trivy v0.35.0
@@ -152,7 +152,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.15.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
-	github.com/stretchr/testify v1.8.1 // indirect
+	github.com/stretchr/testify v1.8.2 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
