@@ -43,7 +43,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.6.1
 	github.com/vulsio/go-cti v0.0.2
-	github.com/vulsio/go-cve-dictionary v0.8.3
+	github.com/vulsio/go-cve-dictionary v0.9.0
 	github.com/vulsio/go-exploitdb v0.4.4
 	github.com/vulsio/go-kev v0.1.1
 	github.com/vulsio/go-msfdb v0.2.1
@@ -112,6 +112,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.1 // indirect
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/htcat/htcat v1.0.2 // indirect
 	github.com/inconshreveable/log15 v2.16.0+incompatible // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect

@@ -543,6 +543,8 @@ github.com/hashicorp/golang-lru v0.5.1/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
 github.com/hashicorp/hcl/v2 v2.14.1 h1:x0BpjfZ+CYdbiz+8yZTQ+gdLO7IXvOut7Da+XJayx34=
+github.com/htcat/htcat v1.0.2 h1:zro95dGwkKDeZOgq9ei+9szd5qurGxBGfHY8hRehA7k=
+github.com/htcat/htcat v1.0.2/go.mod h1:i8ViQbjSi2+lJzM6Lx20FIxHENCz6mzJglK3HH06W3s=
 github.com/huandu/xstrings v1.3.2 h1:L18LIDzqlW6xN2rEkpdV8+oL/IXWJ1APd+vsdYy4Wdw=
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
@@ -779,8 +781,8 @@ github.com/urfave/cli/v2 v2.3.0/go.mod h1:LJmUH05zAU44vOAcrfzZQKsZbVcdbOG8rtL3/X
 github.com/vbatts/tar-split v0.11.2 h1:Via6XqJr0hceW4wff3QRzD5gAk/tatMw/4ZA7cTlIME=
 github.com/vulsio/go-cti v0.0.2 h1:EL11fvKgeQxuwlLDrN5szafH364B2VWGuRSoATT/KaU=
 github.com/vulsio/go-cti v0.0.2/go.mod h1:oICScdF/y+skYH6yORuwSaSYCuIYy30SZRiK+kUUm8k=
-github.com/vulsio/go-cve-dictionary v0.8.3 h1:76meG1GJrXqUdI0HeliUBsdGuMm55XNEPnkPDdQdqyE=
-github.com/vulsio/go-cve-dictionary v0.8.3/go.mod h1:aqf+5NVAvmW8iLJImsrWYb7nHetX1dqP0O/8FYfrI4I=
+github.com/vulsio/go-cve-dictionary v0.9.0 h1:02toBUm9i7KShcHhcmu/d7U+UPv/byWwi9yMV5UGFTY=
+github.com/vulsio/go-cve-dictionary v0.9.0/go.mod h1:PdkEViYpf0sx4H0YF7Sk/Xo+j8Agof4aOVoQxzL+TQA=
 github.com/vulsio/go-exploitdb v0.4.4 h1:h5y6xI4wrpzwo6kmLKU7eb/GryP2kcqgjo8C+VvAFXE=
 github.com/vulsio/go-exploitdb v0.4.4/go.mod h1:nUQwEq6AEp62jeHV1Bf2wq080/7qxu+wguDW/lAnLIo=
 github.com/vulsio/go-kev v0.1.1 h1:Xi0FjUj2czQpnurfbXxSrJFbaePolbTrM+gfYxsvj2o=
