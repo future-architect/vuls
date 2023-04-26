@@ -1,12 +1,12 @@
 package reporter
 
 import (
-	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
 
-	storage "github.com/Azure/azure-sdk-for-go/storage"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
@@ -83,33 +83,37 @@ func (w AzureBlobWriter) Validate() error {
 	if err != nil {
 		return err
 	}
-	r, err := cli.ListContainers(storage.ListContainersParameters{})
-	if err != nil {
-		return err
-	}
 
-	found := false
-	for _, con := range r.Containers {
-		if con.Name == w.ContainerName {
-			found = true
-			break
+	pager := cli.NewListContainersPager(nil)
+	for pager.More() {
+		page, err := pager.NextPage(context.TODO())
+		if err != nil {
+			return xerrors.Errorf("Failed to next page. err: %w", err)
+		}
+		for _, con := range page.ContainerItems {
+			if *con.Name == w.ContainerName {
+				return nil
+			}
 		}
 	}
-	if !found {
-		return xerrors.Errorf("Container not found. Container: %s", w.ContainerName)
-	}
-	return nil
+	return xerrors.Errorf("Container not found. Container: %s", w.ContainerName)
 }
 
-func (w AzureBlobWriter) getBlobClient() (storage.BlobStorageClient, error) {
-	api, err := storage.NewBasicClient(w.AccountName, w.AccountKey)
+func (w AzureBlobWriter) getBlobClient() (*azblob.Client, error) {
+	cred, err := azblob.NewSharedKeyCredential(w.AccountName, w.AccountKey)
 	if err != nil {
-		return storage.BlobStorageClient{}, err
+		return nil, xerrors.Errorf("Failed to create SharedKeyCredential. err: %w", err)
 	}
-	return api.GetBlobService(), nil
+
+	client, err := azblob.NewClientWithSharedKeyCredential(w.Endpoint, cred, nil)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to create Client. err: %w", err)
+	}
+
+	return client, nil
 }
 
-func (w AzureBlobWriter) createBlockBlob(cli storage.BlobStorageClient, k string, b []byte, gzip bool) error {
+func (w AzureBlobWriter) createBlockBlob(cli *azblob.Client, k string, b []byte, gzip bool) error {
 	var err error
 	if gzip {
 		if b, err = gz(b); err != nil {
@@ -118,11 +122,8 @@ func (w AzureBlobWriter) createBlockBlob(cli storage.BlobStorageClient, k string
 		k += ".gz"
 	}
 
-	ref := cli.GetContainerReference(w.ContainerName)
-	blob := ref.GetBlobReference(k)
-	if err := blob.CreateBlockBlobFromReader(bytes.NewReader(b), nil); err != nil {
-		return xerrors.Errorf("Failed to upload data to %s/%s, err: %w",
-			w.ContainerName, k, err)
+	if _, err := cli.UploadBuffer(context.TODO(), w.ContainerName, k, b, nil); err != nil {
+		return xerrors.Errorf("Failed to upload data to %s/%s, err: %w", w.ContainerName, k, err)
 	}
 	return nil
 }
