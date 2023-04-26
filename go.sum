@@ -783,8 +783,8 @@ github.com/vulsio/go-msfdb v0.2.1 h1:s3Czz+WdgtaXjHRy+1fUzSdEjZGXie354IvT+9syAY0
 github.com/vulsio/go-msfdb v0.2.1/go.mod h1:8A7AyeSqZtFxfd5bljiB1/z2hvkFPe3/jpRtV/mqGbo=
 github.com/vulsio/gost v0.4.3-0.20230420081542-e248764c0eee h1:Iv430SBnvzwXX1yxORepcWxpXzrknBpqcm4f1J4YE60=
 github.com/vulsio/gost v0.4.3-0.20230420081542-e248764c0eee/go.mod h1:PxCHzwylur7/EiP7Jo6UPRYkipi76EhA015FOTjKol0=
-github.com/vulsio/goval-dictionary v0.8.2 h1:6aI10z/RFZjADzP4fvf7I1zGqbY3EfAsF0I1VOh/ep0=
-github.com/vulsio/goval-dictionary v0.8.2/go.mod h1:yRO+Xuce12lSQiV6gdMb86uc8V5Vncgzc6U84WvB/5k=
+github.com/vulsio/goval-dictionary v0.9.0 h1:enkHI+EIncq7BKozxMWNbIikuSl3H6aKOL4+EO4SkhM=
+github.com/vulsio/goval-dictionary v0.9.0/go.mod h1:Ui1C4bBail+itAXGxWK7bwMAEr/Dhp0eD11gUdKcz54=
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=
 github.com/xanzy/ssh-agent v0.3.3/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=
 github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb h1:zGWFAtiMcyryUHoUjUJX0/lt1H2+i2Ka2n+D3DImSNo=

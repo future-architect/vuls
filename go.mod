@@ -48,7 +48,7 @@ require (
 	github.com/vulsio/go-kev v0.1.1
 	github.com/vulsio/go-msfdb v0.2.1
 	github.com/vulsio/gost v0.4.3-0.20230420081542-e248764c0eee
-	github.com/vulsio/goval-dictionary v0.8.2
+	github.com/vulsio/goval-dictionary v0.9.0
 	go.etcd.io/bbolt v1.3.7
 	golang.org/x/exp v0.0.0-20230425010034-47ecfdc1ba53
 	golang.org/x/oauth2 v0.1.0
