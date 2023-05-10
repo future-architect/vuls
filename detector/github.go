@@ -269,7 +269,7 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 
 		if len(graph.Errors) > 0 || graph.Data.Repository.URL == "" {
 			return countCheck(errof.New(errof.ErrFailedToAccessGithubAPI,
-				fmt.Sprintf("Failed to access to GitHub API. Response: %s", string(body))))
+				fmt.Sprintf("Failed to access to GitHub API. Repository: %s/%s; Response: %s", owner, repo, string(body))))
 		}
 
 		return nil
