@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/future-architect/vuls/models"
 	gostmodels "github.com/vulsio/gost/models"
 )
@@ -303,7 +305,9 @@ func TestDebian_detect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := (Debian{}).detect(tt.args.cves, tt.args.srcPkg, tt.args.runningKernel); !reflect.DeepEqual(got, tt.want) {
+			got := (Debian{}).detect(tt.args.cves, tt.args.srcPkg, tt.args.runningKernel)
+			slices.SortFunc(got, func(i, j cveContent) bool { return i.cveContent.CveID < j.cveContent.CveID })
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Debian.detect() = %v, want %v", got, tt.want)
 			}
 		})
