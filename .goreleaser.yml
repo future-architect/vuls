@@ -1,64 +1,18 @@
 project_name: vuls
-env:
-  - GO111MODULE=on
 release:
   github:
     owner: future-architect
     name: vuls
 builds:
-- id: vuls-linux-amd64
+- id: vuls
+  env:
+  - CGO_ENABLED=0
   goos:
   - linux
-  goarch:
-  - amd64
-  env:
-  - CGO_ENABLED=1
-  - CC=x86_64-linux-gnu-gcc
-  main: ./cmd/vuls/main.go
-  flags:
-  - -a
-  ldflags: 
-  - -s -w -X github.com/future-architect/vuls/config.Version={{.Version}} -X github.com/future-architect/vuls/config.Revision={{.Commit}}-{{ .CommitDate }}
-  binary: vuls
-
-- id: vuls-linux-arm64
-  goos:
-  - linux
-  goarch:
-  - arm64
-  env:
-  - CGO_ENABLED=1
-  - CC=aarch64-linux-gnu-gcc
-  main: ./cmd/vuls/main.go
-  flags:
-  - -a
-  ldflags: 
-  - -s -w -X github.com/future-architect/vuls/config.Version={{.Version}} -X github.com/future-architect/vuls/config.Revision={{.Commit}}-{{ .CommitDate }}
-  binary: vuls
-
-- id: vuls-windows-amd64
-  goos:
   - windows
   goarch:
   - amd64
-  env:
-  - CGO_ENABLED=1
-  - CC=x86_64-w64-mingw32-gcc
-  main: ./cmd/vuls/main.go
-  flags:
-  - -a
-  ldflags: 
-  - -s -w -X github.com/future-architect/vuls/config.Version={{.Version}} -X github.com/future-architect/vuls/config.Revision={{.Commit}}-{{ .CommitDate }}
-  binary: vuls
-
-- id: vuls-windows-arm64
-  goos:
-  - windows
-  goarch:
   - arm64
-  env:
-  - CGO_ENABLED=1
-  - CC=/llvm-mingw/bin/aarch64-w64-mingw32-gcc
   main: ./cmd/vuls/main.go
   flags:
   - -a
@@ -149,10 +103,7 @@ archives:
 - id: vuls
   name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
   builds:
-  - vuls-linux-amd64
-  - vuls-linux-arm64
-  - vuls-windows-amd64
-  - vuls-windows-arm64
+  - vuls
   format: tar.gz
   files:
   - LICENSE

@@ -22,13 +22,11 @@ jobs:
           go-version-file: go.mod
       -
         name: Run GoReleaser
-        run: |
-          docker run --rm \
-            -e CGO_ENABLED=1 \
-            -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -v `pwd`:/go/src/github.com/future-architect/vuls \
-            -w /go/src/github.com/future-architect/vuls \
-            ghcr.io/goreleaser/goreleaser-cross:v1.20 \
-            release --clean
+        uses: goreleaser/goreleaser-action@v4
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

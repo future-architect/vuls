@@ -89,9 +89,9 @@ func newGostDB(cnf config.VulnDictInterface) (gostdb.DB, error) {
 	if cnf.GetType() == "sqlite3" {
 		path = cnf.GetSQLite3Path()
 	}
-	driver, locked, err := gostdb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), gostdb.Option{})
+	driver, err := gostdb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), gostdb.Option{})
 	if err != nil {
-		if locked {
+		if xerrors.Is(err, gostdb.ErrDBLocked) {
 			return nil, xerrors.Errorf("Failed to init gost DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
 		}
 		return nil, xerrors.Errorf("Failed to init gost DB. DB Path: %s, err: %w", path, err)
