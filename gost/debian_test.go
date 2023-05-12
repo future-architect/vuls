@@ -45,9 +45,9 @@ func TestDebian_Supported(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "12 is not supported yet",
+			name: "12 is supported",
 			args: "12",
-			want: false,
+			want: true,
 		},
 		{
 			name: "13 is not supported yet",
