@@ -365,6 +365,14 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 		},
 		//Debian
 		{
+			name:     "Debian 8 supported",
+			fields:   fields{family: Debian, release: "8"},
+			now:      time.Date(2021, 1, 6, 23, 59, 59, 0, time.UTC),
+			stdEnded: true,
+			extEnded: true,
+			found:    true,
+		},
+		{
 			name:     "Debian 9 supported",
 			fields:   fields{family: Debian, release: "9"},
 			now:      time.Date(2021, 1, 6, 23, 59, 59, 0, time.UTC),
@@ -381,14 +389,6 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			found:    true,
 		},
 		{
-			name:     "Debian 8 supported",
-			fields:   fields{family: Debian, release: "8"},
-			now:      time.Date(2021, 1, 6, 23, 59, 59, 0, time.UTC),
-			stdEnded: true,
-			extEnded: true,
-			found:    true,
-		},
-		{
 			name:     "Debian 11 supported",
 			fields:   fields{family: Debian, release: "11"},
 			now:      time.Date(2021, 1, 6, 23, 59, 59, 0, time.UTC),
@@ -397,8 +397,16 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			found:    true,
 		},
 		{
-			name:     "Debian 12 is not supported yet",
+			name:     "Debian 12 supported",
 			fields:   fields{family: Debian, release: "12"},
+			now:      time.Date(2023, 6, 10, 0, 0, 0, 0, time.UTC),
+			stdEnded: false,
+			extEnded: false,
+			found:    true,
+		},
+		{
+			name:     "Debian 13 is not supported yet",
+			fields:   fields{family: Debian, release: "13"},
 			now:      time.Date(2021, 1, 6, 23, 59, 59, 0, time.UTC),
 			stdEnded: false,
 			extEnded: false,
