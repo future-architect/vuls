@@ -226,7 +226,7 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 	const queryFmt = `{"query":
 	"query { repository(owner:\"%s\", name:\"%s\") { url dependencyGraphManifests(first: %d, withDependencies: true%s) { pageInfo { endCursor hasNextPage } edges { node { blobPath filename repository { url } parseable exceedsMaxSize dependenciesCount dependencies(first: %d%s) { pageInfo { endCursor hasNextPage } edges { node { packageName packageManager repository { url } requirements hasDependencies } } } } } } } }"}`
 
-	queryStr := fmt.Sprintf(queryFmt, owner, repo, 50, after, 100, dependenciesAfter)
+	queryStr := fmt.Sprintf(queryFmt, owner, repo, 10, after, 100, dependenciesAfter)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		"https://api.github.com/graphql",
@@ -242,7 +242,7 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 	req.Header.Set("Accept", "application/vnd.github.hawkgirl-preview+json")
 	req.Header.Set("Content-Type", "application/json")
 
-	graph := DependencyGraph{}
+	var graph DependencyGraph
 	count, retryMax := 0, 10
 	countCheck := func(err error) error {
 		if count == retryMax {
@@ -263,13 +263,14 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 			return countCheck(err)
 		}
 
+		graph = DependencyGraph{}
 		if err := json.Unmarshal(body, &graph); err != nil {
 			return countCheck(err)
 		}
 
 		if len(graph.Errors) > 0 || graph.Data.Repository.URL == "" {
 			return countCheck(errof.New(errof.ErrFailedToAccessGithubAPI,
-				fmt.Sprintf("Failed to access to GitHub API. Response: %s", string(body))))
+				fmt.Sprintf("Failed to access to GitHub API. Repository: %s/%s; Response: %s", owner, repo, string(body))))
 		}
 
 		return nil
