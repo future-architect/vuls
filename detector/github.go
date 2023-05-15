@@ -242,7 +242,7 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 	req.Header.Set("Accept", "application/vnd.github.hawkgirl-preview+json")
 	req.Header.Set("Content-Type", "application/json")
 
-	graph := DependencyGraph{}
+	var graph DependencyGraph
 	count, retryMax := 0, 10
 	countCheck := func(err error) error {
 		if count == retryMax {
@@ -263,6 +263,7 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 			return countCheck(err)
 		}
 
+		graph = DependencyGraph{}
 		if err := json.Unmarshal(body, &graph); err != nil {
 			return countCheck(err)
 		}
