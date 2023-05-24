@@ -991,6 +991,28 @@ func TestSortPackageStatues(t *testing.T) {
 				{Name: "b"},
 			},
 		},
+		{
+			in: PackageFixStatuses{
+				{
+					Name:    "libzstd1",
+					FixedIn: "1.3.1+dfsg-1~ubuntu0.16.04.1+esm1",
+				},
+				{
+					Name:    "libzstd1",
+					FixedIn: "1.3.1+dfsg-1~ubuntu0.16.04.1+esm2",
+				},
+			},
+			out: PackageFixStatuses{
+				{
+					Name:    "libzstd1",
+					FixedIn: "1.3.1+dfsg-1~ubuntu0.16.04.1+esm2",
+				},
+				{
+					Name:    "libzstd1",
+					FixedIn: "1.3.1+dfsg-1~ubuntu0.16.04.1+esm1",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		tt.in.Sort()

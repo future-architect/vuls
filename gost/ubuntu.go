@@ -270,6 +270,7 @@ func (ubu Ubuntu) detect(cves map[string]gostmodels.UbuntuCVE, fixed bool, srcPk
 		}
 
 		if len(c.fixStatuses) > 0 {
+			c.fixStatuses.Sort()
 			contents = append(contents, c)
 		}
 	}

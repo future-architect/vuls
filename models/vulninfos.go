@@ -236,10 +236,13 @@ func (ps PackageFixStatuses) Store(pkg PackageFixStatus) PackageFixStatuses {
 	return ps
 }
 
-// Sort by Name
+// Sort by Name asc, FixedIn desc
 func (ps PackageFixStatuses) Sort() {
 	sort.Slice(ps, func(i, j int) bool {
-		return ps[i].Name < ps[j].Name
+		if ps[i].Name != ps[j].Name {
+			return ps[i].Name < ps[j].Name
+		}
+		return ps[j].FixedIn < ps[i].FixedIn
 	})
 }
 
