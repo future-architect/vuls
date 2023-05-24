@@ -218,29 +218,15 @@ func DetectGitHubDependencyGraph(r *models.ScanResult, owner, repo, token string
 	//TODO Proxy
 	httpClient := oauth2.NewClient(context.Background(), src)
 
-	return fetchDependencyGraph(r, httpClient, owner, repo, "", "")
+	return fetchDependencyGraph(r, httpClient, owner, repo, "", "", 10, 100)
 }
 
 // recursive function
-func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, repo, after, dependenciesAfter string) (err error) {
+func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, repo, after, dependenciesAfter string, first, dependenciesFirst int) (err error) {
 	const queryFmt = `{"query":
 	"query { repository(owner:\"%s\", name:\"%s\") { url dependencyGraphManifests(first: %d, withDependencies: true%s) { pageInfo { endCursor hasNextPage } edges { node { blobPath filename repository { url } parseable exceedsMaxSize dependenciesCount dependencies(first: %d%s) { pageInfo { endCursor hasNextPage } edges { node { packageName packageManager repository { url } requirements hasDependencies } } } } } } } }"}`
-
-	queryStr := fmt.Sprintf(queryFmt, owner, repo, 10, after, 100, dependenciesAfter)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		"https://api.github.com/graphql",
-		bytes.NewBuffer([]byte(queryStr)),
-	)
 	defer cancel()
-	if err != nil {
-		return err
-	}
-
-	// https://docs.github.com/en/graphql/overview/schema-previews#access-to-a-repository-s-dependency-graph-preview
-	// TODO remove this header if it is no longer preview status in the future.
-	req.Header.Set("Accept", "application/vnd.github.hawkgirl-preview+json")
-	req.Header.Set("Content-Type", "application/json")
 
 	var graph DependencyGraph
 	count, retryMax := 0, 10
@@ -252,6 +238,20 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 	}
 	operation := func() error {
 		count++
+		queryStr := fmt.Sprintf(queryFmt, owner, repo, first, after, dependenciesFirst, dependenciesAfter)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+			"https://api.github.com/graphql",
+			bytes.NewBuffer([]byte(queryStr)),
+		)
+		if err != nil {
+			return countCheck(err)
+		}
+
+		// https://docs.github.com/en/graphql/overview/schema-previews#access-to-a-repository-s-dependency-graph-preview
+		// TODO remove this header if it is no longer preview status in the future.
+		req.Header.Set("Accept", "application/vnd.github.hawkgirl-preview+json")
+		req.Header.Set("Content-Type", "application/json")
+
 		resp, err := httpClient.Do(req)
 		if err != nil {
 			return countCheck(err)
@@ -269,6 +269,11 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 		}
 
 		if len(graph.Errors) > 0 || graph.Data.Repository.URL == "" {
+			// this mainly occurs on timeout
+			// reduce the number of dependencies to be fetched for the next retry
+			if dependenciesFirst > 50 {
+				dependenciesFirst -= 5
+			}
 			return countCheck(errof.New(errof.ErrFailedToAccessGithubAPI,
 				fmt.Sprintf("Failed to access to GitHub API. Repository: %s/%s; Response: %s", owner, repo, string(body))))
 		}
@@ -276,7 +281,7 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 		return nil
 	}
 	notify := func(err error, t time.Duration) {
-		logging.Log.Warnf("Failed trial (count: %d). retrying in %s. err: %+v", count, t, err)
+		logging.Log.Warnf("Failed attempts (count: %d). retrying in %s. err: %+v", count, t, err)
 	}
 
 	if err = backoff.RetryNotify(operation, backoff.NewExponentialBackOff(), notify); err != nil {
@@ -309,12 +314,12 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 		}
 	}
 	if dependenciesAfter != "" {
-		return fetchDependencyGraph(r, httpClient, owner, repo, after, dependenciesAfter)
+		return fetchDependencyGraph(r, httpClient, owner, repo, after, dependenciesAfter, first, dependenciesFirst)
 	}
 
 	if graph.Data.Repository.DependencyGraphManifests.PageInfo.HasNextPage {
 		after = fmt.Sprintf(`, after: \"%s\"`, graph.Data.Repository.DependencyGraphManifests.PageInfo.EndCursor)
-		return fetchDependencyGraph(r, httpClient, owner, repo, after, dependenciesAfter)
+		return fetchDependencyGraph(r, httpClient, owner, repo, after, dependenciesAfter, first, dependenciesFirst)
 	}
 
 	return nil
