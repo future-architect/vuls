@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/cenkalti/backoff"
@@ -229,10 +230,15 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 	defer cancel()
 
 	var graph DependencyGraph
+	rateLimitRemaining := 5000
 	count, retryMax := 0, 10
-	countCheck := func(err error) error {
+	retryCheck := func(err error) error {
 		if count == retryMax {
 			return backoff.Permanent(err)
+		}
+		if rateLimitRemaining == 0 {
+			return backoff.Permanent(errof.New(errof.ErrFailedToAccessGithubAPI,
+				fmt.Sprintf("rate limit exceeded. error: %s", err.Error())))
 		}
 		return err
 	}
@@ -244,7 +250,7 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 			bytes.NewBuffer([]byte(queryStr)),
 		)
 		if err != nil {
-			return countCheck(err)
+			return retryCheck(err)
 		}
 
 		// https://docs.github.com/en/graphql/overview/schema-previews#access-to-a-repository-s-dependency-graph-preview
@@ -254,18 +260,24 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			return countCheck(err)
+			return retryCheck(err)
 		}
 		defer resp.Body.Close()
 
+		// https://docs.github.com/en/graphql/overview/resource-limitations#rate-limit
+		if rateLimitRemaining, err = strconv.Atoi(resp.Header.Get("X-RateLimit-Remaining")); err != nil {
+			rateLimitRemaining = 5000
+			return retryCheck(errof.New(errof.ErrFailedToAccessGithubAPI, "Failed to get X-RateLimit-Remaining header"))
+		}
+
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return countCheck(err)
+			return retryCheck(err)
 		}
 
 		graph = DependencyGraph{}
 		if err := json.Unmarshal(body, &graph); err != nil {
-			return countCheck(err)
+			return retryCheck(err)
 		}
 
 		if len(graph.Errors) > 0 || graph.Data.Repository.URL == "" {
@@ -274,7 +286,7 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 			if dependenciesFirst > 50 {
 				dependenciesFirst -= 5
 			}
-			return countCheck(errof.New(errof.ErrFailedToAccessGithubAPI,
+			return retryCheck(errof.New(errof.ErrFailedToAccessGithubAPI,
 				fmt.Sprintf("Failed to access to GitHub API. Repository: %s/%s; Response: %s", owner, repo, string(body))))
 		}
 
