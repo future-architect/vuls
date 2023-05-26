@@ -237,6 +237,8 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 			return backoff.Permanent(err)
 		}
 		if rateLimitRemaining == 0 {
+			// The GraphQL API rate limit is 5,000 points per hour.
+			// Terminate　with an error on rate limit reached.
 			return backoff.Permanent(errof.New(errof.ErrFailedToAccessGithubAPI,
 				fmt.Sprintf("rate limit exceeded. error: %s", err.Error())))
 		}
@@ -266,6 +268,8 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 
 		// https://docs.github.com/en/graphql/overview/resource-limitations#rate-limit
 		if rateLimitRemaining, err = strconv.Atoi(resp.Header.Get("X-RateLimit-Remaining")); err != nil {
+			// If the header retrieval fails, rateLimitRemaining will be set to 0,
+			// preventing further retries. To enable retry, we reset it to 5000.
 			rateLimitRemaining = 5000
 			return retryCheck(errof.New(errof.ErrFailedToAccessGithubAPI, "Failed to get X-RateLimit-Remaining header"))
 		}
