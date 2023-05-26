@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/cenkalti/backoff"
@@ -218,65 +219,85 @@ func DetectGitHubDependencyGraph(r *models.ScanResult, owner, repo, token string
 	//TODO Proxy
 	httpClient := oauth2.NewClient(context.Background(), src)
 
-	return fetchDependencyGraph(r, httpClient, owner, repo, "", "")
+	return fetchDependencyGraph(r, httpClient, owner, repo, "", "", 10, 100)
 }
 
 // recursive function
-func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, repo, after, dependenciesAfter string) (err error) {
+func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, repo, after, dependenciesAfter string, first, dependenciesFirst int) (err error) {
 	const queryFmt = `{"query":
 	"query { repository(owner:\"%s\", name:\"%s\") { url dependencyGraphManifests(first: %d, withDependencies: true%s) { pageInfo { endCursor hasNextPage } edges { node { blobPath filename repository { url } parseable exceedsMaxSize dependenciesCount dependencies(first: %d%s) { pageInfo { endCursor hasNextPage } edges { node { packageName packageManager repository { url } requirements hasDependencies } } } } } } } }"}`
-
-	queryStr := fmt.Sprintf(queryFmt, owner, repo, 10, after, 100, dependenciesAfter)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		"https://api.github.com/graphql",
-		bytes.NewBuffer([]byte(queryStr)),
-	)
 	defer cancel()
-	if err != nil {
-		return err
-	}
-
-	// https://docs.github.com/en/graphql/overview/schema-previews#access-to-a-repository-s-dependency-graph-preview
-	// TODO remove this header if it is no longer preview status in the future.
-	req.Header.Set("Accept", "application/vnd.github.hawkgirl-preview+json")
-	req.Header.Set("Content-Type", "application/json")
 
 	var graph DependencyGraph
+	rateLimitRemaining := 5000
 	count, retryMax := 0, 10
-	countCheck := func(err error) error {
+	retryCheck := func(err error) error {
 		if count == retryMax {
 			return backoff.Permanent(err)
+		}
+		if rateLimitRemaining == 0 {
+			// The GraphQL API rate limit is 5,000 points per hour.
+			// Terminate　with an error on rate limit reached.
+			return backoff.Permanent(errof.New(errof.ErrFailedToAccessGithubAPI,
+				fmt.Sprintf("rate limit exceeded. error: %s", err.Error())))
 		}
 		return err
 	}
 	operation := func() error {
 		count++
+		queryStr := fmt.Sprintf(queryFmt, owner, repo, first, after, dependenciesFirst, dependenciesAfter)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+			"https://api.github.com/graphql",
+			bytes.NewBuffer([]byte(queryStr)),
+		)
+		if err != nil {
+			return retryCheck(err)
+		}
+
+		// https://docs.github.com/en/graphql/overview/schema-previews#access-to-a-repository-s-dependency-graph-preview
+		// TODO remove this header if it is no longer preview status in the future.
+		req.Header.Set("Accept", "application/vnd.github.hawkgirl-preview+json")
+		req.Header.Set("Content-Type", "application/json")
+
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			return countCheck(err)
+			return retryCheck(err)
 		}
 		defer resp.Body.Close()
 
+		// https://docs.github.com/en/graphql/overview/resource-limitations#rate-limit
+		if rateLimitRemaining, err = strconv.Atoi(resp.Header.Get("X-RateLimit-Remaining")); err != nil {
+			// If the header retrieval fails, rateLimitRemaining will be set to 0,
+			// preventing further retries. To enable retry, we reset it to 5000.
+			rateLimitRemaining = 5000
+			return retryCheck(errof.New(errof.ErrFailedToAccessGithubAPI, "Failed to get X-RateLimit-Remaining header"))
+		}
+
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return countCheck(err)
+			return retryCheck(err)
 		}
 
 		graph = DependencyGraph{}
 		if err := json.Unmarshal(body, &graph); err != nil {
-			return countCheck(err)
+			return retryCheck(err)
 		}
 
 		if len(graph.Errors) > 0 || graph.Data.Repository.URL == "" {
-			return countCheck(errof.New(errof.ErrFailedToAccessGithubAPI,
+			// this mainly occurs on timeout
+			// reduce the number of dependencies to be fetched for the next retry
+			if dependenciesFirst > 50 {
+				dependenciesFirst -= 5
+			}
+			return retryCheck(errof.New(errof.ErrFailedToAccessGithubAPI,
 				fmt.Sprintf("Failed to access to GitHub API. Repository: %s/%s; Response: %s", owner, repo, string(body))))
 		}
 
 		return nil
 	}
 	notify := func(err error, t time.Duration) {
-		logging.Log.Warnf("Failed trial (count: %d). retrying in %s. err: %+v", count, t, err)
+		logging.Log.Warnf("Failed attempts (count: %d). retrying in %s. err: %+v", count, t, err)
 	}
 
 	if err = backoff.RetryNotify(operation, backoff.NewExponentialBackOff(), notify); err != nil {
@@ -309,12 +330,12 @@ func fetchDependencyGraph(r *models.ScanResult, httpClient *http.Client, owner, 
 		}
 	}
 	if dependenciesAfter != "" {
-		return fetchDependencyGraph(r, httpClient, owner, repo, after, dependenciesAfter)
+		return fetchDependencyGraph(r, httpClient, owner, repo, after, dependenciesAfter, first, dependenciesFirst)
 	}
 
 	if graph.Data.Repository.DependencyGraphManifests.PageInfo.HasNextPage {
 		after = fmt.Sprintf(`, after: \"%s\"`, graph.Data.Repository.DependencyGraphManifests.PageInfo.EndCursor)
-		return fetchDependencyGraph(r, httpClient, owner, repo, after, dependenciesAfter)
+		return fetchDependencyGraph(r, httpClient, owner, repo, after, dependenciesAfter, first, dependenciesFirst)
 	}
 
 	return nil
