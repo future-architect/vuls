@@ -317,6 +317,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"35": {StandardSupportUntil: time.Date(2022, 12, 12, 23, 59, 59, 0, time.UTC)},
 			"36": {StandardSupportUntil: time.Date(2023, 5, 16, 23, 59, 59, 0, time.UTC)},
 			"37": {StandardSupportUntil: time.Date(2023, 12, 15, 23, 59, 59, 0, time.UTC)},
+			"38": {StandardSupportUntil: time.Date(2024, 5, 18, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
 	case constant.Windows:
 		// https://learn.microsoft.com/ja-jp/lifecycle/products/?products=windows
