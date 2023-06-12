@@ -626,7 +626,7 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 		{
 			name:     "Fedora 38 supported",
 			fields:   fields{family: Fedora, release: "38"},
-			now:      time.Date(2024, 5, 18, 23, 59, 59, 0, time.UTC),
+			now:      time.Date(2024, 5, 14, 23, 59, 59, 0, time.UTC),
 			stdEnded: false,
 			extEnded: false,
 			found:    true,
@@ -634,7 +634,7 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 		{
 			name:     "Fedora 38 eol since 2024-05-19",
 			fields:   fields{family: Fedora, release: "38"},
-			now:      time.Date(2024, 5, 19, 0, 0, 0, 0, time.UTC),
+			now:      time.Date(2024, 5, 15, 0, 0, 0, 0, time.UTC),
 			stdEnded: true,
 			extEnded: true,
 			found:    true,
@@ -642,7 +642,7 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 		{
 			name:     "Fedora 39 not found",
 			fields:   fields{family: Fedora, release: "39"},
-			now:      time.Date(2024, 5, 18, 23, 59, 59, 0, time.UTC),
+			now:      time.Date(2024, 5, 14, 23, 59, 59, 0, time.UTC),
 			stdEnded: false,
 			extEnded: false,
 			found:    false,
