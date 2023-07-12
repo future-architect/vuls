@@ -181,17 +181,7 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 			kernelVersion = formatKernelVersion(osInfo)
 		}
 
-		w := &windows{
-			base: base{
-				Distro: config.Distro{Family: family, Release: release},
-				osPackages: osPackages{
-					Kernel: models.Kernel{Version: kernelVersion},
-				},
-				log: logging.Log,
-			},
-		}
-
-		kbs, err := w.detectKBsFromKernelVersion()
+		kbs, err := DetectKBsFromKernelVersion(release, kernelVersion)
 		if err != nil {
 			return models.ScanResult{}, xerrors.Errorf("Failed to detect KBs from kernel version. err: %w", err)
 		}
