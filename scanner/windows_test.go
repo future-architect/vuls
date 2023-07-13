@@ -784,7 +784,7 @@ func Test_windows_detectKBsFromKernelVersion(t *testing.T) {
 			o := &windows{
 				base: tt.base,
 			}
-			got, err := o.detectKBsFromKernelVersion()
+			got, err := DetectKBsFromKernelVersion(o.getDistro().Release, o.Kernel.Version)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("windows.detectKBsFromKernelVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -1146,7 +1146,7 @@ func (o *windows) scanKBs() (*models.WindowsKB, error) {
 		}
 	}
 
-	kbs, err := o.detectKBsFromKernelVersion()
+	kbs, err := DetectKBsFromKernelVersion(o.getDistro().Release, o.Kernel.Version)
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to detect KBs from kernel version. err: %w", err)
 	}
@@ -4399,14 +4399,14 @@ var windowsReleases = map[string]map[string]map[string]updateProgram{
 	},
 }
 
-func (o *windows) detectKBsFromKernelVersion() (models.WindowsKB, error) {
-	switch ss := strings.Split(o.Kernel.Version, "."); len(ss) {
+func DetectKBsFromKernelVersion(release, kernelVersion string) (models.WindowsKB, error) {
+	switch ss := strings.Split(kernelVersion, "."); len(ss) {
 	case 3:
 		return models.WindowsKB{}, nil
 	case 4:
 		switch {
-		case strings.HasPrefix(o.getDistro().Release, "Windows 10 "), strings.HasPrefix(o.getDistro().Release, "Windows 11 "):
-			osver := strings.Split(o.getDistro().Release, " ")[1]
+		case strings.HasPrefix(release, "Windows 10 "), strings.HasPrefix(release, "Windows 11 "):
+			osver := strings.Split(release, " ")[1]
 
 			verReleases, ok := windowsReleases["Client"][osver]
 			if !ok {
@@ -4448,8 +4448,8 @@ func (o *windows) detectKBsFromKernelVersion() (models.WindowsKB, error) {
 			}
 
 			return kbs, nil
-		case strings.HasPrefix(o.getDistro().Release, "Windows Server 2016"), strings.HasPrefix(o.getDistro().Release, "Windows Server, Version 1709"), strings.HasPrefix(o.getDistro().Release, "Windows Server, Version 1809"), strings.HasPrefix(o.getDistro().Release, "Windows Server 2019"), strings.HasPrefix(o.getDistro().Release, "Windows Server, Version 1903"), strings.HasPrefix(o.getDistro().Release, "Windows Server, Version 1909"), strings.HasPrefix(o.getDistro().Release, "Windows Server, Version 2004"), strings.HasPrefix(o.getDistro().Release, "Windows Server, Version 20H2"), strings.HasPrefix(o.getDistro().Release, "Windows Server 2022"):
-			osver := strings.TrimSpace(strings.NewReplacer("Windows Server", "", ",", "", "(Server Core installation)", "").Replace(o.getDistro().Release))
+		case strings.HasPrefix(release, "Windows Server 2016"), strings.HasPrefix(release, "Windows Server, Version 1709"), strings.HasPrefix(release, "Windows Server, Version 1809"), strings.HasPrefix(release, "Windows Server 2019"), strings.HasPrefix(release, "Windows Server, Version 1903"), strings.HasPrefix(release, "Windows Server, Version 1909"), strings.HasPrefix(release, "Windows Server, Version 2004"), strings.HasPrefix(release, "Windows Server, Version 20H2"), strings.HasPrefix(release, "Windows Server 2022"):
+			osver := strings.TrimSpace(strings.NewReplacer("Windows Server", "", ",", "", "(Server Core installation)", "").Replace(release))
 
 			verReleases, ok := windowsReleases["Server"][osver]
 			if !ok {
@@ -4495,7 +4495,7 @@ func (o *windows) detectKBsFromKernelVersion() (models.WindowsKB, error) {
 			return models.WindowsKB{}, nil
 		}
 	default:
-		return models.WindowsKB{}, xerrors.Errorf("unexpected kernel version. expected: <major version>.<minor version>.<build>(.<revision>), actual: %s", o.Kernel.Version)
+		return models.WindowsKB{}, xerrors.Errorf("unexpected kernel version. expected: <major version>.<minor version>.<build>(.<revision>), actual: %s", kernelVersion)
 	}
 }
 
