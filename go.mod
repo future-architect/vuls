@@ -35,7 +35,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/nlopes/slack v0.6.0
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/package-url/packageurl-go v0.1.1-0.20220203205134-d70459300c8a
+	github.com/package-url/packageurl-go v0.1.1
 	github.com/parnurzeal/gorequest v0.2.16
 	github.com/pkg/errors v0.9.1
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
