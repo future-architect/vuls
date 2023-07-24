@@ -45,13 +45,14 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 
 ## Main Features
 
-### Scan for any vulnerabilities in Linux/FreeBSD Server
+### Scan for any vulnerabilities in Linux/FreeBSD/Windows/macOS
 
-[Supports major Linux/FreeBSD/Windows](https://vuls.io/docs/en/supported-os.html)
+[Supports major Linux/FreeBSD/Windows/macOS](https://vuls.io/docs/en/supported-os.html)
 
 - Alpine, Amazon Linux, CentOS, AlmaLinux, Rocky Linux, Debian, Oracle Linux, Raspbian, RHEL, openSUSE, openSUSE Leap, SUSE Enterprise Linux, Fedora, and Ubuntu
 - FreeBSD
 - Windows
+- macOS
 - Cloud, on-premise, Running Docker Container
 
 ### High-quality scan

@@ -4,10 +4,12 @@
 package detector
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	"golang.org/x/exp/slices"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
@@ -79,6 +81,112 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 				UseJVN: true,
 			})
 		}
+
+		if slices.Contains([]string{constant.MacOSX, constant.MacOSXServer, constant.MacOS, constant.MacOSServer}, r.Family) {
+			var targets []string
+			if r.Release != "" {
+				switch r.Family {
+				case constant.MacOSX:
+					targets = append(targets, "mac_os_x")
+				case constant.MacOSXServer:
+					targets = append(targets, "mac_os_x_server")
+				case constant.MacOS:
+					targets = append(targets, "macos", "mac_os")
+				case constant.MacOSServer:
+					targets = append(targets, "macos_server", "mac_os_server")
+				}
+				for _, t := range targets {
+					cpes = append(cpes, Cpe{
+						CpeURI: fmt.Sprintf("cpe:/o:apple:%s:%s", t, r.Release),
+						UseJVN: false,
+					})
+				}
+			}
+			for _, p := range r.Packages {
+				if p.Version == "" {
+					continue
+				}
+				switch p.Repository {
+				case "com.apple.Safari":
+					for _, t := range targets {
+						cpes = append(cpes, Cpe{
+							CpeURI: fmt.Sprintf("cpe:/a:apple:safari:%s::~~~%s~~", p.Version, t),
+							UseJVN: false,
+						})
+					}
+				case "com.apple.Music":
+					for _, t := range targets {
+						cpes = append(cpes,
+							Cpe{
+								CpeURI: fmt.Sprintf("cpe:/a:apple:music:%s::~~~%s~~", p.Version, t),
+								UseJVN: false,
+							},
+							Cpe{
+								CpeURI: fmt.Sprintf("cpe:/a:apple:apple_music:%s::~~~%s~~", p.Version, t),
+								UseJVN: false,
+							},
+						)
+					}
+				case "com.apple.mail":
+					for _, t := range targets {
+						cpes = append(cpes, Cpe{
+							CpeURI: fmt.Sprintf("cpe:/a:apple:mail:%s::~~~%s~~", p.Version, t),
+							UseJVN: false,
+						})
+					}
+				case "com.apple.Terminal":
+					for _, t := range targets {
+						cpes = append(cpes, Cpe{
+							CpeURI: fmt.Sprintf("cpe:/a:apple:terminal:%s::~~~%s~~", p.Version, t),
+							UseJVN: false,
+						})
+					}
+				case "com.apple.shortcuts":
+					for _, t := range targets {
+						cpes = append(cpes, Cpe{
+							CpeURI: fmt.Sprintf("cpe:/a:apple:shortcuts:%s::~~~%s~~", p.Version, t),
+							UseJVN: false,
+						})
+					}
+				case "com.apple.iCal":
+					for _, t := range targets {
+						cpes = append(cpes, Cpe{
+							CpeURI: fmt.Sprintf("cpe:/a:apple:ical:%s::~~~%s~~", p.Version, t),
+							UseJVN: false,
+						})
+					}
+				case "com.apple.iWork.Keynote":
+					for _, t := range targets {
+						cpes = append(cpes, Cpe{
+							CpeURI: fmt.Sprintf("cpe:/a:apple:keynote:%s::~~~%s~~", p.Version, t),
+							UseJVN: false,
+						})
+					}
+				case "com.apple.iWork.Numbers":
+					for _, t := range targets {
+						cpes = append(cpes, Cpe{
+							CpeURI: fmt.Sprintf("cpe:/a:apple:numbers:%s::~~~%s~~", p.Version, t),
+							UseJVN: false,
+						})
+					}
+				case "com.apple.iWork.Pages":
+					for _, t := range targets {
+						cpes = append(cpes, Cpe{
+							CpeURI: fmt.Sprintf("cpe:/a:apple:pages:%s::~~~%s~~", p.Version, t),
+							UseJVN: false,
+						})
+					}
+				case "com.apple.dt.Xcode":
+					for _, t := range targets {
+						cpes = append(cpes, Cpe{
+							CpeURI: fmt.Sprintf("cpe:/a:apple:xcode:%s::~~~%s~~", p.Version, t),
+							UseJVN: false,
+						})
+					}
+				}
+			}
+		}
+
 		if err := DetectCpeURIsCves(&r, cpes, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
 			return nil, xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
 		}
@@ -262,7 +370,7 @@ func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf c
 // isPkgCvesDetactable checks whether CVEs is detactable with gost and oval from the result
 func isPkgCvesDetactable(r *models.ScanResult) bool {
 	switch r.Family {
-	case constant.FreeBSD, constant.ServerTypePseudo:
+	case constant.FreeBSD, constant.MacOSX, constant.MacOSXServer, constant.MacOS, constant.MacOSServer, constant.ServerTypePseudo:
 		logging.Log.Infof("%s type. Skip OVAL and gost detection", r.Family)
 		return false
 	case constant.Windows:
@@ -431,7 +539,7 @@ func detectPkgsCvesWithOval(cnf config.GovalDictConf, r *models.ScanResult, logO
 		logging.Log.Infof("Skip OVAL and Scan with gost alone.")
 		logging.Log.Infof("%s: %d CVEs are detected with OVAL", r.FormatServerName(), 0)
 		return nil
-	case constant.Windows, constant.FreeBSD, constant.ServerTypePseudo:
+	case constant.Windows, constant.MacOSX, constant.MacOSXServer, constant.MacOS, constant.MacOSServer, constant.FreeBSD, constant.ServerTypePseudo:
 		return nil
 	default:
 		logging.Log.Debugf("Check if oval fetched: %s %s", r.Family, r.Release)

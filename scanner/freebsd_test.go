@@ -9,45 +9,6 @@ import (
 	"github.com/k0kubun/pp"
 )
 
-func TestParseIfconfig(t *testing.T) {
-	var tests = []struct {
-		in        string
-		expected4 []string
-		expected6 []string
-	}{
-		{
-			in: `em0: flags=8843<UP,BROADCAST,RUNNING,SIMPLEX,MULTICAST> metric 0 mtu 1500
-			options=9b<RXCSUM,TXCSUM,VLAN_MTU,VLAN_HWTAGGING,VLAN_HWCSUM>
-			ether 08:00:27:81:82:fa
-			hwaddr 08:00:27:81:82:fa
-			inet 10.0.2.15 netmask 0xffffff00 broadcast 10.0.2.255
-			inet6 2001:db8::68 netmask 0xffffff00 broadcast 10.0.2.255
-			nd6 options=29<PERFORMNUD,IFDISABLED,AUTO_LINKLOCAL>
-			media: Ethernet autoselect (1000baseT <full-duplex>)
-			status: active
-	lo0: flags=8049<UP,LOOPBACK,RUNNING,MULTICAST> metric 0 mtu 16384
-			options=600003<RXCSUM,TXCSUM,RXCSUM_IPV6,TXCSUM_IPV6>
-			inet6 ::1 prefixlen 128
-			inet6 fe80::1%lo0 prefixlen 64 scopeid 0x2
-			inet 127.0.0.1 netmask 0xff000000
-			nd6 options=21<PERFORMNUD,AUTO_LINKLOCAL>`,
-			expected4: []string{"10.0.2.15"},
-			expected6: []string{"2001:db8::68"},
-		},
-	}
-
-	d := newBsd(config.ServerInfo{})
-	for _, tt := range tests {
-		actual4, actual6 := d.parseIfconfig(tt.in)
-		if !reflect.DeepEqual(tt.expected4, actual4) {
-			t.Errorf("expected %s, actual %s", tt.expected4, actual4)
-		}
-		if !reflect.DeepEqual(tt.expected6, actual6) {
-			t.Errorf("expected %s, actual %s", tt.expected6, actual6)
-		}
-	}
-}
-
 func TestParsePkgVersion(t *testing.T) {
 	var tests = []struct {
 		in       string

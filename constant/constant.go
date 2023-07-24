@@ -41,6 +41,18 @@ const (
 	// Windows is
 	Windows = "windows"
 
+	// MacOSX is
+	MacOSX = "macos_x"
+
+	// MacOSXServer is
+	MacOSXServer = "macos_x_server"
+
+	// MacOS is
+	MacOS = "macos"
+
+	// MacOSServer is
+	MacOSServer = "macos_server"
+
 	// OpenSUSE is
 	OpenSUSE = "opensuse"
 
