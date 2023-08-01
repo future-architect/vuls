@@ -519,28 +519,7 @@ func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, mod
 			continue
 		}
 
-		var (
-			pack *models.Package
-			err  error
-		)
-		switch o.getDistro().Family {
-		case constant.Amazon:
-			switch strings.Fields(o.getDistro().Release)[0] {
-			case "2":
-				switch len(strings.Fields(line)) {
-				case 5:
-					pack, err = o.parseInstalledPackagesLine(line)
-				case 6:
-					pack, err = o.parseInstalledPackagesLineFromRepoquery(line)
-				default:
-					return nil, nil, xerrors.Errorf("Failed to parse package line: %s", line)
-				}
-			default:
-				pack, err = o.parseInstalledPackagesLine(line)
-			}
-		default:
-			pack, err = o.parseInstalledPackagesLine(line)
-		}
+		pack, err := o.parseInstalledPackagesLine(line)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -572,30 +551,7 @@ func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, mod
 
 func (o *redhatBase) parseInstalledPackagesLine(line string) (*models.Package, error) {
 	fields := strings.Fields(line)
-	if len(fields) != 5 {
-		return nil,
-			xerrors.Errorf("Failed to parse package line: %s", line)
-	}
-
-	ver := ""
-	epoch := fields[1]
-	if epoch == "0" || epoch == "(none)" {
-		ver = fields[2]
-	} else {
-		ver = fmt.Sprintf("%s:%s", epoch, fields[2])
-	}
-
-	return &models.Package{
-		Name:    fields[0],
-		Version: ver,
-		Release: fields[3],
-		Arch:    fields[4],
-	}, nil
-}
-
-func (o *redhatBase) parseInstalledPackagesLineFromRepoquery(line string) (*models.Package, error) {
-	fields := strings.Fields(line)
-	if len(fields) != 6 {
+	if len(fields) < 5 {
 		return nil, xerrors.Errorf("Failed to parse package line: %s", line)
 	}
 
@@ -607,9 +563,22 @@ func (o *redhatBase) parseInstalledPackagesLineFromRepoquery(line string) (*mode
 		ver = fmt.Sprintf("%s:%s", epoch, fields[2])
 	}
 
-	repo := strings.TrimPrefix(fields[5], "@")
-	if repo == "installed" {
-		repo = "amzn2-core"
+	var repo string
+	switch o.getDistro().Family {
+	case constant.Amazon:
+		switch strings.Fields(o.getDistro().Release)[0] {
+		case "2":
+			if len(fields) == 5 {
+				break
+			}
+			if fields[5] == "installed" {
+				repo = "amzn2-core"
+				break
+			}
+			repo = strings.TrimPrefix(fields[5], "@")
+		default:
+		}
+	default:
 	}
 
 	return &models.Package{

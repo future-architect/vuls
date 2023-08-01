@@ -113,24 +113,13 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 		ovalRelease = strings.TrimPrefix(r.Release, "stream")
 	case constant.Amazon:
 		switch s := strings.Fields(r.Release)[0]; s {
-		case "1":
-			ovalRelease = "1"
-		case "2":
-			ovalRelease = "2"
-		case "2022":
-			ovalRelease = "2022"
-		case "2023":
-			ovalRelease = "2023"
-		case "2025":
-			ovalRelease = "2025"
-		case "2027":
-			ovalRelease = "2027"
-		case "2029":
-			ovalRelease = "2029"
+		case "1", "2", "2022", "2023", "2025", "2027", "2029":
+			ovalRelease = s
 		default:
-			if _, err := time.Parse("2006.01", s); err == nil {
-				ovalRelease = "1"
+			if _, err := time.Parse("2006.01", s); err != nil {
+				return relatedDefs, xerrors.Errorf(`Failed to detect amazon version. err: unexpected Amazon Linux 1 version format. expected: "yyyy.MM", actual: "%s". err: %w`, s, err)
 			}
+			ovalRelease = "1"
 		}
 	}
 
@@ -287,24 +276,13 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relate
 		ovalRelease = strings.TrimPrefix(r.Release, "stream")
 	case constant.Amazon:
 		switch s := strings.Fields(r.Release)[0]; s {
-		case "1":
-			ovalRelease = "1"
-		case "2":
-			ovalRelease = "2"
-		case "2022":
-			ovalRelease = "2022"
-		case "2023":
-			ovalRelease = "2023"
-		case "2025":
-			ovalRelease = "2025"
-		case "2027":
-			ovalRelease = "2027"
-		case "2029":
-			ovalRelease = "2029"
+		case "1", "2", "2022", "2023", "2025", "2027", "2029":
+			ovalRelease = s
 		default:
-			if _, err := time.Parse("2006.01", s); err == nil {
-				ovalRelease = "1"
+			if _, err := time.Parse("2006.01", s); err != nil {
+				return relatedDefs, xerrors.Errorf(`Failed to detect amazon version. err: unexpected Amazon Linux 1 version format. expected: "yyyy.MM", actual: "%s". err: %w`, s, err)
 			}
+			ovalRelease = "1"
 		}
 	}
 

@@ -4399,6 +4399,7 @@ var windowsReleases = map[string]map[string]map[string]updateProgram{
 	},
 }
 
+// DetectKBsFromKernelVersion :
 func DetectKBsFromKernelVersion(release, kernelVersion string) (models.WindowsKB, error) {
 	switch ss := strings.Split(kernelVersion, "."); len(ss) {
 	case 3:
