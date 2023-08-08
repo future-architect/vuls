@@ -3,27 +3,32 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/saas"
+	"github.com/future-architect/vuls/contrib/future-vuls/pkg/cpe"
+	"github.com/future-architect/vuls/contrib/future-vuls/pkg/discover"
+	"github.com/future-architect/vuls/contrib/future-vuls/pkg/schema"
+	"github.com/future-architect/vuls/contrib/future-vuls/pkg/server"
+	"github.com/future-architect/vuls/contrib/future-vuls/pkg/upload"
 	"github.com/spf13/cobra"
 )
 
 var (
-	configFile string
-	stdIn      bool
-	jsonDir    string
-	serverUUID string
-	groupID    int64
-	token      string
-	tags       []string
-	url        string
+	configFile  string
+	stdIn       bool
+	jsonDir     string
+	serverUUID  string
+	groupID     int64
+	token       string
+	tags        []string
+	url         string
+	outputFile  string
+	cidr        string
+	snmpVersion string
 )
 
 func main() {
@@ -52,42 +57,22 @@ func main() {
 			if len(tags) == 0 {
 				tags = strings.Split(os.Getenv("VULS_TAGS"), ",")
 			}
-
 			var scanResultJSON []byte
 			if stdIn {
 				reader := bufio.NewReader(os.Stdin)
 				buf := new(bytes.Buffer)
-				if _, err = buf.ReadFrom(reader); err != nil {
-					return
+				if _, err := buf.ReadFrom(reader); err != nil {
+					fmt.Printf("Failed to read from stdIn. err: %v", err)
+					os.Exit(1)
 				}
 				scanResultJSON = buf.Bytes()
 			} else {
-				fmt.Println("use --stdin option")
+				fmt.Printf("use --stdin option")
 				os.Exit(1)
-				return
 			}
-
-			var scanResult models.ScanResult
-			if err = json.Unmarshal(scanResultJSON, &scanResult); err != nil {
-				fmt.Println("Failed to parse json", err)
+			if err := upload.UploadToFvuls(serverUUID, groupID, url, token, tags, scanResultJSON); err != nil {
+				fmt.Printf("%v\n", err)
 				os.Exit(1)
-				return
-			}
-			scanResult.ServerUUID = serverUUID
-			if 0 < len(tags) {
-				if scanResult.Optional == nil {
-					scanResult.Optional = map[string]interface{}{}
-				}
-				scanResult.Optional["VULS_TAGS"] = tags
-			}
-
-			config.Conf.Saas.GroupID = groupID
-			config.Conf.Saas.Token = token
-			config.Conf.Saas.URL = url
-			if err = (saas.Writer{}).Write(scanResult); err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-				return
 			}
 			return
 		},
@@ -100,6 +85,84 @@ func main() {
 			fmt.Printf("future-vuls-%s-%s\n", config.Version, config.Revision)
 		},
 	}
+
+	var cmdDiscover = &cobra.Command{
+		Use:     "discover --cidr <CIDR_RANGE> --output <OUTPUT_FILE>",
+		Short:   "discover hosts with CIDR range. Default outputFile is ./discover_list.toml",
+		Example: "future-vuls discover --cidr 192.168.0.0/24 --output discover_list.toml",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(outputFile) == 0 {
+				outputFile = schema.FILENAME
+			}
+			if len(cidr) == 0 {
+				fmt.Printf("Please specify cidr range.")
+				os.Exit(1)
+			}
+			if err := discover.DiscoverActiveHosts(cidr, outputFile); err != nil {
+				fmt.Printf("%v\n", err)
+				os.Exit(1)
+			}
+			return
+		},
+	}
+
+	var cmdAddServer = &cobra.Command{
+		Use:     "add-server --token <VULS_TOKEN> --output <OUTPUT_FILE>",
+		Short:   "upload device information to Fvuls as a pseudo server. Default outputFile is ./discover_list.toml",
+		Example: "future-vuls add-server --token <VULS_TOKEN> --output ./discover_list.toml",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(token) == 0 {
+				token = os.Getenv("VULS_TOKEN")
+			}
+			if len(outputFile) == 0 {
+				outputFile = schema.FILENAME
+			}
+			if len(url) == 0 {
+				url = os.Getenv("VULS_URL")
+			}
+			if err := server.AddServerToFvuls(url, token, outputFile); err != nil {
+				fmt.Printf("%v\n", err)
+				os.Exit(1)
+			}
+			return
+		},
+	}
+
+	var cmdAddCpe = &cobra.Command{
+		Use:     "add-cpe --token <VULS_TOKEN> --output <OUTPUT_FILE>",
+		Short:   "scan device CPE and upload to Fvuls server. Default outputFile is ./discover_list.toml",
+		Example: "future-vuls add-cpe --token <VULS_TOKEN>",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(token) == 0 {
+				token = os.Getenv("VULS_TOKEN")
+			}
+			if len(outputFile) == 0 {
+				outputFile = schema.FILENAME
+			}
+			if len(url) == 0 {
+				url = os.Getenv("VULS_URL")
+			}
+			if len(snmpVersion) == 0 {
+				snmpVersion = schema.SNMP_VERSION
+			}
+			if err := cpe.AddCpeDataToFvuls(url, token, snmpVersion, outputFile); err != nil {
+				fmt.Printf("%v\n", err)
+				os.Exit(1)
+			}
+			return
+		},
+	}
+
+	cmdDiscover.PersistentFlags().StringVar(&cidr, "cidr", "", "cidr range")
+	cmdDiscover.PersistentFlags().StringVar(&outputFile, "output", "", "output file")
+	cmdAddServer.PersistentFlags().StringVarP(&token, "token", "t", "", "future vuls token ENV: VULS_TOKEN")
+	cmdAddServer.PersistentFlags().StringVar(&outputFile, "output", "", "output file")
+	cmdAddServer.PersistentFlags().StringVar(&url, "url", "", "future vuls upload url ENV: VULS_URL")
+	cmdAddCpe.PersistentFlags().StringVarP(&token, "token", "t", "", "future vuls token ENV: VULS_TOKEN")
+	cmdAddCpe.PersistentFlags().StringVar(&outputFile, "output", "", "output file")
+	cmdAddCpe.PersistentFlags().StringVar(&url, "url", "", "future vuls upload url ENV: VULS_URL")
+	cmdAddCpe.PersistentFlags().StringVar(&snmpVersion, "snmpVersion", "", "snmp version v1,v2c and v3. default: v2c ")
+
 	cmdFvulsUploader.PersistentFlags().StringVar(&serverUUID, "uuid", "", "server uuid. ENV: VULS_SERVER_UUID")
 	cmdFvulsUploader.PersistentFlags().StringVar(&configFile, "config", "", "config file (default is $HOME/.cobra.yaml)")
 	cmdFvulsUploader.PersistentFlags().BoolVarP(&stdIn, "stdin", "s", false, "input from stdin. ENV: VULS_STDIN")
@@ -110,6 +173,9 @@ func main() {
 	cmdFvulsUploader.PersistentFlags().StringVar(&url, "url", "", "future vuls upload url")
 
 	var rootCmd = &cobra.Command{Use: "future-vuls"}
+	rootCmd.AddCommand(cmdAddServer)
+	rootCmd.AddCommand(cmdDiscover)
+	rootCmd.AddCommand(cmdAddCpe)
 	rootCmd.AddCommand(cmdFvulsUploader)
 	rootCmd.AddCommand(cmdVersion)
 	if err = rootCmd.Execute(); err != nil {
