@@ -37,15 +37,14 @@ func main() {
 		Use:   "upload",
 		Short: "Upload to FutureVuls",
 		Long:  `Upload to FutureVuls`,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(serverUUID) == 0 {
 				serverUUID = os.Getenv("VULS_SERVER_UUID")
 			}
 			if groupID == 0 {
 				envGroupID := os.Getenv("VULS_GROUP_ID")
 				if groupID, err = strconv.ParseInt(envGroupID, 10, 64); err != nil {
-					fmt.Printf("Invalid GroupID: %s\n", envGroupID)
-					return
+					return fmt.Errorf("Invalid GroupID: %s\n", envGroupID)
 				}
 			}
 			if len(url) == 0 {
@@ -62,19 +61,16 @@ func main() {
 				reader := bufio.NewReader(os.Stdin)
 				buf := new(bytes.Buffer)
 				if _, err := buf.ReadFrom(reader); err != nil {
-					fmt.Printf("Failed to read from stdIn. err: %v", err)
-					os.Exit(1)
+					return fmt.Errorf("Failed to read from stdIn. err: %v", err)
 				}
 				scanResultJSON = buf.Bytes()
 			} else {
-				fmt.Printf("use --stdin option")
-				os.Exit(1)
+				return fmt.Errorf("use --stdin option")
 			}
 			if err := upload.UploadToFvuls(serverUUID, groupID, url, token, tags, scanResultJSON); err != nil {
-				fmt.Printf("%v\n", err)
-				os.Exit(1)
+				return fmt.Errorf("%v\n", err)
 			}
-			return
+			return nil
 		},
 	}
 	var cmdVersion = &cobra.Command{
@@ -90,19 +86,17 @@ func main() {
 		Use:     "discover --cidr <CIDR_RANGE> --output <OUTPUT_FILE>",
 		Short:   "discover hosts with CIDR range. Default outputFile is ./discover_list.toml",
 		Example: "future-vuls discover --cidr 192.168.0.0/24 --output discover_list.toml",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(outputFile) == 0 {
 				outputFile = schema.FILENAME
 			}
 			if len(cidr) == 0 {
-				fmt.Printf("Please specify cidr range.")
-				os.Exit(1)
+				return fmt.Errorf("Please specify cidr range.")
 			}
 			if err := discover.DiscoverActiveHosts(cidr, outputFile); err != nil {
-				fmt.Printf("%v\n", err)
-				os.Exit(1)
+				return fmt.Errorf("%v\n", err)
 			}
-			return
+			return nil
 		},
 	}
 
@@ -110,7 +104,7 @@ func main() {
 		Use:     "add-server --token <VULS_TOKEN> --output <OUTPUT_FILE>",
 		Short:   "upload device information to Fvuls as a pseudo server. Default outputFile is ./discover_list.toml",
 		Example: "future-vuls add-server --token <VULS_TOKEN> --output ./discover_list.toml",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(token) == 0 {
 				token = os.Getenv("VULS_TOKEN")
 			}
@@ -121,10 +115,9 @@ func main() {
 				url = os.Getenv("VULS_URL")
 			}
 			if err := server.AddServerToFvuls(url, token, outputFile); err != nil {
-				fmt.Printf("%v\n", err)
-				os.Exit(1)
+				return fmt.Errorf("%v\n", err)
 			}
-			return
+			return nil
 		},
 	}
 
@@ -132,7 +125,7 @@ func main() {
 		Use:     "add-cpe --token <VULS_TOKEN> --output <OUTPUT_FILE>",
 		Short:   "scan device CPE and upload to Fvuls server. Default outputFile is ./discover_list.toml",
 		Example: "future-vuls add-cpe --token <VULS_TOKEN>",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(token) == 0 {
 				token = os.Getenv("VULS_TOKEN")
 			}
@@ -146,10 +139,9 @@ func main() {
 				snmpVersion = schema.SNMP_VERSION
 			}
 			if err := cpe.AddCpeDataToFvuls(url, token, snmpVersion, outputFile); err != nil {
-				fmt.Printf("%v\n", err)
-				os.Exit(1)
+				return fmt.Errorf("%v\n", err)
 			}
-			return
+			return nil
 		},
 	}
 
@@ -179,6 +171,6 @@ func main() {
 	rootCmd.AddCommand(cmdFvulsUploader)
 	rootCmd.AddCommand(cmdVersion)
 	if err = rootCmd.Execute(); err != nil {
-		fmt.Println("Failed to execute command", err)
+		fmt.Println("Failed to execute command")
 	}
 }
