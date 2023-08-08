@@ -9,7 +9,7 @@ import (
 	ps "github.com/kotakanbe/go-pingscanner"
 )
 
-func DiscoverActiveHosts(cidr string, outputFile string) error {
+func ActiveHosts(cidr string, outputFile string) error {
 	scanner := ps.PingScanner{
 		CIDR: cidr,
 		PingOptions: []string{
@@ -20,21 +20,21 @@ func DiscoverActiveHosts(cidr string, outputFile string) error {
 	fmt.Printf("Discovering %s...\n", cidr)
 	hosts, err := scanner.Scan()
 	if err != nil {
-		return fmt.Errorf("Host Discovery failed. err: %v\n", err)
+		return fmt.Errorf("host Discovery failed. err: %v", err)
 	}
 	if len(hosts) < 1 {
-		return fmt.Errorf("Active hosts not found in %s\n", cidr)
+		return fmt.Errorf("active hosts not found in %s", cidr)
 	}
 
 	f, err := os.OpenFile(outputFile, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
 	if err != nil {
-		return fmt.Errorf("Failed to open toml file. err: %v\n", err)
+		return fmt.Errorf("failed to open toml file. err: %v", err)
 	}
 	defer f.Close()
 	var prevDiscoverResult map[string]schema.ServerDetail
 	_, err = toml.DecodeFile(outputFile, &prevDiscoverResult)
 	if err != nil {
-		return fmt.Errorf("Failed to read previous discovery result. err: %v\n", err)
+		return fmt.Errorf("failed to read previous discovery result. err: %v", err)
 	}
 
 	servers := make(map[string]schema.ServerDetail)
@@ -49,11 +49,11 @@ func DiscoverActiveHosts(cidr string, outputFile string) error {
 		}
 	}
 	if len(servers) == 0 {
-		return fmt.Errorf("New host could not be found.\n")
+		return fmt.Errorf("new host could not be found")
 	}
 	encoder := toml.NewEncoder(f)
 	if err = encoder.Encode(servers); err != nil {
-		return fmt.Errorf("Failed to write to %s. err: %v", outputFile, err)
+		return fmt.Errorf("failed to write to %s. err: %v", outputFile, err)
 	}
 	fmt.Printf("Successfully wrote to %s\n", outputFile)
 	return nil

@@ -1,4 +1,4 @@
-package upload
+package saas
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ import (
 func UploadToFvuls(serverUUID string, groupID int64, url string, token string, tags []string, scanResultJSON []byte) error {
 	var scanResult models.ScanResult
 	if err := json.Unmarshal(scanResultJSON, &scanResult); err != nil {
-		return fmt.Errorf("Failed to parse json. err: %v", err)
+		return fmt.Errorf("failed to parse json. err: %v", err)
 	}
 	scanResult.ServerUUID = serverUUID
 	if 0 < len(tags) {

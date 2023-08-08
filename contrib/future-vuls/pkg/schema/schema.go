@@ -1,7 +1,7 @@
 package schema
 
 const FILENAME = "./discover_list.toml"
-const SNMP_VERSION = "v2c"
+const SNMPVERSION = "v2c"
 
 type ServerConf struct {
 	Server map[string]ServerDetail `toml:"server"`

@@ -16,12 +16,12 @@ import (
 	"github.com/future-architect/vuls/util"
 )
 
-type CreatePseudoServerInput struct {
+type createPseudoServerInput struct {
 	APIKey     string `json:"api_key"`
 	ServerName string `json:"serverName"`
 }
 
-type CreatePseudoServerOutput struct {
+type createPseudoServerOutput struct {
 	UUID string `json:"serverUuid"`
 }
 
@@ -29,7 +29,7 @@ func AddServerToFvuls(url string, token string, outputFile string) error {
 	var servers map[string]*schema.ServerDetail
 	_, err := toml.DecodeFile(outputFile, &servers)
 	if err != nil {
-		return fmt.Errorf("Failed to read %s\n", outputFile)
+		return fmt.Errorf("failed to read %s", outputFile)
 	}
 
 	targetServerCount := 0
@@ -41,7 +41,7 @@ func AddServerToFvuls(url string, token string, outputFile string) error {
 		if params.FvulsSync && params.UUID == "" {
 			fmt.Printf("%v: Adding to Fvuls server...\n", addr)
 			targetServerCount++
-			uuid, err := CreatePseudoServer(ctx, url, token, addr)
+			uuid, err := createPseudoServer(ctx, url, token, addr)
 			if err != nil {
 				fmt.Printf("%s: Failed to add to Fvuls server. err: %v\n", addr, err)
 				continue
@@ -53,36 +53,36 @@ func AddServerToFvuls(url string, token string, outputFile string) error {
 	}
 	if targetServerCount == 0 {
 		fmt.Printf("The target of the command could not be found, please rewrite the FvulsSync to true.\n")
-		return fmt.Errorf("Command target not found error\n")
+		return fmt.Errorf("command target not found error")
 	}
 	if !isAnyServerAdded {
-		return fmt.Errorf("All server uploads failed\n")
+		return fmt.Errorf("all server uploads failed")
 	}
 
 	f, err := os.OpenFile(outputFile, os.O_RDWR, 0666)
 	if err != nil {
-		return fmt.Errorf("Failed to open toml file. err: %v\n", err)
+		return fmt.Errorf("failed to open toml file. err: %v", err)
 	}
 	defer f.Close()
 	encoder := toml.NewEncoder(f)
 	if err := encoder.Encode(servers); err != nil {
-		return fmt.Errorf("Failed to write to %s. err: %v\n", outputFile, err)
+		return fmt.Errorf("failed to write to %s. err: %v", outputFile, err)
 	}
 	fmt.Printf("Successfully wrote to %s\n", outputFile)
 	return nil
 }
 
-func CreatePseudoServer(ctx context.Context, url string, token string, addr string) (string, error) {
-	payload := CreatePseudoServerInput{
+func createPseudoServer(ctx context.Context, url string, token string, addr string) (string, error) {
+	payload := createPseudoServerInput{
 		ServerName: addr,
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return "", fmt.Errorf("Failed to Marshal to JSON: %v\n", err)
+		return "", fmt.Errorf("failed to Marshal to JSON: %v", err)
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/server/pseudo", url), bytes.NewBuffer(body))
 	if err != nil {
-		return "", fmt.Errorf("Failed to create request: %v\n", err)
+		return "", fmt.Errorf("failed to create request: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
@@ -90,26 +90,26 @@ func CreatePseudoServer(ctx context.Context, url string, token string, addr stri
 
 	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
 	if err != nil {
-		return "", fmt.Errorf("%v\n", err)
+		return "", fmt.Errorf("%v", err)
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("%v\n", err)
+		return "", fmt.Errorf("%v", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("Falied to create pseudo server. statusCode: %d\n", resp.StatusCode)
+		return "", fmt.Errorf("falied to create pseudo server. statusCode: %d", resp.StatusCode)
 	}
 	t, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("Failed to read response data. err: %v\n", err)
+		return "", fmt.Errorf("failed to read response data. err: %v", err)
 	}
-	var serverDetail CreatePseudoServerOutput
+	var serverDetail createPseudoServerOutput
 	if err := json.Unmarshal(t, &serverDetail); err != nil {
 		if err.Error() == "invalid character 'A' looking for beginning of value" {
-			return "", fmt.Errorf("Invalid token")
+			return "", fmt.Errorf("invalid token")
 		}
-		return "", fmt.Errorf("Failed to unmarshal serverDetail. err: %v\n", err)
+		return "", fmt.Errorf("failed to unmarshal serverDetail. err: %v", err)
 	}
 	return serverDetail.UUID, nil
 }

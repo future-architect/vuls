@@ -11,9 +11,10 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/cpe"
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/discover"
+	"github.com/future-architect/vuls/contrib/future-vuls/pkg/saas"
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/schema"
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/server"
-	"github.com/future-architect/vuls/contrib/future-vuls/pkg/upload"
+
 	"github.com/spf13/cobra"
 )
 
@@ -44,7 +45,7 @@ func main() {
 			if groupID == 0 {
 				envGroupID := os.Getenv("VULS_GROUP_ID")
 				if groupID, err = strconv.ParseInt(envGroupID, 10, 64); err != nil {
-					return fmt.Errorf("Invalid GroupID: %s\n", envGroupID)
+					return fmt.Errorf("invalid GroupID: %s", envGroupID)
 				}
 			}
 			if len(url) == 0 {
@@ -61,14 +62,14 @@ func main() {
 				reader := bufio.NewReader(os.Stdin)
 				buf := new(bytes.Buffer)
 				if _, err := buf.ReadFrom(reader); err != nil {
-					return fmt.Errorf("Failed to read from stdIn. err: %v", err)
+					return fmt.Errorf("failed to read from stdIn. err: %v", err)
 				}
 				scanResultJSON = buf.Bytes()
 			} else {
 				return fmt.Errorf("use --stdin option")
 			}
-			if err := upload.UploadToFvuls(serverUUID, groupID, url, token, tags, scanResultJSON); err != nil {
-				return fmt.Errorf("%v\n", err)
+			if err := saas.UploadToFvuls(serverUUID, groupID, url, token, tags, scanResultJSON); err != nil {
+				return fmt.Errorf("%v", err)
 			}
 			return nil
 		},
@@ -91,10 +92,10 @@ func main() {
 				outputFile = schema.FILENAME
 			}
 			if len(cidr) == 0 {
-				return fmt.Errorf("Please specify cidr range.")
+				return fmt.Errorf("please specify cidr range")
 			}
-			if err := discover.DiscoverActiveHosts(cidr, outputFile); err != nil {
-				return fmt.Errorf("%v\n", err)
+			if err := discover.ActiveHosts(cidr, outputFile); err != nil {
+				return fmt.Errorf("%v", err)
 			}
 			return nil
 		},
@@ -115,7 +116,7 @@ func main() {
 				url = os.Getenv("VULS_URL")
 			}
 			if err := server.AddServerToFvuls(url, token, outputFile); err != nil {
-				return fmt.Errorf("%v\n", err)
+				return fmt.Errorf("%v", err)
 			}
 			return nil
 		},
@@ -136,10 +137,10 @@ func main() {
 				url = os.Getenv("VULS_URL")
 			}
 			if len(snmpVersion) == 0 {
-				snmpVersion = schema.SNMP_VERSION
+				snmpVersion = schema.SNMPVERSION
 			}
 			if err := cpe.AddCpeDataToFvuls(url, token, snmpVersion, outputFile); err != nil {
-				return fmt.Errorf("%v\n", err)
+				return fmt.Errorf("%v", err)
 			}
 			return nil
 		},
