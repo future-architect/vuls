@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -15,7 +13,6 @@ import (
 
 var (
 	serverUUID   string
-	stdIn        bool
 	jsonDir      string
 	jsonFileName string
 )
@@ -29,19 +26,9 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			jsonFilePath := filepath.Join(jsonDir, jsonFileName)
 			var trivyJSON []byte
-			if stdIn {
-				reader := bufio.NewReader(os.Stdin)
-				buf := new(bytes.Buffer)
-				if _, err = buf.ReadFrom(reader); err != nil {
-					fmt.Printf("Failed to read file. err: %+v\n", err)
-					os.Exit(1)
-				}
-				trivyJSON = buf.Bytes()
-			} else {
-				if trivyJSON, err = os.ReadFile(jsonFilePath); err != nil {
-					fmt.Printf("Failed to read file. err: %+v\n", err)
-					os.Exit(1)
-				}
+			if trivyJSON, err = os.ReadFile(jsonFilePath); err != nil {
+				fmt.Printf("Failed to read file. err: %+v\n", err)
+				os.Exit(1)
 			}
 
 			parser, err := parser.NewParser(trivyJSON)
@@ -72,7 +59,6 @@ func main() {
 		},
 	}
 
-	cmdTrivyToVuls.Flags().BoolVarP(&stdIn, "stdin", "s", false, "input from stdin")
 	cmdTrivyToVuls.Flags().StringVarP(&jsonDir, "trivy-json-dir", "d", "./", "trivy json dir")
 	cmdTrivyToVuls.Flags().StringVarP(&jsonFileName, "trivy-json-file-name", "f", "results.json", "trivy json file name")
 
