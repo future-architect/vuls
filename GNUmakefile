@@ -19,17 +19,24 @@ REVISION := $(shell git rev-parse --short HEAD)
 BUILDTIME := $(shell date "+%Y%m%d_%H%M%S")
 LDFLAGS := -X 'github.com/future-architect/vuls/config.Version=$(VERSION)' -X 'github.com/future-architect/vuls/config.Revision=build-$(BUILDTIME)_$(REVISION)'
 GO := CGO_ENABLED=0 go
+GO_WINDOWS := GOOS=windows GOARCH=amd64 $(GO)
 
 all: build test
 
 build: ./cmd/vuls/main.go
 	$(GO) build -a -ldflags "$(LDFLAGS)" -o vuls ./cmd/vuls
 
+build-windows: ./cmd/vuls/main.go
+	$(GO_WINDOWS) build -a -ldflags " $(LDFLAGS)" -o vuls.exe ./cmd/vuls
+
 install: ./cmd/vuls/main.go
 	$(GO) install -ldflags "$(LDFLAGS)" ./cmd/vuls
 
 build-scanner: ./cmd/scanner/main.go 
 	$(GO) build -tags=scanner -a -ldflags "$(LDFLAGS)" -o vuls ./cmd/scanner
+
+build-scanner-windows: ./cmd/vuls/main.go
+	$(GO_WINDOWS) build -tags=scanner -a -ldflags " $(LDFLAGS)" -o vuls.exe ./cmd/scanner
 
 install-scanner: ./cmd/scanner/main.go 
 	$(GO) install -tags=scanner -ldflags "$(LDFLAGS)" ./cmd/scanner
