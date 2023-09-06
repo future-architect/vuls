@@ -99,37 +99,37 @@ Flags:
 
 ```
 ./future-vuls add-server -h
-Register hosts for Fvuls as a pseudo server. The default outputFile is ./discover_list.toml
+upload device information to Fvuls as a pseudo server. Default outputFile is ./discover_list.toml
 
 Usage:
-  future-vuls add-server --token <VULS_TOKEN> --output <Output_File> [flags]
+  future-vuls add-server --token <VULS_TOKEN> --output <OUTPUT_FILE> [flags]
 
 Examples:
 future-vuls add-server --token <VULS_TOKEN> --output ./discover_list.toml
 
 Flags:
-  -h, --help            help for add-server
-      --output string   output file
-  -t, --token string    future vuls token ENV: VULS_TOKEN
-      --url string      future vuls upload url ENV: VULS_URL
+  -h, --help                help for add-server
+      --http-proxy string   proxy url
+      --output string       output file
+  -t, --token string        future vuls token ENV: VULS_TOKEN
 ```
 
 ```
 ./future-vuls add-cpe -h
-scan device CPE and upload to Fvuls. The default outputFile is ./discover_list.toml
+scan device CPE and upload to Fvuls server. Default outputFile is ./discover_list.toml
 
 Usage:
-  future-vuls add-cpe --token <VULS_TOKEN> --output <Output_File> [flags]
+  future-vuls add-cpe --token <VULS_TOKEN> --output <OUTPUT_FILE> [flags]
 
 Examples:
 future-vuls add-cpe --token <VULS_TOKEN>
 
 Flags:
   -h, --help                 help for add-cpe
+      --http-proxy string    proxy url
       --output string        output file
       --snmpVersion string   snmp version v1,v2c and v3. default: v2c
   -t, --token string         future vuls token ENV: VULS_TOKEN
-      --url string           future vuls upload url ENV: VULS_URL
 ```
 
 ## Usage
@@ -154,14 +154,14 @@ Successfully wrote to ./discover_list.toml
 ```
 - `future-vuls add-server`
 ```
-$ ./future-vuls add-server --url "https://rest.vuls.biz/v1" --token fvgr-528ec289-2516-11ee-b1e6-0a58a9feac02
+$ ./future-vuls add-server --token fvgr-528ec289-2516-11ee-b1e6-0a58a9feac02
 192.168.0.2: Adding to Fvuls server...
 192.168.0.2: Done.
 Successfully wrote to ./discover_list.toml
 ```
 - `future-vuls add-cpe`
 ```
-$ ./future-vuls add-cpe --token fvgr-528ec289-2516-11ee-b1e6-0a58a9feac02 --url "https://rest.vuls.biz/v1"
+$ ./future-vuls add-cpe --token fvgr-528ec289-2516-11ee-b1e6-0a58a9feac02
 Uploading CPE to https://rest.2119e7c929.vuls.biz/v1/pkgCpe/cpe...
 192.168.0.2: Done.
 192.168.0.2: Found new cpe: cpe:2.3:h:fortinet:fortigate-50e:-:*:*:*:*:*:*:*

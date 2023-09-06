@@ -25,7 +25,7 @@ type createPseudoServerOutput struct {
 	UUID string `json:"serverUuid"`
 }
 
-func AddServerToFvuls(url string, token string, outputFile string) error {
+func AddServerToFvuls(token string, outputFile string, proxy string) error {
 	var servers map[string]*schema.ServerDetail
 	_, err := toml.DecodeFile(outputFile, &servers)
 	if err != nil {
@@ -41,7 +41,7 @@ func AddServerToFvuls(url string, token string, outputFile string) error {
 		if params.FvulsSync && params.UUID == "" {
 			fmt.Printf("%v: Adding to Fvuls server...\n", addr)
 			targetServerCount++
-			uuid, err := createPseudoServer(ctx, url, token, addr)
+			uuid, err := createPseudoServer(ctx, token, addr, proxy)
 			if err != nil {
 				fmt.Printf("%s: Failed to add to Fvuls server. err: %v\n", addr, err)
 				continue
@@ -72,7 +72,7 @@ func AddServerToFvuls(url string, token string, outputFile string) error {
 	return nil
 }
 
-func createPseudoServer(ctx context.Context, url string, token string, addr string) (string, error) {
+func createPseudoServer(ctx context.Context, token string, addr string, proxy string) (string, error) {
 	payload := createPseudoServerInput{
 		ServerName: addr,
 	}
@@ -80,7 +80,7 @@ func createPseudoServer(ctx context.Context, url string, token string, addr stri
 	if err != nil {
 		return "", fmt.Errorf("failed to Marshal to JSON: %v", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/server/pseudo", url), bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/server/pseudo", schema.REST_ENDPOINT), bytes.NewBuffer(body))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %v", err)
 	}

@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/schema"
 	"github.com/future-architect/vuls/util"
 	"golang.org/x/exp/slices"
@@ -28,7 +27,7 @@ type getServerDetailByUUIDOutput struct {
 	ServerID int64 `json:"id"`
 }
 
-func AddCpeDataToFvuls(url string, token string, snmpVersion string, outputFile string) error {
+func AddCpeDataToFvuls(token string, snmpVersion string, outputFile string, proxy string) error {
 	var servers map[string]*schema.ServerDetail
 	_, err := toml.DecodeFile(outputFile, &servers)
 	if err != nil {
@@ -38,7 +37,7 @@ func AddCpeDataToFvuls(url string, token string, snmpVersion string, outputFile 
 	targetServerCount := 0
 	//This flag indicates whether at least one cpe has been added
 	isAnyCpeAdded := false
-	fmt.Printf("Uploading CPE to %s/pkgCpe/cpe...\n", url)
+	fmt.Printf("Uploading CPE to %s/pkgCpe/cpe...\n", schema.REST_ENDPOINT)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	for addr, params := range servers {
@@ -58,7 +57,7 @@ func AddCpeDataToFvuls(url string, token string, snmpVersion string, outputFile 
 				}
 			}
 
-			serverID, err := fetchServerIDByUUID(ctx, params.UUID, url, token)
+			serverID, err := fetchServerIDByUUID(ctx, params.UUID, token, proxy)
 			if err != nil {
 				fmt.Printf("%s: Failed to Fetch serverID. err: %v\n", addr, err)
 				continue
@@ -69,7 +68,7 @@ func AddCpeDataToFvuls(url string, token string, snmpVersion string, outputFile 
 				fmt.Printf("%s: New CPE datas not found.\n", addr)
 			}
 			for _, newCpe := range newCpes {
-				if err := uploadCPEData(ctx, newCpe, serverID, url, token); err != nil {
+				if err := uploadCPEData(ctx, newCpe, serverID, token, proxy); err != nil {
 					fmt.Printf("%s: Failed to upload CPE %s. err: %v\n", addr, newCpe, err)
 					continue
 				}
@@ -129,15 +128,15 @@ func executeSnmp2cpe(addr string, snmpVersion string) (map[string][]string, erro
 	return jsonData, nil
 }
 
-func fetchServerIDByUUID(ctx context.Context, uuid string, url string, token string) (int64, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/server/uuid/%s", url, uuid), nil)
+func fetchServerIDByUUID(ctx context.Context, uuid string, token string, proxy string) (int64, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/server/uuid/%s", schema.REST_ENDPOINT, uuid), nil)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create request. err: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", token)
-	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
+	client, err := util.GetHTTPClient(proxy)
 	if err != nil {
 		return 0, fmt.Errorf("%v", err)
 	}
@@ -164,7 +163,7 @@ func fetchServerIDByUUID(ctx context.Context, uuid string, url string, token str
 	return serverDetail.ServerID, nil
 }
 
-func uploadCPEData(ctx context.Context, cpe string, serverID int64, url string, token string) error {
+func uploadCPEData(ctx context.Context, cpe string, serverID int64, token string, proxy string) error {
 	payload := addCpeInput{
 		ServerID: serverID,
 		CpeName:  cpe,
@@ -174,7 +173,7 @@ func uploadCPEData(ctx context.Context, cpe string, serverID int64, url string, 
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %v", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/pkgCpe/cpe", url), bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/pkgCpe/cpe", schema.REST_ENDPOINT), bytes.NewBuffer(body))
 	if err != nil {
 		return fmt.Errorf("failed to create request. err: %v", err)
 	}
@@ -182,7 +181,7 @@ func uploadCPEData(ctx context.Context, cpe string, serverID int64, url string, 
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", token)
 
-	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
+	client, err := util.GetHTTPClient(proxy)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

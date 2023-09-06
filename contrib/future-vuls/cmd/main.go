@@ -30,6 +30,7 @@ var (
 	outputFile  string
 	cidr        string
 	snmpVersion string
+	proxy       string
 )
 
 func main() {
@@ -69,7 +70,8 @@ func main() {
 				return fmt.Errorf("use --stdin option")
 			}
 			if err := saas.UploadToFvuls(serverUUID, groupID, url, token, tags, scanResultJSON); err != nil {
-				return fmt.Errorf("%v", err)
+				fmt.Printf("%v", err)
+				os.Exit(1)
 			}
 			return nil
 		},
@@ -95,7 +97,8 @@ func main() {
 				return fmt.Errorf("please specify cidr range")
 			}
 			if err := discover.ActiveHosts(cidr, outputFile); err != nil {
-				return fmt.Errorf("%v", err)
+				fmt.Printf("%v", err)
+				os.Exit(1)
 			}
 			return nil
 		},
@@ -115,8 +118,9 @@ func main() {
 			if len(url) == 0 {
 				url = os.Getenv("VULS_URL")
 			}
-			if err := server.AddServerToFvuls(url, token, outputFile); err != nil {
-				return fmt.Errorf("%v", err)
+			if err := server.AddServerToFvuls(token, outputFile, proxy); err != nil {
+				fmt.Printf("%v", err)
+				os.Exit(1)
 			}
 			return nil
 		},
@@ -139,8 +143,9 @@ func main() {
 			if len(snmpVersion) == 0 {
 				snmpVersion = schema.SNMPVERSION
 			}
-			if err := cpe.AddCpeDataToFvuls(url, token, snmpVersion, outputFile); err != nil {
-				return fmt.Errorf("%v", err)
+			if err := cpe.AddCpeDataToFvuls(token, snmpVersion, outputFile, proxy); err != nil {
+				fmt.Printf("%v", err)
+				os.Exit(1)
 			}
 			return nil
 		},
@@ -150,11 +155,11 @@ func main() {
 	cmdDiscover.PersistentFlags().StringVar(&outputFile, "output", "", "output file")
 	cmdAddServer.PersistentFlags().StringVarP(&token, "token", "t", "", "future vuls token ENV: VULS_TOKEN")
 	cmdAddServer.PersistentFlags().StringVar(&outputFile, "output", "", "output file")
-	cmdAddServer.PersistentFlags().StringVar(&url, "url", "", "future vuls upload url ENV: VULS_URL")
+	cmdAddServer.PersistentFlags().StringVar(&proxy, "http-proxy", "", "proxy url")
 	cmdAddCpe.PersistentFlags().StringVarP(&token, "token", "t", "", "future vuls token ENV: VULS_TOKEN")
 	cmdAddCpe.PersistentFlags().StringVar(&outputFile, "output", "", "output file")
-	cmdAddCpe.PersistentFlags().StringVar(&url, "url", "", "future vuls upload url ENV: VULS_URL")
-	cmdAddCpe.PersistentFlags().StringVar(&snmpVersion, "snmpVersion", "", "snmp version v1,v2c and v3. default: v2c ")
+	cmdAddCpe.PersistentFlags().StringVar(&snmpVersion, "snmp-version", "", "snmp version v1,v2c and v3. default: v2c ")
+	cmdAddCpe.PersistentFlags().StringVar(&proxy, "http-proxy", "", "proxy url")
 
 	cmdFvulsUploader.PersistentFlags().StringVar(&serverUUID, "uuid", "", "server uuid. ENV: VULS_SERVER_UUID")
 	cmdFvulsUploader.PersistentFlags().StringVar(&configFile, "config", "", "config file (default is $HOME/.cobra.yaml)")
@@ -163,7 +168,6 @@ func main() {
 	//	cmdFvulsUploader.Flags().StringVarP(&jsonDir, "results-dir", "d", "./", "vuls scan results json dir")
 	cmdFvulsUploader.PersistentFlags().Int64VarP(&groupID, "group-id", "g", 0, "future vuls group id, ENV: VULS_GROUP_ID")
 	cmdFvulsUploader.PersistentFlags().StringVarP(&token, "token", "t", "", "future vuls token")
-	cmdFvulsUploader.PersistentFlags().StringVar(&url, "url", "", "future vuls upload url")
 
 	var rootCmd = &cobra.Command{Use: "future-vuls"}
 	rootCmd.AddCommand(cmdAddServer)

@@ -2,6 +2,7 @@ package schema
 
 const FILENAME = "./discover_list.toml"
 const SNMPVERSION = "v2c"
+const REST_ENDPOINT = "https://rest.vuls.biz/v1"
 
 type ServerConf struct {
 	Server map[string]ServerDetail `toml:"server"`
