@@ -7,9 +7,9 @@ import (
 
 // SaasConf is FutureVuls config
 type SaasConf struct {
-	GroupID int64  `json:"GroupID"`
-	Token   string `json:"Token"`
-	URL     string `json:"URL"`
+	GroupID int64  `json:"-"`
+	Token   string `json:"-"`
+	URL     string `json:"-"`
 }
 
 // Validate validates configuration

@@ -35,7 +35,7 @@ install: ./cmd/vuls/main.go
 build-scanner: ./cmd/scanner/main.go 
 	$(GO) build -tags=scanner -a -ldflags "$(LDFLAGS)" -o vuls ./cmd/scanner
 
-build-scanner-windows: ./cmd/vuls/main.go
+build-scanner-windows: ./cmd/scanner/main.go
 	$(GO_WINDOWS) build -tags=scanner -a -ldflags " $(LDFLAGS)" -o vuls.exe ./cmd/scanner
 
 install-scanner: ./cmd/scanner/main.go 

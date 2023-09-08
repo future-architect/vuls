@@ -169,7 +169,6 @@ func localExec(c config.ServerInfo, cmdstr string, sudo bool) (result execResult
 	cmd.Stderr = &stderrBuf
 	if err := cmd.Run(); err != nil {
 		result.Error = err
-		fmt.Printf("Err: %v\n", stderrBuf.String())
 		if exitError, ok := err.(*ex.ExitError); ok {
 			waitStatus := exitError.Sys().(syscall.WaitStatus)
 			result.ExitStatus = waitStatus.ExitStatus()

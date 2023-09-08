@@ -35,6 +35,8 @@ var (
 
 var servers, errServers []osTypeInterface
 
+var userDirectoryPath = ""
+
 // Base Interface
 type osTypeInterface interface {
 	setServerInfo(config.ServerInfo)
@@ -458,12 +460,7 @@ func validateSSHConfig(c *config.ServerInfo) error {
 				hostname = sshConfig.hostname
 			}
 		}
-		UserDirectoryPath := ""
-		if c.Distro.Family == constant.Windows {
-			UserDirectoryPath = os.Getenv("userprofile")
-			fmt.Printf("%v\n", UserDirectoryPath)
-		}
-		cmd := fmt.Sprintf("%s -F %s -f %s", sshKeygenBinaryPath, hostname, fmt.Sprintf("%s%s", UserDirectoryPath, knownHosts))
+		cmd := fmt.Sprintf("%s -F %s -f %s", sshKeygenBinaryPath, hostname, knownHosts)
 		logging.Log.Debugf("Executing... %s", strings.Replace(cmd, "\n", "", -1))
 		if r := localExec(*c, cmd, noSudo); r.isSuccess() {
 			keyType, clientKey, err := parseSSHKeygen(r.Stdout)
@@ -571,8 +568,11 @@ func parseSSHConfiguration(stdout string) sshConfiguration {
 		case strings.HasPrefix(line, "userknownhostsfile "):
 			sshConfig.userKnownHosts = strings.Split(strings.TrimPrefix(line, "userknownhostsfile "), " ")
 			if runtime.GOOS == constant.Windows {
+				userDirectoryPath = strings.Replace(os.Getenv("userprofile"), "\\", "/", -1)
 				for i, userKnownHost := range sshConfig.userKnownHosts {
-					sshConfig.userKnownHosts[i] = strings.TrimPrefix(userKnownHost, "~")
+					if strings.HasPrefix(userKnownHost, "~") {
+						sshConfig.userKnownHosts[i] = fmt.Sprintf("%s%s", userDirectoryPath, strings.TrimPrefix(userKnownHost, "~"))
+					}
 				}
 			}
 		case strings.HasPrefix(line, "proxycommand "):
