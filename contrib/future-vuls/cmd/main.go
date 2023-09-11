@@ -87,7 +87,7 @@ func main() {
 
 	var cmdDiscover = &cobra.Command{
 		Use:     "discover --cidr <CIDR_RANGE> --output <OUTPUT_FILE>",
-		Short:   "discover hosts with CIDR range. Default outputFile is ./discover_list.toml",
+		Short:   "discover hosts with CIDR range. Run snmp2cpe on active host to get CPE. Default outputFile is ./discover_list.toml",
 		Example: "future-vuls discover --cidr 192.168.0.0/24 --output discover_list.toml",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(outputFile) == 0 {
@@ -96,29 +96,10 @@ func main() {
 			if len(cidr) == 0 {
 				return fmt.Errorf("please specify cidr range")
 			}
-			if err := discover.ActiveHosts(cidr, outputFile); err != nil {
-				fmt.Printf("%v", err)
-				os.Exit(1)
+			if len(snmpVersion) == 0 {
+				snmpVersion = schema.SNMPVERSION
 			}
-			return nil
-		},
-	}
-
-	var cmdAddServer = &cobra.Command{
-		Use:     "add-server --token <VULS_TOKEN> --output <OUTPUT_FILE>",
-		Short:   "upload device information to Fvuls as a pseudo server. Default outputFile is ./discover_list.toml",
-		Example: "future-vuls add-server --token <VULS_TOKEN> --output ./discover_list.toml",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(token) == 0 {
-				token = os.Getenv("VULS_TOKEN")
-			}
-			if len(outputFile) == 0 {
-				outputFile = schema.FILENAME
-			}
-			if len(url) == 0 {
-				url = os.Getenv("VULS_URL")
-			}
-			if err := server.AddServerToFvuls(token, outputFile, proxy); err != nil {
+			if err := discover.ActiveHosts(cidr, outputFile, snmpVersion); err != nil {
 				fmt.Printf("%v", err)
 				os.Exit(1)
 			}
@@ -128,7 +109,7 @@ func main() {
 
 	var cmdAddCpe = &cobra.Command{
 		Use:     "add-cpe --token <VULS_TOKEN> --output <OUTPUT_FILE>",
-		Short:   "scan device CPE and upload to Fvuls server. Default outputFile is ./discover_list.toml",
+		Short:   "Create a pseudo server in Fvuls and register CPE. Default outputFile is ./discover_list.toml",
 		Example: "future-vuls add-cpe --token <VULS_TOKEN>",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(token) == 0 {
@@ -137,13 +118,11 @@ func main() {
 			if len(outputFile) == 0 {
 				outputFile = schema.FILENAME
 			}
-			if len(url) == 0 {
-				url = os.Getenv("VULS_URL")
+			if err := server.AddServerToFvuls(token, outputFile, proxy); err != nil {
+				fmt.Printf("%v", err)
+				os.Exit(1)
 			}
-			if len(snmpVersion) == 0 {
-				snmpVersion = schema.SNMPVERSION
-			}
-			if err := cpe.AddCpeDataToFvuls(token, snmpVersion, outputFile, proxy); err != nil {
+			if err := cpe.AddCpeDataToFvuls(token, outputFile, proxy); err != nil {
 				fmt.Printf("%v", err)
 				os.Exit(1)
 			}
@@ -153,12 +132,9 @@ func main() {
 
 	cmdDiscover.PersistentFlags().StringVar(&cidr, "cidr", "", "cidr range")
 	cmdDiscover.PersistentFlags().StringVar(&outputFile, "output", "", "output file")
-	cmdAddServer.PersistentFlags().StringVarP(&token, "token", "t", "", "future vuls token ENV: VULS_TOKEN")
-	cmdAddServer.PersistentFlags().StringVar(&outputFile, "output", "", "output file")
-	cmdAddServer.PersistentFlags().StringVar(&proxy, "http-proxy", "", "proxy url")
+	cmdDiscover.PersistentFlags().StringVar(&snmpVersion, "snmp-version", "", "snmp version v1,v2c and v3. default: v2c ")
 	cmdAddCpe.PersistentFlags().StringVarP(&token, "token", "t", "", "future vuls token ENV: VULS_TOKEN")
 	cmdAddCpe.PersistentFlags().StringVar(&outputFile, "output", "", "output file")
-	cmdAddCpe.PersistentFlags().StringVar(&snmpVersion, "snmp-version", "", "snmp version v1,v2c and v3. default: v2c ")
 	cmdAddCpe.PersistentFlags().StringVar(&proxy, "http-proxy", "", "proxy url")
 
 	cmdFvulsUploader.PersistentFlags().StringVar(&serverUUID, "uuid", "", "server uuid. ENV: VULS_SERVER_UUID")
@@ -170,7 +146,6 @@ func main() {
 	cmdFvulsUploader.PersistentFlags().StringVarP(&token, "token", "t", "", "future vuls token")
 
 	var rootCmd = &cobra.Command{Use: "future-vuls"}
-	rootCmd.AddCommand(cmdAddServer)
 	rootCmd.AddCommand(cmdDiscover)
 	rootCmd.AddCommand(cmdAddCpe)
 	rootCmd.AddCommand(cmdFvulsUploader)
