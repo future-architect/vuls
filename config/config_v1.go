@@ -13,10 +13,10 @@ import (
 )
 
 // ConfV1 has old version Configuration for windows
-var ConfV1 ConfigV1
+var ConfV1 V1
 
-// ConfigV1 is Struct of Configuration
-type ConfigV1 struct {
+// V1 is Struct of Configuration
+type V1 struct {
 	Version string
 	Servers map[string]Server
 	Proxy   ProxyConfig
