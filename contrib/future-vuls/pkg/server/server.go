@@ -25,6 +25,7 @@ type createPseudoServerOutput struct {
 	UUID string `json:"serverUuid"`
 }
 
+// AddServerToFvuls ...
 func AddServerToFvuls(url string, token string, outputFile string) error {
 	var servers map[string]*schema.ServerDetail
 	_, err := toml.DecodeFile(outputFile, &servers)

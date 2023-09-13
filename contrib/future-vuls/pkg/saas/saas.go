@@ -9,10 +9,11 @@ import (
 	"github.com/future-architect/vuls/saas"
 )
 
+// UploadToFvuls ...
 func UploadToFvuls(serverUUID string, groupID int64, url string, token string, tags []string, scanResultJSON []byte) error {
 	var scanResult models.ScanResult
 	if err := json.Unmarshal(scanResultJSON, &scanResult); err != nil {
-		return fmt.Errorf("failed to parse json. err: %v\nPlease check trivy scan results.\n", err)
+		return fmt.Errorf("failed to parse json. err: %v\nPlease check trivy scan results.", err)
 	}
 	scanResult.ServerUUID = serverUUID
 	if 0 < len(tags) {

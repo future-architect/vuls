@@ -1,6 +1,9 @@
 package schema
 
+// output filename
 const FILENAME = "./discover_list.toml"
+
+// snmp2cpe version
 const SNMPVERSION = "v2c"
 
 type ServerConf struct {

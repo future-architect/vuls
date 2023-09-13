@@ -1,3 +1,4 @@
+// discover
 package discover
 
 import (
@@ -9,6 +10,7 @@ import (
 	ps "github.com/kotakanbe/go-pingscanner"
 )
 
+// ActiveHosts ...
 func ActiveHosts(cidr string, outputFile string) error {
 	scanner := ps.PingScanner{
 		CIDR: cidr,
