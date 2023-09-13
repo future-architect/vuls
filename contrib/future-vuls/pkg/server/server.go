@@ -33,7 +33,7 @@ func AddServerToFvuls(token string, outputFile string, proxy string) error {
 	}
 
 	targetServerCount := 0
-	fmt.Printf("Creating pseudo server...  URL: %s/server/pseudo\n", schema.RESTENDPOINT)
+	fmt.Printf("Creating pseudo server...  URL: %s/server/pseudo\n", schema.RestEndPoint)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	for addr, params := range servers {
@@ -74,7 +74,7 @@ func createPseudoServer(ctx context.Context, token string, name string, proxy st
 	if err != nil {
 		return "", fmt.Errorf("failed to Marshal to JSON: %v", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/server/pseudo", schema.RESTENDPOINT), bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/server/pseudo", schema.RestEndPoint), bytes.NewBuffer(body))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %v", err)
 	}

@@ -91,13 +91,13 @@ func main() {
 		Example: "future-vuls discover --cidr 192.168.0.0/24 --output discover_list.toml",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(outputFile) == 0 {
-				outputFile = schema.FILENAME
+				outputFile = schema.FileName
 			}
 			if len(cidr) == 0 {
 				return fmt.Errorf("please specify cidr range")
 			}
 			if len(snmpVersion) == 0 {
-				snmpVersion = schema.SNMPVERSION
+				snmpVersion = schema.SnmpVersion
 			}
 			if err := discover.ActiveHosts(cidr, outputFile, snmpVersion); err != nil {
 				fmt.Printf("%v", err)
@@ -119,7 +119,7 @@ func main() {
 				}
 			}
 			if len(outputFile) == 0 {
-				outputFile = schema.FILENAME
+				outputFile = schema.FileName
 			}
 			if err := server.AddServerToFvuls(token, outputFile, proxy); err != nil {
 				fmt.Printf("%v", err)
