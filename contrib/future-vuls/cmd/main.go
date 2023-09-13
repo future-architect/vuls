@@ -114,6 +114,9 @@ func main() {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(token) == 0 {
 				token = os.Getenv("VULS_TOKEN")
+				if len(token) == 0 {
+					return fmt.Errorf("token not specified")
+				}
 			}
 			if len(outputFile) == 0 {
 				outputFile = schema.FILENAME
