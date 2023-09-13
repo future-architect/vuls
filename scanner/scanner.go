@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	ex "os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -568,10 +569,9 @@ func parseSSHConfiguration(stdout string) sshConfiguration {
 		case strings.HasPrefix(line, "userknownhostsfile "):
 			sshConfig.userKnownHosts = strings.Split(strings.TrimPrefix(line, "userknownhostsfile "), " ")
 			if runtime.GOOS == constant.Windows {
-				userDirectoryPath = strings.Replace(os.Getenv("userprofile"), "\\", "/", -1)
 				for i, userKnownHost := range sshConfig.userKnownHosts {
 					if strings.HasPrefix(userKnownHost, "~") {
-						sshConfig.userKnownHosts[i] = fmt.Sprintf("%s%s", userDirectoryPath, strings.TrimPrefix(userKnownHost, "~"))
+						sshConfig.userKnownHosts[i] = normalizeHomeDirPathForWindows(userKnownHost)
 					}
 				}
 			}
@@ -582,6 +582,12 @@ func parseSSHConfiguration(stdout string) sshConfiguration {
 		}
 	}
 	return sshConfig
+}
+
+func normalizeHomeDirPathForWindows(userKnownHost string) string {
+	userKnownHostPath := filepath.Join(os.Getenv("userprofile"), strings.TrimPrefix(userKnownHost, "~"))
+	replacedPath := strings.ReplaceAll(userKnownHostPath, "\\", "/")
+	return replacedPath
 }
 
 func parseSSHScan(stdout string) map[string]string {
