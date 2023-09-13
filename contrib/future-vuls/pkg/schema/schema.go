@@ -1,9 +1,9 @@
 package schema
 
-const FILENAME = "discover_list.toml"
-const SNMPVERSION = "v2c"
-const RESTENDPOINT = "https://rest.vuls.biz/v1"
-const TIMESTAMPFORMAT = "20060102150405"
+const FileName = "discover_list.toml"
+const SnmpVersion = "v2c"
+const RestEndPoint = "https://rest.vuls.biz/v1"
+const TimeStampFormat = "20060102150405"
 
 type ServerConf struct {
 	Server map[string]ServerDetail `toml:"server"`
