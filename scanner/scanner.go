@@ -586,8 +586,7 @@ func parseSSHConfiguration(stdout string) sshConfiguration {
 
 func normalizeHomeDirPathForWindows(userKnownHost string) string {
 	userKnownHostPath := filepath.Join(os.Getenv("userprofile"), strings.TrimPrefix(userKnownHost, "~"))
-	replacedPath := strings.ReplaceAll(userKnownHostPath, "/", "\\")
-	return replacedPath
+	return strings.ReplaceAll(userKnownHostPath, "/", "\\")
 }
 
 func parseSSHScan(stdout string) map[string]string {
