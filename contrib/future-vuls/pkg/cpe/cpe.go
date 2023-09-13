@@ -43,7 +43,7 @@ func AddCpeDataToFvuls(token string, outputFile string, proxy string) error {
 	targetServerCount := 0
 	//This flag indicates whether at least one cpe has been added
 	isAnyCpeAdded := false
-	fmt.Printf("Uploading CPE...  URL: %s/pkgCpe/cpe\n", schema.REST_ENDPOINT)
+	fmt.Printf("Uploading CPE...  URL: %s/pkgCpe/cpe\n", schema.RESTENDPOINT)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	for addr, params := range servers {
@@ -100,7 +100,7 @@ func AddCpeDataToFvuls(token string, outputFile string, proxy string) error {
 }
 
 func fetchServerIDByUUID(ctx context.Context, uuid string, token string, proxy string) (int64, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/server/uuid/%s", schema.REST_ENDPOINT, uuid), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/server/uuid/%s", schema.RESTENDPOINT, uuid), nil)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create request. err: %v", err)
 	}
@@ -144,7 +144,7 @@ func uploadCPEData(ctx context.Context, cpe string, serverID int64, token string
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal JSON: %v", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/pkgCpe/cpe", schema.REST_ENDPOINT), bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/pkgCpe/cpe", schema.RESTENDPOINT), bytes.NewBuffer(body))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request. err: %v", err)
 	}

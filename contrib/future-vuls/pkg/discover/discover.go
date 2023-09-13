@@ -42,7 +42,7 @@ func ActiveHosts(cidr string, outputFile string, snmpVersion string) error {
 			return fmt.Errorf("failed to read previous discovery result. err: %v", err)
 		}
 		currentTime := time.Now()
-		timestamp := currentTime.Format(schema.TIMESTAMP_FORMAT)
+		timestamp := currentTime.Format(schema.TIMESTAMPFORMAT)
 		prevDiscoverFile = fmt.Sprintf("%s_%s", timestamp, outputFile)
 		err := os.Rename(outputFile, prevDiscoverFile)
 		if err != nil {

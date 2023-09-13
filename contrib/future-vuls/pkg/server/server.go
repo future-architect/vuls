@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/schema"
 	"github.com/future-architect/vuls/util"
 )
@@ -33,7 +32,7 @@ func AddServerToFvuls(token string, outputFile string, proxy string) error {
 	}
 
 	targetServerCount := 0
-	fmt.Printf("Creating pseudo server...  URL: %s/server/pseudo\n", schema.REST_ENDPOINT)
+	fmt.Printf("Creating pseudo server...  URL: %s/server/pseudo\n", schema.RESTENDPOINT)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	for addr, params := range servers {
@@ -74,7 +73,7 @@ func createPseudoServer(ctx context.Context, token string, name string, proxy st
 	if err != nil {
 		return "", fmt.Errorf("failed to Marshal to JSON: %v", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/server/pseudo", schema.REST_ENDPOINT), bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/server/pseudo", schema.RESTENDPOINT), bytes.NewBuffer(body))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %v", err)
 	}
@@ -82,7 +81,7 @@ func createPseudoServer(ctx context.Context, token string, name string, proxy st
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", token)
 
-	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
+	client, err := util.GetHTTPClient(proxy)
 	if err != nil {
 		return "", fmt.Errorf("%v", err)
 	}
