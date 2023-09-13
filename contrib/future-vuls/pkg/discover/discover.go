@@ -85,7 +85,7 @@ func ActiveHosts(cidr string, outputFile string, snmpVersion string) error {
 	if err = encoder.Encode(servers); err != nil {
 		return fmt.Errorf("failed to write to %s. err: %v", outputFile, err)
 	}
-	fmt.Printf("Successfully wrote to %s\n", outputFile)
+	fmt.Printf("wrote to %s\n", outputFile)
 	if prevDiscoverFile != "" {
 		fmt.Printf("You can check the difference from the previous DISCOVER with the following command.\n  diff %s %s", outputFile, prevDiscoverFile)
 	}
