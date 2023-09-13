@@ -1,20 +1,23 @@
 package schema
 
-// FILENAME
+// FILENAME ...
 const FILENAME = "discover_list.toml"
 
-// SNMPVERSION
+// SNMPVERSION ...
 const SNMPVERSION = "v2c"
 
-// RESTENDPOINT
+// RESTENDPOINT ...
 const RESTENDPOINT = "https://rest.vuls.biz/v1"
 
-// TIMESTAMPFORMAT
+// TIMESTAMPFORMAT ...
 const TIMESTAMPFORMAT = "20060102150405"
 
+// ServerConf ...
 type ServerConf struct {
 	Server map[string]ServerDetail `toml:"server"`
 }
+
+// ServerDetail ...
 type ServerDetail struct {
 	IP         string   `toml:"ip"`
 	ServerName string   `toml:"server_name"`

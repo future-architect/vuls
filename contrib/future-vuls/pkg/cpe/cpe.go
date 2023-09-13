@@ -22,10 +22,10 @@ type addCpeInput struct {
 }
 
 type addCpeOutput struct {
-	Server ServerChild `json:"server"`
+	Server serverChild `json:"server"`
 }
 
-type ServerChild struct {
+type serverChild struct {
 	ServerName string `json:"serverName"`
 }
 
@@ -33,6 +33,7 @@ type getServerDetailByUUIDOutput struct {
 	ServerID int64 `json:"id"`
 }
 
+// AddCpeDataToFvuls ...
 func AddCpeDataToFvuls(token string, outputFile string, proxy string) error {
 	var servers map[string]*schema.ServerDetail
 	_, err := toml.DecodeFile(outputFile, &servers)

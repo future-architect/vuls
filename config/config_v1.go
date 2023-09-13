@@ -35,6 +35,7 @@ type Server struct {
 // WinUpdateSrcVulsDefault is default value of WinUpdateSrc
 const WinUpdateSrcVulsDefault = 2
 
+// Windows const
 const (
 	SystemDefault   = 0
 	WSUS            = 1
