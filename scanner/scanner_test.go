@@ -383,7 +383,7 @@ func TestNormalizedForWindows(t *testing.T) {
 		{
 			in: "~/.ssh/known_hosts",
 			expected: expected{
-				path: "C:/Users/test-user/.ssh/known_hosts",
+				path: "C:\\Users\\test-user\\.ssh\\known_hosts",
 			},
 		},
 	}
