@@ -22,10 +22,10 @@ type addCpeInput struct {
 }
 
 type addCpeOutput struct {
-	Server ServerChild `json:"server"`
+	Server serverChild `json:"server"`
 }
 
-type ServerChild struct {
+type serverChild struct {
 	ServerName string `json:"serverName"`
 }
 
