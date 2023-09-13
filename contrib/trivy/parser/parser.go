@@ -22,7 +22,7 @@ type Report struct {
 func NewParser(vulnJSON []byte) (Parser, error) {
 	r := Report{}
 	if err := json.Unmarshal(vulnJSON, &r); err != nil {
-		return nil, xerrors.Errorf("Failed to parse JSON. Please use the latest version of trivy, trivy-to-vuls and future-vuls")
+		return nil, xerrors.Errorf("Failed to parse JSON. err: %v.\n Perhaps the trivy execution has failed. Please check the json file of the execution result", err)
 	}
 	switch r.SchemaVersion {
 	case 2:

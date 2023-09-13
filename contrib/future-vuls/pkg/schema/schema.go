@@ -1,17 +1,24 @@
 package schema
 
-// output filename
-const FILENAME = "./discover_list.toml"
+// FILENAME
+const FILENAME = "discover_list.toml"
 
-// snmp2cpe version
+// SNMPVERSION
 const SNMPVERSION = "v2c"
+
+// RESTENDPOINT
+const RESTENDPOINT = "https://rest.vuls.biz/v1"
+
+// TIMESTAMPFORMAT
+const TIMESTAMPFORMAT = "20060102150405"
 
 type ServerConf struct {
 	Server map[string]ServerDetail `toml:"server"`
 }
 type ServerDetail struct {
-	IP        string   `toml:"ip"`
-	UUID      string   `toml:"uuid"`
-	CpeURI    []string `toml:"cpe_uri"`
-	FvulsSync bool     `toml:"fvuls_sync"`
+	IP         string   `toml:"ip"`
+	ServerName string   `toml:"server_name"`
+	UUID       string   `toml:"uuid"`
+	CpeURI     []string `toml:"cpe_uri"`
+	FvulsSync  bool     `toml:"fvuls_sync"`
 }

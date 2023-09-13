@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/schema"
 	"github.com/future-architect/vuls/util"
 )
@@ -26,7 +25,7 @@ type createPseudoServerOutput struct {
 }
 
 // AddServerToFvuls ...
-func AddServerToFvuls(url string, token string, outputFile string) error {
+func AddServerToFvuls(token string, outputFile string, proxy string) error {
 	var servers map[string]*schema.ServerDetail
 	_, err := toml.DecodeFile(outputFile, &servers)
 	if err != nil {
@@ -34,30 +33,24 @@ func AddServerToFvuls(url string, token string, outputFile string) error {
 	}
 
 	targetServerCount := 0
-	//This flag indicates whether at least one server has been added
-	isAnyServerAdded := false
+	fmt.Printf("Creating pseudo server...  URL: %s/server/pseudo\n", schema.RESTENDPOINT)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	for addr, params := range servers {
 		if params.FvulsSync && params.UUID == "" {
-			fmt.Printf("%v: Adding to Fvuls server...\n", addr)
+			fmt.Printf("%v: Add to Fvuls server...\n", params.ServerName)
 			targetServerCount++
-			uuid, err := createPseudoServer(ctx, url, token, addr)
+			uuid, err := createPseudoServer(ctx, token, params.ServerName, proxy)
 			if err != nil {
-				fmt.Printf("%s: Failed to add to Fvuls server. err: %v\n", addr, err)
+				fmt.Printf("%s: Failed to add to Fvuls server. err: %v\n", params.ServerName, err)
 				continue
 			}
 			servers[addr].UUID = uuid
-			fmt.Printf("%s: Done.\n", addr)
-			isAnyServerAdded = true
+			fmt.Printf("%s: Done.\n", params.ServerName)
 		}
 	}
 	if targetServerCount == 0 {
-		fmt.Printf("The target of the command could not be found, please rewrite the FvulsSync to true.\n")
-		return fmt.Errorf("command target not found error")
-	}
-	if !isAnyServerAdded {
-		return fmt.Errorf("all server uploads failed")
+		fmt.Printf("All Fvuls_Sync targets are registered with Fvuls.\n")
 	}
 
 	f, err := os.OpenFile(outputFile, os.O_RDWR, 0666)
@@ -69,19 +62,19 @@ func AddServerToFvuls(url string, token string, outputFile string) error {
 	if err := encoder.Encode(servers); err != nil {
 		return fmt.Errorf("failed to write to %s. err: %v", outputFile, err)
 	}
-	fmt.Printf("Successfully wrote to %s\n", outputFile)
+	fmt.Printf("Successfully wrote to %s\n\n", outputFile)
 	return nil
 }
 
-func createPseudoServer(ctx context.Context, url string, token string, addr string) (string, error) {
+func createPseudoServer(ctx context.Context, token string, name string, proxy string) (string, error) {
 	payload := createPseudoServerInput{
-		ServerName: addr,
+		ServerName: name,
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return "", fmt.Errorf("failed to Marshal to JSON: %v", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/server/pseudo", url), bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/server/pseudo", schema.RESTENDPOINT), bytes.NewBuffer(body))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %v", err)
 	}
@@ -89,7 +82,7 @@ func createPseudoServer(ctx context.Context, url string, token string, addr stri
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", token)
 
-	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
+	client, err := util.GetHTTPClient(proxy)
 	if err != nil {
 		return "", fmt.Errorf("%v", err)
 	}

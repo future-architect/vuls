@@ -8,14 +8,11 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/schema"
 	"github.com/future-architect/vuls/util"
-	"golang.org/x/exp/slices"
 )
 
 type addCpeInput struct {
@@ -24,11 +21,19 @@ type addCpeInput struct {
 	IsURI    bool   `json:"isURI"`
 }
 
+type addCpeOutput struct {
+	Server ServerChild `json:"server"`
+}
+
+type ServerChild struct {
+	ServerName string `json:"serverName"`
+}
+
 type getServerDetailByUUIDOutput struct {
 	ServerID int64 `json:"id"`
 }
 
-func AddCpeDataToFvuls(url string, token string, snmpVersion string, outputFile string) error {
+func AddCpeDataToFvuls(token string, outputFile string, proxy string) error {
 	var servers map[string]*schema.ServerDetail
 	_, err := toml.DecodeFile(outputFile, &servers)
 	if err != nil {
@@ -38,52 +43,44 @@ func AddCpeDataToFvuls(url string, token string, snmpVersion string, outputFile 
 	targetServerCount := 0
 	//This flag indicates whether at least one cpe has been added
 	isAnyCpeAdded := false
-	fmt.Printf("Uploading CPE to %s/pkgCpe/cpe...\n", url)
+	fmt.Printf("Uploading CPE...  URL: %s/pkgCpe/cpe\n", schema.RESTENDPOINT)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	for addr, params := range servers {
-		if params.FvulsSync && params.UUID != "" {
+		if params.FvulsSync && params.UUID != "" && params.CpeURI != nil {
 			targetServerCount++
-			jsonData, err := executeSnmp2cpe(addr, snmpVersion)
-			if err != nil {
-				fmt.Printf("%s: Failed to execute snmp2cpe. err: %v\n", addr, err)
-				continue
-			}
-			fmt.Printf("%s: Done.\n", addr)
-			var newCpes []string
-			for _, cpe := range jsonData[addr] {
-				if !slices.Contains(params.CpeURI, cpe) {
-					fmt.Printf("%s: Found new cpe: %s\n", addr, cpe)
-					newCpes = append(newCpes, cpe)
-				}
-			}
 
-			serverID, err := fetchServerIDByUUID(ctx, params.UUID, url, token)
+			serverID, err := fetchServerIDByUUID(ctx, params.UUID, token, proxy)
 			if err != nil {
-				fmt.Printf("%s: Failed to Fetch serverID. err: %v\n", addr, err)
+				fmt.Printf("%s: Failed to Fetch serverID. err: %v\n", params.ServerName, err)
 				continue
 			}
 			uploadedCpeCount := 0
-			fmt.Printf("%s: Upload CPE...\n", addr)
-			if len(newCpes) == 0 {
-				fmt.Printf("%s: New CPE datas not found.\n", addr)
-			}
-			for _, newCpe := range newCpes {
-				if err := uploadCPEData(ctx, newCpe, serverID, url, token); err != nil {
-					fmt.Printf("%s: Failed to upload CPE %s. err: %v\n", addr, newCpe, err)
+			fmt.Printf("%s: Upload CPE...\n", params.ServerName)
+			var serverName string
+			var correctServerName string
+			for _, Cpe := range params.CpeURI {
+				if serverName, err = uploadCPEData(ctx, Cpe, serverID, token, proxy); err != nil {
+					fmt.Printf("%s: Failed to upload CPE %s. err: %v\n", params.ServerName, Cpe, err)
 					continue
 				}
-				servers[params.IP].CpeURI = append(servers[params.IP].CpeURI, newCpe)
+				fmt.Printf("%s: Uploaded CPE %s\n", params.ServerName, Cpe)
+				if serverName != "" && serverName != servers[addr].ServerName {
+					correctServerName = serverName
+				}
 				isAnyCpeAdded = true
 				uploadedCpeCount++
 			}
-			fmt.Printf("%s: Done.\n", addr)
-			fmt.Printf("%s: Successfully uploaded %d cpes to Fvuls.\n\n", addr, uploadedCpeCount)
+			if correctServerName != "" {
+				servers[addr].ServerName = correctServerName
+				fmt.Printf("%s: Changed server_name in toml file to %s because the server name is different from the registered one\n", params.ServerName, correctServerName)
+			}
+			fmt.Printf("%s: Done.\n", params.ServerName)
+			fmt.Printf("%s: Uploaded %d of the %d cpes to Fvuls.\n", params.ServerName, uploadedCpeCount, len(params.CpeURI))
 		}
 	}
 	if targetServerCount == 0 {
-		fmt.Printf("The target of the command could not be found, please rewrite the FvulsSync to true and execute future-vuls add-server command to fetch UUID.\n")
-		return fmt.Errorf("command target not found error")
+		return fmt.Errorf("upload target not found error")
 	}
 	if !isAnyCpeAdded {
 		return fmt.Errorf("cpe upload failed for all servers")
@@ -102,42 +99,15 @@ func AddCpeDataToFvuls(url string, token string, snmpVersion string, outputFile 
 	return nil
 }
 
-func executeSnmp2cpe(addr string, snmpVersion string) (map[string][]string, error) {
-	fmt.Printf("%s: Execute snmp2cpe...\n", addr)
-	result, err := exec.Command("./snmp2cpe", snmpVersion, addr, "public").CombinedOutput()
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute snmp2cpe. err: %v", err)
-	}
-	cmd := exec.Command("./snmp2cpe", "convert")
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert snmp2cpe result. err: %v", err)
-	}
-	if _, err := io.WriteString(stdin, string(result)); err != nil {
-		return nil, fmt.Errorf("failed to write to stdIn. err: %v", err)
-	}
-	stdin.Close()
-	output, err := cmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert snmp2cpe result. err: %v", err)
-	}
-
-	var jsonData map[string][]string
-	if err := json.Unmarshal(output, &jsonData); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal snmp2cpe output. err: %v", err)
-	}
-	return jsonData, nil
-}
-
-func fetchServerIDByUUID(ctx context.Context, uuid string, url string, token string) (int64, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/server/uuid/%s", url, uuid), nil)
+func fetchServerIDByUUID(ctx context.Context, uuid string, token string, proxy string) (int64, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/server/uuid/%s", schema.RESTENDPOINT, uuid), nil)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create request. err: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", token)
-	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
+	client, err := util.GetHTTPClient(proxy)
 	if err != nil {
 		return 0, fmt.Errorf("%v", err)
 	}
@@ -164,7 +134,7 @@ func fetchServerIDByUUID(ctx context.Context, uuid string, url string, token str
 	return serverDetail.ServerID, nil
 }
 
-func uploadCPEData(ctx context.Context, cpe string, serverID int64, url string, token string) error {
+func uploadCPEData(ctx context.Context, cpe string, serverID int64, token string, proxy string) (string, error) {
 	payload := addCpeInput{
 		ServerID: serverID,
 		CpeName:  cpe,
@@ -172,27 +142,38 @@ func uploadCPEData(ctx context.Context, cpe string, serverID int64, url string, 
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return fmt.Errorf("failed to marshal JSON: %v", err)
+		return "", fmt.Errorf("failed to marshal JSON: %v", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/pkgCpe/cpe", url), bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/pkgCpe/cpe", schema.RESTENDPOINT), bytes.NewBuffer(body))
 	if err != nil {
-		return fmt.Errorf("failed to create request. err: %v", err)
+		return "", fmt.Errorf("failed to create request. err: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", token)
 
-	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
+	client, err := util.GetHTTPClient(proxy)
 	if err != nil {
-		return fmt.Errorf("%v", err)
+		return "", fmt.Errorf("%v", err)
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to sent request. err: %v", err)
+		return "", fmt.Errorf("failed to sent request. err: %v", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("failed to add cpe. err: %v", resp.StatusCode)
+		return "", fmt.Errorf("failed to add cpe. err: %v", resp.StatusCode)
 	}
-	return nil
+	t, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response data. err: %v", err)
+	}
+	var cpeDetail addCpeOutput
+	if err := json.Unmarshal(t, &cpeDetail); err != nil {
+		if err.Error() == "invalid character 'A' looking for beginning of value" {
+			return "", fmt.Errorf("invalid token")
+		}
+		return "", fmt.Errorf("failed to unmarshal serverDetail. err: %v", err)
+	}
+	return cpeDetail.Server.ServerName, nil
 }
