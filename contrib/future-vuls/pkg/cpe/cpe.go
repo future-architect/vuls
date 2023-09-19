@@ -62,7 +62,7 @@ type getServerDetailByUUIDOutput struct {
 	ServerID int64 `json:"id"`
 }
 
-// AddCpeDataToFvuls ...
+// AddServerToFvuls ...
 func AddServerToFvuls(token string, outputFile string, proxy string, url string) error {
 	var servers map[string]*schema.ServerDetail
 	_, err := toml.DecodeFile(outputFile, &servers)
@@ -142,6 +142,7 @@ func createPseudoServer(ctx context.Context, token string, name string, proxy st
 	return serverDetail.UUID, nil
 }
 
+// AddCpeDataToFvuls ...
 func AddCpeDataToFvuls(token string, outputFile string, proxy string, url string) error {
 	var servers map[string]*schema.ServerDetail
 	_, err := toml.DecodeFile(outputFile, &servers)
@@ -200,7 +201,6 @@ func AddCpeDataToFvuls(token string, outputFile string, proxy string, url string
 					fmt.Printf("%s: %s already added. skip\n", params.ServerName, Cpe)
 					continue
 				} else {
-
 					if serverName, err = uploadCPEData(ctx, Cpe, serverID, token, proxy, url); err != nil {
 						fmt.Printf("%s: Failed to upload CPE %s. err: %v\n", params.ServerName, Cpe, err)
 						continue
