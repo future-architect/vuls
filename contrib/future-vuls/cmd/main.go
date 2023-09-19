@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	c "github.com/3th1nk/cidr"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/cpe"
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/discover"
@@ -95,10 +96,15 @@ func main() {
 			if len(cidr) == 0 {
 				return fmt.Errorf("please specify cidr range")
 			}
+			if _, err := c.Parse(cidr); err != nil {
+				return fmt.Errorf("Invalid cidr range")
+			}
 			if len(snmpVersion) == 0 {
 				snmpVersion = schema.SnmpVersion
 			}
-
+			if snmpVersion != "v1" && snmpVersion != "v2c" && snmpVersion != "v3" {
+				return fmt.Errorf("Invalid snmpVersion")
+			}
 			if err := discover.ActiveHosts(cidr, outputFile, snmpVersion); err != nil {
 				fmt.Printf("%v", err)
 				os.Exit(1)

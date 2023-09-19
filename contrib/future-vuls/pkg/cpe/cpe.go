@@ -17,7 +17,6 @@ import (
 )
 
 type createPseudoServerInput struct {
-	APIKey     string `json:"api_key"`
 	ServerName string `json:"serverName"`
 }
 
@@ -128,7 +127,7 @@ func createPseudoServer(ctx context.Context, token string, name string, proxy st
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %v", err)
 	}
-	t, err := sentHTTPRequest(req, token, proxy)
+	t, err := sendHTTPRequest(req, token, proxy)
 	if err != nil {
 		return "", err
 	}
@@ -155,7 +154,7 @@ func AddCpeDataToFvuls(token string, outputFile string, proxy string, url string
 		}
 	}
 	if targetServerCount == 0 {
-		return fmt.Errorf("cpe upload target not found error")
+		return fmt.Errorf("cpe upload target not found")
 	}
 
 	fmt.Printf("Uploading CPE...\n")
@@ -227,7 +226,7 @@ func fetchServerIDByUUID(ctx context.Context, uuid string, token string, proxy s
 	if err != nil {
 		return 0, fmt.Errorf("failed to create request. err: %v", err)
 	}
-	t, err := sentHTTPRequest(req, token, proxy)
+	t, err := sendHTTPRequest(req, token, proxy)
 	if err != nil {
 		return 0, err
 	}
@@ -246,7 +245,7 @@ func fetchUploadedCPEData(ctx context.Context, token string, proxy string, listC
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to create request. err: %v", err)
 	}
-	t, err := sentHTTPRequest(req, token, proxy)
+	t, err := sendHTTPRequest(req, token, proxy)
 	if err != nil {
 		return nil, false, err
 	}
@@ -281,7 +280,7 @@ func uploadCPEData(ctx context.Context, cpe string, serverID int64, token string
 	if err != nil {
 		return "", fmt.Errorf("failed to create request. err: %v", err)
 	}
-	t, err := sentHTTPRequest(req, token, proxy)
+	t, err := sendHTTPRequest(req, token, proxy)
 	if err != nil {
 		return "", err
 	}
@@ -295,7 +294,7 @@ func uploadCPEData(ctx context.Context, cpe string, serverID int64, token string
 	return cpeDetail.Server.ServerName, nil
 }
 
-func sentHTTPRequest(req *http.Request, token string, proxy string) ([]byte, error) {
+func sendHTTPRequest(req *http.Request, token string, proxy string) ([]byte, error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", token)
