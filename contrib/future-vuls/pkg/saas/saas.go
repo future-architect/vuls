@@ -28,7 +28,8 @@ func UploadToFvuls(serverUUID string, groupID int64, url string, token string, t
 	config.Conf.Saas.Token = token
 	config.Conf.Saas.URL = url
 	if err := (saas.Writer{}).Write(scanResult); err != nil {
-		return fmt.Errorf("%v", err)
+		fmt.Printf("%v", err)
+		return err
 	}
 	return nil
 }

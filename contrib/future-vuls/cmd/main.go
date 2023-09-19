@@ -70,7 +70,6 @@ func main() {
 				return fmt.Errorf("use --stdin option")
 			}
 			if err := saas.UploadToFvuls(serverUUID, groupID, url, token, tags, scanResultJSON); err != nil {
-				fmt.Printf("%v", err)
 				os.Exit(1)
 			}
 			return nil
