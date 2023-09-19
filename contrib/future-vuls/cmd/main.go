@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"strings"
 
+	c "github.com/3th1nk/cidr"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/cpe"
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/discover"
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/saas"
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/schema"
-	"github.com/future-architect/vuls/contrib/future-vuls/pkg/server"
 
 	"github.com/spf13/cobra"
 )
@@ -96,8 +96,14 @@ func main() {
 			if len(cidr) == 0 {
 				return fmt.Errorf("please specify cidr range")
 			}
+			if _, err := c.Parse(cidr); err != nil {
+				return fmt.Errorf("Invalid cidr range")
+			}
 			if len(snmpVersion) == 0 {
 				snmpVersion = schema.SnmpVersion
+			}
+			if snmpVersion != "v1" && snmpVersion != "v2c" && snmpVersion != "v3" {
+				return fmt.Errorf("Invalid snmpVersion")
 			}
 			if err := discover.ActiveHosts(cidr, outputFile, snmpVersion); err != nil {
 				fmt.Printf("%v", err)
@@ -121,11 +127,15 @@ func main() {
 			if len(outputFile) == 0 {
 				outputFile = schema.FileName
 			}
-			if err := server.AddServerToFvuls(token, outputFile, proxy); err != nil {
+			url := os.Getenv("VULS_URL")
+			if len(url) == 0 {
+				url = schema.RestEndPoint
+			}
+			if err := cpe.AddServerToFvuls(token, outputFile, proxy, url); err != nil {
 				fmt.Printf("%v", err)
 				os.Exit(1)
 			}
-			if err := cpe.AddCpeDataToFvuls(token, outputFile, proxy); err != nil {
+			if err := cpe.AddCpeDataToFvuls(token, outputFile, proxy, url); err != nil {
 				fmt.Printf("%v", err)
 				os.Exit(1)
 			}
