@@ -365,6 +365,9 @@ const (
 	// Jvn is Jvn
 	Jvn CveContentType = "jvn"
 
+	// Fortinet is Fortinet
+	Fortinet CveContentType = "fortinet"
+
 	// RedHat is RedHat
 	RedHat CveContentType = "redhat"
 
@@ -418,6 +421,7 @@ type CveContentTypes []CveContentType
 var AllCveContetTypes = CveContentTypes{
 	Nvd,
 	Jvn,
+	Fortinet,
 	RedHat,
 	RedHatAPI,
 	Debian,

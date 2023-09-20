@@ -417,7 +417,7 @@ func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := append(CveContentTypes{Trivy, Nvd}, GetCveContentTypes(myFamily)...)
+	order := append(CveContentTypes{Trivy, Fortinet, Nvd}, GetCveContentTypes(myFamily)...)
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
@@ -464,7 +464,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := append(append(CveContentTypes{Trivy}, GetCveContentTypes(myFamily)...), Nvd, GitHub)
+	order := append(append(CveContentTypes{Trivy}, GetCveContentTypes(myFamily)...), Fortinet, Nvd, GitHub)
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
@@ -535,7 +535,7 @@ func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
 
 // Cvss3Scores returns CVSS V3 Score
 func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
-	order := []CveContentType{RedHatAPI, RedHat, SUSE, Microsoft, Nvd, Jvn}
+	order := []CveContentType{RedHatAPI, RedHat, SUSE, Microsoft, Fortinet, Nvd, Jvn}
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
@@ -927,6 +927,15 @@ const (
 	// JvnVendorProductMatchStr :
 	JvnVendorProductMatchStr = "JvnVendorProductMatch"
 
+	// FortinetExactVersionMatchStr :
+	FortinetExactVersionMatchStr = "FortinetExactVersionMatch"
+
+	// FortinetRoughVersionMatchStr :
+	FortinetRoughVersionMatchStr = "FortinetRoughVersionMatch"
+
+	// FortinetVendorProductMatchStr :
+	FortinetVendorProductMatchStr = "FortinetVendorProductMatch"
+
 	// PkgAuditMatchStr :
 	PkgAuditMatchStr = "PkgAuditMatch"
 
@@ -1012,4 +1021,13 @@ var (
 
 	// JvnVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
 	JvnVendorProductMatch = Confidence{10, JvnVendorProductMatchStr, 10}
+
+	// FortinetExactVersionMatch is a ranking how confident the CVE-ID was detected correctly
+	FortinetExactVersionMatch = Confidence{100, FortinetExactVersionMatchStr, 1}
+
+	// FortinetRoughVersionMatch FortinetExactVersionMatch is a ranking how confident the CVE-ID was detected correctly
+	FortinetRoughVersionMatch = Confidence{80, FortinetRoughVersionMatchStr, 1}
+
+	// FortinetVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
+	FortinetVendorProductMatch = Confidence{10, FortinetVendorProductMatchStr, 9}
 )
