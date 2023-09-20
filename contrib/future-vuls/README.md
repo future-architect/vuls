@@ -17,7 +17,7 @@ Structure of toml-formatted file
 ip = {IpAddr}
 server_name = ""
 uuid = {UUID}
-cpe_uri = []
+cpe_uris = []
 fvuls_sync = false
 ```
  
@@ -38,7 +38,7 @@ toml file after command execution
   ip = "192.168.0.10"
   server_name = "192.168.0.10"
   uuid = "e811e2b1-9463-d682-7c79-a4ab37de28cf"
-  cpe_uri = ["cpe:2.3:h:fortinet:fortigate-50e:-:*:*:*:*:*:*:*", "cpe:2.3:o:fortinet:fortios:5.4.6:*:*:*:*:*:*:*"]
+  cpe_uris = ["cpe:2.3:h:fortinet:fortigate-50e:-:*:*:*:*:*:*:*", "cpe:2.3:o:fortinet:fortios:5.4.6:*:*:*:*:*:*:*"]
   fvuls_sync = true
 ```
 ## Installation
