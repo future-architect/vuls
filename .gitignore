@@ -3,7 +3,6 @@
 *.swp
 *.sqlite3*
 *.db
-*.toml
 tags
 .gitmodules
 coverage.out
@@ -11,6 +10,7 @@ issues/
 vendor/
 log/
 results
+config.toml
 !setup/docker/*
 .DS_Store
 dist/
