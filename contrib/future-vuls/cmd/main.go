@@ -3,34 +3,27 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/contrib/future-vuls/pkg/cpe"
-	"github.com/future-architect/vuls/contrib/future-vuls/pkg/discover"
-	"github.com/future-architect/vuls/contrib/future-vuls/pkg/saas"
-	"github.com/future-architect/vuls/contrib/future-vuls/pkg/schema"
-	"github.com/future-architect/vuls/contrib/future-vuls/pkg/server"
-
+	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/saas"
 	"github.com/spf13/cobra"
 )
 
 var (
-	configFile  string
-	stdIn       bool
-	jsonDir     string
-	serverUUID  string
-	groupID     int64
-	token       string
-	tags        []string
-	url         string
-	outputFile  string
-	cidr        string
-	snmpVersion string
-	proxy       string
+	configFile string
+	stdIn      bool
+	jsonDir    string
+	serverUUID string
+	groupID    int64
+	token      string
+	tags       []string
+	url        string
 )
 
 func main() {
@@ -39,14 +32,15 @@ func main() {
 		Use:   "upload",
 		Short: "Upload to FutureVuls",
 		Long:  `Upload to FutureVuls`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			if len(serverUUID) == 0 {
 				serverUUID = os.Getenv("VULS_SERVER_UUID")
 			}
 			if groupID == 0 {
 				envGroupID := os.Getenv("VULS_GROUP_ID")
 				if groupID, err = strconv.ParseInt(envGroupID, 10, 64); err != nil {
-					return fmt.Errorf("invalid GroupID: %s", envGroupID)
+					fmt.Printf("Invalid GroupID: %s\n", envGroupID)
+					return
 				}
 			}
 			if len(url) == 0 {
@@ -58,22 +52,44 @@ func main() {
 			if len(tags) == 0 {
 				tags = strings.Split(os.Getenv("VULS_TAGS"), ",")
 			}
+
 			var scanResultJSON []byte
 			if stdIn {
 				reader := bufio.NewReader(os.Stdin)
 				buf := new(bytes.Buffer)
-				if _, err := buf.ReadFrom(reader); err != nil {
-					return fmt.Errorf("failed to read from stdIn. err: %v", err)
+				if _, err = buf.ReadFrom(reader); err != nil {
+					return
 				}
 				scanResultJSON = buf.Bytes()
 			} else {
-				return fmt.Errorf("use --stdin option")
-			}
-			if err := saas.UploadToFvuls(serverUUID, groupID, url, token, tags, scanResultJSON); err != nil {
-				fmt.Printf("%v", err)
+				fmt.Println("use --stdin option")
 				os.Exit(1)
+				return
 			}
-			return nil
+
+			var scanResult models.ScanResult
+			if err = json.Unmarshal(scanResultJSON, &scanResult); err != nil {
+				fmt.Println("Failed to parse json", err)
+				os.Exit(1)
+				return
+			}
+			scanResult.ServerUUID = serverUUID
+			if 0 < len(tags) {
+				if scanResult.Optional == nil {
+					scanResult.Optional = map[string]interface{}{}
+				}
+				scanResult.Optional["VULS_TAGS"] = tags
+			}
+
+			config.Conf.Saas.GroupID = groupID
+			config.Conf.Saas.Token = token
+			config.Conf.Saas.URL = url
+			if err = (saas.Writer{}).Write(scanResult); err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+				return
+			}
+			return
 		},
 	}
 	var cmdVersion = &cobra.Command{
@@ -84,62 +100,6 @@ func main() {
 			fmt.Printf("future-vuls-%s-%s\n", config.Version, config.Revision)
 		},
 	}
-
-	var cmdDiscover = &cobra.Command{
-		Use:     "discover --cidr <CIDR_RANGE> --output <OUTPUT_FILE>",
-		Short:   "discover hosts with CIDR range. Run snmp2cpe on active host to get CPE. Default outputFile is ./discover_list.toml",
-		Example: "future-vuls discover --cidr 192.168.0.0/24 --output discover_list.toml",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(outputFile) == 0 {
-				outputFile = schema.FILENAME
-			}
-			if len(cidr) == 0 {
-				return fmt.Errorf("please specify cidr range")
-			}
-			if len(snmpVersion) == 0 {
-				snmpVersion = schema.SNMPVERSION
-			}
-			if err := discover.ActiveHosts(cidr, outputFile, snmpVersion); err != nil {
-				fmt.Printf("%v", err)
-				os.Exit(1)
-			}
-			return nil
-		},
-	}
-
-	var cmdAddCpe = &cobra.Command{
-		Use:     "add-cpe --token <VULS_TOKEN> --output <OUTPUT_FILE>",
-		Short:   "Create a pseudo server in Fvuls and register CPE. Default outputFile is ./discover_list.toml",
-		Example: "future-vuls add-cpe --token <VULS_TOKEN>",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(token) == 0 {
-				token = os.Getenv("VULS_TOKEN")
-				if len(token) == 0 {
-					return fmt.Errorf("token not specified")
-				}
-			}
-			if len(outputFile) == 0 {
-				outputFile = schema.FILENAME
-			}
-			if err := server.AddServerToFvuls(token, outputFile, proxy); err != nil {
-				fmt.Printf("%v", err)
-				os.Exit(1)
-			}
-			if err := cpe.AddCpeDataToFvuls(token, outputFile, proxy); err != nil {
-				fmt.Printf("%v", err)
-				os.Exit(1)
-			}
-			return nil
-		},
-	}
-
-	cmdDiscover.PersistentFlags().StringVar(&cidr, "cidr", "", "cidr range")
-	cmdDiscover.PersistentFlags().StringVar(&outputFile, "output", "", "output file")
-	cmdDiscover.PersistentFlags().StringVar(&snmpVersion, "snmp-version", "", "snmp version v1,v2c and v3. default: v2c ")
-	cmdAddCpe.PersistentFlags().StringVarP(&token, "token", "t", "", "future vuls token ENV: VULS_TOKEN")
-	cmdAddCpe.PersistentFlags().StringVar(&outputFile, "output", "", "output file")
-	cmdAddCpe.PersistentFlags().StringVar(&proxy, "http-proxy", "", "proxy url")
-
 	cmdFvulsUploader.PersistentFlags().StringVar(&serverUUID, "uuid", "", "server uuid. ENV: VULS_SERVER_UUID")
 	cmdFvulsUploader.PersistentFlags().StringVar(&configFile, "config", "", "config file (default is $HOME/.cobra.yaml)")
 	cmdFvulsUploader.PersistentFlags().BoolVarP(&stdIn, "stdin", "s", false, "input from stdin. ENV: VULS_STDIN")
@@ -147,13 +107,12 @@ func main() {
 	//	cmdFvulsUploader.Flags().StringVarP(&jsonDir, "results-dir", "d", "./", "vuls scan results json dir")
 	cmdFvulsUploader.PersistentFlags().Int64VarP(&groupID, "group-id", "g", 0, "future vuls group id, ENV: VULS_GROUP_ID")
 	cmdFvulsUploader.PersistentFlags().StringVarP(&token, "token", "t", "", "future vuls token")
+	cmdFvulsUploader.PersistentFlags().StringVar(&url, "url", "", "future vuls upload url")
 
 	var rootCmd = &cobra.Command{Use: "future-vuls"}
-	rootCmd.AddCommand(cmdDiscover)
-	rootCmd.AddCommand(cmdAddCpe)
 	rootCmd.AddCommand(cmdFvulsUploader)
 	rootCmd.AddCommand(cmdVersion)
 	if err = rootCmd.Execute(); err != nil {
-		fmt.Println("Failed to execute command")
+		fmt.Println("Failed to execute command", err)
 	}
 }
