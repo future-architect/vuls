@@ -108,12 +108,10 @@ func writeToFile(cnf config.Config, path string) error {
 	}
 
 	c := struct {
-		Version string                       `toml:"version"`
 		Saas    *config.SaasConf             `toml:"saas"`
 		Default config.ServerInfo            `toml:"default"`
 		Servers map[string]config.ServerInfo `toml:"servers"`
 	}{
-		Version: "v2",
 		Saas:    &cnf.Saas,
 		Default: cnf.Default,
 		Servers: cnf.Servers,
