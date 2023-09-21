@@ -17,7 +17,7 @@ Structure of toml-formatted file
 ip = {IpAddr}
 server_name = ""
 uuid = {UUID}
-cpe_uri = []
+cpe_uris = []
 fvuls_sync = false
 ```
  
@@ -38,7 +38,7 @@ toml file after command execution
   ip = "192.168.0.10"
   server_name = "192.168.0.10"
   uuid = "e811e2b1-9463-d682-7c79-a4ab37de28cf"
-  cpe_uri = ["cpe:2.3:h:fortinet:fortigate-50e:-:*:*:*:*:*:*:*", "cpe:2.3:o:fortinet:fortios:5.4.6:*:*:*:*:*:*:*"]
+  cpe_uris = ["cpe:2.3:h:fortinet:fortigate-50e:-:*:*:*:*:*:*:*", "cpe:2.3:o:fortinet:fortios:5.4.6:*:*:*:*:*:*:*"]
   fvuls_sync = true
 ```
 ## Installation
@@ -131,35 +131,28 @@ Flags:
 ```
 - `future-vuls discover`
 ```
-./future-vuls discover -h
-discover hosts with CIDR range. Run snmp2cpe on active host to get CPE. Default outputFile is ./discover_list.toml
-
-Usage:
-  future-vuls discover --cidr <CIDR_RANGE> --output <OUTPUT_FILE> [flags]
-
-Examples:
-future-vuls discover --cidr 192.168.0.0/24 --output discover_list.toml
-
-Flags:
-      --cidr string           cidr range
-  -h, --help                  help for discover
-      --output string         output file
-      --snmp-version string   snmp version v1,v2c and v3. default: v2c
+./future-vuls discover --cidr 192.168.0.1/24
+Discovering 192.168.0.1/24...
+192.168.0.1: Execute snmp2cpe...
+failed to execute snmp2cpe. err: failed to execute snmp2cpe. err: exit status 1
+192.168.0.2: Execute snmp2cpe...
+failed to execute snmp2cpe. err: failed to execute snmp2cpe. err: exit status 1
+192.168.0.4: Execute snmp2cpe...
+failed to execute snmp2cpe. err: failed to execute snmp2cpe. err: exit status 1
+192.168.0.5: Execute snmp2cpe...
+failed to execute snmp2cpe. err: failed to execute snmp2cpe. err: exit status 1
+192.168.0.6: Execute snmp2cpe...
+New network device found 192.168.0.6
+wrote to discover_list.toml
 ```
 - `future-vuls add-cpe`
 ```
-./future-vuls add-cpe -h
-Create a pseudo server in Fvuls and register CPE. Default outputFile is ./discover_list.toml
+./future-vuls add-cpe --token fvgr-686b92af-5216-11ee-a241-0a58a9feac02
+Creating 1 pseudo server...
+192.168.0.6: Created FutureVuls pseudo server ce024b45-1c59-5b86-1a67-e78a40dfec01
+wrote to discover_list.toml
 
-Usage:
-  future-vuls add-cpe --token <VULS_TOKEN> --output <OUTPUT_FILE> [flags]
-
-Examples:
-future-vuls add-cpe --token <VULS_TOKEN>
-
-Flags:
-  -h, --help                help for add-cpe
-      --http-proxy string   proxy url
-      --output string       output file
-  -t, --token string        future vuls token ENV: VULS_TOKEN
+Uploading 1 server's CPE...
+192.168.0.6: Uploaded CPE cpe:2.3:h:fortinet:fortigate-50e:-:*:*:*:*:*:*:*
+192.168.0.6: Uploaded CPE cpe:2.3:o:fortinet:fortios:5.4.6:*:*:*:*:*:*:*
 ```

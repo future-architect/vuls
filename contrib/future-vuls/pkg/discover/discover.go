@@ -7,18 +7,16 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"reflect"
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/future-architect/vuls/contrib/future-vuls/pkg/schema"
-	ps "github.com/kotakanbe/go-pingscanner"
-	"golang.org/x/exp/maps"
+	"github.com/future-architect/vuls/contrib/future-vuls/pkg/config"
+	"github.com/kotakanbe/go-pingscanner"
 )
 
 // ActiveHosts ...
 func ActiveHosts(cidr string, outputFile string, snmpVersion string) error {
-	scanner := ps.PingScanner{
+	scanner := pingscanner.PingScanner{
 		CIDR: cidr,
 		PingOptions: []string{
 			"-c1",
@@ -30,53 +28,64 @@ func ActiveHosts(cidr string, outputFile string, snmpVersion string) error {
 	if err != nil {
 		return fmt.Errorf("host Discovery failed. err: %v", err)
 	}
-	if len(activeHosts) < 1 {
+	if len(activeHosts) == 0 {
 		return fmt.Errorf("active hosts not found in %s", cidr)
 	}
 
-	var prevDiscoverFile string
-	var prevDiscoverResult map[string]*schema.ServerDetail
-	if _, err := os.Stat(outputFile); err != nil {
-		fmt.Printf("%s is not found. Creating...\n", outputFile)
-	} else {
-		_, err = toml.DecodeFile(outputFile, &prevDiscoverResult)
-		if err != nil {
-			return fmt.Errorf("failed to read previous discovery result. err: %v", err)
-		}
-		currentTime := time.Now()
-		timestamp := currentTime.Format(schema.TimeStampFormat)
-		prevDiscoverFile = fmt.Sprintf("%s_%s", timestamp, outputFile)
-		err := os.Rename(outputFile, prevDiscoverFile)
-		if err != nil {
-			return fmt.Errorf("failed to rename exist toml file. err: %v", err)
+	discoverToml := config.DiscoverToml{}
+	if _, err := os.Stat(outputFile); err == nil {
+		fmt.Printf("%s is found.\n", outputFile)
+		if _, err = toml.DecodeFile(outputFile, &discoverToml); err != nil {
+			return fmt.Errorf("failed to read discover toml: %s", outputFile)
 		}
 	}
 
-	servers := make(map[string]*schema.ServerDetail)
+	servers := make(config.DiscoverToml)
 	for _, activeHost := range activeHosts {
-		cpeData, err := executeSnmp2cpe(activeHost, snmpVersion)
+		cpes, err := executeSnmp2cpe(activeHost, snmpVersion)
 		if err != nil {
 			fmt.Printf("failed to execute snmp2cpe. err: %v\n", err)
 			continue
 		}
-		if _, ok := prevDiscoverResult[activeHost]; !ok {
-			server := schema.ServerDetail{
-				IP:         activeHost,
-				ServerName: activeHost,
-				FvulsSync:  false,
-				CpeURI:     cpeData[activeHost],
-			}
-			servers[activeHost] = &server
+
+		fvulsSync := false
+		serverUUID := ""
+		serverName := activeHost
+		if server, ok := discoverToml[activeHost]; ok {
+			fvulsSync = server.FvulsSync
+			serverUUID = server.UUID
+			serverName = server.ServerName
+		} else {
 			fmt.Printf("New network device found %s\n", activeHost)
-		} else if !reflect.DeepEqual(prevDiscoverResult[activeHost].CpeURI, cpeData[activeHost]) {
-			fmt.Printf("A difference was found in CPE. Updating...\n")
-			prevDiscoverResult[activeHost].CpeURI = cpeData[activeHost]
+		}
+
+		servers[activeHost] = config.ServerSetting{
+			IP:         activeHost,
+			ServerName: serverName,
+			UUID:       serverUUID,
+			FvulsSync:  fvulsSync,
+			CpeURIs:    cpes[activeHost],
+		}
+	}
+
+	for ip, setting := range discoverToml {
+		if _, ok := servers[ip]; !ok {
+			fmt.Printf("%s(%s) has been removed as there was no response.\n", setting.ServerName, setting.IP)
 		}
 	}
 	if len(servers) == 0 {
-		fmt.Printf("new network devices could not be found\n")
+		return fmt.Errorf("new network devices could not be found")
 	}
-	maps.Copy(servers, prevDiscoverResult)
+
+	if 0 < len(discoverToml) {
+		fmt.Printf("Creating new %s and saving the old file under different name...\n", outputFile)
+		timestamp := time.Now().Format(config.DiscoverTomlTimeStampFormat)
+		oldDiscoverFile := fmt.Sprintf("%s_%s", timestamp, outputFile)
+		if err := os.Rename(outputFile, oldDiscoverFile); err != nil {
+			return fmt.Errorf("failed to rename exist toml file. err: %v", err)
+		}
+		fmt.Printf("You can check the difference from the previous DISCOVER with the following command.\n  diff %s %s\n", outputFile, oldDiscoverFile)
+	}
 
 	f, err := os.OpenFile(outputFile, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
@@ -88,13 +97,10 @@ func ActiveHosts(cidr string, outputFile string, snmpVersion string) error {
 		return fmt.Errorf("failed to write to %s. err: %v", outputFile, err)
 	}
 	fmt.Printf("wrote to %s\n", outputFile)
-	if prevDiscoverFile != "" {
-		fmt.Printf("You can check the difference from the previous DISCOVER with the following command.\n  diff %s %s", outputFile, prevDiscoverFile)
-	}
 	return nil
 }
 
-func executeSnmp2cpe(addr string, snmpVersion string) (map[string][]string, error) {
+func executeSnmp2cpe(addr string, snmpVersion string) (cpes map[string][]string, err error) {
 	fmt.Printf("%s: Execute snmp2cpe...\n", addr)
 	result, err := exec.Command("./snmp2cpe", snmpVersion, addr, "public").CombinedOutput()
 	if err != nil {
@@ -114,9 +120,8 @@ func executeSnmp2cpe(addr string, snmpVersion string) (map[string][]string, erro
 		return nil, fmt.Errorf("failed to convert snmp2cpe result. err: %v", err)
 	}
 
-	var jsonData map[string][]string
-	if err := json.Unmarshal(output, &jsonData); err != nil {
+	if err := json.Unmarshal(output, &cpes); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal snmp2cpe output. err: %v", err)
 	}
-	return jsonData, nil
+	return cpes, nil
 }
