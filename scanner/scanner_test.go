@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"net/http"
+	"os"
 	"reflect"
 	"testing"
 
@@ -367,6 +368,30 @@ func TestParseSSHScan(t *testing.T) {
 	for _, tt := range tests {
 		if got := parseSSHScan(tt.in); !reflect.DeepEqual(got, tt.expected) {
 			t.Errorf("expected %v, actual %v", tt.expected, got)
+		}
+	}
+}
+
+func TestNormalizedForWindows(t *testing.T) {
+	type expected struct {
+		path string
+	}
+	tests := []struct {
+		in       string
+		expected expected
+	}{
+		{
+			in: "~/.ssh/known_hosts",
+			expected: expected{
+				path: "C:\\Users\\test-user\\.ssh\\known_hosts",
+			},
+		},
+	}
+	for _, tt := range tests {
+		os.Setenv("userprofile", `C:\Users\test-user`)
+		path := normalizeHomeDirPathForWindows(tt.in)
+		if path != tt.expected.path {
+			t.Errorf("expected path %s, actual %s", tt.expected.path, path)
 		}
 	}
 }
