@@ -94,7 +94,7 @@ func main() {
 		Example: "future-vuls discover --cidr 192.168.0.0/24 --output discover_list.toml",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(outputFile) == 0 {
-				outputFile = config.DiscoverTomFlileName
+				outputFile = config.DiscoverTomlFileName
 			}
 			if len(cidr) == 0 {
 				return fmt.Errorf("please specify cidr range")
@@ -129,7 +129,7 @@ func main() {
 				}
 			}
 			if len(outputFile) == 0 {
-				outputFile = config.DiscoverTomFlileName
+				outputFile = config.DiscoverTomlFileName
 			}
 			url := os.Getenv("VULS_DOMAIN")
 			if len(url) == 0 {

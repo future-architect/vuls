@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	ex "os/exec"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -35,8 +34,6 @@ var (
 )
 
 var servers, errServers []osTypeInterface
-
-var userDirectoryPath = ""
 
 // Base Interface
 type osTypeInterface interface {
@@ -568,13 +565,6 @@ func parseSSHConfiguration(stdout string) sshConfiguration {
 			sshConfig.globalKnownHosts = strings.Split(strings.TrimPrefix(line, "globalknownhostsfile "), " ")
 		case strings.HasPrefix(line, "userknownhostsfile "):
 			sshConfig.userKnownHosts = strings.Split(strings.TrimPrefix(line, "userknownhostsfile "), " ")
-			if runtime.GOOS == constant.Windows {
-				for i, userKnownHost := range sshConfig.userKnownHosts {
-					if strings.HasPrefix(userKnownHost, "~") {
-						sshConfig.userKnownHosts[i] = normalizeHomeDirPathForWindows(userKnownHost)
-					}
-				}
-			}
 		case strings.HasPrefix(line, "proxycommand "):
 			sshConfig.proxyCommand = strings.TrimPrefix(line, "proxycommand ")
 		case strings.HasPrefix(line, "proxyjump "):
@@ -582,11 +572,6 @@ func parseSSHConfiguration(stdout string) sshConfiguration {
 		}
 	}
 	return sshConfig
-}
-
-func normalizeHomeDirPathForWindows(userKnownHost string) string {
-	userKnownHostPath := filepath.Join(os.Getenv("userprofile"), strings.TrimPrefix(userKnownHost, "~"))
-	return strings.ReplaceAll(userKnownHostPath, "/", "\\")
 }
 
 func parseSSHScan(stdout string) map[string]string {

@@ -18,7 +18,7 @@ dist/
 vuls.*
 vuls
 !cmd/vuls
-future-vuls
-trivy-to-vuls
+/future-vuls
+/trivy-to-vuls
 snmp2cpe
 !snmp2cpe/

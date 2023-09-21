@@ -1,3 +1,4 @@
+// cpe
 package cpe
 
 import (
@@ -34,22 +35,28 @@ func AddCpe(token, outputFile, proxy, url string) (err error) {
 		return err
 	}
 
-	addedServers := cpeConfig.AddServerToFvuls(ctx, needAddServers)
-	if 0 < len(addedServers) {
-		for name, server := range addedServers {
-			needAddCpes[name] = server
-		}
+	if 0 < len(needAddServers) {
+		addedServers := cpeConfig.AddServerToFvuls(ctx, needAddServers)
+		if 0 < len(addedServers) {
+			for name, server := range addedServers {
+				needAddCpes[name] = server
+			}
 
-		for name, server := range addedServers {
-			cpeConfig.OriginalDiscoverToml[name] = server
-		}
-		if err = cpeConfig.WriteDiscoverToml(); err != nil {
-			return err
 		}
 	}
 
-	if err = cpeConfig.AddCpeToFvuls(ctx, needAddCpes); err != nil {
+	// update discover toml
+	for name, server := range needAddCpes {
+		cpeConfig.OriginalDiscoverToml[name] = server
+	}
+	if err = cpeConfig.WriteDiscoverToml(); err != nil {
 		return err
+	}
+
+	if 0 < len(needAddCpes) {
+		if err = cpeConfig.AddCpeToFvuls(ctx, needAddCpes); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -70,6 +77,7 @@ func (c *AddCpeConfig) LoadAndCheckTomlFile(ctx context.Context) (needAddServers
 		}
 
 		if setting.UUID == "" {
+			setting.NewCpeURIs = setting.CpeURIs
 			needAddServers[name] = setting
 		} else if 0 < len(setting.CpeURIs) {
 			fvulsClient := fvuls.NewClient(c.Token, c.Proxy)
@@ -116,13 +124,14 @@ func (c *AddCpeConfig) AddServerToFvuls(ctx context.Context, needAddServers map[
 	fvulsClient := fvuls.NewClient(c.Token, c.Proxy)
 	addedServers = make(map[string]config.ServerSetting)
 	for name, server := range needAddServers {
-		var uuid string
-		uuid, err := fvulsClient.CreatePseudoServer(ctx, server.ServerName)
+		var serverDetail fvuls.ServerDetailOutput
+		serverDetail, err := fvulsClient.CreatePseudoServer(ctx, server.ServerName)
 		if err != nil {
 			fmt.Printf("%s: Failed to add to Fvuls server. err: %v\n", server.ServerName, err)
 			continue
 		}
-		server.UUID = uuid
+		server.UUID = serverDetail.ServerUUID
+		server.ServerName = serverDetail.ServerName
 		addedServers[name] = server
 		fmt.Printf("%s: Created FutureVuls pseudo server %s\n", server.ServerName, server.UUID)
 	}

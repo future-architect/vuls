@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"regexp"
-	"runtime"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -13,7 +12,6 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/constant"
-	"github.com/future-architect/vuls/logging"
 )
 
 // TOMLLoader loads config
@@ -23,15 +21,7 @@ type TOMLLoader struct {
 // Load load the configuration TOML file specified by path arg.
 func (c TOMLLoader) Load(pathToToml string) error {
 	// util.Log.Infof("Loading config: %s", pathToToml)
-	if _, err := toml.DecodeFile(pathToToml, &ConfV1); err != nil {
-		return err
-	}
-	if ConfV1.Version != "v2" && runtime.GOOS == "windows" {
-		logging.Log.Infof("An outdated version of config.toml was detected. Converting to newer version...")
-		if err := convertToLatestConfig(pathToToml); err != nil {
-			return xerrors.Errorf("Failed to convert to latest config. err: %w", err)
-		}
-	} else if _, err := toml.DecodeFile(pathToToml, &Conf); err != nil {
+	if _, err := toml.DecodeFile(pathToToml, &Conf); err != nil {
 		return err
 	}
 
