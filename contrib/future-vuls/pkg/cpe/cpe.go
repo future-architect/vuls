@@ -1,4 +1,4 @@
-// cpe
+// Package cpe ...
 package cpe
 
 import (
@@ -13,6 +13,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// AddCpeConfig ...
 type AddCpeConfig struct {
 	Token                string
 	Proxy                string
@@ -20,7 +21,8 @@ type AddCpeConfig struct {
 	OriginalDiscoverToml config.DiscoverToml
 }
 
-func AddCpe(token, outputFile, proxy, url string) (err error) {
+// AddCpe ...
+func AddCpe(token, outputFile, proxy string) (err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -62,6 +64,7 @@ func AddCpe(token, outputFile, proxy, url string) (err error) {
 	return nil
 }
 
+// LoadAndCheckTomlFile ...
 func (c *AddCpeConfig) LoadAndCheckTomlFile(ctx context.Context) (needAddServers, needAddCpes config.DiscoverToml, err error) {
 	var discoverToml config.DiscoverToml
 	if _, err = toml.DecodeFile(c.DiscoverTomlPath, &discoverToml); err != nil {
@@ -119,6 +122,7 @@ func (c *AddCpeConfig) LoadAndCheckTomlFile(ctx context.Context) (needAddServers
 	return needAddServers, needAddCpes, nil
 }
 
+// AddServerToFvuls ...
 func (c *AddCpeConfig) AddServerToFvuls(ctx context.Context, needAddServers map[string]config.ServerSetting) (addedServers config.DiscoverToml) {
 	fmt.Printf("Creating %d pseudo server...\n", len(needAddServers))
 	fvulsClient := fvuls.NewClient(c.Token, c.Proxy)
@@ -138,6 +142,7 @@ func (c *AddCpeConfig) AddServerToFvuls(ctx context.Context, needAddServers map[
 	return addedServers
 }
 
+// AddCpeToFvuls ...
 func (c *AddCpeConfig) AddCpeToFvuls(ctx context.Context, needAddCpes config.DiscoverToml) (err error) {
 	fmt.Printf("Uploading %d server's CPE...\n", len(needAddCpes))
 	fvulsClient := fvuls.NewClient(c.Token, c.Proxy)
@@ -158,6 +163,7 @@ func (c *AddCpeConfig) AddCpeToFvuls(ctx context.Context, needAddCpes config.Dis
 	return nil
 }
 
+// WriteDiscoverToml ...
 func (c *AddCpeConfig) WriteDiscoverToml() error {
 	f, err := os.OpenFile(c.DiscoverTomlPath, os.O_RDWR, 0666)
 	if err != nil {

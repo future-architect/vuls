@@ -1,3 +1,4 @@
+// Package main ...
 package main
 
 import (
@@ -26,7 +27,6 @@ var (
 	groupID     int64
 	token       string
 	tags        []string
-	url         string
 	outputFile  string
 	cidr        string
 	snmpVersion string
@@ -57,9 +57,6 @@ func main() {
 				if groupID, err = strconv.ParseInt(envGroupID, 10, 64); err != nil {
 					return fmt.Errorf("invalid GroupID: %s", envGroupID)
 				}
-			}
-			if len(url) == 0 {
-				url = os.Getenv("VULS_URL")
 			}
 			if len(token) == 0 {
 				token = os.Getenv("VULS_TOKEN")
@@ -131,11 +128,7 @@ func main() {
 			if len(outputFile) == 0 {
 				outputFile = config.DiscoverTomlFileName
 			}
-			url := os.Getenv("VULS_DOMAIN")
-			if len(url) == 0 {
-				url = config.FvulsDomain
-			}
-			if err := cpe.AddCpe(token, outputFile, proxy, url); err != nil {
+			if err := cpe.AddCpe(token, outputFile, proxy); err != nil {
 				fmt.Printf("%v", err)
 				// avoid to display help message
 				os.Exit(1)

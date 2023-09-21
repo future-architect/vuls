@@ -1,4 +1,4 @@
-// discover
+// Package discover ...
 package discover
 
 import (

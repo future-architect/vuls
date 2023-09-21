@@ -1,3 +1,4 @@
+// Package config ...
 package config
 
 const (
@@ -7,8 +8,10 @@ const (
 	DiscoverTomlTimeStampFormat = "20060102150405"
 )
 
+// DiscoverToml ...
 type DiscoverToml map[string]ServerSetting
 
+// ServerSetting ...
 type ServerSetting struct {
 	IP         string   `toml:"ip"`
 	ServerName string   `toml:"server_name"`

@@ -1,3 +1,4 @@
+// Package fvuls ...
 package fvuls
 
 import (
@@ -15,19 +16,21 @@ import (
 	"github.com/future-architect/vuls/util"
 )
 
-type FvulsClient struct {
+// Client ...
+type Client struct {
 	Token             string
 	Proxy             string
 	FvulsScanEndpoint string
 	FvulsRestEndpoint string
 }
 
-func NewClient(token string, proxy string) *FvulsClient {
+// NewClient ...
+func NewClient(token string, proxy string) *Client {
 	fvulsDomain := "vuls.biz"
 	if domain := os.Getenv("VULS_DOMAIN"); 0 < len(domain) {
 		fvulsDomain = domain
 	}
-	return &FvulsClient{
+	return &Client{
 		Token:             token,
 		Proxy:             proxy,
 		FvulsScanEndpoint: fmt.Sprintf("https://auth.%s/one-time-auth", fvulsDomain),
@@ -36,7 +39,7 @@ func NewClient(token string, proxy string) *FvulsClient {
 }
 
 // UploadToFvuls ...
-func (f FvulsClient) UploadToFvuls(serverUUID string, groupID int64, tags []string, scanResultJSON []byte) error {
+func (f Client) UploadToFvuls(serverUUID string, groupID int64, tags []string, scanResultJSON []byte) error {
 	var scanResult models.ScanResult
 	if err := json.Unmarshal(scanResultJSON, &scanResult); err != nil {
 		fmt.Printf("failed to parse json. err: %v\nPerhaps scan has failed. Please check following scan results.\nResult: %s", err, fmt.Sprintf("%s", scanResultJSON))
@@ -59,7 +62,8 @@ func (f FvulsClient) UploadToFvuls(serverUUID string, groupID int64, tags []stri
 	return nil
 }
 
-func (f FvulsClient) GetServerByUUID(ctx context.Context, uuid string) (server ServerDetailOutput, err error) {
+// GetServerByUUID ...
+func (f Client) GetServerByUUID(ctx context.Context, uuid string) (server ServerDetailOutput, err error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/server/uuid/%s", f.FvulsRestEndpoint, uuid), nil)
 	if err != nil {
 		return ServerDetailOutput{}, fmt.Errorf("failed to create request. err: %v", err)
@@ -78,7 +82,8 @@ func (f FvulsClient) GetServerByUUID(ctx context.Context, uuid string) (server S
 	return serverDetail, nil
 }
 
-func (f FvulsClient) CreatePseudoServer(ctx context.Context, name string) (serverDetail ServerDetailOutput, err error) {
+// CreatePseudoServer ...
+func (f Client) CreatePseudoServer(ctx context.Context, name string) (serverDetail ServerDetailOutput, err error) {
 	payload := CreatePseudoServerInput{
 		ServerName: name,
 	}
@@ -103,7 +108,8 @@ func (f FvulsClient) CreatePseudoServer(ctx context.Context, name string) (serve
 	return serverDetail, nil
 }
 
-func (f FvulsClient) UploadCPE(ctx context.Context, cpeURI string, serverID int64) (err error) {
+// UploadCPE ...
+func (f Client) UploadCPE(ctx context.Context, cpeURI string, serverID int64) (err error) {
 	payload := AddCpeInput{
 		ServerID: serverID,
 		CpeName:  cpeURI,
@@ -131,7 +137,8 @@ func (f FvulsClient) UploadCPE(ctx context.Context, cpeURI string, serverID int6
 	return nil
 }
 
-func (f FvulsClient) ListUploadedCPE(ctx context.Context, serverID int64) (uploadedCPEs []string, err error) {
+// ListUploadedCPE ...
+func (f Client) ListUploadedCPE(ctx context.Context, serverID int64) (uploadedCPEs []string, err error) {
 	page := 1
 	for {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/pkgCpes?page=%d&limit=%d&filterServerID=%d", f.FvulsRestEndpoint, page, 200, serverID), nil)
@@ -161,7 +168,7 @@ func (f FvulsClient) ListUploadedCPE(ctx context.Context, serverID int64) (uploa
 	return uploadedCPEs, nil
 }
 
-func (f FvulsClient) sendHTTPRequest(req *http.Request) ([]byte, error) {
+func (f Client) sendHTTPRequest(req *http.Request) ([]byte, error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", f.Token)
