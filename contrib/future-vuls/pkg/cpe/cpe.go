@@ -43,24 +43,29 @@ func AddCpe(token, outputFile, proxy string) (err error) {
 			for name, server := range addedServers {
 				needAddCpes[name] = server
 			}
-
 		}
-	}
 
-	// update discover toml
-	for name, server := range needAddCpes {
-		cpeConfig.OriginalDiscoverToml[name] = server
-	}
-	if err = cpeConfig.WriteDiscoverToml(); err != nil {
-		return err
-	}
-
-	if 0 < len(needAddCpes) {
-		if err = cpeConfig.AddCpeToFvuls(ctx, needAddCpes); err != nil {
+		// update discover toml
+		for name, server := range needAddCpes {
+			cpeConfig.OriginalDiscoverToml[name] = server
+		}
+		if err = cpeConfig.WriteDiscoverToml(); err != nil {
 			return err
 		}
 	}
 
+	if 0 < len(needAddCpes) {
+		var addedCpes config.DiscoverToml
+		if addedCpes, err = cpeConfig.AddCpeToFvuls(ctx, needAddCpes); err != nil {
+			return err
+		}
+		for name, server := range addedCpes {
+			cpeConfig.OriginalDiscoverToml[name] = server
+		}
+		if err = cpeConfig.WriteDiscoverToml(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -143,11 +148,12 @@ func (c *AddCpeConfig) AddServerToFvuls(ctx context.Context, needAddServers map[
 }
 
 // AddCpeToFvuls ...
-func (c *AddCpeConfig) AddCpeToFvuls(ctx context.Context, needAddCpes config.DiscoverToml) (err error) {
+func (c *AddCpeConfig) AddCpeToFvuls(ctx context.Context, needAddCpes config.DiscoverToml) (config.DiscoverToml, error) {
 	fmt.Printf("Uploading %d server's CPE...\n", len(needAddCpes))
 	fvulsClient := fvuls.NewClient(c.Token, c.Proxy)
-	for _, server := range needAddCpes {
+	for name, server := range needAddCpes {
 		serverDetail, err := fvulsClient.GetServerByUUID(ctx, server.UUID)
+		server.ServerName = serverDetail.ServerName
 		if err != nil {
 			fmt.Printf("%s: Failed to Fetch serverID. err: %v\n", server.ServerName, err)
 			continue
@@ -159,8 +165,9 @@ func (c *AddCpeConfig) AddCpeToFvuls(ctx context.Context, needAddCpes config.Dis
 			}
 			fmt.Printf("%s: Uploaded CPE %s\n", server.ServerName, cpeURI)
 		}
+		needAddCpes[name] = server
 	}
-	return nil
+	return needAddCpes, nil
 }
 
 // WriteDiscoverToml ...
