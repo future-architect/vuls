@@ -1,0 +1,13 @@
+["192.168.0.6"]
+  ip = "192.168.0.6"
+  server_name = "hirokav2"
+  uuid = "9a101843-b9fa-b1b1-d27a-0481d8692442"
+  cpe_uris = ["cpe:2.3:h:fortinet:fortigate-50e:-:*:*:*:*:*:*:*", "cpe:2.3:o:fortinet:fortios:5.4.6:*:*:*:*:*:*:*"]
+  fvuls_sync = true
+
+["192.168.0.7"]
+  ip = "192.168.0.7"
+  server_name = "hirokav3"
+  uuid = "58599195-440e-870b-372b-b87dcb283808"
+  cpe_uris = ["cpe:2.3:h:fortinet:fortigate-50e:-:*:*:*:*:*:*:*", "cpe:2.3:o:fortinet:fortios:5.4.6:*:*:*:*:*:*:*"]
+  fvuls_sync = true

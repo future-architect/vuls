@@ -1,0 +1,13 @@
+["192.168.0.6"]
+  ip = "192.168.0.6"
+  server_name = "192.168.0.6"
+  uuid = ""
+  cpe_uris = []
+  fvuls_sync = false
+
+["192.168.0.7"]
+  ip = "192.168.0.7"
+  server_name = "test"
+  uuid = ""
+  cpe_uris = []
+  fvuls_sync = false

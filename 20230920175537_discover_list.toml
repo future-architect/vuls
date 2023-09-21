@@ -1,0 +1,6 @@
+["192.168.0.6"]
+  ip = "192.168.0.6"
+  server_name = "192.168.0.6"
+  uuid = "aaa"
+  cpe_uris = ["cpe:2.3:h:fortinet:fortigate-50e:-:*:*:*:*:*:*:*","cpe:2.3:o:fortinet:fortios:5.4.6:*:*:*:*:*:*:*"]
+  fvuls_sync = true
