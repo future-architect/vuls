@@ -21,7 +21,7 @@ var Version = "`make build` or `make install` will show the version"
 // Revision of Git
 var Revision string
 
-// Conf has Configuration
+// Conf has Configuration(v2)
 var Conf Config
 
 // Config is struct of Configuration
