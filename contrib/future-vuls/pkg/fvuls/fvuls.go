@@ -42,7 +42,7 @@ func NewClient(token string, proxy string) *Client {
 func (f Client) UploadToFvuls(serverUUID string, groupID int64, tags []string, scanResultJSON []byte) error {
 	var scanResult models.ScanResult
 	if err := json.Unmarshal(scanResultJSON, &scanResult); err != nil {
-		fmt.Printf("failed to parse json. err: %v\nPerhaps scan has failed. Please check following scan results.\nResult: %s", err, fmt.Sprintf("%s", scanResultJSON))
+		fmt.Printf("failed to parse json. err: %v\nPerhaps scan has failed. Please check the scan results above or run trivy without pipes.\n", err)
 		return err
 	}
 	scanResult.ServerUUID = serverUUID
