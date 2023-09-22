@@ -2,7 +2,6 @@ package parser
 
 import (
 	"encoding/json"
-	"fmt"
 
 	v2 "github.com/future-architect/vuls/contrib/trivy/parser/v2"
 	"github.com/future-architect/vuls/models"
@@ -23,7 +22,6 @@ type Report struct {
 func NewParser(vulnJSON []byte) (Parser, error) {
 	r := Report{}
 	if err := json.Unmarshal(vulnJSON, &r); err != nil {
-		fmt.Printf("%s", fmt.Sprintf("%s", vulnJSON))
 		return nil, xerrors.Errorf("Failed to parse JSON. Please use the latest version of trivy, trivy-to-vuls and future-vuls")
 	}
 	switch r.SchemaVersion {
