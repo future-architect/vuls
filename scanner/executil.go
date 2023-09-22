@@ -3,6 +3,7 @@ package scanner
 import (
 	"bytes"
 	"fmt"
+	"hash/fnv"
 	"io"
 	ex "os/exec"
 	"path/filepath"
@@ -213,7 +214,12 @@ func sshExecExternal(c config.ServerInfo, cmdstr string, sudo bool) (result exec
 				return
 			}
 
-			controlPath := filepath.Join(home, ".vuls", `controlmaster-%r-`+c.ServerName+`.%p`)
+			controlPath := filepath.Join(home, ".vuls", "cm-%C")
+			h := fnv.New32()
+			if _, err := h.Write([]byte(c.ServerName)); err == nil {
+				controlPath = filepath.Join(home, ".vuls", fmt.Sprintf("cm-%x-%%C", h.Sum32()))
+			}
+
 			args = append(args,
 				"-o", "ControlMaster=auto",
 				"-o", fmt.Sprintf("ControlPath=%s", controlPath),
