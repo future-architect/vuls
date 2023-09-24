@@ -73,7 +73,7 @@ func AddCpe(token, outputFile, proxy string) (err error) {
 func (c *AddCpeConfig) LoadAndCheckTomlFile(ctx context.Context) (needAddServers, needAddCpes config.DiscoverToml, err error) {
 	var discoverToml config.DiscoverToml
 	if _, err = toml.DecodeFile(c.DiscoverTomlPath, &discoverToml); err != nil {
-		return nil, nil, fmt.Errorf("failed to read discover toml: %s", c.DiscoverTomlPath)
+		return nil, nil, fmt.Errorf("failed to read discover toml: %s, err: %v", c.DiscoverTomlPath, err)
 	}
 	c.OriginalDiscoverToml = discoverToml
 
