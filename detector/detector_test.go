@@ -70,6 +70,19 @@ func Test_getMaxConfidence(t *testing.T) {
 			wantMax: models.NvdVendorProductMatch,
 		},
 		{
+			name: "FortinetExactVersionMatch",
+			args: args{
+				detail: cvemodels.CveDetail{
+					Nvds: []cvemodels.Nvd{
+						{DetectionMethod: cvemodels.NvdExactVersionMatch},
+					},
+					Jvns:      []cvemodels.Jvn{{DetectionMethod: cvemodels.JvnVendorProductMatch}},
+					Fortinets: []cvemodels.Fortinet{{DetectionMethod: cvemodels.FortinetExactVersionMatch}},
+				},
+			},
+			wantMax: models.FortinetExactVersionMatch,
+		},
+		{
 			name: "empty",
 			args: args{
 				detail: cvemodels.CveDetail{

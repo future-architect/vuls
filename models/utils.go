@@ -123,3 +123,39 @@ func ConvertNvdToModel(cveID string, nvds []cvedict.Nvd) ([]CveContent, []Exploi
 	}
 	return cves, exploits, mitigations
 }
+
+// ConvertFortinetToModel convert Fortinet to CveContent
+func ConvertFortinetToModel(cveID string, fortinets []cvedict.Fortinet) []CveContent {
+	cves := []CveContent{}
+	for _, fortinet := range fortinets {
+
+		refs := []Reference{}
+		for _, r := range fortinet.References {
+			refs = append(refs, Reference{
+				Link:   r.Link,
+				Source: r.Source,
+			})
+		}
+
+		cweIDs := []string{}
+		for _, cid := range fortinet.Cwes {
+			cweIDs = append(cweIDs, cid.CweID)
+		}
+
+		cve := CveContent{
+			Type:         Fortinet,
+			CveID:        cveID,
+			Title:        fortinet.Title,
+			Summary:      fortinet.Summary,
+			Cvss3Score:   fortinet.Cvss3.BaseScore,
+			Cvss3Vector:  fortinet.Cvss3.VectorString,
+			SourceLink:   fortinet.AdvisoryURL,
+			CweIDs:       cweIDs,
+			References:   refs,
+			Published:    fortinet.PublishedDate,
+			LastModified: fortinet.LastModifiedDate,
+		}
+		cves = append(cves, cve)
+	}
+	return cves
+}
