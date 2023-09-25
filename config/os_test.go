@@ -663,6 +663,22 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			extEnded: false,
 			found:    true,
 		},
+		{
+			name:     "Mac OS X 10.15 EOL",
+			fields:   fields{family: MacOSX, release: "10.15.7"},
+			now:      time.Date(2023, 7, 25, 23, 59, 59, 0, time.UTC),
+			stdEnded: true,
+			extEnded: true,
+			found:    true,
+		},
+		{
+			name:     "macOS 13.4.1 supported",
+			fields:   fields{family: MacOS, release: "13.4.1"},
+			now:      time.Date(2023, 7, 25, 23, 59, 59, 0, time.UTC),
+			stdEnded: false,
+			extEnded: false,
+			found:    true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
