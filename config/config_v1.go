@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -89,7 +88,7 @@ func convertToLatestConfig(pathToToml string) error {
 	}
 	Conf.Servers = convertedServerConfigList
 
-	raw, err := ioutil.ReadFile(pathToSaasJSON)
+	raw, err := os.ReadFile(pathToSaasJSON)
 	if err != nil {
 		return xerrors.Errorf("Failed to read saas-credential.json. err: %w", err)
 	}
