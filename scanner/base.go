@@ -1183,10 +1183,8 @@ func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]stri
 
 func formatNmapOptionsToString(conf *config.PortScanConf) string {
 	cmd := []string{conf.ScannerBinPath}
-	if len(conf.ScanTechniques) != 0 {
-		for _, technique := range conf.ScanTechniques {
-			cmd = append(cmd, "-"+technique)
-		}
+	for _, technique := range conf.ScanTechniques {
+		cmd = append(cmd, "-"+technique)
 	}
 
 	if conf.SourcePort != "" {

@@ -138,14 +138,12 @@ func (c TOMLLoader) Load(pathToToml string) error {
 		if len(server.Enablerepo) == 0 {
 			server.Enablerepo = Conf.Default.Enablerepo
 		}
-		if len(server.Enablerepo) != 0 {
-			for _, repo := range server.Enablerepo {
-				switch repo {
-				case "base", "updates":
-					// nop
-				default:
-					return xerrors.Errorf("For now, enablerepo have to be base or updates: %s", server.Enablerepo)
-				}
+		for _, repo := range server.Enablerepo {
+			switch repo {
+			case "base", "updates":
+				// nop
+			default:
+				return xerrors.Errorf("For now, enablerepo have to be base or updates: %s", server.Enablerepo)
 			}
 		}
 
