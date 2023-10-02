@@ -61,6 +61,7 @@ func (ubu Ubuntu) supported(version string) bool {
 		"2204": "jammy",
 		"2210": "kinetic",
 		"2304": "lunar",
+		"2310": "mantic",
 	}[version]
 	return ok
 }

@@ -48,7 +48,7 @@ require (
 	github.com/vulsio/go-exploitdb v0.4.7-0.20231017104626-201191637c48
 	github.com/vulsio/go-kev v0.1.4-0.20231017105707-8a9a218d280a
 	github.com/vulsio/go-msfdb v0.2.4-0.20231017104449-b705e6975831
-	github.com/vulsio/gost v0.4.6-0.20231017094944-b2272b3bc9e7
+	github.com/vulsio/gost v0.4.6-0.20231018164544-c4d0a39db372
 	github.com/vulsio/goval-dictionary v0.9.5-0.20231017110023-3ae99de8d1c5
 	go.etcd.io/bbolt v1.3.7
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
