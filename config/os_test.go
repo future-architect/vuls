@@ -478,8 +478,16 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			found:    true,
 		},
 		{
-			name:     "Alpine 3.18 not found",
+			name:     "Alpine 3.18 supported",
 			fields:   fields{family: Alpine, release: "3.18"},
+			now:      time.Date(2025, 5, 9, 23, 59, 59, 0, time.UTC),
+			stdEnded: false,
+			extEnded: false,
+			found:    true,
+		},
+		{
+			name:     "Alpine 3.19 not found",
+			fields:   fields{family: Alpine, release: "3.19"},
 			now:      time.Date(2022, 1, 14, 23, 59, 59, 0, time.UTC),
 			stdEnded: false,
 			extEnded: false,
