@@ -369,13 +369,15 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 		case "Windows 10 Version 21H1":
 			eol, found = EOL{StandardSupportUntil: time.Date(2022, 12, 13, 23, 59, 59, 0, time.UTC)}, true
 		case "Windows 10 Version 21H2":
-			eol, found = EOL{StandardSupportUntil: time.Date(2023, 6, 13, 23, 59, 59, 0, time.UTC)}, true
+			eol, found = EOL{StandardSupportUntil: time.Date(2024, 6, 11, 23, 59, 59, 0, time.UTC)}, true
 		case "Windows 10 Version 22H2":
-			eol, found = EOL{StandardSupportUntil: time.Date(2024, 5, 14, 23, 59, 59, 0, time.UTC)}, true
+			eol, found = EOL{StandardSupportUntil: time.Date(2025, 10, 14, 23, 59, 59, 0, time.UTC)}, true
 		case "Windows 11 Version 21H2":
 			eol, found = EOL{StandardSupportUntil: time.Date(2024, 10, 8, 23, 59, 59, 0, time.UTC)}, true
 		case "Windows 11 Version 22H2":
 			eol, found = EOL{StandardSupportUntil: time.Date(2025, 10, 14, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 11 Version 23H2":
+			eol, found = EOL{StandardSupportUntil: time.Date(2026, 11, 10, 23, 59, 59, 0, time.UTC)}, true
 		case "Windows Server 2008":
 			eol, found = EOL{StandardSupportUntil: time.Date(2011, 7, 12, 23, 59, 59, 0, time.UTC)}, true
 			if strings.Contains(rhs, "Service Pack 2") {
