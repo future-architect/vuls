@@ -225,6 +225,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"15.2": {Ended: true},
 			"15.3": {StandardSupportUntil: time.Date(2022, 11, 30, 23, 59, 59, 0, time.UTC)},
 			"15.4": {StandardSupportUntil: time.Date(2023, 11, 30, 23, 59, 59, 0, time.UTC)},
+			"15.5": {StandardSupportUntil: time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC)},
 		}[release]
 	case constant.SUSEEnterpriseServer:
 		// https://www.suse.com/lifecycle
@@ -243,8 +244,11 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"15":   {Ended: true},
 			"15.1": {Ended: true},
 			"15.2": {Ended: true},
-			"15.3": {StandardSupportUntil: time.Date(2022, 11, 30, 23, 59, 59, 0, time.UTC)},
-			"15.4": {StandardSupportUntil: time.Date(2023, 11, 30, 23, 59, 59, 0, time.UTC)},
+			"15.3": {StandardSupportUntil: time.Date(2022, 12, 31, 23, 59, 59, 0, time.UTC)},
+			"15.4": {StandardSupportUntil: time.Date(2023, 12, 31, 23, 59, 59, 0, time.UTC)},
+			"15.5": {},
+			"15.6": {},
+			"15.7": {StandardSupportUntil: time.Date(2028, 7, 31, 23, 59, 59, 0, time.UTC)},
 		}[release]
 	case constant.SUSEEnterpriseDesktop:
 		// https://www.suse.com/lifecycle
@@ -262,8 +266,11 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"15":   {Ended: true},
 			"15.1": {Ended: true},
 			"15.2": {Ended: true},
-			"15.3": {StandardSupportUntil: time.Date(2022, 11, 30, 23, 59, 59, 0, time.UTC)},
-			"15.4": {StandardSupportUntil: time.Date(2023, 11, 30, 23, 59, 59, 0, time.UTC)},
+			"15.3": {StandardSupportUntil: time.Date(2022, 12, 31, 23, 59, 59, 0, time.UTC)},
+			"15.4": {StandardSupportUntil: time.Date(2023, 12, 31, 23, 59, 59, 0, time.UTC)},
+			"15.5": {},
+			"15.6": {},
+			"15.7": {StandardSupportUntil: time.Date(2028, 7, 31, 23, 59, 59, 0, time.UTC)},
 		}[release]
 	case constant.Alpine:
 		// https://github.com/aquasecurity/trivy/blob/master/pkg/detector/ospkg/alpine/alpine.go#L19
@@ -295,6 +302,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"3.15": {StandardSupportUntil: time.Date(2023, 11, 1, 23, 59, 59, 0, time.UTC)},
 			"3.16": {StandardSupportUntil: time.Date(2024, 5, 23, 23, 59, 59, 0, time.UTC)},
 			"3.17": {StandardSupportUntil: time.Date(2024, 11, 22, 23, 59, 59, 0, time.UTC)},
+			"3.18": {StandardSupportUntil: time.Date(2025, 5, 9, 23, 59, 59, 0, time.UTC)},
 		}[majorDotMinor(release)]
 	case constant.FreeBSD:
 		// https://www.freebsd.org/security/
@@ -425,7 +433,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"11": {},
 			"12": {},
 			"13": {},
-			// "14": {},
+			"14": {},
 		}[major(release)]
 	}
 	return
