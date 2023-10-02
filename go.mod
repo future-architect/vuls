@@ -43,7 +43,7 @@ require (
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.7.0
-	github.com/vulsio/go-cti v0.0.3
+	github.com/vulsio/go-cti v0.0.4
 	github.com/vulsio/go-cve-dictionary v0.9.1-0.20230925070138-66e5573a03bd
 	github.com/vulsio/go-exploitdb v0.4.5
 	github.com/vulsio/go-kev v0.1.2
