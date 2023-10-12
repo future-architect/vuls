@@ -31,6 +31,7 @@ var (
 	cidr        string
 	snmpVersion string
 	proxy       string
+	community   string
 )
 
 func main() {
@@ -105,7 +106,10 @@ func main() {
 			if snmpVersion != "v1" && snmpVersion != "v2c" && snmpVersion != "v3" {
 				return fmt.Errorf("Invalid snmpVersion")
 			}
-			if err := discover.ActiveHosts(cidr, outputFile, snmpVersion); err != nil {
+			if community == "" {
+				community = config.Community
+			}
+			if err := discover.ActiveHosts(cidr, outputFile, snmpVersion, community); err != nil {
 				fmt.Printf("%v", err)
 				// avoid to display help message
 				os.Exit(1)
@@ -145,7 +149,8 @@ func main() {
 
 	cmdDiscover.PersistentFlags().StringVar(&cidr, "cidr", "", "cidr range")
 	cmdDiscover.PersistentFlags().StringVar(&outputFile, "output", "", "output file")
-	cmdDiscover.PersistentFlags().StringVar(&snmpVersion, "snmp-version", "", "snmp version v1,v2c and v3. default: v2c ")
+	cmdDiscover.PersistentFlags().StringVar(&snmpVersion, "snmp-version", "", "snmp version v1,v2c and v3. default: v2c")
+	cmdDiscover.PersistentFlags().StringVar(&community, "community", "", "snmp community name. default: public")
 
 	cmdAddCpe.PersistentFlags().StringVarP(&token, "token", "t", "", "future vuls token ENV: VULS_TOKEN")
 	cmdAddCpe.PersistentFlags().StringVar(&outputFile, "output", "", "output file")

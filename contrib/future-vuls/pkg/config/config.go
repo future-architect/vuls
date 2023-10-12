@@ -5,6 +5,7 @@ const (
 	DiscoverTomlFileName        = "discover_list.toml"
 	SnmpVersion                 = "v2c"
 	FvulsDomain                 = "vuls.biz"
+	Community                   = "public"
 	DiscoverTomlTimeStampFormat = "20060102150405"
 )
 

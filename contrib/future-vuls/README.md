@@ -100,6 +100,7 @@ future-vuls discover --cidr 192.168.0.0/24 --output discover_list.toml
 
 Flags:
       --cidr string           cidr range
+      --community string      snmp community name. default: public
   -h, --help                  help for discover
       --output string         output file
       --snmp-version string   snmp version v1,v2c and v3. default: v2c
