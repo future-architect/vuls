@@ -149,8 +149,8 @@ func main() {
 
 	cmdDiscover.PersistentFlags().StringVar(&cidr, "cidr", "", "cidr range")
 	cmdDiscover.PersistentFlags().StringVar(&outputFile, "output", "", "output file")
-	cmdDiscover.PersistentFlags().StringVar(&snmpVersion, "snmp-version", "", "snmp version v1,v2c and v3. default: v2c ")
-	cmdDiscover.PersistentFlags().StringVar(&community, "community", "", "snmp community name")
+	cmdDiscover.PersistentFlags().StringVar(&snmpVersion, "snmp-version", "", "snmp version v1,v2c and v3. default: v2c")
+	cmdDiscover.PersistentFlags().StringVar(&community, "community", "", "snmp community name. default: public")
 
 	cmdAddCpe.PersistentFlags().StringVarP(&token, "token", "t", "", "future vuls token ENV: VULS_TOKEN")
 	cmdAddCpe.PersistentFlags().StringVar(&outputFile, "output", "", "output file")
