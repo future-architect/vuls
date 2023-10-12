@@ -300,8 +300,6 @@ func (s Scanner) initServers() error {
 		return xerrors.New("No scannable host OS")
 	}
 
-	// to generate random color for logging
-	rand.Seed(time.Now().UnixNano())
 	for _, srv := range hosts {
 		srv.setLogger(logging.NewCustomLogger(s.Debug, s.Quiet, s.LogToFile, s.LogDir, config.Colors[rand.Intn(len(config.Colors))], srv.getServerInfo().GetServerName()))
 	}
