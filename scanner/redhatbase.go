@@ -815,7 +815,7 @@ func (o *redhatBase) parseNeedsRestarting(stdout string) (procs []models.NeedRes
 		}
 
 		path := ss[1]
-		if !strings.HasPrefix(path, "/") {
+		if path != "" && !strings.HasPrefix(path, "/") {
 			path = strings.Fields(path)[0]
 			// [ec2-user@ip-172-31-11-139 ~]$ sudo needs-restarting
 			// 2024 : auditd
