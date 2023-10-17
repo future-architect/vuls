@@ -302,8 +302,14 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 
 // ConvertToModel converts gost model to vuls model
 func (ms Microsoft) ConvertToModel(cve *gostmodels.MicrosoftCVE) (*models.CveContent, []models.Mitigation) {
-	slices.SortFunc(cve.Products, func(i, j gostmodels.MicrosoftProduct) bool {
-		return i.ScoreSet.Vector < j.ScoreSet.Vector
+	slices.SortFunc(cve.Products, func(i, j gostmodels.MicrosoftProduct) int {
+		if i.ScoreSet.Vector < j.ScoreSet.Vector {
+			return -1
+		}
+		if i.ScoreSet.Vector > j.ScoreSet.Vector {
+			return +1
+		}
+		return 0
 	})
 
 	v3score := 0.0

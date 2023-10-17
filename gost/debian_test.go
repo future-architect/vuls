@@ -306,7 +306,15 @@ func TestDebian_detect(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := (Debian{}).detect(tt.args.cves, tt.args.srcPkg, tt.args.runningKernel)
-			slices.SortFunc(got, func(i, j cveContent) bool { return i.cveContent.CveID < j.cveContent.CveID })
+			slices.SortFunc(got, func(i, j cveContent) int {
+				if i.cveContent.CveID < j.cveContent.CveID {
+					return -1
+				}
+				if i.cveContent.CveID > j.cveContent.CveID {
+					return +1
+				}
+				return 0
+			})
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Debian.detect() = %v, want %v", got, tt.want)
 			}

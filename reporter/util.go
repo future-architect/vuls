@@ -448,8 +448,14 @@ No CVE-IDs are found in updatable packages.
 				ds = append(ds, []string{"CWE", fmt.Sprintf("[OWASP(%s) Top%s] %s: %s (%s)", year, info.Rank, v.Value, name, v.Type)})
 				top10URLs[year] = append(top10URLs[year], info.URL)
 			}
-			slices.SortFunc(ds, func(a, b []string) bool {
-				return a[1] < b[1]
+			slices.SortFunc(ds, func(a, b []string) int {
+				if a[1] < b[1] {
+					return -1
+				}
+				if a[1] > b[1] {
+					return +1
+				}
+				return 0
 			})
 			data = append(data, ds...)
 
@@ -458,8 +464,14 @@ No CVE-IDs are found in updatable packages.
 				ds = append(ds, []string{"CWE", fmt.Sprintf("[CWE(%s) Top%s] %s: %s (%s)", year, info.Rank, v.Value, name, v.Type)})
 				cweTop25URLs[year] = append(cweTop25URLs[year], info.URL)
 			}
-			slices.SortFunc(ds, func(a, b []string) bool {
-				return a[1] < b[1]
+			slices.SortFunc(ds, func(a, b []string) int {
+				if a[1] < b[1] {
+					return -1
+				}
+				if a[1] > b[1] {
+					return +1
+				}
+				return 0
 			})
 			data = append(data, ds...)
 
@@ -468,8 +480,14 @@ No CVE-IDs are found in updatable packages.
 				ds = append(ds, []string{"CWE", fmt.Sprintf("[CWE/SANS(%s) Top%s]  %s: %s (%s)", year, info.Rank, v.Value, name, v.Type)})
 				sansTop25URLs[year] = append(sansTop25URLs[year], info.URL)
 			}
-			slices.SortFunc(ds, func(a, b []string) bool {
-				return a[1] < b[1]
+			slices.SortFunc(ds, func(a, b []string) int {
+				if a[1] < b[1] {
+					return -1
+				}
+				if a[1] > b[1] {
+					return +1
+				}
+				return 0
 			})
 			data = append(data, ds...)
 
@@ -497,8 +515,14 @@ No CVE-IDs are found in updatable packages.
 			for _, url := range urls {
 				ds = append(ds, []string{fmt.Sprintf("OWASP(%s) Top10", year), url})
 			}
-			slices.SortFunc(ds, func(a, b []string) bool {
-				return a[0] < b[0]
+			slices.SortFunc(ds, func(a, b []string) int {
+				if a[0] < b[0] {
+					return -1
+				}
+				if a[0] > b[0] {
+					return +1
+				}
+				return 0
 			})
 			data = append(data, ds...)
 		}
@@ -507,8 +531,14 @@ No CVE-IDs are found in updatable packages.
 		for year, urls := range cweTop25URLs {
 			ds = append(ds, []string{fmt.Sprintf("CWE(%s) Top25", year), urls[0]})
 		}
-		slices.SortFunc(ds, func(a, b []string) bool {
-			return a[0] < b[0]
+		slices.SortFunc(ds, func(a, b []string) int {
+			if a[0] < b[0] {
+				return -1
+			}
+			if a[0] > b[0] {
+				return +1
+			}
+			return 0
 		})
 		data = append(data, ds...)
 
@@ -516,8 +546,14 @@ No CVE-IDs are found in updatable packages.
 		for year, urls := range sansTop25URLs {
 			ds = append(ds, []string{fmt.Sprintf("SANS/CWE(%s) Top25", year), urls[0]})
 		}
-		slices.SortFunc(ds, func(a, b []string) bool {
-			return a[0] < b[0]
+		slices.SortFunc(ds, func(a, b []string) int {
+			if a[0] < b[0] {
+				return -1
+			}
+			if a[0] > b[0] {
+				return +1
+			}
+			return 0
 		})
 		data = append(data, ds...)
 
