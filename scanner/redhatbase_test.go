@@ -500,8 +500,14 @@ func TestParseNeedsRestarting(t *testing.T) {
 	}{
 		{
 			`1 : /usr/lib/systemd/systemd --switched-root --system --deserialize 21kk
+30170 : 
 437 : /usr/sbin/NetworkManager --no-daemon`,
 			[]models.NeedRestartProcess{
+				{
+					PID:     "30170",
+					Path:    "",
+					HasInit: true,
+				},
 				{
 					PID:     "437",
 					Path:    "/usr/sbin/NetworkManager --no-daemon",
