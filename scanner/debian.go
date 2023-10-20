@@ -132,7 +132,7 @@ func (o *debian) checkIfSudoNoPasswd() error {
 		"stat /proc/1/exe",
 		"ls -l /proc/1/exe",
 		"cat /proc/1/maps",
-		"lsof -i -P -n",
+		"lsof -i -P -n -V",
 	}
 
 	if !o.getServerInfo().Mode.IsOffline() {
