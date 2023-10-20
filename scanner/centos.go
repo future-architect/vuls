@@ -89,7 +89,7 @@ func (o *centos) sudoNoPasswdCmdsFastRoot() []cmd {
 			{"stat /proc/1/exe", exitStatusZero},
 			{"ls -l /proc/1/exe", exitStatusZero},
 			{"cat /proc/1/maps", exitStatusZero},
-			{"lsof -i -P -n -V", exitStatusZero},
+			{"lsof -i -P -n", exitStatusZero},
 		}
 	}
 	return []cmd{
