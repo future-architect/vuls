@@ -1328,15 +1328,10 @@ func (l *base) parseGrepProcMap(stdout string) (soPaths []string) {
 	return soPaths
 }
 
-var errLSOFNoInternetFiles = xerrors.New("no Internet files located")
-
 func (l *base) lsOfListen() (string, error) {
-	cmd := `lsof -i -P -n -V`
+	cmd := `lsof -i -P -n`
 	r := l.exec(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
-		if strings.TrimSpace(r.Stdout) == "lsof: no Internet files located" {
-			return "", xerrors.Errorf("Failed to lsof: %w", errLSOFNoInternetFiles)
-		}
 		return "", xerrors.Errorf("Failed to lsof: %s", r)
 	}
 	return r.Stdout, nil
@@ -1392,7 +1387,7 @@ func (l *base) pkgPs(getOwnerPkgs func([]string) ([]string, error)) error {
 
 	pidListenPorts := map[string][]models.PortStat{}
 	stdout, err = l.lsOfListen()
-	if err != nil && !xerrors.Is(err, errLSOFNoInternetFiles) {
+	if err != nil {
 		// warning only, continue scanning
 		l.log.Warnf("Failed to lsof: %+v", err)
 	}
