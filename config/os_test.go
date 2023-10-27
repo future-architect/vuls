@@ -30,9 +30,9 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			found:    true,
 		},
 		{
-			name:     "amazon linux 1 eol on 2023-6-30",
+			name:     "amazon linux 1 eol on 2023-12-31",
 			fields:   fields{family: Amazon, release: "2018.03"},
-			now:      time.Date(2023, 7, 1, 23, 59, 59, 0, time.UTC),
+			now:      time.Date(2024, 1, 1, 23, 59, 59, 0, time.UTC),
 			stdEnded: true,
 			extEnded: true,
 			found:    true,
