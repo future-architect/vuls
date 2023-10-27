@@ -40,7 +40,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 	switch family {
 	case constant.Amazon:
 		eol, found = map[string]EOL{
-			"1":    {StandardSupportUntil: time.Date(2023, 6, 30, 23, 59, 59, 0, time.UTC)},
+			"1":    {StandardSupportUntil: time.Date(2023, 12, 31, 23, 59, 59, 0, time.UTC)},
 			"2":    {StandardSupportUntil: time.Date(2025, 6, 30, 23, 59, 59, 0, time.UTC)},
 			"2022": {StandardSupportUntil: time.Date(2026, 6, 30, 23, 59, 59, 0, time.UTC)},
 			"2023": {StandardSupportUntil: time.Date(2027, 6, 30, 23, 59, 59, 0, time.UTC)},
