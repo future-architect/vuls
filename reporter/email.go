@@ -133,7 +133,7 @@ func (e *emailSender) sendMail(smtpServerAddr, message string) (err error) {
 		return xerrors.Errorf("Failed to send Mail command: %w", err)
 	}
 	for _, to := range emailConf.To {
-		if err = c.Rcpt(to); err != nil {
+		if err = c.Rcpt(to, nil); err != nil {
 			return xerrors.Errorf("Failed to send Rcpt command: %w", err)
 		}
 	}
