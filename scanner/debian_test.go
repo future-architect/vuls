@@ -550,6 +550,29 @@ func TestParseAptCachePolicy(t *testing.T) {
 				Repo:      "precise-updates/main",
 			},
 		},
+		{
+			// nvidia-container-toolkit
+			`nvidia-container-toolkit:
+  Installed: 1.14.2-1
+  Candidate: 1.14.3-1
+  Version table:
+     1.14.3-1 500
+        500 https://nvidia.github.io/libnvidia-container/stable/deb/amd64  Packages
+ *** 1.14.2-1 500
+        500 https://nvidia.github.io/libnvidia-container/stable/deb/amd64  Packages
+        100 /var/lib/dpkg/status
+     1.14.1-1 500
+        500 https://nvidia.github.io/libnvidia-container/stable/deb/amd64  Packages
+     1.14.0-1 500
+        500 https://nvidia.github.io/libnvidia-container/stable/deb/amd64  Packages`,
+			"nvidia-container-toolkit",
+			packCandidateVer{
+				Name:      "nvidia-container-toolkit",
+				Installed: "1.14.2-1",
+				Candidate: "1.14.3-1",
+				Repo:      "",
+			},
+		},
 	}
 
 	d := newDebian(config.ServerInfo{})

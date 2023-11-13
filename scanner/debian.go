@@ -1106,7 +1106,7 @@ func (o *debian) parseAptCachePolicy(stdout, name string) (packCandidateVer, err
 
 		if isRepoline {
 			ss := strings.Split(strings.TrimSpace(line), " ")
-			if len(ss) == 5 {
+			if len(ss) == 5 || len(ss) == 4 {
 				ver.Repo = ss[2]
 				return ver, nil
 			}
