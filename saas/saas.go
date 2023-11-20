@@ -109,6 +109,10 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 	if err != nil {
 		return xerrors.Errorf("Failed to new aws session. err: %w", err)
 	}
+	// For S3 upload of aws sdk
+	if err := os.Setenv("HTTPS_PROXY", config.Conf.HTTPProxy); err != nil {
+		return xerrors.Errorf("Failed to set HTTP proxy: %s", err)
+	}
 
 	svc := s3.New(sess)
 	for _, r := range rs {
