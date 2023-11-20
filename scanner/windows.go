@@ -1110,7 +1110,7 @@ func (o *windows) scanKBs() (*models.WindowsKB, error) {
 		var searcher string
 		switch c := o.getServerInfo().Windows; c.ServerSelection {
 		case 3: // https://learn.microsoft.com/en-us/windows/win32/wua_sdk/using-wua-to-scan-for-updates-offline
-			searcher = fmt.Sprintf("$UpdateSession = (New-Object -ComObject Microsoft.Update.Session); $UpdateServiceManager = (New-Object -ComObject Microsoft.Update.ServiceManager); $UpdateService = $UpdateServiceManager.AddScanPackageService(\"Offline Sync Service\", \"%s\", 1); $UpdateSearcher = $UpdateSession.CreateUpdateSearcher(); $UpdateSearcher.ServerSelection = %d; $UpdateSearcher.ServiceID = $UpdateService.ServiceID;", c.CabPath, c.ServerSelection)
+			searcher = fmt.Sprintf("$UpdateSession = (New-Object -ComObject Microsoft.Update.Session); $UpdateServiceManager = (New-Object -ComObject Microsoft.Update.ServiceManager); $UpdateService = $UpdateServiceManager.AddScanPackageService(\"Offline Sync Service\", \"%s\"); $UpdateSearcher = $UpdateSession.CreateUpdateSearcher(); $UpdateSearcher.ServerSelection = %d; $UpdateSearcher.ServiceID = $UpdateService.ServiceID;", c.CabPath, c.ServerSelection)
 		default:
 			searcher = fmt.Sprintf("$UpdateSession = (New-Object -ComObject Microsoft.Update.Session); $UpdateSearcher = $UpdateSession.CreateUpdateSearcher(); $UpdateSearcher.ServerSelection = %d;", c.ServerSelection)
 		}
@@ -1140,6 +1140,12 @@ func (o *windows) scanKBs() (*models.WindowsKB, error) {
 			}
 			for _, kb := range kbs {
 				unapplied[kb] = struct{}{}
+			}
+		}
+
+		if o.getServerInfo().Windows.ServerSelection == 3 {
+			if r := o.exec(`$UpdateServiceManager = (New-Object -ComObject Microsoft.Update.ServiceManager); $UpdateServiceManager.Services | Where-Object {$_.Name -eq "Offline Sync Service"} | ForEach-Object { $UpdateServiceManager.RemoveService($_.ServiceID) };`, noSudo); !r.isSuccess() {
+				return nil, xerrors.Errorf("Failed to remove Windows Update Offline Sync Service: %v", r)
 			}
 		}
 	}
