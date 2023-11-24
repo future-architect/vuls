@@ -542,6 +542,14 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			extEnded: false,
 			found:    true,
 		},
+		{
+			name:     "freebsd 14 supported",
+			fields:   fields{family: FreeBSD, release: "14"},
+			now:      time.Date(2028, 11, 21, 23, 59, 59, 0, time.UTC),
+			stdEnded: false,
+			extEnded: false,
+			found:    true,
+		},
 		// Fedora
 		{
 			name:     "Fedora 32 supported",
