@@ -4,6 +4,7 @@
 package models
 
 import (
+	"fmt"
 	"strings"
 
 	cvedict "github.com/vulsio/go-cve-dictionary/models"
@@ -102,24 +103,38 @@ func ConvertNvdToModel(cveID string, nvds []cvedict.Nvd) ([]CveContent, []Exploi
 			desc = append(desc, d.Value)
 		}
 
-		cve := CveContent{
-			Type:          Nvd,
-			CveID:         cveID,
-			Summary:       strings.Join(desc, "\n"),
-			Cvss2Score:    nvd.Cvss2.BaseScore,
-			Cvss2Vector:   nvd.Cvss2.VectorString,
-			Cvss2Severity: nvd.Cvss2.Severity,
-			Cvss3Score:    nvd.Cvss3.BaseScore,
-			Cvss3Vector:   nvd.Cvss3.VectorString,
-			Cvss3Severity: nvd.Cvss3.BaseSeverity,
-			SourceLink:    "https://nvd.nist.gov/vuln/detail/" + cveID,
-			// Cpes:          cpes,
-			CweIDs:       cweIDs,
-			References:   refs,
-			Published:    nvd.PublishedDate,
-			LastModified: nvd.LastModifiedDate,
+		for _, cvss2 := range nvd.Cvss2 {
+			cves = append(cves, CveContent{
+				Type:          Nvd,
+				CveID:         cveID,
+				Summary:       strings.Join(desc, "\n"),
+				Cvss2Score:    cvss2.BaseScore,
+				Cvss2Vector:   cvss2.VectorString,
+				Cvss2Severity: cvss2.Severity,
+				SourceLink:    fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", cveID),
+				// Cpes:          cpes,
+				CweIDs:       cweIDs,
+				References:   refs,
+				Published:    nvd.PublishedDate,
+				LastModified: nvd.LastModifiedDate,
+			})
 		}
-		cves = append(cves, cve)
+		for _, cvss3 := range nvd.Cvss3 {
+			cves = append(cves, CveContent{
+				Type:          Nvd,
+				CveID:         cveID,
+				Summary:       strings.Join(desc, "\n"),
+				Cvss3Score:    cvss3.BaseScore,
+				Cvss3Vector:   cvss3.VectorString,
+				Cvss3Severity: cvss3.BaseSeverity,
+				SourceLink:    fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", cveID),
+				// Cpes:          cpes,
+				CweIDs:       cweIDs,
+				References:   refs,
+				Published:    nvd.PublishedDate,
+				LastModified: nvd.LastModifiedDate,
+			})
+		}
 	}
 	return cves, exploits, mitigations
 }
