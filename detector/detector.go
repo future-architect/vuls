@@ -470,7 +470,7 @@ func FillCvesWithNvdJvnFortinet(r *models.ScanResult, cnf config.GoCveDictConf, 
 				}
 				for _, con := range nvds {
 					if !con.Empty() {
-						vinfo.CveContents[con.Type] = []models.CveContent{con}
+						vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
 					}
 				}
 				for _, con := range append(jvns, fortinets...) {
