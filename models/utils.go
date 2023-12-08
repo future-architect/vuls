@@ -93,46 +93,50 @@ func ConvertNvdToModel(cveID string, nvds []cvedict.Nvd) ([]CveContent, []Exploi
 			}
 		}
 
-		cweIDs := []string{}
-		for _, cid := range nvd.Cwes {
-			cweIDs = append(cweIDs, cid.CweID)
-		}
-
 		desc := []string{}
 		for _, d := range nvd.Descriptions {
 			desc = append(desc, d.Value)
 		}
 
+		m := map[string]CveContent{}
+		for _, cwe := range nvd.Cwes {
+			c := m[cwe.Source]
+			c.CweIDs = append(c.CweIDs, cwe.CweID)
+			m[cwe.Source] = c
+		}
 		for _, cvss2 := range nvd.Cvss2 {
-			cves = append(cves, CveContent{
-				Type:          Nvd,
-				CveID:         cveID,
-				Summary:       strings.Join(desc, "\n"),
-				Cvss2Score:    cvss2.BaseScore,
-				Cvss2Vector:   cvss2.VectorString,
-				Cvss2Severity: cvss2.Severity,
-				SourceLink:    fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", cveID),
-				// Cpes:          cpes,
-				CweIDs:       cweIDs,
-				References:   refs,
-				Published:    nvd.PublishedDate,
-				LastModified: nvd.LastModifiedDate,
-			})
+			c := m[cvss2.Source]
+			c.Cvss2Score = cvss2.BaseScore
+			c.Cvss2Vector = cvss2.VectorString
+			c.Cvss2Severity = cvss2.Severity
+			m[cvss2.Source] = c
 		}
 		for _, cvss3 := range nvd.Cvss3 {
+			c := m[cvss3.Source]
+			c.Cvss3Score = cvss3.BaseScore
+			c.Cvss3Vector = cvss3.VectorString
+			c.Cvss3Severity = cvss3.BaseSeverity
+			m[cvss3.Source] = c
+		}
+
+		for source, cont := range m {
 			cves = append(cves, CveContent{
 				Type:          Nvd,
 				CveID:         cveID,
 				Summary:       strings.Join(desc, "\n"),
-				Cvss3Score:    cvss3.BaseScore,
-				Cvss3Vector:   cvss3.VectorString,
-				Cvss3Severity: cvss3.BaseSeverity,
+				Cvss2Score:    cont.Cvss2Score,
+				Cvss2Vector:   cont.Cvss2Vector,
+				Cvss2Severity: cont.Cvss2Severity,
+				Cvss3Score:    cont.Cvss3Score,
+				Cvss3Vector:   cont.Cvss3Vector,
+				Cvss3Severity: cont.Cvss3Severity,
 				SourceLink:    fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", cveID),
 				// Cpes:          cpes,
-				CweIDs:       cweIDs,
+				CweIDs:       cont.CweIDs,
 				References:   refs,
 				Published:    nvd.PublishedDate,
 				LastModified: nvd.LastModifiedDate,
+				Optional:     map[string]string{"source": source},
 			})
 		}
 	}

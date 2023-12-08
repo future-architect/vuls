@@ -776,8 +776,8 @@ github.com/urfave/cli/v2 v2.3.0/go.mod h1:LJmUH05zAU44vOAcrfzZQKsZbVcdbOG8rtL3/X
 github.com/vbatts/tar-split v0.11.2 h1:Via6XqJr0hceW4wff3QRzD5gAk/tatMw/4ZA7cTlIME=
 github.com/vulsio/go-cti v0.0.5-0.20231017103759-59e022ddcd0e h1:UicE8zdH+TSTFeULX4jwYJgspK9ptMQX5zqdBsYsaPI=
 github.com/vulsio/go-cti v0.0.5-0.20231017103759-59e022ddcd0e/go.mod h1:A7G6SEdN1vChE56Auq8bw/XilEcumqxx2lb3cH8lCdQ=
-github.com/vulsio/go-cve-dictionary v0.10.0 h1:1lE1qoVy7UmFInftMfLWL/hQoWIcs9rnx+zILN5AvR4=
-github.com/vulsio/go-cve-dictionary v0.10.0/go.mod h1:ZY5Q+7ADz1RU0Wu7Q491+70+ZBuc4VN64xkvZFNPYuc=
+github.com/vulsio/go-cve-dictionary v0.10.1-0.20231208101928-9dd0d2707ae5 h1:8iIJwVDVUTzkXW+7cVTjeLmtgQETYYIA4w4qsKS8WTs=
+github.com/vulsio/go-cve-dictionary v0.10.1-0.20231208101928-9dd0d2707ae5/go.mod h1:ZY5Q+7ADz1RU0Wu7Q491+70+ZBuc4VN64xkvZFNPYuc=
 github.com/vulsio/go-exploitdb v0.4.7-0.20231017104626-201191637c48 h1:iT6/EfbOF0lEkCxKZEV9b0yAz1XIELTY1Y50gXyLVJ4=
 github.com/vulsio/go-exploitdb v0.4.7-0.20231017104626-201191637c48/go.mod h1:a8XVcfjrkHcbVCGxL6fo1KsgpShXNA5fxxjfpv+zGt8=
 github.com/vulsio/go-kev v0.1.4-0.20231017105707-8a9a218d280a h1:pdV8P4krLPt2xxbeDoUBDYjhA2OrPceNY1WVmc9Yz0E=
