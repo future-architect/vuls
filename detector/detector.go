@@ -548,7 +548,7 @@ func detectPkgsCvesWithOval(cnf config.GovalDictConf, r *models.ScanResult, logO
 			return err
 		}
 		if !ok {
-			return xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see `https://github.com/vulsio/goval-dictionary#usage`", r.Family, r.Release)
+			logging.Log.Warnf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see `https://github.com/vulsio/goval-dictionary#usage`", r.Family, r.Release)
 		}
 	}
 
