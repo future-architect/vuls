@@ -18,9 +18,7 @@ import (
 	"time"
 
 	dio "github.com/aquasecurity/go-dep-parser/pkg/io"
-	"github.com/aquasecurity/trivy/pkg/fanal/analyzer"
-	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
-	"github.com/aquasecurity/trivy/pkg/javadb"
+	fanal "github.com/aquasecurity/trivy/pkg/fanal/analyzer"
 	debver "github.com/knqyf263/go-deb-version"
 
 	"github.com/future-architect/vuls/config"
@@ -62,10 +60,6 @@ import (
 
 	nmap "github.com/Ullaakut/nmap/v2"
 )
-
-var javaDBInit sync.Once
-
-const defaultJavaDBRepository = "ghcr.io/aquasecurity/trivy-java-db"
 
 type base struct {
 	ServerInfo config.ServerInfo
@@ -765,13 +759,8 @@ func (fs dummyFs) Open(name string) (fs.File, error) {
 
 // AnalyzeLibrary : detects library defined in artifact such as lockfile or jar
 func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode os.FileMode, isOffline bool) (libraryScanners []models.LibraryScanner, err error) {
-	javaDBInit.Do(func() {
-		// TODO(shino): Properly implement every arguments
-		javadb.Init(config.Conf.TrivyCacheDBDir, defaultJavaDBRepository, false, false, ftypes.RegistryOptions{})
-	})
-
-	ag, err := analyzer.NewAnalyzerGroup(analyzer.AnalyzerOptions{
-		Group:             analyzer.GroupBuiltin,
+	ag, err := fanal.NewAnalyzerGroup(fanal.AnalyzerOptions{
+		Group:             fanal.GroupBuiltin,
 		DisabledAnalyzers: disabledAnalyzers,
 	})
 	if err != nil {
@@ -779,10 +768,10 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 	}
 
 	var wg sync.WaitGroup
-	result := new(analyzer.AnalysisResult)
+	result := new(fanal.AnalysisResult)
 
 	info := &DummyFileInfo{name: filepath.Base(path), size: int64(len(contents)), filemode: filemode}
-	opts := analyzer.AnalysisOptions{Offline: isOffline}
+	opts := fanal.AnalysisOptions{Offline: isOffline}
 	if err := ag.AnalyzeFile(
 		ctx,
 		&wg,
@@ -831,75 +820,75 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 }
 
 // https://github.com/aquasecurity/trivy/blob/v0.47.0/pkg/fanal/analyzer/const.go
-var disabledAnalyzers = []analyzer.Type{
+var disabledAnalyzers = []fanal.Type{
 	// ======
 	//   OS
 	// ======
-	analyzer.TypeOSRelease,
-	analyzer.TypeAlpine,
-	analyzer.TypeAmazon,
-	analyzer.TypeCBLMariner,
-	analyzer.TypeDebian,
-	analyzer.TypePhoton,
-	analyzer.TypeCentOS,
-	analyzer.TypeRocky,
-	analyzer.TypeAlma,
-	analyzer.TypeFedora,
-	analyzer.TypeOracle,
-	analyzer.TypeRedHatBase,
-	analyzer.TypeSUSE,
-	analyzer.TypeUbuntu,
-	analyzer.TypeUbuntuESM,
+	fanal.TypeOSRelease,
+	fanal.TypeAlpine,
+	fanal.TypeAmazon,
+	fanal.TypeCBLMariner,
+	fanal.TypeDebian,
+	fanal.TypePhoton,
+	fanal.TypeCentOS,
+	fanal.TypeRocky,
+	fanal.TypeAlma,
+	fanal.TypeFedora,
+	fanal.TypeOracle,
+	fanal.TypeRedHatBase,
+	fanal.TypeSUSE,
+	fanal.TypeUbuntu,
+	fanal.TypeUbuntuESM,
 
 	// OS Package
-	analyzer.TypeApk,
-	analyzer.TypeDpkg,
-	analyzer.TypeDpkgLicense,
-	analyzer.TypeRpm,
-	analyzer.TypeRpmqa,
+	fanal.TypeApk,
+	fanal.TypeDpkg,
+	fanal.TypeDpkgLicense,
+	fanal.TypeRpm,
+	fanal.TypeRpmqa,
 
 	// OS Package Repository
-	analyzer.TypeApkRepo,
+	fanal.TypeApkRepo,
 
 	// ============
 	// Non-packaged
 	// ============
-	analyzer.TypeExecutable,
-	analyzer.TypeSBOM,
+	fanal.TypeExecutable,
+	fanal.TypeSBOM,
 
 	// ============
 	// Image Config
 	// ============
-	analyzer.TypeApkCommand,
-	analyzer.TypeHistoryDockerfile,
-	analyzer.TypeImageConfigSecret,
+	fanal.TypeApkCommand,
+	fanal.TypeHistoryDockerfile,
+	fanal.TypeImageConfigSecret,
 
 	// =================
 	// Structured Config
 	// =================
-	analyzer.TypeAzureARM,
-	analyzer.TypeCloudFormation,
-	analyzer.TypeDockerfile,
-	analyzer.TypeHelm,
-	analyzer.TypeKubernetes,
-	analyzer.TypeTerraform,
-	analyzer.TypeTerraformPlan,
+	fanal.TypeAzureARM,
+	fanal.TypeCloudFormation,
+	fanal.TypeDockerfile,
+	fanal.TypeHelm,
+	fanal.TypeKubernetes,
+	fanal.TypeTerraform,
+	fanal.TypeTerraformPlan,
 
 	// ========
 	// License
 	// ========
-	analyzer.TypeLicenseFile,
+	fanal.TypeLicenseFile,
 
 	// ========
 	// Secrets
 	// ========
-	analyzer.TypeSecret,
+	fanal.TypeSecret,
 
 	// =======
 	// Red Hat
 	// =======
-	analyzer.TypeRedHatContentManifestType,
-	analyzer.TypeRedHatDockerfileType,
+	fanal.TypeRedHatContentManifestType,
+	fanal.TypeRedHatDockerfileType,
 }
 
 // DummyFileInfo is a dummy struct for libscan

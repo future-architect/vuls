@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
+	"github.com/aquasecurity/trivy/pkg/javadb"
 	"github.com/asaskevich/govalidator"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
@@ -16,6 +18,8 @@ import (
 	"github.com/google/subcommands"
 	"github.com/k0kubun/pp"
 )
+
+const defaultJavaDBRepository = "ghcr.io/aquasecurity/trivy-java-db"
 
 // ScanCmd is Subcommand of host discovery mode
 type ScanCmd struct {
@@ -165,6 +169,9 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	if !config.Conf.ValidateOnScan() {
 		return subcommands.ExitUsageError
 	}
+
+	// TODO(shino): Properly implement every arguments
+	javadb.Init(config.Conf.TrivyCacheDBDir, defaultJavaDBRepository, false, false, ftypes.RegistryOptions{})
 
 	s := scanner.Scanner{
 		ResultsDir:     config.Conf.ResultsDir,
