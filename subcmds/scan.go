@@ -11,6 +11,8 @@ import (
 
 	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
 	"github.com/aquasecurity/trivy/pkg/javadb"
+	tlog "github.com/aquasecurity/trivy/pkg/log"
+	"github.com/aquasecurity/trivy/pkg/utils/fsutils"
 	"github.com/asaskevich/govalidator"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
@@ -45,6 +47,9 @@ func (*ScanCmd) Usage() string {
 		[-log-to-file]
 		[-log-dir=/path/to/log]
 		[-cachedb-path=/path/to/cache.db]
+                [-trivy-cachedb-dir=/path/to/dir]
+                [-trivy-java-db-repository=ghcr.io/aquasecurity/trivy-java-db]
+                [-skip-trivy-java-db-update]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-timeout=300]
 		[-timeout-scan=7200]
@@ -53,7 +58,6 @@ func (*ScanCmd) Usage() string {
 		[-pipe]
 		[-vvv]
 		[-ips]
-
 
 		[SERVER]...
 `
@@ -78,6 +82,12 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	defaultCacheDBPath := filepath.Join(wd, "cache.db")
 	f.StringVar(&p.cacheDBPath, "cachedb-path", defaultCacheDBPath,
 		"/path/to/cache.db (local cache of changelog for Ubuntu/Debian)")
+	f.StringVar(&config.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
+		fsutils.CacheDir(), "/path/to/dir")
+	f.StringVar(&config.Conf.TrivyJavaDBRepository, "trivy-java-db-repository",
+		"ghcr.io/aquasecurity/trivy-java-db", "Trivy Java DB Repository")
+	f.BoolVar(&config.Conf.TrivySkipJavaDBUpdate, "trivy-skip-java-db-update",
+		false, "Skip Trivy Java DB Update")
 
 	f.StringVar(&config.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
@@ -170,8 +180,12 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitUsageError
 	}
 
-	// TODO(shino): Properly implement every arguments
-	javadb.Init(config.Conf.TrivyCacheDBDir, defaultJavaDBRepository, false, false, ftypes.RegistryOptions{})
+	if err := tlog.InitLogger(config.Conf.Debug, config.Conf.Quiet); err != nil {
+		logging.Log.Errorf("Trivy init logger error: %+v", err)
+		return subcommands.ExitFailure
+	}
+
+	javadb.Init(config.Conf.TrivyCacheDBDir, config.Conf.TrivyJavaDBRepository, config.Conf.TrivySkipJavaDBUpdate, config.Conf.Quiet, ftypes.RegistryOptions{})
 
 	s := scanner.Scanner{
 		ResultsDir:     config.Conf.ResultsDir,
