@@ -752,7 +752,7 @@ func newDummyFs(path string, contents []byte, info fs.FileInfo) dummyFs {
 
 func (fs dummyFs) Open(name string) (fs.File, error) {
 	if name != fs.path {
-		return nil, xerrors.Errorf("Unkown path: %s", name)
+		return nil, xerrors.Errorf("Unknown path: %s", name)
 	}
 	return fs.file, nil
 }
