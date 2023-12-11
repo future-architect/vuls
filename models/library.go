@@ -131,8 +131,12 @@ func getCveContents(cveID string, vul trivyDBTypes.Vulnerability) (contents map[
 
 // FindLockFiles is a list of filenames that is the target of findLock
 var FindLockFiles = []string{
+	// dart/pub
+	ftypes.PubSpecLock,
+	// elixir/mix
+	ftypes.MixLock,
 	// node
-	ftypes.NpmPkgLock, ftypes.YarnLock, ftypes.PnpmLock,
+	ftypes.NpmPkg, ftypes.NpmPkgLock, ftypes.YarnLock, ftypes.PnpmLock,
 	// ruby
 	ftypes.GemfileLock,
 	// rust
@@ -149,6 +153,8 @@ var FindLockFiles = []string{
 	ftypes.MavenPom, "*.jar", "*.war", "*.ear", "*.par", "*gradle.lockfile",
 	// C / C++
 	ftypes.ConanLock,
+	// Swift
+	ftypes.CocoaPodsLock, ftypes.SwiftResolved,
 }
 
 // GetLibraryKey returns target library key

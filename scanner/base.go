@@ -39,7 +39,6 @@ import (
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/gradle"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/jar"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/pom"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/license"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/npm"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pkg"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pnpm"
