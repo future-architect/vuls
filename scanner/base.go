@@ -6,8 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"io/fs"
 	"net"
 	"os"
 	"path/filepath"
@@ -724,37 +722,6 @@ func (l *base) scanLibraries() (err error) {
 		l.LibraryScanners = append(l.LibraryScanners, libraryScanners...)
 	}
 	return nil
-}
-
-type dummyFile struct {
-	info   fs.FileInfo
-	reader io.ReadCloser
-}
-
-func (f dummyFile) Stat() (fs.FileInfo, error) {
-	return f.info, nil
-}
-func (f dummyFile) Read(buf []byte) (int, error) {
-	return f.reader.Read(buf)
-}
-func (f dummyFile) Close() error {
-	return f.reader.Close()
-}
-
-type dummyFs struct {
-	path string
-	file dummyFile
-}
-
-func newDummyFs(path string, contents []byte, info fs.FileInfo) dummyFs {
-	return dummyFs{path: path, file: dummyFile{info: info, reader: dio.NopCloser(bytes.NewReader(contents))}}
-}
-
-func (fs dummyFs) Open(name string) (fs.File, error) {
-	if name != fs.path {
-		return nil, xerrors.Errorf("Unknown path: %s", name)
-	}
-	return fs.file, nil
 }
 
 // AnalyzeLibrary : detects library defined in artifact such as lockfile or jar
