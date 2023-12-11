@@ -49,7 +49,7 @@ func (*ScanCmd) Usage() string {
 		[-cachedb-path=/path/to/cache.db]
                 [-trivy-cachedb-dir=/path/to/dir]
                 [-trivy-java-db-repository=ghcr.io/aquasecurity/trivy-java-db]
-                [-skip-trivy-java-db-update]
+                [-trivy-skip-java-db-update]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-timeout=300]
 		[-timeout-scan=7200]
