@@ -785,7 +785,7 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 	return libraryScanners, nil
 }
 
-// https://github.com/aquasecurity/trivy/blob/v0.47.0/pkg/fanal/analyzer/const.go
+// https://github.com/aquasecurity/trivy/blob/v0.48.0/pkg/fanal/analyzer/const.go
 var disabledAnalyzers = []fanal.Type{
 	// ======
 	//   OS
