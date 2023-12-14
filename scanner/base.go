@@ -16,13 +16,9 @@ import (
 	"time"
 
 	dio "github.com/aquasecurity/go-dep-parser/pkg/io"
-	"github.com/aquasecurity/trivy-java-db/pkg/db"
 	fanal "github.com/aquasecurity/trivy/pkg/fanal/analyzer"
-	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
-	"github.com/aquasecurity/trivy/pkg/javadb"
 	tlog "github.com/aquasecurity/trivy/pkg/log"
 	debver "github.com/knqyf263/go-deb-version"
-	homedir "github.com/mitchellh/go-homedir"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
@@ -44,7 +40,8 @@ import (
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/golang/binary"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/golang/mod"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/gradle"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/jar"
+
+	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/jar"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/pom"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/npm"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pkg"
@@ -63,6 +60,8 @@ import (
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/swift/swift"
 
 	nmap "github.com/Ullaakut/nmap/v2"
+
+	_ "github.com/future-architect/vuls/scanner/trivy"
 )
 
 type base struct {
@@ -626,31 +625,6 @@ func trivyInit() (err error) {
 		return xerrors.Errorf("Failed to init trivy logger. error: %w", err)
 	}
 
-	home, err := homedir.Dir()
-	if err != nil {
-		return err
-	}
-	cacheDir := filepath.Join(home, ".vuls", "trivy-cache")
-	javaDBMetadata := db.NewMetadata(cacheDir)
-	if err := javaDBMetadata.Update(db.Metadata{}); err != nil {
-		return xerrors.Errorf("Failed to write java DB metadata. err: %w", err)
-	}
-	javaDBFile, err := db.New(cacheDir)
-	if err != nil {
-		return xerrors.Errorf("Failed to create java DB. err: %w", err)
-	}
-	defer func() {
-		closeErr := javaDBFile.Close()
-		if err == nil {
-			err = closeErr
-		}
-	}()
-	err = javaDBFile.Init()
-	if err != nil {
-		return xerrors.Errorf("Failed to init java DB. err: %w", err)
-	}
-
-	javadb.Init(cacheDir, "java-db-repository-not-used", true, config.Conf.Quiet, ftypes.RegistryOptions{})
 	return nil
 }
 
