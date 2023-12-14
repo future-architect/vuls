@@ -16,8 +16,13 @@ import (
 	"time"
 
 	dio "github.com/aquasecurity/go-dep-parser/pkg/io"
+	"github.com/aquasecurity/trivy-java-db/pkg/db"
 	fanal "github.com/aquasecurity/trivy/pkg/fanal/analyzer"
+	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
+	"github.com/aquasecurity/trivy/pkg/javadb"
+	tlog "github.com/aquasecurity/trivy/pkg/log"
 	debver "github.com/knqyf263/go-deb-version"
+	homedir "github.com/mitchellh/go-homedir"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
@@ -616,6 +621,41 @@ func (l *base) parseSystemctlStatus(stdout string) string {
 	return ss[1]
 }
 
+func trivyInit() (err error) {
+	if err := tlog.InitLogger(config.Conf.Debug, config.Conf.Quiet); err != nil {
+		return xerrors.Errorf("Failed to init trivy logger. error: %w", err)
+	}
+
+	home, err := homedir.Dir()
+	if err != nil {
+		return err
+	}
+	cacheDir := filepath.Join(home, ".vuls", "trivy-cache")
+	javaDBMetadata := db.NewMetadata(cacheDir)
+	if err := javaDBMetadata.Update(db.Metadata{}); err != nil {
+		return xerrors.Errorf("Failed to write java DB metadata. err: %w", err)
+	}
+	javaDBFile, err := db.New(cacheDir)
+	if err != nil {
+		return xerrors.Errorf("Failed to create java DB. err: %w", err)
+	}
+	defer func() {
+		closeErr := javaDBFile.Close()
+		if err == nil {
+			err = closeErr
+		}
+	}()
+	err = javaDBFile.Init()
+	if err != nil {
+		return xerrors.Errorf("Failed to init java DB. err: %w", err)
+	}
+
+	javadb.Init(cacheDir, "java-db-repository-not-used", true, config.Conf.Quiet, ftypes.RegistryOptions{})
+	return nil
+}
+
+var trivyInitOnce = sync.OnceValue(trivyInit)
+
 func (l *base) scanLibraries() (err error) {
 	if len(l.LibraryScanners) != 0 {
 		return nil
@@ -627,6 +667,11 @@ func (l *base) scanLibraries() (err error) {
 	}
 
 	l.log.Info("Scanning Language-specific Packages...")
+
+	if err := trivyInitOnce(); err != nil {
+		logging.Log.Errorf("Trivy init error: %+v", err)
+		return err
+	}
 
 	found := map[string]bool{}
 	detectFiles := l.ServerInfo.Lockfiles

@@ -9,9 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
-	"github.com/aquasecurity/trivy/pkg/javadb"
-	tlog "github.com/aquasecurity/trivy/pkg/log"
 	"github.com/aquasecurity/trivy/pkg/utils/fsutils"
 	"github.com/asaskevich/govalidator"
 	"github.com/future-architect/vuls/config"
@@ -179,13 +176,6 @@ func (p *ScanCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	if !config.Conf.ValidateOnScan() {
 		return subcommands.ExitUsageError
 	}
-
-	if err := tlog.InitLogger(config.Conf.Debug, config.Conf.Quiet); err != nil {
-		logging.Log.Errorf("Trivy init logger error: %+v", err)
-		return subcommands.ExitFailure
-	}
-
-	javadb.Init(config.Conf.TrivyCacheDBDir, config.Conf.TrivyJavaDBRepository, config.Conf.TrivySkipJavaDBUpdate, config.Conf.Quiet, ftypes.RegistryOptions{})
 
 	s := scanner.Scanner{
 		ResultsDir:     config.Conf.ResultsDir,
