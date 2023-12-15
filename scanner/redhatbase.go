@@ -420,6 +420,10 @@ func (o *redhatBase) scanPackages() (err error) {
 		return xerrors.Errorf("Failed to scan installed packages: %w", err)
 	}
 
+	if err := o.yumMakeCache(); err != nil {
+		return xerrors.Errorf("Failed to execute `yum makecache`: %w", err)
+	}
+
 	if o.EnabledDnfModules, err = o.detectEnabledDnfModules(); err != nil {
 		return xerrors.Errorf("Failed to detect installed dnf modules: %w", err)
 	}
@@ -645,10 +649,6 @@ func (o *redhatBase) yumMakeCache() error {
 }
 
 func (o *redhatBase) scanUpdatablePackages() (models.Packages, error) {
-	if err := o.yumMakeCache(); err != nil {
-		return nil, xerrors.Errorf("Failed to `yum makecache`: %w", err)
-	}
-
 	isDnf := o.exec(util.PrependProxyEnv(`repoquery --version | grep dnf`), o.sudo.repoquery()).isSuccess()
 	cmd := `repoquery --all --pkgnarrow=updates --qf='%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPO}'`
 	if isDnf {
