@@ -641,8 +641,7 @@ func (l *base) scanLibraries() (err error) {
 	l.log.Info("Scanning Language-specific Packages...")
 
 	if err := trivyInitOnce(); err != nil {
-		logging.Log.Errorf("Trivy init error: %+v", err)
-		return err
+		return xerrors.Errorf("Failed to initialize Trivy. err: %w", err)
 	}
 
 	found := map[string]bool{}

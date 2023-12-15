@@ -171,7 +171,7 @@ endif
 
 	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
 	sleep 1
-	./vuls.new scan -trivy-cachedb-dir=./integration/data/trivy-cache -trivy-skip-java-db-update -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
+	./vuls.new scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
 	cp -f ${BASE_DIR}/$(CURRENT)/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml ${ONE_SEC_AFTER}

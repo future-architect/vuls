@@ -29,10 +29,9 @@ type Config struct {
 	logging.LogOpts
 
 	// scan, report
-	HTTPProxy       string `valid:"url" json:"httpProxy,omitempty"`
-	ResultsDir      string `json:"resultsDir,omitempty"`
-	Pipe            bool   `json:"pipe,omitempty"`
-	TrivyCacheDBDir string `json:"trivyCacheDBDir,omitempty"`
+	HTTPProxy  string `valid:"url" json:"httpProxy,omitempty"`
+	ResultsDir string `json:"resultsDir,omitempty"`
+	Pipe       bool   `json:"pipe,omitempty"`
 
 	Default ServerInfo            `json:"default,omitempty"`
 	Servers map[string]ServerInfo `json:"servers,omitempty"`
@@ -79,6 +78,7 @@ type ScanOpts struct {
 type ReportOpts struct {
 	CvssScoreOver       float64 `json:"cvssScoreOver,omitempty"`
 	ConfidenceScoreOver int     `json:"confidenceScoreOver,omitempty"`
+	TrivyCacheDBDir     string  `json:"trivyCacheDBDir,omitempty"`
 	NoProgress          bool    `json:"noProgress,omitempty"`
 	RefreshCve          bool    `json:"refreshCve,omitempty"`
 	IgnoreUnfixed       bool    `json:"ignoreUnfixed,omitempty"`
