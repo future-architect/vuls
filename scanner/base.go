@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -778,7 +779,9 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 	if err != nil {
 		return nil, xerrors.Errorf("failed to prepare filesystem for post analysis: %w", err)
 	}
-	defer composite.Cleanup()
+	defer func() {
+		_ = composite.Cleanup()
+	}()
 
 	analyzerTypes := ag.RequiredPostAnalyzers(path, info)
 	if len(analyzerTypes) != 0 {
@@ -795,7 +798,8 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 		}
 	}
 
-	libscan, err := convertLibWithScanner(result.Applications)
+	digest := fmt.Sprintf("sha1:%x", sha1.Sum(contents))
+	libscan, err := convertLibWithScanner(result.Applications, digest)
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to convert libs. err: %w", err)
 	}

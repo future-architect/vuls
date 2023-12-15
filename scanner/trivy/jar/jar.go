@@ -61,7 +61,18 @@ func (a *javaLibraryAnalyzer) PostAnalyze(ctx context.Context, input analyzer.Po
 	// It will be called on each JAR file
 	onFile := func(path string, info fs.FileInfo, r dio.ReadSeekerAt) (*types.Application, error) {
 		p := jar.NewParser(client, jar.WithSize(info.Size()), jar.WithFilePath(path))
-		return language.ParsePackage(types.Jar, path, r, p, input.Options.FileChecksum)
+		res, err := language.ParsePackage(types.Jar, path, r, p, input.Options.FileChecksum)
+		if res != nil || err != nil {
+			return res, err
+		}
+
+		// go-dep-parser's jar.go returns nil result if it could not find infomation from pom/manifest/filename.
+		// To defer vuls's decision until report/detect phase, add one application only with file path.
+		return &types.Application{
+			Type:      types.Jar,
+			FilePath:  path,
+			Libraries: []types.Package{{FilePath: path}},
+		}, nil
 	}
 
 	var apps []types.Application

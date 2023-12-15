@@ -5,7 +5,7 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
-func convertLibWithScanner(apps []types.Application) ([]models.LibraryScanner, error) {
+func convertLibWithScanner(apps []types.Application, digest string) ([]models.LibraryScanner, error) {
 	scanners := []models.LibraryScanner{}
 	for _, app := range apps {
 		libs := []models.Library{}
@@ -19,6 +19,7 @@ func convertLibWithScanner(apps []types.Application) ([]models.LibraryScanner, e
 		scanners = append(scanners, models.LibraryScanner{
 			Type:         app.Type,
 			LockfilePath: app.FilePath,
+			Digest:       digest,
 			Libs:         libs,
 		})
 	}
