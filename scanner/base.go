@@ -40,8 +40,6 @@ import (
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/golang/binary"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/golang/mod"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/gradle"
-
-	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/jar"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/pom"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/npm"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pkg"
@@ -58,10 +56,9 @@ import (
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/rust/cargo"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/swift/cocoapods"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/swift/swift"
+	_ "github.com/future-architect/vuls/scanner/trivy/jar"
 
 	nmap "github.com/Ullaakut/nmap/v2"
-
-	_ "github.com/future-architect/vuls/scanner/trivy"
 )
 
 type base struct {
