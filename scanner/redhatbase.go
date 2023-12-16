@@ -420,8 +420,13 @@ func (o *redhatBase) scanPackages() (err error) {
 		return xerrors.Errorf("Failed to scan installed packages: %w", err)
 	}
 
-	if err := o.yumMakeCache(); err != nil {
-		return xerrors.Errorf("Failed to execute `yum makecache`: %w", err)
+	if !(o.getServerInfo().Mode.IsOffline() || (o.Distro.Family == constant.RedHat && o.getServerInfo().Mode.IsFast())) {
+		if err := o.yumMakeCache(); err != nil {
+			err = xerrors.Errorf("Failed to make repository cache: %w", err)
+			o.log.Warnf("err: %+v", err)
+			o.warns = append(o.warns, err)
+			// Only warning this error
+		}
 	}
 
 	if o.EnabledDnfModules, err = o.detectEnabledDnfModules(); err != nil {
@@ -437,12 +442,8 @@ func (o *redhatBase) scanPackages() (err error) {
 		// Only warning this error
 	}
 
-	if o.getServerInfo().Mode.IsOffline() {
+	if o.getServerInfo().Mode.IsOffline() || (o.Distro.Family == constant.RedHat && o.getServerInfo().Mode.IsFast()) {
 		return nil
-	} else if o.Distro.Family == constant.RedHat {
-		if o.getServerInfo().Mode.IsFast() {
-			return nil
-		}
 	}
 
 	updatable, err := o.scanUpdatablePackages()
