@@ -10,7 +10,7 @@ require (
 	github.com/Ullaakut/nmap/v2 v2.2.2
 	github.com/aquasecurity/go-dep-parser v0.0.0-20221114145626-35ef808901e8
 	github.com/aquasecurity/trivy v0.35.0
-	github.com/aquasecurity/trivy-db v0.0.0-20231005141211-4fc651f7ac8d
+	github.com/aquasecurity/trivy-db v0.0.0-20231212124729-c8b1552fd5ae
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/aws/aws-sdk-go v1.45.6
 	github.com/c-robinson/iplib v1.0.7
@@ -20,7 +20,7 @@ require (
 	github.com/emersion/go-smtp v0.19.0
 	github.com/google/go-cmp v0.6.0
 	github.com/google/subcommands v1.2.0
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.5.0
 	github.com/gosnmp/gosnmp v1.37.0
 	github.com/gosuri/uitable v0.0.4
 	github.com/hashicorp/go-uuid v1.0.3
@@ -43,15 +43,15 @@ require (
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.0
-	github.com/vulsio/go-cti v0.0.5-0.20231017103759-59e022ddcd0e
-	github.com/vulsio/go-cve-dictionary v0.10.1-0.20231208101928-9dd0d2707ae5
-	github.com/vulsio/go-exploitdb v0.4.7-0.20231017104626-201191637c48
-	github.com/vulsio/go-kev v0.1.4-0.20231017105707-8a9a218d280a
-	github.com/vulsio/go-msfdb v0.2.4-0.20231017104449-b705e6975831
-	github.com/vulsio/gost v0.4.6-0.20231027050036-c963bd83e7e5
-	github.com/vulsio/goval-dictionary v0.9.5-0.20231017110023-3ae99de8d1c5
+	github.com/vulsio/go-cti v0.0.5-0.20231217191918-27dd65e7bf4a
+	github.com/vulsio/go-cve-dictionary v0.10.1-0.20231217191713-38f11eafd809
+	github.com/vulsio/go-exploitdb v0.4.7-0.20231217192631-346af29403f1
+	github.com/vulsio/go-kev v0.1.4-0.20231217192355-eabdf4c9d706
+	github.com/vulsio/go-msfdb v0.2.4-0.20231217191600-7a377d6e019c
+	github.com/vulsio/gost v0.4.6-0.20231217202927-253ae3c1e8fb
+	github.com/vulsio/goval-dictionary v0.9.5-0.20231217193624-5a5a38b48f60
 	go.etcd.io/bbolt v1.3.8
-	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb
+	golang.org/x/exp v0.0.0-20231214170342-aacd6d4b4611
 	golang.org/x/oauth2 v0.15.0
 	golang.org/x/sync v0.5.0
 	golang.org/x/text v0.14.0
@@ -121,7 +121,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20231201235250-de7065d80cb9 // indirect
-	github.com/jackc/pgx/v5 v5.5.0 // indirect
+	github.com/jackc/pgx/v5 v5.5.1 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
@@ -141,7 +141,7 @@ require (
 	github.com/nsf/termbox-go v1.1.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
-	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
+	github.com/pelletier/go-toml/v2 v2.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
@@ -155,7 +155,7 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.18.0 // indirect
+	github.com/spf13/viper v1.18.1 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
@@ -169,6 +169,7 @@ require (
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/term v0.15.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
+	golang.org/x/tools v0.16.1 // indirect
 	google.golang.org/api v0.153.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20231106174013-bbf56f31fb17 // indirect
@@ -182,9 +183,9 @@ require (
 	gorm.io/driver/postgres v1.5.4 // indirect
 	gorm.io/gorm v1.25.5 // indirect
 	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed // indirect
-	modernc.org/libc v1.37.0 // indirect
+	modernc.org/libc v1.37.6 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.7.2 // indirect
-	modernc.org/sqlite v1.27.0 // indirect
+	modernc.org/sqlite v1.28.0 // indirect
 	moul.io/http2curl v1.0.0 // indirect
 )
