@@ -44,7 +44,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.0
 	github.com/vulsio/go-cti v0.0.5-0.20231217191918-27dd65e7bf4a
-	github.com/vulsio/go-cve-dictionary v0.10.1-0.20231217191713-38f11eafd809
+	github.com/vulsio/go-cve-dictionary v0.10.1
 	github.com/vulsio/go-exploitdb v0.4.7-0.20231217192631-346af29403f1
 	github.com/vulsio/go-kev v0.1.4-0.20231217192355-eabdf4c9d706
 	github.com/vulsio/go-msfdb v0.2.4-0.20231217191600-7a377d6e019c
