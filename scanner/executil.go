@@ -249,7 +249,7 @@ func sshExecExternal(c config.ServerInfo, cmdstr string, sudo bool) (result exec
 	var cmd *ex.Cmd
 	switch c.Distro.Family {
 	case constant.Windows:
-		cmd = ex.Command(sshBinaryPath, append(args, "powershell.exe", "-NoProfile", "-NonInteractive", fmt.Sprintf(`"%s`, cmdstr))...)
+		cmd = ex.Command(sshBinaryPath, append(args, cmdstr)...)
 	default:
 		cmd = ex.Command(sshBinaryPath, append(args, fmt.Sprintf("stty cols 1000; %s", cmdstr))...)
 	}
