@@ -110,9 +110,6 @@ func (o *macos) detectIPAddr() (err error) {
 		return xerrors.Errorf("Failed to detect IP address: %v", r)
 	}
 	o.ServerInfo.IPv4Addrs, o.ServerInfo.IPv6Addrs = o.parseIfconfig(r.Stdout)
-	if err != nil {
-		return xerrors.Errorf("Failed to parse Ifconfig. err: %w", err)
-	}
 	return nil
 }
 
