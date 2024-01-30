@@ -20,7 +20,7 @@ require (
 	github.com/emersion/go-smtp v0.20.2
 	github.com/google/go-cmp v0.6.0
 	github.com/google/subcommands v1.2.0
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/gosnmp/gosnmp v1.37.0
 	github.com/gosuri/uitable v0.0.4
 	github.com/hashicorp/go-uuid v1.0.3
