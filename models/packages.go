@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"golang.org/x/exp/slices"
 	"golang.org/x/xerrors"
 )
 
@@ -234,15 +235,10 @@ type SrcPackage struct {
 
 // AddBinaryName add the name if not exists
 func (s *SrcPackage) AddBinaryName(name string) {
-	found := false
-	for _, n := range s.BinaryNames {
-		if n == name {
-			return
-		}
+	if slices.Contains(s.BinaryNames, name) {
+		return
 	}
-	if !found {
-		s.BinaryNames = append(s.BinaryNames, name)
-	}
+	s.BinaryNames = append(s.BinaryNames, name)
 }
 
 // SrcPackages is Map of SrcPackage
