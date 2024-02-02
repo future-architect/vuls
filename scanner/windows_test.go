@@ -306,20 +306,15 @@ SystemType : x64-based PC`,
 }
 
 func Test_parseRegistry(t *testing.T) {
-	type args struct {
-		stdout string
-		arch   string
-	}
 	tests := []struct {
 		name    string
-		args    args
+		args    string
 		want    osInfo
 		wantErr bool
 	}{
 		{
 			name: "happy",
-			args: args{
-				stdout: `
+			args: `
 ProductName               : Windows 10 Pro
 CurrentVersion            : 6.3
 CurrentMajorVersionNumber : 10
@@ -327,9 +322,10 @@ CurrentMinorVersionNumber : 0
 CurrentBuildNumber        : 19044
 UBR                       : 2364
 EditionID                 : Professional
-InstallationType          : Client`,
-				arch: "AMD64",
-			},
+InstallationType          : Client
+
+PROCESSOR_ARCHITECTURE : AMD64
+`,
 			want: osInfo{
 				productName:      "Windows 10 Pro",
 				version:          "10.0",
@@ -344,7 +340,7 @@ InstallationType          : Client`,
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseRegistry(tt.args.stdout, tt.args.arch)
+			got, err := parseRegistry(tt.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parseRegistry() error = %v, wantErr %v", err, tt.wantErr)
 				return

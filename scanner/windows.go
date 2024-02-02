@@ -20,6 +20,7 @@ import (
 // inherit OsTypeInterface
 type windows struct {
 	base
+	shell string
 }
 
 type osInfo struct {
@@ -41,6 +42,7 @@ func newWindows(c config.ServerInfo) *windows {
 				VulnInfos: models.VulnInfos{},
 			},
 		},
+		shell: "unknown",
 	}
 	d.log = logging.NewNormalLogger()
 	d.setServerInfo(c)
@@ -50,30 +52,43 @@ func newWindows(c config.ServerInfo) *windows {
 func detectWindows(c config.ServerInfo) (bool, osTypeInterface) {
 	tmp := c
 	tmp.Distro.Family = constant.Windows
-
-	if isLocalExec(c.Port, c.Host) {
-		if r, r2 := exec(tmp, `$CurrentVersion = (Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion"); Format-List -InputObject $CurrentVersion -Property ProductName, CurrentVersion, CurrentMajorVersionNumber, CurrentMinorVersionNumber, CurrentBuildNumber, UBR, CSDVersion, EditionID, InstallationType`, noSudo), exec(tmp, `(Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment").PROCESSOR_ARCHITECTURE`, noSudo); (r.isSuccess() && r.Stdout != "") && (r2.isSuccess() && r2.Stdout != "") {
-			w := newWindows(c)
-			osInfo, err := parseRegistry(r.Stdout, strings.TrimSpace(r2.Stdout))
-			if err != nil {
-				w.setErrs([]error{xerrors.Errorf("Failed to parse Registry. err: %w", err)})
-				return true, w
+	w := newWindows(tmp)
+	w.shell = func() string {
+		if r := w.exec("echo $env:OS", noSudo); r.isSuccess() {
+			switch strings.TrimSpace(r.Stdout) {
+			case "$env:OS":
+				return "cmd.exe"
+			case "Windows_NT":
+				return "powershell"
+			default:
+				if rr := w.exec("Get-ChildItem env:OS", noSudo); rr.isSuccess() {
+					return "powershell"
+				}
+				return "unknown"
 			}
+		}
+		return "unknown"
+	}()
 
-			w.log.Debugf("osInfo(Registry): %+v", osInfo)
-			release, err := detectOSName(osInfo)
-			if err != nil {
-				w.setErrs([]error{xerrors.Errorf("Failed to detect os name. err: %w", err)})
-				return true, w
-			}
-			w.setDistro(constant.Windows, release)
-			w.Kernel = models.Kernel{Version: formatKernelVersion(osInfo)}
+	if r := w.exec(w.translateCmd(`Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion" | Format-List -Property ProductName, CurrentVersion, CurrentMajorVersionNumber, CurrentMinorVersionNumber, CurrentBuildNumber, UBR, CSDVersion, EditionID, InstallationType; Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment" | Format-List -Property PROCESSOR_ARCHITECTURE`), noSudo); r.isSuccess() {
+		osInfo, err := parseRegistry(r.Stdout)
+		if err != nil {
+			w.setErrs([]error{xerrors.Errorf("Failed to parse Registry. err: %w", err)})
 			return true, w
 		}
+
+		w.log.Debugf("osInfo(Registry): %+v", osInfo)
+		release, err := detectOSName(osInfo)
+		if err != nil {
+			w.setErrs([]error{xerrors.Errorf("Failed to detect os name. err: %w", err)})
+			return true, w
+		}
+		w.setDistro(constant.Windows, release)
+		w.Kernel = models.Kernel{Version: formatKernelVersion(osInfo)}
+		return true, w
 	}
 
-	if r := exec(tmp, "Get-ComputerInfo -Property WindowsProductName, OsVersion, WindowsEditionId, OsCSDVersion, CsSystemType, WindowsInstallationType", noSudo); r.isSuccess() && r.Stdout != "" {
-		w := newWindows(c)
+	if r := w.exec(w.translateCmd(`$ProgressPreference = "SilentlyContinue"; Get-ComputerInfo -Property WindowsProductName, OsVersion, WindowsEditionId, OsCSDVersion, CsSystemType, WindowsInstallationType`), noSudo); r.isSuccess() {
 		osInfo, err := parseGetComputerInfo(r.Stdout)
 		if err != nil {
 			w.setErrs([]error{xerrors.Errorf("Failed to parse Get-ComputerInfo. err: %w", err)})
@@ -91,8 +106,7 @@ func detectWindows(c config.ServerInfo) (bool, osTypeInterface) {
 		return true, w
 	}
 
-	if r := exec(tmp, "$WmiOS = (Get-WmiObject Win32_OperatingSystem); Format-List -InputObject $WmiOS -Property Caption, Version, OperatingSystemSKU, CSDVersion; $WmiCS = (Get-WmiObject Win32_ComputerSystem); Format-List -InputObject $WmiCS -Property SystemType, DomainRole", noSudo); r.isSuccess() && r.Stdout != "" {
-		w := newWindows(c)
+	if r := w.exec(w.translateCmd("Get-WmiObject Win32_OperatingSystem | Format-List -Property Caption, Version, OperatingSystemSKU, CSDVersion; Get-WmiObject Win32_ComputerSystem | Format-List -Property SystemType, DomainRole"), noSudo); r.isSuccess() {
 		osInfo, err := parseWmiObject(r.Stdout)
 		if err != nil {
 			w.setErrs([]error{xerrors.Errorf("Failed to parse Get-WmiObject. err: %w", err)})
@@ -110,8 +124,7 @@ func detectWindows(c config.ServerInfo) (bool, osTypeInterface) {
 		return true, w
 	}
 
-	if r := exec(tmp, "systeminfo.exe", noSudo); r.isSuccess() && r.Stdout != "" {
-		w := newWindows(c)
+	if r := w.exec("systeminfo.exe", noSudo); r.isSuccess() {
 		osInfo, _, err := parseSystemInfo(r.Stdout)
 		if err != nil {
 			w.setErrs([]error{xerrors.Errorf("Failed to parse systeminfo.exe. err: %w", err)})
@@ -130,6 +143,17 @@ func detectWindows(c config.ServerInfo) (bool, osTypeInterface) {
 	}
 
 	return false, nil
+}
+
+func (w *windows) translateCmd(cmd string) string {
+	switch w.shell {
+	case "cmd.exe":
+		return fmt.Sprintf(`powershell.exe -NoProfile -NonInteractive "%s"`, strings.ReplaceAll(cmd, `"`, `\"`))
+	case "powershell":
+		return cmd
+	default: // not tested with bash etc
+		return fmt.Sprintf(`powershell.exe -NoProfile -NonInteractive "%s"`, strings.ReplaceAll(cmd, `"`, `\"`))
+	}
 }
 
 func parseSystemInfo(stdout string) (osInfo, []string, error) {
@@ -469,7 +493,7 @@ func parseWmiObject(stdout string) (osInfo, error) {
 	return o, nil
 }
 
-func parseRegistry(stdout, arch string) (osInfo, error) {
+func parseRegistry(stdout string) (osInfo, error) {
 	var (
 		o     osInfo
 		major string
@@ -535,18 +559,22 @@ func parseRegistry(stdout, arch string) (osInfo, error) {
 				return osInfo{}, xerrors.Errorf(`Failed to detect InstallationType. expected: "InstallationType : <InstallationType>", line: "%s"`, line)
 			}
 			o.installationType = strings.TrimSpace(rhs)
+		case strings.HasPrefix(line, "PROCESSOR_ARCHITECTURE"):
+			_, rhs, found := strings.Cut(line, ":")
+			if !found {
+				return osInfo{}, xerrors.Errorf(`Failed to detect PROCESSOR_ARCHITECTURE. expected: "PROCESSOR_ARCHITECTURE : <PROCESSOR_ARCHITECTURE>", line: "%s"`, line)
+			}
+			formatted, err := formatArch(strings.TrimSpace(rhs))
+			if err != nil {
+				return osInfo{}, xerrors.Errorf("Failed to format arch. arch: %s, err: %w", strings.TrimSpace(rhs), err)
+			}
+			o.arch = formatted
 		default:
 		}
 	}
 	if major != "" && minor != "" {
 		o.version = fmt.Sprintf("%s.%s", major, minor)
 	}
-
-	formatted, err := formatArch(arch)
-	if err != nil {
-		return osInfo{}, xerrors.Errorf("Failed to format arch. arch: %s, err: %w", arch, err)
-	}
-	o.arch = formatted
 
 	return o, nil
 }
@@ -951,46 +979,46 @@ func formatKernelVersion(osInfo osInfo) string {
 	return v
 }
 
-func (o *windows) checkScanMode() error {
+func (w *windows) checkScanMode() error {
 	return nil
 }
 
-func (o *windows) checkIfSudoNoPasswd() error {
+func (w *windows) checkIfSudoNoPasswd() error {
 	return nil
 }
 
-func (o *windows) checkDeps() error {
+func (w *windows) checkDeps() error {
 	return nil
 }
 
-func (o *windows) preCure() error {
-	if err := o.detectIPAddr(); err != nil {
-		o.log.Warnf("Failed to detect IP addresses: %s", err)
-		o.warns = append(o.warns, err)
+func (w *windows) preCure() error {
+	if err := w.detectIPAddr(); err != nil {
+		w.log.Warnf("Failed to detect IP addresses: %s", err)
+		w.warns = append(w.warns, err)
 	}
 	return nil
 }
 
-func (o *windows) postScan() error {
+func (w *windows) postScan() error {
 	return nil
 }
 
-func (o *windows) detectIPAddr() error {
+func (w *windows) detectIPAddr() error {
 	var err error
-	o.ServerInfo.IPv4Addrs, o.ServerInfo.IPv6Addrs, err = o.ip()
+	w.ServerInfo.IPv4Addrs, w.ServerInfo.IPv6Addrs, err = w.ip()
 	return err
 }
 
-func (o *windows) ip() ([]string, []string, error) {
-	r := o.exec("ipconfig.exe", noSudo)
+func (w *windows) ip() ([]string, []string, error) {
+	r := w.exec("ipconfig.exe", noSudo)
 	if !r.isSuccess() {
 		return nil, nil, xerrors.Errorf("Failed to detect IP address: %v", r)
 	}
-	ipv4Addrs, ipv6Addrs := o.parseIP(r.Stdout)
+	ipv4Addrs, ipv6Addrs := w.parseIP(r.Stdout)
 	return ipv4Addrs, ipv6Addrs, nil
 }
 
-func (o *windows) parseIP(stdout string) ([]string, []string) {
+func (w *windows) parseIP(stdout string) ([]string, []string) {
 	var ipv4Addrs, ipv6Addrs []string
 
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
@@ -1024,25 +1052,25 @@ func (o *windows) parseIP(stdout string) ([]string, []string) {
 	return ipv4Addrs, ipv6Addrs
 }
 
-func (o *windows) scanPackages() error {
-	if r := o.exec("$Packages = (Get-Package); Format-List -InputObject $Packages -Property Name, Version, ProviderName", noSudo); r.isSuccess() {
-		installed, _, err := o.parseInstalledPackages(r.Stdout)
+func (w *windows) scanPackages() error {
+	if r := w.exec(w.translateCmd("Get-Package | Format-List -Property Name, Version, ProviderName"), noSudo); r.isSuccess() {
+		installed, _, err := w.parseInstalledPackages(r.Stdout)
 		if err != nil {
 			return xerrors.Errorf("Failed to parse installed packages. err: %w", err)
 		}
-		o.Packages = installed
+		w.Packages = installed
 	}
 
-	kbs, err := o.scanKBs()
+	kbs, err := w.scanKBs()
 	if err != nil {
 		return xerrors.Errorf("Failed to scan KB. err: %w", err)
 	}
-	o.windowsKB = kbs
+	w.windowsKB = kbs
 
 	return nil
 }
 
-func (o *windows) parseInstalledPackages(stdout string) (models.Packages, models.SrcPackages, error) {
+func (w *windows) parseInstalledPackages(stdout string) (models.Packages, models.SrcPackages, error) {
 	installed := models.Packages{}
 
 	var name, version string
@@ -1084,10 +1112,11 @@ func (o *windows) parseInstalledPackages(stdout string) (models.Packages, models
 	return installed, nil, nil
 }
 
-func (o *windows) scanKBs() (*models.WindowsKB, error) {
+func (w *windows) scanKBs() (*models.WindowsKB, error) {
 	applied, unapplied := map[string]struct{}{}, map[string]struct{}{}
-	if r := o.exec("$Hotfix = (Get-Hotfix); Format-List -InputObject $Hotfix -Property HotFixID", noSudo); r.isSuccess() {
-		kbs, err := o.parseGetHotfix(r.Stdout)
+
+	if r := w.exec(w.translateCmd("Get-Hotfix | Format-List -Property HotFixID"), noSudo); r.isSuccess() {
+		kbs, err := w.parseGetHotfix(r.Stdout)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to parse Get-Hotifx. err: %w", err)
 		}
@@ -1096,8 +1125,8 @@ func (o *windows) scanKBs() (*models.WindowsKB, error) {
 		}
 	}
 
-	if r := o.exec("$Packages = (Get-Package -ProviderName msu); Format-List -InputObject $Packages -Property Name", noSudo); r.isSuccess() {
-		kbs, err := o.parseGetPackageMSU(r.Stdout)
+	if r := w.exec(w.translateCmd("Get-Package -ProviderName msu | Format-List -Property Name"), noSudo); r.isSuccess() {
+		kbs, err := w.parseGetPackageMSU(r.Stdout)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to parse Get-Package. err: %w", err)
 		}
@@ -1106,52 +1135,51 @@ func (o *windows) scanKBs() (*models.WindowsKB, error) {
 		}
 	}
 
-	if isLocalExec(o.getServerInfo().Port, o.getServerInfo().Host) {
-		var searcher string
-		switch c := o.getServerInfo().Windows; c.ServerSelection {
-		case 3: // https://learn.microsoft.com/en-us/windows/win32/wua_sdk/using-wua-to-scan-for-updates-offline
-			searcher = fmt.Sprintf("$UpdateSession = (New-Object -ComObject Microsoft.Update.Session); $UpdateServiceManager = (New-Object -ComObject Microsoft.Update.ServiceManager); $UpdateService = $UpdateServiceManager.AddScanPackageService(\"Offline Sync Service\", \"%s\"); $UpdateSearcher = $UpdateSession.CreateUpdateSearcher(); $UpdateSearcher.ServerSelection = %d; $UpdateSearcher.ServiceID = $UpdateService.ServiceID;", c.CabPath, c.ServerSelection)
-		default:
-			searcher = fmt.Sprintf("$UpdateSession = (New-Object -ComObject Microsoft.Update.Session); $UpdateSearcher = $UpdateSession.CreateUpdateSearcher(); $UpdateSearcher.ServerSelection = %d;", c.ServerSelection)
+	var searcher string
+	switch c := w.getServerInfo().Windows; c.ServerSelection {
+	case 3: // https://learn.microsoft.com/en-us/windows/win32/wua_sdk/using-wua-to-scan-for-updates-offline
+		searcher = fmt.Sprintf(`$UpdateSession = (New-Object -ComObject Microsoft.Update.Session); $UpdateServiceManager = (New-Object -ComObject Microsoft.Update.ServiceManager); $UpdateService = $UpdateServiceManager.AddScanPackageService("Offline Sync Service", "%s"); $UpdateSearcher = $UpdateSession.CreateUpdateSearcher(); $UpdateSearcher.ServerSelection = %d; $UpdateSearcher.ServiceID = $UpdateService.ServiceID;`, c.CabPath, c.ServerSelection)
+	default:
+		searcher = fmt.Sprintf("$UpdateSession = (New-Object -ComObject Microsoft.Update.Session); $UpdateSearcher = $UpdateSession.CreateUpdateSearcher(); $UpdateSearcher.ServerSelection = %d;", c.ServerSelection)
+	}
+	if r := w.exec(w.translateCmd(fmt.Sprintf(`%s $UpdateSearcher.search("IsInstalled = 1 and RebootRequired = 0 and Type='Software'").Updates | ForEach-Object -MemberName KBArticleIDs`, searcher)), noSudo); r.isSuccess() {
+		kbs, err := w.parseWindowsUpdaterSearch(r.Stdout)
+		if err != nil {
+			return nil, xerrors.Errorf("Failed to parse Windows Update Search. err: %w", err)
 		}
-
-		if r := o.exec(fmt.Sprintf(`%s $UpdateSearcher.search("IsInstalled = 1 and RebootRequired = 0 and Type='Software'").Updates | ForEach-Object -MemberName KBArticleIDs`, searcher), noSudo); r.isSuccess() {
-			kbs, err := o.parseWindowsUpdaterSearch(r.Stdout)
-			if err != nil {
-				return nil, xerrors.Errorf("Failed to parse Windows Update Search. err: %w", err)
-			}
-			for _, kb := range kbs {
-				applied[kb] = struct{}{}
-			}
-		}
-		if r := o.exec(fmt.Sprintf(`%s $UpdateSearcher.search("IsInstalled = 0 and Type='Software'").Updates | ForEach-Object -MemberName KBArticleIDs`, searcher), noSudo); r.isSuccess() {
-			kbs, err := o.parseWindowsUpdaterSearch(r.Stdout)
-			if err != nil {
-				return nil, xerrors.Errorf("Failed to parse Windows Update Search. err: %w", err)
-			}
-			for _, kb := range kbs {
-				unapplied[kb] = struct{}{}
-			}
-		}
-		if r := o.exec(fmt.Sprintf(`%s $UpdateSearcher.search("IsInstalled = 1 and RebootRequired = 1 and Type='Software'").Updates | ForEach-Object -MemberName KBArticleIDs`, searcher), noSudo); r.isSuccess() {
-			kbs, err := o.parseWindowsUpdaterSearch(r.Stdout)
-			if err != nil {
-				return nil, xerrors.Errorf("Failed to parse Windows Update Search. err: %w", err)
-			}
-			for _, kb := range kbs {
-				unapplied[kb] = struct{}{}
-			}
-		}
-
-		if o.getServerInfo().Windows.ServerSelection == 3 {
-			if r := o.exec(`$UpdateServiceManager = (New-Object -ComObject Microsoft.Update.ServiceManager); $UpdateServiceManager.Services | Where-Object {$_.Name -eq "Offline Sync Service"} | ForEach-Object { $UpdateServiceManager.RemoveService($_.ServiceID) };`, noSudo); !r.isSuccess() {
-				return nil, xerrors.Errorf("Failed to remove Windows Update Offline Sync Service: %v", r)
-			}
+		for _, kb := range kbs {
+			applied[kb] = struct{}{}
 		}
 	}
 
-	if r := o.exec("$UpdateSearcher = (New-Object -ComObject Microsoft.Update.Session).CreateUpdateSearcher(); $HistoryCount = $UpdateSearcher.GetTotalHistoryCount(); $UpdateSearcher.QueryHistory(0, $HistoryCount) | Sort-Object -Property Date | Format-List -Property Title, Operation, ResultCode", noSudo); r.isSuccess() {
-		kbs, err := o.parseWindowsUpdateHistory(r.Stdout)
+	if r := w.exec(w.translateCmd(fmt.Sprintf(`%s $UpdateSearcher.search("IsInstalled = 0 and Type='Software'").Updates | ForEach-Object -MemberName KBArticleIDs`, searcher)), noSudo); r.isSuccess() {
+		kbs, err := w.parseWindowsUpdaterSearch(r.Stdout)
+		if err != nil {
+			return nil, xerrors.Errorf("Failed to parse Windows Update Search. err: %w", err)
+		}
+		for _, kb := range kbs {
+			unapplied[kb] = struct{}{}
+		}
+	}
+
+	if r := w.exec(w.translateCmd(fmt.Sprintf(`%s $UpdateSearcher.search("IsInstalled = 1 and RebootRequired = 1 and Type='Software'").Updates | ForEach-Object -MemberName KBArticleIDs`, searcher)), noSudo); r.isSuccess() {
+		kbs, err := w.parseWindowsUpdaterSearch(r.Stdout)
+		if err != nil {
+			return nil, xerrors.Errorf("Failed to parse Windows Update Search. err: %w", err)
+		}
+		for _, kb := range kbs {
+			unapplied[kb] = struct{}{}
+		}
+	}
+
+	if w.getServerInfo().Windows.ServerSelection == 3 {
+		if r := w.exec(w.translateCmd(`$UpdateServiceManager = (New-Object -ComObject Microsoft.Update.ServiceManager); $UpdateServiceManager.Services | Where-Object {$_.Name -eq "Offline Sync Service"} | ForEach-Object { $UpdateServiceManager.RemoveService($_.ServiceID) };`), noSudo); !r.isSuccess() {
+			return nil, xerrors.Errorf("Failed to remove Windows Update Offline Sync Service: %v", r)
+		}
+	}
+
+	if r := w.exec(w.translateCmd("$UpdateSearcher = (New-Object -ComObject Microsoft.Update.Session).CreateUpdateSearcher(); $HistoryCount = $UpdateSearcher.GetTotalHistoryCount(); $UpdateSearcher.QueryHistory(0, $HistoryCount) | Sort-Object -Property Date | Format-List -Property Title, Operation, ResultCode"), noSudo); r.isSuccess() {
+		kbs, err := w.parseWindowsUpdateHistory(r.Stdout)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to parse Windows Update History. err: %w", err)
 		}
@@ -1160,7 +1188,7 @@ func (o *windows) scanKBs() (*models.WindowsKB, error) {
 		}
 	}
 
-	kbs, err := DetectKBsFromKernelVersion(o.getDistro().Release, o.Kernel.Version)
+	kbs, err := DetectKBsFromKernelVersion(w.getDistro().Release, w.Kernel.Version)
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to detect KBs from kernel version. err: %w", err)
 	}
@@ -1174,7 +1202,7 @@ func (o *windows) scanKBs() (*models.WindowsKB, error) {
 	return &models.WindowsKB{Applied: maps.Keys(applied), Unapplied: maps.Keys(unapplied)}, nil
 }
 
-func (o *windows) parseGetHotfix(stdout string) ([]string, error) {
+func (w *windows) parseGetHotfix(stdout string) ([]string, error) {
 	var kbs []string
 
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
@@ -1194,7 +1222,7 @@ func (o *windows) parseGetHotfix(stdout string) ([]string, error) {
 	return kbs, nil
 }
 
-func (o *windows) parseGetPackageMSU(stdout string) ([]string, error) {
+func (w *windows) parseGetPackageMSU(stdout string) ([]string, error) {
 	var kbs []string
 
 	kbIDPattern := regexp.MustCompile(`KB(\d{6,7})`)
@@ -1218,7 +1246,7 @@ func (o *windows) parseGetPackageMSU(stdout string) ([]string, error) {
 	return kbs, nil
 }
 
-func (o *windows) parseWindowsUpdaterSearch(stdout string) ([]string, error) {
+func (w *windows) parseWindowsUpdaterSearch(stdout string) ([]string, error) {
 	var kbs []string
 
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
@@ -1231,7 +1259,7 @@ func (o *windows) parseWindowsUpdaterSearch(stdout string) ([]string, error) {
 	return kbs, nil
 }
 
-func (o *windows) parseWindowsUpdateHistory(stdout string) ([]string, error) {
+func (w *windows) parseWindowsUpdateHistory(stdout string) ([]string, error) {
 	kbs := map[string]struct{}{}
 
 	kbIDPattern := regexp.MustCompile(`KB(\d{6,7})`)
@@ -4571,19 +4599,19 @@ func DetectKBsFromKernelVersion(release, kernelVersion string) (models.WindowsKB
 	}
 }
 
-func (o *windows) detectPlatform() {
-	if o.getServerInfo().Mode.IsOffline() {
-		o.setPlatform(models.Platform{Name: "unknown"})
+func (w *windows) detectPlatform() {
+	if w.getServerInfo().Mode.IsOffline() {
+		w.setPlatform(models.Platform{Name: "unknown"})
 		return
 	}
 
-	ok, instanceID, err := o.detectRunningOnAws()
+	ok, instanceID, err := w.detectRunningOnAws()
 	if err != nil {
-		o.setPlatform(models.Platform{Name: "other"})
+		w.setPlatform(models.Platform{Name: "other"})
 		return
 	}
 	if ok {
-		o.setPlatform(models.Platform{
+		w.setPlatform(models.Platform{
 			Name:       "aws",
 			InstanceID: instanceID,
 		})
@@ -4591,40 +4619,40 @@ func (o *windows) detectPlatform() {
 	}
 
 	//TODO Azure, GCP...
-	o.setPlatform(models.Platform{Name: "other"})
+	w.setPlatform(models.Platform{Name: "other"})
 }
 
-func (o *windows) detectRunningOnAws() (bool, string, error) {
-	if r := o.exec("Invoke-WebRequest -MaximumRetryCount 3 -TimeoutSec 1 -NoProxy http://169.254.169.254/latest/meta-data/instance-id", noSudo); r.isSuccess() {
+func (w *windows) detectRunningOnAws() (bool, string, error) {
+	if r := w.exec(w.translateCmd("Invoke-WebRequest -MaximumRetryCount 3 -TimeoutSec 1 -NoProxy http://169.254.169.254/latest/meta-data/instance-id"), noSudo); r.isSuccess() {
 		id := strings.TrimSpace(r.Stdout)
-		if o.isAwsInstanceID(id) {
+		if w.isAwsInstanceID(id) {
 			return true, id, nil
 		}
 	}
 
-	if r := o.exec("Invoke-WebRequest -Method Put -MaximumRetryCount 3 -TimeoutSec 1 -NoProxy -Headers @{\"X-aws-ec2-metadata-token-ttl-seconds\"=\"300\"} http://169.254.169.254/latest/api/token", noSudo); r.isSuccess() {
-		r := o.exec(fmt.Sprintf("Invoke-WebRequest -MaximumRetryCount 3 -TimeoutSec 1 -NoProxy -Headers @{\"X-aws-ec2-metadata-token\"=\"%s\"} http://169.254.169.254/latest/meta-data/instance-id", strings.TrimSpace(r.Stdout)), noSudo)
+	if r := w.exec(w.translateCmd(`Invoke-WebRequest -Method Put -MaximumRetryCount 3 -TimeoutSec 1 -NoProxy -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"="300"} http://169.254.169.254/latest/api/token`), noSudo); r.isSuccess() {
+		r := w.exec(w.translateCmd(fmt.Sprintf(`Invoke-WebRequest -MaximumRetryCount 3 -TimeoutSec 1 -NoProxy -Headers @{"X-aws-ec2-metadata-token"="%s"} http://169.254.169.254/latest/meta-data/instance-id`, strings.TrimSpace(r.Stdout))), noSudo)
 		if r.isSuccess() {
 			id := strings.TrimSpace(r.Stdout)
-			if !o.isAwsInstanceID(id) {
+			if !w.isAwsInstanceID(id) {
 				return false, "", nil
 			}
 			return true, id, nil
 		}
 	}
 
-	if r := o.exec("where.exe curl.exe", noSudo); r.isSuccess() {
-		if r := o.exec("curl.exe --max-time 1 --noproxy 169.254.169.254 http://169.254.169.254/latest/meta-data/instance-id", noSudo); r.isSuccess() {
+	if r := w.exec("where.exe curl.exe", noSudo); r.isSuccess() {
+		if r := w.exec("curl.exe --max-time 1 --noproxy 169.254.169.254 http://169.254.169.254/latest/meta-data/instance-id", noSudo); r.isSuccess() {
 			id := strings.TrimSpace(r.Stdout)
-			if o.isAwsInstanceID(id) {
+			if w.isAwsInstanceID(id) {
 				return true, id, nil
 			}
 		}
 
-		if r := o.exec("curl.exe -X PUT --max-time 1 --noproxy 169.254.169.254 -H \"X-aws-ec2-metadata-token-ttl-seconds: 300\" http://169.254.169.254/latest/api/token", noSudo); r.isSuccess() {
-			if r := o.exec(fmt.Sprintf("curl.exe -H \"X-aws-ec2-metadata-token: %s\" --max-time 1 --noproxy 169.254.169.254 http://169.254.169.254/latest/meta-data/instance-id", strings.TrimSpace(r.Stdout)), noSudo); r.isSuccess() {
+		if r := w.exec(`curl.exe -X PUT --max-time 1 --noproxy 169.254.169.254 -H "X-aws-ec2-metadata-token-ttl-seconds: 300" http://169.254.169.254/latest/api/token`, noSudo); r.isSuccess() {
+			if r := w.exec(fmt.Sprintf(`curl.exe -H "X-aws-ec2-metadata-token: %s" --max-time 1 --noproxy 169.254.169.254 http://169.254.169.254/latest/meta-data/instance-id`, strings.TrimSpace(r.Stdout)), noSudo); r.isSuccess() {
 				id := strings.TrimSpace(r.Stdout)
-				if !o.isAwsInstanceID(id) {
+				if !w.isAwsInstanceID(id) {
 					return false, "", nil
 				}
 				return true, id, nil
@@ -4632,5 +4660,5 @@ func (o *windows) detectRunningOnAws() (bool, string, error) {
 		}
 	}
 
-	return false, "", xerrors.Errorf("Failed to Invoke-WebRequest or curl.exe to AWS instance metadata on %s. container: %s", o.ServerInfo.ServerName, o.ServerInfo.Container.Name)
+	return false, "", xerrors.Errorf("Failed to Invoke-WebRequest or curl.exe to AWS instance metadata on %s. container: %s", w.ServerInfo.ServerName, w.ServerInfo.Container.Name)
 }
