@@ -69,24 +69,24 @@ type ReportConf interface {
 
 // ScanOpts is options for scan
 type ScanOpts struct {
-	TrivyJavaDBRepository string `json:"javaDBRepository,omitempty"`
-	TrivySkipJavaDBUpdate bool   `json:"TrivySkipJavaDBUpdate,omitempty"`
-	Vvv                   bool   `json:"vvv,omitempty"`
+	Vvv bool `json:"vvv,omitempty"`
 }
 
 // ReportOpts is options for report
 type ReportOpts struct {
-	CvssScoreOver       float64 `json:"cvssScoreOver,omitempty"`
-	ConfidenceScoreOver int     `json:"confidenceScoreOver,omitempty"`
-	TrivyCacheDBDir     string  `json:"trivyCacheDBDir,omitempty"`
-	NoProgress          bool    `json:"noProgress,omitempty"`
-	RefreshCve          bool    `json:"refreshCve,omitempty"`
-	IgnoreUnfixed       bool    `json:"ignoreUnfixed,omitempty"`
-	IgnoreUnscoredCves  bool    `json:"ignoreUnscoredCves,omitempty"`
-	DiffPlus            bool    `json:"diffPlus,omitempty"`
-	DiffMinus           bool    `json:"diffMinus,omitempty"`
-	Diff                bool    `json:"diff,omitempty"`
-	Lang                string  `json:"lang,omitempty"`
+	CvssScoreOver         float64 `json:"cvssScoreOver,omitempty"`
+	ConfidenceScoreOver   int     `json:"confidenceScoreOver,omitempty"`
+	TrivyCacheDBDir       string  `json:"trivyCacheDBDir,omitempty"`
+	TrivyJavaDBRepository string  `json:"javaDBRepository,omitempty"`
+	TrivySkipJavaDBUpdate bool    `json:"TrivySkipJavaDBUpdate,omitempty"`
+	NoProgress            bool    `json:"noProgress,omitempty"`
+	RefreshCve            bool    `json:"refreshCve,omitempty"`
+	IgnoreUnfixed         bool    `json:"ignoreUnfixed,omitempty"`
+	IgnoreUnscoredCves    bool    `json:"ignoreUnscoredCves,omitempty"`
+	DiffPlus              bool    `json:"diffPlus,omitempty"`
+	DiffMinus             bool    `json:"diffMinus,omitempty"`
+	Diff                  bool    `json:"diff,omitempty"`
+	Lang                  string  `json:"lang,omitempty"`
 }
 
 // ValidateOnConfigtest validates

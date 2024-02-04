@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 
-	tlog "github.com/aquasecurity/trivy/pkg/log"
 	"github.com/aquasecurity/trivy/pkg/utils/fsutils"
 	"github.com/google/subcommands"
 	"github.com/k0kubun/pp"
@@ -176,16 +175,15 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 
 	f.StringVar(&config.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
 		fsutils.CacheDir(), "/path/to/dir")
+	f.StringVar(&config.Conf.TrivyJavaDBRepository, "trivy-java-db-repository",
+		"ghcr.io/aquasecurity/trivy-java-db", "Trivy Java DB Repository")
+	f.BoolVar(&config.Conf.TrivySkipJavaDBUpdate, "trivy-skip-java-db-update",
+		false, "Skip Trivy Java DB Update")
 }
 
 // Execute execute
 func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogToFile, config.Conf.LogDir, "", "")
-
-	if err := tlog.InitLogger(config.Conf.Debug, config.Conf.Quiet); err != nil {
-		logging.Log.Errorf("Trivy init logger error: %+v", err)
-		return subcommands.ExitFailure
-	}
 
 	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 

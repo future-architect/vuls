@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aquasecurity/trivy/pkg/utils/fsutils"
 	"github.com/asaskevich/govalidator"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
@@ -17,8 +16,6 @@ import (
 	"github.com/google/subcommands"
 	"github.com/k0kubun/pp"
 )
-
-const defaultJavaDBRepository = "ghcr.io/aquasecurity/trivy-java-db"
 
 // ScanCmd is Subcommand of host discovery mode
 type ScanCmd struct {
@@ -76,12 +73,6 @@ func (p *ScanCmd) SetFlags(f *flag.FlagSet) {
 	defaultCacheDBPath := filepath.Join(wd, "cache.db")
 	f.StringVar(&p.cacheDBPath, "cachedb-path", defaultCacheDBPath,
 		"/path/to/cache.db (local cache of changelog for Ubuntu/Debian)")
-	f.StringVar(&config.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
-		fsutils.CacheDir(), "/path/to/dir")
-	f.StringVar(&config.Conf.TrivyJavaDBRepository, "trivy-java-db-repository",
-		"ghcr.io/aquasecurity/trivy-java-db", "Trivy Java DB Repository")
-	f.BoolVar(&config.Conf.TrivySkipJavaDBUpdate, "trivy-skip-java-db-update",
-		false, "Skip Trivy Java DB Update")
 
 	f.StringVar(&config.Conf.HTTPProxy, "http-proxy", "",
 		"http://proxy-url:port (default: empty)")
