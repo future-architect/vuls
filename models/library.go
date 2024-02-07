@@ -15,8 +15,6 @@ import (
 	"github.com/aquasecurity/trivy/pkg/types"
 	"golang.org/x/xerrors"
 
-	"fmt"
-
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 )
@@ -93,7 +91,7 @@ var trivyInitJavaDBOnce = sync.OnceValue(trivyInitJavaDB)
 var javaDB javadb.DB
 
 // Scan : scan target library
-func (s *LibraryScanner) Scan() ([]VulnInfo, error) {
+func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 	if err := trivyInitOnce(); err != nil {
 		return nil, xerrors.Errorf("failed to init Trivy: %w", err)
 	}
@@ -105,7 +103,6 @@ func (s *LibraryScanner) Scan() ([]VulnInfo, error) {
 
 	}
 
-	fmt.Printf("s after fill: %+v\n", s)
 	scanner, ok := library.NewDriver(s.Type)
 	if !ok {
 		return nil, xerrors.Errorf("Failed to new a library driver %s", s.Type)
@@ -128,8 +125,6 @@ func (s *LibraryScanner) Scan() ([]VulnInfo, error) {
 }
 
 func (s *LibraryScanner) refineJARInfo() error {
-
-	fmt.Printf("s: %+v\n", s)
 
 	if err := trivyInitJavaDBOnce(); err != nil {
 		return xerrors.Errorf("failed to init Trivy Java DB: %w", err)
@@ -155,8 +150,22 @@ func (s *LibraryScanner) refineJARInfo() error {
 		logging.Log.Debugf("no record in Java DB by SHA1: %s", sha1)
 		return nil
 	}
+
+	// Will use SHA1 search result, there are two points to watch out.
+	// 1. There can sometimes be multiple Library elements for single JAR file.
+	//    Such elements have identical FilePath. We must replace all of them.
+	// 2. At this point of implementation, ONLY the top-level JAR(-like file)'s SHA1
+	//    is calculated. The file's Library.FilePath is equals to s.LockfilePath.
+	logging.Log.Debugf("Found record in Java DB by SHA1: %+v", props)
+	libs := make([]Library, 0, len(s.Libs))
 	lib := props.Library()
-	s.Libs = []Library{Library{Name: lib.Name, Version: lib.Version, FilePath: s.LockfilePath}}
+	libs = append(libs, Library{Name: lib.Name, Version: lib.Version, FilePath: s.LockfilePath})
+	for _, l := range s.Libs {
+		if l.FilePath != s.LockfilePath {
+			libs = append(libs, l)
+		}
+	}
+	s.Libs = libs
 	return nil
 }
 
