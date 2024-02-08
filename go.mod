@@ -9,7 +9,7 @@ require (
 	github.com/CycloneDX/cyclonedx-go v0.8.0
 	github.com/Ullaakut/nmap/v2 v2.2.2
 	github.com/aquasecurity/go-dep-parser v0.0.0-20231120074854-8322cc2242bf
-	github.com/aquasecurity/trivy v0.48.0
+	github.com/aquasecurity/trivy v0.49.1
 	github.com/aquasecurity/trivy-db v0.0.0-20231005141211-4fc651f7ac8d
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/aws/aws-sdk-go v1.48.4
