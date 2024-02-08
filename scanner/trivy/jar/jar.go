@@ -40,7 +40,7 @@ func (c nopClient) SearchBySHA1(sha1 string) (jar.Properties, error) {
 	return jar.Properties{}, jar.ArtifactNotFoundErr
 }
 
-func (c nopClient) SearchByArtifactID(artifactID string) (string, error) {
+func (c nopClient) SearchByArtifactID(artifactID, version string) (string, error) {
 	return "", jar.ArtifactNotFoundErr
 }
 
