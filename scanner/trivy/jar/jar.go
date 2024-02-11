@@ -85,7 +85,7 @@ func (a *javaLibraryAnalyzer) PostAnalyze(ctx context.Context, input analyzer.Po
 	}
 
 	if err := parallel.WalkDir(ctx, input.FS, ".", a.parallel, onFile, onResult); err != nil {
-		return nil, xerrors.Errorf("walk dir error: %w", err)
+		return nil, xerrors.Errorf("Failed to Walk dir. err: %w", err)
 	}
 
 	return &analyzer.AnalysisResult{

@@ -75,13 +75,13 @@ func downloadDB(appVersion, cacheDir string, quiet, skipUpdate bool) error {
 		logging.Log.Info("Need to update DB")
 		logging.Log.Info("Downloading DB...")
 		if err := client.Download(ctx, cacheDir, ftypes.RegistryOptions{}); err != nil {
-			return xerrors.Errorf("failed to download vulnerability DB: %w", err)
+			return xerrors.Errorf("Failed to download vulnerability DB. err: %w", err)
 		}
 	}
 
 	// for debug
 	if err := showDBInfo(cacheDir); err != nil {
-		return xerrors.Errorf("failed to show database info: %w", err)
+		return xerrors.Errorf("Failed to show database info. err: %w", err)
 	}
 	return nil
 }
@@ -90,7 +90,7 @@ func showDBInfo(cacheDir string) error {
 	m := metadata.NewClient(cacheDir)
 	meta, err := m.Get()
 	if err != nil {
-		return xerrors.Errorf("something wrong with DB: %w", err)
+		return xerrors.Errorf("Something wrong with DB. err: %w", err)
 	}
 	log.Logger.Debugf("DB Schema: %d, UpdatedAt: %s, NextUpdate: %s, DownloadedAt: %s",
 		meta.Version, meta.UpdatedAt, meta.NextUpdate, meta.DownloadedAt)

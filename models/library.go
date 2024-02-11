@@ -98,7 +98,7 @@ func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 
 	if s.Type == ftypes.Jar {
 		if err := s.refineJARInfo(); err != nil {
-			return nil, xerrors.Errorf("Failed to init Trivy's Java DB: %w", err)
+			return nil, xerrors.Errorf("Failed to init Trivy's Java DB. err: %w", err)
 		}
 
 	}
