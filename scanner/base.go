@@ -57,9 +57,12 @@ import (
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/rust/cargo"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/swift/cocoapods"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/swift/swift"
-	_ "github.com/future-architect/vuls/scanner/trivy/jar"
 
 	nmap "github.com/Ullaakut/nmap/v2"
+
+	// To avoid downloading Java DB at scan phase, use custom one
+	_ "github.com/future-architect/vuls/scanner/trivy/jar"
+	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/jar"
 )
 
 type base struct {
