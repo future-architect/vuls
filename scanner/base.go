@@ -779,7 +779,7 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 	// Post-analysis
 	composite, err := ag.PostAnalyzerFS()
 	if err != nil {
-		return nil, xerrors.Errorf("failed to prepare filesystem for post analysis: %w", err)
+		return nil, xerrors.Errorf("Failed to prepare filesystem for post-analysis. err: %w", err)
 	}
 	defer func() {
 		_ = composite.Cleanup()
@@ -790,13 +790,13 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 		opener := func() (dio.ReadSeekCloserAt, error) { return dio.NopCloser(bytes.NewReader(contents)), nil }
 		tmpFilePath, err := composite.CopyFileToTemp(opener, info)
 		if err != nil {
-			return nil, xerrors.Errorf("failed to copy file to temp: %w", err)
+			return nil, xerrors.Errorf("Failed to copy file to temp: %w", err)
 		}
 		if err := composite.CreateLink(analyzerTypes, "", path, tmpFilePath); err != nil {
-			return nil, xerrors.Errorf("failed to create link: %w", err)
+			return nil, xerrors.Errorf("Failed to create link: %w", err)
 		}
 		if err = ag.PostAnalyze(ctx, composite, result, opts); err != nil {
-			return nil, xerrors.Errorf("post analysis error: %w", err)
+			return nil, xerrors.Errorf("Failed at post-analysis. err: %w", err)
 		}
 	}
 

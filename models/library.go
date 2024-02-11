@@ -66,7 +66,7 @@ type Library struct {
 
 func trivyInit() error {
 	if err := tlog.InitLogger(config.Conf.Debug, config.Conf.Quiet); err != nil {
-		return xerrors.Errorf("Failed to init trivy logger: %w", err)
+		return xerrors.Errorf("Failed to init trivy logger. err: %w", err)
 	}
 
 	javadb.Init(config.Conf.TrivyCacheDBDir, config.Conf.TrivyJavaDBRepository, config.Conf.TrivySkipJavaDBUpdate, config.Conf.Quiet, ftypes.RegistryOptions{})
@@ -80,7 +80,7 @@ func trivyInitJavaDB() error {
 
 	javaDBClient, err := javadb.NewClient()
 	if err != nil {
-		return xerrors.Errorf("Failed to init trivy Java DB: %w", err)
+		return xerrors.Errorf("Failed to init trivy Java DB. err: %w", err)
 	}
 	javaDB = *javaDBClient
 	return nil
@@ -93,12 +93,12 @@ var javaDB javadb.DB
 // Scan : scan target library
 func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 	if err := trivyInitOnce(); err != nil {
-		return nil, xerrors.Errorf("failed to init Trivy: %w", err)
+		return nil, xerrors.Errorf("Failed to init Trivy. err: %w", err)
 	}
 
 	if s.Type == ftypes.Jar {
 		if err := s.refineJARInfo(); err != nil {
-			return nil, xerrors.Errorf("failed to init Trivy Java DB: %w", err)
+			return nil, xerrors.Errorf("Failed to init Trivy's Java DB: %w", err)
 		}
 
 	}
@@ -111,7 +111,7 @@ func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 	for _, pkg := range s.Libs {
 		tvulns, err := scanner.DetectVulnerabilities("", pkg.Name, pkg.Version)
 		if err != nil {
-			return nil, xerrors.Errorf("failed to detect %s vulnerabilities: %w", scanner.Type(), err)
+			return nil, xerrors.Errorf("Failed to detect %s vulnerabilities. err: %w", scanner.Type(), err)
 		}
 		if len(tvulns) == 0 {
 			continue
@@ -127,26 +127,26 @@ func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 func (s *LibraryScanner) refineJARInfo() error {
 
 	if err := trivyInitJavaDBOnce(); err != nil {
-		return xerrors.Errorf("failed to init Trivy Java DB: %w", err)
+		return xerrors.Errorf("Failed to init Trivy Java DB. err: %w", err)
 	}
 
 	algorithm, sha1, found := strings.Cut(s.Digest, ":")
 	if !found || algorithm != "sha1" {
 		// SHA1 is not there, do nothing
-		logging.Log.Debugf("no SHA1 hash in digest: %q", s.Digest)
+		logging.Log.Debugf("No SHA1 hash found in the digest: %q", s.Digest)
 		return nil
 	}
 
 	props, err := javaDB.SearchBySHA1(sha1)
 	if err != nil {
 		if !errors.Is(err, jar.ArtifactNotFoundErr) {
-			return xerrors.Errorf("failed to JAR SHA1 search Trivy Java DB: %w", err)
+			return xerrors.Errorf("Failed to search Trivy's Java DB. err: %w", err)
 		}
 
 		// When original s.Libs information can come from pom.xml in JARs,
-		// they should be respected.
-		// We can not determine they came from pom.xml or other sources,
-		// leave them as they are here.
+		// they should be respected (as go-dep-parser's jar implementation).
+		// We can not determine they came from pom.xml or other less-reliable sources,
+		// leave them as they are.
 		logging.Log.Debugf("no record in Java DB by SHA1: %s", sha1)
 		return nil
 	}
