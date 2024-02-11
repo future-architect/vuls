@@ -105,7 +105,7 @@ func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 
 	scanner, ok := library.NewDriver(s.Type)
 	if !ok {
-		return nil, xerrors.Errorf("Failed to new a library driver %s", s.Type)
+		return nil, xerrors.Errorf("Failed to new a library driver for %s", s.Type)
 	}
 	var vulnerabilities = []VulnInfo{}
 	for _, pkg := range s.Libs {
@@ -147,15 +147,15 @@ func (s *LibraryScanner) refineJARInfo() error {
 		// they should be respected (as go-dep-parser's jar implementation).
 		// We can not determine they came from pom.xml or other less-reliable sources,
 		// leave them as they are.
-		logging.Log.Debugf("no record in Java DB by SHA1: %s", sha1)
+		logging.Log.Debugf("No record in Java DB by SHA1: %s", sha1)
 		return nil
 	}
 
-	// Will use SHA1 search result, there are two points to watch out.
+	// Will use SHA1 search result, there are two points to be noted.
 	// 1. There can sometimes be multiple Library elements for single JAR file.
 	//    Such elements have identical FilePath. We must replace all of them.
-	// 2. At this point of implementation, ONLY the top-level JAR(-like file)'s SHA1
-	//    is calculated. The file's Library.FilePath is equals to s.LockfilePath.
+	// 2. At this point of implementation, ONLY the top-level JAR(-like-file)'s SHA1
+	//    is calculated at scan phase. The file's Library.FilePath is equals to s.LockfilePath.
 	logging.Log.Debugf("Found record in Java DB by SHA1: %+v", props)
 	libs := make([]Library, 0, len(s.Libs))
 	lib := props.Library()

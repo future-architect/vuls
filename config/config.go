@@ -77,8 +77,8 @@ type ReportOpts struct {
 	CvssScoreOver         float64 `json:"cvssScoreOver,omitempty"`
 	ConfidenceScoreOver   int     `json:"confidenceScoreOver,omitempty"`
 	TrivyCacheDBDir       string  `json:"trivyCacheDBDir,omitempty"`
-	TrivyJavaDBRepository string  `json:"javaDBRepository,omitempty"`
-	TrivySkipJavaDBUpdate bool    `json:"TrivySkipJavaDBUpdate,omitempty"`
+	TrivyJavaDBRepository string  `json:"trivyJavaDBRepository,omitempty"`
+	TrivySkipJavaDBUpdate bool    `json:"trivySkipJavaDBUpdate,omitempty"`
 	NoProgress            bool    `json:"noProgress,omitempty"`
 	RefreshCve            bool    `json:"refreshCve,omitempty"`
 	IgnoreUnfixed         bool    `json:"ignoreUnfixed,omitempty"`

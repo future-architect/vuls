@@ -60,7 +60,7 @@ import (
 
 	nmap "github.com/Ullaakut/nmap/v2"
 
-	// To avoid downloading Java DB at scan phase, use custom one
+	// To avoid downloading Java DB at scan phase, use custom one for JAR files
 	_ "github.com/future-architect/vuls/scanner/trivy/jar"
 	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/jar"
 )
@@ -623,7 +623,7 @@ func (l *base) parseSystemctlStatus(stdout string) string {
 
 func trivyInit() (err error) {
 	if err := tlog.InitLogger(config.Conf.Debug, config.Conf.Quiet); err != nil {
-		return xerrors.Errorf("Failed to init trivy logger. error: %w", err)
+		return xerrors.Errorf("Failed to init trivy logger. err: %w", err)
 	}
 
 	return nil
@@ -790,10 +790,10 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 		opener := func() (dio.ReadSeekCloserAt, error) { return dio.NopCloser(bytes.NewReader(contents)), nil }
 		tmpFilePath, err := composite.CopyFileToTemp(opener, info)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to copy file to temp: %w", err)
+			return nil, xerrors.Errorf("Failed to copy file to temp. err: %w", err)
 		}
 		if err := composite.CreateLink(analyzerTypes, "", path, tmpFilePath); err != nil {
-			return nil, xerrors.Errorf("Failed to create link: %w", err)
+			return nil, xerrors.Errorf("Failed to create link. err: %w", err)
 		}
 		if err = ag.PostAnalyze(ctx, composite, result, opts); err != nil {
 			return nil, xerrors.Errorf("Failed at post-analysis. err: %w", err)
@@ -809,7 +809,7 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 	return libraryScanners, nil
 }
 
-// https://github.com/aquasecurity/trivy/blob/v0.48.0/pkg/fanal/analyzer/const.go
+// https://github.com/aquasecurity/trivy/blob/v0.49.1/pkg/fanal/analyzer/const.go
 var disabledAnalyzers = []fanal.Type{
 	// ======
 	//   OS

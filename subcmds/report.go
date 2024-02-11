@@ -94,6 +94,8 @@ func (*ReportCmd) Usage() string {
 		[-pipe]
 		[-http="http://vuls-report-server"]
 		[-trivy-cachedb-dir=/path/to/dir]
+                [-trivy-java-db-repository="OCI-repository-for-trivy-java-db"]
+                [-trivy-skip-java-db-update]
 
 		[RFC3339 datetime format under results dir]
 `
