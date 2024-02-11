@@ -227,9 +227,9 @@ var FindLockFiles = []string{
 	// elixir/mix
 	ftypes.MixLock,
 	// node
-	ftypes.NpmPkg, ftypes.NpmPkgLock, ftypes.YarnLock, ftypes.PnpmLock,
+	ftypes.NpmPkgLock, ftypes.YarnLock, ftypes.PnpmLock,
 	// ruby
-	ftypes.GemfileLock,
+	ftypes.GemfileLock, "*.gemspec",
 	// rust
 	ftypes.CargoLock,
 	// php
