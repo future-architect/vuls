@@ -237,7 +237,7 @@ var FindLockFiles = []string{
 	// python
 	ftypes.PipRequirements, ftypes.PipfileLock, ftypes.PoetryLock,
 	// .net
-	ftypes.NuGetPkgsLock, ftypes.NuGetPkgsConfig, "*.deps.json",
+	ftypes.NuGetPkgsLock, ftypes.NuGetPkgsConfig, "*.deps.json", "*Packages.props",
 	// gomod
 	ftypes.GoMod, ftypes.GoSum,
 	// java
@@ -253,7 +253,7 @@ func (s LibraryScanner) GetLibraryKey() string {
 	switch s.Type {
 	case ftypes.Bundler, ftypes.GemSpec:
 		return "ruby"
-	case ftypes.Cargo:
+	case ftypes.Cargo, ftypes.RustBinary:
 		return "rust"
 	case ftypes.Composer:
 		return "php"
@@ -267,8 +267,14 @@ func (s LibraryScanner) GetLibraryKey() string {
 		return ".net"
 	case ftypes.Pipenv, ftypes.Poetry, ftypes.Pip, ftypes.PythonPkg:
 		return "python"
-	case ftypes.ConanLock:
+	case ftypes.Conan:
 		return "c"
+	case ftypes.Pub:
+		return "dart"
+	case ftypes.Hex:
+		return "elixir"
+	case ftypes.Swift, ftypes.Cocoapods:
+		return "swift"
 	default:
 		return ""
 	}
