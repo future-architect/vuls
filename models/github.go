@@ -51,6 +51,8 @@ func (m DependencyGraphManifest) Ecosystem() ftypes.LangType {
 		return ftypes.Npm // JavaScript
 	case strings.HasSuffix(m.Filename, "yarn.lock"):
 		return ftypes.Yarn // JavaScript
+	case strings.HasSuffix(m.Filename, "pnpm-lock.yaml"):
+		return ftypes.Pnpm
 	case strings.HasSuffix(m.Filename, "requirements.txt"),
 		strings.HasSuffix(m.Filename, "requirements-dev.txt"),
 		strings.HasSuffix(m.Filename, "setup.py"):
@@ -68,7 +70,9 @@ func (m DependencyGraphManifest) Ecosystem() ftypes.LangType {
 		return ftypes.GemSpec // Ruby
 	case strings.HasSuffix(m.Filename, "pubspec.lock"),
 		strings.HasSuffix(m.Filename, "pubspec.yaml"):
-		return "pub" // Dart
+		return ftypes.Pub // Dart
+	case strings.HasSuffix(m.Filename, "Package.resolved"):
+		return ftypes.Swift // Swift
 	case strings.HasSuffix(m.Filename, ".yml"),
 		strings.HasSuffix(m.Filename, ".yaml"):
 		return "actions" // GitHub Actions workflows
