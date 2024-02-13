@@ -87,7 +87,6 @@ func WithSize(size int64) Option {
 }
 
 func NewParser(opts ...Option) *Parser {
-	fmt.Printf("foo: %+v\n", "foo")
 	p := &Parser{}
 
 	for _, opt := range opts {
@@ -110,7 +109,6 @@ func (p *Parser) Parse(r dio.ReadSeekerAt) ([]JarLibrary, error) {
 func (p *Parser) parseArtifact(filePath string, size int64, r dio.ReadSeekerAt) ([]JarLibrary, error) {
 	log.Logger.Debugw("Parsing Java artifacts...", zap.String("file", filePath))
 
-	//  TODO(shino): Calculate!
 	sha1, err := digest.CalcSHA1(r)
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to calculate SHA1. err: %w", err)
@@ -181,12 +179,12 @@ func (p *Parser) parseArtifact(filePath string, size int64, r dio.ReadSeekerAt) 
 func (p *Parser) parseInnerJar(zf *zip.File, rootPath string) ([]JarLibrary, error) {
 	fr, err := zf.Open()
 	if err != nil {
-		return nil, xerrors.Errorf("unable to open %s: %w", zf.Name, err)
+		return nil, xerrors.Errorf("Failed to open file %s. err: %w", zf.Name, err)
 	}
 
-	f, err := os.CreateTemp("", "inner")
+	f, err := os.CreateTemp("", "inner-*")
 	if err != nil {
-		return nil, xerrors.Errorf("unable to create a temp file: %w", err)
+		return nil, xerrors.Errorf("Failed to create tmp file for %s. err: %w", zf.Name, err)
 	}
 	defer func() {
 		f.Close()
@@ -195,7 +193,11 @@ func (p *Parser) parseInnerJar(zf *zip.File, rootPath string) ([]JarLibrary, err
 
 	// Copy the file content to the temp file
 	if _, err = io.Copy(f, fr); err != nil {
-		return nil, xerrors.Errorf("file copy error: %w", err)
+		return nil, xerrors.Errorf("Failed to copy file %s. err: %w", zf.Name, err)
+	}
+
+	if _, err = f.Seek(0, io.SeekStart); err != nil {
+		return nil, xerrors.Errorf("Failed to seek file %s. err: %w", zf.Name, err)
 	}
 
 	// build full path to inner jar
@@ -204,7 +206,7 @@ func (p *Parser) parseInnerJar(zf *zip.File, rootPath string) ([]JarLibrary, err
 	// Parse jar/war/ear recursively
 	innerLibs, err := p.parseArtifact(fullPath, int64(zf.UncompressedSize64), f)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to parse %s: %w", zf.Name, err)
+		return nil, xerrors.Errorf("Failed to parse file %s. err: %w", zf.Name, err)
 	}
 
 	return innerLibs, nil

@@ -171,7 +171,6 @@ func (s *LibraryScanner) refineJARInfo() error {
 		logging.Log.Debugf("Found record in Java DB by SHA1: %+v", props)
 		foundLib := props.Library()
 		foundSHA1 = sha1
-		fmt.Printf("foundSHA1: %+v\n", foundSHA1)
 		l.Name = foundLib.Name
 		l.Version = foundLib.Version
 		libs = append(libs, l)
