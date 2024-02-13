@@ -15,7 +15,6 @@ import (
 	"github.com/aquasecurity/trivy/pkg/types"
 	"golang.org/x/xerrors"
 
-	"fmt"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 )
@@ -103,9 +102,6 @@ func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 		}
 
 	}
-	for i, l := range s.Libs {
-		fmt.Printf("[%02d] l: %+v\n", i, l)
-	}
 	scanner, ok := library.NewDriver(s.Type)
 	if !ok {
 		return nil, xerrors.Errorf("Failed to new a library driver for %s", s.Type)
@@ -133,10 +129,16 @@ func (s *LibraryScanner) refineJARInfo() error {
 		return xerrors.Errorf("Failed to init Trivy Java DB. err: %w", err)
 	}
 
-	var foundSHA1 = ""
+	var foundSHA1 = "X" // initial value can be anything but possible SHA1 nor empty string
 	libs := make([]Library, 0, len(s.Libs))
 
 	for _, l := range s.Libs {
+		if l.Digest == "" {
+			// This is the case from pom.properties, it should be respected as is.
+			libs = append(libs, l)
+			continue
+		}
+
 		algorithm, sha1, found := strings.Cut(l.Digest, ":")
 		if !found || algorithm != "sha1" {
 			logging.Log.Debugf("No SHA1 hash found for %s in the digest: %q", l.FilePath, l.Digest)
@@ -148,28 +150,18 @@ func (s *LibraryScanner) refineJARInfo() error {
 			continue
 		}
 
-		props, err := javaDB.SearchBySHA1(sha1)
+		foundProps, err := javaDB.SearchBySHA1(sha1)
 		if err != nil {
 			if !errors.Is(err, jar.ArtifactNotFoundErr) {
 				return xerrors.Errorf("Failed to search Trivy's Java DB. err: %w", err)
 			}
 
-			// When original s.Libs information can come from pom.xml in JARs,
-			// they should be respected (as go-dep-parser's jar implementation).
-			// We can not determine they came from pom.xml or other less-reliable sources,
-			// leave them as they are.
 			logging.Log.Debugf("No record in Java DB for %s by SHA1: %s", l.FilePath, sha1)
 			libs = append(libs, l)
 			continue
 		}
 
-		// Will use SHA1 search result, there are two points to be noted.
-		// 1. There can sometimes be multiple Library elements for single JAR file.
-		//    Such elements have identical FilePath. We must replace all of them.
-		// 2. At this point of implementation, ONLY the top-level JAR(-like-file)'s SHA1
-		//    is calculated at scan phase. The file's Library.FilePath is equals to s.LockfilePath.
-		logging.Log.Debugf("Found record in Java DB by SHA1: %+v", props)
-		foundLib := props.Library()
+		foundLib := foundProps.Library()
 		foundSHA1 = sha1
 		l.Name = foundLib.Name
 		l.Version = foundLib.Version

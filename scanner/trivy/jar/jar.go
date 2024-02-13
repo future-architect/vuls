@@ -12,7 +12,6 @@ import (
 	dio "github.com/aquasecurity/go-dep-parser/pkg/io"
 	"github.com/aquasecurity/trivy/pkg/fanal/analyzer"
 	"github.com/aquasecurity/trivy/pkg/fanal/types"
-	"github.com/aquasecurity/trivy/pkg/licensing"
 	"github.com/aquasecurity/trivy/pkg/parallel"
 )
 
@@ -46,10 +45,10 @@ func (a *javaLibraryAnalyzer) PostAnalyze(ctx context.Context, input analyzer.Po
 		p := NewParser(WithSize(info.Size()), WithFilePath(path))
 		parsedLibs, err := p.Parse(r)
 		if err != nil {
-			return nil, xerrors.Errorf("failed to parse %s: %w", path, err)
+			return nil, xerrors.Errorf("Failed to parse %s. err: %w", path, err)
 		}
 
-		return toApplication(types.Jar, path, path, parsedLibs), nil
+		return toApplication(path, parsedLibs), nil
 	}
 
 	var apps []types.Application
@@ -70,43 +69,30 @@ func (a *javaLibraryAnalyzer) PostAnalyze(ctx context.Context, input analyzer.Po
 	}, nil
 }
 
-func toApplication(fileType types.LangType, filePath, libFilePath string, libs []JarLibrary) *types.Application {
+func toApplication(rootFilePath string, libs []JarLibrary) *types.Application {
 	if len(libs) == 0 {
 		return nil
 	}
 
 	var pkgs []types.Package
 	for _, lib := range libs {
-		var licenses []string
-		if lib.License != "" {
-			licenses = licensing.SplitLicenses(lib.License)
-			for i, license := range licenses {
-				licenses[i] = licensing.Normalize(strings.TrimSpace(license))
-			}
-		}
-
-		// This file path is populated for virtual file paths within archives, such as nested JAR files.
-		libPath := libFilePath
+		libPath := rootFilePath
 		if lib.FilePath != "" {
 			libPath = lib.FilePath
 		}
 
 		newPkg := types.Package{
-			ID:       lib.ID,
 			Name:     lib.Name,
 			Version:  lib.Version,
-			Dev:      lib.Dev,
 			FilePath: libPath,
-			Indirect: lib.Indirect,
-			Licenses: licenses,
 			Digest:   lib.Digest,
 		}
 		pkgs = append(pkgs, newPkg)
 	}
 
 	return &types.Application{
-		Type:      fileType,
-		FilePath:  filePath,
+		Type:      types.Jar,
+		FilePath:  rootFilePath,
 		Libraries: pkgs,
 	}
 }

@@ -27,9 +27,6 @@ type JarLibrary struct {
 	ID       string `json:",omitempty"`
 	Name     string
 	Version  string
-	Dev      bool
-	Indirect bool   `json:",omitempty"`
-	License  string `json:",omitempty"`
 	FilePath string `json:",omitempty"` // Required to show nested jars
 	Digest   digest.Digest
 }
@@ -43,12 +40,12 @@ type Properties struct {
 	Digest     digest.Digest
 }
 
-func (p Properties) Library(hash digest.Digest) JarLibrary {
+func (p Properties) Library() JarLibrary {
 	return JarLibrary{
 		Name:     fmt.Sprintf("%s:%s", p.GroupID, p.ArtifactID),
 		Version:  p.Version,
 		FilePath: p.FilePath,
-		Digest:   hash,
+		Digest:   p.Digest,
 	}
 }
 
@@ -104,8 +101,9 @@ func (p *Parser) Parse(r dio.ReadSeekerAt) ([]JarLibrary, error) {
 	return removeLibraryDuplicates(libs), nil
 }
 
-// This function MUST NOT return empty list unless error occured.
-// The least element has file path and SHA1 digest, it will be utilized at detect phase.
+// This function MUST NOT return empty list unless an error occured.
+// The least element contains file path and SHA1 digest, they can be used at detect phase to
+// determine actual name and version.
 func (p *Parser) parseArtifact(filePath string, size int64, r dio.ReadSeekerAt) ([]JarLibrary, error) {
 	log.Logger.Debugw("Parsing Java artifacts...", zap.String("file", filePath))
 
@@ -121,7 +119,7 @@ func (p *Parser) parseArtifact(filePath string, size int64, r dio.ReadSeekerAt) 
 
 	// Try to extract artifactId and version from the file name
 	// e.g. spring-core-5.3.4-SNAPSHOT.jar => sprint-core, 5.3.4-SNAPSHOT
-	fileProps := parseFileName(filePath)
+	fileProps := parseFileName(filePath, sha1)
 
 	var libs []JarLibrary
 	var m manifest
@@ -134,7 +132,7 @@ func (p *Parser) parseArtifact(filePath string, size int64, r dio.ReadSeekerAt) 
 			if err != nil {
 				return nil, xerrors.Errorf("Failed to parse %s. err: %w", fileInJar.Name, err)
 			}
-			libs = append(libs, props.Library(sha1))
+			libs = append(libs, props.Library())
 
 			// Check if the pom.properties is for the original JAR/WAR/EAR
 			if fileProps.ArtifactID == props.ArtifactID && fileProps.Version == props.Version {
@@ -160,20 +158,15 @@ func (p *Parser) parseArtifact(filePath string, size int64, r dio.ReadSeekerAt) 
 		return libs, nil
 	}
 
-	manifestProps := m.properties(filePath)
+	manifestProps := m.properties(filePath, sha1)
 	if manifestProps.Valid() {
-		return append(libs, manifestProps.Library(sha1)), nil
+		return append(libs, manifestProps.Library()), nil
 	}
 
-	// Return when artifactId or version from the file name are empty
-	if fileProps.ArtifactID == "" || fileProps.Version == "" {
-		if len(libs) == 0 {
-			return []JarLibrary{{FilePath: filePath, Digest: sha1}}, nil
-		}
-		return libs, nil
-	}
-	libs = append(libs, fileProps.Library(sha1))
-	return libs, nil
+	// At this point, no library information from pom nor manifests.
+	// Add one from fileProps, which may have no artifact ID or version, but it will be
+	// rescued at detect phase by SHA1.
+	return append(libs, fileProps.Library()), nil
 }
 
 func (p *Parser) parseInnerJar(zf *zip.File, rootPath string) ([]JarLibrary, error) {
@@ -191,11 +184,10 @@ func (p *Parser) parseInnerJar(zf *zip.File, rootPath string) ([]JarLibrary, err
 		os.Remove(f.Name())
 	}()
 
-	// Copy the file content to the temp file
+	// Copy the file content to the temp file and rewind it at the beginning
 	if _, err = io.Copy(f, fr); err != nil {
 		return nil, xerrors.Errorf("Failed to copy file %s. err: %w", zf.Name, err)
 	}
-
 	if _, err = f.Seek(0, io.SeekStart); err != nil {
 		return nil, xerrors.Errorf("Failed to seek file %s. err: %w", zf.Name, err)
 	}
@@ -220,7 +212,7 @@ func isArtifact(name string) bool {
 	return false
 }
 
-func parseFileName(filePath string) Properties {
+func parseFileName(filePath string, sha1 digest.Digest) Properties {
 	fileName := filepath.Base(filePath)
 	packageVersion := jarFileRegEx.FindStringSubmatch(fileName)
 	if len(packageVersion) != 3 {
@@ -231,16 +223,18 @@ func parseFileName(filePath string) Properties {
 		ArtifactID: packageVersion[1],
 		Version:    packageVersion[2],
 		FilePath:   filePath,
+		Digest:     sha1,
 	}
 }
 
 func parsePomProperties(f *zip.File, filePath string) (Properties, error) {
 	file, err := f.Open()
 	if err != nil {
-		return Properties{}, xerrors.Errorf("unable to open pom.properties: %w", err)
+		return Properties{}, xerrors.Errorf("Unable to open pom.properties. err: %w", err)
 	}
 	defer file.Close()
 
+	// No Digest for pom.properties. Such data is used as is without looking up Java DB at detect phase.
 	p := Properties{
 		FilePath: filePath,
 	}
@@ -321,12 +315,12 @@ func parseManifest(f *zip.File) (manifest, error) {
 	}
 
 	if err = scanner.Err(); err != nil {
-		return manifest{}, xerrors.Errorf("scan error: %w", err)
+		return manifest{}, xerrors.Errorf("Error in scanning file. err: %w", err)
 	}
 	return m, nil
 }
 
-func (m manifest) properties(filePath string) Properties {
+func (m manifest) properties(filePath string, sha1 digest.Digest) Properties {
 	groupID, err := m.determineGroupID()
 	if err != nil {
 		return Properties{}
@@ -347,6 +341,7 @@ func (m manifest) properties(filePath string) Properties {
 		ArtifactID: artifactID,
 		Version:    version,
 		FilePath:   filePath,
+		Digest:     sha1,
 	}
 }
 
@@ -368,7 +363,7 @@ func (m manifest) determineGroupID() (string, error) {
 	case m.specificationVendor != "":
 		groupID = m.specificationVendor
 	default:
-		return "", xerrors.New("no groupID found")
+		return "", xerrors.New("No groupID found")
 	}
 	return strings.TrimSpace(groupID), nil
 }
@@ -383,7 +378,7 @@ func (m manifest) determineArtifactID() (string, error) {
 	case m.bundleName != "":
 		artifactID = m.bundleName
 	default:
-		return "", xerrors.New("no artifactID found")
+		return "", xerrors.New("No artifactID found")
 	}
 	return strings.TrimSpace(artifactID), nil
 }
@@ -398,7 +393,7 @@ func (m manifest) determineVersion() (string, error) {
 	case m.bundleVersion != "":
 		version = m.bundleVersion
 	default:
-		return "", xerrors.New("no version found")
+		return "", xerrors.New("No version found")
 	}
 	return strings.TrimSpace(version), nil
 }
