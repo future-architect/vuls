@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -800,8 +799,7 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 		}
 	}
 
-	digest := fmt.Sprintf("sha1:%x", sha1.Sum(contents))
-	libscan, err := convertLibWithScanner(result.Applications, digest)
+	libscan, err := convertLibWithScanner(result.Applications)
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to convert libs. err: %w", err)
 	}

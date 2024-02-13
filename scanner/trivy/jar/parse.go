@@ -3,39 +3,67 @@ package jar
 import (
 	"archive/zip"
 	"bufio"
-	"crypto/sha1"
-	"encoding/hex"
 	"fmt"
-	dio "github.com/aquasecurity/go-dep-parser/pkg/io"
-	"github.com/aquasecurity/go-dep-parser/pkg/log"
-	"github.com/aquasecurity/go-dep-parser/pkg/types"
-	"github.com/samber/lo"
-	"go.uber.org/zap"
-	"golang.org/x/xerrors"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	dio "github.com/aquasecurity/go-dep-parser/pkg/io"
+	"github.com/aquasecurity/go-dep-parser/pkg/log"
+	"github.com/aquasecurity/trivy/pkg/digest"
+	"github.com/samber/lo"
+	"go.uber.org/zap"
+	"golang.org/x/xerrors"
 )
 
 var (
 	jarFileRegEx = regexp.MustCompile(`^([a-zA-Z0-9\._-]*[^-*])-(\d\S*(?:-SNAPSHOT)?).jar$`)
 )
 
-type Client interface {
-	Exists(groupID, artifactID string) (bool, error)
-	SearchBySHA1(sha1 string) (Properties, error)
-	SearchByArtifactID(artifactID, version string) (string, error)
+type JarLibrary struct {
+	ID       string `json:",omitempty"`
+	Name     string
+	Version  string
+	Dev      bool
+	Indirect bool   `json:",omitempty"`
+	License  string `json:",omitempty"`
+	FilePath string `json:",omitempty"` // Required to show nested jars
+	Digest   digest.Digest
+}
+
+// TODO(shino): make this private
+type Properties struct {
+	GroupID    string
+	ArtifactID string
+	Version    string
+	FilePath   string // path to file containing these props
+	Digest     digest.Digest
+}
+
+func (p Properties) Library(hash digest.Digest) JarLibrary {
+	return JarLibrary{
+		Name:     fmt.Sprintf("%s:%s", p.GroupID, p.ArtifactID),
+		Version:  p.Version,
+		FilePath: p.FilePath,
+		Digest:   hash,
+	}
+}
+
+func (p Properties) Valid() bool {
+	return p.GroupID != "" && p.ArtifactID != "" && p.Version != ""
+}
+
+func (p Properties) String() string {
+	return fmt.Sprintf("%s:%s:%s", p.GroupID, p.ArtifactID, p.Version)
 }
 
 type Parser struct {
 	rootFilePath string
 	offline      bool
 	size         int64
-
-	client Client
 }
 
 type Option func(*Parser)
@@ -58,10 +86,9 @@ func WithSize(size int64) Option {
 	}
 }
 
-func NewParser(c Client, opts ...Option) types.Parser {
-	p := &Parser{
-		client: c,
-	}
+func NewParser(opts ...Option) *Parser {
+	fmt.Printf("foo: %+v\n", "foo")
+	p := &Parser{}
 
 	for _, opt := range opts {
 		opt(p)
@@ -70,28 +97,35 @@ func NewParser(c Client, opts ...Option) types.Parser {
 	return p
 }
 
-func (p *Parser) Parse(r dio.ReadSeekerAt) ([]types.Library, []types.Dependency, error) {
-	libs, deps, err := p.parseArtifact(p.rootFilePath, p.size, r)
+func (p *Parser) Parse(r dio.ReadSeekerAt) ([]JarLibrary, error) {
+	libs, err := p.parseArtifact(p.rootFilePath, p.size, r)
 	if err != nil {
-		return nil, nil, xerrors.Errorf("unable to parse %s: %w", p.rootFilePath, err)
+		return nil, xerrors.Errorf("unable to parse %s: %w", p.rootFilePath, err)
 	}
-	return removeLibraryDuplicates(libs), deps, nil
+	return removeLibraryDuplicates(libs), nil
 }
 
-func (p *Parser) parseArtifact(filePath string, size int64, r dio.ReadSeekerAt) ([]types.Library, []types.Dependency, error) {
+// This function MUST NOT return empty list unless error occured.
+// The least element has file path and SHA1 digest, it will be utilized at detect phase.
+func (p *Parser) parseArtifact(filePath string, size int64, r dio.ReadSeekerAt) ([]JarLibrary, error) {
 	log.Logger.Debugw("Parsing Java artifacts...", zap.String("file", filePath))
+
+	//  TODO(shino): Calculate!
+	sha1, err := digest.CalcSHA1(r)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to calculate SHA1. err: %w", err)
+	}
 
 	zr, err := zip.NewReader(r, size)
 	if err != nil {
-		return nil, nil, xerrors.Errorf("zip error: %w", err)
+		return nil, xerrors.Errorf("Failed to open zip. err: %w", err)
 	}
 
 	// Try to extract artifactId and version from the file name
 	// e.g. spring-core-5.3.4-SNAPSHOT.jar => sprint-core, 5.3.4-SNAPSHOT
-	fileName := filepath.Base(filePath)
 	fileProps := parseFileName(filePath)
 
-	var libs []types.Library
+	var libs []JarLibrary
 	var m manifest
 	var foundPomProps bool
 
@@ -100,9 +134,9 @@ func (p *Parser) parseArtifact(filePath string, size int64, r dio.ReadSeekerAt) 
 		case filepath.Base(fileInJar.Name) == "pom.properties":
 			props, err := parsePomProperties(fileInJar, filePath)
 			if err != nil {
-				return nil, nil, xerrors.Errorf("failed to parse %s: %w", fileInJar.Name, err)
+				return nil, xerrors.Errorf("Failed to parse %s. err: %w", fileInJar.Name, err)
 			}
-			libs = append(libs, props.Library())
+			libs = append(libs, props.Library(sha1))
 
 			// Check if the pom.properties is for the original JAR/WAR/EAR
 			if fileProps.ArtifactID == props.ArtifactID && fileProps.Version == props.Version {
@@ -111,12 +145,12 @@ func (p *Parser) parseArtifact(filePath string, size int64, r dio.ReadSeekerAt) 
 		case filepath.Base(fileInJar.Name) == "MANIFEST.MF":
 			m, err = parseManifest(fileInJar)
 			if err != nil {
-				return nil, nil, xerrors.Errorf("failed to parse MANIFEST.MF: %w", err)
+				return nil, xerrors.Errorf("Failed to parse MANIFEST.MF. err: %w", err)
 			}
 		case isArtifact(fileInJar.Name):
-			innerLibs, _, err := p.parseInnerJar(fileInJar, filePath) //TODO process inner deps
+			innerLibs, err := p.parseInnerJar(fileInJar, filePath) //TODO process inner deps
 			if err != nil {
-				log.Logger.Debugf("Failed to parse %s: %s", fileInJar.Name, err)
+				log.Logger.Debugf("Failed to parse %s. err: %s", fileInJar.Name, err)
 				continue
 			}
 			libs = append(libs, innerLibs...)
@@ -125,66 +159,34 @@ func (p *Parser) parseArtifact(filePath string, size int64, r dio.ReadSeekerAt) 
 
 	// If pom.properties is found, it should be preferred than MANIFEST.MF.
 	if foundPomProps {
-		return libs, nil, nil
+		return libs, nil
 	}
 
 	manifestProps := m.properties(filePath)
-	if p.offline {
-		// In offline mode, we will not check if the artifact information is correct.
-		if !manifestProps.Valid() {
-			log.Logger.Debugw("Unable to identify POM in offline mode", zap.String("file", fileName))
-			return libs, nil, nil
-		}
-		return append(libs, manifestProps.Library()), nil, nil
-	}
-
 	if manifestProps.Valid() {
-		// Even if MANIFEST.MF is found, the groupId and artifactId might not be valid.
-		// We have to make sure that the artifact exists actually.
-		if ok, _ := p.client.Exists(manifestProps.GroupID, manifestProps.ArtifactID); ok {
-			// If groupId and artifactId are valid, they will be returned.
-			return append(libs, manifestProps.Library()), nil, nil
-		}
+		return append(libs, manifestProps.Library(sha1)), nil
 	}
-
-	// If groupId and artifactId are not found, call Maven Central's search API with SHA-1 digest.
-	props, err := p.searchBySHA1(r, filePath)
-	if err == nil {
-		return append(libs, props.Library()), nil, nil
-	} else if !xerrors.Is(err, ArtifactNotFoundErr) {
-		return nil, nil, xerrors.Errorf("failed to search by SHA1: %w", err)
-	}
-
-	log.Logger.Debugw("No such POM in the central repositories", zap.String("file", fileName))
 
 	// Return when artifactId or version from the file name are empty
 	if fileProps.ArtifactID == "" || fileProps.Version == "" {
-		return libs, nil, nil
+		if len(libs) == 0 {
+			return []JarLibrary{{FilePath: filePath, Digest: sha1}}, nil
+		}
+		return libs, nil
 	}
-
-	// Try to search groupId by artifactId via sonatype API
-	// When some artifacts have the same groupIds, it might result in false detection.
-	fileProps.GroupID, err = p.client.SearchByArtifactID(fileProps.ArtifactID, fileProps.Version)
-	if err == nil {
-		log.Logger.Debugw("POM was determined in a heuristic way", zap.String("file", fileName),
-			zap.String("artifact", fileProps.String()))
-		libs = append(libs, fileProps.Library())
-	} else if !xerrors.Is(err, ArtifactNotFoundErr) {
-		return nil, nil, xerrors.Errorf("failed to search by artifact id: %w", err)
-	}
-
-	return libs, nil, nil
+	libs = append(libs, fileProps.Library(sha1))
+	return libs, nil
 }
 
-func (p *Parser) parseInnerJar(zf *zip.File, rootPath string) ([]types.Library, []types.Dependency, error) {
+func (p *Parser) parseInnerJar(zf *zip.File, rootPath string) ([]JarLibrary, error) {
 	fr, err := zf.Open()
 	if err != nil {
-		return nil, nil, xerrors.Errorf("unable to open %s: %w", zf.Name, err)
+		return nil, xerrors.Errorf("unable to open %s: %w", zf.Name, err)
 	}
 
 	f, err := os.CreateTemp("", "inner")
 	if err != nil {
-		return nil, nil, xerrors.Errorf("unable to create a temp file: %w", err)
+		return nil, xerrors.Errorf("unable to create a temp file: %w", err)
 	}
 	defer func() {
 		f.Close()
@@ -193,37 +195,19 @@ func (p *Parser) parseInnerJar(zf *zip.File, rootPath string) ([]types.Library, 
 
 	// Copy the file content to the temp file
 	if _, err = io.Copy(f, fr); err != nil {
-		return nil, nil, xerrors.Errorf("file copy error: %w", err)
+		return nil, xerrors.Errorf("file copy error: %w", err)
 	}
 
 	// build full path to inner jar
 	fullPath := path.Join(rootPath, zf.Name)
 
 	// Parse jar/war/ear recursively
-	innerLibs, innerDeps, err := p.parseArtifact(fullPath, int64(zf.UncompressedSize64), f)
+	innerLibs, err := p.parseArtifact(fullPath, int64(zf.UncompressedSize64), f)
 	if err != nil {
-		return nil, nil, xerrors.Errorf("failed to parse %s: %w", zf.Name, err)
+		return nil, xerrors.Errorf("failed to parse %s: %w", zf.Name, err)
 	}
 
-	return innerLibs, innerDeps, nil
-}
-
-func (p *Parser) searchBySHA1(r io.ReadSeeker, filePath string) (Properties, error) {
-	if _, err := r.Seek(0, io.SeekStart); err != nil {
-		return Properties{}, xerrors.Errorf("file seek error: %w", err)
-	}
-
-	h := sha1.New()
-	if _, err := io.Copy(h, r); err != nil {
-		return Properties{}, xerrors.Errorf("unable to calculate SHA-1: %w", err)
-	}
-	s := hex.EncodeToString(h.Sum(nil))
-	prop, err := p.client.SearchBySHA1(s)
-	if err != nil {
-		return Properties{}, err
-	}
-	prop.FilePath = filePath
-	return prop, nil
+	return innerLibs, nil
 }
 
 func isArtifact(name string) bool {
@@ -417,8 +401,8 @@ func (m manifest) determineVersion() (string, error) {
 	return strings.TrimSpace(version), nil
 }
 
-func removeLibraryDuplicates(libs []types.Library) []types.Library {
-	return lo.UniqBy(libs, func(lib types.Library) string {
+func removeLibraryDuplicates(libs []JarLibrary) []JarLibrary {
+	return lo.UniqBy(libs, func(lib JarLibrary) string {
 		return fmt.Sprintf("%s::%s::%s", lib.Name, lib.Version, lib.FilePath)
 	})
 }

@@ -10,10 +10,9 @@ import (
 	"golang.org/x/xerrors"
 
 	dio "github.com/aquasecurity/go-dep-parser/pkg/io"
-	"github.com/aquasecurity/go-dep-parser/pkg/java/jar"
 	"github.com/aquasecurity/trivy/pkg/fanal/analyzer"
-	"github.com/aquasecurity/trivy/pkg/fanal/analyzer/language"
 	"github.com/aquasecurity/trivy/pkg/fanal/types"
+	"github.com/aquasecurity/trivy/pkg/licensing"
 	"github.com/aquasecurity/trivy/pkg/parallel"
 )
 
@@ -30,20 +29,6 @@ var requiredExtensions = []string{
 	".par",
 }
 
-type nopClient struct{}
-
-func (c nopClient) Exists(groupID, artifactID string) (bool, error) {
-	return true, nil
-}
-
-func (c nopClient) SearchBySHA1(sha1 string) (jar.Properties, error) {
-	return jar.Properties{}, jar.ArtifactNotFoundErr
-}
-
-func (c nopClient) SearchByArtifactID(artifactID, version string) (string, error) {
-	return "", jar.ArtifactNotFoundErr
-}
-
 // javaLibraryAnalyzer analyzes jar/war/ear/par files
 type javaLibraryAnalyzer struct {
 	parallel int
@@ -56,23 +41,15 @@ func newJavaLibraryAnalyzer(options analyzer.AnalyzerOptions) (analyzer.PostAnal
 }
 
 func (a *javaLibraryAnalyzer) PostAnalyze(ctx context.Context, input analyzer.PostAnalysisInput) (*analyzer.AnalysisResult, error) {
-	client := nopClient{}
-
 	// It will be called on each JAR file
 	onFile := func(path string, info fs.FileInfo, r dio.ReadSeekerAt) (*types.Application, error) {
-		p := jar.NewParser(client, jar.WithSize(info.Size()), jar.WithFilePath(path))
-		res, err := language.ParsePackage(types.Jar, path, r, p, input.Options.FileChecksum)
-		if res != nil || err != nil {
-			return res, err
+		p := NewParser(WithSize(info.Size()), WithFilePath(path))
+		parsedLibs, err := p.Parse(r)
+		if err != nil {
+			return nil, xerrors.Errorf("failed to parse %s: %w", path, err)
 		}
 
-		// go-dep-parser's jar.go returns nil result if it could not find infomation from pom/manifest/filename.
-		// To defer vuls's decision until report/detect phase, add one application only with file path.
-		return &types.Application{
-			Type:      types.Jar,
-			FilePath:  path,
-			Libraries: []types.Package{{FilePath: path}},
-		}, nil
+		return toApplication(types.Jar, path, path, parsedLibs), nil
 	}
 
 	var apps []types.Application
@@ -91,6 +68,47 @@ func (a *javaLibraryAnalyzer) PostAnalyze(ctx context.Context, input analyzer.Po
 	return &analyzer.AnalysisResult{
 		Applications: apps,
 	}, nil
+}
+
+func toApplication(fileType types.LangType, filePath, libFilePath string, libs []JarLibrary) *types.Application {
+	if len(libs) == 0 {
+		return nil
+	}
+
+	var pkgs []types.Package
+	for _, lib := range libs {
+		var licenses []string
+		if lib.License != "" {
+			licenses = licensing.SplitLicenses(lib.License)
+			for i, license := range licenses {
+				licenses[i] = licensing.Normalize(strings.TrimSpace(license))
+			}
+		}
+
+		// This file path is populated for virtual file paths within archives, such as nested JAR files.
+		libPath := libFilePath
+		if lib.FilePath != "" {
+			libPath = lib.FilePath
+		}
+
+		newPkg := types.Package{
+			ID:       lib.ID,
+			Name:     lib.Name,
+			Version:  lib.Version,
+			Dev:      lib.Dev,
+			FilePath: libPath,
+			Indirect: lib.Indirect,
+			Licenses: licenses,
+			Digest:   lib.Digest,
+		}
+		pkgs = append(pkgs, newPkg)
+	}
+
+	return &types.Application{
+		Type:      fileType,
+		FilePath:  filePath,
+		Libraries: pkgs,
+	}
 }
 
 func (a *javaLibraryAnalyzer) Required(filePath string, _ os.FileInfo) bool {
