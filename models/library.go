@@ -124,7 +124,6 @@ func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 }
 
 func (s *LibraryScanner) refineJARInfo() error {
-
 	if err := trivyInitJavaDBOnce(); err != nil {
 		return xerrors.Errorf("Failed to init Trivy Java DB. err: %w", err)
 	}

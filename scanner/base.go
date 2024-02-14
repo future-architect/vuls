@@ -42,7 +42,9 @@ import (
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/gradle"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/pom"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/npm"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pkg"
+
+	// Trivy can parse package.json but doesn't use dependencies info. Not use here
+	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pkg"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pnpm"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/yarn"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/php/composer"
