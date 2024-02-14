@@ -42,8 +42,8 @@ func newJavaLibraryAnalyzer(options analyzer.AnalyzerOptions) (analyzer.PostAnal
 func (a *javaLibraryAnalyzer) PostAnalyze(ctx context.Context, input analyzer.PostAnalysisInput) (*analyzer.AnalysisResult, error) {
 	// It will be called on each JAR file
 	onFile := func(path string, info fs.FileInfo, r dio.ReadSeekerAt) (*types.Application, error) {
-		p := NewParser(WithSize(info.Size()), WithFilePath(path))
-		parsedLibs, err := p.Parse(r)
+		p := newParser(withSize(info.Size()), withFilePath(path))
+		parsedLibs, err := p.parse(r)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to parse %s. err: %w", path, err)
 		}
@@ -69,7 +69,7 @@ func (a *javaLibraryAnalyzer) PostAnalyze(ctx context.Context, input analyzer.Po
 	}, nil
 }
 
-func toApplication(rootFilePath string, libs []JarLibrary) *types.Application {
+func toApplication(rootFilePath string, libs []jarLibrary) *types.Application {
 	if len(libs) == 0 {
 		return nil
 	}
@@ -77,15 +77,15 @@ func toApplication(rootFilePath string, libs []JarLibrary) *types.Application {
 	var pkgs []types.Package
 	for _, lib := range libs {
 		libPath := rootFilePath
-		if lib.FilePath != "" {
-			libPath = lib.FilePath
+		if lib.filePath != "" {
+			libPath = lib.filePath
 		}
 
 		newPkg := types.Package{
-			Name:     lib.Name,
-			Version:  lib.Version,
+			Name:     lib.name,
+			Version:  lib.version,
 			FilePath: libPath,
-			Digest:   lib.Digest,
+			Digest:   lib.digest,
 		}
 		pkgs = append(pkgs, newPkg)
 	}
