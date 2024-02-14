@@ -126,7 +126,6 @@ func (p *parser) parseArtifact(filePath string, size int64, r dio.ReadSeekerAt) 
 			if err != nil {
 				return nil, xerrors.Errorf("Failed to parse %s. err: %w", fileInJar.Name, err)
 			}
-			fmt.Printf("%s: %+v  %+v\n", filePath, props.valid(), props)
 			libs = append(libs, props.library())
 
 			// Check if the pom.properties is for the original JAR/WAR/EAR
