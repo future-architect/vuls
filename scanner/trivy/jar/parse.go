@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	jarFileRegEx = regexp.MustCompile(`^([a-zA-Z0-9\._-]*[^-*])-(\d\S*(?:-SNAPSHOT)?).jar$`)
+	jarFileRegEx = regexp.MustCompile(`^([a-zA-Z0-9\._-]*[^-*])-(\d\S*(?:-SNAPSHOT)?).[jwep]ar$`)
 )
 
 type jarLibrary struct {
@@ -60,7 +60,6 @@ func (p properties) string() string {
 
 type parser struct {
 	rootFilePath string
-	offline      bool
 	size         int64
 }
 
@@ -69,12 +68,6 @@ type option func(*parser)
 func withFilePath(filePath string) option {
 	return func(p *parser) {
 		p.rootFilePath = filePath
-	}
-}
-
-func withOffline(offline bool) option {
-	return func(p *parser) {
-		p.offline = offline
 	}
 }
 
@@ -133,6 +126,7 @@ func (p *parser) parseArtifact(filePath string, size int64, r dio.ReadSeekerAt) 
 			if err != nil {
 				return nil, xerrors.Errorf("Failed to parse %s. err: %w", fileInJar.Name, err)
 			}
+			fmt.Printf("%s: %+v  %+v\n", filePath, props.valid(), props)
 			libs = append(libs, props.library())
 
 			// Check if the pom.properties is for the original JAR/WAR/EAR
@@ -217,7 +211,10 @@ func parseFileName(filePath string, sha1 digest.Digest) properties {
 	fileName := filepath.Base(filePath)
 	packageVersion := jarFileRegEx.FindStringSubmatch(fileName)
 	if len(packageVersion) != 3 {
-		return properties{}
+		return properties{
+			filePath: filePath,
+			digest:   sha1,
+		}
 	}
 
 	return properties{
