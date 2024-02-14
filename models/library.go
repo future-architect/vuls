@@ -13,7 +13,10 @@ import (
 	"github.com/aquasecurity/trivy/pkg/javadb"
 	tlog "github.com/aquasecurity/trivy/pkg/log"
 	"github.com/aquasecurity/trivy/pkg/types"
+	"github.com/samber/lo"
 	"golang.org/x/xerrors"
+
+	"fmt"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
@@ -128,7 +131,6 @@ func (s *LibraryScanner) refineJARInfo() error {
 		return xerrors.Errorf("Failed to init Trivy Java DB. err: %w", err)
 	}
 
-	var foundSHA1 = "X" // initial value can be anything but possible SHA1 nor empty string
 	libs := make([]Library, 0, len(s.Libs))
 
 	for _, l := range s.Libs {
@@ -145,10 +147,6 @@ func (s *LibraryScanner) refineJARInfo() error {
 			continue
 		}
 
-		if sha1 == foundSHA1 {
-			continue
-		}
-
 		foundProps, err := javaDB.SearchBySHA1(sha1)
 		if err != nil {
 			if !errors.Is(err, jar.ArtifactNotFoundErr) {
@@ -161,11 +159,14 @@ func (s *LibraryScanner) refineJARInfo() error {
 		}
 
 		foundLib := foundProps.Library()
-		foundSHA1 = sha1
 		l.Name = foundLib.Name
 		l.Version = foundLib.Version
 		libs = append(libs, l)
 	}
+
+	libs = lo.UniqBy(libs, func(lib Library) string {
+		return fmt.Sprintf("%s::%s::%s", lib.Name, lib.Version, lib.FilePath)
+	})
 
 	s.Libs = libs
 	return nil
