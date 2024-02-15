@@ -43,24 +43,25 @@ import (
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/gradle"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/pom"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/npm"
-
-	// Trivy can parse package.json but doesn't use dependencies info. Not use here
-	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pkg"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pnpm"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/yarn"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/php/composer"
-
-	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/packaging"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/pip"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/pipenv"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/poetry"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/ruby/bundler"
-
-	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/ruby/gemspec"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/rust/binary"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/rust/cargo"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/swift/cocoapods"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/swift/swift"
+
+	// Excleded ones:
+	// Trivy can parse package.json but doesn't use dependencies info. Not use here
+	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pkg"
+	// No dependency information included
+	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/ruby/gemspec"
+	// No dependency information included
+	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/packaging"
 
 	nmap "github.com/Ullaakut/nmap/v2"
 
