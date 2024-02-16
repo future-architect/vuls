@@ -95,7 +95,7 @@ func (p *parser) parse(r dio.ReadSeekerAt) ([]jarLibrary, error) {
 	return removeLibraryDuplicates(libs), nil
 }
 
-// This function MUST NOT return empty list unless an error occured.
+// This function MUST NOT return empty list unless an error occurred.
 // The least element contains file path and SHA1 digest, they can be used at detect phase to
 // determine actual name and version.
 func (p *parser) parseArtifact(filePath string, size int64, r dio.ReadSeekerAt) ([]jarLibrary, error) {
