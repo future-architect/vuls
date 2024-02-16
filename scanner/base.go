@@ -31,7 +31,7 @@ import (
 	// Import library scanner
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/c/conan"
 	// Conda package is supported for SBOM, not for vulnerability scanning
-	// https://github.com/aquasecurity/trivy/blob/v0.48.0/pkg/detector/library/driver.go#L74-L76
+	// https://github.com/aquasecurity/trivy/blob/v0.49.1/pkg/detector/library/driver.go#L75-L77
 	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/conda/meta"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/dart/pub"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/dotnet/deps"
