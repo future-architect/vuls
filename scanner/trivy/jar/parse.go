@@ -248,7 +248,7 @@ func parsePomProperties(f *zip.File, filePath string) (properties, error) {
 	}
 
 	if err = scanner.Err(); err != nil {
-		return properties{}, xerrors.Errorf("scan error: %w", err)
+		return properties{}, xerrors.Errorf("Failed to scan %s. err: %w", f.Name, err)
 	}
 	return p, nil
 }
