@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 
@@ -15,8 +16,6 @@ import (
 	"github.com/aquasecurity/trivy/pkg/types"
 	"github.com/samber/lo"
 	"golang.org/x/xerrors"
-
-	"fmt"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
