@@ -269,7 +269,7 @@ type manifest struct {
 func parseManifest(f *zip.File) (manifest, error) {
 	file, err := f.Open()
 	if err != nil {
-		return manifest{}, xerrors.Errorf("unable to open MANIFEST.MF: %w", err)
+		return manifest{}, xerrors.Errorf("Failed to open MANIFEST.MF. err: %w", err)
 	}
 	defer file.Close()
 
