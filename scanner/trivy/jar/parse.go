@@ -294,7 +294,7 @@ func parseManifest(f *zip.File) (manifest, error) {
 		case strings.HasPrefix(line, "Implementation-Vendor:"):
 			m.implementationVendor = strings.TrimPrefix(line, "Implementation-Vendor:")
 		case strings.HasPrefix(line, "Implementation-Vendor-Id:"):
-			m.implementationVendorId = strings.TrimPrefix(line, "Implementation-Vendor-Id:")
+			m.implementationVendorID = strings.TrimPrefix(line, "Implementation-Vendor-Id:")
 		case strings.HasPrefix(line, "Specification-Version:"):
 			m.specificationVersion = strings.TrimPrefix(line, "Specification-Version:")
 		case strings.HasPrefix(line, "Specification-Title:"):
@@ -344,8 +344,8 @@ func (m manifest) properties(filePath string, sha1 digest.Digest) properties {
 func (m manifest) determineGroupID() (string, error) {
 	var groupID string
 	switch {
-	case m.implementationVendorId != "":
-		groupID = m.implementationVendorId
+	case m.implementationVendorID != "":
+		groupID = m.implementationVendorID
 	case m.bundleSymbolicName != "":
 		groupID = m.bundleSymbolicName
 
