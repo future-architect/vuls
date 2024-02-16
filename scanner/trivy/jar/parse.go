@@ -311,7 +311,7 @@ func parseManifest(f *zip.File) (manifest, error) {
 	}
 
 	if err = scanner.Err(); err != nil {
-		return manifest{}, xerrors.Errorf("Error in scanning file. err: %w", err)
+		return manifest{}, xerrors.Errorf("Failed to scan %s. err: %w", f.Name, err)
 	}
 	return m, nil
 }
