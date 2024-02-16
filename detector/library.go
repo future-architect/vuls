@@ -90,7 +90,7 @@ func showDBInfo(cacheDir string) error {
 	m := metadata.NewClient(cacheDir)
 	meta, err := m.Get()
 	if err != nil {
-		return xerrors.Errorf("Something wrong with DB. err: %w", err)
+		return xerrors.Errorf("Failed to get DB metadata. err: %w", err)
 	}
 	log.Logger.Debugf("DB Schema: %d, UpdatedAt: %s, NextUpdate: %s, DownloadedAt: %s",
 		meta.Version, meta.UpdatedAt, meta.NextUpdate, meta.DownloadedAt)
