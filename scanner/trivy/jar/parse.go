@@ -90,7 +90,7 @@ func newParser(opts ...option) *parser {
 func (p *parser) parse(r dio.ReadSeekerAt) ([]jarLibrary, error) {
 	libs, err := p.parseArtifact(p.rootFilePath, p.size, r)
 	if err != nil {
-		return nil, xerrors.Errorf("unable to parse %s: %w", p.rootFilePath, err)
+		return nil, xerrors.Errorf("Failed to parse %s. err: %w", p.rootFilePath, err)
 	}
 	return removeLibraryDuplicates(libs), nil
 }
