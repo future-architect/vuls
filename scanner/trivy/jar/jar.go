@@ -74,20 +74,19 @@ func toApplication(rootFilePath string, libs []jarLibrary) *types.Application {
 		return nil
 	}
 
-	var pkgs []types.Package
+	pkgs := make([]types.Package, 0, len(libs))
 	for _, lib := range libs {
 		libPath := rootFilePath
 		if lib.filePath != "" {
 			libPath = lib.filePath
 		}
 
-		newPkg := types.Package{
+		pkgs = append(pkgs, types.Package{
 			Name:     lib.name,
 			Version:  lib.version,
 			FilePath: libPath,
 			Digest:   lib.digest,
-		}
-		pkgs = append(pkgs, newPkg)
+		})
 	}
 
 	return &types.Application{
