@@ -257,7 +257,7 @@ type manifest struct {
 	implementationVersion  string
 	implementationTitle    string
 	implementationVendor   string
-	implementationVendorId string
+	implementationVendorID string
 	specificationTitle     string
 	specificationVersion   string
 	specificationVendor    string
