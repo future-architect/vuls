@@ -227,7 +227,7 @@ func parseFileName(filePath string, sha1 digest.Digest) properties {
 func parsePomProperties(f *zip.File, filePath string) (properties, error) {
 	file, err := f.Open()
 	if err != nil {
-		return properties{}, xerrors.Errorf("Unable to open pom.properties. err: %w", err)
+		return properties{}, xerrors.Errorf("Failed to open pom.properties. err: %w", err)
 	}
 	defer file.Close()
 
