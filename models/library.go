@@ -130,7 +130,6 @@ func (s *LibraryScanner) refineJARInfo() error {
 	}
 
 	libs := make([]Library, 0, len(s.Libs))
-
 	for _, l := range s.Libs {
 		if l.Digest == "" {
 			// This is the case from pom.properties, it should be respected as is.
