@@ -626,15 +626,7 @@ func (l *base) parseSystemctlStatus(stdout string) string {
 	return ss[1]
 }
 
-func trivyInit() (err error) {
-	if err := tlog.InitLogger(config.Conf.Debug, config.Conf.Quiet); err != nil {
-		return xerrors.Errorf("Failed to init trivy logger. err: %w", err)
-	}
-
-	return nil
-}
-
-var trivyInitOnce = sync.OnceValue(trivyInit)
+var trivyLoggerInitOnce = sync.OnceValue(func() error { return tlog.InitLogger(config.Conf.Debug, config.Conf.Quiet) })
 
 func (l *base) scanLibraries() (err error) {
 	if len(l.LibraryScanners) != 0 {
