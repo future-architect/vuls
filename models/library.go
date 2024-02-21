@@ -102,7 +102,6 @@ func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 		if err := s.refineJARInfo(); err != nil {
 			return nil, xerrors.Errorf("Failed to init Trivy's Java DB. err: %w", err)
 		}
-
 	}
 	scanner, ok := library.NewDriver(s.Type)
 	if !ok {
