@@ -161,11 +161,9 @@ func (s *LibraryScanner) refineJARInfo() error {
 		libs = append(libs, l)
 	}
 
-	libs = lo.UniqBy(libs, func(lib Library) string {
+	s.Libs = lo.UniqBy(libs, func(lib Library) string {
 		return fmt.Sprintf("%s::%s::%s", lib.Name, lib.Version, lib.FilePath)
 	})
-
-	s.Libs = libs
 	return nil
 }
 
