@@ -52,7 +52,7 @@ func (m DependencyGraphManifest) Ecosystem() ftypes.LangType {
 	case strings.HasSuffix(m.Filename, "yarn.lock"):
 		return ftypes.Yarn // JavaScript
 	case strings.HasSuffix(m.Filename, "pnpm-lock.yaml"):
-		return ftypes.Pnpm
+		return ftypes.Pnpm // JavaScript
 	case strings.HasSuffix(m.Filename, "requirements.txt"),
 		strings.HasSuffix(m.Filename, "requirements-dev.txt"),
 		strings.HasSuffix(m.Filename, "setup.py"):
