@@ -283,14 +283,14 @@ func ghpkgToCdxComponents(m models.DependencyGraphManifest, ghpkgToPURL map[stri
 			Properties: &[]cdx.Property{
 				{
 					Name:  "future-architect:vuls:Type",
-					Value: string(m.Ecosystem()),
+					Value: m.Ecosystem(),
 				},
 			},
 		},
 	}
 
 	for _, dep := range m.Dependencies {
-		purl := packageurl.NewPackageURL(string(m.Ecosystem()), "", dep.PackageName, dep.Version(), packageurl.Qualifiers{{Key: "repo_url", Value: m.Repository}, {Key: "file_path", Value: m.Filename}}, "").ToString()
+		purl := packageurl.NewPackageURL(m.Ecosystem(), "", dep.PackageName, dep.Version(), packageurl.Qualifiers{{Key: "repo_url", Value: m.Repository}, {Key: "file_path", Value: m.Filename}}, "").ToString()
 		components = append(components, cdx.Component{
 			BOMRef:     purl,
 			Type:       cdx.ComponentTypeLibrary,
