@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/aquasecurity/go-dep-parser/pkg/java/jar"
 	"github.com/aquasecurity/trivy-db/pkg/db"
@@ -12,12 +11,10 @@ import (
 	"github.com/aquasecurity/trivy/pkg/detector/library"
 	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
 	"github.com/aquasecurity/trivy/pkg/javadb"
-	tlog "github.com/aquasecurity/trivy/pkg/log"
 	"github.com/aquasecurity/trivy/pkg/types"
 	"github.com/samber/lo"
 	"golang.org/x/xerrors"
 
-	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 )
 
@@ -66,41 +63,11 @@ type Library struct {
 	Digest   string
 }
 
-func trivyInit() error {
-	if err := tlog.InitLogger(config.Conf.Debug, config.Conf.Quiet); err != nil {
-		return xerrors.Errorf("Failed to init trivy logger. err: %w", err)
-	}
-
-	javadb.Init(config.Conf.TrivyCacheDBDir, config.Conf.TrivyJavaDBRepository, config.Conf.TrivySkipJavaDBUpdate, config.Conf.Quiet, ftypes.RegistryOptions{})
-	return nil
-}
-
-var trivyInitOnce = sync.OnceValue(trivyInit)
-
-func trivyInitJavaDB() error {
-	javadb.Init(config.Conf.TrivyCacheDBDir, config.Conf.TrivyJavaDBRepository, config.Conf.TrivySkipJavaDBUpdate, config.Conf.Quiet, ftypes.RegistryOptions{})
-
-	javaDBClient, err := javadb.NewClient()
-	if err != nil {
-		return xerrors.Errorf("Failed to init trivy Java DB. err: %w", err)
-	}
-	javaDB = *javaDBClient
-	return nil
-}
-
-var trivyInitJavaDBOnce = sync.OnceValue(trivyInitJavaDB)
-
-var javaDB javadb.DB
-
 // Scan : scan target library
-func (s LibraryScanner) Scan() ([]VulnInfo, error) {
-	if err := trivyInitOnce(); err != nil {
-		return nil, xerrors.Errorf("Failed to init Trivy. err: %w", err)
-	}
-
+func (s LibraryScanner) Scan(javaDBClient *javadb.DB) ([]VulnInfo, error) {
 	if s.Type == ftypes.Jar {
-		if err := s.refineJARInfo(); err != nil {
-			return nil, xerrors.Errorf("Failed to init Trivy's Java DB. err: %w", err)
+		if err := s.improveJARInfo(javaDBClient); err != nil {
+			return nil, xerrors.Errorf("Failed to improve JAR information by trivy Java DB. err: %w", err)
 		}
 	}
 	scanner, ok := library.NewDriver(s.Type)
@@ -124,11 +91,7 @@ func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 	return vulnerabilities, nil
 }
 
-func (s *LibraryScanner) refineJARInfo() error {
-	if err := trivyInitJavaDBOnce(); err != nil {
-		return xerrors.Errorf("Failed to init Trivy Java DB. err: %w", err)
-	}
-
+func (s *LibraryScanner) improveJARInfo(javaDBClient *javadb.DB) error {
 	libs := make([]Library, 0, len(s.Libs))
 	for _, l := range s.Libs {
 		if l.Digest == "" {
@@ -144,10 +107,10 @@ func (s *LibraryScanner) refineJARInfo() error {
 			continue
 		}
 
-		foundProps, err := javaDB.SearchBySHA1(sha1)
+		foundProps, err := javaDBClient.SearchBySHA1(sha1)
 		if err != nil {
 			if !errors.Is(err, jar.ArtifactNotFoundErr) {
-				return xerrors.Errorf("Failed to search Trivy's Java DB. err: %w", err)
+				return xerrors.Errorf("Failed to search trivy Java DB. err: %w", err)
 			}
 
 			logging.Log.Debugf("No record in Java DB for %s by SHA1: %s", l.FilePath, sha1)
