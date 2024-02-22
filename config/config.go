@@ -88,6 +88,7 @@ type ReportOpts struct {
 	TrivyOpts
 }
 
+// TrivyOpts is options for trivy DBs
 type TrivyOpts struct {
 	TrivyCacheDBDir       string `json:"trivyCacheDBDir,omitempty"`
 	TrivyJavaDBRepository string `json:"trivyJavaDBRepository,omitempty"`
