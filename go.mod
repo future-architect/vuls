@@ -37,7 +37,7 @@ require (
 	github.com/nlopes/slack v0.6.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/package-url/packageurl-go v0.1.2
-	github.com/parnurzeal/gorequest v0.2.16
+	github.com/parnurzeal/gorequest v0.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
@@ -138,6 +138,7 @@ require (
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/moul/http2curl v1.0.0 // indirect
 	github.com/nsf/termbox-go v1.1.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
@@ -187,5 +188,4 @@ require (
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.7.2 // indirect
 	modernc.org/sqlite v1.28.0 // indirect
-	moul.io/http2curl v1.0.0 // indirect
 )
