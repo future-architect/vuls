@@ -46,7 +46,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			r.ScannedCves = models.VulnInfos{}
 		}
 
-		if err := DetectLibsCves(&r, config.Conf.TrivyOpts, config.Conf.NoProgress); err != nil {
+		if err := DetectLibsCves(&r, config.Conf.TrivyOpts, config.Conf.LogOpts, config.Conf.NoProgress); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
 		}
 
