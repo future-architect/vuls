@@ -51,6 +51,7 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 		if err != nil {
 			return err
 		}
+		defer javaDBClient.Close()
 	}
 
 	for _, lib := range r.LibraryScanners {
