@@ -89,7 +89,7 @@ func downloadDB(appVersion string, trivyOpts config.TrivyOpts, noProgress, skipU
 	if needsUpdate {
 		logging.Log.Info("Need to update DB")
 		logging.Log.Info("Downloading DB...")
-		if err := client.Download(ctx, tirvyOpts.TrivyCacheDBDir, ftypes.RegistryOptions{}); err != nil {
+		if err := client.Download(ctx, trivyOpts.TrivyCacheDBDir, ftypes.RegistryOptions{}); err != nil {
 			return xerrors.Errorf("Failed to download vulnerability DB. err: %w", err)
 		}
 	}
