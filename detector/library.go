@@ -50,7 +50,7 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 
 				javaDBClient, err = javadb.NewClient()
 				if err != nil {
-					return xerrors.Errorf("Failed to open trivy Java DB. err: %w", err)
+					return xerrors.Errorf("Failed to download or open trivy Java DB. err: %w", err)
 				}
 			}
 			lib.JavaDBClient = javaDBClient
