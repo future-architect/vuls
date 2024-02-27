@@ -79,8 +79,7 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 }
 
 func downloadDB(appVersion string, trivyOpts config.TrivyOpts, noProgress, skipUpdate bool) error {
-	cacheDir := trivyOpts.TrivyCacheDBDir
-	client := db.NewClient(cacheDir, noProgress)
+	client := db.NewClient(trivyOpts.TrivyCacheDBDir, noProgress)
 	ctx := context.Background()
 	needsUpdate, err := client.NeedsUpdate(appVersion, skipUpdate)
 	if err != nil {
@@ -90,13 +89,13 @@ func downloadDB(appVersion string, trivyOpts config.TrivyOpts, noProgress, skipU
 	if needsUpdate {
 		logging.Log.Info("Need to update DB")
 		logging.Log.Info("Downloading DB...")
-		if err := client.Download(ctx, cacheDir, ftypes.RegistryOptions{}); err != nil {
+		if err := client.Download(ctx, tirvyOpts.TrivyCacheDBDir, ftypes.RegistryOptions{}); err != nil {
 			return xerrors.Errorf("Failed to download vulnerability DB. err: %w", err)
 		}
 	}
 
 	// for debug
-	if err := showDBInfo(cacheDir); err != nil {
+	if err := showDBInfo(trivyOpts.TrivyCacheDBDir); err != nil {
 		return xerrors.Errorf("Failed to show database info. err: %w", err)
 	}
 	return nil
@@ -111,20 +110,4 @@ func showDBInfo(cacheDir string) error {
 	log.Logger.Debugf("DB Schema: %d, UpdatedAt: %s, NextUpdate: %s, DownloadedAt: %s",
 		meta.Version, meta.UpdatedAt, meta.NextUpdate, meta.DownloadedAt)
 	return nil
-}
-
-func downloadJavaDB(trivyOpts config.TrivyOpts, noProgress bool) error {
-	javadb.Init(trivyOpts.TrivyCacheDBDir, trivyOpts.TrivyJavaDBRepository, trivyOpts.TrivySkipJavaDBUpdate, noProgress, ftypes.RegistryOptions{})
-	if err := javadb.Update(); err != nil {
-		return xerrors.Errorf("Failed to download trivy Java DB. err: %w", err)
-	}
-	return nil
-}
-
-func newJavaDBClient() (*javadb.DB, error) {
-	client, err := javadb.NewClient()
-	if err != nil {
-		return nil, xerrors.Errorf("Failed to open trivy Java DB. err: %w", err)
-	}
-	return client, nil
 }
