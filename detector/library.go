@@ -34,7 +34,7 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 
 	logging.Log.Info("Updating library db...")
 	if err := downloadDB("", trivyOpts, noProgress, false); err != nil {
-		return err
+		return xerrors.Errorf("Failed to download trivy DB. err: %w", err)
 	}
 	if err := trivydb.Init(trivyOpts.TrivyCacheDBDir); err != nil {
 		return err
