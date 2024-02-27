@@ -50,6 +50,8 @@ type LibraryScanner struct {
 
 	// The path to the Lockfile is stored.
 	LockfilePath string `json:"path,omitempty"`
+
+	JavaDBClient *javadb.DB `json:"-"`
 }
 
 // Library holds the attribute of a package library
@@ -64,9 +66,9 @@ type Library struct {
 }
 
 // Scan : scan target library
-func (s LibraryScanner) Scan(javaDBClient *javadb.DB) ([]VulnInfo, error) {
+func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 	if s.Type == ftypes.Jar {
-		if err := s.improveJARInfo(javaDBClient); err != nil {
+		if err := s.improveJARInfo(); err != nil {
 			return nil, xerrors.Errorf("Failed to improve JAR information by trivy Java DB. err: %w", err)
 		}
 	}
@@ -91,7 +93,7 @@ func (s LibraryScanner) Scan(javaDBClient *javadb.DB) ([]VulnInfo, error) {
 	return vulnerabilities, nil
 }
 
-func (s *LibraryScanner) improveJARInfo(javaDBClient *javadb.DB) error {
+func (s *LibraryScanner) improveJARInfo() error {
 	libs := make([]Library, 0, len(s.Libs))
 	for _, l := range s.Libs {
 		if l.Digest == "" {
@@ -107,7 +109,7 @@ func (s *LibraryScanner) improveJARInfo(javaDBClient *javadb.DB) error {
 			continue
 		}
 
-		foundProps, err := javaDBClient.SearchBySHA1(sha1)
+		foundProps, err := s.JavaDBClient.SearchBySHA1(sha1)
 		if err != nil {
 			if !errors.Is(err, jar.ArtifactNotFoundErr) {
 				return xerrors.Errorf("Failed to search trivy Java DB. err: %w", err)

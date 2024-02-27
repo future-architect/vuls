@@ -5,7 +5,6 @@ package detector
 
 import (
 	"context"
-	"slices"
 
 	trivydb "github.com/aquasecurity/trivy-db/pkg/db"
 	"github.com/aquasecurity/trivy-db/pkg/metadata"
@@ -43,19 +42,21 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 	defer trivydb.Close()
 
 	var javaDBClient *javadb.DB
-	if slices.ContainsFunc(r.LibraryScanners, func(s models.LibraryScanner) bool { return s.Type == ftypes.Jar }) {
-		if err := downloadJavaDB(trivyOpts, noProgress); err != nil {
-			return err
-		}
-		javaDBClient, err = newJavaDBClient()
-		if err != nil {
-			return err
-		}
-		defer javaDBClient.Close()
-	}
-
+	defer javaDBClient.Close()
 	for _, lib := range r.LibraryScanners {
-		vinfos, err := lib.Scan(javaDBClient)
+		if lib.Type == ftypes.Jar {
+			if javaDBClient == nil {
+				javadb.Init(trivyOpts.TrivyCacheDBDir, trivyOpts.TrivyJavaDBRepository, trivyOpts.TrivySkipJavaDBUpdate, noProgress, ftypes.RegistryOptions{})
+
+				javaDBClient, err = javadb.NewClient()
+				if err != nil {
+					return xerrors.Errorf("Failed to open trivy Java DB. err: %w", err)
+				}
+			}
+			lib.JavaDBClient = javaDBClient
+		}
+
+		vinfos, err := lib.Scan()
 		if err != nil {
 			return err
 		}
