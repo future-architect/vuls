@@ -29,7 +29,7 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 	// initialize trivy's logger and db
 	err = log.InitLogger(logOpts.Debug, logOpts.Quiet)
 	if err != nil {
-		return err
+		return xerrors.Errorf("Failed to init trivy logger. err: %w", err)
 	}
 
 	logging.Log.Info("Updating library db...")
