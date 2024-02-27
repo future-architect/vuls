@@ -6,6 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/fs"
 	"net"
 	"os"
 	"path/filepath"
@@ -17,6 +19,8 @@ import (
 
 	dio "github.com/aquasecurity/go-dep-parser/pkg/io"
 	"github.com/aquasecurity/trivy/pkg/fanal/analyzer"
+	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
+	"github.com/aquasecurity/trivy/pkg/javadb"
 	debver "github.com/knqyf263/go-deb-version"
 
 	"github.com/future-architect/vuls/config"
@@ -29,29 +33,39 @@ import (
 
 	// Import library scanner
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/c/conan"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/conda/meta"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/dart/pub"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/dotnet/deps"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/dotnet/nuget"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/elixir/mix"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/golang/binary"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/golang/mod"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/gradle"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/jar"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/pom"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/license"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/npm"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pkg"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pnpm"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/yarn"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/php/composer"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/packaging"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/pip"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/pipenv"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/poetry"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/ruby/bundler"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/ruby/gemspec"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/rust/binary"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/rust/cargo"
-
-	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/ruby/gemspec"
-	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pkg"
-	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/packaging"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/swift/cocoapods"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/swift/swift"
 
 	nmap "github.com/Ullaakut/nmap/v2"
 )
+
+var javaDBInit sync.Once
+
+const defaultJavaDBRepository = "ghcr.io/aquasecurity/trivy-java-db"
 
 type base struct {
 	ServerInfo config.ServerInfo
@@ -718,9 +732,45 @@ func (l *base) scanLibraries() (err error) {
 	return nil
 }
 
+type dummyFile struct {
+	info   fs.FileInfo
+	reader io.ReadCloser
+}
+
+func (f dummyFile) Stat() (fs.FileInfo, error) {
+	return f.info, nil
+}
+func (f dummyFile) Read(buf []byte) (int, error) {
+	return f.reader.Read(buf)
+}
+func (f dummyFile) Close() error {
+	return f.reader.Close()
+}
+
+type dummyFs struct {
+	path string
+	file dummyFile
+}
+
+func newDummyFs(path string, contents []byte, info fs.FileInfo) dummyFs {
+	return dummyFs{path: path, file: dummyFile{info: info, reader: dio.NopCloser(bytes.NewReader(contents))}}
+}
+
+func (fs dummyFs) Open(name string) (fs.File, error) {
+	if name != fs.path {
+		return nil, xerrors.Errorf("Unkown path: %s", name)
+	}
+	return fs.file, nil
+}
+
 // AnalyzeLibrary : detects library defined in artifact such as lockfile or jar
 func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode os.FileMode, isOffline bool) (libraryScanners []models.LibraryScanner, err error) {
-	anal, err := analyzer.NewAnalyzerGroup(analyzer.AnalyzerOptions{
+	javaDBInit.Do(func() {
+		// TODO(shino): Properly implement every arguments
+		javadb.Init(config.Conf.TrivyCacheDBDir, defaultJavaDBRepository, false, false, ftypes.RegistryOptions{})
+	})
+
+	ag, err := analyzer.NewAnalyzerGroup(analyzer.AnalyzerOptions{
 		Group:             analyzer.GroupBuiltin,
 		DisabledAnalyzers: disabledAnalyzers,
 	})
@@ -730,21 +780,47 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 
 	var wg sync.WaitGroup
 	result := new(analyzer.AnalysisResult)
-	if err := anal.AnalyzeFile(
+
+	info := &DummyFileInfo{name: filepath.Base(path), size: int64(len(contents)), filemode: filemode}
+	opts := analyzer.AnalysisOptions{Offline: isOffline}
+	if err := ag.AnalyzeFile(
 		ctx,
 		&wg,
 		semaphore.NewWeighted(1),
 		result,
 		"",
 		path,
-		&DummyFileInfo{name: filepath.Base(path), size: int64(len(contents)), filemode: filemode},
+		info,
 		func() (dio.ReadSeekCloserAt, error) { return dio.NopCloser(bytes.NewReader(contents)), nil },
 		nil,
-		analyzer.AnalysisOptions{Offline: isOffline},
+		opts,
 	); err != nil {
 		return nil, xerrors.Errorf("Failed to get libs. err: %w", err)
 	}
+
 	wg.Wait()
+
+	// Post-analysis
+	composite, err := ag.PostAnalyzerFS()
+	if err != nil {
+		return nil, xerrors.Errorf("failed to prepare filesystem for post analysis: %w", err)
+	}
+	defer composite.Cleanup()
+
+	analyzerTypes := ag.RequiredPostAnalyzers(path, info)
+	if len(analyzerTypes) != 0 {
+		opener := func() (dio.ReadSeekCloserAt, error) { return dio.NopCloser(bytes.NewReader(contents)), nil }
+		tmpFilePath, err := composite.CopyFileToTemp(opener, info)
+		if err != nil {
+			return nil, xerrors.Errorf("failed to copy file to temp: %w", err)
+		}
+		if err := composite.CreateLink(analyzerTypes, "", path, tmpFilePath); err != nil {
+			return nil, xerrors.Errorf("failed to create link: %w", err)
+		}
+		if err = ag.PostAnalyze(ctx, composite, result, opts); err != nil {
+			return nil, xerrors.Errorf("post analysis error: %w", err)
+		}
+	}
 
 	libscan, err := convertLibWithScanner(result.Applications)
 	if err != nil {
@@ -754,7 +830,7 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 	return libraryScanners, nil
 }
 
-// https://github.com/aquasecurity/trivy/blob/84677903a6fa1b707a32d0e8b2bffc23dde52afa/pkg/fanal/analyzer/const.go
+// https://github.com/aquasecurity/trivy/blob/v0.47.0/pkg/fanal/analyzer/const.go
 var disabledAnalyzers = []analyzer.Type{
 	// ======
 	//   OS
@@ -773,6 +849,7 @@ var disabledAnalyzers = []analyzer.Type{
 	analyzer.TypeRedHatBase,
 	analyzer.TypeSUSE,
 	analyzer.TypeUbuntu,
+	analyzer.TypeUbuntuESM,
 
 	// OS Package
 	analyzer.TypeApk,
@@ -785,19 +862,28 @@ var disabledAnalyzers = []analyzer.Type{
 	analyzer.TypeApkRepo,
 
 	// ============
+	// Non-packaged
+	// ============
+	analyzer.TypeExecutable,
+	analyzer.TypeSBOM,
+
+	// ============
 	// Image Config
 	// ============
 	analyzer.TypeApkCommand,
+	analyzer.TypeHistoryDockerfile,
+	analyzer.TypeImageConfigSecret,
 
 	// =================
 	// Structured Config
 	// =================
-	analyzer.TypeYaml,
-	analyzer.TypeJSON,
-	analyzer.TypeDockerfile,
-	analyzer.TypeTerraform,
+	analyzer.TypeAzureARM,
 	analyzer.TypeCloudFormation,
+	analyzer.TypeDockerfile,
 	analyzer.TypeHelm,
+	analyzer.TypeKubernetes,
+	analyzer.TypeTerraform,
+	analyzer.TypeTerraformPlan,
 
 	// ========
 	// License

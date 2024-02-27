@@ -38,7 +38,7 @@ func (lss LibraryScanners) Total() (total int) {
 
 // LibraryScanner has libraries information
 type LibraryScanner struct {
-	Type string
+	Type ftypes.LangType
 	Libs []Library
 
 	// The path to the Lockfile is stored.
@@ -57,9 +57,9 @@ type Library struct {
 
 // Scan : scan target library
 func (s LibraryScanner) Scan() ([]VulnInfo, error) {
-	scanner, err := library.NewDriver(s.Type)
-	if err != nil {
-		return nil, xerrors.Errorf("Failed to new a library driver %s: %w", s.Type, err)
+	scanner, ok := library.NewDriver(s.Type)
+	if !ok {
+		return nil, xerrors.Errorf("Failed to new a library driver %s", s.Type)
 	}
 	var vulnerabilities = []VulnInfo{}
 	for _, pkg := range s.Libs {

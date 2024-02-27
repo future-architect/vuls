@@ -26,7 +26,7 @@ func (m DependencyGraphManifest) RepoURLFilename() string {
 
 // Ecosystem returns a name of ecosystem(or package manager) of manifest(lock) file in trivy way
 // https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/about-the-dependency-graph#supported-package-ecosystems
-func (m DependencyGraphManifest) Ecosystem() string {
+func (m DependencyGraphManifest) Ecosystem() ftypes.LangType {
 	switch {
 	case strings.HasSuffix(m.Filename, "Cargo.lock"),
 		strings.HasSuffix(m.Filename, "Cargo.toml"):

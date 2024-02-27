@@ -9,6 +9,7 @@ import (
 	trivydb "github.com/aquasecurity/trivy-db/pkg/db"
 	"github.com/aquasecurity/trivy-db/pkg/metadata"
 	"github.com/aquasecurity/trivy/pkg/db"
+	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
 	"github.com/aquasecurity/trivy/pkg/log"
 	"golang.org/x/xerrors"
 
@@ -63,7 +64,7 @@ func DetectLibsCves(r *models.ScanResult, cacheDir string, noProgress bool) (err
 }
 
 func downloadDB(appVersion, cacheDir string, quiet, skipUpdate bool) error {
-	client := db.NewClient(cacheDir, quiet, false)
+	client := db.NewClient(cacheDir, quiet)
 	ctx := context.Background()
 	needsUpdate, err := client.NeedsUpdate(appVersion, skipUpdate)
 	if err != nil {
@@ -73,7 +74,7 @@ func downloadDB(appVersion, cacheDir string, quiet, skipUpdate bool) error {
 	if needsUpdate {
 		logging.Log.Info("Need to update DB")
 		logging.Log.Info("Downloading DB...")
-		if err := client.Download(ctx, cacheDir); err != nil {
+		if err := client.Download(ctx, cacheDir, ftypes.RegistryOptions{}); err != nil {
 			return xerrors.Errorf("failed to download vulnerability DB: %w", err)
 		}
 	}

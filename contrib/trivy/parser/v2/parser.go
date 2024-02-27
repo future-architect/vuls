@@ -65,7 +65,7 @@ func setScanResultMeta(scanResult *models.ScanResult, report *types.Report) erro
 	}
 
 	if report.Metadata.OS != nil {
-		scanResult.Family = report.Metadata.OS.Family
+		scanResult.Family = string(report.Metadata.OS.Family)
 		scanResult.Release = report.Metadata.OS.Name
 	} else {
 		scanResult.Family = constant.ServerTypePseudo

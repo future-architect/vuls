@@ -252,14 +252,14 @@ func libpkgToCdxComponents(libscanner models.LibraryScanner, libpkgToPURL map[st
 			Properties: &[]cdx.Property{
 				{
 					Name:  "future-architect:vuls:Type",
-					Value: libscanner.Type,
+					Value: string(libscanner.Type),
 				},
 			},
 		},
 	}
 
 	for _, lib := range libscanner.Libs {
-		purl := packageurl.NewPackageURL(libscanner.Type, "", lib.Name, lib.Version, packageurl.Qualifiers{{Key: "file_path", Value: libscanner.LockfilePath}}, "").ToString()
+		purl := packageurl.NewPackageURL(string(libscanner.Type), "", lib.Name, lib.Version, packageurl.Qualifiers{{Key: "file_path", Value: libscanner.LockfilePath}}, "").ToString()
 		components = append(components, cdx.Component{
 			BOMRef:     purl,
 			Type:       cdx.ComponentTypeLibrary,
@@ -283,14 +283,14 @@ func ghpkgToCdxComponents(m models.DependencyGraphManifest, ghpkgToPURL map[stri
 			Properties: &[]cdx.Property{
 				{
 					Name:  "future-architect:vuls:Type",
-					Value: m.Ecosystem(),
+					Value: string(m.Ecosystem()),
 				},
 			},
 		},
 	}
 
 	for _, dep := range m.Dependencies {
-		purl := packageurl.NewPackageURL(m.Ecosystem(), "", dep.PackageName, dep.Version(), packageurl.Qualifiers{{Key: "repo_url", Value: m.Repository}, {Key: "file_path", Value: m.Filename}}, "").ToString()
+		purl := packageurl.NewPackageURL(string(m.Ecosystem()), "", dep.PackageName, dep.Version(), packageurl.Qualifiers{{Key: "repo_url", Value: m.Repository}, {Key: "file_path", Value: m.Filename}}, "").ToString()
 		components = append(components, cdx.Component{
 			BOMRef:     purl,
 			Type:       cdx.ComponentTypeLibrary,
