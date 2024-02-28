@@ -76,7 +76,6 @@ type ScanOpts struct {
 type ReportOpts struct {
 	CvssScoreOver       float64 `json:"cvssScoreOver,omitempty"`
 	ConfidenceScoreOver int     `json:"confidenceScoreOver,omitempty"`
-	TrivyCacheDBDir     string  `json:"trivyCacheDBDir,omitempty"`
 	NoProgress          bool    `json:"noProgress,omitempty"`
 	RefreshCve          bool    `json:"refreshCve,omitempty"`
 	IgnoreUnfixed       bool    `json:"ignoreUnfixed,omitempty"`
@@ -85,6 +84,15 @@ type ReportOpts struct {
 	DiffMinus           bool    `json:"diffMinus,omitempty"`
 	Diff                bool    `json:"diff,omitempty"`
 	Lang                string  `json:"lang,omitempty"`
+
+	TrivyOpts
+}
+
+// TrivyOpts is options for trivy DBs
+type TrivyOpts struct {
+	TrivyCacheDBDir       string `json:"trivyCacheDBDir,omitempty"`
+	TrivyJavaDBRepository string `json:"trivyJavaDBRepository,omitempty"`
+	TrivySkipJavaDBUpdate bool   `json:"trivySkipJavaDBUpdate,omitempty"`
 }
 
 // ValidateOnConfigtest validates

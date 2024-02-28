@@ -3,8 +3,6 @@ package models
 import (
 	"fmt"
 	"strings"
-
-	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
 )
 
 // DependencyGraphManifests has a map of DependencyGraphManifest
@@ -30,45 +28,49 @@ func (m DependencyGraphManifest) Ecosystem() string {
 	switch {
 	case strings.HasSuffix(m.Filename, "Cargo.lock"),
 		strings.HasSuffix(m.Filename, "Cargo.toml"):
-		return ftypes.Cargo // Rust
+		return "cargo" // Rust
 	case strings.HasSuffix(m.Filename, "composer.lock"),
 		strings.HasSuffix(m.Filename, "composer.json"):
-		return ftypes.Composer // PHP
+		return "composer" // PHP
 	case strings.HasSuffix(m.Filename, ".csproj"),
 		strings.HasSuffix(m.Filename, ".vbproj"),
 		strings.HasSuffix(m.Filename, ".nuspec"),
 		strings.HasSuffix(m.Filename, ".vcxproj"),
 		strings.HasSuffix(m.Filename, ".fsproj"),
 		strings.HasSuffix(m.Filename, "packages.config"):
-		return ftypes.NuGet // .NET languages (C#, F#, VB), C++
+		return "nuget" // .NET languages (C#, F#, VB), C++
 	case strings.HasSuffix(m.Filename, "go.sum"),
 		strings.HasSuffix(m.Filename, "go.mod"):
-		return ftypes.GoModule // Go
+		return "gomod" // Go
 	case strings.HasSuffix(m.Filename, "pom.xml"):
-		return ftypes.Pom // Java, Scala
+		return "pom" // Java, Scala
 	case strings.HasSuffix(m.Filename, "package-lock.json"),
 		strings.HasSuffix(m.Filename, "package.json"):
-		return ftypes.Npm // JavaScript
+		return "npm" // JavaScript
 	case strings.HasSuffix(m.Filename, "yarn.lock"):
-		return ftypes.Yarn // JavaScript
+		return "yarn" // JavaScript
+	case strings.HasSuffix(m.Filename, "pnpm-lock.yaml"):
+		return "pnpm" // JavaScript
 	case strings.HasSuffix(m.Filename, "requirements.txt"),
 		strings.HasSuffix(m.Filename, "requirements-dev.txt"),
 		strings.HasSuffix(m.Filename, "setup.py"):
-		return ftypes.Pip // Python
+		return "pip" // Python
 	case strings.HasSuffix(m.Filename, "Pipfile.lock"),
 		strings.HasSuffix(m.Filename, "Pipfile"):
-		return ftypes.Pipenv // Python
+		return "pipenv" // Python
 	case strings.HasSuffix(m.Filename, "poetry.lock"),
 		strings.HasSuffix(m.Filename, "pyproject.toml"):
-		return ftypes.Poetry // Python
+		return "poetry" // Python
 	case strings.HasSuffix(m.Filename, "Gemfile.lock"),
 		strings.HasSuffix(m.Filename, "Gemfile"):
-		return ftypes.Bundler // Ruby
+		return "bundler" // Ruby
 	case strings.HasSuffix(m.Filename, ".gemspec"):
-		return ftypes.GemSpec // Ruby
+		return "gemspec" // Ruby
 	case strings.HasSuffix(m.Filename, "pubspec.lock"),
 		strings.HasSuffix(m.Filename, "pubspec.yaml"):
 		return "pub" // Dart
+	case strings.HasSuffix(m.Filename, "Package.resolved"):
+		return "swift" // Swift
 	case strings.HasSuffix(m.Filename, ".yml"),
 		strings.HasSuffix(m.Filename, ".yaml"):
 		return "actions" // GitHub Actions workflows

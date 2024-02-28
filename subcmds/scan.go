@@ -50,7 +50,6 @@ func (*ScanCmd) Usage() string {
 		[-vvv]
 		[-ips]
 
-
 		[SERVER]...
 `
 }

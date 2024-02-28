@@ -14,6 +14,7 @@ func convertLibWithScanner(apps []types.Application) ([]models.LibraryScanner, e
 				Name:     lib.Name,
 				Version:  lib.Version,
 				FilePath: lib.FilePath,
+				Digest:   string(lib.Digest),
 			})
 		}
 		scanners = append(scanners, models.LibraryScanner{

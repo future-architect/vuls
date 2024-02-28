@@ -1,11 +1,18 @@
 package models
 
 import (
+	"errors"
+	"fmt"
+	"strings"
+
+	"github.com/aquasecurity/go-dep-parser/pkg/java/jar"
 	"github.com/aquasecurity/trivy-db/pkg/db"
 	trivyDBTypes "github.com/aquasecurity/trivy-db/pkg/types"
 	"github.com/aquasecurity/trivy/pkg/detector/library"
 	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
+	"github.com/aquasecurity/trivy/pkg/javadb"
 	"github.com/aquasecurity/trivy/pkg/types"
+	"github.com/samber/lo"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/logging"
@@ -38,11 +45,13 @@ func (lss LibraryScanners) Total() (total int) {
 
 // LibraryScanner has libraries information
 type LibraryScanner struct {
-	Type string
+	Type ftypes.LangType
 	Libs []Library
 
 	// The path to the Lockfile is stored.
 	LockfilePath string `json:"path,omitempty"`
+
+	JavaDBClient *javadb.DB `json:"-"`
 }
 
 // Library holds the attribute of a package library
@@ -53,19 +62,25 @@ type Library struct {
 	// The Path to the library in the container image. Empty string when Lockfile scan.
 	// This field is used to convert the result JSON of a `trivy image` using trivy-to-vuls.
 	FilePath string
+	Digest   string
 }
 
 // Scan : scan target library
 func (s LibraryScanner) Scan() ([]VulnInfo, error) {
-	scanner, err := library.NewDriver(s.Type)
-	if err != nil {
-		return nil, xerrors.Errorf("Failed to new a library driver %s: %w", s.Type, err)
+	if s.Type == ftypes.Jar {
+		if err := s.improveJARInfo(); err != nil {
+			return nil, xerrors.Errorf("Failed to improve JAR information by trivy Java DB. err: %w", err)
+		}
+	}
+	scanner, ok := library.NewDriver(s.Type)
+	if !ok {
+		return nil, xerrors.Errorf("Failed to new a library driver for %s", s.Type)
 	}
 	var vulnerabilities = []VulnInfo{}
 	for _, pkg := range s.Libs {
 		tvulns, err := scanner.DetectVulnerabilities("", pkg.Name, pkg.Version)
 		if err != nil {
-			return nil, xerrors.Errorf("failed to detect %s vulnerabilities: %w", scanner.Type(), err)
+			return nil, xerrors.Errorf("Failed to detect %s vulnerabilities. err: %w", scanner.Type(), err)
 		}
 		if len(tvulns) == 0 {
 			continue
@@ -76,6 +91,45 @@ func (s LibraryScanner) Scan() ([]VulnInfo, error) {
 	}
 
 	return vulnerabilities, nil
+}
+
+func (s *LibraryScanner) improveJARInfo() error {
+	libs := make([]Library, 0, len(s.Libs))
+	for _, l := range s.Libs {
+		if l.Digest == "" {
+			// This is the case from pom.properties, it should be respected as is.
+			libs = append(libs, l)
+			continue
+		}
+
+		algorithm, sha1, found := strings.Cut(l.Digest, ":")
+		if !found || algorithm != "sha1" {
+			logging.Log.Debugf("No SHA1 hash found for %s in the digest: %q", l.FilePath, l.Digest)
+			libs = append(libs, l)
+			continue
+		}
+
+		foundProps, err := s.JavaDBClient.SearchBySHA1(sha1)
+		if err != nil {
+			if !errors.Is(err, jar.ArtifactNotFoundErr) {
+				return xerrors.Errorf("Failed to search trivy Java DB. err: %w", err)
+			}
+
+			logging.Log.Debugf("No record in Java DB for %s by SHA1: %s", l.FilePath, sha1)
+			libs = append(libs, l)
+			continue
+		}
+
+		foundLib := foundProps.Library()
+		l.Name = foundLib.Name
+		l.Version = foundLib.Version
+		libs = append(libs, l)
+	}
+
+	s.Libs = lo.UniqBy(libs, func(lib Library) string {
+		return fmt.Sprintf("%s::%s::%s", lib.Name, lib.Version, lib.FilePath)
+	})
+	return nil
 }
 
 func (s LibraryScanner) convertFanalToVuln(tvulns []types.DetectedVulnerability) (vulns []VulnInfo) {
@@ -131,10 +185,14 @@ func getCveContents(cveID string, vul trivyDBTypes.Vulnerability) (contents map[
 
 // FindLockFiles is a list of filenames that is the target of findLock
 var FindLockFiles = []string{
+	// dart/pub
+	ftypes.PubSpecLock,
+	// elixir/mix
+	ftypes.MixLock,
 	// node
 	ftypes.NpmPkgLock, ftypes.YarnLock, ftypes.PnpmLock,
 	// ruby
-	ftypes.GemfileLock,
+	ftypes.GemfileLock, "*.gemspec",
 	// rust
 	ftypes.CargoLock,
 	// php
@@ -142,13 +200,15 @@ var FindLockFiles = []string{
 	// python
 	ftypes.PipRequirements, ftypes.PipfileLock, ftypes.PoetryLock,
 	// .net
-	ftypes.NuGetPkgsLock, ftypes.NuGetPkgsConfig, "*.deps.json",
+	ftypes.NuGetPkgsLock, ftypes.NuGetPkgsConfig, "*.deps.json", "*Packages.props",
 	// gomod
 	ftypes.GoMod, ftypes.GoSum,
 	// java
 	ftypes.MavenPom, "*.jar", "*.war", "*.ear", "*.par", "*gradle.lockfile",
 	// C / C++
 	ftypes.ConanLock,
+	// Swift
+	ftypes.CocoaPodsLock, ftypes.SwiftResolved,
 }
 
 // GetLibraryKey returns target library key
@@ -156,7 +216,7 @@ func (s LibraryScanner) GetLibraryKey() string {
 	switch s.Type {
 	case ftypes.Bundler, ftypes.GemSpec:
 		return "ruby"
-	case ftypes.Cargo:
+	case ftypes.Cargo, ftypes.RustBinary:
 		return "rust"
 	case ftypes.Composer:
 		return "php"
@@ -170,8 +230,14 @@ func (s LibraryScanner) GetLibraryKey() string {
 		return ".net"
 	case ftypes.Pipenv, ftypes.Poetry, ftypes.Pip, ftypes.PythonPkg:
 		return "python"
-	case ftypes.ConanLock:
+	case ftypes.Conan:
 		return "c"
+	case ftypes.Pub:
+		return "dart"
+	case ftypes.Hex:
+		return "elixir"
+	case ftypes.Swift, ftypes.Cocoapods:
+		return "swift"
 	default:
 		return ""
 	}

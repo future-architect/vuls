@@ -6,11 +6,11 @@
   - upload vuls results json to future-vuls
 
 - `future-vuls discover`
- -  Explore hosts within the CIDR range using the ping command
- -  Describe the information including CPE on the found hosts in a toml-formatted file.
- -  Exec snmp2cpe(https://github.com/future-architect/vuls/pull/1625) to active hosts to obtain CPE<br>
-Commands running internally　　`snmp2cpe v2c {IPAddr} public  | snmp2cpe convert`<br>
-   
+ -  Explores hosts within the CIDR range using the ping command
+ -  Describes the information including CPEs on the found hosts in a toml-formatted file
+ -  Executes snmp2cpe(https://github.com/future-architect/vuls/pull/1625) to active hosts to obtain CPE,
+    Commands running internally `snmp2cpe v2c {IPAddr} public  | snmp2cpe convert`
+
 Structure of toml-formatted file
 ```
 [server.{ip}]
@@ -23,12 +23,12 @@ fvuls_sync = false
  
 - `future-vuls add-cpe`
   -  Create pseudo server to Fvuls to obtain uuid and Upload CPE information on the specified(FvulsSync is true and UUID is obtained) hosts to Fvuls
-  -  Fvuls_Sync must be rewritten to true to designate it as the target of the command<br><br>
+  -  Fvuls_Sync must be rewritten to true to designate it as the target of the command
 
 
-1.　`future-vuls discover`
+1. `future-vuls discover`
 
-2.　`future-vuls add-cpe`
+2. `future-vuls add-cpe`
 
 These two commands are used to manage the CPE of network devices, and by executing the commands in the order from the top, you can manage the CPE of each device in Fvuls
 

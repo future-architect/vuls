@@ -3,7 +3,7 @@
 	install \
 	all \
 	vendor \
- 	lint \
+	lint \
 	vet \
 	fmt \
 	fmtcheck \
