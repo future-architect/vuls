@@ -10,11 +10,11 @@ import (
 	trivyDBTypes "github.com/aquasecurity/trivy-db/pkg/types"
 	"github.com/aquasecurity/trivy/pkg/detector/library"
 	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
-	"github.com/aquasecurity/trivy/pkg/javadb"
 	"github.com/aquasecurity/trivy/pkg/types"
 	"github.com/samber/lo"
 	"golang.org/x/xerrors"
 
+	"github.com/future-architect/vuls/detector/javadb"
 	"github.com/future-architect/vuls/logging"
 )
 
@@ -51,7 +51,7 @@ type LibraryScanner struct {
 	// The path to the Lockfile is stored.
 	LockfilePath string `json:"path,omitempty"`
 
-	JavaDBClient *javadb.DB `json:"-"`
+	JavaDBClient *javadb.DBClient `json:"-"`
 }
 
 // Library holds the attribute of a package library
