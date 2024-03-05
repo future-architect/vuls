@@ -94,8 +94,9 @@ func (client *DBClient) SearchBySHA1(sha1 string) (jar.Properties, error) {
 	index, err := client.driver.SelectIndexBySha1(sha1)
 	if err != nil {
 		return jar.Properties{}, xerrors.Errorf("Failed to select from Trivy Java DB. err: %w", err)
-	} else if index.ArtifactID == "" {
-		return jar.Properties{}, xerrors.Errorf("digest %s: %w", sha1, jar.ArtifactNotFoundErr)
+	}
+	if index.ArtifactID == "" {
+		return jar.Properties{}, xerrors.Errorf("Failed to search ArtifactID by digest %s. err: %w", sha1, jar.ArtifactNotFoundErr)
 	}
 	return jar.Properties{
 		GroupID:    index.GroupID,
