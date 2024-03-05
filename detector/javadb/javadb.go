@@ -80,6 +80,7 @@ func NewClient(cacheDBDir string) (*DBClient, error) {
 	return &DBClient{driver: driver}, nil
 }
 
+// Close closes Trivy Java DB Client
 func (client *DBClient) Close() error {
 	if client == nil {
 		return nil
