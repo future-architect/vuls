@@ -10,11 +10,11 @@ import (
 	"github.com/aquasecurity/trivy-db/pkg/metadata"
 	"github.com/aquasecurity/trivy/pkg/db"
 	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
-	"github.com/aquasecurity/trivy/pkg/javadb"
 	"github.com/aquasecurity/trivy/pkg/log"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/detector/javadb"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 )
@@ -41,16 +41,18 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 	}
 	defer trivydb.Close()
 
-	var javaDBClient *javadb.DB
+	var javaDBClient *javadb.DBClient
 	defer javaDBClient.Close()
 	for _, lib := range r.LibraryScanners {
 		if lib.Type == ftypes.Jar {
 			if javaDBClient == nil {
-				javadb.Init(trivyOpts.TrivyCacheDBDir, trivyOpts.TrivyJavaDBRepository, trivyOpts.TrivySkipJavaDBUpdate, noProgress, ftypes.RegistryOptions{})
+				if err := javadb.UpdateJavaDB(trivyOpts, noProgress); err != nil {
+					return xerrors.Errorf("Failed to update Trivy Java DB. err: %w", err)
+				}
 
-				javaDBClient, err = javadb.NewClient()
+				javaDBClient, err = javadb.NewClient(trivyOpts.TrivyCacheDBDir)
 				if err != nil {
-					return xerrors.Errorf("Failed to download or open trivy Java DB. err: %w", err)
+					return xerrors.Errorf("Failed to open Trivy Java DB. err: %w", err)
 				}
 			}
 			lib.JavaDBClient = javaDBClient
@@ -107,7 +109,7 @@ func showDBInfo(cacheDir string) error {
 	if err != nil {
 		return xerrors.Errorf("Failed to get DB metadata. err: %w", err)
 	}
-	log.Logger.Debugf("DB Schema: %d, UpdatedAt: %s, NextUpdate: %s, DownloadedAt: %s",
+	logging.Log.Debugf("DB Schema: %d, UpdatedAt: %s, NextUpdate: %s, DownloadedAt: %s",
 		meta.Version, meta.UpdatedAt, meta.NextUpdate, meta.DownloadedAt)
 	return nil
 }
