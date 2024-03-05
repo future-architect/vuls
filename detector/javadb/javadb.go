@@ -71,6 +71,7 @@ type DBClient struct {
 	driver db.DB
 }
 
+// NewClient returns Trivy Java DB Client
 func NewClient(cacheDBDir string) (*DBClient, error) {
 	driver, err := db.New(filepath.Join(cacheDBDir, "java-db"))
 	if err != nil {
