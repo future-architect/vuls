@@ -9,13 +9,13 @@ import (
 
 	"golang.org/x/xerrors"
 
-	"github.com/future-architect/vuls/config"
+	syslogConf "github.com/future-architect/vuls/config/syslog"
 	"github.com/future-architect/vuls/models"
 )
 
 // SyslogWriter send report to syslog
 type SyslogWriter struct {
-	Cnf config.SyslogConf
+	Cnf syslogConf.Conf
 }
 
 // Write results to syslog
