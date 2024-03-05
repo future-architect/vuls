@@ -67,6 +67,7 @@ func UpdateJavaDB(trivyOpts config.TrivyOpts, noProgress bool) error {
 	return nil
 }
 
+// DBClient is Trivy Java DB Client
 type DBClient struct {
 	driver db.DB
 }
