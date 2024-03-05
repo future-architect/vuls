@@ -21,6 +21,7 @@ import (
 	"github.com/future-architect/vuls/logging"
 )
 
+// UpdateJavaDB updates Trivy Java DB
 func UpdateJavaDB(trivyOpts config.TrivyOpts, noProgress bool) error {
 	repo := fmt.Sprintf("%s:%d", trivyOpts.TrivyJavaDBRepository, db.SchemaVersion)
 	dbDir := filepath.Join(trivyOpts.TrivyCacheDBDir, "java-db")
