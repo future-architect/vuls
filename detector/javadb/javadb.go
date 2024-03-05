@@ -89,6 +89,7 @@ func (client *DBClient) Close() error {
 	return client.driver.Close()
 }
 
+// SearchBySHA1 searches Jar Property by SHA1
 func (client *DBClient) SearchBySHA1(sha1 string) (jar.Properties, error) {
 	index, err := client.driver.SelectIndexBySha1(sha1)
 	if err != nil {
