@@ -30,9 +30,10 @@ func UpdateJavaDB(trivyOpts config.TrivyOpts, noProgress bool) error {
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			return xerrors.Errorf("Failed to get Java DB metadata. err: %w", err)
-		} else if trivyOpts.TrivySkipJavaDBUpdate {
+		}
+		if trivyOpts.TrivySkipJavaDBUpdate {
 			logging.Log.Error("Could not skip, the first run cannot skip downloading Java DB")
-			return xerrors.New("'--skip-java-db-update' cannot be specified on the first run")
+			return xerrors.New("'--trivy-skip-java-db-update' cannot be specified on the first run")
 		}
 	}
 
