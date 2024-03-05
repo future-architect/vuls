@@ -147,9 +147,10 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 			libScanner.Type = trivyResult.Type
 			for _, p := range trivyResult.Packages {
 				libScanner.Libs = append(libScanner.Libs, models.Library{
-					Name:     p.Name,
-					Version:  p.Version,
-					FilePath: p.FilePath,
+					Name:       p.Name,
+					Version:    p.Version,
+					PackageURL: p.Identifier.PURL.String(),
+					FilePath:   p.FilePath,
 				})
 			}
 			uniqueLibraryScannerPaths[trivyResult.Target] = libScanner
