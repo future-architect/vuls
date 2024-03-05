@@ -38,6 +38,7 @@ func UpdateJavaDB(trivyOpts config.TrivyOpts, noProgress bool) error {
 
 	if (meta.Version != db.SchemaVersion || meta.NextUpdate.Before(time.Now().UTC())) && !trivyOpts.TrivySkipJavaDBUpdate {
 		// Download DB
+		repo := fmt.Sprintf("%s:%d", trivyOpts.TrivyJavaDBRepository, db.SchemaVersion)
 		logging.Log.Infof("Trivy Java DB Repository: %s", repo)
 		logging.Log.Info("Downloading Trivy Java DB...")
 
