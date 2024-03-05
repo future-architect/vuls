@@ -1,0 +1,29 @@
+name: Build
+
+on:
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: build
+        run: make build
+      - name: build-scanner
+        run: make build-scanner
+      - name: build-trivy-to-vuls
+        run: make build-trivy-to-vuls
+      - name: build-future-vuls
+        run: make build-future-vuls
+      - name: build-snmp2cpe
+        run: make build-snmp2cpe
