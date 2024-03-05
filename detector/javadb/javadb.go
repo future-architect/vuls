@@ -44,7 +44,7 @@ func UpdateJavaDB(trivyOpts config.TrivyOpts, noProgress bool) error {
 
 		var a *oci.Artifact
 		if a, err = oci.NewArtifact(repo, noProgress, types.RegistryOptions{}); err != nil {
-			return xerrors.Errorf("oci error: %w", err)
+			return xerrors.Errorf("Failed to new oci artifact. err: %w", err)
 		}
 		if err = a.Download(context.Background(), dbDir, oci.DownloadOption{MediaType: "application/vnd.aquasec.trivy.javadb.layer.v1.tar+gzip"}); err != nil {
 			return xerrors.Errorf("Failed to download Trivy Java DB. err: %w", err)
