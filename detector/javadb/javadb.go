@@ -58,7 +58,7 @@ func UpdateJavaDB(trivyOpts config.TrivyOpts, noProgress bool) error {
 		// Update DownloadedAt
 		meta.DownloadedAt = time.Now().UTC()
 		if err = metac.Update(meta); err != nil {
-			return xerrors.Errorf("Failed to update Trivy Java DB metadata. erro: %w", err)
+			return xerrors.Errorf("Failed to update Trivy Java DB metadata. err: %w", err)
 		}
 	}
 
