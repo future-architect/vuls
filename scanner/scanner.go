@@ -296,8 +296,8 @@ func ParseInstalledPkgs(distro config.Distro, kernel models.Kernel, pkgList stri
 // initServers detect the kind of OS distribution of target servers
 func (s Scanner) initServers() error {
 	hosts, errHosts := s.detectServerOSes()
-	if len(hosts) == 0 {
-		return xerrors.New("No scannable host OS")
+	if (len(hosts) + len(errHosts)) == 0 {
+		return xerrors.New("No host defined. Check the configuration")
 	}
 
 	for _, srv := range hosts {
@@ -318,8 +318,8 @@ func (s Scanner) initServers() error {
 	servers = append(servers, containers...)
 	errServers = append(errHosts, errContainers...)
 
-	if len(servers) == 0 {
-		return xerrors.New("No scannable servers")
+	if (len(servers) + len(errServers)) == 0 {
+		return xerrors.New("No server defined. Check the configuration")
 	}
 	return nil
 }
@@ -896,7 +896,7 @@ func (s Scanner) detectIPS() {
 
 // execScan scan
 func (s Scanner) execScan() error {
-	if len(servers) == 0 {
+	if (len(servers) + len(errServers)) == 0 {
 		return xerrors.New("No server defined. Check the configuration")
 	}
 
