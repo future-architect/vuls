@@ -219,7 +219,6 @@ func isTrivySupportedOS(family ftypes.TargetType) bool {
 
 func getPURL(p ftypes.Package) string {
 	if p.Identifier.PURL == nil {
-		fmt.Println("EROOR")
 		return ""
 	}
 	return p.Identifier.PURL.String()
