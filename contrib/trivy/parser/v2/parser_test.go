@@ -1041,10 +1041,9 @@ var osAndLib2SR = &models.ScanResult{
 			LockfilePath: "Ruby",
 			Libs: []models.Library{
 				{
-					Name:       "activesupport",
-					Version:    "6.0.2.1",
-					PackageURL: "",
-					FilePath:   "var/lib/gems/2.5.0/specifications/activesupport-6.0.2.1.gemspec",
+					Name:     "activesupport",
+					Version:  "6.0.2.1",
+					FilePath: "var/lib/gems/2.5.0/specifications/activesupport-6.0.2.1.gemspec",
 				},
 			},
 		},
