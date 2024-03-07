@@ -6,19 +6,17 @@ import (
 	"github.com/aquasecurity/trivy/pkg/types"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"github.com/package-url/packageurl-go"
 )
 
 func convertLibWithScanner(apps []ftypes.Application) ([]models.LibraryScanner, error) {
-	scanners := []models.LibraryScanner{}
+	scanners := make([]models.LibraryScanner, 0, len(apps))
 	for _, app := range apps {
-		libs := []models.Library{}
+		libs := make([]models.Library, 0, len(app.Libraries))
 		for _, lib := range app.Libraries {
-			purl := newPURL(app.Type, types.Metadata{}, lib)
 			libs = append(libs, models.Library{
 				Name:       lib.Name,
 				Version:    lib.Version,
-				PackageURL: purl.ToString(),
+				PackageURL: newPURL(app.Type, types.Metadata{}, lib),
 				FilePath:   lib.FilePath,
 				Digest:     string(lib.Digest),
 			})
@@ -32,11 +30,14 @@ func convertLibWithScanner(apps []ftypes.Application) ([]models.LibraryScanner, 
 	return scanners, nil
 }
 
-func newPURL(pkgType ftypes.TargetType, metadata types.Metadata, pkg ftypes.Package) *packageurl.PackageURL {
+func newPURL(pkgType ftypes.TargetType, metadata types.Metadata, pkg ftypes.Package) string {
 	p, err := purl.New(pkgType, metadata, pkg)
 	if err != nil {
 		logging.Log.Errorf("Failed to create PackageURL: %+v", err)
-		return nil
+		return ""
 	}
-	return p.Unwrap()
+	if p == nil {
+		return ""
+	}
+	return p.Unwrap().ToString()
 }
