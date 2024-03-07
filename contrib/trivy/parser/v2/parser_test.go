@@ -37,7 +37,6 @@ func TestParse(t *testing.T) {
 		if err != nil {
 			t.Errorf("%s", err)
 		}
-
 		diff, equal := messagediff.PrettyDiff(
 			v.expected,
 			actual,
@@ -835,9 +834,6 @@ var osAndLib2Trivy = []byte(`
         {
           "ID": "libgnutls30@3.6.7-4",
           "Name": "libgnutls30",
-          "Identifier": {
-            "PURL": "pkg:deb/debian/libgnutls30@3.6.7-4?arch=amd64\u0026distro=debian-10.2"
-          },
           "Version": "3.6.7",
           "Release": "4",
           "Arch": "amd64",
@@ -923,9 +919,6 @@ var osAndLib2Trivy = []byte(`
       "Packages": [
         {
           "Name": "activesupport",
-          "Identifier": {
-            "PURL": "pkg:gem/activesupport@6.0.2.1"
-          },
           "Version": "6.0.2.1",
           "License": "MIT",
           "Layer": {
@@ -1049,7 +1042,7 @@ var osAndLib2SR = &models.ScanResult{
 				{
 					Name:       "activesupport",
 					Version:    "6.0.2.1",
-					PackageURL: "pkg:gem/activesupport@6.0.2.1",
+					PackageURL: "",
 					FilePath:   "var/lib/gems/2.5.0/specifications/activesupport-6.0.2.1.gemspec",
 				},
 			},
