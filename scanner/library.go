@@ -4,6 +4,7 @@ import (
 	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
 	"github.com/aquasecurity/trivy/pkg/purl"
 	"github.com/aquasecurity/trivy/pkg/types"
+
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 )
