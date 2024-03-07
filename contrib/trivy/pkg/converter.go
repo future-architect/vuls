@@ -17,6 +17,7 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 		JSONVersion: models.JSONVersion,
 		ScannedCves: models.VulnInfos{},
 	}
+
 	pkgs := models.Packages{}
 	srcPkgs := models.SrcPackages{}
 	vulnInfos := models.VulnInfos{}
