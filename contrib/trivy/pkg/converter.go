@@ -149,6 +149,7 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 				libScanner.Libs = append(libScanner.Libs, models.Library{
 					Name:     p.Name,
 					Version:  p.Version,
+					PURL:     getPURL(p),
 					FilePath: p.FilePath,
 				})
 			}
@@ -213,4 +214,11 @@ func isTrivySupportedOS(family ftypes.TargetType) bool {
 	}
 	_, ok := supportedFamilies[family]
 	return ok
+}
+
+func getPURL(p ftypes.Package) string {
+	if p.Identifier.PURL == nil {
+		return ""
+	}
+	return p.Identifier.PURL.String()
 }
