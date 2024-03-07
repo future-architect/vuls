@@ -17,7 +17,6 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 		JSONVersion: models.JSONVersion,
 		ScannedCves: models.VulnInfos{},
 	}
-
 	pkgs := models.Packages{}
 	srcPkgs := models.SrcPackages{}
 	vulnInfos := models.VulnInfos{}
@@ -146,12 +145,14 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 			libScanner := uniqueLibraryScannerPaths[trivyResult.Target]
 			libScanner.Type = trivyResult.Type
 			for _, p := range trivyResult.Packages {
+				// fmt.Printf("p: %#v", p)
 				libScanner.Libs = append(libScanner.Libs, models.Library{
 					Name:       p.Name,
 					Version:    p.Version,
-					PackageURL: p.Identifier.PURL.String(),
+					PackageURL: getPURL(p),
 					FilePath:   p.FilePath,
 				})
+				fmt.Println("getPURL", getPURL(p))
 			}
 			uniqueLibraryScannerPaths[trivyResult.Target] = libScanner
 		}
@@ -214,4 +215,12 @@ func isTrivySupportedOS(family ftypes.TargetType) bool {
 	}
 	_, ok := supportedFamilies[family]
 	return ok
+}
+
+func getPURL(p ftypes.Package) string {
+	if p.Identifier.PURL == nil {
+		fmt.Println("EROOR")
+		return ""
+	}
+	return p.Identifier.PURL.String()
 }
