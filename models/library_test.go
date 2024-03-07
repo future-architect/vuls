@@ -23,9 +23,9 @@ func TestLibraryScanners_Find(t *testing.T) {
 					LockfilePath: "/pathA",
 					Libs: []Library{
 						{
-							Name:       "libA",
-							Version:    "1.0.0",
-							PackageURL: "scheme/type/namespace/libA@1.0.0?qualifiers#subpath",
+							Name:    "libA",
+							Version: "1.0.0",
+							PURL:    "scheme/type/namespace/libA@1.0.0?qualifiers#subpath",
 						},
 					},
 				},
@@ -33,9 +33,9 @@ func TestLibraryScanners_Find(t *testing.T) {
 			args: args{"/pathA", "libA"},
 			want: map[string]Library{
 				"/pathA": {
-					Name:       "libA",
-					Version:    "1.0.0",
-					PackageURL: "scheme/type/namespace/libA@1.0.0?qualifiers#subpath",
+					Name:    "libA",
+					Version: "1.0.0",
+					PURL:    "scheme/type/namespace/libA@1.0.0?qualifiers#subpath",
 				},
 			},
 		},
@@ -46,9 +46,9 @@ func TestLibraryScanners_Find(t *testing.T) {
 					LockfilePath: "/pathA",
 					Libs: []Library{
 						{
-							Name:       "libA",
-							Version:    "1.0.0",
-							PackageURL: "scheme/type/namespace/libA@1.0.0?qualifiers#subpath",
+							Name:    "libA",
+							Version: "1.0.0",
+							PURL:    "scheme/type/namespace/libA@1.0.0?qualifiers#subpath",
 						},
 					},
 				},
@@ -56,9 +56,9 @@ func TestLibraryScanners_Find(t *testing.T) {
 					LockfilePath: "/pathB",
 					Libs: []Library{
 						{
-							Name:       "libA",
-							Version:    "1.0.5",
-							PackageURL: "scheme/type/namespace/libA@1.0.5?qualifiers#subpath",
+							Name:    "libA",
+							Version: "1.0.5",
+							PURL:    "scheme/type/namespace/libA@1.0.5?qualifiers#subpath",
 						},
 					},
 				},
@@ -66,9 +66,9 @@ func TestLibraryScanners_Find(t *testing.T) {
 			args: args{"/pathA", "libA"},
 			want: map[string]Library{
 				"/pathA": {
-					Name:       "libA",
-					Version:    "1.0.0",
-					PackageURL: "scheme/type/namespace/libA@1.0.0?qualifiers#subpath",
+					Name:    "libA",
+					Version: "1.0.0",
+					PURL:    "scheme/type/namespace/libA@1.0.0?qualifiers#subpath",
 				},
 			},
 		},
@@ -79,9 +79,9 @@ func TestLibraryScanners_Find(t *testing.T) {
 					LockfilePath: "/pathA",
 					Libs: []Library{
 						{
-							Name:       "libA",
-							Version:    "1.0.0",
-							PackageURL: "scheme/type/namespace/libA@1.0.0?qualifiers#subpath",
+							Name:    "libA",
+							Version: "1.0.0",
+							PURL:    "scheme/type/namespace/libA@1.0.0?qualifiers#subpath",
 						},
 					},
 				},

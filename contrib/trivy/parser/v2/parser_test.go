@@ -480,19 +480,19 @@ var strutsSR = &models.ScanResult{
 			LockfilePath: "Java",
 			Libs: []models.Library{
 				{
-					Name:       "commons-beanutils:commons-beanutils",
-					PackageURL: "pkg:maven/commons-beanutils/commons-beanutils@1.7.0",
-					Version:    "1.7.0",
+					Name:    "commons-beanutils:commons-beanutils",
+					PURL:    "pkg:maven/commons-beanutils/commons-beanutils@1.7.0",
+					Version: "1.7.0",
 				},
 				{
-					Name:       "oro:oro",
-					PackageURL: "pkg:maven/oro/oro@2.0.7",
-					Version:    "2.0.7",
+					Name:    "oro:oro",
+					PURL:    "pkg:maven/oro/oro@2.0.7",
+					Version: "2.0.7",
 				},
 				{
-					Name:       "struts:struts",
-					PackageURL: "pkg:maven/struts/struts@1.2.7",
-					Version:    "1.2.7",
+					Name:    "struts:struts",
+					PURL:    "pkg:maven/struts/struts@1.2.7",
+					Version: "1.2.7",
 				},
 			},
 		},
@@ -745,10 +745,10 @@ var osAndLibSR = &models.ScanResult{
 			LockfilePath: "Ruby",
 			Libs: []models.Library{
 				{
-					Name:       "activesupport",
-					Version:    "6.0.2.1",
-					PackageURL: "pkg:gem/activesupport@6.0.2.1",
-					FilePath:   "var/lib/gems/2.5.0/specifications/activesupport-6.0.2.1.gemspec",
+					Name:     "activesupport",
+					Version:  "6.0.2.1",
+					PURL:     "pkg:gem/activesupport@6.0.2.1",
+					FilePath: "var/lib/gems/2.5.0/specifications/activesupport-6.0.2.1.gemspec",
 				},
 			},
 		},
