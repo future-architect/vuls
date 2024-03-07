@@ -37,6 +37,7 @@ func TestParse(t *testing.T) {
 		if err != nil {
 			t.Errorf("%s", err)
 		}
+
 		diff, equal := messagediff.PrettyDiff(
 			v.expected,
 			actual,
