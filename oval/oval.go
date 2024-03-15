@@ -52,8 +52,30 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (bool, error) {
 		return false, nil
 	}
 	ovalRelease := release
-	if osFamily == constant.CentOS {
+	switch osFamily {
+	case constant.CentOS:
 		ovalRelease = strings.TrimPrefix(release, "stream")
+	case constant.Amazon:
+		switch s := strings.Fields(release)[0]; util.Major(s) {
+		case "1":
+			ovalRelease = "1"
+		case "2":
+			ovalRelease = "2"
+		case "2022":
+			ovalRelease = "2022"
+		case "2023":
+			ovalRelease = "2023"
+		case "2025":
+			ovalRelease = "2025"
+		case "2027":
+			ovalRelease = "2027"
+		case "2029":
+			ovalRelease = "2029"
+		default:
+			if _, err := time.Parse("2006.01", s); err == nil {
+				ovalRelease = "1"
+			}
+		}
 	}
 
 	var count int
@@ -89,8 +111,30 @@ func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 		return false, nil
 	}
 	ovalRelease := release
-	if osFamily == constant.CentOS {
+	switch osFamily {
+	case constant.CentOS:
 		ovalRelease = strings.TrimPrefix(release, "stream")
+	case constant.Amazon:
+		switch s := strings.Fields(release)[0]; util.Major(s) {
+		case "1":
+			ovalRelease = "1"
+		case "2":
+			ovalRelease = "2"
+		case "2022":
+			ovalRelease = "2022"
+		case "2023":
+			ovalRelease = "2023"
+		case "2025":
+			ovalRelease = "2025"
+		case "2027":
+			ovalRelease = "2027"
+		case "2029":
+			ovalRelease = "2029"
+		default:
+			if _, err := time.Parse("2006.01", s); err == nil {
+				ovalRelease = "1"
+			}
+		}
 	}
 
 	var lastModified time.Time

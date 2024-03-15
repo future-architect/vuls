@@ -112,7 +112,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 	case constant.CentOS:
 		ovalRelease = strings.TrimPrefix(r.Release, "stream")
 	case constant.Amazon:
-		switch s := strings.Fields(r.Release)[0]; s {
+		switch s := strings.Fields(r.Release)[0]; util.Major(s) {
 		case "1":
 			ovalRelease = "1"
 		case "2":
@@ -286,7 +286,7 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relate
 	case constant.CentOS:
 		ovalRelease = strings.TrimPrefix(r.Release, "stream")
 	case constant.Amazon:
-		switch s := strings.Fields(r.Release)[0]; s {
+		switch s := strings.Fields(r.Release)[0]; util.Major(s) {
 		case "1":
 			ovalRelease = "1"
 		case "2":
