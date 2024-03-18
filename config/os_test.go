@@ -815,6 +815,10 @@ func Test_getAmazonLinuxVersion(t *testing.T) {
 			want:    "2023",
 		},
 		{
+			release: "2023.3.20240312",
+			want:    "2023",
+		},
+		{
 			release: "2025",
 			want:    "2025",
 		},

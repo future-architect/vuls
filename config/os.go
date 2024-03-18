@@ -459,7 +459,7 @@ func majorDotMinor(osVer string) (majorDotMinor string) {
 }
 
 func getAmazonLinuxVersion(osRelease string) string {
-	switch s := strings.Fields(osRelease)[0]; s {
+	switch s := strings.Fields(osRelease)[0]; major(s) {
 	case "1":
 		return "1"
 	case "2":

@@ -192,6 +192,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 		// $ cat /etc/amazon-linux-release
 		// Amazon Linux release 2022 (Amazon Linux)
 		// Amazon Linux release 2023 (Amazon Linux)
+		// Amazon Linux release 2023.3.20240312 (Amazon Linux)
 		if r := exec(c, "cat /etc/amazon-linux-release", noSudo); r.isSuccess() {
 			amazon := newAmazon(c)
 			result := releasePattern.FindStringSubmatch(strings.TrimSpace(r.Stdout))
@@ -311,6 +312,7 @@ func detectRedhat(c config.ServerInfo) (bool, osTypeInterface) {
 			case strings.HasPrefix(r.Stdout, "Amazon Linux 2023"), strings.HasPrefix(r.Stdout, "Amazon Linux release 2023"):
 				// Amazon Linux 2023 (Amazon Linux)
 				// Amazon Linux release 2023 (Amazon Linux)
+				// Amazon Linux release 2023.3.20240312 (Amazon Linux)
 				release = "2023"
 			case strings.HasPrefix(r.Stdout, "Amazon Linux 2"), strings.HasPrefix(r.Stdout, "Amazon Linux release 2"):
 				// Amazon Linux 2 (Karoo)
