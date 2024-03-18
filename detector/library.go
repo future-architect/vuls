@@ -56,7 +56,7 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 
 	var javaDBClient *javadb.DBClient
 	defer javaDBClient.Close()
-	for _, lib := range r.LibraryScanners {
+	for i, lib := range r.LibraryScanners {
 		d := libraryDetector{scanner: lib}
 		if lib.Type == ftypes.Jar {
 			if javaDBClient == nil {
@@ -73,6 +73,7 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 		}
 
 		vinfos, err := d.scan()
+		r.LibraryScanners[i] = d.scanner
 		if err != nil {
 			return xerrors.Errorf("Failed to scan library. err: %w", err)
 		}
@@ -129,7 +130,7 @@ func showDBInfo(cacheDir string) error {
 }
 
 // Scan : scan target library
-func (d libraryDetector) scan() ([]models.VulnInfo, error) {
+func (d *libraryDetector) scan() ([]models.VulnInfo, error) {
 	if d.scanner.Type == ftypes.Jar {
 		if err := d.improveJARInfo(); err != nil {
 			return nil, xerrors.Errorf("Failed to improve JAR information by trivy Java DB. err: %w", err)
