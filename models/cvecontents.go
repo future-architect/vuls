@@ -274,9 +274,9 @@ type CveContent struct {
 	Cvss2Score    float64           `json:"cvss2Score"`
 	Cvss2Vector   string            `json:"cvss2Vector"`
 	Cvss2Severity string            `json:"cvss2Severity"`
-	Cvss3Score    float64           `json:"cvss3Score"`
-	Cvss3Vector   string            `json:"cvss3Vector"`
-	Cvss3Severity string            `json:"cvss3Severity"`
+	Cvss3Score    float64           `json:"cvss3Score,omitempty"`
+	Cvss3Vector   string            `json:"cvss3Vector,omitempty"`
+	Cvss3Severity string            `json:"cvss3Severity,omitempty"`
 	SourceLink    string            `json:"sourceLink"`
 	Cpes          []Cpe             `json:"cpes,omitempty"`
 	References    References        `json:"references,omitempty"`

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -35,20 +36,37 @@ type WpCveInfos struct {
 
 // WpCveInfo is for wpscan json
 type WpCveInfo struct {
-	ID         string     `json:"id"`
-	Title      string     `json:"title"`
-	CreatedAt  time.Time  `json:"created_at"`
-	UpdatedAt  time.Time  `json:"updated_at"`
-	VulnType   string     `json:"vuln_type"`
-	References References `json:"references"`
-	FixedIn    string     `json:"fixed_in"`
+	ID            string     `json:"id"`
+	Title         string     `json:"title"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
+	PublishedDate time.Time  `json:"published_date"`
+	Description   string     `json:"description"` // Enterprise only
+	Poc           string     `json:"poc"`         // Enterprise only
+	VulnType      string     `json:"vuln_type"`
+	References    References `json:"references"`
+	Cvss          Cvss       `json:"cvss"` // Enterprise only
+	Verified      bool       `json:"verified"`
+	FixedIn       string     `json:"fixed_in"`
+	IntroducedIn  string     `json:"introduced_in"`
+	Closed        Closed     `json:"closed"`
 }
 
 // References is for wpscan json
 type References struct {
-	URL     []string `json:"url"`
-	Cve     []string `json:"cve"`
-	Secunia []string `json:"secunia"`
+	URL []string `json:"url"`
+	Cve []string `json:"cve"`
+}
+
+// CVSS is for wpscan json
+type Cvss struct {
+	Score    string `json:"score"`
+	Vector   string `json:"vector"`
+	Severity string `json:"severity"`
+}
+
+type Closed struct {
+	ClosedReason string `json:"closed_reason"`
 }
 
 // DetectWordPressCves access to wpscan and fetch scurity alerts and then set to the given ScanResult.
@@ -197,17 +215,25 @@ func extractToVulnInfos(pkgName string, cves []WpCveInfo) (vinfos []models.VulnI
 			})
 		}
 
+		v3score := 0.0
+		if vulnerability.Cvss.Score != "" {
+			v3score, _ = strconv.ParseFloat(vulnerability.Cvss.Score, 64)
+		}
+
 		for _, cveID := range cveIDs {
 			vinfos = append(vinfos, models.VulnInfo{
 				CveID: cveID,
 				CveContents: models.NewCveContents(
 					models.CveContent{
-						Type:         models.WpScan,
-						CveID:        cveID,
-						Title:        vulnerability.Title,
-						References:   refs,
-						Published:    vulnerability.CreatedAt,
-						LastModified: vulnerability.UpdatedAt,
+						Type:          models.WpScan,
+						CveID:         cveID,
+						Title:         vulnerability.Title,
+						Cvss3Score:    v3score,
+						Cvss3Vector:   vulnerability.Cvss.Vector,
+						Cvss3Severity: vulnerability.Cvss.Severity,
+						References:    refs,
+						Published:     vulnerability.CreatedAt,
+						LastModified:  vulnerability.UpdatedAt,
 					},
 				),
 				VulnType: vulnerability.VulnType,
