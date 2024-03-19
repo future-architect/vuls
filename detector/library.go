@@ -73,10 +73,11 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 		}
 
 		vinfos, err := d.scan()
-		r.LibraryScanners[i] = d.scanner
 		if err != nil {
 			return xerrors.Errorf("Failed to scan library. err: %w", err)
 		}
+		r.LibraryScanners[i] = d.scanner
+		
 		for _, vinfo := range vinfos {
 			vinfo.Confidences.AppendIfMissing(models.TrivyMatch)
 			if v, ok := r.ScannedCves[vinfo.CveID]; !ok {
