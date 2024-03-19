@@ -9,7 +9,7 @@ require (
 	github.com/CycloneDX/cyclonedx-go v0.8.0
 	github.com/Ullaakut/nmap/v2 v2.2.2
 	github.com/aquasecurity/trivy v0.50.1
-	github.com/aquasecurity/trivy-db v0.0.0-20240304133434-db9bf07792af
+	github.com/aquasecurity/trivy-db v0.0.0-20240425111931-1fe1d505d3ff
 	github.com/aquasecurity/trivy-java-db v0.0.0-20240109071736-184bd7481d48
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/aws/aws-sdk-go v1.51.5
@@ -37,7 +37,7 @@ require (
 	github.com/nlopes/slack v0.6.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/package-url/packageurl-go v0.1.2
-	github.com/parnurzeal/gorequest v0.2.16
+	github.com/parnurzeal/gorequest v0.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
@@ -49,7 +49,7 @@ require (
 	github.com/vulsio/go-exploitdb v0.4.7-0.20240318122115-ccb3abc151a1
 	github.com/vulsio/go-kev v0.1.4-0.20240318121733-b3386e67d3fb
 	github.com/vulsio/go-msfdb v0.2.4-0.20240318121704-8bfc812656dc
-	github.com/vulsio/gost v0.4.6-0.20240318122017-91329ea18521
+	github.com/vulsio/gost v0.4.6-0.20240501065222-d47d2e716bfa
 	github.com/vulsio/goval-dictionary v0.9.5-0.20240423055648-6aa17be1b965
 	go.etcd.io/bbolt v1.3.9
 	go.uber.org/zap v1.27.0
@@ -89,7 +89,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/Masterminds/squirrel v1.5.4 // indirect
-	github.com/Microsoft/go-winio v0.6.1 // indirect
+	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/Microsoft/hcsshim v0.11.4 // indirect
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/ProtonMail/go-crypto v1.1.0-alpha.0 // indirect
@@ -249,6 +249,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
+	github.com/moul/http2curl v1.0.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
@@ -317,7 +318,6 @@ require (
 	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/term v0.19.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.20.0 // indirect
 	google.golang.org/api v0.155.0 // indirect
 	google.golang.org/genproto v0.0.0-20240123012728-ef4313101c80 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240123012728-ef4313101c80 // indirect
@@ -331,7 +331,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.5.6 // indirect
 	gorm.io/driver/postgres v1.5.7 // indirect
-	gorm.io/gorm v1.25.9 // indirect
+	gorm.io/gorm v1.25.10 // indirect
 	gotest.tools/v3 v3.5.0 // indirect
 	helm.sh/helm/v3 v3.14.2 // indirect
 	k8s.io/api v0.29.1 // indirect
@@ -345,11 +345,10 @@ require (
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
 	k8s.io/kubectl v0.29.0 // indirect
 	k8s.io/utils v0.0.0-20231127182322-b307cd553661 // indirect
-	modernc.org/libc v1.50.2 // indirect
+	modernc.org/libc v1.50.4 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.8.0 // indirect
 	modernc.org/sqlite v1.29.8 // indirect
-	moul.io/http2curl v1.0.0 // indirect
 	oras.land/oras-go v1.2.5 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.13.5-0.20230601165947-6ce0bf390ce3 // indirect
