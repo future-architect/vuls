@@ -41,21 +41,22 @@ type WpCveInfo struct {
 	CreatedAt     time.Time  `json:"created_at"`
 	UpdatedAt     time.Time  `json:"updated_at"`
 	PublishedDate time.Time  `json:"published_date"`
-	Description   string     `json:"description"` // Enterprise only
-	Poc           string     `json:"poc"`         // Enterprise only
+	Description   *string    `json:"description"` // Enterprise only
+	Poc           *string    `json:"poc"`         // Enterprise only
 	VulnType      string     `json:"vuln_type"`
 	References    References `json:"references"`
-	Cvss          Cvss       `json:"cvss"` // Enterprise only
+	Cvss          *Cvss      `json:"cvss"` // Enterprise only
 	Verified      bool       `json:"verified"`
-	FixedIn       string     `json:"fixed_in"`
-	IntroducedIn  string     `json:"introduced_in"`
-	Closed        Closed     `json:"closed"`
+	FixedIn       *string    `json:"fixed_in"`
+	IntroducedIn  *string    `json:"introduced_in"`
+	Closed        *Closed    `json:"closed"`
 }
 
 // References is for wpscan json
 type References struct {
-	URL []string `json:"url"`
-	Cve []string `json:"cve"`
+	URL     []string `json:"url"`
+	Cve     []string `json:"cve"`
+	YouTube []string `json:"youtube,omitempty"`
 }
 
 // CVSS is for wpscan json
@@ -209,15 +210,42 @@ func extractToVulnInfos(pkgName string, cves []WpCveInfo) (vinfos []models.VulnI
 		}
 
 		var refs []models.Reference
+		if vulnerability.Poc != nil {
+			refs = append(refs, models.Reference{
+				Source: *vulnerability.Poc,
+			})
+		}
 		for _, url := range vulnerability.References.URL {
 			refs = append(refs, models.Reference{
 				Link: url,
 			})
 		}
+		for _, key := range vulnerability.References.YouTube {
+			refs = append(refs, models.Reference{
+				Link: fmt.Sprintf("https://www.youtube.com/watch?v=%s", key),
+			})
+		}
 
-		v3score := 0.0
-		if vulnerability.Cvss.Score != "" {
-			v3score, _ = strconv.ParseFloat(vulnerability.Cvss.Score, 64)
+		var summary, cvss3Vector, cvss3Severity, fixedIn string
+		var cvss3Score float64
+		if vulnerability.Description != nil {
+			summary = *vulnerability.Description
+		}
+		if vulnerability.Cvss != nil {
+			cvss3Vector = vulnerability.Cvss.Vector
+			cvss3Severity = vulnerability.Cvss.Severity
+			cvss3Score, _ = strconv.ParseFloat(vulnerability.Cvss.Score, 64)
+		}
+		if vulnerability.FixedIn != nil {
+			fixedIn = *vulnerability.FixedIn
+		}
+
+		optional := map[string]string{}
+		if vulnerability.IntroducedIn != nil {
+			optional["introduced_in"] = *vulnerability.IntroducedIn
+		}
+		if vulnerability.Closed != nil {
+			optional["closed_reason"] = vulnerability.Closed.ClosedReason
 		}
 
 		for _, cveID := range cveIDs {
@@ -228,12 +256,14 @@ func extractToVulnInfos(pkgName string, cves []WpCveInfo) (vinfos []models.VulnI
 						Type:          models.WpScan,
 						CveID:         cveID,
 						Title:         vulnerability.Title,
-						Cvss3Score:    v3score,
-						Cvss3Vector:   vulnerability.Cvss.Vector,
-						Cvss3Severity: vulnerability.Cvss.Severity,
+						Summary:       summary,
+						Cvss3Score:    cvss3Score,
+						Cvss3Vector:   cvss3Vector,
+						Cvss3Severity: cvss3Severity,
 						References:    refs,
 						Published:     vulnerability.CreatedAt,
 						LastModified:  vulnerability.UpdatedAt,
+						Optional:      optional,
 					},
 				),
 				VulnType: vulnerability.VulnType,
@@ -242,7 +272,7 @@ func extractToVulnInfos(pkgName string, cves []WpCveInfo) (vinfos []models.VulnI
 				},
 				WpPackageFixStats: []models.WpPackageFixStatus{{
 					Name:    pkgName,
-					FixedIn: vulnerability.FixedIn,
+					FixedIn: fixedIn,
 				}},
 			})
 		}
