@@ -22,20 +22,20 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// WpCveInfos is for wpscan json
-type WpCveInfos struct {
+// wpCveInfos is for wpscan json
+type wpCveInfos struct {
 	ReleaseDate  string `json:"release_date"`
 	ChangelogURL string `json:"changelog_url"`
 	// Status        string `json:"status"`
 	LatestVersion string `json:"latest_version"`
 	LastUpdated   string `json:"last_updated"`
 	// Popular         bool        `json:"popular"`
-	Vulnerabilities []WpCveInfo `json:"vulnerabilities"`
+	Vulnerabilities []wpCveInfo `json:"vulnerabilities"`
 	Error           string      `json:"error"`
 }
 
-// WpCveInfo is for wpscan json
-type WpCveInfo struct {
+// wpCveInfo is for wpscan json
+type wpCveInfo struct {
 	ID            string     `json:"id"`
 	Title         string     `json:"title"`
 	CreatedAt     time.Time  `json:"created_at"`
@@ -44,7 +44,7 @@ type WpCveInfo struct {
 	Description   *string    `json:"description"` // Enterprise only
 	Poc           *string    `json:"poc"`         // Enterprise only
 	VulnType      string     `json:"vuln_type"`
-	References    References `json:"references"`
+	References    references `json:"references"`
 	Cvss          *Cvss      `json:"cvss"` // Enterprise only
 	Verified      bool       `json:"verified"`
 	FixedIn       *string    `json:"fixed_in"`
@@ -52,8 +52,8 @@ type WpCveInfo struct {
 	Closed        *Closed    `json:"closed"`
 }
 
-// References is for wpscan json
-type References struct {
+// references is for wpscan json
+type references struct {
 	URL       []string `json:"url"`
 	Cve       []string `json:"cve"`
 	YouTube   []string `json:"youtube,omitempty"`
@@ -187,7 +187,7 @@ func convertToVinfos(pkgName, body string) (vinfos []models.VulnInfo, err error)
 		return
 	}
 	// "pkgName" : CVE Detailed data
-	pkgnameCves := map[string]WpCveInfos{}
+	pkgnameCves := map[string]wpCveInfos{}
 	if err = json.Unmarshal([]byte(body), &pkgnameCves); err != nil {
 		return nil, xerrors.Errorf("Failed to unmarshal %s. err: %w", body, err)
 	}
@@ -199,7 +199,7 @@ func convertToVinfos(pkgName, body string) (vinfos []models.VulnInfo, err error)
 	return vinfos, nil
 }
 
-func extractToVulnInfos(pkgName string, cves []WpCveInfo) (vinfos []models.VulnInfo) {
+func extractToVulnInfos(pkgName string, cves []wpCveInfo) (vinfos []models.VulnInfo) {
 	for _, vulnerability := range cves {
 		var cveIDs []string
 
