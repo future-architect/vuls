@@ -19,7 +19,6 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	version "github.com/hashicorp/go-version"
-	exploitmodels "github.com/vulsio/go-exploitdb/models"
 	"golang.org/x/xerrors"
 )
 
@@ -226,7 +225,7 @@ func extractToVulnInfos(pkgName string, cves []wpCveInfo) (vinfos []models.VulnI
 		var exploits []models.Exploit
 		for _, id := range vulnerability.References.ExploitDB {
 			exploits = append(exploits, models.Exploit{
-				ExploitType: exploitmodels.OffensiveSecurityType,
+				ExploitType: "wpscan",
 				ID:          id,
 				URL:         fmt.Sprintf("https://www.exploit-db.com/exploits/%s", id),
 			})
