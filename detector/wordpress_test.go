@@ -84,7 +84,7 @@ func TestRemoveInactive(t *testing.T) {
 	}
 }
 
-// ref: https://wpscan.com/docs/api/v3/v3.yml/
+// https://wpscan.com/docs/api/v3/v3.yml/
 func Test_convertToVinfos(t *testing.T) {
 	type args struct {
 		pkgName string

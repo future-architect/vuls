@@ -54,9 +54,9 @@ type WpCveInfo struct {
 
 // References is for wpscan json
 type References struct {
-	URL     []string `json:"url"`
-	Cve     []string `json:"cve"`
-	YouTube []string `json:"youtube,omitempty"`
+	URL       []string `json:"url"`
+	Cve       []string `json:"cve"`
+	YouTube   []string `json:"youtube,omitempty"`
 	ExploitDB []string `json:"exploitdb,omitempty"`
 }
 
@@ -221,9 +221,14 @@ func extractToVulnInfos(pkgName string, cves []WpCveInfo) (vinfos []models.VulnI
 				Link: url,
 			})
 		}
-		for _, key := range vulnerability.References.YouTube {
+		for _, id := range vulnerability.References.YouTube {
 			refs = append(refs, models.Reference{
-				Link: fmt.Sprintf("https://www.youtube.com/watch?v=%s", key),
+				Link: fmt.Sprintf("https://www.youtube.com/watch?v=%s", id),
+			})
+		}
+		for _, id := range vulnerability.References.ExploitDB {
+			refs = append(refs, models.Reference{
+				Link: fmt.Sprintf("https://www.exploit-db.com/exploits/%s", id),
 			})
 		}
 
