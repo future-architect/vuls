@@ -19,6 +19,7 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	version "github.com/hashicorp/go-version"
+	exploitmodels "github.com/vulsio/go-exploitdb/models"
 	"golang.org/x/xerrors"
 )
 
@@ -45,11 +46,11 @@ type wpCveInfo struct {
 	Poc           *string    `json:"poc"`         // Enterprise only
 	VulnType      string     `json:"vuln_type"`
 	References    references `json:"references"`
-	Cvss          *Cvss      `json:"cvss"` // Enterprise only
+	Cvss          *cvss      `json:"cvss"` // Enterprise only
 	Verified      bool       `json:"verified"`
 	FixedIn       *string    `json:"fixed_in"`
 	IntroducedIn  *string    `json:"introduced_in"`
-	Closed        *Closed    `json:"closed"`
+	Closed        *closed    `json:"closed"`
 }
 
 // references is for wpscan json
@@ -60,14 +61,15 @@ type references struct {
 	ExploitDB []string `json:"exploitdb,omitempty"`
 }
 
-// CVSS is for wpscan json
-type Cvss struct {
+// cvss is for wpscan json
+type cvss struct {
 	Score    string `json:"score"`
 	Vector   string `json:"vector"`
 	Severity string `json:"severity"`
 }
 
-type Closed struct {
+// closed is for wpscan json
+type closed struct {
 	ClosedReason string `json:"closed_reason"`
 }
 
@@ -202,7 +204,6 @@ func convertToVinfos(pkgName, body string) (vinfos []models.VulnInfo, err error)
 func extractToVulnInfos(pkgName string, cves []wpCveInfo) (vinfos []models.VulnInfo) {
 	for _, vulnerability := range cves {
 		var cveIDs []string
-
 		if len(vulnerability.References.Cve) == 0 {
 			cveIDs = append(cveIDs, fmt.Sprintf("WPVDBID-%s", vulnerability.ID))
 		}
@@ -211,11 +212,6 @@ func extractToVulnInfos(pkgName string, cves []wpCveInfo) (vinfos []models.VulnI
 		}
 
 		var refs []models.Reference
-		if vulnerability.Poc != nil {
-			refs = append(refs, models.Reference{
-				Source: *vulnerability.Poc,
-			})
-		}
 		for _, url := range vulnerability.References.URL {
 			refs = append(refs, models.Reference{
 				Link: url,
@@ -226,9 +222,13 @@ func extractToVulnInfos(pkgName string, cves []wpCveInfo) (vinfos []models.VulnI
 				Link: fmt.Sprintf("https://www.youtube.com/watch?v=%s", id),
 			})
 		}
+
+		var exploits []models.Exploit
 		for _, id := range vulnerability.References.ExploitDB {
-			refs = append(refs, models.Reference{
-				Link: fmt.Sprintf("https://www.exploit-db.com/exploits/%s", id),
+			exploits = append(exploits, models.Exploit{
+				ExploitType: exploitmodels.OffensiveSecurityType,
+				ID:          id,
+				URL:         fmt.Sprintf("https://www.exploit-db.com/exploits/%s", id),
 			})
 		}
 
@@ -247,6 +247,9 @@ func extractToVulnInfos(pkgName string, cves []wpCveInfo) (vinfos []models.VulnI
 		}
 
 		optional := map[string]string{}
+		if vulnerability.Poc != nil {
+			optional["poc"] = *vulnerability.Poc
+		}
 		if vulnerability.IntroducedIn != nil {
 			optional["introduced_in"] = *vulnerability.IntroducedIn
 		}
@@ -272,6 +275,7 @@ func extractToVulnInfos(pkgName string, cves []wpCveInfo) (vinfos []models.VulnI
 						Optional:      optional,
 					},
 				),
+				Exploits: exploits,
 				VulnType: vulnerability.VulnType,
 				Confidences: []models.Confidence{
 					models.WpScanMatch,
