@@ -226,7 +226,7 @@ func extractToVulnInfos(pkgName string, cves []wpCveInfo) (vinfos []models.VulnI
 		for _, id := range vulnerability.References.ExploitDB {
 			exploits = append(exploits, models.Exploit{
 				ExploitType: "wpscan",
-				ID:          id,
+				ID:          fmt.Sprintf("Exploit-DB: %s", id),
 				URL:         fmt.Sprintf("https://www.exploit-db.com/exploits/%s", id),
 			})
 		}
