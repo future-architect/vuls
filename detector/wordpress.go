@@ -57,6 +57,7 @@ type References struct {
 	URL     []string `json:"url"`
 	Cve     []string `json:"cve"`
 	YouTube []string `json:"youtube,omitempty"`
+	ExploitDB []string `json:"exploitdb,omitempty"`
 }
 
 // CVSS is for wpscan json
