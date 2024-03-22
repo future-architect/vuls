@@ -194,10 +194,13 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 				StandardSupportUntil: time.Date(2023, 7, 20, 23, 59, 59, 0, time.UTC),
 			},
 			"23.04": {
-				StandardSupportUntil: time.Date(2024, 1, 31, 23, 59, 59, 0, time.UTC),
+				StandardSupportUntil: time.Date(2024, 1, 25, 23, 59, 59, 0, time.UTC),
 			},
 			"23.10": {
 				StandardSupportUntil: time.Date(2024, 7, 31, 23, 59, 59, 0, time.UTC),
+			},
+			"24.04": {
+				StandardSupportUntil: time.Date(2029, 6, 30, 23, 59, 59, 0, time.UTC),
 			},
 		}[release]
 	case constant.OpenSUSE:

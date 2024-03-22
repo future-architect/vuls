@@ -371,6 +371,14 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			stdEnded: false,
 			extEnded: false,
 		},
+		{
+			name:     "Ubuntu 24.04 supported",
+			fields:   fields{family: Ubuntu, release: "24.04"},
+			now:      time.Date(2029, 6, 30, 23, 59, 59, 0, time.UTC),
+			found:    true,
+			stdEnded: false,
+			extEnded: false,
+		},
 		//Debian
 		{
 			name:     "Debian 8 supported",
