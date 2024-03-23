@@ -9,6 +9,7 @@ import (
 type SMTPConf struct {
 	SMTPAddr      string   `toml:"smtpAddr,omitempty" json:"-"`
 	SMTPPort      string   `toml:"smtpPort,omitempty" valid:"port" json:"-"`
+	SMTPInsecure  bool     `toml:"smtpInsecure,omitempty" json:"-"`
 	User          string   `toml:"user,omitempty" json:"-"`
 	Password      string   `toml:"password,omitempty" json:"-"`
 	From          string   `toml:"from,omitempty" json:"-"`
