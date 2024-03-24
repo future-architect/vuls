@@ -3,24 +3,6 @@
 
 package detector
 
-import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
-	"strings"
-	"time"
-
-	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/errof"
-	"github.com/future-architect/vuls/logging"
-	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/util"
-	version "github.com/hashicorp/go-version"
-	"golang.org/x/xerrors"
-)
-
 // WpCveInfos is for wpscan json
 type WpCveInfos struct {
 	ReleaseDate  string `json:"release_date"`
