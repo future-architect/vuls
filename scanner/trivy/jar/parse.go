@@ -11,9 +11,9 @@ import (
 	"regexp"
 	"strings"
 
-	dio "github.com/aquasecurity/go-dep-parser/pkg/io"
-	"github.com/aquasecurity/go-dep-parser/pkg/log"
 	"github.com/aquasecurity/trivy/pkg/digest"
+	"github.com/aquasecurity/trivy/pkg/log"
+	xio "github.com/aquasecurity/trivy/pkg/x/io"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
 	"golang.org/x/xerrors"
@@ -87,7 +87,7 @@ func newParser(opts ...option) *parser {
 	return p
 }
 
-func (p *parser) parse(r dio.ReadSeekerAt) ([]jarLibrary, error) {
+func (p *parser) parse(r xio.ReadSeekerAt) ([]jarLibrary, error) {
 	libs, err := p.parseArtifact(p.rootFilePath, p.size, r)
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to parse %s. err: %w", p.rootFilePath, err)
@@ -98,7 +98,7 @@ func (p *parser) parse(r dio.ReadSeekerAt) ([]jarLibrary, error) {
 // This function MUST NOT return empty list unless an error occurred.
 // The least element contains file path and SHA1 digest, they can be used at detect phase to
 // determine actual name and version.
-func (p *parser) parseArtifact(filePath string, size int64, r dio.ReadSeekerAt) ([]jarLibrary, error) {
+func (p *parser) parseArtifact(filePath string, size int64, r xio.ReadSeekerAt) ([]jarLibrary, error) {
 	log.Logger.Debugw("Parsing Java artifacts...", zap.String("file", filePath))
 
 	sha1, err := digest.CalcSHA1(r)
