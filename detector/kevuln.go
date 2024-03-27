@@ -79,18 +79,9 @@ func FillWithKEVuln(r *models.ScanResult, cnf config.KEVulnConf, logOpts logging
 				return err
 			}
 
-			alerts := []models.Alert{}
-			if len(kevulns) > 0 {
-				alerts = append(alerts, models.Alert{
-					Title: "Known Exploited Vulnerabilities Catalog",
-					URL:   "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
-					Team:  "cisa",
-				})
-			}
-
 			v, ok := r.ScannedCves[res.request.cveID]
 			if ok {
-				v.AlertDict.CISA = alerts
+				v.AlertDict.CISA = createAndFillAlert(kevulns)
 				nKEV++
 			}
 			r.ScannedCves[res.request.cveID] = v
@@ -108,16 +99,7 @@ func FillWithKEVuln(r *models.ScanResult, cnf config.KEVulnConf, logOpts logging
 				continue
 			}
 
-			alerts := []models.Alert{}
-			if len(kevulns) > 0 {
-				alerts = append(alerts, models.Alert{
-					Title: "Known Exploited Vulnerabilities Catalog",
-					URL:   "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
-					Team:  "cisa",
-				})
-			}
-
-			vuln.AlertDict.CISA = alerts
+			vuln.AlertDict.CISA = createAndFillAlert(kevulns)
 			nKEV++
 			r.ScannedCves[cveID] = vuln
 		}
@@ -242,4 +224,25 @@ func newKEVulnDB(cnf config.VulnDictInterface) (kevulndb.DB, error) {
 		return nil, xerrors.Errorf("Failed to init kevuln DB. DB Path: %s, err: %w", path, err)
 	}
 	return driver, nil
+}
+
+func createAndFillAlert(kevulns []kevulnmodels.KEVuln) (alerts []models.Alert) {
+	if len(kevulns) > 0 {
+		for _, kevuln := range kevulns {
+			if kevuln.KnownRansomwareCampaignUse == "Known" {
+				alerts = append(alerts, models.Alert{
+					Title: "Known Exploited Vulnerabilities Catalog: Known to be Used in Ransomware Campaigns",
+					URL:   "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+					Team:  "cisa",
+				})
+			} else {
+				alerts = append(alerts, models.Alert{
+					Title: "Known Exploited Vulnerabilities Catalog",
+					URL:   "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+					Team:  "cisa",
+				})
+			}
+		}
+	}
+	return alerts
 }
