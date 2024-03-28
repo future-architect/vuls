@@ -90,7 +90,7 @@ NOW=$(shell date '+%Y-%m-%dT%H-%M-%S%z')
 NOW_JSON_DIR := '${BASE_DIR}/$(NOW)'
 ONE_SEC_AFTER=$(shell date -d '+1 second' '+%Y-%m-%dT%H-%M-%S%z')
 ONE_SEC_AFTER_JSON_DIR := '${BASE_DIR}/$(ONE_SEC_AFTER)'
-LIBS := 'bundler' 'pip' 'pipenv' 'poetry' 'composer' 'npm' 'yarn' 'pnpm' 'cargo' 'gomod' 'gosum' 'gobinary' 'jar' 'pom' 'gradle' 'nuget-lock' 'nuget-config' 'dotnet-deps' 'conan' 'nvd_exact' 'nvd_rough' 'nvd_vendor_product' 'nvd_match_no_jvn' 'jvn_vendor_product' 'jvn_vendor_product_nover'
+LIBS := 'bundler' 'dart' 'elixir' 'pip' 'pipenv' 'poetry' 'composer' 'npm' 'yarn' 'pnpm' 'cargo' 'gomod' 'gosum' 'gobinary' 'jar' 'jar-wrong-name-log4j-core' 'war' 'pom' 'gradle' 'nuget-lock' 'nuget-config' 'dotnet-deps' 'dotnet-package-props' 'conan' 'swift-cocoapods' 'swift-swift' 'rust-binary'
 
 diff:
 	# git clone git@github.com:vulsio/vulsctl.git

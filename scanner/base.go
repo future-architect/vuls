@@ -15,9 +15,9 @@ import (
 	"sync"
 	"time"
 
-	dio "github.com/aquasecurity/go-dep-parser/pkg/io"
 	fanal "github.com/aquasecurity/trivy/pkg/fanal/analyzer"
 	tlog "github.com/aquasecurity/trivy/pkg/log"
+	xio "github.com/aquasecurity/trivy/pkg/x/io"
 	debver "github.com/knqyf263/go-deb-version"
 
 	"github.com/future-architect/vuls/config"
@@ -764,7 +764,7 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 		"",
 		path,
 		info,
-		func() (dio.ReadSeekCloserAt, error) { return dio.NopCloser(bytes.NewReader(contents)), nil },
+		func() (xio.ReadSeekCloserAt, error) { return xio.NopCloser(bytes.NewReader(contents)), nil },
 		nil,
 		opts,
 	); err != nil {
@@ -784,7 +784,7 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 
 	analyzerTypes := ag.RequiredPostAnalyzers(path, info)
 	if len(analyzerTypes) != 0 {
-		opener := func() (dio.ReadSeekCloserAt, error) { return dio.NopCloser(bytes.NewReader(contents)), nil }
+		opener := func() (xio.ReadSeekCloserAt, error) { return xio.NopCloser(bytes.NewReader(contents)), nil }
 		tmpFilePath, err := composite.CopyFileToTemp(opener, info)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to copy file to temp. err: %w", err)
@@ -858,7 +858,8 @@ var disabledAnalyzers = []fanal.Type{
 	fanal.TypeHelm,
 	fanal.TypeKubernetes,
 	fanal.TypeTerraform,
-	fanal.TypeTerraformPlan,
+	fanal.TypeTerraformPlanJSON,
+	fanal.TypeTerraformPlanSnapshot,
 
 	// ========
 	// License

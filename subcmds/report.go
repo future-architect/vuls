@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	trivyFlag "github.com/aquasecurity/trivy/pkg/flag"
 	"github.com/aquasecurity/trivy/pkg/utils/fsutils"
 	"github.com/google/subcommands"
 	"github.com/k0kubun/pp"
@@ -178,7 +179,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&config.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
 		fsutils.CacheDir(), "/path/to/dir")
 	f.StringVar(&config.Conf.TrivyJavaDBRepository, "trivy-java-db-repository",
-		"ghcr.io/aquasecurity/trivy-java-db", "Trivy Java DB Repository")
+		trivyFlag.JavaDBRepositoryFlag.Default, "Trivy Java DB Repository")
 	f.BoolVar(&config.Conf.TrivySkipJavaDBUpdate, "trivy-skip-java-db-update",
 		false, "Skip Trivy Java DB Update")
 }
