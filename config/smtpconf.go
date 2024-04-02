@@ -9,6 +9,7 @@ import (
 type SMTPConf struct {
 	SMTPAddr              string   `toml:"smtpAddr,omitempty" json:"-"`
 	SMTPPort              string   `toml:"smtpPort,omitempty" valid:"port" json:"-"`
+	TLSMode               string   `toml:"tlsMode,omitempty" json:"-"`
 	TLSInsecureSkipVerify bool     `toml:"tlsInsecureSkipVerify,omitempty" json:"-"`
 	User                  string   `toml:"user,omitempty" json:"-"`
 	Password              string   `toml:"password,omitempty" json:"-"`
@@ -50,6 +51,11 @@ func (c *SMTPConf) Validate() (errs []error) {
 	}
 	if c.SMTPPort == "" {
 		errs = append(errs, xerrors.New("email.smtpPort must not be empty"))
+	}
+	switch c.TLSMode {
+	case "", "None", "STARTTLS", "SMTPS":
+	default:
+		errs = append(errs, xerrors.New(`email.tlsMode accepts ["", "None", "STARTTLS", "SMTPS"]`))
 	}
 	if len(c.To) == 0 {
 		errs = append(errs, xerrors.New("email.To required at least one address"))

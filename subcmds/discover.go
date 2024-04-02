@@ -127,6 +127,7 @@ func printConfigToml(ips []string) (err error) {
 #[email]
 #smtpAddr              = "smtp.example.com"
 #smtpPort              = "587"
+#tlsMode               = "STARTTLS"
 #tlsInsecureSkipVerify = false
 #user                  = "username"
 #password              = "password"
