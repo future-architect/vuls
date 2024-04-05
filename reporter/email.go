@@ -94,7 +94,8 @@ func (e *emailSender) sendMail(smtpServerAddr, message string) (err error) {
 	emailConf := e.conf
 	//TLS Config
 	tlsConfig := &tls.Config{
-		ServerName: emailConf.SMTPAddr,
+		ServerName:         emailConf.SMTPAddr,
+		InsecureSkipVerify: emailConf.TLSInsecureSkipVerify,
 	}
 	switch emailConf.SMTPPort {
 	case "465":
@@ -178,19 +179,7 @@ func (e *emailSender) Send(subject, body string) (err error) {
 	for k, v := range headers {
 		header += fmt.Sprintf("%s: %s\r\n", k, v)
 	}
-	message := fmt.Sprintf("%s\r\n%s", header, body)
-
-	smtpServer := net.JoinHostPort(emailConf.SMTPAddr, emailConf.SMTPPort)
-
-	if emailConf.User != "" && emailConf.Password != "" {
-		err = e.sendMail(smtpServer, message)
-		if err != nil {
-			return xerrors.Errorf("Failed to send emails: %w", err)
-		}
-		return nil
-	}
-	err = e.sendMail(smtpServer, message)
-	if err != nil {
+	if err := e.sendMail(net.JoinHostPort(emailConf.SMTPAddr, emailConf.SMTPPort), fmt.Sprintf("%s\r\n%s", header, body)); err != nil {
 		return xerrors.Errorf("Failed to send emails: %w", err)
 	}
 	return nil
