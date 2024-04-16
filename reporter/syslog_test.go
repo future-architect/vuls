@@ -111,7 +111,7 @@ func TestSyslogWriterEncodeSyslog(t *testing.T) {
 		for j, m := range messages {
 			e := tt.expectedMessages[j]
 			if e != m {
-				t.Errorf("test: %d, Messsage %d: \nexpected %s \nactual   %s", i, j, e, m)
+				t.Errorf("test: %d, Message %d: \nexpected %s \nactual   %s", i, j, e, m)
 			}
 		}
 	}

@@ -49,7 +49,7 @@ func DetectGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string,
 
 		// https://developer.github.com/v4/previews/#repository-vulnerability-alerts
 		// To toggle this preview and access data, need to provide a custom media type in the Accept header:
-		// MEMO: I tried to get the affected version via GitHub API. Bit it seems difficult to determin the affected version if there are multiple dependency files such as package.json.
+		// MEMO: I tried to get the affected version via GitHub API. Bit it seems difficult to determine the affected version if there are multiple dependency files such as package.json.
 		// TODO remove this header if it is no longer preview status in the future.
 		req.Header.Set("Accept", "application/vnd.github.package-deletes-preview+json")
 		req.Header.Set("Content-Type", "application/json")
