@@ -67,7 +67,7 @@ func RunTui(results models.ScanResults) subcommands.ExitStatus {
 func keybindings(g *gocui.Gui) (err error) {
 	errs := []error{}
 
-	// Move beetween views
+	// Move between views
 	errs = append(errs, g.SetKeybinding("side", gocui.KeyTab, gocui.ModNone, nextView))
 	//  errs = append(errs, g.SetKeybinding("side", gocui.KeyCtrlH, gocui.ModNone, previousView))
 	//  errs = append(errs, g.SetKeybinding("side", gocui.KeyCtrlL, gocui.ModNone, nextView))

@@ -44,7 +44,7 @@ func TestConvert(t *testing.T) {
 			want: []string{"cpe:2.3:o:cisco:ios:15.1(4)m4:*:*:*:*:*:*:*"},
 		},
 		{
-			name: "Cisco IOS Vresion 15.5(3)M on Cisco 892J-K9-V02",
+			name: "Cisco IOS Version 15.5(3)M on Cisco 892J-K9-V02",
 			args: snmp.Result{
 				SysDescr0: `Cisco IOS Software, C890 Software (C890-UNIVERSALK9-M), Version 15.5(3)M, RELEASE SOFTWARE (fc1)
 		Technical Support: http://www.cisco.com/techsupport
