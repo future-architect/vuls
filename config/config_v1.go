@@ -135,7 +135,7 @@ func convertToLatestConfig(pathToToml string) error {
 	}
 	str := strings.Replace(buf.String(), "\n  [", "\n\n  [", -1)
 	str = fmt.Sprintf("%s\n\n%s",
-		"# See README for details: https://vuls.io/docs/en/usage-settings.html",
+		"# See README for details: https://vuls.io/docs/en/config.toml.html",
 		str)
 
 	return os.WriteFile(realPath, []byte(str), 0600)
