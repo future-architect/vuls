@@ -7,7 +7,6 @@ package javadb
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -40,12 +39,11 @@ func UpdateJavaDB(trivyOpts config.TrivyOpts, noProgress bool) error {
 
 	if (meta.Version != db.SchemaVersion || meta.NextUpdate.Before(time.Now().UTC())) && !trivyOpts.TrivySkipJavaDBUpdate {
 		// Download DB
-		repo := fmt.Sprintf("%s:%d", trivyOpts.TrivyJavaDBRepository, db.SchemaVersion)
-		logging.Log.Infof("Trivy Java DB Repository: %s", repo)
+		logging.Log.Infof("Trivy Java DB Repository: %s", trivyOpts.TrivyJavaDBRepository)
 		logging.Log.Info("Downloading Trivy Java DB...")
 
 		var a *oci.Artifact
-		if a, err = oci.NewArtifact(repo, noProgress, types.RegistryOptions{}); err != nil {
+		if a, err = oci.NewArtifact(trivyOpts.TrivyJavaDBRepository, noProgress, types.RegistryOptions{}); err != nil {
 			return xerrors.Errorf("Failed to new oci artifact. err: %w", err)
 		}
 		if err = a.Download(context.Background(), dbDir, oci.DownloadOption{MediaType: "application/vnd.aquasec.trivy.javadb.layer.v1.tar+gzip"}); err != nil {
