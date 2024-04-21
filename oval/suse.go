@@ -5,6 +5,7 @@ package oval
 
 import (
 	"fmt"
+	"strings"
 
 	"golang.org/x/xerrors"
 
@@ -106,11 +107,6 @@ func (o SUSE) update(r *models.ScanResult, defpacks defPacks) {
 }
 
 func (o SUSE) convertToModel(def *ovalmodels.Definition) *models.CveContent {
-	if len(def.Advisory.Cves) != 1 {
-		logging.Log.Warnf("Unknown Oval format. Please register the issue as it needs to be investigated. https://github.com/vulsio/goval-dictionary/issues family: %s, defID: %s", o.family, def.DefinitionID)
-		return nil
-	}
-
 	refs := []models.Reference{}
 	for _, r := range def.References {
 		refs = append(refs, models.Reference{
@@ -119,15 +115,29 @@ func (o SUSE) convertToModel(def *ovalmodels.Definition) *models.CveContent {
 			RefID:  r.RefID,
 		})
 	}
-	cve := def.Advisory.Cves[0]
-	score3, vec3 := parseCvss3(cve.Cvss3)
-	return &models.CveContent{
-		Title:         def.Title,
-		Summary:       def.Description,
-		CveID:         cve.CveID,
-		Cvss3Score:    score3,
-		Cvss3Vector:   vec3,
-		Cvss3Severity: cve.Impact,
-		References:    refs,
+
+	var c *models.CveContent
+	for _, cve := range def.Advisory.Cves {
+		switch {
+		case strings.Contains(cve.Href, "www.suse.com"):
+			score3, vec3 := parseCvss3(cve.Cvss3)
+			return &models.CveContent{
+				Title:         def.Title,
+				Summary:       def.Description,
+				CveID:         strings.TrimSuffix(cve.CveID, " at SUSE"),
+				Cvss3Score:    score3,
+				Cvss3Vector:   vec3,
+				Cvss3Severity: cve.Impact,
+				References:    refs,
+			}
+		default:
+			c = &models.CveContent{
+				Title:      def.Title,
+				Summary:    def.Description,
+				CveID:      strings.TrimSuffix(cve.CveID, " at NVD"),
+				References: refs,
+			}
+		}
 	}
+	return c
 }
