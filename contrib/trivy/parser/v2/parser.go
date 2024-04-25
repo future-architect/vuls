@@ -40,7 +40,7 @@ var dockerTagPattern = regexp.MustCompile(`^(.*):(.*)$`)
 
 func setScanResultMeta(scanResult *models.ScanResult, report *types.Report) error {
 	if len(report.Results) == 0 {
-		return xerrors.Errorf("scanned images or libraries are not supported by Trivy. see https://aquasecurity.github.io/trivy/dev/vulnerability/detection/os/, https://aquasecurity.github.io/trivy/dev/vulnerability/detection/language/")
+		return xerrors.Errorf("scanned images or libraries are not supported by Trivy. see https://aquasecurity.github.io/trivy/dev/docs/coverage/os/, https://aquasecurity.github.io/trivy/dev/docs/coverage/language/")
 	}
 
 	scanResult.ServerName = report.ArtifactName
