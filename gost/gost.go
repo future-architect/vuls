@@ -67,8 +67,6 @@ func NewGostClient(cnf config.GostConf, family string, o logging.LogOpts) (Clien
 
 	base := Base{driver: db, baseURL: cnf.GetURL()}
 	switch family {
-	case constant.RedHat, constant.CentOS, constant.Rocky, constant.Alma:
-		return RedHat{base}, nil
 	case constant.Debian, constant.Raspbian:
 		return Debian{base}, nil
 	case constant.Ubuntu:
