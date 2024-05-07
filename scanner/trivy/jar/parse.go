@@ -15,7 +15,6 @@ import (
 	"github.com/aquasecurity/trivy/pkg/log"
 	xio "github.com/aquasecurity/trivy/pkg/x/io"
 	"github.com/samber/lo"
-	"go.uber.org/zap"
 	"golang.org/x/xerrors"
 )
 
@@ -99,7 +98,7 @@ func (p *parser) parse(r xio.ReadSeekerAt) ([]jarLibrary, error) {
 // The least element contains file path and SHA1 digest, they can be used at detect phase to
 // determine actual name and version.
 func (p *parser) parseArtifact(filePath string, size int64, r xio.ReadSeekerAt) ([]jarLibrary, error) {
-	log.Logger.Debugw("Parsing Java artifacts...", zap.String("file", filePath))
+	log.Debug("Parsing Java artifacts...", log.String("file", filePath))
 
 	sha1, err := digest.CalcSHA1(r)
 	if err != nil {
@@ -140,7 +139,7 @@ func (p *parser) parseArtifact(filePath string, size int64, r xio.ReadSeekerAt) 
 		case isArtifact(fileInJar.Name):
 			innerLibs, err := p.parseInnerJar(fileInJar, filePath) //TODO process inner deps
 			if err != nil {
-				log.Logger.Debugf("Failed to parse %s. err: %s", fileInJar.Name, err)
+				log.Debugf("Failed to parse %s. err: %s", fileInJar.Name, err)
 				continue
 			}
 			libs = append(libs, innerLibs...)
