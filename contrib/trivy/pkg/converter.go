@@ -5,6 +5,7 @@ import (
 	"sort"
 	"time"
 
+	trivydbTypes "github.com/aquasecurity/trivy-db/pkg/types"
 	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
 	"github.com/aquasecurity/trivy/pkg/types"
 
@@ -68,16 +69,35 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 				lastModified = *vuln.LastModifiedDate
 			}
 
-			vulnInfo.CveContents = models.CveContents{
-				models.Trivy: []models.CveContent{{
-					Cvss3Severity: vuln.Severity,
-					References:    references,
+			for source, severity := range vuln.VendorSeverity {
+				vulnInfo.CveContents[models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source))] = append(vulnInfo.CveContents[models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source))], models.CveContent{
+					Type:          models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source)),
+					CveID:         vuln.VulnerabilityID,
 					Title:         vuln.Title,
 					Summary:       vuln.Description,
+					Cvss3Severity: trivydbTypes.SeverityNames[severity],
 					Published:     published,
 					LastModified:  lastModified,
-				}},
+					References:    references,
+				})
 			}
+
+			for source, cvss := range vuln.CVSS {
+				vulnInfo.CveContents[models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source))] = append(vulnInfo.CveContents[models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source))], models.CveContent{
+					Type:         models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source)),
+					CveID:        vuln.VulnerabilityID,
+					Title:        vuln.Title,
+					Summary:      vuln.Description,
+					Cvss2Score:   cvss.V2Score,
+					Cvss2Vector:  cvss.V2Vector,
+					Cvss3Score:   cvss.V3Score,
+					Cvss3Vector:  cvss.V3Vector,
+					Published:    published,
+					LastModified: lastModified,
+					References:   references,
+				})
+			}
+
 			// do only if image type is Vuln
 			if isTrivySupportedOS(trivyResult.Type) {
 				pkgs[vuln.PkgName] = models.Package{
