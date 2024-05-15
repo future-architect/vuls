@@ -626,7 +626,7 @@ func (l *base) parseSystemctlStatus(stdout string) string {
 	return ss[1]
 }
 
-var trivyLoggerInit = sync.OnceValue(func() error { return tlog.InitLogger(config.Conf.Debug, config.Conf.Quiet) })
+var trivyLoggerInit = sync.OnceFunc(func() { tlog.InitLogger(config.Conf.Debug, config.Conf.Quiet) })
 
 func (l *base) scanLibraries() (err error) {
 	if len(l.LibraryScanners) != 0 {
@@ -640,9 +640,7 @@ func (l *base) scanLibraries() (err error) {
 
 	l.log.Info("Scanning Language-specific Packages...")
 
-	if err := trivyLoggerInit(); err != nil {
-		return xerrors.Errorf("Failed to init trivy logger. err: %w", err)
-	}
+	trivyLoggerInit()
 
 	found := map[string]bool{}
 	detectFiles := l.ServerInfo.Lockfiles
