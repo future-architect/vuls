@@ -560,15 +560,29 @@ func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
 				if cont.Cvss3Severity != "" {
-					values = append(values, CveContentCvss{
-						Type: ctype,
-						Value: Cvss{
-							Type:                 CVSS3,
-							Score:                severityToCvssScoreRoughly(cont.Cvss3Severity),
-							CalculatedBySeverity: true,
-							Severity:             strings.ToUpper(cont.Cvss3Severity),
-						},
-					})
+					switch ctype {
+					case DebianSecurityTracker: // Multiple Severities(sorted) may be listed, and the largest one is used.
+						ss := strings.Split(cont.Cvss3Severity, "|")
+						values = append(values, CveContentCvss{
+							Type: ctype,
+							Value: Cvss{
+								Type:                 CVSS3,
+								Score:                severityToCvssScoreRoughly(ss[len(ss)-1]),
+								CalculatedBySeverity: true,
+								Severity:             strings.ToUpper(cont.Cvss3Severity),
+							},
+						})
+					default:
+						values = append(values, CveContentCvss{
+							Type: ctype,
+							Value: Cvss{
+								Type:                 CVSS3,
+								Score:                severityToCvssScoreRoughly(cont.Cvss3Severity),
+								CalculatedBySeverity: true,
+								Severity:             strings.ToUpper(cont.Cvss3Severity),
+							},
+						})
+					}
 				}
 			}
 		}
