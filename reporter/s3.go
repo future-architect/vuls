@@ -12,6 +12,9 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
+	"github.com/aws/aws-sdk-go-v2/credentials/endpointcreds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"golang.org/x/xerrors"
@@ -33,17 +36,41 @@ type S3Writer struct {
 
 func (w S3Writer) getS3() (*s3.Client, error) {
 	var optFns []func(*awsConfig.LoadOptions) error
+	if w.S3Endpoint != "" {
+		optFns = append(optFns, awsConfig.WithEndpointResolverWithOptions(aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+			return aws.Endpoint{URL: w.S3Endpoint}, nil
+		})))
+	}
 	if w.Region != "" {
 		optFns = append(optFns, awsConfig.WithRegion(w.Region))
 	}
 	if w.Profile != "" {
 		optFns = append(optFns, awsConfig.WithSharedConfigProfile(w.Profile))
 	}
+	if len(w.ConfigFiles) > 0 {
+		optFns = append(optFns, awsConfig.WithSharedConfigFiles(w.ConfigFiles))
+	}
+	if len(w.CredentialFiles) > 0 {
+		optFns = append(optFns, awsConfig.WithSharedCredentialsFiles(w.CredentialFiles))
+	}
+	switch w.CredentialProvider {
+	case "":
+	case config.CredentialProviderAnonymous:
+		optFns = append(optFns, awsConfig.WithCredentialsProvider(aws.AnonymousCredentials{}))
+	case config.CredentialProviderEC2Metadata:
+		optFns = append(optFns, awsConfig.WithCredentialsProvider(aws.NewCredentialsCache(ec2rolecreds.New())))
+	case config.CredentialProviderStatic:
+		optFns = append(optFns, awsConfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(w.AccessKeyID, w.SecretAccessKey, w.SessionToken)))
+	case config.CredentialProviderEndpoint:
+		optFns = append(optFns, awsConfig.WithCredentialsProvider(endpointcreds.New(w.CredentialEndpoint)))
+	default:
+		return nil, xerrors.Errorf("CredentialProvider: %s is not supported", w.CredentialProvider)
+	}
 	cfg, err := awsConfig.LoadDefaultConfig(context.TODO(), optFns...)
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to load config. err: %w", err)
 	}
-	return s3.NewFromConfig(cfg), nil
+	return s3.NewFromConfig(cfg, func(o *s3.Options) { o.UsePathStyle = w.S3UsePathStyle }), nil
 }
 
 // Write results to S3
