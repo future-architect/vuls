@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	trivydb "github.com/aquasecurity/trivy-db/pkg/db"
 	"github.com/aquasecurity/trivy-db/pkg/metadata"
@@ -226,20 +227,59 @@ func (d libraryDetector) getVulnDetail(tvuln types.DetectedVulnerability) (vinfo
 
 func getCveContents(cveID string, vul trivydbTypes.Vulnerability) (contents map[models.CveContentType][]models.CveContent) {
 	contents = map[models.CveContentType][]models.CveContent{}
-	refs := []models.Reference{}
+	refs := make([]models.Reference, 0, len(vul.References))
 	for _, refURL := range vul.References {
 		refs = append(refs, models.Reference{Source: "trivy", Link: refURL})
 	}
 
-	contents[models.Trivy] = []models.CveContent{
-		{
-			Type:          models.Trivy,
+	for source, severity := range vul.VendorSeverity {
+		contents[models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source))] = append(contents[models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source))], models.CveContent{
+			Type:          models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source)),
 			CveID:         cveID,
 			Title:         vul.Title,
 			Summary:       vul.Description,
-			Cvss3Severity: string(vul.Severity),
-			References:    refs,
-		},
+			Cvss3Severity: trivydbTypes.SeverityNames[severity],
+			Published: func() time.Time {
+				if vul.PublishedDate != nil {
+					return *vul.PublishedDate
+				}
+				return time.Time{}
+			}(),
+			LastModified: func() time.Time {
+				if vul.LastModifiedDate != nil {
+					return *vul.LastModifiedDate
+				}
+				return time.Time{}
+			}(),
+			References: refs,
+		})
 	}
+
+	for source, cvss := range vul.CVSS {
+		contents[models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source))] = append(contents[models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source))], models.CveContent{
+			Type:        models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source)),
+			CveID:       cveID,
+			Title:       vul.Title,
+			Summary:     vul.Description,
+			Cvss2Score:  cvss.V2Score,
+			Cvss2Vector: cvss.V2Vector,
+			Cvss3Score:  cvss.V3Score,
+			Cvss3Vector: cvss.V3Vector,
+			Published: func() time.Time {
+				if vul.PublishedDate != nil {
+					return *vul.PublishedDate
+				}
+				return time.Time{}
+			}(),
+			LastModified: func() time.Time {
+				if vul.LastModifiedDate != nil {
+					return *vul.LastModifiedDate
+				}
+				return time.Time{}
+			}(),
+			References: refs,
+		})
+	}
+
 	return contents
 }

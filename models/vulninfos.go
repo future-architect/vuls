@@ -417,7 +417,7 @@ func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := append(CveContentTypes{Trivy, Fortinet, Nvd}, GetCveContentTypes(myFamily)...)
+	order := append(GetCveContentTypes(string(Trivy)), append(CveContentTypes{Fortinet, Nvd}, GetCveContentTypes(myFamily)...)...)
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
@@ -464,7 +464,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := append(append(CveContentTypes{Trivy}, GetCveContentTypes(myFamily)...), Fortinet, Nvd, GitHub)
+	order := append(append(GetCveContentTypes(string(Trivy)), GetCveContentTypes(myFamily)...), Fortinet, Nvd, GitHub)
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
@@ -510,7 +510,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 
 // Cvss2Scores returns CVSS V2 Scores
 func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
-	order := []CveContentType{RedHatAPI, RedHat, Nvd, Jvn}
+	order := append([]CveContentType{RedHatAPI, RedHat, Nvd, Jvn}, GetCveContentTypes(string(Trivy))...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
@@ -535,7 +535,7 @@ func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
 
 // Cvss3Scores returns CVSS V3 Score
 func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
-	order := []CveContentType{RedHatAPI, RedHat, SUSE, Microsoft, Fortinet, Nvd, Jvn}
+	order := append([]CveContentType{RedHatAPI, RedHat, SUSE, Microsoft, Fortinet, Nvd, Jvn}, GetCveContentTypes(string(Trivy))...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
@@ -556,7 +556,7 @@ func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 		}
 	}
 
-	for _, ctype := range []CveContentType{Debian, DebianSecurityTracker, Ubuntu, UbuntuAPI, Amazon, Trivy, GitHub, WpScan} {
+	for _, ctype := range append([]CveContentType{Debian, DebianSecurityTracker, Ubuntu, UbuntuAPI, Amazon, GitHub, WpScan}, GetCveContentTypes(string(Trivy))...) {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
 				if cont.Cvss3Severity != "" {
