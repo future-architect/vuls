@@ -12,6 +12,7 @@ import (
 	"github.com/aquasecurity/trivy/pkg/utils/fsutils"
 	"github.com/google/subcommands"
 	"github.com/k0kubun/pp"
+	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector"
@@ -349,8 +350,11 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			AWSConf:           config.Conf.AWS,
 		}
 		if err := w.Validate(); err != nil {
-			logging.Log.Errorf("Check if there is a bucket beforehand: %s, err: %+v", config.Conf.AWS.S3Bucket, err)
-			return subcommands.ExitUsageError
+			if !xerrors.Is(err, reporter.ErrBucketExistCheck) {
+				logging.Log.Errorf("Check if there is a bucket beforehand: %s, err: %+v", config.Conf.AWS.S3Bucket, err)
+				return subcommands.ExitUsageError
+			}
+			logging.Log.Warnf("bucket: %s existence cannot be checked because s3:ListBucket or s3:ListAllMyBuckets is not allowed", config.Conf.AWS.S3Bucket)
 		}
 		reports = append(reports, w)
 	}
