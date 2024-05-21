@@ -12,15 +12,15 @@ import (
 
 func convertLibWithScanner(apps []ftypes.Application) ([]models.LibraryScanner, error) {
 	for i := range apps {
-		apps[i].Libraries = lo.Filter(apps[i].Libraries, func(lib ftypes.Package, index int) bool {
+		apps[i].Packages = lo.Filter(apps[i].Packages, func(lib ftypes.Package, index int) bool {
 			return !lib.Dev
 		})
 	}
 
 	scanners := make([]models.LibraryScanner, 0, len(apps))
 	for _, app := range apps {
-		libs := make([]models.Library, 0, len(app.Libraries))
-		for _, lib := range app.Libraries {
+		libs := make([]models.Library, 0, len(app.Packages))
+		for _, lib := range app.Packages {
 			libs = append(libs, models.Library{
 				Name:     lib.Name,
 				Version:  lib.Version,
