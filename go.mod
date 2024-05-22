@@ -1,8 +1,8 @@
 module github.com/future-architect/vuls
 
-go 1.22
+go 1.22.0
 
-toolchain go1.22.0
+toolchain go1.22.3
 
 require (
 	github.com/3th1nk/cidr v0.2.0
@@ -10,11 +10,11 @@ require (
 	github.com/BurntSushi/toml v1.3.2
 	github.com/CycloneDX/cyclonedx-go v0.8.0
 	github.com/Ullaakut/nmap/v2 v2.2.2
-	github.com/aquasecurity/trivy v0.51.1
+	github.com/aquasecurity/trivy v0.51.2
 	github.com/aquasecurity/trivy-db v0.0.0-20240425111931-1fe1d505d3ff
 	github.com/aquasecurity/trivy-java-db v0.0.0-20240109071736-184bd7481d48
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
-	github.com/aws/aws-sdk-go v1.51.16
+	github.com/aws/aws-sdk-go v1.53.0
 	github.com/c-robinson/iplib v1.0.8
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/d4l3k/messagediff v1.2.2-0.20190829033028-7e0a312ae40b
@@ -335,16 +335,16 @@ require (
 	gorm.io/gorm v1.25.10 // indirect
 	gotest.tools/v3 v3.5.0 // indirect
 	helm.sh/helm/v3 v3.14.2 // indirect
-	k8s.io/api v0.29.3 // indirect
+	k8s.io/api v0.30.0 // indirect
 	k8s.io/apiextensions-apiserver v0.29.0 // indirect
-	k8s.io/apimachinery v0.29.3 // indirect
+	k8s.io/apimachinery v0.30.0 // indirect
 	k8s.io/apiserver v0.29.0 // indirect
-	k8s.io/cli-runtime v0.29.3 // indirect
-	k8s.io/client-go v0.29.3 // indirect
-	k8s.io/component-base v0.29.3 // indirect
-	k8s.io/klog/v2 v2.120.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
-	k8s.io/kubectl v0.29.3 // indirect
+	k8s.io/cli-runtime v0.30.0 // indirect
+	k8s.io/client-go v0.30.0 // indirect
+	k8s.io/component-base v0.30.0 // indirect
+	k8s.io/klog/v2 v2.120.1 // indirect
+	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
+	k8s.io/kubectl v0.30.0 // indirect
 	k8s.io/utils v0.0.0-20231127182322-b307cd553661 // indirect
 	modernc.org/libc v1.50.5 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
