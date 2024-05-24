@@ -2,17 +2,18 @@ package reporter
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
+	"slices"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
@@ -30,28 +31,23 @@ type S3Writer struct {
 	config.AWSConf
 }
 
-func (w S3Writer) getS3() (*s3.S3, error) {
-	ses, err := session.NewSession()
+func (w S3Writer) getS3() (*s3.Client, error) {
+	var optFns []func(*awsConfig.LoadOptions) error
+	if w.Region != "" {
+		optFns = append(optFns, awsConfig.WithRegion(w.Region))
+	}
+	if w.Profile != "" {
+		optFns = append(optFns, awsConfig.WithSharedConfigProfile(w.Profile))
+	}
+	cfg, err := awsConfig.LoadDefaultConfig(context.TODO(), optFns...)
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("Failed to load config. err: %w", err)
 	}
-	config := &aws.Config{
-		Region: aws.String(w.Region),
-		Credentials: credentials.NewChainCredentials([]credentials.Provider{
-			&credentials.EnvProvider{},
-			&credentials.SharedCredentialsProvider{Filename: "", Profile: w.Profile},
-			&ec2rolecreds.EC2RoleProvider{Client: ec2metadata.New(ses)},
-		}),
-	}
-	s, err := session.NewSession(config)
-	if err != nil {
-		return nil, err
-	}
-	return s3.New(s), nil
+	return s3.NewFromConfig(cfg), nil
 }
 
 // Write results to S3
-// http://docs.aws.amazon.com/sdk-for-go/latest/v1/developerguide/common-examples.title.html
+// https://docs.aws.amazon.com/en_us/code-library/latest/ug/go_2_s3_code_examples.html
 func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 	if len(rs) == 0 {
 		return nil
@@ -59,7 +55,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 
 	svc, err := w.getS3()
 	if err != nil {
-		return err
+		return xerrors.Errorf("Failed to get s3 client. err: %w", err)
 	}
 
 	if w.FormatOneLineText {
@@ -103,34 +99,41 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 	return nil
 }
 
+// ErrBucketExistCheck : bucket existence cannot be checked because s3:ListBucket or s3:ListAllMyBuckets is not allowed
+var ErrBucketExistCheck = xerrors.New("bucket existence cannot be checked because s3:ListBucket or s3:ListAllMyBuckets is not allowed")
+
 // Validate check the existence of S3 bucket
 func (w S3Writer) Validate() error {
 	svc, err := w.getS3()
 	if err != nil {
-		return err
+		return xerrors.Errorf("Failed to get s3 client. err: %w", err)
 	}
 
-	result, err := svc.ListBuckets(&s3.ListBucketsInput{})
-	if err != nil {
-		return xerrors.Errorf("Failed to list buckets. err: %w, profile: %s, region: %s",
-			err, w.Profile, w.Region)
+	// s3:ListBucket
+	_, err = svc.HeadBucket(context.TODO(), &s3.HeadBucketInput{Bucket: aws.String(w.S3Bucket)})
+	if err == nil {
+		return nil
+	}
+	var nsb *types.NoSuchBucket
+	if errors.As(err, &nsb) {
+		return xerrors.Errorf("Failed to find the buckets. profile: %s, region: %s, bucket: %s", w.Profile, w.Region, w.S3Bucket)
 	}
 
-	found := false
-	for _, bucket := range result.Buckets {
-		if *bucket.Name == w.S3Bucket {
-			found = true
-			break
+	// s3:ListAllMyBuckets
+	result, err := svc.ListBuckets(context.TODO(), &s3.ListBucketsInput{})
+	if err == nil {
+		if slices.ContainsFunc(result.Buckets, func(b types.Bucket) bool {
+			return *b.Name == w.S3Bucket
+		}) {
+			return nil
 		}
+		return xerrors.Errorf("Failed to find the buckets. profile: %s, region: %s, bucket: %s", w.Profile, w.Region, w.S3Bucket)
 	}
-	if !found {
-		return xerrors.Errorf("Failed to find the buckets. profile: %s, region: %s, bucket: %s",
-			w.Profile, w.Region, w.S3Bucket)
-	}
-	return nil
+
+	return ErrBucketExistCheck
 }
 
-func (w S3Writer) putObject(svc *s3.S3, k string, b []byte, gzip bool) error {
+func (w S3Writer) putObject(svc *s3.Client, k string, b []byte, gzip bool) error {
 	var err error
 	if gzip {
 		if b, err = gz(b); err != nil {
@@ -140,16 +143,13 @@ func (w S3Writer) putObject(svc *s3.S3, k string, b []byte, gzip bool) error {
 	}
 
 	putObjectInput := &s3.PutObjectInput{
-		Bucket: aws.String(w.S3Bucket),
-		Key:    aws.String(path.Join(w.S3ResultsDir, k)),
-		Body:   bytes.NewReader(b),
+		Bucket:               aws.String(w.S3Bucket),
+		Key:                  aws.String(path.Join(w.S3ResultsDir, k)),
+		Body:                 bytes.NewReader(b),
+		ServerSideEncryption: types.ServerSideEncryption(w.S3ServerSideEncryption),
 	}
 
-	if w.S3ServerSideEncryption != "" {
-		putObjectInput.ServerSideEncryption = aws.String(w.S3ServerSideEncryption)
-	}
-
-	if _, err := svc.PutObject(putObjectInput); err != nil {
+	if _, err := svc.PutObject(context.TODO(), putObjectInput); err != nil {
 		return xerrors.Errorf("Failed to upload data to %s/%s, err: %w",
 			w.S3Bucket, k, err)
 	}

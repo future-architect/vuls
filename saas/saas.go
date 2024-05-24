@@ -12,16 +12,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/sts/types"
+	"golang.org/x/xerrors"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	"golang.org/x/xerrors"
 )
 
 // Writer writes results to SaaS
@@ -29,9 +30,9 @@ type Writer struct{}
 
 // TempCredential : TempCredential
 type TempCredential struct {
-	Credential   *sts.Credentials `json:"Credential"`
-	S3Bucket     string           `json:"S3Bucket"`
-	S3ResultsDir string           `json:"S3ResultsDir"`
+	Credential   *types.Credentials `json:"Credential"`
+	S3Bucket     string             `json:"S3Bucket"`
+	S3ResultsDir string             `json:"S3ResultsDir"`
 }
 
 type payload struct {
@@ -98,23 +99,19 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 		return xerrors.Errorf("Failed to unmarshal saas credential file. err : %s", err)
 	}
 
-	sess, err := session.NewSession(&aws.Config{
-		Credentials: credentials.NewStaticCredentialsFromCreds(credentials.Value{
-			AccessKeyID:     *tempCredential.Credential.AccessKeyId,
-			SecretAccessKey: *tempCredential.Credential.SecretAccessKey,
-			SessionToken:    *tempCredential.Credential.SessionToken,
-		}),
-		Region: aws.String("ap-northeast-1"),
-	})
+	cfg, err := awsConfig.LoadDefaultConfig(ctx,
+		awsConfig.WithRegion("ap-northeast-1"),
+		awsConfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(*tempCredential.Credential.AccessKeyId, *tempCredential.Credential.SecretAccessKey, *tempCredential.Credential.SessionToken)),
+	)
 	if err != nil {
-		return xerrors.Errorf("Failed to new aws session. err: %w", err)
+		return xerrors.Errorf("Failed to load config. err: %w", err)
 	}
 	// For S3 upload of aws sdk
 	if err := os.Setenv("HTTPS_PROXY", config.Conf.HTTPProxy); err != nil {
 		return xerrors.Errorf("Failed to set HTTP proxy: %s", err)
 	}
 
-	svc := s3.New(sess)
+	svc := s3.NewFromConfig(cfg)
 	for _, r := range rs {
 		if 0 < len(tags) {
 			if r.Optional == nil {
@@ -134,7 +131,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 			Key:    aws.String(path.Join(tempCredential.S3ResultsDir, s3Key)),
 			Body:   bytes.NewReader(b),
 		}
-		if _, err := svc.PutObject(putObjectInput); err != nil {
+		if _, err := svc.PutObject(ctx, putObjectInput); err != nil {
 			return xerrors.Errorf("Failed to upload data to %s/%s, err: %w",
 				tempCredential.S3Bucket, s3Key, err)
 		}
