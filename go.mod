@@ -18,7 +18,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.15
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.15
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.54.2
-	github.com/aws/aws-sdk-go-v2/service/sts v1.28.9
+	github.com/aws/aws-sdk-go-v2/service/sts v1.28.10
 	github.com/c-robinson/iplib v1.0.8
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/d4l3k/messagediff v1.2.2-0.20190829033028-7e0a312ae40b
