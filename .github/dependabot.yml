@@ -5,8 +5,19 @@
 
 version: 2
 updates:
-  - package-ecosystem: "gomod" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: github-actions
+    directory: /
     schedule:
-      interval: "weekly"
-    target-branch: "master"
+      interval: monthly
+    target-branch: master
+  - package-ecosystem: gomod # See documentation for possible values
+    open-pull-requests-limit: 10
+    directory: / # Location of package manifests
+    schedule:
+      interval: weekly
+    groups:
+      aws:
+        patterns:
+          - github.com/aws/aws-sdk-go-v2
+          - github.com/aws/aws-sdk-go-v2/*
+    target-branch: master
