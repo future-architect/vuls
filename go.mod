@@ -7,7 +7,7 @@ toolchain go1.22.3
 require (
 	github.com/3th1nk/cidr v0.2.0
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
-	github.com/BurntSushi/toml v1.3.2
+	github.com/BurntSushi/toml v1.4.0
 	github.com/CycloneDX/cyclonedx-go v0.8.0
 	github.com/Ullaakut/nmap/v2 v2.2.2
 	github.com/aquasecurity/trivy v0.51.2
