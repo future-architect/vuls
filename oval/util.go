@@ -475,7 +475,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family, release s
 			switch family {
 			case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Oracle, constant.Fedora:
 				// For kernel related packages, ignore OVAL information with different major versions
-				if _, ok := kernelRelatedPackNames[ovalPack.Name]; ok {
+				if slices.Contains(kernelRelatedPackNames, ovalPack.Name) {
 					if util.Major(ovalPack.Version) != util.Major(running.Release) {
 						continue
 					}
