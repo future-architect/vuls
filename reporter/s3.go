@@ -33,17 +33,29 @@ type S3Writer struct {
 
 func (w S3Writer) getS3() (*s3.Client, error) {
 	var optFns []func(*awsConfig.LoadOptions) error
+	if w.S3Endpoint != "" {
+		optFns = append(optFns, awsConfig.WithEndpointResolverWithOptions(aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+			return aws.Endpoint{URL: w.S3Endpoint}, nil
+		})))
+	}
 	if w.Region != "" {
 		optFns = append(optFns, awsConfig.WithRegion(w.Region))
 	}
 	if w.Profile != "" {
 		optFns = append(optFns, awsConfig.WithSharedConfigProfile(w.Profile))
 	}
+	switch w.CredentialProvider {
+	case "":
+	case config.CredentialProviderAnonymous:
+		optFns = append(optFns, awsConfig.WithCredentialsProvider(aws.AnonymousCredentials{}))
+	default:
+		return nil, xerrors.Errorf("CredentialProvider: %s is not supported", w.CredentialProvider)
+	}
 	cfg, err := awsConfig.LoadDefaultConfig(context.TODO(), optFns...)
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to load config. err: %w", err)
 	}
-	return s3.NewFromConfig(cfg), nil
+	return s3.NewFromConfig(cfg, func(o *s3.Options) { o.UsePathStyle = w.S3UsePathStyle }), nil
 }
 
 // Write results to S3
