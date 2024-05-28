@@ -161,8 +161,9 @@ func printConfigToml(ips []string) (err error) {
 #s3ServerSideEncryption = "AES256"
 #s3UsePathStyle         = false
 
-# https://vuls.io/docs/en/usage-report.html#example-put-results-in-azure-blob-storage<Paste>
+# https://vuls.io/docs/en/usage-report.html#example-put-results-in-azure-blob-storage
 #[azure]
+#endpoint      = "https://default.blob.core.windows.net/"
 #accountName   = "default"
 #accountKey    = "xxxxxxxxxxxxxx"
 #containerName = "vuls"

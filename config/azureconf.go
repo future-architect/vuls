@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	"golang.org/x/xerrors"
@@ -8,6 +9,9 @@ import (
 
 // AzureConf is azure config
 type AzureConf struct {
+	// Azure storage endpoint
+	Endpoint string `json:"endpoint"`
+
 	// Azure account name to use. AZURE_STORAGE_ACCOUNT environment variable is used if not specified
 	AccountName string `json:"accountName"`
 
@@ -35,8 +39,18 @@ func (c *AzureConf) Validate() (errs []error) {
 	if os.Getenv(azureAccount) != "" {
 		c.AccountName = os.Getenv(azureAccount)
 	}
+	if c.AccountName == "" {
+		errs = append(errs, xerrors.Errorf("Azure account name is required"))
+	}
 	if os.Getenv(azureKey) != "" {
 		c.AccountKey = os.Getenv(azureKey)
+	}
+	if c.AccountKey == "" {
+		errs = append(errs, xerrors.Errorf("Azure account key is required"))
+	}
+
+	if c.Endpoint == "" {
+		c.Endpoint = fmt.Sprintf("https://%s.blob.core.windows.net/", c.AccountName)
 	}
 
 	if c.ContainerName == "" {
