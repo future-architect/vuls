@@ -22,7 +22,7 @@ jobs:
 
       - name: vuls/vuls image meta
         id: oss-meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: vuls/vuls
           tags: |
@@ -30,7 +30,7 @@ jobs:
 
       - name: vuls/fvuls image meta
         id: fvuls-meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: vuls/fvuls
           tags: |
