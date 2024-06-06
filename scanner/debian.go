@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -383,7 +384,8 @@ func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, mode
 }
 
 func (o *debian) parseInstalledPackages(stdout string) (models.Packages, models.SrcPackages, error) {
-	installed, srcPacks := models.Packages{}, models.SrcPackages{}
+	installed, srcPacks := models.Packages{}, []models.SrcPackage{}
+	runningKernelSrcPacks := []models.SrcPackage{}
 
 	// e.g.
 	// curl,ii ,7.38.0-4+deb8u2,,7.38.0-4+deb8u2
@@ -412,25 +414,76 @@ func (o *debian) parseInstalledPackages(stdout string) (models.Packages, models.
 				o.log.Debugf("%s package status is '%c', ignoring", name, packageStatus)
 				continue
 			}
+
 			installed[name] = models.Package{
 				Name:    name,
 				Version: version,
 			}
 
-			if pack, ok := srcPacks[srcName]; ok {
-				pack.AddBinaryName(name)
-				srcPacks[srcName] = pack
-			} else {
-				srcPacks[srcName] = models.SrcPackage{
-					Name:        srcName,
-					Version:     srcVersion,
-					BinaryNames: []string{name},
+			srcPacks = append(srcPacks, models.SrcPackage{
+				Name:        srcName,
+				Version:     srcVersion,
+				BinaryNames: []string{name},
+			})
+
+			if models.IsKernelSourcePackage(o.getDistro().Family, srcName) {
+				switch o.getDistro().Family {
+				case constant.Debian, constant.Raspbian:
+					switch name {
+					case fmt.Sprintf("linux-image-%s", o.Kernel.Release), fmt.Sprintf("linux-headers-%s", o.Kernel.Release):
+						runningKernelSrcPacks = append(runningKernelSrcPacks, models.SrcPackage{
+							Name:    srcName,
+							Version: srcVersion,
+						})
+					default:
+					}
+				case constant.Ubuntu:
+					switch name {
+					case fmt.Sprintf("linux-image-%s", o.Kernel.Release), fmt.Sprintf("linux-image-unsigned-%s", o.Kernel.Release), fmt.Sprintf("linux-signed-image-%s", o.Kernel.Release), fmt.Sprintf("linux-image-uc-%s", o.Kernel.Release),
+						fmt.Sprintf("linux-buildinfo-%s", o.Kernel.Release), fmt.Sprintf("linux-cloud-tools-%s", o.Kernel.Release), fmt.Sprintf("linux-headers-%s", o.Kernel.Release), fmt.Sprintf("linux-lib-rust-%s", o.Kernel.Release), fmt.Sprintf("linux-modules-%s", o.Kernel.Release), fmt.Sprintf("linux-modules-extra-%s", o.Kernel.Release), fmt.Sprintf("linux-modules-ipu6-%s", o.Kernel.Release), fmt.Sprintf("linux-modules-ivsc-%s", o.Kernel.Release), fmt.Sprintf("linux-modules-iwlwifi-%s", o.Kernel.Release), fmt.Sprintf("linux-tools-%s", o.Kernel.Release):
+						runningKernelSrcPacks = append(runningKernelSrcPacks, models.SrcPackage{
+							Name:    srcName,
+							Version: srcVersion,
+						})
+					default:
+						if (strings.HasPrefix(name, "linux-modules-nvidia-") || strings.HasPrefix(name, "linux-objects-nvidia-") || strings.HasPrefix(name, "linux-signatures-nvidia-")) && strings.HasSuffix(name, o.Kernel.Release) {
+							runningKernelSrcPacks = append(runningKernelSrcPacks, models.SrcPackage{
+								Name:    srcName,
+								Version: srcVersion,
+							})
+						}
+					}
+				default:
+					return nil, nil, xerrors.Errorf("unknown distro: %s", o.getDistro().Family)
 				}
 			}
 		}
 	}
 
-	return installed, srcPacks, nil
+	srcs := models.SrcPackages{}
+	for _, p := range srcPacks {
+		if models.IsKernelSourcePackage(o.getDistro().Family, p.Name) && !slices.ContainsFunc(runningKernelSrcPacks, func(e models.SrcPackage) bool {
+			return p.Name == e.Name && p.Version == e.Version
+		}) {
+			continue
+		}
+
+		if pack, ok := srcs[p.Name]; ok {
+			for _, bn := range pack.BinaryNames {
+				p.AddBinaryName(bn)
+			}
+		}
+		srcs[p.Name] = p
+	}
+
+	bins := models.Packages{}
+	for _, sp := range srcs {
+		for _, bn := range sp.BinaryNames {
+			bins[bn] = installed[bn]
+		}
+	}
+
+	return bins, srcs, nil
 }
 
 func (o *debian) parseScannedPackagesLine(line string) (name, status, version, srcName, srcVersion string, err error) {
