@@ -163,7 +163,7 @@ func (w S3Writer) putObject(svc *s3.Client, k string, b []byte, gzip bool) error
 
 	if _, err := svc.PutObject(context.TODO(), putObjectInput); err != nil {
 		return xerrors.Errorf("Failed to upload data to %s/%s, err: %w",
-			w.S3Bucket, k, err)
+			w.S3Bucket, path.Join(w.S3ResultsDir, k), err)
 	}
 	return nil
 }

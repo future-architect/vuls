@@ -133,7 +133,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 		}
 		if _, err := svc.PutObject(ctx, putObjectInput); err != nil {
 			return xerrors.Errorf("Failed to upload data to %s/%s, err: %w",
-				tempCredential.S3Bucket, s3Key, err)
+				tempCredential.S3Bucket, path.Join(tempCredential.S3ResultsDir, s3Key), err)
 		}
 	}
 	logging.Log.Infof("done")
