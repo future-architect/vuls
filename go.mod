@@ -10,7 +10,7 @@ require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/CycloneDX/cyclonedx-go v0.9.0
 	github.com/Ullaakut/nmap/v2 v2.2.2
-	github.com/aquasecurity/trivy v0.52.1
+	github.com/aquasecurity/trivy v0.52.2
 	github.com/aquasecurity/trivy-db v0.0.0-20240425111931-1fe1d505d3ff
 	github.com/aquasecurity/trivy-java-db v0.0.0-20240109071736-184bd7481d48
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
