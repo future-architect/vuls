@@ -366,7 +366,7 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 		{
 			name:     "Ubuntu 23.10 supported",
 			fields:   fields{family: Ubuntu, release: "23.10"},
-			now:      time.Date(2024, 7, 31, 23, 59, 59, 0, time.UTC),
+			now:      time.Date(2024, 7, 11, 23, 59, 59, 0, time.UTC),
 			found:    true,
 			stdEnded: false,
 			extEnded: false,
