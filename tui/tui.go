@@ -899,6 +899,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 type dataForTmpl struct {
 	CveID            string
 	Cvsses           string
+	SSVC             []models.CveContentSSVC
 	Exploits         []models.Exploit
 	Metasploits      []models.Metasploit
 	Summary          string
@@ -979,7 +980,7 @@ func detailLines() (string, error) {
 	table := uitable.New()
 	table.MaxColWidth = 100
 	table.Wrap = true
-	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores()...)
+	scores := append(vinfo.Cvss40Scores(), append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores()...)...)
 	var cols []interface{}
 	for _, score := range scores {
 		cols = []interface{}{
@@ -1002,6 +1003,7 @@ func detailLines() (string, error) {
 	data := dataForTmpl{
 		CveID:       vinfo.CveID,
 		Cvsses:      fmt.Sprintf("%s\n", table),
+		SSVC:        vinfo.CveContents.SSVC(),
 		Summary:     fmt.Sprintf("%s (%s)", summary.Value, summary.Type),
 		Mitigation:  strings.Join(mitigations, "\n"),
 		PatchURLs:   vinfo.CveContents.PatchURLs(),
@@ -1026,6 +1028,17 @@ const mdTemplate = `
 CVSS Scores
 -----------
 {{.Cvsses }}
+
+{{if .SSVC}}
+SSVC
+-----------
+{{range $ssvc := .SSVC -}}
+* {{$ssvc.Type}}
+  Exploitation    : {{$ssvc.Value.Exploitation}}
+  Automatable     : {{$ssvc.Value.Automatable}}
+  TechnicalImpact : {{$ssvc.Value.TechnicalImpact}}
+{{end}}
+{{end}}
 
 Summary
 -----------

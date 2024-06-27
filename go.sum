@@ -258,8 +258,8 @@ github.com/OneOfOne/xxhash v1.2.8 h1:31czK/TI9sNkxIKfaUfGlU47BAxQ0ztGgd9vPyqimf8
 github.com/OneOfOne/xxhash v1.2.8/go.mod h1:eZbhyaAYD41SGSSsnmcpxVoRiQ/MPUTjUdIIOT9Um7Q=
 github.com/ProtonMail/go-crypto v1.1.0-alpha.2 h1:bkyFVUP+ROOARdgCiJzNQo2V2kiB97LyUpzH9P6Hrlg=
 github.com/ProtonMail/go-crypto v1.1.0-alpha.2/go.mod h1:rA3QumHc/FZ8pAHreoekgiAbzpNsfQAosU5td4SnOrE=
-github.com/PuerkitoBio/goquery v1.9.1 h1:mTL6XjbJTZdpfL+Gwl5U2h1l9yEkJjhmlTeV9VPW7UI=
-github.com/PuerkitoBio/goquery v1.9.1/go.mod h1:cW1n6TmIMDoORQU5IU/P1T3tGFunOeXEpGP2WHRwkbY=
+github.com/PuerkitoBio/goquery v1.9.2 h1:4/wZksC3KgkQw7SQgkKotmKljk0M6V8TUvA8Wb4yPeE=
+github.com/PuerkitoBio/goquery v1.9.2/go.mod h1:GHPCaP0ODyyxqcNoFGYlAprUFH81NuRPd0GX3Zu2Mvk=
 github.com/Shopify/logrus-bugsnag v0.0.0-20171204204709-577dee27f20d h1:UrqY+r/OJnIp5u0s1SbQ8dVfLCZJsnvazdBP5hS4iRs=
 github.com/Shopify/logrus-bugsnag v0.0.0-20171204204709-577dee27f20d/go.mod h1:HI8ITrYtUY+O+ZhtlqUnD8+KwNPOyugEhfP9fdUIaEQ=
 github.com/Ullaakut/nmap/v2 v2.2.2 h1:178Ety3d8T21sF6WZxyj7QVZUhnC1tL1J+tHLLW507Q=
@@ -1168,8 +1168,8 @@ github.com/vbatts/tar-split v0.11.5 h1:3bHCTIheBm1qFTcgh9oPu+nNBtX+XJIupG/vacinC
 github.com/vbatts/tar-split v0.11.5/go.mod h1:yZbwRsSeGjusneWgA781EKej9HF8vme8okylkAeNKLk=
 github.com/vulsio/go-cti v0.0.5-0.20240318121747-822b3ef289cb h1:aC6CqML20oYEI5Wjx04uwpARsXjdGCrOk4ken+l4dG8=
 github.com/vulsio/go-cti v0.0.5-0.20240318121747-822b3ef289cb/go.mod h1:MHlQMcrMMUGXVc9G1JBZg1J/frsugODntu7CfLInEFs=
-github.com/vulsio/go-cve-dictionary v0.10.2-0.20240319004433-af03be313b77 h1:utQlIgdHOqx+TOHecQm3vk4Bu9QHZcwkKj2DMQ4F3mo=
-github.com/vulsio/go-cve-dictionary v0.10.2-0.20240319004433-af03be313b77/go.mod h1:NYtVYgM43dITGd0wVGTGhBqGHYisdK7k6pLo+71rMzU=
+github.com/vulsio/go-cve-dictionary v0.10.2-0.20240628072614-73f15707be8e h1:z/rVzYJy6LCeSzoLFZuiAFfe45giUYdsyPL+iprlC78=
+github.com/vulsio/go-cve-dictionary v0.10.2-0.20240628072614-73f15707be8e/go.mod h1:Kxpy1CE1D/Wsu7HH+5K1RAQQ6PErMOPHZ2W0+bsxqNc=
 github.com/vulsio/go-exploitdb v0.4.7-0.20240318122115-ccb3abc151a1 h1:rQRTmiO2gYEhyjthvGseV34Qj+nwrVgZEnFvk6Z2AqM=
 github.com/vulsio/go-exploitdb v0.4.7-0.20240318122115-ccb3abc151a1/go.mod h1:ml2oTRyR37hUyyP4kWD9NSlBYIQuJUVNaAfbflSu4i4=
 github.com/vulsio/go-kev v0.1.4-0.20240318121733-b3386e67d3fb h1:j03zKKkR+WWaPoPzMBwNxpDsc1mYDtt9s1VrHaIxmfw=

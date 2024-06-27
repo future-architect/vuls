@@ -461,6 +461,7 @@ func FillCvesWithNvdJvnFortinet(r *models.ScanResult, cnf config.GoCveDictConf, 
 		nvds, exploits, mitigations := models.ConvertNvdToModel(d.CveID, d.Nvds)
 		jvns := models.ConvertJvnToModel(d.CveID, d.Jvns)
 		fortinets := models.ConvertFortinetToModel(d.CveID, d.Fortinets)
+		mitres := models.ConvertMitreToModel(d.CveID, d.Mitres)
 
 		alerts := fillCertAlerts(&d)
 		for cveID, vinfo := range r.ScannedCves {
@@ -475,17 +476,15 @@ func FillCvesWithNvdJvnFortinet(r *models.ScanResult, cnf config.GoCveDictConf, 
 				}
 				for _, con := range append(jvns, fortinets...) {
 					if !con.Empty() {
-						found := false
-						for _, cveCont := range vinfo.CveContents[con.Type] {
-							if con.SourceLink == cveCont.SourceLink {
-								found = true
-								break
-							}
-						}
-						if !found {
+						if !slices.ContainsFunc(vinfo.CveContents[con.Type], func(e models.CveContent) bool {
+							return con.SourceLink == e.SourceLink
+						}) {
 							vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
 						}
 					}
+				}
+				for _, con := range mitres {
+					vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
 				}
 				vinfo.AlertDict = alerts
 				vinfo.Exploits = append(vinfo.Exploits, exploits...)

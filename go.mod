@@ -51,7 +51,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.1
 	github.com/vulsio/go-cti v0.0.5-0.20240318121747-822b3ef289cb
-	github.com/vulsio/go-cve-dictionary v0.10.2-0.20240319004433-af03be313b77
+	github.com/vulsio/go-cve-dictionary v0.10.2-0.20240628072614-73f15707be8e
 	github.com/vulsio/go-exploitdb v0.4.7-0.20240318122115-ccb3abc151a1
 	github.com/vulsio/go-kev v0.1.4-0.20240318121733-b3386e67d3fb
 	github.com/vulsio/go-msfdb v0.2.4-0.20240318121704-8bfc812656dc
@@ -97,7 +97,7 @@ require (
 	github.com/Microsoft/hcsshim v0.12.0 // indirect
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/ProtonMail/go-crypto v1.1.0-alpha.2 // indirect
-	github.com/PuerkitoBio/goquery v1.9.1 // indirect
+	github.com/PuerkitoBio/goquery v1.9.2 // indirect
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/agnivade/levenshtein v1.1.1 // indirect

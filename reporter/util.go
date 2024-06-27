@@ -337,16 +337,24 @@ No CVE-IDs are found in updatable packages.
 	for _, vuln := range r.ScannedCves.ToSortedSlice() {
 		data := [][]string{}
 		data = append(data, []string{"Max Score", vuln.FormatMaxCvssScore()})
+		for _, cvss := range vuln.Cvss40Scores() {
+			if cvssstr := cvss.Value.Format(); cvssstr != "" {
+				data = append(data, []string{string(cvss.Type), cvssstr})
+			}
+		}
 		for _, cvss := range vuln.Cvss3Scores() {
 			if cvssstr := cvss.Value.Format(); cvssstr != "" {
 				data = append(data, []string{string(cvss.Type), cvssstr})
 			}
 		}
-
 		for _, cvss := range vuln.Cvss2Scores() {
 			if cvssstr := cvss.Value.Format(); cvssstr != "" {
 				data = append(data, []string{string(cvss.Type), cvssstr})
 			}
+		}
+
+		for _, ssvc := range vuln.CveContents.SSVC() {
+			data = append(data, []string{fmt.Sprintf("SSVC[%s]", ssvc.Type), fmt.Sprintf("Exploitation    : %s\nAutomatable     : %s\nTechnicalImpact : %s", ssvc.Value.Exploitation, ssvc.Value.Automatable, ssvc.Value.TechnicalImpact)})
 		}
 
 		data = append(data, []string{"Summary", vuln.Summaries(
@@ -770,7 +778,7 @@ func getMinusDiffCves(previous, current models.ScanResult) models.VulnInfos {
 }
 
 func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
-	cTypes := append([]models.CveContentType{models.Nvd, models.Jvn}, models.GetCveContentTypes(current.Family)...)
+	cTypes := append([]models.CveContentType{models.Mitre, models.Nvd, models.Jvn}, models.GetCveContentTypes(current.Family)...)
 
 	prevLastModifieds := map[models.CveContentType][]time.Time{}
 	preVinfo, ok := previous.ScannedCves[cveID]

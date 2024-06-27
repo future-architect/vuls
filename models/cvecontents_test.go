@@ -241,6 +241,48 @@ func TestCveContents_Sort(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "sort CVSS v4.0",
+			v: CveContents{
+				Mitre: []CveContent{
+					{Cvss40Score: 0},
+					{Cvss40Score: 6.9},
+				},
+			},
+			want: CveContents{
+				Mitre: []CveContent{
+					{Cvss40Score: 6.9},
+					{Cvss40Score: 0},
+				},
+			},
+		},
+		{
+			name: "sort CVSS v4.0 and CVSS v3",
+			v: CveContents{
+				Mitre: []CveContent{
+					{
+						Cvss40Score: 0,
+						Cvss3Score:  7.3,
+					},
+					{
+						Cvss40Score: 0,
+						Cvss3Score:  9.8,
+					},
+				},
+			},
+			want: CveContents{
+				Mitre: []CveContent{
+					{
+						Cvss40Score: 0,
+						Cvss3Score:  9.8,
+					},
+					{
+						Cvss40Score: 0,
+						Cvss3Score:  7.3,
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -305,6 +347,56 @@ func TestGetCveContentTypes(t *testing.T) {
 		t.Run(tt.family, func(t *testing.T) {
 			if got := GetCveContentTypes(tt.family); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetCveContentTypes() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCveContents_SSVC(t *testing.T) {
+	tests := []struct {
+		name string
+		v    CveContents
+		want []CveContentSSVC
+	}{
+		{
+			name: "happy",
+			v: CveContents{
+				Mitre: []CveContent{
+					{
+						Type:     Mitre,
+						CveID:    "CVE-2024-5732",
+						Title:    "Clash Proxy Port improper authentication",
+						Optional: map[string]string{"source": "CNA"},
+					},
+					{
+						Type:  Mitre,
+						CveID: "CVE-2024-5732",
+						Title: "CISA ADP Vulnrichment",
+						SSVC: &SSVC{
+							Exploitation:    "none",
+							Automatable:     "no",
+							TechnicalImpact: "partial",
+						},
+						Optional: map[string]string{"source": "ADP:CISA-ADP"},
+					},
+				},
+			},
+			want: []CveContentSSVC{
+				{
+					Type: "mitre(ADP:CISA-ADP)",
+					Value: SSVC{
+						Exploitation:    "none",
+						Automatable:     "no",
+						TechnicalImpact: "partial",
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.v.SSVC(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CveContents.SSVC() = %v, want %v", got, tt.want)
 			}
 		})
 	}

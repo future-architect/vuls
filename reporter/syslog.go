@@ -73,6 +73,11 @@ func (w SyslogWriter) encodeSyslog(result models.ScanResult) (messages []string)
 			kvPairs = append(kvPairs, fmt.Sprintf(`cvss_vector_%s_v3="%s"`, cvss.Type, cvss.Value.Vector))
 		}
 
+		for _, cvss := range vinfo.Cvss40Scores() {
+			kvPairs = append(kvPairs, fmt.Sprintf(`cvss_score_%s_v40="%.2f"`, cvss.Type, cvss.Value.Score))
+			kvPairs = append(kvPairs, fmt.Sprintf(`cvss_vector_%s_v40="%s"`, cvss.Type, cvss.Value.Vector))
+		}
+
 		if conts, ok := vinfo.CveContents[models.Nvd]; ok {
 			for _, cont := range conts {
 				cwes := strings.Join(cont.CweIDs, ",")

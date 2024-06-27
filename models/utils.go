@@ -6,6 +6,7 @@ package models
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	cvedict "github.com/vulsio/go-cve-dictionary/models"
 )
@@ -175,6 +176,125 @@ func ConvertFortinetToModel(cveID string, fortinets []cvedict.Fortinet) []CveCon
 			LastModified: fortinet.LastModifiedDate,
 		}
 		cves = append(cves, cve)
+	}
+	return cves
+}
+
+// ConvertMitreToModel convert Mitre to CveContent
+func ConvertMitreToModel(cveID string, mitres []cvedict.Mitre) []CveContent {
+	var cves []CveContent
+	for _, mitre := range mitres {
+		for _, c := range mitre.Containers {
+			cve := CveContent{
+				Type:  Mitre,
+				CveID: cveID,
+				Title: func() string {
+					if c.Title != nil {
+						return *c.Title
+					}
+					return ""
+				}(),
+				Summary: func() string {
+					for _, d := range c.Descriptions {
+						if d.Lang == "en" {
+							return d.Value
+						}
+					}
+					return ""
+				}(),
+				SourceLink: fmt.Sprintf("https://www.cve.org/CVERecord?id=%s", cveID),
+				Published: func() time.Time {
+					if mitre.CVEMetadata.DatePublished != nil {
+						return *mitre.CVEMetadata.DatePublished
+					}
+					return time.Time{}
+				}(),
+				LastModified: func() time.Time {
+					if mitre.CVEMetadata.DateUpdated != nil {
+						return *mitre.CVEMetadata.DateUpdated
+					}
+					if mitre.CVEMetadata.DatePublished != nil {
+						return *mitre.CVEMetadata.DatePublished
+					}
+					return time.Time{}
+				}(),
+				Optional: map[string]string{"source": func() string {
+					if c.ProviderMetadata.ShortName != nil {
+						return fmt.Sprintf("%s:%s", c.ContainerType, *c.ProviderMetadata.ShortName)
+					}
+					return fmt.Sprintf("%s:%s", c.ContainerType, c.ProviderMetadata.OrgID)
+				}()},
+			}
+
+			for _, m := range c.Metrics {
+				if m.CVSSv2 != nil {
+					cve.Cvss2Score = m.CVSSv2.BaseScore
+					cve.Cvss2Vector = m.CVSSv2.VectorString
+				}
+				if m.CVSSv30 != nil {
+					if cve.Cvss3Vector == "" {
+						cve.Cvss3Score = m.CVSSv30.BaseScore
+						cve.Cvss3Vector = m.CVSSv30.VectorString
+						cve.Cvss3Severity = m.CVSSv30.BaseSeverity
+					}
+				}
+				if m.CVSSv31 != nil {
+					cve.Cvss3Score = m.CVSSv31.BaseScore
+					cve.Cvss3Vector = m.CVSSv31.VectorString
+					cve.Cvss3Severity = m.CVSSv31.BaseSeverity
+				}
+				if m.CVSSv40 != nil {
+					cve.Cvss40Score = m.CVSSv40.BaseScore
+					cve.Cvss40Vector = m.CVSSv40.VectorString
+					cve.Cvss40Severity = m.CVSSv40.BaseSeverity
+				}
+				if m.SSVC != nil {
+					cve.SSVC = &SSVC{
+						Exploitation: func() string {
+							if m.SSVC.Exploitation != nil {
+								return *m.SSVC.Exploitation
+							}
+							return ""
+						}(),
+						Automatable: func() string {
+							if m.SSVC.Automatable != nil {
+								return *m.SSVC.Automatable
+							}
+							return ""
+						}(),
+						TechnicalImpact: func() string {
+							if m.SSVC.TechnicalImpact != nil {
+								return *m.SSVC.TechnicalImpact
+							}
+							return ""
+						}(),
+					}
+				}
+			}
+
+			for _, r := range c.References {
+				cve.References = append(cve.References, Reference{
+					Link:   r.Link,
+					Source: r.Source,
+					Tags: func() []string {
+						if len(r.Tags) > 0 {
+							return strings.Split(r.Tags, ",")
+						}
+						return nil
+					}(),
+				})
+			}
+
+			for _, p := range c.ProblemTypes {
+				for _, d := range p.Descriptions {
+					if d.CweID != nil {
+						cve.CweIDs = append(cve.CweIDs, *d.CweID)
+					}
+				}
+			}
+
+			cves = append(cves, cve)
+		}
 	}
 	return cves
 }

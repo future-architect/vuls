@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -75,7 +77,7 @@ func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string, confidences Co
 		}
 	}
 
-	order := append(append(CveContentTypes{Nvd}, GetCveContentTypes(myFamily)...), GitHub)
+	order := append(append(CveContentTypes{Mitre, Nvd}, GetCveContentTypes(myFamily)...), GitHub)
 	for _, ctype := range order {
 		if conts, found := v[ctype]; found {
 			for _, cont := range conts {
@@ -87,15 +89,9 @@ func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string, confidences Co
 		}
 	}
 
-	jvnMatch := false
-	for _, confidence := range confidences {
-		if confidence.DetectionMethod == JvnVendorProductMatchStr {
-			jvnMatch = true
-			break
-		}
-	}
-
-	if lang == "ja" || jvnMatch {
+	if lang == "ja" || slices.ContainsFunc(confidences, func(e Confidence) bool {
+		return e.DetectionMethod == JvnVendorProductMatchStr
+	}) {
 		if conts, found := v[Jvn]; found {
 			for _, cont := range conts {
 				if 0 < len(cont.SourceLink) {
@@ -159,7 +155,7 @@ func (v CveContents) Cpes(myFamily string) (values []CveContentCpes) {
 	return
 }
 
-// CveContentRefs has CveContentType and Cpes
+// CveContentRefs has CveContentType and References
 type CveContentRefs struct {
 	Type  CveContentType
 	Value []Reference
@@ -224,19 +220,53 @@ func (v CveContents) UniqCweIDs(myFamily string) (values []CveContentStr) {
 	return values
 }
 
+// CveContentSSVCs has CveContentType and SSVC
+type CveContentSSVC struct {
+	Type  CveContentType
+	Value SSVC
+}
+
+func (v CveContents) SSVC() (value []CveContentSSVC) {
+	conts, ok := v[Mitre]
+	if !ok {
+		return
+	}
+	for _, cont := range conts {
+		if cont.SSVC == nil {
+			continue
+		}
+		t := Mitre
+		if s, ok := cont.Optional["source"]; ok {
+			t = CveContentType(fmt.Sprintf("%s(%s)", Mitre, s))
+		}
+		value = append(value, CveContentSSVC{
+			Type:  t,
+			Value: *cont.SSVC,
+		})
+	}
+	return
+}
+
 // Sort elements for integration-testing
 func (v CveContents) Sort() {
 	for contType, contents := range v {
-		// CVSS3 desc, CVSS2 desc, SourceLink asc
+		// CVSS40 desc, CVSS3 desc, CVSS2 desc, SourceLink asc
 		sort.Slice(contents, func(i, j int) bool {
-			if contents[i].Cvss3Score > contents[j].Cvss3Score {
+			if contents[i].Cvss40Score > contents[j].Cvss40Score {
 				return true
-			} else if contents[i].Cvss3Score == contents[i].Cvss3Score {
-				if contents[i].Cvss2Score > contents[j].Cvss2Score {
+			}
+			if contents[i].Cvss40Score == contents[j].Cvss40Score {
+				if contents[i].Cvss3Score > contents[j].Cvss3Score {
 					return true
-				} else if contents[i].Cvss2Score == contents[i].Cvss2Score {
-					if contents[i].SourceLink < contents[j].SourceLink {
+				}
+				if contents[i].Cvss3Score == contents[i].Cvss3Score {
+					if contents[i].Cvss2Score > contents[j].Cvss2Score {
 						return true
+					}
+					if contents[i].Cvss2Score == contents[i].Cvss2Score {
+						if contents[i].SourceLink < contents[j].SourceLink {
+							return true
+						}
 					}
 				}
 			}
@@ -267,23 +297,27 @@ func (v CveContents) Sort() {
 
 // CveContent has abstraction of various vulnerability information
 type CveContent struct {
-	Type          CveContentType    `json:"type"`
-	CveID         string            `json:"cveID"`
-	Title         string            `json:"title"`
-	Summary       string            `json:"summary"`
-	Cvss2Score    float64           `json:"cvss2Score"`
-	Cvss2Vector   string            `json:"cvss2Vector"`
-	Cvss2Severity string            `json:"cvss2Severity"`
-	Cvss3Score    float64           `json:"cvss3Score"`
-	Cvss3Vector   string            `json:"cvss3Vector"`
-	Cvss3Severity string            `json:"cvss3Severity"`
-	SourceLink    string            `json:"sourceLink"`
-	Cpes          []Cpe             `json:"cpes,omitempty"`
-	References    References        `json:"references,omitempty"`
-	CweIDs        []string          `json:"cweIDs,omitempty"`
-	Published     time.Time         `json:"published"`
-	LastModified  time.Time         `json:"lastModified"`
-	Optional      map[string]string `json:"optional,omitempty"`
+	Type           CveContentType    `json:"type"`
+	CveID          string            `json:"cveID"`
+	Title          string            `json:"title"`
+	Summary        string            `json:"summary"`
+	Cvss2Score     float64           `json:"cvss2Score"`
+	Cvss2Vector    string            `json:"cvss2Vector"`
+	Cvss2Severity  string            `json:"cvss2Severity"`
+	Cvss3Score     float64           `json:"cvss3Score"`
+	Cvss3Vector    string            `json:"cvss3Vector"`
+	Cvss3Severity  string            `json:"cvss3Severity"`
+	Cvss40Score    float64           `json:"cvss40Score"`
+	Cvss40Vector   string            `json:"cvss40Vector"`
+	Cvss40Severity string            `json:"cvss40Severity"`
+	SSVC           *SSVC             `json:"ssvc,omitempty"`
+	SourceLink     string            `json:"sourceLink"`
+	Cpes           []Cpe             `json:"cpes,omitempty"`
+	References     References        `json:"references,omitempty"`
+	CweIDs         []string          `json:"cweIDs,omitempty"`
+	Published      time.Time         `json:"published"`
+	LastModified   time.Time         `json:"lastModified"`
+	Optional       map[string]string `json:"optional,omitempty"`
 }
 
 // Empty checks the content is empty
@@ -297,6 +331,8 @@ type CveContentType string
 // NewCveContentType create CveContentType
 func NewCveContentType(name string) CveContentType {
 	switch name {
+	case "mitre":
+		return Mitre
 	case "nvd":
 		return Nvd
 	case "jvn":
@@ -415,6 +451,9 @@ func GetCveContentTypes(family string) []CveContentType {
 }
 
 const (
+	// Mitre is Mitre
+	Mitre CveContentType = "mitre"
+
 	// Nvd is Nvd JSON
 	Nvd CveContentType = "nvd"
 
@@ -556,6 +595,7 @@ type CveContentTypes []CveContentType
 
 // AllCveContetTypes has all of CveContentTypes
 var AllCveContetTypes = CveContentTypes{
+	Mitre,
 	Nvd,
 	Jvn,
 	Fortinet,
@@ -632,4 +672,11 @@ type Reference struct {
 	Source string   `json:"source,omitempty"`
 	RefID  string   `json:"refID,omitempty"`
 	Tags   []string `json:"tags,omitempty"`
+}
+
+// SSVC has SSVC decision points
+type SSVC struct {
+	Exploitation    string `json:"exploitation,omitempty"`
+	Automatable     string `json:"automatable,omitempty"`
+	TechnicalImpact string `json:"technical_impact,omitempty"`
 }
