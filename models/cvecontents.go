@@ -1,11 +1,13 @@
 package models
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
-	"sort"
 	"strings"
 	"time"
+
+	"golang.org/x/exp/maps"
 
 	"github.com/future-architect/vuls/constant"
 )
@@ -17,18 +19,14 @@ type CveContents map[CveContentType][]CveContent
 func NewCveContents(conts ...CveContent) CveContents {
 	m := CveContents{}
 	for _, cont := range conts {
-		if cont.Type == Jvn {
-			found := false
-			for _, cveCont := range m[cont.Type] {
-				if cont.SourceLink == cveCont.SourceLink {
-					found = true
-					break
-				}
-			}
-			if !found {
+		switch cont.Type {
+		case Jvn:
+			if !slices.ContainsFunc(m[cont.Type], func(e CveContent) bool {
+				return cont.SourceLink == e.SourceLink
+			}) {
 				m[cont.Type] = append(m[cont.Type], cont)
 			}
-		} else {
+		default:
 			m[cont.Type] = []CveContent{cont}
 		}
 	}
@@ -45,14 +43,7 @@ type CveContentStr struct {
 func (v CveContents) Except(exceptCtypes ...CveContentType) (values CveContents) {
 	values = CveContents{}
 	for ctype, content := range v {
-		found := false
-		for _, exceptCtype := range exceptCtypes {
-			if ctype == exceptCtype {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(exceptCtypes, ctype) {
 			values[ctype] = content
 		}
 	}
@@ -65,37 +56,51 @@ func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string, confidences Co
 		return
 	}
 
-	if conts, found := v[Nvd]; found {
-		for _, cont := range conts {
-			for _, r := range cont.References {
-				for _, t := range r.Tags {
-					if t == "Vendor Advisory" {
-						values = append(values, CveContentStr{Nvd, r.Link})
+	for _, ctype := range append(append(CveContentTypes{Mitre, Nvd, Jvn}, GetCveContentTypes(myFamily)...), GitHub) {
+		for _, cont := range v[ctype] {
+			switch ctype {
+			case Nvd:
+				for _, r := range cont.References {
+					if slices.Contains(r.Tags, "Vendor Advisory") {
+						if !slices.ContainsFunc(values, func(e CveContentStr) bool {
+							return e.Type == ctype && e.Value == r.Link
+						}) {
+							values = append(values, CveContentStr{
+								Type:  ctype,
+								Value: r.Link,
+							})
+						}
 					}
 				}
-			}
-		}
-	}
-
-	order := append(append(CveContentTypes{Mitre, Nvd}, GetCveContentTypes(myFamily)...), GitHub)
-	for _, ctype := range order {
-		if conts, found := v[ctype]; found {
-			for _, cont := range conts {
-				if cont.SourceLink == "" {
-					continue
+				if cont.SourceLink != "" && !slices.ContainsFunc(values, func(e CveContentStr) bool {
+					return e.Type == ctype && e.Value == cont.SourceLink
+				}) {
+					values = append(values, CveContentStr{
+						Type:  ctype,
+						Value: cont.SourceLink,
+					})
 				}
-				values = append(values, CveContentStr{ctype, cont.SourceLink})
-			}
-		}
-	}
-
-	if lang == "ja" || slices.ContainsFunc(confidences, func(e Confidence) bool {
-		return e.DetectionMethod == JvnVendorProductMatchStr
-	}) {
-		if conts, found := v[Jvn]; found {
-			for _, cont := range conts {
-				if 0 < len(cont.SourceLink) {
-					values = append(values, CveContentStr{Jvn, cont.SourceLink})
+			case Jvn:
+				if lang == "ja" || slices.ContainsFunc(confidences, func(e Confidence) bool {
+					return e.DetectionMethod == JvnVendorProductMatchStr
+				}) {
+					if cont.SourceLink != "" && !slices.ContainsFunc(values, func(e CveContentStr) bool {
+						return e.Type == ctype && e.Value == cont.SourceLink
+					}) {
+						values = append(values, CveContentStr{
+							Type:  ctype,
+							Value: cont.SourceLink,
+						})
+					}
+				}
+			default:
+				if cont.SourceLink != "" && !slices.ContainsFunc(values, func(e CveContentStr) bool {
+					return e.Type == ctype && e.Value == cont.SourceLink
+				}) {
+					values = append(values, CveContentStr{
+						Type:  ctype,
+						Value: cont.SourceLink,
+					})
 				}
 			}
 		}
@@ -104,7 +109,7 @@ func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string, confidences Co
 	if len(values) == 0 && strings.HasPrefix(cveID, "CVE") {
 		return []CveContentStr{{
 			Type:  Nvd,
-			Value: "https://nvd.nist.gov/vuln/detail/" + cveID,
+			Value: fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", cveID),
 		}}
 	}
 	return values
@@ -112,17 +117,10 @@ func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string, confidences Co
 
 // PatchURLs returns link of patch
 func (v CveContents) PatchURLs() (urls []string) {
-	conts, found := v[Nvd]
-	if !found {
-		return
-	}
-
-	for _, cont := range conts {
+	for _, cont := range v[Nvd] {
 		for _, r := range cont.References {
-			for _, t := range r.Tags {
-				if t == "Patch" {
-					urls = append(urls, r.Link)
-				}
+			if slices.Contains(r.Tags, "Patch") && !slices.Contains(urls, r.Link) {
+				urls = append(urls, r.Link)
 			}
 		}
 	}
@@ -141,14 +139,17 @@ func (v CveContents) Cpes(myFamily string) (values []CveContentCpes) {
 	order = append(order, AllCveContetTypes.Except(order...)...)
 
 	for _, ctype := range order {
-		if conts, found := v[ctype]; found {
-			for _, cont := range conts {
-				if 0 < len(cont.Cpes) {
-					values = append(values, CveContentCpes{
-						Type:  ctype,
-						Value: cont.Cpes,
-					})
-				}
+		for _, cont := range v[ctype] {
+			if len(cont.Cpes) == 0 {
+				continue
+			}
+			if !slices.ContainsFunc(values, func(e CveContentCpes) bool {
+				return e.Type == ctype && slices.Equal(e.Value, cont.Cpes)
+			}) {
+				values = append(values, CveContentCpes{
+					Type:  ctype,
+					Value: cont.Cpes,
+				})
 			}
 		}
 	}
@@ -167,14 +168,19 @@ func (v CveContents) References(myFamily string) (values []CveContentRefs) {
 	order = append(order, AllCveContetTypes.Except(order...)...)
 
 	for _, ctype := range order {
-		if conts, found := v[ctype]; found {
-			for _, cont := range conts {
-				if 0 < len(cont.References) {
-					values = append(values, CveContentRefs{
-						Type:  ctype,
-						Value: cont.References,
-					})
-				}
+		for _, cont := range v[ctype] {
+			if len(cont.References) == 0 {
+				continue
+			}
+			if !slices.ContainsFunc(values, func(e CveContentRefs) bool {
+				return e.Type == ctype && slices.EqualFunc(e.Value, cont.References, func(e1, e2 Reference) bool {
+					return e1.Link == e2.Link && e1.RefID == e2.RefID && e1.Source == e2.Source && slices.Equal(e1.Tags, e2.Tags)
+				})
+			}) {
+				values = append(values, CveContentRefs{
+					Type:  ctype,
+					Value: cont.References,
+				})
 			}
 		}
 	}
@@ -187,20 +193,18 @@ func (v CveContents) CweIDs(myFamily string) (values []CveContentStr) {
 	order := GetCveContentTypes(myFamily)
 	order = append(order, AllCveContetTypes.Except(order...)...)
 	for _, ctype := range order {
-		if conts, found := v[ctype]; found {
-			for _, cont := range conts {
-				if 0 < len(cont.CweIDs) {
-					for _, cweID := range cont.CweIDs {
-						for _, val := range values {
-							if val.Value == cweID {
-								continue
-							}
-						}
-						values = append(values, CveContentStr{
-							Type:  ctype,
-							Value: cweID,
-						})
-					}
+		for _, cont := range v[ctype] {
+			if len(cont.CweIDs) == 0 {
+				continue
+			}
+			for _, cweID := range cont.CweIDs {
+				if !slices.ContainsFunc(values, func(e CveContentStr) bool {
+					return e.Type == ctype && e.Value == cweID
+				}) {
+					values = append(values, CveContentStr{
+						Type:  ctype,
+						Value: cweID,
+					})
 				}
 			}
 		}
@@ -209,15 +213,12 @@ func (v CveContents) CweIDs(myFamily string) (values []CveContentStr) {
 }
 
 // UniqCweIDs returns Uniq CweIDs
-func (v CveContents) UniqCweIDs(myFamily string) (values []CveContentStr) {
+func (v CveContents) UniqCweIDs(myFamily string) []CveContentStr {
 	uniq := map[string]CveContentStr{}
 	for _, cwes := range v.CweIDs(myFamily) {
 		uniq[cwes.Value] = cwes
 	}
-	for _, cwe := range uniq {
-		values = append(values, cwe)
-	}
-	return values
+	return maps.Values(uniq)
 }
 
 // CveContentSSVC has CveContentType and SSVC
@@ -227,11 +228,7 @@ type CveContentSSVC struct {
 }
 
 func (v CveContents) SSVC() (value []CveContentSSVC) {
-	conts, ok := v[Mitre]
-	if !ok {
-		return
-	}
-	for _, cont := range conts {
+	for _, cont := range v[Mitre] {
 		if cont.SSVC == nil {
 			continue
 		}
@@ -251,44 +248,20 @@ func (v CveContents) SSVC() (value []CveContentSSVC) {
 func (v CveContents) Sort() {
 	for contType, contents := range v {
 		// CVSS40 desc, CVSS3 desc, CVSS2 desc, SourceLink asc
-		sort.Slice(contents, func(i, j int) bool {
-			if contents[i].Cvss40Score > contents[j].Cvss40Score {
-				return true
-			}
-			if contents[i].Cvss40Score == contents[j].Cvss40Score {
-				if contents[i].Cvss3Score > contents[j].Cvss3Score {
-					return true
-				}
-				if contents[i].Cvss3Score == contents[i].Cvss3Score {
-					if contents[i].Cvss2Score > contents[j].Cvss2Score {
-						return true
-					}
-					if contents[i].Cvss2Score == contents[i].Cvss2Score {
-						if contents[i].SourceLink < contents[j].SourceLink {
-							return true
-						}
-					}
-				}
-			}
-			return false
+		slices.SortFunc(contents, func(a, b CveContent) int {
+			return cmp.Or(
+				cmp.Compare(b.Cvss40Score, a.Cvss40Score),
+				cmp.Compare(b.Cvss3Score, a.Cvss3Score),
+				cmp.Compare(b.Cvss2Score, a.Cvss2Score),
+				cmp.Compare(a.SourceLink, b.SourceLink),
+			)
 		})
-		v[contType] = contents
-	}
-	for contType, contents := range v {
 		for cveID, cont := range contents {
-			sort.Slice(cont.References, func(i, j int) bool {
-				return cont.References[i].Link < cont.References[j].Link
-			})
-			sort.Slice(cont.CweIDs, func(i, j int) bool {
-				return cont.CweIDs[i] < cont.CweIDs[j]
-			})
-			for i, ref := range cont.References {
-				// sort v.CveContents[].References[].Tags
-				sort.Slice(ref.Tags, func(j, k int) bool {
-					return ref.Tags[j] < ref.Tags[k]
-				})
-				cont.References[i] = ref
+			slices.SortFunc(cont.References, func(a, b Reference) int { return cmp.Compare(a.Link, b.Link) })
+			for i := range cont.References {
+				slices.Sort(cont.References[i].Tags)
 			}
+			slices.Sort(cont.CweIDs)
 			contents[cveID] = cont
 		}
 		v[contType] = contents
@@ -643,14 +616,7 @@ var AllCveContetTypes = CveContentTypes{
 // Except returns CveContentTypes except for given args
 func (c CveContentTypes) Except(excepts ...CveContentType) (excepted CveContentTypes) {
 	for _, ctype := range c {
-		found := false
-		for _, except := range excepts {
-			if ctype == except {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(excepts, ctype) {
 			excepted = append(excepted, ctype)
 		}
 	}
