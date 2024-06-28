@@ -220,7 +220,7 @@ func (v CveContents) UniqCweIDs(myFamily string) (values []CveContentStr) {
 	return values
 }
 
-// CveContentSSVCs has CveContentType and SSVC
+// CveContentSSVC has CveContentType and SSVC
 type CveContentSSVC struct {
 	Type  CveContentType
 	Value SSVC
