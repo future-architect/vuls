@@ -1168,8 +1168,8 @@ github.com/vbatts/tar-split v0.11.5 h1:3bHCTIheBm1qFTcgh9oPu+nNBtX+XJIupG/vacinC
 github.com/vbatts/tar-split v0.11.5/go.mod h1:yZbwRsSeGjusneWgA781EKej9HF8vme8okylkAeNKLk=
 github.com/vulsio/go-cti v0.0.5-0.20240318121747-822b3ef289cb h1:aC6CqML20oYEI5Wjx04uwpARsXjdGCrOk4ken+l4dG8=
 github.com/vulsio/go-cti v0.0.5-0.20240318121747-822b3ef289cb/go.mod h1:MHlQMcrMMUGXVc9G1JBZg1J/frsugODntu7CfLInEFs=
-github.com/vulsio/go-cve-dictionary v0.10.2-0.20240628072614-73f15707be8e h1:z/rVzYJy6LCeSzoLFZuiAFfe45giUYdsyPL+iprlC78=
-github.com/vulsio/go-cve-dictionary v0.10.2-0.20240628072614-73f15707be8e/go.mod h1:Kxpy1CE1D/Wsu7HH+5K1RAQQ6PErMOPHZ2W0+bsxqNc=
+github.com/vulsio/go-cve-dictionary v0.10.2-0.20240629171050-9779d964ac2f h1:9DQznoEpK/JWrLZM7FzLaal/pU8Re4gHEpRvEwa+3TU=
+github.com/vulsio/go-cve-dictionary v0.10.2-0.20240629171050-9779d964ac2f/go.mod h1:Kxpy1CE1D/Wsu7HH+5K1RAQQ6PErMOPHZ2W0+bsxqNc=
 github.com/vulsio/go-exploitdb v0.4.7-0.20240318122115-ccb3abc151a1 h1:rQRTmiO2gYEhyjthvGseV34Qj+nwrVgZEnFvk6Z2AqM=
 github.com/vulsio/go-exploitdb v0.4.7-0.20240318122115-ccb3abc151a1/go.mod h1:ml2oTRyR37hUyyP4kWD9NSlBYIQuJUVNaAfbflSu4i4=
 github.com/vulsio/go-kev v0.1.4-0.20240318121733-b3386e67d3fb h1:j03zKKkR+WWaPoPzMBwNxpDsc1mYDtt9s1VrHaIxmfw=
