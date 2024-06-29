@@ -424,6 +424,9 @@ func cdxRatings(cveContents models.CveContents) *[]cdx.VulnerabilityRating {
 			if content.Cvss3Score != 0 || content.Cvss3Vector != "" || content.Cvss3Severity != "" {
 				ratings = append(ratings, cdxCVSS3Rating(string(content.Type), content.Cvss3Vector, content.Cvss3Score, content.Cvss3Severity))
 			}
+			if content.Cvss40Score != 0 || content.Cvss40Vector != "" || content.Cvss40Severity != "" {
+				ratings = append(ratings, cdxCVSS40Rating(string(content.Type), content.Cvss40Vector, content.Cvss40Score, content.Cvss40Severity))
+			}
 		}
 	}
 	return &ratings
@@ -459,6 +462,32 @@ func cdxCVSS3Rating(source, vector string, score float64, severity string) cdx.V
 	}
 	if strings.HasPrefix(vector, "CVSS:3.1") {
 		r.Method = cdx.ScoringMethodCVSSv31
+	}
+	if score != 0 {
+		r.Score = &score
+	}
+	switch strings.ToLower(severity) {
+	case "critical":
+		r.Severity = cdx.SeverityCritical
+	case "high":
+		r.Severity = cdx.SeverityHigh
+	case "medium":
+		r.Severity = cdx.SeverityMedium
+	case "low":
+		r.Severity = cdx.SeverityLow
+	case "none":
+		r.Severity = cdx.SeverityNone
+	default:
+		r.Severity = cdx.SeverityUnknown
+	}
+	return r
+}
+
+func cdxCVSS40Rating(source, vector string, score float64, severity string) cdx.VulnerabilityRating {
+	r := cdx.VulnerabilityRating{
+		Source: &cdx.Source{Name: source},
+		Method: cdx.ScoringMethodCVSSv4,
+		Vector: vector,
 	}
 	if score != 0 {
 		r.Score = &score

@@ -253,7 +253,7 @@ func (w SlackWriter) attachmentText(vinfo models.VulnInfo, cweDict map[string]mo
 	maxCvss := vinfo.MaxCvssScore()
 	vectors := []string{}
 
-	scores := append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores()...)
+	scores := append(vinfo.Cvss40Scores(), append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores()...)...)
 	for _, cvss := range scores {
 		if cvss.Value.Severity == "" {
 			continue
@@ -268,6 +268,8 @@ func (w SlackWriter) attachmentText(vinfo models.VulnInfo, cweDict map[string]mo
 			calcURL = fmt.Sprintf(
 				"https://nvd.nist.gov/vuln-metrics/cvss/v3-calculator?name=%s",
 				vinfo.CveID)
+		case models.CVSS40:
+			calcURL = fmt.Sprintf("https://www.first.org/cvss/calculator/4.0#%s", cvss.Value.Vector)
 		}
 
 		if conts, ok := vinfo.CveContents[cvss.Type]; ok {

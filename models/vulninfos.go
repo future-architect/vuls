@@ -123,8 +123,7 @@ func (v VulnInfos) FilterIgnorePkgs(ignorePkgsRegexps []string) (_ VulnInfos, nF
 // FindScoredVulns return scored vulnerabilities
 func (v VulnInfos) FindScoredVulns() (_ VulnInfos, nFiltered int) {
 	return v.Find(func(vv VulnInfo) bool {
-		if 0 < vv.MaxCvss2Score().Value.Score ||
-			0 < vv.MaxCvss3Score().Value.Score {
+		if 0 < vv.MaxCvss2Score().Value.Score || 0 < vv.MaxCvss3Score().Value.Score || 0 < vv.MaxCvss40Score().Value.Score {
 			return true
 		}
 		nFiltered++
@@ -152,7 +151,10 @@ func (v VulnInfos) ToSortedSlice() (sorted []VulnInfo) {
 func (v VulnInfos) CountGroupBySeverity() map[string]int {
 	m := map[string]int{}
 	for _, vInfo := range v {
-		score := vInfo.MaxCvss3Score().Value.Score
+		score := vInfo.MaxCvss40Score().Value.Score
+		if score < 0.1 {
+			score = vInfo.MaxCvss3Score().Value.Score
+		}
 		if score < 0.1 {
 			score = vInfo.MaxCvss2Score().Value.Score
 		}
@@ -417,7 +419,7 @@ func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := append(GetCveContentTypes(string(Trivy)), append(CveContentTypes{Fortinet, Nvd}, GetCveContentTypes(myFamily)...)...)
+	order := append(GetCveContentTypes(string(Trivy)), append(CveContentTypes{Fortinet, Nvd, Mitre}, GetCveContentTypes(myFamily)...)...)
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
@@ -464,7 +466,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := append(append(GetCveContentTypes(string(Trivy)), GetCveContentTypes(myFamily)...), Fortinet, Nvd, GitHub)
+	order := append(append(GetCveContentTypes(string(Trivy)), GetCveContentTypes(myFamily)...), Fortinet, Nvd, Mitre, GitHub)
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
@@ -510,7 +512,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 
 // Cvss2Scores returns CVSS V2 Scores
 func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
-	order := append([]CveContentType{RedHatAPI, RedHat, Nvd, Jvn}, GetCveContentTypes(string(Trivy))...)
+	order := append([]CveContentType{RedHatAPI, RedHat, Nvd, Mitre, Jvn}, GetCveContentTypes(string(Trivy))...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
@@ -535,7 +537,7 @@ func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
 
 // Cvss3Scores returns CVSS V3 Score
 func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
-	order := append([]CveContentType{RedHatAPI, RedHat, SUSE, Microsoft, Fortinet, Nvd, Jvn}, GetCveContentTypes(string(Trivy))...)
+	order := append([]CveContentType{RedHatAPI, RedHat, SUSE, Microsoft, Fortinet, Nvd, Mitre, Jvn}, GetCveContentTypes(string(Trivy))...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
@@ -606,14 +608,56 @@ func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 	return
 }
 
+// Cvss40Scores returns CVSS V4 Score
+func (v VulnInfo) Cvss40Scores() (values []CveContentCvss) {
+	for _, ctype := range []CveContentType{Mitre} {
+		if conts, found := v.CveContents[ctype]; found {
+			for _, cont := range conts {
+				if cont.Cvss40Score == 0 && cont.Cvss40Severity == "" {
+					continue
+				}
+				// https://nvd.nist.gov/vuln-metrics/cvss
+				values = append(values, CveContentCvss{
+					Type: ctype,
+					Value: Cvss{
+						Type:     CVSS40,
+						Score:    cont.Cvss40Score,
+						Vector:   cont.Cvss40Vector,
+						Severity: strings.ToUpper(cont.Cvss40Severity),
+					},
+				})
+			}
+		}
+	}
+	return
+}
+
 // MaxCvssScore returns max CVSS Score
 // If there is no CVSS Score, return Severity as a numerical value.
 func (v VulnInfo) MaxCvssScore() CveContentCvss {
+	v40Max := v.MaxCvss40Score()
+	if v40Max.Type != Unknown {
+		return v40Max
+	}
 	v3Max := v.MaxCvss3Score()
 	if v3Max.Type != Unknown {
 		return v3Max
 	}
 	return v.MaxCvss2Score()
+}
+
+// MaxCvss40Score returns Max CVSS V4.0 Score
+func (v VulnInfo) MaxCvss40Score() CveContentCvss {
+	max := CveContentCvss{
+		Type:  Unknown,
+		Value: Cvss{Type: CVSS40},
+	}
+	for _, cvss := range v.Cvss40Scores() {
+		if max.Value.Score < cvss.Value.Score {
+			max = cvss
+		}
+	}
+	return max
 }
 
 // MaxCvss3Score returns Max CVSS V3 Score
@@ -648,17 +692,14 @@ func (v VulnInfo) MaxCvss2Score() CveContentCvss {
 func (v VulnInfo) AttackVector() string {
 	for _, conts := range v.CveContents {
 		for _, cont := range conts {
-			if strings.HasPrefix(cont.Cvss2Vector, "AV:N") ||
-				strings.Contains(cont.Cvss3Vector, "AV:N") {
+			switch {
+			case strings.HasPrefix(cont.Cvss2Vector, "AV:N") || strings.Contains(cont.Cvss3Vector, "AV:N") || strings.Contains(cont.Cvss40Vector, "AV:N"):
 				return "AV:N"
-			} else if strings.HasPrefix(cont.Cvss2Vector, "AV:A") ||
-				strings.Contains(cont.Cvss3Vector, "AV:A") {
+			case strings.HasPrefix(cont.Cvss2Vector, "AV:A") || strings.Contains(cont.Cvss3Vector, "AV:A") || strings.Contains(cont.Cvss40Vector, "AV:A"):
 				return "AV:A"
-			} else if strings.HasPrefix(cont.Cvss2Vector, "AV:L") ||
-				strings.Contains(cont.Cvss3Vector, "AV:L") {
+			case strings.HasPrefix(cont.Cvss2Vector, "AV:L") || strings.Contains(cont.Cvss3Vector, "AV:L") || strings.Contains(cont.Cvss40Vector, "AV:L"):
 				return "AV:L"
-			} else if strings.Contains(cont.Cvss3Vector, "AV:P") {
-				// no AV:P in CVSS v2
+			case strings.Contains(cont.Cvss3Vector, "AV:P") || strings.Contains(cont.Cvss40Vector, "AV:P"): // no AV:P in CVSS v2
 				return "AV:P"
 			}
 		}
@@ -724,6 +765,9 @@ const (
 
 	// CVSS3 means CVSS version3
 	CVSS3 CvssType = "3"
+
+	// CVSS40 means CVSS version4.0
+	CVSS40 CvssType = "4.0"
 )
 
 // Cvss has CVSS Score
