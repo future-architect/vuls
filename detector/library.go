@@ -257,14 +257,16 @@ func getCveContents(cveID string, vul trivydbTypes.Vulnerability) (contents map[
 
 	for source, cvss := range vul.CVSS {
 		contents[models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source))] = append(contents[models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source))], models.CveContent{
-			Type:        models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source)),
-			CveID:       cveID,
-			Title:       vul.Title,
-			Summary:     vul.Description,
-			Cvss2Score:  cvss.V2Score,
-			Cvss2Vector: cvss.V2Vector,
-			Cvss3Score:  cvss.V3Score,
-			Cvss3Vector: cvss.V3Vector,
+			Type:         models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source)),
+			CveID:        cveID,
+			Title:        vul.Title,
+			Summary:      vul.Description,
+			Cvss2Score:   cvss.V2Score,
+			Cvss2Vector:  cvss.V2Vector,
+			Cvss3Score:   cvss.V3Score,
+			Cvss3Vector:  cvss.V3Vector,
+			Cvss40Score:  cvss.V40Score,
+			Cvss40Vector: cvss.V40Vector,
 			Published: func() time.Time {
 				if vul.PublishedDate != nil {
 					return *vul.PublishedDate
