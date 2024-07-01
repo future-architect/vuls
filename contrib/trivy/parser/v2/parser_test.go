@@ -1949,7 +1949,7 @@ var oneCVEtoNVulnerabilityTrivy = []byte(`
 			],
 			"VendorSeverity": {
 			  "ghsa": 2,
-			  "nvd": 2,
+			  "nvd": 3,
 			  "ruby-advisory-db": 2
 			},
 			"CVSS": {
@@ -1958,6 +1958,8 @@ var oneCVEtoNVulnerabilityTrivy = []byte(`
 				"V3Score": 5.9
 			  },
 			  "nvd": {
+			  	"V40Vector": "CVSS:4.0/AV:N/AC:H/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:H/SI:N/SA:N",
+				"V40Score": 8.9,
 				"V3Vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N",
 				"V3Score": 5.9
 			  }
@@ -2027,7 +2029,7 @@ var oneCVEtoNVulnerabilityTrivy = []byte(`
 			],
 			"VendorSeverity": {
 			  "ghsa": 2,
-			  "nvd": 2,
+			  "nvd": 3,
 			  "ruby-advisory-db": 2
 			},
 			"CVSS": {
@@ -2036,6 +2038,8 @@ var oneCVEtoNVulnerabilityTrivy = []byte(`
 				"V3Score": 5.9
 			  },
 			  "nvd": {
+			  	"V40Vector": "CVSS:4.0/AV:N/AC:H/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:H/SI:N/SA:N",
+				"V40Score": 8.9,
 				"V3Vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N",
 				"V3Score": 5.9
 			  }
@@ -2545,7 +2549,7 @@ var oneCVEtoNVulnerabilitySR = &models.ScanResult{
 						CveID:         "CVE-2023-26154",
 						Title:         "pubnub Insufficient Entropy vulnerability",
 						Summary:       "Versions of the package pubnub before 7.4.0; all versions of the package com.pubnub:pubnub; versions of the package pubnub before 6.19.0; all versions of the package github.com/pubnub/go; versions of the package github.com/pubnub/go/v7 before 7.2.0; versions of the package pubnub before 7.3.0; versions of the package pubnub/pubnub before 6.1.0; versions of the package pubnub before 5.3.0; versions of the package pubnub before 0.4.0; versions of the package pubnub/c-core before 4.5.0; versions of the package com.pubnub:pubnub-kotlin before 7.7.0; versions of the package pubnub/swift before 6.2.0; versions of the package pubnub before 5.2.0; versions of the package pubnub before 4.3.0 are vulnerable to Insufficient Entropy via the getKey function, due to inefficient implementation of the AES-256-CBC cryptographic algorithm. The provided encrypt function is less secure when hex encoding and trimming are applied, leaving half of the bits in the key always the same for every encoded message or file.\r\r**Note:**\r\rIn order to exploit this vulnerability, the attacker needs to invest resources in preparing the attack and brute-force the encryption.",
-						Cvss3Severity: "MEDIUM",
+						Cvss3Severity: "HIGH",
 						References: models.References{
 							{
 								Source: "trivy",
@@ -2648,12 +2652,14 @@ var oneCVEtoNVulnerabilitySR = &models.ScanResult{
 						LastModified: time.Date(2023, time.December, 11, 17, 48, 3, 653, time.UTC),
 					},
 					{
-						Type:        "trivy:nvd",
-						CveID:       "CVE-2023-26154",
-						Title:       "pubnub Insufficient Entropy vulnerability",
-						Summary:     "Versions of the package pubnub before 7.4.0; all versions of the package com.pubnub:pubnub; versions of the package pubnub before 6.19.0; all versions of the package github.com/pubnub/go; versions of the package github.com/pubnub/go/v7 before 7.2.0; versions of the package pubnub before 7.3.0; versions of the package pubnub/pubnub before 6.1.0; versions of the package pubnub before 5.3.0; versions of the package pubnub before 0.4.0; versions of the package pubnub/c-core before 4.5.0; versions of the package com.pubnub:pubnub-kotlin before 7.7.0; versions of the package pubnub/swift before 6.2.0; versions of the package pubnub before 5.2.0; versions of the package pubnub before 4.3.0 are vulnerable to Insufficient Entropy via the getKey function, due to inefficient implementation of the AES-256-CBC cryptographic algorithm. The provided encrypt function is less secure when hex encoding and trimming are applied, leaving half of the bits in the key always the same for every encoded message or file.\r\r**Note:**\r\rIn order to exploit this vulnerability, the attacker needs to invest resources in preparing the attack and brute-force the encryption.",
-						Cvss3Score:  5.9,
-						Cvss3Vector: "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N",
+						Type:         "trivy:nvd",
+						CveID:        "CVE-2023-26154",
+						Title:        "pubnub Insufficient Entropy vulnerability",
+						Summary:      "Versions of the package pubnub before 7.4.0; all versions of the package com.pubnub:pubnub; versions of the package pubnub before 6.19.0; all versions of the package github.com/pubnub/go; versions of the package github.com/pubnub/go/v7 before 7.2.0; versions of the package pubnub before 7.3.0; versions of the package pubnub/pubnub before 6.1.0; versions of the package pubnub before 5.3.0; versions of the package pubnub before 0.4.0; versions of the package pubnub/c-core before 4.5.0; versions of the package com.pubnub:pubnub-kotlin before 7.7.0; versions of the package pubnub/swift before 6.2.0; versions of the package pubnub before 5.2.0; versions of the package pubnub before 4.3.0 are vulnerable to Insufficient Entropy via the getKey function, due to inefficient implementation of the AES-256-CBC cryptographic algorithm. The provided encrypt function is less secure when hex encoding and trimming are applied, leaving half of the bits in the key always the same for every encoded message or file.\r\r**Note:**\r\rIn order to exploit this vulnerability, the attacker needs to invest resources in preparing the attack and brute-force the encryption.",
+						Cvss3Score:   5.9,
+						Cvss3Vector:  "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N",
+						Cvss40Score:  8.9,
+						Cvss40Vector: "CVSS:4.0/AV:N/AC:H/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:H/SI:N/SA:N",
 						References: models.References{
 							{
 								Source: "trivy",
