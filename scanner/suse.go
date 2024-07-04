@@ -231,7 +231,7 @@ func (o *suse) parseZypperLULines(stdout string) (models.Packages, error) {
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.Contains(line, "S | Repository") || strings.Contains(line, "--+----------------") || warnRepoPattern.MatchString(line) {
+		if line == "" || strings.Contains(line, "S | Repository") || strings.Contains(line, "--+----------------") || warnRepoPattern.MatchString(line) {
 			continue
 		}
 		pack, err := o.parseZypperLUOneLine(line)
