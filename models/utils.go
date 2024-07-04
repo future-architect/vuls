@@ -119,19 +119,29 @@ func ConvertNvdToModel(cveID string, nvds []cvedict.Nvd) ([]CveContent, []Exploi
 			c.Cvss3Severity = cvss3.BaseSeverity
 			m[cvss3.Source] = c
 		}
+		for _, cvss40 := range nvd.Cvss40 {
+			c := m[cvss40.Source]
+			c.Cvss40Score = cvss40.BaseScore
+			c.Cvss40Vector = cvss40.VectorString
+			c.Cvss40Severity = cvss40.BaseSeverity
+			m[cvss40.Source] = c
+		}
 
 		for source, cont := range m {
 			cves = append(cves, CveContent{
-				Type:          Nvd,
-				CveID:         cveID,
-				Summary:       strings.Join(desc, "\n"),
-				Cvss2Score:    cont.Cvss2Score,
-				Cvss2Vector:   cont.Cvss2Vector,
-				Cvss2Severity: cont.Cvss2Severity,
-				Cvss3Score:    cont.Cvss3Score,
-				Cvss3Vector:   cont.Cvss3Vector,
-				Cvss3Severity: cont.Cvss3Severity,
-				SourceLink:    fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", cveID),
+				Type:           Nvd,
+				CveID:          cveID,
+				Summary:        strings.Join(desc, "\n"),
+				Cvss2Score:     cont.Cvss2Score,
+				Cvss2Vector:    cont.Cvss2Vector,
+				Cvss2Severity:  cont.Cvss2Severity,
+				Cvss3Score:     cont.Cvss3Score,
+				Cvss3Vector:    cont.Cvss3Vector,
+				Cvss3Severity:  cont.Cvss3Severity,
+				Cvss40Score:    cont.Cvss40Score,
+				Cvss40Vector:   cont.Cvss40Vector,
+				Cvss40Severity: cont.Cvss40Severity,
+				SourceLink:     fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", cveID),
 				// Cpes:          cpes,
 				CweIDs:       cont.CweIDs,
 				References:   refs,

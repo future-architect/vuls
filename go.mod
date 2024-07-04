@@ -51,7 +51,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.1
 	github.com/vulsio/go-cti v0.0.5-0.20240318121747-822b3ef289cb
-	github.com/vulsio/go-cve-dictionary v0.10.2-0.20240628072614-73f15707be8e
+	github.com/vulsio/go-cve-dictionary v0.10.2-0.20240703055211-dbc168152e90
 	github.com/vulsio/go-exploitdb v0.4.7-0.20240318122115-ccb3abc151a1
 	github.com/vulsio/go-kev v0.1.4-0.20240318121733-b3386e67d3fb
 	github.com/vulsio/go-msfdb v0.2.4-0.20240318121704-8bfc812656dc
@@ -355,7 +355,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
 	k8s.io/kubectl v0.30.0 // indirect
 	k8s.io/utils v0.0.0-20231127182322-b307cd553661 // indirect
-	modernc.org/libc v1.53.4 // indirect
+	modernc.org/libc v1.52.1 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.8.0 // indirect
 	modernc.org/sqlite v1.30.1 // indirect

@@ -610,7 +610,7 @@ func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 
 // Cvss40Scores returns CVSS V4 Score
 func (v VulnInfo) Cvss40Scores() (values []CveContentCvss) {
-	for _, ctype := range []CveContentType{Mitre} {
+	for _, ctype := range []CveContentType{Mitre, Nvd} {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
 				if cont.Cvss40Score == 0 && cont.Cvss40Severity == "" {
