@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/aquasecurity/trivy/pkg/cache"
 	trivyFlag "github.com/aquasecurity/trivy/pkg/flag"
-	"github.com/aquasecurity/trivy/pkg/utils/fsutils"
 	"github.com/google/subcommands"
 	"github.com/k0kubun/pp"
 	"golang.org/x/xerrors"
@@ -178,7 +178,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&config.Conf.Pipe, "pipe", false, "Use args passed via PIPE")
 
 	f.StringVar(&config.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
-		fsutils.CacheDir(), "/path/to/dir")
+		cache.DefaultDir(), "/path/to/dir")
 	f.StringVar(&config.Conf.TrivyJavaDBRepository, "trivy-java-db-repository",
 		trivyFlag.JavaDBRepositoryFlag.Default, "Trivy Java DB Repository")
 	f.BoolVar(&config.Conf.TrivySkipJavaDBUpdate, "trivy-skip-java-db-update",

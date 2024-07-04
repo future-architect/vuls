@@ -63,7 +63,7 @@ var FindLockFiles = []string{
 	// rust
 	ftypes.CargoLock,
 	// php
-	ftypes.ComposerLock,
+	ftypes.ComposerLock, ftypes.ComposerInstalledJson,
 	// python
 	ftypes.PipRequirements, ftypes.PipfileLock, ftypes.PoetryLock,
 	// .net
@@ -85,7 +85,7 @@ func (s LibraryScanner) GetLibraryKey() string {
 		return "ruby"
 	case ftypes.Cargo, ftypes.RustBinary:
 		return "rust"
-	case ftypes.Composer:
+	case ftypes.Composer, ftypes.ComposerVendor:
 		return "php"
 	case ftypes.GoBinary, ftypes.GoModule:
 		return "gomod"

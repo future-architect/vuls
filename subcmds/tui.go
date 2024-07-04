@@ -9,14 +9,15 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/aquasecurity/trivy/pkg/utils/fsutils"
+	"github.com/aquasecurity/trivy/pkg/cache"
+	"github.com/google/subcommands"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/tui"
-	"github.com/google/subcommands"
 )
 
 // TuiCmd is Subcommand of host discovery mode
@@ -103,7 +104,7 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&config.Conf.Pipe, "pipe", false, "Use stdin via PIPE")
 
 	f.StringVar(&config.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
-		fsutils.CacheDir(), "/path/to/dir")
+		cache.DefaultDir(), "/path/to/dir")
 }
 
 // Execute execute

@@ -96,7 +96,7 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 func downloadDB(appVersion string, trivyOpts config.TrivyOpts, noProgress, skipUpdate bool) error {
 	client := db.NewClient(trivyOpts.TrivyCacheDBDir, noProgress)
 	ctx := context.Background()
-	needsUpdate, err := client.NeedsUpdate(appVersion, skipUpdate)
+	needsUpdate, err := client.NeedsUpdate(context.TODO(), appVersion, skipUpdate)
 	if err != nil {
 		return xerrors.Errorf("database error: %w", err)
 	}
