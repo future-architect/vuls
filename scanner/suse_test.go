@@ -4,63 +4,82 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/k0kubun/pp"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
-	"github.com/k0kubun/pp"
 )
 
 func TestScanUpdatablePackages(t *testing.T) {
-	r := newSUSE(config.ServerInfo{})
-	r.Distro = config.Distro{Family: "sles"}
-	stdout := `S | Repository                                  | Name                          | Current Version             | Available Version           | Arch
+	type args struct {
+		stdout string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    models.Packages
+		wantErr bool
+	}{
+		{
+			name: "happy",
+			args: args{
+				stdout: `S | Repository                                  | Name                          | Current Version             | Available Version           | Arch
 --+---------------------------------------------+-------------------------------+-----------------------------+-----------------------------+-------
 v | SLES12-SP2-Updates                          | SUSEConnect                   | 0.3.0-19.8.1                | 0.3.1-19.11.2               | x86_64
 v | SLES12-SP2-Updates                          | SuSEfirewall2                 | 3.6.312-2.3.1               | 3.6.312-2.10.1              | noarch
-v | Clone of SLES11-SP3-Updates for x86_64 | ConsoleKit | 0.2.10-64.65.1 | 0.2.10-64.69.1 | x86_64`
-
-	var tests = []struct {
-		in  string
-		out models.Packages
-	}{
-		{
-			stdout,
-			models.NewPackages(
-				models.Package{
+v | Clone of SLES11-SP3-Updates for x86_64 | ConsoleKit | 0.2.10-64.65.1 | 0.2.10-64.69.1 | x86_64`,
+			},
+			want: models.Packages{
+				"SUSEConnect": {
 					Name:       "SUSEConnect",
 					NewVersion: "0.3.1",
 					NewRelease: "19.11.2",
 					Arch:       "x86_64",
 				},
-				models.Package{
+				"SuSEfirewall2": {
 					Name:       "SuSEfirewall2",
 					NewVersion: "3.6.312",
 					NewRelease: "2.10.1",
 					Arch:       "noarch",
 				},
-				models.Package{
+				"ConsoleKit": {
 					Name:       "ConsoleKit",
 					NewVersion: "0.2.10",
 					NewRelease: "64.69.1",
 					Arch:       "x86_64",
 				},
-			),
+			},
+		},
+		{
+			name: "start new line",
+			args: args{
+				stdout: `
+S | Repository | Name | Current Version | Available Version | Arch
+--+--------------------------------------------------------------+-----------------------+-------------------------------+--------------------------------+-------
+v | Update repository with updates from SUSE Linux Enterprise 15 | git-core | 2.43.0-150600.1.10 | 2.43.0-150600.3.3.1 | x86_64`,
+			},
+			want: models.Packages{
+				"git-core": {
+					Name:       "git-core",
+					NewVersion: "2.43.0",
+					NewRelease: "150600.3.3.1",
+					Arch:       "x86_64",
+				},
+			},
 		},
 	}
-
 	for _, tt := range tests {
-		packages, err := r.parseZypperLULines(tt.in)
-		if err != nil {
-			t.Errorf("Error has occurred, err: %+v\ntt.in: %v", err, tt.in)
-			return
-		}
-		for name, ePack := range tt.out {
-			if !reflect.DeepEqual(ePack, packages[name]) {
-				e := pp.Sprintf("%v", ePack)
-				a := pp.Sprintf("%v", packages[name])
-				t.Errorf("expected %s, actual %s", e, a)
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := (newSUSE(config.ServerInfo{Distro: config.Distro{Family: "sles"}})).parseZypperLULines(tt.args.stdout)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("suse.parseZypperLULines() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
-		}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("suse.parseZypperLULines() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
