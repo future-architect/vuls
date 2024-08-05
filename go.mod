@@ -59,7 +59,7 @@ require (
 	github.com/vulsio/goval-dictionary v0.9.6-0.20240625074017-1da5dfb8b28a
 	go.etcd.io/bbolt v1.3.10
 	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
-	golang.org/x/oauth2 v0.21.0
+	golang.org/x/oauth2 v0.22.0
 	golang.org/x/sync v0.7.0
 	golang.org/x/text v0.16.0
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028
