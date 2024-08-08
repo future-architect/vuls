@@ -82,8 +82,7 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 						}
 					}
 				}
-				slices.SortFunc(severities, trivydbTypes.CompareSeverityString)
-				slices.Reverse(severities)
+				slices.SortFunc(severities, func(a, b string) int { return -trivydbTypes.CompareSeverityString(a, b) })
 
 				vulnInfo.CveContents[models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source))] = []models.CveContent{{
 					Type:          models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source)),
@@ -100,7 +99,7 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 			for source, cvss := range vuln.CVSS {
 				if cs, ok := vulnInfo.CveContents[models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source))]; ok &&
 					slices.ContainsFunc(cs, func(c models.CveContent) bool {
-						return c.Cvss2Score == cvss.V2Score && c.Cvss2Vector == cvss.V2Vector && c.Cvss3Score == cvss.V3Score && c.Cvss3Vector == cvss.V3Vector
+						return c.Cvss2Score == cvss.V2Score && c.Cvss2Vector == cvss.V2Vector && c.Cvss3Score == cvss.V3Score && c.Cvss3Vector == cvss.V3Vector && c.Cvss40Score == cvss.V40Score && c.Cvss40Vector == cvss.V40Vector
 					}) {
 					continue
 				}
@@ -114,6 +113,8 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 					Cvss2Vector:  cvss.V2Vector,
 					Cvss3Score:   cvss.V3Score,
 					Cvss3Vector:  cvss.V3Vector,
+					Cvss40Score:  cvss.V40Score,
+					Cvss40Vector: cvss.V40Vector,
 					Published:    published,
 					LastModified: lastModified,
 					References:   references,
