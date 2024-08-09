@@ -406,8 +406,8 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family, release s
 			continue
 		}
 
-		// https://github.com/aquasecurity/trivy/pull/745
-		if strings.Contains(req.versionRelease, ".ksplice1.") != strings.Contains(ovalPack.Version, ".ksplice1.") {
+		// https://github.com/aquasecurity/trivy/blob/08cc14bd2171afdc1973c6d614dd0d1fb82b7623/pkg/detector/ospkg/oracle/oracle.go#L72-L77
+		if family == constant.Oracle && extractOracleKsplice(ovalPack.Version) != extractOracleKsplice(req.versionRelease) {
 			continue
 		}
 
@@ -589,6 +589,15 @@ var rhelRebuildOSVerPattern = regexp.MustCompile(`\.[es]l(\d+)(?:_\d+)?(?:\.(cen
 
 func rhelRebuildOSVersionToRHEL(ver string) string {
 	return rhelRebuildOSVerPattern.ReplaceAllString(ver, ".el$1")
+}
+
+func extractOracleKsplice(v string) string {
+	for _, s := range strings.Split(v, ".") {
+		if strings.HasPrefix(s, "ksplice") {
+			return s
+		}
+	}
+	return ""
 }
 
 // NewOVALClient returns a client for OVAL database
