@@ -264,6 +264,8 @@ func ParseInstalledPkgs(distro config.Distro, kernel models.Kernel, pkgList stri
 
 	var osType osTypeInterface
 	switch distro.Family {
+	case constant.Arch:
+		osType = &arch{base: base}
 	case constant.Debian, constant.Ubuntu, constant.Raspbian:
 		osType = &debian{base: base}
 	case constant.RedHat:
@@ -759,6 +761,11 @@ func (s Scanner) detectOS(c config.ServerInfo) osTypeInterface {
 			osType.setErrs([]error{xerrors.Errorf("Failed to test first SSH Connection. err: %w", err)})
 			return osType
 		}
+	}
+
+	if itsMe, osType := detectArch(c); itsMe {
+		logging.Log.Debugf("Arch based Linux. Host: %s:%s", c.Host, c.Port)
+		return osType
 	}
 
 	if itsMe, osType := detectWindows(c); itsMe {

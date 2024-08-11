@@ -48,6 +48,10 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"2027": {StandardSupportUntil: time.Date(2031, 6, 30, 23, 59, 59, 0, time.UTC)},
 			"2029": {StandardSupportUntil: time.Date(2033, 6, 30, 23, 59, 59, 0, time.UTC)},
 		}[getAmazonLinuxVersion(release)]
+	case constant.Arch:
+		// Arch Linux uses a rolling release model.
+		// https://wiki.archlinux.org/title/Arch_Linux
+		eol, found = EOL{Ended: false}, true
 	case constant.RedHat:
 		// https://access.redhat.com/support/policy/updates/errata
 		eol, found = map[string]EOL{
