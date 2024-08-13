@@ -1887,6 +1887,48 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected: true,
 			fixedIn:  "2:2.17-106.0.1.ksplice1.el7_2.4",
 		},
+		// .ksplice2.
+		{
+			in: in{
+				family: constant.Oracle,
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:    "nginx",
+							Version: "2:2.17-106.0.1.ksplice2.el7_2.4",
+							Arch:    "x86_64",
+						},
+					},
+				},
+				req: request{
+					packName:       "nginx",
+					versionRelease: "2:2.17-107",
+					arch:           "x86_64",
+				},
+			},
+			affected: false,
+		},
+		// in: .ksplice1. , req: .ksplice2.
+		{
+			in: in{
+				family: constant.Oracle,
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:    "nginx",
+							Version: "2:2.17-106.0.1.ksplice1.el7_2.4",
+							Arch:    "x86_64",
+						},
+					},
+				},
+				req: request{
+					packName:       "nginx",
+					versionRelease: "2:2.17-105.0.1.ksplice2.el7_2.4",
+					arch:           "x86_64",
+				},
+			},
+			affected: false,
+		},
 		// same arch
 		{
 			in: in{
