@@ -354,6 +354,8 @@ func NewCveContentType(name string) CveContentType {
 		return TrivyFedora
 	case "trivy:amazon":
 		return TrivyAmazon
+	case "trivy:azure":
+		return TrivyAzure
 	case "trivy:oracle-oval":
 		return TrivyOracleOVAL
 	case "trivy:suse-cvrf":
@@ -417,7 +419,7 @@ func GetCveContentTypes(family string) []CveContentType {
 	case constant.Windows:
 		return []CveContentType{Microsoft}
 	case string(Trivy):
-		return []CveContentType{Trivy, TrivyNVD, TrivyRedHat, TrivyRedHatOVAL, TrivyDebian, TrivyUbuntu, TrivyCentOS, TrivyRocky, TrivyFedora, TrivyAmazon, TrivyOracleOVAL, TrivySuseCVRF, TrivyAlpine, TrivyArchLinux, TrivyAlma, TrivyCBLMariner, TrivyPhoton, TrivyRubySec, TrivyPhpSecurityAdvisories, TrivyNodejsSecurityWg, TrivyGHSA, TrivyGLAD, TrivyOSV, TrivyWolfi, TrivyChainguard, TrivyBitnamiVulndb, TrivyK8sVulnDB, TrivyGoVulnDB}
+		return []CveContentType{Trivy, TrivyNVD, TrivyRedHat, TrivyRedHatOVAL, TrivyDebian, TrivyUbuntu, TrivyCentOS, TrivyRocky, TrivyFedora, TrivyAmazon, TrivyAzure, TrivyOracleOVAL, TrivySuseCVRF, TrivyAlpine, TrivyArchLinux, TrivyAlma, TrivyCBLMariner, TrivyPhoton, TrivyRubySec, TrivyPhpSecurityAdvisories, TrivyNodejsSecurityWg, TrivyGHSA, TrivyGLAD, TrivyOSV, TrivyWolfi, TrivyChainguard, TrivyBitnamiVulndb, TrivyK8sVulnDB, TrivyGoVulnDB}
 	default:
 		return nil
 	}
@@ -501,6 +503,9 @@ const (
 
 	// TrivyAmazon is TrivyAmazon
 	TrivyAmazon CveContentType = "trivy:amazon"
+
+	// TrivyAzure is TrivyAzure
+	TrivyAzure CveContentType = "trivy:azure"
 
 	// TrivyOracleOVAL is TrivyOracle
 	TrivyOracleOVAL CveContentType = "trivy:oracle-oval"
@@ -592,6 +597,7 @@ var AllCveContetTypes = CveContentTypes{
 	TrivyRocky,
 	TrivyFedora,
 	TrivyAmazon,
+	TrivyAzure,
 	TrivyOracleOVAL,
 	TrivySuseCVRF,
 	TrivyAlpine,
