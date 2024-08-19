@@ -603,6 +603,8 @@ func NewOVALClient(family string, cnf config.GovalDictConf, o logging.LogOpts) (
 	}
 
 	switch family {
+	case constant.Arch:
+		return NewArch(driver, cnf.GetURL()), nil
 	case constant.Debian, constant.Raspbian:
 		return NewDebian(driver, cnf.GetURL()), nil
 	case constant.Ubuntu:
@@ -647,6 +649,8 @@ func NewOVALClient(family string, cnf config.GovalDictConf, o logging.LogOpts) (
 // For example, CentOS/Alma/Rocky uses Red Hat's OVAL, so return 'redhat'
 func GetFamilyInOval(familyInScanResult string) (string, error) {
 	switch familyInScanResult {
+	case constant.Arch:
+		return constant.Arch, nil
 	case constant.Debian, constant.Raspbian:
 		return constant.Debian, nil
 	case constant.Ubuntu:

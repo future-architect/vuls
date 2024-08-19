@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"bufio"
 	"strings"
 
 	"github.com/future-architect/vuls/config"
@@ -97,20 +98,13 @@ func (o *arch) parseInstalledPackages(stdout string) (models.Packages, models.Sr
 		var name, version, release, arch string
 		for _, line := range lines {
 			columns := strings.Split(line, ":")
-			if len(columns) != 2 {
-				continue
-			}
-
 			leftColumn := strings.TrimSpace(columns[0])
-			rightColumn := strings.TrimSpace(columns[1])
+			rightColumn := strings.TrimSpace(strings.Join(columns[1:], ":"))
 			switch leftColumn {
 			case "Name":
 				name = rightColumn
 			case "Version":
 				values := strings.Split(rightColumn, "-")
-				if len(values) != 2 {
-					continue
-				}
 				version = values[0]
 				release = values[1]
 			case "Architecture":
@@ -160,13 +154,23 @@ func (o *arch) scanPackages() error {
 		Version: version,
 	}
 
-	packs, err := o.scanInstalledPackages()
+	installed, err := o.scanInstalledPackages()
 	if err != nil {
 		o.log.Errorf("Failed to scan installed packages: %s", err)
 		return err
 	}
-	o.Packages = packs
 
+	updatable, err := o.scanUpdatablePackages()
+	if err != nil {
+		err = xerrors.Errorf("Failed to scan updatable packages: %w", err)
+		o.log.Warnf("err: %+v", err)
+		o.warns = append(o.warns, err)
+		// Only warning this error
+	} else {
+		installed.MergeNewVersion(updatable)
+	}
+
+	o.Packages = installed
 	return nil
 }
 
@@ -179,4 +183,59 @@ func (o *arch) scanInstalledPackages() (models.Packages, error) {
 	pkgs, _, _ := o.parseInstalledPackages(r.Stdout)
 
 	return pkgs, nil
+}
+
+// TODO: Clean any traces
+func (o *arch) scanUpdatablePackages() (models.Packages, error) {
+	listOutdateCmd := `TMPPATH="${TMPDIR:-/tmp}/vuls"
+DBPATH="$(pacman-conf DBPath)"
+
+mkdir -p "$TMPPATH"
+ln -s "$DBPATH/local" "$TMPPATH" &>/dev/null
+fakeroot -- pacman -Sy --dbpath "$TMPPATH" --logfile /dev/null &>/dev/null
+pacman -Qu --dbpath "$TMPPATH" 2>/dev/null
+`
+	cmd := util.PrependProxyEnv(listOutdateCmd)
+	r := o.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		return nil, xerrors.Errorf("Failed to SSH: %s", r)
+	}
+	pkgs, _ := o.parseOutdatedPackages(r.Stdout)
+
+	unlinkCmd := `TMPPATH="${TMPDIR:-/tmp}/vuls"
+rm -r "$TMPPATH"`
+
+	cmd = util.PrependProxyEnv(unlinkCmd)
+	r = o.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		err := xerrors.Errorf("Failed to SSH: %s", r)
+		o.log.Warnf("err: %+v", err)
+		o.warns = append(o.warns, err)
+		// Only warning this error
+	}
+
+	return pkgs, nil
+}
+
+func (o *arch) parseOutdatedPackages(stdout string) (models.Packages, error) {
+	packs := models.Packages{}
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !strings.Contains(line, "->") {
+			continue
+		}
+		ss := strings.Fields(line)
+		name := ss[0]
+		fullVersionInfo := ss[3]
+
+		versionAndRelease := strings.Split(fullVersionInfo, "-")
+
+		packs[name] = models.Package{
+			Name:       name,
+			NewVersion: versionAndRelease[0],
+			NewRelease: versionAndRelease[1],
+		}
+	}
+	return packs, nil
 }

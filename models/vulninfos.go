@@ -1003,6 +1003,9 @@ const (
 	// RedHatAPIStr is :
 	RedHatAPIStr = "RedHatAPIMatch"
 
+	// ArchLinuxSecurityTrackerMatchStr :
+	ArchLinuxSecurityTrackerMatchStr = "ArchLinuxSecurityTrackerMatch"
+
 	// DebianSecurityTrackerMatchStr :
 	DebianSecurityTrackerMatchStr = "DebianSecurityTrackerMatch"
 
@@ -1043,6 +1046,9 @@ var (
 
 	// RedHatAPIMatch ranking how confident the CVE-ID was detected correctly
 	RedHatAPIMatch = Confidence{100, RedHatAPIStr, 0}
+
+	// DebianSecurityTrackerMatch ranking how confident the CVE-ID was detected correctly
+	ArchLinuxSecurityTrackerMatch = Confidence{100, ArchLinuxSecurityTrackerMatchStr, 0}
 
 	// DebianSecurityTrackerMatch ranking how confident the CVE-ID was detected correctly
 	DebianSecurityTrackerMatch = Confidence{100, DebianSecurityTrackerMatchStr, 0}
