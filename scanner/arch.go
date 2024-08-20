@@ -185,7 +185,6 @@ func (o *arch) scanInstalledPackages() (models.Packages, error) {
 	return pkgs, nil
 }
 
-// TODO: Clean any traces
 func (o *arch) scanUpdatablePackages() (models.Packages, error) {
 	listOutdateCmd := `TMPPATH="${TMPDIR:-/tmp}/vuls"
 DBPATH="$(pacman-conf DBPath)"
