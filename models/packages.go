@@ -85,6 +85,7 @@ type Package struct {
 	NewRelease       string               `json:"newRelease"`
 	Arch             string               `json:"arch"`
 	Repository       string               `json:"repository"`
+	Type             string               `json:"type,omitempty"`
 	ModularityLabel  string               `json:"modularitylabel"`
 	Changelog        *Changelog           `json:"changelog,omitempty"`
 	AffectedProcs    []AffectedProcess    `json:",omitempty"`
@@ -455,4 +456,12 @@ func IsKernelSourcePackage(family, name string) bool {
 	default:
 		return false
 	}
+}
+
+type Snaps map[string]Snap
+
+type Snap struct {
+	Name     string `json:"name"`
+	Version  string `json:"version"`
+	Revision string `json:"revision"`
 }

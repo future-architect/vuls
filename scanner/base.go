@@ -96,6 +96,9 @@ type osPackages struct {
 	// installed source packages (Debian based only)
 	SrcPackages models.SrcPackages
 
+	// Snaps
+	Snaps models.Snaps
+
 	// Detected Vulnerabilities Key: CVE-ID
 	VulnInfos models.VulnInfos
 
@@ -546,6 +549,7 @@ func (l *base) convertToModel() models.ScanResult {
 		RunningKernel:     l.Kernel,
 		Packages:          l.Packages,
 		SrcPackages:       l.SrcPackages,
+		Snaps:             l.Snaps,
 		WordPressPackages: l.WordPress,
 		LibraryScanners:   l.LibraryScanners,
 		WindowsKB:         l.windowsKB,
@@ -1495,4 +1499,41 @@ func (l *base) pkgPs(getOwnerPkgs func([]string) ([]string, error)) error {
 		}
 	}
 	return nil
+}
+
+func (l *base) scanSnaps() error {
+	l.log.Info("Scanning Snap packages.")
+	cmd := util.PrependProxyEnv("snap list")
+	r := l.exec(cmd, noSudo)
+
+	if !r.isSuccess() {
+		return xerrors.Errorf("Scanning snaps failed.")
+	}
+
+	l.Snaps = l.parseSnapList(r.Stdout)
+
+	// Snaps update automatically, therefore we do not check for updates.
+
+	return nil
+}
+
+func (l *base) parseSnapList(stdout string) models.Snaps {
+	snaps := models.Snaps{}
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+
+	// Skip header line
+	scanner.Scan()
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		ss := strings.Fields(line)
+
+		snaps[ss[0]] = models.Snap{
+			Name:     ss[0],
+			Version:  ss[1],
+			Revision: ss[2],
+		}
+	}
+
+	return snaps
 }
