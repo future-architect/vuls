@@ -1501,50 +1501,39 @@ func (l *base) pkgPs(getOwnerPkgs func([]string) ([]string, error)) error {
 	return nil
 }
 
+func (l *base) isFlatpakInstalled() bool {
+	r := l.exec("flatpak --version", noSudo)
+	return r.isSuccess()
+}
+
 func (l *base) scanFlatpaks() error {
+	if !l.isFlatpakInstalled() {
+		return nil
+	}
+
 	l.log.Info("Scanning Flatpak applications.")
-	cmd := util.PrependProxyEnv("flatpak list --app --columns=application,arch,version")
-	r := l.exec(cmd, noSudo)
 
-	if !r.isSuccess() {
-		return xerrors.Errorf("Scanning flatpaks failed.")
+	flatpaks, err := l.parseFlatpakList()
+	if err != nil {
+		return err
 	}
 
-	flatpaks := l.parseFlatpakList(r.Stdout)
-
-	cmd = util.PrependProxyEnv("flatpak remote-ls --app --updates --columns=application,arch,version")
-	r = l.exec(cmd, noSudo)
-
-	if !r.isSuccess() {
-		err := xerrors.Errorf("Failed to check flatpak updates.")
-		l.log.Warnf("err: %+v", err)
-		l.warns = append(l.warns, err)
-		// Only log this error.
-	}
-
-	scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		ss := strings.Fields(line)
-
-		if len(ss) != 3 {
-			continue
-		}
-
-		updatableApp := flatpaks[ss[0]]
-		updatableApp.NewVersion = ss[2]
-		flatpaks[ss[0]] = updatableApp
-	}
-
+	l.fillUpdatableFlatpaks(flatpaks)
 	l.Flatpaks = flatpaks
 
 	return nil
 }
 
-func (l *base) parseFlatpakList(stdout string) models.Flatpaks {
+func (l *base) parseFlatpakList() (models.Flatpaks, error) {
 	flatpaks := models.Flatpaks{}
-	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	cmd := util.PrependProxyEnv("flatpak list --app --columns=application,arch,version")
+	r := l.exec(cmd, noSudo)
+
+	if !r.isSuccess() {
+		return nil, xerrors.Errorf("Failed to get list of flatpak applications.")
+	}
+
+	scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -1566,5 +1555,33 @@ func (l *base) parseFlatpakList(stdout string) models.Flatpaks {
 		}
 	}
 
-	return flatpaks
+	return flatpaks, nil
+}
+
+func (l *base) fillUpdatableFlatpaks(flatpaks models.Flatpaks) {
+	cmd := util.PrependProxyEnv("flatpak remote-ls --app --updates --columns=application,arch,version")
+	r := l.exec(cmd, noSudo)
+
+	if !r.isSuccess() {
+		err := xerrors.Errorf("Failed to check flatpak updates.")
+		l.log.Warnf("err: %+v", err)
+		l.warns = append(l.warns, err)
+		// Only log this error.
+		return
+	}
+
+	scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		ss := strings.Fields(line)
+
+		if len(ss) != 3 {
+			continue
+		}
+
+		updatableApp := flatpaks[ss[0]]
+		updatableApp.NewVersion = ss[2]
+		flatpaks[ss[0]] = updatableApp
+	}
 }
