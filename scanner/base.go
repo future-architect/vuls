@@ -1501,25 +1501,38 @@ func (l *base) pkgPs(getOwnerPkgs func([]string) ([]string, error)) error {
 	return nil
 }
 
-func (l *base) scanSnaps() error {
-	l.log.Info("Scanning Snap packages.")
-	cmd := util.PrependProxyEnv("snap list")
-	r := l.exec(cmd, noSudo)
+func (l *base) isSnapInstalled() bool {
+	r := l.exec("snap version", noSudo)
+	return r.isSuccess()
+}
 
-	if !r.isSuccess() {
-		return xerrors.Errorf("Scanning snaps failed.")
+func (l *base) scanSnaps() error {
+	if !l.isSnapInstalled() {
+		return nil
 	}
 
-	l.Snaps = l.parseSnapList(r.Stdout)
+	l.log.Info("Scanning Snap packages.")
+	snaps, err := l.parseSnapList()
+	if err != nil {
+		return err
+	}
+
+	l.Snaps = snaps
 
 	// Snaps update automatically, therefore we do not check for updates.
 
 	return nil
 }
 
-func (l *base) parseSnapList(stdout string) models.Snaps {
+func (l *base) parseSnapList() (models.Snaps, error) {
+	cmd := util.PrependProxyEnv("snap list")
+	r := l.exec(cmd, noSudo)
+	if !r.isSuccess() {
+		return nil, xerrors.Errorf("Scanning snaps failed.")
+	}
+
 	snaps := models.Snaps{}
-	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
 
 	// Skip header line
 	scanner.Scan()
@@ -1535,5 +1548,5 @@ func (l *base) parseSnapList(stdout string) models.Snaps {
 		}
 	}
 
-	return snaps
+	return snaps, nil
 }
