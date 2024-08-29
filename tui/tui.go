@@ -812,16 +812,6 @@ func setChangelogLayout(g *gocui.Gui) error {
 			}
 		}
 
-		if len(vinfo.AlertDict.CISA) > 0 {
-			lines = append(lines, "\n",
-				"CISA Alert",
-				"===========",
-			)
-			for _, alert := range vinfo.AlertDict.CISA {
-				lines = append(lines, fmt.Sprintf("* [%s](%s)", alert.Title, alert.URL))
-			}
-		}
-
 		if len(vinfo.AlertDict.USCERT) > 0 {
 			lines = append(lines, "\n",
 				"USCERT Alert",
@@ -843,6 +833,28 @@ func setChangelogLayout(g *gocui.Gui) error {
 				} else {
 					lines = append(lines, fmt.Sprintf("* [JPCERT](%s)", alert.URL))
 				}
+			}
+		}
+
+		if len(vinfo.KEVs) > 0 {
+			lines = append(lines, "\n",
+				"Known Exploited Vulnerabilities",
+				"===============================",
+			)
+			for _, k := range vinfo.KEVs {
+				lines = append(lines,
+					fmt.Sprintf("* [%s] %s", k.Type, k.VulnerabilityName),
+					fmt.Sprintf("  - Description: %s", k.ShortDescription),
+					fmt.Sprintf("  - Known To Be Used in Ransomware Campaigns?: %s", k.KnownRansomwareCampaignUse),
+					fmt.Sprintf("  - Action: %s", k.RequiredAction),
+					fmt.Sprintf("  - Date Added / Due Date: %s / %s", k.DateAdded.Format("2006-01-02"), func() string {
+						if k.DueDate != nil {
+							return k.DueDate.Format("2006-01-02")
+						}
+						return ""
+					}()),
+					"\n",
+				)
 			}
 		}
 

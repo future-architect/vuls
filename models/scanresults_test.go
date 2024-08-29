@@ -225,10 +225,6 @@ func TestScanResult_Sort(t *testing.T) {
 								{Title: "a"},
 								{Title: "b"},
 							},
-							CISA: []Alert{
-								{Title: "a"},
-								{Title: "b"},
-							},
 						},
 					},
 				},
@@ -285,10 +281,6 @@ func TestScanResult_Sort(t *testing.T) {
 								{Title: "b"},
 							},
 							JPCERT: []Alert{
-								{Title: "a"},
-								{Title: "b"},
-							},
-							CISA: []Alert{
 								{Title: "a"},
 								{Title: "b"},
 							},
@@ -354,10 +346,6 @@ func TestScanResult_Sort(t *testing.T) {
 								{Title: "b"},
 								{Title: "a"},
 							},
-							CISA: []Alert{
-								{Title: "b"},
-								{Title: "a"},
-							},
 						},
 					},
 				},
@@ -414,10 +402,6 @@ func TestScanResult_Sort(t *testing.T) {
 								{Title: "b"},
 							},
 							JPCERT: []Alert{
-								{Title: "a"},
-								{Title: "b"},
-							},
-							CISA: []Alert{
 								{Title: "a"},
 								{Title: "b"},
 							},
@@ -529,6 +513,64 @@ func TestScanResult_Sort(t *testing.T) {
 									Cvss3Score: 3,
 									Cvss2Score: 1,
 								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "sort kev 1",
+			fields: fields{
+				ScannedCves: VulnInfos{
+					"CVE-0000-0000": VulnInfo{
+						KEVs: []KEV{
+							{Type: VulnCheckKEVType},
+							{Type: CISAKEVType},
+						},
+					},
+				},
+			},
+			expected: fields{
+				ScannedCves: VulnInfos{
+					"CVE-0000-0000": VulnInfo{
+						KEVs: []KEV{
+							{Type: CISAKEVType},
+							{Type: VulnCheckKEVType},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "sort kev 2",
+			fields: fields{
+				ScannedCves: VulnInfos{
+					"CVE-0000-0000": VulnInfo{
+						KEVs: []KEV{
+							{
+								Type:              CISAKEVType,
+								VulnerabilityName: "name 2",
+							},
+							{
+								Type:              CISAKEVType,
+								VulnerabilityName: "name 1",
+							},
+						},
+					},
+				},
+			},
+			expected: fields{
+				ScannedCves: VulnInfos{
+					"CVE-0000-0000": VulnInfo{
+						KEVs: []KEV{
+							{
+								Type:              CISAKEVType,
+								VulnerabilityName: "name 1",
+							},
+							{
+								Type:              CISAKEVType,
+								VulnerabilityName: "name 2",
 							},
 						},
 					},
