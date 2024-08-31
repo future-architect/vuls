@@ -17,7 +17,6 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	kevulndb "github.com/vulsio/go-kev/db"
-	kevulnmodels "github.com/vulsio/go-kev/models"
 	kevulnlog "github.com/vulsio/go-kev/utils"
 )
 
@@ -74,23 +73,78 @@ func FillWithKEVuln(r *models.ScanResult, cnf config.KEVulnConf, logOpts logging
 			return err
 		}
 		for _, res := range responses {
-			kevulns := []kevulnmodels.KEVuln{}
-			if err := json.Unmarshal([]byte(res.json), &kevulns); err != nil {
+			var kev kevulndb.Response
+			if err := json.Unmarshal([]byte(res.json), &kev); err != nil {
 				return err
 			}
 
-			alerts := []models.Alert{}
-			if len(kevulns) > 0 {
-				alerts = append(alerts, models.Alert{
-					Title: "Known Exploited Vulnerabilities Catalog",
-					URL:   "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
-					Team:  "cisa",
-				})
-			}
+			kevs := func() []models.KEV {
+				ks := make([]models.KEV, 0, len(kev.CISA)+len(kev.VulnCheck))
+				for _, k := range kev.CISA {
+					ks = append(ks, models.KEV{
+						Type:                       models.CISAKEVType,
+						VendorProject:              k.VendorProject,
+						Product:                    k.Product,
+						VulnerabilityName:          k.VulnerabilityName,
+						ShortDescription:           k.ShortDescription,
+						RequiredAction:             k.RequiredAction,
+						KnownRansomwareCampaignUse: k.KnownRansomwareCampaignUse,
+						DateAdded:                  k.DateAdded,
+						DueDate: func() *time.Time {
+							if k.DueDate == time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC) {
+								return nil
+							}
+							return &k.DueDate
+						}(),
+						CISA: &models.CISAKEV{
+							Note: k.Notes,
+						},
+					})
+				}
+				for _, k := range kev.VulnCheck {
+					ks = append(ks, models.KEV{
+						Type:                       models.VulnCheckKEVType,
+						VendorProject:              k.VendorProject,
+						Product:                    k.Product,
+						VulnerabilityName:          k.Name,
+						ShortDescription:           k.Description,
+						RequiredAction:             k.RequiredAction,
+						KnownRansomwareCampaignUse: k.KnownRansomwareCampaignUse,
+						DateAdded:                  k.DateAdded,
+						DueDate:                    k.DueDate,
+						VulnCheck: &models.VulnCheckKEV{
+							XDB: func() []models.VulnCheckXDB {
+								xdb := make([]models.VulnCheckXDB, 0, len(k.VulnCheckXDB))
+								for _, x := range k.VulnCheckXDB {
+									xdb = append(xdb, models.VulnCheckXDB{
+										XDBID:       x.XDBID,
+										XDBURL:      x.XDBURL,
+										DateAdded:   x.DateAdded,
+										ExploitType: x.ExploitType,
+										CloneSSHURL: x.CloneSSHURL,
+									})
+								}
+								return xdb
+							}(),
+							ReportedExploitation: func() []models.VulnCheckReportedExploitation {
+								es := make([]models.VulnCheckReportedExploitation, 0, len(k.VulnCheckReportedExploitation))
+								for _, e := range k.VulnCheckReportedExploitation {
+									es = append(es, models.VulnCheckReportedExploitation{
+										URL:       e.URL,
+										DateAdded: e.DateAdded,
+									})
+								}
+								return es
+							}(),
+						},
+					})
+				}
+				return ks
+			}()
 
 			v, ok := r.ScannedCves[res.request.cveID]
 			if ok {
-				v.AlertDict.CISA = alerts
+				v.KEVs = kevs
 				nKEV++
 			}
 			r.ScannedCves[res.request.cveID] = v
@@ -100,24 +154,78 @@ func FillWithKEVuln(r *models.ScanResult, cnf config.KEVulnConf, logOpts logging
 			if cveID == "" {
 				continue
 			}
-			kevulns, err := client.driver.GetKEVulnByCveID(cveID)
+			kev, err := client.driver.GetKEVByCveID(cveID)
 			if err != nil {
-				return err
+				return xerrors.Errorf("Failed to get kev by %s", cveID)
 			}
-			if len(kevulns) == 0 {
+			if len(kev.CISA) == 0 && len(kev.VulnCheck) == 0 {
 				continue
 			}
 
-			alerts := []models.Alert{}
-			if len(kevulns) > 0 {
-				alerts = append(alerts, models.Alert{
-					Title: "Known Exploited Vulnerabilities Catalog",
-					URL:   "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
-					Team:  "cisa",
-				})
-			}
+			vuln.KEVs = func() []models.KEV {
+				ks := make([]models.KEV, 0, len(kev.CISA)+len(kev.VulnCheck))
+				for _, k := range kev.CISA {
+					ks = append(ks, models.KEV{
+						Type:                       models.CISAKEVType,
+						VendorProject:              k.VendorProject,
+						Product:                    k.Product,
+						VulnerabilityName:          k.VulnerabilityName,
+						ShortDescription:           k.ShortDescription,
+						RequiredAction:             k.RequiredAction,
+						KnownRansomwareCampaignUse: k.KnownRansomwareCampaignUse,
+						DateAdded:                  k.DateAdded,
+						DueDate: func() *time.Time {
+							if k.DueDate == time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC) {
+								return nil
+							}
+							return &k.DueDate
+						}(),
+						CISA: &models.CISAKEV{
+							Note: k.Notes,
+						},
+					})
+				}
+				for _, k := range kev.VulnCheck {
+					ks = append(ks, models.KEV{
+						Type:                       models.VulnCheckKEVType,
+						VendorProject:              k.VendorProject,
+						Product:                    k.Product,
+						VulnerabilityName:          k.Name,
+						ShortDescription:           k.Description,
+						RequiredAction:             k.RequiredAction,
+						KnownRansomwareCampaignUse: k.KnownRansomwareCampaignUse,
+						DateAdded:                  k.DateAdded,
+						DueDate:                    k.DueDate,
+						VulnCheck: &models.VulnCheckKEV{
+							XDB: func() []models.VulnCheckXDB {
+								xdb := make([]models.VulnCheckXDB, 0, len(k.VulnCheckXDB))
+								for _, x := range k.VulnCheckXDB {
+									xdb = append(xdb, models.VulnCheckXDB{
+										XDBID:       x.XDBID,
+										XDBURL:      x.XDBURL,
+										DateAdded:   x.DateAdded,
+										ExploitType: x.ExploitType,
+										CloneSSHURL: x.CloneSSHURL,
+									})
+								}
+								return xdb
+							}(),
+							ReportedExploitation: func() []models.VulnCheckReportedExploitation {
+								es := make([]models.VulnCheckReportedExploitation, 0, len(k.VulnCheckReportedExploitation))
+								for _, e := range k.VulnCheckReportedExploitation {
+									es = append(es, models.VulnCheckReportedExploitation{
+										URL:       e.URL,
+										DateAdded: e.DateAdded,
+									})
+								}
+								return es
+							}(),
+						},
+					})
+				}
+				return ks
+			}()
 
-			vuln.AlertDict.CISA = alerts
 			nKEV++
 			r.ScannedCves[cveID] = vuln
 		}

@@ -204,6 +204,7 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 				r.FormatUpdatablePkgsSummary(),
 				r.FormatExploitCveSummary(),
 				r.FormatMetasploitCveSummary(),
+				r.FormatKEVCveSummary(),
 				r.FormatAlertSummary(),
 			}
 		} else {
@@ -283,6 +284,17 @@ No CVE-IDs are found in updatable packages.
 			// fmt.Sprintf("%4.1f", v2max),
 			// fmt.Sprintf("%4.1f", v3max),
 			exploits,
+			func() string {
+				if len(vinfo.KEVs) == 0 {
+					return ""
+				}
+				if slices.ContainsFunc(vinfo.KEVs, func(e models.KEV) bool {
+					return e.Type == models.CISAKEVType
+				}) {
+					return string(models.CISAKEVType)
+				}
+				return string(models.VulnCheckKEVType)
+			}(),
 			fmt.Sprintf("%9s", vinfo.AlertDict.FormatSource()),
 			fmt.Sprintf("%7s", vinfo.PatchStatus(r.Packages)),
 			packnames,
@@ -298,6 +310,7 @@ No CVE-IDs are found in updatable packages.
 		// "v3",
 		// "v2",
 		"PoC",
+		"KEV",
 		"Alert",
 		"Fixed",
 		// "NVD",
@@ -564,10 +577,6 @@ No CVE-IDs are found in updatable packages.
 			return 0
 		})
 		data = append(data, ds...)
-
-		for _, alert := range vuln.AlertDict.CISA {
-			data = append(data, []string{"CISA Alert", alert.URL})
-		}
 
 		for _, alert := range vuln.AlertDict.JPCERT {
 			data = append(data, []string{"JPCERT Alert", alert.URL})

@@ -197,13 +197,14 @@ func (r ScanResult) FormatTextReportHeader() string {
 		pkgs = fmt.Sprintf("%s, %d libs", pkgs, r.LibraryScanners.Total())
 	}
 
-	return fmt.Sprintf("%s\n%s\n%s\n%s, %s, %s, %s\n%s\n",
+	return fmt.Sprintf("%s\n%s\n%s\n%s, %s, %s, %s, %s\n%s\n",
 		r.ServerInfo(),
 		buf.String(),
 		r.ScannedCves.FormatCveSummary(),
 		r.ScannedCves.FormatFixedStatus(r.Packages),
 		r.FormatExploitCveSummary(),
 		r.FormatMetasploitCveSummary(),
+		r.FormatKEVCveSummary(),
 		r.FormatAlertSummary(),
 		pkgs)
 }
@@ -251,15 +252,22 @@ func (r ScanResult) FormatMetasploitCveSummary() string {
 	return fmt.Sprintf("%d exploits", nMetasploitCve)
 }
 
+// FormatKEVCveSummary returns a summary of kev cve
+func (r ScanResult) FormatKEVCveSummary() string {
+	nKEVCve := 0
+	for _, vuln := range r.ScannedCves {
+		if 0 < len(vuln.KEVs) {
+			nKEVCve++
+		}
+	}
+	return fmt.Sprintf("%d kevs", nKEVCve)
+}
+
 // FormatAlertSummary returns a summary of CERT alerts
 func (r ScanResult) FormatAlertSummary() string {
-	cisaCnt := 0
 	uscertCnt := 0
 	jpcertCnt := 0
 	for _, vuln := range r.ScannedCves {
-		if len(vuln.AlertDict.CISA) > 0 {
-			cisaCnt += len(vuln.AlertDict.CISA)
-		}
 		if len(vuln.AlertDict.USCERT) > 0 {
 			uscertCnt += len(vuln.AlertDict.USCERT)
 		}
@@ -267,7 +275,7 @@ func (r ScanResult) FormatAlertSummary() string {
 			jpcertCnt += len(vuln.AlertDict.JPCERT)
 		}
 	}
-	return fmt.Sprintf("cisa: %d, uscert: %d, jpcert: %d alerts", cisaCnt, uscertCnt, jpcertCnt)
+	return fmt.Sprintf("uscert: %d, jpcert: %d alerts", uscertCnt, jpcertCnt)
 }
 
 func (r ScanResult) isDisplayUpdatableNum(mode config.ScanMode) bool {
@@ -425,6 +433,12 @@ func (r *ScanResult) SortForJSONOutput() {
 		sort.Slice(v.Mitigations, func(i, j int) bool {
 			return v.Mitigations[i].URL < v.Mitigations[j].URL
 		})
+		sort.Slice(v.KEVs, func(i, j int) bool {
+			if v.KEVs[i].Type == v.KEVs[j].Type {
+				return v.KEVs[i].VulnerabilityName < v.KEVs[j].VulnerabilityName
+			}
+			return v.KEVs[i].Type < v.KEVs[j].Type
+		})
 
 		v.CveContents.Sort()
 
@@ -433,9 +447,6 @@ func (r *ScanResult) SortForJSONOutput() {
 		})
 		sort.Slice(v.AlertDict.JPCERT, func(i, j int) bool {
 			return v.AlertDict.JPCERT[i].Title < v.AlertDict.JPCERT[j].Title
-		})
-		sort.Slice(v.AlertDict.CISA, func(i, j int) bool {
-			return v.AlertDict.CISA[i].Title < v.AlertDict.CISA[j].Title
 		})
 		r.ScannedCves[k] = v
 	}

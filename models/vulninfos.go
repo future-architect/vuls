@@ -266,6 +266,7 @@ type VulnInfo struct {
 	Exploits             []Exploit            `json:"exploits,omitempty"`
 	Metasploits          []Metasploit         `json:"metasploits,omitempty"`
 	Mitigations          []Mitigation         `json:"mitigations,omitempty"`
+	KEVs                 []KEV                `json:"kevs,omitempty"`
 	Ctis                 []string             `json:"ctis,omitempty"`
 	AlertDict            AlertDict            `json:"alertDict,omitempty"`
 	CpeURIs              []string             `json:"cpeURIs,omitempty"` // CpeURIs related to this CVE defined in config.toml
@@ -910,28 +911,74 @@ type Mitigation struct {
 	URL            string         `json:"url,omitempty"`
 }
 
-// AlertDict has target cve JPCERT, USCERT and CISA alert data
+// KEVType :
+type KEVType string
+
+const (
+	CISAKEVType      KEVType = "cisa"
+	VulnCheckKEVType KEVType = "vulncheck"
+)
+
+// KEV has CISA or VulnCheck Known Exploited Vulnerability
+type KEV struct {
+	Type                       KEVType    `json:"type,omitempty"`
+	VendorProject              string     `json:"vendor_project,omitempty"`
+	Product                    string     `json:"product,omitempty"`
+	VulnerabilityName          string     `json:"vulnerability_name,omitempty"`
+	ShortDescription           string     `json:"short_description,omitempty"`
+	RequiredAction             string     `json:"required_action,omitempty"`
+	KnownRansomwareCampaignUse string     `json:"known_ransomware_campaign_use,omitempty"`
+	DateAdded                  time.Time  `json:"date_added,omitempty"`
+	DueDate                    *time.Time `json:"due_date,omitempty"`
+
+	CISA      *CISAKEV      `json:"cisa,omitempty"`
+	VulnCheck *VulnCheckKEV `json:"vulncheck,omitempty"`
+}
+
+// CISAKEV has CISA KEV only data
+type CISAKEV struct {
+	Note string `json:"note,omitempty"`
+}
+
+// VulnCheckKEV has VulnCheck KEV only data
+type VulnCheckKEV struct {
+	XDB                  []VulnCheckXDB                  `json:"xdb,omitempty"`
+	ReportedExploitation []VulnCheckReportedExploitation `json:"reported_exploitation,omitempty"`
+}
+
+// VulnCheckXDB :
+type VulnCheckXDB struct {
+	XDBID       string    `json:"xdb_id,omitempty"`
+	XDBURL      string    `json:"xdb_url,omitempty"`
+	DateAdded   time.Time `json:"date_added,omitempty"`
+	ExploitType string    `json:"exploit_type,omitempty"`
+	CloneSSHURL string    `json:"clone_ssh_url,omitempty"`
+}
+
+// VulnCheckReportedExploitation :
+type VulnCheckReportedExploitation struct {
+	URL       string    `json:"url,omitempty"`
+	DateAdded time.Time `json:"date_added,omitempty"`
+}
+
+// AlertDict has target cve JPCERT and USCERT alert data
 type AlertDict struct {
-	CISA   []Alert `json:"cisa"`
+	CISA   []Alert `json:"cisa"` // backwards compatibility: for CISA KEV in old JSON
 	JPCERT []Alert `json:"jpcert"`
 	USCERT []Alert `json:"uscert"`
 }
 
 // IsEmpty checks if the content of AlertDict is empty
 func (a AlertDict) IsEmpty() bool {
-	return len(a.CISA) == 0 && len(a.JPCERT) == 0 && len(a.USCERT) == 0
+	return len(a.JPCERT) == 0 && len(a.USCERT) == 0
 }
 
 // FormatSource returns which source has this alert
 func (a AlertDict) FormatSource() string {
-	var s []string
-	if len(a.CISA) != 0 {
-		s = append(s, "CISA")
-	}
 	if len(a.USCERT) != 0 || len(a.JPCERT) != 0 {
-		s = append(s, "CERT")
+		return "CERT"
 	}
-	return strings.Join(s, "/")
+	return ""
 }
 
 // Confidences is a list of Confidence
