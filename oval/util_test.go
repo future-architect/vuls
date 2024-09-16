@@ -2364,6 +2364,88 @@ func TestIsOvalDefAffected(t *testing.T) {
 			fixState:    "Affected",
 			fixedIn:     "",
 		},
+		{
+			in: in{
+				family:  constant.SUSEEnterpriseServer,
+				release: "12.3",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:    "kernel-default",
+							Version: "0:4.4.140-96.98",
+						},
+					},
+				},
+				req: request{
+					packName:       "kernel-default",
+					versionRelease: "0:4.4.140-96.97",
+					arch:           "x86_64",
+				},
+			},
+			affected: true,
+			fixedIn:  "0:4.4.140-96.98",
+		},
+		{
+			in: in{
+				family:  constant.SUSEEnterpriseServer,
+				release: "12.3",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:    "kernel-default",
+							Version: "0:4.4.140-96.97.TDC.1",
+						},
+					},
+				},
+				req: request{
+					packName:       "kernel-default",
+					versionRelease: "0:4.4.140-96.97",
+					arch:           "x86_64",
+				},
+			},
+			affected: false,
+		},
+		{
+			in: in{
+				family:  constant.SUSEEnterpriseServer,
+				release: "12.3",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:    "kernel-default",
+							Version: "0:4.4.180-94.156.1",
+						},
+					},
+				},
+				req: request{
+					packName:       "kernel-default",
+					versionRelease: "0:4.4.140-96.126.TDC.1",
+					arch:           "x86_64",
+				},
+			},
+			affected: false,
+		},
+		{
+			in: in{
+				family:  constant.SUSEEnterpriseServer,
+				release: "12.3",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:    "kernel-default",
+							Version: "0:4.4.140-96.97.TDC.2",
+						},
+					},
+				},
+				req: request{
+					packName:       "kernel-default",
+					versionRelease: "0:4.4.140-96.97.TDC.1",
+					arch:           "x86_64",
+				},
+			},
+			affected: true,
+			fixedIn:  "0:4.4.140-96.97.TDC.2",
+		},
 	}
 
 	for i, tt := range tests {
