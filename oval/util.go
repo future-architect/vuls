@@ -406,9 +406,15 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family, release s
 			continue
 		}
 
-		// https://github.com/aquasecurity/trivy/blob/08cc14bd2171afdc1973c6d614dd0d1fb82b7623/pkg/detector/ospkg/oracle/oracle.go#L72-L77
-		if family == constant.Oracle && extractOracleKsplice(ovalPack.Version) != extractOracleKsplice(req.versionRelease) {
-			continue
+		switch family {
+		case constant.Oracle: // https://github.com/aquasecurity/trivy/blob/08cc14bd2171afdc1973c6d614dd0d1fb82b7623/pkg/detector/ospkg/oracle/oracle.go#L72-L77
+			if extractOracleKsplice(ovalPack.Version) != extractOracleKsplice(req.versionRelease) {
+				continue
+			}
+		case constant.SUSEEnterpriseServer:
+			if strings.Contains(ovalPack.Version, ".TDC.") != strings.Contains(req.versionRelease, ".TDC.") {
+				continue
+			}
 		}
 
 		// There is a modular package and a non-modular package with the same name. (e.g. fedora 35 community-mysql)
