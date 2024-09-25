@@ -1100,22 +1100,22 @@ var (
 	// OvalMatch is a ranking how confident the CVE-ID was detected correctly
 	OvalMatch = Confidence{100, OvalMatchStr, 0}
 
-	// RedHatAPIMatch ranking how confident the CVE-ID was detected correctly
+	// RedHatAPIMatch is a ranking how confident the CVE-ID was detected correctly
 	RedHatAPIMatch = Confidence{100, RedHatAPIStr, 0}
 
-	// DebianSecurityTrackerMatch ranking how confident the CVE-ID was detected correctly
+	// DebianSecurityTrackerMatch is a ranking how confident the CVE-ID was detected correctly
 	DebianSecurityTrackerMatch = Confidence{100, DebianSecurityTrackerMatchStr, 0}
 
-	// UbuntuAPIMatch ranking how confident the CVE-ID was detected correctly
+	// UbuntuAPIMatch is a ranking how confident the CVE-ID was detected correctly
 	UbuntuAPIMatch = Confidence{100, UbuntuAPIMatchStr, 0}
 
-	// WindowsUpdateSearch ranking how confident the CVE-ID was detected correctly
+	// WindowsUpdateSearch is a ranking how confident the CVE-ID was detected correctly
 	WindowsUpdateSearch = Confidence{100, WindowsUpdateSearchStr, 0}
 
-	// WindowsRoughMatch ranking how confident the CVE-ID was detected correctly
+	// WindowsRoughMatch is a ranking how confident the CVE-ID was detected correctly
 	WindowsRoughMatch = Confidence{30, WindowsRoughMatchStr, 0}
 
-	// TrivyMatch ranking how confident the CVE-ID was detected correctly
+	// TrivyMatch is a ranking how confident the CVE-ID was detected correctly
 	TrivyMatch = Confidence{100, TrivyMatchStr, 0}
 
 	// ChangelogExactMatch is a ranking how confident the CVE-ID was detected correctly
@@ -1133,7 +1133,7 @@ var (
 	// NvdExactVersionMatch is a ranking how confident the CVE-ID was detected correctly
 	NvdExactVersionMatch = Confidence{100, NvdExactVersionMatchStr, 1}
 
-	// NvdRoughVersionMatch NvdExactVersionMatch is a ranking how confident the CVE-ID was detected correctly
+	// NvdRoughVersionMatch is a ranking how confident the CVE-ID was detected correctly
 	NvdRoughVersionMatch = Confidence{80, NvdRoughVersionMatchStr, 1}
 
 	// NvdVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
@@ -1145,7 +1145,7 @@ var (
 	// FortinetExactVersionMatch is a ranking how confident the CVE-ID was detected correctly
 	FortinetExactVersionMatch = Confidence{100, FortinetExactVersionMatchStr, 1}
 
-	// FortinetRoughVersionMatch FortinetExactVersionMatch is a ranking how confident the CVE-ID was detected correctly
+	// FortinetRoughVersionMatch is a ranking how confident the CVE-ID was detected correctly
 	FortinetRoughVersionMatch = Confidence{80, FortinetRoughVersionMatchStr, 1}
 
 	// FortinetVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
