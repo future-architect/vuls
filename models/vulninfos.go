@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -717,8 +718,22 @@ func (v VulnInfo) AttackVector() string {
 
 // PatchStatus returns fixed or unfixed string
 func (v VulnInfo) PatchStatus(packs Packages) string {
+	if slices.Contains(v.Confidences, WindowsRoughMatch) {
+		return "unknown"
+	}
+
+	if slices.Contains(v.Confidences, WindowsUpdateSearch) {
+		if slices.ContainsFunc(v.AffectedPackages, func(e PackageFixStatus) bool { return e.FixState == "unknown" }) {
+			return "unknown"
+		}
+		if slices.ContainsFunc(v.AffectedPackages, func(e PackageFixStatus) bool { return e.FixState == "unfixed" }) || (len(v.AffectedPackages) == 0 && len(v.WindowsKBFixedIns) == 0) {
+			return "unfixed"
+		}
+		return "fixed"
+	}
+
 	// Vuls don't know patch status of the CPE
-	if len(v.CpeURIs) != 0 {
+	if len(v.CpeURIs) > 0 {
 		return ""
 	}
 
@@ -739,12 +754,6 @@ func (v VulnInfo) PatchStatus(packs Packages) string {
 			if pack.NewVersion == "" {
 				return "unknown"
 			}
-		}
-	}
-
-	for _, c := range v.Confidences {
-		if c == WindowsUpdateSearch && len(v.WindowsKBFixedIns) == 0 {
-			return "unfixed"
 		}
 	}
 
@@ -1059,6 +1068,9 @@ const (
 	// WindowsUpdateSearchStr :
 	WindowsUpdateSearchStr = "WindowsUpdateSearch"
 
+	// WindowsRoughMatchStr :
+	WindowsRoughMatchStr = "WindowsRoughMatch"
+
 	// TrivyMatchStr :
 	TrivyMatchStr = "TrivyMatch"
 
@@ -1099,6 +1111,9 @@ var (
 
 	// WindowsUpdateSearch ranking how confident the CVE-ID was detected correctly
 	WindowsUpdateSearch = Confidence{100, WindowsUpdateSearchStr, 0}
+
+	// WindowsRoughMatch ranking how confident the CVE-ID was detected correctly
+	WindowsRoughMatch = Confidence{30, WindowsRoughMatchStr, 0}
 
 	// TrivyMatch ranking how confident the CVE-ID was detected correctly
 	TrivyMatch = Confidence{100, TrivyMatchStr, 0}
