@@ -112,9 +112,11 @@ func (o *suse) checkScanMode() error {
 func (o *suse) checkDeps() error {
 	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckDeps(o.depsFast())
-	} else if o.getServerInfo().Mode.IsFastRoot() {
+	}
+	if o.getServerInfo().Mode.IsFastRoot() {
 		return o.execCheckDeps(o.depsFastRoot())
-	} else if o.getServerInfo().Mode.IsDeep() {
+	}
+	if o.getServerInfo().Mode.IsDeep() {
 		return o.execCheckDeps(o.depsDeep())
 	}
 	return xerrors.New("Unknown scan mode")
@@ -135,11 +137,11 @@ func (o *suse) depsDeep() []string {
 func (o *suse) checkIfSudoNoPasswd() error {
 	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsFast())
-	} else if o.getServerInfo().Mode.IsFastRoot() {
-		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsFastRoot())
-	} else {
-		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsDeep())
 	}
+	if o.getServerInfo().Mode.IsFastRoot() {
+		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsFastRoot())
+	}
+	return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsDeep())
 }
 
 func (o *suse) sudoNoPasswdCmdsFast() []cmd {

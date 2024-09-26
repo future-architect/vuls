@@ -371,9 +371,8 @@ func (o *redhatBase) execCheckDeps(packNames []string) error {
 	for _, name := range packNames {
 		cmd := "rpm -q " + name
 		if r := o.exec(cmd, noSudo); !r.isSuccess() {
-			msg := fmt.Sprintf("%s is not installed", name)
-			o.log.Errorf(msg)
-			return xerrors.New(msg)
+			o.log.Errorf("%s is not installed", name)
+			return xerrors.Errorf("%s is not installed", name)
 		}
 	}
 	o.log.Infof("Dependencies ... Pass")

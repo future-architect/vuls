@@ -4,7 +4,6 @@ package discover
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"time"
@@ -111,7 +110,7 @@ func executeSnmp2cpe(addr string, snmpVersion string, community string) (cpes ma
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert snmp2cpe result. err: %v", err)
 	}
-	if _, err := io.WriteString(stdin, string(result)); err != nil {
+	if _, err := stdin.Write(result); err != nil {
 		return nil, fmt.Errorf("failed to write to stdIn. err: %v", err)
 	}
 	stdin.Close()

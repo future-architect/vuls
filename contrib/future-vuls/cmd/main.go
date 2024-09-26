@@ -40,7 +40,7 @@ func main() {
 		Use:   "version",
 		Short: "Show version",
 		Long:  "Show version",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Printf("future-vuls-%s-%s\n", vulsConfig.Version, vulsConfig.Revision)
 		},
 	}
@@ -49,7 +49,7 @@ func main() {
 		Use:   "upload",
 		Short: "Upload to FutureVuls",
 		Long:  `Upload to FutureVuls`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			if len(serverUUID) == 0 {
 				serverUUID = os.Getenv("VULS_SERVER_UUID")
 			}
@@ -90,7 +90,7 @@ func main() {
 		Use:     "discover --cidr <CIDR_RANGE> --output <OUTPUT_FILE>",
 		Short:   "discover hosts with CIDR range. Run snmp2cpe on active host to get CPE. Default outputFile is ./discover_list.toml",
 		Example: "future-vuls discover --cidr 192.168.0.0/24 --output discover_list.toml",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			if len(outputFile) == 0 {
 				outputFile = config.DiscoverTomlFileName
 			}
@@ -122,7 +122,7 @@ func main() {
 		Use:     "add-cpe --token <VULS_TOKEN> --output <OUTPUT_FILE>",
 		Short:   "Create a pseudo server in Fvuls and register CPE. Default outputFile is ./discover_list.toml",
 		Example: "future-vuls add-cpe --token <VULS_TOKEN>",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			if len(token) == 0 {
 				token = os.Getenv("VULS_TOKEN")
 				if len(token) == 0 {

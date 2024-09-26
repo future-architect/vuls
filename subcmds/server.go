@@ -121,7 +121,7 @@ func (p *ServerCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...interface{}
 	http.Handle("/vuls", server.VulsHandler{
 		ToLocalFile: p.toLocalFile,
 	})
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprintf(w, "ok")
 	})
 	logging.Log.Infof("Listening on %s", p.listen)
