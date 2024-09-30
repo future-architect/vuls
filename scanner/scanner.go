@@ -264,6 +264,8 @@ func ParseInstalledPkgs(distro config.Distro, kernel models.Kernel, pkgList stri
 
 	var osType osTypeInterface
 	switch distro.Family {
+	case constant.Alpine:
+		osType = &alpine{base: base}
 	case constant.Debian, constant.Ubuntu, constant.Raspbian:
 		osType = &debian{base: base}
 	case constant.RedHat:

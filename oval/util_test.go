@@ -2446,6 +2446,48 @@ func TestIsOvalDefAffected(t *testing.T) {
 			affected: true,
 			fixedIn:  "0:4.4.140-96.97.TDC.2",
 		},
+		{
+			in: in{
+				family:  constant.Alpine,
+				release: "3.20",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:    "openssl",
+							Version: "3.3.2-r0",
+						},
+					},
+				},
+				req: request{
+					packName:       "openssl",
+					versionRelease: "3.3.1-r3",
+					arch:           "x86_64",
+				},
+			},
+			affected: false,
+		},
+		{
+			in: in{
+				family:  constant.Alpine,
+				release: "3.20",
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:    "openssl",
+							Version: "3.3.2-r0",
+						},
+					},
+				},
+				req: request{
+					packName:        "openssl",
+					versionRelease:  "3.3.1-r3",
+					binaryPackNames: []string{"openssl", "libssl3"},
+					isSrcPack:       true,
+				},
+			},
+			affected: true,
+			fixedIn:  "3.3.2-r0",
+		},
 	}
 
 	for i, tt := range tests {
