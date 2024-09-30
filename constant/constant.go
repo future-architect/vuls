@@ -5,6 +5,9 @@ package constant
 // Define them in the each package.
 
 const (
+	// Arch is
+	Arch = "arch"
+
 	// RedHat is
 	RedHat = "redhat"
 

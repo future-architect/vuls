@@ -444,6 +444,9 @@ const (
 	// RedHatAPI is RedHat
 	RedHatAPI CveContentType = "redhat_api"
 
+	// ArchLinuxSecurityTracker is Arch Linux security tracker
+	ArchLinuxSecurityTracker CveContentType = "arch_linux_security_tracker"
+
 	// DebianSecurityTracker is Debian Security tracker
 	DebianSecurityTracker CveContentType = "debian_security_tracker"
 
