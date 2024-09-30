@@ -36,8 +36,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 	}
 
 	if w.FormatOneLineText {
-		timestr := rs[0].ScannedAt.Format(time.RFC3339)
-		k := fmt.Sprintf(timestr + "/summary.txt")
+		k := fmt.Sprintf("%s/summary.txt", rs[0].ScannedAt.Format(time.RFC3339))
 		text := formatOneLineSummary(rs...)
 		b := []byte(text)
 		if err := w.createBlockBlob(cli, k, b, w.Gzip); err != nil {

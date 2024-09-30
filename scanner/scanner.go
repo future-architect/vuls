@@ -836,7 +836,6 @@ func (s Scanner) checkDependencies() {
 	parallelExec(func(o osTypeInterface) error {
 		return o.checkDeps()
 	}, s.TimeoutSec)
-	return
 }
 
 // checkIfSudoNoPasswd checks whether vuls can sudo with nopassword via SSH
@@ -844,7 +843,6 @@ func (s Scanner) checkIfSudoNoPasswd() {
 	parallelExec(func(o osTypeInterface) error {
 		return o.checkIfSudoNoPasswd()
 	}, s.TimeoutSec)
-	return
 }
 
 // detectPlatform detects the platform of each servers.

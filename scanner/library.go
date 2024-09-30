@@ -12,7 +12,7 @@ import (
 
 func convertLibWithScanner(apps []ftypes.Application) ([]models.LibraryScanner, error) {
 	for i := range apps {
-		apps[i].Packages = lo.Filter(apps[i].Packages, func(lib ftypes.Package, index int) bool {
+		apps[i].Packages = lo.Filter(apps[i].Packages, func(lib ftypes.Package, _ int) bool {
 			return !lib.Dev
 		})
 	}

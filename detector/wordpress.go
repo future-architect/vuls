@@ -313,15 +313,16 @@ func httpRequest(url, token string) (string, error) {
 			fmt.Sprintf("Failed to access to wpscan.com. err: %s", err))
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode == 200 {
+	switch resp.StatusCode {
+	case 200:
 		return string(body), nil
-	} else if resp.StatusCode == 404 {
+	case 404:
 		// This package is not in wpscan
 		return "", nil
-	} else if resp.StatusCode == 429 {
+	case 429:
 		return "", errof.New(errof.ErrWpScanAPILimitExceeded,
 			fmt.Sprintf("wpscan.com API limit exceeded: %+v", resp.Status))
-	} else {
+	default:
 		logging.Log.Warnf("wpscan.com unknown status code: %+v", resp.Status)
 		return "", nil
 	}

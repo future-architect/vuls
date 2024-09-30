@@ -221,7 +221,7 @@ systemd (228-5) unstable; urgency=medium`,
 		aCveIDs, aPack := d.getCveIDsFromChangelog(tt.in[2], tt.in[0], tt.in[1])
 		if len(aCveIDs) != len(tt.cveIDs) {
 			t.Errorf("[%d] Len of return array aren't same. expected %#v, actual %#v", i, tt.cveIDs, aCveIDs)
-			t.Errorf(pp.Sprintf("%s", tt.in))
+			t.Error(pp.Sprintf("%s", tt.in))
 			continue
 		}
 		for j := range tt.cveIDs {

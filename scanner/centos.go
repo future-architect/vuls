@@ -36,11 +36,11 @@ func (o *centos) checkScanMode() error {
 func (o *centos) checkDeps() error {
 	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckDeps(o.depsFast())
-	} else if o.getServerInfo().Mode.IsFastRoot() {
-		return o.execCheckDeps(o.depsFastRoot())
-	} else {
-		return o.execCheckDeps(o.depsDeep())
 	}
+	if o.getServerInfo().Mode.IsFastRoot() {
+		return o.execCheckDeps(o.depsFastRoot())
+	}
+	return o.execCheckDeps(o.depsDeep())
 }
 
 func (o *centos) depsFast() []string {
@@ -70,11 +70,11 @@ func (o *centos) depsDeep() []string {
 func (o *centos) checkIfSudoNoPasswd() error {
 	if o.getServerInfo().Mode.IsFast() {
 		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsFast())
-	} else if o.getServerInfo().Mode.IsFastRoot() {
-		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsFastRoot())
-	} else {
-		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsDeep())
 	}
+	if o.getServerInfo().Mode.IsFastRoot() {
+		return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsFastRoot())
+	}
+	return o.execCheckIfSudoNoPasswd(o.sudoNoPasswdCmdsDeep())
 }
 
 func (o *centos) sudoNoPasswdCmdsFast() []cmd {

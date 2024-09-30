@@ -26,7 +26,7 @@ func main() {
 		Use:   "parse",
 		Short: "Parse trivy json to vuls results",
 		Long:  `Parse trivy json to vuls results`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			jsonFilePath := filepath.Join(jsonDir, jsonFileName)
 			var trivyJSON []byte
 			if stdIn {
@@ -67,7 +67,7 @@ func main() {
 		Use:   "version",
 		Short: "Show version",
 		Long:  "Show version",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Printf("trivy-to-vuls-%s-%s\n", config.Version, config.Revision)
 		},
 	}

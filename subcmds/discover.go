@@ -43,7 +43,7 @@ func (p *DiscoverCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface
 	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 	// validate
 	if len(f.Args()) == 0 {
-		logging.Log.Errorf("Usage: " + p.Usage())
+		logging.Log.Errorf("Usage: %s", p.Usage())
 		return subcommands.ExitUsageError
 	}
 
