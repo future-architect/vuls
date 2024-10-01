@@ -389,6 +389,10 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family, release s
 		}
 	}
 
+	if family == constant.Alpine && !req.isSrcPack {
+		return false, false, "", "", nil
+	}
+
 	for _, ovalPack := range def.AffectedPacks {
 		if req.packName != ovalPack.Name {
 			continue
