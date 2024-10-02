@@ -638,7 +638,9 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 			if val, ok := r.ScannedCves[detail.CveID]; ok {
 				val.CpeURIs = util.AppendIfMissing(val.CpeURIs, cpe.CpeURI)
 				val.Confidences.AppendIfMissing(maxConfidence)
-				val.DistroAdvisories = advisories
+				for _, adv := range advisories {
+					val.DistroAdvisories.AppendIfMissing(&adv)
+				}
 				r.ScannedCves[detail.CveID] = val
 			} else {
 				v := models.VulnInfo{
