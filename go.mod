@@ -48,13 +48,13 @@ require (
 	github.com/samber/lo v1.47.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.1
-	github.com/vulsio/go-cti v0.0.5-0.20240318121747-822b3ef289cb
-	github.com/vulsio/go-cve-dictionary v0.10.2-0.20240703055211-dbc168152e90
-	github.com/vulsio/go-exploitdb v0.4.7-0.20240318122115-ccb3abc151a1
-	github.com/vulsio/go-kev v0.1.4-0.20240830055848-169d68089b5c
-	github.com/vulsio/go-msfdb v0.2.4-0.20240318121704-8bfc812656dc
-	github.com/vulsio/gost v0.4.6-0.20240501065222-d47d2e716bfa
-	github.com/vulsio/goval-dictionary v0.9.6-0.20240625074017-1da5dfb8b28a
+	github.com/vulsio/go-cti v0.1.0
+	github.com/vulsio/go-cve-dictionary v0.11.0
+	github.com/vulsio/go-exploitdb v0.5.0
+	github.com/vulsio/go-kev v0.2.0
+	github.com/vulsio/go-msfdb v0.3.0
+	github.com/vulsio/gost v0.5.0
+	github.com/vulsio/goval-dictionary v0.11.0
 	go.etcd.io/bbolt v1.3.11
 	golang.org/x/exp v0.0.0-20240823005443-9b4947da3948
 	golang.org/x/oauth2 v0.23.0
@@ -94,7 +94,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/ProtonMail/go-crypto v1.1.0-alpha.2 // indirect
-	github.com/PuerkitoBio/goquery v1.9.2 // indirect
+	github.com/PuerkitoBio/goquery v1.10.0 // indirect
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/agnivade/levenshtein v1.1.1 // indirect
@@ -128,7 +128,7 @@ require (
 	github.com/bitnami/go-version v0.0.0-20231130084017-bb00604d650c // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
-	github.com/briandowns/spinner v1.23.0 // indirect
+	github.com/briandowns/spinner v1.23.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chai2010/gettext-go v1.0.2 // indirect
@@ -357,11 +357,11 @@ require (
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.26.0 // indirect
+	golang.org/x/crypto v0.27.0 // indirect
 	golang.org/x/mod v0.20.0 // indirect
-	golang.org/x/net v0.28.0 // indirect
-	golang.org/x/sys v0.24.0 // indirect
-	golang.org/x/term v0.23.0 // indirect
+	golang.org/x/net v0.29.0 // indirect
+	golang.org/x/sys v0.25.0 // indirect
+	golang.org/x/term v0.24.0 // indirect
 	golang.org/x/time v0.6.0 // indirect
 	golang.org/x/tools v0.24.0 // indirect
 	google.golang.org/api v0.172.0 // indirect
