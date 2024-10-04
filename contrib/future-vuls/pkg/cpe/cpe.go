@@ -5,12 +5,13 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/BurntSushi/toml"
+
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/config"
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/fvuls"
-	"golang.org/x/exp/slices"
 )
 
 // AddCpeConfig ...

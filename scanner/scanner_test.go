@@ -4,9 +4,8 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"slices"
 	"testing"
-
-	"golang.org/x/exp/slices"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
@@ -170,8 +169,7 @@ Hyper-V Requirements:      VM Monitor Mode Extensions: Yes
 					Version: "10.0.19044",
 				},
 				WindowsKB: &models.WindowsKB{
-					Applied:   []string{"5012117", "4562830", "5003791", "5007401", "5012599", "5011651", "5005699"},
-					Unapplied: []string{},
+					Applied: []string{"5012117", "4562830", "5003791", "5007401", "5012599", "5011651", "5005699"},
 				},
 			},
 		},

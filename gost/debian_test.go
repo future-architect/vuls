@@ -6,9 +6,8 @@ package gost
 import (
 	"cmp"
 	"reflect"
+	"slices"
 	"testing"
-
-	"golang.org/x/exp/slices"
 
 	"github.com/future-architect/vuls/models"
 	gostmodels "github.com/vulsio/gost/models"

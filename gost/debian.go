@@ -7,11 +7,11 @@ import (
 	"cmp"
 	"encoding/json"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	debver "github.com/knqyf263/go-deb-version"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/constant"
@@ -111,7 +111,7 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixed bool) ([]st
 					for _, s := range append(strings.Split(content.cveContent.Cvss3Severity, "|"), strings.Split(c.cveContent.Cvss3Severity, "|")...) {
 						m[s] = struct{}{}
 					}
-					ss := maps.Keys(m)
+					ss := slices.Collect(maps.Keys(m))
 					slices.SortFunc(ss, deb.CompareSeverity)
 					severty := strings.Join(ss, "|")
 					content.cveContent.Cvss2Severity = severty
@@ -156,7 +156,7 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixed bool) ([]st
 					for _, s := range append(strings.Split(content.cveContent.Cvss3Severity, "|"), strings.Split(c.cveContent.Cvss3Severity, "|")...) {
 						m[s] = struct{}{}
 					}
-					ss := maps.Keys(m)
+					ss := slices.Collect(maps.Keys(m))
 					slices.SortFunc(ss, deb.CompareSeverity)
 					severty := strings.Join(ss, "|")
 					content.cveContent.Cvss2Severity = severty
@@ -192,7 +192,7 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixed bool) ([]st
 		r.ScannedCves[content.cveContent.CveID] = v
 	}
 
-	return maps.Keys(detects), nil
+	return slices.Collect(maps.Keys(detects)), nil
 }
 
 func (deb Debian) detect(cves map[string]gostmodels.DebianCVE, srcPkg models.SrcPackage, runningKernel models.Kernel) []cveContent {
@@ -268,7 +268,7 @@ func (deb Debian) ConvertToModel(cve *gostmodels.DebianCVE) *models.CveContent {
 			m[r.Urgency] = struct{}{}
 		}
 	}
-	ss := maps.Keys(m)
+	ss := slices.Collect(maps.Keys(m))
 	slices.SortFunc(ss, deb.CompareSeverity)
 	severity := strings.Join(ss, "|")
 

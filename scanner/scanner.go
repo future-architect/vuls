@@ -2,16 +2,17 @@ package scanner
 
 import (
 	"fmt"
+	"maps"
 	"math/rand"
 	"net/http"
 	"os"
 	ex "os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
-	"golang.org/x/exp/maps"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/cache"
@@ -207,7 +208,7 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 			RunningKernel: models.Kernel{
 				Version: kernelVersion,
 			},
-			WindowsKB:   &models.WindowsKB{Applied: maps.Keys(applied), Unapplied: maps.Keys(unapplied)},
+			WindowsKB:   &models.WindowsKB{Applied: slices.Collect(maps.Keys(applied)), Unapplied: slices.Collect(maps.Keys(unapplied))},
 			ScannedCves: models.VulnInfos{},
 		}, nil
 	default:

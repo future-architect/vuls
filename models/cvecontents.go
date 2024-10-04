@@ -3,11 +3,10 @@ package models
 import (
 	"cmp"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"time"
-
-	"golang.org/x/exp/maps"
 
 	"github.com/future-architect/vuls/constant"
 )
@@ -218,7 +217,7 @@ func (v CveContents) UniqCweIDs(myFamily string) []CveContentStr {
 	for _, cwes := range v.CweIDs(myFamily) {
 		uniq[cwes.Value] = cwes
 	}
-	return maps.Values(uniq)
+	return slices.Collect(maps.Values(uniq))
 }
 
 // CveContentSSVC has CveContentType and SSVC

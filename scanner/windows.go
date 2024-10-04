@@ -3,12 +3,13 @@ package scanner
 import (
 	"bufio"
 	"fmt"
+	"maps"
 	"net"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
-	"golang.org/x/exp/maps"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
@@ -1199,7 +1200,7 @@ func (w *windows) scanKBs() (*models.WindowsKB, error) {
 		unapplied[kb] = struct{}{}
 	}
 
-	return &models.WindowsKB{Applied: maps.Keys(applied), Unapplied: maps.Keys(unapplied)}, nil
+	return &models.WindowsKB{Applied: slices.Collect(maps.Keys(applied)), Unapplied: slices.Collect(maps.Keys(unapplied))}, nil
 }
 
 func (w *windows) parseGetHotfix(stdout string) ([]string, error) {
@@ -1305,7 +1306,7 @@ func (w *windows) parseWindowsUpdateHistory(stdout string) ([]string, error) {
 		}
 	}
 
-	return maps.Keys(kbs), nil
+	return slices.Collect(maps.Keys(kbs)), nil
 }
 
 type windowsRelease struct {

@@ -6,10 +6,10 @@ package detector
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
-	"golang.org/x/exp/slices"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
