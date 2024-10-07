@@ -3,6 +3,8 @@ package sbom
 import (
 	"bytes"
 	"fmt"
+	"maps"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -10,7 +12,6 @@ import (
 	cdx "github.com/CycloneDX/cyclonedx-go"
 	"github.com/google/uuid"
 	"github.com/package-url/packageurl-go"
-	"golang.org/x/exp/maps"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/constant"
@@ -560,7 +561,7 @@ func cdxCWEs(cveContents models.CveContents) *[]int {
 			}
 		}
 	}
-	cweIDs := maps.Keys(m)
+	cweIDs := slices.Collect(maps.Keys(m))
 	return &cweIDs
 }
 

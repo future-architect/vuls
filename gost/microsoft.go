@@ -6,7 +6,9 @@ package gost
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -14,8 +16,6 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/hashicorp/go-version"
 	"github.com/parnurzeal/gorequest"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/logging"
@@ -137,7 +137,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 		default:
 		}
 	}
-	filtered = unique(append(filtered, maps.Keys(m)...))
+	filtered = unique(append(filtered, slices.Collect(maps.Keys(m))...))
 
 	var cves map[string]gostmodels.MicrosoftCVE
 	if ms.driver == nil {
@@ -294,7 +294,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			CveContents:       models.NewCveContents(*cveCont),
 			Mitigations:       mitigations,
 			AffectedPackages:  stats,
-			WindowsKBFixedIns: maps.Keys(uniqKB),
+			WindowsKBFixedIns: slices.Collect(maps.Keys(uniqKB)),
 		}
 	}
 	return nCVEs, nil

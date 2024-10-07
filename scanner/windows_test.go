@@ -2,11 +2,11 @@ package scanner
 
 import (
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
-	"golang.org/x/exp/slices"
 )
 
 func Test_parseSystemInfo(t *testing.T) {

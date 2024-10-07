@@ -6,11 +6,11 @@ package gost
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
 	debver "github.com/knqyf263/go-deb-version"
-	"golang.org/x/exp/maps"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/constant"
@@ -213,7 +213,7 @@ func (ubu Ubuntu) detectCVEsWithFixState(r *models.ScanResult, fixed bool) ([]st
 		r.ScannedCves[content.cveContent.CveID] = v
 	}
 
-	return maps.Keys(detects), nil
+	return slices.Collect(maps.Keys(detects)), nil
 }
 
 func (ubu Ubuntu) detect(cves map[string]gostmodels.UbuntuCVE, fixed bool, srcPkg models.SrcPackage) []cveContent {

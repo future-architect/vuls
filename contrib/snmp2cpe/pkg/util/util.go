@@ -1,6 +1,9 @@
 package util
 
-import "golang.org/x/exp/maps"
+import (
+	"maps"
+	"slices"
+)
 
 // Unique return unique elements
 func Unique[T comparable](s []T) []T {
@@ -8,5 +11,5 @@ func Unique[T comparable](s []T) []T {
 	for _, v := range s {
 		m[v] = struct{}{}
 	}
-	return maps.Keys(m)
+	return slices.Collect(maps.Keys(m))
 }

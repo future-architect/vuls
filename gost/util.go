@@ -4,13 +4,14 @@
 package gost
 
 import (
+	"maps"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff"
 	"github.com/parnurzeal/gorequest"
-	"golang.org/x/exp/maps"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/logging"
@@ -191,5 +192,5 @@ func unique[T comparable](s []T) []T {
 	for _, v := range s {
 		m[v] = struct{}{}
 	}
-	return maps.Keys(m)
+	return slices.Collect(maps.Keys(m))
 }
