@@ -7,14 +7,18 @@ package javadb
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/aquasecurity/trivy-java-db/pkg/db"
 	"github.com/aquasecurity/trivy/pkg/dependency/parser/java/jar"
 	"github.com/aquasecurity/trivy/pkg/fanal/types"
+	trivyjavadb "github.com/aquasecurity/trivy/pkg/javadb"
 	"github.com/aquasecurity/trivy/pkg/oci"
+	"github.com/google/go-containerregistry/pkg/name"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
@@ -37,33 +41,78 @@ func UpdateJavaDB(trivyOpts config.TrivyOpts, noProgress bool) error {
 		}
 	}
 
-	if (meta.Version != db.SchemaVersion || meta.NextUpdate.Before(time.Now().UTC())) && !trivyOpts.TrivySkipJavaDBUpdate {
-		// Download DB
-		logging.Log.Infof("Trivy Java DB Repository: %s", trivyOpts.TrivyJavaDBRepository)
-		logging.Log.Info("Downloading Trivy Java DB...")
+	if trivyOpts.TrivySkipJavaDBUpdate {
+		return nil
+	}
+	if meta.Version == db.SchemaVersion && isNewDB(meta) {
+		return nil
+	}
 
-		var a *oci.Artifact
-		if a, err = oci.NewArtifact(trivyOpts.TrivyJavaDBRepository, noProgress, types.RegistryOptions{}); err != nil {
-			return xerrors.Errorf("Failed to new oci artifact. err: %w", err)
-		}
-		if err = a.Download(context.Background(), dbDir, oci.DownloadOption{MediaType: "application/vnd.aquasec.trivy.javadb.layer.v1.tar+gzip"}); err != nil {
-			return xerrors.Errorf("Failed to download Trivy Java DB. err: %w", err)
-		}
+	// Download DB
+	logging.Log.Infof("Trivy Java DB Repository: %s", strings.Join(trivyOpts.TrivyJavaDBRepositories, ", "))
+	logging.Log.Info("Downloading Trivy Java DB...")
 
-		// Parse the newly downloaded metadata.json
-		meta, err = metac.Get()
+	refs := make([]name.Reference, 0, len(trivyOpts.TrivyJavaDBRepositories))
+	for _, repo := range trivyOpts.TrivyJavaDBRepositories {
+		ref, err := func() (name.Reference, error) {
+			ref, err := name.ParseReference(repo, name.WithDefaultTag(""))
+			if err != nil {
+				return nil, err
+			}
+
+			// Add the schema version if the tag is not specified for backward compatibility.
+			t, ok := ref.(name.Tag)
+			if !ok || t.TagStr() != "" {
+				return ref, nil
+			}
+
+			ref = t.Tag(fmt.Sprint(trivyjavadb.SchemaVersion))
+			logging.Log.Infof("Adding schema version to the DB repository for backward compatibility. repository: %s", ref.String())
+
+			return ref, nil
+		}()
 		if err != nil {
-			return xerrors.Errorf("Failed to get Trivy Java DB metadata. err: %w", err)
+			return xerrors.Errorf("invalid javadb repository: %w", err)
 		}
+		refs = append(refs, ref)
+	}
 
-		// Update DownloadedAt
-		meta.DownloadedAt = time.Now().UTC()
-		if err = metac.Update(meta); err != nil {
-			return xerrors.Errorf("Failed to update Trivy Java DB metadata. err: %w", err)
-		}
+	a := oci.NewArtifacts(refs, types.RegistryOptions{})
+
+	if err = a.Download(context.Background(), dbDir, oci.DownloadOption{
+		MediaType: "application/vnd.aquasec.trivy.javadb.layer.v1.tar+gzip",
+		Quiet:     noProgress,
+	}); err != nil {
+		return xerrors.Errorf("Failed to download Trivy Java DB. err: %w", err)
+	}
+
+	// Parse the newly downloaded metadata.json
+	meta, err = metac.Get()
+	if err != nil {
+		return xerrors.Errorf("Failed to get Trivy Java DB metadata. err: %w", err)
+	}
+
+	// Update DownloadedAt
+	meta.DownloadedAt = time.Now().UTC()
+	if err = metac.Update(meta); err != nil {
+		return xerrors.Errorf("Failed to update Trivy Java DB metadata. err: %w", err)
 	}
 
 	return nil
+}
+
+func isNewDB(meta db.Metadata) bool {
+	now := time.Now().UTC()
+	if now.Before(meta.NextUpdate) {
+		logging.Log.Debug("Java DB update was skipped because the local Java DB is the latest")
+		return true
+	}
+
+	if now.Before(meta.DownloadedAt.Add(time.Hour * 24)) { // 1 day
+		logging.Log.Debug("Java DB update was skipped because the local Java DB was downloaded during the last day")
+		return true
+	}
+	return false
 }
 
 // DBClient is Trivy Java DB Client
