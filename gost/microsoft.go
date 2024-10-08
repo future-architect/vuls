@@ -4,6 +4,7 @@
 package gost
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"maps"
@@ -175,6 +176,21 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 	}
 
 	for cveID, cve := range cves {
+		v, err := ms.detect(r, cve, applied, unapplied)
+		if err != nil {
+			return 0, xerrors.Errorf("Failed to detect. err: %w", err)
+		}
+		if v == nil {
+			continue
+		}
+		nCVEs++
+		r.ScannedCves[cveID] = *v
+	}
+	return nCVEs, nil
+}
+
+func (ms Microsoft) detect(r *models.ScanResult, cve gostmodels.MicrosoftCVE, applied, unapplied []string) (*models.VulnInfo, error) {
+	cve.Products = func() []gostmodels.MicrosoftProduct {
 		var ps []gostmodels.MicrosoftProduct
 		for _, p := range cve.Products {
 			if len(p.KBs) == 0 {
@@ -182,162 +198,183 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 				continue
 			}
 
-			var kbs []gostmodels.MicrosoftKB
-			for _, kb := range p.KBs {
-				if _, err := strconv.Atoi(kb.Article); err != nil {
-					switch {
-					case strings.HasPrefix(p.Name, "Microsoft Edge"):
-						p, ok := r.Packages["Microsoft Edge"]
-						if !ok {
-							break
-						}
+			p.KBs = func() []gostmodels.MicrosoftKB {
+				var kbs []gostmodels.MicrosoftKB
+				for _, kb := range p.KBs {
+					if _, err := strconv.Atoi(kb.Article); err != nil {
+						switch {
+						case strings.HasPrefix(p.Name, "Microsoft Edge"):
+							p, ok := r.Packages["Microsoft Edge"]
+							if !ok {
+								break
+							}
 
-						if kb.FixedBuild == "" {
-							kbs = append(kbs, kb)
-							break
-						}
+							if kb.FixedBuild == "" {
+								kbs = append(kbs, kb)
+								break
+							}
 
-						vera, err := version.NewVersion(p.Version)
-						if err != nil {
-							kbs = append(kbs, kb)
-							break
+							vera, err := version.NewVersion(p.Version)
+							if err != nil {
+								kbs = append(kbs, kb)
+								break
+							}
+							verb, err := version.NewVersion(kb.FixedBuild)
+							if err != nil {
+								kbs = append(kbs, kb)
+								break
+							}
+							if vera.LessThan(verb) {
+								kbs = append(kbs, kb)
+							}
+						default:
 						}
-						verb, err := version.NewVersion(kb.FixedBuild)
-						if err != nil {
-							kbs = append(kbs, kb)
-							break
+					} else {
+						if slices.Contains(applied, kb.Article) {
+							return nil
 						}
-						if vera.LessThan(verb) {
+						if slices.Contains(unapplied, kb.Article) {
 							kbs = append(kbs, kb)
 						}
-					}
-				} else {
-					if slices.Contains(applied, kb.Article) {
-						kbs = []gostmodels.MicrosoftKB{}
-						break
-					}
-					if slices.Contains(unapplied, kb.Article) {
-						kbs = append(kbs, kb)
 					}
 				}
-			}
-			if len(kbs) > 0 {
-				p.KBs = kbs
+				return kbs
+			}()
+			if len(p.KBs) > 0 {
 				ps = append(ps, p)
 			}
 		}
-		cve.Products = ps
-		if len(cve.Products) == 0 {
+		return ps
+	}()
+	if len(cve.Products) == 0 {
+		return nil, nil
+	}
+
+	cveCont, mitigations := ms.ConvertToModel(&cve)
+	vinfo := models.VulnInfo{
+		CveID:       cve.CveID,
+		CveContents: models.NewCveContents(*cveCont),
+		Mitigations: mitigations,
+	}
+
+	for _, p := range cve.Products {
+		if len(p.KBs) == 0 {
+			switch {
+			case p.Name == r.Release:
+				vinfo.AffectedPackages = append(vinfo.AffectedPackages, models.PackageFixStatus{
+					Name:     p.Name,
+					FixState: "unfixed",
+				})
+			case strings.HasPrefix(p.Name, "Microsoft Edge"):
+				vinfo.AffectedPackages = append(vinfo.AffectedPackages, models.PackageFixStatus{
+					Name:     "Microsoft Edge",
+					FixState: "unknown",
+				})
+			default:
+			}
 			continue
 		}
-		nCVEs++
 
-		cveCont, mitigations := ms.ConvertToModel(&cve)
-		uniqKB := map[string]struct{}{}
-		var stats models.PackageFixStatuses
-		for _, p := range cve.Products {
-			for _, kb := range p.KBs {
-				if _, err := strconv.Atoi(kb.Article); err != nil {
-					switch {
-					case strings.HasPrefix(p.Name, "Microsoft Edge"):
-						s := models.PackageFixStatus{
-							Name:     "Microsoft Edge",
-							FixState: "fixed",
-							FixedIn:  kb.FixedBuild,
-						}
-						if kb.FixedBuild == "" {
-							s.FixState = "unknown"
-						}
-						stats = append(stats, s)
-					default:
-						stats = append(stats, models.PackageFixStatus{
-							Name:     p.Name,
-							FixState: "unknown",
-							FixedIn:  kb.FixedBuild,
-						})
-					}
-				} else {
-					uniqKB[fmt.Sprintf("KB%s", kb.Article)] = struct{}{}
-				}
-			}
-		}
-		if len(uniqKB) == 0 && len(stats) == 0 {
-			for _, p := range cve.Products {
+		for _, kb := range p.KBs {
+			if _, err := strconv.Atoi(kb.Article); err != nil {
 				switch {
 				case strings.HasPrefix(p.Name, "Microsoft Edge"):
-					stats = append(stats, models.PackageFixStatus{
-						Name:     "Microsoft Edge",
-						FixState: "unknown",
+					vinfo.AffectedPackages = append(vinfo.AffectedPackages, models.PackageFixStatus{
+						Name: "Microsoft Edge",
+						FixState: func() string {
+							if func() bool {
+								if kb.FixedBuild == "" {
+									return true
+								}
+
+								if _, err := version.NewVersion(r.Packages["Microsoft Edge"].Version); err != nil {
+									return true
+								}
+
+								if _, err := version.NewVersion(kb.FixedBuild); err != nil {
+									return true
+								}
+
+								return false
+							}() {
+								return "unknown"
+							}
+							return "fixed"
+						}(),
+						FixedIn: kb.FixedBuild,
 					})
 				default:
-					stats = append(stats, models.PackageFixStatus{
-						Name:     p.Name,
-						FixState: "unknown",
-					})
+					return nil, xerrors.Errorf("unexpected product. supported: %q, actual: %q", []string{"Microsoft Edge"}, p.Name)
 				}
+			} else {
+				kbid := fmt.Sprintf("KB%s", kb.Article)
+				vinfo.DistroAdvisories.AppendIfMissing(func() *models.DistroAdvisory {
+					a := models.DistroAdvisory{
+						AdvisoryID:  kbid,
+						Description: "Microsoft Knowledge Base",
+					}
+					return &a
+				}())
+				if !slices.Contains(vinfo.WindowsKBFixedIns, kbid) {
+					vinfo.WindowsKBFixedIns = append(vinfo.WindowsKBFixedIns, kbid)
+				}
+			}
+		}
+	}
 
+	confs, err := func() (models.Confidences, error) {
+		var cs models.Confidences
+
+		if len(vinfo.WindowsKBFixedIns) > 0 {
+			cs.AppendIfMissing(models.WindowsUpdateSearch)
+		}
+
+		for _, stat := range vinfo.AffectedPackages {
+			switch stat.FixState {
+			case "fixed", "unfixed":
+				cs.AppendIfMissing(models.WindowsUpdateSearch)
+			case "unknown":
+				cs.AppendIfMissing(models.WindowsRoughMatch)
+			default:
+				return nil, xerrors.Errorf("unexpected fix state. expected: %q, actual: %q", []string{"fixed", "unfixed", "unknown"}, stat.FixState)
 			}
 		}
 
-		advisories := []models.DistroAdvisory{}
-		for kb := range uniqKB {
-			advisories = append(advisories, models.DistroAdvisory{
-				AdvisoryID:  kb,
-				Description: "Microsoft Knowledge Base",
-			})
+		if len(cs) == 0 {
+			return nil, xerrors.New("confidences not found")
 		}
-
-		r.ScannedCves[cveID] = models.VulnInfo{
-			CveID:             cveID,
-			Confidences:       models.Confidences{models.WindowsUpdateSearch},
-			DistroAdvisories:  advisories,
-			CveContents:       models.NewCveContents(*cveCont),
-			Mitigations:       mitigations,
-			AffectedPackages:  stats,
-			WindowsKBFixedIns: slices.Collect(maps.Keys(uniqKB)),
-		}
+		return cs, nil
+	}()
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to detect confidences. err: %w", err)
 	}
-	return nCVEs, nil
+	vinfo.Confidences = confs
+
+	return &vinfo, nil
 }
 
 // ConvertToModel converts gost model to vuls model
 func (ms Microsoft) ConvertToModel(cve *gostmodels.MicrosoftCVE) (*models.CveContent, []models.Mitigation) {
 	slices.SortFunc(cve.Products, func(i, j gostmodels.MicrosoftProduct) int {
-		if i.ScoreSet.Vector < j.ScoreSet.Vector {
-			return -1
-		}
-		if i.ScoreSet.Vector > j.ScoreSet.Vector {
-			return +1
-		}
-		return 0
+		return cmp.Compare(i.ScoreSet.Vector, j.ScoreSet.Vector)
 	})
 
-	v3score := 0.0
-	var v3Vector string
-	for _, p := range cve.Products {
-		v, err := strconv.ParseFloat(p.ScoreSet.BaseScore, 64)
-		if err != nil {
-			continue
+	p := slices.MaxFunc(cve.Products, func(a, b gostmodels.MicrosoftProduct) int {
+		va, erra := strconv.ParseFloat(a.ScoreSet.BaseScore, 64)
+		vb, errb := strconv.ParseFloat(b.ScoreSet.BaseScore, 64)
+		if erra != nil {
+			if errb != nil {
+				return 0
+			}
+			return -1
 		}
-		if v3score < v {
-			v3score = v
-			v3Vector = p.ScoreSet.Vector
+		if errb != nil {
+			return +1
 		}
-	}
+		return cmp.Compare(va, vb)
+	})
 
-	var v3Severity string
-	for _, p := range cve.Products {
-		v3Severity = p.Severity
-	}
-
-	option := map[string]string{}
-	if 0 < len(cve.ExploitStatus) {
-		// TODO: CVE-2020-0739
-		// "exploit_status": "Publicly Disclosed:No;Exploited:No;Latest Software Release:Exploitation Less Likely;Older Software Release:Exploitation Less Likely;DOS:N/A",
-		option["exploit"] = cve.ExploitStatus
-	}
-
-	mitigations := []models.Mitigation{}
+	var mitigations []models.Mitigation
 	if cve.Mitigation != "" {
 		mitigations = append(mitigations, models.Mitigation{
 			CveContentType: models.Microsoft,
@@ -354,16 +391,29 @@ func (ms Microsoft) ConvertToModel(cve *gostmodels.MicrosoftCVE) (*models.CveCon
 	}
 
 	return &models.CveContent{
-		Type:          models.Microsoft,
-		CveID:         cve.CveID,
-		Title:         cve.Title,
-		Summary:       cve.Description,
-		Cvss3Score:    v3score,
-		Cvss3Vector:   v3Vector,
-		Cvss3Severity: v3Severity,
+		Type:    models.Microsoft,
+		CveID:   cve.CveID,
+		Title:   cve.Title,
+		Summary: cve.Description,
+		Cvss3Score: func() float64 {
+			v, err := strconv.ParseFloat(p.ScoreSet.BaseScore, 64)
+			if err != nil {
+				return 0.0
+			}
+			return v
+		}(),
+		Cvss3Vector:   p.ScoreSet.Vector,
+		Cvss3Severity: p.Severity,
 		Published:     cve.PublishDate,
 		LastModified:  cve.LastUpdateDate,
 		SourceLink:    cve.URL,
-		Optional:      option,
+		Optional: func() map[string]string {
+			if 0 < len(cve.ExploitStatus) {
+				// TODO: CVE-2020-0739
+				// "exploit_status": "Publicly Disclosed:No;Exploited:No;Latest Software Release:Exploitation Less Likely;Older Software Release:Exploitation Less Likely;DOS:N/A",
+				return map[string]string{"exploit": cve.ExploitStatus}
+			}
+			return nil
+		}(),
 	}, mitigations
 }

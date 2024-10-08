@@ -1874,17 +1874,72 @@ func TestVulnInfo_PatchStatus(t *testing.T) {
 			want: "fixed",
 		},
 		{
-			name: "windows unfixed",
+			name: "WindowsRoughMatch",
+			fields: fields{
+				Confidences: Confidences{WindowsRoughMatch},
+			},
+			want: "unknown",
+		},
+		{
+			name: "WindowsRoughMatch and WindowsUpdateSearch",
+			fields: fields{
+				Confidences: Confidences{WindowsRoughMatch, WindowsUpdateSearch},
+			},
+			want: "unknown",
+		},
+		{
+			name: "WindowsUpdateSearch unknown",
+			fields: fields{
+				Confidences: Confidences{WindowsUpdateSearch},
+				AffectedPackages: PackageFixStatuses{
+					{
+						Name:     "Microsoft Edge",
+						FixState: "unknown",
+					},
+				},
+			},
+			want: "unknown",
+		},
+		{
+			name: "WindowsUpdateSearch unfixed",
+			fields: fields{
+				Confidences: Confidences{WindowsUpdateSearch},
+				AffectedPackages: PackageFixStatuses{
+					{
+						Name:     "Windows 10 Version 21H2 for x64-based Systems",
+						FixState: "unfixed",
+					},
+				},
+				WindowsKBFixedIns: []string{"000000"},
+			},
+			want: "unfixed",
+		},
+		{
+			name: "WindowsUpdateSearch unfixed2",
 			fields: fields{
 				Confidences: Confidences{WindowsUpdateSearch},
 			},
 			want: "unfixed",
 		},
 		{
-			name: "windows fixed",
+			name: "WindowsUpdateSearch fixed",
 			fields: fields{
 				Confidences:       Confidences{WindowsUpdateSearch},
 				WindowsKBFixedIns: []string{"000000"},
+			},
+			want: "fixed",
+		},
+		{
+			name: "WindowsUpdateSearch fixed2",
+			fields: fields{
+				Confidences: Confidences{WindowsUpdateSearch},
+				AffectedPackages: PackageFixStatuses{
+					{
+						Name:     "Microsoft Edge",
+						FixState: "fixed",
+						FixedIn:  "128.0.2739.79",
+					},
+				},
 			},
 			want: "fixed",
 		},
