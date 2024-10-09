@@ -5,10 +5,13 @@ package subcmds
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/aquasecurity/trivy/pkg/cache"
+	trivydb "github.com/aquasecurity/trivy/pkg/db"
+	trivyjavadb "github.com/aquasecurity/trivy/pkg/javadb"
 	"github.com/google/subcommands"
 	"github.com/k0kubun/pp"
 
@@ -93,6 +96,9 @@ func (*ReportCmd) Usage() string {
 		[-pipe]
 		[-http="http://vuls-report-server"]
 		[-trivy-cachedb-dir=/path/to/dir]
+		[-trivy-db-repository="OCI-repository-for-trivy-db"]
+		[-trivy-java-db-repository="OCI-repository-for-trivy-java-db"]
+		[-trivy-skip-java-db-update]
 
 		[RFC3339 datetime format under results dir]
 `
@@ -173,6 +179,16 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 
 	f.StringVar(&config.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
 		cache.DefaultDir(), "/path/to/dir")
+
+	config.Conf.TrivyOpts.TrivyDBRepositories = []string{trivydb.DefaultGHCRRepository}
+	dbRepos := stringArrayFlag{target: &config.Conf.TrivyOpts.TrivyDBRepositories}
+	f.Var(&dbRepos, "trivy-db-repository", fmt.Sprintf("Trivy DB Repository in a comma-separated list (default %s)", trivydb.DefaultGHCRRepository))
+
+	config.Conf.TrivyOpts.TrivyJavaDBRepositories = []string{trivyjavadb.DefaultGHCRRepository}
+	javaDBRepos := stringArrayFlag{target: &config.Conf.TrivyOpts.TrivyJavaDBRepositories}
+	f.Var(&javaDBRepos, "trivy-java-db-repository", fmt.Sprintf("Trivy Java DB Repository in a comma-separated list (default %s)", trivyjavadb.DefaultGHCRRepository))
+
+	f.BoolVar(&config.Conf.TrivySkipJavaDBUpdate, "trivy-skip-java-db-update", false, "Skip Trivy Java DB Update")
 }
 
 // Execute execute

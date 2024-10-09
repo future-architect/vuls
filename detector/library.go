@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
 	"github.com/aquasecurity/trivy/pkg/log"
 	"github.com/aquasecurity/trivy/pkg/types"
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/samber/lo"
 	"golang.org/x/xerrors"
 
@@ -47,7 +49,7 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 	if err := downloadDB("", trivyOpts, noProgress, false); err != nil {
 		return xerrors.Errorf("Failed to download trivy DB. err: %w", err)
 	}
-	if err := trivydb.Init(trivyOpts.TrivyCacheDBDir); err != nil {
+	if err := trivydb.Init(filepath.Join(trivyOpts.TrivyCacheDBDir, "db")); err != nil {
 		return xerrors.Errorf("Failed to init trivy DB. err: %w", err)
 	}
 	defer trivydb.Close()
@@ -94,17 +96,41 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 }
 
 func downloadDB(appVersion string, trivyOpts config.TrivyOpts, noProgress, skipUpdate bool) error {
-	client := db.NewClient(trivyOpts.TrivyCacheDBDir, noProgress)
+	refs := make([]name.Reference, 0, len(trivyOpts.TrivyDBRepositories))
+	for _, repo := range trivyOpts.TrivyDBRepositories {
+		ref, err := func() (name.Reference, error) {
+			ref, err := name.ParseReference(repo, name.WithDefaultTag(""))
+			if err != nil {
+				return nil, err
+			}
+
+			// Add the schema version if the tag is not specified for backward compatibility.
+			t, ok := ref.(name.Tag)
+			if !ok || t.TagStr() != "" {
+				return ref, nil
+			}
+
+			ref = t.Tag(fmt.Sprint(trivydb.SchemaVersion))
+			logging.Log.Infof("Adding schema version to the DB repository for backward compatibility. repository: %s", ref.String())
+
+			return ref, nil
+		}()
+		if err != nil {
+			return xerrors.Errorf("invalid db repository: %w", err)
+		}
+		refs = append(refs, ref)
+	}
+	client := db.NewClient(filepath.Join(trivyOpts.TrivyCacheDBDir, "db"), noProgress, db.WithDBRepository(refs))
 	ctx := context.Background()
-	needsUpdate, err := client.NeedsUpdate(context.TODO(), appVersion, skipUpdate)
+	needsUpdate, err := client.NeedsUpdate(ctx, appVersion, skipUpdate)
 	if err != nil {
-		return xerrors.Errorf("database error: %w", err)
+		return xerrors.Errorf("Failed to check NeedsUpdate. err: %w", err)
 	}
 
 	if needsUpdate {
 		logging.Log.Info("Need to update DB")
-		logging.Log.Info("Downloading DB...")
-		if err := client.Download(ctx, trivyOpts.TrivyCacheDBDir, ftypes.RegistryOptions{}); err != nil {
+		logging.Log.Infof("Downloading DB from %s...", strings.Join(trivyOpts.TrivyDBRepositories, ", "))
+		if err := client.Download(ctx, filepath.Join(trivyOpts.TrivyCacheDBDir, "db"), ftypes.RegistryOptions{}); err != nil {
 			return xerrors.Errorf("Failed to download vulnerability DB. err: %w", err)
 		}
 	}
@@ -117,7 +143,7 @@ func downloadDB(appVersion string, trivyOpts config.TrivyOpts, noProgress, skipU
 }
 
 func showDBInfo(cacheDir string) error {
-	m := metadata.NewClient(cacheDir)
+	m := metadata.NewClient(filepath.Join(cacheDir, "db"))
 	meta, err := m.Get()
 	if err != nil {
 		return xerrors.Errorf("Failed to get DB metadata. err: %w", err)
