@@ -12,6 +12,7 @@ import (
 
 type options struct {
 	community string
+	port      uint16
 	debug     bool
 }
 
@@ -31,6 +32,17 @@ func WithCommunity(c string) Option {
 	return communityOption(c)
 }
 
+type portOption uint16
+
+func (p portOption) apply(opts *options) {
+	opts.port = uint16(p)
+}
+
+// WithPort ...
+func WithPort(p uint16) Option {
+	return portOption(p)
+}
+
 type debugOption bool
 
 func (d debugOption) apply(opts *options) {
@@ -44,7 +56,11 @@ func WithDebug(d bool) Option {
 
 // Get ...
 func Get(version gosnmp.SnmpVersion, ipaddr string, opts ...Option) (Result, error) {
-	var options options
+	options := options{
+		community: "public",
+		port:      161,
+		debug:     false,
+	}
 	for _, o := range opts {
 		o.apply(&options)
 	}
@@ -53,7 +69,7 @@ func Get(version gosnmp.SnmpVersion, ipaddr string, opts ...Option) (Result, err
 
 	params := &gosnmp.GoSNMP{
 		Target:             ipaddr,
-		Port:               161,
+		Port:               options.port,
 		Version:            version,
 		Timeout:            time.Duration(2) * time.Second,
 		Retries:            3,
