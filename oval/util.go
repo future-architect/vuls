@@ -415,6 +415,9 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family, release s
 			if extractOracleKsplice(ovalPack.Version) != extractOracleKsplice(req.versionRelease) {
 				continue
 			}
+			if strings.HasSuffix(ovalPack.Version, "_fips") != strings.HasSuffix(req.versionRelease, "_fips") {
+				continue
+			}
 		case constant.SUSEEnterpriseServer:
 			if strings.Contains(ovalPack.Version, ".TDC.") != strings.Contains(req.versionRelease, ".TDC.") {
 				continue
