@@ -366,6 +366,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
-
-// see https://github.com/aquasecurity/trivy/pull/7427, remove when updating trivy to v0.56.0
-replace github.com/open-policy-agent/opa => github.com/nikpivkin/opa v0.0.0-20240829080621-16999fcb5464
