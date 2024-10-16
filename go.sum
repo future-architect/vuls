@@ -298,8 +298,8 @@ github.com/aquasecurity/go-version v0.0.0-20240603093900-cf8a8d29271d h1:4zour5S
 github.com/aquasecurity/go-version v0.0.0-20240603093900-cf8a8d29271d/go.mod h1:1cPOp4BaQZ1G2F5fnw4dFz6pkOyXJI9KTuak8ghIl3U=
 github.com/aquasecurity/testdocker v0.0.0-20240730042311-4642e94c7fc8 h1:b43UVqYjz7qDqK+cVOtF2Lk6CxjytYItP6Pgf3wGsNE=
 github.com/aquasecurity/testdocker v0.0.0-20240730042311-4642e94c7fc8/go.mod h1:wXA9k3uuaxY3yu7gxrxZDPo/04FEMJtwyecdAlYrEIo=
-github.com/aquasecurity/trivy v0.56.1 h1:xK7hgQwUHDNScDY+omXk0QQKUjDC5NManrLA5TyIlqQ=
-github.com/aquasecurity/trivy v0.56.1/go.mod h1:P6LM+3h3G/nndp3BDugw0YZKBOC0lNRX2zCX/LxOpyo=
+github.com/aquasecurity/trivy v0.56.2 h1:4QNIFIBvkFznVy/c6rZwn7fqqaO6izYHtNmw0lMO26Q=
+github.com/aquasecurity/trivy v0.56.2/go.mod h1:P6LM+3h3G/nndp3BDugw0YZKBOC0lNRX2zCX/LxOpyo=
 github.com/aquasecurity/trivy-checks v1.1.0 h1:I0tVOK8dG/KHrWsqfGNYp2uD/i0f+yS7Je31F+LIUqQ=
 github.com/aquasecurity/trivy-checks v1.1.0/go.mod h1:tVzhU0gajD3GmxKPLn/BHR8ZeUquc5ajQTmAsi0kCCU=
 github.com/aquasecurity/trivy-db v0.0.0-20240910133327-7e0f4d2ed4c1 h1:G0gnacAORRUqz2Tm5MqivSpldY2GZ74ijhJcMsae+sA=
@@ -954,8 +954,6 @@ github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f h1:y5//uYreIhSUg3J
 github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f/go.mod h1:ZdcZmHo+o7JKHSa8/e818NopupXU1YMK5fe1lsApnBw=
 github.com/ncruces/go-strftime v0.1.9 h1:bY0MQC28UADQmHmaF5dgpLmImcShSi2kHU9XLdhx/f4=
 github.com/ncruces/go-strftime v0.1.9/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
-github.com/nikpivkin/opa v0.0.0-20240829080621-16999fcb5464 h1:jhZ8nLVxOAslgzmPdKTyctfDJkMfRgksCypFriHzf4E=
-github.com/nikpivkin/opa v0.0.0-20240829080621-16999fcb5464/go.mod h1:cvSIxY0dexL39hOPqXSZKdBYFNx2Rv8Fu5n3MmTjqtE=
 github.com/nlopes/slack v0.6.0 h1:jt0jxVQGhssx1Ib7naAOZEZcGdtIhTzkP0nopK0AsRA=
 github.com/nlopes/slack v0.6.0/go.mod h1:JzQ9m3PMAqcpeCam7UaHSuBuupz7CmpjehYMayT6YOk=
 github.com/nsf/termbox-go v1.1.1 h1:nksUPLCb73Q++DwbYUBEglYBRPZyoXJdrj5L+TkjyZY=
@@ -972,6 +970,8 @@ github.com/onsi/ginkgo/v2 v2.19.0 h1:9Cnnf7UHo57Hy3k6/m5k3dRfGTMXGvxhHFvkDTCTpvA
 github.com/onsi/ginkgo/v2 v2.19.0/go.mod h1:rlwLi9PilAFJ8jCg9UE1QP6VBpd6/xj3SRC0d6TU0To=
 github.com/onsi/gomega v1.33.1 h1:dsYjIxxSR755MDmKVsaFQTE22ChNBcuuTWgkUDSubOk=
 github.com/onsi/gomega v1.33.1/go.mod h1:U4R44UsT+9eLIaYRB2a5qajjtQYn0hauxvRm16AVYg0=
+github.com/open-policy-agent/opa v0.68.1-0.20240903211041-76f7038ea2d1 h1:GQrryTKpunLNDc2NdhNL1FzfrbuNvo45s76anGdqz9k=
+github.com/open-policy-agent/opa v0.68.1-0.20240903211041-76f7038ea2d1/go.mod h1:5E5SvaPwTpwt2WM177I9Z3eT7qUpmOGjk1ZdHs+TZ4w=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.0 h1:8SG7/vwALn54lVB/0yZ/MMwhFrPYtpEHQb2IpWsCzug=
