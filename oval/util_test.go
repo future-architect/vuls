@@ -1929,6 +1929,70 @@ func TestIsOvalDefAffected(t *testing.T) {
 			},
 			affected: false,
 		},
+		// in: _fips , req: not fips
+		{
+			in: in{
+				family: constant.Oracle,
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:    "gnutls",
+							Version: "10:3.6.16-4.0.1.el8_fips",
+							Arch:    "x86_64",
+						},
+					},
+				},
+				req: request{
+					packName:       "gnutls",
+					versionRelease: "3.6.16-4.el8",
+					arch:           "x86_64",
+				},
+			},
+			affected: false,
+		},
+		// in: _fips , req: _fips
+		{
+			in: in{
+				family: constant.Oracle,
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:    "gnutls",
+							Version: "10:3.6.16-8.el8_9.3_fips",
+							Arch:    "x86_64",
+						},
+					},
+				},
+				req: request{
+					packName:       "gnutls",
+					versionRelease: "10:3.6.16-4.0.1.el8_fips",
+					arch:           "x86_64",
+				},
+			},
+			affected: true,
+			fixedIn:  "10:3.6.16-8.el8_9.3_fips",
+		},
+		// in: non fips (upstream?), req: _fips
+		{
+			in: in{
+				family: constant.Oracle,
+				def: ovalmodels.Definition{
+					AffectedPacks: []ovalmodels.Package{
+						{
+							Name:    "gnutls",
+							Version: "0:3.6.16-5.el8_6",
+							Arch:    "x86_64",
+						},
+					},
+				},
+				req: request{
+					packName:       "gnutls",
+					versionRelease: "10:3.6.16-4.0.1.el8_fips",
+					arch:           "x86_64",
+				},
+			},
+			affected: false,
+		},
 		// same arch
 		{
 			in: in{
