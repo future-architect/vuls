@@ -323,8 +323,7 @@ func (ms Microsoft) detect(r *models.ScanResult, cve gostmodels.MicrosoftCVE, ap
 	}
 
 	confs, err := func() (models.Confidences, error) {
-		var cs models.Confidences
-
+		cs := vinfo.Confidences
 		if len(vinfo.WindowsKBFixedIns) > 0 {
 			cs.AppendIfMissing(models.WindowsUpdateSearch)
 		}
