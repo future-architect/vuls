@@ -399,7 +399,7 @@ func TestMicrosoft_detect(t *testing.T) {
 			},
 		},
 		{
-			name: "microsoft other product",
+			name: "microsoft other product not support",
 			args: args{
 				r: &models.ScanResult{
 					Family:  constant.Windows,
@@ -422,6 +422,23 @@ func TestMicrosoft_detect(t *testing.T) {
 									FixedBuild: "1.87.2",
 								},
 							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "microsoft other product not support2",
+			args: args{
+				r: &models.ScanResult{
+					Family:  constant.Windows,
+					Release: "Windows Server 2016",
+				},
+				cve: gostmodels.MicrosoftCVE{
+					CveID: "ADV200001",
+					Products: []gostmodels.MicrosoftProduct{
+						{
+							Name: "Internet Explorer 11 on Windows Server 2016",
 						},
 					},
 				},

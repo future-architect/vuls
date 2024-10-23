@@ -194,7 +194,13 @@ func (ms Microsoft) detect(r *models.ScanResult, cve gostmodels.MicrosoftCVE, ap
 		var ps []gostmodels.MicrosoftProduct
 		for _, p := range cve.Products {
 			if len(p.KBs) == 0 {
-				ps = append(ps, p)
+				switch {
+				case p.Name == r.Release:
+					ps = append(ps, p)
+				case strings.HasPrefix(p.Name, "Microsoft Edge"):
+					ps = append(ps, p)
+				default:
+				}
 				continue
 			}
 
@@ -271,6 +277,7 @@ func (ms Microsoft) detect(r *models.ScanResult, cve gostmodels.MicrosoftCVE, ap
 					FixState: "unknown",
 				})
 			default:
+				return nil, xerrors.Errorf("unexpected product. expected: %q, actual: %q", []string{r.Release, "Microsoft Edge"}, p.Name)
 			}
 			continue
 		}
