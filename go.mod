@@ -8,7 +8,7 @@ require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/CycloneDX/cyclonedx-go v0.9.1
 	github.com/Ullaakut/nmap/v2 v2.2.2
-	github.com/aquasecurity/trivy v0.56.1
+	github.com/aquasecurity/trivy v0.56.2
 	github.com/aquasecurity/trivy-db v0.0.0-20240910133327-7e0f4d2ed4c1
 	github.com/aquasecurity/trivy-java-db v0.0.0-20240109071736-184bd7481d48
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
@@ -366,6 +366,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
-
-// see https://github.com/aquasecurity/trivy/pull/7427, remove when updating trivy to v0.56.0
-replace github.com/open-policy-agent/opa => github.com/nikpivkin/opa v0.0.0-20240829080621-16999fcb5464
