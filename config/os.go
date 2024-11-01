@@ -202,6 +202,9 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"24.04": {
 				StandardSupportUntil: time.Date(2029, 6, 30, 23, 59, 59, 0, time.UTC),
 			},
+			"24.10": {
+				StandardSupportUntil: time.Date(2025, 7, 31, 23, 59, 59, 0, time.UTC),
+			},
 		}[release]
 	case constant.OpenSUSE:
 		// https://en.opensuse.org/Lifetime
