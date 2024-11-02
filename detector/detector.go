@@ -402,7 +402,7 @@ func DetectSnapCves(r *models.ScanResult, cnf config.GoCveDictConf, logOpts logg
 					continue
 				}
 				if vera.LessThan(verb) {
-					detects[row.CveId] = snap.Name
+					detects[row.CveID] = snap.Name
 				}
 			} else if row.VersionEndIncluding != "" {
 				verb, err := hver.NewVersion(row.VersionEndIncluding)
@@ -410,7 +410,7 @@ func DetectSnapCves(r *models.ScanResult, cnf config.GoCveDictConf, logOpts logg
 					continue
 				}
 				if vera.LessThanOrEqual(verb) {
-					detects[row.CveId] = snap.Name
+					detects[row.CveID] = snap.Name
 				}
 			}
 		}
