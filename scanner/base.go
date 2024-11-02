@@ -1533,8 +1533,7 @@ func (l *base) scanFlatpaks() error {
 		l.warns = append(l.warns, err)
 	}
 
-	l.fillUpdatableFlatpaks(flatpaks, r.Stdout)
-	l.Flatpaks = flatpaks
+	l.Flatpaks = l.fillUpdatableFlatpaks(flatpaks, r.Stdout)
 
 	return nil
 }
@@ -1566,7 +1565,7 @@ func (l *base) parseFlatpakList(consoleOutput string) (models.Flatpaks, error) {
 	return flatpaks, nil
 }
 
-func (l *base) fillUpdatableFlatpaks(flatpaks models.Flatpaks, consoleOutput string) {
+func (l *base) fillUpdatableFlatpaks(flatpaks models.Flatpaks, consoleOutput string) models.Flatpaks {
 	scanner := bufio.NewScanner(strings.NewReader(consoleOutput))
 
 	for scanner.Scan() {
@@ -1581,4 +1580,6 @@ func (l *base) fillUpdatableFlatpaks(flatpaks models.Flatpaks, consoleOutput str
 		updatableApp.NewVersion = ss[2]
 		flatpaks[ss[0]] = updatableApp
 	}
+
+	return flatpaks
 }
