@@ -402,7 +402,7 @@ func DetectFlatpakCves(r *models.ScanResult, cnf config.GoCveDictConf, logOpts l
 					continue
 				}
 				if vera.LessThan(verb) {
-					detects[row.CveId] = flatpak.Name
+					detects[row.CveID] = flatpak.Name
 				}
 			} else if row.VersionEndIncluding != "" {
 				verb, err := hver.NewVersion(row.VersionEndIncluding)
@@ -410,7 +410,7 @@ func DetectFlatpakCves(r *models.ScanResult, cnf config.GoCveDictConf, logOpts l
 					continue
 				}
 				if vera.LessThanOrEqual(verb) {
-					detects[row.CveId] = flatpak.Name
+					detects[row.CveID] = flatpak.Name
 				}
 			}
 		}
@@ -425,7 +425,7 @@ func DetectFlatpakCves(r *models.ScanResult, cnf config.GoCveDictConf, logOpts l
 					CveID: cveId,
 				})
 			} else {
-				v.CveContents[models.Nvd] = []models.CveContent{models.CveContent{
+				v.CveContents[models.Nvd] = []models.CveContent{{
 					Type:  models.Nvd,
 					CveID: cveId,
 				}}
