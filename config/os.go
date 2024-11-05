@@ -426,6 +426,10 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			eol, found = EOL{StandardSupportUntil: time.Date(2022, 8, 9, 23, 59, 59, 0, time.UTC)}, true
 		case "Windows Server 2022":
 			eol, found = EOL{StandardSupportUntil: time.Date(2031, 10, 14, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows Server 2022, 23H2 Edition":
+			eol, found = EOL{}, true
+		case "Windows Server 2025":
+			eol, found = EOL{StandardSupportUntil: time.Date(2034, 10, 10, 23, 59, 59, 0, time.UTC)}, true
 		default:
 		}
 	case constant.MacOSX, constant.MacOSXServer:
