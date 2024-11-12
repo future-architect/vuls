@@ -447,7 +447,8 @@ func validateSSHConfig(c *config.ServerInfo) error {
 	sshScanCmd := strings.Join([]string{sshKeyscanBinaryPath, "-p", c.Port, sshConfig.hostname}, " ")
 	r := localExec(*c, sshScanCmd, noSudo)
 	if !r.isSuccess() {
-		return xerrors.Errorf("Failed to ssh-keyscan. cmd: %s, err: %w", sshScanCmd, r.Error)
+		logging.Log.Warnf("SSH configuration validation is skipped. err: Failed to ssh-keyscan. cmd: %s, err: %s", sshScanCmd, r.Error)
+		return nil
 	}
 	serverKeys := parseSSHScan(r.Stdout)
 
@@ -471,7 +472,8 @@ func validateSSHConfig(c *config.ServerInfo) error {
 		if r := localExec(*c, cmd, noSudo); r.isSuccess() {
 			keyType, clientKey, err := parseSSHKeygen(r.Stdout)
 			if err != nil {
-				return xerrors.Errorf("Failed to parse ssh-keygen result. stdout: %s, err: %w", r.Stdout, r.Error)
+				logging.Log.Warnf("SSH configuration validation is skipped. err: Failed to parse ssh-keygen result. stdout: %s, err: %s", r.Stdout, r.Error)
+				return nil
 			}
 			if serverKey, ok := serverKeys[keyType]; ok && serverKey == clientKey {
 				return nil
