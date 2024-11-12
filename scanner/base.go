@@ -18,7 +18,6 @@ import (
 	fanal "github.com/aquasecurity/trivy/pkg/fanal/analyzer"
 	tlog "github.com/aquasecurity/trivy/pkg/log"
 	xio "github.com/aquasecurity/trivy/pkg/x/io"
-	debver "github.com/knqyf263/go-deb-version"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
@@ -148,19 +147,15 @@ func (l *base) runningKernel() (release, version string, err error) {
 
 	switch l.Distro.Family {
 	case constant.Debian:
-		r := l.exec("uname -a", noSudo)
+		r := l.exec(fmt.Sprintf("dpkg-query -W -f='${Version}' linux-image-%s", release), noSudo)
 		if !r.isSuccess() {
-			return "", "", xerrors.Errorf("Failed to SSH: %s", r)
+			l.log.Debugf("Failed to get the running kernel version. err: %s", r.Stderr)
+			return release, "", nil
 		}
-		ss := strings.Fields(r.Stdout)
-		if 6 < len(ss) {
-			version = ss[6]
-		}
-		if _, err := debver.NewVersion(version); err != nil {
-			version = ""
-		}
+		return release, r.Stdout, nil
+	default:
+		return release, "", nil
 	}
-	return
 }
 
 func (l *base) allContainers() (containers []config.Container, err error) {
