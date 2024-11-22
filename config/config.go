@@ -47,6 +47,7 @@ type Config struct {
 	Metasploit MetasploitConf `json:"metasploit,omitempty"`
 	KEVuln     KEVulnConf     `json:"kevuln,omitempty"`
 	Cti        CtiConf        `json:"cti,omitempty"`
+	Vuls2      Vuls2DictConf  `json:"vuls2Dict,omitempty"`
 
 	Slack      SlackConf      `json:"-"`
 	EMail      SMTPConf       `json:"-"`
