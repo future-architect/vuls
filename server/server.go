@@ -62,7 +62,7 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := detector.DetectPkgCves(&r, config.Conf.OvalDict, config.Conf.Gost, config.Conf.LogOpts); err != nil {
+	if err := detector.DetectPkgCves(&r, config.Conf.OvalDict, config.Conf.Gost, config.Conf.Vuls2, config.Conf.LogOpts, config.Conf.NoProgress); err != nil {
 		logging.Log.Errorf("Failed to detect Pkg CVE: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return

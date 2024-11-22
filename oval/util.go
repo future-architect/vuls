@@ -648,6 +648,7 @@ func NewOVALClient(family string, cnf config.GovalDictConf, o logging.LogOpts) (
 		return nil, xerrors.Errorf("Failed to newOvalDB. err: %w", err)
 	}
 
+	// FIXME: change redhat etc. to pseudo
 	switch family {
 	case constant.Debian, constant.Raspbian:
 		return NewDebian(driver, cnf.GetURL()), nil
