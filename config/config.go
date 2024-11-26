@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aquasecurity/trivy/pkg/db"
+	"github.com/aquasecurity/trivy/pkg/javadb"
 	"github.com/asaskevich/govalidator"
 	"golang.org/x/xerrors"
 
@@ -86,6 +88,11 @@ type ReportOpts struct {
 
 	TrivyOpts
 }
+
+var (
+	DefaultTrivyDBRepositories     = []string{db.DefaultGCRRepository, db.DefaultGHCRRepository}
+	DefaultTrivyJavaDBRepositories = []string{javadb.DefaultGCRRepository, javadb.DefaultGHCRRepository}
+)
 
 // TrivyOpts is options for trivy DBs
 type TrivyOpts struct {
