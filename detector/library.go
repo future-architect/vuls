@@ -96,6 +96,9 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 }
 
 func downloadDB(appVersion string, trivyOpts config.TrivyOpts, noProgress, skipUpdate bool) error {
+	if len(trivyOpts.TrivyDBRepositories) == 0 {
+		trivyOpts.TrivyDBRepositories = config.DefaultTrivyDBRepositories
+	}
 	refs := make([]name.Reference, 0, len(trivyOpts.TrivyDBRepositories))
 	for _, repo := range trivyOpts.TrivyDBRepositories {
 		ref, err := func() (name.Reference, error) {

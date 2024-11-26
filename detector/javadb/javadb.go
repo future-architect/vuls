@@ -49,6 +49,9 @@ func UpdateJavaDB(trivyOpts config.TrivyOpts, noProgress bool) error {
 	}
 
 	// Download DB
+	if len(trivyOpts.TrivyJavaDBRepositories) == 0 {
+		trivyOpts.TrivyJavaDBRepositories = config.DefaultTrivyJavaDBRepositories
+	}
 	logging.Log.Infof("Trivy Java DB Repository: %s", strings.Join(trivyOpts.TrivyJavaDBRepositories, ", "))
 	logging.Log.Info("Downloading Trivy Java DB...")
 
