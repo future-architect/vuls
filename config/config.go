@@ -90,7 +90,9 @@ type ReportOpts struct {
 }
 
 var (
-	DefaultTrivyDBRepositories     = []string{db.DefaultGCRRepository, db.DefaultGHCRRepository}
+	// DefaultTrivyDBRepositories is the official repositories of Trivy DB
+	DefaultTrivyDBRepositories = []string{db.DefaultGCRRepository, db.DefaultGHCRRepository}
+	// DefaultTrivyJavaDBRepositories is the official repositories of Trivy Java DB
 	DefaultTrivyJavaDBRepositories = []string{javadb.DefaultGCRRepository, javadb.DefaultGHCRRepository}
 )
 
