@@ -1,5 +1,4 @@
 //go:build !scanner
-// +build !scanner
 
 // Package javadb implements functions that wrap trivy-java-db module.
 package javadb
