@@ -7,110 +7,160 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 )
 
 func TestViaHTTP(t *testing.T) {
-	r := newRHEL(config.ServerInfo{})
-	r.Distro = config.Distro{Family: constant.RedHat}
-
-	var tests = []struct {
-		header         map[string]string
-		body           string
-		packages       models.Packages
-		expectedResult models.ScanResult
-		wantErr        error
+	type args struct {
+		header http.Header
+		body   string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    models.ScanResult
+		wantErr bool
 	}{
 		{
-			header: map[string]string{
-				"X-Vuls-OS-Release":     "6.9",
-				"X-Vuls-Kernel-Release": "2.6.32-695.20.3.el6.x86_64",
+			name: "errOSFamilyHeader",
+			args: args{
+				header: http.Header{
+					http.CanonicalHeaderKey("X-Vuls-OS-Release"):     []string{"6.9"},
+					http.CanonicalHeaderKey("X-Vuls-Kernel-Release"): []string{"2.6.32-695.20.3.el6.x86_64"},
+				},
 			},
-			wantErr: errOSFamilyHeader,
+			wantErr: true,
 		},
 		{
-			header: map[string]string{
-				"X-Vuls-OS-Family":      "redhat",
-				"X-Vuls-Kernel-Release": "2.6.32-695.20.3.el6.x86_64",
+			name: "errOSReleaseHeader",
+			args: args{
+				header: http.Header{
+					http.CanonicalHeaderKey("X-Vuls-OS-Family"):      []string{"redhat"},
+					http.CanonicalHeaderKey("X-Vuls-Kernel-Release"): []string{"2.6.32-695.20.3.el6.x86_64"},
+				},
 			},
-			wantErr: errOSReleaseHeader,
+			wantErr: true,
 		},
 		{
-			header: map[string]string{
-				"X-Vuls-OS-Family":      "centos",
-				"X-Vuls-OS-Release":     "6.9",
-				"X-Vuls-Kernel-Release": "2.6.32-695.20.3.el6.x86_64",
+			name: "alma 9.0",
+			args: args{
+				header: http.Header{
+					http.CanonicalHeaderKey("X-Vuls-OS-Family"):      []string{"alma"},
+					http.CanonicalHeaderKey("X-Vuls-OS-Release"):     []string{"9.0"},
+					http.CanonicalHeaderKey("X-Vuls-Kernel-Release"): []string{"5.14.0-70.13.1.el9_0.x86_64"},
+				},
+				body: `dnf 0 4.14.0 17.el9.alma.1 noarch dnf-4.14.0-17.el9.alma.1.src.rpm (none)
+nginx 1 1.24.0 4.module_el9.5.0+122+220a1c6b.alma.1 x86_64 nginx-1.24.0-4.module_el9.5.0+122+220a1c6b.alma.1.src.rpm nginx:1.24:9050020241004144538:8cf767d6
+kernel-core 0 5.14.0 70.13.1.el9_0 x86_64 kernel-5.14.0-70.13.1.el9_0.src.rpm (none)
+kernel 0 5.14.0 70.13.1.el9_0 x86_64 kernel-5.14.0-70.13.1.el9_0.src.rpm (none)
+kernel-core 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)
+kernel 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)`,
 			},
-			body: `openssl	0	1.0.1e	30.el6.11 x86_64
-			Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x84_64
-			kernel 0 2.6.32 696.20.1.el6 x86_64
-			kernel 0 2.6.32 696.20.3.el6 x86_64
-			kernel 0 2.6.32 695.20.3.el6 x86_64`,
-			expectedResult: models.ScanResult{
-				Family:  "centos",
-				Release: "6.9",
+			want: models.ScanResult{
+				Family:  "alma",
+				Release: "9.0",
 				RunningKernel: models.Kernel{
-					Release: "2.6.32-695.20.3.el6.x86_64",
+					Release: "5.14.0-70.13.1.el9_0.x86_64",
 				},
 				Packages: models.Packages{
-					"openssl": models.Package{
-						Name:    "openssl",
-						Version: "1.0.1e",
-						Release: "30.el6.11",
+					"dnf": models.Package{
+						Name:    "dnf",
+						Version: "4.14.0",
+						Release: "17.el9.alma.1",
+						Arch:    "noarch",
 					},
-					"Percona-Server-shared-56": models.Package{
-						Name:    "Percona-Server-shared-56",
-						Version: "1:5.6.19",
-						Release: "rel67.0.el6",
+					"nginx": models.Package{
+						Name:            "nginx",
+						Version:         "1:1.24.0",
+						Release:         "4.module_el9.5.0+122+220a1c6b.alma.1",
+						Arch:            "x86_64",
+						ModularityLabel: "nginx:1.24:9050020241004144538:8cf767d6",
 					},
 					"kernel": models.Package{
 						Name:    "kernel",
-						Version: "2.6.32",
-						Release: "695.20.3.el6",
+						Version: "5.14.0",
+						Release: "70.13.1.el9_0",
+						Arch:    "x86_64",
+					},
+					"kernel-core": models.Package{
+						Name:    "kernel-core",
+						Version: "5.14.0",
+						Release: "70.13.1.el9_0",
+						Arch:    "x86_64",
 					},
 				},
+				SrcPackages: models.SrcPackages{
+					"dnf": models.SrcPackage{
+						Name:        "dnf",
+						Version:     "4.14.0-17.el9.alma.1",
+						Arch:        "src",
+						BinaryNames: []string{"dnf"},
+					},
+					"nginx": models.SrcPackage{
+						Name:        "nginx",
+						Version:     "1:1.24.0-4.module_el9.5.0+122+220a1c6b.alma.1",
+						Arch:        "src",
+						BinaryNames: []string{"nginx"},
+					},
+					"kernel": models.SrcPackage{
+						Name:        "kernel",
+						Version:     "5.14.0-70.13.1.el9_0",
+						Arch:        "src",
+						BinaryNames: []string{"kernel", "kernel-core"},
+					},
+				},
+				ScannedCves: models.VulnInfos{},
 			},
 		},
 		{
-			header: map[string]string{
-				"X-Vuls-OS-Family":      "debian",
-				"X-Vuls-OS-Release":     "8.10",
-				"X-Vuls-Kernel-Release": "3.16.0-4-amd64",
-				"X-Vuls-Kernel-Version": "3.16.51-2",
+			name: "debian kernel release, kernel version",
+			args: args{
+				header: http.Header{
+					http.CanonicalHeaderKey("X-Vuls-OS-Family"):      []string{"debian"},
+					http.CanonicalHeaderKey("X-Vuls-OS-Release"):     []string{"8.10"},
+					http.CanonicalHeaderKey("X-Vuls-Kernel-Release"): []string{"3.16.0-4-amd64"},
+					http.CanonicalHeaderKey("X-Vuls-Kernel-Version"): []string{"3.16.51-2"},
+				},
 			},
-			body: "",
-			expectedResult: models.ScanResult{
+			want: models.ScanResult{
 				Family:  "debian",
 				Release: "8.10",
 				RunningKernel: models.Kernel{
 					Release: "3.16.0-4-amd64",
 					Version: "3.16.51-2",
 				},
+				Packages:    models.Packages{},
+				SrcPackages: models.SrcPackages{},
+				ScannedCves: models.VulnInfos{},
 			},
 		},
 		{
-			header: map[string]string{
-				"X-Vuls-OS-Family":      "debian",
-				"X-Vuls-OS-Release":     "8.10",
-				"X-Vuls-Kernel-Release": "3.16.0-4-amd64",
+			name: "debian kernel release",
+			args: args{
+				header: http.Header{
+					http.CanonicalHeaderKey("X-Vuls-OS-Family"):      []string{"debian"},
+					http.CanonicalHeaderKey("X-Vuls-OS-Release"):     []string{"8.10"},
+					http.CanonicalHeaderKey("X-Vuls-Kernel-Release"): []string{"3.16.0-4-amd64"},
+				},
 			},
-			body: "",
-			expectedResult: models.ScanResult{
+			want: models.ScanResult{
 				Family:  "debian",
 				Release: "8.10",
 				RunningKernel: models.Kernel{
 					Release: "3.16.0-4-amd64",
-					Version: "",
 				},
+				Packages:    models.Packages{},
+				SrcPackages: models.SrcPackages{},
+				ScannedCves: models.VulnInfos{},
 			},
 		},
 		{
-			header: map[string]string{
-				"X-Vuls-OS-Family": "windows",
-			},
-			body: `
+			name: "windows",
+			args: args{
+				header: http.Header{
+					http.CanonicalHeaderKey("X-Vuls-OS-Family"): []string{"windows"},
+				},
+				body: `
 Host Name:                 DESKTOP
 OS Name:                   Microsoft Windows 10 Pro
 OS Version:                10.0.19044 N/A Build 19044
@@ -162,7 +212,8 @@ Hyper-V Requirements:      VM Monitor Mode Extensions: Yes
 						   Second Level Address Translation: Yes
 						   Data Execution Prevention Available: Yes
 `,
-			expectedResult: models.ScanResult{
+			},
+			want: models.ScanResult{
 				Family:  "windows",
 				Release: "Windows 10 Version 21H2 for x64-based Systems",
 				RunningKernel: models.Kernel{
@@ -171,60 +222,27 @@ Hyper-V Requirements:      VM Monitor Mode Extensions: Yes
 				WindowsKB: &models.WindowsKB{
 					Applied: []string{"5012117", "4562830", "5003791", "5007401", "5012599", "5011651", "5005699"},
 				},
+				ScannedCves: models.VulnInfos{},
 			},
 		},
 	}
-
 	for _, tt := range tests {
-		header := http.Header{}
-		for k, v := range tt.header {
-			header.Set(k, v)
-		}
-
-		result, err := ViaHTTP(header, tt.body, false)
-		if err != tt.wantErr {
-			t.Errorf("error: expected %s, actual: %s", tt.wantErr, err)
-		}
-
-		if result.Family != tt.expectedResult.Family {
-			t.Errorf("os family: expected %s, actual %s", tt.expectedResult.Family, result.Family)
-		}
-		if result.Release != tt.expectedResult.Release {
-			t.Errorf("os release: expected %s, actual %s", tt.expectedResult.Release, result.Release)
-		}
-		if result.RunningKernel.Release != tt.expectedResult.RunningKernel.Release {
-			t.Errorf("kernel release: expected %s, actual %s",
-				tt.expectedResult.RunningKernel.Release, result.RunningKernel.Release)
-		}
-		if result.RunningKernel.Version != tt.expectedResult.RunningKernel.Version {
-			t.Errorf("kernel version: expected %s, actual %s",
-				tt.expectedResult.RunningKernel.Version, result.RunningKernel.Version)
-		}
-
-		for name, expectedPack := range tt.expectedResult.Packages {
-			pack := result.Packages[name]
-			if pack.Name != expectedPack.Name {
-				t.Errorf("name: expected %s, actual %s", expectedPack.Name, pack.Name)
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ViaHTTP(tt.args.header, tt.args.body, false)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ViaHTTP() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
-			if pack.Version != expectedPack.Version {
-				t.Errorf("version: expected %s, actual %s", expectedPack.Version, pack.Version)
+			if got.WindowsKB != nil {
+				slices.Sort(got.WindowsKB.Applied)
 			}
-			if pack.Release != expectedPack.Release {
-				t.Errorf("release: expected %s, actual %s", expectedPack.Release, pack.Release)
+			if tt.want.WindowsKB != nil {
+				slices.Sort(tt.want.WindowsKB.Applied)
 			}
-		}
-
-		if tt.expectedResult.WindowsKB != nil {
-			slices.Sort(tt.expectedResult.WindowsKB.Applied)
-			slices.Sort(tt.expectedResult.WindowsKB.Unapplied)
-		}
-		if result.WindowsKB != nil {
-			slices.Sort(result.WindowsKB.Applied)
-			slices.Sort(result.WindowsKB.Unapplied)
-		}
-		if !reflect.DeepEqual(tt.expectedResult.WindowsKB, result.WindowsKB) {
-			t.Errorf("windows KB: expected %s, actual %s", tt.expectedResult.WindowsKB, result.WindowsKB)
-		}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ViaHTTP() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
