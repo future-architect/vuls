@@ -136,7 +136,15 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 		}
 	}
 
-	nReq := len(r.Packages) + len(r.SrcPackages)
+	nReq := func() int {
+		switch ovalFamily {
+		case constant.Alpine:
+			return len(r.SrcPackages)
+		default:
+			return len(r.Packages)
+		}
+	}()
+
 	reqChan := make(chan request, nReq)
 	resChan := make(chan response, nReq)
 	errChan := make(chan error, nReq)
@@ -145,28 +153,34 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 	defer close(errChan)
 
 	go func() {
-		for _, pack := range r.Packages {
-			req := request{
-				packName:          pack.Name,
-				versionRelease:    pack.FormatVer(),
-				newVersionRelease: pack.FormatNewVer(),
-				isSrcPack:         false,
-				arch:              pack.Arch,
-				repository:        pack.Repository,
-				modularityLabel:   pack.ModularityLabel,
+		switch ovalFamily {
+		case constant.Alpine:
+			for _, pack := range r.SrcPackages {
+				reqChan <- request{
+					packName:        pack.Name,
+					binaryPackNames: pack.BinaryNames,
+					versionRelease:  pack.Version,
+					isSrcPack:       true,
+					// arch:            pack.Arch,
+				}
 			}
-			if ovalFamily == constant.Amazon && ovalRelease == "2" && req.repository == "" {
-				req.repository = "amzn2-core"
-			}
-			reqChan <- req
-		}
-		for _, pack := range r.SrcPackages {
-			reqChan <- request{
-				packName:        pack.Name,
-				binaryPackNames: pack.BinaryNames,
-				versionRelease:  pack.Version,
-				isSrcPack:       true,
-				// arch:            pack.Arch,
+		default:
+			for _, pack := range r.Packages {
+				req := request{
+					packName:          pack.Name,
+					versionRelease:    pack.FormatVer(),
+					newVersionRelease: pack.FormatNewVer(),
+					isSrcPack:         false,
+					arch:              pack.Arch,
+					repository: func() string {
+						if ovalFamily == constant.Amazon && ovalRelease == "2" && pack.Repository == "" {
+							return "amzn2-core"
+						}
+						return pack.Repository
+					}(),
+					modularityLabel: pack.ModularityLabel,
+				}
+				reqChan <- req
 			}
 		}
 	}()
@@ -313,31 +327,42 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relate
 		}
 	}
 
-	requests := []request{}
-	for _, pack := range r.Packages {
-		req := request{
-			packName:          pack.Name,
-			versionRelease:    pack.FormatVer(),
-			newVersionRelease: pack.FormatNewVer(),
-			arch:              pack.Arch,
-			repository:        pack.Repository,
-			modularityLabel:   pack.ModularityLabel,
-			isSrcPack:         false,
+	requests := func() []request {
+		switch ovalFamily {
+		case constant.Alpine:
+			rs := make([]request, 0, len(r.SrcPackages))
+			for _, pack := range r.SrcPackages {
+				rs = append(rs, request{
+					packName:        pack.Name,
+					binaryPackNames: pack.BinaryNames,
+					versionRelease:  pack.Version,
+					arch:            pack.Arch,
+					isSrcPack:       true,
+				})
+			}
+			return rs
+		default:
+			rs := make([]request, 0, len(r.Packages))
+			for _, pack := range r.Packages {
+				rs = append(rs, request{
+					packName:          pack.Name,
+					versionRelease:    pack.FormatVer(),
+					newVersionRelease: pack.FormatNewVer(),
+					arch:              pack.Arch,
+					repository: func() string {
+						if ovalFamily == constant.Amazon && ovalRelease == "2" && pack.Repository == "" {
+							return "amzn2-core"
+						}
+						return pack.Repository
+					}(),
+					modularityLabel: pack.ModularityLabel,
+					isSrcPack:       false,
+				})
+			}
+			return rs
 		}
-		if ovalFamily == constant.Amazon && ovalRelease == "2" && req.repository == "" {
-			req.repository = "amzn2-core"
-		}
-		requests = append(requests, req)
-	}
-	for _, pack := range r.SrcPackages {
-		requests = append(requests, request{
-			packName:        pack.Name,
-			binaryPackNames: pack.BinaryNames,
-			versionRelease:  pack.Version,
-			arch:            pack.Arch,
-			isSrcPack:       true,
-		})
-	}
+	}()
+
 	for _, req := range requests {
 		definitions, err := driver.GetByPackName(ovalFamily, ovalRelease, req.packName, req.arch)
 		if err != nil {
