@@ -8,158 +8,253 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 )
 
-func TestParseInstalledPackagesLinesRedhat(t *testing.T) {
-	r := newRHEL(config.ServerInfo{})
-
-	var packagetests = []struct {
-		in       string
-		distro   config.Distro
-		kernel   models.Kernel
-		packages models.Packages
+func Test_redhatBase_parseInstalledPackages(t *testing.T) {
+	type fields struct {
+		base base
+		sudo rootPriv
+	}
+	type args struct {
+		stdout string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantbps models.Packages
+		wantsps models.SrcPackages
+		wantErr bool
 	}{
 		{
-			in: `openssl	0	1.0.1e	30.el6.11 x86_64
-Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x86_64
-kernel 0 2.6.32 696.20.1.el6 x86_64
-kernel 0 2.6.32 696.20.3.el6 x86_64
-kernel 0 2.6.32 695.20.3.el6 x86_64`,
-			distro: config.Distro{Family: constant.RedHat, Release: "6.11"},
-			kernel: models.Kernel{},
-			packages: models.Packages{
-				"openssl": models.Package{
-					Name:    "openssl",
-					Version: "1.0.1e",
-					Release: "30.el6.11",
-					Arch:    "x86_64",
+			name: "kernel not set",
+			fields: fields{base: base{
+				Distro: config.Distro{Family: constant.Alma, Release: "9.0"},
+				log:    logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `dnf 0 4.14.0 17.el9.alma.1 noarch dnf-4.14.0-17.el9.alma.1.src.rpm (none)
+nginx 1 1.24.0 4.module_el9.5.0+122+220a1c6b.alma.1 x86_64 nginx-1.24.0-4.module_el9.5.0+122+220a1c6b.alma.1.src.rpm nginx:1.24:9050020241004144538:8cf767d6
+kernel-core 0 5.14.0 70.13.1.el9_0 x86_64 kernel-5.14.0-70.13.1.el9_0.src.rpm (none)
+kernel 0 5.14.0 70.13.1.el9_0 x86_64 kernel-5.14.0-70.13.1.el9_0.src.rpm (none)
+kernel-core 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)
+kernel 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)`,
+			},
+			wantbps: models.Packages{
+				"dnf": models.Package{
+					Name:    "dnf",
+					Version: "4.14.0",
+					Release: "17.el9.alma.1",
+					Arch:    "noarch",
 				},
-				"Percona-Server-shared-56": models.Package{
-					Name:    "Percona-Server-shared-56",
-					Version: "1:5.6.19",
-					Release: "rel67.0.el6",
-					Arch:    "x86_64",
+				"nginx": models.Package{
+					Name:            "nginx",
+					Version:         "1:1.24.0",
+					Release:         "4.module_el9.5.0+122+220a1c6b.alma.1",
+					Arch:            "x86_64",
+					ModularityLabel: "nginx:1.24:9050020241004144538:8cf767d6",
 				},
 				"kernel": models.Package{
 					Name:    "kernel",
-					Version: "2.6.32",
-					Release: "696.20.3.el6",
+					Version: "5.14.0",
+					Release: "503.15.1.el9_5",
 					Arch:    "x86_64",
+				},
+				"kernel-core": models.Package{
+					Name:    "kernel-core",
+					Version: "5.14.0",
+					Release: "503.15.1.el9_5",
+					Arch:    "x86_64",
+				},
+			},
+			wantsps: models.SrcPackages{
+				"dnf": models.SrcPackage{
+					Name:        "dnf",
+					Version:     "4.14.0-17.el9.alma.1",
+					Arch:        "src",
+					BinaryNames: []string{"dnf"},
+				},
+				"nginx": models.SrcPackage{
+					Name:        "nginx",
+					Version:     "1:1.24.0-4.module_el9.5.0+122+220a1c6b.alma.1",
+					Arch:        "src",
+					BinaryNames: []string{"nginx"},
+				},
+				"kernel": models.SrcPackage{
+					Name:        "kernel",
+					Version:     "5.14.0-503.15.1.el9_5",
+					Arch:        "src",
+					BinaryNames: []string{"kernel", "kernel-core"},
 				},
 			},
 		},
 		{
-			in: `openssl	0	1.0.1e	30.el6.11 x86_64
-Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x86_64
-kernel 0 2.6.32 696.20.1.el6 x86_64
-kernel 0 2.6.32 696.20.3.el6 x86_64
-kernel 0 2.6.32 695.20.3.el6 x86_64
-kernel-devel 0 2.6.32 696.20.1.el6 x86_64
-kernel-devel 0 2.6.32 696.20.3.el6 x86_64
-kernel-devel 0 2.6.32 695.20.3.el6 x86_64`,
-			distro: config.Distro{Family: constant.RedHat, Release: "6.11"},
-			kernel: models.Kernel{Release: "2.6.32-696.20.3.el6.x86_64"},
-			packages: models.Packages{
-				"openssl": models.Package{
-					Name:    "openssl",
-					Version: "1.0.1e",
-					Release: "30.el6.11",
-					Arch:    "x86_64",
+			name: "kernel set",
+			fields: fields{base: base{
+				Distro:     config.Distro{Family: constant.Alma, Release: "9.0"},
+				osPackages: osPackages{Kernel: models.Kernel{Release: "5.14.0-70.13.1.el9_0.x86_64"}},
+				log:        logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `dnf 0 4.14.0 17.el9.alma.1 noarch dnf-4.14.0-17.el9.alma.1.src.rpm (none)
+nginx 1 1.24.0 4.module_el9.5.0+122+220a1c6b.alma.1 x86_64 nginx-1.24.0-4.module_el9.5.0+122+220a1c6b.alma.1.src.rpm nginx:1.24:9050020241004144538:8cf767d6
+kernel-core 0 5.14.0 70.13.1.el9_0 x86_64 kernel-5.14.0-70.13.1.el9_0.src.rpm (none)
+kernel 0 5.14.0 70.13.1.el9_0 x86_64 kernel-5.14.0-70.13.1.el9_0.src.rpm (none)
+kernel-core 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)
+kernel 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)`,
+			},
+			wantbps: models.Packages{
+				"dnf": models.Package{
+					Name:    "dnf",
+					Version: "4.14.0",
+					Release: "17.el9.alma.1",
+					Arch:    "noarch",
 				},
-				"Percona-Server-shared-56": models.Package{
-					Name:    "Percona-Server-shared-56",
-					Version: "1:5.6.19",
-					Release: "rel67.0.el6",
-					Arch:    "x86_64",
+				"nginx": models.Package{
+					Name:            "nginx",
+					Version:         "1:1.24.0",
+					Release:         "4.module_el9.5.0+122+220a1c6b.alma.1",
+					Arch:            "x86_64",
+					ModularityLabel: "nginx:1.24:9050020241004144538:8cf767d6",
 				},
 				"kernel": models.Package{
 					Name:    "kernel",
-					Version: "2.6.32",
-					Release: "696.20.3.el6",
+					Version: "5.14.0",
+					Release: "70.13.1.el9_0",
 					Arch:    "x86_64",
 				},
-				"kernel-devel": models.Package{
-					Name:    "kernel-devel",
-					Version: "2.6.32",
-					Release: "696.20.3.el6",
+				"kernel-core": models.Package{
+					Name:    "kernel-core",
+					Version: "5.14.0",
+					Release: "70.13.1.el9_0",
 					Arch:    "x86_64",
+				},
+			},
+			wantsps: models.SrcPackages{
+				"dnf": models.SrcPackage{
+					Name:        "dnf",
+					Version:     "4.14.0-17.el9.alma.1",
+					Arch:        "src",
+					BinaryNames: []string{"dnf"},
+				},
+				"nginx": models.SrcPackage{
+					Name:        "nginx",
+					Version:     "1:1.24.0-4.module_el9.5.0+122+220a1c6b.alma.1",
+					Arch:        "src",
+					BinaryNames: []string{"nginx"},
+				},
+				"kernel": models.SrcPackage{
+					Name:        "kernel",
+					Version:     "5.14.0-70.13.1.el9_0",
+					Arch:        "src",
+					BinaryNames: []string{"kernel", "kernel-core"},
 				},
 			},
 		},
 		{
-			in: `openssl	0	1.0.1e	30.el6.11 x86_64
-Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x86_64
-kernel 0 2.6.32 696.20.1.el6 x86_64
-kernel 0 2.6.32 696.20.3.el6 x86_64
-kernel 0 2.6.32 695.20.3.el6 x86_64
-kernel-devel 0 2.6.32 696.20.1.el6 x86_64
-kernel-devel 0 2.6.32 696.20.3.el6 x86_64
-kernel-devel 0 2.6.32 695.20.3.el6 x86_64`,
-			distro: config.Distro{Family: constant.RedHat, Release: "6.11"},
-			kernel: models.Kernel{Release: "2.6.32-695.20.3.el6.x86_64"},
-			packages: models.Packages{
-				"openssl": models.Package{
-					Name:    "openssl",
-					Version: "1.0.1e",
-					Release: "30.el6.11",
+			name: "debug kernel",
+			fields: fields{base: base{
+				Distro:     config.Distro{Family: constant.Alma, Release: "9.0"},
+				osPackages: osPackages{Kernel: models.Kernel{Release: "5.14.0-503.15.1.el9_5.x86_64+debug"}},
+				log:        logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `kernel-core 0 5.14.0 70.13.1.el9_0 x86_64 kernel-5.14.0-70.13.1.el9_0.src.rpm (none)
+kernel 0 5.14.0 70.13.1.el9_0 x86_64 kernel-5.14.0-70.13.1.el9_0.src.rpm (none)
+kernel-core 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)
+kernel 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)
+kernel-debug-core 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)
+kernel-debug 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)`,
+			},
+			wantbps: models.Packages{
+				"kernel-debug": models.Package{
+					Name:    "kernel-debug",
+					Version: "5.14.0",
+					Release: "503.15.1.el9_5",
 					Arch:    "x86_64",
 				},
-				"Percona-Server-shared-56": models.Package{
-					Name:    "Percona-Server-shared-56",
-					Version: "1:5.6.19",
-					Release: "rel67.0.el6",
+				"kernel-debug-core": models.Package{
+					Name:    "kernel-debug-core",
+					Version: "5.14.0",
+					Release: "503.15.1.el9_5",
 					Arch:    "x86_64",
 				},
-				"kernel": models.Package{
-					Name:    "kernel",
-					Version: "2.6.32",
-					Release: "695.20.3.el6",
-					Arch:    "x86_64",
-				},
-				"kernel-devel": models.Package{
-					Name:    "kernel-devel",
-					Version: "2.6.32",
-					Release: "695.20.3.el6",
-					Arch:    "x86_64",
+			},
+			wantsps: models.SrcPackages{
+				"kernel": models.SrcPackage{
+					Name:        "kernel",
+					Version:     "5.14.0-503.15.1.el9_5",
+					Arch:        "src",
+					BinaryNames: []string{"kernel-debug", "kernel-debug-core"},
 				},
 			},
 		},
 		{
-			in: `openssl	0	1.0.1e	30.el6.11 x86_64
-Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x86_64
-kernel 0 2.6.32 696.20.1.el6 x86_64
-kernel 0 2.6.32 696.20.3.el6 x86_64
-kernel 0 2.6.32 695.20.3.el6 x86_64`,
-			distro: config.Distro{Family: constant.Amazon, Release: "2 (Karoo)"},
-			kernel: models.Kernel{},
-			packages: models.Packages{
-				"openssl": models.Package{
-					Name:    "openssl",
-					Version: "1.0.1e",
-					Release: "30.el6.11",
+			name: "amazon 2 (rpm -qa)",
+			fields: fields{base: base{
+				Distro: config.Distro{Family: constant.Amazon, Release: "2 (Karoo)"},
+				log:    logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `yum-utils 0 1.1.31 46.amzn2.0.1 noarch yum-utils-1.1.31-46.amzn2.0.1.src.rpm
+zlib 0 1.2.7 19.amzn2.0.3 x86_64 zlib-1.2.7-19.amzn2.0.3.src.rpm
+java-1.8.0-amazon-corretto 1 1.8.0_432.b06 1.amzn2 x86_64 java-1.8.0-amazon-corretto-1.8.0_432.b06-1.amzn2.src.rpm`,
+			},
+			wantbps: models.Packages{
+				"yum-utils": models.Package{
+					Name:    "yum-utils",
+					Version: "1.1.31",
+					Release: "46.amzn2.0.1",
+					Arch:    "noarch",
+				},
+				"zlib": models.Package{
+					Name:    "zlib",
+					Version: "1.2.7",
+					Release: "19.amzn2.0.3",
 					Arch:    "x86_64",
 				},
-				"Percona-Server-shared-56": models.Package{
-					Name:    "Percona-Server-shared-56",
-					Version: "1:5.6.19",
-					Release: "rel67.0.el6",
+				"java-1.8.0-amazon-corretto": models.Package{
+					Name:    "java-1.8.0-amazon-corretto",
+					Version: "1:1.8.0_432.b06",
+					Release: "1.amzn2",
 					Arch:    "x86_64",
 				},
-				"kernel": models.Package{
-					Name:    "kernel",
-					Version: "2.6.32",
-					Release: "696.20.3.el6",
-					Arch:    "x86_64",
+			},
+			wantsps: models.SrcPackages{
+				"yum-utils": models.SrcPackage{
+					Name:        "yum-utils",
+					Version:     "1.1.31-46.amzn2.0.1",
+					Arch:        "src",
+					BinaryNames: []string{"yum-utils"},
+				},
+				"zlib": models.SrcPackage{
+					Name:        "zlib",
+					Version:     "1.2.7-19.amzn2.0.3",
+					Arch:        "src",
+					BinaryNames: []string{"zlib"},
+				},
+				"java-1.8.0-amazon-corretto": models.SrcPackage{
+					Name:        "java-1.8.0-amazon-corretto",
+					Version:     "1:1.8.0_432.b06-1.amzn2",
+					Arch:        "src",
+					BinaryNames: []string{"java-1.8.0-amazon-corretto"},
 				},
 			},
 		},
 		{
-			in: `yum-utils 0 1.1.31 46.amzn2.0.1 noarch @amzn2-core
-zlib 0 1.2.7 19.amzn2.0.1 x86_64 installed
-java-1.8.0-amazon-corretto 1 1.8.0_192.b12 1.amzn2 x86_64 @amzn2extra-corretto8`,
-			distro: config.Distro{Family: constant.Amazon, Release: "2 (Karoo)"},
-			packages: models.Packages{
+			name: "amazon 2 (repoquery)",
+			fields: fields{base: base{
+				Distro: config.Distro{Family: constant.Amazon, Release: "2 (Karoo)"},
+				log:    logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `yum-utils 0 1.1.31 46.amzn2.0.1 noarch yum-utils-1.1.31-46.amzn2.0.1.src.rpm @amzn2-core
+zlib 0 1.2.7 19.amzn2.0.3 x86_64 zlib-1.2.7-19.amzn2.0.3.src.rpm installed
+java-1.8.0-amazon-corretto 1 1.8.0_432.b06 1.amzn2 x86_64 java-1.8.0-amazon-corretto-1.8.0_432.b06-1.amzn2.src.rpm @amzn2extra-corretto8`,
+			},
+			wantbps: models.Packages{
 				"yum-utils": models.Package{
 					Name:       "yum-utils",
 					Version:    "1.1.31",
@@ -170,251 +265,239 @@ java-1.8.0-amazon-corretto 1 1.8.0_192.b12 1.amzn2 x86_64 @amzn2extra-corretto8`
 				"zlib": models.Package{
 					Name:       "zlib",
 					Version:    "1.2.7",
-					Release:    "19.amzn2.0.1",
+					Release:    "19.amzn2.0.3",
 					Arch:       "x86_64",
 					Repository: "amzn2-core",
 				},
 				"java-1.8.0-amazon-corretto": models.Package{
 					Name:       "java-1.8.0-amazon-corretto",
-					Version:    "1:1.8.0_192.b12",
+					Version:    "1:1.8.0_432.b06",
 					Release:    "1.amzn2",
 					Arch:       "x86_64",
 					Repository: "amzn2extra-corretto8",
 				},
 			},
-		},
-		{
-			in: `kernel-tools-libs 0 5.14.0 70.13.1.el9_0 x86_64 (none)
-kernel-core 0 5.14.0 70.13.1.el9_0 x86_64 (none)
-kernel-modules 0 5.14.0 70.13.1.el9_0 x86_64 (none)
-kernel-tools 0 5.14.0 70.13.1.el9_0 x86_64 (none)
-kernel 0 5.14.0 70.13.1.el9_0 x86_64 (none)
-kernel-srpm-macros 0 1.0 11.el9 noarch (none)
-kernel-debug-modules-core 0 5.14.0 427.13.1.el9_4 x86_64 (none)
-kernel-debug-core 0 5.14.0 427.13.1.el9_4 x86_64 (none)
-kernel-debug-modules 0 5.14.0 427.13.1.el9_4 x86_64 (none)
-kernel-debug 0 5.14.0 427.13.1.el9_4 x86_64 (none)
-kernel-debug-modules-core 0 5.14.0 427.18.1.el9_4 x86_64 (none)
-kernel-debug-core 0 5.14.0 427.18.1.el9_4 x86_64 (none)
-kernel-debug-modules 0 5.14.0 427.18.1.el9_4 x86_64 (none)
-kernel-debug 0 5.14.0 427.18.1.el9_4 x86_64 (none)
-kernel-modules-core 0 5.14.0 427.13.1.el9_4 x86_64 (none)
-kernel-core 0 5.14.0 427.13.1.el9_4 x86_64 (none)
-kernel-modules 0 5.14.0 427.13.1.el9_4 x86_64 (none)
-kernel 0 5.14.0 427.13.1.el9_4 x86_64 (none)`,
-			distro: config.Distro{Family: constant.Alma, Release: "9.0"},
-			kernel: models.Kernel{Release: "5.14.0-427.13.1.el9_4.x86_64+debug"},
-			packages: models.Packages{
-				"kernel-tools-libs": models.Package{
-					Name:    "kernel-tools-libs",
-					Version: "5.14.0",
-					Release: "70.13.1.el9_0",
-					Arch:    "x86_64",
+			wantsps: models.SrcPackages{
+				"yum-utils": models.SrcPackage{
+					Name:        "yum-utils",
+					Version:     "1.1.31-46.amzn2.0.1",
+					Arch:        "src",
+					BinaryNames: []string{"yum-utils"},
 				},
-				"kernel-tools": models.Package{
-					Name:    "kernel-tools",
-					Version: "5.14.0",
-					Release: "70.13.1.el9_0",
-					Arch:    "x86_64",
+				"zlib": models.SrcPackage{
+					Name:        "zlib",
+					Version:     "1.2.7-19.amzn2.0.3",
+					Arch:        "src",
+					BinaryNames: []string{"zlib"},
 				},
-				"kernel-srpm-macros": models.Package{
-					Name:    "kernel-srpm-macros",
-					Version: "1.0",
-					Release: "11.el9",
-					Arch:    "noarch",
-				},
-				"kernel-debug-modules-core": models.Package{
-					Name:    "kernel-debug-modules-core",
-					Version: "5.14.0",
-					Release: "427.13.1.el9_4",
-					Arch:    "x86_64",
-				},
-				"kernel-debug-core": models.Package{
-					Name:    "kernel-debug-core",
-					Version: "5.14.0",
-					Release: "427.13.1.el9_4",
-					Arch:    "x86_64",
-				},
-				"kernel-debug-modules": models.Package{
-					Name:    "kernel-debug-modules",
-					Version: "5.14.0",
-					Release: "427.13.1.el9_4",
-					Arch:    "x86_64",
-				},
-				"kernel-debug": models.Package{
-					Name:    "kernel-debug",
-					Version: "5.14.0",
-					Release: "427.13.1.el9_4",
-					Arch:    "x86_64",
+				"java-1.8.0-amazon-corretto": models.SrcPackage{
+					Name:        "java-1.8.0-amazon-corretto",
+					Version:     "1:1.8.0_432.b06-1.amzn2",
+					Arch:        "src",
+					BinaryNames: []string{"java-1.8.0-amazon-corretto"},
 				},
 			},
 		},
 	}
-
-	for _, tt := range packagetests {
-		r.Distro = tt.distro
-		r.Kernel = tt.kernel
-		packages, _, err := r.parseInstalledPackages(tt.in)
-		if err != nil {
-			t.Errorf("Unexpected error: %s", err)
-		}
-		for name, expectedPack := range tt.packages {
-			pack := packages[name]
-			if pack.Name != expectedPack.Name {
-				t.Errorf("name: expected %s, actual %s", expectedPack.Name, pack.Name)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := &redhatBase{
+				base: tt.fields.base,
+				sudo: tt.fields.sudo,
 			}
-			if pack.Version != expectedPack.Version {
-				t.Errorf("version: expected %s, actual %s", expectedPack.Version, pack.Version)
+			gotbps, gotsps, err := o.parseInstalledPackages(tt.args.stdout)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("redhatBase.parseInstalledPackages() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
-			if pack.Release != expectedPack.Release {
-				t.Errorf("release: expected %s, actual %s", expectedPack.Release, pack.Release)
+			if !reflect.DeepEqual(gotbps, tt.wantbps) {
+				t.Errorf("redhatBase.parseInstalledPackages() gotbps = %v, wantbps %v", gotbps, tt.wantbps)
 			}
-			if pack.Arch != expectedPack.Arch {
-				t.Errorf("arch: expected %s, actual %s", expectedPack.Arch, pack.Arch)
+			if !reflect.DeepEqual(gotsps, tt.wantsps) {
+				t.Errorf("redhatBase.parseInstalledPackages() gotsps = %v, wantsps %v", gotsps, tt.wantsps)
 			}
-			if pack.Repository != expectedPack.Repository {
-				t.Errorf("repository: expected %s, actual %s", expectedPack.Repository, pack.Repository)
-			}
-		}
+		})
 	}
-
 }
-func TestParseInstalledPackagesLine(t *testing.T) {
-	r := newRHEL(config.ServerInfo{})
 
-	var packagetests = []struct {
-		in   string
-		pack models.Package
-		err  bool
+func Test_redhatBase_parseInstalledPackagesLine(t *testing.T) {
+	type args struct {
+		line string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantbp  *models.Package
+		wantsp  *models.SrcPackage
+		wantErr bool
 	}{
 		{
-			"openssl	0	1.0.1e	30.el6.11 x86_64",
-			models.Package{
-				Name:    "openssl",
-				Version: "1.0.1e",
-				Release: "30.el6.11",
+			name: "old: package 1",
+			args: args{line: "gpg-pubkey (none) f5282ee4 58ac92a3 (none) (none)"},
+			wantbp: &models.Package{
+				Name:    "gpg-pubkey",
+				Version: "f5282ee4",
+				Release: "58ac92a3",
+				Arch:    "(none)",
 			},
-			false,
+			wantsp: nil,
 		},
 		{
-			"Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x86_64",
-			models.Package{
-				Name:    "Percona-Server-shared-56",
-				Version: "1:5.6.19",
-				Release: "rel67.0.el6",
+			name: "new: package 1",
+			args: args{line: "gpg-pubkey 0 f5282ee4 58ac92a3 (none) (none)"},
+			wantbp: &models.Package{
+				Name:    "gpg-pubkey",
+				Version: "f5282ee4",
+				Release: "58ac92a3",
+				Arch:    "(none)",
 			},
-			false,
+			wantsp: nil,
 		},
 		{
-			"community-mysql 0 8.0.26 1.module_f35+12627+b26747dd x86_64 mysql:8.0:3520210817160118:f27b74a8",
-			models.Package{
+			name: "new: package 2",
+			args: args{line: "openssl-libs 1 1.1.0h 3.fc27 x86_64 openssl-1.1.0h-3.fc27.src.rpm"},
+			wantbp: &models.Package{
+				Name:    "openssl-libs",
+				Version: "1:1.1.0h",
+				Release: "3.fc27",
+				Arch:    "x86_64",
+			},
+			wantsp: &models.SrcPackage{
+				Name:        "openssl",
+				Version:     "1:1.1.0h-3.fc27",
+				Arch:        "src",
+				BinaryNames: []string{"openssl-libs"},
+			},
+		},
+		{
+			name: "modularity: package 1",
+			args: args{line: "dnf 0 4.14.0 1.fc35 noarch dnf-4.14.0-1.fc35.src.rpm (none)"},
+			wantbp: &models.Package{
+				Name:    "dnf",
+				Version: "4.14.0",
+				Release: "1.fc35",
+				Arch:    "noarch",
+			},
+			wantsp: &models.SrcPackage{
+				Name:        "dnf",
+				Version:     "4.14.0-1.fc35",
+				Arch:        "src",
+				BinaryNames: []string{"dnf"},
+			},
+		},
+		{
+			name: "modularity: package 2",
+			args: args{line: "community-mysql 0 8.0.31 1.module_f35+15642+4eed9dbd x86_64 community-mysql-8.0.31-1.module_f35+15642+4eed9dbd.src.rpm mysql:8.0:3520221024193033:f27b74a8"},
+			wantbp: &models.Package{
 				Name:            "community-mysql",
-				Version:         "8.0.26",
-				Release:         "1.module_f35+12627+b26747dd",
-				ModularityLabel: "mysql:8.0:3520210817160118:f27b74a8",
+				Version:         "8.0.31",
+				Release:         "1.module_f35+15642+4eed9dbd",
+				Arch:            "x86_64",
+				ModularityLabel: "mysql:8.0:3520221024193033:f27b74a8",
 			},
-			false,
-		},
-		{
-			"dnf-utils 0 4.0.24 1.fc35 noarch (none)",
-			models.Package{
-				Name:            "dnf-utils",
-				Version:         "4.0.24",
-				Release:         "1.fc35",
-				ModularityLabel: "",
+			wantsp: &models.SrcPackage{
+				Name:        "community-mysql",
+				Version:     "8.0.31-1.module_f35+15642+4eed9dbd",
+				Arch:        "src",
+				BinaryNames: []string{"community-mysql"},
 			},
-			false,
 		},
 	}
-
-	for i, tt := range packagetests {
-		p, err := r.parseInstalledPackagesLine(tt.in)
-		if err == nil && tt.err {
-			t.Errorf("Expected err not occurred: %d", i)
-		}
-		if err != nil && !tt.err {
-			t.Errorf("UnExpected err not occurred: %d", i)
-		}
-		if p.Name != tt.pack.Name {
-			t.Errorf("name: expected %s, actual %s", tt.pack.Name, p.Name)
-		}
-		if p.Version != tt.pack.Version {
-			t.Errorf("version: expected %s, actual %s", tt.pack.Version, p.Version)
-		}
-		if p.Release != tt.pack.Release {
-			t.Errorf("release: expected %s, actual %s", tt.pack.Release, p.Release)
-		}
-		if p.ModularityLabel != tt.pack.ModularityLabel {
-			t.Errorf("modularitylabel: expected %s, actual %s", tt.pack.ModularityLabel, p.ModularityLabel)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotbp, gotsp, err := (&redhatBase{}).parseInstalledPackagesLine(tt.args.line)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("redhatBase.parseInstalledPackagesLine() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotbp, tt.wantbp) {
+				t.Errorf("redhatBase.parseInstalledPackagesLine() gotbp = %v, wantbp %v", gotbp, tt.wantbp)
+			}
+			if !reflect.DeepEqual(gotsp, tt.wantsp) {
+				t.Errorf("redhatBase.parseInstalledPackagesLine() gotsp = %v, wantsp %v", gotsp, tt.wantsp)
+			}
+		})
 	}
 }
 
-func TestParseInstalledPackagesLineFromRepoquery(t *testing.T) {
-	r := newRHEL(config.ServerInfo{})
-
-	var packagetests = []struct {
-		in   string
-		pack models.Package
-		err  bool
+func Test_redhatBase_parseInstalledPackagesLineFromRepoquery(t *testing.T) {
+	type args struct {
+		line string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantbp  *models.Package
+		wantsp  *models.SrcPackage
+		wantErr bool
 	}{
 		{
-			in: "yum-utils 0 1.1.31 46.amzn2.0.1 noarch @amzn2-core",
-			pack: models.Package{
+			name: "default install",
+			args: args{line: "zlib 0 1.2.7 19.amzn2.0.3 x86_64 zlib-1.2.7-19.amzn2.0.3.src.rpm installed"},
+			wantbp: &models.Package{
+				Name:       "zlib",
+				Version:    "1.2.7",
+				Release:    "19.amzn2.0.3",
+				Arch:       "x86_64",
+				Repository: "amzn2-core",
+			},
+			wantsp: &models.SrcPackage{
+				Name:        "zlib",
+				Version:     "1.2.7-19.amzn2.0.3",
+				Arch:        "src",
+				BinaryNames: []string{"zlib"},
+			},
+		},
+		{
+			name: "manual install",
+			args: args{line: "yum-utils 0 1.1.31 46.amzn2.0.1 noarch yum-utils-1.1.31-46.amzn2.0.1.src.rpm @amzn2-core"},
+			wantbp: &models.Package{
 				Name:       "yum-utils",
 				Version:    "1.1.31",
 				Release:    "46.amzn2.0.1",
 				Arch:       "noarch",
 				Repository: "amzn2-core",
 			},
-		},
-		{
-			in: "zlib 0 1.2.7 19.amzn2.0.1 x86_64 installed",
-			pack: models.Package{
-				Name:       "zlib",
-				Version:    "1.2.7",
-				Release:    "19.amzn2.0.1",
-				Arch:       "x86_64",
-				Repository: "amzn2-core",
+			wantsp: &models.SrcPackage{
+				Name:        "yum-utils",
+				Version:     "1.1.31-46.amzn2.0.1",
+				Arch:        "src",
+				BinaryNames: []string{"yum-utils"},
 			},
 		},
 		{
-			in: "java-1.8.0-amazon-corretto 1 1.8.0_192.b12 1.amzn2 x86_64 @amzn2extra-corretto8",
-			pack: models.Package{
+			name: "extra repository",
+			args: args{line: "java-1.8.0-amazon-corretto 1 1.8.0_432.b06 1.amzn2 x86_64 java-1.8.0-amazon-corretto-1.8.0_432.b06-1.amzn2.src.rpm @amzn2extra-corretto8"},
+			wantbp: &models.Package{
 				Name:       "java-1.8.0-amazon-corretto",
-				Version:    "1:1.8.0_192.b12",
+				Version:    "1:1.8.0_432.b06",
 				Release:    "1.amzn2",
 				Arch:       "x86_64",
 				Repository: "amzn2extra-corretto8",
 			},
+			wantsp: &models.SrcPackage{
+				Name:        "java-1.8.0-amazon-corretto",
+				Version:     "1:1.8.0_432.b06-1.amzn2",
+				Arch:        "src",
+				BinaryNames: []string{"java-1.8.0-amazon-corretto"},
+			},
 		},
 	}
-
-	for i, tt := range packagetests {
-		p, err := r.parseInstalledPackagesLineFromRepoquery(tt.in)
-		if err == nil && tt.err {
-			t.Errorf("Expected err not occurred: %d", i)
-		}
-		if err != nil && !tt.err {
-			t.Errorf("UnExpected err not occurred: %d", i)
-		}
-		if p.Name != tt.pack.Name {
-			t.Errorf("name: expected %s, actual %s", tt.pack.Name, p.Name)
-		}
-		if p.Version != tt.pack.Version {
-			t.Errorf("version: expected %s, actual %s", tt.pack.Version, p.Version)
-		}
-		if p.Release != tt.pack.Release {
-			t.Errorf("release: expected %s, actual %s", tt.pack.Release, p.Release)
-		}
-		if p.Arch != tt.pack.Arch {
-			t.Errorf("arch: expected %s, actual %s", tt.pack.Arch, p.Arch)
-		}
-		if p.Repository != tt.pack.Repository {
-			t.Errorf("repository: expected %s, actual %s", tt.pack.Repository, p.Repository)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotbp, gotsp, err := (&redhatBase{}).parseInstalledPackagesLineFromRepoquery(tt.args.line)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("redhatBase.parseInstalledPackagesLineFromRepoquery() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotbp, tt.wantbp) {
+				t.Errorf("redhatBase.parseInstalledPackagesLineFromRepoquery() gotbp = %v, wantbp %v", gotbp, tt.wantbp)
+			}
+			if !reflect.DeepEqual(gotsp, tt.wantsp) {
+				t.Errorf("redhatBase.parseInstalledPackagesLineFromRepoquery() gotsp = %v, wantsp %v", gotsp, tt.wantsp)
+			}
+		})
 	}
-
 }
 
 func TestParseYumCheckUpdateLine(t *testing.T) {
@@ -673,7 +756,7 @@ func Test_redhatBase_parseRpmQfLine(t *testing.T) {
 		{
 			name:   "valid line",
 			fields: fields{base: base{}},
-			args:   args{line: "Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x86_64"},
+			args:   args{line: "Percona-Server-shared-56	1	5.6.19	rel67.0.el6 x86_64 Percona-SQL-56-5.6.19-rel67.0.el6.src.rpm"},
 			wantPkg: &models.Package{
 				Name:    "Percona-Server-shared-56",
 				Version: "1:5.6.19",

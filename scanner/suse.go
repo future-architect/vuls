@@ -168,9 +168,9 @@ func (o *suse) sudoNoPasswdCmdsFastRoot() []cmd {
 	}
 }
 
-func (o *suse) scanPackages() error {
+func (o *suse) scanPackages() (err error) {
 	o.log.Infof("Scanning OS pkg in %s", o.getServerInfo().Mode)
-	installed, err := o.scanInstalledPackages()
+	o.Packages, o.SrcPackages, err = o.scanInstalledPackages()
 	if err != nil {
 		o.log.Errorf("Failed to scan installed packages: %s", err)
 		return err
@@ -185,7 +185,6 @@ func (o *suse) scanPackages() error {
 	}
 
 	if o.getServerInfo().Mode.IsOffline() {
-		o.Packages = installed
 		return nil
 	}
 
@@ -196,10 +195,8 @@ func (o *suse) scanPackages() error {
 		o.warns = append(o.warns, err)
 		// Only warning this error
 	} else {
-		installed.MergeNewVersion(updatable)
+		o.Packages.MergeNewVersion(updatable)
 	}
-
-	o.Packages = installed
 	return nil
 }
 
