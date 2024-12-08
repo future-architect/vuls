@@ -328,3 +328,9 @@ func (cnf *CtiConf) Init() {
 	cnf.setDefault("go-cti.sqlite3")
 	cnf.DebugSQL = Conf.DebugSQL
 }
+
+type Vuls2DictConf struct {
+	Repository string
+	Path       string
+	SkipUpdate bool
+}
