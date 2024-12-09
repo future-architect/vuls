@@ -239,8 +239,8 @@ github.com/GoogleCloudPlatform/docker-credential-gcr v2.0.5+incompatible h1:juIa
 github.com/GoogleCloudPlatform/docker-credential-gcr v2.0.5+incompatible/go.mod h1:BB1eHdMLYEFuFdBlRMb0N7YGVdM5s6Pt0njxgvfbGGs=
 github.com/MaineK00n/vuls-data-update v0.0.0-20241208090537-1636de60e613 h1:Vnnvrl8aYjq6Lymjj6bQIm+vHpGo1zPE7jZESke+zkg=
 github.com/MaineK00n/vuls-data-update v0.0.0-20241208090537-1636de60e613/go.mod h1:n5rQrltX0Fp2gKJj+nGE7V81ezSdRBxANuhmLtxkWo4=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20241208144343-786d30c45984 h1:yrnzRu3K1S6/SqYwqelPQg5MXcn3CduqlLqlNmd3ryw=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20241208144343-786d30c45984/go.mod h1:ZNpPkiaGaFwDqq0dhSjcOUWdVsiwZQhybLoBQJW5DDg=
+github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20241209093909-fe09a6bc25a4 h1:Fu208UPPav5mw7pGshT/v1As93X7EnAtmsHns2tNqek=
+github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20241209093909-fe09a6bc25a4/go.mod h1:ZNpPkiaGaFwDqq0dhSjcOUWdVsiwZQhybLoBQJW5DDg=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/Masterminds/goutils v1.1.1 h1:5nUrii3FMTL5diU80unEVvNevw1nH4+ZV4DSLVJLSYI=

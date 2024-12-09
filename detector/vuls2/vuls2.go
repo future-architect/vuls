@@ -43,28 +43,14 @@ func Detect(r *models.ScanResult, vuls2Cnf config.Vuls2DictConf, noProgress bool
 		return nil
 	}
 
-	c := Config{
-		Repository: func() string {
-			if vuls2Cnf.Repository != "" {
-				return vuls2Cnf.Repository
-			}
-			return DefaultGHCRRepository
-		}(),
-		Path: func() string {
-			if vuls2Cnf.Path != "" {
-				return vuls2Cnf.Path
-			}
-			return DefaultPath
-		}(),
-		SkipUpdate: vuls2Cnf.SkipUpdate,
-		Quiet:      noProgress,
+	if vuls2Cnf.Repository == "" {
+		vuls2Cnf.Repository = DefaultGHCRRepository
+	}
+	if vuls2Cnf.Path == "" {
+		vuls2Cnf.Path = DefaultPath
 	}
 
-	if err := c.Refresh(); err != nil {
-		return xerrors.Errorf("Failed to refresh vuls2 db. err: %w", err)
-	}
-
-	dbc, err := c.New()
+	dbc, err := newDBConnection(vuls2Cnf, noProgress)
 	if err != nil {
 		return xerrors.Errorf("Failed to get new db connection. err: %w", err)
 	}
