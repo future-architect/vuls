@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/xerrors"
+
 	"github.com/MaineK00n/vuls2/pkg/db/common"
 	"github.com/MaineK00n/vuls2/pkg/db/common/types"
 	"github.com/future-architect/vuls/config"
-	"golang.org/x/xerrors"
 )
 
 func Test_shouldDownload(t *testing.T) {
