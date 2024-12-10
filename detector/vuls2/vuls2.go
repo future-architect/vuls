@@ -237,16 +237,18 @@ func postConvert(e ecosystemTypes.Ecosystem, family string, vuls2Detected detect
 					if !foundBase {
 						sviBase.vulnInfo.CveContents[ccType] = ccs
 					} else {
-						resolved := resolveCveContentList(sr.Family, sviBase.rootID, svi.rootID, ccsBase, ccs)
-						sviBase.vulnInfo.CveContents[ccType] = resolved
+						svi, ccs := resolveCveContentList(sr.Family, sviBase, svi, ccsBase, ccs)
+						sviBase.rootID = svi.rootID
+						sviBase.sourceID = svi.sourceID
+						sviBase.vulnInfo.CveContents[ccType] = ccs
 					}
 				}
-				vimBase[vid] = sviBase
+
+				for _, d := range svi.vulnInfo.DistroAdvisories {
+					sviBase.vulnInfo.DistroAdvisories.AppendIfMissing(&d)
+				}
 			}
 
-			for _, d := range svi.vulnInfo.DistroAdvisories {
-				sviBase.vulnInfo.DistroAdvisories.AppendIfMissing(&d)
-			}
 			smBase := make(map[string]models.PackageFixStatus)
 			for _, sBase := range sviBase.vulnInfo.AffectedPackages {
 				smBase[sBase.Name] = sBase
@@ -445,12 +447,13 @@ func collectCVEs(e ecosystemTypes.Ecosystem, dres detectTypes.DetectResult, sr *
 										}
 										return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
 									}(),
+									Optional: cveContentOptional(sr.Family, rootID, sourceID),
 								},
 							},
 						}
 
 						if base, found := m[rootID][v.Content.ID]; found {
-							if discardsNewVulnInfoBySourceID(sr.Family, string(base.sourceID), string(sourceID)) {
+							if !overwritesByNewVulnInfo(sr.Family, string(base.sourceID), string(sourceID)) {
 								continue
 							}
 						}
