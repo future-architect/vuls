@@ -10,21 +10,22 @@ import (
 	"github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/fixstatus"
 	referenceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/reference"
 	vulnerabilityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability"
+	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 	rpm "github.com/knqyf263/go-rpm-version"
 )
 
-func resolveCveContentList(family string, rootIDX, rootIDY dataTypes.RootID, ccListX, ccListY []models.CveContent) []models.CveContent {
+func resolveCveContentList(family string, sviX, sviY sourceVulnInfo, ccListX, ccListY []models.CveContent) (sourceVulnInfo, []models.CveContent) {
 	switch family {
 	// This logic is from old vuls's oval resolution. Maybe more widely applicable than these four distros.
 	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
-		if rootIDX < rootIDY {
-			return ccListY
+		if sviX.rootID < sviY.rootID {
+			return sviY, ccListY
 		}
-		return ccListX
+		return sviX, ccListX
 	default:
-		return ccListX
+		return sviX, ccListX
 	}
 }
 
@@ -111,18 +112,35 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 	}
 }
 
-func discardsNewVulnInfoBySourceID(family, baseSourceID, newSourceID string) bool {
+func overwritesByNewVulnInfo(family, baseSourceID, newSourceID string) bool {
 	switch family {
 	case constant.RedHat, constant.CentOS:
-		switch newSourceID {
-		case "redhat-csaf":
-			return false
-		case "redhat-ovalv2":
-			return baseSourceID == "redhat-ovalv1"
-		default:
-			return true
+		favorFunc := func(sourceID string) int {
+			switch sourceID {
+			case "redhat-csaf":
+				return 4
+			case "redhat-vex":
+				return 3
+			case "redhat-ovalv2":
+				return 2
+			default:
+				return 1
+			}
 		}
+		return favorFunc(baseSourceID) < favorFunc(newSourceID)
 	default:
 		return true
+	}
+}
+
+func cveContentOptional(family string, rootID dataTypes.RootID, sourceID sourceTypes.SourceID) map[string]string {
+	switch family {
+	case constant.RedHat, constant.CentOS:
+		return map[string]string{
+			"redhat-rootid":   string(rootID),
+			"redhat-sourceid": string(sourceID),
+		}
+	default:
+		return nil
 	}
 }
