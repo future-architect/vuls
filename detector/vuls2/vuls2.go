@@ -31,6 +31,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 )
 
@@ -43,28 +44,14 @@ func Detect(r *models.ScanResult, vuls2Cnf config.Vuls2DictConf, noProgress bool
 		return nil
 	}
 
-	c := Config{
-		Repository: func() string {
-			if vuls2Cnf.Repository != "" {
-				return vuls2Cnf.Repository
-			}
-			return DefaultGHCRRepository
-		}(),
-		Path: func() string {
-			if vuls2Cnf.Path != "" {
-				return vuls2Cnf.Path
-			}
-			return DefaultPath
-		}(),
-		SkipUpdate: vuls2Cnf.SkipUpdate,
-		Quiet:      noProgress,
+	if vuls2Cnf.Repository == "" {
+		vuls2Cnf.Repository = DefaultGHCRRepository
+	}
+	if vuls2Cnf.Path == "" {
+		vuls2Cnf.Path = DefaultPath
 	}
 
-	if err := c.Refresh(); err != nil {
-		return xerrors.Errorf("Failed to refresh vuls2 db. err: %w", err)
-	}
-
-	dbc, err := c.New()
+	dbc, err := newDBConnection(vuls2Cnf, noProgress)
 	if err != nil {
 		return xerrors.Errorf("Failed to get new db connection. err: %w", err)
 	}
@@ -87,6 +74,8 @@ func Detect(r *models.ScanResult, vuls2Cnf config.Vuls2DictConf, noProgress bool
 
 	vulnInfos := postConvert(e, r.Family, vuls2Detected, r)
 	r.ScannedCves = vulnInfos
+	logging.Log.Infof("%s: %d CVEs are detected with vuls2", r.FormatServerName(), len(vulnInfos))
+
 	return nil
 }
 
@@ -131,7 +120,7 @@ func preConvert(sr *models.ScanResult) scanTypes.ScanResult {
 	}
 }
 
-// ALmost copied from vuls2 pkg/detect/detect.go
+// Almost copied from vuls2 pkg/detect/detect.go
 func detect(dbc db.DB, sr scanTypes.ScanResult) (detectTypes.DetectResult, error) {
 	detected := make(map[dataTypes.RootID]detectTypes.VulnerabilityData)
 
