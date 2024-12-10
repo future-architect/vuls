@@ -445,12 +445,13 @@ func collectCVEs(e ecosystemTypes.Ecosystem, dres detectTypes.DetectResult, sr *
 										}
 										return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
 									}(),
+									Optional: cveContentOptional(sr.Family, rootID, sourceID),
 								},
 							},
 						}
 
 						if base, found := m[rootID][v.Content.ID]; found {
-							if discardsNewVulnInfoBySourceID(sr.Family, string(base.sourceID), string(sourceID)) {
+							if !overwritesByNewVulnInfo(sr.Family, string(base.sourceID), string(sourceID)) {
 								continue
 							}
 						}
