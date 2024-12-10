@@ -54,7 +54,7 @@ func shouldDownload(vuls2Cnf config.Vuls2DictConf, now time.Time) (bool, error) 
 	if _, err := os.Stat(vuls2Cnf.Path); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			if vuls2Cnf.SkipUpdate {
-				return false, xerrors.New("Vuls2 db not found, cannot skip update")
+				return false, xerrors.Errorf("%s not found, cannot skip update", vuls2Cnf.Path)
 			}
 			return true, nil
 		}
