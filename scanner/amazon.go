@@ -1,9 +1,6 @@
 package scanner
 
 import (
-	"strings"
-	"time"
-
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
@@ -55,27 +52,20 @@ func (o *amazon) depsFast() []string {
 	if o.getServerInfo().Mode.IsOffline() {
 		return []string{}
 	}
-	// repoquery
-	switch s := strings.Fields(o.getDistro().Release)[0]; s {
-	case "1", "2":
+	switch v, _ := o.Distro.MajorVersion(); v {
+	case 1, 2:
 		return []string{"yum-utils"}
 	default:
-		if _, err := time.Parse("2006.01", s); err == nil {
-			return []string{"yum-utils"}
-		}
-		return []string{"dnf-utils"}
+		return []string{}
 	}
 }
 
 func (o *amazon) depsFastRoot() []string {
-	switch s := strings.Fields(o.getDistro().Release)[0]; s {
-	case "1", "2":
+	switch v, _ := o.Distro.MajorVersion(); v {
+	case 1, 2:
 		return []string{"yum-utils"}
 	default:
-		if _, err := time.Parse("2006.01", s); err == nil {
-			return []string{"yum-utils"}
-		}
-		return []string{"dnf-utils"}
+		return []string{}
 	}
 }
 

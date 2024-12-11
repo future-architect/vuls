@@ -1,6 +1,8 @@
 package scanner
 
 import (
+	"strings"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
@@ -48,9 +50,13 @@ func (o *centos) depsFast() []string {
 		return []string{}
 	}
 
-	// repoquery
-	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Alma8, Rocky8
-	return []string{"yum-utils"}
+	if strings.HasPrefix(o.Distro.Release, "stream") {
+		return []string{}
+	}
+	if v, _ := o.Distro.MajorVersion(); v < 6 {
+		return []string{"yum-utils"}
+	}
+	return []string{}
 }
 
 func (o *centos) depsFastRoot() []string {
@@ -58,9 +64,13 @@ func (o *centos) depsFastRoot() []string {
 		return []string{}
 	}
 
-	// repoquery
-	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Alma8, Rocky8
-	return []string{"yum-utils"}
+	if strings.HasPrefix(o.Distro.Release, "stream") {
+		return []string{}
+	}
+	if v, _ := o.Distro.MajorVersion(); v < 6 {
+		return []string{"yum-utils"}
+	}
+	return []string{}
 }
 
 func (o *centos) depsDeep() []string {
