@@ -44,23 +44,24 @@ func (o *rocky) checkDeps() error {
 }
 
 func (o *rocky) depsFast() []string {
-	if o.getServerInfo().Mode.IsOffline() {
-		return []string{}
-	}
-
-	// repoquery
-	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Alma8, Rocky8
-	return []string{"yum-utils"}
+	return []string{}
 }
 
 func (o *rocky) depsFastRoot() []string {
-	if o.getServerInfo().Mode.IsOffline() {
-		return []string{}
+	var deps []string
+
+	if !o.getServerInfo().Mode.IsOffline() {
+		deps = append(deps, "yum-utils")
 	}
 
-	// repoquery
-	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Alma8, Rocky8
-	return []string{"yum-utils"}
+	deps = append(deps,
+		"which",
+		"lsof",
+		"procps-ng",
+		"iproute",
+	)
+
+	return deps
 }
 
 func (o *rocky) depsDeep() []string {
@@ -78,25 +79,35 @@ func (o *rocky) checkIfSudoNoPasswd() error {
 }
 
 func (o *rocky) sudoNoPasswdCmdsFast() []cmd {
+	if !o.getServerInfo().Mode.IsOffline() {
+		return []cmd{
+			{"dnf repoquery -h", exitStatusZero},
+		}
+	}
 	return []cmd{}
 }
 
 func (o *rocky) sudoNoPasswdCmdsFastRoot() []cmd {
-	if !o.ServerInfo.IsContainer() {
-		return []cmd{
-			{"repoquery -h", exitStatusZero},
-			{"needs-restarting", exitStatusZero},
-			{"which which", exitStatusZero},
-			{"stat /proc/1/exe", exitStatusZero},
-			{"ls -l /proc/1/exe", exitStatusZero},
-			{"cat /proc/1/maps", exitStatusZero},
-			{"lsof -i -P -n", exitStatusZero},
-		}
+	var cs []cmd
+
+	if !o.getServerInfo().Mode.IsOffline() {
+		cs = append(cs,
+			cmd{"dnf repoquery -h", exitStatusZero},
+			cmd{"needs-restarting", exitStatusZero},
+		)
 	}
-	return []cmd{
-		{"repoquery -h", exitStatusZero},
-		{"needs-restarting", exitStatusZero},
+
+	if !o.getServerInfo().IsContainer() {
+		cs = append(cs,
+			cmd{"which which", exitStatusZero},
+			cmd{"stat /proc/1/exe", exitStatusZero},
+			cmd{"ls -l /proc/1/exe", exitStatusZero},
+			cmd{"cat /proc/1/maps", exitStatusZero},
+			cmd{"lsof -i -P -n", exitStatusZero},
+		)
 	}
+
+	return cs
 }
 
 func (o *rocky) sudoNoPasswdCmdsDeep() []cmd {

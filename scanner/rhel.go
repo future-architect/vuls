@@ -52,13 +52,31 @@ func (o *rhel) depsFast() []string {
 }
 
 func (o *rhel) depsFastRoot() []string {
-	if o.getServerInfo().Mode.IsOffline() {
-		return []string{}
+	var deps []string
+
+	if !o.getServerInfo().Mode.IsOffline() {
+		deps = append(deps, "yum-utils")
 	}
 
-	// repoquery
-	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Alma8, Rocky8
-	return []string{"yum-utils"}
+	v, _ := o.getDistro().MajorVersion()
+	switch {
+	case v < 7:
+		deps = append(deps,
+			"which",
+			"lsof",
+			"procps",
+			"iproute",
+		)
+	default:
+		deps = append(deps,
+			"which",
+			"lsof",
+			"procps-ng",
+			"iproute",
+		)
+	}
+
+	return deps
 }
 
 func (o *rhel) depsDeep() []string {
@@ -80,21 +98,33 @@ func (o *rhel) sudoNoPasswdCmdsFast() []cmd {
 }
 
 func (o *rhel) sudoNoPasswdCmdsFastRoot() []cmd {
-	if !o.ServerInfo.IsContainer() {
-		return []cmd{
-			{"repoquery -h", exitStatusZero},
-			{"needs-restarting", exitStatusZero},
-			{"which which", exitStatusZero},
-			{"stat /proc/1/exe", exitStatusZero},
-			{"ls -l /proc/1/exe", exitStatusZero},
-			{"cat /proc/1/maps", exitStatusZero},
-			{"lsof -i -P -n", exitStatusZero},
+	var cs []cmd
+
+	if !o.getServerInfo().Mode.IsOffline() {
+		if v, _ := o.getDistro().MajorVersion(); v < 8 {
+			cs = append(cs,
+				cmd{"repoquery -h", exitStatusZero},
+				cmd{"needs-restarting", exitStatusZero},
+			)
+		} else {
+			cs = append(cs,
+				cmd{"dnf repoquery -h", exitStatusZero},
+				cmd{"needs-restarting", exitStatusZero},
+			)
 		}
 	}
-	return []cmd{
-		{"repoquery -h", exitStatusZero},
-		{"needs-restarting", exitStatusZero},
+
+	if !o.ServerInfo.IsContainer() {
+		cs = append(cs,
+			cmd{"which which", exitStatusZero},
+			cmd{"stat /proc/1/exe", exitStatusZero},
+			cmd{"ls -l /proc/1/exe", exitStatusZero},
+			cmd{"cat /proc/1/maps", exitStatusZero},
+			cmd{"lsof -i -P -n", exitStatusZero},
+		)
 	}
+
+	return cs
 }
 
 func (o *rhel) sudoNoPasswdCmdsDeep() []cmd {
