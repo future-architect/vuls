@@ -315,6 +315,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"3.18": {StandardSupportUntil: time.Date(2025, 5, 9, 23, 59, 59, 0, time.UTC)},
 			"3.19": {StandardSupportUntil: time.Date(2025, 11, 1, 23, 59, 59, 0, time.UTC)},
 			"3.20": {StandardSupportUntil: time.Date(2026, 4, 1, 23, 59, 59, 0, time.UTC)},
+			"3.21": {StandardSupportUntil: time.Date(2026, 11, 1, 23, 59, 59, 0, time.UTC)},
 		}[majorDotMinor(release)]
 	case constant.FreeBSD:
 		// https://www.freebsd.org/security/
@@ -339,8 +340,9 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"36": {StandardSupportUntil: time.Date(2023, 5, 16, 23, 59, 59, 0, time.UTC)},
 			"37": {StandardSupportUntil: time.Date(2023, 12, 5, 23, 59, 59, 0, time.UTC)},
 			"38": {StandardSupportUntil: time.Date(2024, 5, 21, 23, 59, 59, 0, time.UTC)},
-			"39": {StandardSupportUntil: time.Date(2024, 11, 12, 23, 59, 59, 0, time.UTC)},
-			"40": {StandardSupportUntil: time.Date(2025, 5, 13, 23, 59, 59, 0, time.UTC)},
+			"39": {StandardSupportUntil: time.Date(2024, 11, 26, 23, 59, 59, 0, time.UTC)},
+			"40": {StandardSupportUntil: time.Date(2025, 5, 28, 23, 59, 59, 0, time.UTC)},
+			"41": {StandardSupportUntil: time.Date(2025, 11, 19, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
 	case constant.Windows:
 		// https://learn.microsoft.com/ja-jp/lifecycle/products/?products=windows
