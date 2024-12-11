@@ -48,17 +48,40 @@ func (o *fedora) depsFast() []string {
 		return []string{}
 	}
 
-	// repoquery
-	return []string{"dnf-utils"}
+	v, _ := o.getDistro().MajorVersion()
+	switch {
+	case v < 22:
+		return []string{"yum-utils"}
+	case v < 26:
+		return []string{
+			"dnf-plugins-core",
+			"python3-dnf-plugins-core",
+		}
+	default:
+		return []string{}
+	}
 }
 
 func (o *fedora) depsFastRoot() []string {
-	if o.getServerInfo().Mode.IsOffline() {
-		return []string{}
+	var deps []string
+
+	v, _ := o.getDistro().MajorVersion()
+	switch {
+	case v < 22:
+		if !o.getServerInfo().Mode.IsOffline() {
+			deps = append(deps, "yum-utils")
+		}
+	case v < 26:
+		if !o.getServerInfo().Mode.IsOffline() {
+			deps = append(deps,
+				"dnf-plugins-core",
+				"python3-dnf-plugins-core",
+			)
+		}
+	default:
 	}
 
-	// repoquery
-	return []string{"dnf-utils"}
+	return deps
 }
 
 func (o *fedora) depsDeep() []string {
@@ -76,25 +99,61 @@ func (o *fedora) checkIfSudoNoPasswd() error {
 }
 
 func (o *fedora) sudoNoPasswdCmdsFast() []cmd {
-	return []cmd{}
-}
+	if o.getServerInfo().Mode.IsOffline() {
+		return []cmd{}
+	}
 
-func (o *fedora) sudoNoPasswdCmdsFastRoot() []cmd {
-	if !o.ServerInfo.IsContainer() {
+	v, _ := o.getDistro().MajorVersion()
+	if v < 26 {
 		return []cmd{
 			{"repoquery -h", exitStatusZero},
-			{"needs-restarting", exitStatusZero},
-			{"which which", exitStatusZero},
-			{"stat /proc/1/exe", exitStatusZero},
-			{"ls -l /proc/1/exe", exitStatusZero},
-			{"cat /proc/1/maps", exitStatusZero},
-			{"lsof -i -P -n", exitStatusZero},
+		}
+	}
+	if v < 41 {
+		return []cmd{
+			{"dnf repoquery -h", exitStatusZero},
 		}
 	}
 	return []cmd{
-		{"repoquery -h", exitStatusZero},
-		{"needs-restarting", exitStatusZero},
+		{"dnf5 repoquery -h", exitStatusZero},
 	}
+}
+
+func (o *fedora) sudoNoPasswdCmdsFastRoot() []cmd {
+	var cs []cmd
+
+	if !o.getServerInfo().Mode.IsOffline() {
+		v, _ := o.getDistro().MajorVersion()
+		switch {
+		case v < 26:
+			cs = append(cs,
+				cmd{"repoquery -h", exitStatusZero},
+				cmd{"needs-restarting", exitStatusZero},
+			)
+		case v < 41:
+			cs = append(cs,
+				cmd{"dnf repoquery -h", exitStatusZero},
+				cmd{"dnf needs-restarting", exitStatusZero},
+			)
+		default:
+			cs = append(cs,
+				cmd{"dnf5 repoquery -h", exitStatusZero},
+				cmd{"dnf5 needs-restarting", exitStatusZero},
+			)
+		}
+	}
+
+	if !o.ServerInfo.IsContainer() {
+		cs = append(cs,
+			cmd{"which which", exitStatusZero},
+			cmd{"stat /proc/1/exe", exitStatusZero},
+			cmd{"ls -l /proc/1/exe", exitStatusZero},
+			cmd{"cat /proc/1/maps", exitStatusZero},
+			cmd{"lsof -i -P -n", exitStatusZero},
+		)
+	}
+
+	return cs
 }
 
 func (o *fedora) sudoNoPasswdCmdsDeep() []cmd {

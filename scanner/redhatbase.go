@@ -768,11 +768,38 @@ func (o *redhatBase) yumMakeCache() error {
 }
 
 func (o *redhatBase) scanUpdatablePackages() (models.Packages, error) {
-	isDnf := o.exec(util.PrependProxyEnv(`repoquery --version | grep dnf`), o.sudo.repoquery()).isSuccess()
-	cmd := `repoquery --all --pkgnarrow=updates --qf='%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPO}'`
-	if isDnf {
-		cmd = `repoquery --upgrades --qf='%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPONAME}' -q`
-	}
+	cmd := func() string {
+		const (
+			yum  = `repoquery --all --pkgnarrow=updates --qf="%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPO}"`
+			dnf  = `dnf repoquery --upgrades --qf="%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPONAME}" -q`
+			dnf5 = `dnf5 repoquery --upgrades --qf="%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPONAME}\n" -q`
+		)
+
+		v, _ := o.getDistro().MajorVersion()
+		switch o.Distro.Family {
+		case constant.Fedora:
+			switch {
+			case v < 22:
+				return yum
+			case v < 41:
+				return dnf
+			default:
+				return dnf5
+			}
+		case constant.Amazon:
+			switch v {
+			case 1, 2:
+				return yum
+			default:
+				return dnf
+			}
+		default:
+			if v, _ := o.getDistro().MajorVersion(); v < 8 {
+				return yum
+			}
+			return dnf
+		}
+	}()
 	for _, repo := range o.getServerInfo().Enablerepo {
 		cmd += " --enablerepo=" + repo
 	}
@@ -843,7 +870,8 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 	case constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
 		if o.getServerInfo().Mode.IsOffline() {
 			return false
-		} else if o.getServerInfo().Mode.IsFastRoot() || o.getServerInfo().Mode.IsDeep() {
+		}
+		if o.getServerInfo().Mode.IsFastRoot() || o.getServerInfo().Mode.IsDeep() {
 			return true
 		}
 		return false
@@ -856,7 +884,8 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 
 		if o.getServerInfo().Mode.IsOffline() {
 			return false
-		} else if o.getServerInfo().Mode.IsFastRoot() || o.getServerInfo().Mode.IsDeep() {
+		}
+		if o.getServerInfo().Mode.IsFastRoot() || o.getServerInfo().Mode.IsDeep() {
 			return true
 		}
 		return false
@@ -869,14 +898,22 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 
 		if o.getServerInfo().Mode.IsOffline() {
 			return false
-		} else if o.getServerInfo().Mode.IsFastRoot() ||
-			o.getServerInfo().Mode.IsDeep() {
+		}
+		if o.getServerInfo().Mode.IsFastRoot() || o.getServerInfo().Mode.IsDeep() {
 			return true
 		}
 		return false
+	case constant.Amazon:
+		if o.getServerInfo().Mode.IsOffline() {
+			return false
+		}
+		if o.getServerInfo().Mode.IsFastRoot() || o.getServerInfo().Mode.IsDeep() {
+			return true
+		}
+		return false
+	default:
+		return !o.getServerInfo().Mode.IsFast()
 	}
-
-	return !o.getServerInfo().Mode.IsFast()
 }
 
 func (o *redhatBase) needsRestarting() error {
@@ -886,7 +923,38 @@ func (o *redhatBase) needsRestarting() error {
 		// continue scanning
 	}
 
-	cmd := "LANGUAGE=en_US.UTF-8 needs-restarting"
+	cmd := func() string {
+		const (
+			yum  = "LANGUAGE=en_US.UTF-8 needs-restarting"
+			dnf  = "LANGUAGE=en_US.UTF-8 dnf needs-restarting"
+			dnf5 = "LANGUAGE=en_US.UTF-8 dnf5 needs-restarting"
+		)
+
+		v, _ := o.getDistro().MajorVersion()
+		switch o.Distro.Family {
+		case constant.Fedora:
+			switch {
+			case v < 22:
+				return yum
+			case v < 41:
+				return dnf
+			default:
+				return dnf5
+			}
+		case constant.Amazon:
+			switch v {
+			case 1, 2:
+				return yum
+			default:
+				return dnf
+			}
+		default:
+			if v, _ := o.getDistro().MajorVersion(); v < 8 {
+				return yum
+			}
+			return dnf
+		}
+	}()
 	r := o.exec(cmd, sudo)
 	if !r.isSuccess() {
 		return xerrors.Errorf("Failed to SSH: %w", r)
