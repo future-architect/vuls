@@ -172,6 +172,10 @@ func advisoryReferenceSource(family string, r referenceTypes.Reference) string {
 	switch family {
 	case constant.RedHat, constant.CentOS:
 		return "RHSA"
+	case constant.Alma:
+		return "ALSA"
+	case constant.Rocky:
+		return "RLSA"
 	default:
 		return r.Source
 	}
@@ -179,7 +183,7 @@ func advisoryReferenceSource(family string, r referenceTypes.Reference) string {
 
 func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vulnerability) string {
 	switch ccType {
-	case models.RedHat:
+	case models.RedHat, models.Alma, models.Rocky:
 		return fmt.Sprintf("https://access.redhat.com/security/cve/%s", v.Content.ID)
 	default:
 		return ""

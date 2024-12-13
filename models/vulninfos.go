@@ -539,7 +539,7 @@ func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
 
 // Cvss3Scores returns CVSS V3 Score
 func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
-	order := append([]CveContentType{RedHatAPI, RedHat, SUSE, Microsoft, Fortinet, Nvd, Mitre, Jvn}, GetCveContentTypes(string(Trivy))...)
+	order := append([]CveContentType{RedHatAPI, RedHat, Rocky, SUSE, Microsoft, Fortinet, Nvd, Mitre, Jvn}, GetCveContentTypes(string(Trivy))...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
