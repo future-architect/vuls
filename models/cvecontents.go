@@ -309,8 +309,12 @@ func NewCveContentType(name string) CveContentType {
 		return Nvd
 	case "jvn":
 		return Jvn
-	case "redhat", "centos", "alma", "rocky":
+	case "redhat", "centos":
 		return RedHat
+	case "alma":
+		return Alma
+	case "rocky":
+		return Rocky
 	case "fedora":
 		return Fedora
 	case "oracle":
@@ -401,8 +405,12 @@ func NewCveContentType(name string) CveContentType {
 // GetCveContentTypes return CveContentTypes
 func GetCveContentTypes(family string) []CveContentType {
 	switch family {
-	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
+	case constant.RedHat, constant.CentOS:
 		return []CveContentType{RedHat, RedHatAPI}
+	case constant.Alma:
+		return []CveContentType{Alma}
+	case constant.Rocky:
+		return []CveContentType{Rocky}
 	case constant.Fedora:
 		return []CveContentType{Fedora}
 	case constant.Oracle:
@@ -442,6 +450,12 @@ const (
 
 	// RedHatAPI is RedHat
 	RedHatAPI CveContentType = "redhat_api"
+
+	// Alma is Alma
+	Alma CveContentType = "alma"
+
+	// Rocky is Rocky
+	Rocky CveContentType = "rocky"
 
 	// DebianSecurityTracker is Debian Security tracker
 	DebianSecurityTracker CveContentType = "debian_security_tracker"
@@ -578,6 +592,8 @@ var AllCveContetTypes = CveContentTypes{
 	Fortinet,
 	RedHat,
 	RedHatAPI,
+	Alma,
+	Rocky,
 	Debian,
 	DebianSecurityTracker,
 	Ubuntu,
