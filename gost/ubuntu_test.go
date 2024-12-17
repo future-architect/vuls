@@ -1,9 +1,7 @@
 package gost
 
 import (
-	"cmp"
 	"reflect"
-	"slices"
 	"testing"
 	"time"
 
@@ -119,21 +117,22 @@ func TestUbuntuConvertToModel(t *testing.T) {
 	}
 }
 
-func Test_detect(t *testing.T) {
+func TestUbuntu_detect(t *testing.T) {
 	type args struct {
-		cves   map[string]gostmodels.UbuntuCVE
-		fixed  bool
-		srcPkg models.SrcPackage
+		fixed   map[string]gostmodels.UbuntuCVE
+		unfixed map[string]gostmodels.UbuntuCVE
+		srcPkg  models.SrcPackage
 	}
 	tests := []struct {
-		name string
-		args args
-		want []cveContent
+		name    string
+		args    args
+		want    []cveContent
+		wantErr bool
 	}{
 		{
 			name: "fixed",
 			args: args{
-				cves: map[string]gostmodels.UbuntuCVE{
+				fixed: map[string]gostmodels.UbuntuCVE{
 					"CVE-0000-0000": {
 						Candidate: "CVE-0000-0000",
 						Patches: []gostmodels.UbuntuPatch{
@@ -153,51 +152,71 @@ func Test_detect(t *testing.T) {
 						},
 					},
 				},
-				fixed:  true,
-				srcPkg: models.SrcPackage{Name: "pkg", Version: "0.0.0-1", BinaryNames: []string{"pkg"}},
+				srcPkg: models.SrcPackage{
+					Name:        "pkg",
+					Version:     "0.0.0-1",
+					BinaryNames: []string{"pkg"},
+				},
 			},
 			want: []cveContent{
 				{
-					cveContent: models.CveContent{Type: models.UbuntuAPI, CveID: "CVE-0000-0001", SourceLink: "https://ubuntu.com/security/CVE-0000-0001", References: []models.Reference{}},
-					fixStatuses: models.PackageFixStatuses{{
-						Name:    "pkg",
-						FixedIn: "0.0.0-2",
-					}},
+					cveContent: models.CveContent{
+						Type:       models.UbuntuAPI,
+						CveID:      "CVE-0000-0001",
+						SourceLink: "https://ubuntu.com/security/CVE-0000-0001",
+						References: []models.Reference{},
+					},
+					fixStatuses: models.PackageFixStatuses{
+						{
+							Name:    "pkg",
+							FixedIn: "0.0.0-2",
+						},
+					},
 				},
 			},
 		},
 		{
 			name: "unfixed",
 			args: args{
-				cves: map[string]gostmodels.UbuntuCVE{
+				unfixed: map[string]gostmodels.UbuntuCVE{
 					"CVE-0000-0000": {
 						Candidate: "CVE-0000-0000",
 						Patches: []gostmodels.UbuntuPatch{
 							{
 								PackageName:    "pkg",
-								ReleasePatches: []gostmodels.UbuntuReleasePatch{{ReleaseName: "jammy", Status: "open"}},
+								ReleasePatches: []gostmodels.UbuntuReleasePatch{{ReleaseName: "jammy", Status: "needed"}},
 							},
 						},
 					},
 				},
-				fixed:  false,
-				srcPkg: models.SrcPackage{Name: "pkg", Version: "0.0.0-1", BinaryNames: []string{"pkg"}},
+				srcPkg: models.SrcPackage{
+					Name:        "pkg",
+					Version:     "0.0.0-1",
+					BinaryNames: []string{"pkg"},
+				},
 			},
 			want: []cveContent{
 				{
-					cveContent: models.CveContent{Type: models.UbuntuAPI, CveID: "CVE-0000-0000", SourceLink: "https://ubuntu.com/security/CVE-0000-0000", References: []models.Reference{}},
-					fixStatuses: models.PackageFixStatuses{{
-						Name:        "pkg",
-						FixState:    "open",
-						NotFixedYet: true,
-					}},
+					cveContent: models.CveContent{
+						Type:       models.UbuntuAPI,
+						CveID:      "CVE-0000-0000",
+						SourceLink: "https://ubuntu.com/security/CVE-0000-0000",
+						References: []models.Reference{},
+					},
+					fixStatuses: models.PackageFixStatuses{
+						{
+							Name:        "pkg",
+							FixState:    "open",
+							NotFixedYet: true,
+						},
+					},
 				},
 			},
 		},
 		{
 			name: "linux-signed",
 			args: args{
-				cves: map[string]gostmodels.UbuntuCVE{
+				fixed: map[string]gostmodels.UbuntuCVE{
 					"CVE-0000-0000": {
 						Candidate: "CVE-0000-0000",
 						Patches: []gostmodels.UbuntuPatch{
@@ -217,12 +236,20 @@ func Test_detect(t *testing.T) {
 						},
 					},
 				},
-				fixed:  true,
-				srcPkg: models.SrcPackage{Name: "linux-signed", Version: "0.0.0-1", BinaryNames: []string{"linux-image-generic", "linux-headers-generic"}},
+				srcPkg: models.SrcPackage{
+					Name:        "linux-signed",
+					Version:     "0.0.0-1",
+					BinaryNames: []string{"linux-image-generic", "linux-headers-generic"},
+				},
 			},
 			want: []cveContent{
 				{
-					cveContent: models.CveContent{Type: models.UbuntuAPI, CveID: "CVE-0000-0001", SourceLink: "https://ubuntu.com/security/CVE-0000-0001", References: []models.Reference{}},
+					cveContent: models.CveContent{
+						Type:       models.UbuntuAPI,
+						CveID:      "CVE-0000-0001",
+						SourceLink: "https://ubuntu.com/security/CVE-0000-0001",
+						References: []models.Reference{},
+					},
 					fixStatuses: models.PackageFixStatuses{
 						{
 							Name:    "linux-image-generic",
@@ -239,7 +266,7 @@ func Test_detect(t *testing.T) {
 		{
 			name: "linux-meta",
 			args: args{
-				cves: map[string]gostmodels.UbuntuCVE{
+				fixed: map[string]gostmodels.UbuntuCVE{
 					"CVE-0000-0000": {
 						Candidate: "CVE-0000-0000",
 						Patches: []gostmodels.UbuntuPatch{
@@ -259,20 +286,105 @@ func Test_detect(t *testing.T) {
 						},
 					},
 				},
-				fixed:  true,
-				srcPkg: models.SrcPackage{Name: "linux-meta", Version: "0.0.0.1", BinaryNames: []string{"linux-image-generic", "linux-headers-generic"}},
+				srcPkg: models.SrcPackage{
+					Name:        "linux-meta",
+					Version:     "0.0.0.1",
+					BinaryNames: []string{"linux-image-generic", "linux-headers-generic"},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "fixed and unfixed, installed < fixed",
+			args: args{
+				fixed: map[string]gostmodels.UbuntuCVE{
+					"CVE-0000-0000": {
+						Candidate: "CVE-0000-0000",
+						Patches: []gostmodels.UbuntuPatch{
+							{
+								PackageName:    "pkg",
+								ReleasePatches: []gostmodels.UbuntuReleasePatch{{ReleaseName: "esm-apps/focal", Status: "released", Note: "0.0.0-1"}},
+							},
+						},
+					},
+				},
+				unfixed: map[string]gostmodels.UbuntuCVE{
+					"CVE-0000-0000": {
+						Candidate: "CVE-0000-0000",
+						Patches: []gostmodels.UbuntuPatch{
+							{
+								PackageName:    "pkg",
+								ReleasePatches: []gostmodels.UbuntuReleasePatch{{ReleaseName: "focal", Status: "needed"}},
+							},
+						},
+					},
+				},
+				srcPkg: models.SrcPackage{
+					Name:        "pkg",
+					Version:     "0.0.0-0",
+					BinaryNames: []string{"pkg"},
+				},
+			},
+			want: []cveContent{
+				{
+					cveContent: models.CveContent{
+						Type:       models.UbuntuAPI,
+						CveID:      "CVE-0000-0000",
+						SourceLink: "https://ubuntu.com/security/CVE-0000-0000",
+						References: []models.Reference{},
+					},
+					fixStatuses: models.PackageFixStatuses{
+						{
+							Name:    "pkg",
+							FixedIn: "0.0.0-1",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "fixed and unfixed, installed > fixed",
+			args: args{
+				fixed: map[string]gostmodels.UbuntuCVE{
+					"CVE-0000-0000": {
+						Candidate: "CVE-0000-0000",
+						Patches: []gostmodels.UbuntuPatch{
+							{
+								PackageName:    "pkg",
+								ReleasePatches: []gostmodels.UbuntuReleasePatch{{ReleaseName: "esm-apps/focal", Status: "released", Note: "0.0.0-1"}},
+							},
+						},
+					},
+				},
+				unfixed: map[string]gostmodels.UbuntuCVE{
+					"CVE-0000-0000": {
+						Candidate: "CVE-0000-0000",
+						Patches: []gostmodels.UbuntuPatch{
+							{
+								PackageName:    "pkg",
+								ReleasePatches: []gostmodels.UbuntuReleasePatch{{ReleaseName: "focal", Status: "needed"}},
+							},
+						},
+					},
+				},
+				srcPkg: models.SrcPackage{
+					Name:        "pkg",
+					Version:     "0.0.0-2",
+					BinaryNames: []string{"pkg"},
+				},
 			},
 			want: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := (Ubuntu{}).detect(tt.args.cves, tt.args.fixed, tt.args.srcPkg)
-			for i := range got {
-				slices.SortFunc(got[i].fixStatuses, func(i, j models.PackageFixStatus) int { return cmp.Compare(j.Name, i.Name) })
+			got, err := (Ubuntu{}).detect(tt.args.fixed, tt.args.unfixed, tt.args.srcPkg)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Ubuntu.detect() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("detect() = %#v, want %#v", got, tt.want)
+				t.Errorf("Ubuntu.detect() = %v, want %v", got, tt.want)
 			}
 		})
 	}
