@@ -228,11 +228,27 @@ var warnRepoPattern = regexp.MustCompile(`Warning: Repository '.+' appears to be
 func (o *suse) parseZypperLULines(stdout string) (models.Packages, error) {
 	updatables := models.Packages{}
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	headerParsed := false
 	for scanner.Scan() {
 		line := scanner.Text()
-		if line == "" || strings.Contains(line, "S | Repository") || strings.Contains(line, "--+----------------") || warnRepoPattern.MatchString(line) {
+		if line == "" || warnRepoPattern.MatchString(line) {
 			continue
 		}
+
+		if !headerParsed {
+			if func() bool {
+				for _, c := range line {
+					if !strings.ContainsRune("-+", c) {
+						return false
+					}
+				}
+				return true
+			}() {
+				headerParsed = true
+			}
+			continue
+		}
+
 		pack, err := o.parseZypperLUOneLine(line)
 		if err != nil {
 			return nil, err
@@ -248,6 +264,9 @@ func (o *suse) parseZypperLUOneLine(line string) (*models.Package, error) {
 		return nil, xerrors.Errorf("zypper -q lu Unknown format: %s", line)
 	}
 	available := strings.Split(strings.TrimSpace(ss[4]), "-")
+	if len(available) != 2 {
+		return nil, xerrors.Errorf("unexpected Available Version. expected: %q, actual: %q", "<major>-<release>", strings.TrimSpace(ss[4]))
+	}
 	return &models.Package{
 		Name:       strings.TrimSpace(ss[2]),
 		NewVersion: available[0],

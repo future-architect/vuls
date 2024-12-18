@@ -68,6 +68,22 @@ v | Update repository with updates from SUSE Linux Enterprise 15 | git-core | 2.
 				},
 			},
 		},
+		{
+			name: "table header",
+			args: args{
+				stdout: `S  | Repository                                                   | Name     | Current Version | Available Version | Arch
+---+--------------------------------------------------------------+----------+-----------------+-------------------+-------
+v  | Update repository with updates from SUSE Linux Enterprise 15 | iproute2 | 5.14-150400.1.8 | 6.4-150600.7.3.1  | x86_64`,
+			},
+			want: models.Packages{
+				"iproute2": {
+					Name:       "iproute2",
+					NewVersion: "6.4",
+					NewRelease: "150600.7.3.1",
+					Arch:       "x86_64",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
