@@ -47,12 +47,17 @@ func (o *oracle) depsFast() []string {
 	if o.getServerInfo().Mode.IsOffline() {
 		return []string{}
 	}
-	// repoquery
-	return []string{"yum-utils"}
+	if v, _ := o.Distro.MajorVersion(); v < 6 {
+		return []string{"yum-utils"}
+	}
+	return []string{}
 }
 
 func (o *oracle) depsFastRoot() []string {
-	return []string{"yum-utils"}
+	if v, _ := o.Distro.MajorVersion(); v < 6 {
+		return []string{"yum-utils"}
+	}
+	return []string{}
 }
 
 func (o *oracle) depsDeep() []string {

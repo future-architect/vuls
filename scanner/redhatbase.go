@@ -735,11 +735,63 @@ func (o *redhatBase) yumMakeCache() error {
 }
 
 func (o *redhatBase) scanUpdatablePackages() (models.Packages, error) {
-	isDnf := o.exec(util.PrependProxyEnv(`repoquery --version | grep dnf`), o.sudo.repoquery()).isSuccess()
-	cmd := `repoquery --all --pkgnarrow=updates --qf='%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPO}'`
-	if isDnf {
-		cmd = `repoquery --upgrades --qf='%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPONAME}' -q`
-	}
+	cmd := func() string {
+		const (
+			yum  = `repoquery --all --pkgnarrow=updates --qf="%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPO}"`
+			dnf  = `dnf repoquery --upgrades --qf="%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPONAME}" -q`
+			dnf5 = `dnf5 repoquery --upgrades --qf="%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPONAME}\n" -q`
+		)
+
+		switch o.Distro.Family {
+		case constant.OpenSUSE:
+			switch o.Distro.Release {
+			case "tumbleweed":
+				isDnf5 := o.exec(util.PrependProxyEnv(`rpm -q dnf5`), noSudo).isSuccess()
+				if isDnf5 {
+					return dnf5
+				}
+				return dnf
+			default:
+				return yum
+			}
+		case constant.OpenSUSELeap:
+			return dnf
+		case constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
+			if v, _ := o.Distro.MajorVersion(); v < 12 {
+				return yum
+			}
+			return dnf
+		case constant.Fedora:
+			v, _ := o.Distro.MajorVersion()
+			if v < 22 {
+				return yum
+			}
+			if v < 41 {
+				return dnf
+			}
+			return dnf5
+		case constant.Amazon:
+			switch v, _ := o.Distro.MajorVersion(); v {
+			case 1, 2:
+				return yum
+			default:
+				return dnf
+			}
+		case constant.CentOS:
+			if strings.HasPrefix(o.Distro.Release, "stream") {
+				return dnf
+			}
+			if v, _ := o.Distro.MajorVersion(); v < 6 {
+				return yum
+			}
+			return dnf
+		default:
+			if v, _ := o.Distro.MajorVersion(); v < 6 {
+				return yum
+			}
+			return dnf
+		}
+	}()
 	for _, repo := range o.getServerInfo().Enablerepo {
 		cmd += " --enablerepo=" + repo
 	}
