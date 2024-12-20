@@ -3,6 +3,7 @@ package vuls2
 import (
 	"cmp"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
@@ -21,6 +22,63 @@ import (
 	"github.com/future-architect/vuls/models"
 	rpm "github.com/knqyf263/go-rpm-version"
 )
+
+func extractPkgs(family string, pmmm map[sourceTypes.SourceID]map[dataTypes.RootID]map[segmentTypes.DetectionTag]pack) []pack {
+	switch family {
+	case constant.RedHat, constant.CentOS:
+		var pmm map[dataTypes.RootID]map[segmentTypes.DetectionTag]pack
+		var selectedSource sourceTypes.SourceID
+		foundSource := false
+		for _, s := range []sourceTypes.SourceID{sourceTypes.RedHatCSAF, sourceTypes.RedHatVEX, sourceTypes.RedHatOVALv2, sourceTypes.RedHatOVALv1} {
+			if _, found := pmmm[s]; found {
+				selectedSource = s
+				pmm = pmmm[s]
+				foundSource = true
+				break
+			}
+		}
+		if !foundSource {
+			return nil
+		}
+
+		switch selectedSource {
+		case sourceTypes.RedHatCSAF:
+			// FIXME: not implemented yet
+			return nil
+		case sourceTypes.RedHatVEX:
+			var ps []pack
+			// FIXME: Probably, MUST resolve including-unfixed / extras conflict in oval case
+			for _, pm := range pmm {
+				for _, p := range pm {
+					ps = append(ps, p)
+				}
+			}
+			return ps
+		default:
+			// OVAL v2 and v1
+			maxRootID := slices.Max(slices.Collect(maps.Keys(pmm)))
+			pm := pmm[maxRootID]
+			if len(pm) == 0 {
+				return nil
+			}
+			preferedTag := slices.MaxFunc(slices.Collect(maps.Keys(pm)), func(x, y segmentTypes.DetectionTag) int {
+				return tagPreference(family, string(x)) - tagPreference(family, string(y))
+			})
+			return []pack{pm[preferedTag]}
+		}
+
+	default:
+		var ps []pack
+		for _, pmm := range pmmm {
+			for _, pm := range pmm {
+				for _, p := range pm {
+					ps = append(ps, p)
+				}
+			}
+		}
+		return ps
+	}
+}
 
 func resolveCveContentList(family string, sviX, sviY sourceVulnInfo, ccListX, ccListY []models.CveContent) (sourceVulnInfo, []models.CveContent) {
 	switch family {
@@ -60,15 +118,15 @@ func resolvePackageByRootID(family string, rootIDX, rootIDY dataTypes.RootID, st
 	}
 }
 
-func mostPreferredTag(family string, segments []segmentTypes.Segment) segmentTypes.DetectionTag {
-	if len(segments) == 0 {
+func mostPreferredTag(family string, tags []segmentTypes.DetectionTag) segmentTypes.DetectionTag {
+	if len(tags) == 0 {
 		return segmentTypes.DetectionTag("")
 	}
 
-	s := slices.MaxFunc(segments, func(x, y segmentTypes.Segment) int {
-		return tagPreference(family, string(x.Tag)) - tagPreference(family, string(y.Tag))
+	s := slices.MaxFunc(tags, func(x, y segmentTypes.DetectionTag) int {
+		return tagPreference(family, string(x)) - tagPreference(family, string(y))
 	})
-	return s.Tag
+	return s
 }
 
 func resolvePackageByTag(family string, x, y pack) pack {
@@ -78,8 +136,8 @@ func resolvePackageByTag(family string, x, y pack) pack {
 	return x
 }
 
-func resolveAdvisoryByTag(family string, x, y taggedAdvisory) taggedAdvisory {
-	if tagPreference(family, string(x.tag)) < tagPreference(family, string(y.tag)) {
+func resolveAdvisoryByTag(family string, x, y advisoryTypes.Advisory) advisoryTypes.Advisory {
+	if tagPreference(family, string(mostPreferredTag(family, toTags(x.Segments)))) < tagPreference(family, string(mostPreferredTag(family, toTags(y.Segments)))) {
 		return y
 	}
 	return x
@@ -122,8 +180,8 @@ func ignoresCriterion(family string, cn criterionTypes.FilteredCriterion) bool {
 	switch family {
 	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
 		if cn.Criterion.Version.FixStatus != nil && cn.Criterion.Version.FixStatus.Class == fixstatusTypes.ClassUnfixed {
-			switch cn.Criterion.Version.FixStatus.Vendor {
-			case "Will not fix", "Under investigation":
+			switch strings.ToLower(cn.Criterion.Version.FixStatus.Vendor) {
+			case "will not fix", "under investigation":
 				return true
 			}
 		}
@@ -207,7 +265,7 @@ func resolveSourceVulnInfo(family string, x, y sourceVulnInfo) sourceVulnInfo {
 		}
 		if cmp.Or(
 			preferenceFn(string(x.sourceID))-preferenceFn(string(y.sourceID)),
-			tagPreference(family, string(x.tag))-tagPreference(family, string(y.tag)),
+			tagPreference(family, string(mostPreferredTag(family, x.tags)))-tagPreference(family, string(mostPreferredTag(family, y.tags))),
 		) < 0 {
 			return y
 		}

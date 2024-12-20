@@ -201,16 +201,17 @@ func detect(dbc db.DB, sr scanTypes.ScanResult) (detectTypes.DetectResult, error
 }
 
 type pack struct {
-	name   string
-	rootID dataTypes.RootID
-	tag    segmentTypes.DetectionTag
-	status models.PackageFixStatus
+	name     string
+	rootID   dataTypes.RootID
+	sourceID sourceTypes.SourceID
+	tag      segmentTypes.DetectionTag
+	status   models.PackageFixStatus
 }
 
 type sourceVulnInfo struct {
 	sourceID sourceTypes.SourceID
 	rootID   dataTypes.RootID
-	tag      segmentTypes.DetectionTag
+	tags     []segmentTypes.DetectionTag
 	vulnInfo models.VulnInfo
 }
 
@@ -220,77 +221,104 @@ func postConvert(e ecosystemTypes.Ecosystem, family string, vuls2Detected detect
 		return nil, xerrors.Errorf("Failed to collect packages. server: %s, err: %w", vuls2Detected.ServerName, err)
 	}
 
-	am := collectAdvisories(e, family, vuls2Detected)
-	cveMap := collectCVEs(e, family, vuls2Detected, am)
+	// am := collectAdvisories(e, family, vuls2Detected)
+	// cveMap := collectCVEs(e, family, vuls2Detected, am)
 
-	vimBase := make(map[vcTypes.VulnerabilityID]sourceVulnInfo)
+	pmmmmm := make(map[vcTypes.VulnerabilityID]map[string]map[sourceTypes.SourceID]map[dataTypes.RootID]map[segmentTypes.DetectionTag]pack)
+	for _, vulndata := range vuls2Detected.Detected {
+		rootID := vulndata.ID
+		for _, vdv := range vulndata.Vulnerabilities {
+			vulnID := vdv.ID
+			for sourceID, rm := range vdv.Contents {
+				for _, vs := range rm {
+					for _, v := range vs {
+						if !includesEcosystem(v.Segments, e) {
+							continue
+						}
 
-	for rootID, m := range cveMap {
-		for vid, svi := range m {
-			packs, found := func() (map[string]pack, bool) {
-				mm, found := pm[rootID]
-				if !found {
-					return nil, false
-				}
-				packs, found := mm[svi.sourceID]
-				return packs, found
-			}()
-			if !found || len(packs) == 0 {
-				continue
-			}
-
-			sviBase, found := vimBase[vid]
-			if !found {
-				sviBase = svi
-			} else {
-				for ccType, ccs := range svi.vulnInfo.CveContents {
-					ccsBase, foundBase := sviBase.vulnInfo.CveContents[ccType]
-					if !foundBase {
-						sviBase.vulnInfo.CveContents[ccType] = ccs
-					} else {
-						svi, ccs := resolveCveContentList(family, sviBase, svi, ccsBase, ccs)
-						sviBase.rootID = svi.rootID
-						sviBase.sourceID = svi.sourceID
-						sviBase.tag = svi.tag
-						sviBase.vulnInfo.CveContents[ccType] = ccs
+						pkgs := getPackages(rootID, sourceID, v.Segments, pm)
+						for _, p := range pkgs {
+							pmmmm, found := pmmmmm[vulnID]
+							if !found {
+								pmmmm = make(map[string]map[sourceTypes.SourceID]map[dataTypes.RootID]map[segmentTypes.DetectionTag]pack)
+							}
+							pmmm, found := pmmmm[p.name]
+							if !found {
+								pmmm = make(map[sourceTypes.SourceID]map[dataTypes.RootID]map[segmentTypes.DetectionTag]pack)
+							}
+							pmm, found := pmmm[sourceID]
+							if !found {
+								pmm = make(map[dataTypes.RootID]map[segmentTypes.DetectionTag]pack)
+							}
+							pm, found := pmm[dataTypes.RootID(rootID)]
+							if !found {
+								pm = make(map[segmentTypes.DetectionTag]pack)
+							}
+							pm[p.tag] = p
+							pmm[rootID] = pm
+							pmmm[sourceID] = pmm
+							pmmmm[p.name] = pmmm
+							pmmmmm[vulnID] = pmmmm
+						}
 					}
 				}
-
-				for _, d := range svi.vulnInfo.DistroAdvisories {
-					sviBase.vulnInfo.DistroAdvisories.AppendIfMissing(&d)
-				}
 			}
+		}
+	}
 
-			smBase := make(map[string]models.PackageFixStatus)
-			for _, sBase := range sviBase.vulnInfo.AffectedPackages {
-				smBase[sBase.Name] = sBase
+	psm := make(map[vcTypes.VulnerabilityID][]pack)
+	for vulnID, pmmmm := range pmmmmm {
+		for _, pmmm := range pmmmm {
+			pkgs := extractPkgs(family, pmmm)
+			if len(pkgs) == 0 {
+				continue
 			}
-			for _, pack := range packs {
-				sBase, found := smBase[pack.name]
-				if found {
-					pack.status = resolvePackageByRootID(family, sviBase.rootID, svi.rootID, sBase, pack.status)
-				}
-				smBase[pack.name] = pack.status
-			}
-			sviBase.vulnInfo.AffectedPackages = slices.Collect(maps.Values(smBase))
-			sviBase.vulnInfo.AffectedPackages.Sort()
-
-			vimBase[vid] = sviBase
+			psm[vulnID] = append(psm[vulnID], pkgs[0])
 		}
 	}
 
 	res := models.VulnInfos{}
-	for vid, svi := range vimBase {
-		res[string(vid)] = svi.vulnInfo
+	for vulnID, ps := range psm {
+		res[string(vulnID)] = models.VulnInfo{
+			CveID: string(vulnID),
+			AffectedPackages: func() []models.PackageFixStatus {
+				ss := make([]models.PackageFixStatus, 0, len(ps))
+				for _, p := range ps {
+					ss = append(ss, p.status)
+				}
+				return ss
+			}(),
+		}
 	}
 	return res, nil
 }
 
-func collectPackages(e ecosystemTypes.Ecosystem, family string, dres detectTypes.DetectResult, ospkgs []scanTypes.OSPackage) (map[dataTypes.RootID]map[sourceTypes.SourceID]map[string]pack, error) {
-	pm := make(map[dataTypes.RootID]map[sourceTypes.SourceID]map[string]pack)
+func getPackages(rootID dataTypes.RootID, sourceID sourceTypes.SourceID, segments []segmentTypes.Segment, pmmmm map[dataTypes.RootID]map[sourceTypes.SourceID]map[segmentTypes.DetectionTag]map[string]pack) []pack {
+	var ps []pack
+	if _, found := pmmmm[rootID]; !found {
+		return nil
+	}
+	if _, found := pmmmm[rootID][sourceID]; !found {
+		return nil
+	}
+	for _, s := range segments {
+		pm, found := pmmmm[rootID][sourceID][s.Tag]
+		if !found {
+			return nil
+		}
+		for _, p := range pm {
+			ps = append(ps, p)
+		}
+	}
+	return ps
+}
+
+func collectPackages(e ecosystemTypes.Ecosystem, family string, dres detectTypes.DetectResult, ospkgs []scanTypes.OSPackage) (map[dataTypes.RootID]map[sourceTypes.SourceID]map[segmentTypes.DetectionTag]map[string]pack, error) {
+	pm := make(map[dataTypes.RootID]map[sourceTypes.SourceID]map[segmentTypes.DetectionTag]map[string]pack)
 	for _, detected := range dres.Detected {
+
 		if _, found := pm[detected.ID]; !found {
-			pm[detected.ID] = make(map[sourceTypes.SourceID]map[string]pack)
+			pm[detected.ID] = make(map[sourceTypes.SourceID]map[segmentTypes.DetectionTag]map[string]pack)
 		}
 		for _, detections := range detected.Detections {
 			if detections.Ecosystem != e {
@@ -299,28 +327,30 @@ func collectPackages(e ecosystemTypes.Ecosystem, family string, dres detectTypes
 
 			for sourceID, fconds := range detections.Contents {
 				if _, found := pm[detected.ID][sourceID]; !found {
-					pm[detected.ID][sourceID] = make(map[string]pack)
+					pm[detected.ID][sourceID] = make(map[segmentTypes.DetectionTag]map[string]pack)
 				}
 				for _, fcond := range fconds {
-					statuses, ignoresAll, err := collectFixStatuses(family, fcond.Criteria, ospkgs)
+					if _, found := pm[detected.ID][sourceID][fcond.Tag]; !found {
+						pm[detected.ID][sourceID][fcond.Tag] = make(map[string]pack)
+					}
+
+					statuses, ignoresAll, err := collectFixStatuses(family, detected.ID, fcond.Criteria, ospkgs)
 					if err != nil {
 						return nil, xerrors.Errorf("Failed to collect fix statuses. err: %w", err)
 					}
+
 					if ignoresAll {
 						continue
 					}
 					for _, status := range statuses {
-						p := pack{
-							name:   status.Name,
-							rootID: detected.ID,
-							tag:    fcond.Tag,
-							status: status,
+						// FIXME: redundant
+						pm[detected.ID][sourceID][fcond.Tag][status.Name] = pack{
+							name:     status.Name,
+							rootID:   detected.ID,
+							sourceID: sourceID,
+							tag:      fcond.Tag,
+							status:   status,
 						}
-						base, found := pm[detected.ID][sourceID][status.Name]
-						if found {
-							p = resolvePackageByTag(family, p, base)
-						}
-						pm[detected.ID][sourceID][status.Name] = p
 					}
 				}
 			}
@@ -329,10 +359,10 @@ func collectPackages(e ecosystemTypes.Ecosystem, family string, dres detectTypes
 	return pm, nil
 }
 
-func collectFixStatuses(family string, ca criteriaTypes.FilteredCriteria, ospkgs []scanTypes.OSPackage) ([]models.PackageFixStatus, bool, error) {
+func collectFixStatuses(family string, rootID dataTypes.RootID, ca criteriaTypes.FilteredCriteria, ospkgs []scanTypes.OSPackage) ([]models.PackageFixStatus, bool, error) {
 	var statuses []models.PackageFixStatus //nolint:prealloc
 	for _, child := range ca.Criterias {   //nolint:misspell
-		ss, ignoresAll, err := collectFixStatuses(family, child, ospkgs)
+		ss, ignoresAll, err := collectFixStatuses(family, rootID, child, ospkgs)
 		if err != nil {
 			return nil, false, xerrors.Errorf("Failed to collect fix statuses. err: %w", err)
 		}
@@ -383,7 +413,39 @@ func collectFixStatuses(family string, ca criteriaTypes.FilteredCriteria, ospkgs
 	return statuses, false, nil
 }
 
-func collectCVEs(e ecosystemTypes.Ecosystem, family string, dres detectTypes.DetectResult, am map[dataTypes.RootID]map[sourceTypes.SourceID]taggedAdvisory) map[dataTypes.RootID]map[vcTypes.VulnerabilityID]sourceVulnInfo {
+func collectVulns(e ecosystemTypes.Ecosystem, dres detectTypes.DetectResult) map[dataTypes.RootID]map[vcTypes.VulnerabilityID]map[sourceTypes.SourceID]vulnerabilityTypes.Vulnerability {
+	mmm := make(map[dataTypes.RootID]map[vcTypes.VulnerabilityID]map[sourceTypes.SourceID]vulnerabilityTypes.Vulnerability)
+
+	for _, detected := range dres.Detected {
+		for _, dv := range detected.Vulnerabilities {
+			for sourceID, rm := range dv.Contents {
+				for rootID, vs := range rm {
+					for _, v := range vs {
+						if !includesEcosystem(v.Segments, e) {
+							continue
+						}
+						mm, found := mmm[rootID]
+						if !found {
+							mm = make(map[vcTypes.VulnerabilityID]map[sourceTypes.SourceID]vulnerabilityTypes.Vulnerability)
+						}
+						m, found := mm[v.Content.ID]
+						if !found {
+							m = make(map[sourceTypes.SourceID]vulnerabilityTypes.Vulnerability)
+						}
+
+						m[sourceID] = v
+						mm[v.Content.ID] = m
+						mmm[rootID] = mm
+					}
+				}
+			}
+		}
+	}
+
+	return mmm
+}
+
+func collectCVEs(e ecosystemTypes.Ecosystem, family string, dres detectTypes.DetectResult, am map[dataTypes.RootID]map[sourceTypes.SourceID]advisoryTypes.Advisory) map[dataTypes.RootID]map[vcTypes.VulnerabilityID]sourceVulnInfo {
 	m := make(map[dataTypes.RootID]map[vcTypes.VulnerabilityID]sourceVulnInfo)
 
 	for _, detected := range dres.Detected {
@@ -407,7 +469,7 @@ func collectCVEs(e ecosystemTypes.Ecosystem, family string, dres detectTypes.Det
 							if !found {
 								return nil
 							}
-							return &a.advisory
+							return &a
 						}()
 						da := toDistoAdvisory(a)
 						if ignoresVulnerability(family, v, a) {
@@ -499,7 +561,7 @@ func collectCVEs(e ecosystemTypes.Ecosystem, family string, dres detectTypes.Det
 						svi := sourceVulnInfo{
 							sourceID: sourceID,
 							rootID:   rootID,
-							tag:      mostPreferredTag(family, v.Segments),
+							tags:     toTags(v.Segments),
 							vulnInfo: models.VulnInfo{
 								CveID:       string(v.Content.ID),
 								Confidences: models.Confidences{models.OvalMatch},
@@ -525,34 +587,25 @@ func collectCVEs(e ecosystemTypes.Ecosystem, family string, dres detectTypes.Det
 	return m
 }
 
-type taggedAdvisory struct {
-	tag      segmentTypes.DetectionTag
-	advisory advisoryTypes.Advisory
-}
-
-func collectAdvisories(e ecosystemTypes.Ecosystem, family string, dres detectTypes.DetectResult) map[dataTypes.RootID]map[sourceTypes.SourceID]taggedAdvisory {
-	am := make(map[dataTypes.RootID]map[sourceTypes.SourceID]taggedAdvisory)
+func collectAdvisories(e ecosystemTypes.Ecosystem, family string, dres detectTypes.DetectResult) map[dataTypes.RootID]map[sourceTypes.SourceID]advisoryTypes.Advisory {
+	am := make(map[dataTypes.RootID]map[sourceTypes.SourceID]advisoryTypes.Advisory)
 	for _, detected := range dres.Detected {
 		for _, da := range detected.Advisories {
 			for sid, rm := range da.Contents {
 				for rid, as := range rm {
 					if _, found := am[rid]; !found {
-						am[rid] = make(map[sourceTypes.SourceID]taggedAdvisory)
+						am[rid] = make(map[sourceTypes.SourceID]advisoryTypes.Advisory)
 					}
 					for _, a := range as {
 						if !includesEcosystem(a.Segments, e) {
 							continue
 						}
 
-						ta := taggedAdvisory{
-							tag:      mostPreferredTag(family, a.Segments),
-							advisory: a,
-						}
 						base, found := am[rid][sid]
 						if found {
-							ta = resolveAdvisoryByTag(family, base, ta)
+							a = resolveAdvisoryByTag(family, base, a)
 						}
-						am[rid][sid] = ta
+						am[rid][sid] = a
 					}
 				}
 			}
@@ -560,6 +613,14 @@ func collectAdvisories(e ecosystemTypes.Ecosystem, family string, dres detectTyp
 	}
 
 	return am
+}
+
+func toTags(ss []segmentTypes.Segment) []segmentTypes.DetectionTag {
+	ts := make([]segmentTypes.DetectionTag, 0, len(ss))
+	for _, s := range ss {
+		ts = append(ts, s.Tag)
+	}
+	return ts
 }
 
 func toCvss(v vulnerabilityTypes.Vulnerability, da *models.DistroAdvisory) (v2.CVSSv2, v31.CVSSv31) {

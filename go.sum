@@ -237,10 +237,10 @@ github.com/DATA-DOG/go-sqlmock v1.5.2 h1:OcvFkGmslmlZibjAjaHm3L//6LiuBgolP7Oputl
 github.com/DATA-DOG/go-sqlmock v1.5.2/go.mod h1:88MAG/4G7SMwSE3CeA0ZKzrT5CiOU3OJ+JlNzwDqpNU=
 github.com/GoogleCloudPlatform/docker-credential-gcr v2.0.5+incompatible h1:juIaKLLVhqzP55d8x4cSVgwyQv76Z55/fRv/UBr2KkQ=
 github.com/GoogleCloudPlatform/docker-credential-gcr v2.0.5+incompatible/go.mod h1:BB1eHdMLYEFuFdBlRMb0N7YGVdM5s6Pt0njxgvfbGGs=
-github.com/MaineK00n/vuls-data-update v0.0.0-20241210065423-30cbba2233ec h1:X8qyaHELtWDoZXfRznHgiMytME1A3dxGKjzz92sl768=
-github.com/MaineK00n/vuls-data-update v0.0.0-20241210065423-30cbba2233ec/go.mod h1:mqggn0d5g6VGHwrF8qYJJBxX1zztfsJRlXWktZh77/E=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20241211072759-d7100fd9e5cc h1:HzUZ7sNXPE7toQeznWGZHvaGWStmMgDHFGLG71H8YhI=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20241211072759-d7100fd9e5cc/go.mod h1:tB/zheeGT8XoSdWNdKGy+FGhTtwrrgRLCSFFR+BOqI8=
+github.com/MaineK00n/vuls-data-update v0.0.0-20241220103253-e0464240ff28 h1:EFyK5Kkrp0fwclrVqHP8wvKboJqvK5S4A/hMhhSM3Ts=
+github.com/MaineK00n/vuls-data-update v0.0.0-20241220103253-e0464240ff28/go.mod h1:X15skWJjHS02lyFsbyU0gXlfrLyOMBrhj7X7cJ876h8=
+github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20241221065108-2b877daba128 h1:aja7iMXREF/X5uYe0bu1Wfug3Ts1MqXsaRB5jE2qSCY=
+github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20241221065108-2b877daba128/go.mod h1:nahf+HXCP+C2br7PFZRKhMyMv9fz6geczmBhj0ELmY8=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/Masterminds/goutils v1.1.1 h1:5nUrii3FMTL5diU80unEVvNevw1nH4+ZV4DSLVJLSYI=
@@ -1268,8 +1268,8 @@ golang.org/x/crypto v0.0.0-20210921155107-089bfa567519/go.mod h1:GvvjBRRGRdwPK5y
 golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d/go.mod h1:IxCIyHEi3zRg3s0A5j5BB6A9Jmi73HwBIUl50j+osU4=
 golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa/go.mod h1:IxCIyHEi3zRg3s0A5j5BB6A9Jmi73HwBIUl50j+osU4=
 golang.org/x/crypto v0.6.0/go.mod h1:OFC/31mSvZgRz0V1QTNCzfAI1aIRzbiufJtkMIlEp58=
-golang.org/x/crypto v0.30.0 h1:RwoQn3GkWiMkzlX562cLB7OxWvjH1L8xutO2WoJcRoY=
-golang.org/x/crypto v0.30.0/go.mod h1:kDsLvtWBEx7MV9tJOj9bnXsPbxwJQ6csT/x4KIN4Ssk=
+golang.org/x/crypto v0.31.0 h1:ihbySMvVjLAeSH1IbfcRTkD/iNscyz8rGzjF/E5hV6U=
+golang.org/x/crypto v0.31.0/go.mod h1:kDsLvtWBEx7MV9tJOj9bnXsPbxwJQ6csT/x4KIN4Ssk=
 golang.org/x/exp v0.0.0-20190121172915-509febef88a4/go.mod h1:CJ0aWSM057203Lf6IL+f9T1iT9GByDxfZKAQTCR3kQA=
 golang.org/x/exp v0.0.0-20190306152737-a1d7652674e8/go.mod h1:CJ0aWSM057203Lf6IL+f9T1iT9GByDxfZKAQTCR3kQA=
 golang.org/x/exp v0.0.0-20190510132918-efd6b22b2522/go.mod h1:ZjyILWgesfNpC6sMxTJOJm9Kp84zZh5NQWvqDGG3Qr8=
