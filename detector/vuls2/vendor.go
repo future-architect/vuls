@@ -122,8 +122,8 @@ func ignoresCriterion(family string, cn criterionTypes.FilteredCriterion) bool {
 	switch family {
 	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
 		if cn.Criterion.Version.FixStatus != nil && cn.Criterion.Version.FixStatus.Class == fixstatusTypes.ClassUnfixed {
-			switch cn.Criterion.Version.FixStatus.Vendor {
-			case "Will not fix", "Under investigation":
+			switch strings.ToLower(cn.Criterion.Version.FixStatus.Vendor) {
+			case "will not fix", "under investigation":
 				return true
 			}
 		}
