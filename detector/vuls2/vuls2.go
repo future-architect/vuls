@@ -423,13 +423,13 @@ func collectCVEs(e ecosystemTypes.Ecosystem, family string, dres detectTypes.Det
 									Type:  ccType,
 									CveID: string(v.Content.ID),
 									Title: func() string {
-										if a != nil {
+										if a != nil && a.Content.Title != "" {
 											return a.Content.Title
 										}
 										return v.Content.Title
 									}(),
 									Summary: func() string {
-										if a != nil {
+										if a != nil && a.Content.Description != "" {
 											return a.Content.Description
 										}
 										return v.Content.Description
