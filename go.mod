@@ -7,8 +7,8 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.5.0
 	github.com/BurntSushi/toml v1.4.0
 	github.com/CycloneDX/cyclonedx-go v0.9.1
-	github.com/MaineK00n/vuls-data-update v0.0.0-20241210065423-30cbba2233ec
-	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20241211072759-d7100fd9e5cc
+	github.com/MaineK00n/vuls-data-update v0.0.0-20241223032335-8957c1d3e796
+	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20241223034432-1f80d0edb8f7
 	github.com/Ullaakut/nmap/v2 v2.2.2
 	github.com/aquasecurity/trivy v0.57.1
 	github.com/aquasecurity/trivy-db v0.0.0-20241028064941-053a5fa0d3b6
@@ -324,7 +324,7 @@ require (
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.30.0 // indirect
+	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c // indirect
 	golang.org/x/mod v0.21.0 // indirect
 	golang.org/x/net v0.32.0 // indirect
