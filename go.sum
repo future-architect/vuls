@@ -237,10 +237,10 @@ github.com/DATA-DOG/go-sqlmock v1.5.2 h1:OcvFkGmslmlZibjAjaHm3L//6LiuBgolP7Oputl
 github.com/DATA-DOG/go-sqlmock v1.5.2/go.mod h1:88MAG/4G7SMwSE3CeA0ZKzrT5CiOU3OJ+JlNzwDqpNU=
 github.com/GoogleCloudPlatform/docker-credential-gcr v2.0.5+incompatible h1:juIaKLLVhqzP55d8x4cSVgwyQv76Z55/fRv/UBr2KkQ=
 github.com/GoogleCloudPlatform/docker-credential-gcr v2.0.5+incompatible/go.mod h1:BB1eHdMLYEFuFdBlRMb0N7YGVdM5s6Pt0njxgvfbGGs=
-github.com/MaineK00n/vuls-data-update v0.0.0-20241223032335-8957c1d3e796 h1:amzCWduIBBdtSgv8TDOP2bBA4RtON9sYzS5pzCuY1+g=
-github.com/MaineK00n/vuls-data-update v0.0.0-20241223032335-8957c1d3e796/go.mod h1:X15skWJjHS02lyFsbyU0gXlfrLyOMBrhj7X7cJ876h8=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20241223034432-1f80d0edb8f7 h1:5qs4Ztd18zfZ/c2KwW0Jo71zmRLehGcGLYNk893Q4Nw=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20241223034432-1f80d0edb8f7/go.mod h1:3uoPmxPVKiXtFQ856pTgyJK1cmcO6Ug2AZOa2h4JIyM=
+github.com/MaineK00n/vuls-data-update v0.0.0-20241224035812-2450d4a4763f h1:mGsE8hE7Yb1db2XhLQIL9ueYAqwhkTJkChcS1mUZOMU=
+github.com/MaineK00n/vuls-data-update v0.0.0-20241224035812-2450d4a4763f/go.mod h1:X15skWJjHS02lyFsbyU0gXlfrLyOMBrhj7X7cJ876h8=
+github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20241224050543-ce28dcbf14f5 h1:97Pmn/R7t3l48a6wm2jqR9ar/84pp5YAvPrBkSTH6aI=
+github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20241224050543-ce28dcbf14f5/go.mod h1:LKb579jQ1JpeDOfB2Fa2jrfOmQ9i+0kuk1MuB/l0AVU=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/Masterminds/goutils v1.1.1 h1:5nUrii3FMTL5diU80unEVvNevw1nH4+ZV4DSLVJLSYI=
