@@ -3,10 +3,12 @@ package reporter
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 
-	"github.com/future-architect/vuls/models"
 	"golang.org/x/xerrors"
+
+	"github.com/future-architect/vuls/models"
 )
 
 // HTTPRequestWriter writes results to HTTP request
@@ -19,11 +21,20 @@ func (w HTTPRequestWriter) Write(rs ...models.ScanResult) (err error) {
 	for _, r := range rs {
 		b := new(bytes.Buffer)
 		if err := json.NewEncoder(b).Encode(r); err != nil {
-			return err
+			return xerrors.Errorf("Failed to encode scan result. err: %w", err)
 		}
-		_, err = http.Post(w.URL, "application/json; charset=utf-8", b)
+
+		resp, err := http.Post(w.URL, "application/json; charset=utf-8", b)
 		if err != nil {
-			return err
+			return xerrors.Errorf("Failed to post request. err: %w", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			return xerrors.Errorf("Failed to post request. err: error request response with status code %d", resp.StatusCode)
+		}
+		defer resp.Body.Close()
+
+		if _, err := io.Copy(io.Discard, resp.Body); err != nil {
+			return xerrors.Errorf("Failed to discard response body. err: %w", err)
 		}
 	}
 	return nil
@@ -41,7 +52,10 @@ func (w HTTPResponseWriter) Write(rs ...models.ScanResult) (err error) {
 		return xerrors.Errorf("Failed to marshal scan results: %w", err)
 	}
 	w.Writer.Header().Set("Content-Type", "application/json")
-	_, err = w.Writer.Write(res)
 
-	return err
+	if _, err = w.Writer.Write(res); err != nil {
+		return xerrors.Errorf("Failed to write response. err: %w", err)
+	}
+
+	return nil
 }
