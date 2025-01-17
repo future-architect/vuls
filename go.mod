@@ -7,8 +7,8 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.5.0
 	github.com/BurntSushi/toml v1.4.0
 	github.com/CycloneDX/cyclonedx-go v0.9.2
-	github.com/MaineK00n/vuls-data-update v0.0.0-20241208090537-1636de60e613
-	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20241210070054-eb2c0ee8d5a0
+	github.com/MaineK00n/vuls-data-update v0.0.0-20241210065423-30cbba2233ec
+	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20241211072759-d7100fd9e5cc
 	github.com/Ullaakut/nmap/v2 v2.2.2
 	github.com/aquasecurity/trivy v0.58.1
 	github.com/aquasecurity/trivy-db v0.0.0-20241209111357-8c398f13db0e
@@ -364,7 +364,7 @@ require (
 	modernc.org/libc v1.61.0 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.8.0 // indirect
-	modernc.org/sqlite v1.34.1 // indirect
+	modernc.org/sqlite v1.34.2 // indirect
 	mvdan.cc/sh/v3 v3.10.0 // indirect
 	oras.land/oras-go v1.2.5 // indirect
 	oras.land/oras-go/v2 v2.5.0 // indirect
