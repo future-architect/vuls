@@ -15,8 +15,8 @@ import (
 
 func Test_shouldDownload(t *testing.T) {
 	type args struct {
-		vuls2Cnf config.Vuls2DictConf
-		now      time.Time
+		vuls2Conf config.Vuls2Conf
+		now       time.Time
 	}
 	tests := []struct {
 		name     string
@@ -28,15 +28,15 @@ func Test_shouldDownload(t *testing.T) {
 		{
 			name: "no db file",
 			args: args{
-				vuls2Cnf: config.Vuls2DictConf{},
-				now:      *parse("2024-01-02T00:00:00Z"),
+				vuls2Conf: config.Vuls2Conf{},
+				now:       *parse("2024-01-02T00:00:00Z"),
 			},
 			want: true,
 		},
 		{
 			name: "no db file, but skip update",
 			args: args{
-				vuls2Cnf: config.Vuls2DictConf{
+				vuls2Conf: config.Vuls2Conf{
 					SkipUpdate: true,
 				},
 				now: *parse("2024-01-02T00:00:00Z"),
@@ -46,8 +46,8 @@ func Test_shouldDownload(t *testing.T) {
 		{
 			name: "just created",
 			args: args{
-				vuls2Cnf: config.Vuls2DictConf{},
-				now:      *parse("2024-01-02T00:00:00Z"),
+				vuls2Conf: config.Vuls2Conf{},
+				now:       *parse("2024-01-02T00:00:00Z"),
 			},
 			metadata: &types.Metadata{
 				LastModified:  *parse("2024-01-02T00:00:00Z"),
@@ -59,8 +59,8 @@ func Test_shouldDownload(t *testing.T) {
 		{
 			name: "8 hours old",
 			args: args{
-				vuls2Cnf: config.Vuls2DictConf{},
-				now:      *parse("2024-01-02T08:00:00Z"),
+				vuls2Conf: config.Vuls2Conf{},
+				now:       *parse("2024-01-02T08:00:00Z"),
 			},
 			metadata: &types.Metadata{
 				LastModified:  *parse("2024-01-02T00:00:00Z"),
@@ -72,7 +72,7 @@ func Test_shouldDownload(t *testing.T) {
 		{
 			name: "8 hours old, but skip update",
 			args: args{
-				vuls2Cnf: config.Vuls2DictConf{
+				vuls2Conf: config.Vuls2Conf{
 					SkipUpdate: true,
 				},
 				now: *parse("2024-01-02T08:00:00Z"),
@@ -87,8 +87,8 @@ func Test_shouldDownload(t *testing.T) {
 		{
 			name: "8 hours old, but download recently",
 			args: args{
-				vuls2Cnf: config.Vuls2DictConf{},
-				now:      *parse("2024-01-02T08:00:00Z"),
+				vuls2Conf: config.Vuls2Conf{},
+				now:       *parse("2024-01-02T08:00:00Z"),
 			},
 			metadata: &types.Metadata{
 				LastModified:  *parse("2024-01-02T00:00:00Z"),
@@ -101,14 +101,14 @@ func Test_shouldDownload(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := t.TempDir()
-			tt.args.vuls2Cnf.Path = filepath.Join(d, "vuls.db")
+			tt.args.vuls2Conf.Path = filepath.Join(d, "vuls.db")
 			if tt.metadata != nil {
-				if err := putMetadata(*tt.metadata, tt.args.vuls2Cnf.Path); err != nil {
+				if err := putMetadata(*tt.metadata, tt.args.vuls2Conf.Path); err != nil {
 					t.Errorf("putMetadata err = %v", err)
 					return
 				}
 			}
-			got, err := shouldDownload(tt.args.vuls2Cnf, tt.args.now)
+			got, err := shouldDownload(tt.args.vuls2Conf, tt.args.now)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("shouldDownload() error = %v, wantErr %v", err, tt.wantErr)
 				return

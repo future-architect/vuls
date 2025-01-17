@@ -37,21 +37,22 @@ import (
 
 var cveRe = regexp.MustCompile("CVE-[0-9]{4}-[0-9]+")
 
-func Detect(r *models.ScanResult, vuls2Cnf config.Vuls2DictConf, noProgress bool) error {
+// Detect detects vulnerabilities and fills ScanResult
+func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
 	switch r.Family {
 	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
 	default:
 		return nil
 	}
 
-	if vuls2Cnf.Repository == "" {
-		vuls2Cnf.Repository = DefaultGHCRRepository
+	if vuls2Conf.Repository == "" {
+		vuls2Conf.Repository = DefaultGHCRRepository
 	}
-	if vuls2Cnf.Path == "" {
-		vuls2Cnf.Path = DefaultPath
+	if vuls2Conf.Path == "" {
+		vuls2Conf.Path = DefaultPath
 	}
 
-	dbc, err := newDBConnection(vuls2Cnf, noProgress)
+	dbc, err := newDBConnection(vuls2Conf, noProgress)
 	if err != nil {
 		return xerrors.Errorf("Failed to get new db connection. err: %w", err)
 	}

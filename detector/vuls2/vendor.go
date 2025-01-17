@@ -226,6 +226,7 @@ func affectedPackageName(family string, pkg scanTypes.OSPackage) string {
 		return pkg.SrcName
 	}
 }
+
 func cveContentOptional(family string, rootID dataTypes.RootID, sourceID sourceTypes.SourceID) map[string]string {
 	switch family {
 	case constant.RedHat, constant.CentOS:

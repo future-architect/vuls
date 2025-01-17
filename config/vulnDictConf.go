@@ -329,7 +329,8 @@ func (cnf *CtiConf) Init() {
 	cnf.DebugSQL = Conf.DebugSQL
 }
 
-type Vuls2DictConf struct {
+// Vuls2Conf is configuration items for vuls2
+type Vuls2Conf struct {
 	Repository string
 	Path       string
 	SkipUpdate bool

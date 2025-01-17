@@ -318,7 +318,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 
 // DetectPkgCves detects OS pkg cves
 // pass 2 configs
-func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf config.GostConf, vuls2Cnf config.Vuls2DictConf, logOpts logging.LogOpts, noProgress bool) error {
+func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf config.GostConf, vuls2Conf config.Vuls2Conf, logOpts logging.LogOpts, noProgress bool) error {
 	// Pkg Scan
 	if isPkgCvesDetactable(r) {
 		// OVAL, gost(Debian Security Tracker) does not support Package for Raspbian, so skip it.
@@ -327,7 +327,7 @@ func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf c
 		}
 
 		// Vuls2
-		if err := vuls2.Detect(r, vuls2Cnf, noProgress); err != nil {
+		if err := vuls2.Detect(r, vuls2Conf, noProgress); err != nil {
 			return xerrors.Errorf("Failed to detect CVE with Vuls2: %w", err)
 		}
 
