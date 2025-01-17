@@ -9,6 +9,9 @@ require (
 	github.com/CycloneDX/cyclonedx-go v0.9.2
 	github.com/MaineK00n/vuls-data-update v0.0.0-20241223032335-8957c1d3e796
 	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20241223034432-1f80d0edb8f7
+	github.com/CycloneDX/cyclonedx-go v0.9.1
+	github.com/MaineK00n/vuls-data-update v0.0.0-20241224035812-2450d4a4763f
+	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20241224050543-ce28dcbf14f5
 	github.com/Ullaakut/nmap/v2 v2.2.2
 	github.com/aquasecurity/trivy v0.58.1
 	github.com/aquasecurity/trivy-db v0.0.0-20241209111357-8c398f13db0e
