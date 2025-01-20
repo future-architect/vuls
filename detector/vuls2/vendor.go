@@ -193,20 +193,20 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 func resolveSourceVulnInfo(family string, x, y sourceVulnInfo) sourceVulnInfo {
 	switch family {
 	case constant.RedHat, constant.CentOS:
-		preferenceFn := func(sourceID string) int {
+		preferenceFn := func(sourceID sourceTypes.SourceID) int {
 			switch sourceID {
-			case "redhat-csaf":
+			case sourceTypes.RedHatCSAF:
 				return 4
-			case "redhat-vex":
+			case sourceTypes.RedHatVEX:
 				return 3
-			case "redhat-ovalv2":
+			case sourceTypes.RedHatOVALv2:
 				return 2
 			default:
 				return 1
 			}
 		}
 		if cmp.Or(
-			preferenceFn(string(x.sourceID))-preferenceFn(string(y.sourceID)),
+			preferenceFn(x.sourceID)-preferenceFn(y.sourceID),
 			tagPreference(family, string(x.tag))-tagPreference(family, string(y.tag)),
 		) < 0 {
 			return y
