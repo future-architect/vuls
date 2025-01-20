@@ -66,7 +66,7 @@ func mostPreferredTag(family string, segments []segmentTypes.Segment) segmentTyp
 	}
 
 	s := slices.MaxFunc(segments, func(x, y segmentTypes.Segment) int {
-		return tagPreference(family, string(x.Tag)) - tagPreference(family, string(y.Tag))
+		return cmp.Compare(tagPreference(family, string(x.Tag)), tagPreference(family, string(y.Tag)))
 	})
 	return s.Tag
 }
@@ -175,16 +175,14 @@ func selectFixedIn(family string, fixed []string) string {
 
 func advisoryReference(family string, a *advisoryTypes.Advisory, r referenceTypes.Reference) *models.Reference {
 	switch family {
-	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
-		if a != nil && (strings.Contains(r.URL, string(a.Content.ID)) || strings.Contains(r.URL, strings.ReplaceAll(string(a.Content.ID), ":", "-"))) {
+	case constant.RedHat, constant.CentOS, constant.Rocky:
+		if a != nil && strings.Contains(r.URL, string(a.Content.ID)) {
 			return &models.Reference{
 				Link: r.URL,
 				Source: func() string {
 					switch family {
 					case constant.RedHat, constant.CentOS:
 						return "RHSA"
-					case constant.Alma:
-						return "ALSA"
 					case constant.Rocky:
 						return "RLSA"
 					default:
@@ -192,6 +190,15 @@ func advisoryReference(family string, a *advisoryTypes.Advisory, r referenceType
 					}
 				}(),
 				RefID: string(a.Content.ID),
+			}
+		}
+		return nil
+	case constant.Alma:
+		if a != nil && strings.Contains(r.URL, strings.ReplaceAll(string(a.Content.ID), ":", "-")) {
+			return &models.Reference{
+				Link:   r.URL,
+				Source: "ALSA",
+				RefID:  string(a.Content.ID),
 			}
 		}
 		return nil
