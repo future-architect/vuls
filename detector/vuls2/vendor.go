@@ -106,7 +106,7 @@ func tagPreference(family string, tag string) int {
 func ignoresVulnerability(family string, v vulnerabilityTypes.Vulnerability, a *advisoryTypes.Advisory) bool {
 	switch family {
 	case constant.RedHat, constant.CentOS:
-		if a == nil && strings.Contains(v.Content.Description, "** REJECT **") {
+		if strings.Contains(v.Content.Description, "** REJECT **") {
 			return true
 		}
 		if a != nil && strings.Contains(a.Content.Description, "** REJECT **") {
@@ -133,21 +133,26 @@ func ignoresCriterion(family string, cn criterionTypes.FilteredCriterion) bool {
 	}
 }
 
-func ignoresWholeCriteria(family string, cn criterionTypes.FilteredCriterion) bool {
+func ignoresWholeCriteria(family string, sourceID sourceTypes.SourceID, cn criterionTypes.FilteredCriterion) bool {
 	switch family {
 	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
-		// Ignore whole criteria from root if kpatch-patch-* package is included.
-		if cn.Criterion.Type == criterionTypes.CriterionTypeVersion && cn.Criterion.Version != nil &&
-			cn.Criterion.Version.Package.Type == versioncriterionpackageTypes.PackageTypeBinary && cn.Criterion.Version.Package.Binary != nil &&
-			strings.HasPrefix(cn.Criterion.Version.Package.Binary.Name, "kpatch-patch-") {
-			return true
+		switch sourceID {
+		case sourceTypes.RedHatOVALv1, sourceTypes.RedHatOVALv2:
+			// Ignore whole criteria from root if kpatch-patch-* package is included.
+			if cn.Criterion.Type == criterionTypes.CriterionTypeVersion && cn.Criterion.Version != nil &&
+				cn.Criterion.Version.Package.Type == versioncriterionpackageTypes.PackageTypeBinary && cn.Criterion.Version.Package.Binary != nil &&
+				strings.HasPrefix(cn.Criterion.Version.Package.Binary.Name, "kpatch-patch-") {
+				return true
+			}
+			if cn.Criterion.Type == criterionTypes.CriterionTypeNoneExist && cn.Criterion.NoneExist != nil &&
+				cn.Criterion.NoneExist.Type == noneexistcriterionTypes.PackageTypeBinary && cn.Criterion.NoneExist.Binary != nil &&
+				strings.HasPrefix(cn.Criterion.NoneExist.Binary.Name, "kpatch-patch-") {
+				return true
+			}
+			return false
+		default:
+			return false
 		}
-		if cn.Criterion.Type == criterionTypes.CriterionTypeNoneExist && cn.Criterion.NoneExist != nil &&
-			cn.Criterion.NoneExist.Type == noneexistcriterionTypes.PackageTypeBinary && cn.Criterion.NoneExist.Binary != nil &&
-			strings.HasPrefix(cn.Criterion.NoneExist.Binary.Name, "kpatch-patch-") {
-			return true
-		}
-		return false
 	default:
 		return false
 	}
@@ -168,16 +173,30 @@ func selectFixedIn(family string, fixed []string) string {
 	}
 }
 
-func advisoryReferenceSource(family string, r referenceTypes.Reference) string {
+func advisoryReference(family string, a *advisoryTypes.Advisory, r referenceTypes.Reference) *models.Reference {
 	switch family {
-	case constant.RedHat, constant.CentOS:
-		return "RHSA"
-	case constant.Alma:
-		return "ALSA"
-	case constant.Rocky:
-		return "RLSA"
+	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
+		if a != nil && (strings.Contains(r.URL, string(a.Content.ID)) || strings.Contains(r.URL, strings.ReplaceAll(string(a.Content.ID), ":", "-"))) {
+			return &models.Reference{
+				Link: r.URL,
+				Source: func() string {
+					switch family {
+					case constant.RedHat, constant.CentOS:
+						return "RHSA"
+					case constant.Alma:
+						return "ALSA"
+					case constant.Rocky:
+						return "RLSA"
+					default:
+						return r.Source
+					}
+				}(),
+				RefID: string(a.Content.ID),
+			}
+		}
+		return nil
 	default:
-		return r.Source
+		return nil
 	}
 }
 
@@ -206,8 +225,8 @@ func resolveSourceVulnInfo(family string, x, y sourceVulnInfo) sourceVulnInfo {
 			}
 		}
 		if cmp.Or(
-			preferenceFn(x.sourceID)-preferenceFn(y.sourceID),
-			tagPreference(family, string(x.tag))-tagPreference(family, string(y.tag)),
+			cmp.Compare(preferenceFn(x.sourceID), preferenceFn(y.sourceID)),
+			cmp.Compare(tagPreference(family, string(x.tag)), tagPreference(family, string(y.tag))),
 		) < 0 {
 			return y
 		}

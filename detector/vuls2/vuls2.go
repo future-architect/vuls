@@ -4,7 +4,6 @@ import (
 	"maps"
 	"regexp"
 	"slices"
-	"strings"
 	"time"
 
 	"golang.org/x/xerrors"
@@ -78,7 +77,25 @@ func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) e
 		return xerrors.Errorf("Failed to post convert. err: %w", err)
 	}
 
-	r.ScannedCves = vulnInfos
+	for cveID, vi := range vulnInfos {
+		viBase, found := r.ScannedCves[cveID]
+		if !found {
+			viBase = vi
+		} else {
+			viBase.AffectedPackages = append(viBase.AffectedPackages, vi.AffectedPackages...)
+			for _, da := range vi.DistroAdvisories {
+				viBase.DistroAdvisories.AppendIfMissing(&da)
+			}
+			for _, c := range vi.Confidences {
+				viBase.Confidences.AppendIfMissing(c)
+			}
+			for ccType, cc := range vi.CveContents {
+				viBase.CveContents[ccType] = append(viBase.CveContents[ccType], cc...)
+			}
+		}
+		r.ScannedCves[cveID] = viBase
+	}
+
 	logging.Log.Infof("%s: %d CVEs are detected with vuls2", r.FormatServerName(), len(vulnInfos))
 
 	return nil
@@ -303,7 +320,7 @@ func collectPackages(e ecosystemTypes.Ecosystem, family string, dres detectTypes
 					pm[detected.ID][sourceID] = make(map[string]pack)
 				}
 				for _, fcond := range fconds {
-					statuses, ignoresAll, err := collectFixStatuses(family, fcond.Criteria, ospkgs)
+					statuses, ignoresAll, err := collectFixStatuses(family, sourceID, fcond.Criteria, ospkgs)
 					if err != nil {
 						return nil, xerrors.Errorf("Failed to collect fix statuses. err: %w", err)
 					}
@@ -330,10 +347,10 @@ func collectPackages(e ecosystemTypes.Ecosystem, family string, dres detectTypes
 	return pm, nil
 }
 
-func collectFixStatuses(family string, ca criteriaTypes.FilteredCriteria, ospkgs []scanTypes.OSPackage) ([]models.PackageFixStatus, bool, error) {
+func collectFixStatuses(family string, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, ospkgs []scanTypes.OSPackage) ([]models.PackageFixStatus, bool, error) {
 	var statuses []models.PackageFixStatus //nolint:prealloc
 	for _, child := range ca.Criterias {   //nolint:misspell
-		ss, ignoresAll, err := collectFixStatuses(family, child, ospkgs)
+		ss, ignoresAll, err := collectFixStatuses(family, sourceID, child, ospkgs)
 		if err != nil {
 			return nil, false, xerrors.Errorf("Failed to collect fix statuses. err: %w", err)
 		}
@@ -344,7 +361,7 @@ func collectFixStatuses(family string, ca criteriaTypes.FilteredCriteria, ospkgs
 	}
 
 	for _, cn := range ca.Criterions {
-		if ignoresWholeCriteria(family, cn) {
+		if ignoresWholeCriteria(family, sourceID, cn) {
 			return nil, true, nil
 		}
 
@@ -449,12 +466,8 @@ func collectCVEs(e ecosystemTypes.Ecosystem, family string, dres detectTypes.Det
 										}
 										rs := make([]models.Reference, 0, len(refs))
 										for _, r := range refs {
-											if a != nil && (strings.Contains(r.URL, string(a.Content.ID)) || strings.Contains(r.URL, strings.ReplaceAll(string(a.Content.ID), ":", "-"))) {
-												rs = append(rs, models.Reference{
-													Link:   r.URL,
-													Source: advisoryReferenceSource(family, r),
-													RefID:  string(a.Content.ID),
-												})
+											if advRef := advisoryReference(family, a, r); advRef != nil {
+												rs = append(rs, *advRef)
 											}
 											if cveID := cveRe.FindString(r.URL); cveID != "" {
 												rs = append(rs, models.Reference{
