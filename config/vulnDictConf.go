@@ -328,3 +328,10 @@ func (cnf *CtiConf) Init() {
 	cnf.setDefault("go-cti.sqlite3")
 	cnf.DebugSQL = Conf.DebugSQL
 }
+
+// Vuls2Conf is configuration items for vuls2
+type Vuls2Conf struct {
+	Repository string
+	Path       string
+	SkipUpdate bool
+}

@@ -15,6 +15,7 @@ import (
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
 	"github.com/future-architect/vuls/cwe"
+	"github.com/future-architect/vuls/detector/vuls2"
 	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
@@ -49,7 +50,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
 		}
 
-		if err := DetectPkgCves(&r, config.Conf.OvalDict, config.Conf.Gost, config.Conf.LogOpts); err != nil {
+		if err := DetectPkgCves(&r, config.Conf.OvalDict, config.Conf.Gost, config.Conf.Vuls2, config.Conf.LogOpts, config.Conf.NoProgress); err != nil {
 			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
 		}
 
@@ -317,12 +318,17 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 
 // DetectPkgCves detects OS pkg cves
 // pass 2 configs
-func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf config.GostConf, logOpts logging.LogOpts) error {
+func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf config.GostConf, vuls2Conf config.Vuls2Conf, logOpts logging.LogOpts, noProgress bool) error {
 	// Pkg Scan
 	if isPkgCvesDetactable(r) {
 		// OVAL, gost(Debian Security Tracker) does not support Package for Raspbian, so skip it.
 		if r.Family == constant.Raspbian {
 			r = r.RemoveRaspbianPackFromResult()
+		}
+
+		// Vuls2
+		if err := vuls2.Detect(r, vuls2Conf, noProgress); err != nil {
+			return xerrors.Errorf("Failed to detect CVE with Vuls2: %w", err)
 		}
 
 		// OVAL
@@ -536,6 +542,9 @@ func detectPkgsCvesWithOval(cnf config.GovalDictConf, r *models.ScanResult, logO
 	case constant.Debian, constant.Raspbian, constant.Ubuntu:
 		logging.Log.Infof("Skip OVAL and Scan with gost alone.")
 		logging.Log.Infof("%s: %d CVEs are detected with OVAL", r.FormatServerName(), 0)
+		return nil
+	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
+		logging.Log.Debugf("Skip OVAL and Scan by Vuls2")
 		return nil
 	case constant.Windows, constant.MacOSX, constant.MacOSXServer, constant.MacOS, constant.MacOSServer, constant.FreeBSD, constant.ServerTypePseudo:
 		return nil
