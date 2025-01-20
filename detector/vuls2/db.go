@@ -33,7 +33,7 @@ func newDBConnection(vuls2Conf config.Vuls2Conf, noProgress bool) (db.DB, error)
 	}
 
 	if willDownload {
-		logging.Log.Infof("Downloading vuls2 db. repository: %s", vuls2Conf.Repository)
+		logging.Log.Infof("Fetching vuls2 db. repository: %s", vuls2Conf.Repository)
 		if err := fetch.Fetch(fetch.WithRepository(vuls2Conf.Repository), fetch.WithDBPath(vuls2Conf.Path), fetch.WithNoProgress(noProgress)); err != nil {
 			return nil, xerrors.Errorf("Failed to fetch vuls2 db. err: %w", err)
 		}
