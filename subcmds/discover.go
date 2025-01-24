@@ -113,6 +113,11 @@ func printConfigToml(ips []string) (err error) {
 #sqlite3Path = "/path/to/go-cti.sqlite3"
 #url        = ""
 
+[vuls2]
+#Path = "/path/to/vuls.db"
+#Repository = "ghcr.io/vulsio/vuls-nightly-db:<schema-version>"
+#SkipUpdate = false
+
 # https://vuls.io/docs/en/config.toml.html#slack-section
 #[slack]
 #hookURL      = "https://hooks.slack.com/services/abc123/defghijklmnopqrstuvwxyz"
