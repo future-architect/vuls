@@ -90,7 +90,7 @@ NOW=$(shell date '+%Y-%m-%dT%H-%M-%S%z')
 NOW_JSON_DIR := '${BASE_DIR}/$(NOW)'
 ONE_SEC_AFTER=$(shell date -d '+1 second' '+%Y-%m-%dT%H-%M-%S%z')
 ONE_SEC_AFTER_JSON_DIR := '${BASE_DIR}/$(ONE_SEC_AFTER)'
-LIBS := 'bundler' 'dart' 'elixir' 'pip' 'pipenv' 'poetry' 'composer' 'npm-v1' 'npm-v2' 'npm-v3' 'yarn' 'pnpm' 'pnpm-v9' 'cargo' 'gomod' 'gosum' 'gobinary' 'jar' 'jar-wrong-name-log4j-core' 'war' 'pom' 'gradle' 'nuget-lock' 'nuget-config' 'dotnet-deps' 'dotnet-package-props' 'conan-v1' 'conan-v2' 'swift-cocoapods' 'swift-swift' 'rust-binary'
+LIBS := 'bundler' 'dart' 'elixir' 'pip' 'pipenv' 'poetry-v1' 'poetry-v2' 'uv' 'composer' 'npm-v1' 'npm-v2' 'npm-v3' 'yarn' 'pnpm' 'pnpm-v9' 'cargo' 'gomod' 'gosum' 'gobinary' 'jar' 'jar-wrong-name-log4j-core' 'war' 'pom' 'gradle' 'nuget-lock' 'nuget-config' 'dotnet-deps' 'dotnet-package-props' 'conan-v1' 'conan-v2' 'swift-cocoapods' 'swift-swift' 'rust-binary'
 
 diff:
 	# git clone git@github.com:vulsio/vulsctl.git
