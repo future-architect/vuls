@@ -114,6 +114,7 @@ func (s LibraryScanner) GetLibraryKey() string {
 type LibraryFixedIn struct {
 	Key     string `json:"key,omitempty"`
 	Name    string `json:"name,omitempty"`
+	Version string `json:"version,omitempty"`
 	FixedIn string `json:"fixedIn,omitempty"`
 	Path    string `json:"path,omitempty"`
 }
