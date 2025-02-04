@@ -246,6 +246,7 @@ func (d libraryDetector) getVulnDetail(tvuln types.DetectedVulnerability) (vinfo
 		{
 			Key:     d.scanner.GetLibraryKey(),
 			Name:    tvuln.PkgName,
+			Version: tvuln.InstalledVersion,
 			FixedIn: tvuln.FixedVersion,
 			Path:    d.scanner.LockfilePath,
 		},
