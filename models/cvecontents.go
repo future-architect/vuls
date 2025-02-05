@@ -253,6 +253,10 @@ func (v CveContents) Sort() {
 				cmp.Compare(b.Cvss3Score, a.Cvss3Score),
 				cmp.Compare(b.Cvss2Score, a.Cvss2Score),
 				cmp.Compare(a.SourceLink, b.SourceLink),
+				cmp.Compare(a.Cvss40Vector, b.Cvss40Vector),
+				cmp.Compare(a.Cvss3Vector, b.Cvss3Vector),
+				cmp.Compare(a.Cvss2Vector, b.Cvss2Vector),
+				cmp.Compare(fmt.Sprintf("%#v", a.Optional), fmt.Sprintf("%#v", b.Optional)),
 			)
 		})
 		for cveID, cont := range contents {
