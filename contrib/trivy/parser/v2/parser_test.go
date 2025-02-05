@@ -554,6 +554,7 @@ var strutsSR = &models.ScanResult{
 				models.LibraryFixedIn{
 					Key:     "jar",
 					Name:    "commons-beanutils:commons-beanutils",
+					Version: "1.7.0",
 					FixedIn: "1.9.2",
 					//TODO use Artifactname?
 					Path: "Java",
@@ -631,6 +632,7 @@ var strutsSR = &models.ScanResult{
 				models.LibraryFixedIn{
 					Key:     "jar",
 					Name:    "struts:struts",
+					Version: "1.2.7",
 					FixedIn: "",
 					//TODO use Artifactname?
 					Path: "Java",
@@ -1091,6 +1093,7 @@ var osAndLibSR = &models.ScanResult{
 				models.LibraryFixedIn{
 					Key:     "gemspec",
 					Name:    "activesupport",
+					Version: "6.0.2.1",
 					FixedIn: "6.0.3.1, 5.2.4.3",
 					Path:    "Ruby",
 				},
@@ -1580,6 +1583,7 @@ var osAndLib2SR = &models.ScanResult{
 				models.LibraryFixedIn{
 					Key:     "gemspec",
 					Name:    "activesupport",
+					Version: "6.0.2.1",
 					FixedIn: "6.0.3.1, 5.2.4.3",
 					Path:    "Ruby",
 				},
@@ -2874,12 +2878,14 @@ var oneCVEtoNVulnerabilitySR = &models.ScanResult{
 				{
 					Key:     "cargo",
 					Name:    "pubnub",
+					Version: "0.3.0",
 					FixedIn: "0.4.0",
 					Path:    "Cargo.lock",
 				},
 				{
 					Key:     "composer",
 					Name:    "pubnub/pubnub",
+					Version: "6.0.0",
 					FixedIn: "6.1.0",
 					Path:    "composer.lock",
 				},
