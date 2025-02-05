@@ -137,6 +137,7 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 				vulnInfo.LibraryFixedIns = append(vulnInfo.LibraryFixedIns, models.LibraryFixedIn{
 					Key:     string(trivyResult.Type),
 					Name:    vuln.PkgName,
+					Version: vuln.InstalledVersion,
 					Path:    trivyResult.Target,
 					FixedIn: vuln.FixedVersion,
 				})
