@@ -24,22 +24,22 @@ GO_WINDOWS := GOOS=windows GOARCH=amd64 $(GO)
 all: build test
 
 build: ./cmd/vuls/main.go
-	$(GO) build -a -ldflags "$(LDFLAGS)" -o vuls ./cmd/vuls
+	$(GO) build -a -trimpath -ldflags "$(LDFLAGS)" -o vuls ./cmd/vuls
 
 build-windows: ./cmd/vuls/main.go
-	$(GO_WINDOWS) build -a -ldflags " $(LDFLAGS)" -o vuls.exe ./cmd/vuls
+	$(GO_WINDOWS) build -a -trimpath -ldflags " $(LDFLAGS)" -o vuls.exe ./cmd/vuls
 
 install: ./cmd/vuls/main.go
-	$(GO) install -ldflags "$(LDFLAGS)" ./cmd/vuls
+	$(GO) install -a -trimpath -ldflags "$(LDFLAGS)" ./cmd/vuls
 
 build-scanner: ./cmd/scanner/main.go 
-	$(GO) build -tags=scanner -a -ldflags "$(LDFLAGS)" -o vuls ./cmd/scanner
+	$(GO) build -tags=scanner -a -trimpath -ldflags "$(LDFLAGS)" -o vuls ./cmd/scanner
 
 build-scanner-windows: ./cmd/scanner/main.go
-	$(GO_WINDOWS) build -tags=scanner -a -ldflags " $(LDFLAGS)" -o vuls.exe ./cmd/scanner
+	$(GO_WINDOWS) build -tags=scanner -a -trimpath -ldflags " $(LDFLAGS)" -o vuls.exe ./cmd/scanner
 
 install-scanner: ./cmd/scanner/main.go 
-	$(GO) install -tags=scanner -ldflags "$(LDFLAGS)" ./cmd/scanner
+	$(GO) install -a -trimpath -tags=scanner -ldflags "$(LDFLAGS)" ./cmd/scanner
 
 lint:
 	go install github.com/mgechev/revive@latest

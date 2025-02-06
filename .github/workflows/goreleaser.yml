@@ -9,6 +9,16 @@ jobs:
   goreleaser:
     runs-on: ubuntu-latest
     steps:
+      - 
+        name: Maximize build space
+        uses: easimon/maximize-build-space@v10
+        with:
+          root-reserve-mb: 32768
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-haskell: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
       -
         name: Checkout
         uses: actions/checkout@v4
@@ -20,13 +30,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      -
-        name: Clean space as per https://github.com/actions/virtual-environments/issues/709
-        run: |
-          sudo rm -rf "/opt/ghc" || true
-          sudo rm -rf "/usr/share/dotnet" || true
-          sudo rm -rf "/usr/local/lib/android" || true
-          sudo rm -rf "/usr/local/share/boost" || true
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
