@@ -65,7 +65,7 @@ var FindLockFiles = []string{
 	// php
 	ftypes.ComposerLock, ftypes.ComposerInstalledJson,
 	// python
-	ftypes.PipRequirements, ftypes.PipfileLock, ftypes.PoetryLock,
+	ftypes.PipRequirements, ftypes.PipfileLock, ftypes.PoetryLock, ftypes.UvLock,
 	// .net
 	ftypes.NuGetPkgsLock, ftypes.NuGetPkgsConfig, "*.deps.json", "*Packages.props",
 	// gomod
@@ -95,7 +95,7 @@ func (s LibraryScanner) GetLibraryKey() string {
 		return "node"
 	case ftypes.NuGet, ftypes.DotNetCore:
 		return ".net"
-	case ftypes.Pipenv, ftypes.Poetry, ftypes.Pip, ftypes.PythonPkg:
+	case ftypes.Pipenv, ftypes.Poetry, ftypes.Uv, ftypes.Pip, ftypes.PythonPkg:
 		return "python"
 	case ftypes.Conan:
 		return "c"
