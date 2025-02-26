@@ -50,11 +50,11 @@ require (
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
 	github.com/samber/lo v1.49.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/spf13/cobra v1.8.1
+	github.com/spf13/cobra v1.9.1
 	github.com/vulsio/go-cti v0.1.0
 	github.com/vulsio/go-cve-dictionary v0.11.0
 	github.com/vulsio/go-exploitdb v0.5.0
-	github.com/vulsio/go-kev v0.2.0
+	github.com/vulsio/go-kev v0.3.0
 	github.com/vulsio/go-msfdb v0.3.0
 	github.com/vulsio/gost v0.5.1-0.20241031210709-553a4ae98567
 	github.com/vulsio/goval-dictionary v0.11.0
@@ -304,7 +304,7 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/spf13/viper v1.19.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
