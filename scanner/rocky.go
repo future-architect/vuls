@@ -44,23 +44,11 @@ func (o *rocky) checkDeps() error {
 }
 
 func (o *rocky) depsFast() []string {
-	if o.getServerInfo().Mode.IsOffline() {
-		return []string{}
-	}
-
-	// repoquery
-	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Alma8, Rocky8
-	return []string{"yum-utils"}
+	return []string{}
 }
 
 func (o *rocky) depsFastRoot() []string {
-	if o.getServerInfo().Mode.IsOffline() {
-		return []string{}
-	}
-
-	// repoquery
-	// `rpm -qa` shows dnf-utils as yum-utils on RHEL8, CentOS8, Alma8, Rocky8
-	return []string{"yum-utils"}
+	return []string{}
 }
 
 func (o *rocky) depsDeep() []string {
@@ -84,7 +72,6 @@ func (o *rocky) sudoNoPasswdCmdsFast() []cmd {
 func (o *rocky) sudoNoPasswdCmdsFastRoot() []cmd {
 	if !o.ServerInfo.IsContainer() {
 		return []cmd{
-			{"repoquery -h", exitStatusZero},
 			{"needs-restarting", exitStatusZero},
 			{"which which", exitStatusZero},
 			{"stat /proc/1/exe", exitStatusZero},
@@ -94,7 +81,6 @@ func (o *rocky) sudoNoPasswdCmdsFastRoot() []cmd {
 		}
 	}
 	return []cmd{
-		{"repoquery -h", exitStatusZero},
 		{"needs-restarting", exitStatusZero},
 	}
 }

@@ -1,9 +1,6 @@
 package scanner
 
 import (
-	"strings"
-	"time"
-
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
@@ -52,30 +49,30 @@ func (o *amazon) checkDeps() error {
 }
 
 func (o *amazon) depsFast() []string {
-	if o.getServerInfo().Mode.IsOffline() {
-		return []string{}
-	}
-	// repoquery
-	switch s := strings.Fields(o.getDistro().Release)[0]; s {
-	case "1", "2":
+	switch v, _ := o.Distro.MajorVersion(); v {
+	case 1:
+		if o.getServerInfo().Mode.IsOffline() {
+			return []string{}
+		}
+		return []string{"yum-utils"}
+	case 2:
 		return []string{"yum-utils"}
 	default:
-		if _, err := time.Parse("2006.01", s); err == nil {
-			return []string{"yum-utils"}
-		}
-		return []string{"dnf-utils"}
+		return []string{}
 	}
 }
 
 func (o *amazon) depsFastRoot() []string {
-	switch s := strings.Fields(o.getDistro().Release)[0]; s {
-	case "1", "2":
+	switch v, _ := o.Distro.MajorVersion(); v {
+	case 1:
+		if o.getServerInfo().Mode.IsOffline() {
+			return []string{}
+		}
+		return []string{"yum-utils"}
+	case 2:
 		return []string{"yum-utils"}
 	default:
-		if _, err := time.Parse("2006.01", s); err == nil {
-			return []string{"yum-utils"}
-		}
-		return []string{"dnf-utils"}
+		return []string{}
 	}
 }
 
@@ -94,18 +91,47 @@ func (o *amazon) checkIfSudoNoPasswd() error {
 }
 
 func (o *amazon) sudoNoPasswdCmdsFast() []cmd {
-	return []cmd{}
+	switch v, _ := o.Distro.MajorVersion(); v {
+	case 1:
+		if o.getServerInfo().Mode.IsOffline() {
+			return []cmd{}
+		}
+		return []cmd{
+			{"repoquery -h", exitStatusZero},
+		}
+	case 2:
+		return []cmd{
+			{"repoquery -h", exitStatusZero},
+		}
+	default:
+		return []cmd{}
+	}
 }
 
 func (o *amazon) sudoNoPasswdCmdsFastRoot() []cmd {
-	return []cmd{
-		{"needs-restarting", exitStatusZero},
-		{"which which", exitStatusZero},
-		{"stat /proc/1/exe", exitStatusZero},
-		{"ls -l /proc/1/exe", exitStatusZero},
-		{"cat /proc/1/maps", exitStatusZero},
-		{"lsof -i -P -n", exitStatusZero},
+	var cs []cmd
+	switch v, _ := o.Distro.MajorVersion(); v {
+	case 1:
+		if !o.getServerInfo().Mode.IsOffline() {
+			cs = append(cs, cmd{"repoquery -h", exitStatusZero})
+		}
+	case 2:
+		cs = append(cs, cmd{"repoquery -h", exitStatusZero})
+	default:
 	}
+	if !o.ServerInfo.IsContainer() {
+		cs = append(cs,
+			cmd{"needs-restarting", exitStatusZero},
+			cmd{"which which", exitStatusZero},
+			cmd{"stat /proc/1/exe", exitStatusZero},
+			cmd{"ls -l /proc/1/exe", exitStatusZero},
+			cmd{"cat /proc/1/maps", exitStatusZero},
+			cmd{"lsof -i -P -n", exitStatusZero},
+		)
+	} else {
+		cs = append(cs, cmd{"needs-restarting", exitStatusZero})
+	}
+	return cs
 }
 
 func (o *amazon) sudoNoPasswdCmdsDeep() []cmd {

@@ -44,21 +44,29 @@ func (o *fedora) checkDeps() error {
 }
 
 func (o *fedora) depsFast() []string {
-	if o.getServerInfo().Mode.IsOffline() {
-		return []string{}
+	if !o.getServerInfo().Mode.IsOffline() {
+		v, _ := o.Distro.MajorVersion()
+		if v < 22 {
+			return []string{"yum-utils"}
+		}
+		if v < 26 {
+			return []string{"dnf-utils"}
+		}
 	}
-
-	// repoquery
-	return []string{"dnf-utils"}
+	return []string{}
 }
 
 func (o *fedora) depsFastRoot() []string {
-	if o.getServerInfo().Mode.IsOffline() {
-		return []string{}
+	if !o.getServerInfo().Mode.IsOffline() {
+		v, _ := o.Distro.MajorVersion()
+		if v < 22 {
+			return []string{"yum-utils"}
+		}
+		if v < 26 {
+			return []string{"dnf-utils"}
+		}
 	}
-
-	// repoquery
-	return []string{"dnf-utils"}
+	return []string{}
 }
 
 func (o *fedora) depsDeep() []string {
@@ -76,25 +84,38 @@ func (o *fedora) checkIfSudoNoPasswd() error {
 }
 
 func (o *fedora) sudoNoPasswdCmdsFast() []cmd {
+	if !o.getServerInfo().Mode.IsOffline() {
+		if v, _ := o.Distro.MajorVersion(); v < 26 {
+			return []cmd{
+				{"repoquery -h", exitStatusZero},
+			}
+		}
+	}
 	return []cmd{}
 }
 
 func (o *fedora) sudoNoPasswdCmdsFastRoot() []cmd {
-	if !o.ServerInfo.IsContainer() {
-		return []cmd{
-			{"repoquery -h", exitStatusZero},
-			{"needs-restarting", exitStatusZero},
-			{"which which", exitStatusZero},
-			{"stat /proc/1/exe", exitStatusZero},
-			{"ls -l /proc/1/exe", exitStatusZero},
-			{"cat /proc/1/maps", exitStatusZero},
-			{"lsof -i -P -n", exitStatusZero},
+	var cs []cmd
+	if !o.getServerInfo().Mode.IsOffline() {
+		if v, _ := o.Distro.MajorVersion(); v < 26 {
+			cs = append(cs, cmd{"repoquery -h", exitStatusZero})
 		}
 	}
-	return []cmd{
-		{"repoquery -h", exitStatusZero},
-		{"needs-restarting", exitStatusZero},
+	if !o.ServerInfo.IsContainer() {
+		cs = append(cs,
+			cmd{"needs-restarting", exitStatusZero},
+			cmd{"which which", exitStatusZero},
+			cmd{"stat /proc/1/exe", exitStatusZero},
+			cmd{"ls -l /proc/1/exe", exitStatusZero},
+			cmd{"cat /proc/1/maps", exitStatusZero},
+			cmd{"lsof -i -P -n", exitStatusZero},
+		)
+	} else {
+		cs = append(cs,
+			cmd{"needs-restarting", exitStatusZero},
+		)
 	}
+	return cs
 }
 
 func (o *fedora) sudoNoPasswdCmdsDeep() []cmd {
