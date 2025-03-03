@@ -50,7 +50,7 @@ require (
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
 	github.com/samber/lo v1.49.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/spf13/cobra v1.8.1
+	github.com/spf13/cobra v1.9.1
 	github.com/vulsio/go-cti v0.1.0
 	github.com/vulsio/go-cve-dictionary v0.11.0
 	github.com/vulsio/go-exploitdb v0.5.0
