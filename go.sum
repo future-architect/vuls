@@ -1707,8 +1707,8 @@ github.com/vmihailenco/msgpack/v5 v5.4.1 h1:cQriyiUvjTwOHg8QZaPihLWeRAAVoCpE00IU
 github.com/vmihailenco/msgpack/v5 v5.4.1/go.mod h1:GaZTsDaehaPpQVyxrf5mtQlH+pc21PIudVV/E3rRQok=
 github.com/vmihailenco/tagparser/v2 v2.0.0 h1:y09buUbR+b5aycVFQs/g70pqKVZNBmxwAhO7/IwNM9g=
 github.com/vmihailenco/tagparser/v2 v2.0.0/go.mod h1:Wri+At7QHww0WTrCBeu4J6bNtoV6mEfg5OIWRZA9qds=
-github.com/vulsio/go-cti v0.1.0 h1:bIFFBcbUZmJ2h/m9ZfmQw2iFw59J0EQkG+BREUOk1xI=
-github.com/vulsio/go-cti v0.1.0/go.mod h1:+3J73gGJSSyTpKwTApD9EK/3vNDjTAqHytPWTET2g1U=
+github.com/vulsio/go-cti v0.2.0 h1:EIp7chhnuV8nD+B1xXuqWsIa9clpTs7jZu8rpy51eUs=
+github.com/vulsio/go-cti v0.2.0/go.mod h1:hpQKdQX5sj/J+yqMVfZqJQ3en270ZRYfFQ3D/1GKFrU=
 github.com/vulsio/go-cve-dictionary v0.11.0 h1:eIHnp/UH9xNb1+v65CR9LzJBMqtGs1ldokY/+FhRLbw=
 github.com/vulsio/go-cve-dictionary v0.11.0/go.mod h1:O7Xylt0KiZfkYYSmKCfJPMVYF16gju/GihL5foZqNSI=
 github.com/vulsio/go-exploitdb v0.5.0 h1:hexkbZnT6f52BQc1JWYYZhs8vbG/3sBC+WbFejnxuus=
