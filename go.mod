@@ -58,7 +58,7 @@ require (
 	github.com/vulsio/go-msfdb v0.3.0
 	github.com/vulsio/gost v0.5.1-0.20241031210709-553a4ae98567
 	github.com/vulsio/goval-dictionary v0.11.0
-	go.etcd.io/bbolt v1.3.11
+	go.etcd.io/bbolt v1.4.0
 	golang.org/x/oauth2 v0.25.0
 	golang.org/x/sync v0.11.0
 	golang.org/x/text v0.22.0
@@ -304,7 +304,7 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/spf13/viper v1.19.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
