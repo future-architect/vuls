@@ -603,10 +603,10 @@ func summaryLines(r models.ScanResult) string {
 	}
 
 	for i, vinfo := range r.ScannedCves.ToSortedSlice() {
-		max := vinfo.MaxCvssScore().Value.Score
+		score := vinfo.MaxCvssScore().Value.Score
 		cvssScore := "|     "
-		if 0 < max {
-			cvssScore = fmt.Sprintf("| %4.1f", max)
+		if 0 < score {
+			cvssScore = fmt.Sprintf("| %4.1f", score)
 		}
 
 		pkgNames := vinfo.AffectedPackages.Names()

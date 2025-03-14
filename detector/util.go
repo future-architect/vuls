@@ -164,19 +164,19 @@ func getMinusDiffCves(previous, current models.ScanResult) models.VulnInfos {
 		currentCveIDsSet[currentVulnInfo.CveID] = true
 	}
 
-	clear := models.VulnInfos{}
+	removed := models.VulnInfos{}
 	for _, v := range previous.ScannedCves {
 		if !currentCveIDsSet[v.CveID] {
 			v.DiffStatus = models.DiffMinus
-			clear[v.CveID] = v
+			removed[v.CveID] = v
 			logging.Log.Debugf("clear: %s", v.CveID)
 		}
 	}
-	if len(clear) == 0 {
+	if len(removed) == 0 {
 		logging.Log.Infof("%s: There are %d vulnerabilities, but no difference between current result and previous one.", current.FormatServerName(), len(current.ScannedCves))
 	}
 
-	return clear
+	return removed
 }
 
 func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {

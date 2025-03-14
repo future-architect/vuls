@@ -253,7 +253,7 @@ No CVE-IDs are found in updatable packages.
 
 	data := [][]string{}
 	for _, vinfo := range r.ScannedCves.ToSortedSlice() {
-		max := vinfo.MaxCvssScore().Value.Score
+		score := vinfo.MaxCvssScore().Value.Score
 		// v2max := vinfo.MaxCvss2Score().Value.Score
 		// v3max := vinfo.MaxCvss3Score().Value.Score
 
@@ -279,7 +279,7 @@ No CVE-IDs are found in updatable packages.
 
 		data = append(data, []string{
 			vinfo.CveIDDiffFormat(),
-			fmt.Sprintf("%4.1f", max),
+			fmt.Sprintf("%4.1f", score),
 			fmt.Sprintf("%5s", vinfo.AttackVector()),
 			// fmt.Sprintf("%4.1f", v2max),
 			// fmt.Sprintf("%4.1f", v3max),
@@ -627,7 +627,7 @@ No CVE-IDs are found in updatable packages.
 func formatCsvList(r models.ScanResult, path string) error {
 	data := [][]string{{"CVE-ID", "CVSS", "Attack", "PoC", "CERT", "Fixed", "NVD"}}
 	for _, vinfo := range r.ScannedCves.ToSortedSlice() {
-		max := vinfo.MaxCvssScore().Value.Score
+		score := vinfo.MaxCvssScore().Value.Score
 
 		exploits := ""
 		if 0 < len(vinfo.Exploits) || 0 < len(vinfo.Metasploits) {
@@ -643,7 +643,7 @@ func formatCsvList(r models.ScanResult, path string) error {
 
 		data = append(data, []string{
 			vinfo.CveID,
-			fmt.Sprintf("%4.1f", max),
+			fmt.Sprintf("%4.1f", score),
 			vinfo.AttackVector(),
 			exploits,
 			vinfo.AlertDict.FormatSource(),
@@ -771,19 +771,19 @@ func getMinusDiffCves(previous, current models.ScanResult) models.VulnInfos {
 		currentCveIDsSet[currentVulnInfo.CveID] = true
 	}
 
-	clear := models.VulnInfos{}
+	removed := models.VulnInfos{}
 	for _, v := range previous.ScannedCves {
 		if !currentCveIDsSet[v.CveID] {
 			v.DiffStatus = models.DiffMinus
-			clear[v.CveID] = v
+			removed[v.CveID] = v
 			logging.Log.Debugf("clear: %s", v.CveID)
 		}
 	}
-	if len(clear) == 0 {
+	if len(removed) == 0 {
 		logging.Log.Infof("%s: There are %d vulnerabilities, but no difference between current result and previous one.", current.FormatServerName(), len(current.ScannedCves))
 	}
 
-	return clear
+	return removed
 }
 
 func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
