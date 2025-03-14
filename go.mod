@@ -1,7 +1,6 @@
 module github.com/future-architect/vuls
 
-go 1.23.5
-toolchain go1.24.1
+go 1.24
 
 require (
 	github.com/3th1nk/cidr v0.2.0
