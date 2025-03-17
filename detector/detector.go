@@ -666,7 +666,7 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 	return nil
 }
 
-func getMaxConfidence(detail cvemodels.CveDetail) (max models.Confidence) {
+func getMaxConfidence(detail cvemodels.CveDetail) (maxConfidence models.Confidence) {
 	if detail.HasFortinet() {
 		for _, fortinet := range detail.Fortinets {
 			confidence := models.Confidence{}
@@ -678,11 +678,11 @@ func getMaxConfidence(detail cvemodels.CveDetail) (max models.Confidence) {
 			case cvemodels.FortinetVendorProductMatch:
 				confidence = models.FortinetVendorProductMatch
 			}
-			if max.Score < confidence.Score {
-				max = confidence
+			if maxConfidence.Score < confidence.Score {
+				maxConfidence = confidence
 			}
 		}
-		return max
+		return maxConfidence
 	}
 
 	if detail.HasNvd() {
@@ -696,18 +696,18 @@ func getMaxConfidence(detail cvemodels.CveDetail) (max models.Confidence) {
 			case cvemodels.NvdVendorProductMatch:
 				confidence = models.NvdVendorProductMatch
 			}
-			if max.Score < confidence.Score {
-				max = confidence
+			if maxConfidence.Score < confidence.Score {
+				maxConfidence = confidence
 			}
 		}
-		return max
+		return maxConfidence
 	}
 
 	if detail.HasJvn() {
 		return models.JvnVendorProductMatch
 	}
 
-	return max
+	return maxConfidence
 }
 
 // FillCweDict fills CWE

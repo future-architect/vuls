@@ -650,44 +650,44 @@ func (v VulnInfo) MaxCvssScore() CveContentCvss {
 
 // MaxCvss40Score returns Max CVSS V4.0 Score
 func (v VulnInfo) MaxCvss40Score() CveContentCvss {
-	max := CveContentCvss{
+	maxCvss := CveContentCvss{
 		Type:  Unknown,
 		Value: Cvss{Type: CVSS40},
 	}
 	for _, cvss := range v.Cvss40Scores() {
-		if max.Value.Score < cvss.Value.Score {
-			max = cvss
+		if maxCvss.Value.Score < cvss.Value.Score {
+			maxCvss = cvss
 		}
 	}
-	return max
+	return maxCvss
 }
 
 // MaxCvss3Score returns Max CVSS V3 Score
 func (v VulnInfo) MaxCvss3Score() CveContentCvss {
-	max := CveContentCvss{
+	maxCvss := CveContentCvss{
 		Type:  Unknown,
 		Value: Cvss{Type: CVSS3},
 	}
 	for _, cvss := range v.Cvss3Scores() {
-		if max.Value.Score < cvss.Value.Score {
-			max = cvss
+		if maxCvss.Value.Score < cvss.Value.Score {
+			maxCvss = cvss
 		}
 	}
-	return max
+	return maxCvss
 }
 
 // MaxCvss2Score returns Max CVSS V2 Score
 func (v VulnInfo) MaxCvss2Score() CveContentCvss {
-	max := CveContentCvss{
+	maxCvss := CveContentCvss{
 		Type:  Unknown,
 		Value: Cvss{Type: CVSS2},
 	}
 	for _, cvss := range v.Cvss2Scores() {
-		if max.Value.Score < cvss.Value.Score {
-			max = cvss
+		if maxCvss.Value.Score < cvss.Value.Score {
+			maxCvss = cvss
 		}
 	}
-	return max
+	return maxCvss
 }
 
 // AttackVector returns attack vector string
@@ -848,11 +848,11 @@ func severityToCvssScoreRoughly(severity string) float64 {
 
 // FormatMaxCvssScore returns Max CVSS Score
 func (v VulnInfo) FormatMaxCvssScore() string {
-	max := v.MaxCvssScore()
+	cvss := v.MaxCvssScore()
 	return fmt.Sprintf("%3.1f %s (%s)",
-		max.Value.Score,
-		strings.ToUpper(max.Value.Severity),
-		max.Type)
+		cvss.Value.Score,
+		strings.ToUpper(cvss.Value.Severity),
+		cvss.Type)
 }
 
 // DistroAdvisories is a list of DistroAdvisory

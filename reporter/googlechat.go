@@ -35,7 +35,7 @@ func (w GoogleChatWriter) Write(rs ...models.ScanResult) (err error) {
 			r.ScannedCves.FormatFixedStatus(r.Packages),
 			r.FormatUpdatablePkgsSummary())}
 		for _, vinfo := range r.ScannedCves.ToSortedSlice() {
-			max := vinfo.MaxCvssScore().Value.Score
+			score := vinfo.MaxCvssScore().Value.Score
 
 			exploits := ""
 			if 0 < len(vinfo.Exploits) || 0 < len(vinfo.Metasploits) {
@@ -52,7 +52,7 @@ func (w GoogleChatWriter) Write(rs ...models.ScanResult) (err error) {
 			msgs = append(msgs, fmt.Sprintf(`%s %s %4.1f %5s %s`,
 				vinfo.CveIDDiffFormat(),
 				link,
-				max,
+				score,
 				vinfo.AttackVector(),
 				exploits))
 			if len(msgs) == 50 {
