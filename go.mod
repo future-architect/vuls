@@ -60,8 +60,8 @@ require (
 	github.com/vulsio/goval-dictionary v0.11.0
 	go.etcd.io/bbolt v1.4.0
 	golang.org/x/oauth2 v0.27.0
-	golang.org/x/sync v0.11.0
-	golang.org/x/text v0.22.0
+	golang.org/x/sync v0.12.0
+	golang.org/x/text v0.23.0
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da
 )
 
