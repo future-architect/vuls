@@ -47,12 +47,40 @@ func (o *oracle) depsFast() []string {
 	if o.getServerInfo().Mode.IsOffline() {
 		return []string{}
 	}
-	// repoquery
-	return []string{"yum-utils"}
+
+	if v, _ := o.getDistro().MajorVersion(); v < 8 {
+		return []string{"yum-utils"}
+	}
+
+	return []string{}
 }
 
 func (o *oracle) depsFastRoot() []string {
-	return []string{"yum-utils"}
+	var deps []string
+
+	if !o.getServerInfo().Mode.IsOffline() {
+		deps = append(deps, "yum-utils")
+	}
+
+	v, _ := o.getDistro().MajorVersion()
+	switch {
+	case v < 7:
+		deps = append(deps,
+			"which",
+			"lsof",
+			"procps",
+			"iproute",
+		)
+	default:
+		deps = append(deps,
+			"which",
+			"lsof",
+			"procps-ng",
+			"iproute",
+		)
+	}
+
+	return deps
 }
 
 func (o *oracle) depsDeep() []string {
@@ -70,24 +98,48 @@ func (o *oracle) checkIfSudoNoPasswd() error {
 }
 
 func (o *oracle) sudoNoPasswdCmdsFast() []cmd {
-	return []cmd{}
+	if o.getServerInfo().Mode.IsOffline() {
+		return []cmd{}
+	}
+
+	if v, _ := o.getDistro().MajorVersion(); v < 8 {
+		return []cmd{
+			{"repoquery -h", exitStatusZero},
+		}
+	}
+
+	return []cmd{
+		{"dnf repoquery -h", exitStatusZero},
+	}
 }
 
 func (o *oracle) sudoNoPasswdCmdsFastRoot() []cmd {
-	if !o.ServerInfo.IsContainer() {
-		return []cmd{
-			{"repoquery -h", exitStatusZero},
-			{"needs-restarting", exitStatusZero},
-			{"which which", exitStatusZero},
-			{"stat /proc/1/exe", exitStatusZero},
-			{"ls -l /proc/1/exe", exitStatusZero},
-			{"cat /proc/1/maps", exitStatusZero},
+	var cs []cmd
+
+	if !o.getServerInfo().Mode.IsOffline() {
+		if v, _ := o.getDistro().MajorVersion(); v < 8 {
+			cs = append(cs,
+				cmd{"repoquery -h", exitStatusZero},
+				cmd{"needs-restarting", exitStatusZero},
+			)
+		} else {
+			cs = append(cs,
+				cmd{"dnf repoquery -h", exitStatusZero},
+				cmd{"needs-restarting", exitStatusZero},
+			)
 		}
 	}
-	return []cmd{
-		{"repoquery -h", exitStatusZero},
-		{"needs-restarting", exitStatusZero},
+
+	if !o.ServerInfo.IsContainer() {
+		cs = append(cs,
+			cmd{"which which", exitStatusZero},
+			cmd{"stat /proc/1/exe", exitStatusZero},
+			cmd{"ls -l /proc/1/exe", exitStatusZero},
+			cmd{"cat /proc/1/maps", exitStatusZero},
+		)
 	}
+
+	return cs
 }
 
 func (o *oracle) sudoNoPasswdCmdsDeep() []cmd {

@@ -768,11 +768,45 @@ func (o *redhatBase) yumMakeCache() error {
 }
 
 func (o *redhatBase) scanUpdatablePackages() (models.Packages, error) {
-	isDnf := o.exec(util.PrependProxyEnv(`repoquery --version | grep dnf`), o.sudo.repoquery()).isSuccess()
-	cmd := `repoquery --all --pkgnarrow=updates --qf='%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPO}'`
-	if isDnf {
-		cmd = `repoquery --upgrades --qf='%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPONAME}' -q`
-	}
+	cmd := func() string {
+		const (
+			yum  = `repoquery --all --pkgnarrow=updates --qf="%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPO}"`
+			dnf  = `dnf repoquery --upgrades --qf="%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPONAME}" -q`
+			dnf5 = `dnf5 repoquery --upgrades --qf="%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{REPONAME}\n" -q`
+		)
+
+		switch o.Distro.Family {
+		case constant.Fedora:
+			v, _ := o.Distro.MajorVersion()
+			if v < 22 {
+				return yum
+			}
+			if v < 41 {
+				return dnf
+			}
+			return dnf5
+		case constant.Amazon:
+			switch v, _ := o.Distro.MajorVersion(); v {
+			case 1, 2:
+				return yum
+			default:
+				return dnf
+			}
+		case constant.CentOS:
+			if strings.HasPrefix(o.Distro.Release, "stream") {
+				return dnf
+			}
+			if v, _ := o.Distro.MajorVersion(); v < 8 {
+				return yum
+			}
+			return dnf
+		default:
+			if v, _ := o.Distro.MajorVersion(); v < 8 {
+				return yum
+			}
+			return dnf
+		}
+	}()
 	for _, repo := range o.getServerInfo().Enablerepo {
 		cmd += " --enablerepo=" + repo
 	}
@@ -843,7 +877,8 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 	case constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
 		if o.getServerInfo().Mode.IsOffline() {
 			return false
-		} else if o.getServerInfo().Mode.IsFastRoot() || o.getServerInfo().Mode.IsDeep() {
+		}
+		if o.getServerInfo().Mode.IsFastRoot() || o.getServerInfo().Mode.IsDeep() {
 			return true
 		}
 		return false
@@ -856,7 +891,8 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 
 		if o.getServerInfo().Mode.IsOffline() {
 			return false
-		} else if o.getServerInfo().Mode.IsFastRoot() || o.getServerInfo().Mode.IsDeep() {
+		}
+		if o.getServerInfo().Mode.IsFastRoot() || o.getServerInfo().Mode.IsDeep() {
 			return true
 		}
 		return false
@@ -869,14 +905,22 @@ func (o *redhatBase) isExecNeedsRestarting() bool {
 
 		if o.getServerInfo().Mode.IsOffline() {
 			return false
-		} else if o.getServerInfo().Mode.IsFastRoot() ||
-			o.getServerInfo().Mode.IsDeep() {
+		}
+		if o.getServerInfo().Mode.IsFastRoot() || o.getServerInfo().Mode.IsDeep() {
 			return true
 		}
 		return false
+	case constant.Amazon:
+		if o.getServerInfo().Mode.IsOffline() {
+			return false
+		}
+		if o.getServerInfo().Mode.IsFastRoot() || o.getServerInfo().Mode.IsDeep() {
+			return true
+		}
+		return false
+	default:
+		return !o.getServerInfo().Mode.IsFast()
 	}
-
-	return !o.getServerInfo().Mode.IsFast()
 }
 
 func (o *redhatBase) needsRestarting() error {
