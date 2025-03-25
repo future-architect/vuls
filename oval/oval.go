@@ -52,8 +52,6 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (bool, error) {
 	}
 	ovalRelease := release
 	switch osFamily {
-	case constant.CentOS:
-		ovalRelease = strings.TrimPrefix(release, "stream")
 	case constant.Amazon:
 		switch s := strings.Fields(release)[0]; util.Major(s) {
 		case "1":
@@ -111,8 +109,6 @@ func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 	}
 	ovalRelease := release
 	switch osFamily {
-	case constant.CentOS:
-		ovalRelease = strings.TrimPrefix(release, "stream")
 	case constant.Amazon:
 		switch s := strings.Fields(release)[0]; util.Major(s) {
 		case "1":
