@@ -5,9 +5,13 @@ on:
     tags:
       - '*'
 
+permissions: 
+  contents: read
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
+    permissions: 
+      contents: write # Needed for GoReleaser to create releases (tags, release notes, artifacts).
     steps:
       - 
         name: Maximize build space
