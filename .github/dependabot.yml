@@ -8,8 +8,12 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: monthly
+      interval: weekly
     target-branch: master
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
   - package-ecosystem: gomod # See documentation for possible values
     open-pull-requests-limit: 10
     directory: / # Location of package manifests
