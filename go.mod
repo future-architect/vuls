@@ -56,7 +56,7 @@ require (
 	github.com/vulsio/go-exploitdb v0.5.1-0.20250317025710-90df4972d112
 	github.com/vulsio/go-kev v0.3.1-0.20250317025043-ec2cdd38d55e
 	github.com/vulsio/go-msfdb v0.3.1-0.20250317025145-8ee0b9f083c9
-	github.com/vulsio/gost v0.5.1-0.20250317025610-fc5c98c667c1
+	github.com/vulsio/gost v0.5.1
 	github.com/vulsio/goval-dictionary v0.12.0
 	go.etcd.io/bbolt v1.4.0
 	golang.org/x/oauth2 v0.28.0

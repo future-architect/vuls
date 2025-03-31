@@ -1726,8 +1726,8 @@ github.com/vulsio/go-kev v0.3.1-0.20250317025043-ec2cdd38d55e h1:/oxdbg2ONx4pnSY
 github.com/vulsio/go-kev v0.3.1-0.20250317025043-ec2cdd38d55e/go.mod h1:+xifpJmvAbr1Wchu8kwsaMmGjoaMrY5QzDKAyc9k0Aw=
 github.com/vulsio/go-msfdb v0.3.1-0.20250317025145-8ee0b9f083c9 h1:g2gL1BZ+K/FKKHH/MvQeh1+4rbQjhC/psOUlO2h9/VQ=
 github.com/vulsio/go-msfdb v0.3.1-0.20250317025145-8ee0b9f083c9/go.mod h1:+IvuLrHzyTFxoMtNXKxl+S/UlQ1iUpHTzcKXk2ILqDM=
-github.com/vulsio/gost v0.5.1-0.20250317025610-fc5c98c667c1 h1:FX/ajWNvKV3f2IWY8O/DLFF1RV0H7BPsVz8KF9YRzEs=
-github.com/vulsio/gost v0.5.1-0.20250317025610-fc5c98c667c1/go.mod h1:sRtSRLwB4rZsir15cQyyTcj+vl9NjN9mazOrfn/38Hc=
+github.com/vulsio/gost v0.5.1 h1:7+3BVvY0EJ2Ya79FzBL5T5fbCKwH9KR5OWTLmVDqqLI=
+github.com/vulsio/gost v0.5.1/go.mod h1:sRtSRLwB4rZsir15cQyyTcj+vl9NjN9mazOrfn/38Hc=
 github.com/vulsio/goval-dictionary v0.12.0 h1:CLYUKTOU3rtuXUXgxXVvqA2kPblOdu6hvOQiVLO0pis=
 github.com/vulsio/goval-dictionary v0.12.0/go.mod h1:qbiotMXRN0eoMKmtl8ES+Ya9FUEbyJyRAqV4OBkIuvI=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
