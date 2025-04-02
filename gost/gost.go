@@ -73,7 +73,10 @@ func NewGostClient(cnf config.GostConf, family string, o logging.LogOpts) (Clien
 	case constant.Windows:
 		return Microsoft{base}, nil
 	default:
-		return Pseudo{base}, nil
+		if family == "" {
+			return nil, xerrors.New("Probably an error occurred during scanning. Check the error message")
+		}
+		return nil, xerrors.Errorf("Gost for %s is not implemented yet", family)
 	}
 }
 
