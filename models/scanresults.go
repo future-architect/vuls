@@ -49,6 +49,7 @@ type ScanResult struct {
 	RunningKernel     Kernel                   `json:"runningKernel"`
 	Packages          Packages                 `json:"packages"`
 	SrcPackages       SrcPackages              `json:",omitempty"`
+	Flatpaks          Flatpaks                 `json:"flatpaks"`
 	EnabledDnfModules []string                 `json:"enabledDnfModules,omitempty"` // for dnf modules
 	WordPressPackages WordPressPackages        `json:",omitempty"`
 	GitHubManifests   DependencyGraphManifests `json:"gitHubManifests,omitempty"`
@@ -227,6 +228,22 @@ func (r ScanResult) FormatUpdatablePkgsSummary() string {
 	}
 	return fmt.Sprintf("%d installed, %d updatable",
 		len(r.Packages),
+		nUpdatable)
+}
+
+// FormatUpdatableFlatpakSummary returns a summary of updatable Flatpak packages
+func (r ScanResult) FormatUpdatableFlatpakSummary() string {
+	nUpdatable := 0
+	for _, f := range r.Flatpaks {
+		if f.NewVersion == "" {
+			continue
+		}
+		if f.Version != f.NewVersion {
+			nUpdatable++
+		}
+	}
+	return fmt.Sprintf("Flatpak: %d apps, %d updatable",
+		len(r.Flatpaks),
 		nUpdatable)
 }
 
