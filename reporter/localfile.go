@@ -94,7 +94,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 
 		if w.FormatCycloneDXJSON {
-			bs, err := sbom.GenerateCycloneDX(cyclonedx.BOMFileFormatJSON, r)
+			bs, err := sbom.SerializeCycloneDX(sbom.ToCycloneDX(r), cyclonedx.BOMFileFormatJSON)
 			if err != nil {
 				return xerrors.Errorf("Failed to generate CycloneDX JSON. err: %w", err)
 			}
@@ -105,7 +105,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 
 		if w.FormatCycloneDXXML {
-			bs, err := sbom.GenerateCycloneDX(cyclonedx.BOMFileFormatXML, r)
+			bs, err := sbom.SerializeCycloneDX(sbom.ToCycloneDX(r), cyclonedx.BOMFileFormatXML)
 			if err != nil {
 				return xerrors.Errorf("Failed to generate CycloneDX XML. err: %w", err)
 			}

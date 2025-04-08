@@ -18,13 +18,17 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
-// GenerateCycloneDX generates a string in CycloneDX format
-func GenerateCycloneDX(format cdx.BOMFileFormat, r models.ScanResult) ([]byte, error) {
+// ToCycloneDX converts a ScanResult to a CycloneDX BOM.
+func ToCycloneDX(r models.ScanResult) *cdx.BOM {
 	bom := cdx.NewBOM()
 	bom.SerialNumber = uuid.New().URN()
 	bom.Metadata = cdxMetadata(r)
 	bom.Components, bom.Dependencies, bom.Vulnerabilities = cdxComponents(r, bom.Metadata.Component.BOMRef)
+	return bom
+}
 
+// SerializeCycloneDX serializes a CycloneDX BOM to a byte array.
+func SerializeCycloneDX(bom *cdx.BOM, format cdx.BOMFileFormat) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	enc := cdx.NewBOMEncoder(buf, format)
 	enc.SetPretty(true)
