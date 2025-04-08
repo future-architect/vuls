@@ -11,10 +11,8 @@ import (
 
 	cdx "github.com/CycloneDX/cyclonedx-go"
 	"github.com/google/uuid"
-	"github.com/package-url/packageurl-go"
 	"golang.org/x/xerrors"
 
-	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 )
 
@@ -197,17 +195,17 @@ func ospkgToCdxComponents(family, release string, runningKernel models.Kernel, b
 			}
 		}
 
-		purl := toPkgPURL(family, release, pack.Name, pack.Version, pack.Release, pack.Arch, pack.Repository)
+		purl := osPkgToPURL(family, release, pack.Name, pack.Version, pack.Release, pack.Arch, pack.Repository)
 		components = append(components, cdx.Component{
-			BOMRef:     purl,
+			BOMRef:     purl.ToString(),
 			Type:       cdx.ComponentTypeLibrary,
 			Name:       pack.Name,
 			Version:    pack.Version,
-			PackageURL: purl,
+			PackageURL: purl.ToString(),
 			Properties: &props,
 		})
 
-		ospkgToPURL[pack.Name] = purl
+		ospkgToPURL[pack.Name] = purl.ToString()
 	}
 	return components
 }
@@ -264,16 +262,16 @@ func libpkgToCdxComponents(libscanner models.LibraryScanner, libpkgToPURL map[st
 	}
 
 	for _, lib := range libscanner.Libs {
-		purl := packageurl.NewPackageURL(string(libscanner.Type), "", lib.Name, lib.Version, packageurl.Qualifiers{{Key: "file_path", Value: libscanner.LockfilePath}}, "").ToString()
+		purl := libPkgToPURL(libscanner, lib)
 		components = append(components, cdx.Component{
-			BOMRef:     purl,
+			BOMRef:     purl.ToString(),
 			Type:       cdx.ComponentTypeLibrary,
 			Name:       lib.Name,
 			Version:    lib.Version,
-			PackageURL: purl,
+			PackageURL: purl.ToString(),
 		})
 
-		libpkgToPURL[libscanner.LockfilePath][lib.Name] = purl
+		libpkgToPURL[libscanner.LockfilePath][lib.Name] = purl.ToString()
 	}
 
 	return components
@@ -295,16 +293,16 @@ func ghpkgToCdxComponents(m models.DependencyGraphManifest, ghpkgToPURL map[stri
 	}
 
 	for _, dep := range m.Dependencies {
-		purl := packageurl.NewPackageURL(m.Ecosystem(), "", dep.PackageName, dep.Version(), packageurl.Qualifiers{{Key: "repo_url", Value: m.Repository}, {Key: "file_path", Value: m.Filename}}, "").ToString()
+		purl := ghPkgToPURL(m, dep)
 		components = append(components, cdx.Component{
-			BOMRef:     purl,
+			BOMRef:     purl.ToString(),
 			Type:       cdx.ComponentTypeLibrary,
 			Name:       dep.PackageName,
 			Version:    dep.Version(),
-			PackageURL: purl,
+			PackageURL: purl.ToString(),
 		})
 
-		ghpkgToPURL[m.RepoURLFilename()][dep.PackageName] = purl
+		ghpkgToPURL[m.RepoURLFilename()][dep.PackageName] = purl.ToString()
 	}
 
 	return components
@@ -330,16 +328,16 @@ func wppkgToCdxComponents(wppkgs models.WordPressPackages, wppkgToPURL map[strin
 	}
 
 	for _, wppkg := range wppkgs {
-		purl := packageurl.NewPackageURL("wordpress", wppkg.Type, wppkg.Name, wppkg.Version, packageurl.Qualifiers{{Key: "status", Value: wppkg.Status}}, "").ToString()
+		purl := wpPkgToPURL(wppkg)
 		components = append(components, cdx.Component{
-			BOMRef:     purl,
+			BOMRef:     purl.ToString(),
 			Type:       cdx.ComponentTypeLibrary,
 			Name:       wppkg.Name,
 			Version:    wppkg.Version,
-			PackageURL: purl,
+			PackageURL: purl.ToString(),
 		})
 
-		wppkgToPURL[wppkg.Name] = purl
+		wppkgToPURL[wppkg.Name] = purl.ToString()
 	}
 
 	return components
@@ -355,53 +353,6 @@ func cdxDependencies(bomRefs map[string][]string) *[]cdx.Dependency {
 		})
 	}
 	return &dependencies
-}
-
-func toPkgPURL(osFamily, osVersion, packName, packVersion, packRelease, packArch, packRepository string) string {
-	var purlType string
-	switch osFamily {
-	case constant.Alma, constant.Amazon, constant.CentOS, constant.Fedora, constant.OpenSUSE, constant.OpenSUSELeap, constant.Oracle, constant.RedHat, constant.Rocky, constant.SUSEEnterpriseDesktop, constant.SUSEEnterpriseServer:
-		purlType = "rpm"
-	case constant.Alpine:
-		purlType = "apk"
-	case constant.Debian, constant.Raspbian, constant.Ubuntu:
-		purlType = "deb"
-	case constant.FreeBSD:
-		purlType = "pkg"
-	case constant.Windows:
-		purlType = "win"
-	case constant.ServerTypePseudo:
-		purlType = "pseudo"
-	default:
-		purlType = "unknown"
-	}
-
-	version := packVersion
-	if packRelease != "" {
-		version = fmt.Sprintf("%s-%s", packVersion, packRelease)
-	}
-
-	var qualifiers packageurl.Qualifiers
-	if osVersion != "" {
-		qualifiers = append(qualifiers, packageurl.Qualifier{
-			Key:   "distro",
-			Value: osVersion,
-		})
-	}
-	if packArch != "" {
-		qualifiers = append(qualifiers, packageurl.Qualifier{
-			Key:   "arch",
-			Value: packArch,
-		})
-	}
-	if packRepository != "" {
-		qualifiers = append(qualifiers, packageurl.Qualifier{
-			Key:   "repo",
-			Value: packRepository,
-		})
-	}
-
-	return packageurl.NewPackageURL(purlType, osFamily, packName, version, qualifiers, "").ToString()
 }
 
 func cdxVulnerabilities(result models.ScanResult, ospkgToPURL map[string]string, libpkgToPURL, ghpkgToPURL map[string]map[string]string, wppkgToPURL map[string]string) *[]cdx.Vulnerability {
