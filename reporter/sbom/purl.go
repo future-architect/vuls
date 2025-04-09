@@ -111,8 +111,9 @@ func purlType(t ftypes.LangType) string {
 		return packageurl.TypeCargo
 	case ftypes.Julia:
 		return packageurl.TypeJulia
+	default:
+	    return string(t)
 	}
-	return string(t)
 }
 
 func ghEcosystemToPurlType(t string) string {
