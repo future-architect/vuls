@@ -143,8 +143,9 @@ func ghEcosystemToPurlType(t string) string {
 		return packageurl.TypeConan
 	case "pub":
 		return packageurl.TypePub
+	default:
+	    return t
 	}
-	return t
 }
 
 func parsePkgName(t, n string) (string, string) {
