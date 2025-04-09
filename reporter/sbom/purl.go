@@ -112,7 +112,7 @@ func purlType(t ftypes.LangType) string {
 	case ftypes.Julia:
 		return packageurl.TypeJulia
 	default:
-	    return string(t)
+		return string(t)
 	}
 }
 
@@ -145,7 +145,7 @@ func ghEcosystemToPurlType(t string) string {
 	case "pub":
 		return packageurl.TypePub
 	default:
-	    return t
+		return t
 	}
 }
 
