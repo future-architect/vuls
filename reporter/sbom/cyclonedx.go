@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/xerrors"
 
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 )
 
@@ -49,11 +50,7 @@ func cdxMetadata(result models.ScanResult) *cdx.Metadata {
 				},
 			},
 		},
-		Component: &cdx.Component{
-			BOMRef: uuid.NewString(),
-			Type:   cdx.ComponentTypeOS,
-			Name:   result.ServerName,
-		},
+		Component: osToCdxComponent(result),
 	}
 	return &metadata
 }
@@ -63,10 +60,9 @@ func cdxComponents(result models.ScanResult, metaBomRef string) (*[]cdx.Componen
 	bomRefs := map[string][]string{}
 
 	ospkgToPURL := map[string]string{}
-	if ospkgComps := ospkgToCdxComponents(result.Family, result.Release, result.RunningKernel, result.Packages, result.SrcPackages, ospkgToPURL); ospkgComps != nil {
-		bomRefs[metaBomRef] = append(bomRefs[metaBomRef], ospkgComps[0].BOMRef)
-		for _, comp := range ospkgComps[1:] {
-			bomRefs[ospkgComps[0].BOMRef] = append(bomRefs[ospkgComps[0].BOMRef], comp.BOMRef)
+	if ospkgComps := ospkgToCdxComponents(result, ospkgToPURL); len(ospkgComps) > 0 {
+		for _, comp := range ospkgComps {
+			bomRefs[metaBomRef] = append(bomRefs[metaBomRef], comp.BOMRef)
 		}
 		components = append(components, ospkgComps...)
 	}
@@ -115,44 +111,41 @@ func cdxComponents(result models.ScanResult, metaBomRef string) (*[]cdx.Componen
 	return &components, cdxDependencies(bomRefs), cdxVulnerabilities(result, ospkgToPURL, libpkgToPURL, ghpkgToPURL, wppkgToPURL)
 }
 
-func osToCdxComponent(family, release, runningKernelRelease, runningKernelVersion string) cdx.Component {
+func osToCdxComponent(r models.ScanResult) *cdx.Component {
+	family := constant.ServerTypePseudo
+	if r.Family != "" {
+		family = r.Family
+	}
+
 	props := []cdx.Property{
 		{
 			Name:  "future-architect:vuls:Type",
-			Value: "Package",
+			Value: family,
 		},
 	}
-	if runningKernelRelease != "" {
+	if r.RunningKernel.Release != "" {
 		props = append(props, cdx.Property{
 			Name:  "RunningKernelRelease",
-			Value: runningKernelRelease,
+			Value: r.RunningKernel.Release,
 		})
 	}
-	if runningKernelVersion != "" {
+	if r.RunningKernel.Version != "" {
 		props = append(props, cdx.Property{
 			Name:  "RunningKernelVersion",
-			Value: runningKernelVersion,
+			Value: r.RunningKernel.Version,
 		})
 	}
-	return cdx.Component{
+	return &cdx.Component{
 		BOMRef:     uuid.NewString(),
 		Type:       cdx.ComponentTypeOS,
 		Name:       family,
-		Version:    release,
+		Version:    r.Release,
 		Properties: &props,
 	}
 }
 
-func ospkgToCdxComponents(family, release string, runningKernel models.Kernel, binpkgs models.Packages, srcpkgs models.SrcPackages, ospkgToPURL map[string]string) []cdx.Component {
-	if family == "" {
-		return nil
-	}
-
-	components := []cdx.Component{
-		osToCdxComponent(family, release, runningKernel.Release, runningKernel.Version),
-	}
-
-	if len(binpkgs) == 0 {
+func ospkgToCdxComponents(r models.ScanResult, ospkgToPURL map[string]string) (components []cdx.Component) {
+	if r.Family == "" || len(r.Packages) == 0 {
 		return components
 	}
 
@@ -162,7 +155,7 @@ func ospkgToCdxComponents(family, release string, runningKernel models.Kernel, b
 		arch    string
 	}
 	binToSrc := map[string]srcpkg{}
-	for _, pack := range srcpkgs {
+	for _, pack := range r.SrcPackages {
 		for _, binpkg := range pack.BinaryNames {
 			binToSrc[binpkg] = srcpkg{
 				name:    pack.Name,
@@ -172,7 +165,7 @@ func ospkgToCdxComponents(family, release string, runningKernel models.Kernel, b
 		}
 	}
 
-	for _, pack := range binpkgs {
+	for _, pack := range r.Packages {
 		var props []cdx.Property
 		if p, ok := binToSrc[pack.Name]; ok {
 			if p.name != "" {
@@ -195,7 +188,7 @@ func ospkgToCdxComponents(family, release string, runningKernel models.Kernel, b
 			}
 		}
 
-		purl := osPkgToPURL(family, release, pack.Name, pack.Version, pack.Release, pack.Arch, pack.Repository)
+		purl := osPkgToPURL(r.Family, r.Release, pack.Name, pack.Version, pack.Release, pack.Arch, pack.Repository)
 		components = append(components, cdx.Component{
 			BOMRef:     purl.ToString(),
 			Type:       cdx.ComponentTypeLibrary,
