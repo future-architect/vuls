@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/future-architect/vuls/config"
@@ -15,8 +16,11 @@ func NewCmdVersion() *cobra.Command {
 		Use:   "version",
 		Short: "Print the version",
 		Args:  cobra.NoArgs,
-		Run: func(_ *cobra.Command, _ []string) {
-			fmt.Fprintf(os.Stdout, "snmp2cpe %s %s\n", config.Version, config.Revision)
+		RunE: func(_ *cobra.Command, _ []string) error {
+			if _, err := fmt.Fprintf(os.Stdout, "snmp2cpe %s %s\n", config.Version, config.Revision); err != nil {
+				return errors.Wrap(err, "failed to print version")
+			}
+			return nil
 		},
 	}
 	return cmd

@@ -27,6 +27,7 @@ linters:
         - name: increment-decrement
         - name: indent-error-flow
         - name: package-comments
+          disabled: true
         - name: range
         - name: receiver-naming
         - name: redefines-builtin-id
@@ -38,7 +39,18 @@ linters:
         - name: var-declaration
         - name: var-naming
     staticcheck: # https://golangci-lint.run/usage/linters/#staticcheck
-      checks: ["all", "-SA1019"]
+      checks:
+        - all
+        - -ST1000 # at least one file in a package should have a package comment
+        - -ST1005 # error strings should not be capitalized
+  exclusions:
+    rules:
+      - source: "defer .+\\.Close\\(\\)"
+        linters:
+          - errcheck
+      - source: "defer os.Remove\\(.+\\)"
+        linters:
+          - errcheck
 
 formatters:
   enable:

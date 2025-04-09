@@ -24,7 +24,7 @@ type ChatWorkWriter struct {
 func (w ChatWorkWriter) Write(rs ...models.ScanResult) (err error) {
 
 	for _, r := range rs {
-		serverInfo := fmt.Sprintf("%s", r.ServerInfo())
+		serverInfo := r.ServerInfo()
 		if err = w.chatWorkpostMessage(serverInfo); err != nil {
 			return err
 		}

@@ -403,7 +403,7 @@ func validateSSHConfig(c *config.ServerInfo) error {
 	}
 
 	sshConfigCmd := buildSSHConfigCmd(sshBinaryPath, c)
-	logging.Log.Debugf("Executing... %s", strings.Replace(sshConfigCmd, "\n", "", -1))
+	logging.Log.Debugf("Executing... %s", strings.ReplaceAll(sshConfigCmd, "\n", ""))
 	configResult := localExec(*c, sshConfigCmd, noSudo)
 	if !configResult.isSuccess() {
 		if strings.Contains(configResult.Stderr, "unknown option -- G") {
@@ -468,7 +468,7 @@ func validateSSHConfig(c *config.ServerInfo) error {
 			}
 		}
 		cmd := fmt.Sprintf("%s -F %s -f %s", sshKeygenBinaryPath, hostname, knownHosts)
-		logging.Log.Debugf("Executing... %s", strings.Replace(cmd, "\n", "", -1))
+		logging.Log.Debugf("Executing... %s", strings.ReplaceAll(cmd, "\n", ""))
 		if r := localExec(*c, cmd, noSudo); r.isSuccess() {
 			keyType, clientKey, err := parseSSHKeygen(r.Stdout)
 			if err != nil {
@@ -875,7 +875,6 @@ func (s Scanner) detectPlatform() {
 			)
 		}
 	}
-	return
 }
 
 // detectIPS detects the IPS of each servers.
@@ -906,11 +905,9 @@ func (s Scanner) execScan() error {
 	if err := s.setupChangelogCache(); err != nil {
 		return err
 	}
-	defer func() {
-		if cache.DB != nil {
-			cache.DB.Close()
-		}
-	}()
+	if cache.DB != nil {
+		defer cache.DB.Close()
+	}
 
 	scannedAt := time.Now()
 	dir, err := EnsureResultDir(s.ResultsDir, scannedAt)
@@ -933,21 +930,20 @@ func (s Scanner) execScan() error {
 }
 
 func (s Scanner) setupChangelogCache() error {
-	needToSetupCache := false
-	for _, s := range servers {
-		switch s.getDistro().Family {
-		case constant.Raspbian:
-			needToSetupCache = true
-			break
-		case constant.Ubuntu, constant.Debian:
-			//TODO changelog cache for RedHat, Oracle, Amazon, CentOS is not implemented yet.
-			if s.getServerInfo().Mode.IsDeep() {
-				needToSetupCache = true
+	if func() bool {
+		for _, s := range servers {
+			switch s.getDistro().Family {
+			case constant.Raspbian:
+				return true
+			case constant.Ubuntu, constant.Debian:
+				//TODO changelog cache for RedHat, Oracle, Amazon, CentOS is not implemented yet.
+				if s.getServerInfo().Mode.IsDeep() {
+					return true
+				}
 			}
-			break
 		}
-	}
-	if needToSetupCache {
+		return false
+	}() {
 		if err := cache.SetupBolt(s.CacheDBPath, logging.Log); err != nil {
 			return err
 		}

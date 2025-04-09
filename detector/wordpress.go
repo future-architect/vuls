@@ -78,10 +78,9 @@ func detectWordPressCves(r *models.ScanResult, cnf config.WpScanConf) (int, erro
 		return 0, nil
 	}
 	// Core
-	ver := strings.Replace(r.WordPressPackages.CoreVersion(), ".", "", -1)
+	ver := strings.ReplaceAll(r.WordPressPackages.CoreVersion(), ".", "")
 	if ver == "" {
-		return 0, errof.New(errof.ErrFailedToAccessWpScan,
-			fmt.Sprintf("Failed to get WordPress core version."))
+		return 0, errof.New(errof.ErrFailedToAccessWpScan, "Failed to get WordPress core version.")
 	}
 	url := fmt.Sprintf("https://wpscan.com/api/v3/wordpresses/%s", ver)
 	wpVinfos, err := wpscan(url, ver, cnf.Token, true)

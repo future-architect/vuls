@@ -283,7 +283,7 @@ host                = "{{$ip}}"
 	names := []string{}
 	for _, ip := range ips {
 		// TOML section header must not contain "."
-		name := strings.Replace(ip, ".", "-", -1)
+		name := strings.ReplaceAll(ip, ".", "-")
 		names = append(names, name)
 	}
 	a.Names = names

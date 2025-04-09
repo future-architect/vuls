@@ -4,6 +4,7 @@ package detector
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -234,7 +235,7 @@ func newMetasploitDB(cnf config.VulnDictInterface) (metasploitdb.DB, error) {
 	}
 	driver, err := metasploitdb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), metasploitdb.Option{})
 	if err != nil {
-		if xerrors.Is(err, metasploitdb.ErrDBLocked) {
+		if errors.Is(err, metasploitdb.ErrDBLocked) {
 			return nil, xerrors.Errorf("Failed to init metasploit DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
 		}
 		return nil, xerrors.Errorf("Failed to init metasploit DB. DB Path: %s, err: %w", path, err)
