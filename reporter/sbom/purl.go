@@ -151,12 +151,9 @@ func ghEcosystemToPurlType(t string) string {
 
 func parsePkgName(t, n string) (string, string) {
 	if t == packageurl.TypeMaven || t == packageurl.TypeGradle {
-		// Java packages
-		// e.g. com.google.guava:guava
-		parts := strings.Split(n, ":")
-		if len(parts) == 2 {
-			return parts[0], parts[1]
-		}
+		// Maven and Gradle use ":" as a separator
+		// but package-url uses "/"
+		n = strings.ReplaceAll(n, ":", "/")
 	}
 
 	index := strings.LastIndex(n, "/")
