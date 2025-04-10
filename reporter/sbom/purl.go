@@ -65,14 +65,14 @@ func libPkgToPURL(libScanner models.LibraryScanner, lib models.Library) *package
 		}
 	}
 	pType := purlType(libScanner.Type)
-	namespace, name := parsePkgName(pType, lib.Name)
-	return packageurl.NewPackageURL(pType, namespace, name, lib.Version, packageurl.Qualifiers{{Key: "file_path", Value: libScanner.LockfilePath}}, "")
+	namespace, name, subpath := parsePkgName(pType, lib.Name)
+	return packageurl.NewPackageURL(pType, namespace, name, lib.Version, packageurl.Qualifiers{{Key: "file_path", Value: libScanner.LockfilePath}}, subpath)
 }
 
 func ghPkgToPURL(m models.DependencyGraphManifest, dep models.Dependency) *packageurl.PackageURL {
 	pType := ghEcosystemToPurlType(m.Ecosystem())
-	namespace, name := parsePkgName(pType, dep.PackageName)
-	return packageurl.NewPackageURL(pType, namespace, name, dep.Version(), packageurl.Qualifiers{{Key: "repo_url", Value: m.Repository}, {Key: "file_path", Value: m.Filename}}, "")
+	namespace, name, subpath := parsePkgName(pType, dep.PackageName)
+	return packageurl.NewPackageURL(pType, namespace, name, dep.Version(), packageurl.Qualifiers{{Key: "repo_url", Value: m.Repository}, {Key: "file_path", Value: m.Filename}}, subpath)
 }
 
 func wpPkgToPURL(wpPkg models.WpPackage) *packageurl.PackageURL {
@@ -149,17 +149,25 @@ func ghEcosystemToPurlType(t string) string {
 	}
 }
 
-func parsePkgName(t, n string) (string, string) {
-	if t == packageurl.TypeMaven || t == packageurl.TypeGradle {
-		// Maven and Gradle use ":" as a separator
-		// but package-url uses "/"
+func parsePkgName(t, n string) (string, string, string) {
+	var subpath string
+	switch t {
+	case packageurl.TypeMaven, packageurl.TypeGradle:
 		n = strings.ReplaceAll(n, ":", "/")
+	case packageurl.TypePyPi:
+		n = strings.ToLower(strings.ReplaceAll(n, "_", "-"))
+	case packageurl.TypeGolang:
+		n = strings.ToLower(n)
+	case packageurl.TypeNPM:
+		n = strings.ToLower(n)
+	case packageurl.TypeCocoapods:
+		n, subpath, _ = strings.Cut(n, "/")
 	}
 
 	index := strings.LastIndex(n, "/")
 	if index != -1 {
-		return n[:index], n[index+1:]
+		return n[:index], n[index+1:], subpath
 	}
 
-	return "", n
+	return "", n, subpath
 }
