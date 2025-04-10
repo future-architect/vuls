@@ -67,7 +67,7 @@ func cdxComponents(result models.ScanResult, metaBomRef string) (*[]cdx.Componen
 		components = append(components, ospkgComps...)
 	}
 
-	if cpeComps := cpeToCdxComponents(result.ScannedCves); cpeComps != nil {
+	if cpeComps := cpeToCdxComponents(result.ScannedCves); len(cpeComps) > 0 {
 		bomRefs[metaBomRef] = append(bomRefs[metaBomRef], cpeComps[0].BOMRef)
 		for _, comp := range cpeComps[1:] {
 			bomRefs[cpeComps[0].BOMRef] = append(bomRefs[cpeComps[0].BOMRef], comp.BOMRef)
@@ -79,28 +79,30 @@ func cdxComponents(result models.ScanResult, metaBomRef string) (*[]cdx.Componen
 	for _, libscanner := range result.LibraryScanners {
 		libpkgToPURL[libscanner.LockfilePath] = map[string]string{}
 
-		libpkgComps := libpkgToCdxComponents(libscanner, libpkgToPURL)
-		bomRefs[metaBomRef] = append(bomRefs[metaBomRef], libpkgComps[0].BOMRef)
-		for _, comp := range libpkgComps[1:] {
-			bomRefs[libpkgComps[0].BOMRef] = append(bomRefs[libpkgComps[0].BOMRef], comp.BOMRef)
+		if libpkgComps := libpkgToCdxComponents(libscanner, libpkgToPURL); len(libpkgComps) > 0 {
+			bomRefs[metaBomRef] = append(bomRefs[metaBomRef], libpkgComps[0].BOMRef)
+			for _, comp := range libpkgComps[1:] {
+				bomRefs[libpkgComps[0].BOMRef] = append(bomRefs[libpkgComps[0].BOMRef], comp.BOMRef)
+			}
+			components = append(components, libpkgComps...)
 		}
-		components = append(components, libpkgComps...)
 	}
 
 	ghpkgToPURL := map[string]map[string]string{}
 	for _, ghm := range result.GitHubManifests {
 		ghpkgToPURL[ghm.RepoURLFilename()] = map[string]string{}
 
-		ghpkgComps := ghpkgToCdxComponents(ghm, ghpkgToPURL)
-		bomRefs[metaBomRef] = append(bomRefs[metaBomRef], ghpkgComps[0].BOMRef)
-		for _, comp := range ghpkgComps[1:] {
-			bomRefs[ghpkgComps[0].BOMRef] = append(bomRefs[ghpkgComps[0].BOMRef], comp.BOMRef)
+		if ghpkgComps := ghpkgToCdxComponents(ghm, ghpkgToPURL); len(ghpkgComps) > 0 {
+			bomRefs[metaBomRef] = append(bomRefs[metaBomRef], ghpkgComps[0].BOMRef)
+			for _, comp := range ghpkgComps[1:] {
+				bomRefs[ghpkgComps[0].BOMRef] = append(bomRefs[ghpkgComps[0].BOMRef], comp.BOMRef)
+			}
+			components = append(components, ghpkgComps...)
 		}
-		components = append(components, ghpkgComps...)
 	}
 
 	wppkgToPURL := map[string]string{}
-	if wppkgComps := wppkgToCdxComponents(result.WordPressPackages, wppkgToPURL); wppkgComps != nil {
+	if wppkgComps := wppkgToCdxComponents(result.WordPressPackages, wppkgToPURL); len(wppkgComps) > 0 {
 		bomRefs[metaBomRef] = append(bomRefs[metaBomRef], wppkgComps[0].BOMRef)
 		for _, comp := range wppkgComps[1:] {
 			bomRefs[wppkgComps[0].BOMRef] = append(bomRefs[wppkgComps[0].BOMRef], comp.BOMRef)
@@ -144,9 +146,9 @@ func osToCdxComponent(r models.ScanResult) *cdx.Component {
 	}
 }
 
-func ospkgToCdxComponents(r models.ScanResult, ospkgToPURL map[string]string) (components []cdx.Component) {
+func ospkgToCdxComponents(r models.ScanResult, ospkgToPURL map[string]string) []cdx.Component {
 	if r.Family == "" || len(r.Packages) == 0 {
-		return components
+		return nil
 	}
 
 	type srcpkg struct {
@@ -165,6 +167,7 @@ func ospkgToCdxComponents(r models.ScanResult, ospkgToPURL map[string]string) (c
 		}
 	}
 
+	components := make([]cdx.Component, 0, len(r.Packages))
 	for _, pack := range r.Packages {
 		var props []cdx.Property
 		if p, ok := binToSrc[pack.Name]; ok {
@@ -214,19 +217,19 @@ func cpeToCdxComponents(scannedCves models.VulnInfos) []cdx.Component {
 		return nil
 	}
 
-	components := []cdx.Component{
-		{
-			BOMRef: uuid.NewString(),
-			Type:   cdx.ComponentTypeApplication,
-			Name:   "CPEs",
-			Properties: &[]cdx.Property{
-				{
-					Name:  "future-architect:vuls:Type",
-					Value: "CPE",
-				},
+	components := make([]cdx.Component, 0, 1+len(cpes))
+
+	components = append(components, cdx.Component{
+		BOMRef: uuid.NewString(),
+		Type:   cdx.ComponentTypeApplication,
+		Name:   "CPEs",
+		Properties: &[]cdx.Property{
+			{
+				Name:  "future-architect:vuls:Type",
+				Value: "CPE",
 			},
 		},
-	}
+	})
 	for cpe := range cpes {
 		components = append(components, cdx.Component{
 			BOMRef: cpe,
@@ -240,20 +243,23 @@ func cpeToCdxComponents(scannedCves models.VulnInfos) []cdx.Component {
 }
 
 func libpkgToCdxComponents(libscanner models.LibraryScanner, libpkgToPURL map[string]map[string]string) []cdx.Component {
-	components := []cdx.Component{
-		{
-			BOMRef: uuid.NewString(),
-			Type:   cdx.ComponentTypeApplication,
-			Name:   libscanner.LockfilePath,
-			Properties: &[]cdx.Property{
-				{
-					Name:  "future-architect:vuls:Type",
-					Value: string(libscanner.Type),
-				},
-			},
-		},
+	if len(libpkgToPURL) == 0 {
+		return nil
 	}
 
+	components := make([]cdx.Component, 0, 1+len(libscanner.Libs))
+
+	components = append(components, cdx.Component{
+		BOMRef: uuid.NewString(),
+		Type:   cdx.ComponentTypeApplication,
+		Name:   libscanner.LockfilePath,
+		Properties: &[]cdx.Property{
+			{
+				Name:  "future-architect:vuls:Type",
+				Value: string(libscanner.Type),
+			},
+		},
+	})
 	for _, lib := range libscanner.Libs {
 		purl := libPkgToPURL(libscanner, lib)
 		components = append(components, cdx.Component{
@@ -271,20 +277,23 @@ func libpkgToCdxComponents(libscanner models.LibraryScanner, libpkgToPURL map[st
 }
 
 func ghpkgToCdxComponents(m models.DependencyGraphManifest, ghpkgToPURL map[string]map[string]string) []cdx.Component {
-	components := []cdx.Component{
-		{
-			BOMRef: uuid.NewString(),
-			Type:   cdx.ComponentTypeApplication,
-			Name:   m.BlobPath,
-			Properties: &[]cdx.Property{
-				{
-					Name:  "future-architect:vuls:Type",
-					Value: m.Ecosystem(),
-				},
-			},
-		},
+	if len(m.Dependencies) == 0 {
+		return nil
 	}
 
+	components := make([]cdx.Component, 0, 1+len(m.Dependencies))
+
+	components = append(components, cdx.Component{
+		BOMRef: uuid.NewString(),
+		Type:   cdx.ComponentTypeApplication,
+		Name:   m.BlobPath,
+		Properties: &[]cdx.Property{
+			{
+				Name:  "future-architect:vuls:Type",
+				Value: m.Ecosystem(),
+			},
+		},
+	})
 	for _, dep := range m.Dependencies {
 		purl := ghPkgToPURL(m, dep)
 		components = append(components, cdx.Component{
@@ -306,20 +315,19 @@ func wppkgToCdxComponents(wppkgs models.WordPressPackages, wppkgToPURL map[strin
 		return nil
 	}
 
-	components := []cdx.Component{
-		{
-			BOMRef: uuid.NewString(),
-			Type:   cdx.ComponentTypeApplication,
-			Name:   "wordpress",
-			Properties: &[]cdx.Property{
-				{
-					Name:  "future-architect:vuls:Type",
-					Value: "WordPress",
-				},
+	components := make([]cdx.Component, 0, 1+len(wppkgs))
+
+	components = append(components, cdx.Component{
+		BOMRef: uuid.NewString(),
+		Type:   cdx.ComponentTypeApplication,
+		Name:   "wordpress",
+		Properties: &[]cdx.Property{
+			{
+				Name:  "future-architect:vuls:Type",
+				Value: "WordPress",
 			},
 		},
-	}
-
+	})
 	for _, wppkg := range wppkgs {
 		purl := wpPkgToPURL(wppkg)
 		components = append(components, cdx.Component{
