@@ -76,7 +76,7 @@ func ghPkgToPURL(m models.DependencyGraphManifest, dep models.Dependency) *packa
 }
 
 func wpPkgToPURL(wpPkg models.WpPackage) *packageurl.PackageURL {
-	return packageurl.NewPackageURL("wordpress", wpPkg.Type, wpPkg.Name, wpPkg.Version, packageurl.Qualifiers{{Key: "status", Value: wpPkg.Status}}, "")
+	return packageurl.NewPackageURL(packageurl.TypeWORDPRESS, wpPkg.Type, wpPkg.Name, wpPkg.Version, packageurl.Qualifiers{{Key: "status", Value: wpPkg.Status}}, "")
 }
 
 func purlType(t ftypes.LangType) string {
