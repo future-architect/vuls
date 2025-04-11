@@ -44,7 +44,7 @@ func cdxMetadata(result models.ScanResult) *cdx.Metadata {
 			Components: &[]cdx.Component{
 				{
 					Type:    cdx.ComponentTypeApplication,
-					Author:  "future-architect",
+					Group:   "future-architect",
 					Name:    "vuls",
 					Version: fmt.Sprintf("%s-%s", result.ReportedVersion, result.ReportedRevision),
 				},
