@@ -43,7 +43,7 @@ type payload struct {
 	ScannedIPv6s string `json:"ScannedIPv6s"`
 }
 
-// UploadSaas : UploadSaas
+// Write :
 func (w Writer) Write(rs ...models.ScanResult) error {
 	if len(rs) == 0 {
 		return nil

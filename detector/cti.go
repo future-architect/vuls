@@ -4,6 +4,7 @@ package detector
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -212,7 +213,7 @@ func newCTIDB(cnf config.VulnDictInterface) (ctidb.DB, error) {
 	}
 	driver, err := ctidb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), ctidb.Option{})
 	if err != nil {
-		if xerrors.Is(err, ctidb.ErrDBLocked) {
+		if errors.Is(err, ctidb.ErrDBLocked) {
 			return nil, xerrors.Errorf("Failed to init cti DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
 		}
 		return nil, xerrors.Errorf("Failed to init cti DB. DB Path: %s, err: %w", path, err)

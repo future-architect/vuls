@@ -113,7 +113,9 @@ func executeSnmp2cpe(addr string, snmpVersion string, community string) (cpes ma
 	if _, err := stdin.Write(result); err != nil {
 		return nil, fmt.Errorf("failed to write to stdIn. err: %v", err)
 	}
-	stdin.Close()
+	if err := stdin.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close stdIn. err: %v", err)
+	}
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert snmp2cpe result. err: %v", err)

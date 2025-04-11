@@ -167,15 +167,14 @@ func (p *parser) parseInnerJar(zf *zip.File, rootPath string) ([]jarLibrary, err
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to open file %s. err: %w", zf.Name, err)
 	}
+	defer fr.Close()
 
 	f, err := os.CreateTemp("", "inner-*")
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to create tmp file for %s. err: %w", zf.Name, err)
 	}
-	defer func() {
-		f.Close()
-		os.Remove(f.Name())
-	}()
+	defer os.Remove(f.Name())
+	defer f.Close()
 
 	// Copy the file content to the temp file and rewind it at the beginning
 	if _, err = io.Copy(f, fr); err != nil {

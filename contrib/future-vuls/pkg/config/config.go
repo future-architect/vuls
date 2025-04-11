@@ -2,10 +2,15 @@
 package config
 
 const (
-	DiscoverTomlFileName        = "discover_list.toml"
-	SnmpVersion                 = "v2c"
-	FvulsDomain                 = "vuls.biz"
-	Community                   = "public"
+	// DiscoverTomlFileName ...
+	DiscoverTomlFileName = "discover_list.toml"
+	// SnmpVersion ...
+	SnmpVersion = "v2c"
+	// FvulsDomain ...
+	FvulsDomain = "vuls.biz"
+	// Community ...
+	Community = "public"
+	// DiscoverTomlTimeStampFormat ...
 	DiscoverTomlTimeStampFormat = "20060102150405"
 )
 

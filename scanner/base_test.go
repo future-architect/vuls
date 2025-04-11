@@ -508,8 +508,8 @@ func Test_updatePortStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.args.l.updatePortStatus(tt.args.listenIPPorts)
-			if !reflect.DeepEqual(tt.args.l.osPackages.Packages, tt.expect) {
-				t.Errorf("l.updatePortStatus() = %v, want %v", tt.args.l.osPackages.Packages, tt.expect)
+			if !reflect.DeepEqual(tt.args.l.Packages, tt.expect) {
+				t.Errorf("l.updatePortStatus() = %v, want %v", tt.args.l.Packages, tt.expect)
 			}
 		})
 	}

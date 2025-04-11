@@ -207,10 +207,12 @@ func (v VulnInfos) FormatFixedStatus(packs Packages) string {
 // CountDiff counts the number of added/removed CVE-ID
 func (v VulnInfos) CountDiff() (nPlus int, nMinus int) {
 	for _, vInfo := range v {
-		if vInfo.DiffStatus == DiffPlus {
+		switch vInfo.DiffStatus {
+		case DiffPlus:
 			nPlus++
-		} else if vInfo.DiffStatus == DiffMinus {
+		case DiffMinus:
 			nMinus++
+		default:
 		}
 	}
 	return
@@ -427,10 +429,9 @@ func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
 				if cont.Summary != "" {
-					summary := strings.Replace(cont.Summary, "\n", " ", -1)
 					values = append(values, CveContentStr{
 						Type:  ctype,
-						Value: summary,
+						Value: strings.ReplaceAll(cont.Summary, "\n", " "),
 					})
 				}
 			}
@@ -440,7 +441,7 @@ func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 	for _, adv := range v.DistroAdvisories {
 		values = append(values, CveContentStr{
 			Type:  "Vendor",
-			Value: strings.Replace(adv.Description, "\n", " ", -1),
+			Value: strings.ReplaceAll(adv.Description, "\n", " "),
 		})
 	}
 
@@ -460,8 +461,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 			for _, cont := range conts {
 				if cont.Summary != "" {
 					summary := cont.Title
-					summary += "\n" + strings.Replace(
-						strings.Replace(cont.Summary, "\n", " ", -1), "\r", " ", -1)
+					summary += "\n" + strings.ReplaceAll(strings.ReplaceAll(cont.Summary, "\n", " "), "\r", " ")
 					values = append(values, CveContentStr{Jvn, summary})
 				}
 			}
@@ -474,7 +474,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
 				if cont.Summary != "" {
-					summary := strings.Replace(cont.Summary, "\n", " ", -1)
+					summary := strings.ReplaceAll(cont.Summary, "\n", " ")
 					values = append(values, CveContentStr{
 						Type:  ctype,
 						Value: summary,
@@ -924,7 +924,9 @@ type Mitigation struct {
 type KEVType string
 
 const (
-	CISAKEVType      KEVType = "cisa"
+	// CISAKEVType is CISA KEV
+	CISAKEVType KEVType = "cisa"
+	// VulnCheckKEVType is VulnCheck KEV
 	VulnCheckKEVType KEVType = "vulncheck"
 )
 

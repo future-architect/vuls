@@ -121,7 +121,9 @@ func (p *ServerCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...interface{}
 		ToLocalFile: p.toLocalFile,
 	})
 	http.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
-		fmt.Fprintf(w, "ok")
+		if _, err := fmt.Fprintf(w, "ok"); err != nil {
+			logging.Log.Errorf("Failed to print server health. err: %+v", err)
+		}
 	})
 	logging.Log.Infof("Listening on %s", p.listen)
 	if err := http.ListenAndServe(p.listen, nil); err != nil {

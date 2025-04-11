@@ -138,7 +138,7 @@ func writeToFile(cnf config.Config, path string) error {
 	if err := toml.NewEncoder(&buf).Encode(c); err != nil {
 		return xerrors.Errorf("Failed to encode to toml: %w", err)
 	}
-	str := strings.Replace(buf.String(), "\n  [", "\n\n  [", -1)
+	str := strings.ReplaceAll(buf.String(), "\n  [", "\n\n  [")
 	str = fmt.Sprintf("%s\n\n%s",
 		"# See README for details: https://vuls.io/docs/en/config.toml.html",
 		str)

@@ -32,10 +32,8 @@ func (c *SlackConf) Validate() (errs []error) {
 	if len(c.Channel) == 0 {
 		errs = append(errs, xerrors.New("slack.channel must not be empty"))
 	} else {
-		if !(strings.HasPrefix(c.Channel, "#") ||
-			c.Channel == "${servername}") {
-			errs = append(errs, xerrors.Errorf(
-				"channel's prefix must be '#', channel: %s", c.Channel))
+		if !strings.HasPrefix(c.Channel, "#") && c.Channel != "${servername}" {
+			errs = append(errs, xerrors.Errorf("channel's prefix must be '#', channel: %s", c.Channel))
 		}
 	}
 

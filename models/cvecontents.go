@@ -226,6 +226,7 @@ type CveContentSSVC struct {
 	Value SSVC
 }
 
+// SSVC returns SSVC
 func (v CveContents) SSVC() (value []CveContentSSVC) {
 	for _, cont := range v[Mitre] {
 		if cont.SSVC == nil {

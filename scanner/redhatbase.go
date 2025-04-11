@@ -935,7 +935,7 @@ func (o *redhatBase) parseNeedsRestarting(stdout string) (procs []models.NeedRes
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
 		line := scanner.Text()
-		line = strings.Replace(line, "\x00", " ", -1) // for CentOS6.9
+		line = strings.ReplaceAll(line, "\x00", " ") // for CentOS6.9
 		ss := strings.Split(line, " : ")
 		if len(ss) < 2 {
 			continue
@@ -973,7 +973,7 @@ func (o *redhatBase) parseNeedsRestarting(stdout string) (procs []models.NeedRes
 // TODO refactor
 // procPathToFQPN returns Fully-Qualified-Package-Name from the command
 func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
-	execCommand = strings.Replace(execCommand, "\x00", " ", -1) // for CentOS6.9
+	execCommand = strings.ReplaceAll(execCommand, "\x00", " ") // for CentOS6.9
 	path := strings.Fields(execCommand)[0]
 	cmd := `LANGUAGE=en_US.UTF-8 rpm -qf --queryformat "%{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}\n" ` + path
 	r := o.exec(cmd, noSudo)
@@ -981,7 +981,7 @@ func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
 		return "", xerrors.Errorf("Failed to SSH: %s", r)
 	}
 	fqpn := strings.TrimSpace(r.Stdout)
-	return strings.Replace(fqpn, "-(none):", "-", -1), nil
+	return strings.ReplaceAll(fqpn, "-(none):", "-"), nil
 }
 
 func (o *redhatBase) getOwnerPkgs(paths []string) (names []string, _ error) {

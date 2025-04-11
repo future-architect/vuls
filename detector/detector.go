@@ -754,7 +754,6 @@ func FillCweDict(r *models.ScanResult) {
 		dict[id] = entry
 	}
 	r.CweDict = dict
-	return
 }
 
 func fillCweRank(entry *models.CweDictEntry, id string) {

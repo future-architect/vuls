@@ -45,18 +45,16 @@ func getCvesViaHTTP(cveIDs []string, urlPrefix string) (
 	tasks := util.GenWorkers(concurrency)
 	for i := 0; i < nReq; i++ {
 		tasks <- func() {
-			select {
-			case req := <-reqChan:
-				url, err := util.URLPathJoin(
-					urlPrefix,
-					req.cveID,
-				)
-				if err != nil {
-					errChan <- err
-				} else {
-					logging.Log.Debugf("HTTP Request to %s", url)
-					httpGet(url, req, resChan, errChan)
-				}
+			req := <-reqChan
+			url, err := util.URLPathJoin(
+				urlPrefix,
+				req.cveID,
+			)
+			if err != nil {
+				errChan <- err
+			} else {
+				logging.Log.Debugf("HTTP Request to %s", url)
+				httpGet(url, req, resChan, errChan)
 			}
 		}
 	}
@@ -111,19 +109,17 @@ func getCvesWithFixStateViaHTTP(r *models.ScanResult, urlPrefix, fixState string
 	tasks := util.GenWorkers(concurrency)
 	for i := 0; i < nReq; i++ {
 		tasks <- func() {
-			select {
-			case req := <-reqChan:
-				url, err := util.URLPathJoin(
-					urlPrefix,
-					req.packName,
-					fixState,
-				)
-				if err != nil {
-					errChan <- err
-				} else {
-					logging.Log.Debugf("HTTP Request to %s", url)
-					httpGet(url, req, resChan, errChan)
-				}
+			req := <-reqChan
+			url, err := util.URLPathJoin(
+				urlPrefix,
+				req.packName,
+				fixState,
+			)
+			if err != nil {
+				errChan <- err
+			} else {
+				logging.Log.Debugf("HTTP Request to %s", url)
+				httpGet(url, req, resChan, errChan)
 			}
 		}
 	}

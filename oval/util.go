@@ -189,21 +189,19 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 	tasks := util.GenWorkers(concurrency)
 	for i := 0; i < nReq; i++ {
 		tasks <- func() {
-			select {
-			case req := <-reqChan:
-				url, err := util.URLPathJoin(
-					url,
-					"packs",
-					ovalFamily,
-					ovalRelease,
-					req.packName,
-				)
-				if err != nil {
-					errChan <- err
-				} else {
-					logging.Log.Debugf("HTTP Request to %s", url)
-					httpGet(url, req, resChan, errChan)
-				}
+			req := <-reqChan
+			url, err := util.URLPathJoin(
+				url,
+				"packs",
+				ovalFamily,
+				ovalRelease,
+				req.packName,
+			)
+			if err != nil {
+				errChan <- err
+			} else {
+				logging.Log.Debugf("HTTP Request to %s", url)
+				httpGet(url, req, resChan, errChan)
 			}
 		}
 	}

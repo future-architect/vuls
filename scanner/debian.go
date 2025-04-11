@@ -607,7 +607,9 @@ func (o *debian) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
 
 	o.log.Debugf("Reuse meta: %s", current.Name)
 	if config.Conf.Debug {
-		cache.DB.PrettyPrint(current)
+		if err := cache.DB.PrettyPrint(current); err != nil {
+			return nil, xerrors.Errorf("Failed to pretty print: %w", err)
+		}
 	}
 	return &cached, nil
 }
@@ -755,26 +757,23 @@ func (o *debian) scanChangelogs(updatablePacks models.Packages, meta *cache.Meta
 	tasks := util.GenWorkers(concurrency)
 	for range updatablePacks {
 		tasks <- func() {
-			select {
-			case pack := <-reqChan:
-				func(p models.Package) {
-					changelog := o.getChangelogCache(meta, p)
-					if 0 < len(changelog) {
-						cveIDs, pack := o.getCveIDsFromChangelog(changelog, p.Name, p.Version)
-						resChan <- response{pack, cveIDs}
-						return
-					}
+			func(p models.Package) {
+				changelog := o.getChangelogCache(meta, p)
+				if 0 < len(changelog) {
+					cveIDs, pack := o.getCveIDsFromChangelog(changelog, p.Name, p.Version)
+					resChan <- response{pack, cveIDs}
+					return
+				}
 
-					// if the changelog is not in cache or failed to get from local cache,
-					// get the changelog of the package via internet.
-					// After that, store it in the cache.
-					if cveIDs, pack, err := o.fetchParseChangelog(p, tmpClogPath); err != nil {
-						errChan <- err
-					} else {
-						resChan <- response{pack, cveIDs}
-					}
-				}(pack)
-			}
+				// if the changelog is not in cache or failed to get from local cache,
+				// get the changelog of the package via internet.
+				// After that, store it in the cache.
+				if cveIDs, pack, err := o.fetchParseChangelog(p, tmpClogPath); err != nil {
+					errChan <- err
+				} else {
+					resChan <- response{pack, cveIDs}
+				}
+			}(<-reqChan)
 		}
 	}
 
@@ -892,7 +891,7 @@ func (o *debian) fetchParseChangelog(pack models.Package, tmpClogPath string) ([
 		return nil, nil, nil
 	}
 
-	stdout := strings.Replace(r.Stdout, "\r", "", -1)
+	stdout := strings.ReplaceAll(r.Stdout, "\r", "")
 	cveIDs, clogFilledPack := o.getCveIDsFromChangelog(stdout, pack.Name, pack.Version)
 
 	if clogFilledPack.Changelog.Method != models.FailedToGetChangelog {

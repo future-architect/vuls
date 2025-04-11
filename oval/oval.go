@@ -4,6 +4,7 @@ package oval
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 
@@ -178,7 +179,7 @@ func newOvalDB(cnf config.VulnDictInterface) (ovaldb.DB, error) {
 	}
 	driver, err := ovaldb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), ovaldb.Option{})
 	if err != nil {
-		if xerrors.Is(err, ovaldb.ErrDBLocked) {
+		if errors.Is(err, ovaldb.ErrDBLocked) {
 			return nil, xerrors.Errorf("Failed to init OVAL DB. SQLite3: %s is locked. err: %w, ", cnf.GetSQLite3Path(), err)
 		}
 		return nil, xerrors.Errorf("Failed to init OVAL DB. DB Path: %s, err: %w", path, err)

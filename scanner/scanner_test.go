@@ -404,7 +404,9 @@ func TestNormalizedForWindows(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		os.Setenv("userprofile", `C:\Users\test-user`)
+		if err := os.Setenv("userprofile", `C:\Users\test-user`); err != nil {
+			t.Fatalf("failed to set userprofile. err: %s", err)
+		}
 		path := normalizeHomeDirPathForWindows(tt.in)
 		if path != tt.expected.path {
 			t.Errorf("expected path %s, actual %s", tt.expected.path, path)

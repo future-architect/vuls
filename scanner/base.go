@@ -289,7 +289,7 @@ func (l *base) parseLxdPs(stdout string) (containers []config.Container, err err
 		if i%2 == 1 {
 			continue
 		}
-		fields := strings.Fields(strings.Replace(line, "|", " ", -1))
+		fields := strings.Fields(strings.ReplaceAll(line, "|", " "))
 		if len(fields) == 0 {
 			break
 		}
@@ -1060,7 +1060,7 @@ func (l *base) scanPorts() (err error) {
 func (l *base) detectScanDest() map[string][]string {
 	scanIPPortsMap := map[string][]string{}
 
-	for _, p := range l.osPackages.Packages {
+	for _, p := range l.Packages {
 		if p.AffectedProcs == nil {
 			continue
 		}
@@ -1154,7 +1154,9 @@ func nativeScanPort(scanDest string) (bool, error) {
 		}
 		return false, err
 	}
-	conn.Close()
+	if err := conn.Close(); err != nil {
+		return false, xerrors.Errorf("Failed to close connection. err: %w", err)
+	}
 
 	return true, nil
 }
@@ -1210,7 +1212,7 @@ func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]stri
 			cmd = append(cmd, "-p", strings.Join(ports, ","), ip)
 		}
 
-		l.log.Debugf("Executing... %s", strings.Replace(strings.Join(cmd, " "), "\n", "", -1))
+		l.log.Debugf("Executing... %s", strings.ReplaceAll(strings.Join(cmd, " "), "\n", ""))
 		result, warnings, err := scanner.Run()
 		if err != nil {
 			return []string{}, xerrors.Errorf("unable to run nmap scan: %w", err)
@@ -1289,7 +1291,7 @@ func (l *base) setScanTechniques() (func(*nmap.Scanner), error) {
 }
 
 func (l *base) updatePortStatus(listenIPPorts []string) {
-	for name, p := range l.osPackages.Packages {
+	for name, p := range l.Packages {
 		if p.AffectedProcs == nil {
 			continue
 		}
@@ -1298,7 +1300,7 @@ func (l *base) updatePortStatus(listenIPPorts []string) {
 				continue
 			}
 			for j, port := range proc.ListenPortStats {
-				l.osPackages.Packages[name].AffectedProcs[i].ListenPortStats[j].PortReachableTo = l.findPortTestSuccessOn(listenIPPorts, port)
+				l.Packages[name].AffectedProcs[i].ListenPortStats[j].PortReachableTo = l.findPortTestSuccessOn(listenIPPorts, port)
 			}
 		}
 	}

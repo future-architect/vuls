@@ -3,6 +3,8 @@
 package gost
 
 import (
+	"errors"
+
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
@@ -88,7 +90,7 @@ func newGostDB(cnf config.VulnDictInterface) (gostdb.DB, error) {
 	}
 	driver, err := gostdb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), gostdb.Option{})
 	if err != nil {
-		if xerrors.Is(err, gostdb.ErrDBLocked) {
+		if errors.Is(err, gostdb.ErrDBLocked) {
 			return nil, xerrors.Errorf("Failed to init gost DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
 		}
 		return nil, xerrors.Errorf("Failed to init gost DB. DB Path: %s, err: %w", path, err)

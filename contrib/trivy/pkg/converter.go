@@ -154,7 +154,8 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 		}
 
 		// --list-all-pkgs flg of trivy will output all installed packages, so collect them.
-		if trivyResult.Class == types.ClassOSPkg {
+		switch trivyResult.Class {
+		case types.ClassOSPkg:
 			for _, p := range trivyResult.Packages {
 				pv := p.Version
 				if p.Release != "" {
@@ -186,7 +187,7 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 				v.AddBinaryName(p.Name)
 				srcPkgs[p.SrcName] = v
 			}
-		} else if trivyResult.Class == types.ClassLangPkg {
+		case types.ClassLangPkg:
 			libScanner := uniqueLibraryScannerPaths[trivyResult.Target]
 			libScanner.Type = trivyResult.Type
 			for _, p := range trivyResult.Packages {
@@ -198,6 +199,7 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 				})
 			}
 			uniqueLibraryScannerPaths[trivyResult.Target] = libScanner
+		default:
 		}
 	}
 
