@@ -40,13 +40,6 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 
 	for _, vuln := range r.ScannedCves {
 		switch models.NewCveContentType(o.family) {
-		case models.RedHat:
-			if conts, ok := vuln.CveContents[models.RedHat]; ok {
-				for i, cont := range conts {
-					cont.SourceLink = "https://access.redhat.com/security/cve/" + cont.CveID
-					vuln.CveContents[models.RedHat][i] = cont
-				}
-			}
 		case models.Fedora:
 			for _, d := range vuln.DistroAdvisories {
 				if conts, ok := vuln.CveContents[models.Fedora]; ok {
@@ -288,17 +281,6 @@ func (o RedHatBase) update(r *models.ScanResult, defpacks defPacks) (nCVEs int) 
 
 func (o RedHatBase) convertToDistroAdvisory(def *ovalmodels.Definition) *models.DistroAdvisory {
 	switch o.family {
-	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
-		if !strings.HasPrefix(def.Title, "RHSA-") && !strings.HasPrefix(def.Title, "RHBA-") {
-			return nil
-		}
-		return &models.DistroAdvisory{
-			AdvisoryID:  strings.TrimSuffix(strings.Fields(def.Title)[0], ":"),
-			Severity:    def.Advisory.Severity,
-			Issued:      def.Advisory.Issued,
-			Updated:     def.Advisory.Updated,
-			Description: def.Description,
-		}
 	case constant.Oracle:
 		if !strings.HasPrefix(def.Title, "ELSA-") {
 			return nil
@@ -389,42 +371,6 @@ func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *mo
 	return nil
 }
 
-// RedHat is the interface for RedhatBase OVAL
-type RedHat struct {
-	RedHatBase
-}
-
-// NewRedhat creates OVAL client for Redhat
-func NewRedhat(driver ovaldb.DB, baseURL string) RedHat {
-	return RedHat{
-		RedHatBase{
-			Base{
-				driver:  driver,
-				baseURL: baseURL,
-				family:  constant.RedHat,
-			},
-		},
-	}
-}
-
-// CentOS is the interface for CentOS OVAL
-type CentOS struct {
-	RedHatBase
-}
-
-// NewCentOS creates OVAL client for CentOS
-func NewCentOS(driver ovaldb.DB, baseURL string) CentOS {
-	return CentOS{
-		RedHatBase{
-			Base{
-				driver:  driver,
-				baseURL: baseURL,
-				family:  constant.CentOS,
-			},
-		},
-	}
-}
-
 // Oracle is the interface for Oracle OVAL
 type Oracle struct {
 	RedHatBase
@@ -457,44 +403,6 @@ func NewAmazon(driver ovaldb.DB, baseURL string) Amazon {
 				driver:  driver,
 				baseURL: baseURL,
 				family:  constant.Amazon,
-			},
-		},
-	}
-}
-
-// Alma is the interface for RedhatBase OVAL
-type Alma struct {
-	// Base
-	RedHatBase
-}
-
-// NewAlma creates OVAL client for Alma Linux
-func NewAlma(driver ovaldb.DB, baseURL string) Alma {
-	return Alma{
-		RedHatBase{
-			Base{
-				driver:  driver,
-				baseURL: baseURL,
-				family:  constant.Alma,
-			},
-		},
-	}
-}
-
-// Rocky is the interface for RedhatBase OVAL
-type Rocky struct {
-	// Base
-	RedHatBase
-}
-
-// NewRocky creates OVAL client for Rocky Linux
-func NewRocky(driver ovaldb.DB, baseURL string) Rocky {
-	return Rocky{
-		RedHatBase{
-			Base{
-				driver:  driver,
-				baseURL: baseURL,
-				family:  constant.Rocky,
 			},
 		},
 	}
