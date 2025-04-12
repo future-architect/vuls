@@ -60,7 +60,7 @@ func (w TelegramWriter) Write(rs ...models.ScanResult) (err error) {
 
 func (w TelegramWriter) sendMessage(chatID, token, message string) error {
 	uri := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", token)
-	payload := `{"text": "` + strings.Replace(message, `"`, `\"`, -1) + `", "chat_id": "` + chatID + `", "parse_mode": "Markdown" }`
+	payload := `{"text": "` + strings.ReplaceAll(message, `"`, `\"`) + `", "chat_id": "` + chatID + `", "parse_mode": "Markdown" }`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uri, bytes.NewBuffer([]byte(payload)))

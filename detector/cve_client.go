@@ -4,6 +4,7 @@ package detector
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -68,15 +69,13 @@ func (client goCveDictClient) fetchCveDetails(cveIDs []string) (cveDetails []cve
 		tasks := util.GenWorkers(concurrency)
 		for range cveIDs {
 			tasks <- func() {
-				select {
-				case cveID := <-reqChan:
-					url, err := util.URLPathJoin(client.baseURL, "cves", cveID)
-					if err != nil {
-						errChan <- err
-					} else {
-						logging.Log.Debugf("HTTP Request to %s", url)
-						httpGet(cveID, url, resChan, errChan)
-					}
+				cveID := <-reqChan
+				url, err := util.URLPathJoin(client.baseURL, "cves", cveID)
+				if err != nil {
+					errChan <- err
+				} else {
+					logging.Log.Debugf("HTTP Request to %s", url)
+					httpGet(cveID, url, resChan, errChan)
 				}
 			}
 		}
@@ -214,7 +213,7 @@ func newCveDB(cnf config.VulnDictInterface) (cvedb.DB, error) {
 	}
 	driver, err := cvedb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), cvedb.Option{})
 	if err != nil {
-		if xerrors.Is(err, cvedb.ErrDBLocked) {
+		if errors.Is(err, cvedb.ErrDBLocked) {
 			return nil, xerrors.Errorf("Failed to init CVE DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
 		}
 		return nil, xerrors.Errorf("Failed to init CVE DB. DB Path: %s, err: %w", path, err)

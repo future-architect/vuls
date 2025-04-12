@@ -54,7 +54,6 @@ func TestSetupBolt(t *testing.T) {
 		}
 		return nil
 	})
-
 }
 
 func TestEnsureBuckets(t *testing.T) {

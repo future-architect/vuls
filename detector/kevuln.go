@@ -4,6 +4,7 @@ package detector
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -90,7 +91,7 @@ func FillWithKEVuln(r *models.ScanResult, cnf config.KEVulnConf, logOpts logging
 						KnownRansomwareCampaignUse: k.KnownRansomwareCampaignUse,
 						DateAdded:                  k.DateAdded,
 						DueDate: func() *time.Time {
-							if k.DueDate == time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC) {
+							if k.DueDate.Equal(time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)) {
 								return nil
 							}
 							return &k.DueDate
@@ -174,7 +175,7 @@ func FillWithKEVuln(r *models.ScanResult, cnf config.KEVulnConf, logOpts logging
 						KnownRansomwareCampaignUse: k.KnownRansomwareCampaignUse,
 						DateAdded:                  k.DateAdded,
 						DueDate: func() *time.Time {
-							if k.DueDate == time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC) {
+							if k.DueDate.Equal(time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)) {
 								return nil
 							}
 							return &k.DueDate
@@ -343,7 +344,7 @@ func newKEVulnDB(cnf config.VulnDictInterface) (kevulndb.DB, error) {
 	}
 	driver, err := kevulndb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), kevulndb.Option{})
 	if err != nil {
-		if xerrors.Is(err, kevulndb.ErrDBLocked) {
+		if errors.Is(err, kevulndb.ErrDBLocked) {
 			return nil, xerrors.Errorf("Failed to init kevuln DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
 		}
 		return nil, xerrors.Errorf("Failed to init kevuln DB. DB Path: %s, err: %w", path, err)

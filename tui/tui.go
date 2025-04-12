@@ -473,7 +473,9 @@ func getLine(g *gocui.Gui, v *gocui.View) error {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		fmt.Fprintln(v, l)
+		if _, err := fmt.Fprintln(v, l); err != nil {
+			return err
+		}
 		if err := g.SetCurrentView("msg"); err != nil {
 			return err
 		}
@@ -496,7 +498,9 @@ func showMsg(g *gocui.Gui, v *gocui.View) error {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		fmt.Fprintln(v, l)
+		if _, err := fmt.Fprintln(v, l); err != nil {
+			return err
+		}
 		if err := g.SetCurrentView("msg"); err != nil {
 			return err
 		}
@@ -538,7 +542,9 @@ func debug(g *gocui.Gui, str string) error {
 			}
 		}
 		if v, err := g.SetView("debug", maxX/2-7, maxY/2, maxX/2+7, maxY/2+2); err != nil {
-			fmt.Fprint(v, str)
+			if _, err := fmt.Fprint(v, str); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -553,7 +559,9 @@ func setSideLayout(g *gocui.Gui) error {
 		v.Highlight = true
 
 		for _, result := range scanResults {
-			fmt.Fprintln(v, result.ServerInfoTui())
+			if _, err := fmt.Fprintln(v, result.ServerInfoTui()); err != nil {
+				return err
+			}
 		}
 		if len(scanResults) == 0 {
 			return xerrors.New("No scan results")
@@ -575,7 +583,9 @@ func setSummaryLayout(g *gocui.Gui) error {
 		}
 
 		lines := summaryLines(currentScanResult)
-		fmt.Fprint(v, lines)
+		if _, err := fmt.Fprint(v, lines); err != nil {
+			return err
+		}
 
 		v.Highlight = true
 		v.Editable = false
@@ -631,8 +641,7 @@ func summaryLines(r models.ScanResult) string {
 			exploits = "POC"
 		}
 
-		var cols []string
-		cols = []string{
+		cols := []string{
 			fmt.Sprintf(indexFormat, i+1),
 			string(vinfo.DiffStatus),
 			vinfo.CveID,
@@ -650,7 +659,7 @@ func summaryLines(r models.ScanResult) string {
 		stable.AddRow(icols...)
 	}
 
-	return fmt.Sprintf("%s", stable)
+	return stable.String()
 }
 
 func setDetailLayout(g *gocui.Gui) error {
@@ -672,7 +681,9 @@ func setDetailLayout(g *gocui.Gui) error {
 		if err != nil {
 			return err
 		}
-		fmt.Fprint(v, text)
+		if _, err := fmt.Fprint(v, text); err != nil {
+			return err
+		}
 		v.Editable = false
 		v.Wrap = true
 
@@ -899,7 +910,9 @@ func setChangelogLayout(g *gocui.Gui) error {
 			}
 		}
 		text := strings.Join(lines, "\n")
-		fmt.Fprint(v, text)
+		if _, err := fmt.Fprint(v, text); err != nil {
+			return err
+		}
 		v.Editable = false
 		v.Wrap = true
 
@@ -1030,7 +1043,7 @@ func detailLines() (string, error) {
 		return "", err
 	}
 
-	return string(buf.Bytes()), nil
+	return buf.String(), nil
 }
 
 const mdTemplate = `
