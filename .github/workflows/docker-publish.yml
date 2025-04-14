@@ -30,7 +30,7 @@ jobs:
         uses: docker/setup-qemu-action@fcd3152d8ad392d0e9c14d3f0de40f0a88b8ca0e
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@afeb29a6e0d7d6258844ecabe6eba67d13443680
+        uses: docker/setup-buildx-action@941183f0a080fa6be59a9e3d3f4108c19a528204
 
       - name: vuls/vuls image meta
         id: oss-meta
