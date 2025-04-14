@@ -135,7 +135,7 @@ func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixed bool) ([]st
 				continue
 			}
 
-			var f func(string, string) (map[string]gostmodels.DebianCVE, error) = deb.driver.GetFixedCvesDebian
+			f := deb.driver.GetFixedCvesDebian
 			if !fixed {
 				f = deb.driver.GetUnfixedCvesDebian
 			}

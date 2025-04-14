@@ -6,8 +6,8 @@ on:
     branches:
       - master
   pull_request:
-permissions: 
-  contents: read  
+permissions:
+  contents: read
 jobs:
   golangci:
     name: lint
@@ -22,5 +22,4 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@9938e103f8065deff3f289d9e975270d5541b866
         with:
-          version: v1.64.7
-          args: --timeout=10m
+          version: v2.0.2

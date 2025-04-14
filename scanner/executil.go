@@ -140,7 +140,7 @@ func parallelExec(fn func(osTypeInterface) error, timeoutSec ...int) {
 
 func exec(c config.ServerInfo, cmd string, sudo bool, log ...logging.Logger) (result execResult) {
 	logger := getSSHLogger(log...)
-	logger.Debugf("Executing... %s", strings.Replace(cmd, "\n", "", -1))
+	logger.Debugf("Executing... %s", strings.ReplaceAll(cmd, "\n", ""))
 
 	if isLocalExec(c.Port, c.Host) {
 		result = localExec(c, cmd, sudo)
@@ -181,7 +181,7 @@ func localExec(c config.ServerInfo, cmdstr string, sudo bool) (result execResult
 	}
 	result.Stdout = toUTF8(stdoutBuf.String())
 	result.Stderr = toUTF8(stderrBuf.String())
-	result.Cmd = strings.Replace(cmdstr, "\n", "", -1)
+	result.Cmd = strings.ReplaceAll(cmdstr, "\n", "")
 	return
 }
 

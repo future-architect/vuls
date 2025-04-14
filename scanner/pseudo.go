@@ -65,5 +65,4 @@ func (o *pseudo) parseInstalledPackages(string) (models.Packages, models.SrcPack
 
 func (o *pseudo) detectPlatform() {
 	o.setPlatform(models.Platform{Name: "other"})
-	return
 }
