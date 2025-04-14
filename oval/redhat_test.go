@@ -110,7 +110,7 @@ func TestPackNamesOfUpdate(t *testing.T) {
 
 	// util.Log = util.Logger{}.NewCustomLogger()
 	for i, tt := range tests {
-		RedHat{}.update(&tt.in, tt.defPacks)
+		RedHatBase{}.update(&tt.in, tt.defPacks)
 		for cveid := range tt.out.ScannedCves {
 			e := tt.out.ScannedCves[cveid].AffectedPackages
 			a := tt.in.ScannedCves[cveid].AffectedPackages
