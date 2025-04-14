@@ -55,7 +55,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: OSS image build and push
-        uses: docker/build-push-action@84ad562665bb303b549fec655d1b64f9945f3f91
+        uses: docker/build-push-action@88844b95d8cbbb41035fa9c94e5967a33b92db78
         with:
           context: .
           file: ./Dockerfile
@@ -68,7 +68,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
 
       - name: FutureVuls image build and push
-        uses: docker/build-push-action@84ad562665bb303b549fec655d1b64f9945f3f91
+        uses: docker/build-push-action@88844b95d8cbbb41035fa9c94e5967a33b92db78
         with:
           context: .
           file: ./contrib/Dockerfile
