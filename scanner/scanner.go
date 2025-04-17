@@ -63,6 +63,8 @@ type osTypeInterface interface {
 
 	parseInstalledPackages(string) (models.Packages, models.SrcPackages, error)
 
+	scanSnaps() error
+
 	runningContainers() ([]config.Container, error)
 	exitedContainers() ([]config.Container, error)
 	allContainers() ([]config.Container, error)
@@ -962,6 +964,9 @@ func (s Scanner) getScanResults(scannedAt time.Time) (results models.ScanResults
 				return err
 			}
 			if err = o.postScan(); err != nil {
+				return err
+			}
+			if err = o.scanSnaps(); err != nil {
 				return err
 			}
 		}
