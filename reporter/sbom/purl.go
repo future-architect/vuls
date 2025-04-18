@@ -11,7 +11,7 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
-func osPkgToPURL(osFamily, osVersion, packName, packVersion, packRelease, packArch, packRepository string) *packageurl.PackageURL {
+func osPkgToPURL(osFamily, osVersion string, pkg models.Package) *packageurl.PackageURL {
 	var pType string
 	switch osFamily {
 	case constant.Alma, constant.Amazon, constant.CentOS, constant.Fedora, constant.OpenSUSE, constant.OpenSUSELeap, constant.Oracle, constant.RedHat, constant.Rocky, constant.SUSEEnterpriseDesktop, constant.SUSEEnterpriseServer:
@@ -30,9 +30,9 @@ func osPkgToPURL(osFamily, osVersion, packName, packVersion, packRelease, packAr
 		pType = "unknown"
 	}
 
-	version := packVersion
-	if packRelease != "" {
-		version = fmt.Sprintf("%s-%s", packVersion, packRelease)
+	version := pkg.Version
+	if pkg.Release != "" {
+		version = fmt.Sprintf("%s-%s", pkg.Version, pkg.Release)
 	}
 
 	var qualifiers packageurl.Qualifiers
@@ -42,20 +42,20 @@ func osPkgToPURL(osFamily, osVersion, packName, packVersion, packRelease, packAr
 			Value: osVersion,
 		})
 	}
-	if packArch != "" {
+	if pkg.Arch != "" {
 		qualifiers = append(qualifiers, packageurl.Qualifier{
 			Key:   "arch",
-			Value: packArch,
+			Value: pkg.Arch,
 		})
 	}
-	if packRepository != "" {
+	if pkg.Repository != "" {
 		qualifiers = append(qualifiers, packageurl.Qualifier{
 			Key:   "repo",
-			Value: packRepository,
+			Value: pkg.Repository,
 		})
 	}
 
-	return packageurl.NewPackageURL(pType, osFamily, packName, version, qualifiers, "")
+	return packageurl.NewPackageURL(pType, osFamily, pkg.Name, version, qualifiers, "")
 }
 
 func libPkgToPURL(libScanner models.LibraryScanner, lib models.Library) *packageurl.PackageURL {
