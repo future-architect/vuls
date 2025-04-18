@@ -191,18 +191,23 @@ func ospkgToCdxComponents(r models.ScanResult, ospkgToPURL map[string]string) []
 			}
 		}
 
-		purl := osPkgToPURL(r.Family, r.Release, pack.Name, pack.Version, pack.Release, pack.Arch, pack.Repository)
-		components = append(components, cdx.Component{
+		purl := osPkgToPURL(r.Family, r.Release, pack)
+		component := cdx.Component{
 			BOMRef:     purl.ToString(),
 			Type:       cdx.ComponentTypeLibrary,
 			Name:       pack.Name,
 			Version:    pack.Version,
 			PackageURL: purl.ToString(),
-			Properties: &props,
-		})
+		}
 
+		if len(props) > 0 {
+			component.Properties = &props
+		}
+
+		components = append(components, component)
 		ospkgToPURL[pack.Name] = purl.ToString()
 	}
+
 	return components
 }
 
