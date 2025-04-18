@@ -391,6 +391,11 @@ func cdxRatings(cveContents models.CveContents) *[]cdx.VulnerabilityRating {
 			}
 		}
 	}
+
+	if len(ratings) == 0 {
+		return nil
+	}
+
 	return &ratings
 }
 
@@ -522,6 +527,11 @@ func cdxCWEs(cveContents models.CveContents) *[]int {
 			}
 		}
 	}
+
+	if len(m) == 0 {
+		return nil
+	}
+
 	cweIDs := slices.Collect(maps.Keys(m))
 	return &cweIDs
 }
