@@ -36,7 +36,7 @@ func (*SaaSCmd) Usage() string {
 		[-log-to-file]
 		[-log-dir=/path/to/log]
 		[-http-proxy=http://192.168.0.1:8080]
-	  [-timeout=10]
+		[-timeout=10]
 		[-debug]
 		[-quiet]
 `
