@@ -121,6 +121,8 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	w := saas.Writer{
+		Cnf:        config.Conf.Saas,
+		Proxy:      config.Conf.HTTPProxy,
 		TimeoutSec: p.timeoutSec,
 	}
 	if err := w.Write(res...); err != nil {

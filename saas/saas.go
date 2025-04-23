@@ -27,6 +27,8 @@ import (
 
 // Writer writes results to SaaS
 type Writer struct {
+	Cnf        config.SaasConf
+	Proxy      string
 	TimeoutSec int
 }
 
@@ -59,8 +61,8 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 	hostname, _ := os.Hostname()
 
 	payload := payload{
-		GroupID:      config.Conf.Saas.GroupID,
-		Token:        config.Conf.Saas.Token,
+		GroupID:      w.Cnf.GroupID,
+		Token:        w.Cnf.Token,
 		ScannedBy:    hostname,
 		ScannedIPv4s: strings.Join(ipv4s, ", "),
 		ScannedIPv6s: strings.Join(ipv6s, ", "),
@@ -71,7 +73,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(w.TimeoutSec)*time.Second)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, config.Conf.Saas.URL, bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, w.Cnf.URL, bytes.NewBuffer(body))
 	defer cancel()
 	if err != nil {
 		return err
@@ -79,7 +81,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	// TODO Don't use global variable
-	client, err := util.GetHTTPClient(config.Conf.HTTPProxy)
+	client, err := util.GetHTTPClient(w.Proxy)
 	if err != nil {
 		return err
 	}
@@ -109,7 +111,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 		return xerrors.Errorf("Failed to load config. err: %w", err)
 	}
 	// For S3 upload of aws sdk
-	if err := os.Setenv("HTTPS_PROXY", config.Conf.HTTPProxy); err != nil {
+	if err := os.Setenv("HTTPS_PROXY", w.Proxy); err != nil {
 		return xerrors.Errorf("Failed to set HTTP proxy: %s", err)
 	}
 
