@@ -120,7 +120,7 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitFailure
 	}
 
-	var w reporter.ResultWriter = saas.Writer{
+	w := saas.Writer{
 		TimeoutSec: p.timeoutSec,
 	}
 	if err := w.Write(res...); err != nil {
