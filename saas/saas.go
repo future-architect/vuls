@@ -80,7 +80,6 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	// TODO Don't use global variable
 	client, err := util.GetHTTPClient(w.Proxy)
 	if err != nil {
 		return err
