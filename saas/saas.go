@@ -26,7 +26,9 @@ import (
 )
 
 // Writer writes results to SaaS
-type Writer struct{}
+type Writer struct {
+	TimeoutSec int
+}
 
 // TempCredential : TempCredential
 type TempCredential struct {
@@ -68,7 +70,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 		return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(w.TimeoutSec)*time.Second)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, config.Conf.Saas.URL, bytes.NewBuffer(body))
 	defer cancel()
 	if err != nil {
@@ -86,6 +88,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 		return err
 	}
 	defer resp.Body.Close()
+	logging.Log.Infof("StatusCode: %d", resp.StatusCode)
 	if resp.StatusCode != 200 {
 		return xerrors.Errorf("Failed to get Credential. Request JSON : %s,", string(body))
 	}
