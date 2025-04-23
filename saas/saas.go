@@ -88,7 +88,6 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 		return err
 	}
 	defer resp.Body.Close()
-	logging.Log.Infof("StatusCode: %d", resp.StatusCode)
 	if resp.StatusCode != 200 {
 		return xerrors.Errorf("Failed to get Credential. Request JSON : %s,", string(body))
 	}
