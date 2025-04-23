@@ -6,10 +6,12 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/pkg/errors"
+	bolt "go.etcd.io/bbolt"
+	"golang.org/x/xerrors"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
-	"github.com/pkg/errors"
-	"golang.org/x/xerrors"
 
 	db "github.com/MaineK00n/vuls2/pkg/db/common"
 	"github.com/MaineK00n/vuls2/pkg/db/fetch"
@@ -40,8 +42,9 @@ func newDBConnection(vuls2Conf config.Vuls2Conf, noProgress bool) (db.DB, error)
 	}
 
 	dbc, err := (&db.Config{
-		Type: "boltdb",
-		Path: vuls2Conf.Path,
+		Type:    "boltdb",
+		Path:    vuls2Conf.Path,
+		Options: db.DBOptions{BoltDB: &bolt.Options{ReadOnly: true}},
 	}).New()
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to new vuls2 db connection. err: %w", err)
@@ -66,8 +69,9 @@ func shouldDownload(vuls2Conf config.Vuls2Conf, now time.Time) (bool, error) {
 	}
 
 	dbc, err := (&db.Config{
-		Type: "boltdb",
-		Path: vuls2Conf.Path,
+		Type:    "boltdb",
+		Path:    vuls2Conf.Path,
+		Options: db.DBOptions{BoltDB: &bolt.Options{ReadOnly: true}},
 	}).New()
 	if err != nil {
 		return false, xerrors.Errorf("Failed to new vuls2 db connection. path: %s, err: %w", vuls2Conf.Path, err)

@@ -83,9 +83,9 @@ func (red RedHat) setFixedCveToScanResult(cve *gostmodels.RedhatCVE, r *models.S
 
 func (red RedHat) parseCwe(str string) (cwes []string) {
 	if str != "" {
-		s := strings.Replace(str, "(", "|", -1)
-		s = strings.Replace(s, ")", "|", -1)
-		s = strings.Replace(s, "->", "|", -1)
+		s := strings.ReplaceAll(str, "(", "|")
+		s = strings.ReplaceAll(s, ")", "|")
+		s = strings.ReplaceAll(s, "->", "|")
 		for _, s := range strings.Split(s, "|") {
 			if s != "" {
 				cwes = append(cwes, s)

@@ -56,7 +56,7 @@ func (s ScanModule) IsScanPort() bool {
 
 // IsZero return the struct value are all false
 func (s ScanModule) IsZero() bool {
-	return !(s.IsScanOSPkg() || s.IsScanWordPress() || s.IsScanLockFile() || s.IsScanPort())
+	return !s.IsScanOSPkg() && !s.IsScanWordPress() && !s.IsScanLockFile() && !s.IsScanPort()
 }
 
 func (s *ScanModule) ensure() error {
