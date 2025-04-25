@@ -18,6 +18,7 @@ import (
 // SaaSCmd is subcommand for FutureVuls
 type SaaSCmd struct {
 	configPath string
+	timeoutSec int
 }
 
 // Name return subcommand name
@@ -35,6 +36,7 @@ func (*SaaSCmd) Usage() string {
 		[-log-to-file]
 		[-log-dir=/path/to/log]
 		[-http-proxy=http://192.168.0.1:8080]
+		[-timeout=10]
 		[-debug]
 		[-quiet]
 `
@@ -55,6 +57,10 @@ func (p *SaaSCmd) SetFlags(f *flag.FlagSet) {
 	defaultLogDir := logging.GetDefaultLogDir()
 	f.StringVar(&config.Conf.LogDir, "log-dir", defaultLogDir, "/path/to/log")
 	f.BoolVar(&config.Conf.LogToFile, "log-to-file", false, "Output log to file")
+
+	f.IntVar(&p.timeoutSec, "timeout", 10,
+		"Number of seconds for uploading scan reports to saas",
+	)
 
 	f.StringVar(
 		&config.Conf.HTTPProxy, "http-proxy", "",
@@ -114,7 +120,11 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitFailure
 	}
 
-	var w reporter.ResultWriter = saas.Writer{}
+	w := saas.Writer{
+		Cnf:        config.Conf.Saas,
+		Proxy:      config.Conf.HTTPProxy,
+		TimeoutSec: p.timeoutSec,
+	}
 	if err := w.Write(res...); err != nil {
 		logging.Log.Errorf("Failed to upload. err: %+v", err)
 		return subcommands.ExitFailure
