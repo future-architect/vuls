@@ -59,7 +59,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			return nil
 		}
 		notify := func(err error, t time.Duration) {
-			logging.Log.Warnf("Failed to HTTP POST. retrying in %s seconds. err: %+v", t, err)
+			logging.Log.Warnf("Failed to HTTP POST. retrying in %f seconds. err: %+v", t.Seconds(), err)
 		}
 		if err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify); err != nil {
 			return 0, xerrors.Errorf("HTTP Error: %w", err)
@@ -104,7 +104,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			return nil
 		}
 		notify := func(err error, t time.Duration) {
-			logging.Log.Warnf("Failed to HTTP POST. retrying in %s seconds. err: %+v", t, err)
+			logging.Log.Warnf("Failed to HTTP POST. retrying in %f seconds. err: %+v", t.Seconds(), err)
 		}
 		if err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify); err != nil {
 			return 0, xerrors.Errorf("HTTP Error: %w", err)
@@ -171,7 +171,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			return nil
 		}
 		notify := func(err error, t time.Duration) {
-			logging.Log.Warnf("Failed to HTTP POST. retrying in %s seconds. err: %+v", t, err)
+			logging.Log.Warnf("Failed to HTTP POST. retrying in %f seconds. err: %+v", t.Seconds(), err)
 		}
 		if err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify); err != nil {
 			return 0, xerrors.Errorf("HTTP Error: %w", err)

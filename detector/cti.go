@@ -192,7 +192,7 @@ func httpGetCTI(url string, req ctiRequest, resChan chan<- ctiResponse, errChan 
 		return nil
 	}
 	notify := func(err error, t time.Duration) {
-		logging.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %+v", t, err)
+		logging.Log.Warnf("Failed to HTTP GET. retrying in %f seconds. err: %+v", t.Seconds(), err)
 	}
 	if err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify); err != nil {
 		errChan <- xerrors.Errorf("HTTP Error %w", err)

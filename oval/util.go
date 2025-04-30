@@ -277,7 +277,7 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 		return nil
 	}
 	notify := func(err error, t time.Duration) {
-		logging.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %+v", t, err)
+		logging.Log.Warnf("Failed to HTTP GET. retrying in %f seconds. err: %+v", t.Seconds(), err)
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {
