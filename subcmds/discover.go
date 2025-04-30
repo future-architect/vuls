@@ -82,36 +82,57 @@ func printConfigToml(ips []string) (err error) {
 #type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
 #sqlite3Path = "/path/to/cve.sqlite3"
 #url        = ""
+#debugSQL = false
+#timeoutSec = 0
+#timeoutSecPerRequest = 0
 
 [ovalDict]
 #type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
 #sqlite3Path = "/path/to/oval.sqlite3"
 #url        = ""
+#debugSQL = false
+#timeoutSec = 0
+#timeoutSecPerRequest = 0
 
 [gost]
 #type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
 #sqlite3Path = "/path/to/gost.sqlite3"
 #url        = ""
+#debugSQL = false
+#timeoutSec = 0
+#timeoutSecPerRequest = 0
 
 [exploit]
 #type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
 #sqlite3Path = "/path/to/go-exploitdb.sqlite3"
 #url        = ""
+#debugSQL = false
+#timeoutSec = 0
+#timeoutSecPerRequest = 0
 
 [metasploit]
 #type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
 #sqlite3Path = "/path/to/go-msfdb.sqlite3"
 #url        = ""
+#debugSQL = false
+#timeoutSec = 0
+#timeoutSecPerRequest = 0
 
 [kevuln]
 #type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
 #sqlite3Path = "/path/to/go-kev.sqlite3"
 #url        = ""
+#debugSQL = false
+#timeoutSec = 0
+#timeoutSecPerRequest = 0
 
 [cti]
 #type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
 #sqlite3Path = "/path/to/go-cti.sqlite3"
 #url        = ""
+#debugSQL = false
+#timeoutSec = 0
+#timeoutSecPerRequest = 0
 
 [vuls2]
 #Path = "/path/to/vuls.db"

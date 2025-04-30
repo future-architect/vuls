@@ -39,6 +39,12 @@ type VulnDict struct {
 	SQLite3Path string
 
 	DebugSQL bool
+
+	// Timeout for entire request (type: http only)
+	TimeoutSec uint
+
+	// Timeout for each request (type: http only)
+	TimeoutSecPerRequest uint
 }
 
 // GetType returns type
