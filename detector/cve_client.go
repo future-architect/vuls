@@ -117,7 +117,7 @@ func httpGet(key, url string, resChan chan<- response, errChan chan<- error) {
 	var resp *http.Response
 	f := func() (err error) {
 		req := gorequest.New().Get(url)
-		if config.Conf.OvalDict.TimeoutSecPerRequest > 0 {
+		if config.Conf.CveDict.TimeoutSecPerRequest > 0 {
 			req = req.Timeout(time.Duration(config.Conf.CveDict.TimeoutSecPerRequest) * time.Second)
 		}
 		resp, body, errs = req.End()
