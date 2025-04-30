@@ -276,7 +276,10 @@ func getKEVulnsViaHTTP(cveIDs []string, urlPrefix string) (
 		}
 	}
 
-	timeout := time.After(2 * 60 * time.Second)
+	var timeout <-chan time.Time
+	if config.Conf.KEVuln.TimeoutSec > 0 {
+		timeout = time.After(time.Duration(config.Conf.KEVuln.TimeoutSec) * time.Second)
+	}
 	var errs []error
 	for i := 0; i < nReq; i++ {
 		select {
@@ -304,8 +307,11 @@ func httpGetKEVuln(url string, req kevulnRequest, resChan chan<- kevulnResponse,
 	var resp *http.Response
 	count, retryMax := 0, 3
 	f := func() (err error) {
-		//  resp, body, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
-		resp, body, errs = gorequest.New().Timeout(10 * time.Second).Get(url).End()
+		req := gorequest.New().Get(url)
+		if config.Conf.KEVuln.TimeoutSecPerRequest > 0 {
+			req = req.Timeout(time.Duration(config.Conf.KEVuln.TimeoutSecPerRequest) * time.Second)
+		}
+		resp, body, errs = req.End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			count++
 			if count == retryMax {

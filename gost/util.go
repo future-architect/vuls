@@ -13,6 +13,7 @@ import (
 	"github.com/parnurzeal/gorequest"
 	"golang.org/x/xerrors"
 
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -59,7 +60,10 @@ func getCvesViaHTTP(cveIDs []string, urlPrefix string) (
 		}
 	}
 
-	timeout := time.After(2 * 60 * time.Second)
+	var timeout <-chan time.Time
+	if config.Conf.Gost.TimeoutSec > 0 {
+		timeout = time.After(time.Duration(config.Conf.Gost.TimeoutSec) * time.Second)
+	}
 	var errs []error
 	for i := 0; i < nReq; i++ {
 		select {
@@ -68,11 +72,11 @@ func getCvesViaHTTP(cveIDs []string, urlPrefix string) (
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
-			return nil, xerrors.New("Timeout Fetching OVAL")
+			return nil, xerrors.New("Timeout Fetching Gost")
 		}
 	}
 	if len(errs) != 0 {
-		return nil, xerrors.Errorf("Failed to fetch OVAL. err: %w", errs)
+		return nil, xerrors.Errorf("Failed to fetch Gost. err: %w", errs)
 	}
 	return
 }
@@ -124,7 +128,10 @@ func getCvesWithFixStateViaHTTP(r *models.ScanResult, urlPrefix, fixState string
 		}
 	}
 
-	timeout := time.After(2 * 60 * time.Second)
+	var timeout <-chan time.Time
+	if config.Conf.Gost.TimeoutSec > 0 {
+		timeout = time.After(time.Duration(config.Conf.Gost.TimeoutSec) * time.Second)
+	}
 	var errs []error
 	for i := 0; i < nReq; i++ {
 		select {
@@ -148,8 +155,11 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 	var resp *http.Response
 	count, retryMax := 0, 3
 	f := func() (err error) {
-		//  resp, body, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
-		resp, body, errs = gorequest.New().Timeout(10 * time.Second).Get(url).End()
+		req := gorequest.New().Get(url)
+		if config.Conf.Gost.TimeoutSecPerRequest > 0 {
+			req = req.Timeout(time.Duration(config.Conf.Gost.TimeoutSecPerRequest) * time.Second)
+		}
+		resp, body, errs = req.End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			count++
 			if count == retryMax {

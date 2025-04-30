@@ -18,6 +18,7 @@ import (
 	"github.com/parnurzeal/gorequest"
 	"golang.org/x/xerrors"
 
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -47,7 +48,11 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 		var errs []error
 		var resp *http.Response
 		f := func() error {
-			resp, body, errs = gorequest.New().Timeout(10 * time.Second).Post(u).SendStruct(content).Type("json").EndBytes()
+			req := gorequest.New().Post(u).SendStruct(content).Type("json")
+			if config.Conf.Gost.TimeoutSecPerRequest > 0 {
+				req = req.Timeout(time.Duration(config.Conf.Gost.TimeoutSecPerRequest) * time.Second)
+			}
+			resp, body, errs = req.EndBytes()
 			if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 				return xerrors.Errorf("HTTP POST error. url: %s, resp: %v, err: %+v", u, resp, errs)
 			}
@@ -88,7 +93,11 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 		var errs []error
 		var resp *http.Response
 		f := func() error {
-			resp, body, errs = gorequest.New().Timeout(10 * time.Second).Post(u).SendStruct(content).Type("json").EndBytes()
+			req := gorequest.New().Post(u).SendStruct(content).Type("json")
+			if config.Conf.Gost.TimeoutSecPerRequest > 0 {
+				req = req.Timeout(time.Duration(config.Conf.Gost.TimeoutSecPerRequest) * time.Second)
+			}
+			resp, body, errs = req.EndBytes()
 			if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 				return xerrors.Errorf("HTTP POST error. url: %s, resp: %v, err: %+v", u, resp, errs)
 			}
@@ -151,7 +160,11 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 		var errs []error
 		var resp *http.Response
 		f := func() error {
-			resp, body, errs = gorequest.New().Timeout(10 * time.Second).Post(u).SendStruct(content).Type("json").EndBytes()
+			req := gorequest.New().Post(u).SendStruct(content).Type("json")
+			if config.Conf.Gost.TimeoutSecPerRequest > 0 {
+				req = req.Timeout(time.Duration(config.Conf.Gost.TimeoutSecPerRequest) * time.Second)
+			}
+			resp, body, errs = req.EndBytes()
 			if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 				return xerrors.Errorf("HTTP POST error. url: %s, resp: %v, err: %+v", u, resp, errs)
 			}

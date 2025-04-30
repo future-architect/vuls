@@ -80,7 +80,10 @@ func (client goCveDictClient) fetchCveDetails(cveIDs []string) (cveDetails []cve
 			}
 		}
 
-		timeout := time.After(2 * 60 * time.Second)
+		var timeout <-chan time.Time
+		if config.Conf.CveDict.TimeoutSec > 0 {
+			timeout = time.After(time.Duration(config.Conf.CveDict.TimeoutSec) * time.Second)
+		}
 		var errs []error
 		for range cveIDs {
 			select {
@@ -113,7 +116,11 @@ func httpGet(key, url string, resChan chan<- response, errChan chan<- error) {
 	var errs []error
 	var resp *http.Response
 	f := func() (err error) {
-		resp, body, errs = gorequest.New().Timeout(10 * time.Second).Get(url).End()
+		req := gorequest.New().Get(url)
+		if config.Conf.OvalDict.TimeoutSecPerRequest > 0 {
+			req = req.Timeout(time.Duration(config.Conf.CveDict.TimeoutSecPerRequest) * time.Second)
+		}
+		resp, body, errs = req.End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			return xerrors.Errorf("HTTP GET Error, url: %s, resp: %v, err: %+v",
 				url, resp, errs)
@@ -177,7 +184,10 @@ func httpPost(url string, query map[string]string) ([]cvemodels.CveDetail, error
 	var errs []error
 	var resp *http.Response
 	f := func() (err error) {
-		req := gorequest.New().Timeout(10 * time.Second).Post(url)
+		req := gorequest.New().Post(url)
+		if config.Conf.CveDict.TimeoutSecPerRequest > 0 {
+			req = req.Timeout(time.Duration(config.Conf.CveDict.TimeoutSecPerRequest) * time.Second)
+		}
 		for key := range query {
 			req = req.Send(fmt.Sprintf("%s=%s", key, query[key])).Type("json")
 		}

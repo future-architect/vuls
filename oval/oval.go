@@ -84,7 +84,12 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (bool, error) {
 		if err != nil {
 			return false, xerrors.Errorf("Failed to join URLPath. err: %w", err)
 		}
-		resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
+
+		req := gorequest.New().Get(url)
+		if config.Conf.OvalDict.TimeoutSecPerRequest > 0 {
+			req = req.Timeout(time.Duration(config.Conf.OvalDict.TimeoutSecPerRequest) * time.Second)
+		}
+		resp, body, errs := req.End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
 		}
@@ -143,7 +148,11 @@ func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 		if err != nil {
 			return false, xerrors.Errorf("Failed to join URLPath. err: %w", err)
 		}
-		resp, body, errs := gorequest.New().Timeout(10 * time.Second).Get(url).End()
+		req := gorequest.New().Get(url)
+		if config.Conf.OvalDict.TimeoutSecPerRequest > 0 {
+			req = req.Timeout(time.Duration(config.Conf.OvalDict.TimeoutSecPerRequest) * time.Second)
+		}
+		resp, body, errs := req.End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			return false, xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
 		}
