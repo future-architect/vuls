@@ -6,7 +6,7 @@ on:
       - '*'
 permissions:
   contents: read
-  id-token: read
+  id-token: none
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
