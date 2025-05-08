@@ -4,17 +4,19 @@ on:
   push:
     tags:
       - '*'
-
-permissions: 
+permissions:
   contents: read
+  id-token: read
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
     permissions: 
       contents: write # Needed for GoReleaser to create releases (tags, release notes, artifacts).
+      id-token: write # For cosign
     steps:
-      - 
-        name: Maximize build space
+      - name: Cosign install
+        uses: sigstore/cosign-installer@d7d6bc7722e3daa8354c50bcb52f4837da5e9b6a
+      - name: Maximize build space
         uses: easimon/maximize-build-space@fc881a613ad2a34aca9c9624518214ebc21dfc0c
         with:
           root-reserve-mb: 32768
@@ -23,19 +25,15 @@ jobs:
           remove-haskell: "true"
           remove-codeql: "true"
           remove-docker-images: "true"
-      -
-        name: Checkout
+      - name: Checkout
         uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2
-      -
-        name: Unshallow
+      - name: Unshallow
         run: git fetch --prune --unshallow
-      -
-        name: Set up Go
+      - name: Set up Go
         uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b
         with:
           go-version-file: go.mod
-      -
-        name: Run GoReleaser
+      - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552
         with:
           distribution: goreleaser

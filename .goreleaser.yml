@@ -157,3 +157,19 @@ archives:
 
 snapshot:
   name_template: SNAPSHOT-{{ .Commit }}
+
+signs:
+- cmd: cosign
+  env:
+  - COSIGN_EXPERIMENTAL=1
+  signature: "${artifact}.sig"
+  certificate: "${artifact}.pem"
+  args:
+  - "sign-blob"
+  - "--oidc-issuer=https://token.actions.githubusercontent.com"
+  - "--output-certificate=${certificate}"
+  - "--output-signature=${signature}"
+  - "${artifact}"
+  - "--yes"
+  artifacts: all
+  output: true
