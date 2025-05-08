@@ -6,13 +6,13 @@ import (
 	"slices"
 	"strings"
 
-	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	advisoryTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/advisory"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
 	noneexistcriterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/noneexistcriterion"
 	fixstatusTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/fixstatus"
 	versioncriterionpackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package"
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
+	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
 	referenceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/reference"
 	vulnerabilityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
@@ -21,87 +21,6 @@ import (
 	"github.com/future-architect/vuls/models"
 	rpm "github.com/knqyf263/go-rpm-version"
 )
-
-func resolveCveContentList(family string, sviX, sviY sourceVulnInfo, ccListX, ccListY []models.CveContent) (sourceVulnInfo, []models.CveContent) {
-	switch family {
-	// This logic is from old vuls's oval resolution. Maybe more widely applicable than these four distros.
-	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
-		if sviX.rootID < sviY.rootID {
-			return sviY, ccListY
-		}
-		return sviX, ccListX
-	default:
-		return sviX, ccListX
-	}
-}
-
-func resolvePackageByRootID(family string, rootIDX, rootIDY dataTypes.RootID, statusX, statusY models.PackageFixStatus) models.PackageFixStatus {
-	switch family {
-	// This logic is from old vuls's oval resolution. Maybe more widely applicable than these four distros.
-	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
-		former, latter := statusX, statusY
-		if rootIDY < rootIDX {
-			former, latter = statusY, statusX
-		}
-
-		fixedIn := statusX.FixedIn
-		if rpm.NewVersion(statusX.FixedIn).Compare(rpm.NewVersion(statusY.FixedIn)) < 0 {
-			fixedIn = statusY.FixedIn
-		}
-		if latter.NotFixedYet {
-			former.NotFixedYet = true
-			former.FixedIn = fixedIn
-			return former
-		}
-		latter.FixedIn = fixedIn
-		return latter
-	default:
-		return statusX
-	}
-}
-
-func mostPreferredTag(family string, segments []segmentTypes.Segment) segmentTypes.DetectionTag {
-	if len(segments) == 0 {
-		return segmentTypes.DetectionTag("")
-	}
-
-	s := slices.MaxFunc(segments, func(x, y segmentTypes.Segment) int {
-		return cmp.Compare(tagPreference(family, string(x.Tag)), tagPreference(family, string(y.Tag)))
-	})
-	return s.Tag
-}
-
-func resolvePackageByTag(family string, x, y pack) pack {
-	if tagPreference(family, string(x.tag)) < tagPreference(family, string(y.tag)) {
-		return y
-	}
-	return x
-}
-
-func resolveAdvisoryByTag(family string, x, y taggedAdvisory) taggedAdvisory {
-	if tagPreference(family, string(x.tag)) < tagPreference(family, string(y.tag)) {
-		return y
-	}
-	return x
-}
-
-func tagPreference(family string, tag string) int {
-	switch family {
-	case constant.RedHat, constant.CentOS:
-		switch {
-		case strings.HasSuffix(tag, "-including-unpatched"):
-			return 4
-		case strings.HasSuffix(tag, "-extras-including-unpatched"):
-			return 3
-		case strings.HasSuffix(tag, "-supplementary"):
-			return 2
-		default:
-			return 1
-		}
-	default:
-		return 1
-	}
-}
 
 func ignoresVulnerability(family string, v vulnerabilityTypes.Vulnerability, a *advisoryTypes.Advisory) bool {
 	switch family {
@@ -118,36 +37,18 @@ func ignoresVulnerability(family string, v vulnerabilityTypes.Vulnerability, a *
 	}
 }
 
-func ignoresCriterion(family string, cn criterionTypes.FilteredCriterion) bool {
-	switch family {
-	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
-		if cn.Criterion.Version.FixStatus != nil && cn.Criterion.Version.FixStatus.Class == fixstatusTypes.ClassUnfixed {
-			switch strings.ToLower(cn.Criterion.Version.FixStatus.Vendor) {
-			case "will not fix", "under investigation":
-				return true
-			}
-		}
-		return false
-	default:
-		return false
-	}
-}
+func ignoreCriterion(e ecosystemTypes.Ecosystem, cn criterionTypes.FilteredCriterion) bool {
+	family, _, _ := strings.Cut(string(e), ":")
 
-func ignoresWholeCriteria(family string, sourceID sourceTypes.SourceID, cn criterionTypes.FilteredCriterion) bool {
 	switch family {
-	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
-		switch sourceID {
-		case sourceTypes.RedHatOVALv1, sourceTypes.RedHatOVALv2:
-			// Ignore whole criteria from root if kpatch-patch-* package is included.
-			if cn.Criterion.Type == criterionTypes.CriterionTypeVersion && cn.Criterion.Version != nil &&
-				cn.Criterion.Version.Package.Type == versioncriterionpackageTypes.PackageTypeBinary && cn.Criterion.Version.Package.Binary != nil &&
-				strings.HasPrefix(cn.Criterion.Version.Package.Binary.Name, "kpatch-patch-") {
-				return true
-			}
-			if cn.Criterion.Type == criterionTypes.CriterionTypeNoneExist && cn.Criterion.NoneExist != nil &&
-				cn.Criterion.NoneExist.Type == noneexistcriterionTypes.PackageTypeBinary && cn.Criterion.NoneExist.Binary != nil &&
-				strings.HasPrefix(cn.Criterion.NoneExist.Binary.Name, "kpatch-patch-") {
-				return true
+	case constant.RedHat, constant.CentOS:
+		switch cn.Criterion.Type {
+		case criterionTypes.CriterionTypeVersion:
+			if cn.Criterion.Version != nil && cn.Criterion.Version.FixStatus != nil && cn.Criterion.Version.FixStatus.Class == fixstatusTypes.ClassUnfixed {
+				switch strings.ToLower(cn.Criterion.Version.FixStatus.Vendor) {
+				case "will not fix", "under investigation":
+					return true
+				}
 			}
 			return false
 		default:
@@ -158,10 +59,46 @@ func ignoresWholeCriteria(family string, sourceID sourceTypes.SourceID, cn crite
 	}
 }
 
-func selectFixedIn(family string, fixed []string) string {
+func ignoreCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, cn criterionTypes.FilteredCriterion) bool {
+	family, _, _ := strings.Cut(string(e), ":")
+
+	switch family {
+	case constant.RedHat, constant.CentOS:
+		switch sourceID {
+		case sourceTypes.RedHatOVALv1, sourceTypes.RedHatOVALv2:
+			// Ignore whole criteria from root if kpatch-patch-* package is included.
+			switch cn.Criterion.Type {
+			case criterionTypes.CriterionTypeVersion:
+				if cn.Criterion.Version != nil &&
+					cn.Criterion.Version.Package.Type == versioncriterionpackageTypes.PackageTypeBinary && cn.Criterion.Version.Package.Binary != nil &&
+					strings.HasPrefix(cn.Criterion.Version.Package.Binary.Name, "kpatch-patch-") {
+					return true
+				}
+				return false
+			case criterionTypes.CriterionTypeNoneExist:
+				if cn.Criterion.NoneExist != nil &&
+					cn.Criterion.NoneExist.Type == noneexistcriterionTypes.PackageTypeBinary && cn.Criterion.NoneExist.Binary != nil &&
+					strings.HasPrefix(cn.Criterion.NoneExist.Binary.Name, "kpatch-patch-") {
+					return true
+				}
+				return false
+			default:
+				return false
+			}
+		default:
+			return false
+		}
+	default:
+		return false
+	}
+}
+
+func selectFixedIn(e ecosystemTypes.Ecosystem, fixed []string) string {
 	if len(fixed) == 0 {
 		return ""
 	}
+
+	family, _, _ := strings.Cut(string(e), ":")
 
 	switch family {
 	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
@@ -170,6 +107,16 @@ func selectFixedIn(family string, fixed []string) string {
 		})
 	default:
 		return fixed[0]
+	}
+}
+
+func compareFixedIn(e ecosystemTypes.Ecosystem, a, b string) int {
+	family, _, _ := strings.Cut(string(e), ":")
+	switch family {
+	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
+		return rpm.NewVersion(a).Compare(rpm.NewVersion(b))
+	default:
+		return 0
 	}
 }
 
@@ -209,14 +156,16 @@ func advisoryReference(family string, a *advisoryTypes.Advisory, r referenceType
 
 func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vulnerability) string {
 	switch ccType {
-	case models.RedHat, models.Alma, models.Rocky:
+	case models.RedHat:
 		return fmt.Sprintf("https://access.redhat.com/security/cve/%s", v.Content.ID)
 	default:
 		return ""
 	}
 }
 
-func resolveSourceVulnInfo(family string, x, y sourceVulnInfo) sourceVulnInfo {
+func compareSourceID(e ecosystemTypes.Ecosystem, a, b sourceTypes.SourceID) int {
+	family, _, _ := strings.Cut(string(e), ":")
+
 	switch family {
 	case constant.RedHat, constant.CentOS:
 		preferenceFn := func(sourceID sourceTypes.SourceID) int {
@@ -231,19 +180,56 @@ func resolveSourceVulnInfo(family string, x, y sourceVulnInfo) sourceVulnInfo {
 				return 1
 			}
 		}
-		if cmp.Or(
-			cmp.Compare(preferenceFn(x.sourceID), preferenceFn(y.sourceID)),
-			cmp.Compare(tagPreference(family, string(x.tag)), tagPreference(family, string(y.tag))),
-		) < 0 {
-			return y
-		}
-		return x
+		return cmp.Compare(preferenceFn(a), preferenceFn(b))
 	default:
-		return x
+		return 0
 	}
 }
 
-func affectedPackageName(family string, pkg scanTypes.OSPackage) string {
+func compareTag(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, a, b segmentTypes.DetectionTag) int {
+	family, _, _ := strings.Cut(string(e), ":")
+
+	switch family {
+	case constant.RedHat, constant.CentOS:
+		switch s {
+		case sourceTypes.RedHatOVALv2:
+			return cmp.Compare(tagPreference(e, s, a), tagPreference(e, s, b))
+		default:
+			return 0
+		}
+	default:
+		return 0
+	}
+}
+
+func tagPreference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, tag segmentTypes.DetectionTag) int {
+	family, _, _ := strings.Cut(string(e), ":")
+
+	switch family {
+	case constant.RedHat, constant.CentOS:
+		switch s {
+		case sourceTypes.RedHatOVALv2:
+			switch {
+			case strings.HasSuffix(string(tag), "-including-unpatched"):
+				return 4
+			case strings.HasSuffix(string(tag), "-extras-including-unpatched"):
+				return 3
+			case strings.HasSuffix(string(tag), "-supplementary"):
+				return 2
+			default:
+				return 1
+			}
+		default:
+			return 1
+		}
+	default:
+		return 1
+	}
+}
+
+func affectedPackageName(e ecosystemTypes.Ecosystem, pkg scanTypes.OSPackage) string {
+	family, _, _ := strings.Cut(string(e), ":")
+
 	switch family {
 	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
 		return pkg.Name
@@ -253,14 +239,17 @@ func affectedPackageName(family string, pkg scanTypes.OSPackage) string {
 	}
 }
 
-func cveContentOptional(family string, rootID dataTypes.RootID, sourceID sourceTypes.SourceID) map[string]string {
+func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models.Confidence {
+	family, _, _ := strings.Cut(string(e), ":")
+
 	switch family {
-	case constant.RedHat, constant.CentOS:
-		return map[string]string{
-			"redhat-rootid":   string(rootID),
-			"redhat-sourceid": string(sourceID),
-		}
+	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
+		return models.OvalMatch
 	default:
-		return nil
+		return models.Confidence{
+			Score:           5,
+			DetectionMethod: models.DetectionMethod("unknown"),
+			SortOrder:       100,
+		}
 	}
 }
