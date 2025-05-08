@@ -147,7 +147,10 @@ func getMetasploitsViaHTTP(cveIDs []string, urlPrefix string) (
 		}
 	}
 
-	timeout := time.After(2 * 60 * time.Second)
+	var timeout <-chan time.Time
+	if config.Conf.Metasploit.TimeoutSec > 0 {
+		timeout = time.After(time.Duration(config.Conf.Metasploit.TimeoutSec) * time.Second)
+	}
 	var errs []error
 	for i := 0; i < nReq; i++ {
 		select {
@@ -175,8 +178,11 @@ func httpGetMetasploit(url string, req metasploitRequest, resChan chan<- metaspl
 	var resp *http.Response
 	count, retryMax := 0, 3
 	f := func() (err error) {
-		//  resp, body, errs = gorequest.New().SetDebug(config.Conf.Debug).Get(url).End()
-		resp, body, errs = gorequest.New().Timeout(10 * time.Second).Get(url).End()
+		req := gorequest.New().Get(url)
+		if config.Conf.Metasploit.TimeoutSecPerRequest > 0 {
+			req = req.Timeout(time.Duration(config.Conf.Metasploit.TimeoutSecPerRequest) * time.Second)
+		}
+		resp, body, errs = req.End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			count++
 			if count == retryMax {
@@ -187,7 +193,7 @@ func httpGetMetasploit(url string, req metasploitRequest, resChan chan<- metaspl
 		return nil
 	}
 	notify := func(err error, t time.Duration) {
-		logging.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %+v", t, err)
+		logging.Log.Warnf("Failed to HTTP GET. retrying in %f seconds. err: %+v", t.Seconds(), err)
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {

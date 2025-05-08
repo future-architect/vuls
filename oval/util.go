@@ -206,7 +206,10 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 		}
 	}
 
-	timeout := time.After(2 * 60 * time.Second)
+	var timeout <-chan time.Time
+	if config.Conf.OvalDict.TimeoutSec > 0 {
+		timeout = time.After(time.Duration(config.Conf.OvalDict.TimeoutSec) * time.Second)
+	}
 	var errs []error
 	for i := 0; i < nReq; i++ {
 		select {
@@ -259,7 +262,11 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 	var resp *http.Response
 	count, retryMax := 0, 3
 	f := func() (err error) {
-		resp, body, errs = gorequest.New().Timeout(10 * time.Second).Get(url).End()
+		req := gorequest.New().Get(url)
+		if config.Conf.OvalDict.TimeoutSecPerRequest > 0 {
+			req = req.Timeout(time.Duration(config.Conf.OvalDict.TimeoutSecPerRequest) * time.Second)
+		}
+		resp, body, errs = req.End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
 			count++
 			if count == retryMax {
@@ -270,7 +277,7 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 		return nil
 	}
 	notify := func(err error, t time.Duration) {
-		logging.Log.Warnf("Failed to HTTP GET. retrying in %s seconds. err: %+v", t, err)
+		logging.Log.Warnf("Failed to HTTP GET. retrying in %f seconds. err: %+v", t.Seconds(), err)
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {

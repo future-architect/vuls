@@ -4,6 +4,7 @@ import (
 	"maps"
 	"regexp"
 	"slices"
+	"strings"
 	"time"
 
 	"golang.org/x/xerrors"
@@ -17,6 +18,7 @@ import (
 	severityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity"
 	v2 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v2"
 	v31 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v31"
+	v40 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v40"
 	vulnerabilityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability"
 	vcTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability/content"
 	datasourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/datasource"
@@ -432,7 +434,7 @@ func collectCVEs(e ecosystemTypes.Ecosystem, family string, dres detectTypes.Det
 							continue
 						}
 
-						cvss2, cvss3 := toCvss(v, da)
+						cvss2, cvss3, cvss40 := toCvss(v)
 
 						ccType := models.NewCveContentType(family)
 						cc := models.CveContents{
@@ -452,13 +454,16 @@ func collectCVEs(e ecosystemTypes.Ecosystem, family string, dres detectTypes.Det
 										}
 										return v.Content.Description
 									}(),
-									Cvss2Score:    cvss2.BaseScore,
-									Cvss2Vector:   cvss2.Vector,
-									Cvss2Severity: cvss2.NVDBaseSeverity,
-									Cvss3Score:    cvss3.BaseScore,
-									Cvss3Vector:   cvss3.Vector,
-									Cvss3Severity: cvss3.BaseSeverity,
-									SourceLink:    cveContentSourceLink(ccType, v),
+									Cvss2Score:     cvss2.BaseScore,
+									Cvss2Vector:    cvss2.Vector,
+									Cvss2Severity:  cvss2.NVDBaseSeverity,
+									Cvss3Score:     cvss3.BaseScore,
+									Cvss3Vector:    cvss3.Vector,
+									Cvss3Severity:  cvss3.BaseSeverity,
+									Cvss40Score:    cvss40.Score,
+									Cvss40Vector:   cvss40.Vector,
+									Cvss40Severity: cvss40.Severity,
+									SourceLink:     cveContentSourceLink(ccType, v),
 									References: func() models.References {
 										refs := v.Content.References
 										if a != nil {
@@ -576,53 +581,40 @@ func collectAdvisories(e ecosystemTypes.Ecosystem, family string, dres detectTyp
 	return am
 }
 
-func toCvss(v vulnerabilityTypes.Vulnerability, da *models.DistroAdvisory) (v2.CVSSv2, v31.CVSSv31) {
-	cvss2 := func() v2.CVSSv2 {
-		for _, s := range v.Content.Severity {
-			if s.Type == severityTypes.SeverityTypeCVSSv2 && s.CVSSv2 != nil {
-				return *s.CVSSv2
+func toCvss(v vulnerabilityTypes.Vulnerability) (v2.CVSSv2, v31.CVSSv31, v40.CVSSv40) {
+	var (
+		cvss2 v2.CVSSv2
+		cvss3 v31.CVSSv31
+		cvss4 v40.CVSSv40
+	)
+
+	for _, s := range v.Content.Severity {
+		switch s.Type {
+		case severityTypes.SeverityTypeCVSSv2:
+			if cvss2.Vector == "" && s.CVSSv2 != nil {
+				cvss2 = *s.CVSSv2
 			}
-		}
-		return v2.CVSSv2{}
-	}()
-	cvss3 := func() v31.CVSSv31 {
-		for _, s := range v.Content.Severity {
-			if s.Type == severityTypes.SeverityTypeCVSSv31 && s.CVSSv31 != nil {
-				return *s.CVSSv31
-			}
-		}
-		for _, s := range v.Content.Severity {
-			if s.Type == severityTypes.SeverityTypeCVSSv30 && s.CVSSv30 != nil {
-				return v31.CVSSv31{
+		case severityTypes.SeverityTypeCVSSv30:
+			if cvss3.Vector == "" && s.CVSSv30 != nil {
+				cvss3 = v31.CVSSv31{
 					Vector:       s.CVSSv30.Vector,
 					BaseScore:    s.CVSSv30.BaseScore,
 					BaseSeverity: s.CVSSv30.BaseSeverity,
 				}
 			}
-		}
-		return v31.CVSSv31{}
-	}()
-
-	advisorySeverity := func() string {
-		for _, s := range v.Content.Severity {
-			if s.Type != severityTypes.SeverityTypeVendor || s.Vendor == nil || *s.Vendor == "" {
-				continue
+		case severityTypes.SeverityTypeCVSSv31:
+			if !strings.HasPrefix(s.CVSSv31.Vector, "CVSS:3.1/") && s.CVSSv31 != nil {
+				cvss3 = *s.CVSSv31
 			}
-			return *s.Vendor
-		}
-		if da != nil {
-			return da.Severity
-		}
-		return ""
-	}()
-	if advisorySeverity != "None" {
-		cvss3.BaseSeverity = advisorySeverity
-		if cvss2.BaseScore != 0 {
-			cvss2.NVDBaseSeverity = advisorySeverity
+		case severityTypes.SeverityTypeCVSSv40:
+			if cvss4.Vector == "" && s.CVSSv40 != nil {
+				cvss4 = *s.CVSSv40
+			}
+		default:
 		}
 	}
 
-	return cvss2, cvss3
+	return cvss2, cvss3, cvss4
 }
 
 func toDistoAdvisory(a *advisoryTypes.Advisory) *models.DistroAdvisory {
