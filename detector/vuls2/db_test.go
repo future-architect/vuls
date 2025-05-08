@@ -1,4 +1,4 @@
-package vuls2
+package vuls2_test
 
 import (
 	"path/filepath"
@@ -11,6 +11,7 @@ import (
 	"github.com/MaineK00n/vuls2/pkg/db/common"
 	"github.com/MaineK00n/vuls2/pkg/db/common/types"
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/detector/vuls2"
 )
 
 func Test_shouldDownload(t *testing.T) {
@@ -108,7 +109,7 @@ func Test_shouldDownload(t *testing.T) {
 					return
 				}
 			}
-			got, err := shouldDownload(tt.args.vuls2Conf, tt.args.now)
+			got, err := vuls2.ShouldDownload(tt.args.vuls2Conf, tt.args.now)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("shouldDownload() error = %v, wantErr %v", err, tt.wantErr)
 				return
