@@ -603,7 +603,7 @@ func toCvss(v vulnerabilityTypes.Vulnerability) (v2.CVSSv2, v31.CVSSv31, v40.CVS
 				}
 			}
 		case severityTypes.SeverityTypeCVSSv31:
-			if !strings.HasPrefix(s.CVSSv31.Vector, "CVSS:3.1/") && s.CVSSv31 != nil {
+			if !strings.HasPrefix(cvss3.Vector, "CVSS:3.1/") && s.CVSSv31 != nil {
 				cvss3 = *s.CVSSv31
 			}
 		case severityTypes.SeverityTypeCVSSv40:
