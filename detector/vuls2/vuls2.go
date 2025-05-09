@@ -3,6 +3,7 @@ package vuls2
 import (
 	"maps"
 	"regexp"
+	"runtime"
 	"slices"
 	"strings"
 	"time"
@@ -149,7 +150,7 @@ func detect(dbc db.DB, sr scanTypes.ScanResult) (detectTypes.DetectResult, error
 	detected := make(map[dataTypes.RootID]detectTypes.VulnerabilityData)
 
 	if len(sr.OSPackages) > 0 {
-		m, err := ospkg.Detect(dbc, sr)
+		m, err := ospkg.Detect(dbc, sr, runtime.NumCPU())
 		if err != nil {
 			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to detect os packages. err: %w", err)
 		}
