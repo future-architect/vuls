@@ -5,14 +5,15 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 	"text/template"
 
+	"github.com/google/subcommands"
+	ps "github.com/kotakanbe/go-pingscanner"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
-	"github.com/google/subcommands"
-
-	ps "github.com/kotakanbe/go-pingscanner"
 )
 
 // DiscoverCmd is Subcommand of host discovery mode
@@ -50,9 +51,14 @@ func (p *DiscoverCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface
 	for _, cidr := range f.Args() {
 		scanner := ps.PingScanner{
 			CIDR: cidr,
-			PingOptions: []string{
-				"-c1",
-			},
+			PingOptions: func() []string {
+				switch runtime.GOOS {
+				case "windows":
+					return []string{"-n", "1"}
+				default:
+					return []string{"-c", "1"}
+				}
+			}(),
 			NumOfConcurrency: 100,
 		}
 		hosts, err := scanner.Scan()
