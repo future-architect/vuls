@@ -6,20 +6,27 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/future-architect/vuls/contrib/future-vuls/pkg/config"
 	"github.com/kotakanbe/go-pingscanner"
+
+	"github.com/future-architect/vuls/contrib/future-vuls/pkg/config"
 )
 
 // ActiveHosts ...
 func ActiveHosts(cidr string, outputFile string, snmpVersion string, community string) error {
 	scanner := pingscanner.PingScanner{
 		CIDR: cidr,
-		PingOptions: []string{
-			"-c1",
-		},
+		PingOptions: func() []string {
+			switch runtime.GOOS {
+			case "windows":
+				return []string{"-n", "1"}
+			default:
+				return []string{"-c", "1"}
+			}
+		}(),
 		NumOfConcurrency: 100,
 	}
 	fmt.Printf("Discovering %s...\n", cidr)
