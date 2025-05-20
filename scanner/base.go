@@ -15,6 +15,9 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/sync/semaphore"
+	"golang.org/x/xerrors"
+
 	fanal "github.com/aquasecurity/trivy/pkg/fanal/analyzer"
 	tlog "github.com/aquasecurity/trivy/pkg/log"
 	xio "github.com/aquasecurity/trivy/pkg/x/io"
@@ -23,9 +26,8 @@ import (
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
+	ufilepath "github.com/future-architect/vuls/scanner/utils/filepath/unix"
 	"github.com/future-architect/vuls/util"
-	"golang.org/x/sync/semaphore"
-	"golang.org/x/xerrors"
 
 	// Import library scanner
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/c/conan"
@@ -625,7 +627,7 @@ func (l *base) parseSystemctlStatus(stdout string) string {
 var trivyLoggerInit = sync.OnceFunc(func() { tlog.InitLogger(config.Conf.Debug, config.Conf.Quiet) })
 
 func (l *base) scanLibraries() (err error) {
-	if len(l.LibraryScanners) != 0 {
+	if len(l.LibraryScanners) > 0 {
 		return nil
 	}
 
@@ -638,7 +640,6 @@ func (l *base) scanLibraries() (err error) {
 
 	trivyLoggerInit()
 
-	found := map[string]bool{}
 	detectFiles := l.ServerInfo.Lockfiles
 
 	priv := noSudo
@@ -648,87 +649,110 @@ func (l *base) scanLibraries() (err error) {
 
 	// auto detect lockfile
 	if l.ServerInfo.FindLock {
-		findopt := ""
-		for _, filename := range models.FindLockFiles {
-			findopt += fmt.Sprintf("-name %q -o ", filename)
-		}
+		dir := func() string {
+			if len(l.ServerInfo.FindLockDirs) == 0 {
+				l.log.Infof("It's recommended to specify FindLockDirs in config.toml. If FindLockDirs is not specified, all directories under / will be searched, which may increase CPU load")
+				return "/"
+			}
+			return strings.Join(l.ServerInfo.FindLockDirs, " ")
+		}()
 
-		dir := "/"
-		if len(l.ServerInfo.FindLockDirs) != 0 {
-			dir = strings.Join(l.ServerInfo.FindLockDirs, " ")
-		} else {
-			l.log.Infof("It's recommended to specify FindLockDirs in config.toml. If FindLockDirs is not specified, all directories under / will be searched, which may increase CPU load")
-		}
+		findopt := func() string {
+			ss := make([]string, 0, len(models.FindLockFiles))
+			for _, filename := range models.FindLockFiles {
+				ss = append(ss, fmt.Sprintf("-name %q", filename))
+			}
+			return strings.Join(ss, " -o ")
+		}()
+
 		l.log.Infof("Finding files under %s", dir)
 
-		// delete last "-o "
 		// find / -type f -and \( -name "package-lock.json" -o -name "yarn.lock" ... \) 2>&1 | grep -v "find: "
-		cmd := fmt.Sprintf(`find %s -type f -and \( `+findopt[:len(findopt)-3]+` \) 2>&1 | grep -v "find: "`, dir)
-		r := exec(l.ServerInfo, cmd, priv)
+		r := l.exec(fmt.Sprintf(`find %s -type f -and \( %s \) 2>&1 | grep -v "find: "`, dir, findopt), priv)
 		if r.ExitStatus != 0 && r.ExitStatus != 1 {
-			return xerrors.Errorf("Failed to find lock files")
+			return xerrors.Errorf("Failed to find lock files: %s", r)
 		}
-		detectFiles = append(detectFiles, strings.Split(r.Stdout, "\n")...)
+
+		scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
+		for scanner.Scan() {
+			detectFiles = append(detectFiles, scanner.Text())
+		}
+		if err := scanner.Err(); err != nil {
+			return xerrors.Errorf("Failed to reading find results. err: %w", err)
+		}
 	}
 
+	found := make(map[string]bool)
 	for _, path := range detectFiles {
 		if path == "" {
 			continue
 		}
 
-		if path, err = filepath.Abs(path); err != nil {
-			return xerrors.Errorf("Failed to abs the lockfile. err: %w, filepath: %s", err, path)
+		abspath, err := func() (string, error) {
+			if ufilepath.IsAbs(path) {
+				return ufilepath.Clean(path), nil
+			}
+
+			r := l.exec("pwd", noSudo)
+			if !r.isSuccess() {
+				return "", xerrors.Errorf("Failed to get current directory. err: %w", r.Error)
+			}
+
+			return ufilepath.Join(strings.TrimSuffix(r.Stdout, "\n"), path), nil
+		}()
+		if err != nil {
+			return xerrors.Errorf("Failed to abs the lockfile. filepath: %s, err: %w", path, err)
 		}
 
-		// skip already exist
-		if _, ok := found[path]; ok {
+		if _, ok := found[abspath]; ok {
+			continue
+		}
+		found[abspath] = true
+
+		l.log.Debugf("Analyzing file: %s", abspath)
+		filemode, contents, err := func() (os.FileMode, []byte, error) {
+			if isLocalExec(l.getServerInfo().Port, l.getServerInfo().Host) {
+				fileinfo, err := os.Stat(abspath)
+				if err != nil {
+					return os.FileMode(0000), nil, xerrors.Errorf("Failed to get target file info. filepath: %s, err: %w", abspath, err)
+				}
+				filemode := fileinfo.Mode().Perm()
+
+				contents, err := os.ReadFile(abspath)
+				if err != nil {
+					return os.FileMode(0000), nil, xerrors.Errorf("Failed to read target file contents. filepath: %s, err: %w", abspath, err)
+				}
+
+				return filemode, contents, nil
+			}
+
+			r := l.exec(fmt.Sprintf(`stat -c "%%a" %s`, abspath), priv)
+			if !r.isSuccess() {
+				return os.FileMode(0000), nil, xerrors.Errorf("Failed to get target file permission. filepath: %s, err: %w", abspath, err)
+			}
+			permStr := fmt.Sprintf("0%s", strings.TrimSuffix(r.Stdout, "\n"))
+			perm, err := strconv.ParseUint(permStr, 8, 32)
+			if err != nil {
+				return os.FileMode(0000), nil, xerrors.Errorf("Failed to parse permission string. , permission string: %s, err: %s", permStr, err)
+			}
+			filemode := os.FileMode(perm)
+
+			r = l.exec(fmt.Sprintf("cat %s", abspath), priv)
+			if !r.isSuccess() {
+				return os.FileMode(0000), nil, xerrors.Errorf("Failed to read target file contents. filepath: %s, err: %w", abspath, err)
+			}
+			contents := []byte(r.Stdout)
+
+			return filemode, contents, nil
+		}()
+		if err != nil {
+			l.log.Warn(err)
 			continue
 		}
 
-		var contents []byte
-		var filemode os.FileMode
-
-		switch l.Distro.Family {
-		case constant.ServerTypePseudo:
-			fileinfo, err := os.Stat(path)
-			if err != nil {
-				l.log.Warnf("Failed to get target file info. err: %s, filepath: %s", err, path)
-				continue
-			}
-			filemode = fileinfo.Mode().Perm()
-			contents, err = os.ReadFile(path)
-			if err != nil {
-				l.log.Warnf("Failed to read target file contents. err: %s, filepath: %s", err, path)
-				continue
-			}
-		default:
-			l.log.Debugf("Analyzing file: %s", path)
-			cmd := fmt.Sprintf(`stat -c "%%a" %s`, path)
-			r := exec(l.ServerInfo, cmd, priv, logging.NewIODiscardLogger())
-			if !r.isSuccess() {
-				l.log.Warnf("Failed to get target file permission: %s, filepath: %s", r, path)
-				continue
-			}
-			permStr := fmt.Sprintf("0%s", strings.ReplaceAll(r.Stdout, "\n", ""))
-			perm, err := strconv.ParseUint(permStr, 8, 32)
-			if err != nil {
-				l.log.Warnf("Failed to parse permission string. err: %s, permission string: %s", err, permStr)
-				continue
-			}
-			filemode = os.FileMode(perm)
-
-			cmd = fmt.Sprintf("cat %s", path)
-			r = exec(l.ServerInfo, cmd, priv, logging.NewIODiscardLogger())
-			if !r.isSuccess() {
-				l.log.Warnf("Failed to get target file contents: %s, filepath: %s", r, path)
-				continue
-			}
-			contents = []byte(r.Stdout)
-		}
-		found[path] = true
-		var libraryScanners []models.LibraryScanner
-		if libraryScanners, err = AnalyzeLibrary(context.Background(), path, contents, filemode, l.ServerInfo.Mode.IsOffline()); err != nil {
-			return err
+		libraryScanners, err := AnalyzeLibrary(context.Background(), abspath, contents, filemode, l.ServerInfo.Mode.IsOffline())
+		if err != nil {
+			return xerrors.Errorf("Failed to analyze library. err: %w, filepath: %s", err, abspath)
 		}
 		l.LibraryScanners = append(l.LibraryScanners, libraryScanners...)
 	}
@@ -748,7 +772,7 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 	var wg sync.WaitGroup
 	result := new(fanal.AnalysisResult)
 
-	info := &DummyFileInfo{name: filepath.Base(path), size: int64(len(contents)), filemode: filemode}
+	info := &DummyFileInfo{name: ufilepath.Base(path), size: int64(len(contents)), filemode: filemode}
 	opts := fanal.AnalysisOptions{Offline: isOffline}
 	if err := ag.AnalyzeFile(
 		ctx,
