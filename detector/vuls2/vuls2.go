@@ -162,13 +162,14 @@ func detect(dbc db.DB, sr scanTypes.ScanResult) (detectTypes.DetectResult, error
 	}
 
 	for rootID, base := range detected {
-		d, err := dbc.GetVulnerabilityData(dbTypes.SearchDataRoot, string(rootID))
-		if err != nil {
-			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to get vulnerability data. RootID: %s, err: %w", rootID, err)
+		for d, err := range dbc.GetVulnerabilityData(dbTypes.SearchRoot, string(rootID)) {
+			if err != nil {
+				return detectTypes.DetectResult{}, xerrors.Errorf("Failed to get vulnerability data. RootID: %s, err: %w", rootID, err)
+			}
+			base.Advisories = d.Advisories
+			base.Vulnerabilities = d.Vulnerabilities
+			detected[rootID] = base
 		}
-		base.Advisories = d.Advisories
-		base.Vulnerabilities = d.Vulnerabilities
-		detected[rootID] = base
 	}
 
 	var sourceIDs []sourceTypes.SourceID
