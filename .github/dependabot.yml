@@ -23,7 +23,7 @@ updates:
     directory: / # Location of package manifests
     schedule:
       interval: "cron"
-      cronjob:  "0 0 1-7,15-21 * 1" # on 0 AM at 1st and 3rd Mondays
+      cronjob:  "0 0 1-7,15-21 * 1" # at 00:00 on the 1st and 3rd Monday of each month
     groups:
       all-but-trivy:
         patterns:
