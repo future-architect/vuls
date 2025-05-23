@@ -50,6 +50,11 @@ func newDBConnection(vuls2Conf config.Vuls2Conf, noProgress bool) (db.DB, error)
 		return nil, xerrors.Errorf("Failed to new vuls2 db connection. path: %s, err: %w", vuls2Conf.Path, err)
 	}
 
+	if err := dbc.Open(); err != nil {
+		return nil, xerrors.Errorf("Failed to open vuls2 db. path: %s, err: %w", vuls2Conf.Path, err)
+	}
+	defer dbc.Close()
+
 	metadata, err := dbc.GetMetadata()
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to get vuls2 db metadata. path: %s, err: %w", vuls2Conf.Path, err)
