@@ -9,19 +9,52 @@ updates:
     directory: /
     schedule:
       interval: "monthly"
+    groups:
+      all:
+        patterns:
+          - "*"
     target-branch: master
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "monthly"
-  - package-ecosystem: gomod # See documentation for possible values
+  - package-ecosystem: gomod
     open-pull-requests-limit: 10
     directory: / # Location of package manifests
     schedule:
-      interval: "monthly"
+      interval: "cron"
+      cronjob:  "0 0 1-7,15-21 * 1" # at 00:00 on the 1st and 3rd Monday of each month
     groups:
-      aws:
+      vuls:
         patterns:
-          - github.com/aws/aws-sdk-go-v2
-          - github.com/aws/aws-sdk-go-v2/*
+          - "github.com/MaineK00n/vuls-data-update"
+          - "github.com/MaineK00n/vuls2"
+          - "github.com/vulsio/go-cti"
+          - "github.com/vulsio/go-cve-dictionary"
+          - "github.com/vulsio/go-exploitdb"
+          - "github.com/vulsio/go-kev"
+          - "github.com/vulsio/go-msfdb"
+          - "github.com/vulsio/gost"
+          - "github.com/vulsio/goval-dictionary"
+      trivy:
+        patterns:
+          - "github.com/aquasecurity/trivy"
+          - "github.com/aquasecurity/trivy-db"
+          - "github.com/aquasecurity/trivy-java-db"
+      others:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "github.com/MaineK00n/vuls-data-update"
+          - "github.com/MaineK00n/vuls2"
+          - "github.com/vulsio/go-cti"
+          - "github.com/vulsio/go-cve-dictionary"
+          - "github.com/vulsio/go-exploitdb"
+          - "github.com/vulsio/go-kev"
+          - "github.com/vulsio/go-msfdb"
+          - "github.com/vulsio/gost"
+          - "github.com/vulsio/goval-dictionary"
+          - "github.com/aquasecurity/trivy"
+          - "github.com/aquasecurity/trivy-db"
+          - "github.com/aquasecurity/trivy-java-db"
     target-branch: master
