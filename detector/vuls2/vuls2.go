@@ -1,8 +1,14 @@
 package vuls2
 
 import (
+	"cmp"
+	"encoding/json"
+	"fmt"
+	"iter"
 	"maps"
-	"regexp"
+	"net/url"
+	"path"
+	"runtime"
 	"slices"
 	"strings"
 	"time"
@@ -10,17 +16,16 @@ import (
 	"golang.org/x/xerrors"
 
 	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
-	advisoryTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/advisory"
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
+	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
+	vcPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package"
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
 	severityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity"
 	v2 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v2"
 	v31 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v31"
 	v40 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v40"
-	vulnerabilityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability"
-	vcTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability/content"
 	datasourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/datasource"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
 	db "github.com/MaineK00n/vuls2/pkg/db/common"
@@ -35,8 +40,6 @@ import (
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 )
-
-var cveRe = regexp.MustCompile("CVE-[0-9]{4}-[0-9]+")
 
 // Detect detects vulnerabilities and fills ScanResult
 func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
@@ -69,12 +72,7 @@ func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) e
 		return xerrors.Errorf("Failed to detect. err: %w", err)
 	}
 
-	e, err := ecosystemTypes.GetEcosystem(r.Family, r.Release)
-	if err != nil {
-		return xerrors.Errorf("Failed to get ecosystem. family: %s, release: %s, err: %w", r.Family, r.Release, err)
-	}
-
-	vulnInfos, err := postConvert(e, r.Family, vuls2Detected, vuls2Scanned)
+	vulnInfos, err := postConvert(vuls2Scanned, vuls2Detected)
 	if err != nil {
 		return xerrors.Errorf("Failed to post convert. err: %w", err)
 	}
@@ -149,7 +147,7 @@ func detect(dbc db.DB, sr scanTypes.ScanResult) (detectTypes.DetectResult, error
 	detected := make(map[dataTypes.RootID]detectTypes.VulnerabilityData)
 
 	if len(sr.OSPackages) > 0 {
-		m, err := ospkg.Detect(dbc, sr)
+		m, err := ospkg.Detect(dbc, sr, runtime.NumCPU())
 		if err != nil {
 			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to detect os packages. err: %w", err)
 		}
@@ -164,13 +162,14 @@ func detect(dbc db.DB, sr scanTypes.ScanResult) (detectTypes.DetectResult, error
 	}
 
 	for rootID, base := range detected {
-		d, err := dbc.GetVulnerabilityData(dbTypes.SearchDataRoot, string(rootID))
-		if err != nil {
-			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to get vulnerability data. RootID: %s, err: %w", rootID, err)
+		for d, err := range dbc.GetVulnerabilityData(dbTypes.SearchRoot, string(rootID)) {
+			if err != nil {
+				return detectTypes.DetectResult{}, xerrors.Errorf("Failed to get vulnerability data. RootID: %s, err: %w", rootID, err)
+			}
+			base.Advisories = d.Advisories
+			base.Vulnerabilities = d.Vulnerabilities
+			detected[rootID] = base
 		}
-		base.Advisories = d.Advisories
-		base.Vulnerabilities = d.Vulnerabilities
-		detected[rootID] = base
 	}
 
 	var sourceIDs []sourceTypes.SourceID
@@ -220,375 +219,659 @@ func detect(dbc db.DB, sr scanTypes.ScanResult) (detectTypes.DetectResult, error
 	}, nil
 }
 
-type pack struct {
-	name   string
+type source struct {
+	RootID   dataTypes.RootID     `json:"root_id,omitempty"`
+	SourceID sourceTypes.SourceID `json:"source_id,omitempty"`
+	Segment  segmentTypes.Segment `json:"segment,omitempty"`
+}
+
+type sourceData struct {
+	detectableCveIDs []string
+	vulninfos        models.VulnInfos
+	packStatuses     []packStatus
+	cpes             []string
+}
+
+type rootTag struct {
 	rootID dataTypes.RootID
 	tag    segmentTypes.DetectionTag
-	status models.PackageFixStatus
 }
 
-type sourceVulnInfo struct {
-	sourceID sourceTypes.SourceID
-	rootID   dataTypes.RootID
-	tag      segmentTypes.DetectionTag
-	vulnInfo models.VulnInfo
+type pack struct {
+	ecosystem ecosystemTypes.Ecosystem
+	sourceID  sourceTypes.SourceID
+	rootTags  []rootTag
+
+	packStatus packStatus
 }
 
-func postConvert(e ecosystemTypes.Ecosystem, family string, vuls2Detected detectTypes.DetectResult, vuls2Scanned scanTypes.ScanResult) (models.VulnInfos, error) {
-	pm, err := collectPackages(e, family, vuls2Detected, vuls2Scanned.OSPackages)
-	if err != nil {
-		return nil, xerrors.Errorf("Failed to collect packages. server: %s, err: %w", vuls2Detected.ServerName, err)
+type packStatus struct {
+	rangeType vcAffectedRangeTypes.RangeType
+	status    models.PackageFixStatus
+}
+
+func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult) (models.VulnInfos, error) {
+	m := make(map[source]sourceData)
+
+	if err := walkVulnerabilityDetections(m, scanned, detected.Detected); err != nil {
+		return nil, xerrors.Errorf("Failed to walk detections. err: %w", err)
 	}
 
-	am := collectAdvisories(e, family, vuls2Detected)
-	cveMap := collectCVEs(e, family, vuls2Detected, am)
+	if err := walkVulnerabilityDatas(m, detected.Detected); err != nil {
+		return nil, xerrors.Errorf("Failed to walk vulnerability data. err: %w", err)
+	}
 
-	vimBase := make(map[vcTypes.VulnerabilityID]sourceVulnInfo)
+	type affected struct {
+		packm map[string]pack
+		cpes  []string
+	}
 
-	for rootID, m := range cveMap {
-		for vid, svi := range m {
-			packs, found := func() (map[string]pack, bool) {
-				mm, found := pm[rootID]
-				if !found {
-					return nil, false
+	am := make(map[string]affected)
+	for src, vd := range m {
+		for _, vi := range vd.vulninfos {
+			base := am[vi.CveID]
+
+			if len(vd.packStatuses) > 0 {
+				if base.packm == nil {
+					base.packm = make(map[string]pack)
 				}
-				packs, found := mm[svi.sourceID]
-				return packs, found
-			}()
-			if !found || len(packs) == 0 {
-				continue
-			}
-
-			sviBase, found := vimBase[vid]
-			if !found {
-				sviBase = svi
-			} else {
-				for ccType, ccs := range svi.vulnInfo.CveContents {
-					ccsBase, foundBase := sviBase.vulnInfo.CveContents[ccType]
-					if !foundBase {
-						sviBase.vulnInfo.CveContents[ccType] = ccs
+				for _, status := range vd.packStatuses {
+					p, ok := base.packm[status.status.Name]
+					if ok {
+						result, err := comparePack(p, pack{
+							ecosystem: src.Segment.Ecosystem,
+							sourceID:  src.SourceID,
+							rootTags: []rootTag{{
+								rootID: src.RootID,
+								tag:    src.Segment.Tag,
+							}},
+							packStatus: packStatus{
+								rangeType: status.rangeType,
+								status:    status.status,
+							},
+						})
+						if err != nil {
+							return nil, xerrors.Errorf("Failed to compare pack. err: %w", err)
+						}
+						switch result {
+						case 0:
+							p.rootTags = append(p.rootTags, rootTag{
+								rootID: src.RootID,
+								tag:    src.Segment.Tag,
+							})
+						case -1:
+							p = pack{
+								ecosystem: src.Segment.Ecosystem,
+								sourceID:  src.SourceID,
+								rootTags: []rootTag{{
+									rootID: src.RootID,
+									tag:    src.Segment.Tag,
+								}},
+								packStatus: packStatus{
+									rangeType: status.rangeType,
+									status:    status.status,
+								},
+							}
+						default:
+						}
 					} else {
-						svi, ccs := resolveCveContentList(family, sviBase, svi, ccsBase, ccs)
-						sviBase.rootID = svi.rootID
-						sviBase.sourceID = svi.sourceID
-						sviBase.tag = svi.tag
-						sviBase.vulnInfo.CveContents[ccType] = ccs
+						p = pack{
+							ecosystem: src.Segment.Ecosystem,
+							sourceID:  src.SourceID,
+							rootTags: []rootTag{{
+								rootID: src.RootID,
+								tag:    src.Segment.Tag,
+							}},
+							packStatus: packStatus{
+								rangeType: status.rangeType,
+								status:    status.status,
+							},
+						}
+					}
+					base.packm[status.status.Name] = p
+				}
+			}
+
+			if len(vd.cpes) > 0 {
+				for _, cpe := range vd.cpes {
+					if !slices.Contains(base.cpes, cpe) {
+						base.cpes = append(base.cpes, cpe)
 					}
 				}
-
-				for _, d := range svi.vulnInfo.DistroAdvisories {
-					sviBase.vulnInfo.DistroAdvisories.AppendIfMissing(&d)
+				if !slices.Contains(vd.detectableCveIDs, vi.CveID) {
+					vd.detectableCveIDs = append(vd.detectableCveIDs, vi.CveID)
 				}
 			}
 
-			smBase := make(map[string]models.PackageFixStatus)
-			for _, sBase := range sviBase.vulnInfo.AffectedPackages {
-				smBase[sBase.Name] = sBase
-			}
-			for _, pack := range packs {
-				sBase, found := smBase[pack.name]
-				if found {
-					pack.status = resolvePackageByRootID(family, sviBase.rootID, svi.rootID, sBase, pack.status)
+			am[vi.CveID] = base
+		}
+
+		m[src] = vd
+	}
+	for cveID, mm := range am {
+		for _, p := range mm.packm {
+			for _, tag := range p.rootTags {
+				src := source{
+					RootID:   tag.rootID,
+					SourceID: p.sourceID,
+					Segment: segmentTypes.Segment{
+						Ecosystem: p.ecosystem,
+						Tag:       tag.tag,
+					},
 				}
-				smBase[pack.name] = pack.status
+				base := m[src]
+				if !slices.Contains(base.detectableCveIDs, cveID) {
+					base.detectableCveIDs = append(base.detectableCveIDs, cveID)
+				}
+				m[src] = base
 			}
-			sviBase.vulnInfo.AffectedPackages = slices.Collect(maps.Values(smBase))
-			sviBase.vulnInfo.AffectedPackages.Sort()
-
-			vimBase[vid] = sviBase
 		}
 	}
 
-	res := models.VulnInfos{}
-	for vid, svi := range vimBase {
-		res[string(vid)] = svi.vulnInfo
-	}
-	return res, nil
-}
-
-func collectPackages(e ecosystemTypes.Ecosystem, family string, dres detectTypes.DetectResult, ospkgs []scanTypes.OSPackage) (map[dataTypes.RootID]map[sourceTypes.SourceID]map[string]pack, error) {
-	pm := make(map[dataTypes.RootID]map[sourceTypes.SourceID]map[string]pack)
-	for _, detected := range dres.Detected {
-		if _, found := pm[detected.ID]; !found {
-			pm[detected.ID] = make(map[sourceTypes.SourceID]map[string]pack)
-		}
-		for _, detections := range detected.Detections {
-			if detections.Ecosystem != e {
+	vim := make(models.VulnInfos)
+	for _, vd := range m {
+		for _, vi := range vd.vulninfos {
+			if !slices.Contains(vd.detectableCveIDs, vi.CveID) {
 				continue
 			}
 
-			for sourceID, fconds := range detections.Contents {
-				if _, found := pm[detected.ID][sourceID]; !found {
-					pm[detected.ID][sourceID] = make(map[string]pack)
+			base, ok := vim[vi.CveID]
+			if ok {
+				merged, err := mergeVulnInfo(base, vi)
+				if err != nil {
+					return nil, xerrors.Errorf("Failed to merge vuln info. err: %w", err)
 				}
+				base = merged
+			} else {
+				base = vi
+			}
+			vim[vi.CveID] = base
+		}
+	}
+	for _, vi := range vim {
+		ps := make(models.PackageFixStatuses, 0, len(am[vi.CveID].packm))
+		for _, p := range am[vi.CveID].packm {
+			ps = append(ps, p.packStatus.status)
+		}
+		vi.AffectedPackages = ps
+		vi.CpeURIs = am[vi.CveID].cpes
+
+		vim[vi.CveID] = vi
+	}
+
+	return vim, nil
+}
+
+func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.ScanResult, vs []detectTypes.VulnerabilityData) error {
+	for _, v := range vs {
+		for _, d := range v.Detections {
+			for sourceID, fconds := range d.Contents {
 				for _, fcond := range fconds {
-					statuses, ignoresAll, err := collectFixStatuses(family, sourceID, fcond.Criteria, ospkgs)
+					statuses, cpes, _, err := walkCriteria(d.Ecosystem, sourceID, fcond.Criteria, scanned)
 					if err != nil {
-						return nil, xerrors.Errorf("Failed to collect fix statuses. err: %w", err)
+						return xerrors.Errorf("Failed to walk criteria. err: %w", err)
 					}
-					if ignoresAll {
+					if len(statuses) == 0 && len(cpes) == 0 {
 						continue
 					}
-					for _, status := range statuses {
-						p := pack{
-							name:   status.Name,
-							rootID: detected.ID,
-							tag:    fcond.Tag,
-							status: status,
-						}
-						base, found := pm[detected.ID][sourceID][status.Name]
-						if found {
-							p = resolvePackageByTag(family, p, base)
-						}
-						pm[detected.ID][sourceID][status.Name] = p
+
+					src := source{
+						RootID:   v.ID,
+						SourceID: sourceID,
+						Segment: segmentTypes.Segment{
+							Ecosystem: d.Ecosystem,
+							Tag:       fcond.Tag,
+						},
 					}
+					base := m[src]
+					base.packStatuses = append(base.packStatuses, statuses...)
+					base.cpes = append(base.cpes, cpes...)
+					m[src] = base
 				}
 			}
 		}
 	}
-	return pm, nil
+	return nil
 }
 
-func collectFixStatuses(family string, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, ospkgs []scanTypes.OSPackage) ([]models.PackageFixStatus, bool, error) {
-	var statuses []models.PackageFixStatus //nolint:prealloc
-	for _, child := range ca.Criterias {   //nolint:misspell
-		ss, ignoresAll, err := collectFixStatuses(family, sourceID, child, ospkgs)
+func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanResult) ([]packStatus, []string, bool, error) {
+	var (
+		statuses []packStatus
+		cpes     []string
+	)
+	for _, child := range ca.Criterias {
+		ss, cs, ignore, err := walkCriteria(e, sourceID, child, scanned)
 		if err != nil {
-			return nil, false, xerrors.Errorf("Failed to collect fix statuses. err: %w", err)
+			return nil, nil, false, xerrors.Errorf("Failed to walk criteria. err: %w", err)
 		}
-		if ignoresAll {
-			return nil, ignoresAll, nil
+		if ignore {
+			switch ca.Operator {
+			case criteriaTypes.CriteriaOperatorTypeAND:
+				return nil, nil, ignore, nil
+			case criteriaTypes.CriteriaOperatorTypeOR:
+				continue
+			default:
+				return nil, nil, false, xerrors.Errorf("unexpected operator: %s", ca.Operator)
+			}
 		}
 		statuses = append(statuses, ss...)
+		cpes = append(cpes, cs...)
 	}
 
 	for _, cn := range ca.Criterions {
-		if ignoresWholeCriteria(family, sourceID, cn) {
-			return nil, true, nil
+		if ignoreCriteria(e, sourceID, cn) {
+			return nil, nil, true, nil
 		}
 
 		if cn.Criterion.Type != criterionTypes.CriterionTypeVersion || cn.Criterion.Version == nil {
 			continue
 		}
 
-		if ignoresCriterion(family, cn) {
+		if ignoreCriterion(e, cn) {
 			continue
 		}
 
-		fixedIn := func() string {
-			if cn.Criterion.Version.Affected == nil || len(cn.Criterion.Version.Affected.Fixed) == 0 {
-				return ""
-			}
-			return selectFixedIn(family, cn.Criterion.Version.Affected.Fixed)
-		}()
+		switch cn.Criterion.Version.Package.Type {
+		case vcPackageTypes.PackageTypeBinary, vcPackageTypes.PackageTypeSource:
+			rangeType, fixedIn := func() (vcAffectedRangeTypes.RangeType, string) {
+				if cn.Criterion.Version.Affected == nil {
+					return vcAffectedRangeTypes.RangeTypeUnknown, ""
+				}
+				return cn.Criterion.Version.Affected.Type, selectFixedIn(cn.Criterion.Version.Affected.Type, cn.Criterion.Version.Affected.Fixed)
+			}()
 
-		for _, index := range cn.Accepts.Version {
-			if len(ospkgs) <= index {
-				return nil, false, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(ospkgs), index)
-			}
-			statuses = append(statuses, models.PackageFixStatus{
-				Name: affectedPackageName(family, ospkgs[index]),
-				FixState: func() string {
-					if cn.Criterion.Version.FixStatus == nil {
-						return ""
-					}
-					return cn.Criterion.Version.FixStatus.Vendor
-				}(),
-				FixedIn:     fixedIn,
-				NotFixedYet: fixedIn == "",
-			})
-		}
-
-	}
-	return statuses, false, nil
-}
-
-func collectCVEs(e ecosystemTypes.Ecosystem, family string, dres detectTypes.DetectResult, am map[dataTypes.RootID]map[sourceTypes.SourceID]taggedAdvisory) map[dataTypes.RootID]map[vcTypes.VulnerabilityID]sourceVulnInfo {
-	m := make(map[dataTypes.RootID]map[vcTypes.VulnerabilityID]sourceVulnInfo)
-
-	for _, detected := range dres.Detected {
-		for _, dv := range detected.Vulnerabilities {
-			for sourceID, rm := range dv.Contents {
-				for rootID, vs := range rm {
-					for _, v := range vs {
-						if !includesEcosystem(v.Segments, e) {
-							continue
-						}
-						if _, found := m[rootID]; !found {
-							m[rootID] = make(map[vcTypes.VulnerabilityID]sourceVulnInfo)
-						}
-
-						a := func() *advisoryTypes.Advisory {
-							sourceIDMap, found := am[rootID]
-							if !found {
-								return nil
+			for _, index := range cn.Accepts.Version {
+				if len(scanned.OSPackages) <= index {
+					return nil, nil, false, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
+				}
+				statuses = append(statuses, packStatus{
+					rangeType: rangeType,
+					status: models.PackageFixStatus{
+						Name: affectedPackageName(e, scanned.OSPackages[index]),
+						FixState: func() string {
+							if cn.Criterion.Version.FixStatus == nil {
+								return ""
 							}
-							a, found := sourceIDMap[sourceID]
-							if !found {
-								return nil
-							}
-							return &a.advisory
-						}()
-						da := toDistoAdvisory(a)
-						if ignoresVulnerability(family, v, a) {
-							continue
-						}
-
-						cvss2, cvss3, cvss40 := toCvss(v)
-
-						ccType := models.NewCveContentType(family)
-						cc := models.CveContents{
-							ccType: []models.CveContent{
-								{
-									Type:  ccType,
-									CveID: string(v.Content.ID),
-									Title: func() string {
-										if a != nil && a.Content.Title != "" {
-											return a.Content.Title
-										}
-										return v.Content.Title
-									}(),
-									Summary: func() string {
-										if a != nil && a.Content.Description != "" {
-											return a.Content.Description
-										}
-										return v.Content.Description
-									}(),
-									Cvss2Score:     cvss2.BaseScore,
-									Cvss2Vector:    cvss2.Vector,
-									Cvss2Severity:  cvss2.NVDBaseSeverity,
-									Cvss3Score:     cvss3.BaseScore,
-									Cvss3Vector:    cvss3.Vector,
-									Cvss3Severity:  cvss3.BaseSeverity,
-									Cvss40Score:    cvss40.Score,
-									Cvss40Vector:   cvss40.Vector,
-									Cvss40Severity: cvss40.Severity,
-									SourceLink:     cveContentSourceLink(ccType, v),
-									References: func() models.References {
-										refs := v.Content.References
-										if a != nil {
-											refs = a.Content.References
-										}
-										rs := make([]models.Reference, 0, len(refs))
-										for _, r := range refs {
-											if advRef := advisoryReference(family, a, r); advRef != nil {
-												rs = append(rs, *advRef)
-											}
-											if cveID := cveRe.FindString(r.URL); cveID != "" {
-												rs = append(rs, models.Reference{
-													Link:   r.URL,
-													Source: "CVE",
-													RefID:  cveID,
-												})
-											}
-										}
-										return rs
-									}(),
-
-									CweIDs: func() []string {
-										var cs []string
-										for _, cwe := range v.Content.CWE {
-											cs = append(cs, cwe.CWE...)
-										}
-										return cs
-									}(),
-									Published: func() time.Time {
-										if a != nil && a.Content.Published != nil {
-											return *a.Content.Published
-										}
-										if v.Content.Modified != nil {
-											return *v.Content.Modified
-										}
-										return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-									}(),
-									LastModified: func() time.Time {
-										if a != nil && a.Content.Modified != nil {
-											return *a.Content.Modified
-										}
-										if v.Content.Modified != nil {
-											return *v.Content.Modified
-										}
-										return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-									}(),
-									Optional: cveContentOptional(family, rootID, sourceID),
-								},
-							},
-						}
-
-						svi := sourceVulnInfo{
-							sourceID: sourceID,
-							rootID:   rootID,
-							tag:      mostPreferredTag(family, v.Segments),
-							vulnInfo: models.VulnInfo{
-								CveID:       string(v.Content.ID),
-								Confidences: models.Confidences{models.OvalMatch},
-								DistroAdvisories: func() []models.DistroAdvisory {
-									if da != nil {
-										return []models.DistroAdvisory{*da}
-									}
-									return nil
-								}(),
-								CveContents: cc,
-							},
-						}
-						if base, found := m[rootID][v.Content.ID]; found {
-							svi = resolveSourceVulnInfo(family, base, svi)
-						}
-						m[rootID][v.Content.ID] = svi
-					}
+							return cn.Criterion.Version.FixStatus.Vendor
+						}(),
+						FixedIn:     fixedIn,
+						NotFixedYet: fixedIn == "",
+					},
+				})
+			}
+		case vcPackageTypes.PackageTypeCPE:
+			for _, index := range cn.Accepts.Version {
+				if len(scanned.CPE) <= index {
+					return nil, nil, false, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
 				}
 			}
+			cpes = append(cpes, string(*cn.Criterion.Version.Package.CPE))
+		default:
 		}
 	}
-
-	return m
+	return statuses, cpes, false, nil
 }
 
-type taggedAdvisory struct {
-	tag      segmentTypes.DetectionTag
-	advisory advisoryTypes.Advisory
-}
-
-func collectAdvisories(e ecosystemTypes.Ecosystem, family string, dres detectTypes.DetectResult) map[dataTypes.RootID]map[sourceTypes.SourceID]taggedAdvisory {
-	am := make(map[dataTypes.RootID]map[sourceTypes.SourceID]taggedAdvisory)
-	for _, detected := range dres.Detected {
-		for _, da := range detected.Advisories {
-			for sid, rm := range da.Contents {
+func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.VulnerabilityData) error {
+	for _, vd := range vds {
+		am := make(map[source]models.DistroAdvisories)
+		for _, vda := range vd.Advisories {
+			for sid, rm := range vda.Contents {
 				for rid, as := range rm {
-					if _, found := am[rid]; !found {
-						am[rid] = make(map[sourceTypes.SourceID]taggedAdvisory)
-					}
 					for _, a := range as {
-						if !includesEcosystem(a.Segments, e) {
-							continue
-						}
+						for _, segment := range a.Segments {
+							src := source{
+								RootID:   rid,
+								SourceID: sid,
+								Segment:  segment,
+							}
 
-						ta := taggedAdvisory{
-							tag:      mostPreferredTag(family, a.Segments),
-							advisory: a,
+							if _, ok := m[src]; !ok {
+								continue
+							}
+
+							am[src] = append(am[src], models.DistroAdvisory{
+								AdvisoryID: string(a.Content.ID),
+								Severity: func() string {
+									for _, s := range a.Content.Severity {
+										if s.Type == severityTypes.SeverityTypeVendor && s.Vendor != nil {
+											return *s.Vendor
+										}
+									}
+									return ""
+								}(),
+								Issued: func() time.Time {
+									if a.Content.Published != nil {
+										return *a.Content.Published
+									}
+									return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+								}(),
+								Updated: func() time.Time {
+									if a.Content.Modified != nil {
+										return *a.Content.Modified
+									}
+									return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+								}(),
+								Description: a.Content.Description,
+							})
 						}
-						base, found := am[rid][sid]
-						if found {
-							ta = resolveAdvisoryByTag(family, base, ta)
+					}
+				}
+			}
+		}
+
+		for _, vdv := range vd.Vulnerabilities {
+			for sid, rm := range vdv.Contents {
+				for rid, vs := range rm {
+					for _, v := range vs {
+						for _, segment := range v.Segments {
+							src := source{
+								RootID:   rid,
+								SourceID: sid,
+								Segment:  segment,
+							}
+
+							if _, ok := m[src]; !ok {
+								continue
+							}
+
+							if ignoreVulnerability(src.Segment.Ecosystem, v, am[src]) {
+								continue
+							}
+
+							vinfo, err := func() (models.VulnInfo, error) {
+								bs, err := json.Marshal([]source{src})
+								if err != nil {
+									return models.VulnInfo{}, xerrors.Errorf("Failed to marshal sources. err: %w", err)
+								}
+
+								fdas := filterDistroAdvisories(src.Segment.Ecosystem, am[src])
+								cctype := toCveContentType(src.Segment.Ecosystem, sid)
+								cvss2, cvss3, cvss40 := toCvss(v.Content.Severity)
+
+								var rs models.References
+								for _, r := range v.Content.References {
+									rs = append(rs, toReference(r.URL))
+								}
+								for _, da := range fdas {
+									ar, err := advisoryReference(src.Segment.Ecosystem, src.SourceID, da)
+									if err != nil {
+										return models.VulnInfo{}, xerrors.Errorf("Failed to get advisory reference. err: %w", err)
+									}
+									if !slices.ContainsFunc(rs, func(r models.Reference) bool {
+										return r.Link == ar.Link && r.Source == ar.Source && r.RefID == ar.RefID && slices.Equal(r.Tags, ar.Tags)
+									}) {
+										rs = append(rs, ar)
+									}
+								}
+
+								return models.VulnInfo{
+									CveID:            string(v.Content.ID),
+									Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID)},
+									DistroAdvisories: fdas,
+									CveContents: models.NewCveContents(models.CveContent{
+										Type:           cctype,
+										CveID:          string(v.Content.ID),
+										Title:          v.Content.Title,
+										Summary:        v.Content.Description,
+										Cvss2Score:     cvss2.BaseScore,
+										Cvss2Vector:    cvss2.Vector,
+										Cvss2Severity:  cvss2.NVDBaseSeverity,
+										Cvss3Score:     cvss3.BaseScore,
+										Cvss3Vector:    cvss3.Vector,
+										Cvss3Severity:  cvss3.BaseSeverity,
+										Cvss40Score:    cvss40.Score,
+										Cvss40Vector:   cvss40.Vector,
+										Cvss40Severity: cvss40.Severity,
+										SourceLink:     cveContentSourceLink(cctype, v),
+										References:     rs,
+										CweIDs: func() []string {
+											var cs []string
+											for _, cwe := range v.Content.CWE {
+												cs = append(cs, cwe.CWE...)
+											}
+											return cs
+										}(),
+										Published: func() time.Time {
+											if v.Content.Published != nil {
+												return *v.Content.Published
+											}
+											return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+										}(),
+										LastModified: func() time.Time {
+											if v.Content.Modified != nil {
+												return *v.Content.Modified
+											}
+											return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+										}(),
+										Optional: map[string]string{"vuls2-sources": string(bs)},
+									}),
+								}, nil
+							}()
+							if err != nil {
+								return xerrors.Errorf("Failed to create vuln info. err: %w", err)
+							}
+
+							base := m[src]
+							if base.vulninfos == nil {
+								base.vulninfos = make(models.VulnInfos)
+							}
+							base.vulninfos[vinfo.CveID] = vinfo
+							m[src] = base
 						}
-						am[rid][sid] = ta
 					}
 				}
 			}
 		}
 	}
-
-	return am
+	return nil
 }
 
-func toCvss(v vulnerabilityTypes.Vulnerability) (v2.CVSSv2, v31.CVSSv31, v40.CVSSv40) {
+func comparePack(a, b pack) (int, error) {
+	if a.ecosystem == b.ecosystem {
+		if r := compareSourceID(a.ecosystem, a.sourceID, b.sourceID); r != 0 {
+			return r, nil
+		}
+
+		maxTagFn := func(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, tags []rootTag) segmentTypes.DetectionTag {
+			rt := slices.MaxFunc(tags, func(a, b rootTag) int {
+				return compareTag(e, s, a.tag, b.tag)
+			})
+			return rt.tag
+		}
+
+		if r := compareTag(a.ecosystem, a.sourceID, maxTagFn(a.ecosystem, a.sourceID, a.rootTags), maxTagFn(b.ecosystem, b.sourceID, b.rootTags)); r != 0 {
+			return r, nil
+		}
+	}
+
+	r, err := comparePackStatus(a.packStatus, b.packStatus)
+	if err != nil {
+		return 0, xerrors.Errorf("Failed to compare pack status. err: %w", err)
+	}
+
+	return r, nil
+}
+
+func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
+	if a.CveID != b.CveID {
+		return models.VulnInfo{}, xerrors.Errorf("CVE IDs are different. a: %s, b: %s", a.CveID, b.CveID)
+	}
+
+	info := models.VulnInfo{
+		CveID: a.CveID,
+	}
+
+	for _, cc := range []models.Confidences{a.Confidences, b.Confidences} {
+		for _, c := range cc {
+			info.Confidences.AppendIfMissing(c)
+		}
+	}
+
+	am := make(map[string]models.DistroAdvisory)
+	for _, as := range []models.DistroAdvisories{a.DistroAdvisories, b.DistroAdvisories} {
+		for _, a := range as {
+			base, ok := am[a.AdvisoryID]
+			if ok {
+				if cmp.Or(
+					compareSeverity(base.Severity, a.Severity),
+					base.Issued.Compare(a.Issued),
+					base.Updated.Compare(a.Updated),
+				) < 0 {
+					base = a
+				}
+			} else {
+				base = a
+			}
+			am[a.AdvisoryID] = base
+		}
+	}
+	info.DistroAdvisories = slices.Collect(maps.Values(am))
+
+	ccm := make(map[models.CveContentType]models.CveContent)
+	for _, cciter := range []iter.Seq[[]models.CveContent]{maps.Values(a.CveContents), maps.Values(b.CveContents)} {
+		for cc := range cciter {
+			for _, c := range cc {
+				base, ok := ccm[c.Type]
+				if ok {
+					var src1 []source
+					if err := json.Unmarshal([]byte(base.Optional["vuls2-sources"]), &src1); err != nil {
+						return models.VulnInfo{}, xerrors.Errorf("Failed to unmarshal sources. err: %w", err)
+					}
+					var src2 []source
+					if err := json.Unmarshal([]byte(c.Optional["vuls2-sources"]), &src2); err != nil {
+						return models.VulnInfo{}, xerrors.Errorf("Failed to unmarshal sources. err: %w", err)
+					}
+
+					merged := models.CveContent{
+						Type:         base.Type,
+						CveID:        base.CveID,
+						Title:        base.Title,
+						Summary:      base.Summary,
+						SSVC:         base.SSVC,
+						SourceLink:   base.SourceLink,
+						Published:    base.Published,
+						LastModified: base.LastModified,
+						Optional:     base.Optional,
+					}
+
+					if compareSource(slices.MaxFunc(src1, compareSource), slices.MaxFunc(src2, compareSource)) < 0 {
+						merged = models.CveContent{
+							Type:         c.Type,
+							CveID:        c.CveID,
+							Title:        c.Title,
+							Summary:      c.Summary,
+							SSVC:         c.SSVC,
+							SourceLink:   c.SourceLink,
+							Published:    c.Published,
+							LastModified: c.LastModified,
+							Optional:     c.Optional,
+						}
+					}
+
+					switch cmp.Compare(base.Cvss40Score, c.Cvss40Score) {
+					case -1:
+						merged.Cvss40Score = c.Cvss40Score
+						merged.Cvss40Vector = c.Cvss40Vector
+						merged.Cvss40Severity = c.Cvss40Severity
+					default:
+						merged.Cvss40Score = base.Cvss40Score
+						merged.Cvss40Vector = base.Cvss40Vector
+						merged.Cvss40Severity = base.Cvss40Severity
+					}
+
+					switch cmp.Compare(base.Cvss3Score, c.Cvss3Score) {
+					case -1:
+						merged.Cvss3Score = c.Cvss3Score
+						merged.Cvss3Vector = c.Cvss3Vector
+						merged.Cvss3Severity = c.Cvss3Severity
+					default:
+						merged.Cvss3Score = base.Cvss3Score
+						merged.Cvss3Vector = base.Cvss3Vector
+						merged.Cvss3Severity = base.Cvss3Severity
+					}
+
+					switch cmp.Compare(base.Cvss2Score, c.Cvss2Score) {
+					case -1:
+						merged.Cvss2Score = c.Cvss2Score
+						merged.Cvss2Vector = c.Cvss2Vector
+						merged.Cvss2Severity = c.Cvss2Severity
+					default:
+						merged.Cvss2Score = base.Cvss2Score
+						merged.Cvss2Vector = base.Cvss2Vector
+						merged.Cvss2Severity = base.Cvss2Severity
+					}
+
+					for _, rs := range []models.References{base.References, c.References} {
+						for _, r := range rs {
+							if !slices.ContainsFunc(merged.References, func(e models.Reference) bool {
+								return r.Link == e.Link && r.Source == e.Source && r.RefID == e.RefID && slices.Equal(r.Tags, e.Tags)
+							}) {
+								merged.References = append(merged.References, r)
+							}
+						}
+					}
+
+					for _, cs := range [][]string{base.CweIDs, c.CweIDs} {
+						for _, c := range cs {
+							if !slices.Contains(merged.CweIDs, c) {
+								merged.CweIDs = append(merged.CweIDs, c)
+							}
+						}
+					}
+
+					srcs := append(src1, src2...)
+					slices.SortFunc(srcs, compareSource)
+					bs, err := json.Marshal(srcs)
+					if err != nil {
+						return models.VulnInfo{}, xerrors.Errorf("Failed to marshal sources. err: %w", err)
+					}
+					merged.Optional["vuls2-sources"] = string(bs)
+
+					base = merged
+				} else {
+					base = c
+				}
+				ccm[c.Type] = base
+			}
+		}
+	}
+	ccs := make(models.CveContents)
+	for cctype, cc := range ccm {
+		ccs[cctype] = []models.CveContent{cc}
+	}
+	info.CveContents = ccs
+
+	return info, nil
+}
+
+func compareSeverity(a, b string) int {
+	rank := func(severity string) int {
+		switch strings.ToUpper(severity) {
+		case "CRITICAL":
+			return 4
+		case "IMPORTANT", "HIGH":
+			return 3
+		case "MODERATE", "MEDIUM":
+			return 2
+		case "LOW", "NEGLIGIBLE":
+			return 1
+		default:
+			return 0
+		}
+	}
+
+	return cmp.Compare(rank(a), rank(b))
+}
+
+func toCvss(ss []severityTypes.Severity) (v2.CVSSv2, v31.CVSSv31, v40.CVSSv40) {
 	var (
 		cvss2 v2.CVSSv2
 		cvss3 v31.CVSSv31
 		cvss4 v40.CVSSv40
 	)
 
-	for _, s := range v.Content.Severity {
+	for _, s := range ss {
 		switch s.Type {
 		case severityTypes.SeverityTypeCVSSv2:
 			if cvss2.Vector == "" && s.CVSSv2 != nil {
@@ -603,7 +886,7 @@ func toCvss(v vulnerabilityTypes.Vulnerability) (v2.CVSSv2, v31.CVSSv31, v40.CVS
 				}
 			}
 		case severityTypes.SeverityTypeCVSSv31:
-			if !strings.HasPrefix(s.CVSSv31.Vector, "CVSS:3.1/") && s.CVSSv31 != nil {
+			if !strings.HasPrefix(cvss3.Vector, "CVSS:3.1/") && s.CVSSv31 != nil {
 				cvss3 = *s.CVSSv31
 			}
 		case severityTypes.SeverityTypeCVSSv40:
@@ -617,39 +900,84 @@ func toCvss(v vulnerabilityTypes.Vulnerability) (v2.CVSSv2, v31.CVSSv31, v40.CVS
 	return cvss2, cvss3, cvss4
 }
 
-func toDistoAdvisory(a *advisoryTypes.Advisory) *models.DistroAdvisory {
-	if a == nil {
-		return nil
-	}
+func toReference(ref string) models.Reference {
+	switch {
+	case strings.HasPrefix(ref, "https://www.cve.org/CVERecord?id="):
+		return models.Reference{
+			Link:   ref,
+			Source: "CVE",
+			RefID:  strings.TrimPrefix(ref, "https://www.cve.org/CVERecord?id="),
+		}
+	case strings.HasPrefix(ref, "https://cve.mitre.org/cgi-bin/cvename.cgi?name="):
+		return models.Reference{
+			Link:   ref,
+			Source: "MITRE",
+			RefID:  strings.TrimPrefix(ref, "https://cve.mitre.org/cgi-bin/cvename.cgi?name="),
+		}
+	case strings.HasPrefix(ref, "https://nvd.nist.gov/vuln/detail/"):
+		return models.Reference{
+			Link:   ref,
+			Source: "NVD",
+			RefID:  strings.TrimPrefix(ref, "https://nvd.nist.gov/vuln/detail/"),
+		}
+	case strings.HasPrefix(ref, "https://access.redhat.com/"), strings.HasPrefix(ref, "https://bugzilla.redhat.com/"):
+		switch {
+		case strings.HasPrefix(ref, "https://access.redhat.com/security/cve/"):
+			return models.Reference{
+				Link:   ref,
+				Source: "REDHAT",
+				RefID:  strings.TrimPrefix(ref, "https://access.redhat.com/security/cve/"),
+			}
+		case strings.HasPrefix(ref, "https://access.redhat.com/errata/"):
+			return models.Reference{
+				Link:   ref,
+				Source: "REDHAT",
+				RefID:  strings.TrimPrefix(ref, "https://access.redhat.com/errata/"),
+			}
+		case strings.HasPrefix(ref, "https://bugzilla.redhat.com/show_bug.cgi?id="):
+			return models.Reference{
+				Link:   ref,
+				Source: "REDHAT",
+				RefID:  strings.TrimPrefix(ref, "https://bugzilla.redhat.com/show_bug.cgi?id="),
+			}
+		default:
+			return models.Reference{
+				Link:   ref,
+				Source: "REDHAT",
+			}
+		}
+	case strings.HasPrefix(ref, "https://errata.almalinux.org/"):
+		u, err := url.Parse(ref)
+		if err != nil {
+			return models.Reference{
+				Link:   ref,
+				Source: "ALMA",
+			}
+		}
 
-	return &models.DistroAdvisory{
-		AdvisoryID: string(a.Content.ID),
-		Severity: func() string {
-			for _, s := range a.Content.Severity {
-				if s.Type == severityTypes.SeverityTypeVendor && s.Vendor != nil {
-					return *s.Vendor
-				}
+		ss := strings.Split(strings.TrimSuffix(path.Base(u.Path), ".html"), "-")
+		if len(ss) != 3 {
+			return models.Reference{
+				Link:   ref,
+				Source: "ALMA",
 			}
-			return ""
-		}(),
-		Issued: func() time.Time {
-			if a.Content.Published != nil {
-				return *a.Content.Published
-			}
-			return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-		}(),
-		Updated: func() time.Time {
-			if a.Content.Modified != nil {
-				return *a.Content.Modified
-			}
-			return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-		}(),
-		Description: a.Content.Description,
-	}
-}
+		}
 
-func includesEcosystem(s []segmentTypes.Segment, e ecosystemTypes.Ecosystem) bool {
-	return slices.ContainsFunc(s, func(s segmentTypes.Segment) bool {
-		return s.Ecosystem == e
-	})
+		return models.Reference{
+			Link:   ref,
+			Source: "ALMA",
+			RefID:  fmt.Sprintf("%s-%s:%s", ss[0], ss[1], ss[2]),
+		}
+	case strings.HasPrefix(ref, "https://errata.build.resf.org/"):
+		return models.Reference{
+			Link:   ref,
+			Source: "ROCKY",
+			RefID:  strings.TrimPrefix(ref, "https://errata.build.resf.org/"),
+		}
+	default:
+		return models.Reference{
+			Link:   ref,
+			Source: "MISC",
+		}
+	}
 }

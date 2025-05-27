@@ -11,6 +11,9 @@ linters:
     - revive
     - staticcheck
   settings:
+    misspell: # https://golangci-lint.run/usage/linters/#misspell
+      ignore-rules:
+        - "Criterias"
     revive: # https://golangci-lint.run/usage/linters/#revive
       rules:
         - name: blank-imports

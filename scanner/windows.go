@@ -2,9 +2,11 @@ package scanner
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"maps"
 	"net"
+	"os"
 	"regexp"
 	"slices"
 	"strconv"
@@ -16,6 +18,7 @@ import (
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
+	ufilepath "github.com/future-architect/vuls/scanner/utils/filepath/windows"
 )
 
 // inherit OsTypeInterface
@@ -4889,4 +4892,187 @@ func (w *windows) detectRunningOnAws() (bool, string, error) {
 	}
 
 	return false, "", xerrors.Errorf("Failed to Invoke-WebRequest or curl.exe to AWS instance metadata on %s. container: %s", w.ServerInfo.ServerName, w.ServerInfo.Container.Name)
+}
+
+func (w *windows) scanLibraries() (err error) {
+	if len(w.LibraryScanners) > 0 {
+		return nil
+	}
+
+	// library scan for servers need lockfiles
+	if len(w.ServerInfo.Lockfiles) == 0 && !w.ServerInfo.FindLock {
+		return nil
+	}
+
+	w.log.Info("Scanning Language-specific Packages...")
+
+	trivyLoggerInit()
+
+	detectFiles := w.ServerInfo.Lockfiles
+
+	priv := noSudo
+	if w.getServerInfo().Mode.IsFastRoot() || w.getServerInfo().Mode.IsDeep() {
+		priv = sudo
+	}
+
+	// auto detect lockfile
+	if w.ServerInfo.FindLock {
+		cmd := func() string {
+			switch w.shell {
+			case "powershell":
+				dir := func() string {
+					if len(w.ServerInfo.FindLockDirs) == 0 {
+						w.log.Infof("It's recommended to specify FindLockDirs in config.toml. If FindLockDirs is not specified, all directories under C:\\ will be searched, which may increase CPU load")
+						return "C:\\"
+					}
+
+					ss := make([]string, 0, len(w.ServerInfo.FindLockDirs))
+					for _, d := range w.ServerInfo.FindLockDirs {
+						ss = append(ss, fmt.Sprintf("\"%s\"", d))
+					}
+					return strings.Join(ss, ",")
+				}()
+
+				findopt := func() string {
+					ss := make([]string, 0, len(models.FindLockFiles))
+					for _, filename := range models.FindLockFiles {
+						ss = append(ss, fmt.Sprintf("\"%s\"", filename))
+					}
+					return strings.Join(ss, ", ")
+				}()
+
+				w.log.Infof("Finding files under %s", dir)
+
+				// Get-ChildItem -Path C:\ -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -in @("package-lock.json", "yarn.lock") } | Select-Object -ExpandProperty FullName
+				return fmt.Sprintf("Get-ChildItem -Path %s -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -in @(%s) } | Select-Object -ExpandProperty FullName", dir, findopt)
+			default:
+				dir := func() string {
+					if len(w.ServerInfo.FindLockDirs) == 0 {
+						w.log.Infof("It's recommended to specify FindLockDirs in config.toml. If FindLockDirs is not specified, all directories under C:\\ will be searched, which may increase CPU load")
+						return "C:\\"
+					}
+
+					ss := make([]string, 0, len(w.ServerInfo.FindLockDirs))
+					for _, d := range w.ServerInfo.FindLockDirs {
+						if strings.HasSuffix(d, "\\") {
+							d = fmt.Sprintf("%s\\", d)
+						}
+						ss = append(ss, fmt.Sprintf("\\\"%s\\\"", d))
+					}
+					return strings.Join(ss, ",")
+				}()
+
+				findopt := func() string {
+					ss := make([]string, 0, len(models.FindLockFiles))
+					for _, filename := range models.FindLockFiles {
+						ss = append(ss, fmt.Sprintf("\\\"%s\\\"", filename))
+					}
+					return strings.Join(ss, ", ")
+				}()
+
+				w.log.Infof("Finding files under %s", dir)
+
+				// powershell.exe -NoProfile -NonInteractive "Get-ChildItem -Path C:\ -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -in @(\"package-lock.json\", \"yarn.lock\") } | Select-Object -ExpandProperty FullName"
+				return fmt.Sprintf("powershell.exe -NoProfile -NonInteractive \"%s\"", fmt.Sprintf("Get-ChildItem -Path %s -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -in @(%s) } | Select-Object -ExpandProperty FullName", dir, findopt))
+			}
+		}()
+		r := w.exec(cmd, priv)
+		if r.ExitStatus != 0 && r.ExitStatus != 1 {
+			return xerrors.Errorf("Failed to find lock files: %s", r)
+		}
+
+		scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
+		for scanner.Scan() {
+			detectFiles = append(detectFiles, scanner.Text())
+		}
+		if err := scanner.Err(); err != nil {
+			return xerrors.Errorf("Failed to reading find results. err: %w", err)
+		}
+	}
+
+	found := make(map[string]bool)
+	for _, path := range detectFiles {
+		if path == "" {
+			continue
+		}
+
+		abspath, err := func() (string, error) {
+			if ufilepath.IsAbs(path) {
+				return ufilepath.Clean(path), nil
+			}
+
+			r := w.exec(w.translateCmd("Get-Location | Select-object -ExpandProperty Path"), noSudo)
+			if !r.isSuccess() {
+				return "", xerrors.Errorf("Failed to get current directory. err: %w", err)
+			}
+
+			return ufilepath.Join(strings.TrimSuffix(strings.TrimSuffix(r.Stdout, "\n"), "\r"), path), nil
+		}()
+		if err != nil {
+			return xerrors.Errorf("Failed to abs the lockfile. filepath: %s, err: %w", path, err)
+		}
+
+		if _, ok := found[abspath]; ok {
+			continue
+		}
+		found[abspath] = true
+
+		w.log.Debugf("Analyzing file: %s", abspath)
+		filemode, contents, err := func() (os.FileMode, []byte, error) {
+			if isLocalExec(w.getServerInfo().Port, w.getServerInfo().Host) {
+				fileinfo, err := os.Stat(abspath)
+				if err != nil {
+					return os.FileMode(0000), nil, xerrors.Errorf("Failed to get target file info. filepath: %s, err: %w", abspath, err)
+				}
+				filemode := fileinfo.Mode().Perm()
+
+				contents, err := os.ReadFile(abspath)
+				if err != nil {
+					return os.FileMode(0000), nil, xerrors.Errorf("Failed to read target file contents. filepath: %s, err: %w", abspath, err)
+				}
+
+				return filemode, contents, nil
+			}
+
+			filemode := os.FileMode(0666)
+
+			r := w.exec(w.translateCmd(fmt.Sprintf("Get-Content %s", abspath)), priv)
+			if !r.isSuccess() {
+				return os.FileMode(0000), nil, xerrors.Errorf("Failed to read target file contents. filepath: %s, err: %w", abspath, err)
+			}
+			contents := []byte(r.Stdout)
+
+			return filemode, contents, nil
+		}()
+		if err != nil {
+			w.log.Warn(err)
+			continue
+		}
+
+		trivypath := w.cleanPath(abspath)
+		libraryScanners, err := AnalyzeLibrary(context.Background(), trivypath, contents, filemode, w.ServerInfo.Mode.IsOffline())
+		if err != nil {
+			return xerrors.Errorf("Failed to analyze library. err: %w, filepath: %s", err, trivypath)
+		}
+		for _, libscanner := range libraryScanners {
+			libscanner.LockfilePath = abspath
+			w.LibraryScanners = append(w.LibraryScanners, libscanner)
+		}
+	}
+
+	return nil
+}
+
+// https://github.com/aquasecurity/trivy/blob/35e88890c3c201b3eb11f95376172e57bf44df4b/pkg/mapfs/fs.go#L272-L283
+func (w *windows) cleanPath(path string) string {
+	// Convert the volume name like 'C:' into dir like 'C\'
+	if vol := ufilepath.VolumeName(path); vol != "" {
+		newVol := strings.TrimSuffix(vol, ":")
+		newVol = fmt.Sprintf("%s%c", newVol, ufilepath.Separator)
+		path = strings.Replace(path, vol, newVol, 1)
+	}
+	path = ufilepath.Clean(path)
+	path = ufilepath.ToSlash(path)
+	path = strings.TrimLeft(path, "/") // Remove the leading slash
+	return path
 }
