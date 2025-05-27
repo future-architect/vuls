@@ -27,10 +27,10 @@ jobs:
         uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@fcd3152d8ad392d0e9c14d3f0de40f0a88b8ca0e
+        uses: docker/setup-qemu-action@737ba1e397ec2caff0d098f75e1136f9a926dc0a
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e600775e527acba2317260cadb64b7e19efd5362
+        uses: docker/setup-buildx-action@3f1544eb9eff0b4d4d279b33f704a06fcf8d0e43
 
       - name: vuls/vuls image meta
         id: oss-meta
@@ -55,7 +55,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: OSS image build and push
-        uses: docker/build-push-action@14487ce63c7a62a4a324b0bfb37086795e31c6c1
+        uses: docker/build-push-action@1dc73863535b631f98b2378be8619f83b136f4a0
         with:
           context: .
           file: ./Dockerfile
@@ -68,7 +68,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
 
       - name: FutureVuls image build and push
-        uses: docker/build-push-action@14487ce63c7a62a4a324b0bfb37086795e31c6c1
+        uses: docker/build-push-action@1dc73863535b631f98b2378be8619f83b136f4a0
         with:
           context: .
           file: ./contrib/Dockerfile
