@@ -83,28 +83,31 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 	for _, r := range rs {
 		key := r.ReportKeyName()
 		if w.FormatJSON {
-			k := key + ".json"
 			var b []byte
 			if b, err = json.Marshal(r); err != nil {
 				return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
 			}
-			if err := w.putObject(svc, k, b, w.Gzip); err != nil {
+			if err := w.putObject(svc, key+".json", b, w.Gzip); err != nil {
 				return err
 			}
 		}
 
 		if w.FormatList {
-			k := key + "_short.txt"
-			text := formatList(r)
-			if err := w.putObject(svc, k, []byte(text), w.Gzip); err != nil {
+			text, err := formatList(r)
+			if err != nil {
+				return xerrors.Errorf("Failed to format list: %w", err)
+			}
+			if err := w.putObject(svc, key+"_short.txt", []byte(text), w.Gzip); err != nil {
 				return err
 			}
 		}
 
 		if w.FormatFullText {
-			k := key + "_full.txt"
-			text := formatFullPlainText(r)
-			if err := w.putObject(svc, k, []byte(text), w.Gzip); err != nil {
+			text, err := formatFullPlainText(r)
+			if err != nil {
+				return xerrors.Errorf("Failed to format full text: %w", err)
+			}
+			if err := w.putObject(svc, key+"_full.txt", []byte(text), w.Gzip); err != nil {
 				return err
 			}
 		}

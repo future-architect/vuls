@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -21,6 +22,9 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/gosuri/uitable"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/renderer"
+	"github.com/olekukonko/tablewriter/tw"
+	"golang.org/x/term"
 	"golang.org/x/xerrors"
 )
 
@@ -230,12 +234,12 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 		warnMsgs, "\n\n"))
 }
 
-func formatList(r models.ScanResult) string {
+func formatList(r models.ScanResult) (string, error) {
 	header := r.FormatTextReportHeader()
 	if len(r.Errors) != 0 {
 		return fmt.Sprintf(
 			"%s\nError: Use configtest subcommand or scan with --debug to view the details\n%s\n\n",
-			header, r.Errors)
+			header, r.Errors), nil
 	}
 	if len(r.Warnings) != 0 {
 		header += fmt.Sprintf(
@@ -248,7 +252,7 @@ func formatList(r models.ScanResult) string {
 %s
 No CVE-IDs are found in updatable packages.
 %s
-`, header, r.FormatUpdatablePkgsSummary())
+`, header, r.FormatUpdatablePkgsSummary()), nil
 	}
 
 	data := [][]string{}
@@ -302,8 +306,16 @@ No CVE-IDs are found in updatable packages.
 	}
 
 	b := bytes.Buffer{}
-	table := tablewriter.NewWriter(&b)
-	table.SetHeader([]string{
+	table := tablewriter.NewTable(&b,
+		tablewriter.WithRenderer(renderer.NewBlueprint(tw.Rendition{
+			Symbols: tw.NewSymbols(tw.StyleASCII),
+		})),
+		tablewriter.WithMaxWidth(terminalWidth()),
+		tablewriter.WithHeaderAutoFormat(tw.Off),
+		tablewriter.WithRowAutoFormat(tw.Off),
+	)
+
+	table.Header([]string{
 		"CVE-ID",
 		"CVSS",
 		"Attack",
@@ -316,19 +328,21 @@ No CVE-IDs are found in updatable packages.
 		// "NVD",
 		"Packages",
 	})
-	table.SetBorder(true)
-	table.SetRowLine(true)
-	table.AppendBulk(data)
-	table.Render()
-	return fmt.Sprintf("%s\n%s", header, b.String())
+	if err := table.Bulk(data); err != nil {
+		return "", xerrors.Errorf("Failed to bulk to table: %w", err)
+	}
+	if err := table.Render(); err != nil {
+		return "", xerrors.Errorf("Failed to render table: %w", err)
+	}
+	return fmt.Sprintf("%s\n%s", header, b.String()), nil
 }
 
-func formatFullPlainText(r models.ScanResult) (lines string) {
+func formatFullPlainText(r models.ScanResult) (string, error) {
 	header := r.FormatTextReportHeader()
 	if len(r.Errors) != 0 {
 		return fmt.Sprintf(
 			"%s\nError: Use configtest subcommand or scan with --debug to view the details\n%s\n\n",
-			header, r.Errors)
+			header, r.Errors), nil
 	}
 
 	if len(r.Warnings) != 0 {
@@ -342,10 +356,10 @@ func formatFullPlainText(r models.ScanResult) (lines string) {
 %s
 No CVE-IDs are found in updatable packages.
 %s
-`, header, r.FormatUpdatablePkgsSummary())
+`, header, r.FormatUpdatablePkgsSummary()), nil
 	}
 
-	lines = header + "\n"
+	lines := header + "\n"
 
 	for _, vuln := range r.ScannedCves.ToSortedSlice() {
 		data := [][]string{}
@@ -609,19 +623,56 @@ No CVE-IDs are found in updatable packages.
 		// }
 
 		b := bytes.Buffer{}
-		table := tablewriter.NewWriter(&b)
-		table.SetColWidth(80)
-		table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-		table.SetHeader([]string{
+
+		table := tablewriter.NewTable(&b,
+			tablewriter.WithMaxWidth(terminalWidth()),
+			tablewriter.WithRenderer(renderer.NewBlueprint(tw.Rendition{
+				Symbols: tw.NewSymbols(tw.StyleASCII),
+			})),
+			tablewriter.WithHeaderAutoFormat(tw.Off),
+			tablewriter.WithRowAutoFormat(tw.Off),
+		)
+		table.Header([]string{
 			vuln.CveIDDiffFormat(),
 			vuln.PatchStatus(r.Packages),
 		})
-		table.SetBorder(true)
-		table.AppendBulk(data)
-		table.Render()
+		if err := table.Bulk(data); err != nil {
+			return "", xerrors.Errorf("Failed to bulk to table: %w", err)
+		}
+		if err := table.Render(); err != nil {
+			return "", xerrors.Errorf("Failed to render table: %w", err)
+		}
+
 		lines += b.String() + "\n"
 	}
-	return
+	return lines, nil
+}
+
+func terminalWidth() int {
+	if term.IsTerminal(int(os.Stdout.Fd())) {
+		width, _, err := term.GetSize(int(os.Stdout.Fd()))
+		if err == nil {
+			return width
+		}
+	}
+
+	if term.IsTerminal(int(os.Stderr.Fd())) {
+		width, _, err := term.GetSize(int(os.Stderr.Fd()))
+		if err == nil {
+			return width
+		}
+	}
+
+	// Stdout/stderr do not work, fallback to environment variable.
+	colsStr := os.Getenv("COLUMNS")
+	if colsStr != "" {
+		width, err := strconv.Atoi(colsStr)
+		if err == nil && width > 0 {
+			return width
+		}
+	}
+
+	return 80
 }
 
 func formatCsvList(r models.ScanResult, path string) error {
@@ -661,15 +712,6 @@ func formatCsvList(r models.ScanResult, path string) error {
 		return xerrors.Errorf("Failed to write to file: %s, err: %w", path, err)
 	}
 	return nil
-}
-
-func cweURL(cweID string) string {
-	return fmt.Sprintf("https://cwe.mitre.org/data/definitions/%s.html",
-		strings.TrimPrefix(cweID, "CWE-"))
-}
-
-func cweJvnURL(cweID string) string {
-	return fmt.Sprintf("http://jvndb.jvn.jp/ja/cwe/%s.html", cweID)
 }
 
 func diff(curResults, preResults models.ScanResults, isPlus, isMinus bool) (diffed models.ScanResults) {

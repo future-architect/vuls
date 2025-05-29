@@ -31,7 +31,11 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 	m := map[string]int{}
 	for _, r := range rs {
 		if w.FormatOneEMail {
-			message += formatFullPlainText(r) + "\r\n\r\n"
+			text, err := formatFullPlainText(r)
+			if err != nil {
+				return xerrors.Errorf("Failed to format full plain text: %w", err)
+			}
+			message += text + "\r\n\r\n"
 			mm := r.ScannedCves.CountGroupBySeverity()
 			keys := []string{"Critical", "High", "Medium", "Low", "Unknown"}
 			for _, k := range keys {
@@ -49,9 +53,15 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 					r.ScannedCves.FormatCveSummary())
 			}
 			if w.FormatList {
-				message = formatList(r)
+				message, err = formatList(r)
+				if err != nil {
+					return xerrors.Errorf("Failed to format list: %w", err)
+				}
 			} else {
-				message = formatFullPlainText(r)
+				message, err = formatFullPlainText(r)
+				if err != nil {
+					return xerrors.Errorf("Failed to format full plain text: %w", err)
+				}
 			}
 			if w.FormatOneLineText {
 				message = fmt.Sprintf("One Line Summary\r\n================\r\n%s", formatOneLineSummary(r))
