@@ -329,10 +329,10 @@ No CVE-IDs are found in updatable packages.
 		"Packages",
 	})
 	if err := table.Bulk(data); err != nil {
-		return "", xerrors.Errorf("Failed to bulk to table: %w", err)
+		return "", xerrors.Errorf("Failed to bulk to table. err: %w", err)
 	}
 	if err := table.Render(); err != nil {
-		return "", xerrors.Errorf("Failed to render table: %w", err)
+		return "", xerrors.Errorf("Failed to render table. err: %w", err)
 	}
 	return fmt.Sprintf("%s\n%s", header, b.String()), nil
 }
@@ -637,10 +637,10 @@ No CVE-IDs are found in updatable packages.
 			vuln.PatchStatus(r.Packages),
 		})
 		if err := table.Bulk(data); err != nil {
-			return "", xerrors.Errorf("Failed to bulk to table: %w", err)
+			return "", xerrors.Errorf("Failed to bulk to table. err: %w", err)
 		}
 		if err := table.Render(); err != nil {
-			return "", xerrors.Errorf("Failed to render table: %w", err)
+			return "", xerrors.Errorf("Failed to render table. err: %w", err)
 		}
 
 		lines += b.String() + "\n"

@@ -33,7 +33,7 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 		if w.FormatOneEMail {
 			text, err := formatFullPlainText(r)
 			if err != nil {
-				return xerrors.Errorf("Failed to format full plain text: %w", err)
+				return xerrors.Errorf("Failed to format full plain text. err: %w", err)
 			}
 			message += text + "\r\n\r\n"
 			mm := r.ScannedCves.CountGroupBySeverity()
@@ -55,12 +55,12 @@ func (w EMailWriter) Write(rs ...models.ScanResult) (err error) {
 			if w.FormatList {
 				message, err = formatList(r)
 				if err != nil {
-					return xerrors.Errorf("Failed to format list: %w", err)
+					return xerrors.Errorf("Failed to format list. err: %w", err)
 				}
 			} else {
 				message, err = formatFullPlainText(r)
 				if err != nil {
-					return xerrors.Errorf("Failed to format full plain text: %w", err)
+					return xerrors.Errorf("Failed to format full plain text. err: %w", err)
 				}
 			}
 			if w.FormatOneLineText {
