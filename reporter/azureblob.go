@@ -58,17 +58,21 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 
 		if w.FormatList {
-			k := key + "_short.txt"
-			b := []byte(formatList(r))
-			if err := w.createBlockBlob(cli, k, b, w.Gzip); err != nil {
+			text, err := formatList(r)
+			if err != nil {
+				return xerrors.Errorf("Failed to format list. err: %w", err)
+			}
+			if err := w.createBlockBlob(cli, key+"_short.txt", []byte(text), w.Gzip); err != nil {
 				return err
 			}
 		}
 
 		if w.FormatFullText {
-			k := key + "_full.txt"
-			b := []byte(formatFullPlainText(r))
-			if err := w.createBlockBlob(cli, k, b, w.Gzip); err != nil {
+			text, err := formatFullPlainText(r)
+			if err != nil {
+				return xerrors.Errorf("Failed to format full text. err: %w", err)
+			}
+			if err := w.createBlockBlob(cli, key+"_full.txt", []byte(text), w.Gzip); err != nil {
 				return err
 			}
 		}

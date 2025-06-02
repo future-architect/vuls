@@ -63,10 +63,12 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 			if w.DiffPlus || w.DiffMinus {
 				p = path + "_short_diff.txt"
 			}
-			if err := w.writeFile(
-				p, []byte(formatList(r)), 0600); err != nil {
-				return xerrors.Errorf(
-					"Failed to write text files. path: %s, err: %w", p, err)
+			text, err := formatList(r)
+			if err != nil {
+				return xerrors.Errorf("Failed to format list: %w", err)
+			}
+			if err := w.writeFile(p, []byte(text), 0600); err != nil {
+				return xerrors.Errorf("Failed to write text files. path: %s, err: %w", p, err)
 			}
 		}
 
@@ -75,11 +77,12 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 			if w.DiffPlus || w.DiffMinus {
 				p = path + "_full_diff.txt"
 			}
-
-			if err := w.writeFile(
-				p, []byte(formatFullPlainText(r)), 0600); err != nil {
-				return xerrors.Errorf(
-					"Failed to write text files. path: %s, err: %w", p, err)
+			text, err := formatFullPlainText(r)
+			if err != nil {
+				return xerrors.Errorf("Failed to format full text: %w", err)
+			}
+			if err := w.writeFile(p, []byte(text), 0600); err != nil {
+				return xerrors.Errorf("Failed to write text files. path: %s, err: %w", p, err)
 			}
 		}
 
