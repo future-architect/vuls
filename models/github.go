@@ -51,6 +51,8 @@ func (m DependencyGraphManifest) Ecosystem() string {
 		return "yarn" // JavaScript
 	case strings.HasSuffix(m.Filename, "pnpm-lock.yaml"):
 		return "pnpm" // JavaScript
+	case strings.HasSuffix(m.Filename, "bun.lock"):
+		return "bun" // JavaScript
 	case strings.HasSuffix(m.Filename, "requirements.txt"),
 		strings.HasSuffix(m.Filename, "requirements-dev.txt"),
 		strings.HasSuffix(m.Filename, "setup.py"):

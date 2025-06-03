@@ -126,7 +126,7 @@ func ghEcosystemToPurlType(t string) string {
 		return packageurl.TypeGolang
 	case "pom", "gradle":
 		return packageurl.TypeMaven
-	case "npm", "yarn", "pnpm":
+	case "npm", "yarn", "pnpm", "bun":
 		return packageurl.TypeNPM
 	case "nuget":
 		return packageurl.TypeNuget
