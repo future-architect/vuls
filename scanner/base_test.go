@@ -9,6 +9,7 @@ import (
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/golang/binary"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/golang/mod"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/pom"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/bun"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/npm"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pnpm"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/yarn"

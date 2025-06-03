@@ -95,7 +95,7 @@ func purlType(t ftypes.LangType) string {
 		return packageurl.TypePyPi
 	case ftypes.GoBinary, ftypes.GoModule:
 		return packageurl.TypeGolang
-	case ftypes.Npm, ftypes.NodePkg, ftypes.Yarn, ftypes.Pnpm:
+	case ftypes.Npm, ftypes.NodePkg, ftypes.Yarn, ftypes.Pnpm, ftypes.Bun:
 		return packageurl.TypeNPM
 	case ftypes.Cocoapods:
 		return packageurl.TypeCocoapods
@@ -126,7 +126,7 @@ func ghEcosystemToPurlType(t string) string {
 		return packageurl.TypeGolang
 	case "pom", "gradle":
 		return packageurl.TypeMaven
-	case "npm", "yarn", "pnpm":
+	case "npm", "yarn", "pnpm", "bun":
 		return packageurl.TypeNPM
 	case "nuget":
 		return packageurl.TypeNuget
