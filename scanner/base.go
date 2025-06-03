@@ -47,6 +47,7 @@ import (
 	// Julia is supported for SBOM, not for vulnerability scanning
 	// https://github.com/aquasecurity/trivy/blob/v0.52.0/pkg/detector/library/driver.go#L84-L86
 	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/julia/pkg"
+	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/bun"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/npm"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pnpm"
 	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/yarn"

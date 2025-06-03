@@ -57,7 +57,7 @@ var FindLockFiles = []string{
 	// elixir/mix
 	ftypes.MixLock,
 	// node
-	ftypes.NpmPkgLock, ftypes.YarnLock, ftypes.PnpmLock,
+	ftypes.NpmPkgLock, ftypes.YarnLock, ftypes.PnpmLock, ftypes.BunLock,
 	// ruby
 	ftypes.GemfileLock, "*.gemspec",
 	// rust
@@ -91,7 +91,7 @@ func (s LibraryScanner) GetLibraryKey() string {
 		return "gomod"
 	case ftypes.Jar, ftypes.Pom, ftypes.Gradle:
 		return "java"
-	case ftypes.Npm, ftypes.Yarn, ftypes.Pnpm, ftypes.NodePkg, ftypes.JavaScript:
+	case ftypes.Npm, ftypes.Yarn, ftypes.Pnpm, ftypes.NodePkg, ftypes.JavaScript, ftypes.Bun:
 		return "node"
 	case ftypes.NuGet, ftypes.DotNetCore:
 		return ".net"
