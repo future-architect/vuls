@@ -60,15 +60,19 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			},
 			"7": {
 				StandardSupportUntil: time.Date(2024, 6, 30, 23, 59, 59, 0, time.UTC),
-				ExtendedSupportUntil: time.Date(2026, 6, 30, 23, 59, 59, 0, time.UTC),
+				ExtendedSupportUntil: time.Date(2028, 6, 30, 23, 59, 59, 0, time.UTC),
 			},
 			"8": {
 				StandardSupportUntil: time.Date(2029, 5, 31, 23, 59, 59, 0, time.UTC),
-				ExtendedSupportUntil: time.Date(2031, 5, 31, 23, 59, 59, 0, time.UTC),
+				ExtendedSupportUntil: time.Date(2032, 5, 31, 23, 59, 59, 0, time.UTC),
 			},
 			"9": {
 				StandardSupportUntil: time.Date(2032, 5, 31, 23, 59, 59, 0, time.UTC),
-				ExtendedSupportUntil: time.Date(2034, 5, 31, 23, 59, 59, 0, time.UTC),
+				ExtendedSupportUntil: time.Date(2035, 5, 31, 23, 59, 59, 0, time.UTC),
+			},
+			"10": {
+				StandardSupportUntil: time.Date(2035, 5, 31, 23, 59, 59, 0, time.UTC),
+				ExtendedSupportUntil: time.Date(2038, 5, 31, 23, 59, 59, 0, time.UTC),
 			},
 		}[major(release)]
 	case constant.CentOS:
