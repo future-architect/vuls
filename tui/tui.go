@@ -748,6 +748,14 @@ func setChangelogLayout(g *gocui.Gui) error {
 					lines = append(lines, fmt.Sprintf("  * PID: %s %s Port: %s", p.PID, p.Name, ports))
 				}
 			}
+
+			for _, snap := range currentScanResult.Snaps {
+				if snap.Name == affected.Name {
+					line := fmt.Sprintf("[snap] %s-%s", snap.Name, snap.Version)
+					lines = append(lines, line)
+					break
+				}
+			}
 		}
 		sort.Strings(vinfo.CpeURIs)
 		for _, uri := range vinfo.CpeURIs {

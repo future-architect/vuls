@@ -49,6 +49,7 @@ type ScanResult struct {
 	RunningKernel     Kernel                   `json:"runningKernel"`
 	Packages          Packages                 `json:"packages"`
 	SrcPackages       SrcPackages              `json:",omitempty"`
+	Snaps             Snaps                    `json:"snaps"`
 	EnabledDnfModules []string                 `json:"enabledDnfModules,omitempty"` // for dnf modules
 	WordPressPackages WordPressPackages        `json:",omitempty"`
 	GitHubManifests   DependencyGraphManifests `json:"gitHubManifests,omitempty"`
@@ -228,6 +229,11 @@ func (r ScanResult) FormatUpdatablePkgsSummary() string {
 	return fmt.Sprintf("%d installed, %d updatable",
 		len(r.Packages),
 		nUpdatable)
+}
+
+// FormatUpdatableSnapSummary returns a summary of updatable Snap packages
+func (r ScanResult) FormatSnapSummary() string {
+	return fmt.Sprintf("Snap: %d packages", len(r.Snaps))
 }
 
 // FormatExploitCveSummary returns a summary of exploit cve
