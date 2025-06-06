@@ -28,7 +28,7 @@ require (
 	github.com/google/go-containerregistry v0.20.5
 	github.com/google/subcommands v1.2.0
 	github.com/google/uuid v1.6.0
-	github.com/gosnmp/gosnmp v1.40.0
+	github.com/gosnmp/gosnmp v1.41.0
 	github.com/gosuri/uitable v0.0.4
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/hashicorp/go-version v1.7.0
@@ -60,9 +60,9 @@ require (
 	github.com/vulsio/goval-dictionary v0.12.0
 	go.etcd.io/bbolt v1.4.0
 	golang.org/x/oauth2 v0.30.0
-	golang.org/x/sync v0.14.0
+	golang.org/x/sync v0.15.0
 	golang.org/x/term v0.32.0
-	golang.org/x/text v0.25.0
+	golang.org/x/text v0.26.0
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da
 )
 
@@ -341,7 +341,7 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.38.0 // indirect
 	golang.org/x/exp v0.0.0-20250506013437-ce4c2cf36ca6 // indirect
-	golang.org/x/mod v0.24.0 // indirect
+	golang.org/x/mod v0.25.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
