@@ -81,7 +81,7 @@ func detectWindows(c config.ServerInfo) (bool, osTypeInterface) {
 			return true, w
 		}
 
-		w.log.Debugf("osInfo(Registry): %+v", osInfo)
+		logging.Log.Debugf("osInfo(Registry): %+v", osInfo)
 		release, err := detectOSName(osInfo)
 		if err != nil {
 			w.setErrs([]error{xerrors.Errorf("Failed to detect os name. err: %w", err)})
@@ -99,7 +99,7 @@ func detectWindows(c config.ServerInfo) (bool, osTypeInterface) {
 			return true, w
 		}
 
-		w.log.Debugf("osInfo(Get-ComputerInfo): %+v", osInfo)
+		logging.Log.Debugf("osInfo(Get-ComputerInfo): %+v", osInfo)
 		release, err := detectOSName(osInfo)
 		if err != nil {
 			w.setErrs([]error{xerrors.Errorf("Failed to detect os name. err: %w", err)})
@@ -117,7 +117,7 @@ func detectWindows(c config.ServerInfo) (bool, osTypeInterface) {
 			return true, w
 		}
 
-		w.log.Debugf("osInfo(Get-WmiObject): %+v", osInfo)
+		logging.Log.Debugf("osInfo(Get-WmiObject): %+v", osInfo)
 		release, err := detectOSName(osInfo)
 		if err != nil {
 			w.setErrs([]error{xerrors.Errorf("Failed to detect os name. err: %w", err)})
@@ -135,7 +135,7 @@ func detectWindows(c config.ServerInfo) (bool, osTypeInterface) {
 			return true, w
 		}
 
-		w.log.Debugf("osInfo(systeminfo.exe): %+v", osInfo)
+		logging.Log.Debugf("osInfo(systeminfo.exe): %+v", osInfo)
 		release, err := detectOSName(osInfo)
 		if err != nil {
 			w.setErrs([]error{xerrors.Errorf("Failed to detect os name. err: %w", err)})
