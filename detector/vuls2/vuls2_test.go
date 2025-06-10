@@ -1877,6 +1877,86 @@ func Test_postConvert(t *testing.T) {
 								},
 							},
 						},
+						{
+							ID: "CVE-2025-0003",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0003",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.RedHatVEX: {
+											dataTypes.RootID("CVE-2025-0003"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0003",
+														Title:       "title",
+														Description: "[REJECTED CVE] description",
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://access.redhat.com/security/cve/CVE-2025-0003",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+															Tag:       segmentTypes.DetectionTag("rhel-9-including-unpatched:gfedcba-e6c7-e2d7-e6da-c772de020fa7"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.RedHatVEX: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: toPtr(versoncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeBinary,
+																		Binary: &vcBinaryPackageTypes.Package{
+																			Name:          "package1",
+																			Architectures: []string{"aarch64", "x86_64"},
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeRPM,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "0.0.0-1.el9",
+																			},
+																		},
+																		Fixed: []string{"0.0.0-1.el9"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0},
+															},
+														},
+													},
+												},
+												Tag: segmentTypes.DetectionTag("rhel-9-including-unpatched:gfedcba-e6c7-e2d7-e6da-c772de020fa7"),
+											},
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			},
