@@ -28,7 +28,7 @@ func ignoreVulnerability(e ecosystemTypes.Ecosystem, v vulnerabilityTypes.Vulner
 
 	switch et {
 	case ecosystemTypes.EcosystemTypeRedHat:
-		if strings.Contains(v.Content.Description, "** REJECT **") {
+		if strings.Contains(v.Content.Description, "** REJECT **") || strings.HasPrefix(v.Content.Description, "[REJECTED CVE]") {
 			return true
 		}
 
