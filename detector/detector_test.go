@@ -82,6 +82,28 @@ func Test_getMaxConfidence(t *testing.T) {
 			wantMax: models.FortinetExactVersionMatch,
 		},
 		{
+			name: "PaloaltoExactVersionMatch",
+			args: args{
+				detail: cvemodels.CveDetail{
+					Nvds:      []cvemodels.Nvd{{DetectionMethod: cvemodels.NvdExactVersionMatch}},
+					Jvns:      []cvemodels.Jvn{{DetectionMethod: cvemodels.JvnVendorProductMatch}},
+					Paloaltos: []cvemodels.Paloalto{{DetectionMethod: cvemodels.PaloaltoExactVersionMatch}},
+				},
+			},
+			wantMax: models.PaloaltoExactVersionMatch,
+		},
+		{
+			name: "CiscoExactVersionMatch",
+			args: args{
+				detail: cvemodels.CveDetail{
+					Nvds:   []cvemodels.Nvd{{DetectionMethod: cvemodels.NvdExactVersionMatch}},
+					Jvns:   []cvemodels.Jvn{{DetectionMethod: cvemodels.JvnVendorProductMatch}},
+					Ciscos: []cvemodels.Cisco{{DetectionMethod: cvemodels.CiscoExactVersionMatch}},
+				},
+			},
+			wantMax: models.CiscoExactVersionMatch,
+		},
+		{
 			name: "empty",
 			args: args{
 				detail: cvemodels.CveDetail{

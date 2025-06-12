@@ -201,6 +201,23 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 				Source: "FORTINET",
 				RefID:  da.AdvisoryID,
 			}, nil
+		case sourceTypes.PaloAltoCSAF, sourceTypes.PaloAltoJSON, sourceTypes.PaloAltoList:
+			return models.Reference{
+				Link: func() string {
+					if strings.HasPrefix(da.AdvisoryID, "PAN-CVE-") {
+						return fmt.Sprintf("https://security.paloaltonetworks.com/%s", strings.TrimPrefix(da.AdvisoryID, "PAN-"))
+					}
+					return fmt.Sprintf("https://security.paloaltonetworks.com/%s", da.AdvisoryID)
+				}(),
+				Source: "PALOALTO",
+				RefID:  da.AdvisoryID,
+			}, nil
+		case sourceTypes.CiscoCSAF, sourceTypes.CiscoCVRF, sourceTypes.CiscoJSON:
+			return models.Reference{
+				Link:   fmt.Sprintf("https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/%s", da.AdvisoryID),
+				Source: "CISCO",
+				RefID:  da.AdvisoryID,
+			}, nil
 		default:
 			return models.Reference{}, xerrors.Errorf("unsupported source: %s", s)
 		}
@@ -273,9 +290,11 @@ func compareSourceID(e ecosystemTypes.Ecosystem, a, b sourceTypes.SourceID) int 
 	case ecosystemTypes.EcosystemTypeCPE:
 		preferenceFn := func(sourceID sourceTypes.SourceID) int {
 			switch sourceID {
-			case sourceTypes.NVDAPICVE, sourceTypes.JVNFeedDetail, sourceTypes.Fortinet:
+			case sourceTypes.NVDAPICVE, sourceTypes.JVNFeedDetail, sourceTypes.Fortinet, sourceTypes.PaloAltoCSAF, sourceTypes.CiscoCSAF:
+				return 4
+			case sourceTypes.NVDFeedCVE, sourceTypes.JVNFeedRSS, sourceTypes.PaloAltoJSON, sourceTypes.CiscoCVRF:
 				return 3
-			case sourceTypes.NVDFeedCVE, sourceTypes.JVNFeedRSS:
+			case sourceTypes.PaloAltoList, sourceTypes.CiscoJSON:
 				return 2
 			default:
 				return 1
@@ -381,6 +400,10 @@ func toCveContentType(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models
 			return models.Jvn
 		case sourceTypes.Fortinet:
 			return models.Fortinet
+		case sourceTypes.PaloAltoCSAF, sourceTypes.PaloAltoJSON, sourceTypes.PaloAltoList:
+			return models.Paloalto
+		case sourceTypes.CiscoCSAF, sourceTypes.CiscoCVRF, sourceTypes.CiscoJSON:
+			return models.Cisco
 		default:
 			return models.Unknown
 		}
@@ -403,6 +426,10 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) model
 			return models.JvnVendorProductMatch
 		case sourceTypes.Fortinet:
 			return models.FortinetExactVersionMatch
+		case sourceTypes.PaloAltoCSAF, sourceTypes.PaloAltoJSON, sourceTypes.PaloAltoList:
+			return models.PaloaltoExactVersionMatch
+		case sourceTypes.CiscoCSAF, sourceTypes.CiscoCVRF, sourceTypes.CiscoJSON:
+			return models.CiscoExactVersionMatch
 		default:
 			return models.Confidence{
 				Score:           0,
