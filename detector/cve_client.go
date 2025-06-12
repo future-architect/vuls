@@ -170,7 +170,7 @@ func (client goCveDictClient) detectCveByCpeURI(cpeURI string, useJVN bool) (cve
 
 	filtered := []cvemodels.CveDetail{}
 	for _, cve := range cves {
-		if !cve.HasNvd() && !cve.HasFortinet() {
+		if !cve.HasNvd() && !cve.HasFortinet() && !cve.HasPaloalto() && !cve.HasCisco() {
 			continue
 		}
 		cve.Jvns = []cvemodels.Jvn{}

@@ -423,7 +423,7 @@ func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := append(GetCveContentTypes(string(Trivy)), append(CveContentTypes{Fortinet, Nvd, Mitre}, GetCveContentTypes(myFamily)...)...)
+	order := append(GetCveContentTypes(string(Trivy)), append(CveContentTypes{Cisco, Paloalto, Fortinet, Nvd, Mitre}, GetCveContentTypes(myFamily)...)...)
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
@@ -468,7 +468,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := append(append(GetCveContentTypes(string(Trivy)), GetCveContentTypes(myFamily)...), Fortinet, Nvd, Mitre, GitHub)
+	order := append(append(GetCveContentTypes(string(Trivy)), GetCveContentTypes(myFamily)...), Cisco, Paloalto, Fortinet, Nvd, Mitre, GitHub)
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
@@ -539,7 +539,7 @@ func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
 
 // Cvss3Scores returns CVSS V3 Score
 func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
-	order := append([]CveContentType{RedHatAPI, RedHat, Rocky, SUSE, Microsoft, Fortinet, Nvd, Mitre, Jvn}, GetCveContentTypes(string(Trivy))...)
+	order := append([]CveContentType{RedHatAPI, RedHat, Rocky, SUSE, Microsoft, Paloalto, Fortinet, Nvd, Mitre, Jvn}, GetCveContentTypes(string(Trivy))...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
@@ -612,7 +612,7 @@ func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 
 // Cvss40Scores returns CVSS V4 Score
 func (v VulnInfo) Cvss40Scores() (values []CveContentCvss) {
-	for _, ctype := range []CveContentType{Mitre, Nvd} {
+	for _, ctype := range []CveContentType{Paloalto, Mitre, Nvd} {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
 				if cont.Cvss40Score == 0 && cont.Cvss40Severity == "" {
@@ -1052,6 +1052,24 @@ const (
 	// FortinetVendorProductMatchStr :
 	FortinetVendorProductMatchStr = "FortinetVendorProductMatch"
 
+	// PaloaltoExactVersionMatchStr :
+	PaloaltoExactVersionMatchStr = "PaloaltoExactVersionMatch"
+
+	// PaloaltoRoughVersionMatchStr :
+	PaloaltoRoughVersionMatchStr = "PaloaltoRoughVersionMatch"
+
+	// PaloaltoVendorProductMatchStr :
+	PaloaltoVendorProductMatchStr = "PaloaltoVendorProductMatch"
+
+	// CiscoExactVersionMatchStr :
+	CiscoExactVersionMatchStr = "CiscoExactVersionMatch"
+
+	// CiscoRoughVersionMatchStr :
+	CiscoRoughVersionMatchStr = "CiscoRoughVersionMatch"
+
+	// CiscoVendorProductMatchStr :
+	CiscoVendorProductMatchStr = "CiscoVendorProductMatch"
+
 	// PkgAuditMatchStr :
 	PkgAuditMatchStr = "PkgAuditMatch"
 
@@ -1152,4 +1170,22 @@ var (
 
 	// FortinetVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
 	FortinetVendorProductMatch = Confidence{10, FortinetVendorProductMatchStr, 9}
+
+	// PaloaltoExactVersionMatch is a ranking how confident the CVE-ID was detected correctly
+	PaloaltoExactVersionMatch = Confidence{100, PaloaltoExactVersionMatchStr, 1}
+
+	// PaloaltoRoughVersionMatch is a ranking how confident the CVE-ID was detected correctly
+	PaloaltoRoughVersionMatch = Confidence{80, PaloaltoRoughVersionMatchStr, 1}
+
+	// PaloaltoVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
+	PaloaltoVendorProductMatch = Confidence{10, PaloaltoVendorProductMatchStr, 9}
+
+	// CiscoExactVersionMatch is a ranking how confident the CVE-ID was detected correctly
+	CiscoExactVersionMatch = Confidence{100, CiscoExactVersionMatchStr, 1}
+
+	// CiscoRoughVersionMatch is a ranking how confident the CVE-ID was detected correctly
+	CiscoRoughVersionMatch = Confidence{80, CiscoRoughVersionMatchStr, 1}
+
+	// CiscoVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
+	CiscoVendorProductMatch = Confidence{10, CiscoVendorProductMatchStr, 9}
 )
