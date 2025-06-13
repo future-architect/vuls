@@ -308,7 +308,8 @@ No CVE-IDs are found in updatable packages.
 	b := bytes.Buffer{}
 	table := tablewriter.NewTable(&b,
 		tablewriter.WithRenderer(renderer.NewBlueprint(tw.Rendition{
-			Symbols: tw.NewSymbols(tw.StyleASCII),
+			Symbols:  tw.NewSymbols(tw.StyleASCII),
+			Settings: tw.Settings{Separators: tw.Separators{BetweenRows: tw.On}},
 		})),
 		tablewriter.WithMaxWidth(terminalWidth()),
 		tablewriter.WithHeaderAutoFormat(tw.Off),
