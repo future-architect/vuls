@@ -13,8 +13,10 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
+	"github.com/future-architect/vuls/oval"
 	"golang.org/x/xerrors"
 )
 
@@ -257,4 +259,65 @@ func loadOneServerScanResult(jsonFile string) (*models.ScanResult, error) {
 		return nil, xerrors.Errorf("Failed to parse %s: %w", jsonFile, err)
 	}
 	return result, nil
+}
+
+// ValidateDBs checks if the databases are accessible and can be closed properly
+func ValidateDBs(cveConf config.GoCveDictConf, ovalConf config.GovalDictConf, gostConf config.GostConf, exploitConf config.ExploitConf, metasploitConf config.MetasploitConf, kevulnConf config.KEVulnConf, ctiConf config.CtiConf, logOpts logging.LogOpts) error {
+	cvec, err := newGoCveDictClient(&cveConf, logOpts)
+	if err != nil {
+		return xerrors.Errorf("Failed to new CVE client. err: %w", err)
+	}
+	if err := cvec.closeDB(); err != nil {
+		return xerrors.Errorf("Failed to close CVE DB. err: %w", err)
+	}
+
+	ovalc, err := oval.NewOVALClient(constant.ServerTypePseudo, ovalConf, logOpts)
+	if err != nil {
+		return xerrors.Errorf("Failed to new OVAL client. err: %w", err)
+	}
+	if err := ovalc.CloseDB(); err != nil {
+		return xerrors.Errorf("Failed to close OVAL DB. err: %w", err)
+	}
+
+	gostc, err := gost.NewGostClient(gostConf, constant.ServerTypePseudo, logOpts)
+	if err != nil {
+		return xerrors.Errorf("Failed to new gost client. err: %w", err)
+	}
+	if err := gostc.CloseDB(); err != nil {
+		return xerrors.Errorf("Failed to close gost DB. err: %w", err)
+	}
+
+	exploitc, err := newGoExploitDBClient(&exploitConf, logOpts)
+	if err != nil {
+		return xerrors.Errorf("Failed to new exploit client. err: %w", err)
+	}
+	if err := exploitc.closeDB(); err != nil {
+		return xerrors.Errorf("Failed to close exploit DB. err: %w", err)
+	}
+
+	metasploitc, err := newGoMetasploitDBClient(&metasploitConf, logOpts)
+	if err != nil {
+		return xerrors.Errorf("Failed to new metasploit client. err: %w", err)
+	}
+	if err := metasploitc.closeDB(); err != nil {
+		return xerrors.Errorf("Failed to close metasploit DB. err: %w", err)
+	}
+
+	kevulnc, err := newGoKEVulnDBClient(&kevulnConf, logOpts)
+	if err != nil {
+		return xerrors.Errorf("Failed to new KEVuln client. err: %w", err)
+	}
+	if err := kevulnc.closeDB(); err != nil {
+		return xerrors.Errorf("Failed to close KEVuln DB. err: %w", err)
+	}
+
+	ctic, err := newGoCTIDBClient(&ctiConf, logOpts)
+	if err != nil {
+		return xerrors.Errorf("Failed to new CTI client. err: %w", err)
+	}
+	if err := ctic.closeDB(); err != nil {
+		return xerrors.Errorf("Failed to close CTI DB. err: %w", err)
+	}
+
+	return nil
 }

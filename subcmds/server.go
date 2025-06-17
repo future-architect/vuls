@@ -13,6 +13,7 @@ import (
 	"github.com/google/subcommands"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/detector"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/server"
 )
@@ -102,6 +103,7 @@ func (p *ServerCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...interface{}
 			&config.Conf.Exploit,
 			&config.Conf.Metasploit,
 			&config.Conf.KEVuln,
+			&config.Conf.Cti,
 		} {
 			cnf.Init()
 		}
@@ -115,6 +117,12 @@ func (p *ServerCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...interface{}
 	logging.Log.Info("Validating config...")
 	if !config.Conf.ValidateOnReport() {
 		return subcommands.ExitUsageError
+	}
+
+	logging.Log.Info("Validating DBs...")
+	if err := detector.ValidateDBs(config.Conf.CveDict, config.Conf.OvalDict, config.Conf.Gost, config.Conf.Exploit, config.Conf.Metasploit, config.Conf.KEVuln, config.Conf.Cti, config.Conf.LogOpts); err != nil {
+		logging.Log.Errorf("Failed to validate DBs. err: %+v", err)
+		return subcommands.ExitFailure
 	}
 
 	http.Handle("/vuls", server.VulsHandler{
