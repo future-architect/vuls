@@ -40,13 +40,6 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 
 	for _, vuln := range r.ScannedCves {
 		switch models.NewCveContentType(o.family) {
-		case models.RedHat:
-			if conts, ok := vuln.CveContents[models.RedHat]; ok {
-				for i, cont := range conts {
-					cont.SourceLink = "https://access.redhat.com/security/cve/" + cont.CveID
-					vuln.CveContents[models.RedHat][i] = cont
-				}
-			}
 		case models.Fedora:
 			for _, d := range vuln.DistroAdvisories {
 				if conts, ok := vuln.CveContents[models.Fedora]; ok {
@@ -54,13 +47,6 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 						cont.SourceLink = "https://bodhi.fedoraproject.org/updates/" + d.AdvisoryID
 						vuln.CveContents[models.Fedora][i] = cont
 					}
-				}
-			}
-		case models.Oracle:
-			if conts, ok := vuln.CveContents[models.Oracle]; ok {
-				for i, cont := range conts {
-					cont.SourceLink = fmt.Sprintf("https://linux.oracle.com/cve/%s.html", cont.CveID)
-					vuln.CveContents[models.Oracle][i] = cont
 				}
 			}
 		case models.Amazon:
@@ -85,136 +71,6 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 	}
 
 	return nCVEs, nil
-}
-
-var kernelRelatedPackNames = []string{
-	"kernel",
-	"kernel-64k",
-	"kernel-64k-core",
-	"kernel-64k-debug",
-	"kernel-64k-debug-core",
-	"kernel-64k-debug-devel",
-	"kernel-64k-debug-devel-matched",
-	"kernel-64k-debug-modules",
-	"kernel-64k-debug-modules-core",
-	"kernel-64k-debug-modules-extra",
-	"kernel-64k-debug-modules-internal",
-	"kernel-64k-debug-modules-partner",
-	"kernel-64k-devel",
-	"kernel-64k-devel-matched",
-	"kernel-64k-modules",
-	"kernel-64k-modules-core",
-	"kernel-64k-modules-extra",
-	"kernel-64k-modules-internal",
-	"kernel-64k-modules-partner",
-	"kernel-aarch64",
-	"kernel-abi-stablelists",
-	"kernel-abi-whitelists",
-	"kernel-bootwrapper",
-	"kernel-core",
-	"kernel-cross-headers",
-	"kernel-debug",
-	"kernel-debug-core",
-	"kernel-debug-devel",
-	"kernel-debug-devel-matched",
-	"kernel-debuginfo",
-	"kernel-debuginfo-common-aarch64",
-	"kernel-debuginfo-common-armv7hl",
-	"kernel-debuginfo-common-i686",
-	"kernel-debuginfo-common-ppc64le",
-	"kernel-debuginfo-common-s390x",
-	"kernel-debuginfo-common-x86_64",
-	"kernel-debug-modules",
-	"kernel-debug-modules-core",
-	"kernel-debug-modules-extra",
-	"kernel-debug-modules-internal",
-	"kernel-debug-modules-partner",
-	"kernel-debug-uki-virt",
-	"kernel-devel",
-	"kernel-devel-matched",
-	"kernel-doc",
-	"kernel-firmware",
-	"kernel-headers",
-	"kernel-ipaclones-internal",
-	"kernel-kdump",
-	"kernel-kdump-devel",
-	"kernel-libbpf",
-	"kernel-libbpf-devel",
-	"kernel-libbpf-static",
-	"kernel-modules",
-	"kernel-modules-core",
-	"kernel-modules-extra",
-	"kernel-modules-extra-common",
-	"kernel-modules-internal",
-	"kernel-modules-partner",
-	"kernel-rt",
-	"kernel-rt-core",
-	"kernel-rt-debug",
-	"kernel-rt-debug-core",
-	"kernel-rt-debug-devel",
-	"kernel-rt-debug-devel-matched",
-	"kernel-rt-debug-kvm",
-	"kernel-rt-debug-modules",
-	"kernel-rt-debug-modules-core",
-	"kernel-rt-debug-modules-extra",
-	"kernel-rt-debug-modules-internal",
-	"kernel-rt-debug-modules-partner",
-	"kernel-rt-devel",
-	"kernel-rt-devel-matched",
-	"kernel-rt-doc",
-	"kernel-rt-kvm",
-	"kernel-rt-modules",
-	"kernel-rt-modules-core",
-	"kernel-rt-modules-extra",
-	"kernel-rt-modules-internal",
-	"kernel-rt-modules-partner",
-	"kernel-rt-selftests-internal",
-	"kernel-rt-trace",
-	"kernel-rt-trace-devel",
-	"kernel-rt-trace-kvm",
-	"kernel-selftests-internal",
-	"kernel-tools",
-	"kernel-tools-debuginfo",
-	"kernel-tools-debugsource",
-	"kernel-tools-devel",
-	"kernel-tools-libs",
-	"kernel-tools-libs-debuginfo",
-	"kernel-tools-libs-devel",
-	"kernel-uek",
-	"kernel-uek-container",
-	"kernel-uek-container-debug",
-	"kernel-uek-core",
-	"kernel-uek-debug",
-	"kernel-uek-debug-core",
-	"kernel-uek-debug-devel",
-	"kernel-uek-debug-modules",
-	"kernel-uek-debug-modules-extra",
-	"kernel-uek-devel",
-	"kernel-uek-doc",
-	"kernel-uek-firmware",
-	"kernel-uek-headers",
-	"kernel-uek-modules",
-	"kernel-uek-modules-extra",
-	"kernel-uek-tools",
-	"kernel-uek-tools-libs",
-	"kernel-uek-tools-libs-devel",
-	"kernel-uki-virt",
-	"kernel-xen",
-	"kernel-xen-devel",
-	"kernel-zfcpdump",
-	"kernel-zfcpdump-core",
-	"kernel-zfcpdump-devel",
-	"kernel-zfcpdump-devel-matched",
-	"kernel-zfcpdump-modules",
-	"kernel-zfcpdump-modules-core",
-	"kernel-zfcpdump-modules-extra",
-	"kernel-zfcpdump-modules-internal",
-	"kernel-zfcpdump-modules-partner",
-	"libperf",
-	"libperf-devel",
-	"perf",
-	"python3-perf",
-	"python-perf",
 }
 
 func (o RedHatBase) update(r *models.ScanResult, defpacks defPacks) (nCVEs int) {
@@ -288,28 +144,6 @@ func (o RedHatBase) update(r *models.ScanResult, defpacks defPacks) (nCVEs int) 
 
 func (o RedHatBase) convertToDistroAdvisory(def *ovalmodels.Definition) *models.DistroAdvisory {
 	switch o.family {
-	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
-		if !strings.HasPrefix(def.Title, "RHSA-") && !strings.HasPrefix(def.Title, "RHBA-") {
-			return nil
-		}
-		return &models.DistroAdvisory{
-			AdvisoryID:  strings.TrimSuffix(strings.Fields(def.Title)[0], ":"),
-			Severity:    def.Advisory.Severity,
-			Issued:      def.Advisory.Issued,
-			Updated:     def.Advisory.Updated,
-			Description: def.Description,
-		}
-	case constant.Oracle:
-		if !strings.HasPrefix(def.Title, "ELSA-") {
-			return nil
-		}
-		return &models.DistroAdvisory{
-			AdvisoryID:  strings.TrimSuffix(strings.Fields(def.Title)[0], ":"),
-			Severity:    def.Advisory.Severity,
-			Issued:      def.Advisory.Issued,
-			Updated:     def.Advisory.Updated,
-			Description: def.Description,
-		}
 	case constant.Amazon:
 		if !strings.HasPrefix(def.Title, "ALAS") {
 			return nil
@@ -389,60 +223,6 @@ func (o RedHatBase) convertToModel(cveID string, def *ovalmodels.Definition) *mo
 	return nil
 }
 
-// RedHat is the interface for RedhatBase OVAL
-type RedHat struct {
-	RedHatBase
-}
-
-// NewRedhat creates OVAL client for Redhat
-func NewRedhat(driver ovaldb.DB, baseURL string) RedHat {
-	return RedHat{
-		RedHatBase{
-			Base{
-				driver:  driver,
-				baseURL: baseURL,
-				family:  constant.RedHat,
-			},
-		},
-	}
-}
-
-// CentOS is the interface for CentOS OVAL
-type CentOS struct {
-	RedHatBase
-}
-
-// NewCentOS creates OVAL client for CentOS
-func NewCentOS(driver ovaldb.DB, baseURL string) CentOS {
-	return CentOS{
-		RedHatBase{
-			Base{
-				driver:  driver,
-				baseURL: baseURL,
-				family:  constant.CentOS,
-			},
-		},
-	}
-}
-
-// Oracle is the interface for Oracle OVAL
-type Oracle struct {
-	RedHatBase
-}
-
-// NewOracle creates OVAL client for Oracle
-func NewOracle(driver ovaldb.DB, baseURL string) Oracle {
-	return Oracle{
-		RedHatBase{
-			Base{
-				driver:  driver,
-				baseURL: baseURL,
-				family:  constant.Oracle,
-			},
-		},
-	}
-}
-
 // Amazon is the interface for RedhatBase OVAL
 type Amazon struct {
 	// Base
@@ -457,44 +237,6 @@ func NewAmazon(driver ovaldb.DB, baseURL string) Amazon {
 				driver:  driver,
 				baseURL: baseURL,
 				family:  constant.Amazon,
-			},
-		},
-	}
-}
-
-// Alma is the interface for RedhatBase OVAL
-type Alma struct {
-	// Base
-	RedHatBase
-}
-
-// NewAlma creates OVAL client for Alma Linux
-func NewAlma(driver ovaldb.DB, baseURL string) Alma {
-	return Alma{
-		RedHatBase{
-			Base{
-				driver:  driver,
-				baseURL: baseURL,
-				family:  constant.Alma,
-			},
-		},
-	}
-}
-
-// Rocky is the interface for RedhatBase OVAL
-type Rocky struct {
-	// Base
-	RedHatBase
-}
-
-// NewRocky creates OVAL client for Rocky Linux
-func NewRocky(driver ovaldb.DB, baseURL string) Rocky {
-	return Rocky{
-		RedHatBase{
-			Base{
-				driver:  driver,
-				baseURL: baseURL,
-				family:  constant.Rocky,
 			},
 		},
 	}
