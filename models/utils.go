@@ -3,7 +3,9 @@
 package models
 
 import (
+	"cmp"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -304,6 +306,138 @@ func ConvertMitreToModel(cveID string, mitres []cvedict.Mitre) []CveContent {
 
 			cves = append(cves, cve)
 		}
+	}
+	return cves
+}
+
+// ConvertPaloaltoToModel convert Paloalto to CveContent
+func ConvertPaloaltoToModel(cveID string, paloaltos []cvedict.Paloalto) []CveContent {
+	cves := make([]CveContent, 0, len(paloaltos))
+	for _, paloalto := range paloaltos {
+		cvss3score, cvss3vector, cvss3severity := func() (float64, string, string) {
+			if len(paloalto.CVSSv3) == 0 {
+				return 0, "", ""
+			}
+			v3max := slices.MaxFunc(paloalto.CVSSv3, func(a, b cvedict.PaloaltoCVSS3) int {
+				switch {
+				case strings.HasPrefix(a.VectorString, "CVSS:3.0/") && strings.HasPrefix(b.VectorString, "CVSS:3.1/"):
+					return -1
+				case strings.HasPrefix(a.VectorString, "CVSS:3.1/") && strings.HasPrefix(b.VectorString, "CVSS:3.0/"):
+					return +1
+				default:
+					return cmp.Compare(a.BaseScore, b.BaseScore)
+				}
+			})
+			return v3max.BaseScore, v3max.VectorString, v3max.BaseSeverity
+		}()
+		cvss40score, cvss40vector, cvss40severity := func() (float64, string, string) {
+			if len(paloalto.CVSSv40) == 0 {
+				return 0, "", ""
+			}
+			v40max := slices.MaxFunc(paloalto.CVSSv40, func(a, b cvedict.PaloaltoCVSS40) int {
+				return cmp.Compare(a.BaseScore, b.BaseScore)
+			})
+			return v40max.BaseScore, v40max.VectorString, v40max.BaseSeverity
+		}()
+
+		cves = append(cves, CveContent{
+			Type:  Paloalto,
+			CveID: cveID,
+			Title: paloalto.Title,
+			Summary: func() string {
+				for _, d := range paloalto.Descriptions {
+					return d.Description
+				}
+				return ""
+			}(),
+			Cvss3Score:     cvss3score,
+			Cvss3Vector:    cvss3vector,
+			Cvss3Severity:  cvss3severity,
+			Cvss40Score:    cvss40score,
+			Cvss40Vector:   cvss40vector,
+			Cvss40Severity: cvss40severity,
+			SourceLink: func() string {
+				if strings.HasPrefix(paloalto.AdvisoryID, "PAN-CVE-") {
+					return fmt.Sprintf("https://security.paloaltonetworks.com/%s", strings.TrimPrefix(paloalto.AdvisoryID, "PAN-"))
+				}
+				return fmt.Sprintf("https://security.paloaltonetworks.com/%s", paloalto.AdvisoryID)
+			}(),
+			References: func() []Reference {
+				refs := make([]Reference, 0, len(paloalto.References))
+				for _, r := range paloalto.References {
+					refs = append(refs, Reference{
+						Link:   r.Link,
+						Source: r.Source,
+						Tags: func() []string {
+							if len(r.Tags) > 0 {
+								return strings.Split(r.Tags, ",")
+							}
+							return nil
+						}(),
+					})
+				}
+				return refs
+			}(),
+			CweIDs: func() []string {
+				cweIDs := make([]string, 0, len(paloalto.ProblemTypes))
+				for _, pt := range paloalto.ProblemTypes {
+					cweIDs = append(cweIDs, pt.CweID)
+				}
+				return cweIDs
+			}(),
+			Published: func() time.Time {
+				if paloalto.DatePublic != nil {
+					return *paloalto.DatePublic
+				}
+				return time.Time{}
+			}(),
+			LastModified: func() time.Time {
+				if paloalto.DatePublic != nil {
+					return *paloalto.DatePublic
+				}
+				return time.Time{}
+			}(),
+		})
+	}
+	return cves
+}
+
+// ConvertCiscoToModel convert Cisco to CveContent
+func ConvertCiscoToModel(cveID string, ciscos []cvedict.Cisco) []CveContent {
+	cves := make([]CveContent, 0, len(ciscos))
+	for _, cisco := range ciscos {
+		cves = append(cves, CveContent{
+			Type:       Cisco,
+			CveID:      cveID,
+			Title:      cisco.Title,
+			Summary:    cisco.Summary,
+			SourceLink: fmt.Sprintf("https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/%s", cisco.AdvisoryID),
+			References: func() []Reference {
+				refs := make([]Reference, 0, len(cisco.References))
+				for _, r := range cisco.References {
+					refs = append(refs, Reference{
+						Link:   r.Link,
+						Source: r.Source,
+						Tags: func() []string {
+							if len(r.Tags) > 0 {
+								return strings.Split(r.Tags, ",")
+							}
+							return nil
+						}(),
+					})
+				}
+				return refs
+			}(),
+			CweIDs: func() []string {
+				cweIDs := make([]string, 0, len(cisco.CweIDs))
+				for _, c := range cisco.CweIDs {
+					cweIDs = append(cweIDs, c.CweID)
+				}
+				return cweIDs
+			}(),
+			Published:    cisco.FirstPublished,
+			LastModified: cisco.LastUpdated,
+		})
 	}
 	return cves
 }

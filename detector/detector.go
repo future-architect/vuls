@@ -3,6 +3,7 @@
 package detector
 
 import (
+	"cmp"
 	"fmt"
 	"os"
 	"slices"
@@ -440,7 +441,7 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf config.WpScanConf) error {
 	return nil
 }
 
-// FillCvesWithGoCVEDictionary fills CVE detail with NVD, JVN, Fortinet, MITRE
+// FillCvesWithGoCVEDictionary fills CVE detail with NVD, JVN, Fortinet, MITRE, Paloalto, Cisco
 func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf, logOpts logging.LogOpts) (err error) {
 	cveIDs := []string{}
 	for _, v := range r.ScannedCves {
@@ -467,6 +468,8 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 		jvns := models.ConvertJvnToModel(d.CveID, d.Jvns)
 		fortinets := models.ConvertFortinetToModel(d.CveID, d.Fortinets)
 		mitres := models.ConvertMitreToModel(d.CveID, d.Mitres)
+		paloaltos := models.ConvertPaloaltoToModel(d.CveID, d.Paloaltos)
+		ciscos := models.ConvertCiscoToModel(d.CveID, d.Ciscos)
 
 		alerts := fillCertAlerts(&d)
 		for cveID, vinfo := range r.ScannedCves {
@@ -479,12 +482,14 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 						vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
 					}
 				}
-				for _, con := range append(jvns, fortinets...) {
-					if !con.Empty() {
-						if !slices.ContainsFunc(vinfo.CveContents[con.Type], func(e models.CveContent) bool {
-							return con.SourceLink == e.SourceLink
-						}) {
-							vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
+				for _, cons := range [][]models.CveContent{jvns, fortinets, paloaltos, ciscos} {
+					for _, con := range cons {
+						if !con.Empty() {
+							if !slices.ContainsFunc(vinfo.CveContents[con.Type], func(e models.CveContent) bool {
+								return con.SourceLink == e.SourceLink
+							}) {
+								vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
+							}
 						}
 					}
 				}
@@ -627,20 +632,66 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 
 		for _, detail := range details {
 			advisories := []models.DistroAdvisory{}
+			if detail.HasCisco() {
+				for _, cisco := range detail.Ciscos {
+					advisories = append(advisories, models.DistroAdvisory{
+						AdvisoryID:  cisco.AdvisoryID,
+						Severity:    cisco.SIR,
+						Issued:      cisco.FirstPublished,
+						Updated:     cisco.LastUpdated,
+						Description: cisco.Summary,
+					})
+				}
+			}
+
+			if detail.HasPaloalto() {
+				for _, paloalto := range detail.Paloaltos {
+					advisories = append(advisories, models.DistroAdvisory{
+						AdvisoryID: paloalto.AdvisoryID,
+						Issued: func() time.Time {
+							if paloalto.DatePublic != nil {
+								return *paloalto.DatePublic
+							}
+							return time.Time{}
+						}(),
+						Updated: func() time.Time {
+							if paloalto.DatePublic != nil {
+								return *paloalto.DatePublic
+							}
+							return time.Time{}
+						}(),
+						Description: func() string {
+							if len(paloalto.Descriptions) > 0 {
+								return paloalto.Descriptions[0].Description
+							}
+							return ""
+						}(),
+					})
+				}
+			}
+
 			if detail.HasFortinet() {
 				for _, fortinet := range detail.Fortinets {
 					advisories = append(advisories, models.DistroAdvisory{
-						AdvisoryID: fortinet.AdvisoryID,
+						AdvisoryID:  fortinet.AdvisoryID,
+						Issued:      fortinet.PublishedDate,
+						Updated:     fortinet.LastModifiedDate,
+						Description: fortinet.Summary,
 					})
 				}
 			}
+
 			if !detail.HasNvd() && detail.HasJvn() {
 				for _, jvn := range detail.Jvns {
 					advisories = append(advisories, models.DistroAdvisory{
-						AdvisoryID: jvn.JvnID,
+						AdvisoryID:  jvn.JvnID,
+						Issued:      jvn.PublishedDate,
+						Updated:     jvn.LastModifiedDate,
+						Description: jvn.Summary,
 					})
 				}
 			}
+
 			maxConfidence := getMaxConfidence(detail)
 
 			if val, ok := r.ScannedCves[detail.CveID]; ok {
@@ -667,40 +718,80 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 }
 
 func getMaxConfidence(detail cvemodels.CveDetail) (maxConfidence models.Confidence) {
-	if detail.HasFortinet() {
-		for _, fortinet := range detail.Fortinets {
-			confidence := models.Confidence{}
-			switch fortinet.DetectionMethod {
-			case cvemodels.FortinetExactVersionMatch:
-				confidence = models.FortinetExactVersionMatch
-			case cvemodels.FortinetRoughVersionMatch:
-				confidence = models.FortinetRoughVersionMatch
-			case cvemodels.FortinetVendorProductMatch:
-				confidence = models.FortinetVendorProductMatch
-			}
-			if maxConfidence.Score < confidence.Score {
-				maxConfidence = confidence
+	if detail.HasCisco() {
+		fn := func(s string) models.Confidence {
+			switch s {
+			case cvemodels.CiscoExactVersionMatch:
+				return models.CiscoExactVersionMatch
+			case cvemodels.CiscoRoughVersionMatch:
+				return models.CiscoRoughVersionMatch
+			case cvemodels.CiscoVendorProductMatch:
+				return models.CiscoVendorProductMatch
+			default:
+				return models.Confidence{}
 			}
 		}
-		return maxConfidence
+
+		return fn(slices.MaxFunc(detail.Ciscos, func(a, b cvemodels.Cisco) int {
+			return cmp.Compare(fn(a.DetectionMethod).Score, fn(b.DetectionMethod).Score)
+		}).DetectionMethod)
+	}
+
+	if detail.HasPaloalto() {
+		fn := func(s string) models.Confidence {
+			switch s {
+			case cvemodels.PaloaltoExactVersionMatch:
+				return models.PaloaltoExactVersionMatch
+			case cvemodels.PaloaltoRoughVersionMatch:
+				return models.PaloaltoRoughVersionMatch
+			case cvemodels.PaloaltoVendorProductMatch:
+				return models.PaloaltoVendorProductMatch
+			default:
+				return models.Confidence{}
+			}
+		}
+
+		return fn(slices.MaxFunc(detail.Paloaltos, func(a, b cvemodels.Paloalto) int {
+			return cmp.Compare(fn(a.DetectionMethod).Score, fn(b.DetectionMethod).Score)
+		}).DetectionMethod)
+	}
+
+	if detail.HasFortinet() {
+		fn := func(s string) models.Confidence {
+			switch s {
+			case cvemodels.FortinetExactVersionMatch:
+				return models.FortinetExactVersionMatch
+			case cvemodels.FortinetRoughVersionMatch:
+				return models.FortinetRoughVersionMatch
+			case cvemodels.FortinetVendorProductMatch:
+				return models.FortinetVendorProductMatch
+			default:
+				return models.Confidence{}
+			}
+		}
+
+		return fn(slices.MaxFunc(detail.Fortinets, func(a, b cvemodels.Fortinet) int {
+			return cmp.Compare(fn(a.DetectionMethod).Score, fn(b.DetectionMethod).Score)
+		}).DetectionMethod)
 	}
 
 	if detail.HasNvd() {
-		for _, nvd := range detail.Nvds {
-			confidence := models.Confidence{}
-			switch nvd.DetectionMethod {
+		fn := func(s string) models.Confidence {
+			switch s {
 			case cvemodels.NvdExactVersionMatch:
-				confidence = models.NvdExactVersionMatch
+				return models.NvdExactVersionMatch
 			case cvemodels.NvdRoughVersionMatch:
-				confidence = models.NvdRoughVersionMatch
+				return models.NvdRoughVersionMatch
 			case cvemodels.NvdVendorProductMatch:
-				confidence = models.NvdVendorProductMatch
-			}
-			if maxConfidence.Score < confidence.Score {
-				maxConfidence = confidence
+				return models.NvdVendorProductMatch
+			default:
+				return models.Confidence{}
 			}
 		}
-		return maxConfidence
+
+		return fn(slices.MaxFunc(detail.Nvds, func(a, b cvemodels.Nvd) int {
+			return cmp.Compare(fn(a.DetectionMethod).Score, fn(b.DetectionMethod).Score)
+		}).DetectionMethod)
 	}
 
 	if detail.HasJvn() {

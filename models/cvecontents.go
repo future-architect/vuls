@@ -450,6 +450,12 @@ const (
 	// Fortinet is Fortinet
 	Fortinet CveContentType = "fortinet"
 
+	// Paloalto is Paloalto
+	Paloalto CveContentType = "paloalto"
+
+	// Cisco is Cisco
+	Cisco CveContentType = "cisco"
+
 	// RedHat is RedHat
 	RedHat CveContentType = "redhat"
 
@@ -595,6 +601,8 @@ var AllCveContetTypes = CveContentTypes{
 	Nvd,
 	Jvn,
 	Fortinet,
+	Paloalto,
+	Cisco,
 	RedHat,
 	RedHatAPI,
 	Alma,
