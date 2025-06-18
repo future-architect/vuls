@@ -362,6 +362,41 @@ func Test_postConvert(t *testing.T) {
 													},
 												},
 											},
+											dataTypes.RootID("RHSA-2025:0002"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0002",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type: severityTypes.SeverityTypeCVSSv31,
+																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
+																	BaseScore:             7.1,
+																	BaseSeverity:          "HIGH",
+																	TemporalScore:         7.1,
+																	TemporalSeverity:      "HIGH",
+																	EnvironmentalScore:    7.1,
+																	EnvironmentalSeverity: "HIGH",
+																}),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://access.redhat.com/security/cve/CVE-2025-0002",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+															Tag:       segmentTypes.DetectionTag("rhel-9-including-unpatched"),
+														},
+													},
+												},
+											},
 										},
 									},
 								},
@@ -612,7 +647,111 @@ func Test_postConvert(t *testing.T) {
 								{
 									ID: "CVE-2025-0002",
 									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.RedHatOVALv1: {
+											dataTypes.RootID("RHSA-2025:0001"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0002",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type: severityTypes.SeverityTypeCVSSv31,
+																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
+																	BaseScore:             7.1,
+																	BaseSeverity:          "HIGH",
+																	TemporalScore:         7.1,
+																	TemporalSeverity:      "HIGH",
+																	EnvironmentalScore:    7.1,
+																	EnvironmentalSeverity: "HIGH",
+																}),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://access.redhat.com/security/cve/CVE-2025-0002",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+														},
+													},
+												},
+											},
+										},
 										sourceTypes.RedHatOVALv2: {
+											dataTypes.RootID("RHSA-2025:0001"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0002",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type: severityTypes.SeverityTypeCVSSv31,
+																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
+																	BaseScore:             7.1,
+																	BaseSeverity:          "HIGH",
+																	TemporalScore:         7.1,
+																	TemporalSeverity:      "HIGH",
+																	EnvironmentalScore:    7.1,
+																	EnvironmentalSeverity: "HIGH",
+																}),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://access.redhat.com/security/cve/CVE-2025-0002",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+															Tag:       segmentTypes.DetectionTag("rhel-9"),
+														},
+													},
+												},
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0002",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type: severityTypes.SeverityTypeCVSSv31,
+																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+																	BaseScore:             5.5,
+																	BaseSeverity:          "MEDIUM",
+																	TemporalScore:         5.5,
+																	TemporalSeverity:      "MEDIUM",
+																	EnvironmentalScore:    5.5,
+																	EnvironmentalSeverity: "MEDIUM",
+																}),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://access.redhat.com/security/cve/CVE-2025-0002",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+															Tag:       segmentTypes.DetectionTag("rhel-9-including-unpatched"),
+														},
+													},
+												},
+											},
 											dataTypes.RootID("RHSA-2025:0002"): []vulnerabilityTypes.Vulnerability{
 												{
 													Content: vulnerabilityContentTypes.Content{
@@ -655,6 +794,73 @@ func Test_postConvert(t *testing.T) {
 									ID: "CVE-2025-0003",
 									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
 										sourceTypes.RedHatOVALv2: {
+											dataTypes.RootID("CVE-2025-0003"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0003",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type: severityTypes.SeverityTypeCVSSv2,
+																CVSSv2: toPtr(cvssV2Types.CVSSv2{
+																	Vector:                   "AV:L/AC:L/Au:N/C:C/I:N/A:C",
+																	BaseScore:                6.6,
+																	NVDBaseSeverity:          "MEDIUM",
+																	TemporalScore:            6.6,
+																	NVDTemporalSeverity:      "MEDIUM",
+																	EnvironmentalScore:       6.6,
+																	NVDEnvironmentalSeverity: "MEDIUM",
+																}),
+															},
+															{
+																Type: severityTypes.SeverityTypeCVSSv30,
+																CVSSv30: toPtr(cvssV30Types.CVSSv30{
+																	Vector:                "CVSS:3.0/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
+																	BaseScore:             7.1,
+																	BaseSeverity:          "HIGH",
+																	TemporalScore:         7.1,
+																	TemporalSeverity:      "HIGH",
+																	EnvironmentalScore:    7.1,
+																	EnvironmentalSeverity: "HIGH",
+																}),
+															},
+															{
+																Type: severityTypes.SeverityTypeCVSSv31,
+																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
+																	BaseScore:             7.1,
+																	BaseSeverity:          "HIGH",
+																	TemporalScore:         7.1,
+																	TemporalSeverity:      "HIGH",
+																	EnvironmentalScore:    7.1,
+																	EnvironmentalSeverity: "HIGH",
+																}),
+															},
+															{
+																Type: severityTypes.SeverityTypeCVSSv40,
+																CVSSv40: toPtr(cvssV40Types.CVSSv40{
+																	Vector:   "CVSS:4.0/AV:L/AC:H/AT:N/PR:L/UI:N/VC:H/VI:N/VA:H/SC:H/SI:N/SA:H",
+																	Score:    7.1,
+																	Severity: "HIGH",
+																}),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://access.redhat.com/security/cve/CVE-2025-0003",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+															Tag:       segmentTypes.DetectionTag("rhel-9-including-unpatched"),
+														},
+													},
+												},
+											},
 											dataTypes.RootID("RHSA-2025:0002"): []vulnerabilityTypes.Vulnerability{
 												{
 													Content: vulnerabilityContentTypes.Content{
@@ -848,6 +1054,37 @@ func Test_postConvert(t *testing.T) {
 																	EnvironmentalSeverity: "HIGH",
 																}),
 															},
+															{
+																Type: severityTypes.SeverityTypeCVSSv40,
+																CVSSv40: toPtr(cvssV40Types.CVSSv40{
+																	Vector:   "CVSS:4.0/AV:L/AC:H/AT:N/PR:L/UI:N/VC:H/VI:N/VA:H/SC:H/SI:N/SA:H",
+																	Score:    7.1,
+																	Severity: "HIGH",
+																}),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://access.redhat.com/security/cve/CVE-2025-0003",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+															Tag:       segmentTypes.DetectionTag("rhel-9-including-unpatched"),
+														},
+													},
+												},
+											},
+											dataTypes.RootID("RHSA-2025:0002"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0003",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv40,
 																CVSSv40: toPtr(cvssV40Types.CVSSv40{
@@ -1877,86 +2114,6 @@ func Test_postConvert(t *testing.T) {
 								},
 							},
 						},
-						{
-							ID: "CVE-2025-0003",
-							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
-								{
-									ID: "CVE-2025-0003",
-									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
-										sourceTypes.RedHatVEX: {
-											dataTypes.RootID("CVE-2025-0003"): []vulnerabilityTypes.Vulnerability{
-												{
-													Content: vulnerabilityContentTypes.Content{
-														ID:          "CVE-2025-0003",
-														Title:       "title",
-														Description: "[REJECTED CVE] description",
-														References: []referenceTypes.Reference{
-															{
-																URL: "https://access.redhat.com/security/cve/CVE-2025-0003",
-															},
-														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
-													},
-													Segments: []segmentTypes.Segment{
-														{
-															Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
-															Tag:       segmentTypes.DetectionTag("rhel-9-including-unpatched:gfedcba-e6c7-e2d7-e6da-c772de020fa7"),
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-							Detections: []detectTypes.VulnerabilityDataDetection{
-								{
-									Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
-									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
-										sourceTypes.RedHatVEX: {
-											{
-												Criteria: criteriaTypes.FilteredCriteria{
-													Operator: criteriaTypes.CriteriaOperatorTypeOR,
-													Criterions: []criterionTypes.FilteredCriterion{
-														{
-															Criterion: criterionTypes.Criterion{
-																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
-																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
-																		Class: vcFixStatusTypes.ClassFixed,
-																	}),
-																	Package: vcPackageTypes.Package{
-																		Type: vcPackageTypes.PackageTypeBinary,
-																		Binary: &vcBinaryPackageTypes.Package{
-																			Name:          "package1",
-																			Architectures: []string{"aarch64", "x86_64"},
-																		},
-																	},
-																	Affected: &vcAffectedTypes.Affected{
-																		Type: vcAffectedRangeTypes.RangeTypeRPM,
-																		Range: []vcAffectedRangeTypes.Range{
-																			{
-																				LessThan: "0.0.0-1.el9",
-																			},
-																		},
-																		Fixed: []string{"0.0.0-1.el9"},
-																	},
-																}),
-															},
-															Accepts: criterionTypes.AcceptQueries{
-																Version: []int{0},
-															},
-														},
-													},
-												},
-												Tag: segmentTypes.DetectionTag("rhel-9-including-unpatched:gfedcba-e6c7-e2d7-e6da-c772de020fa7"),
-											},
-										},
-									},
-								},
-							},
-						},
 					},
 				},
 			},
@@ -2176,6 +2333,43 @@ func Test_postConvert(t *testing.T) {
 												},
 											},
 										},
+										sourceTypes.RedHatVEX: {
+											dataTypes.RootID("CVE-2025-0001"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0001",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type: severityTypes.SeverityTypeCVSSv31,
+																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+																	BaseScore:             5.5,
+																	BaseSeverity:          "MEDIUM",
+																	TemporalScore:         5.5,
+																	TemporalSeverity:      "MEDIUM",
+																	EnvironmentalScore:    5.5,
+																	EnvironmentalSeverity: "MEDIUM",
+																}),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+															Tag:       segmentTypes.DetectionTag("rhel-9-including-unpatched:0123456-e6c7-e2d7-e6da-c772de020fa7"),
+														},
+													},
+												},
+											},
+										},
 									},
 								},
 								{
@@ -2275,6 +2469,43 @@ func Test_postConvert(t *testing.T) {
 								{
 									ID: "CVE-2025-0001",
 									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.RedHatOVALv2: {
+											dataTypes.RootID("RHSA-2025:0001"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0001",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type: severityTypes.SeverityTypeCVSSv31,
+																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+																	BaseScore:             5.5,
+																	BaseSeverity:          "MEDIUM",
+																	TemporalScore:         5.5,
+																	TemporalSeverity:      "MEDIUM",
+																	EnvironmentalScore:    5.5,
+																	EnvironmentalSeverity: "MEDIUM",
+																}),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+															Tag:       segmentTypes.DetectionTag("rhel-9-including-unpatched"),
+														},
+													},
+												},
+											},
+										},
 										sourceTypes.RedHatVEX: {
 											dataTypes.RootID("CVE-2025-0001"): []vulnerabilityTypes.Vulnerability{
 												{
@@ -2528,6 +2759,42 @@ func Test_postConvert(t *testing.T) {
 												},
 											},
 										},
+										sourceTypes.Fedora: {
+											dataTypes.RootID("FEDORA-EPEL-2025-0123456789"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0001",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type: severityTypes.SeverityTypeCVSSv31,
+																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
+																	BaseScore:             7.1,
+																	BaseSeverity:          "HIGH",
+																	TemporalScore:         7.1,
+																	TemporalSeverity:      "HIGH",
+																	EnvironmentalScore:    7.1,
+																	EnvironmentalSeverity: "HIGH",
+																}),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://www.cve.org/CVERecord?id=CVE-2025-0001",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("epel:9"),
+														},
+													},
+												},
+											},
+										},
 										sourceTypes.NVDAPICVE: {
 											dataTypes.RootID("CVE-2025-0001"): {
 												{
@@ -2674,6 +2941,43 @@ func Test_postConvert(t *testing.T) {
 								{
 									ID: "CVE-2025-0001",
 									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.RedHatVEX: {
+											dataTypes.RootID("CVE-2025-0001"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0001",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type: severityTypes.SeverityTypeCVSSv31,
+																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+																	BaseScore:             5.5,
+																	BaseSeverity:          "MEDIUM",
+																	TemporalScore:         5.5,
+																	TemporalSeverity:      "MEDIUM",
+																	EnvironmentalScore:    5.5,
+																	EnvironmentalSeverity: "MEDIUM",
+																}),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+															Tag:       segmentTypes.DetectionTag("rhel-9-including-unpatched:0123456-e6c7-e2d7-e6da-c772de020fa7"),
+														},
+													},
+												},
+											},
+										},
 										sourceTypes.Fedora: {
 											dataTypes.RootID("FEDORA-EPEL-2025-0123456789"): {
 												{
@@ -2705,6 +3009,42 @@ func Test_postConvert(t *testing.T) {
 													Segments: []segmentTypes.Segment{
 														{
 															Ecosystem: ecosystemTypes.Ecosystem("epel:9"),
+														},
+													},
+												},
+											},
+										},
+										sourceTypes.NVDAPICVE: {
+											dataTypes.RootID("CVE-2025-0001"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0001",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type: severityTypes.SeverityTypeCVSSv31,
+																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+																	BaseScore:             5.5,
+																	BaseSeverity:          "MEDIUM",
+																	TemporalScore:         5.5,
+																	TemporalSeverity:      "MEDIUM",
+																	EnvironmentalScore:    5.5,
+																	EnvironmentalSeverity: "MEDIUM",
+																}),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://nvd.nist.gov/vuln/detail/CVE-2025-0001",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
 														},
 													},
 												},
@@ -3684,6 +4024,86 @@ func Test_postConvert(t *testing.T) {
 													},
 												},
 												Tag: segmentTypes.DetectionTag("rhel-9-including-unpatched"),
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							ID: "CVE-2025-0007",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0007",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.RedHatVEX: {
+											dataTypes.RootID("CVE-2025-0007"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0007",
+														Title:       "title",
+														Description: "[REJECTED CVE] description",
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://access.redhat.com/security/cve/CVE-2025-0007",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+															Tag:       segmentTypes.DetectionTag("rhel-9-including-unpatched:gfedcba-e6c7-e2d7-e6da-c772de020fa7"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.RedHatVEX: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: toPtr(versoncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeBinary,
+																		Binary: &vcBinaryPackageTypes.Package{
+																			Name:          "package1",
+																			Architectures: []string{"aarch64", "x86_64"},
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeRPM,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "0.0.0-1.el9",
+																			},
+																		},
+																		Fixed: []string{"0.0.0-1.el9"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0},
+															},
+														},
+													},
+												},
+												Tag: segmentTypes.DetectionTag("rhel-9-including-unpatched:gfedcba-e6c7-e2d7-e6da-c772de020fa7"),
 											},
 										},
 									},
