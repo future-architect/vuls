@@ -517,44 +517,45 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 		am := make(map[source]models.DistroAdvisories)
 		for _, vda := range vd.Advisories {
 			for sid, rm := range vda.Contents {
-				for rid, as := range rm {
-					for _, a := range as {
-						for _, segment := range a.Segments {
-							src := source{
-								RootID:   rid,
-								SourceID: sid,
-								Segment:  segment,
-							}
-
-							if _, ok := m[src]; !ok {
-								continue
-							}
-
-							am[src] = append(am[src], models.DistroAdvisory{
-								AdvisoryID: string(a.Content.ID),
-								Severity: func() string {
-									for _, s := range a.Content.Severity {
-										if s.Type == severityTypes.SeverityTypeVendor && s.Vendor != nil {
-											return *s.Vendor
-										}
-									}
-									return ""
-								}(),
-								Issued: func() time.Time {
-									if a.Content.Published != nil {
-										return *a.Content.Published
-									}
-									return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-								}(),
-								Updated: func() time.Time {
-									if a.Content.Modified != nil {
-										return *a.Content.Modified
-									}
-									return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-								}(),
-								Description: a.Content.Description,
-							})
+				if rm == nil {
+					return xerrors.Errorf("advisories map is nil, root id: %q -> advisories[source id: %q]", vd.ID, sid)
+				}
+				for _, a := range rm[vd.ID] {
+					for _, segment := range a.Segments {
+						src := source{
+							RootID:   vd.ID,
+							SourceID: sid,
+							Segment:  segment,
 						}
+
+						if _, ok := m[src]; !ok {
+							continue
+						}
+
+						am[src] = append(am[src], models.DistroAdvisory{
+							AdvisoryID: string(a.Content.ID),
+							Severity: func() string {
+								for _, s := range a.Content.Severity {
+									if s.Type == severityTypes.SeverityTypeVendor && s.Vendor != nil {
+										return *s.Vendor
+									}
+								}
+								return ""
+							}(),
+							Issued: func() time.Time {
+								if a.Content.Published != nil {
+									return *a.Content.Published
+								}
+								return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+							}(),
+							Updated: func() time.Time {
+								if a.Content.Modified != nil {
+									return *a.Content.Modified
+								}
+								return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+							}(),
+							Description: a.Content.Description,
+						})
 					}
 				}
 			}
@@ -562,103 +563,104 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 
 		for _, vdv := range vd.Vulnerabilities {
 			for sid, rm := range vdv.Contents {
-				for rid, vs := range rm {
-					for _, v := range vs {
-						for _, segment := range v.Segments {
-							src := source{
-								RootID:   rid,
-								SourceID: sid,
-								Segment:  segment,
-							}
-
-							if _, ok := m[src]; !ok {
-								continue
-							}
-
-							if ignoreVulnerability(src.Segment.Ecosystem, v, am[src]) {
-								continue
-							}
-
-							vinfo, err := func() (models.VulnInfo, error) {
-								bs, err := json.Marshal([]source{src})
-								if err != nil {
-									return models.VulnInfo{}, xerrors.Errorf("Failed to marshal sources. err: %w", err)
-								}
-
-								fdas := filterDistroAdvisories(src.Segment.Ecosystem, am[src])
-								cctype := toCveContentType(src.Segment.Ecosystem, sid)
-								cvss2, cvss3, cvss40 := toCvss(v.Content.Severity)
-
-								var rs models.References
-								for _, r := range v.Content.References {
-									rs = append(rs, toReference(r.URL))
-								}
-								for _, da := range fdas {
-									ar, err := advisoryReference(src.Segment.Ecosystem, src.SourceID, da)
-									if err != nil {
-										return models.VulnInfo{}, xerrors.Errorf("Failed to get advisory reference. err: %w", err)
-									}
-									if !slices.ContainsFunc(rs, func(r models.Reference) bool {
-										return r.Link == ar.Link && r.Source == ar.Source && r.RefID == ar.RefID && slices.Equal(r.Tags, ar.Tags)
-									}) {
-										rs = append(rs, ar)
-									}
-								}
-
-								return models.VulnInfo{
-									CveID:            string(v.Content.ID),
-									Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID)},
-									DistroAdvisories: fdas,
-									CveContents: models.NewCveContents(models.CveContent{
-										Type:           cctype,
-										CveID:          string(v.Content.ID),
-										Title:          v.Content.Title,
-										Summary:        v.Content.Description,
-										Cvss2Score:     cvss2.BaseScore,
-										Cvss2Vector:    cvss2.Vector,
-										Cvss2Severity:  cvss2.NVDBaseSeverity,
-										Cvss3Score:     cvss3.BaseScore,
-										Cvss3Vector:    cvss3.Vector,
-										Cvss3Severity:  cvss3.BaseSeverity,
-										Cvss40Score:    cvss40.Score,
-										Cvss40Vector:   cvss40.Vector,
-										Cvss40Severity: cvss40.Severity,
-										SourceLink:     cveContentSourceLink(cctype, v),
-										References:     rs,
-										CweIDs: func() []string {
-											var cs []string
-											for _, cwe := range v.Content.CWE {
-												cs = append(cs, cwe.CWE...)
-											}
-											return cs
-										}(),
-										Published: func() time.Time {
-											if v.Content.Published != nil {
-												return *v.Content.Published
-											}
-											return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-										}(),
-										LastModified: func() time.Time {
-											if v.Content.Modified != nil {
-												return *v.Content.Modified
-											}
-											return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-										}(),
-										Optional: map[string]string{"vuls2-sources": string(bs)},
-									}),
-								}, nil
-							}()
-							if err != nil {
-								return xerrors.Errorf("Failed to create vuln info. err: %w", err)
-							}
-
-							base := m[src]
-							if base.vulninfos == nil {
-								base.vulninfos = make(models.VulnInfos)
-							}
-							base.vulninfos[vinfo.CveID] = vinfo
-							m[src] = base
+				if rm == nil {
+					return xerrors.Errorf("vulnerabilities map is nil, root id: %q -> vulnerabilities[source id: %q]", vd.ID, sid)
+				}
+				for _, v := range rm[vd.ID] {
+					for _, segment := range v.Segments {
+						src := source{
+							RootID:   vd.ID,
+							SourceID: sid,
+							Segment:  segment,
 						}
+
+						if _, ok := m[src]; !ok {
+							continue
+						}
+
+						if ignoreVulnerability(src.Segment.Ecosystem, v, am[src]) {
+							continue
+						}
+
+						vinfo, err := func() (models.VulnInfo, error) {
+							bs, err := json.Marshal([]source{src})
+							if err != nil {
+								return models.VulnInfo{}, xerrors.Errorf("Failed to marshal sources. err: %w", err)
+							}
+
+							fdas := filterDistroAdvisories(src.Segment.Ecosystem, am[src])
+							cctype := toCveContentType(src.Segment.Ecosystem, sid)
+							cvss2, cvss3, cvss40 := toCvss(v.Content.Severity)
+
+							var rs models.References
+							for _, r := range v.Content.References {
+								rs = append(rs, toReference(r.URL))
+							}
+							for _, da := range fdas {
+								ar, err := advisoryReference(src.Segment.Ecosystem, src.SourceID, da)
+								if err != nil {
+									return models.VulnInfo{}, xerrors.Errorf("Failed to get advisory reference. err: %w", err)
+								}
+								if !slices.ContainsFunc(rs, func(r models.Reference) bool {
+									return r.Link == ar.Link && r.Source == ar.Source && r.RefID == ar.RefID && slices.Equal(r.Tags, ar.Tags)
+								}) {
+									rs = append(rs, ar)
+								}
+							}
+
+							return models.VulnInfo{
+								CveID:            string(v.Content.ID),
+								Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID)},
+								DistroAdvisories: fdas,
+								CveContents: models.NewCveContents(models.CveContent{
+									Type:           cctype,
+									CveID:          string(v.Content.ID),
+									Title:          v.Content.Title,
+									Summary:        v.Content.Description,
+									Cvss2Score:     cvss2.BaseScore,
+									Cvss2Vector:    cvss2.Vector,
+									Cvss2Severity:  cvss2.NVDBaseSeverity,
+									Cvss3Score:     cvss3.BaseScore,
+									Cvss3Vector:    cvss3.Vector,
+									Cvss3Severity:  cvss3.BaseSeverity,
+									Cvss40Score:    cvss40.Score,
+									Cvss40Vector:   cvss40.Vector,
+									Cvss40Severity: cvss40.Severity,
+									SourceLink:     cveContentSourceLink(cctype, v),
+									References:     rs,
+									CweIDs: func() []string {
+										var cs []string
+										for _, cwe := range v.Content.CWE {
+											cs = append(cs, cwe.CWE...)
+										}
+										return cs
+									}(),
+									Published: func() time.Time {
+										if v.Content.Published != nil {
+											return *v.Content.Published
+										}
+										return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+									}(),
+									LastModified: func() time.Time {
+										if v.Content.Modified != nil {
+											return *v.Content.Modified
+										}
+										return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+									}(),
+									Optional: map[string]string{"vuls2-sources": string(bs)},
+								}),
+							}, nil
+						}()
+						if err != nil {
+							return xerrors.Errorf("Failed to create vuln info. err: %w", err)
+						}
+
+						base := m[src]
+						if base.vulninfos == nil {
+							base.vulninfos = make(models.VulnInfos)
+						}
+						base.vulninfos[vinfo.CveID] = vinfo
+						m[src] = base
 					}
 				}
 			}
