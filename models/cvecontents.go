@@ -336,6 +336,8 @@ func NewCveContentType(name string) CveContentType {
 		return UbuntuAPI
 	case constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
 		return SUSE
+	case "alpine":
+		return Alpine
 	case "microsoft":
 		return Microsoft
 	case "wordpress":
@@ -428,6 +430,8 @@ func GetCveContentTypes(family string) []CveContentType {
 		return []CveContentType{Ubuntu, UbuntuAPI}
 	case constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
 		return []CveContentType{SUSE}
+	case constant.Alpine:
+		return []CveContentType{Alpine}
 	case constant.Windows:
 		return []CveContentType{Microsoft}
 	case string(Trivy):
@@ -491,6 +495,9 @@ const (
 
 	// SUSE is SUSE Linux
 	SUSE CveContentType = "suse"
+
+	// Alpine is Alpine Linux
+	Alpine CveContentType = "alpine"
 
 	// Microsoft is Microsoft
 	Microsoft CveContentType = "microsoft"
@@ -614,6 +621,8 @@ var AllCveContetTypes = CveContentTypes{
 	Amazon,
 	Fedora,
 	SUSE,
+	Alpine,
+	Microsoft,
 	WpScan,
 	Trivy,
 	TrivyNVD,

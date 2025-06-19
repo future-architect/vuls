@@ -245,6 +245,12 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 			Source: "ROCKY",
 			RefID:  da.AdvisoryID,
 		}, nil
+	case ecosystemTypes.EcosystemTypeOracle:
+		return models.Reference{
+			Link:   fmt.Sprintf("https://linux.oracle.com/errata/%s.html", da.AdvisoryID),
+			Source: "ORACLE",
+			RefID:  da.AdvisoryID,
+		}, nil
 	default:
 		return models.Reference{}, xerrors.Errorf("unsupported family: %s", et)
 	}
@@ -254,6 +260,10 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 	switch ccType {
 	case models.RedHat:
 		return fmt.Sprintf("https://access.redhat.com/security/cve/%s", v.Content.ID)
+	case models.Oracle:
+		return fmt.Sprintf("https://linux.oracle.com/cve/%s.html", v.Content.ID)
+	case models.Alpine:
+		return fmt.Sprintf("https://security.alpinelinux.org/vuln/%s", v.Content.ID)
 	case models.Nvd:
 		return fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", v.Content.ID)
 	default:
@@ -337,6 +347,18 @@ func compareSourceID(e ecosystemTypes.Ecosystem, a, b sourceTypes.SourceID) int 
 			case sourceTypes.RockyErrata:
 				return 3
 			case sourceTypes.RockyOSV:
+				return 2
+			default:
+				return 1
+			}
+		}
+		return cmp.Compare(preferenceFn(a), preferenceFn(b))
+	case ecosystemTypes.EcosystemTypeAlpine:
+		preferenceFn := func(sourceID sourceTypes.SourceID) int {
+			switch sourceID {
+			case sourceTypes.AlpineSecDB:
+				return 3
+			case sourceTypes.AlpineOSV:
 				return 2
 			default:
 				return 1
@@ -443,7 +465,7 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) model
 			DetectionMethod: models.DetectionMethod("EPELMatch"),
 			SortOrder:       1,
 		}
-	case ecosystemTypes.EcosystemTypeRedHat, ecosystemTypes.EcosystemTypeAlma, ecosystemTypes.EcosystemTypeRocky:
+	case ecosystemTypes.EcosystemTypeRedHat, ecosystemTypes.EcosystemTypeAlma, ecosystemTypes.EcosystemTypeRocky, ecosystemTypes.EcosystemTypeOracle, ecosystemTypes.EcosystemTypeAlpine:
 		return models.OvalMatch
 	default:
 		return models.Confidence{

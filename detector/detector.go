@@ -318,28 +318,29 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 }
 
 // DetectPkgCves detects OS pkg cves
-// pass 2 configs
+// pass 3 configs
 func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf config.GostConf, vuls2Conf config.Vuls2Conf, logOpts logging.LogOpts, noProgress bool) error {
-	// Pkg Scan
 	if isPkgCvesDetactable(r) {
-		// OVAL, gost(Debian Security Tracker) does not support Package for Raspbian, so skip it.
-		if r.Family == constant.Raspbian {
-			r = r.RemoveRaspbianPackFromResult()
-		}
+		switch r.Family {
+		case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Oracle, constant.Alpine:
+			if err := vuls2.Detect(r, vuls2Conf, noProgress); err != nil {
+				return xerrors.Errorf("Failed to detect CVE with Vuls2: %w", err)
+			}
+		case constant.Fedora, constant.Amazon, constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
+			if err := detectPkgsCvesWithOval(ovalCnf, r, logOpts); err != nil {
+				return xerrors.Errorf("Failed to detect CVE with OVAL: %w", err)
+			}
+		case constant.Debian, constant.Raspbian, constant.Ubuntu, constant.Windows:
+			// gost(Debian Security Tracker) does not support Package for Raspbian, so skip it.
+			if r.Family == constant.Raspbian {
+				r = r.RemoveRaspbianPackFromResult()
+			}
 
-		// Vuls2
-		if err := vuls2.Detect(r, vuls2Conf, noProgress); err != nil {
-			return xerrors.Errorf("Failed to detect CVE with Vuls2: %w", err)
-		}
-
-		// OVAL
-		if err := detectPkgsCvesWithOval(ovalCnf, r, logOpts); err != nil {
-			return xerrors.Errorf("Failed to detect CVE with OVAL: %w", err)
-		}
-
-		// gost
-		if err := detectPkgsCvesWithGost(gostCnf, r, logOpts); err != nil {
-			return xerrors.Errorf("Failed to detect CVE with gost: %w", err)
+			if err := detectPkgsCvesWithGost(gostCnf, r, logOpts); err != nil {
+				return xerrors.Errorf("Failed to detect CVE with gost: %w", err)
+			}
+		default:
+			return xerrors.Errorf("Unsupported detection methods for %s", r.Family)
 		}
 	}
 
@@ -377,23 +378,23 @@ func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf c
 func isPkgCvesDetactable(r *models.ScanResult) bool {
 	switch r.Family {
 	case constant.FreeBSD, constant.MacOSX, constant.MacOSXServer, constant.MacOS, constant.MacOSServer, constant.ServerTypePseudo:
-		logging.Log.Infof("%s type. Skip OVAL and gost detection", r.Family)
+		logging.Log.Infof("%s type. Skip OVAL, gost and vuls2 detection", r.Family)
 		return false
 	case constant.Windows:
 		return true
 	default:
 		if r.ScannedVia == "trivy" {
-			logging.Log.Infof("r.ScannedVia is trivy. Skip OVAL and gost detection")
+			logging.Log.Infof("r.ScannedVia is trivy. Skip OVAL, gost and vuls2 detection")
 			return false
 		}
 
 		if r.Release == "" {
-			logging.Log.Infof("r.Release is empty. Skip OVAL and gost detection")
+			logging.Log.Infof("r.Release is empty. Skip OVAL, gost and vuls2 detection")
 			return false
 		}
 
 		if len(r.Packages)+len(r.SrcPackages) == 0 {
-			logging.Log.Infof("Number of packages is 0. Skip OVAL and gost detection")
+			logging.Log.Infof("Number of packages is 0. Skip OVAL, gost and vuls2 detection")
 			return false
 		}
 		return true
@@ -531,11 +532,10 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 	return dict
 }
 
-// detectPkgsCvesWithOval fetches OVAL database
 func detectPkgsCvesWithOval(cnf config.GovalDictConf, r *models.ScanResult, logOpts logging.LogOpts) error {
 	client, err := oval.NewOVALClient(r.Family, cnf, logOpts)
 	if err != nil {
-		return err
+		return xerrors.Errorf("Failed to new OVAL client. err: %w", err)
 	}
 	defer func() {
 		if err := client.CloseDB(); err != nil {
@@ -543,40 +543,29 @@ func detectPkgsCvesWithOval(cnf config.GovalDictConf, r *models.ScanResult, logO
 		}
 	}()
 
-	switch r.Family {
-	case constant.Debian, constant.Raspbian, constant.Ubuntu:
-		logging.Log.Infof("Skip OVAL and Scan with gost alone.")
-		logging.Log.Infof("%s: %d CVEs are detected with OVAL", r.FormatServerName(), 0)
-		return nil
-	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
-		logging.Log.Debugf("Skip OVAL and Scan by Vuls2")
-		return nil
-	case constant.Windows, constant.MacOSX, constant.MacOSXServer, constant.MacOS, constant.MacOSServer, constant.FreeBSD, constant.ServerTypePseudo:
-		return nil
-	default:
-		logging.Log.Debugf("Check if oval fetched: %s %s", r.Family, r.Release)
-		ok, err := client.CheckIfOvalFetched(r.Family, r.Release)
-		if err != nil {
-			return err
-		}
-		if !ok {
-			return xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see `https://github.com/vulsio/goval-dictionary#usage`", r.Family, r.Release)
-		}
+	logging.Log.Debugf("Check if oval fetched: %s %s", r.Family, r.Release)
+	ok, err := client.CheckIfOvalFetched(r.Family, r.Release)
+	if err != nil {
+		return xerrors.Errorf("Failed to check if oval fetched: %w", err)
+	}
+	if !ok {
+		return xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see `https://github.com/vulsio/goval-dictionary#usage`", r.Family, r.Release)
 	}
 
 	logging.Log.Debugf("Check if oval fresh: %s %s", r.Family, r.Release)
 	_, err = client.CheckIfOvalFresh(r.Family, r.Release)
 	if err != nil {
-		return err
+		return xerrors.Errorf("Failed to check if oval fresh: %w", err)
 	}
 
 	logging.Log.Debugf("Fill with oval: %s %s", r.Family, r.Release)
 	nCVEs, err := client.FillWithOval(r)
 	if err != nil {
-		return err
+		return xerrors.Errorf("Failed to fill with oval: %w", err)
 	}
 
 	logging.Log.Infof("%s: %d CVEs are detected with OVAL", r.FormatServerName(), nCVEs)
+
 	return nil
 }
 
@@ -593,20 +582,10 @@ func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult, logOpts l
 
 	nCVEs, err := client.DetectCVEs(r, true)
 	if err != nil {
-		switch r.Family {
-		case constant.Debian, constant.Raspbian, constant.Ubuntu, constant.Windows:
-			return xerrors.Errorf("Failed to detect CVEs with gost: %w", err)
-		default:
-			return xerrors.Errorf("Failed to detect unfixed CVEs with gost: %w", err)
-		}
+		return xerrors.Errorf("Failed to detect CVEs with gost: %w", err)
 	}
 
-	switch r.Family {
-	case constant.Debian, constant.Raspbian, constant.Ubuntu, constant.Windows:
-		logging.Log.Infof("%s: %d CVEs are detected with gost", r.FormatServerName(), nCVEs)
-	default:
-		logging.Log.Infof("%s: %d unfixed CVEs are detected with gost", r.FormatServerName(), nCVEs)
-	}
+	logging.Log.Infof("%s: %d CVEs are detected with gost", r.FormatServerName(), nCVEs)
 
 	return nil
 }

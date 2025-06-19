@@ -36,19 +36,12 @@ import (
 	"github.com/MaineK00n/vuls2/pkg/version"
 
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 )
 
 // Detect detects vulnerabilities and fills ScanResult
 func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
-	switch r.Family {
-	case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky:
-	default:
-		return nil
-	}
-
 	if vuls2Conf.Repository == "" {
 		vuls2Conf.Repository = DefaultGHCRRepository
 	}
@@ -975,6 +968,32 @@ func toReference(ref string) models.Reference {
 			Link:   ref,
 			Source: "ROCKY",
 			RefID:  strings.TrimPrefix(ref, "https://errata.build.resf.org/"),
+		}
+	case strings.HasPrefix(ref, "https://linux.oracle.com/"):
+		switch {
+		case strings.HasPrefix(ref, "https://linux.oracle.com/cve/"):
+			return models.Reference{
+				Link:   ref,
+				Source: "ORACLE",
+				RefID:  strings.TrimPrefix(strings.TrimSuffix(ref, ".html"), "https://linux.oracle.com/cve/"),
+			}
+		case strings.HasPrefix(ref, "https://linux.oracle.com/errata/"):
+			return models.Reference{
+				Link:   ref,
+				Source: "ORACLE",
+				RefID:  strings.TrimPrefix(strings.TrimSuffix(ref, ".html"), "https://linux.oracle.com/errata/"),
+			}
+		default:
+			return models.Reference{
+				Link:   ref,
+				Source: "ORACLE",
+			}
+		}
+	case strings.HasPrefix(ref, "https://security.alpinelinux.org/vuln/"):
+		return models.Reference{
+			Link:   ref,
+			Source: "ALPINE",
+			RefID:  strings.TrimPrefix(ref, "https://security.alpinelinux.org/vuln/"),
 		}
 	default:
 		return models.Reference{
