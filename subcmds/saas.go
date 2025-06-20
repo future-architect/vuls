@@ -82,6 +82,15 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		return subcommands.ExitFailure
 	}
 
+	defer func() {
+		if config.Conf.Debug {
+			return
+		}
+		if err := os.RemoveAll(dir); err != nil {
+			logging.Log.Warnf("Failed to remove %q. err: %+v", dir, err)
+		}
+	}()
+
 	logging.Log.Info("Validating config...")
 	if !config.Conf.ValidateOnSaaS() {
 		return subcommands.ExitUsageError
@@ -132,12 +141,6 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	if hasError {
 		return subcommands.ExitFailure
-	}
-
-	if !config.Conf.Debug {
-		if err := os.RemoveAll(dir); err != nil {
-			logging.Log.Warnf("Failed to remove %s. err: %+v", dir, err)
-		}
 	}
 
 	return subcommands.ExitSuccess
