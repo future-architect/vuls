@@ -50,13 +50,13 @@ require (
 	github.com/samber/lo v1.51.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.9.1
-	github.com/vulsio/go-cti v0.2.1-0.20250317020119-aaf4cf09492e
-	github.com/vulsio/go-cve-dictionary v0.12.2-0.20250616073228-b9ad5d915e05
-	github.com/vulsio/go-exploitdb v0.5.1-0.20250317025710-90df4972d112
-	github.com/vulsio/go-kev v0.3.1-0.20250317025043-ec2cdd38d55e
-	github.com/vulsio/go-msfdb v0.3.1-0.20250317025145-8ee0b9f083c9
-	github.com/vulsio/gost v0.5.2-0.20250521040915-cab634e1c5d6
-	github.com/vulsio/goval-dictionary v0.12.0
+	github.com/vulsio/go-cti v0.3.0
+	github.com/vulsio/go-cve-dictionary v0.13.0
+	github.com/vulsio/go-exploitdb v0.6.0
+	github.com/vulsio/go-kev v0.4.0
+	github.com/vulsio/go-msfdb v0.4.0
+	github.com/vulsio/gost v0.6.0
+	github.com/vulsio/goval-dictionary v0.13.0
 	go.etcd.io/bbolt v1.4.1
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sync v0.15.0
