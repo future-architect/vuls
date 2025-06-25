@@ -2,7 +2,6 @@ package v2
 
 import (
 	"encoding/json"
-	"fmt"
 	"regexp"
 	"time"
 
@@ -54,9 +53,9 @@ func setScanResultMeta(scanResult *models.ScanResult, report *types.Report) erro
 			imageName = matches[1]
 			imageTag = matches[2]
 		}
-		scanResult.ServerName = fmt.Sprintf("%s:%s", imageName, imageTag)
+		scanResult.ServerName = imageName
 		if scanResult.Optional == nil {
-			scanResult.Optional = map[string]interface{}{}
+			scanResult.Optional = map[string]any{}
 		}
 		scanResult.Optional["TRIVY_IMAGE_NAME"] = imageName
 		scanResult.Optional["TRIVY_IMAGE_TAG"] = imageTag

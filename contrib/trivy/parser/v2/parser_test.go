@@ -229,7 +229,7 @@ var redisTrivy = []byte(`
 
 var redisSR = &models.ScanResult{
 	JSONVersion: 4,
-	ServerName:  "redis:latest",
+	ServerName:  "redis",
 	Family:      "debian",
 	Release:     "10.10",
 	ScannedBy:   "trivy",
@@ -864,7 +864,7 @@ var osAndLibTrivy = []byte(`
 
 var osAndLibSR = &models.ScanResult{
 	JSONVersion: 4,
-	ServerName:  "quay.io/fluentd_elasticsearch/fluentd:v2.9.0",
+	ServerName:  "quay.io/fluentd_elasticsearch/fluentd",
 	Family:      "debian",
 	Release:     "10.2",
 	ScannedBy:   "trivy",
@@ -1354,7 +1354,7 @@ var osAndLib2Trivy = []byte(`
 
 var osAndLib2SR = &models.ScanResult{
 	JSONVersion: 4,
-	ServerName:  "quay.io/fluentd_elasticsearch/fluentd:v2.9.0",
+	ServerName:  "quay.io/fluentd_elasticsearch/fluentd",
 	Family:      "debian",
 	Release:     "10.2",
 	ScannedBy:   "trivy",
@@ -2085,7 +2085,7 @@ var oneCVEtoNVulnerabilityTrivy = []byte(`
 
 var oneCVEtoNVulnerabilitySR = &models.ScanResult{
 	JSONVersion: 4,
-	ServerName:  "test-cve-2013-1629-cve-2023-26154:latest",
+	ServerName:  "test-cve-2013-1629-cve-2023-26154",
 	Family:      "debian",
 	Release:     "10.13",
 	ScannedBy:   "trivy",
