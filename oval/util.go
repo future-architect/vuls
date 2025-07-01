@@ -529,6 +529,8 @@ func NewOVALClient(family string, cnf config.GovalDictConf, o logging.LogOpts) (
 		return NewSUSE(driver, cnf.GetURL(), constant.SUSEEnterpriseServer), nil
 	case constant.SUSEEnterpriseDesktop:
 		return NewSUSE(driver, cnf.GetURL(), constant.SUSEEnterpriseDesktop), nil
+	case constant.ServerTypePseudo:
+		return NewPseudo(family), nil
 	default:
 		if family == "" {
 			return nil, xerrors.New("Probably an error occurred during scanning. Check the error message")
