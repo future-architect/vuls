@@ -50,13 +50,13 @@ require (
 	github.com/samber/lo v1.51.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.9.1
-	github.com/vulsio/go-cti v0.3.0
-	github.com/vulsio/go-cve-dictionary v0.13.0
-	github.com/vulsio/go-exploitdb v0.6.0
+	github.com/vulsio/go-cti v0.3.1
+	github.com/vulsio/go-cve-dictionary v0.13.1
+	github.com/vulsio/go-exploitdb v0.6.1
 	github.com/vulsio/go-kev v0.4.0
-	github.com/vulsio/go-msfdb v0.4.0
-	github.com/vulsio/gost v0.6.0
-	github.com/vulsio/goval-dictionary v0.13.0
+	github.com/vulsio/go-msfdb v0.4.1
+	github.com/vulsio/gost v0.6.1
+	github.com/vulsio/goval-dictionary v0.13.1
 	go.etcd.io/bbolt v1.4.2
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sync v0.15.0
@@ -190,7 +190,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
 	github.com/go-sql-driver/mysql v1.9.3 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
-	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
