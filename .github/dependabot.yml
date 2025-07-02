@@ -15,7 +15,9 @@ updates:
           - "*"
     target-branch: master
   - package-ecosystem: docker
-    directory: /
+    directories:
+      - /
+      - /contrib
     schedule:
       interval: "monthly"
     groups:
