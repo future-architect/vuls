@@ -15,7 +15,7 @@ jobs:
       id-token: write # For cosign
     steps:
       - name: Cosign install
-        uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb
+        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac
       - name: Maximize build space
         uses: easimon/maximize-build-space@fc881a613ad2a34aca9c9624518214ebc21dfc0c
         with:
