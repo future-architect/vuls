@@ -402,6 +402,14 @@ func NewCveContentType(name string) CveContentType {
 		return TrivyK8sVulnDB
 	case "trivy:govulndb":
 		return TrivyGoVulnDB
+	case "trivy:aqua":
+		return TrivyAqua
+	case "trivy:echo":
+		return TrivyEcho
+	case "trivy:minimos":
+		return TrivyMinimOS
+	case "trivy:rootio":
+		return TrivyRootIO
 	case "GitHub":
 		return Trivy
 	default:
@@ -435,7 +443,7 @@ func GetCveContentTypes(family string) []CveContentType {
 	case constant.Windows:
 		return []CveContentType{Microsoft}
 	case string(Trivy):
-		return []CveContentType{Trivy, TrivyNVD, TrivyRedHat, TrivyRedHatOVAL, TrivyDebian, TrivyUbuntu, TrivyCentOS, TrivyRocky, TrivyFedora, TrivyAmazon, TrivyAzure, TrivyOracleOVAL, TrivySuseCVRF, TrivyAlpine, TrivyArchLinux, TrivyAlma, TrivyCBLMariner, TrivyPhoton, TrivyRubySec, TrivyPhpSecurityAdvisories, TrivyNodejsSecurityWg, TrivyGHSA, TrivyGLAD, TrivyOSV, TrivyWolfi, TrivyChainguard, TrivyBitnamiVulndb, TrivyK8sVulnDB, TrivyGoVulnDB}
+		return []CveContentType{Trivy, TrivyNVD, TrivyRedHat, TrivyRedHatOVAL, TrivyDebian, TrivyUbuntu, TrivyCentOS, TrivyRocky, TrivyFedora, TrivyAmazon, TrivyAzure, TrivyOracleOVAL, TrivySuseCVRF, TrivyAlpine, TrivyArchLinux, TrivyAlma, TrivyCBLMariner, TrivyPhoton, TrivyRubySec, TrivyPhpSecurityAdvisories, TrivyNodejsSecurityWg, TrivyGHSA, TrivyGLAD, TrivyOSV, TrivyWolfi, TrivyChainguard, TrivyBitnamiVulndb, TrivyK8sVulnDB, TrivyGoVulnDB, TrivyAqua, TrivyEcho, TrivyMinimOS, TrivyRootIO}
 	default:
 		return nil
 	}
@@ -535,9 +543,6 @@ const (
 	// TrivyAmazon is TrivyAmazon
 	TrivyAmazon CveContentType = "trivy:amazon"
 
-	// TrivyAzure is TrivyAzure
-	TrivyAzure CveContentType = "trivy:azure"
-
 	// TrivyOracleOVAL is TrivyOracle
 	TrivyOracleOVAL CveContentType = "trivy:oracle-oval"
 
@@ -552,6 +557,9 @@ const (
 
 	// TrivyAlma is TrivyAlma
 	TrivyAlma CveContentType = "trivy:alma"
+
+	// TrivyAzure is TrivyAzure
+	TrivyAzure CveContentType = "trivy:azure"
 
 	// TrivyCBLMariner is TrivyCBLMariner
 	TrivyCBLMariner CveContentType = "trivy:cbl-mariner"
@@ -591,6 +599,18 @@ const (
 
 	// TrivyGoVulnDB is TrivyGoVulnDB
 	TrivyGoVulnDB CveContentType = "trivy:govulndb"
+
+	// TrivyAqua is TrivyAqua
+	TrivyAqua CveContentType = "trivy:aqua"
+
+	// TrivyEcho is TrivyEcho
+	TrivyEcho CveContentType = "trivy:echo"
+
+	// TrivyMinimOS is TrivyMinimOS
+	TrivyMinimOS CveContentType = "trivy:minimos"
+
+	// TrivyRootIO is TrivyRootIO
+	TrivyRootIO CveContentType = "trivy:rootio"
 
 	// GitHub is GitHub Security Alerts
 	GitHub CveContentType = "github"
@@ -653,6 +673,10 @@ var AllCveContetTypes = CveContentTypes{
 	TrivyBitnamiVulndb,
 	TrivyK8sVulnDB,
 	TrivyGoVulnDB,
+	TrivyAqua,
+	TrivyEcho,
+	TrivyMinimOS,
+	TrivyRootIO,
 	GitHub,
 }
 
