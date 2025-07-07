@@ -543,3 +543,66 @@ func Test_findPortScanSuccessOn(t *testing.T) {
 		})
 	}
 }
+
+func TestParseFlatpakList(t *testing.T) {
+
+	var tests = struct {
+		in       string
+		expected models.Flatpaks
+	}{
+		`Application ID                             Arch      Version
+com.github.d4nj1.tlpui                     x86_64    1.7.1
+com.github.finefindus.eyedropper           x86_64    2.0.1
+com.github.taiko2k.avvie                   x86_64    2.4`,
+		models.Flatpaks{
+			"com.github.d4nj1.tlpui":           models.Flatpak{Application: "com.github.d4nj1.tlpui", Name: "tlpui", Arch: "x86_64", Version: "1.7.1"},
+			"com.github.finefindus.eyedropper": models.Flatpak{Application: "com.github.finefindus.eyedropper", Name: "eyedropper", Arch: "x86_64", Version: "2.0.1"},
+			"com.github.taiko2k.avvie":         models.Flatpak{Application: "com.github.taiko2k.avvie", Name: "avvie", Arch: "x86_64", Version: "2.4"},
+		},
+	}
+
+	l := base{}
+	actual, err := l.parseFlatpakList(tests.in)
+	if err != nil {
+		t.Errorf("Error occurred. in: %s, err: %+v", tests.in, err)
+		return
+	}
+
+	for _, e := range tests.expected {
+		if !reflect.DeepEqual(e, actual[e.Application]) {
+			t.Errorf("expected %v, actual %v", e, actual[e.Application])
+		}
+	}
+}
+
+func TestFillUpdatableFlatpaks(t *testing.T) {
+
+	type args struct {
+		flatpaks      models.Flatpaks
+		consoleOutput string
+	}
+
+	var test = struct {
+		args     args
+		expected models.Flatpaks
+	}{
+		args{
+			models.Flatpaks{
+				"org.videolan.VLC": models.Flatpak{Application: "org.videolan.VLC", Name: "vlc", Arch: "x86_64", Version: "3.0.19"},
+			},
+			`Application ID        Arch        Version
+org.videolan.VLC      x86_64      3.0.21`},
+		models.Flatpaks{
+			"org.videolan.VLC": models.Flatpak{Application: "org.videolan.VLC", Name: "vlc", Arch: "x86_64", Version: "3.0.19", NewVersion: "3.0.21"},
+		},
+	}
+
+	l := base{}
+	actual := l.fillUpdatableFlatpaks(test.args.flatpaks, test.args.consoleOutput)
+
+	for _, e := range test.expected {
+		if !reflect.DeepEqual(e, actual[e.Application]) {
+			t.Errorf("expected %v, actual %v", e, actual[e.Application])
+		}
+	}
+}
