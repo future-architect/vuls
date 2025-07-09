@@ -41,7 +41,7 @@ require (
 	github.com/kotakanbe/logrus-prefixed-formatter v0.0.0-20180123152602-928f7356cb96
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/nlopes/slack v0.6.0
-	github.com/olekukonko/tablewriter v1.0.7
+	github.com/olekukonko/tablewriter v1.0.8
 	github.com/package-url/packageurl-go v0.1.3
 	github.com/parnurzeal/gorequest v0.3.0
 	github.com/pkg/errors v0.9.1
