@@ -805,7 +805,7 @@ func formatArch(arch string) (string, error) {
 		return "ARM64-based", nil
 	case "IA64", "Itanium-based":
 		return "Itanium-based", nil
-	case "x86", "X86-based":
+	case "x86", "X86-based", "32-bit":
 		return "32-bit", nil
 	default:
 		return "", xerrors.New("CPU Architecture not found")
