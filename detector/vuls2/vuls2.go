@@ -400,7 +400,7 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 		for _, d := range v.Detections {
 			for sourceID, fconds := range d.Contents {
 				for _, fcond := range fconds {
-					statuses, cpes, _, err := walkCriteria(d.Ecosystem, sourceID, fcond.Criteria, scanned)
+					statuses, cpes, _, err := walkCriteria(d.Ecosystem, sourceID, fcond.Criteria, fcond.Tag, scanned)
 					if err != nil {
 						return xerrors.Errorf("Failed to walk criteria. err: %w", err)
 					}
@@ -427,13 +427,13 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 	return nil
 }
 
-func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanResult) ([]packStatus, []string, bool, error) {
+func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, bool, error) {
 	var (
 		statuses []packStatus
 		cpes     []string
 	)
 	for _, child := range ca.Criterias {
-		ss, cs, ignore, err := walkCriteria(e, sourceID, child, scanned)
+		ss, cs, ignore, err := walkCriteria(e, sourceID, child, tag, scanned)
 		if err != nil {
 			return nil, nil, false, xerrors.Errorf("Failed to walk criteria. err: %w", err)
 		}
@@ -460,20 +460,25 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 			continue
 		}
 
-		if ignoreCriterion(e, cn) {
+		if ignoreCriterion(e, cn, tag) {
 			continue
 		}
 
-		switch cn.Criterion.Version.Package.Type {
+		fcn, err := filterCriterion(e, scanned, cn)
+		if err != nil {
+			return nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
+		}
+
+		switch fcn.Criterion.Version.Package.Type {
 		case vcPackageTypes.PackageTypeBinary, vcPackageTypes.PackageTypeSource:
 			rangeType, fixedIn := func() (vcAffectedRangeTypes.RangeType, string) {
-				if cn.Criterion.Version.Affected == nil {
+				if fcn.Criterion.Version.Affected == nil {
 					return vcAffectedRangeTypes.RangeTypeUnknown, ""
 				}
-				return cn.Criterion.Version.Affected.Type, selectFixedIn(cn.Criterion.Version.Affected.Type, cn.Criterion.Version.Affected.Fixed)
+				return fcn.Criterion.Version.Affected.Type, selectFixedIn(fcn.Criterion.Version.Affected.Type, fcn.Criterion.Version.Affected.Fixed)
 			}()
 
-			for _, index := range cn.Accepts.Version {
+			for _, index := range fcn.Accepts.Version {
 				if len(scanned.OSPackages) <= index {
 					return nil, nil, false, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
 				}
@@ -482,10 +487,10 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 					status: models.PackageFixStatus{
 						Name: affectedPackageName(e, scanned.OSPackages[index]),
 						FixState: func() string {
-							if cn.Criterion.Version.FixStatus == nil {
+							if fcn.Criterion.Version.FixStatus == nil {
 								return ""
 							}
-							return cn.Criterion.Version.FixStatus.Vendor
+							return fixState(e, sourceID, fcn.Criterion.Version.FixStatus.Vendor)
 						}(),
 						FixedIn:     fixedIn,
 						NotFixedYet: fixedIn == "",
@@ -493,12 +498,12 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 				})
 			}
 		case vcPackageTypes.PackageTypeCPE:
-			for _, index := range cn.Accepts.Version {
+			for _, index := range fcn.Accepts.Version {
 				if len(scanned.CPE) <= index {
 					return nil, nil, false, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
 				}
 			}
-			cpes = append(cpes, string(*cn.Criterion.Version.Package.CPE))
+			cpes = append(cpes, string(*fcn.Criterion.Version.Package.CPE))
 		default:
 		}
 	}
