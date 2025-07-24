@@ -70,8 +70,6 @@ func NewGostClient(cnf config.GostConf, family string, o logging.LogOpts) (Clien
 	switch family {
 	case constant.Debian, constant.Raspbian:
 		return Debian{base}, nil
-	case constant.Ubuntu:
-		return Ubuntu{base}, nil
 	case constant.Windows:
 		return Microsoft{base}, nil
 	case constant.ServerTypePseudo:

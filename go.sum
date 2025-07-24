@@ -682,10 +682,10 @@ github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapp
 github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c/go.mod h1:X0CRv0ky0k6m906ixxpzmDRLvX58TFUKS2eePweuyxk=
 github.com/MaineK00n/go-paloalto-version v0.0.0-20250604055825-65738633ae7a h1:/ch5eGOtMXUGrS1uMvV07uWbuKEfMbm/3DeZ0Ctx52U=
 github.com/MaineK00n/go-paloalto-version v0.0.0-20250604055825-65738633ae7a/go.mod h1:ELOxzfAd4oAe4niMmoZlSiJwzf1DF+DjNdjsUcuqAR8=
-github.com/MaineK00n/vuls-data-update v0.0.0-20250612091020-1510dae2b184 h1:FxvcEbd/aEVKKXQpDbn9dC3GzUfRmLltzMwSS9/QCSA=
-github.com/MaineK00n/vuls-data-update v0.0.0-20250612091020-1510dae2b184/go.mod h1:rAOVc7Vw0GX/KPj5I6jl5ObzWe6r0Kw625leCQHT7Uc=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20250523010213-9b211cf92398 h1:sI22jqK3ptsn95EQldxgnsKYTRccxzVkFgbwFyNZFMY=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20250523010213-9b211cf92398/go.mod h1:5kjwBPbOBPSxBTZz2dOGNbTPGWwawoiYwi4FZRprXl4=
+github.com/MaineK00n/vuls-data-update v0.0.0-20250725084618-e1a89bcbe9f8 h1:pj+Y6hQ/PdzcH4+UsDANMV1gqNQD4T+oVhoLyn5C8mc=
+github.com/MaineK00n/vuls-data-update v0.0.0-20250725084618-e1a89bcbe9f8/go.mod h1:tJsgJiV6MOyVsta40XbNtYUzh4cEmMV+OEfYFHp05vg=
+github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20250728115051-467f2c79767c h1:LAZoB5s1cPwXHoZeZf9eHPcKw7kAeE3i2jwyb1zTvFw=
+github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20250728115051-467f2c79767c/go.mod h1:LeCkNcW1BC3jH3NYNM5HXq04Tsds60tiVuhmBTwuW0o=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/Masterminds/goutils v1.1.1 h1:5nUrii3FMTL5diU80unEVvNevw1nH4+ZV4DSLVJLSYI=
@@ -1549,8 +1549,8 @@ github.com/redis/go-redis/extra/redisotel/v9 v9.0.5 h1:EfpWLLCyXw8PSM2/XNJLjI3Pb
 github.com/redis/go-redis/extra/redisotel/v9 v9.0.5/go.mod h1:WZjPDy7VNzn77AAfnAfVjZNvfJTYfPetfZk5yoSTLaQ=
 github.com/redis/go-redis/v9 v9.8.0 h1:q3nRvjrlge/6UD7eTu/DSg2uYiU2mCL0G/uzBWqhicI=
 github.com/redis/go-redis/v9 v9.8.0/go.mod h1:huWgSWd8mW6+m0VPhJjSSQ+d6Nh1VICQ6Q5lHuCH/Iw=
-github.com/redis/rueidis v1.0.60 h1:MGZX8uNdw7iyWz22JhjA/9iXzddfCUE/EMK4VxKoKpA=
-github.com/redis/rueidis v1.0.60/go.mod h1:Lkhr2QTgcoYBhxARU7kJRO8SyVlgUuEkcJO1Y8MCluA=
+github.com/redis/rueidis v1.0.62 h1:9yNCxsYtg9eMEzHhDq9tlRnDBFJyWTWn6YLQ5EWDE5I=
+github.com/redis/rueidis v1.0.62/go.mod h1:Lkhr2QTgcoYBhxARU7kJRO8SyVlgUuEkcJO1Y8MCluA=
 github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec h1:W09IVJc94icq4NjY3clb7Lk8O1qJ8BdBEF8z0ibU0rE=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
