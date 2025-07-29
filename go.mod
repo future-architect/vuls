@@ -7,8 +7,8 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.2
 	github.com/BurntSushi/toml v1.5.0
 	github.com/CycloneDX/cyclonedx-go v0.9.2
-	github.com/MaineK00n/vuls-data-update v0.0.0-20250612091020-1510dae2b184
-	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20250523010213-9b211cf92398
+	github.com/MaineK00n/vuls-data-update v0.0.0-20250725084618-e1a89bcbe9f8
+	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20250728115051-467f2c79767c
 	github.com/Ullaakut/nmap/v2 v2.2.2
 	github.com/aquasecurity/trivy v0.64.1
 	github.com/aquasecurity/trivy-db v0.0.0-20250627124416-ca81c496a932
@@ -284,7 +284,7 @@ require (
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
-	github.com/redis/rueidis v1.0.60 // indirect
+	github.com/redis/rueidis v1.0.62 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rubenv/sql-migrate v1.8.0 // indirect

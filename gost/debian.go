@@ -66,6 +66,11 @@ func (deb Debian) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 	return len(unique(append(fixedCVEs, unfixedCVEs...))), nil
 }
 
+type cveContent struct {
+	cveContent  models.CveContent
+	fixStatuses models.PackageFixStatuses
+}
+
 func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixed bool) ([]string, error) {
 	detects := map[string]cveContent{}
 	if deb.driver == nil {
