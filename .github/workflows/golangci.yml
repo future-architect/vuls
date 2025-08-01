@@ -20,6 +20,6 @@ jobs:
         with:
           go-version-file: go.mod
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@4f58623b88e35c8172c05b70ed3b93ee8a1bfdd1
+        uses: golangci/golangci-lint-action@3d16f46f229bd30357c5de1a861936e9a560e973
         with:
           version: v2.1.6
