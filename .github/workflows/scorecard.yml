@@ -12,7 +12,7 @@ on:
   schedule:
     - cron: '26 21 * * 1'
   push:
-    branches: [ "${{ github.event.repository.default_branch }}" ]
+    branches: [ "master" ]
 
 # Declare default permissions as read only.
 permissions: read-all
