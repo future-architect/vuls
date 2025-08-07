@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	deb "github.com/knqyf263/go-deb-version"
 	rpm "github.com/knqyf263/go-rpm-version"
 	"golang.org/x/xerrors"
 
@@ -16,10 +17,15 @@ import (
 	versioncriterionpackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package"
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
+	severityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity"
+	v2 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v2"
+	v31 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v31"
+	v40 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v40"
 	vulnerabilityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
 	scanTypes "github.com/MaineK00n/vuls2/pkg/scan/types"
 
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 )
 
@@ -29,6 +35,20 @@ func ignoreVulnerability(e ecosystemTypes.Ecosystem, v vulnerabilityTypes.Vulner
 	switch et {
 	case ecosystemTypes.EcosystemTypeRedHat:
 		if strings.Contains(v.Content.Description, "** REJECT **") || strings.HasPrefix(v.Content.Description, "[REJECTED CVE]") {
+			return true
+		}
+
+		if len(as) == 0 {
+			return false
+		}
+
+		if len(filterDistroAdvisories(e, as)) == 0 {
+			return true
+		}
+
+		return false
+	case ecosystemTypes.EcosystemTypeUbuntu:
+		if strings.HasPrefix(v.Content.Description, "** REJECT **") || strings.HasPrefix(v.Content.Description, "Rejected reason:") {
 			return true
 		}
 
@@ -98,7 +118,7 @@ func ignoreCriteria(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, cn crite
 	}
 }
 
-func ignoreCriterion(e ecosystemTypes.Ecosystem, cn criterionTypes.FilteredCriterion) bool {
+func ignoreCriterion(e ecosystemTypes.Ecosystem, cn criterionTypes.FilteredCriterion, tag segmentTypes.DetectionTag) bool {
 	et, _, _ := strings.Cut(string(e), ":")
 
 	switch et {
@@ -115,8 +135,104 @@ func ignoreCriterion(e ecosystemTypes.Ecosystem, cn criterionTypes.FilteredCrite
 		default:
 			return false
 		}
+	case ecosystemTypes.EcosystemTypeUbuntu:
+		if func() bool {
+			lhs, _, _ := strings.Cut(string(tag), "_")
+			lhs, rhs, ok := strings.Cut(lhs, "/")
+			if !ok {
+				return false
+			}
+			services := []string{"esm", "esm-infra", "esm-apps", "esm-infra-legacy", "esm-apps-legacy", "ros-esm"}
+			if !slices.Contains(services, lhs) && !slices.Contains(services, rhs) {
+				return true
+			}
+			return false
+		}() {
+			return true
+		}
+
+		switch cn.Criterion.Type {
+		case criterionTypes.CriterionTypeVersion:
+			if cn.Criterion.Version != nil && cn.Criterion.Version.FixStatus != nil && cn.Criterion.Version.FixStatus.Class == fixstatusTypes.ClassUnfixed {
+				lhs, _, _ := strings.Cut(cn.Criterion.Version.FixStatus.Vendor, ":")
+				switch lhs {
+				case "ignored", "in-progress":
+					return true
+				}
+			}
+			return false
+		default:
+			return false
+		}
 	default:
 		return false
+	}
+}
+
+func filterCriterion(e ecosystemTypes.Ecosystem, scanned scanTypes.ScanResult, cn criterionTypes.FilteredCriterion) (criterionTypes.FilteredCriterion, error) {
+	et, _, _ := strings.Cut(string(e), ":")
+
+	switch et {
+	case ecosystemTypes.EcosystemTypeUbuntu:
+		switch cn.Criterion.Type {
+		case criterionTypes.CriterionTypeVersion:
+			if cn.Criterion.Version != nil {
+				switch cn.Criterion.Version.Package.Type {
+				case versioncriterionpackageTypes.PackageTypeSource:
+					if !models.IsKernelSourcePackage(constant.Ubuntu, cn.Criterion.Version.Package.Source.Name) {
+						return cn, nil
+					}
+
+					m := make(map[string][]string)
+					for _, p := range scanned.OSPackages {
+						sn := fmt.Sprintf("%s:%d:%s-%s", models.RenameKernelSourcePackageName(constant.Ubuntu, p.SrcName), func() int {
+							if p.SrcEpoch != nil {
+								return *p.SrcEpoch
+							}
+							return 0
+						}(), p.SrcVersion, p.SrcRelease)
+						m[sn] = append(m[sn], p.Name)
+					}
+
+					var accepts []int
+					for _, index := range cn.Accepts.Version {
+						if len(scanned.OSPackages) <= index {
+							return criterionTypes.FilteredCriterion{}, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
+						}
+
+						if slices.ContainsFunc(m[fmt.Sprintf("%s:%d:%s-%s", models.RenameKernelSourcePackageName(constant.Ubuntu, scanned.OSPackages[index].SrcName), func() int {
+							if scanned.OSPackages[index].SrcEpoch != nil {
+								return *scanned.OSPackages[index].SrcEpoch
+							}
+							return 0
+						}(), scanned.OSPackages[index].SrcVersion, scanned.OSPackages[index].SrcRelease)], func(s string) bool {
+							switch s {
+							case fmt.Sprintf("linux-image-%s", scanned.Kernel.Release), fmt.Sprintf("linux-image-unsigned-%s", scanned.Kernel.Release), fmt.Sprintf("linux-signed-image-%s", scanned.Kernel.Release), fmt.Sprintf("linux-image-uc-%s", scanned.Kernel.Release),
+								fmt.Sprintf("linux-buildinfo-%s", scanned.Kernel.Release), fmt.Sprintf("linux-cloud-tools-%s", scanned.Kernel.Release), fmt.Sprintf("linux-headers-%s", scanned.Kernel.Release), fmt.Sprintf("linux-lib-rust-%s", scanned.Kernel.Release), fmt.Sprintf("linux-modules-%s", scanned.Kernel.Release), fmt.Sprintf("linux-modules-extra-%s", scanned.Kernel.Release), fmt.Sprintf("linux-modules-ipu6-%s", scanned.Kernel.Release), fmt.Sprintf("linux-modules-ivsc-%s", scanned.Kernel.Release), fmt.Sprintf("linux-modules-iwlwifi-%s", scanned.Kernel.Release), fmt.Sprintf("linux-tools-%s", scanned.Kernel.Release):
+								return true
+							default:
+								if (strings.HasPrefix(s, "linux-modules-nvidia-") || strings.HasPrefix(s, "linux-objects-nvidia-") || strings.HasPrefix(s, "linux-signatures-nvidia-")) && strings.HasSuffix(s, scanned.Kernel.Release) {
+									return true
+								}
+								return false
+							}
+						}) {
+							accepts = append(accepts, index)
+						}
+					}
+					cn.Accepts.Version = accepts
+
+					return cn, nil
+				default:
+					return cn, nil
+				}
+			}
+			return cn, nil
+		default:
+			return cn, nil
+		}
+	default:
+		return cn, nil
 	}
 }
 
@@ -129,6 +245,23 @@ func affectedPackageName(e ecosystemTypes.Ecosystem, pkg scanTypes.OSPackage) st
 	}
 }
 
+func fixState(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, fixstate string) string {
+	et, _, _ := strings.Cut(string(e), ":")
+
+	switch et {
+	case ecosystemTypes.EcosystemTypeUbuntu:
+		switch s {
+		case sourceTypes.UbuntuCVETracker:
+			lhs, _, _ := strings.Cut(fixstate, ":")
+			return lhs
+		default:
+			return fixstate
+		}
+	default:
+		return fixstate
+	}
+}
+
 func selectFixedIn(rangeType vcAffectedRangeTypes.RangeType, fixed []string) string {
 	if len(fixed) == 0 {
 		return ""
@@ -138,6 +271,21 @@ func selectFixedIn(rangeType vcAffectedRangeTypes.RangeType, fixed []string) str
 	case vcAffectedRangeTypes.RangeTypeRPM:
 		return slices.MaxFunc(fixed, func(x, y string) int {
 			return rpm.NewVersion(x).Compare(rpm.NewVersion(y))
+		})
+	case vcAffectedRangeTypes.RangeTypeDPKG:
+		return slices.MaxFunc(fixed, func(x, y string) int {
+			vx, errx := deb.NewVersion(x)
+			vy, erry := deb.NewVersion(y)
+			switch {
+			case errx != nil && erry != nil:
+				return 0
+			case errx != nil && erry == nil:
+				return -1
+			case errx == nil && erry != nil:
+				return +1
+			default:
+				return vx.Compare(vy)
+			}
 		})
 	default:
 		return fixed[0]
@@ -172,6 +320,19 @@ func comparePackStatus(a, b packStatus) (int, error) {
 			switch a.rangeType {
 			case vcAffectedRangeTypes.RangeTypeRPM:
 				return rpm.NewVersion(a.status.FixedIn).Compare(rpm.NewVersion(b.status.FixedIn))
+			case vcAffectedRangeTypes.RangeTypeDPKG:
+				va, erra := deb.NewVersion(a.status.FixedIn)
+				vb, errb := deb.NewVersion(b.status.FixedIn)
+				switch {
+				case erra != nil && errb != nil:
+					return 0
+				case erra != nil && errb == nil:
+					return -1
+				case erra == nil && errb != nil:
+					return +1
+				default:
+					return va.Compare(vb)
+				}
 			default:
 				return 0
 			}
@@ -251,6 +412,12 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 			Source: "ORACLE",
 			RefID:  da.AdvisoryID,
 		}, nil
+	case ecosystemTypes.EcosystemTypeUbuntu:
+		return models.Reference{
+			Link:   fmt.Sprintf("https://ubuntu.com/security/notices/%s", da.AdvisoryID),
+			Source: "UBUNTU",
+			RefID:  da.AdvisoryID,
+		}, nil
 	default:
 		return models.Reference{}, xerrors.Errorf("unsupported family: %s", et)
 	}
@@ -264,6 +431,8 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 		return fmt.Sprintf("https://linux.oracle.com/cve/%s.html", v.Content.ID)
 	case models.Alpine:
 		return fmt.Sprintf("https://security.alpinelinux.org/vuln/%s", v.Content.ID)
+	case models.Ubuntu, models.UbuntuAPI:
+		return fmt.Sprintf("https://ubuntu.com/security/%s", v.Content.ID)
 	case models.Nvd:
 		return fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", v.Content.ID)
 	default:
@@ -301,8 +470,10 @@ func compareSourceID(e ecosystemTypes.Ecosystem, a, b sourceTypes.SourceID) int 
 		preferenceFn := func(sourceID sourceTypes.SourceID) int {
 			switch sourceID {
 			case sourceTypes.NVDAPICVE, sourceTypes.JVNFeedDetail, sourceTypes.Fortinet, sourceTypes.PaloAltoCSAF, sourceTypes.CiscoCSAF:
+				return 5
+			case sourceTypes.NVDFeedCVEv2, sourceTypes.JVNFeedRSS, sourceTypes.PaloAltoJSON, sourceTypes.CiscoCVRF:
 				return 4
-			case sourceTypes.NVDFeedCVE, sourceTypes.JVNFeedRSS, sourceTypes.PaloAltoJSON, sourceTypes.CiscoCVRF:
+			case sourceTypes.NVDFeedCVEv1:
 				return 3
 			case sourceTypes.PaloAltoList, sourceTypes.CiscoJSON:
 				return 2
@@ -365,6 +536,20 @@ func compareSourceID(e ecosystemTypes.Ecosystem, a, b sourceTypes.SourceID) int 
 			}
 		}
 		return cmp.Compare(preferenceFn(a), preferenceFn(b))
+	case ecosystemTypes.EcosystemTypeUbuntu:
+		preferenceFn := func(sourceID sourceTypes.SourceID) int {
+			switch sourceID {
+			case sourceTypes.UbuntuCVETracker:
+				return 4
+			case sourceTypes.UbuntuOVAL:
+				return 3
+			case sourceTypes.UbuntuOSV:
+				return 2
+			default:
+				return 1
+			}
+		}
+		return cmp.Compare(preferenceFn(a), preferenceFn(b))
 	default:
 		return 0
 	}
@@ -405,6 +590,21 @@ func compareTag(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, a, b segment
 			}
 		}
 		return cmp.Compare(preferenceFn(s, a), preferenceFn(s, b))
+	case ecosystemTypes.EcosystemTypeUbuntu:
+		preferenceFn := func(sourceID sourceTypes.SourceID, tag segmentTypes.DetectionTag) int {
+			switch sourceID {
+			case sourceTypes.UbuntuCVETracker:
+				switch {
+				case !strings.Contains(string(tag), "/"):
+					return 2
+				default:
+					return 1
+				}
+			default:
+				return 1
+			}
+		}
+		return cmp.Compare(preferenceFn(s, a), preferenceFn(s, b))
 	default:
 		return 0
 	}
@@ -416,7 +616,7 @@ func toCveContentType(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models
 	switch et {
 	case ecosystemTypes.EcosystemTypeCPE:
 		switch s {
-		case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVE:
+		case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2:
 			return models.Nvd
 		case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
 			return models.Jvn
@@ -431,9 +631,65 @@ func toCveContentType(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models
 		}
 	case ecosystemTypes.EcosystemTypeEPEL:
 		return models.CveContentType("epel")
+	case ecosystemTypes.EcosystemTypeUbuntu:
+		switch s {
+		case sourceTypes.UbuntuCVETracker:
+			return models.UbuntuAPI
+		default:
+			return models.Ubuntu
+		}
 	default:
 		return models.NewCveContentType(et)
 	}
+}
+
+func toCvss(e ecosystemTypes.Ecosystem, src sourceTypes.SourceID, ss []severityTypes.Severity) (v2.CVSSv2, v31.CVSSv31, v40.CVSSv40) {
+	var (
+		cvss2 v2.CVSSv2
+		cvss3 v31.CVSSv31
+		cvss4 v40.CVSSv40
+	)
+
+	for _, s := range ss {
+		switch s.Type {
+		case severityTypes.SeverityTypeVendor:
+			et, _, _ := strings.Cut(string(e), ":")
+			switch et {
+			case ecosystemTypes.EcosystemTypeUbuntu:
+				switch src {
+				case sourceTypes.UbuntuCVETracker:
+					if s.Vendor != nil {
+						cvss2 = v2.CVSSv2{NVDBaseSeverity: *s.Vendor}
+						cvss3 = v31.CVSSv31{BaseSeverity: *s.Vendor}
+					}
+				default:
+				}
+			}
+		case severityTypes.SeverityTypeCVSSv2:
+			if cvss2.Vector == "" && s.CVSSv2 != nil {
+				cvss2 = *s.CVSSv2
+			}
+		case severityTypes.SeverityTypeCVSSv30:
+			if cvss3.Vector == "" && s.CVSSv30 != nil {
+				cvss3 = v31.CVSSv31{
+					Vector:       s.CVSSv30.Vector,
+					BaseScore:    s.CVSSv30.BaseScore,
+					BaseSeverity: s.CVSSv30.BaseSeverity,
+				}
+			}
+		case severityTypes.SeverityTypeCVSSv31:
+			if !strings.HasPrefix(cvss3.Vector, "CVSS:3.1/") && s.CVSSv31 != nil {
+				cvss3 = *s.CVSSv31
+			}
+		case severityTypes.SeverityTypeCVSSv40:
+			if cvss4.Vector == "" && s.CVSSv40 != nil {
+				cvss4 = *s.CVSSv40
+			}
+		default:
+		}
+	}
+
+	return cvss2, cvss3, cvss4
 }
 
 func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models.Confidence {
@@ -442,7 +698,7 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) model
 	switch et {
 	case ecosystemTypes.EcosystemTypeCPE:
 		switch s {
-		case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVE:
+		case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2:
 			return models.NvdExactVersionMatch
 		case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
 			return models.JvnVendorProductMatch
@@ -467,6 +723,13 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) model
 		}
 	case ecosystemTypes.EcosystemTypeRedHat, ecosystemTypes.EcosystemTypeAlma, ecosystemTypes.EcosystemTypeRocky, ecosystemTypes.EcosystemTypeOracle, ecosystemTypes.EcosystemTypeAlpine:
 		return models.OvalMatch
+	case ecosystemTypes.EcosystemTypeUbuntu:
+		switch s {
+		case sourceTypes.UbuntuCVETracker:
+			return models.UbuntuAPIMatch
+		default:
+			return models.OvalMatch
+		}
 	default:
 		return models.Confidence{
 			Score:           0,

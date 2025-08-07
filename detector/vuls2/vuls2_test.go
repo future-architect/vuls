@@ -15,7 +15,7 @@ import (
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
 	noneexistcriterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/noneexistcriterion"
 	necBinaryPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/noneexistcriterion/binary"
-	versoncriterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion"
+	versioncriterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion"
 	vcAffectedTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected"
 	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
 	vcFixStatusTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/fixstatus"
@@ -413,7 +413,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -443,7 +443,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -482,7 +482,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -512,7 +512,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -550,7 +550,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -580,7 +580,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -908,7 +908,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -938,7 +938,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -968,7 +968,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -1125,7 +1125,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class:  vcFixStatusTypes.ClassUnfixed,
@@ -1573,7 +1573,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -1611,7 +1611,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -1906,7 +1906,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -1936,7 +1936,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -1974,7 +1974,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -2004,7 +2004,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -2048,7 +2048,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -2078,7 +2078,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -2427,7 +2427,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -2558,7 +2558,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -2846,7 +2846,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class:  vcFixStatusTypes.ClassUnfixed,
@@ -2882,7 +2882,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassUnknown,
@@ -3106,7 +3106,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -3421,7 +3421,7 @@ func Test_postConvert(t *testing.T) {
 																{
 																	Criterion: criterionTypes.Criterion{
 																		Type: criterionTypes.CriterionTypeVersion,
-																		Version: toPtr(versoncriterionTypes.Criterion{
+																		Version: toPtr(versioncriterionTypes.Criterion{
 																			Vulnerable: true,
 																			FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																				Class: vcFixStatusTypes.ClassFixed,
@@ -3456,7 +3456,7 @@ func Test_postConvert(t *testing.T) {
 																{
 																	Criterion: criterionTypes.Criterion{
 																		Type: criterionTypes.CriterionTypeVersion,
-																		Version: toPtr(versoncriterionTypes.Criterion{
+																		Version: toPtr(versioncriterionTypes.Criterion{
 																			Vulnerable: true,
 																			FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																				Class: vcFixStatusTypes.ClassFixed,
@@ -3491,7 +3491,7 @@ func Test_postConvert(t *testing.T) {
 																{
 																	Criterion: criterionTypes.Criterion{
 																		Type: criterionTypes.CriterionTypeVersion,
-																		Version: toPtr(versoncriterionTypes.Criterion{
+																		Version: toPtr(versioncriterionTypes.Criterion{
 																			Vulnerable: true,
 																			FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																				Class: vcFixStatusTypes.ClassFixed,
@@ -3598,7 +3598,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -3731,7 +3731,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -3836,7 +3836,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -3916,7 +3916,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class:  vcFixStatusTypes.ClassUnfixed,
@@ -4002,7 +4002,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class:  vcFixStatusTypes.ClassUnfixed,
@@ -4074,7 +4074,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -4419,7 +4419,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -4458,7 +4458,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -4497,7 +4497,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -4707,7 +4707,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -4746,7 +4746,7 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versoncriterionTypes.Criterion{
+																Version: toPtr(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
@@ -4826,6 +4826,964 @@ func Test_postConvert(t *testing.T) {
 								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
 								Optional: map[string]string{
 									"vuls2-sources": "[{\"root_id\":\"RLSA-2025:0001\",\"source_id\":\"rocky-errata\",\"segment\":{\"ecosystem\":\"rocky:9\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "ubuntu",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					Kernel: scanTypes.Kernel{
+						Release: "5.15.0-69-generic",
+					},
+					OSPackages: []scanTypes.OSPackage{
+						{
+							Name:       "linux-headers-5.15.0-69",
+							Version:    "5.15.0-69.76",
+							SrcName:    "linux",
+							SrcVersion: "5.15.0-69.76",
+						},
+						{
+							Name:       "linux-headers-5.15.0-69-generic",
+							Version:    "5.15.0-69.76",
+							SrcName:    "linux",
+							SrcVersion: "5.15.0-69.76",
+						},
+						{
+							Name:       "linux-headers-generic",
+							Version:    "5.15.0.69.67",
+							SrcName:    "linux-meta",
+							SrcVersion: "5.15.0.69.67",
+						},
+						{
+							Name:       "linux-image-5.15.0-69-generic",
+							Version:    "5.15.0-69.76",
+							SrcName:    "linux-signed",
+							SrcVersion: "5.15.0-69.76",
+						},
+						{
+							Name:       "linux-image-5.15.0-33-generic",
+							Version:    "5.15.0-33.34",
+							SrcName:    "linux-signed",
+							SrcVersion: "5.15.0-33.34",
+						},
+						{
+							Name:       "linux-image-virtual",
+							Version:    "5.15.0.69.67",
+							SrcName:    "linux-meta",
+							SrcVersion: "5.15.0.69.67",
+						},
+						{
+							Name:       "bash",
+							Version:    "5.1-6ubuntu1",
+							SrcName:    "bash",
+							SrcVersion: "5.1-6ubuntu1",
+						},
+					},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2025-0001",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.UbuntuCVETracker: {
+											dataTypes.RootID("CVE-2025-0001"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0001",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeVendor,
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																Vendor: toPtr("low"),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-0001",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "jammy_low",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.UbuntuCVETracker: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: toPtr(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "linux",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeDPKG,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "5.15.0-70.77",
+																			},
+																		},
+																		Fixed: []string{"5.15.0-70.77"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0, 1, 3, 4},
+															},
+														},
+													},
+												},
+												Tag: "jammy_low",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							ID: "CVE-2025-0002",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0002",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.UbuntuCVETracker: {
+											dataTypes.RootID("CVE-2025-0002"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0002",
+														Title:       "title",
+														Description: "** REJECT ** description",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeVendor,
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																Vendor: toPtr("low"),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-0002",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "jammy_low",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.UbuntuCVETracker: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: toPtr(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "linux",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeDPKG,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "5.15.0-70.77",
+																			},
+																		},
+																		Fixed: []string{"5.15.0-70.77"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0, 1, 3, 4},
+															},
+														},
+													},
+												},
+												Tag: "jammy_low",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							ID: "CVE-2025-0003",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0003",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.UbuntuCVETracker: {
+											dataTypes.RootID("CVE-2025-0003"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0003",
+														Title:       "title",
+														Description: "Rejected reason: description",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeVendor,
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																Vendor: toPtr("low"),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-0003",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "jammy_low",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.UbuntuCVETracker: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: toPtr(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "linux",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeDPKG,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "5.15.0-70.77",
+																			},
+																		},
+																		Fixed: []string{"5.15.0-70.77"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0, 1, 3, 4},
+															},
+														},
+													},
+												},
+												Tag: "jammy_low",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							ID: "CVE-2025-0004",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0004",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.UbuntuCVETracker: {
+											dataTypes.RootID("CVE-2025-0004"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0004",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeVendor,
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																Vendor: toPtr("low"),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-0004",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "jammy_low",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.UbuntuCVETracker: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: toPtr(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																		Class:  vcFixStatusTypes.ClassUnfixed,
+																		Vendor: "ignored: end of kernel support",
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "linux",
+																		},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0, 1, 2, 3, 4, 5},
+															},
+														},
+													},
+												},
+												Tag: "jammy_low",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							ID: "CVE-2025-0005",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0005",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.UbuntuCVETracker: {
+											dataTypes.RootID("CVE-2025-0005"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0005",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeVendor,
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																Vendor: toPtr("low"),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-0005",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "fips-updates/jammy_low",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.UbuntuCVETracker: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: toPtr(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "linux",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeDPKG,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "5.15.0-70.77+fips.1",
+																			},
+																		},
+																		Fixed: []string{"5.15.0-70.77+fips.1"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0, 1, 3, 4},
+															},
+														},
+													},
+												},
+												Tag: "fips-updates/jammy_low",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							ID: "CVE-2025-0006",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0006",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.UbuntuCVETracker: {
+											dataTypes.RootID("CVE-2025-0006"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0006",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeVendor,
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																Vendor: toPtr("low"),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-0006",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "jammy_low",
+														},
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "esm-apps/jammy_low",
+														},
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "fips-updates/jammy_low",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.UbuntuCVETracker: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: toPtr(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "linux",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeDPKG,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "5.15.0-70.77",
+																			},
+																		},
+																		Fixed: []string{"5.15.0-70.77"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0, 1, 3, 4},
+															},
+														},
+													},
+												},
+												Tag: "jammy_low",
+											},
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: toPtr(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "linux",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeDPKG,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "5.15.0-70.77+esm.1",
+																			},
+																		},
+																		Fixed: []string{"5.15.0-70.77+esm.1"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0, 1, 3, 4},
+															},
+														},
+													},
+												},
+												Tag: "esm-apps/jammy_low",
+											},
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: toPtr(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "linux",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeDPKG,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "5.15.0-70.77+fips.1",
+																			},
+																		},
+																		Fixed: []string{"5.15.0-70.77+fips.1"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0, 1, 3, 4},
+															},
+														},
+													},
+												},
+												Tag: "fips-updates/jammy_low",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							ID: "CVE-2025-0007",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0007",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.UbuntuCVETracker: {
+											dataTypes.RootID("CVE-2025-0007"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0007",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeVendor,
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																Vendor: toPtr("low"),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-0007",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "jammy_low",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.UbuntuCVETracker: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: toPtr(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "linux",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeDPKG,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "5.15.0-69.76",
+																			},
+																		},
+																		Fixed: []string{"5.15.0-69.76"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{4},
+															},
+														},
+													},
+												},
+												Tag: "jammy_low",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							ID: "CVE-2025-0008",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0008",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.UbuntuCVETracker: {
+											dataTypes.RootID("CVE-2025-0008"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0008",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeVendor,
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																Vendor: toPtr("low"),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-0008",
+															},
+														},
+														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "jammy_low",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.UbuntuCVETracker: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: toPtr(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "bash",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeDPKG,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "5.1-6ubuntu2",
+																			},
+																		},
+																		Fixed: []string{"5.1-6ubuntu2"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{6},
+															},
+														},
+													},
+												},
+												Tag: "jammy_low",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-0001": {
+					CveID:       "CVE-2025-0001",
+					Confidences: models.Confidences{models.UbuntuAPIMatch},
+					AffectedPackages: models.PackageFixStatuses{
+						{
+							Name:        "linux-headers-5.15.0-69",
+							NotFixedYet: false,
+							FixedIn:     "5.15.0-70.77",
+						},
+						{
+							Name:        "linux-headers-5.15.0-69-generic",
+							NotFixedYet: false,
+							FixedIn:     "5.15.0-70.77",
+						},
+						{
+							Name:        "linux-image-5.15.0-69-generic",
+							NotFixedYet: false,
+							FixedIn:     "5.15.0-70.77",
+						},
+					},
+					CveContents: models.CveContents{
+						models.UbuntuAPI: []models.CveContent{
+							{
+								Type:          models.UbuntuAPI,
+								CveID:         "CVE-2025-0001",
+								Title:         "title",
+								Summary:       "description",
+								Cvss2Severity: "low",
+								Cvss3Severity: "low",
+								SourceLink:    "https://ubuntu.com/security/CVE-2025-0001",
+								References: []models.Reference{
+									{
+										Link:   "https://www.cve.org/CVERecord?id=CVE-2025-0001",
+										Source: "CVE",
+										RefID:  "CVE-2025-0001",
+									},
+								},
+								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0001\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:22.04\",\"tag\":\"jammy_low\"}}]",
+								},
+							},
+						},
+					},
+				},
+				"CVE-2025-0006": {
+					CveID:       "CVE-2025-0006",
+					Confidences: models.Confidences{models.UbuntuAPIMatch},
+					AffectedPackages: models.PackageFixStatuses{
+						{
+							Name:        "linux-headers-5.15.0-69",
+							NotFixedYet: false,
+							FixedIn:     "5.15.0-70.77",
+						},
+						{
+							Name:        "linux-headers-5.15.0-69-generic",
+							NotFixedYet: false,
+							FixedIn:     "5.15.0-70.77",
+						},
+						{
+							Name:        "linux-image-5.15.0-69-generic",
+							NotFixedYet: false,
+							FixedIn:     "5.15.0-70.77",
+						},
+					},
+					CveContents: models.CveContents{
+						models.UbuntuAPI: []models.CveContent{
+							{
+								Type:          models.UbuntuAPI,
+								CveID:         "CVE-2025-0006",
+								Title:         "title",
+								Summary:       "description",
+								Cvss2Severity: "low",
+								Cvss3Severity: "low",
+								SourceLink:    "https://ubuntu.com/security/CVE-2025-0006",
+								References: []models.Reference{
+									{
+										Link:   "https://www.cve.org/CVERecord?id=CVE-2025-0006",
+										Source: "CVE",
+										RefID:  "CVE-2025-0006",
+									},
+								},
+								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0006\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:22.04\",\"tag\":\"jammy_low\"}}]",
+								},
+							},
+						},
+					},
+				},
+				"CVE-2025-0008": {
+					CveID:       "CVE-2025-0008",
+					Confidences: models.Confidences{models.UbuntuAPIMatch},
+					AffectedPackages: models.PackageFixStatuses{
+						{
+							Name:        "bash",
+							NotFixedYet: false,
+							FixedIn:     "5.1-6ubuntu2",
+						},
+					},
+					CveContents: models.CveContents{
+						models.UbuntuAPI: []models.CveContent{
+							{
+								Type:          models.UbuntuAPI,
+								CveID:         "CVE-2025-0008",
+								Title:         "title",
+								Summary:       "description",
+								Cvss2Severity: "low",
+								Cvss3Severity: "low",
+								SourceLink:    "https://ubuntu.com/security/CVE-2025-0008",
+								References: []models.Reference{
+									{
+										Link:   "https://www.cve.org/CVERecord?id=CVE-2025-0008",
+										Source: "CVE",
+										RefID:  "CVE-2025-0008",
+									},
+								},
+								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0008\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:22.04\",\"tag\":\"jammy_low\"}}]",
 								},
 							},
 						},
