@@ -712,21 +712,6 @@ func (l *base) scanLibraries() (err error) {
 
 		l.log.Debugf("Analyzing file: %s", abspath)
 		filemode, contents, err := func() (os.FileMode, []byte, error) {
-			if isLocalExec(l.getServerInfo().Port, l.getServerInfo().Host) {
-				fileinfo, err := os.Stat(abspath)
-				if err != nil {
-					return os.FileMode(0000), nil, xerrors.Errorf("Failed to get target file info. filepath: %s, err: %w", abspath, err)
-				}
-				filemode := fileinfo.Mode().Perm()
-
-				contents, err := os.ReadFile(abspath)
-				if err != nil {
-					return os.FileMode(0000), nil, xerrors.Errorf("Failed to read target file contents. filepath: %s, err: %w", abspath, err)
-				}
-
-				return filemode, contents, nil
-			}
-
 			r := l.exec(fmt.Sprintf(`stat -c "%%a" %s`, abspath), priv)
 			if !r.isSuccess() {
 				return os.FileMode(0000), nil, xerrors.Errorf("Failed to get target file permission. filepath: %s, err: %w", abspath, err)
