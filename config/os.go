@@ -41,10 +41,9 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 	case constant.Amazon:
 		eol, found = map[string]EOL{
 			"1":    {StandardSupportUntil: time.Date(2023, 12, 31, 23, 59, 59, 0, time.UTC)},
-			"2":    {StandardSupportUntil: time.Date(2025, 6, 30, 23, 59, 59, 0, time.UTC)},
+			"2":    {StandardSupportUntil: time.Date(2026, 6, 30, 23, 59, 59, 0, time.UTC)},
 			"2022": {StandardSupportUntil: time.Date(2026, 6, 30, 23, 59, 59, 0, time.UTC)},
 			"2023": {StandardSupportUntil: time.Date(2027, 6, 30, 23, 59, 59, 0, time.UTC)},
-			"2025": {StandardSupportUntil: time.Date(2029, 6, 30, 23, 59, 59, 0, time.UTC)},
 			"2027": {StandardSupportUntil: time.Date(2031, 6, 30, 23, 59, 59, 0, time.UTC)},
 			"2029": {StandardSupportUntil: time.Date(2033, 6, 30, 23, 59, 59, 0, time.UTC)},
 		}[getAmazonLinuxVersion(release)]
@@ -78,24 +77,27 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 	case constant.CentOS:
 		// https://en.wikipedia.org/wiki/CentOS#End-of-support_schedule
 		eol, found = map[string]EOL{
-			"3":       {Ended: true},
-			"4":       {Ended: true},
-			"5":       {Ended: true},
-			"6":       {Ended: true},
-			"7":       {StandardSupportUntil: time.Date(2024, 6, 30, 23, 59, 59, 0, time.UTC)},
-			"8":       {StandardSupportUntil: time.Date(2021, 12, 31, 23, 59, 59, 0, time.UTC)},
-			"stream8": {StandardSupportUntil: time.Date(2024, 5, 31, 23, 59, 59, 0, time.UTC)},
-			"stream9": {StandardSupportUntil: time.Date(2027, 5, 31, 23, 59, 59, 0, time.UTC)},
+			"3":        {Ended: true},
+			"4":        {Ended: true},
+			"5":        {Ended: true},
+			"6":        {Ended: true},
+			"7":        {StandardSupportUntil: time.Date(2024, 6, 30, 23, 59, 59, 0, time.UTC)},
+			"8":        {StandardSupportUntil: time.Date(2021, 12, 31, 23, 59, 59, 0, time.UTC)},
+			"stream8":  {StandardSupportUntil: time.Date(2024, 5, 31, 23, 59, 59, 0, time.UTC)},
+			"stream9":  {StandardSupportUntil: time.Date(2027, 5, 31, 23, 59, 59, 0, time.UTC)},
+			"stream10": {StandardSupportUntil: time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)},
 		}[major(release)]
 	case constant.Alma:
 		eol, found = map[string]EOL{
-			"8": {StandardSupportUntil: time.Date(2029, 12, 31, 23, 59, 59, 0, time.UTC)},
-			"9": {StandardSupportUntil: time.Date(2032, 5, 31, 23, 59, 59, 0, time.UTC)},
+			"8":  {StandardSupportUntil: time.Date(2029, 12, 31, 23, 59, 59, 0, time.UTC)},
+			"9":  {StandardSupportUntil: time.Date(2032, 5, 31, 23, 59, 59, 0, time.UTC)},
+			"10": {StandardSupportUntil: time.Date(2035, 5, 31, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
 	case constant.Rocky:
 		eol, found = map[string]EOL{
-			"8": {StandardSupportUntil: time.Date(2029, 5, 31, 23, 59, 59, 0, time.UTC)},
-			"9": {StandardSupportUntil: time.Date(2032, 5, 31, 23, 59, 59, 0, time.UTC)},
+			"8":  {StandardSupportUntil: time.Date(2029, 5, 31, 23, 59, 59, 0, time.UTC)},
+			"9":  {StandardSupportUntil: time.Date(2032, 5, 31, 23, 59, 59, 0, time.UTC)},
+			"10": {StandardSupportUntil: time.Date(2035, 5, 31, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
 	case constant.Oracle:
 		eol, found = map[string]EOL{
@@ -121,6 +123,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 				StandardSupportUntil: time.Date(2032, 6, 1, 23, 59, 59, 0, time.UTC),
 				ExtendedSupportUntil: time.Date(2034, 6, 1, 23, 59, 59, 0, time.UTC),
 			},
+			"10": {},
 		}[major(release)]
 	case constant.Debian:
 		eol, found = map[string]EOL{
@@ -324,6 +327,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"3.19": {StandardSupportUntil: time.Date(2025, 11, 1, 23, 59, 59, 0, time.UTC)},
 			"3.20": {StandardSupportUntil: time.Date(2026, 4, 1, 23, 59, 59, 0, time.UTC)},
 			"3.21": {StandardSupportUntil: time.Date(2026, 11, 1, 23, 59, 59, 0, time.UTC)},
+			"3.22": {StandardSupportUntil: time.Date(2027, 5, 1, 23, 59, 59, 0, time.UTC)},
 		}[majorDotMinor(release)]
 	case constant.FreeBSD:
 		// https://www.freebsd.org/security/
@@ -351,6 +355,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"39": {StandardSupportUntil: time.Date(2024, 11, 26, 23, 59, 59, 0, time.UTC)},
 			"40": {StandardSupportUntil: time.Date(2025, 5, 28, 23, 59, 59, 0, time.UTC)},
 			"41": {StandardSupportUntil: time.Date(2025, 11, 19, 23, 59, 59, 0, time.UTC)},
+			"42": {StandardSupportUntil: time.Date(2026, 5, 13, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
 	case constant.Windows:
 		// https://learn.microsoft.com/ja-jp/lifecycle/products/?products=windows
@@ -495,8 +500,6 @@ func getAmazonLinuxVersion(osRelease string) string {
 		return "2022"
 	case "2023":
 		return "2023"
-	case "2025":
-		return "2025"
 	case "2027":
 		return "2027"
 	case "2029":
