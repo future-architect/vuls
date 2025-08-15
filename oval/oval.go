@@ -63,8 +63,6 @@ func (b Base) CheckIfOvalFetched(osFamily, release string) (bool, error) {
 			ovalRelease = "2022"
 		case "2023":
 			ovalRelease = "2023"
-		case "2025":
-			ovalRelease = "2025"
 		case "2027":
 			ovalRelease = "2027"
 		case "2029":
@@ -125,8 +123,6 @@ func (b Base) CheckIfOvalFresh(osFamily, release string) (ok bool, err error) {
 			ovalRelease = "2022"
 		case "2023":
 			ovalRelease = "2023"
-		case "2025":
-			ovalRelease = "2025"
 		case "2027":
 			ovalRelease = "2027"
 		case "2029":

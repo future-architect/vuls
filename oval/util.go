@@ -119,8 +119,6 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 			ovalRelease = "2022"
 		case "2023":
 			ovalRelease = "2023"
-		case "2025":
-			ovalRelease = "2025"
 		case "2027":
 			ovalRelease = "2027"
 		case "2029":
@@ -293,8 +291,6 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relate
 			ovalRelease = "2022"
 		case "2023":
 			ovalRelease = "2023"
-		case "2025":
-			ovalRelease = "2025"
 		case "2027":
 			ovalRelease = "2027"
 		case "2029":
