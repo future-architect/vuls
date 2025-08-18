@@ -543,3 +543,43 @@ func Test_findPortScanSuccessOn(t *testing.T) {
 		})
 	}
 }
+
+func TestParseSnapList(t *testing.T) {
+	var tests = struct {
+		in       string
+		expected models.Snaps
+	}{
+		`Name                       Version          Rev    Tracking         Publisher    Notes
+bare                       1.0              5      latest/stable    canonical**  base
+core22                     20240731         1564   latest/stable    canonical**  base
+firefox                    129.0.2-1        4793   latest/stable/…  mozilla**    -
+firmware-updater           0+git.5007558    127    1/stable/…       canonical**  -
+gnome-42-2204              0+git.510a601    176    latest/stable/…  canonical**  -
+gtk-common-themes          0.1-81-g442e511  1535   latest/stable/…  canonical**  -
+snap-store                 0+git.e3dd562    1173   2/stable/…       canonical**  -
+snapd                      2.63             21759  latest/stable    canonical**  snapd
+snapd-desktop-integration  0.9              178    latest/stable/…  canonical**  -`,
+		models.Snaps{
+			"bare":                      models.Snap{Name: "bare", Version: "1.0", Revision: "5"},
+			"core22":                    models.Snap{Name: "core22", Version: "20240731", Revision: "1564"},
+			"firefox":                   models.Snap{Name: "firefox", Version: "129.0.2-1", Revision: "4793"},
+			"firmware-updater":          models.Snap{Name: "firmware-updater", Version: "0+git.5007558", Revision: "127"},
+			"gnome-42-2204":             models.Snap{Name: "gnome-42-2204", Version: "0+git.510a601", Revision: "176"},
+			"gtk-common-themes":         models.Snap{Name: "gtk-common-themes", Version: "0.1-81-g442e511", Revision: "1535"},
+			"snap-store":                models.Snap{Name: "snap-store", Version: "0+git.e3dd562", Revision: "1173"},
+			"snapd":                     models.Snap{Name: "snapd", Version: "2.63", Revision: "21759"},
+			"snapd-desktop-integration": models.Snap{Name: "snapd-desktop-integration", Version: "0.9", Revision: "178"},
+		},
+	}
+	l := base{}
+	actual, err := l.parseSnapList(tests.in)
+	if err != nil {
+		t.Errorf("Error occurred. in: %s, err: %+v", tests.in, err)
+		return
+	}
+	for _, e := range tests.expected {
+		if !reflect.DeepEqual(e, actual[e.Name]) {
+			t.Errorf("expected %v, actual %v", e, actual[e.Name])
+		}
+	}
+}

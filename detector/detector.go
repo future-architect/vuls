@@ -23,6 +23,7 @@ import (
 	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/util"
+	hver "github.com/hashicorp/go-version"
 	cvemodels "github.com/vulsio/go-cve-dictionary/models"
 )
 
@@ -53,6 +54,10 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 
 		if err := DetectPkgCves(&r, config.Conf.OvalDict, config.Conf.Gost, config.Conf.Vuls2, config.Conf.LogOpts, config.Conf.NoProgress); err != nil {
 			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
+		}
+
+		if err := DetectSnapCves(&r, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
+			return nil, xerrors.Errorf("Failed to detect Snap CVE: %w", err)
 		}
 
 		cpeURIs, owaspDCXMLPath := []string{}, ""
@@ -369,6 +374,83 @@ func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf c
 					r.Packages[i].AffectedProcs[j].ListenPortStats, *ps)
 			}
 		}
+	}
+
+	return nil
+}
+
+func DetectSnapCves(r *models.ScanResult, cnf config.GoCveDictConf, logOpts logging.LogOpts) error {
+	detects := make(map[string]string)
+	client, err := newGoCveDictClient(&cnf, logOpts)
+	if err != nil {
+		return xerrors.Errorf("Failed to newGoCveDictClient. err: %w", err)
+	}
+	defer func() {
+		if err := client.closeDB(); err != nil {
+			logging.Log.Errorf("Failed to close DB. err: %+v", err)
+		}
+	}()
+
+	for _, snap := range r.Snaps {
+		results, err := client.driver.GetCveIDsByProduct(snap.Name)
+		if err != nil {
+			return xerrors.Errorf("Failed to detectCveByCpeURI. err: %w", err)
+		}
+
+		vera, err := hver.NewVersion(snap.Version)
+		if err != nil {
+			continue
+		}
+
+		for _, row := range results {
+			if row.VersionEndExcluding != "" {
+				verb, err := hver.NewVersion(row.VersionEndExcluding)
+				if err != nil {
+					continue
+				}
+				if vera.LessThan(verb) {
+					detects[row.CveID] = snap.Name
+				}
+			} else if row.VersionEndIncluding != "" {
+				verb, err := hver.NewVersion(row.VersionEndIncluding)
+				if err != nil {
+					continue
+				}
+				if vera.LessThanOrEqual(verb) {
+					detects[row.CveID] = snap.Name
+				}
+			}
+		}
+	}
+
+	for cveId, snap := range detects {
+		v, ok := r.ScannedCves[cveId]
+		if ok {
+			if v.CveContents == nil {
+				v.CveContents = models.NewCveContents(models.CveContent{
+					Type:  models.Nvd,
+					CveID: cveId,
+				})
+			} else {
+				v.CveContents[models.Nvd] = []models.CveContent{models.CveContent{
+					Type:  models.Nvd,
+					CveID: cveId,
+				}}
+			}
+			v.Confidences.AppendIfMissing(models.NvdVendorProductMatch)
+		} else {
+			v = models.VulnInfo{
+				CveID: cveId,
+				CveContents: models.NewCveContents(models.CveContent{
+					Type:  models.Nvd,
+					CveID: cveId,
+				}),
+				Confidences: models.Confidences{models.NvdVendorProductMatch},
+			}
+		}
+
+		v.AffectedPackages = v.AffectedPackages.Store(models.PackageFixStatus{Name: snap})
+		r.ScannedCves[cveId] = v
 	}
 
 	return nil
