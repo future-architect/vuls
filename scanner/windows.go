@@ -5041,21 +5041,7 @@ func (w *windows) scanLibraries() (err error) {
 
 		w.log.Debugf("Analyzing file: %s", abspath)
 		filemode, contents, err := func() (os.FileMode, []byte, error) {
-			if isLocalExec(w.getServerInfo().Port, w.getServerInfo().Host) {
-				fileinfo, err := os.Stat(abspath)
-				if err != nil {
-					return os.FileMode(0000), nil, xerrors.Errorf("Failed to get target file info. filepath: %s, err: %w", abspath, err)
-				}
-				filemode := fileinfo.Mode().Perm()
-
-				contents, err := os.ReadFile(abspath)
-				if err != nil {
-					return os.FileMode(0000), nil, xerrors.Errorf("Failed to read target file contents. filepath: %s, err: %w", abspath, err)
-				}
-
-				return filemode, contents, nil
-			}
-
+			// set dummy filemode because Windows file permission is complex and converting them to unix permission is difficult
 			filemode := os.FileMode(0666)
 
 			r := w.exec(w.translateCmd(fmt.Sprintf("Get-Content %s", abspath)), priv)
