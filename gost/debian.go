@@ -33,8 +33,9 @@ func (deb Debian) supported(major string) bool {
 		"10": "buster",
 		"11": "bullseye",
 		"12": "bookworm",
-		// "13": "trixie",
+		"13": "trixie",
 		// "14": "forky",
+		// "15": "duke",
 	}[major]
 	return ok
 }
@@ -64,6 +65,11 @@ func (deb Debian) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err error
 	}
 
 	return len(unique(append(fixedCVEs, unfixedCVEs...))), nil
+}
+
+type cveContent struct {
+	cveContent  models.CveContent
+	fixStatuses models.PackageFixStatuses
 }
 
 func (deb Debian) detectCVEsWithFixState(r *models.ScanResult, fixed bool) ([]string, error) {

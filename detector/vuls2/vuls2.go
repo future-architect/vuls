@@ -23,9 +23,7 @@ import (
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
 	severityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity"
-	v2 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v2"
-	v31 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v31"
-	v40 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v40"
+	severityVendorTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/vendor"
 	datasourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/datasource"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
 	db "github.com/MaineK00n/vuls2/pkg/db/common"
@@ -400,7 +398,7 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 		for _, d := range v.Detections {
 			for sourceID, fconds := range d.Contents {
 				for _, fcond := range fconds {
-					statuses, cpes, _, err := walkCriteria(d.Ecosystem, sourceID, fcond.Criteria, scanned)
+					statuses, cpes, _, err := walkCriteria(d.Ecosystem, sourceID, fcond.Criteria, fcond.Tag, scanned)
 					if err != nil {
 						return xerrors.Errorf("Failed to walk criteria. err: %w", err)
 					}
@@ -427,13 +425,13 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 	return nil
 }
 
-func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanResult) ([]packStatus, []string, bool, error) {
+func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, bool, error) {
 	var (
 		statuses []packStatus
 		cpes     []string
 	)
 	for _, child := range ca.Criterias {
-		ss, cs, ignore, err := walkCriteria(e, sourceID, child, scanned)
+		ss, cs, ignore, err := walkCriteria(e, sourceID, child, tag, scanned)
 		if err != nil {
 			return nil, nil, false, xerrors.Errorf("Failed to walk criteria. err: %w", err)
 		}
@@ -460,20 +458,25 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 			continue
 		}
 
-		if ignoreCriterion(e, cn) {
+		if ignoreCriterion(e, cn, tag) {
 			continue
 		}
 
-		switch cn.Criterion.Version.Package.Type {
+		fcn, err := filterCriterion(e, scanned, cn)
+		if err != nil {
+			return nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
+		}
+
+		switch fcn.Criterion.Version.Package.Type {
 		case vcPackageTypes.PackageTypeBinary, vcPackageTypes.PackageTypeSource:
 			rangeType, fixedIn := func() (vcAffectedRangeTypes.RangeType, string) {
-				if cn.Criterion.Version.Affected == nil {
+				if fcn.Criterion.Version.Affected == nil {
 					return vcAffectedRangeTypes.RangeTypeUnknown, ""
 				}
-				return cn.Criterion.Version.Affected.Type, selectFixedIn(cn.Criterion.Version.Affected.Type, cn.Criterion.Version.Affected.Fixed)
+				return fcn.Criterion.Version.Affected.Type, selectFixedIn(fcn.Criterion.Version.Affected.Type, fcn.Criterion.Version.Affected.Fixed)
 			}()
 
-			for _, index := range cn.Accepts.Version {
+			for _, index := range fcn.Accepts.Version {
 				if len(scanned.OSPackages) <= index {
 					return nil, nil, false, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
 				}
@@ -482,10 +485,10 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 					status: models.PackageFixStatus{
 						Name: affectedPackageName(e, scanned.OSPackages[index]),
 						FixState: func() string {
-							if cn.Criterion.Version.FixStatus == nil {
+							if fcn.Criterion.Version.FixStatus == nil {
 								return ""
 							}
-							return cn.Criterion.Version.FixStatus.Vendor
+							return fixState(e, sourceID, fcn.Criterion.Version.FixStatus.Vendor)
 						}(),
 						FixedIn:     fixedIn,
 						NotFixedYet: fixedIn == "",
@@ -493,12 +496,12 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 				})
 			}
 		case vcPackageTypes.PackageTypeCPE:
-			for _, index := range cn.Accepts.Version {
+			for _, index := range fcn.Accepts.Version {
 				if len(scanned.CPE) <= index {
 					return nil, nil, false, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
 				}
 			}
-			cpes = append(cpes, string(*cn.Criterion.Version.Package.CPE))
+			cpes = append(cpes, string(*fcn.Criterion.Version.Package.CPE))
 		default:
 		}
 	}
@@ -583,7 +586,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 
 							fdas := filterDistroAdvisories(src.Segment.Ecosystem, am[src])
 							cctype := toCveContentType(src.Segment.Ecosystem, sid)
-							cvss2, cvss3, cvss40 := toCvss(v.Content.Severity)
+							cvss2, cvss3, cvss40 := toCvss(src.Segment.Ecosystem, sid, v.Content.Severity)
 
 							var rs models.References
 							for _, r := range v.Content.References {
@@ -709,7 +712,7 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 			base, ok := am[a.AdvisoryID]
 			if ok {
 				if cmp.Or(
-					compareSeverity(base.Severity, a.Severity),
+					severityVendorTypes.Compare("", base.Severity, a.Severity),
 					base.Issued.Compare(a.Issued),
 					base.Updated.Compare(a.Updated),
 				) < 0 {
@@ -840,61 +843,6 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 	return info, nil
 }
 
-func compareSeverity(a, b string) int {
-	rank := func(severity string) int {
-		switch strings.ToUpper(severity) {
-		case "CRITICAL":
-			return 4
-		case "IMPORTANT", "HIGH":
-			return 3
-		case "MODERATE", "MEDIUM":
-			return 2
-		case "LOW", "NEGLIGIBLE":
-			return 1
-		default:
-			return 0
-		}
-	}
-
-	return cmp.Compare(rank(a), rank(b))
-}
-
-func toCvss(ss []severityTypes.Severity) (v2.CVSSv2, v31.CVSSv31, v40.CVSSv40) {
-	var (
-		cvss2 v2.CVSSv2
-		cvss3 v31.CVSSv31
-		cvss4 v40.CVSSv40
-	)
-
-	for _, s := range ss {
-		switch s.Type {
-		case severityTypes.SeverityTypeCVSSv2:
-			if cvss2.Vector == "" && s.CVSSv2 != nil {
-				cvss2 = *s.CVSSv2
-			}
-		case severityTypes.SeverityTypeCVSSv30:
-			if cvss3.Vector == "" && s.CVSSv30 != nil {
-				cvss3 = v31.CVSSv31{
-					Vector:       s.CVSSv30.Vector,
-					BaseScore:    s.CVSSv30.BaseScore,
-					BaseSeverity: s.CVSSv30.BaseSeverity,
-				}
-			}
-		case severityTypes.SeverityTypeCVSSv31:
-			if !strings.HasPrefix(cvss3.Vector, "CVSS:3.1/") && s.CVSSv31 != nil {
-				cvss3 = *s.CVSSv31
-			}
-		case severityTypes.SeverityTypeCVSSv40:
-			if cvss4.Vector == "" && s.CVSSv40 != nil {
-				cvss4 = *s.CVSSv40
-			}
-		default:
-		}
-	}
-
-	return cvss2, cvss3, cvss4
-}
-
 func toReference(ref string) models.Reference {
 	switch {
 	case strings.HasPrefix(ref, "https://www.cve.org/CVERecord?id="):
@@ -994,6 +942,26 @@ func toReference(ref string) models.Reference {
 			Link:   ref,
 			Source: "ALPINE",
 			RefID:  strings.TrimPrefix(ref, "https://security.alpinelinux.org/vuln/"),
+		}
+	case strings.HasPrefix(ref, "https://ubuntu.com/security/"):
+		switch {
+		case strings.HasPrefix(ref, "https://ubuntu.com/security/CVE-"):
+			return models.Reference{
+				Link:   ref,
+				Source: "UBUNTU",
+				RefID:  strings.TrimPrefix(ref, "https://ubuntu.com/security/"),
+			}
+		case strings.HasPrefix(ref, "https://ubuntu.com/security/notices/"):
+			return models.Reference{
+				Link:   ref,
+				Source: "UBUNTU",
+				RefID:  strings.TrimPrefix(ref, "https://ubuntu.com/security/notices/"),
+			}
+		default:
+			return models.Reference{
+				Link:   ref,
+				Source: "UBUNTU",
+			}
 		}
 	default:
 		return models.Reference{

@@ -568,11 +568,7 @@ func parseRegistry(stdout string) (osInfo, error) {
 			if !found {
 				return osInfo{}, xerrors.Errorf(`Failed to detect PROCESSOR_ARCHITECTURE. expected: "PROCESSOR_ARCHITECTURE : <PROCESSOR_ARCHITECTURE>", line: "%s"`, line)
 			}
-			formatted, err := formatArch(strings.TrimSpace(rhs))
-			if err != nil {
-				return osInfo{}, xerrors.Errorf("Failed to format arch. arch: %s, err: %w", strings.TrimSpace(rhs), err)
-			}
-			o.arch = formatted
+			o.arch = strings.TrimSpace(rhs)
 		default:
 		}
 	}
@@ -620,7 +616,12 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 			default:
 				n = "Microsoft Windows XP"
 			}
-			switch osInfo.arch {
+			arch, err := formatArch(osInfo.arch)
+			if err != nil {
+				return "", xerrors.Errorf("Failed to format architecture: %w", err)
+			}
+
+			switch arch {
 			case "x64-based":
 				n = fmt.Sprintf("%s x64 Edition", n)
 			}
@@ -643,7 +644,11 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 			default:
 				n = "Microsoft Windows XP"
 			}
-			switch osInfo.arch {
+			arch, err := formatArch(osInfo.arch)
+			if err != nil {
+				return "", xerrors.Errorf("Failed to format architecture: %w", err)
+			}
+			switch arch {
 			case "x64-based":
 				n = fmt.Sprintf("%s x64 Edition", n)
 			}
@@ -656,7 +661,11 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 			if strings.Contains(osInfo.productName, "R2") {
 				n = "Microsoft Windows Server 2003 R2"
 			}
-			switch osInfo.arch {
+			arch, err := formatArch(osInfo.arch)
+			if err != nil {
+				return "", xerrors.Errorf("Failed to format architecture: %w", err)
+			}
+			switch arch {
 			case "x64-based":
 				n = fmt.Sprintf("%s x64 Edition", n)
 			case "Itanium-based":
@@ -675,7 +684,11 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 		switch osInfo.installationType {
 		case "Client":
 			var n string
-			switch osInfo.arch {
+			arch, err := formatArch(osInfo.arch)
+			if err != nil {
+				return "", xerrors.Errorf("Failed to format architecture: %w", err)
+			}
+			switch arch {
 			case "x64-based":
 				n = "Windows Vista x64 Editions"
 			default:
@@ -688,7 +701,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 		case "Server", "Domain Controller":
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", err
+				return "", xerrors.Errorf("Failed to format architecture: %w", err)
 			}
 			if osInfo.servicePack != "" {
 				return fmt.Sprintf("Windows Server 2008 for %s Systems %s", arch, osInfo.servicePack), nil
@@ -697,7 +710,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 		case "Server Core":
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", err
+				return "", xerrors.Errorf("Failed to format architecture: %w", err)
 			}
 			if osInfo.servicePack != "" {
 				return fmt.Sprintf("Windows Server 2008 for %s Systems %s (Server Core installation)", arch, osInfo.servicePack), nil
@@ -709,7 +722,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 		case "Client":
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", err
+				return "", xerrors.Errorf("Failed to format architecture: %w", err)
 			}
 			if osInfo.servicePack != "" {
 				return fmt.Sprintf("Windows 7 for %s Systems %s", arch, osInfo.servicePack), nil
@@ -718,7 +731,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 		case "Server", "Domain Controller":
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", err
+				return "", xerrors.Errorf("Failed to format architecture: %w", err)
 			}
 			if osInfo.servicePack != "" {
 				return fmt.Sprintf("Windows Server 2008 R2 for %s Systems %s", arch, osInfo.servicePack), nil
@@ -727,7 +740,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 		case "Server Core":
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", err
+				return "", xerrors.Errorf("Failed to format architecture: %w", err)
 			}
 			if osInfo.servicePack != "" {
 				return fmt.Sprintf("Windows Server 2008 R2 for %s Systems %s (Server Core installation)", arch, osInfo.servicePack), nil
@@ -739,7 +752,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 		case "Client":
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", err
+				return "", xerrors.Errorf("Failed to format architecture: %w", err)
 			}
 			return fmt.Sprintf("Windows 8 for %s Systems", arch), nil
 		case "Server", "Domain Controller":
@@ -752,7 +765,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 		case "Client":
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", err
+				return "", xerrors.Errorf("Failed to format architecture: %w", err)
 			}
 			return fmt.Sprintf("Windows 8.1 for %s Systems", arch), nil
 		case "Server", "Domain Controller":
@@ -766,22 +779,22 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 			if strings.Contains(osInfo.productName, "Windows 11") {
 				arch, err := formatArch(osInfo.arch)
 				if err != nil {
-					return "", err
+					return "", xerrors.Errorf("Failed to format architecture: %w", err)
 				}
 				name, err := formatNamebyBuild("11", osInfo.build)
 				if err != nil {
-					return "", err
+					return "", xerrors.Errorf("Failed to format name by build: %w", err)
 				}
 				return fmt.Sprintf("%s for %s Systems", name, arch), nil
 			}
 
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", err
+				return "", xerrors.Errorf("Failed to format architecture: %w", err)
 			}
 			name, err := formatNamebyBuild("10", osInfo.build)
 			if err != nil {
-				return "", err
+				return "", xerrors.Errorf("Failed to format name by build: %w", err)
 			}
 			return fmt.Sprintf("%s for %s Systems", name, arch), nil
 		case "Server", "Nano Server", "Domain Controller":
@@ -789,7 +802,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 		case "Server Core":
 			name, err := formatNamebyBuild("Server", osInfo.build)
 			if err != nil {
-				return "", err
+				return "", xerrors.Errorf("Failed to format name by build: %w", err)
 			}
 			return fmt.Sprintf("%s (Server Core installation)", name), nil
 		}
@@ -808,7 +821,7 @@ func formatArch(arch string) (string, error) {
 	case "x86", "X86-based":
 		return "32-bit", nil
 	default:
-		return "", xerrors.New("CPU Architecture not found")
+		return "", xerrors.Errorf("CPU Architecture not found. expected: %q, actual: %q", []string{"AMD64", "x64-based", "ARM64", "ARM64-based", "IA64", "Itanium-based", "x86", "X86-based"}, arch)
 	}
 }
 
@@ -5028,21 +5041,7 @@ func (w *windows) scanLibraries() (err error) {
 
 		w.log.Debugf("Analyzing file: %s", abspath)
 		filemode, contents, err := func() (os.FileMode, []byte, error) {
-			if isLocalExec(w.getServerInfo().Port, w.getServerInfo().Host) {
-				fileinfo, err := os.Stat(abspath)
-				if err != nil {
-					return os.FileMode(0000), nil, xerrors.Errorf("Failed to get target file info. filepath: %s, err: %w", abspath, err)
-				}
-				filemode := fileinfo.Mode().Perm()
-
-				contents, err := os.ReadFile(abspath)
-				if err != nil {
-					return os.FileMode(0000), nil, xerrors.Errorf("Failed to read target file contents. filepath: %s, err: %w", abspath, err)
-				}
-
-				return filemode, contents, nil
-			}
-
+			// set dummy filemode because Windows file permission is complex and converting them to unix permission is difficult
 			filemode := os.FileMode(0666)
 
 			r := w.exec(w.translateCmd(fmt.Sprintf("Get-Content %s", abspath)), priv)

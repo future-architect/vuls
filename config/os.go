@@ -132,8 +132,9 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"10": {StandardSupportUntil: time.Date(2024, 6, 30, 23, 59, 59, 0, time.UTC)},
 			"11": {StandardSupportUntil: time.Date(2026, 6, 30, 23, 59, 59, 0, time.UTC)},
 			"12": {StandardSupportUntil: time.Date(2028, 6, 30, 23, 59, 59, 0, time.UTC)},
-			// "13": {StandardSupportUntil: time.Date(2030, 6, 30, 23, 59, 59, 0, time.UTC)},
+			"13": {StandardSupportUntil: time.Date(2030, 6, 30, 23, 59, 59, 0, time.UTC)},
 			// "14": {StandardSupportUntil: time.Date(2032, 6, 30, 23, 59, 59, 0, time.UTC)},
+			// "15": {StandardSupportUntil: time.Date(2034, 6, 30, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
 	case constant.Raspbian:
 		// Not found

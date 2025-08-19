@@ -333,7 +333,7 @@ PROCESSOR_ARCHITECTURE : AMD64
 				revision:         "2364",
 				edition:          "Professional",
 				servicePack:      "",
-				arch:             "x64-based",
+				arch:             "AMD64",
 				installationType: "Client",
 			},
 		},
@@ -376,6 +376,20 @@ func Test_detectOSName(t *testing.T) {
 		{
 			name: "Windows 10 Version 21H2 for x64-based Systems",
 			args: osInfo{
+				productName:      "Windows 10 Pro",
+				version:          "10.0",
+				build:            "19044",
+				revision:         "2364",
+				edition:          "Professional",
+				servicePack:      "",
+				arch:             "AMD64",
+				installationType: "Client",
+			},
+			want: "Windows 10 Version 21H2 for x64-based Systems",
+		},
+		{
+			name: "Windows 10 Version 21H2 for x64-based Systems",
+			args: osInfo{
 				productName:      "Microsoft Windows 10 Pro",
 				version:          "10.0",
 				build:            "19044",
@@ -386,6 +400,20 @@ func Test_detectOSName(t *testing.T) {
 				installationType: "Client",
 			},
 			want: "Windows 10 Version 21H2 for x64-based Systems",
+		},
+		{
+			name: "Windows 10 Version 22H2 for 32-bit Systems",
+			args: osInfo{
+				productName:      "Windows 10 Pro",
+				version:          "10.0",
+				build:            "19045",
+				revision:         "6093",
+				edition:          "Professional",
+				servicePack:      "",
+				arch:             "x86",
+				installationType: "Client",
+			},
+			want: "Windows 10 Version 22H2 for 32-bit Systems",
 		},
 		{
 			name: "Windows 11 Version 21H2 for x64-based Systems",
