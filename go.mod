@@ -57,7 +57,7 @@ require (
 	github.com/vulsio/go-msfdb v0.4.1
 	github.com/vulsio/gost v0.6.2-0.20250813200123-e609fd898e22
 	github.com/vulsio/goval-dictionary v0.13.1
-	go.etcd.io/bbolt v1.4.2
+	go.etcd.io/bbolt v1.4.3
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sync v0.16.0
 	golang.org/x/term v0.34.0
