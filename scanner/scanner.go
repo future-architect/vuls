@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	xos "github.com/aquasecurity/trivy/pkg/x/os"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/cache"
@@ -983,6 +984,13 @@ func (s Scanner) getScanResults(scannedAt time.Time) (results models.ScanResults
 		}
 		return nil
 	}, s.ScanTimeoutSec)
+	if slices.ContainsFunc([][]osTypeInterface{servers, errServers}, func(ss []osTypeInterface) bool {
+		return slices.ContainsFunc(ss, func(s osTypeInterface) bool { return s.getServerInfo().Module.IsScanLockFile() })
+	}) {
+		if err := xos.Cleanup(); err != nil {
+			logging.Log.Warnf("Failed to cleanup /tmp/trivy-* directory: %+v", err)
+		}
+	}
 
 	hostname, _ := os.Hostname()
 	ipv4s, ipv6s, err := util.IP()
