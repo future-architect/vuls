@@ -898,6 +898,7 @@ type Exploit struct {
 	ID           string                    `json:"id"`
 	URL          string                    `json:"url"`
 	Description  string                    `json:"description"`
+	Verified     *bool                     `json:"verified,omitempty"`
 	DocumentURL  *string                   `json:"documentURL,omitempty"`
 	ShellCodeURL *string                   `json:"shellCodeURL,omitempty"`
 	BinaryURL    *string                   `json:"binaryURL,omitempty"`
