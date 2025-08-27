@@ -14,6 +14,7 @@ import (
 	"github.com/aquasecurity/trivy/pkg/digest"
 	"github.com/aquasecurity/trivy/pkg/log"
 	xio "github.com/aquasecurity/trivy/pkg/x/io"
+	xos "github.com/aquasecurity/trivy/pkg/x/os"
 	"github.com/samber/lo"
 	"golang.org/x/xerrors"
 )
@@ -169,7 +170,7 @@ func (p *parser) parseInnerJar(zf *zip.File, rootPath string) ([]jarLibrary, err
 	}
 	defer fr.Close()
 
-	f, err := os.CreateTemp("", "inner-*")
+	f, err := xos.CreateTemp("", "jar-inner-")
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to create tmp file for %s. err: %w", zf.Name, err)
 	}
