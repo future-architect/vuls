@@ -55,10 +55,10 @@ func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string, confidences Co
 		return
 	}
 
-	for _, ctype := range append(append(CveContentTypes{Mitre, Nvd, Jvn}, GetCveContentTypes(myFamily)...), GitHub) {
+	for _, ctype := range append(append(CveContentTypes{Mitre, Nvd, Vulncheck, Jvn}, GetCveContentTypes(myFamily)...), GitHub) {
 		for _, cont := range v[ctype] {
 			switch ctype {
-			case Nvd:
+			case Nvd, Vulncheck:
 				for _, r := range cont.References {
 					if slices.Contains(r.Tags, "Vendor Advisory") {
 						if !slices.ContainsFunc(values, func(e CveContentStr) bool {
@@ -312,6 +312,8 @@ func NewCveContentType(name string) CveContentType {
 		return Mitre
 	case "nvd":
 		return Nvd
+	case "vulncheck":
+		return Vulncheck
 	case "jvn":
 		return Jvn
 	case "redhat", "centos":
@@ -455,6 +457,9 @@ const (
 
 	// Nvd is Nvd JSON
 	Nvd CveContentType = "nvd"
+
+	// Vulncheck is Vulncheck
+	Vulncheck CveContentType = "vulncheck"
 
 	// Jvn is Jvn
 	Jvn CveContentType = "jvn"
@@ -626,6 +631,7 @@ type CveContentTypes []CveContentType
 var AllCveContetTypes = CveContentTypes{
 	Mitre,
 	Nvd,
+	Vulncheck,
 	Jvn,
 	Fortinet,
 	Paloalto,

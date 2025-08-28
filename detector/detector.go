@@ -442,7 +442,7 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf config.WpScanConf) error {
 	return nil
 }
 
-// FillCvesWithGoCVEDictionary fills CVE detail with NVD, JVN, Fortinet, MITRE, Paloalto, Cisco
+// FillCvesWithGoCVEDictionary fills CVE detail with NVD, VulnCheck, JVN, Fortinet, MITRE, Paloalto, Cisco
 func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf, logOpts logging.LogOpts) (err error) {
 	cveIDs := []string{}
 	for _, v := range r.ScannedCves {
@@ -466,6 +466,7 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 
 	for _, d := range ds {
 		nvds, exploits, mitigations := models.ConvertNvdToModel(d.CveID, d.Nvds)
+		vulnchecks := models.ConvertVulncheckToModel(d.CveID, d.Vulnchecks)
 		jvns := models.ConvertJvnToModel(d.CveID, d.Jvns)
 		fortinets := models.ConvertFortinetToModel(d.CveID, d.Fortinets)
 		mitres := models.ConvertMitreToModel(d.CveID, d.Mitres)
@@ -482,6 +483,9 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 					if !con.Empty() {
 						vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
 					}
+				}
+				for _, con := range vulnchecks {
+					vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
 				}
 				for _, cons := range [][]models.CveContent{jvns, fortinets, paloaltos, ciscos} {
 					for _, con := range cons {
@@ -769,6 +773,25 @@ func getMaxConfidence(detail cvemodels.CveDetail) (maxConfidence models.Confiden
 		}
 
 		return fn(slices.MaxFunc(detail.Nvds, func(a, b cvemodels.Nvd) int {
+			return cmp.Compare(fn(a.DetectionMethod).Score, fn(b.DetectionMethod).Score)
+		}).DetectionMethod)
+	}
+
+	if detail.HasVulncheck() {
+		fn := func(s string) models.Confidence {
+			switch s {
+			case cvemodels.VulncheckExactVersionMatch:
+				return models.VulncheckExactVersionMatch
+			case cvemodels.VulncheckRoughVersionMatch:
+				return models.VulncheckRoughVersionMatch
+			case cvemodels.VulncheckVendorProductMatch:
+				return models.VulncheckVendorProductMatch
+			default:
+				return models.Confidence{}
+			}
+		}
+
+		return fn(slices.MaxFunc(detail.Vulnchecks, func(a, b cvemodels.Vulncheck) int {
 			return cmp.Compare(fn(a.DetectionMethod).Score, fn(b.DetectionMethod).Score)
 		}).DetectionMethod)
 	}
