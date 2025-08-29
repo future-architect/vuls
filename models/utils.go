@@ -155,6 +155,95 @@ func ConvertNvdToModel(cveID string, nvds []cvedict.Nvd) ([]CveContent, []Exploi
 	return cves, exploits, mitigations
 }
 
+// ConvertVulncheckToModel convert VulnCheck to CveContent
+func ConvertVulncheckToModel(cveID string, vulnchecks []cvedict.Vulncheck) []CveContent {
+	var cves []CveContent
+	for _, vulncheck := range vulnchecks {
+		desc := func() string {
+			switch i := slices.IndexFunc(vulncheck.Descriptions, func(e cvedict.VulncheckDescription) bool {
+				return e.Lang == "en"
+			}); i {
+			case -1:
+				if len(vulncheck.Descriptions) > 0 {
+					return vulncheck.Descriptions[0].Value
+				}
+				return ""
+			default:
+				return vulncheck.Descriptions[i].Value
+			}
+		}()
+
+		refs := func() []Reference {
+			rs := make([]Reference, 0, len(vulncheck.References))
+			for _, r := range vulncheck.References {
+				rs = append(rs, Reference{
+					Link:   r.Link,
+					Source: r.Source,
+					Tags: func() []string {
+						if r.Tags == "" {
+							return nil
+						}
+						return strings.Split(r.Tags, ",")
+					}(),
+				})
+			}
+			return rs
+		}()
+
+		m := make(map[string]CveContent)
+		for _, cwe := range vulncheck.Cwes {
+			c := m[cwe.Source]
+			c.CweIDs = append(c.CweIDs, cwe.CweID)
+			m[cwe.Source] = c
+		}
+		for _, cvss2 := range vulncheck.Cvss2 {
+			c := m[cvss2.Source]
+			c.Cvss2Score = cvss2.BaseScore
+			c.Cvss2Vector = cvss2.VectorString
+			c.Cvss2Severity = cvss2.Severity
+			m[cvss2.Source] = c
+		}
+		for _, cvss3 := range vulncheck.Cvss3 {
+			c := m[cvss3.Source]
+			c.Cvss3Score = cvss3.BaseScore
+			c.Cvss3Vector = cvss3.VectorString
+			c.Cvss3Severity = cvss3.BaseSeverity
+			m[cvss3.Source] = c
+		}
+		for _, cvss40 := range vulncheck.Cvss40 {
+			c := m[cvss40.Source]
+			c.Cvss40Score = cvss40.BaseScore
+			c.Cvss40Vector = cvss40.VectorString
+			c.Cvss40Severity = cvss40.BaseSeverity
+			m[cvss40.Source] = c
+		}
+
+		for source, cont := range m {
+			cves = append(cves, CveContent{
+				Type:           Vulncheck,
+				CveID:          cveID,
+				Summary:        desc,
+				Cvss2Score:     cont.Cvss2Score,
+				Cvss2Vector:    cont.Cvss2Vector,
+				Cvss2Severity:  cont.Cvss2Severity,
+				Cvss3Score:     cont.Cvss3Score,
+				Cvss3Vector:    cont.Cvss3Vector,
+				Cvss3Severity:  cont.Cvss3Severity,
+				Cvss40Score:    cont.Cvss40Score,
+				Cvss40Vector:   cont.Cvss40Vector,
+				Cvss40Severity: cont.Cvss40Severity,
+				SourceLink:     fmt.Sprintf("https://console.vulncheck.com/cve/%s", cveID),
+				CweIDs:         cont.CweIDs,
+				References:     refs,
+				Published:      vulncheck.PublishedDate,
+				LastModified:   vulncheck.LastModifiedDate,
+				Optional:       map[string]string{"source": source},
+			})
+		}
+	}
+	return cves
+}
+
 // ConvertFortinetToModel convert Fortinet to CveContent
 func ConvertFortinetToModel(cveID string, fortinets []cvedict.Fortinet) []CveContent {
 	cves := []CveContent{}

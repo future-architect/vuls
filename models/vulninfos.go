@@ -423,7 +423,7 @@ func (v VulnInfo) Titles(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := append(GetCveContentTypes(string(Trivy)), append(CveContentTypes{Cisco, Paloalto, Fortinet, Nvd, Mitre}, GetCveContentTypes(myFamily)...)...)
+	order := append(GetCveContentTypes(string(Trivy)), append(CveContentTypes{Cisco, Paloalto, Fortinet, Nvd, Vulncheck, Mitre}, GetCveContentTypes(myFamily)...)...)
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
@@ -468,7 +468,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 		}
 	}
 
-	order := append(append(GetCveContentTypes(string(Trivy)), GetCveContentTypes(myFamily)...), Cisco, Paloalto, Fortinet, Nvd, Mitre, GitHub)
+	order := append(append(GetCveContentTypes(string(Trivy)), GetCveContentTypes(myFamily)...), Cisco, Paloalto, Fortinet, Nvd, Vulncheck, Mitre, GitHub)
 	order = append(order, AllCveContetTypes.Except(append(order, Jvn)...)...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
@@ -514,7 +514,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 
 // Cvss2Scores returns CVSS V2 Scores
 func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
-	order := append([]CveContentType{RedHatAPI, RedHat, Nvd, Mitre, Jvn}, GetCveContentTypes(string(Trivy))...)
+	order := append([]CveContentType{RedHatAPI, RedHat, Nvd, Vulncheck, Mitre, Jvn}, GetCveContentTypes(string(Trivy))...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
@@ -539,7 +539,7 @@ func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
 
 // Cvss3Scores returns CVSS V3 Score
 func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
-	order := append([]CveContentType{RedHatAPI, RedHat, Rocky, SUSE, Microsoft, Paloalto, Fortinet, Nvd, Mitre, Jvn}, GetCveContentTypes(string(Trivy))...)
+	order := append([]CveContentType{RedHatAPI, RedHat, Rocky, SUSE, Microsoft, Paloalto, Fortinet, Nvd, Vulncheck, Mitre, Jvn}, GetCveContentTypes(string(Trivy))...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
@@ -612,7 +612,7 @@ func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 
 // Cvss40Scores returns CVSS V4 Score
 func (v VulnInfo) Cvss40Scores() (values []CveContentCvss) {
-	for _, ctype := range []CveContentType{Paloalto, Mitre, Nvd} {
+	for _, ctype := range []CveContentType{Paloalto, Mitre, Nvd, Vulncheck} {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
 				if cont.Cvss40Score == 0 && cont.Cvss40Severity == "" {
@@ -1041,6 +1041,15 @@ const (
 	// NvdVendorProductMatchStr :
 	NvdVendorProductMatchStr = "NvdVendorProductMatch"
 
+	// VulncheckExactVersionMatchStr :
+	VulncheckExactVersionMatchStr = "VulncheckExactVersionMatch"
+
+	// VulncheckRoughVersionMatchStr :
+	VulncheckRoughVersionMatchStr = "VulncheckRoughVersionMatch"
+
+	// VulncheckVendorProductMatchStr :
+	VulncheckVendorProductMatchStr = "VulncheckVendorProductMatch"
+
 	// JvnVendorProductMatchStr :
 	JvnVendorProductMatchStr = "JvnVendorProductMatch"
 
@@ -1159,6 +1168,15 @@ var (
 
 	// NvdVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
 	NvdVendorProductMatch = Confidence{10, NvdVendorProductMatchStr, 9}
+
+	// VulncheckExactVersionMatch is a ranking how confident the CVE-ID was detected correctly
+	VulncheckExactVersionMatch = Confidence{100, VulncheckExactVersionMatchStr, 1}
+
+	// VulncheckRoughVersionMatch is a ranking how confident the CVE-ID was detected correctly
+	VulncheckRoughVersionMatch = Confidence{80, VulncheckRoughVersionMatchStr, 1}
+
+	// VulncheckVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
+	VulncheckVendorProductMatch = Confidence{10, VulncheckVendorProductMatchStr, 9}
 
 	// JvnVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
 	JvnVendorProductMatch = Confidence{10, JvnVendorProductMatchStr, 10}

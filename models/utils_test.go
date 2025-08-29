@@ -3,13 +3,158 @@
 package models_test
 
 import (
+	"cmp"
 	"reflect"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/future-architect/vuls/models"
 	cvedict "github.com/vulsio/go-cve-dictionary/models"
 )
+
+func TestConvertVulncheckToModel(t *testing.T) {
+	type args struct {
+		cveID      string
+		vulnchecks []cvedict.Vulncheck
+	}
+	tests := []struct {
+		name string
+		args args
+		want []models.CveContent
+	}{
+		{
+			name: "CVE-2025-0108",
+			args: args{
+				cveID: "CVE-2025-0108",
+				vulnchecks: []cvedict.Vulncheck{{
+					CveID: "CVE-2025-0108",
+					Descriptions: []cvedict.VulncheckDescription{
+						{
+							Lang:  "en",
+							Value: "An authentication bypass in the Palo Alto Networks PAN-OS software enables an unauthenticated attacker with network access to the management web interface to bypass the authentication otherwise required by the PAN-OS management web interface and invoke certain PHP scripts. While invoking these PHP scripts does not enable remote code execution, it can negatively impact integrity and confidentiality of PAN-OS.\n\nYou can greatly reduce the risk of this issue by restricting access to the management web interface to only trusted internal IP addresses according to our recommended  best practices deployment guidelines https://live.paloaltonetworks.com/t5/community-blogs/tips-amp-tricks-how-to-secure-the-management-access-of-your-palo/ba-p/464431 .\n\nThis issue does not affect Cloud NGFW or Prisma Access software.",
+						},
+						{
+							Lang:  "es",
+							Value: "Una omisión de autenticación en el software PAN-OS de Palo Alto Networks permite que un atacante no autenticado con acceso a la red a la interfaz web de administración omita la autenticación que de otro modo requeriría la interfaz web de administración de PAN-OS e invoque ciertos scripts PHP. Si bien la invocación de estos scripts PHP no permite la ejecución remota de código, puede afectar negativamente la integridad y la confidencialidad de PAN-OS. Puede reducir en gran medida el riesgo de este problema al restringir el acceso a la interfaz web de administración solo a direcciones IP internas confiables de acuerdo con nuestras pautas de implementación de mejores prácticas recomendadas https://live.paloaltonetworks.com/t5/community-blogs/tips-amp-tricks-how-to-secure-the-management-access-of-your-palo/ba-p/464431 . Este problema no afecta al software Cloud NGFW ni a Prisma Access.",
+						},
+					},
+					Cvss2: []cvedict.VulncheckCvss2Extra{},
+					Cvss3: []cvedict.VulncheckCvss3{{
+						Source: "nvd@nist.gov",
+						Type:   "Primary",
+						Cvss3: cvedict.Cvss3{
+							VectorString:        "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N",
+							BaseScore:           9.1,
+							BaseSeverity:        "CRITICAL",
+							ExploitabilityScore: 3.9,
+							ImpactScore:         5.0,
+						},
+					}},
+					Cvss40: []cvedict.VulncheckCvss40{{
+						Source: "psirt@paloaltonetworks.com",
+						Type:   "Secondary",
+						Cvss40: cvedict.Cvss40{
+							VectorString: "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:L/VA:N/SC:N/SI:N/SA:N/E:X/CR:X/IR:X/AR:X/MAV:X/MAC:X/MAT:X/MPR:X/MUI:X/MVC:X/MVI:X/MVA:X/MSC:X/MSI:X/MSA:X/S:X/AU:N/R:U/V:C/RE:M/U:Red",
+							BaseScore:    8.8,
+							BaseSeverity: "HIGH",
+						},
+					}},
+					Cwes: []cvedict.VulncheckCwe{
+						{
+							Source: "psirt@paloaltonetworks.com",
+							Type:   "Secondary",
+							CweID:  "CWE-306",
+						},
+						{
+							Source: "nvd@nist.gov",
+							Type:   "Primary",
+							CweID:  "CWE-306",
+						},
+					},
+					References: []cvedict.VulncheckReference{
+						{
+							Reference: cvedict.Reference{
+								Link:   "https://security.paloaltonetworks.com/CVE-2025-0108",
+								Source: "psirt@paloaltonetworks.com",
+								Tags:   "Exploit,Vendor Advisory",
+								Name:   "https://security.paloaltonetworks.com/CVE-2025-0108",
+							},
+						},
+					},
+					PublishedDate:    time.Date(2025, 02, 12, 21, 15, 16, int(190*time.Millisecond), time.UTC),
+					LastModifiedDate: time.Date(2025, 06, 27, 20, 39, 59, int(717*time.Millisecond), time.UTC),
+				}},
+			},
+			want: []models.CveContent{
+				{
+					Type:          models.Vulncheck,
+					CveID:         "CVE-2025-0108",
+					Summary:       "An authentication bypass in the Palo Alto Networks PAN-OS software enables an unauthenticated attacker with network access to the management web interface to bypass the authentication otherwise required by the PAN-OS management web interface and invoke certain PHP scripts. While invoking these PHP scripts does not enable remote code execution, it can negatively impact integrity and confidentiality of PAN-OS.\n\nYou can greatly reduce the risk of this issue by restricting access to the management web interface to only trusted internal IP addresses according to our recommended  best practices deployment guidelines https://live.paloaltonetworks.com/t5/community-blogs/tips-amp-tricks-how-to-secure-the-management-access-of-your-palo/ba-p/464431 .\n\nThis issue does not affect Cloud NGFW or Prisma Access software.",
+					Cvss3Score:    9.1,
+					Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N",
+					Cvss3Severity: "CRITICAL",
+					SourceLink:    "https://console.vulncheck.com/cve/CVE-2025-0108",
+					References: []models.Reference{
+						{
+							Link:   "https://security.paloaltonetworks.com/CVE-2025-0108",
+							Source: "psirt@paloaltonetworks.com",
+							Tags:   []string{"Exploit", "Vendor Advisory"},
+						},
+					},
+					CweIDs:       []string{"CWE-306"},
+					Published:    time.Date(2025, 02, 12, 21, 15, 16, int(190*time.Millisecond), time.UTC),
+					LastModified: time.Date(2025, 06, 27, 20, 39, 59, int(717*time.Millisecond), time.UTC),
+					Optional:     map[string]string{"source": "nvd@nist.gov"},
+				},
+				{
+					Type:           models.Vulncheck,
+					CveID:          "CVE-2025-0108",
+					Summary:        "An authentication bypass in the Palo Alto Networks PAN-OS software enables an unauthenticated attacker with network access to the management web interface to bypass the authentication otherwise required by the PAN-OS management web interface and invoke certain PHP scripts. While invoking these PHP scripts does not enable remote code execution, it can negatively impact integrity and confidentiality of PAN-OS.\n\nYou can greatly reduce the risk of this issue by restricting access to the management web interface to only trusted internal IP addresses according to our recommended  best practices deployment guidelines https://live.paloaltonetworks.com/t5/community-blogs/tips-amp-tricks-how-to-secure-the-management-access-of-your-palo/ba-p/464431 .\n\nThis issue does not affect Cloud NGFW or Prisma Access software.",
+					Cvss40Score:    8.8,
+					Cvss40Vector:   "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:L/VA:N/SC:N/SI:N/SA:N/E:X/CR:X/IR:X/AR:X/MAV:X/MAC:X/MAT:X/MPR:X/MUI:X/MVC:X/MVI:X/MVA:X/MSC:X/MSI:X/MSA:X/S:X/AU:N/R:U/V:C/RE:M/U:Red",
+					Cvss40Severity: "HIGH",
+					SourceLink:     "https://console.vulncheck.com/cve/CVE-2025-0108",
+					References: []models.Reference{
+						{
+							Link:   "https://security.paloaltonetworks.com/CVE-2025-0108",
+							Source: "psirt@paloaltonetworks.com",
+							Tags:   []string{"Exploit", "Vendor Advisory"},
+						},
+					},
+					CweIDs:       []string{"CWE-306"},
+					Published:    time.Date(2025, 02, 12, 21, 15, 16, int(190*time.Millisecond), time.UTC),
+					LastModified: time.Date(2025, 06, 27, 20, 39, 59, int(717*time.Millisecond), time.UTC),
+					Optional:     map[string]string{"source": "psirt@paloaltonetworks.com"},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := models.ConvertVulncheckToModel(tt.args.cveID, tt.args.vulnchecks)
+
+			slices.SortFunc(got, func(i, j models.CveContent) int {
+				switch {
+				case i.Optional["source"] == "nvd@nist.gov" && j.Optional["source"] != "nvd@nist.gov":
+					return -1
+				case i.Optional["source"] != "nvd@nist.gov" && j.Optional["source"] == "nvd@nist.gov":
+					return +1
+				default:
+					return cmp.Or(
+						cmp.Compare(i.Cvss2Score, j.Cvss2Score),
+						cmp.Compare(i.Cvss3Score, j.Cvss3Score),
+						cmp.Compare(i.Cvss40Score, j.Cvss40Score),
+					)
+				}
+			})
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ConvertVulncheckToModel() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func TestConvertPaloaltoToModel(t *testing.T) {
 	type args struct {

@@ -51,7 +51,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.9.1
 	github.com/vulsio/go-cti v0.3.1
-	github.com/vulsio/go-cve-dictionary v0.13.1
+	github.com/vulsio/go-cve-dictionary v0.13.2-0.20250828090725-8b89e97df7b1
 	github.com/vulsio/go-exploitdb v0.6.1
 	github.com/vulsio/go-kev v0.4.1
 	github.com/vulsio/go-msfdb v0.4.1
@@ -92,7 +92,8 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.26.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.49.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.49.0 // indirect
-	github.com/MaineK00n/go-paloalto-version v0.0.0-20250604055825-65738633ae7a // indirect
+	github.com/MaineK00n/go-cisco-version v0.0.0-20250826032808-615a945b63f4 // indirect
+	github.com/MaineK00n/go-paloalto-version v0.0.0-20250826032740-c5203b6ee7d0 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.3.0 // indirect
@@ -337,7 +338,7 @@ require (
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.3 // indirect
 	golang.org/x/crypto v0.41.0 // indirect
-	golang.org/x/exp v0.0.0-20250813145105-42675adae3e6 // indirect
+	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b // indirect
 	golang.org/x/mod v0.27.0 // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
@@ -355,7 +356,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.6.0 // indirect
 	gorm.io/driver/postgres v1.6.0 // indirect
-	gorm.io/gorm v1.30.1 // indirect
+	gorm.io/gorm v1.30.2 // indirect
 	gotest.tools/v3 v3.5.0 // indirect
 	helm.sh/helm/v3 v3.18.5 // indirect
 	k8s.io/api v0.33.3 // indirect
