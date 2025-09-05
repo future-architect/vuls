@@ -376,6 +376,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
-
-// To fix CVE-2025-8959, force v1.7.9. Once trivy's fix update is released, we can remove this.
-replace github.com/hashicorp/go-getter => github.com/hashicorp/go-getter v1.7.9
