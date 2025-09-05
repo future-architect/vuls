@@ -793,9 +793,6 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to copy file to temp. err: %w", err)
 		}
-		// As of 2025-08-27, tmpFile is not deleted by composite.Cleaup(), so delete it here.
-		defer os.Remove(tmpFilePath)
-
 		if err := composite.CreateLink(analyzerTypes, "", path, tmpFilePath); err != nil {
 			return nil, xerrors.Errorf("Failed to create link. err: %w", err)
 		}
