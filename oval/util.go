@@ -4,10 +4,7 @@ package oval
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"regexp"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -189,7 +186,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 		select {
 		case res := <-resChan:
 			for _, def := range res.defs {
-				affected, notFixedYet, fixState, fixedIn, err := isOvalDefAffected(def, res.request, ovalFamily, ovalRelease, r.EnabledDnfModules)
+				affected, notFixedYet, fixState, fixedIn, err := isOvalDefAffected(def, res.request, ovalFamily, ovalRelease)
 				if err != nil {
 					errs = append(errs, err)
 					continue
@@ -329,7 +326,7 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relate
 			return relatedDefs, xerrors.Errorf("Failed to get %s OVAL info by package: %#v, err: %w", r.Family, req, err)
 		}
 		for _, def := range definitions {
-			affected, notFixedYet, fixState, fixedIn, err := isOvalDefAffected(def, req, ovalFamily, ovalRelease, r.EnabledDnfModules)
+			affected, notFixedYet, fixState, fixedIn, err := isOvalDefAffected(def, req, ovalFamily, ovalRelease)
 			if err != nil {
 				return relatedDefs, xerrors.Errorf("Failed to exec isOvalAffected. err: %w", err)
 			}
@@ -361,9 +358,7 @@ func getDefsByPackNameFromOvalDB(r *models.ScanResult, driver ovaldb.DB) (relate
 	return
 }
 
-var modularVersionPattern = regexp.MustCompile(`.+\.module(?:\+el|_f)\d{1,2}.*`)
-
-func isOvalDefAffected(def ovalmodels.Definition, req request, family, release string, enabledMods []string) (affected, notFixedYet bool, fixState, fixedIn string, err error) {
+func isOvalDefAffected(def ovalmodels.Definition, req request, family, release string) (affected, notFixedYet bool, fixState, fixedIn string, err error) {
 	if family == constant.Amazon && release == "2" {
 		if def.Advisory.AffectedRepository == "" {
 			def.Advisory.AffectedRepository = "amzn2-core"
@@ -379,9 +374,9 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family, release s
 		}
 
 		switch family {
-		case constant.Amazon, constant.Fedora:
+		case constant.Amazon:
 			if ovalPack.Arch == "" {
-				logging.Log.Infof("Arch is needed to detect Vulns for Amazon Linux and Fedora, but empty. You need refresh OVAL maybe. oval: %#v, defID: %s", ovalPack, def.DefinitionID)
+				logging.Log.Infof("Arch is needed to detect Vulns for Amazon Linux, but empty. You need refresh OVAL maybe. oval: %#v, defID: %s", ovalPack, def.DefinitionID)
 				continue
 			}
 		}
@@ -394,43 +389,6 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family, release s
 		case constant.SUSEEnterpriseServer:
 			if strings.Contains(ovalPack.Version, ".TDC.") != strings.Contains(req.versionRelease, ".TDC.") {
 				continue
-			}
-		}
-
-		// There is a modular package and a non-modular package with the same name. (e.g. fedora 35 community-mysql)
-		var modularityLabel string
-		if ovalPack.ModularityLabel == "" {
-			if modularVersionPattern.MatchString(req.versionRelease) {
-				continue
-			}
-		} else {
-			if !modularVersionPattern.MatchString(req.versionRelease) {
-				continue
-			}
-
-			// expect ovalPack.ModularityLabel e.g. RedHat: nginx:1.16, Fedora: mysql:8.0:3520211031142409:f27b74a8
-			ss := strings.Split(ovalPack.ModularityLabel, ":")
-			if len(ss) < 2 {
-				logging.Log.Warnf("Invalid modularitylabel format in oval package. Maybe it is necessary to fix modularitylabel of goval-dictionary. expected: ${name}:${stream}(:${version}:${context}:${arch}), actual: %s", ovalPack.ModularityLabel)
-				continue
-			}
-			modularityLabel = fmt.Sprintf("%s:%s", ss[0], ss[1])
-
-			if req.modularityLabel != "" {
-				ss := strings.Split(req.modularityLabel, ":")
-				if len(ss) < 2 {
-					logging.Log.Warnf("Invalid modularitylabel format in request package. expected: ${name}:${stream}(:${version}:${context}:${arch}), actual: %s", req.modularityLabel)
-					continue
-				}
-				reqModularityLabel := fmt.Sprintf("%s:%s", ss[0], ss[1])
-
-				if reqModularityLabel != modularityLabel {
-					continue
-				}
-			} else {
-				if !slices.Contains(enabledMods, modularityLabel) {
-					continue
-				}
 			}
 		}
 
@@ -452,8 +410,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family, release s
 
 			// If the version of installed is less than in OVAL
 			switch family {
-			case constant.Fedora,
-				constant.Amazon,
+			case constant.Amazon,
 				constant.OpenSUSE,
 				constant.OpenSUSELeap,
 				constant.SUSEEnterpriseServer,
@@ -487,8 +444,7 @@ func isOvalDefAffected(def ovalmodels.Definition, req request, family, release s
 
 func lessThan(family, newVer string, packInOVAL ovalmodels.Package) (bool, error) {
 	switch family {
-	case constant.Fedora,
-		constant.Amazon,
+	case constant.Amazon,
 		constant.OpenSUSE,
 		constant.OpenSUSELeap,
 		constant.SUSEEnterpriseServer,
@@ -513,8 +469,6 @@ func NewOVALClient(family string, cnf config.GovalDictConf, o logging.LogOpts) (
 	}
 
 	switch family {
-	case constant.Fedora:
-		return NewFedora(driver, cnf.GetURL()), nil
 	case constant.Amazon:
 		return NewAmazon(driver, cnf.GetURL()), nil
 	case constant.OpenSUSE:
@@ -538,8 +492,6 @@ func NewOVALClient(family string, cnf config.GovalDictConf, o logging.LogOpts) (
 // GetFamilyInOval returns the OS family name in OVAL
 func GetFamilyInOval(familyInScanResult string) (string, error) {
 	switch familyInScanResult {
-	case constant.Fedora:
-		return constant.Fedora, nil
 	case constant.Amazon:
 		return constant.Amazon, nil
 	case constant.OpenSUSE:

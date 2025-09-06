@@ -322,11 +322,11 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf config.GostConf, vuls2Conf config.Vuls2Conf, logOpts logging.LogOpts, noProgress bool) error {
 	if isPkgCvesDetactable(r) {
 		switch r.Family {
-		case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Oracle, constant.Alpine, constant.Ubuntu:
+		case constant.RedHat, constant.CentOS, constant.Fedora, constant.Alma, constant.Rocky, constant.Oracle, constant.Alpine, constant.Ubuntu:
 			if err := vuls2.Detect(r, vuls2Conf, noProgress); err != nil {
 				return xerrors.Errorf("Failed to detect CVE with Vuls2: %w", err)
 			}
-		case constant.Fedora, constant.Amazon, constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
+		case constant.Amazon, constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
 			if err := detectPkgsCvesWithOval(ovalCnf, r, logOpts); err != nil {
 				return xerrors.Errorf("Failed to detect CVE with OVAL: %w", err)
 			}
