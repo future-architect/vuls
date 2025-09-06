@@ -3,7 +3,9 @@ package scanner
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"fmt"
+	"io"
 	"maps"
 	"net"
 	"os"
@@ -12,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hashicorp/go-version"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
@@ -25,12 +26,7 @@ import (
 // inherit OsTypeInterface
 type windows struct {
 	base
-	shell shellinfo
-}
-
-type shellinfo struct {
-	running   string
-	psVersion string
+	shell string
 }
 
 type osInfo struct {
@@ -52,7 +48,7 @@ func newWindows(c config.ServerInfo) *windows {
 				VulnInfos: models.VulnInfos{},
 			},
 		},
-		shell: shellinfo{running: "unknown"},
+		shell: "unknown",
 	}
 	d.log = logging.NewNormalLogger()
 	d.setServerInfo(c)
@@ -63,25 +59,22 @@ func detectWindows(c config.ServerInfo) (bool, osTypeInterface) {
 	tmp := c
 	tmp.Distro.Family = constant.Windows
 	w := newWindows(tmp)
-	w.shell = func() shellinfo {
+	w.shell = func() string {
 		if r := w.exec("echo $env:OS", noSudo); r.isSuccess() {
 			switch strings.TrimSpace(r.Stdout) {
 			case "$env:OS":
-				return shellinfo{running: "cmd.exe"}
+				return "cmd.exe"
 			case "Windows_NT":
-				return shellinfo{running: "powershell"}
+				return "powershell"
 			default:
 				if rr := w.exec("Get-ChildItem env:OS", noSudo); rr.isSuccess() {
-					return shellinfo{running: "powershell"}
+					return "powershell"
 				}
-				return shellinfo{running: "unknown"}
+				return "unknown"
 			}
 		}
-		return shellinfo{running: "unknown"}
+		return "unknown"
 	}()
-	if r := w.exec(w.translateCmd("$PSVersionTable.PSVersion.ToString()"), noSudo); r.isSuccess() {
-		w.shell.psVersion = strings.TrimSpace(r.Stdout)
-	}
 
 	if r := w.exec(w.translateCmd(`Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion" | Format-List -Property ProductName, CurrentVersion, CurrentMajorVersionNumber, CurrentMinorVersionNumber, CurrentBuildNumber, UBR, CSDVersion, EditionID, InstallationType; Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment" | Format-List -Property PROCESSOR_ARCHITECTURE`), noSudo); r.isSuccess() {
 		osInfo, err := parseRegistry(r.Stdout)
@@ -159,7 +152,7 @@ func detectWindows(c config.ServerInfo) (bool, osTypeInterface) {
 }
 
 func (w *windows) translateCmd(cmd string) string {
-	switch w.shell.running {
+	switch w.shell {
 	case "cmd.exe":
 		return fmt.Sprintf(`powershell.exe -NoProfile -NonInteractive "%s"`, strings.ReplaceAll(cmd, `"`, `\"`))
 	case "powershell":
@@ -4949,7 +4942,7 @@ func (w *windows) scanLibraries() (err error) {
 	// auto detect lockfile
 	if w.ServerInfo.FindLock {
 		cmd := func() string {
-			switch w.shell.running {
+			switch w.shell {
 			case "powershell":
 				dir := func() string {
 					if len(w.ServerInfo.FindLockDirs) == 0 {
@@ -5053,46 +5046,16 @@ func (w *windows) scanLibraries() (err error) {
 			// set dummy filemode because Windows file permission is complex and converting them to unix permission is difficult
 			filemode := os.FileMode(0666)
 
-			r := w.exec(w.translateCmd(func() string {
-				switch w.shell.psVersion {
-				case "":
-					return fmt.Sprintf("[System.IO.File]::ReadAllBytes('%s')", abspath)
-				default:
-					v1, err := version.NewVersion(w.shell.psVersion)
-					if err != nil {
-						return fmt.Sprintf("[System.IO.File]::ReadAllBytes('%s')", abspath)
-					}
-
-					v2, err := version.NewVersion("6.0")
-					if err != nil {
-						return fmt.Sprintf("[System.IO.File]::ReadAllBytes('%s')", abspath)
-					}
-
-					if v1.LessThan(v2) {
-						return fmt.Sprintf("Get-Content -Path '%s' -Encoding Byte -Raw", abspath)
-					}
-					return fmt.Sprintf("Get-Content -Path '%s' -AsByteStream", abspath)
-				}
-			}()), priv)
+			r := w.exec(w.translateCmd(fmt.Sprintf("[Convert]::ToBase64String([System.IO.File]::ReadAllBytes('%s'))", abspath)), priv)
 			if !r.isSuccess() {
 				return os.FileMode(0000), nil, xerrors.Errorf("Failed to read target file contents. filepath: %s, err: %w", abspath, err)
 			}
 
 			contents, err := func() ([]byte, error) {
-				var bs []byte
-
-				scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
-				for scanner.Scan() {
-					n, err := strconv.ParseUint(scanner.Text(), 10, 8)
-					if err != nil {
-						return nil, xerrors.Errorf("Failed to convert %q to type uint8", scanner.Text())
-					}
-					bs = append(bs, byte(n))
+				bs, err := io.ReadAll(base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.Stdout)))
+				if err != nil {
+					return nil, xerrors.Errorf("Failed to decode base64 contents. err: %w", err)
 				}
-				if err := scanner.Err(); err != nil {
-					return nil, xerrors.Errorf("Failed to scan by the scanner. err: %w", err)
-				}
-
 				return bs, nil
 			}()
 			if err != nil {
