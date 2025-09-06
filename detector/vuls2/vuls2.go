@@ -895,6 +895,20 @@ func toReference(ref string) models.Reference {
 				Source: "REDHAT",
 			}
 		}
+	case strings.HasPrefix(ref, "https://bodhi.fedoraproject.org/"):
+		switch {
+		case strings.HasPrefix(ref, "https://bodhi.fedoraproject.org/updates/"):
+			return models.Reference{
+				Link:   ref,
+				Source: "FEDORA",
+				RefID:  strings.TrimPrefix(ref, "https://bodhi.fedoraproject.org/updates/"),
+			}
+		default:
+			return models.Reference{
+				Link:   ref,
+				Source: "FEDORA",
+			}
+		}
 	case strings.HasPrefix(ref, "https://errata.almalinux.org/"):
 		u, err := url.Parse(ref)
 		if err != nil {

@@ -7,7 +7,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.2
 	github.com/BurntSushi/toml v1.5.0
 	github.com/CycloneDX/cyclonedx-go v0.9.2
-	github.com/MaineK00n/vuls-data-update v0.0.0-20250806052959-3cd935b4592e
+	github.com/MaineK00n/vuls-data-update v0.0.0-20250906134441-3ba8b985542e
 	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20250728115051-467f2c79767c
 	github.com/Ullaakut/nmap/v2 v2.2.2
 	github.com/aquasecurity/trivy v0.66.0
@@ -34,6 +34,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0
 	github.com/jesseduffield/gocui v0.3.0
 	github.com/k0kubun/pp v3.0.1+incompatible
+	github.com/knqyf263/go-apk-version v0.0.0-20200609155635-041fdbb8563f
 	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
 	github.com/knqyf263/go-deb-version v0.0.0-20241115132648-6f4aee6ccd23
 	github.com/knqyf263/go-rpm-version v0.0.0-20240918084003-2afd7dc6a38f
@@ -221,7 +222,6 @@ require (
 	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
-	github.com/knqyf263/go-apk-version v0.0.0-20200609155635-041fdbb8563f // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
