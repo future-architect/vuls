@@ -40,15 +40,6 @@ func (o RedHatBase) FillWithOval(r *models.ScanResult) (nCVEs int, err error) {
 
 	for _, vuln := range r.ScannedCves {
 		switch models.NewCveContentType(o.family) {
-		case models.Fedora:
-			for _, d := range vuln.DistroAdvisories {
-				if conts, ok := vuln.CveContents[models.Fedora]; ok {
-					for i, cont := range conts {
-						cont.SourceLink = "https://bodhi.fedoraproject.org/updates/" + d.AdvisoryID
-						vuln.CveContents[models.Fedora][i] = cont
-					}
-				}
-			}
 		case models.Amazon:
 			for _, d := range vuln.DistroAdvisories {
 				if conts, ok := vuln.CveContents[models.Amazon]; ok {
@@ -155,17 +146,6 @@ func (o RedHatBase) convertToDistroAdvisory(def *ovalmodels.Definition) *models.
 			Updated:     def.Advisory.Updated,
 			Description: def.Description,
 		}
-	case constant.Fedora:
-		if !strings.HasPrefix(def.Title, "FEDORA") {
-			return nil
-		}
-		return &models.DistroAdvisory{
-			AdvisoryID:  def.Title,
-			Severity:    def.Advisory.Severity,
-			Issued:      def.Advisory.Issued,
-			Updated:     def.Advisory.Updated,
-			Description: def.Description,
-		}
 	default:
 		return nil
 	}
@@ -237,25 +217,6 @@ func NewAmazon(driver ovaldb.DB, baseURL string) Amazon {
 				driver:  driver,
 				baseURL: baseURL,
 				family:  constant.Amazon,
-			},
-		},
-	}
-}
-
-// Fedora is the interface for RedhatBase OVAL
-type Fedora struct {
-	// Base
-	RedHatBase
-}
-
-// NewFedora creates OVAL client for Fedora Linux
-func NewFedora(driver ovaldb.DB, baseURL string) Fedora {
-	return Fedora{
-		RedHatBase{
-			Base{
-				driver:  driver,
-				baseURL: baseURL,
-				family:  constant.Fedora,
 			},
 		},
 	}
