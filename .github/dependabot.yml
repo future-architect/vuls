@@ -9,6 +9,8 @@ updates:
     directory: /
     schedule:
       interval: "monthly"
+    cooldown:
+      default-days: 14
     groups:
       all:
         patterns:
@@ -20,6 +22,8 @@ updates:
       - /contrib
     schedule:
       interval: "monthly"
+    cooldown:
+      default-days: 14
     groups:
       all:
         patterns:
@@ -30,6 +34,8 @@ updates:
     schedule:
       interval: "cron"
       cronjob: "0 0 1-7,15-21 * 1" # at 00:00 on the 1st and 3rd Monday of each month
+    cooldown:
+      default-days: 3
     groups:
       vuls:
         patterns:
