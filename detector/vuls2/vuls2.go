@@ -56,6 +56,12 @@ func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) e
 	}
 	defer dbc.Close()
 
+	metadata, err := dbc.GetMetadata()
+	if err != nil {
+		return xerrors.Errorf("Failed to get metadata. err: %w", err)
+	}
+	config.Conf.Vuls2.Digest = metadata.Digest
+
 	vuls2Scanned := preConvert(r)
 
 	vuls2Detected, err := detect(dbc, vuls2Scanned)
