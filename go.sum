@@ -668,8 +668,8 @@ github.com/MaineK00n/go-cisco-version v0.0.0-20250826032808-615a945b63f4 h1:2eG8
 github.com/MaineK00n/go-cisco-version v0.0.0-20250826032808-615a945b63f4/go.mod h1:x/MwTByToVra1edsHGAGR+t1NsIiY1/PBa6B3hz3nDA=
 github.com/MaineK00n/go-paloalto-version v0.0.0-20250826032740-c5203b6ee7d0 h1:qJq5Xlidm16U9EWjuQun7ZeDhj+W6gHBZyE5iX4BcQE=
 github.com/MaineK00n/go-paloalto-version v0.0.0-20250826032740-c5203b6ee7d0/go.mod h1:ELOxzfAd4oAe4niMmoZlSiJwzf1DF+DjNdjsUcuqAR8=
-github.com/MaineK00n/vuls-data-update v0.0.0-20250806052959-3cd935b4592e h1:VwV6Pf6YtNpaLrPyLp9yL6qImmrHDFxetNK5+m3SQu8=
-github.com/MaineK00n/vuls-data-update v0.0.0-20250806052959-3cd935b4592e/go.mod h1:nwW1cgZCGHfdPtRnvVU8HKg2Rtt2MrMfCYU1vJgaprU=
+github.com/MaineK00n/vuls-data-update v0.0.0-20250906134441-3ba8b985542e h1:5OPMpGLCmRAIqTuhGXcLqjpcJhfoA7h8U4EmIdIjJ9A=
+github.com/MaineK00n/vuls-data-update v0.0.0-20250906134441-3ba8b985542e/go.mod h1:DqPD3jC7ZpsW9/c7KLJBrmtJASUdn9ZiclCp6mtMSpQ=
 github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20250728115051-467f2c79767c h1:LAZoB5s1cPwXHoZeZf9eHPcKw7kAeE3i2jwyb1zTvFw=
 github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20250728115051-467f2c79767c/go.mod h1:LeCkNcW1BC3jH3NYNM5HXq04Tsds60tiVuhmBTwuW0o=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
