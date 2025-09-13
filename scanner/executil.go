@@ -181,7 +181,7 @@ func localExec(c config.ServerInfo, cmdstr string, sudo bool) (result execResult
 	}
 	result.Stdout = toUTF8(stdoutBuf.String())
 	result.Stderr = toUTF8(stderrBuf.String())
-	result.Cmd = strings.ReplaceAll(cmdstr, "\n", "")
+	result.Cmd = cmd.String()
 	return
 }
 
@@ -275,7 +275,7 @@ func sshExecExternal(c config.ServerInfo, cmdstr string, sudo bool) (result exec
 	result.Container = c.Container
 	result.Host = c.Host
 	result.Port = c.Port
-	result.Cmd = fmt.Sprintf("%s %s", sshBinaryPath, strings.Join(args, " "))
+	result.Cmd = cmd.String()
 	return
 }
 
