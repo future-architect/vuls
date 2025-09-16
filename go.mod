@@ -3,7 +3,6 @@ module github.com/future-architect/vuls
 go 1.24.4
 
 require (
-	github.com/3th1nk/cidr v0.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.2
 	github.com/BurntSushi/toml v1.5.0
 	github.com/CycloneDX/cyclonedx-go v0.9.2
