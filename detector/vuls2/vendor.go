@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	apk "github.com/knqyf263/go-apk-version"
 	deb "github.com/knqyf263/go-deb-version"
 	rpm "github.com/knqyf263/go-rpm-version"
 	"golang.org/x/xerrors"
@@ -268,6 +269,21 @@ func selectFixedIn(rangeType vcAffectedRangeTypes.RangeType, fixed []string) str
 	}
 
 	switch rangeType {
+	case vcAffectedRangeTypes.RangeTypeAPK:
+		return slices.MaxFunc(fixed, func(x, y string) int {
+			vx, errx := apk.NewVersion(x)
+			vy, erry := apk.NewVersion(y)
+			switch {
+			case errx != nil && erry != nil:
+				return 0
+			case errx != nil && erry == nil:
+				return -1
+			case errx == nil && erry != nil:
+				return +1
+			default:
+				return vx.Compare(vy)
+			}
+		})
 	case vcAffectedRangeTypes.RangeTypeRPM:
 		return slices.MaxFunc(fixed, func(x, y string) int {
 			return rpm.NewVersion(x).Compare(rpm.NewVersion(y))
@@ -318,6 +334,19 @@ func comparePackStatus(a, b packStatus) (int, error) {
 			}
 
 			switch a.rangeType {
+			case vcAffectedRangeTypes.RangeTypeAPK:
+				va, erra := apk.NewVersion(a.status.FixedIn)
+				vb, errb := apk.NewVersion(b.status.FixedIn)
+				switch {
+				case erra != nil && errb != nil:
+					return 0
+				case erra != nil && errb == nil:
+					return -1
+				case erra == nil && errb != nil:
+					return +1
+				default:
+					return va.Compare(vb)
+				}
 			case vcAffectedRangeTypes.RangeTypeRPM:
 				return rpm.NewVersion(a.status.FixedIn).Compare(rpm.NewVersion(b.status.FixedIn))
 			case vcAffectedRangeTypes.RangeTypeDPKG:
@@ -382,7 +411,7 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 		default:
 			return models.Reference{}, xerrors.Errorf("unsupported source: %s", s)
 		}
-	case ecosystemTypes.EcosystemTypeEPEL:
+	case ecosystemTypes.EcosystemTypeEPEL, ecosystemTypes.EcosystemTypeFedora:
 		return models.Reference{
 			Link:   fmt.Sprintf("https://bodhi.fedoraproject.org/updates/%s", da.AdvisoryID),
 			Source: "FEDORA",
@@ -721,7 +750,7 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) model
 			DetectionMethod: models.DetectionMethod("EPELMatch"),
 			SortOrder:       1,
 		}
-	case ecosystemTypes.EcosystemTypeRedHat, ecosystemTypes.EcosystemTypeAlma, ecosystemTypes.EcosystemTypeRocky, ecosystemTypes.EcosystemTypeOracle, ecosystemTypes.EcosystemTypeAlpine:
+	case ecosystemTypes.EcosystemTypeRedHat, ecosystemTypes.EcosystemTypeFedora, ecosystemTypes.EcosystemTypeAlma, ecosystemTypes.EcosystemTypeRocky, ecosystemTypes.EcosystemTypeOracle, ecosystemTypes.EcosystemTypeAlpine:
 		return models.OvalMatch
 	case ecosystemTypes.EcosystemTypeUbuntu:
 		switch s {
