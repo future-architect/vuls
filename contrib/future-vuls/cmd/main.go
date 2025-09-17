@@ -5,11 +5,11 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"strings"
 
-	cidrPkg "github.com/3th1nk/cidr"
 	vulsConfig "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/config"
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/cpe"
@@ -97,7 +97,7 @@ func main() {
 			if len(cidr) == 0 {
 				return fmt.Errorf("please specify cidr range")
 			}
-			if _, err := cidrPkg.Parse(cidr); err != nil {
+			if _, _, err := net.ParseCIDR(cidr); err != nil {
 				return fmt.Errorf("Invalid cidr range")
 			}
 			if len(snmpVersion) == 0 {
