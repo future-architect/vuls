@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	vulsConfig "github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/contrib/future-vuls/pkg/config"
@@ -32,6 +33,8 @@ var (
 	snmpVersion string
 	proxy       string
 	community   string
+	timeout     time.Duration
+	retry       int
 )
 
 func main() {
@@ -109,7 +112,7 @@ func main() {
 			if community == "" {
 				community = config.Community
 			}
-			if err := discover.ActiveHosts(cidr, outputFile, snmpVersion, community); err != nil {
+			if err := discover.ActiveHosts(cidr, outputFile, snmpVersion, community, timeout, retry); err != nil {
 				fmt.Printf("%v", err)
 				// avoid to display help message
 				os.Exit(1)
@@ -149,8 +152,10 @@ func main() {
 
 	cmdDiscover.PersistentFlags().StringVar(&cidr, "cidr", "", "cidr range")
 	cmdDiscover.PersistentFlags().StringVar(&outputFile, "output", "", "output file")
-	cmdDiscover.PersistentFlags().StringVar(&snmpVersion, "snmp-version", "", "snmp version v1,v2c and v3. default: v2c")
-	cmdDiscover.PersistentFlags().StringVar(&community, "community", "", "snmp community name. default: public")
+	cmdDiscover.PersistentFlags().StringVar(&snmpVersion, "snmp-version", "v2c", "snmp version v1,v2c and v3")
+	cmdDiscover.PersistentFlags().StringVar(&community, "community", "public", "snmp community name")
+	cmdDiscover.PersistentFlags().DurationVar(&timeout, "timeout", time.Duration(2)*time.Second, "snmp timeout")
+	cmdDiscover.PersistentFlags().IntVar(&retry, "retry", 3, "snmp retry")
 
 	cmdAddCpe.PersistentFlags().StringVarP(&token, "token", "t", "", "future vuls token ENV: VULS_TOKEN")
 	cmdAddCpe.PersistentFlags().StringVar(&outputFile, "output", "", "output file")
