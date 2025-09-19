@@ -13,6 +13,8 @@ import (
 type options struct {
 	community string
 	port      uint16
+	timeout   time.Duration
+	retry     int
 	debug     bool
 }
 
@@ -43,6 +45,28 @@ func WithPort(p uint16) Option {
 	return portOption(p)
 }
 
+type timeoutOption time.Duration
+
+func (t timeoutOption) apply(opts *options) {
+	opts.timeout = time.Duration(t)
+}
+
+// WithTimeout ...
+func WithTimeout(t time.Duration) Option {
+	return timeoutOption(t)
+}
+
+type retryOption int
+
+func (r retryOption) apply(opts *options) {
+	opts.retry = int(r)
+}
+
+// WithRetry ...
+func WithRetry(r int) Option {
+	return retryOption(r)
+}
+
 type debugOption bool
 
 func (d debugOption) apply(opts *options) {
@@ -59,6 +83,8 @@ func Get(version gosnmp.SnmpVersion, ipaddr string, opts ...Option) (Result, err
 	options := options{
 		community: "public",
 		port:      161,
+		timeout:   time.Duration(2) * time.Second,
+		retry:     3,
 		debug:     false,
 	}
 	for _, o := range opts {
@@ -71,8 +97,8 @@ func Get(version gosnmp.SnmpVersion, ipaddr string, opts ...Option) (Result, err
 		Target:             ipaddr,
 		Port:               options.port,
 		Version:            version,
-		Timeout:            time.Duration(2) * time.Second,
-		Retries:            3,
+		Timeout:            options.timeout,
+		Retries:            options.retry,
 		ExponentialTimeout: true,
 		MaxOids:            gosnmp.MaxOids,
 	}
@@ -82,6 +108,8 @@ func Get(version gosnmp.SnmpVersion, ipaddr string, opts ...Option) (Result, err
 		params.Community = options.community
 	case gosnmp.Version3:
 		return Result{}, errors.New("not implemented")
+	default:
+		return Result{}, errors.Errorf("unexpected SNMP version: %d", version)
 	}
 
 	if err := params.Connect(); err != nil {
