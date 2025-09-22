@@ -80,7 +80,7 @@ func Convert(result snmp.Result) []string {
 			if strings.HasPrefix(v, "Arista Networks EOS version ") {
 				cpes = append(cpes, fmt.Sprintf("cpe:2.3:o:arista:eos:%s:*:*:*:*:*:*:*", strings.ToLower(strings.TrimPrefix(v, "Arista Networks EOS version "))))
 			}
-			cpes = append(cpes, fmt.Sprintf("cpe:/h:arista:%s:-:*:*:*:*:*:*:*", strings.ToLower(strings.TrimPrefix(h, "Arista Networks "))))
+			cpes = append(cpes, fmt.Sprintf("cpe:2.3:h:arista:%s:-:*:*:*:*:*:*:*", strings.ToLower(strings.TrimPrefix(h, "Arista Networks "))))
 		}
 		if t, ok := result.EntPhysicalTables[1]; ok {
 			if t.EntPhysicalSoftwareRev != "" {
@@ -429,6 +429,7 @@ func Convert(result snmp.Result) []string {
 
 	m := make(map[string]struct{}, len(cpes))
 	for _, c := range cpes {
+		c = strings.NewReplacer(" ", "_").Replace(c)
 		if _, err := naming.UnbindFS(c); err != nil {
 			log.Printf("WARN: skip %q. err: %s", c, err)
 			continue
