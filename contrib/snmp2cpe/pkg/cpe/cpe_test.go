@@ -83,7 +83,7 @@ func TestConvert(t *testing.T) {
 			want: []string{"cpe:2.3:o:cisco:ios:12.2(17d)sxb11:*:*:*:*:*:*:*"},
 		},
 		{
-			name: "Cisco IOX-XE Version 16.12.4",
+			name: "Cisco IOS-XE Version 16.12.4",
 			args: snmp.Result{
 				SysDescr0: `Cisco IOS Software [Gibraltar], Catalyst L3 Switch Software (CAT9K_LITE_IOSXE), Version 16.12.4, RELEASE SOFTWARE (fc5)
 		Technical Support: http://www.cisco.com/techsupport
@@ -93,7 +93,7 @@ func TestConvert(t *testing.T) {
 			want: []string{"cpe:2.3:o:cisco:ios_xe:16.12.4:*:*:*:*:*:*:*"},
 		},
 		{
-			name: "Cisco IOX-XE Version 03.06.07.E",
+			name: "Cisco IOS-XE Version 03.06.07.E",
 			args: snmp.Result{
 				SysDescr0: `Cisco IOS Software, IOS-XE Software, Catalyst 4500 L3 Switch Software (cat4500es8-UNIVERSALK9-M), Version 03.06.07.E RELEASE SOFTWARE (fc3)
 		Technical Support: http://www.cisco.com/techsupport
@@ -101,6 +101,16 @@ func TestConvert(t *testing.T) {
 		Compiled Wed`,
 			},
 			want: []string{"cpe:2.3:o:cisco:ios_xe:03.06.07.e:*:*:*:*:*:*:*"},
+		},
+		{
+			name: "Cisco IOS-XE Version 03.06.06E on c38xx Stack",
+			args: snmp.Result{
+				SysDescr0: "Cisco IOS Software, IOS-XE Software, Catalyst L3 Switch Software (CAT3K_CAA-UNIVERSALK9-M), Version 03.06.06E RELEASE SOFTWARE (fc1)\r\nTechnical Support: http://www.cisco.com/techsupport\r\nCopyright (c) 1986-2016 by Cisco Systems, Inc.\r\nCompiled Sat 17-Dec-",
+				EntPhysicalTables: map[int]snmp.EntPhysicalTable{1: {
+					EntPhysicalName: "c38xx Stack",
+				}},
+			},
+			want: []string{"cpe:2.3:h:cisco:c38xx_stack:-:*:*:*:*:*:*:*", "cpe:2.3:o:cisco:ios_xe:03.06.06e:*:*:*:*:*:*:*"},
 		},
 		{
 			name: "Juniper SSG-5-SH-BT",
@@ -164,7 +174,7 @@ func TestConvert(t *testing.T) {
 					EntPhysicalSoftwareRev: "4.28.4M",
 				}},
 			},
-			want: []string{"cpe:/h:arista:dcs-7050tx-64:-:*:*:*:*:*:*:*", "cpe:2.3:o:arista:eos:4.28.4m:*:*:*:*:*:*:*"},
+			want: []string{"cpe:2.3:h:arista:dcs-7050tx-64:-:*:*:*:*:*:*:*", "cpe:2.3:o:arista:eos:4.28.4m:*:*:*:*:*:*:*"},
 		},
 		{
 			name: "FortiGate-50E",
