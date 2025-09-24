@@ -13,6 +13,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector"
+	detectorJavaDB "github.com/future-architect/vuls/detector/javadb"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/reporter"
@@ -108,11 +109,11 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&config.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
 		cache.DefaultDir(), "/path/to/dir")
 
-	config.Conf.TrivyDBRepositories = config.DefaultTrivyDBRepositories
+	config.Conf.TrivyDBRepositories = detector.DefaultTrivyDBRepositories
 	dbRepos := stringArrayFlag{target: &config.Conf.TrivyDBRepositories}
 	f.Var(&dbRepos, "trivy-db-repository", "Trivy DB Repository in a comma-separated list")
 
-	config.Conf.TrivyJavaDBRepositories = config.DefaultTrivyJavaDBRepositories
+	config.Conf.TrivyJavaDBRepositories = detectorJavaDB.DefaultTrivyJavaDBRepositories
 	javaDBRepos := stringArrayFlag{target: &config.Conf.TrivyJavaDBRepositories}
 	f.Var(&javaDBRepos, "trivy-java-db-repository", "Trivy Java DB Repository in a comma-separated list")
 

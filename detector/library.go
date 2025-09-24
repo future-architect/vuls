@@ -29,6 +29,9 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
+// DefaultTrivyDBRepositories is the official repositories of Trivy DB
+var DefaultTrivyDBRepositories = []string{db.DefaultGCRRepository, db.DefaultGHCRRepository}
+
 type libraryDetector struct {
 	scanner      models.LibraryScanner
 	javaDBClient *javadb.DBClient
@@ -96,7 +99,7 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 
 func downloadDB(appVersion string, trivyOpts config.TrivyOpts, noProgress, skipUpdate bool) error {
 	if len(trivyOpts.TrivyDBRepositories) == 0 {
-		trivyOpts.TrivyDBRepositories = config.DefaultTrivyDBRepositories
+		trivyOpts.TrivyDBRepositories = DefaultTrivyDBRepositories
 	}
 	refs := make([]name.Reference, 0, len(trivyOpts.TrivyDBRepositories))
 	for _, repo := range trivyOpts.TrivyDBRepositories {

@@ -24,6 +24,9 @@ import (
 	"github.com/future-architect/vuls/logging"
 )
 
+// DefaultTrivyJavaDBRepositories is the official repositories of Trivy Java DB
+var DefaultTrivyJavaDBRepositories = []string{trivyjavadb.DefaultGCRRepository, trivyjavadb.DefaultGHCRRepository}
+
 // UpdateJavaDB updates Trivy Java DB
 func UpdateJavaDB(trivyOpts config.TrivyOpts, noProgress bool) error {
 	dbDir := filepath.Join(trivyOpts.TrivyCacheDBDir, "java-db")
@@ -49,7 +52,7 @@ func UpdateJavaDB(trivyOpts config.TrivyOpts, noProgress bool) error {
 
 	// Download DB
 	if len(trivyOpts.TrivyJavaDBRepositories) == 0 {
-		trivyOpts.TrivyJavaDBRepositories = config.DefaultTrivyJavaDBRepositories
+		trivyOpts.TrivyJavaDBRepositories = DefaultTrivyJavaDBRepositories
 	}
 	logging.Log.Infof("Trivy Java DB Repository: %s", strings.Join(trivyOpts.TrivyJavaDBRepositories, ", "))
 	logging.Log.Info("Downloading Trivy Java DB...")
