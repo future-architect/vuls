@@ -2,12 +2,15 @@ package cpe
 
 import (
 	"fmt"
+	"log"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/hashicorp/go-version"
+	"github.com/knqyf263/go-cpe/naming"
 
 	"github.com/future-architect/vuls/contrib/snmp2cpe/pkg/snmp"
-	"github.com/future-architect/vuls/contrib/snmp2cpe/pkg/util"
 )
 
 // Convert ...
@@ -77,7 +80,7 @@ func Convert(result snmp.Result) []string {
 			if strings.HasPrefix(v, "Arista Networks EOS version ") {
 				cpes = append(cpes, fmt.Sprintf("cpe:2.3:o:arista:eos:%s:*:*:*:*:*:*:*", strings.ToLower(strings.TrimPrefix(v, "Arista Networks EOS version "))))
 			}
-			cpes = append(cpes, fmt.Sprintf("cpe:/h:arista:%s:-:*:*:*:*:*:*:*", strings.ToLower(strings.TrimPrefix(h, "Arista Networks "))))
+			cpes = append(cpes, fmt.Sprintf("cpe:2.3:h:arista:%s:-:*:*:*:*:*:*:*", strings.ToLower(strings.TrimPrefix(h, "Arista Networks "))))
 		}
 		if t, ok := result.EntPhysicalTables[1]; ok {
 			if t.EntPhysicalSoftwareRev != "" {
@@ -424,7 +427,17 @@ func Convert(result snmp.Result) []string {
 		return []string{}
 	}
 
-	return util.Unique(cpes)
+	m := make(map[string]struct{}, len(cpes))
+	for _, c := range cpes {
+		c = strings.NewReplacer(" ", "_").Replace(c)
+		if _, err := naming.UnbindFS(c); err != nil {
+			log.Printf("WARN: skip %q. err: %s", c, err)
+			continue
+		}
+		m[c] = struct{}{}
+	}
+
+	return slices.Collect(maps.Keys(m))
 }
 
 func detectVendor(r snmp.Result) string {

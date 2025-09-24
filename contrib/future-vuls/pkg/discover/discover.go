@@ -16,7 +16,7 @@ import (
 )
 
 // ActiveHosts ...
-func ActiveHosts(cidr string, outputFile string, snmpVersion string, community string) error {
+func ActiveHosts(cidr, outputFile, snmpVersion, community string, timeout time.Duration, retry int) error {
 	scanner := pingscanner.PingScanner{
 		CIDR: cidr,
 		PingOptions: func() []string {
@@ -48,7 +48,7 @@ func ActiveHosts(cidr string, outputFile string, snmpVersion string, community s
 
 	servers := make(config.DiscoverToml)
 	for _, activeHost := range activeHosts {
-		cpes, err := executeSnmp2cpe(activeHost, snmpVersion, community)
+		cpes, err := executeSnmp2cpe(activeHost, snmpVersion, community, timeout, retry)
 		if err != nil {
 			fmt.Printf("failed to execute snmp2cpe. err: %v\n", err)
 			continue
@@ -106,9 +106,9 @@ func ActiveHosts(cidr string, outputFile string, snmpVersion string, community s
 	return nil
 }
 
-func executeSnmp2cpe(addr string, snmpVersion string, community string) (cpes map[string][]string, err error) {
+func executeSnmp2cpe(addr, snmpVersion, community string, timeout time.Duration, retry int) (cpes map[string][]string, err error) {
 	fmt.Printf("%s: Execute snmp2cpe...\n", addr)
-	result, err := exec.Command("./snmp2cpe", snmpVersion, addr, community).CombinedOutput()
+	result, err := exec.Command("./snmp2cpe", snmpVersion, "--timeout", timeout.String(), "--retry", fmt.Sprintf("%d", retry), addr, community).CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute snmp2cpe. err: %v", err)
 	}
