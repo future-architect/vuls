@@ -1197,34 +1197,34 @@ func (o *debian) checkrestart() error {
 		}
 	}
 
-	for i, p := range packs {
+	for _, p := range packs {
 		pack := o.Packages[p.Name]
 		pack.NeedRestartProcs = p.NeedRestartProcs
-		o.Packages[p.Name] = pack
 
-		for j, proc := range p.NeedRestartProcs {
+		for j, proc := range pack.NeedRestartProcs {
 			if !proc.HasInit {
 				continue
 			}
-			packs[i].NeedRestartProcs[j].InitSystem = initName
+			pack.NeedRestartProcs[j].InitSystem = initName
 			if initName == systemd {
 				name, err := o.detectServiceName(proc.PID)
 				if err != nil {
 					o.log.Warn(err)
 					// continue scanning
 				}
-				packs[i].NeedRestartProcs[j].ServiceName = name
+				pack.NeedRestartProcs[j].ServiceName = name
 			} else {
 				if proc.ServiceName == "" {
 					if ss := strings.Fields(r.Stdout); len(ss) == 4 && ss[2] == "process" {
 						if name, ok := pidService[ss[3]]; ok {
-							packs[i].NeedRestartProcs[j].ServiceName = name
+							pack.NeedRestartProcs[j].ServiceName = name
 						}
 					}
 				}
 			}
 		}
-		o.Packages[p.Name] = p
+
+		o.Packages[p.Name] = pack
 	}
 	return nil
 }
