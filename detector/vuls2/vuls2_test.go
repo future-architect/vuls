@@ -44,6 +44,120 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
+func Test_preConvert(t *testing.T) {
+	type args struct {
+		sr *models.ScanResult
+	}
+	tests := []struct {
+		name string
+		args args
+		want scanTypes.ScanResult
+	}{
+		{
+			name: "ubuntu 22.04, old scanner",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "jammy",
+					Family:     "ubuntu",
+					Release:    "22.04",
+					RunningKernel: models.Kernel{
+						Release:        "5.15.0-144-generic",
+						Version:        "",
+						RebootRequired: true,
+					},
+					Packages: models.Packages{
+						"cron": models.Package{
+							Name: "cron",
+						},
+					},
+					SrcPackages: models.SrcPackages{
+						"cron": models.SrcPackage{
+							Name:        "cron",
+							Version:     "3.0pl1-137ubuntu3",
+							BinaryNames: []string{"cron"},
+						},
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "jammy",
+				Family:      ecosystemTypes.Ecosystem("ubuntu"),
+				Release:     "22.04",
+
+				Kernel: scanTypes.Kernel{
+					Release:        "5.15.0-144-generic",
+					Version:        "",
+					RebootRequired: true,
+				},
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:       "cron",
+						Version:    "0",
+						SrcName:    "cron",
+						SrcVersion: "3.0pl1-137ubuntu3",
+					},
+				},
+			},
+		},
+		{
+			name: "ubuntu 22.04",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "jammy",
+					Family:     "ubuntu",
+					Release:    "22.04",
+					RunningKernel: models.Kernel{
+						Release:        "5.15.0-144-generic",
+						Version:        "",
+						RebootRequired: true,
+					},
+					Packages: models.Packages{
+						"cron": models.Package{
+							Name:    "cron",
+							Version: "3.0pl1-137ubuntu3",
+						},
+					},
+					SrcPackages: models.SrcPackages{
+						"cron": models.SrcPackage{
+							Name:        "cron",
+							Version:     "3.0pl1-137ubuntu3",
+							BinaryNames: []string{"cron"},
+						},
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "jammy",
+				Family:      ecosystemTypes.Ecosystem("ubuntu"),
+				Release:     "22.04",
+
+				Kernel: scanTypes.Kernel{
+					Release:        "5.15.0-144-generic",
+					Version:        "",
+					RebootRequired: true,
+				},
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:       "cron",
+						Version:    "3.0pl1-137ubuntu3",
+						SrcName:    "cron",
+						SrcVersion: "3.0pl1-137ubuntu3",
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if diff := gocmp.Diff(vuls2.PreConvert(tt.args.sr), tt.want, gocmpopts.IgnoreFields(scanTypes.ScanResult{}, "ScannedAt", "ScannedBy")); diff != "" {
+				t.Errorf("preConvert() mismatch (-got +want):\n%s", diff)
+			}
+		})
+	}
+}
+
 func Test_postConvert(t *testing.T) {
 	type args struct {
 		scanned  scanTypes.ScanResult

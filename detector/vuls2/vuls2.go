@@ -111,7 +111,7 @@ func preConvert(sr *models.ScanResult) scanTypes.ScanResult {
 	for _, p := range sr.Packages {
 		base := pkgs[p.Name]
 		base.Name = p.Name
-		base.Version = p.Version
+		base.Version = preConvertBinaryVersion(sr.Family, p.Version)
 		base.Release = p.Release
 		base.NewVersion = p.NewVersion
 		base.NewRelease = p.NewRelease
