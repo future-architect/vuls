@@ -30,6 +30,21 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
+func preConvertBinaryVersion(family, version string) string {
+	switch family {
+	case constant.Debian, constant.Raspbian, constant.Ubuntu:
+		// https://github.com/future-architect/vuls/pull/2329
+		// If you are using a scanner from before this PR was merged, the binary package version will be lost when updating NeedRestartProcs during a fast-root scan.
+		// However, the current data source does not require the binary package version, so it will be filled in with "0".
+		if version == "" {
+			return "0"
+		}
+		return version
+	default:
+		return version
+	}
+}
+
 func ignoreVulnerability(e ecosystemTypes.Ecosystem, v vulnerabilityTypes.Vulnerability, as models.DistroAdvisories) bool {
 	et, _, _ := strings.Cut(string(e), ":")
 
