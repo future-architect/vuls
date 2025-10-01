@@ -22,4 +22,4 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@7574dab08b6e7a561d21c7f5c153fe1107cc0b2f
         with:
-          version: v2.1.6
+          version: v2.5.0
