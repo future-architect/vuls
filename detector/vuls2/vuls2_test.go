@@ -6202,6 +6202,297 @@ func Test_postConvert(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "suse (prefer unfixed to fixed)",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					Kernel: scanTypes.Kernel{
+						Release: "5.3.18-59.37-default",
+					},
+					OSPackages: []scanTypes.OSPackage{
+						{
+							Name:    "binutils",
+							Version: "2.37",
+							Release: "7.26.1",
+							Arch:    "x86_64",
+						},
+						{
+							Name:    "sles-release",
+							Version: "15.3",
+							Release: "55.4.1",
+							Arch:    "x86_64",
+						},
+					},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2022-4285",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "SUSE-CU-2023:3179-1",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.SUSEOVAL: {
+											dataTypes.RootID("CVE-2022-4285"): {
+												{
+													Content: advisoryContentTypes.Content{
+														ID: "SUSE-CU-2023:3179-1",
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2022-4285",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.SUSEOVAL: {
+											dataTypes.RootID("CVE-2022-4285"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID: "CVE-2022-4285",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeCVSSv31,
+																Source: "SUSE",
+																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+																	BaseScore:             5.5,
+																	BaseSeverity:          "MEDIUM",
+																	TemporalScore:         5.5,
+																	TemporalSeverity:      "MEDIUM",
+																	EnvironmentalScore:    5.5,
+																	EnvironmentalSeverity: "MEDIUM",
+																}),
+															},
+														},
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.SUSEOVAL: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterias: []criteriaTypes.FilteredCriteria{
+														{
+															Operator: criteriaTypes.CriteriaOperatorTypeAND,
+															Criterias: []criteriaTypes.FilteredCriteria{
+																{
+																	Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																	Criterions: []criterionTypes.FilteredCriterion{
+																		{
+																			Criterion: criterionTypes.Criterion{
+																				Type: criterionTypes.CriterionTypeVersion,
+																				Version: toPtr(versioncriterionTypes.Criterion{
+																					Vulnerable: false,
+																					Package: vcPackageTypes.Package{
+																						Type: vcPackageTypes.PackageTypeBinary,
+																						Binary: &vcBinaryPackageTypes.Package{
+																							Name: "sles-release",
+																						},
+																					},
+																					Affected: &vcAffectedTypes.Affected{
+																						Type: vcAffectedRangeTypes.RangeTypeRPMVersionOnly,
+																						Range: []vcAffectedRangeTypes.Range{
+																							{
+																								Equal: "15.3",
+																							},
+																						},
+																					},
+																				}),
+																			},
+																			Accepts: criterionTypes.AcceptQueries{
+																				Version: []int{1},
+																			},
+																		},
+																	},
+																},
+																{
+																	Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																	Criterions: []criterionTypes.FilteredCriterion{
+																		{
+																			Criterion: criterionTypes.Criterion{
+																				Type: criterionTypes.CriterionTypeVersion,
+																				Version: toPtr(versioncriterionTypes.Criterion{
+																					Vulnerable: true,
+																					FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																						Class: vcFixStatusTypes.ClassFixed,
+																					}),
+																					Package: vcPackageTypes.Package{
+																						Type: vcPackageTypes.PackageTypeBinary,
+																						Binary: &vcBinaryPackageTypes.Package{
+																							Name: "binutils",
+																							Architectures: []string{
+																								"aarch64",
+																								"ppc64le",
+																								"s390x",
+																								"x86_64",
+																							},
+																						},
+																					},
+																					Affected: &vcAffectedTypes.Affected{
+																						Type: vcAffectedRangeTypes.RangeTypeRPM,
+																						Range: []vcAffectedRangeTypes.Range{
+																							{
+																								LessThan: "0:2.41-150100.7.46.1",
+																							},
+																						},
+																						Fixed: []string{"0:2.41-150100.7.46.1"},
+																					},
+																				}),
+																			},
+																			Accepts: criterionTypes.AcceptQueries{
+																				Version: []int{0},
+																			},
+																		},
+																	},
+																},
+															},
+														},
+														{
+															Operator: criteriaTypes.CriteriaOperatorTypeAND,
+															Criterias: []criteriaTypes.FilteredCriteria{
+																{
+																	Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																	Criterions: []criterionTypes.FilteredCriterion{
+																		{
+																			Criterion: criterionTypes.Criterion{
+																				Type: criterionTypes.CriterionTypeVersion,
+																				Version: toPtr(versioncriterionTypes.Criterion{
+																					Vulnerable: false,
+																					Package: vcPackageTypes.Package{
+																						Type: vcPackageTypes.PackageTypeBinary,
+																						Binary: &vcBinaryPackageTypes.Package{
+																							Name: "sles-release",
+																						},
+																					},
+																					Affected: &vcAffectedTypes.Affected{
+																						Type: vcAffectedRangeTypes.RangeTypeRPMVersionOnly,
+																						Range: []vcAffectedRangeTypes.Range{
+																							{
+																								Equal: "15.3",
+																							},
+																						},
+																					},
+																				}),
+																			},
+																			Accepts: criterionTypes.AcceptQueries{
+																				Version: []int{1},
+																			},
+																		},
+																	},
+																},
+																{
+																	Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																	Criterions: []criterionTypes.FilteredCriterion{
+																		{
+																			Criterion: criterionTypes.Criterion{
+																				Type: criterionTypes.CriterionTypeVersion,
+																				Version: toPtr(versioncriterionTypes.Criterion{
+																					Vulnerable: true,
+																					FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																						Class: vcFixStatusTypes.ClassUnfixed,
+																					}),
+																					Package: vcPackageTypes.Package{
+																						Type: vcPackageTypes.PackageTypeBinary,
+																						Binary: &vcBinaryPackageTypes.Package{
+																							Name: "binutils",
+																							Architectures: []string{
+																								"aarch64",
+																								"ppc64le",
+																								"s390x",
+																								"x86_64",
+																							},
+																						},
+																					},
+																					Affected: &vcAffectedTypes.Affected{
+																						Type: vcAffectedRangeTypes.RangeTypeRPM,
+																					},
+																				}),
+																			},
+																			Accepts: criterionTypes.AcceptQueries{
+																				Version: []int{0},
+																			},
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2022-4285": {
+					CveID:       "CVE-2022-4285",
+					Confidences: models.Confidences{models.OvalMatch},
+					AffectedPackages: models.PackageFixStatuses{
+						{
+							Name:        "binutils",
+							NotFixedYet: true,
+						},
+					},
+					DistroAdvisories: models.DistroAdvisories{
+						{
+							AdvisoryID: "SUSE-CU-2023:3179-1",
+							Issued:     time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+							Updated:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+						},
+					},
+					CveContents: models.CveContents{
+						models.SUSE: []models.CveContent{
+							{
+								Type:          models.SUSE,
+								CveID:         "CVE-2022-4285",
+								Cvss3Score:    5.5,
+								Cvss3Vector:   "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+								Cvss3Severity: "MEDIUM",
+								SourceLink:    "https://www.suse.com/security/cve/CVE-2022-4285.html",
+								References: models.References{
+									{
+										Link:   "https://www.suse.com/security/cve/SUSE-CU-2023:3179-1.html",
+										Source: "SUSE",
+										RefID:  "SUSE-CU-2023:3179-1",
+									},
+								},
+								Published:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2022-4285\",\"source_id\":\"suse-oval\",\"segment\":{\"ecosystem\":\"suse.linux.enterprise:15\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
