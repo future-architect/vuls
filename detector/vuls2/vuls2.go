@@ -35,6 +35,7 @@ import (
 	"github.com/MaineK00n/vuls2/pkg/version"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 )
@@ -122,10 +123,18 @@ func preConvert(sr *models.ScanResult) scanTypes.ScanResult {
 		pkgs[p.Name] = base
 	}
 
+	family := func() string {
+		switch sr.Family {
+		case constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
+			return strings.ReplaceAll(sr.Family, ".", "-")
+		default:
+			return sr.Family
+		}
+	}()
 	return scanTypes.ScanResult{
 		JSONVersion: 0,
 		ServerName:  sr.ServerName,
-		Family:      ecosystemTypes.Ecosystem(sr.Family),
+		Family:      ecosystemTypes.Ecosystem(family),
 		Release:     sr.Release,
 
 		Kernel: scanTypes.Kernel{
