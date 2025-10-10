@@ -12,7 +12,7 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2
     - name: Set up Go 1.x
-      uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+      uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00
       with:
         go-version-file: go.mod
     - name: Test
