@@ -19,6 +19,7 @@ import (
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
 	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
+	"github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/fixstatus"
 	vcPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package"
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
@@ -475,6 +476,10 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 
 		switch fcn.Criterion.Version.Package.Type {
 		case vcPackageTypes.PackageTypeBinary, vcPackageTypes.PackageTypeSource:
+			if !cn.Criterion.Version.Vulnerable {
+				continue
+			}
+
 			rangeType, fixedIn := func() (vcAffectedRangeTypes.RangeType, string) {
 				if fcn.Criterion.Version.Affected == nil {
 					return vcAffectedRangeTypes.RangeTypeUnknown, ""
@@ -496,8 +501,13 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 							}
 							return fixState(e, sourceID, fcn.Criterion.Version.FixStatus.Vendor)
 						}(),
-						FixedIn:     fixedIn,
-						NotFixedYet: fixedIn == "",
+						FixedIn: fixedIn,
+						NotFixedYet: func() bool {
+							if cn.Criterion.Version.FixStatus == nil {
+								return true
+							}
+							return cn.Criterion.Version.FixStatus.Class != fixstatus.ClassFixed
+						}(),
 					},
 				})
 			}
