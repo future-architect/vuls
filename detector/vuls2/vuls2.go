@@ -508,7 +508,13 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 							if fcn.Criterion.Version.FixStatus == nil {
 								return ""
 							}
-							return fixState(e, sourceID, fcn.Criterion.Version.FixStatus.Vendor)
+							if s := fixState(e, sourceID, fcn.Criterion.Version.FixStatus.Vendor); s != "" {
+								return s
+							}
+							if fcn.Criterion.Version.FixStatus.Class == fixstatus.ClassUnknown {
+								return "Unknown"
+							}
+							return ""
 						}(),
 						FixedIn: fixedIn,
 						NotFixedYet: func() bool {
