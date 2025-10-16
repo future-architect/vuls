@@ -15,35 +15,36 @@ import (
 )
 
 const (
-	CreatorOrganization = "future-architect"
-	CreatorTool         = "vuls"
+	creatorOrganization = "future-architect"
+	creatorTool         = "vuls"
 )
 
 const (
-	DocumentSPDXIdentifier = "DOCUMENT"
-	ElementOperatingSystem = "Operating-System"
-	ElementPackage         = "Package"
+	documentSPDXIdentifier = "DOCUMENT"
+	elementOperatingSystem = "Operating-System"
+	elementPackage         = "Package"
 
-	PackagePurposeOS          = "OPERATING-SYSTEM"
-	PackagePurposeApplication = "APPLICATION"
-	PackagePurposeLibrary     = "LIBRARY"
+	packagePurposeOS          = "OPERATING-SYSTEM"
+	packagePurposeApplication = "APPLICATION"
+	packagePurposeLibrary     = "LIBRARY"
 
-	PackageAnnotatorTool = "Tool"
-	AnnotationOther      = "Other"
+	packageAnnotatorTool = "Tool"
+	annotationOther      = "Other"
 
 	noneField = "NONE"
 
-	RelationShipContains = common.TypeRelationshipContains
-	RelationShipDepensOn = common.TypeRelationshipDependsOn
+	relationShipContains = common.TypeRelationshipContains
+	relationShipDepensOn = common.TypeRelationshipDependsOn
 
-	CategoryPackageManager = common.CategoryPackageManager
-	PackageManagerPURL     = common.TypePackageManagerPURL
+	categoryPackageManager = common.CategoryPackageManager
+	packageManagerPURL     = common.TypePackageManagerPURL
 
-	CategorySecurity  = common.CategorySecurity
-	SecurityCPE23Type = common.TypeSecurityCPE23Type
-	SecurityAdvisory  = common.TypeSecurityAdvisory
+	categorySecurity  = common.CategorySecurity
+	securityCPE23Type = common.TypeSecurityCPE23Type
+	securityAdvisory  = common.TypeSecurityAdvisory
 )
 
+// ToSPDX converts ScanResult to SPDX Document
 func ToSPDX(r models.ScanResult) spdx.Document {
 	root := osToSpdxPackage(r)
 
@@ -53,7 +54,7 @@ func ToSPDX(r models.ScanResult) spdx.Document {
 	doc := spdx.Document{
 		SPDXVersion:       spdx.Version,
 		DataLicense:       spdx.DataLicense,
-		SPDXIdentifier:    DocumentSPDXIdentifier,
+		SPDXIdentifier:    documentSPDXIdentifier,
 		DocumentName:      root.PackageName,
 		DocumentNamespace: fmt.Sprintf("%s-%s-%s", root.PackageName, root.PackageVersion, uuid.NewString()),
 		CreationInfo:      spdxCreationInfo(r),
@@ -88,25 +89,25 @@ func osToSpdxPackage(r models.ScanResult) *spdx.Package {
 	}
 
 	return &spdx.Package{
-		PackageSPDXIdentifier:     calculateSDPXIDentifier(ElementOperatingSystem),
+		PackageSPDXIdentifier:     calculateSDPXIDentifier(elementOperatingSystem),
 		PackageName:               family,
 		PackageVersion:            r.Release,
 		PackageDownloadLocation:   noneField,
 		Annotations:               annotations,
 		PackageExternalReferences: []*spdx.PackageExternalReference{},
-		PrimaryPackagePurpose:     PackagePurposeOS,
+		PrimaryPackagePurpose:     packagePurposeOS,
 	}
 }
 
 func spdxCreationInfo(result models.ScanResult) *spdx.CreationInfo {
-	toolName := CreatorTool
+	toolName := creatorTool
 	if result.ReportedVersion != "" {
-		toolName = fmt.Sprintf("%s-%s", CreatorTool, result.ReportedVersion)
+		toolName = fmt.Sprintf("%s-%s", creatorTool, result.ReportedVersion)
 	}
 
 	ci := spdx.CreationInfo{
 		Creators: []common.Creator{
-			{Creator: CreatorOrganization, CreatorType: "Organization"},
+			{Creator: creatorOrganization, CreatorType: "Organization"},
 			{Creator: toolName, CreatorType: "Tool"},
 		},
 		Created: result.ReportedAt.Format(time.RFC3339),
@@ -122,26 +123,26 @@ func spdxPackages(result models.ScanResult, root *spdx.Package, packageToURLMap 
 	if ospkgs := ospkgToSPDXPackages(result, packageToURLMap); len(ospkgs) > 0 {
 		for _, pack := range ospkgs {
 			packages = append(packages, &pack)
-			relationships = append(relationships, makeSPDXRelationShip(root.PackageSPDXIdentifier, pack.PackageSPDXIdentifier, RelationShipContains))
+			relationships = append(relationships, makeSPDXRelationShip(root.PackageSPDXIdentifier, pack.PackageSPDXIdentifier, relationShipContains))
 		}
 	}
 
 	if cpePkgs := cpeToSPDXPackages(result, packageToURLMap); len(cpePkgs) > 0 {
 		packages = append(packages, &cpePkgs[0])
-		relationships = append(relationships, makeSPDXRelationShip(root.PackageSPDXIdentifier, cpePkgs[0].PackageSPDXIdentifier, RelationShipContains))
+		relationships = append(relationships, makeSPDXRelationShip(root.PackageSPDXIdentifier, cpePkgs[0].PackageSPDXIdentifier, relationShipContains))
 		for _, pack := range cpePkgs[1:] {
 			packages = append(packages, &pack)
-			relationships = append(relationships, makeSPDXRelationShip(cpePkgs[0].PackageSPDXIdentifier, pack.PackageSPDXIdentifier, RelationShipContains))
+			relationships = append(relationships, makeSPDXRelationShip(cpePkgs[0].PackageSPDXIdentifier, pack.PackageSPDXIdentifier, relationShipContains))
 		}
 	}
 
 	for _, libScanner := range result.LibraryScanners {
 		if libpkgs := libpkgToSPDXPackages(libScanner, packageToURLMap, result.ReportedAt); len(libpkgs) > 0 {
 			packages = append(packages, &libpkgs[0])
-			relationships = append(relationships, makeSPDXRelationShip(root.PackageSPDXIdentifier, libpkgs[0].PackageSPDXIdentifier, RelationShipContains))
+			relationships = append(relationships, makeSPDXRelationShip(root.PackageSPDXIdentifier, libpkgs[0].PackageSPDXIdentifier, relationShipContains))
 			for _, pack := range libpkgs[1:] {
 				packages = append(packages, &pack)
-				relationships = append(relationships, makeSPDXRelationShip(libpkgs[0].PackageSPDXIdentifier, pack.PackageSPDXIdentifier, RelationShipDepensOn))
+				relationships = append(relationships, makeSPDXRelationShip(libpkgs[0].PackageSPDXIdentifier, pack.PackageSPDXIdentifier, relationShipDepensOn))
 			}
 		}
 	}
@@ -149,20 +150,20 @@ func spdxPackages(result models.ScanResult, root *spdx.Package, packageToURLMap 
 	for _, ghm := range result.GitHubManifests {
 		if ghpkgs := ghpkgToSPDXPackages(ghm, packageToURLMap, result.ReportedAt); len(ghpkgs) > 0 {
 			packages = append(packages, &ghpkgs[0])
-			relationships = append(relationships, makeSPDXRelationShip(root.PackageSPDXIdentifier, ghpkgs[0].PackageSPDXIdentifier, RelationShipContains))
+			relationships = append(relationships, makeSPDXRelationShip(root.PackageSPDXIdentifier, ghpkgs[0].PackageSPDXIdentifier, relationShipContains))
 			for _, pack := range ghpkgs[1:] {
 				packages = append(packages, &pack)
-				relationships = append(relationships, makeSPDXRelationShip(ghpkgs[0].PackageSPDXIdentifier, pack.PackageSPDXIdentifier, RelationShipDepensOn))
+				relationships = append(relationships, makeSPDXRelationShip(ghpkgs[0].PackageSPDXIdentifier, pack.PackageSPDXIdentifier, relationShipDepensOn))
 			}
 		}
 	}
 
 	if wppkgs := wppkgToSPDXPackages(result.WordPressPackages, packageToURLMap, result.ReportedAt); len(wppkgs) > 0 {
 		packages = append(packages, &wppkgs[0])
-		relationships = append(relationships, makeSPDXRelationShip(root.PackageSPDXIdentifier, wppkgs[0].PackageSPDXIdentifier, RelationShipContains))
+		relationships = append(relationships, makeSPDXRelationShip(root.PackageSPDXIdentifier, wppkgs[0].PackageSPDXIdentifier, relationShipContains))
 		for _, pack := range wppkgs[1:] {
 			packages = append(packages, &pack)
-			relationships = append(relationships, makeSPDXRelationShip(wppkgs[0].PackageSPDXIdentifier, pack.PackageSPDXIdentifier, RelationShipDepensOn))
+			relationships = append(relationships, makeSPDXRelationShip(wppkgs[0].PackageSPDXIdentifier, pack.PackageSPDXIdentifier, relationShipDepensOn))
 		}
 	}
 
@@ -201,16 +202,16 @@ func ospkgToSPDXPackages(r models.ScanResult, packageToURLMap map[string][]strin
 
 		var externalRefs []*spdx.PackageExternalReference
 		purl := osPkgToPURL(r.Family, r.Release, pack)
-		externalRefs = appendExternalRefs(externalRefs, CategoryPackageManager, PackageManagerPURL, purl.String())
+		externalRefs = appendExternalRefs(externalRefs, categoryPackageManager, packageManagerPURL, purl.String())
 
 		if urls, exists := packageToURLMap[pack.Name]; exists {
 			for _, url := range urls {
-				externalRefs = appendExternalRefs(externalRefs, CategorySecurity, SecurityAdvisory, url)
+				externalRefs = appendExternalRefs(externalRefs, categorySecurity, securityAdvisory, url)
 			}
 		}
 
 		spdxPackage := spdx.Package{
-			PackageSPDXIdentifier:     calculateSDPXIDentifier(ElementPackage),
+			PackageSPDXIdentifier:     calculateSDPXIDentifier(elementPackage),
 			PackageName:               pack.Name,
 			PackageVersion:            pack.Version,
 			PackageDownloadLocation:   noneField,
@@ -237,25 +238,25 @@ func cpeToSPDXPackages(r models.ScanResult, packageToURLMap map[string][]string)
 	packages := make([]spdx.Package, 0, 1+len(cpes))
 
 	packages = append(packages, spdx.Package{
-		PackageSPDXIdentifier:   calculateSDPXIDentifier(ElementPackage),
+		PackageSPDXIdentifier:   calculateSDPXIDentifier(elementPackage),
 		PackageName:             "CPEs",
 		PackageDownloadLocation: noneField,
 		Annotations:             appendAnnotation(nil, "Type", "CPE", r.ReportedAt),
-		PrimaryPackagePurpose:   PackagePurposeApplication,
+		PrimaryPackagePurpose:   packagePurposeApplication,
 	})
 
 	for cpe := range cpes {
 		var externalRefs []*spdx.PackageExternalReference
-		externalRefs = appendExternalRefs(externalRefs, CategorySecurity, SecurityCPE23Type, cpe)
+		externalRefs = appendExternalRefs(externalRefs, categorySecurity, securityCPE23Type, cpe)
 
 		if urls, exists := packageToURLMap[cpe]; exists {
 			for _, url := range urls {
-				externalRefs = appendExternalRefs(externalRefs, CategorySecurity, SecurityAdvisory, url)
+				externalRefs = appendExternalRefs(externalRefs, categorySecurity, securityAdvisory, url)
 			}
 		}
 
 		packages = append(packages, spdx.Package{
-			PackageSPDXIdentifier:     calculateSDPXIDentifier(ElementPackage),
+			PackageSPDXIdentifier:     calculateSDPXIDentifier(elementPackage),
 			PackageName:               cpe,
 			PackageDownloadLocation:   noneField,
 			PackageExternalReferences: externalRefs,
@@ -273,32 +274,32 @@ func libpkgToSPDXPackages(libScanner models.LibraryScanner, packageToURLMap map[
 	packages := make([]spdx.Package, 0, 1+len(libScanner.Libs))
 
 	packages = append(packages, spdx.Package{
-		PackageSPDXIdentifier:   calculateSDPXIDentifier(ElementPackage),
+		PackageSPDXIdentifier:   calculateSDPXIDentifier(elementPackage),
 		PackageName:             libScanner.LockfilePath,
 		PackageDownloadLocation: noneField,
 		Annotations:             appendAnnotation(nil, "Type", string(libScanner.Type), reportedAt),
-		PrimaryPackagePurpose:   PackagePurposeApplication,
+		PrimaryPackagePurpose:   packagePurposeApplication,
 	})
 
 	for _, lib := range libScanner.Libs {
 		var externalRefs []*spdx.PackageExternalReference
 		purl := libPkgToPURL(libScanner, lib)
-		externalRefs = appendExternalRefs(externalRefs, CategoryPackageManager, PackageManagerPURL, purl.String())
+		externalRefs = appendExternalRefs(externalRefs, categoryPackageManager, packageManagerPURL, purl.String())
 
 		libkey := fmt.Sprintf("lib:%s:%s", libScanner.LockfilePath, lib.Name)
 		if urls, exists := packageToURLMap[libkey]; exists {
 			for _, url := range urls {
-				externalRefs = appendExternalRefs(externalRefs, CategorySecurity, SecurityAdvisory, url)
+				externalRefs = appendExternalRefs(externalRefs, categorySecurity, securityAdvisory, url)
 			}
 		}
 
 		packages = append(packages, spdx.Package{
-			PackageSPDXIdentifier:     calculateSDPXIDentifier(ElementPackage),
+			PackageSPDXIdentifier:     calculateSDPXIDentifier(elementPackage),
 			PackageName:               lib.Name,
 			PackageVersion:            lib.Version,
 			PackageDownloadLocation:   noneField,
 			PackageExternalReferences: externalRefs,
-			PrimaryPackagePurpose:     PackagePurposeLibrary,
+			PrimaryPackagePurpose:     packagePurposeLibrary,
 		})
 	}
 
@@ -313,32 +314,32 @@ func ghpkgToSPDXPackages(ghm models.DependencyGraphManifest, packageToURLMap map
 	packages := make([]spdx.Package, 0, 1+len(ghm.Dependencies))
 
 	packages = append(packages, spdx.Package{
-		PackageSPDXIdentifier:   calculateSDPXIDentifier(ElementPackage),
+		PackageSPDXIdentifier:   calculateSDPXIDentifier(elementPackage),
 		PackageName:             ghm.BlobPath,
 		PackageDownloadLocation: noneField,
 		Annotations:             appendAnnotation(nil, "Type", string(ghm.Ecosystem()), reportedAt),
-		PrimaryPackagePurpose:   PackagePurposeApplication,
+		PrimaryPackagePurpose:   packagePurposeApplication,
 	})
 
 	for _, dep := range ghm.Dependencies {
 		var externalRefs []*spdx.PackageExternalReference
 		purl := ghPkgToPURL(ghm, dep)
-		externalRefs = appendExternalRefs(externalRefs, CategoryPackageManager, PackageManagerPURL, purl.String())
+		externalRefs = appendExternalRefs(externalRefs, categoryPackageManager, packageManagerPURL, purl.String())
 
 		ghkey := fmt.Sprintf("gh:%s:%s", ghm.RepoURLFilename(), dep.PackageName)
 		if urls, exists := packageToURLMap[ghkey]; exists {
 			for _, url := range urls {
-				externalRefs = appendExternalRefs(externalRefs, CategorySecurity, SecurityAdvisory, url)
+				externalRefs = appendExternalRefs(externalRefs, categorySecurity, securityAdvisory, url)
 			}
 		}
 
 		packages = append(packages, spdx.Package{
-			PackageSPDXIdentifier:     calculateSDPXIDentifier(ElementPackage),
+			PackageSPDXIdentifier:     calculateSDPXIDentifier(elementPackage),
 			PackageName:               dep.PackageName,
 			PackageVersion:            dep.Version(),
 			PackageDownloadLocation:   noneField,
 			PackageExternalReferences: externalRefs,
-			PrimaryPackagePurpose:     PackagePurposeLibrary,
+			PrimaryPackagePurpose:     packagePurposeLibrary,
 		})
 	}
 
@@ -353,32 +354,32 @@ func wppkgToSPDXPackages(wppkgs models.WordPressPackages, packageToURLMap map[st
 	packages := make([]spdx.Package, 0, 1+len(wppkgs))
 
 	packages = append(packages, spdx.Package{
-		PackageSPDXIdentifier:   calculateSDPXIDentifier(ElementPackage),
+		PackageSPDXIdentifier:   calculateSDPXIDentifier(elementPackage),
 		PackageName:             "wordpress",
 		PackageDownloadLocation: noneField,
 		Annotations:             appendAnnotation(nil, "Type", "WordPress", reportedAt),
-		PrimaryPackagePurpose:   PackagePurposeApplication,
+		PrimaryPackagePurpose:   packagePurposeApplication,
 	})
 
 	for _, wppkg := range wppkgs {
 		var externalRefs []*spdx.PackageExternalReference
 		purl := wpPkgToPURL(wppkg)
-		externalRefs = appendExternalRefs(externalRefs, CategoryPackageManager, PackageManagerPURL, purl.String())
+		externalRefs = appendExternalRefs(externalRefs, categoryPackageManager, packageManagerPURL, purl.String())
 
 		wpkey := fmt.Sprintf("wp:%s", wppkg.Name)
 		if urls, exists := packageToURLMap[wpkey]; exists {
 			for _, url := range urls {
-				externalRefs = appendExternalRefs(externalRefs, CategorySecurity, SecurityAdvisory, url)
+				externalRefs = appendExternalRefs(externalRefs, categorySecurity, securityAdvisory, url)
 			}
 		}
 
 		packages = append(packages, spdx.Package{
-			PackageSPDXIdentifier:     calculateSDPXIDentifier(ElementPackage),
+			PackageSPDXIdentifier:     calculateSDPXIDentifier(elementPackage),
 			PackageName:               wppkg.Name,
 			PackageVersion:            wppkg.Version,
 			PackageDownloadLocation:   noneField,
 			PackageExternalReferences: externalRefs,
-			PrimaryPackagePurpose:     PackagePurposeLibrary,
+			PrimaryPackagePurpose:     packagePurposeLibrary,
 		})
 	}
 
@@ -395,11 +396,11 @@ func appendAnnotation(annotations []spdx.Annotation, key, value string, reported
 	}
 	return append(annotations, spdx.Annotation{
 		Annotator: spdx.Annotator{
-			Annotator:     fmt.Sprintf("%s:%s", CreatorOrganization, CreatorTool),
-			AnnotatorType: PackageAnnotatorTool,
+			Annotator:     fmt.Sprintf("%s:%s", creatorOrganization, creatorTool),
+			AnnotatorType: packageAnnotatorTool,
 		},
 		AnnotationDate:    reportedAt.Format(time.RFC3339),
-		AnnotationType:    AnnotationOther,
+		AnnotationType:    annotationOther,
 		AnnotationComment: fmt.Sprintf("%s: %s", key, value),
 	})
 }
