@@ -45,7 +45,7 @@ const (
 func ToSPDX(r models.ScanResult) spdx.Document {
 	root := osToSpdxPackage(r)
 	// ScanedCves の map を作成する： Identifier -> CVE情報
-	packageToURLMap := creatPackageToURLMap(r)
+	packageToURLMap := createPackageToURLMap(r)
 	packages, relationships := spdxPackages(r, root, packageToURLMap)
 
 	return spdx.Document{
@@ -126,7 +126,7 @@ func spdxPackages(result models.ScanResult, root *spdx.Package, packageToURLMap 
 
 	// libpkgPackages
 	for _, libScanner := range result.LibraryScanners {
-		if libpkgs := libpkgToSPDXPackages(libScanner, result.ReportedAt); len(libpkgs) > 0 {
+		if libpkgs := libpkgToSPDXPackages(libScanner, packageToURLMap, result.ReportedAt); len(libpkgs) > 0 {
 			relationships = append(relationships, makeSPDXRelationShip(root.PackageSPDXIdentifier, libpkgs[0].PackageSPDXIdentifier, RelationShipContains))
 			for _, pack := range libpkgs[1:] {
 				packages = append(packages, &pack)
@@ -137,7 +137,7 @@ func spdxPackages(result models.ScanResult, root *spdx.Package, packageToURLMap 
 
 	// ghpkgPackages
 	for _, ghm := range result.GitHubManifests {
-		if ghpkgs := ghpkgToSPDXPackages(ghm, result.ReportedAt); len(ghpkgs) > 0 {
+		if ghpkgs := ghpkgToSPDXPackages(ghm, packageToURLMap, result.ReportedAt); len(ghpkgs) > 0 {
 			relationships = append(relationships, makeSPDXRelationShip(root.PackageSPDXIdentifier, ghpkgs[0].PackageSPDXIdentifier, RelationShipContains))
 			for _, pack := range ghpkgs[1:] {
 				packages = append(packages, &pack)
@@ -147,7 +147,7 @@ func spdxPackages(result models.ScanResult, root *spdx.Package, packageToURLMap 
 	}
 
 	// wppkgPackages
-	if wppkgs := wppkgToSPDXPackages(result.WordPressPackages, result.ReportedAt); len(wppkgs) > 0 {
+	if wppkgs := wppkgToSPDXPackages(result.WordPressPackages, packageToURLMap, result.ReportedAt); len(wppkgs) > 0 {
 		relationships = append(relationships, makeSPDXRelationShip(root.PackageSPDXIdentifier, wppkgs[0].PackageSPDXIdentifier, RelationShipContains))
 		for _, pack := range wppkgs[1:] {
 			packages = append(packages, &pack)
@@ -252,7 +252,7 @@ func cpeToSPDXPackages(r models.ScanResult, packageToURLMap map[string][]string)
 	return packages
 }
 
-func libpkgToSPDXPackages(libScanner models.LibraryScanner, reportedAt time.Time) []spdx.Package {
+func libpkgToSPDXPackages(libScanner models.LibraryScanner, packageToURLMap map[string][]string, reportedAt time.Time) []spdx.Package {
 	if len(libScanner.Libs) == 0 {
 		return nil
 	}
@@ -271,6 +271,13 @@ func libpkgToSPDXPackages(libScanner models.LibraryScanner, reportedAt time.Time
 		purl := libPkgToPURL(libScanner, lib)
 		externalRefs = appendExternalRefs(externalRefs, CategoryPackageManager, PackageManagerPURL, purl.String())
 
+		libkey := fmt.Sprintf("lib:%s:%s", libScanner.LockfilePath, lib.Name)
+		if urls, exists := packageToURLMap[libkey]; exists {
+			for _, url := range urls {
+				externalRefs = appendExternalRefs(externalRefs, CategorySecurity, SecurityAdvisory, url)
+			}
+		}
+
 		packages = append(packages, spdx.Package{
 			PackageSPDXIdentifier: calculateSDPXIDentifier(ElementPackage),
 			PackageName:           lib.Name,
@@ -281,7 +288,7 @@ func libpkgToSPDXPackages(libScanner models.LibraryScanner, reportedAt time.Time
 	return packages
 }
 
-func ghpkgToSPDXPackages(ghm models.DependencyGraphManifest, reportedAt time.Time) []spdx.Package {
+func ghpkgToSPDXPackages(ghm models.DependencyGraphManifest, packageToURLMap map[string][]string, reportedAt time.Time) []spdx.Package {
 	if len(ghm.Dependencies) == 0 {
 		return nil
 	}
@@ -300,6 +307,13 @@ func ghpkgToSPDXPackages(ghm models.DependencyGraphManifest, reportedAt time.Tim
 		purl := ghPkgToPURL(ghm, dep)
 		externalRefs = appendExternalRefs(externalRefs, CategoryPackageManager, PackageManagerPURL, purl.String())
 
+		ghkey := fmt.Sprintf("gh:%s:%s", ghm.RepoURLFilename(), dep.PackageName)
+		if urls, exists := packageToURLMap[ghkey]; exists {
+			for _, url := range urls {
+				externalRefs = appendExternalRefs(externalRefs, CategorySecurity, SecurityAdvisory, url)
+			}
+		}
+
 		packages = append(packages, spdx.Package{
 			PackageSPDXIdentifier:     calculateSDPXIDentifier(ElementPackage),
 			PackageName:               dep.PackageName,
@@ -312,7 +326,7 @@ func ghpkgToSPDXPackages(ghm models.DependencyGraphManifest, reportedAt time.Tim
 	return packages
 }
 
-func wppkgToSPDXPackages(wppkgs models.WordPressPackages, reportedAt time.Time) []spdx.Package {
+func wppkgToSPDXPackages(wppkgs models.WordPressPackages, packageToURLMap map[string][]string, reportedAt time.Time) []spdx.Package {
 	if len(wppkgs) == 0 {
 		return nil
 	}
@@ -378,33 +392,75 @@ func makeSPDXRelationShip(refA, refB spdx.ElementID, relationship string) *spdx.
 	}
 }
 
-func creatPackageToURLMap(r models.ScanResult) map[string][]string {
-	packageToURLMap := map[string][]string{}
+// createPackageToURLMap builds a flattened mapping from package identifiers to
+// lists of vulnerability reference URLs aggregated from all CVEs in the scan result.
+//
+// Key formats:
+//
+//	OS        : <name>
+//	CPE       : <cpe-uri>
+//	Lib       : lib:<path>:<name>
+//	GitHub    : gh:<manifestPath>:<packageName>
+//	WordPress : wp:<name>
+func createPackageToURLMap(r models.ScanResult) map[string][]string {
+	result := make(map[string][]string)
 
-	for _, vulnInfo := range r.ScannedCves {
-		urls := map[string]struct{}{}
-
-		for _, cveContent := range vulnInfo.CveContents {
-			for _, content := range cveContent {
-				if content.SourceLink != "" {
-					urls[content.SourceLink] = struct{}{}
+	for _, cve := range r.ScannedCves {
+		cveURLSet := make(map[string]struct{})
+		for _, contents := range cve.CveContents {
+			for _, c := range contents {
+				if c.SourceLink != "" {
+					cveURLSet[c.SourceLink] = struct{}{}
 				}
-				for _, ref := range content.References {
-					urls[ref.Link] = struct{}{}
+				for _, ref := range c.References {
+					if ref.Link != "" {
+						cveURLSet[ref.Link] = struct{}{}
+					}
 				}
 			}
 		}
-		urlUniqs := make([]string, 0, len(urls))
-		for url := range urls {
-			urlUniqs = append(urlUniqs, url)
+		if len(cveURLSet) == 0 {
+			continue
 		}
 
-		for _, affected := range vulnInfo.AffectedPackages {
-			packageToURLMap[affected.Name] = urlUniqs
+		cveURLs := make([]string, 0, len(cveURLSet))
+		for u := range cveURLSet {
+			cveURLs = append(cveURLs, u)
+		}
+
+		var keys []string
+		for _, p := range cve.AffectedPackages {
+			if p.Name != "" {
+				keys = append(keys, p.Name)
+			}
+		}
+		for _, cpe := range cve.CpeURIs {
+			if cpe != "" {
+				keys = append(keys, cpe)
+			}
+		}
+		for _, lf := range cve.LibraryFixedIns {
+			if lf.Path != "" && lf.Name != "" {
+				keys = append(keys, fmt.Sprintf("lib:%s:%s", lf.Path, lf.Name))
+			}
+		}
+		for _, alert := range cve.GitHubSecurityAlerts {
+			if alert.RepoURLManifestPath() != "" && alert.Package.Name != "" {
+				keys = append(keys, fmt.Sprintf("gh:%s:%s", alert.RepoURLManifestPath(), alert.Package.Name))
+			}
+		}
+		for _, wp := range cve.WpPackageFixStats {
+			if wp.Name != "" {
+				keys = append(keys, fmt.Sprintf("wp:%s", wp.Name))
+			}
+		}
+
+		for _, k := range keys {
+			result[k] = append(result[k], cveURLs...)
 		}
 	}
 
-	return packageToURLMap
+	return result
 }
 
 func calculateSDPXIDentifier(packageType string) spdx.ElementID {
