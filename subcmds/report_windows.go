@@ -32,6 +32,7 @@ type ReportCmd struct {
 	formatList          bool
 	formatCycloneDXJSON bool
 	formatCycloneDXXML  bool
+	formatSPDXJSON      bool
 	gzip                bool
 
 	toSlack      bool
@@ -85,6 +86,7 @@ func (*ReportCmd) Usage() string {
 		[-format-csv]
 		[-format-cyclonedx-json]
 		[-format-cyclonedx-xml]
+		[-format-spdx-json]
 		[-gzip]
 		[-http-proxy=http://192.168.0.1:8080]
 		[-debug]
@@ -160,6 +162,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 		"Detail report in plain text")
 	f.BoolVar(&p.formatCycloneDXJSON, "format-cyclonedx-json", false, "CycloneDX JSON format")
 	f.BoolVar(&p.formatCycloneDXXML, "format-cyclonedx-xml", false, "CycloneDX XML format")
+	f.BoolVar(&p.formatSPDXJSON, "format-spdx-json", false, "SPDX JSON format")
 
 	f.BoolVar(&p.toSlack, "to-slack", false, "Send report via Slack")
 	f.BoolVar(&p.toChatWork, "to-chatwork", false, "Send report via chatwork")
@@ -245,7 +248,8 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if !(p.formatJSON || p.formatOneLineText ||
 		p.formatList || p.formatFullText || p.formatCsv ||
-		p.formatCycloneDXJSON || p.formatCycloneDXXML) {
+		p.formatCycloneDXJSON || p.formatCycloneDXXML ||
+		p.formatSPDXJSON) {
 		p.formatList = true
 	}
 
@@ -336,6 +340,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			FormatList:          p.formatList,
 			FormatCycloneDXJSON: p.formatCycloneDXJSON,
 			FormatCycloneDXXML:  p.formatCycloneDXXML,
+			FormatSPDXJSON:      p.formatSPDXJSON,
 			Gzip:                p.gzip,
 		})
 	}

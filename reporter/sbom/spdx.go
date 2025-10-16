@@ -1,6 +1,7 @@
 package sbom
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand/v2"
 	"sort"
@@ -63,6 +64,12 @@ func ToSPDX(r models.ScanResult) spdx.Document {
 	sortSDPXDocument(&doc)
 
 	return doc
+}
+
+// SerializeSPDX serializes SPDX Document to JSON
+// Only supports JSON format
+func SerializeSPDX(doc spdx.Document) ([]byte, error) {
+	return json.MarshalIndent(&doc, "", "  ")
 }
 
 func osToSpdxPackage(r models.ScanResult) *spdx.Package {
@@ -428,7 +435,24 @@ func makeSPDXRelationShip(refA, refB spdx.ElementID, relationship string) *spdx.
 //	GitHub    : gh:<manifestPath>:<packageName>
 //	WordPress : wp:<name>
 func createPackageToURLMap(r models.ScanResult) map[string][]string {
-	result := make(map[string][]string)
+	packageURLMap := make(map[string][]string)
+	seen := make(map[string]map[string]struct{})
+
+	addURL := func(key, url string) {
+		if key == "" || url == "" {
+			return
+		}
+		seenSet, ok := seen[key]
+		if !ok {
+			seenSet = make(map[string]struct{})
+			seen[key] = seenSet
+		}
+		if _, exists := seenSet[url]; exists {
+			return
+		}
+		seenSet[url] = struct{}{}
+		packageURLMap[key] = append(packageURLMap[key], url)
+	}
 
 	for _, cve := range r.ScannedCves {
 		cveURLSet := make(map[string]struct{})
@@ -448,45 +472,35 @@ func createPackageToURLMap(r models.ScanResult) map[string][]string {
 			continue
 		}
 
-		cveURLs := make([]string, 0, len(cveURLSet))
-		for u := range cveURLSet {
-			cveURLs = append(cveURLs, u)
-		}
-
 		keySet := make(map[string]struct{})
-		addKey := func(k string) {
-			if k == "" {
-				return
-			}
-			if _, exists := keySet[k]; exists {
-				return
-			}
-			keySet[k] = struct{}{}
-			result[k] = append(result[k], cveURLs...)
-		}
-
 		for _, p := range cve.AffectedPackages {
-			addKey(p.Name)
+			keySet[p.Name] = struct{}{}
 		}
 		for _, cpe := range cve.CpeURIs {
-			addKey(cpe)
+			keySet[cpe] = struct{}{}
 		}
 		for _, lf := range cve.LibraryFixedIns {
 			if lf.Path != "" && lf.Name != "" {
-				addKey(fmt.Sprintf("lib:%s:%s", lf.Path, lf.Name))
+				keySet[fmt.Sprintf("lib:%s:%s", lf.Path, lf.Name)] = struct{}{}
 			}
 		}
 		for _, alert := range cve.GitHubSecurityAlerts {
 			if alert.RepoURLManifestPath() != "" && alert.Package.Name != "" {
-				addKey(fmt.Sprintf("gh:%s:%s", alert.RepoURLManifestPath(), alert.Package.Name))
+				keySet[fmt.Sprintf("gh:%s:%s", alert.RepoURLManifestPath(), alert.Package.Name)] = struct{}{}
 			}
 		}
 		for _, wp := range cve.WpPackageFixStats {
-			addKey(fmt.Sprintf("wp:%s", wp.Name))
+			keySet[fmt.Sprintf("wp:%s", wp.Name)] = struct{}{}
+		}
+
+		for key := range keySet {
+			for url := range cveURLSet {
+				addURL(key, url)
+			}
 		}
 	}
 
-	return result
+	return packageURLMap
 }
 
 func sortSDPXDocument(doc *spdx.Document) {
