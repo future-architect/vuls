@@ -3,6 +3,7 @@ package sbom
 import (
 	"fmt"
 	"math/rand/v2"
+	"sort"
 	"time"
 
 	"github.com/future-architect/vuls/constant"
@@ -27,13 +28,12 @@ const (
 	PackagePurposeLibrary     = "LIBRARY"
 
 	PackageAnnotatorTool = "Tool"
+	AnnotationOther      = "Other"
 
 	noneField = "NONE"
 
 	RelationShipContains = common.TypeRelationshipContains
 	RelationShipDepensOn = common.TypeRelationshipDependsOn
-
-	CategoryOther = common.CategoryOther
 
 	CategoryPackageManager = common.CategoryPackageManager
 	PackageManagerPURL     = common.TypePackageManagerPURL
@@ -49,7 +49,7 @@ func ToSPDX(r models.ScanResult) spdx.Document {
 	packageToURLMap := createPackageToURLMap(r)
 	packages, relationships := spdxPackages(r, root, packageToURLMap)
 
-	return spdx.Document{
+	doc := spdx.Document{
 		SPDXVersion:       spdx.Version,
 		DataLicense:       spdx.DataLicense,
 		SPDXIdentifier:    DocumentSPDXIdentifier,
@@ -59,6 +59,10 @@ func ToSPDX(r models.ScanResult) spdx.Document {
 		Packages:          packages,
 		Relationships:     relationships,
 	}
+
+	sortSDPXDocument(&doc)
+
+	return doc
 }
 
 func osToSpdxPackage(r models.ScanResult) *spdx.Package {
@@ -68,7 +72,7 @@ func osToSpdxPackage(r models.ScanResult) *spdx.Package {
 	}
 
 	var annotations []spdx.Annotation
-	annotations = appendAnnotation(annotations, "OsFamily", r.Family, r.ReportedAt)
+	annotations = appendAnnotation(annotations, "OsFamily", family, r.ReportedAt)
 	if r.RunningKernel.Release != "" {
 		annotations = appendAnnotation(annotations, "RunningKernelRelease", r.RunningKernel.Release, r.ReportedAt)
 	}
@@ -120,7 +124,7 @@ func spdxPackages(result models.ScanResult, root *spdx.Package, packageToURLMap 
 		relationships = append(relationships, makeSPDXRelationShip(root.PackageSPDXIdentifier, cpePkgs[0].PackageSPDXIdentifier, RelationShipContains))
 		for _, pack := range cpePkgs[1:] {
 			packages = append(packages, &pack)
-			relationships = append(relationships, makeSPDXRelationShip(cpePkgs[0].PackageSPDXIdentifier, pack.PackageSPDXIdentifier, RelationShipDepensOn))
+			relationships = append(relationships, makeSPDXRelationShip(cpePkgs[0].PackageSPDXIdentifier, pack.PackageSPDXIdentifier, RelationShipContains))
 		}
 	}
 
@@ -388,7 +392,7 @@ func appendAnnotation(annotations []spdx.Annotation, key, value string, reported
 			AnnotatorType: PackageAnnotatorTool,
 		},
 		AnnotationDate:    reportedAt.Format(time.RFC3339),
-		AnnotationType:    CategoryOther,
+		AnnotationType:    AnnotationOther,
 		AnnotationComment: fmt.Sprintf("%s: %s", key, value),
 	})
 }
@@ -449,37 +453,83 @@ func createPackageToURLMap(r models.ScanResult) map[string][]string {
 			cveURLs = append(cveURLs, u)
 		}
 
-		var keys []string
-		for _, p := range cve.AffectedPackages {
-			if p.Name != "" {
-				keys = append(keys, p.Name)
+		keySet := make(map[string]struct{})
+		addKey := func(k string) {
+			if k == "" {
+				return
 			}
+			if _, exists := keySet[k]; exists {
+				return
+			}
+			keySet[k] = struct{}{}
+			result[k] = append(result[k], cveURLs...)
+		}
+
+		for _, p := range cve.AffectedPackages {
+			addKey(p.Name)
 		}
 		for _, cpe := range cve.CpeURIs {
-			if cpe != "" {
-				keys = append(keys, cpe)
-			}
+			addKey(cpe)
 		}
 		for _, lf := range cve.LibraryFixedIns {
 			if lf.Path != "" && lf.Name != "" {
-				keys = append(keys, fmt.Sprintf("lib:%s:%s", lf.Path, lf.Name))
+				addKey(fmt.Sprintf("lib:%s:%s", lf.Path, lf.Name))
 			}
 		}
 		for _, alert := range cve.GitHubSecurityAlerts {
 			if alert.RepoURLManifestPath() != "" && alert.Package.Name != "" {
-				keys = append(keys, fmt.Sprintf("gh:%s:%s", alert.RepoURLManifestPath(), alert.Package.Name))
+				addKey(fmt.Sprintf("gh:%s:%s", alert.RepoURLManifestPath(), alert.Package.Name))
 			}
 		}
 		for _, wp := range cve.WpPackageFixStats {
-			if wp.Name != "" {
-				keys = append(keys, fmt.Sprintf("wp:%s", wp.Name))
-			}
-		}
-
-		for _, k := range keys {
-			result[k] = append(result[k], cveURLs...)
+			addKey(fmt.Sprintf("wp:%s", wp.Name))
 		}
 	}
 
 	return result
+}
+
+func sortSDPXDocument(doc *spdx.Document) {
+	sort.Slice(doc.Packages, func(i, j int) bool {
+		pi, pj := doc.Packages[i], doc.Packages[j]
+		if pi.PackageName != pj.PackageName {
+			return pi.PackageName < pj.PackageName
+		}
+		if pi.PackageVersion != pj.PackageVersion {
+			return pi.PackageVersion < pj.PackageVersion
+		}
+		return pi.PackageSPDXIdentifier < pj.PackageSPDXIdentifier
+	})
+
+	for _, p := range doc.Packages {
+		if len(p.PackageExternalReferences) > 1 {
+			sort.Slice(p.PackageExternalReferences, func(i, j int) bool {
+				a, b := p.PackageExternalReferences[i], p.PackageExternalReferences[j]
+				if a.Category != b.Category {
+					return a.Category < b.Category
+				}
+				if a.RefType != b.RefType {
+					return a.RefType < b.RefType
+				}
+				return a.Locator < b.Locator
+			})
+		}
+
+		if len(p.Annotations) > 1 {
+			sort.Slice(p.Annotations, func(i, j int) bool {
+				return p.Annotations[i].AnnotationComment < p.Annotations[j].AnnotationComment
+			})
+		}
+	}
+
+	sort.Slice(doc.Relationships, func(i, j int) bool {
+		ri, rj := doc.Relationships[i], doc.Relationships[j]
+		if ri.RefA.ElementRefID != rj.RefA.ElementRefID {
+			return ri.RefA.ElementRefID < rj.RefA.ElementRefID
+		}
+		if ri.RefB.ElementRefID != rj.RefB.ElementRefID {
+			return ri.RefB.ElementRefID < rj.RefB.ElementRefID
+		}
+		return ri.Relationship < rj.Relationship
+	})
 }
