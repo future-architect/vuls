@@ -4,22 +4,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand/v2"
-	"sort"
+	"slices"
 	"time"
 
-	"github.com/future-architect/vuls/constant"
-	"github.com/future-architect/vuls/models"
 	"github.com/google/uuid"
 	"github.com/spdx/tools-golang/spdx"
 	"github.com/spdx/tools-golang/spdx/v2/common"
+
+	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/models"
 )
 
 const (
 	creatorOrganization = "future-architect"
 	creatorTool         = "vuls"
-)
 
-const (
 	documentSPDXIdentifier = "DOCUMENT"
 	elementOperatingSystem = "Operating-System"
 	elementPackage         = "Package"
@@ -94,7 +93,7 @@ func osToSpdxPackage(r models.ScanResult) *spdx.Package {
 		PackageVersion:            r.Release,
 		PackageDownloadLocation:   noneField,
 		Annotations:               annotations,
-		PackageExternalReferences: []*spdx.PackageExternalReference{},
+		PackageExternalReferences: nil,
 		PrimaryPackagePurpose:     packagePurposeOS,
 	}
 }
@@ -505,46 +504,84 @@ func createPackageToURLMap(r models.ScanResult) map[string][]string {
 }
 
 func sortSDPXDocument(doc *spdx.Document) {
-	sort.Slice(doc.Packages, func(i, j int) bool {
-		pi, pj := doc.Packages[i], doc.Packages[j]
+	slices.SortFunc(doc.Packages, func(pi, pj *spdx.Package) int {
 		if pi.PackageName != pj.PackageName {
-			return pi.PackageName < pj.PackageName
+			if pi.PackageName < pj.PackageName {
+				return -1
+			}
+			return 1
 		}
 		if pi.PackageVersion != pj.PackageVersion {
-			return pi.PackageVersion < pj.PackageVersion
+			if pi.PackageVersion < pj.PackageVersion {
+				return -1
+			}
+			return 1
 		}
-		return pi.PackageSPDXIdentifier < pj.PackageSPDXIdentifier
+		if pi.PackageSPDXIdentifier < pj.PackageSPDXIdentifier {
+			return -1
+		} else if pi.PackageSPDXIdentifier > pj.PackageSPDXIdentifier {
+			return 1
+		}
+		return 0
 	})
 
 	for _, p := range doc.Packages {
 		if len(p.PackageExternalReferences) > 1 {
-			sort.Slice(p.PackageExternalReferences, func(i, j int) bool {
-				a, b := p.PackageExternalReferences[i], p.PackageExternalReferences[j]
+			slices.SortFunc(p.PackageExternalReferences, func(a, b *spdx.PackageExternalReference) int {
 				if a.Category != b.Category {
-					return a.Category < b.Category
+					if a.Category < b.Category {
+						return -1
+					}
+					return 1
 				}
 				if a.RefType != b.RefType {
-					return a.RefType < b.RefType
+					if a.RefType < b.RefType {
+						return -1
+					}
+					return 1
 				}
-				return a.Locator < b.Locator
+				if a.Locator < b.Locator {
+					return -1
+				}
+				if a.Locator > b.Locator {
+					return 1
+				}
+				return 0
 			})
 		}
 
 		if len(p.Annotations) > 1 {
-			sort.Slice(p.Annotations, func(i, j int) bool {
-				return p.Annotations[i].AnnotationComment < p.Annotations[j].AnnotationComment
+			slices.SortFunc(p.Annotations, func(a, b spdx.Annotation) int {
+				if a.AnnotationComment < b.AnnotationComment {
+					return -1
+				}
+				if a.AnnotationComment > b.AnnotationComment {
+					return 1
+				}
+				return 0
 			})
 		}
 	}
 
-	sort.Slice(doc.Relationships, func(i, j int) bool {
-		ri, rj := doc.Relationships[i], doc.Relationships[j]
+	slices.SortFunc(doc.Relationships, func(ri, rj *spdx.Relationship) int {
 		if ri.RefA.ElementRefID != rj.RefA.ElementRefID {
-			return ri.RefA.ElementRefID < rj.RefA.ElementRefID
+			if ri.RefA.ElementRefID < rj.RefA.ElementRefID {
+				return -1
+			}
+			return 1
 		}
 		if ri.RefB.ElementRefID != rj.RefB.ElementRefID {
-			return ri.RefB.ElementRefID < rj.RefB.ElementRefID
+			if ri.RefB.ElementRefID < rj.RefB.ElementRefID {
+				return -1
+			}
+			return 1
 		}
-		return ri.Relationship < rj.Relationship
+		if ri.Relationship < rj.Relationship {
+			return -1
+		}
+		if ri.Relationship > rj.Relationship {
+			return 1
+		}
+		return 0
 	})
 }
