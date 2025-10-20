@@ -60,6 +60,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
 - Vulnerability Database
   - [NVD](https://nvd.nist.gov/)
   - [JVN(Japanese)](http://jvndb.jvn.jp/apis/myjvn/)
+  - [Vulert](https://vulert.com/vuln-db)
 
 - OVAL
   - [Red Hat](https://www.redhat.com/security/data/oval/)
