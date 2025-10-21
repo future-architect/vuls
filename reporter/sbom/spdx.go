@@ -75,7 +75,7 @@ func SerializeSPDX(doc spdx.Document) ([]byte, error) {
 	return json.MarshalIndent(&doc, "", "  ")
 }
 
-func osToSpdxPackage(r models.ScanResult) *spdx.Package {
+func osToSpdxPackage(r models.ScanResult) spdx.Package {
 	family := constant.ServerTypePseudo
 	if r.Family != "" {
 		family = r.Family
@@ -90,7 +90,7 @@ func osToSpdxPackage(r models.ScanResult) *spdx.Package {
 		annotations = appendAnnotation(annotations, "RunningKernelVersion", r.RunningKernel.Version, r.ReportedAt)
 	}
 
-	return &spdx.Package{
+	return spdx.Package{
 		PackageSPDXIdentifier:     calculateSDPXIDentifier(elementOperatingSystem),
 		PackageName:               family,
 		PackageVersion:            r.Release,
@@ -116,33 +116,38 @@ func spdxCreationInfo(result models.ScanResult) spdx.CreationInfo {
 	}
 }
 
-func spdxPackages(result models.ScanResult, root *spdx.Package, packageToURLMap map[string][]string) ([]*spdx.Package, []*spdx.Relationship) {
+func spdxPackages(result models.ScanResult, root spdx.Package, packageToURLMap map[string][]string) ([]*spdx.Package, []*spdx.Relationship) {
 	var packages []*spdx.Package
 	var relationships []*spdx.Relationship
 
 	if ospkgs := ospkgToSPDXPackages(result, packageToURLMap); len(ospkgs) > 0 {
 		for _, pack := range ospkgs {
 			packages = append(packages, &pack)
-			relationships = append(relationships, makeSPDXRelationship(root.PackageSPDXIdentifier, pack.PackageSPDXIdentifier, relationshipContains))
+			rel := makeSPDXRelationship(root.PackageSPDXIdentifier, pack.PackageSPDXIdentifier, relationshipContains)
+			relationships = append(relationships, &rel)
 		}
 	}
 
 	if cpePkgs := cpeToSPDXPackages(result, packageToURLMap); len(cpePkgs) > 0 {
 		packages = append(packages, &cpePkgs[0])
-		relationships = append(relationships, makeSPDXRelationship(root.PackageSPDXIdentifier, cpePkgs[0].PackageSPDXIdentifier, relationshipContains))
+		relCpe := makeSPDXRelationship(root.PackageSPDXIdentifier, cpePkgs[0].PackageSPDXIdentifier, relationshipContains)
+		relationships = append(relationships, &relCpe)
 		for _, pack := range cpePkgs[1:] {
 			packages = append(packages, &pack)
-			relationships = append(relationships, makeSPDXRelationship(cpePkgs[0].PackageSPDXIdentifier, pack.PackageSPDXIdentifier, relationshipContains))
+			rel := makeSPDXRelationship(cpePkgs[0].PackageSPDXIdentifier, pack.PackageSPDXIdentifier, relationshipContains)
+			relationships = append(relationships, &rel)
 		}
 	}
 
 	for _, libScanner := range result.LibraryScanners {
 		if libpkgs := libpkgToSPDXPackages(libScanner, packageToURLMap, result.ReportedAt); len(libpkgs) > 0 {
 			packages = append(packages, &libpkgs[0])
-			relationships = append(relationships, makeSPDXRelationship(root.PackageSPDXIdentifier, libpkgs[0].PackageSPDXIdentifier, relationshipContains))
+			relLib := makeSPDXRelationship(root.PackageSPDXIdentifier, libpkgs[0].PackageSPDXIdentifier, relationshipContains)
+			relationships = append(relationships, &relLib)
 			for _, pack := range libpkgs[1:] {
 				packages = append(packages, &pack)
-				relationships = append(relationships, makeSPDXRelationship(libpkgs[0].PackageSPDXIdentifier, pack.PackageSPDXIdentifier, relationshipDepensOn))
+				rel := makeSPDXRelationship(libpkgs[0].PackageSPDXIdentifier, pack.PackageSPDXIdentifier, relationshipDepensOn)
+				relationships = append(relationships, &rel)
 			}
 		}
 	}
@@ -150,20 +155,24 @@ func spdxPackages(result models.ScanResult, root *spdx.Package, packageToURLMap 
 	for _, ghm := range result.GitHubManifests {
 		if ghpkgs := ghpkgToSPDXPackages(ghm, packageToURLMap, result.ReportedAt); len(ghpkgs) > 0 {
 			packages = append(packages, &ghpkgs[0])
-			relationships = append(relationships, makeSPDXRelationship(root.PackageSPDXIdentifier, ghpkgs[0].PackageSPDXIdentifier, relationshipContains))
+			relGhm := makeSPDXRelationship(root.PackageSPDXIdentifier, ghpkgs[0].PackageSPDXIdentifier, relationshipContains)
+			relationships = append(relationships, &relGhm)
 			for _, pack := range ghpkgs[1:] {
 				packages = append(packages, &pack)
-				relationships = append(relationships, makeSPDXRelationship(ghpkgs[0].PackageSPDXIdentifier, pack.PackageSPDXIdentifier, relationshipDepensOn))
+				rel := makeSPDXRelationship(ghpkgs[0].PackageSPDXIdentifier, pack.PackageSPDXIdentifier, relationshipDepensOn)
+				relationships = append(relationships, &rel)
 			}
 		}
 	}
 
 	if wppkgs := wppkgToSPDXPackages(result.WordPressPackages, packageToURLMap, result.ReportedAt); len(wppkgs) > 0 {
 		packages = append(packages, &wppkgs[0])
-		relationships = append(relationships, makeSPDXRelationship(root.PackageSPDXIdentifier, wppkgs[0].PackageSPDXIdentifier, relationshipContains))
+		relWp := makeSPDXRelationship(root.PackageSPDXIdentifier, wppkgs[0].PackageSPDXIdentifier, relationshipContains)
+		relationships = append(relationships, &relWp)
 		for _, pack := range wppkgs[1:] {
 			packages = append(packages, &pack)
-			relationships = append(relationships, makeSPDXRelationship(wppkgs[0].PackageSPDXIdentifier, pack.PackageSPDXIdentifier, relationshipDepensOn))
+			rel := makeSPDXRelationship(wppkgs[0].PackageSPDXIdentifier, pack.PackageSPDXIdentifier, relationshipDepensOn)
+			relationships = append(relationships, &rel)
 		}
 	}
 
@@ -172,7 +181,7 @@ func spdxPackages(result models.ScanResult, root *spdx.Package, packageToURLMap 
 
 func ospkgToSPDXPackages(r models.ScanResult, packageToURLMap map[string][]string) []spdx.Package {
 	if r.Family == "" || len(r.Packages) == 0 {
-		return nil
+		return []spdx.Package{}
 	}
 
 	type srcpkg struct {
@@ -230,7 +239,7 @@ func cpeToSPDXPackages(r models.ScanResult, packageToURLMap map[string][]string)
 	}
 
 	if len(cpes) == 0 {
-		return nil
+		return []spdx.Package{}
 	}
 
 	packages := make([]spdx.Package, 0, 1+len(cpes))
@@ -264,7 +273,7 @@ func cpeToSPDXPackages(r models.ScanResult, packageToURLMap map[string][]string)
 
 func libpkgToSPDXPackages(libScanner models.LibraryScanner, packageToURLMap map[string][]string, reportedAt time.Time) []spdx.Package {
 	if len(libScanner.Libs) == 0 {
-		return nil
+		return []spdx.Package{}
 	}
 
 	packages := make([]spdx.Package, 0, 1+len(libScanner.Libs))
@@ -302,7 +311,7 @@ func libpkgToSPDXPackages(libScanner models.LibraryScanner, packageToURLMap map[
 
 func ghpkgToSPDXPackages(ghm models.DependencyGraphManifest, packageToURLMap map[string][]string, reportedAt time.Time) []spdx.Package {
 	if len(ghm.Dependencies) == 0 {
-		return nil
+		return []spdx.Package{}
 	}
 
 	packages := make([]spdx.Package, 0, 1+len(ghm.Dependencies))
@@ -340,7 +349,7 @@ func ghpkgToSPDXPackages(ghm models.DependencyGraphManifest, packageToURLMap map
 
 func wppkgToSPDXPackages(wppkgs models.WordPressPackages, packageToURLMap map[string][]string, reportedAt time.Time) []spdx.Package {
 	if len(wppkgs) == 0 {
-		return nil
+		return []spdx.Package{}
 	}
 
 	packages := make([]spdx.Package, 0, 1+len(wppkgs))
@@ -407,8 +416,8 @@ func appendExternalRefs(extRefs []*spdx.PackageExternalReference, category, refT
 	})
 }
 
-func makeSPDXRelationship(refA, refB spdx.ElementID, relationship string) *spdx.Relationship {
-	return &spdx.Relationship{
+func makeSPDXRelationship(refA, refB spdx.ElementID, relationship string) spdx.Relationship {
+	return spdx.Relationship{
 		RefA:         common.MakeDocElementID("", string(refA)),
 		RefB:         common.MakeDocElementID("", string(refB)),
 		Relationship: relationship,
