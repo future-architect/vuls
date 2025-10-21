@@ -19,6 +19,7 @@ import (
 const (
 	creatorOrganization = "future-architect"
 	creatorTool         = "vuls"
+	documentNamespace   = "https://www.future.co.jp"
 
 	documentSPDXIdentifier = "DOCUMENT"
 	elementOperatingSystem = "Operating-System"
@@ -57,7 +58,7 @@ func ToSPDX(r models.ScanResult) spdx.Document {
 		DataLicense:       spdx.DataLicense,
 		SPDXIdentifier:    documentSPDXIdentifier,
 		DocumentName:      root.PackageName,
-		DocumentNamespace: fmt.Sprintf("%s-%s-%s", root.PackageName, root.PackageVersion, uuid.NewString()),
+		DocumentNamespace: fmt.Sprintf("%s/%s-%s-%s", documentNamespace, root.PackageName, root.PackageVersion, uuid.NewString()),
 		CreationInfo:      &creationInfo,
 		Packages:          packages,
 		Relationships:     relationships,
