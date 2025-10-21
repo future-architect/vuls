@@ -31,7 +31,7 @@ const (
 	packageAnnotatorTool = "Tool"
 	annotationOther      = "Other"
 
-	noneField = "NONE"
+	valueNone = "NONE"
 
 	relationshipContains = common.TypeRelationshipContains
 	relationshipDepensOn = common.TypeRelationshipDependsOn
@@ -49,6 +49,7 @@ func ToSPDX(r models.ScanResult) spdx.Document {
 	root := osToSpdxPackage(r)
 
 	packageToURLMap := createPackageToURLMap(r)
+	creationInfo := spdxCreationInfo(r)
 	packages, relationships := spdxPackages(r, root, packageToURLMap)
 
 	doc := spdx.Document{
@@ -57,7 +58,7 @@ func ToSPDX(r models.ScanResult) spdx.Document {
 		SPDXIdentifier:    documentSPDXIdentifier,
 		DocumentName:      root.PackageName,
 		DocumentNamespace: fmt.Sprintf("%s-%s-%s", root.PackageName, root.PackageVersion, uuid.NewString()),
-		CreationInfo:      spdxCreationInfo(r),
+		CreationInfo:      &creationInfo,
 		Packages:          packages,
 		Relationships:     relationships,
 	}
@@ -92,28 +93,26 @@ func osToSpdxPackage(r models.ScanResult) *spdx.Package {
 		PackageSPDXIdentifier:     calculateSDPXIDentifier(elementOperatingSystem),
 		PackageName:               family,
 		PackageVersion:            r.Release,
-		PackageDownloadLocation:   noneField,
+		PackageDownloadLocation:   valueNone,
 		Annotations:               annotations,
 		PackageExternalReferences: nil,
 		PrimaryPackagePurpose:     packagePurposeOS,
 	}
 }
 
-func spdxCreationInfo(result models.ScanResult) *spdx.CreationInfo {
+func spdxCreationInfo(result models.ScanResult) spdx.CreationInfo {
 	toolName := creatorTool
 	if result.ReportedVersion != "" {
 		toolName = fmt.Sprintf("%s-%s", creatorTool, result.ReportedVersion)
 	}
 
-	ci := spdx.CreationInfo{
+	return spdx.CreationInfo{
 		Creators: []common.Creator{
 			{Creator: creatorOrganization, CreatorType: "Organization"},
 			{Creator: toolName, CreatorType: "Tool"},
 		},
 		Created: result.ReportedAt.Format(time.RFC3339),
 	}
-
-	return &ci
 }
 
 func spdxPackages(result models.ScanResult, root *spdx.Package, packageToURLMap map[string][]string) ([]*spdx.Package, []*spdx.Relationship) {
@@ -212,7 +211,7 @@ func ospkgToSPDXPackages(r models.ScanResult, packageToURLMap map[string][]strin
 			PackageSPDXIdentifier:     calculateSDPXIDentifier(elementPackage),
 			PackageName:               pack.Name,
 			PackageVersion:            pack.Version,
-			PackageDownloadLocation:   noneField,
+			PackageDownloadLocation:   valueNone,
 			Annotations:               annotations,
 			PackageExternalReferences: externalRefs,
 		}
@@ -238,7 +237,7 @@ func cpeToSPDXPackages(r models.ScanResult, packageToURLMap map[string][]string)
 	packages = append(packages, spdx.Package{
 		PackageSPDXIdentifier:   calculateSDPXIDentifier(elementPackage),
 		PackageName:             "CPEs",
-		PackageDownloadLocation: noneField,
+		PackageDownloadLocation: valueNone,
 		Annotations:             appendAnnotation(nil, "Type", "CPE", r.ReportedAt),
 		PrimaryPackagePurpose:   packagePurposeApplication,
 	})
@@ -254,7 +253,7 @@ func cpeToSPDXPackages(r models.ScanResult, packageToURLMap map[string][]string)
 		packages = append(packages, spdx.Package{
 			PackageSPDXIdentifier:     calculateSDPXIDentifier(elementPackage),
 			PackageName:               cpe,
-			PackageDownloadLocation:   noneField,
+			PackageDownloadLocation:   valueNone,
 			PackageExternalReferences: externalRefs,
 		})
 	}
@@ -272,7 +271,7 @@ func libpkgToSPDXPackages(libScanner models.LibraryScanner, packageToURLMap map[
 	packages = append(packages, spdx.Package{
 		PackageSPDXIdentifier:   calculateSDPXIDentifier(elementPackage),
 		PackageName:             libScanner.LockfilePath,
-		PackageDownloadLocation: noneField,
+		PackageDownloadLocation: valueNone,
 		Annotations:             appendAnnotation(nil, "Type", string(libScanner.Type), reportedAt),
 		PrimaryPackagePurpose:   packagePurposeApplication,
 	})
@@ -291,7 +290,7 @@ func libpkgToSPDXPackages(libScanner models.LibraryScanner, packageToURLMap map[
 			PackageSPDXIdentifier:     calculateSDPXIDentifier(elementPackage),
 			PackageName:               lib.Name,
 			PackageVersion:            lib.Version,
-			PackageDownloadLocation:   noneField,
+			PackageDownloadLocation:   valueNone,
 			PackageExternalReferences: externalRefs,
 			PrimaryPackagePurpose:     packagePurposeLibrary,
 		})
@@ -310,7 +309,7 @@ func ghpkgToSPDXPackages(ghm models.DependencyGraphManifest, packageToURLMap map
 	packages = append(packages, spdx.Package{
 		PackageSPDXIdentifier:   calculateSDPXIDentifier(elementPackage),
 		PackageName:             ghm.BlobPath,
-		PackageDownloadLocation: noneField,
+		PackageDownloadLocation: valueNone,
 		Annotations:             appendAnnotation(nil, "Type", string(ghm.Ecosystem()), reportedAt),
 		PrimaryPackagePurpose:   packagePurposeApplication,
 	})
@@ -329,7 +328,7 @@ func ghpkgToSPDXPackages(ghm models.DependencyGraphManifest, packageToURLMap map
 			PackageSPDXIdentifier:     calculateSDPXIDentifier(elementPackage),
 			PackageName:               dep.PackageName,
 			PackageVersion:            dep.Version(),
-			PackageDownloadLocation:   noneField,
+			PackageDownloadLocation:   valueNone,
 			PackageExternalReferences: externalRefs,
 			PrimaryPackagePurpose:     packagePurposeLibrary,
 		})
@@ -348,7 +347,7 @@ func wppkgToSPDXPackages(wppkgs models.WordPressPackages, packageToURLMap map[st
 	packages = append(packages, spdx.Package{
 		PackageSPDXIdentifier:   calculateSDPXIDentifier(elementPackage),
 		PackageName:             "wordpress",
-		PackageDownloadLocation: noneField,
+		PackageDownloadLocation: valueNone,
 		Annotations:             appendAnnotation(nil, "Type", "WordPress", reportedAt),
 		PrimaryPackagePurpose:   packagePurposeApplication,
 	})
@@ -367,7 +366,7 @@ func wppkgToSPDXPackages(wppkgs models.WordPressPackages, packageToURLMap map[st
 			PackageSPDXIdentifier:     calculateSDPXIDentifier(elementPackage),
 			PackageName:               wppkg.Name,
 			PackageVersion:            wppkg.Version,
-			PackageDownloadLocation:   noneField,
+			PackageDownloadLocation:   valueNone,
 			PackageExternalReferences: externalRefs,
 			PrimaryPackagePurpose:     packagePurposeLibrary,
 		})
