@@ -1,6 +1,7 @@
 package sbom
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"math/rand/v2"
@@ -505,83 +506,36 @@ func createPackageToURLMap(r models.ScanResult) map[string][]string {
 
 func sortSDPXDocument(doc *spdx.Document) {
 	slices.SortFunc(doc.Packages, func(pi, pj *spdx.Package) int {
-		if pi.PackageName != pj.PackageName {
-			if pi.PackageName < pj.PackageName {
-				return -1
-			}
-			return 1
-		}
-		if pi.PackageVersion != pj.PackageVersion {
-			if pi.PackageVersion < pj.PackageVersion {
-				return -1
-			}
-			return 1
-		}
-		if pi.PackageSPDXIdentifier < pj.PackageSPDXIdentifier {
-			return -1
-		} else if pi.PackageSPDXIdentifier > pj.PackageSPDXIdentifier {
-			return 1
-		}
-		return 0
+		return cmp.Or(
+			cmp.Compare(pi.PackageName, pj.PackageName),
+			cmp.Compare(pi.PackageVersion, pj.PackageVersion),
+			cmp.Compare(pi.PackageSPDXIdentifier, pj.PackageSPDXIdentifier),
+		)
 	})
 
 	for _, p := range doc.Packages {
 		if len(p.PackageExternalReferences) > 1 {
 			slices.SortFunc(p.PackageExternalReferences, func(a, b *spdx.PackageExternalReference) int {
-				if a.Category != b.Category {
-					if a.Category < b.Category {
-						return -1
-					}
-					return 1
-				}
-				if a.RefType != b.RefType {
-					if a.RefType < b.RefType {
-						return -1
-					}
-					return 1
-				}
-				if a.Locator < b.Locator {
-					return -1
-				}
-				if a.Locator > b.Locator {
-					return 1
-				}
-				return 0
+				return cmp.Or(
+					cmp.Compare(a.Category, b.Category),
+					cmp.Compare(a.RefType, b.RefType),
+					cmp.Compare(a.Locator, b.Locator),
+				)
 			})
 		}
 
 		if len(p.Annotations) > 1 {
 			slices.SortFunc(p.Annotations, func(a, b spdx.Annotation) int {
-				if a.AnnotationComment < b.AnnotationComment {
-					return -1
-				}
-				if a.AnnotationComment > b.AnnotationComment {
-					return 1
-				}
-				return 0
+				return cmp.Compare(a.AnnotationComment, b.AnnotationComment)
 			})
 		}
 	}
 
 	slices.SortFunc(doc.Relationships, func(ri, rj *spdx.Relationship) int {
-		if ri.RefA.ElementRefID != rj.RefA.ElementRefID {
-			if ri.RefA.ElementRefID < rj.RefA.ElementRefID {
-				return -1
-			}
-			return 1
-		}
-		if ri.RefB.ElementRefID != rj.RefB.ElementRefID {
-			if ri.RefB.ElementRefID < rj.RefB.ElementRefID {
-				return -1
-			}
-			return 1
-		}
-		if ri.Relationship < rj.Relationship {
-			return -1
-		}
-		if ri.Relationship > rj.Relationship {
-			return 1
-		}
-		return 0
+		return cmp.Or(
+			cmp.Compare(ri.RefA.ElementRefID, rj.RefA.ElementRefID),
+			cmp.Compare(ri.RefB.ElementRefID, rj.RefB.ElementRefID),
+			cmp.Compare(ri.Relationship, rj.Relationship),
+		)
 	})
 }
