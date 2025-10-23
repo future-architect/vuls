@@ -12,6 +12,7 @@ import (
 	"github.com/spdx/tools-golang/spdx"
 	"github.com/spdx/tools-golang/spdx/v2/common"
 
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 )
@@ -19,7 +20,7 @@ import (
 const (
 	creatorOrganization = "future-architect"
 	creatorTool         = "vuls"
-	documentNamespace   = "https://www.future.co.jp"
+	documentNamespace   = "https://www.future.co.jp/spdxdoc"
 
 	documentSPDXIdentifier = "DOCUMENT"
 	elementOperatingSystem = "Operating-System"
@@ -34,6 +35,7 @@ const (
 
 	valueNone = "NONE"
 
+	relationshipDescribe = common.TypeRelationshipDescribe
 	relationshipContains = common.TypeRelationshipContains
 	relationshipDepensOn = common.TypeRelationshipDependsOn
 
@@ -46,12 +48,16 @@ const (
 )
 
 // ToSPDX converts ScanResult to SPDX Document
-func ToSPDX(r models.ScanResult) spdx.Document {
+func ToSPDX(r models.ScanResult, toolName string) spdx.Document {
 	root := osToSpdxPackage(r)
 
 	packageToURLMap := createPackageToURLMap(r)
-	creationInfo := spdxCreationInfo(r)
+	creationInfo := spdxCreationInfo(r, toolName)
 	packages, relationships := spdxPackages(r, root, packageToURLMap)
+
+	packages = append(packages, &root)
+	relRoot := makeSPDXRelationship(documentSPDXIdentifier, root.PackageSPDXIdentifier, relationshipDescribe)
+	relationships = append(relationships, &relRoot)
 
 	doc := spdx.Document{
 		SPDXVersion:       spdx.Version,
@@ -91,7 +97,7 @@ func osToSpdxPackage(r models.ScanResult) spdx.Package {
 	}
 
 	return spdx.Package{
-		PackageSPDXIdentifier:     calculateSDPXIDentifier(elementOperatingSystem),
+		PackageSPDXIdentifier:     generateSDPXIDentifier(elementOperatingSystem),
 		PackageName:               family,
 		PackageVersion:            r.Release,
 		PackageDownloadLocation:   valueNone,
@@ -101,8 +107,10 @@ func osToSpdxPackage(r models.ScanResult) spdx.Package {
 	}
 }
 
-func spdxCreationInfo(result models.ScanResult) spdx.CreationInfo {
-	toolName := creatorTool
+func spdxCreationInfo(result models.ScanResult, toolName string) spdx.CreationInfo {
+	if toolName == "" {
+		toolName = fmt.Sprintf("%s-%s-%s", creatorTool, config.Version, config.Revision)
+	}
 	if result.ReportedVersion != "" {
 		toolName = fmt.Sprintf("%s-%s", creatorTool, result.ReportedVersion)
 	}
@@ -218,12 +226,18 @@ func ospkgToSPDXPackages(r models.ScanResult, packageToURLMap map[string][]strin
 		}
 
 		spdxPackage := spdx.Package{
-			PackageSPDXIdentifier:     calculateSDPXIDentifier(elementPackage),
-			PackageName:               pack.Name,
-			PackageVersion:            pack.Version,
+			PackageSPDXIdentifier: generateSDPXIDentifier(elementPackage),
+			PackageName:           pack.Name,
+			PackageVersion: func() string {
+				if pack.Release == "" {
+					return pack.Version
+				}
+				return fmt.Sprintf("%s-%s", pack.Version, pack.Release)
+			}(),
 			PackageDownloadLocation:   valueNone,
 			Annotations:               annotations,
 			PackageExternalReferences: externalRefs,
+			PrimaryPackagePurpose:     packagePurposeLibrary,
 		}
 		packages = append(packages, spdxPackage)
 	}
@@ -245,7 +259,7 @@ func cpeToSPDXPackages(r models.ScanResult, packageToURLMap map[string][]string)
 	packages := make([]spdx.Package, 0, 1+len(cpes))
 
 	packages = append(packages, spdx.Package{
-		PackageSPDXIdentifier:   calculateSDPXIDentifier(elementPackage),
+		PackageSPDXIdentifier:   generateSDPXIDentifier(elementPackage),
 		PackageName:             "CPEs",
 		PackageDownloadLocation: valueNone,
 		Annotations:             appendAnnotation(nil, "Type", "CPE", r.ReportedAt),
@@ -261,10 +275,11 @@ func cpeToSPDXPackages(r models.ScanResult, packageToURLMap map[string][]string)
 		}
 
 		packages = append(packages, spdx.Package{
-			PackageSPDXIdentifier:     calculateSDPXIDentifier(elementPackage),
+			PackageSPDXIdentifier:     generateSDPXIDentifier(elementPackage),
 			PackageName:               cpe,
 			PackageDownloadLocation:   valueNone,
 			PackageExternalReferences: externalRefs,
+			PrimaryPackagePurpose:     packagePurposeLibrary,
 		})
 	}
 
@@ -279,7 +294,7 @@ func libpkgToSPDXPackages(libScanner models.LibraryScanner, packageToURLMap map[
 	packages := make([]spdx.Package, 0, 1+len(libScanner.Libs))
 
 	packages = append(packages, spdx.Package{
-		PackageSPDXIdentifier:   calculateSDPXIDentifier(elementPackage),
+		PackageSPDXIdentifier:   generateSDPXIDentifier(elementPackage),
 		PackageName:             libScanner.LockfilePath,
 		PackageDownloadLocation: valueNone,
 		Annotations:             appendAnnotation(nil, "Type", string(libScanner.Type), reportedAt),
@@ -297,7 +312,7 @@ func libpkgToSPDXPackages(libScanner models.LibraryScanner, packageToURLMap map[
 		}
 
 		packages = append(packages, spdx.Package{
-			PackageSPDXIdentifier:     calculateSDPXIDentifier(elementPackage),
+			PackageSPDXIdentifier:     generateSDPXIDentifier(elementPackage),
 			PackageName:               lib.Name,
 			PackageVersion:            lib.Version,
 			PackageDownloadLocation:   valueNone,
@@ -317,7 +332,7 @@ func ghpkgToSPDXPackages(ghm models.DependencyGraphManifest, packageToURLMap map
 	packages := make([]spdx.Package, 0, 1+len(ghm.Dependencies))
 
 	packages = append(packages, spdx.Package{
-		PackageSPDXIdentifier:   calculateSDPXIDentifier(elementPackage),
+		PackageSPDXIdentifier:   generateSDPXIDentifier(elementPackage),
 		PackageName:             ghm.BlobPath,
 		PackageDownloadLocation: valueNone,
 		Annotations:             appendAnnotation(nil, "Type", string(ghm.Ecosystem()), reportedAt),
@@ -335,7 +350,7 @@ func ghpkgToSPDXPackages(ghm models.DependencyGraphManifest, packageToURLMap map
 		}
 
 		packages = append(packages, spdx.Package{
-			PackageSPDXIdentifier:     calculateSDPXIDentifier(elementPackage),
+			PackageSPDXIdentifier:     generateSDPXIDentifier(elementPackage),
 			PackageName:               dep.PackageName,
 			PackageVersion:            dep.Version(),
 			PackageDownloadLocation:   valueNone,
@@ -355,7 +370,7 @@ func wppkgToSPDXPackages(wppkgs models.WordPressPackages, packageToURLMap map[st
 	packages := make([]spdx.Package, 0, 1+len(wppkgs))
 
 	packages = append(packages, spdx.Package{
-		PackageSPDXIdentifier:   calculateSDPXIDentifier(elementPackage),
+		PackageSPDXIdentifier:   generateSDPXIDentifier(elementPackage),
 		PackageName:             "wordpress",
 		PackageDownloadLocation: valueNone,
 		Annotations:             appendAnnotation(nil, "Type", "WordPress", reportedAt),
@@ -373,7 +388,7 @@ func wppkgToSPDXPackages(wppkgs models.WordPressPackages, packageToURLMap map[st
 		}
 
 		packages = append(packages, spdx.Package{
-			PackageSPDXIdentifier:     calculateSDPXIDentifier(elementPackage),
+			PackageSPDXIdentifier:     generateSDPXIDentifier(elementPackage),
 			PackageName:               wppkg.Name,
 			PackageVersion:            wppkg.Version,
 			PackageDownloadLocation:   valueNone,
@@ -385,7 +400,7 @@ func wppkgToSPDXPackages(wppkgs models.WordPressPackages, packageToURLMap map[st
 	return packages
 }
 
-func calculateSDPXIDentifier(packageType string) spdx.ElementID {
+func generateSDPXIDentifier(packageType string) spdx.ElementID {
 	return spdx.ElementID(fmt.Sprintf("%s-%016x", packageType, rand.Uint64()))
 }
 

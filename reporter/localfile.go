@@ -120,7 +120,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		}
 
 		if w.FormatSPDXJSON {
-			bs, err := sbom.SerializeSPDX(sbom.ToSPDX(r))
+			bs, err := sbom.SerializeSPDX(sbom.ToSPDX(r, ""))
 			if err != nil {
 				return xerrors.Errorf("Failed to generate SPDX JSON. err: %w", err)
 			}
