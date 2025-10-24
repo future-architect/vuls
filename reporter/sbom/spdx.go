@@ -51,13 +51,8 @@ const (
 func ToSPDX(r models.ScanResult, toolName string) spdx.Document {
 	root := osToSpdxPackage(r)
 
-	packageToURLMap := createPackageToURLMap(r)
 	creationInfo := spdxCreationInfo(r, toolName)
-	packages, relationships := spdxPackages(r, root, packageToURLMap)
-
-	packages = append(packages, &root)
-	relRoot := makeSPDXRelationship(documentSPDXIdentifier, root.PackageSPDXIdentifier, relationshipDescribe)
-	relationships = append(relationships, &relRoot)
+	packages, relationships := spdxPackages(r, root)
 
 	doc := spdx.Document{
 		SPDXVersion:       spdx.Version,
@@ -111,9 +106,6 @@ func spdxCreationInfo(result models.ScanResult, toolName string) spdx.CreationIn
 	if toolName == "" {
 		toolName = fmt.Sprintf("%s-%s-%s", creatorTool, config.Version, config.Revision)
 	}
-	if result.ReportedVersion != "" {
-		toolName = fmt.Sprintf("%s-%s", creatorTool, result.ReportedVersion)
-	}
 
 	return spdx.CreationInfo{
 		Creators: []common.Creator{
@@ -124,9 +116,15 @@ func spdxCreationInfo(result models.ScanResult, toolName string) spdx.CreationIn
 	}
 }
 
-func spdxPackages(result models.ScanResult, root spdx.Package, packageToURLMap map[string][]string) ([]*spdx.Package, []*spdx.Relationship) {
+func spdxPackages(result models.ScanResult, root spdx.Package) ([]*spdx.Package, []*spdx.Relationship) {
 	var packages []*spdx.Package
 	var relationships []*spdx.Relationship
+
+	packages = append(packages, &root)
+	relRoot := makeSPDXRelationship(documentSPDXIdentifier, root.PackageSPDXIdentifier, relationshipDescribe)
+	relationships = append(relationships, &relRoot)
+
+	packageToURLMap := createPackageToURLMap(result)
 
 	if ospkgs := ospkgToSPDXPackages(result, packageToURLMap); len(ospkgs) > 0 {
 		for _, pack := range ospkgs {
