@@ -25,6 +25,7 @@ type LocalFileWriter struct {
 	FormatList          bool
 	FormatCycloneDXJSON bool
 	FormatCycloneDXXML  bool
+	FormatSPDXJSON      bool
 	Gzip                bool
 }
 
@@ -118,6 +119,16 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 			}
 		}
 
+		if w.FormatSPDXJSON {
+			bs, err := sbom.SerializeSPDX(sbom.ToSPDX(r, ""))
+			if err != nil {
+				return xerrors.Errorf("Failed to generate SPDX JSON. err: %w", err)
+			}
+			p := fmt.Sprintf("%s_spdx.json", path)
+			if err := w.writeFile(p, bs, 0600); err != nil {
+				return xerrors.Errorf("Failed to write SPDX JSON. path: %s, err: %w", p, err)
+			}
+		}
 	}
 	return nil
 }
