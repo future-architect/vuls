@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -39,7 +40,7 @@ func NewClient(token string, proxy string) *Client {
 }
 
 // UploadToFvuls ...
-func (f Client) UploadToFvuls(serverUUID string, groupID int64, tags []string, scanResultJSON []byte) error {
+func (f Client) UploadToFvuls(serverUUID string, groupID int64, tags []string, scanResultJSON []byte, timeout time.Duration) error {
 	var scanResult models.ScanResult
 	if err := json.Unmarshal(scanResultJSON, &scanResult); err != nil {
 		fmt.Printf("failed to parse json. err: %v\nPerhaps scan has failed. Please check the scan results above or run trivy without pipes.\n", err)
@@ -53,10 +54,15 @@ func (f Client) UploadToFvuls(serverUUID string, groupID int64, tags []string, s
 		scanResult.Optional["VULS_TAGS"] = tags
 	}
 
-	config.Conf.Saas.GroupID = groupID
-	config.Conf.Saas.Token = f.Token
-	config.Conf.Saas.URL = f.FvulsScanEndpoint
-	if err := (saas.Writer{}).Write(scanResult); err != nil {
+	w := saas.Writer{
+		Cnf: config.SaasConf{
+			GroupID: groupID,
+			Token:   f.Token,
+			URL:     f.FvulsScanEndpoint,
+		},
+		Timeout: timeout,
+	}
+	if err := w.Write(scanResult); err != nil {
 		return fmt.Errorf("%v", err)
 	}
 	return nil
