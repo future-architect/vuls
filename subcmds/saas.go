@@ -5,6 +5,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
@@ -130,9 +131,9 @@ func (p *SaaSCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	w := saas.Writer{
-		Cnf:        config.Conf.Saas,
-		Proxy:      config.Conf.HTTPProxy,
-		TimeoutSec: p.timeoutSec,
+		Cnf:     config.Conf.Saas,
+		Proxy:   config.Conf.HTTPProxy,
+		Timeout: time.Duration(p.timeoutSec) * time.Second,
 	}
 	if err := w.Write(res...); err != nil {
 		logging.Log.Errorf("Failed to upload. err: %+v", err)

@@ -27,9 +27,9 @@ import (
 
 // Writer writes results to SaaS
 type Writer struct {
-	Cnf        config.SaasConf
-	Proxy      string
-	TimeoutSec int
+	Cnf     config.SaasConf
+	Proxy   string
+	Timeout time.Duration
 }
 
 // TempCredential : TempCredential
@@ -72,7 +72,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 		return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(w.TimeoutSec)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), w.Timeout)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, w.Cnf.URL, bytes.NewBuffer(body))
 	defer cancel()
 	if err != nil {

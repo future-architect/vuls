@@ -21,20 +21,21 @@ import (
 )
 
 var (
-	configFile  string
-	stdIn       bool
-	jsonDir     string
-	serverUUID  string
-	groupID     int64
-	token       string
-	tags        []string
-	outputFile  string
-	cidr        string
-	snmpVersion string
-	proxy       string
-	community   string
-	timeout     time.Duration
-	retry       int
+	configFile    string
+	stdIn         bool
+	jsonDir       string
+	serverUUID    string
+	groupID       int64
+	token         string
+	tags          []string
+	outputFile    string
+	cidr          string
+	snmpVersion   string
+	proxy         string
+	community     string
+	uploadTimeout time.Duration
+	timeout       time.Duration
+	retry         int
 )
 
 func main() {
@@ -80,7 +81,8 @@ func main() {
 				return fmt.Errorf("use --stdin option")
 			}
 			fvulsClient := fvuls.NewClient(token, "")
-			if err := fvulsClient.UploadToFvuls(serverUUID, groupID, tags, scanResultJSON); err != nil {
+
+			if err := fvulsClient.UploadToFvuls(serverUUID, groupID, tags, scanResultJSON, uploadTimeout); err != nil {
 				fmt.Printf("%v", err)
 				// avoid to display help message
 				os.Exit(1)
@@ -149,6 +151,7 @@ func main() {
 	cmdFvulsUploader.PersistentFlags().BoolVarP(&stdIn, "stdin", "s", false, "input from stdin. ENV: VULS_STDIN")
 	cmdFvulsUploader.PersistentFlags().Int64VarP(&groupID, "group-id", "g", 0, "future vuls group id, ENV: VULS_GROUP_ID")
 	cmdFvulsUploader.PersistentFlags().StringVarP(&token, "token", "t", "", "future vuls token")
+	cmdFvulsUploader.PersistentFlags().DurationVar(&uploadTimeout, "timeout", time.Duration(10)*time.Second, "upload timeout")
 
 	cmdDiscover.PersistentFlags().StringVar(&cidr, "cidr", "", "cidr range")
 	cmdDiscover.PersistentFlags().StringVar(&outputFile, "output", "", "output file")
