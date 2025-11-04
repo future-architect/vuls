@@ -81,7 +81,6 @@ func main() {
 				return fmt.Errorf("use --stdin option")
 			}
 			fvulsClient := fvuls.NewClient(token, "")
-
 			if err := fvulsClient.UploadToFvuls(serverUUID, groupID, tags, scanResultJSON, uploadTimeout); err != nil {
 				fmt.Printf("%v", err)
 				// avoid to display help message
