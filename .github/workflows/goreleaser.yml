@@ -15,7 +15,7 @@ jobs:
       id-token: write # For cosign
     steps:
       - name: Cosign install
-        uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad
       - name: Maximize build space
         uses: easimon/maximize-build-space@fc881a613ad2a34aca9c9624518214ebc21dfc0c
         with:
@@ -30,7 +30,7 @@ jobs:
       - name: Unshallow
         run: git fetch --prune --unshallow
       - name: Set up Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00
         with:
           go-version-file: go.mod
       - name: Run GoReleaser
