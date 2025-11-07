@@ -173,7 +173,7 @@ func (c *AddCpeConfig) AddCpeToFvuls(ctx context.Context, needAddCpes config.Dis
 
 // WriteDiscoverToml ...
 func (c *AddCpeConfig) WriteDiscoverToml() error {
-	f, err := os.OpenFile(c.DiscoverTomlPath, os.O_RDWR, 0666)
+	f, err := os.OpenFile(c.DiscoverTomlPath, os.O_RDWR|os.O_TRUNC, 0666)
 	if err != nil {
 		return fmt.Errorf("failed to open toml file. err: %v", err)
 	}
