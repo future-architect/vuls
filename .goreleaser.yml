@@ -8,6 +8,7 @@ builds:
 - id: vuls
   env:
   - CGO_ENABLED=0
+  - GOEXPERIMENT=jsonv2
   goos:
   - linux
   - windows
@@ -26,6 +27,7 @@ builds:
 - id: vuls-scanner
   env:
   - CGO_ENABLED=0
+  - GOEXPERIMENT=jsonv2
   goos:
   - linux
   - windows
@@ -46,6 +48,7 @@ builds:
 - id: trivy-to-vuls
   env:
   - CGO_ENABLED=0
+  - GOEXPERIMENT=jsonv2
   goos:
   - linux
   - windows
@@ -66,6 +69,7 @@ builds:
 - id: future-vuls
   env:
   - CGO_ENABLED=0
+  - GOEXPERIMENT=jsonv2
   goos:
   - linux
   - windows
@@ -86,6 +90,7 @@ builds:
 - id: snmp2cpe
   env:
   - CGO_ENABLED=0
+  - GOEXPERIMENT=jsonv2
   goos:
   - linux
   - windows
