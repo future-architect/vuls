@@ -382,6 +382,8 @@ func NewCveContentType(name string) CveContentType {
 		return TrivyCBLMariner
 	case "trivy:photon":
 		return TrivyPhoton
+	case "trivy:coreos":
+		return TrivyCoreOS
 	case "trivy:ruby-advisory-db":
 		return TrivyRubySec
 	case "trivy:php-security-advisories":
@@ -445,7 +447,7 @@ func GetCveContentTypes(family string) []CveContentType {
 	case constant.Windows:
 		return []CveContentType{Microsoft}
 	case string(Trivy):
-		return []CveContentType{Trivy, TrivyNVD, TrivyRedHat, TrivyRedHatOVAL, TrivyDebian, TrivyUbuntu, TrivyCentOS, TrivyRocky, TrivyFedora, TrivyAmazon, TrivyAzure, TrivyOracleOVAL, TrivySuseCVRF, TrivyAlpine, TrivyArchLinux, TrivyAlma, TrivyCBLMariner, TrivyPhoton, TrivyRubySec, TrivyPhpSecurityAdvisories, TrivyNodejsSecurityWg, TrivyGHSA, TrivyGLAD, TrivyOSV, TrivyWolfi, TrivyChainguard, TrivyBitnamiVulndb, TrivyK8sVulnDB, TrivyGoVulnDB, TrivyAqua, TrivyEcho, TrivyMinimOS, TrivyRootIO}
+		return []CveContentType{Trivy, TrivyNVD, TrivyRedHat, TrivyRedHatOVAL, TrivyDebian, TrivyUbuntu, TrivyCentOS, TrivyRocky, TrivyFedora, TrivyAmazon, TrivyAzure, TrivyOracleOVAL, TrivySuseCVRF, TrivyAlpine, TrivyArchLinux, TrivyAlma, TrivyCBLMariner, TrivyPhoton, TrivyCoreOS, TrivyRubySec, TrivyPhpSecurityAdvisories, TrivyNodejsSecurityWg, TrivyGHSA, TrivyGLAD, TrivyOSV, TrivyWolfi, TrivyChainguard, TrivyBitnamiVulndb, TrivyK8sVulnDB, TrivyGoVulnDB, TrivyAqua, TrivyEcho, TrivyMinimOS, TrivyRootIO}
 	default:
 		return nil
 	}
@@ -572,6 +574,9 @@ const (
 	// TrivyPhoton is TrivyPhoton
 	TrivyPhoton CveContentType = "trivy:photon"
 
+	// TrivyCoreOS is TrivyCoreOS
+	TrivyCoreOS CveContentType = "trivy:coreos"
+
 	// TrivyRubySec is TrivyRubySec
 	TrivyRubySec CveContentType = "trivy:ruby-advisory-db"
 
@@ -668,6 +673,7 @@ var AllCveContetTypes = CveContentTypes{
 	TrivyAlma,
 	TrivyCBLMariner,
 	TrivyPhoton,
+	TrivyCoreOS,
 	TrivyRubySec,
 	TrivyPhpSecurityAdvisories,
 	TrivyNodejsSecurityWg,

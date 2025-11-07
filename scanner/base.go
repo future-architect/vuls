@@ -817,6 +817,7 @@ var disabledAnalyzers = []fanal.Type{
 	fanal.TypeOSRelease,
 	fanal.TypeAlpine,
 	fanal.TypeAmazon,
+	fanal.TypeAzure,
 	fanal.TypeCBLMariner,
 	fanal.TypeDebian,
 	fanal.TypePhoton,
@@ -829,6 +830,7 @@ var disabledAnalyzers = []fanal.Type{
 	fanal.TypeSUSE,
 	fanal.TypeUbuntu,
 	fanal.TypeUbuntuESM,
+	fanal.TypeCoreOS,
 
 	// OS Package
 	fanal.TypeApk,

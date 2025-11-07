@@ -247,6 +247,7 @@ func isTrivySupportedOS(family ftypes.TargetType) bool {
 		ftypes.CBLMariner:         {},
 		ftypes.CentOS:             {},
 		ftypes.Chainguard:         {},
+		ftypes.CoreOS:             {},
 		ftypes.Debian:             {},
 		ftypes.Echo:               {},
 		ftypes.Fedora:             {},
