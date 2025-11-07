@@ -22,6 +22,8 @@ updates:
       - /contrib
     schedule:
       interval: "monthly"
+    cooldown:
+      default-days: 14
     groups:
       all:
         patterns:
