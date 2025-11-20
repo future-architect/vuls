@@ -20,6 +20,9 @@ on:
   schedule:
     - cron: '32 20 * * 0'
 
+env:
+  GOEXPERIMENT: jsonv2
+
 permissions:
   contents: read
 jobs:
