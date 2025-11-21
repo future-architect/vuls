@@ -5905,6 +5905,303 @@ func Test_postConvert(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "oracle",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					Kernel: scanTypes.Kernel{
+						Release: "5.4.17-2102.200.13.el7uek.x86_64",
+					},
+					OSPackages: []scanTypes.OSPackage{
+						{
+							Name:    "kernel-tools",
+							Version: "3.10.0",
+							Release: "1160.24.1.el7",
+							Arch:    "x86_64",
+						},
+						{
+							Name:    "kernel-uek",
+							Version: "5.4.17",
+							Release: "2102.200.13.el7uek",
+							Arch:    "x86_64",
+						},
+					},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "ELSA-2022-7337",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "ELSA-2022-7337",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.Oracle: {
+											dataTypes.RootID("ELSA-2022-7337"): {
+												{
+													Content: advisoryContentTypes.Content{
+														ID: "ELSA-2022-7337",
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("oracle:7"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2022-29901",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.Oracle: {
+											dataTypes.RootID("ELSA-2022-7337"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID: "CVE-2022-29901",
+														Severity: []severityTypes.Severity{
+															{
+																Type: severityTypes.SeverityTypeCVSSv30,
+																CVSSv30: toPtr(cvssV30Types.CVSSv30{
+																	Vector:                "CVSS:3.0/AV:L/AC:H/PR:L/UI:N/S:C/C:H/I:N/A:N",
+																	BaseScore:             5.6,
+																	BaseSeverity:          "MEDIUM",
+																	TemporalScore:         5.6,
+																	TemporalSeverity:      "MEDIUM",
+																	EnvironmentalScore:    5.6,
+																	EnvironmentalSeverity: "MEDIUM",
+																}),
+															},
+														},
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("oracle:7"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("oracle:7"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.Oracle: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: toPtr(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeBinary,
+																		Binary: &vcBinaryPackageTypes.Package{
+																			Name:          "kernel-tools",
+																			Architectures: []string{"x86_64"},
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeRPM,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "0:3.10.0-1160.80.1.0.1.el7",
+																			},
+																		},
+																		Fixed: []string{"0:3.10.0-1160.80.1.0.1.el7"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							ID: "ELSA-2025-20019",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "ELSA-2025-20019",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.Oracle: {
+											dataTypes.RootID("ELSA-2025-20019"): {
+												{
+													Content: advisoryContentTypes.Content{
+														ID: "ELSA-2025-20019",
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("oracle:7"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2022-29901",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.Oracle: {
+											dataTypes.RootID("ELSA-2025-20019"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID: "CVE-2022-29901",
+														Severity: []severityTypes.Severity{
+															{
+																Type: severityTypes.SeverityTypeCVSSv31,
+																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																	Vector:                "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:C/C:H/I:N/A:N",
+																	BaseScore:             5.6,
+																	BaseSeverity:          "MEDIUM",
+																	TemporalScore:         5.6,
+																	TemporalSeverity:      "MEDIUM",
+																	EnvironmentalScore:    5.6,
+																	EnvironmentalSeverity: "MEDIUM",
+																}),
+															},
+														},
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("oracle:7"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("oracle:7"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.Oracle: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: toPtr(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeBinary,
+																		Binary: &vcBinaryPackageTypes.Package{
+																			Name:          "kernel-uek",
+																			Architectures: []string{"aarch64", "x86_64"},
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeRPM,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "0:5.4.17-2136.339.5.el7uek",
+																			},
+																		},
+																		Fixed: []string{"0:5.4.17-2136.339.5.el7uek"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{1},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2022-29901": {
+					CveID:       "CVE-2022-29901",
+					Confidences: models.Confidences{models.OvalMatch},
+					AffectedPackages: models.PackageFixStatuses{
+						{
+							Name:        "kernel-tools",
+							NotFixedYet: false,
+							FixedIn:     "0:3.10.0-1160.80.1.0.1.el7",
+						},
+						{
+							Name:        "kernel-uek",
+							NotFixedYet: false,
+							FixedIn:     "0:5.4.17-2136.339.5.el7uek",
+						},
+					},
+					DistroAdvisories: models.DistroAdvisories{
+						{
+							AdvisoryID: "ELSA-2022-7337",
+							Issued:     time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+							Updated:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+						},
+						{
+							AdvisoryID: "ELSA-2025-20019",
+							Issued:     time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+							Updated:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+						},
+					},
+					CveContents: models.CveContents{
+						models.Oracle: []models.CveContent{
+							{
+								Type:          models.Oracle,
+								CveID:         "CVE-2022-29901",
+								Cvss3Score:    5.6,
+								Cvss3Vector:   "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:C/C:H/I:N/A:N",
+								Cvss3Severity: "MEDIUM",
+								SourceLink:    "https://linux.oracle.com/cve/CVE-2022-29901.html",
+								References: models.References{
+									{
+										Link:   "https://linux.oracle.com/errata/ELSA-2022-7337.html",
+										Source: "ORACLE",
+										RefID:  "ELSA-2022-7337",
+									},
+									{
+										Link:   "https://linux.oracle.com/errata/ELSA-2025-20019.html",
+										Source: "ORACLE",
+										RefID:  "ELSA-2025-20019",
+									},
+								},
+								Published:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"ELSA-2022-7337\",\"source_id\":\"oracle\",\"segment\":{\"ecosystem\":\"oracle:7\"}},{\"root_id\":\"ELSA-2025-20019\",\"source_id\":\"oracle\",\"segment\":{\"ecosystem\":\"oracle:7\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

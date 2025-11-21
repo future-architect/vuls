@@ -784,15 +784,26 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 						merged.Cvss40Severity = base.Cvss40Severity
 					}
 
-					switch cmp.Compare(base.Cvss3Score, c.Cvss3Score) {
-					case -1:
+					switch {
+					case strings.HasPrefix(base.Cvss3Vector, "CVSS:3.0") && strings.HasPrefix(c.Cvss3Vector, "CVSS:3.1"):
 						merged.Cvss3Score = c.Cvss3Score
 						merged.Cvss3Vector = c.Cvss3Vector
 						merged.Cvss3Severity = c.Cvss3Severity
-					default:
+					case strings.HasPrefix(base.Cvss3Vector, "CVSS:3.1") && strings.HasPrefix(c.Cvss3Vector, "CVSS:3.0"):
 						merged.Cvss3Score = base.Cvss3Score
 						merged.Cvss3Vector = base.Cvss3Vector
 						merged.Cvss3Severity = base.Cvss3Severity
+					default:
+						switch cmp.Compare(base.Cvss3Score, c.Cvss3Score) {
+						case -1:
+							merged.Cvss3Score = c.Cvss3Score
+							merged.Cvss3Vector = c.Cvss3Vector
+							merged.Cvss3Severity = c.Cvss3Severity
+						default:
+							merged.Cvss3Score = base.Cvss3Score
+							merged.Cvss3Vector = base.Cvss3Vector
+							merged.Cvss3Severity = base.Cvss3Severity
+						}
 					}
 
 					switch cmp.Compare(base.Cvss2Score, c.Cvss2Score) {
