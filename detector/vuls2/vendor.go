@@ -462,6 +462,13 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 			Source: "UBUNTU",
 			RefID:  da.AdvisoryID,
 		}, nil
+	case ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSELeapMicro, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed,
+		ecosystemTypes.EcosystemTypeSUSEEnterpriseServer, ecosystemTypes.EcosystemTypeSUSEEnterpriseDesktop, ecosystemTypes.EcosystemTypeSUSEEnterpriseMicro:
+		return models.Reference{
+			Link:   fmt.Sprintf("https://www.suse.com/security/cve/%s.html", da.AdvisoryID),
+			Source: "SUSE",
+			RefID:  da.AdvisoryID,
+		}, nil
 	default:
 		return models.Reference{}, xerrors.Errorf("unsupported family: %s", et)
 	}
