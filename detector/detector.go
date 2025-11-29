@@ -468,6 +468,7 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 		nvds, exploits, mitigations := models.ConvertNvdToModel(d.CveID, d.Nvds)
 		vulnchecks := models.ConvertVulncheckToModel(d.CveID, d.Vulnchecks)
 		jvns := models.ConvertJvnToModel(d.CveID, d.Jvns)
+		euvds := models.ConvertEuvdToModel(d.CveID, d.Euvds)
 		fortinets := models.ConvertFortinetToModel(d.CveID, d.Fortinets)
 		mitres := models.ConvertMitreToModel(d.CveID, d.Mitres)
 		paloaltos := models.ConvertPaloaltoToModel(d.CveID, d.Paloaltos)
@@ -487,7 +488,7 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 				for _, con := range vulnchecks {
 					vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
 				}
-				for _, cons := range [][]models.CveContent{jvns, fortinets, paloaltos, ciscos} {
+				for _, cons := range [][]models.CveContent{jvns, euvds, fortinets, paloaltos, ciscos} {
 					for _, con := range cons {
 						if !con.Empty() {
 							if !slices.ContainsFunc(vinfo.CveContents[con.Type], func(e models.CveContent) bool {

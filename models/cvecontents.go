@@ -316,6 +316,8 @@ func NewCveContentType(name string) CveContentType {
 		return Vulncheck
 	case "jvn":
 		return Jvn
+	case "euvd":
+		return Euvd
 	case "redhat", "centos":
 		return RedHat
 	case "alma":
@@ -465,6 +467,9 @@ const (
 
 	// Jvn is Jvn
 	Jvn CveContentType = "jvn"
+
+	// Euvd is Euvd
+	Euvd CveContentType = "euvd"
 
 	// Fortinet is Fortinet
 	Fortinet CveContentType = "fortinet"

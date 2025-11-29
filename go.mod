@@ -30,7 +30,7 @@ require (
 	github.com/gosnmp/gosnmp v1.42.1
 	github.com/gosuri/uitable v0.0.4
 	github.com/hashicorp/go-uuid v1.0.3
-	github.com/hashicorp/go-version v1.7.0
+	github.com/hashicorp/go-version v1.8.0
 	github.com/jesseduffield/gocui v0.3.0
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/knqyf263/go-apk-version v0.0.0-20200609155635-041fdbb8563f
@@ -52,7 +52,7 @@ require (
 	github.com/spdx/tools-golang v0.5.5
 	github.com/spf13/cobra v1.10.1
 	github.com/vulsio/go-cti v0.3.2
-	github.com/vulsio/go-cve-dictionary v0.14.1-0.20251126061429-9de63913c5a6
+	github.com/vulsio/go-cve-dictionary v0.14.1-0.20251129095104-e3e9f6c5bb88
 	github.com/vulsio/go-exploitdb v0.6.2
 	github.com/vulsio/go-kev v0.4.2
 	github.com/vulsio/go-msfdb v0.4.2
