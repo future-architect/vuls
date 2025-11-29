@@ -13,6 +13,185 @@ import (
 	cvedict "github.com/vulsio/go-cve-dictionary/models"
 )
 
+func TestConvertEuvdToModel(t *testing.T) {
+	type args struct {
+		cveID string
+		euvds []cvedict.Euvd
+	}
+	tests := []struct {
+		name string
+		args args
+		want []models.CveContent
+	}{
+		{
+			name: "CVE-2025-49575",
+			args: args{
+				cveID: "CVE-2025-49575",
+				euvds: []cvedict.Euvd{
+					{
+						EuvdID:        "EUVD-2025-18144",
+						EnisaUUID:     "e15c6dcd-bca6-37ab-b0e0-e1cd92a91c98",
+						Description:   "Citizen skin vulnerable to stored XSS through multiple system messages",
+						DatePublished: time.Date(2025, time.June, 11, 19, 59, 54, 0, time.UTC),
+						DateUpdated:   time.Date(2025, time.June, 13, 03, 43, 58, 0, time.UTC),
+						References: []cvedict.EuvdReference{
+							{
+								Reference: cvedict.Reference{
+									Link: "https://github.com/StarCitizenTools/mediawiki-skins-Citizen/security/advisories/GHSA-4c2h-67qq-vm87",
+									Name: "https://github.com/StarCitizenTools/mediawiki-skins-Citizen/security/advisories/GHSA-4c2h-67qq-vm87",
+								},
+							},
+							{
+								Reference: cvedict.Reference{
+									Link: "https://nvd.nist.gov/vuln/detail/CVE-2025-49575",
+									Name: "https://nvd.nist.gov/vuln/detail/CVE-2025-49575",
+								},
+							},
+						},
+						Aliases: []cvedict.EuvdAlias{
+							{
+								Alias: "GHSA-4c2h-67qq-vm87",
+							},
+							{
+								Alias: "CVE-2025-49575",
+							},
+						},
+					},
+					{
+						EuvdID:           "EUVD-2025-18208",
+						EnisaUUID:        "c8b99a1b-5107-3825-a99f-30d856d6c47e",
+						Description:      "Citizen skin vulnerable to stored XSS through multiple system messages",
+						DatePublished:    time.Date(2025, time.June, 11, 19, 59, 54, 0, time.UTC),
+						DateUpdated:      time.Date(2025, time.June, 13, 03, 43, 58, 0, time.UTC),
+						BaseScore:        6.5,
+						BaseScoreVersion: "3.1",
+						BaseScoreVector:  "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:N",
+						References: []cvedict.EuvdReference{
+							{
+								Reference: cvedict.Reference{
+									Link: "https://github.com/StarCitizenTools/mediawiki-skins-Citizen/security/advisories/GHSA-4c2h-67qq-vm87",
+									Name: "https://github.com/StarCitizenTools/mediawiki-skins-Citizen/security/advisories/GHSA-4c2h-67qq-vm87",
+								},
+							},
+							{
+								Reference: cvedict.Reference{
+									Link: "https://nvd.nist.gov/vuln/detail/CVE-2025-49575",
+									Name: "https://nvd.nist.gov/vuln/detail/CVE-2025-49575",
+								},
+							},
+						},
+						Aliases: []cvedict.EuvdAlias{
+							{
+								Alias: "CVE-2025-49575",
+							},
+						},
+						Assigner: "GitHub_M",
+						EPSS:     0.02,
+					},
+				},
+			},
+			want: []models.CveContent{
+				{
+					Type:       models.Euvd,
+					CveID:      "CVE-2025-49575",
+					Title:      "EUVD-2025-18144",
+					Summary:    "Citizen skin vulnerable to stored XSS through multiple system messages",
+					SourceLink: "https://euvd.enisa.europa.eu/vulnerability/EUVD-2025-18144",
+					References: []models.Reference{
+						{Link: "https://github.com/StarCitizenTools/mediawiki-skins-Citizen/security/advisories/GHSA-4c2h-67qq-vm87"},
+						{Link: "https://nvd.nist.gov/vuln/detail/CVE-2025-49575"},
+					},
+					Published:    time.Date(2025, time.June, 11, 19, 59, 54, 0, time.UTC),
+					LastModified: time.Date(2025, time.June, 13, 03, 43, 58, 0, time.UTC),
+				},
+				{
+					Type:          models.Euvd,
+					CveID:         "CVE-2025-49575",
+					Title:         "EUVD-2025-18208",
+					Summary:       "Citizen skin vulnerable to stored XSS through multiple system messages",
+					Cvss3Score:    6.5,
+					Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:N",
+					Cvss3Severity: "MEDIUM",
+					SourceLink:    "https://euvd.enisa.europa.eu/vulnerability/EUVD-2025-18208",
+					References: []models.Reference{
+						{Link: "https://github.com/StarCitizenTools/mediawiki-skins-Citizen/security/advisories/GHSA-4c2h-67qq-vm87"},
+						{Link: "https://nvd.nist.gov/vuln/detail/CVE-2025-49575"},
+					},
+					Published:    time.Date(2025, time.June, 11, 19, 59, 54, 0, time.UTC),
+					LastModified: time.Date(2025, time.June, 13, 03, 43, 58, 0, time.UTC),
+				},
+			},
+		},
+		{
+			name: "CVE-2025-34028",
+			args: args{
+				cveID: "CVE-2025-34028",
+				euvds: []cvedict.Euvd{
+					{
+						EuvdID:           "EUVD-2025-12275",
+						EnisaUUID:        "631cd45a-4015-314b-b4b4-099d07280668",
+						Description:      "The Commvault Command Center Innovation Release allows an unauthenticated actor to upload ZIP files that represent install packages that, when expanded by the target server, are vulnerable to path traversal vulnerability that can result in Remote Code Execution via malicious JSP.\n\n\n\n\n\nThis issue affects Command Center Innovation Release: 11.38.0 to 11.38.20. The vulnerability is fixed in 11.38.20 with SP38-CU20-433 and SP38-CU20-436 and also fixed in 11.38.25 with SP38-CU25-434 and SP38-CU25-438.",
+						DatePublished:    time.Date(2025, time.April, 22, 16, 32, 23, 0, time.UTC),
+						DateUpdated:      time.Date(2025, time.November, 29, 02, 06, 36, 0, time.UTC),
+						BaseScore:        9.3,
+						BaseScoreVersion: "4.0",
+						BaseScoreVector:  "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:H/VA:H/SC:L/SI:H/SA:H",
+						References: []cvedict.EuvdReference{
+							{
+								Reference: cvedict.Reference{
+									Link: "https://nvd.nist.gov/vuln/detail/CVE-2025-34028",
+									Name: "https://nvd.nist.gov/vuln/detail/CVE-2025-34028",
+								},
+							},
+							{
+								Reference: cvedict.Reference{
+									Link: "https://documentation.commvault.com/securityadvisories/CV_2025_04_1.html",
+									Name: "https://documentation.commvault.com/securityadvisories/CV_2025_04_1.html",
+								},
+							},
+						},
+						Aliases: []cvedict.EuvdAlias{
+							{
+								Alias: "CVE-2025-34028",
+							},
+							{
+								Alias: "GHSA-6q9c-pjw5-5rjm",
+							},
+						},
+						Assigner:       "VulnCheck",
+						EPSS:           45.93,
+						ExploitedSince: func() *time.Time { t := time.Date(2025, time.May, 02, 12, 00, 00, 0, time.UTC); return &t }(),
+					},
+				},
+			},
+			want: []models.CveContent{
+				{
+					Type:           models.Euvd,
+					CveID:          "CVE-2025-34028",
+					Title:          "EUVD-2025-12275",
+					Summary:        "The Commvault Command Center Innovation Release allows an unauthenticated actor to upload ZIP files that represent install packages that, when expanded by the target server, are vulnerable to path traversal vulnerability that can result in Remote Code Execution via malicious JSP.\n\n\n\n\n\nThis issue affects Command Center Innovation Release: 11.38.0 to 11.38.20. The vulnerability is fixed in 11.38.20 with SP38-CU20-433 and SP38-CU20-436 and also fixed in 11.38.25 with SP38-CU25-434 and SP38-CU25-438.",
+					Cvss40Score:    9.3,
+					Cvss40Vector:   "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:H/VA:H/SC:L/SI:H/SA:H",
+					Cvss40Severity: "CRITICAL",
+					SourceLink:     "https://euvd.enisa.europa.eu/vulnerability/EUVD-2025-12275",
+					References: []models.Reference{
+						{Link: "https://nvd.nist.gov/vuln/detail/CVE-2025-34028"},
+						{Link: "https://documentation.commvault.com/securityadvisories/CV_2025_04_1.html"},
+					},
+					Published:    time.Date(2025, time.April, 22, 16, 32, 23, 0, time.UTC),
+					LastModified: time.Date(2025, time.November, 29, 02, 06, 36, 0, time.UTC),
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := models.ConvertEuvdToModel(tt.args.cveID, tt.args.euvds); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ConvertEuvdToModel() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 func TestConvertVulncheckToModel(t *testing.T) {
 	type args struct {
 		cveID      string
