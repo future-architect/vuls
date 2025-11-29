@@ -54,6 +54,47 @@ func ConvertJvnToModel(cveID string, jvns []cvedict.Jvn) []CveContent {
 	return cves
 }
 
+// ConvertEuvdToModel convert EUVD to CveContent
+func ConvertEuvdToModel(cveID string, euvds []cvedict.Euvd) []CveContent {
+	var cves []CveContent
+	for _, euvd := range euvds {
+		refs := make([]Reference, 0, len(euvd.References))
+		for _, r := range euvd.References {
+			refs = append(refs, Reference{
+				Link:   r.Link,
+				Source: r.Source,
+			})
+		}
+
+		cve := CveContent{
+			Type:         Euvd,
+			CveID:        cveID,
+			Title:        euvd.EuvdID,
+			Summary:      euvd.Description,
+			SourceLink:   fmt.Sprintf("https://euvd.enisa.europa.eu/vulnerability/%s", euvd.EuvdID),
+			References:   refs,
+			Published:    euvd.DatePublished,
+			LastModified: euvd.DateUpdated,
+		}
+
+		switch euvd.BaseScoreVersion {
+		case "2.0":
+			cve.Cvss2Score = euvd.BaseScore
+			cve.Cvss2Vector = euvd.BaseScoreVector
+		case "3.0", "3.1":
+			cve.Cvss3Score = euvd.BaseScore
+			cve.Cvss3Vector = euvd.BaseScoreVector
+		case "4.0":
+			cve.Cvss40Score = euvd.BaseScore
+			cve.Cvss40Vector = euvd.BaseScoreVector
+		default:
+		}
+
+		cves = append(cves, cve)
+	}
+	return cves
+}
+
 // ConvertNvdToModel convert NVD to CveContent
 func ConvertNvdToModel(cveID string, nvds []cvedict.Nvd) ([]CveContent, []Exploit, []Mitigation) {
 	cves := []CveContent{}

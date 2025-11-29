@@ -13,6 +13,26 @@ import (
 	cvedict "github.com/vulsio/go-cve-dictionary/models"
 )
 
+func TestConvertEuvdToModel(t *testing.T) {
+	type args struct {
+		cveID string
+		euvds []cvedict.Euvd
+	}
+	tests := []struct {
+		name string
+		args args
+		want []models.CveContent
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := models.ConvertEuvdToModel(tt.args.cveID, tt.args.euvds); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ConvertEuvdToModel() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 func TestConvertVulncheckToModel(t *testing.T) {
 	type args struct {
 		cveID      string
