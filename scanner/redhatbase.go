@@ -973,14 +973,19 @@ func (o *redhatBase) parseNeedsRestarting(stdout string) (procs []models.NeedRes
 // procPathToFQPN returns Fully-Qualified-Package-Name from the command
 func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
 	execCommand = strings.ReplaceAll(execCommand, "\x00", " ") // for CentOS6.9
-	path := strings.Fields(execCommand)[0]
-	cmd := `LANGUAGE=en_US.UTF-8 rpm -qf --queryformat "%{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}\n" ` + path
-	r := o.exec(cmd, noSudo)
+	cmd := fmt.Sprintf("%s %s", o.rpmQf(), strings.Fields(execCommand)[0])
+	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess() {
 		return "", xerrors.Errorf("Failed to SSH: %s", r)
 	}
-	fqpn := strings.TrimSpace(r.Stdout)
-	return strings.ReplaceAll(fqpn, "-(none):", "-"), nil
+	pack, ignroed, err := o.parseRpmQfLine(r.Stdout)
+	if err != nil {
+		return "", xerrors.Errorf("Failed to parse rpm -qf line: %s, err: %+v", r.Stdout, err)
+	}
+	if ignroed {
+		return "", xerrors.Errorf("Failed to return FQPN. line: %s, err: ignore line", r.Stdout)
+	}
+	return pack.FQPN(), nil
 }
 
 func (o *redhatBase) getOwnerPkgs(paths []string) (names []string, _ error) {
