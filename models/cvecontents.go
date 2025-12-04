@@ -55,7 +55,7 @@ func (v CveContents) PrimarySrcURLs(lang, myFamily, cveID string, confidences Co
 		return
 	}
 
-	for _, ctype := range append(append(CveContentTypes{Mitre, Nvd, Vulncheck, Jvn}, GetCveContentTypes(myFamily)...), GitHub) {
+	for _, ctype := range append(append(CveContentTypes{Mitre, Nvd, Vulncheck, Jvn, Euvd}, GetCveContentTypes(myFamily)...), GitHub) {
 		for _, cont := range v[ctype] {
 			switch ctype {
 			case Nvd, Vulncheck:
@@ -316,6 +316,8 @@ func NewCveContentType(name string) CveContentType {
 		return Vulncheck
 	case "jvn":
 		return Jvn
+	case "euvd":
+		return Euvd
 	case "redhat", "centos":
 		return RedHat
 	case "alma":
@@ -465,6 +467,9 @@ const (
 
 	// Jvn is Jvn
 	Jvn CveContentType = "jvn"
+
+	// Euvd is Euvd
+	Euvd CveContentType = "euvd"
 
 	// Fortinet is Fortinet
 	Fortinet CveContentType = "fortinet"
@@ -638,6 +643,7 @@ var AllCveContetTypes = CveContentTypes{
 	Nvd,
 	Vulncheck,
 	Jvn,
+	Euvd,
 	Fortinet,
 	Paloalto,
 	Cisco,

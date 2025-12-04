@@ -502,8 +502,8 @@ github.com/hashicorp/go-safetemp v1.0.0 h1:2HR189eFNrjHQyENnQMMpCiBAsRxzbTMIgBhE
 github.com/hashicorp/go-safetemp v1.0.0/go.mod h1:oaerMy3BhqiTbVye6QuFhFtIceqFoDHxNAB65b+Rj1I=
 github.com/hashicorp/go-uuid v1.0.3 h1:2gKiV6YVmrJ1i2CKKa9obLvRieoRGviZFL26PcT/Co8=
 github.com/hashicorp/go-uuid v1.0.3/go.mod h1:6SBZvOh/SIDV7/2o3Jml5SYk/TvGqwFJ/bN7x4byOro=
-github.com/hashicorp/go-version v1.7.0 h1:5tqGy27NaOTB8yJKUZELlFAS/LTKJkrmONwQKeRZfjY=
-github.com/hashicorp/go-version v1.7.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
+github.com/hashicorp/go-version v1.8.0 h1:KAkNb1HAiZd1ukkxDFGmokVZe1Xy9HG6NUp+bPle2i4=
+github.com/hashicorp/go-version v1.8.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/hashicorp/golang-lru/arc/v2 v2.0.5 h1:l2zaLDubNhW4XO3LnliVj0GXO3+/CGNJAg1dcN2Fpfw=
 github.com/hashicorp/golang-lru/arc/v2 v2.0.5/go.mod h1:ny6zBSQZi2JxIeYcv7kt2sH2PXJtirBN7RDhRpxPkxU=
 github.com/hashicorp/golang-lru/v2 v2.0.7 h1:a+bsQ5rvGLjzHuww6tVxozPZFVghXaHOwFs4luLUK2k=
@@ -888,8 +888,8 @@ github.com/vmihailenco/tagparser/v2 v2.0.0 h1:y09buUbR+b5aycVFQs/g70pqKVZNBmxwAh
 github.com/vmihailenco/tagparser/v2 v2.0.0/go.mod h1:Wri+At7QHww0WTrCBeu4J6bNtoV6mEfg5OIWRZA9qds=
 github.com/vulsio/go-cti v0.3.2 h1:GsFwl18oA0pxEz7lvdKRZcF6ygS6WjaEG4I9wtSMrwE=
 github.com/vulsio/go-cti v0.3.2/go.mod h1:38MJ5oV3yor6YKrMqq0HMydwSvOjlw2JK6fHuq9kYhQ=
-github.com/vulsio/go-cve-dictionary v0.14.1-0.20251126061429-9de63913c5a6 h1:GvlWL6M3P2VJXlRc7TV+os2U5dtfYmGeJA33cG+Ej1c=
-github.com/vulsio/go-cve-dictionary v0.14.1-0.20251126061429-9de63913c5a6/go.mod h1:ERpoGxo8icHzVTNGBagrnqdFHBUlzI20SSo0A+Yvd7w=
+github.com/vulsio/go-cve-dictionary v0.14.1-0.20251129095104-e3e9f6c5bb88 h1:HUv4RG3ZGa5LsxOHfpt2L17YbreVJEgsWDA8buJ3Xik=
+github.com/vulsio/go-cve-dictionary v0.14.1-0.20251129095104-e3e9f6c5bb88/go.mod h1:ERpoGxo8icHzVTNGBagrnqdFHBUlzI20SSo0A+Yvd7w=
 github.com/vulsio/go-exploitdb v0.6.2 h1:FtCXQCE/Rv7x1410aJxcpZRl5xOXRRm6ePlIxmdp6Tc=
 github.com/vulsio/go-exploitdb v0.6.2/go.mod h1:oAu9kwRZcBsmthgju1lupSX2V/MERNIVRgn5a28ldvc=
 github.com/vulsio/go-kev v0.4.2 h1:UHNTC7kElTg2e+vQsB4+wZ64TFYWFQ9ojHbx7FiKWz0=
