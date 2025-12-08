@@ -759,7 +759,6 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 	// `errgroup` cancels the context after Wait returns, so it can’t be use later.
 	// We need a separate context specifically for Analyze.
 	eg, egCtx := errgroup.WithContext(ctx)
-	limit := semaphore.New(1)
 	result := fanal.NewAnalysisResult()
 
 	info := &DummyFileInfo{name: ufilepath.Base(path), size: int64(len(contents)), filemode: filemode}
@@ -767,7 +766,7 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 	if err := ag.AnalyzeFile(
 		egCtx,
 		eg,
-		limit,
+		semaphore.New(1),
 		result,
 		"",
 		path,
@@ -779,7 +778,6 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 		return nil, xerrors.Errorf("Failed to get libs. err: %w", err)
 	}
 
-	// Wait for all the goroutine to finish.
 	if err = eg.Wait(); err != nil {
 		return nil, xerrors.Errorf("analyze error: %w", err)
 	}
