@@ -778,7 +778,7 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 		return nil, xerrors.Errorf("Failed to get libs. err: %w", err)
 	}
 
-	if err = eg.Wait(); err != nil {
+	if err := eg.Wait(); err != nil {
 		return nil, xerrors.Errorf("analyze error: %w", err)
 	}
 
