@@ -15,11 +15,12 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/sync/semaphore"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/xerrors"
 
 	fanal "github.com/aquasecurity/trivy/pkg/fanal/analyzer"
 	tlog "github.com/aquasecurity/trivy/pkg/log"
+	"github.com/aquasecurity/trivy/pkg/semaphore"
 	xio "github.com/aquasecurity/trivy/pkg/x/io"
 
 	"github.com/future-architect/vuls/config"
@@ -755,15 +756,17 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 		return nil, xerrors.Errorf("Failed to new analyzer group. err: %w", err)
 	}
 
-	var wg sync.WaitGroup
-	result := new(fanal.AnalysisResult)
+	// `errgroup` cancels the context after Wait returns, so it can’t be use later.
+	// We need a separate context specifically for Analyze.
+	eg, egCtx := errgroup.WithContext(ctx)
+	result := fanal.NewAnalysisResult()
 
 	info := &DummyFileInfo{name: ufilepath.Base(path), size: int64(len(contents)), filemode: filemode}
 	opts := fanal.AnalysisOptions{Offline: isOffline}
 	if err := ag.AnalyzeFile(
-		ctx,
-		&wg,
-		semaphore.NewWeighted(1),
+		egCtx,
+		eg,
+		semaphore.New(1),
 		result,
 		"",
 		path,
@@ -775,7 +778,9 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 		return nil, xerrors.Errorf("Failed to get libs. err: %w", err)
 	}
 
-	wg.Wait()
+	if err := eg.Wait(); err != nil {
+		return nil, xerrors.Errorf("analyze error: %w", err)
+	}
 
 	// Post-analysis
 	composite, err := ag.PostAnalyzerFS()
