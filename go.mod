@@ -51,13 +51,13 @@ require (
 	github.com/sirupsen/logrus v1.9.4-0.20230606125235-dd1b4c2e81af
 	github.com/spdx/tools-golang v0.5.5
 	github.com/spf13/cobra v1.10.2
-	github.com/vulsio/go-cti v0.3.2
-	github.com/vulsio/go-cve-dictionary v0.14.1-0.20251129095104-e3e9f6c5bb88
-	github.com/vulsio/go-exploitdb v0.6.2
-	github.com/vulsio/go-kev v0.4.2
-	github.com/vulsio/go-msfdb v0.4.2
-	github.com/vulsio/gost v0.7.0
-	github.com/vulsio/goval-dictionary v0.14.0
+	github.com/vulsio/go-cti v0.3.3
+	github.com/vulsio/go-cve-dictionary v0.15.0
+	github.com/vulsio/go-exploitdb v0.6.3
+	github.com/vulsio/go-kev v0.4.3
+	github.com/vulsio/go-msfdb v0.4.3
+	github.com/vulsio/gost v0.7.1
+	github.com/vulsio/goval-dictionary v0.15.0
 	go.etcd.io/bbolt v1.4.3
 	golang.org/x/oauth2 v0.34.0
 	golang.org/x/sync v0.19.0
@@ -173,7 +173,7 @@ require (
 	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.6.2 // indirect
-	github.com/go-git/go-git/v5 v5.16.3 // indirect
+	github.com/go-git/go-git/v5 v5.16.4 // indirect
 	github.com/go-gorp/gorp/v3 v3.1.0 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.2 // indirect
@@ -234,7 +234,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
-	github.com/klauspost/compress v1.18.1 // indirect
+	github.com/klauspost/compress v1.18.2 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
