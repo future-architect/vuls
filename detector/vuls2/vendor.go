@@ -486,6 +486,8 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 		return fmt.Sprintf("https://ubuntu.com/security/%s", v.Content.ID)
 	case models.Nvd:
 		return fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", v.Content.ID)
+	case models.SUSE:
+		return fmt.Sprintf("https://www.suse.com/security/cve/%s", v.Content.ID)
 	default:
 		return ""
 	}
@@ -772,7 +774,7 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) model
 			DetectionMethod: models.DetectionMethod("EPELMatch"),
 			SortOrder:       1,
 		}
-	case ecosystemTypes.EcosystemTypeRedHat, ecosystemTypes.EcosystemTypeFedora, ecosystemTypes.EcosystemTypeAlma, ecosystemTypes.EcosystemTypeRocky, ecosystemTypes.EcosystemTypeOracle, ecosystemTypes.EcosystemTypeAlpine:
+	case ecosystemTypes.EcosystemTypeRedHat, ecosystemTypes.EcosystemTypeFedora, ecosystemTypes.EcosystemTypeAlma, ecosystemTypes.EcosystemTypeRocky, ecosystemTypes.EcosystemTypeOracle, ecosystemTypes.EcosystemTypeAlpine, ecosystemTypes.EcosystemTypeSUSEEnterpriseServer, ecosystemTypes.EcosystemTypeSUSEEnterpriseDesktop, ecosystemTypes.EcosystemTypeSUSEEnterpriseMicro, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSELeapMicro, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed:
 		return models.OvalMatch
 	case ecosystemTypes.EcosystemTypeUbuntu:
 		switch s {
