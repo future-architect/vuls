@@ -691,6 +691,7 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 					CpeURIs:          []string{cpe.CpeURI},
 					Confidences:      models.Confidences{maxConfidence},
 					DistroAdvisories: advisories,
+					CveContents:      models.CveContents{},
 				}
 				r.ScannedCves[detail.CveID] = v
 				nCVEs++

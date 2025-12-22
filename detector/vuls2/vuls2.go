@@ -703,7 +703,8 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 	}
 
 	info := models.VulnInfo{
-		CveID: a.CveID,
+		CveID:       a.CveID,
+		CveContents: models.CveContents{},
 	}
 
 	for _, cc := range []models.Confidences{a.Confidences, b.Confidences} {

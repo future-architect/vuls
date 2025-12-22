@@ -258,6 +258,13 @@ func loadOneServerScanResult(jsonFile string) (*models.ScanResult, error) {
 	if err := json.Unmarshal(data, result); err != nil {
 		return nil, xerrors.Errorf("Failed to parse %s: %w", jsonFile, err)
 	}
+
+	for k, v := range result.ScannedCves {
+		if v.CveContents == nil {
+			v.CveContents = models.NewCveContents()
+			result.ScannedCves[k] = v
+		}
+	}
 	return result, nil
 }
 

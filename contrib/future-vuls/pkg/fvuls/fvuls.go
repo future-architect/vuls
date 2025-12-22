@@ -46,6 +46,12 @@ func (f Client) UploadToFvuls(serverUUID string, groupID int64, tags []string, s
 		fmt.Printf("failed to parse json. err: %v\nPerhaps scan has failed. Please check the scan results above or run trivy without pipes.\n", err)
 		return err
 	}
+	for k, v := range scanResult.ScannedCves {
+		if v.CveContents == nil {
+			v.CveContents = models.NewCveContents()
+			scanResult.ScannedCves[k] = v
+		}
+	}
 	scanResult.ServerUUID = serverUUID
 	if 0 < len(tags) {
 		if scanResult.Optional == nil {

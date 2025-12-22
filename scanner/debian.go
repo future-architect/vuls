@@ -825,6 +825,7 @@ func (o *debian) scanChangelogs(updatablePacks models.Packages, meta *cache.Meta
 			CveID:            cveID.CveID,
 			Confidences:      models.Confidences{cveID.Confidence},
 			AffectedPackages: affected,
+			CveContents:      models.CveContents{},
 		}
 	}
 
