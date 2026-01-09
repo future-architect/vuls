@@ -1170,10 +1170,10 @@ var (
 	NvdVendorProductMatch = Confidence{10, NvdVendorProductMatchStr, 9}
 
 	// VulncheckExactVersionMatch is a ranking how confident the CVE-ID was detected correctly
-	VulncheckExactVersionMatch = Confidence{100, VulncheckExactVersionMatchStr, 1}
+	VulncheckExactVersionMatch = Confidence{85, VulncheckExactVersionMatchStr, 2}
 
 	// VulncheckRoughVersionMatch is a ranking how confident the CVE-ID was detected correctly
-	VulncheckRoughVersionMatch = Confidence{80, VulncheckRoughVersionMatchStr, 1}
+	VulncheckRoughVersionMatch = Confidence{65, VulncheckRoughVersionMatchStr, 2}
 
 	// VulncheckVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
 	VulncheckVendorProductMatch = Confidence{10, VulncheckVendorProductMatchStr, 9}
