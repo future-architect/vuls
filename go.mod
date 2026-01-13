@@ -6,8 +6,8 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.3
 	github.com/BurntSushi/toml v1.5.0
 	github.com/CycloneDX/cyclonedx-go v0.9.3
-	github.com/MaineK00n/vuls-data-update v0.0.0-20251119040922-d7602a3c6123
-	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20251120024419-59d504def6ec
+	github.com/MaineK00n/vuls-data-update v0.0.0-20251125094749-e6f7ed9f8ca3
+	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260116054746-1ca48c3a06bc
 	github.com/Ullaakut/nmap/v2 v2.2.2
 	github.com/aquasecurity/trivy v0.68.2
 	github.com/aquasecurity/trivy-db v0.0.0-20250929072116-eba1ced2340a
@@ -296,7 +296,7 @@ require (
 	github.com/prometheus/common v0.66.1 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
-	github.com/redis/rueidis v1.0.66 // indirect
+	github.com/redis/rueidis v1.0.70 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rubenv/sql-migrate v1.8.0 // indirect
@@ -305,7 +305,7 @@ require (
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/samber/oops v1.18.1 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
-	github.com/schollz/progressbar/v3 v3.18.0 // indirect
+	github.com/schollz/progressbar/v3 v3.19.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect

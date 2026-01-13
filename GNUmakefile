@@ -231,8 +231,12 @@ define sed-d
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/"Type":/d' {} \;
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/"SQLite3Path":/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/"SQLite3Path":/d' {} \;
+	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedVersion/d' {} \;
+	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedVersion/d' {} \;
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedRevision/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedRevision/d' {} \;
+	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/scannedVersion/d' {} \;
+	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/scannedVersion/d' {} \;
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/scannedRevision/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/scannedRevision/d' {} \;
 endef

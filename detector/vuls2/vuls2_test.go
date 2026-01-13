@@ -34,7 +34,7 @@ import (
 	vulnerabilityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability"
 	vulnerabilityContentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability/content"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
-	dbTypes "github.com/MaineK00n/vuls2/pkg/db/common/types"
+	dbTypes "github.com/MaineK00n/vuls2/pkg/db/session/types"
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
 	scanTypes "github.com/MaineK00n/vuls2/pkg/scan/types"
 	gocmp "github.com/google/go-cmp/cmp"

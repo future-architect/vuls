@@ -8,8 +8,8 @@ import (
 
 	"golang.org/x/xerrors"
 
-	"github.com/MaineK00n/vuls2/pkg/db/common"
-	"github.com/MaineK00n/vuls2/pkg/db/common/types"
+	"github.com/MaineK00n/vuls2/pkg/db/session"
+	"github.com/MaineK00n/vuls2/pkg/db/session/types"
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector/vuls2"
 )
@@ -53,7 +53,7 @@ func Test_shouldDownload(t *testing.T) {
 			metadata: &types.Metadata{
 				LastModified:  *parse("2024-01-02T00:00:00Z"),
 				Downloaded:    parse("2024-01-02T00:00:00Z"),
-				SchemaVersion: common.SchemaVersion,
+				SchemaVersion: schemaVersionBoltDB(t),
 			},
 			want: false,
 		},
@@ -66,7 +66,7 @@ func Test_shouldDownload(t *testing.T) {
 			metadata: &types.Metadata{
 				LastModified:  *parse("2024-01-02T00:00:00Z"),
 				Downloaded:    parse("2024-01-02T00:00:00Z"),
-				SchemaVersion: common.SchemaVersion,
+				SchemaVersion: schemaVersionBoltDB(t),
 			},
 			want: true,
 		},
@@ -81,7 +81,7 @@ func Test_shouldDownload(t *testing.T) {
 			metadata: &types.Metadata{
 				LastModified:  *parse("2024-01-02T00:00:00Z"),
 				Downloaded:    parse("2024-01-02T00:00:00Z"),
-				SchemaVersion: common.SchemaVersion,
+				SchemaVersion: schemaVersionBoltDB(t),
 			},
 			want: false,
 		},
@@ -94,7 +94,7 @@ func Test_shouldDownload(t *testing.T) {
 			metadata: &types.Metadata{
 				LastModified:  *parse("2024-01-02T00:00:00Z"),
 				Downloaded:    parse("2024-01-02T07:30:00Z"),
-				SchemaVersion: common.SchemaVersion,
+				SchemaVersion: schemaVersionBoltDB(t),
 			},
 			want: false,
 		},
@@ -107,7 +107,7 @@ func Test_shouldDownload(t *testing.T) {
 			metadata: &types.Metadata{
 				LastModified:  *parse("2024-01-02T00:00:00Z"),
 				Downloaded:    parse("2024-01-02T00:00:00Z"),
-				SchemaVersion: common.SchemaVersion + 1,
+				SchemaVersion: schemaVersionBoltDB(t) + 1,
 			},
 			want: true,
 		},
@@ -122,7 +122,7 @@ func Test_shouldDownload(t *testing.T) {
 			metadata: &types.Metadata{
 				LastModified:  *parse("2024-01-02T00:00:00Z"),
 				Downloaded:    parse("2024-01-02T00:00:00Z"),
-				SchemaVersion: common.SchemaVersion + 1,
+				SchemaVersion: schemaVersionBoltDB(t) + 1,
 			},
 			wantErr: true,
 		},
@@ -151,23 +151,23 @@ func Test_shouldDownload(t *testing.T) {
 }
 
 func putMetadata(metadata types.Metadata, path string) error {
-	c := common.Config{
+	c := session.Config{
 		Type: "boltdb",
 		Path: path,
 	}
-	dbc, err := c.New()
+	sesh, err := c.New()
 	if err != nil {
 		return xerrors.Errorf("c.New(). err: %w", err)
 	}
-	if err := dbc.Open(); err != nil {
-		return xerrors.Errorf("dbc.Open(). err: %w", err)
+	if err := sesh.Storage().Open(); err != nil {
+		return xerrors.Errorf("sesh.Storage().Open(). err: %w", err)
 	}
-	defer dbc.Close()
-	if err := dbc.Initialize(); err != nil {
-		return xerrors.Errorf("dbc.Initialize(). err: %w", err)
+	defer sesh.Storage().Close()
+	if err := sesh.Storage().Initialize(); err != nil {
+		return xerrors.Errorf("sesh.Storage().Initialize(). err: %w", err)
 	}
-	if err := dbc.PutMetadata(metadata); err != nil {
-		return xerrors.Errorf("dbc.PutMetadata(). err: %w", err)
+	if err := sesh.Storage().PutMetadata(metadata); err != nil {
+		return xerrors.Errorf("sesh.Storage().PutMetadata(). err: %w", err)
 	}
 	return nil
 }
@@ -175,4 +175,12 @@ func putMetadata(metadata types.Metadata, path string) error {
 func parse(date string) *time.Time {
 	t, _ := time.Parse(time.RFC3339, date)
 	return &t
+}
+
+func schemaVersionBoltDB(t *testing.T) uint {
+	sv, err := session.SchemaVersion("boltdb")
+	if err != nil {
+		t.Fatalf("session.SchemaVersion() err: %v", err)
+	}
+	return sv
 }
