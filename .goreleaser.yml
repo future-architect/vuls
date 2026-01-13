@@ -112,9 +112,9 @@ archives:
 
 - id: vuls
   name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-  builds:
+  ids:
   - vuls
-  format: tar.gz
+  formats: ['tar.gz']
   files:
   - LICENSE
   - README*
@@ -122,9 +122,9 @@ archives:
 
 - id: vuls-scanner
   name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-  builds:
+  ids:
   - vuls-scanner
-  format: tar.gz
+  formats: ['tar.gz']
   files:
   - LICENSE
   - README*
@@ -132,9 +132,9 @@ archives:
 
 - id: trivy-to-vuls
   name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-  builds:
+  ids:
   - trivy-to-vuls
-  format: tar.gz
+  formats: ['tar.gz']
   files:
   - LICENSE
   - README*
@@ -142,9 +142,9 @@ archives:
 
 - id: future-vuls
   name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-  builds:
+  ids:
   - future-vuls
-  format: tar.gz
+  formats: ['tar.gz']
   files:
   - LICENSE
   - README*
@@ -152,16 +152,16 @@ archives:
 
 - id: snmp2cpe
   name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-  builds:
+  ids:
   - snmp2cpe
-  format: tar.gz
+  formats: ['tar.gz']
   files:
   - LICENSE
   - README*
   - CHANGELOG.md
 
 snapshot:
-  name_template: SNAPSHOT-{{ .Commit }}
+  version_template: SNAPSHOT-{{ .Commit }}
 
 signs:
 - cmd: cosign
