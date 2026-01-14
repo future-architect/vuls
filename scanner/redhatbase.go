@@ -802,30 +802,37 @@ func (o *redhatBase) scanUpdatablePackages() (models.Packages, error) {
 func (o *redhatBase) parseUpdatablePacksLines(stdout string) (models.Packages, error) {
 	updatable := models.Packages{}
 	for line := range strings.SplitSeq(stdout, "\n") {
-		if len(strings.TrimSpace(line)) == 0 || strings.HasPrefix(line, "Loading") {
-			continue
-		}
 		pack, err := o.parseUpdatablePacksLine(line)
 		if err != nil {
 			return updatable, err
 		}
-		updatable[pack.Name] = pack
+		if pack != nil {
+			updatable[pack.Name] = *pack
+		}
 	}
 	return updatable, nil
 }
 
-func (o *redhatBase) parseUpdatablePacksLine(line string) (models.Package, error) {
+func (o *redhatBase) parseUpdatablePacksLine(line string) (*models.Package, error) {
+	if strings.HasPrefix(line, "Loading") {
+		return nil, nil
+	}
+
 	_, rhs, ok := strings.Cut(line, "[y/N]: ")
 	if ok {
 		line = rhs
 	}
 
+	if strings.TrimSpace(line) == "" {
+		return nil, nil
+	}
+
 	switch fields := strings.Split(line, "\" \""); len(fields) {
 	case 5:
 		if !strings.HasPrefix(fields[0], "\"") {
-			return models.Package{}, xerrors.Errorf("unexpected format. expected: %q, actual: %q", "\"<name>\" \"<epoch>\" \"<version>\" \"<release>\" \"<repository>\"", line)
+			return nil, xerrors.Errorf("unexpected format. expected: %q, actual: %q", "\"<name>\" \"<epoch>\" \"<version>\" \"<release>\" \"<repository>\"", line)
 		}
-		return models.Package{
+		return &models.Package{
 			Name: strings.TrimPrefix(fields[0], "\""),
 			NewVersion: func() string {
 				if fields[1] == "0" {
@@ -837,7 +844,7 @@ func (o *redhatBase) parseUpdatablePacksLine(line string) (models.Package, error
 			Repository: strings.TrimSuffix(fields[4], "\""),
 		}, nil
 	default:
-		return models.Package{}, xerrors.Errorf("unexpected format. expected: %q, actual: %q", "\"<name>\" \"<epoch>\" \"<version>\" \"<release>\" \"<repository>\"", line)
+		return nil, xerrors.Errorf("unexpected format. expected: %q, actual: %q", "\"<name>\" \"<epoch>\" \"<version>\" \"<release>\" \"<repository>\"", line)
 	}
 }
 
