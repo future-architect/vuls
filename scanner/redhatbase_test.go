@@ -606,7 +606,7 @@ func Test_redhatBase_parseUpdatablePacksLine(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    models.Package
+		want    *models.Package
 		wantErr bool
 	}{
 		{
@@ -622,7 +622,7 @@ func Test_redhatBase_parseUpdatablePacksLine(t *testing.T) {
 			args: args{
 				line: `"zlib" "0" "1.2.7" "17.el7" "rhui-REGION-rhel-server-releases"`,
 			},
-			want: models.Package{
+			want: &models.Package{
 				Name:       "zlib",
 				NewVersion: "1.2.7",
 				NewRelease: "17.el7",
@@ -642,12 +642,27 @@ func Test_redhatBase_parseUpdatablePacksLine(t *testing.T) {
 			args: args{
 				line: `"shadow-utils" "2" "4.1.5.1" "24.el7" "rhui-REGION-rhel-server-releases"`,
 			},
-			want: models.Package{
+			want: &models.Package{
 				Name:       "shadow-utils",
 				NewVersion: "2:4.1.5.1",
 				NewRelease: "24.el7",
 				Repository: "rhui-REGION-rhel-server-releases",
 			},
+		},
+		{
+			name: `amazon 2023: Is this ok [y/N]: `,
+			fields: fields{
+				base: base{
+					Distro: config.Distro{
+						Family:  constant.Amazon,
+						Release: "2023.7.20250512",
+					},
+				},
+			},
+			args: args{
+				line: `Is this ok [y/N]: `,
+			},
+			want: nil,
 		},
 		{
 			name: `amazon 2023: Is this ok [y/N]: "dnf" "0" "4.14.0" "1.amzn2023.0.6" "amazonlinux"`,
@@ -662,7 +677,7 @@ func Test_redhatBase_parseUpdatablePacksLine(t *testing.T) {
 			args: args{
 				line: `Is this ok [y/N]: "dnf" "0" "4.14.0" "1.amzn2023.0.6" "amazonlinux"`,
 			},
-			want: models.Package{
+			want: &models.Package{
 				Name:       "dnf",
 				NewVersion: "4.14.0",
 				NewRelease: "1.amzn2023.0.6",
