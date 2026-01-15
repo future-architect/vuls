@@ -9,7 +9,7 @@ require (
 	github.com/MaineK00n/vuls-data-update v0.0.0-20251119040922-d7602a3c6123
 	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20251120024419-59d504def6ec
 	github.com/Ullaakut/nmap/v2 v2.2.2
-	github.com/aquasecurity/trivy v0.68.1
+	github.com/aquasecurity/trivy v0.68.2
 	github.com/aquasecurity/trivy-db v0.0.0-20250929072116-eba1ced2340a
 	github.com/aquasecurity/trivy-java-db v0.0.0-20240109071736-184bd7481d48
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
