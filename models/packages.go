@@ -85,6 +85,7 @@ type Package struct {
 	NewRelease       string               `json:"newRelease"`
 	Arch             string               `json:"arch"`
 	Repository       string               `json:"repository"`
+	Type             string               `json:"type,omitempty"`
 	ModularityLabel  string               `json:"modularitylabel"`
 	Changelog        *Changelog           `json:"changelog,omitempty"`
 	AffectedProcs    []AffectedProcess    `json:",omitempty"`
@@ -455,4 +456,14 @@ func IsKernelSourcePackage(family, name string) bool {
 	default:
 		return false
 	}
+}
+
+type Flatpaks map[string]Flatpak
+
+type Flatpak struct {
+	Application string `json:"application"`
+	Name        string `json:"name"`
+	Arch        string `json:"arch"`
+	Version     string `json:"version"`
+	NewVersion  string `json:"newVersion"`
 }

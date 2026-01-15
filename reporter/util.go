@@ -175,6 +175,9 @@ func formatScanSummary(rs ...models.ScanResult) string {
 				fmt.Sprintf("%s%s", r.Family, r.Release),
 				r.FormatUpdatablePkgsSummary(),
 			}
+			if 0 < len(r.Flatpaks) {
+				cols = append(cols, r.FormatUpdatableFlatpakSummary())
+			}
 			if 0 < len(r.WordPressPackages) {
 				cols = append(cols, fmt.Sprintf("%d WordPress pkgs", len(r.WordPressPackages)))
 			}
