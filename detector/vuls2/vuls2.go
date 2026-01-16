@@ -26,8 +26,8 @@ import (
 	severityVendorTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/vendor"
 	datasourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/datasource"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
-	db "github.com/MaineK00n/vuls2/pkg/db/common"
-	dbTypes "github.com/MaineK00n/vuls2/pkg/db/common/types"
+	"github.com/MaineK00n/vuls2/pkg/db/session"
+	dbTypes "github.com/MaineK00n/vuls2/pkg/db/session/types"
 	"github.com/MaineK00n/vuls2/pkg/detect/ospkg"
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
 	scanTypes "github.com/MaineK00n/vuls2/pkg/scan/types"
@@ -38,25 +38,41 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
+// defaultRegistory is GitHub Container Registry for vuls2 db
+const defaultRegistory = "ghcr.io/vulsio/vuls-nightly-db"
+
 // Detect detects vulnerabilities and fills ScanResult
 func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
 	if vuls2Conf.Repository == "" {
-		vuls2Conf.Repository = DefaultGHCRRepository
+		sv, err := session.SchemaVersion("boltdb")
+		if err != nil {
+			return xerrors.Errorf("Failed to get schema version. err: %w", err)
+		}
+
+		vuls2Conf.Repository = fmt.Sprintf("%s:%d", defaultRegistory, sv)
 	}
 	if vuls2Conf.Path == "" {
 		vuls2Conf.Path = DefaultPath
 	}
 
-	dbc, err := newDBConnection(vuls2Conf, noProgress)
+	dbConfig, err := newDBConfig(vuls2Conf, noProgress)
 	if err != nil {
 		return xerrors.Errorf("Failed to get new db connection. err: %w", err)
 	}
-	if err := dbc.Open(); err != nil {
+
+	sesh, err := dbConfig.New()
+	if err != nil {
+		return xerrors.Errorf("Failed to new db session. err: %w", err)
+	}
+
+	defer sesh.Cache().Close()
+
+	if err := sesh.Storage().Open(); err != nil {
 		return xerrors.Errorf("Failed to open db. err: %w", err)
 	}
-	defer dbc.Close()
+	defer sesh.Storage().Close()
 
-	metadata, err := dbc.GetMetadata()
+	metadata, err := sesh.Storage().GetMetadata()
 	if err != nil {
 		return xerrors.Errorf("Failed to get metadata. err: %w", err)
 	}
@@ -64,7 +80,7 @@ func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) e
 
 	vuls2Scanned := preConvert(r)
 
-	vuls2Detected, err := detect(dbc, vuls2Scanned)
+	vuls2Detected, err := detect(sesh, vuls2Scanned)
 	if err != nil {
 		return xerrors.Errorf("Failed to detect. err: %w", err)
 	}
@@ -139,32 +155,35 @@ func preConvert(sr *models.ScanResult) scanTypes.ScanResult {
 	}
 }
 
-// Almost copied from vuls2 pkg/detect/detect.go
-func detect(dbc db.DB, sr scanTypes.ScanResult) (detectTypes.DetectResult, error) {
+func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectResult, error) {
 	detected := make(map[dataTypes.RootID]detectTypes.VulnerabilityData)
 
 	if len(sr.OSPackages) > 0 {
-		m, err := ospkg.Detect(dbc, sr, runtime.NumCPU())
+		m, err := ospkg.Detect(sesh.Storage(), sr, runtime.NumCPU())
 		if err != nil {
 			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to detect os packages. err: %w", err)
 		}
 		for rootID, d := range m {
-			base, ok := detected[rootID]
-			if !ok {
-				base = detectTypes.VulnerabilityData{ID: rootID}
+			base := detectTypes.VulnerabilityData{
+				ID:         rootID,
+				Detections: []detectTypes.VulnerabilityDataDetection{d},
 			}
-			base.Detections = append(base.Detections, d)
-			detected[rootID] = base
-		}
-	}
 
-	for rootID, base := range detected {
-		for d, err := range dbc.GetVulnerabilityData(dbTypes.SearchRoot, string(rootID)) {
+			avs, err := sesh.GetVulnerabilityData(rootID, dbTypes.Filter{
+				Contents: []dbTypes.FilterContentType{
+					dbTypes.FilterContentTypeAdvisories,
+					dbTypes.FilterContentTypeVulnerabilities,
+				},
+				RootIDs:     []dataTypes.RootID{rootID},
+				Ecosystems:  []ecosystemTypes.Ecosystem{d.Ecosystem},
+				DataSources: slices.Collect(maps.Keys(d.Contents)),
+			})
 			if err != nil {
 				return detectTypes.DetectResult{}, xerrors.Errorf("Failed to get vulnerability data. RootID: %s, err: %w", rootID, err)
 			}
-			base.Advisories = d.Advisories
-			base.Vulnerabilities = d.Vulnerabilities
+
+			base.Advisories = avs.Advisories
+			base.Vulnerabilities = avs.Vulnerabilities
 			detected[rootID] = base
 		}
 	}
@@ -196,11 +215,11 @@ func detect(dbc db.DB, sr scanTypes.ScanResult) (detectTypes.DetectResult, error
 
 	datasources := make([]datasourceTypes.DataSource, 0, len(sourceIDs))
 	for _, sourceID := range sourceIDs {
-		s, err := dbc.GetDataSource(sourceID)
+		s, err := sesh.Storage().GetDataSource(sourceID)
 		if err != nil {
 			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to get datasource. sourceID: %s, err: %w", sourceID, err)
 		}
-		datasources = append(datasources, *s)
+		datasources = append(datasources, s)
 	}
 
 	return detectTypes.DetectResult{
