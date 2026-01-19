@@ -737,7 +737,7 @@ func (l *base) scanLibraries() (err error) {
 			continue
 		}
 
-		libraryScanners, err := AnalyzeLibrary(context.Background(), abspath, contents, filemode, l.ServerInfo.Mode.IsOffline())
+		libraryScanners, err := AnalyzeLibrary(context.Background(), abspath, contents, filemode, l.ServerInfo.Mode.IsOffline(), false)
 		if err != nil {
 			return xerrors.Errorf("Failed to analyze library. err: %w, filepath: %s", err, abspath)
 		}
@@ -747,7 +747,7 @@ func (l *base) scanLibraries() (err error) {
 }
 
 // AnalyzeLibrary : detects library defined in artifact such as lockfile or jar
-func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode os.FileMode, isOffline bool) (libraryScanners []models.LibraryScanner, err error) {
+func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode os.FileMode, isOffline, includeDevDependencies bool) (libraryScanners []models.LibraryScanner, err error) {
 	ag, err := fanal.NewAnalyzerGroup(fanal.AnalyzerOptions{
 		Group:             fanal.GroupBuiltin,
 		DisabledAnalyzers: disabledAnalyzers,
@@ -806,7 +806,7 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 		}
 	}
 
-	libscan, err := convertLibWithScanner(result.Applications)
+	libscan, err := convertLibWithScanner(result.Applications, includeDevDependencies)
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to convert libs. err: %w", err)
 	}
