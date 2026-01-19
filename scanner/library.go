@@ -10,11 +10,13 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
-func convertLibWithScanner(apps []ftypes.Application) ([]models.LibraryScanner, error) {
-	for i := range apps {
-		apps[i].Packages = lo.Filter(apps[i].Packages, func(lib ftypes.Package, _ int) bool {
-			return !lib.Dev
-		})
+func convertLibWithScanner(apps []ftypes.Application, includeDevDependencies bool) ([]models.LibraryScanner, error) {
+	if !includeDevDependencies {
+		for i := range apps {
+			apps[i].Packages = lo.Filter(apps[i].Packages, func(lib ftypes.Package, _ int) bool {
+				return !lib.Dev
+			})
+		}
 	}
 
 	scanners := make([]models.LibraryScanner, 0, len(apps))
