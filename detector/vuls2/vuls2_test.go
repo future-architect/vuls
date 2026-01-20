@@ -6222,6 +6222,352 @@ func Test_postConvert(t *testing.T) {
 	}
 }
 
+func Test_pruneCriteria(t *testing.T) {
+	type args struct {
+		criteria criteriaTypes.FilteredCriteria
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    criteriaTypes.FilteredCriteria
+		wantErr bool
+	}{
+		{
+			name: "retained criterion with accepts",
+			args: args{
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeVersion,
+								Version: &versioncriterionTypes.Criterion{
+									Package: vcPackageTypes.Package{
+										Type: vcPackageTypes.PackageTypeBinary,
+										Binary: &vcBinaryPackageTypes.Package{
+											Name: "pkg-1",
+										},
+									},
+								},
+							},
+							Accepts: criterionTypes.AcceptQueries{
+								Version: []int{1},
+							},
+						},
+					},
+				},
+			},
+			want: criteriaTypes.FilteredCriteria{
+				Operator: criteriaTypes.CriteriaOperatorTypeOR,
+				Criterions: []criterionTypes.FilteredCriterion{
+					{
+						Criterion: criterionTypes.Criterion{
+							Type: criterionTypes.CriterionTypeVersion,
+							Version: &versioncriterionTypes.Criterion{
+								Package: vcPackageTypes.Package{
+									Type: vcPackageTypes.PackageTypeBinary,
+									Binary: &vcBinaryPackageTypes.Package{
+										Name: "pkg-1",
+									},
+								},
+							},
+						},
+						Accepts: criterionTypes.AcceptQueries{
+							Version: []int{1},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "prune no accepts, results in empty",
+			args: args{
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeVersion,
+								Version: &versioncriterionTypes.Criterion{
+									Package: vcPackageTypes.Package{
+										Type: vcPackageTypes.PackageTypeBinary,
+										Binary: &vcBinaryPackageTypes.Package{
+											Name: "pkg-1",
+										},
+									},
+								},
+							},
+						},
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeVersion,
+								Version: &versioncriterionTypes.Criterion{
+									Package: vcPackageTypes.Package{
+										Type: vcPackageTypes.PackageTypeBinary,
+										Binary: &vcBinaryPackageTypes.Package{
+											Name: "pkg-2",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: criteriaTypes.FilteredCriteria{
+				Operator: criteriaTypes.CriteriaOperatorTypeOR,
+			},
+		},
+		{
+			name: "prune no accepts, partially accepted",
+			args: args{
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeVersion,
+								Version: &versioncriterionTypes.Criterion{
+									Package: vcPackageTypes.Package{
+										Type: vcPackageTypes.PackageTypeBinary,
+										Binary: &vcBinaryPackageTypes.Package{
+											Name: "pkg-1",
+										},
+									},
+								},
+							},
+							Accepts: criterionTypes.AcceptQueries{
+								Version: []int{1},
+							},
+						},
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeVersion,
+								Version: &versioncriterionTypes.Criterion{
+									Package: vcPackageTypes.Package{
+										Type: vcPackageTypes.PackageTypeBinary,
+										Binary: &vcBinaryPackageTypes.Package{
+											Name: "pkg-2",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: criteriaTypes.FilteredCriteria{
+				Operator: criteriaTypes.CriteriaOperatorTypeOR,
+				Criterions: []criterionTypes.FilteredCriterion{
+					{
+						Criterion: criterionTypes.Criterion{
+							Type: criterionTypes.CriterionTypeVersion,
+							Version: &versioncriterionTypes.Criterion{
+								Package: vcPackageTypes.Package{
+									Type: vcPackageTypes.PackageTypeBinary,
+									Binary: &vcBinaryPackageTypes.Package{
+										Name: "pkg-1",
+									},
+								},
+							},
+						},
+						Accepts: criterionTypes.AcceptQueries{
+							Version: []int{1},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "prune AND criteria with one not-accepted criterion, results in empty",
+			args: args{
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterias: []criteriaTypes.FilteredCriteria{
+						{
+							Operator: criteriaTypes.CriteriaOperatorTypeAND,
+							Criterions: []criterionTypes.FilteredCriterion{
+								{
+									Criterion: criterionTypes.Criterion{
+										Type: criterionTypes.CriterionTypeVersion,
+										Version: &versioncriterionTypes.Criterion{
+											Package: vcPackageTypes.Package{
+												Type: vcPackageTypes.PackageTypeBinary,
+												Binary: &vcBinaryPackageTypes.Package{
+													Name: "pkg-1",
+												},
+											},
+										},
+									},
+									Accepts: criterionTypes.AcceptQueries{
+										Version: []int{1},
+									},
+								},
+								{
+									Criterion: criterionTypes.Criterion{
+										Type: criterionTypes.CriterionTypeVersion,
+										Version: &versioncriterionTypes.Criterion{
+											Package: vcPackageTypes.Package{
+												Type: vcPackageTypes.PackageTypeBinary,
+												Binary: &vcBinaryPackageTypes.Package{
+													Name: "pkg-2",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: criteriaTypes.FilteredCriteria{
+				Operator: criteriaTypes.CriteriaOperatorTypeOR,
+			},
+		},
+		{
+			name: "prune AND criteria with one no-accepts criterion, and some accepted",
+			args: args{
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterias: []criteriaTypes.FilteredCriteria{
+						{
+							Operator: criteriaTypes.CriteriaOperatorTypeAND,
+							Criterions: []criterionTypes.FilteredCriterion{
+								{
+									Criterion: criterionTypes.Criterion{
+										Type: criterionTypes.CriterionTypeVersion,
+										Version: &versioncriterionTypes.Criterion{
+											Package: vcPackageTypes.Package{
+												Type: vcPackageTypes.PackageTypeBinary,
+												Binary: &vcBinaryPackageTypes.Package{
+													Name: "pkg-1",
+												},
+											},
+										},
+									},
+									Accepts: criterionTypes.AcceptQueries{
+										Version: []int{1},
+									},
+								},
+								{
+									Criterion: criterionTypes.Criterion{
+										Type: criterionTypes.CriterionTypeVersion,
+										Version: &versioncriterionTypes.Criterion{
+											Package: vcPackageTypes.Package{
+												Type: vcPackageTypes.PackageTypeBinary,
+												Binary: &vcBinaryPackageTypes.Package{
+													Name: "pkg-2",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Operator: criteriaTypes.CriteriaOperatorTypeAND,
+							Criterions: []criterionTypes.FilteredCriterion{
+								{
+									Criterion: criterionTypes.Criterion{
+										Type: criterionTypes.CriterionTypeVersion,
+										Version: &versioncriterionTypes.Criterion{
+											Package: vcPackageTypes.Package{
+												Type: vcPackageTypes.PackageTypeBinary,
+												Binary: &vcBinaryPackageTypes.Package{
+													Name: "pkg-3",
+												},
+											},
+										},
+									},
+									Accepts: criterionTypes.AcceptQueries{
+										Version: []int{3},
+									},
+								},
+								{
+									Criterion: criterionTypes.Criterion{
+										Type: criterionTypes.CriterionTypeVersion,
+										Version: &versioncriterionTypes.Criterion{
+											Package: vcPackageTypes.Package{
+												Type: vcPackageTypes.PackageTypeBinary,
+												Binary: &vcBinaryPackageTypes.Package{
+													Name: "pkg-4",
+												},
+											},
+										},
+									},
+									Accepts: criterionTypes.AcceptQueries{
+										Version: []int{4},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: criteriaTypes.FilteredCriteria{
+				Operator: criteriaTypes.CriteriaOperatorTypeOR,
+				Criterias: []criteriaTypes.FilteredCriteria{
+					{
+						Operator: criteriaTypes.CriteriaOperatorTypeAND,
+						Criterions: []criterionTypes.FilteredCriterion{
+							{
+								Criterion: criterionTypes.Criterion{
+									Type: criterionTypes.CriterionTypeVersion,
+									Version: &versioncriterionTypes.Criterion{
+										Package: vcPackageTypes.Package{
+											Type: vcPackageTypes.PackageTypeBinary,
+											Binary: &vcBinaryPackageTypes.Package{
+												Name: "pkg-3",
+											},
+										},
+									},
+								},
+								Accepts: criterionTypes.AcceptQueries{
+									Version: []int{3},
+								},
+							},
+							{
+								Criterion: criterionTypes.Criterion{
+									Type: criterionTypes.CriterionTypeVersion,
+									Version: &versioncriterionTypes.Criterion{
+										Package: vcPackageTypes.Package{
+											Type: vcPackageTypes.PackageTypeBinary,
+											Binary: &vcBinaryPackageTypes.Package{
+												Name: "pkg-4",
+											},
+										},
+									},
+								},
+								Accepts: criterionTypes.AcceptQueries{
+									Version: []int{4},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := vuls2.PruneCriteria(tt.args.criteria)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("pruneCriteria() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err != nil {
+				t.Errorf("pruneCriteria() compareVulnInfos() error = %v", err)
+				return
+			}
+
+			if diff := gocmp.Diff(got, tt.want, gocmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("pruneCriteria() mismatch (-got +want):\n%s", diff)
+			}
+		})
+	}
+}
+
 func toPtr[T any](x T) *T {
 	return &x
 }

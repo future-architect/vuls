@@ -423,7 +423,12 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 		for _, d := range v.Detections {
 			for sourceID, fconds := range d.Contents {
 				for _, fcond := range fconds {
-					statuses, cpes, _, err := walkCriteria(d.Ecosystem, sourceID, fcond.Criteria, fcond.Tag, scanned)
+					ca, err := pruneCriteria(fcond.Criteria)
+					if err != nil {
+						return xerrors.Errorf("Failed to prune criteria. err: %w", err)
+					}
+
+					statuses, cpes, _, err := walkCriteria(d.Ecosystem, sourceID, ca, fcond.Tag, scanned)
 					if err != nil {
 						return xerrors.Errorf("Failed to walk criteria. err: %w", err)
 					}
@@ -448,6 +453,66 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 		}
 	}
 	return nil
+}
+
+func pruneCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCriteria, error) {
+	pruned := criteriaTypes.FilteredCriteria{
+		Operator: c.Operator,
+		Criterias: func() []criteriaTypes.FilteredCriteria {
+			if len(c.Criterias) > 0 {
+				return make([]criteriaTypes.FilteredCriteria, 0, len(c.Criterias))
+			}
+			return nil
+		}(),
+		Criterions: func() []criterionTypes.FilteredCriterion {
+			if len(c.Criterions) > 0 {
+				return make([]criterionTypes.FilteredCriterion, 0, len(c.Criterions))
+			}
+			return nil
+		}(),
+	}
+
+	for _, child := range c.Criterias {
+		child, err := pruneCriteria(child)
+		if err != nil {
+			return criteriaTypes.FilteredCriteria{}, xerrors.Errorf("prune criteria: %w", err)
+		}
+
+		if len(child.Criterias) == 0 && len(child.Criterions) == 0 {
+			switch c.Operator {
+			case criteriaTypes.CriteriaOperatorTypeAND:
+				return criteriaTypes.FilteredCriteria{}, nil
+			case criteriaTypes.CriteriaOperatorTypeOR:
+				continue
+			default:
+				return criteriaTypes.FilteredCriteria{}, xerrors.Errorf("unexpected operator. expected: %q, actual: %q", []criteriaTypes.CriteriaOperatorType{criteriaTypes.CriteriaOperatorTypeAND, criteriaTypes.CriteriaOperatorTypeOR}, c.Operator)
+			}
+		}
+
+		pruned.Criterias = append(pruned.Criterias, child)
+	}
+
+	for _, cn := range c.Criterions {
+		isAffected, err := cn.Affected()
+		if err != nil {
+			return criteriaTypes.FilteredCriteria{}, xerrors.Errorf("criterion affected: %w", err)
+		}
+
+		if !isAffected {
+			switch c.Operator {
+			case criteriaTypes.CriteriaOperatorTypeAND:
+				return criteriaTypes.FilteredCriteria{}, nil
+			case criteriaTypes.CriteriaOperatorTypeOR:
+				continue
+			default:
+				return criteriaTypes.FilteredCriteria{}, xerrors.Errorf("unexpected operator. expected: %q, actual: %q", []criteriaTypes.CriteriaOperatorType{criteriaTypes.CriteriaOperatorTypeAND, criteriaTypes.CriteriaOperatorTypeOR}, c.Operator)
+			}
+		}
+
+		pruned.Criterions = append(pruned.Criterions, cn)
+	}
+
+	return pruned, nil
 }
 
 func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, bool, error) {
