@@ -6709,13 +6709,10 @@ func Test_pruneCriteria(t *testing.T) {
 				t.Errorf("pruneCriteria() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if err != nil {
-				t.Errorf("pruneCriteria() compareVulnInfos() error = %v", err)
-				return
-			}
-
-			if diff := gocmp.Diff(got, tt.want, gocmpopts.EquateEmpty()); diff != "" {
-				t.Errorf("pruneCriteria() mismatch (-got +want):\n%s", diff)
+			if !tt.wantErr {
+				if diff := gocmp.Diff(got, tt.want, gocmpopts.EquateEmpty()); diff != "" {
+					t.Errorf("pruneCriteria() mismatch (-got +want):\n%s", diff)
+				}
 			}
 		})
 	}
