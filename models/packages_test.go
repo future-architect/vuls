@@ -449,6 +449,30 @@ func TestRenameKernelSourcePackageName(t *testing.T) {
 			},
 			want: "linux",
 		},
+		{
+			name: "debian apt",
+			args: args{
+				family: constant.Debian,
+				name:   "apt",
+			},
+			want: "apt",
+		},
+		{
+			name: "ubuntu linux-meta -> linux",
+			args: args{
+				family: constant.Ubuntu,
+				name:   "linux-meta",
+			},
+			want: "linux",
+		},
+		{
+			name: "ubuntu apt",
+			args: args{
+				family: constant.Ubuntu,
+				name:   "apt",
+			},
+			want: "apt",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
