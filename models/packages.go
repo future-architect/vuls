@@ -290,8 +290,16 @@ func IsRaspbianPackage(name, version string) bool {
 func RenameKernelSourcePackageName(family, name string) string {
 	switch family {
 	case constant.Debian, constant.Raspbian:
+		if !strings.HasPrefix(name, "linux-") {
+			return name
+		}
+
 		return strings.NewReplacer("linux-signed", "linux", "linux-latest", "linux", "-amd64", "", "-arm64", "", "-i386", "").Replace(name)
 	case constant.Ubuntu:
+		if !strings.HasPrefix(name, "linux-") {
+			return name
+		}
+
 		return strings.NewReplacer("linux-signed", "linux", "linux-meta", "linux").Replace(name)
 	default:
 		return name
