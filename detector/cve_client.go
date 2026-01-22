@@ -65,7 +65,11 @@ func (client goCveDictClient) fetchCveDetails(cveIDs []string) (cveDetails []cve
 			}
 		}()
 
-		concurrency := 10
+		// Increase concurrency for better performance: 50 workers for normal loads, 100 for heavy loads
+		concurrency := 50
+		if len(cveIDs) > 500 {
+			concurrency = 100
+		}
 		tasks := util.GenWorkers(concurrency)
 		for range cveIDs {
 			tasks <- func() {

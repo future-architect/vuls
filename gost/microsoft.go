@@ -202,6 +202,16 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 }
 
 func (ms Microsoft) detect(r *models.ScanResult, cve gostmodels.MicrosoftCVE, applied, unapplied []string) (*models.VulnInfo, error) {
+	// Convert slices to maps for O(1) lookup instead of O(n) with slices.Contains
+	appliedMap := make(map[string]struct{}, len(applied))
+	for _, kb := range applied {
+		appliedMap[kb] = struct{}{}
+	}
+	unappliedMap := make(map[string]struct{}, len(unapplied))
+	for _, kb := range unapplied {
+		unappliedMap[kb] = struct{}{}
+	}
+
 	cve.Products = func() []gostmodels.MicrosoftProduct {
 		var ps []gostmodels.MicrosoftProduct
 		for _, p := range cve.Products {
@@ -248,10 +258,10 @@ func (ms Microsoft) detect(r *models.ScanResult, cve gostmodels.MicrosoftCVE, ap
 						default:
 						}
 					} else {
-						if slices.Contains(applied, kb.Article) {
+						if _, exists := appliedMap[kb.Article]; exists {
 							return nil
 						}
-						if slices.Contains(unapplied, kb.Article) {
+						if _, exists := unappliedMap[kb.Article]; exists {
 							kbs = append(kbs, kb)
 						}
 					}
@@ -274,6 +284,9 @@ func (ms Microsoft) detect(r *models.ScanResult, cve gostmodels.MicrosoftCVE, ap
 		CveContents: models.NewCveContents(*cveCont),
 		Mitigations: mitigations,
 	}
+
+	// Use a map to track WindowsKBFixedIns for O(1) deduplication
+	kbFixedInsMap := make(map[string]struct{})
 
 	for _, p := range cve.Products {
 		if len(p.KBs) == 0 {
@@ -334,7 +347,8 @@ func (ms Microsoft) detect(r *models.ScanResult, cve gostmodels.MicrosoftCVE, ap
 					}
 					return &a
 				}())
-				if !slices.Contains(vinfo.WindowsKBFixedIns, kbid) {
+				if _, exists := kbFixedInsMap[kbid]; !exists {
+					kbFixedInsMap[kbid] = struct{}{}
 					vinfo.WindowsKBFixedIns = append(vinfo.WindowsKBFixedIns, kbid)
 				}
 			}

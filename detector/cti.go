@@ -128,7 +128,8 @@ func getCTIsViaHTTP(cveIDs []string, urlPrefix string) (responses []ctiResponse,
 		}
 	}()
 
-	concurrency := 10
+	// Increase concurrency from 10 to 50 for better performance
+	concurrency := 50
 	tasks := util.GenWorkers(concurrency)
 	for i := 0; i < nReq; i++ {
 		tasks <- func() {

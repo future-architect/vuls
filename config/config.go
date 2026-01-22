@@ -86,6 +86,7 @@ type ReportOpts struct {
 	DiffMinus           bool    `json:"diffMinus,omitempty"`
 	Diff                bool    `json:"diff,omitempty"`
 	Lang                string  `json:"lang,omitempty"`
+	MinimalReport       bool    `json:"minimalReport,omitempty"`
 
 	TrivyOpts
 }

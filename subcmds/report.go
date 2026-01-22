@@ -110,6 +110,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&config.Conf.DebugSQL, "debug-sql", false, "SQL debug mode")
 	f.BoolVar(&config.Conf.Quiet, "quiet", false, "Quiet mode. No output on stdout")
 	f.BoolVar(&config.Conf.NoProgress, "no-progress", false, "Suppress progress bar")
+	f.BoolVar(&config.Conf.MinimalReport, "minimal", false, "Minimal report mode: skip enrichment, output only CVE, package, KB")
 
 	wd, _ := os.Getwd()
 	defaultConfPath := filepath.Join(wd, "config.toml")
