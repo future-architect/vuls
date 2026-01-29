@@ -141,7 +141,7 @@ func preConvert(sr *models.ScanResult) scanTypes.ScanResult {
 	return scanTypes.ScanResult{
 		JSONVersion: 0,
 		ServerName:  sr.ServerName,
-		Family:      ecosystemTypes.Ecosystem(sr.Family),
+		Family:      ecosystemTypes.Ecosystem(toVuls2Family(sr.Family)),
 		Release:     sr.Release,
 
 		Kernel: scanTypes.Kernel{
