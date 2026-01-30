@@ -69,10 +69,8 @@ github.com/MaineK00n/go-paloalto-version v0.0.0-20250909032857-57479910413b h1:p
 github.com/MaineK00n/go-paloalto-version v0.0.0-20250909032857-57479910413b/go.mod h1:ELOxzfAd4oAe4niMmoZlSiJwzf1DF+DjNdjsUcuqAR8=
 github.com/MaineK00n/vuls-data-update v0.0.0-20251125094749-e6f7ed9f8ca3 h1:uftaNsM9F0yMtnS6chKvTgnvU50O/FQxHDv9DZcufms=
 github.com/MaineK00n/vuls-data-update v0.0.0-20251125094749-e6f7ed9f8ca3/go.mod h1:PPnHKRINm9EpZ/HRwKD366yMeEcZGhTfuWxS96BMWcc=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260116054746-1ca48c3a06bc h1:qdssUqtp2p3XQJ3ls0AoN2484tOe4HfFFTFX1zP/qBI=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260116054746-1ca48c3a06bc/go.mod h1:Na9vFuRsTotyf3Nc4V9jb/T2UhVfU5hpm89EbBDBIWg=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260119095403-19e84d806e2e h1:u5l+Fxemz3FUCYTYiDGODai4DpCKDCjNBgJANUk+Yyc=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260119095403-19e84d806e2e/go.mod h1:Na9vFuRsTotyf3Nc4V9jb/T2UhVfU5hpm89EbBDBIWg=
+github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260130013332-a13a8cff2129 h1:PloEBVxxh7YtT/Oje4OtjuAWw6rv9S2Pf2zuAeaRP3E=
+github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260130013332-a13a8cff2129/go.mod h1:J7/OhBbijzZ3GhUbQ+i87W80GgPohuJxEa5e4aDp1HI=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/Masterminds/goutils v1.1.1 h1:5nUrii3FMTL5diU80unEVvNevw1nH4+ZV4DSLVJLSYI=
@@ -555,8 +553,8 @@ github.com/keybase/go-keychain v0.0.1 h1:way+bWYa6lDppZoZcgMbYsvC7GxljxrskdNInRt
 github.com/keybase/go-keychain v0.0.1/go.mod h1:PdEILRW3i9D8JcdM+FmY6RwkHGnhHxXwkPPMeUgOK1k=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
-github.com/klauspost/compress v1.18.2 h1:iiPHWW0YrcFgpBYhsA6D1+fqHssJscY/Tm/y2Uqnapk=
-github.com/klauspost/compress v1.18.2/go.mod h1:R0h/fSBs8DE4ENlcrlib3PsXS61voFxhIs2DeRhCvJ4=
+github.com/klauspost/compress v1.18.3 h1:9PJRvfbmTabkOX8moIpXPbMMbYN60bWImDDU7L+/6zw=
+github.com/klauspost/compress v1.18.3/go.mod h1:R0h/fSBs8DE4ENlcrlib3PsXS61voFxhIs2DeRhCvJ4=
 github.com/klauspost/cpuid/v2 v2.3.0 h1:S4CRMLnYUhGeDFDqkGriYKdfoFlDnMtqTiI/sFzhA9Y=
 github.com/klauspost/cpuid/v2 v2.3.0/go.mod h1:hqwkgyIinND0mEev00jJYCxPNVRVXFQeu1XKlok6oO0=
 github.com/knqyf263/go-apk-version v0.0.0-20200609155635-041fdbb8563f h1:GvCU5GXhHq+7LeOzx/haG7HSIZokl3/0GkoUFzsRJjg=
