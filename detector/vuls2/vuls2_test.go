@@ -6315,7 +6315,8 @@ func Test_pruneCriteria(t *testing.T) {
 				},
 			},
 			want: criteriaTypes.FilteredCriteria{
-				Operator: criteriaTypes.CriteriaOperatorTypeOR,
+				Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+				Criterions: []criterionTypes.FilteredCriterion{},
 			},
 		},
 		{
@@ -6422,7 +6423,8 @@ func Test_pruneCriteria(t *testing.T) {
 				},
 			},
 			want: criteriaTypes.FilteredCriteria{
-				Operator: criteriaTypes.CriteriaOperatorTypeOR,
+				Operator:  criteriaTypes.CriteriaOperatorTypeOR,
+				Criterias: []criteriaTypes.FilteredCriteria{},
 			},
 		},
 		{
@@ -6709,7 +6711,7 @@ func Test_pruneCriteria(t *testing.T) {
 				t.Errorf("pruneCriteria() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if diff := gocmp.Diff(got, tt.want, gocmpopts.EquateEmpty()); diff != "" {
+			if diff := gocmp.Diff(got, tt.want); diff != "" {
 				t.Errorf("pruneCriteria() mismatch (-got +want):\n%s", diff)
 			}
 		})
