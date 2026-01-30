@@ -45,6 +45,16 @@ func preConvertBinaryVersion(family, version string) string {
 	}
 }
 
+func toVuls2Family(vuls0Family string) string {
+	switch vuls0Family {
+	case "suse.linux.enterprise.server", "suse.linux.enterprise.desktop":
+		return "suse.linux.enterprise"
+	case "suse.linux.enterprise.server.micro":
+		return "suse.linux.micro"
+	default:
+		return vuls0Family
+	}
+}
 func ignoreVulnerability(e ecosystemTypes.Ecosystem, v vulnerabilityTypes.Vulnerability, as models.DistroAdvisories) bool {
 	et, _, _ := strings.Cut(string(e), ":")
 
@@ -462,6 +472,12 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 			Source: "UBUNTU",
 			RefID:  da.AdvisoryID,
 		}, nil
+	case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSELeapMicro, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed, ecosystemTypes.EcosystemTypeSUSELinuxMicro:
+		return models.Reference{
+			Link:   fmt.Sprintf("https://www.suse.com/security/cve/%s.html", da.AdvisoryID),
+			Source: "SUSE",
+			RefID:  da.AdvisoryID,
+		}, nil
 	default:
 		return models.Reference{}, xerrors.Errorf("unsupported family: %s", et)
 	}
@@ -479,6 +495,8 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 		return fmt.Sprintf("https://ubuntu.com/security/%s", v.Content.ID)
 	case models.Nvd:
 		return fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", v.Content.ID)
+	case models.SUSE:
+		return fmt.Sprintf("https://www.suse.com/security/cve/%s.html", v.Content.ID)
 	default:
 		return ""
 	}
@@ -682,6 +700,8 @@ func toCveContentType(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models
 		default:
 			return models.Ubuntu
 		}
+	case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise:
+		return models.SUSE
 	default:
 		return models.NewCveContentType(et)
 	}
@@ -695,9 +715,9 @@ func toCvss(e ecosystemTypes.Ecosystem, src sourceTypes.SourceID, ss []severityT
 	)
 
 	for _, s := range ss {
+		et, _, _ := strings.Cut(string(e), ":")
 		switch s.Type {
 		case severityTypes.SeverityTypeVendor:
-			et, _, _ := strings.Cut(string(e), ":")
 			switch et {
 			case ecosystemTypes.EcosystemTypeUbuntu:
 				switch src {
@@ -708,12 +728,39 @@ func toCvss(e ecosystemTypes.Ecosystem, src sourceTypes.SourceID, ss []severityT
 					}
 				default:
 				}
+			case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSELeapMicro, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed, ecosystemTypes.EcosystemTypeSUSELinuxMicro:
+				if s.Vendor != nil {
+					if cvss2.Vector != "" {
+						cvss2.NVDBaseSeverity = *s.Vendor
+					}
+					if cvss3.Vector != "" {
+						cvss3.BaseSeverity = *s.Vendor
+					}
+					if cvss4.Vector != "" {
+						cvss4.Severity = *s.Vendor
+					}
+				}
+			default:
 			}
 		case severityTypes.SeverityTypeCVSSv2:
+			switch et {
+			case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise:
+				if s.Source != "SUSE" {
+					continue
+				}
+			default:
+			}
 			if cvss2.Vector == "" && s.CVSSv2 != nil {
 				cvss2 = *s.CVSSv2
 			}
 		case severityTypes.SeverityTypeCVSSv30:
+			switch et {
+			case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise:
+				if s.Source != "SUSE" {
+					continue
+				}
+			default:
+			}
 			if cvss3.Vector == "" && s.CVSSv30 != nil {
 				cvss3 = v31.CVSSv31{
 					Vector:       s.CVSSv30.Vector,
@@ -722,10 +769,24 @@ func toCvss(e ecosystemTypes.Ecosystem, src sourceTypes.SourceID, ss []severityT
 				}
 			}
 		case severityTypes.SeverityTypeCVSSv31:
+			switch et {
+			case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise:
+				if s.Source != "SUSE" {
+					continue
+				}
+			default:
+			}
 			if !strings.HasPrefix(cvss3.Vector, "CVSS:3.1/") && s.CVSSv31 != nil {
 				cvss3 = *s.CVSSv31
 			}
 		case severityTypes.SeverityTypeCVSSv40:
+			switch et {
+			case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise:
+				if s.Source != "SUSE" {
+					continue
+				}
+			default:
+			}
 			if cvss4.Vector == "" && s.CVSSv40 != nil {
 				cvss4 = *s.CVSSv40
 			}
@@ -765,7 +826,8 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) model
 			DetectionMethod: models.DetectionMethod("EPELMatch"),
 			SortOrder:       1,
 		}
-	case ecosystemTypes.EcosystemTypeRedHat, ecosystemTypes.EcosystemTypeFedora, ecosystemTypes.EcosystemTypeAlma, ecosystemTypes.EcosystemTypeRocky, ecosystemTypes.EcosystemTypeOracle, ecosystemTypes.EcosystemTypeAlpine:
+	case ecosystemTypes.EcosystemTypeRedHat, ecosystemTypes.EcosystemTypeFedora, ecosystemTypes.EcosystemTypeAlma, ecosystemTypes.EcosystemTypeRocky, ecosystemTypes.EcosystemTypeOracle, ecosystemTypes.EcosystemTypeAlpine,
+		ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeSUSELinuxMicro, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSELeapMicro, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed:
 		return models.OvalMatch
 	case ecosystemTypes.EcosystemTypeUbuntu:
 		switch s {
