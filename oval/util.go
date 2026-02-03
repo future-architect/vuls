@@ -472,14 +472,6 @@ func NewOVALClient(family string, cnf config.GovalDictConf, o logging.LogOpts) (
 	switch family {
 	case constant.Amazon:
 		return NewAmazon(driver, cnf.GetURL()), nil
-	case constant.OpenSUSE:
-		return NewSUSE(driver, cnf.GetURL(), constant.OpenSUSE), nil
-	case constant.OpenSUSELeap:
-		return NewSUSE(driver, cnf.GetURL(), constant.OpenSUSELeap), nil
-	case constant.SUSEEnterpriseServer:
-		return NewSUSE(driver, cnf.GetURL(), constant.SUSEEnterpriseServer), nil
-	case constant.SUSEEnterpriseDesktop:
-		return NewSUSE(driver, cnf.GetURL(), constant.SUSEEnterpriseDesktop), nil
 	case constant.ServerTypePseudo:
 		return NewPseudo(family), nil
 	default:
