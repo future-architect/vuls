@@ -66,9 +66,9 @@ func Test_convertLibWithScanner(t *testing.T) {
 					Type:         ftypes.Npm,
 					LockfilePath: "package-lock.json",
 					Libs: []models.Library{
-						{Name: "lodash", Version: "4.17.21", PURL: "pkg:npm/lodash@4.17.21"},
-						{Name: "jest", Version: "29.0.0", PURL: "pkg:npm/jest@29.0.0"},
-						{Name: "express", Version: "4.18.0", PURL: "pkg:npm/express@4.18.0"},
+						{Name: "lodash", Version: "4.17.21", PURL: "pkg:npm/lodash@4.17.21", Dev: false},
+						{Name: "jest", Version: "29.0.0", PURL: "pkg:npm/jest@29.0.0", Dev: true},
+						{Name: "express", Version: "4.18.0", PURL: "pkg:npm/express@4.18.0", Dev: false},
 					},
 				},
 			},

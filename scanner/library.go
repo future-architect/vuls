@@ -29,6 +29,7 @@ func convertLibWithScanner(apps []ftypes.Application, includeDevDependencies boo
 				PURL:     newPURL(app.Type, types.Metadata{}, lib),
 				FilePath: lib.FilePath,
 				Digest:   string(lib.Digest),
+				Dev:      lib.Dev,
 			})
 		}
 		scanners = append(scanners, models.LibraryScanner{
