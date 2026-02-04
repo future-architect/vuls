@@ -96,4 +96,3 @@ func TestConvert_DevDependency(t *testing.T) {
 		})
 	}
 }
-
