@@ -235,7 +235,6 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 	scanResult.Packages = pkgs
 	scanResult.SrcPackages = srcPkgs
 	scanResult.LibraryScanners = libraryScanners
-
 	return scanResult, nil
 }
 
