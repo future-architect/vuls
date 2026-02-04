@@ -5,7 +5,7 @@ go 1.25.5
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.4
 	github.com/BurntSushi/toml v1.6.0
-	github.com/CycloneDX/cyclonedx-go v0.9.3
+	github.com/CycloneDX/cyclonedx-go v0.10.0
 	github.com/MaineK00n/vuls-data-update v0.0.0-20251125094749-e6f7ed9f8ca3
 	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260130013332-a13a8cff2129
 	github.com/Ullaakut/nmap/v2 v2.2.2
