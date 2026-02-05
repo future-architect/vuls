@@ -39,6 +39,10 @@ func TestParse(t *testing.T) {
 			vulnJSON: includeDevDependenciesTrivy,
 			expected: includeDevDependenciesSR,
 		},
+		"filesystemDirScan": {
+			vulnJSON: filesystemDirScanTrivy,
+			expected: filesystemDirScanSR,
+		},
 	}
 
 	for testcase, v := range cases {
@@ -648,7 +652,7 @@ var strutsSR = &models.ScanResult{
 	LibraryScanners: models.LibraryScanners{
 		models.LibraryScanner{
 			Type:         "jar",
-			LockfilePath: "Java",
+			LockfilePath: "/data/struts-1.2.7/lib/Java",
 			Libs: []models.Library{
 				{
 					Name:    "commons-beanutils:commons-beanutils",
@@ -3001,7 +3005,60 @@ var includeDevDependenciesSR = &models.ScanResult{
 					Dev:     true,
 				},
 			},
-			LockfilePath: "pnpm-lock.yaml",
+			LockfilePath: "integration/data/lockfile/pnpm-v9/pnpm-lock.yaml",
+		},
+	},
+	Optional: nil,
+}
+
+// Test case for filesystem directory scan (path joining should occur)
+var filesystemDirScanTrivy = []byte(`{
+  "SchemaVersion": 2,
+  "ArtifactName": "myproject/frontend",
+  "ArtifactType": "filesystem",
+  "Results": [
+    {
+      "Target": "package-lock.json",
+      "Class": "lang-pkgs",
+      "Type": "npm",
+      "Packages": [
+        {
+          "ID": "lodash@4.17.21",
+          "Name": "lodash",
+          "Identifier": {
+            "PURL": "pkg:npm/lodash@4.17.21",
+            "UID": "abc123"
+          },
+          "Version": "4.17.21",
+          "Relationship": "direct"
+        }
+      ],
+      "Vulnerabilities": []
+    }
+  ]
+}
+`)
+
+var filesystemDirScanSR = &models.ScanResult{
+	JSONVersion: 4,
+	ServerName:  "myproject/frontend",
+	Family:      "pseudo",
+	ScannedBy:   "trivy",
+	ScannedVia:  "trivy",
+	ScannedCves: models.VulnInfos{},
+	Packages:    models.Packages{},
+	SrcPackages: models.SrcPackages{},
+	LibraryScanners: models.LibraryScanners{
+		{
+			Type: "npm",
+			Libs: []models.Library{
+				{
+					Name:    "lodash",
+					Version: "4.17.21",
+					PURL:    "pkg:npm/lodash@4.17.21",
+				},
+			},
+			LockfilePath: "myproject/frontend/package-lock.json",
 		},
 	},
 	Optional: nil,
