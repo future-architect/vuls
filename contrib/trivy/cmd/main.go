@@ -14,11 +14,10 @@ import (
 )
 
 var (
-	serverUUID             string
-	stdIn                  bool
-	jsonDir                string
-	jsonFileName           string
-	includeDevDependencies bool
+	serverUUID   string
+	stdIn        bool
+	jsonDir      string
+	jsonFileName string
 )
 
 func main() {
@@ -55,12 +54,6 @@ func main() {
 				fmt.Printf("Failed to parse. err: %+v\n", err)
 				os.Exit(1)
 			}
-			if includeDevDependencies {
-				if scanResult.Optional == nil {
-					scanResult.Optional = map[string]any{}
-				}
-				scanResult.Optional["includeDevDependencies"] = true
-			}
 			var resultJSON []byte
 			if resultJSON, err = json.MarshalIndent(scanResult, "", "   "); err != nil {
 				fmt.Printf("Failed to create json. err: %+v\n", err)
@@ -82,7 +75,6 @@ func main() {
 	cmdTrivyToVuls.Flags().BoolVarP(&stdIn, "stdin", "s", false, "input from stdin")
 	cmdTrivyToVuls.Flags().StringVarP(&jsonDir, "trivy-json-dir", "d", "./", "trivy json dir")
 	cmdTrivyToVuls.Flags().StringVarP(&jsonFileName, "trivy-json-file-name", "f", "results.json", "trivy json file name")
-	cmdTrivyToVuls.Flags().BoolVar(&includeDevDependencies, "include-dev-deps", false, "include dev dependencies in scan result")
 
 	var rootCmd = &cobra.Command{Use: "trivy-to-vuls"}
 	rootCmd.AddCommand(cmdTrivyToVuls)

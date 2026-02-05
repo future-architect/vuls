@@ -196,7 +196,6 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 					Version:  p.Version,
 					PURL:     getPURL(p),
 					FilePath: p.FilePath,
-					Dev:      p.Dev,
 				})
 			}
 			uniqueLibraryScannerPaths[trivyResult.Target] = libScanner

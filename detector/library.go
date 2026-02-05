@@ -33,8 +33,9 @@ import (
 var DefaultTrivyDBRepositories = []string{db.DefaultGCRRepository, db.DefaultGHCRRepository}
 
 type libraryDetector struct {
-	scanner      models.LibraryScanner
-	javaDBClient *javadb.DBClient
+	scanner                 models.LibraryScanner
+	javaDBClient            *javadb.DBClient
+	includeDevDependencies  bool
 }
 
 // DetectLibsCves fills LibraryScanner information
@@ -59,7 +60,10 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 	var javaDBClient *javadb.DBClient
 	defer javaDBClient.Close()
 	for i, lib := range r.LibraryScanners {
-		d := libraryDetector{scanner: lib}
+		d := libraryDetector{
+			scanner:                lib,
+			includeDevDependencies: lo.Contains(trivyOpts.IncludeDevLockfilePaths, lib.LockfilePath),
+		}
 		if lib.Type == ftypes.Jar {
 			if javaDBClient == nil {
 				if err := javadb.UpdateJavaDB(trivyOpts, noProgress); err != nil {
@@ -171,6 +175,10 @@ func (d *libraryDetector) scan() ([]models.VulnInfo, error) {
 	}
 	var vulnerabilities = []models.VulnInfo{}
 	for _, pkg := range d.scanner.Libs {
+		if pkg.Dev && !d.includeDevDependencies {
+			continue
+		}
+
 		tvulns, err := scanner.DetectVulnerabilities("", pkg.Name, pkg.Version)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to detect %s vulnerabilities. err: %w", scanner.Type(), err)

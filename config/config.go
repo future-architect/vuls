@@ -90,10 +90,11 @@ type ReportOpts struct {
 
 // TrivyOpts is options for trivy DBs
 type TrivyOpts struct {
-	TrivyCacheDBDir         string   `json:"trivyCacheDBDir,omitempty"`
-	TrivyDBRepositories     []string `json:"trivyDBRepositories,omitempty"`
-	TrivyJavaDBRepositories []string `json:"trivyJavaDBRepositories,omitempty"`
-	TrivySkipJavaDBUpdate   bool     `json:"trivySkipJavaDBUpdate,omitempty"`
+	TrivyCacheDBDir           string   `json:"trivyCacheDBDir,omitempty"`
+	TrivyDBRepositories       []string `json:"trivyDBRepositories,omitempty"`
+	TrivyJavaDBRepositories   []string `json:"trivyJavaDBRepositories,omitempty"`
+	TrivySkipJavaDBUpdate     bool     `json:"trivySkipJavaDBUpdate,omitempty"`
+	IncludeDevLockfilePaths   []string `json:"includeDevLockfilePaths,omitempty"`
 }
 
 // ValidateOnConfigtest validates

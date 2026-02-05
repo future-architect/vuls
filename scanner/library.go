@@ -4,21 +4,12 @@ import (
 	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
 	"github.com/aquasecurity/trivy/pkg/purl"
 	"github.com/aquasecurity/trivy/pkg/types"
-	"github.com/samber/lo"
 
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 )
 
-func convertLibWithScanner(apps []ftypes.Application, includeDevDependencies bool) ([]models.LibraryScanner, error) {
-	if !includeDevDependencies {
-		for i := range apps {
-			apps[i].Packages = lo.Filter(apps[i].Packages, func(lib ftypes.Package, _ int) bool {
-				return !lib.Dev
-			})
-		}
-	}
-
+func convertLibWithScanner(apps []ftypes.Application) ([]models.LibraryScanner, error) {
 	scanners := make([]models.LibraryScanner, 0, len(apps))
 	for _, app := range apps {
 		libs := make([]models.Library, 0, len(app.Packages))
