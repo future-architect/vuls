@@ -33,9 +33,9 @@ import (
 var DefaultTrivyDBRepositories = []string{db.DefaultGCRRepository, db.DefaultGHCRRepository}
 
 type libraryDetector struct {
-	scanner                 models.LibraryScanner
-	javaDBClient            *javadb.DBClient
-	includeDevDependencies  bool
+	scanner                models.LibraryScanner
+	javaDBClient           *javadb.DBClient
+	includeDevDependencies bool
 }
 
 // DetectLibsCves fills LibraryScanner information
