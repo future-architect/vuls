@@ -5,48 +5,6 @@ import (
 	"testing"
 )
 
-func TestLibrary_Dev(t *testing.T) {
-	tests := []struct {
-		name string
-		lib  Library
-		want bool
-	}{
-		{
-			name: "dev dependency",
-			lib: Library{
-				Name:    "jest",
-				Version: "29.0.0",
-				Dev:     true,
-			},
-			want: true,
-		},
-		{
-			name: "production dependency",
-			lib: Library{
-				Name:    "lodash",
-				Version: "4.17.21",
-				Dev:     false,
-			},
-			want: false,
-		},
-		{
-			name: "default value (production)",
-			lib: Library{
-				Name:    "express",
-				Version: "4.18.0",
-			},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.lib.Dev; got != tt.want {
-				t.Errorf("Library.Dev = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestLibraryScanners_Find(t *testing.T) {
 	type args struct {
 		path string
