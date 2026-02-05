@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -33,9 +34,9 @@ import (
 var DefaultTrivyDBRepositories = []string{db.DefaultGCRRepository, db.DefaultGHCRRepository}
 
 type libraryDetector struct {
-	scanner                models.LibraryScanner
-	javaDBClient           *javadb.DBClient
-	includeDevDependencies bool
+	scanner               models.LibraryScanner
+	javaDBClient          *javadb.DBClient
+	detectDevDependencies bool
 }
 
 // DetectLibsCves fills LibraryScanner information
@@ -61,8 +62,8 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 	defer javaDBClient.Close()
 	for i, lib := range r.LibraryScanners {
 		d := libraryDetector{
-			scanner:                lib,
-			includeDevDependencies: lo.Contains(trivyOpts.IncludeDevLockfilePaths, lib.LockfilePath),
+			scanner:               lib,
+			detectDevDependencies: slices.Contains(trivyOpts.DetectDevLockfilePaths, lib.LockfilePath),
 		}
 		if lib.Type == ftypes.Jar {
 			if javaDBClient == nil {
@@ -175,7 +176,7 @@ func (d *libraryDetector) scan() ([]models.VulnInfo, error) {
 	}
 	var vulnerabilities = []models.VulnInfo{}
 	for _, pkg := range d.scanner.Libs {
-		if pkg.Dev && !d.includeDevDependencies {
+		if pkg.Dev && !d.detectDevDependencies {
 			continue
 		}
 
