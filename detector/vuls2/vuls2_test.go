@@ -148,6 +148,124 @@ func Test_preConvert(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "suse.linux.enterprise.server -> suse.linux.enterprise",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "sles-15",
+					Family:     "suse.linux.enterprise.server",
+					Release:    "15.3",
+					RunningKernel: models.Kernel{
+						Release:        "5.3.18-59.37-default",
+						Version:        "",
+						RebootRequired: false,
+					},
+					Packages: models.Packages{
+						"cron": models.Package{
+							Name:    "sles-release",
+							Version: "15.3",
+						},
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "sles-15",
+				Family:      ecosystemTypes.Ecosystem("suse.linux.enterprise"),
+				Release:     "15.3",
+
+				Kernel: scanTypes.Kernel{
+					Release:        "5.3.18-59.37-default",
+					Version:        "",
+					RebootRequired: false,
+				},
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:    "sles-release",
+						Version: "15.3",
+					},
+				},
+			},
+		},
+		{
+			name: "suse.linux.enterprise.desktop -> suse.linux.enterprise",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "sled-15",
+					Family:     "suse.linux.enterprise.desktop",
+					Release:    "15.3",
+					RunningKernel: models.Kernel{
+						Release:        "5.3.18-59.37-default",
+						Version:        "",
+						RebootRequired: false,
+					},
+					Packages: models.Packages{
+						"cron": models.Package{
+							Name:    "sled-release",
+							Version: "15.3",
+						},
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "sled-15",
+				Family:      ecosystemTypes.Ecosystem("suse.linux.enterprise"),
+				Release:     "15.3",
+
+				Kernel: scanTypes.Kernel{
+					Release:        "5.3.18-59.37-default",
+					Version:        "",
+					RebootRequired: false,
+				},
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:    "sled-release",
+						Version: "15.3",
+					},
+				},
+			},
+		},
+		{
+			name: "opensuse:tumbleweed",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "tumbleweed",
+					Family:     "opensuse",
+					Release:    "tumbleweed",
+					RunningKernel: models.Kernel{
+						Release:        "5.3.18-59.37-default",
+						Version:        "",
+						RebootRequired: false,
+					},
+					Packages: models.Packages{
+						"cron": models.Package{
+							Name:    "openSUSE-release",
+							Version: "20210101",
+							Release: "0",
+						},
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "tumbleweed",
+				Family:      ecosystemTypes.EcosystemTypeOpenSUSETumbleweed,
+
+				Kernel: scanTypes.Kernel{
+					Release:        "5.3.18-59.37-default",
+					Version:        "",
+					RebootRequired: false,
+				},
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:    "openSUSE-release",
+						Version: "20210101",
+						Release: "0",
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
