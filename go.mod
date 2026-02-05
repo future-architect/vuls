@@ -5,7 +5,7 @@ go 1.25.5
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.4
 	github.com/BurntSushi/toml v1.6.0
-	github.com/CycloneDX/cyclonedx-go v0.9.3
+	github.com/CycloneDX/cyclonedx-go v0.10.0
 	github.com/MaineK00n/vuls-data-update v0.0.0-20251125094749-e6f7ed9f8ca3
 	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260130013332-a13a8cff2129
 	github.com/Ullaakut/nmap/v2 v2.2.2
@@ -51,13 +51,13 @@ require (
 	github.com/sirupsen/logrus v1.9.4
 	github.com/spdx/tools-golang v0.5.7
 	github.com/spf13/cobra v1.10.2
-	github.com/vulsio/go-cti v0.3.3
-	github.com/vulsio/go-cve-dictionary v0.15.1-0.20260108114353-25946a4070f3
-	github.com/vulsio/go-exploitdb v0.6.4-0.20251215082522-6ddff63f51a1
-	github.com/vulsio/go-kev v0.4.3
-	github.com/vulsio/go-msfdb v0.4.3
-	github.com/vulsio/gost v0.7.1
-	github.com/vulsio/goval-dictionary v0.15.0
+	github.com/vulsio/go-cti v0.3.4
+	github.com/vulsio/go-cve-dictionary v0.16.0
+	github.com/vulsio/go-exploitdb v0.7.0
+	github.com/vulsio/go-kev v0.4.4
+	github.com/vulsio/go-msfdb v0.4.4
+	github.com/vulsio/gost v0.7.2
+	github.com/vulsio/goval-dictionary v0.15.1
 	go.etcd.io/bbolt v1.4.3
 	golang.org/x/oauth2 v0.34.0
 	golang.org/x/sync v0.19.0
