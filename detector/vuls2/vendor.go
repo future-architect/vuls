@@ -45,16 +45,36 @@ func preConvertBinaryVersion(family, version string) string {
 	}
 }
 
-func toVuls2Family(vuls0Family string) string {
+func toVuls2Family(vuls0Family, vuls0Release string) string {
 	switch vuls0Family {
-	case "suse.linux.enterprise.server", "suse.linux.enterprise.desktop":
-		return "suse.linux.enterprise"
-	case "suse.linux.enterprise.server.micro":
-		return "suse.linux.micro"
+	case constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
+		return ecosystemTypes.EcosystemTypeSUSELinuxEnterprise
+	case constant.OpenSUSE:
+		switch vuls0Release {
+		case "tumbleweed":
+			return ecosystemTypes.EcosystemTypeOpenSUSETumbleweed
+		default:
+			return vuls0Family
+		}
 	default:
 		return vuls0Family
 	}
 }
+
+func toVuls2Release(vuls0Family, vuls0Release string) string {
+	switch vuls0Family {
+	case constant.OpenSUSE:
+		switch vuls0Release {
+		case "tumbleweed":
+			return ""
+		default:
+			return vuls0Release
+		}
+	default:
+		return vuls0Release
+	}
+}
+
 func ignoreVulnerability(e ecosystemTypes.Ecosystem, v vulnerabilityTypes.Vulnerability, as models.DistroAdvisories) bool {
 	et, _, _ := strings.Cut(string(e), ":")
 
@@ -472,7 +492,7 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 			Source: "UBUNTU",
 			RefID:  da.AdvisoryID,
 		}, nil
-	case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSELeapMicro, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed, ecosystemTypes.EcosystemTypeSUSELinuxMicro:
+	case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed:
 		return models.Reference{
 			Link:   fmt.Sprintf("https://www.suse.com/security/cve/%s.html", da.AdvisoryID),
 			Source: "SUSE",
@@ -728,7 +748,7 @@ func toCvss(e ecosystemTypes.Ecosystem, src sourceTypes.SourceID, ss []severityT
 					}
 				default:
 				}
-			case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSELeapMicro, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed, ecosystemTypes.EcosystemTypeSUSELinuxMicro:
+			case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed:
 				if s.Vendor != nil {
 					if cvss2.Vector != "" {
 						cvss2.NVDBaseSeverity = *s.Vendor
