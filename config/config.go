@@ -94,6 +94,7 @@ type TrivyOpts struct {
 	TrivyDBRepositories     []string `json:"trivyDBRepositories,omitempty"`
 	TrivyJavaDBRepositories []string `json:"trivyJavaDBRepositories,omitempty"`
 	TrivySkipJavaDBUpdate   bool     `json:"trivySkipJavaDBUpdate,omitempty"`
+	DetectDevLockfilePaths  []string `json:"detectDevLockfilePaths,omitempty"`
 }
 
 // ValidateOnConfigtest validates

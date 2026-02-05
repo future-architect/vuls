@@ -5376,7 +5376,7 @@ func (w *windows) scanLibraries() (err error) {
 		}
 
 		trivypath := w.cleanPath(abspath)
-		libraryScanners, err := AnalyzeLibrary(context.Background(), trivypath, contents, filemode, w.ServerInfo.Mode.IsOffline(), false)
+		libraryScanners, err := AnalyzeLibrary(context.Background(), trivypath, contents, filemode, w.ServerInfo.Mode.IsOffline())
 		if err != nil {
 			return xerrors.Errorf("Failed to analyze library. err: %w, filepath: %s", err, trivypath)
 		}
