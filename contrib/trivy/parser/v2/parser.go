@@ -24,7 +24,7 @@ func (p ParserV2) Parse(vulnJSON []byte) (result *models.ScanResult, err error) 
 		return nil, err
 	}
 
-	scanResult, err := pkg.Convert(report.Results, report.ArtifactType, report.ArtifactName)
+	scanResult, err := pkg.Convert(report.Results)
 	if err != nil {
 		return nil, err
 	}

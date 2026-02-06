@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"fmt"
-	"path/filepath"
 	"slices"
 	"sort"
 	"strings"
@@ -16,7 +15,7 @@ import (
 )
 
 // Convert :
-func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactName string) (result *models.ScanResult, err error) {
+func Convert(results types.Results) (result *models.ScanResult, err error) {
 	scanResult := &models.ScanResult{
 		JSONVersion: models.JSONVersion,
 		ScannedCves: models.VulnInfos{},
@@ -222,25 +221,9 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 			return libraries[i].Name < libraries[j].Name
 		})
 
-		// Construct the full path for filesystem scans
-		lockfilePath := path
-		if artifactType == ftypes.TypeFilesystem && artifactName != "" {
-			// For filesystem scans, if the path is relative (doesn't start with /),
-			// join it with the artifact name (scan root)
-			if !filepath.IsAbs(path) {
-				if filepath.Base(artifactName) == path {
-					// Direct file scan: use artifactName as the full path
-					lockfilePath = artifactName
-				} else {
-					// Directory scan: join artifactName with path
-					lockfilePath = filepath.Join(artifactName, path)
-				}
-			}
-		}
-
 		libscanner := models.LibraryScanner{
 			Type:         v.Type,
-			LockfilePath: lockfilePath,
+			LockfilePath: path,
 			Libs:         libraries,
 		}
 		libraryScanners = append(libraryScanners, libscanner)
