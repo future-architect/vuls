@@ -85,6 +85,7 @@ type Package struct {
 	NewRelease       string               `json:"newRelease"`
 	Arch             string               `json:"arch"`
 	Repository       string               `json:"repository"`
+	Vendor           string               `json:"vendor,omitempty"`
 	ModularityLabel  string               `json:"modularitylabel"`
 	Changelog        *Changelog           `json:"changelog,omitempty"`
 	AffectedProcs    []AffectedProcess    `json:",omitempty"`

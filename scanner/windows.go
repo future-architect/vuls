@@ -1096,11 +1096,32 @@ func (w *windows) parseIP(stdout string) ([]string, []string) {
 }
 
 func (w *windows) scanPackages() error {
-	if r := w.exec(w.translateCmd("Get-Package | Format-List -Property Name, Version, ProviderName"), noSudo); r.isSuccess() {
+	if r := w.exec(w.translateCmd("Get-Package | Select-Object Name, Version, ProviderName, @{Name='Publisher';Expression={$_.Metadata['Publisher']}} | Format-List"), noSudo); r.isSuccess() {
 		installed, _, err := w.parseInstalledPackages(r.Stdout)
 		if err != nil {
 			return xerrors.Errorf("Failed to parse installed packages. err: %w", err)
 		}
+
+		// Fill in missing vendor info from registry for packages where Get-Package Metadata['Publisher'] is empty (e.g. msi provider)
+		var missingVendorPkgs []string
+		for name, pkg := range installed {
+			if pkg.Vendor == "" {
+				missingVendorPkgs = append(missingVendorPkgs, name)
+			}
+		}
+		if len(missingVendorPkgs) > 0 {
+			if r := w.exec(w.translateCmd("Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*','HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*','HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue | Select-Object DisplayName, Publisher | Format-List"), noSudo); r.isSuccess() {
+				regVendors := w.parseRegistryPublishers(r.Stdout)
+				for _, name := range missingVendorPkgs {
+					if vendor, ok := regVendors[name]; ok && vendor != "" {
+						pkg := installed[name]
+						pkg.Vendor = vendor
+						installed[name] = pkg
+					}
+				}
+			}
+		}
+
 		w.Packages = installed
 	}
 
@@ -1116,13 +1137,16 @@ func (w *windows) scanPackages() error {
 func (w *windows) parseInstalledPackages(stdout string) (models.Packages, models.SrcPackages, error) {
 	installed := models.Packages{}
 
-	var name, version string
+	var name, version, vendor, providerName string
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
 		line := scanner.Text()
 		switch {
 		case line == "":
-			name, version = "", ""
+			if providerName != "msu" && name != "" {
+				installed[name] = models.Package{Name: name, Version: version, Vendor: vendor}
+			}
+			name, version, vendor, providerName = "", "", "", ""
 		case strings.HasPrefix(line, "Name"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
@@ -1140,19 +1164,58 @@ func (w *windows) parseInstalledPackages(stdout string) (models.Packages, models
 			if !found {
 				return nil, nil, xerrors.Errorf(`Failed to detect ProviderName. expected: "ProviderName : <ProviderName>", line: "%s"`, line)
 			}
+			providerName = strings.TrimSpace(rhs)
+		case strings.HasPrefix(line, "Publisher"):
+			_, rhs, found := strings.Cut(line, ":")
+			if !found {
+				return nil, nil, xerrors.Errorf(`Failed to detect Publisher. expected: "Publisher : <Publisher>", line: "%s"`, line)
+			}
+			vendor = strings.TrimSpace(rhs)
+		default:
+		}
+	}
 
-			switch strings.TrimSpace(rhs) {
-			case "msu":
-			default:
-				if name != "" {
-					installed[name] = models.Package{Name: name, Version: version}
-				}
+	// Handle the last entry if stdout does not end with an empty line
+	if providerName != "msu" && name != "" {
+		installed[name] = models.Package{Name: name, Version: version, Vendor: vendor}
+	}
+
+	return installed, nil, nil
+}
+
+func (w *windows) parseRegistryPublishers(stdout string) map[string]string {
+	result := map[string]string{}
+
+	var displayName, publisher string
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := scanner.Text()
+		switch {
+		case line == "":
+			if displayName != "" && publisher != "" {
+				result[displayName] = publisher
+			}
+			displayName, publisher = "", ""
+		case strings.HasPrefix(line, "DisplayName"):
+			_, rhs, found := strings.Cut(line, ":")
+			if found {
+				displayName = strings.TrimSpace(rhs)
+			}
+		case strings.HasPrefix(line, "Publisher"):
+			_, rhs, found := strings.Cut(line, ":")
+			if found {
+				publisher = strings.TrimSpace(rhs)
 			}
 		default:
 		}
 	}
 
-	return installed, nil, nil
+	// Handle last entry
+	if displayName != "" && publisher != "" {
+		result[displayName] = publisher
+	}
+
+	return result
 }
 
 func (w *windows) scanKBs() (*models.WindowsKB, error) {
