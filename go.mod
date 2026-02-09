@@ -59,7 +59,7 @@ require (
 	github.com/vulsio/gost v0.7.2
 	github.com/vulsio/goval-dictionary v0.15.1
 	go.etcd.io/bbolt v1.4.3
-	golang.org/x/oauth2 v0.34.0
+	golang.org/x/oauth2 v0.35.0
 	golang.org/x/sync v0.19.0
 	golang.org/x/term v0.39.0
 	golang.org/x/text v0.33.0
