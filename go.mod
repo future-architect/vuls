@@ -1,6 +1,6 @@
 module github.com/future-architect/vuls
 
-go 1.25.5
+go 1.25.6
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.4
@@ -9,7 +9,7 @@ require (
 	github.com/MaineK00n/vuls-data-update v0.0.0-20251125094749-e6f7ed9f8ca3
 	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260130013332-a13a8cff2129
 	github.com/Ullaakut/nmap/v2 v2.2.2
-	github.com/aquasecurity/trivy v0.69.0
+	github.com/aquasecurity/trivy v0.69.1
 	github.com/aquasecurity/trivy-db v0.0.0-20251222105351-a833f47f8f0d
 	github.com/aquasecurity/trivy-java-db v0.0.0-20240109071736-184bd7481d48
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
