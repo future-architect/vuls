@@ -720,7 +720,7 @@ func toCveContentType(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models
 		default:
 			return models.Ubuntu
 		}
-	case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise:
+	case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed:
 		return models.SUSE
 	default:
 		return models.NewCveContentType(et)
@@ -764,7 +764,7 @@ func toCvss(e ecosystemTypes.Ecosystem, src sourceTypes.SourceID, ss []severityT
 			}
 		case severityTypes.SeverityTypeCVSSv2:
 			switch et {
-			case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise:
+			case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed:
 				if s.Source != "SUSE" {
 					continue
 				}
@@ -775,7 +775,7 @@ func toCvss(e ecosystemTypes.Ecosystem, src sourceTypes.SourceID, ss []severityT
 			}
 		case severityTypes.SeverityTypeCVSSv30:
 			switch et {
-			case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise:
+			case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed:
 				if s.Source != "SUSE" {
 					continue
 				}
@@ -790,7 +790,7 @@ func toCvss(e ecosystemTypes.Ecosystem, src sourceTypes.SourceID, ss []severityT
 			}
 		case severityTypes.SeverityTypeCVSSv31:
 			switch et {
-			case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise:
+			case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed:
 				if s.Source != "SUSE" {
 					continue
 				}
@@ -847,7 +847,7 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) model
 			SortOrder:       1,
 		}
 	case ecosystemTypes.EcosystemTypeRedHat, ecosystemTypes.EcosystemTypeFedora, ecosystemTypes.EcosystemTypeAlma, ecosystemTypes.EcosystemTypeRocky, ecosystemTypes.EcosystemTypeOracle, ecosystemTypes.EcosystemTypeAlpine,
-		ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeSUSELinuxMicro, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSELeapMicro, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed:
+		ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed:
 		return models.OvalMatch
 	case ecosystemTypes.EcosystemTypeUbuntu:
 		switch s {
