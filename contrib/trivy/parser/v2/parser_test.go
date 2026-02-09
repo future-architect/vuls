@@ -35,6 +35,10 @@ func TestParse(t *testing.T) {
 			vulnJSON: oneCVEtoNVulnerabilityTrivy,
 			expected: oneCVEtoNVulnerabilitySR,
 		},
+		"includeDevDependencies": {
+			vulnJSON: includeDevDependenciesTrivy,
+			expected: includeDevDependenciesSR,
+		},
 	}
 
 	for testcase, v := range cases {
@@ -2925,6 +2929,82 @@ var oneCVEtoNVulnerabilitySR = &models.ScanResult{
 		"TRIVY_IMAGE_NAME": "test-cve-2013-1629-cve-2023-26154",
 		"TRIVY_IMAGE_TAG":  "latest",
 	},
+}
+
+var includeDevDependenciesTrivy = []byte(`{
+  "SchemaVersion": 2,
+  "Trivy": {
+    "Version": "0.69.0"
+  },
+  "ReportID": "019c2bed-6853-731a-a073-4a2169befa96",
+  "CreatedAt": "2026-02-05T12:51:44.979205652+09:00",
+  "ArtifactName": "integration/data/lockfile/pnpm-v9/pnpm-lock.yaml",
+  "ArtifactType": "filesystem",
+  "Results": [
+    {
+      "Target": "pnpm-lock.yaml",
+      "Class": "lang-pkgs",
+      "Type": "pnpm",
+      "Packages": [
+        {
+          "ID": "@fortawesome/fontawesome-free@6.5.2",
+          "Name": "@fortawesome/fontawesome-free",
+          "Identifier": {
+            "PURL": "pkg:npm/%40fortawesome/fontawesome-free@6.5.2",
+            "UID": "56b6072d6405ec58"
+          },
+          "Version": "6.5.2",
+          "Relationship": "direct",
+          "AnalyzedBy": "pnpm"
+        },
+        {
+          "ID": "@rushstack/eslint-patch@1.10.2",
+          "Name": "@rushstack/eslint-patch",
+          "Identifier": {
+            "PURL": "pkg:npm/%40rushstack/eslint-patch@1.10.2",
+            "UID": "e5cd80b9795af8fc"
+          },
+          "Version": "1.10.2",
+          "Dev": true,
+          "Relationship": "direct",
+          "AnalyzedBy": "pnpm"
+        }
+      ],
+      "Vulnerabilities": []
+    }
+  ]
+}
+`)
+
+var includeDevDependenciesSR = &models.ScanResult{
+	JSONVersion: 4,
+	ServerName:  "integration/data/lockfile/pnpm-v9/pnpm-lock.yaml",
+	Family:      "pseudo",
+	ScannedBy:   "trivy",
+	ScannedVia:  "trivy",
+	ScannedCves: models.VulnInfos{},
+	Packages:    models.Packages{},
+	SrcPackages: models.SrcPackages{},
+	LibraryScanners: models.LibraryScanners{
+		{
+			Type: "pnpm",
+			Libs: []models.Library{
+				{
+					Name:    "@fortawesome/fontawesome-free",
+					Version: "6.5.2",
+					PURL:    "pkg:npm/%40fortawesome/fontawesome-free@6.5.2",
+				},
+				{
+					Name:    "@rushstack/eslint-patch",
+					Version: "1.10.2",
+					PURL:    "pkg:npm/%40rushstack/eslint-patch@1.10.2",
+					Dev:     true,
+				},
+			},
+			LockfilePath: "pnpm-lock.yaml",
+		},
+	},
+	Optional: nil,
 }
 
 func TestParseError(t *testing.T) {

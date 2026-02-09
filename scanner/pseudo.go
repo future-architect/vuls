@@ -131,7 +131,7 @@ func (o *pseudo) scanLibraries() (err error) {
 		}
 
 		trivypath := o.cleanPath(abspath)
-		libraryScanners, err := AnalyzeLibrary(context.Background(), trivypath, contents, filemode, o.getServerInfo().Mode.IsOffline(), false)
+		libraryScanners, err := AnalyzeLibrary(context.Background(), trivypath, contents, filemode, o.getServerInfo().Mode.IsOffline())
 		if err != nil {
 			return xerrors.Errorf("Failed to analyze library. err: %w, filepath: %s", err, trivypath)
 		}

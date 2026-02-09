@@ -48,6 +48,9 @@ type Library struct {
 	// This field is used to convert the result JSON of a `trivy image` using trivy-to-vuls.
 	FilePath string
 	Digest   string
+
+	// Dev indicates whether the library is a development dependency.
+	Dev bool
 }
 
 // FindLockFiles is a list of filenames that is the target of findLock
