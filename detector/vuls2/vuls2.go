@@ -19,7 +19,7 @@ import (
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
 	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
-	"github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/fixstatus"
+	vcFixStatusTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/fixstatus"
 	vcPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package"
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
@@ -586,18 +586,13 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 							if s := fixState(e, sourceID, fcn.Criterion.Version.FixStatus.Vendor); s != "" {
 								return s
 							}
-							if fcn.Criterion.Version.FixStatus.Class == fixstatus.ClassUnknown {
+							if fcn.Criterion.Version.FixStatus.Class == vcFixStatusTypes.ClassUnknown {
 								return "Unknown"
 							}
 							return ""
 						}(),
-						FixedIn: fixedIn,
-						NotFixedYet: func() bool {
-							if cn.Criterion.Version.FixStatus == nil {
-								return true
-							}
-							return cn.Criterion.Version.FixStatus.Class != fixstatus.ClassFixed
-						}(),
+						FixedIn:     fixedIn,
+						NotFixedYet: cn.Criterion.Version.FixStatus == nil || cn.Criterion.Version.FixStatus.Class != vcFixStatusTypes.ClassFixed,
 					},
 				})
 			}
