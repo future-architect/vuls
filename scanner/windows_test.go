@@ -750,7 +750,10 @@ Publisher   : https://go.dev`,
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			o := &windows{}
-			got := o.parseRegistryPublishers(tt.args.stdout)
+			got, err := o.parseRegistryPublishers(tt.args.stdout)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("windows.parseRegistryPublishers() got = %v, want %v", got, tt.want)
 			}

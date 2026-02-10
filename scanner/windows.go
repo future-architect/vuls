@@ -1103,7 +1103,7 @@ func (w *windows) scanPackages() error {
 		}
 
 		// Fill in missing vendor info from registry for packages where Get-Package Metadata['Publisher'] is empty (e.g. msi provider)
-		var missingVendorPkgs []string
+		missingVendorPkgs := make([]string, 0, len(installed))
 		for name, pkg := range installed {
 			if pkg.Vendor == "" {
 				missingVendorPkgs = append(missingVendorPkgs, name)
@@ -1111,7 +1111,10 @@ func (w *windows) scanPackages() error {
 		}
 		if len(missingVendorPkgs) > 0 {
 			if r := w.exec(w.translateCmd("Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*','HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*','HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue | Select-Object DisplayName, Publisher | Format-List"), noSudo); r.isSuccess() {
-				regVendors := w.parseRegistryPublishers(r.Stdout)
+				regVendors, err := w.parseRegistryPublishers(r.Stdout)
+				if err != nil {
+					return xerrors.Errorf("Failed to parse registry publishers. err: %w", err)
+				}
 				for _, name := range missingVendorPkgs {
 					if vendor, ok := regVendors[name]; ok && vendor != "" {
 						pkg := installed[name]
@@ -1175,6 +1178,10 @@ func (w *windows) parseInstalledPackages(stdout string) (models.Packages, models
 		}
 	}
 
+	if err := scanner.Err(); err != nil {
+		return nil, nil, xerrors.Errorf("Failed to scan installed packages stdout: %w", err)
+	}
+
 	// Handle the last entry if stdout does not end with an empty line
 	if providerName != "msu" && name != "" {
 		installed[name] = models.Package{Name: name, Version: version, Vendor: vendor}
@@ -1183,7 +1190,7 @@ func (w *windows) parseInstalledPackages(stdout string) (models.Packages, models
 	return installed, nil, nil
 }
 
-func (w *windows) parseRegistryPublishers(stdout string) map[string]string {
+func (w *windows) parseRegistryPublishers(stdout string) (map[string]string, error) {
 	result := map[string]string{}
 
 	var displayName, publisher string
@@ -1210,12 +1217,16 @@ func (w *windows) parseRegistryPublishers(stdout string) map[string]string {
 		}
 	}
 
+	if err := scanner.Err(); err != nil {
+		return nil, xerrors.Errorf("Failed to scan registry publishers stdout: %w", err)
+	}
+
 	// Handle last entry
 	if displayName != "" && publisher != "" {
 		result[displayName] = publisher
 	}
 
-	return result
+	return result, nil
 }
 
 func (w *windows) scanKBs() (*models.WindowsKB, error) {
