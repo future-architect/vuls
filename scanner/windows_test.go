@@ -606,6 +606,40 @@ func Test_parseInstalledPackages(t *testing.T) {
 Name         : Git
 Version      : 2.35.1.2
 ProviderName : Programs
+Publisher    : The Git Development Community
+
+Name         : Oracle Database 11g Express Edition
+Version      : 11.2.0
+ProviderName : msi
+Publisher    : Oracle
+
+Name         : 2022-12 x64 ベース システム用 Windows 10 Version 21H2 の累積更新プログラム (KB5021233)
+Version      :
+ProviderName : msu
+Publisher    : Microsoft Corporation
+`,
+			},
+			want: models.Packages{
+				"Git": {
+					Name:    "Git",
+					Version: "2.35.1.2",
+					Vendor:  "The Git Development Community",
+				},
+				"Oracle Database 11g Express Edition": {
+					Name:    "Oracle Database 11g Express Edition",
+					Version: "11.2.0",
+					Vendor:  "Oracle",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "no publisher",
+			args: args{
+				stdout: `
+Name         : Git
+Version      : 2.35.1.2
+ProviderName : Programs
 
 Name         : Oracle Database 11g Express Edition
 Version      : 11.2.0
@@ -639,6 +673,89 @@ ProviderName : msu
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("windows.parseInstalledPackages() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_parseRegistryPublishers(t *testing.T) {
+	type args struct {
+		stdout string
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string]string
+	}{
+		{
+			name: "happy",
+			args: args{
+				stdout: `
+DisplayName : Git
+Publisher   : The Git Development Community
+
+DisplayName : PowerShell 7-x64
+Publisher   : Microsoft Corporation
+
+DisplayName : GitHub CLI
+Publisher   : GitHub, Inc.
+
+DisplayName : Windows Subsystem for Linux
+Publisher   : Microsoft Corporation
+`,
+			},
+			want: map[string]string{
+				"Git":                         "The Git Development Community",
+				"PowerShell 7-x64":            "Microsoft Corporation",
+				"GitHub CLI":                  "GitHub, Inc.",
+				"Windows Subsystem for Linux": "Microsoft Corporation",
+			},
+		},
+		{
+			name: "missing publisher",
+			args: args{
+				stdout: `
+DisplayName : Git
+Publisher   : The Git Development Community
+
+DisplayName : SomeApp
+
+DisplayName : AnotherApp
+Publisher   : SomeVendor
+`,
+			},
+			want: map[string]string{
+				"Git":        "The Git Development Community",
+				"AnotherApp": "SomeVendor",
+			},
+		},
+		{
+			name: "empty",
+			args: args{
+				stdout: ``,
+			},
+			want: map[string]string{},
+		},
+		{
+			name: "no trailing newline",
+			args: args{
+				stdout: `DisplayName : Go Programming Language amd64 go1.24.4
+Publisher   : https://go.dev`,
+			},
+			want: map[string]string{
+				"Go Programming Language amd64 go1.24.4": "https://go.dev",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := &windows{}
+			got, err := o.parseRegistryPublishers(tt.args.stdout)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("windows.parseRegistryPublishers() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
