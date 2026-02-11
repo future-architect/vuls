@@ -560,8 +560,7 @@ var strutsSR = &models.ScanResult{
 					Name:    "commons-beanutils:commons-beanutils",
 					Version: "1.7.0",
 					FixedIn: "1.9.2",
-					//TODO use Artifactname?
-					Path: "Java",
+					Path:    "/data/struts-1.2.7/lib/Java",
 				},
 			},
 			AffectedPackages: models.PackageFixStatuses{},
@@ -638,8 +637,7 @@ var strutsSR = &models.ScanResult{
 					Name:    "struts:struts",
 					Version: "1.2.7",
 					FixedIn: "",
-					//TODO use Artifactname?
-					Path: "Java",
+					Path:    "/data/struts-1.2.7/lib/Java",
 				},
 			},
 			AffectedPackages: models.PackageFixStatuses{},
@@ -648,7 +646,7 @@ var strutsSR = &models.ScanResult{
 	LibraryScanners: models.LibraryScanners{
 		models.LibraryScanner{
 			Type:         "jar",
-			LockfilePath: "Java",
+			LockfilePath: "/data/struts-1.2.7/lib/Java",
 			Libs: []models.Library{
 				{
 					Name:    "commons-beanutils:commons-beanutils",
@@ -1099,7 +1097,7 @@ var osAndLibSR = &models.ScanResult{
 					Name:    "activesupport",
 					Version: "6.0.2.1",
 					FixedIn: "6.0.3.1, 5.2.4.3",
-					Path:    "Ruby",
+					Path:    "/var/lib/gems/2.5.0/specifications/activesupport-6.0.2.1.gemspec",
 				},
 			},
 		},
@@ -1107,7 +1105,7 @@ var osAndLibSR = &models.ScanResult{
 	LibraryScanners: models.LibraryScanners{
 		models.LibraryScanner{
 			Type:         "gemspec",
-			LockfilePath: "Ruby",
+			LockfilePath: "/var/lib/gems/2.5.0/specifications/activesupport-6.0.2.1.gemspec",
 			Libs: []models.Library{
 				{
 					Name:     "activesupport",
@@ -1589,7 +1587,7 @@ var osAndLib2SR = &models.ScanResult{
 					Name:    "activesupport",
 					Version: "6.0.2.1",
 					FixedIn: "6.0.3.1, 5.2.4.3",
-					Path:    "Ruby",
+					Path:    "/var/lib/gems/2.5.0/specifications/activesupport-6.0.2.1.gemspec",
 				},
 			},
 		},
@@ -1597,7 +1595,7 @@ var osAndLib2SR = &models.ScanResult{
 	LibraryScanners: models.LibraryScanners{
 		models.LibraryScanner{
 			Type:         "gemspec",
-			LockfilePath: "Ruby",
+			LockfilePath: "/var/lib/gems/2.5.0/specifications/activesupport-6.0.2.1.gemspec",
 			Libs: []models.Library{
 				{
 					Name:     "activesupport",
@@ -2884,14 +2882,14 @@ var oneCVEtoNVulnerabilitySR = &models.ScanResult{
 					Name:    "pubnub",
 					Version: "0.3.0",
 					FixedIn: "0.4.0",
-					Path:    "Cargo.lock",
+					Path:    "/Cargo.lock",
 				},
 				{
 					Key:     "composer",
 					Name:    "pubnub/pubnub",
 					Version: "6.0.0",
 					FixedIn: "6.1.0",
-					Path:    "composer.lock",
+					Path:    "/composer.lock",
 				},
 			},
 		},
@@ -2903,7 +2901,7 @@ var oneCVEtoNVulnerabilitySR = &models.ScanResult{
 				Name:    "pubnub",
 				Version: "0.3.0",
 			}},
-			LockfilePath: "Cargo.lock",
+			LockfilePath: "/Cargo.lock",
 		},
 		{
 			Type: "composer",
@@ -2911,7 +2909,7 @@ var oneCVEtoNVulnerabilitySR = &models.ScanResult{
 				Name:    "pubnub/pubnub",
 				Version: "6.0.0",
 			}},
-			LockfilePath: "composer.lock",
+			LockfilePath: "/composer.lock",
 		},
 	},
 	Packages: models.Packages{
@@ -3001,7 +2999,7 @@ var includeDevDependenciesSR = &models.ScanResult{
 					Dev:     true,
 				},
 			},
-			LockfilePath: "pnpm-lock.yaml",
+			LockfilePath: "integration/data/lockfile/pnpm-v9/pnpm-lock.yaml",
 		},
 	},
 	Optional: nil,
