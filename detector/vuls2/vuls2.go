@@ -583,13 +583,7 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 							if fcn.Criterion.Version.FixStatus == nil {
 								return ""
 							}
-							if s := fixState(e, sourceID, fcn.Criterion.Version.FixStatus.Vendor); s != "" {
-								return s
-							}
-							if fcn.Criterion.Version.FixStatus.Class == vcFixStatusTypes.ClassUnknown {
-								return "Unknown"
-							}
-							return ""
+							return fixState(e, sourceID, fcn.Criterion.Version.FixStatus.Vendor)
 						}(),
 						FixedIn:     fixedIn,
 						NotFixedYet: cn.Criterion.Version.FixStatus == nil || cn.Criterion.Version.FixStatus.Class != vcFixStatusTypes.ClassFixed,
