@@ -801,7 +801,7 @@ func toCvss(e ecosystemTypes.Ecosystem, src sourceTypes.SourceID, ss []severityT
 			}
 		case severityTypes.SeverityTypeCVSSv40:
 			switch et {
-			case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise:
+			case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed:
 				if s.Source != "SUSE" {
 					continue
 				}
