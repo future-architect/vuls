@@ -6763,7 +6763,7 @@ func Test_postConvert(t *testing.T) {
 																								Version: toPtr(versioncriterionTypes.Criterion{
 																									Vulnerable: true,
 																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
-																										Class: vcFixStatusTypes.ClassUnknown,
+																										Class: vcFixStatusTypes.ClassFixed,
 																									}),
 																									Package: vcPackageTypes.Package{
 																										Type: vcPackageTypes.PackageTypeBinary,
@@ -6844,7 +6844,7 @@ func Test_postConvert(t *testing.T) {
 																								Version: toPtr(versioncriterionTypes.Criterion{
 																									Vulnerable: true,
 																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
-																										Class: vcFixStatusTypes.ClassUnknown,
+																										Class: vcFixStatusTypes.ClassFixed,
 																									}),
 																									Package: vcPackageTypes.Package{
 																										Type: vcPackageTypes.PackageTypeBinary,
@@ -6876,7 +6876,7 @@ func Test_postConvert(t *testing.T) {
 																						Version: toPtr(versioncriterionTypes.Criterion{
 																							Vulnerable: true,
 																							FixStatus: toPtr(vcFixStatusTypes.FixStatus{
-																								Class: vcFixStatusTypes.ClassUnknown,
+																								Class: vcFixStatusTypes.ClassFixed,
 																							}),
 																							Package: vcPackageTypes.Package{
 																								Type: vcPackageTypes.PackageTypeBinary,
@@ -6922,8 +6922,7 @@ func Test_postConvert(t *testing.T) {
 					AffectedPackages: models.PackageFixStatuses{
 						{
 							Name:        "kernel-default",
-							NotFixedYet: true,
-							FixState:    "Unknown",
+							NotFixedYet: false,
 						},
 					},
 					CveContents: models.CveContents{
@@ -7095,7 +7094,7 @@ func Test_postConvert(t *testing.T) {
 																								Version: toPtr(versioncriterionTypes.Criterion{
 																									Vulnerable: true,
 																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
-																										Class: vcFixStatusTypes.ClassUnknown,
+																										Class: vcFixStatusTypes.ClassFixed,
 																									}),
 																									Package: vcPackageTypes.Package{
 																										Type: vcPackageTypes.PackageTypeBinary,
@@ -7176,7 +7175,7 @@ func Test_postConvert(t *testing.T) {
 																								Version: toPtr(versioncriterionTypes.Criterion{
 																									Vulnerable: true,
 																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
-																										Class: vcFixStatusTypes.ClassUnknown,
+																										Class: vcFixStatusTypes.ClassFixed,
 																									}),
 																									Package: vcPackageTypes.Package{
 																										Type: vcPackageTypes.PackageTypeBinary,
@@ -7208,7 +7207,7 @@ func Test_postConvert(t *testing.T) {
 																						Version: toPtr(versioncriterionTypes.Criterion{
 																							Vulnerable: true,
 																							FixStatus: toPtr(vcFixStatusTypes.FixStatus{
-																								Class: vcFixStatusTypes.ClassUnknown,
+																								Class: vcFixStatusTypes.ClassFixed,
 																							}),
 																							Package: vcPackageTypes.Package{
 																								Type: vcPackageTypes.PackageTypeBinary,
@@ -7254,8 +7253,7 @@ func Test_postConvert(t *testing.T) {
 					AffectedPackages: models.PackageFixStatuses{
 						{
 							Name:        "kernel-default",
-							NotFixedYet: true,
-							FixState:    "Unknown",
+							NotFixedYet: false,
 						},
 					},
 					CveContents: models.CveContents{
@@ -7433,7 +7431,7 @@ func Test_postConvert(t *testing.T) {
 																								Version: toPtr(versioncriterionTypes.Criterion{
 																									Vulnerable: true,
 																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
-																										Class: vcFixStatusTypes.ClassUnknown,
+																										Class: vcFixStatusTypes.ClassFixed,
 																									}),
 																									Package: vcPackageTypes.Package{
 																										Type: vcPackageTypes.PackageTypeBinary,
@@ -7514,7 +7512,7 @@ func Test_postConvert(t *testing.T) {
 																								Version: toPtr(versioncriterionTypes.Criterion{
 																									Vulnerable: true,
 																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
-																										Class: vcFixStatusTypes.ClassUnknown,
+																										Class: vcFixStatusTypes.ClassFixed,
 																									}),
 																									Package: vcPackageTypes.Package{
 																										Type: vcPackageTypes.PackageTypeBinary,
@@ -7546,7 +7544,7 @@ func Test_postConvert(t *testing.T) {
 																						Version: toPtr(versioncriterionTypes.Criterion{
 																							Vulnerable: true,
 																							FixStatus: toPtr(vcFixStatusTypes.FixStatus{
-																								Class: vcFixStatusTypes.ClassUnknown,
+																								Class: vcFixStatusTypes.ClassFixed,
 																							}),
 																							Package: vcPackageTypes.Package{
 																								Type: vcPackageTypes.PackageTypeBinary,
@@ -7592,8 +7590,7 @@ func Test_postConvert(t *testing.T) {
 					AffectedPackages: models.PackageFixStatuses{
 						{
 							Name:        "kernel-default",
-							NotFixedYet: true,
-							FixState:    "Unknown",
+							NotFixedYet: false,
 						},
 						{
 							Name:        "kernel-livepatch-5_3_18-150300_59_43-default",
@@ -7775,7 +7772,7 @@ func Test_postConvert(t *testing.T) {
 																								Version: toPtr(versioncriterionTypes.Criterion{
 																									Vulnerable: true,
 																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
-																										Class: vcFixStatusTypes.ClassUnknown,
+																										Class: vcFixStatusTypes.ClassFixed,
 																									}),
 																									Package: vcPackageTypes.Package{
 																										Type: vcPackageTypes.PackageTypeBinary,
@@ -7856,7 +7853,7 @@ func Test_postConvert(t *testing.T) {
 																								Version: toPtr(versioncriterionTypes.Criterion{
 																									Vulnerable: true,
 																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
-																										Class: vcFixStatusTypes.ClassUnknown,
+																										Class: vcFixStatusTypes.ClassFixed,
 																									}),
 																									Package: vcPackageTypes.Package{
 																										Type: vcPackageTypes.PackageTypeBinary,
@@ -7888,7 +7885,7 @@ func Test_postConvert(t *testing.T) {
 																						Version: toPtr(versioncriterionTypes.Criterion{
 																							Vulnerable: true,
 																							FixStatus: toPtr(vcFixStatusTypes.FixStatus{
-																								Class: vcFixStatusTypes.ClassUnknown,
+																								Class: vcFixStatusTypes.ClassFixed,
 																							}),
 																							Package: vcPackageTypes.Package{
 																								Type: vcPackageTypes.PackageTypeBinary,
