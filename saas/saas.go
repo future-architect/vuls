@@ -118,7 +118,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 	for _, r := range rs {
 		if 0 < len(tags) {
 			if r.Optional == nil {
-				r.Optional = map[string]interface{}{}
+				r.Optional = map[string]any{}
 			}
 			r.Optional["VULS_TAGS"] = tags
 		}

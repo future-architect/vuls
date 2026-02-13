@@ -158,7 +158,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 
 	concurrency := 10
 	tasks := util.GenWorkers(concurrency)
-	for i := 0; i < nReq; i++ {
+	for range nReq {
 		tasks <- func() {
 			req := <-reqChan
 			url, err := util.URLPathJoin(
@@ -182,7 +182,7 @@ func getDefsByPackNameViaHTTP(r *models.ScanResult, url string) (relatedDefs ova
 		timeout = time.After(time.Duration(config.Conf.OvalDict.TimeoutSec) * time.Second)
 	}
 	var errs []error
-	for i := 0; i < nReq; i++ {
+	for range nReq {
 		select {
 		case res := <-resChan:
 			for _, def := range res.defs {

@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/knqyf263/go-cpe/naming"
@@ -24,10 +25,8 @@ type vulnerabilityID struct {
 }
 
 func appendIfMissing(slice []string, str string) []string {
-	for _, s := range slice {
-		if s == str {
-			return slice
-		}
+	if slices.Contains(slice, str) {
+		return slice
 	}
 	return append(slice, str)
 }

@@ -130,7 +130,7 @@ func getCTIsViaHTTP(cveIDs []string, urlPrefix string) (responses []ctiResponse,
 
 	concurrency := 10
 	tasks := util.GenWorkers(concurrency)
-	for i := 0; i < nReq; i++ {
+	for range nReq {
 		tasks <- func() {
 			req := <-reqChan
 			url, err := util.URLPathJoin(
@@ -151,7 +151,7 @@ func getCTIsViaHTTP(cveIDs []string, urlPrefix string) (responses []ctiResponse,
 		timeout = time.After(time.Duration(config.Conf.Cti.TimeoutSec) * time.Second)
 	}
 	var errs []error
-	for i := 0; i < nReq; i++ {
+	for range nReq {
 		select {
 		case res := <-resChan:
 			responses = append(responses, res)

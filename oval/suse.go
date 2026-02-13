@@ -4,6 +4,7 @@ package oval
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 
 	"golang.org/x/xerrors"
@@ -90,9 +91,7 @@ func (o SUSE) update(r *models.ScanResult, defpacks defPacks) {
 	collectBinpkgFixstat := defPacks{
 		binpkgFixstat: map[string]fixStat{},
 	}
-	for packName, fixStatus := range defpacks.binpkgFixstat {
-		collectBinpkgFixstat.binpkgFixstat[packName] = fixStatus
-	}
+	maps.Copy(collectBinpkgFixstat.binpkgFixstat, defpacks.binpkgFixstat)
 
 	for _, pack := range vinfo.AffectedPackages {
 		collectBinpkgFixstat.binpkgFixstat[pack.Name] = fixStat{

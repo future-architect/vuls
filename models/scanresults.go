@@ -55,7 +55,7 @@ type ScanResult struct {
 	LibraryScanners   LibraryScanners          `json:"libraries,omitempty"`
 	WindowsKB         *WindowsKB               `json:"windowsKB,omitempty"`
 	CweDict           CweDict                  `json:"cweDict,omitempty"`
-	Optional          map[string]interface{}   `json:",omitempty"`
+	Optional          map[string]any           `json:",omitempty"`
 	Config            struct {
 		Scan   config.Config `json:"scan"`
 		Report config.Config `json:"report"`
@@ -344,8 +344,7 @@ func (r ScanResult) ClearFields(targetTagNames []string) ScanResult {
 		target[strings.ToLower(n)] = true
 	}
 	t := reflect.ValueOf(r).Type()
-	for i := 0; i < t.NumField(); i++ {
-		f := t.Field(i)
+	for f := range t.Fields() {
 		jsonValue := strings.Split(f.Tag.Get("json"), ",")[0]
 		if ok := target[strings.ToLower(jsonValue)]; ok {
 			vv := reflect.New(f.Type).Elem().Interface()

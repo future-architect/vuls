@@ -5,6 +5,7 @@ package detector
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -93,9 +94,7 @@ func diff(curResults, preResults models.ScanResults, isPlus, isMinus bool) (diff
 			if len(cves) == 0 {
 				cves = minus
 			} else {
-				for k, v := range minus {
-					cves[k] = v
-				}
+				maps.Copy(cves, minus)
 			}
 		}
 
@@ -154,9 +153,7 @@ func getPlusDiffCves(previous, current models.ScanResult) models.VulnInfos {
 		logging.Log.Infof("%s: There are %d vulnerabilities, but no difference between current result and previous one.", current.FormatServerName(), len(current.ScannedCves))
 	}
 
-	for cveID, vuln := range newer {
-		updated[cveID] = vuln
-	}
+	maps.Copy(updated, newer)
 	return updated
 }
 

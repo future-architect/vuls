@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -168,9 +169,9 @@ func formatScanSummary(rs ...models.ScanResult) string {
 
 	warnMsgs := []string{}
 	for _, r := range rs {
-		var cols []interface{}
+		var cols []any
 		if len(r.Errors) == 0 {
-			cols = []interface{}{
+			cols = []any{
 				r.FormatServerName(),
 				fmt.Sprintf("%s%s", r.Family, r.Release),
 				r.FormatUpdatablePkgsSummary(),
@@ -182,7 +183,7 @@ func formatScanSummary(rs ...models.ScanResult) string {
 				cols = append(cols, fmt.Sprintf("%d libs", r.LibraryScanners.Total()))
 			}
 		} else {
-			cols = []interface{}{
+			cols = []any{
 				r.FormatServerName(),
 				"Error",
 				"",
@@ -206,9 +207,9 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 
 	warnMsgs := []string{}
 	for _, r := range rs {
-		var cols []interface{}
+		var cols []any
 		if len(r.Errors) == 0 {
-			cols = []interface{}{
+			cols = []any{
 				r.FormatServerName(),
 				r.ScannedCves.FormatCveSummary(),
 				r.ScannedCves.FormatFixedStatus(r.Packages),
@@ -219,7 +220,7 @@ func formatOneLineSummary(rs ...models.ScanResult) string {
 				r.FormatAlertSummary(),
 			}
 		} else {
-			cols = []interface{}{
+			cols = []any{
 				r.FormatServerName(),
 				"Use configtest subcommand or scan with --debug to view the details",
 				"",
@@ -367,7 +368,8 @@ No CVE-IDs are found in updatable packages.
 `, header, r.FormatUpdatablePkgsSummary()), nil
 	}
 
-	lines := header + "\n"
+	var lines strings.Builder
+	lines.WriteString(header + "\n")
 
 	for _, vuln := range r.ScannedCves.ToSortedSlice() {
 		data := [][]string{}
@@ -651,9 +653,9 @@ No CVE-IDs are found in updatable packages.
 			return "", xerrors.Errorf("Failed to render table. err: %w", err)
 		}
 
-		lines += b.String() + "\n"
+		lines.WriteString(b.String() + "\n")
 	}
-	return lines, nil
+	return lines.String(), nil
 }
 
 func terminalWidth() int {
@@ -696,8 +698,8 @@ func formatCsvList(r models.ScanResult, path string) error {
 		link := ""
 		if strings.HasPrefix(vinfo.CveID, "CVE-") {
 			link = fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", vinfo.CveID)
-		} else if strings.HasPrefix(vinfo.CveID, "WPVDBID-") {
-			link = fmt.Sprintf("https://wpscan.com/vulnerabilities/%s", strings.TrimPrefix(vinfo.CveID, "WPVDBID-"))
+		} else if after, ok := strings.CutPrefix(vinfo.CveID, "WPVDBID-"); ok {
+			link = fmt.Sprintf("https://wpscan.com/vulnerabilities/%s", after)
 		}
 
 		data = append(data, []string{
@@ -748,9 +750,7 @@ func diff(curResults, preResults models.ScanResults, isPlus, isMinus bool) (diff
 			if len(cves) == 0 {
 				cves = minus
 			} else {
-				for k, v := range minus {
-					cves[k] = v
-				}
+				maps.Copy(cves, minus)
 			}
 		}
 
@@ -809,9 +809,7 @@ func getPlusDiffCves(previous, current models.ScanResult) models.VulnInfos {
 		logging.Log.Infof("%s: There are %d vulnerabilities, but no difference between current result and previous one.", current.FormatServerName(), len(current.ScannedCves))
 	}
 
-	for cveID, vuln := range newer {
-		updated[cveID] = vuln
-	}
+	maps.Copy(updated, newer)
 	return updated
 }
 

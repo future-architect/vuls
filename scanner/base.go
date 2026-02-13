@@ -269,8 +269,8 @@ func (l *base) lxcPs(option string) (string, error) {
 }
 
 func (l *base) parseDockerPs(stdout string) (containers []config.Container, err error) {
-	lines := strings.Split(stdout, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(stdout, "\n")
+	for line := range lines {
 		fields := strings.Fields(line)
 		if len(fields) == 0 {
 			break
@@ -309,8 +309,8 @@ func (l *base) parseLxdPs(stdout string) (containers []config.Container, err err
 }
 
 func (l *base) parseLxcPs(stdout string) (containers []config.Container, err error) {
-	lines := strings.Split(stdout, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(stdout, "\n")
+	for line := range lines {
 		fields := strings.Fields(line)
 		if len(fields) == 0 {
 			break
@@ -339,8 +339,8 @@ func (l *base) ip() ([]string, []string, error) {
 
 // parseIP parses the results of ip command
 func (l *base) parseIP(stdout string) (ipv4Addrs []string, ipv6Addrs []string) {
-	lines := strings.Split(stdout, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(stdout, "\n")
+	for line := range lines {
 		fields := strings.Fields(line)
 		if len(fields) < 4 {
 			continue
@@ -363,8 +363,8 @@ func (l *base) parseIP(stdout string) (ipv4Addrs []string, ipv6Addrs []string) {
 
 // parseIfconfig parses the results of ifconfig command
 func (l *base) parseIfconfig(stdout string) (ipv4Addrs []string, ipv6Addrs []string) {
-	lines := strings.Split(stdout, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(stdout, "\n")
+	for line := range lines {
 		line = strings.TrimSpace(line)
 		fields := strings.Fields(line)
 		if len(fields) < 4 || !strings.HasPrefix(fields[0], "inet") {
@@ -912,7 +912,7 @@ func (d *DummyFileInfo) ModTime() time.Time { return time.Now() }
 func (d *DummyFileInfo) IsDir() bool { return false }
 
 // Sys is
-func (d *DummyFileInfo) Sys() interface{} { return nil }
+func (d *DummyFileInfo) Sys() any { return nil }
 
 func (l *base) buildWpCliCmd(wpCliArgs string, suppressStderr bool, shell string) string {
 	cmd := fmt.Sprintf("%s %s --path=%s", l.ServerInfo.WordPress.CmdPath, wpCliArgs, l.ServerInfo.WordPress.DocRoot)

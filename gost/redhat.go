@@ -86,7 +86,7 @@ func (red RedHat) parseCwe(str string) (cwes []string) {
 		s := strings.ReplaceAll(str, "(", "|")
 		s = strings.ReplaceAll(s, ")", "|")
 		s = strings.ReplaceAll(s, "->", "|")
-		for _, s := range strings.Split(s, "|") {
+		for s := range strings.SplitSeq(s, "|") {
 			if s != "" {
 				cwes = append(cwes, s)
 			}

@@ -44,7 +44,7 @@ func getCvesViaHTTP(cveIDs []string, urlPrefix string) (
 
 	concurrency := 10
 	tasks := util.GenWorkers(concurrency)
-	for i := 0; i < nReq; i++ {
+	for range nReq {
 		tasks <- func() {
 			req := <-reqChan
 			url, err := util.URLPathJoin(
@@ -65,7 +65,7 @@ func getCvesViaHTTP(cveIDs []string, urlPrefix string) (
 		timeout = time.After(time.Duration(config.Conf.Gost.TimeoutSec) * time.Second)
 	}
 	var errs []error
-	for i := 0; i < nReq; i++ {
+	for range nReq {
 		select {
 		case res := <-resChan:
 			responses = append(responses, res)
@@ -111,7 +111,7 @@ func getCvesWithFixStateViaHTTP(r *models.ScanResult, urlPrefix, fixState string
 
 	concurrency := 10
 	tasks := util.GenWorkers(concurrency)
-	for i := 0; i < nReq; i++ {
+	for range nReq {
 		tasks <- func() {
 			req := <-reqChan
 			url, err := util.URLPathJoin(
@@ -133,7 +133,7 @@ func getCvesWithFixStateViaHTTP(r *models.ScanResult, urlPrefix, fixState string
 		timeout = time.After(time.Duration(config.Conf.Gost.TimeoutSec) * time.Second)
 	}
 	var errs []error
-	for i := 0; i < nReq; i++ {
+	for range nReq {
 		select {
 		case res := <-resChan:
 			responses = append(responses, res)

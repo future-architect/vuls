@@ -4,6 +4,7 @@ package oval
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 
 	"golang.org/x/xerrors"
@@ -107,9 +108,7 @@ func (o RedHatBase) update(r *models.ScanResult, defpacks defPacks) (nCVEs int) 
 		collectBinpkgFixstat := defPacks{
 			binpkgFixstat: map[string]fixStat{},
 		}
-		for packName, fixStatus := range defpacks.binpkgFixstat {
-			collectBinpkgFixstat.binpkgFixstat[packName] = fixStatus
-		}
+		maps.Copy(collectBinpkgFixstat.binpkgFixstat, defpacks.binpkgFixstat)
 
 		for _, pack := range vinfo.AffectedPackages {
 			if stat, ok := collectBinpkgFixstat.binpkgFixstat[pack.Name]; !ok {

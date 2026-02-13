@@ -652,7 +652,7 @@ func summaryLines(r models.ScanResult) string {
 			fmt.Sprintf("%7s |", vinfo.PatchStatus(r.Packages)),
 			strings.Join(pkgNames, ", "),
 		}
-		icols := make([]interface{}, len(cols))
+		icols := make([]any, len(cols))
 		for j := range cols {
 			icols[j] = cols[j]
 		}
@@ -1006,9 +1006,9 @@ func detailLines() (string, error) {
 	table.MaxColWidth = 100
 	table.Wrap = true
 	scores := append(vinfo.Cvss40Scores(), append(vinfo.Cvss3Scores(), vinfo.Cvss2Scores()...)...)
-	var cols []interface{}
+	var cols []any
 	for _, score := range scores {
-		cols = []interface{}{
+		cols = []any{
 			score.Value.Format(),
 			score.Type,
 		}
@@ -1018,8 +1018,8 @@ func detailLines() (string, error) {
 	uniqCweIDs := vinfo.CveContents.UniqCweIDs(r.Family)
 	cwes := []models.CweDictEntry{}
 	for _, cweID := range uniqCweIDs {
-		if strings.HasPrefix(cweID.Value, "CWE-") {
-			if dict, ok := r.CweDict[strings.TrimPrefix(cweID.Value, "CWE-")]; ok {
+		if after, ok := strings.CutPrefix(cweID.Value, "CWE-"); ok {
+			if dict, ok := r.CweDict[after]; ok {
 				cwes = append(cwes, dict)
 			}
 		}

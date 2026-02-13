@@ -192,7 +192,7 @@ func (o *alpine) parseApkIndex(stdout string) (models.Packages, models.SrcPackag
 	binaries := make(models.Packages)
 	sources := make(models.SrcPackages)
 
-	for _, s := range strings.Split(strings.TrimSuffix(stdout, "\n"), "\n\n") {
+	for s := range strings.SplitSeq(strings.TrimSuffix(stdout, "\n"), "\n\n") {
 		var bn, sn, version, arch string
 
 		// https://wiki.alpinelinux.org/wiki/Apk_spec

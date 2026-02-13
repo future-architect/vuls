@@ -91,7 +91,7 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 				severities := []string{trivydbTypes.SeverityNames[severity]}
 				if cs, ok := vulnInfo.CveContents[models.CveContentType(fmt.Sprintf("%s:%s", models.Trivy, source))]; ok {
 					for _, c := range cs {
-						for _, s := range strings.Split(c.Cvss3Severity, "|") {
+						for s := range strings.SplitSeq(c.Cvss3Severity, "|") {
 							if s != "" && !slices.Contains(severities, s) {
 								severities = append(severities, s)
 							}

@@ -3,6 +3,7 @@ package models
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
 	"strconv"
@@ -47,12 +48,8 @@ func (ps Packages) MergeNewVersion(as Packages) {
 // Merge returns merged map (immutable)
 func (ps Packages) Merge(other Packages) Packages {
 	merged := Packages{}
-	for k, v := range ps {
-		merged[k] = v
-	}
-	for k, v := range other {
-		merged[k] = v
-	}
+	maps.Copy(merged, ps)
+	maps.Copy(merged, other)
 	return merged
 }
 
@@ -253,10 +250,8 @@ type SrcPackages map[string]SrcPackage
 // FindByBinName finds by bin-package-name
 func (s SrcPackages) FindByBinName(name string) (*SrcPackage, bool) {
 	for _, p := range s {
-		for _, binName := range p.BinaryNames {
-			if binName == name {
-				return &p, true
-			}
+		if slices.Contains(p.BinaryNames, name) {
+			return &p, true
 		}
 	}
 	return nil, false
@@ -278,13 +273,7 @@ func IsRaspbianPackage(name, version string) bool {
 	if raspiPackNamePattern.MatchString(name) || raspiPackVersionPattern.MatchString(version) {
 		return true
 	}
-	for _, n := range raspiPackNameList {
-		if n == name {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(raspiPackNameList, name)
 }
 
 // RenameKernelSourcePackageName is change common kernel source package

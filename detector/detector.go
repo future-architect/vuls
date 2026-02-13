@@ -812,8 +812,8 @@ func FillCweDict(r *models.ScanResult) {
 		for _, conts := range vinfo.CveContents {
 			for _, cont := range conts {
 				for _, id := range cont.CweIDs {
-					if strings.HasPrefix(id, "CWE-") {
-						id = strings.TrimPrefix(id, "CWE-")
+					if after, ok := strings.CutPrefix(id, "CWE-"); ok {
+						id = after
 						uniqCweIDMap[id] = true
 					}
 				}

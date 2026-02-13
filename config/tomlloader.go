@@ -2,9 +2,11 @@ package config
 
 import (
 	"fmt"
+	"maps"
 	"net"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -87,26 +89,14 @@ func (c TOMLLoader) Load(pathToToml string) error {
 		}
 
 		for _, cve := range Conf.Default.IgnoreCves {
-			found := false
-			for _, c := range server.IgnoreCves {
-				if cve == c {
-					found = true
-					break
-				}
-			}
+			found := slices.Contains(server.IgnoreCves, cve)
 			if !found {
 				server.IgnoreCves = append(server.IgnoreCves, cve)
 			}
 		}
 
 		for _, pkg := range Conf.Default.IgnorePkgsRegexp {
-			found := false
-			for _, p := range server.IgnorePkgsRegexp {
-				if pkg == p {
-					found = true
-					break
-				}
-			}
+			found := slices.Contains(server.IgnorePkgsRegexp, pkg)
 			if !found {
 				server.IgnorePkgsRegexp = append(server.IgnorePkgsRegexp, pkg)
 			}
@@ -313,13 +303,9 @@ func setDefaultIfEmpty(server *ServerInfo) error {
 		server.IgnoredJSONKeys = Conf.Default.IgnoredJSONKeys
 	}
 
-	opt := map[string]interface{}{}
-	for k, v := range Conf.Default.Optional {
-		opt[k] = v
-	}
-	for k, v := range server.Optional {
-		opt[k] = v
-	}
+	opt := map[string]any{}
+	maps.Copy(opt, Conf.Default.Optional)
+	maps.Copy(opt, server.Optional)
 	server.Optional = opt
 
 	return nil
