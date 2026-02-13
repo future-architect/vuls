@@ -1,9 +1,11 @@
 package pkg
 
 import (
+	"cmp"
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
-	"sort"
 	"strings"
 	"time"
 
@@ -15,16 +17,30 @@ import (
 )
 
 // Convert :
-func Convert(results types.Results) (result *models.ScanResult, err error) {
+func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactName string) (result *models.ScanResult, err error) {
 	scanResult := &models.ScanResult{
 		JSONVersion: models.JSONVersion,
 		ScannedCves: models.VulnInfos{},
 	}
 
+	scanmode := func() ftypes.ArtifactType {
+		switch artifactType {
+		case ftypes.TypeFilesystem:
+			// It is not possible to distinguish between fs and rootfs from the artifact type,
+			// so we have no choice but to determine whether or not the results contain os-pkg.
+			if slices.ContainsFunc(results, func(e types.Result) bool { return e.Class == types.ClassOSPkg }) {
+				return "rootfs"
+			}
+			return ftypes.TypeFilesystem
+		default:
+			return artifactType
+		}
+	}()
+
 	pkgs := models.Packages{}
 	srcPkgs := models.SrcPackages{}
 	vulnInfos := models.VulnInfos{}
-	uniqueLibraryScannerPaths := map[string]models.LibraryScanner{}
+	libraryScannerPaths := map[string]models.LibraryScanner{}
 	for _, trivyResult := range results {
 		for _, vuln := range trivyResult.Vulnerabilities {
 			if _, ok := vulnInfos[vuln.VulnerabilityID]; !ok {
@@ -57,8 +73,8 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 				})
 			}
 
-			sort.Slice(references, func(i, j int) bool {
-				return references[i].Link < references[j].Link
+			slices.SortFunc(references, func(a, b models.Reference) int {
+				return cmp.Compare(a.Link, b.Link)
 			})
 
 			var published time.Time
@@ -134,21 +150,23 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 					FixedIn:     vuln.FixedVersion,
 				})
 			} else {
+				lockfilePath := getLockfilePath(scanmode, artifactName, trivyResult.Type, trivyResult.Target, vuln.PkgPath)
+
 				vulnInfo.LibraryFixedIns = append(vulnInfo.LibraryFixedIns, models.LibraryFixedIn{
 					Key:     string(trivyResult.Type),
 					Name:    vuln.PkgName,
 					Version: vuln.InstalledVersion,
-					Path:    trivyResult.Target,
 					FixedIn: vuln.FixedVersion,
+					Path:    lockfilePath,
 				})
-				libScanner := uniqueLibraryScannerPaths[trivyResult.Target]
+				libScanner := libraryScannerPaths[lockfilePath]
 				libScanner.Type = trivyResult.Type
 				libScanner.Libs = append(libScanner.Libs, models.Library{
 					Name:     vuln.PkgName,
 					Version:  vuln.InstalledVersion,
 					FilePath: vuln.PkgPath,
 				})
-				uniqueLibraryScannerPaths[trivyResult.Target] = libScanner
+				libraryScannerPaths[lockfilePath] = libScanner
 			}
 			vulnInfos[vuln.VulnerabilityID] = vulnInfo
 		}
@@ -188,25 +206,29 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 				srcPkgs[p.SrcName] = v
 			}
 		case types.ClassLangPkg:
-			libScanner := uniqueLibraryScannerPaths[trivyResult.Target]
-			libScanner.Type = trivyResult.Type
 			for _, p := range trivyResult.Packages {
-				libScanner.Libs = append(libScanner.Libs, models.Library{
-					Name:     p.Name,
-					Version:  p.Version,
-					PURL:     getPURL(p),
-					FilePath: p.FilePath,
-					Dev:      p.Dev,
-				})
+				lockfilePath := getLockfilePath(scanmode, artifactName, trivyResult.Type, trivyResult.Target, p.FilePath)
+
+				libScanner := libraryScannerPaths[lockfilePath]
+				libScanner.Type = trivyResult.Type
+				for _, p := range trivyResult.Packages {
+					libScanner.Libs = append(libScanner.Libs, models.Library{
+						Name:     p.Name,
+						Version:  p.Version,
+						PURL:     getPURL(p),
+						FilePath: p.FilePath,
+						Dev:      p.Dev,
+					})
+				}
+				libraryScannerPaths[lockfilePath] = libScanner
 			}
-			uniqueLibraryScannerPaths[trivyResult.Target] = libScanner
 		default:
 		}
 	}
 
 	// flatten and unique libraries
-	libraryScanners := make([]models.LibraryScanner, 0, len(uniqueLibraryScannerPaths))
-	for path, v := range uniqueLibraryScannerPaths {
+	libraryScanners := make([]models.LibraryScanner, 0, len(libraryScannerPaths))
+	for path, v := range libraryScannerPaths {
 		uniqueLibrary := map[string]models.Library{}
 		for _, lib := range v.Libs {
 			uniqueLibrary[lib.Name+lib.Version] = lib
@@ -217,8 +239,8 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 			libraries = append(libraries, library)
 		}
 
-		sort.Slice(libraries, func(i, j int) bool {
-			return libraries[i].Name < libraries[j].Name
+		slices.SortFunc(libraries, func(a, b models.Library) int {
+			return cmp.Compare(a.Name, b.Name)
 		})
 
 		libscanner := models.LibraryScanner{
@@ -228,8 +250,8 @@ func Convert(results types.Results) (result *models.ScanResult, err error) {
 		}
 		libraryScanners = append(libraryScanners, libscanner)
 	}
-	sort.Slice(libraryScanners, func(i, j int) bool {
-		return libraryScanners[i].LockfilePath < libraryScanners[j].LockfilePath
+	slices.SortFunc(libraryScanners, func(a, b models.LibraryScanner) int {
+		return cmp.Compare(a.LockfilePath, b.LockfilePath)
 	})
 	scanResult.ScannedCves = vulnInfos
 	scanResult.Packages = pkgs
@@ -274,4 +296,42 @@ func getPURL(p ftypes.Package) string {
 		return ""
 	}
 	return p.Identifier.PURL.String()
+}
+
+func getLockfilePath(scanmode ftypes.ArtifactType, artifactName string, libType ftypes.LangType, target string, libFilepath string) string {
+	p := func() string {
+		switch libType {
+		case ftypes.NodePkg, ftypes.GemSpec, ftypes.PythonPkg:
+			if libFilepath == "" {
+				return target
+			}
+			return libFilepath
+		case ftypes.Jar:
+			if libFilepath == "" {
+				return target
+			}
+			for _, sep := range []string{".jar", ".war", ".par", ".ear"} {
+				if lhs, _, ok := strings.Cut(libFilepath, fmt.Sprintf("%s%s", sep, string(os.PathSeparator))); ok {
+					return fmt.Sprintf("%s%s", lhs, sep)
+				}
+			}
+			return libFilepath
+		default:
+			return target
+		}
+	}()
+
+	switch scanmode {
+	case ftypes.TypeContainerImage:
+		return filepath.Join(string(os.PathSeparator), p)
+	case "rootfs": // rootfs does not have the path passed to the command in artifactName
+		return p
+	case ftypes.TypeFilesystem, ftypes.TypeRepository:
+		if strings.HasSuffix(artifactName, p) {
+			return artifactName
+		}
+		return filepath.Join(artifactName, p)
+	default:
+		return p
+	}
 }
