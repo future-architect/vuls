@@ -215,7 +215,7 @@ func parseSystemInfo(stdout string) (osInfo, []string, error) {
 			if err != nil {
 				return osInfo{}, nil, xerrors.Errorf("Failed to detect number of installed hotfix from %s", line)
 			}
-			for i := 0; i < nKB; i++ {
+			for range nKB {
 				scanner.Scan()
 				line := scanner.Text()
 				_, rhs, found := strings.Cut(line, ":")
@@ -223,8 +223,8 @@ func parseSystemInfo(stdout string) (osInfo, []string, error) {
 					continue
 				}
 				s := strings.TrimSpace(rhs)
-				if strings.HasPrefix(s, "KB") {
-					kbs = append(kbs, strings.TrimPrefix(s, "KB"))
+				if after, ok := strings.CutPrefix(s, "KB"); ok {
+					kbs = append(kbs, after)
 				}
 			}
 		default:

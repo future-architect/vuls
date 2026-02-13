@@ -444,7 +444,7 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf config.WpScanConf) error {
 
 // FillCvesWithGoCVEDictionary fills CVE detail with NVD, VulnCheck, JVN, EUVD, Fortinet, MITRE, Paloalto, Cisco
 func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf, logOpts logging.LogOpts) (err error) {
-	cveIDs := []string{}
+	cveIDs := make([]string, 0, len(r.ScannedCves))
 	for _, v := range r.ScannedCves {
 		cveIDs = append(cveIDs, v.CveID)
 	}
@@ -812,8 +812,8 @@ func FillCweDict(r *models.ScanResult) {
 		for _, conts := range vinfo.CveContents {
 			for _, cont := range conts {
 				for _, id := range cont.CweIDs {
-					if strings.HasPrefix(id, "CWE-") {
-						id = strings.TrimPrefix(id, "CWE-")
+					if after, ok := strings.CutPrefix(id, "CWE-"); ok {
+						id = after
 						uniqCweIDMap[id] = true
 					}
 				}

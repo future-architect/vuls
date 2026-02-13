@@ -55,7 +55,7 @@ func (f Client) UploadToFvuls(serverUUID string, groupID int64, tags []string, s
 	scanResult.ServerUUID = serverUUID
 	if 0 < len(tags) {
 		if scanResult.Optional == nil {
-			scanResult.Optional = map[string]interface{}{}
+			scanResult.Optional = map[string]any{}
 		}
 		scanResult.Optional["VULS_TAGS"] = tags
 	}

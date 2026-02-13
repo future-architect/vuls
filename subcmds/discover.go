@@ -39,7 +39,7 @@ func (p *DiscoverCmd) SetFlags(_ *flag.FlagSet) {
 }
 
 // Execute execute
-func (p *DiscoverCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (p *DiscoverCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...any) subcommands.ExitStatus {
 	logging.Log = logging.NewCustomLogger(false, false, false, config.Conf.LogDir, "", "")
 	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 	// validate

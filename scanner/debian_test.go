@@ -4,7 +4,7 @@ import (
 	"cmp"
 	"os"
 	"reflect"
-	"sort"
+	"slices"
 	"testing"
 
 	gocmp "github.com/google/go-cmp/cmp"
@@ -755,9 +755,8 @@ libuuid1:amd64: /lib/x86_64-linux-gnu/libuuid.so.1.3.0`,
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			o := &debian{}
-			gotPkgNames := o.parseGetPkgName(tt.args.stdout)
-			sort.Strings(gotPkgNames)
+			gotPkgNames := (&debian{}).parseGetPkgName(tt.args.stdout)
+			slices.Sort(gotPkgNames)
 			if !reflect.DeepEqual(gotPkgNames, tt.wantPkgNames) {
 				t.Errorf("debian.parseGetPkgName() = %v, want %v", gotPkgNames, tt.wantPkgNames)
 			}

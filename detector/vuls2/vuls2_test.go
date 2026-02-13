@@ -176,7 +176,7 @@ func Test_postConvert(t *testing.T) {
 					OSPackages: []scanTypes.OSPackage{
 						{
 							Name:    "package1",
-							Epoch:   toPtr(0),
+							Epoch:   new(0),
 							Version: "0.0.0",
 							Release: "0.el9",
 							Arch:    "x86_64",
@@ -184,7 +184,7 @@ func Test_postConvert(t *testing.T) {
 						},
 						{
 							Name:    "package2",
-							Epoch:   toPtr(0),
+							Epoch:   new(0),
 							Version: "0.0.0",
 							Release: "0.el9",
 							Arch:    "x86_64",
@@ -192,7 +192,7 @@ func Test_postConvert(t *testing.T) {
 						},
 						{
 							Name:    "package3",
-							Epoch:   toPtr(0),
+							Epoch:   new(0),
 							Version: "0.0.0",
 							Release: "0.el9",
 							Arch:    "x86_64",
@@ -215,7 +215,7 @@ func Test_postConvert(t *testing.T) {
 														ID:          "RHSA-2025:0001",
 														Title:       "title",
 														Description: "description",
-														Published:   toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -235,10 +235,10 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type:   severityTypes.SeverityTypeVendor,
-																Vendor: toPtr("CRITICAL"),
+																Vendor: new("CRITICAL"),
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -270,7 +270,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -286,7 +286,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -306,7 +306,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -322,7 +322,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -339,7 +339,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
 																	BaseScore:             5.5,
 																	BaseSeverity:          "MEDIUM",
@@ -355,7 +355,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -381,7 +381,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -397,7 +397,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0002",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -417,7 +417,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -433,7 +433,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0002",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -450,7 +450,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
 																	BaseScore:             5.5,
 																	BaseSeverity:          "MEDIUM",
@@ -466,7 +466,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0002",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -485,7 +485,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -501,7 +501,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0002",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -527,9 +527,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -557,9 +557,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -596,9 +596,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -626,9 +626,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -664,9 +664,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -694,9 +694,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -743,7 +743,7 @@ func Test_postConvert(t *testing.T) {
 														ID:          "RHSA-2025:0002",
 														Title:       "title",
 														Description: "description",
-														Published:   toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -771,7 +771,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -787,7 +787,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0002",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -807,7 +807,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -823,7 +823,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0002",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -840,7 +840,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
 																	BaseScore:             5.5,
 																	BaseSeverity:          "MEDIUM",
@@ -856,7 +856,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0002",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -875,7 +875,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -891,7 +891,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0002",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -917,7 +917,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv2,
-																CVSSv2: toPtr(cvssV2Types.CVSSv2{
+																CVSSv2: new(cvssV2Types.CVSSv2{
 																	Vector:                   "AV:L/AC:L/Au:N/C:C/I:N/A:C",
 																	BaseScore:                6.6,
 																	NVDBaseSeverity:          "MEDIUM",
@@ -929,7 +929,7 @@ func Test_postConvert(t *testing.T) {
 															},
 															{
 																Type: severityTypes.SeverityTypeCVSSv30,
-																CVSSv30: toPtr(cvssV30Types.CVSSv30{
+																CVSSv30: new(cvssV30Types.CVSSv30{
 																	Vector:                "CVSS:3.0/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -941,7 +941,7 @@ func Test_postConvert(t *testing.T) {
 															},
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -953,7 +953,7 @@ func Test_postConvert(t *testing.T) {
 															},
 															{
 																Type: severityTypes.SeverityTypeCVSSv40,
-																CVSSv40: toPtr(cvssV40Types.CVSSv40{
+																CVSSv40: new(cvssV40Types.CVSSv40{
 																	Vector:   "CVSS:4.0/AV:L/AC:H/AT:N/PR:L/UI:N/VC:H/VI:N/VA:H/SC:H/SI:N/SA:H",
 																	Score:    7.1,
 																	Severity: "HIGH",
@@ -965,7 +965,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0003",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -984,7 +984,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv40,
-																CVSSv40: toPtr(cvssV40Types.CVSSv40{
+																CVSSv40: new(cvssV40Types.CVSSv40{
 																	Vector:   "CVSS:4.0/AV:L/AC:H/AT:N/PR:L/UI:N/VC:H/VI:N/VA:H/SC:H/SI:N/SA:H",
 																	Score:    7.1,
 																	Severity: "HIGH",
@@ -996,7 +996,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0003",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -1022,9 +1022,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -1052,9 +1052,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -1082,9 +1082,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -1134,7 +1134,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv2,
-																CVSSv2: toPtr(cvssV2Types.CVSSv2{
+																CVSSv2: new(cvssV2Types.CVSSv2{
 																	Vector:                   "AV:L/AC:L/Au:N/C:C/I:N/A:C",
 																	BaseScore:                6.6,
 																	NVDBaseSeverity:          "MEDIUM",
@@ -1146,7 +1146,7 @@ func Test_postConvert(t *testing.T) {
 															},
 															{
 																Type: severityTypes.SeverityTypeCVSSv30,
-																CVSSv30: toPtr(cvssV30Types.CVSSv30{
+																CVSSv30: new(cvssV30Types.CVSSv30{
 																	Vector:                "CVSS:3.0/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -1158,7 +1158,7 @@ func Test_postConvert(t *testing.T) {
 															},
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -1170,7 +1170,7 @@ func Test_postConvert(t *testing.T) {
 															},
 															{
 																Type: severityTypes.SeverityTypeCVSSv40,
-																CVSSv40: toPtr(cvssV40Types.CVSSv40{
+																CVSSv40: new(cvssV40Types.CVSSv40{
 																	Vector:   "CVSS:4.0/AV:L/AC:H/AT:N/PR:L/UI:N/VC:H/VI:N/VA:H/SC:H/SI:N/SA:H",
 																	Score:    7.1,
 																	Severity: "HIGH",
@@ -1182,7 +1182,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0003",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -1201,7 +1201,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv40,
-																CVSSv40: toPtr(cvssV40Types.CVSSv40{
+																CVSSv40: new(cvssV40Types.CVSSv40{
 																	Vector:   "CVSS:4.0/AV:L/AC:H/AT:N/PR:L/UI:N/VC:H/VI:N/VA:H/SC:H/SI:N/SA:H",
 																	Score:    7.1,
 																	Severity: "HIGH",
@@ -1213,7 +1213,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0003",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -1239,9 +1239,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class:  vcFixStatusTypes.ClassUnfixed,
 																		Vendor: "Affected",
 																	}),
@@ -1474,7 +1474,7 @@ func Test_postConvert(t *testing.T) {
 					OSPackages: []scanTypes.OSPackage{
 						{
 							Name:    "package1",
-							Epoch:   toPtr(0),
+							Epoch:   new(0),
 							Version: "0.0.0",
 							Release: "0.el9",
 							Arch:    "x86_64",
@@ -1482,7 +1482,7 @@ func Test_postConvert(t *testing.T) {
 						},
 						{
 							Name:    "package2",
-							Epoch:   toPtr(0),
+							Epoch:   new(0),
 							Version: "0.0.0",
 							Release: "0.el9",
 							Arch:    "x86_64",
@@ -1508,10 +1508,10 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type:   severityTypes.SeverityTypeVendor,
-																Vendor: toPtr("MEDIUM"),
+																Vendor: new("MEDIUM"),
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -1528,10 +1528,10 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type:   severityTypes.SeverityTypeVendor,
-																Vendor: toPtr("HIGH"),
+																Vendor: new("HIGH"),
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -1548,10 +1548,10 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type:   severityTypes.SeverityTypeVendor,
-																Vendor: toPtr("CRITICAL"),
+																Vendor: new("CRITICAL"),
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -1579,7 +1579,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
 																	BaseScore:             5.5,
 																	BaseSeverity:          "MEDIUM",
@@ -1595,7 +1595,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -1612,7 +1612,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -1628,7 +1628,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -1645,7 +1645,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -1661,7 +1661,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -1687,9 +1687,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -1725,9 +1725,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -1783,10 +1783,10 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type:   severityTypes.SeverityTypeVendor,
-																Vendor: toPtr("CRITICAL"),
+																Vendor: new("CRITICAL"),
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -1803,10 +1803,10 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type:   severityTypes.SeverityTypeVendor,
-																Vendor: toPtr("HIGH"),
+																Vendor: new("HIGH"),
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -1823,10 +1823,10 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type:   severityTypes.SeverityTypeVendor,
-																Vendor: toPtr("MEDIUM"),
+																Vendor: new("MEDIUM"),
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -1852,10 +1852,10 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type:   severityTypes.SeverityTypeVendor,
-																Vendor: toPtr("HIGH"),
+																Vendor: new("HIGH"),
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -1883,7 +1883,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -1899,7 +1899,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0002",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -1916,7 +1916,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
 																	BaseScore:             5.5,
 																	BaseSeverity:          "MEDIUM",
@@ -1932,7 +1932,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0002",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -1949,7 +1949,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -1965,7 +1965,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0002",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -1982,7 +1982,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv40,
-																CVSSv40: toPtr(cvssV40Types.CVSSv40{
+																CVSSv40: new(cvssV40Types.CVSSv40{
 																	Vector:   "CVSS:4.0/AV:L/AC:H/AT:N/PR:L/UI:N/VC:H/VI:N/VA:H/SC:H/SI:N/SA:H",
 																	Score:    7.1,
 																	Severity: "HIGH",
@@ -1994,7 +1994,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0002",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -2020,9 +2020,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -2050,9 +2050,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -2088,9 +2088,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -2118,9 +2118,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -2162,9 +2162,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -2192,9 +2192,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -2363,7 +2363,7 @@ func Test_postConvert(t *testing.T) {
 					OSPackages: []scanTypes.OSPackage{
 						{
 							Name:    "package1",
-							Epoch:   toPtr(0),
+							Epoch:   new(0),
 							Version: "0.0.0",
 							Release: "0.el9",
 							Arch:    "x86_64",
@@ -2389,10 +2389,10 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type:   severityTypes.SeverityTypeVendor,
-																Vendor: toPtr("CRITICAL"),
+																Vendor: new("CRITICAL"),
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -2420,7 +2420,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
 																	BaseScore:             5.5,
 																	BaseSeverity:          "MEDIUM",
@@ -2436,7 +2436,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -2457,7 +2457,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
 																	BaseScore:             5.5,
 																	BaseSeverity:          "MEDIUM",
@@ -2473,7 +2473,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -2499,7 +2499,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
 																	BaseScore:             5.5,
 																	BaseSeverity:          "MEDIUM",
@@ -2515,7 +2515,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0002",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -2541,9 +2541,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -2593,7 +2593,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
 																	BaseScore:             5.5,
 																	BaseSeverity:          "MEDIUM",
@@ -2609,7 +2609,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -2630,7 +2630,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
 																	BaseScore:             5.5,
 																	BaseSeverity:          "MEDIUM",
@@ -2646,7 +2646,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -2672,9 +2672,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -2809,7 +2809,7 @@ func Test_postConvert(t *testing.T) {
 					OSPackages: []scanTypes.OSPackage{
 						{
 							Name:    "package1",
-							Epoch:   toPtr(0),
+							Epoch:   new(0),
 							Version: "0.0.0",
 							Release: "0.el9",
 							Arch:    "x86_64",
@@ -2817,7 +2817,7 @@ func Test_postConvert(t *testing.T) {
 						},
 						{
 							Name:    "package2",
-							Epoch:   toPtr(0),
+							Epoch:   new(0),
 							Version: "0.0.0",
 							Release: "0.el9",
 							Arch:    "x86_64",
@@ -2846,7 +2846,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
 																	BaseScore:             5.5,
 																	BaseSeverity:          "MEDIUM",
@@ -2862,7 +2862,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -2883,7 +2883,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -2899,7 +2899,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://www.cve.org/CVERecord?id=CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -2919,7 +2919,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
 																	BaseScore:             5.5,
 																	BaseSeverity:          "MEDIUM",
@@ -2935,7 +2935,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://nvd.nist.gov/vuln/detail/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -2960,9 +2960,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class:  vcFixStatusTypes.ClassUnfixed,
 																		Vendor: "Affected",
 																	}),
@@ -2996,14 +2996,14 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassUnknown,
 																	}),
 																	Package: vcPackageTypes.Package{
 																		Type: vcPackageTypes.PackageTypeCPE,
-																		CPE:  toPtr(vcCPEPackageTypes.CPE("cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*")),
+																		CPE:  new(vcCPEPackageTypes.CPE("cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*")),
 																	},
 																}),
 															},
@@ -3035,10 +3035,10 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type:   severityTypes.SeverityTypeVendor,
-																Vendor: toPtr("MEDIUM"),
+																Vendor: new("MEDIUM"),
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -3065,7 +3065,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
 																	BaseScore:             5.5,
 																	BaseSeverity:          "MEDIUM",
@@ -3081,7 +3081,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -3102,7 +3102,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -3118,7 +3118,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://www.cve.org/CVERecord?id=CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -3138,7 +3138,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
 																	BaseScore:             5.5,
 																	BaseSeverity:          "MEDIUM",
@@ -3154,7 +3154,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://nvd.nist.gov/vuln/detail/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -3179,7 +3179,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:H",
 																	BaseScore:             7.1,
 																	BaseSeverity:          "HIGH",
@@ -3195,7 +3195,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://www.cve.org/CVERecord?id=CVE-2025-0002",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -3220,9 +3220,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -3430,7 +3430,7 @@ func Test_postConvert(t *testing.T) {
 					OSPackages: []scanTypes.OSPackage{
 						{
 							Name:    "package1",
-							Epoch:   toPtr(0),
+							Epoch:   new(0),
 							Version: "0.0.0",
 							Release: "0.el9",
 							Arch:    "x86_64",
@@ -3438,7 +3438,7 @@ func Test_postConvert(t *testing.T) {
 						},
 						{
 							Name:    "kpatch-patch-1",
-							Epoch:   toPtr(0),
+							Epoch:   new(0),
 							Version: "0.0.0",
 							Release: "0.el9",
 							Arch:    "x86_64",
@@ -3461,7 +3461,7 @@ func Test_postConvert(t *testing.T) {
 														ID:          "RHSA-2025:0001",
 														Title:       "title",
 														Description: "description",
-														Published:   toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -3491,7 +3491,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -3520,7 +3520,7 @@ func Test_postConvert(t *testing.T) {
 																{
 																	Criterion: criterionTypes.Criterion{
 																		Type: criterionTypes.CriterionTypeNoneExist,
-																		NoneExist: toPtr(noneexistcriterionTypes.Criterion{
+																		NoneExist: new(noneexistcriterionTypes.Criterion{
 																			Type: noneexistcriterionTypes.PackageTypeBinary,
 																			Binary: &necBinaryPackageTypes.Package{
 																				Name:          "kpatch-patch-2",
@@ -3535,9 +3535,9 @@ func Test_postConvert(t *testing.T) {
 																{
 																	Criterion: criterionTypes.Criterion{
 																		Type: criterionTypes.CriterionTypeVersion,
-																		Version: toPtr(versioncriterionTypes.Criterion{
+																		Version: new(versioncriterionTypes.Criterion{
 																			Vulnerable: true,
-																			FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																			FixStatus: new(vcFixStatusTypes.FixStatus{
 																				Class: vcFixStatusTypes.ClassFixed,
 																			}),
 																			Package: vcPackageTypes.Package{
@@ -3570,9 +3570,9 @@ func Test_postConvert(t *testing.T) {
 																{
 																	Criterion: criterionTypes.Criterion{
 																		Type: criterionTypes.CriterionTypeVersion,
-																		Version: toPtr(versioncriterionTypes.Criterion{
+																		Version: new(versioncriterionTypes.Criterion{
 																			Vulnerable: true,
-																			FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																			FixStatus: new(vcFixStatusTypes.FixStatus{
 																				Class: vcFixStatusTypes.ClassFixed,
 																			}),
 																			Package: vcPackageTypes.Package{
@@ -3605,9 +3605,9 @@ func Test_postConvert(t *testing.T) {
 																{
 																	Criterion: criterionTypes.Criterion{
 																		Type: criterionTypes.CriterionTypeVersion,
-																		Version: toPtr(versioncriterionTypes.Criterion{
+																		Version: new(versioncriterionTypes.Criterion{
 																			Vulnerable: true,
-																			FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																			FixStatus: new(vcFixStatusTypes.FixStatus{
 																				Class: vcFixStatusTypes.ClassFixed,
 																			}),
 																			Package: vcPackageTypes.Package{
@@ -3656,7 +3656,7 @@ func Test_postConvert(t *testing.T) {
 														ID:          "RHSA-2025:0002",
 														Title:       "title",
 														Description: "** REJECT ** description",
-														Published:   toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -3686,7 +3686,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0002",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -3712,9 +3712,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -3761,7 +3761,7 @@ func Test_postConvert(t *testing.T) {
 														ID:          "RHSA-2025:0003",
 														Title:       "title",
 														Description: "description",
-														Published:   toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -3791,7 +3791,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0003",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -3819,7 +3819,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0004",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -3845,9 +3845,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -3894,7 +3894,7 @@ func Test_postConvert(t *testing.T) {
 														ID:          "RHSA-2025:0004",
 														Title:       "title",
 														Description: "description",
-														Published:   toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -3924,7 +3924,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0004",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -3950,9 +3950,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -4004,7 +4004,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0005",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -4030,9 +4030,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class:  vcFixStatusTypes.ClassUnfixed,
 																		Vendor: "Affected",
 																	}),
@@ -4074,7 +4074,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
 																	BaseScore:             5.5,
 																	BaseSeverity:          "MEDIUM",
@@ -4090,7 +4090,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0006",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -4116,9 +4116,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class:  vcFixStatusTypes.ClassUnfixed,
 																		Vendor: "Will not fix",
 																	}),
@@ -4162,7 +4162,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0007",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -4188,9 +4188,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -4378,7 +4378,7 @@ func Test_postConvert(t *testing.T) {
 					OSPackages: []scanTypes.OSPackage{
 						{
 							Name:    "package1",
-							Epoch:   toPtr(0),
+							Epoch:   new(0),
 							Version: "0.0.0",
 							Release: "0.el9",
 							Arch:    "x86_64",
@@ -4401,7 +4401,7 @@ func Test_postConvert(t *testing.T) {
 														ID:          "ALSA-2025:0001",
 														Title:       "title",
 														Description: "description",
-														Published:   toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -4418,7 +4418,7 @@ func Test_postConvert(t *testing.T) {
 														ID:          "ALSA-2025:0001",
 														Title:       "title",
 														Description: "description",
-														Published:   toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -4435,7 +4435,7 @@ func Test_postConvert(t *testing.T) {
 														ID:          "ALSA-2025:0001",
 														Title:       "title",
 														Description: "description",
-														Published:   toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -4464,7 +4464,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -4486,7 +4486,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -4508,7 +4508,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -4533,9 +4533,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -4572,9 +4572,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -4611,9 +4611,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -4705,7 +4705,7 @@ func Test_postConvert(t *testing.T) {
 					OSPackages: []scanTypes.OSPackage{
 						{
 							Name:    "package1",
-							Epoch:   toPtr(0),
+							Epoch:   new(0),
 							Version: "0.0.0",
 							Release: "0.el9",
 							Arch:    "x86_64",
@@ -4728,7 +4728,7 @@ func Test_postConvert(t *testing.T) {
 														ID:          "RLSA-2025:0001",
 														Title:       "title",
 														Description: "description",
-														Published:   toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -4745,7 +4745,7 @@ func Test_postConvert(t *testing.T) {
 														ID:          "RLSA-2025:0001",
 														Title:       "title",
 														Description: "description",
-														Published:   toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -4774,7 +4774,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -4796,7 +4796,7 @@ func Test_postConvert(t *testing.T) {
 																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -4821,9 +4821,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -4860,9 +4860,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -5018,7 +5018,7 @@ func Test_postConvert(t *testing.T) {
 															{
 																Type:   severityTypes.SeverityTypeVendor,
 																Source: "launchpad.net/ubuntu-cve-tracker",
-																Vendor: toPtr("low"),
+																Vendor: new("low"),
 															},
 														},
 														References: []referenceTypes.Reference{
@@ -5027,7 +5027,7 @@ func Test_postConvert(t *testing.T) {
 																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-0001",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -5053,9 +5053,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -5105,7 +5105,7 @@ func Test_postConvert(t *testing.T) {
 															{
 																Type:   severityTypes.SeverityTypeVendor,
 																Source: "launchpad.net/ubuntu-cve-tracker",
-																Vendor: toPtr("low"),
+																Vendor: new("low"),
 															},
 														},
 														References: []referenceTypes.Reference{
@@ -5114,7 +5114,7 @@ func Test_postConvert(t *testing.T) {
 																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-0002",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -5140,9 +5140,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -5192,7 +5192,7 @@ func Test_postConvert(t *testing.T) {
 															{
 																Type:   severityTypes.SeverityTypeVendor,
 																Source: "launchpad.net/ubuntu-cve-tracker",
-																Vendor: toPtr("low"),
+																Vendor: new("low"),
 															},
 														},
 														References: []referenceTypes.Reference{
@@ -5201,7 +5201,7 @@ func Test_postConvert(t *testing.T) {
 																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-0003",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -5227,9 +5227,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -5279,7 +5279,7 @@ func Test_postConvert(t *testing.T) {
 															{
 																Type:   severityTypes.SeverityTypeVendor,
 																Source: "launchpad.net/ubuntu-cve-tracker",
-																Vendor: toPtr("low"),
+																Vendor: new("low"),
 															},
 														},
 														References: []referenceTypes.Reference{
@@ -5288,7 +5288,7 @@ func Test_postConvert(t *testing.T) {
 																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-0004",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -5314,9 +5314,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class:  vcFixStatusTypes.ClassUnfixed,
 																		Vendor: "ignored: end of kernel support",
 																	}),
@@ -5358,7 +5358,7 @@ func Test_postConvert(t *testing.T) {
 															{
 																Type:   severityTypes.SeverityTypeVendor,
 																Source: "launchpad.net/ubuntu-cve-tracker",
-																Vendor: toPtr("low"),
+																Vendor: new("low"),
 															},
 														},
 														References: []referenceTypes.Reference{
@@ -5367,7 +5367,7 @@ func Test_postConvert(t *testing.T) {
 																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-0005",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -5393,9 +5393,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -5445,7 +5445,7 @@ func Test_postConvert(t *testing.T) {
 															{
 																Type:   severityTypes.SeverityTypeVendor,
 																Source: "launchpad.net/ubuntu-cve-tracker",
-																Vendor: toPtr("low"),
+																Vendor: new("low"),
 															},
 														},
 														References: []referenceTypes.Reference{
@@ -5454,7 +5454,7 @@ func Test_postConvert(t *testing.T) {
 																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-0006",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -5488,9 +5488,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -5525,9 +5525,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -5562,9 +5562,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -5614,7 +5614,7 @@ func Test_postConvert(t *testing.T) {
 															{
 																Type:   severityTypes.SeverityTypeVendor,
 																Source: "launchpad.net/ubuntu-cve-tracker",
-																Vendor: toPtr("low"),
+																Vendor: new("low"),
 															},
 														},
 														References: []referenceTypes.Reference{
@@ -5623,7 +5623,7 @@ func Test_postConvert(t *testing.T) {
 																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-0007",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -5649,9 +5649,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -5701,7 +5701,7 @@ func Test_postConvert(t *testing.T) {
 															{
 																Type:   severityTypes.SeverityTypeVendor,
 																Source: "launchpad.net/ubuntu-cve-tracker",
-																Vendor: toPtr("low"),
+																Vendor: new("low"),
 															},
 														},
 														References: []referenceTypes.Reference{
@@ -5710,7 +5710,7 @@ func Test_postConvert(t *testing.T) {
 																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-0008",
 															},
 														},
-														Published: toPtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -5736,9 +5736,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -5964,7 +5964,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv30,
-																CVSSv30: toPtr(cvssV30Types.CVSSv30{
+																CVSSv30: new(cvssV30Types.CVSSv30{
 																	Vector:                "CVSS:3.0/AV:L/AC:H/PR:L/UI:N/S:C/C:H/I:N/A:N",
 																	BaseScore:             5.6,
 																	BaseSeverity:          "MEDIUM",
@@ -5999,9 +5999,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -6069,7 +6069,7 @@ func Test_postConvert(t *testing.T) {
 														Severity: []severityTypes.Severity{
 															{
 																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:C/C:H/I:N/A:N",
 																	BaseScore:             5.6,
 																	BaseSeverity:          "MEDIUM",
@@ -6104,9 +6104,9 @@ func Test_postConvert(t *testing.T) {
 														{
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeVersion,
-																Version: toPtr(versioncriterionTypes.Criterion{
+																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassFixed,
 																	}),
 																	Package: vcPackageTypes.Package{
@@ -6716,10 +6716,6 @@ func Test_pruneCriteria(t *testing.T) {
 			}
 		})
 	}
-}
-
-func toPtr[T any](x T) *T {
-	return &x
 }
 
 func compareVulnInfos(a, b models.VulnInfos) (string, error) {

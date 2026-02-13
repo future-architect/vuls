@@ -260,7 +260,7 @@ func getKEVulnsViaHTTP(cveIDs []string, urlPrefix string) (
 
 	concurrency := 10
 	tasks := util.GenWorkers(concurrency)
-	for i := 0; i < nReq; i++ {
+	for range nReq {
 		tasks <- func() {
 			req := <-reqChan
 			url, err := util.URLPathJoin(
@@ -281,7 +281,7 @@ func getKEVulnsViaHTTP(cveIDs []string, urlPrefix string) (
 		timeout = time.After(time.Duration(config.Conf.KEVuln.TimeoutSec) * time.Second)
 	}
 	var errs []error
-	for i := 0; i < nReq; i++ {
+	for range nReq {
 		select {
 		case res := <-resChan:
 			responses = append(responses, res)

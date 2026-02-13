@@ -238,7 +238,7 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 type source struct {
 	RootID   dataTypes.RootID     `json:"root_id,omitempty"`
 	SourceID sourceTypes.SourceID `json:"source_id,omitempty"`
-	Segment  segmentTypes.Segment `json:"segment,omitempty"`
+	Segment  segmentTypes.Segment `json:"segment,omitzero"`
 }
 
 type sourceData struct {

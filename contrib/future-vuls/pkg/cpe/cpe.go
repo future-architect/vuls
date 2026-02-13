@@ -4,6 +4,7 @@ package cpe
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"slices"
 	"time"
@@ -41,15 +42,11 @@ func AddCpe(token, outputFile, proxy string) (err error) {
 	if 0 < len(needAddServers) {
 		addedServers := cpeConfig.AddServerToFvuls(ctx, needAddServers)
 		if 0 < len(addedServers) {
-			for name, server := range addedServers {
-				needAddCpes[name] = server
-			}
+			maps.Copy(needAddCpes, addedServers)
 		}
 
 		// update discover toml
-		for name, server := range needAddCpes {
-			cpeConfig.OriginalDiscoverToml[name] = server
-		}
+		maps.Copy(cpeConfig.OriginalDiscoverToml, needAddCpes)
 		if err = cpeConfig.WriteDiscoverToml(); err != nil {
 			return err
 		}
@@ -60,9 +57,7 @@ func AddCpe(token, outputFile, proxy string) (err error) {
 		if addedCpes, err = cpeConfig.AddCpeToFvuls(ctx, needAddCpes); err != nil {
 			return err
 		}
-		for name, server := range addedCpes {
-			cpeConfig.OriginalDiscoverToml[name] = server
-		}
+		maps.Copy(cpeConfig.OriginalDiscoverToml, addedCpes)
 		if err = cpeConfig.WriteDiscoverToml(); err != nil {
 			return err
 		}

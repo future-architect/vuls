@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"os/exec"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -153,13 +154,7 @@ func (c *PortScanConf) Validate() (errs []error) {
 					parseCapability := strings.Split(strings.TrimSpace(parseOutput[1]), "+")
 					capabilities := strings.Split(parseCapability[0], ",")
 					for _, needCap := range []string{"cap_net_bind_service", "cap_net_admin", "cap_net_raw"} {
-						existCapFlag := false
-						for _, cap := range capabilities {
-							if needCap == cap {
-								existCapFlag = true
-								break
-							}
-						}
+						existCapFlag := slices.Contains(capabilities, needCap)
 
 						if existCapFlag {
 							continue
@@ -187,11 +182,8 @@ func (c *PortScanConf) Validate() (errs []error) {
 	}
 
 	if c.SourcePort != "" {
-		for _, scanTechnique := range scanTechniques {
-			if scanTechnique == TCPConnect {
-				errs = append(errs, xerrors.New("SourcePort Option(-g/--source-port) is incompatible with the default TCPConnect Scan(-sT)."))
-				break
-			}
+		if slices.Contains(scanTechniques, TCPConnect) {
+			errs = append(errs, xerrors.New("SourcePort Option(-g/--source-port) is incompatible with the default TCPConnect Scan(-sT)."))
 		}
 
 		portNumber, err := strconv.Atoi(c.SourcePort)

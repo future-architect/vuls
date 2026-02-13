@@ -508,8 +508,8 @@ func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, mod
 
 	// openssl 0 1.0.1e	30.el6.11 x86_64
 	// community-mysql-common 0 8.0.26 1.module_f35+12627+b26747dd x86_64 mysql:8.0:3520210817160118:f27b74a8
-	lines := strings.Split(stdout, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(stdout, "\n")
+	for line := range lines {
 		if trimmed := strings.TrimSpace(line); trimmed == "" {
 			continue
 		}

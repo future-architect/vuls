@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/future-architect/vuls/config"
@@ -15,7 +16,7 @@ import (
 // http://qiita.com/na-o-ys/items/65373132b1c5bc973cca
 func GenWorkers(num int) chan<- func() {
 	tasks := make(chan func())
-	for i := 0; i < num; i++ {
+	for range num {
 		go func() {
 			defer func() {
 				if p := recover(); p != nil {
@@ -32,10 +33,8 @@ func GenWorkers(num int) chan<- func() {
 
 // AppendIfMissing append to the slice if missing
 func AppendIfMissing(slice []string, s string) []string {
-	for _, ele := range slice {
-		if ele == s {
-			return slice
-		}
+	if slices.Contains(slice, s) {
+		return slice
 	}
 	return append(slice, s)
 }
@@ -120,7 +119,7 @@ func PrependProxyEnv(cmd string) string {
 
 // proxyEnv returns shell environment variables to set proxy
 func proxyEnv() string {
-	httpProxyEnv := ""
+	var httpProxyEnv strings.Builder
 	keys := []string{
 		"http_proxy",
 		"https_proxy",
@@ -128,9 +127,9 @@ func proxyEnv() string {
 		"HTTPS_PROXY",
 	}
 	for _, key := range keys {
-		httpProxyEnv += fmt.Sprintf(` %s="%s"`, key, config.Conf.HTTPProxy)
+		httpProxyEnv.WriteString(fmt.Sprintf(` %s="%s"`, key, config.Conf.HTTPProxy))
 	}
-	return httpProxyEnv
+	return httpProxyEnv.String()
 }
 
 //  func unixtime(s string) (time.Time, error) {

@@ -3,8 +3,9 @@
 package oval
 
 import (
+	"cmp"
 	"reflect"
-	"sort"
+	"slices"
 	"testing"
 
 	"github.com/future-architect/vuls/constant"
@@ -185,8 +186,8 @@ func TestDefpacksToPackStatuses(t *testing.T) {
 	}
 	for i, tt := range tests {
 		actual := tt.in.dp.toPackStatuses()
-		sort.Slice(actual, func(i, j int) bool {
-			return actual[i].Name < actual[j].Name
+		slices.SortFunc(actual, func(a, b models.PackageFixStatus) int {
+			return cmp.Compare(a.Name, b.Name)
 		})
 		if !reflect.DeepEqual(actual, tt.out) {
 			t.Errorf("[%d]\nexpected: %v\n  actual: %v\n", i, tt.out, actual)

@@ -160,7 +160,7 @@ func TestConvertEuvdToModel(t *testing.T) {
 						},
 						Assigner:       "VulnCheck",
 						EPSS:           45.93,
-						ExploitedSince: func() *time.Time { t := time.Date(2025, time.May, 02, 12, 00, 00, 0, time.UTC); return &t }(),
+						ExploitedSince: new(time.Date(2025, time.May, 02, 12, 00, 00, 0, time.UTC)),
 					},
 				},
 			},
@@ -388,10 +388,7 @@ func TestConvertPaloaltoToModel(t *testing.T) {
 							Tags: "x_refsource_CONFIRM",
 						},
 					}},
-					DatePublic: func() *time.Time {
-						t := time.Date(2023, 10, 11, 16, 0, 0, 0, time.UTC)
-						return &t
-					}(),
+					DatePublic: new(time.Date(2023, 10, 11, 16, 0, 0, 0, time.UTC)),
 				}},
 			},
 			want: []models.CveContent{{

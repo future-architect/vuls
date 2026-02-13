@@ -45,8 +45,8 @@ func (w GoogleChatWriter) Write(rs ...models.ScanResult) (err error) {
 			link := ""
 			if strings.HasPrefix(vinfo.CveID, "CVE-") {
 				link = fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", vinfo.CveID)
-			} else if strings.HasPrefix(vinfo.CveID, "WPVDBID-") {
-				link = fmt.Sprintf("https://wpscan.com/vulnerabilities/%s", strings.TrimPrefix(vinfo.CveID, "WPVDBID-"))
+			} else if after, ok := strings.CutPrefix(vinfo.CveID, "WPVDBID-"); ok {
+				link = fmt.Sprintf("https://wpscan.com/vulnerabilities/%s", after)
 			}
 
 			msgs = append(msgs, fmt.Sprintf(`%s %s %4.1f %5s %s`,

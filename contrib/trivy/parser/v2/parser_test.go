@@ -330,7 +330,7 @@ var redisSR = &models.ScanResult{
 			BinaryNames: []string{"bsdutils", "pkgA"},
 		},
 	},
-	Optional: map[string]interface{}{
+	Optional: map[string]any{
 		"TRIVY_IMAGE_NAME": "redis",
 		"TRIVY_IMAGE_TAG":  "latest",
 	},
@@ -1129,7 +1129,7 @@ var osAndLibSR = &models.ScanResult{
 			BinaryNames: []string{"libgnutls30"},
 		},
 	},
-	Optional: map[string]interface{}{
+	Optional: map[string]any{
 		"TRIVY_IMAGE_NAME": "quay.io/fluentd_elasticsearch/fluentd",
 		"TRIVY_IMAGE_TAG":  "v2.9.0",
 	},
@@ -1619,7 +1619,7 @@ var osAndLib2SR = &models.ScanResult{
 			BinaryNames: []string{"libgnutls30"},
 		},
 	},
-	Optional: map[string]interface{}{
+	Optional: map[string]any{
 		"TRIVY_IMAGE_NAME": "quay.io/fluentd_elasticsearch/fluentd",
 		"TRIVY_IMAGE_TAG":  "v2.9.0",
 	},
@@ -2923,7 +2923,7 @@ var oneCVEtoNVulnerabilitySR = &models.ScanResult{
 		},
 	},
 	SrcPackages: models.SrcPackages{},
-	Optional: map[string]interface{}{
+	Optional: map[string]any{
 		"TRIVY_IMAGE_NAME": "test-cve-2013-1629-cve-2023-26154",
 		"TRIVY_IMAGE_TAG":  "latest",
 	},

@@ -2,10 +2,11 @@ package models
 
 import (
 	"bytes"
+	"cmp"
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
-	"sort"
 	"strings"
 	"time"
 
@@ -55,11 +56,9 @@ func (v VulnInfos) FilterByConfidenceOver(over int) (_ VulnInfos, nFiltered int)
 // FilterIgnoreCves filter function.
 func (v VulnInfos) FilterIgnoreCves(ignoreCveIDs []string) (_ VulnInfos, nFiltered int) {
 	return v.Find(func(v VulnInfo) bool {
-		for _, c := range ignoreCveIDs {
-			if v.CveID == c {
-				nFiltered++
-				return false
-			}
+		if slices.Contains(ignoreCveIDs, v.CveID) {
+			nFiltered++
+			return false
 		}
 		return true
 	}), nFiltered
@@ -134,16 +133,14 @@ func (v VulnInfos) FindScoredVulns() (_ VulnInfos, nFiltered int) {
 
 // ToSortedSlice returns slice of VulnInfos that is sorted by Score, CVE-ID
 func (v VulnInfos) ToSortedSlice() (sorted []VulnInfo) {
-	for k := range v {
-		sorted = append(sorted, v[k])
-	}
-	sort.Slice(sorted, func(i, j int) bool {
-		maxI := sorted[i].MaxCvssScore()
-		maxJ := sorted[j].MaxCvssScore()
-		if maxI.Value.Score != maxJ.Value.Score {
-			return maxJ.Value.Score < maxI.Value.Score
-		}
-		return sorted[i].CveID < sorted[j].CveID
+	sorted = slices.Collect(maps.Values(v))
+	slices.SortFunc(sorted, func(a, b VulnInfo) int {
+		maxA := a.MaxCvssScore()
+		maxB := b.MaxCvssScore()
+		return cmp.Or(
+			-cmp.Compare(maxA.Value.Score, maxB.Value.Score),
+			cmp.Compare(a.CveID, b.CveID),
+		)
 	})
 	return
 }
@@ -243,11 +240,11 @@ func (ps PackageFixStatuses) Store(pkg PackageFixStatus) PackageFixStatuses {
 
 // Sort by Name asc, FixedIn desc
 func (ps PackageFixStatuses) Sort() {
-	sort.Slice(ps, func(i, j int) bool {
-		if ps[i].Name != ps[j].Name {
-			return ps[i].Name < ps[j].Name
-		}
-		return ps[j].FixedIn < ps[i].FixedIn
+	slices.SortFunc(ps, func(a, b PackageFixStatus) int {
+		return cmp.Or(
+			cmp.Compare(a.Name, b.Name),
+			cmp.Compare(b.FixedIn, a.FixedIn),
+		)
 	})
 }
 
@@ -271,7 +268,7 @@ type VulnInfo struct {
 	Mitigations          []Mitigation         `json:"mitigations,omitempty"`
 	KEVs                 []KEV                `json:"kevs,omitempty"`
 	Ctis                 []string             `json:"ctis,omitempty"`
-	AlertDict            AlertDict            `json:"alertDict,omitempty"`
+	AlertDict            AlertDict            `json:"alertDict,omitzero"`
 	CpeURIs              []string             `json:"cpeURIs,omitempty"` // CpeURIs related to this CVE defined in config.toml
 	GitHubSecurityAlerts GitHubSecurityAlerts `json:"gitHubSecurityAlerts,omitempty"`
 	WpPackageFixStats    WpPackageFixStats    `json:"wpPackageFixStats,omitempty"`
@@ -312,7 +309,7 @@ func (g GitHubSecurityAlerts) Names() (names []string) {
 // GitHubSecurityAlert has detected CVE-ID, GSAVulnerablePackage, Status fetched via GitHub API
 type GitHubSecurityAlert struct {
 	Repository    string               `json:"repository"`
-	Package       GSAVulnerablePackage `json:"package,omitempty"`
+	Package       GSAVulnerablePackage `json:"package,omitzero"`
 	FixedIn       string               `json:"fixedIn"`
 	AffectedRange string               `json:"affectedRange"`
 	Dismissed     bool                 `json:"dismissed"`
@@ -940,7 +937,7 @@ type KEV struct {
 	ShortDescription           string     `json:"short_description,omitempty"`
 	RequiredAction             string     `json:"required_action,omitempty"`
 	KnownRansomwareCampaignUse string     `json:"known_ransomware_campaign_use,omitempty"`
-	DateAdded                  time.Time  `json:"date_added,omitempty"`
+	DateAdded                  time.Time  `json:"date_added,omitzero"`
 	DueDate                    *time.Time `json:"due_date,omitempty"`
 
 	CISA      *CISAKEV      `json:"cisa,omitempty"`
@@ -962,7 +959,7 @@ type VulnCheckKEV struct {
 type VulnCheckXDB struct {
 	XDBID       string    `json:"xdb_id,omitempty"`
 	XDBURL      string    `json:"xdb_url,omitempty"`
-	DateAdded   time.Time `json:"date_added,omitempty"`
+	DateAdded   time.Time `json:"date_added,omitzero"`
 	ExploitType string    `json:"exploit_type,omitempty"`
 	CloneSSHURL string    `json:"clone_ssh_url,omitempty"`
 }
@@ -970,7 +967,7 @@ type VulnCheckXDB struct {
 // VulnCheckReportedExploitation :
 type VulnCheckReportedExploitation struct {
 	URL       string    `json:"url,omitempty"`
-	DateAdded time.Time `json:"date_added,omitempty"`
+	DateAdded time.Time `json:"date_added,omitzero"`
 }
 
 // AlertDict has target cve JPCERT and USCERT alert data
@@ -1008,8 +1005,8 @@ func (cs *Confidences) AppendIfMissing(confidence Confidence) {
 
 // SortByConfident sorts Confidences
 func (cs Confidences) SortByConfident() Confidences {
-	sort.Slice(cs, func(i, j int) bool {
-		return cs[i].SortOrder < cs[j].SortOrder
+	slices.SortFunc(cs, func(a, b Confidence) int {
+		return cmp.Compare(a.SortOrder, b.SortOrder)
 	})
 	return cs
 }

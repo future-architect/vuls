@@ -3,6 +3,7 @@ package scanner
 import (
 	"bufio"
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/future-architect/vuls/config"
@@ -156,9 +157,7 @@ func (o *bsd) scanInstalledPackages() (models.Packages, error) {
 		return nil, xerrors.Errorf("Failed to SSH: %s", r)
 	}
 	// `pkg-audit` has a new version, overwrite it.
-	for name, p := range o.parsePkgVersion(r.Stdout) {
-		pkgs[name] = p
-	}
+	maps.Copy(pkgs, o.parsePkgVersion(r.Stdout))
 	return pkgs, nil
 }
 
@@ -241,8 +240,8 @@ func (o *bsd) scanUnsecurePackages() (models.VulnInfos, error) {
 
 func (o *bsd) parsePkgInfo(stdout string) models.Packages {
 	packs := models.Packages{}
-	lines := strings.Split(stdout, "\n")
-	for _, l := range lines {
+	lines := strings.SplitSeq(stdout, "\n")
+	for l := range lines {
 		fields := strings.Fields(l)
 		if len(fields) < 2 {
 			continue
@@ -262,8 +261,8 @@ func (o *bsd) parsePkgInfo(stdout string) models.Packages {
 
 func (o *bsd) parsePkgVersion(stdout string) models.Packages {
 	packs := models.Packages{}
-	lines := strings.Split(stdout, "\n")
-	for _, l := range lines {
+	lines := strings.SplitSeq(stdout, "\n")
+	for l := range lines {
 		fields := strings.Fields(l)
 		if len(fields) < 2 {
 			continue
@@ -329,8 +328,8 @@ func (o *bsd) splitIntoBlocks(stdout string) (blocks []string) {
 }
 
 func (o *bsd) parseBlock(block string) (packName string, cveIDs []string, vulnID string) {
-	lines := strings.Split(block, "\n")
-	for _, l := range lines {
+	lines := strings.SplitSeq(block, "\n")
+	for l := range lines {
 		if strings.HasSuffix(l, " is vulnerable:") {
 			packVer := strings.Fields(l)[0]
 			splitted := strings.Split(packVer, "-")

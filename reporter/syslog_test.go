@@ -3,7 +3,7 @@
 package reporter
 
 import (
-	"sort"
+	"slices"
 	"testing"
 	"time"
 
@@ -104,9 +104,7 @@ func TestSyslogWriterEncodeSyslog(t *testing.T) {
 				i, len(tt.expectedMessages), len(messages))
 		}
 
-		sort.Slice(messages, func(i, j int) bool {
-			return messages[i] < messages[j]
-		})
+		slices.Sort(messages)
 
 		for j, m := range messages {
 			e := tt.expectedMessages[j]

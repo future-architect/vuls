@@ -14,7 +14,7 @@ import (
 
 // ConvertJvnToModel convert JVN to CveContent
 func ConvertJvnToModel(cveID string, jvns []cvedict.Jvn) []CveContent {
-	cves := []CveContent{}
+	cves := make([]CveContent, 0, len(jvns))
 	for _, jvn := range jvns {
 		// cpes := []Cpe{}
 		// for _, c := range jvn.Cpes {
@@ -129,10 +129,10 @@ func ConvertEuvdToModel(cveID string, euvds []cvedict.Euvd) []CveContent {
 
 // ConvertNvdToModel convert NVD to CveContent
 func ConvertNvdToModel(cveID string, nvds []cvedict.Nvd) ([]CveContent, []Exploit, []Mitigation) {
-	cves := []CveContent{}
-	refs := []Reference{}
-	exploits := []Exploit{}
-	mitigations := []Mitigation{}
+	var cves []CveContent //nolint:prealloc
+	var refs []Reference
+	var exploits []Exploit
+	var mitigations []Mitigation
 	for _, nvd := range nvds {
 		// cpes := []Cpe{}
 		// for _, c := range nvd.Cpes {
@@ -168,7 +168,7 @@ func ConvertNvdToModel(cveID string, nvds []cvedict.Nvd) ([]CveContent, []Exploi
 			}
 		}
 
-		desc := []string{}
+		desc := make([]string, 0, len(nvd.Descriptions))
 		for _, d := range nvd.Descriptions {
 			desc = append(desc, d.Value)
 		}
@@ -230,7 +230,7 @@ func ConvertNvdToModel(cveID string, nvds []cvedict.Nvd) ([]CveContent, []Exploi
 
 // ConvertVulncheckToModel convert VulnCheck to CveContent
 func ConvertVulncheckToModel(cveID string, vulnchecks []cvedict.Vulncheck) []CveContent {
-	var cves []CveContent
+	var cves []CveContent //nolint:prealloc
 	for _, vulncheck := range vulnchecks {
 		desc := func() string {
 			switch i := slices.IndexFunc(vulncheck.Descriptions, func(e cvedict.VulncheckDescription) bool {
@@ -319,10 +319,9 @@ func ConvertVulncheckToModel(cveID string, vulnchecks []cvedict.Vulncheck) []Cve
 
 // ConvertFortinetToModel convert Fortinet to CveContent
 func ConvertFortinetToModel(cveID string, fortinets []cvedict.Fortinet) []CveContent {
-	cves := []CveContent{}
+	cves := make([]CveContent, 0, len(fortinets))
 	for _, fortinet := range fortinets {
-
-		refs := []Reference{}
+		refs := make([]Reference, 0, len(fortinet.References))
 		for _, r := range fortinet.References {
 			refs = append(refs, Reference{
 				Link:   r.Link,
@@ -330,7 +329,7 @@ func ConvertFortinetToModel(cveID string, fortinets []cvedict.Fortinet) []CveCon
 			})
 		}
 
-		cweIDs := []string{}
+		cweIDs := make([]string, 0, len(fortinet.Cwes))
 		for _, cid := range fortinet.Cwes {
 			cweIDs = append(cweIDs, cid.CweID)
 		}

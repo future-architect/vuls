@@ -3,7 +3,7 @@ package reporter
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -51,11 +51,11 @@ func (w SlackWriter) Write(rs ...models.ScanResult) (err error) {
 		for i, a := range w.toSlackAttachments(r) {
 			m[i/maxAttachments] = append(m[i/maxAttachments], a)
 		}
-		chunkKeys := []int{}
+		chunkKeys := make([]int, 0, len(m))
 		for k := range m {
 			chunkKeys = append(chunkKeys, k)
 		}
-		sort.Ints(chunkKeys)
+		slices.Sort(chunkKeys)
 
 		summary := fmt.Sprintf("%s\n%s",
 			w.getNotifyUsers(w.Cnf.NotifyUsers),
@@ -284,8 +284,9 @@ func (w SlackWriter) attachmentText(vinfo models.VulnInfo, cweDict map[string]mo
 			}
 		} else {
 			if 0 < len(vinfo.DistroAdvisories) {
-				links := []string{}
-				for _, v := range vinfo.CveContents.PrimarySrcURLs(w.lang, w.osFamily, vinfo.CveID, vinfo.Confidences) {
+				us := vinfo.CveContents.PrimarySrcURLs(w.lang, w.osFamily, vinfo.CveID, vinfo.Confidences)
+				links := make([]string, 0, len(us))
+				for _, v := range us {
 					links = append(links, fmt.Sprintf("<%s|%s>", v.Value, v.Type))
 				}
 
@@ -327,8 +328,9 @@ func (w SlackWriter) attachmentText(vinfo models.VulnInfo, cweDict map[string]mo
 }
 
 func (w SlackWriter) cweIDs(vinfo models.VulnInfo, osFamily string, cweDict models.CweDict) string {
-	links := []string{}
-	for _, c := range vinfo.CveContents.UniqCweIDs(osFamily) {
+	cs := vinfo.CveContents.UniqCweIDs(osFamily)
+	links := make([]string, 0, len(cs))
+	for _, c := range cs {
 		name, url, owasp, cwe25, sans := cweDict.Get(c.Value, w.lang)
 		line := fmt.Sprintf("<%s|%s>: %s", url, c.Value, name)
 		for year, info := range owasp {
@@ -349,7 +351,7 @@ func (w SlackWriter) cweIDs(vinfo models.VulnInfo, osFamily string, cweDict mode
 
 // See testcase
 func (w SlackWriter) getNotifyUsers(notifyUsers []string) string {
-	slackStyleTexts := []string{}
+	slackStyleTexts := make([]string, 0, len(notifyUsers))
 	for _, username := range notifyUsers {
 		slackStyleTexts = append(slackStyleTexts, fmt.Sprintf("<%s>", username))
 	}

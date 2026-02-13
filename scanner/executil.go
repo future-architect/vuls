@@ -8,6 +8,7 @@ import (
 	ex "os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -53,10 +54,8 @@ func (s execResult) isSuccess(expectedStatusCodes ...int) bool {
 	if len(expectedStatusCodes) == 0 {
 		return s.ExitStatus == 0
 	}
-	for _, code := range expectedStatusCodes {
-		if code == s.ExitStatus {
-			return true
-		}
+	if slices.Contains(expectedStatusCodes, s.ExitStatus) {
+		return true
 	}
 	if s.Error != nil {
 		return false

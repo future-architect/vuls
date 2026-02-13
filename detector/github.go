@@ -383,8 +383,8 @@ type DependencyGraph struct {
 		} `json:"repository"`
 	} `json:"data"`
 	Errors []struct {
-		Type      string        `json:"type,omitempty"`
-		Path      []interface{} `json:"path,omitempty"`
+		Type      string `json:"type,omitempty"`
+		Path      []any  `json:"path,omitempty"`
 		Locations []struct {
 			Line   int `json:"line"`
 			Column int `json:"column"`

@@ -32,20 +32,20 @@ type Config struct {
 	ResultsDir string `json:"resultsDir,omitempty"`
 	Pipe       bool   `json:"pipe,omitempty"`
 
-	Default ServerInfo            `json:"default,omitempty"`
+	Default ServerInfo            `json:"default,omitzero"`
 	Servers map[string]ServerInfo `json:"servers,omitempty"`
 
 	ScanOpts
 
 	// report
-	CveDict    GoCveDictConf  `json:"cveDict,omitempty"`
-	OvalDict   GovalDictConf  `json:"ovalDict,omitempty"`
-	Gost       GostConf       `json:"gost,omitempty"`
-	Exploit    ExploitConf    `json:"exploit,omitempty"`
-	Metasploit MetasploitConf `json:"metasploit,omitempty"`
-	KEVuln     KEVulnConf     `json:"kevuln,omitempty"`
-	Cti        CtiConf        `json:"cti,omitempty"`
-	Vuls2      Vuls2Conf      `json:"vuls2,omitempty"`
+	CveDict    GoCveDictConf  `json:"cveDict,omitzero"`
+	OvalDict   GovalDictConf  `json:"ovalDict,omitzero"`
+	Gost       GostConf       `json:"gost,omitzero"`
+	Exploit    ExploitConf    `json:"exploit,omitzero"`
+	Metasploit MetasploitConf `json:"metasploit,omitzero"`
+	KEVuln     KEVulnConf     `json:"kevuln,omitzero"`
+	Cti        CtiConf        `json:"cti,omitzero"`
+	Vuls2      Vuls2Conf      `json:"vuls2,omitzero"`
 
 	Slack      SlackConf      `json:"-"`
 	EMail      SMTPConf       `json:"-"`
@@ -253,7 +253,7 @@ type ServerInfo struct {
 	UUIDs              map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
 	Memo               string                      `toml:"memo,omitempty" json:"memo,omitempty"`
 	Enablerepo         []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, Alma, Rocky, RHEL, Amazon
-	Optional           map[string]interface{}      `toml:"optional,omitempty" json:"optional,omitempty"`     // Optional key-value set that will be outputted to JSON
+	Optional           map[string]any              `toml:"optional,omitempty" json:"optional,omitempty"`     // Optional key-value set that will be outputted to JSON
 	Lockfiles          []string                    `toml:"lockfiles,omitempty" json:"lockfiles,omitempty"`   // ie) path/to/package-lock.json
 	FindLock           bool                        `toml:"findLock,omitempty" json:"findLock,omitempty"`
 	FindLockDirs       []string                    `toml:"findLockDirs,omitempty" json:"findLockDirs,omitempty"`

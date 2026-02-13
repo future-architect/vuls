@@ -38,8 +38,6 @@ var (
 
 var servers, errServers []osTypeInterface
 
-var userDirectoryPath = ""
-
 // Base Interface
 type osTypeInterface interface {
 	setServerInfo(config.ServerInfo)
@@ -557,7 +555,7 @@ type sshConfiguration struct {
 
 func parseSSHConfiguration(stdout string) sshConfiguration {
 	sshConfig := sshConfiguration{}
-	for _, line := range strings.Split(stdout, "\n") {
+	for line := range strings.SplitSeq(stdout, "\n") {
 		line = strings.TrimSuffix(line, "\r")
 		switch {
 		case strings.HasPrefix(line, "user "):
@@ -599,7 +597,7 @@ func normalizeHomeDirPathForWindows(userKnownHost string) string {
 
 func parseSSHScan(stdout string) map[string]string {
 	keys := map[string]string{}
-	for _, line := range strings.Split(stdout, "\n") {
+	for line := range strings.SplitSeq(stdout, "\n") {
 		line = strings.TrimSuffix(line, "\r")
 		if line == "" || strings.HasPrefix(line, "# ") {
 			continue
@@ -612,7 +610,7 @@ func parseSSHScan(stdout string) map[string]string {
 }
 
 func parseSSHKeygen(stdout string) (string, string, error) {
-	for _, line := range strings.Split(stdout, "\n") {
+	for line := range strings.SplitSeq(stdout, "\n") {
 		line = strings.TrimSuffix(line, "\r")
 		if line == "" || strings.HasPrefix(line, "# ") {
 			continue
@@ -650,7 +648,7 @@ func (s Scanner) detectContainerOSes(hosts []osTypeInterface) (actives, inactive
 	}
 
 	timeout := time.After(time.Duration(s.TimeoutSec) * time.Second)
-	for i := 0; i < len(hosts); i++ {
+	for range hosts {
 		select {
 		case res := <-osTypesChan:
 			for _, osi := range res {

@@ -2,7 +2,7 @@ package config
 
 import (
 	"reflect"
-	"sort"
+	"slices"
 	"testing"
 )
 
@@ -83,7 +83,7 @@ func TestHosts(t *testing.T) {
 	}
 	for i, tt := range tests {
 		actual, err := hosts(tt.in, tt.ignore)
-		sort.Slice(actual, func(i, j int) bool { return actual[i] < actual[j] })
+		slices.Sort(actual)
 		if err != nil && !tt.err {
 			t.Errorf("[%d] unexpected error occurred, in: %s act: %s, exp: %s",
 				i, tt.in, actual, tt.expected)

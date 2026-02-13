@@ -43,7 +43,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			return 0, xerrors.Errorf("Failed to join URLPath. err: %w", err)
 		}
 
-		content := map[string]interface{}{"applied": applied, "unapplied": unapplied}
+		content := map[string]any{"applied": applied, "unapplied": unapplied}
 		var body []byte
 		var errs []error
 		var resp *http.Response
@@ -88,7 +88,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			return 0, xerrors.Errorf("Failed to join URLPath. err: %w", err)
 		}
 
-		content := map[string]interface{}{"release": r.Release, "kbs": append(applied, unapplied...)}
+		content := map[string]any{"release": r.Release, "kbs": append(applied, unapplied...)}
 		var body []byte
 		var errs []error
 		var resp *http.Response
@@ -155,7 +155,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			return 0, xerrors.Errorf("Failed to join URLPath. err: %w", err)
 		}
 
-		content := map[string]interface{}{"products": filtered, "kbs": append(applied, unapplied...)}
+		content := map[string]any{"products": filtered, "kbs": append(applied, unapplied...)}
 		var body []byte
 		var errs []error
 		var resp *http.Response
@@ -327,13 +327,10 @@ func (ms Microsoft) detect(r *models.ScanResult, cve gostmodels.MicrosoftCVE, ap
 				}
 			} else {
 				kbid := fmt.Sprintf("KB%s", kb.Article)
-				vinfo.DistroAdvisories.AppendIfMissing(func() *models.DistroAdvisory {
-					a := models.DistroAdvisory{
-						AdvisoryID:  kbid,
-						Description: "Microsoft Knowledge Base",
-					}
-					return &a
-				}())
+				vinfo.DistroAdvisories.AppendIfMissing(new(models.DistroAdvisory{
+					AdvisoryID:  kbid,
+					Description: "Microsoft Knowledge Base",
+				}))
 				if !slices.Contains(vinfo.WindowsKBFixedIns, kbid) {
 					vinfo.WindowsKBFixedIns = append(vinfo.WindowsKBFixedIns, kbid)
 				}

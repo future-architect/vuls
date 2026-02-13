@@ -168,7 +168,7 @@ func (o *debian) checkIfSudoNoPasswd() error {
 type dep struct {
 	packName      string
 	required      bool
-	logFunc       func(string, ...interface{})
+	logFunc       func(string, ...any)
 	additionalMsg string
 }
 
@@ -391,8 +391,8 @@ func (o *debian) parseInstalledPackages(stdout string) (models.Packages, models.
 	// curl,ii ,7.38.0-4+deb8u2,,7.38.0-4+deb8u2
 	// openssh-server,ii ,1:6.7p1-5+deb8u3,openssh,1:6.7p1-5+deb8u3
 	// tar,ii ,1.27.1-2+b1,tar (1.27.1-2),1.27.1-2
-	lines := strings.Split(stdout, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(stdout, "\n")
+	for line := range lines {
 		if trimmed := strings.TrimSpace(line); len(trimmed) != 0 {
 			name, status, version, srcName, srcVersion, err := o.parseScannedPackagesLine(trimmed)
 			if err != nil || len(status) < 2 {
@@ -615,7 +615,7 @@ func (o *debian) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
 }
 
 func (o *debian) fillCandidateVersion(updatables models.Packages) (err error) {
-	names := []string{}
+	names := make([]string, 0, len(updatables))
 	for name := range updatables {
 		names = append(names, name)
 	}
@@ -657,8 +657,8 @@ func (o *debian) parseAptGetUpgrade(stdout string) (updatableNames []string, err
 	stopRe := regexp.MustCompile(`^(\d+) upgraded.*`)
 	startLineFound, stopLineFound := false, false
 
-	lines := strings.Split(stdout, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(stdout, "\n")
+	for line := range lines {
 		if !startLineFound {
 			if matche := startRe.MatchString(line); matche {
 				startLineFound = true
@@ -1111,7 +1111,7 @@ func (o *debian) splitAptCachePolicy(stdout string) map[string]string {
 	for i := len(ii) - 1; 0 <= i; i-- {
 		ri = append(ri, ii[i][0])
 	}
-	splitted := []string{}
+	splitted := make([]string, 0, len(ri))
 	lasti := len(stdout)
 	for _, i := range ri {
 		splitted = append(splitted, stdout[i:lasti])

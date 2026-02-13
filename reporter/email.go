@@ -207,11 +207,11 @@ func (e *emailSender) Send(subject, body string) (err error) {
 	headers["Date"] = time.Now().Format(time.RFC1123Z)
 	headers["Content-Type"] = "text/plain; charset=utf-8"
 
-	var header string
+	var header strings.Builder
 	for k, v := range headers {
-		header += fmt.Sprintf("%s: %s\r\n", k, v)
+		header.WriteString(fmt.Sprintf("%s: %s\r\n", k, v))
 	}
-	if err := e.sendMail(net.JoinHostPort(emailConf.SMTPAddr, emailConf.SMTPPort), fmt.Sprintf("%s\r\n%s", header, body)); err != nil {
+	if err := e.sendMail(net.JoinHostPort(emailConf.SMTPAddr, emailConf.SMTPPort), fmt.Sprintf("%s\r\n%s", header.String(), body)); err != nil {
 		return xerrors.Errorf("Failed to send emails: %w", err)
 	}
 	return nil

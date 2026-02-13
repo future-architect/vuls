@@ -21,7 +21,7 @@ func Convert(result snmp.Result) []string {
 	case "Cisco":
 		var p, v string
 		lhs, _, _ := strings.Cut(result.SysDescr0, " RELEASE SOFTWARE")
-		for _, s := range strings.Split(lhs, ",") {
+		for s := range strings.SplitSeq(lhs, ",") {
 			s = strings.TrimSpace(s)
 			switch {
 			case strings.Contains(s, "Cisco NX-OS"):
@@ -50,7 +50,7 @@ func Convert(result snmp.Result) []string {
 		}
 	case "Juniper Networks":
 		if strings.HasPrefix(result.SysDescr0, "Juniper Networks, Inc.") {
-			for _, s := range strings.Split(strings.TrimPrefix(result.SysDescr0, "Juniper Networks, Inc. "), ",") {
+			for s := range strings.SplitSeq(strings.TrimPrefix(result.SysDescr0, "Juniper Networks, Inc. "), ",") {
 				s = strings.TrimSpace(s)
 				switch {
 				case strings.HasPrefix(s, "qfx"), strings.HasPrefix(s, "ex"), strings.HasPrefix(s, "mx"), strings.HasPrefix(s, "ptx"), strings.HasPrefix(s, "acx"), strings.HasPrefix(s, "bti"), strings.HasPrefix(s, "srx"):
@@ -77,8 +77,8 @@ func Convert(result snmp.Result) []string {
 	case "Arista Networks":
 		v, h, ok := strings.Cut(result.SysDescr0, " running on an ")
 		if ok {
-			if strings.HasPrefix(v, "Arista Networks EOS version ") {
-				cpes = append(cpes, fmt.Sprintf("cpe:2.3:o:arista:eos:%s:*:*:*:*:*:*:*", strings.ToLower(strings.TrimPrefix(v, "Arista Networks EOS version "))))
+			if after, ok0 := strings.CutPrefix(v, "Arista Networks EOS version "); ok0 {
+				cpes = append(cpes, fmt.Sprintf("cpe:2.3:o:arista:eos:%s:*:*:*:*:*:*:*", strings.ToLower(after)))
 			}
 			cpes = append(cpes, fmt.Sprintf("cpe:2.3:h:arista:%s:-:*:*:*:*:*:*:*", strings.ToLower(strings.TrimPrefix(h, "Arista Networks "))))
 		}
@@ -167,7 +167,7 @@ func Convert(result snmp.Result) []string {
 			case strings.HasPrefix(t.EntPhysicalName, "FWM_"):
 				cpes = append(cpes, fmt.Sprintf("cpe:2.3:h:fortinet:fortiwlm-%s:-:*:*:*:*:*:*:*", strings.ToLower(strings.TrimPrefix(t.EntPhysicalName, "FWM_"))))
 			}
-			for _, s := range strings.Fields(t.EntPhysicalSoftwareRev) {
+			for s := range strings.FieldsSeq(t.EntPhysicalSoftwareRev) {
 				switch {
 				case strings.HasPrefix(s, "FortiADC-"), strings.HasPrefix(s, "FortiAI-"), strings.HasPrefix(s, "FortiAnalyzer-"), strings.HasPrefix(s, "FortiAP-"),
 					strings.HasPrefix(s, "FortiAuthenticator-"), strings.HasPrefix(s, "FortiBalancer-"), strings.HasPrefix(s, "FortiBridge-"), strings.HasPrefix(s, "FortiCache-"),
@@ -378,7 +378,7 @@ func Convert(result snmp.Result) []string {
 		}
 	case "YAMAHA":
 		var h, v string
-		for _, s := range strings.Fields(result.SysDescr0) {
+		for s := range strings.FieldsSeq(result.SysDescr0) {
 			switch {
 			case strings.HasPrefix(s, "RTX"), strings.HasPrefix(s, "NVR"), strings.HasPrefix(s, "RTV"), strings.HasPrefix(s, "RT"),
 				strings.HasPrefix(s, "SRT"), strings.HasPrefix(s, "FWX"), strings.HasPrefix(s, "YSL-V810"):
@@ -397,7 +397,7 @@ func Convert(result snmp.Result) []string {
 		}
 	case "NEC":
 		var h, v string
-		for _, s := range strings.Split(result.SysDescr0, ",") {
+		for s := range strings.SplitSeq(result.SysDescr0, ",") {
 			s = strings.TrimSpace(s)
 			switch {
 			case strings.HasPrefix(s, "IX Series "):
