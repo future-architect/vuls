@@ -2,10 +2,11 @@ package models
 
 import (
 	"bytes"
+	"cmp"
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
-	"sort"
 	"strings"
 	"time"
 
@@ -132,16 +133,14 @@ func (v VulnInfos) FindScoredVulns() (_ VulnInfos, nFiltered int) {
 
 // ToSortedSlice returns slice of VulnInfos that is sorted by Score, CVE-ID
 func (v VulnInfos) ToSortedSlice() (sorted []VulnInfo) {
-	for k := range v {
-		sorted = append(sorted, v[k])
-	}
-	sort.Slice(sorted, func(i, j int) bool {
-		maxI := sorted[i].MaxCvssScore()
-		maxJ := sorted[j].MaxCvssScore()
-		if maxI.Value.Score != maxJ.Value.Score {
-			return maxJ.Value.Score < maxI.Value.Score
-		}
-		return sorted[i].CveID < sorted[j].CveID
+	sorted = slices.Collect(maps.Values(v))
+	slices.SortFunc(sorted, func(a, b VulnInfo) int {
+		maxA := a.MaxCvssScore()
+		maxB := b.MaxCvssScore()
+		return cmp.Or(
+			-cmp.Compare(maxA.Value.Score, maxB.Value.Score),
+			cmp.Compare(a.CveID, b.CveID),
+		)
 	})
 	return
 }
@@ -241,11 +240,11 @@ func (ps PackageFixStatuses) Store(pkg PackageFixStatus) PackageFixStatuses {
 
 // Sort by Name asc, FixedIn desc
 func (ps PackageFixStatuses) Sort() {
-	sort.Slice(ps, func(i, j int) bool {
-		if ps[i].Name != ps[j].Name {
-			return ps[i].Name < ps[j].Name
-		}
-		return ps[j].FixedIn < ps[i].FixedIn
+	slices.SortFunc(ps, func(a, b PackageFixStatus) int {
+		return cmp.Or(
+			cmp.Compare(a.Name, b.Name),
+			cmp.Compare(b.FixedIn, a.FixedIn),
+		)
 	})
 }
 
@@ -1006,8 +1005,8 @@ func (cs *Confidences) AppendIfMissing(confidence Confidence) {
 
 // SortByConfident sorts Confidences
 func (cs Confidences) SortByConfident() Confidences {
-	sort.Slice(cs, func(i, j int) bool {
-		return cs[i].SortOrder < cs[j].SortOrder
+	slices.SortFunc(cs, func(a, b Confidence) int {
+		return cmp.Compare(a.SortOrder, b.SortOrder)
 	})
 	return cs
 }

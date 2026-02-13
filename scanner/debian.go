@@ -615,7 +615,7 @@ func (o *debian) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
 }
 
 func (o *debian) fillCandidateVersion(updatables models.Packages) (err error) {
-	names := []string{}
+	names := make([]string, 0, len(updatables))
 	for name := range updatables {
 		names = append(names, name)
 	}
@@ -1111,7 +1111,7 @@ func (o *debian) splitAptCachePolicy(stdout string) map[string]string {
 	for i := len(ii) - 1; 0 <= i; i-- {
 		ri = append(ri, ii[i][0])
 	}
-	splitted := []string{}
+	splitted := make([]string, 0, len(ri))
 	lasti := len(stdout)
 	for _, i := range ri {
 		splitted = append(splitted, stdout[i:lasti])

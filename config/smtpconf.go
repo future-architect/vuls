@@ -37,7 +37,7 @@ func (c *SMTPConf) Validate() (errs []error) {
 	if !c.Enabled {
 		return
 	}
-	emails := []string{}
+	emails := make([]string, 0, 1+len(c.To)+len(c.Cc))
 	emails = append(emails, c.From)
 	emails = append(emails, c.To...)
 	emails = append(emails, c.Cc...)

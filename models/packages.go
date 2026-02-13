@@ -142,7 +142,6 @@ func (p Package) FormatVersionFromTo(stat PackageFixStatus) string {
 
 // FormatChangelog formats the changelog
 func (p Package) FormatChangelog() string {
-	buf := []string{}
 	packVer := fmt.Sprintf("%s-%s -> %s",
 		p.Name, p.FormatVer(), p.FormatNewVer())
 	var delim bytes.Buffer
@@ -161,8 +160,7 @@ func (p Package) FormatChangelog() string {
 	case FailedToFindVersionInChangelog:
 		clog = "Failed to parse changelogs. For details, check yourself"
 	}
-	buf = append(buf, packVer, delim.String(), clog)
-	return strings.Join(buf, "\n")
+	return strings.Join([]string{packVer, delim.String(), clog}, "\n")
 }
 
 // Changelog has contents of changelog and how to get it.

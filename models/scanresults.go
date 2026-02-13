@@ -2,9 +2,10 @@ package models
 
 import (
 	"bytes"
+	"cmp"
 	"fmt"
 	"reflect"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -394,58 +395,54 @@ func (r *ScanResult) CheckEOL() {
 // SortForJSONOutput sort list elements in the ScanResult to diff in integration-test
 func (r *ScanResult) SortForJSONOutput() {
 	for k, v := range r.Packages {
-		sort.Slice(v.AffectedProcs, func(i, j int) bool {
-			return v.AffectedProcs[i].PID < v.AffectedProcs[j].PID
+		slices.SortFunc(v.AffectedProcs, func(a, b AffectedProcess) int {
+			return cmp.Compare(a.PID, b.PID)
 		})
-		sort.Slice(v.NeedRestartProcs, func(i, j int) bool {
-			return v.NeedRestartProcs[i].PID < v.NeedRestartProcs[j].PID
+		slices.SortFunc(v.NeedRestartProcs, func(a, b NeedRestartProcess) int {
+			return cmp.Compare(a.PID, b.PID)
 		})
 		r.Packages[k] = v
 	}
 	for i, v := range r.LibraryScanners {
-		sort.Slice(v.Libs, func(i, j int) bool {
-			switch strings.Compare(v.Libs[i].Name, v.Libs[j].Name) {
-			case -1:
-				return true
-			case 1:
-				return false
-			}
-			return v.Libs[i].Version < v.Libs[j].Version
-
+		slices.SortFunc(v.Libs, func(a, b Library) int {
+			return cmp.Or(
+				cmp.Compare(a.Name, b.Name),
+				cmp.Compare(a.Version, b.Version),
+			)
 		})
 		r.LibraryScanners[i] = v
 	}
 
 	for k, v := range r.ScannedCves {
-		sort.Slice(v.AffectedPackages, func(i, j int) bool {
-			return v.AffectedPackages[i].Name < v.AffectedPackages[j].Name
+		slices.SortFunc(v.AffectedPackages, func(a, b PackageFixStatus) int {
+			return cmp.Compare(a.Name, b.Name)
 		})
-		sort.Slice(v.DistroAdvisories, func(i, j int) bool {
-			return v.DistroAdvisories[i].AdvisoryID < v.DistroAdvisories[j].AdvisoryID
+		slices.SortFunc(v.DistroAdvisories, func(a, b DistroAdvisory) int {
+			return cmp.Compare(a.AdvisoryID, b.AdvisoryID)
 		})
-		sort.Slice(v.Exploits, func(i, j int) bool {
-			return v.Exploits[i].URL < v.Exploits[j].URL
+		slices.SortFunc(v.Exploits, func(a, b Exploit) int {
+			return cmp.Compare(a.URL, b.URL)
 		})
-		sort.Slice(v.Metasploits, func(i, j int) bool {
-			return v.Metasploits[i].Name < v.Metasploits[j].Name
+		slices.SortFunc(v.Metasploits, func(a, b Metasploit) int {
+			return cmp.Compare(a.Name, b.Name)
 		})
-		sort.Slice(v.Mitigations, func(i, j int) bool {
-			return v.Mitigations[i].URL < v.Mitigations[j].URL
+		slices.SortFunc(v.Mitigations, func(a, b Mitigation) int {
+			return cmp.Compare(a.URL, b.URL)
 		})
-		sort.Slice(v.KEVs, func(i, j int) bool {
-			if v.KEVs[i].Type == v.KEVs[j].Type {
-				return v.KEVs[i].VulnerabilityName < v.KEVs[j].VulnerabilityName
-			}
-			return v.KEVs[i].Type < v.KEVs[j].Type
+		slices.SortFunc(v.KEVs, func(a, b KEV) int {
+			return cmp.Or(
+				cmp.Compare(a.Type, b.Type),
+				cmp.Compare(a.VulnerabilityName, b.VulnerabilityName),
+			)
 		})
 
 		v.CveContents.Sort()
 
-		sort.Slice(v.AlertDict.USCERT, func(i, j int) bool {
-			return v.AlertDict.USCERT[i].Title < v.AlertDict.USCERT[j].Title
+		slices.SortFunc(v.AlertDict.USCERT, func(a, b Alert) int {
+			return cmp.Compare(a.Title, b.Title)
 		})
-		sort.Slice(v.AlertDict.JPCERT, func(i, j int) bool {
-			return v.AlertDict.JPCERT[i].Title < v.AlertDict.JPCERT[j].Title
+		slices.SortFunc(v.AlertDict.JPCERT, func(a, b Alert) int {
+			return cmp.Compare(a.Title, b.Title)
 		})
 		r.ScannedCves[k] = v
 	}

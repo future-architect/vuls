@@ -3,9 +3,10 @@
 package oval
 
 import (
+	"cmp"
 	"encoding/json"
 	"net/http"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -77,8 +78,8 @@ func (e *ovalResult) upsert(def ovalmodels.Definition, packName string, fstat fi
 }
 
 func (e *ovalResult) Sort() {
-	sort.SliceStable(e.entries, func(i, j int) bool {
-		return e.entries[i].def.DefinitionID < e.entries[j].def.DefinitionID
+	slices.SortFunc(e.entries, func(a, b defPacks) int {
+		return cmp.Compare(a.def.DefinitionID, b.def.DefinitionID)
 	})
 }
 

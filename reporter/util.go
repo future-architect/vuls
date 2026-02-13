@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -111,9 +110,7 @@ func ListValidJSONDirs(resultsDir string) (dirs []string, err error) {
 			}
 		}
 	}
-	sort.Slice(dirs, func(i, j int) bool {
-		return dirs[j] < dirs[i]
-	})
+	slices.Sort(dirs)
 	return
 }
 
@@ -443,7 +440,7 @@ No CVE-IDs are found in updatable packages.
 				}
 			}
 		}
-		sort.Strings(vuln.CpeURIs)
+		slices.Sort(vuln.CpeURIs)
 		for _, name := range vuln.CpeURIs {
 			data = append(data, []string{"CPE", name})
 		}
@@ -686,7 +683,8 @@ func terminalWidth() int {
 }
 
 func formatCsvList(r models.ScanResult, path string) error {
-	data := [][]string{{"CVE-ID", "CVSS", "Attack", "PoC", "CERT", "Fixed", "NVD"}}
+	data := make([][]string, 0, 1+len(r.ScannedCves))
+	data = append(data, []string{"CVE-ID", "CVSS", "Attack", "PoC", "CERT", "Fixed", "NVD"})
 	for _, vinfo := range r.ScannedCves.ToSortedSlice() {
 		score := vinfo.MaxCvssScore().Value.Score
 

@@ -99,7 +99,7 @@ func (red RedHat) parseCwe(str string) (cwes []string) {
 func (red RedHat) ConvertToModel(cve *gostmodels.RedhatCVE) (*models.CveContent, []models.Mitigation) {
 	cwes := red.parseCwe(cve.Cwe)
 
-	details := []string{}
+	details := make([]string, 0, len(cve.Details))
 	for _, detail := range cve.Details {
 		details = append(details, detail.Detail)
 	}
@@ -122,7 +122,7 @@ func (red RedHat) ConvertToModel(cve *gostmodels.RedhatCVE) (*models.CveContent,
 		v3severity = cve.ThreatSeverity
 	}
 
-	refs := []models.Reference{}
+	refs := make([]models.Reference, 0, len(cve.References))
 	for _, r := range cve.References {
 		refs = append(refs, models.Reference{Link: r.Reference})
 	}

@@ -2,10 +2,10 @@ package tui
 
 import (
 	"bytes"
+	"cmp"
 	"fmt"
 	"os"
 	"slices"
-	"sort"
 	"strings"
 	"text/template"
 	"time"
@@ -32,11 +32,11 @@ var currentChangelogLimitY int
 // RunTui execute main logic
 func RunTui(results models.ScanResults) subcommands.ExitStatus {
 	scanResults = results
-	sort.Slice(scanResults, func(i, j int) bool {
-		if scanResults[i].ServerName == scanResults[j].ServerName {
-			return scanResults[i].Container.Name < scanResults[j].Container.Name
-		}
-		return scanResults[i].ServerName < scanResults[j].ServerName
+	slices.SortFunc(scanResults, func(a, b models.ScanResult) int {
+		return cmp.Or(
+			cmp.Compare(a.ServerName, b.ServerName),
+			cmp.Compare(a.Container.Name, b.Container.Name),
+		)
 	})
 
 	g := gocui.NewGui()
@@ -65,7 +65,7 @@ func RunTui(results models.ScanResults) subcommands.ExitStatus {
 }
 
 func keybindings(g *gocui.Gui) (err error) {
-	errs := []error{}
+	errs := make([]error, 0, 59)
 
 	// Move between views
 	errs = append(errs, g.SetKeybinding("side", gocui.KeyTab, gocui.ModNone, nextView))
@@ -749,7 +749,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 				}
 			}
 		}
-		sort.Strings(vinfo.CpeURIs)
+		slices.Sort(vinfo.CpeURIs)
 		for _, uri := range vinfo.CpeURIs {
 			lines = append(lines, "* "+uri)
 		}

@@ -514,7 +514,7 @@ func (l *base) convertToModel() models.ScanResult {
 		Type:        ctype,
 	}
 
-	errs, warns := []string{}, []string{}
+	errs, warns := make([]string, 0, len(l.errs)), make([]string, 0, len(l.warns))
 	for _, e := range l.errs {
 		errs = append(errs, fmt.Sprintf("%+v", e))
 	}

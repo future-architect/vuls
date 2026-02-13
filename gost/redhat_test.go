@@ -4,7 +4,6 @@ package gost
 
 import (
 	"reflect"
-	"sort"
 	"testing"
 )
 
@@ -27,12 +26,8 @@ func TestParseCwe(t *testing.T) {
 		},
 	}
 
-	r := RedHat{}
 	for i, tt := range tests {
-		out := r.parseCwe(tt.in)
-		sort.Strings(out)
-		sort.Strings(tt.out)
-		if !reflect.DeepEqual(tt.out, out) {
+		if out := (RedHat{}).parseCwe(tt.in); !reflect.DeepEqual(tt.out, out) {
 			t.Errorf("[%d]expected: %s, actual: %s", i, tt.out, out)
 		}
 	}

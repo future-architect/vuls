@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/future-architect/vuls/config"
@@ -236,9 +236,7 @@ func ListValidJSONDirs(resultsDir string) (dirs []string, err error) {
 			}
 		}
 	}
-	sort.Slice(dirs, func(i, j int) bool {
-		return dirs[j] < dirs[i]
-	})
+	slices.Sort(dirs)
 	return
 }
 

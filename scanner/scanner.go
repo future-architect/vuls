@@ -38,8 +38,6 @@ var (
 
 var servers, errServers []osTypeInterface
 
-var userDirectoryPath = ""
-
 // Base Interface
 type osTypeInterface interface {
 	setServerInfo(config.ServerInfo)

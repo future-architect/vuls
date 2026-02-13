@@ -234,7 +234,7 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 			uniqueLibrary[lib.Name+lib.Version] = lib
 		}
 
-		var libraries []models.Library
+		libraries := make([]models.Library, 0, len(uniqueLibrary))
 		for _, library := range uniqueLibrary {
 			libraries = append(libraries, library)
 		}
