@@ -89,7 +89,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 		}[major(release)]
 	case constant.Alma:
 		eol, found = map[string]EOL{
-			"8":  {StandardSupportUntil: time.Date(2029, 12, 31, 23, 59, 59, 0, time.UTC)},
+			"8":  {StandardSupportUntil: time.Date(2029, 5, 31, 23, 59, 59, 0, time.UTC)},
 			"9":  {StandardSupportUntil: time.Date(2032, 5, 31, 23, 59, 59, 0, time.UTC)},
 			"10": {StandardSupportUntil: time.Date(2035, 5, 31, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
@@ -211,10 +211,13 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 				StandardSupportUntil: time.Date(2029, 6, 30, 23, 59, 59, 0, time.UTC),
 			},
 			"24.10": {
-				StandardSupportUntil: time.Date(2025, 7, 31, 23, 59, 59, 0, time.UTC),
+				StandardSupportUntil: time.Date(2025, 7, 10, 23, 59, 59, 0, time.UTC),
 			},
 			"25.04": {
-				StandardSupportUntil: time.Date(2026, 1, 17, 23, 59, 59, 0, time.UTC),
+				StandardSupportUntil: time.Date(2026, 1, 15, 23, 59, 59, 0, time.UTC),
+			},
+			"25.10": {
+				StandardSupportUntil: time.Date(2026, 7, 31, 23, 59, 59, 0, time.UTC),
 			},
 		}[release]
 	case constant.OpenSUSE:
@@ -328,6 +331,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"3.20": {StandardSupportUntil: time.Date(2026, 4, 1, 23, 59, 59, 0, time.UTC)},
 			"3.21": {StandardSupportUntil: time.Date(2026, 11, 1, 23, 59, 59, 0, time.UTC)},
 			"3.22": {StandardSupportUntil: time.Date(2027, 5, 1, 23, 59, 59, 0, time.UTC)},
+			"3.23": {StandardSupportUntil: time.Date(2027, 11, 1, 23, 59, 59, 0, time.UTC)},
 		}[majorDotMinor(release)]
 	case constant.FreeBSD:
 		// https://www.freebsd.org/security/
@@ -349,12 +353,12 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"33": {StandardSupportUntil: time.Date(2021, 11, 29, 23, 59, 59, 0, time.UTC)},
 			"34": {StandardSupportUntil: time.Date(2022, 6, 6, 23, 59, 59, 0, time.UTC)},
 			"35": {StandardSupportUntil: time.Date(2022, 12, 12, 23, 59, 59, 0, time.UTC)},
-			"36": {StandardSupportUntil: time.Date(2023, 5, 16, 23, 59, 59, 0, time.UTC)},
-			"37": {StandardSupportUntil: time.Date(2023, 12, 5, 23, 59, 59, 0, time.UTC)},
-			"38": {StandardSupportUntil: time.Date(2024, 5, 21, 23, 59, 59, 0, time.UTC)},
-			"39": {StandardSupportUntil: time.Date(2024, 11, 26, 23, 59, 59, 0, time.UTC)},
-			"40": {StandardSupportUntil: time.Date(2025, 5, 28, 23, 59, 59, 0, time.UTC)},
-			"41": {StandardSupportUntil: time.Date(2025, 11, 19, 23, 59, 59, 0, time.UTC)},
+			"36": {StandardSupportUntil: time.Date(2023, 5, 15, 23, 59, 59, 0, time.UTC)},
+			"37": {StandardSupportUntil: time.Date(2023, 12, 4, 23, 59, 59, 0, time.UTC)},
+			"38": {StandardSupportUntil: time.Date(2024, 5, 20, 23, 59, 59, 0, time.UTC)},
+			"39": {StandardSupportUntil: time.Date(2024, 11, 25, 23, 59, 59, 0, time.UTC)},
+			"40": {StandardSupportUntil: time.Date(2025, 5, 12, 23, 59, 59, 0, time.UTC)},
+			"41": {StandardSupportUntil: time.Date(2025, 12, 14, 23, 59, 59, 0, time.UTC)},
 			"42": {StandardSupportUntil: time.Date(2026, 5, 13, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
 	case constant.Windows:
