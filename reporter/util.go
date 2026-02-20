@@ -2,6 +2,7 @@ package reporter
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -110,7 +111,9 @@ func ListValidJSONDirs(resultsDir string) (dirs []string, err error) {
 			}
 		}
 	}
-	slices.Sort(dirs)
+	slices.SortFunc(dirs, func(a, b string) int {
+		return -cmp.Compare(a, b)
+	})
 	return
 }
 
