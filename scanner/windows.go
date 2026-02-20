@@ -230,9 +230,6 @@ func parseSystemInfo(stdout string) (osInfo, []string, error) {
 		default:
 		}
 	}
-	if err := scanner.Err(); err != nil {
-		return osInfo{}, nil, xerrors.Errorf("Failed to scan systeminfo stdout. err: %w", err)
-	}
 	return o, kbs, nil
 }
 
@@ -243,7 +240,6 @@ func parseGetComputerInfo(stdout string) (osInfo, error) {
 		line := scanner.Text()
 
 		switch {
-		case line == "":
 		case strings.HasPrefix(line, "WindowsProductName"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
@@ -283,11 +279,7 @@ func parseGetComputerInfo(stdout string) (osInfo, error) {
 			}
 			o.installationType = strings.TrimSpace(rhs)
 		default:
-			return osInfo{}, xerrors.Errorf("Failed to parse property. expected: %q, actual: %q", []string{"WindowsProductName : <ProductName>", "OsVersion : <Version>", "WindowsEditionId : <EditionId>", "OsCSDVersion : <CSDVersion>", "CsSystemType : <SystemType>", "WindowsInstallationType : <InstallationType>"}, line)
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		return osInfo{}, xerrors.Errorf("Failed to scan Get-ComputerInfo stdout. err: %w", err)
 	}
 	return o, nil
 }
@@ -299,7 +291,6 @@ func parseWmiObject(stdout string) (osInfo, error) {
 		line := scanner.Text()
 
 		switch {
-		case line == "":
 		case strings.HasPrefix(line, "Caption"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
@@ -503,11 +494,7 @@ func parseWmiObject(stdout string) (osInfo, error) {
 				return osInfo{}, xerrors.Errorf("Failed to detect Installation Type from DomainRole. err: %s is invalid DomainRole", domainRole)
 			}
 		default:
-			return osInfo{}, xerrors.Errorf("Failed to parse property. expected: %q, actual: %q", []string{"Caption : <Caption>", "Version : <Version>", "OperatingSystemSKU : <OperatingSystemSKU>", "CSDVersion : <CSDVersion>", "SystemType : <SystemType>", "DomainRole : <DomainRole>"}, line)
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		return osInfo{}, xerrors.Errorf("Failed to scan Get-WmiObject stdout. err: %w", err)
 	}
 	return o, nil
 }
@@ -524,7 +511,6 @@ func parseRegistry(stdout string) (osInfo, error) {
 		line := scanner.Text()
 
 		switch {
-		case line == "":
 		case strings.HasPrefix(line, "ProductName"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
@@ -586,16 +572,12 @@ func parseRegistry(stdout string) (osInfo, error) {
 			}
 			o.arch = strings.TrimSpace(rhs)
 		default:
-			return osInfo{}, xerrors.Errorf("Failed to parse property. expected: %q, actual: %q", []string{"ProductName : <ProductName>", "CurrentVersion : <Version>", "CurrentMajorVersionNumber : <MajorVersion>", "CurrentMinorVersionNumber : <MinorVersion>", "CurrentBuildNumber : <Build>", "UBR : <Revision>", "EditionID : <EditionID>", "CSDVersion : <CSDVersion>", "InstallationType : <InstallationType>", "PROCESSOR_ARCHITECTURE : <PROCESSOR_ARCHITECTURE>"}, line)
 		}
 	}
-	if err := scanner.Err(); err != nil {
-		return osInfo{}, xerrors.Errorf("Failed to scan registry stdout. err: %w", err)
-	}
-
 	if major != "" && minor != "" {
 		o.version = fmt.Sprintf("%s.%s", major, minor)
 	}
+
 	return o, nil
 }
 
@@ -1075,14 +1057,11 @@ func (w *windows) ip() ([]string, []string, error) {
 	if !r.isSuccess() {
 		return nil, nil, xerrors.Errorf("Failed to detect IP address: %v", r)
 	}
-	ipv4Addrs, ipv6Addrs, err := w.parseIP(r.Stdout)
-	if err != nil {
-		return nil, nil, xerrors.Errorf("Failed to parse IP address: %w", err)
-	}
+	ipv4Addrs, ipv6Addrs := w.parseIP(r.Stdout)
 	return ipv4Addrs, ipv6Addrs, nil
 }
 
-func (w *windows) parseIP(stdout string) ([]string, []string, error) {
+func (w *windows) parseIP(stdout string) ([]string, []string) {
 	var ipv4Addrs, ipv6Addrs []string
 
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
@@ -1113,11 +1092,7 @@ func (w *windows) parseIP(stdout string) ([]string, []string, error) {
 		default:
 		}
 	}
-	if err := scanner.Err(); err != nil {
-		return nil, nil, xerrors.Errorf("Failed to scan ipconfig output. err: %w", err)
-	}
-
-	return ipv4Addrs, ipv6Addrs, nil
+	return ipv4Addrs, ipv6Addrs
 }
 
 func (w *windows) scanPackages() error {
@@ -1200,7 +1175,6 @@ func (w *windows) parseInstalledPackages(stdout string) (models.Packages, models
 			}
 			vendor = strings.TrimSpace(rhs)
 		default:
-			return nil, nil, xerrors.Errorf("Failed to parse property. expected: %q, actual: %q", []string{"Name : <PackageName>", "Version : <Version>", "ProviderName : <ProviderName>", "Publisher : <Publisher>"}, line)
 		}
 	}
 
@@ -1240,7 +1214,6 @@ func (w *windows) parseRegistryPublishers(stdout string) (map[string]string, err
 				publisher = strings.TrimSpace(rhs)
 			}
 		default:
-			return nil, xerrors.Errorf("Failed to parse property. expected: %q, actual: %q", []string{"DisplayName : <DisplayName>", "Publisher : <Publisher>"}, line)
 		}
 	}
 
@@ -1362,7 +1335,6 @@ func (w *windows) parseGetHotfix(stdout string) ([]string, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		switch {
-		case line == "":
 		case strings.HasPrefix(line, "HotFixID"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
@@ -1370,11 +1342,7 @@ func (w *windows) parseGetHotfix(stdout string) ([]string, error) {
 			}
 			kbs = append(kbs, strings.TrimPrefix(strings.TrimSpace(rhs), "KB"))
 		default:
-			return nil, xerrors.Errorf("Failed to parse property. expected: %q, actual: %q", "HotFixID : <KBID>", line)
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, xerrors.Errorf("Failed to scan Get-Hotfix stdout. err: %w", err)
 	}
 
 	return kbs, nil
@@ -1388,7 +1356,6 @@ func (w *windows) parseGetPackageMSU(stdout string) ([]string, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		switch {
-		case line == "":
 		case strings.HasPrefix(line, "Name"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
@@ -1399,11 +1366,7 @@ func (w *windows) parseGetPackageMSU(stdout string) ([]string, error) {
 				kbs = append(kbs, m[1])
 			}
 		default:
-			return nil, xerrors.Errorf("Failed to parse property. expected: %q, actual: %q", "Name : <PackageName>", line)
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, xerrors.Errorf("Failed to scan Get-PackageMSU stdout. err: %w", err)
 	}
 
 	return kbs, nil
@@ -1414,15 +1377,9 @@ func (w *windows) parseWindowsUpdaterSearch(stdout string) ([]string, error) {
 
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
-		line := scanner.Text()
-		switch line {
-		case "":
-		default:
+		if line := scanner.Text(); line != "" {
 			kbs = append(kbs, line)
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, xerrors.Errorf("Failed to scan Windows Update Search stdout. err: %w", err)
 	}
 
 	return kbs, nil
@@ -1471,11 +1428,7 @@ func (w *windows) parseWindowsUpdateHistory(stdout string) ([]string, error) {
 				}
 			}
 		default:
-			return nil, xerrors.Errorf("Failed to parse property. expected: %q, actual: %q", []string{"Title : <Title>", "Operation : <Operation>", "ResultCode : <ResultCode>"}, line)
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, xerrors.Errorf("Failed to scan Windows Update History stdout. err: %w", err)
 	}
 
 	return slices.Collect(maps.Keys(kbs)), nil
