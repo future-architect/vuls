@@ -1199,7 +1199,12 @@ func (o *debian) checkrestart() error {
 	}
 
 	for _, p := range packs {
-		pack := o.Packages[p.Name]
+		pack, ok := o.Packages[p.Name]
+		if !ok {
+			o.log.Warnf("skip checkrestart for %s, not found in scanned packages", p.Name)
+			o.warns = append(o.warns, fmt.Errorf("skip checkrestart for %s, not found in scanned packages", p.Name))
+			continue
+		}
 		pack.NeedRestartProcs = p.NeedRestartProcs
 
 		for j, proc := range pack.NeedRestartProcs {
@@ -1250,47 +1255,37 @@ func (o *debian) parseCheckRestart(stdout string) (models.Packages, []string) {
 	scanner = bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasSuffix(line, "do not seem to have an associated init script to restart them:") {
+		switch {
+		case strings.HasSuffix(line, "do not seem to have an associated init script to restart them:"):
 			hasInit = false
-			continue
-		}
-		if strings.HasSuffix(line, ":") && len(strings.Fields(line)) == 1 {
-			packName = strings.TrimSuffix(line, ":")
-			continue
-		}
-		if strings.HasPrefix(line, "\t") {
+		case strings.HasSuffix(line, ":") && len(strings.Fields(line)) == 1:
+			// e.g.
+			// "openssh-server:" -> "openssh-server"
+			// "openssh-server:i386:" -> "openssh-server"
+			packName, _, _ = strings.Cut(line, ":")
+		case strings.HasPrefix(line, "\t"):
 			ss := strings.Fields(line)
 			if len(ss) != 2 {
 				continue
 			}
 
-			serviceName := ""
-			for _, s := range services {
-				if packName == s {
-					serviceName = s
-				}
+			var serviceName string
+			if i := slices.Index(services, packName); i != -1 {
+				serviceName = services[i]
 			}
-			if p, ok := packs[packName]; ok {
-				p.NeedRestartProcs = append(p.NeedRestartProcs, models.NeedRestartProcess{
-					PID:         ss[0],
-					Path:        ss[1],
-					ServiceName: serviceName,
-					HasInit:     hasInit,
-				})
-				packs[packName] = p
-			} else {
-				packs[packName] = models.Package{
-					Name: packName,
-					NeedRestartProcs: []models.NeedRestartProcess{
-						{
-							PID:         ss[0],
-							Path:        ss[1],
-							ServiceName: serviceName,
-							HasInit:     hasInit,
-						},
-					},
-				}
+
+			p, ok := packs[packName]
+			if !ok {
+				p = models.Package{Name: packName}
 			}
+			p.NeedRestartProcs = append(p.NeedRestartProcs, models.NeedRestartProcess{
+				PID:         ss[0],
+				Path:        ss[1],
+				ServiceName: serviceName,
+				HasInit:     hasInit,
+			})
+			packs[packName] = p
+		default:
 		}
 	}
 
