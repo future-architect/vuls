@@ -741,7 +741,10 @@ func (l *base) scanLibraries() (err error) {
 		if err != nil {
 			return xerrors.Errorf("Failed to analyze library. err: %w, filepath: %s", err, abspath)
 		}
-		l.LibraryScanners = append(l.LibraryScanners, libraryScanners...)
+		for _, libscanner := range libraryScanners {
+			libscanner.LockfilePath = abspath
+			l.LibraryScanners = append(l.LibraryScanners, libscanner)
+		}
 	}
 	return nil
 }

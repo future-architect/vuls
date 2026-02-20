@@ -708,6 +708,80 @@ util-linux:
 			unknownServices: []string{"ssh"},
 		},
 		{
+			in: `Found 9 processes using old versions of upgraded files
+(8 distinct programs)
+(4 distinct packages)
+
+Of these, 2 seem to contain systemd service definitions or init scripts which can be used to restart them.
+The following packages seem to have definitions that could be used
+to restart their services:
+util-linux:
+	949	/usr/sbin/agetty
+openssh-server:i386:
+	1327	/usr/sbin/sshd
+	1372	/usr/sbin/sshd
+
+These are the systemd services:
+systemctl restart fstrim.service
+
+These are the initd scripts:
+service ssh restart
+
+These processes (2) do not seem to have an associated init script to restart them:
+dbus-daemon:
+	718	/usr/bin/dbus-daemon
+bash:
+	1373	/usr/bin/bash`,
+			out: models.NewPackages(
+				models.Package{
+					Name: "util-linux",
+					NeedRestartProcs: []models.NeedRestartProcess{
+						{
+							PID:     "949",
+							Path:    "/usr/sbin/agetty",
+							HasInit: true,
+						},
+					},
+				},
+				models.Package{
+					Name: "openssh-server",
+					NeedRestartProcs: []models.NeedRestartProcess{
+						{
+							PID:     "1327",
+							Path:    "/usr/sbin/sshd",
+							HasInit: true,
+						},
+						{
+							PID:     "1372",
+							Path:    "/usr/sbin/sshd",
+							HasInit: true,
+						},
+					},
+				},
+				models.Package{
+					Name: "dbus-daemon",
+					NeedRestartProcs: []models.NeedRestartProcess{
+						{
+							PID:     "718",
+							Path:    "/usr/bin/dbus-daemon",
+							HasInit: false,
+						},
+					},
+				},
+				models.Package{
+					Name: "bash",
+					NeedRestartProcs: []models.NeedRestartProcess{
+						{
+							PID:     "1373",
+							Path:    "/usr/bin/bash",
+							HasInit: false,
+						},
+					},
+				},
+			),
+			unknownServices: []string{"ssh"},
+		},
+		{
 			in:              `Found 0 processes using old versions of upgraded files`,
 			out:             models.Packages{},
 			unknownServices: []string{},
@@ -718,9 +792,7 @@ util-linux:
 		packages, services := r.parseCheckRestart(tt.in)
 		for name, ePack := range tt.out {
 			if !reflect.DeepEqual(ePack, packages[name]) {
-				e := pp.Sprintf("%v", ePack)
-				a := pp.Sprintf("%v", packages[name])
-				t.Errorf("expected %s, actual %s", e, a)
+				t.Errorf("expected %v, actual %v", ePack, packages[name])
 			}
 		}
 		if !reflect.DeepEqual(tt.unknownServices, services) {
