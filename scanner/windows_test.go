@@ -814,10 +814,16 @@ func Test_parseGetPackageMSU(t *testing.T) {
 			args: args{
 				stdout: `
 Name         : Git
+Version      : 2.35.1.2
+ProviderName : Programs
 
 Name         : Oracle Database 11g Express Edition
+Version      : 11.2.0
+ProviderName : msi
 
 Name         : 2022-12 x64 ベース システム用 Windows 10 Version 21H2 の累積更新プログラム (KB5021233)
+Version      :
+ProviderName : msu
 `,
 			},
 			want:    []string{"5021233"},
@@ -1017,17 +1023,17 @@ func Test_windows_detectKBsFromKernelVersion(t *testing.T) {
 
 func Test_windows_parseIP(t *testing.T) {
 	tests := []struct {
-		name          string
-		args          string
-		wantIPv4Addrs []string
-		wantIPv6Addrs []string
-		wantErr       bool
+		name      string
+		args      string
+		ipv4Addrs []string
+		ipv6Addrs []string
 	}{
 		{
 			name: "en",
 			args: `
 
 Windows IP Configuration
+
 
 Ethernet adapter イーサネット 4:
 
@@ -1068,14 +1074,15 @@ Ethernet adapter Bluetooth ネットワーク接続:
    Media State . . . . . . . . . . . : Media disconnected
    Connection-specific DNS Suffix  . :
 `,
-			wantIPv4Addrs: []string{"10.145.8.50", "192.168.56.1", "192.168.0.205"},
-			wantIPv6Addrs: []string{"fe80::19b6:ae27:d1fe:2041", "fe80::7080:8828:5cc8:c0ba", "fe80::f49d:2c16:4270:759d"},
+			ipv4Addrs: []string{"10.145.8.50", "192.168.56.1", "192.168.0.205"},
+			ipv6Addrs: []string{"fe80::19b6:ae27:d1fe:2041", "fe80::7080:8828:5cc8:c0ba", "fe80::f49d:2c16:4270:759d"},
 		},
 		{
 			name: "ja",
 			args: `
 
 Windows IP 構成
+
 
 イーサネット アダプター イーサネット 4:
 
@@ -1116,22 +1123,18 @@ Wireless LAN adapter Wi-Fi:
    メディアの状態. . . . . . . . . . . .: メディアは接続されていません
    接続固有の DNS サフィックス . . . . .:
 `,
-			wantIPv4Addrs: []string{"10.145.8.50", "192.168.56.1", "192.168.0.205"},
-			wantIPv6Addrs: []string{"fe80::19b6:ae27:d1fe:2041", "fe80::7080:8828:5cc8:c0ba", "fe80::f49d:2c16:4270:759d"},
+			ipv4Addrs: []string{"10.145.8.50", "192.168.56.1", "192.168.0.205"},
+			ipv6Addrs: []string{"fe80::19b6:ae27:d1fe:2041", "fe80::7080:8828:5cc8:c0ba", "fe80::f49d:2c16:4270:759d"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotIPv4s, gotIPv6s, gotErr := (&windows{}).parseIP(tt.args)
-			if (gotErr != nil) != tt.wantErr {
-				t.Errorf("windows.parseIP() error = %v, wantErr %v", gotErr, tt.wantErr)
-				return
+			gotIPv4s, gotIPv6s := (&windows{}).parseIP(tt.args)
+			if !reflect.DeepEqual(gotIPv4s, tt.ipv4Addrs) {
+				t.Errorf("windows.parseIP() got = %v, want %v", gotIPv4s, tt.ipv4Addrs)
 			}
-			if !reflect.DeepEqual(gotIPv4s, tt.wantIPv4Addrs) {
-				t.Errorf("windows.parseIP() got = %v, want %v", gotIPv4s, tt.wantIPv4Addrs)
-			}
-			if !reflect.DeepEqual(gotIPv6s, tt.wantIPv6Addrs) {
-				t.Errorf("windows.parseIP() got = %v, want %v", gotIPv6s, tt.wantIPv6Addrs)
+			if !reflect.DeepEqual(gotIPv6s, tt.ipv6Addrs) {
+				t.Errorf("windows.parseIP() got = %v, want %v", gotIPv6s, tt.ipv6Addrs)
 			}
 		})
 	}
