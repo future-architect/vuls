@@ -43,7 +43,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"1":    {StandardSupportUntil: time.Date(2023, 12, 31, 23, 59, 59, 0, time.UTC)},
 			"2":    {StandardSupportUntil: time.Date(2026, 6, 30, 23, 59, 59, 0, time.UTC)},
 			"2022": {StandardSupportUntil: time.Date(2026, 6, 30, 23, 59, 59, 0, time.UTC)},
-			"2023": {StandardSupportUntil: time.Date(2027, 6, 30, 23, 59, 59, 0, time.UTC)},
+			"2023": {StandardSupportUntil: time.Date(2029, 6, 30, 23, 59, 59, 0, time.UTC)},
 			"2027": {StandardSupportUntil: time.Date(2031, 6, 30, 23, 59, 59, 0, time.UTC)},
 			"2029": {StandardSupportUntil: time.Date(2033, 6, 30, 23, 59, 59, 0, time.UTC)},
 		}[getAmazonLinuxVersion(release)]
