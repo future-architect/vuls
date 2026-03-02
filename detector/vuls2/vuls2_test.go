@@ -6380,7 +6380,7 @@ func Test_postConvert(t *testing.T) {
 															{
 																Type:   severityTypes.SeverityTypeCVSSv31,
 																Source: "SUSE",
-																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																CVSSv31: new(cvssV31Types.CVSSv31{
 																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
 																	BaseScore:             5.5,
 																	BaseSeverity:          "MEDIUM",
@@ -6421,7 +6421,7 @@ func Test_postConvert(t *testing.T) {
 																		{
 																			Criterion: criterionTypes.Criterion{
 																				Type: criterionTypes.CriterionTypeVersion,
-																				Version: toPtr(versioncriterionTypes.Criterion{
+																				Version: new(versioncriterionTypes.Criterion{
 																					Vulnerable: false,
 																					Package: vcPackageTypes.Package{
 																						Type: vcPackageTypes.PackageTypeBinary,
@@ -6451,9 +6451,9 @@ func Test_postConvert(t *testing.T) {
 																		{
 																			Criterion: criterionTypes.Criterion{
 																				Type: criterionTypes.CriterionTypeVersion,
-																				Version: toPtr(versioncriterionTypes.Criterion{
+																				Version: new(versioncriterionTypes.Criterion{
 																					Vulnerable: true,
-																					FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																					FixStatus: new(vcFixStatusTypes.FixStatus{
 																						Class: vcFixStatusTypes.ClassFixed,
 																					}),
 																					Package: vcPackageTypes.Package{
@@ -6496,7 +6496,7 @@ func Test_postConvert(t *testing.T) {
 																		{
 																			Criterion: criterionTypes.Criterion{
 																				Type: criterionTypes.CriterionTypeVersion,
-																				Version: toPtr(versioncriterionTypes.Criterion{
+																				Version: new(versioncriterionTypes.Criterion{
 																					Vulnerable: false,
 																					Package: vcPackageTypes.Package{
 																						Type: vcPackageTypes.PackageTypeBinary,
@@ -6526,9 +6526,9 @@ func Test_postConvert(t *testing.T) {
 																		{
 																			Criterion: criterionTypes.Criterion{
 																				Type: criterionTypes.CriterionTypeVersion,
-																				Version: toPtr(versioncriterionTypes.Criterion{
+																				Version: new(versioncriterionTypes.Criterion{
 																					Vulnerable: true,
-																					FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																					FixStatus: new(vcFixStatusTypes.FixStatus{
 																						Class: vcFixStatusTypes.ClassUnfixed,
 																					}),
 																					Package: vcPackageTypes.Package{
@@ -6676,7 +6676,7 @@ func Test_postConvert(t *testing.T) {
 																		{
 																			Criterion: criterionTypes.Criterion{
 																				Type: criterionTypes.CriterionTypeVersion,
-																				Version: toPtr(versioncriterionTypes.Criterion{
+																				Version: new(versioncriterionTypes.Criterion{
 																					Vulnerable: false,
 																					Package: vcPackageTypes.Package{
 																						Type: vcPackageTypes.PackageTypeBinary,
@@ -6715,9 +6715,9 @@ func Test_postConvert(t *testing.T) {
 																								{
 																									Criterion: criterionTypes.Criterion{
 																										Type: criterionTypes.CriterionTypeVersion,
-																										Version: toPtr(versioncriterionTypes.Criterion{
+																										Version: new(versioncriterionTypes.Criterion{
 																											Vulnerable: true,
-																											FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																											FixStatus: new(vcFixStatusTypes.FixStatus{
 																												Class: vcFixStatusTypes.ClassFixed,
 																											}),
 																											Package: vcPackageTypes.Package{
@@ -6743,7 +6743,7 @@ func Test_postConvert(t *testing.T) {
 																								{
 																									Criterion: criterionTypes.Criterion{
 																										Type: criterionTypes.CriterionTypeNoneExist,
-																										NoneExist: toPtr(noneexistcriterionTypes.Criterion{
+																										NoneExist: new(noneexistcriterionTypes.Criterion{
 																											Binary: &necBinaryPackageTypes.Package{
 																												Name: "kernel-livepatch-5_3_18-150300_59_43-default",
 																											},
@@ -6760,9 +6760,9 @@ func Test_postConvert(t *testing.T) {
 																						{
 																							Criterion: criterionTypes.Criterion{
 																								Type: criterionTypes.CriterionTypeVersion,
-																								Version: toPtr(versioncriterionTypes.Criterion{
+																								Version: new(versioncriterionTypes.Criterion{
 																									Vulnerable: true,
-																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																									FixStatus: new(vcFixStatusTypes.FixStatus{
 																										Class: vcFixStatusTypes.ClassFixed,
 																									}),
 																									Package: vcPackageTypes.Package{
@@ -6796,9 +6796,9 @@ func Test_postConvert(t *testing.T) {
 																								{
 																									Criterion: criterionTypes.Criterion{
 																										Type: criterionTypes.CriterionTypeVersion,
-																										Version: toPtr(versioncriterionTypes.Criterion{
+																										Version: new(versioncriterionTypes.Criterion{
 																											Vulnerable: true,
-																											FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																											FixStatus: new(vcFixStatusTypes.FixStatus{
 																												Class: vcFixStatusTypes.ClassFixed,
 																											}),
 																											Package: vcPackageTypes.Package{
@@ -6824,7 +6824,7 @@ func Test_postConvert(t *testing.T) {
 																								{
 																									Criterion: criterionTypes.Criterion{
 																										Type: criterionTypes.CriterionTypeNoneExist,
-																										NoneExist: toPtr(noneexistcriterionTypes.Criterion{
+																										NoneExist: new(noneexistcriterionTypes.Criterion{
 																											Binary: &necBinaryPackageTypes.Package{
 																												Name: "kernel-livepatch-5_3_18-150300_59_46-default",
 																											},
@@ -6841,9 +6841,9 @@ func Test_postConvert(t *testing.T) {
 																						{
 																							Criterion: criterionTypes.Criterion{
 																								Type: criterionTypes.CriterionTypeVersion,
-																								Version: toPtr(versioncriterionTypes.Criterion{
+																								Version: new(versioncriterionTypes.Criterion{
 																									Vulnerable: true,
-																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																									FixStatus: new(vcFixStatusTypes.FixStatus{
 																										Class: vcFixStatusTypes.ClassFixed,
 																									}),
 																									Package: vcPackageTypes.Package{
@@ -6873,9 +6873,9 @@ func Test_postConvert(t *testing.T) {
 																				{
 																					Criterion: criterionTypes.Criterion{
 																						Type: criterionTypes.CriterionTypeVersion,
-																						Version: toPtr(versioncriterionTypes.Criterion{
+																						Version: new(versioncriterionTypes.Criterion{
 																							Vulnerable: true,
-																							FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																							FixStatus: new(vcFixStatusTypes.FixStatus{
 																								Class: vcFixStatusTypes.ClassFixed,
 																							}),
 																							Package: vcPackageTypes.Package{
@@ -7007,7 +7007,7 @@ func Test_postConvert(t *testing.T) {
 																		{
 																			Criterion: criterionTypes.Criterion{
 																				Type: criterionTypes.CriterionTypeVersion,
-																				Version: toPtr(versioncriterionTypes.Criterion{
+																				Version: new(versioncriterionTypes.Criterion{
 																					Vulnerable: false,
 																					Package: vcPackageTypes.Package{
 																						Type: vcPackageTypes.PackageTypeBinary,
@@ -7046,9 +7046,9 @@ func Test_postConvert(t *testing.T) {
 																								{
 																									Criterion: criterionTypes.Criterion{
 																										Type: criterionTypes.CriterionTypeVersion,
-																										Version: toPtr(versioncriterionTypes.Criterion{
+																										Version: new(versioncriterionTypes.Criterion{
 																											Vulnerable: true,
-																											FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																											FixStatus: new(vcFixStatusTypes.FixStatus{
 																												Class: vcFixStatusTypes.ClassFixed,
 																											}),
 																											Package: vcPackageTypes.Package{
@@ -7074,7 +7074,7 @@ func Test_postConvert(t *testing.T) {
 																								{
 																									Criterion: criterionTypes.Criterion{
 																										Type: criterionTypes.CriterionTypeNoneExist,
-																										NoneExist: toPtr(noneexistcriterionTypes.Criterion{
+																										NoneExist: new(noneexistcriterionTypes.Criterion{
 																											Binary: &necBinaryPackageTypes.Package{
 																												Name: "kernel-livepatch-5_3_18-150300_59_43-default",
 																											},
@@ -7091,9 +7091,9 @@ func Test_postConvert(t *testing.T) {
 																						{
 																							Criterion: criterionTypes.Criterion{
 																								Type: criterionTypes.CriterionTypeVersion,
-																								Version: toPtr(versioncriterionTypes.Criterion{
+																								Version: new(versioncriterionTypes.Criterion{
 																									Vulnerable: true,
-																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																									FixStatus: new(vcFixStatusTypes.FixStatus{
 																										Class: vcFixStatusTypes.ClassFixed,
 																									}),
 																									Package: vcPackageTypes.Package{
@@ -7127,9 +7127,9 @@ func Test_postConvert(t *testing.T) {
 																								{
 																									Criterion: criterionTypes.Criterion{
 																										Type: criterionTypes.CriterionTypeVersion,
-																										Version: toPtr(versioncriterionTypes.Criterion{
+																										Version: new(versioncriterionTypes.Criterion{
 																											Vulnerable: true,
-																											FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																											FixStatus: new(vcFixStatusTypes.FixStatus{
 																												Class: vcFixStatusTypes.ClassFixed,
 																											}),
 																											Package: vcPackageTypes.Package{
@@ -7155,7 +7155,7 @@ func Test_postConvert(t *testing.T) {
 																								{
 																									Criterion: criterionTypes.Criterion{
 																										Type: criterionTypes.CriterionTypeNoneExist,
-																										NoneExist: toPtr(noneexistcriterionTypes.Criterion{
+																										NoneExist: new(noneexistcriterionTypes.Criterion{
 																											Binary: &necBinaryPackageTypes.Package{
 																												Name: "kernel-livepatch-5_3_18-150300_59_46-default",
 																											},
@@ -7172,9 +7172,9 @@ func Test_postConvert(t *testing.T) {
 																						{
 																							Criterion: criterionTypes.Criterion{
 																								Type: criterionTypes.CriterionTypeVersion,
-																								Version: toPtr(versioncriterionTypes.Criterion{
+																								Version: new(versioncriterionTypes.Criterion{
 																									Vulnerable: true,
-																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																									FixStatus: new(vcFixStatusTypes.FixStatus{
 																										Class: vcFixStatusTypes.ClassFixed,
 																									}),
 																									Package: vcPackageTypes.Package{
@@ -7204,9 +7204,9 @@ func Test_postConvert(t *testing.T) {
 																				{
 																					Criterion: criterionTypes.Criterion{
 																						Type: criterionTypes.CriterionTypeVersion,
-																						Version: toPtr(versioncriterionTypes.Criterion{
+																						Version: new(versioncriterionTypes.Criterion{
 																							Vulnerable: true,
-																							FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																							FixStatus: new(vcFixStatusTypes.FixStatus{
 																								Class: vcFixStatusTypes.ClassFixed,
 																							}),
 																							Package: vcPackageTypes.Package{
@@ -7344,7 +7344,7 @@ func Test_postConvert(t *testing.T) {
 																		{
 																			Criterion: criterionTypes.Criterion{
 																				Type: criterionTypes.CriterionTypeVersion,
-																				Version: toPtr(versioncriterionTypes.Criterion{
+																				Version: new(versioncriterionTypes.Criterion{
 																					Vulnerable: false,
 																					Package: vcPackageTypes.Package{
 																						Type: vcPackageTypes.PackageTypeBinary,
@@ -7383,9 +7383,9 @@ func Test_postConvert(t *testing.T) {
 																								{
 																									Criterion: criterionTypes.Criterion{
 																										Type: criterionTypes.CriterionTypeVersion,
-																										Version: toPtr(versioncriterionTypes.Criterion{
+																										Version: new(versioncriterionTypes.Criterion{
 																											Vulnerable: true,
-																											FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																											FixStatus: new(vcFixStatusTypes.FixStatus{
 																												Class: vcFixStatusTypes.ClassFixed,
 																											}),
 																											Package: vcPackageTypes.Package{
@@ -7411,7 +7411,7 @@ func Test_postConvert(t *testing.T) {
 																								{
 																									Criterion: criterionTypes.Criterion{
 																										Type: criterionTypes.CriterionTypeNoneExist,
-																										NoneExist: toPtr(noneexistcriterionTypes.Criterion{
+																										NoneExist: new(noneexistcriterionTypes.Criterion{
 																											Binary: &necBinaryPackageTypes.Package{
 																												Name: "kernel-livepatch-5_3_18-150300_59_43-default",
 																											},
@@ -7428,9 +7428,9 @@ func Test_postConvert(t *testing.T) {
 																						{
 																							Criterion: criterionTypes.Criterion{
 																								Type: criterionTypes.CriterionTypeVersion,
-																								Version: toPtr(versioncriterionTypes.Criterion{
+																								Version: new(versioncriterionTypes.Criterion{
 																									Vulnerable: true,
-																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																									FixStatus: new(vcFixStatusTypes.FixStatus{
 																										Class: vcFixStatusTypes.ClassFixed,
 																									}),
 																									Package: vcPackageTypes.Package{
@@ -7464,9 +7464,9 @@ func Test_postConvert(t *testing.T) {
 																								{
 																									Criterion: criterionTypes.Criterion{
 																										Type: criterionTypes.CriterionTypeVersion,
-																										Version: toPtr(versioncriterionTypes.Criterion{
+																										Version: new(versioncriterionTypes.Criterion{
 																											Vulnerable: true,
-																											FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																											FixStatus: new(vcFixStatusTypes.FixStatus{
 																												Class: vcFixStatusTypes.ClassFixed,
 																											}),
 																											Package: vcPackageTypes.Package{
@@ -7492,7 +7492,7 @@ func Test_postConvert(t *testing.T) {
 																								{
 																									Criterion: criterionTypes.Criterion{
 																										Type: criterionTypes.CriterionTypeNoneExist,
-																										NoneExist: toPtr(noneexistcriterionTypes.Criterion{
+																										NoneExist: new(noneexistcriterionTypes.Criterion{
 																											Binary: &necBinaryPackageTypes.Package{
 																												Name: "kernel-livepatch-5_3_18-150300_59_46-default",
 																											},
@@ -7509,9 +7509,9 @@ func Test_postConvert(t *testing.T) {
 																						{
 																							Criterion: criterionTypes.Criterion{
 																								Type: criterionTypes.CriterionTypeVersion,
-																								Version: toPtr(versioncriterionTypes.Criterion{
+																								Version: new(versioncriterionTypes.Criterion{
 																									Vulnerable: true,
-																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																									FixStatus: new(vcFixStatusTypes.FixStatus{
 																										Class: vcFixStatusTypes.ClassFixed,
 																									}),
 																									Package: vcPackageTypes.Package{
@@ -7541,9 +7541,9 @@ func Test_postConvert(t *testing.T) {
 																				{
 																					Criterion: criterionTypes.Criterion{
 																						Type: criterionTypes.CriterionTypeVersion,
-																						Version: toPtr(versioncriterionTypes.Criterion{
+																						Version: new(versioncriterionTypes.Criterion{
 																							Vulnerable: true,
-																							FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																							FixStatus: new(vcFixStatusTypes.FixStatus{
 																								Class: vcFixStatusTypes.ClassFixed,
 																							}),
 																							Package: vcPackageTypes.Package{
@@ -7685,7 +7685,7 @@ func Test_postConvert(t *testing.T) {
 																		{
 																			Criterion: criterionTypes.Criterion{
 																				Type: criterionTypes.CriterionTypeVersion,
-																				Version: toPtr(versioncriterionTypes.Criterion{
+																				Version: new(versioncriterionTypes.Criterion{
 																					Vulnerable: false,
 																					Package: vcPackageTypes.Package{
 																						Type: vcPackageTypes.PackageTypeBinary,
@@ -7724,9 +7724,9 @@ func Test_postConvert(t *testing.T) {
 																								{
 																									Criterion: criterionTypes.Criterion{
 																										Type: criterionTypes.CriterionTypeVersion,
-																										Version: toPtr(versioncriterionTypes.Criterion{
+																										Version: new(versioncriterionTypes.Criterion{
 																											Vulnerable: true,
-																											FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																											FixStatus: new(vcFixStatusTypes.FixStatus{
 																												Class: vcFixStatusTypes.ClassFixed,
 																											}),
 																											Package: vcPackageTypes.Package{
@@ -7752,7 +7752,7 @@ func Test_postConvert(t *testing.T) {
 																								{
 																									Criterion: criterionTypes.Criterion{
 																										Type: criterionTypes.CriterionTypeNoneExist,
-																										NoneExist: toPtr(noneexistcriterionTypes.Criterion{
+																										NoneExist: new(noneexistcriterionTypes.Criterion{
 																											Binary: &necBinaryPackageTypes.Package{
 																												Name: "kernel-livepatch-5_3_18-150300_59_43-default",
 																											},
@@ -7769,9 +7769,9 @@ func Test_postConvert(t *testing.T) {
 																						{
 																							Criterion: criterionTypes.Criterion{
 																								Type: criterionTypes.CriterionTypeVersion,
-																								Version: toPtr(versioncriterionTypes.Criterion{
+																								Version: new(versioncriterionTypes.Criterion{
 																									Vulnerable: true,
-																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																									FixStatus: new(vcFixStatusTypes.FixStatus{
 																										Class: vcFixStatusTypes.ClassFixed,
 																									}),
 																									Package: vcPackageTypes.Package{
@@ -7805,9 +7805,9 @@ func Test_postConvert(t *testing.T) {
 																								{
 																									Criterion: criterionTypes.Criterion{
 																										Type: criterionTypes.CriterionTypeVersion,
-																										Version: toPtr(versioncriterionTypes.Criterion{
+																										Version: new(versioncriterionTypes.Criterion{
 																											Vulnerable: true,
-																											FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																											FixStatus: new(vcFixStatusTypes.FixStatus{
 																												Class: vcFixStatusTypes.ClassFixed,
 																											}),
 																											Package: vcPackageTypes.Package{
@@ -7833,7 +7833,7 @@ func Test_postConvert(t *testing.T) {
 																								{
 																									Criterion: criterionTypes.Criterion{
 																										Type: criterionTypes.CriterionTypeNoneExist,
-																										NoneExist: toPtr(noneexistcriterionTypes.Criterion{
+																										NoneExist: new(noneexistcriterionTypes.Criterion{
 																											Binary: &necBinaryPackageTypes.Package{
 																												Name: "kernel-livepatch-5_3_18-150300_59_46-default",
 																											},
@@ -7850,9 +7850,9 @@ func Test_postConvert(t *testing.T) {
 																						{
 																							Criterion: criterionTypes.Criterion{
 																								Type: criterionTypes.CriterionTypeVersion,
-																								Version: toPtr(versioncriterionTypes.Criterion{
+																								Version: new(versioncriterionTypes.Criterion{
 																									Vulnerable: true,
-																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																									FixStatus: new(vcFixStatusTypes.FixStatus{
 																										Class: vcFixStatusTypes.ClassFixed,
 																									}),
 																									Package: vcPackageTypes.Package{
@@ -7882,9 +7882,9 @@ func Test_postConvert(t *testing.T) {
 																				{
 																					Criterion: criterionTypes.Criterion{
 																						Type: criterionTypes.CriterionTypeVersion,
-																						Version: toPtr(versioncriterionTypes.Criterion{
+																						Version: new(versioncriterionTypes.Criterion{
 																							Vulnerable: true,
-																							FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																							FixStatus: new(vcFixStatusTypes.FixStatus{
 																								Class: vcFixStatusTypes.ClassFixed,
 																							}),
 																							Package: vcPackageTypes.Package{
